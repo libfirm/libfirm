@@ -463,8 +463,8 @@ qset_t *get_entry (desc_t *desc, entity *ent)
     return (arr_desc->value);
   } else {
     assert (0 && "invalid descriptor");
-    return NULL;
   }
+  return NULL;
 }
 
 
@@ -654,6 +654,9 @@ void pto_name_cleanup (void)
 
 /*
   $Log$
+  Revision 1.15  2005/03/02 10:14:38  beck
+  placed a return on all execution pathes
+
   Revision 1.14  2005/02/17 08:45:38  liekweg
   Don't return a value for an invalid descriptor
 
