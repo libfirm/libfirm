@@ -38,6 +38,10 @@ static int loop_node_cnt = 0;      /* Counts the number of allocated loop nodes.
 static int current_dfn = 1;        /* Counter to generate depth first numbering
                       of visited nodes.  */
 
+void link_to_reg_end (ir_node *n, void *env);
+void set_projx_link(ir_node *cb_projx, ir_node *end_projx);
+ir_node *get_projx_link(ir_node *cb_projx);
+
 /**********************************************************************/
 /* Node attributes                                                   **/
 /**********************************************************************/
@@ -561,6 +565,10 @@ static INLINE void
 init_ip_scc (void) {
   init_scc_common();
   cg_walk (init_node, NULL, NULL);
+
+#if EXPERIMENTAL_LOOP_TREE
+  cg_walk (link_to_reg_end, NULL, NULL);
+#endif
 }
 
 /* Condition for breaking the recursion. */
@@ -588,28 +596,45 @@ static bool is_outermost_Start(ir_node *n) {
   return false;
 }
 
-/* Don't walk from nodes to blocks except for Control flow operations. */
+/* When to walk from nodes to blocks. Only for Control flow operations? */
 static INLINE int
 get_start_index(ir_node *n) {
-#if 1
-  if (is_cfop(n) || is_fragile_op(n) || intern_get_irn_op(n) == op_Start)
-      // this should be sufficient.
-    return -1;
-  else
-    return 0;
-#else
-  /* This version causes deeper loop trees (at least we verified this for Polymor).
-     But it guarantees that Blocks are analysed before nodes contained in the
-     block.  If so, we can set the value to undef if the block is not executed. */
+#undef BLOCK_BEFORE_NODE
+#define BLOCK_BEFORE_NODE 1
+
+#if BLOCK_BEFORE_NODE
+
+  /* This version assures, that all nodes are ordered absolutely.  This allows
+     to undef all nodes in the heap analysis if the block is false, which means
+     not reachable.
+     I.e., with this code, the order on the loop tree is correct. But a (single)
+     test showed the loop tree is deeper.   */
   if (intern_get_irn_op(n) == op_Phi   ||
       intern_get_irn_op(n) == op_Block ||
-      (intern_get_irn_op(n) == op_Filter && interprocedural_view))
+      (intern_get_irn_op(n) == op_Filter && interprocedural_view) ||
+      (get_irg_pinned(get_irn_irg(n)) == floats &&
+       get_op_pinned(get_irn_op(n)) == floats))
     // Here we could test for backedge at -1 which is illegal
     return 0;
   else
     return -1;
+
+#else
+
+  /* This version causes deeper loop trees (at least we verified this
+     for Polymor).
+     But it guarantees that Blocks are analysed before nodes contained in the
+     block.  If so, we can set the value to undef if the block is not \
+     executed. */
+   if (is_cfop(n) || is_fragile_op(n) || intern_get_irn_op(n) == op_Start)
+     return -1;
+   else
+     return 0;
+
 #endif
 }
+
+
 #if 0
 /* Returns current_ir_graph and set it to the irg of predecessor index
    of node n. */
@@ -699,8 +724,8 @@ static void test(ir_node *pred, ir_node *root, ir_node *this) {
 INLINE static bool is_possible_loop_head(ir_node *n) {
   ir_op *op = intern_get_irn_op(n);
   return ((op == op_Block) ||
-      (op == op_Phi) ||
-      ((op == op_Filter) && interprocedural_view));
+	  (op == op_Phi) ||
+	  ((op == op_Filter) && interprocedural_view));
 }
 
 /* Returns true if n is a loop header, i.e., it is a Block, Phi
@@ -724,10 +749,14 @@ is_head (ir_node *n, ir_node *root)
       assert(pred);
       if (is_backedge(n, i)) continue;
       if (!irn_is_in_stack(pred)) {
-    some_outof_loop = 1;
+	some_outof_loop = 1;
       } else {
-    assert(get_irn_uplink(pred) >= get_irn_uplink(root));
-    some_in_loop = 1;
+	if(get_irn_uplink(pred) < get_irn_uplink(root))
+	  {
+	    DDMN(pred); DDMN(root);
+	  }
+	assert(get_irn_uplink(pred) >= get_irn_uplink(root));
+	some_in_loop = 1;
       }
     }
   }
@@ -748,8 +777,8 @@ smallest_dfn_pred (ir_node *n, int limit)
       assert(pred);
       if (is_backedge(n, i) || !irn_is_in_stack(pred)) continue;
       if (get_irn_dfn(pred) >= limit && (min == -1 || get_irn_dfn(pred) < min)) {
-    index = i;
-    min = get_irn_dfn(pred);
+	index = i;
+	min = get_irn_dfn(pred);
       }
     }
   }
@@ -768,8 +797,8 @@ largest_dfn_pred (ir_node *n)
       ir_node *pred = intern_get_irn_n(n, i);
       if (is_backedge (n, i) || !irn_is_in_stack(pred)) continue;
       if (get_irn_dfn(pred) > max) {
-    index = i;
-    max = get_irn_dfn(pred);
+	index = i;
+	max = get_irn_dfn(pred);
       }
     }
   }
@@ -795,17 +824,17 @@ find_tail (ir_node *n) {
   if (is_head (m, n)) {
     res_index = smallest_dfn_pred(m, 0);
     if ((res_index == -2) &&  /* no smallest dfn pred found. */
-    (n == m))
+    (n ==  m))
       return NULL;
   } else {
     if (m == n) return NULL;
     for (i = tos-2; ; --i) {
       m = stack[i];
       if (is_head (m, n)) {
-    res_index = smallest_dfn_pred (m, get_irn_dfn(m) + 1);
-    if (res_index == -2)  /* no smallest dfn pred found. */
-      res_index = largest_dfn_pred (m);
-    break;
+	res_index = smallest_dfn_pred (m, get_irn_dfn(m) + 1);
+	if (res_index == -2)  /* no smallest dfn pred found. */
+	  res_index = largest_dfn_pred (m);
+	break;
       }
     }
   }
@@ -816,10 +845,88 @@ find_tail (ir_node *n) {
 }
 
 
-/* The core algorithm. *****************************************/
+#if EXPERIMENTAL_LOOP_TREE
+
+/*  ----------------------------------------------------------------
+    AS:  This is experimantal code to build loop trees suitable for
+    the heap analysis. Does not work correctly right now... :-(
+
+
+    Search in stack for the corresponding first Call-End-ProjX that
+    corresponds to one of the control flow predecessors of the given
+    block, that is the possible callers.
+    returns: the control predecessor to chose\
+    or       -1 if no corresponding Call-End-Node could be found
+             on the stack.
+    - -------------------------------------------------------------- */
+
+int search_endproj_in_stack(ir_node *start_block)
+{
+  int i, j;
+  assert(is_Block(start_block));
+  for(i = tos - 1; i >= 0; --i)
+    {
+      DDMN(stack[i]);
+      if(get_irn_op(stack[i]) == op_Proj && get_irn_mode(stack[i]) == mode_X &&
+	 get_irn_op(get_irn_n(stack[i], 0)) == op_EndReg)
+	{
+	  printf("FOUND PROJ!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+	  ir_node *end_projx = stack[i];
+
+	  for(j = 0; j < get_irn_arity(start_block); j++)
+	    {
+	      ir_node *begin_projx = get_Block_cfgpred(get_irg_start_block(get_irn_irg(end_projx)), get_Proj_proj(end_projx));
+	      DDMN(begin_projx);
+	      if(get_irn_n(start_block, j) == begin_projx)
+		{
+		  printf("FOUND IT!!!!!!!!!!!!!!!!!!\n");
+		  return(j);
+		}
+	    }
+	}
+    }
+  return(-1);
+}
+
+
+static pmap *projx_link = NULL;
+
+void link_to_reg_end (ir_node *n, void *env) {
+  if(get_irn_op(n) == op_Proj && get_irn_mode(n) == mode_X && get_irn_op(get_irn_n(n, 0)) == op_EndReg)
+    {
+      /* Reg End Projx -> Find the CallBegin Projx and hash it */
+      ir_node *end_projx = n;
+      ir_node *begin_projx = get_Block_cfgpred(get_irg_start_block(get_irn_irg(end_projx)), get_Proj_proj(end_projx));
+      printf("Linked the following ProjxNodes:\n");
+      DDMN(begin_projx);
+      DDMN(end_projx);
+      set_projx_link(begin_projx, end_projx);
+    }
+}
+
+void set_projx_link(ir_node *cb_projx, ir_node *end_projx)
+{
+  if(projx_link == NULL)
+    projx_link = pmap_create();
+  pmap_insert(projx_link, (void *)cb_projx, (void *)end_projx);
+}
+
+ir_node *get_projx_link(ir_node *cb_projx)
+{
+  return((ir_node *) pmap_get(projx_link, (void *)cb_projx));
+}
+
+#endif
+
+
+
+/*************************************************************
+ *                   The core algorithm.                     *
+ *************************************************************/
+
 
 static void scc (ir_node *n) {
-  int i;
+  int i, *visited;
   if (irn_visited(n)) return;
   mark_irn_visited(n);
 
@@ -836,67 +943,133 @@ static void scc (ir_node *n) {
 
   if (!is_outermost_Start(n)) {
     int arity = intern_get_irn_arity(n);
-    for (i = get_start_index(n); i < arity; i++) {
-      ir_node *m;
-      if (is_backedge(n, i)) continue;
 
-      m = intern_get_irn_n(n, i); /* get_irn_ip_pred(n, i); */
-      /* if ((!m) || (intern_get_irn_op(m) == op_Unknown)) continue; */
-      scc (m);
-      if (irn_is_in_stack(m)) {
-    /* Uplink of m is smaller if n->m is a backedge.
-       Propagate the uplink to mark the loop. */
-    if (get_irn_uplink(m) < get_irn_uplink(n))
-      set_irn_uplink(n, get_irn_uplink(m));
+#if EXPERIMENTAL_LOOP_TREE
+
+    /* This is meant to be used with the experimenatl code above.
+       If the above code is not used any more, this can be deleted, too.... */
+
+    if(interprocedural_view &&
+       is_Block(n) &&
+       get_irn_op(get_irn_n(n, 0)) == op_Proj &&
+       get_irn_op(get_irn_n(get_irn_n(n, 0), 0)) == op_CallBegin)
+      {
+	/* We are at the start node of a function:
+	   Walk to the callers in the correct order! */
+	DDMN(n);
+	DDMN(get_irn_n(get_irn_n(n, 0), 0));
+	for(i = 0; i < arity; i++)
+	  {
+	    int pred_nr;
+	    ir_node *m;
+
+	    pred_nr = search_endproj_in_stack(n);
+	    assert(pred_nr >= 0);
+	    if(is_backedge(n, pred_nr))
+	      continue;
+	    m = get_irn_n(n, pred_nr);
+	    scc(m);
+
+	    if (irn_is_in_stack(m)) {
+	      /* Uplink of m is smaller if n->m is a backedge.
+		 Propagate the uplink to mark the loop. */
+	      if (get_irn_uplink(m) < get_irn_uplink(n))
+		set_irn_uplink(n, get_irn_uplink(m));
+	    }
+	  }
       }
-    }
+    else
+
+#endif
+
+      {
+	for (i = get_start_index(n); i < arity; i++) {
+	  ir_node *m;
+	  if (is_backedge(n, i)) continue;
+	  /*	  printf("i: %d\n", i); */
+	  m = intern_get_irn_n(n, i); /* get_irn_ip_pred(n, i); */
+	  /* if ((!m) || (intern_get_irn_op(m) == op_Unknown)) continue; */
+	  scc (m);
+	  if (irn_is_in_stack(m)) {
+	    /* Uplink of m is smaller if n->m is a backedge.
+	       Propagate the uplink to mark the loop. */
+	    if (get_irn_uplink(m) < get_irn_uplink(n))
+	      set_irn_uplink(n, get_irn_uplink(m));
+	  }
+	}
+      }
   }
 
   if (get_irn_dfn(n) == get_irn_uplink(n)) {
-    /* This condition holds for the node with the incoming backedge.
-       AS: That is: For the loop head. */
+    /* This condition holds for
+       1) the node with the incoming backedge.
+          That is: We found a loop!
+       2) Straight line code, because no uplink has been propagated, so the
+          uplink still is the same as the dfn.
+
+       But n might not be a proper loop head for the analysis. Proper loop
+       heads are Block and Phi nodes. find_tail searches the stack for
+       Block's and Phi's and takes those nodes as loop heads for the current
+       loop instead and marks the incoming edge as backedge. */
+
     ir_node *tail = find_tail(n);
     if (tail) {
-      /* We found a new inner loop! */
+      /* We have a loop, that is no straight line code,
+	 because we found a loop head!
+	 Next actions: Open a new loop on the loop tree and
+	               try to find inner loops */
+
+
+#define NO_LOOPS_WITHOUT_HEAD 1
+#if NO_LOOPS_WITHOUT_HEAD
 
       /* This is an adaption of the algorithm from fiasco / optscc to
        * avoid loops without Block or Phi as first node.  This should
        * severely reduce the number of evaluations of nodes to detect
-       * a fixpoint in the heap analyses.
+       * a fixpoint in the heap analysis.
        * Further it avoids loops without firm nodes that cause errors
        * in the heap analyses. */
-#define NO_LOOPS_WITHOUT_HEAD 1
-#if NO_LOOPS_WITHOUT_HEAD
+
       ir_loop *l;
       int close;
       if (get_loop_n_elements(current_loop) > 0) {
-    l = new_loop();
-    close = 1;
+	l = new_loop();
+	close = 1;
       } else {
-    l = current_loop;
-    close = 0;
+	l = current_loop;
+	close = 0;
       }
+
 #else
+
       ir_loop *l = new_loop();
+
 #endif
 
       /* Remove the loop from the stack ... */
       pop_scc_unmark_visit (n);
-      /* and recompute it in a better order; and so that it goes into
-     the new loop. */
+
       /*  GL @@@ remove experimental stuff rem = find_irg_on_stack(tail); */
 
+      /* The current backedge has been marked, that is temporarily eliminated,
+	 by find tail. Start the scc algorithm
+	 anew on the subgraph thats left (the current loop without the backedge)
+	 in order to find more inner loops. */
+
       scc (tail);
+
       /*  GL @@@ remove experimental stuff current_ir_graph = rem; */
 
       assert (irn_visited(n));
 #if NO_LOOPS_WITHOUT_HEAD
       if (close)
 #endif
-      close_loop(l);
-    } else {
-      /* AS: No inner loop was found. Pop all nodes from the stack
-     to the current loop. */
+	close_loop(l);
+    }
+    else
+      {
+	/* AS: No loop head was found, that is we have straightline code.
+	       Pop all nodes from the stack to the current loop. */
       pop_scc_to_loop(n);
     }
   }
