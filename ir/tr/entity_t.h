@@ -219,13 +219,17 @@ __get_entity_peculiarity(const entity *ent) {
 }
 
 /**
- * @todo why peculiarity only for methods
+ * @todo Why peculiarity only for methods?
+ *       Good question.  Originally, there were only description and
+ *       existent.  The thought was, what sense does it make to
+ *       describe a field?  With inherited the situation changed.  So
+ *       I removed the assertion.  GL, 28.2.05
  */
 static INLINE void
 __set_entity_peculiarity(entity *ent, peculiarity pec) {
   assert(ent && ent->kind == k_entity);
   /* @@@ why peculiarity only for methods? */
-  assert(is_Method_type(ent->type));
+  //assert(is_Method_type(ent->type));
 
   ent->peculiarity = pec;
 }
