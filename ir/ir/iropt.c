@@ -896,75 +896,6 @@ static ir_node *equivalent_node_Phi(ir_node *n)
 }
 
 /**
- * Optimize Loads after Store.
- *
- * @todo FAILS for volatile entities
- */
-static ir_node *equivalent_node_Load(ir_node *n)
-{
-  ir_node *oldn = n;
-
-  if (!get_opt_redundant_LoadStore()) return n;
-
-  /* remove unnecessary Load. */
-  ir_node *a = skip_Proj(get_Load_mem(n));
-  ir_node *b = get_Load_ptr(n);
-  ir_node *c;
-
-  /* TODO: check for volatile */
-  if (get_irn_op(a) == op_Store && get_Store_ptr(a) == b) {
-    /* We load immediately after a store -- a read after write. */
-    ir_node *mem = get_Load_mem(n);
-
-    c = get_Store_value(a);
-    turn_into_tuple(n, 3);
-    set_Tuple_pred(n, pn_Load_M,        mem);
-    set_Tuple_pred(n, pn_Load_X_except, new_Bad());
-    set_Tuple_pred(n, pn_Load_res,      c);              DBG_OPT_RAW;
-  }
-  else if (get_irn_op(a) == op_Load && get_Load_ptr(a) == b) {
-    /* We load immediately after a Load -- a read after read. */
-    return a;
-  }
-
-  return n;
-}
-
-/**
- * Optimize store after store and load after store.
- *
- * @todo FAILS for volatile entities
- */
-static ir_node *equivalent_node_Store(ir_node *n)
-{
-  ir_node *oldn = n;
-
-  if (!get_opt_redundant_LoadStore()) return n;
-
-  /* remove unnecessary store. */
-  ir_node *a = skip_Proj(get_Store_mem(n));
-  ir_node *b = get_Store_ptr(n);
-  ir_node *c = skip_Proj(get_Store_value(n));
-
-  if (get_irn_op(a) == op_Store
-      && get_Store_ptr(a) == b
-      && skip_Proj(get_Store_value(a)) == c) {
-    /* We have twice exactly the same store -- a write after write. */
-    n = a;                                                         DBG_OPT_WAW;
-  } else if (get_irn_op(c) == op_Load
-	     && (a == c || skip_Proj(get_Load_mem(c)) == a)
-	     && get_Load_ptr(c) == b ) {
-    /* We just loaded the value from the same memory, i.e., the store
-       doesn't change the memory -- a write after read. */
-    a = get_Store_mem(n);
-    turn_into_tuple(n, 2);
-    set_Tuple_pred(n, pn_Store_M,        a);
-    set_Tuple_pred(n, pn_Store_X_except, new_Bad());               DBG_OPT_WAR;
-  }
-  return n;
-}
-
-/**
  * optimize Proj(Tuple) and gigo for ProjX in Bad block
  */
 static ir_node *equivalent_node_Proj(ir_node *n)
@@ -1044,8 +975,6 @@ static ir_op *firm_set_default_equivalent_node(ir_op *op)
   CASE(And);
   CASE(Conv);
   CASE(Phi);
-//  CASE(Load);		/* dangerous */
-//  CASE(Store);		/* dangerous, see todo */
   CASE(Proj);
   CASE(Id);
   default:
@@ -1375,23 +1304,6 @@ static ir_node *transform_node_Proj(ir_node *proj)
     }
     return proj;
 
-  /*
-   * Ugly case: due to the walk order it may happen, that a proj is visited
-   * before the preceding Load/Store is optimized (happens in cycles).
-   * This will lead to a Tuple that will be alive after local_optimize(), which
-   * is bad. So, we do it here again.
-   */
-  case iro_Load:
-  case iro_Store:
-    {
-      ir_node *old_n = n;
-      n = equivalent_node(n);
-      if (n != old_n) {
-	set_Proj_pred(proj, n);
-      }
-    }
-    break;
-
   case iro_Tuple:
     /* should not happen, but if it doest will optimize */
     break;
@@ -1403,33 +1315,6 @@ static ir_node *transform_node_Proj(ir_node *proj)
 
   /* we have added a Tuple, optimize it for the current Proj away */
   return equivalent_node_Proj(proj);
-}
-
-/**
- * Transform a Store before a Store to the same address...
- * Both nodes must be in the same block.
- *
- * @todo Check for volatile! Moreover, what if the first store
- *       has a exception handler while the other has not?
- */
-static ir_node *transform_node_Store(ir_node *store)
-{
-  ir_node *pred = skip_Proj(get_Store_mem(store));
-  ir_node *ptr  = get_Store_ptr(store);
-
-  if (!get_opt_redundant_LoadStore()) return store;
-
-  if (get_irn_op(pred) == op_Store &&
-      get_Store_ptr(pred) == ptr   &&
-      get_nodes_block(pred) == get_nodes_block(store)) {
-    /* the Store n is useless, as it is overwritten by the store store */
-    ir_node *mem = get_Store_mem(pred);
-
-    turn_into_tuple(pred, 2);
-    set_Tuple_pred(pred, pn_Store_M,        mem);
-    set_Tuple_pred(pred, pn_Store_X_except, new_Bad());
-  }
-  return store;
 }
 
 /**
@@ -1564,7 +1449,6 @@ static ir_op *firm_set_default_transform_node(ir_op *op)
   CASE(Eor);
   CASE(Not);
   CASE(Proj);
-  CASE(Store);	/* dangerous, see todo */
   CASE(Or);
   default:
     op->transform_node  = NULL;
