@@ -254,6 +254,35 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
 
   switch (opcode)
   {
+
+    case iro_Block:
+      for (i = 0; i < get_Block_n_cfgpreds(n); ++i) {
+	ir_node *pred =  get_Block_cfgpred(n, i);
+	ASSERT_AND_RET((is_Bad(pred) || (get_irn_mode(pred) == mode_X)), "Block node", 0);
+      }
+      // End block may only have Return, Raise or fragile ops as preds.
+      if (n == get_irg_end_block(irg))
+	for (i = 0; i < get_Block_n_cfgpreds(n); ++i) {
+#if 0  // Some optimization seems to add a Jmp to the End Block??
+	  ir_node *pred =  skip_Proj(get_Block_cfgpred(n, i));
+	  if ((get_irn_op(pred) == op_Return) ||
+	      is_Bad(pred)                    ||
+	      (get_irn_op(pred) == op_Raise)  ||
+	      is_fragile_op(pred)               )
+	    {  }
+	  else {
+	    DDMG(irg); printf(" pred %d, ", i); DDMN(n); DDMN(pred);
+	  }
+
+	  ASSERT_AND_RET(((get_irn_op(pred) == op_Return) ||
+			  is_Bad(pred)                    ||
+			  (get_irn_op(pred) == op_Raise)  ||
+			  is_fragile_op(pred)               ),
+			 "End Block node", 0);
+#endif
+	}
+      break;
+
     case iro_Start:
       ASSERT_AND_RET(
           /* Start: BB --> X x M x ref x data1 x ... x datan x ref */

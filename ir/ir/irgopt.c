@@ -761,38 +761,41 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   free(res_pred);
   free(cf_pred);
 
-/* --
-       If the exception control flow from the Call directly branched to the
-       end block we now have the following control flow predecessor pattern:
-       ProjX -> Tuple -> Jmp.
-       We must remove the Jmp along with it's empty block and add Jmp's
-       predecessors as predecessors of this end block. -- */
-  /* find the problematic predecessor of the end block. */
-  end_bl = get_irg_end_block(current_ir_graph);
-  for (i = 0; i < get_Block_n_cfgpreds(end_bl); i++) {
-    cf_op = get_Block_cfgpred(end_bl, i);
-    if (get_irn_op(cf_op) == op_Proj) {
-      cf_op = get_Proj_pred(cf_op);
-      if (get_irn_op(cf_op) == op_Tuple) {
-	cf_op = get_Tuple_pred(cf_op, 1);
-	assert(get_irn_op(cf_op) == op_Jmp);
-	break;
+  if (n_exc > 0) {
+    /* -- If the exception control flow from the inlined Call directly
+       branched to the end block we now have the following control
+       flow predecessor pattern: ProjX -> Tuple -> Jmp.  We must
+       remove the Jmp along with it's empty block and add Jmp's
+       predecessors as predecessors of this end block.  No problem if
+       there is no exception, because then branches Bad to End which
+       is fine. -- */
+    /* find the problematic predecessor of the end block. */
+    end_bl = get_irg_end_block(current_ir_graph);
+    for (i = 0; i < get_Block_n_cfgpreds(end_bl); i++) {
+      cf_op = get_Block_cfgpred(end_bl, i);
+      if (get_irn_op(cf_op) == op_Proj) {
+	cf_op = get_Proj_pred(cf_op);
+	if (get_irn_op(cf_op) == op_Tuple) {
+	  cf_op = get_Tuple_pred(cf_op, 1);
+	  assert(get_irn_op(cf_op) == op_Jmp);
+	  break;
+	}
       }
     }
-  }
-  /* repair */
-  if (i < get_Block_n_cfgpreds(end_bl)) {
-    bl = get_nodes_Block(cf_op);
-    arity = get_Block_n_cfgpreds(end_bl) + get_Block_n_cfgpreds(bl) - 1;
-    cf_pred = (ir_node **) malloc (arity * sizeof (ir_node *));
-    for (j = 0; j < i; j++)
-      cf_pred[j] = get_Block_cfgpred(end_bl, j);
-    for (j = j; j < i + get_Block_n_cfgpreds(bl); j++)
-      cf_pred[j] = get_Block_cfgpred(bl, j-i);
-    for (j = j; j < arity; j++)
-      cf_pred[j] = get_Block_cfgpred(end_bl, j-get_Block_n_cfgpreds(bl) +1);
-    set_irn_in(end_bl, arity, cf_pred);
-    free(cf_pred);
+    /* repair */
+    if (i < get_Block_n_cfgpreds(end_bl)) {
+      bl = get_nodes_Block(cf_op);
+      arity = get_Block_n_cfgpreds(end_bl) + get_Block_n_cfgpreds(bl) - 1;
+      cf_pred = (ir_node **) malloc (arity * sizeof (ir_node *));
+      for (j = 0; j < i; j++)
+	cf_pred[j] = get_Block_cfgpred(end_bl, j);
+      for (j = j; j < i + get_Block_n_cfgpreds(bl); j++)
+	cf_pred[j] = get_Block_cfgpred(bl, j-i);
+      for (j = j; j < arity; j++)
+	cf_pred[j] = get_Block_cfgpred(end_bl, j-get_Block_n_cfgpreds(bl) +1);
+      set_irn_in(end_bl, arity, cf_pred);
+      free(cf_pred);
+    }
   }
 
   /* --  Turn cse back on. -- */
