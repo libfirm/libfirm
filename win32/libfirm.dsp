@@ -241,6 +241,10 @@ SOURCE=..\ir\ana\irbackedge_t.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\ana\ircfscc.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\ana\irdom.c
 # End Source File
 # Begin Source File
