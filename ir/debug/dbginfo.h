@@ -105,14 +105,14 @@ extern INLINE const char* dbg_action_2_str(dbg_action a) {
  *
  * @see dbg_init()
  */
-typedef void merge_pair_func(ir_node *, ir_node *, dbg_action);
+typedef void (merge_pair_func)(ir_node *, ir_node *, dbg_action);
 
 /**
  * The type of the debug info merge function.
  *
  * @see dbg_init()
  */
-typedef void merge_sets_func(ir_node **, int, ir_node **, int, dbg_action);
+typedef void (merge_sets_func)(ir_node **, int, ir_node **, int, dbg_action);
 
 /**
  *   Initializes the debug support.
