@@ -18,7 +18,8 @@
    Checknode must be in current_ir_graph. */
 void irn_vrfy (struct ir_node *checknode);
 
-/* Calls irn_vrfy for each node in irg. */
+/* Calls irn_vrfy for each node in irg.
+   Graph must be in state "pinned".*/
 void irg_vrfy (ir_graph *irg);
 
 

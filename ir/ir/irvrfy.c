@@ -485,6 +485,8 @@ irg_vrfy (ir_graph *irg)
   rem = current_ir_graph;
   current_ir_graph = irg;
 
+  assert(get_irg_pinned(irg) == pinned);
+
   irg_walk(irg->end, vrfy_wrap, NULL, NULL);
 
   current_ir_graph = rem;

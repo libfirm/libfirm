@@ -308,6 +308,12 @@ mark_irn_visited (ir_node *node) {
   node->visited = current_ir_graph->visited;
 }
 
+inline int
+irn_not_visited  (ir_node *node) {
+  assert (node);
+  return (node->visited < current_ir_graph->visited);
+}
+
 inline void
 set_irn_link (ir_node *node, ir_node *link) {
   assert (node);

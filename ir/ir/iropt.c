@@ -1141,5 +1141,9 @@ optimize_in_place (ir_node *n) {
     set_irg_pinned(current_ir_graph, floats);
   if (get_irg_outs_state(current_ir_graph) == outs_consistent)
     set_irg_outs_inconsistent(current_ir_graph);
+  /* Maybe we could also test whether optimizing the node can
+     change the control graph. */
+  if (get_irg_dom_state(current_ir_graph) == dom_consistent)
+    set_irg_dom_inconsistent(current_ir_graph);
   return optimize_in_place_2 (n);
 }

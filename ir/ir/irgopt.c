@@ -25,6 +25,8 @@
 # include "irgmod.h"
 # include "array.h"
 # include "pset.h"
+# include "pdeq.h"  /* provisorisch fuer code placement */
+# include "irouts.h"
 
 /* Defined in iropt.c */
 pset *new_identities (void);
@@ -735,5 +737,257 @@ void inline_small_irgs(ir_graph *irg, int size) {
     }
   }
 
+  current_ir_graph = rem;
+}
+
+
+/********************************************************************/
+/*  Code Placement.  Pinns all floating nodes to a block where they */
+/*  will be executed only if needed.                                */
+/********************************************************************/
+
+static pdeq *worklist;		/* worklist of ir_node*s */
+
+/* Find the earliest correct block for N.  --- Place N into the
+   same Block as its dominance-deepest Input.  */
+static void
+place_floats_early (ir_node *n)
+{
+  int i, start;
+
+  /* we must not run into an infinite loop */
+  assert (irn_not_visited(n));
+  mark_irn_visited(n);
+
+  /* Place floating nodes. */
+  if (get_op_pinned(get_irn_op(n)) == floats) {
+    int depth = 0;
+    ir_node *b = new_Bad();   /* The block to place this node in */
+
+    assert(get_irn_op(n) != op_Block);
+
+    if ((get_irn_op(n) == op_Const) ||
+	(get_irn_op(n) == op_SymConst) ||
+	(is_Bad(n))) {
+      /* These nodes will not be placed by the loop below. */
+      b = get_irg_start_block(current_ir_graph);
+      depth = 1;
+    }
+
+    /* find the block for this node. */
+    for (i = 0; i < get_irn_arity(n); i++) {
+      ir_node *dep = get_irn_n(n, i);
+      ir_node *dep_block;
+      if ((irn_not_visited(dep)) &&
+	  (get_op_pinned(get_irn_op(dep)) == floats)) {
+	place_floats_early (dep);
+      }
+      /* Because all loops contain at least one pinned node, now all
+         our inputs are either pinned or place_early has already
+         been finished on them.  We do not have any unfinished inputs!  */
+      dep_block = get_nodes_Block(dep);
+      if ((!is_Bad(dep_block)) &&
+	  (get_Block_dom_depth(dep_block) > depth)) {
+	b = dep_block;
+	depth = get_Block_dom_depth(dep_block);
+      }
+      /* Avoid that the node is placed in the Start block */
+      if ((depth == 1) && (get_Block_dom_depth(get_nodes_Block(n)) > 1)) {
+	b = get_Block_cfg_out(get_irg_start_block(current_ir_graph), 0);
+	assert(b != get_irg_start_block(current_ir_graph));
+	depth = 2;
+      }
+    }
+    set_nodes_Block(n, b);
+  }
+
+  /* Add predecessors of non floating nodes on worklist. */
+  start = (get_irn_op(n) == op_Block) ? 0 : -1;
+  for (i = start; i < get_irn_arity(n); i++) {
+    ir_node *pred = get_irn_n(n, i);
+    if (irn_not_visited(pred)) {
+      pdeq_putr (worklist, pred);
+    }
+  }
+}
+
+/* Floating nodes form subgraphs that begin at nodes as Const, Load,
+   Start, Call and end at pinned nodes as Store, Call.  Place_early
+   places all floating nodes reachable from its argument through floating
+   nodes and adds all beginnings at pinned nodes to the worklist. */
+inline void place_early () {
+  int i;
+  bool del_me;
+
+  assert(worklist);
+  inc_irg_visited(current_ir_graph);
+
+  /* this inits the worklist */
+  place_floats_early (get_irg_end(current_ir_graph));
+
+  /* Work the content of the worklist. */
+  while (!pdeq_empty (worklist)) {
+    ir_node *n = pdeq_getl (worklist);
+    if (irn_not_visited(n)) place_floats_early (n);
+  }
+
+  set_irg_outs_inconsistent(current_ir_graph);
+  current_ir_graph->pinned = pinned;
+}
+
+
+/* deepest common dominance ancestor of DCA and CONSUMER of PRODUCER */
+static ir_node *
+consumer_dom_dca (ir_node *dca, ir_node *consumer, ir_node *producer)
+{
+  ir_node *block;
+
+  /* Compute the latest block into which we can place a node so that it is
+     before consumer. */
+  if (get_irn_op(consumer) == op_Phi) {
+    /* our comsumer is a Phi-node, the effective use is in all those
+       blocks through which the Phi-node reaches producer */
+    int i;
+    ir_node *phi_block = get_nodes_Block(consumer);
+    for (i = 0;  i < get_irn_arity(consumer); i++) {
+      if (get_irn_n(consumer, i) == producer) {
+	block = get_nodes_Block(get_Block_cfgpred(phi_block, i));
+      }
+    }
+  } else {
+    assert(is_no_Block(consumer));
+    block = get_nodes_Block(consumer);
+  }
+
+  /* Compute the deepest common ancestor of block and dca. */
+  assert(block);
+  if (!dca) return block;
+  while (get_Block_dom_depth(block) > get_Block_dom_depth(dca))
+    block = get_Block_idom(block);
+  while (get_Block_dom_depth(dca) > get_Block_dom_depth(block))
+    dca = get_Block_idom(dca);
+  while (block != dca)
+    { block = get_Block_idom(block); dca = get_Block_idom(dca); }
+
+  return dca;
+}
+
+#if 0
+/* @@@ Needs loop informations.  Will implement later interprocedural. */
+static void
+move_out_of_loops (ir_node *n, ir_node *dca)
+{
+  assert(dca);
+
+  /* Find the region deepest in the dominator tree dominating
+     dca with the least loop nesting depth, but still dominated
+     by our early placement. */
+  ir_node *best = dca;
+  while (dca != get_nodes_Block(n)) {
+    dca = get_Block_idom(dca);
+    if (!dca) break; /* should we put assert(dca)? */
+    if (get_Block_loop_depth(dca) < get_Block_loop_depth(best)) {
+      best = dca;
+    }
+  }
+  if (get_Block_dom_depth(best) >= get_Block_dom_depth(get_nodes_Block(n)))
+    set_nodes_Block(n, best);
+}
+#endif
+
+/* Find the latest legal block for N and place N into the
+   `optimal' Block between the latest and earliest legal block.
+   The `optimal' block is the dominance-deepest block of those
+   with the least loop-nesting-depth.  This places N out of as many
+   loops as possible and then makes it as controldependant as
+   possible. */
+static void
+place_floats_late (ir_node *n)
+{
+  int i;
+
+  assert (irn_not_visited(n)); /* no multiple placement */
+
+  /* no need to place block nodes, control nodes are already placed. */
+  if ((get_irn_op(n) != op_Block) && (!is_cfop(n)) && (get_irn_mode(n) != mode_X)) {
+    /* Assure that our users are all placed, except the Phi-nodes.
+       --- Each dataflow cycle contains at least one Phi-node.  We
+       have to break the `user has to be placed before the
+       producer' dependance cycle and the Phi-nodes are the
+       place to do so, because we need to base our placement on the
+       final region of our users, which is OK with Phi-nodes, as they
+       are pinned, and they never have to be placed after a
+       producer of one of their inputs in the same block anyway. */
+    for (i = 0; i < get_irn_n_outs(n); i++) {
+      ir_node *succ = get_irn_out(n, i);
+      if (irn_not_visited(succ) && (get_irn_op(succ) != op_Phi))
+	place_floats_late (succ);
+    }
+
+    /* We have to determine the final block of this node... except for constants. */
+    if ((get_op_pinned(get_irn_op(n)) == floats) &&
+	(get_irn_op(n) != op_Const) &&
+	(get_irn_op(n) != op_SymConst)) {
+      ir_node *dca = NULL;	/* deepest common ancestor in the
+				   dominator tree of all nodes'
+				   blocks depending on us; our final
+				   placement has to dominate DCA. */
+      for (i = 0; i < get_irn_n_outs(n); i++) {
+	dca = consumer_dom_dca (dca, get_irn_out(n, i), n);
+      }
+      set_nodes_Block(n, dca);
+#if 0
+      move_out_of_loops (n, dca);
+#endif
+    }
+  }
+
+  mark_irn_visited(n);
+
+  /* Add predecessors of all non-floating nodes on list. (Those of floating
+     nodes are placeded already and therefore are marked.)  */
+  for (i = 0; i < get_irn_n_outs(n); i++) {
+    if (irn_not_visited(get_irn_out(n, i))) {
+      pdeq_putr (worklist, get_irn_out(n, i));
+    }
+  }
+}
+
+inline void place_late() {
+  assert(worklist);
+  inc_irg_visited(current_ir_graph);
+
+  /* This fills the worklist initially. */
+  place_floats_late(get_irg_start_block(current_ir_graph));
+  /* And now empty the worklist again... */
+  while (!pdeq_empty (worklist)) {
+    ir_node *n = pdeq_getl (worklist);
+    if (irn_not_visited(n)) place_floats_late(n);
+  }
+}
+
+void place_code(ir_graph *irg) {
+  ir_graph *rem = current_ir_graph;
+  current_ir_graph = irg;
+
+  if (!(get_optimize() && get_opt_global_cse())) return;
+
+  /* Handle graph state */
+  assert(get_irg_phase_state(irg) != phase_building);
+  if (get_irg_dom_state(irg) != dom_consistent)
+    compute_doms(irg);
+
+  /* Place all floating nodes as early as possible. This guarantees
+     a legal code placement. */
+  worklist = new_pdeq ();
+  place_early();
+
+  /* place_early invalidates the outs, place_late needs them. */
+  compute_outs(irg);
+  /* Now move the nodes down in the dominator tree. This reduces the
+     unnecessary executions of the node. */
+  place_late();
+
+  del_pdeq (worklist);
   current_ir_graph = rem;
 }

@@ -909,6 +909,7 @@ dump_ir_graph (ir_graph *irg)
 /***********************************************************************/
 
 int node_floats(ir_node *n) {
+
   return ((get_op_pinned(get_irn_op(n)) == floats) &&
 	  (get_irg_pinned(current_ir_graph) == floats));
 }
@@ -1012,7 +1013,10 @@ dump_block_to_cfg (ir_node *block, void *env) {
     /* This is a block. Dump a node for the block. */
     xfprintf (F, "node: {title:\""); PRINT_NODEID(block);
     xfprintf (F, "\" label: \"%I ", block->op->name); PRINT_NODEID(block);
-    xfprintf (F, "\"}\n");
+    xfprintf (F, "\" ");
+    if (dump_dominator_information_flag)
+      xfprintf(F, "info1:\"dom depth %d\"", get_Block_dom_depth(block));
+    xfprintf (F, "}\n");
     /* Dump the edges */
     for ( i = 0; i < get_Block_n_cfgpreds(block); i++)
       if (get_irn_op(skip_Proj(get_Block_cfgpred(block, i))) != op_Bad) {
@@ -1024,7 +1028,7 @@ dump_block_to_cfg (ir_node *block, void *env) {
 	fprintf (F, "\" }\n");
       }
 
-    /* Dump dominator information */
+    /* Dump dominator edge */
     if (dump_dominator_information_flag && get_Block_idom(block)) {
       pred = get_Block_idom(block);
       xfprintf (F, "edge: { sourcename: \"");

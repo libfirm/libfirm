@@ -72,4 +72,19 @@ void inline_method(ir_node *call, ir_graph *called_graph);
    combination as control flow operation.  */
 void inline_small_irgs(ir_graph *irg, int size);
 
+/* Code Placement.  Pinns all floating nodes to a block where they
+   will be executed only if needed.   Depends on the flag opt_global_cse.
+   Graph may not be in phase_building.  Does not schedule control dead
+   code.  Uses dominator information which it computes if the irg is not
+   in state dom_consistent.  Destroys the out information as it moves nodes
+   to other blocks.  Optimizes Tuples in Control edges. (@@@ This
+   is not tested!)
+   @@@ A more powerful code placement would move operations past Phi nodes
+   out of loops.  Further the control flow should be normalized before
+   computing the dominator information so that there exists an optimal block
+   for all operations. */
+void place_code(ir_graph *irg);
+
+
+
 # endif /* _IRGOPT_H_ */

@@ -49,7 +49,7 @@ main(void)
   set_optimize(1);
   set_opt_constant_folding(1);
   set_opt_cse(1);
-  set_opt_global_cse(1);
+  set_opt_global_cse(0);
   set_opt_dead_node_elimination (1);
 
   prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_i);

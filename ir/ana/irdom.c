@@ -103,12 +103,17 @@ typedef struct {
 
 } dom_env;
 
-void init_tmp_dom_info(ir_node *bl, tmp_dom_info *parent, tmp_dom_info *tdi_list, int* used) {
+
+/* Walks Blocks along the out datastructure.  If recursion started with
+   Start block misses control dead blocks. */
+void init_tmp_dom_info(ir_node *bl, tmp_dom_info *parent,
+		       tmp_dom_info *tdi_list, int* used) {
   tmp_dom_info *tdi;
   int i;
 
   assert(get_irn_op(bl) == op_Block);
-  if (get_irg_block_visited(current_ir_graph) == get_Block_block_visited(bl)) return;
+  if (get_irg_block_visited(current_ir_graph) == get_Block_block_visited(bl))
+    return;
   mark_Block_block_visited(bl);
   set_Block_pre_num(bl, *used);
 
@@ -192,8 +197,8 @@ void compute_doms(ir_graph *irg) {
     compute_outs(current_ir_graph);
 
   /** Initialize the temporary information, add link to parent.  We don't do
-     this with a standard walker as passing the parent to the sons isn't
-     simple. **/
+      this with a standard walker as passing the parent to the sons isn't
+      simple. **/
   used = 0;
   inc_irg_block_visited(current_ir_graph);
   init_tmp_dom_info(get_irg_start_block(current_ir_graph), NULL, tdi_list, &used);
@@ -216,7 +221,7 @@ void compute_doms(ir_graph *irg) {
       ir_node *pred = get_nodes_Block(get_Block_cfgpred(w->block, j));
       tmp_dom_info *u;
 
-      if ((is_Bad(pred)) || (get_Block_pre_num (pred) == -1))
+      if ((is_Bad(get_Block_cfgpred(w->block, j))) || (get_Block_pre_num (pred) == -1))
 	continue;	/* control-dead */
 
       u = dom_eval (&tdi_list[get_Block_pre_num(pred)]);
@@ -266,183 +271,6 @@ void free_dom_and_peace(ir_graph *irg) {
   assert(get_irg_phase_state(current_ir_graph) != phase_building);
   current_ir_graph->dom_state = no_dom;
 
-  /* @@@ free */
+  /* With the implementation right now there is nothing to free,
+     but better call it anyways... */
 }
-
-
-#if 0
-/* Dominator Tree */
-
-/* temporary type used while constructing the dominator tree. */
-typedef struct tmp_dom_info tmp_dom_info;
-struct tmp_dom_info {
-  ir_node *region;
-
-  tmp_dom_info *semi;			/* semidominator */
-  tmp_dom_info *parent;
-  tmp_dom_info *label;		/* used for LINK and EVAL */
-  tmp_dom_info *ancestor;		/* used for LINK and EVAL */
-  tmp_dom_info *dom;			/* After step 3, if the semidominator
-  of w is its immediate dominator, then w->dom is the immediate
-  dominator of w.  Otherwise w->dom is a vertex v whose number is
-  smaller than w and whose immediate dominator is also w's immediate
-  dominator. After step 4, w->dom is the immediate dominator of w.  */
-  tmp_dom_info *bucket;		/* set of vertices with same semidominator */
-};
-
-static int
-dom_count_regions (ir_node *n)
-{
-  int i, count = 1;
-
-  n->visit = ir_visited;
-
-  for (i = IR_ARITY (n);  i > 0;  --i) {
-    ir_node *pr = prev_region (n, i);
-    if (pr && pr->visit != ir_visited) {
-      count += dom_count_regions (pr);
-    }
-  }
-  return count;
-}
-
-struct dt_desc { tmp_dom_info *dt;  int used;};
-
-static void
-dom_setup (ir_node *n, tmp_dom_info *parent, struct dt_desc *dt_desc)
-{
-  tmp_dom_info *dt = &dt_desc->dt[dt_desc->used];
-  int i;
-
-  if (n->visit == ir_visited) return;
-  n->visit = ir_visited;
-
-  assert (IR_CFG_NODE (n));
-
-  n->data.r.pre_num = dt_desc->used;
-  dt->semi = dt;
-  dt->label = dt;
-  dt->ancestor = NULL;
-  dt->bucket = NULL;
-  dt->parent = parent;
-  dt->region = n;
-  ++(dt_desc->used);
-
-  for (i = 0;  i < n->data.r.cfg_outs;  ++i) {
-    dom_setup (n->data.r.cfg_out[i], dt, dt_desc);
-  }
-}
-
-static void
-dom_compress (tmp_dom_info *v)
-{
-  assert (v->ancestor);
-  if (v->ancestor->ancestor) {
-    dom_compress (v->ancestor);
-    if (v->ancestor->label->semi < v->label->semi) {
-      v->label = v->ancestor->label;
-    }
-    v->ancestor = v->ancestor->ancestor;
-  }
-}
-
-/* if V is a root, return v, else return the vertex u, not being the
-   root, with minimum u->semi on the path from v to its root. */
-static tmp_dom_info*
-dom_eval (tmp_dom_info *v)
-{
-  if (!v->ancestor) return v;
-  dom_compress (v);
-  return v->label;
-}
-
-/* make V W's ancestor */
-static void
-dom_link (tmp_dom_info *v, tmp_dom_info *w)
-{
-  w->ancestor = v;
-}
-
-void
-irg_gen_idom (ir_graph *irg)
-{
-  int regions, i;
-  tmp_dom_info *dt;
-  struct dt_desc dt_desc;
-
-  if (!(irg->state & irgs_has_CFG)) irg_gen_out (irg);
-
-  ++ir_visited;
-  regions = 0;
-  /* walk all the artificially kept alive parts of the CFG instead of
-     the CFG beginning from the Start just for fun and safety */
-  keep_alives_in_arr (irg);
-  for (i = ARR_LEN (irg->keep.alive) - 1;  i >= 0;  --i)
-    if (   IR_CFG_NODE (irg->keep.alive[i])
-	&& irg->keep.alive[i]->visit != ir_visited)
-      regions += dom_count_regions (irg->keep.alive[i]);
-
-  dt = alloca ((regions+1) * sizeof (tmp_dom_info));
-  memset (dt, 0, (regions+1) * sizeof (tmp_dom_info));
-
-  /* Step 1 */
-  dt_desc.dt = dt;
-  dt_desc.used = 1;
-  ++ir_visited;
-  dom_setup (irg->start, NULL, &dt_desc);
-
-  /* This assert will fail, if not all Regions are reachable by
-     walking the CFG starting from Start, that is when there is
-     [control] dead code, violating the single entry precondition of
-     this algorithm.  */
-  assert (dt_desc.used == regions + 1);
-
-  for (i = regions;  i > 1;  --i) {
-    tmp_dom_info *w = &dt[i];
-    tmp_dom_info *v;
-    int j, r_ins;
-
-    /* Step 2 */
-    r_ins = IR_ARITY (w->region);
-    for (j = 1;  j <= r_ins;  ++j) {
-      ir_node *prev = prev_region (w->region, j);
-      tmp_dom_info *u;
-
-      if (!prev) continue;	/* control-dead */
-
-      u = dom_eval (&dt[prev->data.r.pre_num]);
-      if (u->semi < w->semi) w->semi = u->semi;
-    }
-    /* Add w to w->semi's bucket.  w is in exactly one bucket, so
-       buckets can ben implemented as linked lists. */
-    w->bucket = w->semi->bucket;
-    w->semi->bucket = w;
-
-    dom_link (w->parent, w);
-
-    /* Step 3 */
-    while ((v = w->parent->bucket)) {
-      tmp_dom_info *u;
-      /* remove v from w->parent->bucket */
-      w->parent->bucket = v->bucket;
-      v->bucket = NULL;
-
-      u = dom_eval (v);
-      v->dom = u->semi < v->semi ? u : w->parent;
-    }
-  }
-  /* Step 4 */
-  dt[1].dom = NULL;
-  dt[1].region->data.r.idom = NULL;
-  dt[1].region->data.r.dom_depth = 1;
-  for (i = 2;  i <= regions;  ++i) {
-    tmp_dom_info *w = &dt[i];
-
-    if (w->dom != w->semi) w->dom = w->dom->dom;
-    w->region->data.r.idom = w->dom->region;
-    w->region->data.r.dom_depth = w->dom->region->data.r.dom_depth + 1;
-  }
-  current_ir_graph = sirg;
-}
-
-#endif

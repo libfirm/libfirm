@@ -1,4 +1,4 @@
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
+/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe      3 2002/02/28 13:33:52
 ** All rights reserved.
 **
 ** Authors: Martin Trapp, Christian Schaefer
@@ -93,6 +93,8 @@ inline void          set_irn_visited (ir_node *node, unsigned long visited);
 inline unsigned long get_irn_visited (ir_node *node);
 /* Sets visited to get_irg_visited(current_ir_graph) */
 inline void          mark_irn_visited (ir_node *node);
+/* Returns 1 of visited < get_irg_visited(current_ir_graph).  */
+inline int           irn_not_visited  (ir_node *node);
 inline void          set_irn_link          (ir_node *node, ir_node *link);
 inline ir_node      *get_irn_link          (ir_node *node);
 #ifdef DEBUG_libfirm
