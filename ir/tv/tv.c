@@ -1481,7 +1481,7 @@ char *get_tarval_bitpattern(tarval *tv)
 {
   int i, j, pos = 0;
   int n = get_mode_size_bits(tv->mode);
-  int bytes = n / 8 + ((n & 7) != 0);
+  int bytes = (n + 7) / 8;
   char *res = malloc((n + 1) * sizeof(char));
   unsigned char byte;
 
