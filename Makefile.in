@@ -26,6 +26,10 @@ enable_external_effects := @enable_external_effects@
 # do we want to test the firm internal backend stuff?
 enable_backend := @enable_backend@
 
+# suck in values for the linking procedure:
+LDFLAGS			= @LDFLAGS@
+LIBS			= @LIBS@
+
 build_subdirs := ir/adt ir/debug ir/tv ir/common ir/ident ir/ir \
 		ir/opt ir/tr ir/ana ir/stat ir/ana2
 
@@ -75,7 +79,7 @@ libfirm.a: $(XOFILES) $(OFILES)
 
 # dont know about xml here
 libfirm.so: subdir_all $(XOFILES) $(OFILES)
-	ld -Bshareable -o ./libfirm.so $(XOFILES) -lm -L/usr/public/libxml2/lib -lxml2
+	ld -Bshareable -o ./libfirm.so $(XOFILES) -lm $(LDFLAGS) $(LIBS)
 
 testprograms:	libfirm.a
 	$(MAKE) -C testprograms
