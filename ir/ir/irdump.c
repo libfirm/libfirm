@@ -583,7 +583,7 @@ void vcg_open (ir_graph *irg, char *suffix) {
   char label[4];
 
   /** open file for vcg graph */
-  id    = get_entity_ld_name (get_irg_ent(irg));
+  id    = get_entity_ld_ident (get_irg_ent(irg));
   len   = id_to_strlen (id);
   cp    = id_to_str (id);
 

@@ -1,3 +1,7 @@
+  4.7.2001 Goetz
+  Added a routine to set the mangled entity name.
+  Added two routines to copy entites.
+
   3.7.2001 Goetz
   Entities now have two more flags, for visibility and allocation mode.
   Types that have a layout have a flag indicating whether the layout is

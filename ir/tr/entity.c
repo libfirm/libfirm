@@ -28,6 +28,25 @@ init_entity (void)
 /** ENTITY                                                        **/
 /*******************************************************************/
 
+inline void insert_entity_in_owner (entity *ent) {
+  type *owner = ent->owner;
+  switch (get_type_tpop_code(owner)) {
+  case tpo_class: {
+    add_class_member (owner, ent);
+  } break;
+  case tpo_struct: {
+    add_struct_member (owner, ent);
+  } break;
+  case tpo_union: {
+    add_union_member (owner, ent);
+  } break;
+  case tpo_array: {
+    set_array_element_entity(owner, ent);
+  } break;
+  default: assert(0);
+  }
+}
+
 entity *
 new_entity (type *owner, ident *name, type *type)
 {
@@ -45,23 +64,39 @@ new_entity (type *owner, ident *name, type *type)
 
   res->visit = 0;
 
-  switch (get_type_tpop_code(owner)) {
-  case tpo_class: {
-    add_class_member (owner, res);
-  } break;
-  case tpo_struct: {
-    add_struct_member (owner, res);
-  } break;
-  case tpo_union: {
-    add_union_member (owner, res);
-  } break;
-  case tpo_array: {
-    set_array_element_entity(owner, res);
-  } break;
-  default: assert(0);
-  }
-
+  /* Remember entity in it's owner. */
+  insert_entity_in_owner (res);
   return res;
+}
+
+entity *
+copy_entity_own (entity *old, type *new_owner) {
+  entity *new;
+
+  assert_legal_owner_of_ent(new_owner);
+  if (old->owner == new_owner) return old;
+  new = (entity *) malloc (sizeof (entity));
+  memcpy (new, old, sizeof (entity));
+  new->owner = new_owner;
+
+  insert_entity_in_owner (new);
+
+  return new;
+}
+
+entity *
+copy_entity_name (entity *old, ident *new_name) {
+  entity *new;
+
+  if (old->name == new_name) return old;
+  new = (entity *) malloc (sizeof (entity));
+  memcpy (new, old, sizeof (entity));
+  new->name = new_name;
+  new->ld_name = NULL;
+
+  insert_entity_in_owner (new);
+
+  return new;
 }
 
 inline const char *
@@ -109,7 +144,7 @@ get_entity_ld_ident (entity *ent)
   return ent->ld_name;
 }
 
-void   set_entity_ld_ident (entity *, ident *ld_ident) {
+void   set_entity_ld_ident (entity *ent, ident *ld_ident) {
   ent->ld_name = ld_ident;
 }
 

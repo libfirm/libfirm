@@ -75,7 +75,15 @@ typedef struct entity entity;
 /* Creates a new entity.
    Automatically inserts the entity as a member of owner. */
 entity     *new_entity (type *owner, ident *name, type *type);
-
+/* Copies the entity if the new_owner is different from the
+   owner of the old entity.  Else returns the old entity.
+   Automatically inserts the new entity as a member of owner. */
+entity     *copy_entity_own (entity *old, type *new_owner);
+/* Copies the entity if the new_name is different from the
+   name of the old entity.  Else returns the old entity.
+   Automatically inserts the new entity as a member of owner.
+   The mangled name ld_name is set to NULL. */
+entity     *copy_entity_name (entity *old, ident *new_name);
 /* manipulate fields of entity */
 const char *get_entity_name     (entity *ent);
 ident      *get_entity_ident    (entity *ent);
