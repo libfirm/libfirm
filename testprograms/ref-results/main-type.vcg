@@ -20,11 +20,11 @@ classname 12: "Member"
 node: {title: "e16" label: "ent a_tp_elem_ent" color: yellow
  info1: "
 id: e16
-allocation:  automatic allocated
-visibility:  local
-variability: uninitialized
-volatility:  non_volatile
-peculiarity: existent
+allocation:  allocation_automatic
+visibility:  visibility_local
+variability: variability_uninitialized
+volatility:  volatility_non_volatile
+peculiarity: peculiarity_existent
 name:    a_tp_elem_ent
 ld_name: a_tp_a_tp_elem_ent
 offset:  -1"
@@ -48,11 +48,11 @@ size: 4B,
 node: {title: "e33" label: "ent a" color: yellow
  info1: "
 id: e33
-allocation:  automatic allocated
-visibility:  local
-variability: uninitialized
-volatility:  non_volatile
-peculiarity: existent
+allocation:  allocation_automatic
+visibility:  visibility_local
+variability: variability_uninitialized
+volatility:  volatility_non_volatile
+peculiarity: peculiarity_existent
 name:    a
 ld_name: mainframe_tp_a
 offset:  -1"
@@ -65,11 +65,11 @@ edge: { sourcename: "t19" targetname: "e33"class: 12 label: "member" color:blue}
 node: {title: "e14" label: "ent main" color: yellow
  info1: "
 id: e14
-allocation:  static allocated
-visibility:  local
-variability: constant
-volatility:  non_volatile
-peculiarity: existent
+allocation:  allocation_static
+visibility:  visibility_local
+variability: variability_constant
+volatility:  volatility_non_volatile
+peculiarity: peculiarity_existent
 name:    main
 ld_name: ARRAY-STACK_EXAMPLE_main
 offset:  -1

@@ -109,11 +109,11 @@ node: {title: "n194" label: "Bad  194"  info1: "visited: 0
 node: {title: "e13" label: "ent a" color: yellow
  info1: "
 id: e13
-allocation:  automatic allocated
-visibility:  local
-variability: uninitialized
-volatility:  non_volatile
-peculiarity: existent
+allocation:  allocation_automatic
+visibility:  visibility_local
+variability: variability_uninitialized
+volatility:  volatility_non_volatile
+peculiarity: peculiarity_existent
 name:    a
 ld_name: PRIMA_a
 offset:  -1"
@@ -128,11 +128,11 @@ edge: { sourcename: "t11" targetname: "e19"class: 12 label: "member" color:blue}
 node: {title: "e16" label: "ent set_a" color: yellow
  info1: "
 id: e16
-allocation:  static allocated
-visibility:  local
-variability: constant
-volatility:  non_volatile
-peculiarity: existent
+allocation:  allocation_static
+visibility:  visibility_local
+variability: variability_constant
+volatility:  volatility_non_volatile
+peculiarity: peculiarity_existent
 name:    set_a
 ld_name: PRIMA_set_a
 offset:  -1
@@ -160,11 +160,11 @@ size: 4B,
 node: {title: "e19" label: "ent c" color: yellow
  info1: "
 id: e19
-allocation:  static allocated
-visibility:  local
-variability: constant
-volatility:  non_volatile
-peculiarity: existent
+allocation:  allocation_static
+visibility:  visibility_local
+variability: variability_constant
+volatility:  volatility_non_volatile
+peculiarity: peculiarity_existent
 name:    c
 ld_name: PRIMA_c
 offset:  -1
@@ -184,11 +184,11 @@ edge: { sourcename: "t17" targetname: "t10"class: 6 label: "res 0" color: green}
 node: {title: "e22" label: "ent OO_INLINE_EXAMPLE_main" color: yellow
  info1: "
 id: e22
-allocation:  static allocated
-visibility:  local
-variability: constant
-volatility:  non_volatile
-peculiarity: existent
+allocation:  allocation_static
+visibility:  visibility_local
+variability: variability_constant
+volatility:  volatility_non_volatile
+peculiarity: peculiarity_existent
 name:    OO_INLINE_EXAMPLE_main
 ld_name: GlobalType_OO_INLINE_EXAMPLE_main
 offset:  -1

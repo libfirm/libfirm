@@ -72,11 +72,11 @@ edge: {sourcename: "n49" targetname: "n43" label: "0" color: blue}
 node: {title: "e14" label: "ent i" color: yellow
  info1: "
 id: e14
-allocation:  automatic allocated
-visibility:  local
-variability: uninitialized
-volatility:  non_volatile
-peculiarity: existent
+allocation:  allocation_automatic
+visibility:  visibility_local
+variability: variability_uninitialized
+volatility:  volatility_non_volatile
+peculiarity: peculiarity_existent
 name:    i
 ld_name: GlobalType_i
 offset:  -1"
@@ -90,11 +90,11 @@ edge: { sourcename: "t0" targetname: "e14"class: 12 label: "member" color:blue}
 node: {title: "e13" label: "ent GLOBAL_VAR_main" color: yellow
  info1: "
 id: e13
-allocation:  static allocated
-visibility:  local
-variability: constant
-volatility:  non_volatile
-peculiarity: existent
+allocation:  allocation_static
+visibility:  visibility_local
+variability: variability_constant
+volatility:  volatility_non_volatile
+peculiarity: peculiarity_existent
 name:    GLOBAL_VAR_main
 ld_name: GlobalType_GLOBAL_VAR_main
 offset:  -1
