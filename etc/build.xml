@@ -18,7 +18,7 @@
 	</cvschangelog>
   </target>
 
-  <target name="html">
+  <target name="html" depends="cvslog">
     <style in="changelog.xml"
            out="changelog.html"
            style="${ant.home}/etc/changelog.xsl">
