@@ -1527,6 +1527,23 @@ static int node_cmp_attr_Cast(ir_node *a, ir_node *b)
     return get_Cast_type(a) != get_Cast_type(b);
 }
 
+static int node_cmp_attr_Load(ir_node *a, ir_node *b)
+{
+  if (get_Load_volatility(a) == volatility_is_volatile ||
+      get_Load_volatility(b) == volatility_is_volatile)
+    /* NEVER do CSE on volatile Loads */
+    return 1;
+
+  return get_Load_mode(a) != get_Load_mode(b);
+}
+
+static int node_cmp_attr_Store(ir_node *a, ir_node *b)
+{
+  /* NEVER do CSE on volatile Stores */
+  return (get_Store_volatility(a) == volatility_is_volatile ||
+      get_Load_volatility(b) == volatility_is_volatile);
+}
+
 /**
  * set the default node attribute compare operation
  */
@@ -1549,6 +1566,8 @@ static ir_op *firm_set_default_node_cmp_attr(ir_op *op)
   CASE(Sel);
   CASE(Phi);
   CASE(Cast);
+  CASE(Load);
+  CASE(Store);
   default:
     op->node_cmp_attr  = NULL;
   }
