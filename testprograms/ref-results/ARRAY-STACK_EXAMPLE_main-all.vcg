@@ -17,7 +17,7 @@ edge: {sourcename: "n38" targetname: "n39" label: "0" color: red}
 node: {title: "n37" label: "Return  37" }
 edge: {sourcename: "n37" targetname: "n49" label: "0" color: blue}
 edge: {sourcename: "n37" targetname: "n42" label: "1" }
-node: {title: "n42" label: "ProjI 2 42" color: yellow}
+node: {title: "n42" label: "ProjIs 2 42" color: yellow}
 edge: {sourcename: "n42" targetname: "n43" label: "0" }
 node: {title: "n43" label: "Load  43" }
 edge: {sourcename: "n43" targetname: "n48" label: "0" color: blue}
@@ -38,7 +38,7 @@ edge: {sourcename: "n40" targetname: "n39" label: "0" color: red}
 node: {title: "n39" label: "ProjX 0 39" color: yellow}
 edge: {sourcename: "n39" targetname: "n41" label: "0" color: red}
 node: {title: "n41" label: "Start  41" color: blue}
-node: {title: "n45" label: "3I  45" color: yellow}
+node: {title: "n45" label: "0x00000003Iu  45" color: yellow}
 node: {title: "n47" label: "ProjP 2 47" color: yellow}
 edge: {sourcename: "n47" targetname: "n41" label: "0" }
 node: {title: "n48" label: "ProjM 1 48" color: yellow}
@@ -64,7 +64,7 @@ size: -1B,
 edge: { sourcename:"t20" targetname: "t1" class: 10 label: "arr elt tp" color:green}
 edge: { sourcename:"t20" targetname: "e21" class: 10 label: "arr ent" color: green}
 node: {title: "t1" label: "primitive int"info1: "state: layout_fixed,
-mode: I,
+mode: Is,
 size: 4B,
 "}
 node: {title: "e24"label: "ent a" color: yellow

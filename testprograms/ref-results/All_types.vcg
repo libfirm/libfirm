@@ -18,7 +18,7 @@ classname 11: "Overwrites"
 classname 12: "Member"
 
 node: {title: "t1" label: "primitive int"info1: "state: layout_fixed,
-mode: I,
+mode: Is,
 size: 4B,
 "}
 node: {title: "t2" label: "class PRIMA"info1: "state: layout_undefined

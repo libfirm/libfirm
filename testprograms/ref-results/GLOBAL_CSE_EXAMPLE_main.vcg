@@ -18,7 +18,7 @@ edge: {sourcename: "n55" targetname: "n56" label: "1" color: red}
 node: {title: "n54" label: "Return  54" }
 edge: {sourcename: "n54" targetname: "n77" label: "0" color: blue}
 edge: {sourcename: "n54" targetname: "n72" label: "1" }
-node: {title: "n72" label: "PhiI  72" color: green}
+node: {title: "n72" label: "PhiIs  72" color: green}
 edge: {sourcename: "n72" targetname: "n75" label: "0" }
 edge: {sourcename: "n72" targetname: "n73" label: "1" }
 }
@@ -53,21 +53,21 @@ edge: {sourcename: "n64" targetname: "n65" label: "0" }
 node: {title: "n65" label: "CmpT  65" }
 edge: {sourcename: "n65" targetname: "n67" label: "0" }
 edge: {sourcename: "n65" targetname: "n66" label: "1" }
-node: {title: "n66" label: "2I  66" color: yellow}
-node: {title: "n67" label: "ProjI 0 67" color: yellow}
+node: {title: "n66" label: "0x00000002Is  66" color: yellow}
+node: {title: "n67" label: "ProjIs 0 67" color: yellow}
 edge: {sourcename: "n67" targetname: "n68" label: "0" }
 node: {title: "n68" label: "ProjT 4 68" color: yellow}
 edge: {sourcename: "n68" targetname: "n62" label: "0" }
 node: {title: "n71" label: "ProjX 0 71" color: yellow}
 edge: {sourcename: "n71" targetname: "n63" label: "0" color: red}
-node: {title: "n73" label: "SubI  73" }
+node: {title: "n73" label: "SubIs  73" }
 edge: {sourcename: "n73" targetname: "n67" label: "0" }
 edge: {sourcename: "n73" targetname: "n74" label: "1" }
-node: {title: "n74" label: "3I  74" color: yellow}
-node: {title: "n75" label: "AddI  75" }
+node: {title: "n74" label: "0x00000003Is  74" color: yellow}
+node: {title: "n75" label: "AddIs  75" }
 edge: {sourcename: "n75" targetname: "n73" label: "0" }
 edge: {sourcename: "n75" targetname: "n76" label: "1" }
-node: {title: "n76" label: "5I  76" color: yellow}
+node: {title: "n76" label: "0x00000005Is  76" color: yellow}
 node: {title: "n77" label: "ProjM 1 77" color: yellow}
 edge: {sourcename: "n77" targetname: "n62" label: "0" color: blue}
 node: {title: "n80" label: "Bad  80" }

@@ -18,7 +18,7 @@ edge: {sourcename: "n32" targetname: "n31" label: "1" color: red}
 node: {title: "n41" label: "Return  41" }
 edge: {sourcename: "n41" targetname: "n13" label: "0" color: blue}
 edge: {sourcename: "n41" targetname: "n34" label: "1" }
-node: {title: "n34" label: "PhiI  34" color: green}
+node: {title: "n34" label: "PhiIs  34" color: green}
 edge: {sourcename: "n34" targetname: "n19" label: "0" }
 edge: {sourcename: "n34" targetname: "n29" label: "1" }
 }
@@ -26,7 +26,7 @@ edge: {sourcename: "n34" targetname: "n29" label: "1" }
 graph: { title: "n26"  label: "26" status:clustered color:yellow
 edge: {sourcename: "n26" targetname: "n25" label: "0" color: red}
 node: {title: "n31" label: "Jmp  31" }
-node: {title: "n29" label: "SubI  29" }
+node: {title: "n29" label: "SubIs  29" }
 edge: {sourcename: "n29" targetname: "n19" label: "0" }
 edge: {sourcename: "n29" targetname: "n27" label: "1" }
 }
@@ -42,7 +42,7 @@ edge: {sourcename: "n22" targetname: "n21" label: "0" }
 node: {title: "n21" label: "CmpT  21" }
 edge: {sourcename: "n21" targetname: "n19" label: "0" }
 edge: {sourcename: "n21" targetname: "n20" label: "1" }
-node: {title: "n19" label: "ProjI 0 19" color: yellow}
+node: {title: "n19" label: "ProjIs 0 19" color: yellow}
 edge: {sourcename: "n19" targetname: "n16" label: "0" }
 node: {title: "n24" label: "ProjX 0 24" color: yellow}
 edge: {sourcename: "n24" targetname: "n23" label: "0" color: red}
@@ -53,10 +53,10 @@ edge: {sourcename: "n8" targetname: "n12" label: "0" color: red}
 node: {title: "n12" label: "ProjX 0 12" color: yellow}
 edge: {sourcename: "n12" targetname: "n9" label: "0" color: red}
 node: {title: "n9" label: "Start  9" color: blue}
-node: {title: "n20" label: "2I  20" color: yellow}
+node: {title: "n20" label: "0x00000002Is  20" color: yellow}
 node: {title: "n16" label: "ProjT 4 16" color: yellow}
 edge: {sourcename: "n16" targetname: "n9" label: "0" }
-node: {title: "n27" label: "3I  27" color: yellow}
+node: {title: "n27" label: "0x00000003Is  27" color: yellow}
 node: {title: "n13" label: "ProjM 1 13" color: yellow}
 edge: {sourcename: "n13" targetname: "n9" label: "0" color: blue}
 }

@@ -19,7 +19,7 @@ edge: {sourcename: "n68" targetname: "n69" label: "2" color: red}
 node: {title: "n67" label: "Return  67" }
 edge: {sourcename: "n67" targetname: "n97" label: "0" color: blue}
 edge: {sourcename: "n67" targetname: "n94" label: "1" }
-node: {title: "n94" label: "PhiI  94" color: green}
+node: {title: "n94" label: "PhiIs  94" color: green}
 edge: {sourcename: "n94" targetname: "n96" label: "0" }
 edge: {sourcename: "n94" targetname: "n95" label: "1" }
 edge: {sourcename: "n94" targetname: "n95" label: "2" }
@@ -56,7 +56,7 @@ edge: {sourcename: "n79" targetname: "n80" label: "0" }
 node: {title: "n80" label: "CmpT  80" }
 edge: {sourcename: "n80" targetname: "n83" label: "0" }
 edge: {sourcename: "n80" targetname: "n81" label: "1" }
-node: {title: "n81" label: "ProjI 0 81" color: yellow}
+node: {title: "n81" label: "ProjIs 0 81" color: yellow}
 edge: {sourcename: "n81" targetname: "n82" label: "0" }
 node: {title: "n93" label: "ProjX 1 93" color: yellow}
 edge: {sourcename: "n93" targetname: "n78" label: "0" color: red}
@@ -69,10 +69,10 @@ edge: {sourcename: "n75" targetname: "n77" label: "0" color: red}
 node: {title: "n77" label: "Start  77" color: blue}
 node: {title: "n82" label: "ProjT 4 82" color: yellow}
 edge: {sourcename: "n82" targetname: "n77" label: "0" }
-node: {title: "n83" label: "1I  83" color: yellow}
-node: {title: "n87" label: "3I  87" color: yellow}
-node: {title: "n95" label: "6I  95" color: yellow}
-node: {title: "n96" label: "5I  96" color: yellow}
+node: {title: "n83" label: "0x00000001Is  83" color: yellow}
+node: {title: "n87" label: "0x00000003Is  87" color: yellow}
+node: {title: "n95" label: "0x00000006Is  95" color: yellow}
+node: {title: "n96" label: "0x00000005Is  96" color: yellow}
 node: {title: "n97" label: "ProjM 1 97" color: yellow}
 edge: {sourcename: "n97" targetname: "n77" label: "0" color: blue}
 }

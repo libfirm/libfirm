@@ -25,8 +25,8 @@ edge: {sourcename: "n59" targetname: "n58" label: "0" color: red}
 node: {title: "n58" label: "ProjX 0 58" color: yellow}
 edge: {sourcename: "n58" targetname: "n60" label: "0" color: red}
 node: {title: "n60" label: "Start  60" color: blue}
-node: {title: "n62" label: "2I  62" color: yellow}
-node: {title: "n63" label: "0I  63" color: yellow}
+node: {title: "n62" label: "0x00000002Is  62" color: yellow}
+node: {title: "n63" label: "0x00000000Is  63" color: yellow}
 node: {title: "n64" label: "ProjM 1 64" color: yellow}
 edge: {sourcename: "n64" targetname: "n60" label: "0" color: blue}
 }

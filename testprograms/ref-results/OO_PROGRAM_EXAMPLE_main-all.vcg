@@ -17,7 +17,7 @@ edge: {sourcename: "n99" targetname: "n100" label: "0" color: red}
 node: {title: "n98" label: "Return  98" }
 edge: {sourcename: "n98" targetname: "n117" label: "0" color: blue}
 edge: {sourcename: "n98" targetname: "n103" label: "1" }
-node: {title: "n103" label: "ProjI 0 103" color: yellow}
+node: {title: "n103" label: "ProjIs 0 103" color: yellow}
 edge: {sourcename: "n103" targetname: "n104" label: "0" }
 node: {title: "n104" label: "ProjT 2 104" color: yellow}
 edge: {sourcename: "n104" targetname: "n105" label: "0" }
@@ -56,10 +56,10 @@ edge: {sourcename: "n101" targetname: "n100" label: "0" color: red}
 node: {title: "n100" label: "ProjX 0 100" color: yellow}
 edge: {sourcename: "n100" targetname: "n102" label: "0" color: red}
 node: {title: "n102" label: "Start  102" color: blue}
-node: {title: "n106" label: "5I  106" color: yellow}
+node: {title: "n106" label: "0x00000005Is  106" color: yellow}
 node: {title: "n110" label: "ProjM 1 110" color: yellow}
 edge: {sourcename: "n110" targetname: "n102" label: "0" color: blue}
-node: {title: "n114" label: "2I  114" color: yellow}
+node: {title: "n114" label: "0x00000002Is  114" color: yellow}
 }
 
 node: {title: "n121" label: "Bad  121" }
@@ -94,7 +94,7 @@ offset:  -1"
 }
 edge: { sourcename:"e4" targetname: "t1" class: 3 label: "type" color: red}
 node: {title: "t1" label: "primitive int"info1: "state: layout_fixed,
-mode: I,
+mode: Is,
 size: 4B,
 "}
 node: {title: "e7"label: "ent set_a" color: yellow

@@ -22,7 +22,7 @@ node: {title: "n221" label: "Store  221" }
 edge: {sourcename: "n221" targetname: "n226" label: "0" color: blue}
 edge: {sourcename: "n221" targetname: "n224" label: "1" }
 edge: {sourcename: "n221" targetname: "n222" label: "2" }
-node: {title: "n222" label: "ProjI 1 222" color: yellow}
+node: {title: "n222" label: "ProjIs 1 222" color: yellow}
 edge: {sourcename: "n222" targetname: "n223" label: "0" }
 node: {title: "n224" label: "Sel a 224" }
 edge: {sourcename: "n224" targetname: "n226" label: "0" color: blue}
@@ -88,7 +88,7 @@ size: 4B,
 "}
 edge: { sourcename:"t3" targetname: "t2" class: 9 label: "points to" color:green}
 node: {title: "t1" label: "primitive int"info1: "state: layout_fixed,
-mode: I,
+mode: Is,
 size: 4B,
 "}
 node: {title: "e10"label: "ent c" color: yellow

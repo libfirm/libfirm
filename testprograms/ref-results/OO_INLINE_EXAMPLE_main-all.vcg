@@ -22,10 +22,10 @@ node: {title: "n194" label: "Store  194" }
 edge: {sourcename: "n194" targetname: "n193" label: "0" color: blue}
 edge: {sourcename: "n194" targetname: "n199" label: "1" }
 edge: {sourcename: "n194" targetname: "n195" label: "2" }
-node: {title: "n195" label: "PhiI  195" color: green}
+node: {title: "n195" label: "PhiIs  195" color: green}
 edge: {sourcename: "n195" targetname: "n198" label: "0" }
 edge: {sourcename: "n195" targetname: "n196" label: "1" }
-node: {title: "n196" label: "PhiI  196" color: green}
+node: {title: "n196" label: "PhiIs  196" color: green}
 edge: {sourcename: "n196" targetname: "n197" label: "0" }
 edge: {sourcename: "n196" targetname: "n195" label: "1" }
 node: {title: "n199" label: "Sel a 199" }
@@ -36,7 +36,7 @@ edge: {sourcename: "n199" targetname: "n200" label: "1" }
 graph: { title: "n192"  label: "192" status:clustered color:yellow
 edge: {sourcename: "n192" targetname: "n187" label: "0" color: red}
 node: {title: "n191" label: "Jmp  191" }
-node: {title: "n197" label: "0I  197" color: yellow}
+node: {title: "n197" label: "0x00000000Is  197" color: yellow}
 node: {title: "n200" label: "ProjP 2 200" color: yellow}
 edge: {sourcename: "n200" targetname: "n201" label: "0" }
 node: {title: "n201" label: "Alloc  201" }
@@ -61,10 +61,10 @@ edge: {sourcename: "n186" targetname: "n187" label: "0" color: red}
 node: {title: "n187" label: "ProjX 0 187" color: yellow}
 edge: {sourcename: "n187" targetname: "n188" label: "0" color: red}
 node: {title: "n188" label: "Start  188" color: blue}
-node: {title: "n198" label: "5I  198" color: yellow}
+node: {title: "n198" label: "0x00000005Is  198" color: yellow}
 node: {title: "n203" label: "ProjM 1 203" color: yellow}
 edge: {sourcename: "n203" targetname: "n188" label: "0" color: blue}
-node: {title: "n206" label: "2I  206" color: yellow}
+node: {title: "n206" label: "0x00000002Is  206" color: yellow}
 }
 
 node: {title: "n185" label: "Bad  185" }
@@ -113,7 +113,7 @@ size: 4B,
 "}
 edge: { sourcename:"t3" targetname: "t2" class: 9 label: "points to" color:green}
 node: {title: "t1" label: "primitive int"info1: "state: layout_fixed,
-mode: I,
+mode: Is,
 size: 4B,
 "}
 node: {title: "e10"label: "ent c" color: yellow

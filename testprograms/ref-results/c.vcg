@@ -22,10 +22,10 @@ node: {title: "n242" label: "Store  242" }
 edge: {sourcename: "n242" targetname: "n241" label: "0" color: blue}
 edge: {sourcename: "n242" targetname: "n248" label: "1" }
 edge: {sourcename: "n242" targetname: "n243" label: "2" }
-node: {title: "n243" label: "PhiI  243" color: green}
+node: {title: "n243" label: "PhiIs  243" color: green}
 edge: {sourcename: "n243" targetname: "n246" label: "0" }
 edge: {sourcename: "n243" targetname: "n244" label: "1" }
-node: {title: "n244" label: "PhiI  244" color: green}
+node: {title: "n244" label: "PhiIs  244" color: green}
 edge: {sourcename: "n244" targetname: "n245" label: "0" }
 edge: {sourcename: "n244" targetname: "n243" label: "1" }
 node: {title: "n248" label: "Sel a 248" }
@@ -36,7 +36,7 @@ edge: {sourcename: "n248" targetname: "n249" label: "1" }
 graph: { title: "n240"  label: "240" status:clustered color:yellow
 edge: {sourcename: "n240" targetname: "n235" label: "0" color: red}
 node: {title: "n239" label: "Jmp  239" }
-node: {title: "n246" label: "ProjI 1 246" color: yellow}
+node: {title: "n246" label: "ProjIs 1 246" color: yellow}
 edge: {sourcename: "n246" targetname: "n247" label: "0" }
 node: {title: "n249" label: "ProjP 0 249" color: yellow}
 edge: {sourcename: "n249" targetname: "n247" label: "0" }
@@ -47,7 +47,7 @@ edge: {sourcename: "n234" targetname: "n235" label: "0" color: red}
 node: {title: "n235" label: "ProjX 0 235" color: yellow}
 edge: {sourcename: "n235" targetname: "n236" label: "0" color: red}
 node: {title: "n236" label: "Start  236" color: blue}
-node: {title: "n245" label: "0I  245" color: yellow}
+node: {title: "n245" label: "0x00000000Is  245" color: yellow}
 node: {title: "n247" label: "ProjT 4 247" color: yellow}
 edge: {sourcename: "n247" targetname: "n236" label: "0" }
 node: {title: "n250" label: "ProjM 1 250" color: yellow}

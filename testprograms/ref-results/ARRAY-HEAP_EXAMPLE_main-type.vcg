@@ -25,7 +25,7 @@ size: -1B,
 edge: { sourcename:"t19" targetname: "t1" class: 10 label: "arr elt tp" color:green}
 edge: { sourcename:"t19" targetname: "e20" class: 10 label: "arr ent" color: green}
 node: {title: "t1" label: "primitive int"info1: "state: layout_fixed,
-mode: I,
+mode: Is,
 size: 4B,
 "}
 node: {title: "e4"label: "ent ARRAY-HEAP_EXAMPLE_main" color: yellow
