@@ -483,6 +483,11 @@ tarval *tarval_rot(tarval *a, tarval *b);  /* bitwise rotation */
  ******/
 char *tarval_bitpattern(tarval *tv);
 
+/**
+ * returns bitpattern [from, to[
+ */
+char *tarval_sub_bitpattern(tarval *tv, int from, int to);
+
 /* Identifying some tarvals ??? */
 /* This function is deprecated and its use strongly discouraged */
 long tarval_classify(tarval *tv);

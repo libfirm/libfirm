@@ -1,3 +1,27 @@
+  * 24.3.2003 Goetz
+    tarval requirements:
+    zu register_mode:
+    Ich haette ganz gerne
+      new_ir_mode(ident* name, int size, int alignment, mode_sort sort);
+    modecode ist der naechste frei int > maxenum.
+    Und der konstruktor sollte auch nach den zwei inits aufgerufen werden koennen.
+    was spricht dagegen?  (die zwei inits stehen in init_firm(), ein benutzer kann
+    schwer dazwischen andere methoden aufrufen.)
+
+  * 24.3.2003 Goetz
+    tarval requirements:
+    - if overflow either return no tarval or return result of overflow
+      computation.  Offer to output a warning. (configurable)
+    - Div:  configure rounding (up/down) in init_firm, remark in each Div node
+      rounding sheme, default by initializations, pass rounding sheme
+      to tarval module
+    - impelement tarval_bitpattern
+    - make routine that outputs parts < 32 bits from any tarval
+      at given position in a C type that is exactly 32 bits.
+      For this test C types for their size or use int32 in integer.h
+      (is this standard C??)
+    - add routine that outputs the position of the largest set bit.
+
   * 29.10.2002 Goetz
     Representation of value compounds is not good, especially with
     calls.
