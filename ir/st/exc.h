@@ -16,23 +16,37 @@
      $Id$
 ***/
 
-# include "irnode.h"
-
 # ifndef _EXC_H_
 # define _EXC_H_
+
+# include "irnode.h"
+
+# include "st.h"
+# include "irop.h"
+# include "irouts.h"
+
+# include <bool.h>
 
 typedef enum {
   exc_invalid,					/* not yet computed */
   exc_normal,					/* normal CF */
-  exc_entry,					/* handler entry */
-  exc_handler,					/* handler block */
+
+  // must push a new exc contrext at entry of block:
   exc_region,					/* region entry */
-  exc_cont						/* cont block */
+
+  // must pop current exc contrext at entry of block
+  exc_handler,					/* handler entry */
+  exc_cont,						/* cont block */
+
+  exc_max						/* maximum value of enum for 'bounds checking' */
 } exc_t;
+
+const char *exc_to_string (exc_t);
 
 bool is_handler_entry (ir_graph*, ir_node*);
 bool is_region_entry  (ir_graph*, ir_node*);
 bool is_handler_block (ir_graph*, ir_node*);
 bool is_cont_entry    (ir_graph*, ir_node*);
+
 
 # endif /* def _EXC_H_ */

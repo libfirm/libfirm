@@ -17,11 +17,15 @@
 ***/
 
 # include "exc.h"
-# include "st.h"
-# include "irop.h"
-# include "irouts.h"
 
-# include <bool.h>
+static char* exc_strings [] = {
+  "Invalid",
+  "Normal",
+  "Region Entry",
+  "Handler Entry",
+  "Cont"
+};
+
 
 /*
   Return true iff (block b is a handler entry AND a dominates b) OR
@@ -118,10 +122,10 @@ bool is_handler_entry (ir_graph *graph, ir_node *block)
 		  is_entry = false;
 
 	  if (true == is_entry)
-		set_Block_exc (block, exc_entry);
+		set_Block_exc (block, exc_handler);
 	}
 
-  return (exc_entry == get_Block_exc (block));
+  return (exc_handler == get_Block_exc (block));
 }
 
 /*
@@ -227,4 +231,18 @@ bool is_cont_entry    (ir_graph *graph, ir_node *block)
 	}
 
   return (exc_cont == get_Block_exc (block));
+}
+
+/*
+  Convert a value of type exc_t to a descriptive string.
+  Returns a reference to a statically allocated, constant string.
+*/
+
+const char *exc_to_string (exc_t exc)
+{
+  int exc_val = (int) exc;
+
+  assert ((0 <= (int) exc_val) && (exc_val < (int) exc_max));
+
+  return (exc_strings [exc_val]);
 }
