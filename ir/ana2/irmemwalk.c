@@ -221,7 +221,7 @@ void irg_walk_mem (ir_graph *graph,
                    void *env)
 {
   ir_node *end_block = get_irg_end_block (graph);
-  walk_mem_env_t *walk_env = (walk_mem_env_t*) xmalloc (sizeof (walk_mem_env_t));
+  walk_mem_env_t *walk_env = xmalloc (sizeof (walk_mem_env_t));
 
   assert (! get_irg_is_mem_visited (graph));
 
@@ -263,6 +263,9 @@ void irg_walk_mem (ir_graph *graph,
 
 /*
   $Log$
+  Revision 1.10  2005/01/14 13:34:48  liekweg
+  Don't cast malloc
+
   Revision 1.9  2005/01/10 17:26:34  liekweg
   fixup printfs, don't put environments on the stack
 
