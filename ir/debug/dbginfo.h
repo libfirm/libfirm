@@ -80,7 +80,7 @@ typedef enum {
 /**
  *   converts enum values to strings
  */
-extern INLINE const char* dbg_action_2_str(dbg_action a) {
+static const char* dbg_action_2_str(dbg_action a) {
   switch(a) {
   case dbg_error: return "dbg_error"; break;
   case dbg_opt_ssa: return "dbg_opt_ssa"; break;
@@ -105,14 +105,14 @@ extern INLINE const char* dbg_action_2_str(dbg_action a) {
  *
  * @see dbg_init()
  */
-typedef void (merge_pair_func)(ir_node *, ir_node *, dbg_action);
+typedef void merge_pair_func(ir_node *, ir_node *, dbg_action);
 
 /**
  * The type of the debug info merge function.
  *
  * @see dbg_init()
  */
-typedef void (merge_sets_func)(ir_node **, int, ir_node **, int, dbg_action);
+typedef void merge_sets_func(ir_node **, int, ir_node **, int, dbg_action);
 
 /**
  *   Initializes the debug support.
