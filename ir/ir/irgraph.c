@@ -204,12 +204,15 @@ ir_graph *new_const_code_irg(void) {
   res->end_except = res->end;
   mature_block(get_cur_block());
   res->bad = new_ir_node (NULL, res, res->start_block, op_Bad, mode_T, 0, NULL);
-  /* res->unknown = new_ir_node (NULL, res, res->start_block, op_Unknown, mode_T, 0, NULL); */
   res->start   = new_Start ();
 
   /* Proj results of start node */
-  projX        = new_Proj (res->start, mode_X, pns_initial_exec);
+  projX            = new_Proj (res->start, mode_X, pns_initial_exec);
+  res->initial_mem = new_Proj (res->start, mode_M, pns_global_store);
+
+  set_store(res->initial_mem);
   add_in_edge(res->start_block, projX);
+
   mature_block (res->current_block);
   add_in_edge (new_immBlock (), projX);
   mature_block(get_cur_block());
