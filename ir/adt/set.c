@@ -351,6 +351,7 @@ expand_table (SET *table)
 	(Segment *)obstack_alloc (&table->obst,
 				  sizeof(Segment) * SEGMENT_SIZE);
       memset(table->dir[NewSegmentDir], 0, sizeof(Segment) * SEGMENT_SIZE);
+      table->nseg++;
     }
     NewSegment = table->dir[NewSegmentDir];
 
@@ -360,7 +361,6 @@ expand_table (SET *table)
       table->maxp <<= 1;	/* table->maxp *= 2	*/
       table->p = 0;
     }
-    table->nseg++;
 
     /* Relocate records to the new bucket */
     Previous = &OldSegment[OldSegmentIndex];
