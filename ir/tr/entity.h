@@ -90,6 +90,9 @@ typedef struct ir_graph ir_graph;
  *   overwrites A list of entities overwritten by this entity.  This list is only
  *              existent if the owner of this entity is a class.  The members in
  *              this list must be entities of super classes.
+ *   overwrittenby A list of entities that overwrite this entity.  This list is only
+ *              existent if the owner of this entity is a class.  The members in
+ *              this list must be entities of sub classes.
  *   link       A void* to associate some additional information with the entity.
  *   irg        If the entity is a method this is the ir graph that represents the
  *              code of the method.
@@ -234,12 +237,17 @@ void      set_entity_offset (entity *ent, int offset);
    is mostly useful for method entities.
    If a Sel node selects an entity that is overwritten by other entities it
    must return a pointer to the entity of the dynamic type of the pointer
-   that is passed to it.  Lowering of the Sel node must assure this. */
+   that is passed to it.  Lowering of the Sel node must assure this.
+   Overwrittenby is the inverse of overwrites.  Both add routines add
+   both relations, they only differ in the order of arguments. */
 void    add_entity_overwrites   (entity *ent, entity *overwritten);
 int     get_entity_n_overwrites (entity *ent);
 entity *get_entity_overwrites   (entity *ent, int pos);
 void    set_entity_overwrites   (entity *ent, int pos, entity *overwritten);
-/* Do we need a second relation "overwritten"? */
+void    add_entity_overwrittenby   (entity *ent, entity *overwrites);
+int     get_entity_n_overwrittenby (entity *ent);
+entity *get_entity_overwrittenby   (entity *ent, int pos);
+void    set_entity_overwrittenby   (entity *ent, int pos, entity *overwrites);
 
 /* A link to store intermediate information */
 void*   get_entity_link(entity *ent);

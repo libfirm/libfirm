@@ -50,6 +50,7 @@ struct entity {
   type *owner;          /* The class this entity belongs to.  In case of local
 			   variables the method they are defined in. */
   entity **overwrites;  /* A list of entities this entity overwrites.  */
+  entity **overwrittenby;  /* A list of entities that overwrite this entity.  */
   ent_allocation allocation;  /* Distinguishes static and dynamically allocated
 				 entities. */
   ent_visibility visibility;  /* Specifies visibility to external program

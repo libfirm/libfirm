@@ -84,6 +84,7 @@ new_entity (type *owner, ident *name, type *type)
   res->volatility = non_volatile;
   res->ld_name = NULL;
   res->overwrites = NEW_ARR_F(entity *, 1);
+  res->overwrittenby = NEW_ARR_F(entity *, 1);
 
   res->irg = NULL;
 
@@ -96,6 +97,7 @@ new_entity (type *owner, ident *name, type *type)
 inline void free_entity_attrs(entity *ent) {
   assert(ent);
   DEL_ARR_F(ent->overwrites);
+  DEL_ARR_F(ent->overwrittenby);
 }
 
 entity *
@@ -108,6 +110,7 @@ copy_entity_own (entity *old, type *new_owner) {
   memcpy (new, old, sizeof (entity));
   new->owner = new_owner;
   new->overwrites = DUP_ARR_F(entity *, old->overwrites);
+  new->overwrittenby = DUP_ARR_F(entity *, old->overwrites);
 
   insert_entity_in_owner (new);
 
@@ -124,6 +127,7 @@ copy_entity_name (entity *old, ident *new_name) {
   new->name = new_name;
   new->ld_name = NULL;
   new->overwrites = DUP_ARR_F(entity *, old->overwrites);
+  new->overwrittenby = DUP_ARR_F(entity *, old->overwrites);
 
   insert_entity_in_owner (new);
 
@@ -364,25 +368,62 @@ set_entity_offset (entity *ent, int offset) {
 inline void
 add_entity_overwrites   (entity *ent, entity *overwritten) {
   assert(ent);
+  assert(is_class_type(get_entity_owner(ent)));
   ARR_APP1 (entity *, ent->overwrites, overwritten);
+  ARR_APP1 (entity *, overwritten->overwrittenby, ent);
 }
 
 inline int
-get_entity_n_overwrites (entity *ent){
+get_entity_n_overwrites (entity *ent) {
   assert(ent);
+  assert(is_class_type(get_entity_owner(ent)));
   return (ARR_LEN (ent->overwrites))-1;
 }
 
 inline entity *
-get_entity_overwrites   (entity *ent, int pos){
+get_entity_overwrites   (entity *ent, int pos) {
   assert(ent);
+  assert(is_class_type(get_entity_owner(ent)));
+  assert(pos < get_entity_n_overwrites(ent));
   return ent->overwrites[pos+1];
 }
 
 inline void
 set_entity_overwrites   (entity *ent, int pos, entity *overwritten) {
   assert(ent);
+  assert(is_class_type(get_entity_owner(ent)));
+  assert(pos < get_entity_n_overwrites(ent));
   ent->overwrites[pos+1] = overwritten;
+}
+
+inline void
+add_entity_overwrittenby   (entity *ent, entity *overwrites) {
+  assert(ent);
+  assert(is_class_type(get_entity_owner(ent)));
+  add_entity_overwrites(overwrites, ent);
+}
+
+inline int
+get_entity_n_overwrittenby (entity *ent) {
+  assert(ent);
+  assert(is_class_type(get_entity_owner(ent)));
+  return (ARR_LEN (ent->overwrittenby))-1;
+}
+
+inline entity *
+get_entity_overwrittenby   (entity *ent, int pos) {
+  assert(ent);
+  assert(is_class_type(get_entity_owner(ent)));
+  assert(pos < get_entity_n_overwrittenby(ent));
+  return ent->overwrittenby[pos+1];
+}
+
+inline void
+set_entity_overwrittenby   (entity *ent, int pos, entity *overwrites) {
+  assert(ent);
+  assert(is_class_type(get_entity_owner(ent)));
+  assert(pos < get_entity_n_overwrittenby(ent));
+  ent->overwrittenby[pos+1] = overwrites;
 }
 
 /* A link to store intermediate information */
