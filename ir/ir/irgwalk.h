@@ -53,18 +53,20 @@ void finish_ip_walk(void);
 /**
  * Walks over the ir graph.
  *
+ * Walks over the ir graph, starting at the node given as first argument.
+ * Executes pre before visiting the predecessor of a node, post after.
+ * irg_walk uses the visited flag in irg and the nodes to determine visited
+ * nodes.  It executes inc_irg_visited(current_ir_graph) to generate a new
+ * flag.  Therefore current_ir_graph must be set before calling the walker.
+ * It marks the node as visited before executing pre.
+ * The void* env can be used to pass status information between the
+ * pre and post functions.  Does not use the link field.
+ *
  * @param node - the start node
  * @param pre  - walker function, executed before the predecessor of a node are visited
  * @param post - walker function, executed after the predecessor of a node are visited
  * @param env  - environment, passend to pre and post
  *
- * Walks over the ir graph, starting at the node given as first argument.
- * Executes pre before visiting the predecessor of a node, post after.
- * irg_walk uses the visited flag in irg and the nodes to determine visited
- * nodes.  It executes inc_irg_visited(current_ir_graph) to generate a new
- * flag.  It marks the node as visited before executing pre.
- * The void* env can be used to pass status information between the
- * pre and post functions.  Does not use the link field.
  */
 void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env);
 

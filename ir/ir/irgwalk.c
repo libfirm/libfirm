@@ -29,6 +29,7 @@
 # include "irgwalk.h"
 # include "typewalk.h"
 # include "firmstat.h"
+# include "ircgcons.h"
 
 # include "eset.h"
 # include "array.h"
@@ -151,10 +152,13 @@ irg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
 void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
 {
   assert(node  && node->kind==k_ir_node);
+
   if (interprocedural_view) {
     eset * irg_set = eset_create();
     int visited;
     ir_graph * irg;
+    assert(get_irp_ip_view_state() == ip_view_valid);
+
     interprocedural_view = false;
     eset_insert(irg_set, current_ir_graph);
     irg_walk(node, (irg_walk_func *) collect_irgs, NULL, irg_set);
