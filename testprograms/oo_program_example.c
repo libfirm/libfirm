@@ -211,6 +211,9 @@ main(void)
     dump_ir_block_graph (get_irp_irg(i));
     dump_type_graph(get_irp_irg(i));
   }
+  //CS
+  dump_all_types();
+
   printf("Use xvcg to view these graphs:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
   return (1);
