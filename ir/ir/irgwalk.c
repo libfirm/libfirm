@@ -14,6 +14,8 @@
 # include <config.h>
 #endif
 
+# include <stdlib.h>
+
 # include "irnode.h"
 # include "irgraph.h" /* visited flag */
 # include "irprog.h"
@@ -312,6 +314,7 @@ new_callsite_stack(ir_graph *g) {
   res->tos = 0;
   res->s = NEW_ARR_F (ir_node *, MIN_STACK_SIZE);
   set_irg_callsite_stack(g, res);
+  return(res);
 }
 
 static INLINE void

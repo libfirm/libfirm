@@ -297,6 +297,8 @@ INLINE ir_node *get_Call_param (ir_node *node, int pos);
 INLINE void     set_Call_param (ir_node *node, int pos, ir_node *param);
 INLINE type    *get_Call_type (ir_node *node);
 INLINE void     set_Call_type (ir_node *node, type *type);
+INLINE int      get_Call_arity (ir_node *node);
+
 /* Set, get and remove the callee-analysis. */
 int get_Call_n_callees(ir_node * node);
 entity * get_Call_callee(ir_node * node, int pos);

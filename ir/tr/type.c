@@ -33,6 +33,7 @@
 
 # include <stdlib.h>
 # include <stddef.h>
+# include <string.h>
 # include "type_t.h"
 # include "tpop_t.h"
 # include "typegmod_t.h"

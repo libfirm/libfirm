@@ -40,6 +40,7 @@ const char* print_firm_kind(void *firm_thing) {
     case k_type_primitive: { return "k_type_primitive"; } break;
 #endif
     case k_ir_node: { return "k_ir_node"; } break;
+  default: break;
   }
   return "";
 }

@@ -30,6 +30,20 @@ void init_irprog(void) {
   new_ir_prog ();
 }
 
+INLINE void remove_irp_type_from_list (type *typ) {
+  int i;
+  assert(typ);
+  for (i = 1; i < (ARR_LEN (irp->types)); i++) {
+    if (irp->types[i] == typ) {
+      for(; i < (ARR_LEN (irp->types)) - 1; i++) {
+	irp->types[i] = irp->types[i+1];
+      }
+      ARR_SETLEN(type*, irp->types, (ARR_LEN(irp->types)) - 1);
+      break;
+    }
+  }
+}
+
 /* Create a new ir prog. Automatically called by init_firm through
    init_irprog. */
 ir_prog *new_ir_prog (void) {
@@ -121,20 +135,6 @@ void add_irp_type(type *typ) {
   assert (typ != NULL);
   assert(irp);
   ARR_APP1 (type *, irp->types, typ);
-}
-
-INLINE void remove_irp_type_from_list (type *typ) {
-  int i;
-  assert(typ);
-  for (i = 1; i < (ARR_LEN (irp->types)); i++) {
-    if (irp->types[i] == typ) {
-      for(; i < (ARR_LEN (irp->types)) - 1; i++) {
-	irp->types[i] = irp->types[i+1];
-      }
-      ARR_SETLEN(type*, irp->types, (ARR_LEN(irp->types)) - 1);
-      break;
-    }
-  }
 }
 
 void remove_irp_type(type *typ) {

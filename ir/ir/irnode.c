@@ -19,6 +19,7 @@
 #include "typegmod_t.h"
 #include "array.h"
 #include "irbackedge_t.h"
+#include "irdump.h"
 
 #ifdef DEBUG_libfirm
 #include "irprog_t.h"

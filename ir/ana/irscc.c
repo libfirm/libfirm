@@ -10,10 +10,15 @@
 
 /* $Id$ */
 
+#include <string.h>
+
 #include "irloop_t.h"
 #include "irnode.h"
 #include "irgraph_t.h"
 #include "array.h"
+#include "xprintf.h"
+#include "irgwalk.h"
+
 
 ir_graph *outermost_ir_graph;      /* The outermost graph the scc is computed
 				      for */

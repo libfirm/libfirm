@@ -518,4 +518,5 @@ smaller_mode(ir_mode *sm, ir_mode *lm) {
   if ((mode_is_float(sm) && mode_is_float(lm)) &&
       get_mode_modecode(sm) <= get_mode_modecode(lm))
     return true;
+  return(false);
 }

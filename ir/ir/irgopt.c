@@ -130,7 +130,7 @@ compute_new_arity(ir_node *b) {
   }
 }
 
-static INLINE new_backedge_info(ir_node *n) {
+static INLINE void new_backedge_info(ir_node *n) {
   switch(get_irn_opcode(n)) {
   case iro_Block:
     n->attr.block.cg_backedge = NULL;

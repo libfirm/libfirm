@@ -20,7 +20,7 @@
 #include "ircons.h"
 #include "irgmod.h"
 #include "xprintf.h"
-
+#include "irnode.h"
 
 /* Eindeutige Adresse zur Markierung von besuchten Knoten und zur
  * Darstellung der unbekannten Methode. */
