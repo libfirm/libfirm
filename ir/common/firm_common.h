@@ -55,4 +55,7 @@ firm_kind get_kind(const void *firm_thing);
 /** Returns the kind of a thing as a string. */
 const char* print_firm_kind(void *firm_thing);
 
+/** Print an identification of a firm thing. */
+void firm_identify_thing(void *X);
+
 # endif /*_FIRM_COMMON_H_ */
