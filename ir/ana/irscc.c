@@ -26,6 +26,7 @@
 #include "pmap.h"
 #include "irgwalk.h"
 #include "irprog_t.h"
+#include "irdump.h"
 
 ir_graph *outermost_ir_graph;      /* The outermost graph the scc is computed
 				      for */
@@ -428,8 +429,8 @@ loop_element get_loop_element (ir_loop *loop, int pos) {
 }
 
 int get_loop_element_pos(ir_loop *loop, void *le) {
-  assert(loop && loop->kind == k_ir_loop);
   int i;
+  assert(loop && loop->kind == k_ir_loop);
 
   for (i = 0; i < get_loop_n_elements(loop); i++)
     if (get_loop_element(loop, i).node == le) return i;
@@ -1067,6 +1068,7 @@ void free_all_loop_information (void) {
 static int test_loop_node(ir_loop *l) {
   int i, has_node = 0, found_problem = 0;
   loop_element le;
+
   assert(l && l->kind == k_ir_loop);
 
   if (get_loop_n_elements(l) == 0) {
