@@ -31,7 +31,7 @@ SOURCES := Makefile.in MakeRules.in MakeTargets\
 
 SHARED_LIB = libfirm.so
 
-INSTALL_LIBS = libfirm.a $(SHARED_LIB)
+INSTALL_LIBS = libfirm.a
 
 GENFILES := stamp-h config.log config.cache
 # config.status config.h.in $(srcdir)/stamp-h.in
@@ -45,7 +45,9 @@ include $(top_srcdir)/MakeTargets
 # add target firmjni if configured with --enable-firmjni
 all: firm
 
-firm: libfirm.a $(SHARED_LIB)
+firm: libfirm.a
+
+shared: $(SHARED_LIB)
 
 $(OFILES): config.h Makefile
 
