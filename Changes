@@ -1,3 +1,9 @@
+  13.3.2001 Goetz
+  Changed equivalent_node() and copy_preds() so that the end block
+  is not optimized away if it has no real predecessors.  This fixes
+  the problem with the while examples.
+  Added while_example in Makefile
+
   12.3.2001 Goetz
   Fooled around with if_while_example: Why does cse make it abort?
   Cse removes path to End node, Bad remains as pred of Endblock.
