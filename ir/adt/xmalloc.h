@@ -14,28 +14,18 @@
 #ifndef _XMALLOC_H_
 #define _XMALLOC_H_
 
-#include "host.h"
-
-/* Declare alloca() */
-
-#ifdef __GNUC__
-  /* @@@ on a true GNU system, this is defined by stdlib.h */
-# undef alloca
-# define alloca(size) __builtin_alloca (size)
-#else
-# if HAVE_ALLOCA_H
-#   include <alloca.h>
-# else
-#   if defined(_AIX) && !defined(C_ALLOCA)
-      /* if your version of AIX chokes on this, use gcc @@@ or alloca.o */
-    #pragma alloca
-#   else
-#     ifndef alloca /* predefined by HP cc +Olibcalls */
-void *alloca ();
-#     endif
-#   endif
-# endif
+#ifdef HAVE_CONFIG_H
+#include "config.h"
 #endif
+
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
+
+#include "host.h"
 
 /* xmalloc() & friends.
 
