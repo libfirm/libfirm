@@ -273,11 +273,15 @@ static void prepare_irg_end(ir_graph * irg, irg_data_t * data) {
     /* res */
     data->res = NEW_ARR_F(ir_node *, n_res);
     for (j = n_res - 1; j >= 0; --j) {
+      ir_mode *mode = NULL;
+      /* In[0] could be a Bad node with wrong mode. */
       for (i = n_ret - 1; i >= 0; --i) {
 	in[i] = get_Return_res(ret_arr[i], j);
+	if (!mode && get_irn_mode(in[i]) != mode_T)
+	  mode = get_irn_mode(in[i]);
       }
-      /* Has in[0] always the valid mode? */
-      data->res[j] = new_Phi(n_ret, in, get_irn_mode(in[0]));
+      assert(mode); /* @@@ else we must create a Bad node */
+      data->res[j] = new_Phi(n_ret, in, mode);
     }
     DEL_ARR_F(in);
   }
@@ -376,10 +380,16 @@ static void move_nodes(ir_node * from_block, ir_node * to_block, ir_node * node)
 
 /* Abhängigkeiten vom Start-Block und den Filter-Operationen im
  * Start-Block auf den Aufrufer hinzufügen. */
-static void construct_start(entity * caller, entity * callee, ir_node * call, ir_node * exec) {
+static void construct_start(entity * caller, entity * callee,
+			    ir_node * call, ir_node * exec) {
   irg_data_t * data = get_entity_link(callee);
   ir_graph * irg = get_entity_irg(callee);
   ir_node * start = get_irg_start(irg), * filter;
+
+  assert(irg);
+  assert(get_entity_peculiarity(callee) == existent); /* Else data is not initalized. */
+  assert((0 <= data->count) &&
+	 (data->count < get_Block_cg_n_cfgpreds(get_nodes_Block(start))));
   set_Block_cg_cfgpred(get_nodes_Block(start), data->count, exec);
   for (filter = get_irn_link(start); filter; filter = get_irn_link(filter)) {
     if (get_irn_op(filter) != op_Filter) continue;
@@ -504,7 +514,8 @@ static void construct_call(ir_node * call) {
   /* post_block kann bereits interprozedurale Steuerflussvorgänger
    * besitzen. Diese müssen dann auch noch für den pre_block gesetzt werden. */
   if (get_Block_cg_cfgpred_arr(post_block)) {
-    set_Block_cg_cfgpred_arr(pre_block, get_Block_cg_n_cfgpreds(post_block), get_Block_cg_cfgpred_arr(post_block));
+    set_Block_cg_cfgpred_arr(pre_block, get_Block_cg_n_cfgpreds(post_block),
+			     get_Block_cg_cfgpred_arr(post_block));
     remove_Block_cg_cfgpred_arr(post_block);
   }
 

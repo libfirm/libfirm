@@ -299,7 +299,7 @@ irn_vrfy (ir_node *n)
 	  );
     break;
   case iro_Phi:
-           /* Phi: BB x dataM^n --> dataM */
+    /* Phi: BB x dataM^n --> dataM */
     /* for some reason "<=" aborts. Is there a problem with get_store? */
     for (i=1; i < get_irn_arity(n); i++) {
       if (!is_Bad(in[i]))

@@ -611,7 +611,9 @@ void set_Block_cg_cfgpred_arr(ir_node * node, int arity, ir_node ** in) {
 }
 
 void set_Block_cg_cfgpred(ir_node * node, int pos, ir_node * pred) {
-  assert(node->op == op_Block && node->attr.block.in_cg && 0 <= pos && pos < ARR_LEN(node->attr.block.in_cg) - 1);
+  assert(node->op == op_Block &&
+	 node->attr.block.in_cg &&
+	 0 <= pos && pos < ARR_LEN(node->attr.block.in_cg) - 1);
   node->attr.block.in_cg[pos + 1] = pred;
 }
 

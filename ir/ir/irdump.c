@@ -692,20 +692,30 @@ dump_type_info (type_or_ent *tore, void *env) {
       xfprintf (F, DEFAULT_TYPE_ATTRIBUTE);
       xfprintf (F, "label: ");
       xfprintf (F, "\"ent %I\" " ENTITY_NODE_ATTR , get_entity_ident(ent));
-      if(dynamic_allocated == get_entity_allocation(ent))
-	xfprintf (F, " info1:\"dynamic allocated\n");
-      else
-	xfprintf (F, " info1:\"static allocated\n");
+      switch (get_entity_allocation(ent)) {
+        case dynamic_allocated:   fprintf (F, " info1:\"dynamic allocated\n");   break;
+        case automatic_allocated: fprintf (F, " info1:\"automatic allocated\n"); break;
+        case static_allocated:    fprintf (F, " info1:\"static allocated\n");    break;
+      }
       switch (get_entity_visibility(ent)) {
 	case local:              fprintf (F, "local\n");             break;
 	case external_visible:   fprintf (F, "external_visible\n");  break;
-	case external_allocated: fprintf (F, "external_allocate\n");break;
+	case external_allocated: fprintf (F, "external_allocate\n"); break;
       }
       switch (get_entity_variability(ent)) {
-	case uninitialized: fprintf (F, "uninitialized");break;
-	case initialized:   fprintf (F, "initialized");  break;
-	case part_constant: fprintf (F, "part_constant");break;
-	case constant:      fprintf (F, "constant");     break;
+	case uninitialized: fprintf (F, "uninitialized\n");break;
+	case initialized:   fprintf (F, "initialized\n");  break;
+	case part_constant: fprintf (F, "part_constant\n");break;
+	case constant:      fprintf (F, "constant\n");     break;
+      }
+      switch (get_entity_volatility(ent)) {
+	case non_volatile: fprintf (F, "non_volatile\n"); break;
+	case is_volatile:  fprintf (F, "is_volatile\n");  break;
+      }
+      switch (get_entity_peculiarity(ent)) {
+	case description: fprintf (F, "description\n"); break;
+        case inherited:   fprintf (F, "inherited\n"); break;
+	case existent:    fprintf (F, "existent\n");    break;
       }
       if (is_method_type(get_entity_type(ent)))
 	xfprintf (F, "\n irg = %p ", get_entity_irg(ent));
