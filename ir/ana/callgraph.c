@@ -178,7 +178,7 @@ static int graph_cmp(const void *elt, const void *key) {
 void compute_callgraph(void) {
   int i, n_irgs = get_irp_n_irgs();
 
-  assert(interprocedural_view == 0);  /* Else walking will not reach the Call nodes. */
+  assert(! get_interprocedural_view());  /* Else walking will not reach the Call nodes. */
 
   /* initialize */
   free_callgraph();
@@ -588,8 +588,8 @@ is_endless_head (ir_graph *n, ir_graph *root)
 static bool
 is_ip_head (ir_graph *n, ir_graph *pred)
 {
-  int iv_rem = interprocedural_view;
-  interprocedural_view = 1;
+  int iv_rem = get_interprocedural_view();
+  set_interprocedural_view(true);
   ir_node *sblock = get_irg_start_block(n);
   int i, arity = get_Block_n_cfgpreds(sblock);
   int is_be = 0;
@@ -611,7 +611,7 @@ is_ip_head (ir_graph *n, ir_graph *pred)
     }
   }
 
-  interprocedural_view = iv_rem;
+  set_interprocedural_view(iv_rem);
   return is_be;
 }
 

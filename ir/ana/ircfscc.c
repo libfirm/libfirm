@@ -578,7 +578,7 @@ int construct_cf_backedges(ir_graph *irg) {
   ir_node *end = get_irg_end(irg);
   int i;
 
-  assert(!interprocedural_view &&
+  assert(!get_interprocedural_view() &&
      "use construct_ip_backedges");
   max_loop_depth = 0;
 
@@ -611,7 +611,7 @@ int construct_cf_backedges(ir_graph *irg) {
 
 int construct_ip_cf_backedges (void) {
   ir_graph *rem = current_ir_graph;
-  int rem_ipv = interprocedural_view;
+  int rem_ipv = get_interprocedural_view();
   int i;
 
   assert(get_irp_ip_view_state() == ip_view_valid);
@@ -622,7 +622,7 @@ int construct_ip_cf_backedges (void) {
 
   current_loop = NULL;
   new_loop();  /* sets current_loop */
-  interprocedural_view = 1;
+  set_interprocedural_view(true);
 
   inc_max_irg_visited();
   for (i = 0; i < get_irp_n_irgs(); i++)
@@ -677,19 +677,19 @@ int construct_ip_cf_backedges (void) {
   assert(get_irg_loop(outermost_ir_graph)->kind == k_ir_loop);
 
   current_ir_graph = rem;
-  interprocedural_view = rem_ipv;
+  set_interprocedural_view(rem_ipv);
   return max_loop_depth;
 }
 
 
 static void reset_backedges(ir_node *n) {
   assert(is_Block(n));
-  int rem = interprocedural_view;
-  interprocedural_view = 1;
+  int rem = get_interprocedural_view();
+  set_interprocedural_view(true);
   clear_backedges(n);
-  interprocedural_view = 0;
+  set_interprocedural_view(false);
   clear_backedges(n);
-  interprocedural_view = rem;
+  set_interprocedural_view(rem);
 }
 
 static void loop_reset_backedges(ir_loop *l) {
@@ -715,10 +715,10 @@ void free_cfloop_information(ir_graph *irg) {
 
 void free_all_cfloop_information (void) {
   int i;
-  int rem = interprocedural_view;
-  interprocedural_view = 1;  /* To visit all filter nodes */
+  int rem = get_interprocedural_view();
+  set_interprocedural_view(true);  /* To visit all filter nodes */
   for (i = 0; i < get_irp_n_irgs(); i++) {
     free_cfloop_information(get_irp_irg(i));
   }
-  interprocedural_view = rem;
+  set_interprocedural_view(rem);
 }

@@ -559,7 +559,7 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
 
   if (!opt_do_node_verification) return 1;
 
-  if (! interprocedural_view) {
+  if (! get_interprocedural_view()) {
     /*
      * do NOT check placement in interprocedural view, as we don't always know
      * the "right" graph ...
@@ -609,7 +609,7 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
                          "End Block node", 0);
         }
       /*  irg attr must == graph we are in. */
-      if (! interprocedural_view) {
+      if (! get_interprocedural_view()) {
         ASSERT_AND_RET(((get_irn_irg(n) && get_irn_irg(n) == irg)), "Block node has wrong irg attribute", 0);
       }
 

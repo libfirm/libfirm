@@ -208,16 +208,16 @@ void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
 {
   assert(node  && node->kind==k_ir_node);
 
-  if (interprocedural_view) {
+  if (get_interprocedural_view()) {
     eset * irg_set = eset_create();
     int visited;
     ir_graph * irg;
     assert(get_irp_ip_view_state() == ip_view_valid);
 
-    interprocedural_view = false;
+    set_interprocedural_view(false);
     eset_insert(irg_set, current_ir_graph);
     irg_walk(node, (irg_walk_func *) collect_irgs, NULL, irg_set);
-    interprocedural_view = true;
+    set_interprocedural_view(true);
     visited = get_max_irg_visited() + 1;
     for (irg = eset_first(irg_set); irg; irg = eset_next(irg_set)) {
       set_irg_visited(irg, visited);
@@ -266,14 +266,14 @@ static INLINE ir_graph *
 switch_irg (ir_node *n, int index) {
   ir_graph *old_current = current_ir_graph;
 
-  if (interprocedural_view) {
+  if (get_interprocedural_view()) {
     /* Only Filter and Block nodes can have predecessors in other graphs. */
     if (get_irn_op(n) == op_Filter)
       n = get_nodes_block(n);
     if (get_irn_op(n) == op_Block) {
       ir_node *cfop = skip_Proj(get_Block_cfgpred(n, index));
       if (is_ip_cfop(cfop)) {
-    current_ir_graph = get_irn_irg(cfop);
+        current_ir_graph = get_irn_irg(cfop);
       }
     }
   }
@@ -312,9 +312,9 @@ cg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
 void cg_walk(irg_walk_func *pre, irg_walk_func *post, void *env) {
   int i;
   ir_graph *rem = current_ir_graph;
-  int rem_view = interprocedural_view;
+  int rem_view = get_interprocedural_view();
 
-  interprocedural_view = true;
+  set_interprocedural_view(true);
 
   inc_max_irg_visited();
   /* Fix all irg_visited flags */
@@ -363,7 +363,7 @@ void cg_walk(irg_walk_func *pre, irg_walk_func *post, void *env) {
     }
   }
 
-  interprocedural_view = rem_view;
+  set_interprocedural_view(rem_view);
   current_ir_graph = rem;
 }
 
@@ -422,7 +422,7 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void
   stat_irg_block_walk(current_ir_graph, node, (void *)pre, (void *)post);
 
   assert(node);
-  assert(!interprocedural_view);   /* interprocedural_view not implemented, because it
+  assert(!get_interprocedural_view());   /* interprocedural_view not implemented, because it
                     * interleaves with irg_walk */
   inc_irg_block_visited(current_ir_graph);
   if (is_no_Block(node)) block = get_nodes_block(node); else block = node;

@@ -330,7 +330,7 @@ static void collect_node(ir_node * node, void *env) {
  * graphs not visited.
  * Free the list with DEL_ARR_F.  */
 static ir_node ** construct_block_lists(ir_graph *irg) {
-  int i, rem_view = interprocedural_view;
+  int i, rem_view = get_interprocedural_view();
   ir_graph *rem = current_ir_graph;
   current_ir_graph = irg;
 
@@ -340,12 +340,12 @@ static ir_node ** construct_block_lists(ir_graph *irg) {
   irg_walk_graph(current_ir_graph, clear_link, collect_node, current_ir_graph);
 
   /* Collect also EndReg and EndExcept. We do not want to change the walker. */
-  interprocedural_view = 0;
+  set_interprocedural_view(false);
   set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph)-1);
   irg_walk(get_irg_end_reg(current_ir_graph), clear_link, collect_node, current_ir_graph);
   set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph)-1);
   irg_walk(get_irg_end_except(current_ir_graph), clear_link, collect_node, current_ir_graph);
-  interprocedural_view = rem_view;
+  set_interprocedural_view(rem_view);
 
   current_ir_graph = rem;
   return ird_get_irg_link(irg);
@@ -479,8 +479,10 @@ dump_node_opcode(FILE *F, ir_node *n)
   } break;
 
   case iro_Filter: {
-    if (!interprocedural_view) fprintf(F, "Proj'");
-    else                       goto default_case;
+    if (!get_interprocedural_view())
+      fprintf(F, "Proj'");
+    else
+      goto default_case;
   } break;
 
   case iro_Proj: {
@@ -501,7 +503,7 @@ dump_node_opcode(FILE *F, ir_node *n)
   case iro_End:
   case iro_EndExcept:
   case iro_EndReg: {
-    if (interprocedural_view) {
+    if (get_interprocedural_view()) {
       fprintf(F, "%s %s", get_irn_opname(n), get_ent_dump_name(get_irg_entity(get_irn_irg(n))));
       break;
     } else
@@ -581,7 +583,7 @@ dump_node_nodeattr(FILE *F, ir_node *n)
 
   switch (get_irn_opcode(n)) {
   case iro_Start:
-    if (false && interprocedural_view) {
+    if (false && get_interprocedural_view()) {
       fprintf (F, "%s", get_ent_dump_name(get_irg_entity(current_ir_graph)));
     }
     break;
@@ -686,7 +688,7 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
   fprintf(F, "arity: %d", get_irn_arity(n));
   if ((get_irn_op(n) == op_Block) ||
       (get_irn_op(n) == op_Phi) ||
-      ((get_irn_op(n) == op_Filter) && interprocedural_view)) {
+      ((get_irn_op(n) == op_Filter) && get_interprocedural_view())) {
     fprintf(F, " backedges:");
     comma = ' ';
     for (i = 0; i < get_irn_arity(n); i++)
@@ -710,7 +712,7 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
     fprintf(F, "start of method of type %s \n", get_type_name_ex(tp, &bad));
     for (i = 0; i < get_method_n_params(tp); ++i)
       fprintf(F, "  param %d type: %s \n", i, get_type_name_ex(get_method_param_type(tp, i), &bad));
-    if ((get_irp_ip_view_state() == ip_view_valid) && !interprocedural_view) {
+    if ((get_irp_ip_view_state() == ip_view_valid) && !get_interprocedural_view()) {
       ir_node *sbl = get_nodes_block(n);
       int i, n_cfgpreds = get_Block_cg_n_cfgpreds(sbl);
       fprintf(F, "graph has %d interprocedural predecessors:\n", n_cfgpreds);
@@ -773,13 +775,13 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
     }
   } break;
   case iro_Return: {
-    if (!interprocedural_view) {
+    if (!get_interprocedural_view()) {
       type *tp = get_entity_type(get_irg_entity(get_irn_irg(n)));
       fprintf(F, "return in method of type %s \n", get_type_name_ex(tp, &bad));
       for (i = 0; i < get_method_n_ress(tp); ++i)
-    fprintf(F, "  res %d type: %s \n", i, get_type_name_ex(get_method_res_type(tp, i), &bad));
+        fprintf(F, "  res %d type: %s \n", i, get_type_name_ex(get_method_res_type(tp, i), &bad));
     }
-    } break;
+  } break;
   case iro_Const: {
     type *tp = get_Const_type(n);
     assert(tp != none_type);
@@ -805,7 +807,7 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
   } break;
   case iro_Filter: {
     int i;
-    if (interprocedural_view) {
+    if (get_interprocedural_view()) {
       fprintf(F, "intra predecessor nodes:\n");
       for (i = 0; i < get_irn_intra_arity(n); i++) {
         ir_node *pred = get_irn_intra_n(n, i);
@@ -1091,7 +1093,7 @@ dump_ir_data_edges(FILE *F, ir_node *n)  {
     ir_node * pred = get_irn_n(n, i);
     assert(pred);
 
-    if ((interprocedural_view && get_irn_visited(pred) < visited))
+    if ((get_interprocedural_view() && get_irn_visited(pred) < visited))
       continue; /* pred not dumped */
 
     if (dump_backedge_information_flag && is_backedge(n, i))
@@ -1889,8 +1891,8 @@ dump_ir_graph (ir_graph *irg, const char *suffix )
 
   if (strncmp(get_entity_name(get_irg_entity(irg)), dump_file_filter, strlen(dump_file_filter)) != 0) return;
   current_ir_graph = irg;
-  if (interprocedural_view) suffix1 = "-pure-ip";
-  else                      suffix1 = "-pure";
+  if (get_interprocedural_view()) suffix1 = "-pure-ip";
+  else                            suffix1 = "-pure";
   f = vcg_open(irg, suffix, suffix1);
   dump_vcg_header(f, get_irg_dump_name(irg), NULL);
 
@@ -1919,8 +1921,8 @@ dump_ir_block_graph (ir_graph *irg, const char *suffix)
   if (strncmp(get_entity_name(get_irg_entity(irg)), dump_file_filter, strlen(dump_file_filter)) != 0)
     return;
 
-  if (interprocedural_view) suffix1 = "-ip";
-  else                      suffix1 = "";
+  if (get_interprocedural_view()) suffix1 = "-ip";
+  else                            suffix1 = "";
   f = vcg_open(irg, suffix, suffix1);
   dump_vcg_header(f, get_irg_dump_name(irg), NULL);
 
@@ -1952,8 +1954,8 @@ dump_ir_graph_w_types (ir_graph *irg, const char *suffix)
 
   current_ir_graph = irg;
 
-  if (interprocedural_view) suffix1 = "-pure-wtypes-ip";
-  else                      suffix1 = "-pure-wtypes";
+  if (get_interprocedural_view()) suffix1 = "-pure-wtypes-ip";
+  else                            suffix1 = "-pure-wtypes";
   f = vcg_open(irg,suffix, suffix1);
   dump_vcg_header(f, get_irg_dump_name(irg), NULL);
 
@@ -1981,8 +1983,8 @@ dump_ir_block_graph_w_types (ir_graph *irg, const char *suffix)
   if (strncmp(get_entity_name(get_irg_entity(irg)), dump_file_filter, strlen(dump_file_filter)) != 0)
     return;
 
-  if (interprocedural_view) suffix1 = "-wtypes-ip";
-  else                      suffix1 = "-wtypes";
+  if (get_interprocedural_view()) suffix1 = "-wtypes-ip";
+  else                            suffix1 = "-wtypes";
   f = vcg_open(irg, suffix, suffix1);
   dump_vcg_header(f, get_irg_dump_name(irg), NULL);
 
@@ -2087,7 +2089,7 @@ dump_cfg (ir_graph *irg, const char *suffix)
   FILE *f;
   ir_graph *rem = current_ir_graph;
   int ddif = dump_dominator_information_flag;
-  int ipv = interprocedural_view;
+  int ipv = get_interprocedural_view();
 
   /* if a filter is set, dump only the irg's that match the filter */
   if (strncmp(get_entity_name(get_irg_entity(irg)), dump_file_filter, strlen(dump_file_filter)) != 0)
@@ -2098,9 +2100,9 @@ dump_cfg (ir_graph *irg, const char *suffix)
   f = vcg_open(irg, suffix, "-cfg");
   dump_vcg_header(f, get_irg_dump_name(irg), NULL);
 
-  if (interprocedural_view) {
+  if (ipv) {
     printf("Warning: dumping cfg not in interprocedural view!\n");
-    interprocedural_view = 0;
+    set_interprocedural_view(false);
   }
 
   if (get_irg_dom_state(irg) != dom_consistent)
@@ -2111,7 +2113,7 @@ dump_cfg (ir_graph *irg, const char *suffix)
   dump_node(f, get_irg_bad(irg));
 
   dump_dominator_information_flag = ddif;
-  interprocedural_view = ipv;
+  set_interprocedural_view(ipv);
   vcg_close(f);
   current_ir_graph = rem;
 }
@@ -2194,8 +2196,8 @@ void dump_callgraph(const char *suffix) {
 void dump_all_cg_block_graph(const char *suffix) {
   FILE *f;
   int i;
-  int rem_view = interprocedural_view;
-  interprocedural_view = 1;
+  int rem_view = get_interprocedural_view();
+  set_interprocedural_view(true);
 
   f = vcg_open_name("All_graphs", suffix);
   dump_vcg_header(f, "All_graphs", NULL);
@@ -2215,7 +2217,7 @@ void dump_all_cg_block_graph(const char *suffix) {
   }
 
   vcg_close(f);
-  interprocedural_view = rem_view;
+  set_interprocedural_view(rem_view);
 }
 
 /***********************************************************************/

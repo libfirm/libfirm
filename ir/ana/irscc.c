@@ -579,7 +579,7 @@ static bool is_outermost_Start(ir_node *n) {
       Besides current_ir_graph is not set properly. */
   if ((get_irn_op(n) == op_Block) &&
       (n == get_irg_start_block(current_ir_graph))) {
-    if ((!interprocedural_view)  ||
+    if ((!get_interprocedural_view())  ||
     (current_ir_graph == outermost_ir_graph))
       return true;
   }
@@ -602,7 +602,7 @@ get_start_index(ir_node *n) {
      test showed the loop tree is deeper.   */
   if (get_irn_op(n) == op_Phi   ||
       get_irn_op(n) == op_Block ||
-      (get_irn_op(n) == op_Filter && interprocedural_view) ||
+      (get_irn_op(n) == op_Filter && get_interprocedural_view()) ||
       (get_irg_pinned(get_irn_irg(n)) == op_pin_state_floats &&
        get_irn_pinned(n) == op_pin_state_floats))
     // Here we could test for backedge at -1 which is illegal
@@ -650,7 +650,7 @@ INLINE static bool is_possible_loop_head(ir_node *n) {
   ir_op *op = get_irn_op(n);
   return ((op == op_Block) ||
 	  (op == op_Phi) ||
-	  ((op == op_Filter) && interprocedural_view));
+	  ((op == op_Filter) && get_interprocedural_view()));
 }
 
 /* Returns true if n is a loop header, i.e., it is a Block, Phi
@@ -1137,7 +1137,7 @@ int construct_backedges(ir_graph *irg) {
   ir_graph *rem = current_ir_graph;
   ir_loop *head_rem;
 
-  assert(!interprocedural_view &&
+  assert(!get_interprocedural_view() &&
      "not implemented, use construct_ip_backedges");
 
   max_loop_depth = 0;
@@ -1175,7 +1175,7 @@ int construct_backedges(ir_graph *irg) {
 
 int construct_ip_backedges (void) {
   ir_graph *rem = current_ir_graph;
-  int rem_ipv = interprocedural_view;
+  int rem_ipv = get_interprocedural_view();
   int i;
 
   max_loop_depth = 0;
@@ -1187,7 +1187,7 @@ int construct_ip_backedges (void) {
 
   current_loop = NULL;
   new_loop();  /* sets current_loop */
-  interprocedural_view = 1;
+  set_interprocedural_view(true);
 
   inc_max_irg_visited();
   for (i = 0; i < get_irp_n_irgs(); i++)
@@ -1239,13 +1239,13 @@ int construct_ip_backedges (void) {
   assert(get_irg_loop(outermost_ir_graph)->kind == k_ir_loop);
 
   current_ir_graph = rem;
-  interprocedural_view = rem_ipv;
+  set_interprocedural_view(rem_ipv);
   return max_loop_depth;
 }
 
 void my_construct_ip_backedges (void) {
   ir_graph *rem = current_ir_graph;
-  int rem_ipv = interprocedural_view;
+  int rem_ipv = get_interprocedural_view();
   int i;
 
   assert(get_irp_ip_view_state() == ip_view_valid);
@@ -1256,7 +1256,7 @@ void my_construct_ip_backedges (void) {
 
   current_loop = NULL;
   new_loop();  /* sets current_loop */
-  interprocedural_view = 1;
+  set_interprocedural_view(true);
 
   inc_max_irg_visited();
   for (i = 0; i < get_irp_n_irgs(); i++)
@@ -1308,17 +1308,18 @@ void my_construct_ip_backedges (void) {
   assert(get_irg_loop(outermost_ir_graph)->kind == k_ir_loop);
 
   current_ir_graph = rem;
-  interprocedural_view = rem_ipv;
+  set_interprocedural_view(rem_ipv);
 }
 
 static void reset_backedges(ir_node *n) {
   if (is_possible_loop_head(n)) {
-    int rem = interprocedural_view;
-    interprocedural_view = 1;
+    int rem = get_interprocedural_view();
+
+    set_interprocedural_view(true);
     clear_backedges(n);
-    interprocedural_view = 0;
+    set_interprocedural_view(true);
     clear_backedges(n);
-    interprocedural_view = rem;
+    set_interprocedural_view(rem);
   }
 }
 
@@ -1358,12 +1359,12 @@ void free_loop_information(ir_graph *irg) {
 
 void free_all_loop_information (void) {
   int i;
-  int rem = interprocedural_view;
-  interprocedural_view = 1;  /* To visit all filter nodes */
+  int rem = get_interprocedural_view();
+  set_interprocedural_view(true);  /* To visit all filter nodes */
   for (i = 0; i < get_irp_n_irgs(); i++) {
     free_loop_information(get_irp_irg(i));
   }
-  interprocedural_view = rem;
+  set_interprocedural_view(rem);
 }
 
 

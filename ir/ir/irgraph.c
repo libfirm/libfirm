@@ -19,6 +19,7 @@
 # include "ircons.h"
 # include "irgraph_t.h"
 # include "irprog_t.h"
+# include "irnode_t.h"
 # include "iropt_t.h"
 # include "irflag_t.h"
 # include "array.h"
@@ -36,12 +37,24 @@ INLINE void set_current_ir_graph(ir_graph *graph) {
 }
 
 
-bool interprocedural_view = false;
-INLINE bool get_interprocedural_view(void) {
-  return interprocedural_view;
+int __interprocedural_view = false;
+
+int (get_interprocedural_view)(void) {
+  return __get_interprocedural_view();
 }
-INLINE void set_interprocedural_view(bool state) {
-  interprocedural_view = state;
+
+void (set_interprocedural_view)(int state) {
+  __interprocedural_view = state;
+
+  /* set function vectors for faster access */
+  if (state) {
+    __get_irn_arity = __get_irn_inter_arity;
+    __get_irn_n     = __get_irn_inter_n;
+  }
+  else {
+    __get_irn_arity = __get_irn_intra_arity;
+    __get_irn_n     = __get_irn_intra_n;
+  }
 }
 
 static ident* frame_type_suffix = NULL;

@@ -155,6 +155,8 @@ int
   return __get_irn_inter_arity(node);
 }
 
+int (*__get_irn_arity)(const ir_node *node) = __get_irn_intra_arity;
+
 int
 (get_irn_arity)(const ir_node *node) {
   return __get_irn_arity(node);
@@ -169,7 +171,7 @@ int
 ir_node **
 get_irn_in (const ir_node *node) {
   assert(node);
-  if (interprocedural_view) { /* handle Filter and Block specially */
+  if (get_interprocedural_view()) { /* handle Filter and Block specially */
     if (get_irn_opcode(node) == iro_Filter) {
       assert(node->attr.filter.in_cg);
       return node->attr.filter.in_cg;
@@ -185,7 +187,7 @@ void
 set_irn_in (ir_node *node, int arity, ir_node **in) {
   ir_node *** arr;
   assert(node);
-  if (interprocedural_view) { /* handle Filter and Block specially */
+  if (get_interprocedural_view()) { /* handle Filter and Block specially */
     if (get_irn_opcode(node) == iro_Filter) {
       assert(node->attr.filter.in_cg);
       arr = &node->attr.filter.in_cg;
@@ -216,9 +218,11 @@ ir_node *
   return __get_irn_inter_n (node, n);
 }
 
+ir_node *(*__get_irn_n)(ir_node *node, int n) = __get_irn_intra_n;
+
 ir_node *
 (get_irn_n)(ir_node *node, int n) {
-  return __get_irn_n (node, n);
+  return __get_irn_n(node, n);
 }
 
 void
@@ -232,7 +236,7 @@ set_irn_n (ir_node *node, int n, ir_node *in) {
     node->attr.filter.in_cg[n + 1] = in;
     return;
   }
-  if (interprocedural_view) { /* handle Filter and Block specially */
+  if (get_interprocedural_view()) { /* handle Filter and Block specially */
     if (get_irn_opcode(node) == iro_Filter) {
       assert(node->attr.filter.in_cg);
       node->attr.filter.in_cg[n + 1] = in;
@@ -631,10 +635,10 @@ void set_Block_cg_cfgpred_arr(ir_node * node, int arity, ir_node ** in) {
     {
       /* Fix backedge array.  fix_backedges operates depending on
      interprocedural_view. */
-      bool ipv = interprocedural_view;
-      interprocedural_view = true;
+      int ipv = get_interprocedural_view();
+      set_interprocedural_view(true);
       fix_backedges(current_ir_graph->obst, node);
-      interprocedural_view = ipv;
+      set_interprocedural_view(ipv);
     }
   }
   memcpy(node->attr.block.in_cg + 1, in, sizeof(ir_node *) * arity);
@@ -1457,7 +1461,7 @@ int is_Phi (ir_node *n) {
   assert(n);
   op = get_irn_op(n);
 
-  if (op == op_Filter) return interprocedural_view;
+  if (op == op_Filter) return get_interprocedural_view();
 
   if (op == op_Phi)
     return  ((get_irg_phase_state(get_irn_irg(n)) !=  phase_building) ||
@@ -2055,7 +2059,7 @@ int
 is_Proj (const ir_node *node) {
   assert(node);
   return node->op == op_Proj
-    || (!interprocedural_view && node->op == op_Filter);
+    || (!get_interprocedural_view() && node->op == op_Filter);
 }
 
 /* Returns true if the operation manipulates control flow. */

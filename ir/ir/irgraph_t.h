@@ -143,6 +143,13 @@ int node_is_in_irgs_storage(ir_graph *irg, ir_node *n);
 /* inline functions for graphs                                       */
 /*-------------------------------------------------------------------*/
 
+extern int __interprocedural_view;
+
+static INLINE int
+__get_interprocedural_view(void) {
+  return __interprocedural_view;
+}
+
 static INLINE int
 __is_ir_graph(void *thing) {
   return (get_kind(thing) == k_ir_graph);
@@ -435,6 +442,7 @@ __inc_irg_block_visited(ir_graph *irg)
   ++irg->block_visited;
 }
 
+#define get_interprocedural_view()         __get_interprocedural_view()
 #define is_ir_graph(thing)                 __is_ir_graph(thing)
 #define get_irg_start_block(irg)           __get_irg_start_block(irg)
 #define set_irg_start_block(irg, node)     __set_irg_start_block(irg, node)

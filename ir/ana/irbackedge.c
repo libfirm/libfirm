@@ -11,6 +11,7 @@
  */
 
 #include "irnode_t.h"
+#include "irgraph_t.h"
 #include "array.h"
 #include "irbackedge_t.h"
 
@@ -30,7 +31,7 @@ static INLINE int *mere_get_backarray(ir_node *n) {
   switch (get_irn_opcode(n)) {
   case iro_Block:
     if (!get_Block_matured(n)) return NULL;
-    if (interprocedural_view && n->attr.block.in_cg) {
+    if (get_interprocedural_view() && n->attr.block.in_cg) {
       assert(n->attr.block.cg_backedge && "backedge array not allocated!");
       return n->attr.block.cg_backedge;
     } else {
@@ -43,7 +44,7 @@ static INLINE int *mere_get_backarray(ir_node *n) {
     return n->attr.phi_backedge;
     break;
   case iro_Filter:
-    if (interprocedural_view) {
+    if (get_interprocedural_view()) {
       assert(n->attr.filter.backedge && "backedge array not allocated!");
       return n->attr.filter.backedge;
     }
@@ -89,9 +90,9 @@ INLINE void fix_backedges(struct obstack *obst, ir_node *n) {
   if (ARR_LEN(arr) != ARR_LEN(get_irn_in(n))-1) {
     arr = new_backedge_arr(obst, ARR_LEN(get_irn_in(n))-1);
     if (opc == iro_Phi)    n->attr.phi_backedge = arr;
-    if ((opc == iro_Block) && !interprocedural_view)
+    if ((opc == iro_Block) && !get_interprocedural_view())
       n->attr.block.backedge = arr;
-    if ((opc == iro_Block) && interprocedural_view)
+    if ((opc == iro_Block) && get_interprocedural_view())
       n->attr.block.cg_backedge = arr;
     if (opc == iro_Filter) n->attr.filter.backedge = arr;
     return;
@@ -140,21 +141,21 @@ bool has_backedges (ir_node *n) {
 /** Sets all backedge information to zero. */
 void clear_backedges (ir_node *n) {
   int i, arity;
-  int rem = interprocedural_view;
+  int rem = get_interprocedural_view();
   int *ba;
-  interprocedural_view = 0;
+  set_interprocedural_view(false);
   ba = get_backarray (n);
   if (ba) {
     arity = get_irn_arity(n);
     for (i = 0; i < arity; i++)
       ba[i] = 0;
   }
-  interprocedural_view = 1;
+  set_interprocedural_view(true);
   ba = get_backarray (n);
   if (ba) {
     arity = get_irn_arity(n);
     for (i = 0; i < arity; i++)
       ba[i] = 0;
   }
-  interprocedural_view = rem;
+  set_interprocedural_view(rem);
 }

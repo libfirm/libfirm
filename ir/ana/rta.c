@@ -23,6 +23,7 @@
 
 #include "irnode_t.h"
 #include "irprog_t.h"
+#include "irgraph_t.h"
 
 #include "eset.h"
 #include "irgwalk.h"
@@ -227,9 +228,9 @@ static int rta_fill_incremental (void)
   int i;
   int n_runs = 0;
   int rerun  = TRUE;
-  int old_ip_view = interprocedural_view;
+  int old_ip_view = get_interprocedural_view();
 
-  interprocedural_view = 0;     /* save this for later */
+  set_interprocedural_view(false);     /* save this for later */
 
   /* init_tables has added main_irg to _live_graphs */
 
@@ -279,7 +280,7 @@ static int rta_fill_incremental (void)
     n_runs ++;
   }
 
-  interprocedural_view = old_ip_view; /* cover up our traces */
+  set_interprocedural_view(old_ip_view); /* cover up our traces */
 
   return (n_runs);
 }
@@ -520,6 +521,9 @@ void rta_report (void)
 
 /*
  * $Log$
+ * Revision 1.28  2004/11/03 14:47:18  beck
+ * removed gloval intraprocedural_view variable and replaced by get_*() set_*() functions
+ *
  * Revision 1.27  2004/10/21 07:23:34  goetz
  * comments
  *
