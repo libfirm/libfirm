@@ -125,11 +125,13 @@ typedef struct type type;
 */
 void        free_type_entities(type *tp);
 
-/** Frees the memory used by the type.   Does not free the entities
-    belonging to the type, except for the array element entity.
-    Does not free if tp is "none" or "unknown".
-    Frees entities in value param subtypes of method types!!! Make sure these
-    are not referenced any more. */
+/** Frees the memory used by the type.
+ *
+ * Removes the type from the type list. Does not free the entities
+ * belonging to the type, except for the array element entity.  Does
+ * not free if tp is "none" or "unknown".  Frees entities in value
+ * param subtypes of method types!!! Make sure these are not
+ * referenced any more. */
 void        free_type(type *tp);
 
 tp_op*      get_type_tpop(type *tp);

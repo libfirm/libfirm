@@ -924,9 +924,11 @@ static entity *resolve_ent_polymorphy2 (type *dynamic_class, entity* static_ent)
   return res;
 }
 
-/* Returns the dynamically referenced entity if the static entity and the
- *  dynamic type are given.
- *  Search downwards in overwritten tree. */
+/** Resolve polymorphy in the inheritance relation.
+ *
+ * Returns the dynamically referenced entity if the static entity and the
+ * dynamic type are given.
+ * Search downwards in overwritten tree. */
 entity *resolve_ent_polymorphy(type *dynamic_class, entity* static_ent) {
   entity *res;
   assert(static_ent && static_ent->kind == k_entity);
@@ -939,7 +941,6 @@ entity *resolve_ent_polymorphy(type *dynamic_class, entity* static_ent) {
     dump_entity(static_ent);
     dump_type(get_entity_owner(static_ent));
     dump_type(dynamic_class);
-
   }
   assert(res);
   return res;
