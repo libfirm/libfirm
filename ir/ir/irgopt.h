@@ -81,10 +81,11 @@ void inline_small_irgs(ir_graph *irg, int size);
    in state dom_consistent.  Destroys the out information as it moves nodes
    to other blocks.  Optimizes Tuples in Control edges. (@@@ This
    is not tested!)
+   Call remove_critical_cf_edges() before place_code().  This normalizes
+   the control flow graph so that for all operations a basic block exists
+   where they can be optimally placed.
    @@@ A more powerful code placement would move operations past Phi nodes
-   out of loops.  Further the control flow should be normalized before
-   computing the dominator information so that there exists an optimal block
-   for all operations. */
+   out of loops.  */
 void place_code(ir_graph *irg);
 
 /********************************************************************/
@@ -99,5 +100,13 @@ void place_code(ir_graph *irg);
 /* @@@ So far destroys backedge information.                        */
 /********************************************************************/
 void optimize_cf(ir_graph *irg);
+
+/* Places an empty basic block on critical control flow edges thereby
+   removing them.
+   A critical control flow edge is an edge from a block with several
+   control exits to a block with several control entries (See Muchnic
+   p. 407).
+   @@@ not yet implemented!!! */
+void remove_critical_cf_edges(ir_graph *irg);
 
 # endif /* _IRGOPT_H_ */

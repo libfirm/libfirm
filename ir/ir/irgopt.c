@@ -1453,3 +1453,12 @@ void optimize_cf(ir_graph *irg) {
 
   current_ir_graph = rem;
 }
+
+/* Placed an empty basic block on critical control flow edges thereby
+   removing them.
+   A critical control flow edge is an edge from a block with several
+   control exits to a block with several control entries (See Muchnic
+   p. 407). */
+void remove_critical_cf_edges(ir_graph *irg) {
+  printf("WARNING: called unimplemented function!!!\n");
+}
