@@ -257,6 +257,7 @@ main(void)
   dump_all_ir_graphs(dump_ir_graph_w_types, "");
   dump_all_ir_graphs(dump_ir_block_graph_w_types, "");
   dump_all_ir_graphs(dump_type_graph, "");
+  dump_all_ir_graphs(dump_graph_as_text, "");
   dump_all_types("");
   dump_class_hierarchy (true, "");
 
