@@ -118,7 +118,7 @@ new_type(tp_op *type_op, ir_mode *mode, ident* name) {
 #ifdef DEBUG_libfirm
   res->nr      = get_irp_new_node_nr();
   res->c_name  = (char*) get_id_str (name);
-#endif
+#endif /* defined DEBUG_libfirm */
 
   return res;
 }
