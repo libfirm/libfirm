@@ -166,10 +166,10 @@ init_op(void)
   op_Proj      = new_ir_op(iro_Proj,      "Proj",      op_pin_state_floats, 0,   oparity_any,      -1, sizeof(long));
   op_Tuple     = new_ir_op(iro_Tuple,     "Tuple",     op_pin_state_floats, L,   oparity_variable, -1, 0);
   op_Id        = new_ir_op(iro_Id,        "Id",        op_pin_state_floats, 0,   oparity_any,      -1, 0);
-  op_Bad       = new_ir_op(iro_Bad,       "Bad",       op_pin_state_floats, X|F, oparity_zero,     -1, 0);
+  op_Bad       = new_ir_op(iro_Bad,       "Bad",       op_pin_state_pinned, X|F, oparity_zero,     -1, 0);
   op_Confirm   = new_ir_op(iro_Confirm,   "Confirm",   op_pin_state_floats, L,   oparity_any,      -1, sizeof(confirm_attr));
 
-  op_Unknown   = new_ir_op(iro_Unknown,   "Unknown",   op_pin_state_floats, X|F, oparity_zero,     -1, 0);
+  op_Unknown   = new_ir_op(iro_Unknown,   "Unknown",   op_pin_state_pinned, X|F, oparity_zero,     -1, 0);
   op_Filter    = new_ir_op(iro_Filter,    "Filter",    op_pin_state_pinned, L,   oparity_variable, -1, sizeof(filter_attr));
   op_Break     = new_ir_op(iro_Break,     "Break",     op_pin_state_pinned, X,   oparity_zero,     -1, 0);
   op_CallBegin = new_ir_op(iro_CallBegin, "CallBegin", op_pin_state_pinned, X|I, oparity_any,      -1, sizeof(callbegin_attr));
