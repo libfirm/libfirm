@@ -546,12 +546,10 @@ dump_ir_data_edges(ir_node *n, pmap *irgmap)  {
     PRINT_NODEID(n);
     fprintf (F, "\" targetname: ");
     if ((get_opt_dump_const_local()) && is_constlike_node(pred) &&
-	!pred_in_wrong_graph(n, i, irgmap))
-    {
+	!pred_in_wrong_graph(n, i, irgmap)) {
       PRINT_CONSTID(n, pred);
-    }
-    else
-      {fprintf(F, "\""); PRINT_NODEID(pred); fprintf(F, "\"");
+    } else {
+      fprintf(F, "\""); PRINT_NODEID(pred); fprintf(F, "\"");
     }
     fprintf (F, " label: \"%d\" ", i);
     print_edge_vcgattr(n, i);
@@ -583,6 +581,13 @@ dump_loop_node_edge (ir_loop *loop, int i) {
   fprintf (F, "}\n");
 }
 
+static INLINE void
+dump_loop_son_edge (ir_loop *loop, int i) {
+  assert(loop);
+  fprintf (F, "edge: {sourcename: \"%p\" targetname: \"%p\" color: darkgreen}\n",
+	   (void *)loop, (void *)get_loop_son(loop, i));
+}
+
 static
 void dump_loops (ir_loop *loop) {
   int i;
@@ -597,6 +602,7 @@ void dump_loops (ir_loop *loop) {
   }
   for (i = 0; i < get_loop_n_sons(loop); i++) {
     dump_loops(get_loop_son(loop, i));
+    dump_loop_son_edge(loop, i);
   }
 }
 
