@@ -90,7 +90,7 @@ new_ir_node (ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mode,
   res->visited = 0;
   res->link = NULL;
   if (arity < 0) {
-    res->in = NEW_ARR_F (ir_node *, 1);
+    res->in = NEW_ARR_F (ir_node *, 1);  /* 1: space for block */
   } else {
     res->in = NEW_ARR_D (ir_node *, irg->obst, (arity+1));
     memcpy (&res->in[1], in, sizeof (ir_node *) * arity);
@@ -462,6 +462,13 @@ set_Block_graph_arr (ir_node *node, int pos, ir_node *value) {
   assert (node->op == op_Block);
   node->attr.block.graph_arr[pos+1] = value;
 }
+
+inline void
+add_End_keepalive (ir_node *end, ir_node *ka) {
+  assert (end->op == op_End);
+  ARR_APP1 (ir_node *, end->in, ka);
+}
+
 /*
 > Implementing the case construct (which is where the constant Proj node is
 > important) involves far more than simply determining the constant values.

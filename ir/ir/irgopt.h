@@ -30,9 +30,10 @@ void dead_node_elimination(ir_graph *irg);
    Further it assumes that all Phi nodes in a block of current_ir_graph
    are assembled in a "link" list in the link field of the corresponding
    block nodes.  Further assumes that all Proj nodes are in a "link" list
-   in the nodes producing the tuple.  Conserves this feature for the old
+   in the nodes producing the tuple.  (This is only a optical feature
+   for the graph.)  Conserves this feature for the old
    nodes of the graph.  This precondition can be established by a call to
-   collect_phis(), see irgmod.h.
+   collect_phisprojs(), see irgmod.h.
    Called_graph must be unequal to current_ir_graph.   Will not inline
    if they are equal.
    Sets visited masterflag in curren_ir_graph to max of flag in current

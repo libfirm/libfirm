@@ -46,13 +46,13 @@ irn_vrfy (ir_node *n)
   case iro_Start:
     assert (
 	    /* Start: BB --> X x M x P x data1 x ... x datan */
-	    mymode == mode_T
+	    mymode == mode_T && "Start node"
 	   );
     break;
   case iro_Jmp:
     assert (
 	    /* Jmp: BB --> X */
-	    mymode == mode_X
+	    mymode == mode_X && "Jmp node"
 	   );
     break;
   case iro_Cond:
@@ -61,7 +61,7 @@ irn_vrfy (ir_node *n)
 	    /* Cond: BB x b --> X x X */
 	    (op1mode == mode_b
 	    /* Cond: BB x Iu --> X^n */
-	    || op1mode == mode_I)
+	    || op1mode == mode_I) && "Cond node"
            );
             assert (mymode == mode_T);
     break;
@@ -69,9 +69,9 @@ irn_vrfy (ir_node *n)
     op1mode = get_irn_mode(in[1]);
     /* Return: BB x M x data1 x ... x datan --> X */
     /* printf("mode: %s, code %s\n", ID_TO_STR(n->mode->name), ID_TO_STR(n->op->name));*/
-    assert ( op1mode == mode_M );  /* operand M */
+    assert ( op1mode == mode_M  && "Return node" );  /* operand M */
     for (i=2; i < get_irn_arity(n); i++) {
-      assert ( mode_is_data(get_irn_mode(in[i])) );  /* operand datai */
+      assert ( mode_is_data(get_irn_mode(in[i]))  && "Return node");  /* operand datai */
     };
     assert ( mymode == mode_X );   /* result X */
     /* Compare returned results with result types of method type */
@@ -90,22 +90,22 @@ irn_vrfy (ir_node *n)
     assert (
 	    /* Sel: BB x M x P --> X x M */
 	    op1mode == mode_M && op2mode == mode_p
-	    && mymode == mode_T
+	    && mymode == mode_T && "Raise node"
 	   );
     break;
   case iro_Const:
     assert (
 	    /* Const: BB --> data */
-	    mode_is_data (mymode) ||
-            mymode == mode_b      /* we want boolean constants for static evaluation
-                                     of Cmp. */
+	    (mode_is_data (mymode) ||
+	     mymode == mode_b)      /* we want boolean constants for static evaluation */
+             && "Const node"        /* of Cmp. */
 	   );
     break;
   case iro_SymConst:
     assert (
 	    /* SymConst: BB --> Iu or
                          BB --> P */
-	    (mymode == mode_I) || (mymode == mode_p)
+	    ((mymode == mode_I) || (mymode == mode_p))  && "SymConst node"
 	   );
     break;
   case iro_Sel:
@@ -114,19 +114,19 @@ irn_vrfy (ir_node *n)
     assert (
 	    /* Sel: BB x M x P x Iu^n --> P */
 	    op1mode == mode_M && op2mode == mode_p
-            && mymode == mode_p
+            && mymode == mode_p && "Sel node"
 	   );
     for (i=3; i < get_irn_arity(n); i++) {
-	    assert (get_irn_mode(in[i]) == mode_I); }
+	    assert (get_irn_mode(in[i]) == mode_I && "Sel node"); }
     break;
   case iro_Call:
     op1mode = get_irn_mode(in[1]);
     op2mode = get_irn_mode(in[2]);
       /* Call: BB x M x P x data1 x ... x datan
                  --> M x datan+1 x ... x data n+m */
-    assert ( op1mode == mode_M && op2mode == mode_p );  /* operand M x P */
+    assert ( op1mode == mode_M && op2mode == mode_p  && "Call node");  /* operand M x P */
     for (i=3; i < get_irn_arity(n); i++) {
-      assert ( mode_is_data(get_irn_mode(in[i])) );  /* operand datai */
+      assert ( mode_is_data(get_irn_mode(in[i])) && "Call node");  /* operand datai */
     };
     assert ( mymode == mode_T );   /* result T */
     /* Compare arguments of node with those of type */
@@ -143,12 +143,13 @@ irn_vrfy (ir_node *n)
     op2mode = get_irn_mode(in[2]);
     assert (
 	    /* common Add: BB x num x num --> num */
-	    (mymode == op1mode && mymode == op2mode
-             && mode_is_num(mymode))
-	    ||  /* Pointer Add: BB x P x Is --> P */
-	    (op1mode == mode_p && op2mode == mode_i && mymode == mode_p)
-	    ||  /* Pointer Add: BB x Is x P --> P */
-	    (op1mode == mode_i && op2mode == mode_p && mymode == mode_p)
+	    ((mymode == op1mode && mymode == op2mode
+	      && mode_is_num(mymode))
+	     ||  /* Pointer Add: BB x P x Is --> P */
+	     (op1mode == mode_p && op2mode == mode_i && mymode == mode_p)
+	     ||  /* Pointer Add: BB x Is x P --> P */
+	     (op1mode == mode_i && op2mode == mode_p && mymode == mode_p))
+	    && "Add node"
            );
       if (op1mode == mode_p || op2mode == mode_p) {
 	/* BB x P x Is --> P or BB x Is x P --> P */
@@ -163,14 +164,15 @@ irn_vrfy (ir_node *n)
     op2mode = get_irn_mode(in[2]);
     assert (
 	    /* common Sub: BB x num x num --> num */
-	    (mymode ==op1mode && mymode == op2mode
-	     && mode_is_num(op1mode))
-	    ||  /* Pointer Sub: BB x P x Is --> P */
-	    (op1mode == mode_p && op2mode == mode_i && mymode == mode_p)
-	    ||  /* Pointer Sub: BB x Is x P --> P */
-	    (op1mode == mode_i && op2mode == mode_p && mymode == mode_p)
-	    ||  /* Pointer Sub: BB x P x P --> Is */
-	    (op1mode == mode_p && op2mode == mode_p && mymode == mode_i)
+	    ((mymode ==op1mode && mymode == op2mode
+	      && mode_is_num(op1mode))
+	     ||  /* Pointer Sub: BB x P x Is --> P */
+	     (op1mode == mode_p && op2mode == mode_i && mymode == mode_p)
+	     ||  /* Pointer Sub: BB x Is x P --> P */
+	     (op1mode == mode_i && op2mode == mode_p && mymode == mode_p)
+	     ||  /* Pointer Sub: BB x P x P --> Is */
+	     (op1mode == mode_p && op2mode == mode_p && mymode == mode_i))
+	    && "Sub node"
            );
       if (op1mode == mode_p && op2mode == mode_p) {
         op_is_symmetric = 1; /* ArmRoq */
@@ -184,7 +186,7 @@ irn_vrfy (ir_node *n)
     op1mode = get_irn_mode(in[1]);
     assert (
 	    /* Minus: BB x float --> float */
-	    op1mode == mymode && mode_is_float (op1mode)
+	    op1mode == mymode && mode_is_float (op1mode)  && "Minus node"
 	   );
     op_is_symmetric = 2;
     break;
@@ -194,7 +196,7 @@ irn_vrfy (ir_node *n)
     assert (
 	    /* Mul: BB x num x num --> num */
 	    mymode == op1mode && mymode == op2mode
-	    && mode_is_num (op1mode)
+	    && mode_is_num (op1mode) && "Mul node"
 	   );
     op_is_symmetric = 2;
     break;
@@ -205,7 +207,7 @@ irn_vrfy (ir_node *n)
     assert (
 	    /* Quot: BB x M x float x float --> M x X x float */
 	    op1mode == mode_M && op2mode == op3mode
-	    && mode_is_float(op2mode) && mymode == mode_T
+	    && mode_is_float(op2mode) && mymode == mode_T && "Quot node"
 	   );
     op_is_symmetric = 2;
     break;
@@ -216,7 +218,7 @@ irn_vrfy (ir_node *n)
     assert (
 	    /* DivMod: BB x M x num x num --> M x X x Is x Is */
 	    op1mode == mode_M && op2mode == op3mode
-	    && mode_is_num (op2mode) && mymode == mode_T
+	    && mode_is_num (op2mode) && mymode == mode_T && "DivMod node"
            );
     op_is_symmetric = 1;
     break;
@@ -228,7 +230,7 @@ irn_vrfy (ir_node *n)
     assert (
 	    /* Div or Mod: BB x M x num x num --> M x X x Is */
 	    op1mode == mode_M && op2mode == op3mode &&
-	    mode_is_num (op2mode) && mymode == mode_T
+	    mode_is_num (op2mode) && mymode == mode_T && "Div or Mod node"
            );
     op_is_symmetric = 1;
     break;
@@ -236,7 +238,7 @@ irn_vrfy (ir_node *n)
     op1mode = get_irn_mode(in[1]);
     assert (
 	    /* Abs: BB x num --> num */
-	    op1mode == mymode && mode_is_num (op1mode)
+	    op1mode == mymode && mode_is_num (op1mode) && "Abs node"
 	   );
     op_is_symmetric = 2;
     break;
@@ -248,7 +250,7 @@ irn_vrfy (ir_node *n)
     assert(
 	   /* And or Or or Eor: BB x int x int --> int */
 	   mymode == op1mode && mymode == op2mode
-	   && mode_is_int (mymode)
+	   && mode_is_int (mymode) && "And, Or or Eor node"
 	  );
     op_is_symmetric = 2;
     break;
@@ -257,7 +259,7 @@ irn_vrfy (ir_node *n)
     assert(
 	   /* Not: BB x int --> int */
 	   mymode == op1mode
-	   && mode_is_int (mymode)
+	   && mode_is_int (mymode) && "Not node"
 	  );
     op_is_symmetric = 2;
     break;
@@ -268,7 +270,7 @@ irn_vrfy (ir_node *n)
     assert(
 	   /* Cmp: BB x datab x datab --> b16 */
            op1mode == op2mode && mode_is_data (op1mode)
-           && mymode == mode_T
+           && mymode == mode_T && "Cmp node"
 	  );
     break;
   case iro_Shl:
@@ -280,7 +282,7 @@ irn_vrfy (ir_node *n)
     assert(
 	   /* Shl, Shr, Shrs or Rot: BB x int x Iu --> int */
 	   mode_is_int (op1mode) && op2mode == mode_I
-           && op1mode == mymode
+           && op1mode == mymode && "Shl, Shr, Shr or Rot node"
 	  );
     break;
   case iro_Conv:
@@ -288,7 +290,7 @@ irn_vrfy (ir_node *n)
     assert(
            /* Conv: BB x datab1 --> datab2 */
 	   mode_is_datab (op1mode)
-           && mode_is_data (mymode)
+           && mode_is_data (mymode) && "Conv node"
 	  );
     break;
   case iro_Phi:
@@ -296,18 +298,18 @@ irn_vrfy (ir_node *n)
     /* for some reason "<=" aborts. Is there a problem with get_store? */
     for (i=1; i < get_irn_arity(n); i++) {
       if (!is_Bad(in[i]))
-	assert ( get_irn_mode(in[i]) == mymode );
+	assert ( get_irn_mode(in[i]) == mymode  && "Phi node");
     };
-    assert ( mode_is_dataM(mymode) );
+    assert ( mode_is_dataM(mymode)  && "Phi node");
     break;
   case iro_Load:
     op1mode = get_irn_mode(in[1]);
     op2mode = get_irn_mode(in[2]);
     assert(
            /* Load: BB x M x P --> M x X x data */
-           op1mode == mode_M && op2mode == mode_p
+           op1mode == mode_M && op2mode == mode_p  && "Load node"
 	  );
-    assert ( mymode == mode_T );
+    assert ( mymode == mode_T  && "Load node");
     break;
   case iro_Store:
     op1mode = get_irn_mode(in[1]);
@@ -316,9 +318,9 @@ irn_vrfy (ir_node *n)
     assert(
            /* Load: BB x M x P x data --> M x X */
            op1mode == mode_M && op2mode == mode_p
-           && mode_is_data (op3mode)
+           && mode_is_data (op3mode) && "Store node"
 	  );
-    assert(mymode == mode_T);
+    assert(mymode == mode_T && "Store node");
     break;
   case iro_Alloc:
     op1mode = get_irn_mode(in[1]);
@@ -326,7 +328,7 @@ irn_vrfy (ir_node *n)
     assert(
            /* Alloc: BB x M x Iu --> M x X x P */
            op1mode == mode_M && op2mode == mode_I
-           && mymode == mode_T
+           && mymode == mode_T && "Alloc node"
 	  );
     break;
   case iro_Free:
@@ -336,15 +338,15 @@ irn_vrfy (ir_node *n)
     assert(
            /* Free: BB x M x P x Iu --> M */
            op1mode == mode_M && op2mode == mode_p && op3mode == mode_I
-           && mymode == mode_M
+           && mymode == mode_M && "Free node"
 	  );
     break;
   case iro_Sync:
            /* Sync: BB x M^n --> M */
     for (i=1; i < get_irn_arity(n); i++) {
-      assert ( get_irn_mode(in[i]) == mode_M );
+      assert ( get_irn_mode(in[i]) == mode_M  && "Sync node");
     };
-    assert ( mymode == mode_M );
+    assert ( mymode == mode_M  && "Sync node");
     break;
   case iro_Proj:
     vrfy_Proj_proj(n);
@@ -352,7 +354,6 @@ irn_vrfy (ir_node *n)
   default: ;
   }
 }
-
 
 void
 vrfy_Proj_proj(ir_node *p) {

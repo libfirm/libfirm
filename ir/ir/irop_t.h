@@ -9,8 +9,8 @@
 struct ir_op {
   opcode code;
   ident *name;
-  size_t attr_size;
-  int labeled;
+  size_t attr_size;     /* Space needed in memory for private attributes */
+  int labeled;          /* Output edge labels on in-edges in vcg graph */
 };
 
 /* create a new ir operation */

@@ -74,8 +74,9 @@ new_ir_op (opcode code, ident *name, size_t attr_size, int labeled)
   res->name = name;
   res->attr_size = attr_size;
   res->labeled = labeled;   /* For vcg dumping.
-                               Set labeled = 1 if the edges shuld be
-			       enumarated, otherwise set labeled = 0. */
+                               Set labeled = 1 if the edges should be
+			       enumarated in vcg output, otherwise set
+			       labeled = 0. */
   return res;
 }
 

@@ -257,4 +257,23 @@ void turn_of_edge_labels();
 void dump_constant_entity_values();
 
 
+/****m* irdump/dump_constant_entity_values
+ *
+ * NAME
+ *   dump_keepalive_edges
+ * SYNOPSIS
+ *   void dump_keepalive_edges()
+ * FUNCTION
+ *   Turns on dumping the edges from the End node to nodes to be kept
+ *   alive
+ * INPUTS
+ *   No inputs
+ * RESULT
+ * SEE ALSO
+ *
+ ***
+ */
+void dump_keepalive_edges();
+
+
 # endif /* _IRDUMP_H_ */

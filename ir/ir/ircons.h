@@ -362,7 +362,7 @@
  *    void set_value (int pos, ir_node *value);
  *    ir_node *get_store (void);
  *    void set_store (ir_node *store);
- *
+ *    keep_alive (ir_node ka)
  *
  *    IR_NODES AND CONSTRUCTORS FOR IR_NODES
  *    =======================================
@@ -1050,6 +1050,15 @@
  *
  *    Returns the node defining the actual store.
  *    Requires current_block to be set correctly.
+ *
+ *
+ *    inline void keep_alive (ir_node *ka)
+ *    ------------------------------------
+ *
+ *    Keep this node alive because it is (might be) not in the control
+ *    flow from Start to End.  Adds the node to the list in the end
+ *    node.
+ *
  *****
  */
 
@@ -1244,6 +1253,9 @@ ir_node *get_store (void);
 
 /* Write a store. */
 void set_store (ir_node *store);
+
+/* keep this node alive even if End is not control-reachable from it */
+inline void keep_alive (ir_node *ka);
 
 /** Useful access routines **/
 /* Returns the current block of the current graph.  To set the current

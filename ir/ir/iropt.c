@@ -660,12 +660,16 @@ transform_node (ir_node *n)
 	set_Tuple_pred(n, 0, jmp);
 	set_Tuple_pred(n, 1, new_Bad());
       }
+      /* We might generate an endless loop, so keep it alive. */
+      add_End_keepalive(get_irg_end(current_ir_graph), get_nodes_Block(n));
     } else if (ta && (get_irn_mode(a) == mode_I) && (get_Cond_kind(n) == dense)) {
       /* I don't want to allow Tuples smaller than the biggest Proj.
          Also this tuple might get really big...
          I generate the Jmp here, and remember it in link.  Link is used
          when optimizing Proj. */
       set_irn_link(n, new_r_Jmp(current_ir_graph, get_nodes_Block(n)));
+      /* We might generate an endless loop, so keep it alive. */
+      add_End_keepalive(get_irg_end(current_ir_graph), get_nodes_Block(n));
     } else if (   (get_irn_op(get_Cond_selector(n)) == op_Eor)
                && (get_irn_mode(get_Cond_selector(n)) == mode_b)
                && (tarval_classify(computed_value(get_Eor_right(a))) == 1)) {

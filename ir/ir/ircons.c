@@ -93,6 +93,11 @@ new_r_Phi (ir_graph *irg, ir_node *block, int arity, ir_node **in, ir_mode *mode
 
   res = optimize (res);
   irn_vrfy (res);
+
+  /* Memory Phis in endless loops must be kept alive.
+     As we can't distinguish these easily we keep all of them alive. */
+  if ((res->op == op_Phi) && (mode == mode_M))
+    add_End_keepalive(irg->end, res);
   return res;
 }
 
@@ -1064,6 +1069,10 @@ new_r_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
   } else {
     res = optimize (res);
     irn_vrfy (res);
+    /* Memory Phis in endless loops must be kept alive.
+       As we can't distinguish these easily we keep all of the alive. */
+    if ((res->op == op_Phi) && (mode == mode_M))
+      add_End_keepalive(irg->end, res);
   }
 
   return res;
@@ -1781,6 +1790,11 @@ set_store (ir_node *store)
   current_ir_graph->current_block->attr.block.graph_arr[0] = store;
 }
 
+inline void
+keep_alive (ir_node *ka)
+{
+  add_End_keepalive(current_ir_graph->end, ka);
+}
 
 /** Useful access routines **/
 /* Returns the current block of the current graph.  To set the current

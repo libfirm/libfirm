@@ -217,16 +217,67 @@ copy_preds (ir_node *n, void *env) {
       set_irn_n (nn, i, get_new_node(get_irn_n(n, i)));
   }
   /* Now the new node is complete.  We can add it to the hash table for cse. */
-  /* add_identity (current_ir_graph->value_table, nn); */
   add_identities (current_ir_graph->value_table, nn);
 }
 
+/* Copies the graph resucsively, compacts the keepalive of the end node. */
+void
+copy_graph () {
+  ir_node *oe, *ne; /* old end, new end */
+  ir_node *ka; /* keep alive */
+  int i;
+
+  oe = get_irg_end(current_ir_graph);
+  /* copy the end node by hand, allocate dynamic in array! */
+  ne = new_ir_node(current_ir_graph,
+		   NULL,
+		   op_End,
+		   mode_X,
+		   -1,
+		   NULL);
+  /* Copy the attributes.  Well, there might be some in the future... */
+  copy_attrs(oe, ne);
+  set_new_node(oe, ne);
+
+  /* copy the live nodes */
+  irg_walk(get_nodes_Block(oe), copy_node, copy_preds, NULL);
+  /* copy_preds for the end node ... */
+  set_nodes_Block(ne, get_new_node(get_nodes_Block(oe)));
+
+  /** ... and now the keep alives. **/
+  /* First pick the not marked block nodes and walk them.  We must pick these
+     first as else we will oversee blocks reachable from Phis. */
+  for (i = 0; i < get_irn_arity(oe); i++) {
+    ka = get_irn_n(oe, i);
+    if ((get_irn_op(ka) == op_Block) &&
+	(get_irn_visited(ka) < get_irg_visited(current_ir_graph))) {
+      /* We must keep the block alive and copy everything reachable */
+      set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph)-1);
+      irg_walk(ka, copy_node, copy_preds, NULL);
+      add_End_keepalive(ne, get_new_node(ka));
+    }
+  }
+
+  /* Now pick the Phis.  Here we will keep all! */
+  for (i = 0; i < get_irn_arity(oe); i++) {
+    ka = get_irn_n(oe, i);
+    if ((get_irn_op(ka) == op_Phi)) {
+      if (get_irn_visited(ka) < get_irg_visited(current_ir_graph)) {
+	/* We didn't copy the Phi yet.  */
+	set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph)-1);
+	irg_walk(ka, copy_node, copy_preds, NULL);
+      }
+      add_End_keepalive(ne, get_new_node(ka));
+    }
+  }
+}
+
 /* Copies the graph reachable from current_ir_graph->end to the obstack
-   in current_ir_graph.
+   in current_ir_graph and fixes the environment.
    Then fixes the fields in current_ir_graph containing nodes of the
    graph.  */
 void
-copy_graph () {
+copy_graph_env () {
   /* Not all nodes remembered in current_ir_graph might be reachable
      from the end node.  Assure their link is set to NULL, so that
      we can test whether new nodes have been computed. */
@@ -238,7 +289,7 @@ copy_graph () {
   inc_irg_block_visited(current_ir_graph);
 
   /* copy the graph */
-  irg_walk(get_irg_end(current_ir_graph), copy_node, copy_preds, NULL);
+  copy_graph();
 
   /* fix the fields in current_ir_graph */
   set_irg_end        (current_ir_graph, get_new_node(get_irg_end(current_ir_graph)));
@@ -302,7 +353,7 @@ dead_node_elimination(ir_graph *irg) {
     irg->value_table = new_identities ();
 
     /* Copy the graph from the old to the new obstack */
-    copy_graph();
+    copy_graph_env();
 
     /* Free memory from old unoptimized obstack */
     obstack_free(graveyard_obst, 0);  /* First empty the obstack ... */
@@ -361,7 +412,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   graph. Both will end up being a tuple.  **/
   post_bl = get_nodes_Block(call);
   set_irg_current_block(current_ir_graph, post_bl);
-  /* XxMxPxP von Start + Parameter von Call */
+  /* XxMxPxP of Start + parameter of Call */
   in[0] = new_Jmp();
   in[1] = get_Call_mem(call);
   in[2] = get_irg_frame(current_ir_graph);
@@ -413,8 +464,8 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   }
 
   /* visited is > than that of called graph.  With this trick visited will
-     remain unchanged so that an outer walker calling this inline will
-     not visit the inlined nodes. */
+     remain unchanged so that an outer walker, e.g., searching the call nodes
+     to inline, calling this inline will not visit the inlined nodes. */
   set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph)-1);
 
   /** Performing dead node elimination inlines the graph **/
@@ -451,6 +502,9 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
 
   set_irg_current_block(current_ir_graph, post_bl); /* just to make sure */
 
+  /** archive keepalives **/
+  for (i = 0; i < get_irn_arity(end); i++)
+    add_End_keepalive(get_irg_end(current_ir_graph), get_irn_n(end, i));
 
   /** Collect control flow from Return blocks to post_calls block. Replace
       Return nodes by Jump nodes. **/

@@ -148,6 +148,8 @@ inline ir_node  *get_Block_graph_arr (ir_node *node, int pos);
 inline void      set_Block_graph_arr (ir_node *node, int pos, ir_node *value);
 
 
+inline void add_End_keepalive (ir_node *end, ir_node *ka);
+
 /* We distinguish three kinds of Cond nodes.  These can be distinguished
    by the mode of the selector operand and an internal flag of type cond_kind.
    First we distinguish binary Conds and switch Conds.

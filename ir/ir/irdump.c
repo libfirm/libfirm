@@ -71,6 +71,8 @@ static FILE *F;
 int edge_label = 1;
 /* A compiler option to turn off dumping values of constant entities */
 int const_entities = 1;
+/* A compiler option to dump the keep alive edges */
+int dump_keepalive = 1;
 
 /* A global variable to record output of the Bad node. */
 int Bad_dumped;
@@ -459,7 +461,10 @@ void print_edge_vcgattr(ir_node *from, int to) {
 /* dump edges to our inputs */
 void
 dump_ir_data_edges(ir_node *n)  {
-  int i;
+  int i, max;
+
+  if ((get_irn_op(n) == op_End) && (!dump_keepalive))
+    return;
 
   for (i = 0; i < get_irn_arity(n); i++) {
     assert(get_irn_n(n, i));
@@ -1100,4 +1105,8 @@ void turn_of_edge_labels() {
 
 void dump_constant_entity_values() {
   const_entities = 0;
+}
+
+void dump_keepalive_edges() {
+  dump_keepalive = 1;
 }

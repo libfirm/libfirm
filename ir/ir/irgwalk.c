@@ -41,8 +41,8 @@ void irg_walk_2(ir_node *node,
       irg_walk_2(get_nodes_Block(node), pre, post, env);
     }
     for (i = get_irn_arity(node) - 1; i >= 0; --i) {
-/*        printf("   "); DDMSG2(node); */
-/*        printf("   "); DDMSG2(get_irn_n(node, i)); */
+      /* printf("   "); DDMSG2(node);
+	 printf("   "); DDMSG2(get_irn_n(node, i));  */
 
       irg_walk_2(get_irn_n(node, i), pre, post, env);
     }
@@ -126,10 +126,21 @@ void irg_block_walk(ir_node *node,
 		    void (pre)(ir_node*, void*), void (post)(ir_node*, void*),
 		    void *env)
 {
+  ir_node *block, *pred;
+  int i;
+
   assert(node);
   inc_irg_block_visited(current_ir_graph);
-  if (is_no_Block(node)) node = get_nodes_Block(node);
-  assert(get_irn_opcode(node)  == iro_Block);
-  irg_block_walk_2(node, pre, post, env);
+  if (is_no_Block(node)) block = get_nodes_Block(node); else block = node;
+  assert(get_irn_opcode(block)  == iro_Block);
+  irg_block_walk_2(block, pre, post, env);
+  /* keepalive: the endless loops ... */
+  if (get_irn_op(node) == op_End)
+    for (i = 0; i < get_irn_arity(node); i++) {
+      pred = get_irn_n(node, i);
+      if (get_irn_op(pred) == op_Block)
+	irg_block_walk_2(pred, pre, post, env);
+    }
+
   return;
 }
