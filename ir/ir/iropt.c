@@ -92,9 +92,15 @@ static tarval *computed_value_Sub(ir_node *n)
 {
   ir_node *a = get_Sub_left(n);
   ir_node *b = get_Sub_right(n);
+  tarval *ta;
+  tarval *tb;
 
-  tarval *ta = value_of(a);
-  tarval *tb = value_of(b);
+  /* a - a */
+  if (a == b)
+    return get_tarval_null(get_irn_mode(n));
+
+  ta = value_of(a);
+  tb = value_of(b);
 
   if ((ta != tarval_bad) && (tb != tarval_bad)
         && (get_irn_mode(a) == get_irn_mode(b))
@@ -186,6 +192,7 @@ static tarval *computed_value_Mod(ir_node *n)
     if (tb != get_mode_null(get_tarval_mode(tb)))   /* div by zero: return tarval_bad */
       return tarval_mod(ta, tb);
   }
+
   return tarval_bad;
 }
 
@@ -1203,36 +1210,62 @@ static ir_node *transform_node_Proj(ir_node *proj)
   ir_node *n = get_Proj_pred(proj);
   ir_node *b;
   tarval *tb;
+  long proj_nr;
 
   switch (get_irn_opcode(n)) {
   case iro_Div:
-    if (get_Proj_proj(proj) == pn_Div_X_except) {
-      b  = get_Div_right(n);
-      tb = computed_value(b);
+    b  = get_Div_right(n);
+    tb = computed_value(b);
 
-      /* we found an exception handler, see if we can remove it */
-      if (tb != tarval_bad && classify_tarval(tb) != TV_CLASSIFY_NULL) { /* div(x, c) && c != 0 */
+    if (tb != tarval_bad && classify_tarval(tb) != TV_CLASSIFY_NULL) { /* div(x, c) && c != 0 */
+      proj_nr = get_Proj_proj(proj);
+
+      if (proj_nr == pn_Div_X_except) {
+        /* we found an exception handler, remove it */
         return new_Bad();
+      }
+      else if (proj_nr == pn_Div_M) {
+	/* the memory Proj can be removed */
+        ir_node *res = get_Div_mem(n);
+        set_Div_mem(n, get_irg_initial_mem(current_ir_graph));
+	return res;
       }
     }
     break;
   case iro_Mod:
-    if (get_Proj_proj(proj) == pn_Mod_X_except) {
-      b  = get_Mod_right(n);
-      tb = computed_value(b);
+    b  = get_Mod_right(n);
+    tb = computed_value(b);
 
-      if (tb != tarval_bad && classify_tarval(tb) != TV_CLASSIFY_NULL) { /* mod(x, c) && c != 0 */
+    if (tb != tarval_bad && classify_tarval(tb) != TV_CLASSIFY_NULL) { /* mod(x, c) && c != 0 */
+      proj_nr = get_Proj_proj(proj);
+
+      if (proj_nr == pn_Mod_X_except) {
+        /* we found an exception handler, remove it */
         return new_Bad();
+      }
+      else if (proj_nr == pn_Mod_M) {
+	/* the memory Proj can be removed */
+        ir_node *res = get_Mod_mem(n);
+        set_Mod_mem(n, get_irg_initial_mem(current_ir_graph));
+	return res;
       }
     }
     break;
   case iro_DivMod:
-    if (get_Proj_proj(proj) == pn_DivMod_X_except) {
-      b  = get_DivMod_right(n);
-      tb = computed_value(b);
+    b  = get_DivMod_right(n);
+    tb = computed_value(b);
 
-      if (tb != tarval_bad && classify_tarval(tb) != TV_CLASSIFY_NULL) { /* DivMod(x, c) && c != 0 */
+    if (tb != tarval_bad && classify_tarval(tb) != TV_CLASSIFY_NULL) { /* DivMod(x, c) && c != 0 */
+      proj_nr = get_Proj_proj(proj);
+
+      if (proj_nr == pn_DivMod_X_except) {
         return new_Bad();
+      }
+      else if (proj_nr == pn_DivMod_M) {
+	/* the memory Proj can be removed */
+        ir_node *res = get_DivMod_mem(n);
+        set_DivMod_mem(n, get_irg_initial_mem(current_ir_graph));
+	return res;
       }
     }
     break;
@@ -1260,7 +1293,7 @@ static ir_node *transform_node_Proj(ir_node *proj)
     return proj;
 
   case iro_Tuple:
-    /* should not happen, but if it does will optimize */
+    /* should not happen, but if it does will be optimized away */
     break;
 
   default:

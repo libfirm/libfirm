@@ -41,6 +41,7 @@ typedef enum {
   irop_flag_ip_cfopcode = 0x00000008,	/**< operation manipulates interprocedural control flow */
   irop_flag_fragile     = 0x00000010,	/**< set if the operation can change the control flow because
                                              of an exception */
+  irop_flag_forking     = 0x00000020,   /**< the operation is a forking control flow */
 } irop_flags;
 
 
@@ -149,5 +150,28 @@ static INLINE int is_op_commutative(const ir_op *op) {
 static INLINE int is_op_fragile(const ir_op *op) {
   return op->flags & irop_flag_fragile;
 }
+
+/* Returns non-zero if operation is forking control flow */
+static INLINE int is_op_forking(const ir_op *op) {
+  return op->flags & irop_flag_forking;
+}
+
+static INLINE opcode __get_op_code(const ir_op *op) {
+  return op->code;
+}
+
+static INLINE ident *__get_op_ident(ir_op *op){
+  return op->name;
+}
+
+static INLINE op_pin_state __get_op_pinned(const ir_op *op) {
+  return op->op_pin_state_pinned;
+}
+
+
+#define get_op_code(op)         __get_op_code(op)
+#define get_op_ident(op)        __get_op_ident(op)
+#define get_op_pinned(op)       __get_op_pinned(op)
+
 
 #endif /* _IROP_T_H_ */
