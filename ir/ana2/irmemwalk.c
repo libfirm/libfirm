@@ -41,7 +41,8 @@
 /** environment for a single memory walker */
 typedef struct walk_mem_env_str {
   ir_graph *graph;              /**< the graph we're visiting */
-  unsigned long visited;        /**< 'visited' marker */
+  unsigned long visited;        /**< 'visited' marker
+                                 (unsigned long in case we walk more than 2^32 graphs) */
   irg_walk_func *pre;           /**< pre action */
   irg_walk_func *post;          /**< post action */
   void *env;                    /**< user-defined environment */
@@ -177,7 +178,8 @@ static void irg_walk_mem_node (ir_node *node,
     }
   } break;
   default: {
-    fprintf (stderr, "irg_walk_mem_node(): not handled: node[%li].op = %s\n",
+    fprintf (stderr, "%s: not handled: node[%li].op = %s\n",
+             __FUNCTION__,
              get_irn_node_nr (node),
              get_op_name (get_irn_op (node)));
 
@@ -219,7 +221,7 @@ void irg_walk_mem (ir_graph *graph,
                    void *env)
 {
   ir_node *end_block = get_irg_end_block (graph);
-  walk_mem_env_t *walk_env = xmalloc(sizeof(*walk_env));
+  walk_mem_env_t *walk_env = (walk_mem_env_t*) xmalloc (sizeof (walk_mem_env_t));
 
   assert (! get_irg_is_mem_visited (graph));
 
@@ -261,6 +263,9 @@ void irg_walk_mem (ir_graph *graph,
 
 /*
   $Log$
+  Revision 1.9  2005/01/10 17:26:34  liekweg
+  fixup printfs, don't put environments on the stack
+
   Revision 1.8  2004/12/22 14:43:14  beck
   made allocations C-like
 

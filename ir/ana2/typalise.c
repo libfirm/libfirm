@@ -52,7 +52,7 @@ static typalise_t *typalise_proj (ir_node*);
 */
 static typalise_t *ta_exact (type *tp)
 {
-  typalise_t *ta = xmalloc (sizeof(*ta));
+  typalise_t *ta = xmalloc (sizeof (typalise_t));
   ta->kind = type_exact;
   ta->res.type = tp;
   ta->id = ta_id ++;
@@ -64,7 +64,7 @@ static typalise_t *ta_exact (type *tp)
 
 static typalise_t *ta_types (lset_t *set)
 {
-  typalise_t *ta = xmalloc (sizeof(*ta));
+  typalise_t *ta = xmalloc (sizeof (typalise_t));
   ta->kind = type_types;
   ta->res.types = set;
   ta->id = ta_id ++;
@@ -74,7 +74,7 @@ static typalise_t *ta_types (lset_t *set)
 
 static typalise_t *ta_type (type *tp)
 {
-  typalise_t *ta = xmalloc (sizeof(*ta));
+  typalise_t *ta = xmalloc (sizeof (typalise_t));
   ta->kind = type_type;
   ta->res.type = tp;
   ta->id = ta_id ++;
@@ -706,6 +706,9 @@ typalise_t *typalise (ir_node *node)
 
 /*
   $Log$
+  Revision 1.7  2005/01/10 17:26:34  liekweg
+  fixup printfs, don't put environments on the stack
+
   Revision 1.6  2005/01/05 14:25:54  beck
   renames all is_x*_type() functions to is_X*_type() to prevent name clash with EDG fronten
 

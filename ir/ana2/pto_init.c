@@ -72,7 +72,7 @@ static pto_t *new_pto (ir_node *node)
 static alloc_pto_t *new_alloc_pto (ir_node *alloc, int n_ctxs)
 {
   int i;
-  alloc_pto_t *alloc_pto = obstack_alloc (pto_obst, sizeof(*alloc_pto));
+  alloc_pto_t *alloc_pto = obstack_alloc (pto_obst, sizeof (alloc_pto_t));
   type *tp;
 
   assert (op_Alloc == get_irn_op(alloc));
@@ -116,7 +116,8 @@ static pto_t* new_symconst_pto (ir_node *symconst)
   } else if (is_Class_type (get_entity_type (ent))) {
     desc = new_name (get_entity_type (ent), symconst, -1);
   } else {
-    fprintf (stderr, "new_symconst_pto(): not handled: %s[%li] (\"%s\")\n",
+    fprintf (stderr, "%s: not handled: %s[%li] (\"%s\")\n",
+             __FUNCTION__,
              get_op_name (get_irn_op (symconst)),
              get_irn_node_nr (symconst),
              get_entity_name (ent));
@@ -137,7 +138,8 @@ static void clear_type_link (type_or_ent *thing, void *_unused)
     type *tp = (type*) thing;
 
     if (is_Class_type (tp)) {
-      DBGPRINT (1, (stdout, "clear_type_link() (\"%s\")\n",
+      DBGPRINT (1, (stdout, "%s (\"%s\")\n",
+                    __FUNCTION__,
                     get_type_name (tp)));
 
       set_type_link (tp, NULL);
@@ -145,7 +147,8 @@ static void clear_type_link (type_or_ent *thing, void *_unused)
   } else if (is_entity (thing)) {
     entity *ent = (entity*) thing;
 
-    DBGPRINT (1, (stdout, "clear_type_link() (\"%s\")\n",
+    DBGPRINT (1, (stdout, "%s (\"%s\")\n",
+                  __FUNCTION__,
                   get_entity_name (ent)));
 
     set_entity_link (ent, NULL);
@@ -188,7 +191,8 @@ static void reset_node_pto (ir_node *node, void *env)
     alloc_pto_t *alloc_pto = (alloc_pto_t*) get_irn_link (node);
     alloc_pto->curr_pto = alloc_pto->ptos [ctx_idx];
 
-    DBGPRINT (1, (stdout, "reset_node_pto(): setting pto of \"%s[%li]\" for ctx %i\n",
+    DBGPRINT (1, (stdout, "%s: setting pto of \"%s[%li]\" for ctx %i\n",
+                  __FUNCTION__,
                   OPNAME (node),
                   OPNUM (node),
                   ctx_idx));
@@ -201,7 +205,8 @@ static void reset_node_pto (ir_node *node, void *env)
 
   default: {
     /* basically, nothing */
-    DBGPRINT (2, (stdout, "reset_node_pto(): resetting pto of \"%s[%li]\"\n",
+    DBGPRINT (2, (stdout, "%s: resetting pto of \"%s[%li]\"\n",
+                  __FUNCTION__,
                   OPNAME (node),
                   OPNUM (node)));
     set_node_pto (node, NULL);
@@ -229,7 +234,8 @@ static void init_pto (ir_node *node, void *env)
         set_node_pto (node, symconst_pto);
 
         /* debugging only */
-        DBGPRINT (1, (stdout, "init_pto(): new name \"%s\" for \"%s[%li]\"\n",
+        DBGPRINT (1, (stdout, "%s: new name \"%s\" for \"%s[%li]\"\n",
+                      __FUNCTION__,
                       get_entity_name (ent),
                       OPNAME (node),
                       OPNUM (node)));
@@ -244,7 +250,8 @@ static void init_pto (ir_node *node, void *env)
     set_alloc_pto (node, alloc_pto);
 
     tp = get_Alloc_type (node); /* debugging only */
-    DBGPRINT (1, (stdout, "init_pto(): %i names \"%s\" for \"%s[%li]\"\n",
+    DBGPRINT (1, (stdout, "%s: %i names \"%s\" for \"%s[%li]\"\n",
+                  __FUNCTION__,
                   n_ctxs,
                   get_type_name (tp),
                   OPNAME (node),
@@ -267,15 +274,18 @@ static void init_pto (ir_node *node, void *env)
 static void pto_init_graph_allocs (ir_graph *graph)
 {
   graph_info_t *ginfo = ecg_get_info (graph);
-  init_env_t init_env;
+  init_env_t *init_env;
 
-  init_env.n_ctxs = ginfo->n_ctxs;
+  init_env = xmalloc (sizeof (init_env_t));
+  init_env->n_ctxs = ginfo->n_ctxs;
 
   /* HERE ("start"); */
 
-  irg_walk_graph (graph, init_pto, NULL, &init_env);
+  irg_walk_graph (graph, init_pto, NULL, init_env);
 
   /* HERE ("end"); */
+  memset (init_env, 0x00, sizeof (init_env_t));
+  free (init_env);
 }
 
 /* ===================================================
@@ -309,8 +319,9 @@ void fake_main_args (ir_graph *graph)
 
   set_node_pto (args [1], arg_pto);
 
-  DBGPRINT (1, (stdout, "fake_main_args():%i (%s[%li])\n",
-                __LINE__, OPNAME (args [1]), OPNUM (args [1])));
+  DBGPRINT (1, (stdout, "%s:%i (%s[%li])\n",
+                __FUNCTION__, __LINE__,
+                OPNAME (args [1]), OPNUM (args [1])));
 
 # ifdef TEST_MAIN_TYPE
   ctp = get_array_element_type (ctp); /* ctp == char[]* */
@@ -330,18 +341,18 @@ void fake_main_args (ir_graph *graph)
 }
 
 /* Initialise the Init module */
-void pto_init_init (void)
+void pto_init_init ()
 {
-  pto_obst = xmalloc(sizeof(*pto_obst));
+  pto_obst = (struct obstack*) xmalloc (sizeof (struct obstack));
 
   obstack_init (pto_obst);
 }
 
 /* Cleanup the Init module */
-void pto_init_cleanup (void)
+void pto_init_cleanup ()
 {
   obstack_free (pto_obst, NULL);
-  memset (pto_obst, 0, sizeof (*pto_obst));
+  memset (pto_obst, 0x00, sizeof (struct obstack));
   free (pto_obst);
   pto_obst = NULL;
 }
@@ -367,7 +378,8 @@ void pto_init_graph (ir_graph *graph)
   const char *ent_name = (char*) get_entity_name (ent);
   const char *own_name = (char*) get_type_name (get_entity_owner (ent));
 
-  DBGPRINT (2, (stdout, "pto_init_graph(): init \"%s.%s\" for %i ctxs\n",
+  DBGPRINT (2, (stdout, "%s: init \"%s.%s\" for %i ctxs\n",
+                __FUNCTION__,
                 own_name, ent_name, n_ctxs));
 
   /* HERE ("start"); */
@@ -386,19 +398,26 @@ void pto_init_graph (ir_graph *graph)
 /* Reset the given graph for a new pass run */
 void pto_reset_graph_pto (ir_graph *graph, int ctx_idx)
 {
-  reset_env_t reset_env;
-  reset_env.ctx_idx = ctx_idx;
+  reset_env_t *reset_env;
+
+  reset_env = (reset_env_t*) xmalloc (sizeof (reset_env_t));
+  reset_env->ctx_idx = ctx_idx;
 
   /* HERE ("start"); */
 
   irg_walk_graph (graph, reset_node_pto, NULL, &reset_env);
 
   /* HERE ("end"); */
+  memset (reset_env, 0x00, sizeof (reset_env_t));
+  free (reset_env);
 }
 
 
 /*
   $Log$
+  Revision 1.15  2005/01/10 17:26:34  liekweg
+  fixup printfs, don't put environments on the stack
+
   Revision 1.14  2005/01/05 14:25:54  beck
   renames all is_x*_type() functions to is_X*_type() to prevent name clash with EDG fronten
 

@@ -82,7 +82,7 @@ void set_main_ctx (ctx_info_t*);
    ==================== */
 static void append_alloc (graph_info_t *ginfo, ir_node *alloc, type *tp)
 {
-  alloc_info_t *ainfo = xmalloc(sizeof(*ainfo));
+  alloc_info_t *ainfo = (alloc_info_t*) xmalloc (sizeof (alloc_info_t));
 
   ainfo->graph = ginfo->graph;
   ainfo->alloc = alloc;
@@ -101,7 +101,7 @@ static void append_alloc (graph_info_t *ginfo, ir_node *alloc, type *tp)
 */
 static callEd_info_t *append_callEd_info (callEd_info_t *ced, ir_graph *callEd)
 {
-  callEd_info_t *nced = xmalloc(sizeof(*nced));
+  callEd_info_t *nced = (callEd_info_t*) xmalloc (sizeof (callEd_info_t));
 
   nced->callEd = callEd;
   nced->prev = ced;
@@ -114,7 +114,7 @@ static callEd_info_t *append_callEd_info (callEd_info_t *ced, ir_graph *callEd)
 */
 static void append_calls (graph_info_t *info, ir_node *call, lset_t *callEds)
 {
-  call_info_t *cinfo = xmalloc(sizeof(*cinfo));
+  call_info_t *cinfo = (call_info_t*) xmalloc (sizeof (call_info_t));
   ir_graph *callEd;
 
   /* setup */
@@ -124,8 +124,13 @@ static void append_calls (graph_info_t *info, ir_node *call, lset_t *callEds)
   cinfo->callEds = NULL;
 
   /* enter */
-  for (callEd = lset_first (callEds); callEd; callEd = lset_next(callEds))
+  callEd = lset_first (callEds);
+
+  while (NULL != callEd) {
     cinfo->callEds = append_callEd_info (cinfo->callEds, callEd);
+    callEd = lset_next(callEds);
+  }
+
 }
 
 /**
@@ -133,7 +138,7 @@ static void append_calls (graph_info_t *info, ir_node *call, lset_t *callEds)
 */
 static void append_call (graph_info_t *info, ir_node *call, ir_graph *callEd)
 {
-  call_info_t *cinfo = xmalloc (sizeof(*cinfo));
+  call_info_t *cinfo = (call_info_t*) xmalloc (sizeof (call_info_t));
 
   cinfo->call = call;
   cinfo->prev = info->calls;
@@ -347,7 +352,7 @@ static void ecg_calls_act (ir_node *node, void *env)
 */
 static void ecg_fill_graph_calls (ir_graph *graph)
 {
-  graph_info_t *ginfo = xmalloc(sizeof(*ginfo));
+  graph_info_t *ginfo = (graph_info_t*) xmalloc (sizeof (graph_info_t));
 
   /* memset (ginfo, 0x00, sizeof (graph_info_t)); */
   assert (ginfo != graph_infos_list);
@@ -389,7 +394,7 @@ static void ecg_fill_calls (void)
 */
 static ctx_info_t *new_ctx (ir_graph *graph, ir_node *call, ctx_info_t *enc)
 {
-  ctx_info_t *res = xmalloc(sizeof(*res));
+  ctx_info_t *res = (ctx_info_t *) xmalloc (sizeof (ctx_info_t));
 
   res->graph = graph;
   res->call = call;
@@ -442,7 +447,7 @@ static void ecg_fill_ctxs_alloc (void)
   graph_info_t *ginfo = graph_infos_list;
 
   while (NULL != ginfo) {
-    ginfo->ctxs = xcalloc(ginfo->n_ctxs, sizeof(ginfo->ctxs[0]));
+    ginfo->ctxs = (ctx_info_t **) xcalloc (ginfo->n_ctxs, sizeof (ctx_info_t *));
 
     /*
       fprintf (stdout, "graph of \"%s\": n_ctxs = %i\n",
@@ -481,7 +486,7 @@ static void ecg_fill_ctxs_write (ir_graph *graph, ctx_info_t *enc_ctx)
         callEd_info->ctxs [callEd_info->n_ctxs] = ctx;
         callEd_info->n_ctxs ++;
 
-        /* Calling graph -> callEd_graph */
+        /* CallR graph -> callEd_graph */
         ecg_fill_ctxs_write (callEd_graph, ctx);
 
         ced = ced->prev;
@@ -514,7 +519,7 @@ static void ecg_fill_ctxs (void)
   /* Grrr, have to add this ctx manually to main.ginfo ... */
   ginfo = ecg_get_info (main_irg);
   ginfo->n_ctxs = 1;
-  ginfo->ctxs = xcalloc(1, sizeof(ginfo->ctxs[0]));
+  ginfo->ctxs = (ctx_info_t **) xcalloc (1, sizeof (ctx_info_t *));
   ginfo->ctxs [0] = main_ctx;
 
   ecg_fill_ctxs_write (main_irg, main_ctx);
@@ -1078,7 +1083,7 @@ void ecg_report ()
         const int n_ctxs = (ginfo->n_ctxs > max_ctxs) ? max_ctxs : ginfo->n_ctxs;
 
         fprintf (dot, "\t/* now the ctxs */\n");
-        fprintf (dot, "\tctx_0x%08x [label=\"<HEAD>", (void*) graph);
+        fprintf (dot, "\tctx_0x%08x [label=\"<HEAD>", (int) graph);
 
         assert (ginfo->ctxs && "no ctx");
         for (i = 0; i < n_ctxs; i ++) {
@@ -1107,7 +1112,7 @@ void ecg_report ()
 
         fprintf (dot,
                  "\tgraph_0x%08x -> ctx_0x%08x:HEAD [label=\"ctx\", dir=\"none\", style=\"dotted\"];\n",
-                 (void*) graph, (void*) graph);
+                 (int) graph, (int) graph);
       }
     } else {
       fprintf (dot, "\t/* graph is not called */\n");
@@ -1175,6 +1180,9 @@ void ecg_ecg (void)
 
 /*
   $Log$
+  Revision 1.16  2005/01/10 17:26:34  liekweg
+  fixup printfs, don't put environments on the stack
+
   Revision 1.15  2004/12/23 15:40:03  beck
   used new xcalloc
 
