@@ -186,7 +186,7 @@ void compute_outs(ir_graph *irg) {
 void free_outs(ir_graph *irg) {
 
   /* Update graph state */
-  assert(get_irg_phase_state(current_ir_graph) != phase_building);
+  // assert(get_irg_phase_state(current_ir_graph) != phase_building);
   current_ir_graph->outs_state = no_outs;
 
   if (irg->outs) free(irg->outs);

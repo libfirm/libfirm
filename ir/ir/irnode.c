@@ -84,6 +84,10 @@ new_ir_node (ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mode,
 
   res = (ir_node *) obstack_alloc (irg->obst, node_size);
 
+  // DEBUG
+  if (op_Raise == op)
+	fprintf (stdout, "%s: res(%p) = %p\n", __PRETTY_FUNCTION__, op, res);
+
   res->kind = k_ir_node;
   res->op = op;
   res->mode = mode;

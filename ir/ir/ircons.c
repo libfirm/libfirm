@@ -471,6 +471,9 @@ new_r_Raise (ir_graph *irg, ir_node *block, ir_node *store, ir_node *obj)
   ir_node *res;
   res = new_ir_node (irg, block, op_Raise, mode_T, 2, in);
 
+  // DEBUG
+  fprintf (stdout, "%s: res = %p\n", __PRETTY_FUNCTION__, res);
+
   res = optimize (res);
   irn_vrfy (res);
   return res;
@@ -1355,6 +1358,7 @@ mature_block (ir_node *block)
   ir_node *next;
 
   assert (get_irn_opcode(block) == iro_Block);
+  // assert (!get_Block_matured(block) && "Block already matured");
 
   if (!get_Block_matured(block)) {
 

@@ -18,6 +18,7 @@
    operation is executed.  Else it uses the values valid at the end of the
    block with the fragile operation. */
 #define PRECISE_EXC_CONTEXT 1
+// #define PRECISE_EXC_CONTEXT 0
 
 /* There are two implementations of the Phi node construction.  The first
    is faster, but does not work for blocks with more than 2 predecessors.
