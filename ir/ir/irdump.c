@@ -740,6 +740,9 @@ static void dump_const_expression(ir_node *value) {
   dump_const_local = 0;
   current_ir_graph = get_const_code_irg();
   irg_walk(value, dump_ir_blocks_nodes, NULL, get_nodes_Block(value));
+  /* Decrease visited flag so that we walk with the same flag for the next
+     expresssion.  This guarantees that we don't dump the same node twice,
+     as for const expressions cse is performed to save memory. */
   set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph) -1);
   current_ir_graph = rem;
   dump_const_local = rem_dump_const_local;
@@ -876,21 +879,25 @@ dump_type_info (type_or_ent *tore, void *env) {
       if (const_entities && (get_entity_variability(ent) != uninitialized)) {
 	if (is_atomic_entity(ent)) {
 	  value = get_atomic_ent_value(ent);
-	  xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"", ent);
-	  PRINT_NODEID(value);
-	  fprintf(F, "\" " ENT_VALUE_EDGE_ATTR "\"}\n");
-	  dump_const_expression(value);
+	  if (value) {
+	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"", ent);
+	    PRINT_NODEID(value);
+	    fprintf(F, "\" " ENT_VALUE_EDGE_ATTR "\"}\n");
+	    dump_const_expression(value);
+	  }
 	}
 	if (is_compound_entity(ent)) {
 	  for (i = 0; i < get_compound_ent_n_values(ent); i++) {
 	    value = get_compound_ent_value(ent, i);
-	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"", ent);
-	    PRINT_NODEID(value);
-	    fprintf(F, "\" " ENT_VALUE_EDGE_ATTR " %d \"}\n", i);
-	    dump_const_expression(value);
-	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-		      ENT_CORR_EDGE_ATTR  "}\n", ent,
-		      get_compound_ent_value_member(ent, i), i);
+	    if (value) {
+	      xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"", ent);
+	      PRINT_NODEID(value);
+	      fprintf(F, "\" " ENT_VALUE_EDGE_ATTR " %d \"}\n", i);
+	      dump_const_expression(value);
+	      xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
+			ENT_CORR_EDGE_ATTR  "}\n", ent,
+			get_compound_ent_value_member(ent, i), i);
+	    }
 	  }
 	}
       }
