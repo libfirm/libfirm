@@ -429,6 +429,7 @@ ident *get_dump_file_filter_ident(void) {
 /** Returns true if dump file filter is not set, or if it is a
  *  prefix of name. */
 int is_filtered_dump_name(ident *name) {
+  if (!dump_file_filter_id) return 1;
   return id_is_prefix(dump_file_filter_id, name);
 }
 
