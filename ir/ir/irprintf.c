@@ -25,8 +25,10 @@
 #include <stdarg.h>
 
 #ifdef HAVE_STRING_H
-# include <string.h>
+#include <string.h>
 #endif
+
+#include <ctype.h>
 
 #include "ident.h"
 #include "irmode_t.h"
@@ -104,6 +106,90 @@ static INLINE void ir_common_printf(const appender_t *app, void *object,
 	va_end(args);
 }
 
+#if 0
+static int is_std_fmt(const char *fmt)
+{
+	static const char *fmt_re_str =
+		"^[0 -+#']?[1-9]*(\\.[1-9]*)?[hlLqjzt]?[diouxXeEfFgGaAc]";
+
+	static regex_t fmt_re;
+	static int preapred_re = 0;
+
+	regmatch_t match[1];
+	int res;
+
+	if(!preapred_re) {
+		int res = regcomp(&fmt_re, fmt_re_str, REG_EXTENDED);
+		assert(res == 0 && "Could not prepare regex");
+		preapred_re = 1;
+	}
+
+	res = regexec(&fmt_re, fmt, 1, &match[0], 0);
+
+#if 0
+	if(res != 0) {
+		char buf[256];
+		regerror(res, &fmt_re, buf, sizeof(buf));
+		printf("%s ", buf);
+	}
+
+	printf("res: %d, start: %d, end: %d\n",
+			res, match[0].rm_so, match[0].rm_eo);
+#endif
+
+	return res == 0 ? match[0].rm_eo : -1;
+}
+#endif
+
+struct settings {
+	char pad;
+	int width;
+	int left_just;
+	int put_plus;
+	int alternate;
+};
+
+#define MIN(x,y) ((x) < (y) ? (x) : (y))
+#define MAX(x,y) ((x) > (y) ? (x) : (y))
+
+
+static void dump_with_settings(const appender_t *app, void *object, size_t limit,
+		const struct settings *settings, const char *str)
+{
+	if(settings->width >= 0) {
+		int i;
+		size_t n = strlen(str);
+		int lim = MIN(settings->width, limit);
+		int to_print = MIN(lim, n);
+		int to_pad = to_print - lim;
+
+		if(!settings->left_just)
+			for(i = 0; i < to_pad; ++i)
+				app->append_char(object, lim, settings->pad);
+
+		app->append_str(object, to_print, str);
+
+		if(!settings->left_just)
+			for(i = 0; i < to_pad; ++i)
+				app->append_char(object, lim, settings->pad);
+	}
+
+	else
+		app->append_str(object, limit, str);
+}
+
+
+
+/* Length specifiers. */
+enum {
+	len_char,
+	len_short,
+	len_int,
+	len_long,
+	len_long_long
+};
+
+
 /**
  * A small printf helper routine for ir nodes.
  * @param app An appender (this determines where the stuff is dumped
@@ -116,7 +202,8 @@ static INLINE void ir_common_printf(const appender_t *app, void *object,
 static void ir_common_vprintf(const appender_t *app, void *object,
 		size_t limit, const char *fmt, va_list args)
 {
-	char buf[256];
+	const char *str;
+	char buf[4096];
 	int i, n;
 
 #define DUMP_STR(s) app->append_str(object, limit, s)
@@ -126,33 +213,128 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 		char ch = fmt[i];
 
 		if(ch == '%') {
-			char next_ch = fmt[++i];
+			int len;
+			const char *len_str = "";
+
+			struct settings settings;
+
+			settings.alternate = 0;
+			settings.pad = ' ';
+			settings.width = -1;
+			settings.left_just = 0;
+			settings.put_plus = 0;
+
+			ch = fmt[++i];
 
 			/* Clear the temporary buffer */
 			buf[0] = '\0';
 
-			switch(next_ch) {
+			/* Set the string to print to the buffer by default. */
+			str = buf;
+
+			while(strchr("#0-+", ch)) {
+				switch(ch) {
+					case '#':
+						settings.alternate = 1;
+						break;
+					case '0':
+						settings.pad = '0';
+						break;
+					case '-':
+						settings.left_just = 1;
+						break;
+					case '+':
+						settings.put_plus = 1;
+						break;
+				}
+
+				ch = fmt[++i];
+			}
+
+
+			/* Read the field width */
+			{
+				char *endptr;
+				int increase;
+
+				settings.width = (int) strtol(&fmt[i], &endptr, 10);
+				increase = (char *) endptr - &fmt[i];
+				ch = fmt[i += increase];
+				if(increase == 0)
+					settings.width = -1;
+			}
+
+			/* Ignore the precision */
+			if(ch == '.')
+				while(isdigit(ch = fmt[++i]));
+
+			/* read the length modifier. */
+			switch(ch) {
+				case 'h':
+					len_str = "h";
+					len = len_short;
+					if((ch = fmt[++i]) == 'h') {
+						len_str = "hh";
+						len = len_char;
+					}
+					break;
+
+				case 'l':
+					len_str = "l";
+					len = len_long;
+					if((ch = fmt[++i]) == 'l') {
+						len_str = "ll";
+						len = len_long_long;
+					}
+					break;
+
+				default:
+					len = len_int;
+			}
+
+			/* Do the conversion specifier. */
+			switch(ch) {
+
+				/* The percent itself */
 				case '%':
-					DUMP_CH('%');
+					buf[0] = '%';
+					buf[1] = '\0';
 					break;
+
+				case 'c':
+					buf[0] = va_arg(args, int);
+					buf[1] = '\0';
+					break;
+
 				case 's':
-					DUMP_STR(va_arg(args, const char *));
+					str = va_arg(args, const char *);
 					break;
-
-                                case 'I':
-                                        DUMP_STR(get_id_str(va_arg(args, ident *)));
-                                        break;
-
-                                case 'e':
-                                        DUMP_STR(get_entity_name(va_arg(args, entity *)));
-                                        break;
-
-                                case 'E':
-                                        DUMP_STR(get_entity_ld_name(va_arg(args, entity *)));
-                                        break;
 
 				case 'p':
 					snprintf(buf, sizeof(buf), "%p", va_arg(args, void *));
+					break;
+
+				case 'd':
+				case 'x':
+				case 'X':
+				case 'o':
+					{
+						char fmt_str[16];
+						snprintf(fmt_str, sizeof(fmt_str), "%%%s%c", len_str, ch);
+						vsnprintf(buf, sizeof(buf), fmt_str, args);
+					}
+					break;
+
+				case 'I':
+					str = get_id_str(va_arg(args, ident *));
+					break;
+
+				case 'e':
+					str = get_entity_name(va_arg(args, entity *));
+					break;
+
+				case 'E':
+					str = get_entity_ld_name(va_arg(args, entity *));
 					break;
 
 				case 't':
@@ -167,8 +349,8 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 					}
 					break;
 
-				case 'o':
-					DUMP_STR(get_irn_opname(va_arg(args, ir_node *)));
+				case 'O':
+					str = get_irn_opname(va_arg(args, ir_node *));
 					break;
 
 				case 'N':
@@ -176,7 +358,7 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 					break;
 
 				case 'm':
-					DUMP_STR(get_mode_name(va_arg(args, ir_mode *)));
+					str = get_mode_name(va_arg(args, ir_mode *));
 					break;
 
 				case 'b':
@@ -184,7 +366,7 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 							get_irn_node_nr(get_nodes_block(va_arg(args, ir_node *))));
 					break;
 
-				case '+':
+				case '*':
 					{
 						iterator_t *it = va_arg(args, iterator_t *);
 						void *collection = va_arg(args, void *);
@@ -218,9 +400,7 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 					break;
 			}
 
-			/* Dump the temporary buffer, if something is in it. */
-			if(buf[0] != '\0')
-				DUMP_STR(buf);
+			dump_with_settings(app, object, limit, &settings, str);
 		}
 
 		else

@@ -900,7 +900,7 @@ int is_forking_op(const ir_node *node);
  * register_additional_node_data() before.
  * @param node The ir node to get the data from.
  * @param type The type of the data you registered.
- * @param off The value returned by register_additional_node_data.
+ * @param off The value returned by register_additional_node_data().
  * @return A pointer of type @p type.
  */
 #define get_irn_data(node,type,off) \

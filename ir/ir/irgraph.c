@@ -711,4 +711,5 @@ static void normalize_proj_walker(ir_node *n, void *env)
 void normalize_proj_nodes(ir_graph *irg)
 {
   irg_walk_graph(irg, NULL, normalize_proj_walker, NULL);
+	set_irg_outs_inconsistent(irg);
 }

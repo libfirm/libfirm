@@ -188,7 +188,7 @@ rflct_sig_t *rflct_signature_allocate(int defs, int uses);
  * @param name The name of the argument.
  * @param mc The mode class of the argument.
  * @param is_variadic true, if the argument is variadic.
- * @param mode_equals This variable has following meaning. If the
+ * @param mode_equals This variable has following meaning: If the
  * argument is variadic, a 1 indicates that all operands binding to this
  * argument must have the same mode. A 0 indicates, that their mode must
  * be of the specified mode class but can differ. If the argument is non
