@@ -106,11 +106,11 @@ new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mo
   res = (ir_node *) obstack_alloc (irg->obst, node_size);
   memset((void *)res, 0, node_size);
 
-  res->kind = k_ir_node;
-  res->op = op;
-  res->mode = mode;
+  res->kind    = k_ir_node;
+  res->op      = op;
+  res->mode    = mode;
   res->visited = 0;
-  res->link = NULL;
+  res->link    = NULL;
   if (arity < 0) {
     res->in = NEW_ARR_F (ir_node *, 1);  /* 1: space for block */
   } else {
@@ -873,7 +873,6 @@ set_Const_type (ir_node *node, type *tp) {
     assert (is_atomic_type(tp));
     assert (get_type_mode(tp) == get_irn_mode(node));
   }
-
   node->attr.con.tp = tp;
 }
 
@@ -1392,8 +1391,8 @@ set_Cast_type (ir_node *node, type *to_tp) {
 }
 
 int
-is_unop (ir_node *node) {
-  return (node->op->opar == oparity_unary);
+(is_unop)(const ir_node *node) {
+  return __is_unop(node);
 }
 
 ir_node *
@@ -1414,8 +1413,8 @@ set_unop_op (ir_node *node, ir_node *op) {
 }
 
 int
-is_binop (ir_node *node) {
-  return (node->op->opar == oparity_binary);
+(is_binop)(const ir_node *node) {
+  return __is_binop(node);
 }
 
 ir_node *
@@ -2026,30 +2025,25 @@ skip_Id (ir_node *node) {
 #endif
 
 int
-is_Bad (ir_node *node) {
-  assert(node);
-  if ((node) && get_irn_opcode(node) == iro_Bad)
-    return 1;
-  return 0;
+(is_Bad)(const ir_node *node) {
+  return __is_Bad(node);
 }
 
 int
-is_no_Block (ir_node *node) {
-  assert(node);
-  return (get_irn_opcode(node) != iro_Block);
+(is_no_Block)(const ir_node *node) {
+  return  __is_no_Block(node);
 }
 
 int
-is_Block (ir_node *node) {
-  assert(node);
-  return (get_irn_opcode(node) == iro_Block);
+(is_Block)(const ir_node *node) {
+  return __is_Block(node);
 }
 
 /* returns true if node is a Unknown node. */
 int
-is_Unknown (ir_node *node) {
+is_Unknown (const ir_node *node) {
   assert(node);
-  return (get_irn_opcode(node) == iro_Unknown);
+  return (get_irn_op(node) == op_Unknown);
 }
 
 int
@@ -2061,20 +2055,20 @@ is_Proj (const ir_node *node) {
 
 /* Returns true if the operation manipulates control flow. */
 int
-is_cfop(ir_node *node) {
+is_cfop(const ir_node *node) {
   return is_cfopcode(get_irn_op(node));
 }
 
 /* Returns true if the operation manipulates interprocedural control flow:
    CallBegin, EndReg, EndExcept */
-int is_ip_cfop(ir_node *node) {
+int is_ip_cfop(const ir_node *node) {
   return is_ip_cfopcode(get_irn_op(node));
 }
 
 /* Returns true if the operation can change the control flow because
    of an exception. */
 int
-is_fragile_op(ir_node *node) {
+is_fragile_op(const ir_node *node) {
   return is_op_fragile(get_irn_op(node));
 }
 
@@ -2103,7 +2097,7 @@ ir_node *get_fragile_op_mem(ir_node *node) {
 
 /* Returns true if the operation is a forking control flow operation. */
 int
-is_forking_op(ir_node *node) {
+is_forking_op(const ir_node *node) {
   return is_op_forking(get_irn_op(node));
 }
 
