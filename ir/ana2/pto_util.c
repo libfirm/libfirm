@@ -118,8 +118,7 @@ entity *get_ptr_ent (ir_node *ptr)
   } break;
 
   default: {
-    fprintf (stderr, "%s: no ent for ptr=%s[%ld]\n",
-             __FUNCTION__,
+    fprintf (stderr, "get_ptr_ent: no ent for ptr=%s[%ld]\n",
              get_op_name (get_irn_op (ptr)),
              get_irn_node_nr (ptr));
     assert (0);
@@ -152,6 +151,9 @@ int is_dummy_load_ptr (ir_node *ptr)
 
 /*
   $Log$
+  Revision 1.12  2004/12/21 15:53:12  beck
+  removed GNUC constructs
+
   Revision 1.11  2004/12/20 17:34:35  liekweg
   fix recursion handling
 
