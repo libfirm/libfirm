@@ -34,36 +34,49 @@
 # include "entity.h"
 
 struct entity {
-  firm_kind kind;
-  ident *name;          /* name of this entity */
-  ident *ld_name;       /* Unique name of this entity, i.e., the mangled
-                           name.  E.g., for a class `A' with field `a' this
+  firm_kind kind;       /**< dynamic type tag for entity. */
+  ident *name;          /**< name of this entity */
+  ident *ld_name;       /**< Unique name of this entity, i.e., the mangled
+                           name.  If the field is read before written a default
+                           magling is applies.  The name of the owner is prepended
+                           to the name of the entity, separated by a underscore.
+                           E.g.,  for a class `A' with field `a' this
                            is the ident for `A_a'. */
-  type *type;           /* The type of this entity, e.g., a method type, a
+  type *type;           /**< The type of this entity, e.g., a method type, a
                            basic type of the language or a class itself */
-  type *owner;          /* The class this entity belongs to.  In case of local
-			   variables the method they are defined in. */
-  entity **overwrites;  /* A list of entities this entity overwrites.  */
-  entity **overwrittenby;  /* A list of entities that overwrite this entity.  */
-  ent_allocation allocation;  /* Distinguishes static and dynamically allocated
-				 entities. */
-  ent_visibility visibility;  /* Specifies visibility to external program
+  type *owner;          /**< The compound type (e.g. class type) this entity belongs to. */
+  ent_allocation allocation;  /**< Distinguishes static and dynamically allocated
+				 entities and some further cases. */
+  ent_visibility visibility;  /**< Specifies visibility to external program
 				 fragments */
-  ent_variability variability;  /* Specifies variability of entities content */
-  ent_volatility volatility;    /* Specifies volatility of entities content */
-  ir_node *value;            /* value of atomic entity */
-  ir_node **values;     /* values of compound entities */
-  entity **val_ents;    /* entities corresponding to constant values */
-  int  offset;          /* Offset in byte for this entity.  Fixed when layout
+  ent_variability variability;  /**< Specifies variability of entities content */
+  ent_volatility volatility;    /**< Specifies volatility of entities content */
+  int  offset;          /**< Offset in byte for this entity.  Fixed when layout
 			   of owner is determined.  */
-  void *link;           /* To store some intermediate information */
-  unsigned long visit;  /* visited counter for walks of the type information */
-  /* for methods */
+  void *link;           /**< To store some intermediate information */
+  unsigned long visit;  /**< visited counter for walks of the type information */
+  struct dbg_info* dbi;    /**< A pointer to information for debug support. */
+
+  /* ------------- fields for atomic entities  ---------------*/
+  ir_node *value;            /**< value if entity is not of variability uninitialized.
+                               Only for atomic entities. */
+
+  /* ------------- fields for compound entities ---------------*/
+  ir_node **values;     /**< constant values of compound entities. Only available if
+                          variablility not uninitialized.  Must be set for variability constant
+                           */
+  entity **val_ents;    /**< entities corresponding to constant values. Only available if
+                          variablility not uninitialized.  Must be set for variability constant */
+
+  /* ------------- fields for entities owned by a class type ---------------*/
+  entity **overwrites;  /**< A list of entities this entity overwrites. */
+  entity **overwrittenby;  /**< A list of entities that overwrite this entity.  */
+
+  /* ------------- fields for methods ---------------*/
   enum peculiarity peculiarity;
-  ir_graph *irg;        /* If (type == method_type) this is the corresponding irg.
+  ir_graph *irg;        /**< If (type == method_type) this is the corresponding irg.
 			   The ir_graph constructor automatically sets this field.
 			   Yes, it must be here. */
-  struct dbg_info* dbi;    /* A pointer to information for debug support. */
 };
 
 
