@@ -860,7 +860,9 @@ void cg_construct(int arr_len, entity ** free_methods_arr) {
 static void destruct_walker(ir_node * node, void * env) {
   if (get_irn_op(node) == op_Block) {
     remove_Block_cg_cfgpred_arr(node);
-    /* Do not turn Break into Jmp.  Better: merge blocks right away. */
+    /* Do not turn Break into Jmp.  Better: merge blocks right away.
+       Well, but there are Breaks left.
+       See exc1 from ajacs-rts/Exceptions.java.  */
     if (get_Block_n_cfgpreds(node) == 1) {
       ir_node *pred = get_Block_cfgpred(node, 0);
       if (get_irn_op(pred) == op_Break)
@@ -870,8 +872,8 @@ static void destruct_walker(ir_node * node, void * env) {
     set_irg_current_block(current_ir_graph, get_nodes_block(node));
     exchange(node, new_Proj(get_Filter_pred(node), get_irn_mode(node), get_Filter_proj(node)));
   } else if (get_irn_op(node) == op_Break) {
-    //set_irg_current_block(current_ir_graph, get_nodes_block(node));
-    //exchange(node, new_Jmp());
+    set_irg_current_block(current_ir_graph, get_nodes_block(node));
+    exchange(node, new_Jmp());
   } else if (get_irn_op(node) == op_Call) {
     remove_Call_callee_arr(node);
   } else if (get_irn_op(node) == op_Proj) {
@@ -887,13 +889,16 @@ void cg_destruct(void) {
     for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
       ir_graph * irg = get_irp_irg(i);
       irg_walk_graph(irg, destruct_walker, clear_link, NULL);
-      set_irg_frame(irg, skip_Id(get_irg_frame(irg)));
-      set_irg_globals(irg, skip_Id(get_irg_globals(irg)));
+
+      set_irg_frame      (irg, skip_Id(get_irg_frame(irg)));
+      set_irg_globals    (irg, skip_Id(get_irg_globals(irg)));
       set_irg_initial_mem(irg, skip_Id(get_irg_initial_mem(irg)));
+      set_irg_end_reg    (irg, get_irg_end(irg));
+      set_irg_end_except (irg, get_irg_end(irg));
+
       set_irg_callee_info_state(irg, irg_callee_info_none);
-      set_irg_end_reg(irg, get_irg_end(irg));
-      set_irg_end_except(irg, get_irg_end(irg));
     }
+
     set_irp_ip_view(ip_view_no);
   }
 }

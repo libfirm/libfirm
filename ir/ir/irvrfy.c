@@ -16,6 +16,7 @@
 
 # include "irprog.h"
 # include "irgraph_t.h"
+# include "ircgcons.h"
 # include "irvrfy.h"
 # include "irgwalk.h"
 # include "irdump.h"
@@ -525,9 +526,13 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
       break;
 
     case iro_EndReg:
+      ASSERT_AND_RET((get_irp_ip_view_state() != ip_view_no),
+		      "EndReg may only appear if ip view is constructed.", 0);
       break;
 
     case iro_EndExcept:
+      ASSERT_AND_RET((get_irp_ip_view_state() != ip_view_no),
+		      "EndExcept may only appear if ip view is constructed.", 0);
       break;
 
     default:
@@ -625,10 +630,13 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       break;
 
     case iro_Break:
+      ASSERT_AND_RET((get_irp_ip_view_state() != ip_view_no),
+		      "Break may only appear if ip view is constructed.", 0);
       ASSERT_AND_RET(
                      /* Jmp: BB --> X */
-                     mymode == mode_X, "Jmp node", 0
+                     mymode == mode_X, "Break node", 0
                      );
+
       break;
 
     case iro_Cond:
@@ -1022,6 +1030,7 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
                          );
       break;
 
+
     case iro_Phi:
     {
       ir_node *block = get_nodes_block(n);
@@ -1047,6 +1056,11 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       ASSERT_AND_RET( mode_is_dataM(mymode), "Phi node", 0 );
       break;
     }
+    case iro_Filter:
+      ASSERT_AND_RET((get_irp_ip_view_state() != ip_view_no),
+	 	    "Filter may only appear if ip view is constructed.", 0);
+      /* We should further do tests as for Proj and Phi. */
+      break;
     case iro_Load:
       op1mode = get_irn_mode(in[1]);
       op2mode = get_irn_mode(in[2]);
