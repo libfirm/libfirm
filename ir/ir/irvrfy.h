@@ -93,4 +93,11 @@ enum verify_bad_flags_t {
  */
 int irg_vrfy_bads(ir_graph *irg, int flags);
 
+/**
+ *  Enable/disable verification of Load/Store nodes with
+ *  its entities. If disabled, Store(SymConst(array)) will be allowed
+ *  (C-frontend builds this :-)
+ */
+void vrfy_enable_entity_tests(int enable);
+
 # endif /* _IRVRFY_H_ */

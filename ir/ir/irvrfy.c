@@ -61,11 +61,20 @@ do { \
 
 #endif
 
+/** if this flag is set, verify entity types in Load & Store nodes */
+static int vrfy_entities = 0;
+
 /* @@@ replace use of array "in" by access functions. */
 ir_node **get_irn_in(ir_node *node);
 
 static node_verification_t opt_do_node_verification = NODE_VERIFICATION_ON;
 static const char *bad_msg;
+
+/* enable verification of Load/Store entities */
+void vrfy_enable_entity_tests(int enable)
+{
+  vrfy_entities = enable;
+}
 
 /**
  * little helper for NULL modes
@@ -382,7 +391,8 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
       if (proj == pn_Load_res) {
 	ir_node *ptr = get_Load_ptr(pred);
 	entity *ent = get_ptr_entity(ptr);
-	if (ent) {
+	if (vrfy_entities && ent && get_irg_phase_state(current_ir_graph) == phase_high) {
+	  /* do NOT check this for lowered phases, see comment on Store */
 	  ASSERT_AND_RET_DBG(
 			     (mode == get_type_mode(get_entity_type(ent))),
 			     "wrong data Proj from Load, entity type_mode failed", 0,
@@ -411,7 +421,7 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
         ((proj == pn_Store_M        && mode == mode_M) ||
          (proj == pn_Store_X_except && mode == mode_X)),
         "wrong Proj from Store", 0,
-    show_proj_failure(p);
+        show_proj_failure(p);
       );
       break;
 
@@ -1067,8 +1077,14 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       ASSERT_AND_RET(mymode == mode_T, "Store node", 0);
 
       entity *target = get_ptr_entity(in[2]);
-      if (target) {
-	ASSERT_AND_RET(op3mode == get_type_mode(get_entity_type(target)), "Store node", 0);
+      if (vrfy_entities && target && get_irg_phase_state(current_ir_graph) == phase_high) {
+	/*
+	 * If lowered code, any Sels that add 0 may be removed, causing
+	 * an direct access to entities of array or compound type.
+	 * Prevent this by checking the phase.
+	 */
+	ASSERT_AND_RET( op3mode == get_type_mode(get_entity_type(target)),
+			"Store node", 0);
       }
 
       break;
