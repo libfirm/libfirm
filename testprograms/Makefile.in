@@ -32,6 +32,7 @@ SOURCES := Makefile.in         	\
 	float_example.c     	\
 	global_cse.c           	\
 	global_var_example.c   	\
+	identify_types.c	\
 	if_else_example.c      	\
 	if_example.c           	\
 	if_while_example.c     	\
