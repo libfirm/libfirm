@@ -44,11 +44,8 @@ void (*__dbg_info_merge_sets)(ir_node **new_nodes, int n_new_nodes,
      = &dbg_info_merge_sets;
 
 
-void dbg_init( void (merge_pair)(ir_node *nw, ir_node *old, dbg_action info) ,
-	       void (merge_sets)(ir_node **new_nodes, int n_new_nodes,
-				 ir_node **old_nodes, int n_old_nodes,
-				  dbg_action info)
-	       ) {
+void dbg_init( merge_pair_func *mpf, merge_sets_func *msf )
+{
   __dbg_info_merge_pair = merge_pair;
   __dbg_info_merge_sets = merge_sets;
 }
