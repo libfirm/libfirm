@@ -125,8 +125,8 @@ void free_ir_graph (ir_graph *irg);
  */
 int      is_ir_graph(void *thing);
 
-//#define get_irg_entity get_irg_ent
-//#define set_irg_entity set_irg_ent
+/* #define get_irg_entity get_irg_ent */
+/* #define set_irg_entity set_irg_ent */
 entity  *get_irg_entity (ir_graph *irg);
 void     set_irg_entity (ir_graph *irg, entity *ent);
 
