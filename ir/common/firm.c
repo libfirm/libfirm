@@ -38,11 +38,11 @@ init_firm (default_initialize_local_variable_func_t *func)
   /* create the type kinds. */
   init_tpop ();
   /* create an obstack and put all tarvals in a pdeq */
-  tarval_init_1 ();
+  init_tarval_1 ();
   /* initialize all modes an ir node can consist of */
   init_mode ();
   /* initialize tarvals, and floating point arithmetic */
-  tarval_init_2 ();
+  init_tarval_2 ();
   /* init graph construction */
   init_irgraph();
   /* kind of obstack initialization */

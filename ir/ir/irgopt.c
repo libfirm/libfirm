@@ -813,8 +813,8 @@ static void collect_calls(ir_node *call, void *env) {
   if (get_irn_op(addr) == op_Const) {
     /* Check whether the constant is the pointer to a compiled entity. */
     tv = get_Const_tarval(addr);
-    if (tv->u.P.ent) {
-      called_irg = get_entity_irg(tv->u.P.ent);
+    if (tarval_to_entity(tv)) {
+      called_irg = get_entity_irg(tarval_to_entity(tv));
       if (called_irg && pos < MAX_INLINE) {
 	/* The Call node calls a locally defined method.  Remember to inline. */
 	calls[pos] = call;
@@ -856,7 +856,7 @@ void inline_small_irgs(ir_graph *irg, int size) {
       tarval *tv;
       ir_graph *callee;
       tv = get_Const_tarval(get_Call_ptr(calls[i]));
-      callee = get_entity_irg(tv->u.P.ent);
+      callee = get_entity_irg(tarval_to_entity(tv));
       if ((_obstack_memory_used(callee->obst) - obstack_room(callee->obst)) < size) {
 	inline_method(calls[i], callee);
       }

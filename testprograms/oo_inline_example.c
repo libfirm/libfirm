@@ -115,8 +115,8 @@ main(void)
   set_irp_main_irg(main_irg);
 
   /* Make the constants.  They are independent of a block. */
-  c2 = new_Const (mode_Is, tarval_from_long (mode_Is, 2));
-  c5 = new_Const (mode_Is, tarval_from_long (mode_Is, 5));
+  c2 = new_Const (mode_Is, new_tarval_from_long (2, mode_Is));
+  c5 = new_Const (mode_Is, new_tarval_from_long (5, mode_Is));
 
   /* There is only one block in main, it contains the allocation and the calls. */
   /* Allocate the defined object and generate the type information. */
@@ -215,7 +215,7 @@ main(void)
   set_value(0, self);
   par1 = new_Proj(get_irg_args(c_irg), mode_Is, 1);
   set_value(1, par1);
-  set_value(2, new_Const (mode_Is, tarval_from_long (mode_Is, 0)));
+  set_value(2, new_Const (mode_Is, new_tarval_from_long (0, mode_Is)));
 
   x = new_Jmp();
   mature_block (get_irg_current_block(c_irg));
@@ -223,11 +223,11 @@ main(void)
   /* generate a block for the loop header and the conditional branch */
   r = new_immBlock ();
   add_in_edge (r, x);
-  x = new_Cond (new_Proj(new_Cmp(new_Const (mode_Is, tarval_from_long (mode_Is, 0)),
-				 new_Const (mode_Is, tarval_from_long (mode_Is, 0))),
+  x = new_Cond (new_Proj(new_Cmp(new_Const (mode_Is, new_tarval_from_long (0, mode_Is)),
+				 new_Const (mode_Is, new_tarval_from_long (0, mode_Is))),
 			 mode_b, Eq));
 
-  /*  x = new_Cond (new_Proj(new_Cmp(new_Const (mode_Is, tarval_from_long (mode_Is, 0)),
+  /*  x = new_Cond (new_Proj(new_Cmp(new_Const (mode_Is, new_tarval_from_long (0, mode_Is)),
 				 get_value(1, mode_Is)),
 				 mode_b, Eq));*/
   f = new_Proj (x, mode_X, 0);

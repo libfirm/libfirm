@@ -156,7 +156,7 @@ void        set_type_mode(type *tp, ir_mode* m) {
 
   if ((tp->type_op == type_primitive) || (tp->type_op == type_enumeration)) {
     /* For pointer, primitive and enumeration size depends on the mode. */
-    tp->size = get_mode_size(m);
+    tp->size = get_mode_size(m)/8;
     tp->mode = m;
   }
 }
@@ -811,7 +811,7 @@ INLINE type *new_type_method (ident *name, int n_param, int n_res) {
   type *res;
   res = new_type(type_method, mode_P, name);
   res->state = layout_fixed;
-  res->size = get_mode_size(mode_P);
+  res->size = get_mode_size(mode_P)/8;
   res->attr.ma.n_params   = n_param;
   res->attr.ma.param_type = (type **) xmalloc (sizeof (type *) * n_param);
   res->attr.ma.n_res      = n_res;
@@ -1028,8 +1028,8 @@ set_array_bounds_int (type *array, int dimension, int lower_bound,
   ir_graph *rem = current_ir_graph;
   current_ir_graph = get_const_code_irg();
   set_array_bounds (array, dimension,
-		    new_Const(mode_Iu, tarval_from_long (mode_Iu, lower_bound)),
-		    new_Const(mode_Iu, tarval_from_long (mode_Iu, upper_bound)));
+		    new_Const(mode_Iu, new_tarval_from_long (lower_bound, mode_Iu)),
+		    new_Const(mode_Iu, new_tarval_from_long (upper_bound, mode_Iu )));
   current_ir_graph = rem;
 }
 INLINE void
@@ -1041,7 +1041,7 @@ void  set_array_lower_bound_int (type *array, int dimension, int lower_bound) {
   ir_graph *rem = current_ir_graph;
   current_ir_graph = get_const_code_irg();
   set_array_lower_bound  (array, dimension,
-			  new_Const(mode_Iu, tarval_from_long (mode_Iu, lower_bound)));
+			  new_Const(mode_Iu, new_tarval_from_long (lower_bound, mode_Iu)));
   current_ir_graph = rem;
 }
 INLINE void
@@ -1053,7 +1053,7 @@ void  set_array_upper_bound_int (type *array, int dimension, int upper_bound) {
   ir_graph *rem = current_ir_graph;
   current_ir_graph = get_const_code_irg();
   set_array_upper_bound  (array, dimension,
-			  new_Const(mode_Iu, tarval_from_long (mode_Iu, upper_bound)));
+			  new_Const(mode_Iu, new_tarval_from_long (upper_bound, mode_Iu)));
   current_ir_graph = rem;
 }
 ir_node * get_array_lower_bound  (type *array, int dimension) {
@@ -1177,7 +1177,7 @@ INLINE type *new_type_pointer           (ident *name, type *points_to) {
   type *res;
   res = new_type(type_pointer, mode_P, name);
   res->attr.pa.points_to = points_to;
-  res->size = get_mode_size(res->mode);
+  res->size = get_mode_size(res->mode)/8;
   res->state = layout_fixed;
   return res;
 }
@@ -1215,7 +1215,7 @@ INLINE type *new_type_primitive (ident *name, ir_mode *mode) {
   type *res;
   /* @@@ assert( mode_is_data(mode) && (!mode == mode_P)); */
   res = new_type(type_primitive, mode, name);
-  res->size = get_mode_size(mode);
+  res->size = get_mode_size(mode)/8;
   res->state = layout_fixed;
   return res;
 }

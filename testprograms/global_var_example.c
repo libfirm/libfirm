@@ -90,7 +90,7 @@ int main(int argc, char **argv)
   i_ptr = new_simpleSel(get_store(), get_irg_globals(irg), i_ent);
 
   store = new_Store (get_store(), i_ptr,
-		     new_Const(mode_Is, tarval_from_long (mode_Is, 2)));
+		     new_Const(mode_Is, new_tarval_from_long (2, mode_Is)));
   set_store(new_Proj(store, mode_M, 0));
 
   {

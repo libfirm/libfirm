@@ -85,8 +85,8 @@ int main(int argc, char **argv)
   irg = new_ir_graph (ent, NUM_OF_LOCAL_VARS);
 
   /* to make a condition  */
-  c1 = new_Const (mode_Is, tarval_from_long (mode_Is, 1));
-  c2 = new_Const (mode_Is, tarval_from_long (mode_Is, 2));
+  c1 = new_Const (mode_Is, new_tarval_from_long (1, mode_Is));
+  c2 = new_Const (mode_Is, new_tarval_from_long (2, mode_Is));
   set_value(0, c2);
 
   cond = new_Cond(new_Proj(new_Cmp(c1, c2), mode_b, Eq));

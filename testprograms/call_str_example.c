@@ -78,7 +78,8 @@ int main(int argc, char **argv)
   irg = new_ir_graph (ent, NUM_OF_LOCAL_VARS);
 
   /* the string is entered in the constant table. const_str is a pointer to the string */
-  const_str = new_Const (mode_P, tarval_P_from_str ("Hello world!"));
+  /* length 13 because of the terminating NULL character */
+  const_str = new_Const (mode_P, new_tarval_from_str ("Hello world!", 13, mode_P));
 
   /* get the pointer to the procedure from the class type */
   /* this is how a pointer to be fixed by the linker is represented after

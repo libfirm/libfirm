@@ -1627,7 +1627,7 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
     printf("Error: no value set.  Use of undefined variable.  Initializing to zero.\n");
     assert (mode->code >= irm_F && mode->code <= irm_P);
     res = new_rd_Const (NULL, current_ir_graph, block, mode,
-		       tarval_mode_null[mode->code]);
+		       get_mode_null(mode));
   }
 
   /* The local valid value is available now. */

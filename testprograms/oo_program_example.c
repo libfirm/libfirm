@@ -110,8 +110,8 @@ main(void)
   set_irp_main_irg(main_irg);
 
   /* Make the constants.  They are independent of a block. */
-  c2 = new_Const (mode_Is, tarval_from_long (mode_Is, 2));
-  c5 = new_Const (mode_Is, tarval_from_long (mode_Is, 5));
+  c2 = new_Const (mode_Is, new_tarval_from_long (2, mode_Is));
+  c5 = new_Const (mode_Is, new_tarval_from_long (5, mode_Is));
 
   /* There is only one block in main, it contains the allocation and the calls. */
   /* Allocate the defined object and generate the type information. */

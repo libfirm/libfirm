@@ -68,7 +68,7 @@ entity *get_inherited_methods_implementation(entity *inh_meth) {
   assert(addr && "constant entity without value");
 
   if (get_irn_op(addr) == op_Const) {
-    impl_meth = get_tv_entity(get_Const_tarval(addr));
+    impl_meth = tarval_to_entity(get_Const_tarval(addr));
   }
 
   assert(!impl_meth || get_entity_peculiarity(impl_meth) == existent);
@@ -184,7 +184,7 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
 	  assert(get_entity_irg(ent));
 	  set_irg_current_block(current_ir_graph, get_nodes_Block(node));
 	  new_node = new_d_Const(get_irn_dbg_info(node),
-				 mode_P, tarval_P_from_entity(ent));       DBG_OPT_NORMALIZE;
+				 mode_P, new_tarval_from_entity(ent, mode_P));       DBG_OPT_NORMALIZE;
 	  exchange(node, new_node);
 	}
       }
@@ -398,7 +398,7 @@ static void callee_ana_node(ir_node * node, eset * methods) {
 
   case iro_Const: {
     /* interne Methode */
-    entity * ent = get_Const_tarval(node)->u.P.ent;
+    entity * ent = tarval_to_entity(get_Const_tarval(node));
     assert(ent && is_method_type(get_entity_type(ent)));
     if (get_entity_visibility(ent) != external_allocated) {
       assert(get_entity_irg(ent));
@@ -570,9 +570,11 @@ static void free_mark(ir_node * node, eset * set) {
     break;
   case iro_Const: {
     tarval * val = get_Const_tarval(node);
-    entity * ent = val->u.P.ent;
-    if (ent != NULL && is_method_type(get_entity_type(ent))) {
-      eset_insert(set, ent);
+    if (tarval_is_entity(val)) { /* filter null pointer */
+      entity * ent = tarval_to_entity(val);
+      if (is_method_type(get_entity_type(ent))) {
+        eset_insert(set, ent);
+      }
     }
     break;
   }

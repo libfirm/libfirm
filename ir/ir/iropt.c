@@ -39,9 +39,9 @@ static INLINE tarval *
 value_of (ir_node *n)
 {
   if ((n != NULL) && (get_irn_op(n) == op_Const))
-    return get_Const_tarval(n);
+    return get_Const_tarval(n); /* might return tarval_bad */
   else
-    return NULL;
+    return tarval_bad;
 }
 
 /* if n can be computed, return the value, else NULL. Performs
@@ -52,9 +52,10 @@ computed_value (ir_node *n)
   tarval *res;
 
   ir_node *a = NULL, *b = NULL;	 /* initialized to shut up gcc */
-  tarval *ta = NULL, *tb = NULL; /* initialized to shut up gcc */
+  /* initialized to uniformly filter invalid constants */
+  tarval *ta = tarval_bad, *tb = tarval_bad;
 
-  res = NULL;
+  res = tarval_bad;
 
   /* get the operands we will work on for simple cases. */
   if (is_binop(n)) {
@@ -77,79 +78,83 @@ computed_value (ir_node *n)
   case iro_SymConst:
     if ((get_SymConst_kind(n) == size) &&
 	(get_type_state(get_SymConst_type(n))) == layout_fixed)
-      res = tarval_from_long (mode_Is, get_type_size(get_SymConst_type(n)));
+      res = new_tarval_from_long (get_type_size(get_SymConst_type(n)), mode_Is);
     break;
   case iro_Add:
-    if (ta && tb && (get_irn_mode(a) == get_irn_mode(b))
-	&& (get_irn_mode(a) != mode_P)) {
+    if ((ta != tarval_bad) && (tb != tarval_bad)
+          && (get_irn_mode(a) == get_irn_mode(b))
+          && !(get_mode_sort(get_irn_mode(a)) == reference)) {
       res = tarval_add (ta, tb);
     }
     break;
   case iro_Sub:
-    if (ta && tb && (get_irn_mode(a) == get_irn_mode(b))
-	&& (get_irn_mode(a) != mode_P)) {
+    if ((ta != tarval_bad) && (tb != tarval_bad)
+          && (get_irn_mode(a) == get_irn_mode(b))
+          && !(get_mode_sort(get_irn_mode(a)) == reference)) {
       res = tarval_sub (ta, tb);
-    } else if (a == b) {
-      res = tarval_mode_null [get_irn_modecode (n)];
     }
     break;
   case iro_Minus:
-      if (ta && mode_is_float(get_irn_mode(a)))
+      if ((ta != tarval_bad) && mode_is_signed(get_irn_mode(a)))
         res = tarval_neg (ta);
     break;
   case iro_Mul:
-    if (ta && tb) /* tarval_mul tests for equivalent modes itself */ {
+    if ((ta != tarval_bad) && (tb != tarval_bad) && (get_irn_mode(a) == get_irn_mode(b))) {
       res = tarval_mul (ta, tb);
     } else {
       /* a*0 = 0 or 0*b = 0:
 	 calls computed_value recursive and returns the 0 with proper
          mode. */
       tarval *v;
-      if (   (tarval_classify ((v = computed_value (a))) == 0)
-	  || (tarval_classify ((v = computed_value (b))) == 0)) {
+      if ( ( ((v = computed_value (a)) != tarval_bad)
+               && (v == get_mode_null(get_tarval_mode(v))) )
+	|| ( ((v = computed_value (b)) != tarval_bad)
+               && (v == get_mode_null(get_tarval_mode(v))) )) {
 	res = v;
       }
     }
     break;
   case iro_Quot:
     /* This was missing in original implementation. Why? */
-    if (ta && tb  && (get_irn_mode(a) == get_irn_mode(b))) {
-      if (tarval_classify(tb) == 0) {res = NULL; break;}
+    if ((ta != tarval_bad) && (tb != tarval_bad) && (get_irn_mode(a) == get_irn_mode(b))) {
+      if (tb == get_mode_null(get_tarval_mode(tb))) break;  /* div by zero: return tarval_bad */
       res = tarval_quo(ta, tb);
     }
     break;
   case iro_Div:
     /* This was missing in original implementation. Why? */
-    if (ta && tb  && (get_irn_mode(a) == get_irn_mode(b))) {
-      if (tarval_classify(tb) == 0) {res = NULL; break;}
+    if ((ta != tarval_bad) && (tb != tarval_bad) && (get_irn_mode(a) == get_irn_mode(b))) {
+      if (tb == get_mode_null(get_tarval_mode(tb))) break;  /* div by zero: return tarval_bad */
       res = tarval_div(ta, tb);
     }
     break;
   case iro_Mod:
     /* This was missing in original implementation. Why? */
-    if (ta && tb  && (get_irn_mode(a) == get_irn_mode(b))) {
-      if (tarval_classify(tb) == 0) {res = NULL; break;}
+    if ((ta != tarval_bad) && (tb != tarval_bad) && (get_irn_mode(a) == get_irn_mode(b))) {
+      if (tb == get_mode_null(get_tarval_mode(tb))) break;  /* div by zero: return tarval_bad */
       res = tarval_mod(ta, tb);
     }
     break;
   /* for iro_DivMod see iro_Proj */
   case iro_Abs:
-    if (ta)
+    if (ta != tarval_bad)
       res = tarval_abs (ta);
     break;
   case iro_And:
-    if (ta && tb) {
+    if ((ta != tarval_bad) && (tb != tarval_bad)) {
       res = tarval_and (ta, tb);
     } else {
       tarval *v;
-      if (   (tarval_classify ((v = computed_value (a))) == 0)
-	  || (tarval_classify ((v = computed_value (b))) == 0)) {
+      if ( ( ((v = computed_value (a)) != tarval_bad)
+               && (v == get_mode_null(get_tarval_mode(v))) )
+	|| ( ((v = computed_value (b)) != tarval_bad)
+               && (v == get_mode_null(get_tarval_mode(v))) )) {
 	res = v;
       }
     }
     break;
   case iro_Or:
-    if (ta && tb) {
+    if ((ta != tarval_bad) && (tb != tarval_bad)) {
       res = tarval_or (ta, tb);
     } else {
       tarval *v;
@@ -159,14 +164,40 @@ computed_value (ir_node *n)
       }
     }
     break;
-  case iro_Eor: if (ta && tb) { res = tarval_eor (ta, tb); } break;
-  case iro_Not: if (ta)       { res = tarval_neg (ta); } break;
-  case iro_Shl: if (ta && tb) { res = tarval_shl (ta, tb); } break;
-    /* tarval_shr is faulty !! */
-  case iro_Shr: if (ta && tb) { res = tarval_shr (ta, tb); } break;
-  case iro_Shrs:if (ta && tb) { /*res = tarval_shrs (ta, tb)*/; } break;
-  case iro_Rot: if (ta && tb) { /*res = tarval_rot (ta, tb)*/; } break;
-  case iro_Conv:if (ta)       { res = tarval_convert_to (ta, get_irn_mode (n)); }
+  case iro_Eor:
+    if ((ta != tarval_bad) && (tb != tarval_bad)) {
+      res = tarval_eor (ta, tb);
+    }
+    break;
+  case iro_Not:
+    if ((ta != tarval_bad)) {
+      res = tarval_neg (ta);
+    }
+    break;
+  case iro_Shl:
+    if ((ta != tarval_bad) && (tb != tarval_bad)) {
+      res = tarval_shl (ta, tb);
+    }
+    break;
+  case iro_Shr:
+    if ((ta != tarval_bad) && (tb != tarval_bad)) {
+      res = tarval_shr (ta, tb);
+    }
+    break;
+  case iro_Shrs:
+    if ((ta != tarval_bad) && (tb != tarval_bad)) {
+     res = tarval_shrs (ta, tb);
+    }
+    break;
+  case iro_Rot:
+    if ((ta != tarval_bad) && (tb != tarval_bad)) {
+      /*res = tarval_rot (ta, tb)*/;
+    }
+    break;
+  case iro_Conv:
+    if (ta != tarval_bad) {
+      res = tarval_convert_to (ta, get_irn_mode (n));
+    }
     break;
   case iro_Proj:  /* iro_Cmp */
     {
@@ -193,16 +224,16 @@ computed_value (ir_node *n)
 	if (aa == ab) { /* 1.: */
           /* This is a tric with the bits used for encoding the Cmp
              Proj numbers, the following statement is not the same:
-          res = tarval_from_long (mode_b, (get_Proj_proj(n) == Eq)):    */
-	  res = tarval_from_long (mode_b, (get_Proj_proj(n) & irpn_Eq));
+          res = new_tarval_from_long ((get_Proj_proj(n) == Eq), mode_b) */
+	  res = new_tarval_from_long ((get_Proj_proj(n) & Eq), mode_b);
 	} else {
 	  tarval *taa = computed_value (aa);
 	  tarval *tab = computed_value (ab);
-	  if (taa && tab) { /* 2.: */
+	  if ((taa != tarval_bad) && (tab != tarval_bad)) { /* 2.: */
             /* strange checks... */
-	    ir_pncmp flags = tarval_comp (taa, tab);
-	    if (flags != irpn_False) {
-              res = tarval_from_long (mode_b, get_Proj_proj(n) & flags);
+	    pnc_number flags = tarval_cmp (taa, tab);
+	    if (flags != False) {
+              res = new_tarval_from_long (get_Proj_proj(n) & flags, mode_b);
 	    }
 	  } else {  /* check for 3.: */
             ir_node *aaa = skip_nop(skip_Proj(aa));
@@ -214,7 +245,7 @@ computed_value (ir_node *n)
                     && (   (/* ab is constant void */
                                (get_irn_op(ab) == op_Const)
                             && (get_irn_mode(ab) == mode_P)
-                            && (get_Const_tarval(ab) == tarval_P_void))
+                            && (get_Const_tarval(ab) == get_mode_null(mode_P)))
 		        || (/* ab is other Alloc */
                                (get_irn_op(ab) == op_Proj)
     	                    && (get_irn_mode(ab) == mode_P)
@@ -223,19 +254,19 @@ computed_value (ir_node *n)
 		|| (/* aa is void and aba is Alloc */
                        (get_irn_op(aa) == op_Const)
                     && (get_irn_mode(aa) == mode_P)
-                    && (get_Const_tarval(aa) == tarval_P_void)
+                    && (get_Const_tarval(aa) == get_mode_null(mode_P))
                     && (get_irn_op(ab) == op_Proj)
     	            && (get_irn_mode(ab) == mode_P)
                     && (get_irn_op(aba) == op_Alloc)))
 	      /* 3.: */
-	      res = tarval_from_long (mode_b, get_Proj_proj(n) & irpn_Ne);
+	      res = new_tarval_from_long (get_Proj_proj(n) & Ne, mode_b);
 	  }
 	}
       } else if (get_irn_op(a) == op_DivMod) {
         ta = value_of(get_DivMod_left(a));
         tb = value_of(get_DivMod_right(a));
-	if (ta && tb  && (get_irn_mode(a) == get_irn_mode(b))) {
-	  if (tarval_classify(tb) == 0) {res = NULL; break;}
+	if ((ta != tarval_bad)  && (tb != tarval_bad) && (get_irn_mode(a) == get_irn_mode(b))) {
+	  if (tb == get_mode_null(get_tarval_mode(tb))) break;  /* div by zero: return tarval_bad */
 	  if (get_Proj_proj(n)== 0) /* Div */
 	    res = tarval_div(ta, tb);
 	  else /* Mod */
@@ -611,24 +642,24 @@ transform_node (ir_node *n)
   switch (get_irn_opcode(n)) {
   case iro_Div: {
     ta = computed_value(n);
-    if (ta) {
+    if (ta != tarval_bad) {
       /* Turn Div into a tuple (mem, bad, value) */
       ir_node *mem = get_Div_mem(n);
       turn_into_tuple(n, 3);
       set_Tuple_pred(n, 0, mem);
       set_Tuple_pred(n, 1, new_Bad());
-      set_Tuple_pred(n, 2, new_Const(get_tv_mode(ta), ta));
+      set_Tuple_pred(n, 2, new_Const(get_tarval_mode(ta), ta));
     }
   } break;
   case iro_Mod: {
     ta = computed_value(n);
-    if (ta) {
+    if (ta != tarval_bad) {
       /* Turn Div into a tuple (mem, bad, value) */
       ir_node *mem = get_Mod_mem(n);
       turn_into_tuple(n, 3);
       set_Tuple_pred(n, 0, mem);
       set_Tuple_pred(n, 1, new_Bad());
-      set_Tuple_pred(n, 2, new_Const(get_tv_mode(ta), ta));
+      set_Tuple_pred(n, 2, new_Const(get_tarval_mode(ta), ta));
     }
   } break;
   case iro_DivMod: {
@@ -645,29 +676,29 @@ transform_node (ir_node *n)
       break;
 
     if (a == b) {
-      a = new_Const (mode, tarval_from_long (mode, 1));
-      b = new_Const (mode, tarval_from_long (mode, 0));
+      a = new_Const (mode, get_mode_one(mode));
+      b = new_Const (mode, get_mode_null(mode));
       evaluated = 1;
     } else {
       ta = value_of(a);
       tb = value_of(b);
 
-      if (tb) {
-	if (tarval_classify(tb) == 1) {
-	  b = new_Const (mode, tarval_from_long (mode, 0));
+      if (tb != tarval_bad) {
+	if (tb == get_mode_one(get_tarval_mode(tb))) {
+	  b = new_Const (mode, get_mode_null(mode));
 	  evaluated = 1;
-	} else if (ta) {
+	} else if (ta != tarval_bad) {
 	  tarval *resa, *resb;
           resa = tarval_div (ta, tb);
-          if (!resa) break; /* Causes exception!!! Model by replacing through
-			       Jmp for X result!? */
+          if (resa == tarval_bad) break; /* Causes exception!!! Model by replacing through
+			                    Jmp for X result!? */
           resb = tarval_mod (ta, tb);
-          if (!resb) break; /* Causes exception! */
+          if (resb == tarval_bad) break; /* Causes exception! */
 	  a = new_Const (mode, resa);
 	  b = new_Const (mode, resb);
 	  evaluated = 1;
 	}
-      } else if (tarval_classify (ta) == 0) {
+      } else if (ta == get_mode_null(get_tarval_mode(ta))) {
         b = a;
 	evaluated = 1;
       }
@@ -691,14 +722,14 @@ transform_node (ir_node *n)
     a = get_Cond_selector(n);
     ta = value_of(a);
 
-    if (ta &&
+    if ((ta != tarval_bad) &&
 	(get_irn_mode(a) == mode_b) &&
 	(get_opt_unreachable_code())) {
       /* It's a boolean Cond, branching on a boolean constant.
 		 Replace it by a tuple (Bad, Jmp) or (Jmp, Bad) */
       jmp = new_r_Jmp(current_ir_graph, get_nodes_Block(n));
       turn_into_tuple(n, 2);
-      if (tv_val_b(ta) == 1)  /* GL: I hope this returns 1 if true */ {
+      if (ta == tarval_b_true) {
 		set_Tuple_pred(n, 0, new_Bad());
 		set_Tuple_pred(n, 1, jmp);
       } else {
@@ -707,7 +738,7 @@ transform_node (ir_node *n)
       }
       /* We might generate an endless loop, so keep it alive. */
       add_End_keepalive(get_irg_end(current_ir_graph), get_nodes_Block(n));
-    } else if (ta &&
+    } else if ((ta != tarval_bad) &&
 	       (get_irn_mode(a) == mode_Iu) &&
 	       (get_Cond_kind(n) == dense) &&
 	       (get_opt_unreachable_code())) {
@@ -759,7 +790,7 @@ transform_node (ir_node *n)
 	       && (get_Cond_kind(a) == dense)
 	       && (get_opt_unreachable_code())) {
       /* The Cond is a Switch on a Constant */
-      if (get_Proj_proj(n) == tv_val_uInt(value_of(a))) {
+      if (get_Proj_proj(n) == tarval_to_long(value_of(a))) {
         /* The always taken branch, reuse the existing Jmp. */
         if (!get_irn_link(a)) /* well, if it exists ;-> */
           set_irn_link(a, new_r_Jmp(current_ir_graph, get_nodes_Block(n)));
@@ -1028,10 +1059,10 @@ optimize_node (ir_node *n)
     if  (get_irn_op(n) != op_Const) {
       /* try to evaluate */
       tv = computed_value (n);
-      if ((get_irn_mode(n) != mode_T) && (tv != NULL)) {
+      if ((get_irn_mode(n) != mode_T) && (tv != tarval_bad)) {
         /* evaluation was succesful -- replace the node. */
 	obstack_free (current_ir_graph->obst, n);
-	return new_Const (get_tv_mode (tv), tv);
+	return new_Const (get_tarval_mode (tv), tv);
       }
     }
   }
@@ -1105,9 +1136,9 @@ optimize_in_place_2 (ir_node *n)
     if  (get_irn_op(n) != op_Const) {
       /* try to evaluate */
       tv = computed_value (n);
-      if ((get_irn_mode(n) != mode_T) && (tv != NULL)) {
+      if ((get_irn_mode(n) != mode_T) && (tv != tarval_bad)) {
         /* evaluation was succesful -- replace the node. */
-	n = new_Const (get_tv_mode (tv), tv);
+	n = new_Const (get_tarval_mode (tv), tv);
 	__dbg_info_merge_pair(n, old_n, dbg_const_eval);
 	return n;
       }

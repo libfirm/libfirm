@@ -93,8 +93,8 @@ main(void)
 # define U_BOUND 9
   array_type = new_type_array(id_from_str("a", 1), N_DIMS, prim_t_int);
   set_array_bounds(array_type, 1,
-		   new_Const(mode_Iu, tarval_from_long (mode_Iu, L_BOUND)),
-		   new_Const(mode_Iu, tarval_from_long (mode_Iu, U_BOUND)));
+		   new_Const(mode_Iu, new_tarval_from_long (L_BOUND, mode_Iu)),
+		   new_Const(mode_Iu, new_tarval_from_long (U_BOUND, mode_Iu)));
   /* As the array is accessed by Sel nodes, we need information about
      the entity the node selects.  Entities of an array are it's elements
      which are, in this case, integers. */
@@ -109,7 +109,7 @@ main(void)
   /*   better: read bounds out of array type information */
   size = (U_BOUND - L_BOUND + 1) * get_mode_size(elt_type_mode);
   /*   make constant representing the size */
-  arr_size  = new_Const(mode_Iu, tarval_from_long (mode_Iu, size));
+  arr_size  = new_Const(mode_Iu, new_tarval_from_long (size, mode_Iu));
   /*   allocate and generate the Proj nodes. */
   array     = new_Alloc(get_store(), arr_size, (type*)array_type, stack_alloc);
   set_store(new_Proj(array, mode_M, 0));   /* make the changed memory visible */
@@ -121,7 +121,7 @@ main(void)
      by (three * elt_size), but this complicates some optimizations. The
      type information accessible via the entity allows to generate the
      pointer increment later. */
-  c3 = new_Const (mode_Iu, tarval_from_long (mode_Iu, 3));
+  c3 = new_Const (mode_Iu, new_tarval_from_long (3, mode_Iu));
   {
      ir_node *in[1];
      in[0] = c3;

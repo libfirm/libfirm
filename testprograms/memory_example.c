@@ -85,16 +85,16 @@ main(void)
 
   /* generate two constant pointers to string constants */
   /* this simulates two global variables, a and b point to these variables */
-  a = new_Const (mode_P, tarval_P_from_str ("VAR_A"));
-  b = new_Const (mode_P, tarval_P_from_str ("VAR_B"));
+  a = new_Const (mode_P, new_tarval_from_str ("VAR_A", 6, mode_P)); /* length 6 because of NULL terminator */
+  b = new_Const (mode_P, new_tarval_from_str ("VAR_B", 6, mode_P));
 
   /* set VAR_A and VAR_B to constant values */
   set_store (new_Proj (new_Store (get_store (), a,
-		     	          new_Const (mode_Iu, tarval_from_long (mode_Is, 0))),
+		     	          new_Const (mode_Iu, new_tarval_from_long (0, mode_Is))),
                        mode_M, 0));
 
   set_store (new_Proj (new_Store (get_store (), b,
-			          new_Const (mode_Iu, tarval_from_long (mode_Is, 1))),
+			          new_Const (mode_Iu, new_tarval_from_long (1, mode_Is))),
                        mode_M, 0));
 
   /* finish this first block */
@@ -122,7 +122,7 @@ main(void)
   x = new_Cond (
         new_Proj (
           new_Cmp (
-            new_Const (mode_Iu, tarval_from_long (mode_Is, 0)),
+            new_Const (mode_Iu, new_tarval_from_long (0, mode_Is)),
             x),
           mode_b, Gt));
 

@@ -74,15 +74,15 @@ int main(int argc, char **argv)
   irg = new_ir_graph (ent, NUM_OF_LOCAL_VARS);
 
   /* Generate two constants */
-  c0 = new_Const (mode_Is, tarval_from_long (mode_Is, 0));
-  c1 = new_Const (mode_Is, tarval_from_long (mode_Is, 1));
+  c0 = new_Const (mode_Is, new_tarval_from_long (0, mode_Is));
+  c1 = new_Const (mode_Is, new_tarval_from_long (1, mode_Is));
 
   /* set a and b to constants */
   set_value (0, c0);  /* this (0) is variable a */
   set_value (1, c1);  /* this (1) is variable b */
 
   /* the expression that evaluates the condition */
-  c2 = new_Const (mode_Is, tarval_from_long (mode_Is, 2));
+  c2 = new_Const (mode_Is, new_tarval_from_long (2, mode_Is));
   cmpGt = new_Proj(new_Cmp(get_value(0, mode_Is), c2), mode_b, Gt);
 
   /* the conditional branch */
@@ -102,7 +102,7 @@ int main(int argc, char **argv)
   /* generate and fill the else block */
   b = new_immBlock ();
   add_in_edge (b, f);
-  set_value (1, new_Const (mode_Is, tarval_from_long (mode_Is, 2)));
+  set_value (1, new_Const (mode_Is, new_tarval_from_long (2, mode_Is)));
   mature_block (b);
   x_else = new_Jmp ();
 

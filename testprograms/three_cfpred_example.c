@@ -91,12 +91,12 @@ int main(int argc, char **argv)
   irg = new_ir_graph (ent, NUM_OF_LOCAL_VARS);
 
   /* to make a condition  */
-  c1 = new_Const (mode_Is, tarval_from_long (mode_Is, 1));
+  c1 = new_Const (mode_Is, new_tarval_from_long (1, mode_Is));
   c2 = new_Proj (get_irg_args(irg), mode_Is, 0);
   set_value(1, c2);
 
   cond = new_Cond(new_Proj(new_Cmp(c1, c2), mode_b, Eq));
-  set_value(0, new_Const (mode_Is, tarval_from_long (mode_Is, 6)));
+  set_value(0, new_Const (mode_Is, new_tarval_from_long (6, mode_Is)));
   f = new_Proj(cond, mode_X, 0);
   t = new_Proj(cond, mode_X, 1);
   mature_block(get_irg_current_block(irg));
@@ -108,7 +108,7 @@ int main(int argc, char **argv)
   Block1 = new_immBlock();
   add_in_edge(Block1, t);
   mature_block(Block1);
-  set_value(0, new_Const (mode_Is, tarval_from_long (mode_Is, 5)));
+  set_value(0, new_Const (mode_Is, new_tarval_from_long (5, mode_Is)));
   jmp = new_Jmp();
   add_in_edge(endBlock, jmp);
 
@@ -116,7 +116,7 @@ int main(int argc, char **argv)
   scndCondBlock = new_immBlock();
   add_in_edge(scndCondBlock, f);
   mature_block(scndCondBlock);
-  c1 = new_Const (mode_Is, tarval_from_long (mode_Is, 3));
+  c1 = new_Const (mode_Is, new_tarval_from_long (3, mode_Is));
   cond = new_Cond(new_Proj(new_Cmp(c1, get_value(1, mode_Is)), mode_b, Eq));
   f = new_Proj(cond, mode_X, 0);
   t = new_Proj(cond, mode_X, 1);

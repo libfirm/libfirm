@@ -20,7 +20,7 @@
 #define SPDICT_COOKIE1	0xB0031E7
 #define SPDICT_COOKIE2	0xBA17B003
 
-/* Line N_o_mbers ToDo: Warum o? */
+/* Line N_o_mbers ToDo: Warum o? Answer: No. 5, not Nu. 5*/
 #define LINO_COOKIE	0x71b83bd5
 
 #endif

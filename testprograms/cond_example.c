@@ -73,19 +73,19 @@ int main(int argc, char **argv)
 
   /* the expression that evaluates the condition */
   /* cmpGt = a > 2 */
-  c2 = new_Const (mode_Is, tarval_from_long (mode_Is, 2));
+  c2 = new_Const (mode_Is, new_tarval_from_long (2, mode_Is));
   cmpGt = new_Proj(new_Cmp(get_value(0, mode_Is), c2), mode_b, Gt);
   cmpGt = new_Conv(cmpGt, mode_Is);
 
   /* cmpLt = a < 10 */
-  c10 = new_Const (mode_Is, tarval_from_long (mode_Is, 10));
+  c10 = new_Const (mode_Is, new_tarval_from_long (10, mode_Is));
   cmpLt = new_Proj(new_Cmp(get_value(0, mode_Is), c10), mode_b, Lt);
   cmpLt = new_Conv(cmpLt, mode_Is);
 
   /* cmpGt && cmpLt */
   and = new_And(cmpGt, cmpLt, mode_Is);
   /* compare result and 0 because we have no cast from integer to bool */
-  and = new_Cmp(and, new_Const (mode_Is, tarval_from_long (mode_Is, 0)));
+  and = new_Cmp(and, new_Const (mode_Is, new_tarval_from_long (0, mode_Is)));
   and = new_Proj(and, mode_b, Ne);
 
   /* the conditional branch */
@@ -98,7 +98,7 @@ int main(int argc, char **argv)
   /* generate and fill the then block */
   b = new_immBlock ();
   add_in_edge (b, t);
-  set_value (0, new_Const (mode_Is, tarval_from_long (mode_Is, 1)));
+  set_value (0, new_Const (mode_Is, new_tarval_from_long (1, mode_Is)));
   mature_block (b);
   x_then = new_Jmp ();
 

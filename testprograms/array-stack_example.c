@@ -84,8 +84,8 @@ main(void)
 # define U_BOUND 9
   array_type = new_type_array(id_from_str("a_tp", 4), N_DIMS, prim_t_int);
   set_array_bounds(array_type, 1,
-		   new_Const(mode_Iu, tarval_from_long (mode_Iu, L_BOUND)),
-		   new_Const(mode_Iu, tarval_from_long (mode_Iu, U_BOUND)));
+		   new_Const(mode_Iu, new_tarval_from_long (L_BOUND, mode_Iu)),
+		   new_Const(mode_Iu, new_tarval_from_long (U_BOUND, mode_Iu)));
   /* The array is an entity of the method, placed on the mehtod's own memory,
      the stack frame. */
   array_ent = new_entity(get_cur_frame_type(), id_from_str("a", 1), array_type);
@@ -105,7 +105,7 @@ main(void)
      array pointer by (three * elt_size), but this complicates some
      optimizations.) The type information accessible via the entity
      allows to generate the pointer increment later. */
-  c3 = new_Const (mode_Iu, tarval_from_long (mode_Iu, 3));
+  c3 = new_Const (mode_Iu, new_tarval_from_long (3, mode_Iu));
   {
      ir_node *in[1];
      in[0] = c3;

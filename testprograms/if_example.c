@@ -78,7 +78,7 @@ main(void)
   set_value (a_pos, new_Proj (get_irg_args(irg), mode_Is, 0));
   /* Generate the constant and assign it to b. The assignment is resovled to a
      dataflow edge. */
-  set_value (b_pos, new_Const (mode_Is, tarval_from_long (mode_Is, 2)));
+  set_value (b_pos, new_Const (mode_Is, new_tarval_from_long (2, mode_Is)));
   /* We know all predecessors of the block and all set_values and set_stores are
      preformed.   We can mature the block.  */
   mature_block (get_irg_current_block(irg));
@@ -93,7 +93,7 @@ main(void)
   r = new_immBlock ();
   add_in_edge (r, t);
   a = new_Sub(get_value(a_pos, mode_Is),
-              new_Const (mode_Is, tarval_from_long (mode_Is, 3)),
+              new_Const (mode_Is, new_tarval_from_long (3, mode_Is)),
   	      mode_Is);
   set_value (a_pos, a);
 

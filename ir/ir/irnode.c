@@ -326,7 +326,7 @@ INLINE ident *
 get_irn_modeident (const ir_node *node)
 {
   assert(node);
-  return node->mode->name;
+  return get_mode_ident(node->mode);
 }
 
 INLINE ir_op *

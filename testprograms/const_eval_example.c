@@ -57,8 +57,8 @@ main(void)
 
   irg = new_ir_graph (ent, 4);
 
-  a = new_Const (mode_Is, tarval_from_long (mode_Is, 7));
-  b = new_Const (mode_Is, tarval_from_long (mode_Is, 5));
+  a = new_Const (mode_Is, new_tarval_from_long (7, mode_Is));
+  b = new_Const (mode_Is, new_tarval_from_long (5, mode_Is));
 
   x = new_Jmp ();
   mature_block (get_irg_current_block(irg));
@@ -70,11 +70,11 @@ main(void)
   c = new_Proj(c, mode_Is, 2);
   */
 
-  c = new_Add (new_Const (mode_Is, tarval_from_long (mode_Is, 5)),
-	       new_Const (mode_Is, tarval_from_long (mode_Is, 7)),
+  c = new_Add (new_Const (mode_Is, new_tarval_from_long (5, mode_Is)),
+	       new_Const (mode_Is, new_tarval_from_long (7, mode_Is)),
 	       mode_Is);
-  d = new_Add (new_Const (mode_Is, tarval_from_long (mode_Is, 7)),
-	       new_Const (mode_Is, tarval_from_long (mode_Is, 5)),
+  d = new_Add (new_Const (mode_Is, new_tarval_from_long (7, mode_Is)),
+	       new_Const (mode_Is, new_tarval_from_long (5, mode_Is)),
 	       mode_Is);
 
   {

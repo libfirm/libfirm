@@ -22,6 +22,7 @@
 /* All this is needed to build the constant node for methods: */
 # include "irprog_t.h"
 # include "ircons.h"
+# include "tv_t.h"
 
 /*******************************************************************/
 /** general                                                       **/
@@ -84,7 +85,7 @@ new_entity (type *owner, ident *name, type *type)
     res->variability = constant;
     rem = current_ir_graph;
     current_ir_graph = get_const_code_irg();
-    res->value = new_Const(mode_P, tarval_P_from_entity(res));
+    res->value = new_Const(mode_P, new_tarval_from_entity(res, mode_P));
     current_ir_graph = rem;
   } else {
     res->variability = uninitialized;
@@ -181,7 +182,7 @@ copy_entity_name (entity *old, ident *new_name) {
 
 void
 free_entity (entity *ent) {
-  free_tv_entity(ent);
+  free_tarval_entity(ent);
   free_entity_attrs(ent);
   free(ent);
 }
@@ -468,7 +469,7 @@ set_array_entity_values(entity *ent, tarval **values, int num_vals) {
   current_ir_graph = get_const_code_irg();
 
   for (i = 0; i < num_vals; i++) {
-    val = new_Const(get_tv_mode (values[i]), values[i]);
+    val = new_Const(get_tarval_mode (values[i]), values[i]);
     add_compound_ent_value(ent, val, get_array_element_entity(arrtp));
   }
   current_ir_graph = rem;

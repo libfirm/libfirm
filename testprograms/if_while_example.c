@@ -73,8 +73,8 @@ main(void)
   irg = new_ir_graph (ent, 4);
 
   /* Generate two constants */
-  set_value (0, new_Const (mode_Iu, tarval_from_long (mode_Iu, 0)));
-  set_value (1, new_Const (mode_Iu, tarval_from_long (mode_Iu, 1)));
+  set_value (0, new_Const (mode_Iu, new_tarval_from_long (0, mode_Iu)));
+  set_value (1, new_Const (mode_Iu, new_tarval_from_long (1, mode_Iu)));
   mature_block (get_irg_current_block(irg));
 
   /* Generate a conditional branch */
@@ -89,8 +89,8 @@ main(void)
   /* generate a block for the loop header and the conditional branch */
   r = new_immBlock ();
   add_in_edge (r, x);
-  x = new_Cond (new_Proj(new_Cmp(new_Const (mode_Iu, tarval_from_long (mode_Is, 0)),
-                                 new_Const (mode_Iu, tarval_from_long (mode_Is, 0))),
+  x = new_Cond (new_Proj(new_Cmp(new_Const (mode_Iu, new_tarval_from_long (0, mode_Is)),
+                                 new_Const (mode_Iu, new_tarval_from_long (0, mode_Is))),
                          mode_b, Eq));
   f = new_Proj (x, mode_X, 0);
   t = new_Proj (x, mode_X, 1);

@@ -89,15 +89,15 @@ main(void)
   set_value (a_pos, new_Proj (get_irg_args(irg), mode_Is, 0));
   /* Generate the constant and assign it to b. The assignment is resovled to a
      dataflow edge. */
-  set_value (b_pos, new_Const (mode_Is, tarval_from_long (mode_Is, 2)));
+  set_value (b_pos, new_Const (mode_Is, new_tarval_from_long (2, mode_Is)));
   /* We know all predecessors of the block and all set_values and set_stores are
      preformed.   We can mature the block.  */
   mature_block (get_irg_current_block(irg));
 
   /* Generate a conditional branch */
   cmp = new_Cmp(get_value(a_pos, mode_Is), get_value(b_pos, mode_Is)); /*
-  cmp = new_Cmp(new_Const (mode_Is, tarval_from_long (mode_Is, 2)),
-                new_Const (mode_Is, tarval_from_long (mode_Is, 2)));*/
+  cmp = new_Cmp(new_Const (mode_Is, new_tarval_from_long (2, mode_Is)),
+                new_Const (mode_Is, new_tarval_from_long (2, mode_Is)));*/
   x = new_Cond (new_Proj(cmp, mode_b, Eq));
   f = new_Proj (x, mode_X, 0);
   t = new_Proj (x, mode_X, 1);
@@ -106,7 +106,7 @@ main(void)
   r = new_immBlock ();
   add_in_edge (r, t);
   a = new_Sub(get_value(a_pos, mode_Is),
-              new_Const (mode_Is, tarval_from_long (mode_Is, 3)),
+              new_Const (mode_Is, new_tarval_from_long (3, mode_Is)),
   	      mode_Is);
   set_value (a_pos, a);
 
@@ -117,9 +117,9 @@ main(void)
   r = new_immBlock ();
   add_in_edge (r, f);
   a = new_Sub(get_value(a_pos, mode_Is),
-              new_Const (mode_Is, tarval_from_long (mode_Is, 3)),
+              new_Const (mode_Is, new_tarval_from_long (3, mode_Is)),
   	      mode_Is);
-  a = new_Add(a, new_Const (mode_Is, tarval_from_long (mode_Is, 5)), mode_Is);
+  a = new_Add(a, new_Const (mode_Is, new_tarval_from_long (5, mode_Is)), mode_Is);
   set_value (a_pos, a);
 
   mature_block (r);

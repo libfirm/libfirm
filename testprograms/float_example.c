@@ -73,7 +73,7 @@ int main(int argc, char **argv)
 #define NUM_OF_LOCAL_VARS 0
   irg = new_ir_graph (ent, NUM_OF_LOCAL_VARS);
 
-  tv = tarval_d_from_str ("12345678901234567890.1234567890", 31);
+  tv = new_tarval_from_str ("12345678901234567890.1234567890", 31, mode_D);
 
 
 

@@ -89,7 +89,11 @@ int main(int argc, char **argv)
   current_ir_graph = get_const_code_irg();
   /* The pointer to the dispatch table is constant. */
   /* The constant is the address of the given entity */
+<<<<<<< const_ent_example.c
+  n = new_Const(mode_P, new_tarval_from_entity(dipte, mode_P));
+=======
   n = new_Const(mode_P, tarval_P_from_entity(dipte));
+>>>>>>> 1.7
   set_entity_variability(diptpe, constant);
   set_atomic_ent_value(diptpe, n);
 
@@ -118,13 +122,13 @@ int main(int argc, char **argv)
   arre = new_entity(get_glob_type(), arrei, arrt);
   set_entity_variability(arre, constant);
   current_ir_graph = get_const_code_irg();
-  n = new_Const(mode_Is, tarval_from_long (mode_Is, 7));
+  n = new_Const(mode_Is, new_tarval_from_long (7, mode_Is));
   add_compound_ent_value(arre, n, arrelte);
-  n = new_Const(mode_Is, tarval_from_long (mode_Is, 2));
+  n = new_Const(mode_Is, new_tarval_from_long (2, mode_Is));
   add_compound_ent_value(arre, n, arrelte);
-  n = new_Const(mode_Is, tarval_from_long (mode_Is, 13));
+  n = new_Const(mode_Is, new_tarval_from_long (13, mode_Is));
   add_compound_ent_value(arre, n, arrelte);
-  n = new_Const(mode_Is, tarval_from_long (mode_Is, 92));
+  n = new_Const(mode_Is, new_tarval_from_long (92, mode_Is));
   add_compound_ent_value(arre, n, arrelte);
 }
   printf("Done building the graph.  Dumping it.\n");

@@ -82,9 +82,9 @@ int main(int argc, char **argv)
   irg = new_ir_graph (ent, NUM_OF_LOCAL_VARS);
 
   /* two make two conditionals that represent a switch */
-  expr = new_Const (mode_Is, tarval_from_long (mode_Is, 0));
-  c1 = new_Const (mode_Is, tarval_from_long (mode_Is, 1));
-  c2 = new_Const (mode_Is, tarval_from_long (mode_Is, 2));
+  expr = new_Const (mode_Is, new_tarval_from_long (0, mode_Is));
+  c1 = new_Const (mode_Is, new_tarval_from_long (1, mode_Is));
+  c2 = new_Const (mode_Is, new_tarval_from_long (2, mode_Is));
 
   cond = new_Cond(new_Proj(new_Cmp(expr, c1), mode_b, Eq));
   f = new_Proj(cond, mode_X, 0);

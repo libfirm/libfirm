@@ -7,12 +7,34 @@
 # ifndef _IRNODE_H_
 # define _IRNODE_H_
 
+/* Projection numbers of compare: use for Proj nodes! */
+typedef enum {
+  False,		/* false */
+  Eq,			/* equal */
+  Lt,			/* less */
+  Le,			/* less or equal */
+  Gt,			/* greater */
+  Ge,			/* greater or equal */
+  Lg,			/* less or greater */
+  Leg,			/* less, equal or greater = ordered */
+  Uo,			/* unordered */
+  Ue,			/* unordered or equal */
+  Ul,			/* unordered or less */
+  Ule,			/* unordered, less or equal */
+  Ug,			/* unordered or greater */
+  Uge,			/* unordered, greater or equal */
+  Ne,			/* unordered, less or greater = not equal */
+  True		        /* true */
+  /* not_mask = Leg*/	/* bits to flip to negate comparison * @@ hack for jni interface */
+} pnc_number;
+#define not_mask Leg
+
+# include "tv.h"
 # include "irgraph.h"
 # include "entity.h"
 # include "firm_common.h"
 # include "irop.h"
 # include "irmode.h"
-# include "tv.h"
 # include "type.h"
 # include "dbginfo.h"
 # include "exc.h"
@@ -388,28 +410,8 @@ INLINE void     set_Eor_right (ir_node *node, ir_node *right);
 INLINE ir_node *get_Not_op (ir_node *node);
 INLINE void     set_Not_op (ir_node *node, ir_node *op);
 
-/** Projection numbers of compare: use for Proj nodes! */
-typedef enum {
-  False,		/**< false */
-  Eq,			/**< equal */
-  Lt,			/**< less */
-  Le,			/**< less or equal */
-  Gt,			/**< greater */
-  Ge,			/**< greater or equal */
-  Lg,			/**< less or greater */
-  Leg,			/**< less, equal or greater = ordered */
-  Uo,			/**< unordered */
-  Ue,			/**< unordered or equal */
-  Ul,			/**< unordered or less */
-  Ule,			/**< unordered, less or equal */
-  Ug,			/**< unordered or greater */
-  Uge,			/**< unordered, greater or equal */
-  Ne,			/**< unordered, less or greater = not equal */
-  True		        /**< true */
-  /* not_mask = Leg*/	/* bits to flip to negate comparison * @@ hack for jni interface */
-} pnc_number;
-#define not_mask Leg
 INLINE const char *get_pnc_string(int pnc);
+
 INLINE int   get_negated_pnc(int pnc);
 INLINE ir_node *get_Cmp_left (ir_node *node);
 INLINE void     set_Cmp_left (ir_node *node, ir_node *left);
