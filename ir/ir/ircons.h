@@ -1080,6 +1080,7 @@
 # include "entity.h"
 # include "tv.h"
 # include "type.h"
+# include "dbginfo.h"
 
 /***************************************************************************/
 /* The raw interface                                                       */
@@ -1088,6 +1089,91 @@
 /* Constructs a Block with a fixed number of predecessors.
    Does not set current_block.  Can not be used with automatic
    Phi node construction. */
+ir_node *new_rd_Block  (dbg_info *db, ir_graph *irg,  int arity, ir_node **in);
+ir_node *new_rd_Start  (dbg_info *db, ir_graph *irg, ir_node *block);
+ir_node *new_rd_End    (dbg_info *db, ir_graph *irg, ir_node *block);
+ir_node *new_rd_Jmp    (dbg_info *db, ir_graph *irg, ir_node *block);
+ir_node *new_rd_Cond   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *c);
+ir_node *new_rd_Return (dbg_info *db, ir_graph *irg, ir_node *block,
+		       ir_node *store, int arity, ir_node **in);
+ir_node *new_rd_Raise  (dbg_info *db, ir_graph *irg, ir_node *block,
+		       ir_node *store, ir_node *obj);
+ir_node *new_rd_Const  (dbg_info *db, ir_graph *irg, ir_node *block,
+		       ir_mode *mode, tarval *con);
+ir_node *new_rd_SymConst (dbg_info *db, ir_graph *irg, ir_node *block,
+                       type_or_id_p value, symconst_kind symkind);
+ir_node *new_rd_Sel    (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
+                       ir_node *objptr, int n_index, ir_node **index,
+		       entity *ent);
+ir_node *new_rd_Call   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
+		       ir_node *callee, int arity, ir_node **in,
+		       type *type);
+ir_node *new_rd_Add    (dbg_info *db, ir_graph *irg, ir_node *block,
+		       ir_node *op1, ir_node *op2, ir_mode *mode);
+ir_node *new_rd_Sub    (dbg_info *db, ir_graph *irg, ir_node *block,
+		       ir_node *op1, ir_node *op2, ir_mode *mode);
+ir_node *new_rd_Minus  (dbg_info *db, ir_graph *irg, ir_node *block,
+		       ir_node *op,  ir_mode *mode);
+ir_node *new_rd_Mul    (dbg_info *db, ir_graph *irg, ir_node *block,
+		       ir_node *op1, ir_node *op2, ir_mode *mode);
+ir_node *new_rd_Quot   (dbg_info *db, ir_graph *irg, ir_node *block,
+		       ir_node *memop, ir_node *op1, ir_node *op2);
+ir_node *new_rd_DivMod (dbg_info *db, ir_graph *irg, ir_node *block,
+		       ir_node *memop, ir_node *op1, ir_node *op2);
+ir_node *new_rd_Div    (dbg_info *db, ir_graph *irg, ir_node *block,
+		       ir_node *memop, ir_node *op1, ir_node *op2);
+ir_node *new_rd_Mod    (dbg_info *db, ir_graph *irg, ir_node *block,
+		       ir_node *memop, ir_node *op1, ir_node *op2);
+ir_node *new_rd_Abs    (dbg_info *db, ir_graph *irg, ir_node *block,
+                       ir_node *op, ir_mode *mode);
+ir_node *new_rd_And    (dbg_info *db, ir_graph *irg, ir_node *block,
+		       ir_node *op1, ir_node *op2, ir_mode *mode);
+ir_node *new_rd_Or     (dbg_info *db, ir_graph *irg, ir_node *block,
+		       ir_node *op1, ir_node *op2, ir_mode *mode);
+ir_node *new_rd_Eor    (dbg_info *db, ir_graph *irg, ir_node *block,
+		       ir_node *op1, ir_node *op2, ir_mode *mode);
+ir_node *new_rd_Not    (dbg_info *db, ir_graph *irg, ir_node *block,
+		       ir_node *op, ir_mode *mode);
+ir_node *new_rd_Cmp    (dbg_info *db, ir_graph *irg, ir_node *block,
+		       ir_node *op1, ir_node *op2);
+ir_node *new_rd_Shl    (dbg_info *db, ir_graph *irg, ir_node *block,
+		       ir_node *op, ir_node *k, ir_mode *mode);
+ir_node *new_rd_Shr    (dbg_info *db, ir_graph *irg, ir_node *block,
+		       ir_node *op, ir_node *k, ir_mode *mode);
+ir_node *new_rd_Shrs   (dbg_info *db, ir_graph *irg, ir_node *block,
+		       ir_node *op, ir_node *k, ir_mode *mode);
+ir_node *new_rd_Rot    (dbg_info *db, ir_graph *irg, ir_node *block,
+		       ir_node *op, ir_node *k, ir_mode *mode);
+ir_node *new_rd_Conv   (dbg_info *db, ir_graph *irg, ir_node *block,
+		       ir_node *op, ir_mode *mode);
+ir_node *new_rd_Phi    (dbg_info *db, ir_graph *irg, ir_node *block, int arity,
+		       ir_node **in, ir_mode *mode);
+ir_node *new_rd_Load   (dbg_info *db, ir_graph *irg, ir_node *block,
+		       ir_node *store, ir_node *adr);
+ir_node *new_rd_Store  (dbg_info *db, ir_graph *irg, ir_node *block,
+		       ir_node *store, ir_node *adr, ir_node *val);
+ir_node *new_rd_Alloc  (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
+		       ir_node *size, type *alloc_type, where_alloc where);
+ir_node *new_rd_Free   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
+		       ir_node *ptr, ir_node *size, type *free_type);
+ir_node *new_rd_Sync   (dbg_info *db, ir_graph *irg, ir_node *block, int arity, ir_node **in);
+ir_node *new_rd_Proj   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg,
+		       ir_mode *mode, long proj);
+ir_node *new_rd_defaultProj (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg,
+			    long max_proj);
+ir_node *new_rd_Tuple  (dbg_info *db, ir_graph *irg, ir_node *block,
+		       int arity, ir_node **in);
+ir_node *new_rd_Id     (dbg_info *db, ir_graph *irg, ir_node *block,
+		       ir_node *val, ir_mode *mode);
+ir_node *new_rd_Bad    ();
+
+/***************************************************************************/
+/* The raw interface without debug support                                 */
+/***************************************************************************/
+
+/* Constructs a Block with a fixed number of predecessors.
+   Does not set current_block.  Can not be used with automatic
+   Phi node costruction. */
 ir_node *new_r_Block  (ir_graph *irg,  int arity, ir_node **in);
 ir_node *new_r_Start  (ir_graph *irg, ir_node *block);
 ir_node *new_r_End    (ir_graph *irg, ir_node *block);
@@ -1166,7 +1252,6 @@ ir_node *new_r_Id     (ir_graph *irg, ir_node *block,
 		       ir_node *val, ir_mode *mode);
 ir_node *new_r_Bad    ();
 
-
 /*************************************************************************/
 /* The block oriented interface                                          */
 /*************************************************************************/
@@ -1174,6 +1259,65 @@ ir_node *new_r_Bad    ();
 /* Sets the current block in which the following constructors place the
    nodes they construct. */
 void switch_block (ir_node *target);
+
+/* Constructs a Block with a fixed number of predecessors.
+   Does set current_block.  Can be used with automatic Phi
+   node construction. */
+
+
+ir_node *new_d_Block(dbg_info* db, int arity, ir_node **in);
+ir_node *new_d_Start  (dbg_info* db);
+ir_node *new_d_End    (dbg_info* db);
+ir_node *new_d_Jmp    (dbg_info* db);
+ir_node *new_d_Cond   (dbg_info* db, ir_node *c);
+ir_node *new_d_Return (dbg_info* db, ir_node *store, int arity, ir_node **in);
+ir_node *new_d_Raise  (dbg_info* db, ir_node *store, ir_node *obj);
+ir_node *new_d_Const  (dbg_info* db, ir_mode *mode, tarval *con);
+ir_node *new_d_SymConst (dbg_info* db, type_or_id_p value, symconst_kind kind);
+ir_node *new_d_simpleSel(dbg_info* db, ir_node *store, ir_node *objptr, entity *ent);
+ir_node *new_d_Sel    (dbg_info* db, ir_node *store, ir_node *objptr, int arity, ir_node **in,
+                     entity *ent);
+ir_node *new_d_Call   (dbg_info* db, ir_node *store, ir_node *callee, int arity, ir_node **in,
+		     type *type);
+ir_node *new_d_Add    (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
+ir_node *new_d_Sub    (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
+ir_node *new_d_Minus  (dbg_info* db, ir_node *op,  ir_mode *mode);
+ir_node *new_d_Mul    (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
+ir_node *new_d_Quot   (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2);
+ir_node *new_d_DivMod (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2);
+ir_node *new_d_Div    (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2);
+ir_node *new_d_Mod    (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2);
+ir_node *new_d_Abs    (dbg_info* db, ir_node *op,                ir_mode *mode);
+ir_node *new_d_And    (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
+ir_node *new_d_Or     (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
+ir_node *new_d_Eor    (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
+ir_node *new_d_Not    (dbg_info* db, ir_node *op,                ir_mode *mode);
+ir_node *new_d_Shl    (dbg_info* db, ir_node *op,  ir_node *k,   ir_mode *mode);
+ir_node *new_d_Shr    (dbg_info* db, ir_node *op,  ir_node *k,   ir_mode *mode);
+ir_node *new_d_Shrs   (dbg_info* db, ir_node *op,  ir_node *k,   ir_mode *mode);
+ir_node *new_d_Rot    (dbg_info* db, ir_node *op,  ir_node *k,   ir_mode *mode);
+ir_node *new_d_Cmp    (dbg_info* db, ir_node *op1, ir_node *op2);
+ir_node *new_d_Conv   (dbg_info* db, ir_node *op, ir_mode *mode);
+ir_node *new_d_Phi    (dbg_info* db, int arity, ir_node **in, ir_mode *mode);
+ir_node *new_d_Load   (dbg_info* db, ir_node *store, ir_node *addr);
+ir_node *new_d_Store  (dbg_info* db, ir_node *store, ir_node *addr, ir_node *val);
+ir_node *new_d_Alloc  (dbg_info* db, ir_node *store, ir_node *size, type *alloc_type,
+                     where_alloc where);
+ir_node *new_d_Free   (dbg_info* db, ir_node *store, ir_node *ptr, ir_node *size,
+		     type *free_type);
+ir_node *new_d_Sync   (dbg_info* db, int arity, ir_node **in);
+ir_node *new_d_Proj   (dbg_info* db, ir_node *arg, ir_mode *mode, long proj);
+ir_node *new_d_defaultProj (dbg_info* db, ir_node *arg, long max_proj);
+ir_node *new_d_Tuple  (dbg_info* db, int arity, ir_node **in);
+ir_node *new_d_Id     (dbg_info* db, ir_node *val, ir_mode *mode);
+ir_node *new_d_Bad    (void);
+
+/*************************************************************************/
+/* The block oriented interface without debug support                    */
+/*************************************************************************/
+
+/* Needed from the interfase with debug support:
+void switch_block (ir_node *target);   */
 
 /* Constructs a Block with a fixed number of predecessors.
    Does set current_block.  Can be used with automatic Phi
@@ -1234,6 +1378,7 @@ ir_node *new_Bad    (void);
 
 /** Block construction **/
 /* immature Block without predecessors */
+ir_node *new_d_immBlock (dbg_info* db);
 ir_node *new_immBlock (void);
 
 /* Add a control flow edge to an immature block. */
@@ -1246,6 +1391,7 @@ void mature_block (ir_node *block);
 /* Read a value from the array with the local variables.  Use this
    function to obtain the last definition of the value associated with
    pos.  Pos may not exceed the value passed as n_loc to new_ir_graph. */
+ir_node *get_d_value (dbg_info* db, int pos, ir_mode *mode);
 ir_node *get_value (int pos, ir_mode *mode);
 
 /* Write a value in the array with the local variables. Use this function
