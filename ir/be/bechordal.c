@@ -17,6 +17,7 @@
 #include "irgraph.h"
 #include "irdump.h"
 #include "irdom.h"
+#include "xmalloc.h"
 
 #include "beutil.h"
 #include "besched.h"
@@ -86,7 +87,7 @@ static void draw_interval_graphs(ir_node *block,
 
 	if((f = fopen(buf, "wt")) != NULL) {
 		border_t *b;
-		int *seen = calloc(get_graph_node_count(irg), sizeof(*seen));
+		int *seen = xcalloc(get_graph_node_count(irg), sizeof(seen[0]));
 		int last_pos = list_empty(border_head) ? 0 : list_entry(border_head->prev, border_t, list)->step;
 		int max_col = 0;
 
