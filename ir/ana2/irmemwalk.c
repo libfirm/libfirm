@@ -24,6 +24,7 @@
 #  include "config.h"
 # endif
 
+# include "irnode_t.h"
 # include "irgwalk.h"           /* for irg_walk_func */
 # include "irprog.h"            /* for get_irp_main_irg */
 # include "xmalloc.h"
@@ -37,15 +38,15 @@
    Data
 */
 
-/* environment for a single memory walker */
+/** environment for a single memory walker */
 typedef struct walk_mem_env_str {
-  ir_graph *graph;              /* the graph we're visiting */
-  int visited;                  /* 'visited' marker */
-  irg_walk_func *pre;           /* pre action */
-  irg_walk_func *post;          /* post action */
-  void *env;                    /* user-defined environment */
+  ir_graph *graph;              /**< the graph we're visiting */
+  unsigned long visited;        /**< 'visited' marker */
+  irg_walk_func *pre;           /**< pre action */
+  irg_walk_func *post;          /**< post action */
+  void *env;                    /**< user-defined environment */
 
-  struct walk_mem_env_str *prev; /* link up walking instances */
+  struct walk_mem_env_str *prev; /**< link up walking instances */
   /* what else? */
 } walk_mem_env_t;
 
@@ -176,8 +177,7 @@ static void irg_walk_mem_node (ir_node *node,
     }
   } break;
   default: {
-    fprintf (stderr, "%s: not handled: node[%li].op = %s\n",
-             __FUNCTION__,
+    fprintf (stderr, "irg_walk_mem_node(): not handled: node[%li].op = %s\n",
              get_irn_node_nr (node),
              get_op_name (get_irn_op (node)));
 
@@ -261,6 +261,10 @@ void irg_walk_mem (ir_graph *graph,
 
 /*
   $Log$
+  Revision 1.7  2004/12/21 14:25:35  beck
+  removed C99 constructs
+  make visit counter of same type as irn visit counter
+
   Revision 1.6  2004/12/02 16:17:51  beck
   fixed config.h include
 
