@@ -157,15 +157,18 @@ static void opcode_clear_entry(node_entry_t *elem)
 
 /**
  * Returns the associates node_entry_t for an ir_op
+ *
+ * @param op    the IR operation
+ * @param hmap  a hash map containing ir_op* -> node_entry_t*
  */
-static node_entry_t *opcode_get_entry(const ir_op *op, pset *set)
+static node_entry_t *opcode_get_entry(const ir_op *op, hmap_node_entry_t *hmap)
 {
   node_entry_t key;
   node_entry_t *elem;
 
   key.op = op;
 
-  elem = pset_find(set, &key, op->code);
+  elem = pset_find(hmap, &key, op->code);
   if (elem)
     return elem;
 
@@ -176,18 +179,21 @@ static node_entry_t *opcode_get_entry(const ir_op *op, pset *set)
 
   elem->op = op;
 
-  return pset_insert(set, elem, op->code);
+  return pset_insert(hmap, elem, op->code);
 }
 
 /**
  * Returns the associates ir_op for an opcode
+ *
+ * @param code  the IR opcode
+ * @param hmap  the hash map containing opcode -> ir_op*
  */
-static ir_op *opcode_find_entry(opcode code, pset *set)
+static ir_op *opcode_find_entry(opcode code, hmap_ir_op *hmap)
 {
   ir_op key;
 
   key.code = code;
-  return pset_find(set, &key, code);
+  return pset_find(hmap, &key, code);
 }
 
 /**
@@ -204,13 +210,17 @@ static void graph_clear_entry(graph_entry_t *elem, int all)
   }
   cnt_clr(&elem->cnt_edges);
   cnt_clr(&elem->cnt_all_calls);
+  cnt_clr(&elem->cnt_call_with_cnst_arg);
   cnt_clr(&elem->cnt_indirect_calls);
 }
 
 /**
- * Returns the associated graph_entry_t for an irg
+ * Returns the associated graph_entry_t for an IR graph.
+ *
+ * @param irg   the IR graph
+ * @param hmap  the hash map containing ir_graph* -> graph_entry_t*
  */
-static graph_entry_t *graph_get_entry(ir_graph *irg, pset *set)
+static graph_entry_t *graph_get_entry(ir_graph *irg, hmap_graph_entry_t *hmap)
 {
   graph_entry_t key;
   graph_entry_t *elem;
@@ -218,7 +228,7 @@ static graph_entry_t *graph_get_entry(ir_graph *irg, pset *set)
 
   key.irg = irg;
 
-  elem = pset_find(set, &key, HASH_PTR(irg));
+  elem = pset_find(hmap, &key, HASH_PTR(irg));
   if (elem)
     return elem;
 
@@ -237,7 +247,7 @@ static graph_entry_t *graph_get_entry(ir_graph *irg, pset *set)
   for (i = 0; i < sizeof(elem->opt_hash)/sizeof(elem->opt_hash[0]); ++i)
     elem->opt_hash[i] = new_pset(opt_cmp, 4);
 
-  return pset_insert(set, elem, HASH_PTR(irg));
+  return pset_insert(hmap, elem, HASH_PTR(irg));
 }
 
 /**
@@ -249,16 +259,19 @@ static void opt_clear_entry(opt_entry_t *elem)
 }
 
 /**
- * Returns the associated opt_entry_t for an ir_op
+ * Returns the associated opt_entry_t for an IR operation.
+ *
+ * @param op    the IR operation
+ * @param hmap  the hash map containing ir_op* -> opt_entry_t*
  */
-static opt_entry_t *opt_get_entry(const ir_op *op, pset *set)
+static opt_entry_t *opt_get_entry(const ir_op *op, hmap_opt_entry_t *hmap)
 {
   opt_entry_t key;
   opt_entry_t *elem;
 
   key.op = op;
 
-  elem = pset_find(set, &key, op->code);
+  elem = pset_find(hmap, &key, op->code);
   if (elem)
     return elem;
 
@@ -269,7 +282,7 @@ static opt_entry_t *opt_get_entry(const ir_op *op, pset *set)
 
   elem->op = op;
 
-  return pset_insert(set, elem, op->code);
+  return pset_insert(hmap, elem, op->code);
 }
 
 /**
@@ -284,16 +297,19 @@ static void block_clear_entry(block_entry_t *elem)
 }
 
 /**
- * Returns the associated block_entry_t for an block
+ * Returns the associated block_entry_t for an block.
+ *
+ * @param block_nr  an IR  block number
+ * @param hmap      a hash map containing long -> block_entry_t
  */
-static block_entry_t *block_get_entry(long block_nr, pset *set)
+static block_entry_t *block_get_entry(long block_nr, hmap_block_entry_t *hmap)
 {
   block_entry_t key;
   block_entry_t *elem;
 
   key.block_nr = block_nr;
 
-  elem = pset_find(set, &key, block_nr);
+  elem = pset_find(hmap, &key, block_nr);
   if (elem)
     return elem;
 
@@ -304,13 +320,15 @@ static block_entry_t *block_get_entry(long block_nr, pset *set)
 
   elem->block_nr = block_nr;
 
-  return pset_insert(set, elem, block_nr);
+  return pset_insert(hmap, elem, block_nr);
 }
 
 
 /**
  * Returns the ir_op for an IR-node,
- * handles special cases and return pseudo op codes
+ * handles special cases and return pseudo op codes.
+ *
+ * @param none  an IR node
  */
 static ir_op *stat_get_irn_op(ir_node *node)
 {
@@ -352,7 +370,7 @@ static ir_op *stat_get_irn_op(ir_node *node)
 /**
  * update the block counter
  */
-static void count_block_info(ir_node *node, graph_entry_t *graph)
+static void undate_block_info(ir_node *node, graph_entry_t *graph)
 {
   ir_op *op = get_irn_op(node);
   ir_node *block;
@@ -404,15 +422,35 @@ static void count_block_info(ir_node *node, graph_entry_t *graph)
   }
 }
 
+/** calculates how many arguments of the call are const */
+static int cnt_const_args(ir_node *call)
+{
+  int  i, res = 0;
+  int  n = get_Call_n_params(call);
+
+  for (i = 0; i < n; ++i) {
+    ir_node *param = get_Call_param(call, i);
+    ir_op   *op = get_irn_op(param);
+
+    if (op == op_Const || op == op_SymConst)
+      ++res;
+  }
+  return res;
+}
+
 /**
  * update info on calls
+ *
+ * @param call   The call
+ * @param graph  The graph entry containing the call
  */
 static void update_call_stat(ir_node *call, graph_entry_t *graph)
 {
-  ir_node *block = get_nodes_block(call);
-  ir_node *ptr = get_Call_ptr(call);
-  entity *ent = NULL;
+  ir_node  *block = get_nodes_block(call);
+  ir_node  *ptr = get_Call_ptr(call);
+  entity   *ent = NULL;
   ir_graph *callee = NULL;
+  int      num_const_args;
 
   /*
    * If the block is bad, the whole subgraph will collapse later
@@ -435,7 +473,7 @@ static void update_call_stat(ir_node *call, graph_entry_t *graph)
 
       /* it is recursive, if it calls at least once */
       if (callee == graph->irg)
-	graph->is_recursive = 1;
+        graph->is_recursive = 1;
     }
   }
   else {
@@ -456,7 +494,7 @@ static void update_call_stat(ir_node *call, graph_entry_t *graph)
       curr = get_Block_idom(curr);
 
       if (! curr || is_no_Block(curr))
-	break;
+        break;
     }
 
     if (curr != block)
@@ -472,6 +510,12 @@ static void update_call_stat(ir_node *call, graph_entry_t *graph)
         graph->is_leaf_call = LCS_NON_LEAF_CALL;
     }
   }
+
+  /* check, if arguments of the call are const */
+  num_const_args = cnt_const_args(call);
+
+  if (num_const_args > 0)
+    cnt_inc(&graph->cnt_call_with_cnst_arg);
 }
 
 /**
@@ -479,9 +523,9 @@ static void update_call_stat(ir_node *call, graph_entry_t *graph)
  */
 static void update_call_stat_2(ir_node *call, graph_entry_t *graph)
 {
-  ir_node *block = get_nodes_block(call);
-  ir_node *ptr = get_Call_ptr(call);
-  entity *ent = NULL;
+  ir_node  *block = get_nodes_block(call);
+  ir_node  *ptr = get_Call_ptr(call);
+  entity   *ent = NULL;
   ir_graph *callee = NULL;
 
   /*
@@ -530,7 +574,7 @@ static void update_node_stat(ir_node *node, void *env)
   cnt_add_i(&graph->cnt_edges, arity);
 
   /* count block edges */
-  count_block_info(node, graph);
+  undate_block_info(node, graph);
 
   /* check for properties that depends on calls like recursion/leaf/indirect call */
   if (op == op_Call)
@@ -770,7 +814,7 @@ static void stat_register_dumper(const dumper_t *dumper)
 }
 
 /**
- * dumps an irg
+ * dumps an IR graph.
  */
 static void stat_dump_graph(graph_entry_t *entry)
 {
@@ -818,7 +862,12 @@ ir_op *stat_get_op_from_opcode(opcode code)
   return opcode_find_entry(code, status->ir_op_hash);
 }
 
-/** A new IR op is registered. */
+/**
+ * A new IR op is registered.
+ *
+ * @param ctx  the hook context
+ * @param op   the new IR opcode that was created.
+ */
 static void stat_new_ir_op(void *ctx, ir_op *op)
 {
   if (! status->stat_options)
@@ -836,7 +885,12 @@ static void stat_new_ir_op(void *ctx, ir_op *op)
   STAT_LEAVE;
 }
 
-/** An IR op is freed. */
+/**
+ * An IR op is freed.
+ *
+ * @param ctx  the hook context
+ * @param op   the IR opcode that is freed
+ */
 static void stat_free_ir_op(void *ctx, ir_op *op)
 {
   if (! status->stat_options)
@@ -848,8 +902,14 @@ static void stat_free_ir_op(void *ctx, ir_op *op)
   STAT_LEAVE;
 }
 
-/** A new node is created. */
-static void stat_new_node(void *ctx, ir_node *node)
+/**
+ * A new node is created.
+ *
+ * @param ctx   the hook context
+ * @param irg   the IR graph on which the node is created
+ * @param node  the new IR node that was created
+ */
+static void stat_new_node(void *ctx, ir_graph *irg, ir_node *node)
 {
   if (! status->stat_options)
     return;
@@ -877,7 +937,12 @@ static void stat_new_node(void *ctx, ir_node *node)
   STAT_LEAVE;
 }
 
-/** A node is changed into a Id node */
+/**
+ * A node is changed into a Id node
+ *
+ * @param ctx   the hook context
+ * @param node  the IR node that will be turned into an ID
+ */
 static void stat_turn_into_id(void *ctx, ir_node *node)
 {
   if (! status->stat_options)
@@ -902,7 +967,13 @@ static void stat_turn_into_id(void *ctx, ir_node *node)
   STAT_LEAVE;
 }
 
-/** A new graph was created */
+/**
+ * A new graph was created
+ *
+ * @param ctx  the hook context
+ * @param irg  the new IR graph that was created
+ * @param ent  the entity of this graph
+ */
 static void stat_new_graph(void *ctx, ir_graph *irg, entity *ent)
 {
   if (! status->stat_options)
@@ -926,6 +997,13 @@ static void stat_new_graph(void *ctx, ir_graph *irg, entity *ent)
 
 /**
  * A graph will be deleted
+ *
+ * @param ctx  the hook context
+ * @param irg  the IR graph that will be deleted
+ *
+ * Note that we still hold the information for this graph
+ * in our hash maps, only a flag is set which prevents this
+ * information from being changed, it's "frozen" from now.
  */
 static void stat_free_graph(void *ctx, ir_graph *irg)
 {
@@ -949,6 +1027,11 @@ static void stat_free_graph(void *ctx, ir_graph *irg)
 
 /**
  * A walk over a graph is initiated. Do not count walks from statistic code.
+ *
+ * @param ctx  the hook context
+ * @param irg  the IR graph that will be walked
+ * @param pre  the pre walker
+ * @param post the post walker
  */
 static void stat_irg_walk(void *ctx, ir_graph *irg, void *pre, void *post)
 {
@@ -966,6 +1049,11 @@ static void stat_irg_walk(void *ctx, ir_graph *irg, void *pre, void *post)
 
 /**
  * A walk over a graph in block-wise order is initiated. Do not count walks from statistic code.
+ *
+ * @param ctx  the hook context
+ * @param irg  the IR graph that will be walked
+ * @param pre  the pre walker
+ * @param post the post walker
  */
 static void stat_irg_walk_blkwise(void *ctx, ir_graph *irg, void *pre, void *post)
 {
@@ -975,6 +1063,12 @@ static void stat_irg_walk_blkwise(void *ctx, ir_graph *irg, void *pre, void *pos
 
 /**
  * A walk over the graph's blocks is initiated. Do not count walks from statistic code.
+ *
+ * @param ctx  the hook context
+ * @param irg  the IR graph that will be walked
+ * @param node the IR node
+ * @param pre  the pre walker
+ * @param post the post walker
  */
 static void stat_irg_block_walk(void *ctx, ir_graph *irg, ir_node *node, void *pre, void *post)
 {
@@ -991,19 +1085,24 @@ static void stat_irg_block_walk(void *ctx, ir_graph *irg, ir_node *node, void *p
 }
 
 /**
- * called for every node that is removed due to an optimization
+ * called for every node that is removed due to an optimization.
+ *
+ * @param n     the IR node that will be removed
+ * @param hmap  the hash map containing ir_op* -> opt_entry_t*
  */
-static void removed_due_opt(ir_node *n, pset *set)
+static void removed_due_opt(ir_node *n, hmap_opt_entry_t *hmap)
 {
   ir_op *op          = stat_get_irn_op(n);
-  opt_entry_t *entry = opt_get_entry(op, set);
+  opt_entry_t *entry = opt_get_entry(op, hmap);
 
   /* increase global value */
   cnt_inc(&entry->count);
 }
 
 /**
- * Some nodes were optimized into some others due to an optimization
+ * Some nodes were optimized into some others due to an optimization.
+ *
+ * @param ctx  the hook context
  */
 static void stat_merge_nodes(
     void *ctx,
@@ -1037,7 +1136,10 @@ static void stat_merge_nodes(
 }
 
 /**
- * reassociation started/stopped.
+ * Reassociation is started/stopped.
+ *
+ * @param ctx   the hook context
+ * @param flag  if non-zero, reassociation is started else stopped
  */
 static void stat_reassociate(void *ctx, int flag)
 {
@@ -1053,6 +1155,9 @@ static void stat_reassociate(void *ctx, int flag)
 
 /**
  * A node was lowered into other nodes
+ *
+ * @param ctx  the hook context
+ * @param node the IR node that will be lowered
  */
 static void stat_lower(void *ctx, ir_node *node)
 {
@@ -1069,7 +1174,12 @@ static void stat_lower(void *ctx, ir_node *node)
 }
 
 /**
- * A graph was inlined
+ * A graph was inlined.
+ *
+ * @param ctx  the hook context
+ * @param call the IR call that will re changed into the body of
+ *             the called IR graph
+ * @param called_irg  the IR graph representing the called routine
  */
 static void stat_inline(void *ctx, ir_node *call, ir_graph *called_irg)
 {
@@ -1090,6 +1200,8 @@ static void stat_inline(void *ctx, ir_node *call, ir_graph *called_irg)
 
 /**
  * A graph with tail-recursions was optimized.
+ *
+ * @param ctx  the hook context
  */
 static void stat_tail_rec(void *ctx, ir_graph *irg)
 {
@@ -1104,6 +1216,8 @@ static void stat_tail_rec(void *ctx, ir_graph *irg)
 
 /**
  * Strength reduction was performed on an iteration variable.
+ *
+ * @param ctx  the hook context
  */
 static void stat_strength_red(void *ctx, ir_graph *irg, ir_node *strong, ir_node *cmp)
 {
@@ -1122,6 +1236,8 @@ static void stat_strength_red(void *ctx, ir_graph *irg, ir_node *strong, ir_node
 
 /**
  * Start the dead node elimination.
+ *
+ * @param ctx  the hook context
  */
 static void stat_dead_node_elim_start(void *ctx, ir_graph *irg)
 {
@@ -1133,6 +1249,8 @@ static void stat_dead_node_elim_start(void *ctx, ir_graph *irg)
 
 /**
  * Stops the dead node elimination.
+ *
+ * @param ctx  the hook context
  */
 static void stat_dead_node_elim_stop(void *ctx, ir_graph *irg)
 {
@@ -1144,6 +1262,8 @@ static void stat_dead_node_elim_stop(void *ctx, ir_graph *irg)
 
 /**
  * A multiply was replaced by a series of Shifts/Adds/Subs
+ *
+ * @param ctx  the hook context
  */
 static void stat_arch_dep_replace_mul_with_shifts(void *ctx, ir_node *mul)
 {
@@ -1160,6 +1280,9 @@ static void stat_arch_dep_replace_mul_with_shifts(void *ctx, ir_node *mul)
 
 /**
  * A division was replaced by a series of Shifts/Muls
+ *
+ * @param ctx  the hook context
+ * @param div  the div node that will be optimized
  */
 static void stat_arch_dep_replace_div_by_const(void *ctx, ir_node *div)
 {
@@ -1176,6 +1299,9 @@ static void stat_arch_dep_replace_div_by_const(void *ctx, ir_node *div)
 
 /**
  * A modulo was replaced by a series of Shifts/Muls
+ *
+ * @param ctx  the hook context
+ * @param mod  the mod node that will be optimized
  */
 static void stat_arch_dep_replace_mod_by_const(void *ctx, ir_node *mod)
 {
@@ -1192,6 +1318,9 @@ static void stat_arch_dep_replace_mod_by_const(void *ctx, ir_node *mod)
 
 /**
  * A DivMod was replaced by a series of Shifts/Muls
+ *
+ * @param ctx     the hook context
+ * @param divmod  the divmod node that will be optimized
  */
 static void stat_arch_dep_replace_DivMod_by_const(void *ctx, ir_node *divmod)
 {
@@ -1281,6 +1410,7 @@ void stat_finish(const char *name)
   STAT_LEAVE;
 }
 
+/** the hook entries for the Firm statistics module */
 static hook_entry_t stat_hooks[hook_last];
 
 /* initialize the statistics module. */

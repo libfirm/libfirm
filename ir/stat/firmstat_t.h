@@ -60,10 +60,10 @@ typedef struct _address_mark_entry_t {
  * An entry for ir_nodes, used in ir_graph statistics.
  */
 typedef struct _node_entry_t {
-  counter_t   cnt_alive;		/**< amount of nodes in this entry */
-  counter_t   new_node;			/**< amount of new nodes for this entry */
-  counter_t   into_Id;			/**< amount of nodes that turned into Id's for this entry */
-  const ir_op *op;			/**< the op for this entry */
+  counter_t   cnt_alive;    /**< amount of nodes in this entry */
+  counter_t   new_node;	    /**< amount of new nodes for this entry */
+  counter_t   into_Id;	    /**< amount of nodes that turned into Id's for this entry */
+  const ir_op *op;          /**< the op for this entry */
 } node_entry_t;
 
 enum leaf_call_state_t {
@@ -73,29 +73,30 @@ enum leaf_call_state_t {
 };
 
 /**
- * An entry for ir_graphs
+ * An entry for ir_graphs. These numbers are calculated for every IR graph.
  */
 typedef struct _graph_entry_t {
-  HASH_MAP(node_entry_t)  *opcode_hash;			/**< hash map containing the opcode counter */
-  HASH_MAP(block_entry_t) *block_hash;			/**< hash map countaining the block counter */
-  counter_t               cnt_walked;			/**< walker walked over the graph */
-  counter_t               cnt_walked_blocks;		/**< walker walked over the graph blocks */
-  counter_t               cnt_was_inlined;		/**< number of times other graph were inlined */
-  counter_t               cnt_got_inlined;		/**< number of times this graph was inlined */
-  counter_t               cnt_strength_red;		/**< number of times strength reduction was successful on this graph */
-  counter_t               cnt_edges;			/**< number of DF edges in this graph */
-  counter_t               cnt_all_calls;                /**< number of all calls */
-  counter_t               cnt_indirect_calls;           /**< number of indirect calls */
-  HASH_MAP(opt_entry_t)   *opt_hash[HOOK_OPT_LAST];	/**< hash maps containing opcode counter for optimizations */
-  ir_graph                *irg;				/**< the graph of this object */
-  entity                  *ent;				/**< the entity of this graph if one exists */
-  set                     *address_mark;                /**< a set containing the address marks of the nodes */
-  unsigned                is_deleted:1;			/**< set if this irg was deleted */
-  unsigned                is_leaf:1;			/**< set, if this irg is a leaf function */
-  unsigned                is_leaf_call:2;               /**< set, if this irg calls only leaf functions */
-  unsigned                is_recursive:1;		/**< set, if this irg has recursive calls */
-  unsigned                is_chain_call:1;		/**< set, if this irg is a chain call */
-  unsigned                is_analyzed:1;                /**< helper: set, if this irg was already analysed */
+  HASH_MAP(node_entry_t)  *opcode_hash;             /**< hash map containing the opcode counter */
+  HASH_MAP(block_entry_t) *block_hash;              /**< hash map containing the block counter */
+  counter_t               cnt_walked;		    /**< walker walked over the graph */
+  counter_t               cnt_walked_blocks;        /**< walker walked over the graph blocks */
+  counter_t               cnt_was_inlined;          /**< number of times other graph were inlined */
+  counter_t               cnt_got_inlined;          /**< number of times this graph was inlined */
+  counter_t               cnt_strength_red;         /**< number of times strength reduction was successful on this graph */
+  counter_t               cnt_edges;		    /**< number of DF edges in this graph */
+  counter_t               cnt_all_calls;            /**< number of all calls */
+  counter_t               cnt_call_with_cnst_arg;   /**< number of calls with const args */
+  counter_t               cnt_indirect_calls;       /**< number of indirect calls */
+  HASH_MAP(opt_entry_t)   *opt_hash[HOOK_OPT_LAST]; /**< hash maps containing opcode counter for optimizations */
+  ir_graph                *irg;                     /**< the graph of this object */
+  entity                  *ent;                     /**< the entity of this graph if one exists */
+  set                     *address_mark;            /**< a set containing the address marks of the nodes */
+  unsigned                is_deleted:1;             /**< set if this irg was deleted */
+  unsigned                is_leaf:1;                /**< set, if this irg is a leaf function */
+  unsigned                is_leaf_call:2;           /**< set, if this irg calls only leaf functions */
+  unsigned                is_recursive:1;           /**< set, if this irg has recursive calls */
+  unsigned                is_chain_call:1;          /**< set, if this irg is a chain call */
+  unsigned                is_analyzed:1;            /**< helper: set, if this irg was already analysed */
 } graph_entry_t;
 
 /**
