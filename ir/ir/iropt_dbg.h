@@ -76,10 +76,10 @@
 	} while(0)
 
 #define DBG_OPT_ALGSIM2                                               \
-  do {                                                          \
+  do {                                                                \
 	  ir_node *ons[3];                                            \
 	  ons[0] = oldn;                                              \
-	  ons[1] = get_unop_op(n);                                    \
+	  ons[1] = get_unop_op(oldn);                                 \
 	  ons[2] = n;                                                 \
 	  stat_merge_nodes(&n, 1, ons, SIZ(ons), STAT_OPT_ALGSIM);    \
 	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_algebraic_simplification); \
