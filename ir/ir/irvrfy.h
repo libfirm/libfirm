@@ -24,12 +24,11 @@
 # include "irnode.h"
 # include "irgraph.h"
 
-typedef enum _node_verification_t
-{
-  NODE_VERIFICATION_OFF        = 0,		/**< do not verify nodes at all */
-  NODE_VERIFICATION_ON         = 1,		/**< do node verification and assert on error in debug version */
-  NODE_VERIFICATION_REPORT     = 2,		/**< do node verification, but report to stderr only */
-  NODE_VERIFICATION_ERROR_ONLY = 3		/**< do node verification, but NEVER do assert nor report */
+typedef enum _node_verification_t {
+  NODE_VERIFICATION_OFF        = 0,	/**< do not verify nodes at all */
+  NODE_VERIFICATION_ON         = 1,	/**< do node verification and assert on error in debug version */
+  NODE_VERIFICATION_REPORT     = 2,	/**< do node verification, but report to stderr only */
+  NODE_VERIFICATION_ERROR_ONLY = 3	/**< do node verification, but NEVER do assert nor report */
 } node_verification_t;
 
 /** Select verification of nodes.
