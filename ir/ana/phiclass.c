@@ -40,7 +40,7 @@ static INLINE void phi_class_insert(pset *class, ir_node *phi, ir_node *member) 
 }
 
 /**
- * Unites two 'phi classes' repesented by two phi nodes.
+ * Unites two 'phi classes' represented by two phi nodes.
  * @param n Phi node representing phi class to reassign
  * @param new_tgt Phi node, which will hold the new bigger phi class
  */
@@ -48,7 +48,7 @@ static void phi_class_union(ir_node *n, ir_node *new_tgt) {
 	ir_node *p;
 	pset *src, *tgt;
 
-    assert(is_Phi(n) && is_Phi(new_tgt) && "These must be phi nodes.");
+	assert(is_Phi(n) && is_Phi(new_tgt) && "These must be phi nodes.");
 	DBG((dbgphi, 1, "\tcorrect %n\n", n));
 
 	/* copy all class members from n to new_tgt. Duplicates eliminated by pset */
@@ -69,9 +69,9 @@ static void phi_class_union(ir_node *n, ir_node *new_tgt) {
  */
 static void phi_class_det(ir_node *curr_phi) {
 	pset *pc;
-    int i, n;
-    assert(is_Phi(curr_phi) && "This must be a phi node.");
-    DBG((dbgphi, 1, "Det. phi class of %n.\n", curr_phi));
+	int i, n;
+	assert(is_Phi(curr_phi) && "This must be a phi node.");
+	DBG((dbgphi, 1, "Det. phi class of %n.\n", curr_phi));
 
 	pc = _get_phi_class(curr_phi);
 	if (!pc) {
@@ -128,10 +128,10 @@ void phi_class_compute(ir_graph *irg) {
 
 static void phi_class_destruction_walker(ir_node *node, void *env) {
 	if (is_Phi(node) && mode_is_datab(get_irn_mode(node))) {
-		pset *class = _get_phi_class(node);
-		if (class) {
-			free(class);
-			class = NULL;
+		pset *clss = _get_phi_class(node);
+		if (clss) {
+			del_pset(clss);
+			clss = NULL;
 		}
 	}
 }
