@@ -22,13 +22,14 @@ X_INCLUDES  =
 SHELL       = /bin/sh
 MAKE        = /usr/bin/make
 
-DISTRIBMEMBERS	 = ircons.m irdump.m irflag.m irgmod.m irgraph.m irgopt.m \
+DISTRIBMEMBERS = ircons.m irdump.m irflag.m irgmod.m irgraph.m irgopt.m \
            irgwalk.m irmode.m irnode.m irop.m iropt.m irprog.m irvrfy.m
 MEMBERS = $(DISTRIBMEMBERS)
 
 CFILES = $(MEMBERS:.m=.c)
 
 HFILES = $(MEMBERS:.m=.h)
+HFILES +=  irnode_t.h irgraph_t.h
 HFILES +=  array.h common.h cookies.h debug.h entity.h gmp.h  \
            host.h ident.h label.h misc.h obst.h pdeq.h pset.h \
            set.h tune.h tv.h type.h xprintf.h xp_help.h irnode2.h

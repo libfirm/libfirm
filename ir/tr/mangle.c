@@ -10,6 +10,7 @@
 # include "obst.h"
 # include "entity.h"
 # include <stdlib.h>
+# include "ident_t.h"
 
 /* Make types visible to allow most efficient access */
 # include "entity_t.h"

@@ -28,6 +28,7 @@
 # include <config.h>
 #endif
 
+# include "xprintf.h"
 #include <assert.h>
 #include <limits.h>
 #include <math.h>
@@ -40,8 +41,8 @@
 #include "obst.h"
 #include "ieee754.h"
 #include "tune.h"
-#include "ident.h"
-#include "tv.h"
+#include "ident_t.h"
+#include "tv_t.h"
 
 # include "entity_t.h"
 

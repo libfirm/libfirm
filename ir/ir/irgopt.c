@@ -6,12 +6,15 @@
 ** Optimizations for a whole ir graph, i.e., a procedure.
 */
 
+# include <assert.h>
+
 # include "irgopt.h"
 # include "irnode_t.h"
+# include "irgraph_t.h"
 # include "iropt.h"
 # include "irgwalk.h"
-# include "irgraph.h"
 # include "ircons.h"
+# include "misc.h"
 
 /********************************************************************/
 /* apply optimizations of iropt to all nodes.                       */

@@ -11,7 +11,7 @@
 #include <string.h>
 #include "array.h"
 #include "tune.h"
-#include "ident.h"
+#include "ident_t.h"
 #include "xprintf.h"
 
 #define XX_USER(name) ident *id_##name;
@@ -93,3 +93,20 @@ id_init (void)
 #undef XX_USER
 #undef XX_INTERNAL
 }
+
+
+#if 1
+inline ident *id_from_str (char *str, int len) {
+  assert (len > 0);
+  return  (const set_entry *)set_hinsert (id_set, (str), (len), ID_HASH ((str), (len)));
+}
+
+inline const char *id_to_str   (ident *id) {
+  return ((const char *)&(id)->dptr[0]);
+}
+
+inline int id_to_strlen(ident *id) {
+  return ((id)->size);
+}
+
+#endif

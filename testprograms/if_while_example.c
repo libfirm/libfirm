@@ -62,7 +62,7 @@ main(void)
   /* Generate two constants */
   set_value (0, new_Const (mode_I, tarval_from_long (mode_i, 0)));
   set_value (1, new_Const (mode_I, tarval_from_long (mode_i, 1)));
-  mature_block (irg->current_block);
+  mature_block (get_irg_current_block(irg));
 
   /* Generate a conditional branch */
   x = new_Cond (new_Proj(new_Cmp(new_Const (mode_I, tarval_from_long (mode_i, 0)),
@@ -122,8 +122,8 @@ main(void)
   }
 
   /* finalize the end block generated in new_ir_graph() */
-  add_in_edge (irg->end_block, x);
-  mature_block (irg->end_block);
+  add_in_edge (get_irg_end_block(irg), x);
+  mature_block (get_irg_end_block(irg));
 
   printf("Optimizing ...\n");
   dead_node_elimination(irg);

@@ -396,9 +396,9 @@ int is_fragile_op(ir_node *node);
 
 #define DDMSG        printf("%s(l.%i)\n", __FUNCTION__, __LINE__)
 #define DDMSG1(X)    printf("%s(l.%i) %s\n", __FUNCTION__, __LINE__,         \
-                            ID_TO_STR(get_irn_opname(X)))
+                            id_to_str(get_irn_opname(X)))
 #define DDMSG2(X)    printf("%s(l.%i) %s: %ld\n", __FUNCTION__, __LINE__,     \
-                     ID_TO_STR(get_irn_opname(X)), get_irn_node_nr(X))
+                     id_to_str(get_irn_opname(X)), get_irn_node_nr(X))
 
 #endif
 

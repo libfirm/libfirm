@@ -87,42 +87,42 @@ int main(int argc, char **argv)
   cond = new_Cond(new_Proj(new_Cmp(expr, c1), mode_b, Eq));
   f = new_Proj(cond, mode_X, 0);
   t = new_Proj(cond, mode_X, 1);
-  mature_block(irg->current_block);
+  mature_block(get_irg_current_block(irg));
 
   new_Block();
-  add_in_edge(irg->current_block, t);
+  add_in_edge(get_irg_current_block(irg), t);
   jmp = new_Jmp();
-  mature_block(irg->current_block);
+  mature_block(get_irg_current_block(irg));
 
   new_Block();
-  add_in_edge(irg->current_block, f);
+  add_in_edge(get_irg_current_block(irg), f);
   cond = new_Cond(new_Proj(new_Cmp(expr, c2), mode_b, Eq));
   f = new_Proj(cond, mode_X, 0);
   t = new_Proj(cond, mode_X, 1);
-  mature_block(irg->current_block);
+  mature_block(get_irg_current_block(irg));
 
   new_Block();
-  add_in_edge(irg->current_block, t);
-  add_in_edge(irg->current_block, jmp);
+  add_in_edge(get_irg_current_block(irg), t);
+  add_in_edge(get_irg_current_block(irg), jmp);
   jmp = new_Jmp();
-  mature_block(irg->current_block);
+  mature_block(get_irg_current_block(irg));
 
   new_Block();
-  add_in_edge(irg->current_block, f);
+  add_in_edge(get_irg_current_block(irg), f);
   t = new_Jmp();
-  mature_block(irg->current_block);
+  mature_block(get_irg_current_block(irg));
 
   new_Block();
-  add_in_edge(irg->current_block, t);
-  add_in_edge(irg->current_block, jmp);
+  add_in_edge(get_irg_current_block(irg), t);
+  add_in_edge(get_irg_current_block(irg), jmp);
   {
     ir_node *in[0]; /* this is the array containing the return parameters */
     x = new_Return (get_store(), 0, in);
   }
-  mature_block (irg->current_block);
+  mature_block (get_irg_current_block(irg));
 
-  add_in_edge (irg->end_block, x);
-  mature_block (irg->end_block);
+  add_in_edge (get_irg_end_block(irg), x);
+  mature_block (get_irg_end_block(irg));
 
   printf("Optimizing ...\n");
   dead_node_elimination(irg);

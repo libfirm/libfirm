@@ -57,16 +57,14 @@
 # define _FIRM_H_
 
 /* The representations */
-# include "irprog.h"
-# include "type.h"
-# include "entity.h"
+# include "irprog.h"     /* control flow and data of a program */
+# include "type.h"       /* type representation */
+# include "entity.h"     /* entity representation */
+# include "tv.h"         /* target values */
+# include "ident.h"      /* source code identificators */
 /* Functionality */
-# include "ircons.h"
-# include "irgopt.h"
-
-/* */
-# include "xprintf.h"
-
+# include "ircons.h"     /* construct ir */
+# include "irgopt.h"     /* optimize ir */
 
 /* initialize firm */
 void init_firm (void);

@@ -50,7 +50,7 @@ main(void)
   b = new_Const (mode_i, tarval_from_long (mode_i, 5));
 
   x = new_Jmp ();
-  mature_block (irg->current_block);
+  mature_block (get_irg_current_block(irg));
 
   /*  To test const eval on DivMod
   c = new_DivMod(get_store(), a, b);
@@ -74,8 +74,8 @@ main(void)
      x = new_Return (get_store (), 2, in);
   }
 
-  add_in_edge (irg->end_block, x);
-  mature_block (irg->end_block);
+  add_in_edge (get_irg_end_block(irg), x);
+  mature_block (get_irg_end_block(irg));
 
   printf("Optimizing ...\n");
   dead_node_elimination(irg);

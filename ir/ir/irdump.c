@@ -6,9 +6,9 @@
 ** irdump.h: dumping of an intermediate representation graph
 */
 
-# include <assert.h>
-# include "irdump.h"
 # include "irnode_t.h"
+# include "irgraph_t.h"
+# include "irdump.h"
 # include "panic.h"
 # include <string.h>
 # include "entity.h"

@@ -7,6 +7,7 @@
 
 # include "irop.h"
 # include "irnode_t.h"
+# include "misc.h"
 
 ir_op *op_Block;
 

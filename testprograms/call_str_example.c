@@ -76,7 +76,7 @@ int main(int argc, char **argv)
   /* this is how a pointer to be fixed by the linker is represented after
      lowering a Sel node. */
 #define FUNCTIONNAME "f"
-  proc_ptr = new_SymConst ((type_or_id_p)ID_FROM_STR (FUNCTIONNAME, strlen(FUNCTIONNAME)),
+  proc_ptr = new_SymConst ((type_or_id_p)id_from_str (FUNCTIONNAME, strlen(FUNCTIONNAME)),
 			   linkage_ptr_info);
 
   /* call procedure set_a, first built array with parameters */
@@ -95,13 +95,13 @@ int main(int argc, char **argv)
   }
   /* Now we generated all instructions for this block and all its predecessor blocks
    * so we can mature it. */
-  mature_block (irg->current_block);
+  mature_block (get_irg_current_block(irg));
 
   /* This adds the in edge of the end block which originates at the return statement.
    * The return node passes controlflow to the end block.  */
-  add_in_edge (irg->end_block, x);
+  add_in_edge (get_irg_end_block(irg), x);
   /* Now we can mature the end block as all it's predecessors are known. */
-  mature_block (irg->end_block);
+  mature_block (get_irg_end_block(irg));
 
   printf("Optimizing ...\n");
   dead_node_elimination(irg);

@@ -91,7 +91,7 @@ int main(int argc, char **argv)
   set_value(0, new_Const (mode_i, tarval_from_long (mode_i, 6)));
   f = new_Proj(cond, mode_X, 0);
   t = new_Proj(cond, mode_X, 1);
-  mature_block(irg->current_block);
+  mature_block(get_irg_current_block(irg));
 
   /* end block to add jmps */
   endBlock = new_Block();
@@ -112,7 +112,7 @@ int main(int argc, char **argv)
   cond = new_Cond(new_Proj(new_Cmp(c1, get_value(1, mode_i)), mode_b, Eq));
   f = new_Proj(cond, mode_X, 0);
   t = new_Proj(cond, mode_X, 1);
-  mature_block(irg->current_block);
+  mature_block(get_irg_current_block(irg));
 
   /* Block 2 */
   Block2 = new_Block();
@@ -135,11 +135,11 @@ int main(int argc, char **argv)
     in[0] = get_value(0, mode_i);
     x = new_Return (get_store(), 1, in);
   }
-  mature_block (irg->current_block);
+  mature_block (get_irg_current_block(irg));
 
   /* finish the Block with the end node */
-  add_in_edge (irg->end_block, x);
-  mature_block (irg->end_block);
+  add_in_edge (get_irg_end_block(irg), x);
+  mature_block (get_irg_end_block(irg));
 
   printf("Optimizing ...\n");
   dead_node_elimination(irg);

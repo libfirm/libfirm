@@ -46,6 +46,8 @@ TARGET = all
 .DEFAULT: $(TARGET)
 .SILENT: $(DFILES) clean  # hides output
 
+$(TARGET):      $(DFILES) $(OFILES)
+
 %.d:    %.c
 	$(SHELL) -ec '$(CXX) $(DEPENDFLAGS) $(INCLUDES) $(X_INCLUDES) $< | sed '\''s/\($*\)\.o[ :]*/\.\.\/objects\/\1.o $@ : /g'\'' > $@'
 
@@ -55,9 +57,6 @@ TARGET = all
 
 lib:
 	cp $(DISTRIB) ../../include
-
-
-$(TARGET):      $(DFILES) $(OFILES)
 
 clean:
 	rm -f $(OFILES) $(DFILES)

@@ -98,7 +98,7 @@ main(void)
 
   /* Now the "real" program: */
   /* Select the array from the stack frame.  */
-  array_ptr = new_simpleSel(get_store(), main_irg->frame, array_ent);
+  array_ptr = new_simpleSel(get_store(), get_irg_frame(main_irg), array_ent);
   /* Load element 3 of the array. For this first generate the pointer
      to this the element by a select node.  (Alternative: increase
      array pointer by (three * elt_size), but this complicates some
@@ -121,11 +121,11 @@ main(void)
 
      x = new_Return (get_store (), 1, in);
   }
-  mature_block (main_irg->current_block);
+  mature_block (get_irg_current_block(main_irg));
 
   /* complete the end_block */
-  add_in_edge (main_irg->end_block, x);
-  mature_block (main_irg->end_block);
+  add_in_edge (get_irg_end_block(main_irg), x);
+  mature_block (get_irg_end_block(main_irg));
 
   printf("Optimizing ...\n");
   dead_node_elimination(main_irg);

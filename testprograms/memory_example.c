@@ -88,7 +88,7 @@ main(void)
 
   /* finish this first block */
   x = new_Jmp ();
-  mature_block (irg->current_block);
+  mature_block (get_irg_current_block(irg));
 
   /* a loop body */
   r = new_Block ();
@@ -133,8 +133,8 @@ main(void)
      x = new_Return (new_Proj(x, mode_M, 0), 1, in);
   }
   mature_block (r);
-  add_in_edge (irg->end_block, x);
-  mature_block (irg->end_block);
+  add_in_edge (get_irg_end_block(irg), x);
+  mature_block (get_irg_end_block(irg));
 
   printf("Optimizing ...\n");
   dead_node_elimination(irg);

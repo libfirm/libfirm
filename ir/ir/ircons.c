@@ -9,6 +9,8 @@
 **   by Goetz Lindenmaier
 */
 
+# include "irgraph_t.h"
+# include "irnode_t.h"
 # include "ircons.h"
 # include "common.h"
 # include "irvrfy.h"
@@ -18,23 +20,23 @@
 # include "array.h"
 /* memset belongs to string.h */
 # include "string.h"
-# include "irnode_t.h"
 
 #if USE_EXPICIT_PHI_IN_STACK
 /* A stack needed for the automatic Phi node construction in constructor
-   Phi_in. */
+   Phi_in. Redefinition in irgraph.c!! */
 struct Phi_in_stack {
   ir_node **stack;
   int       pos;
 };
+typedef struct Phi_in_stack Phi_in_stack;
 #endif
 
 /*********************************************** */
 /** privat interfaces, for professional use only */
 
 /* Constructs a Block with a fixed number of predecessors.
-   Does not set current_block. */
-
+   Does not set current_block.  Can not be used with automatic
+   Phi node construction. */
 inline ir_node *
 new_r_Block (ir_graph *irg,  int arity, ir_node **in)
 {
@@ -42,6 +44,7 @@ new_r_Block (ir_graph *irg,  int arity, ir_node **in)
 
   res = new_ir_node (irg, NULL, op_Block, mode_R, arity, in);
   set_Block_matured(res, 1);
+  set_Block_block_visited(res, 0);
 
   irn_vrfy (res);
   return res;
@@ -602,30 +605,35 @@ new_End (void)
   return res;
 }
 
+#if 0
+/* Constructs a Block with a fixed number of predecessors.
+   Does set current_block.  Can be used with automatic Phi
+   node construction. */
 ir_node *
-new_Block (void)
+new_Block (int arity, ir_node **in)
 {
   ir_node *res;
 
-  res = new_ir_node (current_ir_graph, NULL, op_Block, mode_R, -1, NULL);
+  res = new_r_Block (arity, in);
   current_ir_graph->current_block = res;
-  res->attr.block.matured = 0;
-  set_Block_block_visited(res, 0);
 
-  /* forget this optimization. use this only if mature !!!!
-  res = optimize (res); */
-  irn_vrfy (res);
-
-  /** create a new dynamic array, which stores all parameters in irnodes */
-  /** using the same obstack as the whole irgraph */
+  /* Create and initialize array for Phi-node construction. */
   res->attr.block.graph_arr = NEW_ARR_D (ir_node *, current_ir_graph->obst,
                                          current_ir_graph->params);
-
-  /** initialize the parameter array */
   memset(res->attr.block.graph_arr, 0, sizeof(ir_node *)*current_ir_graph->params);
+
+  res = optimize (res);
+  irn_vrfy (res);
 
   return res;
 }
+#else
+ir_node *
+new_Block (void)
+{
+  return new_immBlock();
+}
+#endif
 
 /*************************************************************************/
 /* Methods necessary for automatic Phi node creation                     */
@@ -1502,7 +1510,31 @@ new_Bad (void)
 /*************************************************************************/
 /* Comfortable interface with automatic Phi node construction.           */
 /* (Uses also constructors of ?? interface, except new_Block.            */
-/* add an adge to a jmp node */
+/*************************************************************************/
+
+/** Block construction **/
+/* immature Block without predecessors */
+ir_node *new_immBlock (void) {
+  ir_node *res;
+
+  /* creates a new dynamic in-array as length of in is -1 */
+  res = new_ir_node (current_ir_graph, NULL, op_Block, mode_R, -1, NULL);
+  current_ir_graph->current_block = res;
+  res->attr.block.matured = 0;
+  set_Block_block_visited(res, 0);
+
+  /* Create and initialize array for Phi-node construction. */
+  res->attr.block.graph_arr = NEW_ARR_D (ir_node *, current_ir_graph->obst,
+                                         current_ir_graph->params);
+  memset(res->attr.block.graph_arr, 0, sizeof(ir_node *)*current_ir_graph->params);
+
+  /* Immature block may not be optimized! */
+  irn_vrfy (res);
+
+  return res;
+}
+
+/* add an adge to a jmp/control flow node */
 void
 add_in_edge (ir_node *block, ir_node *jmp)
 {

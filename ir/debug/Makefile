@@ -55,7 +55,7 @@ TARGET = all
 $(TARGET):      $(DFILES) $(OFILES)
 
 lib:
-	cp $(DISTRIB) ../../include/
+#	cp $(DISTRIB) ../../include/
 
 clean:
 	rm -f $(OFILES) $(DFILES)

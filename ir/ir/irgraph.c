@@ -7,13 +7,19 @@
 */
 
 # include "ircons.h"
-# include "irgraph.h"
+# include "irgraph_t.h"
 # include "irprog.h"
-# include "iropt.h"
+# include "iropt_t.h"
 # include "array.h"
 # include "irgmod.h"
 
 ir_graph *current_ir_graph;
+
+#if USE_EXPICIT_PHI_IN_STACK
+/* really defined in ircons.c */
+typedef struct Phi_in_stack Phi_in_stack;
+Phi_in_stack *new_Phi_in_stack();
+#endif
 
 /* Allocates a list of nodes:
     - The start block containing a start node and Proj nodes for it's four

@@ -6,6 +6,7 @@
 **
 */
 
+# include "irgraph_t.h"
 # include "irvrfy.h"
 # include "irgwalk.h"
 
@@ -24,9 +25,6 @@ irn_vrfy (ir_node *n)
   opcode = get_irn_opcode (n);
   mymode = get_irn_mode (n);
   in = get_irn_in (n);
-
-//  IR_OP_VRFY (opcode);
-//  IR_MODE_VRFY (mymode);
 
   switch (opcode) {
 

@@ -2,9 +2,8 @@
    Copyright (C) 1995, 1996 Markus Armbruster
    All rights reserved. */
 
-#ifndef _MISC_H
-#define _MISC_H
-
+#ifndef _MISC_H_
+#define _MISC_H_
 
 /* Declare alloca() */
 
@@ -29,7 +28,7 @@ void *alloca ();
 
 
 #include "host.h"
-
+#include "bool.h"
 
 /* Alignment of nodes, cf common/tag.h, a power of two.
 
@@ -53,7 +52,6 @@ void *alloca ();
 
 #define IS_POW2(n) ((((n)-1) & (n)) == 0)
 
-typedef unsigned char bool;
 typedef int (*cmp_fun) (const void *, const void *);
 
 
@@ -80,4 +78,4 @@ extern const char *tmalloc_tag;
 # define XMALLOC_TRACE
 #endif
 
-#endif
+#endif /* _MISC_H_ */

@@ -29,8 +29,7 @@
 # ifndef _ENTITY_T_H_
 # define _ENTITY_T_H_
 
-# include "ident.h"
-# include "type.h"
+# include "entity.h"
 
 #ifndef _IR_GRAPH_TYPEDEF_
 #define _IR_GRAPH_TYPEDEF_

@@ -6,11 +6,12 @@
 */
 
 # include <stdio.h>
-# include "ident.h"
+# include "ident_t.h"
 # include "firm.h"
 # include "mangle.h"
 # include "xp_help.h"
 # include "irnode_t.h"
+# include "tv_t.h"
 
 void
 init_firm (void)

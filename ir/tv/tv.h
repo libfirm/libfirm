@@ -6,7 +6,7 @@
 
 # include "irmode.h"
 # include "entity.h"
-# include "xprintf.h"
+# include "bool.h"
 
 typedef struct tarval tarval;
 
@@ -132,7 +132,8 @@ tarval *tarval_shr (tarval *, tarval *);
 long tarval_classify (tarval *);
 long tarval_ord (tarval *, int *fail);
 
-int tarval_print (XP_PAR1, const xprintf_info *, XP_PARN);
+/* moved to tv_t.h
+   int tarval_print (XP_PAR1, const xprintf_info *, XP_PARN); */
 
 /* return a mode-specific value */
 

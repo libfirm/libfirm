@@ -9,6 +9,7 @@
 ** - execute the post function after recursion
 */
 
+#include "stdio.h"
 #include "irgwalk.h"
 #include "irgraph.h"
 #include "irnode.h"
@@ -166,7 +167,7 @@ void type_walk(ir_graph *irg,
   type_env->env = env;
 
   ++type_visited;
-  irg_walk(irg->end, start_type_walk, NULL, type_env);
+  irg_walk(get_irg_end(irg), start_type_walk, NULL, type_env);
 
   type_walk_2((type_or_ent *)get_irg_ent(irg), pre, post, env);
 

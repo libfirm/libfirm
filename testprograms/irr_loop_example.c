@@ -82,7 +82,7 @@ int main(int argc, char **argv)
   cond = new_Cond(new_Proj(new_Cmp(expr, c1), mode_b, Eq));
   f = new_Proj(cond, mode_X, 0);
   t = new_Proj(cond, mode_X, 1);
-  mature_block(irg->current_block);
+  mature_block(get_irg_current_block(irg));
 
   loopBlock1 = new_Block();
   add_in_edge(loopBlock1, t);
@@ -102,16 +102,16 @@ int main(int argc, char **argv)
   mature_block(loopBlock2);
 
   new_Block();
-  add_in_edge(irg->current_block, f_l2);
-  add_in_edge(irg->current_block, f_l1);
+  add_in_edge(get_irg_current_block(irg), f_l2);
+  add_in_edge(get_irg_current_block(irg), f_l1);
   {
     ir_node *in[0];
     x = new_Return (get_store(), 0, in);
   }
-  mature_block (irg->current_block);
+  mature_block (get_irg_current_block(irg));
 
-  add_in_edge (irg->end_block, x);
-  mature_block (irg->end_block);
+  add_in_edge (get_irg_end_block(irg), x);
+  mature_block (get_irg_end_block(irg));
 
   printf("Optimizing ...\n");
   dead_node_elimination(irg);

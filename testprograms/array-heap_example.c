@@ -135,11 +135,11 @@ main(void)
 
      x = new_Return (get_store (), 1, in);
   }
-  mature_block (main_irg->current_block);
+  mature_block (get_irg_current_block(main_irg));
 
   /* complete the end_block */
-  add_in_edge (main_irg->end_block, x);
-  mature_block (main_irg->end_block);
+  add_in_edge (get_irg_end_block(main_irg), x);
+  mature_block (get_irg_end_block(main_irg));
 
   printf("Optimizing ...\n");
   dead_node_elimination(main_irg);

@@ -14,6 +14,7 @@
 # ifndef _IROP_H_
 # define _IROP_H_
 
+# include <stddef.h>
 # include "ident.h"
 
 typedef enum {
@@ -44,7 +45,6 @@ extern ir_op *op_Jmp;
 extern ir_op *op_Cond;
 extern ir_op *op_Return;
 extern ir_op *op_Raise;
-
 extern ir_op *op_Sel;
 
 extern ir_op *op_Const;

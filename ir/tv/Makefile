@@ -27,6 +27,7 @@ MEMBERS	 =  $(DISTRIBMEMBERS)
 CFILES = $(MEMBERS:.m=.c)
 
 HFILES = $(MEMBERS:.m=.h)
+HFILES += tv_t.h
 HFILES += ieee754.h
 
 HFILES += common.h debug.h entity.h gmp.h ident.h irmode.h obst.h \
@@ -45,6 +46,8 @@ TARGET = all
 .DEFAULT: $(TARGET)
 .SILENT: $(DFILES) clean  # hides output
 
+$(TARGET):      $(DFILES) $(OFILES)
+
 %.d:    %.c
 	$(SHELL) -ec '$(CXX) $(DEPENDFLAGS) $(INCLUDES) $(X_INCLUDES) $< | sed '\''s/$*\\.o[ :]*/& $@/g'\'' > $@'
 
@@ -54,8 +57,6 @@ TARGET = all
 
 lib:
 	cp $(DISTRIB) ../../include
-
-$(TARGET):      $(DFILES) $(OFILES)
 
 clean:
 	rm -f $(OFILES) $(DFILES)

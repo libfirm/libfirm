@@ -1,3 +1,8 @@
+  15.8.2000 Goetz until 3.9.00
+  Separated irnode.h and many others into two files: one public
+  one private.
+  Added funcionality to extract headers for lib.
+
   23.8.2000 Goetz
   type_dump also dumps irg->ent
   if_example: corrected nr of locals

@@ -57,7 +57,7 @@ int main(int argc, char **argv)
   irg = new_ir_graph (ent, NUM_OF_LOCAL_VARS);
 
   /* get the first argument a of method main - see irgraph.h */
-  arg1 = new_Proj(irg->args, mode_i, 0);
+  arg1 = new_Proj(get_irg_args(irg), mode_i, 0);
 
   /* arg1 as first first local variable - makes things simple */
   set_value(0, arg1);
@@ -84,7 +84,7 @@ int main(int argc, char **argv)
   f = new_Proj (x, mode_X, 0); /* if condition is false */
   t = new_Proj (x, mode_X, 1); /* if condition is true */
 
-  mature_block (irg->current_block);
+  mature_block (get_irg_current_block(irg));
 
   /* generate and fill the then block */
   b = new_Block ();
@@ -107,13 +107,13 @@ int main(int argc, char **argv)
   }
   /* Now generate all instructions for this block and all its predecessor blocks
    * so we can mature it. */
-  mature_block (irg->current_block);
+  mature_block (get_irg_current_block(irg));
 
   /* This adds the in edge of the end block which originates at the
      return statement. The return node passes controlflow to the end block.*/
-  add_in_edge (irg->end_block, x);
+  add_in_edge (get_irg_end_block(irg), x);
   /* Now we can mature the end block as all it's predecessors are known. */
-  mature_block (irg->end_block);
+  mature_block (get_irg_end_block(irg));
 
   printf("Optimizing ...\n");
   dead_node_elimination(irg);

@@ -20,7 +20,6 @@
 
 # include "irnode.h"
 # include "type.h"
-/*# include "obst.h"*/
 
 struct ir_prog {
   firm_kind kind;

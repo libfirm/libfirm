@@ -133,11 +133,11 @@ main(void)
 
      x = new_Return (get_store (), 1, in);
   }
-  mature_block (main_irg->current_block);
+  mature_block (get_irg_current_block(main_irg));
 
   /* complete the end_block */
-  add_in_edge (main_irg->end_block, x);
-  mature_block (main_irg->end_block);
+  add_in_edge (get_irg_end_block(main_irg), x);
+  mature_block (get_irg_end_block(main_irg));
 
   irg_vrfy(main_irg);
 
@@ -148,8 +148,8 @@ main(void)
   set_a_irg = new_ir_graph (proc_set_e, 4);
 
   /* get the procedure parameter */
-  self = new_Proj(set_a_irg->args, mode_p, 0);
-  par1 = new_Proj(set_a_irg->args, mode_I, 1);
+  self = new_Proj(get_irg_args(set_a_irg), mode_p, 0);
+  par1 = new_Proj(get_irg_args(set_a_irg), mode_I, 1);
   /* Create and select the entity to set */
   class_langint = new_type_class(id_from_str ("Int", 3));
   a_e = new_entity((type *)class_prima, id_from_str ("a", 1),
@@ -160,11 +160,11 @@ main(void)
 
   /* return nothing */
   x = new_Return (get_store (), 0, NULL);
-  mature_block (set_a_irg->current_block);
+  mature_block (get_irg_current_block(set_a_irg));
 
   /* complete the end_block */
-  add_in_edge (set_a_irg->end_block, x);
-  mature_block (set_a_irg->end_block);
+  add_in_edge (get_irg_end_block(set_a_irg), x);
+  mature_block (get_irg_end_block(set_a_irg));
 
   irg_vrfy(set_a_irg);
 
@@ -175,8 +175,8 @@ main(void)
   c_irg = new_ir_graph (proc_c_e, 4);
 
   /* get the procedure parameter */
-  self = new_Proj(c_irg->args, mode_p, 0);
-  par1 = new_Proj(c_irg->args, mode_I, 1);
+  self = new_Proj(get_irg_args(c_irg), mode_p, 0);
+  par1 = new_Proj(get_irg_args(c_irg), mode_I, 1);
 
   /* Select the entity and load the value */
   a_ptr = new_simpleSel(get_store(), self, a_e);
@@ -191,23 +191,18 @@ main(void)
 
     x = new_Return (get_store (), 1, in);
   }
-  mature_block (c_irg->current_block);
+  mature_block (get_irg_current_block(c_irg));
 
   /* complete the end_block */
-  add_in_edge (c_irg->end_block, x);
-  mature_block (c_irg->end_block);
+  add_in_edge (get_irg_end_block(c_irg), x);
+  mature_block (get_irg_end_block(c_irg));
 
   /* verify the graph */
   irg_vrfy(main_irg);
 
   printf("Optimizing ...\n");
-  /*
   for (i = 0; i < get_irp_n_irgs(); i++)
     dead_node_elimination(get_irp_irg(i));
-  */
-  dead_node_elimination(main_irg );
-  dead_node_elimination(c_irg    );
-  dead_node_elimination(set_a_irg);
 
   /****************************************************************************/
 

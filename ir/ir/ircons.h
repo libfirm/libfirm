@@ -1089,17 +1089,14 @@
 # include "entity.h"
 # include "tv.h"
 # include "type.h"
-# include "pdeq.h"
-
-#if USE_EXPICIT_PHI_IN_STACK
-/* A stack needed for the automatic Phi node construction in constructor
-   Phi_in. */
-typedef struct Phi_in_stack Phi_in_stack;
-#endif
 
 /***************************************************************************/
 /* The raw interface                                                       */
+/***************************************************************************/
 
+/* Constructs a Block with a fixed number of predecessors.
+   Does not set current_block.  Can not be used with automatic
+   Phi node construction. */
 ir_node *new_r_Block  (ir_graph *irg,  int arity, ir_node **in);
 ir_node *new_r_Start  (ir_graph *irg, ir_node *block);
 ir_node *new_r_End    (ir_graph *irg, ir_node *block);
@@ -1179,6 +1176,7 @@ ir_node *new_r_Bad    ();
 
 /*************************************************************************/
 /* The block oriented interface                                          */
+/*************************************************************************/
 
 /* Sets the current block in which the following constructors place the
    nodes they construct. */
@@ -1189,6 +1187,9 @@ void switch_block (ir_node *target);
    and add a new one so dass das dann so aussieht:
    passe die Beispeilprogramme an! */
 #if 0
+/* Constructs a Block with a fixed number of predecessors.
+   Does set current_block.  Can be used with automatic Phi
+   node construction. */
 ir_node *new_Block(int arity, ir_node **in);     /* creates mature Block */
 #else
 ir_node *new_Block  (void);
@@ -1243,6 +1244,7 @@ ir_node *new_Bad    (void);
 /* Supports automatic Phi node construction.                           */
 /* All routines of the block oriented interface except new_Block are   */
 /* needed also.                                                        */
+/***********************************************************************/
 
 /** Block construction **/
 /* immature Block without predecessors */
@@ -1252,7 +1254,7 @@ ir_node *new_immBlock (void);
 void add_in_edge (ir_node *immblock, ir_node *jmp);
 
 /* fixes the number of predecessors of a block. */
-void     mature_block (ir_node *block);
+void mature_block (ir_node *block);
 
 /** Parameter administration **/
 /* Read a value from the array with the local variables.  Use this
@@ -1272,15 +1274,9 @@ ir_node *get_store (void);
 /* Write a store. */
 void set_store (ir_node *store);
 
-/* This function is for internal use only.  It is visible as it is needed
-   in irgraph.c to create the stack that is needed for automatic Phi
-   construction. */
-#if USE_EXPICIT_PHI_IN_STACK
-Phi_in_stack *new_Phi_in_stack();
-#endif
-
-/**************************************************************************/
-/* initialize ir construction                                             */
+/***********************************************************************/
+/* initialize ir construction                                          */
+/***********************************************************************/
 void init_cons (void);
 
 

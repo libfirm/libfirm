@@ -7,7 +7,8 @@
 */
 
 # include "irnode_t.h"
-# include "iropt.h"
+# include "irgraph_t.h"
+# include "iropt_t.h"
 # include "ircons.h"
 # include "irgmod.h"
 # include "irvrfy.h"

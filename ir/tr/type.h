@@ -227,7 +227,7 @@ type_class *new_type_class (ident *name);
 
 /* manipulate fields of type_class */
 
-char  *get_class_name  (type_class *class);
+const char  *get_class_name  (type_class *class);
 ident *get_class_ident (type_class *class);
 
 /* Not necessary now!

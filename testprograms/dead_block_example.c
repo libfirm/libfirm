@@ -87,7 +87,7 @@ int main(int argc, char **argv)
   cond = new_Cond(new_Proj(new_Cmp(c1, c2), mode_b, Eq));
   f = new_Proj(cond, mode_X, 0);
   t = new_Proj(cond, mode_X, 1);
-  mature_block(irg->current_block);
+  mature_block(get_irg_current_block(irg));
 
   /* end block to add jmps */
   endBlock = new_Block();
@@ -120,10 +120,10 @@ int main(int argc, char **argv)
     get_store();
     x = new_Return (get_store(), 1, in);
   }
-  mature_block (irg->current_block);
+  mature_block (get_irg_current_block(irg));
 
-  add_in_edge (irg->end_block, x);
-  mature_block (irg->end_block);
+  add_in_edge (get_irg_end_block(irg), x);
+  mature_block (get_irg_end_block(irg));
 
   printf("Optimizing ...\n");
   local_optimize_graph (irg);

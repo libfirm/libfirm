@@ -11,7 +11,6 @@
 
 # include "irnode.h"
 
-
 /* Turns a node into a "useless" Tuple.  The Tuple just forms a tuple
    from several inputs.  The tuples predecessors have to be
    set by hand.

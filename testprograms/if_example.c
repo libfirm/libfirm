@@ -33,7 +33,6 @@ main(void)
   type_primitive *typ;
   ir_node *x, *r, *t, *f, *a, *cmp;
   int a_pos, b_pos;
-  FILE *outfile;
 
   printf("\nCreating an IR graph: IF_EXAMPLE...\n");
 
@@ -52,7 +51,7 @@ main(void)
                     (type *)proc_main);
 
 #define RES_NAME "int"
-  typ = new_type_primitive(ID_FROM_STR(RES_NAME, strlen(RES_NAME)), mode_i);
+  typ = new_type_primitive(id_from_str(RES_NAME, strlen(RES_NAME)), mode_i);
   set_method_param_type(proc_main, 0, (type*)typ);
   set_method_res_type(proc_main, 0, (type*)typ);
 
@@ -67,7 +66,7 @@ main(void)
   set_value (a_pos, new_Proj (get_irg_args(irg), mode_i, 0));
   /*set_value (a_pos, new_Const (mode_i, tarval_from_long (mode_i, 0)));*/
   set_value (b_pos, new_Const (mode_i, tarval_from_long (mode_i, 2)));
-  mature_block (irg->current_block);
+  mature_block (get_irg_current_block(irg));
 
   /* Generate a conditional branch */
   cmp = new_Cmp(get_value(a_pos, mode_i), get_value(b_pos, mode_i));
@@ -100,8 +99,8 @@ main(void)
   }
 
   /* finalize the end block generated in new_ir_graph() */
-  add_in_edge (irg->end_block, x);
-  mature_block (irg->end_block);
+  add_in_edge (get_irg_end_block(irg), x);
+  mature_block (get_irg_end_block(irg));
 
 
   printf("Optimizing ...\n");

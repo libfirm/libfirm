@@ -46,10 +46,10 @@ new_type_class (ident *name)//, int members)
 }
 
 /* manipulate fields of type_class */
-char *
+const char *
 get_class_name  (type_class *class) {
   assert(class);
-  return ID_TO_STR(class->name);
+  return id_to_str(class->name);
 }
 
 /* field: ident */

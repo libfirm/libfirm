@@ -10,6 +10,7 @@
 # define _IRNODE_T_H_
 
 # include "irnode.h"
+# include "xprintf.h"
 
 /** ir node attributes **/
 /* Block attributes */

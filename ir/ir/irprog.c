@@ -8,6 +8,7 @@
 
 # include "irprog.h"
 # include "array.h"
+# include "obst.h"
 
 #define GLOBAL_TYPE_NAME "GlobalType"
 

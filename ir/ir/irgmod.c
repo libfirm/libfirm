@@ -7,6 +7,7 @@
 */
 
 # include "irnode_t.h"
+# include "irgraph_t.h"
 # include "irgmod.h"
 # include "array.h"
 
