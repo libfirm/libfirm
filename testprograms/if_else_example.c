@@ -120,9 +120,9 @@ int main(int argc, char **argv)
   /* Now we can mature the end block as all it's predecessors are known. */
   mature_block (get_irg_end_block(irg));
 
-  printf("Optimizing ...\n");
-  //dead_node_elimination(irg);
+  printf("\nOptimizing ...\n");
   local_optimize_graph(irg);
+  dead_node_elimination(irg);
 
   /* verify the graph */
   irg_vrfy(irg);
