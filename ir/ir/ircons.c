@@ -1479,8 +1479,8 @@ new_rd_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
      Phi node merges the same definition on several paths and therefore
      is not needed. Don't consider Bad nodes! */
   known = res;
-  DDMN(res);  // GL
-  if (phi0) DDMN(phi0); else printf(" phi0 == NULL\n");
+  //DDMN(res);  // GL
+  //if (phi0) DDMN(phi0); else printf(" phi0 == NULL\n");
 
   for (i=0;  i < ins;  ++i)
   {
@@ -1496,7 +1496,7 @@ new_rd_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
        they still refer to the Phi0 they will replace.  So replace right now. */
     if (phi0 && in[i] == phi0) in[i] = res;
 
-    { printf("  "); DDMN(in[i]); } // GL
+    //{ printf("  "); DDMN(in[i]); } // GL
 
     if (in[i]==res || in[i]==known || is_Bad(in[i])) continue;
 
@@ -1508,7 +1508,7 @@ new_rd_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
 
   /* i==ins: there is at most one predecessor, we don't need a phi node. */
   if (i == ins) {
-    printf("  removing Phi node\n"); // GL
+    //printf("  removing Phi node\n"); // GL
     if (res != known) {
       obstack_free (current_ir_graph->obst, res);
       res = known;
@@ -1838,7 +1838,7 @@ mature_block (ir_node *block)
   ir_node *n, **nin;
   ir_node *next;
 
-  DDMN(block); // GL
+  //DDMN(block); // GL
 
   assert (get_irn_opcode(block) == iro_Block);
   /* @@@ should be commented in
