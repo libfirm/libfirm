@@ -221,25 +221,29 @@ ir_graph *new_const_code_irg(void) {
                        iropt.c */
   res->ent = NULL;
   res->frame_type  = NULL;
-  res->start_block = new_immBlock ();
+
+  /* -- The end block -- */
   res->end_block  = new_immBlock ();
   res->end        = new_End ();
   res->end_reg    = res->end;
   res->end_except = res->end;
   mature_immBlock(get_cur_block());  /* mature the end block */
+
+  /* -- The start block -- */
+  res->start_block = new_immBlock ();
   res->bad     = new_ir_node (NULL, res, res->start_block, op_Bad, mode_T, 0, NULL);
   res->no_mem  = new_ir_node (NULL, res, res->start_block, op_NoMem, mode_M, 0, NULL);
   res->start   = new_Start ();
-  res->initial_mem = new_Proj (res->start, mode_M, pn_Start_M);
-
   /* Proj results of start node */
-  projX        = new_Proj (res->start, mode_X, pn_Start_X_initial_exec);
+  res->initial_mem = new_Proj (res->start, mode_M, pn_Start_M);
+  projX            = new_Proj (res->start, mode_X, pn_Start_X_initial_exec);
   add_immBlock_pred (res->start_block, projX);
   mature_immBlock   (res->start_block);  /* mature the start block */
 
   add_immBlock_pred (new_immBlock (), projX);
   mature_immBlock   (get_cur_block());   /* mature the 'body' block for expressions */
-  /* Set the visited flag high enough that the block will never be visited. */
+
+  /* Set the visited flag high enough that the blocks will never be visited. */
   set_irn_visited(get_cur_block(), -1);
   set_Block_block_visited(get_cur_block(), -1);
   set_Block_block_visited(res->start_block, -1);
