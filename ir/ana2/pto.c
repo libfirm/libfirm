@@ -38,6 +38,7 @@
 # include "irmemwalk.h"
 
 # define DBGPRINT(lvl, msg) if (get_pto_verbose () > lvl) { fprintf msg; }
+# define DBGEXE(lvl, cmd) if (get_pto_verbose () > lvl) { cmd; }
 
 /*
   Local Protos
@@ -291,14 +292,14 @@ static void pto_node_obj_load (ir_node *load, ir_node *ptr,
     pto_t *old = get_pto (load);
 
     if (pto_is_dummy (old)) {
-      DBGPRINT (0, (stdout, "%s: dummy pto (0x%08x) from load[%li]\n",
+      DBGPRINT (1, (stdout, "%s: dummy pto (0x%08x) from load[%li]\n",
                     __FUNCTION__, (int) old, get_irn_node_nr (load)));
     }
 
     pto_delete (old);
   }
 
-  DBGPRINT (0, (stdout, "%s: obj load from ent (0x%08x) \"%s.%s\"\n",
+  DBGPRINT (1, (stdout, "%s: obj load from ent (0x%08x) \"%s.%s\"\n",
                 __FUNCTION__,
                 (int) ent,
                 own_name,
@@ -309,24 +310,23 @@ static void pto_node_obj_load (ir_node *load, ir_node *ptr,
   pto_t *res = pto_new_empty (load);
   obj_desc_t *obj_desc = (obj_desc_t*) qset_start (objs);
 
-  /*   fprintf (stdout, "%s: load ptr = ", __FUNCTION__); */
-  /*   qset_print (ptr_objs->objs, stdout); */
+  DBGPRINT (1, (stdout, "%s: ptr_pto = ", __FUNCTION__));
+  DBGEXE (1, qset_print (objs, stdout));
 
   while (NULL != obj_desc) {
     qset_t *cnts = pto_lookup (obj_desc, ent);
 
-    pto_add_all_names (res, cnts);
+    DBGPRINT (1, (stdout, "%s: cnts = ", __FUNCTION__));
+    DBGEXE (1, qset_print (cnts, stdout));
 
-    /*     fprintf (stdout, "%s: load val = ", __FUNCTION__); */
-    /*     qset_print (cnts, stdout); */
+    pto_add_all_names (res, cnts);
 
     obj_desc = (obj_desc_t*) qset_next (objs);
   }
 
-  /*   fprintf (stdout, "%s: load res = ", __FUNCTION__); */
-  /*   qset_print (res->objs, stdout); */
-
   set_pto (load, res);
+
+  DBGPRINT (1, (stdout, "%s\n", __FUNCTION__));
 }
 
 static void pto_node_arr_load (ir_node *load, ir_node *ptr,
@@ -353,7 +353,7 @@ static void pto_node_arr_load (ir_node *load, ir_node *ptr,
     return;
   }
 
-  DBGPRINT (0, (stdout, "%s: array load from ent (0x%08x) \"%s.%s\"\n",
+  DBGPRINT (1, (stdout, "%s: array load from ent (0x%08x) \"%s.%s\"\n",
                 __FUNCTION__,
                 (int) ent,
                 own_name,
@@ -438,7 +438,7 @@ static void pto_node_obj_store (ir_node *store,
   const char *ent_name = (char*) get_entity_name (ent);
   const char *own_name = (char*) get_type_name (get_entity_owner (ent));
 
-  DBGPRINT (0, (stdout, "%s: obj store from ent (0x%08x) \"%s.%s\"\n",
+  DBGPRINT (1, (stdout, "%s: obj store to ent (0x%08x) \"%s.%s\"\n",
                 __FUNCTION__,
                 (int) ent, own_name, ent_name));
 
@@ -449,13 +449,24 @@ static void pto_node_obj_store (ir_node *store,
 
   obj_desc_t *obj_desc = (obj_desc_t*) qset_start (objs);
 
+  DBGPRINT (1, (stdout, "%s: ptr_pto = ", __FUNCTION__));
+  DBGEXE (1, qset_print (objs, stdout));
+
+  DBGPRINT (1, (stdout, "%s: ptr_val = ", __FUNCTION__));
+  DBGEXE (1, qset_print (vals, stdout));
+
   while (NULL != obj_desc) {
     qset_t *cnts = pto_lookup (obj_desc, ent);
 
     qset_insert_all (cnts, vals);
 
+    DBGPRINT (1, (stdout, "%s: cnts = ", __FUNCTION__));
+    DBGEXE (1, qset_print (cnts, stdout));
+
     obj_desc = (obj_desc_t*) qset_next (objs);
   }
+
+  DBGPRINT (1, (stdout, "%s\n", __FUNCTION__));
 }
 
 static void pto_node_arr_store (ir_node *store,
@@ -475,7 +486,7 @@ static void pto_node_arr_store (ir_node *store,
   const char *ent_name = (char*) get_entity_name (ent);
   const char *own_name = (char*) get_type_name (get_entity_owner (ent));
 
-  DBGPRINT (0, (stdout, "%s: array store from ent (0x%08x) \"%s.%s\"\n",
+  DBGPRINT (1, (stdout, "%s: array store to ent (0x%08x) \"%s.%s\"\n",
                 __FUNCTION__,
                 (int) ent, own_name, ent_name));
 
@@ -531,12 +542,24 @@ static void pto_node_alloc (ir_node *alloc, void *env)
     so far: nothing to do
     todo:
     invent new name
- */
+  */
 
-  type *tp = get_Alloc_type (alloc);
+  if (NULL == get_pto (alloc)) {
+    type *tp = get_Alloc_type (alloc);
 
-  pto_t *alloc_pto = pto_new_name (alloc, tp);
-  set_pto (alloc, alloc_pto);
+    pto_t *alloc_pto = pto_new_name (alloc, tp);
+    set_pto (alloc, alloc_pto);
+    DBGPRINT (0, (stdout, "%s (%s[%li]): new pto\n",
+                  __FUNCTION__,
+                  get_op_name (get_irn_op (alloc)),
+                  get_irn_node_nr (alloc)));
+  } else {
+    DBGPRINT (0, (stdout, "%s (%s[%li]): reusing pto\n",
+                  __FUNCTION__,
+                  get_op_name (get_irn_op (alloc)),
+                  get_irn_node_nr (alloc)));
+  }
+
 }
 
 static void pto_node_free (ir_node *free, void *env)
@@ -712,7 +735,7 @@ static void pto_node_cnst (ir_node *cnst, void *env)
     if this represents something nameable, name it
   */
   type *tp = get_Const_type (cnst);
-  pto_t *cnst_pto = pto_new_name (cnst, tp);
+  pto_t *cnst_pto = pto_new_name (cnst, tp); /* WRONG */
 
 
   set_pto (cnst, cnst_pto);
@@ -727,12 +750,36 @@ static void pto_node_sym_cnst (ir_node *sym_cnst, void *env)
     todo:
     if this represents something nameable, name it
   */
-  type *tp = get_entity_type (get_SymConst_entity (sym_cnst));
+  entity *ent = get_SymConst_entity (sym_cnst);
+  type *tp = get_entity_type (ent);
 
-  if (is_class_type (tp)) {
-  pto_t *sym_cnst_pto = pto_new_name (sym_cnst, tp);
+  if (is_pointer_type (tp)) {
+    tp = get_pointer_points_to_type (tp);
+    pto_t *sym_cnst_pto = (pto_t*) get_entity_link (ent);
 
-  set_pto (sym_cnst, sym_cnst_pto);
+    DBGPRINT (2, (stdout, "%s: SymConst (%ld) (%s)\n",
+                  __FUNCTION__,
+                  get_irn_node_nr (sym_cnst),
+                  get_op_name (get_irn_op (sym_cnst))));
+
+
+    if (NULL == sym_cnst_pto) {
+      sym_cnst_pto = pto_new_name (sym_cnst, tp);
+
+      DBGPRINT (1, (stdout, "%s: SymConst (%ld) (%s): NEW PTO\n",
+                    __FUNCTION__,
+                    get_irn_node_nr (sym_cnst),
+                    get_op_name (get_irn_op (sym_cnst))));
+
+      set_entity_link (ent, sym_cnst_pto);
+    } else {
+      DBGPRINT (1, (stdout, "%s: SymConst (%ld) (%s): reusing pto\n",
+                    __FUNCTION__,
+                    get_irn_node_nr (sym_cnst),
+                    get_op_name (get_irn_op (sym_cnst))));
+    }
+
+    set_pto (sym_cnst, sym_cnst_pto);
   } else {
     /* nothing to do */
   }
@@ -747,12 +794,13 @@ static void pto_node_end_block (ir_node *end, void *env)
     todo:
     collect results, set to node.
   */
-  type *tp = get_entity_type (get_irg_entity (get_irn_irg (end)));
+  entity *ent = get_irg_entity (get_irn_irg (end));
+  type *tp = get_entity_type (ent);
 
-    DBGPRINT (2, (stdout, "%s: End Block (%ld) (%s)\n",
-                  __FUNCTION__,
-                  get_irn_node_nr (end),
-                  get_op_name (get_irn_op (end))));
+  DBGPRINT (2, (stdout, "%s: End Block (%ld) (%s)\n",
+                __FUNCTION__,
+                get_irn_node_nr (end),
+                get_op_name (get_irn_op (end))));
 
   if (0 != get_method_n_ress (tp)) {
     tp = get_method_res_type (tp, 0);
@@ -760,13 +808,17 @@ static void pto_node_end_block (ir_node *end, void *env)
     if (mode_P == get_type_mode (tp)) {
       int i;
       int n_ins = get_irn_arity (end);
-      pto_t *end_pto = pto_new_name (end, get_pointer_points_to_type (tp));
+      pto_t *end_pto = pto_new_empty (end);
 
       for (i = 0; i < n_ins; i ++) {
         ir_node *ret = get_irn_n (end, i);
 
-        pto_t *ret_pto = get_pto (ret);
-        assert (ret_pto);
+        if (iro_Return == get_irn_opcode (ret)) {
+          pto_t *ret_pto = get_pto (ret);
+          assert (ret_pto);
+
+          pto_add_all_names (end_pto, ret_pto->objs);
+        }
       }
 
       set_pto (end, end_pto);
@@ -894,11 +946,18 @@ static void clear_type_link (type_or_ent *thing, void *__unused)
     type *tp = (type*) thing;
 
     if (is_class_type (tp)) {
-      DBGPRINT (4, (stdout, "%s (\"%s\")\n",
+      DBGPRINT (1, (stdout, "%s (\"%s\")\n",
                     __FUNCTION__, get_type_name (tp)));
 
       set_type_link (tp, NULL);
     }
+  } else if (is_entity (thing)) {
+    entity *ent = (entity*) thing;
+
+    DBGPRINT (1, (stdout, "%s (\"%s\")\n",
+                  __FUNCTION__, get_entity_name (ent)));
+
+    set_entity_link (ent, NULL);
   }
 }
 
@@ -956,6 +1015,7 @@ void pto_run (int do_verbose)
 {
   /* int i; */
   set_pto_verbose (do_verbose);
+  set_pto_verbose (2);
 
   DBGPRINT (0, (stdout, "START PTO\n"));
 
@@ -1009,6 +1069,9 @@ void pto_cleanup ()
 
 /*
  * $Log$
+ * Revision 1.6  2004/11/09 16:47:09  liekweg
+ * fix SymConst handling
+ *
  * Revision 1.5  2004/11/08 12:33:06  liekweg
  * initialisation; sanitize print levels, misc fixes
  *
