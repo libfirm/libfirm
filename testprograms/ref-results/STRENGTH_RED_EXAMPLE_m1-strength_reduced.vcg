@@ -165,6 +165,7 @@ arity: 0
 kind addr_ent
 entity GlobalType.a (21)
 
+SymConst of type type_unknown
 "}
 edge: {sourcename: "n81" targetname: "n81n48" label: "0" class:16 priority:10}
 edge: {sourcename: "n81" targetname: "n80" label: "1" class:1  priority:50}
@@ -307,6 +308,7 @@ arity: 0
 kind addr_ent
 entity GlobalType.a (21)
 
+SymConst of type type_unknown
 "}
 edge: {sourcename: "n53" targetname: "n53n48" label: "0" class:16 priority:10}
 edge: {sourcename: "n53" targetname: "n52" label: "1" class:1  priority:50}

@@ -179,6 +179,7 @@ visited: 25
 irg:     OO_INLINE_EXAMPLE_main
 arity: 0
 kind size
+SymConst of type type_unknown
 "}
 node: {title: "n38" label: "0x5Is  38"  info1: "mode:    Is
 visited: 25

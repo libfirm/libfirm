@@ -60,7 +60,7 @@ node: {title: "e17" label: "ent PRIMA_set_a" color: yellow
   type:  set_a (15)
   owner: PRIMA (12)
   Does not overwrite other entities.
-  Is not overwriten by other entities.
+  Is not overwritten by other entities.
   allocation:  allocation_static
   visibility:  visibility_local
   variability: variability_constant
@@ -79,7 +79,7 @@ node: {title: "e20" label: "ent PRIMA_c" color: yellow
   type:  c (18)
   owner: PRIMA (12)
   Does not overwrite other entities.
-  Is not overwriten by other entities.
+  Is not overwritten by other entities.
   allocation:  allocation_static
   visibility:  visibility_local
   variability: variability_constant

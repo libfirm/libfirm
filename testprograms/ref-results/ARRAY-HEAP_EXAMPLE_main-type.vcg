@@ -92,7 +92,7 @@ node: {title: "e14" label: "ent ARRAY-HEAP_EXAMPLE_main" color: yellow
   type:  ARRAY-HEAP_EXAMPLE_main (12)
   owner: GlobalType (0)
   Does not overwrite other entities.
-  Is not overwriten by other entities.
+  Is not overwritten by other entities.
   allocation:  allocation_static
   visibility:  visibility_local
   variability: variability_constant
@@ -113,6 +113,7 @@ arity: 0
 kind addr_ent
 entity GlobalType.ARRAY-HEAP_EXAMPLE_main (14)
 
+SymConst of type type_unknown
 "}
 node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1b,

@@ -101,6 +101,7 @@ visited: 9
 irg:     CALL_STR_EXAMPLE_main
 arity: 0
 kind addr_name
+SymConst of type type_unknown
 "}
 node: {title: "n47" label: "SymC &constStr  47"  info1: "mode:    P
 visited: 9
@@ -109,6 +110,7 @@ arity: 0
 kind addr_ent
 entity GlobalType.constStr (17)
 
+SymConst of type type_unknown
 "}
 node: {title: "n40" label: "ProjX 0 40"  info1: "mode:    X
 visited: 9

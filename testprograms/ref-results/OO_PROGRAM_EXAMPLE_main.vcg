@@ -174,6 +174,7 @@ visited: 19
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 0
 kind size
+SymConst of type type_unknown
 "}
 edge: {sourcename: "n41" targetname: "n33" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n41" targetname: "n41n39" label: "1" class:16 priority:10}

@@ -74,7 +74,7 @@ node: {title: "e15" label: "ent WHILE_EXAMPLE_main" color: yellow
   type:  main_tp (12)
   owner: WHILE_EXAMPLE (13)
   Does not overwrite other entities.
-  Is not overwriten by other entities.
+  Is not overwritten by other entities.
   allocation:  allocation_static
   visibility:  visibility_local
   variability: variability_constant
@@ -95,6 +95,7 @@ arity: 0
 kind addr_ent
 entity WHILE_EXAMPLE.main (15)
 
+SymConst of type type_unknown
 "}
 node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1b,

@@ -118,6 +118,7 @@ arity: 0
 kind addr_ent
 entity PRIMA.c (20)
 
+SymConst of type type_unknown
 "}
 edge: {sourcename: "n190" targetname: "n190n165" label: "0" class:16 priority:10}
 }
@@ -147,6 +148,7 @@ visited: 51
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 0
 kind size
+SymConst of type type_unknown
 "}
 edge: {sourcename: "n41" targetname: "n33" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n41" targetname: "n41n39" label: "1" class:16 priority:10}
@@ -170,6 +172,7 @@ arity: 0
 kind addr_ent
 entity PRIMA.set_a (17)
 
+SymConst of type type_unknown
 "}
 edge: {sourcename: "n184" targetname: "n184n166" label: "0" class:16 priority:10}
 }

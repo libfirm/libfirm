@@ -180,6 +180,7 @@ arity: 0
 kind addr_ent
 entity GlobalType.a (171)
 
+SymConst of type type_unknown
 "}
 edge: {sourcename: "n204" targetname: "n202" label: "0" class:1  priority:50}
 edge: {sourcename: "n204" targetname: "n204n186" label: "1" class:16 priority:10}

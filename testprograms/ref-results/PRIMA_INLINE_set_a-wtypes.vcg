@@ -145,7 +145,7 @@ node: {title: "e14" label: "ent a" color: yellow
   type:  int (11)
   owner: PRIMA_INLINE (12)
   Does not overwrite other entities.
-  Is not overwriten by other entities.
+  Is not overwritten by other entities.
   allocation:  allocation_automatic
   visibility:  visibility_local
   variability: variability_uninitialized
@@ -169,7 +169,7 @@ node: {title: "e17" label: "ent PRIMA_INLINE_set_a" color: yellow
   type:  set_a (15)
   owner: PRIMA_INLINE (12)
   Does not overwrite other entities.
-  Is not overwriten by other entities.
+  Is not overwritten by other entities.
   allocation:  allocation_static
   visibility:  visibility_local
   variability: variability_constant
@@ -190,6 +190,7 @@ arity: 0
 kind addr_ent
 entity PRIMA_INLINE.set_a (17)
 
+SymConst of type type_unknown
 "}
 node: {title: "t15" label: "method set_a" info1: "state: layout_fixed,
 mode: P,
@@ -214,7 +215,7 @@ node: {title: "e20" label: "ent PRIMA_INLINE_c" color: yellow
   type:  c (18)
   owner: PRIMA_INLINE (12)
   Does not overwrite other entities.
-  Is not overwriten by other entities.
+  Is not overwritten by other entities.
   allocation:  allocation_static
   visibility:  visibility_local
   variability: variability_constant
@@ -235,6 +236,7 @@ arity: 0
 kind addr_ent
 entity PRIMA_INLINE.c (20)
 
+SymConst of type type_unknown
 "}
 node: {title: "t18" label: "method c" info1: "state: layout_fixed,
 mode: P,

@@ -91,6 +91,7 @@ arity: 0
 kind addr_ent
 entity PRIMA.set_a (17)
 
+SymConst of type type_unknown
 "}
 edge: {sourcename: "n184" targetname: "n184n166" label: "0" class:16 priority:10}
 edge: { sourcename: "n184" targetname: "n182" class:2  priority:50 linestyle:dotted}
@@ -174,6 +175,7 @@ arity: 0
 kind addr_ent
 entity PRIMA.c (20)
 
+SymConst of type type_unknown
 "}
 edge: {sourcename: "n190" targetname: "n190n165" label: "0" class:16 priority:10}
 edge: { sourcename: "n190" targetname: "n188" class:2  priority:50 linestyle:dotted}
@@ -276,6 +278,7 @@ visited: 36
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 0
 kind size
+SymConst of type type_unknown
 "}
 edge: {sourcename: "n41" targetname: "n33" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n41" targetname: "n41n39" label: "1" class:16 priority:10}
@@ -465,7 +468,7 @@ node: {title: "e14" label: "ent a" color: yellow
   type:  int (11)
   owner: PRIMA (12)
   Does not overwrite other entities.
-  Is not overwriten by other entities.
+  Is not overwritten by other entities.
   allocation:  allocation_automatic
   visibility:  visibility_local
   variability: variability_uninitialized
@@ -489,7 +492,7 @@ node: {title: "e17" label: "ent PRIMA_set_a" color: yellow
   type:  set_a (15)
   owner: PRIMA (12)
   Does not overwrite other entities.
-  Is not overwriten by other entities.
+  Is not overwritten by other entities.
   allocation:  allocation_static
   visibility:  visibility_local
   variability: variability_constant
@@ -510,6 +513,7 @@ arity: 0
 kind addr_ent
 entity PRIMA.set_a (17)
 
+SymConst of type type_unknown
 "}
 node: {title: "t15" label: "method set_a" info1: "state: layout_fixed,
 mode: P,
@@ -534,7 +538,7 @@ node: {title: "e20" label: "ent PRIMA_c" color: yellow
   type:  c (18)
   owner: PRIMA (12)
   Does not overwrite other entities.
-  Is not overwriten by other entities.
+  Is not overwritten by other entities.
   allocation:  allocation_static
   visibility:  visibility_local
   variability: variability_constant
@@ -555,6 +559,7 @@ arity: 0
 kind addr_ent
 entity PRIMA.c (20)
 
+SymConst of type type_unknown
 "}
 node: {title: "t18" label: "method c" info1: "state: layout_fixed,
 mode: P,
@@ -571,7 +576,7 @@ node: {title: "e23" label: "ent OO_PROGRAM_EXAMPLE_main" color: yellow
   type:  OO_PROGRAM_EXAMPLE_main (21)
   owner: GlobalType (0)
   Does not overwrite other entities.
-  Is not overwriten by other entities.
+  Is not overwritten by other entities.
   allocation:  allocation_static
   visibility:  visibility_local
   variability: variability_constant
@@ -592,6 +597,7 @@ arity: 0
 kind addr_ent
 entity GlobalType.OO_PROGRAM_EXAMPLE_main (23)
 
+SymConst of type type_unknown
 "}
 node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1b,
