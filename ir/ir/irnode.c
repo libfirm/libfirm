@@ -26,9 +26,7 @@
 #include "irflag.h"
 #include "irop_t.h"
 
-#ifdef DEBUG_libfirm
 #include "irprog_t.h"
-#endif
 
 /* some constants fixing the positions of nodes predecessors
    in the in array */
