@@ -1,0 +1,136 @@
+#!/bin/sh
+
+# Project:     FIRM
+# File name:   script/build_firm_jni
+# Purpose:     skript to build a java native interface for the public headers of firm.
+# Author:      Goetz Lindenmaier
+# Modified by:
+# Created:     30.10.2002
+# CVS-ID:      $Id$
+# Copyright:   (c) 2002 Universität Karlsruhe
+# Licence:
+
+
+###############################################################################
+# Set this variable to the directory which shall contain the JNI implementation
+FIRM_JNI_DIR=/ben/goetz/proj/libfirm/firm-jni/
+
+# Set these directories to point to a libfirm installation:
+
+FIRM_INCLUDE_DIR=/ben/goetz/proj/libfirm/i686/include
+FIRM_LIB_DIR=/ben/goetz/proj/libfirm/i686
+FIRM_JNI_TOOLS_DIR=/ben/goetz/proj/libfirm/firm-jni/tools
+
+# Set this directory to a directory with sufficient space.
+WORK_DIR=/ben/goetz/proj/libfirm/firm-jni/tmp
+
+# This is the list of firm headers a JNI interface is generated for
+FIRM_HEADERS="firm.h firm_common.h dbginfo.h ident.h tv.h
+	type.h entity.h type_or_entity.h tpop.h mangle.h
+	irprog.h irgraph.h irnode.h irmode.h irop.h ircons.h ircgcons.h irflag.h irvrfy.h
+	irdump.h iropt.h irgopt.h ircgopt.h
+	irouts.h irdom.h irloop.h cgana.h
+	irgwalk.h irgmod.h typewalk.h typegmod.h"
+
+###############################################################################
+
+CURRENT_DIR=$PWD
+SOURCE_DIR=sources
+PUREC_DIR=purec
+
+MACHINE=`uname -m`
+SYS_OS=`uname -s`
+ARCH_DIR=$MACHINE-$SYS_OS
+
+LOG_FILE=compile-log.txt
+
+REMOVE_CPP_COMMANDS=$FIRM_JNI_TOOLS_DIR/remove_cpp_comands.perl
+
+#
+# shell initialization
+#
+source /afs/info.uni-karlsruhe.de/public/tools/Modules/init/sh
+
+#
+# flags
+#
+verbose=""
+
+#
+# set up directories
+#
+rm -rf $WORK_DIR
+mkdir -p $WORK_DIR
+cd $WORK_DIR
+
+###############################################################################
+
+analargs () {
+  while [ $# -gt 0 ]; do
+    case $1 in
+      --verbose) verbose="y";;
+      *)	 echo "Unknown option "$1;;
+    esac
+    shift
+  done
+}
+
+analargs $*
+
+###############################################################################
+
+
+###############################################################################
+# Get all the necessary Firm headers.
+cd $WORK_DIR
+
+mkdir $PUREC_DIR
+mkdir $SOURCE_DIR
+
+for file in $FIRM_HEADERS; do
+    cp $FIRM_INCLUDE_DIR/$file $SOURCE_DIR
+done;
+
+cd $SOURCE_DIR
+
+
+###############################################################################
+# Remove C preprocessor commands.  Overwrite the header files.
+# This part should be removed if crecoder integrates the preprocessor.
+
+rm -f firm_typedefs.h
+for file in $FIRM_HEADERS; do
+    perl $REMOVE_CPP_COMMANDS $file
+done;
+
+for file in $FIRM_HEADERS; do
+    gcc -E -C -P $file -o ../$PUREC_DIR/$file
+done;
+
+cd ../$PUREC_DIR
+
+
+###############################################################################
+# Call crecoder to construct from each header a .java file specifying the
+# java native interface.  Further crecoder constructs an implementation of
+# the java native interface in C calling the real libfirm functions.
+# For a file "file.h" files "File.java" and "File.c" are generated.
+
+module add jdk-1.3.1-sun
+export CLASSPATH=$FIRM_JNI_TOOLS_DIR/crecoder.jar:$CLASSPATH
+for file in $FIRM_HEADERS; do
+   java crecoder/tools/jniBuilder/BuildJNI $file
+done;
+
+# Remove the C headers which are no more needed.  They contain
+# nonsense no C compiler ever should see ;-)
+rm -f $FIRM_HEADERS
+# Make the JNI Implementation
+
+export CPPFLAGS="-I. -I/usr/public2/java/jdk1.3-sun/include/ -I/usr/public2/java/jdk1.3-sun/include/linux/ -I$FIRM_INCLUDE_DIR"
+export LDFLAGS="-L$FIRM_LIB_DIR"
+
+make -f $FIRM_JNI_TOOLS_DIR/Makefile
+mv libfirmjni.so $FIRM_JNI_DIR
+
+#mv *.java *.class $FIRM_JNI_DIR
