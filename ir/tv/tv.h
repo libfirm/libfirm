@@ -213,4 +213,8 @@ ir_mode *get_tv_mode (tarval *tv);
 entity *get_tv_entity(tarval *tv);
 
 
+/* Returns absolute of tarval @@@ not tested! */
+tarval *tarval_abs (tarval *a);
+/* Returns 0 if tv is positive, else > 0. @@@ not tested! */
+int tv_is_negative(tarval *a);
 #endif

@@ -6,6 +6,10 @@
 ** testprogram.
 */
 
+# include <stdio.h>
+# include <string.h>
+
+# include "irvrfy.h"
 # include "irdump.h"
 # include "firm.h"
 
@@ -47,7 +51,7 @@ main(void)
   ir_node      *self, *par1, *a_ptr;
   ir_node      *a_val;
 
-  int o_pos, self_pos, e_pos, d_pos;
+  int o_pos, self_pos, e_pos;
 
   int i;
 

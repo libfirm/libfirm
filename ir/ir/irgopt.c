@@ -413,7 +413,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   ir_node **res_pred;
   ir_node **cf_pred;
   ir_node *ret, *phi;
-  ir_node *cf_op, *bl;
+  ir_node *cf_op = NULL, *bl;
   int arity, n_ret, n_exc, n_res, i, j, rem_opt;
   type *called_frame;
 
@@ -478,9 +478,6 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
 
   /* Initialize for compaction of in arrays */
   inc_irg_block_visited(current_ir_graph);
-  /*
-      set_Block_block_visited(get_irg_start_block(called_graph),
-      get_irg_block_visited(current_ir_graph) +1 +1); /* count for self edge */
 
   /*** Replicate local entities of the called_graph ***/
   /* copy the entities. */
@@ -842,7 +839,7 @@ inline void place_early () {
 static ir_node *
 consumer_dom_dca (ir_node *dca, ir_node *consumer, ir_node *producer)
 {
-  ir_node *block;
+  ir_node *block = NULL;
 
   /* Compute the latest block into which we can place a node so that it is
      before consumer. */
@@ -1283,7 +1280,7 @@ void optimize_cf(ir_graph *irg) {
   inc_irg_visited(current_ir_graph);
   for(i = 0; i < get_End_n_keepalives(end); i++) {
     ir_node *ka = get_End_keepalive(end, i);
-    if (irn_not_visited(ka))
+    if (irn_not_visited(ka)) {
       if ((get_irn_op(ka) == op_Block) && Block_not_block_visited(ka)) {
 	set_irg_block_visited(current_ir_graph,  /* Don't walk all the way to Start. */
 			      get_irg_block_visited(current_ir_graph)-1);
@@ -1295,6 +1292,7 @@ void optimize_cf(ir_graph *irg) {
 	ARR_APP1 (ir_node *, in, ka);
       }
     }
+  }
   /* DEL_ARR_F(end->in);   GL @@@ tut nicht ! */
   end->in = in;
 

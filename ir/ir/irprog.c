@@ -12,6 +12,8 @@
 # include <config.h>
 #endif
 
+# include <string.h>
+
 # include "irprog_t.h"
 # include "irgraph_t.h"
 # include "array.h"

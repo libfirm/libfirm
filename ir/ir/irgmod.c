@@ -13,6 +13,9 @@
 # include <config.h>
 #endif
 
+# include "irvrfy.h"
+# include "irflag.h"
+# include "irgwalk.h"
 # include "irnode_t.h"
 # include "irgraph_t.h"
 # include "irgmod.h"

@@ -8,9 +8,13 @@
 
 /* $ID$ */
 
+
+# include <stdio.h>
+# include <string.h>
+
+# include "irvrfy.h"
 # include "irdump.h"
 # include "firm.h"
-# include "irnode.h"
 
 /**  This file constructs the IR for the following program:
 ***  @@@ this is no more correct ...
@@ -46,11 +50,11 @@ main(void)
   entity   *proc_main_e, *proc_set_a_e, *proc_c_e, *a_e;
 
   ir_graph     *main_irg, *set_a_irg, *c_irg;
-  ir_node      *c2, *c5, *obj_o, *obj_size, *proc_ptr, *call, *res, *x, *set_a_call, *c_call;
+  ir_node      *c2, *c5, *obj_o, *obj_size, *proc_ptr, *res, *x, *set_a_call, *c_call;
   ir_node      *self, *par1, *a_ptr;
   ir_node      *a_val, *r, *t, *b, *f;
 
-  int o_pos, self_pos, e_pos, d_pos;
+  int o_pos, self_pos, e_pos;
 
   int i;
 

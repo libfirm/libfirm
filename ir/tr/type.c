@@ -126,14 +126,14 @@ ir_mode*    get_type_mode(type *tp) {
 void        set_type_mode(type *tp, ir_mode* m) {
   assert(tp && tp->kind == k_type);
 
-  assert((tp->type_op != type_primitive) || mode_is_data(m) &&
+  assert(((tp->type_op != type_primitive) || mode_is_data(m)) &&
 	 /* Modes of primitives must be data */
-	 (tp->type_op != type_enumeration) || mode_is_int(m));
+	 ((tp->type_op != type_enumeration) || mode_is_int(m)));
          /* Modes of enumerations must be integers */
 
   if ((tp->type_op == type_primitive) || (tp->type_op == type_enumeration)) {
     /* For pointer, primitive and enumeration size depends on the mode. */
-    tp->size == get_mode_size(m);
+    tp->size = get_mode_size(m);
     tp->mode = m;
   }
 }

@@ -8,7 +8,7 @@
  * Erstellt: Hubert Schmid, 09.06.2002
  * ---------------------------------------------------------------- */
 
-
+#include "stdlib.h"
 #include "cgana.h"
 
 
@@ -19,6 +19,7 @@
 #include "irgwalk.h"
 #include "ircons.h"
 #include "irgmod.h"
+#include "xprintf.h"
 
 
 /* Eindeutige Adresse zur Markierung von besuchten Knoten und zur

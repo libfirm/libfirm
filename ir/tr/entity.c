@@ -13,6 +13,8 @@
 
 # include <stdlib.h>
 # include <stddef.h>
+# include <string.h>
+
 # include "entity_t.h"
 # include "mangle.h"
 # include "typegmod_t.h"

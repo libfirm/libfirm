@@ -8,6 +8,7 @@
  * ---------------------------------------------------------------- */
 
 
+#include <string.h>
 #include "ircgcons.h"
 
 #include "array.h"

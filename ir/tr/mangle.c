@@ -11,6 +11,7 @@
 # include <config.h>
 #endif
 
+# include "xprintf.h"
 # include "mangle.h"
 # include <obstack.h>
 # include "obst.h"

@@ -6,6 +6,10 @@
 ** testprogram.
 */
 
+# include <string.h>
+# include <stdio.h>
+
+# include "irvrfy.h"
 # include "irdump.h"
 # include "firm.h"
 
@@ -48,18 +52,12 @@ main(void)
   entity         *array_ent;    /* the entity representing the array as member
                                    of the stack/method */
   type           *array_type;   /* the type information for the array */
-  entity         *field_ent;    /* the entity representing a field of the array */
-
-  /* Needed while finding the element size.  */
-  type           *elt_type;
-  ir_mode        *elt_type_mode;
-  int            size;
-  ir_node        *arr_size;
+  entity         *field_ent;    /* the entity representing a field of the
+				   array */
 
   /* holds the graph and nodes. */
   ir_graph       *main_irg;
-  ir_node        *array, *array_ptr, *c3, *elt, *val, *x;
-
+  ir_node        *array_ptr, *c3, *elt, *val, *x;
 
   init_firm ();
 

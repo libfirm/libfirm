@@ -11,6 +11,8 @@
 # include <config.h>
 #endif
 
+# include <stdlib.h>
+
 # include "panic.h"
 # include "xprintf.h"
 

@@ -67,6 +67,8 @@
 /* Functionality */
 # include "ircons.h"     /* construct ir */
 # include "irgopt.h"     /* optimize ir */
+# include "irgmod.h"     /* Support to modify ir */
+# include "irflag.h"     /* optimization flags */
 
 /* initialize firm */
 void init_firm (void);

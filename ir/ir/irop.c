@@ -11,6 +11,8 @@
 # include <config.h>
 #endif
 
+# include <string.h>
+
 # include "irop_t.h"
 # include "irnode_t.h"
 # include "misc.h"

@@ -11,6 +11,7 @@
 
 #include "irouts.h"
 
+#include "irgwalk.h"
 #include "irdom_t.h"
 #include "irgraph_t.h"   /* To access state field. */
 #include "irnode_t.h"

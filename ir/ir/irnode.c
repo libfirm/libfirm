@@ -10,6 +10,7 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include <string.h>
 
 #include "irnode_t.h"
 #include "irgraph_t.h"
@@ -650,7 +651,7 @@ add_End_keepalive (ir_node *end, ir_node *ka) {
   ARR_APP1 (ir_node *, end->in, ka);
 }
 
-inline ir_node *
+inline void
 set_End_keepalive(ir_node *end, int pos, ir_node *ka) {
   assert (end->op == op_End);
   set_irn_n(end, pos + END_KEEPALIVE_OFFSET, ka);

@@ -23,7 +23,7 @@ irn_vrfy (ir_node *n)
 {
   int i;
   int opcode;
-  ir_mode *mymode, *op1mode, *op2mode, *op3mode;
+  ir_mode *mymode, *op1mode = NULL, *op2mode, *op3mode;
   int op_is_symmetric = 1;	/* 0: asymmetric
 				   1: operands have identical modes
   				   2: modes of operands == mode of this node */
@@ -373,11 +373,11 @@ vrfy_Proj_proj(ir_node *p) {
 
   switch (get_irn_opcode(pred)) {
   case iro_Start:
-    assert ((proj == 0 && mode == mode_X) ||
-	    (proj == 1 && mode == mode_M) ||
-	    (proj == 2 && mode == mode_p) ||
-	    (proj == 3 && mode == mode_p) ||
-	    (proj == 4 && mode == mode_T) &&
+    assert (((proj == 0 && mode == mode_X) ||
+	     (proj == 1 && mode == mode_M) ||
+	     (proj == 2 && mode == mode_p) ||
+	     (proj == 3 && mode == mode_p) ||
+	     (proj == 4 && mode == mode_T))   &&
 	    "wrong Proj from Start"  );
     break;
   case iro_Cond:
@@ -385,8 +385,8 @@ vrfy_Proj_proj(ir_node *p) {
 	    "wrong Proj from Cond");
     break;
   case iro_Raise:
-    assert ((proj == 0 && mode == mode_X) ||
-	    (proj == 1 && mode == mode_M) &&
+    assert (((proj == 0 && mode == mode_X) ||
+	     (proj == 1 && mode == mode_M))   &&
 	    "wrong Proj from Raise" );
     break;
   case iro_InstOf:
@@ -394,51 +394,51 @@ vrfy_Proj_proj(ir_node *p) {
 			 "wrong Proj from InstOf"));
 	break;
   case iro_Call:
-    assert ((proj == 0 && mode == mode_M) ||
-	    (proj == 1 && mode == mode_X) ||
-	    (proj == 2 && mode == mode_T) ||
-	    (proj == 3 && mode == mode_M) &&
+    assert (((proj == 0 && mode == mode_M) ||
+	     (proj == 1 && mode == mode_X) ||
+	     (proj == 2 && mode == mode_T) ||
+	     (proj == 3 && mode == mode_M))   &&
 	    "wrong Proj from Call" );
     break;
   case iro_Quot:
-    assert ((proj == 0 && mode == mode_M) ||
-	    (proj == 1 && mode == mode_X) ||
-	    (proj == 2 && mode_is_float(mode)) &&
+    assert (((proj == 0 && mode == mode_M) ||
+	     (proj == 1 && mode == mode_X) ||
+	     (proj == 2 && mode_is_float(mode)))  &&
 	    "wrong Proj from Quot");
     break;
   case iro_DivMod:
-    assert ((proj == 0 && mode == mode_M) ||
-	    (proj == 1 && mode == mode_X) ||
-	    (proj == 2 && mode == mode_i) ||
-	    (proj == 3 && mode == mode_i) &&
+    assert (((proj == 0 && mode == mode_M) ||
+	     (proj == 1 && mode == mode_X) ||
+	     (proj == 2 && mode == mode_i) ||
+	     (proj == 3 && mode == mode_i))   &&
 	    "wrong Proj from DivMod" );
     break;
   case iro_Div:
   case iro_Mod:
-    assert ((proj == 0 && mode == mode_M) ||
-	    (proj == 1 && mode == mode_X) ||
-	    (proj == 2 && mode == mode_i) &&
-	    "wrong Proj from Div or Mod" );
+    assert (((proj == 0 && mode == mode_M) ||
+	     (proj == 1 && mode == mode_X) ||
+	     (proj == 2 && mode == mode_i))   &&
+	     "wrong Proj from Div or Mod" );
     break;
   case iro_Cmp:
     assert ((proj >= 0 && proj <= 15 && mode == mode_b) &&
 	    "wrong Proj from Cmp");
     break;
   case iro_Load:
-    assert ((proj == 0 && mode == mode_M) ||
-	    (proj == 1 && mode == mode_X) ||
-	    (proj == 2 && mode_is_data(mode)) &&
+    assert (((proj == 0 && mode == mode_M) ||
+	     (proj == 1 && mode == mode_X) ||
+	     (proj == 2 && mode_is_data(mode)))  &&
 	    "wrong Proj from Load");
     break;
   case iro_Store:
-    assert ((proj == 0 && mode == mode_M) ||
-	    (proj == 1 && mode == mode_X) &&
+    assert (((proj == 0 && mode == mode_M) ||
+	     (proj == 1 && mode == mode_X))    &&
 	    "wrong Proj from Store");
     break;
   case iro_Alloc:
-    assert ((proj == 0 && mode == mode_M) ||
-	    (proj == 1 /* && mode == mode_X*/) ||
-	    (proj == 2 && mode == mode_p) &&
+    assert (((proj == 0 && mode == mode_M) ||
+	     (proj == 1 /* && mode == mode_X*/) ||
+	     (proj == 2 && mode == mode_p))      &&
 	    "wrong Proj from Alloc");
     break;
   case iro_Proj: {

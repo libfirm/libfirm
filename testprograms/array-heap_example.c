@@ -6,6 +6,10 @@
 ** testprogram.
 */
 
+# include <string.h>
+# include <stdio.h>
+
+# include "irvrfy.h"
 # include "irdump.h"
 # include "firm.h"
 

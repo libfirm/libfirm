@@ -6,9 +6,12 @@
 ** testprogram.
 */
 
+# include <stdio.h>
+# include <string.h>
+
+# include "irvrfy.h"
 # include "irdump.h"
 # include "firm.h"
-# include "irnode.h"
 
 /**
 ***  This file constructs the ir for the following pseudo-program:

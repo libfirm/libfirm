@@ -182,7 +182,7 @@ void remove_Block_cg_cfgpred_arr(ir_node * node);
 inline int  get_End_n_keepalives(ir_node *end);
 inline ir_node *get_End_keepalive(ir_node *end, int pos);
 inline void add_End_keepalive (ir_node *end, ir_node *ka);
-inline ir_node *set_End_keepalive(ir_node *end, int pos, ir_node *ka);
+inline void set_End_keepalive(ir_node *end, int pos, ir_node *ka);
 /* Some parts of the End node are allocated seperately -- their memory
    is not recovered by dead_node_elimination if a End node is dead.
    free_End frees these data structures. */
