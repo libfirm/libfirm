@@ -35,6 +35,7 @@
 # include "irgopt_t.h"
 # include "irnode_t.h"
 # include "irouts.h"
+# include "trouts.h"
 # include "hashptr.h"
 # include "pset.h"
 # include "strength_red.h"
@@ -963,7 +964,7 @@ void optimize_loop_unrolling(ir_graph *irg /* unroll factor, max body size */)
     set_irg_dom_inconsistent(irg);
     set_irg_outs_inconsistent(irg);
     set_irg_loopinfo_state(current_ir_graph, loopinfo_cf_inconsistent);
-    set_trouts_inconsistent(irg);
+    set_trouts_inconsistent();
     set_irg_callee_info_state(irg, irg_callee_info_inconsistent);
   }
 
