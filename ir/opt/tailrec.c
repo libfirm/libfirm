@@ -34,6 +34,7 @@
 #include "irgraph_t.h"
 #include "ircons.h"
 #include "irflag.h"
+#include "trouts.h"
 #include "firmstat.h"
 
 /**
@@ -240,6 +241,13 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
     assert(0 <= proj && proj < n_params);
     exchange(p, phis[proj + 1]);
   }
+
+  /* tail recursion was done, all info is invalid */
+  set_irg_dom_inconsistent(irg);
+  set_irg_outs_inconsistent(irg);
+  set_irg_loopinfo_state(current_ir_graph, loopinfo_cf_inconsistent);
+  set_trouts_inconsistent();
+  set_irg_callee_info_state(irg, irg_callee_info_inconsistent);
 
   current_ir_graph = rem_irg;
   set_optimize(rem);
