@@ -1,13 +1,18 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-
 * All rights reserved.
+*/
+
+/**
+* @file typewalk.h
 *
-* Author: Goetz Lindenmaier
+* Traverse the type information.
 *
-* traverse the type information.  The walker walks the whole ir graph
+* @author Goetz Lindenmaier
+*
+* The walker walks the whole ir graph
 * to find the distinct type trees in the type graph forest.
-* - execute the pre function before recursion
-* - execute the post function after recursion
+* - execute the pre() function before recursion
+* - execute the post() function after recursion
 */
 
 /* $Id$ */
