@@ -1,3 +1,185 @@
   14.3.2001 Boris
   make dist should create an archive which has the directory libfirm/
   as top-level
+
+*********** old stuff ***********
+
+
+ * Problem mit endlosen Schleifen loesen.
+
+ + if_while_example ergibt Segmentation Fault da Bad Vorgaenger von Endblock.
+   Optimierung des end blocks geaendert.
+
+ * Automatisches generieren und set_value der Argumente-projs in
+   new_ir_graph
+
+ * Define and implement procedure-global extensions, e.g., the call graph.
+
+ * Implement Confirm node: Added by optimization to annotate dataflow
+   edge with information as (value > 0).  This improves dataflow analysis.
+   These nodes can be derived from Cmp nodes in conjunction with dataflow
+   information.
+
+ * think again about implementation of boolean expressions  (0<1) && (2<3)
+
+ * Adapt tv to operate on the new modes, adapt libfirm, e.g., remove
+   strange constructors.
+
+ * define Nodes for Rotate, Not, Minus, ShrA (Done.)
+   Add evaluation routines to target value, extend optimization,
+   verification to cover these nodes, extend irdump to cover them.
+
+ * do we need remainder (Rem) operator?
+   different sign handling than Mod.  How much processors???
+
+ * Turn Quot, Minus into three letter operator.
+
+Propositions by Boris, 5.3.2001:
+ + Fehler in FIRM?
+   ---------------
+   + in oo_program_example ist das Feld einfach nur eine entity. Aber alles andere
+     hat einen bestimmten Typ (z.B. method, strct, etc.). Muß es dann nicht auch
+     field geben? Oder werden alle Felder eines Objekts in einem strct organisiert
+     -> HowTo Use FIRM - Doku.
+     ==> Wann eine entitaet ein Feld ist, laesst sich am Typ der Entitaet enkennen.
+         Entitaet ist Feld wenn Owner Klassentyp (oder ev. Struct) und Typ nicht
+         Methodentyp.
+	 Speicherbedarf der Entitaet, d.h. ihr mode, laesst sich auch dem Typ ansehen.
+         Manche Typen enthalten explizit den mode (z.B. type_primitive, type_pointer.)
+         Bei anderen haengt die Groesse vom Layout ab:  class, struct.
+         Frage (fehlende Konvention): Ist eine Klasse ein Pointer oder immer nur
+         eine Value-Class??  Je nach dem muss man die Entitaeten modellieren:
+         Klasse = Pointer:  entitaet kann Typ=class haben.
+         Klasse = WerteKlasse: entitaet sollte pointer mit points-to Klasse sein.
+   - fehlende Optimierung: wenn ein Wert einer Ladeoperation nicht gebraucht wird,
+     dann gibt es auch keine Kante dafuer, aber die Ladeoperation bleibt
+     (unnoetigerweise) stehen.
+   - mit set_optimize(1) geht die Optimierung von if(const cmpop const) unvollständig
+     bzw. falsch [da bleibt wohl ein zweiter Block-Knoten ohne Vorgänger]
+ + Verbesserungsvorschläge:
+   ------------------------
+   + Knoten im Typgraphen mit Farbe hinterlegen
+   - Attribute im Firmgraphen nicht im Knoten
+   + Kanten je nach Sematik farbig markieren, vielleicht dann auch Knoten
+     (z.B. rot fuer alles, was mit Steuerfluss zu tun hat)
+   + konfigurierbar, ob Konstanten im Startblock, oder im aktuellen
+     ==> geht schlecht.
+   + von Hochsprachtypen loesen? Signed32 statt int?
+     ==> viel Arbeit, nur Namenskonvention.  Ev wenn target value modul
+         ausgetauscht.
+
+ + change impelmentation of type to use concept as in irnode.
+   Three common fields: kind, ident, mode !!! fill mode with
+   mode_none if applicable.
+
+ + add asserts in type.c that check that proper type is passed.
+   not in get_type_name, get_type_ident.
+
+ + type / entity not good, too much casts.
+   merge type_or_ent union with type union. ??!!
+   allocate always unions.
+   write access routines for type, e.g. get_type_name.
+   change access routines for individual types to select from union.
+
+ + Wann macht man Dispatch Tabellen.  Lower Phase
+
+ + integrate irgmod into ircons.  The routines in there are only needed
+   during ir construction.  (If there are some not needed, remove them.)
+
+ + Build more structured directoriy structure:
+   ir/ir                irgraph, irnode, irop, irmode, type, entity,
+                        common,
+   ir/manipulate        ircons, irgmod, irvrfy
+   ir/optimize          iropt, irflag
+   ir/datastructure     array, obst, pdeq, pset, set
+   ir/include           gmp, host, xfprintf, xgprintf, xmalloc,
+                        xoprintf, xp_help, xprintf
+   ir/compilermodules   ident, xx_ident, tv, ieee754
+   ir/aux               irdump, strerror,
+   where goes           debug, firm, label, mangle, misc, panic, tune?
+
+ + Changes to nodes:
+   - SymConst also returns pointer.
+   - Start returns pointer to segment for globals.
+   - remove copy, clear, type_or_ent
+   - add free
+   - add constructor for shrs
+   - remove Phi0 ruins
+
+ + How shall global variables be modeled in FIRM, if programs as C are
+   translated?  Modeling them as entity of the class defined for the
+   file/compilation unit is not sufficient, as then they are not
+   visible from out of this file.
+   For the uebprakt and kirmes we model them by selection from the
+   area that contains all globals (data segment).  The pointer to
+   this area is provided by the start node.
+   In Sather these were modeled by pointers to string constants containing
+   the name of the global variable (or static field):
+     new_Const (mode_p, tarval_p_from_str ("VAR_A"))
+
+ + port transform_node in iropt to lib.
+
+ + make new Version
+
+***************************************************************************
+
+ + add attributes from doku to constructors.
+
+ + add Phi_in stack as field to ir_graph??!!
+
+ + implement ShrA constructor.
+   What are allowed types?
+
+ + add type struct
+
+ + write dumper for type information.
+   write dumper for type and graph.
+   write dumper for control flow graph.
+
+ + dump irgraph with all the type information.  Write function that
+   dumps type information and one that dumps entities.  To integrate
+   this separate dump_node and the recursion, and add the dump_type
+   and dump_entity function in the recursive iterator or write second
+   dump routine.
+
+ + Fix bug in pset/set, so that several tables can be used. iropt/identify
+   aborts. Thanks, Boris!
+
+ + write example program with irreducible control flow:
+
+   /* Phi node with three predecessors: */
+      a = 1
+      if () goto loop
+      a = 2
+      goto loop
+   loop:
+      if () goto exit
+      b = 1
+      goto loop
+   exit:
+      b = a
+
+   /* irreducible two entry loop */
+      b = 1
+      if () goto entry1 else goto entry2
+   entry 1
+      a = 2
+      if () goto exit else goto entry 2
+   entry 2
+      a = 1
+      if () goto exit else goto entry 1
+   exit
+      b = a + b
+
+ + entity must be able to take arrays as owner.  Anything else?
+   --> assert allowed types.
+
+ + Alloc must be able to take any type as owner.  Also primitive types
+   so that allocation to the stack of dereferenced local variables can
+   be modeled.
+
+ + Implement vrfy_graph(end_node) that iterates over the whole graph
+  calling ir_vrfy so that the graph can be verified after each
+   optimization.
+
+ + DONE: Add access routines to ir_graph, ir_mode (?).

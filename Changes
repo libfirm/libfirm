@@ -1,3 +1,13 @@
+  14.3.2001 Goetz
+  Changed implementation of tr module.  With this I also changed the
+  interface!!  Type casts are unnecessary now, but some access funcions
+  differ.
+
+
+======================================================================
+==================== New version: 0.3.0 ==============================
+======================================================================
+
   14.3.2001 Boris
   added file TODO
 
