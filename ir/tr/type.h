@@ -238,30 +238,17 @@ void   set_class_ident (type_class *class, ident* ident);
 void add_class_member (type_class *class, entity *member);
 entity *get_class_member (type_class *class, int pos);
 void set_class_member (type_class *class, entity *member, int pos);
+int get_class_n_member (type_class *class);
 
 void add_class_subtype (type_class *class,  type_class *subtype);
 type_class *get_class_subtype (type_class *class, int pos);
 void set_class_subtype (type_class *class, type_class *subtype, int pos);
+int get_class_n_subtype (type_class *class);
 
 void add_class_supertype (type_class *class, type_class *supertype);
 type_class *get_class_supertype (type_class *class, int pos);
 void set_class_supertype (type_class *class, type_class *supertype, int pos);
-
-
-/*
-    get_class_n_entities
-    get_class_entity(class, pos)
-    set_class_entity(class, pos, entity)
-    get_class_n_sub
-    ...
-
-
-    Bitte implementieren, und dann in walker (Suche nach !!!! )
-    einfuegen.
-    Genauso Struct!!
-
-    Dann ev. noch in irdump Ausgabe der Kanten eingeben.
-*/
+int get_class_n_supertype (type_class *class);
 
 /*******************************************************************/
 /** TYPE_STRCT                                                   **/
@@ -281,6 +268,12 @@ type_strct *new_type_strct (ident *name);
 /* manipulate fields of type_strct */
 const char  *get_strct_name  (type_strct *strct);
 ident *get_strct_ident (type_strct *strct);
+
+int get_strct_n_member (type_strct *strct);
+void  add_strct_member (type_strct *strct, entity *member);
+entity *get_strct_member (type_strct *strct, int pos);
+void set_strct_member (type_strct *strct, int pos, entity *member);
+
 /*
 void   set_strct_name  (type_strct *strct, char *name);
 void   set_strct_ident (type_strct *strct, ident* ident);

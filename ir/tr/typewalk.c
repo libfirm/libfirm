@@ -75,12 +75,40 @@ void type_walk_2(type_or_ent *tore,
       }
       break;
     case k_type_class:
-      ((type_class *)tore)->visit = type_visited;
-      /* !!!!! */
+      {
+	int i;
+
+	((type_class *)tore)->visit = type_visited;
+	//CS
+	for (i=0; i<get_class_n_member((type_class *)tore); i++)
+	  {
+	    type_walk_2((type_or_ent *)get_class_member((type_class *)tore, i),
+			pre, post, env);
+	  }
+	for (i=0; i<get_class_n_subtype((type_class *)tore); i++)
+	  {
+	    type_walk_2((type_or_ent *)get_class_subtype((type_class *)tore, i),
+			pre, post, env);
+	  }
+	for (i=0; i<get_class_n_supertype((type_class *)tore); i++)
+	  {
+	    type_walk_2((type_or_ent *)get_class_supertype((type_class *)tore, i),
+			pre, post, env);
+	  }
+      }
       break;
     case k_type_strct:
-      ((type_strct *)tore)->visit = type_visited;
-      /* !!!!! */
+      {
+	int i;
+
+	((type_strct *)tore)->visit = type_visited;
+	//CS
+	for (i=0; i<get_strct_n_member((type_strct *)tore); i++)
+	  {
+	    type_walk_2((type_or_ent *)get_strct_member((type_strct *)tore, i),
+			pre, post, env);
+	  }
+      }
       break;
     case k_type_method:
       {

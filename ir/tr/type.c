@@ -82,6 +82,16 @@ set_class_member (type_class *class, entity *member, int pos)
   class->members[pos+1] = member;
 }
 
+int
+get_class_n_member (type_class *class)
+{
+  int res;
+
+  assert(class);
+  res = (ARR_LEN (class->members))-1;
+  return res;
+}
+
 /* field: subtype */
 void
 add_class_subtype (type_class *class,  type_class *subtype)
@@ -102,6 +112,16 @@ set_class_subtype (type_class *class, type_class *subtype, int pos)
   class->subtypes[pos+1] = subtype;
 }
 
+int
+get_class_n_subtype (type_class *class)
+{
+  int res;
+
+  assert(class);
+  res = (ARR_LEN (class->members))-1;
+  return res;
+}
+
 /* field: supertype */
 void
 add_class_supertype (type_class *class, type_class *supertype)
@@ -120,6 +140,16 @@ void
 set_class_supertype (type_class *class, type_class *supertype, int pos)
 {
   class->supertypes[pos+1] = supertype;
+}
+
+int
+get_class_n_supertype (type_class *class)
+{
+  int res;
+
+  assert(class);
+  res = (ARR_LEN (class->members))-1;
+  return res;
 }
 
 /*******************************************************************/
@@ -155,6 +185,35 @@ ident *
 get_strct_ident (type_strct *strct) {
   assert(strct);
   return strct->name;
+}
+
+int
+get_strct_n_member (type_strct *strct)
+{
+  int res;
+
+  assert(strct);
+  res = (ARR_LEN (strct->members))-1;
+  return res;
+}
+
+void
+add_strct_member (type_strct *strct, entity *member)
+{
+  ARR_APP1 (type_strct *, strct->members, member);
+}
+
+entity *
+get_strct_member (type_strct *strct, int pos)
+{
+  assert (strct);
+  return strct->members[pos+1];
+}
+
+void
+set_strct_member (type_strct *strct, int pos, entity *member)
+{
+  strct->members[pos+1] = member;
 }
 
 /*
