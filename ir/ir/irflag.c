@@ -10,7 +10,7 @@
 
 /* 0 - don't do this optimization
    1 - lets see, if there is a better graph */
-int opt_cse = 0;
+int opt_cse = 1;
 int opt_constant_folding = 1;
 int opt_dead_node_elimination = 0;
 int optimized = 1;

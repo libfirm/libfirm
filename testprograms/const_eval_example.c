@@ -43,19 +43,28 @@ main(void)
 
   irg = new_ir_graph (ent, 4);
 
-  a = new_Const (mode_i, tarval_from_long (mode_i, 5));
-  b = new_Const (mode_i, tarval_from_long (mode_i, 7));
+  a = new_Const (mode_i, tarval_from_long (mode_i, 7));
+  b = new_Const (mode_i, tarval_from_long (mode_i, 5));
 
   x = new_Jmp ();
   mature_block (irg->current_block);
 
+  /*  To test const eval on DivMod
+  c = new_DivMod(get_store(), a, b);
+  set_store(new_Proj(c, mode_M, 0));
+  d = new_Proj(c, mode_i, 3);
+  c = new_Proj(c, mode_i, 2);
+  */
+
+
+  /*
   c = new_Add (new_Const (mode_i, tarval_from_long (mode_i, 5)),
 	       new_Const (mode_i, tarval_from_long (mode_i, 7)),
 	       mode_i);
   d = new_Add (new_Const (mode_i, tarval_from_long (mode_i, 7)),
 	       new_Const (mode_i, tarval_from_long (mode_i, 5)),
 	       mode_i);
-
+  */
   {
      ir_node *in[2];
      in[0] = c;

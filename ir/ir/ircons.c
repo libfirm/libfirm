@@ -359,7 +359,7 @@ new_r_Quot (ir_graph *irg, ir_node *block,
 {
   ir_node *in[3] = {memop, op1, op2};
   ir_node *res;
-  res = new_ir_node (irg, block, op_Quot, mode_T, 2, in);
+  res = new_ir_node (irg, block, op_Quot, mode_T, 3, in);
   res = optimize (res);
   ir_vrfy (res);
   return res;
@@ -371,7 +371,7 @@ new_r_DivMod (ir_graph *irg, ir_node *block,
 {
   ir_node *in[3] = {memop, op1, op2};
   ir_node *res;
-  res = new_ir_node (irg, block, op_DivMod, mode_T, 2, in);
+  res = new_ir_node (irg, block, op_DivMod, mode_T, 3, in);
   res = optimize (res);
   ir_vrfy (res);
   return res;
@@ -383,7 +383,7 @@ new_r_Div (ir_graph *irg, ir_node *block,
 {
   ir_node *in[3] = {memop, op1, op2};
   ir_node *res;
-  res = new_ir_node (irg, block, op_Div, mode_T, 2, in);
+  res = new_ir_node (irg, block, op_Div, mode_T, 3, in);
   res = optimize (res);
   ir_vrfy (res);
   return res;
@@ -395,7 +395,7 @@ new_r_Mod (ir_graph *irg, ir_node *block,
 {
   ir_node *in[3] = {memop, op1, op2};
   ir_node *res;
-  res = new_ir_node (irg, block, op_Mod, mode_T, 2, in);
+  res = new_ir_node (irg, block, op_Mod, mode_T, 3, in);
   res = optimize (res);
   ir_vrfy (res);
   return res;

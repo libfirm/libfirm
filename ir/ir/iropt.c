@@ -529,7 +529,6 @@ equivalent_node (ir_node *n)
 } /* end equivalent_node() */
 
 
-#if 0
 /* tries several [inplace] [optimizing] transformations and returns a
    equivalent node.  The difference to equivalent_node is that these
    transformations _do_ generate new nodes, and thus the old node must
@@ -538,16 +537,18 @@ static ir_node *
 transform_node (ir_node *n)
 {
 
-  ir_node *a, *b;
+  ir_node *a = NULL, *b;
   tarval *ta, *tb;
 
   switch (get_irn_opcode(n)) {
   case iro_DivMod: {
+
     int evaluated = 0;
-    ir_mode *mode = get_irn_mode(a);
+    ir_mode *mode;
 
     a = get_DivMod_left(n);
     b = get_DivMod_right(n);
+    mode = get_irn_mode(a);
 
     if (!(   mode_is_int(get_irn_mode(a))
 	  && mode_is_int(get_irn_mode(b))))
@@ -585,9 +586,10 @@ transform_node (ir_node *n)
       ir_node *mem = get_DivMod_mem(n);
       turn_into_tuple(n, 4);
       set_Tuple_pred(n, 0, mem);
-      set_Tuple_pred(n, 1, new_Bad());
+      set_Tuple_pred(n, 1, new_Bad());  /* no exception */
       set_Tuple_pred(n, 2, a);
       set_Tuple_pred(n, 3, b);
+      assert(get_nodes_Block(n));
     }
   }
   break;
@@ -666,7 +668,7 @@ transform_node (ir_node *n)
     }
   }
   break;
-  case iro_Eor: {
+  case iro_Eor: { /* @@@ not tested as boolean Eor not allowed any more. */
     a = get_Eor_left(n);
     b = get_Eor_right(n);
 
@@ -674,7 +676,7 @@ transform_node (ir_node *n)
 	&& (get_irn_op(a) == op_Proj)
         && (get_irn_mode(a) == mode_b)
 	&& (tarval_classify (computed_value (b)) == 1)
-	&& (get_irn_op(get_Proj_pred(a)) == iro_Cmp))
+	&& (get_irn_op(get_Proj_pred(a)) == op_Cmp))
       /* The Eor negates a Cmp. The Cmp has the negated result anyways! */
       n = new_r_Proj(current_ir_graph, get_nodes_Block(n), get_Proj_pred(a),
                      mode_b, get_negated_pnc(get_Proj_proj(a)));
@@ -685,13 +687,13 @@ transform_node (ir_node *n)
       n = new_r_Not(current_ir_graph, get_nodes_Block(n), a, mode_b);
   }
   break;
-  case iro_Not: {
+  case iro_Not: { /* @@@ not tested as boolean Eor not allowed any more. */
     a = get_Not_op(n);
 
     if (   (get_irn_mode(n) == mode_b)
 	&& (get_irn_op(a) == op_Proj)
         && (get_irn_mode(a) == mode_b)
-	&& (get_irn_op(get_Proj_pred(a)) == iro_Cmp))
+	&& (get_irn_op(get_Proj_pred(a)) == op_Cmp))
       /* We negate a Cmp. The Cmp has the negated result anyways! */
       n = new_r_Proj(current_ir_graph, get_nodes_Block(n), get_Proj_pred(a),
                      mode_b, get_negated_pnc(get_Proj_proj(a)));
@@ -699,8 +701,8 @@ transform_node (ir_node *n)
   break;
   default: ;
   }
+  return n;
 }
-#endif
 
 /***************** Common Subexpression Elimination *****************/
 
@@ -927,11 +929,10 @@ optimize (ir_node *n)
     /* The AmRoq fiasco returns n here.  Martin's version doesn't. */
   }
 
-#if 0
-  /* Some more constant expression evaluation. */
+  /* Some more constant expression evaluation that does not allow to
+     free the node. */
   if (get_opt_constant_folding())
     n = transform_node (n);
-#endif
 
   /* Remove nodes with dead (Bad) input. */
   n = gigo (n);

@@ -179,7 +179,7 @@ ir_vrfy (ir_node *n)
 	   );
     op_is_symmetric = 2;
     break;
-  case iro_DivMod:
+  case iro_DivMod:;
     op1mode = get_irn_mode(in[1]);
     op2mode = get_irn_mode(in[2]);
     op3mode = get_irn_mode(in[3]);

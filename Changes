@@ -1,3 +1,8 @@
+  6.7.2000 Goetz
+  Fixed bug in _r_ constructors for all four Div operations.
+  Fixed bug in turn_into_tuple: didn't remember the block.
+  Tested transform_node.
+
   5.7.2000 Goetz
   Fixed some testprograms to new semantics of firm.
   Added testprogram global_var_example.

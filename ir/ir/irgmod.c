@@ -21,9 +21,10 @@ turn_into_tuple (ir_node *node, int arity)
   if (get_irn_arity(node) == arity) {
     /* keep old array */
   } else {
-    /* allocate new array, remove old one. */
-    /* !!!??? free old in_array */
+    /* Allocate new array, don't free old in_array, it's on the obstack. */
+    ir_node *block = get_nodes_Block(node);
     node->in = NEW_ARR_D (ir_node *, current_ir_graph->obst, arity+1);
+    set_nodes_Block(node, block);
   }
 }
 

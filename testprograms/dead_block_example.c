@@ -54,11 +54,6 @@ int main(int argc, char **argv)
 
   /* init library */
   init_firm ();
-  set_opt_constant_folding (1);
-  set_optimize(1);
-  set_opt_cse(1);
-  set_opt_dead_node_elimination(1);
-
 
   /* FIRM was designed for oo languages where all methods belong to a class.
    * For imperative languages like C we view a file as a large class containing
