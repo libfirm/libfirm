@@ -27,8 +27,19 @@
 #include "besched_t.h"
 #include "belive_t.h"
 
+
+
 #undef DUMP_INTERVALS
 #undef DUMP_PRESSURE
+#define DUMP_IFG
+
+#define BUILD_GRAPH
+
+#ifdef USE_OLD_PHI_INTERFERENCE
+#undef BUILD_GRAPH
+#define BUILD_GRAPH
+#endif
+
 
 #define TEST_COLORS 2048
 
@@ -44,7 +55,7 @@ typedef struct _border_t {
 
 typedef struct _env_t {
 	struct obstack obst;	/**< An obstack for temporary storage. */
-	set *phi_if;					/**< The phi interference map. */
+	set *graph;						/**< The interference graph. */
 	bitset_t *live;   		/**< A live bitset to use in every block. */
 	bitset_t *processed;	/**< A set marking processed blocks. */
 	bitset_t *colors;			/**< The color mask. */
@@ -140,7 +151,7 @@ static void draw_interval_graphs(ir_node *block,
 	}
 }
 
-#ifdef USE_OLD_PHI_INTERFERENCE
+#ifdef BUILD_GRAPH
 
 typedef struct _if_edge_t {
 	int src, tgt;
@@ -174,17 +185,36 @@ static INLINE void add_if(const env_t *env, int src, int tgt)
 {
 	if_edge_t edge;
 	edge_init(&edge, src, tgt);
-	set_insert(env->phi_if, &edge, sizeof(edge), IF_EDGE_HASH(&edge));
+	set_insert(env->graph, &edge, sizeof(edge), IF_EDGE_HASH(&edge));
 }
 
 static INLINE int are_connected(const env_t *env, int src, int tgt)
 {
 	if_edge_t edge;
 	edge_init(&edge, src, tgt);
-	return set_find(env->phi_if, &edge, sizeof(edge), IF_EDGE_HASH(&edge)) != NULL;
+	return set_find(env->graph, &edge, sizeof(edge), IF_EDGE_HASH(&edge)) != NULL;
 }
 
-#endif /* USE_OLD_PHI_INTERFERENCE */
+static void dump_ifg(set *edges, const char *filename)
+{
+	FILE *f;
+
+	if((f = fopen(filename, "wt")) != NULL) {
+		if_edge_t *edge;
+
+		fprintf(f, "graph G {\n");
+
+		for(edge = set_first(edges); edge; edge = set_next(edges)) {
+			fprintf(f, "i\tn%d -- n%d\n", edge->src, edge->tgt);
+		}
+
+		fprintf(f, "}\n");
+		fclose(f);
+	}
+
+}
+
+#endif /* USE_OLD_PHI_INTERFERENCE || BUILD_GRAPH */
 
 static INLINE border_t *border_add(env_t *env, struct list_head *head,
 			const ir_node *irn, int step, int is_def)
@@ -275,14 +305,13 @@ static void block_alloc(ir_node *block, void *env_ptr)
 			bitset_clear(live, nr);
 			border_add(env, &head, irn, step, 1);
 
-#ifdef USE_OLD_PHI_INTERFERENCE
-			if(is_phi_operand(irn)) {
+#ifdef BUILD_GRAPH
+			{
 				unsigned long elm;
 				bitset_foreach(live, elm) {
 					int live_nr = (int) elm;
 					ir_node *live_irn = get_irn_for_graph_nr(irg, live_nr);
 					if(is_phi_operand(live_irn)) {
-						DBG((dbg, LEVEL_3, "\t\tinterfering phi operands: %n, %n\n", irn, live_irn));
 						add_if(env, nr, live_nr);
 					}
 				}
@@ -423,6 +452,7 @@ static void block_alloc(ir_node *block, void *env_ptr)
 	}
 #endif
 
+
 	/*
 	 * Allocate the used colors array in the blocks ra info structure and
 	 * fill it.
@@ -452,9 +482,9 @@ void be_ra_chordal(ir_graph *irg)
 
 	obstack_init(&env->obst);
 
-#ifdef USE_OLD_PHI_INTERFERENCE
-	env->phi_if = new_set(if_edge_cmp, node_count);
-#endif /* USE_OLD_PHI_INTERFERENCE */
+#ifdef BUILD_GRAPH
+	env->graph = new_set(if_edge_cmp, node_count);
+#endif
 
 	env->live = bitset_obstack_alloc(&env->obst, node_count);
 	env->processed = bitset_obstack_alloc(&env->obst, get_graph_block_count(irg));
@@ -465,13 +495,25 @@ void be_ra_chordal(ir_graph *irg)
 	irg_block_walk_graph(irg, block_alloc, NULL, env);
 	obstack_free(&env->obst, NULL);
 
+#ifdef DUMP_IFG
+	{
+		char buf[128];
+
+		ir_snprintf(buf, sizeof(buf), "ifg_%s.dot", get_entity_name(get_irg_entity(irg)));
+		dump_ifg(env->graph, buf);
+	}
+#endif
+
 	set_irg_ra_link(irg, env);
 }
 
 void be_ra_chordal_done(ir_graph *irg)
 {
 	env_t *env = get_irg_ra_link(irg);
-	free(env->phi_if);
+
+#ifdef BUILD_GRAPH
+	free(env->graph);
+#endif
 	free(env);
 }
 

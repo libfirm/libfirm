@@ -86,4 +86,4 @@ static INLINE int __is_allocatable_irn(const ir_node *irn)
 #define set_irn_color(irn,col)						__set_irn_color(irn, col)
 #define is_allocatable_irn(irn)						__is_allocatable_irn(irn)
 
-#endif
+#endif /* BERA_T_H */
