@@ -15,7 +15,7 @@ srcdir = @srcdir@
 topdir = ../..
 subdir := ir/be
 
-INSTALL_HEADERS = be.h
+INSTALL_HEADERS = be.h bearch.h bearch_obj.def
 
 SOURCES = $(INSTALL_HEADERS)
 

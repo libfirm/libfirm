@@ -2,7 +2,11 @@
 #ifndef _FIRM_BEARCH_H
 #define _FIRM_BEARCH_H
 
-#include "bitset.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+struct bitset_t;
 
 /*
  * Define the types of the arch facility.
@@ -19,7 +23,7 @@
  * @param pos 				The number of the insn's operand to consider.
  * @param valid_regs 	A bitset where all valid registers are put.
  */
-typedef void (arch_register_callback_t)(ir_node *irn, int pos, bitset_t *valid_regs);
+typedef void (arch_register_callback_t)(ir_node *irn, int pos, struct bitset_t *valid_regs);
 
 
 /**
@@ -99,7 +103,7 @@ arch_insn_t *arch_add_insn(arch_insn_format_t *fmt, const char *name);
  * @return The instruction format, if it was added before, or NULL if it
  * is unknown.
  */
-arch_insn_format_t *arch_find_insn_format(arch_isa_t *isa, const char *name);
+arch_insn_format_t *arch_find_insn_format(const arch_isa_t *isa, const char *name);
 
 /**
  * Find an isa.
@@ -107,6 +111,14 @@ arch_insn_format_t *arch_find_insn_format(arch_isa_t *isa, const char *name);
  * @return The isa if it has been added, or NULl if it is unknwon.
  */
 arch_isa_t *arch_find_isa(const char *name);
+
+/**
+ * Find an sintrsuction in the instruction set architecture.
+ * @param isa The instruction set architecture.
+ * @param name The name of the instruction.
+ * @return The instruction or NULL if no such instruction exists.
+ */
+arch_insn_t *arch_find_insn(const arch_isa_t *isa, const char *name);
 
 /**
  * Find a register class of an isa.
@@ -126,5 +138,33 @@ arch_register_class_t *arch_find_register_class(arch_isa_t *isa, const char *nam
  */
 arch_register_set_t *arch_get_register_set_for_class(arch_register_class_t *cls);
 
+/**
+ * Get a mode which is a placeholder for an unknown mode.
+ * @return Some mode to use, if you don't know which mode you will need,
+ * yet.
+ */
+ir_mode *arch_get_unknown_mode(void);
+
+/**
+ * Make a new bare instance of an insn.
+ * @param insn The instruction.
+ * @param irg The graph.
+ * @param arity The number of operands to reserve for the ir_node.
+ * @return An ir node. Its block and operands are set to an Unknown
+ * node.
+ */
+ir_node *arch_new_node_bare(const arch_insn_t *insn, ir_graph *irg, int arity);
+
+/**
+ * Make a new instance of an insn.
+ * This functions works like new_ir_node() and uses the op in the
+ * insn.
+ */
+ir_node *arch_new_node(const arch_insn_t *insn, ir_graph *irg, ir_node *block,
+		ir_mode *mode, int arity, ir_node **in);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

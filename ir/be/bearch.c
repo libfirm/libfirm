@@ -6,6 +6,8 @@
  * $Id$
  */
 
+#include <string.h>
+
 #include "bearch_t.h"
 
 #include "firm_config.h"
@@ -237,7 +239,7 @@ arch_insn_t *arch_add_insn(arch_insn_format_t *fmt, const char *name)
 	return insn;
 }
 
-arch_insn_format_t *arch_find_insn_format(arch_isa_t *isa, const char *name)
+arch_insn_format_t *arch_find_insn_format(const arch_isa_t *isa, const char *name)
 {
 	return arch_data_find(insn_format, isa, name);
 }
@@ -245,6 +247,11 @@ arch_insn_format_t *arch_find_insn_format(arch_isa_t *isa, const char *name)
 arch_isa_t *arch_find_isa(const char *name)
 {
 	return arch_data_find(isa, NULL, name);
+}
+
+arch_insn_t *arch_find_insn(const arch_isa_t *isa, const char *name)
+{
+	return arch_data_find(insn, isa, name);
 }
 
 arch_register_class_t *arch_find_register_class_t(arch_isa_t *isa, const char *name)
@@ -278,4 +285,9 @@ ir_node *arch_new_node_bare(const arch_insn_t *insn, ir_graph *irg, int arity)
 		in[i] = new_Unknown(mode_Is);
 
 	return arch_new_node(insn, irg, new_Unknown(mode_BB), mode_Is, arity, in);
+}
+
+ir_mode *arch_get_unknown_mode(void)
+{
+	return mode_Is;
 }
