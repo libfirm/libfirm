@@ -7,7 +7,6 @@
 #define _BEPHICOAL_T_H
 
 #include "pset.h"
-#include "domtree.h"
 
 void be_phi_coal_init(void);
 void be_phi_coalesce(pset *all_phi_classes);
