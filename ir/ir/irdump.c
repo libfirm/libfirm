@@ -535,31 +535,26 @@ static INLINE int
 dump_node_mode(FILE *F, ir_node *n)
 {
   int bad = 0;
+  opcode iro = get_irn_opcode(n);
 
-  switch (get_irn_opcode(n)) {
-  case iro_Phi:
-  case iro_Const:
-  case iro_Id:
-  case iro_Proj:
-  case iro_Filter:
-  case iro_Conv:
-  case iro_Tuple:
-  case iro_Add:
-  case iro_Sub:
-  case iro_Mul:
-  case iro_And:
-  case iro_Or:
-  case iro_Eor:
-  case iro_Shl:
-  case iro_Shr:
-  case iro_Abs:
-  case iro_Cmp:
-  case iro_Confirm:
-    fprintf(F, "%s", get_mode_name_ex(get_irn_mode(n), &bad));
-    break;
-  default:
-    ;
+  switch (iro) {
+    case iro_SymConst:
+    case iro_Sel:
+    case iro_End:
+    case iro_Return:
+    case iro_Free:
+    case iro_Sync:
+    case iro_Jmp:
+      break;
+    default: {
+      ir_mode *mode = get_irn_mode(n);
+
+      if (mode && mode != mode_BB && mode != mode_ANY && mode != mode_BAD &&
+          (mode != mode_T || iro == iro_Proj))
+        fprintf(F, "%s", get_mode_name_ex(mode, &bad));
+    }
   }
+
   return bad;
 }
 
