@@ -271,6 +271,10 @@ void dump_dominator_information(void);
  *   If the loops are interprocedural nodes can be missing.
  */
 void dump_loop_information(void);
+
+/**
+ * @see dump_loop_information()
+ */
 void dont_dump_loop_information(void);
 
 # endif /* _IRDUMP_H_ */
