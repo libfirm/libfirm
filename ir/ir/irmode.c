@@ -67,6 +67,19 @@ INLINE static int modes_are_equal(const ir_mode *m, const ir_mode *n)
   return 0;
 }
 
+/*
+ * calculates the next obstack address
+ */
+static void *next_obstack_adr(struct obstack *o, void *p, size_t s)
+{
+  PTR_INT_TYPE adr = __PTR_TO_INT((char *)p);
+  int mask = obstack_alignment_mask(o);
+
+  adr += s + o->alignment_mask;
+
+  return __INT_TO_PTR(adr & ~o->alignment_mask);
+}
+
 /**
  * searches the modes obstack for the given mode and returns
  * a pointer on an equal mode already in the array, NULL if
@@ -74,21 +87,32 @@ INLINE static int modes_are_equal(const ir_mode *m, const ir_mode *n)
  */
 static ir_mode *find_mode(const ir_mode *m)
 {
-  ir_mode *n;
+  ir_mode *n, *nn;
   struct _obstack_chunk	*p;
 
-  p = modes.chunk;
-  for ( n = (ir_mode *)p->contents; (char *)(n+1) <= modes.next_free; ++n) {
+  p  = modes.chunk;
+  n  = (ir_mode *)p->contents;
+  nn = next_obstack_adr(&modes, n, sizeof(*n));
+  for (; (char *)nn <= modes.next_free;) {
     assert(is_mode(n));
     if (modes_are_equal(n, m))
       return n;
+
+    n  = nn;
+    nn = next_obstack_adr(&modes, n, sizeof(*n));
   }
 
   for (p = p->prev; p; p = p->prev) {
-    for (n = (ir_mode *)p->contents; (char *)(n+1) < p->limit; ++n)
+    n  = (ir_mode *)p->contents;
+    nn = next_obstack_adr(&modes, n, sizeof(*n));
+    for (; (char *)nn < p->limit;) {
       assert(is_mode(n));
       if (modes_are_equal(n, m))
 	return n;
+
+      n  = nn;
+      nn = next_obstack_adr(&modes, n, sizeof(*n));
+    }
   }
 
   return NULL;
