@@ -37,12 +37,20 @@ typedef struct _walk_env_t {
 } walk_env_t;
 
 /**
+ * flags for Load/Store
+ */
+enum ldst_flags_t {
+  LDST_VISITED = 1              /**< if set, this Load/Store is already visited */
+};
+
+/**
  * a Load/Store info
  */
 typedef struct _ldst_info_t {
-  ir_node *projs[MAX_PROJ];	/**< list of Proj's of this node */
-  ir_node *exc_block;           /**< the exception block if available */
-  int     exc_idx;              /**< predecessor index in the exception block */
+  ir_node  *projs[MAX_PROJ];    /**< list of Proj's of this node */
+  ir_node  *exc_block;          /**< the exception block if available */
+  int      exc_idx;             /**< predecessor index in the exception block */
+  unsigned flags;               /**< flags */
 } ldst_info_t;
 
 /**
@@ -144,11 +152,12 @@ static int update_exc(ldst_info_t *info, ir_node *block, int pos)
  */
 static void collect_nodes(ir_node *node, void *env)
 {
+  ir_op       *op = get_irn_op(node);
   ir_node     *pred;
   ldst_info_t *ldst_info;
   walk_env_t  *wenv = env;
 
-  if (get_irn_op(node) == op_Proj) {
+  if (op == op_Proj) {
     ir_node *adr;
     ir_op *op;
 
@@ -156,23 +165,31 @@ static void collect_nodes(ir_node *node, void *env)
     op   = get_irn_op(pred);
 
     if (op == op_Load) {
-      adr       = get_Load_ptr(pred);
       ldst_info = get_ldst_info(pred, wenv);
 
       wenv->changes |= update_projs(ldst_info, node);
 
-      set_irn_out_n(adr, get_irn_out_n(adr) + 1);
+      if ((ldst_info->flags & LDST_VISITED) == 0) {
+        adr = get_Load_ptr(pred);
+        set_irn_out_n(adr, get_irn_out_n(adr) + 1);
+
+        ldst_info->flags |= LDST_VISITED;
+      }
     }
     else if (op == op_Store) {
-      adr       = get_Store_ptr(pred);
       ldst_info = get_ldst_info(pred, wenv);
 
       wenv->changes |= update_projs(ldst_info, node);
 
-      set_irn_out_n(adr, get_irn_out_n(adr) + 1);
+      if ((ldst_info->flags & LDST_VISITED) == 0) {
+        adr = get_Store_ptr(pred);
+        set_irn_out_n(adr, get_irn_out_n(adr) + 1);
+
+        ldst_info->flags |= LDST_VISITED;
+      }
     }
   }
-  else if (get_irn_op(node) == op_Block) { /* check, if it's an exception block */
+  else if (op == op_Block) { /* check, if it's an exception block */
     int i, n;
 
     for (i = 0, n = get_Block_n_cfgpreds(node); i < n; ++i) {
