@@ -15,12 +15,11 @@ srcdir = @srcdir@
 topdir = ../..
 subdir := ir/ir
 
-INSTALL_HEADERS =
+INSTALL_HEADERS = firmstat.h
 
 SOURCES = $(INSTALL_HEADERS)
 
 SOURCES += 	Makefile.in \
-		firmstat.h \
 		firmstat.c
 
 include $(topdir)/MakeRules

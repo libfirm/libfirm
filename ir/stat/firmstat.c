@@ -205,11 +205,11 @@ static graph_entry_t *graph_get_entry(const ir_graph *irg, pset *set)
   cnt_clr(&elem->walked_blocks);
 
   /* new hash table for opcodes here  */
-  elem->opcode_hash = new_pset(opcode_cmp, 8);
-  elem->irg         = irg;
+  elem->opcode_hash  = new_pset(opcode_cmp, 5);
+  elem->irg          = irg;
 
   for (i = 0; i < sizeof(elem->opt_hash)/sizeof(elem->opt_hash[0]); ++i)
-    elem->opt_hash[i] = new_pset(opt_cmp, 8);
+    elem->opt_hash[i] = new_pset(opt_cmp, 4);
 
   return pset_insert(set, elem, irg_hash(irg));
 }
@@ -383,6 +383,16 @@ void stat_merge_nodes(
   }
 }
 
+/*
+ * A node was lowered into other nodes
+ */
+void stat_lower(ir_node *node)
+{
+  graph_entry_t *graph = graph_get_entry(current_ir_graph, status->irg_hash);
+
+  removed_due_opt(node, graph->opt_hash[STAT_LOWERED]);
+}
+
 /**
  * dumps a opcode hash
  */
@@ -407,6 +417,7 @@ static const char *opt_names[] = {
   "Tuple optimization",
   "ID optimization",
   "Constant evaluation",
+  "Lowered",
 };
 
 /**

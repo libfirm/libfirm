@@ -25,8 +25,9 @@ typedef enum {
   STAT_OPT_TUPLE      = 6,		/**< Tuple optimization */
   STAT_OPT_ID         = 7,		/**< ID optimization */
   STAT_OPT_CONST_EVAL = 8,		/**< constant evaluation */
+  STAT_LOWERED        = 9,		/**< lowered */
 
-  STAT_OPT_MAX        = 9
+  STAT_OPT_MAX        = 10
 }
 stat_opt_kind;
 
@@ -83,6 +84,11 @@ void stat_merge_nodes(
     ir_node **old_node_array, int old_num_entries,
     stat_opt_kind opt);
 
+/**
+ * A node was lowered into other nodes
+ */
+void stat_lower(ir_node *node);
+
 #else
 
 #define stat_init()
@@ -95,6 +101,7 @@ void stat_merge_nodes(
 #define stat_irg_walk(irg, pre, post)
 #define stat_irg_block_walk(irg, node, pre, post)
 #define stat_merge_nodes(new_node_array, new_num_entries, old_node_array, old_num_entries, opt)
+#define stat_lower(node)
 
 #endif
 
