@@ -387,9 +387,10 @@ copy_graph_env (void) {
   /* Not all nodes remembered in current_ir_graph might be reachable
      from the end node.  Assure their link is set to NULL, so that
      we can test whether new nodes have been computed. */
-  set_irn_link(get_irg_frame  (current_ir_graph), NULL);
-  set_irn_link(get_irg_globals(current_ir_graph), NULL);
-  set_irn_link(get_irg_args   (current_ir_graph), NULL);
+  set_irn_link(get_irg_frame      (current_ir_graph), NULL);
+  set_irn_link(get_irg_globals    (current_ir_graph), NULL);
+  set_irn_link(get_irg_args       (current_ir_graph), NULL);
+  set_irn_link(get_irg_initial_mem(current_ir_graph), NULL);
 
   /* we use the block walk flag for removing Bads from Blocks ins. */
   inc_irg_block_visited(current_ir_graph);
@@ -412,17 +413,23 @@ copy_graph_env (void) {
     copy_node (get_irg_globals(current_ir_graph), NULL);
     copy_preds(get_irg_globals(current_ir_graph), NULL);
   }
+  if (get_irn_link(get_irg_initial_mem(current_ir_graph)) == NULL) {
+    copy_node (get_irg_initial_mem(current_ir_graph), NULL);
+    copy_preds(get_irg_initial_mem(current_ir_graph), NULL);
+  }
   if (get_irn_link(get_irg_args(current_ir_graph)) == NULL) {
     copy_node (get_irg_args(current_ir_graph), NULL);
     copy_preds(get_irg_args(current_ir_graph), NULL);
   }
-  set_irg_start  (current_ir_graph, get_new_node(get_irg_start(current_ir_graph)));
+  set_irg_start      (current_ir_graph, get_new_node(get_irg_start(current_ir_graph)));
 
   set_irg_start_block(current_ir_graph,
               get_new_node(get_irg_start_block(current_ir_graph)));
-  set_irg_frame  (current_ir_graph, get_new_node(get_irg_frame(current_ir_graph)));
-  set_irg_globals(current_ir_graph, get_new_node(get_irg_globals(current_ir_graph)));
-  set_irg_args   (current_ir_graph, get_new_node(get_irg_args(current_ir_graph)));
+  set_irg_frame      (current_ir_graph, get_new_node(get_irg_frame(current_ir_graph)));
+  set_irg_globals    (current_ir_graph, get_new_node(get_irg_globals(current_ir_graph)));
+  set_irg_initial_mem(current_ir_graph, get_new_node(get_irg_initial_mem(current_ir_graph)));
+  set_irg_args       (current_ir_graph, get_new_node(get_irg_args(current_ir_graph)));
+
   if (get_irn_link(get_irg_bad(current_ir_graph)) == NULL) {
     copy_node(get_irg_bad(current_ir_graph), NULL);
     copy_preds(get_irg_bad(current_ir_graph), NULL);
@@ -445,6 +452,7 @@ dead_node_elimination(ir_graph *irg) {
   struct obstack *graveyard_obst = NULL;
   struct obstack *rebirth_obst   = NULL;
 
+  /* inform statistics that we started a dead-node elimination run */
   stat_dead_node_elim_start(irg);
 
   /* Remember external state of current_ir_graph. */
@@ -482,6 +490,7 @@ dead_node_elimination(ir_graph *irg) {
     xfree (graveyard_obst);           /* ... then free it.           */
   }
 
+  /* inform statistics that the run is over */
   stat_dead_node_elim_stop(irg);
 
   current_ir_graph = rem;

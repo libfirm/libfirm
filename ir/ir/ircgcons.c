@@ -249,8 +249,9 @@ static void prepare_irg(ir_graph * irg, irg_data_t * data) {
     }
   }
   /* Globle Einträge für ersetzte Operationen korrigieren. */
-  set_irg_frame(irg, skip_nop(get_irg_frame(irg)));
-  set_irg_globals(irg, skip_nop(get_irg_globals(irg)));
+  set_irg_frame      (irg, skip_nop(get_irg_frame(irg)));
+  set_irg_globals    (irg, skip_nop(get_irg_globals(irg)));
+  set_irg_initial_mem(irg, skip_nop(get_irg_initial_mem(irg)));
 
   /* Unbekannten Aufrufer sofort eintragen. */
   if (data->open) {
@@ -863,6 +864,7 @@ void cg_destruct(void) {
       irg_walk_graph(irg, destruct_walker, clear_link, NULL);
       set_irg_frame(irg, skip_nop(get_irg_frame(irg)));
       set_irg_globals(irg, skip_nop(get_irg_globals(irg)));
+      set_irg_initial_mem(irg, skip_nop(get_irg_initial_mem(irg)));
       set_irg_callee_info_state(irg, irg_callee_info_none);
       set_irg_end_reg(irg, get_irg_end(irg));
       set_irg_end_except(irg, get_irg_end(irg));

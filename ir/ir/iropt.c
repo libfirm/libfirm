@@ -707,7 +707,7 @@ static ir_node *equivalent_node_Div(ir_node *n)
   ir_node *b = get_Div_right(n);
 
   /* Div is not commutative. */
-  if (tarval_classify (computed_value (b)) == TV_CLASSIFY_ONE) { /* div(x, 1) == x */
+  if (tarval_classify(computed_value(b)) == TV_CLASSIFY_ONE) { /* div(x, 1) == x */
     /* Turn Div into a tuple (mem, bad, a) */
     ir_node *mem = get_Div_mem(n);
     turn_into_tuple(n, 3);
@@ -1034,31 +1034,79 @@ optimize_preds(ir_node *n) {
 
 static ir_node *transform_node_Div(ir_node *n)
 {
-  tarval *ta = computed_value(n);
+  tarval *tv = computed_value(n);
+  ir_node *b = get_Div_right(n);
+  tarval *tb = computed_value(b);
 
-  if (ta != tarval_bad) {
+  /* BEWARE: it is NOT possible to optimize a/a to 1, as this may cause a exception */
+
+  if (tv != tarval_bad) {
     /* Turn Div into a tuple (mem, bad, value) */
     ir_node *mem = get_Div_mem(n);
 
     turn_into_tuple(n, 3);
     set_Tuple_pred(n, pn_Div_M, mem);
     set_Tuple_pred(n, pn_Div_X_except, new_Bad());
-    set_Tuple_pred(n, pn_Div_res, new_Const(get_tarval_mode(ta), ta));
+    set_Tuple_pred(n, pn_Div_res, new_Const(get_tarval_mode(tv), tv));
+  }
+  else if (tb != tarval_bad && tarval_classify(tb) != TV_CLASSIFY_NULL) { /* div(x, c) && c != 0 */
+    ir_node *div, *proj;
+    ir_node *a = get_Div_left(n);
+    ir_node *mem = get_Div_mem(n);
+    int rem = get_optimize();
+
+    set_optimize(0);
+    {
+      div = new_rd_Div(get_irn_dbg_info(n), current_ir_graph,
+	get_nodes_Block(n), get_irg_initial_mem(current_ir_graph), a, b);
+    }
+    set_optimize(rem);
+    proj = new_r_Proj(current_ir_graph, get_nodes_Block(n), div, get_irn_mode(a), pn_Div_res);
+
+    turn_into_tuple(n, 3);
+    set_Tuple_pred(n, pn_Div_M, mem);
+    set_Tuple_pred(n, pn_Div_X_except, new_Bad());
+    set_Tuple_pred(n, pn_Div_res, proj);
+
   }
   return n;
 }
 
 static ir_node *transform_node_Mod(ir_node *n)
 {
-  tarval *ta = computed_value(n);
+  tarval *tv = computed_value(n);
+  ir_node *b = get_Mod_right(n);
+  tarval *tb = computed_value(b);
 
-  if (ta != tarval_bad) {
+  /* BEWARE: it is NOT possible to optimize a%a to 0, as this may cause a exception */
+
+  if (tv != tarval_bad) {
     /* Turn Mod into a tuple (mem, bad, value) */
     ir_node *mem = get_Mod_mem(n);
     turn_into_tuple(n, 3);
     set_Tuple_pred(n, pn_Mod_M, mem);
     set_Tuple_pred(n, pn_Mod_X_except, new_Bad());
-    set_Tuple_pred(n, pn_Mod_res, new_Const(get_tarval_mode(ta), ta));
+    set_Tuple_pred(n, pn_Mod_res, new_Const(get_tarval_mode(tv), tv));
+  }
+  else if (tb != tarval_bad && tarval_classify(tb) != TV_CLASSIFY_NULL) { /* div(x, c) && c != 0 */
+    ir_node *mod, *proj;
+    ir_node *a = get_Mod_left(n);
+    ir_node *mem = get_Mod_mem(n);
+    int rem = get_optimize();
+
+    set_optimize(0);
+    {
+      mod = new_rd_Mod(get_irn_dbg_info(n), current_ir_graph,
+	get_nodes_Block(n), get_irg_initial_mem(current_ir_graph), a, b);
+    }
+    set_optimize(rem);
+    proj = new_r_Proj(current_ir_graph, get_nodes_Block(n), mod, get_irn_mode(a), pn_Mod_res);
+
+    turn_into_tuple(n, 3);
+    set_Tuple_pred(n, pn_Mod_M, mem);
+    set_Tuple_pred(n, pn_Mod_X_except, new_Bad());
+    set_Tuple_pred(n, pn_Mod_res, proj);
+
   }
   return n;
 }
@@ -1070,37 +1118,32 @@ static ir_node *transform_node_DivMod(ir_node *n)
   ir_node *a = get_DivMod_left(n);
   ir_node *b = get_DivMod_right(n);
   ir_mode *mode = get_irn_mode(a);
+  tarval *ta = value_of(a);
+  tarval *tb = value_of(b);
 
   if (!(mode_is_int(mode) && mode_is_int(get_irn_mode(b))))
     return n;
 
-  if (a == b) {
-    a = new_Const(mode, get_mode_one(mode));
-    b = new_Const(mode, get_mode_null(mode));
-    evaluated = 1;
-  } else {
-    tarval *ta = value_of(a);
-    tarval *tb = value_of(b);
+  /* BEWARE: it is NOT possible to optimize a/a to 1, as this may cause a exception */
 
-    if (tb != tarval_bad) {
-      if (tb == get_mode_one(get_tarval_mode(tb))) {
-	b = new_Const (mode, get_mode_null(mode));
-	evaluated = 1;
-      } else if (ta != tarval_bad) {
-	tarval *resa, *resb;
-	resa = tarval_div (ta, tb);
-	if (resa == tarval_bad) return n; /* Causes exception!!! Model by replacing through
-					  Jmp for X result!? */
-	resb = tarval_mod (ta, tb);
-	if (resb == tarval_bad) return n; /* Causes exception! */
-	a = new_Const (mode, resa);
-	b = new_Const (mode, resb);
-	evaluated = 1;
-      }
-    } else if (ta == get_mode_null(mode)) {
-      b = a;
+  if (tb != tarval_bad) {
+    if (tb == get_mode_one(get_tarval_mode(tb))) {
+      b = new_Const (mode, get_mode_null(mode));
+      evaluated = 1;
+    } else if (ta != tarval_bad) {
+      tarval *resa, *resb;
+      resa = tarval_div (ta, tb);
+      if (resa == tarval_bad) return n; /* Causes exception!!! Model by replacing through
+					Jmp for X result!? */
+      resb = tarval_mod (ta, tb);
+      if (resb == tarval_bad) return n; /* Causes exception! */
+      a = new_Const (mode, resa);
+      b = new_Const (mode, resb);
       evaluated = 1;
     }
+  } else if (ta == get_mode_null(mode)) {
+    b = a;
+    evaluated = 1;
   }
   if (evaluated) { /* replace by tuple */
     ir_node *mem = get_DivMod_mem(n);

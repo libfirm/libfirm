@@ -75,10 +75,12 @@ typedef struct ir_graph ir_graph;
  *             did actually change something).  Code placement is necessary.
  */
 
-/* Global variable holding the current_ir_graph.  This global variable
-   is used by the ir construction interface in ircons and by the
-   optimizations. */
+/** Global variable holding the current IR-graph.
+ * This global variable is used by the ir construction
+ * interface in ircons and by the optimizations.
+ */
 extern ir_graph *current_ir_graph;
+
 ir_graph *get_current_ir_graph(void);
 void set_current_ir_graph(ir_graph *graph);
 
@@ -100,12 +102,13 @@ void set_interprocedural_view(bool state);
 ir_graph *new_ir_graph (entity *ent, int n_loc);
 
 /** Frees the passed irgraph.
-   Deallocates all nodes in this graph and the ir_graph structure.
-   Sets the field irgraph in the corresponding entity to NULL.
-   Does not remove the irgraph from the list in irprog (requires
-   inefficient search, call remove_irp_irg by hand).
-   Does not free types, entities or modes that are used only by this
-   graph, nor the entity standing for this graph. */
+ * Deallocates all nodes in this graph and the ir_graph structure.
+ * Sets the field irgraph in the corresponding entity to NULL.
+ * Does not remove the irgraph from the list in irprog (requires
+ * inefficient search, call remove_irp_irg by hand).
+ * Does not free types, entities or modes that are used only by this
+ * graph, nor the entity standing for this graph.
+ */
 void free_ir_graph (ir_graph *irg);
 
 /* --- access routines for all ir_graph attributes --- */
@@ -118,8 +121,7 @@ void free_ir_graph (ir_graph *irg);
  *   @return
  *       true if the thing is a ir graph, else false
  */
-int
-is_ir_graph(void *thing);
+int      is_ir_graph(void *thing);
 
 #define get_irg_entity get_irg_ent
 #define set_irg_entity set_irg_ent
@@ -158,18 +160,29 @@ ir_node *get_irg_cstore (ir_graph *irg);
 void     set_irg_cstore (ir_graph *irg, ir_node *node);
 /* end oblivious */
 
-/* node that represents frame pointer */
+/** Returns the node that represents the frame pointer. */
 ir_node *get_irg_frame (ir_graph *irg);
+/** Sets the node that represents the frame pointer. */
 void     set_irg_frame (ir_graph *irg, ir_node *node);
 
-/* node that represents global pointer */
+/** Returns the node that represents the global pointer. */
 ir_node *get_irg_globals (ir_graph *irg);
+/** Sets the node that represents the global pointer. */
 void     set_irg_globals (ir_graph *irg, ir_node *node);
 
+/** Returns the node that represents the initial memory. */
+ir_node *get_irg_initial_mem (ir_graph *irg);
+/** Sets the node that represents the initial memory. */
+void     set_irg_initial_mem (ir_graph *irg, ir_node *node);
+
+/** Returns the node that represents the argument pointer. */
 ir_node *get_irg_args (ir_graph *irg);
+/** Sets the node that represents the argument pointer. */
 void     set_irg_args (ir_graph *irg, ir_node *node);
 
+/** Returns the current block of a graph. */
 ir_node *get_irg_current_block (ir_graph *irg);
+/** Sets the current block of a graph. */
 void     set_irg_current_block (ir_graph *irg, ir_node *node);
 
 /* Use new_Bad() instead!! */
@@ -182,8 +195,10 @@ ir_node *get_irg_unknown (ir_graph *irg);
 void     set_irg_unknown (ir_graph *irg, ir_node *node);
 */
 
+/** Returns teh number of value numbers of a graph. */
 int      get_irg_n_locs (ir_graph *irg);
 
+/** Returns the graph number. */
 long     get_irg_graph_nr(ir_graph *irg);
 
 /********************************************************************************/
@@ -210,7 +225,7 @@ typedef enum {
 irg_phase_state get_irg_phase_state (ir_graph *irg);
 void set_irg_phase_low(ir_graph *irg);
 
-/* state: pinned
+/** state: pinned
    The graph is "pinned" if all nodes are associated with a basic block.
    It is in state "floats" if nodes are in arbitrary blocks.  In state
    "floats" the block predecessor is set in all nodes, but this can be an
@@ -295,7 +310,7 @@ typedef enum {
 irg_inline_property get_irg_inline_property(ir_graph *irg);
 void set_irg_inline_property(ir_graph *irg, irg_inline_property s);
 
-/* A void * field to link arbritary information to the node. */
+/** A void * field to link arbritary information to the node. */
 void  set_irg_link (ir_graph *irg, void *thing);
 void *get_irg_link (ir_graph *irg);
 
