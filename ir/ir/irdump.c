@@ -57,10 +57,13 @@ SeqNo get_Block_seqno(ir_node *n);
 #define DEFAULT_ENUM_ITEM_ATTRIBUTE " "
 
 /* Attributes of edges between Firm nodes */
-#define BLOCK_EDGE_ATTR     "class:2 priority:2 linestyle:dotted"
-#define CF_EDGE_ATTR        "class:13 color:red"
-#define MEM_EDGE_ATTR       "class:14 color:blue"
-#define DOMINATOR_EDGE_ATTR "class:15 color:red"
+#define INTRA_DATA_EDGE_ATTR "class:1  priority:50"
+#define INTER_DATA_EDGE_ATTR "class:16 priority:10"
+#define BLOCK_EDGE_ATTR      "class:2  priority:50 linestyle:dotted"
+#define CF_EDGE_ATTR         "class:13 priority:60 color:red"
+#define INTRA_MEM_EDGE_ATTR  "class:14 priority:50 color:blue"
+#define INTER_MEM_EDGE_ATTR  "class:17 priority:10 color:blue"
+#define DOMINATOR_EDGE_ATTR  "class:15 color:red"
 
 #define BACK_EDGE_ATTR "linestyle:dashed "
 
@@ -822,7 +825,24 @@ dump_ir_block_edge(ir_node *n)  {
   }
 }
 
-static void print_edge_vcgattr(ir_node *from, int to) {
+static void
+print_data_edge_vcgattr(FILE *F, ir_node *from, int to) {
+  if (get_nodes_block(from) == get_nodes_block(get_irn_n(from, to)))
+    fprintf (F, INTRA_DATA_EDGE_ATTR);
+  else
+    fprintf (F, INTER_DATA_EDGE_ATTR);
+}
+
+static void
+print_mem_edge_vcgattr(FILE *F, ir_node *from, int to) {
+  if (get_nodes_block(from) == get_nodes_block(get_irn_n(from, to)))
+    fprintf (F, INTRA_MEM_EDGE_ATTR);
+  else
+    fprintf (F, INTER_MEM_EDGE_ATTR);
+}
+
+static void
+print_edge_vcgattr(ir_node *from, int to) {
   assert(from);
 
   if (dump_backedge_information_flag && is_backedge(from, to))
@@ -838,56 +858,79 @@ static void print_edge_vcgattr(ir_node *from, int to) {
       if (get_irn_mode(get_End_keepalive(from, to)) == mode_BB)
     fprintf (F, CF_EDGE_ATTR);
       if (get_irn_mode(get_End_keepalive(from, to)) == mode_X)
-    fprintf (F, MEM_EDGE_ATTR);
+    fprintf (F, INTER_MEM_EDGE_ATTR);
     }
     break;
-  case iro_EndReg: break;
-  case iro_EndExcept: break;
-  case iro_Jmp:     break;
-  case iro_Break:   break;
-  case iro_Cond:    break;
+  case iro_EndReg:
+  case iro_EndExcept:
+  case iro_Jmp:
+  case iro_Break:
+  case iro_Cond:
+    print_data_edge_vcgattr(F, from, to);
+    break;
   case iro_Return:
   case iro_Raise:
-    if (to == 0) fprintf (F, MEM_EDGE_ATTR);
+    if (to == 0)
+      print_mem_edge_vcgattr(F, from, to);
+    else
+      print_data_edge_vcgattr(F, from, to);
     break;
-  case iro_Const:   break;
-  case iro_SymConst:break;
+  case iro_Const:
+  case iro_SymConst:
+    print_data_edge_vcgattr(F, from, to);
+    break;
   case iro_Sel:
   case iro_Call:
-    if (to == 0) fprintf (F, MEM_EDGE_ATTR);
+    if (to == 0)
+      print_mem_edge_vcgattr(F, from, to);
+    else
+      print_data_edge_vcgattr(F, from, to);
     break;
-  case iro_CallBegin: break;
-  case iro_Add:     break;
-  case iro_Sub:     break;
-  case iro_Minus:   break;
-  case iro_Mul:     break;
+  case iro_CallBegin:
+  case iro_Add:
+  case iro_Sub:
+  case iro_Minus:
+  case iro_Mul:
+    print_data_edge_vcgattr(F, from, to);
+    break;
   case iro_Quot:
   case iro_DivMod:
   case iro_Div:
   case iro_Mod:
-    if (to == 0) fprintf (F, MEM_EDGE_ATTR);
+    if (to == 0)
+      print_mem_edge_vcgattr(F, from, to);
+    else
+      print_data_edge_vcgattr(F, from, to);
     break;
-  case iro_Abs:    break;
-  case iro_And:    break;
-  case iro_Or:     break;
-  case iro_Eor:    break;
-  case iro_Shl:    break;
-  case iro_Shr:    break;
-  case iro_Shrs:   break;
-  case iro_Rot:    break;
-  case iro_Cmp:    break;
-  case iro_Conv:   break;
+  case iro_Abs:
+  case iro_And:
+  case iro_Or:
+  case iro_Eor:
+  case iro_Shl:
+  case iro_Shr:
+  case iro_Shrs:
+  case iro_Rot:
+  case iro_Cmp:
+  case iro_Conv:
+      print_data_edge_vcgattr(F, from, to);
+    break;
   case iro_Phi:
-    if (get_irn_modecode(from) == irm_M) fprintf (F, MEM_EDGE_ATTR);
+    if (get_irn_modecode(from) == irm_M)
+      fprintf (F, INTER_MEM_EDGE_ATTR);
+    else
+      print_data_edge_vcgattr(F, from, to);
     break;
   case iro_Load:
   case iro_Store:
   case iro_Alloc:
   case iro_Free:
-    if (to == 0) fprintf (F, MEM_EDGE_ATTR);
+    if (to == 0)
+      print_mem_edge_vcgattr(F, from, to);
+    else
+      print_data_edge_vcgattr(F, from, to);
     break;
   case iro_Sync:
-    fprintf (F, MEM_EDGE_ATTR);
+    print_mem_edge_vcgattr(F, from, to);
     break;
   case iro_Tuple:  break;
   case iro_Proj:
@@ -897,14 +940,16 @@ static void print_edge_vcgattr(ir_node *from, int to) {
       fprintf (F, CF_EDGE_ATTR);
       break;
     case irm_M:
-      fprintf (F, MEM_EDGE_ATTR);
+      fprintf (F, INTER_MEM_EDGE_ATTR);
       break;
-    default: break;
+    default:
+      print_data_edge_vcgattr(F, from, to);
+      break;
     }
     break;
-  case iro_Bad:    break;
+  case iro_Bad:     break;
   case iro_Unknown: break;
-  case iro_Id:     break;
+  case iro_Id:      break;
   default:
     ;
   }
@@ -1573,22 +1618,24 @@ dump_vcg_header(const char *name, const char *orientation) {
        "manhattan_edges: yes\n"
        "port_sharing: no\n"
        "orientation: %s\n"
-       "classname 1: \"Data\"\n"
-       "classname 2: \"Block\"\n"
-       "classname 13:\"Control Flow\"\n"
-       "classname 14:\"Memory\"\n"
-       "classname 15:\"Dominators\"\n"
-       "classname 3: \"Entity type\"\n"
-       "classname 4: \"Entity owner\"\n"
-       "classname 5: \"Method Param\"\n"
-       "classname 6: \"Method Res\"\n"
-       "classname 7: \"Super\"\n"
-       "classname 8: \"Union\"\n"
-       "classname 9: \"Points-to\"\n"
+       "classname 1:  \"intrablock Data\"\n"
+       "classname 16: \"interblock Data\"\n"
+       "classname 2:  \"Block\"\n"
+       "classname 13: \"Control Flow\"\n"
+       "classname 14: \"intrablock Memory\"\n"
+       "classname 17: \"interblock Memory\"\n"
+       "classname 15: \"Dominators\"\n"
+       "classname 3:  \"Entity type\"\n"
+       "classname 4:  \"Entity owner\"\n"
+       "classname 5:  \"Method Param\"\n"
+       "classname 6:  \"Method Res\"\n"
+       "classname 7:  \"Super\"\n"
+       "classname 8:  \"Union\"\n"
+       "classname 9:  \"Points-to\"\n"
        "classname 10: \"Array Element Type\"\n"
        "classname 11: \"Overwrites\"\n"
        "classname 12: \"Member\"\n"
-           "infoname 1: \"Attribute\"\n"
+       "infoname 1: \"Attribute\"\n"
        "infoname 2: \"Verification errors\"\n",
        name, label, orientation);
 

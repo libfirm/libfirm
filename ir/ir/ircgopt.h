@@ -28,7 +28,9 @@
  * (bezgl. der Abschaetzung get_Call_callee) nicht erreichbar sind. Die
  * Abschaetzung der Aufrufrelation muss entsprechend an den
  * Call-Operationen gespeichert sein. Die "entity->link"s werden dabei
- * ueberschrieben. */
+ * ueberschrieben.
+ *
+ * Frees all interprocedural loop information. */
 void gc_irgs(int n_keep, entity *keep_arr[]);
 
 

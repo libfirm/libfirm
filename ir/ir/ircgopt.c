@@ -24,6 +24,7 @@
 #include "array.h"
 #include "irprog.h"
 #include "irgwalk.h"
+#include "irloop.h"
 
 
 static void clear_link(ir_node * node, void * env) {
@@ -81,6 +82,10 @@ void gc_irgs(int n_keep, entity ** keep_arr) {
   for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     ir_graph * irg = get_irp_irg(i);
     entity * ent = get_irg_ent(irg);
+    /* Removing any graph invalidates all interprocedural loop trees. */
+    if (get_irg_loopinfo_state(irg) == loopinfo_ip_consistent ||
+	get_irg_loopinfo_state(irg) == loopinfo_ip_inconsistent)
+      free_loop_information(irg);
     if (get_entity_link(ent) != MARK) {
       remove_irp_irg(irg);
       set_entity_peculiarity(ent, peculiarity_description);
