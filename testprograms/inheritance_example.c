@@ -45,7 +45,7 @@ int main(int argc, char **argv)
   type  *intt;
   entity *i_m1e, *c_m1e, *c_m2e, *e_m2e, *d_be, *e_ae;   /*        e names entities    */
 
-  printf("\nCreating type information...\n");
+  printf("\nCreating type information for INHERITANCE_EXAMPLE ...\n");
 
   /** init library */
   init_firm (NULL);
