@@ -1,3 +1,6 @@
+  12.3. Goetz
+  Bugfix in inlining: problems in combination with cse.
+
   8.3. Goetz
   Implemented cf optimizations.
   Checked compiler flags -- sorted better to fit optimizations.
