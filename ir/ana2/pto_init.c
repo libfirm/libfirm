@@ -95,12 +95,52 @@ static pto_t* new_symconst_pto (ir_node *symconst)
 
   pto_t *pto = new_pto (symconst);
   entity *ent = get_SymConst_entity (symconst);
-  desc_t *desc = new_ent_name (ent);
+  desc_t *desc = NULL;
+
+  /* ok, so if the symconst has a pointer-to-mumble, it's some address
+     calculation, but if it's the mumble itself, it's just the same,
+     except it's presumably a constant of mumble. In any case, we need to
+     branch on this.  "How's that for object fucking oriented? --jwz" */
+  if (is_pointer_type (get_entity_type (ent))) {
+    desc = new_ent_name (ent);
+  } else if (is_class_type (get_entity_type (ent))) {
+    desc = new_name (get_entity_type (ent), symconst);
+  } else {
+    fprintf (stderr, "%s: not handled: %s[%li] (\"%s\")\n",
+             __FUNCTION__,
+             get_op_name (get_irn_op (symconst)),
+             get_irn_node_nr (symconst),
+             get_entity_name (ent));
+    assert (0 && "something not handled");
+  }
 
   qset_insert (pto->values, desc);
 
   return (pto);
 }
+
+/* Allocate a new pto for a constant */
+static pto_t *new_const_pto (ir_node *cnst)
+{
+  assert (iro_Const == get_irn_opcode (cnst));
+  assert (mode_P == get_irn_mode (cnst));
+
+  static pto_t *cnst_pto = NULL;
+
+  /* since 'store's and 'load's via a NULL pointer are hardly ever
+     successful, we get away with an empty set */
+
+  tarval *tv = get_Const_tarval (cnst);
+
+  assert (tv == get_tarval_null (mode_P));
+
+  if (NULL == cnst_pto) {
+    cnst_pto = new_pto (cnst);
+  }
+
+  return (cnst_pto);
+}
+
 
 /* Helper to pto_init --- clear the link fields of class types */
 static void clear_type_link (type_or_ent *thing, void *__unused)
@@ -145,9 +185,10 @@ static void reset_node_pto (ir_node *node, void *env)
 
   switch (op) {
   case (iro_Load):
-  case (iro_SymConst):
+    /* case (iro_SymConst): */ /* WHY? */
   case (iro_Const):
   case (iro_Call):
+  case (iro_Block):             /* END BLOCK only */
   case (iro_Phi): {
     /* allocate 'empty' pto values */
     pto_t *pto = new_pto (node);
@@ -176,13 +217,12 @@ static void init_pto (ir_node *node, void *env)
 
   switch (op) {
   case (iro_SymConst): {
-    const symconst_kind kind = get_SymConst_kind (node);
-
-    if ((kind == symconst_addr_name) || (kind == symconst_addr_ent)) {
+    if (mode_P == get_irn_mode (node)) {
+      /* debugging only */
       entity *ent = get_SymConst_entity (node);
-
-      if (is_pointer_type (get_entity_type (ent))) {
-        DBGPRINT (0, (stdout, "%s: new name \"%s\" for symconst \"%s[%li]\"\n",
+      if (is_class_type (get_entity_type (ent)) ||
+          is_pointer_type (get_entity_type (ent))) {
+        DBGPRINT (0, (stdout, "%s: new name \"%s\" for \"%s[%li]\"\n",
                       __FUNCTION__,
                       get_entity_name (ent),
                       OPNAME (node),
@@ -198,7 +238,7 @@ static void init_pto (ir_node *node, void *env)
     alloc_pto_t *alloc_pto = new_alloc_pto (node, n_ctxs);
     set_alloc_pto (node, alloc_pto);
 
-    DBGPRINT (0, (stdout, "%s: %i names \"%s\" for alloc \"%s[%li]\"\n",
+    DBGPRINT (0, (stdout, "%s: %i names \"%s\" for \"%s[%li]\"\n",
                   __FUNCTION__,
                   n_ctxs,
                   get_type_name (tp),
@@ -206,10 +246,16 @@ static void init_pto (ir_node *node, void *env)
                   OPNUM (node)));
   } break;
 
+  case (iro_Const): {
+    if (mode_P == get_irn_mode (node)) {
+      pto_t *pto = new_const_pto (node);
+      set_node_pto (node, pto);
+    }
+  } break;
+
   case (iro_Load):
   case (iro_Call):
   case (iro_Phi):
-  case (iro_Const):
     /* nothing --- handled by reset_node_pto on each pass */
     break;
   default: {
@@ -350,6 +396,9 @@ void pto_reset_graph_pto (ir_graph *graph, int ctx_idx)
 
 /*
   $Log$
+  Revision 1.6  2004/11/26 16:00:41  liekweg
+  recognize class consts vs. ptr-to-class consts
+
   Revision 1.5  2004/11/24 14:53:56  liekweg
   Bugfixes
 
