@@ -193,6 +193,7 @@ void normalize_n_returns(ir_graph *irg)
   ir_node *final = NULL;
   ir_node **in;
   ir_node *endbl = get_irg_end_block(irg);
+  ir_node *end;
 
   /* first, link all returns */
   n = get_Block_n_cfgpreds(endbl);
@@ -224,11 +225,13 @@ void normalize_n_returns(ir_graph *irg)
    * new Returns), than we check if a newly created Return can be moved even further.
    * If yes, we simply add it to our work list, else to the final list.
    */
+  end        = get_irg_end(irg);
   n_ret_vals = get_irn_arity(list);
   in         = alloca(sizeof(*in) * n_ret_vals);
   while (list) {
     ir_node *ret   = list;
     ir_node *block = get_nodes_block(ret);
+    ir_node *phiM;
 
     list = get_irn_link(ret);
     --n_rets;
@@ -257,6 +260,22 @@ void normalize_n_returns(ir_graph *irg)
         set_irn_link(new_ret, final);
         final = new_ret;
         ++n_finals;
+      }
+    }
+
+    /*
+     * if the memory of the old Return is a PhiM, remove it
+     * from the keep-alives, or it will keep the block which
+     * will crash the dominator algorithm.
+     */
+    phiM = get_Return_mem(ret);
+    if (is_Phi(phiM)) {
+      n = get_End_n_keepalives(end);
+      for (i = 0; i < n; ++i) {
+        if (get_End_keepalive(end, i) == phiM) {
+          set_End_keepalive(end, i, new_r_Bad(irg));
+          break;
+        }
       }
     }
   }
