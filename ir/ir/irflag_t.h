@@ -219,6 +219,12 @@ static INLINE int get_opt_tail_recursion(void)
   return libFIRM_opt & OPT_TAIL_RECURSION;
 }
 
+/** Returns tail-recursion setting. */
+static INLINE int get_opt_tail_recursion_verbose(void)
+{
+  return libFIRM_verb & OPT_TAIL_RECURSION;
+}
+
 /** Returns precise exception context setting. */
 static INLINE int get_opt_precise_exc_context(void)
 {

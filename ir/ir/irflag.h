@@ -182,6 +182,7 @@ void set_opt_dyn_meth_dispatch (int value);
  * If the flag is turned on tail-recursion calls are optimized into loops.
  */
 void set_opt_tail_recursion(int value);
+void set_opt_tail_recursion_verbose(int value);
 
 
 /** Enable/Disable normalizations of the firm representation.

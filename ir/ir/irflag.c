@@ -260,6 +260,15 @@ void set_opt_tail_recursion(int value)
     libFIRM_opt &= ~OPT_TAIL_RECURSION;
 }
 
+/* Enable/Disable optimization of tail-recursion calls. */
+void set_opt_tail_recursion_verbose(int value)
+{
+  if (value)
+    libFIRM_verb |= OPT_TAIL_RECURSION;
+  else
+    libFIRM_verb &= ~OPT_TAIL_RECURSION;
+}
+
 /* Enable/Disable precise exception context. */
 void set_opt_precise_exc_context(int value)
 {
