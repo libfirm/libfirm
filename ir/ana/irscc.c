@@ -30,6 +30,11 @@
 
 #include "irdump.h"
 
+/* A variant of the loop tree that avoids loops without head.
+   This reduces the depth of the loop tree. */
+#define NO_LOOPS_WITHOUT_HEAD 1
+
+
 INLINE void add_loop_son(ir_loop *loop, ir_loop *son);
 
 INLINE void add_loop_node(ir_loop *loop, ir_node *n);
@@ -788,7 +793,7 @@ find_tail (ir_node *n) {
 	if (res_index == -2)  /* no smallest dfn pred found. */
 	  res_index = largest_dfn_pred (m);
 
-	if ((m == n) && (res_index == -2)) {
+	if ((m == n) && (res_index == -2)) {  /* dont walk past loop head. */
 	  i = -1;
 	}
 	break;
@@ -867,7 +872,8 @@ int search_endproj_in_stack(ir_node *start_block)
 	  int arity = get_irn_arity(start_block);
 	  for(j = 0; j < arity; j++)
 	    {
-	      ir_node *begin_projx = get_Block_cfgpred(get_irg_start_block(get_irn_irg(end_projx)), get_Proj_proj(end_projx));
+	      ir_node *begin_projx = get_Block_cfgpred(get_irg_start_block(get_irn_irg(end_projx)),
+						       get_Proj_proj(end_projx));
 	      DDMN(begin_projx);
 	      if(get_irn_n(start_block, j) == begin_projx)
 		{
@@ -884,11 +890,13 @@ int search_endproj_in_stack(ir_node *start_block)
 static pmap *projx_link = NULL;
 
 void link_to_reg_end (ir_node *n, void *env) {
-  if(get_irn_op(n) == op_Proj && get_irn_mode(n) == mode_X && get_irn_op(get_irn_n(n, 0)) == op_EndReg)
-    {
+  if(get_irn_op(n) == op_Proj &&
+     get_irn_mode(n) == mode_X &&
+     get_irn_op(get_irn_n(n, 0)) == op_EndReg) {
       /* Reg End Projx -> Find the CallBegin Projx and hash it */
       ir_node *end_projx = n;
-      ir_node *begin_projx = get_Block_cfgpred(get_irg_start_block(get_irn_irg(end_projx)), get_Proj_proj(end_projx));
+      ir_node *begin_projx = get_Block_cfgpred(get_irg_start_block(get_irn_irg(end_projx)),
+					       get_Proj_proj(end_projx));
       printf("Linked the following ProjxNodes:\n");
       DDMN(begin_projx);
       DDMN(end_projx);
@@ -910,6 +918,10 @@ ir_node *get_projx_link(ir_node *cb_projx)
 
 #endif
 
+INLINE static int
+is_outermost_loop(ir_loop *l) {
+  return l == get_loop_outer_loop(l);
+}
 
 
 /*-----------------------------------------------------------*
@@ -970,18 +982,20 @@ static void scc (ir_node *n) {
 	 Next actions: Open a new loop on the loop tree and
 	               try to find inner loops */
 
-#define NO_LOOPS_WITHOUT_HEAD 1
 #if NO_LOOPS_WITHOUT_HEAD
       /* This is an adaption of the algorithm from fiasco / optscc to
        * avoid loops without Block or Phi as first node.  This should
        * severely reduce the number of evaluations of nodes to detect
        * a fixpoint in the heap analysis.
        * Further it avoids loops without firm nodes that cause errors
-       * in the heap analyses. */
+       * in the heap analyses.
+       * But attention:  don't do it for the outermost loop:  This loop
+       * is not iterated.  A first block can be a loop head in case of
+       * an endless recursion. */
 
       ir_loop *l;
       int close;
-      if (get_loop_n_elements(current_loop) > 0) {
+      if ((get_loop_n_elements(current_loop) > 0) || (is_outermost_loop(current_loop))) {
 	l = new_loop();
 	close = 1;
       } else {
@@ -1069,7 +1083,6 @@ static void my_scc (ir_node *n) {
 	 Next actions: Open a new loop on the loop tree and
 	               try to find inner loops */
 
-#define NO_LOOPS_WITHOUT_HEAD 1
 #if NO_LOOPS_WITHOUT_HEAD
       /* This is an adaption of the algorithm from fiasco / optscc to
        * avoid loops without Block or Phi as first node.  This should
@@ -1080,7 +1093,7 @@ static void my_scc (ir_node *n) {
 
       ir_loop *l;
       int close;
-      if (get_loop_n_elements(current_loop) > 0) {
+      if ((get_loop_n_elements(current_loop) > 0) || (is_outermost_loop(current_loop))) {
 	l = new_loop();
 	close = 1;
       } else {
@@ -1133,16 +1146,9 @@ void construct_backedges(ir_graph *irg) {
   new_loop();  /* sets current_loop */
   head_rem = current_loop; /* Just for assertion */
 
-  if (interprocedural_view) {
-    set_irg_visited(current_ir_graph, inc_max_irg_visited());
-    init_ip_walk ();
-  } else {
-    inc_irg_visited(current_ir_graph);
-  }
+  inc_irg_visited(current_ir_graph);
 
   scc(get_irg_end(current_ir_graph));
-
-  if (interprocedural_view) finish_ip_walk();
 
   assert(head_rem == current_loop);
   set_irg_loop(current_ir_graph, current_loop);

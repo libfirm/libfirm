@@ -28,6 +28,8 @@
 #include "irprog_t.h"
 #include "irdump.h"
 
+#define NO_CFLOOPS_WITHOUT_HEAD 1
+
 static ir_graph *outermost_ir_graph;      /* The outermost graph the scc is computed
                       for */
 static ir_loop *current_loop;      /* Current cfloop construction is working
@@ -312,6 +314,39 @@ is_head (ir_node *n, ir_node *root)
   return some_outof_loop && some_in_loop;
 }
 
+
+/* Returns true if n is possible loop head of an endless loop.
+   I.e., it is a Block, Phi or Filter node and has only predecessors
+   within the loop.
+   @arg root: only needed for assertion. */
+static bool
+is_endless_head (ir_node *n, ir_node *root)
+{
+  int i, arity;
+  int some_outof_loop = 0, some_in_loop = 0;
+
+  assert(is_Block(n));
+  /* Test for legal loop header: Block, Phi, ... */
+  if (!is_outermost_StartBlock(n)) {
+    arity = get_irn_arity(n);
+    for (i = 0; i < arity; i++) {
+      ir_node *pred = get_nodes_block(skip_Proj(get_irn_n(n, i)));
+      assert(pred);
+      if (is_backedge(n, i)) { continue; }
+      if (!irn_is_in_stack(pred)) {
+	some_outof_loop = 1; //printf(" some out of loop ");
+      } else {
+	if(get_irn_uplink(pred) < get_irn_uplink(root)) {
+	  DDMN(pred); DDMN(root);
+	  assert(get_irn_uplink(pred) >= get_irn_uplink(root));
+	}
+	some_in_loop = 1;
+      }
+    }
+  }
+  return !some_outof_loop && some_in_loop;
+}
+
 /* Returns index of the predecessor with the smallest dfn number
    greater-equal than limit. */
 static int
@@ -356,8 +391,7 @@ largest_dfn_pred (ir_node *n)
 /* Searches the stack for possible loop heads.  Tests these for backedges.
    If it finds a head with an unmarked backedge it marks this edge and
    returns the tail of the loop.
-   If it finds no backedge returns NULL.
-   ("disable_backedge" in fiasco) */
+   If it finds no backedge returns NULL. */
 static ir_node *
 find_tail (ir_node *n) {
   ir_node *m;
@@ -371,20 +405,56 @@ find_tail (ir_node *n) {
       return NULL;
   } else {
     if (m == n) return NULL;
-    for (i = tos-2; ; --i) {
+    for (i = tos-2; i >= 0; --i) {
+
       m = stack[i];
       if (is_head (m, n)) {
 	res_index = smallest_dfn_pred (m, get_irn_dfn(m) + 1);
 	if (res_index == -2)  /* no smallest dfn pred found. */
 	  res_index = largest_dfn_pred (m);
+
+	if ((m == n) && (res_index == -2)) {
+	  i = -1;
+	}
 	break;
       }
+
+
+      /* We should not walk past our selves on the stack:  The upcoming nodes
+	 are not in this loop. We assume a loop not reachable from Start. */
+      if (m == n) {
+	i = -1;
+	break;
+      }
+
     }
+
+
+    if (i < 0) {
+      /* A dead loop not reachable from Start. */
+      for (i = tos-2; i >= 0; --i) {
+	m = stack[i];
+	if (is_endless_head (m, n)) {
+	  res_index = smallest_dfn_pred (m, get_irn_dfn(m) + 1);
+	  if (res_index == -2)  /* no smallest dfn pred found. */
+	    res_index = largest_dfn_pred (m);
+	  break;
+	}
+	if (m == n) { break; }  /* It's not an unreachable loop, either. */
+      }
+      //assert(0 && "no head found on stack");
+    }
+
   }
   assert (res_index > -2);
 
   set_backedge (m, res_index);
   return is_outermost_StartBlock(n) ? NULL : get_nodes_block(skip_Proj(get_irn_n(m, res_index)));
+}
+
+INLINE static int
+is_outermost_loop(ir_loop *l) {
+  return l == get_loop_outer_loop(l);
 }
 
 /*-----------------------------------------------------------*
@@ -448,8 +518,6 @@ static void cfscc (ir_node *n) {
 	 Next actions: Open a new cfloop on the cfloop tree and
 	               try to find inner cfloops */
 
-
-#define NO_CFLOOPS_WITHOUT_HEAD 1
 #if NO_CFLOOPS_WITHOUT_HEAD
 
       /* This is an adaption of the algorithm from fiasco / optscc to
@@ -461,7 +529,7 @@ static void cfscc (ir_node *n) {
 
       ir_loop *l;
       int close;
-      if (get_loop_n_elements(current_loop) > 0) {
+      if ((get_loop_n_elements(current_loop) > 0) || (is_outermost_loop(current_loop))) {
 	l = new_loop();
 	close = 1;
       } else {
