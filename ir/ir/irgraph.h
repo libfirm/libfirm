@@ -355,4 +355,7 @@ void          inc_irg_block_visited (ir_graph *irg);
 unsigned long get_irg_block_visited (ir_graph *irg);
 void          set_irg_block_visited (ir_graph *irg, unsigned long i);
 
+/* is irg a pseudo graph for analysis? */
+int      is_pseudo_ir_graph(ir_graph *irg);
+
 # endif /* _IRGRAPH_H_ */

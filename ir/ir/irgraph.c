@@ -665,3 +665,20 @@ void
 (inc_irg_block_visited)(ir_graph *irg) {
   __inc_irg_block_visited(irg);
 }
+
+/* is irg a pseudo graph for analysis? */
+int is_pseudo_ir_graph(ir_graph *irg)
+{
+  int res = false;
+  entity *ent;
+
+  assert(irg && "nothing here");
+  assert(is_ir_graph(irg) && "no ir_graph given");
+
+  ent = get_irg_entity(irg);
+  if(visibility_external_allocated == get_entity_visibility(ent)
+     && peculiarity_existent == get_entity_peculiarity(ent)) {
+    res = true;
+  }
+  return(res);
+}
