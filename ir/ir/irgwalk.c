@@ -36,7 +36,7 @@
 
 /* walk over an interprocedural graph (callgraph). Visits only graphs in irg_set. */
 static void irg_walk_cg(ir_node * node, int visited, eset * irg_set,
-			irg_walk_func *pre, irg_walk_func *post, void * env) {
+                        irg_walk_func *pre, irg_walk_func *post, void * env) {
   int i;
   ir_graph * rem = current_ir_graph;
   ir_node * pred;
@@ -46,6 +46,8 @@ static void irg_walk_cg(ir_node * node, int visited, eset * irg_set,
 
   set_irn_visited(node, visited);
 
+  if (pre) pre(node, env);
+
   pred = skip_Proj(node);
   if (get_irn_op(pred) == op_CallBegin
       || get_irn_op(pred) == op_EndReg
@@ -53,41 +55,45 @@ static void irg_walk_cg(ir_node * node, int visited, eset * irg_set,
     current_ir_graph = get_irn_irg(pred);
   }
 
-  if (pre) pre(node, env);
-
-  if (is_no_Block(node))
+  if (is_no_Block(node)) { /* not block */
     irg_walk_cg(get_nodes_block(node), visited, irg_set, pre, post, env);
+  }
 
   if (get_irn_op(node) == op_Block) { /* block */
     for (i = get_irn_arity(node) - 1; i >= 0; --i) {
       ir_node * exec = get_irn_n(node, i);
       ir_node * pred = skip_Proj(exec);
       if ((get_irn_op(pred) != op_CallBegin
-	   && get_irn_op(pred) != op_EndReg
-	   && get_irn_op(pred) != op_EndExcept)
-	  || eset_contains(irg_set, get_irn_irg(pred))) {
-	irg_walk_cg(exec, visited, irg_set, pre, post, env);
+           && get_irn_op(pred) != op_EndReg
+           && get_irn_op(pred) != op_EndExcept)
+          || eset_contains(irg_set, get_irn_irg(pred))) {
+        irg_walk_cg(exec, visited, irg_set, pre, post, env);
       }
     }
-  } else if (get_irn_op(node) == op_Filter) {
+  } else if (get_irn_op(node) == op_Filter) { /* filter */
     for (i = get_irn_arity(node) - 1; i >= 0; --i) {
       ir_node * pred = get_irn_n(node, i);
       if (get_irn_op(pred) == op_Unknown || get_irn_op(pred) == op_Bad) {
-	irg_walk_cg(pred, visited, irg_set, pre, post, env);
+        irg_walk_cg(pred, visited, irg_set, pre, post, env);
       } else {
-	ir_node * exec;
-	exec = skip_Proj(get_Block_cfgpred(get_nodes_block(node), i));
-	assert(get_irn_op(exec) == op_CallBegin
-	       || get_irn_op(exec) == op_EndReg
-	       || get_irn_op(exec) == op_EndExcept);
-	if (eset_contains(irg_set, get_irn_irg(exec))) {
-	  current_ir_graph = get_irn_irg(exec);
-	  irg_walk_cg(pred, visited, irg_set, pre, post, env);
-	  current_ir_graph = rem;
-	}
+        ir_node * exec;
+        exec = skip_Proj(get_Block_cfgpred(get_nodes_block(node), i));
+
+        if (op_Bad == get_irn_op (exec)) {
+          continue;
+        }
+
+        assert(get_irn_op(exec) == op_CallBegin
+               || get_irn_op(exec) == op_EndReg
+               || get_irn_op(exec) == op_EndExcept);
+        if (eset_contains(irg_set, get_irn_irg(exec))) {
+          current_ir_graph = get_irn_irg(exec);
+          irg_walk_cg(pred, visited, irg_set, pre, post, env);
+          current_ir_graph = rem;
+        }
       }
     }
-  } else {
+  } else {                      /* everything else */
     for (i = get_irn_arity(node) - 1; i >= 0; --i) {
       irg_walk_cg(get_irn_n(node, i), visited, irg_set, pre, post, env);
     }
@@ -107,8 +113,8 @@ static void collect_irgs(ir_node * node, eset * irg_set) {
       entity * ent = get_Call_callee(node, i);
       ir_graph * irg = ent ? get_entity_irg(ent) : NULL;
       if (irg && !eset_contains(irg_set, irg)) {
-	eset_insert(irg_set, irg);
-	irg_walk_graph(irg, (irg_walk_func *) collect_irgs, NULL, irg_set);
+    eset_insert(irg_set, irg);
+    irg_walk_graph(irg, (irg_walk_func *) collect_irgs, NULL, irg_set);
       }
     }
   }
@@ -218,7 +224,7 @@ switch_irg (ir_node *n, int index) {
     if (get_irn_op(n) == op_Block) {
       ir_node *cfop = skip_Proj(get_Block_cfgpred(n, index));
       if (is_ip_cfop(cfop)) {
-	current_ir_graph = get_irn_irg(cfop);
+    current_ir_graph = get_irn_irg(cfop);
       }
     }
   }
@@ -275,7 +281,7 @@ void cg_walk(irg_walk_func *pre, irg_walk_func *post, void *env) {
     sb = get_irg_start_block(current_ir_graph);
 
     if ((get_Block_n_cfgpreds(sb) > 1) ||
-	(get_nodes_block(get_Block_cfgpred(sb, 0)) != sb)) continue;
+    (get_nodes_block(get_Block_cfgpred(sb, 0)) != sb)) continue;
 
     cg_walk_2(get_irg_end(current_ir_graph), pre, post, env);
   }
@@ -304,7 +310,7 @@ void cg_walk(irg_walk_func *pre, irg_walk_func *post, void *env) {
       int j;
       /* Don't visit the End node. */
       for (j = 0; j < get_End_n_keepalives(e); j++)
-	cg_walk_2(get_End_keepalive(e, j), pre, post, env);
+    cg_walk_2(get_End_keepalive(e, j), pre, post, env);
     }
   }
 
@@ -323,7 +329,7 @@ static ir_node *get_cf_op(ir_node *n) {
   n = skip_Tuple(n);
   pred = skip_Proj(n);
   if (!(is_cfop(pred) || is_fragile_op(pred) ||
-	(get_irn_op(pred) == op_Bad)))
+    (get_irn_op(pred) == op_Bad)))
     n = get_cf_op(n);
 
   return skip_Proj(n);
@@ -343,11 +349,11 @@ static void irg_block_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *p
       ir_node *pred = get_cf_op(get_Block_cfgpred(node, i));
       pred = get_nodes_block(pred);
       if(get_irn_opcode(pred) == iro_Block) {
-	/* recursion */
-	irg_block_walk_2(pred, pre, post, env);
+    /* recursion */
+    irg_block_walk_2(pred, pre, post, env);
       }
       else {
-	assert(get_irn_opcode(pred) == iro_Bad);
+    assert(get_irn_opcode(pred) == iro_Bad);
       }
     }
 
@@ -368,7 +374,7 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void
 
   assert(node);
   assert(!interprocedural_view);   /* interprocedural_view not implemented, because it
-				    * interleaves with irg_walk */
+                    * interleaves with irg_walk */
   inc_irg_block_visited(current_ir_graph);
   if (is_no_Block(node)) block = get_nodes_block(node); else block = node;
   assert(get_irn_opcode(block)  == iro_Block);
@@ -379,7 +385,7 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void
     for (i = 0; i < arity; i++) {
       pred = get_irn_n(node, i);
       if (get_irn_op(pred) == op_Block)
-	irg_block_walk_2(pred, pre, post, env);
+    irg_block_walk_2(pred, pre, post, env);
     }
   }
 
@@ -388,7 +394,7 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void
 
 
 void irg_block_walk_graph(ir_graph *irg, irg_walk_func *pre,
-			  irg_walk_func *post, void *env) {
+              irg_walk_func *post, void *env) {
   ir_graph * rem = current_ir_graph;
   current_ir_graph = irg;
   irg_block_walk(get_irg_end(irg), pre, post, env);
@@ -416,7 +422,7 @@ static void walk_entity(entity *ent, void *env)
       int i, n = get_compound_ent_n_values(ent);
 
       for (i = 0; i < n; i++)
-	irg_walk(get_compound_ent_value(ent, i), my_env->pre, my_env->post, my_env->env);
+    irg_walk(get_compound_ent_value(ent, i), my_env->pre, my_env->post, my_env->env);
     }
   }
 }
@@ -446,11 +452,11 @@ void walk_const_code(irg_walk_func *pre, irg_walk_func *post, void *env) {
     type *tp = get_irp_type(i);
     if (is_array_type(tp)) {
       for (j = 0; j < get_array_n_dimensions(tp); j++) {
-	ir_node *n;
-	n = get_array_lower_bound(tp, j);
-	if (n) irg_walk(n, pre, post, env);
-	n = get_array_upper_bound(tp, j);
-	if (n) irg_walk(n, pre, post, env);
+    ir_node *n;
+    n = get_array_lower_bound(tp, j);
+    if (n) irg_walk(n, pre, post, env);
+    n = get_array_upper_bound(tp, j);
+    if (n) irg_walk(n, pre, post, env);
       }
     }
   }
@@ -637,7 +643,7 @@ ir_node *get_irn_ip_pred(ir_node *n, int pos) {
 
     /* Check whether we enter or leave a procedure and act according. */
     if ((get_irn_op(cf_pred) == op_EndReg) ||
-	(get_irn_op(cf_pred) == op_EndExcept))
+    (get_irn_op(cf_pred) == op_EndExcept))
       enter_procedure(block, cf_pred, pos);
     if (get_irn_op(cf_pred) == op_CallBegin)
       if (!leave_procedure(block, cf_pred, pos)) return NULL;
@@ -664,7 +670,7 @@ re_leave_procedure(ir_node *block, ir_node *cf_pred, int pos) {
   proj = get_Block_cg_cfgpred(block, pos);
   assert(is_Proj(proj));
   callee = get_entity_irg(get_Call_callee(get_CallBegin_call(cf_pred),
-					  get_Proj_proj(proj)));
+                      get_Proj_proj(proj)));
   current_ir_graph = callee;
   push_callsite(callee, cf_pred);
 }
