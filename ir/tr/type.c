@@ -1050,18 +1050,23 @@ INLINE type *new_type_array         (ident *name, int n_dimensions,
 			      type *element_type) {
   type *res;
   int i;
+  ir_graph *rem = current_ir_graph;
   assert(!is_method_type(element_type));
+
   res = new_type(type_array, NULL, name);
   res->attr.aa.n_dimensions = n_dimensions;
   res->attr.aa.lower_bound  = (ir_node **) xmalloc (sizeof (ir_node *) * n_dimensions);
   res->attr.aa.upper_bound  = (ir_node **) xmalloc (sizeof (ir_node *) * n_dimensions);
   res->attr.aa.order  = (int *) xmalloc (sizeof (int) * n_dimensions);
 
+  current_ir_graph = get_const_code_irg();
   for (i = 0; i < n_dimensions; i++) {
-    res->attr.aa.lower_bound[i]  = NULL;
-    res->attr.aa.upper_bound[i]  = NULL;
+    res->attr.aa.lower_bound[i]  = new_Unknown();
+    res->attr.aa.upper_bound[i]  = new_Unknown();
     res->attr.aa.order[i] = i;
   }
+  current_ir_graph = rem;
+
   res->attr.aa.element_type = element_type;
   new_entity(res, mangle_u(name, id_from_str("elem_ent", 8)), element_type);
 
@@ -1127,9 +1132,17 @@ void  set_array_upper_bound_int (type *array, int dimension, int upper_bound) {
 			  new_Const(mode_Iu, new_tarval_from_long (upper_bound, mode_Iu)));
   current_ir_graph = rem;
 }
+int       has_array_lower_bound  (type *array, int dimension) {
+  assert(array && (array->type_op == type_array));
+  return (get_irn_op(array->attr.aa.lower_bound[dimension]) != op_Unknown);
+}
 ir_node * get_array_lower_bound  (type *array, int dimension) {
   assert(array && (array->type_op == type_array));
   return array->attr.aa.lower_bound[dimension];
+}
+int       has_array_upper_bound  (type *array, int dimension) {
+  assert(array && (array->type_op == type_array));
+  return (get_irn_op(array->attr.aa.upper_bound[dimension]) != op_Unknown);
 }
 ir_node * get_array_upper_bound  (type *array, int dimension) {
   assert(array && (array->type_op == type_array));

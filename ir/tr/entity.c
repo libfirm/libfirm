@@ -439,9 +439,12 @@ ir_node *copy_const_value(ir_node *n) {
     nn = new_SymConst(get_SymConst_type_or_id(n), get_SymConst_kind(n)); break;
   case iro_Add:
     nn = new_Add(copy_const_value(get_Add_left(n)), copy_const_value(get_Add_right(n)), m); break;
+  case iro_Unknown:
+    nn = new_Unknown(); break;
   default:
+    DDMN(n);
     assert(0 && "opdope invalid or not implemented");
-    nn=NULL;
+    nn = NULL;
     break;
   }
   return nn;
