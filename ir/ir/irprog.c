@@ -72,6 +72,8 @@ ir_prog *new_ir_prog (void) {
 
   res->const_code_irg = new_const_code_irg();
 
+  res->outs_state = no_outs;
+  res->ip_outedges = NULL;
 
   return res;
 }
@@ -205,6 +207,12 @@ ir_graph *get_const_code_irg(void)
   return irp->const_code_irg;
 }
 
+irg_outs_state get_irp_ip_outs_state() {
+  return irp->outs_state;
+}
+void set_irp_ip_outs_inconsistent() {
+  irp->outs_state = outs_inconsistent;
+}
 void      set_irp_ip_outedges(ir_node ** ip_outedges)
 {
   irp -> ip_outedges = ip_outedges;

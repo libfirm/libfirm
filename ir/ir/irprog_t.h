@@ -22,6 +22,7 @@
 #endif
 
 #include "irprog.h"
+#include "irgraph.h"
 #include "firm_common_t.h"
 
 
@@ -29,7 +30,7 @@
 struct ir_prog {
   firm_kind kind;
   ir_graph  *main_irg;            /**< entry point to the compiled program
-                     or a list, in case we compile a library or the like? */
+				     @@@ or a list, in case we compile a library or the like? */
   ir_graph **graphs;              /**< all graphs in the ir */
   type      *glob_type;           /**< global type.  Must be a class as it can
 				     have fields and procedures.  */
@@ -39,6 +40,7 @@ struct ir_prog {
 				     of constant entities. It is not meant as
 				     a procedure.  */
 
+  irg_outs_state outs_state;     /**< Out edges. */
   ir_node **ip_outedges;         /**< Huge Array that contains all out edges
 				    in interprocedural view. */
   ident     *name;
