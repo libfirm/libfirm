@@ -144,7 +144,7 @@ stat_chain_len (SET *table, int chain_len)
 const char *MANGLEP(tag);
 
 
-static void
+void
 MANGLEP(describe) (SET *table)
 {
   unsigned i, j, collide;
@@ -161,7 +161,7 @@ MANGLEP(describe) (SET *table)
       while (ptr) {
 	if (collide) printf ("<%3d>", collide);
 	else printf ("table");
-	printf ("[%d][%3d]: %u %p\n", i, j, ptr->entry.hash, ptr->entry.dptr);
+	printf ("[%d][%3d]: %u %p\n", i, j, ptr->entry.hash, (void *)ptr->entry.dptr);
 	ptr = ptr->chain;
 	collide++;
       }
@@ -179,13 +179,13 @@ SET *
   SET *table = xmalloc (sizeof (SET));
 
   if (nslots > SEGMENT_SIZE * DIRECTORY_SIZE)
-    nslots = SEGMENT_SIZE * DIRECTORY_SIZE;
+    n_slots = DIRECTORY_SIZE;
   else {
     assert (nslots >= 0);
     /* Adjust nslots up to next power of 2, minimum SEGMENT_SIZE */
     for (i = SEGMENT_SIZE;  i < nslots;  i <<= 1);
+    nslots = i >> SEGMENT_SIZE_SHIFT;
   }
-  nslots = i >> SEGMENT_SIZE_SHIFT;
 
   table->nseg = table->p = table->nkey = 0;
   table->maxp = nslots << SEGMENT_SIZE_SHIFT;
