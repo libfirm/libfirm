@@ -21,6 +21,7 @@
 #include "irnode.h"
 #include "entity.h"
 #include "irloop.h"
+#include "tv.h"
 
 /**
  * identify a firm object type
@@ -30,12 +31,16 @@ static int firm_get_arg_type(const arg_occ_t *occ) {
   return arg_type_ptr;
 }
 
+static int firm_get_arg_type_int(const arg_occ_t *occ) {
+  return arg_type_int;
+}
+
 /**
  * emit a Firm object
  */
 static int firm_emit(appendable_t *app, const arg_occ_t *occ, const arg_value_t *arg)
 {
-#define A(s)    occ->hash ? s " ": ""
+#define A(s)    occ->flag_hash ? s " ": ""
 
   void *X = arg->v_ptr;
   firm_kind *obj = X;
@@ -125,14 +130,30 @@ static int firm_emit_ident(appendable_t *app, const arg_occ_t *occ, const arg_va
 }
 
 
+
+/**
+ * Emit indent.
+ */
+static int firm_emit_indent(appendable_t *app, const arg_occ_t *occ, const arg_value_t *arg)
+{
+	int i;
+	int amount = arg->v_int;
+
+	for(i = 0; i < amount; ++i)
+		appendable_chadd(app, ' ');
+
+	return amount;
+}
+
 arg_env_t *firm_get_arg_env(void)
 {
 #define X(name, letter) {"firm:" name, letter}
 
   static arg_env_t *env = NULL;
 
-  static arg_handler_t firm_handler  = { firm_get_arg_type, firm_emit };
-  static arg_handler_t ident_handler = { firm_get_arg_type, firm_emit_ident };
+  static arg_handler_t firm_handler   = { firm_get_arg_type, firm_emit };
+  static arg_handler_t ident_handler  = { firm_get_arg_type, firm_emit_ident };
+  static arg_handler_t indent_handler = { firm_get_arg_type_int, firm_emit_indent };
 
   static struct {
     const char *name;
@@ -155,10 +176,12 @@ arg_env_t *firm_get_arg_env(void)
     env = arg_new_env();
     arg_add_std(env);
 
+		arg_register(env, "firm", 'F', &firm_handler);
     for (i = 0; i < sizeof(args)/sizeof(args[0]); ++i)
       arg_register(env, args[i].name, args[i].letter, &firm_handler);
 
-    arg_register(env, "ident", 'I', &ident_handler);
+    arg_register(env, "firm:ident", 'I', &ident_handler);
+		arg_register(env, "firm:indent", 'D', &indent_handler);
   }
 
   return env;
