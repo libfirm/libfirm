@@ -42,26 +42,13 @@ typedef struct _border_t {
 	unsigned is_def : 1;			/**< Does this border denote a use or a def. */
 } border_t;
 
-typedef struct _if_edge_t {
-	int src, tgt;
-} if_edge_t;
-
-#define IF_EDGE_HASH(e) ((e)->src)
-
-static int if_edge_cmp(const void *p1, const void *p2, size_t size)
-{
-	const if_edge_t *e1 = p1;
-	const if_edge_t *e2 = p2;
-
-	return !(e1->src == e2->src && e1->tgt == e2->tgt);
-}
-
 typedef struct _env_t {
 	struct obstack obst;	/**< An obstack for temporary storage. */
 	set *phi_if;					/**< The phi interference map. */
 	bitset_t *live;   		/**< A live bitset to use in every block. */
 	bitset_t *processed;	/**< A set marking processed blocks. */
 	bitset_t *colors;			/**< The color mask. */
+	bitset_t *in_colors;	/**< Colors used by live in values. */
 	int colors_n;					/**< The number of colors. */
 } env_t;
 
@@ -153,6 +140,22 @@ static void draw_interval_graphs(ir_node *block,
 	}
 }
 
+#ifdef USE_OLD_PHI_INTERFERENCE
+
+typedef struct _if_edge_t {
+	int src, tgt;
+} if_edge_t;
+
+#define IF_EDGE_HASH(e) ((e)->src)
+
+static int if_edge_cmp(const void *p1, const void *p2, size_t size)
+{
+	const if_edge_t *e1 = p1;
+	const if_edge_t *e2 = p2;
+
+	return !(e1->src == e2->src && e1->tgt == e2->tgt);
+}
+
 static INLINE if_edge_t *edge_init(if_edge_t *edge, int src, int tgt)
 {
 	/* Bring the smaller entry to src. */
@@ -181,7 +184,7 @@ static INLINE int are_connected(const env_t *env, int src, int tgt)
 	return set_find(env->phi_if, &edge, sizeof(edge), IF_EDGE_HASH(&edge)) != NULL;
 }
 
-
+#endif /* USE_OLD_PHI_INTERFERENCE */
 
 static INLINE border_t *border_add(env_t *env, struct list_head *head,
 			const ir_node *irn, int step, int is_def)
@@ -201,7 +204,9 @@ static void block_alloc(ir_node *block, void *env_ptr)
 	void *obstack_level = obstack_base(obst);
 	bitset_t *live = env->live;
 	bitset_t *colors = env->colors;
+	bitset_t *in_colors = env->in_colors;
 	bitset_t *used_colors = bitset_malloc(env->colors_n);
+	bitset_t *tmp_colors = bitset_obstack_alloc(obst, env->colors_n);
 	ir_graph *irg = get_irn_irg(block);
 
 	int i, n;
@@ -233,6 +238,7 @@ static void block_alloc(ir_node *block, void *env_ptr)
 	/* Clear the live and allocate the color bitset. */
 	bitset_clear_all(live);
 	bitset_clear_all(colors);
+	bitset_clear_all(in_colors);
 
 	INIT_LIST_HEAD(&head);
 
@@ -269,6 +275,7 @@ static void block_alloc(ir_node *block, void *env_ptr)
 			bitset_clear(live, nr);
 			border_add(env, &head, irn, step, 1);
 
+#ifdef USE_OLD_PHI_INTERFERENCE
 			if(is_phi_operand(irn)) {
 				unsigned long elm;
 				bitset_foreach(live, elm) {
@@ -280,6 +287,7 @@ static void block_alloc(ir_node *block, void *env_ptr)
 					}
 				}
 			}
+#endif
 		}
 
 		/*
@@ -319,6 +327,7 @@ static void block_alloc(ir_node *block, void *env_ptr)
 			/* Mark the color of the live in value as used. */
 			assert(is_color(col) && "Node must have been assigned a color.");
 			bitset_set(colors, col);
+			bitset_set(in_colors, col);
 			bitset_set(used_colors, col);
 
 			/* Mark the value live in. */
@@ -349,7 +358,21 @@ static void block_alloc(ir_node *block, void *env_ptr)
 		 */
 		if(b->is_def && !is_live_in(block, irn)) {
 			ra_node_info_t *ri = get_ra_node_info(irn);
-			int col = bitset_next_clear(colors, 0);
+			int col = NO_COLOR;
+
+			/*
+			 * Try to assign live out values colors which are not used by live
+			 * in values.
+			 */
+			if(is_live_out(block, irn)) {
+				bitset_copy(tmp_colors, colors);
+				bitset_andnot(tmp_colors, in_colors);
+				col = bitset_next_clear(tmp_colors, 0);
+			}
+
+			/* If a color is not yet assigned, do it now. */
+			if(!is_color(col))
+				col = bitset_next_clear(colors, 0);
 
 			assert(!is_color(get_irn_color(irn)) && "Color must not have assigned");
 			assert(!bitset_is_set(live, nr) && "Value def must not have been encountered");
@@ -416,7 +439,7 @@ static void block_alloc(ir_node *block, void *env_ptr)
 void be_ra_chordal_init(void)
 {
 	dbg = firm_dbg_register(DBG_BERA);
-	/* firm_dbg_set_mask(dbg, -1); */
+	firm_dbg_set_mask(dbg, -1);
 }
 
 void be_ra_chordal(ir_graph *irg)
@@ -428,10 +451,15 @@ void be_ra_chordal(ir_graph *irg)
 		compute_doms(irg);
 
 	obstack_init(&env->obst);
+
+#ifdef USE_OLD_PHI_INTERFERENCE
 	env->phi_if = new_set(if_edge_cmp, node_count);
+#endif /* USE_OLD_PHI_INTERFERENCE */
+
 	env->live = bitset_obstack_alloc(&env->obst, node_count);
 	env->processed = bitset_obstack_alloc(&env->obst, get_graph_block_count(irg));
 	env->colors = bitset_obstack_alloc(&env->obst, TEST_COLORS);
+	env->in_colors = bitset_obstack_alloc(&env->obst, TEST_COLORS);
 	env->colors_n = TEST_COLORS;
 
 	irg_block_walk_graph(irg, block_alloc, NULL, env);
@@ -449,17 +477,14 @@ void be_ra_chordal_done(ir_graph *irg)
 
 int phi_ops_interfere(const ir_node *a, const ir_node *b)
 {
-	return values_interfere(a, b);
-}
-
-#if 0
-int phi_ops_interfere(const ir_node *a, const ir_node *b)
-{
+#ifdef USE_OLD_PHI_INTERFERENCE
 	ir_graph *irg = get_irn_irg(a);
 	env_t *env = get_irg_ra_link(irg);
 
 	assert(irg == get_irn_irg(b) && "Both nodes must be in the same graph");
 
 	return are_connected(env, get_irn_graph_nr(a), get_irn_graph_nr(b));
+#else
+	return values_interfere(a, b);
+#endif /* USE_OLD_PHI_INTERFERENCE */
 }
-#endif
