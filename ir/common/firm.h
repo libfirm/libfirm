@@ -85,6 +85,7 @@ extern "C" {
   /* # include "tailrec.h"*/    /* optimize tail-recursion calls */
 # include "ircgopt.h"    /* Optimizations based on interprocedural graph */
 
+# include "irouts.h"     /* Graph reversal / out edges. */
 # include "irdom.h"      /* Dominator analysis */
 # include "cgana.h"      /* Analysis to construct interprocedural graph */
                          /* including some optimizations */
