@@ -919,10 +919,10 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
           return yet.  We are computing a value in a loop and need to
           break the recursion without knowing the result yet.
 	  @@@ strange case.  Straight forward we would create a Phi before
-	  starting the computation of it's predecessors.  In this case we will find
-	  a Phi here in any case.  The problem is that this implementation only
-	  creates a Phi after computing the predecessors, so that it is hard to
-	  compute self references of this Phi.  @@@
+	  starting the computation of it's predecessors.  In this case we will
+	  find a Phi here in any case.  The problem is that this implementation
+	  only creates a Phi after computing the predecessors, so that it is
+	  hard to compute self references of this Phi.  @@@
         There is no simple check for the second subcase.  Therefore we check
         for a second visit and treat all such cases as the second subcase.
         Anyways, the basic situation is the same:  we reached a block
@@ -932,7 +932,8 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
         implementation that relies on the fact that an obstack is a stack and
         will return a node with the same address on different allocations.
         Look also at phi_merge and new_r_phi_in to understand this.
-	@@@ Unfortunately this does not work, see testprogram three_cfpred_example.
+	@@@ Unfortunately this does not work, see testprogram
+	three_cfpred_example.
 
   */
 
@@ -1063,7 +1064,12 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
      in graph_arr to break recursions. */
   phi0 = NULL;
   if (!block->attr.block.graph_arr[pos]) {
-    /* Even if all variables are defined before use, it can happen that
+    /* This is commented out as collapsing to Bads is no good idea.
+       Either we need an assert here, or we need to call a routine
+       that deals with this case as appropriate for the given language.
+       Right now a self referencing Id is created which will crash irg_vryfy().
+
+       Even if all variables are defined before use, it can happen that
        we get to the start block, if a cond has been replaced by a tuple
        (bad, jmp).  As the start has a self referencing control flow edge,
        we get a self referencing Id, which is hard to optimize away.  We avoid
