@@ -109,7 +109,6 @@ struct entity {
 
   /* ------------- fields for analyses ---------------*/
 
-  ir_node **accesses;                      /**< accessing nodes: loads, stores. */
 
 #ifdef DEBUG_libfirm
   int nr;             /**< a unique node number for each node to make output
@@ -117,6 +116,8 @@ struct entity {
   char *c_name;                 /**< Since idents are ipaque, provide the name in cleartext */
 # endif /* DEBUG_libfirm */
 };
+
+
 
 /* ----------------------- inline functions ------------------------ */
 static INLINE int
@@ -225,6 +226,7 @@ __set_entity_peculiarity(entity *ent, peculiarity pec) {
   assert(ent && ent->kind == k_entity);
   /* @@@ why peculiarity only for methods? */
   assert(is_method_type(ent->type));
+
   ent->peculiarity = pec;
 }
 

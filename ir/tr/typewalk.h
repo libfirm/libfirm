@@ -99,7 +99,7 @@ void class_walk_super2sub(class_walk_func *pre,
 			  void *env);
 
 /**
- * the entity walk function
+ * the entity walk function.  A function type for entity walkers.
  *
  * @param ent     points to the visited entity
  * @param env     free environment pointer
@@ -111,9 +111,10 @@ typedef void entity_walk_func(entity *ent, void *env);
  *
  * @param tp    the type
  * @param doit  the entity walker function
- * @param env   environment, wil be passed to the walker function
+ * @param env   environment, will be passed to the walker function
  */
 void walk_types_entities(type *tp,
 			 entity_walk_func *doit,
 			 void *env);
+
 #endif /* _TYPEWALK_H_ */

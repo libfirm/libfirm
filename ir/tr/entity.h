@@ -529,5 +529,26 @@ bool        entity_not_visited(entity *ent);
  *  dynamic type are given. */
 entity *resolve_ent_polymorphy(type *dynamic_class, entity* static_ent);
 
+/**
+ * @page unknown_entity
+ *
+ *  This entity is an auxiliary entity dedicated to support analyses.
+ *
+ *  The unknown entity represents that there could be an entity, but it is not
+ *  known.  This entity can be used to initialize fields before an analysis (not known
+ *  yet) or to represent the top of a lattice (could not be determined).  There exists
+ *  exactly one entity unknown. This entity has as owner and as type the unknown type. It is
+ *  allocated when initializing the entity module.
+ *
+ *  The following values are set:
+ *    mode:  mode_ANY
+ *    name:  "type_unknown"
+ *    state: layout_fixed
+ *    size:  0
+ */
+/* A variable that contains the only unknown entity. */
+extern entity *unknown_entity;
+/* Returns the unknown entity */
+entity *get_unknown_entity(void);
 
 # endif /* _ENTITY_H_ */

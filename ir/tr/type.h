@@ -904,7 +904,7 @@ type *get_none_type(void);
  */
 /* A variable that contains the only unknown type. */
 extern type *unknown_type;
-/* Returns the none type */
+/* Returns the unknown type */
 type *get_unknown_type(void);
 
 

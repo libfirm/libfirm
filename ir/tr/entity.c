@@ -36,16 +36,25 @@
 /** general                                                       **/
 /*******************************************************************/
 
+entity *unknown_entity = NULL; entity *get_unknown_entity(void) { return unknown_entity; }
+#define UNKNOWN_ENTITY_NAME "unknown_entity"
+
+static INLINE entity *
+new_rd_entity (dbg_info *db, type *owner, ident *name, type *type);
+
 void
 init_entity (void)
 {
+  assert(unknown_type && "Call init_type before init_entity!");
+  new_rd_entity(NULL, unknown_type, new_id_from_str(UNKNOWN_ENTITY_NAME), unknown_type);
 }
+
 
 /*-----------------------------------------------------------------*/
 /* ENTITY                                                          */
 /*-----------------------------------------------------------------*/
 
-static void insert_entity_in_owner (entity *ent) {
+static INLINE void insert_entity_in_owner (entity *ent) {
   type *owner = ent->owner;
   switch (get_type_tpop_code(owner)) {
   case tpo_class: {
@@ -64,8 +73,8 @@ static void insert_entity_in_owner (entity *ent) {
   }
 }
 
-entity *
-new_entity (type *owner, ident *name, type *type)
+static INLINE entity *
+new_rd_entity (dbg_info *db, type *owner, ident *name, type *type)
 {
   entity *res;
   ir_graph *rem;
@@ -73,8 +82,8 @@ new_entity (type *owner, ident *name, type *type)
   assert(!id_contains_char(name, ' ') && "entity name should not contain spaces");
 
   res = (entity *) xmalloc (sizeof (entity));
+  memset(res, 0, sizeof(res));
   res->kind = k_entity;
-  assert_legal_owner_of_ent(owner);
   res->owner = owner;
   res->name = name;
   res->type = type;
@@ -113,7 +122,7 @@ new_entity (type *owner, ident *name, type *type)
   }
   res->irg = NULL;
 
-  res->accesses = NULL;
+  //res->accesses = NULL;
 
 #ifdef DEBUG_libfirm
   res->nr = get_irp_new_node_nr();
@@ -121,17 +130,28 @@ new_entity (type *owner, ident *name, type *type)
 #endif /* DEBUG_libfirm */
 
   res->visit = 0;
+  set_entity_dbg_info(res, db);
 
-  /* Remember entity in it's owner. */
-  insert_entity_in_owner (res);
   return res;
 }
+
 entity *
 new_d_entity (type *owner, ident *name, type *type, dbg_info *db) {
-  entity *res = new_entity(owner, name, type);
-  set_entity_dbg_info(res, db);
+  assert_legal_owner_of_ent(owner);
+  entity *res = new_rd_entity(db, owner, name, type);
+  /* Remember entity in it's owner. */
+  insert_entity_in_owner (res);
+
   return res;
 }
+
+entity *
+new_entity (type *owner, ident *name, type *type) {
+  return new_d_entity(owner, name, type, NULL);
+}
+
+
+
 
 static void free_entity_attrs(entity *ent) {
   int i;
