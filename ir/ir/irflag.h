@@ -184,6 +184,8 @@ void set_opt_dyn_meth_dispatch (int value);
 void set_opt_tail_recursion(int value);
 void set_opt_tail_recursion_verbose(int value);
 
+void set_opt_fragile_ops(int value);
+
 
 /** Enable/Disable normalizations of the firm representation.
  *
