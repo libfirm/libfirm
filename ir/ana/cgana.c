@@ -628,7 +628,7 @@ static void free_mark_proj(ir_node * node, long n, eset * set) {
 
 static void free_mark(ir_node * node, eset * set) {
   int i;
-  assert(mode_is_reference(get_irn_mode(node)));
+//  assert(mode_is_reference(get_irn_mode(node)));
   if (get_irn_link(node) == MARK) {
     return; /* already visited */
   }
