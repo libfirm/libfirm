@@ -22,7 +22,7 @@
 #include "irprog.h"
 #include "irnode_t.h"
 #include "irprog_t.h"
-#include "ircons.h"
+#include "ircons_t.h"
 #include "irgmod.h"
 #include "irgwalk.h"
 #include "irflag_t.h"
