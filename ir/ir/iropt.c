@@ -86,14 +86,15 @@ computed_value (ir_node *n)
     break;
   case iro_Minus:
       if (ta && mode_is_float(get_irn_mode(a)))
-        res = /*tarval_minus (ta);*/ res;
+        res = tarval_neg (ta);
     break;
   case iro_Mul:
     if (ta && tb) /* tarval_mul tests for equivalent modes itself */ {
       res = tarval_mul (ta, tb);
     } else {
-      /* calls computed_value recursive and returns the 0 with proper
-         mode.  Why is this an extra case? */
+      /* a*0 = 0 or 0*b = 0:
+	 calls computed_value recursive and returns the 0 with proper
+         mode. */
       tarval *v;
       if (   (tarval_classify ((v = computed_value (a))) == 0)
 	  || (tarval_classify ((v = computed_value (b))) == 0)) {
@@ -101,10 +102,30 @@ computed_value (ir_node *n)
       }
     }
     break;
+  case iro_Quot:
+    /* This was missing in original implementation. Why? */
+    if (ta && tb  && (get_irn_mode(a) == get_irn_mode(b))) {
+      if (tarval_classify(tb) == 0) {res = NULL; break;}
+      res = tarval_quo(ta, tb);
+    }
+    break;
+  case iro_Div:
+    /* This was missing in original implementation. Why? */
+    if (ta && tb  && (get_irn_mode(a) == get_irn_mode(b))) {
+      if (tarval_classify(tb) == 0) {res = NULL; break;}
+      res = tarval_div(ta, tb);
+    }
+    break;
+  case iro_Mod:
+    /* This was missing in original implementation. Why? */
+    if (ta && tb  && (get_irn_mode(a) == get_irn_mode(b))) {
+      if (tarval_classify(tb) == 0) {res = NULL; break;}
+      res = tarval_mod(ta, tb);
+    }
+    break;
   case iro_Abs:
     if (ta)
-      res = /*tarval_abs (ta);*/ res;
-    /* allowed or problems with max/min ?? */
+      res = tarval_abs (ta);
     break;
   case iro_And:
     if (ta && tb) {
@@ -129,14 +150,15 @@ computed_value (ir_node *n)
     }
     break;
   case iro_Eor: if (ta && tb) { res = tarval_eor (ta, tb); } break;
-  case iro_Not: if (ta)       { /*res = tarval_not (ta)*/; } break;
+  case iro_Not: if (ta)       { res = tarval_neg (ta); } break;
   case iro_Shl: if (ta && tb) { res = tarval_shl (ta, tb); } break;
+    /* tarval_shr is faulty !! */
   case iro_Shr: if (ta && tb) { res = tarval_shr (ta, tb); } break;
-  case iro_Shrs: if(ta && tb) { /*res = tarval_shrs (ta, tb)*/; } break;
+  case iro_Shrs:if (ta && tb) { /*res = tarval_shrs (ta, tb)*/; } break;
   case iro_Rot: if (ta && tb) { /*res = tarval_rot (ta, tb)*/; } break;
-  case iro_Conv: if(ta)    { res = tarval_convert_to (ta, get_irn_mode (n)); }
+  case iro_Conv:if (ta)       { res = tarval_convert_to (ta, get_irn_mode (n)); }
     break;
-  case iro_Proj:
+  case iro_Proj:  /* iro_Cmp */
     {
       ir_node *aa, *ab;
 
