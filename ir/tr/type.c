@@ -910,9 +910,12 @@ int   get_method_n_params  (type *method) {
   return method->attr.ma.n_params;
 }
 type *get_method_param_type(type *method, int pos) {
+  type *res;
   assert(method && (method->type_op == type_method));
   assert(pos >= 0 && pos < get_method_n_params(method));
-  return method->attr.ma.param_type[pos] = skip_tid(method->attr.ma.param_type[pos]);
+  res = method->attr.ma.param_type[pos];
+  assert(res != NULL && "empty method param type");
+  return method->attr.ma.param_type[pos] = skip_tid(res);
 }
 void  set_method_param_type(type *method, int pos, type* tp) {
   assert(method && (method->type_op == type_method));
@@ -950,9 +953,12 @@ int   get_method_n_ress   (type *method) {
   return method->attr.ma.n_res;
 }
 type *get_method_res_type(type *method, int pos) {
+  type *res;
   assert(method && (method->type_op == type_method));
   assert(pos >= 0 && pos < get_method_n_ress(method));
-  return method->attr.ma.res_type[pos] = skip_tid(method->attr.ma.res_type[pos]);
+  res = method->attr.ma.res_type[pos];
+  assert(res != NULL && "empty method return type");
+  return method->attr.ma.res_type[pos] = skip_tid(res);
 }
 void  set_method_res_type(type *method, int pos, type* tp) {
   assert(method && (method->type_op == type_method));
