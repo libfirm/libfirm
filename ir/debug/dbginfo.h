@@ -137,6 +137,7 @@ INLINE static const char* dbg_action_2_str(dbg_action a) {
       return "string conversion not implemented";
     else
       assert(0);
+    return NULL;
   }
 }
 

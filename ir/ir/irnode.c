@@ -2116,6 +2116,7 @@ get_irn_irg(ir_node *node) {
     return node->attr.end.irg;
   } else {
     assert(0 && "no irg attr");
+    return NULL;
   }
 }
 

@@ -413,7 +413,9 @@ ir_node *copy_const_value(ir_node *n) {
   case iro_Add:
     nn = new_Add(copy_const_value(get_Add_left(n)), copy_const_value(get_Add_right(n)), m); break;
   default:
-    assert(0 && "opdope invalid or not implemented"); break;
+    assert(0 && "opdope invalid or not implemented");
+    nn=NULL;
+    break;
   }
   return nn;
 }

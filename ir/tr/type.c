@@ -1346,7 +1346,10 @@ entity *get_compound_member(type *tp, int pos)
   else if (is_union_type(tp))
     res = get_union_member(tp, pos);
   else
+  {
     assert(0 && "need struct, union or class to get a member");
+    res=NULL;
+  }
 
   return res;
 }

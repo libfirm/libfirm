@@ -57,6 +57,7 @@ static entity * get_implementation(type * class, entity * method) {
     }
   }
   assert(0 && "implemenation not found");
+  return NULL;
 }
 
 /* Returns the entity that contains the implementation of the inherited
