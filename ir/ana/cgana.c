@@ -83,10 +83,18 @@ static entity * get_implementation(type * class, entity * method) {
 /** Returns the entity that contains the implementation of the inherited
     entity if available, else returns the entity passed. */
 static entity *get_inherited_methods_implementation(entity *inh_meth) {
+  assert(get_atomic_ent_value(inh_meth) && "constant entity without value");
+  assert((get_irn_op(get_atomic_ent_value(inh_meth)) == op_SymConst) &&
+	 (get_SymConst_kind(get_atomic_ent_value(inh_meth)) == symconst_addr_ent) &&
+	 "Complex constant values not supported -- address of method should be straight constant!");
+
+  return get_SymConst_entity(get_atomic_ent_value(inh_meth));
+
+#if 0  // this stuff is outdated, I think. GL 10.11.04
   entity *impl_meth = NULL;
   ir_node *addr = get_atomic_ent_value(inh_meth);
 
-  assert(addr && "constant entity without value");
+  assert(get_atomic_ent_value(inh_meth) && "constant entity without value");
 
   if ((get_irn_op(addr) == op_SymConst) &&
       (get_SymConst_kind(addr) == symconst_addr_ent)) {
@@ -101,9 +109,12 @@ static entity *get_inherited_methods_implementation(entity *inh_meth) {
       printf("impl meth: "); DDMEO(impl_meth);
       assert(!impl_meth || get_entity_peculiarity(impl_meth) == peculiarity_existent);
     */
+    assert(0);
     impl_meth = NULL;
   }
+  assert((impl_meth || inh_meth) && "no implementation for inherited entity");
   return impl_meth? impl_meth : inh_meth;
+#endif
 }
 
 
@@ -122,10 +133,12 @@ static entity *get_inherited_methods_implementation(entity *inh_meth) {
  */
 static void collect_impls(entity *method, eset *set, int *size, bool *open) {
   int i;
-
+#if 0
   if (get_entity_peculiarity(method) == peculiarity_existent) {
     if ((get_entity_visibility(method) == visibility_external_allocated)
 	&& (NULL == get_entity_irg(method))) {
+      /* We could also add these entities to the callees, but right now we
+	 subsume them by unknown_entity. */
       *open = true;
     } else {
       assert(get_entity_irg(method) != NULL);
@@ -138,7 +151,6 @@ static void collect_impls(entity *method, eset *set, int *size, bool *open) {
 
   if (get_entity_peculiarity(method) == peculiarity_inherited) {
     entity *impl_ent = get_inherited_methods_implementation(method);
-    assert(impl_ent && "no implementation for inherited entity");
     if (get_entity_visibility(impl_ent) == visibility_external_allocated) {
       assert(get_entity_irg(impl_ent) == NULL);
       *open = true;
@@ -150,6 +162,48 @@ static void collect_impls(entity *method, eset *set, int *size, bool *open) {
       }
     }
   }
+#endif
+  /* Only the assertions: */
+  if (get_entity_peculiarity(method) == peculiarity_existent) {
+    if ((get_entity_visibility(method) == visibility_external_allocated)
+	&& (NULL == get_entity_irg(method))) {
+    } else {
+      assert(get_entity_irg(method) != NULL);
+    }
+  }
+  if (get_entity_peculiarity(method) == peculiarity_inherited) {
+    entity *impl_ent = get_inherited_methods_implementation(method);
+    if (get_entity_visibility(impl_ent) == visibility_external_allocated) {
+      assert(get_entity_irg(impl_ent) == NULL);
+    } else {
+      assert(get_entity_irg(impl_ent) != NULL);
+    }
+  }
+
+  /* Add the implementation to the set if it contains an irg, else
+     remember that there are more methods called. */
+  /* @@@ We could also add unknown_entity, or the entities with the
+     unknown irgs.  The first case would result in the exact same
+     behaviour: all unknown irgs are represented by the one and only
+     unknown entity. If we add all entities, we known the number of
+     entities possibly called, and whether there are real unknown
+     entities, i.e, such not represented in the type description.
+     This would be better for an analyses: it could rule out more
+     cases. */
+  entity *impl = method;
+  if (get_entity_peculiarity(method) == peculiarity_inherited)
+    impl = get_inherited_methods_implementation(method);
+
+  if (get_entity_peculiarity(method) != peculiarity_description) {
+    //if (get_entity_irg(impl)) {
+    eset_insert(set, impl);
+    ++(*size);
+      //} else {
+      /* GL: better: eset_insert(set, unknown_entity); */
+      //*open = true;
+      //}
+  }
+
   /*- recursive descent -*/
   for (i = get_entity_n_overwrittenby(method) - 1; i >= 0; --i)
     collect_impls(get_entity_overwrittenby(method, i), set, size, open);
@@ -315,8 +369,8 @@ static void sel_methods_init(void) {
 
   assert(entities == NULL);
   entities = eset_create();
-  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-    entity * ent = get_irg_entity(get_irp_irg(i));
+  for (i = get_irp_n_allirgs() - 1; i >= 0; --i) {
+    entity * ent = get_irg_entity(get_irp_allirg(i));
     /* Nur extern sichtbare Methode können überhaupt mit SymConst
      * aufgerufen werden. */
     if (get_entity_visibility(ent) != visibility_local) {
@@ -451,12 +505,7 @@ static void callee_ana_node(ir_node * node, eset * methods) {
     if (get_SymConst_kind(node) == symconst_addr_ent) {
       entity * ent = get_SymConst_entity(node);
       assert(ent && is_method_type(get_entity_type(ent)));
-      if (get_entity_visibility(ent) != visibility_external_allocated) {
-	assert(get_entity_irg(ent));
-	eset_insert(methods, ent);
-      } else {
-	eset_insert(methods, MARK); /* free method -> unknown */
-      }
+      eset_insert(methods, ent);
     } else {
       assert(get_SymConst_kind(node) == symconst_addr_name);
       /* externe Methode (wegen fix_symconst!) */
@@ -514,7 +563,8 @@ static void callee_walker(ir_node * call, void * env) {
     eset * methods = eset_create();
     entity * ent;
     entity ** arr = NEW_ARR_F(entity *, 0);
-    callee_ana_node(skip_Id(get_Call_ptr(call)), methods);
+    assert(get_irn_op(get_Call_ptr(call)) != op_Id);
+    callee_ana_node(get_Call_ptr(call), methods);
     if (eset_contains(methods, MARK)) { /* unknown method */
       ARR_APP1(entity *, arr, unknown_entity);
     }
@@ -573,9 +623,9 @@ static void remove_Tuples(ir_node * proj, void * env) {
 static void callee_ana(void) {
   int i;
   /* Alle Graphen analysieren. */
-  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-    irg_walk_graph(get_irp_irg(i), callee_walker, remove_Tuples, NULL);
-    set_irg_callee_info_state(get_irp_irg(i), irg_callee_info_consistent);
+  for (i = get_irp_n_allirgs() - 1; i >= 0; --i) {
+    irg_walk_graph(get_irp_allirg(i), callee_walker, remove_Tuples, NULL);
+    set_irg_callee_info_state(get_irp_allirg(i), irg_callee_info_consistent);
   }
   set_irp_callee_info_state(irg_callee_info_consistent);
 }
@@ -633,7 +683,7 @@ static void free_mark_proj(ir_node * node, long n, eset * set) {
 
 static void free_mark(ir_node * node, eset * set) {
   int i;
-//  assert(mode_is_reference(get_irn_mode(node)));
+
   if (get_irn_link(node) == MARK) {
     return; /* already visited */
   }
@@ -735,8 +785,8 @@ static entity ** get_free_methods(void)
   entity ** arr = NEW_ARR_F(entity *, 0);
   entity * ent;
 
-  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-    ir_graph * irg = get_irp_irg(i);
+  for (i = get_irp_n_allirgs() - 1; i >= 0; --i) {
+    ir_graph * irg = get_irp_allirg(i);
     entity * ent = get_irg_entity(irg);
     /* insert "external visible" methods. */
     if (get_entity_visibility(ent) != visibility_local) {
@@ -748,8 +798,8 @@ static entity ** get_free_methods(void)
   }
 
   /* insert sticky methods, too */
-  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-    ir_graph * irg = get_irp_irg(i);
+  for (i = get_irp_n_allirgs() - 1; i >= 0; --i) {
+    ir_graph * irg = get_irp_allirg(i);
     entity * ent = get_irg_entity(irg);
     /* insert "external visible" methods. */
     if (get_entity_stickyness (ent) == stickyness_sticky) {
@@ -821,20 +871,4 @@ void free_callee_info(ir_graph *irg) {
 void opt_call_addrs(void) {
   sel_methods_init();
   sel_methods_dispose();
-#if 0
-  int i;
-  pmap * ldname_map = pmap_create();
-  assert(entities == NULL);
-  entities = eset_create();
-  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-    entity * ent = get_irg_entity(get_irp_irg(i));
-    /* Nur extern sichtbare Methoden können überhaupt mit SymConst
-     * aufgerufen werden. */
-    if (get_entity_visibility(ent) != local) {
-      pmap_insert(ldname_map, (void *) get_entity_ld_ident(ent), ent);
-    }
-  }
-  all_irg_walk((irg_walk_func *) sel_methods_walker, NULL, ldname_map);
-  pmap_destroy(ldname_map);
-#endif
 }

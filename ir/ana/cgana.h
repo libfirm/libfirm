@@ -65,7 +65,6 @@
  *
  *  Leaves Bad control predecessors in the graph!
  */
-/*  @@@ I assume this can not be called via JNI :-( -- how to obtain the array pointer? */
 void cgana(int *len, entity ***free_methods);
 
 /** Free callee information.
