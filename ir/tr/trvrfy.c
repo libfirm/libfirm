@@ -3,6 +3,9 @@
 #include "irgraph_t.h"  /* for checking whether constant code is allocated
 			   on proper obstack */
 
+/**
+ * Check a class
+ */
 static int check_class(type *tp) {
   int i, j, k;
   int found;
@@ -15,6 +18,7 @@ static int check_class(type *tp) {
     assert(mem && "NULL members not allowed");
     //printf(" %d, %d", get_entity_n_overwrites(mem), get_class_n_supertypes(tp)); DDME(mem);
     if (!mem) return error_null_mem;
+
     assert(get_entity_n_overwrites(mem) <= get_class_n_supertypes(tp));
     for (j = 0; j < get_entity_n_overwrites(mem); j++) {
       entity *ovw = get_entity_overwrites(mem, j);
@@ -39,6 +43,11 @@ static int check_class(type *tp) {
   return 0;
 }
 
+/**
+ * Checks a type.
+ *
+ * Currently checks class types only.
+ */
 static int check_type(type *tp) {
   switch (get_type_tpop_code(tp)) {
   case tpo_class:
@@ -48,48 +57,74 @@ static int check_type(type *tp) {
   return 0;
 }
 
+/**
+ * helper environment struct for constant_on_wrong_obstack()
+ */
 struct myenv {
   int res;
-  struct obstack *obst;
+  ir_graph *irg;
 };
 
-static void on_obstack(ir_node *n, void *env) {
-  struct obstack *obst = ((struct myenv *)env)->obst;
+/**
+ * called by the walker
+ */
+static void on_irg_storage(ir_node *n, void *env) {
+  struct myenv * myenv = env;
 
-  /* n must be on the obstack obst. */
-
-  ((struct myenv *)env)->res = 0;
+  myenv->res = node_is_in_irgs_storage(myenv->irg, n);
 }
 
-static int constant_on_wrong_obstack(ir_node *n) {
+/**
+ * checks wheater a given constant IR node is NOT on the
+ * constant IR graph.
+ */
+static int constant_on_wrong_irg(ir_node *n) {
   struct myenv env;
-  env.res = 0;  /* false, not on wrong obstack */
-  env.obst = get_irg_obstack(get_const_code_irg());
-  irg_walk(n, on_obstack, NULL, (void *)&env);
-  return env.res;
+
+  env.res = 1;  /* on right obstack */
+  env.irg = get_const_code_irg();
+
+  irg_walk(n, on_irg_storage, NULL, (void *)&env);
+  return ! env.res;
 }
 
-static int constants_on_wrong_obstack(entity *ent) {
+/*
+ * Check if constants node are NOT on the constant IR graph.
+ */
+static int constants_on_wrong_irg(entity *ent) {
   if (get_entity_variability(ent) == uninitialized) return 0;
 
   if (is_compound_entity(ent)) {
     int i;
     for (i = 0; i < get_compound_ent_n_values(ent); i++) {
-      if (constant_on_wrong_obstack(get_compound_ent_value(ent, i)));
+      if (constant_on_wrong_irg(get_compound_ent_value(ent, i)))
 	return 1;
     }
   } else {
-    return constant_on_wrong_obstack(get_atomic_ent_value(ent));
+    return constant_on_wrong_irg(get_atomic_ent_value(ent));
   }
   return 0;
 }
 
+/*
+ * Check an entity. Currently, we check only if initialized constants
+ * are build on the const irg graph.
+ *
+ * @return
+ * 	0 	if no error encountered
+ * 	!= 0	else
+ */
 static int check_entity(entity *ent) {
-  if (constants_on_wrong_obstack(ent))
-    return error_const_on_wrong_obstack;
+  if (constants_on_wrong_irg(ent)) {
+    assert(0 && "Contants placed on wrong IRG");
+    return error_const_on_wrong_irg;
+  }
   return 0;
 }
 
+/*
+ * check types and entities
+ */
 static void check_tore(type_or_ent *tore, void *env) {
   int *res = env;
   if (is_type(tore)) {
@@ -100,7 +135,9 @@ static void check_tore(type_or_ent *tore, void *env) {
   }
 }
 
-
+/*
+ * Verify types and entities.
+ */
 int tr_vrfy(void) {
   int res;
 
