@@ -211,7 +211,7 @@ int         get_type_alignment_bytes(type *tp);
 
 /** Returns the alignment of a type in bits. If the alignment of a type is
  * not set, it is calculated here according to the following rules:
- * 1.) if a type has a mode, the aligment is the mode size.
+ * 1.) if a type has a mode, the alignment is the mode size.
  * 2.) compound types have the alignment of it's biggest member.
  * 3.) array types have the alignment of its element type.
  * 4.) method types return 0 here.
@@ -360,9 +360,9 @@ bool smaller_type (type *st, type *lt);
  *  - supertypes: A list of direct superclasses.
  *
  *  - peculiarity: The peculiarity of this class.  If the class is of peculiarity
- *                 "description" it only is a description of requirememts to a class,
+ *                 "description" it only is a description of requirements to a class,
  *                 as, e.g., a Java interface.  The class will never be allocated.
- *                 Peculiatity inherited is only possible for entities.  An entity
+ *                 Peculiarity inherited is only possible for entities.  An entity
  *                 is of peculiarity inherited if the compiler generated the entity
  *                 to explicitly resolve inheritance.  An inherited method entity has
  *                 no value for irg.
@@ -421,7 +421,7 @@ int     get_class_n_subtypes (const type *clss);
 /** Gets the subtype at position pos, 0 <= pos < n_subtype. */
 type   *get_class_subtype   (type *clss, int pos);
 
-/** Sets the subtype at positioin pos, 0 <= pos < n_subtype.
+/** Sets the subtype at position pos, 0 <= pos < n_subtype.
    Does not set the corresponding supertype relation for subtype: this might
    be a different position! */
 void    set_class_subtype   (type *clss, type *subtype, int pos);
@@ -444,7 +444,7 @@ int     get_class_supertype_index(type *clss, type *super_clss);
 /** Gets the supertype at position pos,  0 <= pos < n_supertype. */
 type   *get_class_supertype   (type *clss, int pos);
 
-/** Sets the supertype at postition pos, 0 <= pos < n_subtype.
+/** Sets the supertype at position pos, 0 <= pos < n_subtype.
    Does not set the corresponding subtype relation for supertype: this might
    be a different position! */
 void    set_class_supertype   (type *clss, type *supertype, int pos);
@@ -456,7 +456,7 @@ void    remove_class_supertype(type *clss, type *supertype);
 typedef enum peculiarity {
   peculiarity_description,     /**< Represents only a description.  The entity/type is never
 	  	                    allocated, no code/data exists for this entity/type.
-			            @@@ eventually rename to descriptive (adjectiv as the others!)*/
+			            @@@ eventually rename to descriptive (adjective as the others!)*/
   peculiarity_inherited,       /**< Describes explicitly that other entities are
  		                    inherited to the owner of this entity.
  		                    Overwrites must refer to at least one other
@@ -564,7 +564,7 @@ int     is_struct_type(const type *strct);
  *               method type) that represent results passed by value.
  */
 
-/* These makros define the suffixes for the types and entities used
+/* These macros define the suffixes for the types and entities used
    to represent value parameters / results. */
 #define VALUE_PARAMS_SUFFIX  "val_param"
 #define VALUE_RESS_SUFFIX    "val_res"
@@ -714,7 +714,8 @@ int     is_union_type          (const type *uni);
  *                      element selection with Sel.
  * @todo
  *   Do we need several entities?  One might want
- *   to select a dimension and not a single element in case of multidim arrays.
+ *   to select a dimension and not a single element in case of multi
+ *   dimensional arrays.
  */
 
 /** Create a new type array.
@@ -785,7 +786,7 @@ int    is_array_type(const type *array);
  * - *enum:         The target values representing the constants used to
  *                  represent individual enumerations.
  * - *enum_nameid:  Idents containing the source program name of the enumeration
- *  	     constants
+ *  	            constants
  */
 /** Create a new type enumeration -- set the enumerators independently. */
 type   *new_type_enumeration    (ident *name, int n_enums);
