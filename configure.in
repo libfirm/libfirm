@@ -187,13 +187,15 @@ fi
 
 
 dnl check for the obstack header file
-AC_FUNC_OBSTACK
+dnl does not work with:
+dnl  - cygwin
+dnl  - MacOSX
+#AC_FUNC_OBSTACK
 
-#AC_CHECK_HEADERS(obstack.h, ac_obstack_headers="yes", ac_obstack_headers="no")
-#if test "$ac_obstack_headers" != yes; then
-if test "$ac_cv_func_obstack" != "yes"; then
+AC_CHECK_HEADERS(obstack.h, ac_obstack_headers="yes", ac_obstack_headers="no")
+if test "$ac_obstack_headers" != yes; then
   dnl obstack header not found.
-  AC_MSG_ERROR("no obstack support")
+  AC_MSG_ERROR("obstack.h not found")
 fi
 
 
