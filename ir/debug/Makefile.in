@@ -11,7 +11,7 @@ topdir = ../..
 subdir := ir/debug
 
 
-SOURCES = Makefile.in debinfo.c debinfo.h
+SOURCES = Makefile.in dbginfo.c dbginfo.h
 
 include $(topdir)/MakeRules
 
