@@ -77,7 +77,7 @@ test:   realclean all
 	ls >.ignore
 	rm -rf results; mkdir results; ($(run_bin_EXAMPLES)) >results/run-result.txt; \
 	mv *.vcg results; cd results;
-	@($(DIFF) --exclude=CVS results $(REF_DIR) && \
+	@($(DIFF) --brief --exclude=CVS results $(REF_DIR) && \
 	echo Libfirm test successful ) || echo Libfirm test failed ;
 
 reference: realclean all
