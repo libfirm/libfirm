@@ -1462,7 +1462,7 @@ static void dump_cg_ir_block(ir_node * block, void * env) {
   dump_ir_data_edges(block);
 
   /* dump the nodes that go into the block */
-  for (node = get_irn_link(node); node; node = get_irn_link(node)) {
+  for (node = get_irn_link(block); node; node = get_irn_link(node)) {
     dump_node(node, irgmap);
     dump_ir_data_edges(node);
   }
