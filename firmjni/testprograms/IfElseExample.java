@@ -76,7 +76,8 @@ class IfElseExample {
 	int c2 = Ircons.newConst(Irmode.getModeIs(),
 				 Tv.newTarvalFromLong (2, Irmode.getModeIs()));
 	int cmpGt = Ircons.newProj(Ircons.newCmp(Ircons.getValue(0, Irmode.getModeIs()), c2),
-				   Irmode.getModeb(), Irnode.Gt);
+				   Irmode.getModeb(), Irnode.pn_Cmp_Gt);
+
 	int x = Ircons.newCond (cmpGt);
 	int f = Ircons.newProj (x, Irmode.getModeX(), 0); /* if condition is false */
 	int t = Ircons.newProj (x, Irmode.getModeX(), 1); /* if condition is true */
