@@ -149,7 +149,7 @@ my_irg_walk_2_both(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void 
     for (i = get_irn_arity(node) - 1; i >= 0; --i) {
       ir_node *pred = get_irn_n(node, i);
       if (pred->visited < current_ir_graph->visited)
-	my_irg_walk_2_both(pred, pre, post, env);
+        my_irg_walk_2_both(pred, pre, post, env);
     }
   }
 
@@ -157,7 +157,7 @@ my_irg_walk_2_both(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void 
     for (i = get_irn_arity(node) - 1; i >= 0; --i) {
       ir_node *pred = get_irn_n(node, i);
       if ((pred->op == op_Block) && (pred->visited < current_ir_graph->visited))
-	my_irg_walk_2_both(pred, pre, post, env);
+        my_irg_walk_2_both(pred, pre, post, env);
     }
   }
 
@@ -177,12 +177,13 @@ static void walk_pre(ir_node *n, void *env) {
   if (   (get_irn_op(n) == op_Proj)
       && (get_irn_op(get_Proj_pred(n)) == op_Cond)
       && (just_passed_a_Raise)) {
+    ir_node *other_proj;
     ir_node *c = get_Proj_pred(n);
 
     /* If we already visited the other Proj, and it also leads to a Raise,
        we are in the middle of something. Continue searching. */
     assert(get_irn_n_outs(c) == 2 && "encountered a switch cond");
-    ir_node *other_proj = get_irn_out(c, 0);
+    other_proj = get_irn_out(c, 0);
     if (other_proj == n) other_proj = get_irn_out(c, 1);
     if (get_ProjX_probability(other_proj) == Cond_prob_exception_taken) {
       set_ProjX_probability(other_proj, Cond_prob_was_exception_taken);
@@ -225,13 +226,15 @@ void precompute_cond_evaluation(void) {
   my_irg_walk_current_graph(walk_pre, walk_post, NULL);
 
   for (c = Cond_list; c; c = get_irn_link(c)) {
+    ir_node *p0, *p1;
+
     assert(get_irn_n_outs(c) == 2 && "encountered a switch cond");
-    ir_node *p0 = get_irn_out(c, 0);
-    ir_node *p1 = get_irn_out(c, 1);
+    p0 = get_irn_out(c, 0);
+    p1 = get_irn_out(c, 1);
 
     /* both are exceptions */
     if ((get_ProjX_probability(p0) == Cond_prob_exception_taken) &&
-	(get_ProjX_probability(p1) == Cond_prob_exception_taken)   ) {
+        (get_ProjX_probability(p1) == Cond_prob_exception_taken)   ) {
       assert(0 && "I tried to avoid these!");
       /* It's a */
       set_ProjX_probability(p0, Cond_prob_normal);
@@ -261,7 +264,7 @@ int is_fragile_Proj(ir_node *n) {
 }
 
 /*------------------------------------------------------------------*/
-/* The algorithm to compute the execution freqencies.
+/* The algorithm to compute the execution frequencies.
  *
  * Walk the control flow loop tree which we consider the interval
  * tree.  Compute the execution for the lowest loop, add inner loops
@@ -346,7 +349,7 @@ static void compute_frequency(int default_loop_weight) {
     ir_loop *l = (ir_loop *)pdeq_getl(block_worklist);
     int i, n_elems = get_loop_n_elements(l);
 
-    /* The header is initialized with the freqency of the full loop times the iteration weight. */
+    /* The header is initialized with the frequency of the full loop times the iteration weight. */
     check_proper_head(l, get_loop_element(l, 0).son);
 
     for (i = 0; i < n_elems; ++i) {
