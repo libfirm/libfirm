@@ -150,9 +150,15 @@ $(SOURCE_DIR)/firm_typedefs.h: $(FIRM_SOURCE_HEADERS)
 
 FIRM_SRC_HEADER=$(top_srcdir)/ir/$(filter %/$(notdir $@),$(FIRM_PATH_HEADERS))
 
+
+# recode: remove "a from C code...
 $(FIRM_SOURCE_DIR_HEADERS): $(SOURCE_DIR)
-	cp $(FIRM_SRC_HEADER) $(SOURCE_DIR)/$(notdir $@)
+	recode ISO-8859-1..ascii < $(FIRM_SRC_HEADER) > $(SOURCE_DIR)/$(notdir $@)
 	perl $(REMOVE_CPP_COMMANDS) $@
+
+#	cp $(FIRM_SRC_HEADER) $(SOURCE_DIR)/$(notdir $@)
+#	recode ISO-8859-1..ascii < $@ > $@.x
+#	cp $@.x $@
 
 # generiert leere dateien ;-(
 #	troff -a -C -z  $(FIRM_SRC_HEADER) > $(SOURCE_DIR)/$(notdir $@)
