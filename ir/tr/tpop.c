@@ -19,15 +19,17 @@
 # include "tpop_t.h"
 # include "type_t.h"
 
-tp_op *type_class;         tp_op *get_type_class      () { return type_class;       }
-tp_op *type_struct;        tp_op *get_type_struct     () { return type_struct;      }
-tp_op *type_method;        tp_op *get_type_method     () { return type_method;      }
-tp_op *type_union;         tp_op *get_type_union      () { return type_union;       }
-tp_op *type_array;         tp_op *get_type_array      () { return type_array;       }
-tp_op *type_enumeration;   tp_op *get_type_enumeration() { return type_enumeration; }
-tp_op *type_pointer;       tp_op *get_type_pointer    () { return type_pointer;     }
-tp_op *type_primitive;     tp_op *get_type_primitive  () { return type_primitive;   }
-tp_op *type_id;            tp_op *get_type_id         () { return type_id;          }
+tp_op *type_class;         tp_op *get_tpop_class      (void) { return type_class;       }
+tp_op *type_struct;        tp_op *get_tpop_struct     (void) { return type_struct;      }
+tp_op *type_method;        tp_op *get_tpop_method     (void) { return type_method;      }
+tp_op *type_union;         tp_op *get_tpop_union      (void) { return type_union;       }
+tp_op *type_array;         tp_op *get_tpop_array      (void) { return type_array;       }
+tp_op *type_enumeration;   tp_op *get_tpop_enumeration(void) { return type_enumeration; }
+tp_op *type_pointer;       tp_op *get_tpop_pointer    (void) { return type_pointer;     }
+tp_op *type_primitive;     tp_op *get_tpop_primitive  (void) { return type_primitive;   }
+tp_op *type_id;            tp_op *get_tpop_id         (void) { return type_id;          }
+tp_op *tpop_none;          tp_op *get_tpop_none       (void) { return tpop_none;        }
+tp_op *tpop_unknown;       tp_op *get_tpop_unknown    (void) { return tpop_unknown;     }
 
 tp_op *
 new_tpop (tp_opcode code, ident *name, size_t attr_size)
@@ -44,15 +46,17 @@ new_tpop (tp_opcode code, ident *name, size_t attr_size)
 void
 init_tpop(void)
 {
-  type_class       = new_tpop (tpo_class      , id_from_str("class"      , 5), sizeof (cls_attr));
-  type_struct      = new_tpop (tpo_struct     , id_from_str("struct"     , 6), sizeof (stc_attr));
-  type_method      = new_tpop (tpo_method     , id_from_str("method"     , 6), sizeof (mtd_attr));
-  type_union       = new_tpop (tpo_union      , id_from_str("union"      , 5), sizeof (uni_attr));
-  type_array       = new_tpop (tpo_array      , id_from_str("array"      , 5), sizeof (arr_attr));
-  type_enumeration = new_tpop (tpo_enumeration, id_from_str("enumeration",11), sizeof (enm_attr));
-  type_pointer     = new_tpop (tpo_pointer    , id_from_str("pointer"    , 7), sizeof (ptr_attr));
-  type_primitive   = new_tpop (tpo_primitive  , id_from_str("primitive"  , 9), /* sizeof (pri_attr) */ 0);
-  type_id          = new_tpop (tpo_id         , id_from_str("type_id"    , 7), /* sizeof (id_attr)  */ 0);
+  type_class       = new_tpop (tpo_class      , id_from_str("class"       , 5), sizeof (cls_attr));
+  type_struct      = new_tpop (tpo_struct     , id_from_str("struct"      , 6), sizeof (stc_attr));
+  type_method      = new_tpop (tpo_method     , id_from_str("method"      , 6), sizeof (mtd_attr));
+  type_union       = new_tpop (tpo_union      , id_from_str("union"       , 5), sizeof (uni_attr));
+  type_array       = new_tpop (tpo_array      , id_from_str("array"       , 5), sizeof (arr_attr));
+  type_enumeration = new_tpop (tpo_enumeration, id_from_str("enumeration" ,11), sizeof (enm_attr));
+  type_pointer     = new_tpop (tpo_pointer    , id_from_str("pointer"     , 7), sizeof (ptr_attr));
+  type_primitive   = new_tpop (tpo_primitive  , id_from_str("primitive"   , 9), /* sizeof (pri_attr) */ 0);
+  type_id          = new_tpop (tpo_id         , id_from_str("type_id"     , 7), /* sizeof (id_attr)  */ 0);
+  tpop_none        = new_tpop (tpo_none       , id_from_str("type_none"   , 9), /* sizeof (non_attr) */ 0);
+  tpop_unknown     = new_tpop (tpo_unknown    , id_from_str("type_unknown",12), /* sizeof (ukn_attr) */ 0);
 }
 
 /* Returns the string for the tp_opcode. */

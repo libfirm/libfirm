@@ -19,7 +19,7 @@
  *  known in the compiled program.  This includes types specified
  *  in the program as well as types defined by the language.  In the
  *  view of the intermediate representation there is no difference
- *  between these types.
+ *  between these types.  Finally it specifies some auxiliary types.
  *
  *  There exist several kinds of types, arranged by the structure of
  *  the type.  A type is described by a set of attributes.  Some of
@@ -120,7 +120,8 @@ typedef struct type type;
 # include "type_or_entity.h"
 
 /** Frees the memory used by the type.   Does not free the entities
-   belonging to the type, except for the array element entity.  */
+   belonging to the type, except for the array element entity.
+   Does not free if tp is "none" or "unknown". */
 void        free_type(type *tp);
 
 tp_op*      get_type_tpop(type *tp);
@@ -142,7 +143,7 @@ typedef enum {
   layout_fixed         /**< The layout is fixed, all component/member entities
 			  have an offset assigned.  Size of the type is known.
 			  Arrays can be accessed by explicit address
-			  computation. Default for pointer, primitive ane method
+			  computation. Default for pointer, primitive and method
 			  types.  */
 } type_state;
 
@@ -164,7 +165,7 @@ ir_mode*    get_type_mode(type *tp);
 
 /** Sets the mode of a type.
  *
- * Only has an effect on primitive and enumeration types.
+ * Only has an effect on primitive, enumeration and pointer types.
  */
 void        set_type_mode(type *tp, ir_mode* m);
 
@@ -762,6 +763,51 @@ bool  is_primitive_type  (type *primitive);
 
 
 /**
+ * @page none_type
+ *
+ *  This type is an auxiliary type dedicated to support type analyses.
+ *
+ *  The none type represents that there is no type.  The type can be used to
+ *  initialize fields of type* that actually can not contain a type or that
+ *  are initialized for an analysis. There exists exactly one type none.
+ *  This type is not on the type list in ir_prog. It is
+ *  allocated when initializing the type module.
+ *
+ *  The following values are set:
+ *    mode:  mode_BAD
+ *    name:  "type_none"
+ *    state: layout_fixed
+ *    size:  0
+ */
+/* A variable that contains the only none type. */
+extern type *none_type;
+/* Returns the none type */
+type *get_none_type(void);
+
+/**
+ * @page unknown_type
+ *
+ *  This type is an auxiliary type dedicated to support type analyses.
+ *
+ *  The unknown type represents that there could be a type, but it is not
+ *  known.  This type can be used to initialize fields before an analysis (not known
+ *  yet) or to represent the top of a lattice (could not be determined).  There exists
+ *  exactly one type unknown. This type is not on the type list in ir_prog.  It is
+ *  allocated when initializing the type module.
+ *
+ *  The following values are set:
+ *    mode:  mode_ANY
+ *    name:  "type_unknown"
+ *    state: layout_fixed
+ *    size:  0
+ */
+/* A variable that contains the only unknown type. */
+extern type *unknown_type;
+/* Returns the none type */
+type *get_unknown_type(void);
+
+
+/**
  *  Checks whether a type is atomic.
  *  @param tp - any type
  *  @return true if type is primitive, pointer or enumeration
@@ -805,8 +851,11 @@ entity *get_compound_member(type *tp, int pos);
 int is_compound_type(type *tp);
 
 
-/** Outputs a unique number for this type if libfirm is compiled for
-   debugging, (configure with --enable-debug) else returns 0. */
+/**
+ *  Outputs a unique number for this type if libfirm is compiled for
+ *  debugging, (configure with --enable-debug) else returns the address
+ *  of the type cast to long.
+ */
 INLINE long get_type_nr(type *tp);
 
 # endif /* _TYPE_H_ */

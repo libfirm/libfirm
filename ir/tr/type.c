@@ -57,6 +57,10 @@
 /** TYPE                                                          **/
 /*******************************************************************/
 
+type *none_type;    type *get_none_type(void)    { return none_type;    }
+type *unknown_type; type *get_unknown_type(void) { return unknown_type; }
+
+
 #ifdef DEBUG_libfirm
 /** Returns a new, unique number to number nodes or the like. */
 int get_irp_new_node_nr(void);
@@ -67,8 +71,18 @@ static ident *value_params_suffix = NULL;
 static ident *value_ress_suffix = NULL;
 
 void init_type(void) {
-  value_params_suffix = id_from_str(VALUE_PARAMS_SUFFIX, strlen(VALUE_PARAMS_SUFFIX));
-  value_ress_suffix   = id_from_str(VALUE_RESS_SUFFIX,   strlen(VALUE_RESS_SUFFIX));
+  value_params_suffix = new_id_from_str(VALUE_PARAMS_SUFFIX);
+  value_ress_suffix   = new_id_from_str(VALUE_RESS_SUFFIX);
+
+  /* construct none and unknown type. */
+  none_type    = new_type(tpop_none,    mode_BAD, new_id_from_str("type_none"));
+  set_type_size  (none_type, 0);
+  set_type_state (none_type, layout_fixed);
+  remove_irp_type(none_type);
+  unknown_type = new_type(tpop_unknown, mode_ANY, new_id_from_str("type_unknown"));
+  set_type_size  (unknown_type, 0);
+  set_type_state (unknown_type, layout_fixed);
+  remove_irp_type(unknown_type);
 }
 
 unsigned long type_visited;
@@ -77,6 +91,8 @@ INLINE unsigned long get_master_type_visited() { return type_visited; }
 INLINE void inc_master_type_visited() { type_visited++; }
 
 void        free_type(type *tp) {
+  if ((get_type_tpop(tp) == tpop_none) || (get_type_tpop(tp) == tpop_unknown))
+    return;
   /* Remove from list of all types */
   remove_irp_type(tp);
   /* Free the attributes of the type. */
@@ -170,12 +186,16 @@ ir_mode*    get_type_mode(type *tp) {
 void        set_type_mode(type *tp, ir_mode* m) {
   assert(tp && tp->kind == k_type);
 
-  assert(((tp->type_op != type_primitive) || mode_is_data(m)) &&
+  assert(((tp->type_op != type_primitive)   || mode_is_data(m))     &&
 	 /* Modes of primitives must be data */
-	 ((tp->type_op != type_enumeration) || mode_is_int(m)));
+	 ((tp->type_op != type_enumeration) || mode_is_int(m))      &&
          /* Modes of enumerations must be integers */
+	 ((tp->type_op != type_pointer)     || mode_is_reference(m))   );
+	 /* Modes of pointers must be references. */
 
-  if ((tp->type_op == type_primitive) || (tp->type_op == type_enumeration)) {
+  if ((tp->type_op == type_primitive)   ||
+      (tp->type_op == type_enumeration) ||
+      (tp->type_op == type_pointer)       ) {
     /* For pointer, primitive and enumeration size depends on the mode. */
     assert((get_mode_size_bytes(m) != -1) && "unorthodox modes not implemented");
     tp->size = get_mode_size_bytes(m);
@@ -200,7 +220,7 @@ get_type_nr(type *tp) {
 #ifdef DEBUG_libfirm
   return tp->nr;
 #else
-  return 0;
+  return (long)tp;
 #endif
 }
 

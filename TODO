@@ -1,3 +1,8 @@
+  * 22.8.2003 Goetz
+    Firm const nodes should have a type.
+    In jack all nodes are typed now, except the Const nodes. Only const from
+    tarval is typed.
+
   * 14.8.2003 Goetz
     Diverse dynamische arrays haben ein erstes, unverwendetes element. Z.B.
     class members.  Entfernen um Speicher zu sparen.

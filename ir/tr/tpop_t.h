@@ -46,7 +46,7 @@ struct tp_op {
  *   @return A new type opcode.
  *
  */
-tp_op * new_tpop (tp_opcode code, ident *name, size_t attr_size);
+tp_op *new_tpop (tp_opcode code, ident *name, size_t attr_size);
 
 /**
  *   Initialize the tpop module.

@@ -1,13 +1,25 @@
-/*
+/**
+ *
+ * @file tpop.h
+ *
  * Project:     libFIRM
  * File name:   ir/tr/tpop.h
  * Purpose:     Opcode of types.
  * Author:      Goetz Lindenmaier
  * Modified by:
  * Created:
- * CVS-ID:      $Id$
  * Copyright:   (c) 2001-2003 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * CVS-ID:      $Id$
+ *
+ *  This module specifies the kinds of types available in firm.
+ *
+ *  They are called type opcodes. These include classes, structs, methods, unions,
+ *  arrays, enumerations, pointers and primitive types.
+ *  Special types with own opcodes are the id type, a type representing an unknown
+ *  type and a type used to specify that something has no type.
+ *
+ *  @see type.h
  */
 
 # ifndef _TYPEOP_H_
@@ -16,21 +28,11 @@
 #include "ident.h"
 
 /**
- *  @file tpop.h
- *
- *  This module specifies the kinds of types available in firm.
- *
- *  @author  Goetz Lindenmaier
- *
- *  They are called type opcodes. These include classes, structs, methods, unions,
- *  arrays, enumerations, pointers and primitive types.
- */
-
-/**
- *   an enum for the type kinds.
+ *   An enum for the type kinds.
  *   For each type kind exists a typecode to identify it.
  */
 typedef enum {
+  tpo_uninitialized = 0,   /* not a type opcode */
   tpo_class,
   tpo_struct,
   tpo_method,
@@ -39,7 +41,10 @@ typedef enum {
   tpo_enumeration,
   tpo_pointer,
   tpo_primitive,
-  tpo_id
+  tpo_id,
+  tpo_none,
+  tpo_unknown,
+  tpo_max                  /* not a type opcode */
 } tp_opcode;
 
 /**
@@ -87,7 +92,7 @@ ident *get_tpop_ident (tp_op *op);
  *   of the library.
  */
 extern tp_op *type_class;
-tp_op *get_type_class(void);
+tp_op *get_tpop_class(void);
 
 /**
  *   This type opcode marks that the corresponding type is a compound type
@@ -99,7 +104,7 @@ tp_op *get_type_class(void);
  *   of the library.
  */
 extern tp_op *type_struct;
-tp_op *get_type_struct(void);
+tp_op *get_tpop_struct(void);
 
 /**
  *   This type opcode marks that the corresponding type is a method type.
@@ -109,7 +114,7 @@ tp_op *get_type_struct(void);
  *   of the library.
  */
 extern tp_op *type_method;
-tp_op *get_type_method(void);
+tp_op *get_tpop_method(void);
 
 /**
  *   This type opcode marks that the corresponding type is a union type.
@@ -119,7 +124,7 @@ tp_op *get_type_method(void);
  *   of the library.
  */
 extern tp_op *type_union;
-tp_op *get_type_union(void);
+tp_op *get_tpop_union(void);
 
 /**
  *   This type opcode marks that the corresponding type is an array type.
@@ -130,7 +135,7 @@ tp_op *get_type_union(void);
  *   of the library.
  */
 extern tp_op *type_array;
-tp_op *get_type_array(void);
+tp_op *get_tpop_array(void);
 
 /**
  *   This type opcode marks that the corresponding type is an enumeration type.
@@ -142,7 +147,7 @@ tp_op *get_type_array(void);
  *   of the library.
  */
 extern tp_op *type_enumeration;
-tp_op *get_type_enumeration(void);
+tp_op *get_tpop_enumeration(void);
 
 /**
  *   This type opcode marks that the corresponding type is a pointer type.
@@ -152,7 +157,7 @@ tp_op *get_type_enumeration(void);
  *   of the library.
  */
 extern tp_op *type_pointer;
-tp_op *get_type_pointer(void);
+tp_op *get_tpop_pointer(void);
 
 /**
  *   This type opcode marks that the corresponding type is a primitive type.
@@ -163,7 +168,7 @@ tp_op *get_type_pointer(void);
  *   of the library.
  */
 extern tp_op *type_primitive;
-tp_op *get_type_primitive(void);
+tp_op *get_tpop_primitive(void);
 
 /**
  *   This type opcode is an auxiliary opcode dedicated to support transformations
@@ -171,7 +176,7 @@ tp_op *get_type_primitive(void);
  *
  *   If a type is changed to another type with another
  *   opcode the new type will be allocated with new memory.  All nodes refering
- *   to the old type need to be changed to refer the new one.  This is simplified
+ *   to the old type need to be changed to refer to the new one.  This is simplified
  *   by turning the old type into an id type that merely forwards to the new type
  *   that now replaces the old one.
  *   type_ids should never be visible out of the type module.  All access routines
@@ -183,6 +188,28 @@ tp_op *get_type_primitive(void);
  *   of the library.
  */
 extern tp_op *type_id;
-tp_op *get_type_id(void);
+tp_op *get_tpop_id(void);
+
+/**
+ *   This type opcode is an auxiliary opcode dedicated to support type analyses.
+ *
+ *   Types with this opcode represents that there is no type.
+ *   The type can be used to initialize fields of the type* that actually can not
+ *   contain a type or that are initialized for an analysis. There exists exactly
+ *   one type with this opcode.
+ */
+extern tp_op *tpop_none;
+tp_op *get_tpop_none(void);
+
+/**
+ *   This type opcode is an auxiliary opcode dedicated to support type analyses.
+ *
+ *   Types with this opcode represents that there could be a type, but it is not
+ *   known.  This type can be used to initialize fields before an analysis (not known
+ *   yet) or to represent the top of a lattice (could not be determined).  There exists
+ *   exactly one type with this opcode.
+ */
+extern tp_op *tpop_unknown;
+tp_op *get_tpop_unknown(void);
 
 # endif /*_TYPEOP_H_ */
