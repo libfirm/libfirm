@@ -468,9 +468,9 @@
  *      mature_block(loop_header);
  *      mature_block(loop_body);
  *
- *      get_value(loop_body, x);   // gets the Phi in loop_header
- *      set_value(loop_header, x); // sets the value the above get_value should
- *                                 // have returned!!!
+ *      get_value(loop_body, x);   //  gets the Phi in loop_header
+ *      set_value(loop_header, x); //  sets the value the above get_value should
+ *                                 //  have returned!!!
  *
  *    Mature_block also fixes the number of inputs to the Phi nodes.  Mature_block
  *    should be called as early as possible, as afterwards the generation of Phi

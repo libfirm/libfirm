@@ -29,7 +29,7 @@
  *     Block1    scnCondBlock
  *        |       |        |
  *        |       |        |
- * 	  |      \ /      \ /
+ *    |      \ /      \ /
  *        |     Block2   Block3
  *         \      |       /
  *          \     |      /
@@ -40,9 +40,9 @@
  *   This is a program as, e.g.,
  *
  *   if () then
- *     { Jmp label1; } // happens anyways
+ *     { Jmp label1; } /*  happens anyways  */
  *   else
- *     { Jmp label1; } // happens anyways
+ *     { Jmp label1; } /*  happens anyways  */
  * label1:
  *   return();
  *   Jmp label1;
@@ -79,7 +79,7 @@ int main(int argc, char **argv)
 
   owner = get_glob_type();
   proc_main = new_type_method(id_from_str(METHODNAME, strlen(METHODNAME)),
-			      NRARGS, NRES);
+                  NRARGS, NRES);
   set_method_param_type(proc_main, 0, prim_t_int);
   set_method_res_type(proc_main, 0, prim_t_int);
 

@@ -50,32 +50,32 @@ typedef struct {
   struct ir_node **graph_arr; /**< array to store all parameters */
   /* Attributes holding analyses information */
   struct dom_info dom;        /**< Datastructure that holds information about dominators.
-				 @@@ @todo
-				 Eventually overlay with graph_arr as only valid
-				 in different phases.  Eventually inline the whole
-				 datastructure. */
-  //  exc_t exc;		      /**< role of this block for exception handling */
-  //  ir_node *handler_entry;     /**< handler entry block iff this block is part of a region */
+                 @@@ @todo
+                 Eventually overlay with graph_arr as only valid
+                 in different phases.  Eventually inline the whole
+                 datastructure. */
+  /*   exc_t exc;  */            /**< role of this block for exception handling */
+  /*   ir_node *handler_entry; */    /**< handler entry block iff this block is part of a region */
   ir_node ** in_cg;           /**< array with predecessors in
-			       * interprocedural_view, if they differ
-			       * from intraprocedural predecessors */
+                   * interprocedural_view, if they differ
+                   * from intraprocedural predecessors */
   int *backedge;              /**< Field n set to true if pred n is backedge.
-			         @@@ @todo Ev. replace by bitfield! */
+                     @@@ @todo Ev. replace by bitfield! */
   int *cg_backedge;           /**< Field n set to true if pred n is interprocedural backedge.
-			         @@@ @todo Ev. replace by bitfield! */
+                     @@@ @todo Ev. replace by bitfield! */
 } block_attr;
 
 /** Start attributes */
 typedef struct {
   char dummy;
-  //  ir_graph *irg;   @@@ now in block
+  /*   ir_graph *irg;   @@@ now in block */
 } start_attr;
 
 /** Cond attributes */
 typedef struct {
   cond_kind kind;    /**< flavor of Cond */
   long default_proj; /**< for optimization: biggest Proj number, i.e. the one
-   	 	 	  used for default. */
+              used for default. */
 } cond_attr;
 
 /** Const attributes */
@@ -130,22 +130,22 @@ typedef struct {
   long proj;                 /**< contains the result position to project (Proj) */
   ir_node ** in_cg;          /**< array with interprocedural predecessors (Phi) */
   int *backedge;              /**< Field n set to true if pred n is backedge.
-			         @todo Ev. replace by bitfield! */
+                     @todo Ev. replace by bitfield! */
 } filter_attr;
 
 /** EndReg/EndExcept attributes */
 typedef struct {
   char dummy;
-  //  ir_graph * irg;            /**< ir_graph this node belongs to (for
-  //                              * navigating in interprocedural graphs)
-  //         			  @@@ now in block */
+  /*   ir_graph * irg; */           /**< ir_graph this node belongs to (for */
+  /*                               * navigating in interprocedural graphs)  */
+  /*                       @@@ now in block */
 } end_attr;
 
 /** CallBegin attributes */
 typedef struct {
-  //  ir_graph * irg;            / **< ir_graph this node belongs to (for
-  //			      * navigating in interprocedural graphs) */
-  //                           @@@ now in block
+  /*   ir_graph * irg; */           /**< ir_graph this node belongs to (for */
+  /*                   * navigating in interprocedural graphs) */
+  /*                            @@@ now in block */
   ir_node * call;            /**< associated Call-operation */
 } callbegin_attr;
 
@@ -168,25 +168,25 @@ typedef union {
   call_attr      call;  /**< For Call: pointer to the type of the method to call */
   callbegin_attr callbegin; /**< For CallBegin */
   alloc_attr     a;     /**< For Alloc. */
-  io_attr	 io;	/**< For InstOf */
+  io_attr    io;    /**< For InstOf */
   type          *f;     /**< For Free. */
   cast_attr      cast;  /**< For Cast. */
   int            phi0_pos;  /**< For Phi. Used to remember the value defined by
-			       this Phi node.  Needed when the Phi is completed
-			       to call get_r_internal_value to find the
-			       predecessors. If this attribute is set, the Phi
-			       node takes the role of the obsolete Phi0 node,
-			       therefore the name. */
+                   this Phi node.  Needed when the Phi is completed
+                   to call get_r_internal_value to find the
+                   predecessors. If this attribute is set, the Phi
+                   node takes the role of the obsolete Phi0 node,
+                   therefore the name. */
   int *phi_backedge;    /**< For Phi after construction.
-			   Field n set to true if pred n is backedge.
-			   @todo Ev. replace by bitfield! */
+               Field n set to true if pred n is backedge.
+               @todo Ev. replace by bitfield! */
   long           proj;  /**< For Proj: contains the result position to project */
   confirm_attr   confirm_cmp;   /**< For Confirm: compare operation */
   filter_attr    filter;    /**< For Filter */
   end_attr       end;       /**< For EndReg, EndExcept */
 #if PRECISE_EXC_CONTEXT
   struct ir_node **frag_arr; /**< For Phi node construction in case of exceptions
-			       for nodes Store, Load, Div, Mod, Quot, DivMod. */
+                   for nodes Store, Load, Div, Mod, Quot, DivMod. */
 #endif
 } attr;
 
@@ -202,15 +202,15 @@ struct ir_node {
   struct ir_node **in;     /**< array with predecessors / operands */
   void *link;              /**< to attach additional information to the node, e.g.
                               used while construction to link Phi0 nodes and
-			      during optimization to link to nodes that
-			      shall replace a node. */
+                  during optimization to link to nodes that
+                  shall replace a node. */
   /* ------- Fields for optimizations / analysis information ------- */
   struct ir_node **out;    /**< array of out edges */
   struct dbg_info* dbi;    /**< A pointer to information for debug support. */
   /* ------- For debugging ------- */
 #ifdef DEBUG_libfirm
   int node_nr;             /**< a unique node number for each node to make output
-			      readable. */
+                  readable. */
 #endif
   /* ------- For analyses -------- */
   ir_loop *loop;           /**< the loop the node is in. Access routines in irloop.h */

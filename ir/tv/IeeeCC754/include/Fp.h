@@ -10,7 +10,7 @@
 #   with the principles of the IEEE 754-854 floating-point standards.    #
 #   You can find out more about the testing tool IeeeCC754 at            #
 #                                                                        #
-#         http://win-www.uia.ac.be/u/cant/ieeecc754.html                 #
+#         http:/* win-www.uia.ac.be/u/cant/ieeecc754.html                 # */
 #                                                                        #
 #   This tool is in parts based on and greatly benefited from the        #
 #   the program FPTEST developed by Jerome Coonen. For a full            #
@@ -85,7 +85,7 @@ Last updated:
 #endif
 
 #define maxstr 5000
-// maximum chars for binary to decimal conversion
+/*  maximum chars for binary to decimal conversion */
 
 /**This is an abstract class defining floating-points as described in the IEEE 754 standard. It uses the Bitstring class to represent the mantissa and exponent
 separately. The hidden bit is always present in the mantissa and needs to be defined for input and output in a hexadecimal form.\\
@@ -104,7 +104,7 @@ class FP
 {
 
 protected:
-  ///Little or Big Endian
+  /* * Little or Big Endian */ */
   static int Endian;
 
   /**The representation of a floating-point environment. \\
@@ -124,15 +124,15 @@ protected:
     \end{itemize}  */
   static Bitstring fpEnv;
 
-  ///The sign of the floating-point number
+  /* /The sign of the floating-point number */
   int sign;
-  ///Hidden bit (yes/no)
+  /* /Hidden bit (yes/no) */
   int hidden;
-  ///The size of the mantissa
+  /* * The size of the mantissa */ */
   int sizeMant;
-  ///The mantissa
+  /* * The mantissa */ */
   Bitstring mant;
-  ///The exponent
+  /* * The exponent */ */
   Bitstring exp;
 
 
@@ -159,27 +159,27 @@ protected:
    */
   int GetFPRound();
 
-  ///Sets the divide by zero exception in fpEnv
+  /* * Sets the divide by zero exception in fpEnv */ */
   void SetFPDivByZero(){fpEnv.Set(0);}
-  ///Sets the invalid exception in fpEnv
+  /* * Sets the invalid exception in fpEnv */ */
   void SetFPInvalid()  {fpEnv.Set(1);}
-  ///Sets the underflow exception in fpEnv
+  /* * Sets the underflow exception in fpEnv */ */
   void SetFPUnderflow(){fpEnv.Set(2);}
-  ///Sets the overflow exception in fpEnv
+  /* * Sets the overflow exception in fpEnv */ */
   void SetFPOverflow() {fpEnv.Set(3);}
-  ///Sets the inexact exception in fpEnv
+  /* * Sets the inexact exception in fpEnv */ */
   void SetFPInexact()  {fpEnv.Set(4);}
 
 
 
 public:
 
-  ///The size of the exponent
+  /* * The size of the exponent */ */
   int sizeExp;
-  ///decimal
-  char *decimal; // binary to decimal conversion
+  /* * decimal */ */
+  char *decimal; /*  binary to decimal conversion */
 
-  ///Constructor
+  /* * Constructor */ */
   FP();
   /**Constructor setting the size of the exponent, the mantissa and the
     hidden bit
@@ -200,10 +200,10 @@ public:
    @param copy  an other FP object*/
   FP(FP & copy);
 
-  //Destructor
+  /* Destructor */
   virtual~FP(){};
 
-  ///returns true (1) if there is a hidden bit
+  /* * returns true (1) if there is a hidden bit */ */
   int Hidden(){return hidden;};
   /**returns or sets the sign
     @param  sgn  the new sign \\ \begin{tabular}{rcl} 1 &:& negative \\
@@ -273,7 +273,7 @@ public:
                               \end{tabular}
     */
   void SetFPRound (int rm);
-  ///Clears the environment (fpEnv)
+  /* * Clears the environment (fpEnv) */ */
   void ClearFPEnvironment();
   /**Returns the exceptions stored in fpEnv as a Bitstring
    @return a Bitstring with next bit positions set, depending the exception \\\begin{tabular}{rcl}
@@ -295,7 +295,7 @@ public:
     @return\begin{tabular}{rcl} 1 &:& invalid exception  \\
                                  0 &:& no invalid exception
     \end{tabular}*/
-  int GetFPInvalid()  {//cout << "fpEnv.GetBit(1)" << fpEnv.GetBit(1);
+  int GetFPInvalid()  {/* cout << "fpEnv.GetBit(1)" << fpEnv.GetBit(1); */
    return fpEnv.GetBit(1);}
   /**chekcs if there has occured a underflow exception
     @return\begin{tabular}{rcl} 1 &:& underflow exception \\
@@ -316,13 +316,13 @@ public:
   int isInf();
   int isNan();
 
-  ///Overloaded output operator
+  /* * Overloaded output operator */ */
   friend ostream& operator << (ostream& outs, FP &outstr);
 
   friend istream& operator >> (istream& ins, FP &instr);
 
 };
 
-//@Include: MyFloat.h MyDouble.h MyQuad.h FpSim.h Bitstring.h UCB.h dlist.h stack.h ../Calculator/FPcalculator.h
+/* @Include: MyFloat.h MyDouble.h MyQuad.h FpSim.h Bitstring.h UCB.h dlist.h stack.h ../Calculator/FPcalculator.h */
 
 #endif

@@ -106,7 +106,7 @@ typedef struct {
  * value is represented as a pseudo-struct char array, addressed
  * by macros
  * struct {
- *   char sign;             // 0 for positive, 1 for negative
+ *   char sign;             //  0 for positive, 1 for negative
  *   char exp[VALUE_SIZE];
  *   char mant[VALUE_SIZE];
  *   descriptor_t desc;
@@ -1031,7 +1031,7 @@ char* fc_val_from_str(const char *str, unsigned int len, char exp_size, char man
             _fail_char(old_str, len, str - old_str);
         }
     }
-  } // switch(state)
+  } /*  switch(state) */
 
 done:
   sc_val_from_str(mant_str, strlen(mant_str), _mant(result));
@@ -1096,7 +1096,7 @@ char* fc_val_from_float(LLDBL l, char exp_size, char mant_size, char* result)
 #endif
 
 #ifdef HAVE_LONG_DOUBLE
-  TRACEPRINTF(("val_from_float(%.8X%.8X%.8X)\n", ((int*)&l)[2], ((int*)&l)[1], ((int*)&l)[0]));//srcval.val.high, srcval.val.mid, srcval.val.low));
+  TRACEPRINTF(("val_from_float(%.8X%.8X%.8X)\n", ((int*)&l)[2], ((int*)&l)[1], ((int*)&l)[0]));/* srcval.val.high, srcval.val.mid, srcval.val.low)); */
   DEBUGPRINTF(("(%d-%.4X-%.8X%.8X)\n", sign, exponent, mantissa0, mantissa1));
 #else
   TRACEPRINTF(("val_from_float(%.8X%.8X)\n", srcval.val.high, srcval.val.low));

@@ -42,7 +42,7 @@
 
 #include "tv_t.h"
 #include "set.h"            /* to store tarvals in */
-//#include "tune.h"           /* some constants */
+/* #include "tune.h" */          /* some constants */
 #include "entity_t.h"       /* needed to store pointers to entities */
 #include "irmode.h"         /* defines modes etc */
 #include "irmode_t.h"
@@ -53,7 +53,7 @@
 
 /** Size of hash tables.  Should correspond to average number of distinct constant
     target values */
-#define N_CONSTANTS	2048
+#define N_CONSTANTS 2048
 
 /* XXX hack until theres's a proper interface */
 #define BAD 1
@@ -279,7 +279,7 @@ tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
       else if (strcasecmp(str, "false")) return tarval_b_true;
       else
         /* XXX This is C semantics */
-	return atoi(str) ? tarval_b_true : tarval_b_false;
+    return atoi(str) ? tarval_b_true : tarval_b_false;
 
     case irms_float_number:
       switch(get_mode_size_bits(mode)) {
@@ -419,7 +419,7 @@ int tarval_is_entity(tarval *tv)
   assert(tv);
   /* tv->value == NULL means dereferencing a null pointer */
   return ((get_mode_sort(tv->mode) == irms_reference) && (tv->value != NULL) && (tv->length == 0)
-	  && (tv != tarval_P_void));
+      && (tv != tarval_P_void));
 }
 
 entity *tarval_to_entity(tarval *tv)
@@ -734,7 +734,7 @@ int tarval_is_negative(tarval *a)
     case irms_int_number:
       if (!mode_is_signed(a->mode)) return 0;
       else
-	return sc_comp(a->value, get_mode_null(a->mode)->value) == -1 ? 1 : 0;
+    return sc_comp(a->value, get_mode_null(a->mode)->value) == -1 ? 1 : 0;
 
     case irms_float_number:
       return fc_comp(a->value, get_mode_null(a->mode)->value) == -1 ? 1 : 0;
@@ -839,7 +839,7 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m)
     /* cast float to something */
     case irms_float_number:
       switch (get_mode_sort(m)) {
-	case irms_float_number:
+    case irms_float_number:
           switch (get_mode_size_bits(m))
           {
             case 32:
@@ -855,7 +855,7 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m)
               break;
           }
           return get_tarval(fc_get_buffer(), fc_get_buffer_length(), m);
-	  break;
+      break;
 
         case irms_int_number:
           switch (GET_FLOAT_TO_INT_MODE())
@@ -874,7 +874,7 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m)
            * an intermediate representation is needed here first. */
           /*  return get_tarval(); */
           return tarval_bad;
-	  break;
+      break;
 
         default:
           /* the rest can't be converted */
@@ -1440,17 +1440,17 @@ int tarval_snprintf(char *buf, size_t len, tarval *tv)
 
       case TVO_DECIMAL:
         str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_DEC);
-	break;
+    break;
 
       case TVO_OCTAL:
         str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_OCT);
-	break;
+    break;
 
       case TVO_HEX:
       case TVO_NATIVE:
       default:
         str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_HEX);
-	break;
+    break;
       }
       return snprintf(buf, len, "%s%s%s", prefix, str, suffix);
 
@@ -1476,24 +1476,24 @@ int tarval_snprintf(char *buf, size_t len, tarval *tv)
           if (get_entity_peculiarity((entity *)tv->value) != peculiarity_description)
             return snprintf(buf, len, "%s%s%s", prefix, get_entity_ld_name((entity *)tv->value), suffix);
           else {
-	    if (mode_info->mode_output == TVO_NATIVE)
+        if (mode_info->mode_output == TVO_NATIVE)
               return snprintf(buf, len, "NULL");
-	    else
+        else
               return snprintf(buf, len, "0");
-	  }
-	}
+      }
+    }
         else {
-	  if (size > tv->length) {
-	    memcpy(buf, tv->value, tv->length);
-	    buf[tv->length] = '\0';
-	  }
-	  else {
-	    /* truncated */
-	    memcpy(buf, tv->value, size-1);
-	    buf[size-1] = '\0';
-	  }
+      if (size > tv->length) {
+        memcpy(buf, tv->value, tv->length);
+        buf[tv->length] = '\0';
+      }
+      else {
+        /* truncated */
+        memcpy(buf, tv->value, size-1);
+        buf[size-1] = '\0';
+      }
           return tv->length;
-	}
+    }
       else
         return snprintf(buf, len, "void");
 

@@ -7,13 +7,13 @@
 # include "src/heapanal.h"
 # include "src/interprete.h"
 
-// boilerplate stuff:
+/*  boilerplate stuff: */
 #include "libfirm/irvrfy.h"
 #include "libfirm/trvrfy.h"
 #include "libfirm/irdump.h"
 
 
-// I/O:
+/*  I/O: */
 # include <stdio.h>
 
 /*
@@ -23,7 +23,7 @@
  */
 void Java_firmjni_Heapanal_initAnal (JNIEnv *env, jclass clazz)
 {
-  // from interprete.c:
+  /*  from interprete.c:  */
   init_interprete ();
 }
 
@@ -61,28 +61,28 @@ void Java_firmjni_Heapanal_analHeap__ (JNIEnv *env, jclass clazz)
 
   fprintf (stdout, "Ajacs Boilerplate:\n");
   {
-	entity **free_methods = 0;
-	int arr_len = 0;
+    entity **free_methods = 0;
+    int arr_len = 0;
 
     /* replace static constant fields by constants
        @@@ This corrects some code that is invalid Firm!!!
        Execute before irg_vrfy(). */
-	// ???
-    // opt_load_const_static();
+    /* ??? */
+    /*  opt_load_const_static(); */
 
-	/* dump graphs as they come out of the front end */
-	dump_file_suffix = "-fe";
-	dump_all_types ();
-	dump_class_hierarchy (true);
-	dump_all_ir_graphs(dump_ir_block_graph);
-	dump_all_ir_graphs(dump_ir_block_graph_w_types);
-	dump_all_ir_graphs(dump_cfg);
+    /* dump graphs as they come out of the front end */
+    dump_file_suffix = "-fe";
+    dump_all_types ();
+    dump_class_hierarchy (true);
+    dump_all_ir_graphs(dump_ir_block_graph);
+    dump_all_ir_graphs(dump_ir_block_graph_w_types);
+    dump_all_ir_graphs(dump_cfg);
 
     /* verify constructed graphs */
     for (i = 0; i < get_irp_n_irgs(); i++)
-	  irg_vrfy(get_irp_irg(i));
+      irg_vrfy(get_irp_irg(i));
 
-	/* verify something */
+    /* verify something */
     tr_vrfy();
 
 
@@ -90,20 +90,20 @@ void Java_firmjni_Heapanal_analHeap__ (JNIEnv *env, jclass clazz)
      * test loop construction intraprocedural
      */
     for (i = 0; i < get_irp_n_irgs(); i++) {
-	  construct_backedges(get_irp_irg(i));
+      construct_backedges(get_irp_irg(i));
 
       if (1) {
-		dump_loop_information();
-		dump_file_suffix = "-1.2-intra-loop";
-		dump_ir_block_graph(get_irp_irg(i));
-		dont_dump_loop_information();
-		dump_loop_tree(get_irp_irg(i), "-1.2-intra");
+        dump_loop_information();
+        dump_file_suffix = "-1.2-intra-loop";
+        dump_ir_block_graph(get_irp_irg(i));
+        dont_dump_loop_information();
+        dump_loop_tree(get_irp_irg(i), "-1.2-intra");
       }
     }
 
-	DDMG (get_irp_main_irg ());
-	assert(get_irp_main_irg());
-	assert(get_irg_ent(get_irp_main_irg()));
+    DDMG (get_irp_main_irg ());
+    assert(get_irp_main_irg());
+    assert(get_irg_ent(get_irp_main_irg()));
 
 
     /** Do interprocedural optimizations **/
@@ -112,43 +112,43 @@ void Java_firmjni_Heapanal_analHeap__ (JNIEnv *env, jclass clazz)
        Optimizes polymorphic calls.*/
     cgana(&arr_len, &free_methods);
     /* Remove methods that are never called. */
-    // gc_irgs(arr_len, free_methods);
+    /*  gc_irgs(arr_len, free_methods); */
     /* Build the interprocedural dataflow representation */
     cg_construct(arr_len, free_methods);
 
     /* Test construction of interprocedural loop information */
-    // construct_ip_backedges();
+    /*  construct_ip_backedges(); */
 
-	dump_loop_information();
-	dump_file_suffix = "-1.2-inter-loop";
-	dump_all_cg_block_graph();
-	dont_dump_loop_information();
-	dump_loop_tree(get_irp_main_irg(), "-1.2-inter");
+    dump_loop_information();
+    dump_file_suffix = "-1.2-inter-loop";
+    dump_all_cg_block_graph();
+    dont_dump_loop_information();
+    dump_loop_tree(get_irp_main_irg(), "-1.2-inter");
 
 
-	fprintf (stdout, "HA:\n");
-	DDMG (get_irp_main_irg ());
+    fprintf (stdout, "HA:\n");
+    DDMG (get_irp_main_irg ());
 
-	set_max_chi_height(8);	/* change ad lib */
-	set_initial_context_depth(4);	/* change as needed */
-	ha_analyse_heap(get_irg_ent(get_irp_main_irg()), 1);
+    set_max_chi_height(8);  /* change ad lib */
+    set_initial_context_depth(4);   /* change as needed */
+    ha_analyse_heap(get_irg_ent(get_irp_main_irg()), 1);
 
     /* Remove the interprocedural dataflow representation */
-	free(free_methods);
-	cg_destruct();
+    free(free_methods);
+    cg_destruct();
 
-	/* verify optimized graphs */
-	for (i = 0; i < get_irp_n_irgs(); i++) {
-	  irg_vrfy(get_irp_irg(i));
-	}
+    /* verify optimized graphs */
+    for (i = 0; i < get_irp_n_irgs(); i++) {
+      irg_vrfy(get_irp_irg(i));
+    }
 
-	tr_vrfy();
+    tr_vrfy();
 
   }
 
   set_opt_dump_abstvals (1);
 
-  // ToDo:  Dump ???
+  /* ToDo:  Dump ??? */
 
   fprintf (stdout, "Bye,   Heap!\n");
 }
@@ -157,6 +157,9 @@ void Java_firmjni_Heapanal_analHeap__ (JNIEnv *env, jclass clazz)
 
 /*
  * $Log$
+ * Revision 1.2  2004/04/29 13:59:11  liekweg
+ * Removed C++-Style comments --flo
+ *
  * Revision 1.1  2004/04/29 12:11:36  liekweg
  * Moved ... to aux --flo
  *

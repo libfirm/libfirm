@@ -65,6 +65,6 @@ void free_simple_type_information(void);
  *  Not yet implemented, but I guess we want this for iropt, to find the
  *  type for newly allocated constants.
  */
-//type *analyse_irn_type(ir_node *node);
+/* type *analyse_irn_type(ir_node *node); */
 
 #endif /* _IRSIMPLETYPE_H_ */

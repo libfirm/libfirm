@@ -10,7 +10,7 @@
 #   with the principles of the IEEE 754-854 floating-point standards.    #
 #   You can find out more about the testing tool IeeeCC754 at            #
 #                                                                        #
-#         http://win-www.uia.ac.be/u/cant/ieeecc754.html                 #
+#         http:/* win-www.uia.ac.be/u/cant/ieeecc754.html                 # */
 #                                                                        #
 #   This tool is in parts based on and greatly benefited from the        #
 #   the program FPTEST developed by Jerome Coonen. For a full            #
@@ -57,35 +57,35 @@ Last updated:
 */
 
 
-// MORE INFORMATION ON THE FUNCTIONS IN  THIS HEADER FILE CAN BE FOUND
-// ON THE WEBPAGE
-//          http://win-www.uia.ac.be/u/cant/ieeecc754.html
-//   ``Adapt IeeeCC754 to test your floating-point implementation''
+/*  MORE INFORMATION ON THE FUNCTIONS IN  THIS HEADER FILE CAN BE FOUND  */
+/*  ON THE WEBPAGE */
+/*           http://win-www.uia.ac.be/u/cant/ieeecc754.html */
+/*   ``Adapt IeeeCC754 to test your floating-point implementation'' */
 
-// ----
-// Includes
-// ----
+/*  ---- */
+/*  Includes */
+/*  ---- */
 
 #include <Fp.h>
 #include <Bitstring.h>
 
-// ----
-// Includes and Defines specificly for  testing MpIeee
-// ----
+/*  ---- */
+/*  Includes and Defines specificly for  testing MpIeee */
+/*  ---- */
 #ifdef MPIEEE_TEST
 #include <MpIeee.hh>
 #endif
 
-// ----
-// Includes and Defines specificly for testing FMLib
-// ----
+/*  ---- */
+/*  Includes and Defines specificly for testing FMLib */
+/*  ---- */
 #ifdef FMLIB_TEST
 #include <Sdefs.h>
 #endif
 
-// ----
-// CLASS DEFINITION : DriverFloatRepr
-// ----
+/*  ---- */
+/*  CLASS DEFINITION : DriverFloatRepr */
+/*  ---- */
 
 
 class DriverFloatRepr: public FP
@@ -93,22 +93,22 @@ class DriverFloatRepr: public FP
 protected:
 
 void SetLibRound( );
-// call the appropriate functions to set the rounding mode
-// on the target platform - see item (a) on webpage
+/*  call the appropriate functions to set the rounding mode */
+/*  on the target platform - see item (a) on webpage */
 
 void SetLibEnvironment( );
-// call the appropriate functions to clear all floating-point
-// exceptions on the target platform - see item (b) on webpage
+/*  call the appropriate functions to clear all floating-point */
+/*  exceptions on the target platform - see item (b) on webpage */
 
 void GetLibExceptions( );
-// call the appropriate functions to read out exceptions generated
-// by the target platform - see item (b) on webpage
+/*  call the appropriate functions to read out exceptions generated */
+/*  by the target platform - see item (b) on webpage */
 
 public:
 
 #ifndef FMLIB_TEST
-// For testing FMLib we use other definitions
-// --
+/*  For testing FMLib we use other definitions */
+/*  -- */
 DriverFloatRepr::DriverFloatRepr( ) :FP( )
   {}
 
@@ -120,11 +120,11 @@ DriverFloatRepr::DriverFloatRepr( Bitstring  &fp,int m,int e,int h ) :FP( fp,m,e
   ;
 #endif
 
-// If your target implementation is implemented in hardware,
-// provide an implementation of the functions listed below for
-// conversion between your hardware data types and DriverFloatRepr
-// see item (c) on webpage and
-//      ftp://win-ftp.uia.ac.be/pub/cant/IeeeCC754/converting.pdf
+/*  If your target implementation is implemented in hardware, */
+/*  provide an implementation of the functions listed below for */
+/*  conversion between your hardware data types and DriverFloatRepr  */
+/*  see item (c) on webpage and */
+/*       ftp://win-ftp.uia.ac.be/pub/cant/IeeeCC754/converting.pdf */
 
 DriverFloatRepr( float f );
 DriverFloatRepr( double d );
@@ -134,26 +134,26 @@ double todouble( );
 long double tolongdouble( );
 
 
-// If your target implementation is implemented in software,
-// provide an implementation of the functions listed below for
-// conversion between your floating-point datatype and
+/*  If your target implementation is implemented in software, */
+/*  provide an implementation of the functions listed below for */
+/*  conversion between your floating-point datatype and */
 // DriverFloatRepr (don't forget to replace MyDatatype by the
-// appropriate identifier in this declaration) - see item (c) on
-// webpage and
-//      ftp://win-ftp.uia.ac.be/pub/cant/IeeeCC754/converting.pdf
+/*  appropriate identifier in this declaration) - see item (c) on */
+/*  webpage and */
+/*       ftp://win-ftp.uia.ac.be/pub/cant/IeeeCC754/converting.pdf */
 
 DriverFloatRepr (void *val);
 void* to(void *val);
 
 
 
-//
-// Here is an example to test the multiprecision floating-point
-// implementation MpIeee:
+/*  */
+/*  Here is an example to test the multiprecision floating-point */
+/*  implementation MpIeee: */
 
 #ifdef MPIEEE_TEST
-// Functions that Convert MpIeee to DriverFloatRepr and vice-versa
-//--
+/*  Functions that Convert MpIeee to DriverFloatRepr and vice-versa */
+/* -- */
 
 DriverFloatRepr ( const MpIeee &M );
 MpIeee to( );
@@ -161,8 +161,8 @@ MpIeee to( );
 #endif
 
 #ifdef FMLIB_TEST
-// Functions specifically for Testing FMLib
-// --
+/*  Functions specifically for Testing FMLib */
+/*  -- */
 
 DriverFloatRepr::DriverFloatRepr( );
 DriverFloatRepr::DriverFloatRepr( int m,int e,int h );
@@ -178,10 +178,10 @@ void SetOperations( );
 
 #endif
 
-// provide implementaton of the functions listed below in the file
-//      BasicOperations/$PLATFORM/BasicOperationstest.cc
-// see item (d) on webpage
-// --
+/*  provide implementaton of the functions listed below in the file */
+/*       BasicOperations/$PLATFORM/BasicOperationstest.cc */
+/*  see item (d) on webpage */
+/*  -- */
 
 DriverFloatRepr operator + ( DriverFloatRepr &T );
 DriverFloatRepr operator - ( DriverFloatRepr &T );
@@ -190,10 +190,10 @@ DriverFloatRepr operator / ( DriverFloatRepr &T );
 DriverFloatRepr operator % ( DriverFloatRepr &T );
 DriverFloatRepr sqrt( );
 
-// provide implementation of the functions listed below in the file
-//      Conversions/$PLATFORM/Conversionstest.cc
-// see item (d) on webpage
-// --
+/*  provide implementation of the functions listed below in the file */
+/*       Conversions/$PLATFORM/Conversionstest.cc */
+/*  see item (d) on webpage */
+/*  -- */
 
 DriverFloatRepr roundto ( int, int, int );
 DriverFloatRepr copyto ( int, int, int );
@@ -209,13 +209,13 @@ DriverFloatRepr cU ( int, int, int );
 DriverFloatRepr b2d ( int );
 DriverFloatRepr d2b ( );
 
-// conversions between DriverFloatRepr and hardware integer
-// data types; implementation is provided in the files
-//    BasicOperations/$PLATFORM/fpenv_$PLATFORM.cc
-// and
-//    Conversions/$PLATFORM/fpenv_$PLATFORM.cc
-// and should not be modified
-// --
+/*  conversions between DriverFloatRepr and hardware integer */
+/*  data types; implementation is provided in the files */
+/*     BasicOperations/$PLATFORM/fpenv_$PLATFORM.cc */
+/*  and */
+/*     Conversions/$PLATFORM/fpenv_$PLATFORM.cc */
+/*  and should not be modified */
+/*  -- */
 
 DriverFloatRepr( long i );
 DriverFloatRepr( unsigned long i );

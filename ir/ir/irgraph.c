@@ -82,13 +82,13 @@ new_ir_graph (entity *ent, int n_loc)
 #if PRECISE_EXC_CONTEXT
   res->n_loc = n_loc + 1 + 1; /* number of local variables that are never
                                  dereferenced in this graph plus one for
-	    		         the store plus one for links to fragile
-				 operations.  n_loc is not the number of
-				 parameters to the procedure!  */
+                         the store plus one for links to fragile
+                 operations.  n_loc is not the number of
+                 parameters to the procedure!  */
 #else
   res->n_loc = n_loc + 1;  /* number of local variables that are never
                               dereferenced in this graph plus one for
-	    		      the store. This is not the number of parameters
+                      the store. This is not the number of parameters
                               to the procedure!  */
 #endif
 
@@ -103,8 +103,8 @@ new_ir_graph (entity *ent, int n_loc)
   res->obst      = (struct obstack *) xmalloc (sizeof (struct obstack));
   obstack_init (res->obst);
   res->value_table = new_identities (); /* value table for global value
-					   numbering for optimizing use in
-					   iropt.c */
+                       numbering for optimizing use in
+                       iropt.c */
   res->outs = NULL;
 
   res->phase_state = phase_building;
@@ -131,7 +131,7 @@ new_ir_graph (entity *ent, int n_loc)
   res->start_block = new_immBlock ();
   res->start   = new_Start ();
   res->bad     = new_ir_node (NULL, res, res->start_block, op_Bad, mode_T, 0, NULL);
-  //res->unknown = new_ir_node (NULL, res, res->start_block, op_Unknown, mode_T, 0, NULL);
+  /* res->unknown = new_ir_node (NULL, res, res->start_block, op_Unknown, mode_T, 0, NULL); */
 
   /* Proj results of start node */
   projX        = new_Proj (res->start, mode_X, pns_initial_exec);
@@ -182,8 +182,8 @@ ir_graph *new_const_code_irg(void) {
   res->phase_state = phase_building;
   res->pinned = pinned;
   res->value_table = new_identities (); /* value table for global value
-					   numbering for optimizing use in
-					   iropt.c */
+                       numbering for optimizing use in
+                       iropt.c */
   res->ent = NULL;
   res->frame_type = NULL;
   res->start_block = new_immBlock ();
@@ -191,7 +191,7 @@ ir_graph *new_const_code_irg(void) {
   res->end       = new_End ();
   mature_block(get_cur_block());
   res->bad = new_ir_node (NULL, res, res->start_block, op_Bad, mode_T, 0, NULL);
-  //res->unknown = new_ir_node (NULL, res, res->start_block, op_Unknown, mode_T, 0, NULL);
+  /* res->unknown = new_ir_node (NULL, res, res->start_block, op_Unknown, mode_T, 0, NULL); */
   res->start   = new_Start ();
 
   /* Proj results of start node */
@@ -470,7 +470,7 @@ struct obstack *get_irg_obstack(ir_graph *irg) {
  */
 int node_is_in_irgs_storage(ir_graph *irg, ir_node *n)
 {
-  struct _obstack_chunk	*p;
+  struct _obstack_chunk *p;
 
   /*
    * checks wheater the ir_node pointer i on the obstack.

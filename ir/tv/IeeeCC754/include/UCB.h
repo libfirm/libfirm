@@ -10,7 +10,7 @@
 #   with the principles of the IEEE 754-854 floating-point standards.    #
 #   You can find out more about the testing tool IeeeCC754 at            #
 #                                                                        #
-#         http://win-www.uia.ac.be/u/cant/ieeecc754.html                 #
+#         http:/* win-www.uia.ac.be/u/cant/ieeecc754.html                 # */
 #                                                                        #
 #   This tool is in parts based on and greatly benefited from the        #
 #   the program FPTEST developed by Jerome Coonen. For a full            #
@@ -60,18 +60,18 @@ Last updated:
 #ifndef _UCB_H
 #define _UCB_H
 
-// ----
-// Includes
-// ----
+/*  ---- */
+/*  Includes */
+/*  ---- */
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <fstream.h>
 #include <Fp.h>
 
-// ----
-// Defines
-// ----
+/*  ---- */
+/*  Defines */
+/*  ---- */
 #define BUF_LEN    1024
 #define FP_STR      256
 
@@ -133,7 +133,7 @@ template <class T>
 UCB<T>::UCB( )
 {
   line = 0;
-  //  result.SetEnvironment(); change BV
+  /*   result.SetEnvironment(); change BV */
   signalu = 0;
   signalv = 0;
   signalw = 0;
@@ -171,7 +171,7 @@ void UCB<T>::Close( int tiny )
   logfile << "Summary:  " << endl;
   logfile << "--------  " << endl;
 
-  if ( tiny )   { // conclusion underflow
+  if ( tiny )   { /*  conclusion underflow */
     if ( ucb.nou )  {
       if ( ucb.nov )  {
         if ( !( ucb.now ) )
@@ -181,7 +181,7 @@ void UCB<T>::Close( int tiny )
           logfile << "Warning: only 'v' underflow cases in the testset" << endl;
         else
           logfile << "Warning: only 'v' and 'w' underflow cases in the testset" << endl;
-    } // if
+    } /*  if */
     else {
       if ( ucb.nov )  {
         if ( ucb.now )  {
@@ -202,10 +202,10 @@ void UCB<T>::Close( int tiny )
             logfile << "Implementation signals underflow in case the result" << endl << "(1) is tiny after rounding and" << endl << "(2) raises the inexact exception"<< endl << "('v' - underflow)" << endl;
           else
             logfile << "Implementation signals underflow in case the result" << endl << "(1) is tiny after rounding and" << endl << "(2) suffers denormalization loss" << endl << "('u' -  underflow)" << endl;
-        } // else
-      } // else
-    } // else
-  } // if tiny
+        } /*  else */
+      } /*  else */
+    } /*  else */
+  } /*  if tiny */
 
   logfile << "Errors:   " << errors << "/" << allops << endl;
   logfile << "Warnings: " << warnings << "/" << allops << endl;
@@ -341,14 +341,14 @@ int UCB<T>::ReadLine( char* str,int sZero,int nflags,int *lines )
       }
     } else {
 
-      ieeeVector=0; // Cannot be ieeeVector!
+      ieeeVector=0; /*  Cannot be ieeeVector! */
 
       i--;
 
-      while ( isdigit( buf[ i ] ) )  i--; // rewind
+      while ( isdigit( buf[ i ] ) )  i--; /*  rewind */
 
       i++;
-      operation[ i ]  = '\0'; // ignore digit after operation
+      operation[ i ]  = '\0'; /*  ignore digit after operation */
       j = 0;
 
       while ( buf[ i ] != ' ' )
@@ -376,12 +376,12 @@ int UCB<T>::ReadLine( char* str,int sZero,int nflags,int *lines )
 
       tmp[ j ] ='\0';
       sizeM = atoi( tmp );
-      sizeM++ ;  // +1 for the sign
+      sizeM++ ;  /*  +1 for the sign */
     }
 
     while ( buf[ i ]  == ' ' )  i++;
 
-    // read destination format
+    /*  read destination format */
     if ( ( strncmp( operation,"rt",2 )  == 0 )  || ( strncmp( operation,"ct",2 )  == 0 ) )  {
       if ( !isdigit( buf[ i ] ) )  {
         prec = buf[ i ];
@@ -412,11 +412,11 @@ int UCB<T>::ReadLine( char* str,int sZero,int nflags,int *lines )
             dsizeM=240 + 1;
             dhidden = 0;
             break;
-        } // switch
+        } /*  switch */
 
         i++;
         while ( buf[ i ]  == ' ' )  i++;
-      } // if
+      } /*  if */
       else {
         j = 0;
 
@@ -442,15 +442,15 @@ int UCB<T>::ReadLine( char* str,int sZero,int nflags,int *lines )
         dsizeM = atoi( tmp );
         dsizeM++;
 
-      } // else
+      } /*  else */
 
       while ( buf[ i ]  == ' ' )  i++;
-    } // if
+    } /*  if */
     else {
       dsizeE = sizeE;
       dhidden = hidden;
       dsizeM = sizeM;
-    } // else
+    } /*  else */
 
     rounding=buf[ i ];
 
@@ -476,8 +476,8 @@ int UCB<T>::ReadLine( char* str,int sZero,int nflags,int *lines )
 
     if ( ( strncmp( operation,"ci",2 ) ==0 )  ||
          ( strncmp( operation,"cu",2 ) ==0 ) )  {
-      count = 32; // 32 bit integer
-      i += 2; // avoid 0x
+      count = 32; /*  32 bit integer */
+      i += 2; /*  avoid 0x */
 
       for ( j=0; j<count;j++ )  {
       if ( isdigit( buf[ i ] )  || ( ( buf[ i ]  >= 'a' )  && ( buf[ i ]  <= 'f' ) ) )
@@ -486,15 +486,15 @@ int UCB<T>::ReadLine( char* str,int sZero,int nflags,int *lines )
           tmp[ j ]  = 0;
           break;
         }
-      } // for
+      } /*  for */
 
     for ( ; j<count;j++ )
         tmp[ j ]  = 0;
 
     } else if ( ( strncmp( operation,"cI",2 ) ==0 )  ||
                 ( strncmp( operation,"cU",2 ) ==0 ) )  {
-      count = 64; // 64 bit integer
-      i += 2; // avoid 0x
+      count = 64; /*  64 bit integer */
+      i += 2; /*  avoid 0x */
       for ( j=0; j<count;j++ )  {
       if ( isdigit( buf[ i ] )  || ( ( buf[ i ]  >= 'a' )  && ( buf[ i ]  <= 'f' ) ) )
           tmp[ j ]  = buf[ i++ ];
@@ -523,7 +523,7 @@ int UCB<T>::ReadLine( char* str,int sZero,int nflags,int *lines )
     tmp[ j ] ='\0';
 
     if ( strncmp( operation,"d2b",3 )  == 0 )  {
-      operand1 = T( sizeM-1, sizeE, hidden ); // sets Mantissa and exp right
+      operand1 = T( sizeM-1, sizeE, hidden ); /*  sets Mantissa and exp right */
       operand1.decimal = new char[ maxstr ];
       for ( k = 0; k <= j; k++ )
         operand1.decimal[ k ]  = tmp[ k ];
@@ -546,7 +546,7 @@ int UCB<T>::ReadLine( char* str,int sZero,int nflags,int *lines )
     }
 
     i++;
-    count =( int )  ceil( ( double ) ( sizeM+sizeE ) /32.0 ) *8; // reset count!
+    count =( int )  ceil( ( double ) ( sizeM+sizeE ) /32.0 ) *8; /*  reset count! */
 
     for ( j=0; j<count ;j++ ) {
       if ( buf[ i ] ==' ' )
@@ -563,8 +563,8 @@ int UCB<T>::ReadLine( char* str,int sZero,int nflags,int *lines )
     } else {
       if ( ( strncmp( operation,"ri",2 ) ==0 )  ||
            ( strncmp( operation,"ru",2 ) ==0 ) )  {
-        count = 32; // 32 bit integer
-        i += 3; // avoid 0x
+        count = 32; /*  32 bit integer */
+        i += 3; /*  avoid 0x */
         for ( j=0; j<count;j++ )  {
           if ( isdigit( buf[ i ] )  || ( ( buf[ i ]  >= 'a' )  && ( buf[ i ]  <= 'f' ) ) )
             tmp[ j ]  = buf[ i++ ];
@@ -572,14 +572,14 @@ int UCB<T>::ReadLine( char* str,int sZero,int nflags,int *lines )
             tmp[ j ]  = 0;
             break;
           }
-        } // for
+        } /*  for */
         for ( ; j<count;j++ )
           tmp[ j ]  = 0;
       }
       else if ( ( strncmp( operation,"rI",2 ) ==0 )  ||
                 ( strncmp( operation,"rU",2 ) ==0 ) )  {
-        count = 64; // 64 bit integer
-        i += 3; // avoid 0x
+        count = 64; /*  64 bit integer */
+        i += 3; /*  avoid 0x */
         for ( j=0; j<count;j++ )  {
           if ( isdigit( buf[ i ] )  || ( ( buf[ i ]  >= 'a' )  && ( buf[ i ]  <= 'f' ) ) )
             tmp[ j ]  = buf[ i++ ];
@@ -587,7 +587,7 @@ int UCB<T>::ReadLine( char* str,int sZero,int nflags,int *lines )
             tmp[ j ]  = 0;
             break;
           }
-        } // for
+        } /*  for */
         for ( ; j<count;j++ )
           tmp[ j ]  = 0;
       } else if ( strncmp( operation,"b2d",3 )  == 0 )  {
@@ -693,12 +693,12 @@ char* UCB<T>::DoLine( int tiny,int inf, int nan)
   int i = 0;
 
   if ( !( tiny )  && ( operand1.istiny( )  || operand2.istiny( )  || result.istiny( ) ) )
-    return NULL; // do not test tiny denormalized numbers
+    return NULL; /*  do not test tiny denormalized numbers */
   else if ( !( inf )  && ( operand1.isInf( )  || operand2.isInf( )  || result.isInf( ) ) )
-    return NULL; // do not test infinities
+    return NULL; /*  do not test infinities */
   else if ( !( nan )  && ( operand1.isNan( )  || operand2.isNan( )  || result.isNan( ) ) )
-    return NULL; // do not test NaNs
-  // logstream.seekp(0,ios::beg);
+    return NULL; /*  do not test NaNs */
+  /*  logstream.seekp(0,ios::beg); */
 
   allops++;
   SetFPRound( );
@@ -712,7 +712,7 @@ char* UCB<T>::DoLine( int tiny,int inf, int nan)
   else if( strncmp( operation,"mul",3 ) ==0 )
     res = operand1 * operand2;
   else if( strncmp( operation,"div",3 ) ==0 )
-    res = operand1 / operand2; // debug
+    res = operand1 / operand2; /*  debug */
   else if( strncmp( operation,"rem",3 ) ==0 )
     res = operand1 % operand2;
   else if( strncmp( operation,"sqrt",4 ) ==0 )
@@ -773,7 +773,7 @@ void UCB<T>::PrintError( T &res )
 {
   unsigned int i;
   if ( (!ieeeVector) || (ieee) )
-    errors++; // total number of errors encountered
+    errors++; /*  total number of errors encountered */
   else
     warnings++;
   logfile<<"Operation: " << operation << endl;
@@ -790,7 +790,7 @@ void UCB<T>::PrintError( T &res )
     case 'm':
       logfile<<"Round down" << endl;
       break;
-  } // switch
+  } /*  switch */
   logfile<<"Operand 1: " << operand1 << endl;
   logfile<<"Operand 2: " << operand2 << endl;
   logfile<< "Flags expected: ";
@@ -817,7 +817,7 @@ void UCB<T>::PrintError( T &res )
       case 'd':
         logfile<<"z ";
         break;
-    } // switch
+    } /*  switch */
   logfile << endl;
   logfile <<"Flags returned: ";
   if ( res.GetFPDivByZero( ) )
@@ -881,7 +881,7 @@ void UCB<T>::Compare ( T &reslt )
           if ( notsignalv )  {
             logfile<<((ieeeVector) && !(ieee) ? "Warning " : "Error ") <<"Line "<<line<< ": underflow without denormalization loss previously not detected"<< endl;
             check = 0;
-          } // end if
+          } /*  end if */
         }
         else if ( strchr( exceptions,'b' ) )  {
           signalw = 1;
@@ -891,16 +891,16 @@ void UCB<T>::Compare ( T &reslt )
           if ( notsignalw )  {
             logfile <<((ieeeVector) && !(ieee) ? "Warning " : "Error ")<<"Line "<<line<< ": underflow before rounding previously not detected"<< endl;
             check = 0;
-          } // end if
+          } /*  end if */
         }
         else {
           logfile<<((ieeeVector) && !(ieee) ? "Warning " : "Error ") <<"Line "<<line<< ": underflow not expected"<<endl;
           check = 0;
-        } // end if
+        } /*  end if */
       }
       else
         signalu = 1;
-  } // end if
+  } /*  end if */
 
   for( i=0 ; i < strlen( exceptions );i++ ) {
     switch ( exceptions[ i ] ) {
@@ -935,12 +935,12 @@ void UCB<T>::Compare ( T &reslt )
         if ( ( noFlags &  NO_FLAGS_UNDERFLOW )  == 0 ) {
           if( !reslt.GetFPUnderflow( ) )  {
             notsignalv = 1;
-            //PrintError(reslt);
+            /* PrintError(reslt); */
             if ( signalv )  {
               check = 0;
-            } // end if
-          } // end if
-        } // end if
+            } /*  end if */
+          } /*  end if */
+        } /*  end if */
 
         break;
       case 'b':
@@ -951,9 +951,9 @@ void UCB<T>::Compare ( T &reslt )
             if ( signalw )  {
               logfile<<((ieeeVector) && !(ieee) ? "Warning " : "Error ") <<"Line "<<line<< ": underflow before rounding previously detected"<< endl;
               check = 0;
-            } // end if
-          } // end if
-        } // end if
+            } /*  end if */
+          } /*  end if */
+        } /*  end if */
 
         break;
       case 'v':
@@ -995,10 +995,10 @@ void UCB<T>::Compare ( T &reslt )
 
               if (strcmp(resultdummy, reslt.decimal) != 0)
                  {
-		   logfile <<((ieeeVector) && !(ieee) ? "Warning " : "Error ") << "Line "<<line<< ": different decimal representation"<< endl;
-		   check =0;
-		 }
-	      delete[] resultdummy;
+           logfile <<((ieeeVector) && !(ieee) ? "Warning " : "Error ") << "Line "<<line<< ": different decimal representation"<< endl;
+           check =0;
+         }
+          delete[] resultdummy;
       }
     } else if ( result.IsNaN( ) ) {
       if( !reslt.IsNaN( ) ) {
@@ -1013,7 +1013,7 @@ void UCB<T>::Compare ( T &reslt )
             check =0;
           }
           else if ( signedZero ) {
-            // In this case result is a zero and there is signedzero
+            /*  In this case result is a zero and there is signedzero */
             logfile<<((ieeeVector) && !(ieee) ? "Warning " : "Error ") <<"Line "<<line<< ": Different sign"<< endl;
             check =0;
           }

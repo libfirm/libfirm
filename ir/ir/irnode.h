@@ -46,7 +46,7 @@ typedef enum {
 # include "irmode.h"
 # include "type.h"
 # include "dbginfo.h"
-//# include "exc.h"
+/* # include "exc.h" */
 
 /**
  * @file irnode.h
@@ -637,7 +637,7 @@ typedef enum {
   pn_Cmp_True = 15    /**< true */
   /* not_mask = Leg*/   /* bits to flip to negate comparison * @@ hack for jni interface */
 } pn_Cmp;   /* Projection numbers for Cmp */
-//#define not_mask pn_Cmp_Leg
+/* #define not_mask pn_Cmp_Leg */
 
 const char *get_pnc_string(int pnc);
 int         get_negated_pnc(int pnc);

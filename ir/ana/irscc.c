@@ -53,7 +53,7 @@ typedef struct scc_info {
   bool in_stack;         /* Marks whether node is on the stack. */
   int dfn;               /* Depth first search number. */
   int uplink;            /* dfn number of ancestor. */
-  //  ir_loop *loop;         /* Refers to the containing loop. */
+  /*  ir_loop *loop;         *//* Refers to the containing loop. */
   /*
       struct section *section;
       xset def;
@@ -70,56 +70,56 @@ static INLINE scc_info* new_scc_info(void) {
 static INLINE void
 mark_irn_in_stack (ir_node *n) {
   assert(get_irn_link(n));
-  // to slow
-  //((scc_info *)get_irn_link(n))->in_stack = true;
+  /*  to slow */
+  /* ((scc_info *)get_irn_link(n))->in_stack = true; */
   ((scc_info *)n->link)->in_stack = true;
 }
 
 static INLINE void
 mark_irn_not_in_stack (ir_node *n) {
   assert(get_irn_link(n));
-  // to slow
-  //((scc_info *)get_irn_link(n))->in_stack = false;
+  /*  to slow */
+  /* ((scc_info *)get_irn_link(n))->in_stack = false; */
   ((scc_info *)n->link)->in_stack = false;
 }
 
 static INLINE bool
 irn_is_in_stack (ir_node *n) {
   assert(get_irn_link(n));
-  // to slow
-  //return ((scc_info *)get_irn_link(n))->in_stack;
+  /*  to slow */
+  /* return ((scc_info *)get_irn_link(n))->in_stack; */
   return ((scc_info *)n->link)->in_stack;
 }
 
 static INLINE void
 set_irn_uplink (ir_node *n, int uplink) {
   assert(get_irn_link(n));
-  // to slow
-  //((scc_info *)get_irn_link(n))->uplink = uplink;
+  /*  to slow */
+  /* ((scc_info *)get_irn_link(n))->uplink = uplink; */
   ((scc_info *)n->link)->uplink = uplink;
 }
 
 static INLINE int
 get_irn_uplink (ir_node *n) {
   assert(get_irn_link(n));
-  // to slow
-  //return ((scc_info *)get_irn_link(n))->uplink;
+  /*  from fast to slow */
+  /* return ((scc_info *)get_irn_link(n))->uplink; */
   return ((scc_info *)n->link)->uplink;
 }
 
 static INLINE void
 set_irn_dfn (ir_node *n, int dfn) {
   assert(get_irn_link(n));
-  // to slow
-  //((scc_info *)get_irn_link(n))->dfn = dfn;
+  /*  to slow */
+  /* ((scc_info *)get_irn_link(n))->dfn = dfn; */
   ((scc_info *)n->link)->dfn = dfn;
 }
 
 static INLINE int
 get_irn_dfn (ir_node *n) {
   assert(get_irn_link(n));
-  // to slow
-  //return ((scc_info *)get_irn_link(n))->dfn;
+  /*  to slow */
+  /* return ((scc_info *)get_irn_link(n))->dfn; */
   return ((scc_info *)n->link)->dfn;
 }
 
@@ -529,8 +529,8 @@ init_node (ir_node *n, void *env) {
        The mem is not lost as its on the obstack. */
     ir_node *cb = get_Proj_pred(n);
     if ((intern_get_irn_op(cb) == op_CallBegin) ||
-	(intern_get_irn_op(cb) == op_EndReg) ||
-	(intern_get_irn_op(cb) == op_EndExcept)) {
+    (intern_get_irn_op(cb) == op_EndReg) ||
+    (intern_get_irn_op(cb) == op_EndExcept)) {
       init_node(cb, NULL);
       init_node(get_nodes_Block(cb), NULL);
     }
@@ -637,21 +637,21 @@ find_irg_on_stack (ir_node *n) {
       m = stack[i];
       /*printf(" Visiting %d ", i); DDMN(m);*/
       if (is_ip_cfop(m)) {
-	current_ir_graph = get_irn_irg(m);
-	break;
+    current_ir_graph = get_irn_irg(m);
+    break;
       }
       if (intern_get_irn_op(m) == op_Filter) {
-	/* Find the corresponding ip_cfop */
-	ir_node *pred = stack[i+1];
-	int j;
-	for (j = 0; j < get_Filter_n_cg_preds(m); j++)
-	  if (get_Filter_cg_pred(m, j) == pred) break;
-	if (j >= get_Filter_n_cg_preds(m))
-	  /* It is a filter we didn't pass as the predecessors are marked. */
-	  continue;
-	assert(get_Filter_cg_pred(m, j) == pred);
-	switch_irg(m, j);
-	break;
+    /* Find the corresponding ip_cfop */
+    ir_node *pred = stack[i+1];
+    int j;
+    for (j = 0; j < get_Filter_n_cg_preds(m); j++)
+      if (get_Filter_cg_pred(m, j) == pred) break;
+    if (j >= get_Filter_n_cg_preds(m))
+      /* It is a filter we didn't pass as the predecessors are marked. */
+      continue;
+    assert(get_Filter_cg_pred(m, j) == pred);
+    switch_irg(m, j);
+    break;
       }
     }
   }
@@ -825,7 +825,7 @@ static void scc (ir_node *n) {
       if (is_backedge(n, i)) continue;
 
       m = intern_get_irn_n(n, i); /* get_irn_ip_pred(n, i); */
-      //if ((!m) || (intern_get_irn_op(m) == op_Unknown)) continue;
+      /* if ((!m) || (intern_get_irn_op(m) == op_Unknown)) continue; */
       scc (m);
       if (irn_is_in_stack(m)) {
     /* Uplink of m is smaller if n->m is a backedge.
@@ -868,10 +868,10 @@ static void scc (ir_node *n) {
       pop_scc_unmark_visit (n);
       /* and recompute it in a better order; and so that it goes into
      the new loop. */
-      // GL @@@ remove experimental stuff rem = find_irg_on_stack(tail);
+      /*  GL @@@ remove experimental stuff rem = find_irg_on_stack(tail); */
 
       scc (tail);
-      // GL @@@ remove experimental stuff current_ir_graph = rem;
+      /*  GL @@@ remove experimental stuff current_ir_graph = rem; */
 
       assert (irn_visited(n));
 #if NO_LOOPS_WITHOUT_HEAD

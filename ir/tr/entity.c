@@ -131,14 +131,14 @@ void free_entity_attrs(entity *ent) {
     DEL_ARR_F(ent->overwrites);    ent->overwrites = NULL;
     DEL_ARR_F(ent->overwrittenby); ent->overwrittenby = NULL;
   }
-  //if (ent->values) DEL_ARR_F(ent->values); /* @@@ warum nich? */
+  /* if (ent->values) DEL_ARR_F(ent->values); *//* @@@ warum nich? */
   if (ent->val_paths) {
     if (is_compound_entity(ent))
       for (i = 0; i < get_compound_ent_n_values(ent); i++)
-	if (ent->val_paths[i]) ;
-	  /* free_compound_graph_path(ent->val_paths[i]) ;  * @@@ warum nich? */
-	  /* Geht nich: wird mehrfach verwendet!!! ==> mehrfach frei gegeben. */
-    //DEL_ARR_F(ent->val_paths);
+    if (ent->val_paths[i]) ;
+      /* free_compound_graph_path(ent->val_paths[i]) ;  * @@@ warum nich? */
+      /* Geht nich: wird mehrfach verwendet!!! ==> mehrfach frei gegeben. */
+    /* DEL_ARR_F(ent->val_paths); */
   }
   ent->val_paths = NULL;
   ent->values = NULL;
@@ -159,7 +159,7 @@ copy_entity_own (entity *old, type *new_owner) {
     new->overwrites = DUP_ARR_F(entity *, old->overwrites);
     new->overwrittenby = DUP_ARR_F(entity *, old->overwrittenby);
   } else if ((get_type_tpop(get_entity_owner(old)) != type_class) &&
-	     (get_type_tpop(new_owner) == type_class)) {
+         (get_type_tpop(new_owner) == type_class)) {
     new->overwrites = NEW_ARR_F(entity *, 0);
     new->overwrittenby = NEW_ARR_F(entity *, 0);
   }
@@ -252,8 +252,8 @@ assert_legal_owner_of_ent(type *owner) {
   assert (get_type_tpop_code(owner) == tpo_class ||
           get_type_tpop_code(owner) == tpo_union ||
           get_type_tpop_code(owner) == tpo_struct ||
-	  get_type_tpop_code(owner) == tpo_array);   /* Yes, array has an entity
-							-- to select fields! */
+      get_type_tpop_code(owner) == tpo_array);   /* Yes, array has an entity
+                            -- to select fields! */
 }
 
 ident *
@@ -303,7 +303,7 @@ set_entity_allocation (entity *ent, ent_allocation al) {
 /* return the name of the visibility */
 const char *get_allocation_name(ent_allocation all)
 {
-#define X(a)	case a: return #a
+#define X(a)    case a: return #a
   switch (all) {
     X(allocation_automatic);
     X(allocation_parameter);
@@ -324,7 +324,7 @@ void
 set_entity_visibility (entity *ent, ent_visibility vis) {
   if (vis != visibility_local)
     assert((ent->allocation == allocation_static) ||
-	   (ent->allocation == allocation_automatic));
+       (ent->allocation == allocation_automatic));
   /* @@@ Test that the owner type is not local, but how??
          && get_class_visibility(get_entity_owner(ent)) != local));*/
   ent->visibility = vis;
@@ -333,7 +333,7 @@ set_entity_visibility (entity *ent, ent_visibility vis) {
 /* return the name of the visibility */
 const char *get_visibility_name(ent_visibility vis)
 {
-#define X(a)	case a: return #a
+#define X(a)    case a: return #a
   switch (vis) {
     X(visibility_local);
     X(visibility_external_visible);
@@ -373,7 +373,7 @@ set_entity_variability (entity *ent, ent_variability var)
 /* return the name of the variablity */
 const char *get_variability_name(ent_variability var)
 {
-#define X(a)	case a: return #a
+#define X(a)    case a: return #a
   switch (var) {
     X(variability_uninitialized);
     X(variability_initialized);
@@ -399,7 +399,7 @@ set_entity_volatility (entity *ent, ent_volatility vol) {
 /* return the name of the volatility */
 const char *get_volatility_name(ent_volatility var)
 {
-#define X(a)	case a: return #a
+#define X(a)    case a: return #a
   switch (var) {
     X(volatility_non_volatile);
     X(volatility_is_volatile);
@@ -425,7 +425,7 @@ set_entity_peculiarity (entity *ent, peculiarity pec) {
 /* return the name of the peculiarity */
 const char *get_peculiarity_name(peculiarity var)
 {
-#define X(a)	case a: return #a
+#define X(a)    case a: return #a
   switch (var) {
     X(peculiarity_description);
     X(peculiarity_inherited);
@@ -490,7 +490,7 @@ ir_node *copy_const_value(ir_node *n) {
     nn = new_SymConst(get_SymConst_type_or_id(n), get_SymConst_kind(n)); break;
   case iro_Add:
     nn = new_Add(copy_const_value(get_Add_left(n)),
-		 copy_const_value(get_Add_right(n)), m); break;
+         copy_const_value(get_Add_right(n)), m); break;
   case iro_Cast:
     nn = new_Cast(copy_const_value(get_Cast_op(n)), get_Cast_type(n)); break;
   case iro_Conv:
@@ -612,8 +612,8 @@ remove_compound_ent_value(entity *ent, entity *value_ent) {
     compound_graph_path *path = ent->val_paths[i];
     if (path->nodes[path->len-1] == value_ent) {
       for(; i < (ARR_LEN (ent->val_paths))-1; i++) {
-	ent->val_paths[i] = ent->val_paths[i+1];
-	ent->values[i]   = ent->values[i+1];
+    ent->val_paths[i] = ent->val_paths[i+1];
+    ent->values[i]   = ent->values[i+1];
       }
       ARR_SETLEN(entity*,  ent->val_paths, ARR_LEN(ent->val_paths) - 1);
       ARR_SETLEN(ir_node*, ent->values,    ARR_LEN(ent->values)    - 1);
@@ -751,7 +751,7 @@ remove_entity_overwrites(entity *ent, entity *overwritten) {
   for (i = 0; i < (ARR_LEN (ent->overwrites)); i++)
     if (ent->overwrites[i] == overwritten) {
       for(; i < (ARR_LEN (ent->overwrites))-1; i++)
-	ent->overwrites[i] = ent->overwrites[i+1];
+    ent->overwrites[i] = ent->overwrites[i+1];
       ARR_SETLEN(entity*, ent->overwrites, ARR_LEN(ent->overwrites) - 1);
       break;
     }
@@ -803,7 +803,7 @@ void    remove_entity_overwrittenby(entity *ent, entity *overwrites) {
   for (i = 0; i < (ARR_LEN (ent->overwrittenby)); i++)
     if (ent->overwrittenby[i] == overwrites) {
       for(; i < (ARR_LEN (ent->overwrittenby))-1; i++)
-	ent->overwrittenby[i] = ent->overwrittenby[i+1];
+    ent->overwrittenby[i] = ent->overwrittenby[i+1];
       ARR_SETLEN(entity*, ent->overwrittenby, ARR_LEN(ent->overwrittenby) - 1);
       break;
     }
@@ -852,13 +852,13 @@ int is_entity (void *thing) {
 int is_atomic_entity(entity *ent) {
   type* t = get_entity_type(ent);
   return (is_primitive_type(t) || is_pointer_type(t) ||
-	  is_enumeration_type(t) || is_method_type(t));
+      is_enumeration_type(t) || is_method_type(t));
 }
 
 int is_compound_entity(entity *ent) {
   type* t = get_entity_type(ent);
   return (is_class_type(t) || is_struct_type(t) ||
-	  is_array_type(t) || is_union_type(t));
+      is_array_type(t) || is_union_type(t));
 }
 
 /* @@@ not implemnted!!! */
@@ -935,7 +935,7 @@ entity *resolve_ent_polymorphy(type *dynamic_class, entity* static_ent) {
 #if 1 || DEBUG_libfirm
 int dump_node_opcode(FILE *F, ir_node *n); /* from irdump.c */
 
-#define X(a)	case a: printf(#a); break
+#define X(a)    case a: printf(#a); break
 void dump_entity (entity *ent) {
   int i, j;
   type *owner = get_entity_owner(ent);
@@ -974,13 +974,13 @@ void dump_entity (entity *ent) {
     } else {
       printf("\n  compound values:");
       for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
-	compound_graph_path *path = get_compound_ent_value_path(ent, i);
-	entity *ent0 = get_compound_graph_path_node(path, 0);
-	printf("\n    %2d %s", get_entity_offset(ent0), get_entity_name(ent0));
-	for (j = 1; j < get_compound_graph_path_length(path); ++j)
-	  printf(".%s", get_entity_name(get_compound_graph_path_node(path, j)));
-	printf("\t = ");
-	dump_node_opcode(stdout, get_compound_ent_value(ent, i));
+    compound_graph_path *path = get_compound_ent_value_path(ent, i);
+    entity *ent0 = get_compound_graph_path_node(path, 0);
+    printf("\n    %2d %s", get_entity_offset(ent0), get_entity_name(ent0));
+    for (j = 1; j < get_compound_graph_path_length(path); ++j)
+      printf(".%s", get_entity_name(get_compound_graph_path_node(path, j)));
+    printf("\t = ");
+    dump_node_opcode(stdout, get_compound_ent_value(ent, i));
       }
     }
   }

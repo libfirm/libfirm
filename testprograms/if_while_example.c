@@ -23,9 +23,9 @@
 *  This file constructs the ir for the following pseudo-program:
 *
 *  main() {
-*    int a = 0;         // pos 0
-*    int b = 1;         // pos 1
-*    int h;             // pos 2
+*    int a = 0;         /*  pos 0 */
+*    int b = 1;         /*  pos 1 */
+*    int h;             /*  pos 2 */
 *
 *    if (0 == 0)
 *      { a = 2; }

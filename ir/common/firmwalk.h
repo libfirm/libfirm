@@ -79,12 +79,12 @@ typedef void firm_walk_type_func(type *tp, void *env);
 typedef void firm_walk_entity_func(entity *ent, void *env);
 /** Graph callback function definition */
 typedef void firm_walk_graph_func(ir_graph *irg, void *env);
-//@{
+/* @{ */
 /** Block callback function definition */
 typedef void firm_walk_block_init_func(ir_graph *irg, void *env);
 typedef void firm_walk_block_func(ir_node *block, void *env);
 typedef void firm_walk_block_finalize_func(ir_graph *irg, void *env);
-//@}
+/* @} */
 /** Node callback function definition */
 typedef void firm_walk_node_func (ir_node *irn, void *env);
 
@@ -112,15 +112,15 @@ typedef enum
 /** Interface of the firm walker */
 typedef struct
 {
-  //@{
+  /* @{ */
   /** Interface function to dump all used and internal modes.
       Internal modes are: BB, X, M and T */
   firm_walk_init_func *do_mode_init;
   firm_walk_mode_func *do_mode;
   firm_walk_finalize_func *do_mode_finalize;
-  //@}
+  /* @} */
 
-  //@{
+  /* @{ */
   /** Interface to dump all collected types.
    *
    *  @node To dump all (not only used types by default) a special walk
@@ -128,14 +128,14 @@ typedef struct
   firm_walk_init_func *do_type_init;
   firm_walk_type_func *do_type;
   firm_walk_finalize_func *do_type_finalize;
-  //@}
+  /* @} */
 
-  //@{
+  /* @{ */
   /** Dumping interface for entities */
   firm_walk_init_func *do_entity_init;
   firm_walk_entity_func *do_entity;
   firm_walk_finalize_func *do_entity_finalize;
-  //@}
+  /* @} */
 
   /** Dumps all graphs and subnodes.
    *
@@ -156,14 +156,14 @@ typedef struct
   firm_walk_graph_func *do_graph;
   firm_walk_finalize_func *do_graph_finalize;
 
-  //@{
+  /* @{ */
   /** Dumping interface for blocks. If blocks should be handled like
    *  like a normal ir node, a special walker flag could be set.
    *  @see do_graph */
   firm_walk_block_init_func *do_block_init;
   firm_walk_block_func *do_block;
   firm_walk_block_finalize_func *do_block_finalize;
-  //@}
+  /* @} */
 
   /** Dumping interface for ir nodes
    *  @see do_graph */

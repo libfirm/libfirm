@@ -45,13 +45,13 @@ typedef struct {
                        get_firm_walk_link. */
 } fw_data;
 
-//@{
+/*@{ */
 /** Access macros to fw_data structure */
 #define FW_GET_DATA_LIST(s)     ((s)->list)
 #define FW_SET_DATA_LIST(s, t)  ((s)->list = (t))
 #define FW_GET_DATA_LINK(s)     ((s)->link)
 #define FW_SET_DATA_LINK(s, t)  ((s)->link = (t))
-//@}
+/*@} */
 
 /** Returns own data struct of the firm walker.
  *
@@ -97,7 +97,7 @@ fw_data *fw_get_data(void *thing)
       }
     }
     break;
-  default: {} // other kinds of firm nodes
+  default: {} /*  other kinds of firm nodes */
   }
 
   return data;
@@ -135,11 +135,11 @@ void fw_free_data(void *thing)
       }
     }
     break;
-  default: {} // other kinds of firm nodes
+  default: {} /*  other kinds of firm nodes */
   }
 }
 
-// documentation in header file
+/*  documentation in header file */
 void set_firm_walk_link(void *thing, void *link)
 {
   fw_data *data;
@@ -168,11 +168,11 @@ void set_firm_walk_link(void *thing, void *link)
   case k_ir_mode:
     set_mode_link(thing, link);
     break;
-  default: {} // other kinds of firm nodes
+  default: {} /*  other kinds of firm nodes */
   }
 }
 
-// documentation in header file
+/*  documentation in header file */
 void *get_firm_walk_link(void *thing)
 {
   fw_data *data;
@@ -227,7 +227,7 @@ void fw_collect_tore(type_or_ent *tore, void *env)
   switch (get_kind(tore)) {
   case k_entity:
     ent = (entity *)tore;
-    // append entity to list
+    /*  append entity to list */
     set_entity_link(ent, NULL);
     if (!pmap_contains(entity_map, ent))
       pmap_insert(entity_map, ent, env);
@@ -235,7 +235,7 @@ void fw_collect_tore(type_or_ent *tore, void *env)
   case k_type:
     tp = (type *)tore;
     mode = get_type_mode(tp);
-    // append type to list
+    /*  append type to list */
     set_type_link(tp, NULL);
     if (!pmap_contains(type_map, tp))
       pmap_insert(type_map, tp, env);
@@ -345,11 +345,11 @@ void firm_walk_init(firm_walk_flags flags)
      pmap_insert(mode_map, mode_b, NULL);
   */
 
-  // Collect all types (also unused types) if flag is set
+  /*  Collect all types (also unused types) if flag is set */
   if (FW_WITH_ALL_TYPES & flags)
     type_walk(fw_collect_tore, NULL, NULL);
 
-  // for each ir graph
+  /*  for each ir graph */
   for (i = 0; i < get_irp_n_irgs(); i++)
   {
     ir_graph *irg = get_irp_irg(i);
@@ -375,7 +375,7 @@ void firm_walk_finalize(void)
   pmap_destroy(entity_map);
   entity_map = NULL;
 
-  // free all collected data from ir graphs and nodes
+  /*  free all collected data from ir graphs and nodes */
   for (i = 0; i < get_irp_n_irgs(); i++)
   {
     ir_graph *irg = get_irp_irg(i);
@@ -464,12 +464,12 @@ void firm_walk(firm_walk_interface *wif)
       irn_list = FW_GET_DATA_LIST(data);
       irn_list_len = ARR_LEN(irn_list);
 
-      // call block as prefix ir node
+      /*  call block as prefix ir node */
       if ((wif->do_node) &&
           (wif->flags & FW_DUMP_BLOCK_AS_IRN & !FW_DUMP_IRN_IN_PREFIX))
         wif->do_node(block, wif->env);
 
-      // do ir nodes in prefix or postfix order?
+      /*  do ir nodes in prefix or postfix order? */
       if (wif->flags & FW_DUMP_IRN_IN_PREFIX)
         irn_i = irn_list_len-1;
       else
@@ -479,13 +479,13 @@ void firm_walk(firm_walk_interface *wif)
       {
         if (wif->do_node) wif->do_node((ir_node *)irn_list[irn_i], wif->env);
 
-        // do ir nodes in prefix or postfix order?
+        /*  do ir nodes in prefix or postfix order? */
         if (wif->flags & FW_DUMP_IRN_IN_PREFIX)
           irn_i--;
         else
           irn_i++;
       }
-      // call block as postfix ir node
+      /*  call block as postfix ir node */
       if ((wif->do_node) &&
           (wif->flags & (FW_DUMP_BLOCK_AS_IRN | FW_DUMP_IRN_IN_PREFIX)))
         wif->do_node(block, wif->env);
@@ -493,11 +493,11 @@ void firm_walk(firm_walk_interface *wif)
       /* wall over all block's ir nodes nested end =============== */
 
       if (wif->do_block_finalize) wif->do_block_finalize(current_ir_graph, wif->env);
-    } // for each block
+    } /*  for each block */
 
     /* walk over all irg's block nested end ====================== */
 
-  } // for each ir graph irg
+  } /*  for each ir graph irg */
   if (wif->do_graph_finalize) wif->do_graph_finalize(wif->env);
 
   /** ### ToDo: Dump const_code_irg ?? No! Dump const code with entities, types etc. */

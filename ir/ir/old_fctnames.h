@@ -27,8 +27,8 @@
 #define get_ident_of_mode     get_mode_ident
 #define get_size_of_mode      get_mode_size
 #define get_ld_align_of_mode  get_mode_ld_align
-#define get_min_of_mode	      get_mode_min
-#define get_max_of_mode	      get_mode_max
+#define get_min_of_mode       get_mode_min
+#define get_max_of_mode       get_mode_max
 #define get_null_of_mode      get_mode_null
 #define get_fsigned_of_mode   get_mode_fsigned
 #define get_ffloat_of_mode    get_mode_ffloat
@@ -49,8 +49,8 @@
 #define tarval_P_from_entity(X) new_tarval_from_entity(X, mode_P_mach)
 #define get_tarval_entity(X) tarval_to_entity(X)
 
-/* ident.h */  // @@@ Attention: still in ident.h
-//#define id_to_str    get_id_str
-//#define id_to_strlen get_id_strlen
+/* ident.h */  /*  @@@ Attention: still in ident.h */
+/* #define id_to_str    get_id_str */
+/* #define id_to_strlen get_id_strlen */
 
 #endif

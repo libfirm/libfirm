@@ -21,9 +21,9 @@
 /**
 *  This file constructs the ir for the following pseudo-program:
 *
-*  main(int a) {        // pos 0
-*    int b = 1;         // pos 1
-*    int h;             // pos 2
+*  main(int a) {        /*  pos 0 */
+*    int b = 1;         /*  pos 1 */
+*    int h;             /*  pos 2 */
 *
 *    while (0 == 2) loop {
 *      h = a;
@@ -83,7 +83,7 @@ main(void)
   r = new_immBlock ();
   add_in_edge (r, x);
   x = new_Cond (new_Proj(new_Cmp(new_Const (mode_Is, new_tarval_from_long (0, mode_Is)),
-				 get_value(1, mode_Is)),
+                 get_value(1, mode_Is)),
                          mode_b, Eq));
   f = new_Proj (x, mode_X, 0);
   t = new_Proj (x, mode_X, 1);

@@ -616,7 +616,7 @@ static INLINE int dump_node_info(ir_node *n)
     ir_loop *loop = get_irn_loop(n);
     assert(loop);
     fprintf(F, " in loop %d with depth %d\n",
-	    get_loop_loop_nr(loop), get_loop_depth(loop));
+        get_loop_loop_nr(loop), get_loop_depth(loop));
   }
   */
 
@@ -1600,7 +1600,7 @@ static void vcg_open (ir_graph *irg, char * suffix1, char *suffix2) {
   /** open file for vcg graph */
   fname = malloc (len * 2 + strlen(suffix1) + strlen(suffix2) + 5);
 
-  //strncpy (fname, nm, len);      /* copy the filename */
+  /* strncpy (fname, nm, len); */     /* copy the filename */
   j = 0;
   for (i = 0; i < len; ++i) {  /* replase '/' in the name: escape by @. */
     if (nm[i] == '/') {
@@ -1630,7 +1630,7 @@ static void vcg_open_name (const char *name, char *suffix) {
 
   /** open file for vcg graph */
   fname = malloc (len * 2 + 5 + strlen(suffix));
-  //strcpy (fname, name);    /* copy the filename */
+  /* strcpy (fname, name);*/    /* copy the filename */
   j = 0;
   for (i = 0; i < len; ++i) {  /* replase '/' in the name: escape by @. */
     if (name[i] == '/') {
@@ -1680,7 +1680,7 @@ dump_ir_graph (ir_graph *irg)
   char *suffix;
   rem = current_ir_graph;
 
-  //printf("comparing %s %s\n", get_irg_dump_name(irg), dump_file_filter);
+  /* printf("comparing %s %s\n", get_irg_dump_name(irg), dump_file_filter); */
 
   if(strncmp(get_irg_dump_name(irg),dump_file_filter,strlen(dump_file_filter))!=0) return;
 
@@ -1711,7 +1711,7 @@ dump_ir_block_graph (ir_graph *irg)
   int i;
   char *suffix;
 
-  //printf("comparing %s %s\n", get_irg_dump_name(irg), dump_file_filter);
+  /* printf("comparing %s %s\n", get_irg_dump_name(irg), dump_file_filter); */
   if(strncmp(get_irg_dump_name(irg),dump_file_filter,strlen(dump_file_filter))!=0) return;
 
   if (interprocedural_view) suffix = "-ip";

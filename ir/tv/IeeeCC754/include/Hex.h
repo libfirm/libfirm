@@ -10,7 +10,7 @@
 #   with the principles of the IEEE 754-854 floating-point standards.    #
 #   You can find out more about the testing tool IeeeCC754 at            #
 #                                                                        #
-#         http://win-www.uia.ac.be/u/cant/ieeecc754.html                 #
+#         http:/* win-www.uia.ac.be/u/cant/ieeecc754.html                 # */
 #                                                                        #
 #   This tool is in parts based on and greatly benefited from the        #
 #   the program FPTEST developed by Jerome Coonen. For a full            #
@@ -99,7 +99,7 @@ protected:
 
 
 public:
-  /// Constructor, creates empty Bitstring
+  /* *  Constructor, creates empty Bitstring */ */
   Hex();
 
   /** Constructor
@@ -115,7 +115,7 @@ public:
    @param copy a Bitstring object */
   Hex(const Bitstring &copy);
 
-  ///Deconstructor
+  /* * Deconstructor */ */
   ~Hex(){};
 
 

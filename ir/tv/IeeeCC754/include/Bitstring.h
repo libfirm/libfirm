@@ -10,7 +10,7 @@
 #   with the principles of the IEEE 754-854 floating-point standards.    #
 #   You can find out more about the testing tool IeeeCC754 at            #
 #                                                                        #
-#         http://win-www.uia.ac.be/u/cant/ieeecc754.html                 #
+#         http:/* win-www.uia.ac.be/u/cant/ieeecc754.html                 # */
 #                                                                        #
 #   This tool is in parts based on and greatly benefited from the        #
 #   the program FPTEST developed by Jerome Coonen. For a full            #
@@ -93,17 +93,17 @@ because this concept simplifies the resizing of the bitstring.
 class Bitstring
 {
 protected:
-  ///the bitstring
+  /* * the bitstring */ */
   unsigned long * bitstr;
-  ///length of bitstring,
+  /* * length of bitstring,          */ */
   long length;
-  /// number of array elments
+  /* *  number of array elments */ */
   long lengthBlock;
-  ///number of bits in class T
+  /* * number of bits in class T */ */
   long lengthT;
 
 
-  /// returns a unsigned long  with the first res bits set.
+  /* *  returns a unsigned long  with the first res bits set. */ */
   unsigned long GetPattern(unsigned long rest);
 
   /** returns the first block of bitstr. It's only defined
@@ -112,7 +112,7 @@ protected:
   unsigned long Convert();
 
 public:
-  /// Constructor, creates an empty bitstring
+  /* *  Constructor, creates an empty bitstring */ */
   Bitstring();
   /**Constructor,  creates a bitstring of size size.
     @param size the default size*/
@@ -120,9 +120,9 @@ public:
   /**Constructor,initiate the bitstring with the str as input
     @param str the default value for the bitstring  */
   Bitstring(char * str);
-  /// Copy constructor.
+  /* *  Copy constructor. */ */
   Bitstring(const Bitstring& copy);
-  ///Destructor
+  /* * Destructor */ */
   ~Bitstring();
 
   /**Get the length of the bitstring.
@@ -170,7 +170,7 @@ public:
   /** Replace the byte value at position "byte" with the new "bytevalue"
     @param  byte    position of the byte
     @param  bytevalue   new value
-    @return:  void // Previous byte value */
+    @return:  void /*  Previous byte value */ */
   void PutByte(unsigned long byte,Bitstring bytevalue);
 
 
@@ -203,7 +203,7 @@ public:
      @param  begin  the begining of the substring
      @param  count  the length of the substring
      @return  substring from bitstring */
-  // Bitstring SubBitstring (unsigned long begin, unsigned long count) const;
+  /*  Bitstring SubBitstring (unsigned long begin, unsigned long count) const; */
      void SubBitstring(unsigned long begin, Bitstring &sub) const;
 
   /** Overloads the array operator. Returns/change block "n"
@@ -292,6 +292,6 @@ public:
   friend istream& operator >> (istream& ins, Bitstring &instr);
 };
 
-//@Include: Hex.h
+/* @Include: Hex.h */
 
 #endif

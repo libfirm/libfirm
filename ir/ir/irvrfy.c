@@ -542,19 +542,19 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
        (get_irn_mode(pred) == mode_X)
       ), "Block node", 0);
       }
-      // End block may only have Return, Raise or fragile ops as preds.
+      /*  End block may only have Return, Raise or fragile ops as preds. */
       if (n == get_irg_end_block(irg))
     for (i = 0; i < get_Block_n_cfgpreds(n); ++i) {
       ir_node *pred =  skip_Proj(get_Block_cfgpred(n, i));
       if (is_Proj(pred) || get_irn_op(pred) == op_Tuple)
-        break;   // We can not test properly.  How many tuples are there?
+        break;   /*  We can not test properly.  How many tuples are there? */
       ASSERT_AND_RET(((get_irn_op(pred) == op_Return) ||
               is_Bad(pred)                    ||
               (get_irn_op(pred) == op_Raise)  ||
               is_fragile_op(pred)               ),
              "End Block node", 0);
     }
-      // irg attr must == graph we are in.
+      /*  irg attr must == graph we are in. */
       if (! interprocedural_view) {
     ASSERT_AND_RET(((get_irn_irg(n) && get_irn_irg(n) == irg)), "Block node has wrong irg attribute", 0);
       }

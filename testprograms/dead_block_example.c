@@ -31,17 +31,17 @@
 *       |/_     _\|
 *     Block1    Block2   deadBlock
 *        \       |       /
-* 	    \      |      /
-* 	    _\|   \ /   |/_
+*       \      |      /
+*       _\|   \ /   |/_
 *            nextBlock
 *
 *
 *   This is a program as, e.g.,
 *
 *   if () then
-*     { Jmp label1; } // happens anyways
+*     { Jmp label1; } /*  happens anyways  */
 *   else
-*     { Jmp label1; } // happens anyways
+*     { Jmp label1; } /*  happens anyways  */
 * label1:
 *   return();
 *   Jmp label1;

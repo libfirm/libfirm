@@ -120,7 +120,7 @@ int id_is_suffix (ident *suffix, ident *id);
  *
  * @see new_get_id_str(), id_from_str(), get_id_str(), id_is_prefix()
  */
-//int id_contains(ident *infix, ident *id);
+/* int id_contains(ident *infix, ident *id); */
 
 /**
  * Return true if an ident contains a given character.

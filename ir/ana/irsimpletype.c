@@ -95,7 +95,7 @@ static type *find_type_for_Proj(ir_node *n) {
       tp = find_pointer_type_to(get_glob_type());
     else  if (get_Proj_proj(n) == pns_value_arg_base) {
       VERBOSE_UNKNOWN_TYPE(("Value arg base proj %ld from Start: unknown type\n", get_irn_node_nr(n)));
-      tp =  unknown_type; //find_pointer_type_to(get....(get_entity_type(get_irg_ent(get_Start_irg(pred)))));
+      tp =  unknown_type; /* find_pointer_type_to(get....(get_entity_type(get_irg_ent(get_Start_irg(pred))))); */
     } else {
       VERBOSE_UNKNOWN_TYPE(("Proj %ld %ld from Start: unknown type\n", get_Proj_proj(n), get_irn_node_nr(n)));
       tp = unknown_type;
@@ -105,7 +105,7 @@ static type *find_type_for_Proj(ir_node *n) {
     /* value args pointer */
     if (get_Proj_proj(n) == pncl_value_res_base) {
       VERBOSE_UNKNOWN_TYPE(("Value res base Proj %ld from Call: unknown type\n", get_irn_node_nr(n)));
-      tp = unknown_type; //find_pointer_type_to(get....get_Call_type(pred));
+      tp = unknown_type; /* find_pointer_type_to(get....get_Call_type(pred)); */
     } else {
       VERBOSE_UNKNOWN_TYPE(("Proj %ld %ld from Call: unknown type\n", get_Proj_proj(n), get_irn_node_nr(n)));
       tp = unknown_type;
@@ -123,7 +123,7 @@ static type *find_type_for_node(ir_node *n) {
   type *tp1 = NULL, *tp2 = NULL;
   ir_node *a = NULL, *b = NULL;
 
-  //DDMN(n);
+  /* DDMN(n); */
 
   if (is_unop(n)) {
     a = get_unop_op(n);
@@ -153,8 +153,8 @@ static type *find_type_for_node(ir_node *n) {
       type *ana_res_type = get_irn_type(get_Return_res(n, i));
       if (ana_res_type == unknown_type) continue;
       if (res_type != ana_res_type && "return value has wrong type") {
-	DDMN(n);
-	assert(res_type == ana_res_type && "return value has wrong type");
+    DDMN(n);
+    assert(res_type == ana_res_type && "return value has wrong type");
       }
     }
     */
@@ -206,7 +206,7 @@ static type *find_type_for_node(ir_node *n) {
       tp1 = compute_irn_type(get_Phi_pred(n, i));
       assert(tp1 != initial_type);
       if ((tp1 != phi_cycle_type) && (tp1 != none_type))
-	break;
+    break;
     }
 
     /* find a second real type */
@@ -214,18 +214,18 @@ static type *find_type_for_node(ir_node *n) {
     for (; (i < n_preds); ++i) {
       tp2 = compute_irn_type(get_Phi_pred(n, i));
       if ((tp2 == phi_cycle_type) || (tp2 == none_type)) {
-	tp2 = tp1;
-	continue;
+    tp2 = tp1;
+    continue;
       }
       if (tp2 != tp1) break;
     }
 
-    //printf("Types in Phi %s and %s \n", get_type_name(tp1), get_type_name(tp2));
+    /* printf("Types in Phi %s and %s \n", get_type_name(tp1), get_type_name(tp2)); */
 
     if (tp1 == tp2) { tp = tp1; break; }
 
     VERBOSE_UNKNOWN_TYPE(("Phi %ld with two different types: %s, %s: unknown type.\n", get_irn_node_nr(n),
-			  get_type_name(tp1), get_type_name(tp2)));
+              get_type_name(tp1), get_type_name(tp2)));
     tp = unknown_type;
   } break;
   case iro_Load: {
@@ -233,7 +233,7 @@ static type *find_type_for_node(ir_node *n) {
     if (intern_get_irn_op(a) == op_Sel)
       tp = get_entity_type(get_Sel_entity(a));
     else if ((intern_get_irn_op(a) == op_Const) &&
-	(tarval_is_entity(get_Const_tarval(a))))
+    (tarval_is_entity(get_Const_tarval(a))))
       tp = get_entity_type(tarval_to_entity(get_Const_tarval(a)));
     else if (is_pointer_type(compute_irn_type(a))) {
       tp = get_pointer_points_to_type(get_irn_type(a));
@@ -257,21 +257,21 @@ static type *find_type_for_node(ir_node *n) {
   /* catch special cases with fallthrough to binop/unop cases in default. */
   case iro_Sub: {
     if (mode_is_int(intern_get_irn_mode(n))       &&
-	mode_is_reference(intern_get_irn_mode(a)) &&
-	mode_is_reference(intern_get_irn_mode(b))   ) {
+    mode_is_reference(intern_get_irn_mode(a)) &&
+    mode_is_reference(intern_get_irn_mode(b))   ) {
       VERBOSE_UNKNOWN_TYPE(("Sub %ld ptr - ptr = int: unknown type\n", get_irn_node_nr(n)));
       tp =  unknown_type; break;
     }
   } /* fall through to Add. */
   case iro_Add: {
     if (mode_is_reference(intern_get_irn_mode(n)) &&
-	mode_is_reference(intern_get_irn_mode(a)) &&
-	mode_is_int(intern_get_irn_mode(b))         ) {
+    mode_is_reference(intern_get_irn_mode(a)) &&
+    mode_is_int(intern_get_irn_mode(b))         ) {
       tp = tp1; break;
     }
     if (mode_is_reference(intern_get_irn_mode(n)) &&
-	mode_is_int(intern_get_irn_mode(a))       &&
-	mode_is_reference(intern_get_irn_mode(b))    ) {
+    mode_is_int(intern_get_irn_mode(a))       &&
+    mode_is_reference(intern_get_irn_mode(b))    ) {
       tp = tp2; break;
     }
     goto default_code;
@@ -295,15 +295,15 @@ static type *find_type_for_node(ir_node *n) {
 
     if (is_binop(n)) {
       if (tp1 == tp2) {
-	tp = tp1;
-	break;
+    tp = tp1;
+    break;
       }
       if((tp1 == phi_cycle_type) || (tp2 == phi_cycle_type)) {
-	tp = phi_cycle_type;
-	break;
+    tp = phi_cycle_type;
+    break;
       }
       VERBOSE_UNKNOWN_TYPE(("Binop %ld with two different types: %s, %s: unknown type \n", get_irn_node_nr(n),
-			    get_type_name(tp1), get_type_name(tp2)));
+                get_type_name(tp1), get_type_name(tp2)));
       tp = unknown_type;
       break;
     }
@@ -312,14 +312,14 @@ static type *find_type_for_node(ir_node *n) {
   } break; /* default */
   } /* end switch */
 
-  //printf (" found %s ", get_type_name(tp)); DDM;
+  /* printf (" found %s ", get_type_name(tp)); DDM; */
 
   return tp;
 }
 
 
 static type* compute_irn_type(ir_node *n) {
-  //DDMN(n);
+  /* DDMN(n); */
 
   type *tp = get_irn_type(n);
 
@@ -328,7 +328,7 @@ static type* compute_irn_type(ir_node *n) {
     set_irn_type(n, tp);
   }
 
-  //printf (" found %s ", get_type_name(tp)); DDM;
+  /* printf (" found %s ", get_type_name(tp)); DDM; */
 
   return tp;
 }
@@ -337,7 +337,7 @@ static void compute_type(ir_node *n, void *env) {
 
   type *tp = get_irn_type(n);
   if (tp ==  phi_cycle_type) {
-    //printf(" recomputing for phi_cycle_type "); DDMN(n);
+    /* printf(" recomputing for phi_cycle_type "); DDMN(n); */
     set_irn_type(n, initial_type);
   }
 
