@@ -180,7 +180,7 @@ new_rd_Proj (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *arg, ir_mode 
 
   assert(res);
   assert(get_Proj_pred(res));
-  assert(get_nodes_Block(get_Proj_pred(res)));
+  assert(get_nodes_block(get_Proj_pred(res)));
 
   res = optimize_node(res);
 
@@ -839,7 +839,7 @@ new_rd_Filter (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg, ir_mod
 
   assert(res);
   assert(get_Proj_pred(res));
-  assert(get_nodes_Block(get_Proj_pred(res)));
+  assert(get_nodes_block(get_Proj_pred(res)));
 
   res = optimize_node(res);
   IRN_VRFY_IRG(res, irg);
