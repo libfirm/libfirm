@@ -1682,8 +1682,11 @@ ir_node *new_rd_Store  (dbg_info *db, ir_graph *irg, ir_node *block,
 ir_node *new_rd_Alloc  (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
                ir_node *size, type *alloc_type, where_alloc where);
 
-/**
- * Constructor for a Free  node.
+/** Constructor for a Free node.
+ *
+ * Constructor for a Free node.  Frees the memory occupied by the
+ * entity pointed to by the pointer arg.  Type indicates the type of
+ * the entity the argument points to.
  *
  * @param *db         A pointer for debug information.
  * @param *irg        The ir graph the node  belongs to.
@@ -1707,65 +1710,75 @@ ir_node *new_rd_Free   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *st
  * @param *irg      The ir graph the node  belongs to.
  * @param *block    The ir block the node belongs to.
  * @param  arity    The number of memories to syncronize.
- * @param  *in[]    An array of pointers to nodes that produce an output of type memory.  The constructor copies this array.
- *
+ * @param  *in[]    An array of pointers to nodes that produce an output of type
+ *                  memory.  The constructor copies this array.
  */
-
 ir_node *new_rd_Sync   (dbg_info *db, ir_graph *irg, ir_node *block, int arity, ir_node *in[]);
 
-/**
- * Constructor for a Proj  node.
+/** Constructor for a Proj  node.
+ *
+ * Constructor for a Proj node.  Projects a single value out of a tuple.
+ * The @param proj gives the position of the value within the tuple.
  *
  * @param *db    A pointer for deubugginformation.
  * @param *irg   The ir graph the node  belongs to.
  * @param *block The ir block the node belongs to.
- * @param arg    A node producing a tuple.
+ * @param arg    A node producing a tuple.  The node must have mode_T.
  * @param *mode  The mode of the value to project.
  * @param proj   The position of the value in the tuple.
  */
 ir_node *new_rd_Proj   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg,
-               ir_mode *mode, long proj);
+			ir_mode *mode, long proj);
 
-/**
- * Constructor for a defaultProj  node.
+/** Constructor for a defaultProj node.
+ *
+ * Constructor for a defaultProj node.  Represents the default control flow of
+ * a Switch-Cond node.
  *
  * @param *db       A pointer for debug information.
  * @param *irg      The ir graph the node  belongs to.
  * @param *block    The ir block the node belongs to.
  * @param arg       A node producing a tuple.
- * @param max_ proj The end  position of the value in the tuple.
+ * @param max_proj  The end position of the value in the tuple.
  */
 ir_node *new_rd_defaultProj (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg,
 			     long max_proj);
 
-/**
- * Constructor for a Tuple  node.
+/** Constructor for a Tuple node.
+ *
+ * Constructor for a Tuple node.  This is an auxiliary node to replace a
+ * node that returns a tuple without changing the corresponding Proj nodes.
  *
  * @param *db     A pointer for debug information.
  * @param *irg    The ir graph the node  belongs to.
  * @param *block  The ir block the node belongs to.
  * @param arity   The number of tuple elements.
- * @param *in[]    An array containing pointers to the nodes producing the tuple elements. The constructor copies this array.
+ * @param *in[]   An array containing pointers to the nodes producing the tuple
+ *                elements. The constructor copies this array.
  */
 ir_node *new_rd_Tuple  (dbg_info *db, ir_graph *irg, ir_node *block,
-               int arity, ir_node *in[]);
+			int arity, ir_node *in[]);
 
-/**
- * Constructor for a Id  node.
+/** Constructor for a Id node.
+ *
+ * Constructor for a Id node.  This is an auxiliary node to
+ * replace a node that returns a single value.
  *
  * @param *db     A pointer for debug information.
  * @param *irg    The ir graph the node  belongs to.
  * @param *block  The ir block the node belongs to.
- * @param *val
+ * @param *val    The value
  * @param *mode   The mode of *val.
  */
 ir_node *new_rd_Id     (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_node *val, ir_mode *mode);
+			ir_node *val, ir_mode *mode);
 
-/**
- * Constructor for a Bad  node.
+/** Constructor for a Bad node.
  *
- * @param *irg    The ir graph the node  belongs to.
+ * Constructor for a Bad node.  Returns the unique Bad node of the graph.
+ * The same as get_irg_bad(irg).
+ *
+ * @param *irg    The ir graph the node belongs to.
  */
 ir_node *new_rd_Bad    (ir_graph *irg);
 
