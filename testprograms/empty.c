@@ -36,7 +36,7 @@ int main(int argc, char **argv)
   /* init library */
   init_firm ();
 
-  set_opt_dead_node_elimination (o);
+  set_opt_dead_node_elimination (0);
 
   /* FIRM was designed for oo languages where all methods belong to a class.
    * For imperative languages like C we view a file as a large class containing
