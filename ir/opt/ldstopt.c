@@ -212,12 +212,45 @@ static int optimize_load(ir_node *load)
   /* the mem of the load. Must still be returned after optimization */
   mem  = get_Load_mem(load);
 
-  /* follow the memory chain as long as there are only Loads */
-  for (pred = load; res == 0;) {
+  if ((get_irn_opcode(ptr) == iro_SymConst) && (get_SymConst_kind(ptr) == symconst_addr_ent)) {
+    entity *ent = get_SymConst_entity(ptr);
 
-    /* follow only load chains */
-    if (get_irn_op(pred) != op_Load)
-      break;
+    assert(mode_is_reference(get_irn_mode(ptr)));
+
+    if ((allocation_static == get_entity_allocation(ent)) &&
+        (visibility_external_allocated != get_entity_visibility(ent))) {
+      /* a static allocation that is not external: there should be NO exception
+       * when loading. */
+
+      /* no exception, clear the info field as it might be checked later again */
+      if (info->projs[pn_Load_X_except]) {
+        exchange(info->projs[pn_Load_X_except], new_Bad());
+        info->projs[pn_Load_X_except] = NULL;
+      }
+
+      if (variability_constant == get_entity_variability(ent)) {
+        /* more simpler case: we load the content of a constant value:
+         * replace it by the constant itself
+         */
+
+        /* no memory */
+        if (info->projs[pn_Load_M])
+          exchange(info->projs[pn_Load_M], mem);
+
+        /* no result :-) */
+        if (info->projs[pn_Load_res])
+          exchange(info->projs[pn_Load_res], copy_const_value(get_atomic_ent_value(ent)));
+
+        return 1;
+      }
+
+      /* we changed the irg, but try further */
+      res = 1;
+    }
+  }
+
+  /* follow the memory chain as long as there are only Loads */
+  for (pred = skip_Proj(mem); ; pred = skip_Proj(get_Load_mem(pred))) {
 
     /*
      * BEWARE: one might think that checking the modes is useless, because
@@ -226,17 +259,23 @@ static int optimize_load(ir_node *load)
      * is possible a = *(type1 *)p; b = *(type2 *)p ...
      */
 
-    pred = skip_Proj(get_Load_mem(pred));
-
     if (get_irn_op(pred) == op_Store && get_Store_ptr(pred) == ptr &&
-             get_irn_mode(get_Store_value(pred)) == load_mode) {
+        get_irn_mode(get_Store_value(pred)) == load_mode) {
+      ldst_info_t *pred_info = get_irn_link(pred);
+
       /*
        * a load immediately after a store -- a read after write.
-       * We may remove the Load, if it does not have an exception handler
+       * We may remove the Load, if both load & Store does not have an exception handler
        * OR they are in the same block. In the latter case the Load cannot
        * throw an exception when the previous Store was quiet.
+       *
+       * Why we need to check for Store Exc? If the Store cannot be executed (ROM)
+       * the exception handler might simply jump into the load block :-(
+       * We could make it a little bit better if we would know that the exception
+       * handler of teh Store jumps directly to the end...
        */
-      if (! info->projs[pn_Load_X_except] || get_nodes_block(load) == get_nodes_block(pred)) {
+      if ((!pred_info->projs[pn_Store_X_except] && !info->projs[pn_Load_X_except]) ||
+          get_nodes_block(load) == get_nodes_block(pred)) {
         DBG_OPT_RAW(pred, load);
         exchange( info->projs[pn_Load_res], get_Store_value(pred) );
 
@@ -246,7 +285,7 @@ static int optimize_load(ir_node *load)
         /* no exception */
         if (info->projs[pn_Load_X_except])
           exchange( info->projs[pn_Load_X_except], new_Bad());
-        res = 1;
+        return 1;
       }
     }
     else if (get_irn_op(pred) == op_Load && get_Load_ptr(pred) == ptr &&
@@ -256,6 +295,9 @@ static int optimize_load(ir_node *load)
        * We may remove the second Load, if it does not have an exception handler
        * OR they are in the same block. In the later case the Load cannot
        * throw an exception when the previous Load was quiet.
+       *
+       * Here, there is no need to check if the previos load has an exception hander because
+       * they would have exact the same exception...
        */
       if (! info->projs[pn_Load_X_except] || get_nodes_block(load) == get_nodes_block(pred)) {
         ldst_info_t *pred_info = get_irn_link(pred);
@@ -284,10 +326,14 @@ static int optimize_load(ir_node *load)
         if (info->projs[pn_Load_X_except])
           exchange(info->projs[pn_Load_X_except], new_Bad());
 
-        res = 1;
+        return 1;
       }
     }
-  }
+
+    /* follow only load chains */
+    if (get_irn_op(pred) != op_Load)
+      break;
+   }
   return res;
 }
 
@@ -299,7 +345,6 @@ static int optimize_store(ir_node *store)
   ldst_info_t *info = get_irn_link(store);
   ir_node *pred, *mem, *ptr, *value, *block;
   ir_mode *mode;
-  ldst_info_t *pred_info;
   int res = 0;
 
   if (get_Store_volatility(store) == volatility_is_volatile)
@@ -316,36 +361,43 @@ static int optimize_store(ir_node *store)
   ptr   = get_Store_ptr(store);
   mem   = get_Store_mem(store);
   value = get_Store_value(store);
-  pred  = skip_Proj(mem);
+
   mode  = get_irn_mode(value);
 
-  pred_info = get_irn_link(pred);
+  /* follow the memory chain as long as there are only Loads */
+  for (pred = skip_Proj(mem); ; pred = skip_Proj(get_Load_mem(pred))) {
+    ldst_info_t *pred_info = get_irn_link(pred);
 
-  if (get_irn_op(pred) == op_Store && get_Store_ptr(pred) == ptr &&
-      get_nodes_block(pred) == block && get_irn_mode(get_Store_value(pred)) == mode) {
-    /*
-     * a store immediately after a store in the same block -- a write after write.
-     * We may remove the first Store, if it does not have an exception handler.
-     *
-     * TODO: What, if both have the same exception handler ???
-     */
-    if (get_Store_volatility(pred) != volatility_is_volatile && !pred_info->projs[pn_Store_X_except]) {
-      DBG_OPT_WAW(pred, store);
-      exchange( pred_info->projs[pn_Store_M], get_Store_mem(pred) );
-      res = 1;
+    if (get_irn_op(pred) == op_Store && get_Store_ptr(pred) == ptr &&
+        get_nodes_block(pred) == block && get_irn_mode(get_Store_value(pred)) == mode) {
+      /*
+       * a store after a store in the same block -- a write after write.
+       * We may remove the first Store, if it does not have an exception handler.
+       *
+       * TODO: What, if both have the same exception handler ???
+       */
+      if (get_Store_volatility(pred) != volatility_is_volatile && !pred_info->projs[pn_Store_X_except]) {
+        DBG_OPT_WAW(pred, store);
+        exchange( pred_info->projs[pn_Store_M], get_Store_mem(pred) );
+        return 1;
+      }
     }
-  }
-  else if (get_irn_op(pred) == op_Load && get_Load_ptr(pred) == ptr &&
-	   value == pred_info->projs[pn_Load_res]) {
-    /*
-     * a store a value immediately after a load -- a write after read.
-     * We may remove the second Store, if it does not have an exception handler.
-     */
-    if (! info->projs[pn_Store_X_except]) {
-      DBG_OPT_WAR(pred, store);
-      exchange( info->projs[pn_Store_M], mem );
-      res = 1;
+    else if (get_irn_op(pred) == op_Load && get_Load_ptr(pred) == ptr &&
+             value == pred_info->projs[pn_Load_res]) {
+      /*
+       * a store of a value after a load -- a write after read.
+       * We may remove the second Store, if it does not have an exception handler.
+       */
+      if (! info->projs[pn_Store_X_except]) {
+        DBG_OPT_WAR(pred, store);
+        exchange( info->projs[pn_Store_M], mem );
+        return 1;
+      }
     }
+
+    /* follow only load chains */
+    if (get_irn_op(pred) != op_Load)
+      break;
   }
   return res;
 }
