@@ -67,6 +67,7 @@ extern void *xmalloc (size_t);
 extern void *xrealloc (void *, size_t);
 extern char *xstrdup (const char *);
 extern void xnomem (void);
+extern void free (void *);
 
 # define xmalloc(size) (XMALLOC_TRACE (xmalloc) ((size)))
 # define xrealloc(ptr, size) (XMALLOC_TRACE (xrealloc) ((ptr), (size)))
