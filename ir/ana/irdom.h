@@ -60,6 +60,8 @@ void set_Block_pre_num(ir_node *bl, int num);
  *   idom = NULL;
  *   dom_depth = -1;
  *   pre_num = -1;
+ * Also constructs outs information.  As this information is correct after
+ * the run does not free the outs information.
  */
 void compute_doms(ir_graph *irg);
 

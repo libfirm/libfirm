@@ -31,7 +31,7 @@
 #include "irnode_t.h"
 #include "irgraph_t.h"     /* To access irg->outs field (which is private to this module)
                   without public access routine */
-#include "irprog.h"
+#include "irprog_t.h"
 #include "irgwalk.h"
 
 /**********************************************************************/
@@ -256,6 +256,7 @@ void compute_outs(ir_graph *irg) {
 
   /* Update graph state */
   assert(get_irg_phase_state(current_ir_graph) != phase_building);
+  if (current_ir_graph->outs_state != no_outs) free_outs(current_ir_graph);
   current_ir_graph->outs_state = outs_consistent;
 
   /* This first iteration counts the overall number of out edges and the
@@ -408,6 +409,8 @@ void compute_ip_outs(void) {
   int n_out_edges;
   ir_node **out_edges;
 
+  if (irp->outs_state != no_outs) free_ip_outs();
+
   global_count = n_out_edges = count_ip_outs();
   out_edges = (ir_node **) malloc (n_out_edges * sizeof(ir_node *));
   set_irp_ip_outedges(out_edges);
@@ -417,11 +420,12 @@ void compute_ip_outs(void) {
 void free_ip_outs(void)
 {
   ir_node **out_edges = get_irp_ip_outedges();
-  if(out_edges != NULL)
+  if (out_edges != NULL)
     {
       free(out_edges);
       set_irp_ip_outedges(NULL);
     }
+  irp->outs_state = no_outs;
 }
 
 
