@@ -1,7 +1,8 @@
 
   15.01.2001 Goetz
-  added set/get_SymConst_type_or_id.
-  added field offset to entity.
+  added set/get_SymConst_type_or_id in irnode.h
+  added field offset to entity in entity.h
+  added field size to type_class in type.h
 
   12.01.2001 Goetz
   Some changes to make the lib better portable
