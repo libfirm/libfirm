@@ -1,3 +1,23 @@
+  7.8.02 Goetz
+  Implemented scc algorithm.  Added datastructure to mark
+  backedges (ana/backedge.h) and to represent loops
+  (ana/irloop.h).  The scc algorithm (ana/irscc.c) builds
+  both datastructures.
+  The algorithm does not yet work properly for interprocedural
+  graphs.  Finds more loops than only recursions.
+
+  Improved place_code: now moves nodes out of loops.
+  Fixed bug in iropt.c:  wrong parameter in debug info: iropt_dbg.c
+  Now flag set_opt_control_flow can be set to 1 again.
+
+  11.7.2002 Goetz
+  Viele Aenderungen,
+  u.a. Zugrffsfkt normalisiert,
+  global, frame type nicht mehr in irp_types
+  interproz darstellung
+  mehr Zugriffsfkt bei entitaeten
+  u.v.a.
+
   25.4.2002 Goetz
   Added several constructors to tv.
   Changed xgprintf so that full precision of double tvs is printed.
