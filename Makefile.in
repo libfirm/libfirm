@@ -19,6 +19,8 @@ srcdir := @srcdir@
 topdir := .
 # subdirectory under topdir
 subdir := .
+# do we want statistics
+enable_statistics := @enable_statistics@
 
 subdirs := ir/adt ir/debug ir/tv ir/common ir/ident ir/ir ir/tr ir/ana ir/st
 
