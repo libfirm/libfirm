@@ -368,38 +368,38 @@ dead_node_elimination(ir_graph *irg) {
 						     no optimization --> save */
     irg->start_block = new_node;
     set_new_node (old_node, new_node);
-    set_irn_visited (new_node, get_irg_visited(current_ir_graph)+1);
+    set_irn_visited (old_node, get_irg_visited(current_ir_graph)+1);
     /* Copy the Start node */
     old_node = irg->start;
     new_node = new_r_Start (current_ir_graph, irg->start_block);
     irg->start = new_node;
   DDMSG2(new_node);
     set_new_node (old_node, new_node);
-    set_irn_visited (new_node, get_irg_visited(current_ir_graph)+1);
+    set_irn_visited (old_node, get_irg_visited(current_ir_graph)+1);
     /* Copy the Bad node */
     old_node = irg->bad;
     new_node = new_ir_node (irg, irg->start_block, op_Bad, mode_T, 0, NULL);
     irg->bad = new_node;
     set_new_node (old_node, new_node);
-    set_irn_visited (new_node, get_irg_visited(current_ir_graph)+1);
+    set_irn_visited (old_node, get_irg_visited(current_ir_graph)+1);
     /* Copy the Projs for the Start's results. */
     old_node = irg->frame;
     new_node = new_r_Proj (irg, irg->start_block, irg->start, mode_p, pns_frame_base);
     irg->frame = new_node;
     set_new_node (old_node, new_node);
-    set_irn_visited (new_node, get_irg_visited(current_ir_graph)+1);
+    set_irn_visited (old_node, get_irg_visited(current_ir_graph)+1);
 
     old_node = irg->globals;
     new_node = new_r_Proj (irg, irg->start_block, irg->start, mode_p, pns_globals);
     irg->globals = new_node;
     set_new_node (old_node, new_node);
-    set_irn_visited (new_node, get_irg_visited(current_ir_graph)+1);
+    set_irn_visited (old_node, get_irg_visited(current_ir_graph)+1);
 
     old_node = irg->args;
     new_node = new_r_Proj (irg, irg->start_block, irg->start, mode_T, pns_args);
     irg->args = new_node;
     set_new_node (old_node, new_node);
-    set_irn_visited (new_node, get_irg_visited(current_ir_graph)+1);
+    set_irn_visited (old_node, get_irg_visited(current_ir_graph)+1);
 
     /* Walks the graph once, and at the recursive way do the copy thing.
        all reachable nodes will be copied to a new obstack. */
