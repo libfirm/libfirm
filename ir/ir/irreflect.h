@@ -4,11 +4,7 @@
  * @author Sebastian Hack
  * @brief Reflection for Firm operations.
  *
-<<<<<<< irreflect.h
  * $Id$
-=======
- * $Id$
->>>>>>> 1.2
  */
 
 #ifndef __REFLECT_H
