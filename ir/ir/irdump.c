@@ -636,7 +636,7 @@ static void print_typespecific_info(type *tp) {
   switch (get_type_tpop_code(tp)) {
   case tpo_class:
     {
-      if(existent == get_class_peculiarity(tp))
+      if (peculiarity_existent == get_class_peculiarity(tp))
 	fprintf (F, " " TYPE_CLASS_NODE_ATTR);
       else
 	fprintf (F, " " TYPE_DESCRIPTION_NODE_ATTR);
@@ -667,7 +667,8 @@ static void print_typespecific_info(type *tp) {
   } /* switch type */
 }
 
-static void print_type_node(type *tp) {
+static void print_type_node(type *tp)
+{
   fprintf (F, "node: {title: ");
   PRINT_TYPEID(tp);
   fprintf (F, " label: \"%s %s\"", get_id_str(get_type_tpop_nameid(tp)), get_id_str(get_type_ident(tp)));
@@ -678,43 +679,50 @@ static void print_type_node(type *tp) {
   fprintf (F, "}\n");
 }
 
-void dump_entity_node(entity *ent) {
+#define X(a)	case a: fprintf(F, #a); break
+void dump_entity_node(entity *ent)
+{
   fprintf (F, "node: {title: \"");
   PRINT_ENTID(ent); fprintf(F, "\"");
   fprintf (F, DEFAULT_TYPE_ATTRIBUTE);
   fprintf (F, "label: ");
   fprintf (F, "\"ent %s\" " ENTITY_NODE_ATTR , get_id_str(get_entity_ident(ent)));
   fprintf (F, "\n info1: \"\nid: "); PRINT_ENTID(ent);
+
   fprintf (F, "\nallocation:  ");
   switch (get_entity_allocation(ent)) {
-    case dynamic_allocated:   fprintf (F, "dynamic allocated");   break;
-    case automatic_allocated: fprintf (F, "automatic allocated"); break;
-    case static_allocated:    fprintf (F, "static allocated");    break;
-    case parameter_allocated: fprintf (F, "parameter allocated"); break;
+    X(allocation_dynamic);
+    X(allocation_automatic);
+    X(allocation_static);
+    X(allocation_parameter);
   }
+
   fprintf (F, "\nvisibility:  ");
   switch (get_entity_visibility(ent)) {
-    case local:              fprintf (F, "local");             break;
-    case external_visible:   fprintf (F, "external visible");  break;
-    case external_allocated: fprintf (F, "external allocated"); break;
+    X(visibility_local);
+    X(visibility_external_visible);
+    X(visibility_external_allocated);
   }
+
   fprintf (F, "\nvariability: ");
   switch (get_entity_variability(ent)) {
-    case uninitialized: fprintf (F, "uninitialized");break;
-    case initialized:   fprintf (F, "initialized");  break;
-    case part_constant: fprintf (F, "part_constant");break;
-    case constant:      fprintf (F, "constant");     break;
+    X(variability_uninitialized);
+    X(variability_initialized);
+    X(variability_part_constant);
+    X(variability_constant);
   }
+
   fprintf (F, "\nvolatility:  ");
   switch (get_entity_volatility(ent)) {
-    case non_volatile: fprintf (F, "non_volatile"); break;
-    case is_volatile:  fprintf (F, "is_volatile");  break;
+    X(volatility_non_volatile);
+    X(volatility_is_volatile);
   }
+
   fprintf (F, "\npeculiarity: ");
   switch (get_entity_peculiarity(ent)) {
-    case description: fprintf (F, "description"); break;
-    case inherited:   fprintf (F, "inherited");   break;
-    case existent:    fprintf (F, "existent");    break;
+    X(peculiarity_description);
+    X(peculiarity_inherited);
+    X(peculiarity_existent);
   }
   fprintf(F, "\nname:    %s\nld_name: %s",
 	  get_id_str(get_entity_ident(ent)),
@@ -728,6 +736,7 @@ void dump_entity_node(entity *ent) {
   }
   fprintf(F, "\"\n}\n");
 }
+#undef X
 
 /* dumps a type or entity and it's edges. */
 static void
@@ -754,7 +763,7 @@ dump_type_info (type_or_ent *tore, void *env) {
 	}
       }
       /* attached subgraphs */
-      if (const_entities && (get_entity_variability(ent) != uninitialized)) {
+      if (const_entities && (get_entity_variability(ent) != variability_uninitialized)) {
 	if (is_atomic_entity(ent)) {
 	  value = get_atomic_ent_value(ent);
 	  if (value) {

@@ -251,7 +251,7 @@ set_type_state(type *tp, type_state state) {
 	      { DDMT(tp); DDME(get_class_member(tp, i)); }
 	    assert(get_entity_offset(get_class_member(tp, i)) > -1);
 	    assert(is_method_type(get_entity_type(get_class_member(tp, i))) ||
-		   (get_entity_allocation(get_class_member(tp, i)) == automatic_allocated));
+		   (get_entity_allocation(get_class_member(tp, i)) == allocation_automatic));
 	  }
       } break;
     case tpo_struct:
@@ -259,7 +259,7 @@ set_type_state(type *tp, type_state state) {
 	assert(get_type_size(tp) > -1);
 	for (i = 0; i < get_struct_n_members(tp); i++) {
 	  assert(get_entity_offset(get_struct_member(tp, i)) > -1);
-	  assert((get_entity_allocation(get_struct_member(tp, i)) == automatic_allocated));
+	  assert((get_entity_allocation(get_struct_member(tp, i)) == allocation_automatic));
 	}
       } break;
     case tpo_union:
@@ -572,11 +572,11 @@ INLINE type   *new_type_class (ident *name) {
 
   res = new_type(type_class, NULL, name);
 
-  res->attr.ca.members    = NEW_ARR_F (entity *, 1);
-  res->attr.ca.subtypes   = NEW_ARR_F (type *, 1);
-  res->attr.ca.supertypes = NEW_ARR_F (type *, 1);
-  res->attr.ca.peculiarity = existent;
-  res->attr.ca.dfn        = 0;
+  res->attr.ca.members     = NEW_ARR_F (entity *, 1);
+  res->attr.ca.subtypes    = NEW_ARR_F (type *, 1);
+  res->attr.ca.supertypes  = NEW_ARR_F (type *, 1);
+  res->attr.ca.peculiarity = peculiarity_existent;
+  res->attr.ca.dfn         = 0;
 
   return res;
 }
@@ -730,7 +730,7 @@ INLINE peculiarity get_class_peculiarity (type *clss) {
 }
 INLINE void        set_class_peculiarity (type *clss, peculiarity pec) {
   assert(clss && (clss->type_op == type_class));
-  assert(pec != inherited);  /* There is no inheritance of types in libFirm. */
+  assert(pec != peculiarity_inherited);  /* There is no inheritance of types in libFirm. */
   clss->attr.ca.peculiarity = pec;
 }
 

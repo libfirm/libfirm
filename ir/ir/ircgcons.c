@@ -395,7 +395,7 @@ static void construct_start(entity * caller, entity * callee,
   ir_node * start = get_irg_start(irg), * filter;
 
   assert(irg);
-  assert(get_entity_peculiarity(callee) == existent); /* Else data is not initalized. */
+  assert(get_entity_peculiarity(callee) == peculiarity_existent); /* Else data is not initalized. */
   assert((0 <= data->count) &&
 	 (data->count < get_Block_cg_n_cfgpreds(get_nodes_Block(start))));
   set_Block_cg_cfgpred(get_nodes_Block(start), data->count, exec);

@@ -212,16 +212,16 @@ void      set_entity_type (entity *ent, type *tp);
 
 /** The allocation type. */
 typedef enum {
-  automatic_allocated, /**< The entity is allocated during runtime, implicitly
-		  	  as component of a compound type.   This is the default. */
-  parameter_allocated, /**< The entity is a parameter.  It is also automatic allocated.
-			  We distinguish the allocation of paramters from the allocation
-			  of local variables as their placement depends on the calling
-			  conventions. */
-  dynamic_allocated,   /**< The entity is allocated during runtime, explicitly
-			  by an Alloc node. */
-  static_allocated     /**< The entity is allocated statically.  We can use a
-                          SymConst(?) as address of the entity. */
+  allocation_automatic, /**< The entity is allocated during runtime, implicitly
+		  	     as component of a compound type.   This is the default. */
+  allocation_parameter, /**< The entity is a parameter.  It is also automatic allocated.
+			     We distinguish the allocation of paramters from the allocation
+			     of local variables as their placement depends on the calling
+			     conventions. */
+  allocation_dynamic,   /**< The entity is allocated during runtime, explicitly
+			     by an Alloc node. */
+  allocation_static     /**< The entity is allocated statically.  We can use a
+                             SymConst(?) as address of the entity. */
 } ent_allocation;
 
 /** Returns the allocation type of an entity. */
@@ -238,14 +238,14 @@ const char *get_allocation_name(ent_allocation vis);
  * for partial compilation.
  */
 typedef enum {
-  local,              /**< The entity is only visible locally.  This is the default. */
-  external_visible,   /**< The entity is visible to other external program parts, but
-			 it is defined here.  It may not be optimized away.  The entity must
-		         be static_allocated. */
-  external_allocated  /**< The entity is defined and allocated externally.  This compilation
-			 must not allocate memory for this entity. The entity must
-		         be static_allocated.  This can also be an external defined
-			 method. */
+  visibility_local,              /**< The entity is only visible locally.  This is the default. */
+  visibility_external_visible,   /**< The entity is visible to other external program parts, but
+			              it is defined here.  It may not be optimized away.  The entity must
+		                      be static_allocated. */
+  visibility_external_allocated  /**< The entity is defined and allocated externally.  This compilation
+			              must not allocate memory for this entity. The entity must
+		                      be static_allocated.  This can also be an external defined
+			              method. */
 } ent_visibility;
 
 /** Returns the visibility of an entity. */
@@ -259,13 +259,13 @@ const char *get_visibility_name(ent_visibility vis);
 
 /** This enumeration flags the variability of entities. */
 typedef enum {
-  uninitialized,    /**< The content of the entity is completely unknown. */
-  initialized,      /**< After allocation the entity is initalized with the
-		       value given somewhere in the entity. */
-  part_constant,    /**< For entities of compound types.  Some members of the entity
-		       are constant.  The others are uninitialized.  Those members
-		       given a value for are constant. */
-  constant          /**< The entity is constant. */
+  variability_uninitialized,    /**< The content of the entity is completely unknown. */
+  variability_initialized,      /**< After allocation the entity is initalized with the
+		                     value given somewhere in the entity. */
+  variability_part_constant,    /**< For entities of compound types.  Some members of the entity
+		                     are constant.  The others are uninitialized.  Those members
+		                     given a value for are constant. */
+  variability_constant          /**< The entity is constant. */
 } ent_variability;
 
 /** Returns the variability of an entity. */
@@ -279,8 +279,8 @@ const char *get_variability_name(ent_variability var);
 
 /** This enumeration flags the volatility of entities. */
 typedef enum {
-  non_volatile,    /**< The entity is not volatile */
-  is_volatile      /**< The entity is volatile */
+  volatility_non_volatile,    /**< The entity is not volatile */
+  volatility_is_volatile      /**< The entity is volatile */
 } ent_volatility;
 
 /** Returns the volatility of an entity. */

@@ -1264,7 +1264,7 @@ int tarval_snprintf(char *buf, size_t len, tarval *tv)
       if (tv==tarval_P_void) return snprintf(buf, len, "NULL");
       if (tv->value != NULL)
         if (tarval_is_entity(tv)) {
-          if (get_entity_peculiarity((entity *)tv->value) == existent)
+          if (get_entity_peculiarity((entity *)tv->value) == peculiarity_existent)
             return snprintf(buf, len, "%s%s%s", prefix, get_entity_ld_name((entity *)tv->value), suffix);
           else {
 	    if (mode_info->mode_output == TVO_NATIVE)

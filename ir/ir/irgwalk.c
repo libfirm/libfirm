@@ -350,16 +350,19 @@ typedef struct walk_env {
 } walk_env;
 
 /* Walk to all constant expressions in this entity. */
-static void walk_entity(entity *ent, void *env) {
+static void walk_entity(entity *ent, void *env)
+{
   walk_env *my_env = (walk_env *)env;
-  if (get_entity_variability(ent) != uninitialized) {
+
+  if (get_entity_variability(ent) != variability_uninitialized) {
     if (is_atomic_entity(ent)) {
       irg_walk(get_atomic_ent_value(ent), my_env->pre, my_env->post, my_env->env);
-    } else {
-      int i;
-      for (i = 0; i < get_compound_ent_n_values(ent); i++) {
+    }
+    else {
+      int i, n = get_compound_ent_n_values(ent);
+
+      for (i = 0; i < n; i++)
 	irg_walk(get_compound_ent_value(ent, i), my_env->pre, my_env->post, my_env->env);
-      }
     }
   }
 }

@@ -110,7 +110,7 @@ static int constant_on_wrong_irg(ir_node *n) {
  * Check if constants node are NOT on the constant IR graph.
  */
 static int constants_on_wrong_irg(entity *ent) {
-  if (get_entity_variability(ent) == uninitialized) return 0;
+  if (get_entity_variability(ent) == variability_uninitialized) return 0;
 
   if (is_compound_entity(ent)) {
     int i;
@@ -124,7 +124,7 @@ static int constants_on_wrong_irg(entity *ent) {
       return constant_on_wrong_irg(get_atomic_ent_value(ent));
     else
       assert((is_class_type(get_entity_owner(ent)) &&
-	      get_class_peculiarity(get_entity_owner(ent)) == description) &&
+	      get_class_peculiarity(get_entity_owner(ent)) == peculiarity_description) &&
 	     "Value in constant atomic entity not set.");
   }
   return 0;

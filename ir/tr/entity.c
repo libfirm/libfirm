@@ -78,27 +78,29 @@ new_entity (type *owner, ident *name, type *type)
   res->owner = owner;
   res->name = name;
   res->type = type;
+
   if (get_type_tpop(type) == type_method)
-    res->allocation = static_allocated;
+    res->allocation = allocation_static;
   else
-    res->allocation = automatic_allocated;
-  res->visibility = local;
+    res->allocation = allocation_automatic;
+
+  res->visibility = visibility_local;
   res->offset = -1;
   if (is_method_type(type)) {
-    res->variability = constant;
+    res->variability = variability_constant;
     rem = current_ir_graph;
     current_ir_graph = get_const_code_irg();
     res->value = new_Const(mode_P_mach, new_tarval_from_entity(res, mode_P_mach));
     current_ir_graph = rem;
   } else {
-    res->variability = uninitialized;
-    res->value = NULL;
+    res->variability = variability_uninitialized;
+    res->value  = NULL;
     res->values = NULL;
   }
-  res->peculiarity = existent;
-  res->volatility = non_volatile;
-  res->ld_name = NULL;
-  res->overwrites = NEW_ARR_F(entity *, 1);
+  res->peculiarity   = peculiarity_existent;
+  res->volatility    = volatility_non_volatile;
+  res->ld_name       = NULL;
+  res->overwrites    = NEW_ARR_F(entity *, 1);
   res->overwrittenby = NEW_ARR_F(entity *, 1);
 
   res->irg = NULL;
@@ -287,10 +289,10 @@ const char *get_allocation_name(ent_allocation all)
 {
 #define X(a)	case a: return #a
   switch (all) {
-    X(automatic_allocated);
-    X(parameter_allocated);
-    X(dynamic_allocated);
-    X(static_allocated);
+    X(allocation_automatic);
+    X(allocation_parameter);
+    X(allocation_dynamic);
+    X(allocation_static);
     default: return "BAD VALUE";
   }
 #undef X
@@ -304,9 +306,9 @@ get_entity_visibility (entity *ent) {
 
 INLINE void
 set_entity_visibility (entity *ent, ent_visibility vis) {
-  if (vis != local)
-    assert((ent->allocation == static_allocated) ||
-	   (ent->allocation == automatic_allocated));
+  if (vis != visibility_local)
+    assert((ent->allocation == allocation_static) ||
+	   (ent->allocation == allocation_automatic));
   /* @@@ Test that the owner type is not local, but how??
          && get_class_visibility(get_entity_owner(ent)) != local));*/
   ent->visibility = vis;
@@ -317,9 +319,9 @@ const char *get_visibility_name(ent_visibility vis)
 {
 #define X(a)	case a: return #a
   switch (vis) {
-    X(local);
-    X(external_visible);
-    X(external_allocated);
+    X(visibility_local);
+    X(visibility_external_visible);
+    X(visibility_external_allocated);
     default: return "BAD VALUE";
   }
 #undef X
@@ -331,17 +333,20 @@ get_entity_variability (entity *ent) {
 }
 
 INLINE void
-set_entity_variability (entity *ent, ent_variability var){
-  if (var == part_constant)
+set_entity_variability (entity *ent, ent_variability var)
+{
+  if (var == variability_part_constant)
     assert(is_class_type(ent->type) || is_struct_type(ent->type));
+
   if ((is_compound_type(ent->type)) &&
-      (ent->variability == uninitialized) && (var != uninitialized)) {
+      (ent->variability == variability_uninitialized) && (var != variability_uninitialized)) {
     /* Allocate datastructures for constant values */
     ent->values = NEW_ARR_F(ir_node *, 1);
     ent->val_paths = NEW_ARR_F(compound_graph_path *, 1);
   }
+
   if ((is_compound_type(ent->type)) &&
-      (var == uninitialized) && (ent->variability != uninitialized)) {
+      (var == variability_uninitialized) && (ent->variability != variability_uninitialized)) {
     /* Free datastructures for constant values */
     DEL_ARR_F(ent->values);
     DEL_ARR_F(ent->val_paths);
@@ -354,10 +359,10 @@ const char *get_variability_name(ent_variability var)
 {
 #define X(a)	case a: return #a
   switch (var) {
-    X(uninitialized);
-    X(initialized);
-    X(part_constant);
-    X(constant);
+    X(variability_uninitialized);
+    X(variability_initialized);
+    X(variability_part_constant);
+    X(variability_constant);
     default: return "BAD VALUE";
   }
 #undef X
@@ -380,8 +385,8 @@ const char *get_volatility_name(ent_volatility var)
 {
 #define X(a)	case a: return #a
   switch (var) {
-    X(non_volatile);
-    X(is_volatile);
+    X(volatility_non_volatile);
+    X(volatility_is_volatile);
     default: return "BAD VALUE";
   }
 #undef X
@@ -406,9 +411,9 @@ const char *get_peculiarity_name(peculiarity var)
 {
 #define X(a)	case a: return #a
   switch (var) {
-    X(description);
-    X(inherited);
-    X(existent);
+    X(peculiarity_description);
+    X(peculiarity_inherited);
+    X(peculiarity_existent);
     default: return "BAD VALUE";
   }
 #undef X
@@ -416,16 +421,19 @@ const char *get_peculiarity_name(peculiarity var)
 
 /* Set has no effect for existent entities of type method. */
 INLINE ir_node *
-get_atomic_ent_value(entity *ent) {
-  assert(ent); assert(is_atomic_entity(ent));
-  assert((ent->variability != uninitialized));
+get_atomic_ent_value(entity *ent)
+{
+  assert(ent);
+  assert(is_atomic_entity(ent));
+  assert(ent->variability != variability_uninitialized);
   return ent->value;
 }
 
 INLINE void
 set_atomic_ent_value(entity *ent, ir_node *val) {
-  assert(ent && is_atomic_entity(ent) && (ent->variability != uninitialized));
-  if ((is_method_type(ent->type)) && (ent->peculiarity==existent)) return;
+  assert(ent && is_atomic_entity(ent) && (ent->variability != variability_uninitialized));
+  if (is_method_type(ent->type) && (ent->peculiarity == peculiarity_existent))
+    return;
   ent->value = val;
 }
 
@@ -520,40 +528,40 @@ set_compound_graph_path_node(compound_graph_path *gr, int pos, entity *node) {
    the compound. */
 INLINE void
 add_compound_ent_value_w_path(entity *ent, ir_node *val, compound_graph_path *path) {
-  assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
+  assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
   ARR_APP1 (ir_node *, ent->values, val);
   ARR_APP1 (compound_graph_path *, ent->val_paths, path);
 }
 
 INLINE void
 set_compound_ent_value_w_path(entity *ent, ir_node *val, compound_graph_path *path, int pos) {
-  assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
+  assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
   ent->values[pos+1] = val;
   ent->val_paths[pos+1] = path;
 }
 
 INLINE int
 get_compound_ent_n_values(entity *ent) {
-  assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
+  assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
   return (ARR_LEN (ent->values))-1;
 }
 
 INLINE ir_node  *
 get_compound_ent_value(entity *ent, int pos) {
-  assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
+  assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
   return ent->values[pos+1];
 }
 
 INLINE compound_graph_path *
 get_compound_ent_value_path(entity *ent, int pos) {
-  assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
+  assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
   return ent->val_paths[pos+1];
 }
 
 void
 remove_compound_ent_value(entity *ent, entity *value_ent) {
   int i;
-  assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
+  assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
   for (i = 1; i < (ARR_LEN (ent->val_paths)); i++) {
     compound_graph_path *path = ent->val_paths[i];
     if (path->nodes[path->len-1] == value_ent) {
@@ -570,7 +578,7 @@ remove_compound_ent_value(entity *ent, entity *value_ent) {
 
 INLINE void
 add_compound_ent_value(entity *ent, ir_node *val, entity *member) {
-  assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
+  assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
   compound_graph_path *path = new_compound_graph_path(get_entity_owner(ent), 1);
   path->nodes[0] = member;
   add_compound_ent_value_w_path(ent, val, path);
@@ -583,7 +591,7 @@ INLINE void
 copy_and_add_compound_ent_value(entity *ent, ir_node *val, entity *member) {
   ir_graph *rem = current_ir_graph;
 
-  assert(get_entity_variability(ent) != uninitialized);
+  assert(get_entity_variability(ent) != variability_uninitialized);
   current_ir_graph = get_const_code_irg();
 
   val = copy_const_value(val);
@@ -594,14 +602,14 @@ copy_and_add_compound_ent_value(entity *ent, ir_node *val, entity *member) {
 /* Copies the value i of the entity to current_block in current_ir_graph.
 ir_node *
 copy_compound_ent_value(entity *ent, int pos) {
-  assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
+  assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
   return copy_const_value(ent->values[pos+1]);
   }*/
 
 INLINE entity   *
 get_compound_ent_value_member(entity *ent, int pos) {
   compound_graph_path *path;
-  assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
+  assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
   path = get_compound_ent_value_path(ent, pos);
   assert(path->len == 1);
 
@@ -611,7 +619,7 @@ get_compound_ent_value_member(entity *ent, int pos) {
 INLINE void
 set_compound_ent_value(entity *ent, ir_node *val, entity *member, int pos) {
   compound_graph_path *path;
-  assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
+  assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
   path = get_compound_ent_value_path(ent, pos);
   set_compound_graph_path_node(path, 0, member);
   set_compound_ent_value_w_path(ent, val, path, pos);
@@ -629,7 +637,7 @@ set_array_entity_values(entity *ent, tarval **values, int num_vals) {
   /* One bound is sufficient, the nunmber of constant fields makes the
      size. */
   assert(get_array_lower_bound (arrtp, 0) || get_array_upper_bound (arrtp, 0));
-  assert(get_entity_variability(ent) != uninitialized);
+  assert(get_entity_variability(ent) != variability_uninitialized);
   current_ir_graph = get_const_code_irg();
 
   for (i = 0; i < num_vals; i++) {
@@ -783,7 +791,7 @@ set_entity_irg(entity *ent, ir_graph *irg) {
    * aber erhalten bleiben soll. */
   /* assert (irg); */
   assert (is_method_type(ent->type));
-  assert (ent->peculiarity == existent);
+  assert (ent->peculiarity == peculiarity_existent);
   ent->irg = irg;
 }
 
@@ -832,6 +840,7 @@ void        mark_entity_visited(entity *ent) {
 INLINE bool entity_visited(entity *ent) {
   return get_entity_visited(ent) >= type_visited;
 }
+
 INLINE bool entity_not_visited(entity *ent) {
   return get_entity_visited(ent) < type_visited;
 }

@@ -49,13 +49,13 @@ static eset * entities = NULL;
  * übergebenene (dynamischen) Typ überschreibt. */
 static entity * get_implementation(type * class, entity * method) {
   int i;
-  if (get_entity_peculiarity(method) != description &&
+  if (get_entity_peculiarity(method) != peculiarity_description &&
       get_entity_owner(method) == class) {
     return method;
   }
   for (i = get_entity_n_overwrittenby(method) - 1; i >= 0; --i) {
     entity * e = get_entity_overwrittenby(method, i);
-    if (get_entity_peculiarity(e) != description && get_entity_owner(e) == class) {
+    if (get_entity_peculiarity(e) != peculiarity_description && get_entity_owner(e) == class) {
       return e;
     }
   }
@@ -81,10 +81,10 @@ entity *get_inherited_methods_implementation(entity *inh_meth) {
   } else {
     assert(0 && "Complex constant values not supported -- adress of method should be straight constant!");
   }
-  if (impl_meth && (get_entity_peculiarity(impl_meth) != existent)) {
+  if (impl_meth && (get_entity_peculiarity(impl_meth) != peculiarity_existent)) {
     printf("this_meth: "); DDMEO(inh_meth);
     printf("impl meth: "); DDMEO(impl_meth);
-    assert(!impl_meth || get_entity_peculiarity(impl_meth) == existent);
+    assert(!impl_meth || get_entity_peculiarity(impl_meth) == peculiarity_existent);
   }
   return impl_meth? impl_meth : inh_meth;
 }
@@ -99,8 +99,8 @@ entity *get_inherited_methods_implementation(entity *inh_meth) {
    Cycle-free, therefore must terminate. */
 void collect_impls(entity *method, eset *set, int *size, bool *open) {
   int i;
-  if (get_entity_peculiarity(method) == existent) {
-    if (get_entity_visibility(method) == external_allocated) {
+  if (get_entity_peculiarity(method) == peculiarity_existent) {
+    if (get_entity_visibility(method) == visibility_external_allocated) {
       assert(get_entity_irg(method) == NULL);
       *open = true;
     } else {
@@ -111,10 +111,10 @@ void collect_impls(entity *method, eset *set, int *size, bool *open) {
       }
     }
   }
-  if (get_entity_peculiarity(method) == inherited) {
+  if (get_entity_peculiarity(method) == peculiarity_inherited) {
     entity *impl_ent = get_inherited_methods_implementation(method);
     assert(impl_ent && "no implementation for inherited entity");
-    if (get_entity_visibility(impl_ent) == external_allocated) {
+    if (get_entity_visibility(impl_ent) == visibility_external_allocated) {
       assert(get_entity_irg(impl_ent) == NULL);
       *open = true;
     } else {
@@ -193,7 +193,7 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
       pmap_entry * entry = pmap_find(ldname_map, (void *) get_SymConst_ptrinfo(node));
       if (entry != NULL) { /* Method is declared in the compiled code */
 	entity * ent = entry->value;
-	if (get_opt_normalize() && (get_entity_visibility(ent) != external_allocated)) { /* Meth. is defined */
+	if (get_opt_normalize() && (get_entity_visibility(ent) != visibility_external_allocated)) { /* Meth. is defined */
 	  ir_node *new_node;
 	  assert(get_entity_irg(ent));
 	  set_irg_current_block(current_ir_graph, get_nodes_Block(node));
@@ -210,14 +210,14 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
 	(get_irn_op(skip_Proj(get_Sel_ptr(node))) == op_Alloc)) {
       ir_node *new_node;
       /* We know which method will be called, no dispatch necessary. */
-      assert(get_entity_peculiarity(ent) != description);
+      assert(get_entity_peculiarity(ent) != peculiarity_description);
       set_irg_current_block(current_ir_graph, get_nodes_Block(node));
       /* @@@ Is this correct?? Alloc could reference a subtype of the owner
 	 of Sel that overwrites the method referenced in Sel. */
       new_node = copy_const_value(get_atomic_ent_value(ent));              DBG_OPT_POLY_ALLOC;
       exchange (node, new_node);
     } else {
-      assert(get_entity_peculiarity(ent) != inherited);
+      assert(get_entity_peculiarity(ent) != peculiarity_inherited);
       if (!eset_contains(entities, ent)) {
 	/* Entity noch nicht behandelt. Alle (intern oder extern)
 	 * implementierten Methoden suchen, die diese Entity
@@ -231,7 +231,7 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
 	 * ausführbar und nicht erreichbar. */
 	/* Gib eine Warnung aus wenn die Entitaet eine Beschreibung ist
 	   fuer die es keine Implementierung gibt. */
-	if (get_entity_peculiarity(ent) == description) {
+	if (get_entity_peculiarity(ent) == peculiarity_description) {
 	  /* @@@ GL Methode um Fehler anzuzeigen aufrufen! */
 	  printf("WARNING: Calling method description %s in method %s which has "
 		  "no implementation!\n", get_entity_name(ent),
@@ -283,7 +283,7 @@ static void sel_methods_init(void) {
     entity * ent = get_irg_ent(get_irp_irg(i));
     /* Nur extern sichtbare Methode können überhaupt mit SymConst
      * aufgerufen werden. */
-    if (get_entity_visibility(ent) != local) {
+    if (get_entity_visibility(ent) != visibility_local) {
       pmap_insert(ldname_map, (void *) get_entity_ld_ident(ent), ent);
     }
   }
@@ -414,7 +414,7 @@ static void callee_ana_node(ir_node * node, eset * methods) {
     /* interne Methode */
     entity * ent = tarval_to_entity(get_Const_tarval(node));
     assert(ent && is_method_type(get_entity_type(ent)));
-    if (get_entity_visibility(ent) != external_allocated) {
+    if (get_entity_visibility(ent) != visibility_external_allocated) {
       assert(get_entity_irg(ent));
       eset_insert(methods, ent);
     } else {
@@ -669,7 +669,7 @@ static entity ** get_free_methods(void) {
     ir_graph * irg = get_irp_irg(i);
     entity * ent = get_irg_ent(irg);
     /* insert "external visible" methods. */
-    if (get_entity_visibility(ent) != local) {
+    if (get_entity_visibility(ent) != visibility_local) {
       eset_insert(set, ent);
     }
     irg_walk_graph(irg, NULL, (irg_walk_func *) free_ana_walker, set);

@@ -78,7 +78,7 @@ void gc_irgs(int n_keep, entity ** keep_arr) {
     entity * ent = get_irg_ent(irg);
     if (get_entity_link(ent) != MARK) {
       remove_irp_irg(irg);
-      set_entity_peculiarity(ent, description);
+      set_entity_peculiarity(ent, peculiarity_description);
     }
     set_entity_link(ent, NULL);
   }

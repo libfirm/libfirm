@@ -402,15 +402,15 @@ void    remove_class_supertype(type *clss, type *supertype);
 
 /** This enumeration flags the peculiarity of entities and types. */
 typedef enum peculiarity {
-  description,     /**< Represents only a description.  The entity/type is never
-	  	      allocated, no code/data exists for this entity/type. */
-  inherited,       /**< Describes explicitly that other entities are
- 		      inherited to the owner of this entity.
- 		      Overwrites must refer to at least one other
- 		      entity.  If this is a method entity there exists
- 		      no irg for this entity, only for one of the
- 		      overwritten ones. */
-  existent         /**< The entity/type (can) exist. */
+  peculiarity_description,     /**< Represents only a description.  The entity/type is never
+	  	                    allocated, no code/data exists for this entity/type. */
+  peculiarity_inherited,       /**< Describes explicitly that other entities are
+ 		                    inherited to the owner of this entity.
+ 		                    Overwrites must refer to at least one other
+ 		                    entity.  If this is a method entity there exists
+ 		                    no irg for this entity, only for one of the
+ 		                    overwritten ones. */
+  peculiarity_existent         /**< The entity/type (can) exist. */
 } peculiarity;
 
 /* The peculiarity of the class.  The enumeration peculiarity is defined
