@@ -104,7 +104,7 @@ edge: {sourcename: "n316" targetname: "n316n291" label: "1" class:16 priority:10
 
 graph: { title: "n281"  label: "Block 281" status:clustered color:yellow
 edge: {sourcename: "n281" targetname: "n280" label: "0" class:13 priority:60 color:red}
-backedge: {sourcename: "n281" targetname: "n608" label: "1" linestyle:dashed class:13 priority:60 color:red}
+backedge: {sourcename: "n281" targetname: "n611" label: "1" linestyle:dashed class:13 priority:60 color:red}
 node: {title: "n320" label: "PhiM  320"  info1: "Phi 320
   mode:    M
   visited: 32
@@ -113,14 +113,14 @@ node: {title: "n320" label: "PhiM  320"  info1: "Phi 320
   pred nodes:
     -1:    Block 281
      0:    Proj 274
-     1:    Proj 605
+     1:    Proj 608
   Private Attributes:
   backedges:
   in loop 576 with depth 1
 "
 color: green}
 edge: {sourcename: "n320" targetname: "n274" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n320" targetname: "n605" label: "1" class:17 priority:10 color:blue}
+edge: {sourcename: "n320" targetname: "n608" label: "1" class:17 priority:10 color:blue}
 node: {title: "n287" label: "ProjX 0 287"  info1: "Proj 287
   mode:    X
   visited: 32
@@ -210,7 +210,7 @@ node: {title: "n321" label: "PhiIs  321"  info1: "Phi 321
   pred nodes:
     -1:    Block 281
      0:    0x0 278
-     1:    Add 581
+     1:    Add 584
   Private Attributes:
   backedges:
   in loop 574 with depth 1
@@ -229,7 +229,7 @@ node: {title: "n321n278" label: "0x0Is  278"  info1: "0x0 278
 "
 color: yellow}
 edge: {sourcename: "n321" targetname: "n321n278" label: "0" class:16 priority:10}
-edge: {sourcename: "n321" targetname: "n581" label: "1" class:16 priority:10}
+edge: {sourcename: "n321" targetname: "n584" label: "1" class:16 priority:10}
 }
 
 graph: { title: "n277"  label: "Block 277" status:clustered color:yellow
@@ -247,165 +247,165 @@ node: {title: "n280" label: "Jmp  280"  info1: "Jmp 280
 }
 }
 
-graph: { title: "n611"  label: "Block 611" status:clustered color:yellow
-edge: {sourcename: "n611" targetname: "n607" label: "0" class:13 priority:60 color:red}
-node: {title: "n605" label: "ProjM 0 605"  info1: "Proj 605
+graph: { title: "n581"  label: "Block 581" status:clustered color:yellow
+edge: {sourcename: "n581" targetname: "n610" label: "0" class:13 priority:60 color:red}
+node: {title: "n608" label: "ProjM 0 608"  info1: "Proj 608
   mode:    M
   visited: 32
   irg:     LOOP_UNROLL_EXAMPLE_m4
   arity:   1
   pred nodes:
-    -1:    Block 611
-     0:    Store 602
+    -1:    Block 581
+     0:    Store 605
   Private Attributes:
 "
 color: yellow}
-edge: {sourcename: "n605" targetname: "n602" label: "0" class:17 priority:10 color:blue}
-node: {title: "n602" label: "Store  602"  info1: "Store 602
+edge: {sourcename: "n608" targetname: "n605" label: "0" class:17 priority:10 color:blue}
+node: {title: "n605" label: "Store  605"  info1: "Store 605
   mode:    T
   visited: 32
   irg:     LOOP_UNROLL_EXAMPLE_m4
   arity:   3
   pred nodes:
-    -1:    Block 611
-     0:    Proj 593
-     1:    Add 599
-     2:    Add 581
+    -1:    Block 581
+     0:    Proj 596
+     1:    Add 602
+     2:    Add 584
   Private Attributes:
   pinned state: op_pin_state_pinned
   volatility: volatility_non_volatile
 "
 }
-edge: {sourcename: "n602" targetname: "n593" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n605" targetname: "n596" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n605" targetname: "n602" label: "1" class:1  priority:50}
+edge: {sourcename: "n605" targetname: "n584" label: "2" class:1  priority:50}
+node: {title: "n596" label: "ProjM 0 596"  info1: "Proj 596
+  mode:    M
+  visited: 32
+  irg:     LOOP_UNROLL_EXAMPLE_m4
+  arity:   1
+  pred nodes:
+    -1:    Block 581
+     0:    Store 593
+  Private Attributes:
+"
+color: yellow}
+edge: {sourcename: "n596" targetname: "n593" label: "0" class:17 priority:10 color:blue}
+node: {title: "n593" label: "Store  593"  info1: "Store 593
+  mode:    T
+  visited: 32
+  irg:     LOOP_UNROLL_EXAMPLE_m4
+  arity:   3
+  pred nodes:
+    -1:    Block 581
+     0:    Proj 607
+     1:    Add 590
+     2:    Add 584
+  Private Attributes:
+  pinned state: op_pin_state_pinned
+  volatility: volatility_non_volatile
+"
+}
+edge: {sourcename: "n593" targetname: "n607" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n593" targetname: "n590" label: "1" class:1  priority:50}
+edge: {sourcename: "n593" targetname: "n584" label: "2" class:1  priority:50}
+node: {title: "n590" label: "AddP  590"  info1: "Add 590
+  mode:    P
+  visited: 32
+  irg:     LOOP_UNROLL_EXAMPLE_m4
+  arity:   2
+  pred nodes:
+    -1:    Block 581
+     0:    Mul 587
+     1:    SymC &a 279
+  Private Attributes:
+"
+}
+node: {title: "n590n279" label: "SymC &a  279"  info1: "SymC &a 279
+  mode:    P
+  visited: 32
+  irg:     LOOP_UNROLL_EXAMPLE_m4
+  arity:   0
+  pred nodes:
+    -1:    Block 267
+  Private Attributes:
+  in loop 573 with depth 0
+  kind:   addr_ent
+  entity: entity GlobalType.a (263)
+
+  type of value: type_unknown
+"
+}
+edge: {sourcename: "n590" targetname: "n587" label: "0" class:1  priority:50}
+edge: {sourcename: "n590" targetname: "n590n279" label: "1" class:16 priority:10}
+node: {title: "n587" label: "MulIs  587"  info1: "Mul 587
+  mode:    Is
+  visited: 32
+  irg:     LOOP_UNROLL_EXAMPLE_m4
+  arity:   2
+  pred nodes:
+    -1:    Block 581
+     0:    0x8 292
+     1:    Add 584
+  Private Attributes:
+"
+}
+node: {title: "n587n292" label: "0x8Is  292"  info1: "0x8 292
+  mode:    Is
+  visited: 32
+  irg:     LOOP_UNROLL_EXAMPLE_m4
+  arity:   0
+  pred nodes:
+    -1:    Block 267
+  Private Attributes:
+  in loop 573 with depth 0
+  Const of type type_unknown
+"
+color: yellow}
+edge: {sourcename: "n587" targetname: "n587n292" label: "0" class:16 priority:10}
+edge: {sourcename: "n587" targetname: "n584" label: "1" class:1  priority:50}
+node: {title: "n602" label: "AddP  602"  info1: "Add 602
+  mode:    P
+  visited: 32
+  irg:     LOOP_UNROLL_EXAMPLE_m4
+  arity:   2
+  pred nodes:
+    -1:    Block 581
+     0:    SymC &a 279
+     1:    Mul 599
+  Private Attributes:
+"
+}
+node: {title: "n602n279" label: "SymC &a  279"  info1: "SymC &a 279
+  mode:    P
+  visited: 32
+  irg:     LOOP_UNROLL_EXAMPLE_m4
+  arity:   0
+  pred nodes:
+    -1:    Block 267
+  Private Attributes:
+  in loop 573 with depth 0
+  kind:   addr_ent
+  entity: entity GlobalType.a (263)
+
+  type of value: type_unknown
+"
+}
+edge: {sourcename: "n602" targetname: "n602n279" label: "0" class:16 priority:10}
 edge: {sourcename: "n602" targetname: "n599" label: "1" class:1  priority:50}
-edge: {sourcename: "n602" targetname: "n581" label: "2" class:1  priority:50}
-node: {title: "n593" label: "ProjM 0 593"  info1: "Proj 593
-  mode:    M
-  visited: 32
-  irg:     LOOP_UNROLL_EXAMPLE_m4
-  arity:   1
-  pred nodes:
-    -1:    Block 611
-     0:    Store 590
-  Private Attributes:
-"
-color: yellow}
-edge: {sourcename: "n593" targetname: "n590" label: "0" class:17 priority:10 color:blue}
-node: {title: "n590" label: "Store  590"  info1: "Store 590
-  mode:    T
-  visited: 32
-  irg:     LOOP_UNROLL_EXAMPLE_m4
-  arity:   3
-  pred nodes:
-    -1:    Block 611
-     0:    Proj 604
-     1:    Add 587
-     2:    Add 581
-  Private Attributes:
-  pinned state: op_pin_state_pinned
-  volatility: volatility_non_volatile
-"
-}
-edge: {sourcename: "n590" targetname: "n604" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n590" targetname: "n587" label: "1" class:1  priority:50}
-edge: {sourcename: "n590" targetname: "n581" label: "2" class:1  priority:50}
-node: {title: "n587" label: "AddP  587"  info1: "Add 587
-  mode:    P
-  visited: 32
-  irg:     LOOP_UNROLL_EXAMPLE_m4
-  arity:   2
-  pred nodes:
-    -1:    Block 611
-     0:    Mul 584
-     1:    SymC &a 279
-  Private Attributes:
-"
-}
-node: {title: "n587n279" label: "SymC &a  279"  info1: "SymC &a 279
-  mode:    P
-  visited: 32
-  irg:     LOOP_UNROLL_EXAMPLE_m4
-  arity:   0
-  pred nodes:
-    -1:    Block 267
-  Private Attributes:
-  in loop 573 with depth 0
-  kind:   addr_ent
-  entity: entity GlobalType.a (263)
-
-  type of value: type_unknown
-"
-}
-edge: {sourcename: "n587" targetname: "n584" label: "0" class:1  priority:50}
-edge: {sourcename: "n587" targetname: "n587n279" label: "1" class:16 priority:10}
-node: {title: "n584" label: "MulIs  584"  info1: "Mul 584
+node: {title: "n599" label: "MulIs  599"  info1: "Mul 599
   mode:    Is
   visited: 32
   irg:     LOOP_UNROLL_EXAMPLE_m4
   arity:   2
   pred nodes:
-    -1:    Block 611
-     0:    0x8 292
-     1:    Add 581
-  Private Attributes:
-"
-}
-node: {title: "n584n292" label: "0x8Is  292"  info1: "0x8 292
-  mode:    Is
-  visited: 32
-  irg:     LOOP_UNROLL_EXAMPLE_m4
-  arity:   0
-  pred nodes:
-    -1:    Block 267
-  Private Attributes:
-  in loop 573 with depth 0
-  Const of type type_unknown
-"
-color: yellow}
-edge: {sourcename: "n584" targetname: "n584n292" label: "0" class:16 priority:10}
-edge: {sourcename: "n584" targetname: "n581" label: "1" class:1  priority:50}
-node: {title: "n599" label: "AddP  599"  info1: "Add 599
-  mode:    P
-  visited: 32
-  irg:     LOOP_UNROLL_EXAMPLE_m4
-  arity:   2
-  pred nodes:
-    -1:    Block 611
-     0:    SymC &a 279
-     1:    Mul 596
-  Private Attributes:
-"
-}
-node: {title: "n599n279" label: "SymC &a  279"  info1: "SymC &a 279
-  mode:    P
-  visited: 32
-  irg:     LOOP_UNROLL_EXAMPLE_m4
-  arity:   0
-  pred nodes:
-    -1:    Block 267
-  Private Attributes:
-  in loop 573 with depth 0
-  kind:   addr_ent
-  entity: entity GlobalType.a (263)
-
-  type of value: type_unknown
-"
-}
-edge: {sourcename: "n599" targetname: "n599n279" label: "0" class:16 priority:10}
-edge: {sourcename: "n599" targetname: "n596" label: "1" class:1  priority:50}
-node: {title: "n596" label: "MulIs  596"  info1: "Mul 596
-  mode:    Is
-  visited: 32
-  irg:     LOOP_UNROLL_EXAMPLE_m4
-  arity:   2
-  pred nodes:
-    -1:    Block 611
+    -1:    Block 581
      0:    0x4 291
-     1:    Add 581
+     1:    Add 584
   Private Attributes:
 "
 }
-node: {title: "n596n291" label: "0x4Is  291"  info1: "0x4 291
+node: {title: "n599n291" label: "0x4Is  291"  info1: "0x4 291
   mode:    Is
   visited: 32
   irg:     LOOP_UNROLL_EXAMPLE_m4
@@ -417,31 +417,31 @@ node: {title: "n596n291" label: "0x4Is  291"  info1: "0x4 291
   Const of type type_unknown
 "
 color: yellow}
-edge: {sourcename: "n596" targetname: "n596n291" label: "0" class:16 priority:10}
-edge: {sourcename: "n596" targetname: "n581" label: "1" class:1  priority:50}
-node: {title: "n608" label: "Jmp  608"  info1: "Jmp 608
+edge: {sourcename: "n599" targetname: "n599n291" label: "0" class:16 priority:10}
+edge: {sourcename: "n599" targetname: "n584" label: "1" class:1  priority:50}
+node: {title: "n611" label: "Jmp  611"  info1: "Jmp 611
   mode:    X
   visited: 32
   irg:     LOOP_UNROLL_EXAMPLE_m4
   arity:   0
   pred nodes:
-    -1:    Block 611
+    -1:    Block 581
   Private Attributes:
 "
 }
-node: {title: "n581" label: "AddIs  581"  info1: "Add 581
+node: {title: "n584" label: "AddIs  584"  info1: "Add 584
   mode:    Is
   visited: 32
   irg:     LOOP_UNROLL_EXAMPLE_m4
   arity:   2
   pred nodes:
-    -1:    Block 611
+    -1:    Block 581
      0:    0x1 290
-     1:    Add 580
+     1:    Add 583
   Private Attributes:
 "
 }
-node: {title: "n581n290" label: "0x1Is  290"  info1: "0x1 290
+node: {title: "n584n290" label: "0x1Is  290"  info1: "0x1 290
   mode:    Is
   visited: 32
   irg:     LOOP_UNROLL_EXAMPLE_m4
@@ -453,169 +453,169 @@ node: {title: "n581n290" label: "0x1Is  290"  info1: "0x1 290
   Const of type type_unknown
 "
 color: yellow}
-edge: {sourcename: "n581" targetname: "n581n290" label: "0" class:16 priority:10}
-edge: {sourcename: "n581" targetname: "n580" label: "1" class:16 priority:10}
+edge: {sourcename: "n584" targetname: "n584n290" label: "0" class:16 priority:10}
+edge: {sourcename: "n584" targetname: "n583" label: "1" class:16 priority:10}
 }
 
-graph: { title: "n610"  label: "Block 610" status:clustered color:yellow
-edge: {sourcename: "n610" targetname: "n606" label: "0" class:13 priority:60 color:red}
-node: {title: "n604" label: "ProjM 0 604"  info1: "Proj 604
+graph: { title: "n580"  label: "Block 580" status:clustered color:yellow
+edge: {sourcename: "n580" targetname: "n609" label: "0" class:13 priority:60 color:red}
+node: {title: "n607" label: "ProjM 0 607"  info1: "Proj 607
   mode:    M
   visited: 32
   irg:     LOOP_UNROLL_EXAMPLE_m4
   arity:   1
   pred nodes:
-    -1:    Block 610
-     0:    Store 601
+    -1:    Block 580
+     0:    Store 604
   Private Attributes:
 "
 color: yellow}
-edge: {sourcename: "n604" targetname: "n601" label: "0" class:17 priority:10 color:blue}
-node: {title: "n601" label: "Store  601"  info1: "Store 601
+edge: {sourcename: "n607" targetname: "n604" label: "0" class:17 priority:10 color:blue}
+node: {title: "n604" label: "Store  604"  info1: "Store 604
   mode:    T
   visited: 32
   irg:     LOOP_UNROLL_EXAMPLE_m4
   arity:   3
   pred nodes:
-    -1:    Block 610
-     0:    Proj 592
-     1:    Add 598
-     2:    Add 580
+    -1:    Block 580
+     0:    Proj 595
+     1:    Add 601
+     2:    Add 583
   Private Attributes:
   pinned state: op_pin_state_pinned
   volatility: volatility_non_volatile
 "
 }
-edge: {sourcename: "n601" targetname: "n592" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n604" targetname: "n595" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n604" targetname: "n601" label: "1" class:1  priority:50}
+edge: {sourcename: "n604" targetname: "n583" label: "2" class:1  priority:50}
+node: {title: "n595" label: "ProjM 0 595"  info1: "Proj 595
+  mode:    M
+  visited: 32
+  irg:     LOOP_UNROLL_EXAMPLE_m4
+  arity:   1
+  pred nodes:
+    -1:    Block 580
+     0:    Store 592
+  Private Attributes:
+"
+color: yellow}
+edge: {sourcename: "n595" targetname: "n592" label: "0" class:17 priority:10 color:blue}
+node: {title: "n592" label: "Store  592"  info1: "Store 592
+  mode:    T
+  visited: 32
+  irg:     LOOP_UNROLL_EXAMPLE_m4
+  arity:   3
+  pred nodes:
+    -1:    Block 580
+     0:    Proj 606
+     1:    Add 589
+     2:    Add 583
+  Private Attributes:
+  pinned state: op_pin_state_pinned
+  volatility: volatility_non_volatile
+"
+}
+edge: {sourcename: "n592" targetname: "n606" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n592" targetname: "n589" label: "1" class:1  priority:50}
+edge: {sourcename: "n592" targetname: "n583" label: "2" class:1  priority:50}
+node: {title: "n589" label: "AddP  589"  info1: "Add 589
+  mode:    P
+  visited: 32
+  irg:     LOOP_UNROLL_EXAMPLE_m4
+  arity:   2
+  pred nodes:
+    -1:    Block 580
+     0:    Mul 586
+     1:    SymC &a 279
+  Private Attributes:
+"
+}
+node: {title: "n589n279" label: "SymC &a  279"  info1: "SymC &a 279
+  mode:    P
+  visited: 32
+  irg:     LOOP_UNROLL_EXAMPLE_m4
+  arity:   0
+  pred nodes:
+    -1:    Block 267
+  Private Attributes:
+  in loop 573 with depth 0
+  kind:   addr_ent
+  entity: entity GlobalType.a (263)
+
+  type of value: type_unknown
+"
+}
+edge: {sourcename: "n589" targetname: "n586" label: "0" class:1  priority:50}
+edge: {sourcename: "n589" targetname: "n589n279" label: "1" class:16 priority:10}
+node: {title: "n586" label: "MulIs  586"  info1: "Mul 586
+  mode:    Is
+  visited: 32
+  irg:     LOOP_UNROLL_EXAMPLE_m4
+  arity:   2
+  pred nodes:
+    -1:    Block 580
+     0:    0x8 292
+     1:    Add 583
+  Private Attributes:
+"
+}
+node: {title: "n586n292" label: "0x8Is  292"  info1: "0x8 292
+  mode:    Is
+  visited: 32
+  irg:     LOOP_UNROLL_EXAMPLE_m4
+  arity:   0
+  pred nodes:
+    -1:    Block 267
+  Private Attributes:
+  in loop 573 with depth 0
+  Const of type type_unknown
+"
+color: yellow}
+edge: {sourcename: "n586" targetname: "n586n292" label: "0" class:16 priority:10}
+edge: {sourcename: "n586" targetname: "n583" label: "1" class:1  priority:50}
+node: {title: "n601" label: "AddP  601"  info1: "Add 601
+  mode:    P
+  visited: 32
+  irg:     LOOP_UNROLL_EXAMPLE_m4
+  arity:   2
+  pred nodes:
+    -1:    Block 580
+     0:    SymC &a 279
+     1:    Mul 598
+  Private Attributes:
+"
+}
+node: {title: "n601n279" label: "SymC &a  279"  info1: "SymC &a 279
+  mode:    P
+  visited: 32
+  irg:     LOOP_UNROLL_EXAMPLE_m4
+  arity:   0
+  pred nodes:
+    -1:    Block 267
+  Private Attributes:
+  in loop 573 with depth 0
+  kind:   addr_ent
+  entity: entity GlobalType.a (263)
+
+  type of value: type_unknown
+"
+}
+edge: {sourcename: "n601" targetname: "n601n279" label: "0" class:16 priority:10}
 edge: {sourcename: "n601" targetname: "n598" label: "1" class:1  priority:50}
-edge: {sourcename: "n601" targetname: "n580" label: "2" class:1  priority:50}
-node: {title: "n592" label: "ProjM 0 592"  info1: "Proj 592
-  mode:    M
-  visited: 32
-  irg:     LOOP_UNROLL_EXAMPLE_m4
-  arity:   1
-  pred nodes:
-    -1:    Block 610
-     0:    Store 589
-  Private Attributes:
-"
-color: yellow}
-edge: {sourcename: "n592" targetname: "n589" label: "0" class:17 priority:10 color:blue}
-node: {title: "n589" label: "Store  589"  info1: "Store 589
-  mode:    T
-  visited: 32
-  irg:     LOOP_UNROLL_EXAMPLE_m4
-  arity:   3
-  pred nodes:
-    -1:    Block 610
-     0:    Proj 603
-     1:    Add 586
-     2:    Add 580
-  Private Attributes:
-  pinned state: op_pin_state_pinned
-  volatility: volatility_non_volatile
-"
-}
-edge: {sourcename: "n589" targetname: "n603" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n589" targetname: "n586" label: "1" class:1  priority:50}
-edge: {sourcename: "n589" targetname: "n580" label: "2" class:1  priority:50}
-node: {title: "n586" label: "AddP  586"  info1: "Add 586
-  mode:    P
-  visited: 32
-  irg:     LOOP_UNROLL_EXAMPLE_m4
-  arity:   2
-  pred nodes:
-    -1:    Block 610
-     0:    Mul 583
-     1:    SymC &a 279
-  Private Attributes:
-"
-}
-node: {title: "n586n279" label: "SymC &a  279"  info1: "SymC &a 279
-  mode:    P
-  visited: 32
-  irg:     LOOP_UNROLL_EXAMPLE_m4
-  arity:   0
-  pred nodes:
-    -1:    Block 267
-  Private Attributes:
-  in loop 573 with depth 0
-  kind:   addr_ent
-  entity: entity GlobalType.a (263)
-
-  type of value: type_unknown
-"
-}
-edge: {sourcename: "n586" targetname: "n583" label: "0" class:1  priority:50}
-edge: {sourcename: "n586" targetname: "n586n279" label: "1" class:16 priority:10}
-node: {title: "n583" label: "MulIs  583"  info1: "Mul 583
+node: {title: "n598" label: "MulIs  598"  info1: "Mul 598
   mode:    Is
   visited: 32
   irg:     LOOP_UNROLL_EXAMPLE_m4
   arity:   2
   pred nodes:
-    -1:    Block 610
-     0:    0x8 292
-     1:    Add 580
-  Private Attributes:
-"
-}
-node: {title: "n583n292" label: "0x8Is  292"  info1: "0x8 292
-  mode:    Is
-  visited: 32
-  irg:     LOOP_UNROLL_EXAMPLE_m4
-  arity:   0
-  pred nodes:
-    -1:    Block 267
-  Private Attributes:
-  in loop 573 with depth 0
-  Const of type type_unknown
-"
-color: yellow}
-edge: {sourcename: "n583" targetname: "n583n292" label: "0" class:16 priority:10}
-edge: {sourcename: "n583" targetname: "n580" label: "1" class:1  priority:50}
-node: {title: "n598" label: "AddP  598"  info1: "Add 598
-  mode:    P
-  visited: 32
-  irg:     LOOP_UNROLL_EXAMPLE_m4
-  arity:   2
-  pred nodes:
-    -1:    Block 610
-     0:    SymC &a 279
-     1:    Mul 595
-  Private Attributes:
-"
-}
-node: {title: "n598n279" label: "SymC &a  279"  info1: "SymC &a 279
-  mode:    P
-  visited: 32
-  irg:     LOOP_UNROLL_EXAMPLE_m4
-  arity:   0
-  pred nodes:
-    -1:    Block 267
-  Private Attributes:
-  in loop 573 with depth 0
-  kind:   addr_ent
-  entity: entity GlobalType.a (263)
-
-  type of value: type_unknown
-"
-}
-edge: {sourcename: "n598" targetname: "n598n279" label: "0" class:16 priority:10}
-edge: {sourcename: "n598" targetname: "n595" label: "1" class:1  priority:50}
-node: {title: "n595" label: "MulIs  595"  info1: "Mul 595
-  mode:    Is
-  visited: 32
-  irg:     LOOP_UNROLL_EXAMPLE_m4
-  arity:   2
-  pred nodes:
-    -1:    Block 610
+    -1:    Block 580
      0:    0x4 291
-     1:    Add 580
+     1:    Add 583
   Private Attributes:
 "
 }
-node: {title: "n595n291" label: "0x4Is  291"  info1: "0x4 291
+node: {title: "n598n291" label: "0x4Is  291"  info1: "0x4 291
   mode:    Is
   visited: 32
   irg:     LOOP_UNROLL_EXAMPLE_m4
@@ -627,31 +627,31 @@ node: {title: "n595n291" label: "0x4Is  291"  info1: "0x4 291
   Const of type type_unknown
 "
 color: yellow}
-edge: {sourcename: "n595" targetname: "n595n291" label: "0" class:16 priority:10}
-edge: {sourcename: "n595" targetname: "n580" label: "1" class:1  priority:50}
-node: {title: "n607" label: "Jmp  607"  info1: "Jmp 607
+edge: {sourcename: "n598" targetname: "n598n291" label: "0" class:16 priority:10}
+edge: {sourcename: "n598" targetname: "n583" label: "1" class:1  priority:50}
+node: {title: "n610" label: "Jmp  610"  info1: "Jmp 610
   mode:    X
   visited: 32
   irg:     LOOP_UNROLL_EXAMPLE_m4
   arity:   0
   pred nodes:
-    -1:    Block 610
+    -1:    Block 580
   Private Attributes:
 "
 }
-node: {title: "n580" label: "AddIs  580"  info1: "Add 580
+node: {title: "n583" label: "AddIs  583"  info1: "Add 583
   mode:    Is
   visited: 32
   irg:     LOOP_UNROLL_EXAMPLE_m4
   arity:   2
   pred nodes:
-    -1:    Block 610
+    -1:    Block 580
      0:    0x1 290
-     1:    Add 579
+     1:    Add 582
   Private Attributes:
 "
 }
-node: {title: "n580n290" label: "0x1Is  290"  info1: "0x1 290
+node: {title: "n583n290" label: "0x1Is  290"  info1: "0x1 290
   mode:    Is
   visited: 32
   irg:     LOOP_UNROLL_EXAMPLE_m4
@@ -663,85 +663,85 @@ node: {title: "n580n290" label: "0x1Is  290"  info1: "0x1 290
   Const of type type_unknown
 "
 color: yellow}
-edge: {sourcename: "n580" targetname: "n580n290" label: "0" class:16 priority:10}
-edge: {sourcename: "n580" targetname: "n579" label: "1" class:16 priority:10}
+edge: {sourcename: "n583" targetname: "n583n290" label: "0" class:16 priority:10}
+edge: {sourcename: "n583" targetname: "n582" label: "1" class:16 priority:10}
 }
 
-graph: { title: "n609"  label: "Block 609" status:clustered color:yellow
-edge: {sourcename: "n609" targetname: "n307" label: "0" class:13 priority:60 color:red}
-node: {title: "n603" label: "ProjM 0 603"  info1: "Proj 603
+graph: { title: "n579"  label: "Block 579" status:clustered color:yellow
+edge: {sourcename: "n579" targetname: "n307" label: "0" class:13 priority:60 color:red}
+node: {title: "n606" label: "ProjM 0 606"  info1: "Proj 606
   mode:    M
   visited: 32
   irg:     LOOP_UNROLL_EXAMPLE_m4
   arity:   1
   pred nodes:
-    -1:    Block 609
-     0:    Store 600
+    -1:    Block 579
+     0:    Store 603
   Private Attributes:
 "
 color: yellow}
-edge: {sourcename: "n603" targetname: "n600" label: "0" class:17 priority:10 color:blue}
-node: {title: "n600" label: "Store  600"  info1: "Store 600
+edge: {sourcename: "n606" targetname: "n603" label: "0" class:17 priority:10 color:blue}
+node: {title: "n603" label: "Store  603"  info1: "Store 603
   mode:    T
   visited: 32
   irg:     LOOP_UNROLL_EXAMPLE_m4
   arity:   3
   pred nodes:
-    -1:    Block 609
-     0:    Proj 591
-     1:    Add 597
-     2:    Add 579
+    -1:    Block 579
+     0:    Proj 594
+     1:    Add 600
+     2:    Add 582
   Private Attributes:
   pinned state: op_pin_state_pinned
   volatility: volatility_non_volatile
 "
 }
-edge: {sourcename: "n600" targetname: "n591" label: "0" class:14 priority:50 color:blue}
-edge: {sourcename: "n600" targetname: "n597" label: "1" class:1  priority:50}
-edge: {sourcename: "n600" targetname: "n579" label: "2" class:1  priority:50}
-node: {title: "n591" label: "ProjM 0 591"  info1: "Proj 591
+edge: {sourcename: "n603" targetname: "n594" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n603" targetname: "n600" label: "1" class:1  priority:50}
+edge: {sourcename: "n603" targetname: "n582" label: "2" class:1  priority:50}
+node: {title: "n594" label: "ProjM 0 594"  info1: "Proj 594
   mode:    M
   visited: 32
   irg:     LOOP_UNROLL_EXAMPLE_m4
   arity:   1
   pred nodes:
-    -1:    Block 609
-     0:    Store 588
+    -1:    Block 579
+     0:    Store 591
   Private Attributes:
 "
 color: yellow}
-edge: {sourcename: "n591" targetname: "n588" label: "0" class:17 priority:10 color:blue}
-node: {title: "n588" label: "Store  588"  info1: "Store 588
+edge: {sourcename: "n594" targetname: "n591" label: "0" class:17 priority:10 color:blue}
+node: {title: "n591" label: "Store  591"  info1: "Store 591
   mode:    T
   visited: 32
   irg:     LOOP_UNROLL_EXAMPLE_m4
   arity:   3
   pred nodes:
-    -1:    Block 609
+    -1:    Block 579
      0:    Proj 306
-     1:    Add 585
-     2:    Add 579
+     1:    Add 588
+     2:    Add 582
   Private Attributes:
   pinned state: op_pin_state_pinned
   volatility: volatility_non_volatile
 "
 }
-edge: {sourcename: "n588" targetname: "n306" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n588" targetname: "n585" label: "1" class:1  priority:50}
-edge: {sourcename: "n588" targetname: "n579" label: "2" class:1  priority:50}
-node: {title: "n585" label: "AddP  585"  info1: "Add 585
+edge: {sourcename: "n591" targetname: "n306" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n591" targetname: "n588" label: "1" class:1  priority:50}
+edge: {sourcename: "n591" targetname: "n582" label: "2" class:1  priority:50}
+node: {title: "n588" label: "AddP  588"  info1: "Add 588
   mode:    P
   visited: 32
   irg:     LOOP_UNROLL_EXAMPLE_m4
   arity:   2
   pred nodes:
-    -1:    Block 609
-     0:    Mul 582
+    -1:    Block 579
+     0:    Mul 585
      1:    SymC &a 279
   Private Attributes:
 "
 }
-node: {title: "n585n279" label: "SymC &a  279"  info1: "SymC &a 279
+node: {title: "n588n279" label: "SymC &a  279"  info1: "SymC &a 279
   mode:    P
   visited: 32
   irg:     LOOP_UNROLL_EXAMPLE_m4
@@ -756,21 +756,21 @@ node: {title: "n585n279" label: "SymC &a  279"  info1: "SymC &a 279
   type of value: type_unknown
 "
 }
-edge: {sourcename: "n585" targetname: "n582" label: "0" class:1  priority:50}
-edge: {sourcename: "n585" targetname: "n585n279" label: "1" class:16 priority:10}
-node: {title: "n582" label: "MulIs  582"  info1: "Mul 582
+edge: {sourcename: "n588" targetname: "n585" label: "0" class:1  priority:50}
+edge: {sourcename: "n588" targetname: "n588n279" label: "1" class:16 priority:10}
+node: {title: "n585" label: "MulIs  585"  info1: "Mul 585
   mode:    Is
   visited: 32
   irg:     LOOP_UNROLL_EXAMPLE_m4
   arity:   2
   pred nodes:
-    -1:    Block 609
+    -1:    Block 579
      0:    0x8 292
-     1:    Add 579
+     1:    Add 582
   Private Attributes:
 "
 }
-node: {title: "n582n292" label: "0x8Is  292"  info1: "0x8 292
+node: {title: "n585n292" label: "0x8Is  292"  info1: "0x8 292
   mode:    Is
   visited: 32
   irg:     LOOP_UNROLL_EXAMPLE_m4
@@ -782,21 +782,21 @@ node: {title: "n582n292" label: "0x8Is  292"  info1: "0x8 292
   Const of type type_unknown
 "
 color: yellow}
-edge: {sourcename: "n582" targetname: "n582n292" label: "0" class:16 priority:10}
-edge: {sourcename: "n582" targetname: "n579" label: "1" class:1  priority:50}
-node: {title: "n597" label: "AddP  597"  info1: "Add 597
+edge: {sourcename: "n585" targetname: "n585n292" label: "0" class:16 priority:10}
+edge: {sourcename: "n585" targetname: "n582" label: "1" class:1  priority:50}
+node: {title: "n600" label: "AddP  600"  info1: "Add 600
   mode:    P
   visited: 32
   irg:     LOOP_UNROLL_EXAMPLE_m4
   arity:   2
   pred nodes:
-    -1:    Block 609
+    -1:    Block 579
      0:    SymC &a 279
-     1:    Mul 594
+     1:    Mul 597
   Private Attributes:
 "
 }
-node: {title: "n597n279" label: "SymC &a  279"  info1: "SymC &a 279
+node: {title: "n600n279" label: "SymC &a  279"  info1: "SymC &a 279
   mode:    P
   visited: 32
   irg:     LOOP_UNROLL_EXAMPLE_m4
@@ -811,21 +811,21 @@ node: {title: "n597n279" label: "SymC &a  279"  info1: "SymC &a 279
   type of value: type_unknown
 "
 }
-edge: {sourcename: "n597" targetname: "n597n279" label: "0" class:16 priority:10}
-edge: {sourcename: "n597" targetname: "n594" label: "1" class:1  priority:50}
-node: {title: "n594" label: "MulIs  594"  info1: "Mul 594
+edge: {sourcename: "n600" targetname: "n600n279" label: "0" class:16 priority:10}
+edge: {sourcename: "n600" targetname: "n597" label: "1" class:1  priority:50}
+node: {title: "n597" label: "MulIs  597"  info1: "Mul 597
   mode:    Is
   visited: 32
   irg:     LOOP_UNROLL_EXAMPLE_m4
   arity:   2
   pred nodes:
-    -1:    Block 609
+    -1:    Block 579
      0:    0x4 291
-     1:    Add 579
+     1:    Add 582
   Private Attributes:
 "
 }
-node: {title: "n594n291" label: "0x4Is  291"  info1: "0x4 291
+node: {title: "n597n291" label: "0x4Is  291"  info1: "0x4 291
   mode:    Is
   visited: 32
   irg:     LOOP_UNROLL_EXAMPLE_m4
@@ -837,31 +837,31 @@ node: {title: "n594n291" label: "0x4Is  291"  info1: "0x4 291
   Const of type type_unknown
 "
 color: yellow}
-edge: {sourcename: "n594" targetname: "n594n291" label: "0" class:16 priority:10}
-edge: {sourcename: "n594" targetname: "n579" label: "1" class:1  priority:50}
-node: {title: "n606" label: "Jmp  606"  info1: "Jmp 606
+edge: {sourcename: "n597" targetname: "n597n291" label: "0" class:16 priority:10}
+edge: {sourcename: "n597" targetname: "n582" label: "1" class:1  priority:50}
+node: {title: "n609" label: "Jmp  609"  info1: "Jmp 609
   mode:    X
   visited: 32
   irg:     LOOP_UNROLL_EXAMPLE_m4
   arity:   0
   pred nodes:
-    -1:    Block 609
+    -1:    Block 579
   Private Attributes:
 "
 }
-node: {title: "n579" label: "AddIs  579"  info1: "Add 579
+node: {title: "n582" label: "AddIs  582"  info1: "Add 582
   mode:    Is
   visited: 32
   irg:     LOOP_UNROLL_EXAMPLE_m4
   arity:   2
   pred nodes:
-    -1:    Block 609
+    -1:    Block 579
      0:    0x1 290
      1:    Add 294
   Private Attributes:
 "
 }
-node: {title: "n579n290" label: "0x1Is  290"  info1: "0x1 290
+node: {title: "n582n290" label: "0x1Is  290"  info1: "0x1 290
   mode:    Is
   visited: 32
   irg:     LOOP_UNROLL_EXAMPLE_m4
@@ -873,8 +873,8 @@ node: {title: "n579n290" label: "0x1Is  290"  info1: "0x1 290
   Const of type type_unknown
 "
 color: yellow}
-edge: {sourcename: "n579" targetname: "n579n290" label: "0" class:16 priority:10}
-edge: {sourcename: "n579" targetname: "n294" label: "1" class:16 priority:10}
+edge: {sourcename: "n582" targetname: "n582n290" label: "0" class:16 priority:10}
+edge: {sourcename: "n582" targetname: "n294" label: "1" class:16 priority:10}
 }
 
 graph: { title: "n289"  label: "Block 289" status:clustered color:yellow
