@@ -1,0 +1,64 @@
+How to call the driver program IeeeCC754
+========================================
+
+Summary:
+
+IeeeCC754  -c {-s|-d|-l|-q|-m|{-e <int> -t <int> [-h]}}
+              -r {n|p|m|z}  -i -n {i|o|x|z|u|tiny|nan|inf|snz}
+              -f logfile  testfile
+
+IeeeCC754  -u -r {n|p|m|z} -i -n {i|o|x|z|u|tiny|nan|inf|snz}
+              -f logfile  testfile
+
+IeeeCC754  -o <file> {-s|-d|-l|-q|-m|{-e <int> -t <int> [-h]}}
+              -r {n|p|m|z}  -i -n {i|o|x|z|u|tiny|nan|inf|snz}
+              -f logfile  testfile
+
+The required argument 'testfile' is a file of test vectors in extended
+Coonen syntax (the default) or SUN-UCB format.
+
+The options of the driver program can be subdivided in three categories,
+listed below.
+
+(1) Options to specify the purpose of the run. Use precisely one of the
+    following three options:
+         -c : perform testing: file of test vectors is in Coonen syntax
+         -u : perform testing: file of test vectors is in SUN-UCB format
+         -o <file> : do not perform testing but only translate testdata from
+		     Coonen syntax to hexadecimal SUN-UCB format and output
+                     to <file>
+
+(2) Options to specify the precision and exponent range of the source (and
+    for some conversions also the destination) floating-point format, when
+    the file of test vectors is in extended Coonen syntax.
+    When the file of test vectors is in SUN-UCB format, the precision and
+    exponent range are specified in the testfile itself, and the options
+    below should be skipped.
+         -s : single precision (same as -e 8 -t 24 -h)
+         -d : double precision (same as -e 11 -t 53 -h)
+         -l : long double precision (same as -e 15 -t 64)
+         -q : quadruple precision (same as -e 15 -t 113 -h)
+         -m : 240 bit multiprecision (same as  -e 15 -t 240)
+         -e <int> : provide <int> bits to represent exponent
+         -t <int> : provide <int> bits precision
+         -h : leading bit is hidden
+         -ds : single precision destination
+         -dd : double precision destination
+         -dl : long double precision destination
+         -dq : quadruple precision destination
+         -dm : 240 bit multiprecision destination
+         -de <int> : size of destination exponent
+         -dt <int> : destination precision
+         -dh : leading bit is hidden in destination
+
+(3) Options to influence the actual testing phase (optional)
+         -r {n|p|m|z}: test only the specified rounding modes
+	 -n {i|o|x|z|u|tiny|nan|inf|snz}: do not test the specified
+                  exceptions, denormalized numbers, NaNs, signed
+                  infinities or signed zeroes
+         -j {o|u|i|z}: jump/skip test vectors raising the overflow, underflow,
+                  invalid or divide by zero exception
+	 -ieee: test conversions only within range specified by IEEE
+	 -i: idem as -ieee
+	 -f logfile: output log of testing to 'logfile'; the default value
+		  for 'logfile' is ieee.log
