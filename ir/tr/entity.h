@@ -30,7 +30,9 @@ typedef struct entity {
   ident *name;          /* name of this entity */
   // type_class *owner;    /* The class this entity belongs to */
   type *owner;          /* The class this entity belongs to */
-  ident *ld_name;       // don't know what this is good for.
+  ident *ld_name;       /* Unique name of this entity, i.e., the mangled
+                           name.  E.g., for a class `A' with field `a' this
+                           is the ident for `A_a'. */
   type *type;           /* The type of this entity, e.g., a method type, a
                            basic type of the language or a class itself */
   unsigned long visit;  /* visited counter for walks of the type information */

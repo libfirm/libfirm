@@ -16,7 +16,6 @@
 
 #define XX_USER(name) ident *id_##name;
 #define XX_INTERNAL(name, str) XX_USER(name)
-//#include "xx_ident.h"
 #undef XX_USER
 #undef XX_INTERNAL
 
@@ -91,7 +90,6 @@ id_init (void)
 
 #define XX_USER(name) id_##name = ID_FROM_STR(#name, sizeof(#name)- 1);
 #define XX_INTERNAL(name, str) id_##name = ID_FROM_STR((str), sizeof((str))-1);
-  //#include "xx_ident.h"
 #undef XX_USER
 #undef XX_INTERNAL
 }

@@ -173,17 +173,19 @@ dump_ir_node (ir_node *n)
     assert(n->attr.s.ent->kind == k_entity);
     xfprintf (F, "\"%I ", n->op->name);
     xfprintf (F, "%s\" ", id_to_str(n->attr.s.ent->name));
-    // xfprintf (F, "\"%I %I\" ", n->op->name, n->attr.s.ent); // GL: doesn't work for some reason.
+    /*  xdoesn't work for some reason.
+	fprintf (F, "\"%I %I\" ", n->op->name, n->attr.s.ent); */
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_SymConst:
     assert(get_kind(get_SymConst_type(n)) == k_type_class);
-      //assert(n->attr.i.type->kind == k_type_class);
+    /* assert(n->attr.i.type->kind == k_type_class); */
     assert(get_class_ident((type_class *)get_SymConst_type(n)));
-    //assert(n->attr.i.type->clss->name);
+    /* assert(n->attr.i.type->clss->name); */
     xfprintf (F, "\"%s ", id_to_str(get_class_ident((type_class *)get_SymConst_type(n))));
-    //xfprintf (F, "\"%s ", id_to_str(n->attr.i.type->name));
-    // xfprintf (F, "\"%N\" ", n->attr.i.type);  // GL: doesn't work for some reason.
+    /* xfprintf (F, "\"%s ", id_to_str(n->attr.i.type->name)); */
+    /* doesn't work for some reason. */
+    /* xfprintf (F, "\"%N\" ", n->attr.i.type); */
     switch (n->attr.i.num){
     case type_tag:
       xfprintf (F, "tag\" ");
@@ -541,7 +543,7 @@ dump_ir_graph_w_types (ir_graph *irg)
   vcg_open (irg, "-all");
 
   /* dump common ir graph */
-  //  irg_block_walk(irg->end, dump_ir_block, NULL, irg);
+  /*  irg_block_walk(irg->end, dump_ir_block, NULL, irg); */
   irg_walk(irg->end, dump_whole_node, NULL, NULL);
   /* dump type info */
   type_walk(irg, dump_type_info, NULL, NULL);

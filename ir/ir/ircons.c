@@ -742,7 +742,8 @@ new_Block (void)
   res->attr.block.matured = 0;
   set_Block_block_visit(res, 0);
 
-  // res = optimize (res); /* GL: only optimize if mature!!!! */
+  /* forget this optimization. use this only if mature !!!!
+  res = optimize (res); */
   ir_vrfy (res);
 
   /** create a new dynamic array, which stores all parameters in irnodes */

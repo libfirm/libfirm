@@ -137,8 +137,7 @@ long tarval_ord (tarval *, int *fail);
 
 int tarval_print (XP_PAR1, const xprintf_info *, XP_PARN);
 
-
-     /* Labeling of tarvals */
+/* Labeling of tarvals */
 label tarval_label (tarval *);
 void tarval_forall_labeled (int (*) (tarval *, void *), void *);
 

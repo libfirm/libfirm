@@ -190,7 +190,7 @@ computed_value (ir_node *n)
 	  }
 	}
       } else {
-        // printf(" # comp_val: Proj node, not optimized\n");
+        /* printf(" # comp_val: Proj node, not optimized\n"); */
       }
     }
     break;
@@ -392,7 +392,7 @@ equivalent_node (ir_node *n)
       }
 
       if (n_preds == 0) {	/* Phi of dead Region without predecessors. */
-        // GL: why not return new_Bad?
+        /* GL: why not return new_Bad? */
 	break;
       }
 
@@ -733,7 +733,7 @@ vt_cmp (const void *elt, const void *key)
     return 1;
 
   /* compare a->in[0..ins] with b->in[0..ins], i.e., include the block. */
-  // do if (*ain++ != *bin++) return 1; while (ins--);
+  /* do if (*ain++ != *bin++) return 1; while (ins--); */
   for (i = -1; i < get_irn_arity(a); i++)
     if (get_irn_n(a, i) != get_irn_n(b, i))
       return 1;
@@ -776,17 +776,17 @@ ir_node_hash (ir_node *node)
   unsigned h;
   int i;
 
-  // hash table value = 9*(9*(9*(9*(9*arity+in[0])+in[1])+ ...)+mode)+code
+  /* hash table value = 9*(9*(9*(9*(9*arity+in[0])+in[1])+ ...)+mode)+code */
   h = get_irn_arity(node);
 
-  // consider all in nodes... except the block.
+  /* consider all in nodes... except the block. */
   for (i = 0;  i < get_irn_arity(node);  i++) {
     h = 9*h + (unsigned long)get_irn_n(node, i);
   }
 
-  // ...mode,...
+  /* ...mode,... */
   h = 9*h + (unsigned long) get_irn_mode (node);
-  // ...and code
+  /* ...and code */
   h = 9*h + (unsigned long) get_irn_op (node);
 
   return h;
@@ -901,7 +901,7 @@ optimize (ir_node *n)
         /* evaluation was succesful -- replace the node. */
 	obstack_free (current_ir_graph->obst, n);
 	return new_Const (get_tv_mode (tv), tv);
-        // xprintf("* optimize: computed node %I\n", n->op->name);
+        /* xprintf("* optimize: computed node %I\n", n->op->name); */
       }
     }
   }
@@ -921,7 +921,7 @@ optimize (ir_node *n)
   /* identify found a cse, so deallocate the old node. */
   if (n != old_n) {
     obstack_free (current_ir_graph->obst, old_n);
-    // The AmRoq fiasco returns n here.  Martin's version doesn't.
+    /* The AmRoq fiasco returns n here.  Martin's version doesn't. */
   }
 
 #if 0
@@ -937,12 +937,12 @@ optimize (ir_node *n)
 
   /* Now we have a legal, useful node. Enter it in hash table for cse */
   if (get_opt_cse()) {
-    // aborts ??! set/pset can not handle several hash tables??!
-    // No, suddenly it works.
+    /* aborts ??! set/pset can not handle several hash tables??!
+       No, suddenly it works. */
     n = identify_remember (current_ir_graph->value_table, n);
   }
 
-#if 0  // GL: what's the use of this??
+#if 0  /* GL: what's the use of this?? */
   if ((current_ir_graph->state & irgs_building) && IR_KEEP_ALIVE (n)) {
     assert (~current_ir_graph->state & irgs_keep_alives_in_arr);
     pdeq_putr (current_ir_graph->keep.living, n);
@@ -965,7 +965,7 @@ optimize_in_place (ir_node *n)
 
   /* if not optimize return n */
   if (n == NULL) {
-    // Here this is possible.  Why?
+    /* Here this is possible.  Why? */
     return n;
   }
 
@@ -978,7 +978,7 @@ optimize_in_place (ir_node *n)
       if (tv != NULL) {
         /* evaluation was succesful -- replace the node. */
 	return new_Const (get_tv_mode (tv), tv);
-        // xprintf("* optimize: computed node %I\n", n->op->name);
+        /* xprintf("* optimize: computed node %I\n", n->op->name);*/
       }
     }
   }
@@ -997,7 +997,7 @@ optimize_in_place (ir_node *n)
 
   /* identify found a cse, so deallocate the old node. */
   if (n != old_n) {
-    // The AmRoq fiasco returns n here.  Martin's version doesn't.
+    /* The AmRoq fiasco returns n here.  Martin's version doesn't. */
   }
 
 #if 0
@@ -1013,8 +1013,8 @@ optimize_in_place (ir_node *n)
 
   /* Now we have a legal, useful node. Enter it in hash table for cse */
   if (get_opt_cse()) {
-    // aborts ??! set/pset can not handle several hash tables??!
-    // No, suddenly it works.
+    /* aborts ??! set/pset can not handle several hash tables??!
+       No, suddenly it works. */
     n = identify_remember (current_ir_graph->value_table, n);
   }
 

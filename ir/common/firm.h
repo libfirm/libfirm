@@ -3,7 +3,7 @@
 **
 ** Authors: Martin Trapp, Christian Schaefer
 **
-** firm.h:
+** firm.h: initialize the firm tree with all its components
 */
 
 # ifndef _FIRM_H_
