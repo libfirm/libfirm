@@ -1799,7 +1799,7 @@ vcg_close (FILE *F) {
 /** Routine to dump a graph, blocks as conventional nodes.
  */
 void
-dump_ir_graph (ir_graph *irg, char *suffix )
+dump_ir_graph (ir_graph *irg, const char *suffix )
 {
   FILE *f;
   ir_graph *rem;
@@ -1829,7 +1829,7 @@ dump_ir_graph (ir_graph *irg, char *suffix )
 
 
 void
-dump_ir_block_graph (ir_graph *irg, char *suffix)
+dump_ir_block_graph (ir_graph *irg, const char *suffix)
 {
   FILE *f;
   int i;
@@ -1857,7 +1857,7 @@ dump_ir_block_graph (ir_graph *irg, char *suffix)
 /** dumps a graph with type information
  */
 void
-dump_ir_graph_w_types (ir_graph *irg, char *suffix)
+dump_ir_graph_w_types (ir_graph *irg, const char *suffix)
 {
   FILE *f;
   ir_graph *rem = current_ir_graph;
@@ -1887,7 +1887,7 @@ dump_ir_graph_w_types (ir_graph *irg, char *suffix)
 }
 
 void
-dump_ir_block_graph_w_types (ir_graph *irg, char *suffix)
+dump_ir_block_graph_w_types (ir_graph *irg, const char *suffix)
 {
   FILE *f;
   int i;
@@ -1969,7 +1969,7 @@ dump_block_to_cfg(ir_node *block, void *env) {
 }
 
 void
-dump_cfg (ir_graph *irg, char *suffix)
+dump_cfg (ir_graph *irg, const char *suffix)
 {
   FILE *f;
   ir_graph *rem = current_ir_graph;
@@ -2005,11 +2005,11 @@ dump_cfg (ir_graph *irg, char *suffix)
 
 
 
-void dump_callgraph(char *filesuffix) {
+void dump_callgraph(const char *suffix) {
   FILE *F;
   int i, n_irgs = get_irp_n_irgs();
 
-  F = vcg_open_name("Callgraph", filesuffix);
+  F = vcg_open_name("Callgraph", suffix);
   dump_vcg_header(F, "Callgraph", NULL);
 
   for (i = 0; i < n_irgs; ++i) {
@@ -2034,7 +2034,7 @@ void dump_callgraph(char *filesuffix) {
 
 
 /* Dump all irgs in interprocedural view to a single file. */
-void dump_all_cg_block_graph(char *suffix) {
+void dump_all_cg_block_graph(const char *suffix) {
   FILE *f;
   int i;
   int rem_view = interprocedural_view;
@@ -2066,7 +2066,7 @@ void dump_all_cg_block_graph(char *suffix) {
 /***********************************************************************/
 
 void
-dump_type_graph (ir_graph *irg, char *suffix)
+dump_type_graph (ir_graph *irg, const char *suffix)
 {
   FILE *f;
   ir_graph *rem;
@@ -2093,7 +2093,7 @@ dump_type_graph (ir_graph *irg, char *suffix)
 }
 
 void
-dump_all_types (char *suffix)
+dump_all_types (const char *suffix)
 {
   FILE *f = vcg_open_name("All_types", suffix);
   dump_vcg_header(f, "All_types", NULL);
@@ -2103,7 +2103,7 @@ dump_all_types (char *suffix)
 }
 
 void
-dump_class_hierarchy (bool entities, char *suffix)
+dump_class_hierarchy (bool entities, const char *suffix)
 {
   FILE *f = vcg_open_name("class_hierarchy", suffix);
   h_env_t env;
@@ -2127,7 +2127,7 @@ dump_class_hierarchy (bool entities, char *suffix)
 /*  dump_ir_graph_w_types                                              */
 /***********************************************************************/
 
-void dump_all_ir_graphs(dump_graph_func *dmp_grph, char *suffix) {
+void dump_all_ir_graphs(dump_graph_func *dmp_grph, const char *suffix) {
   int i;
   for (i=0; i < get_irp_n_irgs(); i++) {
     dmp_grph(get_irp_irg(i), suffix);
@@ -2228,7 +2228,7 @@ void dump_loops_standalone(FILE *F, ir_loop *loop) {
   }
 }
 
-void dump_loop_tree(ir_graph *irg, char *suffix)
+void dump_loop_tree(ir_graph *irg, const char *suffix)
 {
   FILE *f;
   ir_graph *rem = current_ir_graph;
@@ -2254,7 +2254,7 @@ void dump_loop_tree(ir_graph *irg, char *suffix)
 
 #if CALLGRAPH_LOOP_TREE
 /* works, but the tree is meaningless. */
-void dump_callgraph_loop_tree(ir_loop *l, char *suffix) {
+void dump_callgraph_loop_tree(ir_loop *l, const char *suffix) {
   vcg_open_name("callgraph_looptree", suffix);
   dump_vcg_header("callgraph_looptree", "top_to_bottom");
   dump_loops_standalone(l);
@@ -2309,7 +2309,7 @@ void collect_nodeloop_external_nodes(ir_loop *loop, eset *loopnodes, eset *extno
   }
 }
 
-void dump_loop(ir_loop *l, char *suffix) {
+void dump_loop(ir_loop *l, const char *suffix) {
   FILE *F;
   char name[50];
   eset *loopnodes = eset_create();

@@ -63,7 +63,7 @@ extern char *dump_file_filter;
  *
  * @see turn_off_edge_labels()
  */
-void dump_ir_graph (ir_graph *irg, char *suffix);
+void dump_ir_graph (ir_graph *irg, const char *suffix);
 #define dump_cg_graph dump_ir_graph
 
 /**
@@ -83,12 +83,12 @@ void dump_ir_graph (ir_graph *irg, char *suffix);
  *
  * @see turn_off_edge_labels()
  */
-void dump_ir_block_graph (ir_graph *irg, char *suffix);
+void dump_ir_block_graph (ir_graph *irg, const char *suffix);
 #define dump_cg_block_graph dump_ir_block_graph
 
 /** Dumps all graphs in interprocedural view to a file named All_graphs.vcg.
  */
-void dump_all_cg_block_graph(char *suffix);
+void dump_all_cg_block_graph(const char *suffix);
 
 /**
  *  Dumps a firm graph and  all the type information needed for Calls,
@@ -105,7 +105,7 @@ void dump_all_cg_block_graph(char *suffix);
  *
  * @see turn_off_edge_labels()
  */
-void dump_ir_graph_w_types (ir_graph *irg, char *suffix);
+void dump_ir_graph_w_types (ir_graph *irg, const char *suffix);
 
 /**
  *  Dumps a firm graph and  all the type information needed for Calls,
@@ -123,14 +123,14 @@ void dump_ir_graph_w_types (ir_graph *irg, char *suffix);
  *
  * @see turn_off_edge_labels()
  */
-void dump_ir_block_graph_w_types (ir_graph *irg, char *suffix);
+void dump_ir_block_graph_w_types (ir_graph *irg, const char *suffix);
 
 /**
  *   The type of a walker function that is called for each graph.
  *
  *   @param irg   current visited graph
  */
-typedef void dump_graph_func(ir_graph *irg, char *suffix);
+typedef void dump_graph_func(ir_graph *irg, const char *suffix);
 
 /**
  *   A walker that calls a dumper for each graph.
@@ -150,7 +150,7 @@ typedef void dump_graph_func(ir_graph *irg, char *suffix);
  *
  * @see turn_off_edge_labels()
  */
-void dump_all_ir_graphs (dump_graph_func *dump_graph, char *suffix);
+void dump_all_ir_graphs (dump_graph_func *dump_graph, const char *suffix);
 
 
 /**
@@ -168,14 +168,14 @@ void dump_all_ir_graphs (dump_graph_func *dump_graph, char *suffix);
  *
  * @see turn_off_edge_labels()
  */
-void dump_cfg (ir_graph *irg, char *suffix);
+void dump_cfg (ir_graph *irg, const char *suffix);
 
 
 /** Dump the call graph.
  *
  * Dumps the callgraph to a file "callgraph"<filesuffix>".vcg".
  */
-void dump_callgraph(char *filesuffix);
+void dump_callgraph(const char *suffix);
 
 /**
  *  Dumps all the type information needed for Calls, Sels, ... in this graph.
@@ -191,7 +191,7 @@ void dump_callgraph(char *filesuffix);
  *
  * @see turn_off_edge_labels()
  */
-void dump_type_graph (ir_graph *irg, char *suffix);
+void dump_type_graph (ir_graph *irg, const char *suffix);
 
 /**
  *   Dumps all type information.
@@ -206,7 +206,7 @@ void dump_type_graph (ir_graph *irg, char *suffix);
  *
  * @see turn_off_edge_labels()
  */
-void dump_all_types (char *suffix);
+void dump_all_types (const char *suffix);
 
 /**
  *   Dumps the class hierarchy with or without entities.
@@ -224,7 +224,7 @@ void dump_all_types (char *suffix);
  *   is dumped along with the entities.
  *   Dumps to a file class_hierarchy.vcg
  */
-void dump_class_hierarchy (bool entities, char *suffix);
+void dump_class_hierarchy (bool entities, const char *suffix);
 
 
 /**
@@ -238,7 +238,7 @@ void dump_class_hierarchy (bool entities, char *suffix);
  * @arg irg     Dump the loop tree for this graph.
  * @arg suffix  Suffix to filename.
  */
-void dump_loop_tree(ir_graph *irg, char *suffix);
+void dump_loop_tree(ir_graph *irg, const char *suffix);
 
 /** Dumps the firm nodes in the sub-loop-tree of loop to a graph.
  *  Dumps the loop nodes if dump_loop_information() is set.
@@ -248,7 +248,7 @@ void dump_loop_tree(ir_graph *irg, char *suffix);
  *  @arg loop    Dump the loop tree for this loop.
  *  @arg suffix  Suffix to filename.
  */
-void dump_loop (ir_loop *l, char *suffix);
+void dump_loop (ir_loop *l, const char *suffix);
 
 /**
  *   Sets the vcg flag "display_edge_labels" to no.
