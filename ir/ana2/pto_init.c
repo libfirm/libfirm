@@ -80,7 +80,7 @@ static alloc_pto_t *new_alloc_pto (ir_node *alloc, int n_ctxs)
   alloc_pto->ptos = (pto_t**) obstack_alloc (pto_obst, n_ctxs * sizeof (pto_t*));
 
   for (i = 0; i < n_ctxs; i ++) {
-    desc_t *desc = new_name (tp, alloc);
+    desc_t *desc = new_name (tp, alloc, i);
     alloc_pto->ptos [i] = new_pto (alloc);
     qset_insert (alloc_pto->ptos [i]->values, desc);
   }
@@ -109,7 +109,7 @@ static pto_t* new_symconst_pto (ir_node *symconst)
   if (is_pointer_type (get_entity_type (ent))) {
     desc = new_ent_name (ent);
   } else if (is_class_type (get_entity_type (ent))) {
-    desc = new_name (get_entity_type (ent), symconst);
+    desc = new_name (get_entity_type (ent), symconst, -1);
   } else {
     fprintf (stderr, "%s: not handled: %s[%li] (\"%s\")\n",
              __FUNCTION__,
@@ -336,7 +336,7 @@ void fake_main_args (ir_graph *graph)
 
   assert (is_array_type (ctp));
 
-  desc_t *arg_desc = new_name (ctp, args [1]);
+  desc_t *arg_desc = new_name (ctp, args [1], -1);
   pto_t *arg_pto = new_pto (args [1]);
   /* todo: simulate 'store' to arg1[] ?!? */
   qset_insert (arg_pto->values, arg_desc);
@@ -400,7 +400,7 @@ void pto_init_graph (ir_graph *graph)
   const char *ent_name = (char*) get_entity_name (ent);
   const char *own_name = (char*) get_type_name (get_entity_owner (ent));
 
-  DBGPRINT (0, (stdout, "%s: init \"%s.%s\" for %i ctxs\n", __FUNCTION__,
+  DBGPRINT (2, (stdout, "%s: init \"%s.%s\" for %i ctxs\n", __FUNCTION__,
                 own_name, ent_name, n_ctxs));
 
   /* HERE ("start"); */
@@ -429,6 +429,9 @@ void pto_reset_graph_pto (ir_graph *graph, int ctx_idx)
 
 /*
   $Log$
+  Revision 1.10  2004/12/15 13:31:00  liekweg
+  store ctx idx in names
+
   Revision 1.9  2004/12/15 09:18:18  liekweg
   pto_name.c
 
