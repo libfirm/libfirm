@@ -20,6 +20,7 @@
 # include "array.h"
 
 #if 0
+static long long count = 0;
 #  define ANNOUNCE() printf(__FILE__": call no. %lld (%s)\n", count++, __FUNCTION__)
 #else
 #  define ANNOUNCE() ((void)0)
@@ -29,7 +30,6 @@
  * local values
  * * */
 
-static long long count = 0;
 
 /* dynamic array to hold all modes */
 static ir_mode * modes;
@@ -226,11 +226,18 @@ get_mode_sort(ir_mode* mode)
   return mode->sort;
 }
 
-int
-get_mode_size(ir_mode *mode)
+INLINE int
+get_mode_size_bits(ir_mode *mode)
 {
   ANNOUNCE();
   return mode->size;
+}
+
+int get_mode_size_bytes(ir_mode *mode) {
+  ANNOUNCE();
+  int size = get_mode_size_bits(mode);
+  if ((size % 8) != 0) return -1;
+  return size / 8;
 }
 
 int

@@ -148,8 +148,11 @@ const char *get_mode_name(ir_mode *mode);
 /* A coarse classification of the mode */
 mode_sort get_mode_sort(ir_mode *mode);
 
-/* The size of values of the mode in bits. */
-int get_mode_size(ir_mode *mode);
+/** The size of values of the mode in bits. */
+int get_mode_size_bits(ir_mode *mode);
+/** The size of values of the mode in bytes.  If the size is not
+    dividable by 8 returns -1. */
+int get_mode_size_bytes(ir_mode *mode);
 
 /* The alignment of values of the mode in bytes. */
 int get_mode_align(ir_mode *mode);
