@@ -25,6 +25,7 @@ enum firmstat_options_t {
   FIRMSTAT_ENABLED         = 0x00000001,	/**< enable statistics */
   FIRMSTAT_PATTERN_ENABLED = 0x00000002,	/**< enable pattern calculation */
   FIRMSTAT_COUNT_STRONG_OP = 0x00000004,	/**< if set, count Mul/Div/Mod/DivMod by constant */
+  FIRMSTAT_CSV_OUTPUT      = 0x10000000         /**< CSV output of some mini-statistic */
 };
 
 /**

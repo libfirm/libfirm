@@ -60,6 +60,8 @@ typedef struct _graph_entry_t {
   counter_t               cnt_got_inlined;		/**< number of times this graph was inlined */
   counter_t               cnt_strength_red;		/**< number of times strength reduction was successful on this graph */
   counter_t               cnt_edges;			/**< number of DF edges in this graph */
+  counter_t               cnt_all_calls;                /**< number of all calls */
+  counter_t               cnt_indirect_calls;           /**< number of indirect calls */
   HASH_MAP(opt_entry_t)   *opt_hash[STAT_OPT_MAX];	/**< hash maps containing opcode counter for optimizations */
   ir_graph                *irg;				/**< the graph of this object */
   entity                  *ent;				/**< the entity of this graph if one exists */

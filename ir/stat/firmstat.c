@@ -203,6 +203,8 @@ static void graph_clear_entry(graph_entry_t *elem)
   cnt_clr(&elem->cnt_got_inlined);
   cnt_clr(&elem->cnt_strength_red);
   cnt_clr(&elem->cnt_edges);
+  cnt_clr(&elem->cnt_all_calls);
+  cnt_clr(&elem->cnt_indirect_calls);
 }
 
 /**
@@ -220,6 +222,7 @@ static graph_entry_t *graph_get_entry(ir_graph *irg, pset *set)
   if (elem)
     return elem;
 
+  /* allocate a new one */
   elem = obstack_alloc(&status->cnts, sizeof(*elem));
 
   /* clear counter */
@@ -402,10 +405,12 @@ static void count_block_info(ir_node *node, graph_entry_t *graph)
 /**
  * update info on calls
  */
-static void count_call(ir_node *call, graph_entry_t *graph)
+static void update_call_stat(ir_node *call, graph_entry_t *graph)
 {
   ir_node *ptr = get_Call_ptr(call);
   entity *ent = NULL;
+
+  cnt_inc(&graph->cnt_all_calls);
 
   /* found a call, is not a leaf function */
   graph->is_leaf = 0;
@@ -418,6 +423,10 @@ static void count_call(ir_node *call, graph_entry_t *graph)
       if (get_entity_irg(ent) == graph->irg)
 	graph->is_recursive = 1;
     }
+  }
+  else {
+    /* indirect call */
+    cnt_inc(&graph->cnt_indirect_calls);
   }
 
   /* check, if it's a chain-call: Then, the call-block
@@ -442,7 +451,7 @@ static void count_call(ir_node *call, graph_entry_t *graph)
 /**
  * walker for reachable nodes count
  */
-static void count_nodes(ir_node *node, void *env)
+static void update_node_stat(ir_node *node, void *env)
 {
   graph_entry_t *graph = env;
   node_entry_t *entry;
@@ -458,15 +467,16 @@ static void count_nodes(ir_node *node, void *env)
   /* count block edges */
   count_block_info(node, graph);
 
-  /* check for leaf functions */
+  /* check for properties that depends on calls like recursion/leaf/indirect call */
   if (get_irn_op(node) == op_Call)
-    count_call(node, graph);
+    update_call_stat(node, graph);
 }
 
 /**
- * count all alive nodes and edges in a graph
+ * called for every graph when the graph is either deleted or stat_finish
+ * is called, must recalculate all statistic info
  */
-static void count_nodes_in_graph(graph_entry_t *global, graph_entry_t *graph)
+static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
 {
   node_entry_t *entry;
 
@@ -486,7 +496,7 @@ static void count_nodes_in_graph(graph_entry_t *global, graph_entry_t *graph)
       compute_doms(graph->irg);
 
   /* count the nodes in the graph */
-  irg_walk_graph(graph->irg, count_nodes, NULL, graph);
+  irg_walk_graph(graph->irg, update_node_stat, NULL, graph);
 
 #if 0
   entry = opcode_get_entry(op_Call, graph->opcode_hash);
@@ -639,13 +649,15 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
         fprintf(dmp->f, "\nIrg %p", (void *)entry->irg);
     }
 
-    fprintf(dmp->f, " %swalked %d over blocks %d:\n"
-                    " was inlined:   %d\n"
-		    " got inlined:   %d\n"
-		    " strength red:  %d\n"
-		    " leaf function: %s\n"
-		    " recursive    : %s\n"
-		    " chain call   : %s\n",
+    fprintf(dmp->f, " %swalked %u over blocks %u:\n"
+                    " was inlined   : %u\n"
+		    " got inlined   : %u\n"
+		    " strength red  : %u\n"
+		    " leaf function : %s\n"
+		    " recursive     : %s\n"
+		    " chain call    : %s\n"
+                    " calls         : %u\n"
+                    " indirect calls: %u\n",
         entry->is_deleted ? "DELETED " : "",
         entry->cnt_walked.cnt[0], entry->cnt_walked_blocks.cnt[0],
         entry->cnt_was_inlined.cnt[0],
@@ -653,7 +665,9 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 	entry->cnt_strength_red.cnt[0],
 	entry->is_leaf ? "YES" : "NO",
 	entry->is_recursive ? "YES" : "NO",
-	entry->is_chain_call ? "YES" : "NO"
+	entry->is_chain_call ? "YES" : "NO",
+        entry->cnt_all_calls.cnt[0],
+        entry->cnt_indirect_calls.cnt[0]
     );
   }
   else {
@@ -892,7 +906,9 @@ void init_stat(unsigned enable_options)
   }
 
   stat_register_dumper(&simple_dumper);
-  stat_register_dumper(&csv_dumper);
+
+  if (enable_options & FIRMSTAT_CSV_OUTPUT)
+    stat_register_dumper(&csv_dumper);
 
   /* initialize the pattern hash */
   stat_init_pattern_history(enable_options & FIRMSTAT_PATTERN_ENABLED);
@@ -1004,7 +1020,7 @@ void stat_new_graph(ir_graph *irg, entity *ent)
 }
 
 /*
- * A graph was deleted
+ * A graph will be deleted
  */
 void stat_free_graph(ir_graph *irg)
 {
@@ -1019,7 +1035,7 @@ void stat_free_graph(ir_graph *irg)
     graph->is_deleted = 1;
 
     /* count the nodes of the graph yet, it will be destroyed later */
-    count_nodes_in_graph(global, graph);
+    update_graph_stat(global, graph);
 
     /* count the DAG's */
 //    count_dags_in_graph(global, graph);
@@ -1311,7 +1327,7 @@ void stat_finish(const char *name)
 
       if (! entry->is_deleted) {
         /* the graph is still alive, count the nodes on it */
-        count_nodes_in_graph(global, entry);
+        update_graph_stat(global, entry);
 
         /* count the DAG's */
 //        count_dags_in_graph(global, entry);
@@ -1322,10 +1338,8 @@ void stat_finish(const char *name)
 
       dump_graph(entry);
 
-      /* clear the counter here:
-       * we need only the edge counter to be cleared, all others are cumulative
-       */
-      cnt_clr(&entry->cnt_edges);
+      /* clear the counter */
+      graph_clear_entry(entry);
     }
 
     /* dump global */
