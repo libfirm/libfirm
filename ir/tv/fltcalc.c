@@ -1227,12 +1227,12 @@ LLDBL fc_val_to_float(const void *val)
     mantissa0 |= sc_sub_bits(_mant(value), result_mantissa, byte_offset) << ((byte_offset-4)<<3);
 
 #ifdef HAVE_LONG_DOUBLE
-  mantissa0 &= 0x000FFFFF;  /* get rid of garbage */
   buildval.val.high = sign << 15;
   buildval.val.high |= exponent;
   buildval.val.mid = mantissa0;
   buildval.val.low = mantissa1;
 #else /* no long double */
+  mantissa0 &= 0x000FFFFF;  /* get rid of garbage */
   buildval.val.high = sign << 31;
   buildval.val.high |= exponent << 20;
   buildval.val.high |= mantissa0;
