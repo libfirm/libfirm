@@ -37,6 +37,7 @@
 #include "irloop_t.h"
 #include "irbackedge_t.h"
 #include "cgana.h"
+#include "trouts.h"
 
 #include "irflag_t.h"
 #include "irhooks.h"
