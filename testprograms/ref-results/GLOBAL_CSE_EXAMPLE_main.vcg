@@ -64,12 +64,14 @@ arity: 0
 node: {title: "n24" label: "ProjM 1 24"  info1: "mode:    M
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
+node was pinned in Block 24
 arity: 1
 "color: yellow}
 edge: {sourcename: "n24" targetname: "n19" label: "0" class:17 priority:10 color:blue}
 node: {title: "n46" label: "AddIs  46"  info1: "mode:    Is
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
+node was pinned in Block 46
 arity: 2
 "}
 edge: {sourcename: "n46" targetname: "n38" label: "0" class:16 priority:10}
@@ -77,12 +79,14 @@ edge: {sourcename: "n46" targetname: "n45" label: "1" class:16 priority:10}
 node: {title: "n45" label: "0x5Is  45"  info1: "mode:    Is
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
+node was pinned in Block 45
 arity: 0
 Const of type type_unknown
 "color: yellow}
 node: {title: "n38" label: "SubIs  38"  info1: "mode:    Is
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
+node was pinned in Block 38
 arity: 2
 "}
 edge: {sourcename: "n38" targetname: "n28" label: "0" class:16 priority:10}
@@ -90,6 +94,7 @@ edge: {sourcename: "n38" targetname: "n36" label: "1" class:16 priority:10}
 node: {title: "n36" label: "0x3Is  36"  info1: "mode:    Is
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
+node was pinned in Block 36
 arity: 0
 Const of type type_unknown
 "color: yellow}
@@ -126,6 +131,7 @@ arity: 0
 node: {title: "n33" label: "ProjX 0 33"  info1: "mode:    X
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
+node was pinned in Block 33
 arity: 1
 "color: yellow}
 edge: {sourcename: "n33" targetname: "n32" label: "0" class:13 priority:60 color:red}
@@ -141,18 +147,21 @@ arity: 0
 node: {title: "n34" label: "ProjX 1 34"  info1: "mode:    X
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
+node was pinned in Block 34
 arity: 1
 "color: yellow}
 edge: {sourcename: "n34" targetname: "n32" label: "0" class:13 priority:60 color:red}
 node: {title: "n31" label: "Projb Eq 31"  info1: "mode:    b
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
+node was pinned in Block 31
 arity: 1
 "color: yellow}
 edge: {sourcename: "n31" targetname: "n30" label: "0" class:1  priority:50}
 node: {title: "n30" label: "CmpT  30"  info1: "mode:    T
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
+node was pinned in Block 30
 arity: 2
 "}
 edge: {sourcename: "n30" targetname: "n28" label: "0" class:1  priority:50}
@@ -160,18 +169,21 @@ edge: {sourcename: "n30" targetname: "n29" label: "1" class:16 priority:10}
 node: {title: "n28" label: "ProjIs 0 28"  info1: "mode:    Is
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
+node was pinned in Block 28
 arity: 1
 "color: yellow}
 edge: {sourcename: "n28" targetname: "n25" label: "0" class:16 priority:10}
 node: {title: "n25" label: "ProjT 4 25"  info1: "mode:    T
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
+node was pinned in Block 25
 arity: 1
 "color: yellow}
 edge: {sourcename: "n25" targetname: "n19" label: "0" class:1  priority:50}
 node: {title: "n29" label: "0x2Is  29"  info1: "mode:    Is
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
+node was pinned in Block 29
 arity: 0
 Const of type type_unknown
 "color: yellow}
@@ -188,6 +200,7 @@ edge: {sourcename: "n32" targetname: "n31" label: "0" class:1  priority:50}
 node: {title: "n21" label: "ProjX 0 21"  info1: "mode:    X
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
+node was pinned in Block 21
 arity: 1
 "color: yellow}
 edge: {sourcename: "n21" targetname: "n19" label: "0" class:13 priority:60 color:red}
