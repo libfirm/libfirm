@@ -137,13 +137,15 @@ static void be_main_loop(void)
 
 void be_main(int argc, const char *argv[])
 {
+  assembler_t *gnu_assembler;
+  FILE *asm_output_file;
+
 	be_main_loop();
-	assembler_t *gnu_assembler = gnuasm_create_assembler();
-	FILE *asm_output_file = fopen("asm_output.asm", "w");
+	gnu_assembler = gnuasm_create_assembler();
+	asm_output_file = fopen("asm_output.asm", "w");
 
 	asm_dump_globals ( gnu_assembler );
 	gnuasm_dump ( gnu_assembler, asm_output_file );
 	gnuasm_delete_assembler ( gnu_assembler );
 	fclose(asm_output_file);
-
 }
