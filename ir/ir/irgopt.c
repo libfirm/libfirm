@@ -35,6 +35,7 @@
 # include "irbackedge_t.h"
 # include "irflag_t.h"
 # include "firmstat.h"
+# include "cgana.h"
 
 /* Defined in iropt.c */
 pset *new_identities (void);
@@ -453,9 +454,8 @@ dead_node_elimination(ir_graph *irg) {
 
   /* Handle graph state */
   assert(get_irg_phase_state(current_ir_graph) != phase_building);
-  assert(get_irg_callee_info_state(current_ir_graph) == irg_callee_info_none);
+  free_callee_info(current_ir_graph);
   free_outs(current_ir_graph);
-
   /* @@@ so far we loose loops when copying */
   free_loop_information(current_ir_graph);
 
@@ -1094,7 +1094,7 @@ void inline_small_irgs(ir_graph *irg, int size) {
   current_ir_graph = irg;
   /* Handle graph state */
   assert(get_irg_phase_state(current_ir_graph) != phase_building);
-  assert(get_irg_callee_info_state(current_ir_graph) == irg_callee_info_none);
+  free_callee_info(current_ir_graph);
 
   /* Find Call nodes to inline.
      (We can not inline during a walk of the graph, as inlineing the same
@@ -1211,7 +1211,7 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
   for (i = 0; i < n_irgs; ++i) {
     current_ir_graph = get_irp_irg(i);
     assert(get_irg_phase_state(current_ir_graph) != phase_building);
-    assert(get_irg_callee_info_state(current_ir_graph) == irg_callee_info_none);
+    free_callee_info(current_ir_graph);
 
     irg_walk(get_irg_end(current_ir_graph), NULL, collect_calls2,
          get_irg_link(current_ir_graph));

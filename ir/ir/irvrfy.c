@@ -14,6 +14,7 @@
 # include <config.h>
 #endif
 
+# include "irprog.h"
 # include "irgraph_t.h"
 # include "irvrfy.h"
 # include "irgwalk.h"
@@ -64,24 +65,6 @@ ir_node **get_irn_in(ir_node *node);
 static node_verification_t opt_do_node_verification = NODE_VERIFICATION_ON;
 static const char *bad_msg;
 
-
-/** Borrowed from interprete.c
-static entity *hunt_for_entity (ir_node *addr, ir_node *load) {
-  ir_op *op = get_irn_op(addr);
-  if (op == op_Sel)
-    return get_Sel_entity(addr);
-  if (op == op_Const) {
-    tarval *tv = get_Const_tarval(addr);
-    assert(tarval_is_entity(tv));
-    return get_tarval_entity(tv);
-  }
-
-  if(get_irn_opcode(load) == iro_Load)
-    return(NULL);
-  assert(0 && "unexpected address expression.");
-  return NULL;
-}
-*/
 /**
  * little helper for NULL modes
  */
@@ -681,14 +664,19 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
                      );
       break;
 
-    case iro_Const:
+  case iro_Const: {
+      tarval *tv = get_Const_tarval(n);
+      if (tarval_is_entity(tv))
+	  assert((get_irn_irg(n) == get_const_code_irg() ||
+		 get_entity_peculiarity(tarval_to_entity(tv)) != peculiarity_description) &&
+		 "descriptions have no address!");
       ASSERT_AND_RET(
                      /* Const: BB --> data */
                      (mode_is_data (mymode) ||
                       mymode == mode_b)      /* we want boolean constants for static evaluation */
                      ,"Const node", 0        /* of Cmp. */
                      );
-      break;
+     } break;
 
     case iro_SymConst:
       ASSERT_AND_RET(

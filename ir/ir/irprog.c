@@ -58,7 +58,7 @@ ir_prog *new_ir_prog (void) {
   /* res->obst      = (struct obstack *) xmalloc (sizeof (struct obstack)); */
   res->graphs = NEW_ARR_F (ir_graph *, 1);
   res->types  = NEW_ARR_F (type *, 1);
-  res->name   = NULL;
+  res->name   = new_id_from_str("no_name_set");
 
 #ifdef DEBUG_libfirm
   res->max_node_nr = 0;
