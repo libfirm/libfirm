@@ -96,14 +96,19 @@ node: {title: "e20" label: "ent PRIMA_set_a" color: yellow
 }
 edge: { sourcename: "e20" targetname: "t18"class: 3 label: "type" color: red}
 edge: { sourcename: "e20" targetname: "n19"label: "value 0"}
-node: {title: "n19" label: "SymC &set_a  19"  info1: "mode:    P
-visited: 8
-arity: 0
-kind: addr_ent
-entity PRIMA.set_a (20)
+node: {title: "n19" label: "SymC &set_a  19"  info1: "SymC &set_a 19
+  mode:    P
+  visited: 8
+  arity:   0
+  pred nodes:
+    -1:    Block 1
+  Private Attributes:
+  kind:   addr_ent
+  entity: entity PRIMA.set_a (20)
 
-SymConst of type: type_unknown
-"}
+  type of value: type_unknown
+"
+}
 node: {title: "t18" label: "method set_a" info1: "state: layout_fixed,
 mode: P,
 size: 32b,
@@ -142,14 +147,19 @@ node: {title: "e23" label: "ent PRIMA_c" color: yellow
 }
 edge: { sourcename: "e23" targetname: "t21"class: 3 label: "type" color: red}
 edge: { sourcename: "e23" targetname: "n22"label: "value 0"}
-node: {title: "n22" label: "SymC &c  22"  info1: "mode:    P
-visited: 8
-arity: 0
-kind: addr_ent
-entity PRIMA.c (23)
+node: {title: "n22" label: "SymC &c  22"  info1: "SymC &c 22
+  mode:    P
+  visited: 8
+  arity:   0
+  pred nodes:
+    -1:    Block 1
+  Private Attributes:
+  kind:   addr_ent
+  entity: entity PRIMA.c (23)
 
-SymConst of type: type_unknown
-"}
+  type of value: type_unknown
+"
+}
 node: {title: "t21" label: "method c" info1: "state: layout_fixed,
 mode: P,
 size: 32b,

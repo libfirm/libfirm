@@ -55,44 +55,72 @@ colorentry 125:  255 250  250
 graph: { title: "g29" label: "EMPTY_main" status:clustered color:white
 graph: { title: "n18"  label: "Block 18" status:clustered color:yellow
 edge: {sourcename: "n18" targetname: "n32" label: "0" class:13 priority:60 color:red}
-node: {title: "n19" label: "End  19"  info1: "mode:    X
-visited: 4
-irg:     EMPTY_main
-arity: 0
-"color: blue}
+node: {title: "n19" label: "End  19"  info1: "End 19
+  mode:    X
+  visited: 4
+  irg:     EMPTY_main
+  arity:   0
+  pred nodes:
+    -1:    Block 18
+  Private Attributes:
+"
+color: blue}
 }
 
 graph: { title: "n30"  label: "Block 30" status:clustered color:yellow
 edge: {sourcename: "n30" targetname: "n24" label: "0" class:13 priority:60 color:red}
-node: {title: "n32" label: "Return  32"  info1: "mode:    X
-visited: 4
-irg:     EMPTY_main
-arity: 1
-return in method of type EMPTY_main
-"}
+node: {title: "n32" label: "Return  32"  info1: "Return 32
+  mode:    X
+  visited: 4
+  irg:     EMPTY_main
+  arity:   1
+  pred nodes:
+    -1:    Block 30
+     0:    Proj 27
+  Private Attributes:
+  return in method of type EMPTY_main
+"
+}
 edge: {sourcename: "n32" targetname: "n27" label: "0" class:17 priority:10 color:blue}
 }
 
 graph: { title: "n20"  label: "Block 20" status:clustered color:yellow
 edge: {sourcename: "n20" targetname: "n24" label: "0" class:13 priority:60 color:red}
-node: {title: "n27" label: "ProjM 1 27"  info1: "mode:    M
-visited: 4
-irg:     EMPTY_main
-arity: 1
-"color: yellow}
+node: {title: "n27" label: "ProjM 1 27"  info1: "Proj 27
+  mode:    M
+  visited: 4
+  irg:     EMPTY_main
+  arity:   1
+  pred nodes:
+    -1:    Block 20
+     0:    Start 21
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n27" targetname: "n21" label: "0" class:17 priority:10 color:blue}
-node: {title: "n24" label: "ProjX 0 24"  info1: "mode:    X
-visited: 4
-irg:     EMPTY_main
-arity: 1
-"color: yellow}
+node: {title: "n24" label: "ProjX 0 24"  info1: "Proj 24
+  mode:    X
+  visited: 4
+  irg:     EMPTY_main
+  arity:   1
+  pred nodes:
+    -1:    Block 20
+     0:    Start 21
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n24" targetname: "n21" label: "0" class:13 priority:60 color:red}
-node: {title: "n21" label: "Start  21"  info1: "mode:    T
-visited: 4
-irg:     EMPTY_main
-arity: 0
-start of method of type EMPTY_main
-"color: blue}
+node: {title: "n21" label: "Start  21"  info1: "Start 21
+  mode:    T
+  visited: 4
+  irg:     EMPTY_main
+  arity:   0
+  pred nodes:
+    -1:    Block 20
+  Private Attributes:
+  start of method of type EMPTY_main
+"
+color: blue}
 }
 
 }

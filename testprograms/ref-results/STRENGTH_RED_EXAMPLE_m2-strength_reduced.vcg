@@ -55,28 +55,46 @@ colorentry 125:  255 250  250
 graph: { title: "g148" label: "STRENGTH_RED_EXAMPLE_m2" status:clustered color:white
 graph: { title: "n137"  label: "Block 137" status:clustered color:yellow
 edge: {sourcename: "n137" targetname: "n186" label: "0" class:13 priority:60 color:red}
-node: {title: "n138" label: "End  138"  info1: "mode:    X
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 1
-"color: blue}
+node: {title: "n138" label: "End  138"  info1: "End 138
+  mode:    X
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   1
+  pred nodes:
+    -1:    Block 137
+     0:    Phi 190
+  Private Attributes:
+"
+color: blue}
 }
 
 graph: { title: "n183"  label: "Block 183" status:clustered color:yellow
 edge: {sourcename: "n183" targetname: "n159" label: "0" class:13 priority:60 color:red}
-node: {title: "n186" label: "Return  186"  info1: "mode:    X
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 2
-return in method of type STRENGTH_RED_EXAMPLE_meth_tp
-  res 0 type: int
-"}
-node: {title: "n186n165" label: "0x4Is  165"  info1: "mode:    Is
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 0
-Const of type type_unknown
-"color: yellow}
+node: {title: "n186" label: "Return  186"  info1: "Return 186
+  mode:    X
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   2
+  pred nodes:
+    -1:    Block 183
+     0:    Phi 190
+     1:    0x4 165
+  Private Attributes:
+  return in method of type STRENGTH_RED_EXAMPLE_meth_tp
+    res 0 type: int
+"
+}
+node: {title: "n186n165" label: "0x4Is  165"  info1: "0x4 165
+  mode:    Is
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   0
+  pred nodes:
+    -1:    Block 139
+  Private Attributes:
+  Const of type type_unknown
+"
+color: yellow}
 edge: {sourcename: "n186" targetname: "n190" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n186" targetname: "n186n165" label: "1" class:16 priority:10}
 }
@@ -84,213 +102,400 @@ edge: {sourcename: "n186" targetname: "n186n165" label: "1" class:16 priority:10
 graph: { title: "n153"  label: "Block 153" status:clustered color:yellow
 edge: {sourcename: "n153" targetname: "n152" label: "0" class:13 priority:60 color:red}
 backedge: {sourcename: "n153" targetname: "n177" label: "1" linestyle:dashed class:13 priority:60 color:red}
-node: {title: "n190" label: "PhiM  190"  info1: "mode:    M
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 2 backedges:
-"color: green}
+node: {title: "n190" label: "PhiM  190"  info1: "Phi 190
+  mode:    M
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   2
+  pred nodes:
+    -1:    Block 153
+     0:    Proj 146
+     1:    Proj 175
+  Private Attributes:
+  backedges:
+"
+color: green}
 edge: {sourcename: "n190" targetname: "n146" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n190" targetname: "n175" label: "1" class:17 priority:10 color:blue}
-node: {title: "n573" label: "PhiIs  573"  info1: "mode:    Is
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 2 backedges:
-"color: green}
-node: {title: "n573n150" label: "0x0Is  150"  info1: "mode:    Is
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 0
-Const of type type_unknown
-"color: yellow}
+node: {title: "n573" label: "PhiIs  573"  info1: "Phi 573
+  mode:    Is
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   2
+  pred nodes:
+    -1:    Block 153
+     0:    0x0 150
+     1:    Add 574
+  Private Attributes:
+  backedges:
+"
+color: green}
+node: {title: "n573n150" label: "0x0Is  150"  info1: "0x0 150
+  mode:    Is
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   0
+  pred nodes:
+    -1:    Block 139
+  Private Attributes:
+  Const of type type_unknown
+"
+color: yellow}
 edge: {sourcename: "n573" targetname: "n573n150" label: "0" class:16 priority:10}
 edge: {sourcename: "n573" targetname: "n574" label: "1" class:16 priority:10}
-node: {title: "n580" label: "PhiIs  580"  info1: "mode:    Is
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 2 backedges:
-"color: green}
-node: {title: "n580n150" label: "0x0Is  150"  info1: "mode:    Is
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 0
-Const of type type_unknown
-"color: yellow}
+node: {title: "n580" label: "PhiIs  580"  info1: "Phi 580
+  mode:    Is
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   2
+  pred nodes:
+    -1:    Block 153
+     0:    0x0 150
+     1:    Add 581
+  Private Attributes:
+  backedges:
+"
+color: green}
+node: {title: "n580n150" label: "0x0Is  150"  info1: "0x0 150
+  mode:    Is
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   0
+  pred nodes:
+    -1:    Block 139
+  Private Attributes:
+  Const of type type_unknown
+"
+color: yellow}
 edge: {sourcename: "n580" targetname: "n580n150" label: "0" class:16 priority:10}
 edge: {sourcename: "n580" targetname: "n581" label: "1" class:16 priority:10}
-node: {title: "n159" label: "ProjX 0 159"  info1: "mode:    X
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 1
-"color: yellow}
+node: {title: "n159" label: "ProjX 0 159"  info1: "Proj 159
+  mode:    X
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   1
+  pred nodes:
+    -1:    Block 153
+     0:    Cond 158
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n159" targetname: "n158" label: "0" class:13 priority:60 color:red}
-node: {title: "n160" label: "ProjX 1 160"  info1: "mode:    X
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 1
-"color: yellow}
+node: {title: "n160" label: "ProjX 1 160"  info1: "Proj 160
+  mode:    X
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   1
+  pred nodes:
+    -1:    Block 153
+     0:    Cond 158
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n160" targetname: "n158" label: "0" class:13 priority:60 color:red}
-node: {title: "n158" label: "Cond  158"  info1: "mode:    T
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 1
-"}
+node: {title: "n158" label: "Cond  158"  info1: "Cond 158
+  mode:    T
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   1
+  pred nodes:
+    -1:    Block 153
+     0:    Proj 157
+  Private Attributes:
+  condition kind: dense
+  default ProjNr: 0
+"
+}
 edge: {sourcename: "n158" targetname: "n157" label: "0" class:1  priority:50}
-node: {title: "n157" label: "Projb Gt 157"  info1: "mode:    b
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 1
-"color: yellow}
+node: {title: "n157" label: "Projb Gt 157"  info1: "Proj 157
+  mode:    b
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   1
+  pred nodes:
+    -1:    Block 153
+     0:    Cmp 156
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n157" targetname: "n156" label: "0" class:1  priority:50}
-node: {title: "n156" label: "Cmp  156"  info1: "mode:    T
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 2
-"}
-node: {title: "n156n155" label: "0xAIs  155"  info1: "mode:    Is
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 0
-Const of type type_unknown
-"color: yellow}
+node: {title: "n156" label: "Cmp  156"  info1: "Cmp 156
+  mode:    T
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   2
+  pred nodes:
+    -1:    Block 153
+     0:    0xA 155
+     1:    Phi 191
+  Private Attributes:
+"
+}
+node: {title: "n156n155" label: "0xAIs  155"  info1: "0xA 155
+  mode:    Is
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   0
+  pred nodes:
+    -1:    Block 139
+  Private Attributes:
+  Const of type type_unknown
+"
+color: yellow}
 edge: {sourcename: "n156" targetname: "n156n155" label: "0" class:16 priority:10}
 edge: {sourcename: "n156" targetname: "n191" label: "1" class:1  priority:50}
-node: {title: "n191" label: "PhiIs  191"  info1: "mode:    Is
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 2 backedges:
-"color: green}
-node: {title: "n191n150" label: "0x0Is  150"  info1: "mode:    Is
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 0
-Const of type type_unknown
-"color: yellow}
+node: {title: "n191" label: "PhiIs  191"  info1: "Phi 191
+  mode:    Is
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   2
+  pred nodes:
+    -1:    Block 153
+     0:    0x0 150
+     1:    Add 176
+  Private Attributes:
+  backedges:
+"
+color: green}
+node: {title: "n191n150" label: "0x0Is  150"  info1: "0x0 150
+  mode:    Is
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   0
+  pred nodes:
+    -1:    Block 139
+  Private Attributes:
+  Const of type type_unknown
+"
+color: yellow}
 edge: {sourcename: "n191" targetname: "n191n150" label: "0" class:16 priority:10}
 edge: {sourcename: "n191" targetname: "n176" label: "1" class:16 priority:10}
 }
 
 graph: { title: "n149"  label: "Block 149" status:clustered color:yellow
 edge: {sourcename: "n149" targetname: "n143" label: "0" class:13 priority:60 color:red}
-node: {title: "n152" label: "Jmp  152"  info1: "mode:    X
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 0
-"}
+node: {title: "n152" label: "Jmp  152"  info1: "Jmp 152
+  mode:    X
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   0
+  pred nodes:
+    -1:    Block 149
+  Private Attributes:
+"
+}
 }
 
 graph: { title: "n161"  label: "Block 161" status:clustered color:yellow
 edge: {sourcename: "n161" targetname: "n160" label: "0" class:13 priority:60 color:red}
-node: {title: "n175" label: "ProjM 0 175"  info1: "mode:    M
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 1
-"color: yellow}
+node: {title: "n175" label: "ProjM 0 175"  info1: "Proj 175
+  mode:    M
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   1
+  pred nodes:
+    -1:    Block 161
+     0:    Store 173
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n175" targetname: "n173" label: "0" class:17 priority:10 color:blue}
-node: {title: "n173" label: "Store  173"  info1: "mode:    T
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 3
-volatility: volatility_non_volatile
-"}
+node: {title: "n173" label: "Store  173"  info1: "Store 173
+  mode:    T
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   3
+  pred nodes:
+    -1:    Block 161
+     0:    Phi 190
+     1:    Add 565
+     2:    Phi 580
+  Private Attributes:
+  pinned state: op_pin_state_pinned
+  volatility: volatility_non_volatile
+"
+}
 edge: {sourcename: "n173" targetname: "n190" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n173" targetname: "n565" label: "1" class:1  priority:50}
 edge: {sourcename: "n173" targetname: "n580" label: "2" class:16 priority:10}
-node: {title: "n565" label: "AddP  565"  info1: "mode:    P
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 2
-"}
+node: {title: "n565" label: "AddP  565"  info1: "Add 565
+  mode:    P
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   2
+  pred nodes:
+    -1:    Block 161
+     0:    Phi 573
+     1:    Add 564
+  Private Attributes:
+"
+}
 edge: {sourcename: "n565" targetname: "n573" label: "0" class:16 priority:10}
 edge: {sourcename: "n565" targetname: "n564" label: "1" class:1  priority:50}
-node: {title: "n574" label: "AddIs  574"  info1: "mode:    Is
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 2
-"}
-node: {title: "n574n165" label: "0x4Is  165"  info1: "mode:    Is
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 0
-Const of type type_unknown
-"color: yellow}
+node: {title: "n574" label: "AddIs  574"  info1: "Add 574
+  mode:    Is
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   2
+  pred nodes:
+    -1:    Block 161
+     0:    0x4 165
+     1:    Phi 573
+  Private Attributes:
+"
+}
+node: {title: "n574n165" label: "0x4Is  165"  info1: "0x4 165
+  mode:    Is
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   0
+  pred nodes:
+    -1:    Block 139
+  Private Attributes:
+  Const of type type_unknown
+"
+color: yellow}
 edge: {sourcename: "n574" targetname: "n574n165" label: "0" class:16 priority:10}
 edge: {sourcename: "n574" targetname: "n573" label: "1" class:16 priority:10}
-node: {title: "n564" label: "AddP  564"  info1: "mode:    P
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 2
-"}
-node: {title: "n564n151" label: "SymC &a  151"  info1: "mode:    P
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 0
-kind: addr_ent
-entity GlobalType.a (135)
+node: {title: "n564" label: "AddP  564"  info1: "Add 564
+  mode:    P
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   2
+  pred nodes:
+    -1:    Block 161
+     0:    SymC &a 151
+     1:    0xD 163
+  Private Attributes:
+"
+}
+node: {title: "n564n151" label: "SymC &a  151"  info1: "SymC &a 151
+  mode:    P
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   0
+  pred nodes:
+    -1:    Block 139
+  Private Attributes:
+  kind:   addr_ent
+  entity: entity GlobalType.a (135)
 
-SymConst of type: type_unknown
-"}
-node: {title: "n564n163" label: "0xDIs  163"  info1: "mode:    Is
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 0
-Const of type type_unknown
-"color: yellow}
+  type of value: type_unknown
+"
+}
+node: {title: "n564n163" label: "0xDIs  163"  info1: "0xD 163
+  mode:    Is
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   0
+  pred nodes:
+    -1:    Block 139
+  Private Attributes:
+  Const of type type_unknown
+"
+color: yellow}
 edge: {sourcename: "n564" targetname: "n564n151" label: "0" class:16 priority:10}
 edge: {sourcename: "n564" targetname: "n564n163" label: "1" class:16 priority:10}
-node: {title: "n581" label: "AddIs  581"  info1: "mode:    Is
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 2
-"}
-node: {title: "n581n162" label: "0xFIs  162"  info1: "mode:    Is
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 0
-Const of type type_unknown
-"color: yellow}
+node: {title: "n581" label: "AddIs  581"  info1: "Add 581
+  mode:    Is
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   2
+  pred nodes:
+    -1:    Block 161
+     0:    0xF 162
+     1:    Phi 580
+  Private Attributes:
+"
+}
+node: {title: "n581n162" label: "0xFIs  162"  info1: "0xF 162
+  mode:    Is
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   0
+  pred nodes:
+    -1:    Block 139
+  Private Attributes:
+  Const of type type_unknown
+"
+color: yellow}
 edge: {sourcename: "n581" targetname: "n581n162" label: "0" class:16 priority:10}
 edge: {sourcename: "n581" targetname: "n580" label: "1" class:16 priority:10}
-node: {title: "n177" label: "Jmp  177"  info1: "mode:    X
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 0
-"}
-node: {title: "n176" label: "AddIs  176"  info1: "mode:    Is
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 2
-"}
-node: {title: "n176n164" label: "0x1Is  164"  info1: "mode:    Is
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 0
-Const of type type_unknown
-"color: yellow}
+node: {title: "n177" label: "Jmp  177"  info1: "Jmp 177
+  mode:    X
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   0
+  pred nodes:
+    -1:    Block 161
+  Private Attributes:
+"
+}
+node: {title: "n176" label: "AddIs  176"  info1: "Add 176
+  mode:    Is
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   2
+  pred nodes:
+    -1:    Block 161
+     0:    0x1 164
+     1:    Phi 191
+  Private Attributes:
+"
+}
+node: {title: "n176n164" label: "0x1Is  164"  info1: "0x1 164
+  mode:    Is
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   0
+  pred nodes:
+    -1:    Block 139
+  Private Attributes:
+  Const of type type_unknown
+"
+color: yellow}
 edge: {sourcename: "n176" targetname: "n176n164" label: "0" class:16 priority:10}
 edge: {sourcename: "n176" targetname: "n191" label: "1" class:16 priority:10}
 }
 
 graph: { title: "n139"  label: "Block 139" status:clustered color:yellow
 edge: {sourcename: "n139" targetname: "n143" label: "0" class:13 priority:60 color:red}
-node: {title: "n146" label: "ProjM 1 146"  info1: "mode:    M
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 1
-"color: yellow}
+node: {title: "n146" label: "ProjM 1 146"  info1: "Proj 146
+  mode:    M
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   1
+  pred nodes:
+    -1:    Block 139
+     0:    Start 140
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n146" targetname: "n140" label: "0" class:17 priority:10 color:blue}
-node: {title: "n143" label: "ProjX 0 143"  info1: "mode:    X
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 1
-"color: yellow}
+node: {title: "n143" label: "ProjX 0 143"  info1: "Proj 143
+  mode:    X
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   1
+  pred nodes:
+    -1:    Block 139
+     0:    Start 140
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n143" targetname: "n140" label: "0" class:13 priority:60 color:red}
-node: {title: "n140" label: "Start  140"  info1: "mode:    T
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 0
-start of method of type STRENGTH_RED_EXAMPLE_meth_tp
-  param 0 type: int
-"color: blue}
+node: {title: "n140" label: "Start  140"  info1: "Start 140
+  mode:    T
+  visited: 28
+  irg:     STRENGTH_RED_EXAMPLE_m2
+  arity:   0
+  pred nodes:
+    -1:    Block 139
+  Private Attributes:
+  start of method of type STRENGTH_RED_EXAMPLE_meth_tp
+    param 0 type: int
+"
+color: blue}
 }
 
 }

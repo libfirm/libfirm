@@ -81,9 +81,15 @@ edge: { sourcename: "n78" targetname: "n68"}
 node: {title: "n68" label: "Start Block n68" info1:"arity: 1
 " color:blue }
 edge: { sourcename: "n68" targetname: "n68"}
-node: {title: "n70" label: "Bad  70"  info1: "mode:    T
-visited: 0
-irg:     IRR_LOOP_loop2
-arity: 0
-"}
+node: {title: "n70" label: "Bad  70"  info1: "Bad 70
+  mode:    T
+  visited: 0
+  irg:     IRR_LOOP_loop2
+  arity:   0
+  pred nodes:
+    -1:    Block 68
+  Private Attributes:
+  pinned state: op_pin_state_pinned
+"
+}
 }

@@ -55,52 +55,86 @@ colorentry 125:  255 250  250
 graph: { title: "g30" label: "FLOAT_EXAMPLE_main" status:clustered color:white
 graph: { title: "n19"  label: "Block 19" status:clustered color:yellow
 edge: {sourcename: "n19" targetname: "n34" label: "0" class:13 priority:60 color:red}
-node: {title: "n20" label: "End  20"  info1: "mode:    X
-visited: 4
-irg:     FLOAT_EXAMPLE_main
-arity: 0
-"color: blue}
+node: {title: "n20" label: "End  20"  info1: "End 20
+  mode:    X
+  visited: 4
+  irg:     FLOAT_EXAMPLE_main
+  arity:   0
+  pred nodes:
+    -1:    Block 19
+  Private Attributes:
+"
+color: blue}
 }
 
 graph: { title: "n31"  label: "Block 31" status:clustered color:yellow
 edge: {sourcename: "n31" targetname: "n25" label: "0" class:13 priority:60 color:red}
-node: {title: "n34" label: "Return  34"  info1: "mode:    X
-visited: 4
-irg:     FLOAT_EXAMPLE_main
-arity: 2
-return in method of type FLOAT_EXAMPLE_main
-  res 0 type: dbl
-"}
+node: {title: "n34" label: "Return  34"  info1: "Return 34
+  mode:    X
+  visited: 4
+  irg:     FLOAT_EXAMPLE_main
+  arity:   2
+  pred nodes:
+    -1:    Block 31
+     0:    Proj 28
+     1:    1.234567890123456716800000000000E+19 32
+  Private Attributes:
+  return in method of type FLOAT_EXAMPLE_main
+    res 0 type: dbl
+"
+}
 edge: {sourcename: "n34" targetname: "n28" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n34" targetname: "n32" label: "1" class:16 priority:10}
 }
 
 graph: { title: "n21"  label: "Block 21" status:clustered color:yellow
 edge: {sourcename: "n21" targetname: "n25" label: "0" class:13 priority:60 color:red}
-node: {title: "n28" label: "ProjM 1 28"  info1: "mode:    M
-visited: 4
-irg:     FLOAT_EXAMPLE_main
-arity: 1
-"color: yellow}
+node: {title: "n28" label: "ProjM 1 28"  info1: "Proj 28
+  mode:    M
+  visited: 4
+  irg:     FLOAT_EXAMPLE_main
+  arity:   1
+  pred nodes:
+    -1:    Block 21
+     0:    Start 22
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n28" targetname: "n22" label: "0" class:17 priority:10 color:blue}
-node: {title: "n32" label: "1.234567890123456716800000000000E+19D  32"  info1: "mode:    D
-visited: 4
-irg:     FLOAT_EXAMPLE_main
-arity: 0
-Const of type type_unknown
-"color: yellow}
-node: {title: "n25" label: "ProjX 0 25"  info1: "mode:    X
-visited: 4
-irg:     FLOAT_EXAMPLE_main
-arity: 1
-"color: yellow}
+node: {title: "n32" label: "1.234567890123456716800000000000E+19D  32"  info1: "1.234567890123456716800000000000E+19 32
+  mode:    D
+  visited: 4
+  irg:     FLOAT_EXAMPLE_main
+  arity:   0
+  pred nodes:
+    -1:    Block 21
+  Private Attributes:
+  Const of type type_unknown
+"
+color: yellow}
+node: {title: "n25" label: "ProjX 0 25"  info1: "Proj 25
+  mode:    X
+  visited: 4
+  irg:     FLOAT_EXAMPLE_main
+  arity:   1
+  pred nodes:
+    -1:    Block 21
+     0:    Start 22
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n25" targetname: "n22" label: "0" class:13 priority:60 color:red}
-node: {title: "n22" label: "Start  22"  info1: "mode:    T
-visited: 4
-irg:     FLOAT_EXAMPLE_main
-arity: 0
-start of method of type FLOAT_EXAMPLE_main
-"color: blue}
+node: {title: "n22" label: "Start  22"  info1: "Start 22
+  mode:    T
+  visited: 4
+  irg:     FLOAT_EXAMPLE_main
+  arity:   0
+  pred nodes:
+    -1:    Block 21
+  Private Attributes:
+  start of method of type FLOAT_EXAMPLE_main
+"
+color: blue}
 }
 
 }

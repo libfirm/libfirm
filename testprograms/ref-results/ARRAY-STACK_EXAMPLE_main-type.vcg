@@ -74,16 +74,26 @@ edge: { sourcename: "t19" targetname: "t14"class: 10 label: "arr elt tp" color:g
 edge: { sourcename: "t19" targetname: "e22"class: 10 label: "arr ent" color: green}
 edge: { sourcename: "n23" targetname: "t19"label: "upper 0"}
 edge: { sourcename: "n24" targetname: "t19"label: "lower 0"}
-node: {title: "n23" label: "0x9Iu  23"  info1: "mode:    Iu
-visited: 1
-arity: 0
-Const of type type_unknown
-"color: yellow}
-node: {title: "n24" label: "0x0Iu  24"  info1: "mode:    Iu
-visited: 1
-arity: 0
-Const of type type_unknown
-"color: yellow}
+node: {title: "n23" label: "0x9Iu  23"  info1: "0x9 23
+  mode:    Iu
+  visited: 1
+  arity:   0
+  pred nodes:
+    -1:    Block 1
+  Private Attributes:
+  Const of type type_unknown
+"
+color: yellow}
+node: {title: "n24" label: "0x0Iu  24"  info1: "0x0 24
+  mode:    Iu
+  visited: 1
+  arity:   0
+  pred nodes:
+    -1:    Block 1
+  Private Attributes:
+  Const of type type_unknown
+"
+color: yellow}
 node: {title: "t14" label: "primitive int" info1: "state: layout_fixed,
 mode: Is,
 size: 32b,
@@ -130,14 +140,19 @@ node: {title: "e18" label: "ent ARRAY-STACK_EXAMPLE_main" color: yellow
 }
 edge: { sourcename: "e18" targetname: "t16"class: 3 label: "type" color: red}
 edge: { sourcename: "e18" targetname: "n17"label: "value 0"}
-node: {title: "n17" label: "SymC &main  17"  info1: "mode:    P
-visited: 1
-arity: 0
-kind: addr_ent
-entity ARRAY-STACK_EXAMPLE.main (18)
+node: {title: "n17" label: "SymC &main  17"  info1: "SymC &main 17
+  mode:    P
+  visited: 1
+  arity:   0
+  pred nodes:
+    -1:    Block 1
+  Private Attributes:
+  kind:   addr_ent
+  entity: entity ARRAY-STACK_EXAMPLE.main (18)
 
-SymConst of type: type_unknown
-"}
+  type of value: type_unknown
+"
+}
 node: {title: "t15" label: "class ARRAY-STACK_EXAMPLE" info1: "state: layout_undefined
 size: -1b,
 peculiarity: peculiarity_existent

@@ -56,115 +56,212 @@ graph: { title: "g96" label: "PRIMA_INLINE_c" status:clustered color:white
 graph: { title: "n102"  label: "Block 102" status:clustered color:yellow
 edge: {sourcename: "n102" targetname: "n101" label: "0" class:13 priority:60 color:red}
 edge: {sourcename: "n102" targetname: "n109" label: "1" class:13 priority:60 color:red}
-node: {title: "n130" label: "PhiM  130"  info1: "mode:    M
-visited: 25
-irg:     PRIMA_INLINE_c
-arity: 2 backedges:
-"color: green}
+node: {title: "n130" label: "PhiM  130"  info1: "Phi 130
+  mode:    M
+  visited: 25
+  irg:     PRIMA_INLINE_c
+  arity:   2
+  pred nodes:
+    -1:    Block 102
+     0:    Proj 94
+     1:    Store 117
+  Private Attributes:
+  backedges:
+"
+color: green}
 edge: {sourcename: "n130" targetname: "n94" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n130" targetname: "n117" label: "1" class:17 priority:10 color:blue}
-node: {title: "n117" label: "Store  117"  info1: "mode:    T
-visited: 25
-irg:     PRIMA_INLINE_c
-arity: 3
-volatility: volatility_non_volatile
-"}
+node: {title: "n117" label: "Store  117"  info1: "Store 117
+  mode:    T
+  visited: 25
+  irg:     PRIMA_INLINE_c
+  arity:   3
+  pred nodes:
+    -1:    Block 102
+     0:    Phi 130
+     1:    Sel 116
+     2:    Phi 126
+  Private Attributes:
+  pinned state: op_pin_state_pinned
+  volatility: volatility_non_volatile
+"
+}
 edge: {sourcename: "n117" targetname: "n130" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n117" targetname: "n116" label: "1" class:1  priority:50}
 edge: {sourcename: "n117" targetname: "n126" label: "2" class:1  priority:50}
-node: {title: "n116" label: "Sel a 116"  info1: "mode:    P
-visited: 25
-irg:     PRIMA_INLINE_c
-arity: 2
-Selecting entity of type int
-  from entity of type PRIMA_INLINE
-"}
+node: {title: "n116" label: "Sel a 116"  info1: "Sel 116
+  mode:    P
+  visited: 25
+  irg:     PRIMA_INLINE_c
+  arity:   2
+  pred nodes:
+    -1:    Block 102
+     0:    Phi 130
+     1:    Proj 98
+  Private Attributes:
+  Selecting entity of type int
+    from entity of type PRIMA_INLINE
+"
+}
 edge: {sourcename: "n116" targetname: "n130" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n116" targetname: "n98" label: "1" class:16 priority:10}
-node: {title: "n126" label: "PhiIs  126"  info1: "mode:    Is
-visited: 25
-irg:     PRIMA_INLINE_c
-arity: 2 backedges:
-"color: green}
+node: {title: "n126" label: "PhiIs  126"  info1: "Phi 126
+  mode:    Is
+  visited: 25
+  irg:     PRIMA_INLINE_c
+  arity:   2
+  pred nodes:
+    -1:    Block 102
+     0:    Proj 99
+     1:    Phi 127
+  Private Attributes:
+  backedges:
+"
+color: green}
 edge: {sourcename: "n126" targetname: "n99" label: "0" class:16 priority:10}
 edge: {sourcename: "n126" targetname: "n127" label: "1" class:1  priority:50}
-node: {title: "n127" label: "PhiIs  127"  info1: "mode:    Is
-visited: 25
-irg:     PRIMA_INLINE_c
-arity: 2 backedges:
-"color: green}
+node: {title: "n127" label: "PhiIs  127"  info1: "Phi 127
+  mode:    Is
+  visited: 25
+  irg:     PRIMA_INLINE_c
+  arity:   2
+  pred nodes:
+    -1:    Block 102
+     0:    0x0 100
+     1:    Phi 126
+  Private Attributes:
+  backedges:
+"
+color: green}
 edge: {sourcename: "n127" targetname: "n100" label: "0" class:16 priority:10}
 edge: {sourcename: "n127" targetname: "n126" label: "1" class:1  priority:50}
-node: {title: "n109" label: "Jmp  109"  info1: "mode:    X
-visited: 25
-irg:     PRIMA_INLINE_c
-arity: 0
-"}
+node: {title: "n109" label: "Jmp  109"  info1: "Jmp 109
+  mode:    X
+  visited: 25
+  irg:     PRIMA_INLINE_c
+  arity:   0
+  pred nodes:
+    -1:    Block 102
+  Private Attributes:
+"
+}
 }
 
 graph: { title: "n97"  label: "Block 97" status:clustered color:yellow
 edge: {sourcename: "n97" targetname: "n91" label: "0" class:13 priority:60 color:red}
-node: {title: "n98" label: "ProjP 0 98"  info1: "mode:    P
-visited: 25
-irg:     PRIMA_INLINE_c
-arity: 1
-"color: yellow}
+node: {title: "n98" label: "ProjP 0 98"  info1: "Proj 98
+  mode:    P
+  visited: 25
+  irg:     PRIMA_INLINE_c
+  arity:   1
+  pred nodes:
+    -1:    Block 97
+     0:    Proj 95
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n98" targetname: "n95" label: "0" class:16 priority:10}
-node: {title: "n99" label: "ProjIs 1 99"  info1: "mode:    Is
-visited: 25
-irg:     PRIMA_INLINE_c
-arity: 1
-"color: yellow}
+node: {title: "n99" label: "ProjIs 1 99"  info1: "Proj 99
+  mode:    Is
+  visited: 25
+  irg:     PRIMA_INLINE_c
+  arity:   1
+  pred nodes:
+    -1:    Block 97
+     0:    Proj 95
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n99" targetname: "n95" label: "0" class:16 priority:10}
-node: {title: "n101" label: "Jmp  101"  info1: "mode:    X
-visited: 25
-irg:     PRIMA_INLINE_c
-arity: 0
-"}
+node: {title: "n101" label: "Jmp  101"  info1: "Jmp 101
+  mode:    X
+  visited: 25
+  irg:     PRIMA_INLINE_c
+  arity:   0
+  pred nodes:
+    -1:    Block 97
+  Private Attributes:
+"
+}
 }
 
 graph: { title: "n87"  label: "Block 87" status:clustered color:yellow
 edge: {sourcename: "n87" targetname: "n91" label: "0" class:13 priority:60 color:red}
-node: {title: "n94" label: "ProjM 1 94"  info1: "mode:    M
-visited: 25
-irg:     PRIMA_INLINE_c
-arity: 1
-"color: yellow}
+node: {title: "n94" label: "ProjM 1 94"  info1: "Proj 94
+  mode:    M
+  visited: 25
+  irg:     PRIMA_INLINE_c
+  arity:   1
+  pred nodes:
+    -1:    Block 87
+     0:    Start 88
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n94" targetname: "n88" label: "0" class:17 priority:10 color:blue}
-node: {title: "n95" label: "ProjT 4 95"  info1: "mode:    T
-visited: 25
-irg:     PRIMA_INLINE_c
-arity: 1
-"color: yellow}
+node: {title: "n95" label: "ProjT 4 95"  info1: "Proj 95
+  mode:    T
+  visited: 25
+  irg:     PRIMA_INLINE_c
+  arity:   1
+  pred nodes:
+    -1:    Block 87
+     0:    Start 88
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n95" targetname: "n88" label: "0" class:1  priority:50}
-node: {title: "n100" label: "0x0Is  100"  info1: "mode:    Is
-visited: 25
-irg:     PRIMA_INLINE_c
-arity: 0
-Const of type type_unknown
-"color: yellow}
-node: {title: "n91" label: "ProjX 0 91"  info1: "mode:    X
-visited: 25
-irg:     PRIMA_INLINE_c
-arity: 1
-"color: yellow}
+node: {title: "n100" label: "0x0Is  100"  info1: "0x0 100
+  mode:    Is
+  visited: 25
+  irg:     PRIMA_INLINE_c
+  arity:   0
+  pred nodes:
+    -1:    Block 87
+  Private Attributes:
+  Const of type type_unknown
+"
+color: yellow}
+node: {title: "n91" label: "ProjX 0 91"  info1: "Proj 91
+  mode:    X
+  visited: 25
+  irg:     PRIMA_INLINE_c
+  arity:   1
+  pred nodes:
+    -1:    Block 87
+     0:    Start 88
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n91" targetname: "n88" label: "0" class:13 priority:60 color:red}
-node: {title: "n88" label: "Start  88"  info1: "mode:    T
-visited: 25
-irg:     PRIMA_INLINE_c
-arity: 0
-start of method of type c
-  param 0 type: class_prima_ptr
-  param 1 type: int
-"color: blue}
+node: {title: "n88" label: "Start  88"  info1: "Start 88
+  mode:    T
+  visited: 25
+  irg:     PRIMA_INLINE_c
+  arity:   0
+  pred nodes:
+    -1:    Block 87
+  Private Attributes:
+  start of method of type c
+    param 0 type: class_prima_ptr
+    param 1 type: int
+"
+color: blue}
 }
 
 graph: { title: "n85"  label: "Block 85" status:clustered color:yellow
-node: {title: "n243" label: "End  243"  info1: "mode:    X
-visited: 25
-irg:     PRIMA_INLINE_c
-arity: 2
-"color: blue}
+node: {title: "n243" label: "End  243"  info1: "End 243
+  mode:    X
+  visited: 25
+  irg:     PRIMA_INLINE_c
+  arity:   2
+  pred nodes:
+    -1:    Block 85
+     0:    Block 102
+     1:    Phi 130
+  Private Attributes:
+"
+color: blue}
 }
 
 }

@@ -61,9 +61,15 @@ edge: { sourcename: "n32" targetname: "n22"}
 node: {title: "n22" label: "Start Block n22" info1:"arity: 1
 " color:blue }
 edge: { sourcename: "n22" targetname: "n22"}
-node: {title: "n61" label: "Bad  61"  info1: "mode:    T
-visited: 0
-irg:     DEAD_BLOCK_main
-arity: 0
-"}
+node: {title: "n61" label: "Bad  61"  info1: "Bad 61
+  mode:    T
+  visited: 0
+  irg:     DEAD_BLOCK_main
+  arity:   0
+  pred nodes:
+    -1:    Block 22
+  Private Attributes:
+  pinned state: op_pin_state_pinned
+"
+}
 }

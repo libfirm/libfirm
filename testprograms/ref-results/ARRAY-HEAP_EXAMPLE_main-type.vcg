@@ -74,16 +74,26 @@ edge: { sourcename: "t18" targetname: "t14"class: 10 label: "arr elt tp" color:g
 edge: { sourcename: "t18" targetname: "e21"class: 10 label: "arr ent" color: green}
 edge: { sourcename: "n22" targetname: "t18"label: "upper 0"}
 edge: { sourcename: "n23" targetname: "t18"label: "lower 0"}
-node: {title: "n22" label: "0x9Iu  22"  info1: "mode:    Iu
-visited: 1
-arity: 0
-Const of type type_unknown
-"color: yellow}
-node: {title: "n23" label: "0x0Iu  23"  info1: "mode:    Iu
-visited: 1
-arity: 0
-Const of type type_unknown
-"color: yellow}
+node: {title: "n22" label: "0x9Iu  22"  info1: "0x9 22
+  mode:    Iu
+  visited: 1
+  arity:   0
+  pred nodes:
+    -1:    Block 1
+  Private Attributes:
+  Const of type type_unknown
+"
+color: yellow}
+node: {title: "n23" label: "0x0Iu  23"  info1: "0x0 23
+  mode:    Iu
+  visited: 1
+  arity:   0
+  pred nodes:
+    -1:    Block 1
+  Private Attributes:
+  Const of type type_unknown
+"
+color: yellow}
 node: {title: "t14" label: "primitive int" info1: "state: layout_fixed,
 mode: Is,
 size: 32b,
@@ -108,14 +118,19 @@ node: {title: "e17" label: "ent ARRAY-HEAP_EXAMPLE_main" color: yellow
 }
 edge: { sourcename: "e17" targetname: "t15"class: 3 label: "type" color: red}
 edge: { sourcename: "e17" targetname: "n16"label: "value 0"}
-node: {title: "n16" label: "SymC &ARRAY-HEAP_EXAMPLE_main  16"  info1: "mode:    P
-visited: 1
-arity: 0
-kind: addr_ent
-entity GlobalType.ARRAY-HEAP_EXAMPLE_main (17)
+node: {title: "n16" label: "SymC &ARRAY-HEAP_EXAMPLE_main  16"  info1: "SymC &ARRAY-HEAP_EXAMPLE_main 16
+  mode:    P
+  visited: 1
+  arity:   0
+  pred nodes:
+    -1:    Block 1
+  Private Attributes:
+  kind:   addr_ent
+  entity: entity GlobalType.ARRAY-HEAP_EXAMPLE_main (17)
 
-SymConst of type: type_unknown
-"}
+  type of value: type_unknown
+"
+}
 node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1b,
 peculiarity: peculiarity_existent

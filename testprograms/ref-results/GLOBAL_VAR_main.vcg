@@ -55,80 +55,141 @@ colorentry 125:  255 250  250
 graph: { title: "g31" label: "GLOBAL_VAR_main" status:clustered color:white
 graph: { title: "n20"  label: "Block 20" status:clustered color:yellow
 edge: {sourcename: "n20" targetname: "n39" label: "0" class:13 priority:60 color:red}
-node: {title: "n41" label: "End  41"  info1: "mode:    X
-visited: 10
-irg:     GLOBAL_VAR_main
-arity: 0
-"color: blue}
+node: {title: "n41" label: "End  41"  info1: "End 41
+  mode:    X
+  visited: 10
+  irg:     GLOBAL_VAR_main
+  arity:   0
+  pred nodes:
+    -1:    Block 20
+  Private Attributes:
+"
+color: blue}
 }
 
 graph: { title: "n32"  label: "Block 32" status:clustered color:yellow
 edge: {sourcename: "n32" targetname: "n26" label: "0" class:13 priority:60 color:red}
-node: {title: "n39" label: "Return  39"  info1: "mode:    X
-visited: 10
-irg:     GLOBAL_VAR_main
-arity: 1
-return in method of type GLOBAL_VAR_main
-"}
+node: {title: "n39" label: "Return  39"  info1: "Return 39
+  mode:    X
+  visited: 10
+  irg:     GLOBAL_VAR_main
+  arity:   1
+  pred nodes:
+    -1:    Block 32
+     0:    Proj 38
+  Private Attributes:
+  return in method of type GLOBAL_VAR_main
+"
+}
 edge: {sourcename: "n39" targetname: "n38" label: "0" class:14 priority:50 color:blue}
-node: {title: "n38" label: "ProjM 0 38"  info1: "mode:    M
-visited: 10
-irg:     GLOBAL_VAR_main
-arity: 1
-"color: yellow}
+node: {title: "n38" label: "ProjM 0 38"  info1: "Proj 38
+  mode:    M
+  visited: 10
+  irg:     GLOBAL_VAR_main
+  arity:   1
+  pred nodes:
+    -1:    Block 32
+     0:    Store 36
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n38" targetname: "n36" label: "0" class:17 priority:10 color:blue}
-node: {title: "n36" label: "Store  36"  info1: "mode:    T
-visited: 10
-irg:     GLOBAL_VAR_main
-arity: 3
-volatility: volatility_non_volatile
-"}
+node: {title: "n36" label: "Store  36"  info1: "Store 36
+  mode:    T
+  visited: 10
+  irg:     GLOBAL_VAR_main
+  arity:   3
+  pred nodes:
+    -1:    Block 32
+     0:    Proj 29
+     1:    Sel 34
+     2:    0x2 35
+  Private Attributes:
+  pinned state: op_pin_state_pinned
+  volatility: volatility_non_volatile
+"
+}
 edge: {sourcename: "n36" targetname: "n29" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n36" targetname: "n34" label: "1" class:1  priority:50}
 edge: {sourcename: "n36" targetname: "n35" label: "2" class:16 priority:10}
-node: {title: "n34" label: "Sel i 34"  info1: "mode:    P
-visited: 10
-irg:     GLOBAL_VAR_main
-arity: 2
-Selecting entity of type int
-  from entity of type GlobalType
-"}
+node: {title: "n34" label: "Sel i 34"  info1: "Sel 34
+  mode:    P
+  visited: 10
+  irg:     GLOBAL_VAR_main
+  arity:   2
+  pred nodes:
+    -1:    Block 32
+     0:    Proj 29
+     1:    Proj 28
+  Private Attributes:
+  Selecting entity of type int
+    from entity of type GlobalType
+"
+}
 edge: {sourcename: "n34" targetname: "n29" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n34" targetname: "n28" label: "1" class:16 priority:10}
 }
 
 graph: { title: "n22"  label: "Block 22" status:clustered color:yellow
 edge: {sourcename: "n22" targetname: "n26" label: "0" class:13 priority:60 color:red}
-node: {title: "n29" label: "ProjM 1 29"  info1: "mode:    M
-visited: 10
-irg:     GLOBAL_VAR_main
-arity: 1
-"color: yellow}
+node: {title: "n29" label: "ProjM 1 29"  info1: "Proj 29
+  mode:    M
+  visited: 10
+  irg:     GLOBAL_VAR_main
+  arity:   1
+  pred nodes:
+    -1:    Block 22
+     0:    Start 23
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n29" targetname: "n23" label: "0" class:17 priority:10 color:blue}
-node: {title: "n28" label: "ProjP 3 28"  info1: "mode:    P
-visited: 10
-irg:     GLOBAL_VAR_main
-arity: 1
-"color: yellow}
+node: {title: "n28" label: "ProjP 3 28"  info1: "Proj 28
+  mode:    P
+  visited: 10
+  irg:     GLOBAL_VAR_main
+  arity:   1
+  pred nodes:
+    -1:    Block 22
+     0:    Start 23
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n28" targetname: "n23" label: "0" class:1  priority:50}
-node: {title: "n35" label: "0x2Is  35"  info1: "mode:    Is
-visited: 10
-irg:     GLOBAL_VAR_main
-arity: 0
-Const of type type_unknown
-"color: yellow}
-node: {title: "n26" label: "ProjX 0 26"  info1: "mode:    X
-visited: 10
-irg:     GLOBAL_VAR_main
-arity: 1
-"color: yellow}
+node: {title: "n35" label: "0x2Is  35"  info1: "0x2 35
+  mode:    Is
+  visited: 10
+  irg:     GLOBAL_VAR_main
+  arity:   0
+  pred nodes:
+    -1:    Block 22
+  Private Attributes:
+  Const of type type_unknown
+"
+color: yellow}
+node: {title: "n26" label: "ProjX 0 26"  info1: "Proj 26
+  mode:    X
+  visited: 10
+  irg:     GLOBAL_VAR_main
+  arity:   1
+  pred nodes:
+    -1:    Block 22
+     0:    Start 23
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n26" targetname: "n23" label: "0" class:13 priority:60 color:red}
-node: {title: "n23" label: "Start  23"  info1: "mode:    T
-visited: 10
-irg:     GLOBAL_VAR_main
-arity: 0
-start of method of type GLOBAL_VAR_main
-"color: blue}
+node: {title: "n23" label: "Start  23"  info1: "Start 23
+  mode:    T
+  visited: 10
+  irg:     GLOBAL_VAR_main
+  arity:   0
+  pred nodes:
+    -1:    Block 22
+  Private Attributes:
+  start of method of type GLOBAL_VAR_main
+"
+color: blue}
 }
 
 }

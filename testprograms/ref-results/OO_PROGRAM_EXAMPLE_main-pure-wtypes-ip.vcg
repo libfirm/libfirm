@@ -52,419 +52,794 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-node: {title: "n30" label: "Block  30"  info1: "mode:    BB
-visited: 36
-irg:     OO_PROGRAM_EXAMPLE_main
-arity: 1 backedges:
-"color: lightyellow}
+node: {title: "n30" label: "Block  30"  info1: "Block 30
+  mode:    BB
+  visited: 37
+  irg:     OO_PROGRAM_EXAMPLE_main
+  arity:   1
+  pred nodes:
+     0:    Proj 34
+  Private Attributes:
+  inter arity: 1  inter pred nodes:
+     0:    Proj 34
+  backedges:
+  block visited: 0  dominator info: not implemented
+"
+color: lightyellow}
 edge: {sourcename: "n30" targetname: "n34" label: "0" class:13 priority:60 color:red}
-node: {title: "n31" label: "Start OO_PROGRAM_EXAMPLE_main  31"  info1: "mode:    T
-visited: 36
-irg:     OO_PROGRAM_EXAMPLE_main
-arity: 0
-start of method of type OO_PROGRAM_EXAMPLE_main
-"color: blue}
+node: {title: "n31" label: "Start OO_PROGRAM_EXAMPLE_main  31"  info1: "Start OO_PROGRAM_EXAMPLE_main 31
+  mode:    T
+  visited: 37
+  irg:     OO_PROGRAM_EXAMPLE_main
+  arity:   0
+  pred nodes:
+    -1:    Block 30
+  Private Attributes:
+  start of method of type OO_PROGRAM_EXAMPLE_main
+"
+color: blue}
 edge: { sourcename: "n31" targetname: "n30" class:2  priority:50 linestyle:dotted}
-node: {title: "n34" label: "ProjX 0 34"  info1: "mode:    X
-visited: 36
-irg:     OO_PROGRAM_EXAMPLE_main
-arity: 1
-"color: yellow}
+node: {title: "n34" label: "ProjX 0 34"  info1: "Proj 34
+  mode:    X
+  visited: 37
+  irg:     OO_PROGRAM_EXAMPLE_main
+  arity:   1
+  pred nodes:
+    -1:    Block 30
+     0:    Start OO_PROGRAM_EXAMPLE_main 31
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n34" targetname: "n31" label: "0" class:13 priority:60 color:red}
 edge: { sourcename: "n34" targetname: "n30" class:2  priority:50 linestyle:dotted}
-node: {title: "n191" label: "Block  191"  info1: "mode:    BB
-visited: 36
-irg:     OO_PROGRAM_EXAMPLE_main
-arity: 1 backedges:
-"color: lightyellow}
+node: {title: "n191" label: "Block  191"  info1: "Block 191
+  mode:    BB
+  visited: 37
+  irg:     OO_PROGRAM_EXAMPLE_main
+  arity:   1
+  pred nodes:
+     0:    Proj 34
+  Private Attributes:
+  inter arity: 1  inter pred nodes:
+     0:    Proj 34
+  backedges:
+  block visited: 0  dominator info: not implemented
+"
+color: lightyellow}
 edge: {sourcename: "n191" targetname: "n34" label: "0" class:13 priority:60 color:red}
-node: {title: "n193" label: "CallBegin set_a  193"  info1: "mode:    T
-visited: 36
-irg:     OO_PROGRAM_EXAMPLE_main
-arity: 1
-Call: 50
-possible callees:
-  0: PRIMA_set_a
-"}
-node: {title: "n193n175" label: "SymC &set_a  175"  info1: "mode:    P
-visited: 36
-irg:     OO_PROGRAM_EXAMPLE_main
-arity: 0
-kind: addr_ent
-entity PRIMA.set_a (20)
+node: {title: "n193" label: "CallBegin set_a  193"  info1: "CallBegin set_a 193
+  mode:    T
+  visited: 37
+  irg:     OO_PROGRAM_EXAMPLE_main
+  arity:   1
+  pred nodes:
+    -1:    Block 191
+     0:    SymC &set_a 175
+  Private Attributes:
+  Call: 50
+  possible callees:
+    0: PRIMA_set_a
+"
+}
+node: {title: "n193n175" label: "SymC &set_a  175"  info1: "SymC &set_a 175
+  mode:    P
+  visited: 37
+  irg:     OO_PROGRAM_EXAMPLE_main
+  arity:   0
+  pred nodes:
+    -1:    Block 30
+  Private Attributes:
+  kind:   addr_ent
+  entity: entity PRIMA.set_a (20)
 
-SymConst of type: type_unknown
-"}
+  type of value: type_unknown
+"
+}
 edge: {sourcename: "n193" targetname: "n193n175" label: "0" class:16 priority:10}
 edge: { sourcename: "n193" targetname: "n191" class:2  priority:50 linestyle:dotted}
-node: {title: "n195" label: "ProjX 0 195"  info1: "mode:    X
-visited: 36
-irg:     OO_PROGRAM_EXAMPLE_main
-arity: 1
-"color: yellow}
+node: {title: "n195" label: "ProjX 0 195"  info1: "Proj 195
+  mode:    X
+  visited: 37
+  irg:     OO_PROGRAM_EXAMPLE_main
+  arity:   1
+  pred nodes:
+    -1:    Block 191
+     0:    CallBegin set_a 193
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n195" targetname: "n193" label: "0" class:13 priority:60 color:red}
 edge: { sourcename: "n195" targetname: "n191" class:2  priority:50 linestyle:dotted}
-node: {title: "n64" label: "Block  64"  info1: "mode:    BB
-visited: 36
-irg:     PRIMA_set_a
-arity: 1 backedges:
-"color: lightyellow}
+node: {title: "n64" label: "Block  64"  info1: "Block 64
+  mode:    BB
+  visited: 37
+  irg:     PRIMA_set_a
+  arity:   1
+  pred nodes:
+     0:    Proj 68
+  Private Attributes:
+  inter arity: 1  inter pred nodes:
+     0:    Proj 195
+  backedges:
+  block visited: 0  dominator info: not implemented
+"
+color: lightyellow}
 edge: {sourcename: "n64" targetname: "n195" label: "0" class:13 priority:60 color:red}
-node: {title: "n65" label: "Start PRIMA_set_a  65"  info1: "mode:    T
-visited: 36
-irg:     PRIMA_set_a
-arity: 0
-start of method of type set_a
-  param 0 type: class_prima_ptr
-  param 1 type: int
-"color: blue}
+node: {title: "n65" label: "Start PRIMA_set_a  65"  info1: "Start PRIMA_set_a 65
+  mode:    T
+  visited: 37
+  irg:     PRIMA_set_a
+  arity:   0
+  pred nodes:
+    -1:    Block 64
+  Private Attributes:
+  start of method of type set_a
+    param 0 type: class_prima_ptr
+    param 1 type: int
+"
+color: blue}
 edge: { sourcename: "n65" targetname: "n64" class:2  priority:50 linestyle:dotted}
-node: {title: "n68" label: "ProjX 0 68"  info1: "mode:    X
-visited: 36
-irg:     PRIMA_set_a
-arity: 1
-"color: yellow}
+node: {title: "n68" label: "ProjX 0 68"  info1: "Proj 68
+  mode:    X
+  visited: 37
+  irg:     PRIMA_set_a
+  arity:   1
+  pred nodes:
+    -1:    Block 64
+     0:    Start PRIMA_set_a 65
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n68" targetname: "n65" label: "0" class:13 priority:60 color:red}
 edge: { sourcename: "n68" targetname: "n64" class:2  priority:50 linestyle:dotted}
-node: {title: "n74" label: "Block  74"  info1: "mode:    BB
-visited: 36
-irg:     PRIMA_set_a
-arity: 1 backedges:
-"color: lightyellow}
+node: {title: "n74" label: "Block  74"  info1: "Block 74
+  mode:    BB
+  visited: 37
+  irg:     PRIMA_set_a
+  arity:   1
+  pred nodes:
+     0:    Proj 68
+  Private Attributes:
+  inter arity: 1  inter pred nodes:
+     0:    Proj 68
+  backedges:
+  block visited: 0  dominator info: not implemented
+"
+color: lightyellow}
 edge: {sourcename: "n74" targetname: "n68" label: "0" class:13 priority:60 color:red}
-node: {title: "n187" label: "Jmp  187"  info1: "mode:    X
-visited: 36
-irg:     PRIMA_set_a
-arity: 0
-"}
+node: {title: "n187" label: "Jmp  187"  info1: "Jmp 187
+  mode:    X
+  visited: 37
+  irg:     PRIMA_set_a
+  arity:   0
+  pred nodes:
+    -1:    Block 74
+  Private Attributes:
+"
+}
 edge: { sourcename: "n187" targetname: "n74" class:2  priority:50 linestyle:dotted}
-node: {title: "n188" label: "Block  188"  info1: "mode:    BB
-visited: 36
-irg:     PRIMA_set_a
-arity: 1 backedges:
-"color: lightyellow}
+node: {title: "n188" label: "Block  188"  info1: "Block 188
+  mode:    BB
+  visited: 37
+  irg:     PRIMA_set_a
+  arity:   1
+  pred nodes:
+     0:    Jmp 187
+  Private Attributes:
+  inter arity: 1  inter pred nodes:
+     0:    Jmp 187
+  backedges:
+  block visited: 0  dominator info: not implemented
+"
+color: lightyellow}
 edge: {sourcename: "n188" targetname: "n187" label: "0" class:13 priority:60 color:red}
-node: {title: "n189" label: "EndReg PRIMA_set_a  189"  info1: "mode:    T
-visited: 36
-irg:     PRIMA_set_a
-arity: 0
-"color: blue}
+node: {title: "n189" label: "EndReg PRIMA_set_a  189"  info1: "EndReg PRIMA_set_a 189
+  mode:    T
+  visited: 37
+  irg:     PRIMA_set_a
+  arity:   0
+  pred nodes:
+    -1:    Block 188
+  Private Attributes:
+"
+color: blue}
 edge: { sourcename: "n189" targetname: "n188" class:2  priority:50 linestyle:dotted}
-node: {title: "n194" label: "ProjX 0 194"  info1: "mode:    X
-visited: 36
-irg:     PRIMA_set_a
-arity: 1
-"color: yellow}
+node: {title: "n194" label: "ProjX 0 194"  info1: "Proj 194
+  mode:    X
+  visited: 37
+  irg:     PRIMA_set_a
+  arity:   1
+  pred nodes:
+    -1:    Block 188
+     0:    EndReg PRIMA_set_a 189
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n194" targetname: "n189" label: "0" class:13 priority:60 color:red}
 edge: { sourcename: "n194" targetname: "n188" class:2  priority:50 linestyle:dotted}
-node: {title: "n197" label: "Block  197"  info1: "mode:    BB
-visited: 36
-irg:     OO_PROGRAM_EXAMPLE_main
-arity: 1 backedges:
-"color: lightyellow}
+node: {title: "n197" label: "Block  197"  info1: "Block 197
+  mode:    BB
+  visited: 37
+  irg:     OO_PROGRAM_EXAMPLE_main
+  arity:   1
+  pred nodes:
+     0:    Break 192
+  Private Attributes:
+  inter arity: 1  inter pred nodes:
+     0:    Proj 194
+  backedges:
+  block visited: 0  dominator info: not implemented
+"
+color: lightyellow}
 edge: {sourcename: "n197" targetname: "n194" label: "0" class:13 priority:60 color:red}
-node: {title: "n199" label: "CallBegin c  199"  info1: "mode:    T
-visited: 36
-irg:     OO_PROGRAM_EXAMPLE_main
-arity: 1
-Call: 54
-possible callees:
-  0: PRIMA_c
-"}
-node: {title: "n199n174" label: "SymC &c  174"  info1: "mode:    P
-visited: 36
-irg:     OO_PROGRAM_EXAMPLE_main
-arity: 0
-kind: addr_ent
-entity PRIMA.c (23)
+node: {title: "n199" label: "CallBegin c  199"  info1: "CallBegin c 199
+  mode:    T
+  visited: 37
+  irg:     OO_PROGRAM_EXAMPLE_main
+  arity:   1
+  pred nodes:
+    -1:    Block 197
+     0:    SymC &c 174
+  Private Attributes:
+  Call: 54
+  possible callees:
+    0: PRIMA_c
+"
+}
+node: {title: "n199n174" label: "SymC &c  174"  info1: "SymC &c 174
+  mode:    P
+  visited: 37
+  irg:     OO_PROGRAM_EXAMPLE_main
+  arity:   0
+  pred nodes:
+    -1:    Block 30
+  Private Attributes:
+  kind:   addr_ent
+  entity: entity PRIMA.c (23)
 
-SymConst of type: type_unknown
-"}
+  type of value: type_unknown
+"
+}
 edge: {sourcename: "n199" targetname: "n199n174" label: "0" class:16 priority:10}
 edge: { sourcename: "n199" targetname: "n197" class:2  priority:50 linestyle:dotted}
-node: {title: "n201" label: "ProjX 0 201"  info1: "mode:    X
-visited: 36
-irg:     OO_PROGRAM_EXAMPLE_main
-arity: 1
-"color: yellow}
+node: {title: "n201" label: "ProjX 0 201"  info1: "Proj 201
+  mode:    X
+  visited: 37
+  irg:     OO_PROGRAM_EXAMPLE_main
+  arity:   1
+  pred nodes:
+    -1:    Block 197
+     0:    CallBegin c 199
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n201" targetname: "n199" label: "0" class:13 priority:60 color:red}
 edge: { sourcename: "n201" targetname: "n197" class:2  priority:50 linestyle:dotted}
-node: {title: "n87" label: "Block  87"  info1: "mode:    BB
-visited: 36
-irg:     PRIMA_c
-arity: 1 backedges:
-"color: lightyellow}
+node: {title: "n87" label: "Block  87"  info1: "Block 87
+  mode:    BB
+  visited: 37
+  irg:     PRIMA_c
+  arity:   1
+  pred nodes:
+     0:    Proj 91
+  Private Attributes:
+  inter arity: 1  inter pred nodes:
+     0:    Proj 201
+  backedges:
+  block visited: 0  dominator info: not implemented
+"
+color: lightyellow}
 edge: {sourcename: "n87" targetname: "n201" label: "0" class:13 priority:60 color:red}
-node: {title: "n88" label: "Start PRIMA_c  88"  info1: "mode:    T
-visited: 36
-irg:     PRIMA_c
-arity: 0
-start of method of type c
-  param 0 type: class_prima_ptr
-  param 1 type: int
-"color: blue}
+node: {title: "n88" label: "Start PRIMA_c  88"  info1: "Start PRIMA_c 88
+  mode:    T
+  visited: 37
+  irg:     PRIMA_c
+  arity:   0
+  pred nodes:
+    -1:    Block 87
+  Private Attributes:
+  start of method of type c
+    param 0 type: class_prima_ptr
+    param 1 type: int
+"
+color: blue}
 edge: { sourcename: "n88" targetname: "n87" class:2  priority:50 linestyle:dotted}
-node: {title: "n91" label: "ProjX 0 91"  info1: "mode:    X
-visited: 36
-irg:     PRIMA_c
-arity: 1
-"color: yellow}
+node: {title: "n91" label: "ProjX 0 91"  info1: "Proj 91
+  mode:    X
+  visited: 37
+  irg:     PRIMA_c
+  arity:   1
+  pred nodes:
+    -1:    Block 87
+     0:    Start PRIMA_c 88
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n91" targetname: "n88" label: "0" class:13 priority:60 color:red}
 edge: { sourcename: "n91" targetname: "n87" class:2  priority:50 linestyle:dotted}
-node: {title: "n97" label: "Block  97"  info1: "mode:    BB
-visited: 36
-irg:     PRIMA_c
-arity: 1 backedges:
-"color: lightyellow}
+node: {title: "n97" label: "Block  97"  info1: "Block 97
+  mode:    BB
+  visited: 37
+  irg:     PRIMA_c
+  arity:   1
+  pred nodes:
+     0:    Proj 91
+  Private Attributes:
+  inter arity: 1  inter pred nodes:
+     0:    Proj 91
+  backedges:
+  block visited: 0  dominator info: not implemented
+"
+color: lightyellow}
 edge: {sourcename: "n97" targetname: "n91" label: "0" class:13 priority:60 color:red}
-node: {title: "n179" label: "Jmp  179"  info1: "mode:    X
-visited: 36
-irg:     PRIMA_c
-arity: 0
-"}
+node: {title: "n179" label: "Jmp  179"  info1: "Jmp 179
+  mode:    X
+  visited: 37
+  irg:     PRIMA_c
+  arity:   0
+  pred nodes:
+    -1:    Block 97
+  Private Attributes:
+"
+}
 edge: { sourcename: "n179" targetname: "n97" class:2  priority:50 linestyle:dotted}
-node: {title: "n180" label: "Block  180"  info1: "mode:    BB
-visited: 36
-irg:     PRIMA_c
-arity: 1 backedges:
-"color: lightyellow}
+node: {title: "n180" label: "Block  180"  info1: "Block 180
+  mode:    BB
+  visited: 37
+  irg:     PRIMA_c
+  arity:   1
+  pred nodes:
+     0:    Jmp 179
+  Private Attributes:
+  inter arity: 1  inter pred nodes:
+     0:    Jmp 179
+  backedges:
+  block visited: 0  dominator info: not implemented
+"
+color: lightyellow}
 edge: {sourcename: "n180" targetname: "n179" label: "0" class:13 priority:60 color:red}
-node: {title: "n181" label: "EndReg PRIMA_c  181"  info1: "mode:    T
-visited: 36
-irg:     PRIMA_c
-arity: 0
-"color: blue}
+node: {title: "n181" label: "EndReg PRIMA_c  181"  info1: "EndReg PRIMA_c 181
+  mode:    T
+  visited: 37
+  irg:     PRIMA_c
+  arity:   0
+  pred nodes:
+    -1:    Block 180
+  Private Attributes:
+"
+color: blue}
 edge: { sourcename: "n181" targetname: "n180" class:2  priority:50 linestyle:dotted}
-node: {title: "n200" label: "ProjX 0 200"  info1: "mode:    X
-visited: 36
-irg:     PRIMA_c
-arity: 1
-"color: yellow}
+node: {title: "n200" label: "ProjX 0 200"  info1: "Proj 200
+  mode:    X
+  visited: 37
+  irg:     PRIMA_c
+  arity:   1
+  pred nodes:
+    -1:    Block 180
+     0:    EndReg PRIMA_c 181
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n200" targetname: "n181" label: "0" class:13 priority:60 color:red}
 edge: { sourcename: "n200" targetname: "n180" class:2  priority:50 linestyle:dotted}
-node: {title: "n40" label: "Block  40"  info1: "mode:    BB
-visited: 36
-irg:     OO_PROGRAM_EXAMPLE_main
-arity: 1 backedges:
-"color: lightyellow}
+node: {title: "n40" label: "Block  40"  info1: "Block 40
+  mode:    BB
+  visited: 37
+  irg:     OO_PROGRAM_EXAMPLE_main
+  arity:   1
+  pred nodes:
+     0:    Break 198
+  Private Attributes:
+  inter arity: 1  inter pred nodes:
+     0:    Proj 200
+  backedges:
+  block visited: 0  dominator info: not implemented
+"
+color: lightyellow}
 edge: {sourcename: "n40" targetname: "n200" label: "0" class:13 priority:60 color:red}
-node: {title: "n178" label: "FilterIs 1 178"  info1: "mode:    Is
-visited: 36
-irg:     PRIMA_c
-arity: 1 backedges:
-intra predecessor nodes:
-  ProjT 95
-"color: yellow}
-node: {title: "n178n42" label: "0x5Is  42"  info1: "mode:    Is
-visited: 36
-irg:     OO_PROGRAM_EXAMPLE_main
-arity: 0
-Const of type type_unknown
-"color: yellow}
+node: {title: "n178" label: "FilterIs 1 178"  info1: "Filter 178
+  mode:    Is
+  visited: 37
+  irg:     PRIMA_c
+  arity:   1
+  pred nodes:
+    -1:    Block 87
+     0:    Proj 95
+  Private Attributes:
+  inter arity: 1  inter pred nodes:
+     0:    0x5 42
+  backedges:
+"
+color: yellow}
+node: {title: "n178n42" label: "0x5Is  42"  info1: "0x5 42
+  mode:    Is
+  visited: 37
+  irg:     OO_PROGRAM_EXAMPLE_main
+  arity:   0
+  pred nodes:
+    -1:    Block 30
+  Private Attributes:
+  Const of type type_unknown
+"
+color: yellow}
 edge: {sourcename: "n178" targetname: "n178n42" label: "0" class:16 priority:10}
 edge: { sourcename: "n178" targetname: "n87" class:2  priority:50 linestyle:dotted}
-node: {title: "n37" label: "ProjM 1 37"  info1: "mode:    M
-visited: 36
-irg:     OO_PROGRAM_EXAMPLE_main
-arity: 1
-"color: yellow}
+node: {title: "n37" label: "ProjM 1 37"  info1: "Proj 37
+  mode:    M
+  visited: 37
+  irg:     OO_PROGRAM_EXAMPLE_main
+  arity:   1
+  pred nodes:
+    -1:    Block 30
+     0:    Start OO_PROGRAM_EXAMPLE_main 31
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n37" targetname: "n31" label: "0" class:17 priority:10 color:blue}
 edge: { sourcename: "n37" targetname: "n30" class:2  priority:50 linestyle:dotted}
-node: {title: "n45" label: "Alloc  45"  info1: "mode:    T
-visited: 36
-irg:     OO_PROGRAM_EXAMPLE_main
-arity: 2
-allocating entity of type PRIMA
-"}
-node: {title: "n45n43" label: "SymC PRIMA size  43"  info1: "mode:    Iu
-visited: 36
-irg:     OO_PROGRAM_EXAMPLE_main
-arity: 0
-kind: size
-SymConst of type: type_unknown
-"}
+node: {title: "n45" label: "Alloc  45"  info1: "Alloc 45
+  mode:    T
+  visited: 37
+  irg:     OO_PROGRAM_EXAMPLE_main
+  arity:   2
+  pred nodes:
+    -1:    Block 191
+     0:    Proj 37
+     1:    SymC PRIMA size 43
+  Private Attributes:
+  pinned state: op_pin_state_pinned
+  allocating entity of type: PRIMA
+  allocating on: the heap
+"
+}
+node: {title: "n45n43" label: "SymC PRIMA size  43"  info1: "SymC PRIMA size 43
+  mode:    Iu
+  visited: 37
+  irg:     OO_PROGRAM_EXAMPLE_main
+  arity:   0
+  pred nodes:
+    -1:    Block 30
+  Private Attributes:
+  kind: size
+  type: class type PRIMA (15)
+  type of value: type_unknown
+"
+}
 edge: {sourcename: "n45" targetname: "n37" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n45" targetname: "n45n43" label: "1" class:16 priority:10}
 edge: { sourcename: "n45" targetname: "n191" class:2  priority:50 linestyle:dotted}
-node: {title: "n48" label: "ProjP 2 48"  info1: "mode:    P
-visited: 36
-irg:     OO_PROGRAM_EXAMPLE_main
-arity: 1
-"color: yellow}
+node: {title: "n48" label: "ProjP 2 48"  info1: "Proj 48
+  mode:    P
+  visited: 37
+  irg:     OO_PROGRAM_EXAMPLE_main
+  arity:   1
+  pred nodes:
+    -1:    Block 191
+     0:    Alloc 45
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n48" targetname: "n45" label: "0" class:1  priority:50}
 edge: { sourcename: "n48" targetname: "n191" class:2  priority:50 linestyle:dotted}
-node: {title: "n177" label: "FilterP 0 177"  info1: "mode:    P
-visited: 36
-irg:     PRIMA_c
-arity: 1 backedges:
-intra predecessor nodes:
-  ProjT 95
-"color: yellow}
+node: {title: "n177" label: "FilterP 0 177"  info1: "Filter 177
+  mode:    P
+  visited: 37
+  irg:     PRIMA_c
+  arity:   1
+  pred nodes:
+    -1:    Block 87
+     0:    Proj 95
+  Private Attributes:
+  inter arity: 1  inter pred nodes:
+     0:    Proj 48
+  backedges:
+"
+color: yellow}
 edge: {sourcename: "n177" targetname: "n48" label: "0" class:16 priority:10}
 edge: { sourcename: "n177" targetname: "n87" class:2  priority:50 linestyle:dotted}
-node: {title: "n186" label: "FilterIs 1 186"  info1: "mode:    Is
-visited: 36
-irg:     PRIMA_set_a
-arity: 1 backedges:
-intra predecessor nodes:
-  ProjT 72
-"color: yellow}
-node: {title: "n186n41" label: "0x2Is  41"  info1: "mode:    Is
-visited: 36
-irg:     OO_PROGRAM_EXAMPLE_main
-arity: 0
-Const of type type_unknown
-"color: yellow}
+node: {title: "n186" label: "FilterIs 1 186"  info1: "Filter 186
+  mode:    Is
+  visited: 37
+  irg:     PRIMA_set_a
+  arity:   1
+  pred nodes:
+    -1:    Block 64
+     0:    Proj 72
+  Private Attributes:
+  inter arity: 1  inter pred nodes:
+     0:    0x2 41
+  backedges:
+"
+color: yellow}
+node: {title: "n186n41" label: "0x2Is  41"  info1: "0x2 41
+  mode:    Is
+  visited: 37
+  irg:     OO_PROGRAM_EXAMPLE_main
+  arity:   0
+  pred nodes:
+    -1:    Block 30
+  Private Attributes:
+  Const of type type_unknown
+"
+color: yellow}
 edge: {sourcename: "n186" targetname: "n186n41" label: "0" class:16 priority:10}
 edge: { sourcename: "n186" targetname: "n64" class:2  priority:50 linestyle:dotted}
-node: {title: "n185" label: "FilterP 0 185"  info1: "mode:    P
-visited: 36
-irg:     PRIMA_set_a
-arity: 1 backedges:
-intra predecessor nodes:
-  ProjT 72
-"color: yellow}
+node: {title: "n185" label: "FilterP 0 185"  info1: "Filter 185
+  mode:    P
+  visited: 37
+  irg:     PRIMA_set_a
+  arity:   1
+  pred nodes:
+    -1:    Block 64
+     0:    Proj 72
+  Private Attributes:
+  inter arity: 1  inter pred nodes:
+     0:    Proj 48
+  backedges:
+"
+color: yellow}
 edge: {sourcename: "n185" targetname: "n48" label: "0" class:16 priority:10}
 edge: { sourcename: "n185" targetname: "n64" class:2  priority:50 linestyle:dotted}
-node: {title: "n47" label: "ProjM 0 47"  info1: "mode:    M
-visited: 36
-irg:     OO_PROGRAM_EXAMPLE_main
-arity: 1
-"color: yellow}
+node: {title: "n47" label: "ProjM 0 47"  info1: "Proj 47
+  mode:    M
+  visited: 37
+  irg:     OO_PROGRAM_EXAMPLE_main
+  arity:   1
+  pred nodes:
+    -1:    Block 191
+     0:    Alloc 45
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n47" targetname: "n45" label: "0" class:17 priority:10 color:blue}
 edge: { sourcename: "n47" targetname: "n191" class:2  priority:50 linestyle:dotted}
-node: {title: "n184" label: "FilterM 1 184"  info1: "mode:    M
-visited: 36
-irg:     PRIMA_set_a
-arity: 1 backedges:
-intra predecessor nodes:
-  StartT 65
-"color: yellow}
+node: {title: "n184" label: "FilterM 1 184"  info1: "Filter 184
+  mode:    M
+  visited: 37
+  irg:     PRIMA_set_a
+  arity:   1
+  pred nodes:
+    -1:    Block 64
+     0:    Start PRIMA_set_a 65
+  Private Attributes:
+  inter arity: 1  inter pred nodes:
+     0:    Proj 47
+  backedges:
+"
+color: yellow}
 edge: {sourcename: "n184" targetname: "n47" label: "0" class:17 priority:10 color:blue}
 edge: { sourcename: "n184" targetname: "n64" class:2  priority:50 linestyle:dotted}
-node: {title: "n78" label: "Sel a 78"  info1: "mode:    P
-visited: 36
-irg:     PRIMA_set_a
-arity: 2
-Selecting entity of type int
-  from entity of type PRIMA
-"}
+node: {title: "n78" label: "Sel a 78"  info1: "Sel 78
+  mode:    P
+  visited: 37
+  irg:     PRIMA_set_a
+  arity:   2
+  pred nodes:
+    -1:    Block 74
+     0:    Filter 184
+     1:    Filter 185
+  Private Attributes:
+  Selecting entity of type int
+    from entity of type PRIMA
+"
+}
 edge: {sourcename: "n78" targetname: "n184" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n78" targetname: "n185" label: "1" class:16 priority:10}
 edge: { sourcename: "n78" targetname: "n74" class:2  priority:50 linestyle:dotted}
-node: {title: "n79" label: "Store  79"  info1: "mode:    T
-visited: 36
-irg:     PRIMA_set_a
-arity: 3
-volatility: volatility_non_volatile
-"}
+node: {title: "n79" label: "Store  79"  info1: "Store 79
+  mode:    T
+  visited: 37
+  irg:     PRIMA_set_a
+  arity:   3
+  pred nodes:
+    -1:    Block 74
+     0:    Filter 184
+     1:    Sel 78
+     2:    Filter 186
+  Private Attributes:
+  pinned state: op_pin_state_pinned
+  volatility: volatility_non_volatile
+"
+}
 edge: {sourcename: "n79" targetname: "n184" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n79" targetname: "n78" label: "1" class:1  priority:50}
 edge: {sourcename: "n79" targetname: "n186" label: "2" class:16 priority:10}
 edge: { sourcename: "n79" targetname: "n74" class:2  priority:50 linestyle:dotted}
-node: {title: "n81" label: "ProjM 0 81"  info1: "mode:    M
-visited: 36
-irg:     PRIMA_set_a
-arity: 1
-"color: yellow}
+node: {title: "n81" label: "ProjM 0 81"  info1: "Proj 81
+  mode:    M
+  visited: 37
+  irg:     PRIMA_set_a
+  arity:   1
+  pred nodes:
+    -1:    Block 74
+     0:    Store 79
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n81" targetname: "n79" label: "0" class:17 priority:10 color:blue}
 edge: { sourcename: "n81" targetname: "n74" class:2  priority:50 linestyle:dotted}
-node: {title: "n196" label: "FilterM 0 196"  info1: "mode:    M
-visited: 36
-irg:     OO_PROGRAM_EXAMPLE_main
-arity: 1 backedges:
-intra predecessor nodes:
-  CallT 50
-"color: yellow}
+node: {title: "n196" label: "FilterM 0 196"  info1: "Filter 196
+  mode:    M
+  visited: 37
+  irg:     OO_PROGRAM_EXAMPLE_main
+  arity:   1
+  pred nodes:
+    -1:    Block 197
+     0:    Call 50
+  Private Attributes:
+  inter arity: 1  inter pred nodes:
+     0:    Proj 81
+  backedges:
+"
+color: yellow}
 edge: {sourcename: "n196" targetname: "n81" label: "0" class:17 priority:10 color:blue}
 edge: { sourcename: "n196" targetname: "n197" class:2  priority:50 linestyle:dotted}
-node: {title: "n176" label: "FilterM 1 176"  info1: "mode:    M
-visited: 36
-irg:     PRIMA_c
-arity: 1 backedges:
-intra predecessor nodes:
-  StartT 88
-"color: yellow}
+node: {title: "n176" label: "FilterM 1 176"  info1: "Filter 176
+  mode:    M
+  visited: 37
+  irg:     PRIMA_c
+  arity:   1
+  pred nodes:
+    -1:    Block 87
+     0:    Start PRIMA_c 88
+  Private Attributes:
+  inter arity: 1  inter pred nodes:
+     0:    Filter 196
+  backedges:
+"
+color: yellow}
 edge: {sourcename: "n176" targetname: "n196" label: "0" class:17 priority:10 color:blue}
 edge: { sourcename: "n176" targetname: "n87" class:2  priority:50 linestyle:dotted}
-node: {title: "n101" label: "Sel a 101"  info1: "mode:    P
-visited: 36
-irg:     PRIMA_c
-arity: 2
-Selecting entity of type int
-  from entity of type PRIMA
-"}
+node: {title: "n101" label: "Sel a 101"  info1: "Sel 101
+  mode:    P
+  visited: 37
+  irg:     PRIMA_c
+  arity:   2
+  pred nodes:
+    -1:    Block 97
+     0:    Filter 176
+     1:    Filter 177
+  Private Attributes:
+  Selecting entity of type int
+    from entity of type PRIMA
+"
+}
 edge: {sourcename: "n101" targetname: "n176" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n101" targetname: "n177" label: "1" class:16 priority:10}
 edge: { sourcename: "n101" targetname: "n97" class:2  priority:50 linestyle:dotted}
-node: {title: "n102" label: "Load[Is]  102"  info1: "mode:    T
-visited: 36
-irg:     PRIMA_c
-arity: 2
-volatility: volatility_non_volatile
-"}
+node: {title: "n102" label: "Load[Is]  102"  info1: "Load[Is] 102
+  mode:    T
+  visited: 37
+  irg:     PRIMA_c
+  arity:   2
+  pred nodes:
+    -1:    Block 97
+     0:    Filter 176
+     1:    Sel 101
+  Private Attributes:
+  pinned state: op_pin_state_pinned
+  mode of loaded value: Is
+  volatility: volatility_non_volatile
+"
+}
 edge: {sourcename: "n102" targetname: "n176" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n102" targetname: "n101" label: "1" class:1  priority:50}
 edge: { sourcename: "n102" targetname: "n97" class:2  priority:50 linestyle:dotted}
-node: {title: "n105" label: "ProjIs 2 105"  info1: "mode:    Is
-visited: 36
-irg:     PRIMA_c
-arity: 1
-"color: yellow}
+node: {title: "n105" label: "ProjIs 2 105"  info1: "Proj 105
+  mode:    Is
+  visited: 37
+  irg:     PRIMA_c
+  arity:   1
+  pred nodes:
+    -1:    Block 97
+     0:    Load[Is] 102
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n105" targetname: "n102" label: "0" class:1  priority:50}
 edge: { sourcename: "n105" targetname: "n97" class:2  priority:50 linestyle:dotted}
-node: {title: "n106" label: "AddIs  106"  info1: "mode:    Is
-visited: 36
-irg:     PRIMA_c
-arity: 2
-"}
+node: {title: "n106" label: "AddIs  106"  info1: "Add 106
+  mode:    Is
+  visited: 37
+  irg:     PRIMA_c
+  arity:   2
+  pred nodes:
+    -1:    Block 97
+     0:    Proj 105
+     1:    Filter 178
+  Private Attributes:
+"
+}
 edge: {sourcename: "n106" targetname: "n105" label: "0" class:1  priority:50}
 edge: {sourcename: "n106" targetname: "n178" label: "1" class:16 priority:10}
 edge: { sourcename: "n106" targetname: "n97" class:2  priority:50 linestyle:dotted}
-node: {title: "n203" label: "FilterIs 0 203"  info1: "mode:    Is
-visited: 36
-irg:     OO_PROGRAM_EXAMPLE_main
-arity: 1 backedges:
-intra predecessor nodes:
-  ProjT 57
-"color: yellow}
+node: {title: "n203" label: "FilterIs 0 203"  info1: "Filter 203
+  mode:    Is
+  visited: 37
+  irg:     OO_PROGRAM_EXAMPLE_main
+  arity:   1
+  pred nodes:
+    -1:    Block 40
+     0:    Proj 57
+  Private Attributes:
+  inter arity: 1  inter pred nodes:
+     0:    Add 106
+  backedges:
+"
+color: yellow}
 edge: {sourcename: "n203" targetname: "n106" label: "0" class:16 priority:10}
 edge: { sourcename: "n203" targetname: "n40" class:2  priority:50 linestyle:dotted}
-node: {title: "n104" label: "ProjM 0 104"  info1: "mode:    M
-visited: 36
-irg:     PRIMA_c
-arity: 1
-"color: yellow}
+node: {title: "n104" label: "ProjM 0 104"  info1: "Proj 104
+  mode:    M
+  visited: 37
+  irg:     PRIMA_c
+  arity:   1
+  pred nodes:
+    -1:    Block 97
+     0:    Load[Is] 102
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n104" targetname: "n102" label: "0" class:17 priority:10 color:blue}
 edge: { sourcename: "n104" targetname: "n97" class:2  priority:50 linestyle:dotted}
-node: {title: "n202" label: "FilterM 0 202"  info1: "mode:    M
-visited: 36
-irg:     OO_PROGRAM_EXAMPLE_main
-arity: 1 backedges:
-intra predecessor nodes:
-  CallT 54
-"color: yellow}
+node: {title: "n202" label: "FilterM 0 202"  info1: "Filter 202
+  mode:    M
+  visited: 37
+  irg:     OO_PROGRAM_EXAMPLE_main
+  arity:   1
+  pred nodes:
+    -1:    Block 40
+     0:    Call 54
+  Private Attributes:
+  inter arity: 1  inter pred nodes:
+     0:    Proj 104
+  backedges:
+"
+color: yellow}
 edge: {sourcename: "n202" targetname: "n104" label: "0" class:17 priority:10 color:blue}
 edge: { sourcename: "n202" targetname: "n40" class:2  priority:50 linestyle:dotted}
-node: {title: "n59" label: "Return  59"  info1: "mode:    X
-visited: 36
-irg:     OO_PROGRAM_EXAMPLE_main
-arity: 2
-"}
+node: {title: "n59" label: "Return  59"  info1: "Return 59
+  mode:    X
+  visited: 37
+  irg:     OO_PROGRAM_EXAMPLE_main
+  arity:   2
+  pred nodes:
+    -1:    Block 40
+     0:    Filter 202
+     1:    Filter 203
+  Private Attributes:
+"
+}
 edge: {sourcename: "n59" targetname: "n202" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n59" targetname: "n203" label: "1" class:1  priority:50}
 edge: { sourcename: "n59" targetname: "n40" class:2  priority:50 linestyle:dotted}
-node: {title: "n28" label: "Block  28"  info1: "mode:    BB
-visited: 36
-irg:     OO_PROGRAM_EXAMPLE_main
-arity: 1 backedges:
-"color: lightyellow}
+node: {title: "n28" label: "Block  28"  info1: "Block 28
+  mode:    BB
+  visited: 37
+  irg:     OO_PROGRAM_EXAMPLE_main
+  arity:   1
+  pred nodes:
+     0:    Return 59
+  Private Attributes:
+  inter arity: 1  inter pred nodes:
+     0:    Return 59
+  backedges:
+  block visited: 0  dominator info: not implemented
+"
+color: lightyellow}
 edge: {sourcename: "n28" targetname: "n59" label: "0" class:13 priority:60 color:red}
-node: {title: "n109" label: "End OO_PROGRAM_EXAMPLE_main  109"  info1: "mode:    X
-visited: 36
-irg:     OO_PROGRAM_EXAMPLE_main
-arity: 2
-"color: blue}
+node: {title: "n109" label: "End OO_PROGRAM_EXAMPLE_main  109"  info1: "End OO_PROGRAM_EXAMPLE_main 109
+  mode:    X
+  visited: 37
+  irg:     OO_PROGRAM_EXAMPLE_main
+  arity:   2
+  pred nodes:
+    -1:    Block 28
+     0:    Block 191
+     1:    Block 197
+  Private Attributes:
+"
+color: blue}
 edge: { sourcename: "n109" targetname: "n28" class:2  priority:50 linestyle:dotted}
 node: {title: "e17" label: "ent a" color: yellow
  info1: "entity a (17)
@@ -510,14 +885,19 @@ node: {title: "e20" label: "ent PRIMA_set_a" color: yellow
 }
 edge: { sourcename: "e20" targetname: "t18"class: 3 label: "type" color: red}
 edge: { sourcename: "e20" targetname: "n19"label: "value 0"}
-node: {title: "n19" label: "SymC &set_a  19"  info1: "mode:    P
-visited: 39
-arity: 0
-kind: addr_ent
-entity PRIMA.set_a (20)
+node: {title: "n19" label: "SymC &set_a  19"  info1: "SymC &set_a 19
+  mode:    P
+  visited: 40
+  arity:   0
+  pred nodes:
+    -1:    Block 1
+  Private Attributes:
+  kind:   addr_ent
+  entity: entity PRIMA.set_a (20)
 
-SymConst of type: type_unknown
-"}
+  type of value: type_unknown
+"
+}
 node: {title: "t18" label: "method set_a" info1: "state: layout_fixed,
 mode: P,
 size: 32b,
@@ -556,14 +936,19 @@ node: {title: "e23" label: "ent PRIMA_c" color: yellow
 }
 edge: { sourcename: "e23" targetname: "t21"class: 3 label: "type" color: red}
 edge: { sourcename: "e23" targetname: "n22"label: "value 0"}
-node: {title: "n22" label: "SymC &c  22"  info1: "mode:    P
-visited: 40
-arity: 0
-kind: addr_ent
-entity PRIMA.c (23)
+node: {title: "n22" label: "SymC &c  22"  info1: "SymC &c 22
+  mode:    P
+  visited: 41
+  arity:   0
+  pred nodes:
+    -1:    Block 1
+  Private Attributes:
+  kind:   addr_ent
+  entity: entity PRIMA.c (23)
 
-SymConst of type: type_unknown
-"}
+  type of value: type_unknown
+"
+}
 node: {title: "t21" label: "method c" info1: "state: layout_fixed,
 mode: P,
 size: 32b,
@@ -594,14 +979,19 @@ node: {title: "e26" label: "ent OO_PROGRAM_EXAMPLE_main" color: yellow
 }
 edge: { sourcename: "e26" targetname: "t24"class: 3 label: "type" color: red}
 edge: { sourcename: "e26" targetname: "n25"label: "value 0"}
-node: {title: "n25" label: "SymC &OO_PROGRAM_EXAMPLE_main  25"  info1: "mode:    P
-visited: 41
-arity: 0
-kind: addr_ent
-entity GlobalType.OO_PROGRAM_EXAMPLE_main (26)
+node: {title: "n25" label: "SymC &OO_PROGRAM_EXAMPLE_main  25"  info1: "SymC &OO_PROGRAM_EXAMPLE_main 25
+  mode:    P
+  visited: 42
+  arity:   0
+  pred nodes:
+    -1:    Block 1
+  Private Attributes:
+  kind:   addr_ent
+  entity: entity GlobalType.OO_PROGRAM_EXAMPLE_main (26)
 
-SymConst of type: type_unknown
-"}
+  type of value: type_unknown
+"
+}
 node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1b,
 peculiarity: peculiarity_existent

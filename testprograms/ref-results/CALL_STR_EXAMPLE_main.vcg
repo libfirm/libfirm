@@ -55,35 +55,61 @@ colorentry 125:  255 250  250
 graph: { title: "g49" label: "CALL_STR_EXAMPLE_main" status:clustered color:white
 graph: { title: "n38"  label: "Block 38" status:clustered color:yellow
 edge: {sourcename: "n38" targetname: "n57" label: "0" class:13 priority:60 color:red}
-node: {title: "n59" label: "End  59"  info1: "mode:    X
-visited: 9
-irg:     CALL_STR_EXAMPLE_main
-arity: 0
-"color: blue}
+node: {title: "n59" label: "End  59"  info1: "End 59
+  mode:    X
+  visited: 9
+  irg:     CALL_STR_EXAMPLE_main
+  arity:   0
+  pred nodes:
+    -1:    Block 38
+  Private Attributes:
+"
+color: blue}
 }
 
 graph: { title: "n50"  label: "Block 50" status:clustered color:yellow
 edge: {sourcename: "n50" targetname: "n44" label: "0" class:13 priority:60 color:red}
-node: {title: "n57" label: "Return  57"  info1: "mode:    X
-visited: 9
-irg:     CALL_STR_EXAMPLE_main
-arity: 1
-return in method of type CALL_STR_EXAMPLE_main
-"}
+node: {title: "n57" label: "Return  57"  info1: "Return 57
+  mode:    X
+  visited: 9
+  irg:     CALL_STR_EXAMPLE_main
+  arity:   1
+  pred nodes:
+    -1:    Block 50
+     0:    Proj 56
+  Private Attributes:
+  return in method of type CALL_STR_EXAMPLE_main
+"
+}
 edge: {sourcename: "n57" targetname: "n56" label: "0" class:14 priority:50 color:blue}
-node: {title: "n56" label: "ProjM 0 56"  info1: "mode:    M
-visited: 9
-irg:     CALL_STR_EXAMPLE_main
-arity: 1
-"color: yellow}
+node: {title: "n56" label: "ProjM 0 56"  info1: "Proj 56
+  mode:    M
+  visited: 9
+  irg:     CALL_STR_EXAMPLE_main
+  arity:   1
+  pred nodes:
+    -1:    Block 50
+     0:    Call 54
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n56" targetname: "n54" label: "0" class:17 priority:10 color:blue}
-node: {title: "n54" label: "Call  54"  info1: "mode:    T
-visited: 9
-irg:     CALL_STR_EXAMPLE_main
-arity: 3
-calling method of type f
-  param 0 type: ptr_to_string
-"}
+node: {title: "n54" label: "Call  54"  info1: "Call 54
+  mode:    T
+  visited: 9
+  irg:     CALL_STR_EXAMPLE_main
+  arity:   3
+  pred nodes:
+    -1:    Block 50
+     0:    Proj 47
+     1:    SymC f 52
+     2:    SymC &constStr 51
+  Private Attributes:
+  pinned state: op_pin_state_pinned
+  calling method of type f
+    param 0 type: ptr_to_string
+"
+}
 edge: {sourcename: "n54" targetname: "n47" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n54" targetname: "n52" label: "1" class:16 priority:10}
 edge: {sourcename: "n54" targetname: "n51" label: "2" class:16 priority:10}
@@ -91,40 +117,68 @@ edge: {sourcename: "n54" targetname: "n51" label: "2" class:16 priority:10}
 
 graph: { title: "n40"  label: "Block 40" status:clustered color:yellow
 edge: {sourcename: "n40" targetname: "n44" label: "0" class:13 priority:60 color:red}
-node: {title: "n47" label: "ProjM 1 47"  info1: "mode:    M
-visited: 9
-irg:     CALL_STR_EXAMPLE_main
-arity: 1
-"color: yellow}
+node: {title: "n47" label: "ProjM 1 47"  info1: "Proj 47
+  mode:    M
+  visited: 9
+  irg:     CALL_STR_EXAMPLE_main
+  arity:   1
+  pred nodes:
+    -1:    Block 40
+     0:    Start 41
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n47" targetname: "n41" label: "0" class:17 priority:10 color:blue}
-node: {title: "n52" label: "SymC f  52"  info1: "mode:    P
-visited: 9
-irg:     CALL_STR_EXAMPLE_main
-arity: 0
-kind: addr_name
-SymConst of type: type_unknown
-"}
-node: {title: "n51" label: "SymC &constStr  51"  info1: "mode:    P
-visited: 9
-irg:     CALL_STR_EXAMPLE_main
-arity: 0
-kind: addr_ent
-entity GlobalType.constStr (20)
+node: {title: "n52" label: "SymC f  52"  info1: "SymC f 52
+  mode:    P
+  visited: 9
+  irg:     CALL_STR_EXAMPLE_main
+  arity:   0
+  pred nodes:
+    -1:    Block 40
+  Private Attributes:
+  kind: addr_name
+  name: f
+  type of value: type_unknown
+"
+}
+node: {title: "n51" label: "SymC &constStr  51"  info1: "SymC &constStr 51
+  mode:    P
+  visited: 9
+  irg:     CALL_STR_EXAMPLE_main
+  arity:   0
+  pred nodes:
+    -1:    Block 40
+  Private Attributes:
+  kind:   addr_ent
+  entity: entity GlobalType.constStr (20)
 
-SymConst of type: type_unknown
-"}
-node: {title: "n44" label: "ProjX 0 44"  info1: "mode:    X
-visited: 9
-irg:     CALL_STR_EXAMPLE_main
-arity: 1
-"color: yellow}
+  type of value: type_unknown
+"
+}
+node: {title: "n44" label: "ProjX 0 44"  info1: "Proj 44
+  mode:    X
+  visited: 9
+  irg:     CALL_STR_EXAMPLE_main
+  arity:   1
+  pred nodes:
+    -1:    Block 40
+     0:    Start 41
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n44" targetname: "n41" label: "0" class:13 priority:60 color:red}
-node: {title: "n41" label: "Start  41"  info1: "mode:    T
-visited: 9
-irg:     CALL_STR_EXAMPLE_main
-arity: 0
-start of method of type CALL_STR_EXAMPLE_main
-"color: blue}
+node: {title: "n41" label: "Start  41"  info1: "Start 41
+  mode:    T
+  visited: 9
+  irg:     CALL_STR_EXAMPLE_main
+  arity:   0
+  pred nodes:
+    -1:    Block 40
+  Private Attributes:
+  start of method of type CALL_STR_EXAMPLE_main
+"
+color: blue}
 }
 
 }

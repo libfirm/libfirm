@@ -55,97 +55,173 @@ colorentry 125:  255 250  250
 graph: { title: "g37" label: "ARRAY-STACK_EXAMPLE_main" status:clustered color:white
 graph: { title: "n26"  label: "Block 26" status:clustered color:yellow
 edge: {sourcename: "n26" targetname: "n48" label: "0" class:13 priority:60 color:red}
-node: {title: "n50" label: "End  50"  info1: "mode:    X
-visited: 11
-irg:     ARRAY-STACK_EXAMPLE_main
-arity: 0
-"color: blue}
+node: {title: "n50" label: "End  50"  info1: "End 50
+  mode:    X
+  visited: 11
+  irg:     ARRAY-STACK_EXAMPLE_main
+  arity:   0
+  pred nodes:
+    -1:    Block 26
+  Private Attributes:
+"
+color: blue}
 }
 
 graph: { title: "n38"  label: "Block 38" status:clustered color:yellow
 edge: {sourcename: "n38" targetname: "n32" label: "0" class:13 priority:60 color:red}
-node: {title: "n48" label: "Return  48"  info1: "mode:    X
-visited: 11
-irg:     ARRAY-STACK_EXAMPLE_main
-arity: 2
-return in method of type main_tp
-  res 0 type: int
-"}
+node: {title: "n48" label: "Return  48"  info1: "Return 48
+  mode:    X
+  visited: 11
+  irg:     ARRAY-STACK_EXAMPLE_main
+  arity:   2
+  pred nodes:
+    -1:    Block 38
+     0:    Proj 46
+     1:    Proj 47
+  Private Attributes:
+  return in method of type main_tp
+    res 0 type: int
+"
+}
 edge: {sourcename: "n48" targetname: "n46" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n48" targetname: "n47" label: "1" class:1  priority:50}
-node: {title: "n46" label: "ProjM 0 46"  info1: "mode:    M
-visited: 11
-irg:     ARRAY-STACK_EXAMPLE_main
-arity: 1
-"color: yellow}
+node: {title: "n46" label: "ProjM 0 46"  info1: "Proj 46
+  mode:    M
+  visited: 11
+  irg:     ARRAY-STACK_EXAMPLE_main
+  arity:   1
+  pred nodes:
+    -1:    Block 38
+     0:    Load[Is] 44
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n46" targetname: "n44" label: "0" class:17 priority:10 color:blue}
-node: {title: "n47" label: "ProjIs 2 47"  info1: "mode:    Is
-visited: 11
-irg:     ARRAY-STACK_EXAMPLE_main
-arity: 1
-"color: yellow}
+node: {title: "n47" label: "ProjIs 2 47"  info1: "Proj 47
+  mode:    Is
+  visited: 11
+  irg:     ARRAY-STACK_EXAMPLE_main
+  arity:   1
+  pred nodes:
+    -1:    Block 38
+     0:    Load[Is] 44
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n47" targetname: "n44" label: "0" class:1  priority:50}
-node: {title: "n44" label: "Load[Is]  44"  info1: "mode:    T
-visited: 11
-irg:     ARRAY-STACK_EXAMPLE_main
-arity: 2
-volatility: volatility_non_volatile
-"}
+node: {title: "n44" label: "Load[Is]  44"  info1: "Load[Is] 44
+  mode:    T
+  visited: 11
+  irg:     ARRAY-STACK_EXAMPLE_main
+  arity:   2
+  pred nodes:
+    -1:    Block 38
+     0:    Proj 35
+     1:    Sel 43
+  Private Attributes:
+  pinned state: op_pin_state_pinned
+  mode of loaded value: Is
+  volatility: volatility_non_volatile
+"
+}
 edge: {sourcename: "n44" targetname: "n35" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n44" targetname: "n43" label: "1" class:1  priority:50}
-node: {title: "n43" label: "Sel a_tp_elem_ent 43"  info1: "mode:    P
-visited: 11
-irg:     ARRAY-STACK_EXAMPLE_main
-arity: 3
-Selecting entity of type int
-  from entity of type a_tp
-"}
+node: {title: "n43" label: "Sel a_tp_elem_ent 43"  info1: "Sel 43
+  mode:    P
+  visited: 11
+  irg:     ARRAY-STACK_EXAMPLE_main
+  arity:   3
+  pred nodes:
+    -1:    Block 38
+     0:    Proj 35
+     1:    Sel 41
+     2:    0x3 42
+  Private Attributes:
+  Selecting entity of type int
+    from entity of type a_tp
+"
+}
 edge: {sourcename: "n43" targetname: "n35" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n43" targetname: "n41" label: "1" class:1  priority:50}
 edge: {sourcename: "n43" targetname: "n42" label: "2" class:16 priority:10}
-node: {title: "n41" label: "Sel a 41"  info1: "mode:    P
-visited: 11
-irg:     ARRAY-STACK_EXAMPLE_main
-arity: 2
-Selecting entity of type a_tp
-  from entity of type mainframe_tp
-"}
+node: {title: "n41" label: "Sel a 41"  info1: "Sel 41
+  mode:    P
+  visited: 11
+  irg:     ARRAY-STACK_EXAMPLE_main
+  arity:   2
+  pred nodes:
+    -1:    Block 38
+     0:    Proj 35
+     1:    Proj 33
+  Private Attributes:
+  Selecting entity of type a_tp
+    from entity of type mainframe_tp
+"
+}
 edge: {sourcename: "n41" targetname: "n35" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n41" targetname: "n33" label: "1" class:16 priority:10}
 }
 
 graph: { title: "n28"  label: "Block 28" status:clustered color:yellow
 edge: {sourcename: "n28" targetname: "n32" label: "0" class:13 priority:60 color:red}
-node: {title: "n35" label: "ProjM 1 35"  info1: "mode:    M
-visited: 11
-irg:     ARRAY-STACK_EXAMPLE_main
-arity: 1
-"color: yellow}
+node: {title: "n35" label: "ProjM 1 35"  info1: "Proj 35
+  mode:    M
+  visited: 11
+  irg:     ARRAY-STACK_EXAMPLE_main
+  arity:   1
+  pred nodes:
+    -1:    Block 28
+     0:    Start 29
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n35" targetname: "n29" label: "0" class:17 priority:10 color:blue}
-node: {title: "n33" label: "ProjP 2 33"  info1: "mode:    P
-visited: 11
-irg:     ARRAY-STACK_EXAMPLE_main
-arity: 1
-"color: yellow}
+node: {title: "n33" label: "ProjP 2 33"  info1: "Proj 33
+  mode:    P
+  visited: 11
+  irg:     ARRAY-STACK_EXAMPLE_main
+  arity:   1
+  pred nodes:
+    -1:    Block 28
+     0:    Start 29
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n33" targetname: "n29" label: "0" class:1  priority:50}
-node: {title: "n42" label: "0x3Iu  42"  info1: "mode:    Iu
-visited: 11
-irg:     ARRAY-STACK_EXAMPLE_main
-arity: 0
-Const of type type_unknown
-"color: yellow}
-node: {title: "n32" label: "ProjX 0 32"  info1: "mode:    X
-visited: 11
-irg:     ARRAY-STACK_EXAMPLE_main
-arity: 1
-"color: yellow}
+node: {title: "n42" label: "0x3Iu  42"  info1: "0x3 42
+  mode:    Iu
+  visited: 11
+  irg:     ARRAY-STACK_EXAMPLE_main
+  arity:   0
+  pred nodes:
+    -1:    Block 28
+  Private Attributes:
+  Const of type type_unknown
+"
+color: yellow}
+node: {title: "n32" label: "ProjX 0 32"  info1: "Proj 32
+  mode:    X
+  visited: 11
+  irg:     ARRAY-STACK_EXAMPLE_main
+  arity:   1
+  pred nodes:
+    -1:    Block 28
+     0:    Start 29
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n32" targetname: "n29" label: "0" class:13 priority:60 color:red}
-node: {title: "n29" label: "Start  29"  info1: "mode:    T
-visited: 11
-irg:     ARRAY-STACK_EXAMPLE_main
-arity: 0
-start of method of type main_tp
-"color: blue}
+node: {title: "n29" label: "Start  29"  info1: "Start 29
+  mode:    T
+  visited: 11
+  irg:     ARRAY-STACK_EXAMPLE_main
+  arity:   0
+  pred nodes:
+    -1:    Block 28
+  Private Attributes:
+  start of method of type main_tp
+"
+color: blue}
 }
 
 }

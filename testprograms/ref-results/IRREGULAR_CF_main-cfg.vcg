@@ -78,9 +78,15 @@ edge: { sourcename: "n42" targetname: "n31"}
 node: {title: "n50" label: "Block n50" info1:"arity: 1
 "}
 edge: { sourcename: "n50" targetname: "n42"}
-node: {title: "n67" label: "Bad  67"  info1: "mode:    T
-visited: 0
-irg:     IRREGULAR_CF_main
-arity: 0
-"}
+node: {title: "n67" label: "Bad  67"  info1: "Bad 67
+  mode:    T
+  visited: 0
+  irg:     IRREGULAR_CF_main
+  arity:   0
+  pred nodes:
+    -1:    Block 21
+  Private Attributes:
+  pinned state: op_pin_state_pinned
+"
+}
 }

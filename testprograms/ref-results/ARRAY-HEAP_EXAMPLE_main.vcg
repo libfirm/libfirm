@@ -55,108 +55,197 @@ colorentry 125:  255 250  250
 graph: { title: "g36" label: "ARRAY-HEAP_EXAMPLE_main" status:clustered color:white
 graph: { title: "n25"  label: "Block 25" status:clustered color:yellow
 edge: {sourcename: "n25" targetname: "n50" label: "0" class:13 priority:60 color:red}
-node: {title: "n52" label: "End  52"  info1: "mode:    X
-visited: 11
-irg:     ARRAY-HEAP_EXAMPLE_main
-arity: 0
-"color: blue}
+node: {title: "n52" label: "End  52"  info1: "End 52
+  mode:    X
+  visited: 11
+  irg:     ARRAY-HEAP_EXAMPLE_main
+  arity:   0
+  pred nodes:
+    -1:    Block 25
+  Private Attributes:
+"
+color: blue}
 }
 
 graph: { title: "n37"  label: "Block 37" status:clustered color:yellow
 edge: {sourcename: "n37" targetname: "n31" label: "0" class:13 priority:60 color:red}
-node: {title: "n50" label: "Return  50"  info1: "mode:    X
-visited: 11
-irg:     ARRAY-HEAP_EXAMPLE_main
-arity: 2
-return in method of type ARRAY-HEAP_EXAMPLE_main
-  res 0 type: int
-"}
+node: {title: "n50" label: "Return  50"  info1: "Return 50
+  mode:    X
+  visited: 11
+  irg:     ARRAY-HEAP_EXAMPLE_main
+  arity:   2
+  pred nodes:
+    -1:    Block 37
+     0:    Proj 48
+     1:    Proj 49
+  Private Attributes:
+  return in method of type ARRAY-HEAP_EXAMPLE_main
+    res 0 type: int
+"
+}
 edge: {sourcename: "n50" targetname: "n48" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n50" targetname: "n49" label: "1" class:1  priority:50}
-node: {title: "n48" label: "ProjM 0 48"  info1: "mode:    M
-visited: 11
-irg:     ARRAY-HEAP_EXAMPLE_main
-arity: 1
-"color: yellow}
+node: {title: "n48" label: "ProjM 0 48"  info1: "Proj 48
+  mode:    M
+  visited: 11
+  irg:     ARRAY-HEAP_EXAMPLE_main
+  arity:   1
+  pred nodes:
+    -1:    Block 37
+     0:    Load[Is] 46
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n48" targetname: "n46" label: "0" class:17 priority:10 color:blue}
-node: {title: "n49" label: "ProjIs 2 49"  info1: "mode:    Is
-visited: 11
-irg:     ARRAY-HEAP_EXAMPLE_main
-arity: 1
-"color: yellow}
+node: {title: "n49" label: "ProjIs 2 49"  info1: "Proj 49
+  mode:    Is
+  visited: 11
+  irg:     ARRAY-HEAP_EXAMPLE_main
+  arity:   1
+  pred nodes:
+    -1:    Block 37
+     0:    Load[Is] 46
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n49" targetname: "n46" label: "0" class:1  priority:50}
-node: {title: "n46" label: "Load[Is]  46"  info1: "mode:    T
-visited: 11
-irg:     ARRAY-HEAP_EXAMPLE_main
-arity: 2
-volatility: volatility_non_volatile
-"}
+node: {title: "n46" label: "Load[Is]  46"  info1: "Load[Is] 46
+  mode:    T
+  visited: 11
+  irg:     ARRAY-HEAP_EXAMPLE_main
+  arity:   2
+  pred nodes:
+    -1:    Block 37
+     0:    Proj 42
+     1:    Sel 45
+  Private Attributes:
+  pinned state: op_pin_state_pinned
+  mode of loaded value: Is
+  volatility: volatility_non_volatile
+"
+}
 edge: {sourcename: "n46" targetname: "n42" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n46" targetname: "n45" label: "1" class:1  priority:50}
-node: {title: "n45" label: "Sel a_elem_ent 45"  info1: "mode:    P
-visited: 11
-irg:     ARRAY-HEAP_EXAMPLE_main
-arity: 3
-Selecting entity of type int
-  from entity of type a
-"}
+node: {title: "n45" label: "Sel a_elem_ent 45"  info1: "Sel 45
+  mode:    P
+  visited: 11
+  irg:     ARRAY-HEAP_EXAMPLE_main
+  arity:   3
+  pred nodes:
+    -1:    Block 37
+     0:    Proj 42
+     1:    Proj 43
+     2:    0x3 44
+  Private Attributes:
+  Selecting entity of type int
+    from entity of type a
+"
+}
 edge: {sourcename: "n45" targetname: "n42" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n45" targetname: "n43" label: "1" class:1  priority:50}
 edge: {sourcename: "n45" targetname: "n44" label: "2" class:16 priority:10}
-node: {title: "n42" label: "ProjM 0 42"  info1: "mode:    M
-visited: 11
-irg:     ARRAY-HEAP_EXAMPLE_main
-arity: 1
-"color: yellow}
+node: {title: "n42" label: "ProjM 0 42"  info1: "Proj 42
+  mode:    M
+  visited: 11
+  irg:     ARRAY-HEAP_EXAMPLE_main
+  arity:   1
+  pred nodes:
+    -1:    Block 37
+     0:    Alloc 40
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n42" targetname: "n40" label: "0" class:17 priority:10 color:blue}
-node: {title: "n43" label: "ProjP 2 43"  info1: "mode:    P
-visited: 11
-irg:     ARRAY-HEAP_EXAMPLE_main
-arity: 1
-"color: yellow}
+node: {title: "n43" label: "ProjP 2 43"  info1: "Proj 43
+  mode:    P
+  visited: 11
+  irg:     ARRAY-HEAP_EXAMPLE_main
+  arity:   1
+  pred nodes:
+    -1:    Block 37
+     0:    Alloc 40
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n43" targetname: "n40" label: "0" class:1  priority:50}
-node: {title: "n40" label: "Alloc  40"  info1: "mode:    T
-visited: 11
-irg:     ARRAY-HEAP_EXAMPLE_main
-arity: 2
-allocating entity of type a
-"}
+node: {title: "n40" label: "Alloc  40"  info1: "Alloc 40
+  mode:    T
+  visited: 11
+  irg:     ARRAY-HEAP_EXAMPLE_main
+  arity:   2
+  pred nodes:
+    -1:    Block 37
+     0:    Proj 34
+     1:    0x28 38
+  Private Attributes:
+  pinned state: op_pin_state_pinned
+  allocating entity of type: a
+  allocating on: the stack
+"
+}
 edge: {sourcename: "n40" targetname: "n34" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n40" targetname: "n38" label: "1" class:16 priority:10}
 }
 
 graph: { title: "n27"  label: "Block 27" status:clustered color:yellow
 edge: {sourcename: "n27" targetname: "n31" label: "0" class:13 priority:60 color:red}
-node: {title: "n34" label: "ProjM 1 34"  info1: "mode:    M
-visited: 11
-irg:     ARRAY-HEAP_EXAMPLE_main
-arity: 1
-"color: yellow}
+node: {title: "n34" label: "ProjM 1 34"  info1: "Proj 34
+  mode:    M
+  visited: 11
+  irg:     ARRAY-HEAP_EXAMPLE_main
+  arity:   1
+  pred nodes:
+    -1:    Block 27
+     0:    Start 28
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n34" targetname: "n28" label: "0" class:17 priority:10 color:blue}
-node: {title: "n38" label: "0x28Iu  38"  info1: "mode:    Iu
-visited: 11
-irg:     ARRAY-HEAP_EXAMPLE_main
-arity: 0
-Const of type type_unknown
-"color: yellow}
-node: {title: "n44" label: "0x3Iu  44"  info1: "mode:    Iu
-visited: 11
-irg:     ARRAY-HEAP_EXAMPLE_main
-arity: 0
-Const of type type_unknown
-"color: yellow}
-node: {title: "n31" label: "ProjX 0 31"  info1: "mode:    X
-visited: 11
-irg:     ARRAY-HEAP_EXAMPLE_main
-arity: 1
-"color: yellow}
+node: {title: "n38" label: "0x28Iu  38"  info1: "0x28 38
+  mode:    Iu
+  visited: 11
+  irg:     ARRAY-HEAP_EXAMPLE_main
+  arity:   0
+  pred nodes:
+    -1:    Block 27
+  Private Attributes:
+  Const of type type_unknown
+"
+color: yellow}
+node: {title: "n44" label: "0x3Iu  44"  info1: "0x3 44
+  mode:    Iu
+  visited: 11
+  irg:     ARRAY-HEAP_EXAMPLE_main
+  arity:   0
+  pred nodes:
+    -1:    Block 27
+  Private Attributes:
+  Const of type type_unknown
+"
+color: yellow}
+node: {title: "n31" label: "ProjX 0 31"  info1: "Proj 31
+  mode:    X
+  visited: 11
+  irg:     ARRAY-HEAP_EXAMPLE_main
+  arity:   1
+  pred nodes:
+    -1:    Block 27
+     0:    Start 28
+  Private Attributes:
+"
+color: yellow}
 edge: {sourcename: "n31" targetname: "n28" label: "0" class:13 priority:60 color:red}
-node: {title: "n28" label: "Start  28"  info1: "mode:    T
-visited: 11
-irg:     ARRAY-HEAP_EXAMPLE_main
-arity: 0
-start of method of type ARRAY-HEAP_EXAMPLE_main
-"color: blue}
+node: {title: "n28" label: "Start  28"  info1: "Start 28
+  mode:    T
+  visited: 11
+  irg:     ARRAY-HEAP_EXAMPLE_main
+  arity:   0
+  pred nodes:
+    -1:    Block 27
+  Private Attributes:
+  start of method of type ARRAY-HEAP_EXAMPLE_main
+"
+color: blue}
 }
 
 }

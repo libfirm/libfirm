@@ -90,14 +90,19 @@ node: {title: "e18" label: "ent WHILE_EXAMPLE_main" color: yellow
 }
 edge: { sourcename: "e18" targetname: "t15"class: 3 label: "type" color: red}
 edge: { sourcename: "e18" targetname: "n17"label: "value 0"}
-node: {title: "n17" label: "SymC &main  17"  info1: "mode:    P
-visited: 1
-arity: 0
-kind: addr_ent
-entity WHILE_EXAMPLE.main (18)
+node: {title: "n17" label: "SymC &main  17"  info1: "SymC &main 17
+  mode:    P
+  visited: 1
+  arity:   0
+  pred nodes:
+    -1:    Block 1
+  Private Attributes:
+  kind:   addr_ent
+  entity: entity WHILE_EXAMPLE.main (18)
 
-SymConst of type: type_unknown
-"}
+  type of value: type_unknown
+"
+}
 node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1b,
 peculiarity: peculiarity_existent
