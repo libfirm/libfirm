@@ -15,6 +15,8 @@
 
 #include <assert.h>
 
+#include "irprintf.h"
+#include "irdump.h"
 #include "dags.h"
 
 enum dag_counting_options_t {
@@ -53,25 +55,41 @@ struct _dag_entry_t {
   unsigned    num_inner_nodes;          /**< number of inner nodes in the DAG */
   unsigned    is_dead;                  /**< marks a dead entry */
   dag_entry_t *next;                    /**< link all entries of a DAG */
+  dag_entry_t *link;                    /**< if set, this entry is an ID */
 };
 
 /**
- * a DAG Entry link, used to connect point
- * from several places to the same DAG Entry
+ * return an DAG entry for the node n
  */
-typedef struct _dag_link_t {
-  dag_entry_t	*entry;
-} dag_link_t;
+static dag_entry_t *get_irn_dag_entry(ir_node *n)
+{
+  dag_entry_t *res = get_irn_link(n);
+
+  if (res) {
+    dag_entry_t *p;
+
+    for (p = res; p->link; p = p->link);
+
+    if (p != res)
+      set_irn_link(n, p);
+
+    return p;
+  }
+  return NULL;
+}
+
+#define set_irn_dag_entry(n, e) set_irn_link(n, e)
 
 /**
  * walker for connecting DAGs and counting.
  */
 static void connect_dags(ir_node *node, void *env)
 {
-  dag_env_t  *dag_env = env;
-  int        i, arity;
-  ir_node    *block;
-  dag_link_t *link;
+  dag_env_t   *dag_env = env;
+  int         i, arity;
+  ir_node     *block;
+  dag_entry_t *entry;
+  ir_mode     *mode;
 
   if (is_Block(node))
     return;
@@ -83,15 +101,20 @@ static void connect_dags(ir_node *node, void *env)
       block == get_irg_end_block(current_ir_graph))
     return;
 
-  link = get_irn_link(node);
+  if (is_Phi(node))
+    return;
 
-  if (! link) {
+  mode = get_irn_mode(node);
+  if (mode == mode_X || mode == mode_M) {
+    /* do NOT count mode_X nodes */
+    return;
+  }
+
+  entry = get_irn_dag_entry(node);
+
+  if (! entry) {
     /* found a not assigned node, maybe a new root */
-    dag_entry_t *entry = obstack_alloc(&dag_env->obst, sizeof(*entry));
-
-    /* allocate a new link */
-    link        = obstack_alloc(&dag_env->obst, sizeof(*link));
-    link->entry = entry;
+    entry = obstack_alloc(&dag_env->obst, sizeof(*entry));
 
     entry->num_nodes       = 1;
     entry->num_roots       = 1;
@@ -99,17 +122,24 @@ static void connect_dags(ir_node *node, void *env)
     entry->root            = node;
     entry->is_dead         = 0;
     entry->next            = dag_env->list_of_dags;
+    entry->link            = NULL;
 
     ++dag_env->num_of_dags;
     dag_env->list_of_dags = entry;
 
-    set_irn_link(node, link);
+    set_irn_dag_entry(node, entry);
   }
 
   /* put the predecessors into the same DAG as the current */
   for (i = 0, arity = get_irn_arity(node); i < arity; ++i) {
-    ir_node *prev      = get_irn_n(node, i);
-    int     special    = 0;
+    ir_node *prev = get_irn_n(node, i);
+    ir_mode *mode = get_irn_mode(prev);
+
+    if (is_Phi(prev))
+      continue;
+
+    if (mode == mode_X || mode == mode_M)
+      continue;
 
     /*
      * copy constants if requested into the DAG's
@@ -118,37 +148,59 @@ static void connect_dags(ir_node *node, void *env)
      */
     if (dag_env->options & FIRMSTAT_COPY_CONSTANTS) {
       if (get_irn_op(prev) == op_Const || get_irn_op(prev) == op_SymConst) {
-	++link->entry->num_nodes;
-	++link->entry->num_inner_nodes;
+	++entry->num_nodes;
+	++entry->num_inner_nodes;
       }
     }
 
-    /* only nodes from teh same block goes into the DAG */
+    /* only nodes from the same block goes into the DAG */
     if (get_nodes_block(prev) == block) {
-      dag_link_t *prev_link = get_irn_link(prev);
+      dag_entry_t *prev_entry = get_irn_dag_entry(prev);
 
-      if (! prev_link) {
+      if (! prev_entry) {
 	/* not assigned node, put it into the same DAG */
-	set_irn_link(prev, link);
-	++link->entry->num_nodes;
-	++link->entry->num_inner_nodes;
+	set_irn_dag_entry(prev, entry);
+	++entry->num_nodes;
+	++entry->num_inner_nodes;
       }
-      else if (prev_link->entry != link->entry) {
-	/* two DAGs intersect */
+      else {
+        if (prev_entry != entry) {
 
-	assert(link->entry);
+          /* two DAGs intersect */
+          entry->num_roots       += prev_entry->num_roots;
+          entry->num_nodes       += prev_entry->num_nodes;
+          entry->num_inner_nodes += prev_entry->num_inner_nodes;
 
-	link->entry->num_roots       += prev_link->entry->num_roots;
-	link->entry->num_nodes       += prev_link->entry->num_nodes;
-	link->entry->num_inner_nodes += prev_link->entry->num_inner_nodes;
+          --dag_env->num_of_dags;
 
-	--dag_env->num_of_dags;
-
-	prev_link->entry->is_dead = 1;
-	prev_link->entry          = link->entry;
+          prev_entry->is_dead = 1;
+          prev_entry->link    = entry;
+        }
       }
     }
   }
+}
+
+/**
+ * a vcg attribute hook
+ */
+static int stat_dag_mark_hook(FILE *F, ir_node *n, ir_node *l)
+{
+  static const char *colors[] = { "purple", "pink", "lightblue", "orange", "khaki", "orchid", "lilac", "turquoise" };
+  dag_entry_t *entry;
+
+  /* do not count Bad / NoMem */
+  if (l && (get_irn_op(l) == op_NoMem || get_irn_op(l) == op_Bad))
+    return 0;
+
+  entry = get_irn_dag_entry(n);
+  if (! entry)
+    return 0;
+
+  fprintf(F, "color: %s info3: \"DAG id: %u\"", colors[entry->id & 7], entry->id);
+
+  /* I know the color! */
+  return 1;
 }
 
 /**
@@ -189,6 +241,13 @@ void count_dags_in_graph(graph_entry_t *global, graph_entry_t *graph)
       entry->num_inner_nodes,
       get_irn_node_nr(entry->root));
   }
+
+#if 1
+  /* dump for test */
+  set_dump_node_vcgattr_hook(stat_dag_mark_hook);
+  dump_ir_block_graph(graph->irg, "-dag");
+  set_dump_node_vcgattr_hook(NULL);
+#endif
 
   assert(id == root_env.num_of_dags);
 

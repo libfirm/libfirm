@@ -152,6 +152,7 @@ typedef struct _statistic_info_t {
   dumper_t                *dumper;		/**< list of dumper */
   int                     reassoc_run;          /**< if set, reassociation is running */
   int                     enable;		/**< if set, statistic is enabled */
+  int                     dag_options;          /**< DAG counting options */
 } stat_info_t;
 
 /**

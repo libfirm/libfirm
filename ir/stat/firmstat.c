@@ -491,8 +491,9 @@ static void set_adr_mark(graph_entry_t *graph, ir_node *node, unsigned val)
 /**
  * a vcg attribute hook
  */
-static int stat_adr_mark_hook(FILE *F, ir_node *n)
+static int stat_adr_mark_hook(FILE *F, ir_node *node, ir_node *local)
 {
+  ir_node *n           = local ? local : node;
   ir_graph *irg        = get_irn_irg(n);
   graph_entry_t *graph = graph_get_entry(irg, status->irg_hash);
   unsigned mark        = get_adr_mark(graph, n);
@@ -500,7 +501,7 @@ static int stat_adr_mark_hook(FILE *F, ir_node *n)
   if (mark & MARK_ADDRESS_CALC)
     fprintf(F, "color: purple");
   else if ((mark & (MARK_REF_ADR | MARK_REF_NON_ADR)) == MARK_REF_ADR)
-    fprintf(F, "color: lightpurple");
+    fprintf(F, "color: pink");
   else if ((mark & (MARK_REF_ADR | MARK_REF_NON_ADR)) == (MARK_REF_ADR|MARK_REF_NON_ADR))
     fprintf(F, "color: lightblue");
   else
@@ -545,7 +546,7 @@ static void mark_address_calc(ir_node *node, void *env)
     }
   }
 
-  /* makr all predecessors */
+  /* mark all predecessors */
   for (i = 0, n = get_irn_arity(node); i < n; ++i) {
     ir_node *pred = get_irn_n(node, i);
 
@@ -749,6 +750,8 @@ void init_stat(unsigned enable_options)
 
   /* initialize the pattern hash */
   stat_init_pattern_history(enable_options & FIRMSTAT_PATTERN_ENABLED);
+
+  status->dag_options = enable_options & FIRMSTAT_COUNT_DAG;
 #undef X
 }
 
@@ -875,7 +878,8 @@ void stat_free_graph(ir_graph *irg)
     update_graph_stat(global, graph);
 
     /* count the DAG's */
-    //count_dags_in_graph(global, graph);
+    if (status->dag_options & FIRMSTAT_COUNT_DAG)
+      count_dags_in_graph(global, graph);
 
     /* calculate the pattern */
     stat_calc_pattern_history(irg);
@@ -1167,7 +1171,8 @@ void stat_finish(const char *name)
         update_graph_stat(global, entry);
 
         /* count the DAG's */
-        //count_dags_in_graph(global, entry);
+        if (status->dag_options & FIRMSTAT_COUNT_DAG)
+          count_dags_in_graph(global, entry);
 
         /* calculate the pattern */
         stat_calc_pattern_history(entry->irg);
