@@ -168,14 +168,16 @@ static int optimize_load(ir_node *load)
 	exchange( info->projs[pn_Load_M],   mem );
       }
       else {
-	set_Proj_pred(info->projs[pn_Load_res], pred);
-	set_nodes_block(info->projs[pn_Load_res], get_nodes_block(pred));
-	exchange( info->projs[pn_Load_M],   mem );
+	if (info->projs[pn_Load_res]) {
+	  set_Proj_pred(info->projs[pn_Load_res], pred);
+	  set_nodes_block(info->projs[pn_Load_res], get_nodes_block(pred));
+	}
+	exchange(info->projs[pn_Load_M], mem);
       }
 
       /* no exception */
       if (info->projs[pn_Load_X_except])
-	exchange( info->projs[pn_Load_X_except], new_Bad());
+	exchange(info->projs[pn_Load_X_except], new_Bad());
 
       res = 1;
     }
