@@ -13,7 +13,7 @@
 #ifndef _FLTCALC_H_
 #define _FLTCALC_H_
 
-#include <config.h>
+#include "config.h"
 
 #ifdef HAVE_LONG_DOUBLE
 /* XXX Set this via autoconf */
