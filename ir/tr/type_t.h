@@ -109,6 +109,7 @@ struct type {
   ir_mode *mode;           /* The mode for atomic types */
   unsigned long visit;     /* visited counter for walks of the type information */
   void *link;              /* holds temporary data - like in irnode_t.h */
+  struct dbg_info* dbi;    /* A pointer to information for debug support. */
   tp_attr attr;            /* type kind specific fields. This must be the last
 			      entry in this struct!  Varying size! */
 };

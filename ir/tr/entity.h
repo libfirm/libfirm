@@ -50,6 +50,7 @@
 
 # include "ident.h"
 # include "type.h"
+# include "dbginfo.h"
 
 /*******************************************************************/
 /** general                                                       **/
@@ -126,6 +127,7 @@ typedef struct entity entity;
    value is a pointer to the method.
    Visibility is local, offset -1, and it is not volatile. */
 entity     *new_entity (type *owner, ident *name, type *type);
+entity     *new_d_entity (type *owner, ident *name, type *type, dbg_info *db);
 /* Copies the entity if the new_owner is different from the
    owner of the old entity.  Else returns the old entity.
    Automatically inserts the new entity as a member of owner. */

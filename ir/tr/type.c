@@ -512,7 +512,7 @@ bool smaller_type (type *st, type *lt) {
 /*******************************************************************/
 
 /* create a new class type */
-type   *new_type_class (ident *name) {
+INLINE type   *new_type_class (ident *name) {
   type *res;
 
   res = new_type(type_class, NULL, name);
@@ -523,6 +523,11 @@ type   *new_type_class (ident *name) {
   res->attr.ca.peculiarity = existent;
   res->attr.ca.dfn        = 0;
 
+  return res;
+}
+type   *new_d_type_class (ident *name, dbg_info* db) {
+  type *res = new_type_class (name);
+  set_type_dbg_info(res, db);
   return res;
 }
 INLINE void free_class_attrs(type *clss) {
@@ -692,10 +697,15 @@ bool is_subclass_of(type *low, type *high) {
 /*******************************************************************/
 
 /* create a new type struct */
-type   *new_type_struct (ident *name) {
+INLINE type   *new_type_struct (ident *name) {
   type *res;
   res = new_type(type_struct, NULL, name);
   res->attr.sa.members = NEW_ARR_F (entity *, 1);
+  return res;
+}
+type   *new_d_type_struct (ident *name, dbg_info* db) {
+  type *res = new_type_struct (name);
+  set_type_dbg_info(res, db);
   return res;
 }
 INLINE void free_struct_attrs (type *strct) {
@@ -749,7 +759,7 @@ bool    is_struct_type(type *strct) {
 
 /* Create a new method type.
    N_param is the number of parameters, n_res the number of results.  */
-type *new_type_method (ident *name, int n_param, int n_res) {
+INLINE type *new_type_method (ident *name, int n_param, int n_res) {
   type *res;
   res = new_type(type_method, mode_p, name);
   res->state = layout_fixed;
@@ -758,6 +768,11 @@ type *new_type_method (ident *name, int n_param, int n_res) {
   res->attr.ma.param_type = (type **) xmalloc (sizeof (type *) * n_param);
   res->attr.ma.n_res      = n_res;
   res->attr.ma.res_type   = (type **) xmalloc (sizeof (type *) * n_res);
+  return res;
+}
+type *new_d_type_method (ident *name, int n_param, int n_res, dbg_info* db) {
+  type *res = new_type_method (name, n_param, n_res);
+  set_type_dbg_info(res, db);
   return res;
 }
 INLINE void free_method_attrs(type *method) {
@@ -808,12 +823,17 @@ bool  is_method_type     (type *method) {
 /*******************************************************************/
 
 /* create a new type uni */
-type  *new_type_uni (ident *name) {
+INLINE type  *new_type_uni (ident *name) {
   type *res;
   res = new_type(type_union, NULL, name);
   /*res->attr.ua.unioned_type = (type **)  xmalloc (sizeof (type *)  * n_types);
     res->attr.ua.delim_names  = (ident **) xmalloc (sizeof (ident *) * n_types); */
   res->attr.ua.members = NEW_ARR_F (entity *, 1);
+  return res;
+}
+type  *new_d_type_uni (ident *name, dbg_info* db) {
+  type *res = new_type_uni (name);
+  set_type_dbg_info(res, db);
   return res;
 }
 INLINE void free_union_attrs (type *uni) {
@@ -894,7 +914,7 @@ bool   is_union_type         (type *uni) {
 
 
 /* create a new type array -- set dimension sizes independently */
-type *new_type_array         (ident *name, int n_dimensions,
+INLINE type *new_type_array         (ident *name, int n_dimensions,
 			      type *element_type) {
   type *res;
   int i;
@@ -912,6 +932,12 @@ type *new_type_array         (ident *name, int n_dimensions,
   }
   res->attr.aa.element_type = element_type;
   new_entity(res, mangle_u(name, id_from_str("elem_ent", 8)), element_type);
+  return res;
+}
+type *new_d_type_array (ident *name, int n_dimensions,
+			type *element_type, dbg_info* db) {
+  type *res = new_type_array (name, n_dimensions, element_type);
+  set_type_dbg_info(res, db);
   return res;
 }
 
@@ -1018,7 +1044,7 @@ bool   is_array_type         (type *array) {
 /*******************************************************************/
 
 /* create a new type enumeration -- set the enumerators independently */
-type   *new_type_enumeration    (ident *name, int n_enums) {
+INLINE type   *new_type_enumeration    (ident *name, int n_enums) {
   type *res;
   int i;
   res = new_type(type_enumeration, NULL, name);
@@ -1029,6 +1055,11 @@ type   *new_type_enumeration    (ident *name, int n_enums) {
     res->attr.ea.enumer[i] = NULL;
     res->attr.ea.enum_nameid  = NULL;
   }
+  return res;
+}
+type   *new_d_type_enumeration    (ident *name, int n_enums, dbg_info* db) {
+  type *res = new_type_enumeration (name, n_enums);
+  set_type_dbg_info(res, db);
   return res;
 }
 
@@ -1080,12 +1111,17 @@ bool    is_enumeration_type     (type *enumeration) {
 /*******************************************************************/
 
 /* Create a new type pointer */
-type *new_type_pointer           (ident *name, type *points_to) {
+INLINE type *new_type_pointer           (ident *name, type *points_to) {
   type *res;
   res = new_type(type_pointer, mode_p, name);
   res->attr.pa.points_to = points_to;
   res->size = get_mode_size(res->mode);
   res->state = layout_fixed;
+  return res;
+}
+type *new_d_type_pointer           (ident *name, type *points_to, dbg_info* db) {
+  type *res = new_type_pointer (name, points_to);
+  set_type_dbg_info(res, db);
   return res;
 }
 INLINE void free_pointer_attrs (type *pointer) {
@@ -1113,12 +1149,17 @@ bool  is_pointer_type            (type *pointer) {
 /*******************************************************************/
 
 /* create a new type primitive */
-type *new_type_primitive (ident *name, ir_mode *mode) {
+INLINE type *new_type_primitive (ident *name, ir_mode *mode) {
   type *res;
   /* @@@ assert( mode_is_data(mode) && (!mode == mode_p)); */
   res = new_type(type_primitive, mode, name);
   res->size = get_mode_size(mode);
   res->state = layout_fixed;
+  return res;
+}
+type *new_d_type_primitive (ident *name, ir_mode *mode, dbg_info* db) {
+  type *res = new_type_primitive (name, mode);
+  set_type_dbg_info(res, db);
   return res;
 }
 INLINE void free_primitive_attrs (type *primitive) {

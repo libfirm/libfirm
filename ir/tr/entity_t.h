@@ -69,6 +69,7 @@ struct entity {
   ir_graph *irg;        /* If (type == method_type) this is the corresponding irg.
 			   The ir_graph constructor automatically sets this field.
 			   Yes, it must be here. */
+  struct dbg_info* dbi;    /* A pointer to information for debug support. */
 };
 
 

@@ -38,6 +38,7 @@
 # include "ident.h"
 # include "irmode.h"
 # include "bool.h"
+# include "dbginfo.h"
 
 
 #ifndef _ENTITY_TYPEDEF_
@@ -104,7 +105,10 @@ typedef struct ir_node ir_node;
  *   class, struct, method, union, array, enumeration, pointer, primitive
  * SOURCE
  */
+#ifndef _TYPE_TYPEDEF_
+#define _TYPE_TYPEDEF_
 typedef struct type type;
+#endif
 
 # include "type_or_entity.h"
 
@@ -304,6 +308,7 @@ bool smaller_type (type *st, type *lt);
  */
 /* create a new class type */
 type   *new_type_class (ident *name);
+type   *new_d_type_class (ident *name, dbg_info *db);
 
 /** manipulate private fields of class type  **/
 /* Adds the entity as member of the class.  */
@@ -405,6 +410,7 @@ bool is_subclass_of(type *low, type *high);
  */
 /* create a new type struct */
 type   *new_type_struct (ident *name);
+type   *new_d_type_struct (ident *name, dbg_info* db);
 
 /* manipulate private fields of struct */
 void    add_struct_member   (type *strct, entity *member);
@@ -451,6 +457,7 @@ bool    is_struct_type(type *strct);
    The arrays for the parameter and result types are not initialized by
    the constructor. */
 type *new_type_method (ident *name, int n_param, int n_res);
+type *new_d_type_method (ident *name, int n_param, int n_res, dbg_info* db);
 
 /* manipulate private fields of method. */
 int   get_method_n_params  (type *method);
@@ -479,6 +486,7 @@ bool  is_method_type     (type *method);
  */
 /* create a new type union  */
 type   *new_type_union (ident *name);
+type   *new_d_type_union (ident *name, dbg_info* db);
 
 /* manipulate private fields of struct */
 int     get_union_n_members      (type *uni);
@@ -491,17 +499,6 @@ void    remove_union_member (type *uni, entity *member);
 /* typecheck */
 bool    is_union_type          (type *uni);
 /*****/
-
-#if 0
-/* We don't need these if the union has entities, which it now
-   does. The entities are necessary for the analysis algorithms. */
-type  *get_union_unioned_type (type *uni, int pos);
-void   set_union_unioned_type (type *uni, int pos, type *type);
-
-ident *get_union_delim_nameid (type *uni, int pos);
-const char *get_union_delim_name (type *uni, int pos);
-void   set_union_delim_nameid (type *uni, int pos, ident *id);
-#endif
 
 /****** type/array
  * NAME
@@ -529,6 +526,8 @@ void   set_union_delim_nameid (type *uni, int pos, ident *id);
    Set dimension sizes after call to constructor with set_* routines. */
 type *new_type_array         (ident *name, int n_dimensions,
 			      type *element_type);
+type *new_d_type_array         (ident *name, int n_dimensions,
+			      type *element_type, dbg_info* db);
 
 /* manipulate private fields of array type */
 int   get_array_n_dimensions (type *array);
@@ -574,6 +573,7 @@ bool   is_array_type         (type *array);
 */
 /* create a new type enumeration -- set the enumerators independently */
 type   *new_type_enumeration    (ident *name, int n_enums);
+type   *new_d_type_enumeration    (ident *name, int n_enums, dbg_info* db);
 
 /* manipulate fields of enumeration type. */
 int     get_enumeration_n_enums (type *enumeration);
@@ -600,6 +600,7 @@ bool    is_enumeration_type     (type *enumeration);
  */
 /* Create a new type pointer */
 type *new_type_pointer           (ident *name, type *points_to);
+type *new_d_type_pointer           (ident *name, type *points_to, dbg_info* db);
 
 /* manipulate fields of type_pointer */
 void  set_pointer_points_to_type (type *pointer, type *type);
@@ -620,6 +621,7 @@ bool  is_pointer_type            (type *pointer);
 */
 /* create a new type primitive */
 type *new_type_primitive (ident *name, ir_mode *mode);
+type *new_d_type_primitive (ident *name, ir_mode *mode, dbg_info* db);
 
 /* typecheck */
 bool  is_primitive_type  (type *primitive);

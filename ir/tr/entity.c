@@ -98,7 +98,12 @@ new_entity (type *owner, ident *name, type *type)
   insert_entity_in_owner (res);
   return res;
 }
-
+entity *
+new_d_entity (type *owner, ident *name, type *type, dbg_info *db) {
+  entity *res = new_entity(owner, name, type);
+  set_entity_dbg_info(res, db);
+  return res;
+}
 INLINE void free_entity_attrs(entity *ent) {
   assert(ent);
   if (get_type_tpop(get_entity_owner(ent)) == type_class) {
