@@ -258,6 +258,9 @@ static int reassoc_commutative(ir_node *n)
 }
 
 #define reassoc_Add  reassoc_commutative
+#define reassoc_And  reassoc_commutative
+#define reassoc_Or   reassoc_commutative
+#define reassoc_Eor  reassoc_commutative
 
 /**
  * reassociate using distibutive law for Mul and Add/Sub
@@ -310,6 +313,8 @@ static void do_reassociation(ir_node *n, void *env)
   walker_t *wenv = env;
   int res;
 
+  stat_reassociate(1);
+
   /* reassociation must run until fixpoint */
   do {
     ir_op   *op    = get_irn_op(n);
@@ -328,6 +333,8 @@ static void do_reassociation(ir_node *n, void *env)
       }
     }
   } while (res == 1);
+
+  stat_reassociate(0);
 }
 
 /*
@@ -364,5 +371,8 @@ void firm_init_reassociation(void)
   INIT(Mul);
   INIT(Add);
   INIT(Sub);
+  INIT(And);
+  INIT(Or);
+  INIT(Eor);
 #undef CASE
 }
