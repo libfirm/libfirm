@@ -92,9 +92,14 @@ main(void)
   /* generate and fill the then block */
   r = new_immBlock ();
   add_in_edge (r, t);
-  a = new_Sub(get_value(a_pos, mode_Is),
-              new_Const (mode_Is, new_tarval_from_long (3, mode_Is)),
+  {
+    ir_node *b,*c;
+    c = new_Const (mode_Is, new_tarval_from_long (3, mode_Is));
+    b = get_value(a_pos, mode_Is);
+    a = new_Sub(b,
+              c,
   	      mode_Is);
+  }
   set_value (a_pos, a);
 
   mature_block (r);
