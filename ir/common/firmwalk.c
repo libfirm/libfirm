@@ -14,15 +14,18 @@
 # include <config.h>
 #endif
 
+#include <string.h>
+
 #include "firmwalk.h"
-#include "pmap.h"
-#include "entity.h"
+
+#include "entity_t.h"
 #include "irnode_t.h"
-#include "irprog.h"
+#include "irprog_t.h"
 #include "irgwalk.h"
+
 #include "array.h"
 #include "obst.h"
-#include <string.h>
+#include "pmap.h"
 
 /** obstack for firm walker */
 static struct obstack fw_obst;

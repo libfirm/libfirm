@@ -34,7 +34,7 @@
 #include <stddef.h>
 
 #include "irgraph_t.h"   /* for setting the state flag. */
-#include "irprog.h"
+#include "irprog_t.h"
 #include "pmap.h"
 
 /* ------------ The map. ---------------------------------------------- */

@@ -24,21 +24,19 @@
 #include "cgana.h"
 #include "rta.h"
 
+#include "irnode_t.h"
+#include "irmode_t.h"
+#include "irprog_t.h"
+#include "irgwalk.h"
+#include "ircons.h"
+#include "irgmod.h"
+
+#include "irflag_t.h"
+#include "dbginfo_t.h"
 
 #include "eset.h"
 #include "pmap.h"
 #include "array.h"
-#include "irprog.h"
-#include "irgwalk.h"
-#include "ircons.h"
-#include "irgmod.h"
-#include "irnode_t.h"
-#include "irflag_t.h"
-#include "irmode_t.h"
-
-#include "dbginfo_t.h"
-
-#include "irdump.h"
 
 /* Eindeutige Adresse zur Markierung von besuchten Knoten und zur
  * Darstellung der unbekannten Methode. */

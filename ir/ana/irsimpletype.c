@@ -25,7 +25,7 @@
 # include "irsimpletype.h"
 
 # include "irnode_t.h"
-# include "irprog.h"
+# include "irprog_t.h"
 # include "irgwalk.h"
 # include "ident.h"
 

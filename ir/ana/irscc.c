@@ -958,59 +958,19 @@ static void scc (ir_node *n) {
   if (!is_outermost_Start(n)) {
     int arity = get_irn_arity(n);
 
-#if EXPERIMENTAL_LOOP_TREE
-
-    /* This is meant to be used with the experimenatl code above.
-       If the above code is not used any more, this can be deleted, too.... */
-
-    if(interprocedural_view &&
-       is_Block(n) &&
-       get_irn_op(get_irn_n(n, 0)) == op_Proj &&
-       get_irn_op(get_irn_n(get_irn_n(n, 0), 0)) == op_CallBegin)
-      {
-	/* We are at the start node of a function:
-	   Walk to the callers in the correct order! */
-	DDMN(n);
-	DDMN(get_irn_n(get_irn_n(n, 0), 0));
-	for(i = 0; i < arity; i++)
-	  {
-	    int pred_nr;
-	    ir_node *m;
-
-	    pred_nr = search_endproj_in_stack(n);
-	    assert(pred_nr >= 0);
-	    if(is_backedge(n, pred_nr))
-	      continue;
-	    m = get_irn_n(n, pred_nr);
-	    scc(m);
-
-	    if (irn_is_in_stack(m)) {
-	      /* Uplink of m is smaller if n->m is a backedge.
-		 Propagate the uplink to mark the loop. */
-	      if (get_irn_uplink(m) < get_irn_uplink(n))
-		set_irn_uplink(n, get_irn_uplink(m));
-	    }
-	  }
+    for (i = get_start_index(n); i < arity; i++) {
+      ir_node *m;
+      if (is_backedge(n, i)) continue;
+      m = get_irn_n(n, i); /* get_irn_ip_pred(n, i); */
+      /* if ((!m) || (get_irn_op(m) == op_Unknown)) continue; */
+      scc (m);
+      if (irn_is_in_stack(m)) {
+	/* Uplink of m is smaller if n->m is a backedge.
+	   Propagate the uplink to mark the loop. */
+	if (get_irn_uplink(m) < get_irn_uplink(n))
+	  set_irn_uplink(n, get_irn_uplink(m));
       }
-    else
-
-#endif
-
-      {
-	for (i = get_start_index(n); i < arity; i++) {
-	  ir_node *m;
-	  if (is_backedge(n, i)) continue;
-	  m = get_irn_n(n, i); /* get_irn_ip_pred(n, i); */
-	  /* if ((!m) || (get_irn_op(m) == op_Unknown)) continue; */
-	  scc (m);
-	  if (irn_is_in_stack(m)) {
-	    /* Uplink of m is smaller if n->m is a backedge.
-	       Propagate the uplink to mark the loop. */
-	    if (get_irn_uplink(m) < get_irn_uplink(n))
-	      set_irn_uplink(n, get_irn_uplink(m));
-	  }
-	}
-      }
+    }
   }
 
   if (get_irn_dfn(n) == get_irn_uplink(n)) {
@@ -1032,10 +992,8 @@ static void scc (ir_node *n) {
 	 Next actions: Open a new loop on the loop tree and
 	               try to find inner loops */
 
-
 #define NO_LOOPS_WITHOUT_HEAD 1
 #if NO_LOOPS_WITHOUT_HEAD
-
       /* This is an adaption of the algorithm from fiasco / optscc to
        * avoid loops without Block or Phi as first node.  This should
        * severely reduce the number of evaluations of nodes to detect
@@ -1052,26 +1010,18 @@ static void scc (ir_node *n) {
 	l = current_loop;
 	close = 0;
       }
-
 #else
-
       ir_loop *l = new_loop();
-
 #endif
 
       /* Remove the loop from the stack ... */
       pop_scc_unmark_visit (n);
 
-      /*  GL @@@ remove experimental stuff rem = find_irg_on_stack(tail); */
-
       /* The current backedge has been marked, that is temporarily eliminated,
 	 by find tail. Start the scc algorithm
 	 anew on the subgraph thats left (the current loop without the backedge)
 	 in order to find more inner loops. */
-
       scc (tail);
-
-      /*  GL @@@ remove experimental stuff current_ir_graph = rem; */
 
       assert (irn_visited(n));
 #if NO_LOOPS_WITHOUT_HEAD
@@ -1081,8 +1031,8 @@ static void scc (ir_node *n) {
     }
     else
       {
-	/* AS: No loop head was found, that is we have straightline code.
-	       Pop all nodes from the stack to the current loop. */
+	/* No loop head was found, that is we have straightline code.
+	   Pop all nodes from the stack to the current loop. */
       pop_scc_to_loop(n);
     }
   }

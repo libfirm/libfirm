@@ -27,7 +27,7 @@
 #include <stdlib.h>
 
 #include "irnode_t.h"
-#include "irprog.h"
+#include "irprog_t.h"
 
 #include "eset.h"
 #include "irgwalk.h"
@@ -544,6 +544,9 @@ void rta_report (void)
 
 /*
  * $Log$
+ * Revision 1.21  2004/07/08 15:50:56  goetz
+ * firmstat added
+ *
  * Revision 1.20  2004/07/08 11:17:40  goetz
  * *** empty log message ***
  *
