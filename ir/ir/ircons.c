@@ -58,7 +58,7 @@ typedef struct Phi_in_stack Phi_in_stack;
 /*
  * language dependant initialization variable
  */
-static default_initialize_local_variable_func_t *default_initialize_local_variable = NULL;
+static uninitialized_local_variable_func_t *default_initialize_local_variable = NULL;
 
 /* -------------------------------------------- */
 /* privat interfaces, for professional use only */
@@ -1736,7 +1736,7 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
          before recuring.
       */
       if (default_initialize_local_variable)
-        block->attr.block.graph_arr[pos] = default_initialize_local_variable(mode, pos - 1);
+        block->attr.block.graph_arr[pos] = default_initialize_local_variable(current_ir_graph, mode, pos - 1);
       else
         block->attr.block.graph_arr[pos] = new_Const(mode, tarval_bad);
       /* We don't need to care about exception ops in the start block.
@@ -2329,7 +2329,7 @@ new_d_Sync (dbg_info* db, int arity, ir_node** in)
 ir_node *
 (new_d_Bad)(void)
 {
-  return __new_d_Bad();
+  return _new_d_Bad();
 }
 
 ir_node *
@@ -2385,7 +2385,7 @@ new_d_Filter (dbg_info *db, ir_node *arg, ir_mode *mode, long proj)
 ir_node *
 (new_d_NoMem)(void)
 {
-  return __new_d_NoMem();
+  return _new_d_NoMem();
 }
 
 ir_node *
@@ -2526,7 +2526,7 @@ type *get_cur_frame_type() {
 
 /* call once for each run of the library */
 void
-init_cons (default_initialize_local_variable_func_t *func)
+init_cons(uninitialized_local_variable_func_t *func)
 {
   default_initialize_local_variable = func;
 }
