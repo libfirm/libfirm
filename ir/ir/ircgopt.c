@@ -15,7 +15,9 @@
  * der nicht erreichbaren Methoden wird aus der Abschätzung der
  * Aufrufrelation bestimmt.
  */
-
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
 
 #include "ircgopt.h"
 

@@ -22,14 +22,18 @@
 #define _IRFLAG_H_
 
 /**
+ * A container type to load/restore all optimizations
+ */
+typedef unsigned optimization_state_t;
+
+/**
  * This function enables/disables optimizations globally.
  *
  * If optimize == 0 no optimizations are performed at all.
  * Default: optimize == 1.
  */
 void set_optimize (int value);
-/** Returns global optimization setting */
-int  get_optimize (void);
+int get_optimize(void);
 
 /** Enables/Disables constant folding optimization.
  *
@@ -42,8 +46,6 @@ int  get_optimize (void);
  * Default: opt_constant_folding == 1.
  */
 void set_opt_constant_folding (int value);
-/** Returns constant folding optimization setting. */
-int  get_opt_constant_folding (void);
 
 /** Enables/Disables constant subexpression elimination.
  *
@@ -51,8 +53,6 @@ int  get_opt_constant_folding (void);
  * Default: opt_cse == 1.
  */
 void set_opt_cse (int value);
-/** Returns constant subexpression elimination setting. */
-int  get_opt_cse (void);
 
 /** Enables/Disables global constant subexpression elimination.
  *
@@ -64,18 +64,14 @@ int  get_opt_cse (void);
  * Default: opt_global_cse == 0.
  */
 void set_opt_global_cse (int value);
-/** Returns global constant subexpression elimination setting. */
-int  get_opt_global_cse (void);
 
-/** Enables/Disables unreachble code elimination.
+/** Enables/Disables unreachable code elimination.
  *
  * If opt_unreachable_code == 1 replace nodes (except Block,
  * Phi and Tuple) with a Bad predecessor by the Bad node.
  * Default: opt_unreachable_code == 1.
  */
 void set_opt_unreachable_code(int value);
-/** Returns unreachble code elimination setting. */
-int  get_opt_unreachable_code(void);
 
 /** Enables/Disables control flow optimizations.
  *
@@ -87,23 +83,15 @@ void set_opt_control_flow(int value);
 
 /** Enables/Disables Straightening. */
 void set_opt_control_flow_straightening(int value);
-/** Returns Straightening setting. */
-int  get_opt_control_flow_straightening(void);
 
 /** Enables/Disables if simplifications in local optimizations. */
 void set_opt_control_flow_weak_simplification(int value);
-/** Returns if simplifications in local optimizations setting. */
-int  get_opt_control_flow_weak_simplification(void);
 
 /** Enables/Disables strong if and loop simplification (in optimize_cf). */
 void set_opt_control_flow_strong_simplification(int value);
-/** Returns strong if and loop simplification setting */
-int  get_opt_control_flow_strong_simplification(void);
 
 /** Enables/Disables removal of critical control flow edges. */
 void set_opt_critical_edges(int value);
-/** Returns whether critical edges are removed */
-int  get_opt_critical_edges(void);
 
 /** Enables/Disables reassociation.
  *
@@ -111,8 +99,6 @@ int  get_opt_critical_edges(void);
  * Default: opt_reassociation == 1.
  */
 void set_opt_reassociation(int value);
-/** Returns reassociation setting. */
-int  get_opt_reassociation(void);
 
 /** Enables/Disables dead node elimination.
  *
@@ -120,16 +106,12 @@ int  get_opt_reassociation(void);
  * by copying the firm graph.
  * Default: opt_dead_node_elimination == 1. */
 void set_opt_dead_node_elimination (int value);
-/** Returns dead node elimination setting. */
-int  get_opt_dead_node_elimination (void);
 
 /** Enable/Disables inlining.
  *
  * If opt_inline == 1 the inlining transformation is performed.
  */
 void set_opt_inline (int value);
-/** Returns inlining setting. */
-int  get_opt_inline (void);
 
 /** Enable/Disable optimization of dynamic method dispatch
  *
@@ -138,7 +120,6 @@ int  get_opt_inline (void);
  * the address of a function.
  */
 void set_opt_dyn_meth_dispatch (int value);
-int  get_opt_dyn_meth_dispatch (void);
 
 /** Enable/Disable normalizations of the firm representation.
  *
@@ -153,7 +134,15 @@ int  get_opt_dyn_meth_dispatch (void);
  *  @@@ ATTENTION: not all such transformations are guarded by a flag.
  */
 void set_opt_normalize (int value);
-int  get_opt_normalize (void);
 
+/**
+ * Save the current optimization state.
+ */
+void save_optimization_state(optimization_state_t *state);
+
+/**
+ * Restore the current optimization state.
+ */
+void restore_optimization_state(const optimization_state_t *state);
 
 #endif

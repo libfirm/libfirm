@@ -216,7 +216,7 @@ struct ir_node {
 /** Copies all attributes stored in the old node  to the new node.
     Assumes both have the same opcode and sufficient size. */
 void
-copy_attrs (ir_node *old, ir_node *new);
+copy_attrs(const ir_node *old_node, ir_node *new_node);
 
 
 /** Returns the array with the ins.  The content of the array may not be

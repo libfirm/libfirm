@@ -23,6 +23,7 @@
 # include "tv.h"
 # include "dbginfo_t.h"
 # include "iropt_dbg.h"
+# include "irflag_t.h"
 
 /* Make types visible to allow most efficient access */
 # include "entity_t.h"
@@ -1122,7 +1123,7 @@ optimize_node (ir_node *n)
   ir_node *old_n = n;
 
   /* Allways optimize Phi nodes: part of the construction. */
-  if ((!get_optimize()) && (get_irn_op(n) != op_Phi)) return n;
+  if ((!get_opt_optimize()) && (get_irn_op(n) != op_Phi)) return n;
 
   /* constant expression evaluation / constant folding */
   if (get_opt_constant_folding()) {
@@ -1193,7 +1194,7 @@ optimize_in_place_2 (ir_node *n)
   tarval *tv;
   ir_node *old_n = n;
 
-  if (!get_optimize() && (get_irn_op(n) != op_Phi)) return n;
+  if (!get_opt_optimize() && (get_irn_op(n) != op_Phi)) return n;
 
   /* if not optimize return n */
   if (n == NULL) {

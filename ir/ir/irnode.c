@@ -23,7 +23,7 @@
 #include "array.h"
 #include "irbackedge_t.h"
 #include "irdump.h"
-#include "irflag.h"
+#include "irflag_t.h"
 #include "irop_t.h"
 
 #include "irprog_t.h"
@@ -95,10 +95,12 @@ init_irnode (void)
 {
 }
 
-/* irnode constructor                                             */
-/* create a new irnode in irg, with an op, mode, arity and        */
-/* some incoming irnodes                                          */
-/* this constructor is used in every specified irnode constructor */
+/*
+ * irnode constructor.
+ * Create a new irnode in irg, with an op, mode, arity and
+ * some incoming irnodes.
+ * If arity is negative, a node with a dynamic array is created.
+ */
 INLINE ir_node *
 new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mode,
 	     int arity, ir_node **in)
@@ -133,15 +135,15 @@ new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mo
 /* Copies all attributes stored in the old node to the new node.
    Assumes both have the same opcode and sufficient size. */
 void
-copy_attrs (ir_node *old, ir_node *new) {
-  assert (get_irn_op(old) == get_irn_op(new));
-  memcpy (&new->attr, &old->attr, get_op_attr_size(get_irn_op(old)));
+copy_attrs (const ir_node *old_node, ir_node *new_node) {
+  assert(get_irn_op(old_node) == get_irn_op(new_node));
+  memcpy(&new_node->attr, &old_node->attr, get_op_attr_size(get_irn_op(old_node)));
 }
 
 /** getting some parameters from ir_nodes **/
 
 int
-is_ir_node (void *thing) {
+is_ir_node (const void *thing) {
   assert(thing);
   if (get_kind(thing) == k_ir_node)
     return 1;
@@ -243,7 +245,7 @@ get_irn_inter_n (ir_node *node, int n) {
 
 /* to iterate through the predecessors without touching the array */
 /* To iterate over the operands iterate from 0 to i < get_irn_arity(),
-   to iterate includind the Block predecessor iterate from i = -1 to
+   to iterate including the Block predecessor iterate from i = -1 to
    i < get_irn_arity.
    If it is a block, the entry -1 is NULL. */
 INLINE ir_node *
@@ -527,7 +529,7 @@ int is_value_arg_pointer(ir_node *n) {
 }
 
 /* Returns an array with the predecessors of the Block. Depending on
-   the implementation of the graph datastructure this can be a copy of
+   the implementation of the graph data structure this can be a copy of
    the internal representation of predecessors as well as the internal
    array itself. Therefore writing to this array might obstruct the ir. */
 INLINE ir_node **
@@ -766,7 +768,7 @@ ir_graph *get_EndExcept_irg  (ir_node *end) {
 I know it's complicated.
 Basically there are two proglems:
  - determining the gaps between the projs
- - determining the biggest case constant to konw the proj number for
+ - determining the biggest case constant to know the proj number for
    the default node.
 I see several solutions:
 1. Introduce a ProjDefault node.  Solves both problems.
@@ -779,7 +781,7 @@ I see several solutions:
 
 Solution 2 seems to be the best:
 Computing the gaps in the Firm representation is not too hard, i.e.,
-libfirm can implement a routine that transforms betweeen the two
+libFIRM can implement a routine that transforms between the two
 flavours.  This is also possible for 1) but 2) does not require to
 change any existing optimization.
 Further it should be far simpler to determine the biggest constant than
@@ -2291,7 +2293,7 @@ skip_nop (ir_node *node) {
   ir_node *pred;
   /* don't assert node !!! */
 
-  if (!opt_normalize) return node;
+  if (!get_opt_normalize()) return node;
 
   /* Don't use get_Id_pred:  We get into an endless loop for
      self-referencing Ids. */
@@ -2407,7 +2409,7 @@ ir_node *get_fragile_op_mem(ir_node *node) {
   case iro_Unknown:
     return node;
   default: ;
-    assert(0 && "not reached");
+    assert(0 && "should not be reached");
     return NULL;
   }
 }

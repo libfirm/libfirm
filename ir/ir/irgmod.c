@@ -15,7 +15,7 @@
 #endif
 
 # include "irvrfy.h"
-# include "irflag.h"
+# include "irflag_t.h"
 # include "irgwalk.h"
 # include "irnode_t.h"
 # include "irgraph_t.h"
@@ -138,7 +138,7 @@ void part_block(ir_node *node) {
   ir_node *phi;
 
   /* Turn off optimizations so that blocks are not merged again. */
-  int rem_opt = get_optimize();
+  int rem_opt = get_opt_optimize();
   set_optimize(0);
 
   /* Transform the control flow */

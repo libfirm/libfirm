@@ -24,8 +24,8 @@ SOURCES = $(INSTALL_HEADERS)
 SOURCES += 	Makefile.in \
 		ircons.c irgmod.c irgraph_t.h irnode.c iropt.c irvrfy.c	\
 		irgwalk.c irdump.c irgopt.c irnode_t.h iropt_t.h	\
-		irmode.c irop.c irprog.c irflag.c irgraph.c irmode_t.h	\
-		irop_t.h irprog_t.h ircgcons.c ircgopt.c
+		irmode.c irop.c irprog.c irflag.c irflag_t.h irgraph.c \
+		irmode_t.h irop_t.h irprog_t.h ircgcons.c ircgopt.c
 
 
 include $(topdir)/MakeRules

@@ -33,6 +33,7 @@
 # include "irouts.h"
 # include "irloop.h"
 # include "irbackedge_t.h"
+# include "irflag_t.h"
 
 /* Defined in iropt.c */
 pset *new_identities (void);
@@ -418,7 +419,7 @@ dead_node_elimination(ir_graph *irg) {
   /* @@@ so far we loose loops when copying */
   set_irg_loop(current_ir_graph, NULL);
 
-  if (get_optimize() && get_opt_dead_node_elimination()) {
+  if (get_opt_optimize() && get_opt_dead_node_elimination()) {
 
     /* A quiet place, where the old obstack can rest in peace,
        until it will be cremated. */
@@ -576,9 +577,9 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   int exc_handling; ir_node *proj;
   type *called_frame;
 
-  if (!get_optimize() || !get_opt_inline()) return;
+  if (!get_opt_optimize() || !get_opt_inline()) return;
   /* --  Turn off optimizations, this can cause problems when allocating new nodes. -- */
-  rem_opt = get_optimize();
+  rem_opt = get_opt_optimize();
   set_optimize(0);
 
   /* Handle graph state */
@@ -972,7 +973,7 @@ void inline_small_irgs(ir_graph *irg, int size) {
   ir_node *calls[MAX_INLINE];
   ir_graph *rem = current_ir_graph;
 
-  if (!(get_optimize() && get_opt_inline())) return;
+  if (!(get_opt_optimize() && get_opt_inline())) return;
 
   current_ir_graph = irg;
   /* Handle graph state */
@@ -1081,7 +1082,7 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
   ir_graph *rem = current_ir_graph;
   int did_inline = 1;
 
-  if (!(get_optimize() && get_opt_inline())) return;
+  if (!(get_opt_optimize() && get_opt_inline())) return;
 
   /* extend all irgs by a temporary data structure for inlineing. */
   for (i = 0; i < n_irgs; ++i)
@@ -1451,7 +1452,7 @@ void place_code(ir_graph *irg) {
 
   current_ir_graph = irg;
 
-  if (!(get_optimize() && get_opt_global_cse())) return;
+  if (!(get_opt_optimize() && get_opt_global_cse())) return;
 
   /* Handle graph state */
   assert(get_irg_phase_state(irg) != phase_building);
@@ -1500,7 +1501,7 @@ static void merge_blocks(ir_node *n, void *env) {
 	 A different order of optimizations might cause problems. */
       if (get_opt_normalize())
 	set_Block_cfgpred(n, i, skip_Tuple(get_Block_cfgpred(n, i)));
-  } else if (get_optimize() && (get_irn_mode(n) == mode_X)) {
+  } else if (get_opt_optimize() && (get_irn_mode(n) == mode_X)) {
     /* We will soon visit a block.  Optimize it before visiting! */
     ir_node *b = get_nodes_Block(n);
     ir_node *new_node = equivalent_node(b);
@@ -1555,7 +1556,7 @@ static int test_whether_dispensable(ir_node *b, int pos) {
 
   if (get_Block_block_visited(pred) + 1
       < get_irg_block_visited(current_ir_graph)) {
-    if (!get_optimize() || !get_opt_control_flow_strong_simplification()) {
+    if (!get_opt_optimize() || !get_opt_control_flow_strong_simplification()) {
       /* Mark block so that is will not be removed. */
       set_Block_block_visited(pred, get_irg_block_visited(current_ir_graph)-1);
       return 1;

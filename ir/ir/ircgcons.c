@@ -10,7 +10,9 @@
  * Copyright:   (c) 2002-2003 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
-
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
 
 #include <string.h>
 #include <stdbool.h>
@@ -21,7 +23,7 @@
 #include "ircons.h"
 #include "irgmod.h"
 #include "irgwalk.h"
-#include "irflag.h"
+#include "irflag_t.h"
 
 
 /* Datenstruktur für jede Methode */
@@ -156,7 +158,7 @@ static ir_node * exchange_proj(ir_node * proj) {
 /* Echt neue Block-Operation erzeugen. CSE abschalten! */
 static ir_node * create_Block(int n, ir_node ** in) {
   /* Turn off optimizations so that blocks are not merged again. */
-  int rem_opt = get_optimize();
+  int rem_opt = get_opt_optimize();
   ir_node * block;
   set_optimize(0);
   block = new_Block(n, in);

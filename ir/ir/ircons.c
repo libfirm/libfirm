@@ -11,7 +11,6 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
-
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
@@ -29,6 +28,7 @@
 /* memset belongs to string.h */
 # include "string.h"
 # include "irbackedge_t.h"
+# include "irflag_t.h"
 
 #if USE_EXPLICIT_PHI_IN_STACK
 /* A stack needed for the automatic Phi node construction in constructor
@@ -1521,7 +1521,7 @@ static INLINE ir_node ** new_frag_arr (ir_node *n)
 	 sizeof(ir_node *)*current_ir_graph->n_loc);
   /* turn off optimization before allocating Proj nodes, as res isn't
      finished yet. */
-  opt = get_optimize(); set_optimize(0);
+  opt = get_opt_optimize(); set_optimize(0);
   /* Here we rely on the fact that all frag ops have Memory as first result! */
   if (get_irn_op(n) == op_Call)
     arr[0] = new_Proj(n, mode_M, 3);

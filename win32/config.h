@@ -71,13 +71,13 @@
 #define PACKAGE_BUGREPORT ""
 
 /* Define to the full name of this package. */
-#define PACKAGE_NAME "libfirm"
+#define PACKAGE_NAME "libFIRM"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "libfirm 0.3.0"
+#define PACKAGE_STRING "libFIRM 0.3.0"
 
 /* Define to the one symbol short name of this package. */
-#define PACKAGE_TARNAME "libfirm"
+#define PACKAGE_TARNAME "libFIRM"
 
 /* Define to the version of this package. */
 #define PACKAGE_VERSION "0.3.0"
@@ -89,8 +89,7 @@
    first (like Motorola and SPARC, unlike Intel and VAX). */
 /* #undef WORDS_BIGENDIAN */
 
-/* inline */
-#define INLINE
+#define INLINE __inline
 
 #define snprintf    _snprintf
 #define strcasecmp  stricmp

@@ -11,12 +11,12 @@
  */
 
 /**
-* @file irgraph_t.h
-*
-* ir graph construction.
-*
-* @author Martin Trapp, Christian Schaefer
-*/
+ * @file irgraph_t.h
+ *
+ * ir graph construction.
+ *
+ * @author Martin Trapp, Christian Schaefer
+ */
 
 
 # ifndef _IRGRAPH_T_H_

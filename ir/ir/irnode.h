@@ -59,7 +59,7 @@ typedef enum {
 /**
  * @defgroup ir_node Declarations of an ir node.
  *
- * The type definiton of ir_node is also in irgraph.h to resolve
+ * The type definition of ir_node is also in irgraph.h to resolve
  *  recursion between irnode.h and irgraph.h
  *
  * ir_node - a datatype representing a Firm node
@@ -100,7 +100,7 @@ typedef struct ir_node ir_node;
  *       true if the thing is a ir mode, else false
  */
 int
-is_ir_node (void *thing);
+is_ir_node (const void *thing);
 
 /** returns the number of predecessors without the block predecessor: */
 int                  get_irn_arity         (const ir_node *node);
@@ -109,7 +109,7 @@ INLINE int           get_irn_inter_arity   (const ir_node *node);
 
 /** Replaces the old in array by a new one that will contain the ins given in
    the parameters.  Conserves the block predecessor.  It copies the array passed.
-   This function is necessary to ajust in arrays of blocks, calls and phis.
+   This function is necessary to adjust in arrays of blocks, calls and phis.
    Assumes that current_ir_graph is set to the graph containing "node".
    "in" must contain all predecessors except the block that are required for
    the nodes opcode. */
@@ -161,7 +161,7 @@ INLINE void         *get_irn_link     (const ir_node *node);
  *  is in state pinned (irg is only stored in the block. */
 INLINE ir_graph     *get_irn_irg      (ir_node *node);
 
-/** Outputs a unique number for this node if libfirm is compiled for
+/** Outputs a unique number for this node if libFIRM is compiled for
    debugging, (configure with --enable-debug) else returns address
    of node cast to long. */
 INLINE long          get_irn_node_nr  (const ir_node *node);
@@ -171,7 +171,14 @@ INLINE long          get_irn_node_nr  (const ir_node *node);
  * irnode constructor.
  * Create a new irnode in irg, with an op, mode, arity and
  * some incoming irnodes.
- * If arity is negative, a node with a dynamic array is created.
+ * This constructor is used in every specified irnode constructor.
+ *
+ * @param db    Debug info.
+ * @param irg   IR-graph on with this new node should be constructed.
+ * @param op    The opcode of the new node.
+ * @param mode  The mode of the new node.
+ * @param arity The arity of the new node, may be <0 if yet.
+ * @param in    An array of arity predecessor nodes.
  */
 INLINE ir_node *
 new_ir_node (dbg_info *db,
@@ -267,7 +274,7 @@ void      set_Block_cg_cfgpred_arr(ir_node * node, int arity, ir_node ** in);
 void      set_Block_cg_cfgpred(ir_node * node, int pos, ir_node * pred);
 /* @@@ not supported */
 ir_node **get_Block_cg_cfgpred_arr(ir_node * node);
-/* Returns the number of interproc predecessors.  0 if none. */
+/* Returns the number of interprocedural predecessors.  0 if none. */
 int       get_Block_cg_n_cfgpreds(ir_node * node);
 ir_node  *get_Block_cg_cfgpred(ir_node * node, int pos);
 /* frees the memory. */
@@ -281,7 +288,7 @@ INLINE int  get_End_n_keepalives(ir_node *end);
 INLINE ir_node *get_End_keepalive(ir_node *end, int pos);
 INLINE void add_End_keepalive (ir_node *end, ir_node *ka);
 INLINE void set_End_keepalive(ir_node *end, int pos, ir_node *ka);
-/* Some parts of the End node are allocated seperately -- their memory
+/* Some parts of the End node are allocated separately -- their memory
    is not recovered by dead_node_elimination if a End node is dead.
    free_End frees these data structures. */
 INLINE void free_End (ir_node *end);
@@ -442,7 +449,7 @@ INLINE void     set_Call_type (ir_node *node, type *tp);
 INLINE int      get_Call_arity (ir_node *node);
 
 /* Set, get and remove the callee-analysis.
-   The array is only accessible if intformation is valid.
+   The array is only accessible if information is valid.
    It contains NULL for called methods that are not within
    the compilation unit. */
 int     Call_has_callees      (ir_node *node);
@@ -580,7 +587,7 @@ INLINE void     set_Not_op (ir_node *node, ir_node *op);
 
 /**
  * Projection numbers for Cmp are defined several times.
- * The bit patterns are used for variouse tests, so don't change.
+ * The bit patterns are used for various tests, so don't change.
  * The "unordered" values are possible results of comparing
  * floating point numbers.
  */
@@ -637,7 +644,7 @@ INLINE void     set_Conv_op (ir_node *node, ir_node *op);
 
 /* Does Cast need a mem operator?
  * Cast should only depend on the type, not on the state of an
- * entity.  But:  we initialzie various fields after Alloc, that
+ * entity.  But:  we initialze various fields after Alloc, that
  * are accessed in the cast.  This required some precaution, to
  * get the right memory into the Loads generated from the cast.
  */
