@@ -24,7 +24,8 @@
 typedef enum {
   k_entity,
   k_type,
-  k_ir_node
+  k_ir_node,
+  k_ir_loop
 } firm_kind;
 
 /* returns the kind of the thing */
