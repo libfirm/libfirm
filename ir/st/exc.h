@@ -31,6 +31,10 @@
 
 #include <stdbool.h>
 
+#ifdef __cplusplus
+	extern "C" {
+#endif
+
 typedef enum {
   exc_invalid = 0,					/* not yet computed */
   exc_normal,					/* normal CF */
@@ -46,6 +50,8 @@ typedef enum {
 
   exc_max						/* maximum value of enum for 'bounds checking' */
 } exc_t;
+
+
 
 const char *exc_to_string (exc_t);
 
@@ -66,5 +72,9 @@ ir_node* get_Block_handler (ir_node*);
 
 void     set_Node_handler  (ir_node*, ir_node*);
 ir_node* get_Node_handler  (ir_node*);
+
+#ifdef __cplusplus
+}
+#endif
 
 # endif /* def _EXC_H_ */
