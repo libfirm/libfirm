@@ -781,7 +781,8 @@ static void scc (ir_node *n) {
       if (is_backedge(n, i)) continue;
 
       m = get_irn_n(n, i); /*get_irn_ip_pred(n, i);*/
-      if ((!m) || (get_irn_op(m) == op_Unknown)) continue;
+      assert(m);
+      //if ((!m) || (get_irn_op(m) == op_Unknown)) continue;
       scc (m);
       // GL @@@ remove experimental stuff /*return_recur(n, i);*/
 
