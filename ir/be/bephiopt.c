@@ -3,6 +3,8 @@
  * @date 04.01.2005
  */
 
+#include <stdio.h>
+
 #include "pset.h"
 #include "irgraph.h"
 #include "irnode.h"

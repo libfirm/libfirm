@@ -52,7 +52,7 @@ static INLINE pset *clone(pset *theset) {
 static void coalesce_locals(pset *phi_class, dominfo_t *dominfo) {
 	int i, count, phi_count, arity, intf_det, phi_col, allfree;
 	pset *pc, *intffree;
-	ir_node *phi, *n, *m;
+	ir_node *phi = NULL, *n, *m;
 //	ir_node **members;
 
 	count = pset_count(phi_class);
