@@ -53,6 +53,7 @@ ir_prog *new_ir_prog (void) {
   ir_prog *res;
 
   res = (ir_prog *) malloc (sizeof(ir_prog));
+  memset(res, 0, sizeof(res));
   irp = res;
   /* res->obst      = (struct obstack *) xmalloc (sizeof (struct obstack)); */
   res->graphs = NEW_ARR_F (ir_graph *, 1);
