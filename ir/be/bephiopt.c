@@ -34,7 +34,7 @@
 #define DUMP_DIR_PHI_STAT  1
 #define DUMP_ALL_PHI_STAT  1
 
-#define PHI_STAT_FILE "all.phistat"
+#define PHI_STAT_FILE "dir.phistat"
 #define ENV_PHI_STAT "PHI_STAT"
 
 static firm_dbg_module_t *dbgphi = NULL;
