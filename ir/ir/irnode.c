@@ -2140,9 +2140,8 @@ int
 
 /* returns true if node is a Unknown node. */
 int
-is_Unknown (const ir_node *node) {
-  assert(node);
-  return (get_irn_op(node) == op_Unknown);
+(is_Unknown)(const ir_node *node) {
+  return _is_Unknown(node);
 }
 
 int

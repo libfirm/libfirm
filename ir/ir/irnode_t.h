@@ -527,8 +527,14 @@ _is_Bad(const ir_node *node) {
 
 static INLINE int
 _is_Const(const ir_node *node) {
-	assert(node);
+  assert(node);
   return (node && _get_irn_op(node) == op_Const);
+}
+
+static INLINE int
+_is_Unknown (const ir_node *node) {
+  assert(node);
+  return (node && _get_irn_op(node) == op_Unknown);
 }
 
 static INLINE int
@@ -632,6 +638,7 @@ static INLINE type *_get_irn_type(ir_node *node) {
 #define is_unop(node)                         _is_unop(node)
 #define is_binop(node)                        _is_binop(node)
 #define is_Const(node)                        _is_Const(node)
+#define is_Unknown(node)                      _is_Unknown(node)
 #define is_Bad(node)                          _is_Bad(node)
 #define is_no_Block(node)                     _is_no_Block(node)
 #define is_Block(node)                        _is_Block(node)

@@ -449,6 +449,14 @@ void     set_Sel_index (ir_node *node, int pos, ir_node *index);
 entity  *get_Sel_entity (ir_node *node); /* entity to select */
 void     set_Sel_entity (ir_node *node, entity *ent);
 
+/** InstOf access */
+type    *get_InstOf_ent (ir_node *node);
+void    set_InstOf_ent (ir_node *node, type *ent);
+ir_node *get_InstOf_store (ir_node *node);
+void    set_InstOf_store (ir_node *node, ir_node *obj);
+ir_node *get_InstOf_obj (ir_node *node);
+void    set_InstOf_obj (ir_node *node, ir_node *obj);
+
 /**
  * Projection numbers for result of Call node: use for Proj nodes!
  */
