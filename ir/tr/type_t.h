@@ -8,7 +8,7 @@
 
 /**
  *
- *   file type_t.h
+ *   @file type_t.h
  *   (C) 2001 by Universitaet Karlsruhe
  *   Goetz Lindenmaier
  *   This file contains the datatypes hidden in type.h.
