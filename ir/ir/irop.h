@@ -39,7 +39,8 @@ typedef enum {
   iro_Phi,
   iro_Load, iro_Store, iro_Alloc, iro_Free, iro_Sync,
   iro_Proj, iro_Tuple, iro_Id, iro_Bad, iro_Confirm,
-  iro_Unknown, iro_Filter, iro_Break, iro_CallBegin, iro_EndReg, iro_EndExcept
+  iro_Unknown, iro_Filter, iro_Break, iro_CallBegin, iro_EndReg, iro_EndExcept,
+  iro_FuncCall,
 } opcode;
 
 typedef struct ir_op ir_op;
@@ -102,14 +103,16 @@ extern ir_op *op_CallBegin;       ir_op *get_op_CallBegin (void);
 extern ir_op *op_EndReg;          ir_op *get_op_EndReg    (void);
 extern ir_op *op_EndExcept;       ir_op *get_op_EndExcept (void);
 
+extern ir_op *op_FuncCall;        ir_op *get_op_FuncCall  (void);
 
 /** Returns the ident for the opcode name */
-ident *get_op_ident     (ir_op *op);
+ident *get_op_ident(ir_op *op);
+
 /** Returns the string for the opcode. */
-const char *get_op_name (ir_op *op);
+const char *get_op_name(const ir_op *op);
 
 /** Returns the enum for the opcode */
-opcode get_op_code      (ir_op *op);
+opcode get_op_code(const ir_op *op);
 
 /** pinned states */
 typedef enum {
@@ -117,22 +120,22 @@ typedef enum {
   pinned           /**< Nodes must remain in this basic block. */
 } op_pinned;
 
-/** gets pinned state of an opcoe */
-op_pinned get_op_pinned (ir_op *op);
+/** gets pinned state of an opcode */
+op_pinned get_op_pinned(const ir_op *op);
 
 /** Sets pinned in the opcode.  Setting it to floating has no effect
    for Block, Phi and control flow nodes. */
-void      set_op_pinned(ir_op *op, op_pinned pinned);
+void set_op_pinned(ir_op *op, op_pinned pinned);
 
 /** Returns true if op is one of Start, End, Jmp, Cond, Return, Raise or Bad. */
-int is_cfopcode(ir_op *op);
+int is_cfopcode(const ir_op *op);
 
 /** Returns true if the operation manipulates interprocedural control flow:
    CallBegin, EndReg, EndExcept */
-int is_ip_cfopcode(ir_op *op);
+int is_ip_cfopcode(const ir_op *op);
 
 /** Returns the attribute size of nodes of this opcode.
    @note Use not encouraged, internal feature. */
-int    get_op_attr_size (ir_op *op);
+int get_op_attr_size (const ir_op *op);
 
 # endif /* _IROP_H_ */
