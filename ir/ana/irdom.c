@@ -118,15 +118,15 @@ ir_node *get_Block_dominated_next(const ir_node *bl)
 	return get_dom_info(bl)->next;
 }
 
-void dom_tree_walk(ir_node *n, irg_walk_func *pre,
+void dom_tree_walk(ir_node *bl, irg_walk_func *pre,
 		irg_walk_func *post, void *env)
 {
 	ir_node *p;
 
-  assert(get_irn_irg(n)->dom_state == dom_consistent
+  assert(get_irn_irg(bl)->dom_state == dom_consistent
 			&& "The dominators of the irg must be consistent");
 
-	for(p = get_dom_info(p)->first; p; p = get_dom_info(p)->next) {
+	dominates_for_each(bl, p) {
 		if(pre)
 			pre(p, env);
 
@@ -180,6 +180,7 @@ static void count_and_init_blocks(ir_node *bl, void *env) {
   int *n_blocks = (int *) env;
   (*n_blocks) ++;
 
+	memset(get_dom_info(bl), 0, sizeof(dom_info));
   set_Block_idom(bl, NULL);
   set_Block_pre_num(bl, -1);
   set_Block_dom_depth(bl, -1);
@@ -351,14 +352,12 @@ void compute_doms(ir_graph *irg) {
   }
   /* Step 4 */
   tdi_list[0].dom = NULL;
-	memset(get_dom_info(tdi_list[0].block), 0, sizeof(dom_info));
   set_Block_idom(tdi_list[0].block, NULL);
   set_Block_dom_depth(tdi_list[0].block, 1);
   for (i = 1;  i < n_blocks;  i++) {
     tmp_dom_info *w = &tdi_list[i];
 
     if (w->dom != w->semi) w->dom = w->dom->dom;
-		memset(get_dom_info(tdi_list[i].block), 0, sizeof(dom_info));
     set_Block_idom(w->block, w->dom->block);
     set_Block_dom_depth(w->block, get_Block_dom_depth(w->dom->block) + 1);
   }
