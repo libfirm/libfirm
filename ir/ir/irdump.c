@@ -799,18 +799,25 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
     if (interprocedural_view) {
       fprintf(F, "intra predecessor nodes:\n");
       for (i = 0; i < get_irn_intra_arity(n); i++) {
-    ir_node *pred = get_irn_intra_n(n, i);
-    fprintf(F, "  %s%s %ld\n", get_irn_opname(pred), get_irn_modename(pred), get_irn_node_nr(pred));
+        ir_node *pred = get_irn_intra_n(n, i);
+        fprintf(F, "  %s%s %ld\n", get_irn_opname(pred), get_irn_modename(pred), get_irn_node_nr(pred));
       }
     } else {
       fprintf(F, "inter predecessor nodes:\n");
       for (i = 0; i < get_irn_inter_arity(n); i++) {
-    ir_node *pred = get_irn_inter_n(n, i);
-    fprintf(F, "  %s%s %ld \tin graph %s\n", get_irn_opname(pred), get_irn_modename(pred),
+        ir_node *pred = get_irn_inter_n(n, i);
+        fprintf(F, "  %s%s %ld \tin graph %s\n", get_irn_opname(pred), get_irn_modename(pred),
         get_irn_node_nr(pred), get_ent_dump_name(get_irg_entity(get_irn_irg(pred))));
       }
     }
   } break;
+  case iro_Load:
+    fprintf(F, "volatility: %s\n", get_volatility_name(get_Load_volatility(n)));
+    break;
+  case iro_Store:
+    fprintf(F, "volatility: %s\n", get_volatility_name(get_Store_volatility(n)));
+    break;
+
   default: ;
   }
 
