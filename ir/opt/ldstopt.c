@@ -46,6 +46,21 @@ typedef struct _ldst_info_t {
 } ldst_info_t;
 
 /**
+ * flags for control flow
+ */
+enum block_flags_t {
+  BLOCK_HAS_COND = 1,      /**< Block has conditional control flow */
+  BLOCK_HAS_EXC  = 2       /**< Block has exceptionl control flow */
+};
+
+/**
+ * a Block info
+ */
+typedef struct _block_info_t {
+  unsigned flags;               /**< flags for the block */
+} block_info_t;
+
+/**
  * walker, clears all links first
  */
 static void init_links(ir_node *n, void *env)
@@ -56,9 +71,26 @@ static void init_links(ir_node *n, void *env)
 /**
  * get the Load/Store info of a node
  */
-static ldst_info_t *get_info(ir_node *node, walk_env_t *env)
+static ldst_info_t *get_ldst_info(ir_node *node, walk_env_t *env)
 {
   ldst_info_t *info = get_irn_link(node);
+
+  if (! info) {
+    info = obstack_alloc(&env->obst, sizeof(*info));
+
+    memset(info, 0, sizeof(*info));
+
+    set_irn_link(node, info);
+  }
+  return info;
+}
+
+/**
+ * get the Block info of a node
+ */
+static block_info_t *get_block_info(ir_node *node, walk_env_t *env)
+{
+  block_info_t *info = get_irn_link(node);
 
   if (! info) {
     info = obstack_alloc(&env->obst, sizeof(*info));
@@ -104,32 +136,49 @@ static int update_exc(ldst_info_t *info, ir_node *block, int pos)
 
 /**
  * walker, collects all Load/Store/Proj nodes
+ *
+ * walks form Start -> End
  */
 static void collect_nodes(ir_node *node, void *env)
 {
   ir_node     *pred;
-  ldst_info_t *info;
+  ldst_info_t *ldst_info;
   walk_env_t  *wenv = env;
 
   if (get_irn_op(node) == op_Proj) {
     pred = get_Proj_pred(node);
 
     if (get_irn_op(pred) == op_Load || get_irn_op(pred) == op_Store) {
-      info = get_info(pred, wenv);
+      ldst_info = get_ldst_info(pred, wenv);
 
-      wenv->changes |= update_projs(info, node);
+      wenv->changes |= update_projs(ldst_info, node);
     }
   }
   else if (get_irn_op(node) == op_Block) { /* check, if it's an exception block */
     int i, n;
 
     for (i = 0, n = get_Block_n_cfgpreds(node); i < n; ++i) {
+      ir_node      *pred_block;
+      block_info_t *bl_info;
+
       pred = skip_Proj(get_Block_cfgpred(node, i));
 
-      if (get_irn_op(pred) == op_Load || get_irn_op(pred) == op_Store) {
-        info = get_info(pred, wenv);
+      /* ignore Bad predecessors, they will be removed later */
+      if (is_Bad(pred))
+	continue;
 
-        wenv->changes |= update_exc(info, node, i);
+      pred_block = get_nodes_block(pred);
+      bl_info    = get_block_info(pred_block, wenv);
+
+      if (is_fragile_op(pred))
+	bl_info->flags |= BLOCK_HAS_EXC;
+      else if (is_forking_op(pred))
+	bl_info->flags |= BLOCK_HAS_COND;
+
+      if (get_irn_op(pred) == op_Load || get_irn_op(pred) == op_Store) {
+        ldst_info = get_ldst_info(pred, wenv);
+
+        wenv->changes |= update_exc(ldst_info, node, i);
       }
     }
   }
@@ -291,10 +340,10 @@ static int optimize_store(ir_node *store)
  *        \  |  /                       Str
  *          Phi
  *
- * This removes teh number of stores and allows for predicated execution.
+ * This removes the number of stores and allows for predicated execution.
  * Moves Stores back to the end of a function which may be bad
  *
- * Note: that even works, if one of the Stores is already in our current block
+ * Is only allowed if the predecessor blocks have only one successor.
  */
 static int optimize_phi(ir_node *phi)
 {
@@ -305,6 +354,7 @@ static int optimize_phi(ir_node *phi)
   int *idx;
   dbg_info *db = NULL;
   ldst_info_t *info;
+  block_info_t *bl_info;
 
   /* Must be a memory Phi */
   if (get_irn_mode(phi) != mode_M)
@@ -316,6 +366,15 @@ static int optimize_phi(ir_node *phi)
 
   store = skip_Proj(get_Phi_pred(phi, 0));
   if (get_irn_op(store) != op_Store)
+    return 0;
+
+  /* abort on bad blocks */
+  if (is_Bad(get_nodes_block(store)))
+    return 0;
+
+  /* check if the block has only one output */
+  bl_info = get_irn_link(get_nodes_block(store));
+  if (bl_info->flags)
     return 0;
 
   /* this is the address of the store */
@@ -338,6 +397,15 @@ static int optimize_phi(ir_node *phi)
     /* check, if all stores have the same exception flow */
     if (exc != info->exc_block)
       return 0;
+
+    /* abort on bad blocks */
+    if (is_Bad(get_nodes_block(store)))
+      return 0;
+
+    /* check if the block has only one output */
+    bl_info = get_irn_link(get_nodes_block(store));
+    if (bl_info->flags)
+      return 0;
   }
 
   /*
@@ -354,7 +422,7 @@ static int optimize_phi(ir_node *phi)
    *        \   |   /                       Str
    *           Phi
    *
-   * Note: that even works, if one of the Stores is already in our current block
+   * Is only allowed if the predecessor blocks have only one successor.
    */
 
   /* first step: collect all inputs */
@@ -417,8 +485,8 @@ static void do_load_store_optimize(ir_node *n, void *env)
     wenv->changes |= optimize_store(n);
     break;
 
-  case iro_Phi:
-    wenv->changes |= optimize_phi(n);
+//  case iro_Phi:
+//    wenv->changes |= optimize_phi(n);
 
   default:
     ;
