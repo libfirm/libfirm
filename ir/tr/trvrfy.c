@@ -71,6 +71,17 @@ static int check_array(type *tp) {
   return 0;
 }
 
+
+/**
+ * Check a primitive.
+ */
+static int check_primitive(type *tp) {
+  assert(is_mode(get_type_mode(tp)));
+
+  return 0;
+}
+
+
 /**
  * Checks a type.
  *
@@ -82,6 +93,8 @@ static int check_type(type *tp) {
     return check_class(tp);
   case tpo_array:
     return check_array(tp);
+  case tpo_primitive:
+    return check_primitive(tp);
   default: break;
   }
   return 0;
