@@ -1375,7 +1375,7 @@ place_floats_early(ir_node *n, pdeq *worklist)
   mark_irn_visited(n);
 
   /* Place floating nodes. */
-  if (get_op_pinned(get_irn_op(n)) == op_pin_state_floats) {
+  if (get_irn_pinned(n) == op_pin_state_floats) {
     int depth         = 0;
     ir_node *b        = new_Bad();   /* The block to place this node in */
     int bad_recursion = is_Bad(get_nodes_block(n));
@@ -1398,7 +1398,7 @@ place_floats_early(ir_node *n, pdeq *worklist)
       ir_node *dep_block;
 
       if ((irn_not_visited(dep))
-         && (get_op_pinned(get_irn_op(dep)) == op_pin_state_floats)) {
+         && (get_irn_pinned(dep) == op_pin_state_floats)) {
         place_floats_early(dep, worklist);
       }
 
@@ -1590,7 +1590,7 @@ place_floats_late(ir_node *n, pdeq *worklist)
 
     /* We have to determine the final block of this node... except for
        constants. */
-    if ((get_op_pinned(get_irn_op(n)) == op_pin_state_floats) &&
+    if ((get_irn_pinned(n) == op_pin_state_floats) &&
         (get_irn_op(n) != op_Const) &&
         (get_irn_op(n) != op_SymConst)) {
       ir_node *dca = NULL;  /* deepest common ancestor in the
