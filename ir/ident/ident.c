@@ -116,7 +116,6 @@ inline int id_to_strlen(ident *id) {
 #endif
 
 int id_is_prefix (ident *prefix, ident *id) {
-  int i;
   if (id_to_strlen(prefix) > id_to_strlen(id)) return 0;
   if (0 == memcmp(&(prefix->dptr[0]), &(id->dptr[0]), id_to_strlen(prefix)))
     return 1;

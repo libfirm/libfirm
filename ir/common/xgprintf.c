@@ -63,8 +63,6 @@ xvgprintf (xgprintf_func *out, void *arg, const char *fmt, va_list args)
 			   number of chars for from string */
   int qualifier;	/* 'h', 'l', or 'L' for integer fields */
 
-  unsigned short helper_short;
-
   done = 0;
 
 #define P(__b,__l) do { out (arg, __b, __l); done += __l; } while (0)

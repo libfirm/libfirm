@@ -103,7 +103,7 @@ void irg_out_walk(ir_node *node,
 void irg_out_block_walk2(ir_node *bl,
 			void (pre)(ir_node*, void*), void (post)(ir_node*, void*),
 			void *env) {
-  int i, out_pos;
+  int i;
 
   assert(get_irn_opcode(bl) == iro_Block);
 

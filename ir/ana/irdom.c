@@ -175,7 +175,6 @@ void compute_doms(ir_graph *irg) {
   ir_graph *rem = current_ir_graph;
   int n_blocks, used, i, j;
   tmp_dom_info *tdi_list;   /* Ein Golf? */
-  dom_env de;
 
   current_ir_graph = irg;
 
