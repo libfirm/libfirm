@@ -24,6 +24,7 @@
 # include "irgmod.h"
 # include "mangle.h"
 # include "irouts.h"
+# include "firmstat.h"
 
 ir_graph *current_ir_graph;
 INLINE ir_graph *get_current_ir_graph(void) {
@@ -74,11 +75,13 @@ new_ir_graph (entity *ent, int n_loc)
   memset(res, 0, sizeof (ir_graph));
   res->kind=k_ir_graph;
 
+  /* inform statistics here, as blocks will be already build on this graph */
+  stat_new_graph(res);
+
   current_ir_graph = res;
   add_irp_irg(res);          /* remember this graph global. */
 
-/**
-  * initialized for each graph. **/
+  /*-- initialized for each graph. --*/
 #if PRECISE_EXC_CONTEXT
   res->n_loc = n_loc + 1 + 1; /* number of local variables that are never
                                  dereferenced in this graph plus one for
@@ -114,17 +117,16 @@ new_ir_graph (entity *ent, int n_loc)
   res->typeinfo_state = irg_typeinfo_none;
   res->loopinfo_state = loopinfo_none;
 
-  /** Type information for the procedure of the graph **/
+  /*-- Type information for the procedure of the graph --*/
   res->ent = ent;
   set_entity_irg(ent, res);
 
-/**
-      contain "inner" methods as in Pascal. **/
+  /*-- contain "inner" methods as in Pascal. --*/
   res->frame_type = new_type_class(mangle(get_entity_ident(ent), frame_type_suffix));
   /* Remove type from type list.  Must be treated differently than other types. */
   remove_irp_type_from_list(res->frame_type);
 
-  /** Nodes needed in every graph **/
+  /*-- Nodes needed in every graph --*/
   res->end_block  = new_immBlock ();
   res->end        = new_End ();
   res->end_reg    = res->end;
@@ -154,9 +156,10 @@ new_ir_graph (entity *ent, int n_loc)
    */
   mature_block (res->current_block);
 
-  /** Make a block to start with **/
+  /*-- Make a block to start with --*/
   first_block = new_immBlock ();
   add_in_edge (first_block, projX);
+
 
   return res;
 }
