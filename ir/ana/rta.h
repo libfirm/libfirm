@@ -31,10 +31,13 @@ int rta_is_alive_graph(ir_graph *graph);
 /** report for all graphs and types wheater they are alive */
 void rta_report (void);
 
-#endif /* def _RTA_H_ */
+#endif /* not defined _RTA_H_ */
 
 /*
  * $Log$
+ * Revision 1.11  2004/10/18 12:47:46  liekweg
+ * minor fix
+ *
  * Revision 1.10  2004/09/24 13:59:04  beck
  * fixed doxygen comments, removed initialization for description entities
  *

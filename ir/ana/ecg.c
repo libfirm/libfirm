@@ -1519,7 +1519,6 @@ void ecg_report ()
 
     while (NULL != cinfo) {
       ir_node *call = cinfo->call;
-      int i;
 
       fprintf (dot, "\t/* call_0x%08x */\n", (int) call);
       fprintf (dot, "\tcall_0x%08x [label=\"call\\l0x%08x\"];\n",
@@ -1626,6 +1625,9 @@ void ecg_ecg ()
 
 /*
   $Log$
+  Revision 1.6  2004/10/18 12:47:19  liekweg
+  minor fix
+
   Revision 1.5  2004/10/14 11:31:28  liekweg
   SHUTUP_GCC
 
