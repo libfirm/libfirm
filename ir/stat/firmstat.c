@@ -1131,7 +1131,7 @@ void stat_finish(void)
 #define FIRM_STATISTICS
 #include "firmstat.h"
 
-void stat_init(void) {}
+void stat_init(unsigned options) {}
 
 void stat_finish(void) {}
 
