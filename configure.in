@@ -12,7 +12,7 @@ AC_INIT(ir/ir/ircons.c)
 dnl if other files should be generated just add them to ac_output_files
 ac_output_file="Makefile MakeRules ir/Makefile ir/adt/Makefile ir/debug/Makefile \
 		ir/tv/Makefile ir/common/Makefile ir/ident/Makefile ir/ir/Makefile \
-		ir/ana/Makefile ir/tr/Makefile testprograms/Makefile"
+		ir/ana/Makefile ir/tr/Makefile ir/st/Makefile testprograms/Makefile"
 
 dnl generate the config header file
 AC_CONFIG_HEADER(config.h)

@@ -262,7 +262,7 @@ void compute_doms(ir_graph *irg) {
   }
 
   /* clean up */
-  free(tdi_list);
+  // free(tdi_list);
   current_ir_graph = rem;
 }
 

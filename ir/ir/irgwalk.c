@@ -102,7 +102,7 @@ ir_node *get_cf_op(ir_node *n) {
 }
 
 void irg_block_walk_2(ir_node *node, void (pre)(ir_node*, void*),
-		      void (post)(ir_node*, void*), void *env)
+					  void (post)(ir_node*, void*), void *env)
 {
   int i;
 
@@ -121,15 +121,17 @@ void irg_block_walk_2(ir_node *node, void (pre)(ir_node*, void*),
       /* GL: I'm not sure whether this assert must go through.  There
          could be Id chains?? Tuple/Proj .... */
 
-      assert(is_cfop(pred) || is_fragile_op(pred) ||
-	     (get_irn_op(pred) == op_Bad));
+      assert(is_cfop(pred)
+			 || is_fragile_op(pred)
+			 || (get_irn_op(pred) == op_Bad));
+
       pred = get_nodes_Block(pred);
       if(get_irn_opcode(pred) == iro_Block) {
-	/* recursion */
-	irg_block_walk_2(pred, pre, post, env);
+		/* recursion */
+		irg_block_walk_2(pred, pre, post, env);
       }
       else {
-	assert(get_irn_opcode(pred) == iro_Bad);
+		assert(get_irn_opcode(pred) == iro_Bad);
       }
     }
 

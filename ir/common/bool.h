@@ -18,4 +18,9 @@ typedef unsigned char bool;
 
 # endif /* __cplusplus */
 
+# ifndef TRUE
+#  define TRUE  1
+#  define FALSE 0
+# endif /* ndef TRUE */
+
 # endif /* _BOOL_H_ */
