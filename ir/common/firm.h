@@ -82,7 +82,7 @@ extern "C" {
 
 # include "irflag.h"     /* optimization flags */
 # include "irgopt.h"     /* optimize ir */
-  /* # include "tailrec.h"*/    /* optimize tail-recursion calls */
+# include "tailrec.h"    /* optimize tail-recursion calls */
 # include "ircgopt.h"    /* Optimizations based on interprocedural graph */
 
 # include "irouts.h"     /* Graph reversal / out edges. */
@@ -97,12 +97,15 @@ extern "C" {
 # include "typegmod.h"   /* Support to modify type graph */
 # include "mangle.h"     /* Support for mangling ident names. */
 
+# include "firmstat.h"   /* statistics */
+
 /* @@@ temporarily for jni builder until preprocessor works.
    Then it should be sufficient to include <file.h> instead
-   of firm.h as not all enums are needed in the impelmentation
+   of firm.h as not all enums are needed in the implementation
    files. */
 # include "irdump.h"
 # include "irvrfy.h"
+# include "trvrfy.h"
 
 /**
  * Initialize the firm library.
