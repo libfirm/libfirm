@@ -22,6 +22,9 @@
 #define MAX_ARITY 10
 #define MAX_CLS_SIZE 10
 
+/**
+ * For an explanation of these values see phi_stat_dump_pretty
+ */
 enum vals_t {
 	I_ARG         = 0,
 	I_CONST,
@@ -197,13 +200,15 @@ static void dump_file(char *filename, int stat[ASIZE]) {
 	int i;
 
 	if (! (file = fopen(filename, "wt"))) {
-		fprintf(stderr, "Cannot open file for writing\n");
+		fprintf(stderr, "Cannot open file for writing: %s\n", filename);
 		return;
 	}
 
 	for (i = 0; i < ASIZE; i++) {
 		if (i >= I_ARITY_S && i <= I_ARITY_E)
-			fprintf(file, "%i %i\n", stat[i], stat[I_ALL_NODES]);
+			fprintf(file, "%i %i\n", stat[i], stat[I_PHIS]);
+		else if (i >= I_CLS_SIZE_S && i <= I_CLS_SIZE_E)
+			fprintf(file, "%i %i\n", stat[i], stat[I_PHICLS]);
 		else
 			fprintf(file, "%i\n", stat[i]);
 	}
@@ -215,10 +220,13 @@ static void dump_file(char *filename, int stat[ASIZE]) {
 /**
  * Updates a cumulative file with the current values.
  */
-static void update_file(char *filename) {
+void phi_stat_update(char *filename) {
     int i;
 	FILE *all;
 	int vals[ASIZE];
+
+	if (!filename)
+		return;
 
 	/* read in */
 	all = fopen(filename, "rt");
@@ -226,7 +234,9 @@ static void update_file(char *filename) {
     if (all) {
 		for (i = 0; i < ASIZE; i++) {
 			if (i >= I_ARITY_S && i <= I_ARITY_E)
-				fscanf(all, "%i %i\n", &vals[i], &vals[I_ALL_NODES]);
+				fscanf(all, "%i %i\n", &vals[i], &vals[I_PHIS]);
+			else if (i >= I_CLS_SIZE_S && i <= I_CLS_SIZE_E)
+				fscanf(all, "%i %i\n", &vals[i], &vals[I_PHICLS]);
 			else
 				fscanf(all, "%i\n", &vals[i]);
 		}
@@ -249,11 +259,9 @@ static void update_file(char *filename) {
  * Dumps the current contents of the values array to a file.
  * Updates a cumulative file.
  */
-void phi_stat_dump(char *filename, char *cum_filename) {
+void phi_stat_dump(char *filename) {
 	if (filename)
 		dump_file(filename, curr_vals);
-	if (cum_filename)
-		update_file(cum_filename);
 }
 
 
@@ -266,7 +274,7 @@ void phi_stat_dump_pretty(char *filename) {
 	FILE *out;
 
 	if (! (out = fopen(filename, "wt"))) {
-		fprintf(stderr, "Cannot open file for writing\n");
+		fprintf(stderr, "Cannot open file for writing: %s\n", filename);
 		return;
 	}
 

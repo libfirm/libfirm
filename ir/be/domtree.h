@@ -6,7 +6,6 @@
 #ifndef _DOMTREE_H
 #define _DOMTREE_H
 
-#include "pmap.h"
 #include "irgraph.h"
 #include "irnode.h"
 

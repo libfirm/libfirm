@@ -18,13 +18,14 @@
 #include "bephicongr_t.h"
 #include "beutil.h"
 
+#define DEBUG_LVL 0
 
 size_t phi_irn_data_offset = 0;
 static firm_dbg_module_t *dbgphi = NULL;
 
 void be_phi_congr_class_init(void) {
 	dbgphi = firm_dbg_register("Phi classes");
-	firm_dbg_set_mask(dbgphi, 1);
+	firm_dbg_set_mask(dbgphi, DEBUG_LVL);
 	phi_irn_data_offset = register_additional_node_data(sizeof(phi_info_t));
 }
 
