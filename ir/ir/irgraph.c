@@ -126,6 +126,10 @@ new_ir_graph (entity *ent, int n_loc)
   res->frame   = new_Proj (res->start, mode_P, pns_frame_base);
   res->globals = new_Proj (res->start, mode_P, pns_globals);
   res->args    = new_Proj (res->start, mode_T, pns_args);
+#ifdef DEBUG_libfirm
+  res->graph_nr = get_irp_new_node_nr();
+#endif
+
 
   add_in_edge(res->start_block, projX);
   /*
@@ -207,6 +211,18 @@ void free_ir_graph (ir_graph *irg) {
    templates:
    {attr type} get_irg_{attribute name} (ir_graph *irg);
    void set_irg_{attr name} (ir_graph *irg, {attr type} {attr}); */
+
+/* Outputs a unique number for this node */
+
+INLINE long
+get_irg_graph_nr(ir_graph *irg) {
+  assert(irg);
+#ifdef DEBUG_libfirm
+  return irg->graph_nr;
+#else
+  return 0;
+#endif
+}
 
 ir_node *
 get_irg_start_block (ir_graph *irg)

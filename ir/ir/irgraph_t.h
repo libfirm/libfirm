@@ -72,7 +72,13 @@ struct ir_graph {
 					every time someone walks through
 					the graph */
   unsigned long block_visited;       /**< same as visited, for a complete block */
+#ifdef DEBUG_libfirm
+  int graph_nr;             /**< a unique graph number for each graph to make output
+			      readable. */
+#endif
 };
+
+INLINE long get_irg_graph_nr(ir_graph *irg) ;
 
 /** Make a rudimentary ir graph for the constant code.
    Must look like a correct irg, spare everything else. */

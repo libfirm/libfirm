@@ -8,8 +8,13 @@
 # ifndef _IRPROG_T_H_
 # define _IRPROG_T_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "irprog.h"
 #include "firm_common_t.h"
+
 
 /** ir_prog */
 struct ir_prog {

@@ -71,10 +71,22 @@
 
 
 #if DEBUG_libfirm && NODEID_AS_LABEL
-#define PRINT_NODEID(X) fprintf(F, "%ld", get_irn_node_nr(X))
+#define PRINT_NODEID(X) fprintf(F, "n%ld", get_irn_node_nr(X))
+#define PRINT_TYPEID(X) fprintf(F, "t%ld", get_type_nr(X))
+#define PRINT_ENTID(X) fprintf(F, "e%ld", get_entity_nr(X))
+#define PRINT_IRGID(X) fprintf(F,"g%ld", get_irg_graph_nr(X))
 #else
 #define PRINT_NODEID(X) fprintf(F, "%p", X)
+#define PRINT_TYPEID(X) fprintf(F, "%p", X)
+#define PRINT_ENTID(X) fprintf(F, "%p", X)
+#define PRINT_IRGID(X) fprintf(F,"%p",X)
 #endif
+
+#define PRINT_TYPE_TYPE_EDGE(S,T,ATR,...) {fprintf (F, "edge: { sourcename:\""); PRINT_TYPEID(S); fprintf (F, "\" targetname: \""); PRINT_TYPEID(T);  fprintf (F,"\" " ATR "}\n",##__VA_ARGS__);}
+#define PRINT_TYPE_ENT_EDGE(S,T,ATR,...)  {fprintf (F, "edge: { sourcename:\""); PRINT_TYPEID(S); fprintf (F, "\" targetname: \""); PRINT_ENTID(T);  fprintf (F,"\" " ATR "}\n",##__VA_ARGS__);}
+#define PRINT_ENT_ENT_EDGE(S,T,ATR,...)   {fprintf (F, "edge: { sourcename:\""); PRINT_ENTID(S); fprintf (F, "\" targetname: \""); PRINT_ENTID(T);  fprintf (F,"\" " ATR "}\n",##__VA_ARGS__);}
+#define PRINT_ENT_TYPE_EDGE(S,T,ATR,...)  {fprintf (F, "edge: { sourcename:\""); PRINT_ENTID(S); fprintf (F, "\" targetname: \""); PRINT_TYPEID(T);  fprintf (F,"\" " ATR "}\n",##__VA_ARGS__);}
+
 
 /* A suffix to manipulate the file name. */
 char *dump_file_suffix = NULL;
@@ -132,9 +144,9 @@ dump_node_opcode (ir_node *n)
       assert(get_type_ident(get_SymConst_type(n)));
       xfprintf (F, "SymC %I ", get_type_ident(get_SymConst_type(n)));
       if (get_SymConst_kind(n) == type_tag)
-        xfprintf (F, "tag");
+        fprintf (F, "tag");
       else
-        xfprintf (F, "size");
+        fprintf (F, "size");
     }
 
   /* Filter */
@@ -186,7 +198,7 @@ dump_node_nodeattr (ir_node *n)
     break;
   case iro_Proj:
     if (n->in[1]->op->code == iro_Cmp) {
-      xfprintf (F, "%s", get_pnc_string(n->attr.proj));
+      fprintf (F, "%s", get_pnc_string(n->attr.proj));
     } else {
       xfprintf (F, "%ld", n->attr.proj);
     }
@@ -213,19 +225,19 @@ dump_node_vcgattr (ir_node *n)
   case iro_EndExcept:
     /* fall through */
   case iro_End:
-    xfprintf (F, "color: blue");
+    fprintf (F, "color: blue");
     break;
   case iro_Block:
-    xfprintf (F, "color: lightyellow");
+    fprintf (F, "color: lightyellow");
     break;
   case iro_Phi:
-    xfprintf (F, "color: green");
+    fprintf (F, "color: green");
     break;
   case iro_Const:
   case iro_Proj:
   case iro_Filter:
   case iro_Tuple:
-    xfprintf (F, "color: yellow");
+    fprintf (F, "color: yellow");
     break;
   default:
     xfprintf (F, DEFAULT_NODE_ATTR);
@@ -274,18 +286,18 @@ static void dump_const_node_local(ir_node *n, pmap *irgmap) {
       mark_irn_visited(con);
       /* Generate a new name for the node by appending the names of
 	 n and const. */
-      xfprintf (F, "node: {title: \""); PRINT_NODEID(n); PRINT_NODEID(con);
+      fprintf (F, "node: {title: \""); PRINT_NODEID(n); PRINT_NODEID(con);
       fprintf(F, "\" label: \"");
       dump_node_opcode(con);
       dump_node_mode (con);
-      xfprintf (F, " ");
+      fprintf (F, " ");
       dump_node_nodeattr(con);
 #ifdef DEBUG_libfirm
       xfprintf (F, " %ld", get_irn_node_nr(con));
 #endif
-      xfprintf (F, "\" ");
+      fprintf (F, "\" ");
       dump_node_vcgattr(con);
-      xfprintf (F, "}\n");
+      fprintf (F, "}\n");
     }
   }
 }
@@ -295,18 +307,18 @@ dump_node (ir_node *n, pmap * map) {
   if (dump_const_local_set() && is_constlike_node(n)) return;
 
   /* dump this node */
-  xfprintf (F, "node: {title: \""); PRINT_NODEID(n); fprintf(F, "\" label: \"");
+  fprintf (F, "node: {title: \""); PRINT_NODEID(n); fprintf(F, "\" label: \"");
 
   dump_node_opcode(n);
   dump_node_mode (n);
-  xfprintf (F, " ");
+  fprintf (F, " ");
   dump_node_nodeattr(n);
 #ifdef DEBUG_libfirm
   xfprintf (F, " %ld", get_irn_node_nr(n));
 #endif
-  xfprintf (F, "\" ");
+  fprintf (F, "\" ");
   dump_node_vcgattr(n);
-  xfprintf (F, "}\n");
+  fprintf (F, "}\n");
   dump_const_node_local(n, map);
 }
 
@@ -471,13 +483,13 @@ dump_ir_node (ir_node *n)
   case iro_SymConst:
     assert(get_kind(get_SymConst_type(n)) == k_type);
     assert(get_type_ident(get_SymConst_type(n)));
-    xfprintf (F, "\"%s ", get_type_name(get_SymConst_type(n)));
+    fprintf (F, "\"%s ", get_type_name(get_SymConst_type(n)));
     switch (n->attr.i.num){
     case type_tag:
-      xfprintf (F, "tag\" ");
+      fprintf (F, "tag\" ");
       break;
     case size:
-      xfprintf (F, "size\" ");
+      fprintf (F, "size\" ");
       break;
     default:
       assert(0);
@@ -500,7 +512,7 @@ dump_ir_node (ir_node *n)
   default:
     xfprintf (F, "\"%I%I\" ", get_irn_opident(n), get_irn_modeident(n));
   }
-  xfprintf (F, "}\n");		/* footer */
+  fprintf (F, "}\n");		/* footer */
 }
 
 
@@ -509,9 +521,9 @@ static void
 dump_ir_block_edge(ir_node *n)  {
   if (dump_const_local_set() && is_constlike_node(n)) return;
   if (is_no_Block(n)) {
-    xfprintf (F, "edge: { sourcename: \"");
+    fprintf (F, "edge: { sourcename: \"");
     PRINT_NODEID(n);
-    xfprintf (F, "\" targetname: \"");
+    fprintf (F, "\" targetname: \"");
     PRINT_NODEID(get_nodes_Block(n));
     xfprintf (F, "\" "	BLOCK_EDGE_ATTR "}\n");
   }
@@ -661,7 +673,7 @@ static
 void dump_loops (ir_loop *loop) {
   int i;
   /* dump this loop node */
-  xfprintf (F, "node: {title: \"%p\" label: \"loop %d, %d sons, %d nodes\" }\n",
+  fprintf (F, "node: {title: \"%p\" label: \"loop %d, %d sons, %d nodes\" }\n",
 	    loop, get_loop_depth(loop), get_loop_n_sons(loop), get_loop_n_nodes(loop));
   /* dump edges to nodes in loop -- only if it is a real loop */
   if (get_loop_depth(loop) != 0) {
@@ -698,32 +710,32 @@ static void dump_node2type_edges (ir_node *n, void *env)
   case iro_SymConst:
     if (   (get_SymConst_kind(n) == type_tag)
 	   || (get_SymConst_kind(n) == size)) {
-      xfprintf (F, "edge: { sourcename: \"");
+      fprintf (F, "edge: { sourcename: \"");
       PRINT_NODEID(n);
       fprintf (F, "\" targetname: \"%p\" "
 	       NODE2TYPE_EDGE_ATTR "}\n", get_SymConst_type(n));
     }
     break;
   case iro_Sel: {
-    xfprintf (F, "edge: { sourcename: \"");
+    fprintf (F, "edge: { sourcename: \"");
     PRINT_NODEID(n);
     fprintf (F, "\" targetname: \"%p\" "
 	     NODE2TYPE_EDGE_ATTR "}\n", get_Sel_entity(n));
     } break;
   case iro_Call: {
-    xfprintf (F, "edge: { sourcename: \"");
+    fprintf (F, "edge: { sourcename: \"");
     PRINT_NODEID(n);
     fprintf (F, "\" targetname: \"%p\" "
 	     NODE2TYPE_EDGE_ATTR "}\n", get_Call_type(n));
     } break;
   case iro_Alloc: {
-    xfprintf (F, "edge: { sourcename: \"");
+    fprintf (F, "edge: { sourcename: \"");
     PRINT_NODEID(n);
     fprintf (F, "\" targetname: \"%p\" "
 	     NODE2TYPE_EDGE_ATTR "}\n", get_Alloc_type(n));
     } break;
   case iro_Free: {
-    xfprintf (F, "edge: { sourcename: \"");
+    fprintf (F, "edge: { sourcename: \"");
     PRINT_NODEID(n);
     fprintf (F, "\" targetname: \"%p\" "
 	     NODE2TYPE_EDGE_ATTR "}\n", get_Free_type(n));
@@ -751,13 +763,13 @@ static void dump_const_expression(ir_node *value) {
 
 static void print_type_info(type *tp) {
   if (get_type_state(tp) == layout_undefined) {
-    xfprintf(F, "state: layout_undefined\n");
+    fprintf(F, "state: layout_undefined\n");
   } else {
-    xfprintf(F, "state: layout_fixed,\n");
+    fprintf(F, "state: layout_fixed,\n");
   }
   if (get_type_mode(tp))
     xfprintf(F, "mode: %I,\n", get_mode_ident(get_type_mode(tp)));
-  xfprintf(F, "size: %dB,\n", get_type_size(tp));
+  fprintf(F, "size: %dB,\n", get_type_size(tp));
 }
 
 
@@ -797,8 +809,9 @@ static void print_typespecific_info(type *tp) {
 }
 
 static void print_type_node(type *tp) {
-  xfprintf (F, "node: {title: \"%p\" ", tp);
-  xfprintf (F, "label: \"%I %I\"", get_type_tpop_nameid(tp), get_type_ident(tp));
+  xfprintf (F, "node: {title: \"");
+  PRINT_TYPEID(tp);
+  xfprintf (F, "\" label: \"%I %I\"", get_type_tpop_nameid(tp), get_type_ident(tp));
   xfprintf (F, "info1: \"");
   print_type_info(tp);
   xfprintf (F, "\"");
@@ -807,8 +820,9 @@ static void print_type_node(type *tp) {
 }
 
 void dump_entity_node(entity *ent) {
-  xfprintf (F, "node: {title: \"%p\" ", ent);
-  xfprintf (F, DEFAULT_TYPE_ATTRIBUTE);
+  xfprintf (F, "node: {title: \"");
+  PRINT_ENTID(ent);
+  xfprintf (F, "\"" DEFAULT_TYPE_ATTRIBUTE);
   xfprintf (F, "label: ");
   xfprintf (F, "\"ent %I\" " ENTITY_NODE_ATTR , get_entity_ident(ent));
   fprintf (F, "\n info1:\"\nallocation:  ");
@@ -845,8 +859,8 @@ void dump_entity_node(entity *ent) {
   xfprintf(F, "\nname:    %I\nld_name: %I", get_entity_ident(ent), get_entity_ld_ident(ent));
   fprintf(F, "\noffset:  %d", get_entity_offset(ent));
   if (is_method_type(get_entity_type(ent)))
-    xfprintf (F, "\nirg = %p ", get_entity_irg(ent));
-  xfprintf(F, "\"\n}\n");
+    { fprintf (F, "\nirg = "); PRINT_IRGID(get_entity_irg(ent)); }
+  fprintf(F, "\"\n}\n");
 }
 
 /* dumps a type or entity and it's edges. */
@@ -865,24 +879,29 @@ dump_type_info (type_or_ent *tore, void *env) {
       dump_entity_node(ent);
       /* The Edges */
       /* skip this to reduce graph.  Member edge of type is parallel to this edge. *
-      xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
+      fprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
                 ENT_OWN_EDGE_ATTR "}\n", ent, get_entity_owner(ent));*/
-      xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-                ENT_TYPE_EDGE_ATTR "}\n", ent, get_entity_type(ent));
+      PRINT_ENT_TYPE_EDGE(ent,get_entity_type(ent),ENT_TYPE_EDGE_ATTR);
       if(is_class_type(get_entity_owner(ent))) {
-	for(i = 0; i < get_entity_n_overwrites(ent); i++)
-	  xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-		    ENT_OVERWRITES_EDGE_ATTR "}\n",
-		    ent, get_entity_overwrites(ent, i));
+	for(i = 0; i < get_entity_n_overwrites(ent); i++){
+		PRINT_ENT_ENT_EDGE(ent,get_entity_overwrites(ent, i), ENT_OVERWRITES_EDGE_ATTR);
+	}
       }
       /* attached subgraphs */
       if (const_entities && (get_entity_variability(ent) != uninitialized)) {
 	if (is_atomic_entity(ent)) {
 	  value = get_atomic_ent_value(ent);
 	  if (value) {
-	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"", ent);
+	    fprintf (F, "edge: { sourcename: \"");
+	    PRINT_ENTID(ent);
+	    fprintf (F, "\" targetname: \"");
+	    PRINT_NODEID(value);
+	    fprintf(F, "\" " ENT_VALUE_EDGE_ATTR " %d \"}\n", i);
+	      /*
+	    fprintf (F, "edge: { sourcename: \"%p\" targetname: \"", GET_ENTID(ent));
 	    PRINT_NODEID(value);
 	    fprintf(F, "\" " ENT_VALUE_EDGE_ATTR "\"}\n");
+	    */
 	    dump_const_expression(value);
 	  }
 	}
@@ -890,13 +909,18 @@ dump_type_info (type_or_ent *tore, void *env) {
 	  for (i = 0; i < get_compound_ent_n_values(ent); i++) {
 	    value = get_compound_ent_value(ent, i);
 	    if (value) {
-	      xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"", ent);
+	      fprintf (F, "edge: { sourcename: \"");
+	      PRINT_ENTID(ent);
+	      fprintf (F, "\" targetname: \"");
 	      PRINT_NODEID(value);
 	      fprintf(F, "\" " ENT_VALUE_EDGE_ATTR " %d \"}\n", i);
 	      dump_const_expression(value);
-	      xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-			ENT_CORR_EDGE_ATTR  "}\n", ent,
+	      PRINT_ENT_ENT_EDGE(ent,get_compound_ent_value_member(ent, i),ENT_CORR_EDGE_ATTR,i);
+	      /*
+	      fprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
+			ENT_CORR_EDGE_ATTR  "}\n", GET_ENTID(ent),
 			get_compound_ent_value_member(ent, i), i);
+			*/
 	    }
 	  }
 	}
@@ -904,61 +928,62 @@ dump_type_info (type_or_ent *tore, void *env) {
     } break;
   case k_type:
     {
+#ifndef DEBUG
       type *tp = (type *)tore;
+#endif
+
+
       print_type_node(tp);
       /* and now the edges */
       switch (get_type_tpop_code(tp)) {
       case tpo_class:
 	{
 	  for (i=0; i < get_class_n_supertypes(tp); i++)
-	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-		      TYPE_SUPER_EDGE_ATTR "}\n",
-		      tp, get_class_supertype(tp, i));
+	  {
+		  PRINT_TYPE_TYPE_EDGE(tp,get_class_supertype(tp, i),TYPE_SUPER_EDGE_ATTR);
+	  }
+
 	  for (i=0; i < get_class_n_members(tp); i++)
-	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-		      TYPE_MEMBER_EDGE_ATTR "}\n",
-		      tp, get_class_member(tp, i));
+	  {
+		  PRINT_TYPE_ENT_EDGE(tp,get_class_member(tp, i),TYPE_MEMBER_EDGE_ATTR);
+	  }
 	} break;
       case tpo_struct:
 	{
 	  for (i=0; i < get_struct_n_members(tp); i++)
-	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-		      TYPE_MEMBER_EDGE_ATTR "}\n",
-		      tp, get_struct_member(tp, i));
+	  {
+		  PRINT_TYPE_ENT_EDGE(tp,get_struct_member(tp, i),TYPE_MEMBER_EDGE_ATTR);
+	  }
 	} break;
       case tpo_method:
 	{
 	  for (i = 0; i < get_method_n_params(tp); i++)
-	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-		      METH_PAR_EDGE_ATTR "}\n",
-		      tp, get_method_param_type(tp, i), i);
+	  {
+		  PRINT_TYPE_TYPE_EDGE(tp,get_method_param_type(tp, i),METH_PAR_EDGE_ATTR,i);
+	  }
 	  for (i = 0; i < get_method_n_ress(tp); i++)
-	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-		      METH_RES_EDGE_ATTR "}\n",
-		      tp, get_method_res_type(tp, i), i);
+	  {
+		  PRINT_TYPE_TYPE_EDGE(tp,get_method_res_type(tp, i),METH_RES_EDGE_ATTR,i);
+	  }
 	} break;
       case tpo_union:
 	{
 	  for (i = 0; i < get_union_n_members(tp); i++)
-	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-		      "label: \"\"f" UNION_EDGE_ATTR "}\n",
-		      tp, get_union_member(tp, i));
+	  {
+		  PRINT_TYPE_ENT_EDGE(tp,get_union_member(tp, i),UNION_EDGE_ATTR);
+	  }
 	} break;
       case tpo_array:
 	{
-	  xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-		    ARR_ELT_TYPE_EDGE_ATTR "}\n", tp, get_array_element_type(tp), i);
-	  xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-		    ARR_ENT_EDGE_ATTR "}\n", tp, get_array_element_entity(tp), i);
+		  PRINT_TYPE_TYPE_EDGE(tp,get_array_element_type(tp),ARR_ELT_TYPE_EDGE_ATTR);
+		  PRINT_TYPE_ENT_EDGE(tp,get_array_element_entity(tp),ARR_ENT_EDGE_ATTR);
 	} break;
       case tpo_enumeration:
 	{
 	} break;
       case tpo_pointer:
 	{
-	  xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-		    PTR_PTS_TO_EDGE_ATTR "}\n", tp,
-		    get_pointer_points_to_type(tp), i);
+		  PRINT_TYPE_TYPE_EDGE(tp,get_pointer_points_to_type(tp), PTR_PTS_TO_EDGE_ATTR);
 	} break;
       case tpo_primitive:
 	{
@@ -989,12 +1014,11 @@ dump_class_hierarchy_node (type_or_ent *tore, void *env) {
       /* The node */
       dump_entity_node(ent);
       /* The edges */
-      xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-                TYPE_MEMBER_EDGE_ATTR "}\n", get_entity_owner(ent), ent);
+      PRINT_TYPE_ENT_EDGE(get_entity_owner(ent),ent,TYPE_MEMBER_EDGE_ATTR);
       for(i = 0; i < get_entity_n_overwrites(ent); i++)
-	xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-		  ENT_OVERWRITES_EDGE_ATTR "}\n",
-		  ent, get_entity_overwrites(ent, i));
+      {
+      PRINT_ENT_ENT_EDGE(get_entity_overwrites(ent, i),ent, ENT_OVERWRITES_EDGE_ATTR);
+      }
     }
   } break; /* case k_entity */
   case k_type:
@@ -1006,9 +1030,9 @@ dump_class_hierarchy_node (type_or_ent *tore, void *env) {
 	  print_type_node(tp);
 	  /* and now the edges */
 	  for (i=0; i < get_class_n_supertypes(tp); i++)
-	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-		      TYPE_SUPER_EDGE_ATTR "}\n",
-		      tp, get_class_supertype(tp, i));
+	  {
+		  PRINT_TYPE_TYPE_EDGE(tp,get_class_supertype(tp, i),TYPE_SUPER_EDGE_ATTR);
+	  }
         } break;
         default: break;
       } /* switch type */
@@ -1060,7 +1084,7 @@ static void vcg_open (ir_graph *irg, char *suffix) {
   }
 
   /* print header */
-  xfprintf (F,
+  fprintf (F,
 	    "graph: { title: \"ir graph of %s\"\n"
 	    "display_edge_labels: %s\n"
 	    "layoutalgorithm: mindepth\n"
@@ -1081,7 +1105,7 @@ static void vcg_open (ir_graph *irg, char *suffix) {
 	    "classname 12: \"Member\""
 	    , cp, label);
 
-  xfprintf (F, "\n");		/* a separator */
+  fprintf (F, "\n");		/* a separator */
 }
 
 static void vcg_open_name (const char *name) {
@@ -1111,7 +1135,7 @@ static void vcg_open_name (const char *name) {
   }
 
   /* print header */
-  xfprintf (F,
+  fprintf (F,
 	    "graph: { title: \"ir graph of %s\"\n"
 	    "display_edge_labels: %s\n"
 	    "layoutalgorithm: mindepth\n"
@@ -1132,12 +1156,12 @@ static void vcg_open_name (const char *name) {
 	    "classname 12: \"Member\"\n"
 	    , name, label);
 
-  xfprintf (F, "\n");		/* a separator */
+  fprintf (F, "\n");		/* a separator */
 }
 
 static void
 vcg_close (void) {
-  xfprintf (F, "}\n");  /* print footer */
+  fprintf (F, "}\n");  /* print footer */
   fclose (F);           /* close vcg file */
 }
 
@@ -1203,18 +1227,18 @@ dump_ir_block (ir_node *block, void *env) {
   if (get_irn_opcode(block) == iro_Block) {
 
     /* This is a block. So dump the vcg information to make a block. */
-    xfprintf(F, "graph: { title: \"");
+    fprintf(F, "graph: { title: \"");
 	PRINT_NODEID(block);
 	fprintf(F, "\"  label: \"");
 #ifdef DEBUG_libfirm
-    xfprintf (F, "%ld", get_irn_node_nr(block));
+    fprintf (F, "%ld", get_irn_node_nr(block));
 #else
     xfprintf (F, "%I", block->op->name);
 #endif
     if (exc_normal != get_Block_exc (block))
       fprintf (F, " (%s)", exc_to_string (get_Block_exc (block)));
 
-    xfprintf(F, "\" status:clustered color:%s \n",
+    fprintf(F, "\" status:clustered color:%s \n",
 	     get_Block_matured (block) ? "yellow" : "red");
     /* dump the blocks edges */
     dump_ir_data_edges(block);
@@ -1223,7 +1247,7 @@ dump_ir_block (ir_node *block, void *env) {
     irg_walk(irg->end, dump_ir_blocks_nodes, NULL, block);
 
     /* Close the vcg information for the block */
-    xfprintf(F, "}\n\n");
+    fprintf(F, "}\n\n");
     dump_const_node_local(block, NULL);
   }
 }
@@ -1289,21 +1313,21 @@ dump_block_to_cfg (ir_node *block, void *env) {
 
   if (get_irn_opcode(block) == iro_Block) {
     /* This is a block. Dump a node for the block. */
-    xfprintf (F, "node: {title:\""); PRINT_NODEID(block);
+    fprintf (F, "node: {title:\""); PRINT_NODEID(block);
     xfprintf (F, "\" label: \"%I ", block->op->name); PRINT_NODEID(block);
 
 	if (exc_normal != get_Block_exc (block))
-	  xfprintf (F, " (%s)", exc_to_string (get_Block_exc (block)));
+	  fprintf (F, " (%s)", exc_to_string (get_Block_exc (block)));
 
-    xfprintf (F, "\" ");
+    fprintf (F, "\" ");
     if (dump_dominator_information_flag)
-      xfprintf(F, "info1:\"dom depth %d\"", get_Block_dom_depth(block));
-    xfprintf (F, "}\n");
+      fprintf(F, "info1:\"dom depth %d\"", get_Block_dom_depth(block));
+    fprintf (F, "}\n");
     /* Dump the edges */
     for ( i = 0; i < get_Block_n_cfgpreds(block); i++)
       if (get_irn_op(skip_Proj(get_Block_cfgpred(block, i))) != op_Bad) {
 	pred = get_nodes_Block(skip_Proj(get_Block_cfgpred(block, i)));
-	xfprintf (F, "edge: { sourcename: \"");
+	fprintf (F, "edge: { sourcename: \"");
 	PRINT_NODEID(block);
 	fprintf (F, "\" targetname: \"");
 	PRINT_NODEID(pred);
@@ -1313,7 +1337,7 @@ dump_block_to_cfg (ir_node *block, void *env) {
     /* Dump dominator edge */
     if (dump_dominator_information_flag && get_Block_idom(block)) {
       pred = get_Block_idom(block);
-      xfprintf (F, "edge: { sourcename: \"");
+      fprintf (F, "edge: { sourcename: \"");
       PRINT_NODEID(block);
       fprintf (F, "\" targetname: \"");
       PRINT_NODEID(pred);
@@ -1522,11 +1546,11 @@ static void dump_cg_ir_block(ir_node * block, void * env) {
   ir_node *node;
   pmap *irgmap = (pmap *)env;
   assert(is_Block(block));
-  xfprintf(F, "graph: { title: \"");
+  fprintf(F, "graph: { title: \"");
   PRINT_NODEID(block);
   fprintf(F, "\"  label: \"");
 #ifdef DEBUG_libfirm
-  xfprintf (F, "%ld", get_irn_node_nr(block));
+  fprintf (F, "%ld", get_irn_node_nr(block));
 #else
   xfprintf (F, "%I", block->op->name);
 #endif
@@ -1534,7 +1558,7 @@ static void dump_cg_ir_block(ir_node * block, void * env) {
     fprintf (F, " (%s)", exc_to_string (get_Block_exc(block)));
   }
 
-  xfprintf(F, "\" status:clustered color:%s \n",
+  fprintf(F, "\" status:clustered color:%s \n",
 	   get_Block_matured(block) ? "yellow" : "red");
 
   /* dump the blocks edges */
@@ -1547,7 +1571,7 @@ static void dump_cg_ir_block(ir_node * block, void * env) {
   }
 
   /* Close the vcg information for the block */
-  xfprintf(F, "}\n\n");
+  fprintf(F, "}\n\n");
 }
 
 static void d_cg_block_graph(ir_graph *irg, ir_node **arr, pmap *irgmap) {
@@ -1569,7 +1593,7 @@ static void d_cg_block_graph(ir_graph *irg, ir_node **arr, pmap *irgmap) {
     }
   }
   /* Close the vcg information for the irg */
-  xfprintf(F, "}\n\n");
+  fprintf(F, "}\n\n");
 }
 
 /* dump interprocedural graph with surrounding methods */
@@ -1680,7 +1704,7 @@ void dump_cg_graph(ir_graph * irg) {
     DEL_ARR_F(arr);
 
     /* Close the vcg information for the irg */
-    xfprintf(F, "}\n\n");
+    fprintf(F, "}\n\n");
   }
 
   pmap_destroy(map);
