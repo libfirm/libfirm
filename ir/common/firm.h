@@ -115,7 +115,6 @@ extern "C" {
    Then it should be sufficient to include <file.h> instead
    of firm.h as not all enums are needed in the implementation
    files. */
-#include "irprintf.h"      /* printf like dumping facility */
 #include "irdump.h"
 #include "irvrfy.h"
 #include "trvrfy.h"
