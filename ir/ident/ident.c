@@ -43,8 +43,14 @@ void id_init(void)
 
 INLINE ident *id_from_str (const char *str, int len)
 {
-  assert (len > 0);
+  assert(len > 0);
   return set_hinsert0(id_set, str, len, ID_HASH(str, len));
+}
+
+ident *new_id_from_str(const char *str)
+{
+  assert(str);
+  return id_from_str(str, strlen(str));
 }
 
 INLINE const char *id_to_str(ident *id)
@@ -57,13 +63,13 @@ INLINE int id_to_strlen(ident *id)
   return id->size;
 }
 
-int id_is_prefix (ident *prefix, ident *id)
+int id_is_prefix(ident *prefix, ident *id)
 {
   if (id_to_strlen(prefix) > id_to_strlen(id)) return 0;
   return 0 == memcmp(prefix->dptr, id->dptr, id_to_strlen(prefix));
 }
 
-int id_is_suffix (ident *suffix, ident *id)
+int id_is_suffix(ident *suffix, ident *id)
 {
   int suflen = id_to_strlen(suffix);
   int idlen  = id_to_strlen(id);
@@ -75,6 +81,11 @@ int id_is_suffix (ident *suffix, ident *id)
   part = part + (idlen - suflen);
 
   return 0 == memcmp(suffix->dptr, part, suflen);
+}
+
+int id_contains_char(ident *id, char c)
+{
+  return strchr(id_to_str(id), c) != NULL;
 }
 
 int print_id (ident *id)
