@@ -195,6 +195,7 @@ new_r_ir_graph (entity *ent, int n_loc)
 #ifdef DEBUG_libfirm
   res->graph_nr    = get_irp_new_node_nr();
 #endif
+  res->proj_args   = NULL;
 
   set_store(res->initial_mem);
 
@@ -447,6 +448,16 @@ ir_node *
 void
 (set_irg_args)(ir_graph *irg, ir_node *node) {
   __set_irg_args(irg, node);
+}
+
+ir_node **
+(get_irg_proj_args) (const ir_graph *irg) {
+  return __get_irg_proj_args (irg);
+}
+
+void
+(set_irg_proj_args) (ir_graph *irg, ir_node **nodes) {
+  __set_irg_proj_args (irg, nodes);
 }
 
 ir_node *

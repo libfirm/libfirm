@@ -45,7 +45,7 @@ struct ir_graph {
                     the type of the procedure and the
                     class it belongs to. */
   struct type    *frame_type;    /**< A class type representing the stack frame.
-				    Can include "inner" methods. */
+                    Can include "inner" methods. */
   struct ir_node *start_block;   /**< block the start node will belong to */
   struct ir_node *start;         /**< start node of this ir_graph */
   struct ir_node *end_block;     /**< block the end node will belong to */
@@ -55,13 +55,14 @@ struct ir_graph {
   struct ir_node *cstore;        /**< constant store -- no more needed!! */
   struct ir_node *frame;         /**< method's frame */
   struct ir_node *globals;       /**< pointer to the data segment containing all
-				    globals as well as global procedures. */
+                    globals as well as global procedures. */
   struct ir_node *initial_mem;   /**< initial memory of this graph */
   struct ir_node *args;          /**< methods arguments */
+  struct ir_node **proj_args;          /**< projs off the methods arguments */
   struct ir_node *bad;           /**< bad node of this ir_graph, the one and
-				    only in this graph */
+                    only in this graph */
   struct ir_node *no_mem;        /**< NoMem node of this ir_graph, the one and
-				    only in this graph */
+                    only in this graph */
   /* GL removed: we need unknown with mode for analyses. */
   /*   struct ir_node *unknown;*/           /**< unknown node of this ir_graph */
   struct obstack *obst;          /**< obstack where all of the ir_nodes live */
@@ -83,11 +84,11 @@ struct ir_graph {
   struct Phi_in_stack *Phi_in_stack; /**< needed for automatic Phi construction */
 #endif
   int n_loc;                         /**< number of local variable in this
-					procedure including procedure parameters. */
+                    procedure including procedure parameters. */
 
   /* -- Fields for optimizations / analysis information -- */
   pset *value_table;                 /**< hash table for global value numbering (cse)
-					for optimizing use in iropt.c */
+                    for optimizing use in iropt.c */
   struct ir_node **outs;             /**< Space for the out arrays. */
 
 #ifdef DEBUG_libfirm
@@ -107,13 +108,13 @@ struct ir_graph {
 
   /* -- Fields for Walking the graph -- */
   unsigned long visited;             /**< this flag is an identifier for
-					ir walk. it will be incremented
-					every time someone walks through
-					the graph */
+                    ir walk. it will be incremented
+                    every time someone walks through
+                    the graph */
   unsigned long block_visited;       /**< same as visited, for a complete block */
 #ifdef DEBUG_libfirm
   int graph_nr;             /**< a unique graph number for each graph to make output
-			       readable. */
+                   readable. */
 #endif
 };
 
@@ -264,6 +265,16 @@ __get_irg_args(const ir_graph *irg) {
 static INLINE void
 __set_irg_args(ir_graph *irg, ir_node *node) {
   irg->args = node;
+}
+
+static INLINE ir_node **
+__get_irg_proj_args(const ir_graph *irg) {
+  return irg->proj_args;
+}
+
+static INLINE void
+__set_irg_proj_args(ir_graph *irg, ir_node **nodes) {
+  irg->proj_args = nodes;
 }
 
 static INLINE ir_node *
