@@ -88,6 +88,8 @@ new_entity (type *owner, ident *name, type *type)
     current_ir_graph = rem;
   } else {
     res->variability = uninitialized;
+    res->value = NULL;
+    res->values = NULL;
   }
   res->peculiarity = existent;
   res->volatility = non_volatile;
