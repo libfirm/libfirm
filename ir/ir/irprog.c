@@ -124,10 +124,9 @@ void add_irp_irg(ir_graph *irg) {
 }
 
 /* Removes irg from the list or irgs, shrinks the list by one. */
-void remove_irp_irg(ir_graph *irg){
+void remove_irp_irg_from_list(ir_graph *irg){
   int i, found = false;
   assert(irg);
-  free_ir_graph(irg);
   for (i = 0; i < (ARR_LEN (irp->graphs)); i++) {
     if (irp->graphs[i] == irg) {
       found = true;
@@ -149,6 +148,13 @@ void remove_irp_irg(ir_graph *irg){
       }
     }
   }
+}
+
+/* Removes irg from the list or irgs, shrinks the list by one. */
+void remove_irp_irg(ir_graph *irg){
+  assert(irg);
+  free_ir_graph(irg);
+  remove_irp_irg_from_list(irg);
 }
 
 int (get_irp_n_irgs)(void) {

@@ -247,8 +247,8 @@ void free_callgraph(void) {
     ir_graph *irg = get_irp_irg(i);
     if (irg->callees) DEL_ARR_F(irg->callees);
     if (irg->callers) DEL_ARR_F(irg->callers);
-    if (irg->callee_isbe) DEL_ARR_F(irg->callee_isbe);
-    if (irg->caller_isbe) DEL_ARR_F(irg->caller_isbe);
+    if (irg->callee_isbe) free(irg->callee_isbe);
+    if (irg->caller_isbe) free(irg->caller_isbe);
     irg->callees = NULL;
     irg->callers = NULL;
     irg->callee_isbe = NULL;

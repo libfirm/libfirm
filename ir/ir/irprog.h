@@ -107,6 +107,9 @@ void      set_irp_main_irg(ir_graph *main_irg);
 /** Adds irg to the list of ir graphs in irp. */
 void      add_irp_irg(ir_graph *irg);
 
+/** Removes irg from the list of irgs and
+    shrinks the list by one. */
+void      remove_irp_irg_from_list(ir_graph *irg);
 /** Removes irg from the list of irgs, deallocates it and
     shrinks the list by one. */
 void      remove_irp_irg(ir_graph *irg);
