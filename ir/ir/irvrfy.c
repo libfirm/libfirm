@@ -920,7 +920,11 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
 
 int irn_vrfy(ir_node *n)
 {
-  return irn_vrfy_irg(n, current_ir_graph);
+  int res = 1;
+#ifdef DEBUG_libfirm
+  res = irn_vrfy_irg(n, current_ir_graph);
+#endif
+  return res;
 }
 
 /*******************************************************************/
@@ -937,6 +941,7 @@ static void vrfy_wrap(ir_node *node, void *env)
 int irg_vrfy(ir_graph *irg)
 {
   int res = 1;
+#ifdef DEBUG_libfirm
   ir_graph *rem;
 
   rem = current_ir_graph;
@@ -947,6 +952,6 @@ int irg_vrfy(ir_graph *irg)
   irg_walk(irg->end, vrfy_wrap, NULL, &res);
 
   current_ir_graph = rem;
-
+#endif
   return res;
 }
