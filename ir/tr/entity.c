@@ -10,9 +10,7 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
-#ifdef HAVE_CONFIG_H
-# include <config.h>
-#endif
+#include "firm_common_t.h"
 
 # include <stdlib.h>
 # include <stddef.h>
@@ -22,10 +20,15 @@
 # include "mangle.h"
 # include "typegmod.h"
 # include "array.h"
+
 /* All this is needed to build the constant node for methods: */
 # include "irprog_t.h"
 # include "ircons.h"
 # include "tv_t.h"
+
+#if DEBUG_libfirm
+# include "irdump.h"  /* for output if errors occur. */
+#endif
 
 # include "callgraph.h"  /* for dumping debug output */
 
@@ -109,6 +112,8 @@ new_entity (type *owner, ident *name, type *type)
     res->overwrittenby = NULL;
   }
   res->irg = NULL;
+
+  res->accesses = NULL;
 
 #ifdef DEBUG_libfirm
   res->nr = get_irp_new_node_nr();
@@ -1182,6 +1187,7 @@ entity *resolve_ent_polymorphy(type *dynamic_class, entity* static_ent) {
   assert(static_ent && static_ent->kind == k_entity);
 
   res = resolve_ent_polymorphy2(dynamic_class, static_ent);
+#if DEBUG_libfirm
   if (!res) {
     printf(" Could not find entity "); DDME(static_ent);
     printf("  in "); DDMT(dynamic_class);
@@ -1190,130 +1196,7 @@ entity *resolve_ent_polymorphy(type *dynamic_class, entity* static_ent) {
     dump_type(get_entity_owner(static_ent));
     dump_type(dynamic_class);
   }
+#endif
   assert(res);
   return res;
 }
-
-
-
-/*******************************************************************/
-/** Debug aides                                                   **/
-/*******************************************************************/
-
-
-#if 1 || DEBUG_libfirm
-int dump_node_opcode(FILE *F, ir_node *n); /* from irdump.c */
-
-
-
-#define X(a)    case a: fprintf(F, #a); break
-void    dump_entity_to_file (FILE *F, entity *ent) {
-  int i, j;
-  assert(ent && ent->kind == k_entity);
-  type *owner = get_entity_owner(ent);
-  type *type  = get_entity_type(ent);
-  fprintf(F, "entity %s (%ld)\n", get_entity_name(ent), get_entity_nr(ent));
-  fprintf(F, "  type:  %s (%ld)\n", get_type_name(type),  get_type_nr(type));
-  fprintf(F, "  owner: %s (%ld)\n", get_type_name(owner), get_type_nr(owner));
-
-  if (is_class_type(get_entity_owner(ent))) {
-    if (get_entity_n_overwrites(ent) > 0) {
-      fprintf(F, "  overwrites:\n");
-      for (i = 0; i < get_entity_n_overwrites(ent); ++i) {
-	entity *ov = get_entity_overwrites(ent, i);
-      fprintf(F, "    %d: %s of class %s\n", i, get_entity_name(ov), get_type_name(get_entity_owner(ov)));
-      }
-    } else {
-      fprintf(F, "  Does not overwrite other entities. \n");
-    }
-    if (get_entity_n_overwrittenby(ent) > 0) {
-      fprintf(F, "  overwritten by:\n");
-      for (i = 0; i < get_entity_n_overwrittenby(ent); ++i) {
-	entity *ov = get_entity_overwrittenby(ent, i);
-	fprintf(F, "    %d: %s of class %s\n", i, get_entity_name(ov), get_type_name(get_entity_owner(ov)));
-      }
-    } else {
-      fprintf(F, "  Is not overwriten by other entities. \n");
-    }
-  }
-
-  fprintf(F, "  allocation:  ");
-  switch (get_entity_allocation(ent)) {
-    X(allocation_dynamic);
-    X(allocation_automatic);
-    X(allocation_static);
-    X(allocation_parameter);
-  }
-
-  fprintf(F, "\n  visibility:  ");
-  switch (get_entity_visibility(ent)) {
-    X(visibility_local);
-    X(visibility_external_visible);
-    X(visibility_external_allocated);
-  }
-
-  fprintf(F, "\n  variability: ");
-  switch (get_entity_variability(ent)) {
-    X(variability_uninitialized);
-    X(variability_initialized);
-    X(variability_part_constant);
-    X(variability_constant);
-  }
-
-  if (get_entity_variability(ent) != variability_uninitialized) {
-    if (is_atomic_entity(ent)) {
-      fprintf(F, "\n  atomic value: ");
-      dump_node_opcode(F, get_atomic_ent_value(ent));
-    } else {
-      fprintf(F, "\n  compound values:");
-      for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
-    compound_graph_path *path = get_compound_ent_value_path(ent, i);
-    entity *ent0 = get_compound_graph_path_node(path, 0);
-    fprintf(F, "\n    %3d ", get_entity_offset_bits(ent0));
-    if (get_type_state(type) == layout_fixed)
-      fprintf(F, "(%3d) ",   get_compound_ent_value_offset_bits(ent, i));
-    fprintf(F, "%s", get_entity_name(ent0));
-    for (j = 0; j < get_compound_graph_path_length(path); ++j) {
-      entity *node = get_compound_graph_path_node(path, j);
-      fprintf(F, ".%s", get_entity_name(node));
-      if (is_array_type(get_entity_owner(node)))
-        fprintf(F, "[%d]", get_compound_graph_path_array_index(path, j));
-    }
-    fprintf(F, "\t = ");
-    dump_node_opcode(F, get_compound_ent_value(ent, i));
-      }
-    }
-  }
-
-  fprintf(F, "\n  volatility:  ");
-  switch (get_entity_volatility(ent)) {
-    X(volatility_non_volatile);
-    X(volatility_is_volatile);
-  }
-
-  fprintf(F, "\n  peculiarity: %s", get_peculiarity_string(get_entity_peculiarity(ent)));
-  fprintf(F, "\n  ld_name: %s", ent->ld_name ? get_entity_ld_name(ent) : "no yet set");
-  fprintf(F, "\n  offset:  %d", get_entity_offset_bits(ent));
-  if (is_method_type(get_entity_type(ent))) {
-    if (get_entity_irg(ent))   /* can be null */ {
-      fprintf(F, "\n  irg = %ld", get_irg_graph_nr(get_entity_irg(ent)));
-      if (get_irp_callgraph_state() == irp_callgraph_and_calltree_consistent) {
-	fprintf(F, "\n    recursion depth %d", get_irg_recursion_depth(get_entity_irg(ent)));
-	fprintf(F, "\n    loop depth      %d", get_irg_loop_depth(get_entity_irg(ent)));
-      }
-    } else {
-      fprintf(F, "\n  irg = NULL");
-    }
-  }
-  fprintf(F, "\n\n");
-}
-#undef X
-
-void dump_entity (entity *ent) {
-  dump_entity_to_file(stdout, ent);
-}
-
-#else  /* DEBUG_libfirm */
-void dump_entity_to_file (FILE *F, entity *ent) {}
-void dump_entity (entity *ent) {}
-#endif /* DEBUG_libfirm */

@@ -940,11 +940,6 @@ long get_type_nr(type *tp);
 /*******************************************************************/
 
 
-/** Write the type and all its attributes to stdout.
- *
- *  Writes the type and all its attributes to stdout if DEBUG_libfirm
- *  is set.  Else does nothing. */
-void    dump_type (type *tp);
 
 
 # endif /* _TYPE_H_ */

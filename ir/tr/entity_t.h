@@ -38,9 +38,12 @@
 # ifndef _ENTITY_T_H_
 # define _ENTITY_T_H_
 
+#include "firm_common_t.h"
+
 # include "entity.h"
 # include "typegmod.h"
 # include "mangle.h"
+
 
 /** A path in a compund graph. */
 struct compound_graph_path {
@@ -80,28 +83,37 @@ struct entity {
   struct dbg_info* dbi;    /**< A pointer to information for debug support. */
 
   /* ------------- fields for atomic entities  ---------------*/
+
   ir_node *value;            /**< value if entity is not of variability uninitialized.
                                Only for atomic entities. */
 
   /* ------------- fields for compound entities ---------------*/
+
   ir_node **values;     /**< constant values of compound entities. Only available if
-                          variablility not uninitialized.  Must be set for variability constant
+			   variablility not uninitialized.  Must be set for variability constant
                            */
-  compound_graph_path **val_paths;    /**< paths corresponding to constant values. Only available if
-                          variablility not uninitialized.  Must be set for variability constant */
+  compound_graph_path **val_paths; /**< paths corresponding to constant values. Only available if
+				      variablility not uninitialized.  Must be set for variability constant */
 
   /* ------------- fields for entities owned by a class type ---------------*/
-  entity **overwrites;  /**< A list of entities this entity overwrites. */
+
+  entity **overwrites;     /**< A list of entities this entity overwrites. */
   entity **overwrittenby;  /**< A list of entities that overwrite this entity.  */
 
   /* ------------- fields for methods ---------------*/
+
   enum peculiarity peculiarity;
   ir_graph *irg;        /**< If (type == method_type) this is the corresponding irg.
-               The ir_graph constructor automatically sets this field.
-               Yes, it must be here. */
+			   The ir_graph constructor automatically sets this field.
+			   Yes, it must be here. */
+
+  /* ------------- fields for analyses ---------------*/
+
+  ir_node **accesses;                      /**< accessing nodes: loads, stores. */
+
 #ifdef DEBUG_libfirm
   int nr;             /**< a unique node number for each node to make output
-                  readable. */
+			 readable. */
 #endif
 };
 

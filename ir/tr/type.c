@@ -1623,7 +1623,7 @@ entity *get_compound_member(type *tp, int pos)
   else
   {
     assert(0 && "need struct, union or class to get a member");
-    res=NULL;
+    res = NULL;
   }
 
   return res;
@@ -1635,60 +1635,3 @@ int is_compound_type(type *tp) {
   return (is_class_type(tp) || is_struct_type(tp) ||
 	  is_array_type(tp) || is_union_type(tp));
 }
-
-
-#ifdef DEBUG_libfirm
-int dump_node_opcode(FILE *F, ir_node *n); /* from irdump.c */
-
-void dump_type (type *tp) {
-  int i;
-
-  printf("%s type %s (%ld)", get_tpop_name(get_type_tpop(tp)), get_type_name(tp), get_type_nr(tp));
-
-  switch (get_type_tpop_code(tp)) {
-
-  case tpo_class:
-    printf("\n  members: ");
-    for (i = 0; i < get_class_n_members(tp); ++i) {
-      entity *mem = get_class_member(tp, i);
-      printf("\n    (%3d) %s:\t %s",
-	     get_entity_offset_bits(mem), get_type_name(get_entity_type(mem)), get_entity_name(mem));
-    }
-    printf("\n  supertypes: ");
-    for (i = 0; i < get_class_n_supertypes(tp); ++i) {
-      type *stp = get_class_supertype(tp, i);
-      printf("\n    %s", get_type_name(stp));
-    }
-    printf("\n  subtypes: ");
-    for (i = 0; i < get_class_n_subtypes(tp); ++i) {
-      type *stp = get_class_subtype(tp, i);
-      printf("\n    %s", get_type_name(stp));
-    }
-
-    printf("\n  peculiarity: %s", get_peculiarity_string(get_class_peculiarity(tp)));
-    break;
-
-  case tpo_union:
-  case tpo_struct:
-    printf("\n  members: ");
-    for (i = 0; i < get_compound_n_members(tp); ++i) {
-      entity *mem = get_compound_member(tp, i);
-      printf("\n    (%3d) %s:\t %s",
-	     get_entity_offset_bits(mem), get_type_name(get_entity_type(mem)), get_entity_name(mem));
-    }
-    break;
-
-  case tpo_pointer: {
-    type *tt = get_pointer_points_to_type(tp);
-
-    printf("\n  points to %s (%ld)", get_type_name(tt), get_type_nr(tt));
-  } break;
-
-  default:
-    printf(": details not implemented\n");
-  }
-  printf("\n\n");
-}
-#else  /* DEBUG_libfirm */
-void dump_type (type *tp) {}
-#endif /* DEBUG_libfirm */
