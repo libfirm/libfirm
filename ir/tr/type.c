@@ -204,16 +204,29 @@ void        set_type_mode(type *tp, ir_mode* m) {
 	 ((tp->type_op != type_pointer)     || mode_is_reference(m))   );
 	 /* Modes of pointers must be references. */
 
-  if (tp->type_op == type_primitive) {
+  switch (get_type_tpop_code(tp)) {
+  case tpo_primitive:
     /* For primitive size depends on the mode. */
     tp->size = get_mode_size_bits(m);
     tp->mode = m;
-  }
-  if ((tp->type_op == type_enumeration) || (tp->type_op == type_pointer)) {
+    break;
+  case tpo_enumeration:
+  case tpo_pointer:
     /* For pointer and enumeration size depends on the mode, but only byte size allowed. */
     assert((get_mode_size_bits(m) & 7) == 0 && "unorthodox modes not implemented");
     tp->size = get_mode_size_bits(m);
     tp->mode = m;
+    break;
+  case tpo_struct:
+  case tpo_class:
+    /* for classes and structs we allow to set a mode if the layout is fixed AND the size matches */
+    assert(get_type_state(tp) == layout_fixed &&
+	   tp->size == get_mode_size_bits(m) &&
+	   "mode don't match struct/class layout");
+    tp->mode = m;
+    break;
+  default:
+    assert(0 && "setting a mode is NOT allowed for this type");
   }
 }
 
