@@ -41,6 +41,7 @@ static const char *opt_names[] = {
   "Common subexpression elimination",
   "Strength reduction",
   "Architecture dependant optimization",
+  "Reassociation optimization",
   "Lowered",
 };
 
@@ -417,7 +418,8 @@ static void count_call(ir_node *call, graph_entry_t *graph)
     }
   }
 
-  /* check, if it's a chain-call */
+  /* check, if it's a chain-call: Then, the call-block
+   * must dominate the end block. */
   {
     ir_node *curr = get_irg_end_block(graph->irg);
     ir_node *block  = get_nodes_block(call);
@@ -476,9 +478,10 @@ static void count_nodes_in_graph(graph_entry_t *global, graph_entry_t *graph)
   graph->is_recursive  = 0;
   graph->is_chain_call = 1;
 
-  /* we need dominance info */
+  /* we need dominator info */
   if (graph->irg != get_const_code_irg())
-    compute_doms(graph->irg);
+    if (get_irg_dom_state(graph->irg) != dom_consistent)
+      compute_doms(graph->irg);
 
   /* count the nodes in the graph */
   irg_walk_graph(graph->irg, count_nodes, NULL, graph);
@@ -1096,6 +1099,9 @@ void stat_merge_nodes(
     int i, j;
     graph_entry_t *graph = graph_get_entry(current_ir_graph, status->irg_hash);
 
+    if (status->reassoc_run)
+      opt = STAT_OPT_REASSOC;
+
     for (i = 0; i < old_num_entries; ++i) {
       for (j = 0; j < new_num_entries; ++j)
         if (old_node_array[i] == new_node_array[j])
@@ -1106,6 +1112,21 @@ void stat_merge_nodes(
         removed_due_opt(old_node_array[i], graph->opt_hash[opt]);
       }
     }
+  }
+  STAT_LEAVE;
+}
+
+/*
+ * reassociation started/stopped.
+ */
+void stat_reassociate(int flag)
+{
+  if (! status->enable)
+    return;
+
+  STAT_ENTER;
+  {
+    status->reassoc_run = flag;
   }
   STAT_LEAVE;
 }
@@ -1357,6 +1378,8 @@ void stat_merge_nodes(
     ir_node **new_node_array, int new_num_entries,
     ir_node **old_node_array, int old_num_entries,
     stat_opt_kind opt) {}
+
+void stat_reassociate(int start) {}
 
 void stat_lower(ir_node *node) {}
 

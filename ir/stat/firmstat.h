@@ -52,6 +52,7 @@ typedef enum {
   STAT_OPT_CSE,                 /**< common subexpression elimination */
   STAT_OPT_STRENGTH_RED,	/**< strenght reduction */
   STAT_OPT_ARCH_DEP,		/**< architecture dependant optimization */
+  STAT_OPT_REASSOC,             /**< reassociation */
   STAT_LOWERED,			/**< lowered */
 
   STAT_OPT_MAX
@@ -116,6 +117,11 @@ void stat_merge_nodes(
     ir_node **new_node_array, int new_num_entries,
     ir_node **old_node_array, int old_num_entries,
     stat_opt_kind opt);
+
+/**
+ * Reassociation of nodes started/stopped.
+ */
+void stat_reassociate(int start);
 
 /**
  * A node was lowered into other nodes
@@ -190,6 +196,7 @@ ir_op *stat_get_op_from_opcode(opcode code);
 #define stat_irg_walk_blkwise(irg, pre, post)
 #define stat_irg_block_walk(irg, node, pre, post)
 #define stat_merge_nodes(new_node_array, new_num_entries, old_node_array, old_num_entries, opt)
+#define stat_reassociate(start)
 #define stat_lower(node)
 #define stat_inline(call, irg)
 #define stat_tail_rec(irg)

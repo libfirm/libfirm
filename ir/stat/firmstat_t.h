@@ -142,6 +142,7 @@ typedef struct _statistic_info_t {
   ir_op                   *op_ModC;		/**< pseudo op for modulo by const */
   ir_op                   *op_DivModC;		/**< pseudo op for DivMod by const */
   dumper_t                *dumper;		/**< list of dumper */
+  int                     reassoc_run;          /**< if set, reassociation is running */
   int                     enable;		/**< if set, statistic is enabled */
 } stat_info_t;
 
