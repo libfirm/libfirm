@@ -38,7 +38,7 @@ typedef enum {
   HOOK_OPT_RAW,         /**< Read-After-Write optimization */
   HOOK_OPT_RAR,         /**< Read-After-Read optimization */
   HOOK_OPT_RC,          /**< Read-a-Const optimization */
-  HOOK_OPT_TUPLE,	/**< Tuple optimization */
+  HOOK_OPT_TUPLE,				/**< Tuple optimization */
   HOOK_OPT_ID,          /**< ID optimization */
   HOOK_OPT_CSE,         /**< common subexpression elimination */
   HOOK_OPT_STRENGTH_RED,/**< strength reduction */
@@ -46,7 +46,6 @@ typedef enum {
   HOOK_OPT_REASSOC,     /**< reassociation */
   HOOK_OPT_POLY_CALL,   /**< polymorphic call optimization */
   HOOK_LOWERED,         /**< lowered */
-
   HOOK_OPT_LAST
 } hook_opt_kind;
 
@@ -58,7 +57,10 @@ typedef struct hook_entry {
   union {
     void (*_hook_new_ir_op)(void *context, ir_op *op);
     void (*_hook_free_ir_op)(void *context, ir_op *op);
-    void (*_hook_new_node)(void *context, ir_node *node);
+    void (*_hook_new_node)(void *context, ir_graph *graph, ir_node *node);
+		void (*_hook_set_irn_n)(void *context, ir_node *src,
+				int pos, ir_node *tgt, ir_node *old_tgt);
+		void (*_hook_replaced)(void *context, ir_node *old_node, ir_node *new_node);
     void (*_hook_turn_into_id)(void *context, ir_node *node);
     void (*_hook_new_graph)(void *context, ir_graph *irg, entity *ent);
     void (*_hook_free_graph)(void *context, ir_graph *irg);
@@ -93,6 +95,8 @@ typedef enum {
   hook_new_ir_op,
   hook_free_ir_op,
   hook_new_node,
+	hook_set_irn_n,
+	hook_replaced,
   hook_turn_into_id,
   hook_new_graph,
   hook_free_graph,
@@ -146,7 +150,10 @@ extern hook_entry_t *hooks[hook_last];
 
 #define hook_new_ir_op(op)                hook_exec(hook_new_ir_op, (ctx, op))
 #define hook_free_ir_op(op)               hook_exec(hook_free_ir_op, (ctx, op))
-#define hook_new_node(node)               hook_exec(hook_new_node, (ctx, node))
+#define hook_new_node(graph, node)        hook_exec(hook_new_node, (ctx, graph, node))
+#define hook_set_irn_n(src, pos, tgt, old_tgt) \
+	hook_exec(hook_set_irn_n, (ctx, src, pos, tgt, old_tgt))
+#define hook_replaced(old, nw)						hook_exec(hook_replaced, (ctx, old, nw))
 #define hook_turn_into_id(node)           hook_exec(hook_turn_into_id, (ctx, node))
 #define hook_new_graph(irg, ent)          hook_exec(hook_new_graph, (ctx, irg, ent))
 #define hook_free_graph(irg)              hook_exec(hook_free_graph, (ctx, irg))
