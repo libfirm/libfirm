@@ -63,8 +63,9 @@ struct ir_prog {
   irp_callgraph_state callgraph_state; /**< State of the callgraph. */
   struct ir_loop *outermost_cg_loop;   /**< For callgraph analysis: entry point
 					    to looptree over callgraph. */
-  int max_callgraph_loop_depth;
-  int max_callgraph_recursion_depth;
+  int max_callgraph_loop_depth;        /**< needed in callgraph. */
+  int max_callgraph_recursion_depth;   /**< needed in callgraph. */
+  int max_method_execution_frequency;  /**< needed in callgraph. */
 
 #ifdef DEBUG_libfirm
   long max_node_nr;                /**< to generate unique numbers for nodes. */
