@@ -210,7 +210,7 @@ init_op(void)
   op_Load      = new_ir_op(iro_Load,      "Load",      op_pin_state_exc_pinned, L|F, oparity_any,      -1, sizeof(load_attr));
   op_Store     = new_ir_op(iro_Store,     "Store",     op_pin_state_exc_pinned, L|F, oparity_any,      -1, sizeof(store_attr));
   op_Alloc     = new_ir_op(iro_Alloc,     "Alloc",     op_pin_state_pinned, L|F,     oparity_any,      -1, sizeof(alloc_attr));
-  op_Free      = new_ir_op(iro_Free,      "Free",      op_pin_state_pinned, L,       oparity_any,      -1, sizeof(type *));
+  op_Free      = new_ir_op(iro_Free,      "Free",      op_pin_state_pinned, L,       oparity_any,      -1, sizeof(free_attr));
   op_Sync      = new_ir_op(iro_Sync,      "Sync",      op_pin_state_pinned, 0,       oparity_any,      -1, 0);
 
   op_Proj      = new_ir_op(iro_Proj,      "Proj",      op_pin_state_floats, 0,       oparity_any,      -1, sizeof(long));
