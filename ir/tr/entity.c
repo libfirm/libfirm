@@ -50,6 +50,11 @@ init_entity (void)
   unknown_entity = new_rd_entity(NULL, unknown_type, new_id_from_str(UNKNOWN_ENTITY_NAME), unknown_type);
   set_entity_visibility(unknown_entity, visibility_external_allocated);
   set_entity_ld_ident(unknown_entity, get_entity_ident(unknown_entity));
+
+  symconst_symbol sym;
+  sym.entity_p = unknown_entity;
+  current_ir_graph = get_const_code_irg();
+  unknown_entity->value = new_SymConst(sym, symconst_addr_ent);
 }
 
 
@@ -1131,7 +1136,8 @@ set_entity_irg(entity *ent, ir_graph *irg) {
   assert(ent && is_method_type(get_entity_type(ent)));
   /* Wie kann man die Referenz auf einen IRG löschen, z.B. wenn die
    * Methode selbst nicht mehr aufgerufen werden kann, die Entität
-   * aber erhalten bleiben soll. */
+   * aber erhalten bleiben soll?  Wandle die Entitaet in description oder
+   * inherited um! */
   /* assert(irg); */
   assert((irg  && ent->peculiarity == peculiarity_existent) ||
          (!irg && ent->peculiarity == peculiarity_description) ||

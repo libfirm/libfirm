@@ -551,7 +551,7 @@ entity *resolve_ent_polymorphy(type *dynamic_class, entity* static_ent);
  *    visibility    = visibility_external_allocated
  *    offset        = -1
  *    variability   = variability_uninitialized
- *    value         = NULL
+ *    value         = SymConst(unknown_entity)
  *    values        = NULL
  *    val_paths     = NULL
  *    peculiarity   = peculiarity_existent
