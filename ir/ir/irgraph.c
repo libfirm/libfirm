@@ -23,6 +23,7 @@ ir_graph *current_ir_graph;
 /* really defined in ircons.c */
 typedef struct Phi_in_stack Phi_in_stack;
 Phi_in_stack *new_Phi_in_stack();
+void free_Phi_in_stack(Phi_in_stack *s);
 #endif
 
 /* Allocates a list of nodes:
@@ -96,6 +97,20 @@ new_ir_graph (entity *ent, int n_loc)
   add_in_edge (first_block, projX);
 
   return res;
+}
+
+/* Frees the passed irgraph.
+   Deallocates all nodes in this graph and the ir_graph structure.
+   Sets the field irgraph in the corresponding entity to NULL.
+   Does not free types, entities or modes that are used only by this
+   graph, nor the entity standing for this graph. */
+void free_ir_graph (ir_graph *irg) {
+  set_entity_irg(irg->ent, NULL);
+  free(irg->obst);
+#if USE_EXPICIT_PHI_IN_STACK
+  free_Phi_in_stack(irg->Phi_in_stack);
+#endif
+  free(irg);
 }
 
 /* access routines for all ir_graph attributes:

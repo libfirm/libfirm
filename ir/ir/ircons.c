@@ -722,6 +722,12 @@ new_Phi_in_stack() {
   return res;
 }
 
+void
+free_Phi_in_stack(Phi_in_stack *s) {
+  DEL_ARR_F(s->stack);
+  free(s);
+}
+
 void free_to_Phi_in_stack(ir_node *phi) {
   assert(get_irn_opcode(phi) == iro_Phi);
 
@@ -1012,8 +1018,9 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
     every block that has no definition of the value! **/
 
 #if USE_EXPICIT_PHI_IN_STACK
-/* Just a dummy */
+/* Just dummies */
 Phi_in_stack * new_Phi_in_stack() {  return NULL; }
+void free_Phi_in_stack(Phi_in_stack *s) { }
 #endif
 
 inline ir_node *
