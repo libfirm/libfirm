@@ -6,7 +6,7 @@
 # include "entity.h"
 
 /* Initialise the RTA data structures and perform RTA */
-void rta_init(int, int);
+void rta_init(int);
 /* Delete all graphs that have been found to be dead */
 void rta_delete_dead_graphs (void);
 /* Clean up our data structures */
@@ -23,6 +23,9 @@ void rta_report (void);
 
 /*
  * $Log$
+ * Revision 1.9  2004/08/19 16:51:02  goetz
+ * fixed some errors, pushed closer to inteded firm semantics
+ *
  * Revision 1.8  2004/06/18 17:34:31  liekweg
  * Removed field checks --flo
  *

@@ -13,9 +13,17 @@
  */
 
 /**
- * Intraprozedurale Analyse zur Abschätzung der Aufrufrelation. Es
+ * Intraprozedurale Analyse zur Abschätzung der Aufrufrelation. Es wird
  * die Menge der instantiierten Klassen bestimmt, und daraus eine Abschätzung
- * der aufgerufenen Methoden bestimmt.
+ * der aufgerufenen Methoden.
+ *
+ * Voraussetzung ist, dass das Programm keine Methodenzeiger handhaben kann.
+ * In diesem Fall koennten Methoden verloren gehen.  Oder wir muessen nach
+ * allen "freien" Methoden suchen (siehe cgana).
+ *
+ * @@@ Die Analyse sollte wissen, von welchen Klassen Instanzen ausserhalb
+ * der Uebersetzungseinheit alloziert werden koennen.  Diese muessen in
+ * die initiale Menge allozierter Klassen aufgenommern werden.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -38,22 +46,26 @@
 # define TRUE 1
 # define FALSE 0
 
+/* flags */
+static int verbose     = 0;
+
+
 /* base data */
 static eset *_live_classes   = NULL;
 
 /* cache computed results */
 static eset *_live_graphs    = NULL;
 
-static int whole_world = 0;
-static int verbose     = 0;
-
 /**
    Given a method, find the firm graph that implements that method.
 */
 static ir_graph *get_implementing_graph (entity *method)
 {
+#if 0
   ir_graph *graph = get_entity_irg ((entity*) method);
 
+  /* Search upwards in the overwrites graph. */
+  /* GL: this will not work for multiple inheritance */
   if (NULL == graph) {
     int i;
     int n_over = get_entity_n_overwrites ((entity*) method);
@@ -64,11 +76,23 @@ static ir_graph *get_implementing_graph (entity *method)
     }
   }
 
+  /* GL   this is not valid in our remove irg algorithm ... which we removed by now ...  */
+  assert(get_entity_peculiarity(method) == peculiarity_description
+	 || graph == get_entity_irg(get_SymConst_entity(get_atomic_ent_value(method))));
+
   /* we *must* always return a graph != NULL, *except* when we're used
      inside remove_irg or force_description */
   /* assert (graph && "no graph"); */
 
   return (graph);
+#else
+  ir_graph *graph = NULL;
+
+  if (get_entity_peculiarity(method) != peculiarity_description)
+    graph = get_entity_irg(get_SymConst_entity(get_atomic_ent_value(method)));
+
+  return graph;
+#endif
 }
 
 static int add_graph (ir_graph *graph)
@@ -89,10 +113,10 @@ static int add_graph (ir_graph *graph)
 static int add_class (type *clazz)
 {
   if (!eset_contains (_live_classes, clazz)) {
-  if (verbose > 1) {
-    fprintf(stdout, "RTA:        new class: ");
-    DDMT(clazz);
-  }
+    if (verbose > 1) {
+      fprintf(stdout, "RTA:        new class: ");
+      DDMT(clazz);
+    }
 
     eset_insert (_live_classes, clazz);
     return (TRUE);
@@ -101,10 +125,10 @@ static int add_class (type *clazz)
   return (FALSE);
 }
 
-/**
-   Given an entity, add all implementing graphs that belong to live classes to _live_graphs.
-
-   Iff additions occurred, return TRUE, else FALSE.
+/** Given an entity, add all implementing graphs that belong to live classes
+ *  to _live_graphs.
+ *
+ *  Iff additions occurred, return TRUE, else FALSE.
 */
 static int add_implementing_graphs (entity *method)
 {
@@ -136,12 +160,11 @@ static int add_implementing_graphs (entity *method)
   return (change);
 }
 
-/**
-   Enter all method accesses and all class allocations into
-   our tables.
-
-   Set *(int*)env to true iff (possibly) new graphs have been found.
-*/
+/** Enter all method accesses and all class allocations into
+ *  our tables.
+ *
+ *  Set *(int*)env to true iff (possibly) new graphs have been found.
+ */
 static void rta_act (ir_node *node, void *env)
 {
   int *change = (int*) env;
@@ -153,32 +176,41 @@ static void rta_act (ir_node *node, void *env)
 
     ir_node *ptr = get_Call_ptr (node);
 
-    if (iro_Sel == get_irn_opcode (ptr)) { /* CALL SEL */
+    /* CALL SEL */
+    if (iro_Sel == get_irn_opcode (ptr)) {
       ent = get_Sel_entity (ptr);
-      *change = add_implementing_graphs (ent);
-    } else if (iro_SymConst == get_irn_opcode (ptr)) { /* CALL SYMCONST */
+      *change |= add_implementing_graphs (ent);
+
+    /* CALL SYMCONST */
+    } else if (iro_SymConst == get_irn_opcode (ptr)) {
       if (get_SymConst_kind(ptr) == symconst_addr_ent) {
 	ent = get_SymConst_entity (ptr);
 	ir_graph *graph = get_entity_irg (ent);
-	/* don't use get_implementing_graph on a SymConst! */
 	if (graph) {
-	  *change = add_graph (graph);
+	  *change |= add_graph (graph);
 	} else {
 	  /* it's an external allocated thing. */
 	}
       } else if (get_SymConst_kind(ptr) == symconst_addr_name) {
-      /* If this SymConst refers to a method the method is external_visible
-         and therefore must be considered live anyways. */
-      /* assert (ent && "couldn't determine entity of call to symConst"); */
+	/* If this SymConst refers to a method the method is external_visible
+	   and therefore must be considered live anyways. */
+	if (get_SymConst_name(ptr) != new_id_from_str("iro_Catch"))
+	  assert (ent && "couldn't determine entity of call to symConst");
       } else {
 	/* other symconst. */
+	assert(0 && "This SymConst can not be an address for a method call.");
       }
 
+    /* STRANGE */
+    } else {
+      DDMN(ptr);
+      assert(0 && "Unexpected address expression: can not analyse, therefore can not do correct rta!");
     }
+
   } else if (iro_Alloc == op) { /* ALLOC */
     type *type = get_Alloc_type (node);
 
-    *change = add_class (type);
+    *change |= add_class (type);
   }
 }
 
@@ -192,16 +224,15 @@ static int rta_fill_graph (ir_graph* graph)
 
   current_ir_graph = graph;
 
-  irg_walk (get_irg_end (graph), rta_act, NULL, &change);
+  irg_walk_graph (graph, rta_act, NULL, &change);
 
   return (change);
 }
 
-/**
-   Traverse all graphs to collect method accesses and object allocations.
-
-   @param rerun Whether to rely on is_alive in a second run
-*/
+/** Traverse all graphs to collect method accesses and object allocations.
+ *
+ *  @param rerun Whether to rely on is_alive in a second run
+ */
 static int rta_fill_incremental (void)
 {
   int i;
@@ -220,10 +251,10 @@ static int rta_fill_incremental (void)
     ir_graph *graph = get_irp_irg (i);
     entity *ent = get_irg_entity (graph);
 
-    if (((!whole_world) &&
-         (visibility_external_visible == get_entity_visibility (ent))) ||
+    if ((visibility_external_visible == get_entity_visibility (ent)) ||
         (stickyness_sticky == get_entity_stickyness (ent))) {
       eset_insert (_live_graphs, graph);
+      // printf("external visible: "); DDMG(graph);
     }
   }
 
@@ -242,7 +273,6 @@ static int rta_fill_incremental (void)
     eset_insert_all (_live_graphs, live_graphs);
 
     rerun = FALSE;
-
     for (graph = eset_first (live_graphs);
          graph;
          graph = eset_next (live_graphs)) {
@@ -322,51 +352,14 @@ static void force_description (entity *ent, entity *addr)
   }
 }
 
-/* remove a graph, part II */
-/*
-   Note: get_implementing_graph is not well defined here (graph->ent
-   could overwrite more than one superclass implementation (graph).
-   Since we *know* that this entity will not be called, this is OK.
-*/
-static void remove_irg (ir_graph *graph)
-{
-  entity *ent = get_irg_entity (graph);
-  peculiarity pec = get_entity_peculiarity (ent);
-
-  /*   DDMEO (get_irg_entity(graph)); */
-
-  /* delete the ir_graph data */
-  set_entity_peculiarity (ent, peculiarity_description);
-  remove_irp_irg (graph);
-  /* remove_irp_irg also removes the entities' reference to the graph */
-  /*
-    if (NULL != get_entity_irg (ent)) {
-    set_entity_irg (ent, NULL);
-    }
-  */
-  set_entity_peculiarity (ent, pec);
-
-  /* find the implementation (graph) from *some* superclass: */
-  graph = get_implementing_graph (ent);
-
-  if (TRUE || (NULL == graph)) { /* always pretend to be 'abstract'; let the others figure this out */
-    /* nothing to inherit!  pretend we're abstract */
-    force_description (ent, ent);
-  } else {
-    /* pretend that we inherit the implementation (graph) from some superclass: */
-    set_entity_peculiarity (ent, peculiarity_inherited);
-
-    exchange (get_atomic_ent_value (ent),
-              get_atomic_ent_value (get_irg_entity(graph)));
-  }
-}
-
 /**
    Initialise the static data structures.
 */
 static void init_tables (void)
 {
-  _live_classes   = eset_create ();
+  int i, n_globs = get_class_n_members(get_glob_type());
+
+  _live_classes = eset_create ();
 
   _live_graphs = eset_create ();
 
@@ -374,20 +367,18 @@ static void init_tables (void)
     eset_insert (_live_graphs, get_irp_main_irg ());
   }
 
-  /* Adding the GlobalType is pointless, since its methods are always
-     called via a constant */
-  /*
-  if (get_glob_type ()) {
-    eset_insert (_live_classes, get_glob_type ());
+  /* Find static allocated classes */
+  for (i = 0; i < n_globs; ++i) {
+    type *member_type = get_entity_type(get_class_member(get_glob_type(), i));
+    if (is_class_type(member_type))
+      eset_insert(_live_classes, member_type);
   }
-  */
 }
 
 /* Initialise the RTA data structures, and perform RTA.
    @param   do_verbose If == 1, print statistics, if > 1, chatter about every detail
-   @param   do_whole_world Iff != 0, assume whole-world
 */
-void rta_init (int do_verbose, int do_whole_world)
+void rta_init (int do_verbose)
 {
   int n_runs = 0;
 
@@ -399,7 +390,6 @@ void rta_init (int do_verbose, int do_whole_world)
   tr_vrfy ();
 # endif /* defined DEBUG_libfirm */
 
-  whole_world = do_whole_world;
   verbose = do_verbose;
 
   init_tables ();
@@ -409,9 +399,6 @@ void rta_init (int do_verbose, int do_whole_world)
   if (verbose) {
     int n_live_graphs = stats ();
 
-    if (whole_world) {
-      printf ("RTA: whole-world assumption\n");
-    }
     printf ("RTA: n_graphs      = %i\n", get_irp_n_irgs ());
     printf ("RTA: n_live_graphs = %i\n", n_live_graphs);
     printf ("RTA: n_runs        = %i\n", n_runs);
@@ -423,6 +410,24 @@ void rta_init (int do_verbose, int do_whole_world)
   }
   tr_vrfy ();
 # endif /* defined DEBUG_libfirm */
+}
+
+
+void make_entity_to_description(type_or_ent *tore, void *env) {
+  if (get_kind(tore) == k_entity) {
+    entity *ent = (entity *)tore;
+
+    if ((is_method_type(get_entity_type(ent)))                        &&
+	(get_entity_peculiarity(ent) != peculiarity_description)      &&
+	(get_entity_visibility(ent)  != visibility_external_allocated)   ) {
+      ir_graph *irg = get_entity_irg(get_SymConst_entity(get_atomic_ent_value(ent)));
+      if (!eset_contains (_live_graphs, irg)) {
+	set_entity_peculiarity(ent, peculiarity_description);
+	set_entity_irg(ent, NULL);
+	set_atomic_ent_value(ent, new_Const(mode_P, get_tarval_null(mode_P)));
+      }
+    }
+  }
 }
 
 /* Delete all graphs that we have found to be dead from the program
@@ -437,7 +442,7 @@ void rta_delete_dead_graphs (void)
 
   if (!get_optimize() || !get_opt_dead_method_elimination()) return;
 
-  eset *dead_graphs = eset_create ();
+  ir_graph *dead_graphs[get_irp_n_irgs()];
 
   for (i = 0; i < n_graphs; i++) {
     graph = get_irp_irg(i);
@@ -447,26 +452,18 @@ void rta_delete_dead_graphs (void)
     } else {
 # ifdef DEBUG_libfirm
       entity *ent = get_irg_entity (graph);
-      assert (whole_world ||
-              (visibility_external_visible != get_entity_visibility (ent)));
+      assert (visibility_external_visible != get_entity_visibility (ent));
 # endif /* defined DEBUG_libfirm */
 
+      dead_graphs[n_dead_graphs] = graph;
       n_dead_graphs ++;
-      eset_insert (dead_graphs, graph);
     }
   }
 
-  /* now delete the graphs. */
-  for (graph = eset_first (dead_graphs);
-       graph;
-       graph = (ir_graph*) eset_next (dead_graphs)) {
-
-    if ((verbose > 1) || get_opt_dead_method_elimination_verbose ()) {
-      fprintf(stdout, "RTA: removing graph of ");
-      DDMEO(get_irg_entity (graph));
-    }
-
-    remove_irg (graph);
+  current_ir_graph = get_const_code_irg();
+  type_walk(make_entity_to_description, NULL, NULL);
+  for (i = 0; i < n_dead_graphs; ++i) {
+    remove_irp_irg (dead_graphs[i]);
   }
 
   if (verbose) {
@@ -535,6 +532,9 @@ void rta_report (void)
 
 /*
  * $Log$
+ * Revision 1.23  2004/08/19 16:51:02  goetz
+ * fixed some errors, pushed closer to inteded firm semantics
+ *
  * Revision 1.22  2004/08/13 08:57:15  beyhan
  * normalized names of functions, enums ...
  * added suffix as argument to dumpers, removed global variable
