@@ -114,7 +114,7 @@ typedef struct ir_node ir_node;
  *  @link pointer_type pointer @endlink, @link primitive_type primitive @endlink
  *
  *  @todo
- *  	mode maybe not global field??
+ *      mode maybe not global field??
  */
 #ifndef _TYPE_TYPEDEF_
 #define _TYPE_TYPEDEF_
@@ -151,15 +151,15 @@ const char* get_type_name(const type *tp);
 /** The state of the type layout. */
 typedef enum {
   layout_undefined,    /**< The layout of this type is not defined.
-			  Address computation to access fields is not
-			  possible, fields must be accessed by Sel
-			  nodes.  This is the default value except for
-			  pointer, primitive and method types. */
+              Address computation to access fields is not
+              possible, fields must be accessed by Sel
+              nodes.  This is the default value except for
+              pointer, primitive and method types. */
   layout_fixed         /**< The layout is fixed, all component/member entities
-			  have an offset assigned.  Size of the type is known.
-			  Arrays can be accessed by explicit address
-			  computation. Default for pointer, primitive and method
-			  types.  */
+              have an offset assigned.  Size of the type is known.
+              Arrays can be accessed by explicit address
+              computation. Default for pointer, primitive and method
+              types.  */
 } type_state;
 
 /** Returns the type layout state of a type. */
@@ -266,7 +266,7 @@ void          inc_master_type_visited(void);
 int is_type            (const void *thing);
 
 /**
- *   Checks whether two types are structural equal.
+ *   Checks whether two types are structurally equal.
  *
  *   @param st pointer type
  *   @param lt pointer type
@@ -340,7 +340,7 @@ int equal_type(type *tpy1, type *typ2);
 int smaller_type (type *st, type *lt);
 
 /**
- *  @page class_type	Representation of a class type
+ *  @page class_type    Representation of a class type
  *
  *  If the type opcode is set to type_class the type represents class
  *  types.  A list of fields and methods is associated with a class.
@@ -455,18 +455,18 @@ void    remove_class_supertype(type *clss, type *supertype);
 /** This enumeration flags the peculiarity of entities and types. */
 typedef enum peculiarity {
   peculiarity_description,     /**< Represents only a description.  The entity/type is never
-	  	                    allocated, no code/data exists for this entity/type.
-			            @@@ eventually rename to descriptive (adjective as the others!)*/
+                            allocated, no code/data exists for this entity/type.
+                        @@@ eventually rename to descriptive (adjective as the others!)*/
   peculiarity_inherited,       /**< Describes explicitly that other entities are
- 		                    inherited to the owner of this entity.
- 		                    Overwrites must refer to at least one other
- 		                    entity.  If this is a method entity there exists
- 		                    no irg for this entity, only for one of the
- 		                    overwritten ones.
-			            Only for entity. */
+                            inherited to the owner of this entity.
+                            Overwrites must refer to at least one other
+                            entity.  If this is a method entity there exists
+                            no irg for this entity, only for one of the
+                            overwritten ones.
+                        Only for entity. */
   peculiarity_existent         /**< The entity/type (can) exist.
-				    @@@ eventually rename to 'real' i.e., 'echt'
-			            This serves better as opposition to description _and_ inherited.*/
+                    @@@ eventually rename to 'real' i.e., 'echt'
+                        This serves better as opposition to description _and_ inherited.*/
 } peculiarity;
 const char *get_peculiarity_string(peculiarity p);
 
@@ -487,7 +487,7 @@ int is_Class_type(const type *clss);
 int is_subclass_of(type *low, type *high);
 
 /**
- *  @page struct_type	Representation of a struct type
+ *  @page struct_type   Representation of a struct type
  *
  *  Type_strct represents aggregate types that consist of a list
  *  of fields.
@@ -495,7 +495,7 @@ int is_subclass_of(type *low, type *high);
  *  - member:  All entities belonging to this class.  This are the fields
  *             that can have any of the following types:  type_class,
  *             type_struct, type_union, type_array, type_enumeration,
- *  	       type_pointer, type_primitive.
+ *             type_pointer, type_primitive.
  *             This is a dynamic list that can be grown with an "add_" function,
  *             but not shrinked.
  *             This is a dynamic list that can be grown with an "add_" function,
@@ -531,7 +531,7 @@ void    remove_struct_member (type *strct, entity *member);
 int     is_Struct_type(const type *strct);
 
 /**
- * @page method_type	Representation of a method type
+ * @page method_type    Representation of a method type
  *
  * A method type represents a method, function or procedure type.
  * It contains a list of the parameter and result types, as these
@@ -632,8 +632,8 @@ type *get_method_value_res_type(const type *method);
  * non_variadic.
  */
 typedef enum variadicity {
-  variadicity_non_variadic,	/**< non variadic */
-  variadicity_variadic		/**< variadic */
+  variadicity_non_variadic, /**< non variadic */
+  variadicity_variadic      /**< variadic */
 } variadicity;
 
 /** Returns the null-terminated name of this variadicity. */
@@ -665,7 +665,7 @@ void set_method_first_variadic_param_index(type *method, int index);
 int   is_Method_type     (const type *method);
 
 /**
- *   @page union_type	Representation of a union type.
+ *   @page union_type   Representation of a union type.
  *
  *   The union type represents union types.
  *   - n_types:     Number of unioned types.
@@ -700,7 +700,7 @@ void    remove_union_member (type *uni, entity *member);
 int     is_Union_type          (const type *uni);
 
 /**
- * @page array_type	Representation of an array type
+ * @page array_type Representation of an array type
  *
  * The array type represents rectangular multi dimensional arrays.
  * The constants representing the bounds must be allocated to
@@ -726,7 +726,7 @@ int     is_Union_type          (const type *uni);
  * Set dimension sizes after call to constructor with set_* routines.
  */
 type *new_type_array         (ident *name, int n_dimensions,
-			      type *element_type);
+                  type *element_type);
 
 /** Create a new type array with debug information.
  *
@@ -737,7 +737,7 @@ type *new_type_array         (ident *name, int n_dimensions,
  * A legal array type must have at least one dimension set.
  */
 type *new_d_type_array         (ident *name, int n_dimensions,
-			      type *element_type, dbg_info* db);
+                  type *element_type, dbg_info* db);
 
 /* --- manipulate private fields of array type --- */
 
@@ -794,7 +794,7 @@ entity *get_array_element_entity (const type *array);
 int    is_Array_type(const type *array);
 
 /**
- * @page enumeration_type	Representation of an enumeration type
+ * @page enumeration_type   Representation of an enumeration type
  *
  * Enumeration types need not necessarily be represented explicitly
  * by Firm types, as the frontend can lower them to integer constants as
@@ -803,7 +803,7 @@ int    is_Array_type(const type *array);
  * - *enum:         The target values representing the constants used to
  *                  represent individual enumerations.
  * - *enum_nameid:  Idents containing the source program name of the enumeration
- *  	            constants
+ *                  constants
  */
 /** Create a new type enumeration -- set the enumerators independently. */
 type   *new_type_enumeration    (ident *name, int n_enums);
@@ -835,7 +835,7 @@ const char *get_enumeration_name(const type *enumeration, int pos);
 int     is_Enumeration_type     (const type *enumeration);
 
 /**
- * @page pointer_type	Representation of a pointer type
+ * @page pointer_type   Representation of a pointer type
  *
  * The mode of the pointer type must be a mode_reference.
  *

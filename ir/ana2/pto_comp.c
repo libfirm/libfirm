@@ -607,14 +607,14 @@ static void pto_call (ir_graph *graph, ir_node *call, pto_env_t *pto_env)
       DBGEXE (1, pto_print_pto (get_irg_end_block (graph)));
 
     if (rec_change) {
-      DBGPRINT (0, (stdout, "%s: change args", __FUNCTION__));
+      DBGPRINT (0, (stdout, "%s: change args\n", __FUNCTION__));
     }
 
     rec_change |= set_graph_result (graph, call);
 
     if (rec_change) {
-      DBGPRINT (0, (stdout, "%s: return out:", __FUNCTION__));
-      DBGEXE (0, pto_print_pto (get_irg_end_block (graph)));
+      DBGPRINT (1, (stdout, "%s: return out:", __FUNCTION__));
+      DBGEXE (1, pto_print_pto (get_irg_end_block (graph)));
     }
 
 # if 0
@@ -756,6 +756,9 @@ pto_t *get_alloc_pto (ir_node *alloc)
 
 /*
   $Log$
+  Revision 1.17  2005/02/25 16:48:21  liekweg
+  fix typo
+
   Revision 1.16  2005/01/27 15:51:19  liekweg
   whitespace change
 
