@@ -132,6 +132,9 @@ void set_opt_dead_node_elimination(int value)
     libFIRM_opt &= ~OPT_DEAD_NODE_ELIMINATION;
 }
 
+void set_opt_dead_method_elimination (int value) {}
+void set_opt_dead_method_elimination_verbose (int value) {}
+
 void set_optimize(int value)
 {
   if (value)
