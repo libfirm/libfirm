@@ -10,17 +10,14 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
-
-
- /* Copyright (C) 2002 by Universitaet Karlsruhe
-* All rights reserved.
-*
-* Authors:  Goetz Lindenmaier
-*
-* irouts.c --- Compute out edges for ir nodes (also called def-use
-* edges).
-*
-*/
+ /**
+  * @file irouts.c Compute out edges for ir nodes (also called def-use edges).
+  *
+  * Copyright (C) 2002 by Universitaet Karlsruhe
+  * All rights reserved.
+  *
+  * Authors:  Goetz Lindenmaier
+  */
 
 /* $Id$ */
 #ifdef HAVE_CONFIG_H
@@ -40,10 +37,11 @@
    when compiling with neither DEBUG_libfirm or NDEBUG defined */
 #endif /* defined DEBUG_libfirm */
 
-/**********************************************************************/
+/*--------------------------------------------------------------------*/
 /** Accessing the out datastructures                                 **/
-/**********************************************************************/
+/*--------------------------------------------------------------------*/
 
+/** Clear the outs of a node */
 static void reset_outs (ir_node *node, void *unused)
 {
   node->out = NULL;
@@ -53,7 +51,7 @@ static void reset_outs (ir_node *node, void *unused)
 }
 
 /* returns the number of successors of the node: */
-INLINE int get_irn_n_outs    (ir_node *node) {
+INLINE int get_irn_n_outs (ir_node *node) {
 #ifdef DEBUG_libfirm
   /* assert (node->out_valid); */
 #endif /* defined DEBUG_libfirm */
@@ -88,7 +86,8 @@ INLINE int get_Block_n_cfg_outs (ir_node *bl) {
 #endif /* defined DEBUG_libfirm */
   for (i = 0; i < (int)bl->out[0]; i++)
     if ((get_irn_mode(bl->out[i+1]) == mode_X) &&
-    (get_irn_op(bl->out[i+1]) != op_End)) n_cfg_outs++;
+        (get_irn_op(bl->out[i+1]) != op_End))
+      n_cfg_outs++;
   return n_cfg_outs;
 }
 
@@ -101,10 +100,10 @@ INLINE ir_node *get_Block_cfg_out  (ir_node *bl, int pos) {
 #endif /* defined DEBUG_libfirm */
   for (i = 0; i < (int)bl->out[0]; i++)
     if ((get_irn_mode(bl->out[i+1]) == mode_X)  &&
-    (get_irn_op(bl->out[i+1]) != op_End)) {
+        (get_irn_op(bl->out[i+1]) != op_End)) {
       if (out_pos == pos) {
-    ir_node *cfop = bl->out[i+1];
-    return cfop->out[0+1];
+        ir_node *cfop = bl->out[i+1];
+        return cfop->out[0+1];
       } else {
         out_pos++;
       }
@@ -112,7 +111,7 @@ INLINE ir_node *get_Block_cfg_out  (ir_node *bl, int pos) {
   return NULL;
 }
 
-void irg_out_walk_2(ir_node *node,  irg_walk_func *pre,
+static void irg_out_walk_2(ir_node *node,  irg_walk_func *pre,
             irg_walk_func *post, void *env) {
   int i;
   ir_node *succ;
@@ -146,7 +145,7 @@ void irg_out_walk(ir_node *node,
   return;
 }
 
-void irg_out_block_walk2(ir_node *bl,
+static void irg_out_block_walk2(ir_node *bl,
             irg_walk_func *pre, irg_walk_func *post,
             void *env) {
   int i;
@@ -188,7 +187,7 @@ void irg_out_block_walk(ir_node *node,
 
 }
 
-/**********************************************************************/
+/*--------------------------------------------------------------------*/
 /** Building and Removing the out datasturcture                      **/
 /**                                                                  **/
 /** The outs of a graph are allocated in a single, large array.      **/
@@ -205,34 +204,43 @@ void irg_out_block_walk(ir_node *node,
 /** the large array into smaller parts, sets the out edges and       **/
 /** recounts the out edges.                                          **/
 /** Removes Tuple nodes!                                             **/
-/**********************************************************************/
+/*--------------------------------------------------------------------*/
 
 
-/* Returns the amount of out edges for not yet visited successors. */
+/** Returns the amount of out edges for not yet visited successors. */
 static int count_outs(ir_node *n) {
   int start, i, res, irn_arity;
-  ir_node *succ;
 
   set_irn_visited(n, get_irg_visited(current_ir_graph));
   n->out = (ir_node **) 1;     /* Space for array size. */
 
-  start = get_irn_op(n) == op_Block ? 0 : -1;
+  start = is_Block(n) ? 0 : -1;
   irn_arity = get_irn_arity(n);
-  res = irn_arity - start +1;  /* --1 or --0; 1 for array size. */
+  res = irn_arity - start + 1;  /* --1 or --0; 1 for array size. */
+
   for (i = start; i < irn_arity; i++) {
     /* Optimize Tuples.  They annoy if walking the cfg. */
-    succ = skip_Tuple(get_irn_n(n, i));
+    ir_node *succ = skip_Tuple(get_irn_n(n, i));
     set_irn_n(n, i, succ);
+
     /* count outs for successors */
     if (get_irn_visited(succ) < get_irg_visited(current_ir_graph)) {
       res += count_outs(succ);
     }
     /* Count my outs */
-    succ->out = (ir_node **)( (int)succ->out +1);
+    succ->out = (ir_node **)( (int)succ->out + 1);
   }
   return res;
 }
 
+/**
+ * Enter memory for the outs to a node.
+ *
+ * @param n      current node
+ * @param free   current free address in the chunk allocated for the outs
+ *
+ * @return The next free address
+ */
 static ir_node **set_out_edges(ir_node *n, ir_node **free) {
   int n_outs, start, i, irn_arity;
   ir_node *succ;
@@ -245,14 +253,15 @@ static ir_node **set_out_edges(ir_node *n, ir_node **free) {
 #ifdef DEBUG_libfirm
   n->out_valid = 1;
 #endif /* defined DEBUG_libfirm */
-  free = &free[n_outs];
+  free += n_outs;
   /* We count the successors again, the space will be sufficient.
      We use this counter to remember the position for the next back
      edge. */
   n->out[0] = (ir_node *)0;
 
-  if (get_irn_op(n) == op_Block) start = 0; else start = -1;
+  start = is_Block(n) ? 0 : -1;
   irn_arity = get_irn_arity(n);
+
   for (i = start; i < irn_arity; i++) {
     succ = get_irn_n(n, i);
     /* Recursion */
@@ -265,9 +274,9 @@ static ir_node **set_out_edges(ir_node *n, ir_node **free) {
   return free;
 }
 
-  /* We want that the out of ProjX from Start contains the next block at
-     position 1, the Start block at position 2.  This is necessary for
-     the out block walker. */
+/* We want that the out of ProjX from Start contains the next block at
+   position 1, the Start block at position 2.  This is necessary for
+   the out block walker. */
 static INLINE void fix_start_proj(ir_graph *irg) {
   ir_node *proj    = NULL;
   ir_node *startbl = get_irg_start_block(irg);
@@ -288,6 +297,7 @@ static INLINE void fix_start_proj(ir_graph *irg) {
   }
 }
 
+/* compute the outs for a given graph */
 void compute_outs(ir_graph *irg) {
   ir_graph *rem = current_ir_graph;
   int n_out_edges = 0;
@@ -297,7 +307,9 @@ void compute_outs(ir_graph *irg) {
 
   /* Update graph state */
   assert(get_irg_phase_state(current_ir_graph) != phase_building);
-  if (current_ir_graph->outs_state != outs_none) free_outs(current_ir_graph);
+
+  if (current_ir_graph->outs_state != outs_none)
+    free_outs(current_ir_graph);
   current_ir_graph->outs_state = outs_consistent;
 
   /* This first iteration counts the overall number of out edges and the
@@ -316,10 +328,8 @@ void compute_outs(ir_graph *irg) {
   inc_irg_visited(irg);
   end = set_out_edges(get_irg_end(irg), irg->outs);
 
-#ifdef DEBUG_libfirm
   /* Check how much memory we have used */
   assert (end == (irg->outs + n_out_edges));
-#endif /* defined DEBUG_libfirm */
 
   /* We want that the out of ProjX from Start contains the next block at
      position 1, the Start block at position 2.  This is necessary for
@@ -341,23 +351,20 @@ void compute_outs(ir_graph *irg) {
  *------------------------------------------------------------*/
 
 
-/* ------------------------------------------
-   Inits the number of outedges for each node
-   before counting.
-   ------------------------------------------ */
-
-static void init_count(ir_node * node, void * env)
-{
+/**
+ * Inits the number of outedges for each node
+ * before counting.
+ */
+static void init_count(ir_node * node, void *env) {
   node->out = (ir_node **) 1; /* 1 for the array size */
 }
 
 
-/* -----------------------------------------------
-   Adjusts the out edge count for its predecessors
-   and adds the current arity to the overall count,
-   which is saved in "env"
-   ------------------------------------------------ */
-
+/**
+ * Adjusts the out edge count for its predecessors
+ * and adds the current arity to the overall count,
+ * which is saved in "env"
+ */
 static void node_arity_count(ir_node * node, void * env)
 {
   int *anz = (int *) env, arity, n_outs, i, start;
@@ -376,11 +383,10 @@ static void node_arity_count(ir_node * node, void * env)
 }
 
 
-/* ----------------------------------------
-   Inits all nodes for setting the outedges
-   Returns the overall count of edges
-   ---------------------------------------- */
-
+/*
+ * Inits all nodes for setting the outedges
+ * Returns the overall count of edges
+ */
 int count_ip_outs(void) {
 
   int res = 0;
@@ -390,14 +396,13 @@ int count_ip_outs(void) {
   return(res);
 }
 
-int dummy_count = 0, global_count; /* Only for debugging */
+static int dummy_count = 0, global_count; /* Only for debugging */
 
-/* ---------------------------------------------
-   For each node: Sets the pointer to array
-   in which the outedges are written later.
-   The current array start is transported in env
-   --------------------------------------------- */
-
+/**
+ * For each node: Sets the pointer to array
+ * in which the outedges are written later.
+ * The current array start is transported in env
+ */
 static void set_array_pointer(ir_node *node, void *env) {
 
   int n_outs;
@@ -416,11 +421,10 @@ static void set_array_pointer(ir_node *node, void *env) {
 }
 
 
-/* -------------------------------------------
-   Adds an outedge from the predecessor to the
-   current node.
-   ------------------------------------------- */
-
+/**
+ * Adds an outedge from the predecessor to the
+ * current node.
+ */
 static void set_out_pointer(ir_node * node, void * env) {
   int i, arity = get_irn_arity(node);
   ir_node *succ;
@@ -434,10 +438,9 @@ static void set_out_pointer(ir_node * node, void * env) {
 }
 
 
-/* -------------------------------
-   Sets the outedges for all nodes.
-   -------------------------------- */
-
+/*
+ * Sets the outedges for all nodes.
+ */
 void set_ip_outs(void)
 {
   ir_node **outedge_array = get_irp_ip_outedges();
@@ -446,12 +449,11 @@ void set_ip_outs(void)
 
 
 
-/* --------------------------------------------------------
-   Counts the outedges, allocates memory to save the
-   outedges and fills this outedge array in interprocedural
-   view!
-   -------------------------------------------------------- */
-
+/*
+ * Counts the outedges, allocates memory to save the
+ * outedges and fills this outedge array in interprocedural
+ * view!
+ */
 void compute_ip_outs(void) {
 
   int n_out_edges;
