@@ -18,7 +18,7 @@
  *
  *  This file contains the representation of the callgraph.
  *  The nodes of the call graph are ir_graphs.  The edges between
- *  ghe nodes are calling relations.  I.e., if method a calls method
+ *  the nodes are calling relations.  I.e., if method a calls method
  *  b at some point, there is an edge between a and b.
  *
  *  Further this file contains an algorithm to construct the call
@@ -70,6 +70,7 @@ int       get_irg_loop_depth(ir_graph *irg);
     this irg. */
 int       get_irg_recursion_depth(ir_graph *irg);
 
+double get_irg_method_execution_frequency (ir_graph *irg);
 
 /** Construct the callgraph. Expects callee information, i.e.,
     irg_callee_info_consistent must be set.  This can be computed with
@@ -84,9 +85,24 @@ typedef void callgraph_walk_func(ir_graph *g, void *env);
 
 void callgraph_walk(callgraph_walk_func *pre, callgraph_walk_func *post, void *env);
 
-/** Compute the backedges that represent recursions. */
+/** Compute the backedges that represent recursions and a looptree.
+ */
 void find_callgraph_recursions(void);
 
+/** Compute interprocedural performance estimates.
+ *
+ *  Computes
+ *   - the loop depth of the method.
+ *     The loop depth of an edge between two methods is the
+ *     maximal loop depth of the Call nodes that call along this edge.
+ *     The loop depth of the method is the loop depth of the most expensive
+ *     path from main().
+ *   - The recursion depth.  The maximal number of recursions passed
+ *     on all paths reaching this method.
+ *   - The execution freqency.  As loop depth, but the edge weight is the sum
+ *     of the execution freqencies of all Calls along the edge.
+ **/
+void compute_performance_estimates(void);
 
 /** Computes the loop nesting information.
  *
