@@ -1616,7 +1616,7 @@ static void get_comm_Binop_Ops(ir_node *binop, ir_node **a, ir_node **c)
  *           AND    c1
  *               OR
  */
-static ir_node *transform_node_Or(ir_node *or)
+static ir_node *transform_node_Or_bf_store(ir_node *or)
 {
   ir_node *and, *c1;
   ir_node *or_l, *c2;
@@ -1683,7 +1683,120 @@ static ir_node *transform_node_Or(ir_node *or)
   set_Or_right(or, new_const);
 
   /* check for more */
-  return transform_node_Or(or);
+  return transform_node_Or_bf_store(or);
+}
+
+/**
+ * Optimize an Or(shl(x, c), shr(x, bits - c)) into a Rot
+ */
+static ir_node *transform_node_Or_Rot(ir_node *or)
+{
+  ir_mode *mode = get_irn_mode(or);
+  ir_node *shl, *shr, *block;
+  ir_node *irn, *x, *c1, *c2, *v, *sub;
+  tarval *tv1, *tv2;
+
+  if (! mode_is_int(mode))
+    return or;
+
+  shl = get_binop_left(or);
+  shr = get_binop_right(or);
+
+  if (get_irn_op(shl) == op_Shr) {
+    if (get_irn_op(shr) != op_Shl)
+      return or;
+
+    irn = shl;
+    shl = shr;
+    shr = irn;
+  }
+  else if (get_irn_op(shl) != op_Shl)
+    return or;
+  else if (get_irn_op(shr) != op_Shr)
+    return or;
+
+  x = get_Shl_left(shl);
+  if (x != get_Shr_left(shr))
+    return or;
+
+  c1 = get_Shl_right(shl);
+  c2 = get_Shr_right(shr);
+  if (get_irn_op(c1) == op_Const && get_irn_op(c2) == op_Const) {
+    tv1 = get_Const_tarval(c1);
+    if (! tarval_is_long(tv1))
+      return or;
+
+    tv2 = get_Const_tarval(c2);
+    if (! tarval_is_long(tv2))
+      return or;
+
+    if (get_tarval_long(tv1) + get_tarval_long(tv2)
+        != get_mode_size_bits(mode))
+      return or;
+
+    /* yet, condition met */
+    block = get_nodes_block(or);
+
+    return new_r_Rot(current_ir_graph, block, x, c1, mode);
+  }
+  else if (get_irn_op(c1) == op_Sub) {
+    v   = c2;
+    sub = c1;
+
+    if (get_Sub_right(sub) != v)
+      return or;
+
+    c1 = get_Sub_left(sub);
+    if (get_irn_op(c1) != op_Const)
+      return or;
+
+    tv1 = get_Const_tarval(c1);
+    if (! tarval_is_long(tv1))
+      return or;
+
+    if (get_tarval_long(tv1) != get_mode_size_bits(mode))
+      return or;
+
+    /* yet, condition met */
+    block = get_nodes_block(or);
+
+    /* a Rot right is not supported, so use a rot left */
+    return new_r_Rot(current_ir_graph, block, x, sub, mode);
+  }
+  else if (get_irn_op(c2) == op_Sub) {
+    v   = c1;
+    sub = c2;
+
+    c1 = get_Sub_left(sub);
+    if (get_irn_op(c1) != op_Const)
+      return or;
+
+    tv1 = get_Const_tarval(c1);
+    if (! tarval_is_long(tv1))
+      return or;
+
+    if (get_tarval_long(tv1) != get_mode_size_bits(mode))
+      return or;
+
+    /* yet, condition met */
+    block = get_nodes_block(or);
+
+    /* a Rot Left */
+    return new_r_Rot(current_ir_graph, block, x, v, mode);
+  }
+
+  return or;
+}
+
+/**
+ * Optimize an Or
+ */
+static ir_node *transform_node_Or(ir_node *or)
+{
+  or = transform_node_Or_bf_store(or);
+  or = transform_node_Or_Rot(or);
+
+  return or;
 }
 
 /* forward */
