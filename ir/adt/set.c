@@ -85,13 +85,13 @@ typedef struct element {
 
 
 struct SET {
-  short	p;			/* Next bucket to be split	*/
-  short	maxp;			/* upper bound on p during expansion	*/
-  int nkey;			/* current # keys	*/
-  short	nseg;			/* current # segments	*/
+  unsigned p;			/* Next bucket to be split	*/
+  unsigned maxp;		/* upper bound on p during expansion	*/
+  unsigned nkey;		/* current # keys	*/
+  unsigned nseg;		/* current # segments	*/
   Segment *dir[DIRECTORY_SIZE];
   MANGLEP(cmp_fun) cmp;		/* function comparing entries */
-  int iter_i, iter_j;
+  unsigned iter_i, iter_j;
   Element *iter_tail;		/* non-NULL while iterating over elts */
 #ifdef PSET
   Element *free_list;		/* list of free Elements */
@@ -147,11 +147,11 @@ const char *MANGLEP(tag);
 static void
 MANGLEP(describe) (SET *table)
 {
-  int i, j, collide;
+  unsigned i, j, collide;
   Element *ptr;
   Segment *seg;
 
-  printf ("p=%d maxp=%d nkey=%d nseg=%d\n",
+  printf ("p=%u maxp=%u nkey=%u nseg=%u\n",
 	  table->p, table->maxp, table->nkey, table->nseg);
   for (i = 0;  i < table->nseg;  i++) {
     seg = table->dir[i];
@@ -178,9 +178,13 @@ SET *
   int i;
   SET *table = xmalloc (sizeof (SET));
 
-  /* Adjust nslots up to next power of 2, minimum SEGMENT_SIZE */
-  assert (nslots >= 0);
-  for (i = SEGMENT_SIZE;  i < nslots;  i <<= 1) assert (i < (i << 1));
+  if (nslots > SEGMENT_SIZE * DIRECTORY_SIZE)
+    nslots = SEGMENT_SIZE * DIRECTORY_SIZE;
+  else {
+    assert (nslots >= 0);
+    /* Adjust nslots up to next power of 2, minimum SEGMENT_SIZE */
+    for (i = SEGMENT_SIZE;  i < nslots;  i <<= 1);
+  }
   nslots = i >> SEGMENT_SIZE_SHIFT;
 
   table->nseg = table->p = table->nkey = 0;
