@@ -41,6 +41,11 @@ typedef struct set_entry {
  *
  * @return
  *    0 if the elements are identically, non-zero else
+ *
+ * @note
+ *    Although it is possible to define different meanings for equality of two
+ *    elements of a sets, they can be only equal if there sizes are
+ *    equal. This is checked before the compare function is called.
  */
 typedef int (*set_cmp_fun) (const void *elt, const void *key, size_t size);
 
