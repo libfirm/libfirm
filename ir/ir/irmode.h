@@ -1,18 +1,22 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
 * All rights reserved.
-*
-* Authors: Christian Schaefer
-*
-irmode.h Modes for ir operators.
-
-This module specifies the modes that type the firm nodes.  See
-UKA tech report 1999-14 for more information about modes.
-
-
-@@@ This file is at the level of the original fiasco.  It needs to be ported
-to the version of the tech report!!! This will be done with the
-reimplementation of the tarval module.
 */
+
+/**
+ * @file irmode.h
+ *
+ * Modes for ir operators.
+ *
+ * @author Christian Schaefer
+ *
+ * This module specifies the modes that type the firm nodes.  See
+ * UKA tech report 1999-14 for more information about modes.
+ *
+ * @todo
+ * This file is at the level of the original fiasco.  It needs to be ported
+ * to the version of the tech report!!! This will be done with the
+ * reimplementation of the tarval module.
+ */
 
 /* $Id$ */
 
@@ -79,7 +83,8 @@ extern ir_mode *mode_X;  /**< execution */
 extern ir_mode *mode_M;	 /**< memory */
 extern ir_mode *mode_BB; /**< block */
 
-/* Access routines for JNI Interface */
+/*@{*/
+/** Access routines for JNI Interface */
 ir_mode *get_modeT();
 ir_mode *get_modeF();
 ir_mode *get_modeD();
@@ -99,79 +104,78 @@ ir_mode *get_modeb();
 ir_mode *get_modeX();
 ir_mode *get_modeM();
 ir_mode *get_modeBB();
+/*@}*/
 
-/* An enum for this mode */
+/** An enum for this mode */
 modecode get_mode_modecode (ir_mode *mode);
 /* void  set_mode_modecode (ir_mode *mode, modecode code);  */
 
-/* The ident of this mode */
+/** The ident of this mode */
 ident   *get_mode_ident    (ir_mode *mode);
 /* void  set_mode_ident    (ir_mode *mode, ident *id);    */
 
-/* The name of this mode */
+/** The name of this mode */
 const char *get_mode_name  (ir_mode *mode);
 /* void  set_mode_name     (ir_mode *mode, char *name);    */
 
-/* The size of values of the mode in bytes. */
+/** The size of values of the mode in bytes. */
 int      get_mode_size     (ir_mode *mode);
 /* void  set_mode_size     (ir_mode *mode, int size);       */
 
-/* The alignment of values of the mode. */
+/** The alignment of values of the mode. */
 int      get_mode_ld_align (ir_mode *mode);
 /* void  set_mode_ld_align (ir_mode *mode, int ld_align); */
 
-/* The smallest representable value */
+/** The smallest representable value */
 tarval  *get_mode_min      (ir_mode *mode);
 /* void  set_mode_min      (ir_mode *mode, tarval *min); */
 
-/* The biggest representable value */
+/** The biggest representable value */
 tarval  *get_mode_max      (ir_mode *mode);
 /* void  set_mode_max      (ir_mode *mode, tarval *max); */
 
-/* The value Zero represented in this mode */
+/** The value Zero represented in this mode */
 tarval  *get_mode_null     (ir_mode *mode);
 /* void  set_mode_null     (ir_mode *mode, tarval *null); */
 
-/* Returns 1 if mode is signed, else 0. */
+/** Returns 1 if mode is signed, else 0. */
 unsigned get_mode_fsigned  (ir_mode *mode);
 /* void  set_mode_fsigned  (ir_mode *mode, unsigned fsigned); */
 
-/* Returns 1 if mode is float, else 0. */
+/** Returns 1 if mode is float, else 0. */
 unsigned get_mode_ffloat   (ir_mode *mode);
 /* void  set_mode_ffloat   (ir_mode *mode, unsigned ffloat); */
 
-/* Functions to check, whether a modecode is signed, float, int, num, data,
-   datab or dataM. For more exact definitions read the corresponding pages
+/*@{*/
+/**
+   Functions to check, whether a modecode is signed, float, int, num, data,
+   datab or dataM.
+
+   For more exact definitions read the corresponding pages
    in the firm documentation or the followingenumeration
 
    The set of "float" is defined as:
-   ---------------------------------
    float = {irm_F, irm_D, irm_E}
 
    The set of "int" is defined as:
-   -------------------------------
    int   = {irm_Bs, irm_Bu, irm_Hs, irm_Hu, irm_Is, irm_Iu, irm_Ls, irm_Lu}
 
    The set of "num" is defined as:
-   -------------------------------
    num   = {irm_F, irm_D, irm_E, irm_Bs, irm_Bu, irm_Hs, irm_Hu,
             irm_Is, irm_Iu, irm_Ls, irm_Lu}
             = {float || int}
 
    The set of "data" is defined as:
-   -------------------------------
    data  = {irm_F, irm_D, irm_E irm_Bs, irm_Bu, irm_Hs, irm_Hu,
             irm_Is, irm_Iu, irm_Ls, irm_Lu, irm_C, irm_U, irm_P}
             = {num || irm_C || irm_P}
 
    The set of "datab" is defined as:
-   ---------------------------------
    datab = {irm_F, irm_D, irm_E, irm_Bs, irm_Bu, irm_Hs, irm_Hu,
             irm_Is, irm_Iu, irm_Ls, irm_Lu, irm_C, irm_U, irm_P, irm_b}
             = {data || irm_b }
 
    The set of "dataM" is defined as:
-   ---------------------------------
    dataM = {irm_F, irm_D, irm_E, irm_Bs, irm_Bu, irm_Hs, irm_Hu,
             irm_Is, irm_Iu, irm_Ls, irm_Lu, irm_C, irm_U, irm_P, irm_M}
             = {data || irm_M}
@@ -185,8 +189,9 @@ int mode_is_num (ir_mode *mode);
 int mode_is_data (ir_mode *mode);
 int mode_is_datab (ir_mode *mode);
 int mode_is_dataM (ir_mode *mode);
+/*@}*/
 
-/* Returns true if sm can be converted to lm without loss
+/** Returns true if sm can be converted to lm without loss
    according to firm definiton */
 bool smaller_mode(ir_mode *sm, ir_mode *lm);
 
