@@ -27,6 +27,7 @@
 #include "set.h"
 #include "bitset.h"
 #include "bitfiddle.h"
+#include "irhooks.h"
 
 #define MAX_DEPTH 				20
 
@@ -234,43 +235,52 @@ static opt_if_conv_info_t default_info = {
 static firm_dbg_module_t *dbg;
 
 /**
- * A simple check for sde effects upton an opcode of a ir node.
+ * A simple check for side effects upto an opcode of a ir node.
  * @param irn The ir node to check,
  * @return 1 if the opcode itself may produce side effects, 0 if not.
  */
 static INLINE int has_side_effects(const ir_node *irn)
 {
-	opcode opc = get_irn_opcode(irn);
+	ir_op *op = get_irn_op(irn);
 
-	if(opc == iro_Cmp)
+	if (op == op_Cmp)
 		return 0;
 
 	return !mode_is_datab(get_irn_mode(irn));
 }
 
+enum failure_reason_t {
+  SUCCESS      = IF_RESULT_SUCCESS,
+  TO_DEEP      = IF_RESULT_TOO_DEEP,
+  SIDE_EFFECTS = IF_RESULT_SIDE_EFFECT,
+  PHI_FOUND    = IF_RESULT_SIDE_EFFECT_PHI
+};
+
 /**
- * Decdies, if a given expression and its subexpressions
+ * Decides, if a given expression and its subexpressions
  * (to certain, also given extent) can be moved to a block.
- * @param expr The expression to examine.
- * @param block The block where the expression should go.
- * @param depth The current depth, passed recursively. Use 0 for
- * non-recursive calls.
+ *
+ * @param expr      The expression to examine.
+ * @param block     The block where the expression should go.
+ * @param depth     The current depth, passed recursively. Use 0 for
+ *                  non-recursive calls.
  * @param max_depth The maximum depth to which the expression should be
  * examined.
+ *
+ * @return a failure reason
  */
 static int _can_move_to(ir_node *expr, ir_node *dest_block, int depth, int max_depth)
 {
 	int i, n;
-	int res = 1;
+	int res = SUCCESS;
 	ir_node *expr_block = get_nodes_block(expr);
-
 
 	/*
 	 * If we are forced to look too deep into the expression,
 	 * treat it like it could not be moved.
 	 */
 	if(depth >= max_depth) {
-		res = 0;
+		res = TO_DEEP;
 		goto end;
 	}
 
@@ -280,34 +290,34 @@ static int _can_move_to(ir_node *expr, ir_node *dest_block, int depth, int max_d
 	 * has side effects or anything else. It is executed on each
 	 * path the destination block is reached.
 	 */
-	if(block_dominates(expr_block, dest_block))
+	if (block_dominates(expr_block, dest_block))
 		goto end;
 
 	/*
 	 * We cannot move phis!
 	 */
-	if(is_Phi(expr)) {
-		res = 0;
+	if (is_Phi(expr)) {
+		res = PHI_FOUND;
 		goto end;
 	}
 
 	/*
-	 * This should be superflous and could be converted into a assertion.
+	 * This should be superfluous and could be converted into a assertion.
 	 * The destination block _must_ dominate the block of the expression,
 	 * else the expression could be used without its definition.
 	 */
-	if(!block_dominates(dest_block, expr_block)) {
-		res = 0;
+	if (! block_dominates(dest_block, expr_block)) {
+		res = IF_RESULT_SIDE_EFFECT;
 		goto end;
 	}
 
 	/*
 	 * Surely, if the expression does not have a data mode, it is not
-	 * movable. Perhaps onw should also test the floating property of
+	 * movable. Perhaps one should also test the floating property of
 	 * the opcode/node.
 	 */
-	if(has_side_effects(expr)) {
-		res = 0;
+	if (has_side_effects(expr)) {
+		res = IF_RESULT_SIDE_EFFECT;
 		goto end;
 	}
 
@@ -316,13 +326,14 @@ static int _can_move_to(ir_node *expr, ir_node *dest_block, int depth, int max_d
 	 * check them out. If one of them cannot be moved, this one
 	 * cannot be moved either.
 	 */
-	for(i = 0, n = get_irn_arity(expr); i < n; ++i) {
+	for (i = 0, n = get_irn_arity(expr); i < n; ++i) {
 		ir_node *op = get_irn_n(expr, i);
 		int new_depth = is_Proj(op) ? depth : depth + 1;
-		if(!_can_move_to(op, dest_block, new_depth, max_depth)) {
-			res = 0;
+
+    res = _can_move_to(op, dest_block, new_depth, max_depth);
+
+    if (res != SUCCESS)
 			goto end;
-		}
 	}
 
 end:
@@ -338,17 +349,24 @@ end:
  * deeper into an expression than a given threshold to examine if
  * it can be moved, the expression is rejected and the test returns
  * false.
- * @param expr The expression to check for.
+ *
+ * @param expr       The expression to check for.
  * @param dest_block The destination block you want @p expr to be.
- * @param max_depth The maximum depth @p expr should be investigated.
- * @return 1, if the expression can be moved to the destination block,
- * 0 if not.
+ * @param max_depth  The maximum depth @p expr should be investigated.
+ *
+ * @return return a failure reason
  */
 static INLINE int can_move_to(ir_node *expr, ir_node *dest_block, int max_depth)
 {
 	return _can_move_to(expr, dest_block, 0, max_depth);
 }
 
+/**
+ * move a DAG given by a root node expr into a new block
+ *
+ * @param expr       the root of a dag
+ * @param dest_block the destination block
+ */
 static void move_to(ir_node *expr, ir_node *dest_block)
 {
 	int i, n;
@@ -358,15 +376,18 @@ static void move_to(ir_node *expr, ir_node *dest_block)
 	 * If we reached the dominator, we are done.
 	 * We will never put code through the dominator
 	 */
-	if(block_dominates(expr_block, dest_block))
+	if (block_dominates(expr_block, dest_block))
 		return;
 
-	for(i = 0, n = get_irn_arity(expr); i < n; ++i)
+	for (i = 0, n = get_irn_arity(expr); i < n; ++i)
 		move_to(get_irn_n(expr, i), dest_block);
 
 	set_nodes_block(expr, dest_block);
 }
 
+/**
+ * return the common dominator of two blocks
+ */
 static INLINE ir_node *common_idom(ir_node *b1, ir_node *b2)
 {
 	if(block_dominates(b1, b2))
@@ -376,18 +397,17 @@ static INLINE ir_node *common_idom(ir_node *b1, ir_node *b2)
 	else {
 		ir_node *p;
 
-		for(p = b1; !block_dominates(p, b2); p = get_Block_idom(p));
+		for (p = get_Block_idom(b1); !block_dominates(p, b2); p = get_Block_idom(p));
 		return p;
 	}
 }
-
 
 /**
  * Information about a cond node.
  */
 typedef struct _cond_t {
 	ir_node *cond;					/**< The cond node. */
-	struct list_head list;	/**< List head which is used for queueing this cond
+	struct list_head list;	/**< List head which is used for queuing this cond
 														into the cond bunch it belongs to. */
 	unsigned is_new : 1;
 	unsigned totally_covers : 1;
@@ -410,6 +430,9 @@ typedef struct _cond_t {
 	} cases[2];
 } cond_t;
 
+/**
+ * retrieve the conditional information from a Cond node
+ */
 static INLINE cond_t *get_cond(ir_node *irn, set *cond_set)
 {
 	cond_t templ;
@@ -481,15 +504,15 @@ static int cond_cmp(const void *a, const void *b, size_t size)
  * blocks in which phis are located.
  */
 typedef struct _cond_info_t {
-	struct list_head list;			/**< Used to list all of these structs per method. */
+	struct list_head list;			/**< Used to list all of these structs per class. */
 
-	struct list_head roots;			/**< A list of non-depending conds. Two conds are
-																independent, if yot can not reach the one from the
-																other (all conds in this list have to dominate the
-																block this struct is attached to. */
+	struct list_head roots;			/**< A list of non-depending Conds. Two Conds are
+																independent, if it's not possible not reach one from the
+																other (all Conds in this list have to dominate the
+																block this struct is attached to). */
 
 	ir_node *first_phi;					/**< The first phi node this cond info was made for. */
-	set *cond_set;							/**< A set of all dominating reachable conds. */
+	set *cond_set;							/**< A set of all dominating reachable Conds. */
 } cond_info_t;
 
 /**
@@ -499,7 +522,7 @@ static void _find_conds(ir_node *irn, long visited_nr,
 		ir_node *dominator, cond_t *masked_by, int pos, int depth, cond_info_t *ci)
 {
 	ir_node *block;
-	int saw_switch_cond = 0;
+	int saw_select_cond = 0;
 
 	block = get_nodes_block(irn);
 
@@ -507,7 +530,7 @@ static void _find_conds(ir_node *irn, long visited_nr,
 	 * Only check this block if it is dominated by the specified
 	 * dominator or it has not been visited yet.
 	 */
-	if(block_dominates(dominator, block) && get_Block_block_visited(block) < visited_nr) {
+	if (block_dominates(dominator, block) && get_Block_block_visited(block) < visited_nr) {
 		cond_t *res = masked_by;
 		int i, n;
 
@@ -526,7 +549,7 @@ static void _find_conds(ir_node *irn, long visited_nr,
 			int is_modeb_cond = get_irn_opcode(cond) == iro_Cond
 				&& get_irn_mode(get_Cond_selector(cond)) == mode_b;
 
-			saw_switch_cond = !is_modeb_cond;
+      saw_select_cond = !is_modeb_cond;
 
 			/* Check, if the pred of the proj is a Cond
 			 * with a Projb as selector.
@@ -573,7 +596,6 @@ static void _find_conds(ir_node *irn, long visited_nr,
 				 * root list of the conf trees.
 				 */
 				else {
-					DBG((dbg, LEVEL_2, "%Ddeleting from list: %n, res: %n\n", depth, masked_by->cond, res->cond));
 					assert(res->cases[proj].pos < 0);
 					list_del_init(&masked_by->list);
 				}
@@ -585,7 +607,7 @@ static void _find_conds(ir_node *irn, long visited_nr,
 			}
 		}
 
-		if(get_Block_block_visited(block) < visited_nr && !saw_switch_cond) {
+		if(get_Block_block_visited(block) < visited_nr && !saw_select_cond) {
 
 			set_Block_block_visited(block, visited_nr);
 
@@ -610,9 +632,10 @@ static void _find_conds(ir_node *irn, long visited_nr,
  * A convenience function for _find_conds.
  * It sets some parameters needed for recursion to appropriate start
  * values. Always use this function.
- * @param irn The node to start looking for conds from. This might
- * 	be the phi node we are investigating.
- * @param conds The set to record the found conds in.
+ *
+ * @param irn   The node to start looking for Conds from. This might
+ * 	            be the phi node we are investigating.
+ * @param conds The set to record the found Conds in.
  */
 static INLINE void find_conds(ir_node *irn, cond_info_t *ci)
 {
@@ -620,7 +643,6 @@ static INLINE void find_conds(ir_node *irn, cond_info_t *ci)
 	long visited_nr;
 	ir_node *block = get_nodes_block(irn);
 	ir_node *dom = get_Block_idom(block);
-
 
 	for(i = 0, n = get_irn_arity(block); i < n; ++i) {
 		ir_node *pred = get_irn_n(block, i);
@@ -644,7 +666,7 @@ static INLINE void find_conds(ir_node *irn, cond_info_t *ci)
 static ir_node *make_mux_on_demand(ir_node *phi, ir_node *dom, cond_t *cond,
 		int max_depth, ir_node **mux, bitset_t *positions, int *muxes_made, long visited_nr)
 {
-	int i;
+	int i, can_move[2];
 	ir_node *projb = get_Cond_selector(cond->cond);
 	ir_node *bl = get_nodes_block(cond->cond);
 	ir_node *operands[2];
@@ -660,8 +682,8 @@ static ir_node *make_mux_on_demand(ir_node *phi, ir_node *dom, cond_t *cond,
 		set[i] = -1;
 
 		/*
-		 * If this cond branch is masked by another cond, make the mux
-		 * for that cond first, since the mux for this cond takes
+		 * If this Cond branch is masked by another cond, make the mux
+		 * for that Cond first, since the Mux for this cond takes
 		 * it as an operand.
 		 */
 		if(masked_by) {
@@ -683,30 +705,61 @@ static ir_node *make_mux_on_demand(ir_node *phi, ir_node *dom, cond_t *cond,
 
 	/*
 	 * Move the operands to the dominator block if the cond
-	 * made sense. Some conds found are not suitable for making a mux
+	 * made sense. Some Conds found are not suitable for making a mux
 	 * out of them, since one of their branches cannot be reached from
 	 * the phi block. In that case we do not make a mux and return NULL.
 	 */
-	if(operands[0] && operands[1]
-			&& can_move_to(operands[0], bl, max_depth)
-			&& can_move_to(operands[1], bl, max_depth)) {
+  if(operands[0] && operands[1]) {
+    if (operands[0] == operands[1]) {
+      /* there is no gain in using mux in this case, as
+         it will be optimized away. We will NOT move the
+         content of the blocks either
+        */
+      for (i = 0; i < 2; ++i)
+        if(set[i] >= 0)
+          bitset_set(positions, set[i]);
 
-		move_to(operands[0], bl);
-		move_to(operands[1], bl);
+      *mux = operands[0];
+      return *mux;
+    }
 
-		/* Make the mux. */
-		*mux = new_r_Mux(current_ir_graph, bl, projb,
-				operands[0], operands[1], get_irn_mode(operands[0]));
+		can_move[0] = can_move_to(operands[0], bl, max_depth);
+		can_move[1] = can_move_to(operands[1], bl, max_depth);
 
-		*muxes_made += 1;
+    if (can_move[0] == SUCCESS && can_move[1] == SUCCESS) {
+		  move_to(operands[0], bl);
+		  move_to(operands[1], bl);
 
-		DBG((dbg, LEVEL_2, "\t%n(%n, %n, %n)[%d, %d]\n",
-					*mux, projb, operands[0], operands[1], set[0], set[1]));
+		  /* Make the mux. */
+		  *mux = new_r_Mux(current_ir_graph, bl, projb,
+				  operands[0], operands[1], get_irn_mode(operands[0]));
 
-		for(i = 0; i < 2; ++i)
-			if(set[i] >= 0)
-				bitset_set(positions, set[i]);
+		  *muxes_made += 1;
+
+		  DBG((dbg, LEVEL_2, "\t%n(%n, %n, %n)[%d, %d]\n",
+					  *mux, projb, operands[0], operands[1], set[0], set[1]));
+
+		  for(i = 0; i < 2; ++i)
+        if(set[i] >= 0) {
+				  bitset_set(positions, set[i]);
+
+          /* we have done one */
+          hook_if_conversion(current_ir_graph, phi, set[i], *mux, IF_RESULT_SUCCESS);
+        }
+    }
+    else {
+      if(can_move[0] != SUCCESS)
+        hook_if_conversion(current_ir_graph, phi, set[0], NULL, can_move[0]);
+      if(can_move[1] != SUCCESS)
+        hook_if_conversion(current_ir_graph, phi, set[1], NULL, can_move[1]);
+    }
 	}
+  else {
+    if(operands[0] != SUCCESS)
+      hook_if_conversion(current_ir_graph, phi, set[0], NULL, IF_RESULT_BAD_CF);
+    if(operands[1] != SUCCESS)
+      hook_if_conversion(current_ir_graph, phi, set[1], NULL, IF_RESULT_BAD_CF);
+  }
 
 	return *mux;
 }
@@ -831,7 +884,7 @@ static void annotate_cond_info_post(ir_node *irn, void *data)
 			 */
 			list_add(&cwi->cond_info_head, &ci->list);
 
-			DBG((dbg, LEVEL_2, "searching conds at %n(%n)\n", irn, block));
+			DBG((dbg, LEVEL_2, "searching conds at %n\n", irn));
 
 			/*
 			 * Fill the set with conds we find on the way from
@@ -934,7 +987,7 @@ void opt_if_conv(ir_graph *irg, opt_if_conv_info_t *params)
 	/* Init the debug stuff. */
 	dbg = firm_dbg_register("firm.opt.ifconv");
 #if 0
-	firm_dbg_set_mask(dbg, LEVEL_1 | LEVEL_2 | LEVEL_3);
+	firm_dbg_set_mask(dbg, LEVEL_1);
 #endif
 
 	/* Ensure, that the dominators are computed. */
