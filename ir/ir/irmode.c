@@ -224,12 +224,15 @@ INLINE ir_mode *get_modeANY(void) { ANNOUNCE(); return mode_ANY; }
 INLINE ir_mode *get_modeBAD(void) { ANNOUNCE(); return mode_BAD; }
 
 
-ir_mode *get_modeP_mach(void)  { ANNOUNCE(); return mode_P_mach; }
-void     set_modeP_mach(ir_mode *p) {
+ir_mode *(get_modeP_mach)(void) {
   ANNOUNCE();
-  assert(mode_is_reference(p));
-  mode_P_mach = p;
- }
+  return __get_modeP_mach();
+}
+
+void (set_modeP_mach)(ir_mode *p) {
+  ANNOUNCE();
+  __set_modeP_mach(p);
+}
 
 /**
  * Registers a new mode if not defined yet, else returns
@@ -355,17 +358,17 @@ ir_mode *new_ir_vector_mode(const char *name, mode_sort sort, int bit_size, unsi
 
 /* Functions for the direct access to all attributes od a ir_mode */
 modecode
-get_mode_modecode(const ir_mode *mode)
+(get_mode_modecode)(const ir_mode *mode)
 {
   ANNOUNCE();
-  return mode->code;
+  return __get_mode_modecode(mode);
 }
 
 ident *
-get_mode_ident(const ir_mode *mode)
+(get_mode_ident)(const ir_mode *mode)
 {
   ANNOUNCE();
-  return mode->name;
+  return __get_mode_ident(mode);
 }
 
 const char *
@@ -376,44 +379,44 @@ get_mode_name(const ir_mode *mode)
 }
 
 mode_sort
-get_mode_sort(const ir_mode* mode)
+(get_mode_sort)(const ir_mode* mode)
 {
   ANNOUNCE();
-  return mode->sort;
-}
-
-INLINE int
-get_mode_size_bits(const ir_mode *mode)
-{
-  ANNOUNCE();
-  return mode->size;
-}
-
-int get_mode_size_bytes(const ir_mode *mode) {
-  int size = get_mode_size_bits(mode);
-  ANNOUNCE();
-  if ((size & 7) != 0) return -1;
-  return size >> 3;
+  return __get_mode_sort(mode);
 }
 
 int
-get_mode_align (const ir_mode *mode)
+(get_mode_size_bits)(const ir_mode *mode)
 {
   ANNOUNCE();
-  return mode->align;
+  return __get_mode_size_bits(mode);
 }
 
 int
-get_mode_sign (const ir_mode *mode)
-{
+(get_mode_size_bytes)(const ir_mode *mode) {
   ANNOUNCE();
-  return mode->sign;
+  return __get_mode_size_bytes(mode);
 }
 
-int get_mode_arithmetic (const ir_mode *mode)
+int
+(get_mode_align)(const ir_mode *mode)
 {
   ANNOUNCE();
-  return mode->arithmetic;
+  return __get_mode_align(mode);
+}
+
+int
+(get_mode_sign)(const ir_mode *mode)
+{
+  ANNOUNCE();
+  return __get_mode_sign(mode);
+}
+
+int
+(get_mode_arithmetic)(const ir_mode *mode)
+{
+  ANNOUNCE();
+  return get_mode_arithmetic(mode);
 }
 
 
@@ -421,24 +424,27 @@ int get_mode_arithmetic (const ir_mode *mode)
  *  whether shift applies modulo to value of bits to shift.  Asserts
  *  if mode is not irms_int_number.
  */
-unsigned int get_mode_modulo_shift(const ir_mode *mode) {
-  return mode->modulo_shift;
+unsigned int
+(get_mode_modulo_shift)(const ir_mode *mode) {
+  return __get_mode_modulo_shift(mode);
 }
 
-unsigned int get_mode_vector_elems(const ir_mode *mode) {
-  return mode->vector_elem;
+unsigned int
+(get_mode_vector_elems)(const ir_mode *mode) {
+  return __get_mode_vector_elems(mode);
 }
 
-void *get_mode_link(const ir_mode *mode)
+void *
+(get_mode_link)(const ir_mode *mode)
 {
   ANNOUNCE();
-  return mode->link;
+  return __get_mode_link(mode);
 }
 
-void set_mode_link(ir_mode *mode, void *l)
+void
+(set_mode_link)(ir_mode *mode, void *l)
 {
-  mode->link=l;
-  return;
+  __set_mode_link(mode, l);
 }
 
 tarval *
@@ -516,158 +522,78 @@ is_mode (void *thing) {
     return 0;
 }
 
-/* Functions to check, whether a modecode is signed, float, int, num, data,
-   datab or dataM. For more exact definitions read the corresponding pages
-   in the firm documentation or the followingenumeration
-
-   The set of "float" is defined as:
-   ---------------------------------
-   float = {irm_F, irm_D, irm_E}
-
-   The set of "int" is defined as:
-   -------------------------------
-   int   = {irm_Bs, irm_Bu, irm_Hs, irm_Hu, irm_Is, irm_Iu, irm_Ls, irm_Lu}
-
-   The set of "num" is defined as:
-   -------------------------------
-   num   = {irm_F, irm_D, irm_E, irm_Bs, irm_Bu, irm_Hs, irm_Hu,
-            irm_Is, irm_Iu, irm_Ls, irm_Lu}
-            = {float || int}
-
-   The set of "data" is defined as:
-   -------------------------------
-   data  = {irm_F, irm_D, irm_E irm_Bs, irm_Bu, irm_Hs, irm_Hu,
-            irm_Is, irm_Iu, irm_Ls, irm_Lu, irm_C, irm_U, irm_P}
-            = {num || irm_C || irm_U || irm_P}
-
-   The set of "datab" is defined as:
-   ---------------------------------
-   datab = {irm_F, irm_D, irm_E, irm_Bs, irm_Bu, irm_Hs, irm_Hu,
-            irm_Is, irm_Iu, irm_Ls, irm_Lu, irm_C, irm_U, irm_P, irm_b}
-            = {data || irm_b }
-
-   The set of "dataM" is defined as:
-   ---------------------------------
-   dataM = {irm_F, irm_D, irm_E, irm_Bs, irm_Bu, irm_Hs, irm_Hu,
-            irm_Is, irm_Iu, irm_Ls, irm_Lu, irm_C, irm_U, irm_P, irm_M}
-            = {data || irm_M}
-*/
-
-#ifdef MODE_ACCESS_DEFINES
-#  undef mode_is_signed
-#  undef mode_is_float
-#  undef mode_is_int
-#  undef mode_is_num
-#  undef mode_is_numP
-#  undef mode_is_data
-#  undef mode_is_datab
-#  undef mode_is_dataM
-#endif
 int
-mode_is_signed (const ir_mode *mode)
-{
+(mode_is_signed)(const ir_mode *mode) {
   ANNOUNCE();
-  assert(mode);
-  return mode->sign;
+  return __mode_is_signed(mode);
 }
 
 int
-mode_is_float (const ir_mode *mode)
-{
+(mode_is_float)(const ir_mode *mode) {
   ANNOUNCE();
-  assert(mode);
-  return (get_mode_sort(mode) == irms_float_number);
+  return __mode_is_float(mode);
 }
 
 int
-mode_is_int (const ir_mode *mode)
-{
+(mode_is_int)(const ir_mode *mode) {
   ANNOUNCE();
-  assert(mode);
-  return (get_mode_sort(mode) == irms_int_number);
-}
-
-int mode_is_character (const ir_mode *mode)
-{
-  ANNOUNCE();
-  assert(mode);
-  return (get_mode_sort(mode) == irms_character);
-}
-
-int mode_is_reference (const ir_mode *mode)
-{
-  ANNOUNCE();
-  assert(mode);
-  return (get_mode_sort(mode) == irms_reference);
+  return __mode_is_int(mode);
 }
 
 int
-mode_is_num (const ir_mode *mode)
-{
+(mode_is_character)(const ir_mode *mode) {
   ANNOUNCE();
-  assert(mode);
-  return (mode_is_int(mode) || mode_is_float(mode));
+  return __mode_is_character(mode);
 }
 
 int
-mode_is_numP (const ir_mode *mode)
-{
+(mode_is_reference)(const ir_mode *mode) {
   ANNOUNCE();
-  assert(mode);
-  return (mode_is_int(mode) || mode_is_float(mode) || mode_is_reference(mode));
+  return __mode_is_reference(mode);
 }
 
 int
-mode_is_data (const ir_mode *mode)
-{
+(mode_is_num)(const ir_mode *mode) {
   ANNOUNCE();
-  assert(mode);
-  return (mode_is_num(mode) || get_mode_sort(mode) == irms_character || get_mode_sort(mode) == irms_reference);
+  return __mode_is_num(mode);
 }
 
 int
-mode_is_datab (const ir_mode *mode)
-{
+(mode_is_numP)(const ir_mode *mode) {
   ANNOUNCE();
-  assert(mode);
-  return (mode_is_data(mode) || get_mode_sort(mode) == irms_internal_boolean);
+  return __mode_is_numP(mode);
 }
 
 int
-mode_is_dataM (const ir_mode *mode)
-{
+(mode_is_data)(const ir_mode *mode) {
   ANNOUNCE();
-  assert(mode);
-  return (mode_is_data(mode) || get_mode_modecode(mode) == irm_M);
+  return __mode_is_data(mode);
 }
 
 int
-mode_is_float_vector (const ir_mode *mode)
-{
+(mode_is_datab)(const ir_mode *mode) {
   ANNOUNCE();
-  assert(mode);
-  return (get_mode_sort(mode) == irms_float_number) && (get_mode_vector_elems(mode) > 1);
+  return __mode_is_datab(mode);
 }
 
 int
-mode_is_int_vector (const ir_mode *mode)
-{
+(mode_is_dataM)(const ir_mode *mode) {
   ANNOUNCE();
-  assert(mode);
-  return (get_mode_sort(mode) == irms_int_number) && (get_mode_vector_elems(mode) > 1);
+  return __mode_is_dataM(mode);
 }
 
-#ifdef MODE_ACCESS_DEFINES
-#  define mode_is_signed(mode) (mode)->sign
-#  define mode_is_float(mode) ((mode)->sort == irms_float_number)
-#  define mode_is_int(mode) ((mode)->sort == irms_int_number)
-#  define mode_is_num(mode) (((mode)->sort == irms_float_number) || ((mode)->sort == irms_int_number))
-#  define mode_is_data(mode) (((mode)->sort == irms_float_number) || ((mode)->sort == irms_int_number) || ((mode)->sort == irms_character) || ((mode)->sort == irms_reference))
-#  define mode_is_datab(mode) (((mode)->sort == irms_float_number) || ((mode)->sort == irms_int_number) || ((mode)->sort == irms_character) || ((mode)->sort == irms_reference) || ((mode)->sort == irms_internal_boolean))
-#  define mode_is_dataM(mode) (((mode)->sort == irms_float_number) || ((mode)->sort == irms_int_number) || ((mode)->sort == irms_character) || ((mode)->sort == irms_reference) || ((mode)->code == irm_M))
-#  define mode_is_float_vector(mode) (((mode)->sort == irms_float_number) && ((mode)->vector_elem > 1))
-#  define mode_is_int_vector(mode) (((mode)->sort == irms_int_number) && ((mode)->vector_elem > 1))
-#endif
+int
+(mode_is_float_vector)(const ir_mode *mode) {
+  ANNOUNCE();
+  return __mode_is_float_vector(mode);
+}
+
+int
+(mode_is_int_vector)(const ir_mode *mode) {
+  ANNOUNCE();
+  return __mode_is_int_vector(mode);
+}
+
 /* Returns true if sm can be converted to lm without loss. */
 int
 smaller_mode(const ir_mode *sm, const ir_mode *lm)
