@@ -1,29 +1,31 @@
-/* (C) 1998 - 2000 by Universitaet Karlsruhe
+/* (C) 2002 by Universitaet Karlsruhe
 ** All rights reserved.
 **
-** Authors: Christian Schaefer, Goetz Lindenmaier
+** Authors: Goetz Lindenmaier
 **
 ** testprogram.
 */
 
+/* $ID$ */
+
 # include "irdump.h"
 # include "firm.h"
+# include "irnode.h"
 
 /**
 ***  This file constructs the ir for the following pseudo-program:
 ***
-***  main() {
-***    int a = 0;         // pos 0
+***  VAR_A is some extern variable.
+***
+***  main(int a) {        // pos 0
 ***    int b = 1;         // pos 1
 ***    int h;             // pos 2
-***
-***    if (0 == 0)
-***      { a = 2; }
 ***
 ***    while (0 == 0) loop {
 ***      h = a;
 ***      a = b;
 ***      b = h;
+***      VAR_A = b;
 ***    }
 ***
 ***    return a-b;
@@ -33,77 +35,78 @@
 int
 main(void)
 {
+  type *prim_t_int;
   ir_graph *irg;
   type *owner;
   type *proc_main;
-  type     *prim_t_int;
   entity *ent;
   ir_node *b, *x, *r, *t, *f;
 
-  printf("\nCreating an IR graph: IF_WHILE_EXAMPLE...\n");
+  printf("\nCreating an IR graph: ENDLESS_LOOP_EXAMPLE...\n");
 
   init_firm ();
-  turn_of_edge_labels();
 
   set_optimize(1);
-  set_opt_constant_folding(0);  /* so that the stupid tests are not optimized. */
-                                /* if optimized no path to End remains!! */
+  set_opt_constant_folding(1);
   set_opt_cse(1);
+  set_opt_global_cse(1);
   set_opt_dead_node_elimination (1);
 
-  /*** Make basic type information for primitive type int. ***/
-  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_I);
+  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_i);
 
-#define METHODNAME "main"
-#define NRARGS 0
+#define METHODNAME "main_tp"
+#define NRARGS 1
 #define NRES 1
 
   proc_main = new_type_method(id_from_str(METHODNAME, strlen(METHODNAME)),
                               NRARGS, NRES);
+  set_method_param_type(proc_main, 0, prim_t_int);
   set_method_res_type(proc_main, 0, prim_t_int);
-  owner = new_type_class (id_from_str ("IF_WHILE_EXAMPLE", 16));
-  ent = new_entity (owner, id_from_str ("main", 4), proc_main);
+
+
+  owner = new_type_class (id_from_str ("ENDLESS_LOOP_EXAMPLE", 20));
+  ent = new_entity (owner, id_from_str ("main", strlen("main")), proc_main);
 
   /* Generates start and end blocks and nodes and a first, initial block */
   irg = new_ir_graph (ent, 4);
 
-  /* Generate two constants */
-  set_value (0, new_Const (mode_I, tarval_from_long (mode_I, 0)));
-  set_value (1, new_Const (mode_I, tarval_from_long (mode_I, 1)));
-  mature_block (get_irg_current_block(irg));
+  /* Generate two values */
+  set_value (0, new_Proj(get_irg_args(irg), mode_i, 0));
+  set_value (1, new_Const (mode_i, tarval_from_long (mode_i, 1)));
 
-  /* Generate a conditional branch */
   x = new_Jmp();
-
-  /* generate the fall through block and add all cfg edges */
-  r = new_immBlock ();
-  add_in_edge (r, x);
-  mature_block (r);
-  x = new_Jmp ();
+  mature_block (get_irg_current_block(irg));
 
   /* generate a block for the loop header and the conditional branch */
   r = new_immBlock ();
   add_in_edge (r, x);
-  x = new_Cond (new_Proj(new_Cmp(new_Const (mode_I, tarval_from_long (mode_i, 0)),
-                                 new_Const (mode_I, tarval_from_long (mode_i, 0))),
-                         mode_b, Eq));
+  x = new_Cond (new_Proj(new_Cmp(new_Const (mode_i, tarval_from_long (mode_i, 0)),
+				 new_Const (mode_i, tarval_from_long (mode_i, 0))),
+			 mode_b, Eq));
   f = new_Proj (x, mode_X, 0);
   t = new_Proj (x, mode_X, 1);
 
   /* generate the block for the loop body */
   b = new_immBlock ();
-  add_in_edge (b,t);
+  add_in_edge (b, t);
   x = new_Jmp ();
   add_in_edge (r, x);
-  mature_block (r);
 
-  /* the code in the loop body,
+  /* The code in the loop body,
      as we are dealing with local variables only the dataflow edges
-     are manipulated */
-  set_value (2, get_value (0, mode_I));
-  set_value (0, get_value (1, mode_I));
-  set_value (1, get_value (2, mode_I));
+     are manipulated. */
+  set_value (2, get_value (0, mode_i));
+  set_value (0, get_value (1, mode_i));
+  set_value (1, get_value (2, mode_i));
+
+  /* set VAR_A to constant value */
+  set_store (new_Proj (new_Store (get_store (),
+				  new_Const (mode_p, tarval_p_from_str ("VAR_A")),
+		     	          get_value(1, mode_i)),
+                       mode_M, 0));
+
   mature_block (b);
+  mature_block (r);
 
   /* generate the return block */
   r = new_immBlock ();
@@ -112,7 +115,7 @@ main(void)
 
   {
      ir_node *in[1];
-     in[0] = new_Sub (get_value (0, mode_I), get_value (1, mode_I), mode_I);
+     in[0] = new_Sub (get_value (0, mode_i), get_value (1, mode_i), mode_i);
 
      x = new_Return (get_store (), 1, in);
   }
@@ -125,18 +128,17 @@ main(void)
 
   printf("Optimizing ...\n");
 
-  local_optimize_graph(irg);
   dead_node_elimination(irg);
-
-  compute_outs(irg);
+  local_optimize_graph(irg);
 
   /* verify the graph */
   irg_vrfy(irg);
 
   /* output the vcg file */
-  printf("Done building the graph.  Dumping it with out-edges.\n");
-  dump_out_edges();
-  dump_ir_graph (irg);
+  printf("Done building the graph.  Dumping it.\n");
+  turn_of_edge_labels();
+  dump_all_types();
+  dump_ir_block_graph (irg);
   printf("Use xvcg to view this graph:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
 

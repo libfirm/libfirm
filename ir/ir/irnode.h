@@ -60,7 +60,7 @@ inline ir_node     **get_irn_in            (ir_node *node);
 /* Replaces the old in array by a new one that will contain the ins given in
    the parameters.  Conserves the block predecessor.  It copies the array passed.
    This function is necessary to ajust in arrays of blocks, calls and phis.
-   Assumes the current_ir_graph is set to the graph containing "node".
+   Assumes that current_ir_graph is set to the graph containing "node".
    "in" must contain all predecessors except the block that are required for
    the nodes opcode. */
 inline void          set_irn_in            (ir_node *node, int arity,
@@ -71,6 +71,7 @@ inline void          set_irn_in            (ir_node *node, int arity,
    to iterate including the Block predecessor iterate from i = -1 to
    i < get_irn_arity. */
 /* Access predecessor n */
+/* get_irn_n removes Id predecessors. */
 inline ir_node      *get_irn_n             (ir_node *node, int n);
 inline void          set_irn_n             (ir_node *node, int n, ir_node *in);
 /* Get the mode struct. */
@@ -149,6 +150,10 @@ inline void      set_Block_graph_arr (ir_node *node, int pos, ir_node *value);
 
 
 inline void add_End_keepalive (ir_node *end, ir_node *ka);
+/* Some parts of the End node are allocated seperately -- their memory
+   is not recovered by dead_node_elimination if a End not is dead.
+   free_End frees these data structures. */
+inline void free_End (ir_node *end);
 
 /* We distinguish three kinds of Cond nodes.  These can be distinguished
    by the mode of the selector operand and an internal flag of type cond_kind.
@@ -463,6 +468,7 @@ inline void      set_Id_pred (ir_node *node, ir_node *pred);
 inline ir_node *skip_Proj (ir_node *node);
 /* returns operand of node if node is a Id */
 inline ir_node *skip_nop  (ir_node *node);
+inline ir_node *skip_Id  (ir_node *node);   /* Same as skip_nop. */
 /* returns corresponding operand of Tuple if node is a Proj from
    a Tuple. */
 inline ir_node *skip_Tuple (ir_node *node);
@@ -471,7 +477,7 @@ inline int      is_Bad    (ir_node *node);
 /* returns true if the node is not a Block */
 inline int      is_no_Block (ir_node *node);
 /* Returns true if the operation manipulates control flow:
-   Start, End, Jmp, Cond, Return, Raise */
+   Start, End, Jmp, Cond, Return, Raise, Bad */
 int is_cfop(ir_node *node);
 /* Returns true if the operation can change the control flow because
    of an exception. */
@@ -495,6 +501,9 @@ ir_node *get_fragile_op_mem(ir_node *node);
                      print_firm_kind(X), (X))
 #define DDMSG4(X)    printf("%s(l.%i) %s %s: %p\n", __FUNCTION__, __LINE__,     \
                      get_type_tpop_name(X), get_type_name(X), (X))
+#define DDMSG5(X)    printf("%s%s: %ld",          \
+                     id_to_str(get_irn_opident(X)), id_to_str(get_irn_modeident(X)), \
+                     get_irn_node_nr(X))
 
 #endif
 

@@ -1267,9 +1267,11 @@ type *get_cur_frame_type();
 
 
 /***********************************************************************/
-/* initialize ir construction                                          */
+/* initialize and finalize ir construction                             */
 /***********************************************************************/
-void init_cons (void);
+
+/* Puts the graph into state "phase_high" */
+void finalize_cons (ir_graph *irg);
 
 
 # endif /* _IRCONS_H_ */

@@ -1,10 +1,12 @@
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
+/* Copyright (C) 2002 by Universitaet Karlsruhe
 ** All rights reserved.
 **
 ** Authors: Christian Schaefer, Goetz Lindenmaier
 **
 ** testprogram.
 */
+
+/* $Id$ */
 
 # include "irdump.h"
 # include "firm.h"
@@ -14,9 +16,12 @@
 ***
 ***  int main(int a) {
 ***    int b = 2;
-***    if ( a == b )
-***      { a := a - 3; }
-***
+***    if ( a == b ) {
+***       a := a - 3;
+***    } else {
+***       a := a - 3;
+***       a := a + 5;
+***    }
 ***    return a;
 ***  }
 **/
@@ -32,11 +37,17 @@ main(void)
   ir_node *x, *r, *t, *f, *a, *cmp;
   int a_pos, b_pos;
 
-  printf("\nCreating an IR graph: IF_EXAMPLE...\n");
+  printf("\nCreating an IR graph: GLOBAL_CSE_EXAMPLE...\n");
 
   init_firm ();
 
-#define CLASSNAME "IF_EXAMPLE"
+  set_optimize(1);
+  set_opt_constant_folding(1);
+  set_opt_cse(1);
+  set_opt_global_cse(1);
+  set_opt_dead_node_elimination (1);
+
+#define CLASSNAME "GLOBAL_CSE_EXAMPLE"
 #define METHODNAME "main"
 #define NRARGS 1
 #define NRES 1
@@ -80,7 +91,9 @@ main(void)
   mature_block (get_irg_current_block(irg));
 
   /* Generate a conditional branch */
-  cmp = new_Cmp(get_value(a_pos, mode_i), get_value(b_pos, mode_i));
+  cmp = new_Cmp(get_value(a_pos, mode_i), get_value(b_pos, mode_i)); /*
+  cmp = new_Cmp(new_Const (mode_i, tarval_from_long (mode_i, 2)),
+                new_Const (mode_i, tarval_from_long (mode_i, 2)));*/
   x = new_Cond (new_Proj(cmp, mode_b, Eq));
   f = new_Proj (x, mode_X, 0);
   t = new_Proj (x, mode_X, 1);
@@ -94,12 +107,24 @@ main(void)
   set_value (a_pos, a);
 
   mature_block (r);
-  x = new_Jmp ();
+  t = new_Jmp ();
+
+  /* generate the else block */
+  r = new_immBlock ();
+  add_in_edge (r, f);
+  a = new_Sub(get_value(a_pos, mode_i),
+              new_Const (mode_i, tarval_from_long (mode_i, 3)),
+  	      mode_i);
+  a = new_Add(a, new_Const (mode_i, tarval_from_long (mode_i, 5)), mode_i);
+  set_value (a_pos, a);
+
+  mature_block (r);
+  f = new_Jmp ();
 
   /* generate the fall through block and add all cfg edges */
   r = new_immBlock ();
   add_in_edge (r, f);
-  add_in_edge (r, x);
+  add_in_edge (r, t);
   mature_block (r);
   /* The Return statement */
   {
@@ -117,6 +142,10 @@ main(void)
   /* verify the graph */
   irg_vrfy(irg);
   finalize_cons (irg);
+
+  printf("Optimizing ...\n");
+  local_optimize_graph(irg);
+  dead_node_elimination(irg);
 
   /* output the vcg file */
   printf("Done building the graph.  Dumping it.\n");

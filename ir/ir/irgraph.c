@@ -76,6 +76,11 @@ new_ir_graph (entity *ent, int n_loc)
   res->value_table = new_identities (); /* value table for global value
 					   numbering for optimizing use in
 					   iropt.c */
+  res->outs = NULL;
+
+  res->phase_state = phase_building;
+  res->pinned = pinned;
+  res->outs_state = no_outs;
 
   /** Type inforamtion for the procedure of the graph **/
   res->ent = ent;
@@ -132,6 +137,7 @@ ir_graph *new_const_code_irg() {
 #endif
   res->obst      = (struct obstack *) xmalloc (sizeof (struct obstack));
   obstack_init (res->obst);
+  res->pinned = pinned;
   res->value_table = new_identities (); /* value table for global value
 					   numbering for optimizing use in
 					   iropt.c */
@@ -156,8 +162,6 @@ ir_graph *new_const_code_irg() {
   set_Block_block_visited(res->start_block, -1);
   return res;
 }
-
-
 
 /* Frees the passed irgraph.
    Deallocates all nodes in this graph and the ir_graph structure.
@@ -336,6 +340,33 @@ void
 set_irg_n_loc (ir_graph *irg, int n_loc)
 {
   irg->n_loc = n_loc;
+}
+
+irg_phase_state get_irg_phase_state (ir_graph *irg) {
+  return irg->phase_state;
+}
+
+void set_irg_phase_low(ir_graph *irg) {
+  irg->phase_state = phase_low;
+}
+
+op_pinned
+get_irg_pinned (ir_graph *irg) {
+  return irg->pinned;
+}
+
+irg_outs_state get_irg_outs_state(ir_graph *irg) {
+  return irg->outs_state;
+}
+
+void set_irg_outs_inconsistent(ir_graph *irg) {
+  irg->outs_state = outs_inconsistent;
+}
+
+inline void
+set_irg_pinned (ir_graph *irg, op_pinned p)
+{
+  irg->pinned = p;
 }
 
 unsigned long

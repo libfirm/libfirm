@@ -1,4 +1,4 @@
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
+/* Coyright (C) 1998 - 2000 by Universitaet Karlsruhe
 ** All rights reserved.
 **
 ** Author: Christian Schaefer
@@ -17,7 +17,7 @@
 # include "irgopt.h"
 # include "irnode_t.h"
 # include "irgraph_t.h"
-# include "iropt.h"
+# include "iropt_t.h"
 # include "irgwalk.h"
 # include "ircons.h"
 # include "misc.h"
@@ -55,7 +55,7 @@ optimize_in_place_wrapper (ir_node *n, void *env) {
   /* optimize all sons after recursion, i.e., the sons' sons are
      optimized already. */
   for (i = -1; i < get_irn_arity(n); i++) {
-    optimized = optimize_in_place(get_irn_n(n, i));
+    optimized = optimize_in_place_2(get_irn_n(n, i));
     set_irn_n(n, i, optimized);
   }
 }
@@ -65,7 +65,14 @@ local_optimize_graph (ir_graph *irg) {
   ir_graph *rem = current_ir_graph;
   current_ir_graph = irg;
 
-  /* Should we clean the value_table in irg for the cse? Better do so... */
+  /* Handle graph state */
+  assert(get_irg_phase_state(irg) != phase_building);
+  if (get_opt_global_cse())
+    set_irg_pinned(current_ir_graph, floats);
+  if (get_irg_outs_state(current_ir_graph) == outs_consistent)
+    set_irg_outs_inconsistent(current_ir_graph);
+
+  /* Clean the value_table in irg for the cse. */
   del_identities(irg->value_table);
   irg->value_table = new_identities();
 
@@ -189,7 +196,7 @@ copy_preds (ir_node *n, void *env) {
     set_Block_block_visited(n, 0);
     /* Local optimization could not merge two subsequent blocks if
        in array contained Bads.  Now it's possible.
-       @@@ I removed the call to optimize_in_place as it requires
+       We don't call optimize_in_place as it requires
        that the fields in ir_graph are set properly. */
     if (get_Block_n_cfgpreds(nn) == 1
 	&& get_irn_op(get_Block_cfgpred(nn, 0)) == op_Jmp)
@@ -292,6 +299,7 @@ copy_graph_env () {
   copy_graph();
 
   /* fix the fields in current_ir_graph */
+  free_End(get_irg_end(current_ir_graph));
   set_irg_end        (current_ir_graph, get_new_node(get_irg_end(current_ir_graph)));
   set_irg_end_block  (current_ir_graph, get_new_node(get_irg_end_block(current_ir_graph)));
   if (get_irn_link(get_irg_frame(current_ir_graph)) == NULL) {
@@ -336,6 +344,10 @@ dead_node_elimination(ir_graph *irg) {
   /* Remember external state of current_ir_graph. */
   rem = current_ir_graph;
   current_ir_graph = irg;
+
+  /* Handle graph state */
+  assert(get_irg_phase_state(current_ir_graph) != phase_building);
+  free_outs(current_ir_graph);
 
   if (get_optimize() && get_opt_dead_node_elimination()) {
 
@@ -399,6 +411,11 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   type *called_frame, *caller_frame;
 
   if (!get_opt_inline()) return;
+
+  /* Handle graph state */
+  assert(get_irg_phase_state(current_ir_graph) != phase_building);
+  if (get_irg_outs_state(current_ir_graph) == outs_consistent)
+    set_irg_outs_inconsistent(current_ir_graph);
 
   /** Check preconditions **/
   assert(get_irn_op(call) == op_Call);
@@ -505,6 +522,8 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   /** archive keepalives **/
   for (i = 0; i < get_irn_arity(end); i++)
     add_End_keepalive(get_irg_end(current_ir_graph), get_irn_n(end, i));
+  /* The new end node will die, but the in array is not on the obstack ... */
+  free_End(end);
 
   /** Collect control flow from Return blocks to post_calls block. Replace
       Return nodes by Jump nodes. **/

@@ -42,7 +42,8 @@ int main(int argc, char **argv)
   entity *ae, *fe, *ge, *dipte, *diptpe;   /*        e names entities    */
   ir_node *n;
 
-  printf("\nCreating type information...\n");
+  printf("\nExample program for constant entites.\n");
+  printf("Creating type information...\n");
 
   /** init library */
   init_firm ();

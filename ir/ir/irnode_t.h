@@ -74,7 +74,6 @@ typedef union {
   symconst_attr  i;     /* For SymConst. */
   sel_attr       s;     /* For Sel. */
   call_attr      call;  /* For Call: pointer to the type of the method to call */
-  long           proj;  /* For Proj: contains the result position to project */
   alloc_attr     a;     /* For Alloc. */
   type          *f;     /* For Free. */
   int            phi0_pos;  /* For Phi. Used to remember the value defined by
@@ -83,11 +82,11 @@ typedef union {
 			       predecessors. If this attribute is set, the Phi
 			       node takes the role of the obsolete Phi0 node,
 			       therefore the name. */
+  long           proj;  /* For Proj: contains the result position to project */
 #if PRECISE_EXC_CONTEXT
   struct ir_node **frag_arr; /* For Phi node construction in case of exceptions
 			       for nodes Store, Load, Div, Mod, Quot, DivMod. */
 #endif
-
 } attr;
 
 
@@ -95,6 +94,7 @@ typedef union {
 /* if the node has some attributes, they are stored in attr */
 
 struct ir_node {
+  /** Basics of the representation **/
   firm_kind kind;          /* distinguishes this node from others */
   ir_op *op;               /* Opcode of this node. */
   ir_mode *mode;           /* Mode of this node. */
@@ -104,6 +104,9 @@ struct ir_node {
                               used while construction to link Phi0 nodes and
 			      during optimization to link to nodes that
 			      shall replace a node. */
+  /**  Fields for optimizations / analysis information **/
+  struct ir_node **out;    /* array of out edges */
+  /** For debugging **/
 #ifdef DEBUG_libfirm
   int node_nr;             /* a unique node number for each node to make output
 			      readable. */

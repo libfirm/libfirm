@@ -19,6 +19,9 @@ void local_optimize_graph (ir_graph *irg);
 /* Performs dead node elimination by copying the ir graph to a new obstack.
    Further removes Bad predecesors from Blocks and the corresponding
    inputs to Phi nodes.
+   The graph may not be in state phase_building.  The outs datasturcture
+   is freed, the outs state set to no_outs. (@@@ Change this? -> inconsistent.)
+   Removes old attributes of nodes.
    Attention: the numbers assigned to nodes if the library is compiled for
    development/debugging are not conserved by copying. */
 void dead_node_elimination(ir_graph *irg);

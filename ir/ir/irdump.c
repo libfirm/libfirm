@@ -26,6 +26,7 @@
 # include "type_or_entity.h"
 # include "irgwalk.h"
 # include "typewalk.h"
+# include "irouts.h"
 
 /* Attributes of nodes */
 #define DEFAULT_NODE_ATTR ""
@@ -72,7 +73,10 @@ int edge_label = 1;
 /* A compiler option to turn off dumping values of constant entities */
 int const_entities = 1;
 /* A compiler option to dump the keep alive edges */
-int dump_keepalive = 1;
+int dump_keepalive = 0;
+/* A compiler option to dump the out edges in dump_ir_graph */
+int dump_out_edge_flag = 0;
+
 
 /* A global variable to record output of the Bad node. */
 int Bad_dumped;
@@ -479,6 +483,22 @@ dump_ir_data_edges(ir_node *n)  {
   }
 }
 
+/* dump out edges */
+void
+dump_out_edge (ir_node *n, void* env) {
+  int i;
+  for (i = 0; i < get_irn_n_outs(n); i++) {
+    assert(get_irn_out(n, i));
+    fprintf (F, "edge: {sourcename: \"");
+    PRINT_NODEID(n);
+    fprintf (F, "\" targetname: \"");
+    PRINT_NODEID(get_irn_out(n, i));
+    fprintf (F, "\" color: red linestyle: dashed");
+    fprintf (F, "}\n");
+  }
+}
+
+
 /* dumps the edges between nodes and their type or entity attributes. */
 void dump_node2type_edges (ir_node *n, void *env)
 {
@@ -851,7 +871,7 @@ vcg_close () {
 void
 dump_whole_node (ir_node *n, void* env) {
   dump_node(n);
-  dump_ir_block_edge(n);
+  if (!node_floats(n)) dump_ir_block_edge(n);
   dump_ir_data_edges(n);
 }
 
@@ -867,6 +887,11 @@ dump_ir_graph (ir_graph *irg)
   /* walk over the graph */
   irg_walk(irg->end, dump_whole_node, NULL, NULL);
 
+  /* dump the out edges in a separate walk */
+  if ((dump_out_edge_flag) && (get_irg_outs_state(irg) != no_outs)) {
+    irg_out_walk(irg->start, dump_out_edge, NULL, NULL);
+  }
+
   vcg_close();
 
   current_ir_graph = rem;
@@ -876,11 +901,16 @@ dump_ir_graph (ir_graph *irg)
 /* the following routines dump the nodes as attached to the blocks.    */
 /***********************************************************************/
 
+int node_floats(ir_node *n) {
+  return ((get_op_pinned(get_irn_op(n)) == floats) &&
+	  (get_irg_pinned(current_ir_graph) == floats));
+}
+
 void
 dump_ir_blocks_nodes (ir_node *n, void *env) {
   ir_node *block = (ir_node *)env;
 
-  if (is_no_Block(n) && get_nodes_Block(n) == block) {
+  if (is_no_Block(n) && get_nodes_Block(n) == block && !node_floats(n)) {
     dump_node(n);
     dump_ir_data_edges(n);
   }
@@ -920,9 +950,14 @@ dump_blockless_nodes (ir_node *n, void *env) {
     dump_node(n);
     dump_ir_data_edges(n);
     dump_ir_block_edge(n);
+    if (get_irn_op(n) == op_Bad) Bad_dumped = 1;
+    return;
   }
-  if (get_irn_op(n) == op_Bad)
-    Bad_dumped = 1;
+  if (node_floats(n)) {
+    dump_node(n);
+    dump_ir_data_edges(n);
+    if (get_irn_op(n) == op_Bad) Bad_dumped = 1;
+  }
 }
 
 void dump_ir_block_graph_2  (ir_graph *irg)
@@ -1109,4 +1144,8 @@ void dump_constant_entity_values() {
 
 void dump_keepalive_edges() {
   dump_keepalive = 1;
+}
+
+void dump_out_edges() {
+  dump_out_edge_flag = 1;
 }

@@ -105,6 +105,8 @@ int main(int argc, char **argv)
   /* Now we can mature the end block as all it's predecessors are known. */
   mature_block (get_irg_end_block(irg));
 
+  finalize_cons (irg);
+
   printf("Optimizing ...\n");
   dead_node_elimination(irg);
 

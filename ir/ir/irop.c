@@ -65,13 +65,14 @@ ir_op *op_Bad;
 
 
 ir_op *
-new_ir_op (opcode code, ident *name, size_t attr_size, int labeled)
+new_ir_op (opcode code, char *name, op_pinned p, int labeled, size_t attr_size)
 {
   ir_op *res;
 
   res = (ir_op *) xmalloc (sizeof (ir_op));
   res->code = code;
-  res->name = name;
+  res->name = id_from_str(name, strlen(name));
+  res->pinned = p;
   res->attr_size = attr_size;
   res->labeled = labeled;   /* For vcg dumping.
                                Set labeled = 1 if the edges should be
@@ -84,54 +85,54 @@ new_ir_op (opcode code, ident *name, size_t attr_size, int labeled)
 void
 init_op(void)
 {
-  op_Block = new_ir_op (iro_Block, id_from_str ("Block", 5), sizeof (block_attr), 1);
+  op_Block = new_ir_op (iro_Block, "Block",  pinned, 1, sizeof (block_attr));
 
-  op_Start = new_ir_op (iro_Start, id_from_str ("Start", 5), sizeof (block_attr), 1);
-  op_End = new_ir_op (iro_End, id_from_str ("End", 3), sizeof (block_attr), 1);
-  op_Jmp    = new_ir_op (iro_Jmp, id_from_str ("Jmp", 3), 0, 0);
-  op_Cond   = new_ir_op (iro_Cond, id_from_str ("Cond", 4), sizeof(cond_attr), 1);
-  op_Return = new_ir_op (iro_Return, id_from_str ("Return", 6), 0, 1);
-  op_Raise  = new_ir_op (iro_Raise, id_from_str ("Raise", 5), 0, 1);
+  op_Start = new_ir_op (iro_Start, "Start",  pinned, 0, 0);
+  op_End   = new_ir_op (iro_End,   "End",    pinned, 0, 0);
+  op_Jmp   = new_ir_op (iro_Jmp,   "Jmp",    pinned, 0, 0);
+  op_Cond  = new_ir_op (iro_Cond,  "Cond",   pinned, 1, sizeof(cond_attr));
+  op_Return= new_ir_op (iro_Return,"Return", pinned, 1, 0);
+  op_Raise = new_ir_op (iro_Raise, "Raise",  pinned, 1, 0);
 
-  op_Const = new_ir_op (iro_Const, id_from_str ("Const", 5), sizeof (struct tarval *), 0);
-  op_SymConst = new_ir_op (iro_SymConst, id_from_str ("SymConst", 8),
-			   sizeof (symconst_attr), 0);
+  op_Const = new_ir_op (iro_Const, "Const",  floats, 0, sizeof (struct tarval *));
+  op_SymConst = new_ir_op (iro_SymConst, "SymConst",
+			                     floats, 0, sizeof (symconst_attr));
 
-  op_Sel = new_ir_op (iro_Sel, id_from_str ("Sel", 3), sizeof (sel_attr), 1);
+  op_Sel   = new_ir_op (iro_Sel,   "Sel",    floats, 1, sizeof (sel_attr));
 
-  op_Call = new_ir_op (iro_Call, id_from_str ("Call", 4), sizeof (call_attr), 1);
-  op_Add = new_ir_op (iro_Add, id_from_str ("Add", 3), 0, 0);
-  op_Minus = new_ir_op (iro_Minus, id_from_str ("Minus", 5), 0, 0);
-  op_Sub = new_ir_op (iro_Sub, id_from_str ("Sub", 3), 0, 1);
-  op_Mul = new_ir_op (iro_Mul, id_from_str ("Mul", 3), 0, 0);
-  op_Quot =   new_ir_op (iro_Quot,   id_from_str ("Quot", 4),   sizeof(struct irnode **), 1);
-  op_DivMod = new_ir_op (iro_DivMod, id_from_str ("DivMod", 6), sizeof(struct irnode **), 1);
-  op_Div =    new_ir_op (iro_Div,    id_from_str ("Div", 3),    sizeof(struct irnode **), 1);
-  op_Mod =    new_ir_op (iro_Mod,    id_from_str ("Mod", 3),    sizeof(struct irnode **), 1);
-  op_Abs = new_ir_op (iro_Abs, id_from_str ("Abs", 3), 0, 0);
-  op_And = new_ir_op (iro_And, id_from_str ("And", 3), 0, 0);
-  op_Or  = new_ir_op (iro_Or,  id_from_str ("Or", 2), 0, 0);
-  op_Eor = new_ir_op (iro_Eor, id_from_str ("Eor", 3), 0, 0);
-  op_Not = new_ir_op (iro_Not, id_from_str ("Not", 3), 0, 0);
-  op_Cmp = new_ir_op (iro_Cmp, id_from_str ("Cmp", 3), 0, 1);
-  op_Shl = new_ir_op (iro_Shl, id_from_str ("Shl", 3), 0, 1);
-  op_Shr = new_ir_op (iro_Shr, id_from_str ("Shr", 3), 0, 1);
-  op_Shrs  = new_ir_op (iro_Shrs, id_from_str ("Shrs", 3), 0, 0);
-  op_Rot   = new_ir_op (iro_Rot, id_from_str ("Rot", 3), 0, 0);
-  op_Conv  = new_ir_op (iro_Conv, id_from_str ("Conv", 4), 0, 1);
+  op_Call  = new_ir_op (iro_Call,  "Call",   pinned, 1, sizeof (call_attr));
+  op_Add   = new_ir_op (iro_Add,   "Add",    floats, 0, 0);
+  op_Minus = new_ir_op (iro_Minus, "Minus",  floats, 0, 0);
+  op_Sub   = new_ir_op (iro_Sub,   "Sub",    floats, 1, 0);
+  op_Mul   = new_ir_op (iro_Mul,   "Mul",    floats, 0, 0);
+  op_Quot  = new_ir_op (iro_Quot,  "Quot",   pinned, 1, sizeof(struct irnode **));
+  op_DivMod= new_ir_op (iro_DivMod,"DivMod", pinned, 1, sizeof(struct irnode **));
+  op_Div   = new_ir_op (iro_Div,   "Div",    pinned, 1, sizeof(struct irnode **));
+  op_Mod   = new_ir_op (iro_Mod,   "Mod",    pinned, 1, sizeof(struct irnode **));
+  op_Abs   = new_ir_op (iro_Abs,   "Abs",    floats, 0, 0);
+  op_And   = new_ir_op (iro_And,   "And",    floats, 0, 0);
+  op_Or    = new_ir_op (iro_Or,    "Or",     floats, 0, 0);
+  op_Eor   = new_ir_op (iro_Eor,   "Eor",    floats, 0, 0);
+  op_Not   = new_ir_op (iro_Not,   "Not",    floats, 0, 0);
+  op_Cmp   = new_ir_op (iro_Cmp,   "Cmp",    floats, 1, 0);
+  op_Shl   = new_ir_op (iro_Shl,   "Shl",    floats, 1, 0);
+  op_Shr   = new_ir_op (iro_Shr,   "Shr",    floats, 1, 0);
+  op_Shrs  = new_ir_op (iro_Shrs,  "Shrs",   floats, 1, 0);
+  op_Rot   = new_ir_op (iro_Rot,   "Rot",    floats, 1, 0);
+  op_Conv  = new_ir_op (iro_Conv,  "Conv",   floats, 0, 0);
 
-  op_Phi   = new_ir_op (iro_Phi,   id_from_str ("Phi", 3),   sizeof (int), 1);
+  op_Phi   = new_ir_op (iro_Phi,   "Phi",    pinned, 1, sizeof (int));
 
-  op_Load  = new_ir_op (iro_Load,  id_from_str ("Load", 4),  sizeof(struct irnode **), 1);
-  op_Store = new_ir_op (iro_Store, id_from_str ("Store", 5), sizeof(struct irnode **), 1);
-  op_Alloc = new_ir_op (iro_Alloc, id_from_str ("Alloc", 5), sizeof (alloc_attr), 1);
-  op_Free  = new_ir_op (iro_Free,  id_from_str ("Free", 4),  sizeof (type *),     1);
-  op_Sync  = new_ir_op (iro_Sync,  id_from_str ("Sync", 4),  0, 0);
+  op_Load  = new_ir_op (iro_Load,  "Load",   pinned, 1, sizeof(struct irnode **));
+  op_Store = new_ir_op (iro_Store, "Store",  pinned, 1, sizeof(struct irnode **));
+  op_Alloc = new_ir_op (iro_Alloc, "Alloc",  pinned, 1, sizeof (alloc_attr));
+  op_Free  = new_ir_op (iro_Free,  "Free",   pinned, 1, sizeof (type *));
+  op_Sync  = new_ir_op (iro_Sync,  "Sync",   pinned, 0, 0);
 
-  op_Proj  = new_ir_op (iro_Proj,  id_from_str ("Proj", 4), sizeof (long), 1);
-  op_Tuple = new_ir_op (iro_Tuple, id_from_str ("Tuple", 5), 0, 1);
-  op_Id    = new_ir_op (iro_Id,    id_from_str ("Id", 2), 0, 0);
-  op_Bad   = new_ir_op (iro_Bad,   id_from_str ("Bad", 3), 0, 0);
+  op_Proj  = new_ir_op (iro_Proj,  "Proj",   floats, 0, sizeof (long));
+  op_Tuple = new_ir_op (iro_Tuple, "Tuple",  floats, 1, 0);
+  op_Id    = new_ir_op (iro_Id,    "Id",     floats, 0, 0);
+  op_Bad   = new_ir_op (iro_Bad,   "Bad",    floats, 0, 0);
 }
 
 /* Returns the string for the opcode. */
@@ -147,7 +148,29 @@ ident *get_op_ident(ir_op *op){
   return op->name;
 }
 
+op_pinned get_op_pinned (ir_op *op){
+  return op->pinned;
+}
+
+/* Sets pinned in the opcode.  Setting it to floating has no effect
+   for Phi, Block and control flow nodes. */
+void      set_op_pinned(ir_op *op, op_pinned pinned) {
+  if (op == op_Block || op == op_Phi || is_cfopcode(op)) return;
+  op->pinned = pinned;
+}
+
+
 /* returns the attribute size of the operator. */
 int get_op_attr_size (ir_op *op) {
   return op->attr_size;
+}
+
+int is_cfopcode(ir_op *op) {
+  return ((op == op_Start)
+          || (op == op_Jmp)
+          || (op == op_Cond)
+          || (op == op_Return)
+          || (op == op_Raise)
+          || (op == op_Bad)
+	  || (op == op_End));
 }

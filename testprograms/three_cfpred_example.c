@@ -147,11 +147,12 @@ int main(int argc, char **argv)
   add_in_edge (get_irg_end_block(irg), x);
   mature_block (get_irg_end_block(irg));
 
-  printf("Optimizing ...\n");
-  dead_node_elimination(irg);
-
   /* verify the graph */
   irg_vrfy(irg);
+  finalize_cons (irg);
+
+  printf("Optimizing ...\n");
+  dead_node_elimination(irg);
 
   printf("Dumping the graph and a control flow graph.\n");
   dump_ir_block_graph (irg);

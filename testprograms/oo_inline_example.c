@@ -1,4 +1,4 @@
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
+/* Copyright (C)2002 by Universitaet Karlsruhe
 ** All rights reserved.
 **
 ** Authors: Goetz Lindenmaier
@@ -6,11 +6,14 @@
 ** testprogram.
 */
 
+/* $ID$ */
+
 # include "irdump.h"
 # include "firm.h"
+# include "irnode.h"
 
 /**  This file constructs the IR for the following program:
-***
+***  @@@ this is no more correct ...
 ***  class PRIMA {
 ***    a: int;
 ***
@@ -43,9 +46,9 @@ main(void)
   entity   *proc_main_e, *proc_set_a_e, *proc_c_e, *a_e;
 
   ir_graph     *main_irg, *set_a_irg, *c_irg;
-  ir_node      *c2, *c5, *obj_o, *obj_size, *proc_ptr, *call, *res, *x;
+  ir_node      *c2, *c5, *obj_o, *obj_size, *proc_ptr, *call, *res, *x, *set_a_call, *c_call;
   ir_node      *self, *par1, *a_ptr;
-  ir_node      *a_val;
+  ir_node      *a_val, *r, *t, *b, *f;
 
   int o_pos, self_pos, e_pos, d_pos;
 
@@ -53,6 +56,8 @@ main(void)
 
   init_firm ();
 
+  set_optimize(1);
+  set_opt_inline (1);
   set_opt_constant_folding(1);
   set_opt_cse(1);
   set_opt_dead_node_elimination(1);
@@ -62,7 +67,7 @@ main(void)
 
   /*** Make type information for the class (PRIMA). ***/
   /* The type of the class */
-  class_prima = new_type_class(id_from_str ("PRIMA", 5));
+  class_prima = new_type_class(id_from_str ("PRIMA_INLINE", 5));
   /* We need type information for pointers to the class: */
   class_p_ptr = new_type_pointer (id_from_str ("class_prima_ptr", 15),
 				  class_prima);
@@ -85,7 +90,7 @@ main(void)
 
   /*** Now build procedure main. ***/
   /** Type information for main. **/
-  printf("\nCreating an IR graph: OO_PROGRAM_EXAMPLE...\n");
+  printf("\nCreating an IR graph: OO_INLINE_EXAMPLE...\n");
   /* Main is not modeled as part of an explicit class here. Therefore the
      owner is the global type. */
   owner = get_glob_type();
@@ -127,10 +132,11 @@ main(void)
     ir_node *in[2];
     in[0] = get_value(o_pos, mode_p);
     in[1] = c2;
-    call = new_Call(get_store(), proc_ptr, 2, in, proc_set_a);
+    set_a_call = new_Call(get_store(), proc_ptr, 2, in, proc_set_a);
+
   }
   /* Make the change to memory visible.  There are no results.  */
-  set_store(new_Proj(call, mode_M, 0));
+  set_store(new_Proj(set_a_call, mode_M, 0));
 
   /* Get the pointer to the nest procedure from the object. */
   proc_ptr = new_simpleSel(get_store(), get_value(o_pos, mode_p), proc_c_e);
@@ -140,13 +146,13 @@ main(void)
     ir_node *in[2];
     in[0] = get_value(o_pos, mode_p);
     in[1] = c5;
-    call = new_Call(get_store(), proc_ptr, 2, in, proc_c);
+    c_call = new_Call(get_store(), proc_ptr, 2, in, proc_c);
   }
   /* make the change to memory visible */
-  set_store(new_Proj(call, mode_M, 0));
+  set_store(new_Proj(c_call, mode_M, 0));
   /* Get the result of the procedure: select the result tuple from the call,
      then the proper result from the tuple. */
-  res = new_Proj(new_Proj(call, mode_T, 2), mode_i, 0);
+  res = new_Proj(new_Proj(c_call, mode_T, 2), mode_i, 0);
 
   /* return the results of procedure main */
   {
@@ -198,12 +204,51 @@ main(void)
   printf("Creating IR graph for c: \n");
 
   /* Local variables self, d */
-  c_irg = new_ir_graph (proc_c_e, 2);
+  c_irg = new_ir_graph (proc_c_e, 5);
 
   /* get the procedure parameter */
   self = new_Proj(get_irg_args(c_irg), mode_p, 0);
+  set_value(0, self);
   par1 = new_Proj(get_irg_args(c_irg), mode_i, 1);
+  set_value(1, par1);
+  set_value(2, new_Const (mode_i, tarval_from_long (mode_i, 0)));
 
+  x = new_Jmp();
+  mature_block (get_irg_current_block(c_irg));
+
+  /* generate a block for the loop header and the conditional branch */
+  r = new_immBlock ();
+  add_in_edge (r, x);
+  x = new_Cond (new_Proj(new_Cmp(new_Const (mode_i, tarval_from_long (mode_i, 0)),
+				 new_Const (mode_i, tarval_from_long (mode_i, 0))),
+			 mode_b, Eq));
+
+  /*  x = new_Cond (new_Proj(new_Cmp(new_Const (mode_i, tarval_from_long (mode_i, 0)),
+				 get_value(1, mode_i)),
+				 mode_b, Eq));*/
+  f = new_Proj (x, mode_X, 0);
+  t = new_Proj (x, mode_X, 1);
+
+  /* generate the block for the loop body */
+  b = new_immBlock ();
+  add_in_edge (b, t);
+
+  /* The code in the loop body,
+     as we are dealing with local variables only the dataflow edges
+     are manipulated. */
+  set_value (3, get_value (1, mode_i));
+  set_value (1, get_value (2, mode_i));
+  set_value (2, get_value (3, mode_i));
+  a_ptr = new_simpleSel(get_store(), self, a_e);
+  set_store(new_Store(get_store(), a_ptr, get_value(2, mode_i)));
+  x = new_Jmp ();
+  add_in_edge(r, x);
+  mature_block (b);
+  mature_block (r);
+
+  /* generate the return block */
+  r = new_immBlock ();
+  add_in_edge (r, f);
   /* Select the entity and load the value */
   a_ptr = new_simpleSel(get_store(), self, a_e);
   a_val = new_Load(get_store(), a_ptr);
@@ -217,7 +262,7 @@ main(void)
 
     x = new_Return (get_store (), 1, in);
   }
-  mature_block (get_irg_current_block(c_irg));
+  mature_block (r);
 
   /* complete the end_block */
   add_in_edge (get_irg_end_block(c_irg), x);
@@ -229,13 +274,23 @@ main(void)
 
   /****************************************************************************/
 
+
+  collect_phiprojs(main_irg);
+  current_ir_graph = main_irg;
+  printf("Inlining set_a ...\n");
+  inline_method(set_a_call, set_a_irg);
+  printf("Inlineing c ...\n");
+  inline_method(c_call, c_irg);
+
   printf("Optimizing ...\n");
+
   for (i = 0; i < get_irp_n_irgs(); i++) {
     local_optimize_graph(get_irp_irg(i));
     dead_node_elimination(get_irp_irg(i));
   }
 
   printf("Dumping graphs of all procedures and a type graph.\n");
+  turn_of_edge_labels();
   dump_all_ir_graphs(dump_ir_block_graph);
   dump_all_ir_graphs(dump_ir_block_graph_w_types);
   dump_all_types();

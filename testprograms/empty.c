@@ -87,6 +87,7 @@ int main(int argc, char **argv)
 
   /* Verify the graph.  Finds some very bad errors in the graph. */
   irg_vrfy(irg);
+  finalize_cons (irg);
 
   printf("Done building the graph.  Dumping it.\n");
   dump_ir_block_graph (irg);

@@ -140,6 +140,8 @@ main(void)
   add_in_edge (get_irg_end_block(main_irg), x);
   mature_block (get_irg_end_block(main_irg));
 
+  finalize_cons (main_irg);
+
   printf("Optimizing ...\n");
   dead_node_elimination(main_irg);
 

@@ -96,6 +96,7 @@ new_ir_node (ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mode,
     memcpy (&res->in[1], in, sizeof (ir_node *) * arity);
   }
   res->in[0] = block;
+  res->out = NULL;
 
 #ifdef DEBUG_libfirm
   res->node_nr = get_irp_new_node_nr();
@@ -208,9 +209,12 @@ set_irn_in (ir_node *node, int arity, ir_node **in) {
 inline ir_node *
 get_irn_n (ir_node *node, int n)
 {
+  ir_node *res;
   assert (node);
-  assert (get_irn_arity (node) > n);
-  return skip_nop(node->in[n+1]);
+  assert ((get_irn_arity (node) > n) && (-1 <= n));
+  res = skip_nop(node->in[n+1]);
+  if (res != node->in[n+1]) node->in[n+1] = res;
+  return res;
 }
 
 inline void
@@ -467,6 +471,12 @@ inline void
 add_End_keepalive (ir_node *end, ir_node *ka) {
   assert (end->op == op_End);
   ARR_APP1 (ir_node *, end->in, ka);
+}
+
+inline void
+free_End (ir_node *end) {
+  /* DEL_ARR_F(end->in);   GL @@@ tut nicht ! */
+  end->in = NULL;   /* @@@ make sure we get an error if we use the in array afterwards ... */
 }
 
 /*
@@ -1815,6 +1825,11 @@ skip_nop (ir_node *node) {
   }
 }
 
+inline ir_node *
+skip_Id (ir_node *node) {
+  return skip_nop(node);
+}
+
 inline int
 is_Bad (ir_node *node) {
   assert(node);
@@ -1832,12 +1847,7 @@ is_no_Block (ir_node *node) {
 /* Returns true if the operation manipulates control flow. */
 int
 is_cfop(ir_node *node) {
-  return (   (get_irn_opcode(node) == iro_Start)
-          || (get_irn_opcode(node) == iro_Jmp)
-          || (get_irn_opcode(node) == iro_Cond)
-          || (get_irn_opcode(node) == iro_Return)
-          || (get_irn_opcode(node) == iro_Raise)
-          || (get_irn_opcode(node) == iro_Bad));
+  return is_cfopcode(get_irn_op(node));
 }
 
 /* Returns true if the operation can change the control flow because

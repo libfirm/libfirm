@@ -22,7 +22,7 @@
 # include "common.h"
 # include "irvrfy.h"
 # include "irop.h"
-# include "iropt.h"
+# include "iropt_t.h"
 # include "irgmod.h"
 # include "array.h"
 /* memset belongs to string.h */
@@ -636,10 +636,8 @@ ir_node *
 new_End (void)
 {
   ir_node *res;
-
   res = new_ir_node (current_ir_graph,  current_ir_graph->current_block,
 		     op_End, mode_X, -1, NULL);
-
   res = optimize (res);
   irn_vrfy (res);
 
@@ -1373,8 +1371,9 @@ mature_block (ir_node *block)
        we can not free the node on the obstack.  Therefore we have to call
        optimize_in_place.
        Unfortunately the optimization does not change a lot, as all allocated
-       nodes refer to the unoptimized node. */
-    block = optimize_in_place(block);
+       nodes refer to the unoptimized node.
+       We can call _2, as global cse has no effect on blocks. */
+    block = optimize_in_place_2(block);
     irn_vrfy(block);
   }
 }
@@ -1717,6 +1716,7 @@ new_Bad (void)
 ir_node *new_immBlock (void) {
   ir_node *res;
 
+  assert(get_irg_phase_state (current_ir_graph) == phase_building);
   /* creates a new dynamic in-array as length of in is -1 */
   res = new_ir_node (current_ir_graph, NULL, op_Block, mode_R, -1, NULL);
   current_ir_graph->current_block = res;
@@ -1761,6 +1761,7 @@ switch_block (ir_node *target)
 ir_node *
 get_value (int pos, ir_mode *mode)
 {
+  assert(get_irg_phase_state (current_ir_graph) == phase_building);
   inc_irg_visited(current_ir_graph);
   return get_r_value_internal (current_ir_graph->current_block, pos + 1, mode);
 }
@@ -1770,6 +1771,7 @@ get_value (int pos, ir_mode *mode)
 inline void
 set_value (int pos, ir_node *value)
 {
+  assert(get_irg_phase_state (current_ir_graph) == phase_building);
   current_ir_graph->current_block->attr.block.graph_arr[pos + 1] = value;
 }
 
@@ -1777,6 +1779,7 @@ set_value (int pos, ir_node *value)
 inline ir_node *
 get_store (void)
 {
+  assert(get_irg_phase_state (current_ir_graph) == phase_building);
   /* GL: one could call get_value instead */
   inc_irg_visited(current_ir_graph);
   return get_r_value_internal (current_ir_graph->current_block, 0, mode_M);
@@ -1786,6 +1789,7 @@ get_store (void)
 inline void
 set_store (ir_node *store)
 {
+  assert(get_irg_phase_state (current_ir_graph) == phase_building);
   /* GL: one could call set_value instead */
   current_ir_graph->current_block->attr.block.graph_arr[0] = store;
 }
@@ -1816,4 +1820,10 @@ type *get_cur_frame_type() {
 void
 init_cons (void)
 {
+}
+
+/* call for each graph */
+void
+finalize_cons (ir_graph *irg) {
+  irg->phase_state = phase_high;
 }

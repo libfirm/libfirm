@@ -35,7 +35,6 @@ ir_prog *new_ir_prog (void) {
 
   res = (ir_prog *) malloc (sizeof(ir_prog));
   irp = res;
-
   /* res->obst      = (struct obstack *) xmalloc (sizeof (struct obstack)); */
   res->graphs = NEW_ARR_F (ir_graph *, 1);
   res->types  = NEW_ARR_F (type *, 1);

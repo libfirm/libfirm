@@ -16,6 +16,7 @@
 
 /* ir_graph holds all information for a procedure */
 struct ir_graph {
+  /** Basics of the representation **/
   struct entity  *ent;               /* The entity of this procedure, i.e.,
 					the type of the procedure and the
 					class it belongs to. */
@@ -33,26 +34,39 @@ struct ir_graph {
   struct ir_node *bad;		     /* bad node of this ir_graph, the one and
                                         only in this graph */
   struct obstack *obst;		     /* obstack where all of the ir_nodes live */
+  struct ir_node *current_block;     /* block for newly gen_*()-erated
+					ir_nodes */
+
+  /** Fields indicating different states of irgraph **/
+  irg_phase_state phase_state;       /* compiler phase */
+  op_pinned pinned;                  /* Flag for status of nodes */
+  irg_outs_state outs_state;         /* Out edges. */
+
+  /** Fields for construction **/
 #if USE_EXPICIT_PHI_IN_STACK
   struct Phi_in_stack *Phi_in_stack; /* needed for automatic Phi construction */
 #endif
-  struct ir_node *current_block;     /* block for newly gen_*()-erated
-					ir_nodes */
   int n_loc;                         /* number of local variable in this
 					procedure including procedure parameters. */
-  pset *value_table;                 /* value table for global value numbering
+
+  /** Fields for optimizations / analysis information **/
+  pset *value_table;                 /* hash table for global value numbering (cse)
 					for optimizing use in iropt.c */
+  struct ir_node **outs;             /* Space for the out arrays. */
+
+  /** Fields for Walking the graph **/
   unsigned long visited;             /* this flag is an identifier for
-					ir walk. it will be incremented,
-					every time, someone walk through
+					ir walk. it will be incremented
+					every time someone walks through
 					the graph */
-  unsigned long block_visited;       /* same as visited, for a
-					complete block */
+  unsigned long block_visited;       /* same as visited, for a complete block */
 };
 
 /* Make a rudimentary ir graph for the constant code.
    Must look like a correct irg, spare everything else. */
 ir_graph *new_const_code_irg();
 
+inline void
+set_irg_pinned (ir_graph *irg, op_pinned p);
 
 # endif /* _IRGRAPH_T_H_ */

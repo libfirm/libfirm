@@ -17,7 +17,8 @@ SOURCES := Makefile.in \
 	call_str_example.c     if_else_example.c      memory_example.c		\
 	cond_example.c         if_example.c           oo_program_example.c	\
 	const_eval_example.c   if_while_example.c     three_cfpred_example.c	\
-	dead_block_example.c   inheritance_example.c  while_example.c
+	dead_block_example.c   inheritance_example.c  while_example.c		\
+	endless_loop.c	       global_cse.c	      oo_inline_example.c
 
 bin_EXAMPLES = $(CFILES:.c=)
 run_bin_EXAMPLES = $(patsubst %.c,./%;,$(CFILES))

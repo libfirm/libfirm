@@ -130,6 +130,8 @@ int main(int argc, char **argv)
   add_in_edge (get_irg_end_block(irg), x);
   mature_block (get_irg_end_block(irg));
 
+  finalize_cons (irg);
+
   printf("Optimizing ...\n");
   local_optimize_graph (irg);
   dead_node_elimination (irg);

@@ -24,9 +24,10 @@
 
    optimize (n) may deallocate `n' and everything allocated after `n'! */
 
-tarval *computed_value (ir_node *n);
+tarval  *computed_value (ir_node *n);
 
 ir_node *optimize (ir_node *n);
+
 ir_node *optimize_in_place (ir_node *n);
 
 # endif /* _IROPT_H_ */

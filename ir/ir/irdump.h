@@ -276,4 +276,21 @@ void dump_constant_entity_values();
 void dump_keepalive_edges();
 
 
+/****m* irdump/dump_constant_entity_values
+ *
+ * NAME
+ *   dump_out_edges
+ * SYNOPSIS
+ *   void dump_out_edges()
+ * FUNCTION
+ *   Turns on dumping the out edges starting from the Start block in
+ *   dump_ir_graph.  To test the consistency of the out datastructure.
+ * INPUTS
+ *   No inputs
+ * RESULT
+ * SEE ALSO
+ *
+ ***
+ */
+void dump_out_edges();
 # endif /* _IRDUMP_H_ */

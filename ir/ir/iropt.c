@@ -765,9 +765,8 @@ transform_node (ir_node *n)
 
 /* **************** Common Subexpression Elimination **************** */
 
-/* Compare function for two nodes in the hash table.   Gets two     */
-/* nodes as parameters.                                             */
-/* @@@  a+b != b+a ? */
+/* Compare function for two nodes in the hash table.   Gets two       */
+/* nodes as parameters.  Returns 0 if the nodes are a cse.            */
 static int
 vt_cmp (const void *elt, const void *key)
 {
@@ -794,12 +793,16 @@ vt_cmp (const void *elt, const void *key)
   if (get_irn_arity (a) != get_irn_arity(b))
     return 1;
 
-  /* compare a->in[0..ins] with b->in[0..ins], i.e., include the block. */
-  /* do if (*ain++ != *bin++) return 1; while (ins--); */
-  for (i = -1; i < get_irn_arity(a); i++)
+  /* for block-local cse and pinned nodes: */
+  if (!get_opt_global_cse() || (get_op_pinned(get_irn_op(a)) == pinned)) {
+    if (get_irn_n(a, -1) != get_irn_n(b, -1))
+      return 1;
+  }
+
+  /* compare a->in[0..ins] with b->in[0..ins] */
+  for (i = 0; i < get_irn_arity(a); i++)
     if (get_irn_n(a, i) != get_irn_n(b, i))
       return 1;
-
 
   switch (get_irn_opcode(a)) {
   case iro_Const:
@@ -872,31 +875,44 @@ identify (pset *value_table, ir_node *n)
 {
   ir_node *o = NULL;
 
-
-
   if (!value_table) return n;
 
-  switch (get_irn_opcode (n)) {
-  case iro_Add:
-  case iro_Mul:
-  case iro_Or:
-  case iro_And:
-  case iro_Eor:
-    {
-      /* for commutative operators perform  a OP b == b OP a */
-      if (get_binop_left(n) > get_binop_right(n)) {
-	ir_node *h = get_binop_left(n);
-	set_binop_left(n, get_binop_right(n));
-	set_binop_right(n, h);
+  if (get_opt_reassociation()) {
+    switch (get_irn_opcode (n)) {
+    case iro_Add:
+    case iro_Mul:
+    case iro_Or:
+    case iro_And:
+    case iro_Eor:
+      {
+	/* for commutative operators perform  a OP b == b OP a */
+	if (get_binop_left(n) > get_binop_right(n)) {
+	  ir_node *h = get_binop_left(n);
+	  set_binop_left(n, get_binop_right(n));
+	  set_binop_right(n, h);
+	}
       }
+      break;
+    default: break;
     }
-  break;
-  default: break;
   }
+
   o = pset_find (value_table, n, ir_node_hash (n));
   if (!o) return n;
 
   return o;
+}
+
+/* During construction we set the pinned flag in the graph right when the
+   optimizatin is performed.  The flag turning on procedure global cse could
+   be changed between two allocations.  This way we are safe. */
+static inline ir_node *
+identify_cons (pset *value_table, ir_node *n) {
+  ir_node *old = n;
+  n = identify(value_table, n);
+  if (get_irn_n(old, -1) != get_irn_n(n, -1))
+    set_irg_pinned(current_ir_graph, floats);
+  return n;
 }
 
 /* Return the canonical node computing the same value as n.
@@ -965,12 +981,6 @@ optimize (ir_node *n)
   /* Allways optimize Phi nodes: part of the construction. */
   if ((!get_optimize()) && (get_irn_op(n) != op_Phi)) return n;
 
-  /* if not optimize return n */
-  if (n == NULL) {
-    printf(" attention: empty node!!! \n");
-    return n;
-  }
-
   /* constant expression evaluation / constant folding */
   if (get_opt_constant_folding()) {
     /* constants can not be evaluated */
@@ -995,7 +1005,7 @@ optimize (ir_node *n)
      now all nodes are pinned to blocks, i.e., the cse only finds common
      subexpressions within a block. */
   if (get_opt_cse())
-    n = identify (current_ir_graph->value_table, n);
+    n = identify_cons (current_ir_graph->value_table, n);
   /* identify found a cse, so deallocate the old node. */
   if (n != old_n) {
     obstack_free (current_ir_graph->obst, old_n);
@@ -1032,7 +1042,7 @@ optimize (ir_node *n)
    nodes lying on the obstack.  Remove these by a dead node elimination,
    i.e., a copying garbage collection. */
 ir_node *
-optimize_in_place (ir_node *n)
+optimize_in_place_2 (ir_node *n)
 {
   tarval *tv;
   ir_node *old_n = n;
@@ -1071,8 +1081,9 @@ optimize_in_place (ir_node *n)
   /* The block input is used to distinguish different subexpressions.  Right
      now all nodes are pinned to blocks, i.e., the cse only finds common
      subexpressions within a block. */
-  if (get_opt_cse())
+  if (get_opt_cse()) {
     n = identify (current_ir_graph->value_table, n);
+  }
 
   /* identify found a cse, so deallocate the old node. */
   if (n != old_n) {
@@ -1096,4 +1107,16 @@ optimize_in_place (ir_node *n)
     n = identify_remember (current_ir_graph->value_table, n);
 
   return n;
+}
+
+/* Wrapper for external use, set proper status bits after optimization */
+ir_node *
+optimize_in_place (ir_node *n) {
+  /* Handle graph state */
+  assert(get_irg_phase_state(current_ir_graph) != phase_building);
+  if (get_opt_global_cse())
+    set_irg_pinned(current_ir_graph, floats);
+  if (get_irg_outs_state(current_ir_graph) == outs_consistent)
+    set_irg_outs_inconsistent(current_ir_graph);
+  return optimize_in_place_2 (n);
 }
