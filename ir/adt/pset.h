@@ -14,41 +14,120 @@
 
 #include <stddef.h>
 
-/** The type of a pset (Set of pointers) */
+/**
+ * The abstract type of a pset (Set of pointers).
+ *
+ * This kind of sets stores only pointer to elements, the elements itself
+ * must be stored somewere else.
+ *
+ * @see set
+ */
 typedef struct pset pset;
 
-/** a pset entry */
+/** The entry of a pset, representing an element pointer in the set and it's meta-information */
 typedef struct {
   unsigned hash;
   void *dptr;
 } pset_entry;
 
-/** the type of a pset compare function */
-typedef int (*pset_cmp_fun) (const void *, const void *);
+/**
+ * The type of a set compare function.
+ *
+ * @param elt   pointer to an element
+ * @param key   pointer to another element
+ *
+ * @return
+ *    0 if the elements are identically, non-zero else
+ */
+typedef int (*pset_cmp_fun) (const void *elt, const void *key);
 
-/** Makes new hash table. Needs function to compare two nodes to
-   resolve hash value collision and the size. */
-pset *new_pset (pset_cmp_fun, int slots);
+/**
+ * Creates a new pset.
+ *
+ * @param func    the compare function of this pset
+ * @param slots   number of slots
+ *
+ * @returns
+ *    created pset
+ */
+pset *new_pset (pset_cmp_fun func, int slots);
 
-/** Deletes hash table */
-void del_pset (pset *);
+/**
+ * Deletes a pset.
+ *
+ * @note
+ *    This does NOT delete the elements of this pset, just it's pointers!
+ */
+void del_pset (pset *pset);
 
-/** Returns the pointer associated with pointer key.  Hash is
-   the hash value computed from key.  Returns Null if key not
-   in hash table.  */
-void *pset_find (pset *, const void *key, unsigned hash);
-void *pset_insert (pset *, const void *key, unsigned hash);
-pset_entry *pset_hinsert (pset *, const void *key, unsigned hash);
-void *pset_remove (pset *, const void *key, unsigned hash);
+/**
+ * Searches an element pointer in a pset.
+ *
+ * @param pset  the pset to search in
+ * @param key   the element to is searched
+ * @param hash  the hash value of key
+ *
+ * @return
+ *    the pointer of the found element in the pset of NULL if it was not found
+ */
+void *pset_find (pset *pset, const void *key, unsigned hash);
+
+/**
+ * Inserts an element pointer into a pset.
+ *
+ * @param pset  the pset to insert in
+ * @param key   a pointer to the element to be inserted
+ * @param hash  the hash-value of the element
+ *
+ * @return a pointer to the inserted element
+ *
+ * @note
+ *    It is not possible to insert on element more than once. If a element
+ *    that should be inserted is already in the set, this functions does
+ *    nothing but returning its set_entry.
+
+ */
+void *pset_insert (pset *pset, const void *key, unsigned hash);
+
+/**
+ * Inserts an element pointer into a pset and returns its pset_entry.
+ *
+ * @param pset  the pset to insert in
+ * @param key   a pointer to the element to be inserted
+ * @param hash  the hash-value of the element
+ *
+ * @return a pointer to the pset_entry of the inserted element
+ *
+ * @note
+ *    It is not possible to insert on element more than once. If a element
+ *    that should be inserted is already in the pset, this functions does
+ *    nothing but returning its pset_entry.
+ */
+pset_entry *pset_hinsert (pset *pset, const void *key, unsigned hash);
+
+/**
+ * Removes an element from a pset.
+ *
+ * @param pset  the pset to insert in
+ * @param key   a pointer to the element to be inserted
+ * @param hash  the hash-value of the element
+ *
+ * @return
+ *    the pointer to the removed element
+ *
+ * @remark
+ *    The current implementation did not allow to remove non-existing elements
+ */
+void *pset_remove (pset *pset, const void *key, unsigned hash);
 
 /** returns the first element of a pset */
-void *pset_first (pset *);
+void *pset_first (pset *pset);
 
 /** returns the next element of a pset */
-void *pset_next (pset *);
+void *pset_next (pset *pset);
 
-/** breaks the iteration of a set. Must be called before the next pset_first() call */
-void pset_break (pset *);
+/** Breaks the iteration of a set. Must be called before the next pset_first() call */
+void pset_break (pset *pset);
 
 #define new_pset(cmp, slots) (PSET_TRACE (new_pset) ((cmp), (slots)))
 #define pset_find(pset, key, hash) \

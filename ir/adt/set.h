@@ -14,39 +14,107 @@
 
 #include <stddef.h>
 
-/** The type of a set. */
+/**
+ * The abstract type of a set.
+ *
+ * This sets stores copies of its elements, so there is no need
+ * to store the elements after there were added to a set.
+ *
+ * @see pset
+ */
 typedef struct set set;
 
-/** an entry of a set */
+/** The entry of a set, representing an element in the set and it's meta-information */
 typedef struct set_entry {
-  unsigned hash;
-  size_t size;
-  int dptr[1];			/**< data copied in must not need more
+  unsigned hash;    /**< the hash value of the element */
+  size_t size;      /**< the size of the element */
+  int dptr[1];			/**< the element itself, data copied in must not need more
 				   alignment than this */
 } set_entry;
 
-/** the type of a set compare function */
+/**
+ * The type of a set compare function.
+ *
+ * @param elt   pointer to an element
+ * @param key   pointer to another element
+ * @param size  size of the elements
+ *
+ * @return
+ *    0 if the elements are identically, non-zero else
+ */
 typedef int (*set_cmp_fun) (const void *elt, const void *key, size_t size);
 
-/** creates a new set */
-set *new_set (set_cmp_fun, int slots);
+/**
+ * Creates a new set.
+ *
+ * @param func    the compare function of this set
+ * @param slots   number of slots
+ *
+ * @returns
+ *    created set
+ */
+set *new_set (set_cmp_fun func, int slots);
 
-/** deletes a set */
-void del_set (set *);
+/** Deletes a set and all elements of it. */
+void del_set (set *set);
 
-void *set_find (set *, const void *key, size_t, unsigned hash);
-void *set_insert (set *, const void *key, size_t, unsigned hash);
-set_entry *set_hinsert (set *, const void *key, size_t, unsigned hash);
+/**
+ * Searches an element in a set.
+ *
+ * @param set   the set to search in
+ * @param key   the element to is searched
+ * @param size  the size of key
+ * @param hash  the hash value of key
+ *
+ * @return
+ *    the address of the found element in the set of NULL if it was not found
+ */
+void *set_find (set *set, const void *key, size_t size, unsigned hash);
 
-/** returns the first element of a set */
-void *set_first (set *);
+/**
+ * Inserts an element into a set.
+ *
+ * @param set   the set to insert in
+ * @param key   a pointer to the element to be inserted
+ * @param size  the size of the element that should be inserted
+ * @param hash  the hash-value of the element
+ *
+ * @return a pointer to the inserted element
+ *
+ * @note
+ *    It is not possible to insert on element more than once. If a element
+ *    that should be inserted is already in the set, this functions does
+ *    nothing but returning its pointer.
+ */
+void *set_insert (set *set, const void *key, size_t size, unsigned hash);
 
-/** returns the next element of a set */
-void *set_next (set *);
+/**
+ * Inserts an element into a set and returns its set_entry.
+ *
+ * @param set   the set to insert in
+ * @param key   a pointer to the element to be inserted
+ * @param size  the size of the element that should be inserted
+ * @param hash  the hash-value of the element
+ *
+ * @return a pointer to the set_entry of the inserted element
+ *
+ * @note
+ *    It is not possible to insert on element more than once. If a element
+ *    that should be inserted is already in the set, this functions does
+ *    nothing but returning its set_entry.
+ */
+set_entry *set_hinsert (set *set, const void *key, size_t size, unsigned hash);
 
-/** breaks the iteration of a set. Must be called before the next set_first() call */
-void set_break (set *);
+/** Returns the first element of a set. */
+void *set_first (set *set);
 
+/** Returns the next element of a set. */
+void *set_next (set *set);
+
+/** Breaks the iteration of a set. Must be called before the next set_first() call */
+void set_break (set *set);
+
+/* implementation specific */
 #define new_set(cmp, slots) (SET_TRACE (new_set) ((cmp), (slots)))
 #define set_find(set, key, size, hash) \
   _set_search ((set), (key), (size), (hash), _set_find)
