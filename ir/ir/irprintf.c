@@ -21,12 +21,13 @@
 #include "config.h"
 #endif
 
-#include <stdio.h>
-#include <stdarg.h>
-
 #ifdef HAVE_STRING_H
 #include <string.h>
 #endif
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
 
 #include <ctype.h>
 
