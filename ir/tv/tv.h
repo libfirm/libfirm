@@ -89,6 +89,7 @@ struct tarval {
 };
 
 extern tarval *tarval_bad;
+/* We should have a tarval_undefined */
 extern tarval *tarval_b_false;
 extern tarval *tarval_b_true;
 extern tarval *tarval_d_NaN;

@@ -1,5 +1,5 @@
 DIRS = adt common debug ident ir tr tv
-INCDIRS = -I../include -I../ir/include
+INCDIRS = -I../include -I../fe/elifirm
 
 LIBDIRS=-L.. -L/usr/public/lib/gmp/
 
@@ -14,7 +14,7 @@ all: empty const_eval_example 					\
      array-heap_example oo_program_example inheritance_example	\
      irr_cf_example	\
      irr_loop_example dead_block_example global_var_example	\
-     three_cfpred_example
+     three_cfpred_example evaluate
 
 clean:
 	rm -f 					\
@@ -102,3 +102,6 @@ global_var_example: global_var_example.o
 
 three_cfpred_example: three_cfpred_example.o
 	gcc -o three_cfpred_example three_cfpred_example.o $(LIBDIRS) $(LIBS)
+
+evaluate: evaluate.o
+	gcc -o evaluate evaluate.o $(LIBDIRS) $(LIBS)
