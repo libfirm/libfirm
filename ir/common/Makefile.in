@@ -8,7 +8,7 @@
 top_srcdir := @top_srcdir@
 srcdir = @srcdir@
 topdir = ../..
-subdir := common
+subdir := ir/common
 
 INSTALL_HEADERS := bool.h common.h firm.h
 

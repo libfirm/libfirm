@@ -8,7 +8,7 @@
 top_srcdir := @top_srcdir@
 srcdir = @srcdir@
 topdir = ../..
-subdir := adt
+subdir := ir/adt
 
 
 SOURCES = Makefile.in array.c array.h cookies.h debug.c debug.h host.h obst.h \

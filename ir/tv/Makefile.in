@@ -8,7 +8,7 @@
 top_srcdir := @top_srcdir@
 srcdir = @srcdir@
 topdir = ../..
-subdir := tv
+subdir := ir/tv
 
 INSTALL_HEADERS = tv.h
 

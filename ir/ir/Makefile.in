@@ -8,7 +8,7 @@
 top_srcdir := @top_srcdir@
 srcdir = @srcdir@
 topdir = ../..
-subdir := ir
+subdir := ir/ir
 
 INSTALL_HEADERS = irprog.h irgraph.h irnode.h irmode.h irop.h ircons.h 		\
 		irflag.h irvrfy.h irgwalk.h irgmod.h iropt.h irdump.h 		\

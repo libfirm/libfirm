@@ -8,7 +8,7 @@
 top_srcdir := @top_srcdir@
 srcdir = @srcdir@
 topdir = ../..
-subdir := tr
+subdir := ir/tr
 
 INSTALL_HEADERS = mangle.h type.h entity.h type_or_entity.h typewalk.h
 

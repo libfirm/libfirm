@@ -8,7 +8,7 @@
 top_srcdir := @top_srcdir@
 srcdir = @srcdir@
 topdir = ../..
-subdir := debug
+subdir := ir/debug
 
 
 SOURCES = Makefile.in debinfo.c debinfo.h
