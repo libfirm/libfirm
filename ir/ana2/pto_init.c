@@ -199,6 +199,7 @@ static void reset_node_pto (ir_node *node, void *env)
 
     assert (alloc_pto->curr_pto);
   } break;
+  case (iro_Const):
   case (iro_SymConst): {
       /* nothing, leave as-is */
     } break;
@@ -226,7 +227,7 @@ static void init_pto (ir_node *node, void *env)
 
   switch (op) {
   case (iro_SymConst): {
-    if (mode_is_reference(get_irn_mode (node))) {
+    if (mode_is_reference (get_irn_mode (node))) {
       entity *ent = get_SymConst_entity (node);
       type   *tp = get_entity_type (ent);
       if (is_Class_type (tp) || is_Pointer_type (tp)) {
@@ -258,6 +259,17 @@ static void init_pto (ir_node *node, void *env)
                   OPNUM (node)));
   } break;
 
+  case (iro_Const): {
+    tarval *tv = get_Const_tarval (node);
+
+    /* only need 'NULL' pointer constants */
+    if (mode_P == get_tarval_mode (tv)) {
+      if (get_tarval_null (mode_P) == tv) {
+        pto_t *pto = new_pto (node);
+        set_node_pto (node, pto);
+      }
+    }
+  } break;
   case (iro_Load):
   case (iro_Call):
   case (iro_Phi):
@@ -405,7 +417,7 @@ void pto_reset_graph_pto (ir_graph *graph, int ctx_idx)
 
   /* HERE ("start"); */
 
-  irg_walk_graph (graph, reset_node_pto, NULL, &reset_env);
+  irg_walk_graph (graph, reset_node_pto, NULL, reset_env);
 
   /* HERE ("end"); */
   memset (reset_env, 0x00, sizeof (reset_env_t));
@@ -415,6 +427,9 @@ void pto_reset_graph_pto (ir_graph *graph, int ctx_idx)
 
 /*
   $Log$
+  Revision 1.16  2005/01/14 13:36:50  liekweg
+  don't put environments on the stack; handle consts
+
   Revision 1.15  2005/01/10 17:26:34  liekweg
   fixup printfs, don't put environments on the stack
 
