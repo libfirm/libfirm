@@ -1,3 +1,6 @@
+  31.7.2000 Chris
+  Fixed a bug, caused by the recursive use in type.h and entity.h.
+  Deleted the _TYPE_TYPEDEF_ and inserted the _ENTITY_TYPEDEF_ instead.
 
   20.7.2000 Goetz
   Fixed bug in optimize(). Returned Null instead n if

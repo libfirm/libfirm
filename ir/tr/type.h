@@ -183,14 +183,22 @@ or lowering phases.
 # include "common.h"
 # include "ident.h"
 # include "irmode.h"
-# include "entity.h"
+/*CS*/
+//# include "entity.h"
+
+#ifndef _ENTITY_TYPEDEF_
+#define _ENTITY_TYPEDEF_
+/* to resolve recursion between entity.h and type.h */
+typedef struct entity entity;
+#endif
 
 /* for recursive type definiton */
-#ifndef _TYPE_TYPEDEF_
-#define _TYPE_TYPEDEF_
+//#ifndef _TYPE_TYPEDEF_
+//#define _TYPE_TYPEDEF_
 /* to resolve recursion between entity.h and irgraph.h */
 typedef union type type;
-#endif
+//#endif
+
 
 /* visited flag to traverse the type information */
 extern unsigned long type_visited;

@@ -30,6 +30,7 @@
 # define _ENTITY_H_
 
 # include "ident.h"
+# include "type.h"
 
 /*******************************************************************/
 /** general                                                       **/
@@ -48,13 +49,20 @@ void init_entity (void);
 typedef struct ir_graph ir_graph;
 #endif
 
-#ifndef _TYPE_TYPEDEF_
-#define _TYPE_TYPEDEF_
-/* to resolve recursion between entity.h and irgraph.h */
-typedef union type type;
+#ifndef _ENTITY_TYPEDEF_
+#define _ENTITY_TYPEDEF_
+/* to resolve recursion between entity.h and type.h */
+typedef struct entity entity;
 #endif
 
-typedef struct entity entity;
+/*CS*/
+//#ifndef _TYPE_TYPEDEF_
+//#define _TYPE_TYPEDEF_
+/* to resolve recursion between entity.h and irgraph.h */
+//typedef union type type;
+//#endif
+
+//typedef struct entity entity;
 
 /* create a new entity */
 entity   *new_entity (type *owner, ident *name, type *type);
