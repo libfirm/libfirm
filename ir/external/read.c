@@ -30,6 +30,7 @@
 #include "read.h"
 #include "irprog.h"
 #include "irgraph.h"
+#include "pseudo_irg.h"
 #include "ircons.h"
 #include "irmode.h"
 #include "irdump.h"
@@ -1379,8 +1380,11 @@ static void create_abstract_firm(module_t *module, proc_t *proc, entity *fent)
      && peculiarity_existent == get_entity_peculiarity(fent)
      && "not an abstract entity");
   /* create irg in entity */
-  irg = new_ir_graph(fent, 0);
+  irg = new_pseudo_ir_graph(fent, 0);
   set_irg_inline_property(irg, irg_inline_forbidden);
+
+  /* If the spec says so: */
+  set_entity_visibility(fent, visibility_local);
 
   VERBOSE_PRINT((stdout, "create effects for %s\n",
          get_id_str(proc -> proc_ident)));
@@ -1629,11 +1633,26 @@ void create_abstraction(const char *filename)
   modules = NULL;
 }
 
+
+void free_abstraction(void) {
+  int i, n_pseudo_irgs = get_irp_n_pseudo_irgs();
+  for (i = 0; i < n_pseudo_irgs; ++i) {
+    ir_graph *p_irg = get_irp_pseudo_irg(i);
+    set_entity_visibility(get_irg_entity(p_irg), visibility_external_allocated);
+    // @@@ free_pseudo_ir_graph(p_irg);
+  }
+}
+
+
 /********************************************************************/
 
 
 /*
  * $Log$
+ * Revision 1.15  2004/11/11 09:28:32  goetz
+ * treat pseudo irgs special
+ * parse 'local' from xml files
+ *
  * Revision 1.14  2004/11/10 14:42:00  boesler
  * be more helpful if a method does not exist
  *

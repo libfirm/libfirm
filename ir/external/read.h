@@ -20,11 +20,17 @@
 /** read the file and build the graphs */
 void create_abstraction(const char *filename);
 
+void free_abstraction(void);
+
 
 #endif /* defined _READ_H_ */
 
 /*
   $Log$
+  Revision 1.8  2004/11/11 09:28:32  goetz
+  treat pseudo irgs special
+  parse 'local' from xml files
+
   Revision 1.7  2004/10/25 13:52:24  boesler
   seperated read.h (public interface) and read_t.h (types)
 

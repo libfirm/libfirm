@@ -19,12 +19,12 @@ srcdir = @srcdir@
 topdir = ../..
 subdir := ir/external
 
-INSTALL_HEADERS = read.h
+INSTALL_HEADERS = read.h pseudo_irg.h
 
 SOURCES = $(INSTALL_HEADERS)
 
 SOURCES += 	Makefile.in \
-		read.c
+		read.c pseudo_irg.c
 
 include $(topdir)/MakeRules
 
