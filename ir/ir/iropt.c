@@ -27,6 +27,7 @@
 # include "irflag_t.h"
 # include "firmstat.h"
 # include "irarch.h"
+# include "hashptr.h"
 
 /* Make types visible to allow most efficient access */
 # include "entity_t.h"
@@ -1914,8 +1915,6 @@ vt_cmp (const void *elt, const void *key)
   return 0;
 }
 
-#define ADDR_TO_VAL(p)  (((unsigned)(p)) >> 3)
-
 /*
  * Calculate a hash value of a node.
  */
@@ -1927,12 +1926,12 @@ ir_node_hash (ir_node *node)
 
   if (node->op == op_Const) {
     /* special value for const, as they only differ in their tarval. */
-    h = ADDR_TO_VAL(node->attr.con.tv);
-    h = 9*h + ADDR_TO_VAL(get_irn_mode(node));
+    h = HASHPTR(node->attr.con.tv);
+    h = 9*h + HASHPTR(get_irn_mode(node));
   } else if (node->op == op_SymConst) {
     /* special value for const, as they only differ in their symbol. */
-    h = ADDR_TO_VAL(node->attr.i.sym.type_p);
-    h = 9*h + ADDR_TO_VAL(get_irn_mode(node));
+    h = HASHPTR(node->attr.i.sym.type_p);
+    h = 9*h + HASHPTR(get_irn_mode(node));
   } else {
 
     /* hash table value = 9*(9*(9*(9*(9*arity+in[0])+in[1])+ ...)+mode)+code */
@@ -1940,13 +1939,13 @@ ir_node_hash (ir_node *node)
 
     /* consider all in nodes... except the block if not a control flow. */
     for (i =  is_cfop(node) ? -1 : 0;  i < irn_arity;  i++) {
-      h = 9*h + ADDR_TO_VAL(get_irn_intra_n(node, i));
+      h = 9*h + HASHPTR(get_irn_intra_n(node, i));
     }
 
     /* ...mode,... */
-    h = 9*h + ADDR_TO_VAL(get_irn_mode(node));
+    h = 9*h + HASHPTR(get_irn_mode(node));
     /* ...and code */
-    h = 9*h + ADDR_TO_VAL(get_irn_op(node));
+    h = 9*h + HASHPTR(get_irn_op(node));
   }
 
   return h;
