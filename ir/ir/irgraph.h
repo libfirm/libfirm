@@ -220,7 +220,7 @@ irg_loopinfo_state get_irg_loopinfo_state(ir_graph *irg);
 void set_irg_loopinfo_inconsistent(ir_graph *irg);
 
 
-/* A void * field to link arbritary information to the node. */
+ A void * field to link arbritary information to the node. */
 void set_irg_link (ir_graph *irg, void *thing);
 void *get_irg_link (ir_graph *irg);
 
