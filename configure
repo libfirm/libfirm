@@ -1314,23 +1314,16 @@ else
   enable_heapanalysis="no"
 fi;
 if test "$enable_heapanalysis" = "no"; then
-
-cat >>confdefs.h <<\_ACEOF
-#define DO_HEAPANALYSIS 0
-_ACEOF
-
   echo "$as_me:$LINENO: result: heapanalysis disabled" >&5
 echo "${ECHO_T}heapanalysis disabled" >&6
 else
-
-cat >>confdefs.h <<\_ACEOF
+  cat >>confdefs.h <<\_ACEOF
 #define DO_HEAPANALYSIS 1
 _ACEOF
 
   echo "$as_me:$LINENO: result: heapanalysis enabled" >&5
 echo "${ECHO_T}heapanalysis enabled" >&6
 fi
-
 
 
 # Check whether --enable-libiberty or --disable-libiberty was given.
