@@ -112,7 +112,12 @@ new_rd_Phi (dbg_info* db, ir_graph *irg, ir_node *block, int arity, ir_node **in
 
   res->attr.phi_backedge = new_backedge_arr(irg->obst, arity);
 
-  for (i = arity-1; i >= 0; i--) if (intern_get_irn_op(in[i]) == op_Unknown) has_unknown = true;
+  for (i = arity-1; i >= 0; i--)
+    if (intern_get_irn_op(in[i]) == op_Unknown) {
+      has_unknown = true;
+      break;
+    }
+
   if (!has_unknown) res = optimize_node (res);
   irn_vrfy_irg (res, irg);
 
@@ -188,7 +193,7 @@ new_rd_defaultProj (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *arg,
            long max_proj)
 {
   ir_node *res;
-  assert((arg->op==op_Cond) && (get_irn_mode(arg->in[1]) == mode_Iu));
+  assert(arg->op == op_Cond);
   arg->attr.c.kind = fragmentary;
   arg->attr.c.default_proj = max_proj;
   res = new_rd_Proj (db, irg, block, arg, mode_X, max_proj);
@@ -1548,8 +1553,10 @@ get_frag_arr (ir_node *n) {
 static void
 set_frag_value(ir_node **frag_arr, int pos, ir_node *val) {
   if (!frag_arr[pos]) frag_arr[pos] = val;
-  if (frag_arr[current_ir_graph->n_loc - 1])
-    set_frag_value (get_frag_arr(frag_arr[current_ir_graph->n_loc - 1]), pos, val);
+  if (frag_arr[current_ir_graph->n_loc - 1]) {
+    ir_node **arr = get_frag_arr(frag_arr[current_ir_graph->n_loc - 1]);
+    set_frag_value(arr, pos, val);
+  }
 }
 
 static ir_node *
@@ -1864,7 +1871,7 @@ ir_node *
 new_d_defaultProj (dbg_info* db, ir_node *arg, long max_proj)
 {
   ir_node *res;
-  assert((arg->op==op_Cond) && (get_irn_mode(arg->in[1]) == mode_Iu));
+  assert(arg->op == op_Cond);
   arg->attr.c.kind = fragmentary;
   arg->attr.c.default_proj = max_proj;
   res = new_Proj (arg, mode_X, max_proj);
