@@ -5,6 +5,7 @@
 
 #include <stdlib.h>
 
+#include "bitset.h"
 #include "debug.h"
 #include "bechordal.h"
 
@@ -12,14 +13,11 @@
 #include "bephicongr_t.h"
 #include "bephicoal_t.h"
 
-
-static firm_dbg_module_t *dbgmod = NULL;
-
+static firm_dbg_module_t *dbgphi = NULL;
 
 void be_phi_coal_init(void) {
-	dbgmod = firm_dbg_register("Phi coalescing");
-	firm_dbg_set_mask(dbgmod, 1);
-	DBG((dbgmod, 1, "Phi coalescing dbg enabled"));
+	dbgphi = firm_dbg_register("Phi coalescing");
+	firm_dbg_set_mask(dbgphi, 1);
 }
 
 
@@ -60,7 +58,7 @@ static void coalesce_locals(pset *phi_class, dominfo_t *dominfo) {
 //	members = pset_to_array(phi_class);
 
 	/* how many phi nodes are in this class? */
-	DBG((dbgmod, 1, "Checking phi count\n"));
+	DBG((dbgphi, 1, "Checking phi count\n"));
 	phi_count = 0;
 	for (n = (ir_node *)pset_first(pc); n; n = (ir_node *)pset_next(pc)) {
 		if (is_Phi(n)) {
@@ -70,28 +68,24 @@ static void coalesce_locals(pset *phi_class, dominfo_t *dominfo) {
 	}
 
 	if (phi_count > 1) {
-		DBG((dbgmod, 1, "Dropped: Too many phis\n"));
+		DBG((dbgphi, 1, "Dropped: Too many phis\n"));
 		goto exit;
 	}
 	assert(phi_count == 1 && phi);
 
 
 	/* where is the definition of the arguments? */
-	DBG((dbgmod, 1, "Checking arg def\n"));
+	DBG((dbgphi, 1, "Checking arg def\n"));
 	arity = get_irn_arity(phi);
 	for (i = 0; i < arity; ++i) {
         ir_node *block_of_arg, *block_ith_pred;
 		ir_node *arg = get_irn_n(phi, i);
 
-		/* TODO: check next few lines after const node copy placement */
-//		if (iro_Const == get_irn_opcode(arg) && CONSTS_SPLIT_PHI_CLASSES)
-//			continue;
-
 		block_of_arg = get_nodes_block(arg);
 		block_ith_pred = get_nodes_block(get_irn_n(get_nodes_block(phi), i));
 
 		if (block_of_arg != block_ith_pred) {
-			DBG((dbgmod, 1, "Dropped: Arg-def not in pred-block\n"));
+			DBG((dbgphi, 1, "Dropped: Arg-def not in pred-block\n"));
 			goto exit;
 		}
 	}
@@ -100,30 +94,30 @@ static void coalesce_locals(pset *phi_class, dominfo_t *dominfo) {
 	/* determine a greedy set of non-interfering members
 	 * crucial: starting with the phi node
 	 */
-	DBG((dbgmod, 1, "Building greedy non-interfering set\n"));
+	DBG((dbgphi, 1, "Building greedy non-interfering set\n"));
 	intffree = pset_new_ptr(4);
 
 	pset_remove_ptr(pc, phi);
 	pset_insert_ptr(intffree, phi);
 
 	while (m = (ir_node *)pset_first(pc), m) {
-		DBG((dbgmod, 1, "Checking %n\n", m));
+		DBG((dbgphi, 1, "Checking %n\n", m));
 		pset_break(pc);
 		pset_remove_ptr(pc, m);
 
 		intf_det = 0;
 		for (n = (ir_node *)pset_first(intffree); n; n = (ir_node *)pset_next(intffree)) {
-			DBG((dbgmod, 1, "\t%n", n));
+			DBG((dbgphi, 1, "\t%n", n));
 			if (phi_ops_interfere(m, n)) {
-				DBG((dbgmod, 1, "\tinterf\n"));
+				DBG((dbgphi, 1, "\tinterf\n"));
 				intf_det = 1;
 			} else {
-				DBG((dbgmod, 1, "\tclean\n"));
+				DBG((dbgphi, 1, "\tclean\n"));
 			}
 		}
 
 		if (!intf_det) {
-			DBG((dbgmod, 1, "Added to set\n"));
+			DBG((dbgphi, 1, "Added to set\n"));
 			pset_insert_ptr(intffree, m);
 		}
 	}
@@ -131,33 +125,36 @@ static void coalesce_locals(pset *phi_class, dominfo_t *dominfo) {
 	/*
 	 * color the non interfering set
 	 */
-	DBG((dbgmod, 1, "Coloring...\n"));
+	DBG((dbgphi, 1, "Coloring...\n"));
 	phi_col = get_irn_color(phi);
-	DBG((dbgmod, 1, "phi-color: %d\n", grnfxt));
+	DBG((dbgphi, 1, "phi-color: %d\n", phi_col));
 
 	/* check if phi color is free in blocks of all members */
 	allfree = 1;
 	for (n = (ir_node *)pset_first(intffree); n; n = (ir_node *)pset_next(intffree)) {
 		ir_node *block;
+		bitset_t *used_colors;
+
 		if (n == phi)
 			continue;
 
 		block = get_nodes_block(n);
-/* TODO
-		if (! COLORFREE(block, phi_col)) {
+
+		used_colors = get_ra_block_info(block)->used_colors;
+
+		if (bitset_is_set(used_colors, phi_col)) {
 			allfree = 0;
 			break;
 		}
-*/
 	}
-/*
+
 	if (allfree) {
 		for (n = (ir_node *)pset_first(intffree); n; n = (ir_node *)pset_next(intffree))
 			set_irn_color(n, phi_col);
+		printf("KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK\n");
 	} else {
 
 	}
-*/
 
 exit:
 	del_pset(pc);
@@ -165,7 +162,7 @@ exit:
 }
 
 
-void be_phi_coalesce_locals(pset *all_phi_classes, dominfo_t *dominfo) {
+void be_phi_coalesce(pset *all_phi_classes, dominfo_t *dominfo) {
 	pset *phi_class;
 
 	for (phi_class = (pset *)pset_first(all_phi_classes); phi_class; phi_class = (pset *)pset_next(all_phi_classes))

@@ -197,7 +197,7 @@ static void dump_file(char *filename, int stat[ASIZE]) {
 	int i;
 
 	if (! (file = fopen(filename, "wt"))) {
-		//TODO DBG((dbgmod, 0, "Cannot open file for writing\n"));
+		fprintf(stderr, "Cannot open file for writing\n");
 		return;
 	}
 
@@ -266,7 +266,7 @@ void phi_stat_dump_pretty(char *filename) {
 	FILE *out;
 
 	if (! (out = fopen(filename, "wt"))) {
-		//TODO DBG((dbgmod, 0, "Cannot open file for writing\n"));
+		fprintf(stderr, "Cannot open file for writing\n");
 		return;
 	}
 

@@ -10,15 +10,8 @@
 #include "irgraph.h"
 #include "irnode.h"
 
-typedef struct _domtree_t {
-	ir_node *block;
-	struct _domtree_t *up, *right, *down;
-} domtree_t;
-
-typedef struct _dominfo_t {
-	domtree_t *root;
-	pmap *b2dom;
-} dominfo_t;
+typedef struct _domtree_t domtree_t;
+typedef struct _dominfo_t dominfo_t;
 
 dominfo_t *domtree_create(ir_graph *irg);
 domtree_t *domtree_find(dominfo_t *dom, ir_node *block);

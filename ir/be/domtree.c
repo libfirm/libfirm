@@ -10,6 +10,17 @@
 #include "domtree.h"
 
 
+struct _domtree_t {
+	ir_node *block;
+	struct _domtree_t *up, *right, *down;
+};
+
+struct _dominfo_t {
+	domtree_t *root;
+	pmap *b2dom;
+};
+
+
 domtree_t *domtree_find(dominfo_t *dom, ir_node *block) {
 	assert(is_Block(block));
 	return (domtree_t *)pmap_find(dom->b2dom, block);

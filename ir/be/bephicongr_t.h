@@ -6,9 +6,8 @@
 #ifndef _BEPHICONGR_T_H
 #define _BEPHICONGR_T_H
 
-#include "irnode.h"
 #include "pset.h"
-
+#include "irnode.h"
 
 typedef struct _phi_info_t {
 	ir_node *phi;      			   /* only set in args of phi nodes (which could be a phi itslef). Points to a phi node or NULL */
@@ -23,11 +22,8 @@ extern size_t phi_irn_data_offset;
  * A non zero value results in splitting phi congruence
  * classes at all const nodes (except they do share
  * some non-const nodes too)
- *
- * A non zero value can only be set if copies of const
- * nodes are placed correctly.
  */
-#define CONSTS_SPLIT_PHI_CLASSES 1
+#define CONSTS_SPLIT_PHI_CLASSES 0
 #define get_irn_phi_info(irn)   get_irn_data(irn, phi_info_t, phi_irn_data_offset)
 #define get_phi_class(irn)      get_irn_phi_info(irn)->phi_class /* Only for phi nodes */
 
