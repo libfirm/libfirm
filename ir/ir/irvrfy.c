@@ -34,12 +34,12 @@
 #else
 #define ASSERT_AND_RET(expr, string, ret) \
 do { \
-  bad_msg = #expr " && " string; \
   if (opt_do_node_verification == NODE_VERIFICATION_ON) \
     assert((expr) && string); \
   if (!(expr)) { \
     if (opt_do_node_verification == NODE_VERIFICATION_REPORT) \
       fprintf(stderr, #expr " : " string "\n"); \
+    bad_msg = #expr " && " string; \
     return (ret); \
   } \
 } while(0)
