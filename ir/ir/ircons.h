@@ -1182,18 +1182,10 @@ ir_node *new_r_Bad    ();
    nodes they construct. */
 void switch_block (ir_node *target);
 
-/* Chris: please rename the Block constructor:
-   new_Block to new_immBlock
-   and add a new one so dass das dann so aussieht:
-   passe die Beispeilprogramme an! */
-#if 0
 /* Constructs a Block with a fixed number of predecessors.
    Does set current_block.  Can be used with automatic Phi
    node construction. */
-ir_node *new_Block(int arity, ir_node **in);     /* creates mature Block */
-#else
-ir_node *new_Block  (void);
-#endif
+ir_node *new_Block(int arity, ir_node **in);
 ir_node *new_Start  (void);
 ir_node *new_End    (void);
 ir_node *new_Jmp    (void);

@@ -90,24 +90,24 @@ int main(int argc, char **argv)
   mature_block(get_irg_current_block(irg));
 
   /* end block to add jmps */
-  endBlock = new_Block();
+  endBlock = new_immBlock();
 
   /* Block 1 */
-  Block1 = new_Block();
+  Block1 = new_immBlock();
   add_in_edge(Block1, t);
   mature_block(Block1);
   jmp = new_Jmp();
   add_in_edge(endBlock, jmp);
 
   /* Block 2 */
-  Block2 = new_Block();
+  Block2 = new_immBlock();
   add_in_edge(Block2, f);
   mature_block(Block2);
   jmp = new_Jmp();
   add_in_edge(endBlock, jmp);
 
   /* dead Block */
-  deadBlock = new_Block();
+  deadBlock = new_immBlock();
   mature_block(deadBlock);
   jmp = new_Jmp();
   add_in_edge(endBlock, jmp);

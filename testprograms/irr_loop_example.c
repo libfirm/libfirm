@@ -84,13 +84,13 @@ int main(int argc, char **argv)
   t = new_Proj(cond, mode_X, 1);
   mature_block(get_irg_current_block(irg));
 
-  loopBlock1 = new_Block();
+  loopBlock1 = new_immBlock();
   add_in_edge(loopBlock1, t);
   cond = new_Cond(new_Proj(new_Cmp(expr, c2), mode_b, Eq));
   f_l1 = new_Proj(cond, mode_X, 0);
   t_l1 = new_Proj(cond, mode_X, 1);
 
-  loopBlock2 = new_Block();
+  loopBlock2 = new_immBlock();
   add_in_edge(loopBlock2, f);
   cond = new_Cond(new_Proj(new_Cmp(expr, c3), mode_b, Eq));
   f_l2 = new_Proj(cond, mode_X, 0);
@@ -101,7 +101,7 @@ int main(int argc, char **argv)
   mature_block(loopBlock1);
   mature_block(loopBlock2);
 
-  new_Block();
+  new_immBlock();
   add_in_edge(get_irg_current_block(irg), f_l2);
   add_in_edge(get_irg_current_block(irg), f_l1);
   {

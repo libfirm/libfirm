@@ -65,10 +65,10 @@ new_ir_graph (entity *ent, int params)
   set_entity_irg(ent, res);
 
   /** Nodes needed in every graph **/
-  res->end_block = new_Block ();
+  res->end_block = new_immBlock ();
   res->end       = new_End ();
 
-  res->start_block = new_Block ();
+  res->start_block = new_immBlock ();
   res->start   = new_Start ();
   res->bad     = new_ir_node (res, res->start_block, op_Bad, mode_T, 0, NULL);
 
@@ -87,7 +87,7 @@ new_ir_graph (entity *ent, int params)
   mature_block (res->current_block);
 
   /** Make a block to start with **/
-  first_block = new_Block ();
+  first_block = new_immBlock ();
   add_in_edge (first_block, projX);
 
   return res;

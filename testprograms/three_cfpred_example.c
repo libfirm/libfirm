@@ -94,10 +94,10 @@ int main(int argc, char **argv)
   mature_block(get_irg_current_block(irg));
 
   /* end block to add jmps */
-  endBlock = new_Block();
+  endBlock = new_immBlock();
 
   /* Block 1 */
-  Block1 = new_Block();
+  Block1 = new_immBlock();
   add_in_edge(Block1, t);
   mature_block(Block1);
   set_value(0, new_Const (mode_i, tarval_from_long (mode_i, 5)));
@@ -105,7 +105,7 @@ int main(int argc, char **argv)
   add_in_edge(endBlock, jmp);
 
   /* scndCondBlock */
-  scndCondBlock = new_Block();
+  scndCondBlock = new_immBlock();
   add_in_edge(scndCondBlock, f);
   mature_block(scndCondBlock);
   c1 = new_Const (mode_i, tarval_from_long (mode_i, 3));
@@ -115,14 +115,14 @@ int main(int argc, char **argv)
   mature_block(get_irg_current_block(irg));
 
   /* Block 2 */
-  Block2 = new_Block();
+  Block2 = new_immBlock();
   add_in_edge(Block2, f);
   mature_block(Block2);
   jmp = new_Jmp();
   add_in_edge(endBlock, jmp);
 
   /* Block 3 */
-  Block3 = new_Block();
+  Block3 = new_immBlock();
   add_in_edge(Block3, t);
   mature_block(Block3);
   jmp = new_Jmp();

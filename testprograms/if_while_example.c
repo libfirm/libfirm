@@ -72,21 +72,21 @@ main(void)
   t = new_Proj (x, mode_X, 1);
 
   /* generate and fill the then block */
-  r = new_Block ();
+  r = new_immBlock ();
   add_in_edge (r, t);
   set_value (0, new_Const (mode_I, tarval_from_long (mode_i, 2)));
   mature_block (r);
   x = new_Jmp ();
 
   /* generate the fall through block and add all cfg edges */
-  r = new_Block ();
+  r = new_immBlock ();
   add_in_edge (r, f);
   add_in_edge (r, x);
   mature_block (r);
   x = new_Jmp ();
 
   /* generate a block for the loop header and the conditional branch */
-  r = new_Block ();
+  r = new_immBlock ();
   add_in_edge (r, x);
   x = new_Cond (new_Proj(new_Cmp(new_Const (mode_I, tarval_from_long (mode_i, 0)),
                                  new_Const (mode_I, tarval_from_long (mode_i, 0))),
@@ -95,7 +95,7 @@ main(void)
   t = new_Proj (x, mode_X, 1);
 
   /* generate the block for the loop body */
-  b = new_Block ();
+  b = new_immBlock ();
   add_in_edge (b,t);
   x = new_Jmp ();
   add_in_edge (r, x);
@@ -110,7 +110,7 @@ main(void)
   mature_block (b);
 
   /* generate the return block */
-  r = new_Block ();
+  r = new_immBlock ();
   add_in_edge (r, f);
   mature_block (r);
 

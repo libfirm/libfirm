@@ -91,7 +91,7 @@ main(void)
   mature_block (get_irg_current_block(irg));
 
   /* a loop body */
-  r = new_Block ();
+  r = new_immBlock ();
   add_in_edge (r, x);
 
   /* exchange the content of the two variables. Exceptions not cached. */
@@ -121,7 +121,7 @@ main(void)
   mature_block(r);
 
   /* generate the block the loop exits to */
-  r = new_Block ();
+  r = new_immBlock ();
   add_in_edge (r, x);
 
   /* generate the return block and return the content of VAR_A */

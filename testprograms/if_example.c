@@ -75,7 +75,7 @@ main(void)
   t = new_Proj (x, mode_X, 1);
 
   /* generate and fill the then block */
-  r = new_Block ();
+  r = new_immBlock ();
   add_in_edge (r, t);
   a = new_Sub(get_value(a_pos, mode_i),
               new_Const (mode_i, tarval_from_long (mode_i, 2)),
@@ -86,7 +86,7 @@ main(void)
   x = new_Jmp ();
 
   /* generate the fall through block and add all cfg edges */
-  r = new_Block ();
+  r = new_immBlock ();
   add_in_edge (r, f);
   add_in_edge (r, x);
   mature_block (r);

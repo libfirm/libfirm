@@ -605,7 +605,7 @@ new_End (void)
   return res;
 }
 
-#if 0
+#if 1
 /* Constructs a Block with a fixed number of predecessors.
    Does set current_block.  Can be used with automatic Phi
    node construction. */

@@ -84,21 +84,21 @@ int main(int argc, char **argv)
   mature_block (get_irg_current_block(irg));
 
   /* generate and fill the then block */
-  b = new_Block ();
+  b = new_immBlock ();
   add_in_edge (b, t);
   set_value (0, get_value(1, mode_i));
   mature_block (b);
   x_then = new_Jmp ();
 
   /* generate and fill the else block */
-  b = new_Block ();
+  b = new_immBlock ();
   add_in_edge (b, f);
   set_value (1, new_Const (mode_i, tarval_from_long (mode_i, 2)));
   mature_block (b);
   x_else = new_Jmp ();
 
   /* generate the join block and add all cfg edges */
-  b = new_Block ();
+  b = new_immBlock ();
   add_in_edge (b, x_then);
   add_in_edge (b, x_else);
 
