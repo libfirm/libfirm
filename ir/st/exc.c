@@ -110,8 +110,6 @@ bool is_handler_entry (ir_graph *graph, ir_node *block)
   bool is_entry = true;
   int  i        = 0;
   int  n        = get_irn_arity (block);
-  ir_node *node = 0;
-  ir_op* op     = op_Bad;
 
   if (exc_invalid == get_Block_exc (block))
 	{

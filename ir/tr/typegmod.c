@@ -13,7 +13,6 @@
 # include "irmode.h"
 
 inline void exchange_types(type *old_type, type *new_type) {
-  int i;
   /* Deallocate datastructures not directly contained in the
      old type.  We must do this now as it is the latest point
      where we know the original kind of type.
