@@ -46,6 +46,7 @@ typedef enum {
   HOOK_OPT_REASSOC,     /**< reassociation */
   HOOK_OPT_POLY_CALL,   /**< polymorphic call optimization */
   HOOK_OPT_IF_CONV,     /**< an if conversion was tried */
+  HOOK_OPT_FUNC_CALL,   /**< a real function call was removed */
   HOOK_LOWERED,         /**< lowered */
   HOOK_OPT_LAST
 } hook_opt_kind;
@@ -87,6 +88,7 @@ typedef struct hook_entry {
     void (*_hook_dead_node_elim_start)(void *context, ir_graph *irg);
     void (*_hook_dead_node_elim_stop)(void *context, ir_graph *irg);
     void (*_hook_if_conversion)(void *context, ir_graph *irg, ir_node *phi, int pos, ir_node *mux, if_result_t reason);
+    void (*_hook_func_call)(void *context, ir_graph *irg, ir_node *call);
     void (*_hook_arch_dep_replace_mul_with_shifts)(void *context, ir_node *irn);
     void (*_hook_arch_dep_replace_div_by_const)(void *context, ir_node *irn);
     void (*_hook_arch_dep_replace_mod_by_const)(void *context, ir_node *irn);
@@ -124,6 +126,7 @@ typedef enum {
   hook_dead_node_elim_start,
   hook_dead_node_elim_stop,
   hook_if_conversion,
+  hook_func_call,
   hook_arch_dep_replace_mul_with_shifts,
   hook_arch_dep_replace_div_by_const,
   hook_arch_dep_replace_mod_by_const,
@@ -187,6 +190,8 @@ extern hook_entry_t *hooks[hook_last];
 #define hook_dead_node_elim_stop(irg)     hook_exec(hook_dead_node_elim_stop, (ctx, irg))
 #define hook_if_conversion(irg, phi, pos, mux, reason) \
   hook_exec(hook_if_conversion, (ctx, irg, phi, pos, mux, reason))
+#define hook_func_call(irg, call) \
+  hook_exec(hook_func_call, (ctx, irg, call))
 #define hook_arch_dep_replace_mul_with_shifts(irn) \
   hook_exec(hook_arch_dep_replace_mul_with_shifts, (ctx, irn))
 #define hook_arch_dep_replace_div_by_const(irn) \
