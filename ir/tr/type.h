@@ -554,9 +554,12 @@ entity *get_method_value_res_ent(type *method, int pos);
  * non_variadic.
  */
 typedef enum variadicity {
-  non_variadic,		/**< non variadic */
-  variadic		/**< variadic */
+  variadicity_non_variadic,	/**< non variadic */
+  variadicity_variadic		/**< variadic */
 } variadicity;
+
+/** Returns the null-terminated name of this variadicity. */
+const char *get_variadicity_name(variadicity vari);
 
 /** Returns the variadicity of a method. */
 variadicity get_method_variadicity(type *method);

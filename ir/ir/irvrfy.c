@@ -365,7 +365,7 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       /* Compare arguments of node with those of type */
       mt = get_Call_type(n);
 
-      if (get_method_variadicity(mt) == variadic) {
+      if (get_method_variadicity(mt) == variadicity_variadic) {
         ASSERT_AND_RET(
             get_Call_n_params(n) >= get_method_n_params(mt),
             "Number of args for Call doesn't match number of args in variadic type.",

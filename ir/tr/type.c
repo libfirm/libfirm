@@ -858,7 +858,7 @@ INLINE type *new_type_method (ident *name, int n_param, int n_res) {
   res->attr.ma.n_res        = n_res;
   res->attr.ma.res_type     = (type **) xmalloc (sizeof (type *) * n_res);
   res->attr.ma.value_ress   = NULL;
-  res->attr.ma.variadicity  = non_variadic;
+  res->attr.ma.variadicity  = variadicity_non_variadic;
 
   return res;
 }
@@ -941,6 +941,19 @@ entity *get_method_value_res_ent(type *method, int pos) {
   assert((get_entity_type(get_struct_member(method->attr.ma.value_ress, pos)) != method->attr.ma.value_ress)
 	 && "result type not yet set");
   return get_struct_member(method->attr.ma.value_ress, pos);
+}
+
+/* Returns the null-terminated name of this variadicity. */
+const char *get_variadicity_name(variadicity vari)
+{
+#define X(a)	case a: return #a
+  switch (vari) {
+    X(variadicity_non_variadic);
+    X(variadicity_variadic);
+    default:
+      return "BAD VALUE";
+  }
+#undef X
 }
 
 variadicity get_method_variadicity(type *method)
