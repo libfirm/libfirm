@@ -25,6 +25,7 @@
 int
 main(void)
 {
+  type     *prim_t_int;
   ir_graph *irg;
   type *owner;
   type *method;    /* the type of this method */
@@ -35,6 +36,9 @@ main(void)
 
   init_firm ();
 
+  /*** Make basic type information for primitive type int. ***/
+  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_i);
+
   /* Try both optimizations: */
   set_opt_constant_folding(1);
   set_opt_cse(1);
@@ -42,6 +46,8 @@ main(void)
 
   owner = new_type_class (id_from_str ("CONST_EVAL_EXAMPLE", 18));
   method = new_type_method (id_from_str("main", 4), 0, 2);
+  set_method_res_type(method, 0, prim_t_int);
+  set_method_res_type(method, 1, prim_t_int);
   ent = new_entity (owner, id_from_str ("main", 4), method);
 
   irg = new_ir_graph (ent, 4);

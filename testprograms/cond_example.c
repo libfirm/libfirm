@@ -23,6 +23,7 @@
 
 int main(int argc, char **argv)
 {
+  type     *prim_t_int;
   ir_graph *irg;       /* this variable contains the irgraph */
   type     *owner;     /* the class in which this method is defined */
   type     *method;    /* the type of this method */
@@ -34,6 +35,9 @@ int main(int argc, char **argv)
   /* init library */
   init_firm ();
 
+  /*** Make basic type information for primitive type int. ***/
+  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_i);
+
   /* FIRM was designed for oo languages where all methods belong to a class.
    * For imperative languages like C we view a file as a large class containing
    * all functions as methods in this file.
@@ -44,7 +48,9 @@ int main(int argc, char **argv)
 #define ENTITYNAME "main"
 
   owner = new_type_class (id_from_str (CLASSNAME, strlen(CLASSNAME)));
-  method = new_type_method (id_from_str("main", 4), 0, 2);
+  method = new_type_method (id_from_str("main", 4), 1, 1);
+  set_method_param_type(method, 0, prim_t_int);
+  set_method_res_type(method, 0, prim_t_int);
   ent = new_entity (owner, id_from_str (ENTITYNAME, strlen(ENTITYNAME)), method);
 
 

@@ -47,6 +47,7 @@ int main(int argc, char **argv)
   ir_graph *irg;          /* this variable contains the irgraph */
   type *owner;      /* the class in which this method is defined */
   type *proc_main; /* type information for the method main */
+  type     *prim_t_int;
   entity *ent;            /* represents this method as entity of owner */
   ir_node *c1, *c2, *cond, *f, *t, *endBlock, *Block1, *jmp, *Block2,
           *deadBlock, *x;
@@ -55,6 +56,9 @@ int main(int argc, char **argv)
   init_firm ();
 
   set_opt_cse(0);  /* there is a bug: first and start block are cse!! @@@ */
+
+  /*** Make basic type information for primitive type int. ***/
+  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_i);
 
   /* FIRM was designed for oo languages where all methods belong to a class.
    * For imperative languages like C we view a file as a large class containing
@@ -65,12 +69,13 @@ int main(int argc, char **argv)
 #define CLASSNAME "DEAD_BLOCK"
 #define METHODNAME "main"
 #define NRARGS 0
-#define NRES 0
+#define NRES 1
   printf("\nCreating an IR graph: %s...\n", CLASSNAME);
 
   owner = new_type_class (id_from_str (CLASSNAME, strlen(CLASSNAME)));
   proc_main = new_type_method(id_from_str(METHODNAME, strlen(METHODNAME)),
                               NRARGS, NRES);
+  set_method_res_type(proc_main, 0, prim_t_int);
   ent = new_entity (owner,
                     id_from_str (METHODNAME, strlen(METHODNAME)),
                     proc_main);

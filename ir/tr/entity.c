@@ -283,7 +283,6 @@ set_compound_ent_value(entity *ent, ir_node *val, entity *member, int pos) {
   ent->val_ents[pos+1] = member;
 }
 
-
 inline int
 get_entity_offset (entity *ent) {
   return ent->offset;

@@ -147,7 +147,7 @@ main(void)
   set_store(new_Proj(call, mode_M, 0));
   /* Get the result of the procedure: select the result tuple from the call,
      then the proper result from the tuple. */
-  res = new_Proj(new_Proj(call, mode_T, 2), mode_I, 0);
+  res = new_Proj(new_Proj(call, mode_T, 2), mode_i, 0);
 
   /* return the results of procedure main */
   {
@@ -174,7 +174,7 @@ main(void)
   /* get the procedure parameter */
   self = new_Proj(get_irg_args(set_a_irg), mode_p, 0);
   set_value(self_pos, self);
-  par1 = new_Proj(get_irg_args(set_a_irg), mode_I, 1);
+  par1 = new_Proj(get_irg_args(set_a_irg), mode_i, 1);
   set_value(e_pos, par1);
   /* Create and select the entity to set */
   a_ptr = new_simpleSel(get_store(), self, a_e);
@@ -201,18 +201,18 @@ main(void)
 
   /* get the procedure parameter */
   self = new_Proj(get_irg_args(c_irg), mode_p, 0);
-  par1 = new_Proj(get_irg_args(c_irg), mode_I, 1);
+  par1 = new_Proj(get_irg_args(c_irg), mode_i, 1);
 
   /* Select the entity and load the value */
   a_ptr = new_simpleSel(get_store(), self, a_e);
   a_val = new_Load(get_store(), a_ptr);
   set_store(new_Proj(a_val, mode_M, 0));
-  a_val = new_Proj(a_val, mode_I, 1);
+  a_val = new_Proj(a_val, mode_i, 2);
 
   /* return the result */
   {
     ir_node *in[1];
-    in[0] = new_Add(par1, a_val, mode_I);
+    in[0] = new_Add(par1, a_val, mode_i);
 
     x = new_Return (get_store (), 1, in);
   }

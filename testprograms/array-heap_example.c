@@ -109,7 +109,7 @@ main(void)
   /*   allocate and generate the Proj nodes. */
   array     = new_Alloc(get_store(), arr_size, (type*)array_type, stack_alloc);
   set_store(new_Proj(array, mode_M, 0));   /* make the changed memory visible */
-  array_ptr = new_Proj(array, mode_p, 1);  /* remember the pointer to the array */
+  array_ptr = new_Proj(array, mode_p, 2);  /* remember the pointer to the array */
 
   /* Now the "real" program: */
   /* Load element 3 of the array. For this first generate the pointer to this
@@ -125,7 +125,7 @@ main(void)
   }
   val = new_Load(get_store(), elt);
   set_store(new_Proj(val, mode_M, 0));
-  val = new_Proj(val, mode_i, 1);
+  val = new_Proj(val, mode_i, 2);
 
   /* return the result of procedure main */
   {

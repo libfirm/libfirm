@@ -55,6 +55,7 @@ main(void)
   ir_graph *irg;
   type     *owner;
   type     *method;    /* the type of this method */
+  type     *prim_t_int;
   entity   *ent;
   ir_node  *a, *b, *x, *y, *r;
 
@@ -64,9 +65,13 @@ main(void)
 
   set_opt_dead_node_elimination (1);
 
+  /*** Make basic type information for primitive type int. ***/
+  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_I);
+
   /* a class to get started with, containing the main procedure */
   owner = new_type_class (id_from_str ("MEMORY_EXAMPLE", 14));
-  method = new_type_method (id_from_str("main", 4), 0, 2);
+  method = new_type_method (id_from_str("main", 4), 0, 1);
+  set_method_res_type(method, 0, prim_t_int);
   ent = new_entity (owner, id_from_str ("main", 4), method);
 
   /* Generates start and end blocks and nodes and a first, initial block */

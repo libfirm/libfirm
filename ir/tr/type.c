@@ -232,10 +232,12 @@ int     get_class_n_member (type *clss) {
 }
 entity *get_class_member   (type *clss, int pos) {
   assert(clss && (clss->type_op == type_class));
+  assert(pos >= 0 && pos < get_class_n_member(clss));
   return clss->attr.ca.members[pos+1];
 }
 void    set_class_member   (type *clss, entity *member, int pos) {
   assert(clss && (clss->type_op == type_class));
+  assert(pos >= 0 && pos < get_class_n_member(clss));
   clss->attr.ca.members[pos+1] = member;
 }
 void    remove_class_member(type *clss, entity *member) {
@@ -266,10 +268,12 @@ int     get_class_n_subtype (type *clss) {
 }
 type   *get_class_subtype   (type *clss, int pos) {
   assert(clss && (clss->type_op == type_class));
+  assert(pos >= 0 && pos < get_class_n_subtype(clss));
   return clss->attr.ca.subtypes[pos+1] = skip_tid(clss->attr.ca.subtypes[pos+1]);
 }
 void    set_class_subtype   (type *clss, type *subtype, int pos) {
   assert(clss && (clss->type_op == type_class));
+  assert(pos >= 0 && pos < get_class_n_subtype(clss));
   clss->attr.ca.subtypes[pos+1] = subtype;
 }
 void    remove_class_subtype(type *clss, type *subtype) {
@@ -301,10 +305,12 @@ int     get_class_n_supertype (type *clss) {
 }
 type   *get_class_supertype   (type *clss, int pos) {
   assert(clss && (clss->type_op == type_class));
+  assert(pos >= 0 && pos < get_class_n_supertype(clss));
   return clss->attr.ca.supertypes[pos+1] = skip_tid(clss->attr.ca.supertypes[pos+1]);
 }
 void    set_class_supertype   (type *clss, type *supertype, int pos) {
   assert(clss && (clss->type_op == type_class));
+  assert(pos >= 0 && pos < get_class_n_supertype(clss));
   clss->attr.ca.supertypes[pos+1] = supertype;
 }
 void    remove_class_supertype(type *clss, type *supertype) {
@@ -350,10 +356,12 @@ int     get_struct_n_member (type *strct) {
 }
 entity *get_struct_member   (type *strct, int pos) {
   assert(strct && (strct->type_op == type_struct));
+  assert(pos >= 0 && pos < get_struct_n_member(strct));
   return strct->attr.sa.members[pos+1];
 }
 void    set_struct_member   (type *strct, int pos, entity *member) {
   assert(strct && (strct->type_op == type_struct));
+  assert(pos >= 0 && pos < get_struct_n_member(strct));
   strct->attr.sa.members[pos+1] = member;
 }
 void    remove_struct_member(type *strct, entity *member) {
@@ -400,10 +408,12 @@ int   get_method_n_params  (type *method) {
 }
 type *get_method_param_type(type *method, int pos) {
   assert(method && (method->type_op == type_method));
+  assert(pos >= 0 && pos < get_method_n_params(method));
   return method->attr.ma.param_type[pos] = skip_tid(method->attr.ma.param_type[pos]);
 }
 void  set_method_param_type(type *method, int pos, type* type) {
   assert(method && (method->type_op == type_method));
+  assert(pos >= 0 && pos < get_method_n_params(method));
   method->attr.ma.param_type[pos] = type;
 }
 
@@ -413,10 +423,12 @@ int   get_method_n_res   (type *method) {
 }
 type *get_method_res_type(type *method, int pos) {
   assert(method && (method->type_op == type_method));
+  assert(pos >= 0 && pos < get_method_n_res(method));
   return method->attr.ma.res_type[pos] = skip_tid(method->attr.ma.res_type[pos]);
 }
 void  set_method_res_type(type *method, int pos, type* type) {
   assert(method && (method->type_op == type_method));
+  assert(pos >= 0 && pos < get_method_n_res(method));
   method->attr.ma.res_type[pos] = type;
 }
 
@@ -444,7 +456,7 @@ inline void free_union_attrs (type *uni) {
   assert(uni && (uni->type_op == type_union));
   DEL_ARR_F(uni->attr.ua.members);
 }
-/* manipulate private fields of struct */
+/* manipulate private fields of union */
 #if 0
 int    get_union_n_types      (type *uni) {
   assert(uni && (uni->type_op == type_union));
@@ -452,22 +464,27 @@ int    get_union_n_types      (type *uni) {
 }
 type  *get_union_unioned_type (type *uni, int pos) {
   assert(uni && (uni->type_op == type_union));
+  assert(pos >= 0 && pos < get_union_n_types(uni));
   return uni->attr.ua.unioned_type[pos] = skip_tid(uni->attr.ua.unioned_type[pos]);
 }
 void   set_union_unioned_type (type *uni, int pos, type *type) {
   assert(uni && (uni->type_op == type_union));
+  assert(pos >= 0 && pos < get_union_n_types(uni));
   uni->attr.ua.unioned_type[pos] = type;
 }
 ident *get_union_delim_nameid (type *uni, int pos) {
   assert(uni && (uni->type_op == type_union));
+  assert(pos >= 0 && pos < get_union_n_types(uni));
   return uni->attr.ua.delim_names[pos];
 }
 const char *get_union_delim_name (type *uni, int pos) {
   assert(uni && (uni->type_op == type_union));
+  assert(pos >= 0 && pos < get_union_n_types(uni));
   return id_to_str(uni->attr.ua.delim_names[pos]);
 }
 void   set_union_delim_nameid (type *uni, int pos, ident *id) {
   assert(uni && (uni->type_op == type_union));
+  assert(pos >= 0 && pos < get_union_n_types(uni));
   uni->attr.ua.delim_names[pos] = id;
 }
 #endif
@@ -481,10 +498,12 @@ void    add_union_member   (type *uni, entity *member) {
 }
 entity  *get_union_member (type *uni, int pos) {
   assert(uni && (uni->type_op == type_union));
+  assert(pos >= 0 && pos < get_union_n_members(uni));
   return uni->attr.ua.members[pos+1];
 }
 void   set_union_member (type *uni, int pos, entity *member) {
   assert(uni && (uni->type_op == type_union));
+  assert(pos >= 0 && pos < get_union_n_members(uni));
   uni->attr.ua.members[pos+1] = member;
 }
 void   remove_union_member(type *uni, entity *member) {
@@ -617,22 +636,27 @@ int     get_enumeration_n_enums (type *enumeration) {
 }
 void    set_enumeration_enum    (type *enumeration, int pos, tarval *con) {
   assert(enumeration && (enumeration->type_op == type_enumeration));
+  assert(pos >= 0 && pos < get_enumeration_n_enums(enumeration));
   enumeration->attr.ea.enumer[pos] = con;
 }
 tarval *get_enumeration_enum    (type *enumeration, int pos) {
   assert(enumeration && (enumeration->type_op == type_enumeration));
+  assert(pos >= 0 && pos < get_enumeration_n_enums(enumeration));
   return enumeration->attr.ea.enumer[pos];
 }
 void    set_enumeration_nameid  (type *enumeration, int pos, ident *id) {
   assert(enumeration && (enumeration->type_op == type_enumeration));
+  assert(pos >= 0 && pos < get_enumeration_n_enums(enumeration));
   enumeration->attr.ea.enum_nameid[pos] = id;
 }
 ident  *get_enumeration_nameid  (type *enumeration, int pos) {
   assert(enumeration && (enumeration->type_op == type_enumeration));
+  assert(pos >= 0 && pos < get_enumeration_n_enums(enumeration));
   return enumeration->attr.ea.enum_nameid[pos];
 }
 const char *get_enumeration_name(type *enumeration, int pos) {
   assert(enumeration && (enumeration->type_op == type_enumeration));
+  assert(pos >= 0 && pos < get_enumeration_n_enums(enumeration));
   return id_to_str(enumeration->attr.ea.enum_nameid[pos]);
 }
 

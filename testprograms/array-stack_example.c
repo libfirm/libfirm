@@ -115,7 +115,7 @@ main(void)
   }
   val = new_Load(get_store(), elt);
   set_store(new_Proj(val, mode_M, 0));
-  val = new_Proj(val, mode_i, 1);
+  val = new_Proj(val, mode_i, 2);
 
   /* return the result of procedure main */
   {

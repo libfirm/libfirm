@@ -27,6 +27,7 @@ int main(int argc, char **argv)
   type     *owner;       /* the class in which this method is defined */
   type     *proc_main;   /* type information for the method main */
   type     *proc_called; /* type information for called method f */
+  type     *string_ptr;  /* type for pointers to strings. */
   entity   *ent;         /* represents this method as entity of owner */
   ir_node  *x, *const_str, *proc_ptr, *call;
 
@@ -35,6 +36,10 @@ int main(int argc, char **argv)
   /* init library */
   init_firm ();
 
+  string_ptr = new_type_pointer (
+		 id_from_str ("ptr_to_string", 13),
+		 new_type_array (id_from_str ("char_arr", 8), 1,
+			         new_type_primitive (id_from_str("char", 4), mode_c)));
   /* FIRM was designed for oo languages where all methods belong to a class.
    * For imperative languages like C we view a program as a large class containing
    * all functions of the program as methods in this class.  This class is
@@ -56,6 +61,7 @@ int main(int argc, char **argv)
   owner = get_glob_type();
   proc_called = new_type_method(id_from_str(F_METHODNAME, strlen(F_METHODNAME)),
                               F_NRARGS, F_NRES);
+  set_method_param_type(proc_called, 0, string_ptr);
 
   /* Make the entity for main needed for a correct  ir_graph.  */
 #define ENTITYNAME "main"

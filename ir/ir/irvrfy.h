@@ -14,7 +14,8 @@
 # include "irnode.h"
 # include "irgraph.h"
 
-/* Tests the types of predecessors of checknode. */
+/* Tests the modes of chechnode and its predecessors.
+   Checknode must be in current_ir_graph. */
 void irn_vrfy (struct ir_node *checknode);
 
 /* Calls irn_vrfy for each node in irg. */
