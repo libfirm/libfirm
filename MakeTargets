@@ -74,6 +74,7 @@ local_tags:	$(TAGFILES)
 install:	$(INCLUDEDIR) install_headers $(LIBDIR) install_libs
 	@echo ================================================
 	@echo Don\'t forget to add $(LIBDIR) to LD_LIBRARY_PATH
+	@echo Don\'t forget to add /usr/public/libxml2/lib to LD_LIBRARY_PATH
 	@echo ================================================
 
 install_headers:	subdir_install_headers local_install_headers
