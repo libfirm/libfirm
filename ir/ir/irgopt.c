@@ -573,6 +573,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   ir_node *ret, *phi;
   ir_node *cf_op = NULL, *bl;
   int arity, n_ret, n_exc, n_res, i, j, rem_opt, irn_arity;
+  int exc_handling; ir_node *proj;
   type *called_frame;
 
   if (!get_optimize() || !get_opt_inline()) return;
@@ -599,6 +600,31 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
     set_optimize(rem_opt);
     return;
   }
+
+  /* -- Decide how to handle exception control flow: Is there a handler
+     for the Call node, or do we branch directly to End on an exception?
+     exc_handling: 0 There is a handler.
+                   1 Branches to End.
+		   2 Exception handling not represented in Firm. -- */
+  exc_handling = 2;
+  for (proj = (ir_node *)get_irn_link(call); proj; proj = (ir_node *)get_irn_link(proj)) {
+    assert(get_irn_op(proj) == op_Proj);
+    if (get_Proj_proj(proj) == pn_Call_M_except) { exc_handling = 0; break;}
+    if (get_Proj_proj(proj) == pn_Call_X_except) { exc_handling = 1; }
+  }
+
+  {
+    ir_node *proj, *Mproj = NULL, *Xproj = NULL;
+    for (proj = (ir_node *)get_irn_link(call); proj; proj = (ir_node *)get_irn_link(proj)) {
+      assert(get_irn_op(proj) == op_Proj);
+      if (get_Proj_proj(proj) == pn_Call_X_except) Xproj = proj;
+      if (get_Proj_proj(proj) == pn_Call_M_except) Mproj = proj;
+    }
+    if      (Mproj) { assert(Xproj); exc_handling = 0; }
+    else if (Xproj) {                exc_handling = 1; }
+    else            {                exc_handling = 2; }
+  }
+
 
   /* --
       the procedure and later replaces the Start node of the called graph.
@@ -673,12 +699,15 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   /* -- Merge the end of the inlined procedure with the call site -- */
   /* We will turn the old Call node into a Tuple with the following
      predecessors:
-     -1:  Block of Tuple.
-     0: Phi of all Memories of Return statements.
-     1: Jmp from new Block that merges the control flow from all exception
-	 predecessors of the old end block.
-     2: Tuple of all arguments.
-     3: Phi of Exception memories.
+       -1:  Block of Tuple.
+       0: Phi of all Memories of Return statements.
+       1: Jmp from new Block that merges the control flow from all exception
+	  predecessors of the old end block.
+       2: Tuple of all arguments.
+       3: Phi of Exception memories.
+     In case the old Call directly branches to End on an exception we don't
+     need the block merging all exceptions nor the Phi of the exception
+     memories.
   */
 
   /* -- Precompute some values -- */
@@ -688,7 +717,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   n_res = get_method_n_ress(get_Call_type(call));
 
   res_pred = (ir_node **) malloc (n_res * sizeof (ir_node *));
-  cf_pred = (ir_node **) malloc (arity * sizeof (ir_node *));
+  cf_pred =  (ir_node **) malloc (arity * sizeof (ir_node *));
 
   set_irg_current_block(current_ir_graph, post_bl); /* just to make sure */
 
@@ -700,8 +729,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   /* The new end node will die.  We need not free as the in array is on the obstack:
      copy_node only generated 'D' arrays. */
 
-/* --
-      Return nodes by Jump nodes. -- */
+  /* -- Replace Return nodes by Jump nodes. -- */
   n_ret = 0;
   for (i = 0; i < arity; i++) {
     ir_node *ret;
@@ -713,8 +741,8 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   }
   set_irn_in(post_bl, n_ret, cf_pred);
 
-/* --
-      turned into a tuple.  -- */
+  /* -- Build a Tuple for all results of the method.
+     Add Phi node if there was more than one Return.  -- */
   turn_into_tuple(post_call, 4);
   /* First the Memory-Phi */
   n_ret = 0;
@@ -755,48 +783,78 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   } else {
     set_Tuple_pred(call, 2, new_Bad());
   }
-  /* Finally the exception control flow.  We need to add a Phi node to
+  /* Finally the exception control flow.
+     We have two (three) possible situations:
+     First if the Call branches to an exception handler: We need to add a Phi node to
      collect the memory containing the exception objects.  Further we need
      to add another block to get a correct representation of this Phi.  To
      this block we add a Jmp that resolves into the X output of the Call
-     when the Call is turned into a tuple. */
-  n_exc = 0;
-  for (i = 0; i < arity; i++) {
-    ir_node *ret;
-    ret = get_irn_n(end_bl, i);
-    if (is_fragile_op(skip_Proj(ret)) || (get_irn_op(skip_Proj(ret)) == op_Raise)) {
-      cf_pred[n_exc] = ret;
-      n_exc++;
-    }
-  }
-  if (n_exc > 0) {
-    new_Block(n_exc, cf_pred);      /* watch it: current_block is changed! */
-    set_Tuple_pred(call, 1, new_Jmp());
-    /* The Phi for the memories with the exception objects */
+     when the Call is turned into a tuple.
+     Second the Call branches to End, the exception is not handled.  Just
+     add all inlined exception branches to the End node.
+     Third: there is no Exception edge at all. Handle as case two. */
+  if (exc_handler == 0) {
     n_exc = 0;
     for (i = 0; i < arity; i++) {
       ir_node *ret;
-      ret = skip_Proj(get_irn_n(end_bl, i));
-      if (get_irn_op(ret) == op_Call) {
-	cf_pred[n_exc] = new_r_Proj(current_ir_graph, get_nodes_Block(ret), ret, mode_M, 3);
-	n_exc++;
-      } else if (is_fragile_op(ret)) {
-	/* We rely that all cfops have the memory output at the same position. */
-	cf_pred[n_exc] = new_r_Proj(current_ir_graph, get_nodes_Block(ret), ret, mode_M, 0);
-	n_exc++;
-      } else if (get_irn_op(ret) == op_Raise) {
-	cf_pred[n_exc] = new_r_Proj(current_ir_graph, get_nodes_Block(ret), ret, mode_M, 1);
+      ret = get_irn_n(end_bl, i);
+      if (is_fragile_op(skip_Proj(ret)) || (get_irn_op(skip_Proj(ret)) == op_Raise)) {
+	cf_pred[n_exc] = ret;
 	n_exc++;
       }
     }
-    set_Tuple_pred(call, 3, new_Phi(n_exc, cf_pred, mode_M));
+    if (n_exc > 0) {
+      new_Block(n_exc, cf_pred);      /* watch it: current_block is changed! */
+      set_Tuple_pred(call, 1, new_Jmp());
+      /* The Phi for the memories with the exception objects */
+      n_exc = 0;
+      for (i = 0; i < arity; i++) {
+	ir_node *ret;
+	ret = skip_Proj(get_irn_n(end_bl, i));
+	if (get_irn_op(ret) == op_Call) {
+	  cf_pred[n_exc] = new_r_Proj(current_ir_graph, get_nodes_Block(ret), ret, mode_M, 3);
+	  n_exc++;
+	} else if (is_fragile_op(ret)) {
+	/* We rely that all cfops have the memory output at the same position. */
+	  cf_pred[n_exc] = new_r_Proj(current_ir_graph, get_nodes_Block(ret), ret, mode_M, 0);
+	  n_exc++;
+	} else if (get_irn_op(ret) == op_Raise) {
+	  cf_pred[n_exc] = new_r_Proj(current_ir_graph, get_nodes_Block(ret), ret, mode_M, 1);
+	  n_exc++;
+	}
+      }
+      set_Tuple_pred(call, 3, new_Phi(n_exc, cf_pred, mode_M));
+    } else {
+      set_Tuple_pred(call, 1, new_Bad());
+      set_Tuple_pred(call, 3, new_Bad());
+    }
   } else {
+    /* assert(exc_handler == 1 || no exceptions. ) */
+    n_exc = 0;
+    for (i = 0; i < arity; i++) {
+      ir_node *ret;
+      ret = get_irn_n(end_bl, i);
+      if (is_fragile_op(skip_Proj(ret)) || (get_irn_op(skip_Proj(ret)) == op_Raise)) {
+	cf_pred[n_exc] = ret;
+	n_exc++;
+      }
+    }
+    ir_node *main_end_bl = get_irg_end_block(current_ir_graph);
+    int main_end_bl_arity = get_irn_arity(main_end_bl);
+    ir_node **end_preds =  (ir_node **) malloc ((n_exc + main_end_bl_arity) * sizeof (ir_node *));
+    for (i = 0; i < main_end_bl_arity; ++i)
+      end_preds[i] = get_irn_n(main_end_bl, i);
+    for (i = 0; i < n_exc; ++i)
+      end_preds[main_end_bl_arity + i] = cf_pred[i];
+    set_irn_in(main_end_bl, n_exc + main_end_bl_arity, end_preds);
     set_Tuple_pred(call, 1, new_Bad());
     set_Tuple_pred(call, 3, new_Bad());
+    free(end_preds);
   }
   free(res_pred);
   free(cf_pred);
 
+#if 0  /* old. now better, correcter, faster implementation. */
   if (n_exc > 0) {
     /* -- If the exception control flow from the inlined Call directly
        branched to the end block we now have the following control
@@ -804,7 +862,9 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
        remove the Jmp along with it's empty block and add Jmp's
        predecessors as predecessors of this end block.  No problem if
        there is no exception, because then branches Bad to End which
-       is fine. -- */
+       is fine. --
+       @@@ can't we know this beforehand: by getting the Proj(1) from
+       the Call link list and checking whether it goes to Proj. */
     /* find the problematic predecessor of the end block. */
     end_bl = get_irg_end_block(current_ir_graph);
     for (i = 0; i < get_Block_n_cfgpreds(end_bl); i++) {
@@ -837,6 +897,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
       set_Tuple_pred(call, pn_Call_X_except, new_Bad());
     }
   }
+#endif
 
   /* --  Turn cse back on. -- */
   set_optimize(rem_opt);
