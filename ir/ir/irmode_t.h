@@ -34,7 +34,6 @@ struct ir_mode {
                                      (see irmode.h) */
   mode_arithmetic   arithmetic;    /**< different arithmetic operations possible with a mode */
   int               size;          /**< size of the mode in Bits. */
-  int               align;         /**< mode alignment in Bits. */
   unsigned          sign:1;        /**< signedness of this mode */
   unsigned int      modulo_shift;  /**< number of bits a valus of this mode will be shifted */
   unsigned          vector_elem;   /**< if this is not equal 1, this is a vector mode with
@@ -42,10 +41,10 @@ struct ir_mode {
 					of all bits and must be dividable by vector_elem */
 
   /* ----------------------------------------------------------------------- */
-  tarval            *min;
-  tarval            *max;
-  tarval            *null;
-  tarval            *one;
+  tarval            *min;       /**< the minimum value that can be expressed */
+  tarval            *max;       /**< the maximum value that can be expressed */
+  tarval            *null;      /**< the value 0 */
+  tarval            *one;       /**< the value 1 */
   void              *link;      /**< To store some intermediate information */
   const void        *tv_priv;   /**< tarval module will save private data here */
 };
@@ -82,16 +81,6 @@ __get_mode_size_bytes(const ir_mode *mode) {
   int size = __get_mode_size_bits(mode);
   if ((size & 7) != 0) return -1;
   return size >> 3;
-}
-
-static INLINE int
-__get_mode_align_bits(const ir_mode *mode) { return mode->align; }
-
-static INLINE int
-__get_mode_align_bytes(const ir_mode *mode) {
-  int align = __get_mode_align_bits(mode);
-  if ((align & 7) != 0) return -1;
-  return align >> 3;
 }
 
 static INLINE int
@@ -234,7 +223,6 @@ void finish_mode(void);
 #define get_mode_sort(mode)            __get_mode_sort(mode)
 #define get_mode_size_bits(mode)       __get_mode_size_bits(mode)
 #define get_mode_size_bytes(mode)      __get_mode_size_bytes(mode)
-#define get_mode_align(mode)           __get_mode_align(mode)
 #define get_mode_sign(mode)            __get_mode_sign(mode)
 #define get_mode_arithmetic(mode)      __get_mode_arithmetic(mode)
 #define get_mode_modulo_shift(mode)    __get_mode_modulo_shift(mode)

@@ -48,7 +48,6 @@
  *  -  ident *name:             Name of this mode. Two modes are different if the name is different.
  *  -  mode_sort sort:          sort of mode specifying possible usage kategories
  *  -  int    size:             size of the mode in Bits.
- *  -  int    align:            byte alignment
  *  -  unsigned sign:1:         signedness of this mode
  *  -  ... more to come
  *  -  modulo_shift             specifies for modes of kind irms_int_number
@@ -140,7 +139,6 @@ typedef enum {
  * @param name		the name of the mode to be created
  * @param sort		the mode_sort of the mode to be created
  * @param bit_size	number of bits this mode allocate
- * @param bit_align	the alignment for an entity of this mode in bits
  * @param sign		non-zero if this is a signed mode
  * @param arithmetic    arithmetic operations possible with a mode
  * @param modulo_shift  Is ignored for modes other than integer.
@@ -157,9 +155,9 @@ typedef enum {
  *
  * @note
  * 	It is allowed to construct the default modes. So, a call
- * 	new_ir_mode("Is", irms_int_number, 32, 4, 1, irma_twos_complement, 32) will return mode_Is.
+ * 	new_ir_mode("Is", irms_int_number, 32, 1, irma_twos_complement, 32) will return mode_Is.
  */
-ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int bit_align, int sign, mode_arithmetic arithmetic, unsigned int modulo_shift);
+ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int sign, mode_arithmetic arithmetic, unsigned int modulo_shift);
 
 /**
  * Creates a new vector mode.
@@ -168,7 +166,6 @@ ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int bit_ali
  * @param sort		the mode_sort of the mode to be created
  * @param bit_size	number of bits for one element of this mode
  * @param num_of_elem   number of elements in this vector mode
- * @param bit_align	the alignment for an entity of this mode in bits
  * @param sign		non-zero if this is a signed mode
  * @param arithmetic    arithmetic operations possible with a mode
  * @param modulo_shift  Is ignored for modes other than integer.
@@ -182,7 +179,7 @@ ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int bit_ali
  * @return
  * 	The new mode or NULL on error.
  */
-ir_mode *new_ir_vector_mode(const char *name, mode_sort sort, int bit_size, unsigned num_of_elem, int bit_align, int sign,
+ir_mode *new_ir_vector_mode(const char *name, mode_sort sort, int bit_size, unsigned num_of_elem, int sign,
 		     mode_arithmetic arithmetic, unsigned int modulo_shift );
 
 /**
@@ -215,13 +212,6 @@ int get_mode_size_bits(const ir_mode *mode);
 /** Returns the size of values of the mode in bytes.
  *  If the size is not dividable by 8 returns -1. */
 int get_mode_size_bytes(const ir_mode *mode);
-
-/** Returns the alignment of values of the mode in bits. */
-int get_mode_align_bits(const ir_mode *mode);
-
-/** Returns the alignment of values of the mode in bytes.
- *  If the alignment is not dividable by 8 returns -1. */
-int get_mode_align_bytes(const ir_mode *mode);
 
 /** Returns the signess of a mode.
  *
@@ -427,12 +417,20 @@ int smaller_mode(const ir_mode *sm, const ir_mode *lm);
 
 /**
  * Returns a matching unsigned mode for a given integer signed mode.
+ * Returns NULL if no matching mode exists.
  */
 ir_mode *find_unsigned_mode(const ir_mode *mode);
 
 /**
  * Returns a matching signed mode for a given integer unsigned mode.
+ * Returns NULL if no matching mode exists.
  */
 ir_mode *find_signed_mode(const ir_mode *mode);
+
+/**
+ * Returns an integer mode with 2*n bits for a given integer mode with n bits.
+ * Returns NULL if no matching mode exists.
+ */
+ir_mode *find_double_bits_int_mode(const ir_mode *mode);
 
 #endif /* _IRMODE_H_ */
