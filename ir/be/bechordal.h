@@ -15,6 +15,8 @@
  */
 void be_ra_chordal(ir_graph *irg);
 
-void be_ra_chordal_free(ir_graph *irg);
+void be_ra_chordal_done(ir_graph *irg);
+
+int phi_ops_interfere(const ir_node *a, const ir_node *b);
 
 #endif
