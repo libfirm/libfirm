@@ -103,8 +103,10 @@ new_rd_Phi (dbg_info* db, ir_graph *irg, ir_node *block, int arity, ir_node **in
   int i;
   bool has_unknown = false;
 
-  assert( get_Block_matured(block) );
-  assert( get_irn_arity(block) == arity );
+  /* Don't assert that block matured: the use of this constructor is strongly
+     restricted ... */
+  if ( get_Block_matured(block) )
+    assert( get_irn_arity(block) == arity );
 
   res = new_ir_node (db, irg, block, op_Phi, mode, arity, in);
 

@@ -418,8 +418,8 @@ void dump_pointer_values_to_info(bool b) {
 /* Routines to dump information about a single ir node.            */
 /*******************************************************************/
 
-static INLINE int
-dump_node_opcode(ir_node *n)
+INLINE int
+dump_node_opcode(FILE *F, ir_node *n)
 {
   int bad = 0;
 
@@ -743,7 +743,7 @@ static void dump_const_node_local(ir_node *n) {
 	 n and const. */
       fprintf(F, "node: {title: "); PRINT_CONSTID(n, con);
       fprintf(F, " label: \"");
-      bad |= dump_node_opcode(con);
+      bad |= dump_node_opcode(F, con);
       dump_node_mode (con);
       bad |= dump_node_typeinfo(con);
       fprintf (F, " ");
@@ -775,7 +775,7 @@ static void dump_node(ir_node *n)
   fprintf(F, "node: {title: \""); PRINT_NODEID(n); fprintf(F, "\" label: \"");
 
   bad = ! irn_vrfy_irg_dump(n, current_ir_graph, &p);
-  bad |= dump_node_opcode(n);
+  bad |= dump_node_opcode(F, n);
   dump_node_mode (n);
   bad |= dump_node_typeinfo(n);
   fprintf(F, " ");
@@ -981,7 +981,7 @@ dump_whole_block(ir_node *block) {
   fprintf(F, "graph: { title: \"");
   PRINT_NODEID(block);
   fprintf(F, "\"  label: \"");
-  dump_node_opcode(block);
+  dump_node_opcode(F, block);
   fprintf (F, " %ld", get_irn_node_nr(block));
 #ifdef HEAPANAL
   if (get_opt_dump_abstvals())
@@ -1231,7 +1231,7 @@ void dump_entity_node(entity *ent)
 
   fprintf(F, "\npeculiarity: %s", get_peculiarity_string(get_entity_peculiarity(ent)));
   fprintf(F, "\nname:    %s\nld_name: %s",
-	  get_ent_dump_name(ent), ent->ld_name ? get_entity_ld_name(ent) : "no yet set");
+	  get_entity_name(ent), ent->ld_name ? get_entity_ld_name(ent) : "no yet set");
   fprintf(F, "\noffset:  %d", get_entity_offset(ent));
   if (is_method_type(get_entity_type(ent))) {
     if (get_entity_irg(ent))   /* can be null */
@@ -2007,7 +2007,7 @@ void dump_loops_standalone (ir_loop *loop) {
       else
 	fprintf(F, "\n");
 
-      dump_node_opcode(n);
+      dump_node_opcode(F, n);
       dump_node_mode (n);
       dump_node_typeinfo(n);
       fprintf (F, " ");
@@ -2132,7 +2132,7 @@ void dump_loop (ir_loop *l, char *suffix) {
       fprintf(F, "graph: { title: \"");
       PRINT_NODEID(b);
       fprintf(F, "\"  label: \"");
-      dump_node_opcode(b);
+      dump_node_opcode(F, b);
       fprintf (F, " %ld", get_irn_node_nr(b));
       fprintf(F, "\" status:clustered color:yellow\n");
 
@@ -2157,7 +2157,7 @@ void dump_loop (ir_loop *l, char *suffix) {
       fprintf(F, "graph: { title: \"");
       PRINT_NODEID(b);
       fprintf(F, "\"  label: \"");
-      dump_node_opcode(b);
+      dump_node_opcode(F, b);
       fprintf (F, " %ld", get_irn_node_nr(b));
       fprintf(F, "\" status:clustered color:lightblue\n");
 

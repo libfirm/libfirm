@@ -599,7 +599,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   ir_node **cf_pred;
   ir_node *ret, *phi;
   int arity, n_ret, n_exc, n_res, i, j, rem_opt, irn_arity;
-  int exc_handling; ir_node *proj;
+  int exc_handling;
   type *called_frame;
 
   if ( !(get_irg_inline_property(called_graph) == irg_inline_forced) && (!get_opt_optimize() || !get_opt_inline() ||

@@ -920,3 +920,93 @@ entity *resolve_ent_polymorphy(type *dynamic_class, entity* static_ent) {
   assert(res);
   return res;
 }
+
+
+
+/*******************************************************************/
+/** Debug aides                                                   **/
+/*******************************************************************/
+
+
+#if 1 || DEBUG_libfirm
+INLINE int dump_node_opcode(FILE *F, ir_node *n); /* from irdump.c */
+
+#define X(a)	case a: printf(#a); break
+void dump_entity (entity *ent) {
+  int i, j;
+  type *owner = get_entity_owner(ent);
+  type *type  = get_entity_type(ent);
+  printf("entity %s (%ld)\n", get_entity_name(ent), get_entity_nr(ent));
+  printf("  type:  %s (%ld)\n", get_type_name(type),  get_type_nr(type));
+  printf("  owner: %s (%ld)\n", get_type_name(owner), get_type_nr(owner));
+
+  printf ("  allocation:  ");
+  switch (get_entity_allocation(ent)) {
+    X(allocation_dynamic);
+    X(allocation_automatic);
+    X(allocation_static);
+    X(allocation_parameter);
+  }
+
+  printf ("\n  visibility:  ");
+  switch (get_entity_visibility(ent)) {
+    X(visibility_local);
+    X(visibility_external_visible);
+    X(visibility_external_allocated);
+  }
+
+  printf ("\n  variability: ");
+  switch (get_entity_variability(ent)) {
+    X(variability_uninitialized);
+    X(variability_initialized);
+    X(variability_part_constant);
+    X(variability_constant);
+  }
+
+  if (get_entity_variability(ent) != variability_uninitialized) {
+    if (is_atomic_entity(ent)) {
+      printf("\n  atomic value: ");
+      dump_node_opcode(stdout, get_atomic_ent_value(ent));
+    } else {
+      printf("\n  compound values:");
+      for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
+	compound_graph_path *path = get_compound_ent_value_path(ent, i);
+	entity *ent0 = get_compound_graph_path_node(path, 0);
+	printf("\n    %2d %s", get_entity_offset(ent0), get_entity_name(ent0));
+	for (j = 1; j < get_compound_graph_path_length(path); ++j)
+	  printf(".%s", get_entity_name(get_compound_graph_path_node(path, j)));
+	printf("\t = ");
+	dump_node_opcode(stdout, get_compound_ent_value(ent, i));
+      }
+    }
+  }
+
+  printf ("\n  volatility:  ");
+  switch (get_entity_volatility(ent)) {
+    X(volatility_non_volatile);
+    X(volatility_is_volatile);
+  }
+
+  printf("\n  peculiarity: %s", get_peculiarity_string(get_entity_peculiarity(ent)));
+  printf("\n  ld_name: %s", ent->ld_name ? get_entity_ld_name(ent) : "no yet set");
+  printf("\n  offset:  %d", get_entity_offset(ent));
+  if (is_method_type(get_entity_type(ent))) {
+    if (get_entity_irg(ent))   /* can be null */
+      { printf ("\n  irg = %ld", get_irg_graph_nr(get_entity_irg(ent))); }
+    else
+      { printf ("\n  irg = NULL"); }
+  }
+
+
+  printf("\n");
+  printf("\n");
+  printf("\n");
+  printf("\n");
+  printf("\n");
+
+
+}
+#undef X
+#else  /* DEBUG_libfirm */
+void dump_entity (entity *ent) {}
+#endif /* DEBUG_libfirm */

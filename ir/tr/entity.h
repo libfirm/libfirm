@@ -455,4 +455,17 @@ bool        entity_not_visited(entity *ent);
  *  dynamic type are given. */
 entity *resolve_ent_polymorphy(type *dynamic_class, entity* static_ent);
 
+
+/*******************************************************************/
+/** Debug aides                                                   **/
+/*******************************************************************/
+
+
+/** Write the entity and all its attributes to stdout.
+ *
+ *  Writes the entity and all its attributes to stdout if DEBUG_libfirm
+ *  is set.  Else does nothing. */
+void    dump_entity (entity *ent);
+
+
 # endif /* _ENTITY_H_ */
