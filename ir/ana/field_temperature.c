@@ -212,6 +212,9 @@ void chain_accesses(ir_node *n, void *env) {
 
   if (is_memop(n)) {
     addr = get_memop_ptr(n);
+  } else if (get_irn_op(n) == op_Call) {
+    addr = get_Call_ptr(n);
+    if (get_irn_op(addr) != op_Sel) return;  /* Sels before Calls mean a Load / polymorphic Call. */
   } else {
     return;
   }
