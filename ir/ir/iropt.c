@@ -937,7 +937,7 @@ optimize (ir_node *n)
   /* Remove nodes with dead (Bad) input. */
   n = gigo (n);
   /* Now we can verify the node, as it has no dead inputs any more. */
-  ir_vrfy(n);
+  irn_vrfy(n);
 
   /* Now we have a legal, useful node. Enter it in hash table for cse */
   if (get_opt_cse()) {
@@ -1012,7 +1012,7 @@ optimize_in_place (ir_node *n)
   /* Remove nodes with dead (Bad) input. */
   n = gigo (n);
   /* Now we can verify the node, as it has no dead inputs any more. */
-  ir_vrfy(n);
+  irn_vrfy(n);
 
   /* Now we have a legal, useful node. Enter it in hash table for cse */
   if (get_opt_cse()) {

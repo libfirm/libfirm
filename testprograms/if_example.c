@@ -104,7 +104,7 @@ main(void)
   mature_block (irg->end_block);
 
   /* verify the graph */
-  vrfy_graph(irg);
+  irg_vrfy(irg);
 
   /* output the vcg file */
   printf("\nDone building the graph.  Dumping it.\n");

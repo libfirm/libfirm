@@ -142,7 +142,7 @@ main(void)
   mature_block (main_irg->end_block);
 
   /* verify the graph */
-  vrfy_graph(main_irg);
+  irg_vrfy(main_irg);
 
   printf("\nDone building the graph.\n");
   printf("Dumping the graph and a type graph.\n");

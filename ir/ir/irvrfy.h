@@ -13,10 +13,10 @@
 # include "irgraph.h"
 
 /* Tests the types of predecessors of checknode. */
-void ir_vrfy (ir_node *checknode);
+void irn_vrfy (struct ir_node *checknode);
 
-/* Calls ir_vrfy for each node in irg. */
-void vrfy_graph (ir_graph *irg);
+/* Calls irn_vrfy for each node in irg. */
+void irg_vrfy (ir_graph *irg);
 
 
 # endif /* _IRVRFY_H_ */

@@ -42,25 +42,19 @@ void irg_walk(ir_node *node,
 	      void (pre)(ir_node*, void*), void (post)(ir_node*, void*),
 	      void *env)
 {
-  unsigned long i;
-
   assert(node);
-  i = get_irg_visited(current_ir_graph);
-  ++i;
-  set_irg_visited(current_ir_graph, i);
+  inc_irg_visited (current_ir_graph);
   irg_walk_2(node, pre, post, env);
   return;
 }
 
 /***************************************************************************/
-void irg_block_walk_2(ir_node *node,
-		      void (pre)(ir_node*, void*), void (post)(ir_node*, void*),
-		      void *env)
+void irg_block_walk_2(ir_node *node, void (pre)(ir_node*, void*),
+		      void (post)(ir_node*, void*), void *env)
 {
   int i;
 
   assert(get_irn_opcode(node) == iro_Block);
-
 
   if(get_Block_block_visit(node) < get_irg_block_visited(current_ir_graph)) {
     set_Block_block_visit(node, get_irg_block_visited(current_ir_graph));
@@ -95,12 +89,8 @@ void irg_block_walk(ir_node *node,
 		    void (pre)(ir_node*, void*), void (post)(ir_node*, void*),
 		    void *env)
 {
-  unsigned long i;
-
   assert(node);
-  i = get_irg_block_visited(current_ir_graph);
-  ++i;
-  set_irg_block_visited(current_ir_graph, i);
+  inc_irg_block_visited(current_ir_graph);
   if (is_no_Block(node)) node = get_nodes_Block(node);
   assert(get_irn_opcode(node)  == iro_Block);
   irg_block_walk_2(node, pre, post, env);

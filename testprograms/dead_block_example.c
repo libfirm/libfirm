@@ -123,7 +123,7 @@ int main(int argc, char **argv)
   mature_block (irg->end_block);
 
   /* verify the graph */
-  vrfy_graph(irg);
+  irg_vrfy(irg);
 
   printf("\nDone building the graph.\n");
   local_optimize_graph (irg);

@@ -120,7 +120,7 @@ int main(int argc, char **argv)
   mature_block (irg->end_block);
 
   /* verify the graph */
-  vrfy_graph(irg);
+  irg_vrfy(irg);
 
   printf("\nDone building the graph.  Dumping it.\n");
   dump_ir_block_graph (irg);

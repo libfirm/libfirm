@@ -51,7 +51,7 @@ new_r_Start (ir_graph *irg, ir_node *block)
 
   res = new_ir_node (irg, block, op_Start, mode_T, 0, NULL);
 
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -62,7 +62,7 @@ new_r_End (ir_graph *irg, ir_node *block)
 
   res = new_ir_node (irg, block, op_End, mode_X, -1, NULL);
 
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -76,7 +76,7 @@ new_r_Phi0 (ir_graph *irg, ir_node *block, ir_mode *mode)
 
   /* GL I'm not sure whether we should optimize this guy. *
      res = optimize (res); ??? */
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -93,7 +93,7 @@ new_r_Phi (ir_graph *irg, ir_node *block, int arity, ir_node **in, ir_mode *mode
   res = new_ir_node (irg, block, op_Phi, mode, arity, in);
 
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -228,7 +228,7 @@ new_r_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
     res = known;
   } else {
     res = optimize (res);
-    ir_vrfy (res);
+    irn_vrfy (res);
   }
 
   /* return the pointer to the Phi node.  This node might be deallocated! */
@@ -242,7 +242,7 @@ new_r_Const (ir_graph *irg, ir_node *block, ir_mode *mode, tarval *con)
   res = new_ir_node (irg, block, op_Const, mode, 0, NULL);
   res->attr.con = con;
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
 
 #if 0
   res = local_optimize_newby (res);
@@ -258,7 +258,7 @@ new_r_Id (ir_graph *irg, ir_node *block, ir_node *val, ir_mode *mode)
   ir_node *res;
   res = new_ir_node (irg, block, op_Id, mode, 1, in);
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -277,7 +277,7 @@ new_r_Proj (ir_graph *irg, ir_node *block, ir_node *arg, ir_mode *mode,
 
   res = optimize (res);
 
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 
 }
@@ -289,7 +289,7 @@ new_r_Conv (ir_graph *irg, ir_node *block, ir_node *op, ir_mode *mode)
   ir_node *res;
   res = new_ir_node (irg, block, op_Conv, mode, 1, in);
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 
 }
@@ -301,7 +301,7 @@ new_r_Tuple (ir_graph *irg, ir_node *block, int arity, ir_node **in)
 
   res = new_ir_node (irg, block, op_Tuple, mode_T, arity, in);
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -313,7 +313,7 @@ new_r_Add (ir_graph *irg, ir_node *block,
   ir_node *res;
   res = new_ir_node (irg, block, op_Add, mode, 2, in);
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -325,7 +325,7 @@ new_r_Sub (ir_graph *irg, ir_node *block,
   ir_node *res;
   res = new_ir_node (irg, block, op_Sub, mode, 2, in);
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -337,7 +337,7 @@ new_r_Minus (ir_graph *irg, ir_node *block,
   ir_node *res;
   res = new_ir_node (irg, block, op_Minus, mode, 1, in);
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -349,7 +349,7 @@ new_r_Mul (ir_graph *irg, ir_node *block,
   ir_node *res;
   res = new_ir_node (irg, block, op_Mul, mode, 2, in);
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -361,7 +361,7 @@ new_r_Quot (ir_graph *irg, ir_node *block,
   ir_node *res;
   res = new_ir_node (irg, block, op_Quot, mode_T, 3, in);
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -373,7 +373,7 @@ new_r_DivMod (ir_graph *irg, ir_node *block,
   ir_node *res;
   res = new_ir_node (irg, block, op_DivMod, mode_T, 3, in);
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -385,7 +385,7 @@ new_r_Div (ir_graph *irg, ir_node *block,
   ir_node *res;
   res = new_ir_node (irg, block, op_Div, mode_T, 3, in);
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -397,7 +397,7 @@ new_r_Mod (ir_graph *irg, ir_node *block,
   ir_node *res;
   res = new_ir_node (irg, block, op_Mod, mode_T, 3, in);
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -409,7 +409,7 @@ new_r_And (ir_graph *irg, ir_node *block,
   ir_node *res;
   res = new_ir_node (irg, block, op_And, mode, 2, in);
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -421,7 +421,7 @@ new_r_Or (ir_graph *irg, ir_node *block,
   ir_node *res;
   res = new_ir_node (irg, block, op_Or, mode, 2, in);
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -433,7 +433,7 @@ new_r_Eor (ir_graph *irg, ir_node *block,
   ir_node *res;
   res = new_ir_node (irg, block, op_Eor, mode, 2, in);
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -445,7 +445,7 @@ new_r_Not    (ir_graph *irg, ir_node *block,
   ir_node *res;
   res = new_ir_node (irg, block, op_Not, mode, 1, in);
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -457,7 +457,7 @@ new_r_Shl (ir_graph *irg, ir_node *block,
   ir_node *res;
   res = new_ir_node (irg, block, op_Shl, mode, 2, in);
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -469,7 +469,7 @@ new_r_Shr (ir_graph *irg, ir_node *block,
   ir_node *res;
   res = new_ir_node (irg, block, op_Shr, mode, 2, in);
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -481,7 +481,7 @@ new_r_Shrs (ir_graph *irg, ir_node *block,
   ir_node *res;
   res = new_ir_node (irg, block, op_Shrs, mode, 2, in);
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -493,7 +493,7 @@ new_r_Rot (ir_graph *irg, ir_node *block,
   ir_node *res;
   res = new_ir_node (irg, block, op_Rot, mode, 2, in);
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -505,7 +505,7 @@ new_r_Abs (ir_graph *irg, ir_node *block,
   ir_node *res;
   res = new_ir_node (irg, block, op_Abs, mode, 1, in);
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -517,7 +517,7 @@ new_r_Cmp (ir_graph *irg, ir_node *block,
   ir_node *res;
   res = new_ir_node (irg, block, op_Cmp, mode_T, 2, in);
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -528,7 +528,7 @@ new_r_Jmp (ir_graph *irg, ir_node *block)
   ir_node *res;
   res = new_ir_node (irg, block, op_Jmp, mode_X, 0, in);
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -539,7 +539,7 @@ new_r_Cond (ir_graph *irg, ir_node *block, ir_node *c)
   ir_node *res;
   res = new_ir_node (irg, block, op_Cond, mode_T, 1, in);
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -561,7 +561,7 @@ new_r_Call (ir_graph *irg, ir_node *block, ir_node *store,
 
   set_Call_type(res, type);
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -579,7 +579,7 @@ new_r_Return (ir_graph *irg, ir_node *block,
   memcpy (&r_in[1], in, sizeof (ir_node *) * arity);
   res = new_ir_node (irg, block, op_Return, mode_X, r_arity, r_in);
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -591,7 +591,7 @@ new_r_Raise (ir_graph *irg, ir_node *block, ir_node *store, ir_node *obj)
   res = new_ir_node (irg, block, op_Raise, mode_X, 2, in);
 
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -604,7 +604,7 @@ new_r_Load (ir_graph *irg, ir_node *block,
   res = new_ir_node (irg, block, op_Load, mode_T, 2, in);
 
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -617,7 +617,7 @@ new_r_Store (ir_graph *irg, ir_node *block,
   res = new_ir_node (irg, block, op_Store, mode_T, 3, in);
 
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -633,7 +633,7 @@ new_r_Alloc (ir_graph *irg, ir_node *block, ir_node *store,
   res->attr.a.type = alloc_type;
 
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -648,7 +648,7 @@ new_r_Free (ir_graph *irg, ir_node *block, ir_node *store,
   res->attr.f = free_type;
 
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -671,7 +671,7 @@ new_r_Sel (ir_graph *irg, ir_node *block, ir_node *store, ir_node *objptr,
   res->attr.s.ent = ent;
 
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -693,7 +693,7 @@ new_r_SymConst (ir_graph *irg, ir_node *block, type_or_id *value,
     res->attr.i.tori.typ = (type *)value;
   }
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -705,7 +705,7 @@ new_r_Sync (ir_graph *irg, ir_node *block, int arity, ir_node **in)
   res = new_ir_node (irg, block, op_Sync, mode_M, arity, in);
 
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -728,7 +728,7 @@ new_Start (void)
 		     op_Start, mode_T, 0, NULL);
 
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -741,7 +741,7 @@ new_End (void)
 		     op_End, mode_X, -1, NULL);
 
   res = optimize (res);
-  ir_vrfy (res);
+  irn_vrfy (res);
   return res;
 }
 
@@ -757,7 +757,7 @@ new_Block (void)
 
   /* forget this optimization. use this only if mature !!!!
   res = optimize (res); */
-  ir_vrfy (res);
+  irn_vrfy (res);
 
   /** create a new dynamic array, which stores all parameters in irnodes */
   /** using the same obstack as the whole irgraph */
@@ -952,7 +952,7 @@ mature_block (ir_node *block)
     block->attr.block.matured = 1;
 
     block = optimize_in_place(block);
-    ir_vrfy(block);
+    irn_vrfy(block);
   }
 
 }

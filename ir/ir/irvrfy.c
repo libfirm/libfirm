@@ -10,7 +10,7 @@
 # include "irgwalk.h"
 
 void
-ir_vrfy (ir_node *n)
+irn_vrfy (ir_node *n)
 {
   int i;
   int opcode;
@@ -326,11 +326,11 @@ ir_vrfy (ir_node *n)
 
 void
 vrfy_wrap (ir_node *node, void *env) {
-  ir_vrfy(node);
+  irn_vrfy(node);
 }
 
 void
-vrfy_graph (ir_graph *irg)
+irg_vrfy (ir_graph *irg)
 {
   irg_walk(irg->end, vrfy_wrap, NULL, NULL);
 }
