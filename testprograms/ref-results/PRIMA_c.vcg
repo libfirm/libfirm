@@ -24,91 +24,104 @@ classname 12: "Member"
 infoname 1: "Attribute"
 infoname 2: "Verification errors"
 
-graph: { title: "g90" label: "PRIMA_c" status:clustered color:white
-graph: { title: "n148"  label: "Block 148" status:clustered color:yellow
-edge: {sourcename: "n148" targetname: "n149" label: "0" class:13 priority:60 color:red}
-node: {title: "n146" label: "End  146"  info1: "visited: 12
+graph: { title: "g89" label: "PRIMA_c" status:clustered color:white
+graph: { title: "n147"  label: "Block 147" status:clustered color:yellow
+edge: {sourcename: "n147" targetname: "n148" label: "0" class:13 priority:60 color:red}
+node: {title: "n145" label: "End  145"  info1: "mode:    X
+visited: 12
 irg:     PRIMA_c
 arity: 0
 "color: blue}
 }
 
-graph: { title: "n150"  label: "Block 150" status:clustered color:yellow
-edge: {sourcename: "n150" targetname: "n151" label: "0" class:13 priority:60 color:red}
-node: {title: "n149" label: "Return  149"  info1: "visited: 12
+graph: { title: "n149"  label: "Block 149" status:clustered color:yellow
+edge: {sourcename: "n149" targetname: "n150" label: "0" class:13 priority:60 color:red}
+node: {title: "n148" label: "Return  148"  info1: "mode:    X
+visited: 12
 irg:     PRIMA_c
 arity: 2
 return in method of type c
   res 0 type: int
-" info2: "mymode == mode_X && Result X"}
-edge: {sourcename: "n149" targetname: "n162" label: "0" class:14 priority:50 color:blue}
-edge: {sourcename: "n149" targetname: "n154" label: "1" class:1  priority:50}
-node: {title: "n162" label: "ProjM 0 162"  info1: "visited: 12
+"}
+edge: {sourcename: "n148" targetname: "n161" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n148" targetname: "n153" label: "1" class:1  priority:50}
+node: {title: "n161" label: "ProjM 0 161"  info1: "mode:    M
+visited: 12
 irg:     PRIMA_c
 arity: 1
 "color: yellow}
-edge: {sourcename: "n162" targetname: "n156" label: "0" class:17 priority:10 color:blue}
-node: {title: "n154" label: "AddIs  154"  info1: "visited: 12
+edge: {sourcename: "n161" targetname: "n155" label: "0" class:17 priority:10 color:blue}
+node: {title: "n153" label: "AddIs  153"  info1: "mode:    Is
+visited: 12
 irg:     PRIMA_c
 arity: 2
 "}
-edge: {sourcename: "n154" targetname: "n161" label: "0" class:1  priority:50}
-edge: {sourcename: "n154" targetname: "n155" label: "1" class:1  priority:50}
-node: {title: "n161" label: "ProjIs 1 161"  info1: "visited: 12
-irg:     PRIMA_c
-arity: 1
-" info2: "(mode == get_type_mode(get_method_param_type(mt, proj))) && Mode of Proj from Start doesn't match mode of param type."color: yellow}
-edge: {sourcename: "n161" targetname: "n159" label: "0" class:16 priority:10}
-node: {title: "n155" label: "ProjIs 2 155"  info1: "visited: 12
+edge: {sourcename: "n153" targetname: "n160" label: "0" class:1  priority:50}
+edge: {sourcename: "n153" targetname: "n154" label: "1" class:1  priority:50}
+node: {title: "n160" label: "ProjIs 1 160"  info1: "mode:    Is
+visited: 12
 irg:     PRIMA_c
 arity: 1
 "color: yellow}
-edge: {sourcename: "n155" targetname: "n156" label: "0" class:1  priority:50}
-node: {title: "n156" label: "Load  156"  info1: "visited: 12
+edge: {sourcename: "n160" targetname: "n158" label: "0" class:16 priority:10}
+node: {title: "n154" label: "ProjIs 2 154"  info1: "mode:    Is
+visited: 12
+irg:     PRIMA_c
+arity: 1
+"color: yellow}
+edge: {sourcename: "n154" targetname: "n155" label: "0" class:1  priority:50}
+node: {title: "n155" label: "Load  155"  info1: "mode:    T
+visited: 12
 irg:     PRIMA_c
 arity: 2
-" info2: "mymode == mode_T && Load node"}
-edge: {sourcename: "n156" targetname: "n160" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n156" targetname: "n157" label: "1" class:1  priority:50}
-node: {title: "n157" label: "Sel a 157"  info1: "visited: 12
+"}
+edge: {sourcename: "n155" targetname: "n159" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n155" targetname: "n156" label: "1" class:1  priority:50}
+node: {title: "n156" label: "Sel a 156"  info1: "mode:    P
+visited: 12
 irg:     PRIMA_c
 arity: 2
 Selecting entity of type int
   from entity of type PRIMA
 "}
-edge: {sourcename: "n157" targetname: "n160" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n157" targetname: "n158" label: "1" class:1  priority:50}
-node: {title: "n158" label: "ProjP 0 158"  info1: "visited: 12
+edge: {sourcename: "n156" targetname: "n159" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n156" targetname: "n157" label: "1" class:1  priority:50}
+node: {title: "n157" label: "ProjP 0 157"  info1: "mode:    P
+visited: 12
 irg:     PRIMA_c
 arity: 1
-" info2: "(mode == get_type_mode(get_method_param_type(mt, proj))) && Mode of Proj from Start doesn't match mode of param type."color: yellow}
-edge: {sourcename: "n158" targetname: "n159" label: "0" class:16 priority:10}
+"color: yellow}
+edge: {sourcename: "n157" targetname: "n158" label: "0" class:16 priority:10}
 }
 
-graph: { title: "n152"  label: "Block 152" status:clustered color:yellow
-edge: {sourcename: "n152" targetname: "n151" label: "0" class:13 priority:60 color:red}
-node: {title: "n160" label: "ProjM 1 160"  info1: "visited: 12
+graph: { title: "n151"  label: "Block 151" status:clustered color:yellow
+edge: {sourcename: "n151" targetname: "n150" label: "0" class:13 priority:60 color:red}
+node: {title: "n159" label: "ProjM 1 159"  info1: "mode:    M
+visited: 12
 irg:     PRIMA_c
 arity: 1
 "color: yellow}
-edge: {sourcename: "n160" targetname: "n153" label: "0" class:17 priority:10 color:blue}
-node: {title: "n159" label: "ProjT 4 159"  info1: "visited: 12
+edge: {sourcename: "n159" targetname: "n152" label: "0" class:17 priority:10 color:blue}
+node: {title: "n158" label: "ProjT 4 158"  info1: "mode:    T
+visited: 12
 irg:     PRIMA_c
 arity: 1
 "color: yellow}
-edge: {sourcename: "n159" targetname: "n153" label: "0" class:1  priority:50}
-node: {title: "n151" label: "ProjX 0 151"  info1: "visited: 12
+edge: {sourcename: "n158" targetname: "n152" label: "0" class:1  priority:50}
+node: {title: "n150" label: "ProjX 0 150"  info1: "mode:    X
+visited: 12
 irg:     PRIMA_c
 arity: 1
 "color: yellow}
-edge: {sourcename: "n151" targetname: "n153" label: "0" class:13 priority:60 color:red}
-node: {title: "n153" label: "Start  153"  info1: "visited: 12
+edge: {sourcename: "n150" targetname: "n152" label: "0" class:13 priority:60 color:red}
+node: {title: "n152" label: "Start  152"  info1: "mode:    T
+visited: 12
 irg:     PRIMA_c
 arity: 0
 start of method of type c
   param 0 type: class_prima_ptr
   param 1 type: int
-" info2: "mymode == mode_T && Start node"color: blue}
+"color: blue}
 }
 
 }

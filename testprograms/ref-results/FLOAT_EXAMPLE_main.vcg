@@ -24,49 +24,55 @@ classname 12: "Member"
 infoname 1: "Attribute"
 infoname 2: "Verification errors"
 
-graph: { title: "g26" label: "FLOAT_EXAMPLE_main" status:clustered color:white
-graph: { title: "n16"  label: "Block 16" status:clustered color:yellow
-edge: {sourcename: "n16" targetname: "n30" label: "0" class:13 priority:60 color:red}
-node: {title: "n17" label: "End  17"  info1: "visited: 4
+graph: { title: "g25" label: "FLOAT_EXAMPLE_main" status:clustered color:white
+graph: { title: "n15"  label: "Block 15" status:clustered color:yellow
+edge: {sourcename: "n15" targetname: "n29" label: "0" class:13 priority:60 color:red}
+node: {title: "n16" label: "End  16"  info1: "mode:    X
+visited: 4
 irg:     FLOAT_EXAMPLE_main
 arity: 0
 "color: blue}
 }
 
-graph: { title: "n27"  label: "Block 27" status:clustered color:yellow
-edge: {sourcename: "n27" targetname: "n21" label: "0" class:13 priority:60 color:red}
-node: {title: "n30" label: "Return  30"  info1: "visited: 4
+graph: { title: "n26"  label: "Block 26" status:clustered color:yellow
+edge: {sourcename: "n26" targetname: "n20" label: "0" class:13 priority:60 color:red}
+node: {title: "n29" label: "Return  29"  info1: "mode:    X
+visited: 4
 irg:     FLOAT_EXAMPLE_main
 arity: 2
 return in method of type FLOAT_EXAMPLE_main
   res 0 type: dbl
-" info2: "mymode == mode_X && Result X"}
-edge: {sourcename: "n30" targetname: "n22" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n30" targetname: "n28" label: "1" class:16 priority:10}
+"}
+edge: {sourcename: "n29" targetname: "n23" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n29" targetname: "n27" label: "1" class:16 priority:10}
 }
 
-graph: { title: "n18"  label: "Block 18" status:clustered color:yellow
-edge: {sourcename: "n18" targetname: "n21" label: "0" class:13 priority:60 color:red}
-node: {title: "n22" label: "ProjM 1 22"  info1: "visited: 4
+graph: { title: "n17"  label: "Block 17" status:clustered color:yellow
+edge: {sourcename: "n17" targetname: "n20" label: "0" class:13 priority:60 color:red}
+node: {title: "n23" label: "ProjM 1 23"  info1: "mode:    M
+visited: 4
 irg:     FLOAT_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n22" targetname: "n19" label: "0" class:17 priority:10 color:blue}
-node: {title: "n28" label: "1.234567890123456716800000000000E+19D  28"  info1: "visited: 4
+edge: {sourcename: "n23" targetname: "n18" label: "0" class:17 priority:10 color:blue}
+node: {title: "n27" label: "1.234567890123456716800000000000E+19D  27"  info1: "mode:    D
+visited: 4
 irg:     FLOAT_EXAMPLE_main
 arity: 0
 Const of type type_unknown
-" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
-node: {title: "n21" label: "ProjX 0 21"  info1: "visited: 4
+"color: yellow}
+node: {title: "n20" label: "ProjX 0 20"  info1: "mode:    X
+visited: 4
 irg:     FLOAT_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n21" targetname: "n19" label: "0" class:13 priority:60 color:red}
-node: {title: "n19" label: "Start  19"  info1: "visited: 4
+edge: {sourcename: "n20" targetname: "n18" label: "0" class:13 priority:60 color:red}
+node: {title: "n18" label: "Start  18"  info1: "mode:    T
+visited: 4
 irg:     FLOAT_EXAMPLE_main
 arity: 0
 start of method of type FLOAT_EXAMPLE_main
-" info2: "mymode == mode_T && Start node"color: blue}
+"color: blue}
 }
 
 }

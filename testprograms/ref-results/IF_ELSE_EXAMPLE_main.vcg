@@ -24,56 +24,63 @@ classname 12: "Member"
 infoname 1: "Attribute"
 infoname 2: "Verification errors"
 
-graph: { title: "g26" label: "IF_ELSE_EXAMPLE_main" status:clustered color:white
-graph: { title: "n61"  label: "Block 61" status:clustered color:yellow
-edge: {sourcename: "n61" targetname: "n62" label: "0" class:13 priority:60 color:red}
-node: {title: "n59" label: "End  59"  info1: "visited: 16
+graph: { title: "g25" label: "IF_ELSE_EXAMPLE_main" status:clustered color:white
+graph: { title: "n60"  label: "Block 60" status:clustered color:yellow
+edge: {sourcename: "n60" targetname: "n61" label: "0" class:13 priority:60 color:red}
+node: {title: "n58" label: "End  58"  info1: "mode:    X
+visited: 16
 irg:     IF_ELSE_EXAMPLE_main
 arity: 0
 "color: blue}
 }
 
-graph: { title: "n65"  label: "Block 65" status:clustered color:yellow
-edge: {sourcename: "n65" targetname: "n66" label: "0" class:13 priority:60 color:red}
-node: {title: "n62" label: "Return  62"  info1: "visited: 16
+graph: { title: "n64"  label: "Block 64" status:clustered color:yellow
+edge: {sourcename: "n64" targetname: "n65" label: "0" class:13 priority:60 color:red}
+node: {title: "n61" label: "Return  61"  info1: "mode:    X
+visited: 16
 irg:     IF_ELSE_EXAMPLE_main
 arity: 3
 return in method of type IF_ELSE_EXAMPLE_main
   res 0 type: int
   res 1 type: int
-" info2: "mymode == mode_X && Result X"}
-edge: {sourcename: "n62" targetname: "n71" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n62" targetname: "n70" label: "1" class:16 priority:10}
-edge: {sourcename: "n62" targetname: "n69" label: "2" class:16 priority:10}
+"}
+edge: {sourcename: "n61" targetname: "n70" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n61" targetname: "n69" label: "1" class:16 priority:10}
+edge: {sourcename: "n61" targetname: "n68" label: "2" class:16 priority:10}
 }
 
-graph: { title: "n67"  label: "Block 67" status:clustered color:yellow
-edge: {sourcename: "n67" targetname: "n66" label: "0" class:13 priority:60 color:red}
-node: {title: "n71" label: "ProjM 1 71"  info1: "visited: 16
+graph: { title: "n66"  label: "Block 66" status:clustered color:yellow
+edge: {sourcename: "n66" targetname: "n65" label: "0" class:13 priority:60 color:red}
+node: {title: "n70" label: "ProjM 1 70"  info1: "mode:    M
+visited: 16
 irg:     IF_ELSE_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n71" targetname: "n68" label: "0" class:17 priority:10 color:blue}
-node: {title: "n70" label: "0x0Is  70"  info1: "visited: 16
+edge: {sourcename: "n70" targetname: "n67" label: "0" class:17 priority:10 color:blue}
+node: {title: "n69" label: "0x0Is  69"  info1: "mode:    Is
+visited: 16
 irg:     IF_ELSE_EXAMPLE_main
 arity: 0
 Const of type type_unknown
-" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
-node: {title: "n69" label: "0x2Is  69"  info1: "visited: 16
+"color: yellow}
+node: {title: "n68" label: "0x2Is  68"  info1: "mode:    Is
+visited: 16
 irg:     IF_ELSE_EXAMPLE_main
 arity: 0
 Const of type type_unknown
-" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
-node: {title: "n66" label: "ProjX 0 66"  info1: "visited: 16
+"color: yellow}
+node: {title: "n65" label: "ProjX 0 65"  info1: "mode:    X
+visited: 16
 irg:     IF_ELSE_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n66" targetname: "n68" label: "0" class:13 priority:60 color:red}
-node: {title: "n68" label: "Start  68"  info1: "visited: 16
+edge: {sourcename: "n65" targetname: "n67" label: "0" class:13 priority:60 color:red}
+node: {title: "n67" label: "Start  67"  info1: "mode:    T
+visited: 16
 irg:     IF_ELSE_EXAMPLE_main
 arity: 0
 start of method of type IF_ELSE_EXAMPLE_main
-" info2: "mymode == mode_T && Start node"color: blue}
+"color: blue}
 }
 
 }

@@ -24,168 +24,193 @@ classname 12: "Member"
 infoname 1: "Attribute"
 infoname 2: "Verification errors"
 
-graph: { title: "g26" label: "THREE_CFPRED_EXAMPLE_main" status:clustered color:white
-graph: { title: "n76"  label: "Block 76" status:clustered color:yellow
-edge: {sourcename: "n76" targetname: "n77" label: "0" class:13 priority:60 color:red}
-node: {title: "n74" label: "End  74"  info1: "visited: 11
+graph: { title: "g25" label: "THREE_CFPRED_EXAMPLE_main" status:clustered color:white
+graph: { title: "n75"  label: "Block 75" status:clustered color:yellow
+edge: {sourcename: "n75" targetname: "n76" label: "0" class:13 priority:60 color:red}
+node: {title: "n73" label: "End  73"  info1: "mode:    X
+visited: 11
 irg:     THREE_CFPRED_EXAMPLE_main
 arity: 0
 "color: blue}
 }
 
-graph: { title: "n78"  label: "Block 78" status:clustered color:yellow
-edge: {sourcename: "n78" targetname: "n101" label: "0" class:13 priority:60 color:red}
-edge: {sourcename: "n78" targetname: "n98" label: "1" class:13 priority:60 color:red}
-edge: {sourcename: "n78" targetname: "n79" label: "2" class:13 priority:60 color:red}
-node: {title: "n77" label: "Return  77"  info1: "visited: 11
+graph: { title: "n77"  label: "Block 77" status:clustered color:yellow
+edge: {sourcename: "n77" targetname: "n100" label: "0" class:13 priority:60 color:red}
+edge: {sourcename: "n77" targetname: "n97" label: "1" class:13 priority:60 color:red}
+edge: {sourcename: "n77" targetname: "n78" label: "2" class:13 priority:60 color:red}
+node: {title: "n76" label: "Return  76"  info1: "mode:    X
+visited: 11
 irg:     THREE_CFPRED_EXAMPLE_main
 arity: 2
 return in method of type THREE_CFPRED_EXAMPLE_main
   res 0 type: int
-" info2: "mymode == mode_X && Result X"}
-edge: {sourcename: "n77" targetname: "n107" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n77" targetname: "n104" label: "1" class:1  priority:50}
-node: {title: "n104" label: "PhiIs  104"  info1: "visited: 11
+"}
+edge: {sourcename: "n76" targetname: "n106" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n76" targetname: "n103" label: "1" class:1  priority:50}
+node: {title: "n103" label: "PhiIs  103"  info1: "mode:    Is
+visited: 11
 irg:     THREE_CFPRED_EXAMPLE_main
 arity: 3 backedges:
-" info2: "mode_is_dataM(mymode) && Phi node"color: green}
-edge: {sourcename: "n104" targetname: "n106" label: "0" class:16 priority:10}
-edge: {sourcename: "n104" targetname: "n105" label: "1" class:16 priority:10}
-edge: {sourcename: "n104" targetname: "n105" label: "2" class:16 priority:10}
+"color: green}
+edge: {sourcename: "n103" targetname: "n105" label: "0" class:16 priority:10}
+edge: {sourcename: "n103" targetname: "n104" label: "1" class:16 priority:10}
+edge: {sourcename: "n103" targetname: "n104" label: "2" class:16 priority:10}
 }
 
-graph: { title: "n102"  label: "Block 102" status:clustered color:yellow
-edge: {sourcename: "n102" targetname: "n103" label: "0" class:13 priority:60 color:red}
-node: {title: "n101" label: "Jmp  101"  info1: "visited: 11
+graph: { title: "n101"  label: "Block 101" status:clustered color:yellow
+edge: {sourcename: "n101" targetname: "n102" label: "0" class:13 priority:60 color:red}
+node: {title: "n100" label: "Jmp  100"  info1: "mode:    X
+visited: 11
 irg:     THREE_CFPRED_EXAMPLE_main
 arity: 0
-" info2: "mymode == mode_X && Jmp node"}
+"}
 }
 
-graph: { title: "n99"  label: "Block 99" status:clustered color:yellow
-edge: {sourcename: "n99" targetname: "n100" label: "0" class:13 priority:60 color:red}
-node: {title: "n98" label: "Jmp  98"  info1: "visited: 11
+graph: { title: "n98"  label: "Block 98" status:clustered color:yellow
+edge: {sourcename: "n98" targetname: "n99" label: "0" class:13 priority:60 color:red}
+node: {title: "n97" label: "Jmp  97"  info1: "mode:    X
+visited: 11
 irg:     THREE_CFPRED_EXAMPLE_main
 arity: 0
-" info2: "mymode == mode_X && Jmp node"}
+"}
 }
 
-graph: { title: "n80"  label: "Block 80" status:clustered color:yellow
-edge: {sourcename: "n80" targetname: "n81" label: "0" class:13 priority:60 color:red}
-node: {title: "n79" label: "Jmp  79"  info1: "visited: 11
+graph: { title: "n79"  label: "Block 79" status:clustered color:yellow
+edge: {sourcename: "n79" targetname: "n80" label: "0" class:13 priority:60 color:red}
+node: {title: "n78" label: "Jmp  78"  info1: "mode:    X
+visited: 11
 irg:     THREE_CFPRED_EXAMPLE_main
 arity: 0
-" info2: "mymode == mode_X && Jmp node"}
+"}
 }
 
-graph: { title: "n82"  label: "Block 82" status:clustered color:yellow
-edge: {sourcename: "n82" targetname: "n83" label: "0" class:13 priority:60 color:red}
-node: {title: "n100" label: "ProjX 0 100"  info1: "visited: 11
+graph: { title: "n81"  label: "Block 81" status:clustered color:yellow
+edge: {sourcename: "n81" targetname: "n82" label: "0" class:13 priority:60 color:red}
+node: {title: "n99" label: "ProjX 0 99"  info1: "mode:    X
+visited: 11
 irg:     THREE_CFPRED_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n100" targetname: "n94" label: "0" class:13 priority:60 color:red}
-node: {title: "n81" label: "ProjX 1 81"  info1: "visited: 11
+edge: {sourcename: "n99" targetname: "n93" label: "0" class:13 priority:60 color:red}
+node: {title: "n80" label: "ProjX 1 80"  info1: "mode:    X
+visited: 11
 irg:     THREE_CFPRED_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n81" targetname: "n94" label: "0" class:13 priority:60 color:red}
-node: {title: "n94" label: "Cond  94"  info1: "visited: 11
+edge: {sourcename: "n80" targetname: "n93" label: "0" class:13 priority:60 color:red}
+node: {title: "n93" label: "Cond  93"  info1: "mode:    T
+visited: 11
 irg:     THREE_CFPRED_EXAMPLE_main
 arity: 1
-" info2: "mymode == mode_T && Cond mode is not a tuple"}
+"}
+edge: {sourcename: "n93" targetname: "n94" label: "0" class:1  priority:50}
+node: {title: "n94" label: "Projb Eq 94"  info1: "mode:    b
+visited: 11
+irg:     THREE_CFPRED_EXAMPLE_main
+arity: 1
+"color: yellow}
 edge: {sourcename: "n94" targetname: "n95" label: "0" class:1  priority:50}
-node: {title: "n95" label: "Projb Eq 95"  info1: "visited: 11
-irg:     THREE_CFPRED_EXAMPLE_main
-arity: 1
-"color: yellow}
-edge: {sourcename: "n95" targetname: "n96" label: "0" class:1  priority:50}
-node: {title: "n96" label: "CmpT  96"  info1: "visited: 11
+node: {title: "n95" label: "CmpT  95"  info1: "mode:    T
+visited: 11
 irg:     THREE_CFPRED_EXAMPLE_main
 arity: 2
 "}
-edge: {sourcename: "n96" targetname: "n97" label: "0" class:16 priority:10}
-edge: {sourcename: "n96" targetname: "n91" label: "1" class:16 priority:10}
+edge: {sourcename: "n95" targetname: "n96" label: "0" class:16 priority:10}
+edge: {sourcename: "n95" targetname: "n90" label: "1" class:16 priority:10}
 }
 
-graph: { title: "n84"  label: "Block 84" status:clustered color:yellow
-edge: {sourcename: "n84" targetname: "n85" label: "0" class:13 priority:60 color:red}
-node: {title: "n103" label: "ProjX 1 103"  info1: "visited: 11
+graph: { title: "n83"  label: "Block 83" status:clustered color:yellow
+edge: {sourcename: "n83" targetname: "n84" label: "0" class:13 priority:60 color:red}
+node: {title: "n102" label: "ProjX 1 102"  info1: "mode:    X
+visited: 11
 irg:     THREE_CFPRED_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n103" targetname: "n88" label: "0" class:13 priority:60 color:red}
-node: {title: "n83" label: "ProjX 0 83"  info1: "visited: 11
+edge: {sourcename: "n102" targetname: "n87" label: "0" class:13 priority:60 color:red}
+node: {title: "n82" label: "ProjX 0 82"  info1: "mode:    X
+visited: 11
 irg:     THREE_CFPRED_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n83" targetname: "n88" label: "0" class:13 priority:60 color:red}
-node: {title: "n88" label: "Cond  88"  info1: "visited: 11
+edge: {sourcename: "n82" targetname: "n87" label: "0" class:13 priority:60 color:red}
+node: {title: "n87" label: "Cond  87"  info1: "mode:    T
+visited: 11
 irg:     THREE_CFPRED_EXAMPLE_main
 arity: 1
-" info2: "mymode == mode_T && Cond mode is not a tuple"}
+"}
+edge: {sourcename: "n87" targetname: "n88" label: "0" class:1  priority:50}
+node: {title: "n88" label: "Projb Eq 88"  info1: "mode:    b
+visited: 11
+irg:     THREE_CFPRED_EXAMPLE_main
+arity: 1
+"color: yellow}
 edge: {sourcename: "n88" targetname: "n89" label: "0" class:1  priority:50}
-node: {title: "n89" label: "Projb Eq 89"  info1: "visited: 11
-irg:     THREE_CFPRED_EXAMPLE_main
-arity: 1
-"color: yellow}
-edge: {sourcename: "n89" targetname: "n90" label: "0" class:1  priority:50}
-node: {title: "n90" label: "CmpT  90"  info1: "visited: 11
+node: {title: "n89" label: "CmpT  89"  info1: "mode:    T
+visited: 11
 irg:     THREE_CFPRED_EXAMPLE_main
 arity: 2
 "}
-edge: {sourcename: "n90" targetname: "n93" label: "0" class:16 priority:10}
-edge: {sourcename: "n90" targetname: "n91" label: "1" class:1  priority:50}
-node: {title: "n91" label: "ProjIs 0 91"  info1: "visited: 11
+edge: {sourcename: "n89" targetname: "n92" label: "0" class:16 priority:10}
+edge: {sourcename: "n89" targetname: "n90" label: "1" class:1  priority:50}
+node: {title: "n90" label: "ProjIs 0 90"  info1: "mode:    Is
+visited: 11
 irg:     THREE_CFPRED_EXAMPLE_main
 arity: 1
-" info2: "(mode == get_type_mode(get_method_param_type(mt, proj))) && Mode of Proj from Start doesn't match mode of param type."color: yellow}
-edge: {sourcename: "n91" targetname: "n92" label: "0" class:16 priority:10}
+"color: yellow}
+edge: {sourcename: "n90" targetname: "n91" label: "0" class:16 priority:10}
 }
 
-graph: { title: "n86"  label: "Block 86" status:clustered color:yellow
-edge: {sourcename: "n86" targetname: "n85" label: "0" class:13 priority:60 color:red}
-node: {title: "n107" label: "ProjM 1 107"  info1: "visited: 11
+graph: { title: "n85"  label: "Block 85" status:clustered color:yellow
+edge: {sourcename: "n85" targetname: "n84" label: "0" class:13 priority:60 color:red}
+node: {title: "n106" label: "ProjM 1 106"  info1: "mode:    M
+visited: 11
 irg:     THREE_CFPRED_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n107" targetname: "n87" label: "0" class:17 priority:10 color:blue}
-node: {title: "n106" label: "0x5Is  106"  info1: "visited: 11
+edge: {sourcename: "n106" targetname: "n86" label: "0" class:17 priority:10 color:blue}
+node: {title: "n105" label: "0x5Is  105"  info1: "mode:    Is
+visited: 11
 irg:     THREE_CFPRED_EXAMPLE_main
 arity: 0
 Const of type type_unknown
-" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
-node: {title: "n105" label: "0x6Is  105"  info1: "visited: 11
+"color: yellow}
+node: {title: "n104" label: "0x6Is  104"  info1: "mode:    Is
+visited: 11
 irg:     THREE_CFPRED_EXAMPLE_main
 arity: 0
 Const of type type_unknown
-" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
-node: {title: "n97" label: "0x3Is  97"  info1: "visited: 11
+"color: yellow}
+node: {title: "n96" label: "0x3Is  96"  info1: "mode:    Is
+visited: 11
 irg:     THREE_CFPRED_EXAMPLE_main
 arity: 0
 Const of type type_unknown
-" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
-node: {title: "n93" label: "0x1Is  93"  info1: "visited: 11
+"color: yellow}
+node: {title: "n92" label: "0x1Is  92"  info1: "mode:    Is
+visited: 11
 irg:     THREE_CFPRED_EXAMPLE_main
 arity: 0
 Const of type type_unknown
-" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
-node: {title: "n92" label: "ProjT 4 92"  info1: "visited: 11
+"color: yellow}
+node: {title: "n91" label: "ProjT 4 91"  info1: "mode:    T
+visited: 11
 irg:     THREE_CFPRED_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n92" targetname: "n87" label: "0" class:1  priority:50}
-node: {title: "n85" label: "ProjX 0 85"  info1: "visited: 11
+edge: {sourcename: "n91" targetname: "n86" label: "0" class:1  priority:50}
+node: {title: "n84" label: "ProjX 0 84"  info1: "mode:    X
+visited: 11
 irg:     THREE_CFPRED_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n85" targetname: "n87" label: "0" class:13 priority:60 color:red}
-node: {title: "n87" label: "Start  87"  info1: "visited: 11
+edge: {sourcename: "n84" targetname: "n86" label: "0" class:13 priority:60 color:red}
+node: {title: "n86" label: "Start  86"  info1: "mode:    T
+visited: 11
 irg:     THREE_CFPRED_EXAMPLE_main
 arity: 0
 start of method of type THREE_CFPRED_EXAMPLE_main
   param 0 type: int
-" info2: "mymode == mode_T && Start node"color: blue}
+"color: blue}
 }
 
 }
