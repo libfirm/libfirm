@@ -1306,7 +1306,7 @@ void stat_finish(const char *name)
     }
 
     /* dump global */
-//    dump_graph(global);
+    dump_graph(global);
     dump_finish();
 
     stat_finish_pattern_history();
