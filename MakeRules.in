@@ -10,7 +10,7 @@ VPATH = $(srcdir)
 LIBFIRM_VERSION = @PACKAGE_VERSION@
 
 CC = @CC@
-CFLAGS := -Wall @CFLAGS@
+CFLAGS := -Wall -Wstrict-prototypes @CFLAGS@
 CPPFLAGS := -I. -I$(topdir) -I$(srcdir) -I$(top_srcdir) @CPPFLAGS@
 prefix?=@prefix@
 exec_prefix?=@exec_prefix@
