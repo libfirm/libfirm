@@ -234,12 +234,15 @@ void close_loop (ir_loop *l)
   if (get_kind(last_son) == k_ir_loop &&
       get_loop_n_elements(last_son) == 1)
     {
+      ir_loop *gson;
+
       lelement = get_loop_element(last_son, 0);
-      ir_loop *gson = lelement.son;
+      gson = lelement.son;
       if(get_kind(gson) == k_ir_loop)
 	{
-	  gson -> outer_loop = l;
           loop_element new_last_son;
+
+	  gson -> outer_loop = l;
           new_last_son.son = gson;
 	  l -> children[last] = new_last_son;
 	}

@@ -382,6 +382,8 @@ static void move_phis(ir_node * from_block, ir_node * to_block) {
  * Verschiebe ebenfalls die Projs aus diesen Operationen. */
 static void move_nodes(ir_node * from_block, ir_node * to_block, ir_node * node) {
   int i;
+  ir_node *proj;
+
   for (i = get_irn_arity(node) - 1; i >= 0; --i) {
     ir_node * pred = get_irn_n(node, i);
     if (get_nodes_Block(pred) == from_block) {
@@ -391,7 +393,7 @@ static void move_nodes(ir_node * from_block, ir_node * to_block, ir_node * node)
   set_nodes_Block(node, to_block);
 
   /* Move projs of this node. */
-  ir_node *proj = get_irn_link(node);
+  proj = get_irn_link(node);
   for (; proj; proj = skip_Id(get_irn_link(proj))) {
     if (get_irn_op(proj) != op_Proj && get_irn_op(proj) != op_Filter) continue;
     if ((get_nodes_Block(proj) == from_block) && (skip_Proj(get_irn_n(proj, 0)) == node))
@@ -686,8 +688,10 @@ static void construct_call(ir_node * call) {
     if (skip_Proj(get_Proj_pred(proj)) != call) continue;
     if (get_Proj_pred(proj) == call) {
       if (get_Proj_proj(proj) == 0) { /* memory */
+	ir_node * filter;
+
 	set_nodes_Block(proj, post_block);
-	ir_node * filter = exchange_proj(proj);
+	filter = exchange_proj(proj);
 	/* filter in die Liste der Phis aufnehmen */
 	if (get_irn_link(filter) == NULL) { /* note CSE */
 	  set_irn_link(filter, get_irn_link(post_block));
@@ -700,8 +704,9 @@ static void construct_call(ir_node * call) {
       } else if (get_Proj_proj(proj) == 2) { /* results */
 	/* nothing */
       } else if (get_Proj_proj(proj) == 3) { /* except_mem */
+        ir_node * filter;
+
 	set_nodes_Block(proj, post_block);
-	ir_node * filter;
 	assert(except_block);
 	set_irg_current_block(current_ir_graph, except_block);
 	filter = exchange_proj(proj);
@@ -717,9 +722,11 @@ static void construct_call(ir_node * call) {
 	assert(0 && "not reached");
       }
     } else { /* result */
+      ir_node * filter;
+
       assert(is_Proj(get_Proj_pred(proj)) && get_Proj_pred(get_Proj_pred(proj)) == call);
       set_nodes_Block(proj, post_block);
-      ir_node * filter = exchange_proj(proj);
+      filter = exchange_proj(proj);
       /* filter in die Liste der Phis aufnehmen */
       if (get_irn_link(filter) == NULL) { /* not CSE */
 	set_irn_link(filter, get_irn_link(post_block));
