@@ -1191,7 +1191,7 @@ void inline_small_irgs(ir_graph *irg, int size) {
     for (i = 0; i < env.pos; i++) {
       ir_graph *callee;
       callee = get_entity_irg(get_SymConst_entity(get_Call_ptr(env.calls[i])));
-      if (((_obstack_memory_used(callee->obst) - obstack_room(callee->obst)) < size) ||
+      if (((_obstack_memory_used(callee->obst) - (int)obstack_room(callee->obst)) < size) ||
         (get_irg_inline_property(callee) == irg_inline_forced)) {
         inline_method(env.calls[i], callee);
       }
@@ -1282,7 +1282,7 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
 
   if (!(get_opt_optimize() && get_opt_inline())) return;
 
-  /* extend all irgs by a temporary data structure for inlineing. */
+  /* extend all irgs by a temporary data structure for inlining. */
   for (i = 0; i < n_irgs; ++i)
     set_irg_link(get_irp_irg(i), new_inline_irg_env());
 
@@ -1310,8 +1310,10 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
       env = (inline_irg_env *)get_irg_link(current_ir_graph);
 
       for (call = eset_first(env->call_nodes); call; call = eset_next(env->call_nodes)) {
+        ir_graph *callee;
+
         if (get_irn_op(call) == op_Tuple) continue;   /* We already inlined. */
-        ir_graph *callee = get_call_called_irg(call);
+        callee = get_call_called_irg(call);
 
         if (env->n_nodes > maxsize) continue; // break;
 

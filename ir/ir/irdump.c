@@ -773,9 +773,11 @@ static void dump_const_node_local(FILE *F, ir_node *n) {
 
 /** If the block of an edge is a const_like node, dump it local with an edge */
 static void dump_const_block_local(FILE *F, ir_node *n) {
+  ir_node *blk;
+
   if (!get_opt_dump_const_local()) return;
 
-  ir_node *blk = get_nodes_block(n);
+  blk = get_nodes_block(n);
   if (is_constlike_node(blk)) {
     int bad = 0;
 
@@ -1009,7 +1011,8 @@ print_edge_vcgattr(FILE *F, ir_node *from, int to) {
 /* dump edges to our inputs */
 static void
 dump_ir_data_edges(FILE *F, ir_node *n)  {
-  int i, visited = get_irn_visited(n);
+  int i;
+  unsigned long visited = get_irn_visited(n);
 
   if ((get_irn_op(n) == op_End) && (!dump_keepalive))
     return;
@@ -2052,11 +2055,13 @@ static int compute_color (int my, int max) {
   if (!max) {
     color = 0;
   } else {
+    int step;
+
     /* if small, scale to the full color range. */
     if (max < n_colors)
       my = my * (n_colors/max);
 
-    int step = 1 + (max / n_colors);
+    step = 1 + (max / n_colors);
 
     color = my/step;
   }
@@ -2064,22 +2069,24 @@ static int compute_color (int my, int max) {
 }
 
 static int get_entity_color(entity *ent) {
-  assert(get_entity_irg(ent));
   ir_graph *irg = get_entity_irg(ent);
+  assert(irg);
 
-  int rec_depth     = get_irg_recursion_depth(irg);
-  int loop_depth    = get_irg_loop_depth(irg);
-  int overall_depth = weight_overall(rec_depth, loop_depth);
+  {
+    int rec_depth     = get_irg_recursion_depth(irg);
+    int loop_depth    = get_irg_loop_depth(irg);
+    int overall_depth = weight_overall(rec_depth, loop_depth);
 
-  int max_rec_depth     = irp->max_callgraph_recursion_depth;
-  int max_loop_depth    = irp->max_callgraph_loop_depth;
-  int max_overall_depth = weight_overall(max_rec_depth, max_loop_depth);
+    int max_rec_depth     = irp->max_callgraph_recursion_depth;
+    int max_loop_depth    = irp->max_callgraph_loop_depth;
+    int max_overall_depth = weight_overall(max_rec_depth, max_loop_depth);
 
-  /* int my_rec_color     = compute_color(rec_depth, max_rec_depth); */
-  /* int my_loop_color    = compute_color(loop_depth, max_loop_depth); */
-  int my_overall_color = compute_color(overall_depth, max_overall_depth);;
+    /* int my_rec_color     = compute_color(rec_depth, max_rec_depth); */
+    /* int my_loop_color    = compute_color(loop_depth, max_loop_depth); */
+    int my_overall_color = compute_color(overall_depth, max_overall_depth);;
 
-  return my_overall_color;
+    return my_overall_color;
+  }
 }
 
 void dump_callgraph(const char *suffix) {
@@ -2278,9 +2285,11 @@ void dump_loops_standalone(FILE *F, ir_loop *loop) {
       /* Causes indeterministic output: if (is_Block(n)) fprintf (F, "\t ->%d", (int)get_irn_link(n)); */
       if (has_backedges(n)) fprintf(F, "\t loop head!");
     } else { /* for callgraph loop tree */
+      ir_graph *n;
       assert(get_kind(son) == k_ir_graph);
+
       /* We are a loop node -> Collect firm graphs */
-      ir_graph *n = (ir_graph *)le.node;
+      n = (ir_graph *)le.node;
       if (!loop_node_started) {
         /* Start a new node which contains all firm nodes of the current loop */
         fprintf (F, "node: { title: \"");
@@ -2290,7 +2299,7 @@ void dump_loops_standalone(FILE *F, ir_loop *loop) {
         first = i;
       }
       else
-    fprintf(F, "\n");
+        fprintf(F, "\n");
       fprintf (F, " %s", get_irg_dump_name(n));
       /* fprintf (F, " %s (depth %d)", get_irg_dump_name(n), n->callgraph_weighted_loop_depth); */
     }
