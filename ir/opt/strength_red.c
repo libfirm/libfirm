@@ -1,18 +1,38 @@
 /**
  *
- * @file irsimpeltype.c
+ * @file strength_red.c
  *
  * Project:     libFIRM
  * File name:   ir/opt/strength_red.c
  * Purpose:     Make strength reduction .
  * Author:      Beyhan Veliev
  * Modified by:
- * Created:     22.8.2003
+ * Created:     22.8.2004
  * CVS-ID:      $Id$
- * Copyright:   (c) 2003 Universität Karlsruhe
+ * Copyright:   (c) 2004 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
+
+
+/*
+
+reducible(o)
+   while (reducible)
+     o = reduce(o)
+
+reduce_itervar(induct_var_info *iv)
+  for each (out o of iv) {
+    if (o is reducible) {
+       if (o is strong (Mul))
+         iv_new = reduce(o), remember_pattern(o)
+       else     // o is not strong (Add ...)
+	 if (o is the only user)
+           iv_new = reducible(o)
+    }
+  }
+
+*/
 
 # include "strength_red.h"
 
@@ -29,15 +49,20 @@
 /* The information needed for an induction variable */
 typedef struct _induct_var_info {
   ir_op   *operation_code;
-  ir_node *increment, *init, *op;
-  int      be_pos;
-  int      init_pred_pos;
-  int      op_pred_pos;
+  ir_node *increment, *init, *op, *itervar_phi, *c, *new_phi, *new_increment, *new_init;
+  ir_node *new_op, *new_add, *reducible_node;
+  ir_node *old_ind, *symconst, *new_cmp, *cmp_const, *cmp_init_block, *cmp;
+  ir_loop *l_itervar_phi;
+  int      be_pos, strong_reduced;
+  int      init_pred_pos, op_pred_pos, out_loop_res, phi_pred, reducible;
 } induct_var_info;
+
+
+
 
 /** Counter for verbose information about optimization. */
 static int n_reduced_expressions;
-
+static int n_made_new_phis;
 /** Detect basic iteration variables.
  *
  * The variable ir represented by a subgraph as this:
@@ -58,44 +83,61 @@ static int n_reduced_expressions;
  * @param n     A phi node.
  * @param info  After call contains the induction variable information
  */
-static induct_var_info *is_induction_variable (ir_node *n, induct_var_info *info) {
+static induct_var_info *is_induction_variable (induct_var_info *info) {
 
   ir_node  *phi_pred_0, *phi_pred_1, *add_r, *add_l, *sub_r, *sub_l ;
   ir_op    *phi_pred_0_op, *phi_pred_1_op;
 
-  info->operation_code = NULL;
-  info->increment      = NULL;
-  info->init           = NULL;
-  info->op             = NULL;
-  info->be_pos         = -1;
-  info->init_pred_pos  = -1;
-  info->op_pred_pos    = -1;
+  info->c                = NULL;
+  info->cmp              = NULL;
+  info->cmp_const        = NULL;
+  info->cmp_init_block   = NULL;
+  info->increment        = NULL;
+  info->init             = NULL;
+  info->l_itervar_phi    = NULL;
+  info->new_add          = NULL;
+  info->new_cmp          = NULL;
+  info->new_increment    = NULL;
+  info->new_init         = NULL;
+  info->new_op           = NULL;
+  info->new_phi          = NULL;
+  info->operation_code   = NULL;
+  info->op               = NULL;
+  info->old_ind          = NULL;
+  info->reducible_node   = NULL;
+  info->out_loop_res     = 1;
+  info->reducible        = 0;
+  info->phi_pred         = 0;
+  info->strong_reduced   = 0;
+  info->be_pos           = -1;
+  info->init_pred_pos    = -1;
+  info->op_pred_pos      = -1;
 
-  assert(get_irn_op(n) == op_Phi);
+  assert(get_irn_op(info->itervar_phi) == op_Phi);
 
   /* The necessary conditions for the phi node. */
-  if (get_irn_arity(n) != 2             ||
-      !has_backedges(get_nodes_block(n))  )
+  if (get_irn_arity(info->itervar_phi) != 2             ||
+      !has_backedges(get_nodes_block(info->itervar_phi))  )
     return NULL;
 
   /* The predecessors  of the phi node. */
-  phi_pred_0 = get_Phi_pred(n, 0);
-  phi_pred_1 = get_Phi_pred(n, 1);
+  phi_pred_0 = get_Phi_pred(info->itervar_phi, 0);
+  phi_pred_1 = get_Phi_pred(info->itervar_phi, 1);
 
   /*The operation of the predecessors. */
   phi_pred_0_op = get_irn_op(phi_pred_0);
   phi_pred_1_op = get_irn_op(phi_pred_1);
 
-  /*Compute if the induction variable is added or substracted wiht a constant . */
+ /*Compute if the induction variable is added or substracted wiht a constant . */
   if (phi_pred_0_op == op_Add){
     info->operation_code = op_Add;
     add_l = get_Add_left(phi_pred_0);
     add_r = get_Add_right(phi_pred_0);
     info->op_pred_pos = 0;
     info->init_pred_pos = 1;
-    if (add_l == n){
+    if (add_l == info->itervar_phi){
       info->increment = add_r;
-    } else if (add_r == n){
+    } else if (add_r == info->itervar_phi){
       info->increment = add_l;
     } else return NULL;
   } else if (phi_pred_1_op == op_Add){
@@ -104,9 +146,9 @@ static induct_var_info *is_induction_variable (ir_node *n, induct_var_info *info
     add_r = get_Add_right(phi_pred_1);
     info->op_pred_pos = 1;
     info->init_pred_pos = 0;
-    if (add_l == n){
+    if (add_l == info->itervar_phi){
       info->increment = add_r;
-    } else if (add_r == n){
+    } else if (add_r == info->itervar_phi){
       info->increment = add_l;
     } else return NULL;
   } else if (phi_pred_0_op == op_Sub){
@@ -115,9 +157,9 @@ static induct_var_info *is_induction_variable (ir_node *n, induct_var_info *info
     sub_l = get_Sub_left(phi_pred_0);
     info->op_pred_pos = 0;
     info->init_pred_pos = 1;
-    if (sub_l == n){
+    if (sub_l == info->itervar_phi){
       info->increment = sub_r;
-    } else if (sub_r == n){
+    } else if (sub_r == info->itervar_phi){
       info->increment = sub_l;
     } else return NULL;
   } else if (phi_pred_1_op == op_Sub){
@@ -126,112 +168,138 @@ static induct_var_info *is_induction_variable (ir_node *n, induct_var_info *info
     sub_l = get_Sub_left(phi_pred_1);
     info->op_pred_pos = 1;
     info->init_pred_pos = 0;
-    if (sub_l == n){
+    if (sub_l == info->itervar_phi){
       info->increment = sub_r;
     } else return NULL;
   } else
     return NULL;
 
   /*Compute the position of the backedge. */
-  if (is_backedge(get_nodes_block(n), info->op_pred_pos)){
+  if (is_backedge(get_nodes_block(info->itervar_phi), info->op_pred_pos)){
     info->be_pos = info->op_pred_pos;
-    info->op = get_Phi_pred(n, info->op_pred_pos);
-    info->init = get_Phi_pred(n, info->init_pred_pos);
+    info->op = get_Phi_pred(info->itervar_phi, info->op_pred_pos);
+    info->init = get_Phi_pred(info->itervar_phi, info->init_pred_pos);
   }
 
   if (get_Block_dom_depth(get_nodes_block(info->init))  >=
-      get_Block_dom_depth(get_nodes_block(n))) {
+      get_Block_dom_depth(get_nodes_block(info->itervar_phi))) {
     return NULL;
   }
 
+  /* This "for" marks if the iteration operation have a Store successor .*/
+  int op_pred = get_irn_n_outs(info->op), Store_in_op = 0, Store_in_phi = 0, cmp_in_phi = 0;
+  for(int i = 1; i <= op_pred; i++){
+    ir_node  *out = get_irn_out(info->op, (i-1));
+    ir_op *out_op = get_irn_op(out);
+    if(out_op == op_Store)
+      Store_in_op++;
+  }
+
+  // Information about loop of itervar_phi.
+  info->l_itervar_phi = get_irn_loop(get_nodes_block(info->itervar_phi));
+
+  /* This "for" searchs for the Cmp successor of the
+     iter_var to reduce and marks if the iter_var have a Store
+     successor or a successor out of loop.*/
+  info->phi_pred = get_irn_n_outs(info->itervar_phi);
+  for (int i = 1; i <= info->phi_pred; i++) {
+    ir_node *out = get_irn_out(info->itervar_phi, (i-1));
+    ir_op   *out_op = get_irn_op(out);
+    if ((get_irn_loop(get_nodes_block(out)) != info->l_itervar_phi) &&
+	( get_Block_dom_depth(get_nodes_block(out))  >
+	  get_Block_dom_depth(get_nodes_block(info->itervar_phi))))
+      info->out_loop_res = 0;
+
+    if ( out_op == op_Store)
+      Store_in_phi++;
+    else if (out_op == op_Cmp){
+      info->cmp = out;
+      cmp_in_phi++;
+    }
+  }
+
+  if((info->phi_pred == 3 && op_pred == 1 && Store_in_phi == 0 && cmp_in_phi == 1)  ||
+     (info->phi_pred == 2 && op_pred == 2 && Store_in_op ==0 && info->cmp != NULL )  ||
+     (info->phi_pred == 1 && Store_in_op == 0))
+    info->reducible = 1;
+
+  // Search for constant of Cmp.
+  if (info->cmp != NULL){
+    if (get_irn_op(get_Cmp_left(info->cmp)) == op_Const)
+      info->cmp_const = get_Cmp_left(info->cmp);
+    else
+      info->cmp_const = get_Cmp_right(info->cmp);
+
+    ir_node *cmp_const_block = get_nodes_block(info->cmp_const);
+    if (get_Block_dom_depth(get_nodes_block(info->init)) >=
+	get_Block_dom_depth(cmp_const_block))
+      info->cmp_init_block = get_nodes_block(info->init);
+    else
+      info->cmp_init_block = cmp_const_block;
+  }
   return info;
 }
 
 /* from irdump.c */
 const char *get_irg_dump_name(ir_graph *irg);
 
-/**
- * Reduce a node.
+static INLINE ir_node *
+my_new_r_Add (ir_graph *irg, ir_node *b, ir_node *op1, ir_node *op2) {
+  ir_mode *m = get_irn_mode(op1);
+  if (mode_is_reference(get_irn_mode (op2)))
+    m = get_irn_mode(op2);
+  return new_r_Add(irg, b, op1, op2, m);
+}
+
+static INLINE ir_node *
+my_new_r_Sub (ir_graph *irg, ir_node *b, ir_node *op1, ir_node *op2) {
+  ir_mode *m = get_irn_mode(op1);
+  if (mode_is_reference(get_irn_mode (op2)))
+    m = get_irn_mode(op2);
+  else if(mode_is_reference(get_irn_mode (op2)) && m == mode_P)
+    m = mode_Is;
+  return new_r_Sub(irg, b, op1, op2, m);
+}
+
+/* Reduce a Add, Sub or Mul node
  *
- * @param *srong   The node to be reduce.
- * @param *env     Free environment pointer.
- *
- * The node for reduce mus be in a loop whit *phi and *add.The *phi node muss
- * have 2 predecessors a Const and a Add node. The predecessors of Add node muss
- * be *phi and a Const node. The nodes a, b, c  muss be Const with dom_depth <
- * phi.
+ * @param *reduce_var  The node to reduce.
+ * @param *ivi         Contains the induction variable information.
  */
-
-void reduce_itervar(ir_node *itervar_phi, void *env) {
-  int i;
-  ir_node *strong = NULL, *cmp = NULL, *c, *cmp_const, *old_add;
-  int phi_pred, strong_in_Phi = 0, cmp_in_phi = 0, out_loop_res = 1, Store_in_phi = 0;
-  int op_pred, Store_in_op = 0, strong_in_op = 0;
-
-  induct_var_info ivi;
-
-  // This "if" finds the Phi predecessors for the node that must be reduced.
-  if ((get_irn_op(itervar_phi) == op_Phi)    &&
-      is_induction_variable(itervar_phi, &ivi) != NULL ) {
-    phi_pred = get_irn_n_outs(itervar_phi);
-    ir_loop *l_itervar_phi = get_irn_loop(get_nodes_block(itervar_phi));
-    for (i = 0; i < phi_pred; i++) {
-      ir_node *out = get_irn_out(itervar_phi, i);
-      ir_op   *out_op = get_irn_op(out);
-      if (get_irn_loop(get_nodes_block(out)) != l_itervar_phi)
-        out_loop_res = 0;
-      if ( out_op == op_Store)
-        Store_in_phi++;
-      if (out_op == op_Mul) {
-        strong = out;
-        strong_in_Phi++;
-      }else if (out_op == op_Cmp){
-        cmp = out;
-        cmp_in_phi++;
-      }
-    }
-
-    if (strong == NULL){
-      op_pred = get_irn_n_outs(ivi.op);
-      for(i = 0; i < op_pred; i++){
-        ir_node  *out = get_irn_out(ivi.op, i);
-        ir_op *out_op = get_irn_op(out);
-        if(out_op == op_Store)
-          Store_in_op++;
-        if(out_op == op_Mul){
-          strong = out;
-          strong_in_op++;
-        }
-      }
-    }
-    if (strong == NULL || (strong_in_Phi > 1) || (strong_in_op > 1)) return;
-
-    if (get_irn_loop(get_nodes_block(strong)) != l_itervar_phi) return;
-
-    ir_op *mul_right_op = get_irn_op(get_Mul_right(strong));
-    if(mul_right_op == op_Phi || mul_right_op == op_Add || mul_right_op == op_Sub)
-      c = get_Mul_left(strong);
-    else
-      c = get_Mul_right(strong);
+static int reduce(ir_node *reduce_var, induct_var_info *ivi){
 
 
-    if (get_Block_dom_depth(get_nodes_block(c))  >=
-        get_Block_dom_depth(get_nodes_block(itervar_phi))) return;
+  // Essential conditions for a reducable node.
+  if (get_irn_loop(get_nodes_block(reduce_var)) != ivi->l_itervar_phi) return 0;
 
-    if (get_opt_strength_red_verbose() && get_firm_verbosity() > 1) {
-      printf("The constant of Reducing node is: "); DDMN(c);
-      printf("The Phi node is"); DDMN(itervar_phi);
-      printf("Reducing node: "); DDMN(strong);
-      printf("  iter var is  "); DDMN(ivi.op);
-      printf("  in graph     "); DDMG(current_ir_graph);
-    }
+  if(get_irn_op(reduce_var) == op_Mul){
 
-    ir_node *inc , *init , *new_phi, *in[2], *new_op = NULL, *block_init;
-    ir_node *block_inc, *new_add, *symconst;
+    n_reduced_expressions++;
+    ir_node *mul_init  = NULL;
+    ir_node *mul_const = NULL;
+    // Search for constant and init of strong.
+    ir_node  *mul_right = get_Mul_right(reduce_var);
+    ir_node  *mul_left  = get_Mul_left(reduce_var);
+    ir_op *mul_right_op = get_irn_op(mul_right);
+    ir_op  *mul_left_op = get_irn_op(mul_left);
+    if(mul_right_op != op_Const)
+      mul_init = mul_right;
+    else  if(mul_left_op != op_Const)
+      mul_init = mul_left;
 
-    ir_node *init_block      = get_nodes_block(ivi.init);
-    ir_node *increment_block = get_nodes_block(ivi.increment);
-    ir_node *c_block         = get_nodes_block(c) ;
+    if(mul_right_op == op_Const )
+      mul_const = mul_right;
+    else if(mul_left_op == op_Const)
+      mul_const = mul_left;
+
+    if(mul_const == NULL || mul_init == NULL) return 0;
+
+    ir_node *in[2], *block_init;
+    ir_node *block_inc;
+
+    ir_node *init_block      = get_nodes_block(mul_init);
+    ir_node *increment_block = get_nodes_block(ivi->increment);
+    ir_node *c_block         = get_nodes_block(mul_const) ;
 
     if (get_Block_dom_depth(increment_block) >= get_Block_dom_depth(c_block))
       block_inc = increment_block;
@@ -243,76 +311,255 @@ void reduce_itervar(ir_node *itervar_phi, void *env) {
     else
       block_init = c_block;
 
-    /* we will do a strength reduction */
-    stat_strength_red(current_ir_graph, strong, cmp);
+    if(!ivi->reducible){
 
-    /* Compute new loop invariant increment and initialization values. */
-    inc  = new_r_Mul (current_ir_graph, block_inc,  ivi.increment, c, get_irn_mode(c));
-    init = new_r_Mul (current_ir_graph, block_init, ivi.init,      c, get_irn_mode(ivi.init));
+      // Essential condition for the constant of strong.
+      if (get_Block_dom_depth(get_nodes_block(mul_const))  >=
+	  get_Block_dom_depth(get_nodes_block(ivi->itervar_phi))) return 0;
+      n_made_new_phis++;
+      if (get_opt_strength_red_verbose() && get_firm_verbosity() > 1) {
+	printf("The new Phi node is : "); DDMN(ivi->itervar_phi);
+	printf("reducing operation is : "); DDMN(reduce_var);
+	printf("in graph : "); DDMG(current_ir_graph);
+      }
 
-    /* Generate a new basic induction variable. Break the data flow loop
-       initially by using an Unknown node. */
-    in[ivi.op_pred_pos]   = new_Unknown(get_irn_mode(init));
-    in[ivi.init_pred_pos] = init;
-    new_phi = new_r_Phi(current_ir_graph, get_nodes_block(itervar_phi), 2, in, get_irn_mode(init));
-    mark_irn_visited(new_phi);
+      ivi->new_increment  = new_r_Mul (current_ir_graph, block_inc,  ivi->increment, mul_const,
+				       get_irn_mode(mul_const));
+      if (!(get_irn_op(mul_init) == op_Phi)){
+	ivi->new_init = new_r_Mul (current_ir_graph, block_init, ivi->init, mul_const,
+				   get_irn_mode(mul_const));
+	ivi->new_init =my_new_r_Add(current_ir_graph, block_init, ivi->new_init,
+				    ivi->new_increment);
+      }else
+	ivi->new_init = new_r_Mul (current_ir_graph, block_init, ivi->init, mul_const,
+				   get_irn_mode(mul_const));
 
-    if (ivi.operation_code == op_Add)
-      new_op = new_r_Add(current_ir_graph, get_nodes_block(ivi.op), inc, new_phi,
-                         get_irn_mode(inc));
-    else if (ivi.operation_code == op_Sub)
-      new_op = new_r_Sub(current_ir_graph, get_nodes_block(ivi.op), new_phi, inc,
-                         get_irn_mode(inc));
-    set_Phi_pred(new_phi, ivi.op_pred_pos, new_op);
+      /* Generate a new basic induction variable. Break the data flow loop
+	 initially by using an Unknown node. */
 
-    if(strong_in_op){
-      if(get_irn_n_outs(strong) > 1) return;
-      else old_add = get_irn_out(strong, 0);
-      if(get_irn_op(old_add) != op_Add) return;
-      if(get_Add_left(old_add) == strong)
-        symconst = get_Add_right(old_add);
-      else
-        symconst = get_Add_left(old_add);
-      new_add = new_r_Add(current_ir_graph, get_nodes_block(old_add),
-                          new_op, symconst,  get_irn_mode(symconst));
-      exchange(old_add, new_add);
+      in[ivi->op_pred_pos]   = new_Unknown(get_irn_mode(ivi->new_init));
+
+      in[ivi->init_pred_pos] = ivi->new_init;
+      ivi->new_phi = new_r_Phi(current_ir_graph, get_nodes_block(ivi->itervar_phi), 2, in,
+			       get_irn_mode(mul_const));
+      mark_irn_visited(ivi->new_phi);
+
+      if (ivi->operation_code == op_Add)
+	ivi->new_op =my_new_r_Add(current_ir_graph, get_nodes_block(ivi->op),
+				  ivi->new_increment,ivi-> new_phi);
+      else if (ivi->operation_code == op_Sub)
+	ivi->new_op = my_new_r_Sub(current_ir_graph, get_nodes_block(ivi->op),ivi-> new_phi,
+				   ivi->new_increment);
+
+      set_Phi_pred(ivi->new_phi, ivi->op_pred_pos, ivi->new_op);
+
+
+
+
+
+      // This for search for a reducible successor of reduc_var.
+      int reduce_var_pred =  get_irn_n_outs(reduce_var);
+      if(reduce_var_pred == 1){
+	ir_node *old_ind =get_irn_out(reduce_var, 0);
+	if(get_irn_op(old_ind) == op_Add || get_irn_op(old_ind) == op_Sub ||
+	   get_irn_op(old_ind) == op_Mul){
+	  ivi->reducible = 1;
+	  ivi->reducible_node = old_ind;
+	}
+      }
+      /* Replace the use of the strength reduced value. */
+      exchange(reduce_var, ivi->new_phi);
+      return 1;
+    }else {
+      if(ivi->new_phi == NULL){
+	ivi->init = new_r_Mul (current_ir_graph, get_nodes_block(ivi->init),
+			       mul_const, ivi->init,
+			       get_irn_mode(mul_const));
+	if(ivi->cmp != NULL)
+	  ivi->cmp_const = new_r_Mul (current_ir_graph, ivi->cmp_init_block,
+				      ivi->cmp_const, mul_const, get_irn_mode(mul_const));
+	ivi->increment = new_r_Mul (current_ir_graph, block_init,
+				    ivi->increment, mul_const, get_irn_mode(mul_const));
+      }else {
+	ivi->new_init = new_r_Mul (current_ir_graph, get_nodes_block(ivi->init),
+				   mul_const, ivi->new_init,
+				   get_irn_mode(mul_const));
+	ivi->new_increment = new_r_Mul (current_ir_graph, block_init,
+					ivi->new_increment, mul_const,
+					get_irn_mode(mul_const));
+      }
+      if (get_opt_strength_red_verbose() && get_firm_verbosity() > 1) {
+	printf("\nReducing operation is : "); DDMN(reduce_var);
+	printf("in graph : "); DDMG(current_ir_graph);
+      }
+      return 1;
     }
 
-    /* Replace the use of the strength reduced value. */
-    exchange(strong, new_phi);
+  }else if (get_irn_op (reduce_var) == op_Add){
+    n_reduced_expressions++;
+    ir_node *add_init  = NULL;
+    ir_node *add_const = NULL;
 
-    if (cmp == NULL || cmp_in_phi > 1 || out_loop_res == 0 || Store_in_phi != 0 || Store_in_op != 0) return;
-
-    if (get_irn_op(get_Cmp_left(cmp)) == op_Const)
-      cmp_const = get_Cmp_left(cmp);
-    else
-      cmp_const = get_Cmp_right(cmp);
-
-    if (get_irn_loop(get_nodes_block(cmp)) != l_itervar_phi) return;
-
+    // Search for constant of add.
+    ir_node  *add_right = get_Add_right(reduce_var);
+    ir_node  *add_left  = get_Add_left(reduce_var);
+    ir_op *add_right_op = get_irn_op(add_right);
+    ir_op  *add_left_op = get_irn_op(add_left);
+    if(add_right_op != op_Const)
+      add_init = add_right;
+    else  if(add_left_op != op_Const )
+      add_init = add_left;
+    if(add_right_op == op_Const || add_right_op == op_SymConst)
+      add_const = add_right;
+    else if(add_left_op == op_Const || add_left_op == op_SymConst)
+      add_const = add_left;
+    if(add_const == NULL) return 0;
+    if(ivi->new_phi == NULL){
+      ivi->init = my_new_r_Add (current_ir_graph, get_nodes_block(ivi->init),
+				add_const, ivi->init);
+      if(ivi->cmp != NULL)
+	ivi->cmp_const = my_new_r_Add (current_ir_graph, ivi->cmp_init_block,
+				       add_const, ivi->cmp_const);
+    }else{
+      ivi->new_init = my_new_r_Add (current_ir_graph, get_nodes_block(ivi->init),
+				    add_const, ivi->new_init);
+    }
     if (get_opt_strength_red_verbose() && get_firm_verbosity() > 1) {
-      printf("It is possibale to exchange the Cmp with a new Cmp   \n");
-      printf("The constant of Cmp node is: "); DDMN(cmp_const);
-      printf("The Phi node is  "); DDMN(itervar_phi);
-      printf("Cmp node: "); DDMN(cmp);
-      printf("  in graph     "); DDMG(current_ir_graph);
+      printf("\nReducing operation is : "); DDMN(reduce_var);
+      printf("in graph : "); DDMG(current_ir_graph);
     }
+    return 1;
+  }else if(get_irn_op(reduce_var) == op_Sub ){
+    n_reduced_expressions++;
+    ir_node *sub_init  = NULL;
+    ir_node *sub_const = NULL;
+    // Search for constant of sub.
+    ir_node  *sub_right = get_Sub_right(reduce_var);
+    ir_node  *sub_left  = get_Sub_left(reduce_var);
+    ir_op *sub_right_op = get_irn_op(sub_right);
+    ir_op  *sub_left_op = get_irn_op(sub_left);
+    if(sub_right_op != op_Const)
+      sub_init = sub_right;
+    else  if(sub_left_op != op_Const)
+      sub_init = sub_left;
+    if(sub_right_op == op_Const)
+      sub_const = sub_right;
+    else if(sub_left_op == op_Const)
+      sub_const = sub_left;
 
-    ir_node *new_cmp_const, *new_cmp, *cmp_const_block = get_nodes_block(cmp_const);
+    if(sub_const == NULL ) return 0;
 
-    if (get_Block_dom_depth(init_block) >= get_Block_dom_depth(cmp_const_block))
-      block_init = init_block;
-    else
-      block_init = cmp_const_block;
-
-    new_cmp_const = new_r_Mul (current_ir_graph, block_init, cmp_const,
-                               c, get_irn_mode(ivi.init));
-    new_cmp = new_r_Cmp (current_ir_graph, get_nodes_block(cmp),
-                         new_phi, new_cmp_const);
-    exchange(cmp, new_cmp);
-  } else return;
+    if(ivi->new_phi == NULL){
+    ivi->init = my_new_r_Sub (current_ir_graph, get_nodes_block(ivi->init),
+			      ivi->init, sub_const);
+    if (ivi->cmp != NULL)
+      ivi->cmp_const =my_new_r_Sub (current_ir_graph, get_nodes_block(ivi->init),
+				    ivi->cmp_const,sub_const);
+    }else
+      ivi->new_init = my_new_r_Sub (current_ir_graph, get_nodes_block(ivi->init),
+				    ivi->new_init, sub_const);
+    if (get_opt_strength_red_verbose() && get_firm_verbosity() > 1) {
+      printf("\nReducing operation is : "); DDMN(reduce_var);
+      printf("in graph : "); DDMG(current_ir_graph);
+    }
+    return 1;
+  }else return 0;
 }
 
+static ir_node *reducible(ir_node *out,  induct_var_info *ivi){
+  int pred = 1;
+  ir_node *reduced = NULL;
+  while( pred == 1 ){
+    if( reduce(out, ivi) )
+      reduced  = out;
+    else return reduced;
+    out = get_irn_out(out,0 );
+    pred = get_irn_n_outs(out);
+
+  }
+  return reduced;
+}
+/**
+ * Reduce a node.
+ *
+ * @param *itervar_phi   The iteration variable of a loop.
+ * @param *env           Free environment pointer.
+ *
+ */
+
+static void reduce_itervar(ir_node *itervar_phi, void *env) {
+
+
+  induct_var_info ivi;
+
+  // This "if" finds the inreration variable.
+  ivi.itervar_phi = itervar_phi;
+  if ( (get_irn_op(ivi.itervar_phi) == op_Phi) &&
+       is_induction_variable(&ivi) != NULL ) {
+
+    for (int i = 1; i <= ivi.phi_pred; i++) {
+      ir_node *out = get_irn_out(ivi.itervar_phi, (i-1));
+      ir_op   *out_op = get_irn_op(out);
+      if(ivi.reducible){
+	if(ivi.phi_pred == 3 && out != ivi.op && out !=ivi.cmp){
+	  ir_node *reduced = reducible(out, &ivi);
+	  if (reduced != NULL)
+	    exchange( reduced, ivi.itervar_phi);
+	}
+      } else if (out_op == op_Mul)
+	if(reduce(out, &ivi) && ivi.reducible){
+	  ir_node *reduced = reducible(ivi.reducible_node, &ivi);
+	  if(reduced != NULL)
+	    exchange(reduced, ivi.new_phi);
+	  ivi.reducible = 0;
+	  set_Phi_pred(ivi.new_phi, ivi.init_pred_pos, ivi.new_init);
+	  set_irn_mode(ivi.new_phi,get_irn_mode(ivi.new_init));
+	  set_irn_mode(ivi.new_op,get_irn_mode(ivi.new_phi));
+	}
+    }
+    int op_out = get_irn_n_outs(ivi.op);
+    for (int i = 1; i <= op_out; i++){
+      ir_node *out = get_irn_out(ivi.op, (i-1));
+      ir_op   *out_op = get_irn_op(out);
+      if(op_out == 2 && out != ivi.itervar_phi){
+	ir_node *reduced = reducible(out, &ivi);
+	if(reduced != NULL)
+	  exchange( reduced, ivi.op);
+      }else if (out_op == op_Mul)
+	if(reduce(out, &ivi) && ivi.reducible){
+	  ir_node *reduced = reducible(ivi.reducible_node, &ivi);
+	  if(reduced != NULL)
+	    exchange(reduced, ivi.new_phi);
+	  ivi.reducible = 0;
+	  set_Phi_pred(ivi.new_phi, ivi.init_pred_pos, ivi.new_init);
+	  set_irn_mode(ivi.new_phi,get_irn_mode(ivi.new_init));
+	  set_irn_mode(ivi.new_op,get_irn_mode(ivi.new_phi));
+	}
+    }
+
+    if(ivi.reducible){
+      if(get_irn_op(ivi.op) == op_Add)
+	if(get_Add_left(ivi.op) == ivi.itervar_phi)
+	  set_Add_right(ivi.op, ivi.increment);
+	else
+	  set_Add_left(ivi.op, ivi.increment);
+      else if(get_Sub_left(ivi.op) == ivi.itervar_phi)
+	set_Sub_right(ivi.op, ivi.increment);
+      else
+	set_Sub_right(ivi.op, ivi.increment);
+      set_Phi_pred(ivi.itervar_phi, ivi.init_pred_pos, ivi.init);
+      set_irn_mode(ivi.itervar_phi, get_irn_mode(ivi.init));
+      set_irn_mode(ivi.op, get_irn_mode(ivi.itervar_phi));
+      if (ivi.cmp != NULL){
+	set_irn_mode(ivi.cmp_const, get_irn_mode(ivi.itervar_phi));
+	if(get_Cmp_left(ivi.cmp) == ivi.itervar_phi)
+	  set_Cmp_right(ivi.cmp, ivi.cmp_const);
+	else
+	  set_Cmp_left(ivi.cmp, ivi.cmp_const);
+      }
+    }
+  } else return;
+}
 
 /* Performs strength reduction for the passed graph. */
 void reduce_strength(ir_graph *irg) {
@@ -322,7 +569,7 @@ void reduce_strength(ir_graph *irg) {
   if (!get_optimize() || !get_opt_strength_red()) return;
 
   n_reduced_expressions = 0;
-
+  n_made_new_phis = 0;
   /* -- Precompute some information -- */
   /* Call algorithm that computes the backedges */
   construct_cf_backedges(irg);
@@ -334,7 +581,9 @@ void reduce_strength(ir_graph *irg) {
   irg_walk_graph(irg, NULL, reduce_itervar, NULL);
 
   if (get_opt_strength_red_verbose())
-    printf("Reduced %d iteration variables in graph %s.%s\n.", n_reduced_expressions,
+    printf ("\n %d made new_phis und  ", n_made_new_phis);
+    printf("reduced %d iteration variables "
+           "in \n graph %s.%s.\n", n_reduced_expressions,
        get_type_name(get_entity_owner(get_irg_entity(irg))),
        get_entity_name(get_irg_entity(irg)));
 

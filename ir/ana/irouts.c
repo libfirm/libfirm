@@ -51,7 +51,8 @@ static void reset_outs (ir_node *node, void *unused)
 }
 
 /* returns the number of successors of the node: */
-INLINE int get_irn_n_outs (ir_node *node) {
+INLINE int get_irn_n_outs    (ir_node *node) {
+  assert(node && node->kind == k_ir_node);
 #ifdef DEBUG_libfirm
   /* assert (node->out_valid); */
 #endif /* defined DEBUG_libfirm */
@@ -60,7 +61,6 @@ INLINE int get_irn_n_outs (ir_node *node) {
 
 /* Access successor n */
 INLINE ir_node *get_irn_out      (ir_node *node, int pos) {
-  assert(node);
   assert(pos >= 0 && pos < get_irn_n_outs(node));
 #ifdef DEBUG_libfirm
   /* assert (node->out_valid); */

@@ -7,9 +7,9 @@
  * Purpose:     Strength reduction.
  * Author:      Beyhan Veliev
  * Modified by:
- * Created:     22.8.2003
+ * Created:     22.8.2004
  * CVS-ID:      $Id$
- * Copyright:   (c) 2003 Universität Karlsruhe
+ * Copyright:   (c) 2004 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  *
  *

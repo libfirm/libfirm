@@ -355,7 +355,7 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
          (proj == pn_Div_X_except && mode == mode_X) ||
          (proj == pn_Div_res      && mode_is_int(mode))),
         "wrong Proj from Div or Mod", 0,
-    show_proj_failure(p);
+	show_proj_failure(p);
       );
       break;
 

@@ -26,6 +26,7 @@ optimization_state_t libFIRM_opt =
   ENABLE(OPT_OPTIMIZED)                          |
   ENABLE(OPT_CSE)                                |
   DISABLE(OPT_GLOBAL_CSE)                        |
+  ENABLE(OPT_LOOP_UNROLLING)                     |
   ENABLE(OPT_STRENGTH_RED)                       |
   ENABLE(OPT_CONSTANT_FOLDING)                   |
   ENABLE(OPT_REDUNDANT_LOADSTORE)                |
@@ -49,6 +50,7 @@ optimization_state_t libFIRM_verb =
   DISABLE(OPT_OPTIMIZED)                          |
   DISABLE(OPT_CSE)                                |
   DISABLE(OPT_GLOBAL_CSE)                         |
+  DISABLE(OPT_LOOP_UNROLLING)                     |
   DISABLE(OPT_STRENGTH_RED)                       |
   DISABLE(OPT_CONSTANT_FOLDING)                   |
   DISABLE(OPT_REDUNDANT_LOADSTORE)                |
@@ -90,6 +92,22 @@ void set_opt_global_cse(int value)
     libFIRM_opt |= OPT_GLOBAL_CSE;
   else
     libFIRM_opt &= ~OPT_GLOBAL_CSE;
+}
+
+void set_opt_loop_unrolling (int value)
+{
+  if (value)
+    libFIRM_opt |= OPT_LOOP_UNROLLING;
+  else
+    libFIRM_opt &= ~OPT_LOOP_UNROLLING;
+}
+
+void set_opt_loop_unrolling_verbose (int value)
+{
+  if (value)
+    libFIRM_verb |= OPT_LOOP_UNROLLING;
+  else
+    libFIRM_verb &= ~OPT_LOOP_UNROLLING;
 }
 
 void set_opt_strength_red (int value)

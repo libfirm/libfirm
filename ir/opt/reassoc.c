@@ -33,12 +33,12 @@ typedef struct _walker_t {
 typedef enum {
   NO_CONSTANT   = 0,    /**< node is not constant */
   REAL_CONSTANT = 1,    /**< node is a constnt that is suitable for constant folding */
-  CONST_EXPR    = 4     /**< node is not constnt expression in the current context,
+  CONST_EXPR    = 4     /**< node is not constant expression in the current context,
                              use 4 here to simplify implementation of get_comm_Binop_ops() */
 } const_class_t;
 
 /**
- * returns wheater a node is constant, ie is a constant or
+ * returns whether a node is constant, ie is a constant or
  * is loop invariant
  */
 static const_class_t get_const_class(ir_node *n)

@@ -70,6 +70,19 @@ int  get_firm_verbosity (void);
  */
 void set_opt_constant_folding (int value);
 
+/** Enables/Disables loop unrolling.
+ *
+ * If opt_loop_unrolling == 1 perform loop_unrolling.
+ * See loop_unrolling.h.
+ *
+ * Default: opt_loop_unrolling = 1;
+ */
+void set_opt_loop_unrolling (int value);
+
+/** Enables/Disables output of information about loop unrolling.
+ */
+void set_opt_loop_unrolling_verbose (int value);
+
 /** Enables/Disables removal of redundant Loads and Stores.
  *
  *  - Remove Store that overwrites a just stored value (WAW).

@@ -78,8 +78,10 @@ typedef enum {
   /** precise exception context */
   OPT_PRECISE_EXC_CONTEXT                = 0x00008000,
 
+ /** EMPTY SLOT !!! TO BE ASSIGNED */
 
-  /** EMPTY SLOT !!! TO BE ASSIGNED */
+  /** Do loop unrolling */
+  OPT_LOOP_UNROLLING                     = 0x00010000,
 
   /** Do Strength reduction */
   OPT_STRENGTH_RED                       = 0x00020000,
@@ -111,6 +113,17 @@ static INLINE int _get_opt_cse(void)
 static INLINE int get_opt_global_cse(void)
 {
   return libFIRM_opt & OPT_GLOBAL_CSE;
+}
+
+static INLINE int get_opt_loop_unrolling(void)
+{
+  return libFIRM_opt & OPT_LOOP_UNROLLING;
+}
+
+/** Returns verbosity for loop unrolling.   */
+static INLINE int get_opt_loop_unrolling_verbose(void)
+{
+  return libFIRM_verb & OPT_LOOP_UNROLLING;
 }
 
 static INLINE int get_opt_strength_red(void)
