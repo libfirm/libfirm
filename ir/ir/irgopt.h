@@ -35,6 +35,8 @@ void dead_node_elimination(ir_graph *irg);
 void remove_bad_predecessors(ir_graph *irg);
 
 /* Inlines a method at the given call site.
+   Removes the call node and splits the basic block the call node
+   belongs to.  Inserts a copy of the called graph between these nodes.
    Assumes that call is a Call node in current_ir_graph and that
    the type in the Call nodes type attribute is the same as the
    type of the called graph.
@@ -49,8 +51,8 @@ void remove_bad_predecessors(ir_graph *irg);
    if they are equal.
    Sets visited masterflag in current_ir_graph to the max of the flag in
    current and called graph.
-   Removes the call node and splits the basic block the call node
-   belongs to.  Inserts a copy of the called graph between these nodes.
+   Assumes that both, the called and the calling graph are in state
+   "pinned".
    It is recommended to call local_optimize_graph after inlining as this
    function leaves a set of obscure Tuple nodes, e.g. a Proj-Tuple-Jmp
    combination as control flow operation. */

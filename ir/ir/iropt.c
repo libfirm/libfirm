@@ -72,6 +72,12 @@ computed_value (ir_node *n)
   switch (get_irn_opcode(n)) {
   case iro_Const:
     res = get_Const_tarval(n);
+    break;
+  case iro_SymConst:
+    if ((get_SymConst_kind(n) == size) &&
+	(get_type_state(get_SymConst_type(n))) == layout_fixed)
+      res = tarval_from_long (mode_i, get_type_size(get_SymConst_type(n)));
+    break;
   case iro_Add:
     if (ta && tb && (get_irn_mode(a) == get_irn_mode(b))
 	&& (get_irn_mode(a) != mode_p)) {
