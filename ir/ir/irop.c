@@ -128,6 +128,15 @@ init_op(void)
 }
 
 /* returns the attribute size of the operator. */
+
+opcode get_op_code (ir_op *op){
+  return op->code;
+}
+
+ident *get_op_name(ir_op *op){
+  return op->name;
+}
+
 int get_op_attr_size (ir_op *op) {
   return op->attr_size;
 }

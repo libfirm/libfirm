@@ -81,12 +81,11 @@ extern ir_op *op_Id;
 extern ir_op *op_Bad;
 
 
-/* returns the attribute size of the operator. */
-int get_op_attr_size (ir_op *op);
-
 /* Returns the string for the opcode. */
-const char* get_op_name (ir_op *op);
 
+opcode get_op_code (ir_op *op);
+ident *get_op_name(ir_op *op);
+int get_op_attr_size (ir_op *op);
 
 
 # endif /* _IROP_H_ */

@@ -238,7 +238,7 @@ int     get_class_n_member (type_class *class);
 entity *get_class_member (type_class *class, int pos);
 void    set_class_member (type_class *class, entity *member, int pos);
 
-void        add_class_subtype (type_class *class,  type_class *subtype);
+void        add_class_subtype (type_class *class,type_class *subtype);
 int         get_class_n_subtype (type_class *class);
 type_class *get_class_subtype (type_class *class, int pos);
 void        set_class_subtype (type_class *class, type_class *subtype, int pos);
