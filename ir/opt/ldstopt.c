@@ -36,6 +36,11 @@
 # include "irflag_t.h"
 # include "array.h"
 # include "irhooks.h"
+# include "opt_polymorphy.h"
+
+#ifdef DO_CACHEOPT
+#include "cacheopt/cachesim.h"
+#endif
 
 #undef IMAX
 #define IMAX(a,b)	((a) > (b) ? (a) : (b))
@@ -234,7 +239,7 @@ static void collect_nodes(ir_node *node, void *env)
 }
 
 /**
- * returns a entity if the address ptr points to a constant one.
+ * Returns an entity if the address ptr points to a constant one.
  */
 static entity *find_constant_entity(ir_node *ptr)
 {
@@ -247,6 +252,15 @@ static entity *find_constant_entity(ir_node *ptr)
     else if (op == op_Sel) {
       entity *ent = get_Sel_entity(ptr);
       type *tp    = get_entity_owner(ent);
+
+      /* Do not fiddle about polymorphy. */
+      if (is_Class_type(get_entity_owner(ent)) &&
+	  ((get_entity_n_overwrites(ent)    != 0) ||
+	   (get_entity_n_overwrittenby(ent) != 0)   ) )
+	return NULL;
+
+      if (variability_constant == get_entity_variability(ent))
+	return ent;
 
       if (is_Array_type(tp)) {
         /* check bounds */
@@ -286,6 +300,38 @@ static entity *find_constant_entity(ir_node *ptr)
       return NULL;
   }
 }
+
+static long get_Sel_array_index_long(ir_node *n, int dim) {
+  ir_node *index = get_Sel_index(n, dim);
+  assert(get_irn_op(index) == op_Const);
+  return get_tarval_long(get_Const_tarval(index));
+}
+
+compound_graph_path *rec_get_accessed_path(ir_node *ptr, int depth) {
+  compound_graph_path *res;
+  if (get_irn_op(ptr) == op_SymConst) {
+    assert(get_SymConst_kind(ptr) == symconst_addr_ent);
+    entity *root = get_SymConst_entity(ptr);
+    res = new_compound_graph_path(get_entity_type(root), depth);
+  } else {
+    assert(get_irn_op(ptr) == op_Sel);
+    res = rec_get_accessed_path(get_Sel_ptr(ptr), depth+1);
+    entity *field = get_Sel_entity(ptr);
+    int path_len = get_compound_graph_path_length(res);
+    int pos = path_len - depth -1;
+    set_compound_graph_path_node(res, pos, field);
+    if (is_Array_type(get_entity_owner(field))) {
+      assert(get_Sel_n_indexs(ptr) == 1 && "multi dim arrays not implemented");
+      set_compound_graph_path_array_index(res, pos, get_Sel_array_index_long(ptr, 0));
+    }
+  }
+  return res;
+}
+
+compound_graph_path *get_accessed_path(ir_node *ptr) {
+  return rec_get_accessed_path(ptr, 0);
+}
+
 
 /**
  * optimize a Load
@@ -354,6 +400,23 @@ static int optimize_load(ir_node *load)
   /* the mem of the Load. Must still be returned after optimization */
   mem  = get_Load_mem(load);
 
+  /* Load from a constant polymorphic field, where we can resolve
+     polymorphy. */
+  ir_node *new_node = transform_node_Load(load);
+  if (new_node != load) {
+    if (info->projs[pn_Load_M]) {
+      exchange(info->projs[pn_Load_M], mem);
+      info->projs[pn_Load_M] = NULL;
+    }
+    if (info->projs[pn_Load_X_except]) {
+      exchange(info->projs[pn_Load_X_except], new_Bad());
+      info->projs[pn_Load_X_except] = NULL;
+    }
+    if (info->projs[pn_Load_res])
+      exchange(info->projs[pn_Load_res], new_node);
+    return 1;
+  }
+
   /* check if we can determine the entity that will be loaded */
   ent = find_constant_entity(ptr);
   if (ent) {
@@ -395,12 +458,39 @@ static int optimize_load(ir_node *load)
       }
       else if (variability_constant == get_entity_variability(ent)) {
         printf(">>>>>>>>>>>>> Found access to constant entity %s in function %s\n", get_entity_name(ent),
-            get_entity_name(get_irg_entity(current_ir_graph)));
+	       get_entity_name(get_irg_entity(current_ir_graph)));
+	printf("  load: "); DDMN(load);
+	printf("  ptr:  "); DDMN(ptr);
+
+	compound_graph_path *path = get_accessed_path(ptr);
+	assert(is_proper_compound_graph_path(path, get_compound_graph_path_length(path)-1));
+	ir_node *c = get_compound_ent_value_by_path(ent, path);
+
+	printf("  cons: "); DDMN(c);
+
+        if (info->projs[pn_Load_M])
+          exchange(info->projs[pn_Load_M], mem);
+        if (info->projs[pn_Load_res])
+	  exchange(info->projs[pn_Load_res], copy_const_value(c));
+
+	{
+	int j;
+	        for (j = 0; j < get_compound_graph_path_length(path); ++j) {
+	          entity *node = get_compound_graph_path_node(path, j);
+	          fprintf(stdout, ".%s", get_entity_name(node));
+	          if (is_Array_type(get_entity_owner(node)))
+	            fprintf(stdout, "[%d]", get_compound_graph_path_array_index(path, j));
+	        }
+		printf("\n");
+	}
+
       }
 
       /* we changed the irg, but try further */
       res = 1;
     }
+
+
   }
 
   /* Check, if the address of this load is used more than once.
@@ -587,7 +677,7 @@ static int optimize_phi(ir_node *phi, void *env)
 {
   walk_env_t *wenv = env;
   int i, n;
-  ir_node *store, *ptr, *block, *phiM, *phiD, *exc, *projM;
+  ir_node *store, *old_store, *ptr, *block, *phiM, *phiD, *exc, *projM;
   ir_mode *mode;
   ir_node **inM, **inD;
   int *idx;
@@ -604,6 +694,7 @@ static int optimize_phi(ir_node *phi, void *env)
     return 0;
 
   store = skip_Proj(get_Phi_pred(phi, 0));
+  old_store = store;
   if (get_irn_op(store) != op_Store)
     return 0;
 
@@ -687,6 +778,10 @@ static int optimize_phi(ir_node *phi, void *env)
 
   /* fourth step: create the Store */
   store = new_rd_Store(db, current_ir_graph, block, phiM, ptr, phiD);
+#ifdef DO_CACHEOPT
+  co_set_irn_name(store, co_get_irn_ident(old_store));
+#endif
+
   projM = new_rd_Proj(NULL, current_ir_graph, block, store, mode_M, pn_Store_M);
 
   info = get_ldst_info(store, wenv);
