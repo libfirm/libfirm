@@ -1390,7 +1390,7 @@ tarval_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
 	printed = XPSR ("(NULL)");
     } else {
       assert (val == tarval_P_void);
-      printed = XPSR ("(void)");
+      printed = XPSR ("(NULL)");
     }
     break;
 
