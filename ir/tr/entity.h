@@ -85,6 +85,7 @@ typedef struct ir_graph ir_graph;
  *              external_visible,  external_allocated)
  *   variability A flag indicating the variability of this entity (values:
  *              uninitialized, initalized, part_constant, constant)
+ *   volatility @@@
  *   offset     The offset of the entity within the compound object.  Only set
  *              if the owner in the state "layout_fixed".
  *   overwrites A list of entities overwritten by this entity.  This list is only
@@ -177,7 +178,8 @@ typedef enum {
 		         be static_allocated. */
   external_allocated  /* The entity is defined and allocated externally.  This compilation
 			 must not allocate memory for this entity. The entity must
-		         be static_allocated. */
+		         be static_allocated.  This can also be an external defined
+			 method. */
 } ent_visibility;
 
 ent_visibility get_entity_visibility (entity *ent);

@@ -147,7 +147,7 @@ get_entity_ident    (entity *ent) {
 }
 
 /*
-void   set_entity_ld_name  (entity *, char *ld_name);
+void   set_entitye_ld_name  (entity *, char *ld_name);
 void   set_entity_ld_ident (entity *, ident *ld_ident);
 */
 

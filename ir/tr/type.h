@@ -94,7 +94,7 @@ typedef struct ir_node ir_node;
  *               A fixed layout for enumeration types means that each enumeration
  *               is associated with an implementation value.
  *  visit        A counter for walks of the type information.
- *  link         A void* to associate some additional inforamtion with the type.
+ *  link         A void* to associate some additional information with the type.
  *
  *  These fields can only be accessed via access functions.
  *
@@ -209,7 +209,11 @@ int is_type            (void *thing);
  *  peculiarity The peculiarity of this class.  If the class is of peculiarity
  *             "description" it only is a description of requirememts to a class,
  *             as, e.g., a Java interface.  The class will never be allocated.
- *             Values: description, existent.  Default: existent.
+ *             Peculiatity inherited is only possible for entities.  An entity
+ *             is of peculiarity inherited if the compiler generated the entity
+ *             to explicitly resolve inheritance.  An inherited method entity has
+ *             no value for irg.
+ *             Values: description, existent, inherited.  Default: existent.
  *
  * SOURCE
  */
@@ -273,6 +277,11 @@ void    remove_class_supertype(type *clss, type *supertype);
 typedef enum peculiarity {
   description,     /* Represents only a description.  The entity/type is never
 	  	      allocated, no code/data exists for this entity/type. */
+  inherited,       /* Describes explicitly that other entities are inherited
+			  to the owner of this entity.  Overwrites must refer to
+			  at least one other entity.  If this is a method entity
+			  there exists no irg for this entity, only for one of
+			  the overwritten ones. */
   existent         /* The entity/type (can) exist. */
 } peculiarity;
 
