@@ -410,13 +410,15 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   ir_node **cf_pred;
   ir_node *ret, *phi;
   ir_node *cf_op, *bl;
-  int arity, n_ret, n_exc, n_res, i, j;
+  int arity, n_ret, n_exc, n_res, i, j, rem_opt;
   type *called_frame, *caller_frame;
 
   if (!get_opt_inline()) return;
 
   /* Handle graph state */
   assert(get_irg_phase_state(current_ir_graph) != phase_building);
+  assert(get_irg_pinned(current_ir_graph) == pinned);
+  assert(get_irg_pinned(called_graph) == pinned);
   if (get_irg_outs_state(current_ir_graph) == outs_consistent)
     set_irg_outs_inconsistent(current_ir_graph);
 
@@ -425,6 +427,10 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   assert(get_Call_type(call) == get_entity_type(get_irg_ent(called_graph)));
   assert(get_type_tpop(get_Call_type(call)) == type_method);
   if (called_graph == current_ir_graph) return;
+
+  /** Turn off cse, this can cause problems when allocating new nodes. **/
+  rem_opt = get_opt_cse();
+  set_opt_cse(0);
 
   /** Part the Call node into two nodes.  Pre_call collects the parameters of
 	  the procedure and later replaces the Start node of the called graph.
@@ -652,6 +658,9 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
     set_irn_in(end_bl, arity, cf_pred);
     free(cf_pred);
   }
+
+  /** Turn cse back on. **/
+  set_opt_cse(rem_opt);
 }
 
 /********************************************************************/
