@@ -407,7 +407,7 @@ void set_ip_outs(void)
    view!
    -------------------------------------------------------- */
 
-void ascompute_ip_outs(void) {
+void compute_ip_outs(void) {
 
   int n_out_edges;
   ir_node **out_edges;

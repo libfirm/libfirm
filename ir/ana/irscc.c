@@ -20,13 +20,16 @@
 #include <string.h>
 
 #include "irloop_t.h"
-#include "irnode.h"
+#include "irnode_t.h"
 #include "irgraph_t.h"
 #include "array.h"
 #include "pmap.h"
 #include "irgwalk.h"
 #include "irprog_t.h"
 #include "irdump.h"
+
+#undef INLINE
+#define INLINE
 
 ir_graph *outermost_ir_graph;      /* The outermost graph the scc is computed
 				      for */
@@ -70,51 +73,65 @@ static INLINE scc_info* new_scc_info(void) {
 static INLINE void
 mark_irn_in_stack (ir_node *n) {
   assert(get_irn_link(n));
-  ((scc_info *)get_irn_link(n))->in_stack = true;
+  // to slow
+  //((scc_info *)get_irn_link(n))->in_stack = true;
+  ((scc_info *)n->link)->in_stack = true;
 }
 
 static INLINE void
 mark_irn_not_in_stack (ir_node *n) {
   assert(get_irn_link(n));
-  ((scc_info *)get_irn_link(n))->in_stack = false;
+  // to slow
+  //((scc_info *)get_irn_link(n))->in_stack = false;
+  ((scc_info *)n->link)->in_stack = false;
 }
 
 static INLINE bool
 irn_is_in_stack (ir_node *n) {
   assert(get_irn_link(n));
-  return ((scc_info *)get_irn_link(n))->in_stack;
+  // to slow
+  //return ((scc_info *)get_irn_link(n))->in_stack;
+  return ((scc_info *)n->link)->in_stack;
 }
 
 static INLINE void
 set_irn_uplink (ir_node *n, int uplink) {
   assert(get_irn_link(n));
-  ((scc_info *)get_irn_link(n))->uplink = uplink;
+  // to slow
+  //((scc_info *)get_irn_link(n))->uplink = uplink;
+  ((scc_info *)n->link)->uplink = uplink;
 }
 
 static INLINE int
 get_irn_uplink (ir_node *n) {
   assert(get_irn_link(n));
-  return ((scc_info *)get_irn_link(n))->uplink;
+  // to slow
+  //return ((scc_info *)get_irn_link(n))->uplink;
+  return ((scc_info *)n->link)->uplink;
 }
 
 static INLINE void
 set_irn_dfn (ir_node *n, int dfn) {
-  if (! get_irn_link(n)) { DDMN(n); DDME(get_irg_ent(current_ir_graph));}
   assert(get_irn_link(n));
-  ((scc_info *)get_irn_link(n))->dfn = dfn;
+  // to slow
+  //((scc_info *)get_irn_link(n))->dfn = dfn;
+  ((scc_info *)n->link)->dfn = dfn;
 }
 
 static INLINE int
 get_irn_dfn (ir_node *n) {
   assert(get_irn_link(n));
-  return ((scc_info *)get_irn_link(n))->dfn;
+  // to slow
+  //return ((scc_info *)get_irn_link(n))->dfn;
+  return ((scc_info *)n->link)->dfn;
 }
 
+#if 0
+/* Replaced node loop map by real field as hash access dominates runtime
+ * of the algorithm. ! */
 /* Uses temporary information to set the loop */
 static INLINE void
 set_irn_loop (ir_node *n, ir_loop* loop) {
-  //assert(get_irn_link(n));
-  //((scc_info *)get_irn_link(n))->loop = loop;
   assert(node_loop_map && "not initialized!");
   pmap_insert(node_loop_map, (void *)n, (void *)loop);
 }
@@ -123,15 +140,26 @@ set_irn_loop (ir_node *n, ir_loop* loop) {
 INLINE ir_loop *
 get_irn_loop (ir_node *n) {
   ir_loop *res = NULL;
-  //assert(get_irn_link(n));
-  //return ((scc_info *)get_irn_link(n))->loop;
-  assert(node_loop_map && "not initialized!");
+  if (!node_loop_map) return NULL;
 
   if (pmap_contains(node_loop_map, (void *)n))
     res = (ir_loop *) pmap_get(node_loop_map, (void *)n);
 
   return res;
 }
+#else
+static INLINE void
+set_irn_loop (ir_node *n, ir_loop* loop) {
+  n->loop = loop;
+}
+
+/* Uses temporary information to get the loop */
+INLINE ir_loop *
+get_irn_loop (ir_node *n) {
+  return n->loop;
+}
+#endif
+
 
 #if 0
 static ir_loop *find_nodes_loop (ir_node *n, ir_loop *l) {
@@ -569,7 +597,7 @@ get_start_index(ir_node *n) {
   else
     return 0;
 }
-
+#if 0
 /* Returns current_ir_graph and set it to the irg of predecessor index
    of node n. */
 static INLINE ir_graph *
@@ -592,7 +620,6 @@ switch_irg (ir_node *n, int index) {
   return old_current;
 }
 
-#if 0
 /* Walks up the stack passing n and then finding the node
    where we walked into the irg n is contained in.
    Here we switch the irg. */
@@ -657,9 +684,10 @@ static void test(ir_node *pred, ir_node *root, ir_node *this) {
 
 /* Test for legal loop header: Block, Phi, ... */
 INLINE static bool is_possible_loop_head(ir_node *n) {
-  return ((get_irn_op(n) == op_Block) ||
-	  (get_irn_op(n) == op_Phi) ||
-	  ((get_irn_op(n) == op_Filter) && interprocedural_view));
+  ir_op *op = get_irn_op(n);
+  return ((op == op_Block) ||
+	  (op == op_Phi) ||
+	  ((op == op_Filter) && interprocedural_view));
 }
 
 /* Returns true if n is a loop header, i.e., it is a Block, Phi
@@ -669,7 +697,7 @@ INLINE static bool is_possible_loop_head(ir_node *n) {
 static bool
 is_head (ir_node *n, ir_node *root)
 {
-  int i;
+  int i, arity;
   int some_outof_loop = 0, some_in_loop = 0;
 
   /* Test for legal loop header: Block, Phi, ... */
@@ -677,7 +705,8 @@ is_head (ir_node *n, ir_node *root)
     return false;
 
   if (!is_outermost_Start(n)) {
-    for (i = get_start_index(n); i < get_irn_arity(n); i++) {
+    arity = get_irn_arity(n);
+    for (i = get_start_index(n); i < arity; i++) {
       ir_node *pred = get_irn_n(n, i);
       assert(pred);
       if (is_backedge(n, i)) continue;
@@ -700,7 +729,8 @@ smallest_dfn_pred (ir_node *n, int limit)
   int i, index = -2, min = -1;
 
   if (!is_outermost_Start(n)) {
-    for (i = get_start_index(n); i < get_irn_arity(n); i++) {
+    int arity = get_irn_arity(n);
+    for (i = get_start_index(n); i < arity; i++) {
       ir_node *pred = get_irn_n(n, i);
       assert(pred);
       if (is_backedge(n, i) || !irn_is_in_stack(pred)) continue;
@@ -720,7 +750,8 @@ largest_dfn_pred (ir_node *n)
   int i, index = -2, max = -1;
 
   if (!is_outermost_Start(n)) {
-    for (i = get_start_index(n); i < get_irn_arity(n); i++) {
+    int arity = get_irn_arity(n);
+    for (i = get_start_index(n); i < arity; i++) {
       ir_node *pred = get_irn_n(n, i);
       if (is_backedge (n, i) || !irn_is_in_stack(pred)) continue;
       if (get_irn_dfn(pred) > max) {
@@ -776,7 +807,6 @@ find_tail (ir_node *n) {
 
 static void scc (ir_node *n) {
   int i;
-  // GL @@@ remove experimental stuff ir_graph *rem;
 
   if (irn_visited(n)) return;
   mark_irn_visited(n);
@@ -786,11 +816,6 @@ static void scc (ir_node *n) {
   set_irn_uplink(n, current_dfn);   /* ... is default uplink. */
   set_irn_loop(n, NULL);
   current_dfn ++;
-
-  /* What's this good for?
-  n->ana.scc.section = NULL;
-  */
-
   push(n);
 
   /* AS: get_start_index might return -1 for Control Flow Nodes, and thus a negative
@@ -798,16 +823,14 @@ static void scc (ir_node *n) {
      so is_backedge does not access array[-1] but correctly returns false! */
 
   if (!is_outermost_Start(n)) {
-    for (i = get_start_index(n); i < get_irn_arity(n); i++) {
+    int arity = get_irn_arity(n);
+    for (i = get_start_index(n); i < arity; i++) {
       ir_node *m;
       if (is_backedge(n, i)) continue;
 
-      m = get_irn_n(n, i); /*get_irn_ip_pred(n, i);*/
-      assert(m);
+      m = get_irn_n(n, i); /* get_irn_ip_pred(n, i); */
       //if ((!m) || (get_irn_op(m) == op_Unknown)) continue;
       scc (m);
-      // GL @@@ remove experimental stuff /*return_recur(n, i);*/
-
       if (irn_is_in_stack(m)) {
 	/* Uplink of m is smaller if n->m is a backedge.
 	   Propagate the uplink to mark the loop. */
@@ -898,6 +921,7 @@ void construct_backedges(ir_graph *irg) {
 
   assert(head_rem == current_loop);
   set_irg_loop(current_ir_graph, current_loop);
+  set_irg_loopinfo_state(current_ir_graph, loopinfo_consistent);
   assert(get_irg_loop(current_ir_graph)->kind == k_ir_loop);
   /*
   irg->loops = current_loop;
@@ -946,6 +970,7 @@ void construct_ip_backedges (void) {
   }
 
   set_irg_loop(outermost_ir_graph, current_loop);
+  set_irg_loopinfo_state(current_ir_graph, loopinfo_ip_consistent);
   assert(get_irg_loop(outermost_ir_graph)->kind == k_ir_loop);
 
   current_ir_graph = rem;
@@ -1011,6 +1036,7 @@ void construct_ip_backedges (void) {
   }
 
   set_irg_loop(outermost_ir_graph, current_loop);
+  set_irg_loopinfo_state(current_ir_graph, loopinfo_ip_consistent);
   assert(get_irg_loop(outermost_ir_graph)->kind == k_ir_loop);
 
   current_ir_graph = rem;
@@ -1032,6 +1058,8 @@ static void reset_backedges(ir_node *n) {
 static void loop_reset_backedges(ir_loop *l) {
   int i;
   reset_backedges(get_loop_node(l, 0));
+  for (i = 0; i < get_loop_n_nodes(l); ++i)
+    set_irn_loop(get_loop_node(l, i), NULL);
   for (i = 0; i < get_loop_n_sons(l); ++i) {
     loop_reset_backedges(get_loop_son(l, i));
   }
@@ -1043,6 +1071,7 @@ void free_loop_information(ir_graph *irg) {
   if (get_irg_loop(irg))
     loop_reset_backedges(get_irg_loop(irg));
   set_irg_loop(irg, NULL);
+  set_irg_loopinfo_state(current_ir_graph, loopinfo_none);
   /* We cannot free the loop nodes, they are on the obstack. */
 }
 
