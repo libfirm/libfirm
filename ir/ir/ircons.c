@@ -1572,11 +1572,29 @@ get_frag_arr (ir_node *n) {
 
 static void
 set_frag_value(ir_node **frag_arr, int pos, ir_node *val) {
+#if 0
   if (!frag_arr[pos]) frag_arr[pos] = val;
   if (frag_arr[current_ir_graph->n_loc - 1]) {
     ir_node **arr = get_frag_arr(frag_arr[current_ir_graph->n_loc - 1]);
+    assert(arr != frag_arr && "Endless recursion detected");
     set_frag_value(arr, pos, val);
   }
+#else
+  int i;
+
+  for (i = 0; i < 1000; ++i) {
+    if (!frag_arr[pos]) {
+      frag_arr[pos] = val;
+    }
+    if (frag_arr[current_ir_graph->n_loc - 1]) {
+      ir_node **arr = get_frag_arr(frag_arr[current_ir_graph->n_loc - 1]);
+      frag_arr = arr;
+    }
+    else
+      return;
+  }
+  assert(0 && "potential endless recursion");
+#endif
 }
 
 static ir_node *
@@ -1657,10 +1675,12 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
       phi0 = new_rd_Phi0(current_ir_graph, block, mode);
       block->attr.block.graph_arr[pos] = phi0;
 #if PRECISE_EXC_CONTEXT
-      /* Set graph_arr for fragile ops.  Also here we should break recursion.
-	 We could choose a cyclic path through an cfop.  But the recursion would
-	 break at some point. */
-      set_frag_value(block->attr.block.graph_arr, pos, phi0);
+      if (get_opt_precise_exc_context()) {
+	/* Set graph_arr for fragile ops.  Also here we should break recursion.
+	   We could choose a cyclic path through an cfop.  But the recursion would
+	   break at some point. */
+	set_frag_value(block->attr.block.graph_arr, pos, phi0);
+      }
 #endif
     }
   }
@@ -1681,12 +1701,13 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
     assert (prevBlock);
     if (!is_Bad(prevBlock)) {
 #if PRECISE_EXC_CONTEXT
-      if (is_fragile_op(prevCfOp) && (get_irn_op (prevCfOp) != op_Bad)) {
-    assert(get_r_frag_value_internal (prevBlock, prevCfOp, pos, mode));
-    nin[i-1] = get_r_frag_value_internal (prevBlock, prevCfOp, pos, mode);
+      if (get_opt_precise_exc_context() &&
+	  is_fragile_op(prevCfOp) && (get_irn_op (prevCfOp) != op_Bad)) {
+	assert(get_r_frag_value_internal (prevBlock, prevCfOp, pos, mode));
+	nin[i-1] = get_r_frag_value_internal (prevBlock, prevCfOp, pos, mode);
       } else
 #endif
-    nin[i-1] = get_r_value_internal (prevBlock, pos, mode);
+      nin[i-1] = get_r_value_internal (prevBlock, pos, mode);
     } else {
       nin[i-1] = new_Bad();
     }
@@ -1962,6 +1983,20 @@ new_d_Mul (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode)
             op1, op2, mode);
 }
 
+/**
+ * allocate the frag array
+ */
+static void allocate_frag_arr(ir_node *res, ir_op *op, ir_node ***frag_store) {
+  if (get_opt_precise_exc_context()) {
+    if (! *frag_store &&
+	(current_ir_graph->phase_state == phase_building) &&
+	(get_irn_op(res) == op)) { /* Could be optimized away. */
+      *frag_store = new_frag_arr(res);
+    }
+  }
+}
+
+
 ir_node *
 new_d_Quot (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2)
 {
@@ -1969,9 +2004,7 @@ new_d_Quot (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2)
   res = new_rd_Quot (db, current_ir_graph, current_ir_graph->current_block,
              memop, op1, op2);
 #if PRECISE_EXC_CONTEXT
-  if ((current_ir_graph->phase_state == phase_building) &&
-      (get_irn_op(res) == op_Quot))  /* Could be optimized away. */
-    res->attr.frag_arr = new_frag_arr(res);
+  allocate_frag_arr(res, op_Quot, &res->attr.frag_arr);  /* Could be optimized away. */
 #endif
 
   return res;
@@ -1984,9 +2017,7 @@ new_d_DivMod (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2)
   res = new_rd_DivMod (db, current_ir_graph, current_ir_graph->current_block,
                memop, op1, op2);
 #if PRECISE_EXC_CONTEXT
-  if ((current_ir_graph->phase_state == phase_building) &&
-      (get_irn_op(res) == op_DivMod))   /* Could be optimized away. */
-    res->attr.frag_arr = new_frag_arr(res);
+  allocate_frag_arr(res, op_DivMod, &res->attr.frag_arr);  /* Could be optimized away. */
 #endif
 
   return res;
@@ -1999,9 +2030,7 @@ new_d_Div (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2)
   res = new_rd_Div (db, current_ir_graph, current_ir_graph->current_block,
             memop, op1, op2);
 #if PRECISE_EXC_CONTEXT
-  if ((current_ir_graph->phase_state == phase_building) &&
-      (get_irn_op(res) == op_Div))  /* Could be optimized away. */
-    res->attr.frag_arr = new_frag_arr(res);
+  allocate_frag_arr(res, op_Div, &res->attr.frag_arr);  /* Could be optimized away. */
 #endif
 
   return res;
@@ -2014,9 +2043,7 @@ new_d_Mod (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2)
   res = new_rd_Mod (db, current_ir_graph, current_ir_graph->current_block,
             memop, op1, op2);
 #if PRECISE_EXC_CONTEXT
-  if ((current_ir_graph->phase_state == phase_building) &&
-      (get_irn_op(res) == op_Mod))  /* Could be optimized away. */
-    res->attr.frag_arr = new_frag_arr(res);
+  allocate_frag_arr(res, op_Mod, &res->attr.frag_arr);  /* Could be optimized away. */
 #endif
 
   return res;
@@ -2112,9 +2139,7 @@ new_d_Call (dbg_info* db, ir_node *store, ir_node *callee, int arity, ir_node **
   res = new_rd_Call (db, current_ir_graph, current_ir_graph->current_block,
              store, callee, arity, in, tp);
 #if PRECISE_EXC_CONTEXT
-  if ((current_ir_graph->phase_state == phase_building) &&
-      (get_irn_op(res) == op_Call))  /* Could be optimized away. */
-    res->attr.call.frag_arr = new_frag_arr(res);
+  allocate_frag_arr(res, op_Call, &res->attr.call.frag_arr);  /* Could be optimized away. */
 #endif
 
   return res;
@@ -2141,9 +2166,7 @@ new_d_Load (dbg_info* db, ir_node *store, ir_node *addr)
   res = new_rd_Load (db, current_ir_graph, current_ir_graph->current_block,
              store, addr);
 #if PRECISE_EXC_CONTEXT
-  if ((current_ir_graph->phase_state == phase_building) &&
-      (get_irn_op(res) == op_Load))  /* Could be optimized away. */
-    res->attr.frag_arr = new_frag_arr(res);
+  allocate_frag_arr(res, op_Load, &res->attr.frag_arr);  /* Could be optimized away. */
 #endif
 
   return res;
@@ -2156,9 +2179,7 @@ new_d_Store (dbg_info* db, ir_node *store, ir_node *addr, ir_node *val)
   res = new_rd_Store (db, current_ir_graph, current_ir_graph->current_block,
               store, addr, val);
 #if PRECISE_EXC_CONTEXT
-  if ((current_ir_graph->phase_state == phase_building) &&
-      (get_irn_op(res) == op_Store))  /* Could be optimized away. */
-    res->attr.frag_arr = new_frag_arr(res);
+  allocate_frag_arr(res, op_Store, &res->attr.frag_arr);  /* Could be optimized away. */
 #endif
 
   return res;
@@ -2172,9 +2193,7 @@ new_d_Alloc (dbg_info* db, ir_node *store, ir_node *size, type *alloc_type,
   res = new_rd_Alloc (db, current_ir_graph, current_ir_graph->current_block,
               store, size, alloc_type, where);
 #if PRECISE_EXC_CONTEXT
-  if ((current_ir_graph->phase_state == phase_building) &&
-      (get_irn_op(res) == op_Alloc))  /* Could be optimized away. */
-    res->attr.a.frag_arr = new_frag_arr(res);
+  allocate_frag_arr(res, op_Alloc, &res->attr.a.frag_arr);  /* Could be optimized away. */
 #endif
 
   return res;

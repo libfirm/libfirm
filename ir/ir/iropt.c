@@ -1543,7 +1543,7 @@ optimize_node (ir_node *n)
   /* constant expression evaluation / constant folding */
   if (get_opt_constant_folding()) {
     /* constants can not be evaluated */
-    if  (get_irn_op(n) != op_Const) {
+    if (iro != iro_Const) {
       /* try to evaluate */
       tv = computed_value (n);
       if ((get_irn_mode(n) != mode_T) && (tv != tarval_bad)) {
@@ -1553,7 +1553,7 @@ optimize_node (ir_node *n)
 	 */
 	ir_node x = *n;
 	oldn = &x;
-        /* evaluation was succesful -- replace the node. */
+        /* evaluation was successful -- replace the node. */
 	obstack_free (current_ir_graph->obst, n);
 	n = new_Const (get_tarval_mode (tv), tv);
 							DBG_OPT_ALGSIM0;
@@ -1637,7 +1637,7 @@ optimize_in_place_2 (ir_node *n)
       /* try to evaluate */
       tv = computed_value (n);
       if ((get_irn_mode(n) != mode_T) && (tv != tarval_bad)) {
-        /* evaluation was succesful -- replace the node. */
+        /* evaluation was successful -- replace the node. */
 	n = new_Const (get_tarval_mode (tv), tv);
 						DBG_OPT_ALGSIM0;
 	return n;

@@ -38,7 +38,9 @@ optimization_state_t libFIRM_opt =
   ENABLE(OPT_INLINE)                             |
   ENABLE(OPT_DYN_METH_DISPATCH)                  |
   ENABLE(OPT_NORMALIZE)                          |
-  ENABLE(OPT_TAIL_RECURSION);
+  ENABLE(OPT_TAIL_RECURSION)                     |
+  ENABLE(OPT_PRECISE_EXC_CONTEXT)                |
+  0;
 
 /* set the flags with set_flagname, get the flag with get_flagname */
 void set_opt_cse (int value)
@@ -195,6 +197,15 @@ void set_opt_tail_recursion(int value)
     libFIRM_opt |= OPT_TAIL_RECURSION;
   else
     libFIRM_opt &= ~OPT_TAIL_RECURSION;
+}
+
+/* Enable/Disable precise exception context. */
+void set_opt_precise_exc_context(int value)
+{
+  if (value)
+    libFIRM_opt |= OPT_PRECISE_EXC_CONTEXT;
+  else
+    libFIRM_opt &= ~OPT_PRECISE_EXC_CONTEXT;
 }
 
 /* Save the current optimization state. */

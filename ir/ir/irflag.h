@@ -150,6 +150,9 @@ void set_opt_normalize (int value);
  */
 void set_opt_tail_recursion(int value);
 
+/** Enable/Disable precise exception context. */
+void set_opt_precise_exc_context(int value);
+
 /**
  * Save the current optimization state.
  */

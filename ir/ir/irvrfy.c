@@ -266,7 +266,7 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
            (proj == pns_globals        && mode_is_reference(mode)) ||
            (proj == pns_args           && mode == mode_T) ||
            (proj == pns_value_arg_base && mode_is_reference(mode)) ||
-           (proj == pns_value_arg_base && mode == mode_T)	/* FIXME: only one of those */
+           (proj == pns_value_arg_base && mode == mode_T)    /* FIXME: only one of those */
           ),
           "wrong Proj from Start", 0,
       show_proj_failure(p);
@@ -431,7 +431,7 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
     case iro_Proj:
       {
         type *mt; /* A method type */
-	long nr = get_Proj_proj(pred);
+    long nr = get_Proj_proj(pred);
 
         pred = skip_nop(get_Proj_pred(pred));
         ASSERT_AND_RET((get_irn_mode(pred) == mode_T), "Proj from something not a tuple", 0);
@@ -440,7 +440,7 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
           case iro_Start:
             mt = get_entity_type(get_irg_ent(irg));
 
-	    if (nr == pns_args) {
+        if (nr == pns_args) {
               ASSERT_AND_RET(
                   (proj >= 0 && mode_is_data(mode)),
                   "wrong Proj from Proj from Start", 0);
@@ -455,8 +455,8 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
                   (mode == get_type_mode(get_method_param_type(mt, proj))),
                   "Mode of Proj from Start doesn't match mode of param type.", 0);
             }
-	    else if (nr == pns_value_arg_base) {
-	      ASSERT_AND_RET(
+        else if (nr == pns_value_arg_base) {
+          ASSERT_AND_RET(
                   (proj >= 0 && mode_is_reference(mode)),
                   "wrong Proj from Proj from Start", 0
               );
@@ -464,7 +464,7 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
                 (proj < get_method_n_params(mt)),
                 "More Projs for args than args in type", 0
               );
-	    }
+        }
             break;
 
           case iro_Call:
@@ -540,8 +540,8 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
   int opcode, opcode1;
   ir_mode *mymode, *op1mode = NULL, *op2mode, *op3mode;
   int op_is_symmetric = 1;  /*  0: asymmetric
-								1: operands have identical modes
-								2: modes of operands == mode of this node */
+                                1: operands have identical modes
+                                2: modes of operands == mode of this node */
   type *mt;                 /* A method type */
   entity *ent;
 
@@ -555,10 +555,10 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
      * the "right" graph ...
      */
     ASSERT_AND_RET_DBG(
-					   node_is_in_irgs_storage(irg, n),
-					   "Node is not stored on proper IR graph!", 0,
-					   show_node_on_graph(irg, n);
-					   );
+                       node_is_in_irgs_storage(irg, n),
+                       "Node is not stored on proper IR graph!", 0,
+                       show_node_on_graph(irg, n);
+                       );
   }
 
   opcode = get_irn_opcode(n);
@@ -575,66 +575,65 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
   mymode = get_irn_mode(n);
   in = get_irn_in(n);
 
-  switch (opcode)
-	{
+  switch (opcode) {
 
     case iro_Block:
       for (i = 0; i < get_Block_n_cfgpreds(n); ++i) {
-		ir_node *pred =  get_Block_cfgpred(n, i);
-		ASSERT_AND_RET(
-					   (is_Bad(pred)     ||
-						is_Unknown(pred) ||
-						(get_irn_mode(pred) == mode_X)
-						), "Block node", 0);
+        ir_node *pred =  get_Block_cfgpred(n, i);
+        ASSERT_AND_RET(
+                       (is_Bad(pred)     ||
+                        is_Unknown(pred) ||
+                        (get_irn_mode(pred) == mode_X)
+                        ), "Block node", 0);
       }
       /*  End block may only have Return, Raise or fragile ops as preds. */
       if (n == get_irg_end_block(irg))
-		for (i = 0; i < get_Block_n_cfgpreds(n); ++i) {
-		  ir_node *pred =  skip_Proj(get_Block_cfgpred(n, i));
-		  if (is_Proj(pred) || get_irn_op(pred) == op_Tuple)
-			break;   /*  We can not test properly.  How many tuples are there? */
-		  ASSERT_AND_RET(((get_irn_op(pred) == op_Return) ||
-						  is_Bad(pred)                    ||
-						  (get_irn_op(pred) == op_Raise)  ||
-						  is_fragile_op(pred)               ),
-						 "End Block node", 0);
-		}
+        for (i = 0; i < get_Block_n_cfgpreds(n); ++i) {
+          ir_node *pred =  skip_Proj(get_Block_cfgpred(n, i));
+          if (is_Proj(pred) || get_irn_op(pred) == op_Tuple)
+            break;   /*  We can not test properly.  How many tuples are there? */
+          ASSERT_AND_RET(((get_irn_op(pred) == op_Return) ||
+                          is_Bad(pred)                    ||
+                          (get_irn_op(pred) == op_Raise)  ||
+                          is_fragile_op(pred)               ),
+                         "End Block node", 0);
+        }
       /*  irg attr must == graph we are in. */
       if (! interprocedural_view) {
-		ASSERT_AND_RET(((get_irn_irg(n) && get_irn_irg(n) == irg)), "Block node has wrong irg attribute", 0);
+        ASSERT_AND_RET(((get_irn_irg(n) && get_irn_irg(n) == irg)), "Block node has wrong irg attribute", 0);
       }
 
       break;
 
     case iro_Start:
       ASSERT_AND_RET(
-					 /* Start: BB --> X x M x ref x data1 x ... x datan x ref */
-					 mymode == mode_T, "Start node", 0
-					 );
+                     /* Start: BB --> X x M x ref x data1 x ... x datan x ref */
+                     mymode == mode_T, "Start node", 0
+                     );
       break;
 
     case iro_Jmp:
       ASSERT_AND_RET(
-					 /* Jmp: BB --> X */
-					 mymode == mode_X, "Jmp node", 0
-					 );
+                     /* Jmp: BB --> X */
+                     mymode == mode_X, "Jmp node", 0
+                     );
       break;
 
     case iro_Break:
       ASSERT_AND_RET(
-					 /* Jmp: BB --> X */
-					 mymode == mode_X, "Jmp node", 0
-					 );
+                     /* Jmp: BB --> X */
+                     mymode == mode_X, "Jmp node", 0
+                     );
       break;
 
     case iro_Cond:
       op1mode = get_irn_mode(in[1]);
       ASSERT_AND_RET(
-					 /* Cond: BB x b --> X x X */
-					 (op1mode == mode_b ||
-					  /* Cond: BB x int --> X^n */
-					  mode_is_int(op1mode) ),  "Cond node", 0
-					 );
+                     /* Cond: BB x b --> X x X */
+                     (op1mode == mode_b ||
+                      /* Cond: BB x int --> X^n */
+                      mode_is_int(op1mode) ),  "Cond node", 0
+                     );
       ASSERT_AND_RET(mymode == mode_T, "Cond mode is not a tuple", 0);
       break;
 
@@ -653,22 +652,22 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
         "Number of results for Return doesn't match number of results in type.", 0,
       show_return_nres(irg, n, mt););
       for (i = 0; i < get_Return_n_ress(n); i++) {
-	type *res_type = get_method_res_type(mt, i);
+    type *res_type = get_method_res_type(mt, i);
 
         if (is_atomic_type(res_type)) {
-	  ASSERT_AND_RET_DBG(
-	    get_irn_mode(get_Return_res(n, i)) == get_type_mode(res_type),
-	    "Mode of result for Return doesn't match mode of result type.", 0,
-	    show_return_modes(irg, n, mt, i);
-	  );
-	}
-	else {
-	  ASSERT_AND_RET_DBG(
-	    mode_is_reference(get_irn_mode(get_Return_res(n, i))),
-	    "Mode of result for Return doesn't match mode of result type.", 0,
-	    show_return_modes(irg, n, mt, i);
-	  );
-	}
+      ASSERT_AND_RET_DBG(
+        get_irn_mode(get_Return_res(n, i)) == get_type_mode(res_type),
+        "Mode of result for Return doesn't match mode of result type.", 0,
+        show_return_modes(irg, n, mt, i);
+      );
+    }
+    else {
+      ASSERT_AND_RET_DBG(
+        mode_is_reference(get_irn_mode(get_Return_res(n, i))),
+        "Mode of result for Return doesn't match mode of result type.", 0,
+        show_return_modes(irg, n, mt, i);
+      );
+    }
       }
       break;
 
@@ -676,42 +675,42 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       op1mode = get_irn_mode(in[1]);
       op2mode = get_irn_mode(in[2]);
       ASSERT_AND_RET(
-					 /* Sel: BB x M x ref --> X x M */
-					 op1mode == mode_M && mode_is_reference(op2mode) &&
-					 mymode == mode_T, "Raise node", 0
-					 );
+                     /* Sel: BB x M x ref --> X x M */
+                     op1mode == mode_M && mode_is_reference(op2mode) &&
+                     mymode == mode_T, "Raise node", 0
+                     );
       break;
 
     case iro_Const:
       ASSERT_AND_RET(
-					 /* Const: BB --> data */
-					 (mode_is_data (mymode) ||
-					  mymode == mode_b)      /* we want boolean constants for static evaluation */
-					 ,"Const node", 0        /* of Cmp. */
-					 );
+                     /* Const: BB --> data */
+                     (mode_is_data (mymode) ||
+                      mymode == mode_b)      /* we want boolean constants for static evaluation */
+                     ,"Const node", 0        /* of Cmp. */
+                     );
       break;
 
     case iro_SymConst:
       ASSERT_AND_RET(
-					 /* SymConst: BB --> int*/
-					 (mode_is_int(mymode) ||
-					  /* SymConst: BB --> ref */
-					  mode_is_reference(mymode))
-					 ,"SymConst node", 0);
+                     /* SymConst: BB --> int*/
+                     (mode_is_int(mymode) ||
+                      /* SymConst: BB --> ref */
+                      mode_is_reference(mymode))
+                     ,"SymConst node", 0);
       break;
 
     case iro_Sel:
       op1mode = get_irn_mode(in[1]);
       op2mode = get_irn_mode(in[2]);
       ASSERT_AND_RET_DBG(
-						 /* Sel: BB x M x ref x int^n --> ref */
-						 (op1mode == mode_M && op2mode == mymode && mode_is_reference(mymode)),
-						 "Sel node", 0, show_node_failure(n)
-						 );
+                         /* Sel: BB x M x ref x int^n --> ref */
+                         (op1mode == mode_M && op2mode == mymode && mode_is_reference(mymode)),
+                         "Sel node", 0, show_node_failure(n)
+                         );
       for (i=3; i < get_irn_arity(n); i++)
-		{
-		  ASSERT_AND_RET_DBG(mode_is_int(get_irn_mode(in[i])), "Sel node", 0, show_node_failure(n));
-		}
+        {
+          ASSERT_AND_RET_DBG(mode_is_int(get_irn_mode(in[i])), "Sel node", 0, show_node_failure(n));
+        }
       ent = get_Sel_entity(n);
       ASSERT_AND_RET_DBG(ent, "Sel node with empty entity", 0, show_node_failure(n));
       break;
@@ -736,38 +735,38 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
 
       if (get_method_variadicity(mt) == variadicity_variadic) {
         ASSERT_AND_RET_DBG(
-						   get_Call_n_params(n) >= get_method_n_params(mt),
-						   "Number of args for Call doesn't match number of args in variadic type.",
-						   0,
-						   fprintf(stderr, "Call has %d params, method %s type %d\n",
-								   get_Call_n_params(n), get_type_name(mt), get_method_n_params(mt));
-						   );
+                           get_Call_n_params(n) >= get_method_n_params(mt),
+                           "Number of args for Call doesn't match number of args in variadic type.",
+                           0,
+                           fprintf(stderr, "Call has %d params, method %s type %d\n",
+                                   get_Call_n_params(n), get_type_name(mt), get_method_n_params(mt));
+                           );
       }
       else {
         ASSERT_AND_RET(
-					   get_Call_n_params(n) == get_method_n_params(mt),
-					   "Number of args for Call doesn't match number of args in non variadic type.",
-					   0);
+                       get_Call_n_params(n) == get_method_n_params(mt),
+                       "Number of args for Call doesn't match number of args in non variadic type.",
+                       0);
       }
 
       for (i = 0; i < get_method_n_params(mt); i++) {
-	type *t = get_method_param_type(mt, i);
+    type *t = get_method_param_type(mt, i);
 
-	if (is_atomic_type(t)) {
-	  ASSERT_AND_RET_DBG(
-	      get_irn_mode(get_Call_param(n, i)) == get_type_mode(t),
-	      "Mode of arg for Call doesn't match mode of arg type.", 0,
-	  show_call_param(n, mt);
-	  );
-	}
-	else {
-	  /* call with a compound type, mode must be reference */
-	  ASSERT_AND_RET_DBG(
-	      mode_is_reference(get_irn_mode(get_Call_param(n, i))),
-	      "Mode of arg for Call doesn't match mode of arg type.", 0,
-	  show_call_param(n, mt);
-	  );
-	}
+    if (is_atomic_type(t)) {
+      ASSERT_AND_RET_DBG(
+          get_irn_mode(get_Call_param(n, i)) == get_type_mode(t),
+          "Mode of arg for Call doesn't match mode of arg type.", 0,
+      show_call_param(n, mt);
+      );
+    }
+    else {
+      /* call with a compound type, mode must be reference */
+      ASSERT_AND_RET_DBG(
+          mode_is_reference(get_irn_mode(get_Call_param(n, i))),
+          "Mode of arg for Call doesn't match mode of arg type.", 0,
+      show_call_param(n, mt);
+      );
+    }
       }
       break;
 
@@ -775,19 +774,19 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       op1mode = get_irn_mode(in[1]);
       op2mode = get_irn_mode(in[2]);
       ASSERT_AND_RET_DBG(
-						 (
-						  /* common Add: BB x numP x numP --> numP */
-						  (op1mode == mymode && op2mode == op1mode && mode_is_numP(mymode)) ||
-						  /* Pointer Add: BB x ref x int --> ref */
-						  (mode_is_reference(op1mode) && mode_is_int(op2mode) && op1mode == mymode) ||
-						  /* Pointer Add: BB x int x ref --> ref */
-						  (mode_is_int(op1mode) && op2mode == mymode && mode_is_reference(mymode))
-						  ),
-						 "Add node", 0,
-						 show_binop_failure(n, "/* common Add: BB x numP x numP --> numP */ |\n"
-											"/* Pointer Add: BB x ref x int --> ref */   |\n"
-											"/* Pointer Add: BB x int x ref --> ref */");
-						 );
+                         (
+                          /* common Add: BB x numP x numP --> numP */
+                          (op1mode == mymode && op2mode == op1mode && mode_is_numP(mymode)) ||
+                          /* Pointer Add: BB x ref x int --> ref */
+                          (mode_is_reference(op1mode) && mode_is_int(op2mode) && op1mode == mymode) ||
+                          /* Pointer Add: BB x int x ref --> ref */
+                          (mode_is_int(op1mode) && op2mode == mymode && mode_is_reference(mymode))
+                          ),
+                         "Add node", 0,
+                         show_binop_failure(n, "/* common Add: BB x numP x numP --> numP */ |\n"
+                                            "/* Pointer Add: BB x ref x int --> ref */   |\n"
+                                            "/* Pointer Add: BB x int x ref --> ref */");
+                         );
       if (mode_is_reference(op1mode) != mode_is_reference(op2mode)) {
         /* BB x ref x int --> ref or BB x int x ref --> ref */
         op_is_symmetric = 0;
@@ -801,20 +800,20 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       op1mode = get_irn_mode(in[1]);
       op2mode = get_irn_mode(in[2]);
       ASSERT_AND_RET_DBG(
-						 /* common Sub: BB x numP x numP --> numP */
-						 ((mymode ==op1mode && mymode == op2mode && mode_is_numP(op1mode)) ||
-						  /* Pointer Sub: BB x ref x int --> ref */
-						  (op1mode == mymode && mode_is_int(op2mode) && mode_is_reference(mymode)) ||
-						  /* Pointer Sub: BB x int x ref --> ref */
-						  (mode_is_int(op1mode) && op2mode == mymode && mode_is_reference(mymode)) ||
-						  /* Pointer Sub: BB x ref x ref --> int */
-						  (op1mode == op2mode && mode_is_reference(op2mode) && mode_is_int(mymode))),
-						 "Sub node", 0,
-						 show_binop_failure(n, "/* common Sub: BB x numP x numP --> numP */ |\n"
-											"/* Pointer Sub: BB x ref x int --> ref */   |\n"
-											"/* Pointer Sub: BB x int x ref --> ref */   |\n"
-											"/* Pointer Sub: BB x ref x ref --> int */" );
-						 );
+                         /* common Sub: BB x numP x numP --> numP */
+                         ((mymode ==op1mode && mymode == op2mode && mode_is_numP(op1mode)) ||
+                          /* Pointer Sub: BB x ref x int --> ref */
+                          (op1mode == mymode && mode_is_int(op2mode) && mode_is_reference(mymode)) ||
+                          /* Pointer Sub: BB x int x ref --> ref */
+                          (mode_is_int(op1mode) && op2mode == mymode && mode_is_reference(mymode)) ||
+                          /* Pointer Sub: BB x ref x ref --> int */
+                          (op1mode == op2mode && mode_is_reference(op2mode) && mode_is_int(mymode))),
+                         "Sub node", 0,
+                         show_binop_failure(n, "/* common Sub: BB x numP x numP --> numP */ |\n"
+                                            "/* Pointer Sub: BB x ref x int --> ref */   |\n"
+                                            "/* Pointer Sub: BB x int x ref --> ref */   |\n"
+                                            "/* Pointer Sub: BB x ref x ref --> int */" );
+                         );
       if (mode_is_reference(op1mode) != mode_is_reference(op2mode)) {
         op_is_symmetric = 0;
       } else {
@@ -825,10 +824,10 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
     case iro_Minus:
       op1mode = get_irn_mode(in[1]);
       ASSERT_AND_RET_DBG(
-						 /* Minus: BB x float --> float */
-						 op1mode == mymode && get_mode_sort(op1mode) == irms_float_number, "Minus node", 0,
-						 show_unop_failure(n , "/* Minus: BB x float --> float */");
-						 );
+                         /* Minus: BB x float --> float */
+                         op1mode == mymode && get_mode_sort(op1mode) == irms_float_number, "Minus node", 0,
+                         show_unop_failure(n , "/* Minus: BB x float --> float */");
+                         );
       op_is_symmetric = 2;
       break;
 
@@ -836,12 +835,14 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       op1mode = get_irn_mode(in[1]);
       op2mode = get_irn_mode(in[2]);
       ASSERT_AND_RET_DBG(
-						 /* Mul: BB x int1 x int1 --> int2 */
-						 ((mode_is_int(op1mode)   && op2mode == op1mode && mode_is_int(mymode)) ||
-						  (mode_is_float(op1mode) && op2mode == op1mode && mymode == op1mode)),
-						 "Mul node",0,
-						 show_binop_failure(n, "/* Mul: BB x int1 x int1 --> int2 */");
-						 );
+                         /* Mul: BB x int1 x int1 --> int2 */
+                         ((mode_is_int(op1mode)   && op2mode == op1mode && mode_is_int(mymode)) ||
+                         /* Mul: BB x float x float --> float */
+                          (mode_is_float(op1mode) && op2mode == op1mode && mymode == op1mode)),
+                         "Mul node",0,
+                         show_binop_failure(n, "/* Mul: BB x int1 x int1 --> int2 */ |\n"
+                                               "/* Mul: BB x float x float --> float */");
+                         );
       op_is_symmetric = 2;
       break;
 
@@ -850,13 +851,13 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       op2mode = get_irn_mode(in[2]);
       op3mode = get_irn_mode(in[3]);
       ASSERT_AND_RET_DBG(
-						 /* Quot: BB x M x float x float --> M x X x float */
-						 op1mode == mode_M && op2mode == op3mode &&
-						 get_mode_sort(op2mode) == irms_float_number &&
-						 mymode == mode_T,
-						 "Quot node",0,
-						 show_binop_failure(n, "/* Quot: BB x M x float x float --> M x X x float */");
-						 );
+                         /* Quot: BB x M x float x float --> M x X x float */
+                         op1mode == mode_M && op2mode == op3mode &&
+                         get_mode_sort(op2mode) == irms_float_number &&
+                         mymode == mode_T,
+                         "Quot node",0,
+                         show_binop_failure(n, "/* Quot: BB x M x float x float --> M x X x float */");
+                         );
       op_is_symmetric = 2;
       break;
 
@@ -865,13 +866,13 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       op2mode = get_irn_mode(in[2]);
       op3mode = get_irn_mode(in[3]);
       ASSERT_AND_RET(
-					 /* DivMod: BB x M x int x int --> M x X x int x int */
-					 op1mode == mode_M &&
-					 mode_is_int(op2mode) &&
-					 op3mode == op2mode &&
-					 mymode == mode_T,
-					 "DivMod node", 0
-					 );
+                     /* DivMod: BB x M x int x int --> M x X x int x int */
+                     op1mode == mode_M &&
+                     mode_is_int(op2mode) &&
+                     op3mode == op2mode &&
+                     mymode == mode_T,
+                     "DivMod node", 0
+                     );
       op_is_symmetric = 1;
       break;
 
@@ -881,25 +882,25 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       op2mode = get_irn_mode(in[2]);
       op3mode = get_irn_mode(in[3]);
       ASSERT_AND_RET(
-					 /* Div or Mod: BB x M x int x int --> M x X x int */
-					 op1mode == mode_M &&
-					 op2mode == op3mode &&
-					 mode_is_int(op2mode) &&
-					 mymode == mode_T,
-					 "Div or Mod node", 0
-					 );
+                     /* Div or Mod: BB x M x int x int --> M x X x int */
+                     op1mode == mode_M &&
+                     op2mode == op3mode &&
+                     mode_is_int(op2mode) &&
+                     mymode == mode_T,
+                     "Div or Mod node", 0
+                     );
       op_is_symmetric = 1;
       break;
 
     case iro_Abs:
       op1mode = get_irn_mode(in[1]);
       ASSERT_AND_RET_DBG(
-						 /* Abs: BB x num --> num */
-						 op1mode == mymode &&
-						 mode_is_num (op1mode),
-						 "Abs node", 0,
-						 show_unop_failure(n, "/* Abs: BB x num --> num */");
-						 );
+                         /* Abs: BB x num --> num */
+                         op1mode == mymode &&
+                         mode_is_num (op1mode),
+                         "Abs node", 0,
+                         show_unop_failure(n, "/* Abs: BB x num --> num */");
+                         );
       op_is_symmetric = 2;
       break;
 
@@ -909,25 +910,25 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       op1mode = get_irn_mode(in[1]);
       op2mode = get_irn_mode(in[2]);
       ASSERT_AND_RET_DBG(
-						 /* And or Or or Eor: BB x int x int --> int */
-						 mode_is_int(mymode) &&
-						 op2mode == op1mode &&
-						 mymode == op2mode,
-						 "And, Or or Eor node", 0,
-						 show_binop_failure(n, "/* And or Or or Eor: BB x int x int --> int */");
-						 );
+                         /* And or Or or Eor: BB x int x int --> int */
+                         mode_is_int(mymode) &&
+                         op2mode == op1mode &&
+                         mymode == op2mode,
+                         "And, Or or Eor node", 0,
+                         show_binop_failure(n, "/* And or Or or Eor: BB x int x int --> int */");
+                         );
       op_is_symmetric = 2;
       break;
 
     case iro_Not:
       op1mode = get_irn_mode(in[1]);
       ASSERT_AND_RET_DBG(
-						 /* Not: BB x int --> int */
-						 mode_is_int(mymode) &&
-						 mymode == op1mode,
-						 "Not node", 0,
-						 show_unop_failure(n, "/* Not: BB x int --> int */");
-						 );
+                         /* Not: BB x int --> int */
+                         mode_is_int(mymode) &&
+                         mymode == op1mode,
+                         "Not node", 0,
+                         show_unop_failure(n, "/* Not: BB x int --> int */");
+                         );
       op_is_symmetric = 2;
       break;
 
@@ -936,13 +937,13 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       op1mode = get_irn_mode(in[1]);
       op2mode = get_irn_mode(in[2]);
       ASSERT_AND_RET_DBG(
-						 /* Cmp: BB x datab x datab --> b16 */
-						 mode_is_data (op1mode) &&
-						 op2mode == op1mode &&
-						 mymode == mode_T,
-						 "Cmp node", 0,
-						 show_binop_failure(n, "/* Cmp: BB x datab x datab --> b16 */");
-						 );
+                         /* Cmp: BB x datab x datab --> b16 */
+                         mode_is_data (op1mode) &&
+                         op2mode == op1mode &&
+                         mymode == mode_T,
+                         "Cmp node", 0,
+                         show_binop_failure(n, "/* Cmp: BB x datab x datab --> b16 */");
+                         );
       break;
 
     case iro_Shl:
@@ -951,47 +952,47 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       op1mode = get_irn_mode(in[1]);
       op2mode = get_irn_mode(in[2]);
       ASSERT_AND_RET_DBG(
-						 /* Shl, Shr or Shrs: BB x int x int_u --> int */
-						 mode_is_int(op1mode) &&
-						 mode_is_int(op2mode) &&
-						 !mode_is_signed(op2mode) &&
-						 mymode == op1mode,
-						 "Shl, Shr, Shr or Rot node", 0,
-						 show_binop_failure(n, "/* Shl, Shr or Shrs: BB x int x int_u --> int */");
-						 );
+                         /* Shl, Shr or Shrs: BB x int x int_u --> int */
+                         mode_is_int(op1mode) &&
+                         mode_is_int(op2mode) &&
+                         !mode_is_signed(op2mode) &&
+                         mymode == op1mode,
+                         "Shl, Shr, Shr or Rot node", 0,
+                         show_binop_failure(n, "/* Shl, Shr or Shrs: BB x int x int_u --> int */");
+                         );
       break;
 
     case iro_Rot:
       op1mode = get_irn_mode(in[1]);
       op2mode = get_irn_mode(in[2]);
       ASSERT_AND_RET_DBG(
-						 /* Rot: BB x int x int --> int */
-						 mode_is_int(op1mode) &&
-						 mode_is_int(op2mode) &&
-						 mymode == op1mode,
-						 "Rot node", 0,
-						 show_binop_failure(n, "/* Rot: BB x int x int --> int */");
-						 );
+                         /* Rot: BB x int x int --> int */
+                         mode_is_int(op1mode) &&
+                         mode_is_int(op2mode) &&
+                         mymode == op1mode,
+                         "Rot node", 0,
+                         show_binop_failure(n, "/* Rot: BB x int x int --> int */");
+                         );
       break;
 
     case iro_Conv:
       op1mode = get_irn_mode(in[1]);
       ASSERT_AND_RET_DBG(
-						 /* Conv: BB x datab1 --> datab2 */
-						 mode_is_datab(op1mode) && mode_is_data(mymode),
-						 "Conv node", 0,
-						 show_unop_failure(n, "/* Conv: BB x datab1 --> datab2 */");
-						 );
+                         /* Conv: BB x datab1 --> datab2 */
+                         mode_is_datab(op1mode) && mode_is_data(mymode),
+                         "Conv node", 0,
+                         show_unop_failure(n, "/* Conv: BB x datab1 --> datab2 */");
+                         );
       break;
 
     case iro_Cast:
       op1mode = get_irn_mode(in[1]);
       ASSERT_AND_RET_DBG(
-						 /* Conv: BB x datab1 --> datab2 */
-						 mode_is_data(op1mode) && op1mode == mymode,
-						 "Cast node", 0,
-						 show_unop_failure(n, "/* Conv: BB x datab1 --> datab2 */");
-						 );
+                         /* Conv: BB x datab1 --> datab2 */
+                         mode_is_data(op1mode) && op1mode == mymode,
+                         "Cast node", 0,
+                         show_unop_failure(n, "/* Conv: BB x datab1 --> datab2 */");
+                         );
       break;
 
     case iro_Phi:
@@ -999,10 +1000,10 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       for (i = 1; i < get_irn_arity(n); i++) {
         if (!is_Bad(in[i]) && (get_irn_op(in[i]) != op_Unknown))
           ASSERT_AND_RET_DBG(
-							 get_irn_mode(in[i]) == mymode,
-							 "Phi node", 0,
-							 show_phi_failure(n, in[i], i);
-							 );
+                             get_irn_mode(in[i]) == mymode,
+                             "Phi node", 0,
+                             show_phi_failure(n, in[i], i);
+                             );
       };
       ASSERT_AND_RET( mode_is_dataM(mymode), "Phi node", 0 );
       break;
@@ -1011,26 +1012,26 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       op1mode = get_irn_mode(in[1]);
       op2mode = get_irn_mode(in[2]);
       ASSERT_AND_RET(
-					 /* Load: BB x M x ref --> M x X x data */
-					 op1mode == mode_M && mode_is_reference(op2mode),
-					 "Load node", 0
-					 );
+                     /* Load: BB x M x ref --> M x X x data */
+                     op1mode == mode_M && mode_is_reference(op2mode),
+                     "Load node", 0
+                     );
       ASSERT_AND_RET( mymode == mode_T, "Load node", 0 );
 
-	  /*
-	   * jack's gen_add_firm_code:simpleSel seems to build Load (Load
-	   * (Proj (Proj))) sometimes ...
+      /*
+       * jack's gen_add_firm_code:simpleSel seems to build Load (Load
+       * (Proj (Proj))) sometimes ...
 
-	   * interprete.c:ai_eval seems to assume that this happens, too
+       * interprete.c:ai_eval seems to assume that this happens, too
 
-	   * obset.c:get_abstval_any can't deal with this if the load has
-	   * mode_T
-	   *
-	  {
-		entity *ent = hunt_for_entity (get_Load_ptr (n), n);
-		assert ((NULL != ent) || (mymode != mode_T));
-	  }
-	  */
+       * obset.c:get_abstval_any can't deal with this if the load has
+       * mode_T
+       *
+      {
+        entity *ent = hunt_for_entity (get_Load_ptr (n), n);
+        assert ((NULL != ent) || (mymode != mode_T));
+      }
+      */
 
       break;
 
@@ -1039,10 +1040,10 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       op2mode = get_irn_mode(in[2]);
       op3mode = get_irn_mode(in[3]);
       ASSERT_AND_RET(
-					 /* Load: BB x M x ref data --> M x X */
-					 op1mode == mode_M && mode_is_reference(op2mode) && mode_is_data(op3mode),
-					 "Store node", 0
-					 );
+                     /* Load: BB x M x ref data --> M x X */
+                     op1mode == mode_M && mode_is_reference(op2mode) && mode_is_data(op3mode),
+                     "Store node", 0
+                     );
       ASSERT_AND_RET(mymode == mode_T, "Store node", 0);
       break;
 
@@ -1050,26 +1051,26 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       op1mode = get_irn_mode(in[1]);
       op2mode = get_irn_mode(in[2]);
       ASSERT_AND_RET_DBG(
-						 /* Alloc: BB x M x int_u --> M x X x ref */
-						 op1mode == mode_M &&
-						 mode_is_int(op2mode) &&
-						 !mode_is_signed(op2mode) &&
-						 mymode == mode_T,
-						 "Alloc node", 0,
-						 show_binop_failure(n, "/* Alloc: BB x M x int_u --> M x X x ref */");
-						 );
+                         /* Alloc: BB x M x int_u --> M x X x ref */
+                         op1mode == mode_M &&
+                         mode_is_int(op2mode) &&
+                         !mode_is_signed(op2mode) &&
+                         mymode == mode_T,
+                         "Alloc node", 0,
+                         show_binop_failure(n, "/* Alloc: BB x M x int_u --> M x X x ref */");
+                         );
       break;
 
     case iro_Free:
       op1mode = get_irn_mode(in[1]);
       op2mode = get_irn_mode(in[2]);
       ASSERT_AND_RET_DBG(
-						 /* Free: BB x M x ref --> M */
-						 op1mode == mode_M && mode_is_reference(op2mode) &&
-						 mymode == mode_M,
-						 "Free node", 0,
-						 show_binop_failure(n, "/* Free: BB x M x ref --> M */");
-						 );
+                         /* Free: BB x M x ref --> M */
+                         op1mode == mode_M && mode_is_reference(op2mode) &&
+                         mymode == mode_M,
+                         "Free node", 0,
+                         show_binop_failure(n, "/* Free: BB x M x ref --> M */");
+                         );
       break;
 
     case iro_Sync:
@@ -1088,17 +1089,17 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       op1mode = get_irn_mode(in[1]);
       op2mode = get_irn_mode(in[2]);
       ASSERT_AND_RET_DBG(
-						 /* Confirm: BB x T x T --> T */
-						 op1mode == mymode &&
-						 op2mode == mymode,
-						 "Confirm node", 0,
-						 show_binop_failure(n, "/* Confirm: BB x T x T --> T */");
-						 );
+                         /* Confirm: BB x T x T --> T */
+                         op1mode == mymode &&
+                         op2mode == mymode,
+                         "Confirm node", 0,
+                         show_binop_failure(n, "/* Confirm: BB x T x T --> T */");
+                         );
       break;
 
     default:
       break;
-	}
+    }
 
   /* All went ok */
   return 1;
@@ -1113,9 +1114,9 @@ int irn_vrfy(ir_node *n)
   return res;
 }
 
-/*******************************************************************/
+/*-----------------------------------------------------------------*/
 /* Verify the whole graph.                                         */
-/*******************************************************************/
+/*-----------------------------------------------------------------*/
 
 /* This *is* used, except gcc doesn't notice that */
 static void vrfy_wrap(ir_node *node, void *env)

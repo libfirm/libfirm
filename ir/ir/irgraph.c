@@ -20,6 +20,7 @@
 # include "irgraph_t.h"
 # include "irprog_t.h"
 # include "iropt_t.h"
+# include "irflag_t.h"
 # include "array.h"
 # include "irgmod.h"
 # include "mangle.h"
@@ -82,18 +83,19 @@ new_ir_graph (entity *ent, int n_loc)
   add_irp_irg(res);          /* remember this graph global. */
 
   /*-- initialized for each graph. --*/
-#if PRECISE_EXC_CONTEXT
-  res->n_loc = n_loc + 1 + 1; /* number of local variables that are never
-                                 dereferenced in this graph plus one for
-				 the store plus one for links to fragile
-				 operations.  n_loc is not the number of
-				 parameters to the procedure!  */
-#else
-  res->n_loc = n_loc + 1;  /* number of local variables that are never
-                              dereferenced in this graph plus one for
-			      the store. This is not the number of parameters
-                              to the procedure!  */
-#endif
+  if (get_opt_precise_exc_context()) {
+    res->n_loc = n_loc + 1 + 1; /* number of local variables that are never
+				   dereferenced in this graph plus one for
+				   the store plus one for links to fragile
+				   operations.  n_loc is not the number of
+				   parameters to the procedure!  */
+  }
+  else {
+    res->n_loc = n_loc + 1;  /* number of local variables that are never
+				dereferenced in this graph plus one for
+				the store. This is not the number of parameters
+				to the procedure!  */
+  }
 
   res->visited = 0;     /* visited flag, for the ir walker */
   res->block_visited=0; /* visited flag, for the 'block'-walker */
@@ -467,21 +469,19 @@ is_frame_type(type *ftp) {
 int
 get_irg_n_locs (ir_graph *irg)
 {
-#if PRECISE_EXC_CONTEXT
-  return irg->n_loc - 1 - 1;
-#else
-  return irg->n_loc - 1;
-#endif
+  if (get_opt_precise_exc_context())
+    return irg->n_loc - 1 - 1;
+  else
+    return irg->n_loc - 1;
 }
 
 void
 set_irg_n_loc (ir_graph *irg, int n_loc)
 {
-#if PRECISE_EXC_CONTEXT
-  irg->n_loc = n_loc + 1 + 1;
-#else
-  irg->n_loc = n_loc + 1;
-#endif
+  if (get_opt_precise_exc_context())
+    irg->n_loc = n_loc + 1 + 1;
+  else
+    irg->n_loc = n_loc + 1;
 }
 
 

@@ -73,7 +73,10 @@ typedef enum {
   OPT_TAIL_RECURSION                     = 0x00002000,
 
   /** Free never called methods */
-  OPT_DEAD_METHOD_ELIMINATION            = 0x00008000,
+  OPT_DEAD_METHOD_ELIMINATION            = 0x00004000,
+
+  /** precise exception context */
+  OPT_PRECISE_EXC_CONTEXT                = 0x00008000,
 
   /** Free never called methods */
   OPT_DEAD_METHOD_ELIMINATION_VERBOSE    = 0x00010000,
@@ -184,6 +187,14 @@ static INLINE int get_opt_tail_recursion(void)
   return libFIRM_opt & OPT_TAIL_RECURSION;
 }
 
-
+/** Returns precise exception context setting. */
+static INLINE int get_opt_precise_exc_context(void)
+{
+#if PRECISE_EXC_CONTEXT
+  return 0;
+#else
+  return libFIRM_opt & OPT_PRECISE_EXC_CONTEXT;
+#endif
+}
 
 #endif /* _IRFLAG_T_H_ */
