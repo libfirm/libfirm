@@ -115,7 +115,7 @@ void optimize_funccalls(void)
         if (change)
           break;
       }
-      else if (op == op_Raise) {
+      else {
         /* exception found */
         change = 1;
         break;
