@@ -3,6 +3,9 @@
  * @author Sebastian Hack
  * @date 8.12.2004
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <ctype.h>
 
