@@ -192,7 +192,7 @@ ident      *get_entity_ld_ident (entity *ent);
 void        set_entity_ld_ident (entity *ent, ident *ld_ident);
 
 /** Returns the mangled name of the entity as a string. */
-const char *get_entity_ld_name (entity *end);
+const char *get_entity_ld_name (entity *ent);
 
 /** Returns the owner of the entity. */
 type       *get_entity_owner (entity *ent);
