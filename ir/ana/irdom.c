@@ -351,12 +351,14 @@ void compute_doms(ir_graph *irg) {
   }
   /* Step 4 */
   tdi_list[0].dom = NULL;
+	memset(get_dom_info(tdi_list[0].block), 0, sizeof(dom_info));
   set_Block_idom(tdi_list[0].block, NULL);
   set_Block_dom_depth(tdi_list[0].block, 1);
   for (i = 1;  i < n_blocks;  i++) {
     tmp_dom_info *w = &tdi_list[i];
 
     if (w->dom != w->semi) w->dom = w->dom->dom;
+		memset(get_dom_info(tdi_list[i].block), 0, sizeof(dom_info));
     set_Block_idom(w->block, w->dom->block);
     set_Block_dom_depth(w->block, get_Block_dom_depth(w->dom->block) + 1);
   }
