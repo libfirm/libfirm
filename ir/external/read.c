@@ -30,7 +30,7 @@ getNodeModule (xmlNodePtr node)
   if (NULL == mod_str) {
     return (NULL);
   } else {
-    char *res = strdup (mod_str);
+    const char *res = strdup (mod_str);
 
     return (res);
   }
@@ -757,6 +757,9 @@ void test_getEffectByName ()
 
 /*
  * $Log$
+ * Revision 1.4  2004/10/14 11:31:53  liekweg
+ * ...
+ *
  * Revision 1.3  2004/10/13 13:36:28  rubino
  * fix for strdup
  *
