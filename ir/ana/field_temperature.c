@@ -170,7 +170,7 @@ int get_irn_loop_call_depth(ir_node *n) {
 }
 
 int get_irn_loop_depth(ir_node *n) {
-  get_loop_depth(get_irn_loop(get_nodes_block(n)));
+  return get_loop_depth(get_irn_loop(get_nodes_block(n)));
 }
 
 int get_irn_recursion_depth(ir_node *n) {
