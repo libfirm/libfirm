@@ -3505,7 +3505,7 @@ fi
 
 #AC_CHECK_HEADERS(obstack.h, ac_obstack_headers="yes", ac_obstack_headers="no")
 #if test "$ac_obstack_headers" != yes; then
-if test $ac_cv_func_obstack != yes; then
+if test "$ac_cv_func_obstack" != "yes"; then
     { { echo "$as_me:$LINENO: error: \"no obstack support\"" >&5
 echo "$as_me: error: \"no obstack support\"" >&2;}
    { (exit 1); exit 1; }; }
