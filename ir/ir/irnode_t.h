@@ -49,7 +49,8 @@ typedef struct {
   ir_graph *irg;
   unsigned long block_visited;  /**< for the walker that walks over all blocks. */
   /* Attributes private to construction: */
-  bool matured;               /**< if set, all in-nodes of the block are fixed */
+  int matured:1;                /**< if set, all in-nodes of the block are fixed */
+  int dead:1;                   /**< if set, the block is dead (and could be replace by a Bad */
   struct ir_node **graph_arr; /**< array to store all parameters */
   /* Attributes holding analyses information */
   struct dom_info dom;        /**< Datastructure that holds information about dominators.
@@ -510,6 +511,25 @@ __is_Block(const ir_node *node) {
   return (__get_irn_op(node) == op_Block);
 }
 
+static INLINE ir_node *
+__set_Block_dead(ir_node *block) {
+  assert(__get_irn_op(block) == op_Block);
+  block->attr.block.dead = 1;
+  return block;
+}
+
+static INLINE int
+__is_Block_dead(const ir_node *block) {
+  ir_op * op = __get_irn_op(block);
+
+  if (op == op_Bad)
+    return 1;
+  else {
+    assert(op == op_Block);
+    return block->attr.block.dead;
+  }
+}
+
 /* this section MUST contain all inline functions */
 #define is_ir_node(thing)          __is_ir_node(thing)
 #define get_irn_intra_arity(node)  __get_irn_intra_arity(node)
@@ -534,5 +554,7 @@ __is_Block(const ir_node *node) {
 #define is_Bad(node)               __is_Bad(node)
 #define is_no_Block(node)          __is_no_Block(node)
 #define is_Block(node)             __is_Block(node)
+#define set_Block_dead(block)      __set_Block_dead(block)
+#define is_Block_dead(block)       __is_Block_dead(block)
 
 # endif /* _IRNODE_T_H_ */

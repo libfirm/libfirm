@@ -276,6 +276,9 @@ bool      get_Block_matured (ir_node *node);
 void      set_Block_matured (ir_node *node, bool matured);
 unsigned long get_Block_block_visited (ir_node *node);
 void      set_Block_block_visited (ir_node *node, unsigned long visit);
+ir_node  *set_Block_dead(ir_node *block);
+int       is_Block_dead(const ir_node *block);
+
 /* For this current_ir_graph must be set. */
 void      mark_Block_block_visited(ir_node *node);
 int       Block_not_block_visited(ir_node *node);

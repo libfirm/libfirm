@@ -698,6 +698,14 @@ void remove_Block_cg_cfgpred_arr(ir_node * node) {
   node->attr.block.in_cg = NULL;
 }
 
+ir_node *(set_Block_dead)(ir_node *block) {
+  return __set_Block_dead(block);
+}
+
+int (is_Block_dead)(const ir_node *block) {
+  return __is_Block_dead(block);
+}
+
 void
 set_Start_irg(ir_node *node, ir_graph *irg) {
   assert(node->op == op_Start);

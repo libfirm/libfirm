@@ -52,8 +52,9 @@ typedef struct Phi_in_stack Phi_in_stack;
  */
 static default_initialize_local_variable_func_t *default_initialize_local_variable = NULL;
 
-/*** ******************************************** */
-/** privat interfaces, for professional use only */
+/* -------------------------------------------- */
+/* privat interfaces, for professional use only */
+/* -------------------------------------------- */
 
 /* Constructs a Block with a fixed number of predecessors.
    Does not set current_block.  Can not be used with automatic
@@ -69,9 +70,10 @@ new_rd_Block (dbg_info* db, ir_graph *irg,  int arity, ir_node **in)
 
   /* res->attr.block.exc = exc_normal; */
   /* res->attr.block.handler_entry = 0; */
-  res->attr.block.irg = irg;
-  res->attr.block.backedge = new_backedge_arr(irg->obst, arity);
-  res->attr.block.in_cg = NULL;
+  res->attr.block.dead        = 0;
+  res->attr.block.irg         = irg;
+  res->attr.block.backedge    = new_backedge_arr(irg->obst, arity);
+  res->attr.block.in_cg       = NULL;
   res->attr.block.cg_backedge = NULL;
 
   IRN_VRFY_IRG(res, irg);
@@ -2373,12 +2375,13 @@ ir_node *new_d_immBlock (dbg_info* db) {
   /* creates a new dynamic in-array as length of in is -1 */
   res = new_ir_node (db, current_ir_graph, NULL, op_Block, mode_BB, -1, NULL);
   current_ir_graph->current_block = res;
-  res->attr.block.matured = 0;
+  res->attr.block.matured     = 0;
+  res->attr.block.dead        = 0;
   /* res->attr.block.exc = exc_normal; */
   /* res->attr.block.handler_entry = 0; */
-  res->attr.block.irg = current_ir_graph;
-  res->attr.block.backedge = NULL;
-  res->attr.block.in_cg = NULL;
+  res->attr.block.irg         = current_ir_graph;
+  res->attr.block.backedge    = NULL;
+  res->attr.block.in_cg       = NULL;
   res->attr.block.cg_backedge = NULL;
   set_Block_block_visited(res, 0);
 

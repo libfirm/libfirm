@@ -683,7 +683,10 @@ static void dump_node_vcgattr(FILE *F, ir_node *n, int bad)
     fprintf (F, "color: blue");
     break;
   case iro_Block:
-    fprintf (F, "color: lightyellow");
+    if (is_Block_dead(n))
+      fprintf (F, "color: lightred");
+    else
+      fprintf (F, "color: lightyellow");
     break;
   case iro_Phi:
     fprintf (F, "color: green");
