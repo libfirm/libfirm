@@ -29,9 +29,9 @@
 #define fail_char(a, b, c, d) _fail_char((a), (b), (c), (d), __FILE__,  __LINE__)
 
 #if 0
-#  define DEBUGPRINTF(...) printf(__VA_ARGS__)
+#  define DEBUGPRINTF(x) printf x
 #else
-#  define DEBUGPRINTF(...) ((void)0)
+#  define DEBUGPRINTF(x) ((void)0)
 #endif
 
 /*****************************************************************************
@@ -40,18 +40,15 @@
 
 static char calc_buffer[CALC_BUFFER_SIZE];    /* buffer holding all results */
 
-static char quot[CALC_BUFFER_SIZE]; /* temp buffer holding result of divmod */
-static char rem[CALC_BUFFER_SIZE]; /* temp buffer holding remainder of divmod */
+static const char max_digit[4] = { SC_0, SC_1, SC_3, SC_7 };
+static const char min_digit[4] = { SC_F, SC_E, SC_C, SC_8 };
 
-static char max_digit[4] = { SC_0, SC_1, SC_3, SC_7 };
-static char min_digit[4] = { SC_F, SC_E, SC_C, SC_8 };
-
-static char not_table[16] = { SC_F, SC_E, SC_D, SC_C, SC_B, SC_A, SC_9, SC_8,
+static const char not_table[16] = { SC_F, SC_E, SC_D, SC_C, SC_B, SC_A, SC_9, SC_8,
                               SC_7, SC_6, SC_5, SC_4, SC_3, SC_2, SC_1, SC_0 };
 
-static char shift_table[4] = { SC_1, SC_2, SC_4, SC_8 };
+static const char shift_table[4] = { SC_1, SC_2, SC_4, SC_8 };
 
-static char and_table[16][16] = {
+static const char and_table[16][16] = {
                             { SC_0, SC_0, SC_0, SC_0, SC_0, SC_0, SC_0, SC_0,
                               SC_0, SC_0, SC_0, SC_0, SC_0, SC_0, SC_0, SC_0 },
 
@@ -100,7 +97,7 @@ static char and_table[16][16] = {
                             { SC_0, SC_1, SC_2, SC_3, SC_4, SC_5, SC_6, SC_7,
                               SC_8, SC_9, SC_A, SC_B, SC_C, SC_D, SC_E, SC_F } };
 
-static char or_table[16][16] = {
+static const char or_table[16][16] = {
                             { SC_0, SC_1, SC_2, SC_3, SC_4, SC_5, SC_6, SC_7,
                               SC_8, SC_9, SC_A, SC_B, SC_C, SC_D, SC_E, SC_F },
 
@@ -149,7 +146,7 @@ static char or_table[16][16] = {
                             { SC_F, SC_F, SC_F, SC_F, SC_F, SC_F, SC_F, SC_F,
                               SC_F, SC_F, SC_F, SC_F, SC_F, SC_F, SC_F, SC_F } };
 
-static char xor_table[16][16] = {
+static char const xor_table[16][16] = {
                              { SC_0, SC_1, SC_2, SC_3, SC_4, SC_5, SC_6, SC_7,
                                SC_8, SC_9, SC_A, SC_B, SC_C, SC_D, SC_E, SC_F },
 
@@ -199,7 +196,7 @@ static char xor_table[16][16] = {
                                SC_7, SC_6, SC_5, SC_4, SC_3, SC_2, SC_1, SC_0 }
                                 };
 
-static char add_table[16][16][2] = {
+static char const add_table[16][16][2] = {
                        { {SC_0, SC_0}, {SC_1, SC_0}, {SC_2, SC_0}, {SC_3, SC_0},
                          {SC_4, SC_0}, {SC_5, SC_0}, {SC_6, SC_0}, {SC_7, SC_0},
                          {SC_8, SC_0}, {SC_9, SC_0}, {SC_A, SC_0}, {SC_B, SC_0},
@@ -281,7 +278,7 @@ static char add_table[16][16][2] = {
                          {SC_B, SC_1}, {SC_C, SC_1}, {SC_D, SC_1}, {SC_E, SC_1} }
                              };
 
-static char mul_table[16][16][2] = {
+static char const mul_table[16][16][2] = {
                        { {SC_0, SC_0}, {SC_0, SC_0}, {SC_0, SC_0}, {SC_0, SC_0},
                          {SC_0, SC_0}, {SC_0, SC_0}, {SC_0, SC_0}, {SC_0, SC_0},
                          {SC_0, SC_0}, {SC_0, SC_0}, {SC_0, SC_0}, {SC_0, SC_0},
@@ -363,7 +360,7 @@ static char mul_table[16][16][2] = {
                          {SC_4, SC_B}, {SC_3, SC_C}, {SC_2, SC_D}, {SC_1, SC_E} }
                              };
 
-static char shrs_table[16][4][2] = {
+static char const shrs_table[16][4][2] = {
                        { {SC_0, SC_0}, {SC_0, SC_0}, {SC_0, SC_0}, {SC_0, SC_0} },
                        { {SC_1, SC_0}, {SC_0, SC_8}, {SC_0, SC_4}, {SC_0, SC_2} },
                        { {SC_2, SC_0}, {SC_1, SC_0}, {SC_0, SC_8}, {SC_0, SC_4} },
@@ -462,7 +459,7 @@ static void _negate(const char *val, char *buffer)
 static void _add(const char *val1, const char *val2, char *buffer)
 {
   int counter;
-  char *add1, *add2;
+  const char *add1, *add2;
   char carry = SC_0;
 
   for (counter = 0; counter < CALC_BUFFER_SIZE; counter++)
@@ -478,11 +475,11 @@ static void _add(const char *val1, const char *val2, char *buffer)
 
 static void _mul(const char *val1, const char *val2, char *buffer)
 {
-  static char temp_buffer[CALC_BUFFER_SIZE]; /* result buffer */
-  static char neg_val1[CALC_BUFFER_SIZE];    /* abs of val1 */
-  static char neg_val2[CALC_BUFFER_SIZE];    /* abs of val2 */
+  char temp_buffer[CALC_BUFFER_SIZE]; /* result buffer */
+  char neg_val1[CALC_BUFFER_SIZE];    /* abs of val1 */
+  char neg_val2[CALC_BUFFER_SIZE];    /* abs of val2 */
 
-  char *mul, *add1, *add2;            /* intermediate result containers */
+  const char *mul, *add1, *add2;      /* intermediate result containers */
   char carry = SC_0;                  /* container for carries */
   char sign = 0;                      /* marks result sign */
   int c_inner, c_outer;               /* loop counters */
@@ -542,9 +539,10 @@ static void _mul(const char *val1, const char *val2, char *buffer)
     }
   }
 
-  if (sign) _negate(temp_buffer, temp_buffer);
-
-  memcpy(buffer, temp_buffer, CALC_BUFFER_SIZE);
+  if (sign)
+    _negate(temp_buffer, buffer);
+  else
+    memcpy(buffer, temp_buffer, CALC_BUFFER_SIZE);
 }
 
 static void _sub(const char *val1, const char *val2, char *buffer)
@@ -567,11 +565,11 @@ static void _push(const char digit, char *buffer)
 }
 
 /* XXX: This is MOST slow */
-static void _divmod(const char *dividend, const char *divisor)
+static void _divmod(const char *dividend, const char *divisor, char *quot, char *rem)
 {
   const char *minus_divisor;
-  static char neg_val1[CALC_BUFFER_SIZE];
-  static char neg_val2[CALC_BUFFER_SIZE];
+  char neg_val1[CALC_BUFFER_SIZE];
+  char neg_val2[CALC_BUFFER_SIZE];
 
   char sign = 0;     /* remember result sign */
 
@@ -580,6 +578,7 @@ static void _divmod(const char *dividend, const char *divisor)
   /* clear result buffer */
   memset(quot, SC_0, CALC_BUFFER_SIZE);
   memset(rem, SC_0, CALC_BUFFER_SIZE);
+
   /* if the dividend is zero result is zero (quot is zero)*/
   if (sc_comp(dividend, quot) == 0) return;
   /* if the divisor is zero this won't work (quot is zero) */
@@ -651,7 +650,7 @@ static void _divmod(const char *dividend, const char *divisor)
 
 static void _shl(const char *val1, const char *val2, char *buffer, unsigned radius, unsigned is_signed)
 {
-  char *shl;
+  const char *shl;
   char shift;
   char carry = SC_0;
 
@@ -719,7 +718,7 @@ static void _shl(const char *val1, const char *val2, char *buffer, unsigned radi
 
 static void _shr(const char *val1, const char *val2, char *buffer, unsigned radius, unsigned is_signed, int signed_shift)
 {
-  char *shrs;
+  const char *shrs;
   char sign;
   char msd;
 
@@ -791,9 +790,9 @@ static void _shr(const char *val1, const char *val2, char *buffer, unsigned radi
 /* positive: low-order -> high order, negative other direction */
 static void _rot(const char *val1, const char *val2, char *buffer, unsigned radius, unsigned is_signed)
 {
-  static char temp_buffer[CALC_BUFFER_SIZE];
+  char temp_buffer[CALC_BUFFER_SIZE];
 
-  char *shl;
+  const char *shl;
   char carry = SC_0;
 
   int counter, old_counter;
@@ -820,13 +819,13 @@ static void _rot(const char *val1, const char *val2, char *buffer, unsigned radi
   shift = _val(shift_table[offset % 4]);
   offset = offset / 4;
 
-  DEBUGPRINTF("offset: %d, shift: %d\n", offset, shift);
+  DEBUGPRINTF(("offset: %d, shift: %d\n", offset, shift));
   for (counter = 0; counter < radius/4 - offset; counter++)
   {
     shl = mul_table[_val(val1[counter])][_val(shift)];
     temp_buffer[counter + offset] = or_table[_val(shl[0])][_val(carry)];
     carry = shl[1];
-    DEBUGPRINTF("%d(%x): %s\n", counter, shl[0], sc_print_hex(temp_buffer));
+    DEBUGPRINTF(("%d(%x): %s\n", counter, shl[0], sc_print_hex(temp_buffer)));
   }
   old_counter = counter;
   for (; counter < radius/4; counter++)
@@ -834,7 +833,7 @@ static void _rot(const char *val1, const char *val2, char *buffer, unsigned radi
     shl = mul_table[_val(val1[counter])][_val(shift)];
     temp_buffer[counter - old_counter] = or_table[_val(shl[0])][_val(carry)];
     carry = shl[1];
-    DEBUGPRINTF("%d(%x)> %s\n", counter, shl[0], sc_print_hex(temp_buffer));
+    DEBUGPRINTF(("%d(%x)> %s\n", counter, shl[0], sc_print_hex(temp_buffer)));
   }
   temp_buffer[counter - old_counter] = or_table[_val(temp_buffer[counter-old_counter])][_val(carry)];
 
@@ -872,8 +871,8 @@ void sc_val_from_str(const char *str, unsigned int len)
   unsigned int orig_len = len;
 
   char sign = 0;
-  static char base[CALC_BUFFER_SIZE];
-  static char val[CALC_BUFFER_SIZE];
+  char base[CALC_BUFFER_SIZE];
+  char val[CALC_BUFFER_SIZE];
 
   /* verify valid pointers (not null) */
   assert(str);
@@ -1084,99 +1083,100 @@ void sc_max_from_bits(unsigned int num_bits, unsigned int sign)
 
 void sc_calc(const void* value1, const void* value2, unsigned op)
 {
-  const char *val1 = (char *)value1;
-  const char *val2 = (char *)value2;
+  char unused_res[CALC_BUFFER_SIZE]; /* temp buffer holding unused result of divmod */
+
+  const char *val1 = (const char *)value1;
+  const char *val2 = (const char *)value2;
   CLEAR_CALC_BUFFER();
 
-  DEBUGPRINTF("%s ", sc_print(value1, SC_HEX));
+  DEBUGPRINTF(("%s ", sc_print(value1, SC_HEX)));
 
   switch (op)
   {
     case SC_NEG:
       _negate(val1, calc_buffer);
-      DEBUGPRINTF("negated: %s\n", sc_print(calc_buffer, SC_HEX));
+      DEBUGPRINTF(("negated: %s\n", sc_print_hex(calc_buffer)));
       return;
     case SC_OR:
-      DEBUGPRINTF("| ");
+      DEBUGPRINTF(("| "));
       _bitor(val1, val2, calc_buffer);
       break;
     case SC_AND:
-      DEBUGPRINTF("& ");
+      DEBUGPRINTF(("& "));
       _bitand(val1, val2, calc_buffer);
       break;
     case SC_XOR:
-      DEBUGPRINTF("^ ");
+      DEBUGPRINTF(("^ "));
       _bitxor(val1, val2, calc_buffer);
       break;
     case SC_NOT:
       _bitnot(val1, calc_buffer);
-      DEBUGPRINTF("bit-negated: %s\n", sc_print(calc_buffer, SC_HEX));
+      DEBUGPRINTF(("bit-negated: %s\n", sc_print_hex(calc_buffer)));
       return;
     case SC_ADD:
-      DEBUGPRINTF("+ ");
+      DEBUGPRINTF(("+ "));
       _add(val1, val2, calc_buffer);
       break;
     case SC_SUB:
-      DEBUGPRINTF("- ");
+      DEBUGPRINTF(("- "));
       _sub(val1, val2, calc_buffer);
       break;
     case SC_MUL:
-      DEBUGPRINTF("* ");
+      DEBUGPRINTF(("* "));
       _mul(val1, val2, calc_buffer);
       break;
     case SC_DIV:
-      DEBUGPRINTF("/ ");
-      _divmod(val1, val2);
-      memcpy(calc_buffer, quot, CALC_BUFFER_SIZE);
+      DEBUGPRINTF(("/ "));
+      _divmod(val1, val2, calc_buffer, unused_res);
       break;
     case SC_MOD:
-      DEBUGPRINTF("%% ");
-      _divmod(val1, val2);
-      memcpy(calc_buffer, rem, CALC_BUFFER_SIZE);
+      DEBUGPRINTF(("%% "));
+      _divmod(val1, val2, unused_res, calc_buffer);
       break;
     default:
       assert(0);
   }
-  DEBUGPRINTF("%s -> ", sc_print(value2, SC_HEX));
-  DEBUGPRINTF("%s\n", sc_print(calc_buffer, SC_HEX));
+  DEBUGPRINTF(("%s -> ", sc_print_hex(value2)));
+  DEBUGPRINTF(("%s\n", sc_print_hex(calc_buffer)));
 }
+
 void sc_bitcalc(const void* value1, const void* value2, unsigned radius, unsigned sign, unsigned op)
 {
-  const char *val1 = (char *)value1;
-  const char *val2 = (char *)value2;
+  const char *val1 = (const char *)value1;
+  const char *val2 = (const char *)value2;
   CLEAR_CALC_BUFFER();
 
-  DEBUGPRINTF("%s ", sc_print(value1, SC_HEX));
+  DEBUGPRINTF(("%s ", sc_print_hex(value1)));
   switch (op)
   {
     case SC_SHL:
-      DEBUGPRINTF("<< ");
+      DEBUGPRINTF(("<< "));
       _shl(val1, val2, calc_buffer, radius, sign);
       break;
     case SC_SHR:
-      DEBUGPRINTF(">> ");
+      DEBUGPRINTF((">> "));
       _shr(val1, val2, calc_buffer, radius, sign, 0);
       break;
     case SC_SHRS:
-      DEBUGPRINTF(">>> ");
+      DEBUGPRINTF((">>> "));
       _shr(val1, val2, calc_buffer, radius, sign, 1);
       break;
     case SC_ROT:
-      DEBUGPRINTF("<<>> ");
+      DEBUGPRINTF(("<<>> "));
       _rot(val1, val2, calc_buffer, radius, sign);
       break;
     default:
       assert(0);
   }
-  DEBUGPRINTF("%s -> ", sc_print(value2, SC_HEX));
-  DEBUGPRINTF("%s\n", sc_print(calc_buffer, SC_HEX));
+  DEBUGPRINTF(("%s -> ", sc_print_hex(value2)));
+  DEBUGPRINTF(("%s\n", sc_print_hex(calc_buffer)));
 }
 
 int sc_comp(const void* value1, const void* value2)
 {
   int counter = CALC_BUFFER_SIZE - 1;
-  const char *val1 = (char *)value1;
-  const char *val2 = (char *)value2;
+  const char *val1 = (const char *)value1;
+  const char *val2 = (const char *)value2;
 
   /* compare signs first:
    * the loop below can only compare values of the same sign! */
