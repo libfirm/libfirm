@@ -839,6 +839,7 @@ find_tail (ir_node *n) {
     }
 
   }
+  if (res_index <= -2) return NULL;
   assert (res_index > -2);
 
   set_backedge (m, res_index);

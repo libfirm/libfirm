@@ -500,7 +500,7 @@ static ir_node *equivalent_node_Block(ir_node *n)
     n = get_nodes_Block(get_Block_cfgpred(n, 0));
     if (n == oldn) {
       /* Jmp jumps into the block it is in -- deal self cycle. */
-      n = new_Bad();
+      n = new_Bad();                                      DBG_OPT_DEAD;
     } else {
                                                           DBG_OPT_STG;
     }
@@ -780,7 +780,7 @@ static ir_node *equivalent_node_Phi(ir_node *n)
 
   n_preds = get_Phi_n_preds(n);
 
-  block = get_nodes_Block(n);
+  block = get_nodes_block(n);
   /* @@@ fliegt 'raus, sollte aber doch immer wahr sein!!!
      assert(get_irn_arity(block) == n_preds && "phi in wrong block!"); */
   if ((is_Bad(block)) ||                         /* Control dead */
@@ -795,8 +795,8 @@ static ir_node *equivalent_node_Phi(ir_node *n)
      value that is known at a certain point.  This is useful for
      dataflow analysis. */
   if (n_preds == 2) {
-    ir_node *a = follow_Id (get_Phi_pred(n, 0));
-    ir_node *b = follow_Id (get_Phi_pred(n, 1));
+    ir_node *a = get_Phi_pred(n, 0);
+    ir_node *b = get_Phi_pred(n, 1);
     if (   (get_irn_op(a) == op_Confirm)
 	&& (get_irn_op(b) == op_Confirm)
 	&& follow_Id (get_irn_n(a, 0) == get_irn_n(b, 0))
@@ -807,15 +807,20 @@ static ir_node *equivalent_node_Phi(ir_node *n)
   }
 #endif
 
+  /* If the Block has a Bad pred, we also have one. */
+  for (i = 0;  i < n_preds;  ++i)
+    if (is_Bad (get_Block_cfgpred(block, i)))
+      set_Phi_pred(n, i, new_Bad());
+
   /* Find first non-self-referencing input */
   for (i = 0;  i < n_preds;  ++i) {
-    first_val = follow_Id(get_Phi_pred(n, i));
-    /* skip Id's */
-    set_Phi_pred(n, i, first_val);
+    first_val = get_Phi_pred(n, i);
     if (   (first_val != n)                            /* not self pointer */
-	&& (get_irn_op(first_val) != op_Bad)           /* value not dead */
-	&& !(is_Bad (get_Block_cfgpred(block, i))) ) { /* not dead control flow */
-      break;                         /* then found first value. */
+#if 1
+	&& (get_irn_op(first_val) != op_Bad)
+#endif
+	   ) {        /* value not dead */
+      break;          /* then found first value. */
     }
   }
 
@@ -827,13 +832,13 @@ static ir_node *equivalent_node_Phi(ir_node *n)
   /* follow_Id () for rest of inputs, determine if any of these
      are non-self-referencing */
   while (++i < n_preds) {
-    scnd_val = follow_Id(get_Phi_pred(n, i));
-    /* skip Id's */
-    set_Phi_pred(n, i, scnd_val);
+    scnd_val = get_Phi_pred(n, i);
     if (   (scnd_val != n)
 	&& (scnd_val != first_val)
+#if 1
 	&& (get_irn_op(scnd_val) != op_Bad)
-	&& !(is_Bad (get_Block_cfgpred(block, i))) ) {
+#endif
+	   ) {
       break;
     }
   }
@@ -842,10 +847,9 @@ static ir_node *equivalent_node_Phi(ir_node *n)
   if (i >= n_preds) {
     n = first_val;                                     DBG_OPT_PHI;
   } else {
-    /* skip the remaining Ids. */
-    while (++i < n_preds) {
-      set_Phi_pred(n, i, follow_Id(get_Phi_pred(n, i)));
-    }
+    /* skip the remaining Ids (done in get_Phi_pred). */
+    /* superfluous, since we walk all to propagate Block's Bads.
+       while (++i < n_preds) get_Phi_pred(n, i);     */
   }
   return n;
 }
