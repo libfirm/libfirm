@@ -40,6 +40,8 @@
 # include <malloc.h>
 #endif
 
+#include "xmalloc.h"
+
 typedef uint32_t UINT32;
 
 #ifdef HAVE_LONG_DOUBLE
@@ -100,15 +102,15 @@ typedef struct {
   value_class_t  class;
 } descriptor_t;
 
-#define CLEAR_BUFFER(buffer) memset(buffer, 0, CALC_BUFFER_SIZE)
+#define CLEAR_BUFFER(buffer) memset(buffer, 0, calc_buffer_size)
 
 /* because variable sized structs are impossible, the internal
  * value is represented as a pseudo-struct char array, addressed
  * by macros
  * struct {
  *   char sign;             //  0 for positive, 1 for negative
- *   char exp[VALUE_SIZE];
- *   char mant[VALUE_SIZE];
+ *   char exp[value_size];
+ *   char mant[value_size];
  *   descriptor_t desc;
  * };
  */
@@ -117,9 +119,9 @@ typedef struct {
 #define _mant(a) (&((char*)a)[MANTISSA_POS])
 #define _desc(a) (*(descriptor_t *)&((char*)a)[DESCRIPTOR_POS])
 
-#define _save_result(x) memcpy((x), sc_get_buffer(), VALUE_SIZE)
-#define _shift_right(x, y, b) sc_shr((x), (y), VALUE_SIZE*4, 0, (b))
-#define _shift_left(x, y, b) sc_shl((x), (y), VALUE_SIZE*4, 0, (b))
+#define _save_result(x) memcpy((x), sc_get_buffer(), value_size)
+#define _shift_right(x, y, b) sc_shr((x), (y), value_size*4, 0, (b))
+#define _shift_left(x, y, b) sc_shl((x), (y), value_size*4, 0, (b))
 
 #define FC_DEFINE1(code) char* fc_##code(const void *a, void *result)                          \
                    {                                                                           \
@@ -147,10 +149,10 @@ typedef struct {
 
 static char *calc_buffer = NULL;
 
-static fc_rounding_mode_t ROUNDING_MODE;
+static fc_rounding_mode_t rounding_mode;
 
-static int CALC_BUFFER_SIZE;
-static int VALUE_SIZE;
+static int calc_buffer_size;
+static int value_size;
 static int SIGN_POS;
 static int EXPONENT_POS;
 static int MANTISSA_POS;
@@ -181,18 +183,18 @@ static char* _pack(const char *int_float, char *packed)
   char *temp;
   char *val_buffer;
 
-  temp = alloca(VALUE_SIZE);
-  shift_val = alloca(VALUE_SIZE);
+  temp = alloca(value_size);
+  shift_val = alloca(value_size);
 
   switch (_desc(int_float).class) {
     case NAN:
-      val_buffer = alloca(CALC_BUFFER_SIZE);
+      val_buffer = alloca(calc_buffer_size);
       fc_get_qnan(_desc(int_float).exponent_size, _desc(int_float).mantissa_size, val_buffer);
       int_float = val_buffer;
       break;
 
     case INF:
-      val_buffer = alloca(CALC_BUFFER_SIZE);
+      val_buffer = alloca(calc_buffer_size);
       fc_get_plusinf(_desc(int_float).exponent_size, _desc(int_float).mantissa_size, val_buffer);
       _sign(val_buffer) = _sign(int_float);
       int_float = val_buffer;
@@ -235,7 +237,7 @@ char* _normalize(const char *in_val, char *out_val, int sticky)
   char lsb, guard, round, round_dir = 0;
   char *temp;
 
-  temp = alloca(VALUE_SIZE);
+  temp = alloca(value_size);
 
   /* +2: save two rounding bits at the end */
   hsb = 2 + _desc(in_val).mantissa_size - sc_get_highest_set_bit(_mant(in_val)) - 1;
@@ -248,7 +250,7 @@ char* _normalize(const char *in_val, char *out_val, int sticky)
 
   _desc(out_val).class = NORMAL;
 
-  /* mantissa all zeroes, so zero exponent (because of explicit one)*/
+  /* mantissa all zeros, so zero exponent (because of explicit one)*/
   if (hsb == 2 + _desc(in_val).mantissa_size)
   {
     sc_val_from_ulong(0, _exp(out_val));
@@ -301,7 +303,7 @@ char* _normalize(const char *in_val, char *out_val, int sticky)
   guard = (lsb&0x2)>>1;
   round = lsb&0x1;
 
-  switch (ROUNDING_MODE)
+  switch (rounding_mode)
   {
     case FC_TONEAREST:
       /* round to nearest representable value, if in doubt choose the version
@@ -389,7 +391,7 @@ char* _normalize(const char *in_val, char *out_val, int sticky)
     if (_sign(out_val) == 0)
     {
       /* value is positive */
-      switch (ROUNDING_MODE) {
+      switch (rounding_mode) {
         case FC_TONEAREST:
         case FC_TOPOSITIVE:
           _desc(out_val).class = INF;
@@ -401,7 +403,7 @@ char* _normalize(const char *in_val, char *out_val, int sticky)
       }
     } else {
       /* value is negative */
-      switch (ROUNDING_MODE) {
+      switch (rounding_mode) {
         case FC_TONEAREST:
         case FC_TONEGATIVE:
           _desc(out_val).class = INF;
@@ -429,11 +431,11 @@ static char* _add(const char* a, const char* b, char* result)
   char sticky;
 
   if (_desc(a).class == NAN) {
-    if (a != result) memcpy(result, a, CALC_BUFFER_SIZE);
+    if (a != result) memcpy(result, a, calc_buffer_size);
     return result;
   }
   if (_desc(b).class == NAN) {
-    if (b != result) memcpy(result, b, CALC_BUFFER_SIZE);
+    if (b != result) memcpy(result, b, calc_buffer_size);
     return result;
   }
 
@@ -448,8 +450,8 @@ static char* _add(const char* a, const char* b, char* result)
   if (sign && (_desc(a).class == INF) && (_desc(b).class == INF))
     return fc_get_qnan(_desc(a).exponent_size, _desc(b).mantissa_size, result);
 
-  temp = alloca(VALUE_SIZE);
-  exp_diff = alloca(VALUE_SIZE);
+  temp = alloca(value_size);
+  exp_diff = alloca(value_size);
 
   /* get exponent difference */
   sc_sub(_exp(a), _exp(b), exp_diff);
@@ -465,7 +467,7 @@ static char* _add(const char* a, const char* b, char* result)
         else _sign(result) = 0;
         break;
       case 0:  /* a == b */
-        if (ROUNDING_MODE == FC_TONEGATIVE)
+        if (rounding_mode == FC_TONEGATIVE)
           _sign(result) = 1;
         else
           _sign(result) = 0;
@@ -484,20 +486,20 @@ static char* _add(const char* a, const char* b, char* result)
 
   /* sign has been taken care of, check for special cases */
   if (_desc(a).class == ZERO) {
-    if (b != result) memcpy(result+SIGN_POS+1, b+SIGN_POS+1, CALC_BUFFER_SIZE-SIGN_POS-1);
+    if (b != result) memcpy(result+SIGN_POS+1, b+SIGN_POS+1, calc_buffer_size-SIGN_POS-1);
     return result;
   }
   if (_desc(b).class == ZERO) {
-    if (a != result) memcpy(result+SIGN_POS+1, a+SIGN_POS+1, CALC_BUFFER_SIZE-SIGN_POS-1);
+    if (a != result) memcpy(result+SIGN_POS+1, a+SIGN_POS+1, calc_buffer_size-SIGN_POS-1);
     return result;
   }
 
   if (_desc(a).class == INF) {
-    if (a != result) memcpy(result+SIGN_POS+1, a+SIGN_POS+1, CALC_BUFFER_SIZE-SIGN_POS-1);
+    if (a != result) memcpy(result+SIGN_POS+1, a+SIGN_POS+1, calc_buffer_size-SIGN_POS-1);
     return result;
   }
   if (_desc(b).class == INF) {
-    if (b != result) memcpy(result+SIGN_POS+1, b+SIGN_POS+1, CALC_BUFFER_SIZE-SIGN_POS-1);
+    if (b != result) memcpy(result+SIGN_POS+1, b+SIGN_POS+1, calc_buffer_size-SIGN_POS-1);
     return result;
   }
 
@@ -518,7 +520,7 @@ static char* _add(const char* a, const char* b, char* result)
     /* if subtracting a little more than the represented value or adding a little
      * more than the represented value to a negative value this, in addition to the
      * still set sticky bit, takes account of the 'little more' */
-    char *temp1 = alloca(CALC_BUFFER_SIZE);
+    char *temp1 = alloca(calc_buffer_size);
     sc_val_from_ulong(1, temp1);
     sc_add(temp, temp1, temp);
   }
@@ -541,7 +543,7 @@ static char* _add(const char* a, const char* b, char* result)
   }
 
   /* resulting exponent is the bigger one */
-  memmove(_exp(result), _exp(a), VALUE_SIZE);
+  memmove(_exp(result), _exp(a), value_size);
 
   return _normalize(result, result, sticky);
 }
@@ -551,15 +553,15 @@ static char* _mul(const char* a, const char* b, char* result)
   char *temp;
 
   if (_desc(a).class == NAN) {
-    if (a != result) memcpy(result, a, CALC_BUFFER_SIZE);
+    if (a != result) memcpy(result, a, calc_buffer_size);
     return result;
   }
   if (_desc(b).class == NAN) {
-    if (b != result) memcpy(result, b, CALC_BUFFER_SIZE);
+    if (b != result) memcpy(result, b, calc_buffer_size);
     return result;
   }
 
-  temp = alloca(VALUE_SIZE);
+  temp = alloca(value_size);
 
   if (result != a && result != b)
     memcpy(&_desc(result), &_desc(a), sizeof(descriptor_t));
@@ -571,23 +573,23 @@ static char* _mul(const char* a, const char* b, char* result)
     if (_desc(b).class == INF)
       fc_get_qnan(_desc(a).exponent_size, _desc(a).mantissa_size, result);
     else
-      if (a != result) memcpy(result+SIGN_POS+1, a+SIGN_POS+1, CALC_BUFFER_SIZE-1);
+      if (a != result) memcpy(result+SIGN_POS+1, a+SIGN_POS+1, calc_buffer_size-1);
     return result;
   }
   if (_desc(b).class == ZERO) {
     if (_desc(a).class == INF)
       fc_get_qnan(_desc(a).exponent_size, _desc(a).mantissa_size, result);
     else
-      if (b != result) memcpy(result+SIGN_POS+1, b+SIGN_POS+1, CALC_BUFFER_SIZE-1);
+      if (b != result) memcpy(result+SIGN_POS+1, b+SIGN_POS+1, calc_buffer_size-1);
     return result;
   }
 
   if (_desc(a).class == INF) {
-    if (a != result) memcpy(result+SIGN_POS+1, a+SIGN_POS+1, CALC_BUFFER_SIZE-1);
+    if (a != result) memcpy(result+SIGN_POS+1, a+SIGN_POS+1, calc_buffer_size-1);
     return result;
   }
   if (_desc(b).class == INF) {
-    if (b != result) memcpy(result+SIGN_POS+1, b+SIGN_POS+1, CALC_BUFFER_SIZE-1);
+    if (b != result) memcpy(result+SIGN_POS+1, b+SIGN_POS+1, calc_buffer_size-1);
     return result;
   }
 
@@ -623,16 +625,16 @@ static char* _div(const char* a, const char* b, char* result)
   char *temp, *dividend;
 
   if (_desc(a).class == NAN) {
-    if (a != result) memcpy(result, a, CALC_BUFFER_SIZE);
+    if (a != result) memcpy(result, a, calc_buffer_size);
     return result;
   }
   if (_desc(b).class == NAN) {
-    if (b != result) memcpy(result, b, CALC_BUFFER_SIZE);
+    if (b != result) memcpy(result, b, calc_buffer_size);
     return result;
   }
 
-  temp = alloca(VALUE_SIZE);
-  dividend = alloca(VALUE_SIZE);
+  temp = alloca(value_size);
+  dividend = alloca(value_size);
 
   if (result != a && result != b)
     memcpy(&_desc(result), &_desc(a), sizeof(descriptor_t));
@@ -646,7 +648,7 @@ static char* _div(const char* a, const char* b, char* result)
       fc_get_qnan(_desc(a).exponent_size, _desc(a).mantissa_size, result);
     else
       /* 0/x -> a */
-      if (a != result) memcpy(result+SIGN_POS+1, a+SIGN_POS+1, CALC_BUFFER_SIZE-1);
+      if (a != result) memcpy(result+SIGN_POS+1, a+SIGN_POS+1, calc_buffer_size-1);
     return result;
   }
 
@@ -666,7 +668,7 @@ static char* _div(const char* a, const char* b, char* result)
 
   if (_desc(a).class == INF) {
     /* inf/x -> inf */
-    if (a != result) memcpy(result+SIGN_POS+1, a+SIGN_POS+1, CALC_BUFFER_SIZE-1);
+    if (a != result) memcpy(result+SIGN_POS+1, a+SIGN_POS+1, calc_buffer_size-1);
     return result;
   }
   if (_desc(b).class == ZERO) {
@@ -701,7 +703,7 @@ static char* _div(const char* a, const char* b, char* result)
   _shift_left(_mant(a), temp, dividend);
 
   {
-    char *divisor = alloca(CALC_BUFFER_SIZE);
+    char *divisor = alloca(calc_buffer_size);
     sc_val_from_ulong(1, divisor);
     _shift_right(_mant(b), divisor, divisor);
     sc_div(dividend, divisor, _mant(result));
@@ -722,8 +724,8 @@ void _power_of_ten(int exp, descriptor_t *desc, char *result)
   if (desc != NULL)
     memcpy(&_desc(result), desc, sizeof(descriptor_t));
 
-  build = alloca(VALUE_SIZE);
-  temp = alloca(VALUE_SIZE);
+  build = alloca(value_size);
+  temp = alloca(value_size);
 
   sc_val_from_ulong((1 << _desc(result).exponent_size)/2-1, _exp(result));
 
@@ -763,7 +765,7 @@ static char* _trunc(const char *a, char *result)
   int exp_bias, exp_val;
   char *temp;
 
-  temp = alloca(VALUE_SIZE);
+  temp = alloca(value_size);
 
   if (a != result)
     memcpy(&_desc(result), &_desc(a), sizeof(descriptor_t));
@@ -782,7 +784,7 @@ static char* _trunc(const char *a, char *result)
 
   if (exp_val > _desc(a).mantissa_size) {
     if (a != result)
-      memcpy(result, a, CALC_BUFFER_SIZE);
+      memcpy(result, a, calc_buffer_size);
 
     return result;
   }
@@ -796,7 +798,7 @@ static char* _trunc(const char *a, char *result)
   /* and the mask and return the result */
   sc_and(_mant(a), temp, _mant(result));
 
-  if (a != result) memcpy(_exp(result), _exp(a), VALUE_SIZE);
+  if (a != result) memcpy(_exp(result), _exp(a), value_size);
 
   return result;
 }
@@ -829,8 +831,8 @@ char* _calc(const char *a, const char *b, int opcode, char *result)
       break;
     case FC_sub:
       TRACEPRINTF(("- %s ", fc_print(b, buffer, 100, FC_PACKED)));
-      temp = alloca(CALC_BUFFER_SIZE);
-      memcpy(temp, b, CALC_BUFFER_SIZE);
+      temp = alloca(calc_buffer_size);
+      memcpy(temp, b, calc_buffer_size);
       _sign(temp) = !_sign(b);
       if (sc_comp(_exp(a), _exp(temp)) == -1)
         _add(temp, a, result);
@@ -847,7 +849,7 @@ char* _calc(const char *a, const char *b, int opcode, char *result)
       break;
     case FC_neg:
       TRACEPRINTF(("negated "));
-      if (a != result) memcpy(result, a, CALC_BUFFER_SIZE);
+      if (a != result) memcpy(result, a, calc_buffer_size);
       _sign(result) = !_sign(a);
       break;
     case FC_int:
@@ -871,7 +873,7 @@ const void *fc_get_buffer(void)
 
 const int fc_get_buffer_length(void)
 {
-  return CALC_BUFFER_SIZE;
+  return calc_buffer_size;
 }
 
 char* fc_val_from_str(const char *str, unsigned int len, char exp_size, char mant_size, char *result)
@@ -896,8 +898,8 @@ char* fc_val_from_str(const char *str, unsigned int len, char exp_size, char man
 
   if (result == NULL) result = calc_buffer;
 
-  exp_val = alloca(VALUE_SIZE);
-  power_val = alloca(CALC_BUFFER_SIZE);
+  exp_val = alloca(value_size);
+  power_val = alloca(calc_buffer_size);
   mant_str = alloca((len)?(len):(strlen(str)));
 
   _desc(result).exponent_size = exp_size;
@@ -1104,7 +1106,7 @@ char* fc_val_from_float(LLDBL l, char exp_size, char mant_size, char* result)
 #endif
 
   if (result == NULL) result = calc_buffer;
-  temp = alloca(VALUE_SIZE);
+  temp = alloca(value_size);
 
   _desc(result).exponent_size = exp_size;
   _desc(result).mantissa_size = mant_size;
@@ -1174,7 +1176,7 @@ char* fc_val_from_float(LLDBL l, char exp_size, char mant_size, char* result)
 
   _normalize(result, result, 0);
 
-  TRACEPRINTF(("val_from_float results in %s\n", fc_print(result, temp, CALC_BUFFER_SIZE, FC_PACKED)));
+  TRACEPRINTF(("val_from_float results in %s\n", fc_print(result, temp, calc_buffer_size, FC_PACKED)));
 
   return result;
 }
@@ -1201,7 +1203,7 @@ LLDBL fc_val_to_float(const void *val)
   char result_mantissa = 52;
 #endif
 
-  temp = alloca(CALC_BUFFER_SIZE);
+  temp = alloca(calc_buffer_size);
 #ifdef HAVE_EXPLICIT_ONE
   value = fc_cast(val, result_exponent, result_mantissa-1, temp);
 #else
@@ -1250,11 +1252,11 @@ char* fc_cast(const void *val, char exp_size, char mant_size, char *result)
   int exp_offset, val_bias, res_bias;
 
   if (result == NULL) result = calc_buffer;
-  temp = alloca(VALUE_SIZE);
+  temp = alloca(value_size);
 
   if (_desc(value).exponent_size == exp_size && _desc(value).mantissa_size == mant_size)
   {
-    if (value != result) memcpy(result, value, CALC_BUFFER_SIZE);
+    if (value != result) memcpy(result, value, calc_buffer_size);
     return result;
   }
 
@@ -1280,13 +1282,13 @@ char* fc_cast(const void *val, char exp_size, char mant_size, char *result)
     sc_val_from_ulong(1, NULL);
     _shift_left(_mant(val), sc_get_buffer(), _mant(result));
   } else if (value != result) {
-    memcpy(_mant(result), _mant(value), VALUE_SIZE);
+    memcpy(_mant(result), _mant(value), value_size);
   } else {
-    memmove(_mant(result), _mant(value), VALUE_SIZE);
+    memmove(_mant(result), _mant(value), value_size);
   }
 
   _normalize(result, result, 0);
-  TRACEPRINTF(("Cast results in %s\n", fc_print(result, temp, VALUE_SIZE, FC_PACKED)));
+  TRACEPRINTF(("Cast results in %s\n", fc_print(result, temp, value_size, FC_PACKED)));
   return result;
 }
 
@@ -1446,7 +1448,7 @@ char *fc_print(const void *a, char *buf, int buflen, unsigned base)
 
   val = (const char*)a;
 
-  mul_1 = alloca(CALC_BUFFER_SIZE);
+  mul_1 = alloca(calc_buffer_size);
 
   switch (base) {
     case FC_DEC:
@@ -1495,7 +1497,7 @@ char *fc_print(const void *a, char *buf, int buflen, unsigned base)
 
     case FC_PACKED:
     default:
-      snprintf(buf, buflen, "%s", sc_print(_pack(val, mul_1), VALUE_SIZE*4, SC_HEX));
+      snprintf(buf, buflen, "%s", sc_print(_pack(val, mul_1), value_size*4, SC_HEX));
       break;
   }
   return buf;
@@ -1506,7 +1508,7 @@ unsigned char fc_sub_bits(const void *value, unsigned num_bits, unsigned byte_of
   /* this is used to cache the packed version of the value */
   static char *pack = NULL;
 
-  if (pack == NULL) pack = malloc(VALUE_SIZE);
+  if (pack == NULL) pack = xmalloc(value_size);
 
   if (value != NULL)
     _pack((const char*)value, pack);
@@ -1517,14 +1519,14 @@ unsigned char fc_sub_bits(const void *value, unsigned num_bits, unsigned byte_of
 fc_rounding_mode_t fc_set_rounding_mode(fc_rounding_mode_t mode)
 {
   if (mode == FC_TONEAREST || mode == FC_TOPOSITIVE || mode == FC_TONEGATIVE || mode == FC_TOZERO)
-      ROUNDING_MODE = mode;
+      rounding_mode = mode;
 
-  return ROUNDING_MODE;
+  return rounding_mode;
 }
 
 fc_rounding_mode_t fc_get_rounding_mode(void)
 {
-  return ROUNDING_MODE;
+  return rounding_mode;
 }
 
 void init_fltcalc(int precision)
@@ -1541,16 +1543,16 @@ void init_fltcalc(int precision)
     if (max_precision < precision)
       printf("WARING: not enough precision available, using %d\n", max_precision);
 
-    ROUNDING_MODE = FC_TONEAREST;
-    VALUE_SIZE = sc_get_buffer_length();
+    rounding_mode = FC_TONEAREST;
+    value_size = sc_get_buffer_length();
     SIGN_POS = 0;
     EXPONENT_POS = SIGN_POS + sizeof(char);
-    MANTISSA_POS = EXPONENT_POS + VALUE_SIZE;
-    DESCRIPTOR_POS = MANTISSA_POS + VALUE_SIZE;
-    CALC_BUFFER_SIZE = DESCRIPTOR_POS + sizeof(descriptor_t);
+    MANTISSA_POS = EXPONENT_POS + value_size;
+    DESCRIPTOR_POS = MANTISSA_POS + value_size;
+    calc_buffer_size = DESCRIPTOR_POS + sizeof(descriptor_t);
 
-    calc_buffer = malloc(CALC_BUFFER_SIZE);
-    DEBUGPRINTF(("init fltcalc:\n\tVALUE_SIZE = %d\n\tSIGN_POS = %d\n\tEXPONENT_POS = %d\n\tMANTISSA_POS = %d\n\tDESCRIPTOR_POS = %d\n\tCALC_BUFFER_SIZE = %d\n\tcalc_buffer = %p\n\n", VALUE_SIZE, SIGN_POS, EXPONENT_POS, MANTISSA_POS, DESCRIPTOR_POS, CALC_BUFFER_SIZE, calc_buffer));
+    calc_buffer = xmalloc(calc_buffer_size);
+    DEBUGPRINTF(("init fltcalc:\n\tVALUE_SIZE = %d\n\tSIGN_POS = %d\n\tEXPONENT_POS = %d\n\tMANTISSA_POS = %d\n\tDESCRIPTOR_POS = %d\n\tCALC_BUFFER_SIZE = %d\n\tcalc_buffer = %p\n\n", value_size, SIGN_POS, EXPONENT_POS, MANTISSA_POS, DESCRIPTOR_POS, calc_buffer_size, calc_buffer));
 #ifdef HAVE_LONG_DOUBLE
     DEBUGPRINTF(("\tUsing long double (1-15-64) interface\n"));
 #else
