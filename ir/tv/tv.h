@@ -2,6 +2,12 @@
    Copyright (C) 1995, 1996 Christian von Roques
 */
 
+/**
+ * @file tv.h
+ *
+ * Declarations for Target Values.
+ */
+
 /* $Id$ */
 
 /*
@@ -51,7 +57,8 @@ Discussion of new interface, proposals by Prof. Waite:
 typedef struct tarval tarval;
 #endif
 
-/* how to represent target types on host */
+/*@{*/
+/** how to represent target types on host */
 typedef float  tarval_F;
 typedef double tarval_D;
 typedef long double tarval_E;
@@ -59,6 +66,9 @@ typedef long   tarval_sInt;
 typedef unsigned long tarval_uInt;
 typedef char tarval_C;
 typedef unsigned short tarval_U;   /* 16 bit ?! wchar could be defined as char...  */
+/*@}*/
+
+/** tarval_P */
 typedef struct {
   /** if ent then xname is missing or mangled from ent,
      else if xname then xname is a linker symbol that is not mangled
@@ -71,6 +81,7 @@ typedef struct {
   tarval *tv;
 } tarval_P;
 
+/** a trval */
 struct tarval {
   union {
     tarval_F F;         /**< float */
@@ -95,18 +106,23 @@ extern tarval *tarval_D_NaN;                tarval *get_tarval_D_NaN    ();
 extern tarval *tarval_D_Inf;                tarval *get_tarval_D_Inf    ();
 extern tarval *tarval_P_void;               tarval *get_tarval_P_void   ();
 extern tarval *tarval_mode_null[];          tarval *get_tarval_mode_null(ir_mode *mode);
-/* @@@ These are not initialized!! Don't use. */
+
+/*@{*/
+/** @bug These are not initialized!! Don't use. */
 extern tarval *tarval_mode_min[];           tarval *get_tarval_mode_min (ir_mode *mode);
 extern tarval *tarval_mode_max[];           tarval *get_tarval_mode_max (ir_mode *mode);
+/*@}*/
 
 void tarval_init_1 (void);
 void tarval_init_2 (void);
 
-/* ************************ Constructors for tarvals ************************ */
+/*@{*/
+/** Constructors for tarvals */
 tarval *tarval_F_from_str (const char *s, size_t len);
 tarval *tarval_D_from_str (const char *s, size_t len);
 tarval *tarval_int_from_str (const char *s, size_t len, int base, ir_mode *m);
 tarval *tarval_from_long  (ir_mode *m, long val);
+/*@}*/
 
 tarval *tarval_P_from_str (const char *xname);
 /* The tarval represents the address of the entity.  As the address must
@@ -122,7 +138,7 @@ void tarval_append1 (char ch);
 tarval *tarval_finish_as (ir_mode *m);
 tarval *tarval_cancel (void); /* returns tarval_bad */
 
-/* The flags for projecting a comparison result */
+/** The flags for projecting a comparison result */
 typedef enum {
   irpn_False=0,	/**< 0000 false */
   irpn_Eq,		/**< 0001 equal */
@@ -144,12 +160,8 @@ typedef enum {
 } ir_pncmp;
 #define irpn_notmask irpn_Leg
 
-/* ******************** Arithmethic operations on tarvals ******************** */
-/* Compare a with b and return an ir_pncmp describing the relation
-   between a and b.  This is either Uo, Lt, Eq, Gt, or False if a or b
-   are symbolic pointers which can not be compared at all. */
-ir_pncmp tarval_comp (tarval *a, tarval *b);
-
+/*@{*/
+/** Arithmethic operations on tarvals */
 tarval *tarval_neg (tarval *a);
 tarval *tarval_add (tarval *a, tarval *b);
 tarval *tarval_sub (tarval *a, tarval *b);
@@ -163,12 +175,20 @@ tarval *tarval_or  (tarval *a, tarval *b);
 tarval *tarval_eor (tarval *a, tarval *b);
 tarval *tarval_shl (tarval *a, tarval *b);
 tarval *tarval_shr (tarval *a, tarval *b);
+/*@}*/
+
+/** Compare a with b and return an ir_pncmp describing the relation
+   between a and b.  This is either Uo, Lt, Eq, Gt, or False if a or b
+   are symbolic pointers which can not be compared at all. */
+ir_pncmp tarval_comp (tarval *a, tarval *b);
+
 
 /* Identifying some tarvals */
 long tarval_classify (tarval *tv);
 long tarval_ord (tarval *tv, int *fail);
 
-/* return a mode-specific value */
+/*@{*/
+/** return a mode-specific value */
 tarval_F tv_val_F (tarval *tv);
 tarval_D tv_val_D (tarval *tv);
 tarval_sInt tv_val_sInt (tarval *tv);
@@ -180,12 +200,13 @@ tarval_uInt tv_val_uInt (tarval *tv);
    tarval_p tv_val_p (tarval *tv);
 */
 bool     tv_val_b (tarval *tv);
+/*@}*/
 
 ir_mode *get_tv_mode (tarval *tv);
-/* Returns the entity if the tv is a pointer to an entity, else
+/** Returns the entity if the tv is a pointer to an entity, else
    returns NULL; */
 entity *get_tv_entity(tarval *tv);
 
-/* Returns 0 if tv is positive, else > 0. @@@ not tested! */
+/** Returns 0 if tv is positive, else > 0. @todo not tested! */
 int tv_is_negative(tarval *a);
 #endif  /* _TV_H_ */
