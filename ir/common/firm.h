@@ -86,6 +86,7 @@ extern "C" {
 #include "cfopt.h"         /* optimize control flow */
 #include "tailrec.h"       /* optimize tail-recursion calls */
 #include "ircgopt.h"       /* Optimizations based on interprocedural graph */
+#include "strength_red.h"  /* Strength reduction */
 #include "irarch.h"        /* architecture dependant optimizations */
 
 #include "irouts.h"        /* Graph reversal / out edges. */
