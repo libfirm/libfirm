@@ -35,10 +35,10 @@ typedef struct {
 
 //@{
 /** Access macros to fw_data structure */
-#define FGD_GET_DATA_LIST(s)     ((s)->list)
-#define FGD_SET_DATA_LIST(s, t)  ((s)->list = (t))
-#define FGD_GET_DATA_LINK(s)     ((s)->link)
-#define FGD_SET_DATA_LINK(s, t)  ((s)->link = (t))
+#define FW_GET_DATA_LIST(s)     ((s)->list)
+#define FW_SET_DATA_LIST(s, t)  ((s)->list = (t))
+#define FW_GET_DATA_LINK(s)     ((s)->link)
+#define FW_SET_DATA_LINK(s, t)  ((s)->link = (t))
 //@}
 
 /** Returns own data struct of the firm walker.
@@ -66,7 +66,7 @@ fw_data *fw_get_data(void *thing)
       memset(data, 0, sizeof(fw_data));
       set_irg_link(thing, data);
       /* allocate block list */
-      FGD_GET_DATA_LIST(data) = NEW_ARR_F(ir_node *, 0);
+      FW_GET_DATA_LIST(data) = NEW_ARR_F(ir_node *, 0);
     }
     break;
   case k_ir_node:
@@ -81,7 +81,7 @@ fw_data *fw_get_data(void *thing)
         memset(data, 0, sizeof(fw_data));
         set_irn_link(thing, data);
         /* allocate node list */
-        FGD_GET_DATA_LIST(data) = NEW_ARR_F(ir_node *, 0);
+        FW_GET_DATA_LIST(data) = NEW_ARR_F(ir_node *, 0);
       }
     }
     break;
@@ -105,7 +105,7 @@ void fw_free_data(void *thing)
     /* delete block list of graph */
     if (NULL != data)
     {
-      DEL_ARR_F(FGD_GET_DATA_LIST(data));
+      DEL_ARR_F(FW_GET_DATA_LIST(data));
       set_irg_link(thing, NULL);
     }
     break;
@@ -116,7 +116,7 @@ void fw_free_data(void *thing)
       data = get_irn_link(thing);
       if (NULL != data)
       {
-        DEL_ARR_F(FGD_GET_DATA_LIST(data));
+        DEL_ARR_F(FW_GET_DATA_LIST(data));
         set_irn_link(thing, NULL);
       }
     }
@@ -140,13 +140,13 @@ void set_firm_walk_link(void *thing, void *link)
     break;
   case k_ir_graph:
     data = fw_get_data(thing);
-    FGD_SET_DATA_LINK(data, link);
+    FW_SET_DATA_LINK(data, link);
     break;
   case k_ir_node:
     if (is_Block(thing))
     {
       data = fw_get_data(thing);
-      FGD_SET_DATA_LINK(data, link);
+      FW_SET_DATA_LINK(data, link);
     }
     else
       set_irn_link(thing, link);
@@ -170,12 +170,12 @@ void *get_firm_walk_link(void *thing)
     return get_type_link(thing);
   case k_ir_graph:
     data = fw_get_data(thing);
-    return FGD_GET_DATA_LINK(data);
+    return FW_GET_DATA_LINK(data);
   case k_ir_node:
     if (is_Block(thing))
     {
       data = fw_get_data(thing);
-      return FGD_GET_DATA_LINK(data);
+      return FW_GET_DATA_LINK(data);
     }
     else
       return get_irn_link(thing);
@@ -249,7 +249,7 @@ void fw_collect_irn(ir_node *irn, void *env)
   {
     /* add this block to ir graph's block list */
     data = fw_get_data(get_current_ir_graph());
-    ARR_APP1(ir_node *, FGD_GET_DATA_LIST(data), irn);
+    ARR_APP1(ir_node *, FW_GET_DATA_LIST(data), irn);
   }
   /* non block nodes */
   else
@@ -257,7 +257,7 @@ void fw_collect_irn(ir_node *irn, void *env)
     /* add this node to block's node list */
     ir_node *block = get_nodes_Block(irn);
     data = fw_get_data(block);
-    ARR_APP1(ir_node *, FGD_GET_DATA_LIST(data), irn);
+    ARR_APP1(ir_node *, FW_GET_DATA_LIST(data), irn);
   }
 }
 
@@ -316,7 +316,7 @@ void firm_walk_init(firm_walk_flags flags)
   pmap_insert(mode_map, mode_b, NULL);
 
   // Collect all types (also unused types) if flag is set
-  if (FGD_WITH_ALL_TYPES & flags)
+  if (FW_WITH_ALL_TYPES & flags)
     type_walk(fw_collect_tore, NULL, NULL);
 
   // for each ir graph
@@ -422,7 +422,7 @@ void firm_walk(firm_walk_interface *wif)
 
     /* walk over all irg's block nested ========================== */
     data = fw_get_data(irg);
-    block_list = FGD_GET_DATA_LIST(data);
+    block_list = FW_GET_DATA_LIST(data);
     block_list_len = ARR_LEN(block_list);
     for (block_i = 0; block_i < block_list_len; block_i++)
     {
@@ -433,16 +433,16 @@ void firm_walk(firm_walk_interface *wif)
 
       /* walk over all block's ir nodes nested =================== */
       data = fw_get_data(block);
-      irn_list = FGD_GET_DATA_LIST(data);
+      irn_list = FW_GET_DATA_LIST(data);
       irn_list_len = ARR_LEN(irn_list);
 
       // call block as prefix ir node
       if ((wif->do_node) &&
-          (wif->flags & FGD_DUMP_BLOCK_AS_IRN & !FGD_DUMP_IRN_IN_PREFIX))
+          (wif->flags & FW_DUMP_BLOCK_AS_IRN & !FW_DUMP_IRN_IN_PREFIX))
         wif->do_node(block, wif->env);
 
       // do ir nodes in prefix or postfix order?
-      if (wif->flags & FGD_DUMP_IRN_IN_PREFIX)
+      if (wif->flags & FW_DUMP_IRN_IN_PREFIX)
         irn_i = irn_list_len-1;
       else
         irn_i = 0;
@@ -452,14 +452,14 @@ void firm_walk(firm_walk_interface *wif)
         if (wif->do_node) wif->do_node((ir_node *)irn_list[irn_i], wif->env);
 
         // do ir nodes in prefix or postfix order?
-        if (wif->flags & FGD_DUMP_IRN_IN_PREFIX)
+        if (wif->flags & FW_DUMP_IRN_IN_PREFIX)
           irn_i--;
         else
           irn_i++;
       }
       // call block as postfix ir node
       if ((wif->do_node) &&
-          (wif->flags & (FGD_DUMP_BLOCK_AS_IRN | FGD_DUMP_IRN_IN_PREFIX)))
+          (wif->flags & (FW_DUMP_BLOCK_AS_IRN | FW_DUMP_IRN_IN_PREFIX)))
         wif->do_node(block, wif->env);
 
       /* wall over all block's ir nodes nested end =============== */

@@ -82,17 +82,17 @@ typedef void firm_walk_node_func (ir_node *irn, void *env);
  */
 typedef enum
 {
-  FGD_WITH_ALL_TYPES     = 1<<0, /**< Collect and dump all types, especially
+  FW_WITH_ALL_TYPES     = 1<<0, /**< Collect and dump all types, especially
                                       unused types.
                                       @note This flag could be set in
                                       firm_dumper_init() and is unused in
                                       firm_dump() */
-  FGD_WITH_DOMINATOR     = 1<<1, /**< nyi */
-  FGD_WITH_OUTEDGES      = 1<<2, /**< nyi */
-  FGD_WITH_LOOPS         = 1<<3, /**< nyi */
-  FGD_DUMP_BLOCK_AS_IRN  = 1<<4, /**< Dump all block nodes as irn nodes
+  FW_WITH_DOMINATOR     = 1<<1, /**< nyi */
+  FW_WITH_OUTEDGES      = 1<<2, /**< nyi */
+  FW_WITH_LOOPS         = 1<<3, /**< nyi */
+  FW_DUMP_BLOCK_AS_IRN  = 1<<4, /**< Dump all block nodes as irn nodes
                                       additionally */
-  FGD_DUMP_IRN_IN_PREFIX = 1<<5, /**< Dumps all ir nodes in prefix order
+  FW_DUMP_IRN_IN_PREFIX = 1<<5, /**< Dumps all ir nodes in prefix order
                                       according to the internal firm graph
                                       structure */
 } firm_walk_flags;
