@@ -253,7 +253,7 @@ void opt_tail_rec_irg(ir_graph *irg)
   n_preds = get_Block_n_cfgpreds(end_block);
   for (i = 0; i < n_preds; ++i) {
     ir_node *ret = get_Block_cfgpred(end_block, i);
-    ir_node *proj_m, *call, *call_ptr;
+    ir_node *call, *call_ptr;
     entity *ent;
     int j, n_ress;
     ir_node **ress;
@@ -263,12 +263,7 @@ void opt_tail_rec_irg(ir_graph *irg)
       continue;
 
     /* check, if it's a Return self() */
-    proj_m = get_Return_mem(ret);
-
-    if (get_irn_op(proj_m) != op_Proj)
-      continue;
-
-    call = get_Proj_pred(proj_m);
+    call = skip_Proj(get_Return_mem(ret));
     if (get_irn_op(call) != op_Call)
       continue;
 
@@ -290,23 +285,7 @@ void opt_tail_rec_irg(ir_graph *irg)
     ress = get_Return_res_arr(ret);
 
     for (j = 0; j < n_ress; ++j) {
-      ir_node *proj = ress[j];
-      ir_node *proj_proj;
-      ir_node *irn;
-
-      if (get_irn_op(proj) != op_Proj) {
-	/* not routed to a call */
-	break;
-      }
-
-      proj_proj = get_Proj_pred(proj);
-
-      if (get_irn_op(proj) != op_Proj) {
-	/* not routed to a call */
-	break;
-      }
-
-      irn = get_Proj_pred(proj_proj);
+      ir_node *irn = skip_Proj(skip_Proj(ress[j]));
 
       if (irn != call) {
 	/* not routed to a call */
