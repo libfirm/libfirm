@@ -89,7 +89,7 @@ int main(int argc, char **argv)
   current_ir_graph = get_const_code_irg();
   /* The pointer to the dispatch table is constant. */
   /* The constant is the address of the given entity */
-  n = new_Const(mode_P, tarval_p_from_entity(dipte));
+  n = new_Const(mode_P, tarval_P_from_entity(dipte));
   set_entity_variability(diptpe, constant);
   set_atomic_ent_value(diptpe, n);
 
