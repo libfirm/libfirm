@@ -209,12 +209,22 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
     if (get_optimize() && get_opt_dyn_meth_dispatch() &&
 	(get_irn_op(skip_Proj(get_Sel_ptr(node))) == op_Alloc)) {
       ir_node *new_node;
+      entity *called_ent;
       /* We know which method will be called, no dispatch necessary. */
+#if 0
       assert(get_entity_peculiarity(ent) != peculiarity_description);
       set_irg_current_block(current_ir_graph, get_nodes_Block(node));
       /* @@@ Is this correct?? Alloc could reference a subtype of the owner
 	 of Sel that overwrites the method referenced in Sel. */
+      /* @@@ Yes, this is wrong. GL, 10.3.04 */
       new_node = copy_const_value(get_atomic_ent_value(ent));              DBG_OPT_POLY_ALLOC;
+#else
+      called_ent = resolve_ent_polymorphy(get_Alloc_type(skip_Proj(get_Sel_ptr(node))), ent);
+      set_irg_current_block(current_ir_graph, get_nodes_Block(node));
+      /* called_ent may not be description: has no Address/Const to Call! */
+      assert(get_entity_peculiarity(called_ent) != peculiarity_description);
+      new_node = copy_const_value(get_atomic_ent_value(called_ent));       DBG_OPT_POLY_ALLOC;
+#endif
       exchange (node, new_node);
     } else {
       assert(get_entity_peculiarity(ent) != peculiarity_inherited);
@@ -508,6 +518,7 @@ static void callee_ana(void) {
   /* Alle Graphen analysieren. */
   for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     irg_walk_graph(get_irp_irg(i), callee_walker, NULL, NULL);
+    set_irg_callee_info_state(get_irp_irg(i), irg_callee_info_consistent);
   }
 }
 

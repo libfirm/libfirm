@@ -451,4 +451,8 @@ bool        entity_visited(entity *ent);
 /** Returns true if this entity was not visited. */
 bool        entity_not_visited(entity *ent);
 
+/** Returns the dynamically referenced entity if the static entity and the
+ *  dynamic type are given. */
+entity *resolve_ent_polymorphy(type *dynamic_class, entity* static_ent);
+
 # endif /* _ENTITY_H_ */

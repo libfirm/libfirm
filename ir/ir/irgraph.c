@@ -71,6 +71,7 @@ new_ir_graph (entity *ent, int n_loc)
   ir_node *projX;
 
   res = (ir_graph *) malloc (sizeof (ir_graph));
+  memset(res, 0, sizeof (ir_graph));
   res->kind=k_ir_graph;
 
   current_ir_graph = res;
@@ -531,6 +532,15 @@ set_irg_loopinfo_inconsistent(ir_graph *irg) {
 INLINE void
 set_irg_pinned (ir_graph *irg, op_pinned p) {
   irg->pinned = p;
+}
+
+
+irg_callee_info_state get_irg_callee_info_state(ir_graph *irg) {
+  return irg->callee_info_state;
+}
+
+void set_irg_callee_info_state(ir_graph *irg, irg_callee_info_state s) {
+  irg->callee_info_state = s;
 }
 
 INLINE void

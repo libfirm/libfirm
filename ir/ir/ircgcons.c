@@ -830,5 +830,6 @@ void cg_destruct(void) {
     irg_walk_graph(irg, destruct_walker, clear_link, NULL);
     set_irg_frame(irg, skip_nop(get_irg_frame(irg)));
     set_irg_globals(irg, skip_nop(get_irg_globals(irg)));
+    set_irg_callee_info_state(irg, irg_callee_info_none);
   }
 }

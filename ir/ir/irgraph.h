@@ -254,6 +254,17 @@ irg_loopinfo_state get_irg_loopinfo_state(ir_graph *irg);
 void set_irg_loopinfo_inconsistent(ir_graph *irg);
 
 
+/** state: callee_information_state
+ *  Call nodes contain a list of possible callees.  This list must be
+ *  computed by an anlyses.  */
+typedef enum {
+  irg_callee_info_none,
+  irg_callee_info_consistent,
+  irg_callee_info_inconsistent
+} irg_callee_info_state;
+irg_callee_info_state get_irg_callee_info_state(ir_graph *irg);
+void set_irg_callee_info_state(ir_graph *irg, irg_callee_info_state s);
+
 /* A void * field to link arbritary information to the node. */
 void  set_irg_link (ir_graph *irg, void *thing);
 void *get_irg_link (ir_graph *irg);

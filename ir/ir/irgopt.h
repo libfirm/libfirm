@@ -38,6 +38,8 @@ void local_optimize_graph (ir_graph *irg);
 
    Backedge information is conserved.
    Removes old attributes of nodes.  Sets link field to NULL.
+   Callee information must be freed (irg_callee_info_none).
+
    Attention: the numbers assigned to nodes if the library is compiled for
    development/debugging are not conserved by copying. */
 void dead_node_elimination(ir_graph *irg);

@@ -894,3 +894,28 @@ INLINE bool entity_visited(entity *ent) {
 INLINE bool entity_not_visited(entity *ent) {
   return get_entity_visited(ent) < type_visited;
 }
+
+/* Need two routines because I want to assert the result. */
+static INLINE entity *resolve_ent_polymorphy2 (type *dynamic_class, entity* static_ent) {
+  int i, n_overwrittenby;
+  entity *res = NULL;
+
+  if (get_entity_owner(static_ent) == dynamic_class) return static_ent;
+
+  n_overwrittenby = get_entity_n_overwrittenby(static_ent);
+  for (i = 0; i < n_overwrittenby; ++i) {
+    res = resolve_ent_polymorphy2(dynamic_class, get_entity_overwrittenby(static_ent, i));
+    if (res) break;
+  }
+
+  return res;
+}
+
+/* Returns the dynamically referenced entity if the static entity and the
+ *  dynamic type are given.
+ *  Search downwards in overwritten tree. */
+entity *resolve_ent_polymorphy(type *dynamic_class, entity* static_ent) {
+  entity *res = resolve_ent_polymorphy2(dynamic_class, static_ent);
+  assert(res);
+  return res;
+}

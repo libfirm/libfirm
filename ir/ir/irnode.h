@@ -448,6 +448,7 @@ INLINE int      get_Call_arity (ir_node *node);
 int     Call_has_callees      (ir_node *node);
 int     get_Call_n_callees    (ir_node * node);
 entity *get_Call_callee       (ir_node * node, int pos);
+/* assumes current_ir_graph set properly! */
 void    set_Call_callee_arr   (ir_node * node, int n, entity ** arr);
 void    remove_Call_callee_arr(ir_node * node);
 
