@@ -22,14 +22,8 @@ libdir = @libdir@
 
 .PHONY: default all clean realclean depend
 
-MEMBERS = Firm.m Firm.m Firm_common.m Dbginfo.m Ident.m Tv.m     	\
-	Type.m Entity.m Type_or_entity.m Tpop.m Mangle.m 		\
-	Irprog.m Irgraph.m Irnode.m Irmode.m Irop.m Ircons.m Ircgcons.m \
-	Irflag.m Irvrfy.m Irdump.m Iropt.m Irgopt.m Ircgopt.m		\
-	Irouts.m Irdom.m Irloop.m Cgana.m        			\
-	Irgmod.m Typegmod.m
-# How to pass function pointers? Or how to obtain them?
-#      Irgwalk.m Typewalk.m
+SHELL_TOUPPER = awk '{for (i=1;i<(NF+1);i=i+1) {printf(toupper(substr($$i,1,1)) substr($$i,2)" ")}}'
+SHELL_TOLOWER = awk '{for (i=1;i<(NF+1);i=i+1) {printf(tolower(substr($$i,1,1)) substr($$i,2)" ")}}'
 
 OFILES  = $(MEMBERS:.m=.o)
 HFILES  = $(MEMBERS:.m=.h)
@@ -38,26 +32,68 @@ CLASSFILES = $(MEMBERS:.m=.class)
 CPPFLAGS = 	-I$(top_srcdir)/ir/ir  -I$(top_srcdir)/ir/common  	\
 		-I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/tr  	\
 	        -I$(top_srcdir)/ir/tv -I$(top_srcdir)/ir/debug 		\
-	        -I$(top_srcdir)/ir/ana -I$(top_srcdir)/ir/st @CPPFLAGS@
+	        -I$(top_srcdir)/ir/ana -I$(top_srcdir)/ir/st @CPPFLAGS@ \
+		-D_SIZE_T_
 
 LDFLAGS += $(topdir)
 
-all: 	classfiles jni
+FIRM_HEADERS=$(notdir $(FIRM_PATH_HEADERS))
+MEMBERS=$(subst .h,.m,$(shell echo $(FIRM_HEADERS)|$(SHELL_TOUPPER)))
 
-# call the generator to make the implementation files
-#impl:
-#	-sh build_firm_jni
+# How to pass function pointers? Therefore removed.
+# irgwalk.h typewalk.h
+
+# How to pass function pointers? Or how to obtain them?
+#      Irgwalk.m Typewalk.m
+#
+FIRM_PATH_HEADERS=common/firm.h common/firm_common.h \
+	debug/dbginfo.h ident/ident.h tv/tv.h \
+	tr/type.h tr/entity.h tr/type_or_entity.h tr/tpop.h tr/mangle.h \
+	ir/irprog.h ir/irgraph.h ir/irnode.h ir/irmode.h ir/irop.h \
+	ir/ircons.h ir/ircgcons.h ir/irflag.h ir/irvrfy.h ir/irdump.h \
+	ir/iropt.h ir/irgopt.h ir/ircgopt.h \
+	ana/irouts.h ana/irdom.h ana/irloop.h ana/cgana.h \
+	ir/irgmod.h tr/typegmod.h
+FIRM_SOURCE_DIR_HEADERS=$(addprefix $(SOURCE_DIR)/,$(FIRM_HEADERS))
+
+# The directory containing crecoder.jar and, for now,
+# remove_cpp_comands.perl
+FIRM_JNI_TOOLS_DIR=$(top_srcdir)/tools
+
+WORK_DIR=.
+
+###############################################################################
+
+SOURCE_DIR=sources
+
+REMOVE_CPP_COMMANDS=$(FIRM_JNI_TOOLS_DIR)/remove_cpp_comands.perl
+CRECODER=$(FIRM_JNI_TOOLS_DIR)/crecoder.jar
+
+all: 	classfiles jni
 
 classfiles: $(CLASSFILES)
 
 %.class: %.java
 	javac $<
 
+# javah renames these files.  the jnibuilder doesn't anticipate this
+# and generates #includes with the original names.
+Firm_common.h: Firm_common.class
+	ln -sf Firm_0005fcommon.h Firm_common.h
+	javah -classpath $(topdir) -o $@ $(PACKAGENAME).$(<:.class=)
+
+Type_or_entity.h: Type_or_entity.class
+	ln -sf Type_0005for_0005fentity.h Type_or_entity.h
+	javah -classpath $(topdir) -o $@ $(PACKAGENAME).$(<:.class=)
+
 %.h:	%.class
-	javah -classpath $(topdir) -o $(<:.class=.h) $(PACKAGENAME).$(<:.class=)
+	javah -classpath $(topdir) -o $@ $(PACKAGENAME).$(<:.class=)
 
 %.o:	%.c %.h
 	gcc $(CPPFLAGS) -c $< -o $@
+
+$(OFILES):
+	gcc $(CPPFLAGS) -c $(@:.o=.c) -o $@
 
 jni:    $(HFILES) $(OFILES)  # ../libfirm.a
 	gcc -shared -fPIC -o $(LIBNAME) *.o -lfirm -L..
@@ -73,3 +109,38 @@ clean:
 
 realclean: clean
 	rm -f *~ libfirmjni.so *.vcg *.java *.class
+
+
+$(SOURCE_DIR):
+	rm -rf $(SOURCE_DIR)
+	mkdir $(SOURCE_DIR)
+
+$(SOURCE_DIR)/firm_typedefs.h: $(FIRM_SOURCE_HEADERS)
+	mv firm_typedefs.h $@
+
+###############################################################################
+# Get all the necessary Firm headers.
+###############################################################################
+# Remove C preprocessor commands.  Overwrite the header files.
+# This part should be removed if crecoder integrates the preprocessor.
+
+FIRM_SRC_HEADER=$(top_srcdir)/ir/$(filter %/$(notdir $@),$(FIRM_PATH_HEADERS))
+
+$(FIRM_SOURCE_DIR_HEADERS): $(SOURCE_DIR)
+	troff -a -C -z  $(FIRM_SRC_HEADER) >$(SOURCE_DIR)/$(notdir $@)
+	perl $(REMOVE_CPP_COMMANDS) $@
+
+$(FIRM_HEADERS):$(FIRM_SOURCE_DIR_HEADERS) $(SOURCE_DIR)/firm_typedefs.h
+	gcc $(CPPFLAGS) -E -C -P $(SOURCE_DIR)/$@ -o $@
+
+###############################################################################
+# Call crecoder to construct from each header a .java file specifying the
+# java native interface.  Further crecoder constructs an implementation of
+# the java native interface in C calling the real libfirm functions.
+# For a file "file.h" files "File.java" and "File.c" are generated.
+
+
+H_FROM_JAVA=$(subst .java,.h,$(shell echo $@|$(SHELL_TOLOWER)))
+
+%.java: $(FIRM_HEADERS)
+	env CLASSPATH=$(FIRM_JNI_TOOLS_DIR)/crecoder.jar:$$CLASSPATH java crecoder/tools/jniBuilder/BuildJNI $(H_FROM_JAVA);\
