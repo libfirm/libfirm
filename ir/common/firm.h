@@ -100,6 +100,7 @@ extern "C" {
 #include "tr_inheritance.h" /* Support to handle inheritance. */
 
 #include "irarch.h"        /* architecture dependant optimizations */
+#include "archop.h"        /* architecture dependant opcodes */
 //#include "modeconv.h"      /* architecture dependant mode conversion */
 
 #include "firmstat.h"      /* statistics */
@@ -161,17 +162,14 @@ struct _firm_parameter_t {
    */
   ident_if_t *id_if;
 
-	/**
-	 * The factory function for the architecture dependent
-	 * optimizations.
-	 */
-
+  /**
+   * The architecture dependand opcode settings.
+   * If not set, no architecture dependand operations will be used.
+   */
+  arch_ops_info *arch_op_settings;
 };
 
-
 typedef struct _firm_parameter_t firm_parameter_t;
-
-
 
 /**
  * Initialize the firm library.
@@ -179,14 +177,10 @@ typedef struct _firm_parameter_t firm_parameter_t;
  * Initializes the firm library.  Allocates default data structures.
  * Initializes configurable behaviour of the library.
  *
- * @param param    This function is called, whenever a local variable is
- * used before definition.  The function should either insert a default value,
- * or raise a compiler error.
+ * @param param    A structure containing the parameters of the libFirm.
  *
- * The parameter func may be NULL. In that case, the original FIRM behavior
+ * The parameter struct may be NULL. In that case, the original FIRM behavior
  * is conserved.
- *
- * @see default_initialize_local_variable_func_t
  */
 void init_firm(const firm_parameter_t *params);
 
