@@ -69,7 +69,7 @@ new_entity (type *owner, ident *name, type *type)
 
   assert(!id_contains_char(name, ' ') && "entity name should not contain spaces");
 
-  res = (entity *) malloc (sizeof (entity));
+  res = (entity *) xmalloc (sizeof (entity));
   res->kind = k_entity;
   assert_legal_owner_of_ent(owner);
   res->owner = owner;
@@ -130,7 +130,7 @@ copy_entity_own (entity *old, type *new_owner) {
 
   assert_legal_owner_of_ent(new_owner);
   if (old->owner == new_owner) return old;
-  new = (entity *) malloc (sizeof (entity));
+  new = (entity *) xmalloc (sizeof (entity));
   memcpy (new, old, sizeof (entity));
   new->owner = new_owner;
   /*
@@ -162,7 +162,7 @@ copy_entity_name (entity *old, ident *new_name) {
   entity *new;
 
   if (old->name == new_name) return old;
-  new = (entity *) malloc (sizeof (entity));
+  new = (entity *) xmalloc (sizeof (entity));
   memcpy (new, old, sizeof (entity));
   new->name = new_name;
   new->ld_name = NULL;
