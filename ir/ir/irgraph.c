@@ -422,6 +422,27 @@ struct obstack *get_irg_obstack(ir_graph *irg) {
   return irg->obst;
 }
 
+/*
+ * Returns true if the node n is allocated on the storage of graph irg.
+ *
+ * Implementation is GLIBC specific as is uses the internal _obstack_chunk implementation.
+ */
+int node_is_in_irgs_storage(ir_graph *irg, ir_node *n)
+{
+  struct _obstack_chunk	*p;
+
+  /*
+   * checks wheater the ir_node pointer i on the obstack.
+   * A more sophisticated chaeck would test the "whole" ir_node
+   */
+  for (p = irg->obst->chunk; p; p = p->prev) {
+    if (((char *)p->contents <= (char *)n) && ((char *)n < (char *)p->limit))
+      return 1;
+  }
+
+  return 0;
+}
+
 irg_phase_state
 get_irg_phase_state (ir_graph *irg) {
   return irg->phase_state;

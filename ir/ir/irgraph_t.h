@@ -84,10 +84,24 @@ void init_irgraph(void);
    Must look like a correct irg, spare everything else. */
 ir_graph *new_const_code_irg(void);
 
+/**
+ * Set the pinned state of a graph.
+ *
+ * @irg		the IR graph
+ * @p		new pin state
+ */
 INLINE void
 set_irg_pinned (ir_graph *irg, op_pinned p);
 
 /** Returns the obstack associated with the graph. */
 struct obstack *get_irg_obstack(ir_graph *irg);
+
+/**
+ * Returns true if the node n is allocated on the storage of graph irg.
+ *
+ * @param irg	the IR graph
+ * @param n	the IR node
+ */
+int node_is_in_irgs_storage(ir_graph *irg, ir_node *n);
 
 # endif /* _IRGRAPH_T_H_ */
