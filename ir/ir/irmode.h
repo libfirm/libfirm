@@ -433,4 +433,10 @@ ir_mode *find_signed_mode(const ir_mode *mode);
  */
 ir_mode *find_double_bits_int_mode(const ir_mode *mode);
 
+/**
+ * Returns non-zero if the given mode honors signed zero's, i.e.,
+ * a +0 and a -0 exists and handled differently.
+ */
+int mode_honor_signed_zeros(const ir_mode *mode);
+
 #endif /* _IRMODE_H_ */
