@@ -19,6 +19,7 @@
 # include "tv.h"
 # include "type.h"
 # include "dbginfo.h"
+# include "exc.h"
 
 /* The typedefiniton of ir_node is also in irgraph.h to resolve
    recursion between irnode.h and irgraph.h */
@@ -155,6 +156,9 @@ inline void      mark_Block_block_visited(ir_node *node);
 inline int       Block_not_block_visited(ir_node *node);
 inline ir_node  *get_Block_graph_arr (ir_node *node, int pos);
 inline void      set_Block_graph_arr (ir_node *node, int pos, ir_node *value);
+
+void  set_Block_exc (ir_node*, exc_t);
+exc_t get_Block_exc (ir_node*);
 
 
 inline int  get_End_n_keepalives(ir_node *end);

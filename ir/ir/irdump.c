@@ -957,7 +957,8 @@ dump_ir_block (ir_node *block, void *env) {
 #else
     xfprintf (F, "%I", block->op->name);
 #endif
-	fprintf (F, " (%s)", exc_to_string (get_Block_exc (block)));
+	if (exc_normal != get_Block_exc (block))
+	  fprintf (F, " (%s)", exc_to_string (get_Block_exc (block)));
 
     xfprintf(F, "\" status:clustered color:%s \n",
 			 get_Block_matured (block) ? "yellow" : "red");
@@ -1033,6 +1034,10 @@ dump_block_to_cfg (ir_node *block, void *env) {
     /* This is a block. Dump a node for the block. */
     xfprintf (F, "node: {title:\""); PRINT_NODEID(block);
     xfprintf (F, "\" label: \"%I ", block->op->name); PRINT_NODEID(block);
+
+	if (exc_normal != get_Block_exc (block))
+	  xfprintf (F, " (%s)", exc_to_string (get_Block_exc (block)));
+
     xfprintf (F, "\" ");
     if (dump_dominator_information_flag)
       xfprintf(F, "info1:\"dom depth %d\"", get_Block_dom_depth(block));
