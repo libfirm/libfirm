@@ -33,7 +33,10 @@
  *  An ident represents an unique string. The == operator
  *  is sufficient to compare two idents.
  */
-typedef const struct ident ident;
+#ifndef _IDENT_TYPEDEF_
+#define _IDENT_TYPEDEF_
+typedef const struct s_ident ident;
+#endif
 
 /**
  * The ident module interface.
