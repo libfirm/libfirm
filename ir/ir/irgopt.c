@@ -1533,10 +1533,7 @@ consumer_dom_dca (ir_node *dca, ir_node *consumer, ir_node *producer)
       if (get_irn_n(consumer, i) == producer) {
         ir_node *new_block = get_nodes_block(get_Block_cfgpred(phi_block, i));
 
-        if (block)
-          block = calc_dca(block, new_block);
-        else
-          block = new_block;
+        block = calc_dca(block, new_block);
       }
     }
   } else {
