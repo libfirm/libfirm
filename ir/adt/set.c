@@ -304,7 +304,6 @@ static INLINE unsigned
 Hash (SET *table, unsigned h)
 {
   unsigned address;
-
   address = h & (table->maxp - 1);          /* h % table->maxp */
   if (address < (unsigned)table->p)
     address = h & ((table->maxp << 1) - 1); /* h % (2*table->maxp) */
@@ -471,6 +470,11 @@ MANGLE(_,_search) (SET *table,
 
 
 #ifdef PSET
+
+int pset_default_ptr_cmp(const void *x, const void *y)
+{
+	return x != y;
+}
 
 void *
 pset_remove (SET *table, const void *key, unsigned hash)
