@@ -21,52 +21,117 @@
 /* type of callback function for ir_graph walk */
 #ifndef _IRG_WALK_FUNC_TYPEDEF_
 #define _IRG_WALK_FUNC_TYPEDEF_
-typedef void (irg_walk_func)(ir_node *, void *);
+/**
+ * The type of a walk function.
+ *
+ * @param node - the node that is just visited
+ * @param env  - an environment pointer passed by the walk functions
+ */
+typedef void irg_walk_func(ir_node *node, void *env);
 #endif
 
-/* Allocates some necessary datastructures. */
+/** Allocates some necessary datastructures. */
 void init_ip_walk(void);
 
-/* Frees some necessary datastructures. */
+/** Frees some necessary datastructures. */
 void finish_ip_walk(void);
 
-/* Walks over the ir graph, starting at the node given as first argument.
-   Executes pre before visiting the predecessor of a node, post after.
-   irg_walk uses the visited flag in irg and the nodes to determine visited
-   nodes.  It executes inc_irg_visited(current_ir_graph) to generate a new
-   flag.  It marks the node as visited before executing pre.
-   The void* env can be used to pass status information between the
-   pre and post functions.  */
+/**
+ * Walks over the ir graph.
+ *
+ * @param node - the start node
+ * @param pre  - walker function, executed before the predecessor of a node are visited
+ * @param post - walker function, executed after the predecessor of a node are visited
+ * @param env  - environment, passend to pre and post
+ *
+ * Walks over the ir graph, starting at the node given as first argument.
+ * Executes pre before visiting the predecessor of a node, post after.
+ * irg_walk uses the visited flag in irg and the nodes to determine visited
+ * nodes.  It executes inc_irg_visited(current_ir_graph) to generate a new
+ * flag.  It marks the node as visited before executing pre.
+ * The void* env can be used to pass status information between the
+ * pre and post functions.
+ */
 void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env);
 
-/* Like "irg_walk", but walks over all reachable nodes in the ir
+/**
+ * Walks over all reachable nodes in the ir graph.
+ *
+ * @param irg  - the irg graph
+ * @param pre  - walker function, executed before the predecessor of a node are visited
+ * @param post - walker function, executed after the predecessor of a node are visited
+ * @param env  - environment, passend to pre and post
+ *
+ * Like irg_walk(), but walks over all reachable nodes in the ir
  * graph, starting at the end operation. During the walk current_ir_graph
- * is set to irg. */
+ * is set to irg.
+ */
 void irg_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env);
 
-/* Executes irg_walk(end, pre, post, env) for all irgraphs in irprog.
-   Sets current_ir_graph properly for each walk.  Conserves current
-   current_ir_graph.  In interprocedural view nodes can be visited several
-   times. */
+/**
+ * Executes irg_walk(end, pre, post, env) for all irgraphs in irprog.
+ *
+ * @param pre  - walker function, executed before the predecessor of a node are visited
+ * @param post - walker function, executed after the predecessor of a node are visited
+ * @param env  - environment, passend to pre and post
+ *
+ * This function executes irg_walk(end, pre, post, env) for all irgraphs in irprog.
+ * Sets current_ir_graph properly for each walk.  Conserves current
+ * current_ir_graph.  In interprocedural view nodes can be visited several
+ * times.
+ */
 void all_irg_walk(irg_walk_func *pre, irg_walk_func *post, void *env);
 
-/* Walks all irgs in interprocedural view.  Visits each node only once.
-   Sets current_ir_graph properly. */
+/**
+ * Walks all irgs in interprocedural view.
+ *
+ * @param pre  - walker function, executed before the predecessor of a node are visited
+ * @param post - walker function, executed after the predecessor of a node are visited
+ * @param env  - environment, passend to pre and post
+ *
+ * This function walks all irgs in interprocedural view.
+ * Visits each node only once.Sets current_ir_graph properly.
+ */
 void cg_walk(irg_walk_func *pre, irg_walk_func *post, void *env);
 
-/* Walks only over Block nodes in the graph.  Has it's own visited
-   flag, so that it can be interleaved with the other walker.
-   If a none block is passed, starts at the block this node belongs to.
-   If end is passed also visites kept alive blocks. */
+/**
+ * Walks only over Block nodes in the graph.
+ *
+ * @param node - the start node
+ * @param pre  - walker function, executed before the predecessor of a node are visited
+ * @param post - walker function, executed after the predecessor of a node are visited
+ * @param env  - environment, passend to pre and post
+ *
+ * This function Walks only over Block nodes in the graph. Has it's own visited
+ * flag, so that it can be interleaved with the other walker.
+ * If a none block is passed, starts at the block this node belongs to.
+ * If end is passed also visites kept alive blocks.
+ */
 void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env);
 
-/* Like "irg_block_walk", but walks over all reachable blocks in the
- * ir graph, starting at the end block. */
+/**
+ * Walks only over reachable Block nodes in the graph.
+ *
+ * @param irg  - the irg graph
+ * @param pre  - walker function, executed before the predecessor of a node are visited
+ * @param post - walker function, executed after the predecessor of a node are visited
+ * @param env  - environment, passend to pre and post
+ *
+ * Like irg_block_walk(), but walks over all reachable blocks in the
+ * ir graph, starting at the end block.
+ */
 void irg_block_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env);
 
-/* Walks over all code in const_code_irg.
-   Uses visited flag in const_code_irg. */
+/**
+ * Walks over all code in const_code_irg.
+ *
+ * @param pre  - walker function, executed before the predecessor of a node are visited
+ * @param post - walker function, executed after the predecessor of a node are visited
+ * @param env  - environment, passend to pre and post
+ *
+ * This function walks over all code in const_code_irg.
+ * Uses visited flag in const_code_irg.
+ */
 void walk_const_code(irg_walk_func *pre, irg_walk_func *post, void *env);
-
 
 # endif /* _IRGWALK_H_ */
