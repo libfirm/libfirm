@@ -218,4 +218,46 @@ visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 0
 "color: blue}
-edge: { sourcename: "n77" targetname: "n20" class:2  pri
+edge: { sourcename: "n77" targetname: "n20" class:2  priority:50 linestyle:dotted}
+edge: {sourcename: "n23" targetname: "n26" color: red linestyle: dashed}
+edge: {sourcename: "n23" targetname: "n29" color: red linestyle: dashed}
+edge: {sourcename: "n26" targetname: "n32" color: red linestyle: dashed}
+edge: {sourcename: "n26" targetname: "n22" color: red linestyle: dashed}
+edge: {sourcename: "n32" targetname: "n35" color: red linestyle: dashed}
+edge: {sourcename: "n35" targetname: "n38" color: red linestyle: dashed}
+edge: {sourcename: "n38" targetname: "n45" color: red linestyle: dashed}
+edge: {sourcename: "n38" targetname: "n43" color: red linestyle: dashed}
+edge: {sourcename: "n38" targetname: "n42" color: red linestyle: dashed}
+edge: {sourcename: "n38" targetname: "n41" color: red linestyle: dashed}
+edge: {sourcename: "n38" targetname: "n44" color: red linestyle: dashed}
+edge: {sourcename: "n38" targetname: "n58" color: red linestyle: dashed}
+edge: {sourcename: "n38" targetname: "n53" color: red linestyle: dashed}
+edge: {sourcename: "n45" targetname: "n46" color: red linestyle: dashed}
+edge: {sourcename: "n46" targetname: "n47" color: red linestyle: dashed}
+edge: {sourcename: "n47" targetname: "n38" color: red linestyle: dashed}
+edge: {sourcename: "n43" targetname: "n45" color: red linestyle: dashed}
+edge: {sourcename: "n43" targetname: "n44" color: red linestyle: dashed}
+edge: {sourcename: "n44" targetname: "n60" color: red linestyle: dashed}
+edge: {sourcename: "n60" targetname: "n76" color: red linestyle: dashed}
+edge: {sourcename: "n60" targetname: "n65" color: red linestyle: dashed}
+edge: {sourcename: "n76" targetname: "n20" color: red linestyle: dashed}
+edge: {sourcename: "n20" targetname: "n77" color: red linestyle: dashed}
+edge: {sourcename: "n65" targetname: "n76" color: red linestyle: dashed}
+edge: {sourcename: "n42" targetname: "n43" color: red linestyle: dashed}
+edge: {sourcename: "n41" targetname: "n42" color: red linestyle: dashed}
+edge: {sourcename: "n58" targetname: "n53" color: red linestyle: dashed}
+edge: {sourcename: "n58" targetname: "n65" color: red linestyle: dashed}
+edge: {sourcename: "n53" targetname: "n58" color: red linestyle: dashed}
+edge: {sourcename: "n53" targetname: "n65" color: red linestyle: dashed}
+edge: {sourcename: "n22" targetname: "n26" color: red linestyle: dashed}
+edge: {sourcename: "n22" targetname: "n23" color: red linestyle: dashed}
+edge: {sourcename: "n22" targetname: "n39" color: red linestyle: dashed}
+edge: {sourcename: "n22" targetname: "n29" color: red linestyle: dashed}
+edge: {sourcename: "n22" targetname: "n33" color: red linestyle: dashed}
+edge: {sourcename: "n22" targetname: "n34" color: red linestyle: dashed}
+edge: {sourcename: "n39" targetname: "n41" color: red linestyle: dashed}
+edge: {sourcename: "n39" targetname: "n41" color: red linestyle: dashed}
+edge: {sourcename: "n29" targetname: "n76" color: red linestyle: dashed}
+edge: {sourcename: "n33" targetname: "n58" color: red linestyle: dashed}
+edge: {sourcename: "n34" targetname: "n53" color: red linestyle: dashed}
+}

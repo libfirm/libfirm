@@ -204,10 +204,10 @@ node: {title: "n648n349" label: "SymC &a  349"  info1: "mode:    P
 visited: 27
 irg:     STRENGTH_RED_EXAMPLE_m5
 arity: 0
-kind addr_ent
+kind: addr_ent
 entity GlobalType.a (333)
 
-SymConst of type type_unknown
+SymConst of type: type_unknown
 "}
 node: {title: "n648n646" label: "0xFFFFFFFCIs  646"  info1: "mode:    Is
 visited: 27

@@ -222,10 +222,10 @@ node: {title: "n67n62" label: "SymC &a2  62"  info1: "mode:    P
 visited: 26
 irg:     STRENGTH_RED_EXAMPLE_m1
 arity: 0
-kind addr_ent
+kind: addr_ent
 entity GlobalType.a2 (32)
 
-SymConst of type type_unknown
+SymConst of type: type_unknown
 "}
 edge: {sourcename: "n67" targetname: "n67n62" label: "0" class:16 priority:10}
 edge: {sourcename: "n67" targetname: "n66" label: "1" class:1  priority:50}
@@ -251,10 +251,10 @@ node: {title: "n65n61" label: "SymC &a  61"  info1: "mode:    P
 visited: 26
 irg:     STRENGTH_RED_EXAMPLE_m1
 arity: 0
-kind addr_ent
+kind: addr_ent
 entity GlobalType.a (31)
 
-SymConst of type type_unknown
+SymConst of type: type_unknown
 "}
 edge: {sourcename: "n65" targetname: "n65n61" label: "0" class:16 priority:10}
 edge: {sourcename: "n65" targetname: "n64" label: "1" class:1  priority:50}
@@ -323,10 +323,10 @@ node: {title: "n107n61" label: "SymC &a  61"  info1: "mode:    P
 visited: 26
 irg:     STRENGTH_RED_EXAMPLE_m1
 arity: 0
-kind addr_ent
+kind: addr_ent
 entity GlobalType.a (31)
 
-SymConst of type type_unknown
+SymConst of type: type_unknown
 "}
 edge: {sourcename: "n107" targetname: "n107n61" label: "0" class:16 priority:10}
 edge: {sourcename: "n107" targetname: "n106" label: "1" class:1  priority:50}

@@ -99,10 +99,10 @@ edge: { sourcename: "e20" targetname: "n19"label: "value 0"}
 node: {title: "n19" label: "SymC &set_a  19"  info1: "mode:    P
 visited: 9
 arity: 0
-kind addr_ent
+kind: addr_ent
 entity PRIMA.set_a (20)
 
-SymConst of type type_unknown
+SymConst of type: type_unknown
 "}
 node: {title: "t18" label: "method set_a" info1: "state: layout_fixed,
 mode: P,
@@ -145,10 +145,10 @@ edge: { sourcename: "e23" targetname: "n22"label: "value 0"}
 node: {title: "n22" label: "SymC &c  22"  info1: "mode:    P
 visited: 9
 arity: 0
-kind addr_ent
+kind: addr_ent
 entity PRIMA.c (23)
 
-SymConst of type type_unknown
+SymConst of type: type_unknown
 "}
 node: {title: "t21" label: "method c" info1: "state: layout_fixed,
 mode: P,

@@ -178,10 +178,10 @@ node: {title: "n501n482" label: "SymC &a  482"  info1: "mode:    P
 visited: 17
 irg:     STRENGTH_RED_EXAMPLE_m7
 arity: 0
-kind addr_ent
+kind: addr_ent
 entity GlobalType.a (465)
 
-SymConst of type type_unknown
+SymConst of type: type_unknown
 "}
 edge: {sourcename: "n501" targetname: "n499" label: "0" class:1  priority:50}
 edge: {sourcename: "n501" targetname: "n501n482" label: "1" class:16 priority:10}

@@ -223,10 +223,10 @@ node: {title: "n433n415" label: "SymC &a  415"  info1: "mode:    P
 visited: 16
 irg:     STRENGTH_RED_EXAMPLE_m6
 arity: 0
-kind addr_ent
+kind: addr_ent
 entity GlobalType.a (399)
 
-SymConst of type type_unknown
+SymConst of type: type_unknown
 "}
 edge: {sourcename: "n433" targetname: "n431" label: "0" class:1  priority:50}
 edge: {sourcename: "n433" targetname: "n433n415" label: "1" class:16 priority:10}

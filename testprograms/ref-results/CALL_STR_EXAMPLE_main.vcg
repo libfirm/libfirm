@@ -101,17 +101,17 @@ node: {title: "n52" label: "SymC f  52"  info1: "mode:    P
 visited: 9
 irg:     CALL_STR_EXAMPLE_main
 arity: 0
-kind addr_name
-SymConst of type type_unknown
+kind: addr_name
+SymConst of type: type_unknown
 "}
 node: {title: "n51" label: "SymC &constStr  51"  info1: "mode:    P
 visited: 9
 irg:     CALL_STR_EXAMPLE_main
 arity: 0
-kind addr_ent
+kind: addr_ent
 entity GlobalType.constStr (20)
 
-SymConst of type type_unknown
+SymConst of type: type_unknown
 "}
 node: {title: "n44" label: "ProjX 0 44"  info1: "mode:    X
 visited: 9

@@ -95,8 +95,8 @@ node: {title: "n45n43" label: "SymC PRIMA size  43"  info1: "mode:    Iu
 visited: 18
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 0
-kind size
-SymConst of type type_unknown
+kind: size
+SymConst of type: type_unknown
 "}
 edge: {sourcename: "n45" targetname: "n37" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n45" targetname: "n45n43" label: "1" class:16 priority:10}

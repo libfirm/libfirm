@@ -224,10 +224,10 @@ node: {title: "n564n151" label: "SymC &a  151"  info1: "mode:    P
 visited: 28
 irg:     STRENGTH_RED_EXAMPLE_m2
 arity: 0
-kind addr_ent
+kind: addr_ent
 entity GlobalType.a (135)
 
-SymConst of type type_unknown
+SymConst of type: type_unknown
 "}
 node: {title: "n564n163" label: "0xDIs  163"  info1: "mode:    Is
 visited: 28

@@ -239,10 +239,10 @@ node: {title: "n618n282" label: "SymC &a  282"  info1: "mode:    P
 visited: 32
 irg:     STRENGTH_RED_EXAMPLE_m4
 arity: 0
-kind addr_ent
+kind: addr_ent
 entity GlobalType.a (266)
 
-SymConst of type type_unknown
+SymConst of type: type_unknown
 "}
 node: {title: "n618n295" label: "0x8Is  295"  info1: "mode:    Is
 visited: 32
@@ -281,10 +281,10 @@ node: {title: "n612n282" label: "SymC &a  282"  info1: "mode:    P
 visited: 32
 irg:     STRENGTH_RED_EXAMPLE_m4
 arity: 0
-kind addr_ent
+kind: addr_ent
 entity GlobalType.a (266)
 
-SymConst of type type_unknown
+SymConst of type: type_unknown
 "}
 node: {title: "n612n294" label: "0x4Is  294"  info1: "mode:    Is
 visited: 32

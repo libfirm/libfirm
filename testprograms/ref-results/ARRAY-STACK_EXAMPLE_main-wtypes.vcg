@@ -231,10 +231,10 @@ edge: { sourcename: "e18" targetname: "n17"label: "value 0"}
 node: {title: "n17" label: "SymC &main  17"  info1: "mode:    P
 visited: 2
 arity: 0
-kind addr_ent
+kind: addr_ent
 entity ARRAY-STACK_EXAMPLE.main (18)
 
-SymConst of type type_unknown
+SymConst of type: type_unknown
 "}
 node: {title: "t15" label: "class ARRAY-STACK_EXAMPLE" info1: "state: layout_undefined
 size: -1b,

@@ -95,8 +95,8 @@ node: {title: "n45n43" label: "SymC PRIMA size  43"  info1: "mode:    Iu
 visited: 20
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 0
-kind size
-SymConst of type type_unknown
+kind: size
+SymConst of type: type_unknown
 "}
 edge: {sourcename: "n45" targetname: "n37" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n45" targetname: "n45n43" label: "1" class:16 priority:10}
@@ -290,10 +290,10 @@ edge: { sourcename: "e20" targetname: "n19"label: "value 0"}
 node: {title: "n19" label: "SymC &set_a  19"  info1: "mode:    P
 visited: 1
 arity: 0
-kind addr_ent
+kind: addr_ent
 entity PRIMA.set_a (20)
 
-SymConst of type type_unknown
+SymConst of type: type_unknown
 "}
 node: {title: "t18" label: "method set_a" info1: "state: layout_fixed,
 mode: P,
@@ -327,10 +327,10 @@ edge: { sourcename: "e23" targetname: "n22"label: "value 0"}
 node: {title: "n22" label: "SymC &c  22"  info1: "mode:    P
 visited: 1
 arity: 0
-kind addr_ent
+kind: addr_ent
 entity PRIMA.c (23)
 
-SymConst of type type_unknown
+SymConst of type: type_unknown
 "}
 node: {title: "e26" label: "ent OO_PROGRAM_EXAMPLE_main" color: yellow
  info1: "entity OO_PROGRAM_EXAMPLE_main (26)
@@ -355,10 +355,10 @@ edge: { sourcename: "e26" targetname: "n25"label: "value 0"}
 node: {title: "n25" label: "SymC &OO_PROGRAM_EXAMPLE_main  25"  info1: "mode:    P
 visited: 1
 arity: 0
-kind addr_ent
+kind: addr_ent
 entity GlobalType.OO_PROGRAM_EXAMPLE_main (26)
 
-SymConst of type type_unknown
+SymConst of type: type_unknown
 "}
 node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1b,

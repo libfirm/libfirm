@@ -217,10 +217,10 @@ node: {title: "n673n415" label: "SymC &a  415"  info1: "mode:    P
 visited: 27
 irg:     STRENGTH_RED_EXAMPLE_m6
 arity: 0
-kind addr_ent
+kind: addr_ent
 entity GlobalType.a (399)
 
-SymConst of type type_unknown
+SymConst of type: type_unknown
 "}
 node: {title: "n673n671" label: "0xFFFFFFFCIs  671"  info1: "mode:    Is
 visited: 27

@@ -93,10 +93,10 @@ edge: { sourcename: "e18" targetname: "n17"label: "value 0"}
 node: {title: "n17" label: "SymC &main  17"  info1: "mode:    P
 visited: 1
 arity: 0
-kind addr_ent
+kind: addr_ent
 entity WHILE_EXAMPLE.main (18)
 
-SymConst of type type_unknown
+SymConst of type: type_unknown
 "}
 node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1b,
