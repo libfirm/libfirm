@@ -18,9 +18,9 @@
 #include "irprog.h"
 #include "irgwalk.h"
 
-/**------------------------------------------------------------------*/
-/* We represent the fields in entities/types by hashmaps.            */
-/**------------------------------------------------------------------*/
+/*------------------------------------------------------------------*/
+/* We represent the fields in entities/types by hashmaps.           */
+/*------------------------------------------------------------------*/
 
 static pmap *entity_access_map = NULL;
 static pmap *entity_reference_map = NULL;

@@ -71,8 +71,11 @@ int       get_irg_loop_depth(ir_graph *irg);
 int       get_irg_recursion_depth(ir_graph *irg);
 
 
-/** Construct and destruct the callgraph. */
+/** Construct the callgraph. Expects callee information, i.e.,
+    irg_callee_info_consistent must be set.  This can be computed with
+    cgana(). */
 void compute_callgraph(void);
+/** Destruct the callgraph. */
 void free_callgraph(void);
 
 

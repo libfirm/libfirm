@@ -69,14 +69,14 @@ void cgana(int *len, entity ***free_methods);
 
 /** Free callee information.
  *
- *  Sets callee_info_state of the graph passed to none.
+ *  Sets callee_info_state of the graph passed to none.  Sets callee field
+ *  in all call nodes to NULL.  Else it happens that the field contains
+ *  pointers to other than firm arrays.
  */
 void free_callee_info(ir_graph *irg);
 
 /* Optimize the address expressions passed to call nodes.
  * Performs only the optimizations done by cgana. */
-/* @@@ move to irgopt ?! */
-/* @@@ not fully implemented as buggy !!!  */
 void opt_call_addrs(void);
 
 

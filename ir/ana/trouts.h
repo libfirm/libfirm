@@ -11,22 +11,22 @@
  */
 
 /**
-* @file trouts.h
-*
-* Trouts list all uses of types and entities.
-* Each type gets a list of all Alloc nodes allocating it.
-* Each entity gets two lists:
-*   - one containing all accesses (Load, (Call), Store),
-*   - and one containing all uses to get a reference (Sel, SymConst).
-*
-* @todo
-*   To list all uses of entities of a type, we also should list all
-*   static/automatic allocated entities in types.  The Alloc nodes
-*   represent only the dynamic allocated entities.
-*
-* @author Goetz Lindenmaier
-*
-*/
+ * @file trouts.h
+ *
+ * Trouts list all uses of types and entities.
+ * Each type gets a list of all Alloc nodes allocating it.
+ * Each entity gets two lists:
+ *   - one containing all accesses (Load, (Call), Store),
+ *   - and one containing all uses to get a reference (Sel, SymConst).
+ *
+ * @todo
+ *   To list all uses of entities of a type, we also should list all
+ *   static/automatic allocated entities in types.  The Alloc nodes
+ *   represent only the dynamic allocated entities.
+ *
+ * @author Goetz Lindenmaier
+ *
+ */
 
 # ifndef _TROUTS_H_
 # define _TROUTS_H_
