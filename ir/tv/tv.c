@@ -1778,3 +1778,10 @@ get_tv_mode (tarval *tv)
 {
   return tv->mode;
 }
+
+
+entity *get_tv_entity(tarval *tv)
+{
+  /*assert(??? && "not a pointer to an entity");*/
+  return tv->u.p.ent;
+}

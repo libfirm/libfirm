@@ -208,5 +208,6 @@ void tarval_stats (void);
 #endif
 
 ir_mode *get_tv_mode (tarval *tv);
+entity *get_tv_entity(tarval *tv);
 
 #endif
