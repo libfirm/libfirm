@@ -49,6 +49,7 @@
 #define UNION_EDGE_ATTR      "class: 8 label: \"component\" color: blue"
 #define PTR_PTS_TO_EDGE_ATTR "class: 9 label: \"points to\" color:green"
 #define ARR_ELT_TYPE_EDGE_ATTR "class: 10 label: \"arr elt\" color:green"
+#define ENT_OVERWRITES_EDGE_ATTR "class: 11 label: \"overwrites\" color:red"
 
 #define PRINT_NODEID(X) fprintf(F, "%p", X)
 
@@ -498,6 +499,9 @@ dump_type_info (type_or_ent *tore, void *env) {
                 ENT_OWN_EDGE_ATTR "}\n", tore, get_entity_owner(ent));
       xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
                 ENT_TYPE_EDGE_ATTR "}\n", tore, get_entity_type(ent));
+      for(i = 0; i < get_entity_n_overwrites(ent); i++)
+	xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
+		  ENT_OVERWRITES_EDGE_ATTR "}\n", tore, get_entity_overwrites(ent, i));
     } break;
   case k_type:
     {
