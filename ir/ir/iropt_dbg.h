@@ -104,31 +104,40 @@
 	} while(0)
 
 
-#define DBG_OPT_WAW                                                   \
-  do {                                                          \
+#define DBG_OPT_WAW(st1, st2)                                         \
+  do {                                                                \
 	  ir_node *ons[2];                                            \
-	  ons[0] = oldn;                                              \
-	  ons[1] = n;                                                 \
-	  stat_merge_nodes(&n, 1, ons, SIZ(ons), STAT_OPT_WAW);	      \
-	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_write_after_write);\
+	  ons[0] = st1;                                               \
+	  ons[1] = st2;                                               \
+	  stat_merge_nodes(&st2, 1, ons, SIZ(ons), STAT_OPT_WAW);     \
+	  __dbg_info_merge_sets(&st2, 1, ons, SIZ(ons), dbg_write_after_write); \
 	} while(0)
 
-#define DBG_OPT_WAR                                                   \
-  do {                                                          \
+#define DBG_OPT_WAR(load, store)                                      \
+  do {                                                                \
 	  ir_node *ons[2];                                            \
-	  ons[0] = oldn;                                              \
-	  ons[1] = c;                                                 \
-	  stat_merge_nodes(&n, 1, ons, SIZ(ons), STAT_OPT_WAR);	      \
-	  __dbg_info_merge_sets(&c, 1, ons, SIZ(ons), dbg_write_after_read); \
+	  ons[0] = load;                                              \
+	  ons[1] = store;                                             \
+	  stat_merge_nodes(&load, 1, ons, SIZ(ons), STAT_OPT_WAR);    \
+	  __dbg_info_merge_sets(&load, 1, ons, SIZ(ons), dbg_write_after_read); \
 	} while(0)
 
-#define DBG_OPT_RAW                                                   \
-  do {                                                          \
+#define DBG_OPT_RAW(store, load)                                      \
+  do {                                                                \
 	  ir_node *ons[2];                                            \
-	  ons[0] = oldn;                                              \
-	  ons[1] = c;                                                 \
-	  stat_merge_nodes(&n, 1, ons, SIZ(ons), STAT_OPT_RAW);	      \
-	  __dbg_info_merge_sets(&c, 1, ons, SIZ(ons), dbg_read_after_write); \
+	  ons[0] = store;                                             \
+	  ons[1] = load;                                              \
+	  stat_merge_nodes(&store, 1, ons, SIZ(ons), STAT_OPT_RAW);   \
+	  __dbg_info_merge_sets(&store, 1, ons, SIZ(ons), dbg_read_after_write); \
+	} while(0)
+
+#define DBG_OPT_RAR(ld1, ld2)                                         \
+  do {                                                                \
+	  ir_node *ons[2];                                            \
+	  ons[0] = ld1;                                               \
+	  ons[1] = ld2;                                               \
+	  stat_merge_nodes(&ld1, 1, ons, SIZ(ons), STAT_OPT_RAR);     \
+	  __dbg_info_merge_sets(&ld1, 1, ons, SIZ(ons), dbg_read_after_read); \
 	} while(0)
 
 #define DBG_OPT_TUPLE                                                 \
