@@ -417,6 +417,8 @@ ir_node *get_loop_node (ir_loop *loop, int pos) {
     if(node_nr == pos)
       return(loop -> children[child_nr].node);
   }
+  DDML(loop);
+  printf("pos: %d\n", pos);
   assert(0 && "no child at pos found");
   return NULL;
 }
