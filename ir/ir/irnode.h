@@ -13,6 +13,8 @@
 # ifndef _IRNODE_H_
 # define _IRNODE_H_
 
+#include <stddef.h>
+
 /**
  * Projection numbers of compare: use for Proj nodes!
  * @remark there are numbers with normalized names below!
@@ -888,6 +890,28 @@ ir_node *get_fragile_op_mem(ir_node *node);
 /** Returns true if the operation is a forking control flow
  *  operation: Cond. */
 int is_forking_op(const ir_node *node);
+
+/**
+ * Access custom node data.
+ * The data must have been registered with
+ * register_additional_node_data() before.
+ * @param node The ir node to get the data from.
+ * @param type The type of the data you registered.
+ * @param off The value returned by register_additional_node_data.
+ * @return A pointer of type @p type.
+ */
+#define get_irn_data(node,type,off) \
+ (assert(off > 0 && "Invalid node data offset"), (type *) ((char *) (node) - (off)))
+
+/**
+ * Request additional data to be allocated with an ir node.
+ * @param size The size of the additional data required.
+ * @return A positive number, if the opration was successful, which
+ * must be passed to the access macro get_irn_data(), 0 if the
+ * registration failed.
+ */
+size_t register_additional_node_data(size_t size);
+
 
 /*-----------------------------------------------------------------*/
 /** Debug aides                                                   **/

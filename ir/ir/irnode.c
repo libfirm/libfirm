@@ -84,9 +84,35 @@ const char *symconst_name_arr [] = {
   "type_tag", "size", "addr_name", "addr_ent"
 };
 
+/**
+ * Indicates, whether additional data can be registered to ir nodes.
+ * If set to 1, this is not possible anymore.
+ */
+static int forbid_new_data = 0;
+
+/**
+ * The amount of additional space for custom data to be allocated upon
+ * creating a new node.
+ */
+static size_t additional_node_data_size = 0;
+
+
+size_t register_additional_node_data(size_t size)
+{
+	assert(!forbid_new_data && "Too late to register additional node data");
+
+	if(forbid_new_data)
+		return 0;
+
+	return additional_node_data_size += size;
+}
+
+
 void
 init_irnode (void)
 {
+	/* Forbid the addition of new data to an ir node. */
+	forbid_new_data = 1;
 }
 
 /*
@@ -100,11 +126,13 @@ new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mo
          int arity, ir_node **in)
 {
   ir_node *res;
-  int node_size = offsetof (ir_node, attr) +  op->attr_size;
+  size_t node_size = offsetof(ir_node, attr) + op->attr_size + additional_node_data_size;
+	char *p;
 
   assert(irg && op && mode);
-  res = (ir_node *) obstack_alloc (irg->obst, node_size);
-  memset((void *)res, 0, node_size);
+  p = obstack_alloc (irg->obst, node_size);
+  memset(p, 0, node_size);
+	res = (ir_node *) (p + additional_node_data_size);
 
   res->kind    = k_ir_node;
   res->op      = op;
@@ -2010,6 +2038,7 @@ int
 is_forking_op(const ir_node *node) {
   return is_op_forking(get_irn_op(node));
 }
+
 
 #ifdef DEBUG_libfirm
 void dump_irn (ir_node *n) {
