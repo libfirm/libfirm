@@ -110,6 +110,8 @@ typedef enum {
                                      after write optimization. */
   dbg_write_after_read,         /**< A Firm subgraph was replaced because of a write
                                      after read optimization. */
+  dbg_read_after_write,         /**< A Firm subgraph was replaced because of a read
+                                     after write optimization. */
   dbg_rem_poly_call,            /**< Remove polymorphic call. */
   dbg_dead_code,                /**< Removing unreachable code, I.e. blocks that are never executed. */
   dbg_max                       /**< Maximum value. */
@@ -136,6 +138,7 @@ static const char* dbg_action_2_str(dbg_action a) {
     return "dbg_algebraic_simplification"; break;
   case dbg_write_after_write: return "dbg_write_after_write"; break;
   case dbg_write_after_read: return "dbg_write_after_read"; break;
+  case dbg_read_after_write: return "dbg_read_after_write"; break;
   case dbg_rem_poly_call: return "dbg_rem_poly_call"; break;
   default:
     if (a <= dbg_max)
