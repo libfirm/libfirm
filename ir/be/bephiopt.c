@@ -14,6 +14,7 @@
 #include "irouts.h"
 #include "irdom.h"
 
+#include "beutil.h"
 #include "bera_t.h"
 #include "bephiopt.h"
 #include "phiclass_t.h"
