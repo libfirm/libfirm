@@ -631,25 +631,6 @@ get_Node_handler (ir_node *node) {
   return (NULL);
 }
 
-/* exc_t handling for Blocks */
-void set_Block_exc (ir_node *block, exc_t exc) {
-  assert ((block->op == op_Block));
-}
-
-exc_t get_Block_exc (ir_node *block) {
-  assert ((block->op == op_Block));
-  return (0);
-}
-
-/* exc_t handling for Nodes */
-void set_Node_exc (ir_node *node, exc_t exc) {
-
-}
-
-exc_t get_Node_exc (ir_node *node) {
-  return (0);
-}
-
 void set_Block_cg_cfgpred_arr(ir_node * node, int arity, ir_node ** in) {
   assert(node->op == op_Block);
   if (node->attr.block.in_cg == NULL || arity != ARR_LEN(node->attr.block.in_cg) - 1) {
