@@ -107,7 +107,7 @@ main(void)
   elt_type = get_array_element_type(array_type);
   elt_type_mode = get_type_mode(elt_type);
   /*   better: read bounds out of array type information */
-  size = (U_BOUND - L_BOUND + 1) * get_mode_size(elt_type_mode);
+  size = (U_BOUND - L_BOUND + 1) * get_mode_size_bytes(elt_type_mode);
   /*   make constant representing the size */
   arr_size  = new_Const(mode_Iu, new_tarval_from_long (size, mode_Iu));
   /*   allocate and generate the Proj nodes. */
