@@ -1515,7 +1515,7 @@ void init_strcalc(int precision)
     CALC_BUFFER_SIZE = (precision / 2);
     MAX_VALUE_SIZE   = (precision / 4);
 
-    calc_buffer = malloc(CALC_BUFFER_SIZE+1 * sizeof(char));
+    calc_buffer   = malloc(CALC_BUFFER_SIZE+1 * sizeof(char));
     output_buffer = malloc(BIT_PATTERN_SIZE+1 * sizeof(char));
 
     if (calc_buffer == NULL || output_buffer == NULL)
@@ -1526,6 +1526,12 @@ void init_strcalc(int precision)
 
     DEBUGPRINTF(("init strcalc: \n\tPRECISION: %d\n\tCALC_BUFFER_SIZE = %d\n\tMAX_VALUE_SIZE = %d\n\tbuffer pointer: %p\n", precision, CALC_BUFFER_SIZE, MAX_VALUE_SIZE, calc_buffer));
   }
+}
+
+
+void finish_strcalc() {
+  free(calc_buffer);   calc_buffer   = NULL;
+  free(output_buffer); output_buffer = NULL;
 }
 int sc_get_precision(void)
 {

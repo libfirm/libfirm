@@ -119,9 +119,17 @@ typedef struct type type;
 
 # include "type_or_entity.h"
 
+/** frees all entities associated with a type.
+    Does not free array entity.
+    Warning: make sure these entities are not referenced anywhere else.
+*/
+void        free_type_entities(type *tp);
+
 /** Frees the memory used by the type.   Does not free the entities
-   belonging to the type, except for the array element entity.
-   Does not free if tp is "none" or "unknown". */
+    belonging to the type, except for the array element entity.
+    Does not free if tp is "none" or "unknown".
+    Frees entities in value param subtypes of method types!!! Make sure these
+    are not referenced any more. */
 void        free_type(type *tp);
 
 tp_op*      get_type_tpop(type *tp);

@@ -984,3 +984,35 @@ init_mode (void)
   /* set the machine specific modes to the predifined ones */
   mode_P_mach = mode_P;
 }
+
+
+void finish_mode(void) {
+  obstack_free(&modes, 0);
+
+  mode_T = NULL;
+  mode_X = NULL;
+  mode_M = NULL;
+  mode_BB = NULL;
+  mode_ANY = NULL;
+  mode_BAD = NULL;
+
+  mode_F = NULL;
+  mode_D = NULL;
+  mode_E = NULL;
+
+  mode_Bs = NULL;
+  mode_Bu = NULL;
+  mode_Hs = NULL;
+  mode_Hu = NULL;
+  mode_Is = NULL;
+  mode_Iu = NULL;
+  mode_Ls = NULL;
+  mode_Lu = NULL;
+
+  mode_C = NULL;
+  mode_U = NULL;
+  mode_b = NULL;
+  mode_P = NULL;
+
+  mode_P_mach = NULL;
+}

@@ -1,3 +1,7 @@
+  * 25.2.04 Goetz
+    Fix memory leak in irprog: free_ir_prog.
+    Fix memory leak in entity: free_entity_attrs
+
   * 19.12.03 Goetz
     Add state management for loops (consistent, inconsistent, invalid).
 

@@ -153,6 +153,7 @@ const char *sc_print(const void *val1, unsigned bits, enum base_t base);
  *   for calculations. The reason for being multiples of 8 eludes me
  */
 void init_strcalc(int precision_in_bytes);
+void finish_strcalc(void);
 int sc_get_precision(void);
 
 #endif /* _STRCALC_H_ */

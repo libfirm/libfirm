@@ -145,6 +145,15 @@ new_type(tp_op *type_op,
 	 ident* name);
 void free_type_attrs       (type *tp);
 
+INLINE void free_class_entities      (type *clss);
+INLINE void free_struct_entities     (type *strct);
+INLINE void free_method_entities     (type *method);
+INLINE void free_union_entities      (type *uni);
+INLINE void free_array_entities      (type *array);
+INLINE void free_enumeration_entities(type *enumeration);
+INLINE void free_pointer_entities    (type *pointer);
+INLINE void free_primitive_entities  (type *primitive);
+
 INLINE void free_class_attrs      (type *clss);
 INLINE void free_struct_attrs     (type *strct);
 INLINE void free_method_attrs     (type *method);
@@ -153,6 +162,8 @@ INLINE void free_array_attrs      (type *array);
 INLINE void free_enumeration_attrs(type *enumeration);
 INLINE void free_pointer_attrs    (type *pointer);
 INLINE void free_primitive_attrs  (type *primitive);
+
+
 
 
 /** initialize the type module */

@@ -23,7 +23,7 @@
 #include "entity.h"
 
 /* Methoden sind "frei", wenn ihr Funktionszeiger (potentiell)
- *"explizit" bekannt ist, d.h.:
+ * "explizit" bekannt ist, d.h.:
  *
  * - die Methode ist von aussen sichtbar (external_visible).
  *

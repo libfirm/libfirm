@@ -99,6 +99,9 @@ new_ir_op (opcode code, const char *name, op_pinned p, int labeled, size_t attr_
   return res;
 }
 
+void free_ir_op (ir_op *code) {
+  free(code);
+}
 
 void
 init_op(void)
@@ -162,6 +165,68 @@ init_op(void)
   op_EndExcept = new_ir_op (iro_EndExcept, "EndExcept", pinned, 0, sizeof(end_attr));
 
   op_FuncCall  = new_ir_op (iro_FuncCall,  "FuncCall",  floats, 1, sizeof (call_attr));
+}
+
+
+/* free memory used by irop module. */
+void finish_op() {
+  free_ir_op (op_Block); op_Block     = NULL;
+
+  free_ir_op (op_Start    ); op_Start     = NULL;
+  free_ir_op (op_End      ); op_End       = NULL;
+  free_ir_op (op_Jmp      ); op_Jmp       = NULL;
+  free_ir_op (op_Cond     ); op_Cond      = NULL;
+  free_ir_op (op_Return   ); op_Return    = NULL;
+  free_ir_op (op_Raise    ); op_Raise     = NULL;
+
+  free_ir_op (op_Const    ); op_Const     = NULL;
+  free_ir_op (op_SymConst ); op_SymConst  = NULL;
+
+  free_ir_op (op_Sel      ); op_Sel       = NULL;
+  free_ir_op (op_InstOf   ); op_InstOf    = NULL;
+
+  free_ir_op (op_Call     ); op_Call      = NULL;
+  free_ir_op (op_Add      ); op_Add       = NULL;
+  free_ir_op (op_Minus    ); op_Minus     = NULL;
+  free_ir_op (op_Sub      ); op_Sub       = NULL;
+  free_ir_op (op_Mul      ); op_Mul       = NULL;
+  free_ir_op (op_Quot     ); op_Quot      = NULL;
+  free_ir_op (op_DivMod   ); op_DivMod    = NULL;
+  free_ir_op (op_Div      ); op_Div       = NULL;
+  free_ir_op (op_Mod      ); op_Mod       = NULL;
+  free_ir_op (op_Abs      ); op_Abs       = NULL;
+  free_ir_op (op_And      ); op_And       = NULL;
+  free_ir_op (op_Or       ); op_Or        = NULL;
+  free_ir_op (op_Eor      ); op_Eor       = NULL;
+  free_ir_op (op_Not      ); op_Not       = NULL;
+  free_ir_op (op_Cmp      ); op_Cmp       = NULL;
+  free_ir_op (op_Shl      ); op_Shl       = NULL;
+  free_ir_op (op_Shr      ); op_Shr       = NULL;
+  free_ir_op (op_Shrs     ); op_Shrs      = NULL;
+  free_ir_op (op_Rot      ); op_Rot       = NULL;
+  free_ir_op (op_Conv     ); op_Conv      = NULL;
+  free_ir_op (op_Cast     ); op_Cast      = NULL;
+
+  free_ir_op (op_Phi      ); op_Phi       = NULL;
+
+  free_ir_op (op_Load     ); op_Load      = NULL;
+  free_ir_op (op_Store    ); op_Store     = NULL;
+  free_ir_op (op_Alloc    ); op_Alloc     = NULL;
+  free_ir_op (op_Free     ); op_Free      = NULL;
+  free_ir_op (op_Sync     ); op_Sync      = NULL;
+
+  free_ir_op (op_Proj     ); op_Proj      = NULL;
+  free_ir_op (op_Tuple    ); op_Tuple     = NULL;
+  free_ir_op (op_Id       ); op_Id        = NULL;
+  free_ir_op (op_Bad      ); op_Bad       = NULL;
+  free_ir_op (op_Confirm  ); op_Confirm   = NULL;
+
+  free_ir_op (op_Unknown  ); op_Unknown   = NULL;
+  free_ir_op (op_Filter   ); op_Filter    = NULL;
+  free_ir_op (op_Break    ); op_Break     = NULL;
+  free_ir_op (op_CallBegin); op_CallBegin = NULL;
+  free_ir_op (op_EndReg   ); op_EndReg    = NULL;
+  free_ir_op (op_EndExcept); op_EndExcept = NULL;
 }
 
 /* Returns the string for the opcode. */

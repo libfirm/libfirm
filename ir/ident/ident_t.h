@@ -16,6 +16,7 @@
 # include "ident.h"
 
 void id_init (int initial_n_idents);
+void id_finish (void);
 
 #define ID_HASH(str, len) \
   (((  ((unsigned char *)(str))[0] * 33 \

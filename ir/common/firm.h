@@ -110,4 +110,9 @@
  */
 void init_firm (default_initialize_local_variable_func_t *func);
 
+/**
+ * Frees all memory occupied by the firm library.
+ */
+void free_firm (void);
+
 # endif /* _FIRM_H_ */

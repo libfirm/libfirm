@@ -420,4 +420,7 @@ int smaller_mode(const ir_mode *sm, const ir_mode *lm);
 /** mode module initialization, call once before use of any other function **/
 void init_mode (void);
 
+/** mode module finalization. frees all memory.  */
+void finish_mode(void);
+
 #endif /* _IRMODE_H_ */

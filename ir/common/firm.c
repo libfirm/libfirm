@@ -53,3 +53,24 @@ init_firm (default_initialize_local_variable_func_t *func)
   /* Constructs some idents needed. */
   init_type();
 }
+
+
+void free_firm (void) {
+  int i;
+
+  for (i = 0; i < get_irp_n_irgs(); i++)
+    free_ir_graph(get_irp_irg(i));
+
+  for (i = 0; i < get_irp_n_types(); i++) {
+    free_type_entities(get_irp_type(i));
+    free_type(get_irp_type(i));
+  }
+
+  free_type_entities(get_glob_type());
+  free_ir_prog();
+
+  finish_tarval();
+  finish_op();
+  finish_mode();
+  id_finish();
+}

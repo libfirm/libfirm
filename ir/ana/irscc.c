@@ -827,7 +827,7 @@ static void scc (ir_node *n) {
        * avoid loops without Block or Phi as first node.  This should
        * severely reduce the number of evaluations of nodes to detect
        * a fixpoint in the heap analyses.
-       * Firther it avoids loops without firm nodes that cause errors
+       * Further it avoids loops without firm nodes that cause errors
        * in the heap analyses. */
 #define NO_LOOPS_WITHOUT_HEAD 1
 #if NO_LOOPS_WITHOUT_HEAD

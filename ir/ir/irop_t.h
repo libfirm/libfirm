@@ -20,9 +20,12 @@
 struct ir_op {
   opcode code;
   ident *name;
-  size_t attr_size;     /**< Space needed in memory for private attributes */
-  int labeled;          /**< Output edge labels on in-edges in vcg graph */
-  int pinned;           /**< How to deal with the node in cse, pre. */
+  size_t attr_size;       /**< Space needed in memory for private attributes */
+  int labeled;            /**< Output edge labels on in-edges in vcg graph */
+  int pinned;             /**< How to deal with the node in cse, pre. */
+  int reqires_fexible_in; /**< The node must always have a flexible array as in. */
+                          /** @@@@ Change constructors for ir_op, and new_ir_node!!!
+			      new_ir_node not only checks the arity, but also the op!!! @@@ */
 };
 
 /**
@@ -40,5 +43,8 @@ ir_op * new_ir_op (opcode code, const char *name, op_pinned p,
 
 /** initialize the irop module */
 void init_op (void);
+
+/* free memory used by irop module. */
+void finish_op(void);
 
 #endif /* _IROP_T_H_ */

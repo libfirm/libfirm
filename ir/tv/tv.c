@@ -1675,6 +1675,14 @@ void init_tarval_2(void)
   tarval_set_mode_output_option(mode_P,  &reference_output);
 }
 
+/* free all memory occupied by tarval. */
+void finish_tarval(void) {
+  finish_strcalc ();
+  finish_fltcalc ();
+  del_set(tarvals); tarvals = NULL;
+  del_set(values);  values = NULL;
+}
+
 /****************************************************************************
  *   end of tv.c
  ****************************************************************************/

@@ -71,7 +71,6 @@ void init_irtypeinfo(void) {
 
   for (i = 0; i < get_irp_n_irgs(); ++i)
     set_irg_typeinfo_state(get_irp_irg(i), irg_typeinfo_none);
-
 }
 
 void free_irtypeinfo(void) {
@@ -82,7 +81,6 @@ void free_irtypeinfo(void) {
     initial_type = NULL;
   } else
     assert(0 && "call init_type_info before freeing");
-
 
   if (type_node_map) {
     pmap_destroy(type_node_map);

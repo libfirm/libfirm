@@ -31,6 +31,11 @@ void id_init(int initial_n_idents)
   id_set = new_set(memcmp, initial_n_idents);
 }
 
+void id_finish (void) {
+  del_set(id_set);
+  id_set = NULL;
+}
+
 INLINE ident *id_from_str (const char *str, int len)
 {
   assert(len > 0);

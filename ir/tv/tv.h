@@ -594,6 +594,8 @@ void init_tarval_1(void);
  */
 void init_tarval_2(void);
 
+void finish_tarval(void);
+
 /**
  * Output of tarvals to a buffer.
  */

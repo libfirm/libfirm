@@ -163,6 +163,11 @@ copy_node (ir_node *n, void *env) {
   ir_node *nn, *block;
   int new_arity;
 
+  /* The end node looses it's flexible in array.  This doesn't matter,
+     as dead node elimination builds End by hand, inlineing doesn't use
+     the End node. */
+  //assert(n->op == op_End ||  ((_ARR_DESCR(n->in))->cookie != ARR_F_MAGIC));
+
   if (get_irn_opcode(n) == iro_Block) {
     block = NULL;
     new_arity = compute_new_arity(n);
@@ -670,8 +675,9 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   /* -- archive keepalives -- */
   for (i = 0; i < get_irn_arity(end); i++)
     add_End_keepalive(get_irg_end(current_ir_graph), get_irn_n(end, i));
-  /* The new end node will die, but the in array is not on the obstack ... */
-  free_End(end);
+
+  /* The new end node will die.  We need not free as the in array is on the obstack:
+     copy_node only generated 'D' arrays. */
 
 /* --
       Return nodes by Jump nodes. -- */

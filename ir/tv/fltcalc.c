@@ -1567,6 +1567,10 @@ void init_fltcalc(int precision)
   }
 }
 
+void finish_fltcalc (void) {
+  free(calc_buffer); calc_buffer = NULL;
+}
+
 /* definition of interface functions */
 FC_DEFINE2(add)
 FC_DEFINE2(sub)

@@ -750,7 +750,7 @@ INLINE void
 free_End (ir_node *end) {
   assert (end->op == op_End);
   end->kind = k_BAD;
-  /* DEL_ARR_F(end->in);   GL @@@ tut nicht ! */
+  DEL_ARR_F(end->in);  /* GL @@@ tut nicht ! */
   end->in = NULL;   /* @@@ make sure we get an error if we use the
 		       in array afterwards ... */
 }

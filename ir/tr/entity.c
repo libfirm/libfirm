@@ -96,12 +96,13 @@ new_entity (type *owner, ident *name, type *type)
     res->variability = variability_uninitialized;
     res->value  = NULL;
     res->values = NULL;
+    res->val_paths = NULL;
   }
   res->peculiarity   = peculiarity_existent;
   res->volatility    = volatility_non_volatile;
   res->ld_name       = NULL;
-  res->overwrites    = NEW_ARR_F(entity *, 1);
-  res->overwrittenby = NEW_ARR_F(entity *, 1);
+  res->overwrites    = NEW_ARR_F(entity *, 0);
+  res->overwrittenby = NEW_ARR_F(entity *, 0);
 
   res->irg = NULL;
 
@@ -121,12 +122,30 @@ new_d_entity (type *owner, ident *name, type *type, dbg_info *db) {
   set_entity_dbg_info(res, db);
   return res;
 }
+
+INLINE void    free_compound_graph_path (compound_graph_path *gr);
+INLINE int     is_compound_graph_path(void *thing);
+INLINE int     get_compound_graph_path_length(compound_graph_path *gr);
+INLINE entity *get_compound_graph_path_node(compound_graph_path *gr, int pos);
+INLINE int     get_compound_ent_n_values(entity *ent);
+
 INLINE void free_entity_attrs(entity *ent) {
+  int i;
   assert(ent);
   if (get_type_tpop(get_entity_owner(ent)) == type_class) {
-    DEL_ARR_F(ent->overwrites);
-    DEL_ARR_F(ent->overwrittenby);
+    DEL_ARR_F(ent->overwrites);    ent->overwrites = NULL;
+    DEL_ARR_F(ent->overwrittenby); ent->overwrittenby = NULL;
   }
+  //if (ent->values) DEL_ARR_F(ent->values); /* @@@ warum nich? */
+  if (ent->val_paths) {
+    if (is_compound_entity(ent))
+      for (i = 0; i < get_compound_ent_n_values(ent); i++)
+	if (ent->val_paths[i])
+	   free_compound_graph_path(ent->val_paths[i]) ;  /* @@@ warum nich? */
+    //DEL_ARR_F(ent->val_paths);
+  }
+  ent->val_paths = NULL;
+  ent->values = NULL;
 }
 
 entity *
@@ -145,13 +164,13 @@ copy_entity_own (entity *old, type *new_owner) {
     new->overwrittenby = DUP_ARR_F(entity *, old->overwrittenby);
   } else if ((get_type_tpop(get_entity_owner(old)) != type_class) &&
 	     (get_type_tpop(new_owner) == type_class)) {
-    new->overwrites = NEW_ARR_F(entity *, 1);
-    new->overwrittenby = NEW_ARR_F(entity *, 1);
+    new->overwrites = NEW_ARR_F(entity *, 0);
+    new->overwrittenby = NEW_ARR_F(entity *, 0);
   }
   */
   if (is_class_type(new_owner)) {
-    new->overwrites = NEW_ARR_F(entity *, 1);
-    new->overwrittenby = NEW_ARR_F(entity *, 1);
+    new->overwrites = NEW_ARR_F(entity *, 0);
+    new->overwrittenby = NEW_ARR_F(entity *, 0);
   }
 #ifdef DEBUG_libfirm
   new->nr = get_irp_new_node_nr();
@@ -342,15 +361,15 @@ set_entity_variability (entity *ent, ent_variability var)
   if ((is_compound_type(ent->type)) &&
       (ent->variability == variability_uninitialized) && (var != variability_uninitialized)) {
     /* Allocate datastructures for constant values */
-    ent->values = NEW_ARR_F(ir_node *, 1);
-    ent->val_paths = NEW_ARR_F(compound_graph_path *, 1);
+    ent->values    = NEW_ARR_F(ir_node *, 0);
+    ent->val_paths = NEW_ARR_F(compound_graph_path *, 0);
   }
 
   if ((is_compound_type(ent->type)) &&
       (var == variability_uninitialized) && (ent->variability != variability_uninitialized)) {
     /* Free datastructures for constant values */
-    DEL_ARR_F(ent->values);
-    DEL_ARR_F(ent->val_paths);
+    DEL_ARR_F(ent->values);    ent->values    = NULL;
+    DEL_ARR_F(ent->val_paths); ent->val_paths = NULL;
   }
   ent->variability = var;
 }
@@ -528,7 +547,7 @@ INLINE int is_proper_compound_graph_path(compound_graph_path *gr, int pos) {
     if (get_entity_owner(node) != owner) return false;
     owner = get_entity_type(node);
   }
-  if (pos == get_compound_graph_path_length(gr) -1)
+  if (pos == get_compound_graph_path_length(gr))
     if (!is_atomic_type(owner)) return false;
   return true;
 }
@@ -567,33 +586,33 @@ add_compound_ent_value_w_path(entity *ent, ir_node *val, compound_graph_path *pa
 INLINE void
 set_compound_ent_value_w_path(entity *ent, ir_node *val, compound_graph_path *path, int pos) {
   assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
-  ent->values[pos+1] = val;
-  ent->val_paths[pos+1] = path;
+  ent->values[pos] = val;
+  ent->val_paths[pos] = path;
 }
 
 INLINE int
 get_compound_ent_n_values(entity *ent) {
   assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
-  return (ARR_LEN (ent->values))-1;
+  return (ARR_LEN (ent->values));
 }
 
 INLINE ir_node  *
 get_compound_ent_value(entity *ent, int pos) {
   assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
-  return ent->values[pos+1];
+  return ent->values[pos];
 }
 
 INLINE compound_graph_path *
 get_compound_ent_value_path(entity *ent, int pos) {
   assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
-  return ent->val_paths[pos+1];
+  return ent->val_paths[pos];
 }
 
 void
 remove_compound_ent_value(entity *ent, entity *value_ent) {
   int i;
   assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
-  for (i = 1; i < (ARR_LEN (ent->val_paths)); i++) {
+  for (i = 0; i < (ARR_LEN (ent->val_paths)); i++) {
     compound_graph_path *path = ent->val_paths[i];
     if (path->nodes[path->len-1] == value_ent) {
       for(; i < (ARR_LEN (ent->val_paths))-1; i++) {
@@ -700,7 +719,7 @@ INLINE int
 get_entity_n_overwrites (entity *ent) {
   assert(ent);
   assert(is_class_type(get_entity_owner(ent)));
-  return (ARR_LEN (ent->overwrites))-1;
+  return (ARR_LEN (ent->overwrites));
 }
 
 int
@@ -718,7 +737,7 @@ get_entity_overwrites   (entity *ent, int pos) {
   assert(ent);
   assert(is_class_type(get_entity_owner(ent)));
   assert(pos < get_entity_n_overwrites(ent));
-  return ent->overwrites[pos+1];
+  return ent->overwrites[pos];
 }
 
 INLINE void
@@ -726,14 +745,14 @@ set_entity_overwrites   (entity *ent, int pos, entity *overwritten) {
   assert(ent);
   assert(is_class_type(get_entity_owner(ent)));
   assert(pos < get_entity_n_overwrites(ent));
-  ent->overwrites[pos+1] = overwritten;
+  ent->overwrites[pos] = overwritten;
 }
 
 void
 remove_entity_overwrites(entity *ent, entity *overwritten) {
   int i;
   assert(ent && is_class_type(get_entity_owner(ent)));
-  for (i = 1; i < (ARR_LEN (ent->overwrites)); i++)
+  for (i = 0; i < (ARR_LEN (ent->overwrites)); i++)
     if (ent->overwrites[i] == overwritten) {
       for(; i < (ARR_LEN (ent->overwrites))-1; i++)
 	ent->overwrites[i] = ent->overwrites[i+1];
@@ -753,7 +772,7 @@ INLINE int
 get_entity_n_overwrittenby (entity *ent) {
   assert(ent);
   assert(is_class_type(get_entity_owner(ent)));
-  return (ARR_LEN (ent->overwrittenby))-1;
+  return (ARR_LEN (ent->overwrittenby));
 }
 
 int
@@ -771,7 +790,7 @@ get_entity_overwrittenby   (entity *ent, int pos) {
   assert(ent);
   assert(is_class_type(get_entity_owner(ent)));
   assert(pos < get_entity_n_overwrittenby(ent));
-  return ent->overwrittenby[pos+1];
+  return ent->overwrittenby[pos];
 }
 
 INLINE void
@@ -779,13 +798,13 @@ set_entity_overwrittenby   (entity *ent, int pos, entity *overwrites) {
   assert(ent);
   assert(is_class_type(get_entity_owner(ent)));
   assert(pos < get_entity_n_overwrittenby(ent));
-  ent->overwrittenby[pos+1] = overwrites;
+  ent->overwrittenby[pos] = overwrites;
 }
 
 void    remove_entity_overwrittenby(entity *ent, entity *overwrites) {
   int i;
   assert(ent && is_class_type(get_entity_owner(ent)));
-  for (i = 1; i < (ARR_LEN (ent->overwrittenby)); i++)
+  for (i = 0; i < (ARR_LEN (ent->overwrittenby)); i++)
     if (ent->overwrittenby[i] == overwrites) {
       for(; i < (ARR_LEN (ent->overwrittenby))-1; i++)
 	ent->overwrittenby[i] = ent->overwrittenby[i+1];

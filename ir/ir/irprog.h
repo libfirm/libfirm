@@ -76,6 +76,10 @@ void init_irprog(void);
    Automatically called by init_firm() through init_irprog.  */
 ir_prog *new_ir_prog (void);
 
+/** frees all memory used by irp.  Types in type list and irgs in irg
+    list must be freed by hand before. */
+void     free_ir_prog(void);
+
 /** Gets the main routine of the compiled program. */
 ir_graph *get_irp_main_irg(void);
 

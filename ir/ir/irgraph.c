@@ -23,6 +23,7 @@
 # include "array.h"
 # include "irgmod.h"
 # include "mangle.h"
+# include "irouts.h"
 
 ir_graph *current_ir_graph;
 INLINE ir_graph *get_current_ir_graph(void) {
@@ -207,6 +208,9 @@ ir_graph *new_const_code_irg(void) {
   return res;
 }
 
+/* Defined in iropt.c */
+void  del_identities (pset *value_table);
+
 /* Frees the passed irgraph.
    Deallocates all nodes in this graph and the ir_graph structure.
    Sets the field irgraph in the corresponding entity to NULL.
@@ -215,12 +219,16 @@ ir_graph *new_const_code_irg(void) {
    Does not free types, entities or modes that are used only by this
    graph, nor the entity standing for this graph. */
 void free_ir_graph (ir_graph *irg) {
-  set_entity_irg(irg->ent, NULL);
-  irg->kind = k_BAD;
+  if (irg->ent) set_entity_irg(irg->ent, NULL);  /* not set in const code irg */
+  free_End(irg->end);
+  if (irg->frame_type)  free_type(irg->frame_type);
+  if (irg->value_table) del_identities(irg->value_table);
+  if (irg->outs_state != no_outs) free_outs(irg);
   free(irg->obst);
 #if USE_EXPLICIT_PHI_IN_STACK
   free_Phi_in_stack(irg->Phi_in_stack);
 #endif
+  irg->kind = k_BAD;
   free(irg);
 }
 

@@ -76,6 +76,18 @@ ir_prog *new_ir_prog (void) {
   return res;
 }
 
+/* frees all memory used by irp.  Types in type list, irgs in irg
+    list and entities in global type must be freed by hand before. */
+void     free_ir_prog() {
+  free_type(irp->glob_type);
+  /* @@@ * free_ir_graph(irp->const_code_irg); * ?? End has no in?? */
+  DEL_ARR_F(irp->graphs);
+  DEL_ARR_F(irp->types);
+
+  irp->kind = k_BAD;
+  irp->const_code_irg = NULL;
+}
+
 /** Functions to access the fields of ir_prog **/
 
 

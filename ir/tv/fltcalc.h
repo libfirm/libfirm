@@ -235,4 +235,6 @@ fc_rounding_mode_t fc_get_rounding_mode(void);
 unsigned char fc_sub_bits(const void *val, unsigned num_bit, unsigned byte_ofs);
 
 void init_fltcalc(int precision);
+void finish_fltcalc (void);
+
 #endif /* _FLTCALC_H_ */

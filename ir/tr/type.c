@@ -90,20 +90,6 @@ INLINE void set_master_type_visited(unsigned long val) { type_visited = val; }
 INLINE unsigned long get_master_type_visited() { return type_visited; }
 INLINE void inc_master_type_visited() { type_visited++; }
 
-void        free_type(type *tp) {
-  if ((get_type_tpop(tp) == tpop_none) || (get_type_tpop(tp) == tpop_unknown))
-    return;
-  /* Remove from list of all types */
-  remove_irp_type(tp);
-  /* Free the attributes of the type. */
-  free_type_attrs(tp);
-  /* Free entities automatically allocated with the type */
-  if (is_array_type(tp))
-    free_entity(get_array_element_entity(tp));
-  /* And now the type itself... */
-  tp->kind = k_BAD;
-  free(tp);
-}
 
 INLINE type *
 new_type(tp_op *type_op, ir_mode *mode, ident* name) {
@@ -130,6 +116,35 @@ new_type(tp_op *type_op, ir_mode *mode, ident* name) {
 #endif
 
   return res;
+}
+
+void        free_type(type *tp) {
+  if ((get_type_tpop(tp) == tpop_none) || (get_type_tpop(tp) == tpop_unknown))
+    return;
+  /* Remove from list of all types */
+  remove_irp_type(tp);
+  /* Free the attributes of the type. */
+  free_type_attrs(tp);
+  /* Free entities automatically allocated with the type */
+  if (is_array_type(tp))
+    free_entity(get_array_element_entity(tp));
+  /* And now the type itself... */
+  tp->kind = k_BAD;
+  free(tp);
+}
+
+void free_type_entities(type *tp) {
+  switch(get_type_tpop_code(tp)) {
+  case tpo_class:       { free_class_entities(tp);       } break;
+  case tpo_struct:      { free_struct_entities(tp);      } break;
+  case tpo_method:      { free_method_entities(tp);      } break;
+  case tpo_union:       { free_union_entities(tp);       } break;
+  case tpo_array:       { free_array_entities(tp);       } break;
+  case tpo_enumeration: { free_enumeration_entities(tp); } break;
+  case tpo_pointer:     { free_pointer_entities(tp);     } break;
+  case tpo_primitive:   { free_primitive_entities(tp);   } break;
+  default: break;
+  }
 }
 
 void free_type_attrs(type *tp) {
@@ -606,6 +621,14 @@ type   *new_d_type_class (ident *name, dbg_info* db) {
   set_type_dbg_info(res, db);
   return res;
 }
+
+INLINE void free_class_entities(type *clss) {
+  int i;
+  assert(clss && (clss->type_op == type_class));
+  for (i = get_class_n_members(clss)-1; i >= 0; --i)
+    free_entity(get_class_member(clss, i));
+}
+
 INLINE void free_class_attrs(type *clss) {
   assert(clss && (clss->type_op == type_class));
   DEL_ARR_F(clss->attr.ca.members);
@@ -809,6 +832,12 @@ type   *new_d_type_struct (ident *name, dbg_info* db) {
   set_type_dbg_info(res, db);
   return res;
 }
+INLINE void free_struct_entities (type *strct) {
+  int i;
+  assert(strct && (strct->type_op == type_struct));
+  for (i = get_struct_n_members(strct)-1; i >= 0; --i)
+    free_entity(get_struct_member(strct, i));
+}
 INLINE void free_struct_attrs (type *strct) {
   assert(strct && (strct->type_op == type_struct));
   DEL_ARR_F(strct->attr.sa.members);
@@ -898,10 +927,22 @@ type *new_d_type_method (ident *name, int n_param, int n_res, dbg_info* db) {
   return res;
 }
 
+INLINE void free_method_entities(type *method) {
+  assert(method && (method->type_op == type_method));
+}
+/* Attention: also frees entities in value parameter subtypes! */
 INLINE void free_method_attrs(type *method) {
   assert(method && (method->type_op == type_method));
   free(method->attr.ma.param_type);
   free(method->attr.ma.res_type);
+  if (method->attr.ma.value_params) {
+    free_type_entities(method->attr.ma.value_params);
+    free_type(method->attr.ma.value_params);
+  }
+  if (method->attr.ma.value_ress) {
+    free_type_entities(method->attr.ma.value_ress);
+    free_type(method->attr.ma.value_ress);
+  }
 }
 
 /* manipulate private fields of method. */
@@ -1034,6 +1075,12 @@ type  *new_d_type_union (ident *name, dbg_info* db) {
   set_type_dbg_info(res, db);
   return res;
 }
+INLINE void free_union_entities (type *uni) {
+  int i;
+  assert(uni && (uni->type_op == type_union));
+  for (i = get_union_n_members(uni)-1; i >= 0; --i)
+    free_entity(get_union_member(uni, i));
+}
 INLINE void free_union_attrs (type *uni) {
   assert(uni && (uni->type_op == type_union));
   DEL_ARR_F(uni->attr.ua.members);
@@ -1145,6 +1192,9 @@ type *new_d_type_array (ident *name, int n_dimensions,
   return res;
 }
 
+INLINE void free_array_entities (type *array) {
+  assert(array && (array->type_op == type_array));
+}
 INLINE void free_array_attrs (type *array) {
   assert(array && (array->type_op == type_array));
   free(array->attr.aa.lower_bound);
@@ -1280,6 +1330,9 @@ type   *new_d_type_enumeration    (ident *name, int n_enums, dbg_info* db) {
   return res;
 }
 
+INLINE void free_enumeration_entities(type *enumeration) {
+  assert(enumeration && (enumeration->type_op == type_enumeration));
+}
 INLINE void free_enumeration_attrs(type *enumeration) {
   assert(enumeration && (enumeration->type_op == type_enumeration));
   free(enumeration->attr.ea.enumer);
@@ -1343,6 +1396,9 @@ type *new_d_type_pointer (ident *name, type *points_to, ir_mode *ptr_mode, dbg_i
   set_type_dbg_info(res, db);
   return res;
 }
+INLINE void free_pointer_entities (type *pointer) {
+  assert(pointer && (pointer->type_op == type_pointer));
+}
 INLINE void free_pointer_attrs (type *pointer) {
   assert(pointer && (pointer->type_op == type_pointer));
 }
@@ -1395,6 +1451,9 @@ type *new_d_type_primitive (ident *name, ir_mode *mode, dbg_info* db) {
   type *res = new_type_primitive (name, mode);
   set_type_dbg_info(res, db);
   return res;
+}
+INLINE void free_primitive_entities (type *primitive) {
+  assert(primitive && (primitive->type_op == type_primitive));
 }
 INLINE void free_primitive_attrs (type *primitive) {
   assert(primitive && (primitive->type_op == type_primitive));
