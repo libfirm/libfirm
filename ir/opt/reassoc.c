@@ -326,6 +326,8 @@ static void do_reassociation(ir_node *n, void *env)
     /* reassociation works only for integer or reference modes */
     if (op->reassociate && (mode_is_int(mode) || mode_is_reference(mode))) {
       res = op->reassociate(&n);
+
+			wenv->changes |= res;
     }
   } while (res == 1);
 
