@@ -2,12 +2,13 @@
 * All rights reserved.
 *
 * Authors: Martin Trapp, Christian Schaefer, Goetz Lindenmaier.
-*
-* firm.h: Central FIRM header.
-*
-*
-*
-*
+*/
+
+/**
+ @file firm.h
+
+    Central FIRM header.
+
     FIRM is a full graph based intermediate representation in SSA Form
     with a novel concept to model side effects.  It allows fast, aggressive
     optimizations.
@@ -87,7 +88,9 @@
    files. */
 # include "irdump.h"
 
-/* initialize firm */
+/**
+ * Initialize the firm library.
+ */
 void init_firm (void);
 
 # endif /* _FIRM_H_ */

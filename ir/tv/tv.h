@@ -60,7 +60,7 @@ typedef unsigned long tarval_uInt;
 typedef char tarval_C;
 typedef unsigned short tarval_U;   /* 16 bit ?! wchar could be defined as char...  */
 typedef struct {
-  /* if ent then xname is missing or mangled from ent,
+  /** if ent then xname is missing or mangled from ent,
      else if xname then xname is a linker symbol that is not mangled
        from an entity,
      else this is tarval_p_void.
@@ -73,15 +73,15 @@ typedef struct {
 
 struct tarval {
   union {
-    tarval_F F;         /* float */
-    tarval_D D;         /* double */
-    tarval_E E;         /* extended */
-    tarval_sInt sInt;   /* signed integral */
-    tarval_uInt uInt;   /* unsigned integral */
-    tarval_C C;         /* character */
-    tarval_U U;         /* unicode character */
-    tarval_P P;         /* pointer */
-    bool b;             /* boolean */
+    tarval_F F;         /**< float */
+    tarval_D D;         /**< double */
+    tarval_E E;         /**< extended */
+    tarval_sInt sInt;   /**< signed integral */
+    tarval_uInt uInt;   /**< unsigned integral */
+    tarval_C C;         /**< character */
+    tarval_U U;         /**< unicode character */
+    tarval_P P;         /**< pointer */
+    bool b;             /**< boolean */
   } u;
   ir_mode *mode;
 };
@@ -124,22 +124,22 @@ tarval *tarval_cancel (void); /* returns tarval_bad */
 
 /* The flags for projecting a comparison result */
 typedef enum {
-  irpn_False=0,	/* 0000 false */
-  irpn_Eq,		/* 0001 equal */
-  irpn_Lt,		/* 0010 less */
-  irpn_Le,		/* 0011 less or equal */
-  irpn_Gt,		/* 0100 greater */
-  irpn_Ge,		/* 0101 greater of equal */
-  irpn_Lg,		/* 0110 less or greater */
-  irpn_Leg,		/* 0111 less, equal or greater = ordered */
-  irpn_Uo,		/* 1000 unordered */
-  irpn_Ue,		/* 1001 unordered or equal */
-  irpn_Ul,		/* 1010 unordered or less */
-  irpn_Ule,		/* 1011 unordered, less or equal */
-  irpn_Ug,		/* 1100 unordered or greater */
-  irpn_Uge,		/* 1101 unordered, greater or equal */
-  irpn_Ne,		/* 1110 unordered, less or greater = not equal */
-  irpn_True		/* 1111 true */
+  irpn_False=0,	/**< 0000 false */
+  irpn_Eq,		/**< 0001 equal */
+  irpn_Lt,		/**< 0010 less */
+  irpn_Le,		/**< 0011 less or equal */
+  irpn_Gt,		/**< 0100 greater */
+  irpn_Ge,		/**< 0101 greater of equal */
+  irpn_Lg,		/**< 0110 less or greater */
+  irpn_Leg,		/**< 0111 less, equal or greater = ordered */
+  irpn_Uo,		/**< 1000 unordered */
+  irpn_Ue,		/**< 1001 unordered or equal */
+  irpn_Ul,		/**< 1010 unordered or less */
+  irpn_Ule,		/**< 1011 unordered, less or equal */
+  irpn_Ug,		/**< 1100 unordered or greater */
+  irpn_Uge,		/**< 1101 unordered, greater or equal */
+  irpn_Ne,		/**< 1110 unordered, less or greater = not equal */
+  irpn_True		/**< 1111 true */
   /*irpn_notmask = irpn_Leg  @@@ removed for JNI builder */
 } ir_pncmp;
 #define irpn_notmask irpn_Leg
