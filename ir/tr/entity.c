@@ -51,12 +51,9 @@ new_entity (type *owner, ident *name, type *type)
     add_struct_member (owner, res);
   } break;
   case tpo_union: {
-    /* not implemented */
+    add_union_member (owner, res);
   } break;
-  case tpo_method: {
-    /* not implemented */
-  } break;
-  default: ;
+  default: assert(0);
   }
 
   return res;
@@ -94,8 +91,7 @@ inline void   /* should this go into type.c? */
 assert_legal_owner_of_ent(type *owner) {
   assert (get_type_tpop_code(owner) == tpo_class ||
           get_type_tpop_code(owner) == tpo_union ||
-          get_type_tpop_code(owner) == tpo_array ||
-          get_type_tpop_code(owner) == tpo_method );
+          get_type_tpop_code(owner) == tpo_struct);
 }
 
 inline ident *

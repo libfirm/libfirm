@@ -267,28 +267,33 @@ bool  is_method_type     (type *method);
  *   The union type represents union types.
  * ATTRIBUTES
  *   n_types        Number of unioned types.
- *   unioned_type   A list of unioned types.
- *   delim_names    Idents for the names of the union delimiters.
+ *   members        Entities for unioned types.  Fixed length array.
  * SOURCE
  */
 /* create a new type union
-   The arrays for the types and idents are not initialized by the
-   constructor. */
-type  *new_type_union (ident *name, int n_types);
+   The array with the entities is not initalized by the constructor. */
+type   *new_type_union (ident *name);
 
 /* manipulate private fields of struct */
-int    get_union_n_types      (type *uni);
+int     get_union_n_members      (type *uni);
+void    add_union_member (type *uni, entity *member);
+entity *get_union_member (type *uni, int pos);
+void    set_union_member (type *uni, int pos, entity *member);
 
+/* typecheck */
+bool    is_union_type          (type *uni);
+/*****/
+
+#if 0
+/* We don't need these if the union has entities, which it now
+   does. The entities are necessary for the analysis algorithms. */
 type  *get_union_unioned_type (type *uni, int pos);
 void   set_union_unioned_type (type *uni, int pos, type *type);
 
 ident *get_union_delim_nameid (type *uni, int pos);
 const char *get_union_delim_name (type *uni, int pos);
 void   set_union_delim_nameid (type *uni, int pos, ident *id);
-
-/* typecheck */
-bool   is_union_type          (type *uni);
-/*****/
+#endif
 
 /****** type/array
  * NAME

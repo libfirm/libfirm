@@ -58,6 +58,9 @@ main(void)
   /* make basic type information for primitive type int.*/
   prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_i);
 
+
+  printf("  Hier %s\n", get_mode_name(get_type_mode(prim_t_int)));
+
   /* first build procedure main */
   printf("\nCreating an IR graph: OO_PROGRAM_EXAMPLE...\n");
   owner = get_glob_type();

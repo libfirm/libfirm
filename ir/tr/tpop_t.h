@@ -65,10 +65,10 @@ tp_op * new_tpop (tp_opcode code, ident *name, size_t attr_size);
  */
 void init_tpop (void);
 
-/****f* tpop/get_topo_attr_size
+/****f* tpop/get_tpop_attr_size
  *
  * NAME
- *   get_topo_attr_size - Returns the size of the attribute to this kind
+ *   get_tpop_attr_size - Returns the size of the attribute to this kind
  *   of type.
  * NOTE
  *   Internal feature.

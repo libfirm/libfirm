@@ -82,6 +82,9 @@ ir_mode*    get_type_mode(type *tp) {
 void        set_type_mode(type *tp, ir_mode* m) {
   assert(tp);
   tp->mode = m;
+  /* For pointer and primitive size depends on the mode. */
+  if ((tp->type_op == type_pointer) || (tp->type_op == type_primitive))
+    tp->size == get_mode_size(m);
 }
 ident*      get_type_nameid(type *tp) {
   assert(tp);
@@ -101,6 +104,8 @@ int         get_type_size(type *tp) {
 }
 void        set_type_size(type *tp, int size) {
   assert(tp);
+  /* For pointer and primitive size depends on the mode. */
+  assert((tp->type_op != type_pointer) && (tp->type_op != type_primitive));
   tp->size = size;
 }
 unsigned long get_type_visited(type *tp) {
@@ -275,6 +280,7 @@ void  set_method_res_type(type *method, int pos, type* type) {
   assert(method && (method->type_op == type_method));
   method->attr.ma.res_type[pos] = type;
 }
+
 /* typecheck */
 bool  is_method_type     (type *method) {
   assert(method);
@@ -287,15 +293,16 @@ bool  is_method_type     (type *method) {
 /*******************************************************************/
 
 /* create a new type uni */
-type  *new_type_uni (ident *name, int n_types) {
+type  *new_type_uni (ident *name) {
   type *res;
   res = new_type(type_union, NULL, name);
-  res->attr.ua.n_types = n_types;
-  res->attr.ua.unioned_type = (type **)  xmalloc (sizeof (type *)  * n_types);
-  res->attr.ua.delim_names  = (ident **) xmalloc (sizeof (ident *) * n_types);
+  /*res->attr.ua.unioned_type = (type **)  xmalloc (sizeof (type *)  * n_types);
+    res->attr.ua.delim_names  = (ident **) xmalloc (sizeof (ident *) * n_types); */
+  res->attr.ua.members = NEW_ARR_F (entity *, 1);
   return res;
 }
 /* manipulate private fields of struct */
+#if 0
 int    get_union_n_types      (type *uni) {
   assert(uni && (uni->type_op == type_union));
   return uni->attr.ua.n_types;
@@ -320,6 +327,23 @@ void   set_union_delim_nameid (type *uni, int pos, ident *id) {
   assert(uni && (uni->type_op == type_union));
   uni->attr.ua.delim_names[pos] = id;
 }
+#endif
+int    get_union_n_members      (type *uni) {
+  assert(uni && (uni->type_op == type_union));
+  return (ARR_LEN (uni->attr.ua.members))-1;
+}
+void    add_union_member   (type *uni, entity *member) {
+  assert(uni && (uni->type_op == type_union));
+  ARR_APP1 (entity *, uni->attr.ua.members, member);
+}
+entity  *get_union_member (type *uni, int pos) {
+  assert(uni && (uni->type_op == type_union));
+  return uni->attr.ua.members[pos+1];
+}
+void   set_union_member (type *uni, int pos, entity *member) {
+  assert(uni && (uni->type_op == type_union));
+  uni->attr.ua.members[pos+1] = member;
+}
 
 /* typecheck */
 bool   is_union_type         (type *uni) {
@@ -341,6 +365,7 @@ type *new_type_array         (ident *name, int n_dimensions) {
   res->attr.aa.upper_bound  = (int *) xmalloc (sizeof (int) * n_dimensions);
   return res;
 }
+
 /* manipulate private fields of array type */
 int   get_array_n_dimensions (type *array) {
   assert(array && (array->type_op == type_array));
@@ -437,6 +462,7 @@ type *new_type_pointer           (ident *name, type *points_to) {
   type *res;
   res = new_type(type_pointer, mode_p, name);
   res->attr.pa.points_to = points_to;
+  res->size = get_mode_size(res->mode);
   return res;
 }
 /* manipulate fields of type_pointer */
@@ -463,7 +489,8 @@ bool  is_pointer_type            (type *pointer) {
 /* create a new type primitive */
 type *new_type_primitive (ident *name, ir_mode *mode) {
   type *res;
-  res = new_type(type_primitive, mode_p, name);
+  res = new_type(type_primitive, mode, name);
+  res->size = get_mode_size(mode);
   return res;
 }
 

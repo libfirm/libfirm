@@ -95,8 +95,8 @@ void type_walk_2(type_or_ent *tore,
 	    break;
 	  case tpo_union:
 	    {
-	      for (i = 0; i < get_union_n_types(tp); i++)
-		type_walk_2((type_or_ent *)get_union_unioned_type(tp, i), pre, post, env);
+	      for (i = 0; i < get_union_n_members(tp); i++)
+		type_walk_2((type_or_ent *)get_union_member(tp, i), pre, post, env);
 	    }
 	    break;
 	  case tpo_array:
