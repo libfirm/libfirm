@@ -72,6 +72,16 @@ static void irg_walk_mem_node (ir_node *node,
     set_irn_visited (node, walk_env->visited);
   }
 
+  if (iro_Proj == op) {
+    /* We don't want to see proj nodes at all --- skip over them */
+    in = get_Proj_pred (node);
+
+    irg_walk_mem_node (in, walk_env);
+
+    return;
+  }
+
+  /* execute the 'pre' function */
   if (NULL != walk_env->pre) {
     walk_env->pre (node, walk_env->env);
   }
@@ -119,11 +129,6 @@ static void irg_walk_mem_node (ir_node *node,
 
     irg_walk_mem_node (in, walk_env);
   } break;
-  case (iro_Proj): {
-    in = get_Proj_pred (node);
-
-    irg_walk_mem_node (in, walk_env);
-  } break;
   case (iro_Phi): {
     int i;
     int n_ins = get_irn_arity (node);
@@ -166,10 +171,16 @@ static void irg_walk_mem_node (ir_node *node,
     }
   } break;
   default: {
+    fprintf (stderr, "%s: not handled: node[%li].op = %s\n",
+             __FUNCTION__,
+             get_irn_node_nr (node),
+             get_op_name (get_irn_op (node)));
+
     assert (0 && "something not handled");
   }
   }
 
+  /* execute the 'post' function */
   if (NULL != walk_env->post) {
     walk_env->post (node, walk_env->env);
   }
@@ -202,7 +213,7 @@ void irg_walk_mem (ir_graph *graph,
                    irg_walk_func *pre, irg_walk_func *post,
                    void *env)
 {
-  ir_node *end = get_irg_end_block (graph);
+  ir_node *end_block = get_irg_end_block (graph);
   walk_mem_env_t *walk_env = (walk_mem_env_t*) xmalloc (sizeof (walk_mem_env_t));
 
   assert (! get_irg_is_mem_visited (graph));
@@ -218,10 +229,16 @@ void irg_walk_mem (ir_graph *graph,
   walk_env->post = post;
   walk_env->env  = env;
 
-  /* 'graph' is not actually being visited right now, but it should be reported that way */
+  /* 'graph' is not actually being visited right now, so make sure it is reported that way */
   assert (get_irg_is_mem_visited (graph));
 
-  irg_walk_mem_node (end, walk_env);
+  /*
+    The ins of the end BLOCK are either 'return's (regular exits) or
+    'ProjX'/'Raise's (exception exits).  We only walk over the
+    'return' nodes, assuming that all memory-changing nodes are found
+    from there on.
+  */
+  irg_walk_mem_node (end_block, walk_env);
   /*
     The end NODE sometimes has some more ins. not sure whether we need to walk them.
   */
@@ -239,6 +256,9 @@ void irg_walk_mem (ir_graph *graph,
 
 /*
   $Log$
+  Revision 1.4  2004/11/18 16:35:11  liekweg
+  Do not touch Proj nodes at all
+
   Revision 1.3  2004/11/04 14:57:12  liekweg
   fixed end block handling
 
