@@ -155,10 +155,7 @@ typedef void merge_pair_func(ir_node *new_node, ir_node *old_node, dbg_action ac
  *
  * @see dbg_init()
  */
-typedef void merge_sets_func(
-    ir_node **new_node_array, int new_num_entries,
-    ir_node **old_node_array, int old_num_entries,
-    dbg_action action);
+typedef void merge_sets_func(ir_node **new_node_array, int new_num_entries, ir_node **old_node_array, int old_num_entries, dbg_action action);
 
 /**
  *  Initializes the debug support.
