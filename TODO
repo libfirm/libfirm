@@ -1,3 +1,8 @@
+  * 14.8.2003 Goetz
+    Diverse dynamische arrays haben ein erstes, unverwendetes element. Z.B.
+    class members.  Entfernen um Speicher zu sparen.
+    Ev. auch attribute an firm Knoten optimieren, per bitfield.
+
   * 24.3.2003 Goetz
     tarval requirements:
     zu register_mode:

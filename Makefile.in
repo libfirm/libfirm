@@ -37,7 +37,7 @@ include $(top_srcdir)/MakeTargets
 # add target firmjni if configured with --enable-firmjni
 all: firm
 
-firm: config.h Makefile libfirm.a libfirm.so
+firm: config.h Makefile libfirm.a
 
 libfirm.a: subdir_all $(XOFILES) $(OFILES)
 	$(AR) $(ARFLAGS) $@.new $(XOFILES) $(OFILES)
