@@ -747,7 +747,7 @@ int  get_compound_ent_value_offset_bits(entity *ent, int pos) {
     if (is_array_type(owner_tp)) {
       int size  = get_mode_size_bits (get_type_mode(node_tp));
       int align = get_mode_align_bits(get_type_mode(node_tp));
-      if (size <= align)
+      if (size < align)
 	size = align;
       else {
 	assert(size % align == 0);
