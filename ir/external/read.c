@@ -1164,6 +1164,7 @@ static void create_abstract_firm(module_t *module, proc_t *proc, entity *fent)
 	 && "not an abstract entity");
   /* create irg in entity */
   irg = new_ir_graph(fent, 0);
+  set_irg_inline_property(irg, irg_inline_forbidden);
 
   VERBOSE_PRINT((stdout, "create effects for %s\n",
 		 get_id_str(proc -> proc_ident)));
@@ -1398,6 +1399,9 @@ void create_abstraction(const char *filename)
 
 /*
  * $Log$
+ * Revision 1.9  2004/10/22 13:51:35  boesler
+ * prohibit inlining of pseudo ir_graphs
+ *
  * Revision 1.8  2004/10/22 13:13:27  boesler
  * replaced char* by idents, minor fix in Firm codegen for call
  *
