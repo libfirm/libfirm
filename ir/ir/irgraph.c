@@ -66,12 +66,12 @@ void (set_interprocedural_view)(int state) {
 
   /* set function vectors for faster access */
   if (state) {
-    __get_irn_arity = __get_irn_inter_arity;
-    __get_irn_n     = __get_irn_inter_n;
+    _get_irn_arity = _get_irn_inter_arity;
+    _get_irn_n     = _get_irn_inter_n;
   }
   else {
-    __get_irn_arity = __get_irn_intra_arity;
-    __get_irn_n     = __get_irn_intra_n;
+    _get_irn_arity = _get_irn_intra_arity;
+    _get_irn_n     = _get_irn_intra_n;
   }
 }
 
