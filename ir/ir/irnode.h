@@ -187,6 +187,11 @@ ir_graph     *get_irn_irg      (ir_node *node);
    of node cast to long. */
 long          get_irn_node_nr  (const ir_node *node);
 
+/** Returns the pinned state of a node. */
+op_pin_state get_irn_pinned    (const ir_node *node);
+
+/** Set pin state for nodes with op pin state op_pin_state_exc_pinned */
+void set_irn_pinned(ir_node *node, op_pin_state state);
 
 /**
  * irnode constructor.

@@ -359,6 +359,16 @@ op_pin_state
   return (__get_op_pinned (get_irn_op (node)));
 }
 
+void set_irn_pinned(ir_node *node, op_pin_state state) {
+  /* due to optimization an opt may be turned into a Tuple */
+  if (get_irn_op(node) == op_Tuple)
+    return;
+
+  assert(node && get_op_pinned(get_irn_op(node)) == op_pin_state_exc_pinned);
+  assert(state == op_pin_state_pinned || state == op_pin_state_floats);
+
+  node->attr.except.pin_state = state;
+}
 
 #ifdef DO_HEAPANALYSIS
 /* Access the abstract interpretation information of a node.

@@ -78,7 +78,7 @@ typedef struct {
 typedef struct {
   cond_kind kind;    /**< flavor of Cond */
   long default_proj; /**< for optimization: biggest Proj number, i.e. the one
-              used for default. */
+                          used for default. */
 } cond_attr;
 
 /** Const attributes */
@@ -98,21 +98,27 @@ typedef struct {
   entity *ent;          /**< entity to select */
 } sel_attr;
 
+/** Exception attributes */
 typedef struct {
-  type *cld_tp;         /**< type of called procedure */
+  op_pin_state   pin_state;     /**< the pin state for operations that might generate a exception:
+                                     If it's know that no exception will be generated, could be set to
+                                     op_pin_state_floats. */
 #if PRECISE_EXC_CONTEXT
-  struct ir_node **frag_arr; /**< For Phi node construction in case of exceptions */
+  struct ir_node **frag_arr;    /**< For Phi node construction in case of exception */
 #endif
-  entity ** callee_arr; /**< result of callee analysis */
+} except_attr;
+
+typedef struct {
+  except_attr    exc;           /**< the exception attribute. MUST be the first one. */
+  type *cld_tp;                 /**< type of called procedure */
+  entity ** callee_arr;         /**< result of callee analysis */
 } call_attr;
 
 /** Alloc attributes */
 typedef struct {
-  type *type;           /**< Type of the allocated object.  */
-  where_alloc where;    /**< stack, heap or other managed part of memory */
-#if PRECISE_EXC_CONTEXT
-  struct ir_node **frag_arr; /**< For Phi node construction in case of exceptions */
-#endif
+  except_attr    exc;           /**< the exception attribute. MUST be the first one. */
+  type *type;                   /**< Type of the allocated object.  */
+  where_alloc where;            /**< stack, heap or other managed part of memory */
 } alloc_attr;
 
 /** InstOf attributes */
@@ -153,25 +159,16 @@ typedef struct {
 
 /** Load attributes */
 typedef struct {
-  ir_mode *load_mode;           /**< the mode of this Load operation */
+  except_attr    exc;           /**< the exception attribute. MUST be the first one. */
+  ir_mode        *load_mode;    /**< the mode of this Load operation */
   ent_volatility volatility;	/**< the volatility of a Load/Store operation */
-#if PRECISE_EXC_CONTEXT
-  struct ir_node **frag_arr;    /**< For Phi node construction in case of exception */
-#endif
 } load_attr;
 
 /** Store attributes */
 typedef struct {
+  except_attr    exc;           /**< the exception attribute. MUST be the first one. */
   ent_volatility volatility;	/**< the volatility of a Store operation */
-#if PRECISE_EXC_CONTEXT
-  struct ir_node **frag_arr;    /**< For Phi node construction in case of exception */
-#endif
 } store_attr;
-
-/** Exception attributes */
-typedef struct {
-  struct ir_node **frag_arr;    /**< For Phi node construction in case of exception */
-} except_attr;
 
 typedef pn_Cmp confirm_attr; /** Attribute to hold compare operation */
 
@@ -205,9 +202,7 @@ typedef union {
   confirm_attr   confirm_cmp;   /**< For Confirm: compare operation */
   filter_attr    filter;    /**< For Filter */
   end_attr       end;       /**< For EndReg, EndExcept */
-#if PRECISE_EXC_CONTEXT
   except_attr    except; /**< For Phi node construction in case of exceptions */
-#endif
 } attr;
 
 
@@ -480,6 +475,18 @@ static INLINE void *
 __get_irn_link(const ir_node *node) {
   assert (node);
   return node->link;
+}
+
+/**
+ * Returns the pinned state of a node.
+ * Intern version of libFirm.
+ */
+static INLINE op_pin_state
+__get_irn_pinned(const ir_node *node) {
+  op_pin_state state = __get_op_pinned(__get_irn_op(node));
+  if (state == op_pin_state_exc_pinned)
+    return get_opt_fragile_ops() ? node->attr.except.pin_state : op_pin_state_pinned;
+  return state;
 }
 
 /* this section MUST contain all inline functions */
