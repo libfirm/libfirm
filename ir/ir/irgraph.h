@@ -82,7 +82,7 @@ typedef struct ir_graph ir_graph;
  *               it's result.  This is a Proj node on the fourth output of
  *               the start node.  This output is tagged as pn_Start_T_args.
  *
- *      *proj_args        The proj nodes off the args node.
+ *      *proj_args        The proj nodes of the args node.
  *
  *      *bad             The Bad node is an auxiliary node. It is needed only once,
  *                       so there is this globally reachable node.
@@ -249,9 +249,9 @@ ir_node *get_irg_args (const ir_graph *irg);
 /** Sets the node that represents the argument pointer. */
 void     set_irg_args (ir_graph *irg, ir_node *node);
 
-/** Returns an array of the nodes off the argument pointer. */
+/** Returns an array of the nodes of the argument pointer. */
 ir_node **get_irg_proj_args (const ir_graph *irg);
-/** Sets the array of the nodes off the argument pointer. */
+/** Sets the array of the nodes of the argument pointer. */
 void     set_irg_proj_args (ir_graph *irg, ir_node **nodes);
 
 /** Returns the current block of a graph. */

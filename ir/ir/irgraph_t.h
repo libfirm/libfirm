@@ -68,7 +68,7 @@ struct ir_graph {
                     globals as well as global procedures. */
   struct ir_node *initial_mem;   /**< initial memory of this graph */
   struct ir_node *args;          /**< methods arguments */
-  struct ir_node **proj_args;          /**< projs off the methods arguments */
+  struct ir_node **proj_args;    /**< projs of the methods arguments */
   struct ir_node *bad;           /**< bad node of this ir_graph, the one and
                     only in this graph */
   struct ir_node *no_mem;        /**< NoMem node of this ir_graph, the one and
