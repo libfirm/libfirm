@@ -1129,6 +1129,20 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
                          );
       break;
 
+    case iro_Mux:
+      op1mode = get_irn_mode(in[1]);
+      op2mode = get_irn_mode(in[2]);
+      op3mode = get_irn_mode(in[3]);
+      ASSERT_AND_RET(
+                         /* Mux: BB x b x numP x numP --> numP */
+                         op1mode == mode_b &&
+                         op2mode == mymode &&
+                         op3mode == mymode &&
+                         mode_is_numP(mymode),
+                         "Mux node", 0
+                         );
+      break;
+
     default:
       break;
     }

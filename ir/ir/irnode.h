@@ -848,6 +848,14 @@ void     set_Confirm_bound (ir_node *node, ir_node *bound);
 pn_Cmp   get_Confirm_cmp   (ir_node *node);
 void     set_Confirm_cmp   (ir_node *node, pn_Cmp cmp);
 
+ir_node *get_Mux_sel   (ir_node *node);
+void     set_Mux_sel   (ir_node *node, ir_node *sel);
+ir_node *get_Mux_false (ir_node *node);
+void     set_Mux_false (ir_node *node, ir_node *ir_false);
+ir_node *get_Mux_true  (ir_node *node);
+void     set_Mux_true  (ir_node *node, ir_node *ir_true);
+
+
 /*
  *
  * NAME Auxiliary routines

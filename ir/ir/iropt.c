@@ -514,6 +514,26 @@ static tarval *computed_value_Proj(ir_node *n)
 }
 
 /**
+ * calculate the value of a Mux: can be evaluated, if the
+ * sel and the right input are known
+ */
+static tarval *computed_value_Mux(ir_node *n)
+{
+  ir_node *sel = get_Mux_sel(n);
+  tarval *ts = value_of(sel);
+
+  if (ts == get_tarval_b_true()) {
+    ir_node *v = get_Mux_true(n);
+    return value_of(v);
+  }
+  else if (ts == get_tarval_b_false()) {
+    ir_node *v = get_Mux_false(n);
+    return value_of(v);
+  }
+  return tarval_bad;
+}
+
+/**
  * If the parameter n can be computed, return its value, else tarval_bad.
  * Performs constant folding.
  *
@@ -557,6 +577,7 @@ static ir_op *firm_set_default_computed_value(ir_op *op)
   CASE(Rot);
   CASE(Conv);
   CASE(Proj);
+  CASE(Mux);
   default:
     op->computed_value  = NULL;
   }
@@ -1063,6 +1084,22 @@ static ir_node *equivalent_node_Id(ir_node *n)
 }
 
 /**
+ * optimize a Mux
+ */
+static ir_node *equivalent_node_Mux(ir_node *n)
+{
+  ir_node *sel = get_Mux_sel(n);
+  tarval *ts = value_of(sel);
+
+  if (ts == get_tarval_b_true())
+    return get_Mux_true(n);
+  else if (ts == get_tarval_b_false())
+    return get_Mux_false(n);
+
+  return n;
+}
+
+/**
  * equivalent_node() returns a node equivalent to input n. It skips all nodes that
  * perform no actual computation, as, e.g., the Id nodes.  It does not create
  * new nodes.  It is therefore safe to free n if the node returned is not n.
@@ -1110,6 +1147,7 @@ static ir_op *firm_set_default_equivalent_node(ir_op *op)
   CASE(Phi);
   CASE(Proj);
   CASE(Id);
+  CASE(Mux);
   default:
     op->equivalent_node  = NULL;
   }

@@ -88,6 +88,7 @@ ir_op *op_EndReg;      ir_op *get_op_EndReg    (void) { return op_EndReg;    }
 ir_op *op_EndExcept;   ir_op *get_op_EndExcept (void) { return op_EndExcept; }
 
 ir_op *op_NoMem;       ir_op *get_op_NoMem     (void) { return op_NoMem; }
+ir_op *op_Mux;         ir_op *get_op_Mux       (void) { return op_Mux; }
 
 
 /*
@@ -226,6 +227,7 @@ init_op(void)
   op_EndExcept = new_ir_op(iro_EndExcept, "EndExcept", op_pin_state_pinned, X|I,     oparity_any,      -1, sizeof(end_attr));
 
   op_NoMem     = new_ir_op(iro_NoMem,     "NoMem",     op_pin_state_pinned, 0,       oparity_zero,     -1, 0);
+  op_Mux       = new_ir_op(iro_Mux,       "Mux",       op_pin_state_floats, 0,       oparity_trinary,  -1, 0);
 
 #undef Y
 #undef F
@@ -297,6 +299,7 @@ void finish_op(void) {
   free_ir_op (op_EndExcept); op_EndExcept = NULL;
 
   free_ir_op (op_NoMem    ); op_NoMem     = NULL;
+  free_ir_op (op_Mux      ); op_Mux       = NULL;
 }
 
 /* Returns the string for the opcode. */

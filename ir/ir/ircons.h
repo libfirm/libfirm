@@ -289,6 +289,7 @@
  *               type *free_type);
  *    ir_node *new_Proj   (ir_node *arg, ir_mode *mode, long proj);
  *    ir_node *new_NoMem  (void);
+ *    ir_node *new_Mux    (ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode);
  *
  *    void add_immBlock_pred (ir_node *block, ir_node *jmp);
  *    void mature_immBlock (ir_node *block);
@@ -797,6 +798,13 @@
  *      different path in the control flow.
  *    Output
  *      The definition valid in this block.
+ *
+ *    ir_node *new_Mux (ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode)
+ *    -----------------------------------------------------------------------------
+ *
+ *    Creates a Mux node. This node implements the following semantic:
+ *    If the sel node (which must be of mode_b) evaluates to true, its value is
+ *    ir_true, else ir_false;
  *
  *
  *    OPERATIONS TO MANAGE MEMORY EXPLICITLY
@@ -1734,6 +1742,7 @@ ir_node *new_rd_EndExcept(dbg_info *db, ir_graph *irg, ir_node *block);
  *
  * The constructor builds the Filter in intraprocedural view.
  *
+ * @param *db     A pointer for debug information.
  * @param *irg    The ir graph the node belong to.
  * @param *block  The block the node belong to.
  * @param *arg  The tuple value to project from.
@@ -1751,6 +1760,21 @@ ir_node *new_rd_Filter (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *ar
  * @param *irg    The ir graph the node belongs to.
  */
 ir_node *new_rd_NoMem  (ir_graph *irg);
+
+/** Constructor for a Mux node.
+ *
+ * Adds the node to the block in current_ir_block.
+ *
+ * @param *db       A pointer for debug information.
+ * @param *irg      The ir graph the node belong to.
+ * @param *block    The block the node belong to.
+ * @param *sel      The ir_node that calculates the boolean select.
+ * @param *ir_true  The ir_node that calculates the true result.
+ * @param *ir_false The ir_node that calculates the false result.
+ * @param *mode     The mode of the node (and it_true and ir_false).
+ */
+ir_node *new_rd_Mux  (dbg_info *db, ir_graph *irg, ir_node *block,
+    ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode);
 
 /*-------------------------------------------------------------------------*/
 /* The raw interface without debug support                                 */
@@ -2383,6 +2407,20 @@ ir_node *new_r_Filter (ir_graph *irg, ir_node *block, ir_node *arg,
  * @param *irg    The ir graph the node belongs to.
  */
 ir_node *new_r_NoMem  (ir_graph *irg);
+
+/** Constructor for a Mux node.
+ *
+ * Adds the node to the block in current_ir_block.
+ *
+ * @param *irg      The ir graph the node belong to.
+ * @param *block    The block the node belong to.
+ * @param *sel      The ir_node that calculates the boolean select.
+ * @param *ir_true  The ir_node that calculates the true result.
+ * @param *ir_false The ir_node that calculates the false result.
+ * @param *mode     The mode of the node (and it_true and ir_false).
+ */
+ir_node *new_r_Mux  (ir_graph *irg, ir_node *block,
+    ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode);
 
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface                                          */
@@ -3066,6 +3104,19 @@ ir_node *new_d_Filter (dbg_info *db, ir_node *arg, ir_mode *mode, long proj);
  */
 ir_node *new_d_NoMem  (void);
 
+/** Constructor for a Mux node.
+ *
+ * Adds the node to the block in current_ir_block.
+ *
+ * @param *db       A pointer for debug information.
+ * @param *sel      The ir_node that calculates the boolean select.
+ * @param *ir_true  The ir_node that calculates the true result.
+ * @param *ir_false The ir_node that calculates the false result.
+ * @param *mode     The mode of the node (and it_true and ir_false).
+ */
+ir_node *new_d_Mux  (dbg_info *db, ir_node *sel,
+    ir_node *ir_false, ir_node *ir_true, ir_mode *mode);
+
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface without debug support                    */
 /*-----------------------------------------------------------------------*/
@@ -3632,6 +3683,17 @@ ir_node *new_Unknown(ir_mode *m);
  * get_irg_no_mem().
  */
 ir_node *new_NoMem  (void);
+
+/** Constructor for a Mux node.
+ *
+ * Adds the node to the block in current_ir_block.
+ *
+ * @param *sel      The ir_node that calculates the boolean select.
+ * @param *ir_true  The ir_node that calculates the true result.
+ * @param *ir_false The ir_node that calculates the false result.
+ * @param *mode     The mode of the node (and it_true and ir_false).
+ */
+ir_node *new_Mux  (ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode);
 
 /*---------------------------------------------------------------------*/
 /* The comfortable interface.                                          */

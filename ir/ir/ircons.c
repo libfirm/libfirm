@@ -860,13 +860,30 @@ new_rd_Filter (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg, ir_mod
   res = optimize_node(res);
   IRN_VRFY_IRG(res, irg);
   return res;
-
 }
 
 INLINE ir_node *
-new_rd_NoMem (ir_graph *irg)
-{
+new_rd_NoMem (ir_graph *irg) {
   return irg->no_mem;
+}
+
+INLINE ir_node *
+new_rd_Mux  (dbg_info *db, ir_graph *irg, ir_node *block,
+    ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode)
+{
+  ir_node *in[3];
+  ir_node *res;
+
+  in[0] = sel;
+  in[1] = ir_false;
+  in[2] = ir_true;
+
+  res = new_ir_node(db, irg, block, op_Mux, mode, 3, in);
+  assert(res);
+
+  res = optimize_node(res);
+  IRN_VRFY_IRG(res, irg);
+  return res;
 }
 
 
@@ -1060,6 +1077,10 @@ INLINE ir_node *new_r_Filter (ir_graph *irg, ir_node *block, ir_node *arg,
 }
 INLINE ir_node *new_r_NoMem  (ir_graph *irg) {
   return new_rd_NoMem(irg);
+}
+INLINE ir_node *new_r_Mux (ir_graph *irg, ir_node *block,
+    ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode) {
+  return new_rd_Mux(NULL, irg, block, sel, ir_false, ir_true, mode);
 }
 
 
@@ -2369,6 +2390,13 @@ ir_node *
   return __new_d_NoMem();
 }
 
+ir_node *
+new_d_Mux (dbg_info *db, ir_node *sel, ir_node *ir_false,
+    ir_node *ir_true, ir_mode *mode) {
+  return new_rd_Mux (db, current_ir_graph, current_ir_graph->current_block,
+      sel, ir_false, ir_true, mode);
+}
+
 /* ********************************************************************* */
 /* Comfortable interface with automatic Phi node construction.           */
 /* (Uses also constructors of ?? interface, except new_Block.            */
@@ -2677,4 +2705,7 @@ ir_node *new_Filter (ir_node *arg, ir_mode *mode, long proj) {
 }
 ir_node *new_NoMem  (void) {
   return new_d_NoMem();
+}
+ir_node *new_Mux (ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode) {
+  return new_d_Mux(NULL, sel, ir_false, ir_true, mode);
 }

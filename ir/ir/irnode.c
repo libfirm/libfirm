@@ -1844,10 +1844,38 @@ ir_node *get_Filter_cg_pred(ir_node *node, int pos) {
   return node->attr.filter.in_cg[pos + 1];
 }
 
+/* Mux support */
+ir_node *get_Mux_sel   (ir_node *node) {
+  assert(node->op == op_Mux);
+  return node->in[1];
+}
+void     set_Mux_sel   (ir_node *node, ir_node *sel) {
+  assert(node->op == op_Mux);
+  node->in[1] = sel;
+}
+
+ir_node *get_Mux_false (ir_node *node) {
+  assert(node->op == op_Mux);
+  return node->in[2];
+}
+void     set_Mux_false (ir_node *node, ir_node *ir_false) {
+  assert(node->op == op_Mux);
+  node->in[2] = ir_false;
+}
+
+ir_node *get_Mux_true  (ir_node *node) {
+  assert(node->op == op_Mux);
+  return node->in[3];
+}
+void     set_Mux_true  (ir_node *node, ir_node *ir_true) {
+  assert(node->op == op_Mux);
+  node->in[3] = ir_true;
+}
+
 
 ir_graph *
 get_irn_irg(const ir_node *node) {
-  if (get_irn_op(node) != op_Block)
+  if (! is_Block(node))
     node = get_nodes_block(node);
   if (is_Bad(node))  /* sometimes bad is predecessor of nodes instead of block: in case of optimization */
     node = get_nodes_block(node);
