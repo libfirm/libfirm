@@ -1734,6 +1734,38 @@ set_Sync_pred (ir_node *node, int pos, ir_node *pred) {
   set_irn_n(node, pos, pred);
 }
 
+type *get_Proj_type(ir_node *n)
+{
+  type *tp      = NULL;
+  ir_node *pred = get_Proj_pred(n);
+
+  switch (get_irn_opcode(pred)) {
+  case iro_Proj: {
+    ir_node *pred_pred;
+    /* Deal with Start / Call here: we need to know the Proj Nr. */
+    assert(get_irn_mode(pred) == mode_T);
+    pred_pred = get_Proj_pred(pred);
+    if (get_irn_op(pred_pred) == op_Start)  {
+      type *mtp = get_entity_type(get_irg_entity(get_irn_irg(pred_pred)));
+      tp = get_method_param_type(mtp, get_Proj_proj(n));
+    } else if (get_irn_op(pred_pred) == op_Call) {
+      type *mtp = get_Call_type(pred_pred);
+      tp = get_method_res_type(mtp, get_Proj_proj(n));
+    }
+  } break;
+  case iro_Start: break;
+  case iro_Call: break;
+  case iro_Load: {
+    ir_node *a = get_Load_ptr(pred);
+    if (get_irn_op(a) == op_Sel)
+      tp = get_entity_type(get_Sel_entity(a));
+  } break;
+  default:
+    break;
+  }
+  return tp;
+}
+
 ir_node *
 get_Proj_pred (ir_node *node) {
   assert (is_Proj(node));
@@ -2108,6 +2140,27 @@ is_forking_op(const ir_node *node) {
   return is_op_forking(get_irn_op(node));
 }
 
+type *(get_irn_type)(ir_node *node) {
+  return _get_irn_type(node);
+}
+
+/** the get_type operation must be always implemented */
+static type *get_Null_type(ir_node *n) {
+  return NULL;
+}
+
+/* set the get_type operation */
+ir_op *firm_set_default_get_type(ir_op *op)
+{
+  switch (op->code) {
+  case iro_Const:    op->get_type = get_Const_type; break;
+  case iro_SymConst: op->get_type = get_SymConst_value_type; break;
+  case iro_Cast:     op->get_type = get_Cast_type; break;
+  case iro_Proj:     op->get_type = get_Proj_type; break;
+  default:           op->get_type = get_Null_type; break;
+  }
+  return op;
+}
 
 #ifdef DEBUG_libfirm
 void dump_irn (ir_node *n) {

@@ -816,8 +816,15 @@ int       get_Sync_n_preds (ir_node *node);
 ir_node  *get_Sync_pred (ir_node *node, int pos);
 void      set_Sync_pred (ir_node *node, int pos, ir_node *pred);
 
+/** Returns the source language type of a Proj node.
+ * Must be an atomic type.  Mode of type must be mode of node.
+ */
+type     *get_Proj_type (ir_node *node);
+
+/** Return the predecessor of a Proj node. */
 ir_node  *get_Proj_pred (ir_node *node);
 void      set_Proj_pred (ir_node *node, ir_node *pred);
+/** Return the projection number of a Proj node. */
 long      get_Proj_proj (ir_node *node);
 void      set_Proj_proj (ir_node *node, long proj);
 
@@ -892,6 +899,11 @@ ir_node *get_fragile_op_mem(ir_node *node);
 /** Returns true if the operation is a forking control flow
  *  operation: Cond. */
 int is_forking_op(const ir_node *node);
+
+/** Return the type associated with the value produced by n
+ *  if the node remarks this type as it is the case for
+ *  Cast, Const, SymConst and some Proj nodes. */
+type *get_irn_type(ir_node *n);
 
 /**
  * Access custom node data.

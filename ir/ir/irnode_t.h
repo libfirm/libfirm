@@ -272,10 +272,13 @@ store_attr    get_irn_store_attr    (ir_node *node);
 except_attr   get_irn_except_attr   (ir_node *node);
 /** @} */
 
-/*
+/**
  * The amount of additional space for custom data to be allocated upon creating a new node.
  */
 extern unsigned firm_add_node_size;
+
+/** Set the get_type operation of an ir_op. */
+ir_op *firm_set_default_get_type(ir_op *op);
 
 /*-------------------------------------------------------------------*/
 /*  These function are most used in libfirm.  Give them as static    */
@@ -554,26 +557,27 @@ _is_Block_dead(const ir_node *block) {
 }
 
 static INLINE tarval *_get_Const_tarval (ir_node *node) {
-  assert (node->op == op_Const);
+  assert (_get_irn_op(node) == op_Const);
   return node->attr.con.tv;
 }
 
-
-static INLINE cnst_classify_t _classify_Const(ir_node *node)
-{
-	ir_op *op;
+static INLINE cnst_classify_t _classify_Const(ir_node *node) {
+  ir_op *op;
   assert(_is_ir_node(node));
 
-	op = _get_irn_op(node);
+  op = _get_irn_op(node);
 
-	if(op == op_Const)
-		return classify_tarval(_get_Const_tarval(node));
-	else if(op == op_SymConst)
-		return CNST_SYMCONST;
+  if(op == op_Const)
+    return classify_tarval(_get_Const_tarval(node));
+  else if(op == op_SymConst)
+    return CNST_SYMCONST;
 
-	return CNST_NO_CONST;
+  return CNST_NO_CONST;
 }
 
+static INLINE type *_get_irn_type(ir_node *node) {
+  return _get_irn_op(node)->get_type(node);
+}
 
 /* this section MUST contain all inline functions */
 #define is_ir_node(thing)          _is_ir_node(thing)
@@ -601,7 +605,8 @@ static INLINE cnst_classify_t _classify_Const(ir_node *node)
 #define is_Block(node)             _is_Block(node)
 #define set_Block_dead(block)      _set_Block_dead(block)
 #define is_Block_dead(block)       _is_Block_dead(block)
-#define get_Const_tarval(node)		 _get_Const_tarval(node)
-#define classify_Const(node)			 _classify_Const(node)
+#define get_Const_tarval(node)     _get_Const_tarval(node)
+#define classify_Const(node)       _classify_Const(node)
+#define get_irn_type(node)         _get_irn_type(node)
 
 # endif /* _IRNODE_T_H_ */
