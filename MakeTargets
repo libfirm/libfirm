@@ -65,10 +65,10 @@ Makefile: $(srcdir)/Makefile.in $(topdir)/config.status
 	CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= ./config.status >&2
 
 # generate TAGS
-tags:	subdir_tags local_tags
-.PHONY: local_tags
-local_tags:	$(TAGFILES)
-	etags -C $^
+.PHONY: tags
+tags:	TAGS
+TAGS:
+	ctags -R *.[ch]
 
 # installation
 install:	$(INCLUDEDIR) $(INCLUDEDIR)/adt install_headers $(LIBDIR) install_libs
