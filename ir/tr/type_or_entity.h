@@ -14,8 +14,8 @@
 # define _TYPE_OR_ENTITY_H_
 
 typedef union {
-  type   *typ;
-  entity *ent;
+  struct type   *typ;
+  struct entity *ent;
 } type_or_ent;
 
 
