@@ -128,7 +128,6 @@ int main(int argc, char **argv)
   irg_vrfy(irg);
 
   printf("Done building the graph.  Dumping it.\n");
-  //dump_ir_graph (irg);
   dump_ir_block_graph (irg);
   printf("use xvcg to view this graph:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
