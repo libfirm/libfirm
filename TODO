@@ -1,3 +1,21 @@
+  * 19.12.03 Goetz
+    Add state management for loops (consistent, inconsistent, invalid).
+
+  * 18.12.03 Goetz
+    It sucks that Call and CallBegin are different nodes. Change this!!!!
+    (as for Filter: Phi/Proj).
+
+  * 8.12. Goetz
+    Vorgaengernummern am Looptree auf Kanten ausgeben.
+
+  * 8.12.03 Goetz und Till
+    Alloc Semantik:  Der Alloc Knoten koennte wissen, ob der
+    allozierte Speicher zu Null initialisiert ist.  Dies nehmen
+    wir im Jack Java Compiler an, im CRS C Compiler jedoch nicht.
+    Ist das nicht explizit im Allok Knoten vermerkt, kann eine
+    Optimierung nur in Abhaengigkeit vom Frontend darauf aufbauen.
+    (z.B. heapanal nimmt any an, statt null.)
+
   * 8.9.03 Boris
     Wenn man in Arrays.java in der Methode ArrObject.f() die
     ersten zwei prints auskommentiert und pass_array_test die
