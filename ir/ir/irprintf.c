@@ -35,8 +35,10 @@
 #include "irmode_t.h"
 #include "irnode_t.h"
 #include "entity_t.h"
+#include "type_t.h"
 #include "tv.h"
 #include "irprintf.h"
+#include "obst.h"
 #include "pset.h"
 #include "iterator.h"
 #include "bitset.h"
@@ -96,6 +98,32 @@ static void file_append_str(void *object, size_t n, const char *str)
 }
 
 /**
+ * Init the obstack. i.e. do nothing.
+ */
+static void obst_init(void *object, size_t n)
+{
+}
+
+/**
+ * append a char to a obstack.
+ */
+static void obst_append_char(void *object, size_t n, char ch)
+{
+	struct obstack *obst = object;
+	obstack_1grow(obst, ch);
+}
+
+/**
+ * append a string to a obstack.
+ */
+static void obst_append_str(void *object, size_t n, const char *str)
+{
+	struct obstack *obst = object;
+	obstack_grow(obst, str, strlen(str));
+}
+
+
+/**
  * the file appender
  */
 static const appender_t file_appender = {
@@ -111,6 +139,15 @@ static const appender_t str_appender = {
 	str_init,
 	str_append_char,
 	str_append_str
+};
+
+/**
+ * the obstack appender.
+ */
+static const appender_t obst_appender = {
+	obst_init,
+	obst_append_char,
+	obst_append_str
 };
 
 static void ir_common_vprintf(const appender_t *app, void *object,
@@ -373,6 +410,10 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 					str = get_id_str(va_arg(args, ident *));
 					break;
 
+				case 't':
+					str = get_type_name(va_arg(args, type *));
+					break;
+
 				case 'e':
 					str = get_entity_name(va_arg(args, entity *));
 					break;
@@ -381,7 +422,7 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 					str = get_entity_ld_name(va_arg(args, entity *));
 					break;
 
-				case 't':
+				case 'T':
 					tarval_snprintf(buf, sizeof(buf), va_arg(args, tarval *));
 					break;
 
@@ -504,4 +545,35 @@ void ir_snprintf(char *buf, size_t len, const char *fmt, ...)
 	va_start(args, fmt);
 	ir_common_vprintf(&str_appender, buf, len, fmt, args);
 	va_end(args);
+}
+
+/**
+ * Convencience for string dumping.
+ */
+void ir_obst_printf(struct obstack *obst, const char *fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	ir_common_vprintf(&obst_appender, obst, 0, fmt, args);
+	va_end(args);
+}
+
+void ir_vprintf(const char *fmt, va_list args)
+{
+	ir_common_vprintf(&file_appender, stdout, 0, fmt, args);
+}
+
+void ir_vfprintf(FILE *f, const char *fmt, va_list args)
+{
+	ir_common_vprintf(&file_appender, f, 0, fmt, args);
+}
+
+void ir_vsnprintf(char *buf, size_t len, const char *fmt, va_list args)
+{
+	ir_common_vprintf(&str_appender, buf, len, fmt, args);
+}
+
+void ir_obst_vprintf(struct obstack *obst, const char *fmt, va_list args)
+{
+	ir_common_vprintf(&obst_appender, obst, 0, fmt, args);
 }

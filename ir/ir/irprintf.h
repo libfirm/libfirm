@@ -21,7 +21,9 @@
 #define _IRPRINTF_H
 
 #include <stddef.h>
+#include <stdarg.h>
 #include <stdio.h>
+#include <obstack.h>
 
 /**
  * Something that can append strings and chars to something.
@@ -50,15 +52,16 @@ typedef void (ir_printf_cb_t)(const appender_t *app, void *object, size_t limit,
  * - @%p A pointer.
  * - @%s A string.
  * - @%I An ident.
+ * - @%t A type name.
  * - @%e An entity name.
- * - @%E An entity ld_name.
+ * - @%E An entity ld name.
  * - @%n A full description of a node.
  * - @%O The opcode name of an ir node.
  * - @%m The mode name of an ir mode.
  * - @%N The node number of an ir node.
  * - @%B The block node number of the nodes block.
  * - @%b A bitset.
- * - @%t A tarval.
+ * - @%T A tarval.
  *
  * Each of these can be prepended by a '+' which means, that the given
  * pointer is a collection of items specified by the format. In this
@@ -68,7 +71,7 @@ typedef void (ir_printf_cb_t)(const appender_t *app, void *object, size_t limit,
  * @code
  *   pset *nodes;
  *   ...
- *   ir_printf("Some nodes: %+n\n", it_pset, nodes);
+ *   ir_printf("Some nodes: %*n\n", it_pset, nodes);
  * @endcode
  * The @c it_pset is an iterator interface (of type
  * @c iterator_t that allows the dumper to traverse the set.
@@ -89,7 +92,7 @@ typedef void (ir_printf_cb_t)(const appender_t *app, void *object, size_t limit,
  *   ...
  *   pset *xyzs;
  *
- *   ir_printf("A set of xyz\'s: %+C\n", it_pset, xyzs, xyz_dump);
+ *   ir_printf("A set of xyz\'s: %*C\n", it_pset, xyzs, xyz_dump);
  * @endcode
  *
  * @param fmt The format string.
@@ -106,5 +109,24 @@ void ir_fprintf(FILE *f, const char *fmt, ...);
  */
 void ir_snprintf(char *buf, size_t n, const char *fmt, ...);
 
+/**
+ * @see irn_printf.
+ */
+void ir_vprintf(const char *fmt, va_list args);
+
+/**
+ * @see irn_printf.
+ */
+void ir_vfprintf(FILE *f, const char *fmt, va_list args);
+
+/**
+ * @see irn_printf.
+ */
+void ir_vsnprintf(char *buf, size_t len, const char *fmt, va_list args);
+
+/**
+ * @see irn_printf.
+ */
+void ir_obst_vprintf(struct obstack *obst, const char *fmt, va_list args);
 
 #endif
