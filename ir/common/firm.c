@@ -16,9 +16,11 @@
 # include "firm.h"
 # include "mangle.h"
 # include "xp_help.h"
-# include "irnode_t.h"
 # include "tv_t.h"
+/* init functions are not public */
 # include "tpop_t.h"
+# include "irnode_t.h"
+# include "irmode_t.h"
 
 void
 init_firm (void)
@@ -44,8 +46,8 @@ init_firm (void)
   init_mangle ();
   /* initalize all op codes an irnode can consist of */
   init_op ();
-  /* called once for each run of this library, empty at this moment!!! */
-  init_cons ();
+  /* called once for each run of this library, empty right now... @@@!!!
+     init_cons (); */
   /* Builds a construct allowing to access all information to be constructed
      later. */
   init_irprog ();

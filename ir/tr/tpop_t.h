@@ -1,8 +1,8 @@
 
 /* $Id$ */
 
-# ifndef _IROP_T_H_
-# define _IROP_T_H_
+# ifndef _TPOP_T_H_
+# define _TPOP_T_H_
 
 # include <stddef.h>
 # include "tpop.h"
@@ -85,4 +85,4 @@ void init_tpop (void);
  */
 int get_tpop_attr_size (tp_op *op);
 
-#endif /* _IROP_T_H_ */
+#endif /* _TPOP_T_H_ */

@@ -45,14 +45,14 @@ turn_into_tuple (ir_node *node, int arity)
    Since `new' may be bigger than `old' replace `old'
    by an op_Id which is smaller than everything */
 inline void
-exchange (ir_node *old, ir_node *new)
+exchange (ir_node *old, ir_node *nw)
 {
   ir_node *block = old->in[0];
 
   old->op = op_Id;
   old->in = NEW_ARR_D (ir_node *, current_ir_graph->obst, 2);
   old->in[0] = block;
-  old->in[1] = new;
+  old->in[1] = nw;
 }
 
 /**********************************************************************/

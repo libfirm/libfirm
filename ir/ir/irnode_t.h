@@ -32,8 +32,8 @@ typedef struct {
 				 @@@ Eventually overlay with graph_arr as only valid
 				 in different phases.  Eventually inline the whole
 				 datastructure. */
-  exc_t exc;					/* role of this block for exception handling */
-  ir_node *handler_entry;		/* handler entry block iff this block is part of a region */
+  exc_t exc;		      /* role of this block for exception handling */
+  ir_node *handler_entry;     /* handler entry block iff this block is part of a region */
   ir_node ** in_cg;           /* array with predecessors in
 			       * interprocedural_view, if they differ
 			       * from intraprocedural predecessors */

@@ -12,6 +12,8 @@
 # ifndef _COMMON_H_
 # define _COMMON_H_
 
+#define INLINE inline
+
 /* a list of firm kinds */
 typedef enum {
   k_entity,
