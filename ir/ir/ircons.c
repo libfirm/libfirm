@@ -721,6 +721,26 @@ new_rd_SymConst (dbg_info* db, ir_graph *irg, ir_node *block, symconst_symbol va
   return res;
 }
 
+ir_node *new_rd_SymConst_addr_ent (dbg_info *db, ir_graph *irg, entity *symbol, type *tp) {
+  symconst_symbol sym = {(type *)symbol};
+  return new_rd_SymConst_type(db, irg, irg->start_block, sym, symconst_addr_ent, tp);
+}
+
+ir_node *new_rd_SymConst_addr_name (dbg_info *db, ir_graph *irg, ident *symbol, type *tp) {
+  symconst_symbol sym = {(type *)symbol};
+  return new_rd_SymConst_type(db, irg, irg->start_block, sym, symconst_addr_name, tp);
+}
+
+ir_node *new_rd_SymConst_type_tag (dbg_info *db, ir_graph *irg, type *symbol, type *tp) {
+  symconst_symbol sym = {symbol};
+  return new_rd_SymConst_type(db, irg, irg->start_block, sym, symconst_type_tag, tp);
+}
+
+ir_node *new_rd_SymConst_size (dbg_info *db, ir_graph *irg, type *symbol, type *tp) {
+  symconst_symbol sym = {symbol};
+  return new_rd_SymConst_type(db, irg, irg->start_block, sym, symconst_size, tp);
+}
+
 INLINE ir_node *
 new_rd_Sync (dbg_info* db, ir_graph *irg, ir_node *block, int arity, ir_node **in)
 {

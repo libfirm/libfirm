@@ -1300,6 +1300,9 @@ ir_node *new_rd_Const  (dbg_info *db, ir_graph *irg, ir_node *block,
  *    Outputs of the node.
  *      An unsigned integer (I_u) or a pointer (P).
  *
+ *    Mention union in declaration so that the firmjni generator recognizes that
+ *    it can not cast the argument to an int.
+ *
  * @param *db     A pointer for debug information.
  * @param *irg    The ir graph the node  belongs to.
  * @param *block  The ir block the node belongs to.
@@ -1308,14 +1311,42 @@ ir_node *new_rd_Const  (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param tp      The source type of the constant.
  */
 ir_node *
-new_rd_SymConst_type (dbg_info* db, ir_graph *irg, ir_node *block, symconst_symbol value,
+new_rd_SymConst_type (dbg_info* db, ir_graph *irg, ir_node *block, union symconst_symbol value,
 		      symconst_kind symkind, type *tp);
 
 /** Constructor for a SymConst node.
  *
  *  Same as new_rd_SymConst_type, except that it sets the type to type_unknown. */
 ir_node *new_rd_SymConst (dbg_info *db, ir_graph *irg, ir_node *block,
-			  symconst_symbol value, symconst_kind symkind);
+			  union symconst_symbol value, symconst_kind symkind);
+
+/** Constructor for a SymConst addr_ent node.
+ *
+ * Same as new_rd_SymConst_type, except that the constructor is tailored for
+ * symconst_addr_ent.
+ * Adds the symconst to the start block of irg. */
+ir_node *new_rd_SymConst_addr_ent (dbg_info *db, ir_graph *irg, entity *symbol, type *tp);
+
+/** Constructor for a SymConst addr_name node.
+ *
+ * Same as new_rd_SymConst_type, except that the constructor is tailored for
+ * symconst_addr_ent.
+ * Adds the symconst to the start block of irg. */
+ir_node *new_rd_SymConst_addr_name (dbg_info *db, ir_graph *irg, ident *symbol, type *tp);
+
+/** Constructor for a SymConst type_tag node.
+ *
+ * Same as new_rd_SymConst_type, except that the constructor is tailored for
+ * symconst_addr_ent.
+ * Adds the symconst to the start block of irg. */
+ir_node *new_rd_SymConst_type_tag (dbg_info *db, ir_graph *irg, type *symbol, type *tp);
+
+/** Constructor for a SymConst size node.
+ *
+ * Same as new_rd_SymConst_type, except that the constructor is tailored for
+ * symconst_addr_ent.
+ * Adds the symconst to the start block of irg. */
+ir_node *new_rd_SymConst_size (dbg_info *db, ir_graph *irg, type *symbol, type *tp);
 
 /** Constructor for a Sel node.
  *
@@ -1975,7 +2006,7 @@ ir_node *new_r_Const  (ir_graph *irg, ir_node *block,
  * @param symkind The kind of the symbolic constant: type_tag, size or link_info.
  */
 ir_node *new_r_SymConst (ir_graph *irg, ir_node *block,
-                       symconst_symbol value, symconst_kind symkind);
+			 union symconst_symbol value, symconst_kind symkind);
 
 /** Constructor for a Sel node.
  *
@@ -2682,12 +2713,12 @@ ir_node *new_d_Const  (dbg_info* db, ir_mode *mode, tarval *con);
  * @param tp      The source type of the constant.
  *
  */
-ir_node *new_d_SymConst_type (dbg_info* db, symconst_symbol value, symconst_kind kind, type* tp);
+ir_node *new_d_SymConst_type (dbg_info* db, union symconst_symbol value, symconst_kind kind, type* tp);
 
 /** Constructor for a SymConst node.
  *
  *  Same as new_d_SymConst_type, except that it sets the type to type_unknown. */
-ir_node *new_d_SymConst (dbg_info* db, symconst_symbol value, symconst_kind kind);
+ir_node *new_d_SymConst (dbg_info* db, union symconst_symbol value, symconst_kind kind);
 
 /** Constructor for a simpleSel node.
  *
@@ -3393,7 +3424,7 @@ ir_node *new_Const  (ir_mode *mode, tarval *con);
  * @param symkind The kind of the symbolic constant: symconst_type_tag, symconst_size or symconst_addr_name.
  *
  */
-ir_node *new_SymConst (symconst_symbol value, symconst_kind kind);
+ir_node *new_SymConst (union symconst_symbol value, symconst_kind kind);
 
 /** Constructor for a simpelSel node.
  *

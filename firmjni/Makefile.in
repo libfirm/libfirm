@@ -68,7 +68,7 @@ FIRM_PATH_HEADERS=common/firm.h common/firm_common.h \
 	ir/ircons.h ir/ircgcons.h ir/irflag.h ir/irvrfy.h ir/irdump.h \
 	ir/iropt.h ir/irgopt.h ir/ircgopt.h \
 	ana/irouts.h ana/irdom.h ana/irloop.h ana/cgana.h \
-	ir/irgmod.h tr/typegmod.h opt/tailrec.h stat/firmstat.h
+	ir/irgmod.h tr/typegmod.h opt/tailrec.h
 
 FIRM_SOURCE_DIR_HEADERS=$(addprefix $(SOURCE_DIR)/,$(FIRM_HEADERS))
 
