@@ -195,7 +195,7 @@ static void prepare_irg_end_except(ir_graph * irg, irg_data_t * data);
 
 /* If we use new_Unknown we get the Unknown of a graph.  This can
  * cause cycles we don't want to see, as Unknwon is in the Start Block
- * or the procedure. Use unknown of outermost irg where the start
+ * of the procedure. Use unknown of outermost irg where the start
  * block has no predecessors. */
 static INLINE ir_node *get_cg_Unknown(ir_mode *m) {
   assert((get_Block_n_cfgpreds(get_irg_start_block(get_irp_main_irg())) == 1) &&
@@ -592,6 +592,8 @@ static void construct_call(ir_node * call) {
   ir_node * jmp = new_Break(); /* Sprung für intraprozedurale Darstellung (in
                 * pre_block) */
   ir_node * call_begin = new_CallBegin(call); /* (in pre_block) */
+  /* CallBegin might be entry to endless recursion. */
+  add_End_keepalive(get_irg_end(get_irn_irg(pre_block)), pre_block);
   ir_node ** in = NEW_ARR_F(ir_node *, n_callees);
   entity * caller = get_irg_ent(current_ir_graph); /* entity des aktuellen ir_graph */
   entity ** callees = NEW_ARR_F(entity *, n_callees); /* aufgerufene Methoden: entity */
@@ -817,10 +819,10 @@ void cg_construct(int arr_len, entity ** free_methods_arr) {
     current_ir_graph = get_irp_irg(i);
     for (node = get_irn_link(get_irg_end(current_ir_graph)); node; node = get_irn_link(node)) {
       if (get_irn_op(node) == op_Call) {
-    n_callees = get_Call_n_callees(node);
-    if (n_callees > 1 || (n_callees == 1 && get_Call_callee(node, 0) != NULL)) {
-      construct_call(node);
-    }
+	n_callees = get_Call_n_callees(node);
+	if (n_callees > 1 || (n_callees == 1 && get_Call_callee(node, 0) != NULL)) {
+	  construct_call(node);
+	}
       }
     }
   }
