@@ -453,11 +453,11 @@ get_irn_alloc_attr (ir_node *node)
   return node->attr.a;
 }
 
-type *
+free_attr
 get_irn_free_attr     (ir_node *node)
 {
   assert (node->op == op_Free);
-  return node->attr.f = skip_tid(node->attr.f);
+  return node->attr.f;
 }
 
 symconst_attr
@@ -1655,13 +1655,25 @@ set_Free_size (ir_node *node, ir_node *size) {
 type  *
 get_Free_type (ir_node *node) {
   assert (node->op == op_Free);
-  return node->attr.f = skip_tid(node->attr.f);
+  return node->attr.f.type = skip_tid(node->attr.f.type);
 }
 
 void
 set_Free_type (ir_node *node, type *tp) {
   assert (node->op == op_Free);
-  node->attr.f = tp;
+  node->attr.f.type = tp;
+}
+
+where_alloc
+get_Free_where (ir_node *node) {
+  assert (node->op == op_Free);
+  return node->attr.f.where;
+}
+
+void
+set_Free_where (ir_node *node, where_alloc where) {
+  assert (node->op == op_Free);
+  node->attr.f.where = where;
 }
 
 ir_node **
