@@ -1,5 +1,7 @@
 
 #include "trvrfy.h"
+#include "irgraph_t.h"  /* for checking whether constant code is allocated
+			   on proper obstack */
 
 static int check_class(type *tp) {
   int i, j, k;
@@ -51,33 +53,33 @@ struct myenv {
   struct obstack *obst;
 };
 
-static void on_obstack(ir_node *n; void *env) {
-  struct obstack *obst = ((myenv *)env)->obst;
+static void on_obstack(ir_node *n, void *env) {
+  struct obstack *obst = ((struct myenv *)env)->obst;
 
   /* n must be on the obstack obst. */
 
-  ((myenv *)env)->res = 0;
+  ((struct myenv *)env)->res = 0;
 }
 
 static int constant_on_wrong_obstack(ir_node *n) {
   struct myenv env;
   env.res = 0;  /* false, not on wrong obstack */
-  env.obst = get_irg_obst(get_const_code_irg());
+  env.obst = get_irg_obstack(get_const_code_irg());
   irg_walk(n, on_obstack, NULL, (void *)&env);
   return env.res;
 }
 
 static int constants_on_wrong_obstack(entity *ent) {
-  if (get_entity_variability(ent) == uninitialize) return 0;
+  if (get_entity_variability(ent) == uninitialized) return 0;
 
   if (is_compound_entity(ent)) {
     int i;
     for (i = 0; i < get_compound_ent_n_values(ent); i++) {
-      if (constant_on_wrong_obstack(get_compound_entity_value(ent, i)));
+      if (constant_on_wrong_obstack(get_compound_ent_value(ent, i)));
 	return 1;
     }
   } else {
-    return constant_on_wrong_obstack(get_atomic_entity_value(ent));
+    return constant_on_wrong_obstack(get_atomic_ent_value(ent));
   }
   return 0;
 }
