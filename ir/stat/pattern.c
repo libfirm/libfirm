@@ -57,9 +57,9 @@ enum vlc_code_t {
  * An entry for patterns
  */
 typedef struct _pattern_entry_t {
-  counter_t   count;		/**< amount of pattern occurance */
-  unsigned    len;		/**< lenght of the VLC encoded buffer */
-  BYTE        buf[1];		/**< buffer contains the VLC encoded pattern */
+  counter_t   count;        /**< amount of pattern occurance */
+  unsigned    len;          /**< length of the VLC encoded buffer */
+  BYTE        buf[1];       /**< buffer contains the VLC encoded pattern */
 } pattern_entry_t;
 
 /**
@@ -76,11 +76,11 @@ enum options_t {
  * pattern info
  */
 typedef struct _pattern_info_t {
-  int                       enable;		/**< if non-zero, this module is enabled */
-  struct obstack            obst;		/**< obstack containing the counters */
-  HASH_MAP(pattern_entry_t) *pattern_hash;	/**< hash map containing the counter for pattern */
-  unsigned                  bound;		/**< lowest value for output */
-  unsigned                  options;		/**< option mask */
+  int                       enable;         /**< if non-zero, this module is enabled */
+  struct obstack            obst;           /**< obstack containing the counters */
+  HASH_MAP(pattern_entry_t) *pattern_hash;  /**< hash map containing the counter for pattern */
+  unsigned                  bound;          /**< lowest value for output */
+  unsigned                  options;        /**< option mask */
 } pattern_info_t;
 
 /*
@@ -89,7 +89,7 @@ typedef struct _pattern_info_t {
 static pattern_info_t _status, *status = &_status;
 
 /**
- * compare two elemnts for counter
+ * compare two elements for counter
  */
 static int pattern_count_cmp(const void *elt, const void *key)
 {
@@ -120,7 +120,7 @@ static int pattern_cmp(const void *elt, const void *key)
 }
 
 /**
- * initialise a code buffer
+ * initialize a code buffer
  */
 static void init_buf(CODE_BUFFER *buf, BYTE *data, unsigned len)
 {
@@ -144,7 +144,7 @@ static INLINE void put_byte(CODE_BUFFER *buf, BYTE byte)
 }
 
 /**
- * returns the current lenght of a buffer
+ * returns the current length of a buffer
  */
 static unsigned buf_lenght(const CODE_BUFFER *buf)
 {
@@ -152,7 +152,7 @@ static unsigned buf_lenght(const CODE_BUFFER *buf)
 }
 
 /**
- * returns the current lenght of a buffer
+ * returns the current length of a buffer
  */
 static const BYTE *buf_content(const CODE_BUFFER *buf)
 {
@@ -662,7 +662,7 @@ void stat_calc_pattern_history(ir_graph *irg)
 }
 
 /*
- * initialises the pattern history
+ * initializes the pattern history
  */
 void stat_init_pattern_history(int enable)
 {

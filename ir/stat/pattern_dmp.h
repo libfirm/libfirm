@@ -41,12 +41,12 @@ void pattern_dump_edge(pattern_dumper_t *self, unsigned tgt, unsigned src, unsig
 void pattern_start_children(pattern_dumper_t *self, unsigned id);
 
 /**
- * finishes childred dumper
+ * finishes the children dumper
  */
 void pattern_finish_children(pattern_dumper_t *self, unsigned id);
 
 /**
- * finishes dumper, destroyes the dumper object
+ * finishes dumper, destroys the dumper object
  */
 void pattern_end(pattern_dumper_t *self);
 

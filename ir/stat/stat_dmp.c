@@ -87,7 +87,7 @@ static void simple_dump_opt_hash(dumper_t *dmp, pset *set, int index)
 }
 
 /**
- * dumps the endges count
+ * dumps the edges count
  */
 static void simple_dump_edges(dumper_t *dmp, counter_t *cnt)
 {
@@ -129,11 +129,11 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
         entry->cnt_walked.cnt[0], entry->cnt_walked_blocks.cnt[0],
         entry->cnt_was_inlined.cnt[0],
         entry->cnt_got_inlined.cnt[0],
-	entry->cnt_strength_red.cnt[0],
-	entry->is_leaf ? "YES" : "NO",
-	entry->is_leaf_call == LCS_NON_LEAF_CALL ? "NO" : (entry->is_leaf_call == LCS_LEAF_CALL ? "Yes" : "Maybe"),
-	entry->is_recursive ? "YES" : "NO",
-	entry->is_chain_call ? "YES" : "NO",
+	    entry->cnt_strength_red.cnt[0],
+	    entry->is_leaf ? "YES" : "NO",
+	    entry->is_leaf_call == LCS_NON_LEAF_CALL ? "NO" : (entry->is_leaf_call == LCS_LEAF_CALL ? "Yes" : "Maybe"),
+	    entry->is_recursive ? "YES" : "NO",
+	    entry->is_chain_call ? "YES" : "NO",
         entry->cnt_all_calls.cnt[0],
         entry->cnt_indirect_calls.cnt[0]
     );
@@ -173,7 +173,7 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 }
 
 /**
- * initialise the simple dumper
+ * initialize the simple dumper
  */
 static void simple_init(dumper_t *dmp, const char *name)
 {
@@ -279,7 +279,7 @@ static void csv_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 }
 
 /**
- * initialise the simple dumper
+ * initialize the simple dumper
  */
 static void csv_init(dumper_t *dmp, const char *name)
 {

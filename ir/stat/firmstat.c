@@ -31,6 +31,7 @@
 #include "pattern.h"
 #include "dags.h"
 #include "stat_dmp.h"
+#include "xmalloc.h"
 
 /*
  * need this to be static:
@@ -42,7 +43,7 @@
  */
 static ir_op _op_Phi0;
 
-/** The PhiM, just to count memorty Phi's. */
+/** The PhiM, just to count memory Phi's. */
 static ir_op _op_PhiM;
 
 /** The Mul by Const node. */
@@ -206,7 +207,7 @@ static void graph_clear_entry(graph_entry_t *elem, int all)
 }
 
 /**
- * Returns the acssociates graph_entry_t for an irg
+ * Returns the associated graph_entry_t for an irg
  */
 static graph_entry_t *graph_get_entry(ir_graph *irg, pset *set)
 {
@@ -247,7 +248,7 @@ static void opt_clear_entry(opt_entry_t *elem)
 }
 
 /**
- * Returns the associates opt_entry_t for an ir_op
+ * Returns the associated opt_entry_t for an ir_op
  */
 static opt_entry_t *opt_get_entry(const ir_op *op, pset *set)
 {
@@ -282,7 +283,7 @@ static void block_clear_entry(block_entry_t *elem)
 }
 
 /**
- * Returns the associates block_entry_t for an block
+ * Returns the associated block_entry_t for an block
  */
 static block_entry_t *block_get_entry(long block_nr, pset *set)
 {
@@ -413,7 +414,7 @@ static void update_call_stat(ir_node *call, graph_entry_t *graph)
   ir_graph *callee = NULL;
 
   /*
-   * If the block is bad, the whole subgraph will colabse later
+   * If the block is bad, the whole subgraph will collapse later
    * so do not count this call.
    * This happens in dead code.
    */
@@ -483,7 +484,7 @@ static void update_call_stat_2(ir_node *call, graph_entry_t *graph)
   ir_graph *callee = NULL;
 
   /*
-   * If the block is bad, the whole subgraph will colabse later
+   * If the block is bad, the whole subgraph will collapse later
    * so do not count this call.
    * This happens in dead code.
    */
@@ -536,7 +537,7 @@ static void update_node_stat(ir_node *node, void *env)
 }
 
 /**
- * walker for reachable nodes count for graphs on teh wait_q
+ * walker for reachable nodes count for graphs on the wait_q
  */
 static void update_node_stat_2(ir_node *node, void *env)
 {
@@ -754,7 +755,7 @@ static void update_graph_stat_2(graph_entry_t *global, graph_entry_t *graph)
  */
 static void stat_register_dumper(const dumper_t *dumper)
 {
-  dumper_t *p = malloc(sizeof(*p));
+  dumper_t *p = xmalloc(sizeof(*p));
 
   if (p) {
     *p = *dumper;
@@ -781,7 +782,7 @@ static void stat_dump_graph(graph_entry_t *entry)
 }
 
 /**
- * initialise the dumper
+ * initialize the dumper
  */
 static void stat_dump_init(const char *name)
 {
@@ -1302,7 +1303,7 @@ void stat_finish(const char *name)
       }
     }
 
-    /* some calculations are dependant, we pushed them on the wait_q */
+    /* some calculations are dependent, we pushed them on the wait_q */
     while (! pdeq_empty(status->wait_q)) {
       entry = pdeq_getr(status->wait_q);
 

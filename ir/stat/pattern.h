@@ -25,7 +25,7 @@
 void stat_calc_pattern_history(ir_graph *irg);
 
 /**
- * initialises the pattern history.
+ * initializes the pattern history.
  *
  * @param enable  Enable flag.
  */

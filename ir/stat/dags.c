@@ -84,7 +84,7 @@ static dag_entry_t *get_irn_dag_entry(ir_node *n)
 #define set_irn_dag_entry(n, e) set_irn_link(n, e)
 
 /**
- * checks wheater a node is an arg
+ * checks wether a node is an arg
  */
 static int is_arg(ir_node *node)
 {
@@ -152,7 +152,7 @@ static void connect_dags(ir_node *node, void *env)
     set_irn_dag_entry(node, entry);
   }
 
-  /* if this option is set, Loads are onways leaves */
+  /* if this option is set, Loads are allways leaves */
   if (dag_env->options & FIRMSTAT_LOAD_IS_LEAVE && get_irn_op(node) == op_Load)
     return;
 

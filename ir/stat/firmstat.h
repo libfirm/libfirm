@@ -22,12 +22,12 @@
  * Statistic options, can be or'ed.
  */
 enum firmstat_options_t {
-  FIRMSTAT_ENABLED         = 0x00000001,	/**< enable statistics */
-  FIRMSTAT_PATTERN_ENABLED = 0x00000002,	/**< enable pattern calculation */
-  FIRMSTAT_COUNT_STRONG_OP = 0x00000004,	/**< if set, count Mul/Div/Mod/DivMod by constant */
-  FIRMSTAT_COUNT_DAG       = 0x00000008,        /**< if set, count DAG statistics */
-  FIRMSTAT_COUNT_DELETED   = 0x00000010,        /**< if set, count deleted graphs */
-  FIRMSTAT_CSV_OUTPUT      = 0x10000000         /**< CSV output of some mini-statistic */
+  FIRMSTAT_ENABLED         = 0x00000001,    /**< enable statistics */
+  FIRMSTAT_PATTERN_ENABLED = 0x00000002,    /**< enable pattern calculation */
+  FIRMSTAT_COUNT_STRONG_OP = 0x00000004,    /**< if set, count Mul/Div/Mod/DivMod by constant */
+  FIRMSTAT_COUNT_DAG       = 0x00000008,    /**< if set, count DAG statistics */
+  FIRMSTAT_COUNT_DELETED   = 0x00000010,    /**< if set, count deleted graphs */
+  FIRMSTAT_CSV_OUTPUT      = 0x10000000     /**< CSV output of some mini-statistic */
 };
 
 /**
@@ -41,24 +41,24 @@ void stat_finish(const char *name);
 #ifdef FIRM_STATISTICS
 
 typedef enum {
-  STAT_OPT_STG,			/**< straightening optimization */
-  STAT_OPT_IFSIM,		/**< if simplification */
-  STAT_OPT_CONST_EVAL,          /**< constant evaluation */
-  STAT_OPT_ALGSIM,		/**< algebraic simplification */
-  STAT_OPT_PHI,			/**< Phi optmization */
-  STAT_OPT_WAW,			/**< Write-After-Write optimization */
-  STAT_OPT_WAR,			/**< Write-After-Read optimization */
-  STAT_OPT_RAW,			/**< Read-After-Write optimization */
-  STAT_OPT_RAR,			/**< Read-After-Read optimization */
-  STAT_OPT_RC,                  /**< Read-a-Const optimization */
+  STAT_OPT_STG,         /**< straightening optimization */
+  STAT_OPT_IFSIM,       /**< if simplification */
+  STAT_OPT_CONST_EVAL,  /**< constant evaluation */
+  STAT_OPT_ALGSIM,      /**< algebraic simplification */
+  STAT_OPT_PHI,         /**< Phi optmization */
+  STAT_OPT_WAW,         /**< Write-After-Write optimization */
+  STAT_OPT_WAR,         /**< Write-After-Read optimization */
+  STAT_OPT_RAW,         /**< Read-After-Write optimization */
+  STAT_OPT_RAR,         /**< Read-After-Read optimization */
+  STAT_OPT_RC,          /**< Read-a-Const optimization */
   STAT_OPT_TUPLE,		/**< Tuple optimization */
-  STAT_OPT_ID,			/**< ID optimization */
-  STAT_OPT_CSE,                 /**< common subexpression elimination */
-  STAT_OPT_STRENGTH_RED,	/**< strength reduction */
-  STAT_OPT_ARCH_DEP,		/**< architecture dependent optimization */
-  STAT_OPT_REASSOC,             /**< reassociation */
-  STAT_OPT_POLY_CALL,           /**< polymorphic call optimization */
-  STAT_LOWERED,			/**< lowered */
+  STAT_OPT_ID,          /**< ID optimization */
+  STAT_OPT_CSE,         /**< common subexpression elimination */
+  STAT_OPT_STRENGTH_RED,/**< strength reduction */
+  STAT_OPT_ARCH_DEP,    /**< architecture dependent optimization */
+  STAT_OPT_REASSOC,     /**< reassociation */
+  STAT_OPT_POLY_CALL,   /**< polymorphic call optimization */
+  STAT_LOWERED,         /**< lowered */
 
   STAT_OPT_MAX
 } stat_opt_kind;
@@ -66,7 +66,7 @@ typedef enum {
 /**
  * initialize the statistics module.
  *
- * @param enable_options  Bitmask containing the statistic options
+ * @param enable_options  a bitmask containing the statistic options
  */
 void init_stat(unsigned enable_options);
 

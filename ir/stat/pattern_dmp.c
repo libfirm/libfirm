@@ -258,7 +258,7 @@ static void stdout_start_children(pattern_dumper_t *self, unsigned id)
 }
 
 /**
- * finishes childred  dumper
+ * finishes the children dumper
  */
 static void stdout_finish_children(pattern_dumper_t *self, unsigned id)
 {
@@ -342,7 +342,7 @@ void pattern_start_children(pattern_dumper_t *self, unsigned id)
 }
 
 /*
- * finishes childred dumper
+ * finishes the children dumper
  */
 void pattern_finish_children(pattern_dumper_t *self, unsigned id)
 {
