@@ -266,13 +266,17 @@ static ir_node **set_out_edges(ir_node *n, ir_node **free) {
 }
 
 static INLINE void fix_start_proj(ir_graph *irg) {
-  ir_node *proj = NULL, *startbl;
+  ir_node *proj    = NULL;
+  ir_node *startbl = get_irg_start_block(irg);
   int i;
-  if (get_Block_n_cfg_outs(get_irg_start_block(irg))) {
-    startbl = get_irg_start_block(irg);
+
+  if (get_Block_n_cfg_outs(startbl)) {
     for (i = 0; i < get_irn_n_outs(startbl); i++)
-      if (get_irn_mode(get_irn_out(startbl, i)) == mode_X)
+      if (get_irn_mode(get_irn_out(startbl, i)) == mode_X) {
         proj = get_irn_out(startbl, i);
+        break;
+      }
+
     if (get_irn_out(proj, 0) == startbl) {
       assert(get_irn_n_outs(proj) == 2);
       set_irn_out(proj, 0, get_irn_out(proj, 1));
