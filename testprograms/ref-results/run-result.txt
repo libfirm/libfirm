@@ -1,0 +1,150 @@
+
+Creating an IR graph: ARRAY-HEAP_EXAMPLE...
+Optimizing ...
+Dumping the graph and a type graph.
+use xvcg to view these graphs:
+/ben/goetz/bin/xvcg GRAPHNAME
+
+
+Creating an IR graph: EMPTY...
+Done building the graph.  Dumping it.
+use xvcg to view this graph:
+/ben/goetz/bin/xvcg GRAPHNAME
+
+
+Creating an IR graph: IRR_CF...
+Optimizing ...
+Dumping the graph and a control flow graph.
+Use xvcg to view these graphs:
+/ben/goetz/bin/xvcg GRAPHNAME
+
+
+Creating an IR graph: ARRAY-STACK_EXAMPLE...
+Optimizing ...
+Dumping the graph and a type graph.
+Use xvcg to view these graphs:
+/ben/goetz/bin/xvcg GRAPHNAME
+
+
+Creating an IR graph: GLOBAL_VAR ...
+Optimizing ...
+Done building the graph.  Dumping it.
+Use xvcg to view this graph:
+/ben/goetz/bin/xvcg GRAPHNAME
+
+
+Creating an IR graph: IRR_LOOP...
+Optimizing ...
+Dumping the graph and a control flow graph.
+Use xvcg to view these graphs:
+/ben/goetz/bin/xvcg GRAPHNAME
+
+
+Creating an IR graph: CALL_STR_EXAMPLE...
+Optimizing ...
+Done building the graph.  Dumping it.
+Use xvcg to view this graph:
+/ben/goetz/bin/xvcg GRAPHNAME
+
+
+creating an IR graph: IF_ELSE_EXAMPLE...
+
+Optimizing ...
+Done building the graph.  Dumping it.
+use xvcg to view this graph:
+/ben/goetz/bin/xvcg GRAPHNAME
+
+
+Creating an IR graph: MEMORY_EXAMPLE...
+Optimizing ...
+Done building the graph.  Dumping it.
+Use xvcg to view this graph:
+/ben/goetz/bin/xvcg GRAPHNAME
+
+
+Creating an IR graph: COND_EXAMPLE...
+Optimizing ...
+Done building the graph.  Dumping it.
+Use xvcg to view this graph:
+/ben/goetz/bin/xvcg GRAPHNAME
+
+
+Creating an IR graph: IF_EXAMPLE...
+Done building the graph.  Dumping it.
+use xvcg to view this graph:
+/ben/goetz/bin/xvcg GRAPHNAME
+
+
+Creating an IR graph: OO_PROGRAM_EXAMPLE...
+Creating IR graph for set_a:
+Creating IR graph for c:
+Optimizing ...
+Dumping graphs of all procedures and a type graph.
+Use xvcg to view these graphs:
+/ben/goetz/bin/xvcg GRAPHNAME
+
+
+Creating an IR graph: CONST_EVAL_EXAMPLE...
+Optimizing ...
+Done building the graph.  Dumping it.
+use xvcg to view this graph:
+/ben/goetz/bin/xvcg GRAPHNAME
+
+
+Creating an IR graph: IF_WHILE_EXAMPLE...
+Optimizing ...
+Done building the graph.  Dumping it with out-edges.
+Use xvcg to view this graph:
+/ben/goetz/bin/xvcg GRAPHNAME
+
+
+Creating an IR graph: ...
+Optimizing ...
+Dumping the graph and a control flow graph.
+Use xvcg to view these graphs:
+/ben/goetz/bin/xvcg GRAPHNAME
+
+
+Creating an IR graph: DEAD_BLOCK...
+Optimizing ...
+Dumping the graph and a control flow graph.
+Use xvcg to view these graphs:
+/ben/goetz/bin/xvcg GRAPHNAME
+
+
+Creating type information...
+Done building the graph.  Dumping it.
+use xvcg to view this graph:
+/ben/goetz/bin/xvcg GRAPHNAME
+
+
+Creating an IR graph: WHILE_EXAMPLE...
+Optimizing ...
+Done building the graph.  Dumping it.
+Use xvcg to view this graph:
+/ben/goetz/bin/xvcg GRAPHNAME
+
+
+Creating an IR graph: ENDLESS_LOOP_EXAMPLE...
+Optimizing ...
+Done building the graph.  Dumping it.
+Use xvcg to view this graph:
+/ben/goetz/bin/xvcg GRAPHNAME
+
+
+Creating an IR graph: GLOBAL_CSE_EXAMPLE...
+Optimizing ...
+Done building the graph.  Dumping it.
+use xvcg to view this graph:
+/ben/goetz/bin/xvcg GRAPHNAME
+
+
+Creating an IR graph: OO_INLINE_EXAMPLE...
+Creating IR graph for set_a:
+Creating IR graph for c:
+Inlining set_a ...
+INLINEing c ...
+Optimizing ...
+Dumping graphs of all procedures and a type graph.
+Use xvcg to view these graphs:
+/ben/goetz/bin/xvcg GRAPHNAME

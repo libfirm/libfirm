@@ -1,0 +1,116 @@
+graph: { title: "ir graph of IF_WHILE_EXAMPLE_main"
+display_edge_labels: no
+layoutalgorithm: mindepth
+manhattan_edges: yes
+port_sharing: no
+orientation: bottom_to_top
+classname 1: "Data"
+classname 2: "Block"
+classname 3: "Entity type"classname 4: "Entity owner"classname 5: "Method Param"classname 6: "Method Res"classname 7: "Super"classname 8: "Union"classname 9: "Points-to"classname 10: "Array Element Type"classname 11: "Overwrites"classname 12: "Member"
+node: {title: "0x80a0d8c" label: "Start " color: blue}
+edge: { sourcename: "0x80a0d8c" targetname: "0x80a0cd8" class: 2 priority: 2 linestyle: dotted}
+node: {title: "0x80a0d50" label: "ProjX 0" color: yellow}
+edge: { sourcename: "0x80a0d50" targetname: "0x80a0cd8" class: 2 priority: 2 linestyle: dotted}
+edge: {sourcename: "0x80a0d50" targetname: "0x80a0d8c" label: "0" color: red}
+node: {title: "0x80a0cd8" label: "Block " color: lightyellow}
+edge: {sourcename: "0x80a0cd8" targetname: "0x80a0d50" label: "0" color: red}
+node: {title: "0x80a0ca0" label: "0I " color: yellow}
+edge: { sourcename: "0x80a0ca0" targetname: "0x80a0cd8" class: 2 priority: 2 linestyle: dotted}
+node: {title: "0x80a0c64" label: "CmpT " }
+edge: { sourcename: "0x80a0c64" targetname: "0x80a0a80" class: 2 priority: 2 linestyle: dotted}
+edge: {sourcename: "0x80a0c64" targetname: "0x80a0ca0" label: "0" }
+edge: {sourcename: "0x80a0c64" targetname: "0x80a0ca0" label: "1" }
+node: {title: "0x80a0c28" label: "Projb Eq" color: yellow}
+edge: { sourcename: "0x80a0c28" targetname: "0x80a0a80" class: 2 priority: 2 linestyle: dotted}
+edge: {sourcename: "0x80a0c28" targetname: "0x80a0c64" label: "0" }
+node: {title: "0x80a0be8" label: "Cond " }
+edge: { sourcename: "0x80a0be8" targetname: "0x80a0a80" class: 2 priority: 2 linestyle: dotted}
+edge: {sourcename: "0x80a0be8" targetname: "0x80a0c28" label: "0" }
+node: {title: "0x80a0bac" label: "ProjX 1" color: yellow}
+edge: { sourcename: "0x80a0bac" targetname: "0x80a0a80" class: 2 priority: 2 linestyle: dotted}
+edge: {sourcename: "0x80a0bac" targetname: "0x80a0be8" label: "0" color: red}
+node: {title: "0x80a0b34" label: "Block " color: lightyellow}
+edge: {sourcename: "0x80a0b34" targetname: "0x80a0bac" label: "0" color: red}
+node: {title: "0x80a0b00" label: "Jmp " }
+edge: { sourcename: "0x80a0b00" targetname: "0x80a0b34" class: 2 priority: 2 linestyle: dotted}
+node: {title: "0x80a0df4" label: "Block " color: lightyellow}
+edge: {sourcename: "0x80a0df4" targetname: "0x80a0d50" label: "0" color: red}
+node: {title: "0x80a0dc0" label: "Jmp " }
+edge: { sourcename: "0x80a0dc0" targetname: "0x80a0df4" class: 2 priority: 2 linestyle: dotted}
+node: {title: "0x80a0a80" label: "Block " color: lightyellow}
+edge: {sourcename: "0x80a0a80" targetname: "0x80a0dc0" label: "0" color: red}
+edge: {sourcename: "0x80a0a80" targetname: "0x80a0b00" label: "1" color: red}
+node: {title: "0x80a0a44" label: "ProjX 0" color: yellow}
+edge: { sourcename: "0x80a0a44" targetname: "0x80a0a80" class: 2 priority: 2 linestyle: dotted}
+edge: {sourcename: "0x80a0a44" targetname: "0x80a0be8" label: "0" color: red}
+node: {title: "0x80a09cc" label: "Block " color: lightyellow}
+edge: {sourcename: "0x80a09cc" targetname: "0x80a0a44" label: "0" color: red}
+node: {title: "0x80a0f58" label: "0I " color: yellow}
+edge: { sourcename: "0x80a0f58" targetname: "0x80a0cd8" class: 2 priority: 2 linestyle: dotted}
+node: {title: "0x80a0f00" label: "PhiI " color: green}
+edge: { sourcename: "0x80a0f00" targetname: "0x80a0a80" class: 2 priority: 2 linestyle: dotted}
+edge: {sourcename: "0x80a0f00" targetname: "0x80a0f58" label: "0" }
+edge: {sourcename: "0x80a0f00" targetname: "0x80a0ea8" label: "1" }
+node: {title: "0x80a0f90" label: "1I " color: yellow}
+edge: { sourcename: "0x80a0f90" targetname: "0x80a0cd8" class: 2 priority: 2 linestyle: dotted}
+node: {title: "0x80a0ea8" label: "PhiI " color: green}
+edge: { sourcename: "0x80a0ea8" targetname: "0x80a0a80" class: 2 priority: 2 linestyle: dotted}
+edge: {sourcename: "0x80a0ea8" targetname: "0x80a0f90" label: "0" }
+edge: {sourcename: "0x80a0ea8" targetname: "0x80a0f00" label: "1" }
+node: {title: "0x80a0e6c" label: "SubI " }
+edge: { sourcename: "0x80a0e6c" targetname: "0x80a09cc" class: 2 priority: 2 linestyle: dotted}
+edge: {sourcename: "0x80a0e6c" targetname: "0x80a0f00" label: "0" }
+edge: {sourcename: "0x80a0e6c" targetname: "0x80a0ea8" label: "1" }
+node: {title: "0x80a0fc8" label: "ProjM 1" color: yellow}
+edge: { sourcename: "0x80a0fc8" targetname: "0x80a0cd8" class: 2 priority: 2 linestyle: dotted}
+edge: {sourcename: "0x80a0fc8" targetname: "0x80a0d8c" label: "0" color: blue}
+node: {title: "0x80a0990" label: "Return " }
+edge: { sourcename: "0x80a0990" targetname: "0x80a09cc" class: 2 priority: 2 linestyle: dotted}
+edge: {sourcename: "0x80a0990" targetname: "0x80a0fc8" label: "0" color: blue}
+edge: {sourcename: "0x80a0990" targetname: "0x80a0e6c" label: "1" }
+node: {title: "0x80a0918" label: "Block " color: lightyellow}
+edge: {sourcename: "0x80a0918" targetname: "0x80a0990" label: "0" color: red}
+node: {title: "0x80a08f8" label: "End " color: blue}
+edge: { sourcename: "0x80a08f8" targetname: "0x80a0918" class: 2 priority: 2 linestyle: dotted}
+edge: {sourcename: "0x80a0d8c" targetname: "0x80a0d50" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0d8c" targetname: "0x80a0fc8" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0d50" targetname: "0x80a0df4" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0d50" targetname: "0x80a0cd8" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0df4" targetname: "0x80a0dc0" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0dc0" targetname: "0x80a0a80" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0a80" targetname: "0x80a0bac" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0a80" targetname: "0x80a0be8" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0a80" targetname: "0x80a0c28" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0a80" targetname: "0x80a0c64" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0a80" targetname: "0x80a0a44" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0a80" targetname: "0x80a0f00" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0a80" targetname: "0x80a0ea8" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0bac" targetname: "0x80a0b34" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0b34" targetname: "0x80a0b00" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0b00" targetname: "0x80a0a80" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0be8" targetname: "0x80a0bac" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0be8" targetname: "0x80a0a44" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0a44" targetname: "0x80a09cc" color: red linestyle: dashed}
+edge: {sourcename: "0x80a09cc" targetname: "0x80a0990" color: red linestyle: dashed}
+edge: {sourcename: "0x80a09cc" targetname: "0x80a0e6c" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0990" targetname: "0x80a0918" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0918" targetname: "0x80a08f8" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0e6c" targetname: "0x80a0990" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0c28" targetname: "0x80a0be8" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0c64" targetname: "0x80a0c28" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0f00" targetname: "0x80a0ea8" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0f00" targetname: "0x80a0e6c" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0ea8" targetname: "0x80a0f00" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0ea8" targetname: "0x80a0e6c" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0cd8" targetname: "0x80a0d50" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0cd8" targetname: "0x80a0d8c" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0cd8" targetname: "0x80a0ca0" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0cd8" targetname: "0x80a0fc8" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0cd8" targetname: "0x80a0f58" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0cd8" targetname: "0x80a0f90" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0ca0" targetname: "0x80a0c64" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0ca0" targetname: "0x80a0c64" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0fc8" targetname: "0x80a0990" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0f58" targetname: "0x80a0f00" color: red linestyle: dashed}
+edge: {sourcename: "0x80a0f90" targetname: "0x80a0ea8" color: red linestyle: dashed}
+}

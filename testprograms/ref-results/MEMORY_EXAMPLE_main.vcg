@@ -1,0 +1,105 @@
+graph: { title: "ir graph of MEMORY_EXAMPLE_main"
+display_edge_labels: yes
+layoutalgorithm: mindepth
+manhattan_edges: yes
+port_sharing: no
+orientation: bottom_to_top
+classname 1: "Data"
+classname 2: "Block"
+classname 3: "Entity type"classname 4: "Entity owner"classname 5: "Method Param"classname 6: "Method Res"classname 7: "Super"classname 8: "Union"classname 9: "Points-to"classname 10: "Array Element Type"classname 11: "Overwrites"classname 12: "Member"
+graph: { title: "0x80a0930"  label: "Block" status:clustered color:yellow
+edge: {sourcename: "0x80a0930" targetname: "0x80a09a8" label: "0" color: red}
+node: {title: "0x80a0910" label: "End " color: blue}
+}
+
+graph: { title: "0x80a09e4"  label: "Block" status:clustered color:yellow
+edge: {sourcename: "0x80a09e4" targetname: "0x80a0a5c" label: "0" color: red}
+node: {title: "0x80a09a8" label: "Return " }
+edge: {sourcename: "0x80a09a8" targetname: "0x80a1300" label: "0" color: blue}
+edge: {sourcename: "0x80a09a8" targetname: "0x80a1284" label: "1" }
+node: {title: "0x80a1284" label: "ProjI 2" color: yellow}
+edge: {sourcename: "0x80a1284" targetname: "0x80a12c0" label: "0" }
+node: {title: "0x80a12c0" label: "Load " }
+edge: {sourcename: "0x80a12c0" targetname: "0x80a0e00" label: "0" color: blue}
+edge: {sourcename: "0x80a12c0" targetname: "0x80a0c88" label: "1" }
+node: {title: "0x80a1300" label: "ProjM 0" color: yellow}
+edge: {sourcename: "0x80a1300" targetname: "0x80a12c0" label: "0" color: blue}
+}
+
+graph: { title: "0x80a0a98"  label: "Block" status:clustered color:yellow
+edge: {sourcename: "0x80a0a98" targetname: "0x80a1250" label: "0" color: red}
+edge: {sourcename: "0x80a0a98" targetname: "0x80a0b18" label: "1" color: red}
+node: {title: "0x80a0a5c" label: "ProjX 1" color: yellow}
+edge: {sourcename: "0x80a0a5c" targetname: "0x80a0b54" label: "0" color: red}
+node: {title: "0x80a0b18" label: "ProjX 0" color: yellow}
+edge: {sourcename: "0x80a0b18" targetname: "0x80a0b54" label: "0" color: red}
+node: {title: "0x80a0b54" label: "Cond " }
+edge: {sourcename: "0x80a0b54" targetname: "0x80a0b94" label: "0" }
+node: {title: "0x80a0b94" label: "Projb Gt" color: yellow}
+edge: {sourcename: "0x80a0b94" targetname: "0x80a0bd0" label: "0" }
+node: {title: "0x80a0bd0" label: "CmpT " }
+edge: {sourcename: "0x80a0bd0" targetname: "0x80a11dc" label: "0" }
+edge: {sourcename: "0x80a0bd0" targetname: "0x80a0c0c" label: "1" }
+node: {title: "0x80a0c0c" label: "ProjI 2" color: yellow}
+edge: {sourcename: "0x80a0c0c" targetname: "0x80a0c48" label: "0" }
+node: {title: "0x80a0c48" label: "Load " }
+edge: {sourcename: "0x80a0c48" targetname: "0x80a0da8" label: "0" color: blue}
+edge: {sourcename: "0x80a0c48" targetname: "0x80a0c88" label: "1" }
+node: {title: "0x80a0da8" label: "PhiM " color: green}
+edge: {sourcename: "0x80a0da8" targetname: "0x80a102c" label: "0" color: blue}
+edge: {sourcename: "0x80a0da8" targetname: "0x80a0e00" label: "1" color: blue}
+node: {title: "0x80a0e00" label: "ProjM 0" color: yellow}
+edge: {sourcename: "0x80a0e00" targetname: "0x80a0e3c" label: "0" color: blue}
+node: {title: "0x80a0e3c" label: "Store " }
+edge: {sourcename: "0x80a0e3c" targetname: "0x80a0eb8" label: "0" color: blue}
+edge: {sourcename: "0x80a0e3c" targetname: "0x80a0e80" label: "1" }
+edge: {sourcename: "0x80a0e3c" targetname: "0x80a0c0c" label: "2" }
+node: {title: "0x80a0eb8" label: "ProjM 0" color: yellow}
+edge: {sourcename: "0x80a0eb8" targetname: "0x80a0ef4" label: "0" color: blue}
+node: {title: "0x80a0ef4" label: "Store " }
+edge: {sourcename: "0x80a0ef4" targetname: "0x80a0ff0" label: "0" color: blue}
+edge: {sourcename: "0x80a0ef4" targetname: "0x80a0c88" label: "1" }
+edge: {sourcename: "0x80a0ef4" targetname: "0x80a0f38" label: "2" }
+node: {title: "0x80a0f38" label: "ProjI 2" color: yellow}
+edge: {sourcename: "0x80a0f38" targetname: "0x80a0f74" label: "0" }
+node: {title: "0x80a0f74" label: "Load " }
+edge: {sourcename: "0x80a0f74" targetname: "0x80a0fb4" label: "0" color: blue}
+edge: {sourcename: "0x80a0f74" targetname: "0x80a0e80" label: "1" }
+node: {title: "0x80a0fb4" label: "ProjM 0" color: yellow}
+edge: {sourcename: "0x80a0fb4" targetname: "0x80a0c48" label: "0" color: blue}
+node: {title: "0x80a0ff0" label: "ProjM 0" color: yellow}
+edge: {sourcename: "0x80a0ff0" targetname: "0x80a0f74" label: "0" color: blue}
+}
+
+graph: { title: "0x80a1068"  label: "Block" status:clustered color:yellow
+edge: {sourcename: "0x80a1068" targetname: "0x80a0d38" label: "0" color: red}
+node: {title: "0x80a102c" label: "ProjM 0" color: yellow}
+edge: {sourcename: "0x80a102c" targetname: "0x80a10e0" label: "0" color: blue}
+node: {title: "0x80a10e0" label: "Store " }
+edge: {sourcename: "0x80a10e0" targetname: "0x80a115c" label: "0" color: blue}
+edge: {sourcename: "0x80a10e0" targetname: "0x80a0e80" label: "1" }
+edge: {sourcename: "0x80a10e0" targetname: "0x80a1124" label: "2" }
+node: {title: "0x80a115c" label: "ProjM 0" color: yellow}
+edge: {sourcename: "0x80a115c" targetname: "0x80a1198" label: "0" color: blue}
+node: {title: "0x80a1198" label: "Store " }
+edge: {sourcename: "0x80a1198" targetname: "0x80a1214" label: "0" color: blue}
+edge: {sourcename: "0x80a1198" targetname: "0x80a0c88" label: "1" }
+edge: {sourcename: "0x80a1198" targetname: "0x80a11dc" label: "2" }
+node: {title: "0x80a1250" label: "Jmp " }
+}
+
+graph: { title: "0x80a0cc0"  label: "Block" status:clustered color:yellow
+edge: {sourcename: "0x80a0cc0" targetname: "0x80a0d38" label: "0" color: red}
+node: {title: "0x80a0c88" label: "VAR_AP " color: yellow}
+node: {title: "0x80a0d38" label: "ProjX 0" color: yellow}
+edge: {sourcename: "0x80a0d38" targetname: "0x80a0d74" label: "0" color: red}
+node: {title: "0x80a0d74" label: "Start " color: blue}
+node: {title: "0x80a0e80" label: "VAR_BP " color: yellow}
+node: {title: "0x80a1124" label: "1I " color: yellow}
+node: {title: "0x80a11dc" label: "0I " color: yellow}
+node: {title: "0x80a1214" label: "ProjM 1" color: yellow}
+edge: {sourcename: "0x80a1214" targetname: "0x80a0d74" label: "0" color: blue}
+}
+
+node: {title: "0x80a13f0" label: "Bad " }
+}

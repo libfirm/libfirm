@@ -1,0 +1,31 @@
+graph: { title: "ir graph of EMPTY_main"
+display_edge_labels: yes
+layoutalgorithm: mindepth
+manhattan_edges: yes
+port_sharing: no
+orientation: bottom_to_top
+classname 1: "Data"
+classname 2: "Block"
+classname 3: "Entity type"classname 4: "Entity owner"classname 5: "Method Param"classname 6: "Method Res"classname 7: "Super"classname 8: "Union"classname 9: "Points-to"classname 10: "Array Element Type"classname 11: "Overwrites"classname 12: "Member"
+graph: { title: "0x809e280"  label: "Block" status:clustered color:yellow
+edge: {sourcename: "0x809e280" targetname: "0x809e5e0" label: "0" color: red}
+node: {title: "0x809e2e4" label: "End " color: blue}
+}
+
+graph: { title: "0x809e544"  label: "Block" status:clustered color:yellow
+edge: {sourcename: "0x809e544" targetname: "0x809e404" label: "0" color: red}
+node: {title: "0x809e5e0" label: "Return " }
+edge: {sourcename: "0x809e5e0" targetname: "0x809e440" label: "0" color: blue}
+}
+
+graph: { title: "0x809e304"  label: "Block" status:clustered color:yellow
+edge: {sourcename: "0x809e304" targetname: "0x809e404" label: "0" color: red}
+node: {title: "0x809e404" label: "ProjX 0" color: yellow}
+edge: {sourcename: "0x809e404" targetname: "0x809e368" label: "0" color: red}
+node: {title: "0x809e368" label: "Start " color: blue}
+node: {title: "0x809e440" label: "ProjM 1" color: yellow}
+edge: {sourcename: "0x809e440" targetname: "0x809e368" label: "0" color: blue}
+}
+
+node: {title: "0x809e39c" label: "Bad " }
+}

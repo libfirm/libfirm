@@ -1,0 +1,73 @@
+graph: { title: "ir graph of WHILE_EXAMPLE_main"
+display_edge_labels: no
+layoutalgorithm: mindepth
+manhattan_edges: yes
+port_sharing: no
+orientation: bottom_to_top
+classname 1: "Data"
+classname 2: "Block"
+classname 3: "Entity type"classname 4: "Entity owner"classname 5: "Method Param"classname 6: "Method Res"classname 7: "Super"classname 8: "Union"classname 9: "Points-to"classname 10: "Array Element Type"classname 11: "Overwrites"classname 12: "Member"
+graph: { title: "0x80a08f8"  label: "Block" status:clustered color:yellow
+edge: {sourcename: "0x80a08f8" targetname: "0x80a0970" label: "0" color: red}
+node: {title: "0x80a08d8" label: "End " color: blue}
+}
+
+graph: { title: "0x80a09ac"  label: "Block" status:clustered color:yellow
+edge: {sourcename: "0x80a09ac" targetname: "0x80a0a24" label: "0" color: red}
+node: {title: "0x80a0970" label: "Return " }
+edge: {sourcename: "0x80a0970" targetname: "0x80a0fe8" label: "0" color: blue}
+edge: {sourcename: "0x80a0970" targetname: "0x80a0fac" label: "1" }
+node: {title: "0x80a0fac" label: "SubI " }
+edge: {sourcename: "0x80a0fac" targetname: "0x80a0cd8" label: "0" }
+edge: {sourcename: "0x80a0fac" targetname: "0x80a0c80" label: "1" }
+}
+
+graph: { title: "0x80a0a60"  label: "Block" status:clustered color:yellow
+edge: {sourcename: "0x80a0a60" targetname: "0x80a0f78" label: "0" color: red}
+edge: {sourcename: "0x80a0a60" targetname: "0x80a0ae0" label: "1" color: red}
+node: {title: "0x80a0a24" label: "ProjX 0" color: yellow}
+edge: {sourcename: "0x80a0a24" targetname: "0x80a0bc8" label: "0" color: red}
+node: {title: "0x80a0b8c" label: "ProjX 1" color: yellow}
+edge: {sourcename: "0x80a0b8c" targetname: "0x80a0bc8" label: "0" color: red}
+node: {title: "0x80a0bc8" label: "Cond " }
+edge: {sourcename: "0x80a0bc8" targetname: "0x80a0c08" label: "0" }
+node: {title: "0x80a0c08" label: "Projb Eq" color: yellow}
+edge: {sourcename: "0x80a0c08" targetname: "0x80a0c44" label: "0" }
+node: {title: "0x80a0c44" label: "CmpT " }
+edge: {sourcename: "0x80a0c44" targetname: "0x80a0f40" label: "0" }
+edge: {sourcename: "0x80a0c44" targetname: "0x80a0c80" label: "1" }
+node: {title: "0x80a0c80" label: "PhiI " color: green}
+edge: {sourcename: "0x80a0c80" targetname: "0x80a0f08" label: "0" }
+edge: {sourcename: "0x80a0c80" targetname: "0x80a0cd8" label: "1" }
+node: {title: "0x80a0cd8" label: "PhiI " color: green}
+edge: {sourcename: "0x80a0cd8" targetname: "0x80a0d30" label: "0" }
+edge: {sourcename: "0x80a0cd8" targetname: "0x80a0c80" label: "1" }
+}
+
+graph: { title: "0x80a0b14"  label: "Block" status:clustered color:yellow
+edge: {sourcename: "0x80a0b14" targetname: "0x80a0b8c" label: "0" color: red}
+node: {title: "0x80a0ae0" label: "Jmp " }
+}
+
+graph: { title: "0x80a0d6c"  label: "Block" status:clustered color:yellow
+edge: {sourcename: "0x80a0d6c" targetname: "0x80a0de4" label: "0" color: red}
+node: {title: "0x80a0d30" label: "ProjI 0" color: yellow}
+edge: {sourcename: "0x80a0d30" targetname: "0x80a0ecc" label: "0" }
+node: {title: "0x80a0f78" label: "Jmp " }
+}
+
+graph: { title: "0x80a0e20"  label: "Block" status:clustered color:yellow
+edge: {sourcename: "0x80a0e20" targetname: "0x80a0de4" label: "0" color: red}
+node: {title: "0x80a0de4" label: "ProjX 0" color: yellow}
+edge: {sourcename: "0x80a0de4" targetname: "0x80a0e98" label: "0" color: red}
+node: {title: "0x80a0e98" label: "Start " color: blue}
+node: {title: "0x80a0ecc" label: "ProjT 4" color: yellow}
+edge: {sourcename: "0x80a0ecc" targetname: "0x80a0e98" label: "0" }
+node: {title: "0x80a0f08" label: "1I " color: yellow}
+node: {title: "0x80a0f40" label: "0I " color: yellow}
+node: {title: "0x80a0fe8" label: "ProjM 1" color: yellow}
+edge: {sourcename: "0x80a0fe8" targetname: "0x80a0e98" label: "0" color: blue}
+}
+
+node: {title: "0x80a109c" label: "Bad " }
+}

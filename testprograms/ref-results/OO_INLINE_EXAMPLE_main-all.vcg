@@ -1,0 +1,149 @@
+graph: { title: "ir graph of OO_INLINE_EXAMPLE_main"
+display_edge_labels: no
+layoutalgorithm: mindepth
+manhattan_edges: yes
+port_sharing: no
+orientation: bottom_to_top
+classname 1: "Data"
+classname 2: "Block"
+classname 3: "Entity type"classname 4: "Entity owner"classname 5: "Method Param"classname 6: "Method Res"classname 7: "Super"classname 8: "Union"classname 9: "Points-to"classname 10: "Array Element Type"classname 11: "Overwrites"classname 12: "Member"
+graph: { title: "0x80a6758"  label: "Block" status:clustered color:yellow
+node: {title: "0x80a6738" label: "End " color: blue}
+}
+
+graph: { title: "0x80a68d4"  label: "Block" status:clustered color:yellow
+edge: {sourcename: "0x80a68d4" targetname: "0x80a6988" label: "0" color: red}
+edge: {sourcename: "0x80a68d4" targetname: "0x80a6954" label: "1" color: red}
+node: {title: "0x80a6a34" label: "PhiM " color: green}
+edge: {sourcename: "0x80a6a34" targetname: "0x80a6d2c" label: "0" color: blue}
+edge: {sourcename: "0x80a6a34" targetname: "0x80a6a8c" label: "1" color: blue}
+node: {title: "0x80a6954" label: "Jmp " }
+node: {title: "0x80a6a8c" label: "Store " }
+edge: {sourcename: "0x80a6a8c" targetname: "0x80a6a34" label: "0" color: blue}
+edge: {sourcename: "0x80a6a8c" targetname: "0x80a6bf0" label: "1" }
+edge: {sourcename: "0x80a6a8c" targetname: "0x80a6ad0" label: "2" }
+node: {title: "0x80a6ad0" label: "PhiI " color: green}
+edge: {sourcename: "0x80a6ad0" targetname: "0x80a6bb8" label: "0" }
+edge: {sourcename: "0x80a6ad0" targetname: "0x80a6b28" label: "1" }
+node: {title: "0x80a6b28" label: "PhiI " color: green}
+edge: {sourcename: "0x80a6b28" targetname: "0x80a6b80" label: "0" }
+edge: {sourcename: "0x80a6b28" targetname: "0x80a6ad0" label: "1" }
+node: {title: "0x80a6bf0" label: "Sel a" }
+edge: {sourcename: "0x80a6bf0" targetname: "0x80a6a34" label: "0" color: blue}
+edge: {sourcename: "0x80a6bf0" targetname: "0x80a6c30" label: "1" }
+}
+
+graph: { title: "0x80a69bc"  label: "Block" status:clustered color:yellow
+edge: {sourcename: "0x80a69bc" targetname: "0x80a6864" label: "0" color: red}
+node: {title: "0x80a6988" label: "Jmp " }
+node: {title: "0x80a6b80" label: "0I " color: yellow}
+node: {title: "0x80a6c30" label: "ProjP 2" color: yellow}
+edge: {sourcename: "0x80a6c30" targetname: "0x80a6c6c" label: "0" }
+node: {title: "0x80a6c6c" label: "Alloc " }
+edge: {sourcename: "0x80a6c6c" targetname: "0x80a6cf0" label: "0" color: blue}
+edge: {sourcename: "0x80a6c6c" targetname: "0x80a6cb4" label: "1" }
+node: {title: "0x80a6cb4" label: "SymC PRIMA size " }
+node: {title: "0x80a6d2c" label: "ProjM 0" color: yellow}
+edge: {sourcename: "0x80a6d2c" targetname: "0x80a6d68" label: "0" color: blue}
+node: {title: "0x80a6d68" label: "Store " }
+edge: {sourcename: "0x80a6d68" targetname: "0x80a6e24" label: "0" color: blue}
+edge: {sourcename: "0x80a6d68" targetname: "0x80a6de4" label: "1" }
+edge: {sourcename: "0x80a6d68" targetname: "0x80a6dac" label: "2" }
+node: {title: "0x80a6de4" label: "Sel a" }
+edge: {sourcename: "0x80a6de4" targetname: "0x80a6e24" label: "0" color: blue}
+edge: {sourcename: "0x80a6de4" targetname: "0x80a6c30" label: "1" }
+node: {title: "0x80a6e24" label: "ProjM 0" color: yellow}
+edge: {sourcename: "0x80a6e24" targetname: "0x80a6c6c" label: "0" color: blue}
+}
+
+graph: { title: "0x80a67ec"  label: "Block" status:clustered color:yellow
+edge: {sourcename: "0x80a67ec" targetname: "0x80a6864" label: "0" color: red}
+node: {title: "0x80a6864" label: "ProjX 0" color: yellow}
+edge: {sourcename: "0x80a6864" targetname: "0x80a68a0" label: "0" color: red}
+node: {title: "0x80a68a0" label: "Start " color: blue}
+node: {title: "0x80a6bb8" label: "5I " color: yellow}
+node: {title: "0x80a6cf0" label: "ProjM 1" color: yellow}
+edge: {sourcename: "0x80a6cf0" targetname: "0x80a68a0" label: "0" color: blue}
+node: {title: "0x80a6dac" label: "2I " color: yellow}
+}
+
+node: {title: "0x80a67b8" label: "Bad " }
+node: {title: "0x809e1b0" label: "ent a" color: yellow info1:"automatic allocated
+local
+uninitialized
+non_volatile
+existent
+"}
+edge: { sourcename: "0x809e1b0" targetname: "0x809e0c0" class: 3 label: "type" color: red}
+node: {title: "0x809e0e8" label: "class PRIMA"info1: "state: layout_undefined
+size: -1B,
+" color: green}
+edge: { sourcename: "0x809e0e8" targetname: "0x809e1b0" class: 12 label: "member" color:blue}
+edge: { sourcename: "0x809e0e8" targetname: "0x809e2d0" class: 12 label: "member" color:blue}
+edge: { sourcename: "0x809e0e8" targetname: "0x809e3a0" class: 12 label: "member" color:blue}
+node: {title: "0x809e2d0" label: "ent set_a" color: yellow info1:"static allocated
+local
+constant
+non_volatile
+existent
+
+ irg = 0x80a0ae0 "}
+edge: { sourcename: "0x809e2d0" targetname: "0x809e238" class: 3 label: "type" color: red}
+edge: { sourcename: "0x809e2d0" targetname: "0x809be78" label: "value "}
+node: {title: "0x809be78" label: "&(PRIMA_set_a)P " color: yellow}
+node: {title: "0x809e238" label: "method set_a"info1: "state: layout_fixed,
+mode: P,
+size: 4B,
+"}
+edge: { sourcename: "0x809e238" targetname: "0x809e180" class: 5 label: "param 0" color: green}
+edge: { sourcename: "0x809e238" targetname: "0x809e0c0" class: 5 label: "param 1" color: green}
+node: {title: "0x809e180" label: "pointer class_prima_ptr"info1: "state: layout_fixed,
+mode: P,
+size: 4B,
+"}
+edge: { sourcename: "0x809e180" targetname: "0x809e0e8" class: 9 label: "points to" color:green}
+node: {title: "0x809e0c0" label: "primitive int"info1: "state: layout_fixed,
+mode: I,
+size: 4B,
+"}
+node: {title: "0x809e3a0" label: "ent c" color: yellow info1:"static allocated
+local
+constant
+non_volatile
+existent
+
+ irg = 0x80a30e8 "}
+edge: { sourcename: "0x809e3a0" targetname: "0x809e340" class: 3 label: "type" color: red}
+edge: { sourcename: "0x809e3a0" targetname: "0x809beb0" label: "value "}
+node: {title: "0x809beb0" label: "&(PRIMA_c)P " color: yellow}
+node: {title: "0x809e340" label: "method c"info1: "state: layout_fixed,
+mode: P,
+size: 4B,
+"}
+edge: { sourcename: "0x809e340" targetname: "0x809e180" class: 5 label: "param 0" color: green}
+edge: { sourcename: "0x809e340" targetname: "0x809e0c0" class: 5 label: "param 1" color: green}
+edge: { sourcename: "0x809e340" targetname: "0x809e0c0" class: 6 label: "res 0" color: green}
+node: {title: "0x809e488" label: "ent OO_INLINE_EXAMPLE_main" color: yellow info1:"static allocated
+local
+constant
+non_volatile
+existent
+
+ irg = 0x809e510 "}
+edge: { sourcename: "0x809e488" targetname: "0x809e428" class: 3 label: "type" color: red}
+edge: { sourcename: "0x809e488" targetname: "0x809bee8" label: "value "}
+node: {title: "0x809bee8" label: "&(GlobalType_OO_INLINE_EXAMPLE_main)P " color: yellow}
+node: {title: "0x809bae0" label: "class GlobalType"info1: "state: layout_undefined
+size: -1B,
+" color: green}
+edge: { sourcename: "0x809bae0" targetname: "0x809e488" class: 12 label: "member" color:blue}
+node: {title: "0x809e428" label: "method OO_INLINE_EXAMPLE_main"info1: "state: layout_fixed,
+mode: P,
+size: 4B,
+"}
+edge: { sourcename: "0x809e428" targetname: "0x809e0c0" class: 6 label: "res 0" color: green}
+edge: { sourcename: "0x80a6bf0" targetname: "0x809e1b0" class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename: "0x80a6c6c" targetname: "0x809e0e8" class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename: "0x80a6cb4" targetname: "0x809e0e8" class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename: "0x80a6de4" targetname: "0x809e1b0" class: 2 priority: 2 linestyle: dotted}
+}
