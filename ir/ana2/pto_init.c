@@ -34,6 +34,8 @@
 # include "irgwalk.h"
 # include "xmalloc.h"
 
+# include "gnu_ext.h"
+
 /* Local Defines: */
 # define obstack_chunk_alloc xmalloc
 # define obstack_chunk_free  free
@@ -427,6 +429,9 @@ void pto_reset_graph_pto (ir_graph *graph, int ctx_idx)
 
 /*
   $Log$
+  Revision 1.17  2005/01/14 14:12:51  liekweg
+  prepare gnu extension fix
+
   Revision 1.16  2005/01/14 13:36:50  liekweg
   don't put environments on the stack; handle consts
 
