@@ -94,12 +94,12 @@ void normalize_one_return(ir_graph *irg)
 
       /* save the return values and shuffle them */
       for (k = 0; k < n_ret_vals; ++k)
-        retvals[j + k*n_ret_vals] = get_irn_n(ret, k);
-
-      ++j;
+        retvals[j + k*n_rets] = get_irn_n(ret, k);
 
       set_Block_cfgpred(endbl, i, new_r_Bad(irg));
       last_idx = i;
+
+      ++j;
     }
   }
 
