@@ -1304,6 +1304,8 @@ static ir_op *firm_set_default_node_cmp_attr(ir_op *op)
   CASE(Call);
   CASE(FuncCall);
   CASE(Sel);
+  CASE(Phi);
+  CASE(Cast);
   default:
     op->node_cmp_attr  = NULL;
   }
