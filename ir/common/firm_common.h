@@ -33,7 +33,8 @@ typedef enum {
   k_ir_mode,    /**< an ir mode */
   k_ir_op,      /**< an ir opcode */
   k_tarval,     /**< a tarval */
-  k_ir_loop     /**< a loop */
+  k_ir_loop,    /**< a loop */
+  k_ir_max      /**< maximum value -- illegal for firm nodes. */
 } firm_kind;
 
 /**
