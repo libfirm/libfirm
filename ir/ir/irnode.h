@@ -214,14 +214,6 @@ new_ir_node (dbg_info *db,
          int arity,
          ir_node *in[]);
 
-/*
- *
- * NAME access functions for node fields.
- *
- *  Not properly documented ;-)
- *
- */
-
 /** Return the block the node belongs to.
  *
  * This works for all except Block.  It can return Blocks or the Bad node.
@@ -230,10 +222,12 @@ new_ir_node (dbg_info *db,
  * nodes we use infix "nodes" and do not name this function
  * get_irn_block. */
 ir_node  *get_nodes_block (ir_node *node);
+
+/** Sets the Block of a node. */
 void      set_nodes_block (ir_node *node, ir_node *block);
 
 /**
- * @function get_irn_block
+ * @function get_irn_block()
  * @see get_nodes_block()
  */
 /**
@@ -292,21 +286,28 @@ void      set_Block_cg_cfgpred_arr(ir_node * node, int arity, ir_node ** in);
 void      set_Block_cg_cfgpred(ir_node * node, int pos, ir_node * pred);
 /* @@@ not supported */
 ir_node **get_Block_cg_cfgpred_arr(ir_node * node);
-/* Returns the number of interprocedural predecessors.  0 if none. */
+/** Returns the number of interprocedural predecessors.  0 if none. */
 int       get_Block_cg_n_cfgpreds(ir_node * node);
+/** Return the interprocedural predecessor at position pos. */
 ir_node  *get_Block_cg_cfgpred(ir_node * node, int pos);
 /* frees the memory. */
 void      remove_Block_cg_cfgpred_arr(ir_node * node);
 
-/** Keep alive dedicated nodes.  These must be either
- *  PhiM or Block nodes. */
+/** Return the number of Keep alive node. */
 int  get_End_n_keepalives(ir_node *end);
+
+/** Return the Keep alive node a position pos. */
 ir_node *get_End_keepalive(ir_node *end, int pos);
+
+/** Keep alive dedicated nodes.  These must be either PhiM or Block nodes. */
 void add_End_keepalive (ir_node *end, ir_node *ka);
+
+/** Set the Keep alive node at position pos. */
 void set_End_keepalive(ir_node *end, int pos, ir_node *ka);
-/* Some parts of the End node are allocated separately -- their memory
+
+/** Some parts of the End node are allocated separately -- their memory
    is not recovered by dead_node_elimination if a End node is dead.
-   free_End frees these data structures. */
+   free_End() frees these data structures. */
 void free_End (ir_node *end);
 
 
@@ -374,17 +375,19 @@ typedef enum {
 
 tarval  *get_Const_tarval (ir_node *node);
 void     set_Const_tarval (ir_node *node, tarval *con);
-/* The source language type.  Must be an atomic type.  Mode of type must
-   be mode of node. For tarvals from entities type must be pointer to
-   entity type. */
+
+/** Returns the source language type of a Const node.
+ * Must be an atomic type.  Mode of type must be mode of node.
+ */
 type    *get_Const_type   (ir_node *node);
+
+/** Sets the source language type of a Const node. */
 void     set_Const_type   (ir_node *node, type *tp);
 
 /**  This enum names the three different kinds of symbolic Constants
      represented by SymConst.  The content of the attribute type_or_id
      depends on this tag.  Use the proper access routine after testing
      this flag. */
-
 typedef enum {
   symconst_type_tag,    /**< The SymConst is a type tag for the given type.
 			   Type_or_id_p is type *. */
@@ -406,12 +409,12 @@ union symconst_symbol {
   entity *entity_p;
 };
 
-
 typedef union symconst_symbol symconst_symbol;
 
 
-/** Access the kind of the SymConst. */
+/** Get the kind of the SymConst. */
 symconst_kind get_SymConst_kind (const ir_node *node);
+/** Set the kind of the SymConst. */
 void          set_SymConst_kind (ir_node *node, symconst_kind num);
 
 /** Only to access SymConst of kind type_tag or size.  Else assertion: */
@@ -500,6 +503,7 @@ int      get_Call_arity (ir_node *node);
 int     Call_has_callees      (ir_node *node);
 int     get_Call_n_callees    (ir_node *node);
 entity *get_Call_callee       (ir_node *node, int pos);
+
 /** Set the full callee array.
  *
  *  The passed array is copied. Assumes current_ir_graph set properly! */
@@ -555,10 +559,10 @@ void    remove_FuncCall_callee_arr(ir_node * node);
    unops are: Minus, Abs, Not, Conv, Cast
    binops are: Add, Sub, Mul, Quot, DivMod, Div, Mod, And, Or, Eor, Shl,
    Shr, Shrs, Rot, Cmp */
-int      is_unop (ir_node *node);
+int      is_unop (const ir_node *node);
 ir_node *get_unop_op (ir_node *node);
 void     set_unop_op (ir_node *node, ir_node *op);
-int      is_binop (ir_node *node);
+int      is_binop (const ir_node *node);
 ir_node *get_binop_left (ir_node *node);
 void     set_binop_left (ir_node *node, ir_node *left);
 ir_node *get_binop_right (ir_node *node);
@@ -676,24 +680,25 @@ void     set_Not_op (ir_node *node, ir_node *op);
  * The bit patterns are used for various tests, so don't change.
  * The "unordered" values are possible results of comparing
  * floating point numbers.
+ * Note that the encoding is imported, so do NOT change the order.
  */
 typedef enum {
-  pn_Cmp_False = 0,   /**< false */
-  pn_Cmp_Eq,          /**< equal */
-  pn_Cmp_Lt,          /**< less */
-  pn_Cmp_Le,          /**< less or equal */
-  pn_Cmp_Gt,          /**< greater */
-  pn_Cmp_Ge,          /**< greater or equal */
-  pn_Cmp_Lg,          /**< less or greater */
-  pn_Cmp_Leg = 7,     /**< less, equal or greater = ordered */
-  pn_Cmp_Uo,          /**< unordered */
-  pn_Cmp_Ue,          /**< unordered or equal */
-  pn_Cmp_Ul,          /**< unordered or less */
-  pn_Cmp_Ule,         /**< unordered, less or equal */
-  pn_Cmp_Ug,          /**< unordered or greater */
-  pn_Cmp_Uge,         /**< unordered, greater or equal */
-  pn_Cmp_Ne,          /**< unordered, less or greater = not equal */
-  pn_Cmp_True = 15    /**< true */
+  pn_Cmp_False = 0,                             /**< false */
+  pn_Cmp_Eq    = 1,                             /**< equal */
+  pn_Cmp_Lt    = 2,                             /**< less */
+  pn_Cmp_Le    = pn_Cmp_Eq|pn_Cmp_Lt,           /**< less or equal */
+  pn_Cmp_Gt    = 4,                             /**< greater */
+  pn_Cmp_Ge    = pn_Cmp_Eq|pn_Cmp_Gt,           /**< greater or equal */
+  pn_Cmp_Lg    = pn_Cmp_Lt|pn_Cmp_Gt,           /**< less or greater */
+  pn_Cmp_Leg   = pn_Cmp_Lt|pn_Cmp_Eq|pn_Cmp_Gt, /**< less, equal or greater = ordered */
+  pn_Cmp_Uo    = 8,                             /**< unordered */
+  pn_Cmp_Ue    = pn_Cmp_Uo|pn_Cmp_Eq,           /**< unordered or equal */
+  pn_Cmp_Ul    = pn_Cmp_Uo|pn_Cmp_Lt,           /**< unordered or less */
+  pn_Cmp_Ule   = pn_Cmp_Uo|pn_Cmp_Eq|pn_Cmp_Lt, /**< unordered, less or equal */
+  pn_Cmp_Ug    = pn_Cmp_Uo|pn_Cmp_Gt,           /**< unordered or greater */
+  pn_Cmp_Uge   = pn_Cmp_Uo|pn_Cmp_Eq|pn_Cmp_Gt, /**< unordered, greater or equal */
+  pn_Cmp_Ne    = pn_Cmp_Uo|pn_Cmp_Lt|pn_Cmp_Gt, /**< unordered, less or greater = not equal */
+  pn_Cmp_True  = 15                             /**< true */
   /* not_mask = Leg*/   /* bits to flip to negate comparison * @@ hack for jni interface */
 } pn_Cmp;   /* Projection numbers for Cmp */
 /* #define not_mask pn_Cmp_Leg */
@@ -892,33 +897,33 @@ ir_node *skip_Tuple (ir_node *node);
 /** returns operand of node if node is a Cast */
 ir_node *skip_Cast  (ir_node *node);
 /** returns true if node is a Bad node. */
-int      is_Bad    (ir_node *node);
+int      is_Bad    (const ir_node *node);
 /** returns true if the node is not a Block */
-int      is_no_Block (ir_node *node);
+int      is_no_Block (const ir_node *node);
 /** returns true if the node is a Block */
-int      is_Block (ir_node *node);
+int      is_Block (const ir_node *node);
 /** returns true if node is a Unknown node. */
-int      is_Unknown (ir_node *node);
+int      is_Unknown (const ir_node *node);
 /** returns true if node is a Proj node or a Filter node in
  * intraprocedural view */
 int      is_Proj (const ir_node *node);
 /** Returns true if the operation manipulates control flow:
    Start, End, Jmp, Cond, Return, Raise, Bad, CallBegin, EndReg, EndExcept */
-int is_cfop(ir_node *node);
+int is_cfop(const ir_node *node);
 
 /** Returns true if the operation manipulates interprocedural control flow:
     CallBegin, EndReg, EndExcept */
-int is_ip_cfop(ir_node *node);
+int is_ip_cfop(const ir_node *node);
 /** Returns true if the operation can change the control flow because
     of an exception: Call, Quot, DivMod, Div, Mod, Load, Store, Alloc,
     Bad. */
-int is_fragile_op(ir_node *node);
+int is_fragile_op(const ir_node *node);
 /** Returns the memory operand of fragile operations. */
 ir_node *get_fragile_op_mem(ir_node *node);
 
 /** Returns true if the operation is a forking control flow
  *  operation: Cond. */
-int is_forking_op(ir_node *node);
+int is_forking_op(const ir_node *node);
 
 /*-----------------------------------------------------------------*/
 /** Debug aides                                                   **/
