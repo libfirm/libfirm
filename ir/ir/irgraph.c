@@ -224,6 +224,7 @@ void free_ir_graph (ir_graph *irg) {
   if (irg->frame_type)  free_type(irg->frame_type);
   if (irg->value_table) del_identities(irg->value_table);
   if (irg->outs_state != no_outs) free_outs(irg);
+  obstack_free(irg->obst,NULL);
   free(irg->obst);
 #if USE_EXPLICIT_PHI_IN_STACK
   free_Phi_in_stack(irg->Phi_in_stack);
