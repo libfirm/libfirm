@@ -45,8 +45,6 @@ void *
 
   if (!res) xnomem ();
 
-  memset (res, 0x00, size);
-
   return res;
 }
 
