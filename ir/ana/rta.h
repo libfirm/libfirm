@@ -5,7 +5,7 @@
 
 # include "entity.h"
 
-void rta_init    (void);
+void rta_init    (int);
 void rta_cleanup (void);
 
 int  rta_is_alive_class  (type*);
@@ -16,6 +16,9 @@ int  rta_is_alive_field  (entity*);
 
 /*
  * $Log$
+ * Revision 1.3  2004/06/13 15:03:45  liekweg
+ * RTA auf Iterative RTA aufgebohrt --flo
+ *
  * Revision 1.2  2004/06/12 17:09:46  liekweg
  * RTA works, outedges breaks.  "Yay." --flo
  *

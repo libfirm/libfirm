@@ -54,6 +54,25 @@ static eset *_dead_graphs    = NULL;
 
 /* now the meat */
 
+static void init_tables ()
+{
+  _live_classes   = eset_create ();
+  _live_fields    = eset_create ();
+  _called_methods = eset_create ();
+
+  _live_graphs = eset_create ();
+  _dead_graphs = eset_create ();
+
+  if (get_irp_main_irg ()) {
+    eset_insert (_live_graphs, get_irp_main_irg ());
+  }
+
+  if (get_glob_type ()) {
+    eset_insert (_live_classes, get_glob_type ());
+  }
+
+}
+
 /**
    Enter all method and field accesses and all class allocations into our tables.
 */
@@ -72,7 +91,7 @@ static void rta_act (ir_node *node, void *env)
       ent = get_tarval_entity (get_Const_tarval (ptr));
     }
 
-    assert (ent);
+    /* assert (ent); */
 
     if (ent) {
       eset_insert (_called_methods, ent);
@@ -116,18 +135,69 @@ static void rta_fill_graph (ir_graph* graph)
   }
 }
 
+static int is_alive (ir_graph *graph, eset *live_graphs, eset *dead_graphs)
+{
+  if (eset_contains (live_graphs, graph)) {
+    return (TRUE);
+  }
+
+  if (eset_contains (dead_graphs, graph)) {
+    return (FALSE);
+  }
+
+  assert (0 && "what's up");
+}
+
 /**
-Traverse all graphs to collect method and field accesses and object allocations.
+   Traverse all graphs to collect method and field accesses and object allocations.
+
+   @param rerun Whether to rely on is_alive in a second run
 */
-static void rta_fill_all ()
+static void rta_fill_all (int rerun)
 {
   int i;
   int old_ip_view = interprocedural_view;
+  eset *live_graphs = NULL;
+  eset *dead_graphs = NULL;
 
   interprocedural_view = 0;
-  for (i = 0; i < get_irp_n_irgs(); i++) {
-    rta_fill_graph (get_irp_irg (i));
+
+  if (rerun) {
+    int i;
+    int n_graphs = get_irp_n_irgs ();
+
+    /* force all graphs to be entered in either live_graphs or dead_graphs */
+    for (i = 0; i < n_graphs; i ++) {
+      rta_is_alive_graph (get_irp_irg (i));
+    }
+
+    /* remember existing infos for later */
+    live_graphs = _live_graphs;
+    dead_graphs = _dead_graphs;
+
+    /* ensure that live_graphs and dead_graphs aren't deallocated by rta_cleanup */
+    _live_graphs = NULL;
+    _dead_graphs = NULL;
+
+    rta_cleanup ();
+    init_tables ();
   }
+
+  /* consider all graphs, possibly taking into account existing infos */
+  for (i = 0; i < get_irp_n_irgs(); i++) {
+    ir_graph *graph = get_irp_irg (i);
+
+    if (!rerun || is_alive (graph, live_graphs, dead_graphs)) {
+      rta_fill_graph (graph);
+    }
+  }
+
+  if (rerun) {
+    /* clean up the tables that we have retained */
+    eset_destroy (live_graphs);
+    eset_destroy (dead_graphs);
+  }
+
   interprocedural_view = old_ip_view;
 }
 
@@ -278,37 +348,7 @@ static int has_live_class (entity *method, ir_graph *graph)
   return (has_class);
 }
 
-static int rta_check (ir_graph *graph)
-{
-  return (rta_is_alive_graph (graph));
-}
-
-
-void rta_init ()
-{
-  _live_classes   = eset_create ();
-  _live_fields    = eset_create ();
-  _called_methods = eset_create ();
-
-  _live_graphs = eset_create ();
-  _dead_graphs = eset_create ();
-
-  /*
-   * shold be:
-   * rta_fill_queue ()
-   */
-  if (get_irp_main_irg ()) {
-    eset_insert (_live_graphs, get_irp_main_irg ());
-  }
-
-  if (get_glob_type ()) {
-    eset_insert (_live_classes, get_glob_type ());
-  }
-
-  rta_fill_all ();
-}
-
-void rta_cleanup ()
+static int stats ()
 {
   int i;
   int n_live_graphs = 0;
@@ -317,17 +357,44 @@ void rta_cleanup ()
   for (i = 0; i < n_graphs; i++) {
     ir_graph *graph = get_irp_irg(i);
 
-    if (rta_check (graph)) {
-      const char *name = get_entity_name (get_irg_ent (graph));;
-
+    if (rta_is_alive_graph (graph)) {
       n_live_graphs ++;
-
-      fprintf (stdout, "LIVE  %s\n", name);
     }
   }
 
-  fprintf (stdout, "RES   %s: %i graphs, %i live\n", __FUNCTION__, n_graphs, n_live_graphs);
+  return (n_live_graphs);
+}
 
+void rta_init (int verbose)
+{
+  int n_live_graphs = get_irp_n_irgs ();
+  int n_graphs = 0;
+  int n_runs = 0;
+
+  init_tables ();
+
+  printf ("RTA: run %i (%i graphs to go)\n", n_runs, n_live_graphs);
+  rta_fill_all (FALSE);
+
+  while (n_graphs != n_live_graphs) {
+    n_graphs = n_live_graphs;
+    n_runs ++;
+    rta_fill_all (TRUE);
+    n_live_graphs = stats ();
+    if (verbose) {
+      printf ("RTA: run %i (%i graphs to go)\n", n_runs, n_live_graphs);
+    }
+  }
+
+  if (verbose) {
+    printf ("RTA: n_graphs      = %i\n", get_irp_n_irgs ());
+    printf ("RTA: n_live_graphs = %i\n", n_live_graphs);
+    printf ("RTA: n_runs        = %i\n", n_runs);
+  }
+}
+
+void rta_cleanup ()
+{
   if (_live_classes) {
     eset_destroy (_live_classes);
     _live_classes = NULL;
@@ -391,6 +458,9 @@ int  rta_is_alive_field  (entity *field)
 
 /*
  * $Log$
+ * Revision 1.5  2004/06/13 15:03:45  liekweg
+ * RTA auf Iterative RTA aufgebohrt --flo
+ *
  * Revision 1.4  2004/06/12 19:35:04  liekweg
  * Kommentare eingef"ugt --flo
  *
