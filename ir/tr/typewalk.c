@@ -203,6 +203,8 @@ void type_walk_irg (ir_graph *irg,
 
   type_walk_2((type_or_ent *)get_irg_ent(irg), pre, post, env);
 
+  type_walk_2((type_or_ent *)get_irg_frame_type(irg), pre, post, env);
+
   free(type_env);
   return;
 }
