@@ -1,15 +1,18 @@
 /*
 *  Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
 *  All rights reserved.
+*/
+
+/**
+* @file irop.h
 *
-*  Authors: Christian Schaefer
+* Operators of firm nodes.
 *
-*  irop.h  operators of firm nodes
+* @author Christian Schaefer
 *
 *  This module specifies the opcodes possible for ir nodes.  Their
 *  definition is close to the operations specified in UKA Tech-Report
 *  1999-14
-*
 */
 
 /* $Id$ */
@@ -19,6 +22,7 @@
 
 # include "ident.h"
 
+/** the opcodes */
 typedef enum {
   iro_Block,
   iro_Start, iro_End, iro_Jmp, iro_Cond, iro_Return, iro_Raise,
@@ -92,33 +96,36 @@ extern ir_op *op_EndReg;	  ir_op *get_op_EndReg    ();
 extern ir_op *op_EndExcept;  	  ir_op *get_op_EndExcept ();
 
 
-/* Returns the ident for the opcode name */
+/** Returns the ident for the opcode name */
 ident *get_op_ident     (ir_op *op);
-/* Returns the string for the opcode. */
+/** Returns the string for the opcode. */
 const char *get_op_name (ir_op *op);
 
-/* Returns the enum for the opcode */
+/** Returns the enum for the opcode */
 opcode get_op_code      (ir_op *op);
 
+/** pinned states */
 typedef enum {
-  floats = 0,    /* Nodes of this opcode can be placed in any basic block. */
-  pinned           /* Nodes must remain in this basic block. */
+  floats = 0,    /**< Nodes of this opcode can be placed in any basic block. */
+  pinned           /**< Nodes must remain in this basic block. */
 } op_pinned;
 
+/** gets pinned state of an opcoe */
 op_pinned get_op_pinned (ir_op *op);
-/* Sets pinned in the opcode.  Setting it to floating has no effect
+
+/** Sets pinned in the opcode.  Setting it to floating has no effect
    for Block, Phi and control flow nodes. */
 void      set_op_pinned(ir_op *op, op_pinned pinned);
 
-/* Returns true if op is one of Start, End, Jmp, Cond, Return, Raise or Bad. */
+/** Returns true if op is one of Start, End, Jmp, Cond, Return, Raise or Bad. */
 int is_cfopcode(ir_op *op);
 
-/* Returns true if the operation manipulates interprocedural control flow:
+/** Returns true if the operation manipulates interprocedural control flow:
    CallBegin, EndReg, EndExcept */
 int is_ip_cfopcode(ir_op *op);
 
-/* Returns the attribute size of nodes of this opcode.
-   @@@ Use not encouraged, internal feature. */
+/** Returns the attribute size of nodes of this opcode.
+   @note Use not encouraged, internal feature. */
 int    get_op_attr_size (ir_op *op);
 
 # endif /* _IROP_H_ */
