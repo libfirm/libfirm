@@ -1799,20 +1799,20 @@ vt_cmp (const void *elt, const void *key)
   if ((get_irn_op(a) != get_irn_op(b)) ||
       (get_irn_mode(a) != get_irn_mode(b))) return 1;
 
-  /* compare if a's in and b's in are equal */
-  irn_arity_a = get_irn_arity (a);
-  if (irn_arity_a != get_irn_arity(b))
+  /* compare if a's in and b's in are of equal length */
+  irn_arity_a = get_irn_intra_arity (a);
+  if (irn_arity_a != get_irn_intra_arity(b))
     return 1;
 
   /* for block-local cse and op_pin_state_pinned nodes: */
   if (!get_opt_global_cse() || (get_irn_pinned(a) == op_pin_state_pinned)) {
-    if (get_irn_n(a, -1) != get_irn_n(b, -1))
+    if (get_irn_intra_n(a, -1) != get_irn_intra_n(b, -1))
       return 1;
   }
 
   /* compare a->in[0..ins] with b->in[0..ins] */
   for (i = 0; i < irn_arity_a; i++)
-    if (get_irn_n(a, i) != get_irn_n(b, i))
+    if (get_irn_intra_n(a, i) != get_irn_intra_n(b, i))
       return 1;
 
   /*
@@ -1825,6 +1825,8 @@ vt_cmp (const void *elt, const void *key)
   return 0;
 }
 
+#define ADDR_TO_VAL(p)  (((unsigned)(p)) >> 3)
+
 /*
  * Calculate a hash value of a node.
  */
@@ -1836,41 +1838,39 @@ ir_node_hash (ir_node *node)
 
   if (node->op == op_Const) {
     /* special value for const, as they only differ in their tarval. */
-    h = ((unsigned) node->attr.con.tv)>>3 ;
-    h = 9*h + (unsigned)get_irn_mode(node);
+    h = ADDR_TO_VAL(node->attr.con.tv);
+    h = 9*h + ADDR_TO_VAL(get_irn_mode(node));
   } else if (node->op == op_SymConst) {
     /* special value for const, as they only differ in their symbol. */
-    h = ((unsigned) node->attr.i.sym.type_p)>>3 ;
-    h = 9*h + (unsigned)get_irn_mode(node);
+    h = ADDR_TO_VAL(node->attr.i.sym.type_p);
+    h = 9*h + ADDR_TO_VAL(get_irn_mode(node));
   } else {
 
     /* hash table value = 9*(9*(9*(9*(9*arity+in[0])+in[1])+ ...)+mode)+code */
-    h = irn_arity = get_irn_arity(node);
+    h = irn_arity = get_irn_intra_arity(node);
 
-    /* consider all in nodes... except the block. */
-    for (i = 0;  i < irn_arity;  i++) {
-      h = 9*h + (unsigned)get_irn_n(node, i);
+    /* consider all in nodes... except the block if not a control flow. */
+    for (i =  is_cfop(node) ? -1 : 0;  i < irn_arity;  i++) {
+      h = 9*h + ADDR_TO_VAL(get_irn_intra_n(node, i));
     }
 
     /* ...mode,... */
-    h = 9*h + (unsigned) get_irn_mode (node);
+    h = 9*h + ADDR_TO_VAL(get_irn_mode(node));
     /* ...and code */
-    h = 9*h + (unsigned) get_irn_op (node);
+    h = 9*h + ADDR_TO_VAL(get_irn_op(node));
   }
 
   return h;
 }
 
 pset *
-new_identities (void)
-{
-  return new_pset (vt_cmp, N_IR_NODES);
+new_identities(void) {
+  return new_pset(vt_cmp, N_IR_NODES);
 }
 
 void
-del_identities (pset *value_table)
-{
-  del_pset (value_table);
+del_identities(pset *value_table) {
+  del_pset(value_table);
 }
 
 /**
