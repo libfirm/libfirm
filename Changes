@@ -1,4 +1,10 @@
-  12.1.2001 Goetz
+  29.8.2001 Goetz
+  Added routine to free irgraphs.
+
+  17.7.2001 Goetz
+  Improved add routines to sub, supertype in type.c
+
+  12.r7.2001 Goetz
   Added implementation of overwrites stuff.
 
   11.7.2001 Goetz
