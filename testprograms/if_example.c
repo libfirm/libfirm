@@ -104,6 +104,7 @@ main(void)
 
 
   printf("Optimizing ...\n");
+  local_optimize_graph(irg);
   dead_node_elimination(irg);
 
   /* verify the graph */

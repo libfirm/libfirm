@@ -200,9 +200,10 @@ main(void)
   irg_vrfy(main_irg);
 
   printf("Optimizing ...\n");
-  for (i = 0; i < get_irp_n_irgs(); i++)
+  for (i = 0; i < get_irp_n_irgs(); i++) {
+    local_optimize_graph(get_irp_irg(i));
     dead_node_elimination(get_irp_irg(i));
-
+  }
   /****************************************************************************/
 
   printf("Dumping graphs of all procedures.\n");
