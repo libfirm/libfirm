@@ -1052,24 +1052,25 @@ char* fc_val_from_float(LLDBL l, char exp_size, char mant_size, char* result)
   char *temp;
   int bias_res, bias_val, mant_val;
   value_t srcval;
+  UINT32 sign, exponent, mantissa0, mantissa1;
 
   srcval.d = l;
   bias_res = ((1<<exp_size)/2-1);
 
 #ifdef HAVE_LONG_DOUBLE
-  mant_val = 64;
-  bias_val = 0x3fff;
-  UINT32 sign = (srcval.val.high & 0x00008000) != 0;
-  UINT32 exponent = (srcval.val.high & 0x00007FFF) ;
-  UINT32 mantissa0 = srcval.val.mid;
-  UINT32 mantissa1 = srcval.val.low;
+  mant_val  = 64;
+  bias_val  = 0x3fff;
+  sign      = (srcval.val.high & 0x00008000) != 0;
+  exponent  = (srcval.val.high & 0x00007FFF) ;
+  mantissa0 = srcval.val.mid;
+  mantissa1 = srcval.val.low;
 #else /* no long double */
-  mant_val = 52;
-  bias_val = 0x3ff;
-  UINT32 sign = (srcval.val.high & 0x80000000) != 0;
-  UINT32 exponent = (srcval.val.high & 0x7FF00000) >> 20;
-  UINT32 mantissa0 = srcval.val.high & 0x000FFFFF;
-  UINT32 mantissa1 = srcval.val.low;
+  mant_val  = 52;
+  bias_val  = 0x3ff;
+  sign      = (srcval.val.high & 0x80000000) != 0;
+  exponent  = (srcval.val.high & 0x7FF00000) >> 20;
+  mantissa0 = srcval.val.high & 0x000FFFFF;
+  mantissa1 = srcval.val.low;
 #endif
 
 #ifdef HAVE_LONG_DOUBLE
