@@ -1,7 +1,7 @@
 /* -*- c -*- */
 
 /*
- * Time-stamp: <23.11.2004 13:26:21h liekweg>
+ * Time-stamp: <26.11.2004 16:53:35h liekweg>
  * Project:     libFIRM
  * File name:   ir/ana2/qset.c
  * Purpose:     yet another set implementation
@@ -344,7 +344,10 @@ static void qset_resize (qset_t *qset, const int n_slots)
 
   memcpy (values, qset->values, qset->n_elems * sizeof (sortable_t));
   memset (qset->values, 0x00, qset->n_elems * sizeof (sortable_t)); /* debug only */
-  free (qset->values);
+
+  if (NULL == qset->obst) {
+    free (qset->values);
+  }
 
   qset->values = values;
   qset->n_slots = new_size;
@@ -509,15 +512,18 @@ void qset_sort (qset_t *qset)
 */
 void qset_compact (qset_t *qset)
 {
-  sortable_t *values = (sortable_t*) mix_malloc (qset->obst,
-                                                 qset->n_elems * sizeof (sortable_t));
-  memcpy (values, qset->values, qset->n_elems * sizeof (sortable_t));
+  if (NULL == qset->obst) {
+    sortable_t *values = (sortable_t*) mix_malloc (qset->obst,
+                                                   qset->n_elems * sizeof (sortable_t));
+    memcpy (values, qset->values, qset->n_elems * sizeof (sortable_t));
 
-  memset (qset->values, 0x00, qset->n_elems * sizeof (sortable_t));
-  free (qset->values);
+    memset (qset->values, 0x00, qset->n_elems * sizeof (sortable_t));
 
-  qset->values = values;
-  qset->n_slots = qset->n_elems;
+    free (qset->values);
+
+    qset->values = values;
+    qset->n_slots = qset->n_elems;
+  }
 }
 
 /*
@@ -620,7 +626,10 @@ void qset_insert_all (qset_t *qset1, qset_t *qset2)
   qset_sort (qset1);
 
   memset (values, 0x00, n_elems * sizeof (sortable_t));
-  free (values);
+
+  if (NULL == qset1->obst) {
+    free (values);
+  }
 }
 
 /*
@@ -749,6 +758,9 @@ int qset_test_main (int argc, char **argv)
 
 /*
   $Log$
+  Revision 1.6  2004/11/26 15:58:30  liekweg
+  don't free inside obstacks (thx, michael)
+
   Revision 1.5  2004/11/24 14:53:56  liekweg
   Bugfixes
 
