@@ -143,6 +143,13 @@ void set_opt_dyn_meth_dispatch (int value);
  */
 void set_opt_normalize (int value);
 
+/** Enable/Disable optimization of tail-recursion calls.
+ *
+ * This flag enables/disables the optimization tail-recursion call.
+ * If the flag is turned on tail-recursion calls are optimized into loops.
+ */
+void set_opt_tail_recursion(int value);
+
 /**
  * Save the current optimization state.
  */

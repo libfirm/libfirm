@@ -36,7 +36,8 @@ optimization_state_t libFIRM_opt =
   ENABLE(OPT_REASSOCIATION)                      |
   ENABLE(OPT_INLINE)                             |
   ENABLE(OPT_DYN_METH_DISPATCH)                  |
-  ENABLE(OPT_NORMALIZE);
+  ENABLE(OPT_NORMALIZE)                          |
+  ENABLE(OPT_TAIL_RECURSION);
 
 /* set the flags with set_flagname, get the flag with get_flagname */
 void set_opt_cse (int value)
@@ -148,6 +149,7 @@ int get_optimize(void)
   return get_opt_optimize();
 }
 
+/* Enable/Disables inlining. */
 void set_opt_inline(int value)
 {
   if (value)
@@ -156,12 +158,7 @@ void set_opt_inline(int value)
     libFIRM_opt &= ~OPT_INLINE;
 }
 
-/** Enable/Disable optimization of dynamic method dispatch
- *
- * This flag enables/disables the optimization of dynamic method dispatch.
- * If the flag is turned on Sel nodes can be replaced by Const nodes representing
- * the address of a function.
- */
+/* Enable/Disable optimization of dynamic method dispatch */
 void set_opt_dyn_meth_dispatch (int value)
 {
   if (value)
@@ -170,12 +167,22 @@ void set_opt_dyn_meth_dispatch (int value)
     libFIRM_opt &= ~OPT_DYN_METH_DISPATCH;
 }
 
+/* Enable/Disable normalizations of the firm representation. */
 void set_opt_normalize(int value)
 {
   if (value)
     libFIRM_opt |= OPT_NORMALIZE;
   else
     libFIRM_opt &= ~OPT_NORMALIZE;
+}
+
+/* Enable/Disable optimization of tail-recursion calls. */
+void set_opt_tail_recursion(int value)
+{
+  if (value)
+    libFIRM_opt |= OPT_TAIL_RECURSION;
+  else
+    libFIRM_opt &= ~OPT_TAIL_RECURSION;
 }
 
 /* Save the current optimization state. */
