@@ -17,6 +17,10 @@
  * @date 29.11.2004
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -141,7 +145,7 @@ static void ir_common_vprintf(const appender_t *app, void *object,
                                         break;
 
                                 case 'E':
-                                        DUMP_STR(get_entity_ldname(va_arg(args, entity *)));
+                                        DUMP_STR(get_entity_ld_name(va_arg(args, entity *)));
                                         break;
 
 				case 'p':
