@@ -66,7 +66,7 @@ typedef struct {
 	const char *name;
 	bool commutative;
 	int sig_count;
-	const rflct_arg_t *sigs[MAX_SIG_COUNT];
+	rflct_arg_t *sigs[MAX_SIG_COUNT];
 } rflct_opcode_t;
 
 static struct obstack obst;
@@ -413,7 +413,7 @@ void rflct_new_opcode(opcode opc, const char *name, bool commutative)
 
 bool rflct_opcode_add_signature(opcode opc, rflct_sig_t *sig)
 {
-	const rflct_arg_t *args = sig->args;
+	rflct_arg_t *args = sig->args;
 	rflct_opcode_t *op = opcodes[opc];
 	int i;
 
