@@ -543,6 +543,11 @@ static void callee_ana_node(ir_node * node, eset * methods) {
     }
     break;
 
+  case iro_Mux:
+    callee_ana_node(get_Mux_false(node), methods);
+    callee_ana_node(get_Mux_true(node), methods);
+    break;
+
   case iro_Id:
     callee_ana_node(get_Id_pred(node), methods);
     break;
