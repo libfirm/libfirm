@@ -55,9 +55,9 @@ static void init_link (ir_node *n, void *env) {
 }
 
 #if 0   /* Old version. Avoids Ids.
-	   This is not necessary:  we do a postwalk, and get_irn_n
-	   removes ids anyways.  So it's much cheaper to call the
-	   optimization less often and use the exchange() algorithm. */
+           This is not necessary:  we do a postwalk, and get_irn_n
+           removes ids anyways.  So it's much cheaper to call the
+           optimization less often and use the exchange() algorithm. */
 static void
 optimize_in_place_wrapper (ir_node *n, void *env) {
   int i, irn_arity;
@@ -258,7 +258,6 @@ copy_node (ir_node *n, void *env) {
 
   /*  printf("\n old node: "); DDMSG2(n);
       printf(" new node: "); DDMSG2(nn); */
-
 }
 
 /**
@@ -282,9 +281,9 @@ copy_preds (ir_node *n, void *env) {
     irn_arity = get_irn_arity(n);
     for (i = 0; i < irn_arity; i++)
       if (get_irn_opcode(get_irn_n(n, i)) != iro_Bad) {
-    set_irn_n (nn, j, get_new_node(get_irn_n(n, i)));
-    /*if (is_backedge(n, i)) set_backedge(nn, j);*/
-    j++;
+        set_irn_n (nn, j, get_new_node(get_irn_n(n, i)));
+        /*if (is_backedge(n, i)) set_backedge(nn, j);*/
+        j++;
       }
     /* repair the block visited flag from above misuse. Repair it in both
        graphs so that the old one can still be used. */
@@ -295,15 +294,15 @@ copy_preds (ir_node *n, void *env) {
        We don't call optimize_in_place as it requires
        that the fields in ir_graph are set properly. */
     if ((get_opt_control_flow_straightening()) &&
-    (get_Block_n_cfgpreds(nn) == 1) &&
-    (get_irn_op(get_Block_cfgpred(nn, 0)) == op_Jmp)) {
+        (get_Block_n_cfgpreds(nn) == 1) &&
+        (get_irn_op(get_Block_cfgpred(nn, 0)) == op_Jmp)) {
       ir_node *old = get_nodes_block(get_Block_cfgpred(nn, 0));
       if (nn == old) {
-    /* Jmp jumps into the block it is in -- deal self cycle. */
-    assert(is_Bad(get_new_node(get_irg_bad(current_ir_graph))));
-    exchange(nn, get_new_node(get_irg_bad(current_ir_graph)));
+        /* Jmp jumps into the block it is in -- deal self cycle. */
+        assert(is_Bad(get_new_node(get_irg_bad(current_ir_graph))));
+        exchange(nn, get_new_node(get_irg_bad(current_ir_graph)));
       } else {
-    exchange(nn, old);
+        exchange(nn, old);
       }
     }
   } else if (get_irn_opcode(n) == iro_Phi) {
@@ -315,9 +314,9 @@ copy_preds (ir_node *n, void *env) {
     irn_arity = get_irn_arity(n);
     for (i = 0; i < irn_arity; i++)
       if (get_irn_opcode(get_irn_n(block, i)) != iro_Bad) {
-    set_irn_n (nn, j, get_new_node(get_irn_n(n, i)));
-    /*if (is_backedge(n, i)) set_backedge(nn, j);*/
-    j++;
+        set_irn_n (nn, j, get_new_node(get_irn_n(n, i)));
+        /*if (is_backedge(n, i)) set_backedge(nn, j);*/
+        j++;
       }
     /* If the pre walker reached this Phi after the post walker visited the
        block block_visited is > 0. */
@@ -383,7 +382,7 @@ copy_graph (int copy_node_nr) {
   for (i = 0; i < irn_arity; i++) {
     ka = get_irn_intra_n(oe, i);
     if ((get_irn_op(ka) == op_Block) &&
-    (get_irn_visited(ka) < get_irg_visited(current_ir_graph))) {
+        (get_irn_visited(ka) < get_irg_visited(current_ir_graph))) {
       /* We must keep the block alive and copy everything reachable */
       set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph)-1);
       irg_walk(ka, copy_node, copy_preds, (void *)copy_node_nr);
@@ -397,15 +396,15 @@ copy_graph (int copy_node_nr) {
     ka = get_irn_intra_n(oe, i);
     if ((get_irn_op(ka) == op_Phi)) {
       if (get_irn_visited(ka) < get_irg_visited(current_ir_graph)) {
-    /* We didn't copy the Phi yet.  */
-    set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph)-1);
-    irg_walk(ka, copy_node, copy_preds, (void *)copy_node_nr);
+        /* We didn't copy the Phi yet.  */
+        set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph)-1);
+        irg_walk(ka, copy_node, copy_preds, (void *)copy_node_nr);
       }
       add_End_keepalive(ne, get_new_node(ka));
     }
   }
 
-	/* start block somtimes only reached after keep alives */
+  /* start block somtimes only reached after keep alives */
   set_nodes_block(nb, get_new_node(get_nodes_block(ob)));
 }
 
@@ -727,7 +726,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
     return 0;
 
   assert(get_method_n_params(get_entity_type(get_irg_entity(called_graph))) ==
-	 get_method_n_params(get_Call_type(call)));
+         get_method_n_params(get_Call_type(call)));
 
   /*
    * currently, we cannot inline two cases:
@@ -930,9 +929,9 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
         }
       }
       if (n_ret > 0)
-	phi = new_Phi(n_ret, cf_pred, get_irn_mode(cf_pred[0]));
+        phi = new_Phi(n_ret, cf_pred, get_irn_mode(cf_pred[0]));
       else
-	phi = new_Bad();
+        phi = new_Bad();
       res_pred[j] = phi;
       /* Conserve Phi-list for further inlinings -- but might be optimized */
       if (get_nodes_block(phi) == post_bl) {
@@ -1117,8 +1116,8 @@ static void collect_calls(ir_node *call, void *env) {
       ir_graph *called_irg = get_entity_irg(get_SymConst_entity(addr));
       inline_env_t *ienv = (inline_env_t *)env;
       if (called_irg && ienv->pos < MAX_INLINE) {
-	/* The Call node calls a locally defined method.  Remember to inline. */
-	ienv->calls[ienv->pos++] = call;
+        /* The Call node calls a locally defined method.  Remember to inline. */
+        ienv->calls[ienv->pos++] = call;
       }
     }
   }
@@ -1260,7 +1259,7 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
     free_callee_info(current_ir_graph);
 
     irg_walk(get_irg_end(current_ir_graph), NULL, collect_calls2,
-	     get_irg_link(current_ir_graph));
+             get_irg_link(current_ir_graph));
   }
 
   /* -- and now inline. -- */
@@ -1277,7 +1276,7 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
       env = (inline_irg_env *)get_irg_link(current_ir_graph);
 
       for (call = eset_first(env->call_nodes); call; call = eset_next(env->call_nodes)) {
-	if (get_irn_op(call) == op_Tuple) continue;   /* We already inlined. */
+        if (get_irn_op(call) == op_Tuple) continue;   /* We already inlined. */
         ir_graph *callee = get_call_called_irg(call);
 
         if (env->n_nodes > maxsize) continue; // break;
@@ -1287,16 +1286,16 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
             phiproj_computed = 1;
             collect_phiprojs(current_ir_graph);
           }
-	  did_inline = inline_method(call, callee);
+          did_inline = inline_method(call, callee);
 
           if (did_inline) {
-	    /* Do some statistics */
-	    inline_irg_env *callee_env = (inline_irg_env *)get_irg_link(callee);
-	    env->n_call_nodes --;
-	    env->n_nodes += callee_env->n_nodes;
-	    callee_env->n_callers--;
-	  }
-	}
+            /* Do some statistics */
+            inline_irg_env *callee_env = (inline_irg_env *)get_irg_link(callee);
+            env->n_call_nodes --;
+            env->n_nodes += callee_env->n_nodes;
+            callee_env->n_callers--;
+          }
+        }
       }
     }
   }
@@ -1319,20 +1318,20 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
       ir_graph *callee = get_call_called_irg(call);
 
       if (callee &&
-	  ((is_smaller(callee, size) && (env->n_nodes < maxsize)) ||    /* small function */
-	   (get_irg_inline_property(callee) == irg_inline_forced))) {
+          ((is_smaller(callee, size) && (env->n_nodes < maxsize)) ||    /* small function */
+           (get_irg_inline_property(callee) == irg_inline_forced))) {
         if (!phiproj_computed) {
             phiproj_computed = 1;
             collect_phiprojs(current_ir_graph);
         }
         if (inline_method(call, callee)) {
-	  inline_irg_env *callee_env = (inline_irg_env *)get_irg_link(callee);
-	  env->n_call_nodes--;
-	  eset_insert_all(env->call_nodes, callee_env->call_nodes);  /* @@@ ??? This are the wrong nodes !? Not the copied ones. */
-	  env->n_call_nodes += callee_env->n_call_nodes;
-	  env->n_nodes += callee_env->n_nodes;
-	  callee_env->n_callers--;
-	}
+          inline_irg_env *callee_env = (inline_irg_env *)get_irg_link(callee);
+          env->n_call_nodes--;
+          eset_insert_all(env->call_nodes, callee_env->call_nodes);  /* @@@ ??? This are the wrong nodes !? Not the copied ones. */
+          env->n_call_nodes += callee_env->n_call_nodes;
+          env->n_nodes += callee_env->n_nodes;
+          callee_env->n_callers--;
+        }
       } else {
         eset_insert(env->call_nodes, call);
       }
@@ -1345,11 +1344,11 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
 #if 0
     env = (inline_irg_env *)get_irg_link(current_ir_graph);
     if ((env->n_call_nodes_orig != env->n_call_nodes) ||
-	(env->n_callers_orig != env->n_callers))
+        (env->n_callers_orig != env->n_callers))
       printf("Nodes:%3d ->%3d, calls:%3d ->%3d, callers:%3d ->%3d, -- %s\n",
-	     env->n_nodes_orig, env->n_nodes, env->n_call_nodes_orig, env->n_call_nodes,
-	     env->n_callers_orig, env->n_callers,
-	     get_entity_name(get_irg_entity(current_ir_graph)));
+             env->n_nodes_orig, env->n_nodes, env->n_call_nodes_orig, env->n_call_nodes,
+             env->n_callers_orig, env->n_callers,
+             get_entity_name(get_irg_entity(current_ir_graph)));
 #endif
     free_inline_irg_env((inline_irg_env *)get_irg_link(current_ir_graph));
   }
@@ -1586,25 +1585,25 @@ place_floats_late(ir_node *n, pdeq *worklist)
     for (i = 0; i < get_irn_n_outs(n); i++) {
       ir_node *succ = get_irn_out(n, i);
       if (irn_not_visited(succ) && (get_irn_op(succ) != op_Phi))
-	place_floats_late(succ, worklist);
+        place_floats_late(succ, worklist);
     }
 
     /* We have to determine the final block of this node... except for
        constants. */
     if ((get_op_pinned(get_irn_op(n)) == op_pin_state_floats) &&
-	(get_irn_op(n) != op_Const) &&
-	(get_irn_op(n) != op_SymConst)) {
+        (get_irn_op(n) != op_Const) &&
+        (get_irn_op(n) != op_SymConst)) {
       ir_node *dca = NULL;  /* deepest common ancestor in the
                    dominator tree of all nodes'
                    blocks depending on us; our final
                    placement has to dominate DCA. */
       for (i = 0; i < get_irn_n_outs(n); i++) {
-	ir_node *out = get_irn_out(n, i);
-	/* ignore if out is in dead code */
-	ir_node *outbl = get_nodes_block(out);
-	if (is_Bad(outbl) || get_Block_dom_depth(outbl) == -1)
-	  continue;
-	dca = consumer_dom_dca (dca, out, n);
+        ir_node *out = get_irn_out(n, i);
+        /* ignore if out is in dead code */
+        ir_node *outbl = get_nodes_block(out);
+        if (is_Bad(outbl) || get_Block_dom_depth(outbl) == -1)
+          continue;
+        dca = consumer_dom_dca (dca, out, n);
       }
       if (dca) {
         set_nodes_block(n, dca);
