@@ -319,19 +319,16 @@ void set_irg_phase_low(ir_graph *irg);
 op_pin_state get_irg_pinned (const ir_graph *irg);
 
 /** state: outs_state
-   Outs are the back edges or def-use edges.
-   Values:  outs_none, outs_consistent, outs_inconsistent
-   outs_none: outs are not computed, no memory is allocated.
-   outs_consistent:  outs are computed and correct,
-   outs_inconsistent: outs have been computed, memory is still allocated,
-   but the graph has been changed since. */
+ *  Outs are the back edges or def-use edges of ir nodes.
+ *  Values:  outs_none, outs_consistent, outs_inconsistent */
 typedef enum {
-  outs_none,
-  outs_consistent,
-  outs_inconsistent
+  outs_none,         /**< Outs are not computed, no memory is allocated. */
+  outs_consistent,   /**< Outs are computed and correct. */
+  outs_inconsistent  /**< Outs have been computed, memory is still allocated,
+			but the graph has been changed since. */
 } irg_outs_state;
 irg_outs_state get_irg_outs_state(const ir_graph *irg);
-void set_irg_outs_inconsistent(ir_graph *irg);
+void           set_irg_outs_inconsistent(ir_graph *irg);
 
 /** state: dom_state
    Signals the state of the dominator infomation.
@@ -432,15 +429,19 @@ void set_irg_inline_property(ir_graph *irg, irg_inline_property s);
 void  set_irg_link (ir_graph *irg, void *thing);
 void *get_irg_link (const ir_graph *irg);
 
-/** increments visited by one */
+/** Increments visited flag by one.
+ *  @see also: get_irn_visited() get_irg_block_visited(). */
 void          inc_irg_visited (ir_graph *irg);
 unsigned long get_irg_visited (const ir_graph *irg);
 void          set_irg_visited (ir_graph *irg, unsigned long i);
+/** An interprocedural flag valid for all irgs.
+ *  @see also: get_irn_visited() get_irg_block_visited(). */
 unsigned long get_max_irg_visited (void);
 void          set_max_irg_visited (int val);
 unsigned long inc_max_irg_visited (void);
 
-/** increments block_visited by one */
+/** Increments block_visited by one.
+ *  @see also: get_irn_visited() get_irg_block_visited(). */
 void          inc_irg_block_visited (ir_graph *irg);
 unsigned long get_irg_block_visited (const ir_graph *irg);
 void          set_irg_block_visited (ir_graph *irg, unsigned long i);
