@@ -135,14 +135,14 @@ void        free_type_entities(type *tp);
  * that refers to this type.                           */
 void        free_type(type *tp);
 
-tp_op*      get_type_tpop(type *tp);
-ident*      get_type_tpop_nameid(type *tp);
-const char* get_type_tpop_name(type *tp);
-tp_opcode   get_type_tpop_code(type *tp);
+tp_op*      get_type_tpop(const type *tp);
+ident*      get_type_tpop_nameid(const type *tp);
+const char* get_type_tpop_name(const type *tp);
+tp_opcode   get_type_tpop_code(const type *tp);
 
-ident*      get_type_ident(type *tp);
+ident*      get_type_ident(const type *tp);
 void        set_type_ident(type *tp, ident* id);
-const char* get_type_name(type *tp);
+const char* get_type_name(const type *tp);
 
 /** The state of the type layout. */
 typedef enum {
@@ -159,7 +159,7 @@ typedef enum {
 } type_state;
 
 /** Returns the type layout state of a type. */
-type_state  get_type_state(type *tp);
+type_state  get_type_state(const type *tp);
 
 /** Sets the type layout state of a type.
  *
@@ -172,7 +172,7 @@ void        set_type_state(type *tp, type_state state);
  *
  * Returns NULL for all non atomic types.
  */
-ir_mode*    get_type_mode(type *tp);
+ir_mode*    get_type_mode(const type *tp);
 
 /** Sets the mode of a type.
  *
@@ -180,12 +180,12 @@ ir_mode*    get_type_mode(type *tp);
  */
 void        set_type_mode(type *tp, ir_mode* m);
 
-/** Returns the size of a type in bytes, retuns -1 if the size is NOT
+/** Returns the size of a type in bytes, returns -1 if the size is NOT
  *  a byte size, ie not dividable by 8. */
-int         get_type_size_bytes(type *tp);
+int         get_type_size_bytes(const type *tp);
 
 /** Returns the size of a type in bits. */
-int         get_type_size_bits(type *tp);
+int         get_type_size_bits(const type *tp);
 
 /** Sets the size of a type in bytes.
  *
@@ -201,15 +201,38 @@ void        set_type_size_bytes(type *tp, int size);
  */
 void        set_type_size_bits(type *tp, int size);
 
+/** Returns the alignment of a type in bytes, returns -1 if the alignment is NOT
+ *  a byte size, ie not dividable by 8. Calls get_type_alignment_bits(). */
+int         get_type_alignment_bytes(type *tp);
 
-unsigned long get_type_visited(type *tp);
+/** Returns the alignment of a type in bits. If the alignment of a type is
+ * not set, it is calculated here according to the following rules:
+ * 1.) if a type has a mode, the aligment is the mode size.
+ * 2.) compound types have the alignment of it's biggest member.
+ * 3.) array types have the alignment of its element type.
+ * 4.) method types return 0 here.
+ * 5.) all other types return 8 here (i.e. aligned at byte).
+ */
+int         get_type_alignment_bits(type *tp);
+
+/** Sets the alignment of a type in bytes. */
+void        set_type_alignment_bytes(type *tp, int size);
+
+/** Sets the alignment of a type in bits.
+ *
+ * For method types the alignment is always fixed.
+ * This call is legal but has no effect.
+ */
+void        set_type_alignment_bits(type *tp, int size);
+
+unsigned long get_type_visited(const type *tp);
 void          set_type_visited(type *tp, unsigned long num);
 /* Sets visited field in type to type_visited. */
 void          mark_type_visited(type *tp);
-/* @@@ name clash!! int           type_visited(type *tp); */
-int           type_not_visited(type *tp);
+/* @@@ name clash!! int           type_visited(const type *tp); */
+int           type_not_visited(const type *tp);
 
-void*         get_type_link(type *tp);
+void*         get_type_link(const type *tp);
 void          set_type_link(type *tp, void *l);
 
 /**
@@ -236,7 +259,7 @@ void          inc_master_type_visited(void);
  * @return
  *     true if the thing is a type, else false
  */
-int is_type            (void *thing);
+int is_type            (const void *thing);
 
 /**
  *   Checks whether two types are structural equal.
@@ -355,10 +378,10 @@ type   *new_d_type_class (ident *name, dbg_info *db);
 void    add_class_member   (type *clss, entity *member);
 
 /** Returns the number of members of this class. */
-int     get_class_n_members (type *clss);
+int     get_class_n_members (const type *clss);
 
 /** Returns the member at position pos, 0 <= pos < n_member */
-entity *get_class_member   (type *clss, int pos);
+entity *get_class_member   (const type *clss, int pos);
 
 /** Returns index of mem in clss, -1 if not contained. */
 int     get_class_member_index(type *clss, entity *mem);
@@ -389,7 +412,7 @@ void    remove_class_member(type *clss, entity *member);
 void    add_class_subtype   (type *clss, type *subtype);
 
 /** Returns the number of subtypes */
-int     get_class_n_subtypes (type *clss);
+int     get_class_n_subtypes (const type *clss);
 
 /** Gets the subtype at position pos, 0 <= pos < n_subtype. */
 type   *get_class_subtype   (type *clss, int pos);
@@ -409,7 +432,7 @@ void    remove_class_subtype(type *clss, type *subtype);
 void    add_class_supertype   (type *clss, type *supertype);
 
 /** Returns the number of supertypes */
-int     get_class_n_supertypes (type *clss);
+int     get_class_n_supertypes (const type *clss);
 
 /** Returns the index of an supertype in a type. */
 int     get_class_supertype_index(type *clss, type *super_clss);
@@ -441,20 +464,20 @@ typedef enum peculiarity {
 				    @@@ eventually rename to 'real' i.e., 'echt'
 			            This serves better as opposition to description _and_ inherited.*/
 } peculiarity;
-char *get_peculiarity_string(peculiarity p);
+const char *get_peculiarity_string(peculiarity p);
 
 /* The peculiarity of the class.  The enumeration peculiarity is defined
    in entity.h */
-peculiarity get_class_peculiarity (type *clss);
+peculiarity get_class_peculiarity (const type *clss);
 void        set_class_peculiarity (type *clss, peculiarity pec);
 
 /* Set and get a class' dfn --
    @todo This is an undocumented field, subject to change! */
 void set_class_dfn (type *clss, int dfn);
-int  get_class_dfn (type *clss);
+int  get_class_dfn (const type *clss);
 
 /** Returns true if a type is a class type. */
-int is_class_type(type *clss);
+int is_class_type(const type *clss);
 
 /** Returns true if low is subclass of high. */
 bool is_subclass_of(type *low, type *high);
@@ -485,10 +508,10 @@ type   *new_d_type_struct (ident *name, dbg_info* db);
 void    add_struct_member   (type *strct, entity *member);
 
 /** Returns the number of members of this struct. */
-int     get_struct_n_members (type *strct);
+int     get_struct_n_members (const type *strct);
 
 /** Returns the member at position pos, 0 <= pos < n_member */
-entity *get_struct_member   (type *strct, int pos);
+entity *get_struct_member   (const type *strct, int pos);
 
 /** Returns index of member in strct, -1 if not contained. */
 int     get_struct_member_index(type *strct, entity *member);
@@ -501,7 +524,7 @@ void    set_struct_member   (type *strct, int pos, entity *member);
 void    remove_struct_member (type *strct, entity *member);
 
 /** Returns true if a type is a struct type. */
-int     is_struct_type(type *strct);
+int     is_struct_type(const type *strct);
 
 /**
  * @page method_type	Representation of a method type
@@ -568,7 +591,7 @@ type *new_d_type_method (ident *name, int n_param, int n_res, dbg_info* db);
 /* -- manipulate private fields of method. -- */
 
 /** Returns the number of parameters of this method. */
-int   get_method_n_params  (type *method);
+int   get_method_n_params  (const type *method);
 
 /** Returns the type of the parameter at position pos of a method. */
 type *get_method_param_type(type *method, int pos);
@@ -577,14 +600,14 @@ type *get_method_param_type(type *method, int pos);
     changing the type of the corresponding entity if the representation is constructed. */
 void  set_method_param_type(type *method, int pos, type* tp);
 /** Returns an entity that represents the copied value argument.  Only necessary
-   for compounds passed by value. This information is constrnewucted only on demand. */
+   for compounds passed by value. This information is constructed only on demand. */
 entity *get_method_value_param_ent(type *method, int pos);
 /**
  * Returns a type that represents the copied value arguments.
  */
-type *get_method_value_param_type(type *method);
+type *get_method_value_param_type(const type *method);
 
-int   get_method_n_ress   (type *method);
+int   get_method_n_ress   (const type *method);
 type *get_method_res_type(type *method, int pos);
 /** Sets the type of the result at position pos of a method.
     Also changes the type in the pass-by-value representation by just
@@ -593,10 +616,11 @@ void  set_method_res_type(type *method, int pos, type* tp);
 /** Returns an entity that represents the copied value result.  Only necessary
    for compounds passed by value. This information is constructed only on demand. */
 entity *get_method_value_res_ent(type *method, int pos);
+
 /**
  * Returns a type that represents the copied value results.
  */
-type *get_method_value_res_type(type *method);
+type *get_method_value_res_type(const type *method);
 
 /**
  * this enum flags the variadicity of methods (methods with a
@@ -612,7 +636,7 @@ typedef enum variadicity {
 const char *get_variadicity_name(variadicity vari);
 
 /** Returns the variadicity of a method. */
-variadicity get_method_variadicity(type *method);
+variadicity get_method_variadicity(const type *method);
 
 /** Sets the variadicity of a method. */
 void set_method_variadicity(type *method, variadicity vari);
@@ -623,7 +647,7 @@ void set_method_variadicity(type *method, variadicity vari);
  * of the method type plus one is returned for variadic functions.
  * Non-variadic function types always return -1 here.
  */
-int get_method_first_variadic_param_index(type *method);
+int get_method_first_variadic_param_index(const type *method);
 
 /**
  * Sets the first variadic parameter index. This allows to specify
@@ -634,7 +658,7 @@ int get_method_first_variadic_param_index(type *method);
 void set_method_first_variadic_param_index(type *method, int index);
 
 /** Returns true if a type is a method type. */
-int   is_method_type     (type *method);
+int   is_method_type     (const type *method);
 
 /**
  *   @page union_type	Representation of a union type.
@@ -654,13 +678,13 @@ type   *new_d_type_union (ident *name, dbg_info* db);
 /* --- manipulate private fields of struct --- */
 
 /** Returns the number of unioned types of this union */
-int     get_union_n_members      (type *uni);
+int     get_union_n_members      (const type *uni);
 
 /** Adds a new entity to a union type */
 void    add_union_member (type *uni, entity *member);
 
 /** Returns the entity at position pos of a union */
-entity *get_union_member (type *uni, int pos);
+entity *get_union_member (const type *uni, int pos);
 
 /** Overwrites a entity at position pos in a union type. */
 void    set_union_member (type *uni, int pos, entity *member);
@@ -669,7 +693,7 @@ void    set_union_member (type *uni, int pos, entity *member);
 void    remove_union_member (type *uni, entity *member);
 
 /** Returns true if a type is a union type. */
-int     is_union_type          (type *uni);
+int     is_union_type          (const type *uni);
 
 /**
  * @page array_type	Representation of an array type
@@ -713,7 +737,7 @@ type *new_d_type_array         (ident *name, int n_dimensions,
 /* --- manipulate private fields of array type --- */
 
 /** Returns the number of array dimensions of this type. */
-int   get_array_n_dimensions (type *array);
+int   get_array_n_dimensions (const type *array);
 
 /** Allocates Const nodes of mode_I for the array dimensions */
 void  set_array_bounds_int   (type *array, int dimension, int lower_bound,
@@ -725,27 +749,27 @@ void  set_array_lower_bound_int (type *array, int dimension, int lower_bound);
 void  set_array_upper_bound  (type *array, int dimension, ir_node *upper_bound);
 void  set_array_upper_bound_int (type *array, int dimension, int lower_bound);
 /** returns true if lower bound != Unknown */
-int       has_array_lower_bound     (type *array, int dimension);
-ir_node * get_array_lower_bound     (type *array, int dimension);
+int       has_array_lower_bound     (const type *array, int dimension);
+ir_node * get_array_lower_bound     (const type *array, int dimension);
 /** Works only if bound is Const node with tarval that can be converted to long. */
-long      get_array_lower_bound_int (type *array, int dimension);
+long      get_array_lower_bound_int (const type *array, int dimension);
 /** returns true if lower bound != Unknown */
-int       has_array_upper_bound     (type *array, int dimension);
-ir_node * get_array_upper_bound     (type *array, int dimension);
+int       has_array_upper_bound     (const type *array, int dimension);
+ir_node * get_array_upper_bound     (const type *array, int dimension);
 /** Works only if bound is Const node with tarval that can be converted to long. */
-long      get_array_upper_bound_int (type *array, int dimension);
+long      get_array_upper_bound_int (const type *array, int dimension);
 
 void set_array_order (type *array, int dimension, int order);
-int  get_array_order (type *array, int dimension);
+int  get_array_order (const type *array, int dimension);
 
 void  set_array_element_type (type *array, type *tp);
 type *get_array_element_type (type *array);
 
 void  set_array_element_entity (type *array, entity *ent);
-entity *get_array_element_entity (type *array);
+entity *get_array_element_entity (const type *array);
 
 /** Returns true if a type is an array type. */
-int    is_array_type(type *array);
+int    is_array_type(const type *array);
 
 /**
  * @page enumeration_type	Representation of an enumeration type
@@ -768,25 +792,25 @@ type   *new_d_type_enumeration    (ident *name, int n_enums, dbg_info* db);
 /* --- manipulate fields of enumeration type. --- */
 
 /** Returns the number of enumeration values of this enumeration */
-int     get_enumeration_n_enums (type *enumeration);
+int     get_enumeration_n_enums (const type *enumeration);
 
 /** Sets the enumeration value at a given position. */
 void    set_enumeration_enum    (type *enumeration, int pos, tarval *con);
 
 /** Returns the enumeration value at a given position. */
-tarval *get_enumeration_enum    (type *enumeration, int pos);
+tarval *get_enumeration_enum    (const type *enumeration, int pos);
 
 /** Assign an ident to an enumeration value at a given position. */
 void    set_enumeration_nameid  (type *enumeration, int pos, ident *id);
 
 /** Returns the assigned ident of an enumeration value at a given position. */
-ident  *get_enumeration_nameid  (type *enumeration, int pos);
+ident  *get_enumeration_nameid  (const type *enumeration, int pos);
 
 /** Returns the assigned name of an enumeration value at a given position. */
-const char *get_enumeration_name(type *enumeration, int pos);
+const char *get_enumeration_name(const type *enumeration, int pos);
 
 /** Returns true if a type is a enumeration type. */
-int     is_enumeration_type     (type *enumeration);
+int     is_enumeration_type     (const type *enumeration);
 
 /**
  * @page pointer_type	Representation of a pointer type
@@ -815,7 +839,7 @@ void  set_pointer_points_to_type (type *pointer, type *tp);
 type *get_pointer_points_to_type (type *pointer);
 
 /** Returns true if a type is a pointer type. */
-int   is_pointer_type            (type *pointer);
+int   is_pointer_type            (const type *pointer);
 
 /** Returns the first pointer type that has as points_to tp.
  *  Not efficient: O(#types).
@@ -836,7 +860,7 @@ type *new_type_primitive (ident *name, ir_mode *mode);
 type *new_d_type_primitive (ident *name, ir_mode *mode, dbg_info* db);
 
 /** Returns true if a type is a primitive type. */
-int  is_primitive_type  (type *primitive);
+int  is_primitive_type  (const type *primitive);
 
 
 /**
@@ -889,7 +913,7 @@ type *get_unknown_type(void);
  *  @param tp - any type
  *  @return true if type is primitive, pointer or enumeration
  */
-int is_atomic_type(type *tp);
+int is_atomic_type(const type *tp);
 
 /* --- Support for compound types --- */
 
@@ -904,7 +928,7 @@ int is_atomic_type(type *tp);
  *
  * @return Number of members in the compound type.
  */
-int get_compound_n_members(type *tp);
+int get_compound_n_members(const type *tp);
 
 /**
  * Gets the member of a firm compound type at position pos.
@@ -916,7 +940,7 @@ int get_compound_n_members(type *tp);
  *
  * @see get_compound_n_members() for justifaction of existence.
  */
-entity *get_compound_member(type *tp, int pos);
+entity *get_compound_member(const type *tp, int pos);
 
 /**
  *  Checks whether a type is compound.
@@ -925,7 +949,7 @@ entity *get_compound_member(type *tp, int pos);
  *
  *  @return true if the type is class, structure, union or array type.
  */
-int is_compound_type(type *tp);
+int is_compound_type(const type *tp);
 
 
 /**
@@ -933,7 +957,7 @@ int is_compound_type(type *tp);
  *  debugging, (configure with --enable-debug) else returns the address
  *  of the type cast to long.
  */
-long get_type_nr(type *tp);
+long get_type_nr(const type *tp);
 
 /*******************************************************************/
 /** Debug aides                                                   **/

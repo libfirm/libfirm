@@ -121,6 +121,10 @@ struct type {
   int size;                /**< Size of an entity of this type. This is determined
 			      when fixing the layout of this class.  Size must be
 			      given in bits. */
+  int align;               /**< Alignment of an entity of this type. This should be
+                                set according to the source language needs. If not set it's
+                                calculated automatically by get_type_alignment().
+                                Alignment must be given in bits. */
   ir_mode *mode;           /**< The mode for atomic types */
   unsigned long visit;     /**< visited counter for walks of the type information */
   void *link;              /**< holds temporary data - like in irnode_t.h */
@@ -188,7 +192,7 @@ static INLINE unsigned long __get_master_type_visited(void)     { return type_vi
 static INLINE void __inc_master_type_visited(void)              { type_visited++; }
 
 static INLINE void *
-__get_type_link(type *tp) {
+__get_type_link(const type *tp) {
   assert(tp && tp->kind == k_type);
   return(tp -> link);
 }
@@ -200,31 +204,31 @@ __set_type_link(type *tp, void *l) {
 }
 
 static INLINE tp_op*
-__get_type_tpop(type *tp) {
+__get_type_tpop(const type *tp) {
   assert(tp && tp->kind == k_type);
   return tp->type_op;
 }
 
 static INLINE ident*
-__get_type_tpop_nameid(type *tp) {
+__get_type_tpop_nameid(const type *tp) {
   assert(tp && tp->kind == k_type);
   return get_tpop_ident(tp->type_op);
 }
 
 static INLINE tp_opcode
-__get_type_tpop_code(type *tp) {
+__get_type_tpop_code(const type *tp) {
   assert(tp && tp->kind == k_type);
   return get_tpop_code(tp->type_op);
 }
 
 static INLINE ir_mode *
-__get_type_mode(type *tp) {
+__get_type_mode(const type *tp) {
   assert(tp && tp->kind == k_type);
   return tp->mode;
 }
 
 static INLINE ident *
-__get_type_ident(type *tp) {
+__get_type_ident(const type *tp) {
   assert(tp && tp->kind == k_type);
   return tp->name;
 }
@@ -236,7 +240,7 @@ __set_type_ident(type *tp, ident* id) {
 }
 
 static INLINE long
-__get_type_nr(type *tp) {
+__get_type_nr(const type *tp) {
   assert(tp);
 #ifdef DEBUG_libfirm
   return tp->nr;
@@ -246,13 +250,13 @@ __get_type_nr(type *tp) {
 }
 
 static INLINE int
-__get_type_size_bits(type *tp) {
+__get_type_size_bits(const type *tp) {
   assert(tp && tp->kind == k_type);
   return tp->size;
 }
 
 static INLINE int
-__get_type_size_bytes(type *tp) {
+__get_type_size_bytes(const type *tp) {
   int size = __get_type_size_bits(tp);
   if (size < 0)
     return -1;
@@ -264,13 +268,13 @@ __get_type_size_bytes(type *tp) {
 }
 
 static INLINE type_state
-__get_type_state(type *tp) {
+__get_type_state(const type *tp) {
   assert(tp && tp->kind == k_type);
   return tp->state;
 }
 
 static INLINE unsigned long
-__get_type_visited(type *tp) {
+__get_type_visited(const type *tp) {
   assert(tp && tp->kind == k_type);
   return tp->visit;
 }
@@ -289,86 +293,86 @@ __mark_type_visited(type *tp) {
 }
 
 static INLINE int
-__type_visited(type *tp) {
+__type_visited(const type *tp) {
   assert(tp && tp->kind == k_type);
   return tp->visit >= type_visited;
 }
 
 static INLINE int
-__type_not_visited(type *tp) {
+__type_not_visited(const type *tp) {
   assert(tp && tp->kind == k_type);
   return tp->visit  < type_visited;
 }
 
 static INLINE int
-__is_type(void *thing) {
+__is_type(const void *thing) {
   return (get_kind(thing) == k_type);
 }
 
 static INLINE int
-__is_class_type(type *clss) {
+__is_class_type(const type *clss) {
   assert(clss);
   return (clss->type_op == type_class);
 }
 
 static INLINE int
-__get_class_n_members (type *clss) {
+__get_class_n_members (const type *clss) {
   assert(clss && (clss->type_op == type_class));
   return (ARR_LEN (clss->attr.ca.members));
 }
 
 static INLINE entity *
-__get_class_member   (type *clss, int pos) {
+__get_class_member   (const type *clss, int pos) {
   assert(clss && (clss->type_op == type_class));
-  assert(pos >= 0 && pos < get_class_n_members(clss));
+  assert(pos >= 0 && pos < __get_class_n_members(clss));
   return clss->attr.ca.members[pos];
 }
 
 static INLINE int
-__is_struct_type(type *strct) {
+__is_struct_type(const type *strct) {
   assert(strct);
   return (strct->type_op == type_struct);
 }
 
 static INLINE int
-__is_method_type(type *method) {
+__is_method_type(const type *method) {
   assert(method);
   return (method->type_op == type_method);
 }
 
 static INLINE int
-__is_union_type(type *uni) {
+__is_union_type(const type *uni) {
   assert(uni);
   return (uni->type_op == type_union);
 }
 
 static INLINE int
-__is_array_type(type *array) {
+__is_array_type(const type *array) {
   assert(array);
   return (array->type_op == type_array);
 }
 
 static INLINE int
-__is_enumeration_type(type *enumeration) {
+__is_enumeration_type(const type *enumeration) {
   assert(enumeration);
   return (enumeration->type_op == type_enumeration);
 }
 
 static INLINE int
-__is_pointer_type(type *pointer) {
+__is_pointer_type(const type *pointer) {
   assert(pointer);
   return (pointer->type_op == type_pointer);
 }
 
 /** Returns true if a type is a primitive type. */
 static INLINE int
-__is_primitive_type(type *primitive) {
+__is_primitive_type(const type *primitive) {
   assert(primitive && primitive->kind == k_type);
   return (primitive->type_op == type_primitive);
 }
 
 static INLINE int
-__is_atomic_type(type *tp) {
+__is_atomic_type(const type *tp) {
   assert(tp && tp->kind == k_type);
   return (is_primitive_type(tp) || is_pointer_type(tp) ||
 	  is_enumeration_type(tp));
