@@ -1,6 +1,6 @@
 /* Copyright (c) 2002 by Universität Karlsruhe (TH).  All Rights Reserved */
 //
-// Time-stamp: <Monday, 13.05.2002, 15:51:30 goetz@i44pc2.info.uni-karlsruhe.de>
+// Time-stamp: <Monday, 13.05.2002, 15:53:33 goetz@i44pc2.info.uni-karlsruhe.de>
 //
 
 /***
@@ -69,7 +69,7 @@ static bool is_exc_jmp (ir_node *node)
 	{
 	  op = get_irn_op (get_Proj_pred (node));
 
-	  assert ((is_fragile_op(get_Proj_pred))       &&
+	  assert ((is_fragile_op(get_Proj_pred(node))) &&
 		  (op != op_Bad) && (op != op_Unknown) &&
 		  (get_irn_mode(node) == mode_X));// Check for proper Proj attr
 	  return (true);
