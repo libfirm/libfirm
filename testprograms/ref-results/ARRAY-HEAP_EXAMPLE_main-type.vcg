@@ -40,6 +40,8 @@ edge: { sourcename: "n19" targetname: "t16"label: "lower 0"}
 node: {title: "n18" label: "0x9Iu  18" color: yellow info1: "visited: 1
 Const of type type_unknown
 "}
+node: {title: "n4" label: "Bad  4"  info1: "visited: 1
+"}
 node: {title: "n19" label: "0x0Iu  19" color: yellow info1: "visited: 1
 Const of type type_unknown
 "}

@@ -107,6 +107,8 @@ edge: { sourcename: "e15" targetname: "n14"label: "value 0"}
 node: {title: "n14" label: "&(GlobalType_GLOBAL_VAR_main)P  14" color: yellow info1: "visited: 1
 Const of type type_unknown
 "}
+node: {title: "n4" label: "Bad  4"  info1: "visited: 1
+"}
 node: {title: "t13" label: "method GLOBAL_VAR_main" info1: "state: layout_fixed,
 mode: P,
 size: 4B,

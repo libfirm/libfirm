@@ -163,6 +163,8 @@ edge: { sourcename: "e18" targetname: "n17"label: "value 0"}
 node: {title: "n17" label: "&(PRIMA_set_a)P  17" color: yellow info1: "visited: 1
 Const of type type_unknown
 "}
+node: {title: "n4" label: "Bad  4"  info1: "visited: 1
+"}
 node: {title: "t16" label: "method set_a" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
