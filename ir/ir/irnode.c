@@ -352,6 +352,26 @@ void *
   return __get_irn_link(node);
 }
 
+
+#ifdef DO_HEAPANALYSIS
+/* Access the abstract interpretation information of a node.
+   Returns NULL if no such information is available. */
+struct abstval *get_irn_abst_value(ir_node *n) {
+  return n->av;
+}
+/* Set the abstract interpretation information of a node. */
+void set_irn_abst_value(ir_node *n, struct abstval *os) {
+  n->av = os;
+}
+struct section *firm_get_irn_section(ir_node *n) {
+  return n->sec;
+}
+void firm_set_irn_section(ir_node *n, struct section *s) {
+  n->sec = s;
+}
+#endif /* DO_HEAPANALYSIS */
+
+
 /* Outputs a unique number for this node */
 long
 get_irn_node_nr(const ir_node *node) {

@@ -214,6 +214,10 @@ struct ir_node {
 #endif
   /* ------- For analyses -------- */
   ir_loop *loop;           /**< the loop the node is in. Access routines in irloop.h */
+#ifdef  DO_HEAPANALYSIS
+  struct abstval *av;
+  struct section *sec;
+#endif
   /* ------- Opcode depending fields -------- */
   attr attr;               /**< attribute of this node. Depends on opcode.
                               Must be last field of struct ir_node. */
