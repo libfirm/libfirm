@@ -76,12 +76,18 @@ void type_walk_super2sub(type_walk_func *pre,
 			 type_walk_func *post,
 			 void *env);
 
-/**
-    Touches every class in specified order:
-    - first the super class
-    - second the class itself
-    If new classes are created during the traversal these
-    will be visited, too. */
+/** Walker for class types in inheritance order.
+ *
+ *  Touches every class in specified order:
+ *   - first the super class
+ *   - second the class itself
+ *   If new classes are created during the traversal these
+ *   will be visited, too.
+ * Starts the walk at arbitrary classes.
+ * Executes pre when first visiting a class.  Executes post after
+ * visiting all superclasses.
+ *
+ * The arguments pre, post, env may be NULL. */
 void type_walk_super(type_walk_func *pre,
 		     type_walk_func *post,
 		     void *env);
