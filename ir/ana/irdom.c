@@ -136,7 +136,6 @@ void init_tmp_dom_info(ir_node *bl, tmp_dom_info *parent,
   }
 }
 
-
 static void
 dom_compress (tmp_dom_info *v)
 {
