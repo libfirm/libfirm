@@ -13,14 +13,13 @@
 #include <assert.h>
 #include <string.h>
 
-#include "config.h"
+#include "firm_config.h"
 #include "bitfiddle.h"
 
-#include "bitset_std.h"
-
-/* #if defined(__GNUC__) && defined(__i386__) */
-#if 0
+#if defined(__GNUC__) && defined(__i386__)
 #include "bitset_ia32.h"
+#else
+#include "bitset_std.h"
 #endif
 
 typedef struct _bitset_t {

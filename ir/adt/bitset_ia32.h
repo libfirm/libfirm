@@ -123,35 +123,18 @@ static INLINE void _bitset_sse_inside_binop_ ## name(unsigned long *tgt, unsigne
 
 static INLINE void _bitset_sse_inside_binop_with_zero_and(unsigned long *tgt)
 {
-#ifdef _BITSET_SSE_USE_INLINE_ASM
-	asm("pxor %%xmm0,%%xmm0\n\t"
-			"movapd %%xmm0,%0"
-			:
-			: "m" (tgt)
-			: "xmm0", "memory");
-#else
 	tgt[0] = 0;
 	tgt[1] = 0;
 	tgt[2] = 0;
 	tgt[3] = 0;
-#endif
 }
 
 static INLINE void _bitset_sse_inside_binop_with_zero_xor(unsigned long *tgt)
 {
-#ifdef _BITSET_SSE_USE_INLINE_ASM
-	asm("pxor %%xmm0,%%xmm0\n\t"
-			"pxor %0,%%xmm0\n\t"
-			"movapd %%xmm0,%0"
-			:
-			: "m" (tgt)
-			: "xmm0", "memory");
-#else
 	__m128i src_op = _mm_setzero_si128();
 	__m128i tgt_op = _mm_load_si128((void *) tgt);
 	__m128i res = _mm_xor_si128(tgt_op, src_op);
 	_mm_store_si128((__m128i *) tgt, res);
-#endif
 }
 
 static INLINE void _bitset_sse_inside_binop_andnot(unsigned long *tgt, unsigned long *src)

@@ -10,7 +10,7 @@
 #ifndef __FIRM_HACKDEL_H
 #define __FIRM_HACKDEL_H
 
-#include "config.h"
+#include "firm_config.h"
 
 #define HACKDEL_WORDSIZE 32
 
