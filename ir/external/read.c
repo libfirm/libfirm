@@ -1266,7 +1266,7 @@ static void create_abstract_join (ir_graph *irg, proc_t *proc, eff_t *eff)
 
   n_ins = eff->effect.join.n_ins;
 
-  /* seems like current_module is not always mature at this point */
+  /* seems like current_block is not always mature at this point */
   mature_immBlock (get_cur_block ());
 
   block = get_cur_block ();     /* remember this so we can put the ProjXs into it */
@@ -1320,6 +1320,53 @@ static void create_abstract_join (ir_graph *irg, proc_t *proc, eff_t *eff)
   add_value_to_proc (proc, eff);
 }
 
+static void create_abstract_raise (ir_graph *irg, proc_t *proc, eff_t *eff)
+{
+  ir_node *block   = NULL;
+  ir_node *unknown = NULL;
+  ir_node *cond    = NULL;
+
+  /* seems like current_block is not always mature at this point */
+  mature_immBlock (get_cur_block ());
+  block = get_cur_block ();     /* remember this so we can put the ProjXs into it */
+
+  /* jump based on an unknown condition so both values are possible */
+  unknown = new_Unknown (mode_Iu);
+  cond    = new_Cond (unknown);
+
+  /* one branch for 'throw-exception' case */
+  {
+    ir_node *projX = new_Proj (cond, mode_X, 1L);
+    ir_node *b_exc = new_immBlock ();
+    ir_node *obj   = NULL;
+    ir_node *thrw  = NULL;
+    eff_t *thrw_eff = NULL;
+
+    add_immBlock_pred (b_exc, projX);
+
+    thrw_eff = find_valueid_in_proc_effects (eff->effect.raise.valref, proc);
+    obj = thrw_eff->firmnode;
+
+    thrw = new_Raise (get_store (), obj);
+    /* exc-jump to end block */
+    thrw = new_Proj (thrw, mode_X, 0L);
+
+    add_immBlock_pred (get_irg_end_block (irg), thrw);
+    mature_immBlock (get_cur_block ());
+  }
+
+  set_cur_block (block);     /* back to the first block */
+
+  /* one branch for 'non-exception' case */
+  {
+    ir_node *projX = new_Proj (cond, mode_X, 0);
+    new_immBlock ();            /* also sets current_block */
+    add_immBlock_pred (get_cur_block (), projX);
+    mature_immBlock (get_cur_block ());
+    /* continue building in current_block */
+  }
+
+}
 
 static void create_abstract_firm(module_t *module, proc_t *proc, entity *fent)
 {
@@ -1368,6 +1415,9 @@ static void create_abstract_firm(module_t *module, proc_t *proc, entity *fent)
       break;
     case eff_join:
       create_abstract_join(irg, proc, eff);
+      break;
+    case eff_raise:
+      create_abstract_raise(irg, proc, eff);
       break;
     default:
       assert(0 && "effect not implemented");
@@ -1575,6 +1625,9 @@ void create_abstraction(const char *filename)
 
 /*
  * $Log$
+ * Revision 1.13  2004/11/05 14:00:53  liekweg
+ * added raise
+ *
  * Revision 1.12  2004/11/02 14:30:31  liekweg
  * fixed multi-input join (thx, Boris) --flo
  *
