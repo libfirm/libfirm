@@ -127,9 +127,7 @@ new_r_ir_graph (entity *ent, int n_loc)
   res = alloc_graph();
   res->kind = k_ir_graph;
 
-#ifdef FIRM_EDGES_INPLACE
-	edges_init_graph(res);
-#endif
+  edges_init_graph(res);
 
   /* inform statistics here, as blocks will be already build on this graph */
   hook_new_graph(res, ent);
