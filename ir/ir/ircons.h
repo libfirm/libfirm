@@ -453,7 +453,12 @@
  *    --------------------------------------------
  *
  *    Creates a new Block with the given list of predecessors.  This block
- *    is mature.
+ *    is mature.  As other constructors calls optimization and vrfy for the
+ *    block.  If one of the predecessors is Unknown (as it has to be filled in
+ *    later) optimizations are skipped.  This is necessary to
+ *    construct Blocks in loops.  Leaving Unknown in the Block after finishing
+ *    the construction may have strange effects, especially for interprocedural
+ *    representation and analyses.
  *
  *
  *    CONTROL FLOW OPERATIONS
@@ -840,6 +845,11 @@
  *
  *    Creates a Phi node. The in's order has to correspond to the order
  *    of in's of current_block.  This is not checked by the library!
+ *    If one of the predecessors is Unknown (as it has to be filled in
+ *    later) optimizations are skipped.  This is necessary to
+ *    construct Phi nodes in loops.  Leaving Unknown in the Phi after finishing
+ *    the construction may have strange effects, especially for interprocedural
+ *    representation and analyses.
  *
  *    Parameter
  *      arity            number of predecessors

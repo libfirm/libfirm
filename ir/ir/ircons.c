@@ -97,6 +97,8 @@ INLINE ir_node *
 new_rd_Phi (dbg_info* db, ir_graph *irg, ir_node *block, int arity, ir_node **in, ir_mode *mode)
 {
   ir_node *res;
+  int i;
+  bool has_unknown = false;
 
   assert( get_Block_matured(block) );
   assert( get_irn_arity(block) == arity );
@@ -105,7 +107,8 @@ new_rd_Phi (dbg_info* db, ir_graph *irg, ir_node *block, int arity, ir_node **in
 
   res->attr.phi_backedge = new_backedge_arr(irg->obst, arity);
 
-  res = optimize_node (res);
+  for (i = arity-1; i >= 0; i--) if (get_irn_op(in[i]) == op_Unknown) has_unknown = true;
+  if (!has_unknown) res = optimize_node (res);
   irn_vrfy_irg (res, irg);
 
   /* Memory Phis in endless loops must be kept alive.
@@ -938,6 +941,8 @@ ir_node *
 new_d_Block (dbg_info* db, int arity, ir_node **in)
 {
   ir_node *res;
+  int i;
+  bool has_unknown = false;
 
   res = new_rd_Block (db, current_ir_graph, arity, in);
 
@@ -946,7 +951,9 @@ new_d_Block (dbg_info* db, int arity, ir_node **in)
                                          current_ir_graph->n_loc);
   memset(res->attr.block.graph_arr, 0, sizeof(ir_node *)*current_ir_graph->n_loc);
 
-  res = optimize_node (res);
+  for (i = arity-1; i >= 0; i--) if (get_irn_op(in[i]) == op_Unknown) has_unknown = true;
+
+  if (!has_unknown) res = optimize_node (res);
   current_ir_graph->current_block = res;
 
   irn_vrfy_irg (res, current_ir_graph);
