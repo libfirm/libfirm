@@ -589,8 +589,7 @@ new_compound_graph_path(type *tp, int length) {
   res->kind         = k_ir_compound_graph_path;
   res->tp           = tp;
   res->len          = length;
-  res->arr_indicees = xmalloc(length * sizeof(*res ->arr_indicees));
-  memset(res->arr_indicees, 0, length * sizeof(res ->arr_indicees[0]));
+  res->arr_indicees = xcalloc(length, sizeof(res ->arr_indicees[0]));
 
   return res;
 }
@@ -950,8 +949,7 @@ void compute_compound_ent_array_indicees(entity *ent) {
 
 /** @fixme MMB: the memcpy is very strange */
 static int *resize (int *buf, int new_size) {
-  int *new_buf = xmalloc(new_size * sizeof(new_buf[0]));
-  memset(new_buf, 0, new_size * sizeof(new_buf[0]));
+  int *new_buf = xcalloc(new_size, sizeof(new_buf[0]));
   memcpy(new_buf, buf, new_size>1);
   free(buf);
   return new_buf;
@@ -990,8 +988,7 @@ void sort_compound_ent_values(entity *ent) {
 
   /* estimated upper bound for size. Better: use flexible array ... */
   size = ((tp_size > (n_vals * 32)) ? tp_size : (n_vals * 32)) * 4;
-  permutation = xmalloc(size * sizeof(permutation[0]));
-  memset(permutation, 0, size * sizeof(permutation[0]));
+  permutation = xcalloc(size, sizeof(permutation[0]));
 
   for (i = 0; i < n_vals; ++i) {
     int pos = get_compound_ent_value_offset_bits(ent, i);
