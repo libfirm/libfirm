@@ -40,19 +40,21 @@ void stat_finish(const char *name);
 typedef enum {
   STAT_OPT_STG,			/**< straightening optimization */
   STAT_OPT_IFSIM,		/**< if simplification */
+  STAT_OPT_CONST_EVAL,          /**< constant evaluation */
   STAT_OPT_ALGSIM,		/**< algebraic simplification */
   STAT_OPT_PHI,			/**< Phi optmization */
   STAT_OPT_WAW,			/**< Write-After-Write optimization */
   STAT_OPT_WAR,			/**< Write-After-Read optimization */
   STAT_OPT_RAW,			/**< Read-After-Write optimization */
   STAT_OPT_RAR,			/**< Read-After-Read optimization */
+  STAT_OPT_RC,                  /**< Read-a-Const optimization */
   STAT_OPT_TUPLE,		/**< Tuple optimization */
   STAT_OPT_ID,			/**< ID optimization */
-  STAT_OPT_CONST_EVAL,		/**< constant evaluation */
   STAT_OPT_CSE,                 /**< common subexpression elimination */
   STAT_OPT_STRENGTH_RED,	/**< strenght reduction */
   STAT_OPT_ARCH_DEP,		/**< architecture dependant optimization */
   STAT_OPT_REASSOC,             /**< reassociation */
+  STAT_OPT_POLY_CALL,           /**< polymorphic call optimization */
   STAT_LOWERED,			/**< lowered */
 
   STAT_OPT_MAX

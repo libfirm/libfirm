@@ -29,19 +29,21 @@
 static const char *opt_names[] = {
   "straightening optimization",
   "if simplification",
+  "constant evaluation",
   "algebraic simplification",
   "Phi optmization",
   "Write-After-Write optimization",
   "Write-After-Read optimization",
   "Read-After-Write optimization",
   "Read-After-Read optimization",
+  "Read-a-Const optimization",
   "Tuple optimization",
   "ID optimization",
-  "Constant evaluation",
   "Common subexpression elimination",
   "Strength reduction",
   "Architecture dependant optimization",
   "Reassociation optimization",
+  "Polymorphic call optimization",
   "Lowered",
 };
 
