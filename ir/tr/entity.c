@@ -264,7 +264,7 @@ get_entity_nr(entity *ent) {
 
 const char *
 (get_entity_name)(const entity *ent) {
-  return __get_entity_name(ent);
+  return _get_entity_name(ent);
 }
 
 ident *
@@ -279,7 +279,7 @@ void   set_entity_ld_ident (entity *, ident *ld_ident);
 
 type *
 (get_entity_owner)(entity *ent) {
-  return __get_entity_owner(ent);
+  return _get_entity_owner(ent);
 }
 
 void
@@ -300,37 +300,37 @@ assert_legal_owner_of_ent(type *owner) {
 
 ident *
 (get_entity_ld_ident)(entity *ent) {
-  return __get_entity_ld_ident(ent);
+  return _get_entity_ld_ident(ent);
 }
 
 void
 (set_entity_ld_ident)(entity *ent, ident *ld_ident) {
-   __set_entity_ld_ident(ent, ld_ident);
+   _set_entity_ld_ident(ent, ld_ident);
 }
 
 const char *
 (get_entity_ld_name)(entity *ent) {
-  return __get_entity_ld_name(ent);
+  return _get_entity_ld_name(ent);
 }
 
 type *
 (get_entity_type)(entity *ent) {
-  return __get_entity_type(ent);
+  return _get_entity_type(ent);
 }
 
 void
 (set_entity_type)(entity *ent, type *type) {
-  __set_entity_type(ent, type);
+  _set_entity_type(ent, type);
 }
 
 ent_allocation
 (get_entity_allocation)(const entity *ent) {
-  return __get_entity_allocation(ent);
+  return _get_entity_allocation(ent);
 }
 
 void
 (set_entity_allocation)(entity *ent, ent_allocation al) {
-  __set_entity_allocation(ent, al);
+  _set_entity_allocation(ent, al);
 }
 
 /* return the name of the visibility */
@@ -350,7 +350,7 @@ const char *get_allocation_name(ent_allocation all)
 
 ent_visibility
 (get_entity_visibility)(const entity *ent) {
-  return __get_entity_visibility(ent);
+  return _get_entity_visibility(ent);
 }
 
 void
@@ -379,7 +379,7 @@ const char *get_visibility_name(ent_visibility vis)
 
 ent_variability
 (get_entity_variability)(const entity *ent) {
-  return __get_entity_variability(ent);
+  return _get_entity_variability(ent);
 }
 
 void
@@ -426,12 +426,12 @@ const char *get_variability_name(ent_variability var)
 
 ent_volatility
 (get_entity_volatility)(const entity *ent) {
-  return __get_entity_volatility(ent);
+  return _get_entity_volatility(ent);
 }
 
 void
 (set_entity_volatility)(entity *ent, ent_volatility vol) {
-  __set_entity_volatility(ent, vol);
+  _set_entity_volatility(ent, vol);
 }
 
 /* return the name of the volatility */
@@ -448,12 +448,12 @@ const char *get_volatility_name(ent_volatility var)
 
 peculiarity
 (get_entity_peculiarity)(const entity *ent) {
-  return __get_entity_peculiarity(ent);
+  return _get_entity_peculiarity(ent);
 }
 
 void
 (set_entity_peculiarity)(entity *ent, peculiarity pec) {
-  __set_entity_peculiarity(ent, pec);
+  _set_entity_peculiarity(ent, pec);
 }
 
 /* return the name of the peculiarity */
@@ -472,13 +472,13 @@ const char *get_peculiarity_name(peculiarity var)
 /* Get the entity's stickyness */
 ent_stickyness
 (get_entity_stickyness)(const entity *ent) {
-  return __get_entity_stickyness(ent);
+  return _get_entity_stickyness(ent);
 }
 
 /* Set the entity's stickyness */
 void
 (set_entity_stickyness)(entity *ent, ent_stickyness stickyness) {
-  __set_entity_stickyness(ent, stickyness);
+  _set_entity_stickyness(ent, stickyness);
 }
 
 /* Set has no effect for existent entities of type method. */
@@ -722,11 +722,11 @@ static int equal_paths(compound_graph_path *path1, int *visited_indicees, compou
 
       low = get_array_lower_bound_int(tp, 0);
       if (low + visited_indicees[i] < get_compound_graph_path_array_index(path2, i)) {
-	      visited_indicees[i]++;
-	      return false;
-      } else {
-	      assert(low + visited_indicees[i] == get_compound_graph_path_array_index(path2, i));
+        visited_indicees[i]++;
+        return false;
       }
+      else
+        assert(low + visited_indicees[i] == get_compound_graph_path_array_index(path2, i));
     }
   }
   return true;
@@ -741,6 +741,22 @@ int get_compound_ent_pos_by_path(entity *ent, compound_graph_path *path) {
     if (equal_paths(get_compound_ent_value_path(ent, i), visited_indicees, path))
       return i;
   }
+
+#if 0
+  {
+    int j;
+    printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+      printf("Entity %s : ", get_entity_name(ent));
+      for (j = 0; j < get_compound_graph_path_length(path); ++j) {
+        entity *node = get_compound_graph_path_node(path, j);
+        printf("%s", get_entity_name(node));
+        if (is_Array_type(get_entity_owner(node)))
+          printf("[%d]", get_compound_graph_path_array_index(path, j));
+      }
+    printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+  }
+#endif
+
   assert(0 && "path not found");
   return -1;
 }
@@ -1086,22 +1102,22 @@ void sort_compound_ent_values(entity *ent) {
 
 int
 (get_entity_offset_bytes)(const entity *ent) {
-  return __get_entity_offset_bytes(ent);
+  return _get_entity_offset_bytes(ent);
 }
 
 int
 (get_entity_offset_bits)(const entity *ent) {
-  return __get_entity_offset_bits(ent);
+  return _get_entity_offset_bits(ent);
 }
 
 void
 (set_entity_offset_bytes)(entity *ent, int offset) {
-  __set_entity_offset_bytes(ent, offset);
+  _set_entity_offset_bytes(ent, offset);
 }
 
 void
 (set_entity_offset_bits)(entity *ent, int offset) {
-  __set_entity_offset_bits(ent, offset);
+  _set_entity_offset_bits(ent, offset);
 }
 
 void
@@ -1205,17 +1221,17 @@ void    remove_entity_overwrittenby(entity *ent, entity *overwrites) {
 /* A link to store intermediate information */
 void *
 (get_entity_link)(const entity *ent) {
-  return __get_entity_link(ent);
+  return _get_entity_link(ent);
 }
 
 void
 (set_entity_link)(entity *ent, void *l) {
-  __set_entity_link(ent, l);
+  _set_entity_link(ent, l);
 }
 
 ir_graph *
 (get_entity_irg)(const entity *ent) {
-  return __get_entity_irg(ent);
+  return _get_entity_irg(ent);
 }
 
 void
@@ -1236,7 +1252,7 @@ set_entity_irg(entity *ent, ir_graph *irg) {
 
 int
 (is_entity)(const void *thing) {
-  return __is_entity(thing);
+  return _is_entity(thing);
 }
 
 int is_atomic_entity(entity *ent) {

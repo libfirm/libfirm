@@ -122,30 +122,30 @@ struct entity {
 
 /* ----------------------- inline functions ------------------------ */
 static INLINE int
-__is_entity(const void *thing) {
+_is_entity(const void *thing) {
   return get_kind(thing) == k_entity;
 }
 
 static INLINE const char *
-__get_entity_name(const entity *ent) {
+_get_entity_name(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   return get_id_str(get_entity_ident(ent));
 }
 
 static INLINE ident *
-__get_entity_ident(const entity *ent) {
+_get_entity_ident(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->name;
 }
 
 static INLINE type *
-__get_entity_owner(entity *ent) {
+_get_entity_owner(entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->owner = skip_tid(ent->owner);
 }
 
 static INLINE ident *
-__get_entity_ld_ident(entity *ent)
+_get_entity_ld_ident(entity *ent)
 {
   assert(ent && ent->kind == k_entity);
   if (ent->ld_name == NULL)
@@ -154,67 +154,67 @@ __get_entity_ld_ident(entity *ent)
 }
 
 static INLINE void
-__set_entity_ld_ident(entity *ent, ident *ld_ident) {
+_set_entity_ld_ident(entity *ent, ident *ld_ident) {
   assert(ent && ent->kind == k_entity);
   ent->ld_name = ld_ident;
 }
 
 static INLINE const char *
-__get_entity_ld_name(entity *ent) {
+_get_entity_ld_name(entity *ent) {
   assert(ent && ent->kind == k_entity);
   return get_id_str(get_entity_ld_ident(ent));
 }
 
 static INLINE type *
-__get_entity_type(entity *ent) {
+_get_entity_type(entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->type = skip_tid(ent->type);
 }
 
 static INLINE void
-__set_entity_type(entity *ent, type *type) {
+_set_entity_type(entity *ent, type *type) {
   assert(ent && ent->kind == k_entity);
   ent->type = type;
 }
 
 static INLINE ent_allocation
-__get_entity_allocation(const entity *ent) {
+_get_entity_allocation(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->allocation;
 }
 
 static INLINE void
-__set_entity_allocation(entity *ent, ent_allocation al) {
+_set_entity_allocation(entity *ent, ent_allocation al) {
   assert(ent && ent->kind == k_entity);
   ent->allocation = al;
 }
 
 static INLINE ent_visibility
-__get_entity_visibility(const entity *ent) {
+_get_entity_visibility(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->visibility;
 }
 
 static INLINE ent_variability
-__get_entity_variability(const entity *ent) {
+_get_entity_variability(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->variability;
 }
 
 static INLINE ent_volatility
-__get_entity_volatility(const entity *ent) {
+_get_entity_volatility(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->volatility;
 }
 
 static INLINE void
-__set_entity_volatility(entity *ent, ent_volatility vol) {
+_set_entity_volatility(entity *ent, ent_volatility vol) {
   assert(ent && ent->kind == k_entity);
   ent->volatility = vol;
 }
 
 static INLINE peculiarity
-__get_entity_peculiarity(const entity *ent) {
+_get_entity_peculiarity(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->peculiarity;
 }
@@ -227,7 +227,7 @@ __get_entity_peculiarity(const entity *ent) {
  *       I removed the assertion.  GL, 28.2.05
  */
 static INLINE void
-__set_entity_peculiarity(entity *ent, peculiarity pec) {
+_set_entity_peculiarity(entity *ent, peculiarity pec) {
   assert(ent && ent->kind == k_entity);
   /* @@@ why peculiarity only for methods? */
   //assert(is_Method_type(ent->type));
@@ -236,57 +236,57 @@ __set_entity_peculiarity(entity *ent, peculiarity pec) {
 }
 
 static INLINE ent_stickyness
-__get_entity_stickyness(const entity *ent) {
+_get_entity_stickyness(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->stickyness;
 }
 
 static INLINE void
-__set_entity_stickyness(entity *ent, ent_stickyness stickyness)
+_set_entity_stickyness(entity *ent, ent_stickyness stickyness)
 {
   assert(ent && ent->kind == k_entity);
   ent->stickyness = stickyness;
 }
 
 static INLINE int
-__get_entity_offset_bits(const entity *ent) {
+_get_entity_offset_bits(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->offset;
 }
 
 static INLINE int
-__get_entity_offset_bytes(const entity *ent) {
-  int bits = __get_entity_offset_bits(ent);
+_get_entity_offset_bytes(const entity *ent) {
+  int bits = _get_entity_offset_bits(ent);
 
   if (bits & 7) return -1;
   return bits >> 3;
 }
 
 static INLINE void
-__set_entity_offset_bits(entity *ent, int offset) {
+_set_entity_offset_bits(entity *ent, int offset) {
   assert(ent && ent->kind == k_entity);
   ent->offset = offset;
 }
 
 static INLINE void
-__set_entity_offset_bytes(entity *ent, int offset) {
-  __set_entity_offset_bits(ent, offset * 8);
+_set_entity_offset_bytes(entity *ent, int offset) {
+  _set_entity_offset_bits(ent, offset * 8);
 }
 
 static INLINE void *
-__get_entity_link(const entity *ent) {
+_get_entity_link(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->link;
 }
 
 static INLINE void
-__set_entity_link(entity *ent, void *l) {
+_set_entity_link(entity *ent, void *l) {
   assert(ent && ent->kind == k_entity);
   ent->link = l;
 }
 
 static INLINE ir_graph *
-__get_entity_irg(const entity *ent) {
+_get_entity_irg(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   assert(ent == unknown_entity || is_Method_type(ent->type));
   if (!get_visit_pseudo_irgs() && ent->irg && is_pseudo_ir_graph(ent->irg))
@@ -294,31 +294,31 @@ __get_entity_irg(const entity *ent) {
   return ent->irg;
 }
 
-#define is_entity(thing)                        __is_entity(thing)
-#define get_entity_name(ent)                    __get_entity_name(ent)
-#define get_entity_ident(ent)                   __get_entity_ident(ent)
-#define get_entity_owner(ent)                   __get_entity_owner(ent)
-#define get_entity_ld_ident(ent)                __get_entity_ld_ident(ent)
-#define set_entity_ld_ident(ent, ld_ident)      __set_entity_ld_ident(ent, ld_ident)
-#define get_entity_ld_name(ent)                 __get_entity_ld_name(ent)
-#define get_entity_type(ent)                    __get_entity_type(ent)
-#define set_entity_type(ent, type)              __set_entity_type(ent, type)
-#define get_entity_allocation(ent)              __get_entity_allocation(ent)
-#define set_entity_allocation(ent, al)          __set_entity_allocation(ent, al)
-#define get_entity_visibility(ent)              __get_entity_visibility(ent)
-#define get_entity_variability(ent)             __get_entity_variability(ent)
-#define get_entity_volatility(ent)              __get_entity_volatility(ent)
-#define set_entity_volatility(ent, vol)         __set_entity_volatility(ent, vol)
-#define get_entity_peculiarity(ent)             __get_entity_peculiarity(ent)
-#define set_entity_peculiarity(ent, pec)        __set_entity_peculiarity(ent, pec)
-#define get_entity_stickyness(ent)              __get_entity_stickyness(ent)
-#define set_entity_stickyness(ent, stickyness)  __set_entity_stickyness(ent, stickyness)
-#define get_entity_offset_bits(ent)             __get_entity_offset_bits(ent)
-#define get_entity_offset_bytes(ent)            __get_entity_offset_bytes(ent)
-#define set_entity_offset_bits(ent, offset)     __set_entity_offset_bits(ent, offset)
-#define set_entity_offset_bytes(ent, offset)    __set_entity_offset_bytes(ent, offset)
-#define get_entity_link(ent)                    __get_entity_link(ent)
-#define set_entity_link(ent, l)                 __set_entity_link(ent, l)
-#define get_entity_irg(ent)                     __get_entity_irg(ent)
+#define is_entity(thing)                        _is_entity(thing)
+#define get_entity_name(ent)                    _get_entity_name(ent)
+#define get_entity_ident(ent)                   _get_entity_ident(ent)
+#define get_entity_owner(ent)                   _get_entity_owner(ent)
+#define get_entity_ld_ident(ent)                _get_entity_ld_ident(ent)
+#define set_entity_ld_ident(ent, ld_ident)      _set_entity_ld_ident(ent, ld_ident)
+#define get_entity_ld_name(ent)                 _get_entity_ld_name(ent)
+#define get_entity_type(ent)                    _get_entity_type(ent)
+#define set_entity_type(ent, type)              _set_entity_type(ent, type)
+#define get_entity_allocation(ent)              _get_entity_allocation(ent)
+#define set_entity_allocation(ent, al)          _set_entity_allocation(ent, al)
+#define get_entity_visibility(ent)              _get_entity_visibility(ent)
+#define get_entity_variability(ent)             _get_entity_variability(ent)
+#define get_entity_volatility(ent)              _get_entity_volatility(ent)
+#define set_entity_volatility(ent, vol)         _set_entity_volatility(ent, vol)
+#define get_entity_peculiarity(ent)             _get_entity_peculiarity(ent)
+#define set_entity_peculiarity(ent, pec)        _set_entity_peculiarity(ent, pec)
+#define get_entity_stickyness(ent)              _get_entity_stickyness(ent)
+#define set_entity_stickyness(ent, stickyness)  _set_entity_stickyness(ent, stickyness)
+#define get_entity_offset_bits(ent)             _get_entity_offset_bits(ent)
+#define get_entity_offset_bytes(ent)            _get_entity_offset_bytes(ent)
+#define set_entity_offset_bits(ent, offset)     _set_entity_offset_bits(ent, offset)
+#define set_entity_offset_bytes(ent, offset)    _set_entity_offset_bytes(ent, offset)
+#define get_entity_link(ent)                    _get_entity_link(ent)
+#define set_entity_link(ent, l)                 _set_entity_link(ent, l)
+#define get_entity_irg(ent)                     _get_entity_irg(ent)
 
 # endif /* _ENTITY_T_H_ */
