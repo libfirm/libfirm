@@ -1148,6 +1148,8 @@ set_entity_irg(entity *ent, ir_graph *irg) {
    * inherited um! */
   /* assert(irg); */
   assert((irg  && ent->peculiarity == peculiarity_existent) ||
+	 (!irg && (ent->peculiarity == peculiarity_existent)
+	  && (ent -> visibility == visibility_external_allocated)) ||
          (!irg && ent->peculiarity == peculiarity_description) ||
          (!irg && ent->peculiarity == peculiarity_inherited));
   ent->irg = irg;
