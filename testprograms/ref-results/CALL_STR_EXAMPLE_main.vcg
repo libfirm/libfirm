@@ -22,7 +22,6 @@ node: {title: "n61" label: "Call  61" }
 edge: {sourcename: "n61" targetname: "n64" label: "0" color: blue}
 edge: {sourcename: "n61" targetname: "n63" label: "1" }
 edge: {sourcename: "n61" targetname: "n62" label: "2" }
-node: {title: "n63" label: "SymC f  63" }
 }
 
 graph: { title: "n58"  label: "58" status:clustered color:yellow
@@ -31,6 +30,7 @@ node: {title: "n57" label: "ProjX 0 57" color: yellow}
 edge: {sourcename: "n57" targetname: "n59" label: "0" color: red}
 node: {title: "n59" label: "Start  59" color: blue}
 node: {title: "n62" label: "&(GlobalType_constStr)P  62" color: yellow}
+node: {title: "n63" label: "SymC f  63" }
 node: {title: "n64" label: "ProjM 1 64" color: yellow}
 edge: {sourcename: "n64" targetname: "n59" label: "0" color: blue}
 }

@@ -42,7 +42,6 @@ edge: {sourcename: "n209" targetname: "n210" label: "0" }
 node: {title: "n210" label: "Alloc  210" }
 edge: {sourcename: "n210" targetname: "n212" label: "0" color: blue}
 edge: {sourcename: "n210" targetname: "n211" label: "1" }
-node: {title: "n211" label: "SymC PRIMA size  211" }
 node: {title: "n213" label: "ProjM 0 213" color: yellow}
 edge: {sourcename: "n213" targetname: "n214" label: "0" color: blue}
 node: {title: "n214" label: "Store  214" }
@@ -62,6 +61,7 @@ node: {title: "n196" label: "ProjX 0 196" color: yellow}
 edge: {sourcename: "n196" targetname: "n197" label: "0" color: red}
 node: {title: "n197" label: "Start  197" color: blue}
 node: {title: "n207" label: "0x5Is  207" color: yellow}
+node: {title: "n211" label: "SymC PRIMA size  211" }
 node: {title: "n212" label: "ProjM 1 212" color: yellow}
 edge: {sourcename: "n212" targetname: "n197" label: "0" color: blue}
 node: {title: "n215" label: "0x2Is  215" color: yellow}
