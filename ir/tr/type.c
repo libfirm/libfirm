@@ -188,11 +188,11 @@ void    remove_class_member(type *clss, entity *member) {
   assert(clss && (clss->type_op == type_class));
   for (i = 1; i < (ARR_LEN (clss->attr.ca.members))-1; i++)
     if (clss->attr.ca.members[i+1] == member) {
+      for(i++; i < (ARR_LEN (clss->attr.ca.members)) - 1; i++)
+	clss->attr.ca.members[i] = clss->attr.ca.members[i + 1];
+      ARR_SETLEN(entity*, clss->attr.ca.members, ARR_LEN(clss->attr.ca.members) - 1);
       break;
     }
-  for(i++; i < (ARR_LEN (clss->attr.ca.members))-1; i++)
-    clss->attr.ca.members[i] = clss->attr.ca.members[i+1];
-  --_ARR_DESCR((clss->attr.ca.members))->nelts;
 }
 
 void    add_class_subtype   (type *clss, type *subtype) {
@@ -217,11 +217,11 @@ void    remove_class_subtype(type *clss, type *subtype) {
   assert(clss && (clss->type_op == type_class));
   for (i = 1; i < (ARR_LEN (clss->attr.ca.subtypes))-1; i++)
     if (clss->attr.ca.subtypes[i+1] == subtype) {
+      for(i++; i < (ARR_LEN (clss->attr.ca.subtypes))-1; i++)
+	clss->attr.ca.subtypes[i] = clss->attr.ca.subtypes[i+1];
+      ARR_SETLEN(entity*, clss->attr.ca.subtypes, ARR_LEN(clss->attr.ca.subtypes) - 1);
       break;
     }
-  for(i++; i < (ARR_LEN (clss->attr.ca.subtypes))-1; i++)
-    clss->attr.ca.subtypes[i] = clss->attr.ca.subtypes[i+1];
-  --_ARR_DESCR((clss->attr.ca.subtypes))->nelts;
 }
 
 void    add_class_supertype   (type *clss, type *supertype) {
@@ -246,11 +246,11 @@ void    remove_class_supertype(type *clss, type *supertype) {
   assert(clss && (clss->type_op == type_class));
   for (i = 1; i < (ARR_LEN (clss->attr.ca.supertypes))-1; i++)
     if (clss->attr.ca.supertypes[i+1] == supertype) {
+      for(i++; i < (ARR_LEN (clss->attr.ca.supertypes))-1; i++)
+	clss->attr.ca.supertypes[i] = clss->attr.ca.supertypes[i+1];
+      ARR_SETLEN(entity*, clss->attr.ca.supertypes, ARR_LEN(clss->attr.ca.supertypes) - 1);
       break;
     }
-  for(i++; i < (ARR_LEN (clss->attr.ca.supertypes))-1; i++)
-    clss->attr.ca.supertypes[i] = clss->attr.ca.supertypes[i+1];
-  --_ARR_DESCR((clss->attr.ca.supertypes))->nelts;
 }
 /* typecheck */
 bool    is_class_type(type *clss) {
@@ -291,11 +291,11 @@ void    remove_struct_member(type *strct, entity *member) {
   assert(strct && (strct->type_op == type_struct));
   for (i = 1; i < (ARR_LEN (strct->attr.sa.members))-1; i++)
     if (strct->attr.sa.members[i+1] == member) {
+      for(i++; i < (ARR_LEN (strct->attr.sa.members))-1; i++)
+	strct->attr.sa.members[i] = strct->attr.sa.members[i+1];
+      ARR_SETLEN(entity*, strct->attr.sa.members, ARR_LEN(strct->attr.sa.members) - 1);
       break;
     }
-  for(i++; i < (ARR_LEN (strct->attr.sa.members))-1; i++)
-    strct->attr.sa.members[i] = strct->attr.sa.members[i+1];
-  --_ARR_DESCR((strct->attr.sa.members))->nelts;
 }
 /* typecheck */
 bool    is_struct_type(type *strct) {
@@ -414,11 +414,11 @@ void   remove_union_member(type *uni, entity *member) {
   assert(uni && (uni->type_op == type_union));
   for (i = 1; i < (ARR_LEN (uni->attr.ua.members))-1; i++)
     if (uni->attr.ua.members[i+1] == member) {
+      for(i++; i < (ARR_LEN (uni->attr.ua.members))-1; i++)
+	uni->attr.ua.members[i] = uni->attr.ua.members[i+1];
+      ARR_SETLEN(entity*, uni->attr.ua.members, ARR_LEN(uni->attr.ua.members) - 1);
       break;
     }
-  for(i++; i < (ARR_LEN (uni->attr.ua.members))-1; i++)
-    uni->attr.ua.members[i] = uni->attr.ua.members[i+1];
-  --_ARR_DESCR((uni->attr.ua.members))->nelts;
 }
 
 /* typecheck */
