@@ -11,7 +11,7 @@
  */
 
 #ifdef HAVE_CONFIG_H
-# include <config.h>
+# include "config.h"
 #endif
 
 #include <stdlib.h>
@@ -103,10 +103,10 @@ _del_arr_f (void *elts)
   _arr_descr *dp = _ARR_DESCR (elts);
 
   ARR_VRFY (elts);
-  assert (dp->cookie == ARR_F_MAGIC);
+  assert (dp->magic == ARR_F_MAGIC);
 
 #ifndef NDEBUG
-  dp->cookie = 0xdeadbeef;
+  dp->magic = 0xdeadbeef;
 #endif
   free (dp);
 }
@@ -128,7 +128,7 @@ _arr_setlen (void *elts, int nelts, size_t elts_size)
 {
   _arr_descr *dp = _ARR_DESCR (elts);
 
-  assert ((dp->cookie == ARR_F_MAGIC) && (nelts >= 0));
+  assert ((dp->magic == ARR_F_MAGIC) && (nelts >= 0));
   ARR_VRFY (elts);
   assert (!dp->eltsize || !nelts || (dp->eltsize == elts_size/nelts));
 
@@ -157,7 +157,7 @@ _arr_resize (void *elts, int nelts, size_t eltsize)
   _arr_descr *dp = _ARR_DESCR (elts);
   int n;
 
-  assert ((dp->cookie == ARR_F_MAGIC) && (nelts >= 0));
+  assert ((dp->magic == ARR_F_MAGIC) && (nelts >= 0));
   ARR_VRFY (elts);
   assert (dp->eltsize ? dp->eltsize == eltsize : (dp->eltsize = eltsize, 1));
 

@@ -21,9 +21,12 @@
 #include <stddef.h>
 #include <obstack.h>
 
-#include "cookies.h"
-#include "xmalloc.h"
+#include "fourcc.h"
+#include "align.h"
 
+#define ARR_D_MAGIC	FOURCC('A','R','R','D')
+#define ARR_A_MAGIC	FOURCC('A','R','R','A')
+#define ARR_F_MAGIC	FOURCC('A','R','R','F')
 
 /**
  * Creates a flexible array.
@@ -38,7 +41,7 @@
  *         first element of this array).
  */
 #define NEW_ARR_F(type, nelts)						\
-  (XMALLOC_TRACE (type *)_new_arr_f ((nelts), sizeof(type) * (nelts)))
+  ((type *)_new_arr_f ((nelts), sizeof(type) * (nelts)))
 
 /**
  * Creates a new flxible array with the same number of elements as a
@@ -76,7 +79,7 @@
  *
  * @param arr    The flexible array.
  */
-#define DEL_ARR_F(arr) (XMALLOC_TRACE _del_arr_f ((arr)))
+#define DEL_ARR_F(arr) (_del_arr_f ((arr)))
 
 /**
  * Creates a dynamic array on an obstack.
@@ -216,7 +219,7 @@
  * @remark  This macro may change arr, so update all references!
  */
 #define ARR_RESIZE(type, arr, n)					\
-  (XMALLOC_TRACE (arr) = _arr_resize ((arr), (n), sizeof(type)))
+  ((arr) = _arr_resize ((arr), (n), sizeof(type)))
 
 /**
  * Resize a flexible array, always reallocate data.
@@ -228,7 +231,7 @@
  * @remark  This macro may change arr, so update all references!
  */
 #define ARR_SETLEN(type, arr, n)					\
-  (XMALLOC_TRACE (arr) = _arr_setlen ((arr), (n), sizeof(type) * (n)))
+  ((arr) = _arr_setlen ((arr), (n), sizeof(type) * (n)))
 
 /** Set a length smaller than the current length of the array.  Do not
  *  resize. len must be <= ARR_LEN(arr). */
@@ -277,10 +280,10 @@
 # define ARR_IDX_VRFY(arr, idx) ((void)0)
 #else
 # define ARR_VRFY(arr)									\
-    assert (   (   (_ARR_DESCR((arr))->cookie == ARR_D_MAGIC)				\
-		|| (_ARR_DESCR((arr))->cookie == ARR_A_MAGIC)				\
-		|| (_ARR_DESCR((arr))->cookie == ARR_F_MAGIC))				\
-	    && (   (_ARR_DESCR((arr))->cookie != ARR_F_MAGIC)				\
+    assert (   (   (_ARR_DESCR((arr))->magic == ARR_D_MAGIC)				\
+		|| (_ARR_DESCR((arr))->magic == ARR_A_MAGIC)				\
+		|| (_ARR_DESCR((arr))->magic == ARR_F_MAGIC))				\
+	    && (   (_ARR_DESCR((arr))->magic != ARR_F_MAGIC)				\
 		|| (_ARR_DESCR((arr))->u.allocated >= _ARR_DESCR((arr))->nelts))	\
 	    && (_ARR_DESCR((arr))->nelts >= 0))
 # define ARR_IDX_VRFY(arr, idx)				\
@@ -295,9 +298,9 @@
 # define _ARR_DBGINF_DECL
 # define _ARR_SET_DBGINF(descr, co, es)
 #else
-# define _ARR_DBGINF_DECL int cookie; size_t eltsize;
+# define _ARR_DBGINF_DECL int magic; size_t eltsize;
 # define _ARR_SET_DBGINF(descr, co, es)					\
-    ( (descr)->cookie = (co), (descr)->eltsize = (es) )
+    ( (descr)->magic = (co), (descr)->eltsize = (es) )
 #endif
 
 /**
