@@ -249,10 +249,12 @@ copy_node (ir_node *n, void *env) {
   new_backedge_info(nn);
   set_new_node(n, nn);
 
+#if DEBUG_libfirm
   if (copy_node_nr) {
     /* for easier debugging, we want to copy the node numbers too */
     nn->node_nr = n->node_nr;
   }
+#endif
 
   /*  printf("\n old node: "); DDMSG2(n);
       printf(" new node: "); DDMSG2(nn); */
