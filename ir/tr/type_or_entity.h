@@ -1,21 +1,25 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-
 * All rights reserved.
-*
-* Author: Goetz Lindenmaier
-*
 */
+
+/**
+ * @file type_or_entity.h
+ *
+ * Provides a datatype to treat types and entities as the same.
+ *
+ * @author Goetz Lindenmaier
+ */
 
 /* $Id$ */
 
-/* A datatype to treat types and entities as the same. */
 
 # ifndef _TYPE_OR_ENTITY_H_
 # define _TYPE_OR_ENTITY_H_
 
+/** A datatype to treat types and entities as the same. */
 typedef union {
-  struct type   *typ;
-  struct entity *ent;
+  struct type   *typ;     /**< points to a type */
+  struct entity *ent;     /**< points to an entity */
 } type_or_ent;
 
 

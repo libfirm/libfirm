@@ -1,11 +1,14 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
 * All rights reserved.
-*
-* Authors: Martin Trapp, Christian Schaefer &
-*          Goetz Lindenmaier
-*
-* firm_common.h: common firm declarations
 */
+
+/**
+ * @file firm_common.h
+ *
+ * common firm declarations
+ *
+ * @author Martin Trapp, Christian Schaefer & Goetz Lindenmaier
+ */
 
 /* $Id$ */
 
@@ -20,18 +23,22 @@
 #endif
 #endif
 
-/* a list of firm kinds */
+/** a list of firm kinds */
 typedef enum {
-  k_entity,
-  k_type,
-  k_ir_node,
+  k_entity,     /**< an entity */
+  k_type,       /**< a type */
+  k_ir_node,    /**< an ir node */
   k_ir_loop
 } firm_kind;
 
-/* returns the kind of the thing */
+/**
+ * Returns the kind of a thing.
+ *
+ * @param firm_thing  pointer repraesenting a firm object
+ */
 firm_kind get_kind(void *firm_thing);
 
-/* returns a string. */
+/** Returns the kind of a thing as a string. */
 const char* print_firm_kind(void *firm_thing);
 
 # endif /*_FIRM_COMMON_H_ */
