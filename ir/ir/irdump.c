@@ -93,7 +93,8 @@ int dump_out_edge_flag = 0;
 int dump_dominator_information_flag = 0;
 int dump_loop_information_flag = 0;
 int dump_const_local = 0;
-static INLINE bool dump_const_local_set() {
+
+static INLINE bool dump_const_local_set(void) {
   if (!dump_out_edge_flag && !dump_loop_information_flag)
     return dump_const_local;
   else
@@ -1128,7 +1129,7 @@ static void vcg_open_name (const char *name) {
 }
 
 static void
-vcg_close () {
+vcg_close (void) {
   xfprintf (F, "}\n");  /* print footer */
   fclose (F);           /* close vcg file */
 }
@@ -1452,7 +1453,7 @@ void dump_all_ir_graphs (dump_graph_func *dump_graph) {
 
 /* To turn off display of edge labels.  Edge labels offen cause xvcg to
    abort with a segmentation fault. */
-void turn_off_edge_labels() {
+void turn_off_edge_labels(void) {
   edge_label = 0;
 }
 
@@ -1461,7 +1462,7 @@ void dump_consts_local(bool b) {
   dump_const_local = b;
 }
 
-void turn_off_constant_entity_values() {
+void turn_off_constant_entity_values(void) {
   const_entities = 0;
 }
 
@@ -1469,19 +1470,19 @@ void dump_keepalive_edges(bool b) {
   dump_keepalive = b;
 }
 
-void dump_out_edges() {
+void dump_out_edges(void) {
   dump_out_edge_flag = 1;
 }
 
-void dump_dominator_information() {
+void dump_dominator_information(void) {
   dump_dominator_information_flag = 1;
 }
 
-void dump_loop_information() {
+void dump_loop_information(void) {
   dump_loop_information_flag = 1;
 }
 
-void dont_dump_loop_information() {
+void dont_dump_loop_information(void) {
   dump_loop_information_flag = 0;
 }
 
@@ -1605,14 +1606,14 @@ static void collect_node(ir_node * node, void *env) {
 /* Links all nodes that have the block field set in the link field of
    the block.  Adds all blocks and nodes not associated with a block
    in a array in irg->link. */
-static void collect_nodes() {
+static void collect_nodes(void) {
   int i;
   for (i = 0; i < get_irp_n_irgs(); i++)
     set_irg_link(get_irp_irg(i), NEW_ARR_F(ir_node *, 0));
   cg_walk(clear_link, collect_node, NULL);
 }
 
-static void dump_graphs() {
+static void dump_graphs(void) {
   int i;
   for (i = 0; i < get_irp_n_irgs(); i++) {
     current_ir_graph = get_irp_irg(i);
@@ -1621,7 +1622,7 @@ static void dump_graphs() {
 }
 
 /* Dump all irgs in interprocedural view to a single file. */
-void dump_all_cg_block_graph() {
+void dump_all_cg_block_graph(void) {
   int i;
   int rem_view = interprocedural_view;
   interprocedural_view = 1;
