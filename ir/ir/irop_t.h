@@ -79,6 +79,13 @@ typedef ir_node *(*transform_node_func)(ir_node *n);
  */
 typedef int (*node_cmp_attr_func)(ir_node *a, ir_node *b);
 
+/**
+ * The reassociation operation.
+ * Called from a walker.  Returns non-zero if
+ * a reassociation rule was applied.
+ */
+typedef int (*reassociate_func)(ir_node *n);
+
 /** The type of an ir_op. */
 struct ir_op {
   opcode code;            /**< the unique opcode of the op */
@@ -94,6 +101,7 @@ struct ir_op {
   equivalent_node_func  equivalent_node;	/**< optimizes the node by returning an equivalent one. */
   transform_node_func   transform_node;		/**< optimizes the node by transforming it. */
   node_cmp_attr_func    node_cmp_attr;		/**< compares two node attributes. */
+  reassociate_func      reassociate;            /**< reassociate a tree */
 };
 
 /**
