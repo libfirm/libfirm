@@ -25,7 +25,7 @@ SOURCES += Makefile.in \
 		irouts.c trouts.c irdom_t.h irdom.c cgana.c	rta.c  \
 		irloop_t.h irbackedge.c irbackedge_t.h irscc.c ircfscc.c 	\
 		irtypeinfo.c irsimpletype.c interval_analysis.c			\
-		callgraph.c field_temperature.c execution_frequency.c
+		callgraph.c field_temperature.c execution_frequency.c phiclass.c
 
 include $(topdir)/MakeRules
 
