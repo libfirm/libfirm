@@ -242,7 +242,7 @@ typedef enum {
   visibility_external_visible,   /**< The entity is visible to other external program parts, but
                           it is defined here.  It may not be optimized away.  The entity must
                               be static_allocated. */
-  visibility_external_allocated,  /**< The entity is defined and allocated externally.  This compilation
+  visibility_external_allocated  /**< The entity is defined and allocated externally.  This compilation
                           must not allocate memory for this entity. The entity must
                               be static_allocated.  This can also be an external defined
                           method. */

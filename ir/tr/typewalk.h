@@ -26,7 +26,10 @@
 #ifndef _TYPEWALK_H_
 #define _TYPEWALK_H_
 
-# include "type_or_entity.h"
+#include "type.h"
+#include "type_or_entity.h"
+
+#include "irgraph.h"
 
 /**
  * the type walk function

@@ -104,16 +104,16 @@ new_type(tp_op *type_op, ir_mode *mode, ident* name) {
   res = (type *) xmalloc (node_size);
   add_irp_type(res);   /* Remember the new type global. */
 
-  res->kind = k_type;
+  res->kind    = k_type;
   res->type_op = type_op;
-  res->mode = mode;
-  res->name = name;
-  res->state = layout_undefined;
-  res->size = -1;
-  res->visit = 0;
-  res -> link = NULL;
+  res->mode    = mode;
+  res->name    = name;
+  res->state   = layout_undefined;
+  res->size    = -1;
+  res->visit   = 0;
+  res -> link  = NULL;
 #ifdef DEBUG_libfirm
-  res->nr = get_irp_new_node_nr();
+  res->nr      = get_irp_new_node_nr();
 #endif
 
   return res;
@@ -297,8 +297,9 @@ set_type_state(type *tp, type_state state) {
     case tpo_class:
       {
 	assert(get_type_size_bits(tp) > -1);
-	if (tp != get_glob_type())
-	  for (i = 0; i < get_class_n_members(tp); i++) {
+	if (tp != get_glob_type()) {
+	  int n_mem = get_class_n_members(tp);
+	  for (i = 0; i < n_mem; i++) {
 	    if (get_entity_offset_bits(get_class_member(tp, i)) <= -1)
 	      { DDMT(tp); DDME(get_class_member(tp, i)); }
 	    assert(get_entity_offset_bits(get_class_member(tp, i)) > -1);
@@ -307,6 +308,7 @@ set_type_state(type *tp, type_state state) {
 		   (get_entity_allocation(get_class_member(tp, i)) == allocation_automatic));
                    */
 	  }
+	}
       } break;
     case tpo_struct:
       {
@@ -665,9 +667,8 @@ void    add_class_member   (type *clss, entity *member) {
   ARR_APP1 (entity *, clss->attr.ca.members, member);
 }
 
-int     get_class_n_members (type *clss) {
-  assert(clss && (clss->type_op == type_class));
-  return (ARR_LEN (clss->attr.ca.members))-1;
+int     (get_class_n_members) (type *clss) {
+  return __get_class_n_members(clss);
 }
 
 int     get_class_member_index(type *clss, entity *mem) {
@@ -679,10 +680,8 @@ int     get_class_member_index(type *clss, entity *mem) {
   return -1;
 }
 
-entity *get_class_member   (type *clss, int pos) {
-  assert(clss && (clss->type_op == type_class));
-  assert(pos >= 0 && pos < get_class_n_members(clss));
-  return clss->attr.ca.members[pos+1];
+entity *(get_class_member)   (type *clss, int pos) {
+  return __get_class_member(clss, pos);
 }
 
 entity *get_class_member_by_name(type *clss, ident *name) {

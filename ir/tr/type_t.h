@@ -18,6 +18,8 @@
 # include "type.h"
 # include "tpop_t.h"
 
+# include "array.h"
+
 /**
  * @file type_t.h
  * This file contains the datatypes hidden in type.h.
@@ -304,6 +306,19 @@ __is_class_type(type *clss) {
 }
 
 static INLINE int
+__get_class_n_members (type *clss) {
+  assert(clss && (clss->type_op == type_class));
+  return (ARR_LEN (clss->attr.ca.members))-1;
+}
+
+static INLINE entity *
+__get_class_member   (type *clss, int pos) {
+  assert(clss && (clss->type_op == type_class));
+  assert(pos >= 0 && pos < get_class_n_members(clss));
+  return clss->attr.ca.members[pos+1];
+}
+
+static INLINE int
 __is_struct_type(type *strct) {
   assert(strct);
   return (strct->type_op == type_struct);
@@ -375,6 +390,8 @@ __is_atomic_type(type *tp) {
 #define type_not_visited(tp)              __type_not_visited(tp)
 #define is_type(thing)                    __is_type(thing)
 #define is_class_type(clss)               __is_class_type(clss)
+#define get_class_n_members(clss)         __get_class_n_members(clss)
+#define get_class_member(clss, pos)       __get_class_member(clss, pos)
 #define is_struct_type(strct)             __is_struct_type(strct)
 #define is_method_type(method)            __is_method_type(method)
 #define is_union_type(uni)                __is_union_type(uni)

@@ -24,17 +24,17 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include "irgwalk.h"
-#include "irgraph_t.h"
-#include "irnode.h"
-#include "irprog.h"
-#include "type_or_entity.h"
-#include "typegmod.h"
-#include "typewalk.h"
 
-/* Make types visible to allow most efficient access */
+#include "typewalk.h"
 #include "entity_t.h"
 #include "type_t.h"
+#include "type_or_entity.h"
+#include "typegmod.h"
+
+#include "irprog_t.h"
+#include "irgraph_t.h"
+#include "irnode_t.h"
+#include "irgwalk.h"
 
 typedef struct type_walk_env {
   type_walk_func *pre;
@@ -44,9 +44,9 @@ typedef struct type_walk_env {
 
 
 static void type_walk_2(type_or_ent *tore,
-	       void (*pre)(type_or_ent*, void*),
-	       void (*post)(type_or_ent*, void*),
-	       void *env)
+			void (*pre) (type_or_ent*, void*),
+			void (*post)(type_or_ent*, void*),
+			void *env)
 {
   int i;
 
@@ -192,11 +192,11 @@ static void start_type_walk(ir_node *node, void *env) {
 void type_walk(type_walk_func *pre,
 	       type_walk_func *post,
 	       void *env) {
-  int i;
+  int i, n_types = get_irp_n_types();
   ++type_visited;
   /*type_walk_2((type_or_ent *)get_glob_type(), pre, post, env);
    global type is on the list visited below, too. */
-  for (i = 0; i < get_irp_n_types(); i++) {
+  for (i = 0; i < n_types; i++) {
     type_walk_2((type_or_ent *)get_irp_type(i), pre, post, env);
   }
   type_walk_2((type_or_ent *)get_glob_type(), pre, post, env);
@@ -319,11 +319,11 @@ void type_walk_super2sub(
 		  void (*post)(type_or_ent*, void*),
 		  void *env)
 {
-  int i;
+  int i, n_types = get_irp_n_types();
   type *tp;
   ++type_visited;
   type_walk_s2s_2((type_or_ent *)get_glob_type(), pre, post, env);
-  for (i = 0; i < get_irp_n_types(); i++) {
+  for (i = 0; i < n_types; i++) {
     tp = get_irp_type(i);
     type_walk_s2s_2((type_or_ent *)tp, pre, post, env);
   }
@@ -408,11 +408,11 @@ void type_walk_super(
 		  void (*pre)(type_or_ent*, void*),
 		  void (*post)(type_or_ent*, void*),
 		  void *env) {
-  int i;
+  int i, n_types = get_irp_n_types();
   type *tp;
   ++type_visited;
   type_walk_super_2((type_or_ent *)get_glob_type(), pre, post, env);
-  for (i = 0; i < get_irp_n_types(); i++) {
+  for (i = 0; i < n_types; i++) {
     tp = get_irp_type(i);
     type_walk_super_2((type_or_ent *)tp, pre, post, env);
   }
@@ -456,38 +456,16 @@ class_walk_s2s_2(type *tp,
   return;
 }
 
-#if 0
 void class_walk_super2sub(
 		  void (*pre)(type*, void*),
 		  void (*post)(type*, void*),
 		  void *env)
 {
-  int i;
+  int i, n_types = get_irp_n_types();
   type *tp;
 
   ++type_visited;
-  for (i = 0; i < get_irp_n_types(); i++) {
-    tp = get_irp_type(i);
-    if (is_class_type(tp) &&
-	(get_class_n_supertypes(tp) == 0) &&
-	(tp->visit < type_visited) &&
-	(!is_frame_type(tp)) &&
-	(tp != get_glob_type())) {
-      class_walk_s2s_2(tp, pre, post, env);
-    }
-  }
-}
-#endif
-void class_walk_super2sub(
-		  void (*pre)(type*, void*),
-		  void (*post)(type*, void*),
-		  void *env)
-{
-  int i;
-  type *tp;
-
-  ++type_visited;
-  for (i = 0; i < get_irp_n_types(); i++) {
+  for (i = 0; i < n_types; i++) {
     tp = get_irp_type(i);
     if (is_class_type(tp) &&
 	(get_class_n_supertypes(tp) == 0) &&
