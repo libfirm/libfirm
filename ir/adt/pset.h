@@ -142,8 +142,8 @@ pset_entry *pset_hinsert (pset *pset, const void *key, unsigned hash);
 /**
  * Removes an element from a pset.
  *
- * @param pset  the pset to insert in
- * @param key   a pointer to the element to be inserted
+ * @param pset  the pset to delete in
+ * @param key   a pointer to the element to be deleted
  * @param hash  the hash-value of the element
  *
  * @return
