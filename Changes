@@ -1,3 +1,6 @@
+  27.2.2001 Goetz
+  Moved struct from irprog.h to irprog_t.h
+
   25.1.2001 Goetz
   After compacting of in arrays in dead_node_elimination
   merge blocks and remove Phis with one pred.
