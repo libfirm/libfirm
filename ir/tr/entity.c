@@ -121,12 +121,18 @@ copy_entity_own (entity *old, type *new_owner) {
   new = (entity *) malloc (sizeof (entity));
   memcpy (new, old, sizeof (entity));
   new->owner = new_owner;
+  /*
   if ((get_type_tpop(get_entity_owner(old)) == type_class) &&
       (get_type_tpop(new_owner) == type_class)) {
     new->overwrites = DUP_ARR_F(entity *, old->overwrites);
     new->overwrittenby = DUP_ARR_F(entity *, old->overwrittenby);
   } else if ((get_type_tpop(get_entity_owner(old)) != type_class) &&
 	     (get_type_tpop(new_owner) == type_class)) {
+    new->overwrites = NEW_ARR_F(entity *, 1);
+    new->overwrittenby = NEW_ARR_F(entity *, 1);
+  }
+  */
+  if (is_class_type(new_owner)) {
     new->overwrites = NEW_ARR_F(entity *, 1);
     new->overwrittenby = NEW_ARR_F(entity *, 1);
   }
@@ -461,6 +467,16 @@ get_entity_n_overwrites (entity *ent) {
   return (ARR_LEN (ent->overwrites))-1;
 }
 
+int
+get_entity_overwrites_index(entity *ent, entity *overwritten) {
+  int i;
+  assert(ent && is_class_type(get_entity_owner(ent)));
+  for (i = 0; i < get_entity_n_overwrites(ent); i++)
+    if (get_entity_overwrites(ent, i) == overwritten)
+      return i;
+  return -1;
+}
+
 INLINE entity *
 get_entity_overwrites   (entity *ent, int pos) {
   assert(ent);
@@ -477,6 +493,19 @@ set_entity_overwrites   (entity *ent, int pos, entity *overwritten) {
   ent->overwrites[pos+1] = overwritten;
 }
 
+void
+remove_entity_overwrites(entity *ent, entity *overwritten) {
+  int i;
+  assert(ent && is_class_type(get_entity_owner(ent)));
+  for (i = 1; i < (ARR_LEN (ent->overwrites)); i++)
+    if (ent->overwrites[i] == overwritten) {
+      for(; i < (ARR_LEN (ent->overwrites))-1; i++)
+	ent->overwrites[i] = ent->overwrites[i+1];
+      ARR_SETLEN(entity*, ent->overwrites, ARR_LEN(ent->overwrites) - 1);
+      break;
+    }
+}
+
 INLINE void
 add_entity_overwrittenby   (entity *ent, entity *overwrites) {
   assert(ent);
@@ -489,6 +518,16 @@ get_entity_n_overwrittenby (entity *ent) {
   assert(ent);
   assert(is_class_type(get_entity_owner(ent)));
   return (ARR_LEN (ent->overwrittenby))-1;
+}
+
+int
+get_entity_overwrittenby_index(entity *ent, entity *overwrites) {
+  int i;
+  assert(ent && is_class_type(get_entity_owner(ent)));
+  for (i = 0; i < get_entity_n_overwrittenby(ent); i++)
+    if (get_entity_overwrittenby(ent, i) == overwrites)
+      return i;
+  return -1;
 }
 
 INLINE entity *
@@ -505,6 +544,18 @@ set_entity_overwrittenby   (entity *ent, int pos, entity *overwrites) {
   assert(is_class_type(get_entity_owner(ent)));
   assert(pos < get_entity_n_overwrittenby(ent));
   ent->overwrittenby[pos+1] = overwrites;
+}
+
+void    remove_entity_overwrittenby(entity *ent, entity *overwrites) {
+  int i;
+  assert(ent && is_class_type(get_entity_owner(ent)));
+  for (i = 1; i < (ARR_LEN (ent->overwrittenby)); i++)
+    if (ent->overwrittenby[i] == overwrites) {
+      for(; i < (ARR_LEN (ent->overwrittenby))-1; i++)
+	ent->overwrittenby[i] = ent->overwrittenby[i+1];
+      ARR_SETLEN(entity*, ent->overwrittenby, ARR_LEN(ent->overwrittenby) - 1);
+      break;
+    }
 }
 
 /* A link to store intermediate information */
@@ -539,6 +590,14 @@ set_entity_irg(entity *ent, ir_graph *irg) {
   ent->irg = irg;
 }
 
+int is_entity (void *thing) {
+  assert(thing);
+  if (get_kind(thing) == k_entity)
+    return 1;
+  else
+    return 0;
+}
+
 int is_atomic_entity(entity *ent) {
   type* t = get_entity_type(ent);
   return (is_primitive_type(t) || is_pointer_type(t) ||
@@ -570,4 +629,12 @@ void        set_entity_visited(entity *ent, unsigned long num) {
 void        mark_entity_visited(entity *ent) {
   assert (ent);
   ent->visit = type_visited;
+}
+
+
+INLINE bool entity_visited(entity *ent) {
+  return get_entity_visited(ent) >= type_visited;
+}
+INLINE bool entity_not_visited(entity *ent) {
+  return get_entity_visited(ent) < type_visited;
 }

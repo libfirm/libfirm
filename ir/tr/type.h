@@ -146,6 +146,8 @@ unsigned long get_type_visited(type *tp);
 void          set_type_visited(type *tp, unsigned long num);
 /* Sets visited field in type to type_visited. */
 void          mark_type_visited(type *tp);
+/* @@@ name clash!! bool          type_visited(type *tp); */
+bool          type_not_visited(type *tp);
 
 void*         get_type_link(type *tp);
 void          set_type_link(type *tp, void *l);
@@ -168,8 +170,11 @@ void          inc_master_type_visited();
 /**
  *
  *   Checks whether a pointer points to a type.
- *   @param thing - a pointer
- *   @return true if the thing is a type, else false
+ *
+ *   @param thing     an arbitrary pointer
+ *
+ *   @return
+ *       true if the thing is a type, else false
  *
  */
 int is_type            (void *thing);
@@ -284,6 +289,8 @@ void    add_class_member   (type *clss, entity *member);
 int     get_class_n_members (type *clss);
 /* Returns the member at position pos, 0 <= pos < n_member */
 entity *get_class_member   (type *clss, int pos);
+/** Returns index of mem in clss, -1 if not contained. */
+int     get_class_member_index(type *clss, entity *mem);
 /* Overwrites the member at position pos, 0 <= pos < n_member with
    the passed entity. */
 void    set_class_member   (type *clss, entity *member, int pos);
@@ -320,6 +327,7 @@ void    remove_class_subtype(type *clss, type *subtype);
 void    add_class_supertype   (type *clss, type *supertype);
 /* Returns the number of supertypes */
 int     get_class_n_supertypes (type *clss);
+int     get_class_supertype_index(type *clss, type *super_clss);
 /* Gets the supertype at position pos,  0 <= pos < n_supertype. */
 type   *get_class_supertype   (type *clss, int pos);
 /* Sets the supertype at postition pos, 0 <= pos < n_subtype.  Does not

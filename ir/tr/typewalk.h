@@ -22,6 +22,7 @@
 
 
 typedef void (type_walk_func)(type_or_ent *, void *);
+typedef void (class_walk_func)(type *, void *);
 
 /**
     Touches every type and entity in unspecified order.  If new
@@ -66,8 +67,8 @@ void type_walk_super(type_walk_func *pre,
    Does not visit global type, frame types.
 */
 /* @@@ ?? something is wrong with this. */
-void class_walk_super2sub(type_walk_func *pre,
-			  type_walk_func *post,
+void class_walk_super2sub(class_walk_func *pre,
+			  class_walk_func *post,
 			  void *env);
 
 

@@ -204,7 +204,6 @@ set_type_state(type *tp, type_state state) {
 	    assert(get_entity_offset(get_class_member(tp, i)) > -1);
 	    assert(is_method_type(get_entity_type(get_class_member(tp, i))) ||
 		   (get_entity_allocation(get_class_member(tp, i)) == automatic_allocated));
-	    /*    @@@ lowerfirm geht nicht durch */
 	  }
       } break;
     case tpo_struct:
@@ -250,6 +249,16 @@ void        mark_type_visited(type *tp) {
   assert(tp->visit < type_visited);
   tp->visit = type_visited;
 }
+/* @@@ name clash with master flag
+bool          type_visited(type *tp) {
+  assert(tp && tp->kind == k_type);
+  return tp->visit >= type_visited;
+  }*/
+bool          type_not_visited(type *tp) {
+  assert(tp && tp->kind == k_type);
+  return tp->visit  < type_visited;
+}
+
 
 int is_type            (void *thing) {
   assert(thing);
@@ -369,7 +378,6 @@ bool equal_type(type *typ1, type *typ2) {
     }
   } break;
   case tpo_array:       {
-    type *set, *let;  /* small/large elt. type */
     if (get_array_n_dimensions(typ1) != get_array_n_dimensions(typ2))
       return false;
     if (!equal_type(get_array_element_type(typ1), get_array_element_type(typ2)))
@@ -545,6 +553,14 @@ int     get_class_n_members (type *clss) {
   assert(clss && (clss->type_op == type_class));
   return (ARR_LEN (clss->attr.ca.members))-1;
 }
+int     get_class_member_index(type *clss, entity *mem) {
+  int i;
+  assert(clss && (clss->type_op == type_class));
+  for (i = 0; i < get_class_n_members(clss); i++)
+    if (get_class_member(clss, i) == mem)
+      return i;
+  return -1;
+}
 entity *get_class_member   (type *clss, int pos) {
   assert(clss && (clss->type_op == type_class));
   assert(pos >= 0 && pos < get_class_n_members(clss));
@@ -628,6 +644,15 @@ void    add_class_supertype   (type *clss, type *supertype) {
 int     get_class_n_supertypes (type *clss) {
   assert(clss && (clss->type_op == type_class));
   return (ARR_LEN (clss->attr.ca.supertypes))-1;
+}
+int get_class_supertype_index(type *clss, type *super_clss) {
+  int i;
+  assert(clss && (clss->type_op == type_class));
+  assert(super_clss && (super_clss->type_op == type_class));
+  for (i = 0; i < get_class_n_supertypes(clss); i++)
+    if (get_class_supertype(clss, i) == super_clss)
+      return i;
+  return -1;
 }
 type   *get_class_supertype   (type *clss, int pos) {
   assert(clss && (clss->type_op == type_class));

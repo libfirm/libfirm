@@ -125,7 +125,8 @@ entity     *new_entity (type *owner, ident *name, type *tp);
 entity     *new_d_entity (type *owner, ident *name, type *tp, dbg_info *db);
 /* Copies the entity if the new_owner is different from the
    owner of the old entity.  Else returns the old entity.
-   Automatically inserts the new entity as a member of owner. */
+   Automatically inserts the new entity as a member of owner.
+   Resets the overwrites/overwritten_by fields. */
 entity     *copy_entity_own (entity *old, type *new_owner);
 /* Copies the entity if the new_name is different from the
    name of the old entity.  Else returns the old entity.
@@ -202,10 +203,10 @@ typedef enum {
 ent_variability get_entity_variability (entity *ent);
 void            set_entity_variability (entity *ent, ent_variability var);
 
-/* This enumeration flags the volatility of entities. */
+/** This enumeration flags the volatility of entities. */
 typedef enum {
-  non_volatile,    /* The entity is not volatile */
-  is_volatile      /* The entity is volatile */
+  non_volatile,    /**< The entity is not volatile */
+  is_volatile      /**< The entity is volatile */
 } ent_volatility;
 
 ent_volatility get_entity_volatility (entity *ent);
@@ -270,13 +271,27 @@ void set_array_entity_values(entity *ent, tarval **values, int num_vals);
    both relations, they only differ in the order of arguments. */
 void    add_entity_overwrites   (entity *ent, entity *overwritten);
 int     get_entity_n_overwrites (entity *ent);
+int     get_entity_overwrites_index(entity *ent, entity *overwritten);
 entity *get_entity_overwrites   (entity *ent, int pos);
 void    set_entity_overwrites   (entity *ent, int pos, entity *overwritten);
+void    remove_entity_overwrites(entity *ent, entity *overwritten);
 
 void    add_entity_overwrittenby   (entity *ent, entity *overwrites);
 int     get_entity_n_overwrittenby (entity *ent);
+int     get_entity_overwrittenby_index(entity *ent, entity *overwrites);
 entity *get_entity_overwrittenby   (entity *ent, int pos);
 void    set_entity_overwrittenby   (entity *ent, int pos, entity *overwrites);
+void    remove_entity_overwrittenby(entity *ent, entity *overwrites);
+
+/**
+ *   Checks whether a pointer points to an entity.
+ *
+ *   @param thing     an arbitrary pointer
+ *
+ *   @return
+ *       true if the thing is an entity, else false
+ */
+int is_entity (void *thing);
 
 /* Returns true if the type of the entity is a primitive, pointer
    enumeration or method type. */
@@ -297,6 +312,9 @@ unsigned long get_entity_visited(entity *ent);
 void        set_entity_visited(entity *ent, unsigned long num);
 /* Sets visited field in entity to entity_visited. */
 void        mark_entity_visited(entity *ent);
+bool        entity_visited(entity *ent);
+bool        entity_not_visited(entity *ent);
+
 
 
 
