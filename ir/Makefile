@@ -40,15 +40,11 @@ debug:
 
 all:	TAGS $(TARGET)
 
-#testprograms:
-#	$(MAKE) -C testprograms
-
 clean:
 	for i in $(SUBDIRS); do  $(MAKE) -C $$i clean; done
 
 realclean:
 	for i in $(SUBDIRS); do  $(MAKE) -C $$i realclean; done
-	$(MAKE) -C testprograms realclean
 	rm -f $(TARGET) core
 
 profile:        realclean

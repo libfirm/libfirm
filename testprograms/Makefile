@@ -1,6 +1,6 @@
 
 DIRS = adt common debug ident ir tr tv
-INCDIRS = $(DIRS:%=-I../ir/%) -I../include
+INCDIRS = $(DIRS:%=-I../ir/%) -I../ir/include
 
 LIBDIRS=-L.. -L/usr/public/lib/gmp/
 LIBS=-lfirm -lgmp -lm
