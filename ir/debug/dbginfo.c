@@ -22,26 +22,30 @@
 
 
 inline void
-dbg_info_merge_pair(ir_node *nw, ir_node *old, ident *info) {
+dbg_info_merge_pair(ir_node *nw, ir_node *old, dbg_action info) {
   set_irn_dbg_info(nw, get_irn_dbg_info(old));
 }
 
 inline void
-dbg_info_merge_sets(ir_node **new_nodes, ir_node **old_nodes, ident *info) {
+dbg_info_merge_sets(ir_node **new_nodes, int n_new_nodes,
+		    ir_node **old_nodes, int n_old_nodes,
+		    dbg_action info) {
 }
 
 
-void (*__dbg_info_merge_pair)(ir_node *nw, ir_node *old, ident *info)
+void (*__dbg_info_merge_pair)(ir_node *nw, ir_node *old, dbg_action info)
      = &dbg_info_merge_pair;
 
-void (*__dbg_info_merge_sets)(ir_node **new_nodes, ir_node **old_nodes,
-			      ident *info)
+void (*__dbg_info_merge_sets)(ir_node **new_nodes, int n_new_nodes,
+			      ir_node **old_nodes, int n_old_nodes,
+			      dbg_action info)
      = &dbg_info_merge_sets;
 
 
-void dbg_init( void (merge_pair)(ir_node *nw, ir_node *old, ident *info) ,
-	       void (merge_sets)(ir_node **new_nodes, ir_node **old_nodes,
-				  ident *info)
+void dbg_init( void (merge_pair)(ir_node *nw, ir_node *old, dbg_action info) ,
+	       void (merge_sets)(ir_node **new_nodes, int n_new_nodes,
+				 ir_node **old_nodes, int n_old_nodes,
+				  dbg_action info)
 	       ) {
   __dbg_info_merge_pair = merge_pair;
   __dbg_info_merge_sets = merge_sets;
