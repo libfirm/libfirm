@@ -27,7 +27,15 @@
 
 /* If this is defined debuging aids are created, e.g. a field in
    ir_node uniquely numbering the nodes. */
-#define DEBUG_libfirm 1
+/* #define DEBUG_libfirm 1 */
+/*
+ * this is now set by the configure script as an option
+ * use
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+ * instead
+ */
 
 /* a list of firm kinds */
 typedef enum {

@@ -5,6 +5,10 @@
 **
 */
 
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 # include "panic.h"
 # include "xprintf.h"
 

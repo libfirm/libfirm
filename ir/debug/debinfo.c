@@ -11,6 +11,10 @@
 **  by a real implementation.
 */
 
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 #include "debinfo.h"
 
 inline void
