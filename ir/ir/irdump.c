@@ -2286,7 +2286,7 @@ void dump_loops_standalone(FILE *F, ir_loop *loop) {
       fprintf (F, " ");
       bad |= dump_node_nodeattr(F, n);
       fprintf (F, " %ld", get_irn_node_nr(n));
-      if (is_Block(n)) fprintf (F, "\t ->%d", (int)get_irn_link(n));
+      /* Causes indeterministic output: if (is_Block(n)) fprintf (F, "\t ->%d", (int)get_irn_link(n)); */
       if (has_backedges(n)) fprintf(F, "\t loop head!");
     } else { /* for callgraph loop tree */
       assert(get_kind(son) == k_ir_graph);

@@ -54,16 +54,16 @@ colorentry 125:  255 250  250
 
 node: {title: "l620" label: "loop 0, 1 sons, 4 nodes"  info1: " loop nr: 620
  The loop was analyzed 0 times."}
-node: { title: "l620-0-nodes" color: lightyellow label: "Block  270	 ->135442068
-Block  280	 ->135442080" }
+node: { title: "l620-0-nodes" color: lightyellow label: "Block  270
+Block  280" }
 edge: {sourcename: "l620" targetname: "l620-0-nodes" label:"0...1"}
 edge: {sourcename: "l620" targetname: "l621" color: darkgreen label: "2"}
 node: {title: "l621" label: "loop 1, 0 sons, 2 nodes"  info1: " loop nr: 621
  The loop was analyzed 0 times."}
-node: { title: "l621-0-nodes" color: lightyellow label: "Block  284	 ->135442044	 loop head!
-Block  292	 ->135442056" }
+node: { title: "l621-0-nodes" color: lightyellow label: "Block  284	 loop head!
+Block  292" }
 edge: {sourcename: "l621" targetname: "l621-0-nodes" label:"0...1"}
-node: { title: "l620-3-nodes" color: lightyellow label: "Block  316	 ->135442032
-Block  268	 ->135442020" }
+node: { title: "l620-3-nodes" color: lightyellow label: "Block  316
+Block  268" }
 edge: {sourcename: "l620" targetname: "l620-3-nodes" label:"3...4"}
 }
