@@ -17,10 +17,6 @@
 /*
  * local definitions and macros
  */
-#define BIT_PATTERN_SIZE (8 * BIGGEST_INTEGER_SIZE_IN_BYTES)
-#define CALC_BUFFER_SIZE (4 * BIGGEST_INTEGER_SIZE_IN_BYTES)
-#define MAX_VALUE_SIZE   (2 * BIGGEST_INTEGER_SIZE_IN_BYTES)
-
 #define CLEAR_CALC_BUFFER() assert(calc_buffer); memset(calc_buffer, SC_0, CALC_BUFFER_SIZE)
 #define _val(a) ((a)-SC_0)
 #define _digit(a) ((a)+SC_0)
@@ -441,7 +437,7 @@ static void _bitand(const char *val1, const char *val2, char *buffer)
 
 static int _sign(const char *val)
 {
-  return (val[CALC_BUFFER_SIZE-1] < SC_7) ? (1) : (-1);
+  return (val[CALC_BUFFER_SIZE-1] <= SC_7) ? (1) : (-1);
 }
 
 static void _inc(char *val, char *buffer)
@@ -1240,7 +1236,7 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base)
   char div1_res[CALC_BUFFER_SIZE];
   char div2_res[CALC_BUFFER_SIZE];
   char rem_res[CALC_BUFFER_SIZE];
-  int counter, nibbles, i;
+  int counter, nibbles, i, sign;
   char x;
 
   const char *val = (const char *)value;
@@ -1307,16 +1303,27 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base)
     memset(base_val, SC_0, CALC_BUFFER_SIZE);
     base_val[0] = base == SC_DEC ? SC_A : SC_8;
 
+    m    = val;
+    sign = 0;
+    if (base == SC_DEC) {
+      /* check for negative values */
+      if (_sign(val) == -1) {
+	_negate(val, div2_res);
+	sign = 1;
+	m = div2_res;
+      }
+    }
+
     /* transfer data into oscilating buffers */
     memset(div1_res, SC_0, CALC_BUFFER_SIZE);
     for (counter = 0; counter < nibbles; ++counter)
-      div1_res[counter] = val[counter];
+      div1_res[counter] = m[counter];
 
-    /* last nibble must be masked */
+     /* last nibble must be masked */
     if (bits & 3) {
       ++counter;
 
-      div1_res[counter] = and_table[_val(val[counter])][bits & 3];
+      div1_res[counter] = and_table[_val(m[counter])][bits & 3];
     }
 
     m = div1_res;
@@ -1335,6 +1342,8 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base)
       if (x == 0)
 	break;
     }
+    if (sign)
+       *(--pos) = '-';
     break;
 
   default:

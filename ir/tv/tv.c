@@ -910,8 +910,8 @@ int tarval_print(XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
   {
     case int_number:
     case character:
-      str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_DEC);
-      return XPF1R("%s", str);
+      str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_HEX);
+      return XPF1R("0x%s", str);
 
     case float_number:
       return XPF1R("%s", fc_print_dec(tv->value, buf, sizeof(buf)));

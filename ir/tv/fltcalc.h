@@ -1,6 +1,12 @@
 #ifndef _FLTCALC_H_
 #define _FLTCALC_H_
 
+#ifdef USE_LONG_DOUBLE
+typedef long double LLDBL;
+#else
+typedef double LLDBL;
+#endif
+
 enum {
   FC_ADD,
   FC_SUB,
@@ -19,8 +25,8 @@ const void *fc_get_buffer(void);
 const int fc_get_buffer_length(void);
 
 void fc_val_from_str(const char *str, unsigned int len);
-void fc_val_from_float(long double l);
-long double fc_val_to_float(const void *val);
+void fc_val_from_float(LLDBL l);
+LLDBL fc_val_to_float(const void *val);
 
 void fc_get_min(unsigned int num_bits);
 void fc_get_max(unsigned int num_bits);

@@ -5,7 +5,7 @@
 /*
  * TODO:
  *
- * This code uses the C-type long double to respesent floating
+ * This code uses the C-type LLDBL to respesent floating
  * point values. This is bad because:
  *
  * 1.) It depends on IEEE arithmetic on the compilation engine (hardly a problem)
@@ -20,20 +20,32 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#ifdef USE_LONG_DOUBLE
+/* have long double type */
+
 /* only defined in C99 mode */
 extern long double strtold(const char *str, char **end);
+
+#define strtoLLD	strtold
+
+#else
+/* don't have long double type */
+
+extern double strtod(const char *str, char **end);
+
+#define strtoLLD	strtod
+
+#endif
 
 /********
  * globals
  ********/
-static long double value;
+static LLDBL value;
 
-//#define CAST_IN(val) ({ long double xxx = *(long double *)(val); printf("CAST to %Lg\n", xxx); xxx; })
-
-#define CAST_IN(val) (*((long double *)((val))))
+#define CAST_IN(val) (*((LLDBL *)((val))))
 #define CAST_OUT(val) ((void *)&(val))
 
-#define CLEAR_BUFFER() memset((char*)&value, 0, sizeof(long double))
+#define CLEAR_BUFFER() memset((char*)&value, 0, sizeof(LLDBL))
 /********
  * private functions
  ********/
@@ -48,22 +60,22 @@ const void *fc_get_buffer(void)
 
 const int fc_get_buffer_length(void)
 {
-  return sizeof(long double);
+  return sizeof(LLDBL);
 }
 
 void fc_val_from_str(const char *str, unsigned int len)
 {
   CLEAR_BUFFER();
-  value = strtold(str, NULL);
+  value = strtoLLD(str, NULL);
 }
 
-void fc_val_from_float(long double l)
+void fc_val_from_float(LLDBL l)
 {
   CLEAR_BUFFER();
   value = l;
 }
 
-long double fc_val_to_float(const void *val)
+LLDBL fc_val_to_float(const void *val)
 {
   return CAST_IN(val);
 }
@@ -106,13 +118,13 @@ void fc_get_max(unsigned int num_bits)
 
 void fc_get_nan(void)
 {
-  value = strtold("nan", NULL);
+  value = strtoLLD("nan", NULL);
 
 }
 
 void fc_get_inf(void)
 {
-  value = strtold("inf", NULL);
+  value = strtoLLD("inf", NULL);
 }
 
 void fc_calc(const void *a, const void *b, int opcode)
@@ -146,13 +158,17 @@ int fc_comp(const void *a, const void *b)
 
 char *fc_print_dec(const void *a, char *buf, int buflen)
 {
+#ifdef USE_LONG_DOUBLE
   snprintf(buf, buflen, "%1.30Lg", CAST_IN(a));
+#else
+  snprintf(buf, buflen, "%1.30g", CAST_IN(a));
+#endif
   return buf;
 }
 
 unsigned char fc_sub_bits(const void *value, unsigned num_bits, unsigned byte_ofs)
 {
-  long double val = CAST_IN(value);
+  LLDBL val = CAST_IN(value);
   float f;
   double d;
 

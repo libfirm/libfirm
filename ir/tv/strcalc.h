@@ -120,6 +120,6 @@ unsigned char sc_sub_bits(const void *value, int len, unsigned byte_ofs);
 const char *sc_print(const void *val1, unsigned bits, enum base_t base);
 
 void init_strcalc(int precision_in_bytes);
-int get_precision();
+int get_precision(void);
 
 #endif /* _STRCALC_H_ */
