@@ -47,6 +47,7 @@ SOURCES := Makefile.in          	\
 	three_cfpred_example.c  	\
 	while_example.c
 
+
 GENFILES = %.vcg results.txt
 
 bin_EXAMPLES = $(CFILES:.c=)
@@ -61,7 +62,8 @@ CPPFLAGS += -I$(top_srcdir)/ir/adt -I$(top_srcdir)/ir/common -I$(top_srcdir)/ir/
 
 LDFLAGS = -L$(topdir)
 LDFLAGS+= @LDFLAGS@
-LDLIBS += -lfirm -liberty
+LDLIBS += -lfirm -liberty -L/usr/public/libxml2 -lxml2
+# @@@ TODO replace hand crafted stuff (xml2) for configure
 
 GENFILES := $(bin_EXAMPLES) *.vcg
 
