@@ -5,7 +5,7 @@ LIBDIRS=-L.. -L/usr/public/lib/gmp/
 
 LIBS=-lfirm -lgmp
 
-%.o:	%.c
+%.o:	%.c ../libfirm.a
 	gcc -c $(INCDIRS) -g $<
 
 all: empty const_eval_example 					\

@@ -1,3 +1,4 @@
+
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
 ** All rights reserved.
 **
@@ -45,105 +46,105 @@ new_type_class (ident *name)//, int members)
 
 /* manipulate fields of type_class */
 const char *
-get_class_name  (type_class *class) {
-  assert(class);
-  return id_to_str(class->name);
+get_class_name  (type_class *clss) {
+  assert(clss);
+  return id_to_str(clss->name);
 }
 
 /* field: ident */
 ident *
-get_class_ident (type_class *class) {
-  assert(class);
-  return class->name;
+get_class_ident (type_class *clss) {
+  assert(clss);
+  return clss->name;
 }
 
 /*
-void   set_class_name  (type_class *class, char *name);
-void   set_class_ident (type_class *class, ident* ident);
+void   set_class_name  (type_class *clss, char *name);
+void   set_class_ident (type_class *clss, ident* ident);
 */
 
 /* field: member */
 void
-add_class_member (type_class *class, entity *member)
+add_class_member (type_class *clss, entity *member)
 {
-  ARR_APP1 (entity *, class->members, member);
+  ARR_APP1 (entity *, clss->members, member);
 }
 
 entity *
-get_class_member (type_class *class, int pos)
+get_class_member (type_class *clss, int pos)
 {
-  assert (class);
-  return class->members[pos+1];
+  assert (clss);
+  return clss->members[pos+1];
 }
 
 void
-set_class_member (type_class *class, entity *member, int pos)
+set_class_member (type_class *clss, entity *member, int pos)
 {
-  class->members[pos+1] = member;
+  clss->members[pos+1] = member;
 }
 
 int
-get_class_n_member (type_class *class)
+get_class_n_member (type_class *clss)
 {
   int res;
 
-  assert(class);
-  res = (ARR_LEN (class->members))-1;
+  assert(clss);
+  res = (ARR_LEN (clss->members))-1;
   return res;
 }
 
 /* field: subtype */
 void
-add_class_subtype (type_class *class,  type_class *subtype)
+add_class_subtype (type_class *clss,  type_class *subtype)
 {
-  ARR_APP1 (type_class *, class->subtypes, subtype);
+  ARR_APP1 (type_class *, clss->subtypes, subtype);
 }
 
 type_class *
-get_class_subtype (type_class *class, int pos)
+get_class_subtype (type_class *clss, int pos)
 {
-  assert (class);
-  return class->subtypes[pos+1];
+  assert (clss);
+  return clss->subtypes[pos+1];
 }
 
 void
-set_class_subtype (type_class *class, type_class *subtype, int pos)
+set_class_subtype (type_class *clss, type_class *subtype, int pos)
 {
-  class->subtypes[pos+1] = subtype;
+  clss->subtypes[pos+1] = subtype;
 }
 
 int
-get_class_n_subtype (type_class *class)
+get_class_n_subtype (type_class *clss)
 {
-  assert(class);
-  return (ARR_LEN (class->subtypes))-1;
+  assert(clss);
+  return (ARR_LEN (clss->subtypes))-1;
 }
 
 /* field: supertype */
 void
-add_class_supertype (type_class *class, type_class *supertype)
+add_class_supertype (type_class *clss, type_class *supertype)
 {
-  ARR_APP1 (type_class *, class->supertypes, supertype);
+  ARR_APP1 (type_class *, clss->supertypes, supertype);
 }
 
 type_class *
-get_class_supertype (type_class *class, int pos)
+get_class_supertype (type_class *clss, int pos)
 {
-  assert (class);
-  return class->supertypes[pos+1];
+  assert (clss);
+  return clss->supertypes[pos+1];
 }
 
 void
-set_class_supertype (type_class *class, type_class *supertype, int pos)
+set_class_supertype (type_class *clss, type_class *supertype, int pos)
 {
-  class->supertypes[pos+1] = supertype;
+  clss->supertypes[pos+1] = supertype;
 }
 
 int
-get_class_n_supertype (type_class *class)
+get_class_n_supertype (type_class *clss)
 {
-  assert(class);
-  return (ARR_LEN (class->supertypes))-1;
+  assert(clss);
+  return (ARR_LEN (clss->supertypes))-1;
 }
 
 /*******************************************************************/

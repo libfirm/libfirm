@@ -225,28 +225,28 @@ type_class *new_type_class (ident *name);
 
 /* manipulate fields of type_class */
 
-const char  *get_class_name  (type_class *class);
-ident       *get_class_ident (type_class *class);
+const char  *get_class_name  (type_class *clss);
+ident       *get_class_ident (type_class *clss);
 
 /* Not necessary now!
-void   set_class_name  (type_class *class, char *name);
-void   set_class_ident (type_class *class, ident* ident);
+void   set_class_name  (type_class *clss, char *name);
+void   set_class_ident (type_class *clss, ident* ident);
 */
 
-void    add_class_member (type_class *class, entity *member);
-int     get_class_n_member (type_class *class);
-entity *get_class_member (type_class *class, int pos);
-void    set_class_member (type_class *class, entity *member, int pos);
+void    add_class_member (type_class *clss, entity *member);
+int     get_class_n_member (type_class *clss);
+entity *get_class_member (type_class *clss, int pos);
+void    set_class_member (type_class *clss, entity *member, int pos);
 
-void        add_class_subtype (type_class *class,type_class *subtype);
-int         get_class_n_subtype (type_class *class);
-type_class *get_class_subtype (type_class *class, int pos);
-void        set_class_subtype (type_class *class, type_class *subtype, int pos);
+void        add_class_subtype (type_class *clss,type_class *subtype);
+int         get_class_n_subtype (type_class *clss);
+type_class *get_class_subtype (type_class *clss, int pos);
+void        set_class_subtype (type_class *clss, type_class *subtype, int pos);
 
-void        add_class_supertype (type_class *class, type_class *supertype);
-int         get_class_n_supertype (type_class *class);
-type_class *get_class_supertype (type_class *class, int pos);
-void        set_class_supertype (type_class *class, type_class *supertype, int pos);
+void        add_class_supertype (type_class *clss, type_class *supertype);
+int         get_class_n_supertype (type_class *clss);
+type_class *get_class_supertype (type_class *clss, int pos);
+void        set_class_supertype (type_class *clss, type_class *supertype, int pos);
 
 /*******************************************************************/
 /** TYPE_STRCT                                                   **/

@@ -13,7 +13,6 @@
 ***
 ***  class PRIMA
 ***    a: int;
-***    b: real;
 ***    c(int): int;
 ***    set_a(int): void;
 ***  end
