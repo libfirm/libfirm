@@ -16,7 +16,7 @@ topdir = ../..
 subdir := ir/ir
 
 INSTALL_HEADERS = cfopt.h tailrec.h ldstopt.h strength_red.h reassoc.h \
-		loop_unrolling.h funccall.h opt_polymorphy.h
+		loop_unrolling.h funccall.h opt_polymorphy.h ifconv.h
 
 SOURCES = $(INSTALL_HEADERS)
 
