@@ -391,6 +391,7 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
       if (proj == pn_Load_res) {
 	ir_node *ptr = get_Load_ptr(pred);
 	entity *ent = get_ptr_entity(ptr);
+
 	if (vrfy_entities && ent && get_irg_phase_state(current_ir_graph) == phase_high) {
 	  /* do NOT check this for lowered phases, see comment on Store */
 	  ASSERT_AND_RET_DBG(
@@ -401,7 +402,7 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
 	}
 	else {
 	  ASSERT_AND_RET_DBG(
-			     mode_is_data(mode),
+			     mode_is_data(mode) && mode == get_Load_mode(pred),
 			     "wrong data Proj from Load", 0,
 			     show_proj_failure(p);
 			     );
