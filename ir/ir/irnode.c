@@ -448,7 +448,10 @@ inline ir_node **
 get_Return_res_arr (ir_node *node)
 {
   assert ((node->op == op_Return));
-  return ((ir_node **)get_Return_res(node, 0));
+  if (get_Return_n_res(node) > 0)
+    return ((ir_node **)get_Return_res(node, 0));
+  else
+    return NULL;
 }
 
 inline int
@@ -467,6 +470,7 @@ set_Return_n_res (ir_node *node, int results) {
 inline ir_node *
 get_Return_res (ir_node *node, int pos) {
   assert (node->op == op_Return);
+  assert (get_Return_n_res(node) > pos);
   return get_irn_n(node, pos+1);
 }
 
@@ -583,7 +587,10 @@ inline ir_node **
 get_Sel_index_arr (ir_node *node)
 {
   assert ((node->op == op_Sel));
-  return (ir_node **)get_Sel_index(node, 0);
+  if (get_Sel_n_index(node) > 0)
+    return (ir_node **)get_Sel_index(node, 0);
+  else
+    return NULL;
 }
 
 inline int
@@ -662,7 +669,10 @@ set_Call_ptr (ir_node *node, ir_node *ptr) {
 inline ir_node **
 get_Call_param_arr (ir_node *node) {
   assert (node->op == op_Call);
-  return ((ir_node **)get_Call_param (node, 0));
+  if (get_Call_arity(node) > 0)
+    return ((ir_node **)get_Call_param (node, 0));
+  else
+    return NULL;
 }
 
 inline int

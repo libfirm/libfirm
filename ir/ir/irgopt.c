@@ -66,7 +66,6 @@ get_new_node (ir_node * n)
   assert(new);
 
   return new;
-
 }
 
 /* Create this node on a new obstack. */
@@ -78,6 +77,7 @@ copy_node (ir_node *n, void *env) {
   int i;
 
   assert (n);
+  DDMSG2(n);
 
   if (is_binop(n)) {
     a = get_binop_left(n);
@@ -114,8 +114,9 @@ copy_node (ir_node *n, void *env) {
     {
       ir_node **in;
       in = get_Return_res_arr(n);
-      for (i = 0; i < get_Return_n_res(n); i++)
+      for (i = 0; i < get_Return_n_res(n); i++) {
 	set_Return_res(n, i, get_new_node(get_Return_res(n, i)));
+      }
       res = new_r_Return (current_ir_graph, get_new_node(get_nodes_Block(n)),
 			  get_new_node(get_Return_mem(n)),
 			  get_Return_n_res(n), in);
@@ -326,6 +327,8 @@ copy_node (ir_node *n, void *env) {
   }
   /* @@@ Here we could call optimize()!! */
   set_new_node(n, res);
+
+  printf(" "); DDMSG2(res);
 }
 
 
@@ -370,6 +373,7 @@ dead_node_elimination(ir_graph *irg) {
     old_node = irg->start;
     new_node = new_r_Start (current_ir_graph, irg->start_block);
     irg->start = new_node;
+  DDMSG2(new_node);
     set_new_node (old_node, new_node);
     set_irn_visited (new_node, get_irg_visited(current_ir_graph)+1);
     /* Copy the Bad node */
