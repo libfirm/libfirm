@@ -1,250 +1,201 @@
 /* -*- c -*- */
 
 /*
- * Project:     libFIRM
- * File name:   ir/ana2/pto_init.c
- * Purpose:     Pto Initialization
- * Author:      Florian
- * Modified by:
- * Created:     Wed  3 Nov 2004
- * CVS-ID:      $Id$
- * Copyright:   (c) 1999-2004 Universität Karlsruhe
- * Licence:     This file is protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- */
-
+   Project:     libFIRM
+   File name:   ir/ana/pto_init.c
+   Purpose:     Initialisation Functions
+   Author:      Florian
+   Modified by:
+   Created:     Sat Nov 13 19:35:27 CET 2004
+   CVS-ID:      $Id$
+   Copyright:   (c) 1999-2004 Universität Karlsruhe
+   Licence:     This file is protected by the GPL -  GNU GENERAL PUBLIC LICENSE.
+*/
 
 # ifdef HAVE_CONFIG_H
 #  include <config.h>
 # endif
 
-# include "pto.h"
-# include "pto_util.h"
+/*
+ pto_init: Initialisation Functions
+*/
 
-# include "entity.h"
-# include "irnode.h"
+# include "pto_init.h"
+# include "pto_debug.h"
+# include "pto_comp.h"
+
+# include "typewalk.h"
+# include "irgwalk.h"
 # include "xmalloc.h"
 
-# define DBGPRINT(lvl, msg) if (get_pto_verbose () > lvl) { fprintf msg; }
+/* Local Defines: */
 
-static void pto_init_proj_load (ir_node *proj, ir_node *load)
+/* Local Data Types: */
+typedef struct init_env_str
 {
-  assert ((mode_P == get_irn_mode (proj)) && "wrong proj(load)");
+  int n_ctxs;
+} init_env_t;
 
-  pto_t *pto = pto_new_empty (proj);
-  pto_set_dummy (pto);
+/* Local Variables: */
 
-  DBGPRINT (1, (stdout, "%s: pto (%s[%li]) = 0x%08x\n",
-                __FUNCTION__,
-                get_op_name (get_irn_op (proj)),
-                get_irn_node_nr (proj),
-                (int) pto));
+/* Local Prototypes: */
 
-  set_pto (proj, pto);
+/* ===================================================
+   Local Implementation:
+   =================================================== */
+/* Allocate a new pto */
+static pto_t *new_pto (ir_node *node)
+{
+  /* dummy implementation for fake_pto */
+  pto_t *pto = xmalloc (sizeof (pto_t));
+
+  return (pto);
 }
 
-static void pto_init_call (ir_node *call)
+/* Allocate a new alloc_pto */
+static alloc_pto_t *new_alloc_pto (ir_node *node, int n_ctxs)
 {
-  /* check return value: */
-  ir_node *ptr = get_Call_ptr (call);
-  entity *ent = get_ptr_ent (ptr);
-  type *meth_tp = get_entity_type (ent);
+  int i;
+  /* dummy implementation for fake_pto */
+  alloc_pto_t *alloc_pto = xmalloc (sizeof (alloc_pto_t));
 
-  if (0 == get_method_n_ress (meth_tp)) {
-    /* no return value at all */
-    return;
+  alloc_pto->ptos = (pto_t**) xmalloc (n_ctxs * sizeof (pto_t*));
+
+  for (i = 0; i < n_ctxs; i ++) {
+    alloc_pto->ptos [i] = new_pto (node);
   }
 
-  type *ret_tp  = get_method_res_type (meth_tp, 0);
-
-  if (mode_P != get_type_mode (ret_tp)) {
-    /* no pointer-valued return value */
-    return;
-  }
-
-  pto_t *pto = pto_new_empty (call);
-  pto_set_dummy (pto);
-
-  DBGPRINT (1, (stdout, "%s: pto (%s[%li]) = 0x%08x\n",
-                __FUNCTION__,
-                get_op_name (get_irn_op (call)),
-                get_irn_node_nr (call),
-                (int) pto));
-
-  set_pto (call, pto);
+  return (alloc_pto);
 }
 
-static void pto_init_raise (ir_node *raise)
+
+/* Helper to pto_init --- clear the link fields of class types */
+static void clear_type_link (type_or_ent *thing, void *__unused)
 {
-  /* assert (0 && "initialise raise?"); */
+  if (is_type (thing)) {
+    type *tp = (type*) thing;
 
-  /* right now, do nothing and hope that a raise can always be
-     analysed on-the-fly. */
-}
+    if (is_class_type (tp)) {
+      DBGPRINT (1, (stdout, "%s (\"%s\")\n",
+                    __FUNCTION__, get_type_name (tp)));
 
-static void pto_init_proj (ir_node *proj)
-{
-  ir_node *in = get_Proj_pred (proj);
-  const opcode in_op = get_irn_opcode (in);
-
-  switch (in_op) {
-  case (iro_Proj): {
-    ir_node *in_in = get_Proj_pred (in);
-    const opcode in_in_op = get_irn_opcode (in_in);
-
-    switch (in_in_op) {
-    case (iro_Start): {
-      /* nothing (always initialised with actual values) */
-    } break;
-
-    case (iro_Call): {
-      /* nothing (must use call itself) */
-    } break;
-
-    default: {
-      fprintf (stderr, "%s: proj(proj(%s[%ld])) not handled\n",
-               __FUNCTION__,
-               get_op_name (get_irn_op (in_in)),
-               get_irn_node_nr (in_in));
-      assert (0);
+      set_type_link (tp, NULL);
     }
-    } /* end switch(Proj.Proj.op) */
-  } break; /* iro_Proj */
+  } else if (is_entity (thing)) {
+    entity *ent = (entity*) thing;
 
-  case (iro_Start): {
-    /* ProjM (start) or ProjT (start) --- nothing */
-  } break;
+    DBGPRINT (1, (stdout, "%s (\"%s\")\n",
+                  __FUNCTION__, get_entity_name (ent)));
 
-  case (iro_Call): {
-    /* ProjT (start) --- nothing */
-  } break;
-
-  case (iro_Load): {
-    if (mode_P == get_irn_mode (proj)) {
-    /* ProjV(load) */
-      pto_init_proj_load (proj, in);
-    } else {
-      /* ProjM(load) --- nothing to do */
-    }
-  } break;
-
-  case (iro_Store): {
-    /* ProjM (store) --- nothing */
-  } break;
-
-  case (iro_Alloc): {
-    /* nothing to do --- can always be computed on-the-fly */
-  } break;
-
-  case (iro_Raise): {
-    /* ProjX (raise) --- TODO */
-  } break;
-
-  case (iro_Cast): {
-    /* not needed */
-  } break;
-
-  default: {
-    fprintf (stderr, "%s: proj(%s[%ld]) not handled\n",
-             __FUNCTION__,
-             get_op_name (get_irn_op (in)),
-             get_irn_node_nr (in));
-    assert (0);
+    set_entity_link (ent, NULL);
   }
-  } /* end switch (Proj.op) */
-
 }
 
-void pto_init_node (ir_node *node)
+/* Helper to pto_init_graph --- clear the links of the given node */
+static void clear_node_link (ir_node *node, void *__unused)
 {
+  set_irn_link (node, NULL);
+}
+
+/* Helper to pto_init_graph --- clear the links of all nodes */
+static void clear_graph_links (ir_graph *graph)
+{
+  irg_walk_graph (graph, clear_node_link, NULL, NULL);
+}
+
+/* Temporary fix until we get 'real' ptos: Allocate some dummy for pto */
+static void fake_pto (ir_node *node, void *env)
+{
+  init_env_t *init_env = (init_env_t*) env;
+  int n_ctxs = init_env->n_ctxs;
+
   const opcode op = get_irn_opcode (node);
 
-  DBGPRINT (1, (stdout, "%s (%s[%li])\n",
-                __FUNCTION__,
-                get_op_name (get_irn_op (node)),
-                get_irn_node_nr (node)));
-
   switch (op) {
-  case (iro_Start): {
-    /* nothing (not needed) */
-  } break;
-
-  case (iro_Load): {
-    /* nothing (not needed) */
-  } break;
-
-  case (iro_Store): {
-    /* nothing (not needed) */
-  } break;
+  case (iro_Load):
+  case (iro_SymConst):
+  case (iro_Const):
+  case (iro_Call):
+  case (iro_Phi): {
+    pto_t *pto = new_pto (node);
+    set_node_pto (node, pto);
+    } break;
 
   case (iro_Alloc): {
-    /* nothing (can always be computed on-the-fly) */
-  } break;
+    alloc_pto_t *alloc_pto = new_alloc_pto (node, n_ctxs);
+    set_alloc_pto (node, alloc_pto);
 
-  case (iro_Raise): {
-    /* Todo: Check how a Raise works */
-    pto_init_raise (node);
-  } break;
-
-  case (iro_Call): {
-    /* pretend we have a return value */
-    pto_init_call (node);
-  } break;
-
-  case (iro_Proj): {
-    /* this actually does most of the work */
-    pto_init_proj (node);
-  } break;
-
-  case (iro_Cast): {
-    /* nothing (can always be computed on-the-fly) */
-  } break;
-
-  case (iro_SymConst): {
-    /* nothing (can always be computed on-the-fly) */
-  } break;
-
-  case (iro_Const): {
-    /* nothing (can always be computed on-the-fly) */
-  } break;
-
-  case (iro_Block): {
-    /* nothing (this is only interesting for the end block, and that
-       can always be computed on-the-fly) */
-  } break;
-
-  case (iro_Phi): {
-    /* nothing (This would need the predecessors to be initialized! Do this on-the-fly) */
-  } break;
-
-  /* now, enumerate everything else that is uninteresting */
-  case (iro_Return):
-  case (iro_Div):
-  case (iro_Quot):
-  case (iro_Mod):
-  case (iro_DivMod): {
-    /* nothing (not needed) */
-  } break;
-
-  default: {
-    fprintf (stderr, "%s: %s[%ld] not handled\n",
-             __FUNCTION__,
-             get_op_name (get_irn_op (node)),
-             get_irn_node_nr (node));
-    assert (0);
-  } break;
-
+    } break;
+  default:
+    HERE ("no pto");
   }
 }
 
+/* ===================================================
+   Exported Implementation:
+   =================================================== */
+/* Initialise the Names of the Types/Entities */
+void pto_init_type_names ()
+{
+  HERE ("start");
+  type_walk (clear_type_link, NULL, NULL);
+}
+
+/* Initialise the given graph for a new pass run */
+void pto_init_graph (ir_graph *graph)
+{
+  graph_info_t *ginfo = ecg_get_info (graph);
+  int n_ctxs = ginfo->n_ctxs;
+
+  init_env_t *init_env = xmalloc (sizeof (init_env_t));
+  init_env->n_ctxs = n_ctxs;
+
+  HERE ("start");
+
+  clear_graph_links (graph);
+
+  entity *ent = get_irg_entity (graph);
+
+  const char *ent_name = (char*) get_entity_name (ent);
+  const char *own_name = (char*) get_type_name (get_entity_owner (ent));
+
+  DBGPRINT (0, (stdout, "%s: init \"%s.%s\" for %i ctxs\n", __FUNCTION__,
+                own_name, ent_name, n_ctxs));
+
+  irg_walk_graph (graph, fake_pto, NULL, init_env);
+
+  HERE ("end");
+}
+
+/* Set all alloc names to the right ptos for a new pass run */
+void pto_init_allocs (graph_info_t *ginfo, int ctx_idx)
+{
+  assert (NULL != ginfo);
+
+  alloc_info_t *ainfo = ginfo->allocs;
+
+  HERE ("start");
+
+  while (NULL != ainfo) {
+    ir_node *alloc = ainfo->alloc;
+    alloc_pto_t *alloc_pto = (alloc_pto_t*) get_irn_link (alloc);
+
+    alloc_pto->curr_pto = alloc_pto->ptos [ctx_idx];
+
+    DBGPRINT (0, (stdout, "%s:%i (%s[%li]): ctx_idx = %i\n",
+                  __FUNCTION__, __LINE__, OPNAME (alloc), OPNUM (alloc), ctx_idx));
+
+    ainfo = ainfo->prev;
+  }
+
+  HERE ("end");
+}
 
 
 /*
- * $Log$
- * Revision 1.2  2004/11/08 12:33:06  liekweg
- * initialisation; sanitize print levels, misc fixes
- *
- * Revision 1.1  2004/11/04 14:58:59  liekweg
- * added initialisation
- *
- *
- */
+  $Log$
+  Revision 1.3  2004/11/18 16:37:07  liekweg
+  rewrite
+
+
+*/
