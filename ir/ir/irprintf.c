@@ -34,6 +34,7 @@
 
 #include <ctype.h>
 
+#include "firm_config.h"
 #include "ident.h"
 #include "irmode_t.h"
 #include "irnode_t.h"
@@ -153,6 +154,8 @@ static const appender_t obst_appender = {
 	obst_append_char,
 	obst_append_str
 };
+
+#ifndef WITH_LIBCORE
 
 static void ir_common_vprintf(const appender_t *app, void *object,
 		size_t limit, const char *fmt, va_list args);
@@ -595,3 +598,56 @@ void ir_obst_vprintf(struct obstack *obst, const char *fmt, va_list args)
 {
 	ir_common_vprintf(&obst_appender, obst, 0, fmt, args);
 }
+
+#else
+
+#include "irargs_t.h"
+
+void ir_printf(const char *fmt, ...)
+{
+	va_list args;
+
+	va_start(args, fmt);
+	lc_evprintf(firm_get_arg_env(), fmt, args);
+	va_end(args);
+}
+
+void ir_fprintf(FILE *f, const char *fmt, ...)
+{
+	va_list args;
+
+	va_start(args, fmt);
+	lc_evfprintf(firm_get_arg_env(), f, fmt, args);
+	va_end(args);
+}
+
+void ir_snprintf(char *buf, size_t n, const char *fmt, ...)
+{
+	va_list args;
+
+	va_start(args, fmt);
+	lc_evsnprintf(firm_get_arg_env(), buf, n, fmt, args);
+	va_end(args);
+}
+
+void ir_vprintf(const char *fmt, va_list args)
+{
+	lc_evprintf(firm_get_arg_env(), fmt, args);
+}
+
+void ir_vfprintf(FILE *f, const char *fmt, va_list args)
+{
+	lc_evfprintf(firm_get_arg_env(), f, fmt, args);
+}
+
+void ir_vsnprintf(char *buf, size_t len, const char *fmt, va_list args)
+{
+	lc_evsnprintf(firm_get_arg_env(), buf, len, fmt, args);
+}
+
+void ir_obst_vprintf(struct obstack *obst, const char *fmt, va_list args)
+{
+	lc_evoprintf(firm_get_arg_env(), obst, fmt, args);
+}
+
+#endif
