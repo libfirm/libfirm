@@ -215,24 +215,6 @@ long double get_tarval_double(tarval *tv);
  */
 int tarval_is_double(tarval *tv);
 
-/**
- * Construct a tarval that represents the address of the entity.
- *
- * The address must be constant, the entity must have as owner the global type.
- * We no more support this function: Use the new SymConst instead.
-tarval *new_tarval_from_entity (entity *ent, ir_mode *mode);
- */
-
-/**
- * Returns the associated entity of a tarval.  Asserts if tarval does not
- * contain an entity.
-entity *get_tarval_entity(tarval *tv);
- */
-
-/**
- * Returns non-zero if a the given tarval represents an entity.
-int tarval_is_entity(tarval *tv);
- */
 
 /** ********** Access routines for tarval fields ********** **/
 
@@ -335,6 +317,22 @@ tarval *get_tarval_nan(ir_mode *mode);
 tarval *get_tarval_inf(ir_mode *mode);
 
 /* ******************** Arithmethic operations on tarvals ******************** */
+
+typedef enum _tarval_int_overflow_mode_t {
+  TV_OVERFLOW_BAD,      /**< tarval module will return tarval_bad if a overflow occurs */
+  TV_OVERFLOW_WRAP,     /**< tarval module will overflow will be ignored, wrap around occurs */
+  TV_OVERFLOW_SATURATE  /**< tarval module will saturate the overflow */
+} tarval_int_overflow_mode_t;
+
+/**
+ * Sets the overflow mode for integer operations.
+ */
+void tarval_set_integer_overflow_mode(tarval_int_overflow_mode_t ov_mode);
+
+/**
+ * Get the overflow mode for integer operations.
+ */
+tarval_int_overflow_mode_t tarval_get_integer_overflow_mode(void);
 
 /**
  * Compares two tarvals
@@ -453,6 +451,9 @@ tarval *tarval_shrs(tarval *a, tarval *b);
 
 /** Rotation. */
 tarval *tarval_rot(tarval *a, tarval *b);
+
+/** Carry flag of the last operation */
+int tarval_carry(void);
 
 /* *********** Output of tarvals *********** */
 

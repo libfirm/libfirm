@@ -54,11 +54,8 @@
     target values */
 #define N_CONSTANTS 2048
 
-/* XXX hack until theres's a proper interface */
-#define BAD 1
-#define SATURATE 2
-#define WRAP 3
-#define GET_OVERFLOW_MODE() BAD
+/* get the integer overflow mode */
+#define GET_OVERFLOW_MODE() int_overflow_mode
 
 /* unused, float to int doesn't work yet */
 #define TRUNCATE 1
@@ -95,6 +92,7 @@ static long long count = 0;
  ****************************************************************************/
 static struct set *tarvals;   /* container for tarval structs */
 static struct set *values;    /* container for values */
+static tarval_int_overflow_mode_t int_overflow_mode = TV_OVERFLOW_WRAP;
 
 /****************************************************************************
  *   private functions
@@ -170,6 +168,9 @@ static tarval *get_tarval(const void *value, int length, ir_mode *mode)
   return (tarval *)INSERT_TARVAL(&tv);
 }
 
+/**
+ * handle overflow
+ */
 static tarval *get_tarval_overflow(const void *value, int length, ir_mode *mode)
 {
   switch (get_mode_sort(mode))
@@ -177,9 +178,9 @@ static tarval *get_tarval_overflow(const void *value, int length, ir_mode *mode)
     case irms_int_number:
       if (sc_comp(value, get_mode_max(mode)->value) == 1) {
         switch (GET_OVERFLOW_MODE()) {
-          case SATURATE:
+          case TV_OVERFLOW_SATURATE:
             return get_mode_max(mode);
-          case WRAP:
+          case TV_OVERFLOW_WRAP:
             {
               char *temp = alloca(sc_get_buffer_length());
               char *diff = alloca(sc_get_buffer_length());
@@ -191,7 +192,7 @@ static tarval *get_tarval_overflow(const void *value, int length, ir_mode *mode)
                 sc_sub(temp, diff, temp);
               return get_tarval(temp, length, mode);
             }
-          case BAD:
+          case TV_OVERFLOW_BAD:
             return tarval_bad;
           default:
             return get_tarval(value, length, mode);
@@ -199,9 +200,9 @@ static tarval *get_tarval_overflow(const void *value, int length, ir_mode *mode)
       }
       if (sc_comp(value, get_mode_min(mode)->value) == -1) {
         switch (GET_OVERFLOW_MODE()) {
-          case SATURATE:
+          case TV_OVERFLOW_SATURATE:
             return get_mode_min(mode);
-          case WRAP:
+          case TV_OVERFLOW_WRAP:
             {
               char *temp = alloca(sc_get_buffer_length());
               char *diff = alloca(sc_get_buffer_length());
@@ -213,7 +214,7 @@ static tarval *get_tarval_overflow(const void *value, int length, ir_mode *mode)
                 sc_add(temp, diff, temp);
               return get_tarval(temp, length, mode);
             }
-          case BAD:
+          case TV_OVERFLOW_BAD:
             return tarval_bad;
           default:
             return get_tarval(value, length, mode);
@@ -792,7 +793,7 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m)
     /* cast float to something */
     case irms_float_number:
       switch (get_mode_sort(m)) {
-    case irms_float_number:
+        case irms_float_number:
           switch (get_mode_size_bits(m))
           {
             case 32:
@@ -808,7 +809,6 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m)
               break;
           }
           return get_tarval(fc_get_buffer(), fc_get_buffer_length(), m);
-      break;
 
         case irms_int_number:
           switch (GET_FLOAT_TO_INT_MODE())
@@ -827,7 +827,6 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m)
            * an intermediate representation is needed here first. */
           /*  return get_tarval(); */
           return tarval_bad;
-      break;
 
         default:
           /* the rest can't be converted */
@@ -931,7 +930,8 @@ tarval *tarval_neg(tarval *a)
   ANNOUNCE();
   assert(a);
   assert(mode_is_num(a->mode)); /* negation only for numerical values */
-  assert(mode_is_signed(a->mode)); /* negation is difficult without negative numbers, isn't it */
+
+  /* note: negation is allowed even for unsigned modes. */
 
   if (get_mode_n_vector_elems(a->mode) > 1) {
     /* vector arithmetic not implemented yet */
@@ -964,7 +964,7 @@ tarval *tarval_add(tarval *a, tarval *b)
   ANNOUNCE();
   assert(a);
   assert(b);
-  assert((a->mode == b->mode) || (get_mode_sort(a->mode) == irms_character && mode_is_int(b->mode)));
+  assert(a->mode == b->mode);
 
   if (get_mode_n_vector_elems(a->mode) > 1 || get_mode_n_vector_elems(b->mode) > 1) {
     /* vector arithmetic not implemented yet */
@@ -999,7 +999,7 @@ tarval *tarval_sub(tarval *a, tarval *b)
   ANNOUNCE();
   assert(a);
   assert(b);
-  assert((a->mode == b->mode) || (get_mode_sort(a->mode) == irms_character && mode_is_int(b->mode)));
+  assert(a->mode == b->mode);
 
   if (get_mode_n_vector_elems(a->mode) > 1 || get_mode_n_vector_elems(b->mode) > 1) {
     /* vector arithmetic not implemented yet */
@@ -1033,7 +1033,7 @@ tarval *tarval_mul(tarval *a, tarval *b)
   ANNOUNCE();
   assert(a);
   assert(b);
-  assert((a->mode == b->mode) && mode_is_num(a->mode));
+  assert(a->mode == b->mode);
 
   if (get_mode_n_vector_elems(a->mode) > 1) {
     /* vector arithmetic not implemented yet */
@@ -1364,6 +1364,13 @@ tarval *tarval_rot(tarval *a, tarval *b)
   return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 }
 
+/*
+ * carry flag of the last operation
+ */
+int tarval_carry(void)
+{
+  return sc_had_carry();
+}
 
 /*
  * Output of tarvals
@@ -1456,7 +1463,7 @@ int tarval_snprintf(char *buf, size_t len, tarval *tv)
     case irms_control_flow:
     case irms_memory:
     case irms_auxiliary:
-      return snprintf(buf, len, "<BAD>");
+      return snprintf(buf, len, "<TV_OVERFLOW_BAD>");
   }
 
   return 0;
@@ -1565,6 +1572,20 @@ tarval_classification_t classify_tarval(tarval *tv)
     return TV_CLASSIFY_ALL_ONE;
 
   return TV_CLASSIFY_OTHER;
+}
+
+/**
+ * Sets the overflow mode for integer operations.
+ */
+void tarval_set_integer_overflow_mode(tarval_int_overflow_mode_t ov_mode) {
+  int_overflow_mode = ov_mode;
+}
+
+/**
+ * Get the overflow mode for integer operations.
+ */
+tarval_int_overflow_mode_t tarval_get_integer_overflow_mode(void) {
+  return int_overflow_mode;
 }
 
 /**
