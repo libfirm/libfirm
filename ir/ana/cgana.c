@@ -137,6 +137,8 @@ static entity *get_inherited_methods_implementation(entity *inh_meth) {
  */
 static void collect_impls(entity *method, eset *set, int *size, bool *open) {
   int i;
+  entity *impl;
+
 #if 0
   if (get_entity_peculiarity(method) == peculiarity_existent) {
     if ((get_entity_visibility(method) == visibility_external_allocated)
@@ -188,13 +190,13 @@ static void collect_impls(entity *method, eset *set, int *size, bool *open) {
      remember that there are more methods called. */
   /* @@@ We could also add unknown_entity, or the entities with the
      unknown irgs.  The first case would result in the exact same
-     behaviour: all unknown irgs are represented by the one and only
+     behavior: all unknown irgs are represented by the one and only
      unknown entity. If we add all entities, we known the number of
      entities possibly called, and whether there are real unknown
      entities, i.e, such not represented in the type description.
-     This would be better for an analyses: it could rule out more
+     This would be better for an analysis: it could rule out more
      cases. */
-  entity *impl = method;
+  impl = method;
   if (get_entity_peculiarity(method) == peculiarity_inherited)
     impl = get_inherited_methods_implementation(method);
 
@@ -253,7 +255,7 @@ static entity ** get_impl_methods(entity * method) {
   return arr;
 }
 
-/** Analyse address computations.
+/** Analyze address computations.
  *
  *  - If the node is a SymConst(name) replace it by SymConst(ent) if possible.
  *  - If the node is a Sel:
@@ -272,17 +274,19 @@ static void sel_methods_walker(ir_node * node, void *env) {
     if (get_SymConst_kind(node) == symconst_addr_name) {
       pmap_entry * entry = pmap_find(ldname_map, (void *) get_SymConst_name(node));
       if (entry != NULL) { /* Method is declared in the compiled code */
-	entity * ent = entry->value;
-	if (get_opt_normalize() && (get_entity_visibility(ent) != visibility_external_allocated)) { /* Meth. is defined */
-	  set_irg_current_block(current_ir_graph, get_nodes_block(node));
-	  ir_node *new_node = copy_const_value(get_atomic_ent_value(ent));
+	    entity * ent = entry->value;
+	    if (get_opt_normalize() && (get_entity_visibility(ent) != visibility_external_allocated)) { /* Meth. is defined */
+          ir_node *new_node;
 
-	  DBG_OPT_CSTEVAL(node, new_node);
+	      set_irg_current_block(current_ir_graph, get_nodes_block(node));
+	      new_node = copy_const_value(get_atomic_ent_value(ent));
 
-	  assert(get_entity_irg(ent));
-	  DDMN(new_node);
-	  exchange(node, new_node);
-	}
+	      DBG_OPT_CSTEVAL(node, new_node);
+
+	      assert(get_entity_irg(ent));
+	      DDMN(new_node);
+	      exchange(node, new_node);
+	    }
       }
     }
   }
@@ -323,10 +327,10 @@ static void sel_methods_walker(ir_node * node, void *env) {
         /* Gib eine Warnung aus wenn die Entitaet eine Beschreibung ist
            fuer die es keine Implementierung gibt. */
         if (get_entity_peculiarity(ent) == peculiarity_description) {
-	  /* This is possible:  We call a method in a dead part of the program. */
+          /* This is possible:  We call a method in a dead part of the program. */
         } else {
-	  DDMN(node);
-	  assert(0);  /* Why should this happen ??? */
+	      DDMN(node);
+	      assert(0);  /* Why should this happen ??? */
           //exchange(node, new_Bad());
         }
       } else {
