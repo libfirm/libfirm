@@ -93,6 +93,21 @@ fi],
 [enable_firm_jni=no])
 AC_SUBST(enable_firm_jni)
 
+dnl set heap analyses support
+dnl -------------------------
+AC_ARG_ENABLE(heapanalysis, [  --enable-heapanalysis       Compile with heap analysis.],
+        [enable_heapanalysis=$enableval], [enable_heapanalysis="no"])
+if test "$enable_heapanalysis" = "no"; then
+  AC_DEFINE(DO_HEAPANALYSIS, 0, [Don't compile with heap analysis])
+  AC_MSG_RESULT([heapanalysis disabled])
+else
+  AC_DEFINE(DO_HEAPANALYSIS, 1, [Compile with heap analysis])
+  AC_MSG_RESULT([heapanalysis enabled])
+fi
+AC_SUBST(enable_heapanalysis)
+
+dnl to be used!! AM_CONDITIONAL(FIRM_HEAPANALYSIS, test "$enable_heapanalysis" != "no")
+
 dnl disable linking of libiberty parts (xmalloc, xprintf, obstack, ...)
 dnl ----------------------
 AC_ARG_ENABLE(libiberty,

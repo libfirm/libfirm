@@ -15,6 +15,8 @@ srcdir = @srcdir@
 topdir = ..
 subdir = firmjni
 
+enable_heapanal := @enable_heapanalysis@
+
 # The library implementing the JNI methods.  This name is also
 # known to the generator for the JNI interface and used in the
 # static initializer.
@@ -22,6 +24,8 @@ LIBNAME = libfirmjni.so
 
 # The name of the package containing the Firm JNI
 PACKAGENAME = firmjni
+
+include $(topdir)/MakeRules
 
 # where to put libfirmjni.so
 libdir = @libdir@
@@ -39,16 +43,12 @@ HFILES  = $(MEMBERS:.m=.h)
 JAVAFILES  = $(MEMBERS:.m=.java)
 CLASSFILES = $(MEMBERS:.m=.class)
 
-CPPFLAGS = 	-I$(top_srcdir)/ir/ir  -I$(top_srcdir)/ir/common  	\
+CPPFLAGS += 	-I$(top_srcdir)/ir/ir  -I$(top_srcdir)/ir/common  	\
 		-I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/tr  	\
 	        -I$(top_srcdir)/ir/tv -I$(top_srcdir)/ir/debug 		\
-	        -I$(top_srcdir)/ir/ana -I$(top_srcdir)/ir/st \
-			-I$(top_srcdir)/../opt/heapanal \
-			-I$(top_srcdir)/include \
-			-I/usr/local/jdk1.3.1/include \
-			-I/usr/local/jdk1.3.1/include/freebsd @CPPFLAGS@
+	        -I$(top_srcdir)/ir/ana -I$(top_srcdir)/ir/st
 
-LDFLAGS += $(topdir)
+LDFLAGS += -I$(topdir)
 
 FIRM_HEADERS=$(notdir $(FIRM_PATH_HEADERS))
 MEMBERS=$(subst .h,.m,$(shell echo $(FIRM_HEADERS)|$(SHELL_TOUPPER)))
@@ -68,10 +68,15 @@ FIRM_PATH_HEADERS=common/firm.h common/firm_common.h \
 	ir/iropt.h ir/irgopt.h ir/ircgopt.h \
 	ana/irouts.h ana/irdom.h ana/irloop.h ana/cgana.h \
 	ir/irgmod.h tr/typegmod.h
+
 FIRM_SOURCE_DIR_HEADERS=$(addprefix $(SOURCE_DIR)/,$(FIRM_HEADERS))
 
 # hand implemented members
-IMPL_MEMBERS = Dbginfo.m Heapanal.m
+IMPL_MEMBERS = Dbginfo.m
+
+ifeq ($(enable_heapanal),yes)
+IMPL_MEMBERS += Heapanal.m
+endif
 
 # The directory containing crecoder.jar and, for now,
 # remove_cpp_comands.perl
@@ -106,10 +111,10 @@ Type_or_entity.h: Type_or_entity.class
 
 
 Dbginfo.java:
-	cp aux/Dbginfo.java aux/Dbginfo.c .
+	cp $(top_srcdir)/firmjni/aux/Dbginfo.java $(top_srcdir)/firmjni/aux/Dbginfo.c .
 
 Heapanal.java:
-	cp aux/Heapanal.java aux/Heapanal.c .
+	cp $(top_srcdir)/firmjni/aux/Heapanal.java $(top_srcdir)/firmjni/aux/Heapanal.c .
 
 %.h:	%.class
 	javah -classpath $(topdir) -o $@ $(PACKAGENAME).$(<:.class=)
@@ -120,9 +125,16 @@ Heapanal.java:
 $(OFILES):
 	gcc $(CPPFLAGS) -c $(@:.o=.c) -o $@
 
+
+ifeq ($(enable_heapanal),yes)
+HEAPANALLIB = -lheapanal
+else
+HEAPANALLIB =
+endif
+
+
 jni:    $(HFILES) $(OFILES)  # ../libfirm.a
-	gcc -shared -fPIC -o $(LIBNAME) *.o -lfirm -L.. -lheapanal -L../../opt/heapanal \
-	-liberty -L../../sw/lib
+	gcc -shared -fPIC -o $(LIBNAME) *.o -lfirm -L.. $(HEAPANALLIB) $(LDFLAGS) -liberty -L../../sw/lib
 
 install:
 	cp libfirmjni.so $(libdir)

@@ -19,3 +19,26 @@ To generate FIRM code from a compiler frontend read the documentation
 "libFIRM: A Library for Compiler Optimization Reaserch Implementing
 Firm", UKA tech-report 2002-5. About Firm you can learn in UKA
 tech-report 1999-14.
+
+
+
+You can generate a Java Native Interface for the library.  For this
+configure libfirm with --enable-firmjni and give the path to
+the jni headers, e.g.
+--with-includedir=/usr/public2/java/jdk1.3.1-sun/include/:/usr/
+  public2/java/jdk1.3.1-sun/include/linux/.
+Then go to ./<arch>/firmjni and call make.  To test the native
+interface go on to testprograms and call make test.
+
+
+If you are using the library for heap analysis with libfirm you
+have to configure libfirm with --enable-heapanalysis.  If you
+use the heap analysis through the java native interface you
+must in addition give the paths to the heap analysis installation:
+--with-includedir=<path where you find heapanal/heapanal.h>
+--with-libdir=<path where you find libheapanal.a>
+
+
+
+You can also give the paths by setting environment variables
+CPPFLAGS and LDFLAGS before configuring.

@@ -88,6 +88,9 @@
 /* Define to 1 if Firm statistics are activated */
 #undef FIRM_STATISTICS
 
+/* Define to 1 for heap analysis support */
+#undef DO_HEAPANALYSIS
+
 /* Define the right volatile token */
 #undef volatile
 

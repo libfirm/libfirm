@@ -42,9 +42,7 @@
 # include "pmap.h"
 # include "eset.h"
 
-/* #undef HEAPANAL  */
-#undef HEAPANAL
-#ifdef HEAPANAL
+#ifdef DO_HEAPANALYSIS
 void dump_chi_term(FILE *FL, ir_node *n);
 void dump_state(FILE *FL, ir_node *n);
 int  get_opt_dump_abstvals(void);
@@ -797,7 +795,7 @@ static void dump_node(ir_node *n)
   dump_node_vcgattr(n, bad);
   fprintf(F, "}\n");
   dump_const_node_local(n);
-#ifdef HEAPANAL
+#ifdef DO_HEAPANALYSIS
   dump_chi_term(F, n);
   dump_state(F, n);
 #endif
@@ -993,7 +991,7 @@ dump_whole_block(ir_node *block) {
   fprintf(F, "\"  label: \"");
   dump_node_opcode(F, block);
   fprintf (F, " %ld", get_irn_node_nr(block));
-#ifdef HEAPANAL
+#ifdef DO_HEAPANALYSIS
   if (get_opt_dump_abstvals())
     fprintf (F, " seqno: %d", (int)get_Block_seqno(block));
 #endif
@@ -1012,7 +1010,7 @@ dump_whole_block(ir_node *block) {
   /* Close the vcg information for the block */
   fprintf(F, "}\n");
   dump_const_node_local(block);
-#ifdef HEAPANAL
+#ifdef DO_HEAPANALYSIS
   dump_chi_term(F, block);
 #endif
   fprintf(F, "\n");

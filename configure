@@ -829,6 +829,7 @@ Optional Features:
   --enable-profile        enable profiling
   --enable-autodoc        enable auto documentation
   --enable-firmjni        check for tools necesarry to construct a java native interface for Firm
+  --enable-heapanalysis       Compile with heap analysis.
   --disable-libiberty     disable own libiberty parts
   --enable-statistics     enable Firm statistics
 
@@ -1303,6 +1304,33 @@ fi
 else
   enable_firm_jni=no
 fi;
+
+
+# Check whether --enable-heapanalysis or --disable-heapanalysis was given.
+if test "${enable_heapanalysis+set}" = set; then
+  enableval="$enable_heapanalysis"
+  enable_heapanalysis=$enableval
+else
+  enable_heapanalysis="no"
+fi;
+if test "$enable_heapanalysis" = "no"; then
+
+cat >>confdefs.h <<\_ACEOF
+#define DO_HEAPANALYSIS 0
+_ACEOF
+
+  echo "$as_me:$LINENO: result: heapanalysis disabled" >&5
+echo "${ECHO_T}heapanalysis disabled" >&6
+else
+
+cat >>confdefs.h <<\_ACEOF
+#define DO_HEAPANALYSIS 1
+_ACEOF
+
+  echo "$as_me:$LINENO: result: heapanalysis enabled" >&5
+echo "${ECHO_T}heapanalysis enabled" >&6
+fi
+
 
 
 # Check whether --enable-libiberty or --disable-libiberty was given.
@@ -4861,6 +4889,7 @@ s,@enable_debug_libfirm@,$enable_debug_libfirm,;t t
 s,@enable_profile_libfirm@,$enable_profile_libfirm,;t t
 s,@enable_auto_documentation@,$enable_auto_documentation,;t t
 s,@enable_firm_jni@,$enable_firm_jni,;t t
+s,@enable_heapanalysis@,$enable_heapanalysis,;t t
 s,@disable_libiberty@,$disable_libiberty,;t t
 s,@enable_statistics@,$enable_statistics,;t t
 s,@CC@,$CC,;t t

@@ -2,10 +2,9 @@
 
 # include "Heapanal.h"
 
-# include "firm.h"
+# include "libfirm/firm.h"
 # include "irsimpletype.h"
-# include "src/heapanal.h"
-# include "src/interprete.h"
+# include "heapanal/heapanal.h"
 
 /*  boilerplate stuff: */
 #include "libfirm/irvrfy.h"
@@ -157,6 +156,9 @@ void Java_firmjni_Heapanal_analHeap__ (JNIEnv *env, jclass clazz)
 
 /*
  * $Log$
+ * Revision 1.3  2004/04/30 09:00:01  goetz
+ * added configure support for heap analyses
+ *
  * Revision 1.2  2004/04/29 13:59:11  liekweg
  * Removed C++-Style comments --flo
  *
