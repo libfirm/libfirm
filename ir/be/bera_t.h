@@ -10,6 +10,8 @@
 #include "firm_config.h"
 #include "bitset.h"
 
+#include "bera.h"
+
 #define DBG_BERA "firm.be.ra"
 
 typedef struct _ra_node_info_t {
