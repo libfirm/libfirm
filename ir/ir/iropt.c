@@ -1568,8 +1568,12 @@ optimize_node (ir_node *n)
 	 * we MUST copy the node here temparary, because it's still needed
 	 * for DBG_OPT_ALGSIM0
 	 */
-	ir_node x = *n;
-	oldn = &x;
+	int node_size = offsetof(ir_node, attr) +  n->op->attr_size;
+	ir_node *x = alloca(node_size);
+
+	memcpy(x, n, node_size);
+	oldn = x;
+
         /* evaluation was successful -- replace the node. */
 	obstack_free (current_ir_graph->obst, n);
 	n = new_Const (get_tarval_mode (tv), tv);
