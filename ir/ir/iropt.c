@@ -425,7 +425,8 @@ static tarval *computed_value_Proj(ir_node *n)
     ab = get_Cmp_right(a);
     proj_nr = get_Proj_proj(n);
 
-    if (aa == ab) { /* 1.: */
+    if (aa == ab && !mode_is_float(get_irn_mode(aa))) { /* 1.: */
+      /* BEWARE: a == a is NOT always True for floating Point!!! */
       /* This is a trick with the bits used for encoding the Cmp
          Proj numbers, the following statement is not the same:
       return new_tarval_from_long (proj_nr == Eq, mode_b) */
