@@ -44,7 +44,7 @@ libfirm.a: subdir_all $(XOFILES) $(OFILES)
 
 testprograms:	libfirm.a
 	$(MAKE) -C testprograms
-	$(MAKE) -C firmjni  test
+#	$(MAKE) -C firmjni  test  Tut nicht in craks Makefile
 
 
 # gernerate program documentation
