@@ -2056,9 +2056,9 @@ static void descend_and_dump(FILE *F, ir_node *n, int depth, pset *mark_set) {
   pset_insert_ptr(mark_set, n);
 
   if (depth > 0) {
+    int i, start = is_Block(n) ? 0 : -1;
     dump_whole_node(n, F);
-    int start = is_Block(n) ? 0 : -1;
-    for (int i = start; i < get_irn_arity(n); ++i)
+    for (i = start; i < get_irn_arity(n); ++i)
       descend_and_dump(F, get_irn_n(n, i), depth-1, mark_set);
   } else {
     dump_node(F, n);
