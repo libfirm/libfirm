@@ -1104,6 +1104,24 @@ static ir_node *equivalent_node_Mux(ir_node *n)
 }
 
 /**
+ * Optimize -a CMP -b into b CMP a.
+ * This works even for floating point
+ */
+static ir_node *equivalent_node_Cmp(ir_node *n)
+{
+  ir_node *left  = get_Cmp_left(n);
+  ir_node *right = get_Cmp_right(n);
+
+  if (get_irn_op(left) == op_Minus && get_irn_op(right) == op_Minus) {
+    left  = get_Minus_op(left);
+    right = get_Minus_op(right);
+    set_Cmp_left(n, right);
+    set_Cmp_right(n, left);
+  }
+  return n;
+}
+
+/**
  * equivalent_node() returns a node equivalent to input n. It skips all nodes that
  * perform no actual computation, as, e.g., the Id nodes.  It does not create
  * new nodes.  It is therefore safe to free n if the node returned is not n.
@@ -1152,6 +1170,7 @@ static ir_op *firm_set_default_equivalent_node(ir_op *op)
   CASE(Proj);
   CASE(Id);
   CASE(Mux);
+  CASE(Cmp);
   default:
     op->equivalent_node  = NULL;
   }
@@ -1319,6 +1338,9 @@ static ir_node *transform_node_Mul(ir_node *n) {
   return arch_dep_replace_mul_with_shifts(n);
 }
 
+/**
+ * transform a Div Node
+ */
 static ir_node *transform_node_Div(ir_node *n)
 {
   tarval *tv = value_of(n);
@@ -1346,6 +1368,9 @@ static ir_node *transform_node_Div(ir_node *n)
   return n;
 }
 
+/**
+ * transform a Mod node
+ */
 static ir_node *transform_node_Mod(ir_node *n)
 {
   tarval *tv = value_of(n);
@@ -1373,6 +1398,9 @@ static ir_node *transform_node_Mod(ir_node *n)
   return n;
 }
 
+/**
+ * transform a DivMod node
+ */
 static ir_node *transform_node_DivMod(ir_node *n)
 {
   int evaluated = 0;
@@ -1432,6 +1460,9 @@ static ir_node *transform_node_DivMod(ir_node *n)
   return n;
 }
 
+/**
+ * transform a Cond node
+ */
 static ir_node *transform_node_Cond(ir_node *n)
 {
   /* Replace the Cond by a Jmp if it branches on a constant
@@ -1558,12 +1589,15 @@ static ir_node *transform_node_Cast(ir_node *n) {
 }
 
 /**
- * Transform a Div/Mod/DivMod with a non-zero constant. Must be
- * done here instead of equivalent node because it creates new
- * nodes.
+ * Does all optimizations on nodes that must be done on it's Proj's
+ * because of creating new nodes.
+ *
+ * Transform a Div/Mod/DivMod with a non-zero constant.
  * Removes the exceptions and routes the memory to the NoMem node.
  *
- * Further, it optimizes jump tables by removing all impossible cases.
+ * Optimizes jump tables by removing all impossible cases.
+ *
+ * Normalizes Cmp nodes.
  */
 static ir_node *transform_node_Proj(ir_node *proj)
 {
@@ -1659,6 +1693,117 @@ static ir_node *transform_node_Proj(ir_node *proj)
           else
             return new_Bad();
         }
+      }
+    }
+    return proj;
+
+  case iro_Cmp:
+    if (get_opt_reassociation()) {
+      ir_node *left  = get_Cmp_left(n);
+      ir_node *right = get_Cmp_right(n);
+      ir_node *c     = NULL;
+      tarval *tv     = NULL;
+      int changed    = 0;
+      ir_mode *mode  = NULL;
+
+      proj_nr = get_Proj_proj(proj);
+
+      /*
+       * First step: normalize the compare op
+       * by placing the constant on the right site
+       * or moving the lower address node to the left.
+       * We ignore the case that both are constants, then
+       * this compare should be optimized away.
+       */
+      if (get_irn_op(right) == op_Const)
+        c = right;
+      else if (get_irn_op(left) == op_Const) {
+        c     = left;
+        left  = right;
+        right = c;
+
+        proj_nr = get_swapped_pnc(proj_nr);
+        changed |= 1;
+      }
+      else if (left > right) {
+        ir_node *t = left;
+
+        left  = right;
+        right = t;
+
+        proj_nr = get_swapped_pnc(proj_nr);
+        changed |= 1;
+      }
+
+      /*
+       * Second step: Try to reduce the magnitude
+       * of a constant. This may help to generate better code
+       * later and may help to normalize more compares.
+       * Of course this is only possible for integer values.
+       */
+      if (c) {
+        mode = get_irn_mode(c);
+        tv = get_Const_tarval(c);
+
+        if (tv != tarval_bad) {
+          /* the following optimization is possibe on non-int values either:
+           * -a CMP c  ==>  a swap(CMP) -c */
+          if (get_opt_constant_folding() && get_irn_op(left) == op_Minus) {
+            left = get_Minus_op(left);
+            tv = tarval_sub(get_tarval_one(mode), tv);
+
+            proj_nr = get_swapped_pnc(proj_nr);
+            changed |= 2;
+          }
+
+          if (mode_is_int(mode)) {
+            /* Ne includes Unordered which is not possible on integers.
+             * However, frontends often use this wrong, so fix it here */
+            if (proj_nr == pn_Cmp_Ne)
+              proj_nr = pn_Cmp_Lg;
+
+            /* c > 0 : a < c  ==>  a <= (c-1)    a >= c  ==>  a > (c-1) */
+            if ((proj_nr == pn_Cmp_Lt || proj_nr == pn_Cmp_Ge) &&
+                tarval_cmp(tv, get_tarval_null(mode)) == pn_Cmp_Gt) {
+              tv = tarval_sub(tv, get_tarval_one(mode));
+
+              proj_nr ^= pn_Cmp_Eq;
+              changed |= 2;
+            }
+            /* c < 0 : a > c  ==>  a >= (c+1)    a <= c  ==>  a < (c+1) */
+            else if ((proj_nr == pn_Cmp_Gt || proj_nr == pn_Cmp_Le) &&
+                tarval_cmp(tv, get_tarval_null(mode)) == pn_Cmp_Lt) {
+              tv = tarval_add(tv, get_tarval_one(mode));
+
+              proj_nr ^= pn_Cmp_Eq;
+              changed |= 2;
+            }
+
+            /* a-b == 0  ==>  a == b,  a-b != 0  ==>  a != b */
+            if (classify_tarval(tv) == TV_CLASSIFY_NULL && get_irn_op(left) == op_Sub) {
+              if (proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg) {
+                right = get_Sub_right(left);
+                left  = get_Sub_left(left);
+
+                changed &= ~2;
+              }
+            }
+          }
+        }
+      }
+
+      if (changed) {
+        ir_node *block = get_nodes_block(n);
+
+        if (changed & 2)      /* need a new Const */
+          right = new_Const(mode, tv);
+
+        /* create a new compare */
+        n = new_rd_Cmp(get_irn_dbg_info(n), current_ir_graph, block,
+              left, right);
+
+        set_Proj_pred(proj, n);
+        set_Proj_proj(proj, proj_nr);
       }
     }
     return proj;
@@ -1905,7 +2050,7 @@ static ir_node *transform_node(ir_node *n);
 /**
  * Optimize (a >> c1) >> c2), works for Shr, Shrs, Shl
  */
-static ir_node * transform_node_shift(ir_node *n)
+static ir_node *transform_node_shift(ir_node *n)
 {
   ir_node *left, *right;
   tarval *tv1, *tv2, *res;
