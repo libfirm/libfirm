@@ -570,7 +570,7 @@ int node_is_in_irgs_storage(ir_graph *irg, ir_node *n)
   struct _obstack_chunk *p;
 
   /*
-   * checks wheater the ir_node pointer i on the obstack.
+   * checks weather the ir_node pointer is on the obstack.
    * A more sophisticated check would test the "whole" ir_node
    */
   for (p = irg->obst->chunk; p; p = p->prev) {
@@ -774,7 +774,7 @@ void set_irg_loc_description(ir_graph *irg, int n, void *description)
   assert(0 <= n && n < irg->n_loc);
 
   if (! irg->loc_descriptions)
-    irg->loc_descriptions = xmalloc(sizeof(*irg->loc_descriptions) * irg->n_loc);
+    irg->loc_descriptions = xcalloc(sizeof(*irg->loc_descriptions), irg->n_loc);
 
   irg->loc_descriptions[n] = description;
 }
