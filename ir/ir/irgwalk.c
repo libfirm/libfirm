@@ -245,7 +245,8 @@ void cg_walk(irg_walk_func *pre, irg_walk_func *post, void *env) {
   for (i = 0; i < get_irp_n_irgs(); i++)
     set_irg_visited(get_irp_irg(i), get_max_irg_visited());
 
-  /* Walk starting at unreachable procedures. */
+  /* Walk starting at unreachable procedures. Only these
+   * have End blocks visible in interprocedural view. */
   for (i = 0; i < get_irp_n_irgs(); i++) {
     ir_node *sb;
     current_ir_graph = get_irp_irg(i);
@@ -261,12 +262,28 @@ void cg_walk(irg_walk_func *pre, irg_walk_func *post, void *env) {
   /* Check whether we walked all procedures: there could be procedures
      with cyclic calls but no call from the outside. */
   for (i = 0; i < get_irp_n_irgs(); i++) {
-    ir_node *eb;
+    ir_node *sb;
     current_ir_graph = get_irp_irg(i);
 
-    eb = get_irg_start_block(current_ir_graph);
-    if (get_irn_visited(eb) < get_irg_visited(current_ir_graph)) {
-      cg_walk_2(get_irg_end(current_ir_graph), pre, post, env);
+    /* Test start block: if inner procedure end and end block are not
+     * visible and therefore not marked. */
+    sb = get_irg_start_block(current_ir_graph);
+    if (get_irn_visited(sb) < get_irg_visited(current_ir_graph)) {
+      cg_walk_2(sb, pre, post, env);
+    }
+  }
+
+  /* Walk all endless loops in inner procedures.
+   * We recognize an inner procedure if the End node is not visited. */
+  for (i = 0; i < get_irp_n_irgs(); i++) {
+    ir_node *e;
+    current_ir_graph = get_irp_irg(i);
+    e = get_irg_end(current_ir_graph);
+    if (get_irn_visited(e) < get_irg_visited(current_ir_graph)) {
+      int j;
+      /* Don't visit the End node. */
+      for (j = 0; j < get_End_n_keepalives(e); j++)
+	cg_walk_2(get_End_keepalive(e, j), pre, post, env);
     }
   }
 
