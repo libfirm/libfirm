@@ -11,10 +11,10 @@
 FIRM_IMPL1(sched_get_time_step, int, const ir_node *)
 FIRM_IMPL1(sched_has_succ, int, const ir_node *)
 FIRM_IMPL1(sched_has_prev, int, const ir_node *)
-FIRM_IMPL1(sched_succ, const ir_node *, const ir_node *)
-FIRM_IMPL1(sched_prev, const ir_node *, const ir_node *)
-FIRM_IMPL1(sched_first, const ir_node *, const ir_node *)
-FIRM_IMPL1(sched_last, const ir_node *, const ir_node *)
+FIRM_IMPL1(sched_succ, ir_node *, const ir_node *)
+FIRM_IMPL1(sched_prev, ir_node *, const ir_node *)
+FIRM_IMPL1(sched_first, ir_node *, const ir_node *)
+FIRM_IMPL1(sched_last, ir_node *, const ir_node *)
 
 size_t sched_irn_data_offset = 0;
 

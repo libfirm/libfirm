@@ -9,6 +9,7 @@
 
 #include "firm_config.h"
 #include "bitset.h"
+#include "list.h"
 
 #include "bera.h"
 
@@ -20,7 +21,8 @@ typedef struct _ra_node_info_t {
 } ra_node_info_t;
 
 typedef struct _ra_block_info_t {
-	bitset_t *used_colors;		/**< A bitmask containing all colors used in the block. */
+	bitset_t *used_colors;					/**< A bitmask containing all colors used in the block. */
+	struct list_head border_head;		/**< A list head to enqueue the borders. */
 } ra_block_info_t;
 
 /**
@@ -64,27 +66,27 @@ void be_ra_init(void);
  */
 #define is_color(col) ((col) != NO_COLOR)
 
-static INLINE int __get_irn_color(const ir_node *irn)
+static INLINE int _get_irn_color(const ir_node *irn)
 {
 	assert(!is_Block(irn) && "No block allowed here");
 	return get_ra_node_info(irn)->color;
 }
 
-static INLINE void __set_irn_color(const ir_node *irn, int color)
+static INLINE void _set_irn_color(const ir_node *irn, int color)
 {
 	assert(!is_Block(irn) && "No block allowed here");
 	get_ra_node_info(irn)->color = color;
 }
 
-static INLINE int __is_allocatable_irn(const ir_node *irn)
+static INLINE int _is_allocatable_irn(const ir_node *irn)
 {
 	assert(!is_Block(irn) && "No block allowed here");
 	return mode_is_datab(get_irn_mode(irn));
 }
 
-#define get_irn_color(irn)								__get_irn_color(irn)
-#define set_irn_color(irn,col)						__set_irn_color(irn, col)
-#define is_allocatable_irn(irn)						__is_allocatable_irn(irn)
+#define get_irn_color(irn)								_get_irn_color(irn)
+#define set_irn_color(irn,col)						_set_irn_color(irn, col)
+#define is_allocatable_irn(irn)						_is_allocatable_irn(irn)
 
 /**
  * Check, if two phi operands interfere.
