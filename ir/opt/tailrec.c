@@ -36,6 +36,7 @@
 #include "irflag.h"
 #include "trouts.h"
 #include "return.h"
+#include "irhooks.h"
 
 /**
  * the environment for collecting data
@@ -120,8 +121,7 @@ static void collect_data(ir_node *node, void *env)
  */
 static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
 {
-  ir_graph *rem_irg = current_ir_graph;
-  ir_node *end_block = irg->end_block;
+  ir_node *end_block = get_irg_end_block(irg);
   ir_node *block, *jmp, *call, *calls;
   ir_node **in;
   ir_node **phis;
@@ -129,11 +129,13 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
   ir_node *p;
   int i, j, n_params;
   collect_t data;
-  int rem = get_optimize();
+  int rem         = get_optimize();
+  entity *ent     = get_irg_entity(irg);
+  type *method_tp = get_entity_type(ent);
 
   assert(n_tail_calls);
 
-  /* we add nwe nodes, so the outs are inconsistant */
+  /* we add new nodes, so the outs are inconsistant */
   set_irg_outs_inconsistent(irg);
 
   /* we add new blocks and change the control flow */
@@ -142,6 +144,10 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
   /* we add a new loop */
   set_irg_loopinfo_inconsistent(irg);
 
+  /* calls are removed */
+  set_trouts_inconsistent();
+
+  /* we must build some new nodes WITHOUT CSE */
   set_optimize(0);
 
   /* collect needed data */
@@ -161,8 +167,6 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
   assert(data.proj_m && "Could not find ProjM(Start)");
   assert((data.proj_data || n_params == 0) && "Could not find Proj(ProjT(Start)) of non-void function");
 
-  current_ir_graph = irg;
-
   /* allocate in's for phi and block construction */
   NEW_ARR_A(ir_node *, in, n_tail_calls + 1);
 
@@ -171,19 +175,21 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
   /* turn Return's into Jmp's */
   for (i = 1, p = rets; p; p = get_irn_link(p)) {
     ir_node *jmp;
+    ir_node *block = get_nodes_block(p);
 
-    set_cur_block(get_nodes_block(p));
-    jmp = new_Jmp();
+    jmp = new_r_Jmp(irg, block);
 
-    exchange(p, new_Bad());
+    exchange(p, new_r_Bad(irg));
     in[i++] = jmp;
 
-    add_End_keepalive(get_irg_end(irg), jmp);
+    /* we might generate an endless loop, so add
+     * the block to the keep-alive list */
+    add_End_keepalive(get_irg_end(irg), block);
   }
 
   /* create a new block at start */
-  block = new_Block(n_tail_calls + 1, in);
-  jmp   = new_Jmp();
+  block = new_r_Block(irg, n_tail_calls + 1, in);
+  jmp   = new_r_Jmp(irg, block);
 
   /* the old first block is now the second one */
   set_Block_cfgpred(data.block, data.blk_idx, jmp);
@@ -193,7 +199,7 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
 
   /* build the memory phi */
   i = 0;
-  in[i] = new_rd_Proj(NULL, irg, irg->start_block, irg->start, mode_M, pn_Start_M);
+  in[i] = new_r_Proj(irg, get_irg_start_block(irg), get_irg_start(irg), mode_M, pn_Start_M);
   ++i;
 
   for (calls = call; calls; calls = get_irn_link(calls)) {
@@ -202,13 +208,13 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
   }
   assert(i == n_tail_calls + 1);
 
-  phis[0] = new_rd_Phi(NULL, irg, block, n_tail_calls + 1, in, mode_M);
+  phis[0] = new_r_Phi(irg, block, n_tail_calls + 1, in, mode_M);
 
   /* build the data phi's */
   if (n_params > 0) {
     ir_node *calls;
 
-    NEW_ARR_A(ir_node **, call_params, n_params);
+    NEW_ARR_A(ir_node **, call_params, n_tail_calls);
 
     /* collect all parameters */
     for (i = 0, calls = call; calls; calls = get_irn_link(calls)) {
@@ -218,13 +224,13 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
 
     /* build new projs and Phi's */
     for (i = 0; i < n_params; ++i) {
-      ir_mode *mode = get_irn_mode(call_params[0][i]);
+      ir_mode *mode = get_type_mode(get_method_param_type(method_tp, i));
 
-      in[0] = new_rd_Proj(NULL, irg, block, irg->args, mode, i);
+      in[0] = new_r_Proj(irg, block, irg->args, mode, i);
       for (j = 0; j < n_tail_calls; ++j)
 	in[j + 1] = call_params[j][i];
 
-      phis[i + 1] = new_rd_Phi(NULL, irg, block, n_tail_calls + 1, in, mode);
+      phis[i + 1] = new_r_Phi(irg, block, n_tail_calls + 1, in, mode);
     }
   }
 
@@ -249,7 +255,6 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
   set_trouts_inconsistent();
   set_irg_callee_info_state(irg, irg_callee_info_inconsistent);
 
-  current_ir_graph = rem_irg;
   set_optimize(rem);
 }
 
@@ -258,7 +263,7 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
  */
 int opt_tail_rec_irg(ir_graph *irg)
 {
-  ir_node *end_block = irg->end_block;
+  ir_node *end_block;
   int n_preds;
   int i, n_tail_calls = 0;
   ir_node *rets = NULL;
@@ -272,6 +277,7 @@ int opt_tail_rec_irg(ir_graph *irg)
    */
   normalize_n_returns(irg);
 
+  end_block = get_irg_end_block(irg);
   set_irn_link(end_block, NULL);
 
   n_preds = get_Block_n_cfgpreds(end_block);
@@ -337,6 +343,7 @@ int opt_tail_rec_irg(ir_graph *irg)
     printf("  Performing tail recursion for graph %s and %d Calls\n",
 	   get_entity_ld_name(get_irg_entity(irg)), n_tail_calls);
 
+  hook_tail_rec(irg, n_tail_calls);
   do_opt_tail_rec(irg, rets, n_tail_calls);
 
   return n_tail_calls;
