@@ -15,31 +15,7 @@
 
 #include <stddef.h>
 
-/**
- * Projection numbers of compare: use for Proj nodes!
- * @remark there are numbers with normalized names below!
- */
-typedef enum {
-  False = 0,    /**< false */
-  Eq,           /**< equal */
-  Lt,           /**< less */
-  Le,           /**< less or equal */
-  Gt,           /**< greater */
-  Ge,           /**< greater or equal */
-  Lg,           /**< less or greater */
-  Leg = 7,      /**< less, equal or greater = ordered */
-  Uo,           /**< unordered */
-  Ue,           /**< unordered or equal */
-  Ul,           /**< unordered or less */
-  Ule,          /**< unordered, less or equal */
-  Ug,           /**< unordered or greater */
-  Uge,          /**< unordered, greater or equal */
-  Ne,           /**< unordered, less or greater = not equal */
-  True = 15     /**< true */
-  /* not_mask = Leg*/   /* bits to flip to negate comparison * @@ hack for jni interface */
-} pnc_number;   /* pnc: Projection Number Cmp */
-#define not_mask Leg
-
+# include "pnc.h"
 # include "tv.h"
 # include "irgraph.h"
 # include "entity.h"
@@ -48,7 +24,6 @@ typedef enum {
 # include "irmode.h"
 # include "type.h"
 # include "dbginfo.h"
-/* # include "exc.h" */
 
 /**
  * @file irnode.h
@@ -378,8 +353,24 @@ typedef enum {
   pn_Raise_max   /**< number of projections from a Raise */
 } pn_Raise;  /* Projection numbers for Raise. */
 
+typedef enum {
+	CNST_NULL = TV_CLASSIFY_NULL,				/**< The node is a const(0). */
+	CNST_ONE = TV_CLASSIFY_ONE,					/**< The node is a const(1). */
+	CNST_ALL_ONE = TV_CLASSIFY_ALL_ONE, /**< The node is a const(11111...). */
+	CNST_OTHER = TV_CLASSIFY_OTHER,			/**< The tarvel of the const has another value. */
+	CNST_SYMCONST,											/**< The node is symconst. */
+	CNST_NO_CONST												/**< The node is no const at all. */
+} cnst_classify_t;
+
 tarval  *get_Const_tarval (ir_node *node);
 void     set_Const_tarval (ir_node *node, tarval *con);
+
+/**
+ * Classify a node concerning constant properties.
+ * @param irn A node to check for.
+ * @return Constant properties of that node.
+ */
+cnst_classify_t classify_Const(ir_node *irn);
 
 /** Returns the source language type of a Const node.
  * Must be an atomic type.  Mode of type must be mode of node.

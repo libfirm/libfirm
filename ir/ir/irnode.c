@@ -27,6 +27,7 @@
 #include "irdump.h"
 #include "irop_t.h"
 #include "irprog_t.h"
+#include "iredges_t.h"
 
 #include "irhooks.h"
 
@@ -147,6 +148,7 @@ new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mo
     res->in = NEW_ARR_D (ir_node *, irg->obst, (arity+1));
     memcpy (&res->in[1], in, sizeof (ir_node *) * arity);
   }
+
   res->in[0] = block;
   set_irn_dbg_info(res, db);
   res->out = NULL;
@@ -155,7 +157,19 @@ new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mo
   res->node_nr = get_irp_new_node_nr();
 #endif
 
-  hook_new_node(res);
+#ifdef FIRM_EDGES_INPLACE
+	{
+		int i, n;
+		int not_a_block = !is_Block(res);
+
+		INIT_LIST_HEAD(&res->edge_info.outs_head);
+
+		for(i = 0, n = arity + not_a_block; i < n; ++i)
+			edges_notify_edge(res, i - not_a_block, res->in[i], NULL, irg);
+	}
+#endif
+
+  hook_new_node(irg, res);
 
   return res;
 }
@@ -249,7 +263,9 @@ ir_node *
 
 void
 set_irn_n (ir_node *node, int n, ir_node *in) {
-  assert(node && node->kind == k_ir_node && -1 <= n && n < get_irn_arity(node));
+  assert(node && node->kind == k_ir_node);
+  assert(-1 <= n);
+  assert(n < get_irn_arity(node));
   assert(in && in->kind == k_ir_node);
 
   if ((n == -1) && (get_irn_opcode(node) == iro_Filter)) {
@@ -270,6 +286,15 @@ set_irn_n (ir_node *node, int n, ir_node *in) {
     }
     /* else fall through */
   }
+
+	/* Call the hook */
+	hook_set_irn_n(node, n, in, node->in[n + 1]);
+
+#ifdef FIRM_EDGES_INPLACE
+	/* Here, we rely on src and tgt being in the current ir graph */
+	edges_notify_edge(node, n, in, node->in[n + 1], current_ir_graph);
+#endif
+
   node->in[n + 1] = in;
 }
 
@@ -874,15 +899,19 @@ set_Raise_exo_ptr (ir_node *node, ir_node *exo_ptr) {
   set_irn_n(node, 1, exo_ptr);
 }
 
-tarval *get_Const_tarval (ir_node *node) {
-  assert (node->op == op_Const);
-  return node->attr.con.tv;
+tarval *(get_Const_tarval)(ir_node *node) {
+	return _get_Const_tarval(node);
 }
 
 void
 set_Const_tarval (ir_node *node, tarval *con) {
   assert (node->op == op_Const);
   node->attr.con.tv = con;
+}
+
+cnst_classify_t (classify_Const)(ir_node *node)
+{
+	return _classify_Const(node);
 }
 
 
