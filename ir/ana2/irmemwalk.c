@@ -25,6 +25,7 @@
 # endif
 
 # include "irgwalk.h"           /* for irg_walk_func */
+# include "irprog.h"            /* for get_irp_main_irg */
 # include "xmalloc.h"
 
 # ifndef TRUE
@@ -153,6 +154,17 @@ static void irg_walk_mem_node (ir_node *node,
 
     irg_walk_mem_node (in, walk_env);
   } break;
+  case (iro_Block): {
+    /* End Block ONLY */
+    int i;
+    int n_ins = get_irn_arity (node);
+
+    for (i = 0; i < n_ins; i ++) {
+      ir_node *ret = get_irn_n (node, i);
+
+      irg_walk_mem_node (ret, walk_env);
+    }
+  } break;
   default: {
     assert (0 && "something not handled");
   }
@@ -190,10 +202,7 @@ void irg_walk_mem (ir_graph *graph,
                    irg_walk_func *pre, irg_walk_func *post,
                    void *env)
 {
-  int i;
-  ir_node *ret = NULL;
   ir_node *end = get_irg_end_block (graph);
-  int n_ins;
   walk_mem_env_t *walk_env = (walk_mem_env_t*) xmalloc (sizeof (walk_mem_env_t));
 
   assert (! get_irg_is_mem_visited (graph));
@@ -212,14 +221,7 @@ void irg_walk_mem (ir_graph *graph,
   /* 'graph' is not actually being visited right now, but it should be reported that way */
   assert (get_irg_is_mem_visited (graph));
 
-  /* all return nodes */
-  n_ins = get_irn_arity (end);
-  for (i = 0; i < n_ins; i ++) {
-    ret = get_irn_n (end, i);
-
-    irg_walk_mem_node (ret, walk_env);
-  }
-
+  irg_walk_mem_node (end, walk_env);
   /*
     The end NODE sometimes has some more ins. not sure whether we need to walk them.
   */
@@ -237,6 +239,9 @@ void irg_walk_mem (ir_graph *graph,
 
 /*
   $Log$
+  Revision 1.3  2004/11/04 14:57:12  liekweg
+  fixed end block handling
+
   Revision 1.2  2004/10/22 14:41:12  liekweg
   execute 'pre' for a change.  Also, add CVS log
 
