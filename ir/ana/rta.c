@@ -174,18 +174,20 @@ static void rta_act (ir_node *node, void *env)
       /* CALL SYMCONST */
     } else if (iro_SymConst == get_irn_opcode (ptr)) {
       if (get_SymConst_kind(ptr) == symconst_addr_ent) {
+        ir_graph *graph;
+
         ent = get_SymConst_entity (ptr);
-        ir_graph *graph = get_entity_irg (ent);
+        graph = get_entity_irg (ent);
         if (graph) {
           *change |= add_graph (graph);
         } else {
           /* it's an external allocated thing. */
         }
       } else if (get_SymConst_kind(ptr) == symconst_addr_name) {
-	/* Entities of kind addr_name may not be allocated in this compilation unit.
-	   If so, the frontend built faulty Firm.  So just ignore. */
-	/* if (get_SymConst_name(ptr) != new_id_from_str("iro_Catch"))
-	  assert (ent && "couldn't determine entity of call to SymConst of kind addr_name."); */
+	    /* Entities of kind addr_name may not be allocated in this compilation unit.
+	       If so, the frontend built faulty Firm.  So just ignore. */
+	    /* if (get_SymConst_name(ptr) != new_id_from_str("iro_Catch"))
+        assert (ent && "couldn't determine entity of call to SymConst of kind addr_name."); */
       } else {
         /* other symconst. */
         assert(0 && "This SymConst can not be an address for a method call.");
@@ -285,9 +287,9 @@ static int rta_fill_incremental (void)
   return (n_runs);
 }
 
-/*
-   Count the number of graphs that we have found to be live.
-*/
+/**
+ * Count the number of graphs that we have found to be live.
+ */
 static int stats (void)
 {
   int i;
@@ -343,7 +345,7 @@ static void force_description (entity *ent, entity *addr)
 }
 
 /**
-   Initialise the static data structures.
+   Initialize the static data structures.
 */
 static void init_tables (void)
 {
@@ -365,18 +367,17 @@ static void init_tables (void)
 }
 
 /*
- * Initialise the RTA data structures, and perform RTA.
+ * Initialize the RTA data structures, and perform RTA.
  * do_verbose If == 1, print statistics, if > 1, chatter about every detail
  */
 void rta_init (int do_verbose)
 {
-  int n_runs = 0;
+  int i, n_runs = 0;
 
   int rem_vpi = get_visit_pseudo_irgs();
   set_visit_pseudo_irgs(1);
 
 # ifdef DEBUG_libfirm
-  int i;
   for (i = 0; i < get_irp_n_irgs(); i++) {
     irg_vrfy (get_irp_irg(i));
   }
@@ -418,12 +419,12 @@ static void make_entity_to_description(type_or_ent *tore, void *env) {
     entity *ent = (entity *)tore;
 
     if ((is_method_type(get_entity_type(ent)))                        &&
-    (get_entity_peculiarity(ent) != peculiarity_description)      &&
-    (get_entity_visibility(ent)  != visibility_external_allocated)   ) {
+        (get_entity_peculiarity(ent) != peculiarity_description)      &&
+        (get_entity_visibility(ent)  != visibility_external_allocated)   ) {
       ir_graph *irg = get_entity_irg(get_SymConst_entity(get_atomic_ent_value(ent)));
       if (!eset_contains (_live_graphs, irg)) {
-    set_entity_peculiarity(ent, peculiarity_description);
-    set_entity_irg(ent, NULL);
+        set_entity_peculiarity(ent, peculiarity_description);
+        set_entity_irg(ent, NULL);
       }
     }
   }
@@ -438,13 +439,14 @@ void rta_delete_dead_graphs (void)
   int n_graphs = get_irp_n_irgs ();
   ir_graph *graph = NULL;
   int n_dead_graphs = 0;
+  ir_graph **dead_graphs;
 
   int rem_vpi = get_visit_pseudo_irgs();
   set_visit_pseudo_irgs(1);
 
   if (!get_optimize() || !get_opt_dead_method_elimination()) return;
 
-  ir_graph *dead_graphs[get_irp_n_irgs()];
+  dead_graphs = xmalloc(sizeof(*dead_graphs) * get_irp_n_irgs());
 
   for (i = 0; i < n_graphs; i++) {
     graph = get_irp_irg(i);
@@ -472,6 +474,8 @@ void rta_delete_dead_graphs (void)
   }
 
   set_visit_pseudo_irgs(rem_vpi);
+
+  free(dead_graphs);
 }
 
 /* Clean up the RTA data structures.  Call this after calling rta_init */
@@ -531,6 +535,9 @@ void rta_report (void)
 
 /*
  * $Log$
+ * Revision 1.31  2004/12/21 13:45:14  beck
+ * removed C99 constructs
+ *
  * Revision 1.30  2004/12/02 16:16:11  beck
  * fixed config.h include
  * used xmalloc instead of malloc
