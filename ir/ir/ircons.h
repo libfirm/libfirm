@@ -286,7 +286,7 @@
  *    ir_node *new_Alloc  (ir_node *store, ir_node *size, type *alloc_type,
  *                         where_alloc where);
  *    ir_node *new_Free   (ir_node *store, ir_node *ptr, ir_node *size,
- *               type *free_type);
+ *               type *free_type, where_alloc where);
  *    ir_node *new_Proj   (ir_node *arg, ir_mode *mode, long proj);
  *    ir_node *new_NoMem  (void);
  *    ir_node *new_Mux    (ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode);
@@ -866,8 +866,10 @@
  *      a.*type          A pointer to the class the allocated data object
  *                       belongs to.
  *
- *    ir_node *new_Free (ir_node *store, ir_node *ptr, type *free_type)
- *    ------------------------------------------------------------------
+ *    ir_node *new_Free (ir_node *store, ir_node *ptr, ir_node *size, type *free_type,
+ *    --------------------------------------------------------------------------------
+ *                        where_alloc where)
+ *                        ------------------
  *
  *    The Free node frees memory of the given variable.
  *
@@ -876,6 +878,7 @@
  *      *ptr         The pointer to the object to free.
  *      *size        The number of objects of type free_type to free in a sequence.
  *      *free_type   The type of the freed variable.
+ *      where        Where the variable was allocated, either heap_alloc or stack_alloc.
  *
  *    Inputs:
  *      A memory, a pointer and an unsigned integer.
@@ -1587,9 +1590,10 @@ ir_node *new_rd_Alloc  (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *st
  * @param *ptr        The pointer to the object to free.
  * @param *size       The number of objects of type free_type to free in a sequence.
  * @param *free_type  The type of the freed variable.
+ * @param where       Where the variable was allocated, either heap_alloc or stack_alloc.
  */
 ir_node *new_rd_Free   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
-			ir_node *ptr, ir_node *size, type *free_type);
+			ir_node *ptr, ir_node *size, type *free_type, where_alloc where);
 
 /** Constructor for a Sync node.
  *
@@ -2228,9 +2232,10 @@ ir_node *new_r_Alloc  (ir_graph *irg, ir_node *block, ir_node *store,
  * @param *ptr        The pointer to the object to free.
  * @param *size       The number of objects of type free_type to free in a sequence.
  * @param *free_type  The type of the freed variable.
+ * @param where       Where the variable was allocated, either heap_alloc or stack_alloc.
  */
 ir_node *new_r_Free   (ir_graph *irg, ir_node *block, ir_node *store,
-               ir_node *ptr, ir_node *size, type *free_type);
+               ir_node *ptr, ir_node *size, type *free_type, where_alloc where);
 
 /** Constructor for a  Sync node.
  *
@@ -2934,9 +2939,10 @@ ir_node *new_d_Alloc  (dbg_info* db, ir_node *store, ir_node *size, type *alloc_
  * @param *ptr        The pointer to the object to free.
  * @param *size       The number of objects of type free_type to free in a sequence.
  * @param *free_type  The type of the freed variable.
+ * @param where       Where the variable was allocated, either heap_alloc or stack_alloc.
  */
 ir_node *new_d_Free   (dbg_info* db, ir_node *store, ir_node *ptr, ir_node *size,
-             type *free_type);
+             type *free_type, where_alloc where);
 
 /** Constructor for a Sync node.
  *
@@ -3570,9 +3576,10 @@ ir_node *new_Alloc  (ir_node *store, ir_node *size, type *alloc_type,
  * @param *ptr        The pointer to the object to free.
  * @param *size       The number of objects of type free_type to free in a sequence.
  * @param *free_type  The type of the freed variable.
+ * @param where       Where the variable was allocated, either heap_alloc or stack_alloc.
  */
 ir_node *new_Free   (ir_node *store, ir_node *ptr, ir_node *size,
-		     type *free_type);
+		     type *free_type, where_alloc where);
 
 /** Constructor for a  Sync node.
  *
