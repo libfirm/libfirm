@@ -26,6 +26,7 @@ enum  trvrfy_error_codes {
   no_error = 0,
   error_ent_not_cont = 1,
   error_null_mem,
+  error_const_on_wrong_obstack,
 };
 
 
