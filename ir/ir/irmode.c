@@ -93,11 +93,15 @@ init_mode (void)
   mode_f->name = id_from_str ("f", 1);
   mode_f->fsigned = 1;
   mode_f->ffloat = 1;
+  mode_f->ld_align = 4;
+  mode_f->size = 4;
 
   /* double */
   mode_d->name = id_from_str ("d", 1);
   mode_d->fsigned = 1;
   mode_d->ffloat = 1;
+  mode_d->ld_align = 4;
+  mode_d->size = 8;
 
   /* signed char */
   mode_c->name = id_from_str ("c", 1);
