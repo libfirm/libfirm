@@ -829,7 +829,8 @@ Optional Features:
   --enable-profile        enable profiling
   --enable-autodoc        enable auto documentation
   --enable-firmjni        check for tools necesarry to construct a java native interface for Firm
-  --enable-heapanalysis       Compile with heap analysis.
+  --enable-heapanalysis   Compile with heap analysis.
+  --enable-backend        Compile with backend facility.
   --disable-libiberty     disable own libiberty parts
   --enable-statistics     enable Firm statistics
   --disable-external-effects  disable descriptions of external effects in XML
@@ -1213,6 +1214,7 @@ ac_output_file="Makefile MakeRules ir/Makefile ir/adt/Makefile ir/debug/Makefile
 		ir/ana/Makefile ir/tr/Makefile ir/ana2/Makefile ir/stat/Makefile \
 		ir/opt/Makefile ir/external/Makefile ir/config/Makefile \
 		testprograms/Makefile firmjni/Makefile firmjni/testprograms/Makefile \
+		ir/be/Makefile \
 		libfirm.doxygen"
 
 ac_config_headers="$ac_config_headers config.h"
@@ -1228,8 +1230,6 @@ CONF_DIR_NAME=`dirname $0`
 if test "${with_includedir+set}" = set; then
   withval="$with_includedir"
   CPPFLAGS=$CPPFLAGS" -I"`echo $withval|sed 's;\:; -I;g'`
-else
-  T_FLAG=""
 fi;
 
 
@@ -1237,8 +1237,6 @@ fi;
 if test "${with_libdir+set}" = set; then
   withval="$with_libdir"
   LDFLAGS=$LDFLAGS" -L"`echo $withval|sed 's;\:; -L;g'`
-else
-  T_FLAG=""
 fi;
 
 
@@ -1310,6 +1308,8 @@ else
 fi;
 
 
+echo "$as_me:$LINENO: checking for heapanalysis" >&5
+echo $ECHO_N "checking for heapanalysis... $ECHO_C" >&6
 # Check whether --enable-heapanalysis or --disable-heapanalysis was given.
 if test "${enable_heapanalysis+set}" = set; then
   enableval="$enable_heapanalysis"
@@ -1318,16 +1318,30 @@ else
   enable_heapanalysis="no"
 fi;
 if test "$enable_heapanalysis" = "no"; then
-  echo "$as_me:$LINENO: result: heapanalysis disabled" >&5
-echo "${ECHO_T}heapanalysis disabled" >&6
+  echo "$as_me:$LINENO: result: disabled" >&5
+echo "${ECHO_T}disabled" >&6
 else
   cat >>confdefs.h <<\_ACEOF
 #define DO_HEAPANALYSIS 1
 _ACEOF
 
-  echo "$as_me:$LINENO: result: heapanalysis enabled" >&5
-echo "${ECHO_T}heapanalysis enabled" >&6
+  echo "$as_me:$LINENO: result: enabled" >&5
+echo "${ECHO_T}enabled" >&6
 fi
+
+
+# Check whether --enable-backend or --disable-backend was given.
+if test "${enable_backend+set}" = set; then
+  enableval="$enable_backend"
+  if test "$enableval" = "yes"; then
+  cat >>confdefs.h <<\_ACEOF
+#define FIRM_BACKEND 1
+_ACEOF
+
+fi
+else
+  enable_backend="yes"
+fi;
 
 
 # Check whether --enable-libiberty or --disable-libiberty was given.
@@ -2521,8 +2535,8 @@ test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
 
 
 touch tmp-install.a tmp-install.b
-if eval "$INSTALL -C tmp-install.a tmp-install.b" ; then
-    INSTALL="$INSTALL -C"
+if eval "$INSTALL tmp-install.a tmp-install.b" ; then
+    INSTALL="$INSTALL"
 fi
 rm tmp-install.a tmp-install.b
 
@@ -5102,6 +5116,7 @@ s,@enable_profile_libfirm@,$enable_profile_libfirm,;t t
 s,@enable_auto_documentation@,$enable_auto_documentation,;t t
 s,@enable_firm_jni@,$enable_firm_jni,;t t
 s,@enable_heapanalysis@,$enable_heapanalysis,;t t
+s,@enable_backend@,$enable_backend,;t t
 s,@disable_libiberty@,$disable_libiberty,;t t
 s,@enable_statistics@,$enable_statistics,;t t
 s,@enable_external_effects@,$enable_external_effects,;t t
