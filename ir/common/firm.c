@@ -38,6 +38,7 @@
 # include "irarch.h"
 # include "reassoc_t.h"
 # include "irhooks.h"
+# include "iredges_t.h"
 
 void
 init_firm(const firm_parameter_t *param)
@@ -58,12 +59,15 @@ init_firm(const firm_parameter_t *param)
     memcpy(&def_params, param, size);
   }
 
+
   /* initialize all ident stuff */
   init_ident(def_params.id_if, 1024);
   /* initialize Firm hooks */
   init_hooks();
   /* enhanced statistics, need idents and hooks */
   init_stat(def_params.enable_statistics);
+	/* Edges need hooks. */
+	init_edges();
   /* create the type kinds. */
   init_tpop();
   /* create an obstack and put all tarvals in a pdeq */

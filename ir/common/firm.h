@@ -113,6 +113,8 @@ extern "C" {
 
 #include "irarch.h"
 
+#include "iredges.h"
+
 /* Makros that define the old function names we decided to rename.
    Use for compatibility with old implementations. */
 /*#include "old_fctnames.h"*/
