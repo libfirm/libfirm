@@ -59,7 +59,7 @@ static type* compute_irn_type(ir_node *n);
 
 static type *find_type_for_Proj(ir_node *n) {
   type *tp;
-  ir_node *pred = get_Proj_pred(n);
+  ir_node *pred = skip_Tuple(get_Proj_pred(n));
   ir_mode *m = get_irn_mode(n);
 
   if (m == mode_T  ||
@@ -141,12 +141,27 @@ static type *find_type_for_node(ir_node *n) {
   } break;
 
   /* has no type */
+  case iro_Return: {
+    /* Check returned type. */
+    int i;
+    type *meth_type = get_entity_type(get_irg_ent(current_ir_graph));
+    for (i = 0; i < get_method_n_ress(meth_type); i++) {
+      type *res_type = get_method_res_type(meth_type, i);
+      type *ana_res_type = get_irn_type(get_Return_res(n, i));
+      /*(
+      if (ana_res_type == unknown_type) continue;
+      if (res_type != ana_res_type && "return value has wrong type") {
+	DDMN(n);
+	assert(res_type == ana_res_type && "return value has wrong type");
+      }
+      */
+    }
+  }
   case iro_Block:
   case iro_Start:
   case iro_End:
   case iro_Jmp:
   case iro_Cond:
-  case iro_Return:
   case iro_Raise:
   case iro_Call:
   case iro_Cmp:
@@ -218,9 +233,10 @@ static type *find_type_for_node(ir_node *n) {
     else if ((get_irn_op(a) == op_Const) &&
 	(tarval_is_entity(get_Const_tarval(a))))
       tp = get_entity_type(tarval_to_entity(get_Const_tarval(a)));
-    else if (is_pointer_type(compute_irn_type(a)))
+    else if (is_pointer_type(compute_irn_type(a))) {
       tp = get_pointer_points_to_type(get_irn_type(a));
-    else {
+      if (is_array_type(tp)) tp = get_array_element_type(tp);
+    } else {
       VERBOSE_UNKNOWN_TYPE(("Load %ld with typeless address. result: unknown type\n", get_irn_node_nr(n)));
       tp = unknown_type;
     }
