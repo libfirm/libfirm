@@ -412,7 +412,7 @@ bool get_opt_dump_const_local(void);
 /**  Turns off dumping the values of constant entities. Makes type graphs
  *   better readable.
  */
-void turn_off_constant_entity_values(void);
+void dump_constant_entity_values(bool b);
 
 /**  Turns on dumping the edges from the End node to nodes to be kept
  *   alive.
@@ -425,24 +425,18 @@ bool get_opt_dump_keepalive_edges(void);
  *
  *  To test the consistency of the out datastructure.
  */
-void dump_out_edges(void);
+void dump_out_edges(bool b);
 
 /** If this flag is set the dumper dumps edges to immediate dominator in cfg.
  */
-void dump_dominator_information(void);
+void dump_dominator_information(bool b);
 
 /** If this flag is set the dumper dumps loop nodes and edges from
  *  these nodes to the contained ir nodes.
  *
- *  Can be turned off with dont_dump_loop_information().
  *  If the loops are interprocedural nodes can be missing.
  */
-void dump_loop_information(void);
-
-/**
- * @see dump_loop_information()
- */
-void dont_dump_loop_information(void);
+void dump_loop_information(bool b);
 
 /** If set and backedge info is computed, backedges are dumped dashed
  *  and as vcg 'backedge' construct.

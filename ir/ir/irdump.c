@@ -432,8 +432,8 @@ void dump_consts_local(bool b) {
   dump_const_local = b;
 }
 
-void turn_off_constant_entity_values(void) {
-  const_entities = 0;
+void dump_constant_entity_values(bool b) {
+  const_entities = b;
 }
 
 void dump_keepalive_edges(bool b) {
@@ -444,20 +444,16 @@ bool get_opt_dump_keepalive_edges(void) {
   return dump_keepalive;
 }
 
-void dump_out_edges(void) {
-  dump_out_edge_flag = 1;
+void dump_out_edges(bool b) {
+  dump_out_edge_flag = b;
 }
 
-void dump_dominator_information(void) {
-  dump_dominator_information_flag = 1;
+void dump_dominator_information(bool b) {
+  dump_dominator_information_flag = b;
 }
 
-void dump_loop_information(void) {
-  dump_loop_information_flag = 1;
-}
-
-void dont_dump_loop_information(void) {
-  dump_loop_information_flag = 0;
+void dump_loop_information(bool b) {
+  dump_loop_information_flag = b;
 }
 
 void dump_backedge_information(bool b) {
