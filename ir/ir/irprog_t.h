@@ -18,7 +18,7 @@
 # define _IRPROG_T_H_
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include "firm_config.h"
 #endif
 
 #include "irprog.h"

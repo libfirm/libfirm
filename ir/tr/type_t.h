@@ -12,9 +12,8 @@
 
 # ifndef _TYPE_T_H_
 # define _TYPE_T_H_
-# ifdef HAVE_CONFIG_H
-# include "config.h"
-# endif
+
+# include "firm_config.h"
 # include "type.h"
 # include "tpop_t.h"
 

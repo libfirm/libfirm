@@ -23,19 +23,16 @@
 # ifndef _IRNODE_T_H_
 # define _IRNODE_T_H_
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-# include "irnode.h"
-# include "irop_t.h"
-# include "irgraph_t.h"
-# include "irflag_t.h"
-# include "firm_common_t.h"
-# include "irdom_t.h" /* For size of struct dom_info. */
-# include "dbginfo.h"
-# include "irloop.h"
-# include "array.h"
+#include "firm_config.h"
+#include "irnode.h"
+#include "irop_t.h"
+#include "irgraph_t.h"
+#include "irflag_t.h"
+#include "firm_common_t.h"
+#include "irdom_t.h" /* For size of struct dom_info. */
+#include "dbginfo.h"
+#include "irloop.h"
+#include "array.h"
 
 #include "set.h"
 #include "entity_t.h"
