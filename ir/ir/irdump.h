@@ -41,6 +41,8 @@ void dump_ir_block_edge(ir_node *n);
 /* dump edges to our inputs */
 void dump_ir_data_edges(ir_node *n);
 #endif
+/* @@@ GL: A hack */
+extern char *dump_file_suffix;
 
 /****m* irdump/dump_ir_graph
  *

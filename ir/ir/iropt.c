@@ -234,8 +234,6 @@ computed_value (ir_node *n)
 	  else /* Mod */
 	    res = tarval_mod(ta, tb);
 	}
-      } else {
-        /* printf(" # comp_val: Proj node, not optimized\n"); */
       }
     }
     break;
@@ -270,7 +268,7 @@ different_identity (ir_node *a, ir_node *b)
    new nodes.  It is therefore safe to free N if the node returned is not N.
    If a node returns a Tuple we can not just skip it.  If the size of the
    in array fits, we transform n into a tuple (e.g., Div). */
-static ir_node *
+ir_node *
 equivalent_node (ir_node *n)
 {
   int ins;
@@ -293,30 +291,45 @@ equivalent_node (ir_node *n)
   case iro_Block:
     {
       /* The Block constructor does not call optimize, but mature_block
-		 calls the optimization. */
+	 calls the optimization. */
       assert(get_Block_matured(n));
 
-      /* A single entry Block following a single exit Block can be merged,
-         if it is not the Start block. */
+      /* Straightening: a single entry Block following a single exit Block
+         can be merged, if it is not the Start block. */
       /* !!! Beware, all Phi-nodes of n must have been optimized away.
-		 This should be true, as the block is matured before optimize is called.
+	 This should be true, as the block is matured before optimize is called.
          But what about Phi-cycles with the Phi0/Id that could not be resolved?
-		 Remaining Phi nodes are just Ids. */
-      if (get_Block_n_cfgpreds(n) == 1
-		  && get_irn_op(get_Block_cfgpred(n, 0)) == op_Jmp) {
-		n = get_nodes_Block(get_Block_cfgpred(n, 0));
-
-      } else if ((n != current_ir_graph->start_block) &&
-				 (n != current_ir_graph->end_block)     ) {
-		int i;
-		/* If all inputs are dead, this block is dead too, except if it is
+	 Remaining Phi nodes are just Ids. */
+      if ((get_Block_n_cfgpreds(n) == 1) &&
+	  (get_irn_op(get_Block_cfgpred(n, 0)) == op_Jmp) &&
+	  (get_opt_control_flow())) {
+	n = get_nodes_Block(get_Block_cfgpred(n, 0));
+      } else if ((get_Block_n_cfgpreds(n) == 2) &&
+		 (get_opt_control_flow())) {
+	/* Test whether Cond jumps twice to this block
+	   @@@ we could do this also with two loops finding two preds from several ones. */
+	a = get_Block_cfgpred(n, 0);
+	b = get_Block_cfgpred(n, 1);
+	if ((get_irn_op(a) == op_Proj) &&
+	    (get_irn_op(b) == op_Proj) &&
+	    (get_Proj_pred(a) == get_Proj_pred(b)) &&
+	    (get_irn_op(get_Proj_pred(a)) == op_Cond)) {
+	  /* Also a single entry Block following a single exit Block.  Phis have
+	     twice the same operand and will be optimized away. */
+	  n = get_nodes_Block(a);
+	}
+      } else if (get_opt_unreachable_code() &&
+		 (n != current_ir_graph->start_block) &&
+		 (n != current_ir_graph->end_block)     ) {
+	int i;
+	/* If all inputs are dead, this block is dead too, except if it is
            the start or end block.  This is a step of unreachable code
-		   elimination */
-		for (i = 0; i < get_Block_n_cfgpreds(n); i++) {
-		  if (!is_Bad(get_Block_cfgpred(n, i))) break;
-		}
-		if (i == get_Block_n_cfgpreds(n))
-		  n = new_Bad();
+	   elimination */
+	for (i = 0; i < get_Block_n_cfgpreds(n); i++) {
+	  if (!is_Bad(get_Block_cfgpred(n, i))) break;
+	}
+	if (i == get_Block_n_cfgpreds(n))
+	  n = new_Bad();
       }
     }
     break;
@@ -426,19 +439,11 @@ equivalent_node (ir_node *n)
       n_preds = get_Phi_n_preds(n);
 
       block = get_nodes_Block(n);
-      if (is_Bad(block)) return new_Bad();
-      assert(get_irn_op (block) == op_Block);
+      if ((is_Bad(block)) ||                         /* Control dead */
+	  (block == current_ir_graph->start_block))  /* There should be no Phi nodes */
+	return new_Bad();			     /*	in the Start Block. */
 
-      /* there should be no Phi nodes in the Start region. */
-      if (block == current_ir_graph->start_block) {
-		n = new_Bad();
-		break;
-      }
-
-      if (n_preds == 0) {	/* Phi of dead Region without predecessors. */
-        /* GL: why not return new_Bad? */
-		break;
-      }
+      if (n_preds == 0) break;           /* Phi of dead Region without predecessors. */
 
 #if 0
       /* first we test for a special case: */
@@ -446,16 +451,16 @@ equivalent_node (ir_node *n)
          value that is known at a certain point.  This is useful for
          dataflow analysis. */
       if (n_preds == 2) {
-		ir_node *a = follow_Id (get_Phi_pred(n, 0));
-		ir_node *b = follow_Id (get_Phi_pred(n, 1));
-		if (   (get_irn_op(a) == op_Confirm)
-			   && (get_irn_op(b) == op_Confirm)
-			   && (follow_Id (get_irn_n(a, 0)) == follow_Id(get_irn_n(b, 0)))
-			   && (get_irn_n(a, 1) == get_irn_n (b, 1))
-			   && (a->data.num == (~b->data.num & irpn_True) )) {
-		  n = follow_Id (get_irn_n(a, 0));
-		  break;
-		}
+	ir_node *a = follow_Id (get_Phi_pred(n, 0));
+	ir_node *b = follow_Id (get_Phi_pred(n, 1));
+	if (   (get_irn_op(a) == op_Confirm)
+	    && (get_irn_op(b) == op_Confirm)
+	    && (follow_Id (get_irn_n(a, 0)) == follow_Id(get_irn_n(b, 0)))
+	    && (get_irn_n(a, 1) == get_irn_n (b, 1))
+	    && (a->data.num == (~b->data.num & irpn_True) )) {
+	  n = follow_Id (get_irn_n(a, 0));
+	  break;
+	}
       }
 #endif
 
@@ -464,11 +469,11 @@ equivalent_node (ir_node *n)
         first_val = follow_Id(get_Phi_pred(n, i));
         /* skip Id's */
         set_Phi_pred(n, i, first_val);
-		if (   (first_val != n)                            /* not self pointer */
-			   && (get_irn_op(first_val) != op_Bad)        /* value not dead */
-			   && !(is_Bad (get_Block_cfgpred(block, i))) ) { /* not dead control flow */
-		  break;                         /* then found first value. */
-		}
+	if (   (first_val != n)                            /* not self pointer */
+	    && (get_irn_op(first_val) != op_Bad)           /* value not dead */
+	    && !(is_Bad (get_Block_cfgpred(block, i))) ) { /* not dead control flow */
+	  break;                         /* then found first value. */
+	}
       }
 
       /* A totally Bad or self-referencing Phi (we didn't break the above loop) */
@@ -477,27 +482,27 @@ equivalent_node (ir_node *n)
       scnd_val = NULL;
 
       /* follow_Id () for rest of inputs, determine if any of these
-		 are non-self-referencing */
+	 are non-self-referencing */
       while (++i < n_preds) {
         scnd_val = follow_Id(get_Phi_pred(n, i));
         /* skip Id's */
         set_Phi_pred(n, i, scnd_val);
         if (   (scnd_val != n)
-			   && (scnd_val != first_val)
-			   && (get_irn_op(scnd_val) != op_Bad)
-			   && !(is_Bad (get_Block_cfgpred(block, i))) ) {
+	    && (scnd_val != first_val)
+	    && (get_irn_op(scnd_val) != op_Bad)
+	    && !(is_Bad (get_Block_cfgpred(block, i))) ) {
           break;
-		}
+	}
       }
 
       /* Fold, if no multiple distinct non-self-referencing inputs */
       if (i >= n_preds) {
-		n = first_val;
+	n = first_val;
       } else {
-		/* skip the remaining Ids. */
-		while (++i < n_preds) {
-		  set_Phi_pred(n, i, follow_Id(get_Phi_pred(n, i)));
-		}
+	/* skip the remaining Ids. */
+	while (++i < n_preds) {
+	  set_Phi_pred(n, i, follow_Id(get_Phi_pred(n, i)));
+	}
       }
     }
     break;
@@ -533,12 +538,12 @@ equivalent_node (ir_node *n)
         /* We have twice exactly the same store -- a write after write. */
 		n = a;
       } else if (get_irn_op(c) == op_Load
-				 && (a == c || skip_Proj(get_Load_mem(c)) == a)
+		 && (a == c || skip_Proj(get_Load_mem(c)) == a)
                  && get_Load_ptr(c) == b )
-		/* !!!??? and a cryptic test */ {
+	/* !!!??? and a cryptic test */ {
         /* We just loaded the value from the same memory, i.e., the store
            doesn't change the memory -- a write after read. */
-		a = get_Store_mem(n);
+	a = get_Store_mem(n);
         turn_into_tuple(n, 2);
         set_Tuple_pred(n, 0, a);
         set_Tuple_pred(n, 1, new_Bad());
@@ -552,16 +557,16 @@ equivalent_node (ir_node *n)
 
       if ( get_irn_op(a) == op_Tuple) {
         /* Remove the Tuple/Proj combination. */
-		if ( get_Proj_proj(n) <= get_Tuple_n_preds(a) ) {
-		  n = get_Tuple_pred(a, get_Proj_proj(n));
-		} else {
+	if ( get_Proj_proj(n) <= get_Tuple_n_preds(a) ) {
+	  n = get_Tuple_pred(a, get_Proj_proj(n));
+	} else {
           assert(0); /* This should not happen! */
-		  n = new_Bad();
-		}
+	  n = new_Bad();
+	}
       } else if (get_irn_mode(n) == mode_X &&
-				 is_Bad(get_nodes_Block(n))) {
+		 is_Bad(get_nodes_Block(n))) {
         /* Remove dead control flow. */
-		n = new_Bad();
+	n = new_Bad();
       }
     }
     break;
@@ -577,7 +582,7 @@ equivalent_node (ir_node *n)
 } /* end equivalent_node() */
 
 
-/* tries several [inplace] [optimizing] transformations and returns a
+/* tries several [inplace] [optimizing] transformations and returns an
    equivalent node.  The difference to equivalent_node is that these
    transformations _do_ generate new nodes, and thus the old node must
    not be freed even if the equivalent node isn't the old one. */
@@ -620,8 +625,8 @@ transform_node (ir_node *n)
     b = get_DivMod_right(n);
     mode = get_irn_mode(a);
 
-    if (!(mode_is_int(get_irn_mode(a))
-	  && mode_is_int(get_irn_mode(b))))
+    if (!(mode_is_int(get_irn_mode(a)) &&
+	  mode_is_int(get_irn_mode(b))))
       break;
 
     if (a == b) {
@@ -633,23 +638,23 @@ transform_node (ir_node *n)
       tb = value_of(b);
 
       if (tb) {
-		if (tarval_classify(tb) == 1) {
-		  b = new_Const (mode, tarval_from_long (mode, 0));
-		  evaluated = 1;
-		} else if (ta) {
-		  tarval *resa, *resb;
+	if (tarval_classify(tb) == 1) {
+	  b = new_Const (mode, tarval_from_long (mode, 0));
+	  evaluated = 1;
+	} else if (ta) {
+	  tarval *resa, *resb;
           resa = tarval_div (ta, tb);
           if (!resa) break; /* Causes exception!!! Model by replacing through
-							   Jmp for X result!? */
+			       Jmp for X result!? */
           resb = tarval_mod (ta, tb);
           if (!resb) break; /* Causes exception! */
-		  a = new_Const (mode, resa);
-		  b = new_Const (mode, resb);
-		  evaluated = 1;
-		}
+	  a = new_Const (mode, resa);
+	  b = new_Const (mode, resb);
+	  evaluated = 1;
+	}
       } else if (tarval_classify (ta) == 0) {
         b = a;
-		evaluated = 1;
+	evaluated = 1;
       }
     }
     if (evaluated) { /* replace by tuple */
@@ -671,7 +676,9 @@ transform_node (ir_node *n)
     a = get_Cond_selector(n);
     ta = value_of(a);
 
-    if (ta && (get_irn_mode(a) == mode_b)) {
+    if (ta &&
+	(get_irn_mode(a) == mode_b) &&
+	(get_opt_unreachable_code())) {
       /* It's a boolean Cond, branching on a boolean constant.
 		 Replace it by a tuple (Bad, Jmp) or (Jmp, Bad) */
       jmp = new_r_Jmp(current_ir_graph, get_nodes_Block(n));
@@ -685,7 +692,10 @@ transform_node (ir_node *n)
       }
       /* We might generate an endless loop, so keep it alive. */
       add_End_keepalive(get_irg_end(current_ir_graph), get_nodes_Block(n));
-    } else if (ta && (get_irn_mode(a) == mode_I) && (get_Cond_kind(n) == dense)) {
+    } else if (ta &&
+	       (get_irn_mode(a) == mode_I) &&
+	       (get_Cond_kind(n) == dense) &&
+	       (get_opt_unreachable_code())) {
       /* I don't want to allow Tuples smaller than the biggest Proj.
          Also this tuple might get really big...
          I generate the Jmp here, and remember it in link.  Link is used
@@ -693,19 +703,19 @@ transform_node (ir_node *n)
       set_irn_link(n, new_r_Jmp(current_ir_graph, get_nodes_Block(n)));
       /* We might generate an endless loop, so keep it alive. */
       add_End_keepalive(get_irg_end(current_ir_graph), get_nodes_Block(n));
-    } else if (   (get_irn_op(get_Cond_selector(n)) == op_Eor)
-				  && (get_irn_mode(get_Cond_selector(n)) == mode_b)
-				  && (tarval_classify(computed_value(get_Eor_right(a))) == 1)) {
+    } else if ((get_irn_op(get_Cond_selector(n)) == op_Eor)
+	       && (get_irn_mode(get_Cond_selector(n)) == mode_b)
+	       && (tarval_classify(computed_value(get_Eor_right(a))) == 1)) {
       /* The Eor is a negate.  Generate a new Cond without the negate,
          simulate the negate by exchanging the results. */
       set_irn_link(n, new_r_Cond(current_ir_graph, get_nodes_Block(n),
-								 get_Eor_left(a)));
-    } else if (   (get_irn_op(get_Cond_selector(n)) == op_Not)
-				  && (get_irn_mode(get_Cond_selector(n)) == mode_b)) {
+				 get_Eor_left(a)));
+    } else if ((get_irn_op(get_Cond_selector(n)) == op_Not)
+	       && (get_irn_mode(get_Cond_selector(n)) == mode_b)) {
       /* A Not before the Cond.  Generate a new Cond without the Not,
          simulate the Not by exchanging the results. */
       set_irn_link(n, new_r_Cond(current_ir_graph, get_nodes_Block(n),
-								 get_Not_op(a)));
+				 get_Not_op(a)));
     }
   }
   break;
@@ -713,26 +723,26 @@ transform_node (ir_node *n)
   case iro_Proj: {
     a = get_Proj_pred(n);
 
-    if (  (get_irn_op(a) == op_Cond)
-		  && get_irn_link(a)
-		  && get_irn_op(get_irn_link(a)) == op_Cond) {
-	  /* Use the better Cond if the Proj projs from a Cond which get's
-		 its result from an Eor/Not. */
-      assert (   (   (get_irn_op(get_Cond_selector(a)) == op_Eor)
-					 || (get_irn_op(get_Cond_selector(a)) == op_Not))
-				 && (get_irn_mode(get_Cond_selector(a)) == mode_b)
-				 && (get_irn_op(get_irn_link(a)) == op_Cond)
-				 && (get_Cond_selector(get_irn_link(a)) ==
-					 get_Eor_left(get_Cond_selector(a))));
+    if ((get_irn_op(a) == op_Cond)
+	&& get_irn_link(a)
+	&& get_irn_op(get_irn_link(a)) == op_Cond) {
+      /* Use the better Cond if the Proj projs from a Cond which get's
+	 its result from an Eor/Not. */
+      assert (((get_irn_op(get_Cond_selector(a)) == op_Eor)
+	       || (get_irn_op(get_Cond_selector(a)) == op_Not))
+	      && (get_irn_mode(get_Cond_selector(a)) == mode_b)
+	      && (get_irn_op(get_irn_link(a)) == op_Cond)
+	      && (get_Cond_selector(get_irn_link(a)) == get_Eor_left(get_Cond_selector(a))));
       set_Proj_pred(n, get_irn_link(a));
       if (get_Proj_proj(n) == 0)
         set_Proj_proj(n, 1);
       else
         set_Proj_proj(n, 0);
-    } else if (   (get_irn_op(a) == op_Cond)
-				  && (get_irn_mode(get_Cond_selector(a)) == mode_I)
-				  && value_of(a)
-				  && (get_Cond_kind(a) == dense)) {
+    } else if ((get_irn_op(a) == op_Cond)
+	       && (get_irn_mode(get_Cond_selector(a)) == mode_I)
+	       && value_of(a)
+	       && (get_Cond_kind(a) == dense)
+	       && (get_opt_unreachable_code())) {
       /* The Cond is a Switch on a Constant */
       if (get_Proj_proj(n) == tv_val_CHIL(value_of(a))) {
         /* The always taken branch, reuse the existing Jmp. */
@@ -741,12 +751,12 @@ transform_node (ir_node *n)
         assert(get_irn_op(get_irn_link(a)) == op_Jmp);
         n = get_irn_link(a);
       } else {/* Not taken control flow, but be careful with the default! */
-		if (get_Proj_proj(n) < a->attr.c.default_proj){
-		  /* a never taken branch */
-		  n = new_Bad();
-		} else {
-		  a->attr.c.default_proj = get_Proj_proj(n);
-		}
+	if (get_Proj_proj(n) < a->attr.c.default_proj){
+	  /* a never taken branch */
+	  n = new_Bad();
+	} else {
+	  a->attr.c.default_proj = get_Proj_proj(n);
+	}
       }
     }
   } break;
@@ -754,16 +764,16 @@ transform_node (ir_node *n)
     a = get_Eor_left(n);
     b = get_Eor_right(n);
 
-    if (   (get_irn_mode(n) == mode_b)
-		   && (get_irn_op(a) == op_Proj)
-		   && (get_irn_mode(a) == mode_b)
-		   && (tarval_classify (computed_value (b)) == 1)
-		   && (get_irn_op(get_Proj_pred(a)) == op_Cmp))
+    if ((get_irn_mode(n) == mode_b)
+	&& (get_irn_op(a) == op_Proj)
+	&& (get_irn_mode(a) == mode_b)
+	&& (tarval_classify (computed_value (b)) == 1)
+	&& (get_irn_op(get_Proj_pred(a)) == op_Cmp))
       /* The Eor negates a Cmp. The Cmp has the negated result anyways! */
       n = new_r_Proj(current_ir_graph, get_nodes_Block(n), get_Proj_pred(a),
                      mode_b, get_negated_pnc(get_Proj_proj(a)));
-    else if (   (get_irn_mode(n) == mode_b)
-				&& (tarval_classify (computed_value (b)) == 1))
+    else if ((get_irn_mode(n) == mode_b)
+	     && (tarval_classify (computed_value (b)) == 1))
       /* The Eor is a Not. Replace it by a Not. */
       /*   ????!!!Extend to bitfield 1111111. */
       n = new_r_Not(current_ir_graph, get_nodes_Block(n), a, mode_b);
@@ -773,9 +783,9 @@ transform_node (ir_node *n)
     a = get_Not_op(n);
 
     if (   (get_irn_mode(n) == mode_b)
-		   && (get_irn_op(a) == op_Proj)
-		   && (get_irn_mode(a) == mode_b)
-		   && (get_irn_op(get_Proj_pred(a)) == op_Cmp))
+	&& (get_irn_op(a) == op_Proj)
+	&& (get_irn_mode(a) == mode_b)
+	&& (get_irn_op(get_Proj_pred(a)) == op_Cmp))
       /* We negate a Cmp. The Cmp has the negated result anyways! */
       n = new_r_Proj(current_ir_graph, get_nodes_Block(n), get_Proj_pred(a),
                      mode_b, get_negated_pnc(get_Proj_proj(a)));
@@ -1019,7 +1029,11 @@ optimize (ir_node *n)
   }
 
   /* remove unnecessary nodes */
-  if (get_opt_constant_folding() || get_irn_op(n) == op_Phi)
+  if (get_opt_constant_folding() ||
+      (get_irn_op(n) == op_Phi)  ||   /* always optimize these nodes. */
+      (get_irn_op(n) == op_Id)   ||
+      (get_irn_op(n) == op_Proj) ||
+      (get_irn_op(n) == op_Block)  )  /* Flags tested local. */
     n = equivalent_node (n);
 
   /** common subexpression elimination **/
@@ -1029,34 +1043,31 @@ optimize (ir_node *n)
      subexpressions within a block. */
   if (get_opt_cse())
     n = identify_cons (current_ir_graph->value_table, n);
-  /* identify found a cse, so deallocate the old node. */
+
   if (n != old_n) {
+    /* We found an existing, better node, so we can deallocate the old node. */
     obstack_free (current_ir_graph->obst, old_n);
-    /* The AmRoq fiasco returns n here.  Martin's version doesn't. */
   }
 
   /* Some more constant expression evaluation that does not allow to
      free the node. */
-  if (get_opt_constant_folding())
+  if (get_opt_constant_folding() ||
+      (get_irn_op(n) == op_Cond) ||
+      (get_irn_op(n) == op_Proj))     /* Flags tested local. */
     n = transform_node (n);
 
-  /* Remove nodes with dead (Bad) input. */
-  if (get_opt_unreachable_code())
-    n = gigo (n);
+  /* Remove nodes with dead (Bad) input.
+     Run always for transformation induced Bads. */
+  n = gigo (n);
+
   /* Now we can verify the node, as it has no dead inputs any more. */
   irn_vrfy(n);
 
   /* Now we have a legal, useful node. Enter it in hash table for cse */
-  if (get_opt_cse()) {
+  if (get_opt_cse() && (get_irn_opcode(n) != iro_Block)) {
     n = identify_remember (current_ir_graph->value_table, n);
   }
 
-#if 0  /* GL: what's the use of this?? */
-  if ((current_ir_graph->state & irgs_building) && IR_KEEP_ALIVE (n)) {
-    assert (~current_ir_graph->state & irgs_keep_alives_in_arr);
-    pdeq_putr (current_ir_graph->keep.living, n);
-  }
-#endif
   return n;
 }
 
@@ -1070,10 +1081,11 @@ optimize_in_place_2 (ir_node *n)
   tarval *tv;
   ir_node *old_n = n;
 
-  if (!get_optimize()) return n;
+  if (!get_optimize() && (get_irn_op(n) != op_Phi)) return n;
 
   /* if not optimize return n */
   if (n == NULL) {
+    assert(0);
     /* Here this is possible.  Why? */
     return n;
   }
@@ -1096,7 +1108,11 @@ optimize_in_place_2 (ir_node *n)
 
   /* remove unnecessary nodes */
   /*if (get_opt_constant_folding()) */
-  if (get_opt_constant_folding() || get_irn_op(n) == op_Phi)
+  if (get_opt_constant_folding() ||
+      (get_irn_op(n) == op_Phi)  ||   /* always optimize these nodes. */
+      (get_irn_op(n) == op_Id)   ||
+      (get_irn_op(n) == op_Proj) ||
+      (get_irn_op(n) == op_Block)  )  /* Flags tested local. */
     n = equivalent_node (n);
 
   /** common subexpression elimination **/
@@ -1108,18 +1124,16 @@ optimize_in_place_2 (ir_node *n)
     n = identify (current_ir_graph->value_table, n);
   }
 
-  /* identify found a cse, so deallocate the old node. */
-  if (n != old_n) {
-    /* The AmRoq fiasco returns n here.  Martin's version doesn't. */
-  }
-
   /* Some more constant expression evaluation. */
-  if (get_opt_constant_folding())
+  if (get_opt_constant_folding() ||
+      (get_irn_op(n) == op_Cond) ||
+      (get_irn_op(n) == op_Proj))     /* Flags tested local. */
     n = transform_node (n);
 
-  /* Remove nodes with dead (Bad) input. */
-  if (get_opt_unreachable_code())
-    n = gigo (n);
+  /* Remove nodes with dead (Bad) input.
+     Run always for transformation induced Bads.  */
+  n = gigo (n);
+
   /* Now we can verify the node, as it has no dead inputs any more. */
   irn_vrfy(n);
 

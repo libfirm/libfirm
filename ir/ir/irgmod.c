@@ -52,9 +52,8 @@ exchange (ir_node *old, ir_node *new)
   old->in[1] = new;
 }
 
-
 /**********************************************************************/
-/*  Funcionality for collect_phis                                     */
+/*  Functionality for collect_phis                                     */
 /**********************************************************************/
 
 void

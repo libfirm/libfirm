@@ -47,6 +47,10 @@ int  get_opt_global_cse (void);
 inline void set_opt_unreachable_code(int value);
 inline int  get_opt_unreachable_code(void);
 
+/* Performs Straightening, if simplifications and loop simplifications. */
+inline void set_opt_control_flow(int value);
+inline int  get_opt_control_flow(void);
+
 /* If opt_reassociation == 1 reassociation is performed.
    Default: opt_reassociation == 1. */
 inline void set_opt_reassociation(int value);

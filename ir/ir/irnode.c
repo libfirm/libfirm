@@ -85,10 +85,6 @@ new_ir_node (ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mode,
 
   res = (ir_node *) obstack_alloc (irg->obst, node_size);
 
-  // DEBUG
-  if (op_Raise == op)
-	fprintf (stdout, "%s: res(%p) = %p\n", __PRETTY_FUNCTION__, op, res);
-
   res->kind = k_ir_node;
   res->op = op;
   res->mode = mode;
@@ -479,6 +475,10 @@ inline void mark_Block_block_visited (ir_node *node) {
   node->attr.block.block_visited = get_irg_block_visited(current_ir_graph);
 }
 
+inline int Block_not_block_visited(ir_node *node) {
+  assert (node->op == op_Block);
+  return (node->attr.block.block_visited < get_irg_block_visited(current_ir_graph));
+}
 
 inline ir_node *
 get_Block_graph_arr (ir_node *node, int pos) {

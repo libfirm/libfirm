@@ -37,7 +37,9 @@ void all_irg_walk(void (pre)(ir_node*, void*), void (post)(ir_node*, void*),
 
 
 /* Walks only over Block nodes in the graph.  Has it's own visited
-   flag, so that it can be interleaved with the other walker.         */
+   flag, so that it can be interleaved with the other walker.
+   If a none block is passed, starts at the block this node belongs to.
+   If end is passed also visites kept alive blocks. */
 void irg_block_walk(ir_node *node,
 		    void (pre)(ir_node*, void*), void (post)(ir_node*, void*),
 		    void *env);

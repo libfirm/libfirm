@@ -67,6 +67,9 @@
 #define PRINT_NODEID(X) fprintf(F, "%p", X)
 #endif
 
+/* A suffix to manipulate the file name. */
+char *dump_file_suffix = NULL;
+
 /* file to dump to */
 static FILE *F;
 
@@ -767,21 +770,17 @@ void vcg_open (ir_graph *irg, char *suffix) {
   /** open file for vcg graph */
   ent = get_irg_ent(irg);
   id    = ent->ld_name ? ent->ld_name : ent->name;
-    /* Don't use get_entity_ld_ident (ent) as it computes the mangled name! */
+  /* Don't use get_entity_ld_ident (ent) as it computes the mangled name! */
   len   = id_to_strlen (id);
   cp    = id_to_str (id);
-  fname = malloc (len + 5 + strlen(suffix));
+  if (dump_file_suffix)
+    fname = malloc (len + 5 + strlen(suffix) + strlen(dump_file_suffix));
+  else
+    fname = malloc (len + 5 + strlen(suffix));
   strncpy (fname, cp, len);      /* copy the filename */
   fname[len] = '\0';
+  if (dump_file_suffix) strcat (fname, dump_file_suffix);  /* append file suffix */
   strcat (fname, suffix);  /* append file suffix */
-
-  fname = malloc (len + 5 + strlen(suffix));
-  strncpy (fname, cp, len); /* copy the filename */
-  fname[len] = '\0';        /* ensure string termination */
-  /*strcpy (fname, cp);      * copy the filename *
-    this produces wrong, too long strings in conjuction with the
-    jocca frontend.  The \0 seems to be missing. */
-  strcat (fname, suffix);   /* append file suffix */
   strcat (fname, ".vcg");   /* append the .vcg suffix */
   F = fopen (fname, "w");   /* open file for writing */
   if (!F) {

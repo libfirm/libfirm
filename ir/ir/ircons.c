@@ -470,10 +470,6 @@ new_r_Raise (ir_graph *irg, ir_node *block, ir_node *store, ir_node *obj)
   ir_node *in[2] = {store, obj};
   ir_node *res;
   res = new_ir_node (irg, block, op_Raise, mode_T, 2, in);
-
-  // DEBUG
-  fprintf (stdout, "%s: res = %p\n", __PRETTY_FUNCTION__, res);
-
   res = optimize (res);
   irn_vrfy (res);
   return res;

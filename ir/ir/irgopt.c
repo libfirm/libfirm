@@ -25,22 +25,13 @@
 # include "irgmod.h"
 # include "array.h"
 # include "pset.h"
-# include "pdeq.h"  /* provisorisch fuer code placement */
+# include "pdeq.h"       /* Fuer code placement */
 # include "irouts.h"
 
 /* Defined in iropt.c */
 pset *new_identities (void);
 void  del_identities (pset *value_table);
 void  add_identities   (pset *value_table, ir_node *node);
-
-#if 0  /* Warum ist das hier nochmal definiert?
-	  Hat's nicht gelinkt wegen typeO tities - tity ?? */
-/* To fill the hash table */
-void
-add_identity (pset *value_table, ir_node *n) {
-  /* identify_remember (value_table, n);*/
-}
-#endif
 
 /********************************************************************/
 /* apply optimizations of iropt to all nodes.                       */
@@ -80,6 +71,8 @@ local_optimize_graph (ir_graph *irg) {
     set_irg_pinned(current_ir_graph, floats);
   if (get_irg_outs_state(current_ir_graph) == outs_consistent)
     set_irg_outs_inconsistent(current_ir_graph);
+  if (get_irg_dom_state(current_ir_graph) == dom_consistent)
+    set_irg_dom_inconsistent(current_ir_graph);
 
   /* Clean the value_table in irg for the cse. */
   del_identities(irg->value_table);
@@ -241,7 +234,7 @@ copy_preds (ir_node *n, void *env) {
 void
 copy_graph () {
   ir_node *oe, *ne; /* old end, new end */
-  ir_node *ka; /* keep alive */
+  ir_node *ka;      /* keep alive */
   int i;
 
   oe = get_irg_end(current_ir_graph);
@@ -524,7 +517,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   arity = get_irn_arity(end_bl);    /* arity = n_exc + n_ret  */
   n_res = get_method_n_res(get_Call_type(call));
 
-  res_pred = (ir_node **) malloc ((n_res) * sizeof (ir_node *));
+  res_pred = (ir_node **) malloc (n_res * sizeof (ir_node *));
   cf_pred = (ir_node **) malloc (arity * sizeof (ir_node *));
 
   set_irg_current_block(current_ir_graph, post_bl); /* just to make sure */
@@ -988,6 +981,314 @@ void place_code(ir_graph *irg) {
      unnecessary executions of the node. */
   place_late();
 
+  set_irg_outs_inconsistent(current_ir_graph);
   del_pdeq (worklist);
+  current_ir_graph = rem;
+}
+
+
+
+/********************************************************************/
+/* Control flow optimization.                                       */
+/* Removes Bad control flow predecessors and empty blocks.  A block */
+/* is empty if it contains only a Jmp node.                         */
+/* */
+/********************************************************************/
+
+
+static void merge_blocks(ir_node *n, void *env) {
+  int i;
+  set_irn_link(n, NULL);
+
+  if (get_irn_op(n) == op_Block) {
+    /* Remove Tuples */
+    for (i = 0; i < get_Block_n_cfgpreds(n); i++)
+      set_Block_cfgpred(n, i, skip_Tuple(get_Block_cfgpred(n, i)));
+  } else if (get_irn_mode(n) == mode_X) {
+    /* We will soon visit a block.  Optimize it before visiting! */
+    ir_node *b = get_nodes_Block(n);
+    ir_node *new = equivalent_node(b);
+    while (irn_not_visited(b) && (!is_Bad(new)) && (new != b)) {
+      /* We would have to run gigo if new is bad. */
+      if (get_optimize() && get_opt_control_flow()) exchange (b, new);
+      b = new;
+      new = equivalent_node(b);
+    }
+    if (is_Bad(new)) exchange (n, new_Bad());
+  }
+}
+
+static void collect_nodes(ir_node *n, void *env) {
+  int i;
+  if (is_no_Block(n)) {
+    ir_node *b = get_nodes_Block(n);
+
+    if ((get_irn_op(n) == op_Phi)) {
+      /* Collect Phi nodes to compact ins along with block's ins. */
+      set_irn_link(n, get_irn_link(b));
+      set_irn_link(b, n);
+    } else if (get_irn_op(n) != op_Jmp) {  /* Check for non empty block. */
+      mark_Block_block_visited(b);
+    }
+  }
+}
+
+/* Returns true if pred is pred of block */
+int is_pred_of(ir_node *pred, ir_node *b) {
+  int i;
+  for (i = 0; i < get_Block_n_cfgpreds(b); i++) {
+    ir_node *b_pred = get_nodes_Block(get_Block_cfgpred(b, i));
+    if (b_pred == pred) return 1;
+  }
+  return 0;
+}
+
+int test_whether_dispensable(ir_node *b, int pos) {
+  int i, j, n_preds = 1;
+  int dispensable = 1;
+  ir_node *cfop = get_Block_cfgpred(b, pos);
+  ir_node *pred = get_nodes_Block(cfop);
+
+  if (get_Block_block_visited(pred) + 1
+      < get_irg_block_visited(current_ir_graph)) {
+    if (!get_optimize() || !get_opt_control_flow()) {
+      /* Mark block so that is will not be removed. */
+      set_Block_block_visited(pred, get_irg_block_visited(current_ir_graph)-1);
+      return 1;
+    }
+    /* Seems to be empty. */
+    if (!get_irn_link(b)) {
+      /* There are no Phi nodes ==> dispensable. */
+      n_preds = get_Block_n_cfgpreds(pred);
+    } else {
+      /* b's pred blocks and pred's pred blocks must be pairwise disjunct.
+	 Work preds < pos as if they were already removed. */
+      for (i = 0; i < pos; i++) {
+	ir_node *b_pred = get_nodes_Block(get_Block_cfgpred(b, i));
+	if (get_Block_block_visited(b_pred) + 1
+	    < get_irg_block_visited(current_ir_graph)) {
+	  for (j = 0; j < get_Block_n_cfgpreds(b_pred); j++) {
+	    ir_node *b_pred_pred = get_nodes_Block(get_Block_cfgpred(b_pred, j));
+	    if (is_pred_of(b_pred_pred, pred)) dispensable = 0;
+	  }
+	} else {
+	  if (is_pred_of(b_pred, pred)) dispensable = 0;
+	}
+      }
+      for (i = pos +1; i < get_Block_n_cfgpreds(b); i++) {
+	ir_node *b_pred = get_nodes_Block(get_Block_cfgpred(b, i));
+	if (is_pred_of(b_pred, pred)) dispensable = 0;
+      }
+      if (!dispensable) {
+	set_Block_block_visited(pred, get_irg_block_visited(current_ir_graph)-1);
+	n_preds = 1;
+      } else {
+	n_preds = get_Block_n_cfgpreds(pred);
+      }
+    }
+  }
+
+  return n_preds;
+}
+
+void optimize_blocks(ir_node *b, void *env) {
+  int i, j, k, max_preds, n_preds;
+  ir_node *pred, *phi;
+  ir_node **in;
+
+  max_preds = 0;
+  for (i = 0; i < get_Block_n_cfgpreds(b); i++) {
+    pred = get_Block_cfgpred(b, i);
+    max_preds += test_whether_dispensable(b, i);
+  }
+  in = (ir_node **) malloc(max_preds * sizeof(ir_node *));
+
+
+  /** Debug output **
+  printf(" working on "); DDMN(b);
+  for (i = 0; i < get_Block_n_cfgpreds(b); i++) {
+    pred = get_nodes_Block(get_Block_cfgpred(b, i));
+    if (is_Bad(get_Block_cfgpred(b, i))) {
+      printf("  removing Bad %i\n ", i);
+    } else if (get_Block_block_visited(pred) +1
+	       < get_irg_block_visited(current_ir_graph)) {
+      printf("  removing pred %i ", i); DDMN(pred);
+    } else { printf("  Nothing to do for "); DDMN(pred); }
+  }
+ ** end Debug output **/
+
+  /** Fix the Phi nodes **/
+  phi = get_irn_link(b);
+  while (phi) {
+    assert(get_irn_op(phi) == op_Phi);
+    /* Find the new predecessors for the Phi */
+    n_preds = 0;
+    for (i = 0; i < get_Block_n_cfgpreds(b); i++) {
+      pred = get_nodes_Block(get_Block_cfgpred(b, i));
+      if (is_Bad(get_Block_cfgpred(b, i))) {
+	/* Do nothing */
+      } else if (get_Block_block_visited(pred) +1
+		 < get_irg_block_visited(current_ir_graph)) {
+	/* It's an empty block and not yet visited. */
+	ir_node *phi_pred = get_Phi_pred(phi, i);
+	for (j = 0; j < get_Block_n_cfgpreds(pred); j++) {
+	  if (get_nodes_Block(phi_pred) == pred) {
+	    assert(get_irn_op(phi_pred) == op_Phi);  /* Block is empty!! */
+	    in[n_preds] = get_Phi_pred(phi_pred, j);
+	  } else {
+	    in[n_preds] = phi_pred;
+	  }
+	  n_preds++;
+	}
+#if 0
+	/* @@@ hier brauche ich schleifeninformation!!! Wenn keine Rueckwaertskante
+	   dann darfs auch keine Verwendung geben. */
+	if (get_nodes_Block(phi_pred) == pred) {
+	  /* remove the Phi as it might be kept alive. Further there
+	     might be other users. */
+	  exchange(phi_pred, phi);  /* geht, is aber doch semantisch falsch! */
+	}
+#endif
+      } else {
+	in[n_preds] = get_Phi_pred(phi, i);
+	n_preds ++;
+      }
+    }
+    /* Fix the node */
+    set_irn_in(phi, n_preds, in);
+    phi = get_irn_link(phi);
+  }
+
+  /** Move Phi nodes from removed blocks to this one.
+      This happens only if merge between loop backedge and single loop entry. **/
+  for (k = 0; k < get_Block_n_cfgpreds(b); k++) {
+    pred = get_nodes_Block(get_Block_cfgpred(b, k));
+    if (get_Block_block_visited(pred) +1
+	< get_irg_block_visited(current_ir_graph)) {
+      phi = get_irn_link(pred);
+      while (phi) {
+	if (get_irn_op(phi) == op_Phi) {
+	  set_nodes_Block(phi, b);
+
+	  n_preds = 0;
+	  for (i = 0; i < k; i++) {
+	    pred = get_nodes_Block(get_Block_cfgpred(b, i));
+	    if (is_Bad(get_Block_cfgpred(b, i))) {
+	      /* Do nothing */
+	    } else if (get_Block_block_visited(pred) +1
+		       < get_irg_block_visited(current_ir_graph)) {
+	      /* It's an empty block and not yet visited. */
+	      for (j = 0; j < get_Block_n_cfgpreds(pred); j++) {
+		/* @@@ Hier brauche ich schleifeninformation!!! Kontrllflusskante
+		   muss Rueckwaertskante sein! (An allen vier in[n_preds] = phi
+		   Anweisungen.) Trotzdem tuts bisher!! */
+		in[n_preds] = phi;
+		n_preds++;
+	      }
+	    } else {
+	      in[n_preds] = phi;
+	      n_preds++;
+	    }
+	  }
+	  for (i = 0; i < get_Phi_n_preds(phi); i++) {
+	    in[n_preds] = get_Phi_pred(phi, i);
+	    n_preds++;
+	  }
+	  for (i = k+1; i < get_Block_n_cfgpreds(b); i++) {
+	    pred = get_nodes_Block(get_Block_cfgpred(b, i));
+	    if (is_Bad(get_Block_cfgpred(b, i))) {
+	      /* Do nothing */
+	    } else if (get_Block_block_visited(pred) +1
+		       < get_irg_block_visited(current_ir_graph)) {
+	      /* It's an empty block and not yet visited. */
+	      for (j = 0; j < get_Block_n_cfgpreds(pred); j++) {
+		in[n_preds] = phi;
+		n_preds++;
+	      }
+	    } else {
+	      in[n_preds] = phi;
+	      n_preds++;
+	    }
+	  }
+	  set_irn_in(phi, n_preds, in);
+	}
+	phi = get_irn_link(phi);
+      }
+    }
+  }
+
+  /** Fix the block **/
+  n_preds = 0;
+  for (i = 0; i < get_Block_n_cfgpreds(b); i++) {
+    pred = get_nodes_Block(get_Block_cfgpred(b, i));
+    if (is_Bad(get_Block_cfgpred(b, i))) {
+      /* Do nothing */
+    } else if (get_Block_block_visited(pred) +1
+	       < get_irg_block_visited(current_ir_graph)) {
+      /* It's an empty block and not yet visited. */
+      assert(get_Block_n_cfgpreds(b) > 1);
+                        /* Else it should be optimized by equivalent_node. */
+      for (j = 0; j < get_Block_n_cfgpreds(pred); j++) {
+	in[n_preds] = get_Block_cfgpred(pred, j);
+	n_preds++;
+      }
+      /* Remove block as it might be kept alive. */
+      exchange(pred, b/*new_Bad()*/);
+    } else {
+      in[n_preds] = get_Block_cfgpred(b, i);
+      n_preds ++;
+    }
+  }
+  set_irn_in(b, n_preds, in);
+  free(in);
+}
+
+void optimize_cf(ir_graph *irg) {
+  int i;
+  ir_node **in;
+  ir_node *end = get_irg_end(irg);
+  ir_graph *rem = current_ir_graph;
+  current_ir_graph = irg;
+
+
+  /* Handle graph state */
+  assert(get_irg_phase_state(irg) != phase_building);
+  if (get_irg_outs_state(current_ir_graph) == outs_consistent)
+    set_irg_outs_inconsistent(current_ir_graph);
+  if (get_irg_dom_state(current_ir_graph) == dom_consistent)
+    set_irg_dom_inconsistent(current_ir_graph);
+
+  //DDME(get_irg_ent(irg));
+
+  /* Use block visited flag to mark non-empty blocks. */
+  inc_irg_block_visited(irg);
+  irg_walk(end, merge_blocks, collect_nodes, NULL);
+
+  /* Optimize the standard code. */
+  irg_block_walk(get_irg_end_block(irg), optimize_blocks, NULL, NULL);
+
+  /* Walk all keep alives, optimize them if block, add to new in-array
+     for end if useful. */
+  in = NEW_ARR_F (ir_node *, 1);
+  in[0] = get_nodes_Block(end);
+
+  inc_irg_visited(current_ir_graph);
+  for(i = 0; i < get_End_n_keepalives(end); i++) {
+    ir_node *ka = get_End_keepalive(end, i);
+    if (irn_not_visited(ka))
+      if ((get_irn_op(ka) == op_Block) && Block_not_block_visited(ka)) {
+	set_irg_block_visited(current_ir_graph,  /* Don't walk all the way to Start. */
+			      get_irg_block_visited(current_ir_graph)-1);
+	irg_block_walk(ka, optimize_blocks, NULL, NULL);
+	mark_irn_visited(ka);
+	ARR_APP1 (ir_node *, in, ka);
+      } else if (get_irn_op(ka) == op_Phi) {
+	mark_irn_visited(ka);
+	ARR_APP1 (ir_node *, in, ka);
+      }
+    }
+  /* DEL_ARR_F(end->in);   GL @@@ tut nicht ! */
+  end->in = in;
+
   current_ir_graph = rem;
 }

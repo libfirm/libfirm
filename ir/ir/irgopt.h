@@ -85,6 +85,17 @@ void inline_small_irgs(ir_graph *irg, int size);
    for all operations. */
 void place_code(ir_graph *irg);
 
+/********************************************************************/
+/* Control flow optimization.                                       */
+/* Removes empty blocks doing if simplifications and loop simpli-   */
+/* fications.  A block is empty if it contains only a Jmp node and  */
+/* Phi nodes.                                                       */
+/* Merges single entry single exit blocks with their predecessor    */
+/* and propagates dead control flow by calling equivalent_node.     */
+/* Independent of compiler flag it removes Tuples from cf edges,    */
+/* Bad predecessors form blocks and unnecessary predecessors of End.*/
+/********************************************************************/
+void optimize_cf(ir_graph *irg);
 
 
 # endif /* _IRGOPT_H_ */
