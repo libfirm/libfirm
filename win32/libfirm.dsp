@@ -80,12 +80,16 @@ LIB32=link.exe -lib
 
 # Name "libfirm - Win32 Release"
 # Name "libfirm - Win32 Debug"
-# Begin Group "Header-Dateien"
+# Begin Group "Win32-specific"
 
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
 # Begin Source File
 
 SOURCE=.\config.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\math.c
 # End Source File
 # End Group
 # Begin Group "FIRM"
@@ -149,6 +153,11 @@ SOURCE=..\ir\adt\pmap.c
 # Begin Source File
 
 SOURCE=..\ir\adt\pmap.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\adt\pset.c
+# ADD CPP /D "PSET"
 # End Source File
 # Begin Source File
 

@@ -90,7 +90,7 @@
 /* #undef WORDS_BIGENDIAN */
 
 /* inline */
-#define INLINE __inline
+#define INLINE
 
 #define snprintf    _snprintf
 #define strcasecmp  stricmp
