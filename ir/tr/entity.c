@@ -27,6 +27,8 @@
 /** general                                                       **/
 /*******************************************************************/
 
+unsigned long entity_visited;
+
 void
 init_entity (void)
 {
@@ -96,10 +98,13 @@ new_entity (type *owner, ident *name, type *type)
   insert_entity_in_owner (res);
   return res;
 }
+
 INLINE void free_entity_attrs(entity *ent) {
   assert(ent);
-  DEL_ARR_F(ent->overwrites);
-  DEL_ARR_F(ent->overwrittenby);
+  if (get_type_tpop(get_entity_owner(ent)) == type_class) {
+    DEL_ARR_F(ent->overwrites);
+    DEL_ARR_F(ent->overwrittenby);
+  }
 }
 
 entity *
@@ -111,8 +116,15 @@ copy_entity_own (entity *old, type *new_owner) {
   new = (entity *) malloc (sizeof (entity));
   memcpy (new, old, sizeof (entity));
   new->owner = new_owner;
-  new->overwrites = DUP_ARR_F(entity *, old->overwrites);
-  new->overwrittenby = DUP_ARR_F(entity *, old->overwrittenby);
+  if ((get_type_tpop(get_entity_owner(old)) == type_class) &&
+      (get_type_tpop(new_owner) == type_class)) {
+    new->overwrites = DUP_ARR_F(entity *, old->overwrites);
+    new->overwrittenby = DUP_ARR_F(entity *, old->overwrittenby);
+  } else if ((get_type_tpop(get_entity_owner(old)) != type_class) &&
+	     (get_type_tpop(new_owner) == type_class)) {
+    new->overwrites = NEW_ARR_F(entity *, 1);
+    new->overwrittenby = NEW_ARR_F(entity *, 1);
+  }
 
   insert_entity_in_owner (new);
 
@@ -138,7 +150,8 @@ copy_entity_name (entity *old, ident *new_name) {
 
 void
 free_entity (entity *ent) {
-  /* @@@ */
+  free_entity_attrs(ent);
+  free(ent);
 }
 
 INLINE const char *
@@ -514,4 +527,19 @@ int is_compound_entity(entity *ent) {
 
 bool equal_entity(entity *ent1, entity *ent2) {
   return true;
+}
+
+
+unsigned long get_entity_visited(entity *entity) {
+  assert (entity);
+  return entity->visit;
+}
+void        set_entity_visited(entity *entity, unsigned long num) {
+  assert (entity);
+  entity->visit = num;
+}
+/* Sets visited field in entity to entity_visited. */
+void        mark_entity_visited(entity *entity) {
+  assert (entity);
+  entity->visit = entity_visited;
 }

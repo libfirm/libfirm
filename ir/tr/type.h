@@ -320,8 +320,9 @@ void    set_class_member   (type *clss, entity *member, int pos);
    members is an array of entities, num the size of this array.  Sets all
    owners of the members passed to clss. */
 void    set_class_members  (type *clss, entity **members, int arity);
-/* Finds member in the list of members and overwrites it with NULL
- @@@ Doesn't work properly. */
+/* Finds member in the list of members and removes it.
+   Shrinks the member list, so iterate from the end!!!
+   Does not deallocate the entity.  */
 void    remove_class_member(type *clss, entity *member);
 
 
@@ -337,8 +338,7 @@ type   *get_class_subtype   (type *clss, int pos);
    set the corresponding supertype relation for subtype: this might
    be a different position! */
 void    set_class_subtype   (type *clss, type *subtype, int pos);
-/* Finds subtype in the list of subtypes and overwrites it with NULL
- @@@ Doesn't work properly. */
+/* Finds subtype in the list of subtypes and removes it  */
 void    remove_class_subtype(type *clss, type *subtype);
 
 
@@ -354,8 +354,7 @@ type   *get_class_supertype   (type *clss, int pos);
    set the corresponding subtype relation for supertype: this might
    be a different position! */
 void    set_class_supertype   (type *clss, type *supertype, int pos);
-/* Finds supertype in the list of supertypes and overwrites it with NULL
- @@@ Doesn't work properly. */
+/* Finds supertype in the list of supertypes and removes it */
 void    remove_class_supertype(type *clss, type *supertype);
 
 /* This enumeration flags the peculiarity of entities and types. */
@@ -411,8 +410,7 @@ void    add_struct_member   (type *strct, entity *member);
 int     get_struct_n_members (type *strct);
 entity *get_struct_member   (type *strct, int pos);
 void    set_struct_member   (type *strct, int pos, entity *member);
-/* Finds member in the list of memberss and overwrites it with NULL
- @@@ Doesn't work properly. */
+/* Finds member in the list of memberss and removees it */
 void    remove_struct_member (type *strct, entity *member);
 
 /* typecheck */
@@ -486,8 +484,7 @@ int     get_union_n_members      (type *uni);
 void    add_union_member (type *uni, entity *member);
 entity *get_union_member (type *uni, int pos);
 void    set_union_member (type *uni, int pos, entity *member);
-/* Finds member in the list of members and overwrites it with NULL
-   @@@ Doesn't work properly. */
+/* Finds member in the list of members and removes it. */
 void    remove_union_member (type *uni, entity *member);
 
 /* typecheck */

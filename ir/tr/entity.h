@@ -103,6 +103,7 @@ typedef struct ir_graph ir_graph;
  *              In that case there nowhere exists code for this entity and this entity
  *              is never dynamically used in the code.
  *              Values: description, existent.  Default: existent.
+ *   visited    visited flag.  Master flag is entity_visited.
  *
  *  These fields can only be accessed via access functions.
  *
@@ -116,6 +117,7 @@ typedef struct ir_graph ir_graph;
 /* to resolve recursion between entity.h and type.h */
 typedef struct entity entity;
 #endif
+
 
 /* Creates a new entity.
    Automatically inserts the entity as a member of owner.
@@ -283,9 +285,36 @@ int is_compound_entity(entity *ent);
 /* Returns true if ent1 and ent2 have are equal except for their owner.
    Two entities are equal if
     - they have the same type (the same C-struct)
+    - ...?
 */
 bool equal_entity(entity *ent1, entity *ent2);
 
+
+unsigned long get_entity_visited(entity *entity);
+void        set_entity_visited(entity *entity, unsigned long num);
+/* Sets visited field in entity to entity_visited. */
+void        mark_entity_visited(entity *entity);
+
+
 /*****/
+
+
+/****v* entity/visited
+ *
+ * NAME
+ *   entity_visited -  visited flag to traverse the entity information
+ * PURPOSE
+ *   Increase this flag by one before traversing the entity information.
+ *   Mark entity nodes as visited by set_entity_visited(entity, value) or
+ *   mark_entity_visited.
+ *   Check whether node was already visited by comparing get_entity_visited(entity)
+ *   and entity_visited.
+ *   Or use the function to walk all entities.
+ * SEE ALSO
+ * SOURCE
+ */
+extern unsigned long entity_visited;
+/*****/
+
 
 # endif /* _ENTITY_H_ */
