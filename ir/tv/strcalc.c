@@ -61,16 +61,17 @@
 /*
  * private variables
  */
-
 static char *calc_buffer = NULL;    /* buffer holding all results */
 static char *output_buffer = NULL;  /* buffer for output */
 static int BIT_PATTERN_SIZE;        /* maximum number of bits */
 static int CALC_BUFFER_SIZE;        /* size of internally stored values */
 static int MAX_VALUE_SIZE;          /* maximum size of values */
 
-static int carry_flag;              /* some computation set carry_flag: */
-                                    /* rightshift if bits were lost due to shifting */
-                                    /* division if there was a remainder */
+static int carry_flag;              /**< some computation set the carry_flag:
+                                         - rightshift if bits were lost due to shifting
+                                         - division if there was a remainder
+                                         However, the meaning of carry is machine dependant
+                                         and often devined in other ways! */
 
 static const char max_digit[4] = { SC_0, SC_1, SC_3, SC_7 };
 static const char min_digit[4] = { SC_F, SC_E, SC_C, SC_8 };
@@ -430,6 +431,9 @@ static void _fail_char(const char *str, size_t len, const char fchar, int pos,
   exit(-1);
 }
 
+/**
+ * implements the bitwise NOT operation
+ */
 static void _bitnot(const char *val, char *buffer)
 {
   int counter;
@@ -438,6 +442,9 @@ static void _bitnot(const char *val, char *buffer)
     buffer[counter] = not_table[_val(val[counter])];
 }
 
+/**
+ * implements the bitwise OR operation
+ */
 static void _bitor(const char *val1, const char *val2, char *buffer)
 {
   int counter;
@@ -446,6 +453,9 @@ static void _bitor(const char *val1, const char *val2, char *buffer)
     buffer[counter] = or_table[_val(val1[counter])][_val(val2[counter])];
 }
 
+/**
+ * implements the bitwise eXclusive OR operation
+ */
 static void _bitxor(const char *val1, const char *val2, char *buffer)
 {
   int counter;
@@ -454,6 +464,9 @@ static void _bitxor(const char *val1, const char *val2, char *buffer)
     buffer[counter] = xor_table[_val(val1[counter])][_val(val2[counter])];
 }
 
+/**
+ * implements the bitwise AND operation
+ */
 static void _bitand(const char *val1, const char *val2, char *buffer)
 {
   int counter;
@@ -462,12 +475,18 @@ static void _bitand(const char *val1, const char *val2, char *buffer)
     buffer[counter] = and_table[_val(val1[counter])][_val(val2[counter])];
 }
 
+/**
+ * returns the sign bit.
+ *
+ * @todo This implementation is wrong, as it returns the highest bit of the buffer
+ *       NOT the highest bit depending on the real mode
+ */
 static int _sign(const char *val)
 {
   return (val[CALC_BUFFER_SIZE-1] <= SC_7) ? (1) : (-1);
 }
 
-/*
+/**
  * returns non-zero if bit at position pos is set
  */
 static int _bit(const char *val, int pos)
@@ -478,7 +497,10 @@ static int _bit(const char *val, int pos)
   return _bitisset(val[nibble], bit);
 }
 
-static void _inc(char *val, char *buffer)
+/**
+ * Implements a fast ADD + 1
+ */
+static void _inc(const char *val, char *buffer)
 {
   int counter = 0;
 
@@ -500,12 +522,21 @@ static void _inc(char *val, char *buffer)
    * happen only when a value changes sign. */
 }
 
+/**
+ * Implements a unary MINUS
+ */
 static void _negate(const char *val, char *buffer)
 {
   _bitnot(val, buffer);
   _inc(buffer, buffer);
 }
 
+/**
+ * Implements a binary ADD
+ *
+ * @todo The implementation of carry is wrong, as it is the
+ *       CALC_BUFFER_SIZE carry, not the mode depending
+ */
 static void _add(const char *val1, const char *val2, char *buffer)
 {
   int counter;
@@ -523,6 +554,20 @@ static void _add(const char *val1, const char *val2, char *buffer)
   carry_flag = carry != SC_0;
 }
 
+/**
+ * Implements a binary SUB
+ */
+static void _sub(const char *val1, const char *val2, char *buffer)
+{
+  char temp_buffer[CALC_BUFFER_SIZE];  /* intermediate buffer to hold -val2 */
+
+  _negate(val2, temp_buffer);
+  _add(val1, temp_buffer, buffer);
+}
+
+/**
+ * Implements a binary MUL
+ */
 static void _mul(const char *val1, const char *val2, char *buffer)
 {
   char* temp_buffer; /* result buffer */
@@ -600,15 +645,9 @@ static void _mul(const char *val1, const char *val2, char *buffer)
     memcpy(buffer, temp_buffer, CALC_BUFFER_SIZE);
 }
 
-static void _sub(const char *val1, const char *val2, char *buffer)
-{
-  char *temp_buffer;  /* intermediate buffer to hold -val2 */
-  temp_buffer = alloca(CALC_BUFFER_SIZE);
-
-  _negate(val2, temp_buffer);
-  _add(val1, temp_buffer, buffer);
-}
-
+/**
+ * Shift the buffer to left and add a 4 bit digit
+ */
 static void _push(const char digit, char *buffer)
 {
   int counter;
@@ -620,14 +659,20 @@ static void _push(const char digit, char *buffer)
   buffer[0] = digit;
 }
 
-/* XXX: This is MOST slow */
-static void _divmod(const char *dividend, const char *divisor, char *quot, char *rem)
+/**
+ * Implements truncating integer division and remainder.
+ *
+ * Note: This is MOST slow
+ */
+static void _divmod(const char *rDividend, const char *divisor, char *quot, char *rem)
 {
+  const char *dividend = rDividend;
   const char *minus_divisor;
   char *neg_val1;
   char *neg_val2;
 
-  char sign = 0;     /* remember result sign */
+  char div_sign = 0;     /* remember division result sign */
+  char rem_sign = 0;     /* remember remainder esult sign */
 
   int c_dividend;      /* loop counters */
 
@@ -645,24 +690,21 @@ static void _divmod(const char *dividend, const char *divisor, char *quot, char 
   if (sc_comp(dividend, quot) == 0)
     return;
 
-  if (_sign(dividend) == -1)
-  {
+  if (_sign(dividend) == -1) {
     _negate(dividend, neg_val1);
-    sign ^= 1;
+    div_sign ^= 1;
+    rem_sign ^= 1;
     dividend = neg_val1;
   }
 
   _negate(divisor, neg_val2);
-  if (_sign(divisor) == -1)
-  {
-    sign ^= 1;
+  if (_sign(divisor) == -1) {
+    div_sign ^= 1;
     minus_divisor = divisor;
     divisor = neg_val2;
   }
   else
-  {
     minus_divisor = neg_val2;
-  }
 
   /* if divisor >= dividend division is easy
    * (remember these are absolute values) */
@@ -673,7 +715,7 @@ static void _divmod(const char *dividend, const char *divisor, char *quot, char 
       return;
 
     case -1: /* dividend < divisor */
-      memcpy(rem, dividend, CALC_BUFFER_SIZE);
+      memcpy(rem, rDividend, CALC_BUFFER_SIZE);
       return;
 
     default: /* unluckily division is necessary :( */
@@ -702,15 +744,22 @@ static void _divmod(const char *dividend, const char *divisor, char *quot, char 
     }
   }
 
+  /* sets carry if remainder is non-zero ??? */
   carry_flag = !sc_is_zero(rem);
 
-  if (sign)
-  {
+  if (div_sign)
     _negate(quot, quot);
+
+  if (rem_sign)
     _negate(rem, rem);
-  }
 }
 
+/**
+ * Implements a Shift Left, which can either preserve the sign bit
+ * or not.
+ *
+ * @todo Assertions seems to be wrong
+ */
 static void _shl(const char *val1, char *buffer, long offset, int radius, unsigned is_signed)
 {
   const char *shl;
@@ -778,6 +827,12 @@ static void _shl(const char *val1, char *buffer, long offset, int radius, unsign
   }
 }
 
+/**
+ * Implements a Shift Right, which can either preserve the sign bit
+ * or not.
+ *
+ * @todo Assertions seems to be wrong
+ */
 static void _shr(const char *val1, char *buffer, long offset, int radius, unsigned is_signed, int signed_shift)
 {
   const char *shrs;
@@ -862,7 +917,10 @@ static void _shr(const char *val1, char *buffer, long offset, int radius, unsign
   }
 }
 
-/* positive: low-order -> high order, negative other direction */
+/**
+ * Implements a Rotate Right.
+ * positive: low-order -> high order, negative other direction
+ */
 static void _rot(const char *val1, char *buffer, long offset, int radius, unsigned is_signed)
 {
   char *temp1, *temp2;
@@ -1150,12 +1208,11 @@ void sc_max_from_bits(unsigned int num_bits, unsigned int sign, void *buffer)
 
 void sc_calc(const void* value1, const void* value2, unsigned op, void *buffer)
 {
-  char *unused_res; /* temp buffer holding unused result of divmod */
+  char unused_res[CALC_BUFFER_SIZE]; /* temp buffer holding unused result of divmod */
 
   const char *val1 = (const char *)value1;
   const char *val2 = (const char *)value2;
 
-  unused_res = alloca(CALC_BUFFER_SIZE);
   CLEAR_BUFFER(calc_buffer);
   carry_flag = 0;
 
