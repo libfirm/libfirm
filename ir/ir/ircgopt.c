@@ -59,22 +59,22 @@ void gc_irgs(int n_keep, entity ** keep_arr) {
     for (i = 0; i < ARR_LEN(marked); ++i) {
       /* check for extern methods, these don't have an IRG */
       if (get_entity_visibility(marked[i]) != visibility_external_allocated) {
-	ir_graph * irg = get_entity_irg(marked[i]);
-	ir_node * node = get_irg_end(irg);
-	/* collect calls */
-	irg_walk_graph(irg, clear_link, (irg_walk_func *) collect_call, node);
-	/* iterate calls */
-	for (node = get_irn_link(node); node; node = get_irn_link(node)) {
-	  int i;
-	  assert(get_irn_op(node) == op_Call);
-	  for (i = get_Call_n_callees(node) - 1; i >= 0; --i) {
-	    entity * ent = get_Call_callee(node, i);
-	    if (ent && get_entity_irg(ent) && get_entity_link(ent) != MARK) {
-	      set_entity_link(ent, MARK);
-	      ARR_APP1(entity *, marked, ent);
-	    }
-	  }
-	}
+        ir_graph * irg = get_entity_irg(marked[i]);
+        ir_node * node = get_irg_end(irg);
+        /* collect calls */
+        irg_walk_graph(irg, clear_link, (irg_walk_func *) collect_call, node);
+        /* iterate calls */
+        for (node = get_irn_link(node); node; node = get_irn_link(node)) {
+          int i;
+          assert(get_irn_op(node) == op_Call);
+          for (i = get_Call_n_callees(node) - 1; i >= 0; --i) {
+            entity * ent = get_Call_callee(node, i);
+            if (ent && get_entity_irg(ent) && get_entity_link(ent) != MARK) {
+              set_entity_link(ent, MARK);
+              ARR_APP1(entity *, marked, ent);
+            }
+          }
+        }
       }
     }
     DEL_ARR_F(marked);
@@ -86,13 +86,15 @@ void gc_irgs(int n_keep, entity ** keep_arr) {
     entity * ent = get_irg_ent(irg);
     /* Removing any graph invalidates all interprocedural loop trees. */
     if (get_irg_loopinfo_state(irg) == loopinfo_ip_consistent ||
-	get_irg_loopinfo_state(irg) == loopinfo_ip_inconsistent)
+        get_irg_loopinfo_state(irg) == loopinfo_ip_inconsistent) {
       free_loop_information(irg);
+    }
     if (get_entity_link(ent) != MARK) {
       remove_irp_irg(irg);
       set_entity_peculiarity(ent, peculiarity_description);
-      if (get_opt_dead_method_elimination_verbose())
-	printf("dead method elimination: freeing method %s\n", get_entity_ld_name(ent));
+      if (get_opt_dead_method_elimination_verbose()) {
+        printf("dead method elimination: freeing method %s\n", get_entity_ld_name(ent));
+      }
     }
     set_entity_link(ent, NULL);
   }

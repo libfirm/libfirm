@@ -667,16 +667,15 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
   case iro_Const: {
       tarval *tv = get_Const_tarval(n);
       if (tarval_is_entity(tv))
-	  ASSERT_AND_RET(
-	                 (get_irn_irg(n) == get_const_code_irg()) ||
-	                 (get_entity_peculiarity(tarval_to_entity(tv)) != peculiarity_description),
-	                 "descriptions have no address", 0);
-	  ASSERT_AND_RET(
-			 /* Const: BB --> data */
-			 (mode_is_data (mymode) ||
-			  mymode == mode_b)      /* we want boolean constants for static evaluation */
-			 ,"Const node", 0        /* of Cmp. */
-			 );
+      ASSERT_AND_RET((get_irn_irg(n) == get_const_code_irg()) ||
+                     (get_entity_peculiarity(tarval_to_entity(tv)) != peculiarity_description),
+                     "descriptions have no address", 0);
+      ASSERT_AND_RET(
+             /* Const: BB --> data */
+             (mode_is_data (mymode) ||
+              mymode == mode_b)      /* we want boolean constants for static evaluation */
+             ,"Const node", 0        /* of Cmp. */
+             );
      } break;
 
     case iro_SymConst:
