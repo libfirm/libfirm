@@ -238,19 +238,19 @@ set_irn_in (ir_node *node, int arity, ir_node **in) {
 }
 
 ir_node *
-(get_irn_intra_n)(ir_node *node, int n) {
+(get_irn_intra_n)(const ir_node *node, int n) {
   return __get_irn_intra_n (node, n);
 }
 
 ir_node *
-(get_irn_inter_n)(ir_node *node, int n) {
+(get_irn_inter_n)(const ir_node *node, int n) {
   return __get_irn_inter_n (node, n);
 }
 
-ir_node *(*__get_irn_n)(ir_node *node, int n) = __get_irn_intra_n;
+ir_node *(*__get_irn_n)(const ir_node *node, int n) = __get_irn_intra_n;
 
 ir_node *
-(get_irn_n)(ir_node *node, int n) {
+(get_irn_n)(const ir_node *node, int n) {
   return __get_irn_n(node, n);
 }
 
@@ -527,7 +527,7 @@ get_irn_except_attr (ir_node *node)
 
 /* this works for all except Block */
 ir_node *
-get_nodes_block (ir_node *node) {
+get_nodes_block (const ir_node *node) {
   assert (!(node->op == op_Block));
   return get_irn_n(node, -1);
 }

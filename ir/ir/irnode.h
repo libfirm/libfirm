@@ -133,9 +133,9 @@ void          set_irn_in            (ir_node *node, int arity,
  * Get the n-th predecessor of a node.
  * This function removes Id predecessors.
  */
-ir_node      *get_irn_n             (ir_node *node, int n);
-ir_node      *get_irn_intra_n       (ir_node *node, int n);
-ir_node      *get_irn_inter_n       (ir_node *node, int n);
+ir_node      *get_irn_n             (const ir_node *node, int n);
+ir_node      *get_irn_intra_n       (const ir_node *node, int n);
+ir_node      *get_irn_inter_n       (const ir_node *node, int n);
 
 /** Replace the n-th predecessor of a node with a new one. */
 void          set_irn_n             (ir_node *node, int n, ir_node *in);
@@ -223,7 +223,7 @@ new_ir_node (dbg_info *db,
  * To express the difference to access routines that work for all
  * nodes we use infix "nodes" and do not name this function
  * get_irn_block. */
-ir_node  *get_nodes_block (ir_node *node);
+ir_node  *get_nodes_block (const ir_node *node);
 
 /** Sets the Block of a node. */
 void      set_nodes_block (ir_node *node, ir_node *block);
@@ -904,7 +904,16 @@ int is_forking_op(const ir_node *node);
  * @return A pointer of type @p type.
  */
 #define get_irn_data(node,type,off) \
- (assert(off > 0 && "Invalid node data offset"), (type *) ((char *) (node) - (off)))
+  (assert(off > 0 && "Invalid node data offset"), (type *) ((char *) (node) - (off)))
+
+/**
+ * Get the pointer to the node some custom data belongs to.
+ * @param data The pointer to the custom data.
+ * @param off The number as returned by register_additional_node_data().
+ * @return A pointer to the ir node the custom data belongs to.
+ */
+#define get_irn_data_base(data,off) \
+  (assert(off > 0 && "Invalid node data offset"), (ir_node *) ((char *) (data) + (off)))
 
 /**
  * Request additional data to be allocated with an ir node.

@@ -41,6 +41,7 @@
 #include "entity_t.h"
 #include "type_t.h"
 
+
 /** ir node attributes **/
 
 /** Block attributes */
@@ -339,7 +340,7 @@ extern int (*__get_irn_arity)(const ir_node *node);
  * Intern version for libFirm.
  */
 static INLINE ir_node *
-__get_irn_intra_n (ir_node *node, int n) {
+__get_irn_intra_n (const ir_node *node, int n) {
   assert(node); assert(-1 <= n && n < __get_irn_intra_arity(node));
 
   return (node->in[n + 1] = skip_Id(node->in[n + 1]));
@@ -349,7 +350,7 @@ __get_irn_intra_n (ir_node *node, int n) {
  * Intern version for libFirm.
  */
 static INLINE ir_node*
-__get_irn_inter_n (ir_node *node, int n) {
+__get_irn_inter_n (const ir_node *node, int n) {
   assert(node); assert(-1 <= n && n < __get_irn_inter_arity(node));
 
   /* handle Filter and Block specially */
@@ -371,7 +372,7 @@ __get_irn_inter_n (ir_node *node, int n) {
  * If it is a block, the entry -1 is NULL.
  * Intern version for libFirm.
  */
-extern ir_node *(*__get_irn_n)(ir_node *node, int n);
+extern ir_node *(*__get_irn_n)(const ir_node *node, int n);
 
 /**
  * Gets the mode of a node.
