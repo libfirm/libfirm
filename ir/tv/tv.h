@@ -39,8 +39,8 @@ Discussion of new interface, proposals by Prof. Waite:
 
 */
 
-#ifndef _TV_H
-#define _TV_H
+#ifndef _TV_H_
+#define _TV_H_
 
 # include "irmode.h"
 # include "entity.h"
@@ -194,19 +194,6 @@ bool     tv_val_b (tarval *tv);
 tarval_B tv_val_B (tarval *tv);
 tarval_s tv_val_s (tarval *tv);
 
-#ifdef NDEBUG
-#define TARVAL_VRFY(val) ((void)0)
-#else
-#define TARVAL_VRFY(val) _tarval_vrfy ((val))
-extern void _tarval_vrfy (const tarval *);
-#endif
-
-#ifdef STATS
-void tarval_stats (void);
-#else
-#define tarval_stats() ((void)0)
-#endif
-
 ir_mode *get_tv_mode (tarval *tv);
 /* Returns the entity if the tv is a pointer to an entity, else
    returns NULL; */
@@ -214,4 +201,4 @@ entity *get_tv_entity(tarval *tv);
 
 /* Returns 0 if tv is positive, else > 0. @@@ not tested! */
 int tv_is_negative(tarval *a);
-#endif
+#endif  /* _TV_H_ */

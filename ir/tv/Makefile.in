@@ -19,7 +19,7 @@ SOURCES += Makefile.in ieee754.h tv.c tv_t.h
 include $(topdir)/MakeRules
 
 CPPFLAGS += -I$(top_srcdir)/ir/common -I$(top_srcdir)/ir/tr -I$(top_srcdir)/ir/adt \
-		-I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/ir
+	    -I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/ir -I$(top_srcdir)/ir/debug
 
 include $(top_srcdir)/MakeTargets
 
