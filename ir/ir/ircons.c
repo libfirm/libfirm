@@ -1479,24 +1479,15 @@ new_rd_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
      Phi node merges the same definition on several paths and therefore
      is not needed. Don't consider Bad nodes! */
   known = res;
-  //DDMNB(res);  // GL
-  //if (phi0) DDMN(phi0); else printf(" phi0 == NULL\n");
-
   for (i=0;  i < ins;  ++i)
   {
     assert(in[i]);
-
-    // GL
-    //if (get_irn_op(in[i]) == op_Id)
-    //{ printf("  "); DDMN(in[i]); }
 
     in[i] = skip_Id(in[i]);  /* increasses the number of freed Phis. */
 
     /* Optimize self referencing Phis:  We can't detect them yet properly, as
        they still refer to the Phi0 they will replace.  So replace right now. */
     if (phi0 && in[i] == phi0) in[i] = res;
-
-    //{ printf("  "); DDMN(in[i]); } // GL
 
     if (in[i]==res || in[i]==known || is_Bad(in[i])) continue;
 
@@ -1508,14 +1499,13 @@ new_rd_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
 
   /* i==ins: there is at most one predecessor, we don't need a phi node. */
   if (i == ins) {
-    //printf("  removing Phi node\n"); // GL
     if (res != known) {
       obstack_free (current_ir_graph->obst, res);
       if (is_Phi(known)) {
 	/* If pred is a phi node we want to optmize it: If loops are matured in a bad
 	   order, an enclosing Phi know may get superfluous. */
 	res = optimize_in_place_2(known);
-	if (res != known) { /* printf("found better pred "); DDMN(res); GL */ exchange(known, res); }
+	if (res != known) { exchange(known, res); }
       } else {
 	res = known;
       }
@@ -1524,10 +1514,7 @@ new_rd_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
       res = new_Bad();
     }
   } else {
-    // GL ir_node *old = res;
-    // GL dump_node (res);
     res = optimize_node (res);  /* This is necessary to add the node to the hash table for cse. */
-    // GL if (res != old) { printf("optimize not useless!!! \n"); assert(0); }
     irn_vrfy_irg (res, irg);
     /* Memory Phis in endless loops must be kept alive.
        As we can't distinguish these easily we keep all of them alive. */
@@ -1844,8 +1831,6 @@ mature_block (ir_node *block)
   int ins;
   ir_node *n, **nin;
   ir_node *next;
-
-  //DDMN(block); // GL
 
   assert (get_irn_opcode(block) == iro_Block);
   /* @@@ should be commented in
