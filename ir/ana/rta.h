@@ -6,7 +6,7 @@
 # include "entity.h"
 
 /* Initialise the RTA data structures and perform RTA */
-void rta_init(int verbose);
+void rta_init(int, int);
 /* Delete all graphs that have been found to be dead */
 void rta_delete_dead_graphs (void);
 /* Clean up our data structures */
@@ -18,11 +18,16 @@ int rta_is_alive_class(type *clazz);
 int rta_is_alive_graph(ir_graph *graph);
 /* Inquire whether the given field is alive */
 int rta_is_alive_field(entity *field);
+/* dump our opinion */
+void rta_report (FILE*);
 
 #endif /* def _RTA_H_ */
 
 /*
  * $Log$
+ * Revision 1.6  2004/06/17 14:21:14  liekweg
+ * major bugfix
+ *
  * Revision 1.5  2004/06/17 08:33:01  liekweg
  * Added comments; added remove_irg
  *

@@ -13,7 +13,7 @@
  */
 
 /**
-nn * Intraprozedurale Analyse zur Abschätzung der Aufrufrelation. Es
+ * Intraprozedurale Analyse zur Abschätzung der Aufrufrelation. Es
  * die Menge der instantiierten Klassen bestimmt, und daraus existierende Methoden
  * bestimmt.
  */
@@ -46,6 +46,8 @@ static eset *_called_methods = NULL;
 /* cache computed results */
 static eset *_live_graphs    = NULL;
 static eset *_dead_graphs    = NULL;
+
+static int whole_world = 0;
 
 /**
    Initialise the static data structures.
@@ -88,9 +90,8 @@ static void rta_act (ir_node *node, void *env)
 
     } else if (iro_SymConst == get_irn_opcode (ptr)) { /* CALL SYMCONST */
       /* If this SymConst refers to a method the method is external_visible
-	 and therefore must be considered executed anyways. */
-      //dump_ir_block_graph(get_irn_irg(ptr));
-      //assert (ent && "couldn't determine entity of call to symConst");
+     and therefore must be considered live anyways. */
+      /* assert (ent && "couldn't determine entity of call to symConst"); */
     }
 
     if (ent) {
@@ -193,17 +194,19 @@ static void rta_fill_all (int rerun)
   for (i = 0; i < get_irp_n_irgs(); i++) {
     ir_graph *graph = get_irp_irg (i);
 
-    /* Need to take care of graphs that are externally
-       visible. Pretend that they are called: */
-    entity *ent = get_irg_entity (graph);
-    if (visibility_local != get_entity_visibility (ent)) {
-      eset_insert (_called_methods, ent);
+    if (! whole_world) {
+      /* Need to take care of graphs that are externally
+         visible. Pretend that they are called: */
+      entity *ent = get_irg_entity (graph);
+      if (visibility_external_visible == get_entity_visibility (ent)) {
+        eset_insert (_called_methods, ent);
 
-      if (get_entity_irg (ent)) {
-        eset_insert (_live_graphs, get_entity_irg (ent));
+        if (get_entity_irg (ent)) {
+          eset_insert (_live_graphs, get_entity_irg (ent));
+        }
+
+        eset_insert (_live_classes, get_entity_owner (ent));
       }
-
-      eset_insert (_live_classes, get_entity_owner (ent));
     }
 
     /* now check the graph */
@@ -231,7 +234,7 @@ static void rta_fill_all (int rerun)
    Find out whether the given method could be the target of a
    polymorphic call.
 */
-static int is_call_target (const entity *method)
+static int is_call_target (entity *method)
 {
   int is_target = FALSE;
   int i;
@@ -245,9 +248,9 @@ static int is_call_target (const entity *method)
   }
 
   /* not called?  check methods in superclass(es) */
-  n_over = get_entity_n_overwrittenby ((entity*) method);
+  n_over = get_entity_n_overwrites ((entity*) method);
   for (i = 0; !is_target && (i < n_over); i ++) {
-    entity *over = get_entity_overwrittenby ((entity*) method, i);
+    entity *over = get_entity_overwrites ((entity*) method, i);
     is_target |= is_call_target (over);
   }
 
@@ -257,7 +260,7 @@ static int is_call_target (const entity *method)
 /**
    Given a method, find the firm graph that implements that method.
 */
-static ir_graph *get_implementing_graph (const entity *method)
+static ir_graph *get_implementing_graph (entity *method)
 {
   ir_graph *graph = get_entity_irg ((entity*) method);
 
@@ -279,75 +282,51 @@ static ir_graph *get_implementing_graph (const entity *method)
 }
 
 /**
-   Determine whether the give method or one of its overwriter have
-   been used in a call to the given graph.
+   Determine wether the given method is called through polymorphy with
+   the given graph
 */
-static int has_live_call (entity *method, ir_graph *graph)
+static int has_live_downcall (entity *method, ir_graph *graph)
 {
-  int has_call = FALSE;
+  int has_downcall = FALSE;
   int i, n_over;
 
-  /* stop searching if a overwriting method comes with a new graph */
-  /* if (get_irg_ent (graph) != method) *
-     { /* shouldn't we compare GRAPHS here????? *
-     return (FALSE);
-     }
-  */
-
-  if (graph != get_entity_irg (method)) {
+  if (graph != get_entity_irg ((entity*) method)) {
     return (FALSE);
   }
 
-  /* maybe we're called (possibly through polymorphy)? */
-  if (is_call_target (method)) {
+  if (eset_contains (_called_methods, method)) {
     return (TRUE);
   }
 
   /* maybe we're overwritten by a method that is called? */
   n_over = get_entity_n_overwrittenby ((entity*) method);
-  for (i = 0; !has_call && (i < n_over); i ++) {
-    entity *over = get_entity_overwrittenby((entity*) method, i);
-    has_call |= has_live_call (over, graph);
+  for (i = 0; !has_downcall && (i < n_over); i ++) {
+    entity *over = get_entity_overwrittenby ((entity*) method, i);
+    has_downcall |= has_live_downcall (over, graph);
   }
 
-  return (has_call);
+  return (has_downcall);
 }
 
 /**
-   Determine whether the given class is live *and* uses the given
-   graph at some point, or has live subclasses that use the graph.
+   Determine whether the given method or one of its overwriters have
+   been used in a call to the given graph.
 */
-static int has_graph (type *clazz, ir_graph *graph)
+static int has_live_call (entity *method, ir_graph *graph)
 {
-  int has_the_graph = FALSE;
-  int i;
-  int n_sub;
-
-  if (eset_contains (_live_classes, clazz)) {
-    int n_meth = get_class_n_members (clazz);
-
-    for (i = 0; i < n_meth; i ++) {
-      entity *member = get_class_member (clazz, i);
-      if (is_method_type (get_entity_type (member))) {
-        ir_graph *impl = get_entity_irg (member);
-
-        if (impl == graph) {
-          return (TRUE);
-        }
-      } /* is_method */
-    } /* all methods */
-  } /* _live_classes.contains (clazz) */
-
-  /* our subclasses might be using that graph, no? */
-  n_sub = get_class_n_subtypes (clazz);
-  for (i = 0; !has_the_graph && (i < n_sub); i ++) {
-    type *sub = get_class_subtype (clazz, i);
-
-    has_the_graph |= has_graph (sub, graph);
+  /* maybe we're called (possibly through polymorphy)? */
+  if (is_call_target (method)) {
+    return (TRUE);
   }
 
-  return (has_the_graph);
+  /* maybe our subclasses have seen a call? */
+  if (has_live_downcall (method, graph)) {
+    return (TRUE);
+  }
+
+  return (FALSE);
 }
+
 
 /**
    Determine whether the given method could be used in a call to the
@@ -360,20 +339,17 @@ static int has_live_class (entity *method, ir_graph *graph)
   int n_over;
   type *clazz;
 
-  /* stop searching when an overwriting method provides a new graph */
-  if (get_implementing_graph (method) != graph) {
-    return (FALSE);
-  }
+  /* DON'T stop searching when an overwriting method provides a new graph */
 
   clazz = get_entity_owner (method);
 
-  if (has_graph (clazz, graph)) { /* this also checks whether clazz is live*/
+  if (rta_is_alive_class (clazz)) {
     return (TRUE);
   }
 
-  n_over = get_entity_n_overwrittenby (method);
+  n_over = get_entity_n_overwrites (method);
   for (i = 0; !has_class && (i < n_over); i ++) {
-    entity *over = get_entity_overwrittenby (method, i);
+    entity *over = get_entity_overwrites (method, i);
     has_class |= has_live_class (over, graph);
   }
 
@@ -451,7 +427,7 @@ static void remove_irg (ir_graph *graph)
 {
   entity *ent = get_irg_entity (graph);
 
-  //DDMEO(get_irg_ent(graph));
+/*   DDMEO (get_irg_ent(graph)); */
 
   /* delete the ir_graph data */
   remove_irp_irg (graph);
@@ -464,7 +440,7 @@ static void remove_irg (ir_graph *graph)
     /* nothing to inherit!  pretend we're abstract */
     force_description (ent, ent);
   } else {
-  /* pretend that we inherit the implementation (graph) from some superclass: */
+    /* pretend that we inherit the implementation (graph) from some superclass: */
     set_entity_peculiarity (ent, peculiarity_inherited);
 
     exchange (get_atomic_ent_value (ent),
@@ -475,7 +451,7 @@ static void remove_irg (ir_graph *graph)
 /* Initialise the RTA data structures, and perform RTA.
    @param   verbose Iff != 0, print statistics as we go along
 */
-void rta_init (int verbose)
+void rta_init (int verbose, int whole_world)
 {
   int n_live_graphs = get_irp_n_irgs ();
   int n_graphs = 0;
@@ -490,6 +466,10 @@ void rta_init (int verbose)
 # endif /* defined DEBUG_libfirm */
 
   init_tables ();
+
+  if (verbose && whole_world) {
+    printf ("RTA: whole-world assumption\n");
+  }
 
   if (verbose) {
     printf ("RTA: run %i (%i graphs to go)\n", n_runs, n_live_graphs);
@@ -539,20 +519,14 @@ void rta_delete_dead_graphs ()
     } else {
 # ifdef DEBUG_libfirm
       entity *ent = get_irg_entity (graph);
-      assert (visibility_external_visible != get_entity_visibility (ent));
+      assert (whole_world ||
+              (visibility_external_visible != get_entity_visibility (ent)));
 # endif /* defined DEBUG_libfirm */
 
       eset_insert (dead_graphs, graph);
     }
   }
-  /*
-  for (i = 0; i < get_irp_n_types(); ++i) {
-    type *tp = get_irp_type(i);
-    if (is_class_type(tp) && !rta_is_alive_class(tp)) {
-      printf(" never allocated: "); DDMT(tp);
-    }
-  }
-  */
+
   /* now delete the graphs. */
   for (graph = eset_first (dead_graphs);
        graph;
@@ -607,6 +581,9 @@ int  rta_is_alive_class  (type   *clazz)
 /* Say whether this graph might be run at any time in the program: */
 int  rta_is_alive_graph (ir_graph *graph)
 {
+  int has_call  = FALSE;
+  int has_class = FALSE;
+
   if (eset_contains (_live_graphs, graph)) {
     return (TRUE);
   }
@@ -617,7 +594,10 @@ int  rta_is_alive_graph (ir_graph *graph)
 
   entity *meth = get_irg_ent (graph);
 
-  if (has_live_call (meth, graph) && has_live_class (meth, graph)) {
+  has_call  = has_live_call (meth, graph);
+  has_class = has_live_class (meth, graph);
+
+  if (has_call && has_class) {
     eset_insert (_live_graphs, graph);
 
     return (TRUE);
@@ -634,10 +614,32 @@ int  rta_is_alive_field  (entity *field)
   return (eset_contains (_live_fields, field));
 }
 
+/* dump our opinion */
+void rta_report (FILE *stream)
+{
+  int i;
+
+  for (i = 0; i < get_irp_n_types(); ++i) {
+    type *tp = get_irp_type(i);
+    if (is_class_type(tp) && rta_is_alive_class(tp)) {
+      fprintf(stream, "RTA: considered allocated: "); DDMT(tp);
+    }
+  }
+
+  for (i = 0; i < get_irp_n_irgs(); i++) {
+    if (rta_is_alive_graph (get_irp_irg(i))) {
+      fprintf(stream, "RTA: considered called: graph of");
+      DDMEO(get_irg_ent (get_irp_irg(i)));
+    }
+  }
+}
 
 
 /*
  * $Log$
+ * Revision 1.11  2004/06/17 14:21:13  liekweg
+ * major bugfix
+ *
  * Revision 1.10  2004/06/17 10:31:41  goetz
  * irscc: bugfix, can now deal with loops not reachable from start
  * cgana: bugfix, skip_Tuple
