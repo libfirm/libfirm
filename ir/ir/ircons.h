@@ -751,23 +751,23 @@
  *    Output:
  *      A 16-tuple containing the results of the 16 different comparisons.
  *      The following is a list giving the comparisons and a projection
- *      number (pnc_number) to use in Proj nodes to extract the proper result.
- *        False     false
- *        Eq        equal
- *        Lt    less
- *        Le    less or equal
- *        Gt    greater
- *        Ge    greater of equal
- *        Lg    less or greater
- *        Leg   less, equal or greater = ordered
- *        Uo    unordered
- *        Ue    unordered or equal
- *        Ul    unordered or less
- *        Ule   unordered, less or equal
- *        Ug    unordered or greater
- *        Uge   unordered, greater or equal
- *        Ne    unordered, less or greater = not equal
- *        True  true
+ *      number (pn_Cmp) to use in Proj nodes to extract the proper result.
+ *        pn_Cmp_False false
+ *        pn_Cmp_Eq    equal
+ *        pn_Cmp_Lt    less
+ *        pn_Cmp_Le    less or equal
+ *        pn_Cmp_Gt    greater
+ *        pn_Cmp_Ge    greater of equal
+ *        pn_Cmp_Lg    less or greater
+ *        pn_Cmp_Leg   less, equal or greater = ordered
+ *        pn_Cmp_Uo    unordered
+ *        pn_Cmp_Ue    unordered or equal
+ *        pn_Cmp_Ul    unordered or less
+ *        pn_Cmp_Ule   unordered, less or equal
+ *        pn_Cmp_Ug    unordered or greater
+ *        pn_Cmp_Uge   unordered, greater or equal
+ *        pn_Cmp_Ne    unordered, less or greater = not equal
+ *        pn_Cmp_True  true
  *
  *
  *
