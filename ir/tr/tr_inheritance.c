@@ -227,7 +227,7 @@ static void  add_type_map(type *tp, dir d, type *new) {
 static void compute_down_closure(type *tp) {
   pset *myset, *subset;
   int i, n_subtypes, n_members, n_supertypes;
-  int master_visited = get_master_type_visited();
+  unsigned long master_visited = get_master_type_visited();
 
   assert(is_Class_type(tp));
 
