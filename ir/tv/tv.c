@@ -35,6 +35,7 @@
 # include "xprintf.h"
 #include <assert.h>
 #include <limits.h>
+#include <errno.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -609,6 +610,28 @@ tarval_S_from_str (const char *s, size_t len)
   return tarval_identify (tv);
 }
 
+tarval *tarval_int_from_str (const char *s, size_t len, int base, ir_mode *m) {
+  long val;
+  char *eptr;
+  char *buf;
+
+  assert (mode_is_int(m));
+  assert (!BUILDING);
+
+  buf = alloca (len+1);
+  stripcpy (buf, s, len);
+
+  errno = 0;
+  val = strtol(buf, &eptr, base);    /* strtoll */
+  assert (eptr == buf+strlen(buf));
+  if ((errno == ERANGE)               &&
+      ((m == mode_l) || (m == mode_L))  ) {
+    printf("WARNING: Constant %s not representable. Continuing with %ld.\n",
+	   s, val);
+  }
+
+  return tarval_from_long(m, val);
+}
 
 /* Create a tarval with mode `m' and value `i' casted to the type that
    represents such tarvals on host.  The resulting value must be legal
