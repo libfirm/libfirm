@@ -51,12 +51,15 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-node: {title: "n58" label: "Block n58" }
-edge: { sourcename: "n58" targetname: "n65"}
-node: {title: "n65" label: "Block n65" }
-edge: { sourcename: "n65" targetname: "n61"}
-node: {title: "n61" label: "Block n61" }
-edge: { sourcename: "n61" targetname: "n61"}
+node: {title: "n17" label: "End Block n17" info1:"arity: 1
+" color:blue }
+edge: { sourcename: "n17" targetname: "n28"}
+node: {title: "n28" label: "Block n28" info1:"arity: 1
+"}
+edge: { sourcename: "n28" targetname: "n19"}
+node: {title: "n19" label: "Start Block n19" info1:"arity: 1
+" color:blue }
+edge: { sourcename: "n19" targetname: "n19"}
 node: {title: "n57" label: "Bad  57"  info1: "mode:    T
 visited: 0
 irg:     DEAD_BLOCK_main

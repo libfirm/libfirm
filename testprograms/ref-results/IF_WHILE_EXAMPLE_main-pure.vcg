@@ -51,69 +51,69 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-node: {title: "n89" label: "Start  89"  info1: "mode:    T
+node: {title: "n20" label: "Start  20"  info1: "mode:    T
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 0
 start of method of type main
 "color: blue}
-edge: { sourcename: "n89" targetname: "n87" class:2  priority:50 linestyle:dotted}
-node: {title: "n88" label: "ProjX 0 88"  info1: "mode:    X
+edge: { sourcename: "n20" targetname: "n19" class:2  priority:50 linestyle:dotted}
+node: {title: "n22" label: "ProjX 0 22"  info1: "mode:    X
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n88" targetname: "n89" label: "0" class:13 priority:60 color:red}
-edge: { sourcename: "n88" targetname: "n87" class:2  priority:50 linestyle:dotted}
-node: {title: "n87" label: "Block  87"  info1: "mode:    BB
+edge: {sourcename: "n22" targetname: "n20" label: "0" class:13 priority:60 color:red}
+edge: { sourcename: "n22" targetname: "n19" class:2  priority:50 linestyle:dotted}
+node: {title: "n19" label: "Block  19"  info1: "mode:    BB
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 1 backedges:
 "color: lightyellow}
-edge: {sourcename: "n87" targetname: "n88" label: "0" class:13 priority:60 color:red}
-node: {title: "n86" label: "0x0Iu  86"  info1: "mode:    Iu
+edge: {sourcename: "n19" targetname: "n22" label: "0" class:13 priority:60 color:red}
+node: {title: "n35" label: "0x0Iu  35"  info1: "mode:    Iu
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 0
 Const of type type_unknown
 "color: yellow}
-edge: { sourcename: "n86" targetname: "n87" class:2  priority:50 linestyle:dotted}
-node: {title: "n85" label: "CmpT  85"  info1: "mode:    T
+edge: { sourcename: "n35" targetname: "n19" class:2  priority:50 linestyle:dotted}
+node: {title: "n37" label: "CmpT  37"  info1: "mode:    T
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 2
 "}
-edge: {sourcename: "n85" targetname: "n86" label: "0" class:16 priority:10}
-edge: {sourcename: "n85" targetname: "n86" label: "1" class:16 priority:10}
-edge: { sourcename: "n85" targetname: "n79" class:2  priority:50 linestyle:dotted}
-node: {title: "n84" label: "Projb Eq 84"  info1: "mode:    b
+edge: {sourcename: "n37" targetname: "n35" label: "0" class:16 priority:10}
+edge: {sourcename: "n37" targetname: "n35" label: "1" class:16 priority:10}
+edge: { sourcename: "n37" targetname: "n34" class:2  priority:50 linestyle:dotted}
+node: {title: "n38" label: "Projb Eq 38"  info1: "mode:    b
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n84" targetname: "n85" label: "0" class:1  priority:50}
-edge: { sourcename: "n84" targetname: "n79" class:2  priority:50 linestyle:dotted}
-node: {title: "n83" label: "Cond  83"  info1: "mode:    T
+edge: {sourcename: "n38" targetname: "n37" label: "0" class:1  priority:50}
+edge: { sourcename: "n38" targetname: "n34" class:2  priority:50 linestyle:dotted}
+node: {title: "n39" label: "Cond  39"  info1: "mode:    T
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 1
 "}
-edge: {sourcename: "n83" targetname: "n84" label: "0" class:1  priority:50}
-edge: { sourcename: "n83" targetname: "n79" class:2  priority:50 linestyle:dotted}
-node: {title: "n82" label: "ProjX 1 82"  info1: "mode:    X
+edge: {sourcename: "n39" targetname: "n38" label: "0" class:1  priority:50}
+edge: { sourcename: "n39" targetname: "n34" class:2  priority:50 linestyle:dotted}
+node: {title: "n41" label: "ProjX 1 41"  info1: "mode:    X
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n82" targetname: "n83" label: "0" class:13 priority:60 color:red}
-edge: { sourcename: "n82" targetname: "n79" class:2  priority:50 linestyle:dotted}
-node: {title: "n81" label: "Block  81"  info1: "mode:    BB
+edge: {sourcename: "n41" targetname: "n39" label: "0" class:13 priority:60 color:red}
+edge: { sourcename: "n41" targetname: "n34" class:2  priority:50 linestyle:dotted}
+node: {title: "n42" label: "Block  42"  info1: "mode:    BB
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 1 backedges:
 "color: lightyellow}
-edge: {sourcename: "n81" targetname: "n82" label: "0" class:13 priority:60 color:red}
-node: {title: "n80" label: "Jmp  80"  info1: "mode:    X
+edge: {sourcename: "n42" targetname: "n41" label: "0" class:13 priority:60 color:red}
+node: {title: "n43" label: "Jmp  43"  info1: "mode:    X
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 0

@@ -51,21 +51,27 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-node: {title: "n61" label: "Block n61" }
-edge: { sourcename: "n61" targetname: "n63"}
-node: {title: "n63" label: "Block n63" }
-edge: { sourcename: "n63" targetname: "n67"}
-edge: { sourcename: "n63" targetname: "n65"}
-node: {title: "n65" label: "Block n65" }
-edge: { sourcename: "n65" targetname: "n78"}
-edge: { sourcename: "n65" targetname: "n67"}
-node: {title: "n67" label: "Block n67" }
-edge: { sourcename: "n67" targetname: "n78"}
-edge: { sourcename: "n67" targetname: "n65"}
-node: {title: "n78" label: "Block n78" }
-edge: { sourcename: "n78" targetname: "n73"}
-node: {title: "n73" label: "Block n73" }
-edge: { sourcename: "n73" targetname: "n73"}
+node: {title: "n16" label: "End Block n16" info1:"arity: 1
+" color:blue }
+edge: { sourcename: "n16" targetname: "n49"}
+node: {title: "n49" label: "Block n49" info1:"arity: 2
+"}
+edge: { sourcename: "n49" targetname: "n43"}
+edge: { sourcename: "n49" targetname: "n37"}
+node: {title: "n37" label: "Block n37" info1:"arity: 2
+"}
+edge: { sourcename: "n37" targetname: "n27"}
+edge: { sourcename: "n37" targetname: "n43"}
+node: {title: "n43" label: "Block n43" info1:"arity: 2
+"}
+edge: { sourcename: "n43" targetname: "n27"}
+edge: { sourcename: "n43" targetname: "n37"}
+node: {title: "n27" label: "Block n27" info1:"arity: 1
+"}
+edge: { sourcename: "n27" targetname: "n18"}
+node: {title: "n18" label: "Start Block n18" info1:"arity: 1
+" color:blue }
+edge: { sourcename: "n18" targetname: "n18"}
 node: {title: "n60" label: "Bad  60"  info1: "mode:    T
 visited: 0
 irg:     IRR_LOOP_main

@@ -52,8 +52,8 @@ colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
 graph: { title: "g27" label: "COND_EXAMPLE_main" status:clustered color:white
-graph: { title: "n60"  label: "Block 60" status:clustered color:yellow
-edge: {sourcename: "n60" targetname: "n61" label: "0" class:13 priority:60 color:red}
+graph: { title: "n17"  label: "Block 17" status:clustered color:yellow
+edge: {sourcename: "n17" targetname: "n51" label: "0" class:13 priority:60 color:red}
 node: {title: "n58" label: "End  58"  info1: "mode:    X
 visited: 12
 irg:     COND_EXAMPLE_main
@@ -61,167 +61,167 @@ arity: 0
 "color: blue}
 }
 
-graph: { title: "n62"  label: "Block 62" status:clustered color:yellow
-edge: {sourcename: "n62" targetname: "n83" label: "0" class:13 priority:60 color:red}
-edge: {sourcename: "n62" targetname: "n63" label: "1" class:13 priority:60 color:red}
-node: {title: "n61" label: "Return  61"  info1: "mode:    X
+graph: { title: "n48"  label: "Block 48" status:clustered color:yellow
+edge: {sourcename: "n48" targetname: "n47" label: "0" class:13 priority:60 color:red}
+edge: {sourcename: "n48" targetname: "n43" label: "1" class:13 priority:60 color:red}
+node: {title: "n51" label: "Return  51"  info1: "mode:    X
 visited: 12
 irg:     COND_EXAMPLE_main
 arity: 2
 return in method of type main
   res 0 type: int
 "}
-edge: {sourcename: "n61" targetname: "n88" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n61" targetname: "n86" label: "1" class:1  priority:50}
-node: {title: "n86" label: "PhiIs  86"  info1: "mode:    Is
+edge: {sourcename: "n51" targetname: "n25" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n51" targetname: "n57" label: "1" class:1  priority:50}
+node: {title: "n57" label: "PhiIs  57"  info1: "mode:    Is
 visited: 12
 irg:     COND_EXAMPLE_main
 arity: 2 backedges:
 "color: green}
-edge: {sourcename: "n86" targetname: "n87" label: "0" class:16 priority:10}
-edge: {sourcename: "n86" targetname: "n77" label: "1" class:16 priority:10}
+edge: {sourcename: "n57" targetname: "n46" label: "0" class:16 priority:10}
+edge: {sourcename: "n57" targetname: "n29" label: "1" class:16 priority:10}
 }
 
-graph: { title: "n84"  label: "Block 84" status:clustered color:yellow
-edge: {sourcename: "n84" targetname: "n85" label: "0" class:13 priority:60 color:red}
-node: {title: "n83" label: "Jmp  83"  info1: "mode:    X
+graph: { title: "n45"  label: "Block 45" status:clustered color:yellow
+edge: {sourcename: "n45" targetname: "n44" label: "0" class:13 priority:60 color:red}
+node: {title: "n47" label: "Jmp  47"  info1: "mode:    X
 visited: 12
 irg:     COND_EXAMPLE_main
 arity: 0
 "}
 }
 
-graph: { title: "n64"  label: "Block 64" status:clustered color:yellow
-edge: {sourcename: "n64" targetname: "n65" label: "0" class:13 priority:60 color:red}
-node: {title: "n85" label: "ProjX 1 85"  info1: "mode:    X
+graph: { title: "n28"  label: "Block 28" status:clustered color:yellow
+edge: {sourcename: "n28" targetname: "n22" label: "0" class:13 priority:60 color:red}
+node: {title: "n44" label: "ProjX 1 44"  info1: "mode:    X
 visited: 12
 irg:     COND_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n85" targetname: "n68" label: "0" class:13 priority:60 color:red}
-node: {title: "n63" label: "ProjX 0 63"  info1: "mode:    X
+edge: {sourcename: "n44" targetname: "n42" label: "0" class:13 priority:60 color:red}
+node: {title: "n43" label: "ProjX 0 43"  info1: "mode:    X
 visited: 12
 irg:     COND_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n63" targetname: "n68" label: "0" class:13 priority:60 color:red}
-node: {title: "n68" label: "Cond  68"  info1: "mode:    T
+edge: {sourcename: "n43" targetname: "n42" label: "0" class:13 priority:60 color:red}
+node: {title: "n42" label: "Cond  42"  info1: "mode:    T
 visited: 12
 irg:     COND_EXAMPLE_main
 arity: 1
 "}
-edge: {sourcename: "n68" targetname: "n69" label: "0" class:1  priority:50}
-node: {title: "n69" label: "Projb Ne 69"  info1: "mode:    b
+edge: {sourcename: "n42" targetname: "n41" label: "0" class:1  priority:50}
+node: {title: "n41" label: "Projb Ne 41"  info1: "mode:    b
 visited: 12
 irg:     COND_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n69" targetname: "n70" label: "0" class:1  priority:50}
-node: {title: "n70" label: "CmpT  70"  info1: "mode:    T
+edge: {sourcename: "n41" targetname: "n40" label: "0" class:1  priority:50}
+node: {title: "n40" label: "CmpT  40"  info1: "mode:    T
 visited: 12
 irg:     COND_EXAMPLE_main
 arity: 2
 "}
-edge: {sourcename: "n70" targetname: "n72" label: "0" class:1  priority:50}
-edge: {sourcename: "n70" targetname: "n71" label: "1" class:16 priority:10}
-node: {title: "n72" label: "AndIs  72"  info1: "mode:    Is
+edge: {sourcename: "n40" targetname: "n38" label: "0" class:1  priority:50}
+edge: {sourcename: "n40" targetname: "n39" label: "1" class:16 priority:10}
+node: {title: "n38" label: "AndIs  38"  info1: "mode:    Is
 visited: 12
 irg:     COND_EXAMPLE_main
 arity: 2
 "}
-edge: {sourcename: "n72" targetname: "n79" label: "0" class:1  priority:50}
-edge: {sourcename: "n72" targetname: "n73" label: "1" class:1  priority:50}
-node: {title: "n79" label: "ConvIs  79"  info1: "mode:    Is
+edge: {sourcename: "n38" targetname: "n33" label: "0" class:1  priority:50}
+edge: {sourcename: "n38" targetname: "n37" label: "1" class:1  priority:50}
+node: {title: "n33" label: "ConvIs  33"  info1: "mode:    Is
 visited: 12
 irg:     COND_EXAMPLE_main
 arity: 1
 "}
-edge: {sourcename: "n79" targetname: "n80" label: "0" class:1  priority:50}
-node: {title: "n80" label: "Projb Gt 80"  info1: "mode:    b
+edge: {sourcename: "n33" targetname: "n32" label: "0" class:1  priority:50}
+node: {title: "n32" label: "Projb Gt 32"  info1: "mode:    b
 visited: 12
 irg:     COND_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n80" targetname: "n81" label: "0" class:1  priority:50}
-node: {title: "n81" label: "CmpT  81"  info1: "mode:    T
+edge: {sourcename: "n32" targetname: "n31" label: "0" class:1  priority:50}
+node: {title: "n31" label: "CmpT  31"  info1: "mode:    T
 visited: 12
 irg:     COND_EXAMPLE_main
 arity: 2
 "}
-edge: {sourcename: "n81" targetname: "n77" label: "0" class:1  priority:50}
-edge: {sourcename: "n81" targetname: "n82" label: "1" class:16 priority:10}
-node: {title: "n73" label: "ConvIs  73"  info1: "mode:    Is
+edge: {sourcename: "n31" targetname: "n29" label: "0" class:1  priority:50}
+edge: {sourcename: "n31" targetname: "n30" label: "1" class:16 priority:10}
+node: {title: "n37" label: "ConvIs  37"  info1: "mode:    Is
 visited: 12
 irg:     COND_EXAMPLE_main
 arity: 1
 "}
-edge: {sourcename: "n73" targetname: "n74" label: "0" class:1  priority:50}
-node: {title: "n74" label: "Projb Lt 74"  info1: "mode:    b
+edge: {sourcename: "n37" targetname: "n36" label: "0" class:1  priority:50}
+node: {title: "n36" label: "Projb Lt 36"  info1: "mode:    b
 visited: 12
 irg:     COND_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n74" targetname: "n75" label: "0" class:1  priority:50}
-node: {title: "n75" label: "CmpT  75"  info1: "mode:    T
+edge: {sourcename: "n36" targetname: "n35" label: "0" class:1  priority:50}
+node: {title: "n35" label: "CmpT  35"  info1: "mode:    T
 visited: 12
 irg:     COND_EXAMPLE_main
 arity: 2
 "}
-edge: {sourcename: "n75" targetname: "n77" label: "0" class:1  priority:50}
-edge: {sourcename: "n75" targetname: "n76" label: "1" class:16 priority:10}
-node: {title: "n77" label: "ProjIs 0 77"  info1: "mode:    Is
+edge: {sourcename: "n35" targetname: "n29" label: "0" class:1  priority:50}
+edge: {sourcename: "n35" targetname: "n34" label: "1" class:16 priority:10}
+node: {title: "n29" label: "ProjIs 0 29"  info1: "mode:    Is
 visited: 12
 irg:     COND_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n77" targetname: "n78" label: "0" class:16 priority:10}
+edge: {sourcename: "n29" targetname: "n26" label: "0" class:16 priority:10}
 }
 
-graph: { title: "n66"  label: "Block 66" status:clustered color:yellow
-edge: {sourcename: "n66" targetname: "n65" label: "0" class:13 priority:60 color:red}
-node: {title: "n88" label: "ProjM 1 88"  info1: "mode:    M
+graph: { title: "n19"  label: "Block 19" status:clustered color:yellow
+edge: {sourcename: "n19" targetname: "n22" label: "0" class:13 priority:60 color:red}
+node: {title: "n25" label: "ProjM 1 25"  info1: "mode:    M
 visited: 12
 irg:     COND_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n88" targetname: "n67" label: "0" class:17 priority:10 color:blue}
-node: {title: "n87" label: "0x1Is  87"  info1: "mode:    Is
+edge: {sourcename: "n25" targetname: "n20" label: "0" class:17 priority:10 color:blue}
+node: {title: "n46" label: "0x1Is  46"  info1: "mode:    Is
 visited: 12
 irg:     COND_EXAMPLE_main
 arity: 0
 Const of type type_unknown
 "color: yellow}
-node: {title: "n82" label: "0x2Is  82"  info1: "mode:    Is
+node: {title: "n30" label: "0x2Is  30"  info1: "mode:    Is
 visited: 12
 irg:     COND_EXAMPLE_main
 arity: 0
 Const of type type_unknown
 "color: yellow}
-node: {title: "n78" label: "ProjT 4 78"  info1: "mode:    T
+node: {title: "n26" label: "ProjT 4 26"  info1: "mode:    T
 visited: 12
 irg:     COND_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n78" targetname: "n67" label: "0" class:1  priority:50}
-node: {title: "n76" label: "0xAIs  76"  info1: "mode:    Is
+edge: {sourcename: "n26" targetname: "n20" label: "0" class:1  priority:50}
+node: {title: "n34" label: "0xAIs  34"  info1: "mode:    Is
 visited: 12
 irg:     COND_EXAMPLE_main
 arity: 0
 Const of type type_unknown
 "color: yellow}
-node: {title: "n71" label: "0x0Is  71"  info1: "mode:    Is
+node: {title: "n39" label: "0x0Is  39"  info1: "mode:    Is
 visited: 12
 irg:     COND_EXAMPLE_main
 arity: 0
 Const of type type_unknown
 "color: yellow}
-node: {title: "n65" label: "ProjX 0 65"  info1: "mode:    X
+node: {title: "n22" label: "ProjX 0 22"  info1: "mode:    X
 visited: 12
 irg:     COND_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n65" targetname: "n67" label: "0" class:13 priority:60 color:red}
-node: {title: "n67" label: "Start  67"  info1: "mode:    T
+edge: {sourcename: "n22" targetname: "n20" label: "0" class:13 priority:60 color:red}
+node: {title: "n20" label: "Start  20"  info1: "mode:    T
 visited: 12
 irg:     COND_EXAMPLE_main
 arity: 0

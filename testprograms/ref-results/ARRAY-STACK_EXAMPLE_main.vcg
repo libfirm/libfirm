@@ -52,8 +52,8 @@ colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
 graph: { title: "g33" label: "ARRAY-STACK_EXAMPLE_main" status:clustered color:white
-graph: { title: "n48"  label: "Block 48" status:clustered color:yellow
-edge: {sourcename: "n48" targetname: "n49" label: "0" class:13 priority:60 color:red}
+graph: { title: "n23"  label: "Block 23" status:clustered color:yellow
+edge: {sourcename: "n23" targetname: "n44" label: "0" class:13 priority:60 color:red}
 node: {title: "n46" label: "End  46"  info1: "mode:    X
 visited: 11
 irg:     ARRAY-STACK_EXAMPLE_main
@@ -61,84 +61,84 @@ arity: 0
 "color: blue}
 }
 
-graph: { title: "n50"  label: "Block 50" status:clustered color:yellow
-edge: {sourcename: "n50" targetname: "n51" label: "0" class:13 priority:60 color:red}
-node: {title: "n49" label: "Return  49"  info1: "mode:    X
+graph: { title: "n34"  label: "Block 34" status:clustered color:yellow
+edge: {sourcename: "n34" targetname: "n28" label: "0" class:13 priority:60 color:red}
+node: {title: "n44" label: "Return  44"  info1: "mode:    X
 visited: 11
 irg:     ARRAY-STACK_EXAMPLE_main
 arity: 2
 return in method of type main_tp
   res 0 type: int
 "}
-edge: {sourcename: "n49" targetname: "n61" label: "0" class:14 priority:50 color:blue}
-edge: {sourcename: "n49" targetname: "n54" label: "1" class:1  priority:50}
-node: {title: "n61" label: "ProjM 0 61"  info1: "mode:    M
+edge: {sourcename: "n44" targetname: "n42" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n44" targetname: "n43" label: "1" class:1  priority:50}
+node: {title: "n42" label: "ProjM 0 42"  info1: "mode:    M
 visited: 11
 irg:     ARRAY-STACK_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n61" targetname: "n55" label: "0" class:17 priority:10 color:blue}
-node: {title: "n54" label: "ProjIs 2 54"  info1: "mode:    Is
+edge: {sourcename: "n42" targetname: "n40" label: "0" class:17 priority:10 color:blue}
+node: {title: "n43" label: "ProjIs 2 43"  info1: "mode:    Is
 visited: 11
 irg:     ARRAY-STACK_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n54" targetname: "n55" label: "0" class:1  priority:50}
-node: {title: "n55" label: "Load  55"  info1: "mode:    T
+edge: {sourcename: "n43" targetname: "n40" label: "0" class:1  priority:50}
+node: {title: "n40" label: "Load  40"  info1: "mode:    T
 visited: 11
 irg:     ARRAY-STACK_EXAMPLE_main
 arity: 2
 "}
-edge: {sourcename: "n55" targetname: "n60" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n55" targetname: "n56" label: "1" class:1  priority:50}
-node: {title: "n56" label: "Sel a_tp_elem_ent 56"  info1: "mode:    P
+edge: {sourcename: "n40" targetname: "n31" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n40" targetname: "n39" label: "1" class:1  priority:50}
+node: {title: "n39" label: "Sel a_tp_elem_ent 39"  info1: "mode:    P
 visited: 11
 irg:     ARRAY-STACK_EXAMPLE_main
 arity: 3
 Selecting entity of type int
   from entity of type a_tp
 "}
-edge: {sourcename: "n56" targetname: "n60" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n56" targetname: "n58" label: "1" class:1  priority:50}
-edge: {sourcename: "n56" targetname: "n57" label: "2" class:16 priority:10}
-node: {title: "n58" label: "Sel a 58"  info1: "mode:    P
+edge: {sourcename: "n39" targetname: "n31" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n39" targetname: "n37" label: "1" class:1  priority:50}
+edge: {sourcename: "n39" targetname: "n38" label: "2" class:16 priority:10}
+node: {title: "n37" label: "Sel a 37"  info1: "mode:    P
 visited: 11
 irg:     ARRAY-STACK_EXAMPLE_main
 arity: 2
 Selecting entity of type a_tp
   from entity of type mainframe_tp
 "}
-edge: {sourcename: "n58" targetname: "n60" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n58" targetname: "n59" label: "1" class:16 priority:10}
+edge: {sourcename: "n37" targetname: "n31" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n37" targetname: "n29" label: "1" class:16 priority:10}
 }
 
-graph: { title: "n52"  label: "Block 52" status:clustered color:yellow
-edge: {sourcename: "n52" targetname: "n51" label: "0" class:13 priority:60 color:red}
-node: {title: "n60" label: "ProjM 1 60"  info1: "mode:    M
+graph: { title: "n25"  label: "Block 25" status:clustered color:yellow
+edge: {sourcename: "n25" targetname: "n28" label: "0" class:13 priority:60 color:red}
+node: {title: "n31" label: "ProjM 1 31"  info1: "mode:    M
 visited: 11
 irg:     ARRAY-STACK_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n60" targetname: "n53" label: "0" class:17 priority:10 color:blue}
-node: {title: "n59" label: "ProjP 2 59"  info1: "mode:    P
+edge: {sourcename: "n31" targetname: "n26" label: "0" class:17 priority:10 color:blue}
+node: {title: "n29" label: "ProjP 2 29"  info1: "mode:    P
 visited: 11
 irg:     ARRAY-STACK_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n59" targetname: "n53" label: "0" class:1  priority:50}
-node: {title: "n57" label: "0x3Iu  57"  info1: "mode:    Iu
+edge: {sourcename: "n29" targetname: "n26" label: "0" class:1  priority:50}
+node: {title: "n38" label: "0x3Iu  38"  info1: "mode:    Iu
 visited: 11
 irg:     ARRAY-STACK_EXAMPLE_main
 arity: 0
 Const of type type_unknown
 "color: yellow}
-node: {title: "n51" label: "ProjX 0 51"  info1: "mode:    X
+node: {title: "n28" label: "ProjX 0 28"  info1: "mode:    X
 visited: 11
 irg:     ARRAY-STACK_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n51" targetname: "n53" label: "0" class:13 priority:60 color:red}
-node: {title: "n53" label: "Start  53"  info1: "mode:    T
+edge: {sourcename: "n28" targetname: "n26" label: "0" class:13 priority:60 color:red}
+node: {title: "n26" label: "Start  26"  info1: "mode:    T
 visited: 11
 irg:     ARRAY-STACK_EXAMPLE_main
 arity: 0

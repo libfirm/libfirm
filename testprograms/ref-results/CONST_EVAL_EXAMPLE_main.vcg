@@ -52,8 +52,8 @@ colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
 graph: { title: "g27" label: "CONST_EVAL_EXAMPLE_main" status:clustered color:white
-graph: { title: "n45"  label: "Block 45" status:clustered color:yellow
-edge: {sourcename: "n45" targetname: "n46" label: "0" class:13 priority:60 color:red}
+graph: { title: "n17"  label: "Block 17" status:clustered color:yellow
+edge: {sourcename: "n17" targetname: "n42" label: "0" class:13 priority:60 color:red}
 node: {title: "n43" label: "End  43"  info1: "mode:    X
 visited: 7
 irg:     CONST_EVAL_EXAMPLE_main
@@ -61,9 +61,9 @@ arity: 0
 "color: blue}
 }
 
-graph: { title: "n47"  label: "Block 47" status:clustered color:yellow
-edge: {sourcename: "n47" targetname: "n48" label: "0" class:13 priority:60 color:red}
-node: {title: "n46" label: "Return  46"  info1: "mode:    X
+graph: { title: "n28"  label: "Block 28" status:clustered color:yellow
+edge: {sourcename: "n28" targetname: "n22" label: "0" class:13 priority:60 color:red}
+node: {title: "n42" label: "Return  42"  info1: "mode:    X
 visited: 7
 irg:     CONST_EVAL_EXAMPLE_main
 arity: 3
@@ -71,32 +71,32 @@ return in method of type main
   res 0 type: int
   res 1 type: int
 "}
-edge: {sourcename: "n46" targetname: "n52" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n46" targetname: "n51" label: "1" class:16 priority:10}
-edge: {sourcename: "n46" targetname: "n51" label: "2" class:16 priority:10}
+edge: {sourcename: "n42" targetname: "n25" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n42" targetname: "n35" label: "1" class:16 priority:10}
+edge: {sourcename: "n42" targetname: "n35" label: "2" class:16 priority:10}
 }
 
-graph: { title: "n49"  label: "Block 49" status:clustered color:yellow
-edge: {sourcename: "n49" targetname: "n48" label: "0" class:13 priority:60 color:red}
-node: {title: "n52" label: "ProjM 1 52"  info1: "mode:    M
+graph: { title: "n19"  label: "Block 19" status:clustered color:yellow
+edge: {sourcename: "n19" targetname: "n22" label: "0" class:13 priority:60 color:red}
+node: {title: "n25" label: "ProjM 1 25"  info1: "mode:    M
 visited: 7
 irg:     CONST_EVAL_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n52" targetname: "n50" label: "0" class:17 priority:10 color:blue}
-node: {title: "n51" label: "0xCIs  51"  info1: "mode:    Is
+edge: {sourcename: "n25" targetname: "n20" label: "0" class:17 priority:10 color:blue}
+node: {title: "n35" label: "0xCIs  35"  info1: "mode:    Is
 visited: 7
 irg:     CONST_EVAL_EXAMPLE_main
 arity: 0
 Const of type type_unknown
 "color: yellow}
-node: {title: "n48" label: "ProjX 0 48"  info1: "mode:    X
+node: {title: "n22" label: "ProjX 0 22"  info1: "mode:    X
 visited: 7
 irg:     CONST_EVAL_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n48" targetname: "n50" label: "0" class:13 priority:60 color:red}
-node: {title: "n50" label: "Start  50"  info1: "mode:    T
+edge: {sourcename: "n22" targetname: "n20" label: "0" class:13 priority:60 color:red}
+node: {title: "n20" label: "Start  20"  info1: "mode:    T
 visited: 7
 irg:     CONST_EVAL_EXAMPLE_main
 arity: 0

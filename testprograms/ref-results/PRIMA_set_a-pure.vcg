@@ -51,13 +51,13 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-node: {title: "n135" label: "Block  135"  info1: "mode:    BB
+node: {title: "n60" label: "Block  60"  info1: "mode:    BB
 visited: 11
 irg:     PRIMA_set_a
 arity: 1 backedges:
 "color: lightyellow}
-edge: {sourcename: "n135" targetname: "n134" label: "0" class:13 priority:60 color:red}
-node: {title: "n136" label: "Start  136"  info1: "mode:    T
+edge: {sourcename: "n60" targetname: "n63" label: "0" class:13 priority:60 color:red}
+node: {title: "n61" label: "Start  61"  info1: "mode:    T
 visited: 11
 irg:     PRIMA_set_a
 arity: 0
@@ -65,92 +65,92 @@ start of method of type set_a
   param 0 type: class_prima_ptr
   param 1 type: int
 "color: blue}
-edge: { sourcename: "n136" targetname: "n135" class:2  priority:50 linestyle:dotted}
-node: {title: "n134" label: "ProjX 0 134"  info1: "mode:    X
+edge: { sourcename: "n61" targetname: "n60" class:2  priority:50 linestyle:dotted}
+node: {title: "n63" label: "ProjX 0 63"  info1: "mode:    X
 visited: 11
 irg:     PRIMA_set_a
 arity: 1
 "color: yellow}
-edge: {sourcename: "n134" targetname: "n136" label: "0" class:13 priority:60 color:red}
-edge: { sourcename: "n134" targetname: "n135" class:2  priority:50 linestyle:dotted}
-node: {title: "n133" label: "Block  133"  info1: "mode:    BB
+edge: {sourcename: "n63" targetname: "n61" label: "0" class:13 priority:60 color:red}
+edge: { sourcename: "n63" targetname: "n60" class:2  priority:50 linestyle:dotted}
+node: {title: "n69" label: "Block  69"  info1: "mode:    BB
 visited: 11
 irg:     PRIMA_set_a
 arity: 1 backedges:
 "color: lightyellow}
-edge: {sourcename: "n133" targetname: "n134" label: "0" class:13 priority:60 color:red}
-node: {title: "n140" label: "ProjT 4 140"  info1: "mode:    T
+edge: {sourcename: "n69" targetname: "n63" label: "0" class:13 priority:60 color:red}
+node: {title: "n67" label: "ProjT 4 67"  info1: "mode:    T
 visited: 11
 irg:     PRIMA_set_a
 arity: 1
 "color: yellow}
-edge: {sourcename: "n140" targetname: "n136" label: "0" class:1  priority:50}
-edge: { sourcename: "n140" targetname: "n135" class:2  priority:50 linestyle:dotted}
-node: {title: "n139" label: "ProjIs 1 139"  info1: "mode:    Is
+edge: {sourcename: "n67" targetname: "n61" label: "0" class:1  priority:50}
+edge: { sourcename: "n67" targetname: "n60" class:2  priority:50 linestyle:dotted}
+node: {title: "n71" label: "ProjIs 1 71"  info1: "mode:    Is
 visited: 11
 irg:     PRIMA_set_a
 arity: 1
 "color: yellow}
-edge: {sourcename: "n139" targetname: "n140" label: "0" class:16 priority:10}
-edge: { sourcename: "n139" targetname: "n133" class:2  priority:50 linestyle:dotted}
-node: {title: "n142" label: "ProjP 0 142"  info1: "mode:    P
+edge: {sourcename: "n71" targetname: "n67" label: "0" class:16 priority:10}
+edge: { sourcename: "n71" targetname: "n69" class:2  priority:50 linestyle:dotted}
+node: {title: "n70" label: "ProjP 0 70"  info1: "mode:    P
 visited: 11
 irg:     PRIMA_set_a
 arity: 1
 "color: yellow}
-edge: {sourcename: "n142" targetname: "n140" label: "0" class:16 priority:10}
-edge: { sourcename: "n142" targetname: "n133" class:2  priority:50 linestyle:dotted}
-node: {title: "n143" label: "ProjM 1 143"  info1: "mode:    M
+edge: {sourcename: "n70" targetname: "n67" label: "0" class:16 priority:10}
+edge: { sourcename: "n70" targetname: "n69" class:2  priority:50 linestyle:dotted}
+node: {title: "n66" label: "ProjM 1 66"  info1: "mode:    M
 visited: 11
 irg:     PRIMA_set_a
 arity: 1
 "color: yellow}
-edge: {sourcename: "n143" targetname: "n136" label: "0" class:17 priority:10 color:blue}
-edge: { sourcename: "n143" targetname: "n135" class:2  priority:50 linestyle:dotted}
-node: {title: "n141" label: "Sel a 141"  info1: "mode:    P
+edge: {sourcename: "n66" targetname: "n61" label: "0" class:17 priority:10 color:blue}
+edge: { sourcename: "n66" targetname: "n60" class:2  priority:50 linestyle:dotted}
+node: {title: "n73" label: "Sel a 73"  info1: "mode:    P
 visited: 11
 irg:     PRIMA_set_a
 arity: 2
 Selecting entity of type int
   from entity of type PRIMA
 "}
-edge: {sourcename: "n141" targetname: "n143" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n141" targetname: "n142" label: "1" class:1  priority:50}
-edge: { sourcename: "n141" targetname: "n133" class:2  priority:50 linestyle:dotted}
-node: {title: "n138" label: "Store  138"  info1: "mode:    T
+edge: {sourcename: "n73" targetname: "n66" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n73" targetname: "n70" label: "1" class:1  priority:50}
+edge: { sourcename: "n73" targetname: "n69" class:2  priority:50 linestyle:dotted}
+node: {title: "n74" label: "Store  74"  info1: "mode:    T
 visited: 11
 irg:     PRIMA_set_a
 arity: 3
 "}
-edge: {sourcename: "n138" targetname: "n143" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n138" targetname: "n141" label: "1" class:1  priority:50}
-edge: {sourcename: "n138" targetname: "n139" label: "2" class:1  priority:50}
-edge: { sourcename: "n138" targetname: "n133" class:2  priority:50 linestyle:dotted}
-node: {title: "n137" label: "ProjM 0 137"  info1: "mode:    M
+edge: {sourcename: "n74" targetname: "n66" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n74" targetname: "n73" label: "1" class:1  priority:50}
+edge: {sourcename: "n74" targetname: "n71" label: "2" class:1  priority:50}
+edge: { sourcename: "n74" targetname: "n69" class:2  priority:50 linestyle:dotted}
+node: {title: "n76" label: "ProjM 0 76"  info1: "mode:    M
 visited: 11
 irg:     PRIMA_set_a
 arity: 1
 "color: yellow}
-edge: {sourcename: "n137" targetname: "n138" label: "0" class:17 priority:10 color:blue}
-edge: { sourcename: "n137" targetname: "n133" class:2  priority:50 linestyle:dotted}
-node: {title: "n132" label: "Return  132"  info1: "mode:    X
+edge: {sourcename: "n76" targetname: "n74" label: "0" class:17 priority:10 color:blue}
+edge: { sourcename: "n76" targetname: "n69" class:2  priority:50 linestyle:dotted}
+node: {title: "n77" label: "Return  77"  info1: "mode:    X
 visited: 11
 irg:     PRIMA_set_a
 arity: 1
 return in method of type set_a
 "}
-edge: {sourcename: "n132" targetname: "n137" label: "0" class:14 priority:50 color:blue}
-edge: { sourcename: "n132" targetname: "n133" class:2  priority:50 linestyle:dotted}
-node: {title: "n131" label: "Block  131"  info1: "mode:    BB
+edge: {sourcename: "n77" targetname: "n76" label: "0" class:14 priority:50 color:blue}
+edge: { sourcename: "n77" targetname: "n69" class:2  priority:50 linestyle:dotted}
+node: {title: "n58" label: "Block  58"  info1: "mode:    BB
 visited: 11
 irg:     PRIMA_set_a
 arity: 1 backedges:
 "color: lightyellow}
-edge: {sourcename: "n131" targetname: "n132" label: "0" class:13 priority:60 color:red}
+edge: {sourcename: "n58" targetname: "n77" label: "0" class:13 priority:60 color:red}
 node: {title: "n129" label: "End  129"  info1: "mode:    X
 visited: 11
 irg:     PRIMA_set_a
 arity: 0
 "color: blue}
-edge: { sourcename: "n129" targetname: "n131" class:2  priority:50 linestyle:dotted}
+edge: { sourcename: "n129" targetname: "n58" class:2  priority:50 linestyle:dotted}
 }
