@@ -16,6 +16,7 @@
 
 # include "irop.h"
 # include "tv.h"
+# include "irnode.h"
 
 /** The allowed parities */
 typedef enum {
@@ -83,8 +84,10 @@ typedef int (*node_cmp_attr_func)(ir_node *a, ir_node *b);
  * The reassociation operation.
  * Called from a walker.  Returns non-zero if
  * a reassociation rule was applied.
+ * The pointer n is set to the newly created node, if some reassociation
+ * was applied.
  */
-typedef int (*reassociate_func)(ir_node *n);
+typedef int (*reassociate_func)(ir_node **n);
 
 /**
  * The copy attribute operation.
