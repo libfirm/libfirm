@@ -354,12 +354,12 @@ typedef enum {
 } pn_Raise;  /* Projection numbers for Raise. */
 
 typedef enum {
-	CNST_NULL = TV_CLASSIFY_NULL,				/**< The node is a const(0). */
-	CNST_ONE = TV_CLASSIFY_ONE,					/**< The node is a const(1). */
-	CNST_ALL_ONE = TV_CLASSIFY_ALL_ONE, /**< The node is a const(11111...). */
-	CNST_OTHER = TV_CLASSIFY_OTHER,			/**< The tarvel of the const has another value. */
-	CNST_SYMCONST,											/**< The node is symconst. */
-	CNST_NO_CONST												/**< The node is no const at all. */
+  CNST_NULL = TV_CLASSIFY_NULL,       /**< The node is a const(0). */
+  CNST_ONE = TV_CLASSIFY_ONE,         /**< The node is a const(1). */
+  CNST_ALL_ONE = TV_CLASSIFY_ALL_ONE, /**< The node is a const(11111...). */
+  CNST_OTHER = TV_CLASSIFY_OTHER,     /**< The tarvel of the const has another value. */
+  CNST_SYMCONST,                      /**< The node is symconst. */
+  CNST_NO_CONST                       /**< The node is no const at all. */
 } cnst_classify_t;
 
 tarval  *get_Const_tarval (ir_node *node);
