@@ -26,6 +26,8 @@
 #include "irflag.h"
 #include "firmstat.h"
 
+static int n_opt_applications = 0;
+
 /**
  * the environment for colelcting data
  */
@@ -309,6 +311,11 @@ void opt_tail_rec_irg(ir_graph *irg)
   if (! n_tail_calls)
     return;
 
+  if (get_opt_tail_recursion_verbose() && get_firm_verbosity() > 1)
+    printf("  Performing tail recursion for graph %s and %d Calls\n",
+	   get_entity_ld_name(get_irg_entity(irg)), n_tail_calls);
+  n_opt_applications++;
+
   do_opt_tail_rec(irg, rets, n_tail_calls);
 }
 
@@ -322,9 +329,14 @@ void opt_tail_recursion(void)
   if (! get_opt_tail_recursion() || ! get_opt_optimize())
     return;
 
+  n_opt_applications = 0;
+
   for (i = 0; i < get_irp_n_irgs(); i++) {
     current_ir_graph = get_irp_irg(i);
 
     opt_tail_rec_irg(current_ir_graph);
   }
+
+  if (get_opt_tail_recursion_verbose())
+    printf("Performed tail recursion for %d of %d graphs\n", n_opt_applications, get_irp_n_irgs());
 }

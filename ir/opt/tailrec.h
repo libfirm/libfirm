@@ -26,6 +26,8 @@
  * Optimizes simple tail-recursion calls by
  * converting them into loops. Depends on the flag opt_tail_recursion.
  *
+ * Does not work for Calls that use the exception stuff.
+ *
  * @param irg   the graph to be optimized
  */
 void opt_tail_rec_irg(ir_graph *irg);
