@@ -206,6 +206,8 @@ ir_mode *get_tv_mode (tarval *tv);
 /** Returns the entity if the tv is a pointer to an entity, else
    returns NULL; */
 entity *get_tv_entity(tarval *tv);
+/* Removes tarvals that are pointers to ent. */
+void free_tv_entity(entity *ent);
 
 /** Returns 0 if tv is positive, else > 0. @todo not tested! */
 int tv_is_negative(tarval *a);

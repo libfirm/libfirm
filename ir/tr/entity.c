@@ -176,8 +176,10 @@ copy_entity_name (entity *old, ident *new_name) {
   return new;
 }
 
+
 void
 free_entity (entity *ent) {
+  free_tv_entity(ent);
   free_entity_attrs(ent);
   free(ent);
 }

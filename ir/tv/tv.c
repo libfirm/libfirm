@@ -1432,3 +1432,32 @@ entity *get_tv_entity(tarval *tv) {
   }
   return ent;
 }
+
+
+void
+free_tv_entity(entity *ent) {
+  /* There can be a tarval referencing this entity.
+     Even if the tarval is not used by the code any more,
+     it can still reference an entity.  If a hash function
+     happens to collide with this tarval, we will verify that
+     it contains a proper entity and we will crash.
+     As we cannot remove tarvals (they are on an obstack) we
+     overwrite ent with NULL. */
+  /* Get the tarval by allocating a new one. */
+  tarval *tv = (tarval *)pset_first(tarvals);
+  tarval *found = NULL;
+  while (tv) {
+    entity *tv_ent = get_tv_entity(tv);
+    if ((tv_ent) && (tv_ent == ent)) {
+      found = tv;
+      //pset_remove(tarvals, tv, tarval_hash(tv));
+      //tv->u.P.ent = NULL;
+      //  tv = NULL;
+    } //else {
+      tv = pset_next(tarvals);
+      //}
+  }
+  // pset_break(tarvals);
+  if (found)
+    pset_remove(tarvals, found, tarval_hash(found));
+}
