@@ -147,17 +147,28 @@ void        free_entity (entity *ent);
 const char *get_entity_name     (entity *ent);
 ident      *get_entity_ident    (entity *ent);
 
-/* returns the mangled name of the entity.  If the mangled name is
-   set it returns the existing name.  Else it generates a name
-   with mangle_entity() and remembers this new name internally. */
+/** Returns the mangled name of the entity.
+ *
+ * If the mangled name is set it returns the existing name.
+ * Else it generates a name with mangle_entity()
+ * and remembers this new name internally.
+ */
 ident      *get_entity_ld_ident (entity *ent);
+
+/** Sets the mangled name of the entity. */
 void        set_entity_ld_ident (entity *ent, ident *ld_ident);
+
+/** Returns the mangled name of the entity as a string. */
 const char *get_entity_ld_name (entity *end);
 
+/** Returns the owner of the entity. */
 type       *get_entity_owner (entity *ent);
-/* Sets the owner field in entity to owner.  Don't forget to add
+
+/** Sets the owner field in entity to owner.  Don't forget to add
    ent to owner!! */
 void        set_entity_owner (entity *ent, type *owner);
+
+/** Asserts if the type owner is neither a compound type or an array */
 INLINE void assert_legal_owner_of_ent(type *owner);
 
 type     *get_entity_type (entity *ent);
@@ -257,7 +268,7 @@ ir_node *get_compound_ent_value(entity *ent, int pos);
 entity  *get_compound_ent_value_member(entity *ent, int pos);
 void     set_compound_ent_value(entity *ent, ir_node *val, entity *member, int pos);
 void     remove_compound_ent_value(entity *ent, entity *value_ent);
-/* Inits the entity ent witch must be of a one dimensional
+/** Inits the entity ent witch must be of a one dimensional
    array type with the values given in the values array.
    The array must have a lower and an upper bound.  Keeps the
    order of values. Does not test whether the number of values
@@ -265,7 +276,7 @@ void     remove_compound_ent_value(entity *ent, entity *value_ent);
    values have the proper mode for the array. */
 void set_array_entity_values(entity *ent, tarval **values, int num_vals);
 
-/** Fields of entities with a class type as owner **/
+/* --- Fields of entities with a class type as owner --- */
 /* Overwrites is a field that specifies that an access to the overwritten
    entity in the supertype must use this entity.  It's a list as with
    multiple inheritance several enitites can be overwritten.  This field
@@ -316,9 +327,14 @@ bool equal_entity(entity *ent1, entity *ent2);
 
 unsigned long get_entity_visited(entity *ent);
 void        set_entity_visited(entity *ent, unsigned long num);
+
 /** Sets visited field in entity to entity_visited. */
 void        mark_entity_visited(entity *ent);
+
+/** Returns true if this entity was visited. */
 bool        entity_visited(entity *ent);
+
+/** Returns true if this entity was not visited. */
 bool        entity_not_visited(entity *ent);
 
 
