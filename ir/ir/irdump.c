@@ -250,6 +250,13 @@ bool pred_in_wrong_graph(ir_node *n, int pos, pmap *irgmap) {
 }
 
 
+static INLINE
+bool is_constlike_node(ir_node *n) {
+  ir_op *op = get_irn_op(n);
+  return (op == op_Const || op == op_Bad || op == op_SymConst);
+}
+
+
 void dump_const_node_local(ir_node *n, pmap *irgmap) {
   int i;
   if (!dump_const_local_set()) return;
@@ -257,14 +264,14 @@ void dump_const_node_local(ir_node *n, pmap *irgmap) {
      initialize it first. */
   for (i = 0; i < get_irn_arity(n); i++) {
     ir_node *con = get_irn_n(n, i);
-    if (get_irn_op(con) == op_Const) {
+    if (is_constlike_node(con)) {
       if (pred_in_wrong_graph(n, i, irgmap)) continue; /* pred not dumped */
       set_irn_visited(con, get_irg_visited(current_ir_graph)-1);
     }
   }
   for (i = 0; i < get_irn_arity(n); i++) {
     ir_node *con = get_irn_n(n, i);
-    if ((get_irn_op(con) == op_Const) && irn_not_visited(con)) {
+    if (is_constlike_node(con) && irn_not_visited(con)) {
       if (pred_in_wrong_graph(n, i, irgmap)) continue; /* pred not dumped */
       mark_irn_visited(con);
       /* Generate a new name for the node by appending the names of
@@ -287,7 +294,7 @@ void dump_const_node_local(ir_node *n, pmap *irgmap) {
 
 void
 dump_node (ir_node *n, pmap * map) {
-  if (dump_const_local_set() && (get_irn_op(n) == op_Const)) return;
+  if (dump_const_local_set() && is_constlike_node(n)) return;
 
   /* dump this node */
   xfprintf (F, "node: {title: \""); PRINT_NODEID(n); fprintf(F, "\" label: \"");
@@ -502,7 +509,7 @@ dump_ir_node (ir_node *n)
 /* dump the edge to the block this node belongs to */
 void
 dump_ir_block_edge(ir_node *n)  {
-  if (dump_const_local_set() && (get_irn_op(n) == op_Const)) return;
+  if (dump_const_local_set() && is_constlike_node(n)) return;
   if (is_no_Block(n)) {
     xfprintf (F, "edge: { sourcename: \"");
     PRINT_NODEID(n);
@@ -617,7 +624,7 @@ dump_ir_data_edges(ir_node *n)  {
       fprintf (F, "edge: {sourcename: \"");
     PRINT_NODEID(n);
     fprintf (F, "\" targetname: \"");
-    if ((dump_const_local_set()) && (get_irn_op(pred) == op_Const))
+    if ((dump_const_local_set()) && is_constlike_node(pred))
       PRINT_NODEID(n);
     PRINT_NODEID(pred);
     fprintf (F, "\"");
@@ -1149,6 +1156,7 @@ dump_ir_block (ir_node *block, void *env) {
 
     /* Close the vcg information for the block */
     xfprintf(F, "}\n\n");
+    dump_const_node_local(block, NULL);
   }
 }
 
@@ -1194,9 +1202,7 @@ dump_ir_block_graph (ir_graph *irg)
 
   dump_ir_block_graph_2 (irg);
 
-  if (dump_loop_information_flag) {
-    dump_loop_info(irg);
-  }
+  if (dump_loop_information_flag) dump_loop_info(irg);
 
   vcg_close();
   current_ir_graph = rem;

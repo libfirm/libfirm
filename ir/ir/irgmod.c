@@ -156,7 +156,10 @@ void part_block(ir_node *node) {
   set_irn_link(new_block, phi);
   set_irn_link(old_block, NULL);
   while (phi) {
-    set_nodes_Block(phi, new_block);
+    if(get_nodes_Block(phi) == old_block);   /* @@@ inlinening chokes on phis that don't
+					       obey this condition.  How do they get into
+					       the list??? Example: InterfaceIII */
+      set_nodes_Block(phi, new_block);
     phi = get_irn_link(phi);
   }
 

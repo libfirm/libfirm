@@ -459,11 +459,10 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
 
   /** Check preconditions **/
   assert(get_irn_op(call) == op_Call);
-  /* assert(get_Call_type(call) == get_entity_type(get_irg_ent(called_graph))); */
-  /*
-    @@@ TODO does not work for InterfaceIII.java after cgana
-  assert(smaller_type(get_entity_type(get_irg_ent(called_graph)),
-		      get_Call_type(call)));
+  /* @@@ TODO does not work for InterfaceIII.java after cgana
+     assert(get_Call_type(call) == get_entity_type(get_irg_ent(called_graph)));
+     assert(smaller_type(get_entity_type(get_irg_ent(called_graph)),
+     get_Call_type(call)));
   */
   assert(get_type_tpop(get_Call_type(call)) == type_method);
   if (called_graph == current_ir_graph) return;
@@ -493,7 +492,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   /* Visited flags in calling irg must be >= flag in called irg.
      Else walker and arity computation will not work. */
   if (get_irg_visited(current_ir_graph) <= get_irg_visited(called_graph))
-    set_irg_visited(current_ir_graph, get_irg_visited(called_graph)+1);   /***/
+    set_irg_visited(current_ir_graph, get_irg_visited(called_graph)+1);
   if (get_irg_block_visited(current_ir_graph)< get_irg_block_visited(called_graph))
     set_irg_block_visited(current_ir_graph, get_irg_block_visited(called_graph));
   /* Set pre_call as new Start node in link field of the start node of
@@ -503,11 +502,11 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
      copying. */
   set_irn_link(get_irg_start(called_graph), pre_call);
   set_irn_visited(get_irg_start(called_graph),
-				  get_irg_visited(current_ir_graph));/***/
+		  get_irg_visited(current_ir_graph));
   set_irn_link(get_irg_start_block(called_graph),
-			   get_nodes_Block(pre_call));
+	       get_nodes_Block(pre_call));
   set_irn_visited(get_irg_start_block(called_graph),
-				  get_irg_visited(current_ir_graph));  /***/
+		  get_irg_visited(current_ir_graph));
 
   /* Initialize for compaction of in arrays */
   inc_irg_block_visited(current_ir_graph);
@@ -530,7 +529,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   /** Performing dead node elimination inlines the graph **/
   /* Copies the nodes to the obstack of current_ir_graph. Updates links to new
      entities. */
-  /* @@@ endless loops are not copied!! */
+  /* @@@ endless loops are not copied!! -- they should be, I think... */
   irg_walk(get_irg_end(called_graph), copy_node_inline, copy_preds,
 	   get_irg_frame_type(called_graph));
 
@@ -594,8 +593,11 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   }
   phi = new_Phi(n_ret, cf_pred, mode_M);
   set_Tuple_pred(call, 0, phi);
-  set_irn_link(phi, get_irn_link(post_bl));  /* Conserve Phi-list for further inlinings */
-  set_irn_link(post_bl, phi);
+  /* Conserve Phi-list for further inlinings -- but might be optimized */
+  if (get_nodes_Block(phi) == post_bl) {
+    set_irn_link(phi, get_irn_link(post_bl));
+    set_irn_link(post_bl, phi);
+  }
   /* Now the real results */
   if (n_res > 0) {
     for (j = 0; j < n_res; j++) {
@@ -609,8 +611,11 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
       }
       phi = new_Phi(n_ret, cf_pred, get_irn_mode(cf_pred[0]));
       res_pred[j] = phi;
-      set_irn_link(phi, get_irn_link(post_bl));  /* Conserve Phi-list for further inlinings */
-      set_irn_link(post_bl, phi);
+      /* Conserve Phi-list for further inlinings -- but might be optimized */
+      if (get_nodes_Block(phi) == post_bl) {
+	set_irn_link(phi, get_irn_link(post_bl));
+	set_irn_link(post_bl, phi);
+      }
     }
     set_Tuple_pred(call, 2, new_Tuple(n_res, res_pred));
   } else {
@@ -729,7 +734,6 @@ static void collect_calls(ir_node *call, void *env) {
   }
 }
 
-
 /* Inlines all small methods at call sites where the called address comes
    from a Const node that references the entity representing the called
    method.
@@ -742,8 +746,6 @@ void inline_small_irgs(ir_graph *irg, int size) {
   ir_graph *rem = current_ir_graph;
 
   if (!(get_optimize() && get_opt_inline())) return;
-
-  //DDME(get_irg_ent(current_ir_graph));
 
   current_ir_graph = irg;
   /* Handle graph state */
@@ -761,6 +763,7 @@ void inline_small_irgs(ir_graph *irg, int size) {
     /* There are calls to inline */
     collect_phiprojs(irg);
     for (i = 0; i < pos; i++) {
+      char buf[1024];
       tarval *tv;
       ir_graph *callee;
       tv = get_Const_tarval(get_Call_ptr(calls[i]));

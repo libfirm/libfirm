@@ -451,6 +451,8 @@ equivalent_node (ir_node *n)
       n_preds = get_Phi_n_preds(n);
 
       block = get_nodes_Block(n);
+      /* @@@ fliegt 'raus, sollte aber doch immer wahr sein!!!
+	 assert(get_irn_arity(block) == n_preds && "phi in wrong block!"); */
       if ((is_Bad(block)) ||                         /* Control dead */
 	  (block == current_ir_graph->start_block))  /* There should be no Phi nodes */
 	return new_Bad();			     /*	in the Start Block. */
