@@ -25,7 +25,7 @@
 #include "irprog.h"
 #include "irgwalk.h"
 #include "irloop.h"
-
+#include "irflag_t.h"
 
 static void clear_link(ir_node * node, void * env) {
   set_irn_link(node, NULL);
@@ -46,6 +46,8 @@ static void collect_call(ir_node * node, ir_node * head) {
 void gc_irgs(int n_keep, entity ** keep_arr) {
   void * MARK = &MARK;
   int i;
+
+  if (!get_opt_dead_method_elimination()) return;
 
   /* mark */
   if (n_keep > 0) {
@@ -89,6 +91,8 @@ void gc_irgs(int n_keep, entity ** keep_arr) {
     if (get_entity_link(ent) != MARK) {
       remove_irp_irg(irg);
       set_entity_peculiarity(ent, peculiarity_description);
+      if (get_opt_dead_method_elimination_verbose())
+	printf("dead method elimination: freeing method %s\n", get_entity_ld_name(ent));
     }
     set_entity_link(ent, NULL);
   }

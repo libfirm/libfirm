@@ -33,6 +33,7 @@ optimization_state_t libFIRM_opt =
   ENABLE(OPT_CONTROL_FLOW_STRONG_SIMPLIFICATION) |
   ENABLE(OPT_CRITICAL_EDGES)                     |
   ENABLE(OPT_DEAD_NODE_ELIMINATION)              |
+  ENABLE(OPT_DEAD_METHOD_ELIMINATION)            |
   ENABLE(OPT_REASSOCIATION)                      |
   ENABLE(OPT_INLINE)                             |
   ENABLE(OPT_DYN_METH_DISPATCH)                  |
@@ -133,8 +134,19 @@ void set_opt_dead_node_elimination(int value)
     libFIRM_opt &= ~OPT_DEAD_NODE_ELIMINATION;
 }
 
-void set_opt_dead_method_elimination (int value) {}
-void set_opt_dead_method_elimination_verbose (int value) {}
+void set_opt_dead_method_elimination (int value) {
+  if (value)
+    libFIRM_opt |= OPT_DEAD_METHOD_ELIMINATION;
+  else
+    libFIRM_opt &= ~OPT_DEAD_METHOD_ELIMINATION;
+}
+
+void set_opt_dead_method_elimination_verbose (int value) {
+  if (value)
+    libFIRM_opt |= OPT_DEAD_METHOD_ELIMINATION_VERBOSE;
+  else
+    libFIRM_opt &= ~OPT_DEAD_METHOD_ELIMINATION_VERBOSE;
+}
 
 void set_optimize(int value)
 {

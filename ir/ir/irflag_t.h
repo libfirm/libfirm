@@ -72,6 +72,12 @@ typedef enum {
   /** Remove tail-recursion. */
   OPT_TAIL_RECURSION                     = 0x00002000,
 
+  /** Free never called methods */
+  OPT_DEAD_METHOD_ELIMINATION            = 0x00008000,
+
+  /** Free never called methods */
+  OPT_DEAD_METHOD_ELIMINATION_VERBOSE    = 0x00010000,
+
   /** Turn off all optimizations. */
   OPT_OPTIMIZED                          = 0x40000000,
 } libfirm_opts_t;
@@ -138,6 +144,18 @@ static INLINE int get_opt_dead_node_elimination(void)
   return libFIRM_opt & OPT_DEAD_NODE_ELIMINATION;
 }
 
+/** Returns dead method elimination setting. */
+static INLINE int get_opt_dead_method_elimination(void)
+{
+  return libFIRM_opt & OPT_DEAD_METHOD_ELIMINATION;
+}
+
+/** Returns dead method elimination setting. */
+static INLINE int get_opt_dead_method_elimination_verbose(void)
+{
+  return libFIRM_opt & OPT_DEAD_METHOD_ELIMINATION_VERBOSE;
+}
+
 /** Returns global optimization setting */
 static INLINE int get_opt_optimize(void)
 {
@@ -165,5 +183,7 @@ static INLINE int get_opt_tail_recursion(void)
 {
   return libFIRM_opt & OPT_TAIL_RECURSION;
 }
+
+
 
 #endif /* _IRFLAG_T_H_ */

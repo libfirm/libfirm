@@ -109,9 +109,9 @@ void set_opt_dead_node_elimination (int value);
 
 /** Enables/Disables dead method elimination.
  *
- * If opt_dead_node_elimination == 1 methods never called are
+ * If opt_dead_method_elimination == 1 methods never called are
  * removed.
- * Default: opt_dead_node_elimination == 1. */
+ * Default: opt_dead_method_elimination == 1. */
 void set_opt_dead_method_elimination (int value);
 void set_opt_dead_method_elimination_verbose (int value);
 
