@@ -25,7 +25,9 @@ int opt_global_cse = 0;             /* Don't use block predecessor for compariso
 /* @@@ 0 solage code placement fehlt */
 int opt_constant_folding = 1;       /* Evaluate operations */
 int opt_unreachable_code = 1;       /* Bad node propagation */
-int opt_control_flow = 1;           /* control flow optimizations. */
+int opt_control_flow_straightening = 1;           /*  */
+int opt_control_flow_weak_simplification = 1;           /*  */
+int opt_control_flow_strong_simplification = 1;           /*  */
 int opt_dead_node_elimination = 1;  /* Reclaim memory */
 int opt_reassociation = 1;          /* Reassociate nodes */
 int opt_inline = 1;                 /* Do inlining transformation */
@@ -78,12 +80,33 @@ get_opt_unreachable_code(void)
 }
 
 INLINE void set_opt_control_flow(int value) {
-  opt_control_flow = value;
+  set_opt_control_flow_straightening(value);
+  set_opt_control_flow_weak_simplification(value);
+  set_opt_control_flow_strong_simplification(value);
 }
 
-INLINE int  get_opt_control_flow(void) {
-  return opt_control_flow;
+/* Performs Straightening */
+void set_opt_control_flow_straightening(int value) {
+  opt_control_flow_straightening = value;
 }
+int  get_opt_control_flow_straightening(void) {
+  return opt_control_flow_straightening;
+}
+/* Performs if simplifications in local optimizations. */
+void set_opt_control_flow_weak_simplification(int value) {
+  opt_control_flow_weak_simplification = value;
+}
+int  get_opt_control_flow_weak_simplification(void) {
+  return opt_control_flow_weak_simplification;
+}
+/* Performs strong if and loop simplification (in optimize_cf). */
+void set_opt_control_flow_strong_simplification(int value) {
+  opt_control_flow_strong_simplification = value;
+}
+int  get_opt_control_flow_strong_simplification(void) {
+  return opt_control_flow_strong_simplification;
+}
+
 
 INLINE void
 set_opt_reassociation(int value)

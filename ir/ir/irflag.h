@@ -47,9 +47,20 @@ int  get_opt_global_cse (void);
 void set_opt_unreachable_code(int value);
 int  get_opt_unreachable_code(void);
 
-/* Performs Straightening, if simplifications and loop simplifications. */
+/* Performs Straightening, if simplifications and loop simplifications.
+   Sets all separate control flow flags (control_flow_straightening,
+   weak_simplification and strong_simplificatio). */
 void set_opt_control_flow(int value);
-int  get_opt_control_flow(void);
+
+/* Performs Straightening */
+void set_opt_control_flow_straightening(int value);
+int  get_opt_control_flow_straightening(void);
+/* Performs if simplifications in local optimizations. */
+void set_opt_control_flow_weak_simplification(int value);
+int  get_opt_control_flow_weak_simplification(void);
+/* Performs strong if and loop simplification (in optimize_cf). */
+void set_opt_control_flow_strong_simplification(int value);
+int  get_opt_control_flow_strong_simplification(void);
 
 /* If opt_reassociation == 1 reassociation is performed.
    Default: opt_reassociation == 1. */

@@ -310,11 +310,11 @@ equivalent_node (ir_node *n)
 	 Remaining Phi nodes are just Ids. */
       if ((get_Block_n_cfgpreds(n) == 1) &&
 	  (get_irn_op(get_Block_cfgpred(n, 0)) == op_Jmp) &&
-	  (get_opt_control_flow())) {
+	  (get_opt_control_flow_straightening())) {
 	n = get_nodes_Block(get_Block_cfgpred(n, 0));                     DBG_OPT_STG;
 
       } else if ((get_Block_n_cfgpreds(n) == 2) &&
-		 (get_opt_control_flow())) {
+		 (get_opt_control_flow_weak_simplification())) {
 	/* Test whether Cond jumps twice to this block
 	   @@@ we could do this also with two loops finding two preds from several ones. */
 	a = get_Block_cfgpred(n, 0);

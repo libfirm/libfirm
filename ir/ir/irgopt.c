@@ -218,7 +218,7 @@ copy_preds (ir_node *n, void *env) {
        in array contained Bads.  Now it's possible.
        We don't call optimize_in_place as it requires
        that the fields in ir_graph are set properly. */
-    if ((get_opt_control_flow()) &&
+    if ((get_opt_control_flow_straightening()) &&
 	(get_Block_n_cfgpreds(nn) == 1) &&
 	(get_irn_op(get_Block_cfgpred(nn, 0)) == op_Jmp))
       exchange(nn, get_nodes_Block(get_Block_cfgpred(nn, 0)));
@@ -1164,7 +1164,11 @@ static void merge_blocks(ir_node *n, void *env) {
     ir_node *new = equivalent_node(b);
     while (irn_not_visited(b) && (!is_Bad(new)) && (new != b)) {
       /* We would have to run gigo if new is bad. */
-      if (get_optimize() && get_opt_control_flow()) exchange (b, new);
+      if (!get_optimize() || (!get_opt_control_flow_straightening()
+			      && !get_opt_control_flow_weak_simplification()))
+	/* how could something be optimized of flags are not set? */
+	assert(0 && "strange ??!!");
+      exchange (b, new);
       b = new;
       new = equivalent_node(b);
     }
@@ -1207,7 +1211,7 @@ static int test_whether_dispensable(ir_node *b, int pos) {
 
   if (get_Block_block_visited(pred) + 1
       < get_irg_block_visited(current_ir_graph)) {
-    if (!get_optimize() || !get_opt_control_flow()) {
+    if (!get_optimize() || !get_opt_control_flow_strong_simplification()) {
       /* Mark block so that is will not be removed. */
       set_Block_block_visited(pred, get_irg_block_visited(current_ir_graph)-1);
       return 1;
