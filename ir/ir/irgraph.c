@@ -396,6 +396,7 @@ get_irg_frame_type (ir_graph *irg)
 void
 set_irg_frame_type (ir_graph *irg, type *ftp)
 {
+  assert(is_class_type(ftp));
   irg->frame_type = ftp;
 }
 
@@ -403,9 +404,14 @@ set_irg_frame_type (ir_graph *irg, type *ftp)
 /* To test for a frame type */
 int
 is_frame_type(type *ftp) {
-  return ((is_class_type(ftp) || is_struct_type(ftp)) &&
-	  id_is_suffix(id_from_str(FRAME_TP_SUFFIX, strlen(FRAME_TP_SUFFIX)),
-		       get_type_ident(ftp)));
+  int i;
+  if (is_class_type(ftp)) {
+    for (i = 0; i < get_irp_n_irgs(); i++) {
+      type *frame_tp = get_irg_frame_type(get_irp_irg(i));
+      if (ftp == frame_tp) return true;
+    }
+  }
+  return false;
 }
 
 int

@@ -117,8 +117,8 @@ void     set_irg_ent (ir_graph *irg, entity *ent);
 
 type    *get_irg_frame_type (ir_graph *irg);
 void     set_irg_frame_type (ir_graph *irg, type *ftp);
-/* To test for a frame type */
-int      is_frame_type(type *ftp);
+/* To test for a frame type. O(#irgs) if ftp is class type.  */
+int      is_frame_type (type *ftp);
 
 ir_node *get_irg_start_block (ir_graph *irg);
 void     set_irg_start_block (ir_graph *irg, ir_node *node);
