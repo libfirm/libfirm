@@ -86,7 +86,7 @@ init_op(void)
   op_Start = new_ir_op (iro_Start, id_from_str ("Start", 5), sizeof (block_attr), 1);
   op_End = new_ir_op (iro_End, id_from_str ("End", 3), sizeof (block_attr), 1);
   op_Jmp    = new_ir_op (iro_Jmp, id_from_str ("Jmp", 3), 0, 0);
-  op_Cond   = new_ir_op (iro_Cond, id_from_str ("Cond", 4), 0, 1);
+  op_Cond   = new_ir_op (iro_Cond, id_from_str ("Cond", 4), sizeof(cond_kind), 1);
   op_Return = new_ir_op (iro_Return, id_from_str ("Return", 6), 0, 1);
   op_Raise  = new_ir_op (iro_Raise, id_from_str ("Raise", 5), 0, 1);
 

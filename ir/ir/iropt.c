@@ -654,7 +654,7 @@ transform_node (ir_node *n)
 	set_Tuple_pred(n, 0, jmp);
 	set_Tuple_pred(n, 1, new_Bad());
       }
-    } else if (ta && (get_irn_mode(a) == mode_I)) {
+    } else if (ta && (get_irn_mode(a) == mode_I) && (get_Cond_kind(n) == dense)) {
       /* I don't want to allow Tuples smaller than the biggest Proj.
          Also this tuple might get really big...
          I generate the Jmp here, and remember it in link.  Link is used
@@ -698,7 +698,8 @@ transform_node (ir_node *n)
         set_Proj_proj(n, 0);
     } else if (   (get_irn_op(a) == op_Cond)
                && (get_irn_mode(get_Cond_selector(a)) == mode_I)
-               && value_of(a)) {
+	       && value_of(a)
+	       && (get_Cond_kind(a) == dense)) {
       /* The Cond is a Switch on a Constant */
       if (get_Proj_proj(n) == tv_val_CHIL(value_of(a))) {
         /* The always taken branch, reuse the existing Jmp. */

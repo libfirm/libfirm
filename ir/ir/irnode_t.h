@@ -57,6 +57,7 @@ typedef union {
   long           proj;  /* For Proj: contains the result position to project */
   alloc_attr     a;     /* For Alloc. */
   type          *f;     /* For Free. */
+  cond_kind      c;     /* For Cond. */
   int            phi0_pos;  /* For Phi. Used to remember the value defined by
 			       this Phi node.  Needed when the Phi is completed
 			       to call get_r_internal_value to find the

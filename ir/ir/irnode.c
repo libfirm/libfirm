@@ -491,6 +491,18 @@ set_Cond_selector (ir_node *node, ir_node *selector) {
   set_irn_n(node, 0, selector);
 }
 
+inline cond_kind
+get_Cond_kind (ir_node *node) {
+  assert (node->op == op_Cond);
+  return node->attr.c;
+}
+
+inline void
+set_Cond_kind (ir_node *node, cond_kind kind) {
+  assert (node->op == op_Cond);
+  node->attr.c = kind;
+}
+
 inline ir_node *
 get_Return_mem (ir_node *node) {
   assert (node->op == op_Return);

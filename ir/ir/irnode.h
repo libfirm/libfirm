@@ -136,8 +136,37 @@ inline void      set_Block_block_visited (ir_node *node, unsigned long visit);
 inline ir_node  *get_Block_graph_arr (ir_node *node, int pos);
 inline void      set_Block_graph_arr (ir_node *node, int pos, ir_node *value);
 
+
+/* We distinguish three kinds of Cond nodes.  These can be distinguished
+   by the mode of the selector operand and an internal flag of type cond_kind.
+   First we distinguish binary Conds and switch Conds.
+   A binary Cond has as selector a boolean value.  Proj(0) projects the control
+   flow for case "False", Proj(1) the control flow for "True".  A binary Cond
+   is recognized by the boolean selector.
+   The switch Cond has as selector an unsigned integer.  It produces as result
+   an n+1 Tuple (cf0, ... , cfn) of control flows.
+   We differ two flavours of this Cond.  The first, the dense Cond, passes
+   control along output i if the selector value is i, 0 <= i <= n.  If the
+   selector value is >n it passes control along output n.
+   The second Cond flavor differes in the treatment of cases not specified in
+   the source program.  It magically knows about the existence of Proj nodes.
+   It only passes control along output i, 0 <= i <= n, if a node Proj(Cond, i)
+   exists.  Else it passes control along output n (even if this Proj does not
+   exist.)  This Cond we call "fragmentary".  There is a special constructor
+   new_defaultProj that automatically sets the flavor.
+   The two switch flavors are distinguished by a flag of type cond_kind.  Default
+   flavor is "dense"
+*/
+typedef enum {
+  dense,        /* Default. Missing Proj nodes are dead control flow. */
+  fragmentary   /* Special. No control flow optimizations allowed.  Missing
+		   Proj nodes mean default control flow, i.e., Proj(n). */
+} cond_kind;
+
 inline ir_node  *get_Cond_selector (ir_node *node);
 inline void      set_Cond_selector (ir_node *node, ir_node *selector);
+inline cond_kind get_Cond_kind (ir_node *node);
+inline void      set_Cond_kind (ir_node *node, cond_kind kind);
 
 inline ir_node  *get_Return_mem (ir_node *node);
 inline void      set_Return_mem (ir_node *node, ir_node *mem);

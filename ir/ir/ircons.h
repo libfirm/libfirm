@@ -1141,6 +1141,8 @@ ir_node *new_r_Free   (ir_graph *irg, ir_node *block, ir_node *store,
 ir_node *new_r_Sync   (ir_graph *irg, ir_node *block, int arity, ir_node **in);
 ir_node *new_r_Proj   (ir_graph *irg, ir_node *block, ir_node *arg,
 		       ir_mode *mode, long proj);
+ir_node *new_r_defaultProj (ir_graph *irg, ir_node *block, ir_node *arg,
+			    long max_proj);
 ir_node *new_r_Tuple  (ir_graph *irg, ir_node *block,
 		       int arity, ir_node **in);
 ir_node *new_r_Id     (ir_graph *irg, ir_node *block,
@@ -1201,6 +1203,7 @@ ir_node *new_Free   (ir_node *store, ir_node *ptr, ir_node *size,
 		     type *free_type);
 ir_node *new_Sync   (int arity, ir_node **in);
 ir_node *new_Proj   (ir_node *arg, ir_mode *mode, long proj);
+ir_node *new_defaultProj (ir_node *arg, long max_proj);
 ir_node *new_Tuple  (int arity, ir_node **in);
 ir_node *new_Id     (ir_node *val, ir_mode *mode);
 ir_node *new_Bad    (void);
