@@ -37,7 +37,7 @@ stat_opt_kind;
 void stat_init(void);
 
 /**
- * Finish the statistics .
+ * Finish the statistics.
  */
 void stat_finish(void);
 
@@ -100,6 +100,11 @@ void stat_lower(ir_node *node);
 void stat_inline(ir_node *call, ir_graph *irg);
 
 /**
+ * A graph with tail-recursions was optimized.
+ */
+void stat_tail_rec(ir_graph *irg);
+
+/**
  * Start the dead node elimination.
  */
 void stat_dead_node_elim_start(ir_graph *irg);
@@ -124,6 +129,7 @@ void stat_dead_node_elim_stop(ir_graph *irg);
 #define stat_merge_nodes(new_node_array, new_num_entries, old_node_array, old_num_entries, opt)
 #define stat_lower(node)
 #define stat_inline(call, irg)
+#define stat_tail_rec(irg)
 #define stat_dead_node_elim_start(irg)
 #define stat_dead_node_elim_stop(irg)
 

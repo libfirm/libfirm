@@ -36,6 +36,16 @@
 #include "firmstat.h"
 
 /*
+ * just be make some things clear :-), the
+ * poor man "generics"
+ */
+#define HASH_MAP(type)	pset_##type
+
+typedef pset pset_node_entry_t;
+typedef pset pset_graph_entry_t;
+typedef pset pset_opt_entry_t;
+
+/*
  * 32 bit should be enough for now
  */
 #define STAT_CNT_NUM 1
@@ -48,7 +58,7 @@ typedef struct _counter_t {
  * An entry for ir_nodes
  */
 typedef struct _node_entry_t {
-  counter_t   count;			/**< amount of nodes in this entry */
+  counter_t   cnt_alive;		/**< amount of nodes in this entry */
   counter_t   new_node;			/**< amount of new nodes for this entry */
   counter_t   into_Id;			/**< amount of nodes that turned into Id's for this entry */
   const ir_op *op;			/**< the op for this entry */
@@ -58,15 +68,16 @@ typedef struct _node_entry_t {
  * An entry for ir_graphs
  */
 typedef struct _graph_entry_t {
-  pset           *opcode_hash;			/**< hash map containing the opcode counter */
-  counter_t      walked;			/**< walker walked over the graph */
-  counter_t      walked_blocks;			/**< walker walked over the graph blocks */
-  counter_t      was_inlined;			/**< number of times other graph were inlined */
-  counter_t      got_inlined;			/**< number of times this graph was inlined */
-  pset           *opt_hash[STAT_OPT_MAX];	/**< hash maps containing opcode counter for optimizations */
-  ir_graph       *irg;				/**< the graph of this object */
-  entity         *ent;				/**< the entity of this graph if one exists */
-  int            deleted;			/**< set if this irg was deleted */
+  HASH_MAP(node_entry_t)  *opcode_hash;			/**< hash map containing the opcode counter */
+  counter_t               cnt_walked;			/**< walker walked over the graph */
+  counter_t               cnt_walked_blocks;		/**< walker walked over the graph blocks */
+  counter_t               cnt_was_inlined;		/**< number of times other graph were inlined */
+  counter_t               cnt_got_inlined;		/**< number of times this graph was inlined */
+  counter_t               cnt_edges;			/**< number of DF edges in this graph */
+  HASH_MAP(opt_entry_t)   *opt_hash[STAT_OPT_MAX];	/**< hash maps containing opcode counter for optimizations */
+  ir_graph                *irg;				/**< the graph of this object */
+  entity                  *ent;				/**< the entity of this graph if one exists */
+  int                     deleted;			/**< set if this irg was deleted */
 } graph_entry_t;
 
 /**
@@ -77,18 +88,79 @@ typedef struct _opt_entry_t {
   const ir_op *op;			/**< the op for this entry */
 } opt_entry_t;
 
+/** forward */
+typedef struct _dumper_t dumper_t;
+
+/**
+ * handler for dumping an IRG
+ *
+ * @param dmp   the dumper
+ * @param entry the IR-graph hash map entry
+ */
+typedef void (*dump_graph_FUNC)(dumper_t *dmp, graph_entry_t *entry);
+
+/**
+ * handler for dumper init
+ *
+ * @param dmp   the dumper
+ * @param name  name of the file to dump to
+ */
+typedef void (*dump_init_FUNC)(dumper_t *dmp, const char *name);
+
+/**
+ * handler for dumper finish
+ *
+ * @param dmp   the dumper
+ */
+typedef void (*dump_finish_FUNC)(dumper_t *dmp);
+
+
+/**
+ * a dumper description
+ */
+struct _dumper_t {
+  dump_graph_FUNC         dump_graph;		/**< handler for dumping an irg */
+  dump_init_FUNC          init;			/**< handler for init */
+  dump_finish_FUNC        finish;		/**< handler for finish */
+  FILE                    *f;			/**< the file to dump to */
+  dumper_t                *next;		/**< link to the next dumper */
+};
+
 /**
  * statistics info
  */
 typedef struct _statistic_info_t {
-  struct obstack cnts;			/**< obstack containing the counters */
-  pset           *opcode_hash;		/**< hash map containing the opcode counter */
-  pset           *irg_hash;		/**< hash map containing the counter for irgs */
-  FILE           *f;			/**< outputfile */
-  ir_op          *op_Phi0;		/**< needed pseudo op */
-  int            recursive;		/**< flag for detecting recursive hook calls */
-  int            in_dead_node_elim;	/**< set, if dead node elimination runs */
+  struct obstack          cnts;			/**< obstack containing the counters */
+  HASH_MAP(graph_entry_t) *irg_hash;		/**< hash map containing the counter for irgs */
+  int                     recursive;		/**< flag for detecting recursive hook calls */
+  int                     in_dead_node_elim;	/**< set, if dead node elimination runs */
+  ir_op                   *op_Phi0;		/**< needed pseudo op */
+  ir_op                   *op_PhiM;		/**< needed pseudo op */
+  dumper_t                *dumper;		/**< list of dumper */
 } stat_info_t;
+
+/**
+ * names of the optimizations
+ */
+static const char *opt_names[] = {
+  "straightening optimization",
+  "if simplification",
+  "algebraic simplification",
+  "Phi optmization",
+  "Write-After-Write optimization",
+  "Write-After-Read optimization",
+  "Tuple optimization",
+  "ID optimization",
+  "Constant evaluation",
+  "Lowered",
+};
+
+/**
+ * need this to be static
+ */
+static ir_op _op_Phi0, _op_PhiM;
+
+/* ---------------------------------------------------------------------------------- */
 
 #define STAT_ENTER		++status->recursive
 #define STAT_LEAVE		--status->recursive
@@ -138,18 +210,45 @@ static INLINE void cnt_clr(counter_t *cnt)
  */
 static inline void cnt_add(counter_t *dst, const counter_t *src)
 {
-  int i;
+  int i, carry = 0;
 
   for (i = 0; i < STAT_CNT_NUM; ++i) {
-    unsigned a = dst->cnt[i] + src->cnt[i];
-    unsigned no_carry = a >= dst->cnt[i];
+    unsigned a = dst->cnt[i] + src->cnt[i] + carry;
+
+    if (carry)
+      carry = a <= dst->cnt[i];
+    else
+      carry = a < dst->cnt[i];
 
     dst->cnt[i] = a;
 
-    if (no_carry) {
-      /* no carry */
+    if (! carry)
       break;
-    }
+  }
+}
+
+/**
+ * add an integer to an counter
+ */
+static inline void cnt_add_i(counter_t *dst, int src)
+{
+  int i;
+  unsigned a = dst->cnt[0] + src;
+  unsigned carry = a < dst->cnt[i];
+
+  dst->cnt[0] = a;
+  if (! carry)
+    return;
+
+  for (i = 1; i < STAT_CNT_NUM; ++i) {
+    unsigned a = dst->cnt[i] + carry;
+
+    carry = a < dst->cnt[i];
+
+    dst->cnt[i] = a;
+
+    if (! carry)
+      break;
   }
 }
 
@@ -203,7 +302,7 @@ static node_entry_t *opcode_get_entry(const ir_op *op, pset *set)
   elem = obstack_alloc(&status->cnts, sizeof(*elem));
 
   /* clear counter */
-  cnt_clr(&elem->count);
+  cnt_clr(&elem->cnt_alive);
   cnt_clr(&elem->new_node);
   cnt_clr(&elem->into_Id);
 
@@ -238,10 +337,11 @@ static graph_entry_t *graph_get_entry(ir_graph *irg, pset *set)
 
   elem = obstack_alloc(&status->cnts, sizeof(*elem));
 
-  cnt_clr(&elem->walked);
-  cnt_clr(&elem->walked_blocks);
-  cnt_clr(&elem->got_inlined);
-  cnt_clr(&elem->was_inlined);
+  cnt_clr(&elem->cnt_walked);
+  cnt_clr(&elem->cnt_walked_blocks);
+  cnt_clr(&elem->cnt_got_inlined);
+  cnt_clr(&elem->cnt_was_inlined);
+  cnt_clr(&elem->cnt_edges);
 
   /* new hash table for opcodes here  */
   elem->opcode_hash  = new_pset(opcode_cmp, 5);
@@ -278,45 +378,374 @@ static opt_entry_t *opt_get_entry(const ir_op *op, pset *set)
 }
 
 /**
+ * Returns the ir_op for an IR-node,
+ * handles special cases and return pseudo op codes
+ */
+static ir_op *stat_get_irn_op(const ir_node *node)
+{
+  ir_op *op = intern_get_irn_op(node);
+
+  if (op->code == iro_Phi && intern_get_irn_arity(node) == 0) {
+    /* special case, a Phi0 node, count on extra counter */
+    op = status->op_Phi0;
+  }
+  else if (op->code == iro_Phi && intern_get_irn_mode(node) == mode_M) {
+    /* special case, a Memory Phi node, count on extra counter */
+    op = status->op_PhiM;
+  }
+  return op;
+}
+
+
+/**
+ * environment for the count walker
+ */
+typedef struct _cnt_env_t {
+  pset      *set;		/**< the hash map containing the ir_ops */
+  counter_t *cnt_edges;		/**< the edges counter */
+} cnt_env_t;
+
+/**
  * walker for reachable nodes count
  */
 static void count_nodes(ir_node *node, void *env)
 {
-  pset *set = env;
+  cnt_env_t *cenv = env;
   node_entry_t *entry;
-  ir_op *op = get_irn_op(node);
+  ir_op *op = stat_get_irn_op(node);
+  int arity = intern_get_irn_arity(node);
 
-  if (op->code == iro_Phi && get_irn_arity(node) == 0) {
-    /* special case, a Phi0 node, count on extra counter */
-    op = status->op_Phi0;
-  }
+  entry = opcode_get_entry(op, cenv->set);
 
-  entry = opcode_get_entry(op, set);
-
-  cnt_inc(&entry->count);
+  cnt_inc(&entry->cnt_alive);
+  cnt_add_i(cenv->cnt_edges, arity);
 }
 
 /**
- * count all reachable nodes in a graph
+ * count all alive nodes in a graph
  */
-static void count_nodes_in_graph(ir_graph *irg, pset *set)
+static void count_nodes_in_graph(graph_entry_t * global, graph_entry_t * graph)
 {
-  irg_walk_graph(irg, count_nodes, NULL, set);
+  cnt_env_t env;
+  node_entry_t *entry;
+
+  env.set       = graph->opcode_hash;
+  env.cnt_edges = &graph->cnt_edges;
+
+  irg_walk_graph(graph->irg, count_nodes, NULL, &env);
+
+  /* assume we walk every graph only ONCE, we could sum here the global count */
+  for (entry = pset_first(graph->opcode_hash); entry; entry = pset_next(graph->opcode_hash)) {
+    node_entry_t *g_entry = opcode_get_entry(entry->op, global->opcode_hash);
+
+    /* update the node counter */
+    cnt_add(&g_entry->cnt_alive, &entry->cnt_alive);
+  }
+
+  /* update the edge counter */
+  cnt_add(&global->cnt_edges, &graph->cnt_edges);
 }
+
+/**
+ * register a dumper
+ */
+static void stat_register_dumper(dumper_t *dumper, const char *name)
+{
+  dumper->next   = status->dumper;
+  status->dumper = dumper;
+
+  if (dumper->init)
+    dumper->init(dumper, name);
+}
+
+/**
+ * dumps an irg
+ */
+static void dump_graph(graph_entry_t *entry)
+{
+  dumper_t *dumper;
+
+  for (dumper = status->dumper; dumper; dumper = dumper->next) {
+    if (dumper->dump_graph)
+      dumper->dump_graph(dumper, entry);
+  }
+}
+
+/**
+ * finish the dumper
+ */
+static void dump_finish(void)
+{
+  dumper_t *dumper;
+
+  for (dumper = status->dumper; dumper; dumper = dumper->next) {
+    if (dumper->finish)
+      dumper->finish(dumper);
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+
+/**
+ * dumps a opcode hash into human readable form
+ */
+static void simple_dump_opcode_hash(dumper_t *dmp, pset *set)
+{
+  node_entry_t *entry;
+  counter_t f_alive;
+  counter_t f_new_node;
+  counter_t f_Id;
+
+  cnt_clr(&f_alive);
+  cnt_clr(&f_new_node);
+  cnt_clr(&f_Id);
+
+  fprintf(dmp->f, "%-16s %-8s %-8s %-8s\n", "Opcode", "alive", "created", "->Id");
+  for (entry = pset_first(set); entry; entry = pset_next(set)) {
+    fprintf(dmp->f, "%-16s %8d %8d %8d\n",
+	get_id_str(entry->op->name), entry->cnt_alive.cnt[0], entry->new_node.cnt[0], entry->into_Id.cnt[0]);
+
+    cnt_add(&f_alive,    &entry->cnt_alive);
+    cnt_add(&f_new_node, &entry->new_node);
+    cnt_add(&f_Id,       &entry->into_Id);
+  }
+  fprintf(dmp->f, "-------------------------------------------\n");
+  fprintf(dmp->f, "%-16s %8d %8d %8d\n", "Sum",
+     f_alive.cnt[0],
+     f_new_node.cnt[0],
+     f_Id.cnt[0]);
+}
+
+/**
+ * dumps a optimization hash into human readable form
+ */
+static void simple_dump_opt_hash(dumper_t *dmp, pset *set, int index)
+{
+  opt_entry_t *entry = pset_first(set);
+
+  if (entry) {
+    fprintf(dmp->f, "\n%s:\n", opt_names[index]);
+    fprintf(dmp->f, "%-16s %-8s\n", "Opcode", "deref");
+
+    for (; entry; entry = pset_next(set)) {
+      fprintf(dmp->f, "%-16s %8d\n",
+	  get_id_str(entry->op->name), entry->count.cnt[0]);
+    }
+  }
+}
+
+/**
+ * dumps the endges count
+ */
+static void simple_dump_edges(dumper_t *dmp, counter_t *cnt)
+{
+  fprintf(dmp->f, "%-16s %8d\n", "Edges", cnt->cnt[0]);
+}
+
+/**
+ * dumps the IRG
+ */
+static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
+{
+  int dump_opts = 1;
+
+  if (entry->irg) {
+    ir_graph *const_irg = get_const_code_irg();
+
+    if (entry->irg == const_irg) {
+      fprintf(dmp->f, "\nConst code Irg %p", (void *)entry->irg);
+    }
+    else {
+      if (entry->ent)
+	fprintf(dmp->f, "\nEntity %s, Irg %p", get_entity_name(entry->ent), (void *)entry->irg);
+      else
+	fprintf(dmp->f, "\nIrg %p", (void *)entry->irg);
+    }
+
+    fprintf(dmp->f, " %swalked %d over blocks %d was inlined %d got inlined %d:\n",
+	entry->deleted ? "DELETED " : "",
+	entry->cnt_walked.cnt[0], entry->cnt_walked_blocks.cnt[0],
+	entry->cnt_was_inlined.cnt[0],
+	entry->cnt_got_inlined.cnt[0]
+    );
+  }
+  else {
+    fprintf(dmp->f, "\nGlobals counts:\n");
+    dump_opts = 0;
+  }
+
+  simple_dump_opcode_hash(dmp, entry->opcode_hash);
+  simple_dump_edges(dmp, &entry->cnt_edges);
+
+  /* effects of optimizations */
+  if (dump_opts) {
+    int i;
+
+    for (i = 0; i < sizeof(entry->opt_hash)/sizeof(entry->opt_hash[0]); ++i) {
+      simple_dump_opt_hash(dmp, entry->opt_hash[i], i);
+    }
+  }
+}
+
+/**
+ * initialise the simple dumper
+ */
+static void simple_init(dumper_t *dmp, const char *name)
+{
+  dmp->f = fopen(name, "w");
+}
+
+/**
+ * finishes the simple dumper
+ */
+static void simple_finish(dumper_t *dmp)
+{
+  fclose(dmp->f);
+  dmp->f = NULL;
+}
+
+/**
+ * the simple human readable dumper
+ */
+static dumper_t simple_dumper = {
+  simple_dump_graph,
+  simple_init,
+  simple_finish,
+  NULL,
+  NULL,
+};
+
+/* ---------------------------------------------------------------------- */
+
+/**
+ * count the nodes as needed:
+ *
+ * 1 normal (data) Phi's
+ * 2 memory Phi's
+ * 3 Proj
+ * 0 all other nodes
+ */
+static void csv_count_nodes(graph_entry_t *graph, counter_t cnt[])
+{
+  node_entry_t *entry;
+  int i;
+
+  for (i = 0; i < 4; ++i)
+    cnt_clr(&cnt[i]);
+
+  for (entry = pset_first(graph->opcode_hash); entry; entry = pset_next(graph->opcode_hash)) {
+    if (entry->op == op_Phi) {
+      /* normal Phi */
+      cnt_add(&cnt[1], &entry->cnt_alive);
+    }
+    else if (entry->op == status->op_PhiM) {
+      /* memory Phi */
+      cnt_add(&cnt[2], &entry->cnt_alive);
+    }
+    else if (entry->op == op_Proj) {
+      /* Proj */
+      cnt_add(&cnt[3], &entry->cnt_alive);
+    }
+    else {
+      /* all other nodes */
+      cnt_add(&cnt[0], &entry->cnt_alive);
+    }
+  }
+}
+
+/**
+ * dumps the IRG
+ */
+static void csv_dump_graph(dumper_t *dmp, graph_entry_t *entry)
+{
+  const char *name;
+
+  counter_t cnt[4];
+
+  if (entry->irg) {
+    ir_graph *const_irg = get_const_code_irg();
+
+    if (entry->irg == const_irg) {
+      name = "<Const code Irg>";
+      return;
+    }
+    else {
+      if (entry->ent)
+	name = get_entity_name(entry->ent);
+      else
+	name = "<UNKNOWN IRG>";
+    }
+
+    csv_count_nodes(entry, cnt);
+
+    fprintf(dmp->f, "%-40s, %p, %d, %d, %d, %d\n",
+	name,
+	entry->irg,
+	cnt[0].cnt[0],
+	cnt[1].cnt[0],
+	cnt[2].cnt[0],
+	cnt[3].cnt[0]
+    );
+  }
+}
+
+/**
+ * initialise the simple dumper
+ */
+static void csv_init(dumper_t *dmp, const char *name)
+{
+  dmp->f = fopen(name, "a");
+}
+
+/**
+ * finishes the simple dumper
+ */
+static void csv_finish(dumper_t *dmp)
+{
+  fclose(dmp->f);
+  dmp->f = NULL;
+}
+
+/**
+ * the simple human readable dumper
+ */
+static dumper_t csv_dumper = {
+  csv_dump_graph,
+  csv_init,
+  csv_finish,
+  NULL,
+  NULL,
+};
+
 
 /* ---------------------------------------------------------------------- */
 
 /* initialize the statistics module. */
 void stat_init(void)
 {
+#define X(a)	a, sizeof(a)-1
+
+  int pseudo_id = 0;
+
   obstack_init(&status->cnts);
 
-  /* create the hash-tables */
-  status->opcode_hash = new_pset(opcode_cmp, 8);
-  status->irg_hash    = new_pset(graph_cmp, 8);
+  /* build the pseudo-ops */
+  _op_Phi0.code = --pseudo_id;
+  _op_Phi0.name = id_from_str(X("Phi0"));
 
-  status->f           = fopen("firmstat.txt", "w");
-  status->op_Phi0     = NULL;
+  _op_PhiM.code = --pseudo_id;
+  _op_PhiM.name = id_from_str(X("PhiM"));
+
+  /* create the hash-tables */
+  status->irg_hash   = new_pset(graph_cmp, 8);
+
+  status->op_Phi0    = &_op_Phi0;
+  status->op_PhiM    = &_op_PhiM;
+
+  stat_register_dumper(&simple_dumper, "firmstat.txt");
+  stat_register_dumper(&csv_dumper, "firmstat.csv");
+
+#undef X
 }
 
 /* A new IR op is registered. */
@@ -324,8 +753,10 @@ void stat_new_ir_op(const ir_op *op)
 {
   STAT_ENTER;
   {
+    graph_entry_t *graph = graph_get_entry(NULL, status->irg_hash);
+
     /* execute for side effect :-) */
-    opcode_get_entry(op, status->opcode_hash);
+    opcode_get_entry(op, graph->opcode_hash);
   }
   STAT_LEAVE;
 }
@@ -350,25 +781,15 @@ void stat_new_node(const ir_node *node)
   {
     node_entry_t *entry;
     graph_entry_t *graph;
-    ir_op *op = get_irn_op(node);
-
-    if (op->code == iro_Phi && get_irn_arity(node) == 0) {
-      /* special case, a Phi0 node, count on extra counter */
-      if (! status->op_Phi0) {
-	ir_op *op_Phi = get_op_Phi();
-
-	status->op_Phi0 = new_ir_op(0xFFFF, "Phi0", op_Phi->pinned, op_Phi->flags, op_Phi->opar, op_Phi->op_index, op_Phi->attr_size);
-      }
-      op = status->op_Phi0;
-    }
-
-    entry = opcode_get_entry(op, status->opcode_hash);
-    graph = graph_get_entry(current_ir_graph, status->irg_hash);
+    ir_op *op = stat_get_irn_op(node);
 
     /* increase global value */
+    graph = graph_get_entry(NULL, status->irg_hash);
+    entry = opcode_get_entry(op, graph->opcode_hash);
     cnt_inc(&entry->new_node);
 
     /* increase local value */
+    graph = graph_get_entry(current_ir_graph, status->irg_hash);
     entry = opcode_get_entry(op, graph->opcode_hash);
     cnt_inc(&entry->new_node);
   }
@@ -382,25 +803,15 @@ void stat_turn_into_id(const ir_node *node)
   {
     node_entry_t *entry;
     graph_entry_t *graph;
-    ir_op *op = get_irn_op(node);
-
-    if (op->code == iro_Phi && get_irn_arity(node) == 0) {
-      /* special case, a Phi0 node, count on extra counter */
-      if (! status->op_Phi0) {
-	ir_op *op_Phi = get_op_Phi();
-
-	status->op_Phi0 = new_ir_op(0xFFFF, "Phi0", op_Phi->pinned, op_Phi->flags, op_Phi->opar, op_Phi->op_index, op_Phi->attr_size);
-      }
-      op = status->op_Phi0;
-    }
-
-    entry = opcode_get_entry(op, status->opcode_hash);
-    graph = graph_get_entry(current_ir_graph, status->irg_hash);
+    ir_op *op = stat_get_irn_op(node);
 
     /* increase global value */
+    graph = graph_get_entry(NULL, status->irg_hash);
+    entry = opcode_get_entry(op, graph->opcode_hash);
     cnt_inc(&entry->into_Id);
 
     /* increase local value */
+    graph = graph_get_entry(current_ir_graph, status->irg_hash);
     entry = opcode_get_entry(op, graph->opcode_hash);
     cnt_inc(&entry->into_Id);
   }
@@ -428,12 +839,13 @@ void stat_free_graph(ir_graph *irg)
 {
   STAT_ENTER;
   {
-    graph_entry_t * graph = graph_get_entry(irg, status->irg_hash);
+    graph_entry_t *graph  = graph_get_entry(irg, status->irg_hash);
+    graph_entry_t *global = graph_get_entry(NULL, status->irg_hash);
 
     graph->deleted = 1;
 
     /* count the nodes of the graph yet, it will be destroyed later */
-    count_nodes_in_graph(irg, graph->opcode_hash);
+    count_nodes_in_graph(global, graph);
   }
   STAT_LEAVE;
 }
@@ -447,7 +859,7 @@ void stat_irg_walk(ir_graph *irg, void *pre, void *post)
   {
     graph_entry_t *graph = graph_get_entry(irg, status->irg_hash);
 
-    cnt_inc(&graph->walked);
+    cnt_inc(&graph->cnt_walked);
   }
   STAT_LEAVE;
 }
@@ -461,7 +873,7 @@ void stat_irg_block_walk(ir_graph *irg, const ir_node *node, void *pre, void *po
   {
     graph_entry_t *graph = graph_get_entry(irg, status->irg_hash);
 
-    cnt_inc(&graph->walked_blocks);
+    cnt_inc(&graph->cnt_walked_blocks);
   }
   STAT_LEAVE;
 }
@@ -530,8 +942,8 @@ void stat_inline(ir_node *call, ir_graph *called_irg)
     graph_entry_t *i_graph = graph_get_entry(called_irg, status->irg_hash);
     graph_entry_t *graph   = graph_get_entry(irg, status->irg_hash);
 
-    cnt_inc(&graph->got_inlined);
-    cnt_inc(&i_graph->was_inlined);
+    cnt_inc(&graph->cnt_got_inlined);
+    cnt_inc(&i_graph->cnt_was_inlined);
   }
   STAT_LEAVE;
 }
@@ -552,113 +964,34 @@ void stat_dead_node_elim_stop(ir_graph *irg)
   --status->in_dead_node_elim;
 }
 
-/**
- * dumps a opcode hash
- */
-static void dump_opcode_hash(pset *set)
-{
-  node_entry_t *entry;
-  counter_t f_count;
-  counter_t f_new_node;
-  counter_t f_Id;
-
-  cnt_clr(&f_count);
-  cnt_clr(&f_new_node);
-  cnt_clr(&f_Id);
-
-  fprintf(status->f, "%-16s %-8s %-8s %-8s\n", "Opcode", "alive", "created", "->Id");
-  for (entry = pset_first(set); entry; entry = pset_next(set)) {
-    fprintf(status->f, "%-16s %8d %8d %8d\n",
-	get_id_str(entry->op->name), entry->count.cnt[0], entry->new_node.cnt[0], entry->into_Id.cnt[0]);
-
-    cnt_add(&f_count,    &entry->count);
-    cnt_add(&f_new_node, &entry->new_node);
-    cnt_add(&f_Id,       &entry->into_Id);
-  }
-  fprintf(status->f, "-------------------------------------------\n");
-  fprintf(status->f, "%-16s %8d %8d %8d\n", "Sum",
-     f_count.cnt[0],
-     f_new_node.cnt[0],
-     f_Id.cnt[0]);
-}
-
-static const char *opt_names[] = {
-  "straightening optimization",
-  "if simplification",
-  "algebraic simplification",
-  "Phi optmization",
-  "Write-After-Write optimization",
-  "Write-After-Read optimization",
-  "Tuple optimization",
-  "ID optimization",
-  "Constant evaluation",
-  "Lowered",
-};
-
-/**
- * dumps a optimization hash
- */
-static void dump_opt_hash(pset *set, int index)
-{
-  opt_entry_t *entry = pset_first(set);
-
-  if (entry) {
-    fprintf(status->f, "\n%s:\n", opt_names[index]);
-    fprintf(status->f, "%-16s %-8s\n", "Opcode", "deref");
-
-    for (; entry; entry = pset_next(set)) {
-      fprintf(status->f, "%-16s %8d\n",
-	  get_id_str(entry->op->name), entry->count.cnt[0]);
-    }
-  }
-}
-
 /* Finish the statistics */
 void stat_finish(void)
 {
   STAT_ENTER;
   {
-    int i;
     graph_entry_t *entry;
-    ir_graph *const_irg = get_const_code_irg();
+    graph_entry_t *global = graph_get_entry(NULL, status->irg_hash);
 
-    /* dump global */
-    fprintf(status->f, "\nGlobal counts:\n");
-    dump_opcode_hash(status->opcode_hash);
-
+    /* dump per graph */
     for (entry = pset_first(status->irg_hash); entry; entry = pset_next(status->irg_hash)) {
-      entity *ent = entry->ent;
+
+      if (entry->irg == NULL) {
+	/* special entry for the global count */
+	continue;
+      }
 
       if (! entry->deleted) {
 	/* the graph is still alive, count the nodes on it */
-	count_nodes_in_graph(entry->irg, entry->opcode_hash);
+	count_nodes_in_graph(global, entry);
       }
 
-      if (entry->irg == const_irg) {
-	fprintf(status->f, "\nConst code Irg %p", entry->irg);
-      }
-      else {
-	if (ent)
-	  fprintf(status->f, "\nEntity %s, Irg %p", get_entity_name(ent), entry->irg);
-	else
-	  fprintf(status->f, "\nIrg %p", entry->irg);
-      }
-
-      fprintf(status->f, " %swalked %d over blocks %d was inlined %d got inlined %d:\n",
-	  entry->deleted ? "DELETED " : "",
-	  entry->walked.cnt[0], entry->walked_blocks.cnt[0],
-	  entry->was_inlined.cnt[0],
-	  entry->got_inlined.cnt[0]
-	  );
-
-      dump_opcode_hash(entry->opcode_hash);
-
-      for (i = 0; i < sizeof(entry->opt_hash)/sizeof(entry->opt_hash[0]); ++i) {
-	dump_opt_hash(entry->opt_hash[i], i);
-      }
+      dump_graph(entry);
     }
 
-    fclose(status->f);
+    /* dump global */
+    dump_graph(global);
+    dump_finish();
+
   }
   STAT_LEAVE;
 }
