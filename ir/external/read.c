@@ -1,14 +1,16 @@
 /* -*- c -*- */
 
 /*
-  configure libxml2 (default Linux libxml2.rpm doesn't cut it)
-
-  ./configure --prefix=/afs/info.uni-karlsruhe.de/user/<home>/src/C/xml --with-gnu-ld --with-pic --with-output --with-tree --with-reader --with-pattern --with-writer --with-push --with-valid --with-catalog --with-xpath--with-xptr --with-c14n --with-xinclude --with-schemas --with-regexps --with-debug --with-mem-debug
-
-
-  gcc -g read.c -I../include/libxml2 -L../lib -lxml2 -o read
-  ./read <file>.xml
-*/
+ * Project:     libFIRM
+ * File name:   ir/external/read.c
+ * Purpose:     Read descriptions of external effects
+ * Author:      Florian
+ * Modified by:
+ * Created:     11.10.2004
+ * CVS-ID:      $$
+ * Copyright:   (c) 1999-2004 Universität Karlsruhe
+ * Licence:     This file is protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 # include "read.h"
 
@@ -603,11 +605,17 @@ effs_t *getEffectByName (const char *procname)
   return (NULL);
 }
 
-void read_extern (const char *filename)
+void extern_init ()
+{
+  /* nothing to do */
+}
+
+void extern_read (const char *filename)
 {
   /* xmlNsPtr ns = NULL; */           /* no namespace for us */
   xmlDocPtr doc;                /* whole document */
   xmlNodePtr cur;               /* current node */
+
   /* i've got no idea what the VERSION cast is all about. voodoo
      programming at its finest. */
   LIBXML_TEST_VERSION xmlKeepBlanksDefault (0);
@@ -624,7 +632,7 @@ void read_extern (const char *filename)
     exit (EXIT_FAILURE);
   }
 
-  {
+  if (EXTERN_VERBOSE) {
     const char *mod_str = getNodeModule (cur);
 
     if (NULL != mod_str) {
@@ -653,6 +661,63 @@ void read_extern (const char *filename)
     cur = cur->next;
   }
 }
+
+/** clean up our mess */
+void extern_cleanup ()
+{
+  /* the types */
+  {
+    type_t *tp = types;
+
+    while (NULL != tp) {
+      type_t *curr = tp;
+      tp = tp->prev;
+
+      free ((char*) curr->name);
+      memset (curr, 0x00, sizeof (type_t));
+      free (curr);
+    }
+
+    types = NULL;
+  }
+
+  /* the ennities */
+  {
+    entity_t *ent = entities;
+
+    while (NULL != ent) {
+      entity_t *curr = ent;
+      ent = ent->prev;
+
+      free ((char*) curr->name);
+      free ((char*) curr->tp_name);
+      memset (curr, 0x00, sizeof (entity_t));
+      free (curr);
+    }
+
+    entities = NULL;
+  }
+
+  /* the effs */
+  {
+    effs_t *eff = effs;
+
+    while (NULL != eff) {
+      int i;
+      effs_t *curr = eff;
+      eff = eff->next;
+
+      for (i = 0; i < curr->n_effs; i ++) {
+        free (curr->effs [i]);
+      }
+
+      free (curr);
+    }
+  }
+
+  effs = NULL;
+}
+
 
 void test_getEffectByName ()
 {
@@ -687,103 +752,14 @@ void test_getEffectByName ()
 }
 
 
-int
-main (int argc, char **argv)
-{
-  /* xmlNsPtr ns = NULL; */           /* no namespace for us */
-  xmlDocPtr doc;                /* whole document */
-  xmlNodePtr cur;               /* current node */
-  char *name;
-
-  if (2 != argc) {
-    fprintf (stderr, "no filename\n");
-    exit (EXIT_FAILURE);
-  }
-
-  /* i've got no idea what the VERSION cast is all about. voodoo
-     programming at its finest. */
-  LIBXML_TEST_VERSION xmlKeepBlanksDefault (0);
-  name = argv [1];
-  doc = xmlParseFile (name);
-
-  CHECK (doc, "xmlParseFile");
-
-  cur = xmlDocGetRootElement (doc);
-  CHECK (cur, "xmlDocGetRootElement");
-
-  if (! NODE_NAME (cur, effects)) {
-    fprintf (stderr,"root node \"%s\" != \"effects\"\n", BAD_CAST cur->name);
-    xmlFreeDoc (doc);
-
-    exit (EXIT_FAILURE);
-  }
-
-  {
-    const char *mod_str = getNodeModule (cur);
-
-    if (NULL != mod_str) {
-      fprintf (stdout, "effects for \"%s\"\n", mod_str);
-    } else {
-      fprintf (stdout, "effects \t0x%08x\n", (int) cur);
-    }
-  }
-
-  /* parse entities */
-  cur = cur->xmlChildrenNode;
-  while (cur != NULL) {
-    if (NODE_NAME (cur, type)) {
-      parseType (doc, cur);
-    } else if (NODE_NAME (cur, entity)) {
-      parseEntity (doc, cur);
-    } else if (NODE_NAME (cur, effect)) {
-      parseEffect (doc, cur);
-    } else if ((NODE_NAME (cur, comment))) {
-      /* comment */
-    } else {
-      fprintf (stderr, "wrong element \"%s\"\n", BAD_CAST cur->name);
-      exit (EXIT_FAILURE);
-    }
-
-    cur = cur->next;
-  }
-
-  /* test getEffectByName */
-  {
-    char *names [] = {
-      "store_unknown_proc",
-      "rise_something",
-      "other_fake_proc",
-      "ret_alloc",
-      "mash_args",
-      "ret_arg",
-      "empty_external",
-      "no_this_doesn't_really_exist",
-      "my_fake_proc",
-      NULL
-    };
-
-    int i = 0;
-
-    while (NULL != names [i]) {
-      effs_t *the_eff = getEffectByName (names [i]);
-
-      if (the_eff) {
-        fprintf (stdout, "Effect for \"%s\" is at 0x%08x\n",
-                 names [i], (int) the_eff);
-      } else {
-        fprintf (stdout, "Effect for \"%s\" not found\n",
-                 names [i]);
-      }
-      i ++;
-    }
-  }
-
-  exit (EXIT_SUCCESS);
-}
 
 
 /*
  * $Log$
+ * Revision 1.2  2004/10/11 15:56:09  liekweg
+ * Cleanup, comments ...
+ * Added init func --flo
+ *
  * Revision 1.1  2004/10/11 09:31:06  liekweg
  * First Import of XML reading procs --flo
  *

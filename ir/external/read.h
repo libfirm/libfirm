@@ -1,22 +1,46 @@
 /* -*- c -*- */
 
-#ifndef _READ_H_
-#define _READ_H_
+/*
+ * Project:     libFIRM
+ * File name:   ir/external/read.c
+ * Purpose:     Read descriptions of external effects
+ * Author:      Florian
+ * Modified by:
+ * Created:     11.10.2004
+ * CVS-ID:      $$
+ * Copyright:   (c) 1999-2004 Universität Karlsruhe
+ * Licence:     This file is protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <assert.h>
+# ifndef _READ_H_
+# define _READ_H_
 
-#include <libxml/xmlmemory.h>
-#include <libxml/parser.h>
-#include <libxml/encoding.h>
+# include <stdio.h>
+# include <string.h>
+# include <stdlib.h>
+# include <assert.h>
 
+# include <libxml/xmlmemory.h>
+# include <libxml/parser.h>
+# include <libxml/encoding.h>
+
+# include "type.h"
+# include "entity.h"
+
+/* we need strdup */
 # ifndef _BSD_SOURCE
-#  define _BSD_SOURCE            /* need strdup */
+#  define _BSD_SOURCE
 # endif /* ! defined _BSD_SOURCE */
 
 # define MY_ENCODING "ISO-8859-1"
+
+/* quick hack until we get a cmd line flag or something: just add
+   '-DEXTERN_VERBOSE' to 'CFLAGS' */
+# ifndef EXTERN_VERBOSE
+#  define EXTERN_VERBOSE 1
+# else
+#  define EXTERN_VERBOSE 0
+# endif /* defined EXTERN_VERBOSE */
 
 # define CHECK(ptr,msg)     assert (ptr && msg)
 
@@ -31,8 +55,8 @@ typedef struct type_str
 {
   const char *name;
   int id;
-  void *f_tp;                   /* firm type */
-  struct type_str *prev;
+  entity *f_tp;                 /* firm type */
+  struct type_str *prev;        /* linked list */
 } type_t;
 
 typedef struct entity_str
@@ -40,8 +64,8 @@ typedef struct entity_str
   const char *name;
   const char *tp_name;
   int id;
-  void *f_ent;                  /* firm entity */
-  struct entity_str *prev;
+  type *f_ent;                  /* firm entity */
+  struct entity_str *prev;      /* linked list */
 } entity_t;
 
 /* now the xml nodes */
@@ -63,7 +87,6 @@ typedef enum eff_node_kind {
 typedef struct eff_str
 {
   eff_node_kind_t kind;
-  /* struct eff_str *next; */
 } eff_t;
 
 typedef struct effs_str
@@ -77,7 +100,6 @@ typedef struct effs_str
 typedef struct arg_str
 {
   eff_node_kind_t kind;
-  /* struct eff_str *next; */
   int id;
   int num;
 } arg_t;
@@ -85,14 +107,12 @@ typedef struct arg_str
 typedef struct valref_str
 {
   eff_node_kind_t kind;
-  /* struct eff_str *next; */
   int refid;
 } valref_t;
 
 typedef struct select_str
 {
   eff_node_kind_t kind;
-  /* struct eff_str *next; */
   int valrefid;                 /* id of enclosed valref node, or -1 */
   entity_t *ent;
 } select_t;
@@ -100,7 +120,6 @@ typedef struct select_str
 typedef struct load_str
 {
   eff_node_kind_t kind;
-  /* struct eff_str *next; */
   int id;
   int ptrrefid;                 /* id of valref node enclosed in select, or -1 */
   entity_t *ent;
@@ -109,7 +128,6 @@ typedef struct load_str
 typedef struct store_str
 {
   eff_node_kind_t kind;
-  /* struct eff_str *next; */
   int ptrrefid;                 /* id of ptr valref node enclosed in select, or -1 */
   int valrefid;                 /* id of val valref node enclosed in select, or -1 */
   entity_t *ent;
@@ -125,7 +143,6 @@ typedef struct alloc_str
 typedef struct call_str
 {
   eff_node_kind_t kind;
-  /* struct eff_str *next; */
   int id;
   int valrefid;                 /* id of enclosed valref node, or -1 */
   entity_t *ent;                /* called entity */
@@ -136,14 +153,12 @@ typedef struct call_str
 typedef struct unknown_str
 {
   eff_node_kind_t kind;
-  /* struct eff_str *next; */
   int id;
 } unknown_t;
 
 typedef struct join_str
 {
   eff_node_kind_t kind;
-  /* struct eff_str *next; */
   int id;
   int n_ins;
   int *ins;
@@ -152,9 +167,8 @@ typedef struct join_str
 typedef struct ret_str
 {
   eff_node_kind_t kind;
-  /* struct eff_str *next; */
-  int ret_id;
-} ret_t;                     /* returned value, or -1 */
+  int ret_id;                   /* returned value, or -1 */
+} ret_t;
 
 typedef struct raise_str
 {
@@ -183,14 +197,23 @@ entity_t *getEntityById (const int);
 /** get the effect entry for the given name */
 effs_t *getEffectByName (const char*);
 
+/** initialise the data structures */
+void extern_init (void);
+
 /** read in the file of the given name */
-void read_extern (const char*);
+void extern_read (const char*);
 
+/** clean up our mess */
+void extern_cleanup (void);
 
-#endif /* defined _READ_H_ */
+# endif /* defined _READ_H_ */
 
 /*
   $Log$
+  Revision 1.2  2004/10/11 15:56:09  liekweg
+  Cleanup, comments ...
+  Added init func --flo
+
   Revision 1.1  2004/10/11 09:31:06  liekweg
   First Import of XML reading procs --flo
 
