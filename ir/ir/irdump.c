@@ -41,7 +41,7 @@
 # include "pmap.h"
 # include "eset.h"
 
-#undef HEAPANAL
+#define HEAPANAL
 #ifdef HEAPANAL
 void dump_chi_term(FILE *FL, ir_node *n);
 void dump_state(FILE *FL, ir_node *n);
@@ -547,6 +547,7 @@ dump_node_vcgattr (ir_node *n)
 static INLINE void
 dump_node_info (ir_node *n) {
   int i;
+  char comma;
   ir_graph *irg;
   fprintf (F, " info1: \"");
   if (opt_dump_pointer_values_to_info)
@@ -555,6 +556,18 @@ dump_node_info (ir_node *n) {
   irg = get_irn_irg(n);
   if (irg != get_const_code_irg())
     fprintf (F, "irg:     %s\n", get_ent_dump_name(get_irg_entity(irg)));
+
+  fprintf(F, "arity: %d", get_irn_arity(n));
+  if ((get_irn_op(n) == op_Block) ||
+      (get_irn_op(n) == op_Phi) ||
+      ((get_irn_op(n) == op_Filter) && interprocedural_view)) {
+    fprintf(F, " backedges:");
+    comma = ' ';
+    for (i = 0; i < get_irn_arity(n); i++)
+      if (is_backedge(n, i)) { fprintf(F, "%c %d", comma, i); comma = ','; }
+  }
+  fprintf(F, "\n");
+
 
   /* Source types */
   switch (get_irn_opcode(n)) {
@@ -1360,6 +1373,9 @@ dump_loop_label(ir_loop *loop) {
 static INLINE void dump_loop_info(ir_loop *loop) {
   fprintf (F, " info1: \"");
   fprintf (F, " loop nr: %d", get_loop_loop_nr(loop));
+#if DEBUG_libfirm   /* GL @@@ debug analyses */
+  fprintf (F, "\n The loop was analyzed %d times.", (int)get_loop_link(loop));
+#endif
   fprintf (F, "\"");
 }
 
@@ -1866,6 +1882,7 @@ void dump_loops_standalone (ir_loop *loop) {
 	  fprintf (F, " ");
 	  dump_node_nodeattr(n);
 	  fprintf (F, " %ld", get_irn_node_nr(n));
+
 	}
     }
 
