@@ -123,6 +123,7 @@ computed_value (ir_node *n)
       res = tarval_mod(ta, tb);
     }
     break;
+  /* for iro_DivMod see iro_Proj */
   case iro_Abs:
     if (ta)
       res = tarval_abs (ta);
@@ -220,6 +221,16 @@ computed_value (ir_node *n)
 	      /* 3.: */
 	      res = tarval_from_long (mode_b, get_Proj_proj(n) & irpn_Ne);
 	  }
+	}
+      } else if (get_irn_op(a) == op_DivMod) {
+        ta = value_of(get_DivMod_left(a));
+        tb = value_of(get_DivMod_right(a));
+	if (ta && tb  && (get_irn_mode(a) == get_irn_mode(b))) {
+	  if (tarval_classify(tb) == 0) {res = NULL; break;}
+	  if (get_Proj_proj(n)== 0) /* Div */
+	    res = tarval_div(ta, tb);
+	  else /* Mod */
+	    res = tarval_mod(ta, tb);
 	}
       } else {
         /* printf(" # comp_val: Proj node, not optimized\n"); */
