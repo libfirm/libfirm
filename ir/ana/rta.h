@@ -5,24 +5,39 @@
 
 # include "entity.h"
 
-/* Initialise the RTA data structures and perform RTA */
-void rta_init(int);
-/* Delete all graphs that have been found to be dead */
+/**
+ * Initialise the RTA data structures and perform RTA.
+ *
+ * @param do_verbose If == 1, print statistics, if > 1, chatter about every detail
+ */
+void rta_init(int do_verbose);
+
+/**
+ * Delete all graphs that have been found to be dead.
+ */
 void rta_delete_dead_graphs (void);
-/* Clean up our data structures */
+
+/** Clean up our data structures.
+ * Finishes the RTA.
+ */
 void rta_cleanup(void);
 
-/* Inquire whether the given class is live */
+/** Returns non-zero if the given class is alive. */
 int rta_is_alive_class(type *clazz);
-/* Inquire whether the given graph is alive */
+
+/** Returns non-zero if the given graph is alive. */
 int rta_is_alive_graph(ir_graph *graph);
-/* dump our opinion */
+
+/** report for all graphs and types wheater they are alive */
 void rta_report (void);
 
 #endif /* def _RTA_H_ */
 
 /*
  * $Log$
+ * Revision 1.10  2004/09/24 13:59:04  beck
+ * fixed doxygen comments, removed initialization for description entities
+ *
  * Revision 1.9  2004/08/19 16:51:02  goetz
  * fixed some errors, pushed closer to inteded firm semantics
  *

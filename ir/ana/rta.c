@@ -360,8 +360,7 @@ static void init_tables (void)
   int i, n_globs = get_class_n_members(get_glob_type());
 
   _live_classes = eset_create ();
-
-  _live_graphs = eset_create ();
+  _live_graphs  = eset_create ();
 
   if (get_irp_main_irg ()) {
     eset_insert (_live_graphs, get_irp_main_irg ());
@@ -375,9 +374,10 @@ static void init_tables (void)
   }
 }
 
-/* Initialise the RTA data structures, and perform RTA.
-   @param   do_verbose If == 1, print statistics, if > 1, chatter about every detail
-*/
+/*
+ * Initialise the RTA data structures, and perform RTA.
+ * do_verbose If == 1, print statistics, if > 1, chatter about every detail
+ */
 void rta_init (int do_verbose)
 {
   int n_runs = 0;
@@ -412,8 +412,13 @@ void rta_init (int do_verbose)
 # endif /* defined DEBUG_libfirm */
 }
 
-
-void make_entity_to_description(type_or_ent *tore, void *env) {
+/**
+ * walker for all types and entities
+ *
+ * Changes the peculiarity of entities that represents
+ * dead graphs to peculiarity_description.
+ */
+static void make_entity_to_description(type_or_ent *tore, void *env) {
   if (get_kind(tore) == k_entity) {
     entity *ent = (entity *)tore;
 
@@ -424,7 +429,6 @@ void make_entity_to_description(type_or_ent *tore, void *env) {
       if (!eset_contains (_live_graphs, irg)) {
 	set_entity_peculiarity(ent, peculiarity_description);
 	set_entity_irg(ent, NULL);
-	set_atomic_ent_value(ent, new_Const(mode_P, get_tarval_null(mode_P)));
       }
     }
   }
@@ -460,7 +464,6 @@ void rta_delete_dead_graphs (void)
     }
   }
 
-  current_ir_graph = get_const_code_irg();
   type_walk(make_entity_to_description, NULL, NULL);
   for (i = 0; i < n_dead_graphs; ++i) {
     remove_irp_irg (dead_graphs[i]);
@@ -502,11 +505,7 @@ int  rta_is_alive_class  (type   *clazz)
 /* Say whether this graph might be run at any time in the program: */
 int  rta_is_alive_graph (ir_graph *graph)
 {
-  if (eset_contains (_live_graphs, graph)) {
-    return (TRUE);
-  }
-
-  return (FALSE);
+  return eset_contains (_live_graphs, graph);
 }
 
 /* dump our opinion */
@@ -532,6 +531,9 @@ void rta_report (void)
 
 /*
  * $Log$
+ * Revision 1.24  2004/09/24 13:59:04  beck
+ * fixed doxygen comments, removed initialization for description entities
+ *
  * Revision 1.23  2004/08/19 16:51:02  goetz
  * fixed some errors, pushed closer to inteded firm semantics
  *
