@@ -1844,7 +1844,8 @@ static int node_cmp_attr_Alloc(ir_node *a, ir_node *b)
 /** Compares the attributes of two Free nodes. */
 static int node_cmp_attr_Free(ir_node *a, ir_node *b)
 {
-    return (get_irn_free_attr(a) != get_irn_free_attr(b));
+    return (get_irn_free_attr(a).where != get_irn_free_attr(b).where)
+        || (get_irn_free_attr(a).type != get_irn_free_attr(b).type);
 }
 
 /** Compares the attributes of two SymConst nodes. */
