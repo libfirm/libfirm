@@ -163,17 +163,17 @@ static void rta_act (ir_node *node, void *env)
       if (graph) {
         *change = add_graph (graph);
       } else {
-        /* it's an externally allocated thing. */
+        /* it's an external allocated thing. */
       }
     } else if (iro_SymConst == get_irn_opcode (ptr)) { /* CALL SYMCONST */
       if (get_SymConst_kind(ptr) == symconst_addr_ent) {
 	ent = get_SymConst_entity (ptr);
 	ir_graph *graph = get_entity_irg (ent);
-	/* don't use get_implementing_graph on a Const! */
+	/* don't use get_implementing_graph on a SymConst! */
 	if (graph) {
 	  *change = add_graph (graph);
 	} else {
-	  /* it's an externally allocated thing. */
+	  /* it's an external allocated thing. */
 	}
       } else if (get_SymConst_kind(ptr) == symconst_addr_name) {
       /* If this SymConst refers to a method the method is external_visible
@@ -544,6 +544,9 @@ void rta_report (void)
 
 /*
  * $Log$
+ * Revision 1.20  2004/07/08 11:17:40  goetz
+ * *** empty log message ***
+ *
  * Revision 1.19  2004/07/06 12:30:37  beyhan
  * new SymConst semantics
  *

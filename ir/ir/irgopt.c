@@ -887,7 +887,10 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
           n_ret++;
         }
       }
-      phi = new_Phi(n_ret, cf_pred, get_irn_mode(cf_pred[0]));
+      if (n_ret > 0)
+	phi = new_Phi(n_ret, cf_pred, get_irn_mode(cf_pred[0]));
+      else
+	phi = new_Bad();
       res_pred[j] = phi;
       /* Conserve Phi-list for further inlinings -- but might be optimized */
       if (get_nodes_Block(phi) == post_bl) {
