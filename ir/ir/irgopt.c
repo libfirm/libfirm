@@ -1,7 +1,7 @@
-/* Coyright (C) 1998 - 2000 by Universitaet Karlsruhe
+/* Coyright (C) 1998 - 2002 by Universitaet Karlsruhe
 ** All rights reserved.
 **
-** Author: Christian Schaefer
+** Author: Christian Schaefer, Goetz Lindenmaier, Sebastian Felis
 **
 ** Optimizations for a whole ir graph, i.e., a procedure.
 */
@@ -410,9 +410,95 @@ dead_node_elimination(ir_graph *irg) {
   current_ir_graph = rem;
 }
 
-void remove_bad_predecessors(ir_graph *irg) {
-  printf("remove_bad_predecessors not implemented!!!\n");
+/* Relink bad predeseccors of a block and store the old in array to the
+   link field. This function is called by relink_bad_predecessors().
+   The array of link field starts with the block operand at position 0.
+   If block has bad predecessors, create a new in array without bad preds.
+   Otherwise let in array untouched. */
+static void relink_bad_block_predecessors(ir_node *n, void *env) {
+  ir_node **new_in, *irn;
+  int i, new_irn_n, old_irn_arity, new_irn_arity = 0;
+
+  /* if link field of block is NULL, look for bad predecessors otherwise
+     this is allready done */
+  if (get_irn_op(n) == op_Block &&
+      get_irn_link(n) == NULL) {
+
+    /* save old predecessors in link field (position 0 is the block operand)*/
+    set_irn_link(n, (void *)get_irn_in(n));
+
+    /* count predecessors without bad nodes */
+    old_irn_arity = get_irn_arity(n);
+    for (i = 0; i < old_irn_arity; i++)
+      if (!is_Bad(get_irn_n(n, i))) new_irn_arity++;
+
+    /* arity changing: set new predecessors without bad nodes */
+    if (new_irn_arity < old_irn_arity) {
+      /* get new predecessor array without Block predecessor */
+      new_in = NEW_ARR_D (ir_node *, current_ir_graph->obst, (new_irn_arity+1));
+
+      /* set new predeseccors in array */
+      new_in[0] = NULL;
+      new_irn_n = 1;
+      for (i = 1; i < old_irn_arity; i++) {
+	irn = get_irn_n(n, i);
+	if (!is_Bad(irn)) new_in[new_irn_n++] = irn;
+      }
+      n->in = new_in;
+    } /* ir node has bad predecessors */
+
+  } /* Block is not relinked */
 }
+
+/* Relinks Bad predecesors from Bocks and Phis called by walker
+   remove_bad_predecesors(). If n is a Block, call
+   relink_bad_block_redecessors(). If n is a Phinode, call also the relinking
+   function of Phi's Block. If this block has bad predecessors, relink preds
+   of the Phinode. */
+static void relink_bad_predecessors(ir_node *n, void *env) {
+  ir_node *block, **old_in;
+  int i, old_irn_arity, new_irn_arity;
+
+  /* relink bad predeseccors of a block */
+  if (get_irn_op(n) == op_Block)
+    relink_bad_block_predecessors(n, env);
+
+  /* If Phi node relink its block and its predecessors */
+  if (get_irn_op(n) == op_Phi) {
+
+    /* Relink predeseccors of phi's block */
+    block = get_nodes_Block(n);
+    if (get_irn_link(block) == NULL)
+      relink_bad_block_predecessors(block, env);
+
+    old_in = (ir_node **)get_irn_link(block); /* Of Phi's Block */
+    old_irn_arity = ARR_LEN(old_in);
+
+    /* Relink Phi predeseccors if count of predeseccors changed */
+    if (old_irn_arity != ARR_LEN(get_irn_in(block))) {
+      /* set new predeseccors in array
+	 n->in[0] remains the same block */
+      new_irn_arity = 1;
+      for(i = 1; i < old_irn_arity; i++)
+	if (!is_Bad((ir_node *)old_in[i])) n->in[new_irn_arity++] = n->in[i];
+
+      ARR_SETLEN(ir_node *, n->in, new_irn_arity);
+    }
+
+  } /* n is a Phi node */
+}
+
+/* Removes Bad Bad predecesors from Blocks and the corresponding
+   inputs to Phi nodes as in dead_node_elimination but without
+   copying the graph.
+   On walking up set the link field to NULL, on walking down call
+   relink_bad_predecessors() (This function stores the old in array
+   to the link field and sets a new in array if arity of predecessors
+   changes) */
+void remove_bad_predecessors(ir_graph *irg) {
+  irg_walk_graph(irg, init_link, relink_bad_predecessors, NULL);
+}
+
 
 /**********************************************************************/
 /*  Funcionality for inlining                                         */
