@@ -3,24 +3,7 @@
 #ifndef _RTA_H_
 #define _RTA_H_
 
-#ifdef HAVE_CONFIG_H
-# include <config.h>
-#endif
-
-#include <stdlib.h>
-#include "cgana.h"              /* get_implementation */
-
-#include "eset.h"
-/* #include "pmap.h" */
-/* #include "array.h" */
-#include "irprog.h"
-#include "irgwalk.h"
-/* #include "ircons.h" */
-/* #include "irgmod.h" */
-#include "irnode_t.h"
-/* #include "irflag_t.h" */
-
-/* #include "dbginfo_t.h" */
+# include "entity.h"
 
 void rta_init    (void);
 void rta_cleanup (void);
@@ -33,6 +16,9 @@ int  rta_is_alive_field  (entity*);
 
 /*
  * $Log$
+ * Revision 1.2  2004/06/12 17:09:46  liekweg
+ * RTA works, outedges breaks.  "Yay." --flo
+ *
  * Revision 1.1  2004/06/11 18:24:18  liekweg
  * Added RTA --flo
  *
