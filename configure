@@ -841,6 +841,7 @@ Optional Packages:
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-includedir=add colon seperated list of directories to include search path
   --with-libdir=add colon seperated list of directories to linker search path
+  --with-libxml2=installation prefix of libxml2 (IPD: --with-libxml2=/usr/public/libxml2)
 
 Some influential environment variables:
   CC          C compiler command
@@ -1238,6 +1239,14 @@ fi;
 if test "${with_libdir+set}" = set; then
   withval="$with_libdir"
   LDFLAGS=$LDFLAGS" -L"`echo $withval|sed 's;\:; -L;g'`
+fi;
+
+
+# Check whether --with-libxml2 or --without-libxml2 was given.
+if test "${with_libxml2+set}" = set; then
+  withval="$with_libxml2"
+  LDFLAGS=$LDFLAGS" -L"$withval"/lib";
+	CPPFLAGS=$CPPFLAGS" -I"$withval"/include/libxml2"
 fi;
 
 

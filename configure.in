@@ -44,6 +44,11 @@ dnl check for additional library dirs
 AC_ARG_WITH(libdir, [  --with-libdir=add colon seperated list of directories to linker search path],
     LDFLAGS=$LDFLAGS" -L"`echo $withval|sed 's;\:; -L;g'`)
 
+dnl check for libxml2 library installation dir
+AC_ARG_WITH(libxml2, [  --with-libxml2=installation prefix of libxml2 (IPD: --with-libxml2=/usr/public/libxml2)],
+    LDFLAGS=$LDFLAGS" -L"$withval"/lib";
+	CPPFLAGS=$CPPFLAGS" -I"$withval"/include/libxml2")
+
 dnl Package options
 dnl ===============
 
