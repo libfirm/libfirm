@@ -110,13 +110,17 @@ extern "C" {
 
 #include "irreflect.h"     /* reflection */
 
+
 /* @@@ temporarily for jni builder until preprocessor works.
    Then it should be sufficient to include <file.h> instead
    of firm.h as not all enums are needed in the implementation
    files. */
+#include "irprintf.h"      /* printf like dumping facility */
 #include "irdump.h"
 #include "irvrfy.h"
 #include "trvrfy.h"
+
+#include "irarch.h"
 
 /* Makros that define the old function names we decided to rename.
    Use for compatibility with old implementations. */
@@ -158,6 +162,12 @@ struct _firm_parameter_t {
    * If not set, the default libFirm ident module (using hash sets).
    */
   ident_if_t *id_if;
+
+	/**
+	 * The factory function for the architecture dependent
+	 * optimizations.
+	 */
+
 };
 
 
