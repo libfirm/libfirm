@@ -502,14 +502,9 @@ get_Block_n_cfgpreds (ir_node *node) {
 
 ir_node *
 get_Block_cfgpred (ir_node *node, int pos) {
+  assert(node);
   assert (node->op == op_Block);
-  /* debug @@@
-  if (-1 > pos || get_irn_arity(node) <= pos) {
-    dump_ir_block_graph(current_ir_graph);
-    printf("pos: %d, arity: %d ", pos, get_irn_arity(node));
-    DDMN(node);
-    } */
-  assert(node); assert(-1 <= pos && pos < get_irn_arity(node));
+  assert(-1 <= pos && pos < get_irn_arity(node));
   return get_irn_n(node, pos);
 }
 

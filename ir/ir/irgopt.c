@@ -697,6 +697,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
   assert(get_irg_pinned(called_graph) == pinned);
   if (get_irg_outs_state(current_ir_graph) == outs_consistent)
     set_irg_outs_inconsistent(current_ir_graph);
+  set_irg_loopinfo_inconsistent(current_ir_graph);
 
   /* -- Check preconditions -- */
   assert(get_irn_op(call) == op_Call);
@@ -766,12 +767,11 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
      Further mark these nodes so that they are not visited by the
      copying. */
   set_irn_link(get_irg_start(called_graph), pre_call);
-  set_irn_visited(get_irg_start(called_graph),
-          get_irg_visited(current_ir_graph));
-  set_irn_link(get_irg_start_block(called_graph),
-           get_nodes_Block(pre_call));
-  set_irn_visited(get_irg_start_block(called_graph),
-          get_irg_visited(current_ir_graph));
+  set_irn_visited(get_irg_start(called_graph), get_irg_visited(current_ir_graph));
+  set_irn_link(get_irg_start_block(called_graph), get_nodes_Block(pre_call));
+  set_irn_visited(get_irg_start_block(called_graph), get_irg_visited(current_ir_graph));
+  set_irn_link(get_irg_bad(called_graph), get_irg_bad(current_ir_graph));
+  set_irn_visited(get_irg_bad(called_graph), get_irg_visited(current_ir_graph));
 
   /* Initialize for compaction of in arrays */
   inc_irg_block_visited(current_ir_graph);
