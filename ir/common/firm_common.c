@@ -17,6 +17,7 @@
 
 #include "firm_common_t.h"
 #include "irgraph.h"
+#include "irloop.h"
 
 /* returns the kind of the thing */
 firm_kind
