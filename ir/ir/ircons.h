@@ -336,7 +336,8 @@
  *    The block can be completed by mature_immBlock(block) if all predecessors are
  *    known.  If several blocks are built at once, mature_immBlock can only be called
  *    after set_value has been called for all values that are life at the end
- *    of the block.  This is necessary so that Phi nodes created mature_immBlock *    get the right predecessors in case of cyclic dependencies.  If all set_values
+ *    of the block.  This is necessary so that Phi nodes created mature_immBlock
+ *    get the right predecessors in case of cyclic dependencies.  If all set_values
  *    of this block are called after maturing it and before calling get_value
  *    in some block that is control flow dependent on this block, the construction
  *    is correct.
@@ -398,7 +399,7 @@
  *    later) optimizations are skipped.  This is necessary to
  *    construct Blocks in loops.  Leaving Unknown in the Block after finishing
  *    the construction may have strange effects, especially for interprocedural
- *    representation and analyses.
+ *    representation and analysis.
  *
  *
  *    CONTROL FLOW OPERATIONS
@@ -585,14 +586,14 @@
  *                      ------------
  *
  *    Selects a field from an array type.  The entity has as owner the array, as
- *    type the arrays element type.  The indexes to access an array element are
+ *    type the arrays element type.  The indices to access an array element are
  *    given also.
  *
  *    Parameters:
  *      *store     The memory in which the object the entity should be selected from
  *                 is allocated.
  *      *frame     The pointer to the object.
- *      *arity     number of array indexes.
+ *      *arity     number of array indices.
  *      *in        array with index inputs to the node.
  *      *sel       The entity to select.
  *
@@ -786,7 +787,7 @@
  *    later) optimizations are skipped.  This is necessary to
  *    construct Phi nodes in loops.  Leaving Unknown in the Phi after finishing
  *    the construction may have strange effects, especially for interprocedural
- *    representation and analyses.
+ *    representation and analysis.
  *
  *    Parameter
  *      arity            number of predecessors
@@ -895,7 +896,7 @@
  *    unifying the memories with a preceding Sync operation.
  *
  *    Parameters
- *      arity    The number of memories to syncronize.
+ *      arity    The number of memories to synchronize.
  *      **in     An array of pointers to nodes that produce an output of
  *               type memory.
  *    Inputs
@@ -1143,7 +1144,7 @@ ir_node *new_rd_Raise  (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param *db    A pointer for debug information.
  * @param *irg   The ir graph the node  belongs to.
  * @param *block The ir block the node belongs to.
- * @param *mode  The mode of the operands and redults.
+ * @param *mode  The mode of the operands and results.
  * @param *con   Points to an entry in the constant table.
  * @param *tp    The type of the constant.
  */
@@ -1159,7 +1160,7 @@ ir_node *new_rd_Const_type (dbg_info* db, ir_graph *irg, ir_node *block,
  * @param *db    A pointer for debug information.
  * @param *irg   The ir graph the node  belongs to.
  * @param *block The ir block the node belongs to.
- * @param *mode  The mode of the operands and redults.
+ * @param *mode  The mode of the operands and results.
  * @param *con   Points to an entry in the constant table.
  */
 ir_node *new_rd_Const  (dbg_info *db, ir_graph *irg, ir_node *block,
@@ -1209,28 +1210,28 @@ ir_node *new_rd_SymConst (dbg_info *db, ir_graph *irg, ir_node *block,
  *
  * Same as new_rd_SymConst_type, except that the constructor is tailored for
  * symconst_addr_ent.
- * Adds the symconst to the start block of irg. */
+ * Adds the SymConst to the start block of irg. */
 ir_node *new_rd_SymConst_addr_ent (dbg_info *db, ir_graph *irg, entity *symbol, type *tp);
 
 /** Constructor for a SymConst addr_name node.
  *
  * Same as new_rd_SymConst_type, except that the constructor is tailored for
  * symconst_addr_ent.
- * Adds the symconst to the start block of irg. */
+ * Adds the SymConst to the start block of irg. */
 ir_node *new_rd_SymConst_addr_name (dbg_info *db, ir_graph *irg, ident *symbol, type *tp);
 
 /** Constructor for a SymConst type_tag node.
  *
  * Same as new_rd_SymConst_type, except that the constructor is tailored for
  * symconst_addr_ent.
- * Adds the symconst to the start block of irg. */
+ * Adds the SymConst to the start block of irg. */
 ir_node *new_rd_SymConst_type_tag (dbg_info *db, ir_graph *irg, type *symbol, type *tp);
 
 /** Constructor for a SymConst size node.
  *
  * Same as new_rd_SymConst_type, except that the constructor is tailored for
  * symconst_addr_ent.
- * Adds the symconst to the start block of irg. */
+ * Adds the SymConst to the start block of irg. */
 ir_node *new_rd_SymConst_size (dbg_info *db, ir_graph *irg, type *symbol, type *tp);
 
 /** Constructor for a Sel node.
@@ -1239,7 +1240,7 @@ ir_node *new_rd_SymConst_size (dbg_info *db, ir_graph *irg, type *symbol, type *
  * with a compound type.  It explicitly specifies the entity selected.
  * Dynamically the node may select entities that overwrite the given
  * entity.  If the selected entity is an array element entity the Sel
- * node takes the required array indicees as inputs.
+ * node takes the required array indices as inputs.
  *
  * @param   *db        A pointer for debug information.
  * @param   *irg       The ir graph the node  belongs to.
@@ -1248,8 +1249,8 @@ ir_node *new_rd_SymConst_size (dbg_info *db, ir_graph *irg, type *symbol, type *
  *                     from is allocated.
  * @param   *objptr    A pointer to a compound entity the Sel operation selects a
  *                     single attribute from.
- * @param   *n_index   The number of array indicees needed to select an array element entity.
- * @param   *index[]   If the compound entity is an array the indicees of the selected
+ * @param   *n_index   The number of array indices needed to select an array element entity.
+ * @param   *index[]   If the compound entity is an array the indices of the selected
  *                     element entity.  The constructor copies this array.
  * @param   *ent       The entity to select.
  */
@@ -1599,7 +1600,7 @@ ir_node *new_rd_Free   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *st
  * @param *db       A pointer for debug information.
  * @param *irg      The ir graph the node  belongs to.
  * @param *block    The ir block the node belongs to.
- * @param  arity    The number of memories to syncronize.
+ * @param  arity    The number of memories to synchronize.
  * @param  *in[]    An array of pointers to nodes that produce an output of type
  *                  memory.  The constructor copies this array.
  */
@@ -1610,7 +1611,7 @@ ir_node *new_rd_Sync   (dbg_info *db, ir_graph *irg, ir_node *block, int arity, 
  * Projects a single value out of a tuple.  The parameter proj gives the
  * position of the value within the tuple.
  *
- * @param *db    A pointer for deubugginformation.
+ * @param *db    A pointer for debug information.
  * @param *irg   The ir graph the node  belongs to.
  * @param *block The ir block the node belongs to.
  * @param arg    A node producing a tuple.  The node must have mode_T.
@@ -1842,7 +1843,7 @@ ir_node *new_r_Cond   (ir_graph *irg, ir_node *block, ir_node *c);
  * @param *irg   The ir graph the node  belongs to.
  * @param *block The ir block the node belongs to.
  * @param *store The state of memory.
- * @param arity  Number of array indexes.
+ * @param arity  Number of array indices.
  * @param *in[]   Array with index inputs to the node. The constructor copies this array.
  */
 ir_node *new_r_Return (ir_graph *irg, ir_node *block,
@@ -1895,7 +1896,7 @@ ir_node *new_r_Const  (ir_graph *irg, ir_node *block,
  *
  * @param *irg    The ir graph the node  belongs to.
  * @param *block  The ir block the node belongs to.
- * @param volue   A type, entity or a ident depending on the SymConst kind.
+ * @param value   A type, entity or a ident depending on the SymConst kind.
  * @param symkind The kind of the symbolic constant: type_tag, size or link_info.
  */
 ir_node *new_r_SymConst (ir_graph *irg, ir_node *block,
@@ -1907,7 +1908,7 @@ ir_node *new_r_SymConst (ir_graph *irg, ir_node *block,
  * with a compound type.  It explicitly specifies the entity selected.
  * Dynamically the node may select entities that overwrite the given
  * entity.  If the selected entity is an array element entity the Sel
- * node takes the required array indicees as inputs.
+ * node takes the required array indices as inputs.
  *
  * @param   *irg       The ir graph the node  belongs to.
  * @param   *block     The ir block the node belongs to.
@@ -1915,8 +1916,8 @@ ir_node *new_r_SymConst (ir_graph *irg, ir_node *block,
  *                     from is allocated.
  * @param   *objptr    A pointer to a compound entity the Sel operation selects a
  *                     single attribute from.
- * @param   *n_index   The number of array indicees needed to select an array element entity.
- * @param   *index[]   If the compound entity is an array the indicees of the selected
+ * @param   *n_index   The number of array indices needed to select an array element entity.
+ * @param   *index[]   If the compound entity is an array the indices of the selected
  *                     element entity.  The constructor copies this array.
  * @param   *ent       The entity to select.
  */
@@ -2239,7 +2240,7 @@ ir_node *new_r_Free   (ir_graph *irg, ir_node *block, ir_node *store,
  *
  * @param *irg      The ir graph the node  belongs to.
  * @param *block    The ir block the node belongs to.
- * @param  arity    The number of memories to syncronize.
+ * @param  arity    The number of memories to synchronize.
  * @param  *in[]    An array of pointers to nodes that produce an output of  type memory.
  *                  The constructor copies this array.
  */
@@ -2328,7 +2329,7 @@ ir_node *new_r_Confirm (ir_graph *irg, ir_node *block,
 
 /** Constructor for a Unknown node.
  *
- * Represents an arbtrary valus.  Places the node in
+ * Represents an arbitrary value.  Places the node in
  * the start block.
  *
  * @param *irg    The ir graph the node  belongs to.
@@ -2345,7 +2346,7 @@ ir_node *new_r_Unknown(ir_graph *irg, ir_mode *m);
  *
  * @param *irg    The ir graph the node belong to.
  * @param *block  The block the node belong to.
- * @param *callee The call node bisible in the  intra procedural view.
+ * @param *callee The call node visible in the  intra procedural view.
  */
 ir_node *new_r_CallBegin(ir_graph *irg, ir_node *block, ir_node *callee);
 
@@ -2448,7 +2449,7 @@ ir_node *get_cur_block(void);
  * with a fixed number of predecessors.  Does set current_block.  Can
  * be used with automatic Phi node construction.
  *
- * @param *db    A Pointer for  debugginfomation.
+ * @param *db    A Pointer for debug information.
  * @param arity  The number of control predecessors.
  * @param in[]   An array of control predecessors.  The length of
  *               the array must be 'arity'.
@@ -2508,7 +2509,7 @@ ir_node *new_d_Cond   (dbg_info* db, ir_node *c);
  *
  * @param *db    A pointer for debug information.
  * @param *store The state of memory.
- * @param arity  Number of array indexes.
+ * @param arity  Number of array indices.
  * @param *in    Array with index inputs to the node.
  */
 
@@ -2533,12 +2534,11 @@ ir_node *new_d_Raise  (dbg_info* db, ir_node *store, ir_node *obj);
  * level type information for the constant value.
  *
  * @param *db    A pointer for debug information.
- * @param *mode  The mode of the operands and redults.
+ * @param *mode  The mode of the operands and results.
  * @param *con   Points to an entry in the constant table. This pointer is
                  added to the attributes of the node.
- * @param *tp    The type of the constante.
+ * @param *tp    The type of the constant.
  */
-
 ir_node *new_d_Const_type (dbg_info* db, ir_mode *mode, tarval *con, type *tp);
 
 /** Constructor for a Const node.
@@ -2550,7 +2550,7 @@ ir_node *new_d_Const_type (dbg_info* db, ir_mode *mode, tarval *con, type *tp);
  * supported: If tv is entity derives a somehow useful type.)
  *
  * @param *db    A pointer for debug information.
- * @param *mode  The mode of the operands and redults.
+ * @param *mode  The mode of the operands and results.
  * @param *con   Points to an entry in the constant table. This pointer is added
  *               to the attributes of the node.
  */
@@ -2613,7 +2613,7 @@ ir_node *new_d_simpleSel(dbg_info* db, ir_node *store, ir_node *objptr, entity *
  * with a compound type.  It explicitly specifies the entity selected.
  * Dynamically the node may select entities that overwrite the given
  * entity.  If the selected entity is an array element entity the Sel
- * node takes the required array indicees as inputs.
+ * node takes the required array indices as inputs.
  * Adds the node to the block in current_ir_block.
  *
  * @param   *db        A pointer for debug information.
@@ -2621,8 +2621,8 @@ ir_node *new_d_simpleSel(dbg_info* db, ir_node *store, ir_node *objptr, entity *
  *                     from is allocated.
  * @param   *objptr    A pointer to a compound entity the Sel operation selects a
  *                     single attribute from.
- * @param   *n_index   The number of array indicees needed to select an array element entity.
- * @param   *index[]   If the compound entity is an array the indicees of the selected
+ * @param   *n_index   The number of array indices needed to select an array element entity.
+ * @param   *index[]   If the compound entity is an array the indices of the selected
  *                     element entity.  The constructor copies this array.
  * @param   *ent       The entity to select.
  */
@@ -2880,7 +2880,7 @@ ir_node *new_d_Cast   (dbg_info* db, ir_node *op, type *to_tp);
  *
  * Adds the node to the block in current_ir_block.
  *
- * @param *db    A pointer for debugginaromation.
+ * @param *db    A pointer for debug information.
  * @param arity  The number of predecessors
  * @param *in    Array with predecessors
  * @param *mode  The mode of it's inputs and output.
@@ -2946,7 +2946,7 @@ ir_node *new_d_Free   (dbg_info* db, ir_node *store, ir_node *ptr, ir_node *size
  * Adds the node to the block in current_ir_block.
  *
  * @param *db       A pointer for debug information.
- * @param  arity    The number of memories to syncronize.
+ * @param  arity    The number of memories to synchronize.
  * @param  **in     An array of pointers to nodes that produce an output of type
  *                  memory.  The constructor copies this array.
  */
@@ -2959,7 +2959,7 @@ ir_node *new_d_Sync   (dbg_info* db, int arity, ir_node *in[]);
  * position of the value within the tuple.
  * Adds the node to the block in current_ir_block.
  *
- * @param *db    A pointer for deubugginformation.
+ * @param *db    A pointer for deubug information.
  * @param arg    A node producing a tuple.
  * @param *mode  The mode of the value to project.
  * @param proj   The position of the value in the tuple.
@@ -3002,7 +3002,7 @@ ir_node *new_d_Tuple  (dbg_info* db, int arity, ir_node *in[]);
  */
 ir_node *new_d_Id     (dbg_info* db, ir_node *val, ir_mode *mode);
 
-/** Costructor for a Bad node.
+/** Constructor for a Bad node.
  *
  * Returns the unique Bad node of the graph.  The same as
  * get_irg_bad().
@@ -3027,7 +3027,7 @@ ir_node *new_d_Confirm (dbg_info* db, ir_node *val, ir_node *bound, pn_Cmp cmp);
 
 /** Constructor for an Unknown node.
  *
- * Represents an arbtrary valus.  Places the node in
+ * Represents an arbitrary value.  Places the node in
  * the start block.
  *
  * @param *m      The mode of the unknown value.
@@ -3042,7 +3042,7 @@ ir_node *new_d_Unknown(ir_mode *m);
  * node.Adds the node to the block in current_ir_block.
  *
  * @param *db     A pointer for debug information.
- * @param *callee The call node bisible in the  intra procedural view.
+ * @param *callee The call node visible in the  intra procedural view.
  */
 ir_node *new_d_CallBegin(dbg_info *db, ir_node *callee);
 
@@ -3054,7 +3054,7 @@ ir_node *new_d_CallBegin(dbg_info *db, ir_node *callee);
  */
 ir_node *new_d_EndReg (dbg_info *db);
 
-/** Constructor for an Endexcept node.
+/** Constructor for an EndExcept node.
  *
  * Used to represent regular procedure end in interprocedual view.
  * Adds the node to the block in current_ir_block.
@@ -3121,7 +3121,7 @@ ir_node *new_d_Mux  (dbg_info *db, ir_node *sel,
 /* The block oriented interface without debug support                    */
 /*-----------------------------------------------------------------------*/
 
-/* Needed from the interfase with debug support:
+/* Needed from the interface with debug support:
 void set_cur_block (ir_node *target);   */
 
 /** Constructor for a Block node.
@@ -3201,7 +3201,7 @@ ir_node *new_Cond   (ir_node *c);
  * can end regular control flow. Adds the node to the block in current_ir_block.
  *
  * @param *store The state of memory.
- * @param arity  Number of array indexes.
+ * @param arity  Number of array indices.
  * @param *in    Array with index inputs to the node.
  */
 ir_node *new_Return (ir_node *store, int arity, ir_node *in[]);
@@ -3222,7 +3222,7 @@ ir_node *new_Raise  (ir_node *store, ir_node *obj);
  * supported: If tv is entity derives a somehow useful type.)
  * Adds the node to the block in current_ir_block.
  *
- * @param *mode  The mode of the operands and redults.
+ * @param *mode  The mode of the operands and results.
  * @param *con   Points to an entry in the constant table. This pointer is
  *               added to the attributes of  the node.
  */
@@ -3278,15 +3278,15 @@ ir_node *new_simpleSel(ir_node *store, ir_node *objptr, entity *ent);
  * with a compound type.  It explicitly specifies the entity selected.
  * Dynamically the node may select entities that overwrite the given
  * entity.  If the selected entity is an array element entity the Sel
- * node takes the required array indicees as inputs.
+ * node takes the required array indices as inputs.
  * Adds the node to the block in current_ir_block.
  *
  * @param   *store     The memory in which the object the entity should be selected
  *                     from is allocated.
  * @param   *objptr    A pointer to a compound entity the Sel operation selects a
  *                     single attribute from.
- * @param   *n_index   The number of array indicees needed to select an array element entity.
- * @param   *index[]   If the compound entity is an array the indicees of the selected
+ * @param   *n_index   The number of array indices needed to select an array element entity.
+ * @param   *index[]   If the compound entity is an array the indices of the selected
  *                     element entity.  The constructor copies this array.
  * @param   *ent       The entity to select.
  */
@@ -3581,7 +3581,7 @@ ir_node *new_Free   (ir_node *store, ir_node *ptr, ir_node *size,
  * value in all memories where it occurs.
  * Adds the node to the block in current_ir_block.
  *
- * @param  arity    The number of memories to syncronize.
+ * @param  arity    The number of memories to synchronize.
  * @param  **in     An array of pointers to nodes that produce an output of type
  *                  memory.  The constructor copies this array.
  */
@@ -3787,9 +3787,9 @@ void finalize_cons (ir_graph *irg);
  * This function is called, whenever a local variable is used before definition
  *
  * @parameter mode      the mode of the local var
- * @pos                 position choosen be the frontend for this var
+ * @pos                 position chosen be the frontend for this var
  *
- * @return a firm node of mode @p mode that initialises the var at position pos
+ * @return a firm node of mode @p mode that initializes the var at position pos
  *
  * @note
  *      Do not return NULL
