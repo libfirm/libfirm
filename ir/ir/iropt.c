@@ -1482,27 +1482,35 @@ vt_cmp (const void *elt, const void *key)
   return 0;
 }
 
-/**
+/*
  * Calculate a hash value of a node.
  */
-static unsigned
+unsigned
 ir_node_hash (ir_node *node)
 {
   unsigned h;
   int i, irn_arity;
 
-  /* hash table value = 9*(9*(9*(9*(9*arity+in[0])+in[1])+ ...)+mode)+code */
-  h = irn_arity = get_irn_arity(node);
+  if (node->op == op_Const) {
+    /* special value for const, as they only differ in their tarval. */
+    /* @@@ What about SymConst? */
+    h = ((unsigned) node->attr.con.tv)>>3 ;
+    h = 9*h + (unsigned)get_irn_mode(node);
+  } else {
 
-  /* consider all in nodes... except the block. */
-  for (i = 0;  i < irn_arity;  i++) {
-    h = 9*h + (unsigned long)get_irn_n(node, i);
+    /* hash table value = 9*(9*(9*(9*(9*arity+in[0])+in[1])+ ...)+mode)+code */
+    h = irn_arity = get_irn_arity(node);
+
+    /* consider all in nodes... except the block. */
+    for (i = 0;  i < irn_arity;  i++) {
+      h = 9*h + (unsigned)get_irn_n(node, i);
+    }
+
+    /* ...mode,... */
+    h = 9*h + (unsigned) get_irn_mode (node);
+    /* ...and code */
+    h = 9*h + (unsigned) get_irn_op (node);
   }
-
-  /* ...mode,... */
-  h = 9*h + (unsigned long) get_irn_mode (node);
-  /* ...and code */
-  h = 9*h + (unsigned long) get_irn_op (node);
 
   return h;
 }
@@ -1522,6 +1530,10 @@ del_identities (pset *value_table)
 /**
  * Return the canonical node computing the same value as n.
  * Looks up the node in a hash table.
+ *
+ * For Const nodes this is performed in the constructor, too.  Const
+ * nodes are extremely time critical because of their frequent use in
+ * constant string arrays.
  */
 static INLINE ir_node *
 identify (pset *value_table, ir_node *n)
@@ -1550,7 +1562,7 @@ identify (pset *value_table, ir_node *n)
 
 /**
  * During construction we set the pinned flag in the graph right when the
- * optimizatin is performed.  The flag turning on procedure global cse could
+ * optimization is performed.  The flag turning on procedure global cse could
  * be changed between two allocations.  This way we are safe.
  */
 static INLINE ir_node *

@@ -21,7 +21,7 @@
 # include "ircons.h"
 # include "firm_common_t.h"
 # include "irvrfy.h"
-# include "irop.h"
+# include "irop_t.h"
 # include "iropt_t.h"
 # include "irgmod.h"
 # include "array.h"
@@ -132,16 +132,12 @@ INLINE ir_node *
 new_rd_Const_type (dbg_info* db, ir_graph *irg, ir_node *block, ir_mode *mode, tarval *con, type *tp)
 {
   ir_node *res;
-  res = new_ir_node (db, irg, block, op_Const, mode, 0, NULL);
+  res = new_ir_node (db, irg, irg->start_block, op_Const, mode, 0, NULL);
   res->attr.con.tv = con;
   set_Const_type(res, tp);  /* Call method because of complex assertion. */
   res = optimize_node (res);
   assert(get_Const_type(res) == tp);
   irn_vrfy_irg (res, irg);
-
-#if 0
-  res = local_optimize_newby (res);
-# endif
 
   return res;
 }
@@ -150,8 +146,10 @@ INLINE ir_node *
 new_rd_Const (dbg_info* db, ir_graph *irg, ir_node *block, ir_mode *mode, tarval *con)
 {
   type *tp = unknown_type;
+  /* removing this somehow causes errors in jack. */
   if (tarval_is_entity(con))
     tp = find_pointer_type_to_type(get_entity_type(get_tarval_entity(con)));
+
   return new_rd_Const_type (db, irg, block, mode, con, tp);
 }
 
