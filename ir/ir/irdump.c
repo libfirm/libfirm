@@ -49,11 +49,11 @@
 #include "pset.h"
 
 #if DO_HEAPANALYSIS
-void dump_irn_chi_term(FILE *FL, ir_node *n);
-void dump_irn_state(FILE *FL, ir_node *n);
-int  get_opt_dump_abstvals(void);
+extern void dump_irn_chi_term(FILE *FL, ir_node *n);
+extern void dump_irn_state(FILE *FL, ir_node *n);
+extern int  get_opt_dump_abstvals(void);
 typedef unsigned long SeqNo;
-SeqNo get_Block_seqno(ir_node *n);
+extern SeqNo get_Block_seqno(ir_node *n);
 #endif
 
 /* basis for a color range for vcg */
@@ -1828,7 +1828,7 @@ dump_ir_graph (ir_graph *irg, const char *suffix )
   rem = current_ir_graph;
 
   if (strncmp(get_entity_name(get_irg_entity(irg)),
-	      dump_file_filter, strlen(dump_file_filter)) != 0) return;
+          dump_file_filter, strlen(dump_file_filter)) != 0) return;
 
   current_ir_graph = irg;
   if (get_interprocedural_view()) suffix1 = "-pure-ip";
