@@ -1,3 +1,6 @@
+/*
+ * (C) 2001 by Universitaet Karlsruhe
+ */
 
 /* $Id$ */
 
@@ -7,11 +10,10 @@
 # include "type.h"
 
 /**
+ * @file type_t.h
+ * This file contains the datatypes hidden in type.h.
  *
- *   @file type_t.h
- *   (C) 2001 by Universitaet Karlsruhe
- *   Goetz Lindenmaier
- *   This file contains the datatypes hidden in type.h.
+ * @author Goetz Lindenmaier
  * @see  type.h tpop_t.h tpop.h
  */
 
