@@ -22,7 +22,7 @@
 #include "type_or_entity.h"
 
 /* Make types visible to allow most efficient access */
-# include "entity_t.h"
+#include "entity_t.h"
 #include "type_t.h"
 
 typedef struct type_walk_env {
