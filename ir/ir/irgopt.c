@@ -536,7 +536,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   type *called_frame;
 
   if (!get_optimize() || !get_opt_inline()) return;
-  /** Turn off optimizations, this can cause problems when allocating new nodes. **/
+  /* --  Turn off optimizations, this can cause problems when allocating new nodes. -- */
   rem_opt = get_optimize();
   set_optimize(0);
 
@@ -547,9 +547,9 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   if (get_irg_outs_state(current_ir_graph) == outs_consistent)
     set_irg_outs_inconsistent(current_ir_graph);
 
-  /** Check preconditions **/
+  /* -- Check preconditions -- */
   assert(get_irn_op(call) == op_Call);
-  /* @@@ TODO does not work for InterfaceIII.java after cgana
+  /* @@@ does not work for InterfaceIII.java after cgana
      assert(get_Call_type(call) == get_entity_type(get_irg_ent(called_graph)));
      assert(smaller_type(get_entity_type(get_irg_ent(called_graph)),
      get_Call_type(call)));
@@ -558,10 +558,10 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   if (called_graph == current_ir_graph) return;
 
 
-/**
+/* --
       the procedure and later replaces the Start node of the called graph.
       Post_call is the old Call node and collects the results of the called
-      graph. Both will end up being a tuple.  **/
+      graph. Both will end up being a tuple.  -- */
   post_bl = get_nodes_Block(call);
   set_irg_current_block(current_ir_graph, post_bl);
   /* XxMxPxP of Start + parameter of Call */
@@ -573,12 +573,12 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   pre_call = new_Tuple(5, in);
   post_call = call;
 
-/**
+/* --
       The new block gets the ins of the old block, pre_call and all its
-      predecessors and all Phi nodes. **/
+      predecessors and all Phi nodes. -- */
   part_block(pre_call);
 
-  /** Prepare state for dead node elimination **/
+  /* -- Prepare state for dead node elimination -- */
   /* Visited flags in calling irg must be >= flag in called irg.
      Else walker and arity computation will not work. */
   if (get_irg_visited(current_ir_graph) <= get_irg_visited(called_graph))
@@ -601,7 +601,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   /* Initialize for compaction of in arrays */
   inc_irg_block_visited(current_ir_graph);
 
-  /*** Replicate local entities of the called_graph ***/
+  /* -- Replicate local entities of the called_graph -- */
   /* copy the entities. */
   called_frame = get_irg_frame_type(called_graph);
   for (i = 0; i < get_class_n_members(called_frame); i++) {
@@ -616,7 +616,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
      to inline, calling this inline will not visit the inlined nodes. */
   set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph)-1);
 
-  /** Performing dead node elimination inlines the graph **/
+  /* -- Performing dead node elimination inlines the graph -- */
   /* Copies the nodes to the obstack of current_ir_graph. Updates links to new
      entities. */
   /* @@@ endless loops are not copied!! -- they should be, I think... */
@@ -628,7 +628,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   set_irg_block_visited(called_graph, get_irg_block_visited(current_ir_graph));
   set_Block_block_visited(get_irg_start_block(called_graph), 0);
 
-  /*** Merge the end of the inlined procedure with the call site ***/
+  /* -- Merge the end of the inlined procedure with the call site -- */
   /* We will turn the old Call node into a Tuple with the following
      predecessors:
      -1:  Block of Tuple.
@@ -639,7 +639,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
      3: Phi of Exception memories.
   */
 
-  /** Precompute some values **/
+  /* -- Precompute some values -- */
   end_bl = get_new_node(get_irg_end_block(called_graph));
   end = get_new_node(get_irg_end(called_graph));
   arity = get_irn_arity(end_bl);    /* arity = n_exc + n_ret  */
@@ -650,14 +650,14 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
 
   set_irg_current_block(current_ir_graph, post_bl); /* just to make sure */
 
-  /** archive keepalives **/
+  /* -- archive keepalives -- */
   for (i = 0; i < get_irn_arity(end); i++)
     add_End_keepalive(get_irg_end(current_ir_graph), get_irn_n(end, i));
   /* The new end node will die, but the in array is not on the obstack ... */
   free_End(end);
 
-/**
-      Return nodes by Jump nodes. **/
+/* --
+      Return nodes by Jump nodes. -- */
   n_ret = 0;
   for (i = 0; i < arity; i++) {
     ir_node *ret;
@@ -669,8 +669,8 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   }
   set_irn_in(post_bl, n_ret, cf_pred);
 
-/**
-      turned into a tuple. **/
+/* --
+      turned into a tuple.  -- */
   turn_into_tuple(post_call, 4);
   /* First the Memory-Phi */
   n_ret = 0;
@@ -753,12 +753,12 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   free(res_pred);
   free(cf_pred);
 
-/**
+/* --
        If the exception control flow from the Call directly branched to the
        end block we now have the following control flow predecessor pattern:
        ProjX -> Tuple -> Jmp.
        We must remove the Jmp along with it's empty block and add Jmp's
-       predecessors as predecessors of this end block. ***/
+       predecessors as predecessors of this end block. -- */
   /* find the problematic predecessor of the end block. */
   end_bl = get_irg_end_block(current_ir_graph);
   for (i = 0; i < get_Block_n_cfgpreds(end_bl); i++) {
@@ -787,7 +787,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
     free(cf_pred);
   }
 
-  /** Turn cse back on. **/
+  /* --  Turn cse back on. -- */
   set_optimize(rem_opt);
 }
 

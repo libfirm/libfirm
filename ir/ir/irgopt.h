@@ -1,9 +1,13 @@
 /* Copyright (C) 1998 - 2001 by Universitaet Karlsruhe
 * All rights reserved.
-*
-* Author: Christian Schaefer, Goetz Lindenmaier
+*/
+
+/**
+* @file irgopts.h
 *
 * Optimizations for a whole ir graph, i.e., a procedure.
+*
+* @author Christian Schaefer, Goetz Lindenmaier
 */
 
 /* $Id$ */
@@ -13,29 +17,34 @@
 
 # include "irgraph.h"
 
-/* Applies local optimizations (see iropt.h) to all nodes in the graph. */
+/** Applies local optimizations (see iropt.h) to all nodes in the graph. */
 void local_optimize_graph (ir_graph *irg);
 
-/* Performs dead node elimination by copying the ir graph to a new obstack.
+/** Performs dead node elimination by copying the ir graph to a new obstack.
+
    Further removes Bad predecesors from Blocks and the corresponding
    inputs to Phi nodes.
    Optimization is only performed if options `optimize' and
    `opt_dead_node_elimination' are set.
    The graph may not be in state phase_building.  The outs datasturcture
-   is freed, the outs state set to no_outs. (@@@ Change this? -> inconsistent.)
+   is freed, the outs state set to no_outs.
+   @todo Change this? -> inconsistent.
+
    Backedge information is conserved.
    Removes old attributes of nodes.  Sets link field to NULL.
    Attention: the numbers assigned to nodes if the library is compiled for
    development/debugging are not conserved by copying. */
 void dead_node_elimination(ir_graph *irg);
 
-/* Removes Bad Bad predecesors from Blocks and the corresponding
+/** Removes Bad Bad predecesors from Blocks and the corresponding
    inputs to Phi nodes as in dead_node_elimination but without
    copying the graph.
-   @@@ not implemented! */
+
+   @todo not implemented! */
 void remove_bad_predecessors(ir_graph *irg);
 
-/* Inlines a method at the given call site.
+/** Inlines a method at the given call site.
+
    Removes the call node and splits the basic block the call node
    belongs to.  Inserts a copy of the called graph between these nodes.
    Assumes that call is a Call node in current_ir_graph and that
@@ -59,7 +68,7 @@ void remove_bad_predecessors(ir_graph *irg);
    combination as control flow operation. */
 void inline_method(ir_node *call, ir_graph *called_graph);
 
-/* Inlines all small methods at call sites where the called address comes
+/** Inlines all small methods at call sites where the called address comes
    from a Const node that references the entity representing the called
    method.
    The size argument is a rough measure for the code size of the method:
@@ -74,39 +83,43 @@ void inline_method(ir_node *call, ir_graph *called_graph);
    combination as control flow operation.  */
 void inline_small_irgs(ir_graph *irg, int size);
 
-/* Code Placement.  Pinns all floating nodes to a block where they
+/** Code Placement.  Pinns all floating nodes to a block where they
    will be executed only if needed.   Depends on the flag opt_global_cse.
    Graph may not be in phase_building.  Does not schedule control dead
    code.  Uses dominator information which it computes if the irg is not
    in state dom_consistent.  Destroys the out information as it moves nodes
-   to other blocks.  Optimizes Tuples in Control edges. (@@@ This
-   is not tested!)
+   to other blocks.  Optimizes Tuples in Control edges.
+   @todo This is not tested!
+
    Call remove_critical_cf_edges() before place_code().  This normalizes
    the control flow graph so that for all operations a basic block exists
    where they can be optimally placed.
-   @@@ A more powerful code placement would move operations past Phi nodes
+
+   @todo A more powerful code placement would move operations past Phi nodes
    out of loops.  */
 void place_code(ir_graph *irg);
 
-/********************************************************************/
-/* Control flow optimization.                                       */
-/* Removes empty blocks doing if simplifications and loop simpli-   */
-/* fications.  A block is empty if it contains only a Jmp node and  */
-/* Phi nodes.                                                       */
-/* Merges single entry single exit blocks with their predecessor    */
-/* and propagates dead control flow by calling equivalent_node.     */
-/* Independent of compiler flag it removes Tuples from cf edges,    */
-/* Bad predecessors form blocks and unnecessary predecessors of End.*/
-/* @@@ So far destroys backedge information.                        */
-/********************************************************************/
+/** Control flow optimization.
+ * Removes empty blocks doing if simplifications and loop simplifications.
+ * A block is empty if it contains only a Jmp node and
+ * Phi nodes.
+ * Merges single entry single exit blocks with their predecessor
+ * and propagates dead control flow by calling equivalent_node.
+ * Independent of compiler flag it removes Tuples from cf edges,
+ * Bad predecessors form blocks and unnecessary predecessors of End.
+ *
+ * @bug So far destroys backedge information.
+ */
 void optimize_cf(ir_graph *irg);
 
-/* Places an empty basic block on critical control flow edges thereby
+/** Places an empty basic block on critical control flow edges thereby
    removing them.
+
    A critical control flow edge is an edge from a block with several
    control exits to a block with several control entries (See Muchnic
    p. 407).
-   @@@ not yet implemented!!! */
+
+   @todo not yet implemented!!! */
 void remove_critical_cf_edges(ir_graph *irg);
 
 # endif /* _IRGOPT_H_ */
