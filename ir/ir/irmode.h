@@ -106,7 +106,7 @@ typedef enum {
 		               Floating point computations can be performed. */
   irms_reference,         /**< A mode to represent entities.
 		               Restricted int computations can be performed */
-  irms_character          /**< A mode to represent characters/symbols
+  irms_character,         /**< A mode to represent characters/symbols
 		               ?? Are computations allowed? as int?? */
 } mode_sort;
 
@@ -127,7 +127,7 @@ typedef enum {
   irma_ieee754 = 256,         /**< Values of the mode are represented according to ieee754
 				   floatingpoint standard.  Only legal for modes of sort float_number. */
   irma_float_BCD,             /**< Values of the mode are represented  as binary coded decimals
-				   according to @@@ which standars??? Only legal for modes of
+				   according to @@@ which standards??? Only legal for modes of
 				   sort float_number. */
   irma_max
 } mode_arithmetic;
@@ -157,9 +157,33 @@ typedef enum {
  *
  * @note
  * 	It is allowed to construct the default modes. So, a call
- * 	new_ir_mode("Is", irms_int_number, 32, 4, 1, 32) will return mode_Is.
+ * 	new_ir_mode("Is", irms_int_number, 32, 4, 1, irma_twos_complement, 32) will return mode_Is.
  */
 ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align, int sign, mode_arithmetic arithmetic, unsigned int modulo_shift);
+
+/**
+ * Creates a new vector mode.
+ *
+ * @param name		the name of the mode to be created
+ * @param sort		the mode_sort of the mode to be created
+ * @param bit_size	number of bits for one element of this mode
+ * @param num_of_elem   number of elements in this vector mode
+ * @param align		the byte alignment for an entity of this mode (in bits)
+ * @param sign		non-zero if this is a signed mode
+ * @param arithmetic    arithmetic operations possible with a mode
+ * @param modulo_shift  Is ignored for modes other than integer.
+ *
+ * This function constructs a new vector mode given by the parameters.
+ * If the parameters match an already defined mode, this mode is returned.
+ * If the mode is newly allocated, a new unique mode_code is choosen.
+ * Also, special value tarvals will be calculated such as null,
+ * min, max and can be retrieved using the get_mode_* fuctions
+ *
+ * @return
+ * 	The new mode or NULL on error.
+ */
+ir_mode *new_ir_vector_mode(const char *name, mode_sort sort, int bit_size, unsigned num_of_elem, int align, int sign,
+		     mode_arithmetic arithmetic, unsigned int modulo_shift );
 
 /**
  *   Checks whether a pointer points to a mode.
@@ -209,6 +233,11 @@ int get_mode_arithmetic (const ir_mode *mode);
  */
 unsigned int get_mode_modulo_shift(const ir_mode *mode);
 
+/** Attribute vector_elem specifies the number of vector elements of
+ *  a vector mode. For non-vector modes it returns 1 for data and 0
+ *  for all other modes
+ */
+unsigned int get_mode_vector_elems(const ir_mode *mode);
 
 /** Returns the stored intermediate information. */
 void* get_mode_link(const ir_mode *mode);
@@ -366,6 +395,8 @@ void set_modeP_mach(ir_mode *p);
 
    The set of "dataM" is defined as:
    dataM =  {data || irm_M}
+
+   Vector "int" and "float" are defined by the arithmetic and vector_elem > 1.
 */
 /*@}*/
 /* Test for a certain class of modes. */
@@ -379,6 +410,8 @@ int mode_is_numP (const ir_mode *mode);
 int mode_is_data (const ir_mode *mode);
 int mode_is_datab (const ir_mode *mode);
 int mode_is_dataM (const ir_mode *mode);
+int mode_is_float_vector (const ir_mode *mode);
+int mode_is_int_vector (const ir_mode *mode);
 
 /** Returns true if sm can be converted to lm without loss
    according to firm definiton */

@@ -56,12 +56,13 @@ static int num_modes;
 INLINE static int modes_are_equal(const ir_mode *m, const ir_mode *n)
 {
   if (m == n) return 1;
-  if (m->sort == n->sort &&
-      m->arithmetic == n->arithmetic &&
-      m->size == n->size &&
-      m->align == n->align &&
-      m->sign == n->sign  &&
-      m->modulo_shift == n->modulo_shift)
+  if (m->sort         == n->sort &&
+      m->arithmetic   == n->arithmetic &&
+      m->size         == n->size &&
+      m->align        == n->align &&
+      m->sign         == n->sign  &&
+      m->modulo_shift == n->modulo_shift &&
+      m->vector_elem  == n->vector_elem)
     return 1;
 
   return 0;
@@ -75,9 +76,9 @@ static void *next_obstack_adr(struct obstack *o, void *p, size_t s)
   PTR_INT_TYPE adr = __PTR_TO_INT((char *)p);
   int mask = obstack_alignment_mask(o);
 
-  adr += s + o->alignment_mask;
+  adr += s + mask;
 
-  return __INT_TO_PTR(adr & ~o->alignment_mask);
+  return __INT_TO_PTR(adr & ~mask);
 }
 
 /**
@@ -242,7 +243,7 @@ static ir_mode *register_mode(const ir_mode* new_mode)
   assert(new_mode);
 
   /* copy mode struct to modes array */
-  mode=(ir_mode*) obstack_copy(&modes, new_mode, sizeof(ir_mode));
+  mode = (ir_mode*)obstack_copy(&modes, new_mode, sizeof(ir_mode));
 
   mode->kind = k_ir_mode;
   if(num_modes>=irm_max) mode->code = num_modes;
@@ -268,6 +269,7 @@ ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align, 
   mode_tmpl.align        = align;
   mode_tmpl.sign         = sign ? 1 : 0;
   mode_tmpl.modulo_shift = (mode_tmpl.sort == irms_int_number) ? modulo_shift : 0;
+  mode_tmpl.vector_elem  = 1;
   mode_tmpl.arithmetic   = arithmetic;
   mode_tmpl.link         = NULL;
   mode_tmpl.tv_priv      = NULL;
@@ -295,6 +297,60 @@ ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align, 
     case irms_int_number:
     case irms_reference:
     case irms_character:
+      return register_mode(&mode_tmpl);
+  }
+  return NULL; /* to shut up gcc */
+}
+
+/*
+ * Creates a new vector mode.
+ */
+ir_mode *new_ir_vector_mode(const char *name, mode_sort sort, int bit_size, unsigned num_of_elem, int align, int sign,
+		     mode_arithmetic arithmetic, unsigned int modulo_shift )
+{
+  ir_mode mode_tmpl;
+  ir_mode *mode;
+
+  mode_tmpl.name         = new_id_from_str(name);
+  mode_tmpl.sort         = sort;
+  mode_tmpl.size         = bit_size * num_of_elem;
+  mode_tmpl.align        = align;
+  mode_tmpl.sign         = sign ? 1 : 0;
+  mode_tmpl.modulo_shift = (mode_tmpl.sort == irms_int_number) ? modulo_shift : 0;
+  mode_tmpl.vector_elem  = num_of_elem;
+  mode_tmpl.arithmetic   = arithmetic;
+  mode_tmpl.link         = NULL;
+  mode_tmpl.tv_priv      = NULL;
+
+  mode = find_mode(&mode_tmpl);
+  if (mode)
+    return mode;
+
+  if (num_of_elem <= 1) {
+    assert(0 && "vector modes should have at least 2 elements");
+    return NULL;
+  }
+
+  /* sanity checks */
+  switch (sort)
+  {
+    case irms_auxiliary:
+    case irms_control_flow:
+    case irms_memory:
+    case irms_internal_boolean:
+      assert(0 && "internal modes cannot be user defined");
+      return NULL;
+
+    case irms_reference:
+    case irms_character:
+      assert(0 && "only integer and floating point modes can be vectorized");
+      return NULL;
+
+    case irms_float_number:
+      assert(0 && "not yet implemented");
+      return NULL;
+
+    case irms_int_number:
       return register_mode(&mode_tmpl);
   }
   return NULL; /* to shut up gcc */
@@ -372,7 +428,11 @@ unsigned int get_mode_modulo_shift(const ir_mode *mode) {
   return mode->modulo_shift;
 }
 
-void* get_mode_link(const ir_mode *mode)
+unsigned int get_mode_vector_elems(const ir_mode *mode) {
+  return mode->vector_elem;
+}
+
+void *get_mode_link(const ir_mode *mode)
 {
   ANNOUNCE();
   return mode->link;
@@ -583,6 +643,23 @@ mode_is_dataM (const ir_mode *mode)
   assert(mode);
   return (mode_is_data(mode) || get_mode_modecode(mode) == irm_M);
 }
+
+int
+mode_is_float_vector (const ir_mode *mode)
+{
+  ANNOUNCE();
+  assert(mode);
+  return (get_mode_sort(mode) == irms_float_number) && (get_mode_vector_elems(mode) > 1);
+}
+
+int
+mode_is_int_vector (const ir_mode *mode)
+{
+  ANNOUNCE();
+  assert(mode);
+  return (get_mode_sort(mode) == irms_int_number) && (get_mode_vector_elems(mode) > 1);
+}
+
 #ifdef MODE_ACCESS_DEFINES
 #  define mode_is_signed(mode) (mode)->sign
 #  define mode_is_float(mode) ((mode)->sort == irms_float_number)
@@ -591,6 +668,8 @@ mode_is_dataM (const ir_mode *mode)
 #  define mode_is_data(mode) (((mode)->sort == irms_float_number) || ((mode)->sort == irms_int_number) || ((mode)->sort == irms_character) || ((mode)->sort == irms_reference))
 #  define mode_is_datab(mode) (((mode)->sort == irms_float_number) || ((mode)->sort == irms_int_number) || ((mode)->sort == irms_character) || ((mode)->sort == irms_reference) || ((mode)->sort == irms_internal_boolean))
 #  define mode_is_dataM(mode) (((mode)->sort == irms_float_number) || ((mode)->sort == irms_int_number) || ((mode)->sort == irms_character) || ((mode)->sort == irms_reference) || ((mode)->code == irm_M))
+#  define mode_is_float_vector(mode) (((mode)->sort == irms_float_number) && ((mode)->vector_elem > 1))
+#  define mode_is_int_vector(mode) (((mode)->sort == irms_int_number) && ((mode)->vector_elem > 1))
 #endif
 /* Returns true if sm can be converted to lm without loss. */
 int
@@ -687,6 +766,7 @@ init_mode (void)
   newmode.align        = 0;
   newmode.sign         = 0;
   newmode.modulo_shift = 0;
+  newmode.vector_elem  = 0;
   newmode.link         = NULL;
   newmode.tv_priv      = NULL;
 
@@ -745,6 +825,7 @@ init_mode (void)
   mode_b = register_mode(&newmode);
 
 /* Data Modes */
+  newmode.vector_elem = 1;
 
   /* Float Number Modes */
   newmode.sort    = irms_float_number;
