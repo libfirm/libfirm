@@ -61,7 +61,8 @@ node: {title: "n22" label: "Block  22"  info1: "Block 22
      0:    Proj 26
   Private Attributes:
   backedges:
-  block visited: 0  dominator info: not implemented
+  block visited: 0
+  dominator info: output not implemented
 "
 color: lightyellow}
 edge: {sourcename: "n22" targetname: "n26" label: "0" class:13 priority:60 color:red}
@@ -99,7 +100,8 @@ node: {title: "n32" label: "Block  32"  info1: "Block 32
      0:    Proj 26
   Private Attributes:
   backedges:
-  block visited: 0  dominator info: not implemented
+  block visited: 0
+  dominator info: output not implemented
 "
 color: lightyellow}
 edge: {sourcename: "n32" targetname: "n26" label: "0" class:13 priority:60 color:red}
@@ -213,7 +215,8 @@ node: {title: "n20" label: "Block  20"  info1: "Block 20
      0:    Return 39
   Private Attributes:
   backedges:
-  block visited: 0  dominator info: not implemented
+  block visited: 0
+  dominator info: output not implemented
 "
 color: lightyellow}
 edge: {sourcename: "n20" targetname: "n39" label: "0" class:13 priority:60 color:red}

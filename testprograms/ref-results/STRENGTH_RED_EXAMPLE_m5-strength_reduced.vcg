@@ -64,6 +64,7 @@ node: {title: "n336" label: "End  336"  info1: "End 336
     -1:    Block 335
      0:    Phi 389
   Private Attributes:
+  in loop 636 with depth 0
 "
 color: blue}
 }
@@ -80,6 +81,7 @@ node: {title: "n385" label: "Return  385"  info1: "Return 385
      0:    Phi 389
      1:    0x4 361
   Private Attributes:
+  in loop 636 with depth 0
   return in method of type STRENGTH_RED_EXAMPLE_meth_tp
     res 0 type: int
 "
@@ -92,6 +94,7 @@ node: {title: "n385n361" label: "0x4Is  361"  info1: "0x4 361
   pred nodes:
     -1:    Block 337
   Private Attributes:
+  in loop 636 with depth 0
   Const of type type_unknown
 "
 color: yellow}
@@ -113,6 +116,7 @@ node: {title: "n389" label: "PhiM  389"  info1: "Phi 389
      1:    Proj 375
   Private Attributes:
   backedges:
+  in loop 639 with depth 1
 "
 color: green}
 edge: {sourcename: "n389" targetname: "n344" label: "0" class:17 priority:10 color:blue}
@@ -126,6 +130,7 @@ node: {title: "n357" label: "ProjX 0 357"  info1: "Proj 357
     -1:    Block 351
      0:    Cond 356
   Private Attributes:
+  in loop 636 with depth 0
 "
 color: yellow}
 edge: {sourcename: "n357" targetname: "n356" label: "0" class:13 priority:60 color:red}
@@ -138,6 +143,7 @@ node: {title: "n358" label: "ProjX 1 358"  info1: "Proj 358
     -1:    Block 351
      0:    Cond 356
   Private Attributes:
+  in loop 638 with depth 2
 "
 color: yellow}
 edge: {sourcename: "n358" targetname: "n356" label: "0" class:13 priority:60 color:red}
@@ -150,6 +156,7 @@ node: {title: "n356" label: "Cond  356"  info1: "Cond 356
     -1:    Block 351
      0:    Proj 355
   Private Attributes:
+  in loop 638 with depth 2
   condition kind: dense
   default ProjNr: 0
 "
@@ -164,6 +171,7 @@ node: {title: "n355" label: "Projb Lt 355"  info1: "Proj 355
     -1:    Block 351
      0:    Cmp 354
   Private Attributes:
+  in loop 638 with depth 2
 "
 color: yellow}
 edge: {sourcename: "n355" targetname: "n354" label: "0" class:1  priority:50}
@@ -177,6 +185,7 @@ node: {title: "n354" label: "Cmp  354"  info1: "Cmp 354
      0:    0x0 353
      1:    Phi 390
   Private Attributes:
+  in loop 638 with depth 2
 "
 }
 node: {title: "n354n353" label: "0x0Is  353"  info1: "0x0 353
@@ -187,6 +196,7 @@ node: {title: "n354n353" label: "0x0Is  353"  info1: "0x0 353
   pred nodes:
     -1:    Block 337
   Private Attributes:
+  in loop 636 with depth 0
   Const of type type_unknown
 "
 color: yellow}
@@ -203,6 +213,7 @@ node: {title: "n390" label: "PhiIs  390"  info1: "Phi 390
      1:    Add 643
   Private Attributes:
   backedges:
+  in loop 637 with depth 1
 "
 color: green}
 node: {title: "n390n656" label: "0x28Is  656"  info1: "0x28 656
@@ -230,6 +241,7 @@ node: {title: "n350" label: "Jmp  350"  info1: "Jmp 350
   pred nodes:
     -1:    Block 347
   Private Attributes:
+  in loop 636 with depth 0
 "
 }
 }
@@ -245,6 +257,7 @@ node: {title: "n375" label: "ProjM 0 375"  info1: "Proj 375
     -1:    Block 359
      0:    Store 373
   Private Attributes:
+  in loop 639 with depth 1
 "
 color: yellow}
 edge: {sourcename: "n375" targetname: "n373" label: "0" class:17 priority:10 color:blue}
@@ -260,6 +273,7 @@ node: {title: "n373" label: "Store  373"  info1: "Store 373
      2:    0x13 371
   Private Attributes:
   pinned state: op_pin_state_pinned
+  in loop 639 with depth 1
   volatility: volatility_non_volatile
 "
 }
@@ -271,6 +285,7 @@ node: {title: "n373n371" label: "0x13Is  371"  info1: "0x13 371
   pred nodes:
     -1:    Block 337
   Private Attributes:
+  in loop 636 with depth 0
   Const of type type_unknown
 "
 color: yellow}
@@ -336,6 +351,7 @@ node: {title: "n648n349" label: "SymC &a  349"  info1: "SymC &a 349
   pred nodes:
     -1:    Block 337
   Private Attributes:
+  in loop 636 with depth 0
   kind:   addr_ent
   entity: entity GlobalType.a (333)
 
@@ -363,6 +379,7 @@ node: {title: "n376" label: "Jmp  376"  info1: "Jmp 376
   pred nodes:
     -1:    Block 359
   Private Attributes:
+  in loop 638 with depth 2
 "
 }
 node: {title: "n643" label: "AddIs  643"  info1: "Add 643
@@ -403,6 +420,7 @@ node: {title: "n344" label: "ProjM 1 344"  info1: "Proj 344
     -1:    Block 337
      0:    Start 338
   Private Attributes:
+  in loop 636 with depth 0
 "
 color: yellow}
 edge: {sourcename: "n344" targetname: "n338" label: "0" class:17 priority:10 color:blue}
@@ -415,6 +433,7 @@ node: {title: "n341" label: "ProjX 0 341"  info1: "Proj 341
     -1:    Block 337
      0:    Start 338
   Private Attributes:
+  in loop 636 with depth 0
 "
 color: yellow}
 edge: {sourcename: "n341" targetname: "n338" label: "0" class:13 priority:60 color:red}
@@ -426,6 +445,7 @@ node: {title: "n338" label: "Start  338"  info1: "Start 338
   pred nodes:
     -1:    Block 337
   Private Attributes:
+  in loop 636 with depth 0
   start of method of type STRENGTH_RED_EXAMPLE_meth_tp
     param 0 type: int
 "

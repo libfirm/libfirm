@@ -67,6 +67,7 @@ node: {title: "n120" label: "PhiM  120"  info1: "Phi 120
      1: be Proj 112
   Private Attributes:
   backedges:  1
+  in loop 529 with depth 1
 "
 color: green}
 edge: {sourcename: "n120" targetname: "n91" label: "0" class:17 priority:10 color:blue}
@@ -82,6 +83,7 @@ node: {title: "n119" label: "PhiIs  119"  info1: "Phi 119
      1: be Sub 113
   Private Attributes:
   backedges:  1
+  in loop 528 with depth 1
 "
 color: green}
 edge: {sourcename: "n119" targetname: "n92" label: "0" class:16 priority:10}
@@ -94,6 +96,7 @@ node: {title: "n100" label: "Jmp  100"  info1: "Jmp 100
   pred nodes:
     -1:    Block 93
   Private Attributes:
+  in loop 527 with depth 1
 "
 }
 }
@@ -112,6 +115,7 @@ node: {title: "n91" label: "PhiM  91"  info1: "Phi 91
      1: be Proj 83
   Private Attributes:
   backedges:  1
+  in loop 526 with depth 1
 "
 color: green}
 edge: {sourcename: "n91" targetname: "n43" label: "0" class:17 priority:10 color:blue}
@@ -125,6 +129,7 @@ node: {title: "n55" label: "ProjX 0 55"  info1: "Proj 55
     -1:    Block 49
      0:    Cond 54
   Private Attributes:
+  in loop 523 with depth 0
 "
 color: yellow}
 edge: {sourcename: "n55" targetname: "n54" label: "0" class:13 priority:60 color:red}
@@ -137,6 +142,7 @@ node: {title: "n56" label: "ProjX 1 56"  info1: "Proj 56
     -1:    Block 49
      0:    Cond 54
   Private Attributes:
+  in loop 525 with depth 2
 "
 color: yellow}
 edge: {sourcename: "n56" targetname: "n54" label: "0" class:13 priority:60 color:red}
@@ -149,6 +155,7 @@ node: {title: "n54" label: "Cond  54"  info1: "Cond 54
     -1:    Block 49
      0:    Proj 53
   Private Attributes:
+  in loop 525 with depth 2
   condition kind: dense
   default ProjNr: 0
 "
@@ -163,6 +170,7 @@ node: {title: "n53" label: "Projb Gt 53"  info1: "Proj 53
     -1:    Block 49
      0:    Cmp 52
   Private Attributes:
+  in loop 525 with depth 2
 "
 color: yellow}
 edge: {sourcename: "n53" targetname: "n52" label: "0" class:1  priority:50}
@@ -176,6 +184,7 @@ node: {title: "n52" label: "Cmp  52"  info1: "Cmp 52
      0:    0xA 51
      1:    Phi 92
   Private Attributes:
+  in loop 525 with depth 2
 "
 }
 node: {title: "n52n51" label: "0xAIs  51"  info1: "0xA 51
@@ -186,6 +195,7 @@ node: {title: "n52n51" label: "0xAIs  51"  info1: "0xA 51
   pred nodes:
     -1:    Block 36
   Private Attributes:
+  in loop 523 with depth 0
   Const of type type_unknown
 "
 color: yellow}
@@ -202,6 +212,7 @@ node: {title: "n92" label: "PhiIs  92"  info1: "Phi 92
      1: be Add 84
   Private Attributes:
   backedges:  1
+  in loop 524 with depth 1
 "
 color: green}
 node: {title: "n92n47" label: "0x0Is  47"  info1: "0x0 47
@@ -212,6 +223,7 @@ node: {title: "n92n47" label: "0x0Is  47"  info1: "0x0 47
   pred nodes:
     -1:    Block 36
   Private Attributes:
+  in loop 523 with depth 0
   Const of type type_unknown
 "
 color: yellow}
@@ -229,6 +241,7 @@ node: {title: "n48" label: "Jmp  48"  info1: "Jmp 48
   pred nodes:
     -1:    Block 46
   Private Attributes:
+  in loop 523 with depth 0
 "
 }
 }
@@ -244,6 +257,7 @@ node: {title: "n83" label: "ProjM 0 83"  info1: "Proj 83
     -1:    Block 57
      0:    Store 81
   Private Attributes:
+  in loop 526 with depth 1
 "
 color: yellow}
 edge: {sourcename: "n83" targetname: "n81" label: "0" class:17 priority:10 color:blue}
@@ -259,6 +273,7 @@ node: {title: "n81" label: "Store  81"  info1: "Store 81
      2:    0xF 80
   Private Attributes:
   pinned state: op_pin_state_pinned
+  in loop 526 with depth 1
   volatility: volatility_non_volatile
 "
 }
@@ -270,6 +285,7 @@ node: {title: "n81n80" label: "0xFIs  80"  info1: "0xF 80
   pred nodes:
     -1:    Block 36
   Private Attributes:
+  in loop 523 with depth 0
   Const of type type_unknown
 "
 color: yellow}
@@ -285,6 +301,7 @@ node: {title: "n76" label: "ProjM 0 76"  info1: "Proj 76
     -1:    Block 57
      0:    Store 74
   Private Attributes:
+  in loop 526 with depth 1
 "
 color: yellow}
 edge: {sourcename: "n76" targetname: "n74" label: "0" class:17 priority:10 color:blue}
@@ -300,6 +317,7 @@ node: {title: "n74" label: "Store  74"  info1: "Store 74
      2:    0x10 73
   Private Attributes:
   pinned state: op_pin_state_pinned
+  in loop 526 with depth 1
   volatility: volatility_non_volatile
 "
 }
@@ -311,6 +329,7 @@ node: {title: "n74n73" label: "0x10Is  73"  info1: "0x10 73
   pred nodes:
     -1:    Block 36
   Private Attributes:
+  in loop 523 with depth 0
   Const of type type_unknown
 "
 color: yellow}
@@ -326,6 +345,7 @@ node: {title: "n72" label: "ProjM 0 72"  info1: "Proj 72
     -1:    Block 57
      0:    Store 70
   Private Attributes:
+  in loop 526 with depth 1
 "
 color: yellow}
 edge: {sourcename: "n72" targetname: "n70" label: "0" class:17 priority:10 color:blue}
@@ -341,6 +361,7 @@ node: {title: "n70" label: "Store  70"  info1: "Store 70
      2:    0x13 68
   Private Attributes:
   pinned state: op_pin_state_pinned
+  in loop 526 with depth 1
   volatility: volatility_non_volatile
 "
 }
@@ -352,6 +373,7 @@ node: {title: "n70n68" label: "0x13Is  68"  info1: "0x13 68
   pred nodes:
     -1:    Block 36
   Private Attributes:
+  in loop 523 with depth 0
   Const of type type_unknown
 "
 color: yellow}
@@ -368,6 +390,7 @@ node: {title: "n67" label: "AddP  67"  info1: "Add 67
      0:    SymC &a2 62
      1:    Mul 66
   Private Attributes:
+  in loop 523 with depth 0
 "
 }
 node: {title: "n67n62" label: "SymC &a2  62"  info1: "SymC &a2 62
@@ -378,6 +401,7 @@ node: {title: "n67n62" label: "SymC &a2  62"  info1: "SymC &a2 62
   pred nodes:
     -1:    Block 36
   Private Attributes:
+  in loop 523 with depth 0
   kind:   addr_ent
   entity: entity GlobalType.a2 (32)
 
@@ -396,6 +420,7 @@ node: {title: "n66" label: "MulIs  66"  info1: "Mul 66
      0:    0xC 60
      1:    Phi 92
   Private Attributes:
+  in loop 523 with depth 0
 "
 }
 node: {title: "n66n60" label: "0xCIs  60"  info1: "0xC 60
@@ -406,6 +431,7 @@ node: {title: "n66n60" label: "0xCIs  60"  info1: "0xC 60
   pred nodes:
     -1:    Block 36
   Private Attributes:
+  in loop 523 with depth 0
   Const of type type_unknown
 "
 color: yellow}
@@ -421,6 +447,7 @@ node: {title: "n65" label: "AddP  65"  info1: "Add 65
      0:    SymC &a 61
      1:    Mul 64
   Private Attributes:
+  in loop 523 with depth 0
 "
 }
 node: {title: "n65n61" label: "SymC &a  61"  info1: "SymC &a 61
@@ -431,6 +458,7 @@ node: {title: "n65n61" label: "SymC &a  61"  info1: "SymC &a 61
   pred nodes:
     -1:    Block 36
   Private Attributes:
+  in loop 523 with depth 0
   kind:   addr_ent
   entity: entity GlobalType.a (31)
 
@@ -449,6 +477,7 @@ node: {title: "n64" label: "MulIs  64"  info1: "Mul 64
      0:    0x4 59
      1:    Phi 92
   Private Attributes:
+  in loop 523 with depth 0
 "
 }
 node: {title: "n64n59" label: "0x4Is  59"  info1: "0x4 59
@@ -459,6 +488,7 @@ node: {title: "n64n59" label: "0x4Is  59"  info1: "0x4 59
   pred nodes:
     -1:    Block 36
   Private Attributes:
+  in loop 523 with depth 0
   Const of type type_unknown
 "
 color: yellow}
@@ -472,6 +502,7 @@ node: {title: "n85" label: "Jmp  85"  info1: "Jmp 85
   pred nodes:
     -1:    Block 57
   Private Attributes:
+  in loop 525 with depth 2
 "
 }
 node: {title: "n84" label: "AddIs  84"  info1: "Add 84
@@ -484,6 +515,7 @@ node: {title: "n84" label: "AddIs  84"  info1: "Add 84
      0:    0x1 58
      1:    Phi 92
   Private Attributes:
+  in loop 524 with depth 1
 "
 }
 node: {title: "n84n58" label: "0x1Is  58"  info1: "0x1 58
@@ -494,6 +526,7 @@ node: {title: "n84n58" label: "0x1Is  58"  info1: "0x1 58
   pred nodes:
     -1:    Block 36
   Private Attributes:
+  in loop 523 with depth 0
   Const of type type_unknown
 "
 color: yellow}
@@ -512,6 +545,7 @@ node: {title: "n112" label: "ProjM 0 112"  info1: "Proj 112
     -1:    Block 103
      0:    Store 110
   Private Attributes:
+  in loop 529 with depth 1
 "
 color: yellow}
 edge: {sourcename: "n112" targetname: "n110" label: "0" class:17 priority:10 color:blue}
@@ -527,6 +561,7 @@ node: {title: "n110" label: "Store  110"  info1: "Store 110
      2:    0x13 68
   Private Attributes:
   pinned state: op_pin_state_pinned
+  in loop 529 with depth 1
   volatility: volatility_non_volatile
 "
 }
@@ -538,6 +573,7 @@ node: {title: "n110n68" label: "0x13Is  68"  info1: "0x13 68
   pred nodes:
     -1:    Block 36
   Private Attributes:
+  in loop 523 with depth 0
   Const of type type_unknown
 "
 color: yellow}
@@ -554,6 +590,7 @@ node: {title: "n107" label: "AddP  107"  info1: "Add 107
      0:    SymC &a 61
      1:    Mul 106
   Private Attributes:
+  in loop 523 with depth 0
 "
 }
 node: {title: "n107n61" label: "SymC &a  61"  info1: "SymC &a 61
@@ -564,6 +601,7 @@ node: {title: "n107n61" label: "SymC &a  61"  info1: "SymC &a 61
   pred nodes:
     -1:    Block 36
   Private Attributes:
+  in loop 523 with depth 0
   kind:   addr_ent
   entity: entity GlobalType.a (31)
 
@@ -582,6 +620,7 @@ node: {title: "n106" label: "MulIs  106"  info1: "Mul 106
      0:    0x4 59
      1:    Phi 119
   Private Attributes:
+  in loop 523 with depth 0
 "
 }
 node: {title: "n106n59" label: "0x4Is  59"  info1: "0x4 59
@@ -592,6 +631,7 @@ node: {title: "n106n59" label: "0x4Is  59"  info1: "0x4 59
   pred nodes:
     -1:    Block 36
   Private Attributes:
+  in loop 523 with depth 0
   Const of type type_unknown
 "
 color: yellow}
@@ -607,6 +647,7 @@ node: {title: "n113" label: "SubIs  113"  info1: "Sub 113
      0:    Phi 119
      1:    0x1 58
   Private Attributes:
+  in loop 528 with depth 1
 "
 }
 node: {title: "n113n58" label: "0x1Is  58"  info1: "0x1 58
@@ -617,6 +658,7 @@ node: {title: "n113n58" label: "0x1Is  58"  info1: "0x1 58
   pred nodes:
     -1:    Block 36
   Private Attributes:
+  in loop 523 with depth 0
   Const of type type_unknown
 "
 color: yellow}
@@ -630,6 +672,7 @@ node: {title: "n114" label: "Jmp  114"  info1: "Jmp 114
   pred nodes:
     -1:    Block 103
   Private Attributes:
+  in loop 527 with depth 1
 "
 }
 }
@@ -647,6 +690,7 @@ node: {title: "n35" label: "End  35"  info1: "End 35
      1:    Block 93
      2:    Phi 120
   Private Attributes:
+  in loop 523 with depth 0
 "
 color: blue}
 }
@@ -659,6 +703,7 @@ node: {title: "n34n38" label: "Bad  38"  info1: "Bad 38
     -1:    Block 36
   Private Attributes:
   pinned state: op_pin_state_pinned
+  in loop 523 with depth 0
 "
 }
 
@@ -673,6 +718,7 @@ node: {title: "n43" label: "ProjM 1 43"  info1: "Proj 43
     -1:    Block 36
      0:    Start 37
   Private Attributes:
+  in loop 523 with depth 0
 "
 color: yellow}
 edge: {sourcename: "n43" targetname: "n37" label: "0" class:17 priority:10 color:blue}
@@ -685,6 +731,7 @@ node: {title: "n40" label: "ProjX 0 40"  info1: "Proj 40
     -1:    Block 36
      0:    Start 37
   Private Attributes:
+  in loop 523 with depth 0
 "
 color: yellow}
 edge: {sourcename: "n40" targetname: "n37" label: "0" class:13 priority:60 color:red}
@@ -696,6 +743,7 @@ node: {title: "n37" label: "Start  37"  info1: "Start 37
   pred nodes:
     -1:    Block 36
   Private Attributes:
+  in loop 523 with depth 0
   start of method of type STRENGTH_RED_EXAMPLE_meth_tp
     param 0 type: int
 "

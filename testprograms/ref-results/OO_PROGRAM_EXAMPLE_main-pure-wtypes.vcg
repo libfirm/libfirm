@@ -61,7 +61,8 @@ node: {title: "n30" label: "Block  30"  info1: "Block 30
      0:    Proj 34
   Private Attributes:
   backedges:
-  block visited: 0  dominator info: not implemented
+  block visited: 0
+  dominator info: output not implemented
 "
 color: lightyellow}
 edge: {sourcename: "n30" targetname: "n34" label: "0" class:13 priority:60 color:red}
@@ -99,7 +100,8 @@ node: {title: "n40" label: "Block  40"  info1: "Block 40
      0:    Proj 34
   Private Attributes:
   backedges:
-  block visited: 0  dominator info: not implemented
+  block visited: 0
+  dominator info: output not implemented
 "
 color: lightyellow}
 edge: {sourcename: "n40" targetname: "n34" label: "0" class:13 priority:60 color:red}
@@ -354,7 +356,8 @@ node: {title: "n28" label: "Block  28"  info1: "Block 28
      0:    Return 59
   Private Attributes:
   backedges:
-  block visited: 0  dominator info: not implemented
+  block visited: 0
+  dominator info: output not implemented
 "
 color: lightyellow}
 edge: {sourcename: "n28" targetname: "n59" label: "0" class:13 priority:60 color:red}

@@ -86,7 +86,8 @@ node: {title: "n22" label: "Block  22"  info1: "Block 22
      0:    Proj 26
   Private Attributes:
   backedges:
-  block visited: 0  dominator info: not implemented
+  block visited: 0
+  dominator info: output not implemented
 "
 color: lightyellow}
 edge: {sourcename: "n22" targetname: "n26" label: "0" class:13 priority:60 color:red}
@@ -167,7 +168,8 @@ node: {title: "n46" label: "Block  46"  info1: "Block 46
      0:    Proj 45
   Private Attributes:
   backedges:
-  block visited: 0  dominator info: not implemented
+  block visited: 0
+  dominator info: output not implemented
 "
 color: lightyellow}
 edge: {sourcename: "n46" targetname: "n45" label: "0" class:13 priority:60 color:red}
@@ -191,7 +193,8 @@ node: {title: "n32" label: "Block  32"  info1: "Block 32
      0:    Proj 26
   Private Attributes:
   backedges:
-  block visited: 0  dominator info: not implemented
+  block visited: 0
+  dominator info: output not implemented
 "
 color: lightyellow}
 edge: {sourcename: "n32" targetname: "n26" label: "0" class:13 priority:60 color:red}
@@ -216,7 +219,8 @@ node: {title: "n38" label: "Block  38"  info1: "Block 38
      1:    Jmp 47
   Private Attributes:
   backedges:
-  block visited: 0  dominator info: not implemented
+  block visited: 0
+  dominator info: output not implemented
 "
 color: lightyellow}
 edge: {sourcename: "n38" targetname: "n35" label: "0" class:13 priority:60 color:red}
@@ -243,7 +247,8 @@ node: {title: "n60" label: "Block  60"  info1: "Block 60
      0:    Proj 44
   Private Attributes:
   backedges:
-  block visited: 0  dominator info: not implemented
+  block visited: 0
+  dominator info: output not implemented
 "
 color: lightyellow}
 edge: {sourcename: "n60" targetname: "n44" label: "0" class:13 priority:60 color:red}
@@ -357,7 +362,8 @@ node: {title: "n20" label: "Block  20"  info1: "Block 20
      0:    Return 76
   Private Attributes:
   backedges:
-  block visited: 0  dominator info: not implemented
+  block visited: 0
+  dominator info: output not implemented
 "
 color: lightyellow}
 edge: {sourcename: "n20" targetname: "n76" label: "0" class:13 priority:60 color:red}

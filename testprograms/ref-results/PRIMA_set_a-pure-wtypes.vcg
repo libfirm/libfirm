@@ -61,7 +61,8 @@ node: {title: "n64" label: "Block  64"  info1: "Block 64
      0:    Proj 68
   Private Attributes:
   backedges:
-  block visited: 0  dominator info: not implemented
+  block visited: 0
+  dominator info: output not implemented
 "
 color: lightyellow}
 edge: {sourcename: "n64" targetname: "n68" label: "0" class:13 priority:60 color:red}
@@ -101,7 +102,8 @@ node: {title: "n74" label: "Block  74"  info1: "Block 74
      0:    Proj 68
   Private Attributes:
   backedges:
-  block visited: 0  dominator info: not implemented
+  block visited: 0
+  dominator info: output not implemented
 "
 color: lightyellow}
 edge: {sourcename: "n74" targetname: "n68" label: "0" class:13 priority:60 color:red}
@@ -229,7 +231,8 @@ node: {title: "n62" label: "Block  62"  info1: "Block 62
      0:    Return 82
   Private Attributes:
   backedges:
-  block visited: 0  dominator info: not implemented
+  block visited: 0
+  dominator info: output not implemented
 "
 color: lightyellow}
 edge: {sourcename: "n62" targetname: "n82" label: "0" class:13 priority:60 color:red}

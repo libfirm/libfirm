@@ -64,6 +64,7 @@ node: {title: "n468" label: "End  468"  info1: "End 468
     -1:    Block 467
      0:    Phi 521
   Private Attributes:
+  in loop 686 with depth 0
 "
 color: blue}
 }
@@ -80,6 +81,7 @@ node: {title: "n517" label: "Return  517"  info1: "Return 517
      0:    Phi 521
      1:    0x4 494
   Private Attributes:
+  in loop 686 with depth 0
   return in method of type STRENGTH_RED_EXAMPLE_meth_tp
     res 0 type: int
 "
@@ -92,6 +94,7 @@ node: {title: "n517n494" label: "0x4Is  494"  info1: "0x4 494
   pred nodes:
     -1:    Block 469
   Private Attributes:
+  in loop 686 with depth 0
   Const of type type_unknown
 "
 color: yellow}
@@ -113,6 +116,7 @@ node: {title: "n521" label: "PhiM  521"  info1: "Phi 521
      1:    Proj 506
   Private Attributes:
   backedges:
+  in loop 689 with depth 1
 "
 color: green}
 edge: {sourcename: "n521" targetname: "n476" label: "0" class:17 priority:10 color:blue}
@@ -152,6 +156,7 @@ node: {title: "n490" label: "ProjX 0 490"  info1: "Proj 490
     -1:    Block 484
      0:    Cond 489
   Private Attributes:
+  in loop 686 with depth 0
 "
 color: yellow}
 edge: {sourcename: "n490" targetname: "n489" label: "0" class:13 priority:60 color:red}
@@ -164,6 +169,7 @@ node: {title: "n491" label: "ProjX 1 491"  info1: "Proj 491
     -1:    Block 484
      0:    Cond 489
   Private Attributes:
+  in loop 688 with depth 2
 "
 color: yellow}
 edge: {sourcename: "n491" targetname: "n489" label: "0" class:13 priority:60 color:red}
@@ -176,6 +182,7 @@ node: {title: "n489" label: "Cond  489"  info1: "Cond 489
     -1:    Block 484
      0:    Proj 488
   Private Attributes:
+  in loop 688 with depth 2
   condition kind: dense
   default ProjNr: 0
 "
@@ -190,6 +197,7 @@ node: {title: "n488" label: "Projb Lt 488"  info1: "Proj 488
     -1:    Block 484
      0:    Cmp 487
   Private Attributes:
+  in loop 688 with depth 2
 "
 color: yellow}
 edge: {sourcename: "n488" targetname: "n487" label: "0" class:1  priority:50}
@@ -203,6 +211,7 @@ node: {title: "n487" label: "Cmp  487"  info1: "Cmp 487
      0:    0x0 486
      1:    Phi 522
   Private Attributes:
+  in loop 688 with depth 2
 "
 }
 node: {title: "n487n486" label: "0x0Is  486"  info1: "0x0 486
@@ -213,6 +222,7 @@ node: {title: "n487n486" label: "0x0Is  486"  info1: "0x0 486
   pred nodes:
     -1:    Block 469
   Private Attributes:
+  in loop 686 with depth 0
   Const of type type_unknown
 "
 color: yellow}
@@ -229,6 +239,7 @@ node: {title: "n522" label: "PhiIs  522"  info1: "Phi 522
      1:    Add 693
   Private Attributes:
   backedges:
+  in loop 687 with depth 1
 "
 color: green}
 node: {title: "n522n481" label: "0xAIs  481"  info1: "0xA 481
@@ -239,6 +250,7 @@ node: {title: "n522n481" label: "0xAIs  481"  info1: "0xA 481
   pred nodes:
     -1:    Block 469
   Private Attributes:
+  in loop 686 with depth 0
   Const of type type_unknown
 "
 color: yellow}
@@ -256,6 +268,7 @@ node: {title: "n483" label: "Jmp  483"  info1: "Jmp 483
   pred nodes:
     -1:    Block 479
   Private Attributes:
+  in loop 686 with depth 0
 "
 }
 }
@@ -271,6 +284,7 @@ node: {title: "n506" label: "ProjM 0 506"  info1: "Proj 506
     -1:    Block 492
      0:    Store 504
   Private Attributes:
+  in loop 689 with depth 1
 "
 color: yellow}
 edge: {sourcename: "n506" targetname: "n504" label: "0" class:17 priority:10 color:blue}
@@ -286,6 +300,7 @@ node: {title: "n504" label: "Store  504"  info1: "Store 504
      2:    Add 502
   Private Attributes:
   pinned state: op_pin_state_pinned
+  in loop 689 with depth 1
   volatility: volatility_non_volatile
 "
 }
@@ -351,6 +366,7 @@ node: {title: "n701n482" label: "SymC &a  482"  info1: "SymC &a 482
   pred nodes:
     -1:    Block 469
   Private Attributes:
+  in loop 686 with depth 0
   kind:   addr_ent
   entity: entity GlobalType.a (465)
 
@@ -380,6 +396,7 @@ node: {title: "n502" label: "AddIs  502"  info1: "Add 502
      0:    0x13 495
      1:    Phi 522
   Private Attributes:
+  in loop 686 with depth 0
 "
 }
 node: {title: "n502n495" label: "0x13Is  495"  info1: "0x13 495
@@ -390,6 +407,7 @@ node: {title: "n502n495" label: "0x13Is  495"  info1: "0x13 495
   pred nodes:
     -1:    Block 469
   Private Attributes:
+  in loop 686 with depth 0
   Const of type type_unknown
 "
 color: yellow}
@@ -403,6 +421,7 @@ node: {title: "n508" label: "Jmp  508"  info1: "Jmp 508
   pred nodes:
     -1:    Block 492
   Private Attributes:
+  in loop 688 with depth 2
 "
 }
 node: {title: "n693" label: "AddIs  693"  info1: "Add 693
@@ -443,6 +462,7 @@ node: {title: "n476" label: "ProjM 1 476"  info1: "Proj 476
     -1:    Block 469
      0:    Start 470
   Private Attributes:
+  in loop 686 with depth 0
 "
 color: yellow}
 edge: {sourcename: "n476" targetname: "n470" label: "0" class:17 priority:10 color:blue}
@@ -455,6 +475,7 @@ node: {title: "n473" label: "ProjX 0 473"  info1: "Proj 473
     -1:    Block 469
      0:    Start 470
   Private Attributes:
+  in loop 686 with depth 0
 "
 color: yellow}
 edge: {sourcename: "n473" targetname: "n470" label: "0" class:13 priority:60 color:red}
@@ -466,6 +487,7 @@ node: {title: "n470" label: "Start  470"  info1: "Start 470
   pred nodes:
     -1:    Block 469
   Private Attributes:
+  in loop 686 with depth 0
   start of method of type STRENGTH_RED_EXAMPLE_meth_tp
     param 0 type: int
 "
