@@ -482,7 +482,7 @@ typedef enum {
   TVO_OCTAL,			/**< use octal representation */
   TVO_BINARY,			/**< use binary representation */
   TVO_FLOAT,			/**< use floating point representation (i.e 1.342e-2)*/
-  TVO_HEXFLOAT,                 /**< use hexadecimal floating point representation (i.e 0x1.ea32p-12)*/
+  TVO_HEXFLOAT                  /**< use hexadecimal floating point representation (i.e 0x1.ea32p-12)*/
 } tv_output_mode;
 
 /**
