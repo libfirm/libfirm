@@ -1173,9 +1173,6 @@ optimize_node (ir_node *n)
      Run always for transformation induced Bads. */
   n = gigo (n);
 
-  /* Now we can verify the node, as it has no dead inputs any more. */
-  irn_vrfy(n);
-
   /* Now we have a legal, useful node. Enter it in hash table for cse */
   if (get_opt_cse() && (get_irn_opcode(n) != iro_Block)) {
     n = identify_remember (current_ir_graph->value_table, n);
