@@ -1073,11 +1073,13 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
        we get to the start block, if a cond has been replaced by a tuple
        (bad, jmp).  As the start has a self referencing control flow edge,
        we get a self referencing Id, which is hard to optimize away.  We avoid
-       this by defining the value as a Bad node. *
+       this by defining the value as a Bad node.
+       Returning a const with tarval_bad is a preliminary solution. */
+
     if (block == get_irg_start_block(current_ir_graph)) {
-      block->attr.block.graph_arr[pos] = new_Bad();
-      return new_Bad();
-      } else */ {
+      block->attr.block.graph_arr[pos] = new_Const(mode, tarval_bad);
+      return block->attr.block.graph_arr[pos];
+      } else  {
       phi0 = new_r_Phi0(current_ir_graph, block, mode);
       block->attr.block.graph_arr[pos] = phi0;
     }
