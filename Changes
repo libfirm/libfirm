@@ -1,0 +1,184 @@
+  15.2.2000 Goetz
+  Added access routine to attribute link of irnode in irnode.ch.
+  Added get_negated_pnc to irnode.ch.
+
+  14.2.2000 Goetz
+  Added an iterator in iropt that calls the optimization for all nodes.
+  Copied optimize's code to optimize_in_place and removed deallocations.
+  Made set_irn_n in irnode.c public.
+  Added Bad as possible cfg predecessor in is_cfg_node in irnode.  Bads
+  are allowded as cfgpredecessors to represent dead "incoming" control
+  flow.
+  Added call to optimize_in_place in mature_block. Is this useful?
+
+  10.2.2000 Goetz
+  Changed tests from comparing enums to comparing pointers. This is more
+  efficient and reads better.  e.g., instead get_irn_opcode == irm_And
+  now get_irn_op == op_And
+
+  10.2.2000 Goetz
+  Compared equivalent_value to the one in the original fiasco.
+  Added a test in case iro_And.
+  Changed implementation of iro_Div. Added routines turn_into_tuple
+    and set_irn_op() in irgmod/irnode.
+  Changed implementation of irn_Minus (although commented out).
+  Now all features are ported or documented for this function.
+
+  10.2.2000 Goetz
+  Compared computed_value to the one in the original fiasco.
+  Added one further optimization in case iro_Proj.
+  Now all features are ported for this function.
+
+  9.2.2000 Goetz
+  Updated comments in ircons.h.
+
+  9.2.2000 Goetz
+  Changed possible attribute of SymConst from type_class to type.
+  SymConst size could be the size of a union, array, ...
+
+  9.2.2000 Goetz
+  Implemented two dumpers that dump type information and a graph with
+  type information.
+
+  9.2.2000 Goetz
+  Implemented a walker that walks over the type informatin that can
+  be reached from an ir node.
+  Added routine get_kind(firm_thing) in common.h, Added file common.c.
+  Added files typewalk.ch and routines to irdump.
+  Added visited flags and initialization to entity and all types.
+  Implemented some of the missing access routines in type.c, entity.c
+
+  9.2.2000 Goetz
+  Implemented constructor for ShrA.
+  Added type struct.
+  Added routine that iterates the graph and verifies all nodes.
+  Added Phi_in stack to irgraph.  This allows to build several
+    graphs at once with respect to the Phi building algorithm.
+
+  9.2.2000 Goetz
+  Implemented dumper for control flow graphs.  Changed irr_* and dead_*
+  examples to dump cfg.
+
+  8.2.2000 Goetz
+  Implemeted explicit stack for the Phi node generation.  See ircons.c.
+
+  8.2.2000 Goetz
+  added include string.h in xoprintf.c to get rid of warning:
+  implicit declaration of function `bcopy'
+
+  7.2.2000 Goetz
+  Worked on iropt.c:
+  Added more cases to equivalent_node.
+  Portet gigo, identify, identify_remember.
+  The set/pset library can not handle several hash tables.  At least,
+  compiling several procedures causes a segmentation fault during access
+  to the tables (oo_program_example).  Need to work on this.
+  transform_node still needs to be ported.
+  some cases in equivalent_node are still missing.
+
+  To get it running I had to remove the call to optimize in the
+  new_Block constructor. It can only be called when the Block is
+  mature.
+
+  7.2.2000 Goetz
+  Introduced a walker that walks only over blocks.  The asserts
+  might be too strict for general graphs, but so far it works.
+  For the walker I introduced an additional flag in the attribute
+  of Blocks, an a global block_visited variable (in irgraph.h).
+  Furhter I modularized dump_ir_node, implemented dump_ir_graph
+  with the existing walker, and added new routines to output a
+  basic block graph.
+  Changed the examples to call the new dump routine.
+
+  7.2.2000 Goetz
+  Added auxiliary routines to ir_node:
+  skip_Proj, skip_Nop, is_Bad ...
+  Changed access routines to use get_irn_n instead of explicit array
+  accesses. Changed get_irn_n to call skip_Id, so that the access routines
+  never will return Id nodes.
+
+  3.2.2000 Goetz
+  Repaired Phi computation, changed new_r_Phi_in.  Added test program to
+  test irregular controlflow.
+
+  2.2.2000 Goetz
+  Updated optimizations computed_value and equivalent_node to new
+  Syntax of FIRM nodes and to use access routines.
+  Added routine skip_Proj in irnode.
+
+  2.2.2000 Boris Boesler
+  Added files irgwalk.c and irgwalk.h. They include a simple function to
+  traverse an ir graph and execute pre and post functions to current node.
+
+  1.2.2000 Goetz
+  Added arrays with parameters and result types to the type informtion
+  of a procedure.  This is needed for the code generation.  Also added
+  the corresponding access routines.
+  Adapted the testprograms.
+
+  1.2.2000 Goetz
+  Found a bug / complication:  the call order
+    get_value   (makes Phi0, put's it into graph_arr)
+    set_value   (overwrites Phi0 in graph_arr)
+    mature_block (upgrades Phi0, puts it again into graph_arr, overwriting
+                  the proper value.)
+  fails.  Added test wether graph_arr is already set in phi_merge.
+
+  Added tons of comments to explain Phi generation -- the stack hack.
+
+
+  27.1.2000 Goetz
+  irdump now outputs the pnc_number for projs of Cmp nodes.
+  Added routine to access the pnc_string.
+
+  27.1.2000 Goetz
+  Added result "dataseg" to Start node, with all it's consequences.
+  We need this for the compiler lab to translate global variables.
+  Now they can be selected from the data segment, and the start
+  node supplies the pointer to this segment.
+  These changes are guarded by preprocessor variable UEBPRAKT in
+  common.h
+  Changed files: common.h, irgraph.ch, irnode.h
+
+  26.1.2000 Goetz
+  Testprograms:
+  removed array_example, added array-heap_example and
+  array-stack_example and adapted makefile.
+  ir_lib:
+  Entity now also allows type_method as owner. This is to model
+  the stack, Sel nodes that select a variable (array) from the
+  stack need an entity that describes what they select.  This
+  entity gets the type of the enclosing procedure as owner.
+
+  24.1.2000 Chris
+  Added future access routines in `irmode.[ch]' as comments,
+    that all attributes in the ir_mode struct can be user-defined.
+  Added access routines in `irgraph.[ch]', for all attributes.
+
+  22.1.2000 Chris
+  Moved verify routines from `irgraph.[ch]' to own files `irvrfy.[ch]'.
+  Added `irvrfy.[ch]' to MAKEFILE
+  Added "inline" before access routines in `irnode.h', that no warnings
+    will appear furthermore.
+  Added three more access routines in `irmode.[ch]':
+	struct tarval *get_min_of_mode (ir_mode *mode);
+	struct tarval *get_max_of_mode (ir_mode *mode);
+	struct tarval *get_null_of_mode (ir_mode *mode);
+
+  21.1.2000 Goetz
+  Adaption of Alloc, Sel and Entity to new types:
+    Changed array_example to use type instead of type_class.
+    Changed entity to allow all types as owner instead of
+      only type_class.  Added routine "assert_legal_owner_of_ent(type* type)".
+    Changed alloc to allow allocating variables of any type instead of
+      only type_class.
+    Adapted all testprograms to avoid warnings.
+
+  removed dtest ... from Makefile, replaced by test.
+
+  20.1.2000 Goetz
+  Added "run" to makefile, added array_example to makefile of testprograms.
+  Corrected testprogram array
+  Changed assert in irvrfy -- Conv.
+  Started Change log.
+  Started TODO log.

@@ -96,10 +96,9 @@
 #endif
 
 
-/* Private */
-/* Don't try this at home, kids, we're trained professionals ;-> */
-
-// ... or at the IPD, either.
+/* Private !!!
+   Don't try this at home, kids, we're trained professionals ;->
+   ... or at the IPD, either. */
 #ifdef NDEBUG
 # define _ARR_DBGINF_DECL
 # define _ARR_SET_DBGINF(descr, co, es) ((co), (es))
