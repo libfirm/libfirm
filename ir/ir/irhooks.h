@@ -83,7 +83,7 @@ typedef struct hook_entry {
     void (*_hook_reassociate)(void *context, int start);
     void (*_hook_lower)(void *context, ir_node *node);
     void (*_hook_inline)(void *context, ir_node *call, ir_graph *irg);
-    void (*_hook_tail_rec)(void *context, ir_graph *irg);
+    void (*_hook_tail_rec)(void *context, ir_graph *irg, int n_calls);
     void (*_hook_strength_red)(void *context, ir_graph *irg, ir_node *strong, ir_node *cmp);
     void (*_hook_dead_node_elim_start)(void *context, ir_graph *irg);
     void (*_hook_dead_node_elim_stop)(void *context, ir_graph *irg);
@@ -183,7 +183,7 @@ extern hook_entry_t *hooks[hook_last];
 #define hook_reassociate(start)           hook_exec(hook_reassociate, (ctx, start))
 #define hook_lower(node)                  hook_exec(hook_lower, (ctx, node))
 #define hook_inline(call, irg)            hook_exec(hook_inline, (ctx, call, irg))
-#define hook_tail_rec(irg)                hook_exec(hook_tail_rec, (ctx, irg))
+#define hook_tail_rec(irg, n_calls)       hook_exec(hook_tail_rec, (ctx, irg, n_calls))
 #define hook_strength_red(irg, strong, cmp) \
   hook_exec(hook_strength_red, (ctx, irg, strong, cmp))
 #define hook_dead_node_elim_start(irg)    hook_exec(hook_dead_node_elim_start, (ctx, irg))
