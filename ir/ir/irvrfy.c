@@ -120,11 +120,26 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
       break;
 
     case iro_Load:
-      ASSERT_AND_RET(
-          ((proj == 0 && mode == mode_M) ||
-           (proj == 1 && mode == mode_X) ||
-           (proj == 2 && mode_is_data(mode))),
-          "wrong Proj from Load", 0);
+      if (proj == pn_Load_res) {
+	ir_node *ptr = get_Load_ptr(pred);
+	entity *ent = NULL;
+	if (get_irn_op(ptr) == op_Sel) {
+	  ent = get_Sel_entity(ptr);
+	} else if ((get_irn_op(ptr) == op_Const) &&
+		   tarval_is_entity(get_Const_tarval(ptr))) {
+	  ent = get_tarval_entity(get_Const_tarval(ptr));
+	}
+	if (ent)
+	  ASSERT_AND_RET((mode == get_type_mode(get_entity_type(ent))),
+			 "wrong data Proj from Load", 0);
+	else
+	  ASSERT_AND_RET(mode_is_data(mode),
+			 "wrong data Proj from Load", 0);
+      } else {
+	ASSERT_AND_RET(((proj == pn_Load_M        && mode == mode_M) ||
+			(proj == pn_Load_X_except && mode == mode_X)),
+		       "wrong Proj from Load", 0);
+      }
       break;
 
     case iro_Store:

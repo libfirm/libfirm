@@ -195,7 +195,9 @@ int get_mode_size_bytes(const ir_mode *mode);
 /** Returns the alignment of values of the mode in bytes. */
 int get_mode_align(const ir_mode *mode);
 
-/** Returns the signess of a mode */
+/** Returns the signess of a mode.
+ *
+ * Returns the signess of a mode: 1 if mode is signed. */
 int get_mode_sign (const ir_mode *mode);
 
 /** Returns the arithmetic of a mode */

@@ -1179,6 +1179,8 @@ ir_node *new_rd_Tuple  (dbg_info *db, ir_graph *irg, ir_node *block,
 ir_node *new_rd_Id     (dbg_info *db, ir_graph *irg, ir_node *block,
 		       ir_node *val, ir_mode *mode);
 ir_node *new_rd_Bad    (ir_graph *irg);
+ir_node *new_rd_Confirm (dbg_info *db, ir_graph *irg, ir_node *block,
+			 ir_node *val, ir_node *bound, pn_Cmp cmp);
 ir_node *new_rd_Unknown(ir_graph *irg);
 ir_node *new_rd_CallBegin(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *callee);
 ir_node *new_rd_EndReg (dbg_info *db, ir_graph *irg, ir_node *block);
@@ -1273,6 +1275,8 @@ ir_node *new_r_Tuple  (ir_graph *irg, ir_node *block,
 ir_node *new_r_Id     (ir_graph *irg, ir_node *block,
 		       ir_node *val, ir_mode *mode);
 ir_node *new_r_Bad    (ir_graph *irg);
+ir_node *new_r_Confirm (ir_graph *irg, ir_node *block,
+			ir_node *val, ir_node *bound, pn_Cmp cmp);
 ir_node *new_r_Unknown(ir_graph *irg);
 ir_node *new_r_CallBegin(ir_graph *irg, ir_node *block, ir_node *callee);
 ir_node *new_r_EndReg (ir_graph *irg, ir_node *block);
@@ -1342,6 +1346,7 @@ ir_node *new_d_defaultProj (dbg_info* db, ir_node *arg, long max_proj);
 ir_node *new_d_Tuple  (dbg_info* db, int arity, ir_node *in[]);
 ir_node *new_d_Id     (dbg_info* db, ir_node *val, ir_mode *mode);
 ir_node *new_d_Bad    (void);
+ir_node *new_d_Confirm (dbg_info* db, ir_node *val, ir_node *bound, pn_Cmp cmp);
 ir_node *new_d_Unknown(void);
 ir_node *new_d_CallBegin(dbg_info *db, ir_node *callee);
 ir_node *new_d_EndReg (dbg_info *db);
@@ -1411,6 +1416,7 @@ ir_node *new_defaultProj (ir_node *arg, long max_proj);
 ir_node *new_Tuple  (int arity, ir_node *in[]);
 ir_node *new_Id     (ir_node *val, ir_mode *mode);
 ir_node *new_Bad    (void);
+ir_node *new_Confirm (ir_node *val, ir_node *bound, pn_Cmp cmp);
 ir_node *new_Unknown(void);
 
 /*---------------------------------------------------------------------*/

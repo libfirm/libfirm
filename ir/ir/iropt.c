@@ -628,15 +628,44 @@ equivalent_node (ir_node *n)
   return n;
 } /* end equivalent_node() */
 
+/* do node specific optimizations of nodes predecessors. */
+static void
+optimize_preds(ir_node *n) {
+  ir_node *a = NULL, *b = NULL;
+
+  /* get the operands we will work on for simple cases. */
+  if (is_binop(n)) {
+    a = get_binop_left(n);
+    b = get_binop_right(n);
+  } else if (is_unop(n)) {
+    a = get_unop_op(n);
+  }
+
+  switch (get_irn_opcode(n)) {
+
+  case iro_Cmp:
+    /* We don't want Cast as input to Cmp. */
+    if (get_irn_op(a) == op_Cast) {
+      a = get_Cast_op(a);
+      set_Cmp_left(n, a);
+    }
+    if (get_irn_op(b) == op_Cast) {
+      b = get_Cast_op(b);
+      set_Cmp_right(n, b);
+    }
+    break;
+
+  default: break;
+  } /* end switch */
+}
+
 
 /* tries several [inplace] [optimizing] transformations and returns an
    equivalent node.  The difference to equivalent_node is that these
    transformations _do_ generate new nodes, and thus the old node must
    not be freed even if the equivalent node isn't the old one. */
 static ir_node *
-transform_node (ir_node *n)
-{
-
+transform_node (ir_node *n) {
   ir_node *a = NULL, *b;
   tarval *ta, *tb;
 
@@ -1099,6 +1128,8 @@ optimize_node (ir_node *n)
       (get_irn_op(n) == op_Block)  )  /* Flags tested local. */
     n = equivalent_node (n);
 
+  optimize_preds(n);                  /* do node specific optimizations of nodes predecessors. */
+
   /** common subexpression elimination **/
   /* Checks whether n is already available. */
   /* The block input is used to distinguish different subexpressions. Right
@@ -1177,6 +1208,8 @@ optimize_in_place_2 (ir_node *n)
       (get_irn_op(n) == op_Proj) ||   /* ... */
       (get_irn_op(n) == op_Block)  )  /* Flags tested local. */
     n = equivalent_node (n);
+
+  optimize_preds(n);                  /* do node specific optimizations of nodes predecessors. */
 
   /** common subexpression elimination **/
   /* Checks whether n is already available. */

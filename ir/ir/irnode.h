@@ -447,8 +447,8 @@ INLINE ir_node *get_Quot_mem (ir_node *node);
 INLINE void     set_Quot_mem (ir_node *node, ir_node *mem);
 
 typedef enum {
-  pn_Quot_X_except,    /**< Execution result if exception occured. */
   pn_Quot_M,           /**< Memory result.    */
+  pn_Quot_X_except,    /**< Execution result if exception occured. */
   pn_Quot_res          /**< Result of computation. */
 } pn_Quot;  /* Projection numbers for Quot. */
 
@@ -460,8 +460,8 @@ INLINE ir_node *get_DivMod_mem (ir_node *node);
 INLINE void     set_DivMod_mem (ir_node *node, ir_node *mem);
 
 typedef enum {
-  pn_DivMod_X_except,    /**< Execution result if exception occured. */
   pn_DivMod_M,           /**< Memory result.    */
+  pn_DivMod_X_except,    /**< Execution result if exception occured. */
   pn_DivMod_res_div,     /**< Result of computation a / b. */
   pn_DivMod_res_mod      /**< Result of computation a % b. */
 } pn_DivMod;  /* Projection numbers for DivMod. */
@@ -474,8 +474,8 @@ INLINE ir_node *get_Div_mem (ir_node *node);
 INLINE void     set_Div_mem (ir_node *node, ir_node *mem);
 
 typedef enum {
-  pn_Div_X_except,    /**< Execution result if exception occured. */
   pn_Div_M,           /**< Memory result.    */
+  pn_Div_X_except,    /**< Execution result if exception occured. */
   pn_Div_res          /**< Result of computation. */
 } pn_Div;  /* Projection numbers for Div. */
 
@@ -487,8 +487,8 @@ INLINE ir_node *get_Mod_mem (ir_node *node);
 INLINE void     set_Mod_mem (ir_node *node, ir_node *mem);
 
 typedef enum {
-  pn_Mod_X_except,    /**< Execution result if exception occured. */
   pn_Mod_M,           /**< Memory result.    */
+  pn_Mod_X_except,    /**< Execution result if exception occured. */
   pn_Mod_res          /**< Result of computation. */
 } pn_Mod;  /* Projection numbers for Mod. */
 
@@ -596,8 +596,8 @@ int              get_Filter_n_cg_preds(ir_node *node);
 ir_node *        get_Filter_cg_pred(ir_node *node, int pos);
 
 typedef enum {
-  pn_Load_X_except,  /**< Execution result if exception occured. */
   pn_Load_M,         /**< Memory result.    */
+  pn_Load_X_except,  /**< Execution result if exception occured. */
   pn_Load_res        /**< Result of load operation. */
 } pn_Load;  /* Projection numbers for Load. */
 
@@ -607,8 +607,8 @@ INLINE ir_node *get_Load_ptr (ir_node *node);
 INLINE void     set_Load_ptr (ir_node *node, ir_node *ptr);
 
 typedef enum {
-  pn_Store_X_except,  /**< Execution result if exception occured. */
-  pn_Store_M          /**< Memory result.    */
+  pn_Store_M,         /**< Memory result.    */
+  pn_Store_X_except   /**< Execution result if exception occured. */
 } pn_Store;  /* Projection numbers for Store. */
 
 INLINE ir_node *get_Store_mem (ir_node *node);
@@ -619,8 +619,8 @@ INLINE ir_node *get_Store_value (ir_node *node);
 INLINE void     set_Store_value (ir_node *node, ir_node *value);
 
 typedef enum {
-  pn_Alloc_X,    /**< Execution result if exception occured. */
   pn_Alloc_M,    /**< Memory result. */
+  pn_Alloc_X_except,    /**< Execution result if exception occured. */
   pn_Alloc_res   /**< Result of allocation. */
 } pn_Alloc;  /* Projection numbers for Alloc. */
 

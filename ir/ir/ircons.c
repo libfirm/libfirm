@@ -973,6 +973,9 @@ INLINE ir_node *new_r_Id     (ir_graph *irg, ir_node *block,
 INLINE ir_node *new_r_Bad    (ir_graph *irg) {
   return new_rd_Bad(irg);
 }
+INLINE ir_node *new_r_Confirm (ir_graph *irg, ir_node *block, ir_node *val, ir_node *bound, pn_Cmp cmp) {
+  return new_rd_Confirm (NULL, irg, block, val, bound, cmp);
+}
 INLINE ir_node *new_r_Unknown (ir_graph *irg) {
   return new_rd_Unknown(irg);
 }
