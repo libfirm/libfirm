@@ -542,7 +542,8 @@ new_rd_Call (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *store,
 
   assert(is_method_type(tp));
   set_Call_type(res, tp);
-  res->attr.call.callee_arr = NULL;
+  res->attr.call.exc.pin_state = op_pin_state_pinned;
+  res->attr.call.callee_arr    = NULL;
   res = optimize_node(res);
   IRN_VRFY_IRG(res, irg);
   return res;
@@ -590,8 +591,9 @@ new_rd_Load (dbg_info* db, ir_graph *irg, ir_node *block,
   in[0] = store;
   in[1] = adr;
   res = new_ir_node(db, irg, block, op_Load, mode_T, 2, in);
-  res->attr.load.load_mode  = mode;
-  res->attr.load.volatility = volatility_non_volatile;
+  res->attr.load.exc.pin_state = op_pin_state_pinned;
+  res->attr.load.load_mode     = mode;
+  res->attr.load.volatility    = volatility_non_volatile;
   res = optimize_node(res);
   IRN_VRFY_IRG(res, irg);
   return res;
@@ -608,7 +610,8 @@ new_rd_Store (dbg_info* db, ir_graph *irg, ir_node *block,
   in[1] = adr;
   in[2] = val;
   res = new_ir_node(db, irg, block, op_Store, mode_T, 3, in);
-  res->attr.store.volatility = volatility_non_volatile;
+  res->attr.store.exc.pin_state = op_pin_state_pinned;
+  res->attr.store.volatility    = volatility_non_volatile;
   res = optimize_node(res);
   IRN_VRFY_IRG(res, irg);
   return res;
@@ -624,8 +627,9 @@ new_rd_Alloc (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *store,
   in[0] = store;
   in[1] = size;
   res = new_ir_node(db, irg, block, op_Alloc, mode_T, 2, in);
-  res->attr.a.where = where;
-  res->attr.a.type  = alloc_type;
+  res->attr.a.exc.pin_state = op_pin_state_pinned;
+  res->attr.a.where         = where;
+  res->attr.a.type          = alloc_type;
   res = optimize_node(res);
   IRN_VRFY_IRG(res, irg);
   return res;
@@ -1613,13 +1617,13 @@ static INLINE ir_node **
 get_frag_arr (ir_node *n) {
   switch (get_irn_opcode(n)) {
   case iro_Call:
-    return n->attr.call.frag_arr;
+    return n->attr.call.exc.frag_arr;
   case iro_Alloc:
-    return n->attr.a.frag_arr;
+    return n->attr.a.exc.frag_arr;
   case iro_Load:
-    return n->attr.load.frag_arr;
+    return n->attr.load.exc.frag_arr;
   case iro_Store:
-    return n->attr.store.frag_arr;
+    return n->attr.store.exc.frag_arr;
   default:
     return n->attr.except.frag_arr;
   }
@@ -2058,6 +2062,7 @@ new_d_Quot (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2)
   ir_node *res;
   res = new_rd_Quot (db, current_ir_graph, current_ir_graph->current_block,
              memop, op1, op2);
+  res->attr.except.pin_state = op_pin_state_pinned;
 #if PRECISE_EXC_CONTEXT
   allocate_frag_arr(res, op_Quot, &res->attr.except.frag_arr);  /* Could be optimized away. */
 #endif
@@ -2071,6 +2076,7 @@ new_d_DivMod (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2)
   ir_node *res;
   res = new_rd_DivMod (db, current_ir_graph, current_ir_graph->current_block,
                memop, op1, op2);
+  res->attr.except.pin_state = op_pin_state_pinned;
 #if PRECISE_EXC_CONTEXT
   allocate_frag_arr(res, op_DivMod, &res->attr.except.frag_arr);  /* Could be optimized away. */
 #endif
@@ -2084,6 +2090,7 @@ new_d_Div (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2)
   ir_node *res;
   res = new_rd_Div (db, current_ir_graph, current_ir_graph->current_block,
             memop, op1, op2);
+  res->attr.except.pin_state = op_pin_state_pinned;
 #if PRECISE_EXC_CONTEXT
   allocate_frag_arr(res, op_Div, &res->attr.except.frag_arr);  /* Could be optimized away. */
 #endif
@@ -2097,6 +2104,7 @@ new_d_Mod (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2)
   ir_node *res;
   res = new_rd_Mod (db, current_ir_graph, current_ir_graph->current_block,
             memop, op1, op2);
+  res->attr.except.pin_state = op_pin_state_pinned;
 #if PRECISE_EXC_CONTEXT
   allocate_frag_arr(res, op_Mod, &res->attr.except.frag_arr);  /* Could be optimized away. */
 #endif
@@ -2194,7 +2202,7 @@ new_d_Call (dbg_info* db, ir_node *store, ir_node *callee, int arity, ir_node **
   res = new_rd_Call (db, current_ir_graph, current_ir_graph->current_block,
              store, callee, arity, in, tp);
 #if PRECISE_EXC_CONTEXT
-  allocate_frag_arr(res, op_Call, &res->attr.call.frag_arr);  /* Could be optimized away. */
+  allocate_frag_arr(res, op_Call, &res->attr.call.exc.frag_arr);  /* Could be optimized away. */
 #endif
 
   return res;
@@ -2221,7 +2229,7 @@ new_d_Load (dbg_info* db, ir_node *store, ir_node *addr, ir_mode *mode)
   res = new_rd_Load (db, current_ir_graph, current_ir_graph->current_block,
              store, addr, mode);
 #if PRECISE_EXC_CONTEXT
-  allocate_frag_arr(res, op_Load, &res->attr.load.frag_arr);  /* Could be optimized away. */
+  allocate_frag_arr(res, op_Load, &res->attr.load.exc.frag_arr);  /* Could be optimized away. */
 #endif
 
   return res;
@@ -2234,7 +2242,7 @@ new_d_Store (dbg_info* db, ir_node *store, ir_node *addr, ir_node *val)
   res = new_rd_Store (db, current_ir_graph, current_ir_graph->current_block,
               store, addr, val);
 #if PRECISE_EXC_CONTEXT
-  allocate_frag_arr(res, op_Store, &res->attr.store.frag_arr);  /* Could be optimized away. */
+  allocate_frag_arr(res, op_Store, &res->attr.store.exc.frag_arr);  /* Could be optimized away. */
 #endif
 
   return res;
@@ -2248,7 +2256,7 @@ new_d_Alloc (dbg_info* db, ir_node *store, ir_node *size, type *alloc_type,
   res = new_rd_Alloc (db, current_ir_graph, current_ir_graph->current_block,
               store, size, alloc_type, where);
 #if PRECISE_EXC_CONTEXT
-  allocate_frag_arr(res, op_Alloc, &res->attr.a.frag_arr);  /* Could be optimized away. */
+  allocate_frag_arr(res, op_Alloc, &res->attr.a.exc.frag_arr);  /* Could be optimized away. */
 #endif
 
   return res;
