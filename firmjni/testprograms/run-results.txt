@@ -6,6 +6,9 @@ use xvcg to view this graph:
 
 
 Creating an IR graph: IfElseExample...
+Optimization: 3
+new Node 33
+old Node 32
 Optimization: 2
 new Nodes: 35,
 old Nodes: 36, 34, 35,

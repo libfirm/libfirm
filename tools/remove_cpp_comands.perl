@@ -61,9 +61,17 @@ $guardedtypedef = 0;
 $scndlastline = "";
 $lastline = "";
 
+$eat = 0;
+
 foreach $line (@lines) {
 
-    if (($line =~ /^\#/)   ) {
+    if ($line =~ /\#ifdef __cplusplus/) {
+#       There is extern "C" in firm.h, guarded by #ifdef __cplusplus
+#       crecoder does not grok the extern "C", so remove thses three lines.
+	$eat = 2;
+    } elsif ($eat > 0) {
+	$eat = $eat -1;
+    } elsif (($line =~ /^\#/)   ) {
 	# eat the line
 	$scndlastline = $lastline;
 	$lastline = $line;
@@ -99,8 +107,6 @@ foreach $line (@lines) {
 		$guardedtypedef = 0;
 	    }
 	}
-    } elsif ($line =~ /extern "C"/) {
-	print OUT "/* extern C */ {";
     } else {
 	print OUT "$line";
 	$scndlastline = $lastline;
