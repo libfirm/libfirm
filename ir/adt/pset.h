@@ -3,28 +3,37 @@
 
 /* $Id$ */
 
+/**
+ * @file pset.h
+ *
+ * Declarations for pset.
+ */
+
 #ifndef _PSET_H
 #define _PSET_H
 
 #include <stddef.h>
 
+/** The type of a pset (Set of pointers) */
 typedef struct pset pset;
 
+/** a pset entry */
 typedef struct {
   unsigned hash;
   void *dptr;
 } pset_entry;
 
-
+/** the type of a pset compare function */
 typedef int (*pset_cmp_fun) (const void *, const void *);
 
-/* Makes new hash table. Needs function to compare two nodes to
+/** Makes new hash table. Needs function to compare two nodes to
    resolve hash value collision and the size. */
 pset *new_pset (pset_cmp_fun, int slots);
-/* Deletes hash table */
+
+/** Deletes hash table */
 void del_pset (pset *);
 
-/* Returns the pointer associated with pointer key.  Hash is
+/** Returns the pointer associated with pointer key.  Hash is
    the hash value computed from key.  Returns Null if key not
    in hash table.  */
 void *pset_find (pset *, const void *key, unsigned hash);
@@ -32,8 +41,13 @@ void *pset_insert (pset *, const void *key, unsigned hash);
 pset_entry *pset_hinsert (pset *, const void *key, unsigned hash);
 void *pset_remove (pset *, const void *key, unsigned hash);
 
+/** returns the first element of a pset */
 void *pset_first (pset *);
+
+/** returns the next element of a pset */
 void *pset_next (pset *);
+
+/** breaks the iteration of a set. Must be called before the next pset_first() call */
 void pset_break (pset *);
 
 #define new_pset(cmp, slots) (PSET_TRACE (new_pset) ((cmp), (slots)))
