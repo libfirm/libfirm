@@ -32,6 +32,7 @@
 int get_pto_verbose (void);     /* grrr, can't include pto.h */
 
 # define DBGPRINT(lvl, msg) if (get_pto_verbose () > lvl) { fprintf msg; }
+# define DBGEXE(lvl, cmd) if (get_pto_verbose () > lvl) { cmd; }
 
 static int pto_id = 0;          /* only for pto_t->kind */
 
@@ -526,6 +527,9 @@ void pto_enter (obj_desc_t *obj_desc, entity *ent, pto_t *pto)
 
 /*
   $Log$
+  Revision 1.5  2004/11/09 16:46:01  liekweg
+  new DBGEXE macro
+
   Revision 1.4  2004/11/08 12:33:06  liekweg
   initialisation; sanitize print levels, misc fixes
 
