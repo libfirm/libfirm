@@ -61,8 +61,11 @@ get_new_node (ir_node * n)
 /* Create this node on a new obstack. */
 void
 copy_node (ir_node *n, void *env) {
-  ir_node * res, a, b;
   int i;
+  ir_node *res, *a, *b;
+  res = (ir_node *) malloc (sizeof (ir_node));
+  a = (ir_node *) malloc (sizeof (ir_node));
+  b = (ir_node *) malloc (sizeof (ir_node));
 
   if (is_binop(n)) {
     a = get_binop_left(n);
@@ -73,13 +76,16 @@ copy_node (ir_node *n, void *env) {
 
   switch (get_irn_opcode(n)) {
   case iro_Block:
+    {
       /*CS malloc*/
-      ir_node **in [get_Block_n_cfgpreds(n)];
-      for (i=0; i <(get_Return_n_res(n)); i++) {
+      ir_node *in [get_Block_n_cfgpreds(n)];
+
+      for (i=0; i <(get_Block_n_cfgpreds(n)); i++) {
 	in[i] = get_Block_cfgpred (n, i);
       }
       res = new_r_Block (current_ir_graph, get_Block_n_cfgpreds(n), in);
       set_new_node(n, res);
+    }
     break;
   case iro_Start:
     res = new_r_Start (current_ir_graph, get_new_node(n));
@@ -101,7 +107,7 @@ copy_node (ir_node *n, void *env) {
   case iro_Return:
     {
       /*CS malloc*/
-      ir_node **in [get_Return_n_res(n)];
+      ir_node *in [get_Return_n_res(n)];
       for (i=0; i <(get_Return_n_res(n)); i++) {
 	in[i] = get_Return_res (n, i);
       }
@@ -122,23 +128,28 @@ copy_node (ir_node *n, void *env) {
     break;
   case iro_SymConst:
     {
-      if (get_SymConst_kind(n) == type_tag || get_SymConst_kind(n) == size)
+      type_or_id *value;
+      value = (type_or_id *) malloc (sizeof (type_or_id));
+      if ((get_SymConst_kind(n)==type_tag) || (get_SymConst_kind(n)==size))
 	{
-	  res = new_r_Raise (current_ir_graph, get_new_node(n),
-			     get_SymConst_type(n), get_SymConst_kind (n));
+	  value = get_SymConst_type(n);
 	}
       else
-	/* if get_SymConst_kind(n) == linkage_ptr_info */
 	{
-	  res = new_r_Raise (current_ir_graph, get_new_node(n),
-			     get_SymConst_ptrinfo(n), get_SymConst_kind (n));
+	  if (get_SymConst_kind(n)==linkage_ptr_info)
+	  {
+	    value = get_SymConst_ptrinfo(n);
+	  }
 	}
+    res = new_r_SymConst (current_ir_graph, get_new_node(n), value,
+			  get_SymConst_kind (n));
     set_new_node(n, res);
     }
     break;
   case iro_Sel:
     {
-      ir_node **in [get_Sel_n_index(n)];
+      /*CS*/
+      ir_node *in [get_Sel_n_index(n)];
       for (i=0; i <(get_Sel_n_index(n)); i++) {
 	in[i] = get_Sel_index (n, i);
       }
@@ -150,7 +161,8 @@ copy_node (ir_node *n, void *env) {
     break;
   case  iro_Call:
     {
-      ir_node **in [get_Call_arity(n)];
+      /*CS*/
+      ir_node *in [get_Call_arity(n)];
       for (i=0; i <(get_Call_arity(n)); i++) {
 	in[i] = get_Call_param (n, i);
       }
@@ -162,14 +174,17 @@ copy_node (ir_node *n, void *env) {
     break;
   case iro_Add:
     res = new_r_Add (current_ir_graph, get_new_node(n),
-		     get_new_node(a),
-		     get_new_node(b), get_irn_mode(n));
+		     get_new_node(a), get_new_node(b), get_irn_mode(n));
     set_new_node(n, res);
     break;
   case iro_Sub:
-    res = new_r_Sub (current_ir_graph, get_new_node(get_nodes_block(n)),
-		     get_new_node(a),get_new_node(b), get_irn_mode(n));
-    set_new_node(n, res);
+    {
+      ir_node *temp_node;
+      temp_node = get_nodes_block(n);
+      res = new_r_Sub (current_ir_graph, get_new_node(temp_node),
+                       get_new_node(a), get_new_node(b), get_irn_mode(n));
+      set_new_node(n, res);
+    }
     break;
   case iro_Minus:
     res = new_r_Minus (current_ir_graph, get_new_node(n), get_new_node(a),
@@ -189,15 +204,15 @@ copy_node (ir_node *n, void *env) {
 			get_new_node(a), get_new_node(b));
     break;
   case iro_Div:
-    res = new_r_Div (current_ir_graph, get_new_node(n), get_Div_mem (n),
+    res = new_r_Div (current_ir_graph, get_new_node(n), get_Div_mem(n),
 		     get_new_node(a), get_new_node(b));
     break;
   case iro_Mod:
-    res = new_r_Mod (current_ir_graph, get_new_node(n), get_Mod_mem (n),
+    res = new_r_Mod (current_ir_graph, get_new_node(n), get_Mod_mem(n),
 		     get_new_node(a), get_new_node(b));
     break;
   case iro_Abs:
-    res = new_r_Mod (current_ir_graph, get_new_node(n), get_Abs_op(n)
+    res = new_r_Mod (current_ir_graph, get_new_node(n), get_Abs_op(n),
 		     get_irn_mode(n));
     break;
   case iro_And:
@@ -241,14 +256,16 @@ copy_node (ir_node *n, void *env) {
 		     get_irn_mode(n));
     break;
   case iro_Phi:
-      /*CS malloc*/
-      ir_node **in [get_Phi_n_preds(n)];
+    /*CS malloc*/
+    {
+      ir_node *in [get_Phi_n_preds(n)];
       for (i=0; i <(get_Phi_n_preds(n)); i++) {
 	in[i] = get_Phi_pred (n, i);
       }
       res = new_r_Phi (current_ir_graph, get_new_node(n),
 		       get_Phi_n_preds(n), in, get_irn_mode(n));
       set_new_node(n, res);
+    }
     break;
   case iro_Load:
     res = new_r_Load (current_ir_graph, get_new_node(n), get_Load_mem(n),
@@ -270,14 +287,16 @@ copy_node (ir_node *n, void *env) {
 		      get_Free_size(n), get_Free_type(n));
     break;
   case iro_Sync:
-      /*CS malloc*/
-      ir_node **in [get_Sync_n_preds(n)];
+    /*CS malloc*/
+    {
+      ir_node *in [get_Sync_n_preds(n)];
       for (i=0; i <(get_Sync_n_preds(n)); i++) {
 	in[i] = get_Sync_pred (n, i);
       }
       res = new_r_Sync (current_ir_graph, get_new_node(n),
 			get_Sync_n_preds(n), in);
       set_new_node(n, res);
+    }
     break;
   case iro_Proj:
     res = new_r_Proj (current_ir_graph, get_new_node(n),
@@ -285,14 +304,16 @@ copy_node (ir_node *n, void *env) {
 		      get_Proj_proj(n));
     break;
   case iro_Tuple:
-      /*CS malloc*/
-      ir_node **in [get_Tuple_n_preds(n)];
+    /*CS malloc*/
+    {
+      ir_node *in [get_Tuple_n_preds(n)];
       for (i=0; i <(get_Tuple_n_preds(n)); i++) {
-	in[i] = gget_Tuple_pred (n, i);
+	in[i] = get_Tuple_pred (n, i);
       }
       res = new_r_Tuple (current_ir_graph, get_new_node(n),
 			 get_Tuple_n_preds(n), in);
       set_new_node(n, res);
+    }
     break;
   case iro_Id:
     res = new_r_Id (current_ir_graph, get_new_node(n),

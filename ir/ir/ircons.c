@@ -55,6 +55,8 @@ new_r_Block (ir_graph *irg,  int arity, ir_node **in)
 {
   ir_node *res;
 
+  res = new_ir_node (current_ir_graph, NULL, op_Block, mode_R, -1, NULL);
+
   return res;
 
 }
