@@ -86,4 +86,12 @@ static INLINE int __is_allocatable_irn(const ir_node *irn)
 #define set_irn_color(irn,col)						__set_irn_color(irn, col)
 #define is_allocatable_irn(irn)						__is_allocatable_irn(irn)
 
+/**
+ * Check, if two phi operands interfere.
+ * @param a A node which is operand to a phi function.
+ * @param b Another node which is operand to a phi function.
+ * @return 1, if @p a and @p b interfere, 0 if not.
+ */
+int phi_ops_interfere(const ir_node *a, const ir_node *b);
+
 #endif /* BERA_T_H */
