@@ -88,11 +88,42 @@ static ir_mode *find_mode(const ir_mode *m)
  */
 static void set_mode_values(ir_mode* mode)
 {
-  mode->min = get_tarval_min(mode);
-  mode->max= get_tarval_max(mode);
-  mode->null= get_tarval_null(mode);
-  mode->one= get_tarval_one(mode);
+  switch (get_mode_sort(mode))
+  {
+    case irms_int_number:
+    case irms_float_number:
+      mode->min = get_tarval_min(mode);
+      mode->max = get_tarval_max(mode);
+      mode->null = get_tarval_null(mode);
+      mode->one = get_tarval_one(mode);
+      break;
+
+    case irms_internal_boolean:
+      mode->min = tarval_b_false;
+      mode->max = tarval_b_true;
+      mode->null = tarval_b_false;
+      mode->one = tarval_b_true;
+      break;
+
+    case irms_reference:
+      mode->min = tarval_bad;
+      mode->max = tarval_bad;
+      mode->null = (get_mode_modecode(mode)==irm_P)?tarval_P_void:tarval_bad;
+      mode->one = tarval_bad;
+      break;
+
+    case irms_character:
+    case irms_auxiliary:
+    case irms_memory:
+    case irms_control_flow:
+      mode->min = tarval_bad;
+      mode->max = tarval_bad;
+      mode->null = tarval_bad;
+      mode->one = tarval_bad;
+      break;
+  }
 }
+
 /* * *
  * globals defined in irmode.h
  * * */
@@ -164,8 +195,6 @@ static ir_mode *register_mode(const ir_mode* new_mode)
   ANNOUNCE();
   assert(new_mode);
 
-
-
   /* copy mode struct to modes array */
   mode=(ir_mode*) obstack_copy(&modes, new_mode, sizeof(ir_mode));
 
@@ -173,7 +202,7 @@ static ir_mode *register_mode(const ir_mode* new_mode)
   if(num_modes>=irm_max) mode->code = num_modes;
   num_modes++;
 
-  if(mode->sort==irms_int_number || mode->sort==irms_float_number || mode->sort==irms_character) set_mode_values(mode);
+  set_mode_values(mode);
 
   return mode;
 }
@@ -751,7 +780,7 @@ init_mode (void)
 
   mode_Lu = register_mode(&newmode);
 
-  /* Integer Number Modes */
+  /* Character Modes */
   newmode.sort    = irms_character;
   newmode.arithmetic = irma_none;
 
