@@ -82,6 +82,8 @@ extern "C" {
 
 #include "irflag.h"        /* optimization flags */
 #include "irgopt.h"        /* optimize ir */
+#include "ldstopt.h"       /* optimize Load/Store */
+//#include "cfopt.h"         /* optimize control flow */
 #include "tailrec.h"       /* optimize tail-recursion calls */
 #include "ircgopt.h"       /* Optimizations based on interprocedural graph */
 
