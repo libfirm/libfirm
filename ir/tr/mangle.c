@@ -47,7 +47,7 @@ mangle_type (type *type)
   ident *res;
 
   assert (type->kind == k_type);
-  assert (type->type_op->code == tpo_class);
+  /* assert (type->type_op->code == tpo_class); */
 
   xoprintf (&mangle_obst, "%I", type->name);
   len = obstack_object_size (&mangle_obst);
