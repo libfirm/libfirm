@@ -64,7 +64,7 @@ new_type(tp_op *type_op, ir_mode *mode, ident* name) {
   int node_size ;
 
   assert(type_op != type_id);
-  assert(!id_contains_char(name, ' ') && "entity name should not contain spaces");
+  assert(!id_contains_char(name, ' ') && "type name should not contain spaces");
 
   node_size = offsetof (type, attr) +  type_op->attr_size;
   res = (type *) xmalloc (node_size);
