@@ -50,6 +50,7 @@ typedef enum {
   STAT_OPT_ID,			/**< ID optimization */
   STAT_OPT_CONST_EVAL,		/**< constant evaluation */
   STAT_OPT_STRENGTH_RED,	/**< strenght reduction */
+  STAT_OPT_ARCH_DEP,		/**< architecture dependant optimization */
   STAT_LOWERED,			/**< lowered */
 
   STAT_OPT_MAX
@@ -146,6 +147,11 @@ void stat_dead_node_elim_start(ir_graph *irg);
 void stat_dead_node_elim_stop(ir_graph *irg);
 
 /**
+ * A multiply was replaced by a series of Shifts/Adds/Subs
+ */
+void stat_arch_dep_replace_mul_with_shifts(ir_node *mul);
+
+/**
  * helper: get an ir_op from an opcode
  *
  * @param code  the opcode
@@ -174,6 +180,7 @@ ir_op *stat_get_op_from_opcode(opcode code);
 #define stat_strength_red(irg, strong, cmp)
 #define stat_dead_node_elim_start(irg)
 #define stat_dead_node_elim_stop(irg)
+#define stat_arch_dep_replace_mul_with_shifts(irn)
 
 #endif
 

@@ -39,6 +39,7 @@ static const char *opt_names[] = {
   "ID optimization",
   "Constant evaluation",
   "Strength reduction",
+  "Architecture dependant optimization",
   "Lowered",
 };
 
@@ -1123,6 +1124,22 @@ void stat_dead_node_elim_stop(ir_graph *irg)
   --status->in_dead_node_elim;
 }
 
+/*
+ * A multiply was replaced by a series of Shifts/Adds/Subs
+ */
+void stat_arch_dep_replace_mul_with_shifts(ir_node *mul)
+{
+  if (! status->enable)
+    return;
+
+  STAT_ENTER;
+  {
+    graph_entry_t *graph = graph_get_entry(current_ir_graph, status->irg_hash);
+    removed_due_opt(mul, graph->opt_hash[STAT_OPT_ARCH_DEP]);
+  }
+  STAT_LEAVE;
+}
+
 /* Finish the statistics */
 void stat_finish(const char *name)
 {
@@ -1227,5 +1244,7 @@ void stat_strength_red(ir_graph *irg, ir_node *strong, ir_node *cmp) {}
 void stat_dead_node_elim_start(ir_graph *irg) {}
 
 void stat_dead_node_elim_stop(ir_graph *irg) {}
+
+void stat_arch_dep_replace_mul_with_shifts(ir_node *mul) {}
 
 #endif

@@ -24,13 +24,13 @@
 #include "firmstat.h"
 #include "ircons.h"
 #include "irarch.h"
-
+#include "firmstat.h"
 
 #undef DEB
 
 #define MAX_BITSTR 64
 
-/** The params got from the factopry in arch_dep_init(...). */
+/** The params got from the factory in arch_dep_init(...). */
 static const arch_dep_params_t *params = NULL;
 
 /** The bit mask, which optimizations to apply. */
@@ -293,6 +293,9 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn)
 		}
 
 	}
+
+	if (res != irn)
+	  stat_arch_dep_replace_mul_with_shifts(irn);
 
 	return res;
 }
