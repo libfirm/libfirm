@@ -68,8 +68,8 @@
 /** TYPE                                                          **/
 /*******************************************************************/
 
-type *none_type;    type *get_none_type(void)    { return none_type;    }
-type *unknown_type; type *get_unknown_type(void) { return unknown_type; }
+type *firm_none_type;    type *get_none_type(void)    { return firm_none_type;    }
+type *firm_unknown_type; type *get_unknown_type(void) { return firm_unknown_type; }
 
 
 #ifdef DEBUG_libfirm
@@ -86,14 +86,14 @@ void init_type(void) {
   value_ress_suffix   = new_id_from_str(VALUE_RESS_SUFFIX);
 
   /* construct none and unknown type. */
-  none_type    = new_type(tpop_none,    mode_BAD, new_id_from_str("type_none"));
-  set_type_size_bits(none_type, 0);
-  set_type_state (none_type, layout_fixed);
-  remove_irp_type(none_type);
-  unknown_type = new_type(tpop_unknown, mode_ANY, new_id_from_str("type_unknown"));
-  set_type_size_bits(unknown_type, 0);
-  set_type_state (unknown_type, layout_fixed);
-  remove_irp_type(unknown_type);
+  firm_none_type    = new_type(tpop_none,    mode_BAD, new_id_from_str("type_none"));
+  set_type_size_bits(firm_none_type, 0);
+  set_type_state (firm_none_type, layout_fixed);
+  remove_irp_type(firm_none_type);
+  firm_unknown_type = new_type(tpop_unknown, mode_ANY, new_id_from_str("type_unknown"));
+  set_type_size_bits(firm_unknown_type, 0);
+  set_type_state (firm_unknown_type, layout_fixed);
+  remove_irp_type(firm_unknown_type);
 }
 
 unsigned long type_visited;
@@ -1610,7 +1610,7 @@ int (is_pointer_type)(const type *pointer) {
 
 /* Returns the first pointer type that has as points_to tp.
  *  Not efficient: O(#types).
- *  If not found returns unknown_type. */
+ *  If not found returns firm_unknown_type. */
 type *find_pointer_type_to_type (type *tp) {
   int i;
   for (i = 0; i < get_irp_n_types(); ++i) {
@@ -1618,7 +1618,7 @@ type *find_pointer_type_to_type (type *tp) {
     if (is_pointer_type(found) && get_pointer_points_to_type(found) == tp)
       return (found);
   }
-  return unknown_type;
+  return firm_unknown_type;
 }
 
 
