@@ -322,6 +322,9 @@ void        set_entity_peculiarity (entity *ent, peculiarity pec);
 const char *get_peculiarity_name(peculiarity var);
 
 /* -- Representation of constant values of entites -- */
+/** Returns true if the the node is representable as code on
+ *  const_code_irg. */
+int      is_irn_const_expression(ir_node *n);
 /* Set current_ir_graph to get_const_code_irg() to generate a constant
    expression. */
 /* Copies a firm subgraph that complies to the restrictions for

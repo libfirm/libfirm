@@ -438,6 +438,31 @@ set_atomic_ent_value(entity *ent, ir_node *val) {
   ent->value = val;
 }
 
+/* Returns true if the the node is representable as code on
+ *  const_code_irg. */
+int is_irn_const_expression(ir_node *n) {
+  ir_node *pred;
+  ir_mode *m;
+
+  m = get_irn_mode(n);
+  switch(get_irn_opcode(n)) {
+  case iro_Const:
+  case iro_SymConst:
+  case iro_Unknown:
+    return true; break;
+  case iro_Add:
+    if (is_irn_const_expression(get_Add_left(n)))
+      return is_irn_const_expression(get_Add_right(n));
+  case iro_Conv:
+  case iro_Cast:
+    return is_irn_const_expression(get_irn_n(n, 0));
+  default:
+    return false;
+    break;
+  }
+  return false;
+}
+
 
 ir_node *copy_const_value(ir_node *n) {
   ir_node *nn;
@@ -450,7 +475,12 @@ ir_node *copy_const_value(ir_node *n) {
   case iro_SymConst:
     nn = new_SymConst(get_SymConst_type_or_id(n), get_SymConst_kind(n)); break;
   case iro_Add:
-    nn = new_Add(copy_const_value(get_Add_left(n)), copy_const_value(get_Add_right(n)), m); break;
+    nn = new_Add(copy_const_value(get_Add_left(n)),
+		 copy_const_value(get_Add_right(n)), m); break;
+  case iro_Cast:
+    nn = new_Cast(copy_const_value(get_Cast_op(n)), get_Cast_type(n)); break;
+  case iro_Conv:
+    nn = new_Conv(copy_const_value(get_Conv_op(n)), m); break;
   case iro_Unknown:
     nn = new_Unknown(); break;
   default:
