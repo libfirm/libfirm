@@ -285,7 +285,7 @@ static int has_live_call (entity *method, ir_graph *graph)
   int i, n_over;
 
   /* stop searching if a overwriting method comes with a new graph */
-  if (get_irg_ent (graph) != method) { /* shouldn't we comare GRAPS????? */
+  if (get_irg_ent (graph) != method) { /* shouldn't we compare GRAPHS here????? */
     return (FALSE);
   }
 
@@ -306,7 +306,7 @@ static int has_live_call (entity *method, ir_graph *graph)
 
 /**
    Determine whether the given class is live *and* uses the given
-   graph at some point.
+   graph at some point, or has live subclasses that use the graph.
 */
 static int has_graph (type *clazz, ir_graph *graph)
 {
@@ -341,7 +341,7 @@ static int has_graph (type *clazz, ir_graph *graph)
 }
 
 /**
-   Determine wether the given method could be used in a call to the
+   Determine whether the given method could be used in a call to the
    given graph on a live class.
 */
 static int has_live_class (entity *method, ir_graph *graph)
@@ -419,7 +419,7 @@ static void force_description (entity *ent, entity *addr)
         force_description (over, addr);
       }
     } else if (peculiarity_existent == get_entity_peculiarity (over)) {
-      /* check wether 'over' forces 'inheritance' of *our* graph: */
+      /* check whether 'over' forces 'inheritance' of *our* graph: */
       ir_node *f_addr = get_atomic_ent_value (over);
       entity *impl_ent = tarval_to_entity (get_Const_tarval (f_addr));
 
@@ -526,8 +526,10 @@ void rta_delete_dead_graphs ()
     if (is_alive (graph, _live_graphs, _dead_graphs)) {
       /* do nothing (except some debugging fprintf`s :-) */
     } else {
+# ifdef DEBUG_libfirm
       entity *ent = get_irg_entity (graph);
       assert (visibility_external_visible != get_entity_visibility (ent));
+# endif /* defined DEBUG_libfirm */
 
       eset_insert (dead_graphs, graph);
     }
@@ -578,13 +580,13 @@ void rta_cleanup ()
   }
 }
 
-/* Say wether this class might be instantiated at any point in the program: */
+/* Say whether this class might be instantiated at any point in the program: */
 int  rta_is_alive_class  (type   *clazz)
 {
   return (eset_contains (_live_classes, clazz));
 }
 
-/* Say wether this graph might be run at any time in the program: */
+/* Say whether this graph might be run at any time in the program: */
 int  rta_is_alive_graph (ir_graph *graph)
 {
   if (eset_contains (_live_graphs, graph)) {
@@ -608,7 +610,7 @@ int  rta_is_alive_graph (ir_graph *graph)
   }
 }
 
-/* Say wether there have been any accesses to this field: */
+/* Say whether there have been any accesses to this field: */
 int  rta_is_alive_field  (entity *field)
 {
   return (eset_contains (_live_fields, field));
@@ -618,6 +620,9 @@ int  rta_is_alive_field  (entity *field)
 
 /*
  * $Log$
+ * Revision 1.9  2004/06/17 08:56:03  liekweg
+ * Fixed typos in comments
+ *
  * Revision 1.8  2004/06/17 08:33:01  liekweg
  * Added comments; added remove_irg
  *
