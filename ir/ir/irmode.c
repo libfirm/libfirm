@@ -238,8 +238,10 @@ ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align, 
       break;
 
     case irms_float_number:
-      assert(0 && "not yet implemented");
-      return NULL;
+      if(arithmetic != irma_ieee754) {
+	assert(0 && "not yet implemented");
+	return NULL;
+      }
       break;
 
     case irms_int_number:
