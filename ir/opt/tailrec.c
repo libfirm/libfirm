@@ -266,6 +266,12 @@ int opt_tail_rec_irg(ir_graph *irg)
   if (! get_opt_tail_recursion() || ! get_opt_optimize())
     return 0;
 
+  /*
+   * This tail recursion optimization works best
+   * if the Returns are normalized.
+   */
+  normalize_n_returns(irg);
+
   set_irn_link(end_block, NULL);
 
   n_preds = get_Block_n_cfgpreds(end_block);

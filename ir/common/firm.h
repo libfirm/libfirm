@@ -77,6 +77,7 @@ extern "C" {
 #include "loop_unrolling.h" /* Do loop unrolling */
 #include "ifconv.h"         /* if conversion */
 #include "funccall.h"       /* real function call optimization */
+#include "return.h"         /* Return node normalizations */
 
 /* Analyses */
 #include "irouts.h"         /* Graph reversal / out edges. */
