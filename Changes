@@ -1,3 +1,19 @@
+  5.3.2001 Goetz
+  More colours in vcg output.
+  Fixed bug:  cse found that start block equals it's
+  first successor as both have the Start block as predecessor.
+  This only happens for local_optimize_graph() as during construction
+  the Start block is not entered in the value table.
+  Changed implementation:  irgmod:  local_optimize_graph() did not
+  empty the hash table with the irnodes for cse.  This might cause that
+  cse turns up with a node that seems better but was removed from the
+  graph in an earlier optimization phase.
+  Removed old #if 1 from ircons.c
+  Commented in call of optimization for Block nodes in irgopt.c, copy_preds():
+  Optimizes blocks that had bad predecessors.
+  Same for Phi nodes.
+
+
   27.2.2001 Goetz
   Moved struct from irprog.h to irprog_t.h, same for irmode.h.
   Added a module deb_info in debug.h.  Adapted makefile.  Added example
