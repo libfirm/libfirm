@@ -981,13 +981,9 @@ void ecg_report ()
   FILE *dot = fopen ("calls.dot", "w");
 
   fprintf (dot, "digraph \"calls\" {\n");
-  fprintf (dot, "\tgraph [rankdir=\"LR\", ordering=\"out\"];\n");
-  fprintf (dot, "\tnode [shape = \"record\", style = \"filled\"];\n");
-  fprintf (dot, "\tedge [color = \"black\"];\n");
-  fprintf (dot, "\n");
-  fprintf (dot, "\tsize = \"11, 7\";\n");
-  fprintf (dot, "\trotate = \"90\";\n");
-  fprintf (dot, "\tratio = \"fill\";\n");
+  fprintf (dot, "\tgraph [rankdir=\"LR\", ordering=\"out\", size=\"11, 7\", rotate=\"90\", ratio=\"fill\"];\n");
+  fprintf (dot, "\tnode [shape=\"record\", style=\"filled\"];\n");
+  fprintf (dot, "\tedge [color=\"black\"];\n");
   fprintf (dot, "\n");
 
   for (i = 0; i < get_irp_n_irgs (); i++) {
@@ -1097,13 +1093,10 @@ void ecg_ecg ()
   FILE *dot = fopen ("ecg.dot", "w");
 
   fprintf (dot, "digraph \"ecg\" {\n");
-  fprintf (dot, "\tnode [shape = \"record\", style = \"filled\"];\n");
-  fprintf (dot, "\tedge [color = \"black\"];\n");
+  fprintf (dot, "\tgraph [rankdir=\"LR\", ordering=\"out\", size=\"11, 7\", rotate=\"90\", ratio=\"fill\"];\n");
+  fprintf (dot, "\tnode [shape=\"record\", style=\"filled\"];\n");
+  fprintf (dot, "\tedge [color=\"black\"];\n");
   fprintf (dot, "\n");
-  fprintf (dot, "\tsize = \"11, 7\";\n");
-  fprintf (dot, "\trotate = \"90\";\n");
-  fprintf (dot, "\tratio = \"fill\";\n");
-  fprintf (dot, "\trankdir = \"LR\";\n");
   fprintf (dot, "\n");
 
   /* ir_graph *main_graph = get_irp_main_irg (); */
@@ -1124,6 +1117,9 @@ void ecg_ecg ()
 
 /*
   $Log$
+  Revision 1.11  2004/12/15 09:18:18  liekweg
+  pto_name.c
+
   Revision 1.10  2004/12/06 12:55:06  liekweg
   actually iterate
 

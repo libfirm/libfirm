@@ -97,7 +97,12 @@ static pto_t* new_symconst_pto (ir_node *symconst)
   entity *ent = get_SymConst_entity (symconst);
   desc_t *desc = NULL;
 
-  /* ok, so if the symconst has a pointer-to-mumble, it's some address
+  /*
+  const char *ent_name = (char*) get_entity_name (ent);
+  const char *own_name = (char*) get_type_name (get_entity_owner (ent));
+  HERE3 ("start", own_name, ent_name);
+  */
+  /* Ok, so if the symconst has a pointer-to-mumble, it's some address
      calculation, but if it's the mumble itself, it's just the same,
      except it's presumably a constant of mumble. In any case, we need to
      branch on this.  "How's that for object fucking oriented? --jwz" */
@@ -115,6 +120,8 @@ static pto_t* new_symconst_pto (ir_node *symconst)
   }
 
   qset_insert (pto->values, desc);
+
+  /* HERE3 ("end", own_name, ent_name); */
 
   return (pto);
 }
@@ -393,7 +400,7 @@ void pto_init_graph (ir_graph *graph)
   const char *ent_name = (char*) get_entity_name (ent);
   const char *own_name = (char*) get_type_name (get_entity_owner (ent));
 
-  DBGPRINT (1, (stdout, "%s: init \"%s.%s\" for %i ctxs\n", __FUNCTION__,
+  DBGPRINT (0, (stdout, "%s: init \"%s.%s\" for %i ctxs\n", __FUNCTION__,
                 own_name, ent_name, n_ctxs));
 
   /* HERE ("start"); */
@@ -422,6 +429,9 @@ void pto_reset_graph_pto (ir_graph *graph, int ctx_idx)
 
 /*
   $Log$
+  Revision 1.9  2004/12/15 09:18:18  liekweg
+  pto_name.c
+
   Revision 1.8  2004/12/02 16:17:51  beck
   fixed config.h include
 

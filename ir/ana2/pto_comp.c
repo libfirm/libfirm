@@ -270,8 +270,12 @@ static pto_t *get_pto (ir_node *node, pto_env_t *env)
   case (iro_Call):              /* FALLTHROUGH */
   case (iro_Load):              /* FALLTHROUGH */
   case (iro_Const):             /* FALLTHROUGH */
-  case (iro_SymConst): return (get_node_pto (node));
+  case (iro_SymConst):{
+    pto_t *pto = get_node_pto (node);
 
+    assert (pto);
+    return (pto);
+  }
   default:
     /* stopgap measure */
     fprintf (stderr, "%s: not handled: node[%li].op = %s\n",
@@ -297,15 +301,23 @@ static void pto_load (ir_node *load, pto_env_t *pto_env)
     return;
   }
 
+  /* TODO: ONLY LOAD IFF LOAD.ENT.MODE == MODE_P */
+
   entity *ent = get_ptr_ent (ptr);
-  pto_t *ptr_pto = get_pto (ptr, pto_env);
 
-  assert (ptr_pto);
+  if (mode_P == get_type_mode (get_entity_type (ent))) {
 
-  DBGPRINT (1, (stdout, "%s (%s[%li]): ptr = %p\n", __FUNCTION__,
-                OPNAME (ptr), OPNUM (ptr), (void*) ptr_pto));
+    pto_t *ptr_pto = get_pto (ptr, pto_env);
 
-  pto_env->change |= mod_load (load, ent, ptr_pto);
+    HERE ("ptr");
+
+    assert (ptr_pto);
+
+    DBGPRINT (1, (stdout, "%s (%s[%li]): ptr = %p\n", __FUNCTION__,
+                  OPNAME (ptr), OPNUM (ptr), (void*) ptr_pto));
+
+    pto_env->change |= mod_load (load, ent, ptr_pto);
+  }
 }
 
 static void pto_store (ir_node *store, pto_env_t *pto_env)
@@ -442,11 +454,11 @@ static void pto_graph_pass (ir_graph *graph, void *pto_env)
   entity *ent = get_irg_entity (graph);
   const char *ent_name = (char*) get_entity_name (ent);
   const char *own_name = (char*) get_type_name (get_entity_owner (ent));
-  /* HERE3 ("start", own_name, ent_name); */
+  HERE3 ("start", own_name, ent_name);
 
   irg_walk_mem (graph, pto_node_pre, pto_node_post, pto_env);
 
-  /* HERE3 ("end  ", own_name, ent_name); */
+  HERE3 ("end  ", own_name, ent_name);
 }
 
 /* Continue PTO for one of the graphs called at a Call */
@@ -626,6 +638,9 @@ pto_t *get_alloc_pto (ir_node *alloc)
 
 /*
   $Log$
+  Revision 1.8  2004/12/15 09:18:18  liekweg
+  pto_name.c
+
   Revision 1.7  2004/12/06 12:55:06  liekweg
   actually iterate
 

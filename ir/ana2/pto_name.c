@@ -335,8 +335,6 @@ static void pto_name_dump_desc (desc_t *desc, FILE *stream)
       }
     }
   } else if (array == desc->kind) {
-    arr_desc_t *arr_desc = (arr_desc_t*) desc;
-
     fprintf (stream, "|<arr>[]");
   } else {
     assert (0 && "invalid descriptor");
@@ -349,7 +347,7 @@ static void pto_name_dump_desc (desc_t *desc, FILE *stream)
   int col_idx = desc->col_idx;
   float hue = (float) col_idx / (float) last_col_idx;
   float sat = 1.000;            /* 0.300 .. 1.000 */
-  float val = 1.000;            /* 0.300 .. 1.000 */
+  float val = 0.800;            /* 0.300 .. 1.000 */
 
 # define MAX_COLORS 12
   if (last_col_idx > MAX_COLORS) {
@@ -361,17 +359,17 @@ static void pto_name_dump_desc (desc_t *desc, FILE *stream)
 
     col_idx = col_idx % MAX_COLORS;
     hue = (float) col_idx / (float) MAX_COLORS;
+
+    // re-adjust sat and val
+    {
+      const float sat_min = 0.200; /* 0.200 .. 0.400 */
+      const float val_min = 0.300; /* 0.300 .. 0.400 */
+
+      sat = sat_min + ((1.0 - sat_min) * sat);
+      val = val_min + ((1.0 - val_min) * val);
+    }
   }
 # undef MAX_COLORS
-
-  // re-adjust sat and val
-  {
-    const float sat_min = 0.200; /* 0.200 .. 0.400 */
-    const float val_min = 0.300; /* 0.300 .. 0.400 */
-
-    sat = sat_min + ((1.0 - sat_min) * sat);
-    val = val_min + ((1.0 - val_min) * val);
-  }
 
   fprintf (stream, ", color=\"%01.3f, %01.3f, %01.3f\"", hue, sat, val);
 
@@ -386,6 +384,8 @@ static void pto_name_dump_desc (desc_t *desc, FILE *stream)
   }
 
   fprintf (stream, ", fontcolor=\"%s\"", fontcolor);
+# else /* if defined PTO_COLOR */
+  fprintf (stream, ", color=\"lightgrey\"");
 # endif /* defined PTO_COLOR */
 
   /* end attributes */
@@ -443,7 +443,7 @@ qset_t *get_entry (desc_t *desc, entity *ent)
     }
 
     assert (0 && "entry not found");
-  } else if (desc->kind = array) {
+  } else if (desc->kind == array) {
     arr_desc_t *arr_desc = (arr_desc_t*) desc;
 
     return (arr_desc->value);
@@ -519,6 +519,10 @@ desc_t *new_ent_name (entity *ent)
   assert (is_pointer_type (tp));
   tp = get_pointer_points_to_type (tp);
   assert (is_class_type (tp));
+
+  DBGPRINT (2, (stdout, "%s: new name for entity \"%s\"\n", __FUNCTION__,
+                get_entity_name (ent)));
+  DBGEXE (fflush (stdout));
 
   assert (((allocation_static == get_entity_allocation (ent)) ||
            (allocation_automatic == get_entity_allocation (ent))) &&
@@ -631,6 +635,9 @@ void pto_name_cleanup ()
 
 /*
   $Log$
+  Revision 1.7  2004/12/15 09:18:18  liekweg
+  pto_name.c
+
   Revision 1.6  2004/12/06 12:52:09  liekweg
   colorize name dump
 
