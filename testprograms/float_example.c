@@ -39,7 +39,7 @@ int main(int argc, char **argv)
   ir_node  *x;          /* to build control flow */
   tarval *tv;
 
-  printf("\nCreating an IR graph: EMPTY...\n");
+  printf("\nCreating an IR graph: FLOAT EXAMPLE...\n");
 
   /* init library */
   init_firm (NULL);
@@ -53,7 +53,7 @@ int main(int argc, char **argv)
    */
   owner = get_glob_type();
 
-#define METHODNAME "main"
+#define METHODNAME "FLOAT_EXAMPLE_main"
 #define NRARGS 0
 #define NRES 1
   /* The type of the method */

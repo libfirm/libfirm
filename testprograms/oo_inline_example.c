@@ -72,7 +72,7 @@ main(void)
 
   /*** Make type information for the class (PRIMA). ***/
   /* The type of the class */
-  class_prima = new_type_class(id_from_str ("PRIMA_INLINE", 5));
+  class_prima = new_type_class(new_id_from_str ("PRIMA_INLINE"));
   /* We need type information for pointers to the class: */
   class_p_ptr = new_type_pointer (id_from_str ("class_prima_ptr", 15),
 				  class_prima);
@@ -283,7 +283,7 @@ main(void)
   current_ir_graph = main_irg;
   printf("Inlining set_a ...\n");
   inline_method(set_a_call, set_a_irg);
-  printf("INLINEing c ...\n");
+  printf("Inlineing c ...\n");
   inline_method(c_call, c_irg);
 
   printf("Optimizing ...\n");
@@ -294,6 +294,9 @@ main(void)
   }
 
   printf("Dumping graphs of all procedures and a type graph.\n");
+  /* Touch ld names to distinguish names from oo_inline names. */
+  get_entity_ld_ident(proc_set_a_e);
+  get_entity_ld_ident(proc_c_e);
   turn_off_edge_labels();
   dump_all_ir_graphs(dump_ir_block_graph);
   dump_all_ir_graphs(dump_ir_block_graph_w_types);

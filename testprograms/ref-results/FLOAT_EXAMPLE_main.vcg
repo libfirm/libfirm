@@ -1,0 +1,54 @@
+graph: { title: "ir graph of FLOAT_EXAMPLE_main"
+display_edge_labels: yes
+layoutalgorithm: mindepth
+manhattan_edges: yes
+port_sharing: no
+orientation: bottom_to_top
+classname 1: "Data"
+classname 2: "Block"
+classname 3: "Entity type"
+classname 4: "Entity owner"
+classname 5: "Method Param"
+classname 6: "Method Res"
+classname 7: "Super"
+classname 8: "Union"
+classname 9: "Points-to"
+classname 10: "Array Element Type"
+classname 11: "Overwrites"
+classname 12: "Member"
+
+graph: { title: "n17" label: "17" status:clustered color:yellow
+edge: {sourcename: "n17" targetname: "n32" label: "0" color: red}
+node: {title: "n18" label: "End  18" color: blue info1: "visited: 4
+"}
+}
+
+graph: { title: "n29" label: "29" status:clustered color:yellow
+edge: {sourcename: "n29" targetname: "n23" label: "0" color: red}
+node: {title: "n32" label: "Return  32"  info1: "visited: 5
+return in method of type FLOAT_EXAMPLE_main
+  res 0 type: dbl
+"}
+edge: {sourcename: "n32" targetname: "n24" label: "0" color: blue}
+edge: {sourcename: "n32" targetname: "n30" label: "1" }
+}
+
+graph: { title: "n19" label: "19" status:clustered color:yellow
+edge: {sourcename: "n19" targetname: "n23" label: "0" color: red}
+node: {title: "n23" label: "ProjX 0 23" color: yellow info1: "visited: 6
+"}
+edge: {sourcename: "n23" targetname: "n20" label: "0" color: red}
+node: {title: "n20" label: "Start  20" color: blue info1: "visited: 6
+start of method of type FLOAT_EXAMPLE_main
+"}
+node: {title: "n30" label: "1.234567890123456716800000000000E+19D  30" color: yellow info1: "visited: 6
+Const of type type_unknown
+"}
+node: {title: "n24" label: "ProjM 1 24" color: yellow info1: "visited: 6
+"}
+edge: {sourcename: "n24" targetname: "n20" label: "0" color: blue}
+}
+
+node: {title: "n21" label: "Bad  21"  info1: "visited: 0
+"}
+}

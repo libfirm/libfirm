@@ -1,5 +1,5 @@
-graph: { title: "ir graph of PRIMA_set_a"
-display_edge_labels: yes
+graph: { title: "ir graph of PRIMA_INLINE_set_a"
+display_edge_labels: no
 layoutalgorithm: mindepth
 manhattan_edges: yes
 port_sharing: no
@@ -17,59 +17,59 @@ classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
 
-graph: { title: "n135" label: "135" status:clustered color:yellow
-edge: {sourcename: "n135" targetname: "n136" label: "0" color: red}
-node: {title: "n134" label: "End  134" color: blue info1: "visited: 12
+graph: { title: "n225" label: "225" status:clustered color:yellow
+edge: {sourcename: "n225" targetname: "n226" label: "0" color: red}
+node: {title: "n224" label: "End  224" color: blue info1: "visited: 20
 "}
 }
 
-graph: { title: "n137" label: "137" status:clustered color:yellow
-edge: {sourcename: "n137" targetname: "n138" label: "0" color: red}
-node: {title: "n136" label: "Return  136"  info1: "visited: 13
+graph: { title: "n227" label: "227" status:clustered color:yellow
+edge: {sourcename: "n227" targetname: "n228" label: "0" color: red}
+node: {title: "n226" label: "Return  226"  info1: "visited: 21
 return in method of type set_a
 "}
-edge: {sourcename: "n136" targetname: "n141" label: "0" color: blue}
-node: {title: "n141" label: "ProjM 0 141" color: yellow info1: "visited: 13
+edge: {sourcename: "n226" targetname: "n231" label: "0" color: blue}
+node: {title: "n231" label: "ProjM 0 231" color: yellow info1: "visited: 21
 "}
-edge: {sourcename: "n141" targetname: "n142" label: "0" color: blue}
-node: {title: "n142" label: "Store  142"  info1: "visited: 13
+edge: {sourcename: "n231" targetname: "n232" label: "0" color: blue}
+node: {title: "n232" label: "Store  232"  info1: "visited: 21
 "}
-edge: {sourcename: "n142" targetname: "n147" label: "0" color: blue}
-edge: {sourcename: "n142" targetname: "n145" label: "1" }
-edge: {sourcename: "n142" targetname: "n143" label: "2" }
-node: {title: "n143" label: "ProjIs 1 143" color: yellow info1: "visited: 13
+edge: {sourcename: "n232" targetname: "n237" label: "0" color: blue}
+edge: {sourcename: "n232" targetname: "n235" label: "1" }
+edge: {sourcename: "n232" targetname: "n233" label: "2" }
+node: {title: "n233" label: "ProjIs 1 233" color: yellow info1: "visited: 21
 "}
-edge: {sourcename: "n143" targetname: "n144" label: "0" }
-node: {title: "n145" label: "Sel a 145"  info1: "visited: 13
+edge: {sourcename: "n233" targetname: "n234" label: "0" }
+node: {title: "n235" label: "Sel a 235"  info1: "visited: 21
 Selecting entity of type int
-  from entity of type PRIMA
+  from entity of type PRIMA_INLINE
 "}
-edge: {sourcename: "n145" targetname: "n147" label: "0" color: blue}
-edge: {sourcename: "n145" targetname: "n146" label: "1" }
-node: {title: "n146" label: "ProjP 0 146" color: yellow info1: "visited: 13
+edge: {sourcename: "n235" targetname: "n237" label: "0" color: blue}
+edge: {sourcename: "n235" targetname: "n236" label: "1" }
+node: {title: "n236" label: "ProjP 0 236" color: yellow info1: "visited: 21
 "}
-edge: {sourcename: "n146" targetname: "n144" label: "0" }
+edge: {sourcename: "n236" targetname: "n234" label: "0" }
 }
 
-graph: { title: "n139" label: "139" status:clustered color:yellow
-edge: {sourcename: "n139" targetname: "n138" label: "0" color: red}
-node: {title: "n138" label: "ProjX 0 138" color: yellow info1: "visited: 14
+graph: { title: "n229" label: "229" status:clustered color:yellow
+edge: {sourcename: "n229" targetname: "n228" label: "0" color: red}
+node: {title: "n228" label: "ProjX 0 228" color: yellow info1: "visited: 22
 "}
-edge: {sourcename: "n138" targetname: "n140" label: "0" color: red}
-node: {title: "n140" label: "Start  140" color: blue info1: "visited: 14
+edge: {sourcename: "n228" targetname: "n230" label: "0" color: red}
+node: {title: "n230" label: "Start  230" color: blue info1: "visited: 22
 start of method of type set_a
   param 0 type: class_prima_ptr
   param 1 type: int
 "}
-node: {title: "n144" label: "ProjT 4 144" color: yellow info1: "visited: 14
+node: {title: "n234" label: "ProjT 4 234" color: yellow info1: "visited: 22
 "}
-edge: {sourcename: "n144" targetname: "n140" label: "0" }
-node: {title: "n147" label: "ProjM 1 147" color: yellow info1: "visited: 14
+edge: {sourcename: "n234" targetname: "n230" label: "0" }
+node: {title: "n237" label: "ProjM 1 237" color: yellow info1: "visited: 22
 "}
-edge: {sourcename: "n147" targetname: "n140" label: "0" color: blue}
+edge: {sourcename: "n237" targetname: "n230" label: "0" color: blue}
 }
 
-node: {title: "n150" label: "Bad  150"  info1: "visited: 0
+node: {title: "n240" label: "Bad  240"  info1: "visited: 0
 "}
 node: {title: "e15" label: "ent a" color: yellow
  info1: "
@@ -80,11 +80,11 @@ variability: variability_uninitialized
 volatility:  volatility_non_volatile
 peculiarity: peculiarity_existent
 name:    a
-ld_name: PRIMA_a
+ld_name: PRIMA_INLINE_a
 offset:  -1"
 }
 edge: { sourcename: "e15" targetname: "t12"class: 3 label: "type" color: red}
-node: {title: "t13" label: "class PRIMA" info1: "state: layout_undefined
+node: {title: "t13" label: "class PRIMA_INLINE" info1: "state: layout_undefined
 size: -1B,
 " color: green}
 edge: { sourcename: "t13" targetname: "e15"class: 12 label: "member" color:blue}
@@ -99,13 +99,13 @@ variability: variability_constant
 volatility:  volatility_non_volatile
 peculiarity: peculiarity_existent
 name:    set_a
-ld_name: PRIMA_set_a
+ld_name: PRIMA_INLINE_set_a
 offset:  -1
 irg = g71"
 }
 edge: { sourcename: "e18" targetname: "t16"class: 3 label: "type" color: red}
 edge: { sourcename: "e18" targetname: "n17"label: "value 0"}
-node: {title: "n17" label: "&(PRIMA_set_a)P  17" color: yellow info1: "visited: 2
+node: {title: "n17" label: "&(PRIMA_INLINE_set_a)P  17" color: yellow info1: "visited: 2
 Const of type type_unknown
 "}
 node: {title: "n4" label: "Bad  4"  info1: "visited: 2
@@ -134,13 +134,13 @@ variability: variability_constant
 volatility:  volatility_non_volatile
 peculiarity: peculiarity_existent
 name:    c
-ld_name: PRIMA_c
+ld_name: PRIMA_INLINE_c
 offset:  -1
 irg = g94"
 }
 edge: { sourcename: "e21" targetname: "t19"class: 3 label: "type" color: red}
 edge: { sourcename: "e21" targetname: "n20"label: "value 0"}
-node: {title: "n20" label: "&(PRIMA_c)P  20" color: yellow info1: "visited: 2
+node: {title: "n20" label: "&(PRIMA_INLINE_c)P  20" color: yellow info1: "visited: 2
 Const of type type_unknown
 "}
 node: {title: "t19" label: "method c" info1: "state: layout_fixed,
@@ -153,5 +153,5 @@ edge: { sourcename: "t19" targetname: "t12"class: 6 label: "res 0" color: green}
 node: {title: "t59" label: "class set_aframe_tp" info1: "state: layout_undefined
 size: -1B,
 " color: green}
-edge: { sourcename: "n145" targetname: "e15"class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename: "n235" targetname: "e15"class: 2 priority: 2 linestyle: dotted}
 }

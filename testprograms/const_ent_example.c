@@ -44,7 +44,7 @@ int main(int argc, char **argv)
 {
   ident *Ci, *ai, *fi, *fti, *gi, *gti, *inti, *dipti, *diptpi, *diptpei, *diptei;
       /* suffix i names identifiers */
-  type  *Ct, *intt, *at, *ft, *gt, *diptt, *diptpt;
+  type  *Ct, *intt, *ft, *gt, *diptt, *diptpt;
       /*        t names types       */
   entity *ae, *fe, *ge, *dipte, *diptpe;   /*        e names entities    */
   ir_node *n;
@@ -94,16 +94,12 @@ int main(int argc, char **argv)
   current_ir_graph = get_const_code_irg();
   /* The pointer to the dispatch table is constant. */
   /* The constant is the address of the given entity */
-<<<<<<< const_ent_example.c
   n = new_Const(mode_P, new_tarval_from_entity(dipte, mode_P));
-=======
-  n = new_Const(mode_P, tarval_P_from_entity(dipte));
->>>>>>> 1.7
-  set_entity_variability(diptpe, constant);
+  set_entity_variability(diptpe, variability_constant);
   set_atomic_ent_value(diptpe, n);
 
   /* The entity representing the dispatch table is constant, too. */
-  set_entity_variability(dipte, constant);
+  set_entity_variability(dipte, variability_constant);
   add_compound_ent_value(dipte, get_atomic_ent_value(fe), fe);
   add_compound_ent_value(dipte, get_atomic_ent_value(ge), ge);
 
@@ -125,7 +121,7 @@ int main(int argc, char **argv)
 
   /** The constant array entity **/
   arre = new_entity(get_glob_type(), arrei, arrt);
-  set_entity_variability(arre, constant);
+  set_entity_variability(arre, variability_constant);
   current_ir_graph = get_const_code_irg();
   n = new_Const(mode_Is, new_tarval_from_long (7, mode_Is));
   add_compound_ent_value(arre, n, arrelte);

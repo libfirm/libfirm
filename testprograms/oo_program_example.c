@@ -244,6 +244,9 @@ main(void)
   }
 
   printf("Dumping graphs of all procedures and a type graph.\n");
+  /* Touch ld names to distinguish names from oo_inline names. */
+  get_entity_ld_ident(proc_set_a_e);
+  get_entity_ld_ident(proc_c_e);
   dump_all_ir_graphs(dump_ir_block_graph);
   dump_all_ir_graphs(dump_ir_block_graph_w_types);
   dump_all_types();

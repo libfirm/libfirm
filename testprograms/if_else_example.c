@@ -46,7 +46,7 @@ int main(int argc, char **argv)
   entity   *ent;       /* represents this method as entity of owner */
   ir_node  *x, *x_then, *x_else, *c0, *c1, *c2, *cmpGt, *f, *t, *b;
 
-  printf("\ncreating an IR graph: IF_ELSE_EXAMPLE...\n");
+  printf("\nCreating an IR graph: IF_ELSE_EXAMPLE...\n");
 
   /* init library */
   init_firm (NULL);
@@ -136,7 +136,7 @@ int main(int argc, char **argv)
 
   finalize_cons (irg);
 
-  printf("\nOptimizing ...\n");
+  printf("Optimizing ...\n");
   local_optimize_graph(irg);
   dead_node_elimination(irg);
 

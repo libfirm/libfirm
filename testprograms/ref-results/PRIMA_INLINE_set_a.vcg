@@ -1,4 +1,4 @@
-graph: { title: "ir graph of set_a"
+graph: { title: "ir graph of PRIMA_INLINE_set_a"
 display_edge_labels: no
 layoutalgorithm: mindepth
 manhattan_edges: yes
@@ -42,7 +42,7 @@ node: {title: "n233" label: "ProjIs 1 233" color: yellow info1: "visited: 17
 edge: {sourcename: "n233" targetname: "n234" label: "0" }
 node: {title: "n235" label: "Sel a 235"  info1: "visited: 17
 Selecting entity of type int
-  from entity of type PRIMA
+  from entity of type PRIMA_INLINE
 "}
 edge: {sourcename: "n235" targetname: "n237" label: "0" color: blue}
 edge: {sourcename: "n235" targetname: "n236" label: "1" }

@@ -21,106 +21,37 @@ node: {title: "t12" label: "primitive int" info1: "state: layout_fixed,
 mode: Is,
 size: 4B,
 "}
-node: {title: "t13" label: "class PRIMA" info1: "state: layout_undefined
+node: {title: "t13" label: "method main_tp" info1: "state: layout_fixed,
+mode: P,
+size: 4B,
+"}
+edge: { sourcename: "t13" targetname: "t12"class: 5 label: "param 0" color: green}
+edge: { sourcename: "t13" targetname: "t12"class: 6 label: "res 0" color: green}
+node: {title: "t14" label: "class WHILE_EXAMPLE" info1: "state: layout_undefined
 size: -1B,
 " color: green}
-edge: { sourcename: "t13" targetname: "e15"class: 12 label: "member" color:blue}
-edge: { sourcename: "t13" targetname: "e18"class: 12 label: "member" color:blue}
-edge: { sourcename: "t13" targetname: "e21"class: 12 label: "member" color:blue}
-node: {title: "e15" label: "ent a" color: yellow
+edge: { sourcename: "t14" targetname: "e16"class: 12 label: "member" color:blue}
+node: {title: "e16" label: "ent main" color: yellow
  info1: "
-id: e15
-allocation:  allocation_automatic
-visibility:  visibility_local
-variability: variability_uninitialized
-volatility:  volatility_non_volatile
-peculiarity: peculiarity_existent
-name:    a
-ld_name: PRIMA_a
-offset:  -1"
-}
-edge: { sourcename: "e15" targetname: "t12"class: 3 label: "type" color: red}
-node: {title: "e18" label: "ent set_a" color: yellow
- info1: "
-id: e18
+id: e16
 allocation:  allocation_static
 visibility:  visibility_local
 variability: variability_constant
 volatility:  volatility_non_volatile
 peculiarity: peculiarity_existent
-name:    set_a
-ld_name: PRIMA_set_a
+name:    main
+ld_name: WHILE_EXAMPLE_main
 offset:  -1
-irg = g71"
+irg = g29"
 }
-edge: { sourcename: "e18" targetname: "t16"class: 3 label: "type" color: red}
-edge: { sourcename: "e18" targetname: "n17"label: "value 0"}
-node: {title: "n17" label: "&(PRIMA_set_a)P  17" color: yellow info1: "visited: 4
+edge: { sourcename: "e16" targetname: "t13"class: 3 label: "type" color: red}
+edge: { sourcename: "e16" targetname: "n15"label: "value 0"}
+node: {title: "n15" label: "&(WHILE_EXAMPLE_main)P  15" color: yellow info1: "visited: 1
 Const of type type_unknown
 "}
-node: {title: "n4" label: "Bad  4"  info1: "visited: 4
+node: {title: "n4" label: "Bad  4"  info1: "visited: 1
 "}
-node: {title: "t16" label: "method set_a" info1: "state: layout_fixed,
-mode: P,
-size: 4B,
-"}
-edge: { sourcename: "t16" targetname: "t14"class: 5 label: "param 0" color: green}
-edge: { sourcename: "t16" targetname: "t12"class: 5 label: "param 1" color: green}
-node: {title: "t14" label: "pointer class_prima_ptr" info1: "state: layout_fixed,
-mode: P,
-size: 4B,
-"}
-edge: { sourcename: "t14" targetname: "t13"class: 9 label: "points to" color:green}
-node: {title: "e21" label: "ent c" color: yellow
- info1: "
-id: e21
-allocation:  allocation_static
-visibility:  visibility_local
-variability: variability_constant
-volatility:  volatility_non_volatile
-peculiarity: peculiarity_existent
-name:    c
-ld_name: PRIMA_c
-offset:  -1
-irg = g94"
-}
-edge: { sourcename: "e21" targetname: "t19"class: 3 label: "type" color: red}
-edge: { sourcename: "e21" targetname: "n20"label: "value 0"}
-node: {title: "n20" label: "&(PRIMA_c)P  20" color: yellow info1: "visited: 4
-Const of type type_unknown
-"}
-node: {title: "t19" label: "method c" info1: "state: layout_fixed,
-mode: P,
-size: 4B,
-"}
-edge: { sourcename: "t19" targetname: "t14"class: 5 label: "param 0" color: green}
-edge: { sourcename: "t19" targetname: "t12"class: 5 label: "param 1" color: green}
-edge: { sourcename: "t19" targetname: "t12"class: 6 label: "res 0" color: green}
-node: {title: "t22" label: "method OO_INLINE_EXAMPLE_main" info1: "state: layout_fixed,
-mode: P,
-size: 4B,
-"}
-edge: { sourcename: "t22" targetname: "t12"class: 6 label: "res 0" color: green}
 node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1B,
 " color: green}
-edge: { sourcename: "t0" targetname: "e24"class: 12 label: "member" color:blue}
-node: {title: "e24" label: "ent OO_INLINE_EXAMPLE_main" color: yellow
- info1: "
-id: e24
-allocation:  allocation_static
-visibility:  visibility_local
-variability: variability_constant
-volatility:  volatility_non_volatile
-peculiarity: peculiarity_existent
-name:    OO_INLINE_EXAMPLE_main
-ld_name: GlobalType_OO_INLINE_EXAMPLE_main
-offset:  -1
-irg = g37"
-}
-edge: { sourcename: "e24" targetname: "t22"class: 3 label: "type" color: red}
-edge: { sourcename: "e24" targetname: "n23"label: "value 0"}
-node: {title: "n23" label: "&(GlobalType_OO_INLINE_EXAMPLE_main)P  23" color: yellow info1: "visited: 4
-Const of type type_unknown
-"}
 }

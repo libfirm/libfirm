@@ -46,7 +46,7 @@ edge: {sourcename: "n207" targetname: "n208" label: "0" }
 edge: {sourcename: "n207" targetname: "n206" label: "1" }
 node: {title: "n210" label: "Sel a 210"  info1: "visited: 22
 Selecting entity of type int
-  from entity of type PRIMA
+  from entity of type PRIMA_INLINE
 "}
 edge: {sourcename: "n210" targetname: "n204" label: "0" color: blue}
 edge: {sourcename: "n210" targetname: "n211" label: "1" }
@@ -63,7 +63,7 @@ node: {title: "n211" label: "ProjP 2 211" color: yellow info1: "visited: 23
 "}
 edge: {sourcename: "n211" targetname: "n212" label: "0" }
 node: {title: "n212" label: "Alloc  212"  info1: "visited: 23
-allocating entity of type PRIMA
+allocating entity of type PRIMA_INLINE
 "}
 edge: {sourcename: "n212" targetname: "n214" label: "0" color: blue}
 edge: {sourcename: "n212" targetname: "n213" label: "1" }
@@ -77,7 +77,7 @@ edge: {sourcename: "n216" targetname: "n218" label: "1" }
 edge: {sourcename: "n216" targetname: "n217" label: "2" }
 node: {title: "n218" label: "Sel a 218"  info1: "visited: 23
 Selecting entity of type int
-  from entity of type PRIMA
+  from entity of type PRIMA_INLINE
 "}
 edge: {sourcename: "n218" targetname: "n219" label: "0" color: blue}
 edge: {sourcename: "n218" targetname: "n211" label: "1" }
@@ -97,7 +97,7 @@ start of method of type OO_INLINE_EXAMPLE_main
 node: {title: "n209" label: "0x5Is  209" color: yellow info1: "visited: 24
 Const of type type_unknown
 "}
-node: {title: "n213" label: "SymC PRIMA size  213"  info1: "visited: 24
+node: {title: "n213" label: "SymC PRIMA_INLINE size  213"  info1: "visited: 24
 "}
 node: {title: "n214" label: "ProjM 1 214" color: yellow info1: "visited: 24
 "}

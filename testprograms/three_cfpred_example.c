@@ -75,7 +75,7 @@ int main(int argc, char **argv)
 #define METHODNAME "THREE_CFPRED_EXAMPLE_main"
 #define NRARGS 1
 #define NRES 1
-  printf("\nCreating an IR graph: ...\n");
+  printf("\nCreating an IR graph: THREE_CFPRED_EXAMPLE ...\n");
 
   owner = get_glob_type();
   proc_main = new_type_method(id_from_str(METHODNAME, strlen(METHODNAME)),

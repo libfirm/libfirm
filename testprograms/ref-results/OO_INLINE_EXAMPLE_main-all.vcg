@@ -46,7 +46,7 @@ edge: {sourcename: "n207" targetname: "n208" label: "0" }
 edge: {sourcename: "n207" targetname: "n206" label: "1" }
 node: {title: "n210" label: "Sel a 210"  info1: "visited: 27
 Selecting entity of type int
-  from entity of type PRIMA
+  from entity of type PRIMA_INLINE
 "}
 edge: {sourcename: "n210" targetname: "n204" label: "0" color: blue}
 edge: {sourcename: "n210" targetname: "n211" label: "1" }
@@ -63,7 +63,7 @@ node: {title: "n211" label: "ProjP 2 211" color: yellow info1: "visited: 28
 "}
 edge: {sourcename: "n211" targetname: "n212" label: "0" }
 node: {title: "n212" label: "Alloc  212"  info1: "visited: 28
-allocating entity of type PRIMA
+allocating entity of type PRIMA_INLINE
 "}
 edge: {sourcename: "n212" targetname: "n214" label: "0" color: blue}
 edge: {sourcename: "n212" targetname: "n213" label: "1" }
@@ -77,7 +77,7 @@ edge: {sourcename: "n216" targetname: "n218" label: "1" }
 edge: {sourcename: "n216" targetname: "n217" label: "2" }
 node: {title: "n218" label: "Sel a 218"  info1: "visited: 28
 Selecting entity of type int
-  from entity of type PRIMA
+  from entity of type PRIMA_INLINE
 "}
 edge: {sourcename: "n218" targetname: "n219" label: "0" color: blue}
 edge: {sourcename: "n218" targetname: "n211" label: "1" }
@@ -97,7 +97,7 @@ start of method of type OO_INLINE_EXAMPLE_main
 node: {title: "n209" label: "0x5Is  209" color: yellow info1: "visited: 29
 Const of type type_unknown
 "}
-node: {title: "n213" label: "SymC PRIMA size  213"  info1: "visited: 29
+node: {title: "n213" label: "SymC PRIMA_INLINE size  213"  info1: "visited: 29
 "}
 node: {title: "n214" label: "ProjM 1 214" color: yellow info1: "visited: 29
 "}
@@ -118,11 +118,11 @@ variability: variability_uninitialized
 volatility:  volatility_non_volatile
 peculiarity: peculiarity_existent
 name:    a
-ld_name: PRIMA_a
+ld_name: PRIMA_INLINE_a
 offset:  -1"
 }
 edge: { sourcename: "e15" targetname: "t12"class: 3 label: "type" color: red}
-node: {title: "t13" label: "class PRIMA" info1: "state: layout_undefined
+node: {title: "t13" label: "class PRIMA_INLINE" info1: "state: layout_undefined
 size: -1B,
 " color: green}
 edge: { sourcename: "t13" targetname: "e15"class: 12 label: "member" color:blue}
@@ -137,13 +137,13 @@ variability: variability_constant
 volatility:  volatility_non_volatile
 peculiarity: peculiarity_existent
 name:    set_a
-ld_name: PRIMA_set_a
+ld_name: PRIMA_INLINE_set_a
 offset:  -1
 irg = g71"
 }
 edge: { sourcename: "e18" targetname: "t16"class: 3 label: "type" color: red}
 edge: { sourcename: "e18" targetname: "n17"label: "value 0"}
-node: {title: "n17" label: "&(PRIMA_set_a)P  17" color: yellow info1: "visited: 1
+node: {title: "n17" label: "&(PRIMA_INLINE_set_a)P  17" color: yellow info1: "visited: 1
 Const of type type_unknown
 "}
 node: {title: "n4" label: "Bad  4"  info1: "visited: 1
@@ -172,13 +172,13 @@ variability: variability_constant
 volatility:  volatility_non_volatile
 peculiarity: peculiarity_existent
 name:    c
-ld_name: PRIMA_c
+ld_name: PRIMA_INLINE_c
 offset:  -1
 irg = g94"
 }
 edge: { sourcename: "e21" targetname: "t19"class: 3 label: "type" color: red}
 edge: { sourcename: "e21" targetname: "n20"label: "value 0"}
-node: {title: "n20" label: "&(PRIMA_c)P  20" color: yellow info1: "visited: 1
+node: {title: "n20" label: "&(PRIMA_INLINE_c)P  20" color: yellow info1: "visited: 1
 Const of type type_unknown
 "}
 node: {title: "t19" label: "method c" info1: "state: layout_fixed,
