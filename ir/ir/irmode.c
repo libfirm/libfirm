@@ -35,27 +35,29 @@ ir_mode *mode_Z;
 void
 init_mode (void)
 {
-  /* allocate all modes */
-  mode_T = (ir_mode *) malloc (sizeof (ir_mode));
-  mode_f = (ir_mode *) malloc (sizeof (ir_mode));
-  mode_d = (ir_mode *) malloc (sizeof (ir_mode));
-  mode_c = (ir_mode *) malloc (sizeof (ir_mode));
-  mode_C = (ir_mode *) malloc (sizeof (ir_mode));
-  mode_h = (ir_mode *) malloc (sizeof (ir_mode));
-  mode_H = (ir_mode *) malloc (sizeof (ir_mode));
-  mode_i = (ir_mode *) malloc (sizeof (ir_mode));
-  mode_I = (ir_mode *) malloc (sizeof (ir_mode));
-  mode_l = (ir_mode *) malloc (sizeof (ir_mode));
-  mode_L = (ir_mode *) malloc (sizeof (ir_mode));
-  mode_B = (ir_mode *) malloc (sizeof (ir_mode));
-  mode_b = (ir_mode *) malloc (sizeof (ir_mode));
-  mode_p = (ir_mode *) malloc (sizeof (ir_mode));
-  mode_s = (ir_mode *) malloc (sizeof (ir_mode));
-  mode_S = (ir_mode *) malloc (sizeof (ir_mode));
-  mode_X = (ir_mode *) malloc (sizeof (ir_mode));
-  mode_M = (ir_mode *) malloc (sizeof (ir_mode));
-  mode_R = (ir_mode *) malloc (sizeof (ir_mode));
-  mode_Z = (ir_mode *) malloc (sizeof (ir_mode));
+  /* allocate all modes. We need to memset them as tarval_vrfy
+     reads fields before they are initialized: It compares to
+     min/max when tarvals for min/max are allocated!  */
+  mode_T = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_T, 0, sizeof(ir_mode));
+  mode_f = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_f, 0, sizeof(ir_mode));
+  mode_d = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_d, 0, sizeof(ir_mode));
+  mode_c = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_c, 0, sizeof(ir_mode));
+  mode_C = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_C, 0, sizeof(ir_mode));
+  mode_h = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_h, 0, sizeof(ir_mode));
+  mode_H = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_H, 0, sizeof(ir_mode));
+  mode_i = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_i, 0, sizeof(ir_mode));
+  mode_I = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_I, 0, sizeof(ir_mode));
+  mode_l = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_l, 0, sizeof(ir_mode));
+  mode_L = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_L, 0, sizeof(ir_mode));
+  mode_B = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_B, 0, sizeof(ir_mode));
+  mode_b = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_b, 0, sizeof(ir_mode));
+  mode_p = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_p, 0, sizeof(ir_mode));
+  mode_s = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_s, 0, sizeof(ir_mode));
+  mode_S = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_S, 0, sizeof(ir_mode));
+  mode_X = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_X, 0, sizeof(ir_mode));
+  mode_M = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_M, 0, sizeof(ir_mode));
+  mode_R = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_R, 0, sizeof(ir_mode));
+  mode_Z = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_Z, 0, sizeof(ir_mode));
 
   mode_T->code = irm_T;
   mode_f->code = irm_f;

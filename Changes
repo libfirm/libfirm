@@ -1,6 +1,9 @@
   20.12.2000 Goetz
-  external to declaration of irp
-  typedef before pns and pnc_number.
+  Added external to declaration of irp.
+  Added typedef before pns and pnc_number.
+  irmode.c, init_mode(): We need to memset all new modes as
+  tarval_vrfy reads fields before they are initialized: It
+  compares to min/max when tarvals for min/max are allocated!
 
   18.12.2000 Goetz
   Changed parameter of Methods in type.h and type.c from
