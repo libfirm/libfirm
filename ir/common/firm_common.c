@@ -18,6 +18,7 @@
 #include "firm_common_t.h"
 #include "irgraph.h"
 #include "irloop.h"
+#include "tv.h"
 
 /**
  * Ideally, this macro would check if size bytes could be read at
