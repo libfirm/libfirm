@@ -23,6 +23,8 @@
 #include "ident_t.h"
 #include "set.h"
 
+typedef const struct set_entry ident_s;
+
 /** The current ident module implementation. */
 static ident_if_t impl;
 
