@@ -102,8 +102,8 @@ tp_opcode   get_type_tpop_code(type *tp);
 ir_mode*    get_type_mode(type *tp);
 void        set_type_mode(type *tp, ir_mode* m);
 
-ident*      get_type_nameid(type *tp);
-void        set_type_nameid(type *tp, ident* id);
+ident*      get_type_ident(type *tp);
+void        set_type_ident(type *tp, ident* id);
 const char* get_type_name(type *tp);
 
 int         get_type_size(type *tp);

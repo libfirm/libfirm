@@ -100,18 +100,22 @@ ident*      get_type_tpop_nameid(type *tp) {
   assert(tp);
   return tp->type_op->name;
 }
+
 const char* get_type_tpop_name(type *tp) {
   assert(tp);
   return id_to_str(tp->type_op->name);
 }
+
 tp_opcode    get_type_tpop_code(type *tp) {
   assert(tp);
   return tp->type_op->code;
 }
+
 ir_mode*    get_type_mode(type *tp) {
   assert(tp);
   return tp->mode;
 }
+
 void        set_type_mode(type *tp, ir_mode* m) {
   assert(tp);
   tp->mode = m;
@@ -119,18 +123,22 @@ void        set_type_mode(type *tp, ir_mode* m) {
   if ((tp->type_op == type_pointer) || (tp->type_op == type_primitive))
     tp->size == get_mode_size(m);
 }
-ident*      get_type_nameid(type *tp) {
+
+ident*      get_type_ident(type *tp) {
   assert(tp);
   return tp->name;
 }
-void        set_type_nameid(type *tp, ident* id) {
+
+void        set_type_ident(type *tp, ident* id) {
   assert(tp);
   tp->name = id;
 }
+
 const char* get_type_name(type *tp) {
   assert(tp);
   return id_to_str(tp->name);
 }
+
 int         get_type_size(type *tp) {
   assert(tp);
   return tp->size;

@@ -147,7 +147,7 @@ ir_node_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
     XPF1 ("%I", get_irn_mode(np)->name);
     XPC  (" ");
     XP   (symconst_name_arr[get_irn_symconst_attr(np).num]);
-    XPF1 (" %#N", get_type_nameid(get_SymConst_type(np)));
+    XPF1 (" %#N", get_type_ident(get_SymConst_type(np)));
     break;
   case iro_Start:		/* don't dump mode of these */
   case iro_Cond:

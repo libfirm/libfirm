@@ -79,8 +79,8 @@ dump_node_opcode (ir_node *n)
       xfprintf (F, "%I", get_SymConst_ptrinfo(n));
     } else {
       assert(get_kind(get_SymConst_type(n)) == k_type);
-      assert(get_type_nameid(get_SymConst_type(n)));
-      xfprintf (F, "%s ", id_to_str(get_type_nameid(get_SymConst_type(n))));
+      assert(get_type_ident(get_SymConst_type(n)));
+      xfprintf (F, "%s ", id_to_str(get_type_ident(get_SymConst_type(n))));
       if (get_SymConst_kind == type_tag)
 	xfprintf (F, "tag");
       else
@@ -323,7 +323,7 @@ dump_ir_node (ir_node *n)
     break;
   case iro_SymConst:
     assert(get_kind(get_SymConst_type(n)) == k_type);
-    assert(get_type_nameid(get_SymConst_type(n)));
+    assert(get_type_ident(get_SymConst_type(n)));
     xfprintf (F, "\"%s ", get_type_name(get_SymConst_type(n)));
     switch (n->attr.i.num){
     case type_tag:
@@ -512,7 +512,7 @@ dump_type_info (type_or_ent *tore, void *env) {
     {
       /* why can't I cast here??? @@@ */
       type *type = tore;
-      xfprintf (F, "\"%I %I", get_type_tpop_nameid(type), get_type_nameid(type));
+      xfprintf (F, "\"%I %I", get_type_tpop_nameid(type), get_type_ident(type));
 
       switch (get_type_tpop_code(type)) {
       case tpo_class:
