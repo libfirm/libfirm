@@ -37,8 +37,6 @@
 # include "irloop.h"
 # include "array.h"
 
-# include "exc.h"
-
 #include "set.h"
 #include "entity_t.h"
 #include "type_t.h"
@@ -224,16 +222,16 @@ struct ir_node {
   struct ir_node **in;     /**< array with predecessors / operands */
   void *link;              /**< to attach additional information to the node, e.g.
                               used while construction to link Phi0 nodes and
-                  during optimization to link to nodes that
-                  shall replace a node. */
+			      during optimization to link to nodes that
+			      shall replace a node. */
   /* ------- Fields for optimizations / analysis information ------- */
   struct ir_node **out;    /**< array of out edges */
   struct dbg_info* dbi;    /**< A pointer to information for debug support. */
   /* ------- For debugging ------- */
 #ifdef DEBUG_libfirm
-  int out_valid;                /** < indicate that out edges are valid */
+  int out_valid;           /** < indicate that out edges are valid */
   int node_nr;             /**< a unique node number for each node to make output
-                  readable. */
+			      readable. */
 #endif
   /* ------- For analyses -------- */
   ir_loop *loop;           /**< the loop the node is in. Access routines in irloop.h */
@@ -245,6 +243,7 @@ struct ir_node {
   attr attr;               /**< attribute of this node. Depends on opcode.
                               Must be last field of struct ir_node. */
 };
+
 
 /** Copies all attributes stored in the old node  to the new node.
     Assumes both have the same opcode and sufficient size. */
