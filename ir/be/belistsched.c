@@ -289,6 +289,10 @@ static void list_sched_block(ir_node *block, void *env_ptr)
     for(i = 0, n = get_irn_n_outs(block); i < n; ++i) {
         ir_node *irn = get_irn_out(block, i);
 
+				/* Skip the end node because of keepalive edges. */
+				if(get_irn_opcode(irn) == iro_End)
+					continue;
+
         /* Phi functions are scheduled immediately, since they only transfer
          * data flow from the predecessors to this block. */
         if(is_Phi(irn)) {
