@@ -5,17 +5,27 @@
 
 # include "entity.h"
 
+/* Initialise the RTA data structures and perform RTA */
 void rta_init(int verbose);
+/* Delete all graphs that have been found to be dead */
+void rta_delete_dead_graphs (void);
+/* Clean up our data structures */
 void rta_cleanup(void);
 
+/* Inquire whether the given class is live */
 int rta_is_alive_class(type *clazz);
+/* Inquire whether the given graph is alive */
 int rta_is_alive_graph(ir_graph *graph);
+/* Inquire whether the given field is alive */
 int rta_is_alive_field(entity *field);
 
 #endif /* def _RTA_H_ */
 
 /*
  * $Log$
+ * Revision 1.5  2004/06/17 08:33:01  liekweg
+ * Added comments; added remove_irg
+ *
  * Revision 1.4  2004/06/15 11:44:54  beck
  * New inlining schema implemented:
  *
