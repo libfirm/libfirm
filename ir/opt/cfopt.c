@@ -22,6 +22,8 @@
 #include "ircons.h"
 #include "iropt_t.h"
 #include "irgwalk.h"
+#include "irgmod.h"
+#include "irdump.h"
 #include "irvrfy.h"
 
 #include "array.h"
