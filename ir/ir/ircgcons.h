@@ -2,7 +2,7 @@
  * $Id$
  * -------------------------------------------------------------------
  * Auf- und Abbau der interprozeduralen Darstellung (Explizite
- * interprozedurale Abhängigkeiten).
+ * interprozedurale Abhaengigkeiten).
  *
  * Erstellt: Hubert Schmid, 09.06.2002
  * ---------------------------------------------------------------- */
@@ -21,7 +21,7 @@ void cg_construct(int arr_len, entity *free_methods_arr[]);
 
 
 /* Abbau der interprozeduralen (Sichten-) Darstellung, in eine
- * gewöhnliche intraprozedurale Darstellung */
+ * gewoehnliche intraprozedurale Darstellung */
 void cg_destruct(void);
 
 

@@ -2,7 +2,7 @@
  * $Id$
  * -------------------------------------------------------------------
  * Entfernen von nicht erreichbaren (aufrufbaren) Methoden. Die Menge
- * der nicht erreichbaren Methoden wird aus der Abschätzung der
+ * der nicht erreichbaren Methoden wird aus der Abschaetzung der
  * Aufrufrelation bestimmt.
  *
  * Erstellt: Hubert Schmid, 09.06.2002
@@ -17,10 +17,10 @@
 
 
 /* Entfernt alle Methoden, die von den Methoden aus "keep_arr"
- * (bezgl. der Abschätzung get_Call_callee) nicht erreichbar sind. Die
- * Abschätzung der Aufrufrelation muss entsprechend an den
+ * (bezgl. der Abschaetzung get_Call_callee) nicht erreichbar sind. Die
+ * Abschaetzung der Aufrufrelation muss entsprechend an den
  * Call-Operationen gespeichert sein. Die "entity->link"s werden dabei
- * überschrieben. */
+ * ueberschrieben. */
 void gc_irgs(int n_keep, entity *keep_arr[]);
 
 

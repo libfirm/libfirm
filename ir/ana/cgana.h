@@ -1,8 +1,8 @@
 /* -------------------------------------------------------------------
  * $Id$
  * -------------------------------------------------------------------
- * Intraprozedurale Analyse zur Abschätzung der Aufrulrelation. Es
- * wird eine Menge von freien Methoden und anschließend die an den
+ * Intraprozedurale Analyse zur Abschaetzung der Aufrulrelation. Es
+ * wird eine Menge von freien Methoden und anschliessend die an den
  * Call-Operationen aufrufbaren Methoden bestimmt.
  *
  * Erstellt: Hubert Schmid, 09.06.2002
@@ -19,24 +19,24 @@
 /* Methoden sind "frei", wenn ihr Funktionszeiger (potentiell)
  *"explizit" bekannt ist, d.h.:
  *
- * - die Methode ist von außen sichtbar (external_visible).
+ * - die Methode ist von aussen sichtbar (external_visible).
  *
  * - ihr Funktionszeiger ist "frei", d.h. der Funktionszeiger wurde
- *   nicht ausschließlich an den entsprechenden Eingang eines
+ *   nicht ausschliesslich an den entsprechenden Eingang eines
  *   Call-Knotens weitergegeben, sondern z.B. in den Speicher
- *   geschrieben, als Parameter übergeben, ...
+ *   geschrieben, als Parameter uebergeben, ...
  *
  * Die main-Methode ist immer in der Menge enthalten.
  *
- * Die Links an den "ir_node"s werden gelöscht. */
+ * Die Links an den "ir_node"s werden geloescht. */
 
 
 
 /* Analyses a rough estimation of the possible call graph.
- * Bestimmt für jede Call-Operation die Menge der aufrufbaren Methode
+ * Bestimmt fuer jede Call-Operation die Menge der aufrufbaren Methode
  * und speichert das Ergebnis in der Call-Operation. (siehe
  * "set_Call_callee"). Die Methode gibt die Menge der
- * "freien" Methoden zurück, die vom Aufrufer wieder freigegeben
+ * "freien" Methoden zurueck, die vom Aufrufer wieder freigegeben
  * werden muss (free).
  * The algorithm implements roughly Static Class Hierarchy Analysis
  * as described in "Optimization of Object-Oriented Programs Using
