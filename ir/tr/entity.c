@@ -580,8 +580,9 @@ remove_compound_ent_value(entity *ent, entity *value_ent) {
 
 INLINE void
 add_compound_ent_value(entity *ent, ir_node *val, entity *member) {
+  compound_graph_path *path;
   assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
-  compound_graph_path *path = new_compound_graph_path(get_entity_owner(ent), 1);
+  path = new_compound_graph_path(get_entity_owner(ent), 1);
   path->nodes[0] = member;
   add_compound_ent_value_w_path(ent, val, path);
 }
