@@ -114,7 +114,6 @@ void local_optimize_node(ir_node *n) {
   do_local_optimize(n);
 
   current_ir_graph = rem;
-
 }
 
 void
@@ -524,6 +523,7 @@ dead_node_elimination(ir_graph *irg) {
   assert(get_irg_phase_state(current_ir_graph) != phase_building);
   free_callee_info(current_ir_graph);
   free_outs(current_ir_graph);
+  free_trouts();
   /* @@@ so far we loose loops when copying */
   free_loop_information(current_ir_graph);
 

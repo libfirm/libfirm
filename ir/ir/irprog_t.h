@@ -14,8 +14,8 @@
  * @file irprog_t.h
  */
 
-# ifndef _IRPROG_T_H_
-# define _IRPROG_T_H_
+#ifndef _IRPROG_T_H_
+#define _IRPROG_T_H_
 
 #ifdef HAVE_CONFIG_H
 #include "firm_config.h"
@@ -27,6 +27,7 @@
 #include "ircgcons.h"
 #include "firm_common_t.h"
 #include "typegmod.h"
+#include "irtypeinfo.h"
 
 #include "callgraph.h"
 
@@ -52,13 +53,14 @@ struct ir_prog {
 
   ip_view_state ip_view;          /**< State of interprocedural view. */
 
-  irg_outs_state outs_state;      /**< Out edges. */
+  irg_outs_state outs_state;      /**< State of out edges of ir nodes. */
   ir_node **ip_outedges;          /**< Huge Array that contains all out edges
 				       in interprocedural view. */
+  irg_outs_state trouts_state;    /**< State of out edges of type information. */
 
   irg_callee_info_state callee_info_state; /**< Validity of callee information.
-				            Contains the lowest value or all irgs.  */
-
+					      Contains the lowest value or all irgs.  */
+  ir_typeinfo_state typeinfo_state;    /**< Validity of type information. */
 
   irp_callgraph_state callgraph_state; /**< State of the callgraph. */
   struct ir_loop *outermost_cg_loop;   /**< For callgraph analysis: entry point

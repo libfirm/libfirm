@@ -563,6 +563,7 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
                        "Node is not stored on proper IR graph!", 0,
                        show_node_on_graph(irg, n);
                        );
+    assert(get_irn_irg(n) == irg);
   }
 
   opcode = get_irn_opcode(n);

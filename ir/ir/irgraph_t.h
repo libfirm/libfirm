@@ -84,7 +84,7 @@ struct ir_graph {
   op_pin_state op_pin_state_pinned;  /**< Flag for status of nodes */
   irg_outs_state outs_state;         /**< Out edges. */
   irg_dom_state dom_state;           /**< Dominator information */
-  irg_typeinfo_state typeinfo_state;       /**< Validity of type information */
+  ir_typeinfo_state typeinfo_state;        /**< Validity of type information */
   irg_callee_info_state callee_info_state; /**< Validity of callee information */
   irg_inline_property inline_property;     /**< How to handle inlineing. */
   irg_loopinfo_state loopinfo_state;       /**< state of loop information */

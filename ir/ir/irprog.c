@@ -80,8 +80,9 @@ ir_prog *new_ir_prog (void) {
 
   res->const_code_irg = new_const_code_irg();
 
-  res->outs_state = outs_none;
-  res->ip_outedges = NULL;
+  res->outs_state   = outs_none;
+  res->ip_outedges  = NULL;
+  res->trouts_state = outs_none;
 
   return res;
 }

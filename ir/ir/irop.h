@@ -11,16 +11,16 @@
  */
 
 /**
-* @file irop.h
-*
-* Operators of firm nodes.
-*
-* @author Christian Schaefer
-*
-*  This module specifies the opcodes possible for ir nodes.  Their
-*  definition is close to the operations specified in UKA Tech-Report
-*  1999-14
-*/
+ * @file irop.h
+ *
+ * Operators of firm nodes.
+ *
+ * @author Christian Schaefer
+ *
+ *  This module specifies the opcodes possible for ir nodes.  Their
+ *  definition is close to the operations specified in UKA Tech-Report
+ *  1999-14
+ */
 
 # ifndef _IROP_H_
 # define _IROP_H_

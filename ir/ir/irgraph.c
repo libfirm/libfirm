@@ -171,7 +171,8 @@ new_r_ir_graph (entity *ent, int n_loc)
   res->op_pin_state_pinned = op_pin_state_pinned;
   res->outs_state     = outs_none;
   res->dom_state      = dom_none;
-  res->typeinfo_state = irg_typeinfo_none;
+  res->typeinfo_state = ir_typeinfo_none;
+  set_irp_typeinfo_inconsistent();           /* there is a new graph with typeinfo_none. */
   res->loopinfo_state = loopinfo_none;
 
   /*-- Type information for the procedure of the graph --*/
