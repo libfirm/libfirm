@@ -22,13 +22,304 @@
 #include "irprog_t.h"
 #include "entity_t.h"
 #include "trouts.h"
+#include "irgwalk.h"
 
 #include "field_temperature.h"
 
-#define MY_SIZE 32     /* Size of an array that actually should be computed. */
+#define MY_SIZE 1024     /* Size of an array that actually should be computed. */
 
 int dump_node_opcode(FILE *F, ir_node *n); /* from irdump.c */
 
+
+/* Just opens a file, mangling a file name.
+ *
+ * The name consists of the following parts:
+ *
+ * @arg basename  The basis of the name telling about the content.
+ * @arg
+ *
+ */
+static FILE *text_open (const char *basename, const char * suffix1, const char *suffix2, const char *suffix3) {
+  FILE *F;
+  int len = strlen(basename), i, j;
+  char *fname;  /* filename to put the vcg information in */
+
+  if (!basename) assert(basename);
+  if (!suffix1) suffix1 = "";
+  if (!suffix2) suffix2 = "";
+  if (!suffix3) suffix3 = ".txt";
+
+  /* open file for vcg graph */
+  fname = malloc (strlen(basename)*2 + strlen(suffix1) + strlen(suffix2) + 5); /* *2: space for excapes. */
+
+  j = 0;
+  for (i = 0; i < len; ++i) {  /* replase '/' in the name: escape by @. */
+    if (basename[i] == '/') {
+      fname[j] = '@'; j++; fname[j] = '1'; j++;
+    } else if (basename[i] == '@') {
+      fname[j] = '@'; j++; fname[j] = '2'; j++;
+    } else {
+      fname[j] = basename[i]; j++;
+    }
+  }
+  fname[j] = '\0';
+  strcat (fname, suffix1);  /* append file suffix */
+  strcat (fname, suffix2);  /* append file suffix */
+  strcat (fname, suffix3);  /* append the .txt suffix */
+
+  F = fopen (fname, "w");   /* open file for writing */
+  if (!F) {
+    assert(0);
+  }
+  free(fname);
+
+  return F;
+}
+
+int dump_irnode_to_file(FILE *F, ir_node *n) {
+  int i, bad = 0;
+  char comma;
+  ir_graph *irg;
+
+  dump_node_opcode(F, n);
+  fprintf(F, " %ld\n", get_irn_node_nr(n));
+
+  if (opt_dump_pointer_values_to_info)
+    fprintf (F, "  addr:    %p \n", (void *)n);
+  fprintf (F, "  mode:    %s\n", get_mode_name(get_irn_mode(n)));
+  fprintf (F, "  visited: %ld \n", get_irn_visited(n));
+  irg = get_irn_irg(n);
+  if (irg != get_const_code_irg())
+    fprintf (F, "  irg:     %s\n", get_ent_dump_name(get_irg_entity(irg)));
+
+  if (get_irn_pinned(n) == op_pin_state_floats &&
+      get_irg_pinned(get_irn_irg(n)) == op_pin_state_floats) {
+    fprintf(F, "  node was pinned in ");
+    dump_node_opcode(F, get_nodes_block(n));
+    fprintf(F, " %ld\n", get_irn_node_nr(get_nodes_block(n)));
+  }
+
+  fprintf(F, "  arity:   %d\n", get_irn_intra_arity(n));
+  /* show all predecessor nodes */
+  fprintf(F, "  pred nodes: \n");
+  if (!is_Block(n)) {
+    fprintf(F, "    -1:    ");
+    dump_node_opcode(F, get_nodes_block(n));
+    fprintf(F, " %ld\n", get_irn_node_nr(get_nodes_block(n)));
+  }
+  for ( i = 0; i < get_irn_intra_arity(n); ++i) {
+    fprintf(F, "     %d: %s ", i, is_intra_backedge(n, i) ? "be" : "  ");
+    dump_node_opcode(F, get_irn_intra_n(n, i));
+    fprintf(F, " %ld\n", get_irn_node_nr(get_irn_intra_n(n, i)));
+  }
+
+  fprintf(F, "  Private Attributes:\n");
+
+  if ((get_irp_ip_view_state() != ip_view_no)
+      && (get_irn_opcode(n) == iro_Filter || get_irn_opcode(n) == iro_Block)) {
+    fprintf(F, "  inter arity: %d", get_irn_inter_arity(n));
+    fprintf(F, "  inter pred nodes: \n");
+    for ( i = 0; i < get_irn_inter_arity(n); ++i) {
+      fprintf(F, "     %d: %s ", i, is_intra_backedge(n, i) ? "be" : "  ");
+      dump_node_opcode(F, get_irn_inter_n(n, i));
+      fprintf(F, " %ld\n", get_irn_node_nr(get_irn_inter_n(n, i)));
+    }
+  }
+
+  if (is_fragile_op(n)) {
+    fprintf(F, "  pinned state: %s\n", get_op_pin_state_name(get_irn_pinned(n)));
+    /* not dumped: frag array */
+  }
+
+  /* This is not nice, output it as a marker in the predecessor list. */
+  if ((get_irn_op(n) == op_Block) ||
+      (get_irn_op(n) == op_Phi) ||
+      ((get_irn_op(n) == op_Filter) && get_interprocedural_view())) {
+    fprintf(F, "  backedges:");
+    comma = ' ';
+    for (i = 0; i < get_irn_arity(n); i++)
+      if (is_backedge(n, i)) { fprintf(F, "%c %d", comma, i); comma = ','; }
+    fprintf(F, "\n");
+  }
+
+  /* Loop node   Someone else please tell me what's wrong ...
+  if (get_irn_loop(n)) {
+    ir_loop *loop = get_irn_loop(n);
+    assert(loop);
+    fprintf(F, " in loop %d with depth %d\n",
+        get_loop_loop_nr(loop), get_loop_depth(loop));
+  }
+  */
+
+  /* Source types */
+  switch (get_irn_opcode(n)) {
+  case iro_Block: {
+    fprintf(F, "  block visited: %ld", get_Block_block_visited(n));
+    fprintf(F, "  dominator info: not implemented\n");
+    /* not dumped: graph_arr */
+    /* not dumped: mature    */
+  }  break;
+  case iro_Start: {
+    type *tp = get_entity_type(get_irg_entity(get_irn_irg(n)));
+    fprintf(F, "  start of method of type %s \n", get_type_name_ex(tp, &bad));
+    for (i = 0; i < get_method_n_params(tp); ++i)
+      fprintf(F, "    param %d type: %s \n", i, get_type_name_ex(get_method_param_type(tp, i), &bad));
+    if ((get_irp_ip_view_state() == ip_view_valid) && !get_interprocedural_view()) {
+      ir_node *sbl = get_nodes_block(n);
+      int i, n_cfgpreds = get_Block_cg_n_cfgpreds(sbl);
+      fprintf(F, "  graph has %d interprocedural predecessors:\n", n_cfgpreds);
+      for (i = 0; i < n_cfgpreds; ++i) {
+        ir_node *cfgpred = get_Block_cg_cfgpred(sbl, i);
+        fprintf(F, "    %d: Call %ld in graph %s\n", i, get_irn_node_nr(cfgpred),
+                get_irg_dump_name(get_irn_irg(cfgpred)));
+      }
+    }
+  } break;
+  case iro_Cond: {
+    fprintf(F, "  condition kind: %s\n",  get_Cond_kind(n) == dense ? "dense" : "fragmentary");
+    fprintf(F, "  default ProjNr: %ld\n", get_Cond_defaultProj(n));
+  } break;
+  case iro_Alloc: {
+    fprintf(F, "  allocating entity of type: %s \n", get_type_name_ex(get_Alloc_type(n), &bad));
+    fprintf(F, "  allocating on: the %s\n", (get_Alloc_where(n) == stack_alloc) ? "stack" : "heap");
+  } break;
+  case iro_Free: {
+    fprintf(F, "  freeing entity of type %s \n", get_type_name_ex(get_Free_type(n), &bad));
+  } break;
+  case iro_Sel: {
+    entity *ent = get_Sel_entity(n);
+
+    if (ent) {
+      fprintf(F, "  Selecting entity of type %s\n", get_type_name_ex(get_entity_type(ent), &bad));
+      fprintf(F, "    from entity of type %s\n", get_type_name_ex(get_entity_owner(ent), &bad));
+    }
+    else {
+      fprintf(F, "  <NULL entity>\n");
+      bad = 1;
+    }
+  } break;
+  case iro_Call: {
+    type *tp = get_Call_type(n);
+    fprintf(F, "  calling method of type %s \n", get_type_name_ex(tp, &bad));
+    if(get_unknown_type() != tp) {
+      for (i = 0; i < get_method_n_params(tp); ++i)
+	fprintf(F, "    param %d type: %s \n", i, get_type_name_ex(get_method_param_type(tp, i), &bad));
+      for (i = 0; i < get_method_n_ress(tp); ++i)
+	fprintf(F, "    resul %d type: %s \n", i, get_type_name_ex(get_method_res_type(tp, i), &bad));
+    }
+    if (Call_has_callees(n)) {
+      fprintf(F, "  possible callees: \n");
+      for (i = 0; i < get_Call_n_callees(n); i++) {
+	fprintf(F, "    %d: %s\n", i, get_ent_dump_name(get_Call_callee(n, i)));
+      }
+    }
+  } break;
+  case iro_CallBegin: {
+    ir_node *call = get_CallBegin_call(n);
+    fprintf(F, "  Call: %ld\n", get_irn_node_nr(call));
+    if (Call_has_callees(call)) {
+      fprintf(F, "  possible callees: \n");
+      for (i = 0; i < get_Call_n_callees(call); i++) {
+	fprintf(F, "    %d: %s\n", i, get_ent_dump_name(get_Call_callee(call, i)));
+      }
+    }
+  } break;
+  case iro_Cast: {
+    fprintf(F, "  cast to type: %s\n", get_type_name_ex(get_Cast_type(n), &bad));
+  } break;
+  case iro_Return: {
+    if (!get_interprocedural_view()) {
+      type *tp = get_entity_type(get_irg_entity(get_irn_irg(n)));
+      fprintf(F, "  return in method of type %s \n", get_type_name_ex(tp, &bad));
+      for (i = 0; i < get_method_n_ress(tp); ++i)
+        fprintf(F, "    res %d type: %s \n", i, get_type_name_ex(get_method_res_type(tp, i), &bad));
+    }
+  } break;
+  case iro_Const: {
+    type *tp = get_Const_type(n);
+    assert(tp != none_type);
+    fprintf(F, "  Const of type %s \n", get_type_name_ex(get_Const_type(n), &bad));
+  } break;
+  case iro_SymConst: {
+    switch(get_SymConst_kind(n)) {
+    case symconst_addr_name:
+      fprintf(F, "  kind: addr_name\n");
+      fprintf(F, "  name: %s\n", get_id_str(get_SymConst_name(n)));
+      break;
+    case symconst_addr_ent:
+      fprintf(F, "  kind:   addr_ent\n");
+      fprintf(F, "  entity: ");
+      dump_entity_to_file(F, get_SymConst_entity(n), dump_verbosity_onlynames);
+      break;
+    case symconst_type_tag:
+      fprintf(F, "  kind: type_tag\n");
+      fprintf(F, "  type: ");
+      dump_type_to_file(F, get_SymConst_type(n), dump_verbosity_onlynames);
+      break;
+    case symconst_size:
+      fprintf(F, "  kind: size\n");
+      fprintf(F, "  type: ");
+      dump_type_to_file(F, get_SymConst_type(n), dump_verbosity_onlynames);
+      break;
+    }
+    fprintf(F, "  type of value: %s \n", get_type_name_ex(get_SymConst_value_type(n), &bad));
+  } break;
+  case iro_Load:
+    fprintf(F, "  mode of loaded value: %s\n", get_mode_name_ex(get_Load_mode(n), &bad));
+    fprintf(F, "  volatility: %s\n", get_volatility_name(get_Load_volatility(n)));
+    break;
+  case iro_Store:
+    fprintf(F, "  volatility: %s\n", get_volatility_name(get_Store_volatility(n)));
+    break;
+  case iro_Confirm:
+    fprintf(F, "  compare operation: %s\n", get_pnc_string(get_Confirm_cmp(n)));
+    break;
+
+  default: ;
+  }
+
+  if (get_irg_typeinfo_state(get_irn_irg(n)) == irg_typeinfo_consistent  ||
+      get_irg_typeinfo_state(get_irn_irg(n)) == irg_typeinfo_inconsistent  )
+    if (get_irn_typeinfo_type(n) != none_type)
+      fprintf (F, "  Analysed type: %s\n", get_type_name_ex(get_irn_typeinfo_type(n), &bad));
+
+  return bad;
+}
+
+
+
+void dump_irnode(ir_node *n) {
+  dump_irnode_to_file(stdout, n);
+}
+
+
+void dump_graph_to_file(FILE *F, ir_graph *irg) {
+  fprintf(F, "graph %s\n", get_irg_dump_name(irg));
+}
+
+void dump_graph(ir_graph *g) {
+  dump_graph_to_file(stdout, g);
+}
+
+static void dump_node_to_graph_file(ir_node *n, void *env) {
+  FILE *F = (FILE *)env;
+
+  dump_irnode_to_file(F, n);
+  fprintf(F, "\n");
+}
+
+void dump_graph_as_text(ir_graph *irg, const char *suffix) {
+  const char *basename = get_irg_dump_name(irg);
+  FILE *F;
+
+  F = text_open (basename, suffix, "", ".txt");
+
+  dump_graph_to_file(F, irg);
+  fprintf(F, "\n\n");
+  irg_walk_graph (irg, NULL, dump_node_to_graph_file, F);
+
+  fclose (F);
+}
 
 
 int addr_is_alloc(ir_node *acc) {
@@ -208,15 +499,24 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
 
   if (verbosity & dump_verbosity_accessStats) {
     int n_acc = get_entity_n_accesses(ent);
-    int L_freq[MY_SIZE];
+    int max_depth = 0;
+
+    /* Find maximal depth */
+    for (i = 0; i < n_acc; ++i) {
+      ir_node *acc = get_entity_access(ent, i);
+      int depth = get_weighted_loop_depth(acc);
+      max_depth = (depth > max_depth) ? depth : max_depth ;
+    }
+
+    int L_freq[max_depth];
     int max_L_freq = -1;
-    int S_freq[MY_SIZE];
+    int S_freq[max_depth];
     int max_S_freq = -1;
-    int LA_freq[MY_SIZE];
+    int LA_freq[max_depth];
     int max_LA_freq = -1;
-    int SA_freq[MY_SIZE];
+    int SA_freq[max_depth];
     int max_SA_freq = -1;
-    for (i = 0; i < MY_SIZE; ++i) {
+    for (i = 0; i < max_depth; ++i) {
       L_freq[i] = 0;
       LA_freq[i] = 0;
       S_freq[i] = 0;
@@ -226,7 +526,7 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
     for (i = 0; i < n_acc; ++i) {
       ir_node *acc = get_entity_access(ent, i);
       int depth = get_weighted_loop_depth(acc);
-      assert(depth < MY_SIZE);
+      assert(depth < max_depth);
       if ((get_irn_op(acc) == op_Load) || (get_irn_op(acc) == op_Call)) {
 	L_freq[depth]++;
 	max_L_freq = (depth > max_L_freq) ? depth : max_L_freq;
@@ -310,17 +610,25 @@ void dump_entity (entity *ent) {
 
 void    dump_entitycsv_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned verbosity,
 				       int *max_disp, int disp[], const char *comma) {
-  int i;
+  int i, max_depth = 0;
   int n_acc = get_entity_n_accesses(ent);
-  int L_freq[MY_SIZE];
+
+  /* Find maximal depth */
+  for (i = 0; i < n_acc; ++i) {
+    ir_node *acc = get_entity_access(ent, i);
+    int depth = get_weighted_loop_depth(acc);
+    max_depth = (depth > max_depth) ? depth : max_depth ;
+  }
+
+  int L_freq[max_depth];
   int max_L_freq = -1;
-  int S_freq[MY_SIZE];
+  int S_freq[max_depth];
   int max_S_freq = -1;
-  int LA_freq[MY_SIZE];
+  int LA_freq[max_depth];
   int max_LA_freq = -1;
-  int SA_freq[MY_SIZE];
+  int SA_freq[max_depth];
   int max_SA_freq = -1;
-  for (i = 0; i < MY_SIZE; ++i) {
+  for (i = 0; i < max_depth; ++i) {
     L_freq[i] = 0;
     LA_freq[i] = 0;
     S_freq[i] = 0;
@@ -330,7 +638,7 @@ void    dump_entitycsv_to_file_prefix (FILE *F, entity *ent, char *prefix, unsig
   for (i = 0; i < n_acc; ++i) {
     ir_node *acc = get_entity_access(ent, i);
     int depth = get_weighted_loop_depth(acc);
-    assert(depth < MY_SIZE);
+    assert(depth < max_depth);
     if ((get_irn_op(acc) == op_Load) || (get_irn_op(acc) == op_Call)) {
       L_freq[depth]++;
       max_L_freq = (depth > max_L_freq) ? depth : max_L_freq;
@@ -383,11 +691,20 @@ void dump_typecsv_to_file(FILE *F, type *tp, dump_verbosity verbosity, const cha
 
   if (verbosity & dump_verbosity_accessStats) {
     int i, n_all = get_type_n_allocations(tp);
-    int freq[MY_SIZE];
+    int max_depth = 0;
+
+    /* Find maximal depth */
+    for (i = 0; i < n_all; ++i) {
+      ir_node *all = get_type_allocation(tp, i);
+      int depth = get_weighted_loop_depth(all);
+      max_depth = (depth > max_depth) ? depth : max_depth ;
+    }
+
+    int freq[max_depth];
     int max_freq = -1;
-    int disp[MY_SIZE];   /* Accumulated accesses to static members: dispatch table. */
+    int disp[max_depth];   /* Accumulated accesses to static members: dispatch table. */
     int max_disp = -1;
-    for (i = 0; i < MY_SIZE; ++i) {
+    for (i = 0; i < max_depth; ++i) {
       freq[i] = 0;
       disp[i] = 0;
     }
@@ -395,7 +712,7 @@ void dump_typecsv_to_file(FILE *F, type *tp, dump_verbosity verbosity, const cha
     for (i = 0; i < n_all; ++i) {
       ir_node *all = get_type_allocation(tp, i);
       int depth = get_weighted_loop_depth(all);
-      assert(depth < MY_SIZE);
+      assert(depth < max_depth);
       freq[depth]++;
       max_freq = (depth > max_freq) ? depth : max_freq;
       assert(get_irn_op(all) == op_Alloc);
@@ -500,14 +817,23 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
 
   if (verbosity & dump_verbosity_accessStats) {
     int n_all = get_type_n_allocations(tp);
-    int freq[MY_SIZE];
+    int max_depth = 0;
+
+    /* Find maximal depth */
+    for (i = 0; i < n_all; ++i) {
+      ir_node *all = get_type_allocation(tp, i);
+      int depth = get_weighted_loop_depth(all);
+      max_depth = (depth > max_depth) ? depth : max_depth ;
+    }
+
+    int freq[max_depth];
     int max_freq = -1;
-    for (i = 0; i < MY_SIZE; ++i) freq[i] = 0;
+    for (i = 0; i < max_depth; ++i) freq[i] = 0;
 
     for (i = 0; i < n_all; ++i) {
       ir_node *all = get_type_allocation(tp, i);
       int depth = get_weighted_loop_depth(all);
-      assert(depth < MY_SIZE);
+      assert(depth < max_depth);
       freq[depth]++;
       max_freq = (depth > max_freq) ? depth : max_freq;
       assert(get_irn_op(all) == op_Alloc);
@@ -531,51 +857,6 @@ void dump_type(type *tp) {
   dump_type_to_file (stdout, tp, dump_verbosity_max);
 }
 
-/* Just opens a file, mangling a file name.
- *
- * The name consists of the following parts:
- *
- * @arg basename  The basis of the name telling about the content.
- * @arg
- *
- */
-
-static FILE *text_open (const char *basename, const char * suffix1, const char *suffix2, const char *suffix3) {
-  FILE *F;
-  int len = strlen(basename), i, j;
-  char *fname;  /* filename to put the vcg information in */
-
-  if (!basename) assert(basename);
-  if (!suffix1) suffix1 = "";
-  if (!suffix2) suffix2 = "";
-  if (!suffix3) suffix3 = ".txt";
-
-  /* open file for vcg graph */
-  fname = malloc (strlen(basename)*2 + strlen(suffix1) + strlen(suffix2) + 5); /* *2: space for excapes. */
-
-  j = 0;
-  for (i = 0; i < len; ++i) {  /* replase '/' in the name: escape by @. */
-    if (basename[i] == '/') {
-      fname[j] = '@'; j++; fname[j] = '1'; j++;
-    } else if (basename[i] == '@') {
-      fname[j] = '@'; j++; fname[j] = '2'; j++;
-    } else {
-      fname[j] = basename[i]; j++;
-    }
-  }
-  fname[j] = '\0';
-  strcat (fname, suffix1);  /* append file suffix */
-  strcat (fname, suffix2);  /* append file suffix */
-  strcat (fname, suffix3);  /* append the .txt suffix */
-
-  F = fopen (fname, "w");   /* open file for writing */
-  if (!F) {
-    assert(0);
-  }
-  free(fname);
-
-  return F;
-}
 
 void dump_types_as_text(unsigned verbosity, const char *suffix) {
   const char *basename;

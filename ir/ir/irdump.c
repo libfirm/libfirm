@@ -59,7 +59,7 @@ static int base_color = 0;
  * returns the name of a mode or <ERROR> if mode is NOT a mode object.
  * in the later case, sets bad
  */
-static const char *get_mode_name_ex(ir_mode *mode, int *bad)
+const char *get_mode_name_ex(ir_mode *mode, int *bad)
 {
   if (is_mode(mode))
     return get_mode_name(mode);
@@ -71,7 +71,7 @@ static const char *get_mode_name_ex(ir_mode *mode, int *bad)
  * returns the name of a type or <ERROR> if mode is NOT a mode object.
  * in the later case, sets bad
  */
-static const char *get_type_name_ex(type *tp, int *bad)
+const char *get_type_name_ex(type *tp, int *bad)
 {
   if (is_type(tp))
     return get_type_name(tp);
@@ -286,7 +286,7 @@ static void clear_link(ir_node * node, void * env) {
 /**
  * If the entity has a ld_name, returns it, else returns the name of the entity.
  */
-static const char *get_ent_dump_name(entity *ent) {
+const char *get_ent_dump_name(entity *ent) {
   if (!ent)
     return "<NULL entity>";
   /* Don't use get_entity_ld_ident (ent) as it computes the mangled name! */
@@ -701,6 +701,20 @@ static void dump_node_vcgattr(FILE *F, ir_node *n, int bad)
   if (overrule_nodecolor) fprintf(F, " color: %s", overrule_nodecolor);
 }
 
+
+/* Replace this once I can do a reference.  */
+#if 0
+/**
+ * Dump the node information of a node n to a file F.
+ */
+static INLINE int dump_node_info(FILE *F, ir_node *n)
+{ int bad = 0;
+  fprintf (F, " info1: \"");
+  bad = dump_irnode_to_file(F, n);
+  fprintf(F, "\"\n");
+  return bad;
+}
+#else
 /**
  * Dump the node information of a node n to a file F.
  */
@@ -890,6 +904,7 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
 
   return bad;
 }
+#endif
 
 /**
  * checks wheater a node is "constant-like", ie can be treated "block-less"
@@ -1325,7 +1340,7 @@ dump_block_graph(FILE *F, ir_graph *irg) {
 /** Dumps an irg as a graph.
  *  If interprocedural view edges can point to nodes out of this graph.
  */
-static void dump_graph(FILE *F, ir_graph *irg) {
+static void dump_graph_from_list(FILE *F, ir_graph *irg) {
 
   fprintf(F, "graph: { title: \"");
   PRINT_IRGID(irg);
@@ -2026,7 +2041,7 @@ dump_ir_block_graph (ir_graph *irg, const char *suffix)
   for (i = 0; i < get_irp_n_irgs(); i++) {
     ir_node **arr = ird_get_irg_link(get_irp_irg(i));
     if (arr) {
-      dump_graph(f, get_irp_irg(i));
+      dump_graph_from_list(f, get_irp_irg(i));
       DEL_ARR_F(arr);
     }
   }
@@ -2088,7 +2103,7 @@ dump_ir_block_graph_w_types (ir_graph *irg, const char *suffix)
   for (i = 0; i < get_irp_n_irgs(); i++) {
     ir_node **arr = ird_get_irg_link(get_irp_irg(i));
     if (arr) {
-      dump_graph(f, get_irp_irg(i));
+      dump_graph_from_list(f, get_irp_irg(i));
       DEL_ARR_F(arr);
     }
   }
@@ -2306,7 +2321,7 @@ void dump_all_cg_block_graph(const char *suffix) {
   for (i = 0; i < get_irp_n_irgs(); i++) {
     current_ir_graph = get_irp_irg(i);
     assert(ird_get_irg_link(current_ir_graph));
-    dump_graph(f, current_ir_graph);
+    dump_graph_from_list(f, current_ir_graph);
     DEL_ARR_F(ird_get_irg_link(current_ir_graph));
   }
 

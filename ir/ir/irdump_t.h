@@ -72,12 +72,17 @@
 
 extern int dump_dominator_information_flag;
 extern const char *dump_file_filter;
+extern bool opt_dump_pointer_values_to_info;
 
 FILE *vcg_open (ir_graph *irg, const char * suffix1, const char *suffix2);
 void dump_vcg_header(FILE *F, const char *name, const char *orientation);
 const char *get_irg_dump_name(ir_graph *irg);
 void vcg_close (FILE *F);
 
+
+const char *get_ent_dump_name(entity *ent);
+const char *get_type_name_ex(type *tp, int *bad);
+const char *get_mode_name_ex(ir_mode *mode, int *bad);
 /**
  * dump the name of a node n to the File F.
  */

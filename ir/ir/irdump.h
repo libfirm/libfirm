@@ -271,6 +271,38 @@ void dump_callgraph_loop_tree(const char *suffix);
 /*                                TEXT DUMPERS                                  */
 /* **************************************************************************** */
 
+
+/** Write the irnode and all its attributes to the file passed.
+ * */
+int dump_irnode_to_file (FILE *f, ir_node *n);
+
+/** Write the irnode and all its attributes to stdout.
+ *  */
+void    dump_irnode (ir_node *n);
+
+/** Write the graph and all its attributes to the file passed.
+ *  Does not write the nodes.
+ * */
+void dump_graph_to_file(FILE *F, ir_graph *irg);
+
+/** Write the graph and all its attributes to stdout.
+ *  Does not write the nodes.
+ *  */
+void dump_graph(ir_graph *g);
+
+
+/** Dump graph information as text.
+ *
+ *  Often graphs are unhandy in their vcg representation.  The text
+ *  dumper represents the information for the firm nodes more compact,
+ *  but the relations between the nodes only implicitly.
+ *
+ *  The file name is the graph name (get_entity_name()), appended by
+ *  <suffix>.txt.
+ */
+void dump_graph_as_text(ir_graph *irg, const char *suffix);
+
+
 /** Verbosity for text dumpers */
 typedef enum {
   dump_verbosity_onlynames         = 0x00000001,   /**< only dump names. turns off all other
