@@ -537,10 +537,11 @@ int tarval_is_negative(tarval *a)
   {
     case int_number:
       if (!mode_is_signed(a->mode)) return 0;
-      else return sc_comp(a->value, get_mode_null(a->mode)->value);
+      else
+	return sc_comp(a->value, get_mode_null(a->mode)->value) == -1 ? 1 : 0;
 
     case float_number:
-      return fc_comp(a->value, get_mode_null(a->mode)->value);
+      return fc_comp(a->value, get_mode_null(a->mode)->value) == -1 ? 1 : 0;
 
     default:
       assert(0 && "not implemented");
