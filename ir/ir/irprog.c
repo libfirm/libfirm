@@ -11,10 +11,12 @@
  */
 
 #ifdef HAVE_CONFIG_H
-# include <config.h>
+# include "config.h"
 #endif
 
+#ifdef HAVE_STRING_H
 # include <string.h>
+#endif
 
 # include "irprog_t.h"
 # include "irgraph_t.h"
@@ -58,7 +60,7 @@ INLINE void remove_irp_type_from_list (type *typ) {
 ir_prog *new_ir_prog (void) {
   ir_prog *res;
 
-  res = (ir_prog *) malloc (sizeof(ir_prog));
+  res = (ir_prog *) xmalloc (sizeof(ir_prog));
   memset(res, 0, sizeof(res));
   irp = res;
   /* res->obst      = (struct obstack *) xmalloc (sizeof (struct obstack)); */

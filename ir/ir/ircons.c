@@ -12,7 +12,17 @@
  */
 
 #ifdef HAVE_CONFIG_H
-# include <config.h>
+# include "config.h"
+#endif
+
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
+#ifdef HAVE_STRING_H
+#include <string.h>
 #endif
 
 # include "irgraph_t.h"
@@ -25,8 +35,6 @@
 # include "iropt_t.h"
 # include "irgmod.h"
 # include "array.h"
-/* memset belongs to string.h */
-# include "string.h"
 # include "irbackedge_t.h"
 # include "irflag_t.h"
 

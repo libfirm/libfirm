@@ -11,17 +11,21 @@
  */
 
 /**
-* traverse an ir graph
-* - execute the pre function before recursion
-* - execute the post function after recursion
-*/
+ * @file irgwalk.c
+ *
+ * traverse an ir graph
+ * - execute the pre function before recursion
+ * - execute the post function after recursion
+ */
 
 
 #ifdef HAVE_CONFIG_H
-# include <config.h>
+# include "config.h"
 #endif
 
-#include <stdlib.h>
+#ifdef HAVE_STDLIB_H
+# include <stdlib.h>
+#endif
 
 #include "irnode_t.h"
 #include "irgraph_t.h" /* visited flag */

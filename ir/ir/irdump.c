@@ -9,10 +9,16 @@
  * Copyright:   (c) 1998-2003 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
-
+#ifdef HAVE_STRING_H
 #include <string.h>
+#endif
+#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
+#endif
 #include <stdarg.h>
 
 #include "firm_common_t.h"

@@ -11,9 +11,12 @@
  */
 
 #ifdef HAVE_CONFIG_H
-# include <config.h>
+# include "config.h"
 #endif
-#include <string.h>
+
+#ifdef HAVE_STRING_H
+# include <string.h>
+#endif
 
 #include "ident.h"
 #include "irnode_t.h"

@@ -6,10 +6,19 @@
  *
  * $Id$
  */
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
-#include <stdlib.h>
-#include <string.h>
-#include <strings.h>
+#ifdef HAVE_STDLIB_H
+# include <stdlib.h>
+#endif
+#ifdef HAVE_STRING_H
+# include <string.h>
+#endif
+#ifdef HAVE_STRINGS_H
+# include <strings.h>
+#endif
 
 #define obstack_chunk_alloc malloc
 #define obstack_chunk_free free

@@ -11,11 +11,14 @@
  */
 
 #ifdef HAVE_CONFIG_H
-# include <config.h>
+# include "config.h"
 #endif
 
+#ifdef HAVE_STRING_H
 # include <string.h>
+#endif
 
+# include "xmalloc.h"
 # include "ircons.h"
 # include "irgraph_t.h"
 # include "irprog_t.h"
@@ -86,7 +89,7 @@ new_r_ir_graph (entity *ent, int n_loc)
   ir_node *first_block;
   ir_node *projX;
 
-  res = (ir_graph *) malloc (sizeof (ir_graph));
+  res = (ir_graph *) xmalloc (sizeof (ir_graph));
   memset(res, 0, sizeof (ir_graph));
   res->kind = k_ir_graph;
 
@@ -195,7 +198,7 @@ ir_graph *new_const_code_irg(void) {
   ir_graph *res;
   ir_node *projX;
 
-  res = (ir_graph *) malloc (sizeof(*res));
+  res = (ir_graph *) xmalloc (sizeof(*res));
   memset(res, 0, sizeof(*res));
 
   /* inform statistics here, as blocks will be already build on this graph */
