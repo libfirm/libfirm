@@ -440,9 +440,9 @@ void dump_pointer_values_to_info(bool b) {
   opt_dump_pointer_values_to_info = b;
 }
 
-/*******************************************************************/
+/*-----------------------------------------------------------------*/
 /* Routines to dump information about a single ir node.            */
-/*******************************************************************/
+/*-----------------------------------------------------------------*/
 
 INLINE int
 dump_node_opcode(FILE *F, ir_node *n)
@@ -663,6 +663,28 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
   if (irg != get_const_code_irg())
     fprintf (F, "irg:     %s\n", get_ent_dump_name(get_irg_entity(irg)));
 
+  if (get_op_pinned(get_irn_op(n)) == op_pin_state_floats &&
+      get_irg_pinned(get_irn_irg(n)) == op_pin_state_floats) {
+    fprintf(F, "node was pinned in ");
+    dump_node_opcode(F, get_nodes_block(n));
+    fprintf(F, " %ld\n", get_irn_node_nr(n));
+  }
+
+#if 0
+  /* show all predecessor nodes */
+  fprintf(F, "pred nodes: \n");
+  if (!is_Block(n)) {
+    fprintf(F, "  -1: ");
+    dump_node_opcode(F, get_nodes_block(n));
+    fprintf(F, " %ld\n", get_irn_node_nr(get_nodes_block(n)));
+  }
+  for ( i = 0; i < get_irn_arity(n); ++i) {
+    fprintf(F, "   %d: ", i);
+    dump_node_opcode(F, get_irn_n(n, i));
+    fprintf(F, " %ld\n", get_irn_node_nr(get_irn_n(n, i)));
+  }
+#endif
+
   fprintf(F, "arity: %d", get_irn_arity(n));
   if ((get_irn_op(n) == op_Block) ||
       (get_irn_op(n) == op_Phi) ||
@@ -818,7 +840,7 @@ static void dump_const_node_local(FILE *F, ir_node *n) {
   for (i = 0; i < get_irn_arity(n); i++) {
     ir_node *con = get_irn_n(n, i);
     if (is_constlike_node(con)) {
-      set_irn_visited(con, get_irg_visited(current_ir_graph)-1);
+      set_irn_visited(con, get_irg_visited(current_ir_graph) - 1);
     }
   }
 
@@ -887,11 +909,13 @@ static void
 dump_ir_block_edge(FILE *F, ir_node *n)  {
   if (get_opt_dump_const_local() && is_constlike_node(n)) return;
   if (is_no_Block(n)) {
+    ir_node *block = get_nodes_block(n);
+
     fprintf (F, "edge: { sourcename: \"");
     PRINT_NODEID(n);
-    fprintf (F, "\" targetname: \"");
-    PRINT_NODEID(get_nodes_block(n));
-    fprintf (F, "\" "   BLOCK_EDGE_ATTR "}\n");
+    fprintf (F, "\" targetname: ");
+    fprintf(F, "\""); PRINT_NODEID(block); fprintf(F, "\"");
+    fprintf (F, " "   BLOCK_EDGE_ATTR "}\n");
   }
 }
 
