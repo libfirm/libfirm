@@ -80,7 +80,10 @@ void     set_irg_loop(ir_graph *irg, ir_loop *l);
 ir_loop *get_irg_loop(ir_graph *irg);
 
 /** Returns the loop n is contained in.
-   assumes current_ir_graph set properly. */
+    assumes current_ir_graph set properly. */
+/*  @@@ @@@ @@@ @@@@ @@@
+    current impl is very expensive: O(#nodes in irg).
+    Is used by heapanal (O(#phi)) --> better impl required. */
 ir_loop *get_irn_loop(ir_node *n);
 
 /** Returns outer loop, itself if outermost. */
@@ -107,13 +110,19 @@ loop_element get_loop_element (ir_loop *loop, int pos);
  */
 
 /** Constructs backedge information for irg in intraprocedural view. */
+/* @@@ Well, maybe construct_loop_information or analyze_loops ? */
 void construct_backedges(ir_graph *irg);
 
 /** Constructs backedges for all irgs in interprocedural view.  All
     loops in the graph will be marked as such, not only realizeable
     loops and recursions in the program.  E.g., if the same funcion is
-    called twice, there is a loop between the first funcion return and
+    called twice, there is a loop between the first function return and
     the second call.  */
 void construct_ip_backedges(void);
+
+/** Removes all loop information.
+    Resets all backedges */
+void free_loop_information(ir_graph *irg);
+void free_all_loop_information (void);
 
 #endif /* _IRLOOP_H_ */

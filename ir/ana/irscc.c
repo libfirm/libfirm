@@ -596,6 +596,13 @@ static void test(ir_node *pred, ir_node *root, ir_node *this) {
 }
 #endif
 
+/* Test for legal loop header: Block, Phi, ... */
+INLINE static bool is_possible_loop_head(ir_node *n) {
+  return ((get_irn_op(n) == op_Block) ||
+	  (get_irn_op(n) == op_Phi) ||
+	  ((get_irn_op(n) == op_Filter) && interprocedural_view));
+}
+
 /* Returns true if n is a loop header, i.e., it is a Block, Phi
    or Filter node and has predecessors within the loop and out
    of the loop. */
@@ -605,10 +612,8 @@ is_head (ir_node *n, ir_node *root)
   int i;
   int some_outof_loop = 0,  some_in_loop = 0;
 
-  /* Test for legal loop header */
-  if (!((get_irn_op(n) == op_Block) ||
-	(get_irn_op(n) == op_Phi) ||
-	((get_irn_op(n) == op_Filter) && interprocedural_view)))
+  /* Test for legal loop header: Block, Phi, ... */
+  if (!is_possible_loop_head(n))
     return false;
 
   if (!is_outermost_Start(n)) {
@@ -863,4 +868,29 @@ void construct_ip_backedges (void) {
 
   current_ir_graph = rem;
   interprocedural_view = rem_ipv;
+}
+
+
+static void reset_backedges(ir_node *n, void *env) {
+  if (is_possible_loop_head(n))
+    clear_backedges(n);
+}
+
+/** Removes all loop information.
+    Resets all backedges */
+void free_loop_information(ir_graph *irg) {
+  set_irg_loop(irg, NULL);
+  /* We cannot free the loop nodes, they are on the obstack. */
+  irg_walk_graph(irg, NULL, reset_backedges, NULL);
+}
+
+
+void free_all_loop_information (void) {
+  int i;
+  int rem = interprocedural_view;
+  interprocedural_view = 1;  /* To visit all filter nodes */
+  for (i = 0; i < get_irp_n_irgs(); i++) {
+    free_loop_information(get_irp_irg(i));
+  }
+  interprocedural_view = rem;
 }
