@@ -1,13 +1,14 @@
-/* Copyright (C)2002 by Universitaet Karlsruhe
-* All rights reserved.
-*
-* Authors: Goetz Lindenmaier
-*
-* testprogram.
-*/
-
-/* $ID$ */
-
+/*
+ * Project:     libFIRM
+ * File name:   testprograms/oo_inline_example.c
+ * Purpose:     Test inlineing.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1999-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 # include <stdio.h>
 # include <string.h>

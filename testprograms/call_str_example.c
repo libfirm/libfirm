@@ -1,10 +1,14 @@
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-* All rights reserved.
-*
-* Authors: Christian Schaefer, Goetz Lindenmaier
-*
-* testprogram.
-*/
+/*
+ * Project:     libFIRM
+ * File name:   testprograms/call_str_example.c
+ * Purpose:     Shows representation of constant string.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1999-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 # include <string.h>
 # include <stdio.h>
@@ -14,16 +18,16 @@
 # include "firm.h"
 
 /**
-*  This file constructs the ir for the following pseudo-program:
-*
-*  void f(char *);
-*
-*  void CALL_STR_EXAMPLE_main () {
-      f("Hello World\n");
-*  }
-*
-*  This program shall demonstrate how to represent string constants.
-**/
+ *  This file constructs the ir for the following pseudo-program:
+ *
+ *  void f(char *);
+ *
+ *  void CALL_STR_EXAMPLE_main () {
+ *      f("Hello World\n");
+ *  }
+ *
+ *  This program demonstrates how to represent string constants.
+ */
 
 int main(int argc, char **argv)
 {

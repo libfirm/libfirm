@@ -1,10 +1,15 @@
-/* (C) 1998 - 2000 by Universitaet Karlsruhe
-* All rights reserved.
-*
-* Authors: Christian Schaefer, Goetz Lindenmaier
-*
-* testprogram.
-*/
+/*
+ * Project:     libFIRM
+ * File name:   testprograms/if_while_example.c
+ * Purpose:     Shows more complex control flow.
+ * Author:      Christian Schaefer, Goetz Lindenmaier
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1999-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
+
 
 # include <stdio.h>
 # include <string.h>

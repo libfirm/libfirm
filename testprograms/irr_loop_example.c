@@ -1,10 +1,14 @@
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-* All rights reserved.
-*
-* Authors: Christian Schaefer, Goetz Lindenmaier
-*
-* testprogram.
-*/
+/*
+ * Project:     libFIRM
+ * File name:   testprograms/irr_loop_example.c
+ * Purpose:     Test Phi construction with irregular control flow.
+ * Author:      Christian Schaefer, Goetz Lindenmaier
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1999-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 # include <stdio.h>
 # include <string.h>
@@ -12,10 +16,6 @@
 # include "irvrfy.h"
 # include "irdump.h"
 # include "firm.h"
-
-/*
- *   an irreducible loop.
- */
 
 /**
 *  This file constructs a control flow of following shape:

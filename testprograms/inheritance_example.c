@@ -1,10 +1,14 @@
-/* Copyright (C) 2000 by Universitaet Karlsruhe
-* All rights reserved.
-*
-* Author: Goetz Lindenmaier
-*
-* testprogram.
-*/
+/*
+ * Project:     libFIRM
+ * File name:   testprograms/inheritance_example.c
+ * Purpose:     Shows type graph with inheritance.
+ * Author:      Christian Schaefer, Goetz Lindenmaier
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1999-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 # include <stdio.h>
 # include <string.h>

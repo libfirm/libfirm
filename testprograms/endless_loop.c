@@ -1,12 +1,16 @@
-/* (C) 2002 by Universitaet Karlsruhe
-* All rights reserved.
-*
-* Authors: Goetz Lindenmaier
-*
-* testprogram.
-*/
+/*
+ * Project:     libFIRM
+ * File name:   testprograms/endless_loop.c
+ * Purpose:     Representation of an endless loop.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1999-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
-/* $ID$ */
+
 
 # include <stdio.h>
 # include <string.h>

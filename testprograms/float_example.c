@@ -1,9 +1,14 @@
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-* All rights reserved.
-*
-* Authors: Christian Schaefer, Goetz Lindenmaier
-*
-*/
+/*
+ * Project:     libFIRM
+ * File name:   testprograms/float_example.c
+ * Purpose:
+ * Author:      Christian Schaefer, Goetz Lindenmaier
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1999-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 # include <stdio.h>
 # include <string.h>

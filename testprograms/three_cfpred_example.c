@@ -1,10 +1,15 @@
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-* All rights reserved.
-*
-* Authors: Christian Schaefer, Goetz Lindenmaier
-*
-* testprogram.
-*/
+/*
+ * Project:     libFIRM
+ * File name:   testprograms/three_cfpred_example.c
+ * Purpose:     Construct a block with more than two predecessors.
+ * Author:      Christian Schaefer, Goetz Lindenmaier
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1999-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
+
 
 # include <stdio.h>
 # include <string.h>
@@ -13,40 +18,36 @@
 # include "irdump.h"
 # include "firm.h"
 
-/*
- *   a dead block / unreachable code.
- */
-
 /**
-*  This file constructs a control flow of following shape:
-*
-*
-*       firstCondBlock
-*          /     \
-*         /       \
-*       |/_       _\|
-*     Block1    scnCondBlock
-*        |       |        |
-* 	   |       |        |
-* 	   |      \ /      \ /
-*        |     Block2   Block3
-*         \      |       /
-*      \     |      /
-*      _\|  \ /   |/_
-*            nextBlock
-*
-*
-*   This is a program as, e.g.,
-*
-*   if () then
-*     { Jmp label1; } // happens anyways
-*   else
-*     { Jmp label1; } // happens anyways
-* label1:
-*   return();
-*   Jmp label1;
-*
-**/
+ *  This file constructs a control flow of following shape:
+ *
+ *
+ *       firstCondBlock
+ *          /     \
+ *         /       \
+ *       |/_       _\|
+ *     Block1    scnCondBlock
+ *        |       |        |
+ *        |       |        |
+ * 	  |      \ /      \ /
+ *        |     Block2   Block3
+ *         \      |       /
+ *          \     |      /
+ *          _\|  \ /   |/_
+ *            nextBlock
+ *
+ *
+ *   This is a program as, e.g.,
+ *
+ *   if () then
+ *     { Jmp label1; } // happens anyways
+ *   else
+ *     { Jmp label1; } // happens anyways
+ * label1:
+ *   return();
+ *   Jmp label1;
+ *
+ **/
 
 int main(int argc, char **argv)
 {

@@ -1,12 +1,17 @@
-/* Copyright (C) 2000 by Universitaet Karlsruhe
-* All rights reserved.
-*
-* Author: Goetz Lindenmaier
-*
-* testprogram.
-*/
+/*
+ * Project:     libFIRM
+ * File name:   testprograms/const_ent_example.c
+ * Purpose:     Shows how to construct type information for constant entities.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1999-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
-#include <stdio.h>
+
+# include <stdio.h>
 # include <string.h>
 
 # include "irvrfy.h"
@@ -14,26 +19,26 @@
 # include "firm.h"
 
 /**
-*  This file constructs type information for constant entities.
-*
-*  It constructs the information for a class type with a dispatch
-*  table.  The class has a field a, and two methods f and g.  The
-*  class is represented by a class type with two entities for the
-*  field a and the reference to the dispatch table.  This reference
-*  is a constant entity.  Ther dispatch table is also represented
-*  by a class type that contains the two methods.   There is one entity
-*  of the dispatch table which is constant.
-*
-*  Further the example shows the representation of a constant global
-*  array.
-*
-*  class C {
-*    int a;
-*    void f();
-*    void g(int);
-*  }
-*  int[4] arre = (7, 2, 13, 92);
-**/
+ *  This file constructs type information for constant entities.
+ *
+ *  It constructs the information for a class type with a dispatch
+ *  table.  The class has a field a, and two methods f and g.  The
+ *  class is represented by a class type with two entities for the
+ *  field a and the reference to the dispatch table.  This reference
+ *  is a constant entity.  Ther dispatch table is also represented
+ *  by a class type that contains the two methods.   There is one entity
+ *  of the dispatch table which is constant.
+ *
+ *  Further the example shows the representation of a constant global
+ *  array.
+ *
+ *  class C {
+ *    int a;
+ *    void f();
+ *    void g(int);
+ *  }
+ *  int[4] arre = (7, 2, 13, 92);
+ **/
 
 int main(int argc, char **argv)
 {
