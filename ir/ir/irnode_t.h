@@ -316,7 +316,6 @@ __get_irn_inter_arity (const ir_node *node) {
  */
 static INLINE int
 __get_irn_arity (const ir_node *node) {
-  assert(node);
   if (interprocedural_view) return __get_irn_inter_arity(node);
   return __get_irn_intra_arity(node);
 }
