@@ -83,7 +83,7 @@ init_firm(const firm_parameter_t *param)
 
   /* Init architecture dependent optimizations. */
   arch_dep_init(arch_dep_default_factory);
-  arch_dep_set_opts(arch_dep_mul_to_shift);
+  arch_dep_set_opts(arch_dep_mul_to_shift | arch_dep_div_to_shift | arch_dep_mod_to_shift);
 }
 
 
