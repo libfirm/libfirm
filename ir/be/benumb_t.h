@@ -25,14 +25,14 @@ typedef struct _irg_numbering_t {
 extern int numbering_irn_data_offset;
 extern int numbering_irg_data_offset;
 
-#define _get_irn_numbering(mod,irn) get_irn_data(irn, mod numbering_t, numbering_irn_data_offset)
-#define _get_irg_numbering(mod,irg) get_irg_data(irg, mod irg_numbering_t, numbering_irg_data_offset)
+#define _get_irn_numbering(type,irn) get_irn_data(irn, type, numbering_irn_data_offset)
+#define _get_irg_numbering(type,irg) get_irg_data(irg, type, numbering_irg_data_offset)
 
-#define get_irn_numbering_const(irn) _get_irn_numbering(const, irn)
-#define get_irg_numbering_const(irg) _get_irg_numbering(const, irg)
+#define get_irn_numbering_const(irn) _get_irn_numbering(const numbering_t, irn)
+#define get_irg_numbering_const(irg) _get_irg_numbering(const irg_numbering_t, irg)
 
-#define get_irn_numbering(irn) _get_irn_numbering( , irn)
-#define get_irg_numbering(irg) _get_irg_numbering( , irg)
+#define get_irn_numbering(irn) _get_irn_numbering(numbering_t, irn)
+#define get_irg_numbering(irg) _get_irg_numbering(irg_numbering_t, irg)
 
 static INLINE int __get_irn_graph_nr(const ir_node *irn)
 {
