@@ -157,16 +157,16 @@ new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mo
   res->node_nr = get_irp_new_node_nr();
 #endif
 
-#ifdef FIRM_EDGES_INPLACE
-	{
-		int i, n;
-		int not_a_block = !is_Block(res);
+#if FIRM_EDGES_INPLACE
+  {
+    int i, n;
+    int not_a_block = is_no_Block(res);
 
-		INIT_LIST_HEAD(&res->edge_info.outs_head);
+    INIT_LIST_HEAD(&res->edge_info.outs_head);
 
-		for(i = 0, n = arity + not_a_block; i < n; ++i)
-			edges_notify_edge(res, i - not_a_block, res->in[i], NULL, irg);
-	}
+    for (i = 0, n = arity + not_a_block; i < n; ++i)
+      edges_notify_edge(res, i - not_a_block, res->in[i], NULL, irg);
+  }
 #endif
 
   hook_new_node(irg, res);
@@ -287,13 +287,11 @@ set_irn_n (ir_node *node, int n, ir_node *in) {
     /* else fall through */
   }
 
-	/* Call the hook */
-	hook_set_irn_n(node, n, in, node->in[n + 1]);
+  /* Call the hook */
+  hook_set_irn_n(node, n, in, node->in[n + 1]);
 
-#ifdef FIRM_EDGES_INPLACE
-	/* Here, we rely on src and tgt being in the current ir graph */
-	edges_notify_edge(node, n, in, node->in[n + 1], current_ir_graph);
-#endif
+  /* Here, we rely on src and tgt being in the current ir graph */
+  edges_notify_edge(node, n, in, node->in[n + 1], current_ir_graph);
 
   node->in[n + 1] = in;
 }
