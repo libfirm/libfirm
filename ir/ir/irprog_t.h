@@ -25,7 +25,9 @@
 #include "irgraph.h"
 #include "ircgcons.h"
 #include "firm_common_t.h"
+#include "typegmod.h"
 
+#include "array.h"
 
 /** ir_prog */
 struct ir_prog {
@@ -56,9 +58,58 @@ struct ir_prog {
 
 INLINE void remove_irp_type_from_list (type *typ);
 
+static INLINE type *
+__get_glob_type(void) {
+  assert(irp);
+  return irp->glob_type = skip_tid(irp->glob_type);
+}
+
+static INLINE int
+__get_irp_n_irgs(void) {
+  assert (irp && irp->graphs);
+  /* Strangely the first element of the array is NULL.  Why??  */
+  return (ARR_LEN((irp)->graphs) - 1);
+}
+
+static INLINE ir_graph *
+__get_irp_irg(int pos){
+  assert (irp && irp->graphs);
+  /* Strangely the first element of the array is NULL.  Why??  */
+  return irp->graphs[pos+1];
+}
+
+
+static INLINE int
+__get_irp_n_types (void) {
+  assert (irp && irp->types);
+  /* Strangely the first element of the array is NULL.  Why??  */
+  return (ARR_LEN((irp)->types) - 1);
+}
+
+static INLINE type *
+__get_irp_type(int pos) {
+  assert (irp && irp->types);
+  /* Strangely the first element of the array is NULL.  Why??  */
+  /* Don't set the skip_tid result so that no double entries are generated. */
+  return skip_tid(irp->types[pos+1]);
+}
+
 #ifdef DEBUG_libfirm
 /** Returns a new, unique number to number nodes or the like. */
 int get_irp_new_node_nr(void);
 #endif
+
+static INLINE ir_graph *
+__get_const_code_irg(void)
+{
+  return irp->const_code_irg;
+}
+
+#define get_irp_n_irgs()       __get_irp_n_irgs()
+#define get_irp_irg(pos)       __get_irp_irg(pos)
+#define get_irp_n_types()      __get_irp_n_types()
+#define get_irp_type(pos)      __get_irp_type(pos)
+#define get_const_code_irg()   __get_const_code_irg()
+#define get_glob_type()        __get_glob_type()
 
 #endif /* ifndef _IRPROG_T_H_ */

@@ -15,27 +15,31 @@
 # include <config.h>
 #endif
 
-# include <assert.h>
-# include <stdbool.h>
+#include <assert.h>
+#include <stdbool.h>
 
-# include "irprog.h"
-# include "irgopt.h"
-# include "irnode_t.h"
-# include "irgraph_t.h"
-# include "iropt_t.h"
-# include "irgwalk.h"
-# include "ircons_t.h"
-# include "irgmod.h"
-# include "array.h"
-# include "pset.h"
-# include "eset.h"
-# include "pdeq.h"       /* Fuer code placement */
-# include "irouts.h"
-# include "irloop.h"
-# include "irbackedge_t.h"
-# include "irflag_t.h"
-# include "firmstat.h"
-# include "cgana.h"
+#include "irnode_t.h"
+#include "irgraph_t.h"
+#include "irprog_t.h"
+
+#include "ircons.h"
+#include "iropt_t.h"
+#include "irgopt.h"
+#include "irgmod.h"
+#include "irgwalk.h"
+
+#include "array.h"
+#include "pset.h"
+#include "eset.h"
+#include "pdeq.h"       /* Fuer code placement */
+
+#include "irouts.h"
+#include "irloop_t.h"
+#include "irbackedge_t.h"
+#include "cgana.h"
+
+#include "irflag_t.h"
+#include "firmstat.h"
 
 /* Defined in iropt.c */
 pset *new_identities (void);

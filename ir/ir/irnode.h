@@ -392,9 +392,6 @@ void     set_Const_type   (ir_node *node, type *tp);
      depends on this tag.  Use the proper access routine after testing
      this flag. */
 
-#define type_tag         symconst_type_tag
-//#define size             symconst_size   geht nicht, benennt auf size in type.c um!
-#define linkage_ptr_info symconst_addr_name
 typedef enum {
   symconst_type_tag,    /**< The SymConst is a type tag for the given type.
 			   Type_or_id_p is type *. */
@@ -411,11 +408,14 @@ typedef enum {
 /** SymConst attributes
     This union contains the symbolic information represented by the node  */
 union symconst_symbol {
-  type   *type_p;           //old typ
-  ident  *ident_p;         // old ptrinfo
-  entity *entity_p;        // entity_p
+  type   *type_p;
+  ident  *ident_p;
+  entity *entity_p;
 };
+
+
 typedef union symconst_symbol symconst_symbol;
+
 
 /** Access the kind of the SymConst. */
 symconst_kind get_SymConst_kind (const ir_node *node);

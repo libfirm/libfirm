@@ -77,9 +77,10 @@ main(void)
 
   /* build typeinformation of procedure main */
   owner = new_type_class (id_from_str ("ARRAY-STACK_EXAMPLE", 19));
-  proc_main = new_type_method(id_from_str("main_tp", 4), 0, 1);
+  proc_main = new_type_method(id_from_str("main_tp", 7), 0, 1);
   set_method_res_type(proc_main, 0, prim_t_int);
   proc_main_e = new_entity (owner, id_from_str ("main", 4), proc_main);
+  get_entity_ld_name(proc_main_e); /* force name mangling */
 
   /* make type information for the array and set the bounds */
 # define N_DIMS 1

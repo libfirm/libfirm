@@ -39,19 +39,20 @@
 # include <config.h>
 #endif
 
-
 # include <stdlib.h>
 # include <stddef.h>
 # include <string.h>
+
 # include "type_t.h"
-# include "tpop_t.h"
+
 # include "irprog_t.h"
-# include "typegmod.h"
-# include "array.h"
-# include "irprog.h"
-# include "mangle.h"
-# include "tv.h"
 # include "ircons.h"
+# include "tpop_t.h"
+# include "typegmod.h"
+# include "mangle.h"
+# include "tv_t.h"
+
+# include "array.h"
 
 /*******************************************************************/
 /** TYPE                                                          **/

@@ -25,16 +25,17 @@
 
 #include "type_identify.h"
 
-# include <stdlib.h>
-# include <stddef.h>
-# include <string.h>
-# include "type_t.h"
-# include "tpop_t.h"
-# include "irprog_t.h"
-# include "typegmod.h"
-# include "array.h"
-# include "irprog.h"
-# include "mangle.h"
+#include <stdlib.h>
+#include <stddef.h>
+#include <string.h>
+
+#include "type_t.h"
+#include "tpop_t.h"
+#include "irprog_t.h"
+#include "typegmod.h"
+#include "array.h"
+#include "irprog_t.h"
+#include "mangle.h"
 #include "pset.h"
 
 /* The hash set for types. */

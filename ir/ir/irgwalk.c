@@ -121,11 +121,70 @@ static void collect_irgs(ir_node * node, eset * irg_set) {
 }
 
 static void
+irg_walk_2_pre(ir_node *node, irg_walk_func *pre, void * env) {
+  int i;
+  set_irn_visited(node, current_ir_graph->visited);
+
+  pre(node, env);
+
+  if (node->op != op_Block) {
+    ir_node *pred = get_irn_n(node, -1);
+    if (pred->visited < current_ir_graph->visited)
+      irg_walk_2_pre(pred, pre, env);
+  }
+  for (i = get_irn_arity(node) - 1; i >= 0; --i) {
+    ir_node *pred = get_irn_n(node, i);
+    if (pred->visited < current_ir_graph->visited)
+      irg_walk_2_pre(pred, pre, env);
+  }
+}
+
+static void
+irg_walk_2_post(ir_node *node, irg_walk_func *post, void * env) {
+  int i;
+  set_irn_visited(node, current_ir_graph->visited);
+
+  if (node->op != op_Block) {
+    ir_node *pred = get_irn_n(node, -1);
+    if (pred->visited < current_ir_graph->visited)
+      irg_walk_2_post(pred, post, env);
+  }
+  for (i = get_irn_arity(node) - 1; i >= 0; --i) {
+    ir_node *pred = get_irn_n(node, i);
+    if (pred->visited < current_ir_graph->visited)
+      irg_walk_2_post(pred, post, env);
+  }
+
+  post(node, env);
+}
+
+static void
+irg_walk_2_both(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env) {
+  int i;
+  set_irn_visited(node, current_ir_graph->visited);
+
+  pre(node, env);
+
+  if (node->op != op_Block) {
+    ir_node *pred = get_irn_n(node, -1);
+    if (pred->visited < current_ir_graph->visited)
+      irg_walk_2_both(pred, pre, post, env);
+  }
+  for (i = get_irn_arity(node) - 1; i >= 0; --i) {
+    ir_node *pred = get_irn_n(node, i);
+    if (pred->visited < current_ir_graph->visited)
+      irg_walk_2_both(pred, pre, post, env);
+  }
+
+  post(node, env);
+}
+
+
+static void
 irg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
 {
+#if 0 /* safe, old */
   int i;
-  assert(node && node->kind==k_ir_node);
-#if 0 /* safe */
   if (get_irn_visited(node) < get_irg_visited(current_ir_graph)) {
     set_irn_visited(node, get_irg_visited(current_ir_graph));
 
@@ -139,7 +198,9 @@ irg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
     if (post) post(node, env);
   }
 #else /* faster */
+#if 0
   if (node->visited < current_ir_graph->visited) {
+    int i;
     set_irn_visited(node, current_ir_graph->visited);
 
     if (pre) pre(node, env);
@@ -151,6 +212,13 @@ irg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
 
     if (post) post(node, env);
   }
+#else /* even faster */
+  if (node->visited < current_ir_graph->visited) {
+    if      (!post) irg_walk_2_pre (node, pre, env);
+    else if (!pre)  irg_walk_2_post(node, post, env);
+    else            irg_walk_2_both(node, pre, post, env);
+  }
+#endif
 #endif
 }
 

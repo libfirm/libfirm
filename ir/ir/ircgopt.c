@@ -24,7 +24,7 @@
 #include "array.h"
 #include "irprog.h"
 #include "irgwalk.h"
-#include "irloop.h"
+#include "irloop_t.h"
 #include "irflag_t.h"
 
 static void clear_link(ir_node * node, void * env) {

@@ -108,9 +108,8 @@ void set_irp_main_irg(ir_graph *main_irg) {
   irp->main_irg = main_irg;
 }
 
-type *get_glob_type(void) {
-  assert(irp);
-  return irp->glob_type = skip_tid(irp->glob_type);
+type *(get_glob_type)(void) {
+  return __get_glob_type();
 }
 
 /* Adds irg to the list of ir graphs in irp. */
@@ -136,16 +135,12 @@ void remove_irp_irg(ir_graph *irg){
   }
 }
 
-int get_irp_n_irgs() {
-  assert (irp && irp->graphs);
-  /* Strangely the first element of the array is NULL.  Why??  */
-  return (ARR_LEN((irp)->graphs) - 1);
+int (get_irp_n_irgs)(void) {
+  return __get_irp_n_irgs();
 }
 
-ir_graph *get_irp_irg(int pos){
-  assert (irp && irp->graphs);
-  /* Strangely the first element of the array is NULL.  Why??  */
-  return irp->graphs[pos+1];
+ir_graph *(get_irp_irg)(int pos){
+  return __get_irp_irg(pos);
 }
 
 void set_irp_irg(int pos, ir_graph *irg) {
@@ -166,17 +161,12 @@ void remove_irp_type(type *typ) {
   remove_irp_type_from_list (typ);
 }
 
-int get_irp_n_types (void) {
-  assert (irp && irp->types);
-  /* Strangely the first element of the array is NULL.  Why??  */
-  return (ARR_LEN((irp)->types) - 1);
+int (get_irp_n_types) (void) {
+  return __get_irp_n_types();
 }
 
-type *get_irp_type(int pos) {
-  assert (irp && irp->types);
-  /* Strangely the first element of the array is NULL.  Why??  */
-  /* Don't set the skip_tid result so that no double entries are generated. */
-  return skip_tid(irp->types[pos+1]);
+type *(get_irp_type) (int pos) {
+  return __get_irp_type(pos);
 }
 
 void  set_irp_type(int pos, type *typ) {
@@ -206,17 +196,19 @@ const char  *get_irp_prog_name(void) {
 }
 
 
-ir_graph *get_const_code_irg(void)
+ir_graph *(get_const_code_irg)(void)
 {
-  return irp->const_code_irg;
+  return __get_const_code_irg();
 }
 
 irg_outs_state get_irp_ip_outs_state() {
   return irp->outs_state;
 }
+
 void set_irp_ip_outs_inconsistent() {
   irp->outs_state = outs_inconsistent;
 }
+
 void      set_irp_ip_outedges(ir_node ** ip_outedges)
 {
   irp -> ip_outedges = ip_outedges;

@@ -44,7 +44,6 @@
 #include "set.h"            /* to store tarvals in */
 /* #include "tune.h" */          /* some constants */
 #include "entity_t.h"       /* needed to store pointers to entities */
-#include "irmode.h"         /* defines modes etc */
 #include "irmode_t.h"
 #include "irnode.h"         /* defines boolean return values (pnc_number)*/
 #include "host.h"

@@ -68,6 +68,7 @@ main(void)
 
   owner = new_type_class (id_from_str ("WHILE_EXAMPLE", 13));
   ent = new_entity (owner, id_from_str ("main", strlen("main")), proc_main);
+  get_entity_ld_name(ent); /* force name mangling */
 
   /* Generates start and end blocks and nodes and a first, initial block */
   irg = new_ir_graph (ent, 4);

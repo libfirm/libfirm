@@ -33,9 +33,8 @@ typedef enum {
   STAT_OPT_CONST_EVAL,	/**< constant evaluation */
   STAT_LOWERED,		/**< lowered */
 
-  STAT_OPT_MAX
-}
-stat_opt_kind;
+  STAT_OPT_MAX        = 10
+} stat_opt_kind;
 
 /**
  * initialize the statistics module.

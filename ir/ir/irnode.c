@@ -1921,11 +1921,17 @@ skip_nop (ir_node *node) {
   ir_node *pred;
   /* don't assert node !!! */
 
+  if (!node || (node->op != op_Id)) return node;
+
   if (!get_opt_normalize()) return node;
 
   /* Don't use get_Id_pred:  We get into an endless loop for
      self-referencing Ids. */
-  if (node && (node->op == op_Id) && (node != (pred = node->in[0+1]))) {
+  pred = node->in[0+1];
+
+  if (pred->op != op_Id) return pred;
+
+  if (node != pred) {  /* not a self referencing Id. Resolve Id chain. */
     ir_node *rem_pred, *res;
 
     if (pred->op != op_Id) return pred; /* shortcut */
@@ -1933,11 +1939,11 @@ skip_nop (ir_node *node) {
 
     assert (get_irn_arity (node) > 0);
 
-    node->in[0+1] = node;
+    node->in[0+1] = node;   /* turn us into a self referencing Id:  shorten Id cycles. */
     res = skip_nop(rem_pred);
     if (res->op == op_Id) /* self-loop */ return node;
 
-    node->in[0+1] = res;
+    node->in[0+1] = res;    /* Turn Id chain into Ids all referencing the chain end. */
     return res;
   } else {
     return node;

@@ -21,7 +21,7 @@
 # include "ircons_t.h"
 # include "irgmod.h"
 # include "irvrfy.h"
-# include "tv.h"
+# include "tv_t.h"
 # include "dbginfo_t.h"
 # include "iropt_dbg.h"
 # include "irflag_t.h"

@@ -119,7 +119,8 @@ main(void)
 
   /* There is only one block in main, it contains the allocation and the calls. */
   /* Allocate the defined object and generate the type information. */
-  obj_size = new_SymConst((type_or_id_p)class_prima, size);
+  symconst_symbol sym = {class_prima};
+  obj_size = new_SymConst(sym, symconst_size);
   obj_o    = new_Alloc(get_store(), obj_size, class_prima, heap_alloc);
   set_store(new_Proj(obj_o, mode_M, 0));  /* make the changed memory visible */
   obj_o    = new_Proj(obj_o, mode_P, 2);  /* remember the pointer to the object */

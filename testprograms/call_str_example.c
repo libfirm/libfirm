@@ -103,8 +103,9 @@ int main(int argc, char **argv)
 
   /* get the pointer to the procedure from the class type */
   /* this is how a pointer to be fixed by the linker is represented. */
-  proc_ptr = new_SymConst ((type_or_id_p)id_from_str (F_METHODNAME, strlen(F_METHODNAME)),
-			   linkage_ptr_info);
+  symconst_symbol sym;
+  sym.ident_p = new_id_from_str (F_METHODNAME);
+  proc_ptr = new_SymConst (sym, symconst_addr_name);
 
   /* call procedure set_a, first built array with parameters */
   {
