@@ -365,7 +365,7 @@ static int _encode_node(ir_node *node, int max_depth, codec_env_t *env)
       tarval *tv = get_Const_tarval(node);
 
       if (tarval_is_long(tv)) {
-	long v = tarval_to_long(tv);
+	long v = get_tarval_long(tv);
 
 	put_tag(env->buf, VLC_TAG_ICONST);
 	put_code(env->buf, v);
