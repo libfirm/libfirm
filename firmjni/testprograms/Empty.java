@@ -27,8 +27,8 @@ class Empty {
 
 	System.out.println("\nCreating an IR graph: EMPTY...");
 
-	/* init library */
-	Firm.initFirm();
+	/* init library: Java did not support the callback, so ALWAYS use 0 here */
+	Firm.initFirm(0);
 
 	/** Build type information for the procedure. **/
 

@@ -29,7 +29,7 @@ class IfElseExample {
 
 	System.out.println("\nCreating an IR graph: IfElseExample...");
 
-	/* init library */
+  /* init library: Java did not support the callback, so ALWAYS use 0 here */
 	Firm.initFirm();
 
 	/** Build type information for the compilation unit. **/
