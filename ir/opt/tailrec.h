@@ -29,8 +29,10 @@
  * Does not work for Calls that use the exception stuff.
  *
  * @param irg   the graph to be optimized
+ *
+ * @return non-zero if the optimization could be applied, 0 else
  */
-void opt_tail_rec_irg(ir_graph *irg);
+int opt_tail_rec_irg(ir_graph *irg);
 
 /*
  * Optimize tail-recursion calls for all IR-Graphs.

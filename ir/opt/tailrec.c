@@ -36,21 +36,19 @@
 #include "irflag.h"
 #include "firmstat.h"
 
-static int n_opt_applications = 0;
-
 /**
- * the environment for colelcting data
+ * the environment for collecting data
  */
 typedef struct _collect_t {
   ir_node *proj_X;		/**< initial exec proj */
   ir_node *block;		/**< old first block */
   int     blk_idx;		/**< cfgpred index of the initial exec in block */
   ir_node *proj_m;		/**< linked list of memory from start proj's */
-  ir_node *proj_data;		/**< linked list of all parameter access proj's */
+  ir_node *proj_data;	/**< linked list of all parameter access proj's */
 } collect_t;
 
 /**
- * walker for collecting data
+ * walker for collecting data, fills a collect_t environment
  */
 static void collect_data(ir_node *node, void *env)
 {
@@ -67,26 +65,26 @@ static void collect_data(ir_node *node, void *env)
       ir_node *start = get_Proj_pred(pred);
 
       if (get_irn_op(start) == op_Start) {
-	if (get_Proj_proj(pred) == pn_Start_T_args) {
-	  /* found Proj(ProjT(Start)) */
-	  set_irn_link(node, data->proj_data);
-	  data->proj_data = node;
-	}
+	    if (get_Proj_proj(pred) == pn_Start_T_args) {
+	      /* found Proj(ProjT(Start)) */
+	      set_irn_link(node, data->proj_data);
+	      data->proj_data = node;
+	    }
       }
     }
     else if (op == op_Start) {
       switch (get_Proj_proj(node)) {
         case pn_Start_M:
           /* found ProjM(Start) */
-	  set_irn_link(node, data->proj_m);
-	  data->proj_m = node;
-	  break;
-	case pn_Start_X_initial_exec:
-	  /* found ProjX(Start) */
-	  data->proj_X = node;
-	  break;
-	default:
-	  break;
+	      set_irn_link(node, data->proj_m);
+	      data->proj_m = node;
+	      break;
+	    case pn_Start_X_initial_exec:
+	      /* found ProjX(Start) */
+	      data->proj_X = node;
+	      break;
+	    default:
+	      break;
       }
     }
     break;
@@ -98,11 +96,11 @@ static void collect_data(ir_node *node, void *env)
      */
     if (node != current_ir_graph->start_block) {
       for (i = 0; i < n_pred; ++i) {
-	if (get_Block_cfgpred(node, i) == data->proj_X) {
-	  data->block   = node;
-	  data->blk_idx = i;
-	  break;
-	}
+	    if (get_Block_cfgpred(node, i) == data->proj_X) {
+	      data->block   = node;
+	      data->blk_idx = i;
+	      break;
+	    }
       }
     }
     break;
@@ -250,7 +248,7 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
 /*
  * convert simple tail-calls into loops
  */
-void opt_tail_rec_irg(ir_graph *irg)
+int opt_tail_rec_irg(ir_graph *irg)
 {
   ir_node *end_block = irg->end_block;
   int n_preds;
@@ -258,7 +256,7 @@ void opt_tail_rec_irg(ir_graph *irg)
   ir_node *rets = NULL;
 
   if (! get_opt_tail_recursion() || ! get_opt_optimize())
-    return;
+    return 0;
 
   set_irn_link(end_block, NULL);
 
@@ -300,8 +298,8 @@ void opt_tail_rec_irg(ir_graph *irg)
       ir_node *irn = skip_Proj(skip_Proj(ress[j]));
 
       if (irn != call) {
-	/* not routed to a call */
-	break;
+	    /* not routed to a call */
+	    break;
       }
     }
     if (j < n_ress)
@@ -319,14 +317,15 @@ void opt_tail_rec_irg(ir_graph *irg)
 
   /* now, end_block->link contains the list of all tail calls */
   if (! n_tail_calls)
-    return;
+    return 0;
 
   if (get_opt_tail_recursion_verbose() && get_firm_verbosity() > 1)
     printf("  Performing tail recursion for graph %s and %d Calls\n",
 	   get_entity_ld_name(get_irg_entity(irg)), n_tail_calls);
-  n_opt_applications++;
 
   do_opt_tail_rec(irg, rets, n_tail_calls);
+
+  return n_tail_calls;
 }
 
 /*
@@ -335,16 +334,16 @@ void opt_tail_rec_irg(ir_graph *irg)
 void opt_tail_recursion(void)
 {
   int i;
+  int n_opt_applications = 0;
 
   if (! get_opt_tail_recursion() || ! get_opt_optimize())
     return;
 
-  n_opt_applications = 0;
-
   for (i = 0; i < get_irp_n_irgs(); i++) {
     current_ir_graph = get_irp_irg(i);
 
-    opt_tail_rec_irg(current_ir_graph);
+    if (opt_tail_rec_irg(current_ir_graph))
+      ++n_opt_applications;
   }
 
   if (get_opt_tail_recursion_verbose())
