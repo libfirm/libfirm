@@ -23,6 +23,7 @@
 # include "typegmod.h"
 
 #define GLOBAL_TYPE_NAME "GlobalType"
+#define INITAL_PROG_NAME "no_name_set"
 
 /* A variable from where everything in the ir can be accessed. */
 ir_prog *irp;
@@ -62,14 +63,13 @@ ir_prog *new_ir_prog (void) {
   /* res->obst      = (struct obstack *) xmalloc (sizeof (struct obstack)); */
   res->graphs = NEW_ARR_F (ir_graph *, 0);
   res->types  = NEW_ARR_F (type *, 0);
-  res->name   = new_id_from_str("no_name_set");
+  res->name   = new_id_from_str(INITAL_PROG_NAME);
 
 #ifdef DEBUG_libfirm
   res->max_node_nr = 0;
 #endif
 
-  res->glob_type = new_type_class(new_id_from_chars (GLOBAL_TYPE_NAME,
-					       strlen(GLOBAL_TYPE_NAME)));
+  res->glob_type = new_type_class(new_id_from_str (GLOBAL_TYPE_NAME));
   /* Remove type from type list.  Must be treated differently than
      other types. */
   remove_irp_type_from_list(res->glob_type);
@@ -185,6 +185,9 @@ int get_irp_new_node_nr() {
 /*- File name / executable name or the like -*/
 void   set_irp_prog_name(ident *name) {
   irp->name = name;
+}
+int irp_prog_name_is_set(void) {
+  return irp->name != new_id_from_str(INITAL_PROG_NAME);
 }
 ident *get_irp_prog_ident(void) {
   return irp->name;

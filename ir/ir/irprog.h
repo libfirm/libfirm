@@ -83,16 +83,18 @@ ir_prog *new_ir_prog (void);
  *  list must be freed by hand before. */
 void     free_ir_prog(void);
 
-/** Sets the file name / executable name or the like. Initially NULL. */
+/** Sets the file name / executable name or the like. Initially the
+    ident 'no_name_set'. */
 void   set_irp_prog_name (ident *name);
 
-/** Gets the file name / executable name or the like. Returns NULL if
- *  not yet set.
+/** Returns true if the user ever set a program name */
+int    irp_prog_name_is_set(void);
+
+/** Gets the file name / executable name or the like.
  */
 ident *get_irp_prog_ident(void);
 
-/** Gets the file name / executable name or the like. Returns NULL if
- *  not yet set.
+/** Gets the file name / executable name or the like.
  */
 const char *get_irp_prog_name (void);
 
