@@ -82,13 +82,16 @@ void add_irp_irg(ir_graph *irg) {
 void remove_irp_irg(ir_graph *irg){
   int i;
   assert(irg);
-  for (i = 1; i < (ARR_LEN (irp->graphs))-1; i++)
-    if (irp->graphs[i+1] == irg) {
-      for(i++; i < (ARR_LEN (irp->graphs)) - 1; i++)
+  free_ir_graph(irg);
+  for (i = 1; i < (ARR_LEN (irp->graphs)); i++) {
+    if (irp->graphs[i] == irg) {
+      for(; i < (ARR_LEN (irp->graphs)) - 1; i++) {
 	irp->graphs[i] = irp->graphs[i+1];
+      }
       ARR_SETLEN(ir_graph*, irp->graphs, (ARR_LEN(irp->graphs)) - 1);
       break;
     }
+  }
 }
 
 int get_irp_n_irgs() {
