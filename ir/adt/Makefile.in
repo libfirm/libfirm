@@ -19,7 +19,7 @@ disable_libiberty := @disable_libiberty@
 
 SOURCES = Makefile.in 							\
 	array.c array.h cookies.h host.h obst.h	pdeq.c pdeq.h pset.h 	\
-	set.c set.h pmap.h pmap.c eset.h eset.c	xmalloc.h
+	set.c set.h pmap.h pmap.c eset.h eset.c	iterator.c iterator.h xmalloc.h
 
 ifeq ($(disable_libiberty),no)
 SOURCES += xmalloc.c
