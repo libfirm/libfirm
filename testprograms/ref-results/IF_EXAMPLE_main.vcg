@@ -21,6 +21,7 @@ graph: { title: "g28" label: "IF_EXAMPLE_main" status:clustered color:white
 graph: { title: "n17"  label: "Block 17" status:clustered color:yellow
 edge: {sourcename: "n17" targetname: "n52" label: "0" color: red}
 node: {title: "n18" label: "End  18" color: blue info1: "visited: 8
+irg:     IF_EXAMPLE_main
 "}
 }
 
@@ -28,12 +29,14 @@ graph: { title: "n43"  label: "Block 43" status:clustered color:yellow
 edge: {sourcename: "n43" targetname: "n35" label: "0" color: red}
 edge: {sourcename: "n43" targetname: "n42" label: "1" color: red}
 node: {title: "n52" label: "Return  52"  info1: "visited: 8
+irg:     IF_EXAMPLE_main
 return in method of type IF_EXAMPLE_main
   res 0 type: int
 "}
 edge: {sourcename: "n52" targetname: "n24" label: "0" color: blue}
 edge: {sourcename: "n52" targetname: "n45" label: "1" }
 node: {title: "n45" label: "PhiIs  45" color: green info1: "visited: 8
+irg:     IF_EXAMPLE_main
 "}
 edge: {sourcename: "n45" targetname: "n30" label: "0" }
 edge: {sourcename: "n45" targetname: "n40" label: "1" }
@@ -42,32 +45,40 @@ edge: {sourcename: "n45" targetname: "n40" label: "1" }
 graph: { title: "n37"  label: "Block 37" status:clustered color:yellow
 edge: {sourcename: "n37" targetname: "n36" label: "0" color: red}
 node: {title: "n40" label: "SubIs  40"  info1: "visited: 8
+irg:     IF_EXAMPLE_main
 "}
 edge: {sourcename: "n40" targetname: "n30" label: "0" }
 edge: {sourcename: "n40" targetname: "n38" label: "1" }
 node: {title: "n42" label: "Jmp  42"  info1: "visited: 8
+irg:     IF_EXAMPLE_main
 "}
 }
 
 graph: { title: "n29"  label: "Block 29" status:clustered color:yellow
 edge: {sourcename: "n29" targetname: "n23" label: "0" color: red}
 node: {title: "n35" label: "ProjX 0 35" color: yellow info1: "visited: 8
+irg:     IF_EXAMPLE_main
 "}
 edge: {sourcename: "n35" targetname: "n34" label: "0" color: red}
 node: {title: "n36" label: "ProjX 1 36" color: yellow info1: "visited: 8
+irg:     IF_EXAMPLE_main
 "}
 edge: {sourcename: "n36" targetname: "n34" label: "0" color: red}
 node: {title: "n34" label: "Cond  34"  info1: "visited: 8
+irg:     IF_EXAMPLE_main
 "}
 edge: {sourcename: "n34" targetname: "n33" label: "0" }
 node: {title: "n33" label: "Projb Eq 33" color: yellow info1: "visited: 8
+irg:     IF_EXAMPLE_main
 "}
 edge: {sourcename: "n33" targetname: "n32" label: "0" }
 node: {title: "n32" label: "CmpT  32"  info1: "visited: 8
+irg:     IF_EXAMPLE_main
 "}
 edge: {sourcename: "n32" targetname: "n30" label: "0" }
 edge: {sourcename: "n32" targetname: "n31" label: "1" }
 node: {title: "n30" label: "ProjIs 0 30" color: yellow info1: "visited: 8
+irg:     IF_EXAMPLE_main
 "}
 edge: {sourcename: "n30" targetname: "n27" label: "0" }
 }
@@ -75,21 +86,27 @@ edge: {sourcename: "n30" targetname: "n27" label: "0" }
 graph: { title: "n19"  label: "Block 19" status:clustered color:yellow
 edge: {sourcename: "n19" targetname: "n23" label: "0" color: red}
 node: {title: "n24" label: "ProjM 1 24" color: yellow info1: "visited: 8
+irg:     IF_EXAMPLE_main
 "}
 edge: {sourcename: "n24" targetname: "n20" label: "0" color: blue}
 node: {title: "n38" label: "0x3Is  38" color: yellow info1: "visited: 8
+irg:     IF_EXAMPLE_main
 Const of type type_unknown
 "}
 node: {title: "n27" label: "ProjT 4 27" color: yellow info1: "visited: 8
+irg:     IF_EXAMPLE_main
 "}
 edge: {sourcename: "n27" targetname: "n20" label: "0" }
 node: {title: "n31" label: "0x2Is  31" color: yellow info1: "visited: 8
+irg:     IF_EXAMPLE_main
 Const of type type_unknown
 "}
 node: {title: "n23" label: "ProjX 0 23" color: yellow info1: "visited: 8
+irg:     IF_EXAMPLE_main
 "}
 edge: {sourcename: "n23" targetname: "n20" label: "0" color: red}
 node: {title: "n20" label: "Start  20" color: blue info1: "visited: 8
+irg:     IF_EXAMPLE_main
 start of method of type IF_EXAMPLE_main
   param 0 type: int
 "}

@@ -1,5 +1,5 @@
 graph: { title: "ir graph of GlobalType_OO_PROGRAM_EXAMPLE_main"
-display_edge_labels: yes
+display_edge_labels: no
 layoutalgorithm: mindepth
 manhattan_edges: yes
 port_sharing: no

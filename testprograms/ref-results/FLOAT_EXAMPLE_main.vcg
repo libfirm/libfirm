@@ -21,12 +21,14 @@ graph: { title: "g28" label: "FLOAT_EXAMPLE_main" status:clustered color:white
 graph: { title: "n17"  label: "Block 17" status:clustered color:yellow
 edge: {sourcename: "n17" targetname: "n32" label: "0" color: red}
 node: {title: "n18" label: "End  18" color: blue info1: "visited: 4
+irg:     FLOAT_EXAMPLE_main
 "}
 }
 
 graph: { title: "n29"  label: "Block 29" status:clustered color:yellow
 edge: {sourcename: "n29" targetname: "n23" label: "0" color: red}
 node: {title: "n32" label: "Return  32"  info1: "visited: 4
+irg:     FLOAT_EXAMPLE_main
 return in method of type FLOAT_EXAMPLE_main
   res 0 type: dbl
 "}
@@ -37,15 +39,19 @@ edge: {sourcename: "n32" targetname: "n30" label: "1" }
 graph: { title: "n19"  label: "Block 19" status:clustered color:yellow
 edge: {sourcename: "n19" targetname: "n23" label: "0" color: red}
 node: {title: "n24" label: "ProjM 1 24" color: yellow info1: "visited: 4
+irg:     FLOAT_EXAMPLE_main
 "}
 edge: {sourcename: "n24" targetname: "n20" label: "0" color: blue}
 node: {title: "n30" label: "1.234567890123456716800000000000E+19D  30" color: yellow info1: "visited: 4
+irg:     FLOAT_EXAMPLE_main
 Const of type type_unknown
 "}
 node: {title: "n23" label: "ProjX 0 23" color: yellow info1: "visited: 4
+irg:     FLOAT_EXAMPLE_main
 "}
 edge: {sourcename: "n23" targetname: "n20" label: "0" color: red}
 node: {title: "n20" label: "Start  20" color: blue info1: "visited: 4
+irg:     FLOAT_EXAMPLE_main
 start of method of type FLOAT_EXAMPLE_main
 "}
 }

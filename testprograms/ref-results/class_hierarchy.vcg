@@ -1,5 +1,5 @@
 graph: { title: "ir graph of class_hierarchy"
-display_edge_labels: yes
+display_edge_labels: no
 layoutalgorithm: mindepth
 manhattan_edges: yes
 port_sharing: no

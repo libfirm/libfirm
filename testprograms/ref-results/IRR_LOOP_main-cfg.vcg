@@ -33,5 +33,6 @@ edge: { sourcename: "n79" targetname: "n74"}
 node: {title: "n74" label: "Block n74" }
 edge: { sourcename: "n74" targetname: "n74"}
 node: {title: "n96" label: "Bad  96"  info1: "visited: 0
+irg:     main
 "}
 }

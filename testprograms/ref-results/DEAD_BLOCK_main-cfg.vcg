@@ -24,5 +24,6 @@ edge: { sourcename: "n67" targetname: "n63"}
 node: {title: "n63" label: "Block n63" }
 edge: { sourcename: "n63" targetname: "n63"}
 node: {title: "n62" label: "Bad  62"  info1: "visited: 0
+irg:     main
 "}
 }

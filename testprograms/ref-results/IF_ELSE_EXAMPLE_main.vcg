@@ -21,12 +21,14 @@ graph: { title: "g28" label: "IF_ELSE_EXAMPLE_main" status:clustered color:white
 graph: { title: "n62"  label: "Block 62" status:clustered color:yellow
 edge: {sourcename: "n62" targetname: "n63" label: "0" color: red}
 node: {title: "n61" label: "End  61" color: blue info1: "visited: 13
+irg:     IF_ELSE_EXAMPLE_main
 "}
 }
 
 graph: { title: "n66"  label: "Block 66" status:clustered color:yellow
 edge: {sourcename: "n66" targetname: "n67" label: "0" color: red}
 node: {title: "n63" label: "Return  63"  info1: "visited: 13
+irg:     IF_ELSE_EXAMPLE_main
 return in method of type IF_ELSE_EXAMPLE_main
   res 0 type: int
   res 1 type: int
@@ -39,18 +41,23 @@ edge: {sourcename: "n63" targetname: "n71" label: "2" }
 graph: { title: "n68"  label: "Block 68" status:clustered color:yellow
 edge: {sourcename: "n68" targetname: "n67" label: "0" color: red}
 node: {title: "n73" label: "ProjM 1 73" color: yellow info1: "visited: 13
+irg:     IF_ELSE_EXAMPLE_main
 "}
 edge: {sourcename: "n73" targetname: "n69" label: "0" color: blue}
 node: {title: "n72" label: "0x0Is  72" color: yellow info1: "visited: 13
+irg:     IF_ELSE_EXAMPLE_main
 Const of type type_unknown
 "}
 node: {title: "n71" label: "0x2Is  71" color: yellow info1: "visited: 13
+irg:     IF_ELSE_EXAMPLE_main
 Const of type type_unknown
 "}
 node: {title: "n67" label: "ProjX 0 67" color: yellow info1: "visited: 13
+irg:     IF_ELSE_EXAMPLE_main
 "}
 edge: {sourcename: "n67" targetname: "n69" label: "0" color: red}
 node: {title: "n69" label: "Start  69" color: blue info1: "visited: 13
+irg:     IF_ELSE_EXAMPLE_main
 start of method of type IF_ELSE_EXAMPLE_main
 "}
 }

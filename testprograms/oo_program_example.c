@@ -248,6 +248,8 @@ main(void)
   get_entity_ld_ident(proc_set_a_e);
   get_entity_ld_ident(proc_c_e);
 
+  dump_consts_local(1);
+  turn_off_edge_labels();
 
   dump_all_ir_graphs(dump_ir_graph);
   dump_all_ir_graphs(dump_ir_block_graph);
@@ -256,7 +258,6 @@ main(void)
   dump_all_ir_graphs(dump_type_graph);
   dump_all_types();
   dump_class_hierarchy (true);
-
 
   entity **free_methods;
   int arr_len;

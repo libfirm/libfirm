@@ -21,19 +21,23 @@ graph: { title: "g45" label: "CALL_STR_EXAMPLE_main" status:clustered color:whit
 graph: { title: "n56"  label: "Block 56" status:clustered color:yellow
 edge: {sourcename: "n56" targetname: "n57" label: "0" color: red}
 node: {title: "n55" label: "End  55" color: blue info1: "visited: 6
+irg:     CALL_STR_EXAMPLE_main
 "}
 }
 
 graph: { title: "n58"  label: "Block 58" status:clustered color:yellow
 edge: {sourcename: "n58" targetname: "n59" label: "0" color: red}
 node: {title: "n57" label: "Return  57"  info1: "visited: 6
+irg:     CALL_STR_EXAMPLE_main
 return in method of type CALL_STR_EXAMPLE_main
 "}
 edge: {sourcename: "n57" targetname: "n62" label: "0" color: blue}
 node: {title: "n62" label: "ProjM 0 62" color: yellow info1: "visited: 6
+irg:     CALL_STR_EXAMPLE_main
 "}
 edge: {sourcename: "n62" targetname: "n63" label: "0" color: blue}
 node: {title: "n63" label: "Call  63"  info1: "visited: 6
+irg:     CALL_STR_EXAMPLE_main
 calling method of type f
   param 0 type: ptr_to_string
 "}
@@ -45,17 +49,22 @@ edge: {sourcename: "n63" targetname: "n64" label: "2" }
 graph: { title: "n60"  label: "Block 60" status:clustered color:yellow
 edge: {sourcename: "n60" targetname: "n59" label: "0" color: red}
 node: {title: "n66" label: "ProjM 1 66" color: yellow info1: "visited: 6
+irg:     CALL_STR_EXAMPLE_main
 "}
 edge: {sourcename: "n66" targetname: "n61" label: "0" color: blue}
 node: {title: "n65" label: "SymC f  65"  info1: "visited: 6
+irg:     CALL_STR_EXAMPLE_main
 "}
 node: {title: "n64" label: "&(GlobalType_constStr)P  64" color: yellow info1: "visited: 6
+irg:     CALL_STR_EXAMPLE_main
 Const of type ptr_to_string
 "}
 node: {title: "n59" label: "ProjX 0 59" color: yellow info1: "visited: 6
+irg:     CALL_STR_EXAMPLE_main
 "}
 edge: {sourcename: "n59" targetname: "n61" label: "0" color: red}
 node: {title: "n61" label: "Start  61" color: blue info1: "visited: 6
+irg:     CALL_STR_EXAMPLE_main
 start of method of type CALL_STR_EXAMPLE_main
 "}
 }

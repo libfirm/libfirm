@@ -36,5 +36,6 @@ edge: { sourcename: "n100" targetname: "n83"}
 node: {title: "n103" label: "Block n103" }
 edge: { sourcename: "n103" targetname: "n85"}
 node: {title: "n111" label: "Bad  111"  info1: "visited: 0
+irg:     THREE_CFPRED_EXAMPLE_main
 "}
 }

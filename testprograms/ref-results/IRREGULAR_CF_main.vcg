@@ -21,6 +21,7 @@ graph: { title: "g28" label: "main" status:clustered color:white
 graph: { title: "n65"  label: "Block 65" status:clustered color:yellow
 edge: {sourcename: "n65" targetname: "n66" label: "0" color: red}
 node: {title: "n64" label: "End  64" color: blue info1: "visited: 5
+irg:     main
 "}
 }
 
@@ -28,6 +29,7 @@ graph: { title: "n67"  label: "Block 67" status:clustered color:yellow
 edge: {sourcename: "n67" targetname: "n89" label: "0" color: red}
 edge: {sourcename: "n67" targetname: "n68" label: "1" color: red}
 node: {title: "n66" label: "Return  66"  info1: "visited: 5
+irg:     main
 return in method of type main
 "}
 edge: {sourcename: "n66" targetname: "n92" label: "0" color: blue}
@@ -36,6 +38,7 @@ edge: {sourcename: "n66" targetname: "n92" label: "0" color: blue}
 graph: { title: "n90"  label: "Block 90" status:clustered color:yellow
 edge: {sourcename: "n90" targetname: "n91" label: "0" color: red}
 node: {title: "n89" label: "Jmp  89"  info1: "visited: 5
+irg:     main
 "}
 }
 
@@ -43,24 +46,30 @@ graph: { title: "n69"  label: "Block 69" status:clustered color:yellow
 edge: {sourcename: "n69" targetname: "n82" label: "0" color: red}
 edge: {sourcename: "n69" targetname: "n70" label: "1" color: red}
 node: {title: "n68" label: "Jmp  68"  info1: "visited: 5
+irg:     main
 "}
 }
 
 graph: { title: "n83"  label: "Block 83" status:clustered color:yellow
 edge: {sourcename: "n83" targetname: "n84" label: "0" color: red}
 node: {title: "n91" label: "ProjX 0 91" color: yellow info1: "visited: 5
+irg:     main
 "}
 edge: {sourcename: "n91" targetname: "n85" label: "0" color: red}
 node: {title: "n82" label: "ProjX 1 82" color: yellow info1: "visited: 5
+irg:     main
 "}
 edge: {sourcename: "n82" targetname: "n85" label: "0" color: red}
 node: {title: "n85" label: "Cond  85"  info1: "visited: 5
+irg:     main
 "}
 edge: {sourcename: "n85" targetname: "n86" label: "0" }
 node: {title: "n86" label: "Projb Eq 86" color: yellow info1: "visited: 5
+irg:     main
 "}
 edge: {sourcename: "n86" targetname: "n87" label: "0" }
 node: {title: "n87" label: "CmpT  87"  info1: "visited: 5
+irg:     main
 "}
 edge: {sourcename: "n87" targetname: "n81" label: "0" }
 edge: {sourcename: "n87" targetname: "n88" label: "1" }
@@ -69,24 +78,30 @@ edge: {sourcename: "n87" targetname: "n88" label: "1" }
 graph: { title: "n71"  label: "Block 71" status:clustered color:yellow
 edge: {sourcename: "n71" targetname: "n72" label: "0" color: red}
 node: {title: "n70" label: "Jmp  70"  info1: "visited: 5
+irg:     main
 "}
 }
 
 graph: { title: "n73"  label: "Block 73" status:clustered color:yellow
 edge: {sourcename: "n73" targetname: "n74" label: "0" color: red}
 node: {title: "n84" label: "ProjX 0 84" color: yellow info1: "visited: 5
+irg:     main
 "}
 edge: {sourcename: "n84" targetname: "n77" label: "0" color: red}
 node: {title: "n72" label: "ProjX 1 72" color: yellow info1: "visited: 5
+irg:     main
 "}
 edge: {sourcename: "n72" targetname: "n77" label: "0" color: red}
 node: {title: "n77" label: "Cond  77"  info1: "visited: 5
+irg:     main
 "}
 edge: {sourcename: "n77" targetname: "n78" label: "0" }
 node: {title: "n78" label: "Projb Eq 78" color: yellow info1: "visited: 5
+irg:     main
 "}
 edge: {sourcename: "n78" targetname: "n79" label: "0" }
 node: {title: "n79" label: "CmpT  79"  info1: "visited: 5
+irg:     main
 "}
 edge: {sourcename: "n79" targetname: "n81" label: "0" }
 edge: {sourcename: "n79" targetname: "n80" label: "1" }
@@ -95,21 +110,27 @@ edge: {sourcename: "n79" targetname: "n80" label: "1" }
 graph: { title: "n75"  label: "Block 75" status:clustered color:yellow
 edge: {sourcename: "n75" targetname: "n74" label: "0" color: red}
 node: {title: "n92" label: "ProjM 1 92" color: yellow info1: "visited: 5
+irg:     main
 "}
 edge: {sourcename: "n92" targetname: "n76" label: "0" color: blue}
 node: {title: "n88" label: "0x2Is  88" color: yellow info1: "visited: 5
+irg:     main
 Const of type type_unknown
 "}
 node: {title: "n81" label: "0x0Is  81" color: yellow info1: "visited: 5
+irg:     main
 Const of type type_unknown
 "}
 node: {title: "n80" label: "0x1Is  80" color: yellow info1: "visited: 5
+irg:     main
 Const of type type_unknown
 "}
 node: {title: "n74" label: "ProjX 0 74" color: yellow info1: "visited: 5
+irg:     main
 "}
 edge: {sourcename: "n74" targetname: "n76" label: "0" color: red}
 node: {title: "n76" label: "Start  76" color: blue info1: "visited: 5
+irg:     main
 start of method of type main
 "}
 }

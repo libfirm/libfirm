@@ -1,5 +1,5 @@
 graph: { title: "ir graph of PRIMA_set_a"
-display_edge_labels: yes
+display_edge_labels: no
 layoutalgorithm: mindepth
 manhattan_edges: yes
 port_sharing: no
@@ -21,33 +21,40 @@ graph: { title: "g71" label: "set_a" status:clustered color:white
 graph: { title: "n135"  label: "Block 135" status:clustered color:yellow
 edge: {sourcename: "n135" targetname: "n136" label: "0" color: red}
 node: {title: "n134" label: "End  134" color: blue info1: "visited: 13
+irg:     set_a
 "}
 }
 
 graph: { title: "n137"  label: "Block 137" status:clustered color:yellow
 edge: {sourcename: "n137" targetname: "n138" label: "0" color: red}
 node: {title: "n136" label: "Return  136"  info1: "visited: 13
+irg:     set_a
 return in method of type set_a
 "}
 edge: {sourcename: "n136" targetname: "n141" label: "0" color: blue}
 node: {title: "n141" label: "ProjM 0 141" color: yellow info1: "visited: 13
+irg:     set_a
 "}
 edge: {sourcename: "n141" targetname: "n142" label: "0" color: blue}
 node: {title: "n142" label: "Store  142"  info1: "visited: 13
+irg:     set_a
 "}
 edge: {sourcename: "n142" targetname: "n147" label: "0" color: blue}
 edge: {sourcename: "n142" targetname: "n145" label: "1" }
 edge: {sourcename: "n142" targetname: "n143" label: "2" }
 node: {title: "n145" label: "Sel a 145"  info1: "visited: 13
+irg:     set_a
 Selecting entity of type int
   from entity of type PRIMA
 "}
 edge: {sourcename: "n145" targetname: "n147" label: "0" color: blue}
 edge: {sourcename: "n145" targetname: "n146" label: "1" }
 node: {title: "n146" label: "ProjP 0 146" color: yellow info1: "visited: 13
+irg:     set_a
 "}
 edge: {sourcename: "n146" targetname: "n144" label: "0" }
 node: {title: "n143" label: "ProjIs 1 143" color: yellow info1: "visited: 13
+irg:     set_a
 "}
 edge: {sourcename: "n143" targetname: "n144" label: "0" }
 }
@@ -55,15 +62,19 @@ edge: {sourcename: "n143" targetname: "n144" label: "0" }
 graph: { title: "n139"  label: "Block 139" status:clustered color:yellow
 edge: {sourcename: "n139" targetname: "n138" label: "0" color: red}
 node: {title: "n147" label: "ProjM 1 147" color: yellow info1: "visited: 13
+irg:     set_a
 "}
 edge: {sourcename: "n147" targetname: "n140" label: "0" color: blue}
 node: {title: "n144" label: "ProjT 4 144" color: yellow info1: "visited: 13
+irg:     set_a
 "}
 edge: {sourcename: "n144" targetname: "n140" label: "0" }
 node: {title: "n138" label: "ProjX 0 138" color: yellow info1: "visited: 13
+irg:     set_a
 "}
 edge: {sourcename: "n138" targetname: "n140" label: "0" color: red}
 node: {title: "n140" label: "Start  140" color: blue info1: "visited: 13
+irg:     set_a
 start of method of type set_a
   param 0 type: class_prima_ptr
   param 1 type: int

@@ -22,89 +22,110 @@ graph: { title: "n200"  label: "Block 200" status:clustered color:yellow
 edge: {sourcename: "n200" targetname: "n202" label: "0" color: red}
 edge: {sourcename: "n200" targetname: "n201" label: "1" color: red}
 node: {title: "n204" label: "PhiM  204" color: green info1: "visited: 22
+irg:     OO_INLINE_EXAMPLE_main
 "}
 edge: {sourcename: "n204" targetname: "n215" label: "0" color: blue}
 edge: {sourcename: "n204" targetname: "n205" label: "1" color: blue}
 node: {title: "n205" label: "Store  205"  info1: "visited: 22
+irg:     OO_INLINE_EXAMPLE_main
 "}
 edge: {sourcename: "n205" targetname: "n204" label: "0" color: blue}
 edge: {sourcename: "n205" targetname: "n210" label: "1" }
 edge: {sourcename: "n205" targetname: "n206" label: "2" }
 node: {title: "n210" label: "Sel a 210"  info1: "visited: 22
+irg:     OO_INLINE_EXAMPLE_main
 Selecting entity of type int
   from entity of type PRIMA_INLINE
 "}
 edge: {sourcename: "n210" targetname: "n204" label: "0" color: blue}
 edge: {sourcename: "n210" targetname: "n211" label: "1" }
 node: {title: "n206" label: "PhiIs  206" color: green info1: "visited: 22
+irg:     OO_INLINE_EXAMPLE_main
 "}
 edge: {sourcename: "n206" targetname: "n209" label: "0" }
 edge: {sourcename: "n206" targetname: "n207" label: "1" }
 node: {title: "n207" label: "PhiIs  207" color: green info1: "visited: 22
+irg:     OO_INLINE_EXAMPLE_main
 "}
 edge: {sourcename: "n207" targetname: "n208" label: "0" }
 edge: {sourcename: "n207" targetname: "n206" label: "1" }
 node: {title: "n201" label: "Jmp  201"  info1: "visited: 22
+irg:     OO_INLINE_EXAMPLE_main
 "}
 }
 
 graph: { title: "n203"  label: "Block 203" status:clustered color:yellow
 edge: {sourcename: "n203" targetname: "n198" label: "0" color: red}
 node: {title: "n215" label: "ProjM 0 215" color: yellow info1: "visited: 22
+irg:     OO_INLINE_EXAMPLE_main
 "}
 edge: {sourcename: "n215" targetname: "n216" label: "0" color: blue}
 node: {title: "n216" label: "Store  216"  info1: "visited: 22
+irg:     OO_INLINE_EXAMPLE_main
 "}
 edge: {sourcename: "n216" targetname: "n219" label: "0" color: blue}
 edge: {sourcename: "n216" targetname: "n218" label: "1" }
 edge: {sourcename: "n216" targetname: "n217" label: "2" }
 node: {title: "n218" label: "Sel a 218"  info1: "visited: 22
+irg:     OO_INLINE_EXAMPLE_main
 Selecting entity of type int
   from entity of type PRIMA_INLINE
 "}
 edge: {sourcename: "n218" targetname: "n219" label: "0" color: blue}
 edge: {sourcename: "n218" targetname: "n211" label: "1" }
 node: {title: "n219" label: "ProjM 0 219" color: yellow info1: "visited: 22
+irg:     OO_INLINE_EXAMPLE_main
 "}
 edge: {sourcename: "n219" targetname: "n212" label: "0" color: blue}
 node: {title: "n211" label: "ProjP 2 211" color: yellow info1: "visited: 22
+irg:     OO_INLINE_EXAMPLE_main
 "}
 edge: {sourcename: "n211" targetname: "n212" label: "0" }
 node: {title: "n212" label: "Alloc  212"  info1: "visited: 22
+irg:     OO_INLINE_EXAMPLE_main
 allocating entity of type PRIMA_INLINE
 "}
 edge: {sourcename: "n212" targetname: "n214" label: "0" color: blue}
 edge: {sourcename: "n212" targetname: "n213" label: "1" }
 node: {title: "n208" label: "0x0Is  208" color: yellow info1: "visited: 22
+irg:     OO_INLINE_EXAMPLE_main
 Const of type type_unknown
 "}
 node: {title: "n202" label: "Jmp  202"  info1: "visited: 22
+irg:     OO_INLINE_EXAMPLE_main
 "}
 }
 
 graph: { title: "n197"  label: "Block 197" status:clustered color:yellow
 edge: {sourcename: "n197" targetname: "n198" label: "0" color: red}
 node: {title: "n217" label: "0x2Is  217" color: yellow info1: "visited: 22
+irg:     OO_INLINE_EXAMPLE_main
 Const of type type_unknown
 "}
 node: {title: "n214" label: "ProjM 1 214" color: yellow info1: "visited: 22
+irg:     OO_INLINE_EXAMPLE_main
 "}
 edge: {sourcename: "n214" targetname: "n199" label: "0" color: blue}
 node: {title: "n213" label: "SymC PRIMA_INLINE size  213"  info1: "visited: 22
+irg:     OO_INLINE_EXAMPLE_main
 "}
 node: {title: "n209" label: "0x5Is  209" color: yellow info1: "visited: 22
+irg:     OO_INLINE_EXAMPLE_main
 Const of type type_unknown
 "}
 node: {title: "n198" label: "ProjX 0 198" color: yellow info1: "visited: 22
+irg:     OO_INLINE_EXAMPLE_main
 "}
 edge: {sourcename: "n198" targetname: "n199" label: "0" color: red}
 node: {title: "n199" label: "Start  199" color: blue info1: "visited: 22
+irg:     OO_INLINE_EXAMPLE_main
 start of method of type OO_INLINE_EXAMPLE_main
 "}
 }
 
 graph: { title: "n195"  label: "Block 195" status:clustered color:yellow
 node: {title: "n194" label: "End  194" color: blue info1: "visited: 22
+irg:     OO_INLINE_EXAMPLE_main
 "}
 }
 
