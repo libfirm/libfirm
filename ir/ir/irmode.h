@@ -266,6 +266,9 @@ extern ir_mode *mode_C;  /**< 8 bit char */
 extern ir_mode *mode_U;  /**< 16 bit unicode char */
 
 extern ir_mode *mode_P;  /**< pointer */
+extern ir_mode *mode_P_mach; /**< A pointer mode that is set by the client of libfirm.  This mode
+			       represents the pointer size of the target machine. Is initialized
+			       to mode_P. */
 
 /* -- Auxiliary modes necessary for the Firm representation -- */
 extern ir_mode *mode_b;  /**< internal boolean */
@@ -300,6 +303,9 @@ ir_mode *get_modeM(void);
 ir_mode *get_modeT(void);
 ir_mode *get_modeANY(void);
 ir_mode *get_modeBAD(void);
+
+ir_mode *get_modeP_mach(void);
+ir_mode *set_modeP_mach(ir_mode *p);
 
 /**
    Functions to check, whether a modecode is signed, float, int, num, data,
