@@ -1555,8 +1555,12 @@ static INLINE ir_node ** new_frag_arr (ir_node *n)
   if (get_irn_op(n) == op_Call)
     arr[0] = new_Proj(n, mode_M, pn_Call_M_except);
   else {
-    assert(pn_Raise_M == pn_Quot_M == pn_DivMod_M == pn_Div_M == pn_Mod_M == pn_Load_M
-	   == pn_Store_M == pn_Alloc_M);
+    assert((pn_Quot_M == pn_DivMod_M) &&
+	   (pn_Quot_M == pn_Div_M)    &&
+	   (pn_Quot_M == pn_Mod_M)    &&
+	   (pn_Quot_M == pn_Load_M)   &&
+	   (pn_Quot_M == pn_Store_M)  &&
+	   (pn_Quot_M == pn_Alloc_M)    );
     arr[0] = new_Proj(n, mode_M, pn_Alloc_M);
   }
   set_optimize(opt);
@@ -1994,9 +1998,9 @@ new_d_Mul (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode)
  */
 static void allocate_frag_arr(ir_node *res, ir_op *op, ir_node ***frag_store) {
   if (get_opt_precise_exc_context()) {
-    if (! *frag_store &&
-	(current_ir_graph->phase_state == phase_building) &&
-	(get_irn_op(res) == op)) { /* Could be optimized away. */
+    if ((current_ir_graph->phase_state == phase_building) &&
+	(get_irn_op(res) == op) && /* Could be optimized away. */
+	!*frag_store)    /* Could be a cse where the arr is already set. */ {
       *frag_store = new_frag_arr(res);
     }
   }

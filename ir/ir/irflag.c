@@ -202,10 +202,12 @@ void set_opt_tail_recursion(int value)
 /* Enable/Disable precise exception context. */
 void set_opt_precise_exc_context(int value)
 {
+#if PRECISE_EXC_CONTEXT
   if (value)
     libFIRM_opt |= OPT_PRECISE_EXC_CONTEXT;
   else
     libFIRM_opt &= ~OPT_PRECISE_EXC_CONTEXT;
+#endif
 }
 
 /* Save the current optimization state. */

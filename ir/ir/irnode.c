@@ -103,6 +103,7 @@ new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mo
 
   assert(irg && op && mode);
   res = (ir_node *) obstack_alloc (irg->obst, node_size);
+  memset((void *)res, 0, node_size);
 
   res->kind = k_ir_node;
   res->op = op;

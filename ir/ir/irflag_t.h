@@ -190,11 +190,7 @@ static INLINE int get_opt_tail_recursion(void)
 /** Returns precise exception context setting. */
 static INLINE int get_opt_precise_exc_context(void)
 {
-#if PRECISE_EXC_CONTEXT
-  return 0;
-#else
   return libFIRM_opt & OPT_PRECISE_EXC_CONTEXT;
-#endif
 }
 
 #endif /* _IRFLAG_T_H_ */
