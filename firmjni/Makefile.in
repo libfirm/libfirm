@@ -15,7 +15,10 @@ srcdir = @srcdir@
 topdir = ..
 subdir = firmjni
 
-enable_heapanal := @enable_heapanalysis@
+enable_heapanal         := @enable_heapanalysis@
+enable_libcore          := @enable_libcore@
+enable_external_effects := @enable_external_effects@
+disable_libiberty       := @disable_libiberty@
 
 # The library implementing the JNI methods.  This name is also
 # known to the generator for the JNI interface and used in the
@@ -47,13 +50,28 @@ CPPFLAGS += 	-I$(top_srcdir)/ir/ir  -I$(top_srcdir)/ir/common  	\
 		-I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/tr  	\
 	        -I$(top_srcdir)/ir/tv -I$(top_srcdir)/ir/debug 		\
 	        -I$(top_srcdir)/ir/ana -I$(top_srcdir)/ir/opt		\
-		-I$(top_srcdir)/ir/st -I$(top_srcdir)/ir/stat
+		-I$(top_srcdir)/ir/st -I$(top_srcdir)/ir/stat           \
+		-I$(topdir)/ir/config                                   \
+		-I$(topdir)
 
-LDFLAGS += -I$(topdir)
+LDFLAGS += -L$(libdir)
 
-ifeq ($enable_heapanal,yes)
-LDFLAGS += -L$(libdir) -lfirmlower -labor
+ifeq ($(enable_heapanal),yes)
+LDFLAGS += -lfirmlower -labor -lheapanal
 endif
+
+ifeq ($(enable_libcore),yes)
+LDFLAGS += -lcore
+endif
+
+ifeq ($(enable_external_effects),yes)
+LDFLAGS += -lxml
+endif
+
+ifeq ($(disable_libiberty),yes)
+LDFLAGS += -liberty
+endif
+
 
 FIRM_HEADERS=$(notdir $(FIRM_PATH_HEADERS))
 MEMBERS=$(subst .h,.m,$(shell echo $(FIRM_HEADERS)|$(SHELL_TOUPPER)))
@@ -132,16 +150,10 @@ $(OFILES):
 	gcc $(CPPFLAGS) -c $(@:.o=.c) -o $@
 
 
-ifeq ($(enable_heapanal),yes)
-HEAPANALLIB = -lheapanal
-else
-HEAPANALLIB =
-endif
-
-# We need firmlower and abor for heap analysis stuff, wich is called from aux/Heapanal.java
-# BY the way, what is sw/lib/  can this be removed???
+# We need firmlower and abor for heap analysis stuff, which is called from aux/Heapanal.java
+# BY the way, what is ../../sw/lib/  can this be removed? Probaly, so I did.
 jni:    $(HFILES) $(OFILES)  # ../libfirm.a
-	gcc -shared -fPIC -o $(LIBNAME) *.o -lfirm -lxml2 -L.. $(HEAPANALLIB) $(LDFLAGS) -liberty -L../../sw/lib
+	gcc -shared -fPIC -o $(LIBNAME) *.o -lfirm -L.. $(LDFLAGS)
 install:
 	cp libfirmjni.so $(libdir)
 #	mkdir $(javadir)
