@@ -24,7 +24,7 @@
 # include "irgraph_t.h"
 # include "iropt_t.h"
 # include "irgwalk.h"
-# include "ircons.h"
+# include "ircons_t.h"
 # include "irgmod.h"
 # include "array.h"
 # include "pset.h"

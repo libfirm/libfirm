@@ -18,7 +18,7 @@
 # include "irgraph_t.h"
 # include "irmode_t.h"
 # include "iropt_t.h"
-# include "ircons.h"
+# include "ircons_t.h"
 # include "irgmod.h"
 # include "irvrfy.h"
 # include "tv.h"
