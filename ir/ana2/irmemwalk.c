@@ -68,12 +68,8 @@ static void irg_walk_mem_node (ir_node *node,
   if (get_irn_visited (node) >= walk_env->visited) {
     return;
   } else {
-    set_irn_visited (node, walk_env->visited + 1);
+    set_irn_visited (node, walk_env->visited);
   }
-
-  fprintf (stdout, "Node (0x%08x).op = %s\n", (int)
-           node,
-           get_op_name (get_irn_op (node)));
 
   if (NULL != walk_env->pre) {
     walk_env->pre (node, walk_env->env);
@@ -130,7 +126,6 @@ static void irg_walk_mem_node (ir_node *node,
   case (iro_Phi): {
     int i;
     int n_ins = get_irn_arity (node);
-
 
     for (i = 0; i < n_ins; i ++) {
       in = get_irn_n (node, i);
@@ -237,3 +232,13 @@ void irg_walk_mem (ir_graph *graph,
 
   assert (! get_irg_is_mem_visited (graph));
 }
+
+
+
+/*
+  $Log$
+  Revision 1.2  2004/10/22 14:41:12  liekweg
+  execute 'pre' for a change.  Also, add CVS log
+
+
+*/
