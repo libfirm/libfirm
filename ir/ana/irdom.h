@@ -89,6 +89,16 @@ ir_node *get_Block_dominated_first(const ir_node *bl);
 ir_node *get_Block_dominated_next(const ir_node *dom);
 
 /**
+ * Iterate over all nodes which are immediately dominated by a given
+ * node.
+ * @param bl The block whose dominated blocks shall be iterated on.
+ * @param curr An iterator variable of type ir_node*
+ */
+#define dominates_for_each(bl,curr) \
+	for(curr = get_Block_dominated_first(bl); curr; \
+			curr = get_Block_dominated_next(curr))
+
+/**
  * Check, if a block dominates another block.
  * @param a The first block.
  * @param b The second block.
