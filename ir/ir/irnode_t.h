@@ -33,8 +33,12 @@
 #include "array.h"
 
 #include "set.h"
+#include "list.h"
 #include "entity_t.h"
 #include "type_t.h"
+#include "tv_t.h"
+
+#define FIRM_EDGES_INPLACE 1
 
 
 /** ir node attributes **/
@@ -169,6 +173,15 @@ typedef struct {
 
 typedef pn_Cmp confirm_attr; /** Attribute to hold compare operation */
 
+/**
+ * Edge info to put into an irn.
+ */
+typedef struct _irn_edge_info_t {
+	struct list_head outs_head;
+	int out_count;
+} irn_edge_info_t;
+
+
 /** Some irnodes just have one attribute, these are stored here,
    some have more. Their name is 'irnodename_attr' */
 typedef union {
@@ -217,11 +230,11 @@ struct ir_node {
 			      during optimization to link to nodes that
 			      shall replace a node. */
   /* ------- Fields for optimizations / analysis information ------- */
-  struct ir_node **out;    /**< array of out edges */
+  struct ir_node **out;    /**< @deprecated array of out edges. */
   struct dbg_info* dbi;    /**< A pointer to information for debug support. */
   /* ------- For debugging ------- */
 #ifdef DEBUG_libfirm
-  int out_valid;           /** < indicate that out edges are valid */
+	int out_valid;
   int node_nr;             /**< a unique node number for each node to make output
 			      readable. */
 #endif
@@ -230,6 +243,9 @@ struct ir_node {
 #ifdef  DO_HEAPANALYSIS
   struct abstval *av;
   struct section *sec;
+#endif
+#ifdef FIRM_EDGES_INPLACE
+	irn_edge_info_t edge_info;
 #endif
   /* ------- Opcode depending fields -------- */
   attr attr;               /**< attribute of this node. Depends on opcode.
@@ -539,6 +555,28 @@ _is_Block_dead(const ir_node *block) {
   }
 }
 
+static INLINE tarval *_get_Const_tarval (ir_node *node) {
+  assert (node->op == op_Const);
+  return node->attr.con.tv;
+}
+
+
+static INLINE cnst_classify_t _classify_Const(ir_node *node)
+{
+	ir_op *op;
+  assert(_is_ir_node(node));
+
+	op = _get_irn_op(node);
+
+	if(op == op_Const)
+		return classify_tarval(_get_Const_tarval(node));
+	else if(op == op_SymConst)
+		return CNST_SYMCONST;
+
+	return CNST_NO_CONST;
+}
+
+
 /* this section MUST contain all inline functions */
 #define is_ir_node(thing)          _is_ir_node(thing)
 #define get_irn_intra_arity(node)  _get_irn_intra_arity(node)
@@ -565,5 +603,7 @@ _is_Block_dead(const ir_node *block) {
 #define is_Block(node)             _is_Block(node)
 #define set_Block_dead(block)      _set_Block_dead(block)
 #define is_Block_dead(block)       _is_Block_dead(block)
+#define get_Const_tarval(node)		 _get_Const_tarval(node)
+#define classify_Const(node)			 _classify_Const(node)
 
 # endif /* _IRNODE_T_H_ */
