@@ -49,7 +49,7 @@ extern char *dump_file_suffix;
  *  name of the entity describing the procedure (irg->entity) and the
  *  ending .vcg.  Eventually overwrites existing files.
  *
- * @see turn_of_edge_labels()
+ * @see turn_off_edge_labels()
  */
 void dump_ir_graph (ir_graph *irg);
 
@@ -67,7 +67,7 @@ void dump_ir_graph (ir_graph *irg);
  *  name of the entity describing the procedure (irg->entity) and the
  *  ending .vcg.  Eventually overwrites existing files.
  *
- * @see turn_of_edge_labels()
+ * @see turn_off_edge_labels()
  */
 void dump_ir_block_graph (ir_graph *irg);
 
@@ -84,7 +84,7 @@ void dump_ir_block_graph (ir_graph *irg);
  *   name of the entity describing the procedure (irg->entity) and the
  *   ending -cfg.vcg.  Eventually overwrites existing files.
  *
- * @see turn_of_edge_labels()
+ * @see turn_off_edge_labels()
  */
 void dump_cfg (ir_graph *irg);
 
@@ -99,7 +99,7 @@ void dump_cfg (ir_graph *irg);
  *  name of the entity describing the procedure (irg->entity) and the
  *  ending -type.vcg.  Eventually overwrites existing files.
  *
- * @see turn_of_edge_labels()
+ * @see turn_off_edge_labels()
  */
 void dump_type_graph (ir_graph *irg);
 
@@ -114,7 +114,7 @@ void dump_type_graph (ir_graph *irg);
  *   format.
  *   Dumps the graph to a file named All_types.vcg.
  *
- * @see turn_of_edge_labels()
+ * @see turn_off_edge_labels()
  */
 void dump_all_types (void);
 
@@ -149,7 +149,7 @@ void dump_class_hierarchy (bool entities);
  *  name of the entity describing the procedure (irg->entity) and the
  *  ending -all.vcg.  Eventually overwrites existing files.
  *
- * @see turn_of_edge_labels()
+ * @see turn_off_edge_labels()
  */
 void dump_ir_graph_w_types (ir_graph *irg);
 
@@ -167,7 +167,7 @@ void dump_ir_graph_w_types (ir_graph *irg);
  *  name of the entity describing the procedure (irg->entity) and the
  *  ending -all.vcg.  Eventually overwrites existing files.
  *
- * @see turn_of_edge_labels()
+ * @see turn_off_edge_labels()
  */
 void dump_ir_block_graph_w_types (ir_graph *irg);
 
@@ -217,7 +217,7 @@ typedef void dump_graph_func(ir_graph *irg);
  *   - dump_type_graph()
  *   - dump_ir_graph_w_types()
  *
- * @see turn_of_edge_labels()
+ * @see turn_off_edge_labels()
  */
 void dump_all_ir_graphs (dump_graph_func *dump_graph);
 
