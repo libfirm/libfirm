@@ -259,7 +259,11 @@ typedef enum {
   loopinfo_consistent,      /**< IntRAprocedural loop information constructed and valid. */
   loopinfo_inconsistent,    /**< IntRAprocedural loop information constructed and invalid. */
   loopinfo_ip_consistent,   /**< IntERprocedural loop information constructed and valid. */
-  loopinfo_ip_inconsistent  /**< IntERprocedural loop information constructed and invalid. */
+  loopinfo_ip_inconsistent, /**< IntERprocedural loop information constructed and invalid. */
+  loopinfo_cf_consistent,      /**< IntRAprocedural control loop information constructed and valid. */
+  loopinfo_cf_inconsistent,    /**< IntRAprocedural control loop information constructed and invalid. */
+  loopinfo_cf_ip_consistent,   /**< IntERprocedural control loop information constructed and valid. */
+  loopinfo_cf_ip_inconsistent  /**< IntERprocedural control loop information constructed and invalid. */
 } irg_loopinfo_state;
 irg_loopinfo_state get_irg_loopinfo_state(ir_graph *irg);
 void set_irg_loopinfo_state(ir_graph *irg, irg_loopinfo_state s);
