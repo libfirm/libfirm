@@ -481,7 +481,7 @@ static int cond_cmp(const void *a, const void *b, size_t size)
  * blocks in which phis are located.
  */
 typedef struct _cond_info_t {
-	struct list_head list;			/**< Used to list all of these structs per class. */
+	struct list_head list;			/**< Used to list all of these structs per method. */
 
 	struct list_head roots;			/**< A list of non-depending conds. Two conds are
 																independent, if yot can not reach the one from the
@@ -499,7 +499,7 @@ static void _find_conds(ir_node *irn, long visited_nr,
 		ir_node *dominator, cond_t *masked_by, int pos, int depth, cond_info_t *ci)
 {
 	ir_node *block;
-	int is_modeb_cond = 0;
+	int saw_switch_cond = 0;
 
 	block = get_nodes_block(irn);
 
@@ -523,8 +523,10 @@ static void _find_conds(ir_node *irn, long visited_nr,
 			ir_node *cond = get_Proj_pred(irn);
 
 			/* true, if the mode is a mode_b cond _NO_ switch cond */
-			is_modeb_cond = get_irn_opcode(cond) == iro_Cond
+			int is_modeb_cond = get_irn_opcode(cond) == iro_Cond
 				&& get_irn_mode(get_Cond_selector(cond)) == mode_b;
+
+			saw_switch_cond = !is_modeb_cond;
 
 			/* Check, if the pred of the proj is a Cond
 			 * with a Projb as selector.
@@ -571,6 +573,7 @@ static void _find_conds(ir_node *irn, long visited_nr,
 				 * root list of the conf trees.
 				 */
 				else {
+					DBG((dbg, LEVEL_2, "%Ddeleting from list: %n, res: %n\n", depth, masked_by->cond, res->cond));
 					assert(res->cases[proj].pos < 0);
 					list_del_init(&masked_by->list);
 				}
@@ -582,7 +585,7 @@ static void _find_conds(ir_node *irn, long visited_nr,
 			}
 		}
 
-		if(get_Block_block_visited(block) < visited_nr) {
+		if(get_Block_block_visited(block) < visited_nr && !saw_switch_cond) {
 
 			set_Block_block_visited(block, visited_nr);
 
@@ -828,7 +831,7 @@ static void annotate_cond_info_post(ir_node *irn, void *data)
 			 */
 			list_add(&cwi->cond_info_head, &ci->list);
 
-			DBG((dbg, LEVEL_2, "searching conds at %n\n", irn));
+			DBG((dbg, LEVEL_2, "searching conds at %n(%n)\n", irn, block));
 
 			/*
 			 * Fill the set with conds we find on the way from
@@ -931,7 +934,7 @@ void opt_if_conv(ir_graph *irg, opt_if_conv_info_t *params)
 	/* Init the debug stuff. */
 	dbg = firm_dbg_register("firm.opt.ifconv");
 #if 0
-	firm_dbg_set_mask(dbg, LEVEL_1);
+	firm_dbg_set_mask(dbg, LEVEL_1 | LEVEL_2 | LEVEL_3);
 #endif
 
 	/* Ensure, that the dominators are computed. */
