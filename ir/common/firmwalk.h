@@ -36,6 +36,11 @@
 #include "irgraph.h"
 #include "typewalk.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /** Returns the link of a firm node.
  *  Possible firm structures are: entity, type, ir_graph, ir_node and
  *  ir_mode. Otherwise this function has no effect
@@ -204,5 +209,10 @@ void firm_walk(firm_walk_interface *wif);
 
 /** Finalize the walker and frees all stored data for dumping */
 void firm_walk_finalize(void);
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif /* _FIRM_WALK_H_ */
