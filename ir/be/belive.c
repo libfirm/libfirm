@@ -60,26 +60,27 @@ static INLINE void mark_live_end(ir_node *block, const ir_node *irn)
 static void live_end_at_block(ir_node *def, ir_node *block,
 		pset *visited, int is_true_out)
 {
-	if(pset_find_ptr(visited, block))
-		return;
-
-	pset_insert_ptr(visited, block);
 	mark_live_end(block, def);
-
 	if(is_true_out)
 		mark_live_out(block, def);
 
-	/*
-	 * If this block is not the definition block, we have to go up
-	 * further.
-	 */
-	if(get_nodes_block(def) != block) {
-		int i, n;
+	if(!pset_find_ptr(visited, block)) {
 
-		mark_live_in(block, def);
+		pset_insert_ptr(visited, block);
 
-		for(i = 0, n = get_irn_arity(block); i < n; ++i)
-			live_end_at_block(def, get_nodes_block(get_irn_n(block, i)), visited, 1);
+		/*
+		 * If this block is not the definition block, we have to go up
+		 * further.
+		 */
+		if(get_nodes_block(def) != block) {
+			int i, n;
+
+			mark_live_in(block, def);
+
+			for(i = 0, n = get_irn_arity(block); i < n; ++i)
+				live_end_at_block(def, get_nodes_block(get_irn_n(block, i)), visited, 1);
+		}
+
 	}
 }
 
@@ -96,7 +97,7 @@ static void liveness_for_node(ir_node *irn, void *env)
 	ir_node *def_block;
 	pset *visited;
 
-	/* Don't compute liveness information fornon-data nodes. */
+	/* Don't compute liveness information for non-data nodes. */
 	if(!is_data_node(irn))
 		return;
 
@@ -117,13 +118,6 @@ static void liveness_for_node(ir_node *irn, void *env)
 
 		/* Get the block where the usage is in. */
 		use_block = get_nodes_block(use);
-
-		/*
-		 * If the block of the definition equals the use block, we can skip
-		 * the following computations, since this use is local to a block.
-		 */
-		if(def_block == use_block)
-			continue;
 
 		/*
 		 * If the use is a phi function, determine the corresponding block
@@ -148,7 +142,7 @@ static void liveness_for_node(ir_node *irn, void *env)
 		 * Else, the value is live in at this block. Mark it and call live
 		 * out on the predecessors.
 		 */
-		else {
+		else if(def_block != use_block) {
 			int i, n;
 
 			mark_live_in(use_block, irn);
