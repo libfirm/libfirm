@@ -6,6 +6,7 @@
 #ifndef _PDEQ_H
 #define _PDEQ_H
 
+#include <string.h>
 #include "misc.h"
 
 typedef struct pdeq pdeq;
