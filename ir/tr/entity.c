@@ -63,6 +63,8 @@ new_entity (type *owner, ident *name, type *type)
   entity *res;
   ir_graph *rem;
 
+  assert(!id_contains_char(name, ' ') && "entity name should not contain spaces");
+
   res = (entity *) malloc (sizeof (entity));
   res->kind = k_entity;
   assert_legal_owner_of_ent(owner);
