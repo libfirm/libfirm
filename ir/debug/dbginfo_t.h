@@ -18,9 +18,11 @@
 
 #include "dbginfo.h"
 
-extern void (*__dbg_info_merge_pair)(ir_node *nw, ir_node *old, ident *info);
+extern void (*__dbg_info_merge_pair)(ir_node *nw, ir_node *old,
+				     dbg_action info);
 
-extern void (*__dbg_info_merge_sets)(ir_node **new_nodes, ir_node **old_nodes,
-				     ident *info);
+extern void (*__dbg_info_merge_sets)(ir_node **new_nodes, int n_new_nodes,
+				     ir_node **old_nodes, int n_old_nodes,
+				     dbg_action info);
 
 #endif /* __DBGINFO_T_H__ */
