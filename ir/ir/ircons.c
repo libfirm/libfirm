@@ -1191,7 +1191,7 @@ new_Phi_in_stack(void) {
 
   res = (Phi_in_stack *) malloc ( sizeof (Phi_in_stack));
 
-  res->stack = NEW_ARR_F (ir_node *, 1);
+  res->stack = NEW_ARR_F (ir_node *, 0);
   res->pos = 0;
 
   return res;

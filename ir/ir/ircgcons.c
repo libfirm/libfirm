@@ -283,10 +283,10 @@ static void prepare_irg_end(ir_graph * irg, irg_data_t * data) {
   for (i = get_Block_n_cfgpreds(end_block) - 1; i >= 0; --i) {
     if (get_irn_op(cfgpred_arr[i]) == op_Return) {
       if (ret_arr) {
-    ARR_APP1(ir_node *, ret_arr, cfgpred_arr[i]);
+	ARR_APP1(ir_node *, ret_arr, cfgpred_arr[i]);
       } else {
-    ret_arr = NEW_ARR_F(ir_node *, 1);
-    ret_arr[0] = cfgpred_arr[i];
+	ret_arr = NEW_ARR_F(ir_node *, 1);
+	ret_arr[0] = cfgpred_arr[i];
       }
       ++n_ret;
     }

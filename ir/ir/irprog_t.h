@@ -68,14 +68,14 @@ static INLINE int
 __get_irp_n_irgs(void) {
   assert (irp && irp->graphs);
   /* Strangely the first element of the array is NULL.  Why??  */
-  return (ARR_LEN((irp)->graphs) - 1);
+  return (ARR_LEN((irp)->graphs));
 }
 
 static INLINE ir_graph *
 __get_irp_irg(int pos){
   assert (irp && irp->graphs);
   /* Strangely the first element of the array is NULL.  Why??  */
-  return irp->graphs[pos+1];
+  return irp->graphs[pos];
 }
 
 
@@ -83,7 +83,7 @@ static INLINE int
 __get_irp_n_types (void) {
   assert (irp && irp->types);
   /* Strangely the first element of the array is NULL.  Why??  */
-  return (ARR_LEN((irp)->types) - 1);
+  return (ARR_LEN((irp)->types));
 }
 
 static INLINE type *
@@ -91,7 +91,7 @@ __get_irp_type(int pos) {
   assert (irp && irp->types);
   /* Strangely the first element of the array is NULL.  Why??  */
   /* Don't set the skip_tid result so that no double entries are generated. */
-  return skip_tid(irp->types[pos+1]);
+  return skip_tid(irp->types[pos]);
 }
 
 #ifdef DEBUG_libfirm

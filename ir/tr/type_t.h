@@ -308,14 +308,14 @@ __is_class_type(type *clss) {
 static INLINE int
 __get_class_n_members (type *clss) {
   assert(clss && (clss->type_op == type_class));
-  return (ARR_LEN (clss->attr.ca.members))-1;
+  return (ARR_LEN (clss->attr.ca.members));
 }
 
 static INLINE entity *
 __get_class_member   (type *clss, int pos) {
   assert(clss && (clss->type_op == type_class));
   assert(pos >= 0 && pos < get_class_n_members(clss));
-  return clss->attr.ca.members[pos+1];
+  return clss->attr.ca.members[pos];
 }
 
 static INLINE int

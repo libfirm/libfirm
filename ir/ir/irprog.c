@@ -37,7 +37,7 @@ INLINE void remove_irp_type_from_list (type *typ) {
   int i;
   assert(typ);
 #if 0
-  for (i = 1; i < (ARR_LEN (irp->types)); i++) {
+  for (i = 0; i < (ARR_LEN (irp->types)); i++) {
 #else
   for (i = ARR_LEN (irp->types) -1; i >= 0; i--) {
 #endif
@@ -60,8 +60,8 @@ ir_prog *new_ir_prog (void) {
   memset(res, 0, sizeof(res));
   irp = res;
   /* res->obst      = (struct obstack *) xmalloc (sizeof (struct obstack)); */
-  res->graphs = NEW_ARR_F (ir_graph *, 1);
-  res->types  = NEW_ARR_F (type *, 1);
+  res->graphs = NEW_ARR_F (ir_graph *, 0);
+  res->types  = NEW_ARR_F (type *, 0);
   res->name   = new_id_from_str("no_name_set");
 
 #ifdef DEBUG_libfirm
@@ -124,7 +124,7 @@ void remove_irp_irg(ir_graph *irg){
   int i;
   assert(irg);
   free_ir_graph(irg);
-  for (i = 1; i < (ARR_LEN (irp->graphs)); i++) {
+  for (i = 0; i < (ARR_LEN (irp->graphs)); i++) {
     if (irp->graphs[i] == irg) {
       for(; i < (ARR_LEN (irp->graphs)) - 1; i++) {
 	irp->graphs[i] = irp->graphs[i+1];
@@ -145,9 +145,9 @@ ir_graph *(get_irp_irg)(int pos){
 
 void set_irp_irg(int pos, ir_graph *irg) {
   assert (irp && irg);
-  assert (pos < (ARR_LEN((irp)->graphs) - 1));
+  assert (pos < (ARR_LEN((irp)->graphs)));
   /* Strangely the first element of the array is NULL.  Why??  */
-  irp->graphs[pos+1] = irg;
+  irp->graphs[pos] = irg;
 }
 
 /* Adds type to the list of types in irp. */
@@ -171,9 +171,9 @@ type *(get_irp_type) (int pos) {
 
 void  set_irp_type(int pos, type *typ) {
   assert (irp && typ);
-  assert (pos < (ARR_LEN((irp)->types) - 1));
+  assert (pos < (ARR_LEN((irp)->types)));
   /* Strangely the first element of the array is NULL.  Why??  */
-  irp->types[pos+1] = typ;
+  irp->types[pos] = typ;
 }
 
 #ifdef DEBUG_libfirm
