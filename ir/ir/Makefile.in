@@ -18,7 +18,7 @@ subdir := ir/ir
 INSTALL_HEADERS = irprog.h irgraph.h irnode.h irmode.h irop.h ircons.h	\
 		irflag.h irvrfy.h irgwalk.h irgmod.h iropt.h irdump.h	\
 		irgopt.h ircgcons.h ircgopt.h irreflect.h irarch.h irprintf.h \
-		pseudo_irg.h irhooks.h iredges.h
+		pseudo_irg.h irhooks.h iredges.h pnc.h
 
 SOURCES = $(INSTALL_HEADERS)
 
