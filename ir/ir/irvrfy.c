@@ -93,12 +93,53 @@ void do_node_verification(node_verification_t mode)
   opt_do_node_verification = mode;
 }
 
+/** the last IRG, on which a verify error was found */
+static ir_graph *last_irg_error = NULL;
+
+/**
+ * print the name of the entity of an verification failure
+ */
+static void show_entity_failure(ir_node *node)
+{
+  ir_graph *irg = get_irn_irg(node);
+
+  if (last_irg_error == irg)
+    return;
+
+  last_irg_error = irg;
+
+  if (irg == get_const_code_irg()) {
+    fprintf(stderr, "\nFIRM: irn_vrfy_irg() <of CONST_CODE_IRG> failed\n");
+  }
+  else {
+    entity *ent = get_irg_entity(irg);
+
+    if (ent) {
+      type *ent_type = get_entity_owner(ent);
+
+      if (ent_type) {
+        if (ent_type == get_glob_type())
+          fprintf(stderr, "\nFIRM: irn_vrfy_irg() %s failed\n", get_entity_name(ent));
+        else
+          fprintf(stderr, "\nFIRM: irn_vrfy_irg() %s::%s failed\n", get_type_name(ent_type), get_entity_name(ent));
+      }
+      else {
+          fprintf(stderr, "\nFIRM: irn_vrfy_irg() <NULL>::%s failed\n", get_entity_name(ent));
+      }
+    }
+    else {
+     fprintf(stderr, "\nFIRM: irn_vrfy_irg() <IRG %p> failed\n", (void *)irg);
+    }
+  }
+}
+
 /**
  * Prints a failure for a Node
  */
 static void show_node_failure(ir_node *n)
 {
-  fprintf(stderr, "\nFIRM: irn_vrfy_irg() of node %ld %s%s\n" ,
+  show_entity_failure(n);
+  fprintf(stderr, "  node %ld %s%s\n" ,
     get_irn_node_nr(n),
     get_irn_opname(n), get_irn_modename(n)
   );
@@ -112,7 +153,8 @@ static void show_binop_failure(ir_node *n, const char *text)
   ir_node *left  = get_binop_left(n);
   ir_node *right = get_binop_right(n);
 
-  fprintf(stderr, "\nFIRM: irn_vrfy_irg() of node %ld %s%s(%s%s, %s%s) did not match (%s)\n",
+  show_entity_failure(n);
+  fprintf(stderr, "  node %ld %s%s(%s%s, %s%s) did not match (%s)\n",
       get_irn_node_nr(n),
       get_irn_opname(n), get_irn_modename(n),
       get_irn_opname(left), get_irn_modename(left),
@@ -127,7 +169,8 @@ static void show_unop_failure(ir_node *n, const char *text)
 {
   ir_node *op  = get_unop_op(n);
 
-  fprintf(stderr, "\nFIRM: irn_vrfy_irg() of node %ld %s%s(%s%s) did not match (%s)\n",
+  show_entity_failure(n);
+  fprintf(stderr, "  node %ld %s%s(%s%s) did not match (%s)\n",
       get_irn_node_nr(n),
       get_irn_opname(n), get_irn_modename(n),
       get_irn_opname(op), get_irn_modename(op),
@@ -143,7 +186,8 @@ static void show_triop_failure(ir_node *n, const char *text)
   ir_node *op1  = get_irn_n(n, 1);
   ir_node *op2  = get_irn_n(n, 2);
 
-  fprintf(stderr, "\nFIRM: irn_vrfy_irg() of node %ld %s%s(%s%s, %s%s, %s%s) did not match (%s)\n",
+  show_entity_failure(n);
+  fprintf(stderr, "  of node %ld %s%s(%s%s, %s%s, %s%s) did not match (%s)\n",
       get_irn_node_nr(n),
       get_irn_opname(n), get_irn_modename(n),
       get_irn_opname(op0), get_irn_modename(op0),
@@ -160,10 +204,28 @@ static void show_proj_failure(ir_node *n)
   ir_node *op  = get_Proj_pred(n);
   int proj     = get_Proj_proj(n);
 
-  fprintf(stderr, "\nFIRM: irn_vrfy_irg() of node %ld %s%s %d(%s%s) failed\n" ,
+  show_entity_failure(n);
+  fprintf(stderr, "  node %ld %s%s %d(%s%s) failed\n" ,
       get_irn_node_nr(n),
       get_irn_opname(n), get_irn_modename(n), proj,
       get_irn_opname(op), get_irn_modename(op));
+}
+
+/**
+ * Prints a failure message for a proj from Start
+ */
+static void show_proj_mode_failure(ir_node *n, type *ty)
+{
+  long proj  = get_Proj_proj(n);
+  ir_mode *m = get_type_mode(ty);
+
+  show_entity_failure(n);
+  fprintf(stderr, "  Proj %ld mode %s proj %ld (type %s mode %s) failed\n" ,
+      get_irn_node_nr(n),
+      get_irn_modename(n),
+      proj,
+      get_type_name(ty),
+      get_mode_name_ex(m));
 }
 
 /**
@@ -175,7 +237,8 @@ static void show_proj_failure_ent(ir_node *n, entity *ent)
   int proj     = get_Proj_proj(n);
   ir_mode *m   = get_type_mode(get_entity_type(ent));
 
-  fprintf(stderr, "\nFIRM: irn_vrfy_irg() of node %ld %s%s %d(%s%s) entity %s(type %s mode %s)failed\n" ,
+  show_entity_failure(n);
+  fprintf(stderr, "  node %ld %s%s %d(%s%s) entity %s(type %s mode %s)failed\n" ,
       get_irn_node_nr(n),
       get_irn_opname(n), get_irn_modename(n), proj,
       get_irn_opname(op), get_irn_modename(op),
@@ -207,7 +270,8 @@ static void show_call_param(ir_node *n, type *mt)
 {
   int i;
 
-  fprintf(stderr, "\nFIRM: irn_vrfy_irg() Call type-check failed: %s(", get_type_name(mt));
+  show_entity_failure(n);
+  fprintf(stderr, "  Call type-check failed: %s(", get_type_name(mt));
   for (i = 0; i < get_method_n_params(mt); ++i) {
     fprintf(stderr, "%s ", get_mode_name_ex(get_type_mode(get_method_param_type(mt, i))));
   }
@@ -227,7 +291,8 @@ static void show_return_modes(ir_graph *irg, ir_node *n, type *mt, int i)
 {
   entity *ent = get_irg_entity(irg);
 
-  fprintf(stderr, "\nFIRM: irn_vrfy_irg() Return node %ld in entity \"%s\" mode %s different from type mode %s\n",
+  show_entity_failure(n);
+  fprintf(stderr, "  Return node %ld in entity \"%s\" mode %s different from type mode %s\n",
     get_irn_node_nr(n), get_entity_name(ent),
     get_mode_name_ex(get_irn_mode(get_Return_res(n, i))),
     get_mode_name_ex(get_type_mode(get_method_res_type(mt, i)))
@@ -241,7 +306,8 @@ static void show_return_nres(ir_graph *irg, ir_node *n, type *mt)
 {
   entity *ent = get_irg_entity(irg);
 
-  fprintf(stderr, "\nFIRM: irn_vrfy_irg() Return node %ld in entity \"%s\" has %d results different from type %d\n",
+  show_entity_failure(n);
+  fprintf(stderr, "  Return node %ld in entity \"%s\" has %d results different from type %d\n",
     get_irn_node_nr(n), get_entity_name(ent),
     get_Return_n_ress(n), get_method_n_ress(mt));
 }
@@ -251,7 +317,8 @@ static void show_return_nres(ir_graph *irg, ir_node *n, type *mt)
  */
 static void show_phi_failure(ir_node *phi, ir_node *pred, int pos)
 {
-  fprintf(stderr, "\nFIRM: irn_vrfy_irg() Phi node %ld has mode %s different from predeccessor node %ld mode %s\n",
+  show_entity_failure(phi);
+  fprintf(stderr, "  Phi node %ld has mode %s different from predeccessor node %ld mode %s\n",
     get_irn_node_nr(phi), get_mode_name_ex(get_irn_mode(phi)),
     get_irn_node_nr(pred), get_mode_name_ex(get_irn_mode(pred)));
 }
@@ -261,12 +328,13 @@ static void show_phi_failure(ir_node *phi, ir_node *pred, int pos)
  */
 static void show_phi_inputs(ir_node *phi, ir_node *block)
 {
-  fprintf(stderr, "\nFIRM: irn_vrfy_irg() Phi node %ld has %d inputs, its Block %ld has %d\n",
+  show_entity_failure(phi);
+  fprintf(stderr, "  Phi node %ld has %d inputs, its Block %ld has %d\n",
     get_irn_node_nr(phi),   get_irn_arity(phi),
     get_irn_node_nr(block), get_irn_arity(block));
 }
 
-/* If the address is Sel or SymConst, return the entity. */
+/** If the address is Sel or SymConst, return the entity. */
 static entity *get_ptr_entity(ir_node *ptr) {
   if (get_irn_op(ptr) == op_Sel) {
     return get_Sel_entity(ptr);
@@ -470,9 +538,11 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
                   if ((mode_is_reference(mode)) && is_compound_type(get_method_param_type(mt, proj)))
                     /* value argument */ break;
 
-                  ASSERT_AND_RET(
+                  ASSERT_AND_RET_DBG(
                       (mode == get_type_mode(get_method_param_type(mt, proj))),
-                      "Mode of Proj from Start doesn't match mode of param type.", 0);
+                      "Mode of Proj from Start doesn't match mode of param type.", 0,
+                      show_proj_mode_failure(p, get_method_param_type(mt, proj));
+                  );
                 }
             else if (nr == pn_Start_P_value_arg_base) {
               ASSERT_AND_RET(
@@ -1219,6 +1289,7 @@ int irg_vrfy(ir_graph *irg)
 
   rem = current_ir_graph;
   current_ir_graph = irg;
+  last_irg_error = NULL;
 
   assert(get_irg_pinned(irg) == op_pin_state_pinned);
 
