@@ -180,11 +180,14 @@ _tarval_vrfy (const tarval *val)
   case irm_E:
     break;
     /* integral */
-  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
-    assert (!uInt_overflow (val->u.uInt, val->mode)); break;
+  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu: {
+    //    printf("Tarval is %lu\n", val->u.uInt);
+    assert (!uInt_overflow (val->u.uInt, val->mode));
+    } break;
   case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
     assert (!sInt_overflow (val->u.sInt, val->mode)); break;
   case irm_C:
+  case irm_U:
     break;
   case irm_P:
     if (val->u.P.ent)
@@ -266,6 +269,8 @@ tarval_cmp (const void *p, const void *q)
     return a->u.sInt != b->u.sInt;
   case irm_C:
     return a->u.C - b->u.C;
+  case irm_U:
+    return a->u.U - b->u.U;
   case irm_P:
     if (a->u.P.ent || b->u.P.ent)
       return (char *)a->u.P.ent - (char *)b->u.P.ent;
@@ -317,6 +322,8 @@ tarval_hash (tarval *tv)
     h ^= tv->u.sInt; break;
   case irm_C:
     h ^= tv->u.C; break;
+  case irm_U:
+    h ^= tv->u.U; break;
   case irm_P:
     if (tv->u.P.ent) {
       /* @@@ lower bits not random, watch for collisions; perhaps
@@ -429,6 +436,7 @@ tarval_init_2 (void)
   tarval_mode_null [irm_Ls] = tarval_from_long (mode_Ls, 0);
   tarval_mode_null [irm_Lu] = tarval_from_long (mode_Lu, 0);
   tarval_mode_null [irm_C] = tarval_from_long (mode_C, 0);
+  tarval_mode_null [irm_U] = tarval_from_long (mode_U, 0);
   tarval_mode_null [irm_b] = tarval_b_false;
   tarval_mode_null [irm_P] = tarval_P_void;
 }
@@ -553,6 +561,8 @@ tarval_from_long (ir_mode *m, long val)
     return tarval_P_void;
   case irm_C:
     tv->u.C = val; break;
+  case irm_U:
+    tv->u.U = val; break;
   case irm_b:
     tv->u.b = !!val;		/* u.b must be 0 or 1 */
     break;
@@ -1358,6 +1368,9 @@ tarval_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
     } else {
       printed = XPF1R ("0x%x", (unsigned long)val->u.C);
     }
+    break;
+  case irm_U:           /* unicode character */
+      printed = XPF1R ("0x%x", (unsigned long)val->u.U);
     break;
 
   case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls: /* signed num */

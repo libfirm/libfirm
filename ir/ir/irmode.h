@@ -42,6 +42,7 @@ typedef enum { /* irm is short for `ir mode' */
   irm_b,                         // internal boolean
   irm_M,                         // memory
   irm_T,                         // tuple
+  irm_U,                         // unicode character
   irm_max
 } modecode;
 
@@ -60,6 +61,7 @@ extern ir_mode *mode_Iu; /* unsigned integer */
 extern ir_mode *mode_Ls; /* signed long integer */
 extern ir_mode *mode_Lu; /* unsigned long integer */
 extern ir_mode *mode_C;  /* char */
+extern ir_mode *mode_U;  /* unicode char */
 extern ir_mode *mode_P;  /* pointer */
 extern ir_mode *mode_b;  /* internal boolean */
 extern ir_mode *mode_X;  /* execution */
@@ -80,6 +82,7 @@ ir_mode *get_modeIu();
 ir_mode *get_modeLs();
 ir_mode *get_modeLu();
 ir_mode *get_modeC();
+ir_mode *get_modeU();
 ir_mode *get_modeP();
 ir_mode *get_modeb();
 ir_mode *get_modeX();
@@ -126,6 +129,42 @@ unsigned get_mode_fsigned  (ir_mode *mode);
 unsigned get_mode_ffloat   (ir_mode *mode);
 /* void  set_mode_ffloat   (ir_mode *mode, unsigned ffloat); */
 
+/* Functions to check, whether a modecode is signed, float, int, num, data,
+   datab or dataM. For more exact definitions read the corresponding pages
+   in the firm documentation or the followingenumeration
+
+   The set of "float" is defined as:
+   ---------------------------------
+   float = {irm_F, irm_D, irm_E}
+
+   The set of "int" is defined as:
+   -------------------------------
+   int   = {irm_Bs, irm_Bu, irm_Hs, irm_Hu, irm_Is, irm_Iu, irm_Ls, irm_Lu}
+
+   The set of "num" is defined as:
+   -------------------------------
+   num   = {irm_F, irm_D, irm_E, irm_Bs, irm_Bu, irm_Hs, irm_Hu,
+            irm_Is, irm_Iu, irm_Ls, irm_Lu}
+            = {float || int}
+
+   The set of "data" is defined as:
+   -------------------------------
+   data  = {irm_F, irm_D, irm_E irm_Bs, irm_Bu, irm_Hs, irm_Hu,
+            irm_Is, irm_Iu, irm_Ls, irm_Lu, irm_C, irm_U, irm_P}
+            = {num || irm_C || irm_P}
+
+   The set of "datab" is defined as:
+   ---------------------------------
+   datab = {irm_F, irm_D, irm_E, irm_Bs, irm_Bu, irm_Hs, irm_Hu,
+            irm_Is, irm_Iu, irm_Ls, irm_Lu, irm_C, irm_U, irm_P, irm_b}
+            = {data || irm_b }
+
+   The set of "dataM" is defined as:
+   ---------------------------------
+   dataM = {irm_F, irm_D, irm_E, irm_Bs, irm_Bu, irm_Hs, irm_Hu,
+            irm_Is, irm_Iu, irm_Ls, irm_Lu, irm_C, irm_U, irm_P, irm_M}
+            = {data || irm_M}
+*/
 
 /* Test for a certain class of modes. */
 int mode_is_signed (ir_mode *mode);

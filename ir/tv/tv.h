@@ -58,6 +58,7 @@ typedef long double tarval_E;
 typedef long   tarval_sInt;
 typedef unsigned long tarval_uInt;
 typedef char tarval_C;
+typedef unsigned short tarval_U;   /* 16 bit ?! wchar could be defined as char...  */
 typedef struct {
   /* if ent then xname is missing or mangled from ent,
      else if xname then xname is a linker symbol that is not mangled
@@ -78,6 +79,7 @@ struct tarval {
     tarval_sInt sInt;   /* signed integral */
     tarval_uInt uInt;   /* unsigned integral */
     tarval_C C;         /* character */
+    tarval_U U;         /* unicode character */
     tarval_P P;         /* pointer */
     bool b;             /* boolean */
   } u;
