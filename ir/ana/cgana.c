@@ -73,7 +73,12 @@ entity *get_inherited_methods_implementation(entity *inh_meth) {
 }
 
 
-/* A recursive descend in the overwritten relation.
+/* Collect the entity representing the implementation of this
+   entity (not the same if inherited) and all entities for overwriting
+   implementations in "set".
+   If the implementation of the method is not included in the
+   compilation unit "open" is set to true.
+   A recursive descend in the overwritten relation.
    Cycle-free, therefore must terminate. */
 void collect_impls(entity *method, eset *set, int *size, bool *open) {
   int i;
@@ -654,7 +659,8 @@ void cgana(int *length, entity ***free_methods) {
   DEL_ARR_F(free_meths);
 }
 
-/* Alle SymConst-Operationen, die auf interne Methoden verweisen,
+/* Optimize the address expressions passed to call nodes.
+ * Alle SymConst-Operationen, die auf interne Methoden verweisen,
  * werden durch Const-Operationen ersetzt.
  * Sel Knoten deren entitaeten nicht ueberschrieben werden, werden
  * durch Const ersetzt.

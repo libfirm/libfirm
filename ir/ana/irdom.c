@@ -70,7 +70,7 @@ void set_Block_dom_depth(ir_node *bl, int depth) {
 /**  **/
 /**********************************************************************/
 
-void count_and_init_blocks(ir_node *bl, void *env) {
+static void count_and_init_blocks(ir_node *bl, void *env) {
   int *n_blocks = (int *) env;
   (*n_blocks) ++;
 
@@ -107,8 +107,8 @@ typedef struct {
 
 /* Walks Blocks along the out datastructure.  If recursion started with
    Start block misses control dead blocks. */
-void init_tmp_dom_info(ir_node *bl, tmp_dom_info *parent,
-		       tmp_dom_info *tdi_list, int* used) {
+static void init_tmp_dom_info(ir_node *bl, tmp_dom_info *parent,
+			      tmp_dom_info *tdi_list, int* used) {
   tmp_dom_info *tdi;
   int i;
 
@@ -254,7 +254,7 @@ void compute_doms(ir_graph *irg) {
   }
 
   /* clean up */
-  /*  free(tdi_list); @@@ doew not work !!?? */
+  /*  free(tdi_list); @@@ does not work !!?? */
   current_ir_graph = rem;
 }
 

@@ -10,6 +10,8 @@
 /* $Id$ */
 
 #include "irnode_t.h"
+#include "array.h"
+#include "irbackedge_t.h"
 
 /**********************************************************************/
 /** Backedge information.                                            **/
@@ -17,8 +19,9 @@
 
 
 /* Returns backarray if the node can have backedges.  Else returns
-   NULL. */
-inline int *get_backarray(ir_node *n) {
+   NULL. Does not assert whether the backarray is correct -- use
+   very careful! */
+static INLINE int *mere_get_backarray(ir_node *n) {
   switch(get_irn_opcode(n)) {
   case iro_Block:
     if (interprocedural_view && n->attr.block.in_cg) {
@@ -42,6 +45,53 @@ inline int *get_backarray(ir_node *n) {
   default: ;
   }
   return NULL;
+}
+
+/* Returns backarray if the node can have backedges.  Else returns
+   NULL. */
+static INLINE int *get_backarray(ir_node *n) {
+  int *ba = mere_get_backarray(n);
+
+  if (ba) {
+    int bal = ARR_LEN(ba);  /* avoid makro expansion in assertion. */
+    int inl = ARR_LEN(get_irn_in(n)) -1;  /* Use get_irn_in -- sensitive to view! */
+    assert(bal == inl && "backedge array with faulty length");
+  }
+
+  return ba;
+}
+
+/* returns true if node has no backarray, or
+                if size of backarray == size of in array. */
+static INLINE bool legal_backarray (ir_node *n) {
+  int *ba = mere_get_backarray(n);
+  if (ba && (ARR_LEN(ba) != ARR_LEN(get_irn_in(n))-1))  /* Use get_irn_in -- sensitive to view! */
+    return false;
+  return true;
+}
+
+
+INLINE void fix_backedges(struct obstack *obst, ir_node *n) {
+  opcode opc = get_irn_opcode(n);
+  int *arr = mere_get_backarray(n);
+  if (ARR_LEN(arr) == ARR_LEN(get_irn_in(n))-1)
+    return;
+  if (ARR_LEN(arr) != ARR_LEN(get_irn_in(n))-1) {
+    arr = new_backedge_arr(obst, ARR_LEN(get_irn_in(n))-1);
+    if (opc == iro_Phi)    n->attr.phi_backedge = arr;
+    if ((opc == iro_Block) && !interprocedural_view)
+      n->attr.block.backedge = arr;
+    if ((opc == iro_Block) && interprocedural_view)
+      n->attr.block.cg_backedge = arr;
+    if (opc == iro_Filter) n->attr.filter.backedge = arr;
+    return;
+  }
+  assert(legal_backarray(n));
+  // @@@ more efficient in memory consumption, not possible with
+  // array implementation.
+  //if (ARR_LEN(arr) < ARR_LEN(get_irn_in(n))-1) {
+  //  ARR_SETLEN(int, arr, ARR_LEN(get_irn_in(n))-1);
+  //}
 }
 
 /* Returns true if the predesessor pos is a backedge. */

@@ -31,11 +31,17 @@
  * Die Links an den "ir_node"s werden gelöscht. */
 
 
-/* Bestimmt für jede Call-Operation die Menge der aufrufbaren Methode
+
+/* Analyses a rough estimation of the possible call graph.
+ * Bestimmt für jede Call-Operation die Menge der aufrufbaren Methode
  * und speichert das Ergebnis in der Call-Operation. (siehe
  * "set_Call_callee"). Die Methode gibt die Menge der
  * "freien" Methoden zurück, die vom Aufrufer wieder freigegeben
  * werden muss (free).
+ * The algorithm implements roughly Static Class Hierarchy Analysis
+ * as described in "Optimization of Object-Oriented Programs Using
+ * Static Class Hierarchy Analysis" by Jeffrey Dean and David Grove
+ * and Craig Chambers.
  *
  * Performs some optimizations possible by the analysed information:
  *   - Replace SymConst nodes by Const nodes if possible,
@@ -45,7 +51,9 @@
 /* @@@ I assume this can not be called via JNI :-( */
 void cgana(int *len, entity ***free_methods);
 
-/* Performs only the optimizations done by cgana. */
+/* Optimize the address expressions passed to call nodes.
+ * Performs only the optimizations done by cgana. */
 /* @@@ move to irgopt ?! */
+/* @@@ not fully implemented as buggy !!!  */
 void opt_call_addrs(void);
 #endif /* _CGANA_H_ */

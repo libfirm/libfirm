@@ -164,7 +164,7 @@ void irg_out_block_walk(ir_node *node,
 
 
 /* Returns the amount of out edges for not yet visited successors. */
-int count_outs(ir_node *n) {
+static int count_outs(ir_node *n) {
   int start, i, res;
   ir_node *succ;
 
@@ -186,7 +186,7 @@ int count_outs(ir_node *n) {
   return res;
 }
 
-ir_node **set_out_edges(ir_node *n, ir_node **free) {
+static ir_node **set_out_edges(ir_node *n, ir_node **free) {
   int n_outs, start, i;
   ir_node *succ;
 
@@ -214,7 +214,7 @@ ir_node **set_out_edges(ir_node *n, ir_node **free) {
   return free;
 }
 
-INLINE void fix_start_proj(ir_graph *irg) {
+static INLINE void fix_start_proj(ir_graph *irg) {
   ir_node *proj = NULL, *startbl;
   int i;
   if (get_Block_n_cfg_outs(get_irg_start_block(irg))) {

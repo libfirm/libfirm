@@ -109,7 +109,7 @@ get_irn_loop_tmp (ir_node *n) {
   return ((scc_info *)get_irn_link(n))->loop;
 }
 
-ir_loop *find_nodes_loop (ir_node *n, ir_loop *l) {
+static ir_loop *find_nodes_loop (ir_node *n, ir_loop *l) {
   int i;
   ir_loop *res = NULL;
 
@@ -214,7 +214,7 @@ pop_scc_unmark_visit (ir_node *n)
 
 /* Allocates a new loop as son of current_loop.  Sets current_loop
    to the new loop and returns the father. */
-ir_loop *new_loop (void) {
+static ir_loop *new_loop (void) {
   ir_loop *father, *son;
 
   father = current_loop;
@@ -239,7 +239,7 @@ ir_loop *new_loop (void) {
 
 /* Finishes the datastructures, copies the arrays to the obstack
    of current_ir_graph. */
-void mature_loop (ir_loop *loop) {
+static void mature_loop (ir_loop *loop) {
   ir_loop **new_sons;
   ir_node **new_nods;
 
@@ -357,6 +357,7 @@ init_ip_scc () {
   init_stack();
   cg_walk (init_node, NULL, NULL);
 }
+
 #if 0
 Works, but is inefficient.
 static INLINE void
@@ -375,7 +376,7 @@ init_ip_scc () {
 #endif
 
 /* Condition for breaking the recursion. */
-bool is_outermost_Start(ir_node *n) {
+static bool is_outermost_Start(ir_node *n) {
   /* Test whether this is the outermost Start node.  If so
      recursion must end. */
   if ((get_irn_op(n) == op_Block)     &&
@@ -603,7 +604,7 @@ find_tail (ir_node *n) {
 
 /* The core algorithm. *****************************************/
 
-void scc (ir_node *n) {
+static void scc (ir_node *n) {
   int i;
   ir_graph *rem;
 
