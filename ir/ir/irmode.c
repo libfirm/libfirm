@@ -206,7 +206,7 @@ static ir_mode *register_mode(ir_mode* new_mode)
  */
 ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align, int sign)
 {
-  ir_mode mode_tmpl, *res;
+  ir_mode mode_tmpl;
 
   mode_tmpl.name    = new_id_from_str(name);
   mode_tmpl.sort    = sort;
@@ -409,6 +409,20 @@ mode_is_int (ir_mode *mode)
   ANNOUNCE();
   assert(mode);
   return (get_mode_sort(mode) == irms_int_number);
+}
+
+int mode_is_character (ir_mode *mode)
+{
+  ANNOUNCE();
+  assert(mode);
+  return (get_mode_sort(mode) == irms_character);
+}
+
+int mode_is_reference (ir_mode *mode)
+{
+  ANNOUNCE();
+  assert(mode);
+  return (get_mode_sort(mode) == irms_reference);
 }
 
 int
