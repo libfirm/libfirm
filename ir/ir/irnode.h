@@ -55,6 +55,14 @@ typedef struct ir_node ir_node;
 int                  get_irn_arity         (ir_node *node);
 /* returns the array with the ins: */
 inline ir_node     **get_irn_in            (ir_node *node);
+/* Replaces the old in array by a new one that will contain the ins given in
+   the parameters.  It copies the array passed.
+   This function is necessary to ajust in arrays of blocks, calls and phis.
+   Assumes the current_ir_graph is set to the graph containing "node".
+   "in" must contain all predecessors except the block that are required for
+   the nodes opcode. */
+inline void          set_irn_in            (ir_node *node, int arity,
+					    ir_node **in);
 /* to iterate through the predecessors without touching the array. No
    order of predecessors guaranteed.
    To iterate over the operands iterate from 0 to i < get_irn_arity(),
@@ -75,8 +83,9 @@ inline void          set_irn_op            (ir_node *node, ir_op *op);
 /* Get the opcode-enum of the node */
 inline opcode        get_irn_opcode        (ir_node *node);
 /* Get the ident for a string representation of the opcode */
-inline const char   *get_irn_opname        (ir_node *node);
 inline ident        *get_irn_opident       (ir_node *node);
+/* Get the string representation of the opcode */
+inline const char   *get_irn_opname        (ir_node *node);
 inline void          set_irn_visited (ir_node *node, unsigned long visited);
 inline unsigned long get_irn_visited (ir_node *node);
 inline void          set_irn_link          (ir_node *node, ir_node *link);
@@ -450,6 +459,9 @@ inline void      set_Id_pred (ir_node *node, ir_node *pred);
 inline ir_node *skip_Proj (ir_node *node);
 /* returns operand of node if node is a Id */
 inline ir_node *skip_nop  (ir_node *node);
+/* returns corresponding operand of Tuple if node is a Proj from
+   a Tuple. */
+inline ir_node *skip_Tuple (ir_node *node);
 /* returns true if node is a Bad node. */
 inline int      is_Bad    (ir_node *node);
 /* returns true if the node is not a Block */
@@ -460,6 +472,8 @@ int is_cfop(ir_node *node);
 /* Returns true if the operation can change the control flow because
    of an exception. */
 int is_fragile_op(ir_node *node);
+/* Returns the memory operand of fragile operations. */
+ir_node *get_fragile_op_mem(ir_node *node);
 
 /*****/
 
@@ -470,8 +484,9 @@ int is_fragile_op(ir_node *node);
 #define DDMSG        printf("%s(l.%i)\n", __FUNCTION__, __LINE__)
 #define DDMSG1(X)    printf("%s(l.%i) %s\n", __FUNCTION__, __LINE__,         \
                             id_to_str(get_irn_opident(X)))
-#define DDMSG2(X)    printf("%s(l.%i) %s: %ld\n", __FUNCTION__, __LINE__,     \
-                     id_to_str(get_irn_opident(X)), get_irn_node_nr(X))
+#define DDMSG2(X)    printf("%s(l.%i) %s%s: %ld\n", __FUNCTION__, __LINE__,          \
+                     id_to_str(get_irn_opident(X)), id_to_str(get_irn_modeident(X)), \
+                     get_irn_node_nr(X))
 #define DDMSG3(X)    printf("%s(l.%i) %s: %p\n", __FUNCTION__, __LINE__,     \
                      print_firm_kind(X), (X))
 

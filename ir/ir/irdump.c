@@ -57,7 +57,11 @@
 /* file to dump to */
 static FILE *F;
 
+/* A compiler option to turn off edge labels */
 int edge_label = 1;
+
+/* A global variable to record output of the Bad node. */
+int Bad_dumped;
 
 /*******************************************************************/
 /* routines to dump information about a single node                */
@@ -441,7 +445,7 @@ dump_ir_data_edges(ir_node *n)  {
     assert(get_irn_n(n, i));
     xfprintf (F, "edge: {sourcename: \"%p\" targetname: \"%p\"",
 	      n, get_irn_n(n, i));
-    fprintf (F, " label: \"%d\" ", i+1);
+    fprintf (F, " label: \"%d\" ", i);
     print_edge_vcgattr(n, i);
     fprintf (F, "}\n");
   }
@@ -745,6 +749,8 @@ dump_ir_blocks_nodes (ir_node *n, void *env) {
     dump_node(n);
     dump_ir_data_edges(n);
   }
+  if (get_irn_op(n) == op_Bad)
+    Bad_dumped = 1;
 }
 
 void
@@ -772,6 +778,18 @@ dump_ir_block (ir_node *block, void *env) {
   }
 }
 
+
+void
+dump_blockless_nodes (ir_node *n, void *env) {
+  if (is_no_Block(n) && get_irn_op(get_nodes_Block(n)) == op_Bad) {
+    dump_node(n);
+    dump_ir_data_edges(n);
+    dump_ir_block_edge(n);
+  }
+  if (get_irn_op(n) == op_Bad)
+    Bad_dumped = 1;
+}
+
 void
 dump_ir_block_graph (ir_graph *irg)
 {
@@ -781,9 +799,16 @@ dump_ir_block_graph (ir_graph *irg)
 
   vcg_open (irg, "");
 
+  Bad_dumped = 0;
   /* walk over the blocks in the graph */
   irg_block_walk(irg->end, dump_ir_block, NULL, irg);
 
+  /* dump all nodes that are not in a Block */
+  irg_walk(irg->end, dump_blockless_nodes, NULL, NULL);
+
+  /* dump the Bad node */
+  if (!Bad_dumped)
+    dump_node(get_irg_bad(irg));
   vcg_close();
   current_ir_graph = rem;
 }

@@ -648,7 +648,6 @@ new_Block (int arity, ir_node **in)
   ir_node *res;
 
   res = new_r_Block (current_ir_graph, arity, in);
-  current_ir_graph->current_block = res;
 
   /* Create and initialize array for Phi-node construction. */
   res->attr.block.graph_arr = NEW_ARR_D (ir_node *, current_ir_graph->obst,
@@ -656,6 +655,8 @@ new_Block (int arity, ir_node **in)
   memset(res->attr.block.graph_arr, 0, sizeof(ir_node *)*current_ir_graph->n_loc);
 
   res = optimize (res);
+  current_ir_graph->current_block = res;
+
   irn_vrfy (res);
 
   return res;

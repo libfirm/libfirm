@@ -27,6 +27,12 @@ irn_vrfy (ir_node *n)
   ir_node **in;
 
   opcode = get_irn_opcode (n);
+
+  if (opcode != iro_Phi && opcode != iro_Block)
+    for (i = 0; i < get_irn_arity(n); i++)
+      if (get_irn_opcode(get_irn_n(n, i)) == iro_Bad)
+	return;
+
   mymode = get_irn_mode (n);
   in = get_irn_in (n);
 

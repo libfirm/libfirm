@@ -187,6 +187,17 @@ get_irn_in (ir_node *node)
   return ((node)->in);
 }
 
+inline void
+set_irn_in (ir_node *node, int arity, ir_node **in) {
+  assert(node);
+  if (arity != get_irn_arity(node)) {
+    ir_node *block = node->in[0];
+    node->in = NEW_ARR_D (ir_node *, current_ir_graph->obst, (arity+1));
+    node->in[0] = block;
+  }
+  memcpy (&node->in[1], in, sizeof (ir_node *) * arity);
+}
+
 /* to iterate through the predecessors without touching the array */
 /* To iterate over the operands iterate from 0 to i < get_irn_arity(),
    to iterate includind the Block predecessor iterate from i = -1 to
@@ -1774,6 +1785,14 @@ skip_Proj (ir_node *node) {
 }
 
 inline ir_node *
+skip_Tuple (ir_node *node) {
+  if ((node->op == op_Proj) && (get_irn_op(get_Proj_pred(node)) == op_Tuple))
+    return get_Tuple_pred(get_Proj_pred(node), get_Proj_proj(node));
+  return node;
+}
+
+
+inline ir_node *
 skip_nop (ir_node *node) {
   /* don't assert node !!! */
 
@@ -1825,4 +1844,25 @@ is_fragile_op(ir_node *node) {
           || (get_irn_opcode(node) == iro_Store)
           || (get_irn_opcode(node) == iro_Alloc)
           || (get_irn_opcode(node) == iro_Bad));
+}
+
+
+/* Returns the memory operand of fragile operations. */
+ir_node *get_fragile_op_mem(ir_node *node) {
+  assert(node && is_fragile_op(node));
+
+  switch (get_irn_opcode (node)) {
+  case iro_Call  :
+  case iro_Quot  :
+  case iro_DivMod:
+  case iro_Div   :
+  case iro_Mod   :
+  case iro_Load  :
+  case iro_Store :
+  case iro_Alloc :
+    return get_irn_n(node, 0);
+  case iro_Bad   :
+    return node;
+  default: ;
+  }
 }

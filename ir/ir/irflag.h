@@ -33,10 +33,20 @@ int  get_opt_constant_folding (void);
 void set_opt_cse (int value);
 int  get_opt_cse (void);
 
+/* If opt_unreachable_code == 1 replace nodes (except Block,
+   Phi and Tuple) with a Bad predecessor by the Bad node.
+   Default: opt_unreachable_code == 1. */
+inline void set_opt_unreachable_code(int value);
+inline int  get_opt_unreachable_code(void);
+
 /* If opt_dead_node_elimination == 1 deallocate all dead nodes
    by copying the firm graph.
    Default: opt_dead_node_elimination == 0.  @@@ as buggy, else 1. */
 void set_opt_dead_node_elimination (int value);
 int  get_opt_dead_node_elimination (void);
+
+/* If opt_inline == 1 the inlining transformation is performed. */
+void set_opt_inline (int value);
+int  get_opt_inline (void);
 
 #endif

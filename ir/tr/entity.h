@@ -126,14 +126,14 @@ ident      *get_entity_ld_ident (entity *ent);
 void        set_entity_ld_ident (entity *ent, ident *ld_ident);
 
 /*
-char     *get_entity_ld_name  (entity *ent);
-void      set_entity_ld_name  (entity *ent, char *ld_name);
+char       *get_entity_ld_name  (entity *ent);
+void        set_entity_ld_name  (entity *ent, char *ld_name);
 */
 
-type     *get_entity_owner (entity *ent);
+type       *get_entity_owner (entity *ent);
 /* Sets the owner field in entity to owner. */
-void      set_entity_owner (entity *ent, type *owner);
-inline void  assert_legal_owner_of_ent(type *owner);
+void        set_entity_owner (entity *ent, type *owner);
+inline void assert_legal_owner_of_ent(type *owner);
 
 type     *get_entity_type (entity *ent);
 void      set_entity_type (entity *ent, type *type);

@@ -22,8 +22,9 @@ void irg_walk_2(ir_node *node,
 {
   int i;
 
+
   assert(node);
-/*      printf(" - "); DDMSG2(node);  */
+  /*      printf(" - "); DDMSG2(node);  */
 
   if (get_irn_visited(node) < get_irg_visited(current_ir_graph)) {
 
@@ -63,6 +64,21 @@ void irg_walk(ir_node *node,
 }
 
 /***************************************************************************/
+
+/* Walks back from n until it finds a real cf op. */
+ir_node *get_cf_op(ir_node *n) {
+  ir_node *pred;
+
+  n = skip_nop(n);
+  n = skip_Tuple(n);
+  pred = skip_Proj(n);
+  if (!(is_cfop(pred) || is_fragile_op(pred) ||
+	(get_irn_op(pred) == op_Bad)))
+    n = get_cf_op(n);
+
+  return skip_Proj(n);
+}
+
 void irg_block_walk_2(ir_node *node, void (pre)(ir_node*, void*),
 		      void (post)(ir_node*, void*), void *env)
 {
@@ -79,10 +95,12 @@ void irg_block_walk_2(ir_node *node, void (pre)(ir_node*, void*),
     for(i = get_Block_n_cfgpreds(node) - 1; i >= 0; --i) {
 
       /* find the corresponding predecessor block. */
-      ir_node *pred = skip_Proj(get_Block_cfgpred(node, i));
+      ir_node *pred = get_cf_op(get_Block_cfgpred(node, i));
       /* GL: I'm not sure whether this assert must go through.  There
-         could be Id chains?? */
-      assert(is_cfop(pred) || is_fragile_op(pred));
+         could be Id chains?? Tuple/Proj .... */
+
+      assert(is_cfop(pred) || is_fragile_op(pred) ||
+	     (get_irn_op(pred) == op_Bad));
       pred = get_nodes_Block(pred);
       if(get_irn_opcode(pred) == iro_Block) {
 	/* recursion */

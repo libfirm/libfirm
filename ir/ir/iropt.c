@@ -298,7 +298,8 @@ equivalent_node (ir_node *n)
          if it is not the Start block. */
       /* !!! Beware, all Phi-nodes of n must have been optimized away.
 	 This should be true, as the block is matured before optimize is called.
-         But what about Phi-cycles with the Phi0/Id that could not be resolved? */
+         But what about Phi-cycles with the Phi0/Id that could not be resolved?
+	 Remaining Phi nodes are just Ids. */
       if (get_Block_n_cfgpreds(n) == 1
 	  && get_irn_op(get_Block_cfgpred(n, 0)) == op_Jmp) {
 	n = get_nodes_Block(get_Block_cfgpred(n, 0));
@@ -501,8 +502,10 @@ equivalent_node (ir_node *n)
 
   case iro_Load:
     {
+#if 0  /* Is an illegal transformation: different nodes can
+	  represent the same pointer value!! */
       a = skip_Proj(get_Load_mem(n));
-      b = skip_Proj(get_Load_ptr(n));
+      b = get_Load_ptr(n);
 
       if (get_irn_op(a) == op_Store) {
         if ( different_identity (b, get_Store_ptr(a))) {
@@ -512,6 +515,7 @@ equivalent_node (ir_node *n)
 	} else if (( 0 /* ???didn't get cryptic test that returns 0 */ )) {
         }
       }
+#endif
     }
       break;
   case iro_Store:
@@ -548,7 +552,7 @@ equivalent_node (ir_node *n)
 	if ( get_Proj_proj(n) <= get_Tuple_n_preds(a) ) {
 	  n = get_Tuple_pred(a, get_Proj_proj(n));
 	} else {
-          assert(0); /* This should not happen! (GL added this assert) */
+          assert(0); /* This should not happen! */
 	  n = new_Bad();
 	}
       } else if (get_irn_mode(n) == mode_X &&
@@ -855,11 +859,6 @@ del_identities (pset *value_table)
   del_pset (value_table);
 }
 
-void
-add_identities (pset *value_table, ir_node *node) {
-  identify_remember (value_table, node);
-}
-
 /* Return the canonical node computing the same value as n.
    Looks up the node in a hash table. */
 static inline ir_node *
@@ -908,6 +907,11 @@ identify_remember (pset *value_table, ir_node *node)
   if (o == node) return node;
 
   return o;
+}
+
+void
+add_identities (pset *value_table, ir_node *node) {
+  identify_remember (value_table, node);
 }
 
 /* garbage in, garbage out. If a node has a dead input, i.e., the
@@ -996,7 +1000,8 @@ optimize (ir_node *n)
     n = transform_node (n);
 
   /* Remove nodes with dead (Bad) input. */
-  n = gigo (n);
+  if (get_opt_unreachable_code())
+    n = gigo (n);
   /* Now we can verify the node, as it has no dead inputs any more. */
   irn_vrfy(n);
 
@@ -1071,7 +1076,8 @@ optimize_in_place (ir_node *n)
     n = transform_node (n);
 
   /* Remove nodes with dead (Bad) input. */
-  n = gigo (n);
+  if (get_opt_unreachable_code())
+    n = gigo (n);
   /* Now we can verify the node, as it has no dead inputs any more. */
   irn_vrfy(n);
 
