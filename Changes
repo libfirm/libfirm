@@ -1,4 +1,10 @@
-  6.9.00 Goetz
+  6.9.2000 Chris
+  Added seven access routines in type.[hc]:
+  get_class_n_member, get_class_n_subtype, get_class_n_supertype,
+  get_strct_n_member, add_strct_member, get_strct_member and set_strct_member.
+  Fixed the type_walk_2 for those seven routines.
+
+  6.9.2000 Goetz
   Added irdump routine dump_all_types.
   Did changes to irprog, type, typewalk to achieve this.
   typewalk needs to walk along members, sub and supertypes, this
@@ -8,7 +14,7 @@
 ==================== New version: 0.2.5 ==============================
 ======================================================================
 
-  3.9.00 Goetz
+  3.9.2000 Goetz
   Made new Version: 0.2.5
 
   15.8.2000 Goetz until 3.9.00
