@@ -8,6 +8,7 @@
 #define _BENUMB_T_H
 
 #include "firm_config.h"
+#include "irnode.h"
 
 #include "benumb.h"
 
