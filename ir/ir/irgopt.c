@@ -190,13 +190,16 @@ static void
 copy_node (ir_node *n, void *env) {
   ir_node *nn, *block;
   int new_arity;
-
+  opcode op = get_irn_opcode(n);
   /* The end node looses it's flexible in array.  This doesn't matter,
      as dead node elimination builds End by hand, inlineing doesn't use
      the End node. */
   /* assert(n->op == op_End ||  ((_ARR_DESCR(n->in))->cookie != ARR_F_MAGIC)); */
 
-  if (get_irn_opcode(n) == iro_Block) {
+  if (op == iro_Bad) {
+    /* node copied already */
+    return;
+  } else if (op == iro_Block) {
     block = NULL;
     new_arity = compute_new_arity(n);
     n->attr.block.graph_arr = NULL;
@@ -308,7 +311,7 @@ copy_preds (ir_node *n, void *env) {
  */
 static void
 copy_graph (void) {
-  ir_node *oe, *ne; /* old end, new end */
+  ir_node *oe, *ne, *ob, *nb; /* old end, new end, old bad, new bad */
   ir_node *ka;      /* keep alive */
   int i, irn_arity;
 
@@ -325,10 +328,21 @@ copy_graph (void) {
   copy_attrs(oe, ne);
   set_new_node(oe, ne);
 
+  ob = get_irg_bad(current_ir_graph);
+  nb =  new_ir_node(get_irn_dbg_info(ob),
+           current_ir_graph,
+           NULL,
+           op_Bad,
+           mode_T,
+           0,
+           NULL);
+  set_new_node(ob, nb);
+
   /* copy the live nodes */
   irg_walk(get_nodes_Block(oe), copy_node, copy_preds, NULL);
   /* copy_preds for the end node ... */
   set_nodes_Block(ne, get_new_node(get_nodes_Block(oe)));
+  set_nodes_Block(nb, get_new_node(get_nodes_Block(ob)));
 
   /*- ... and now the keep alives. -*/
   /* First pick the not marked block nodes and walk them.  We must pick these
@@ -1331,8 +1345,9 @@ place_floats_early(ir_node *n, pdeq *worklist)
 
   /* Place floating nodes. */
   if (get_op_pinned(get_irn_op(n)) == floats) {
-    int depth = 0;
-    ir_node *b = new_Bad();   /* The block to place this node in */
+    int depth         = 0;
+    ir_node *b        = new_Bad();   /* The block to place this node in */
+    int bad_recursion = is_Bad(get_nodes_block(n));
 
     assert(get_irn_op(n) != op_Block);
 
@@ -1350,10 +1365,19 @@ place_floats_early(ir_node *n, pdeq *worklist)
     for (i = 0; i < irn_arity; i++) {
       ir_node *dep = get_irn_n(n, i);
       ir_node *dep_block;
-      if ((irn_not_visited(dep)) &&
-      (get_op_pinned(get_irn_op(dep)) == floats)) {
+
+      if ((irn_not_visited(dep))
+	 && (get_op_pinned(get_irn_op(dep)) == floats)) {
 	place_floats_early(dep, worklist);
       }
+
+      /*
+       * A node in the Bad block must stay in the bad block,
+       * so don't compute a new block for it.
+       */
+      if (bad_recursion)
+        continue;
+
       /* Because all loops contain at least one pinned node, now all
          our inputs are either pinned or place_early has already
          been finished on them.  We do not have any unfinished inputs!  */
@@ -1386,7 +1410,7 @@ place_floats_early(ir_node *n, pdeq *worklist)
 
 /**
  * Floating nodes form subgraphs that begin at nodes as Const, Load,
- * Start, Call and end at pinned nodes as Store, Call.  Place_early
+ * Start, Call and that end at pinned nodes as Store, Call.  Place_early
  * places all floating nodes reachable from its argument through floating
  * nodes and adds all beginnings at pinned nodes to the worklist.
  */

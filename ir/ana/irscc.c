@@ -243,9 +243,7 @@ pop_scc_to_loop (ir_node *n)
   ir_node *m;
   int i = 0;
 
-  /*for (;;) {*/
-  do
-    {
+  do {
     m = pop();
 
     //printf(" dfn: %d, upl %d upl-new %d ", get_irn_dfn(m), get_irn_uplink(m), loop_node_cnt+1); DDMN(m);
@@ -256,10 +254,12 @@ pop_scc_to_loop (ir_node *n)
     set_irn_loop(m, current_loop);
     i++;
     /*    if (m==n) break;*/
-    } while(m != n);
+  } while(m != n);
 
-  if(i > 1)
+  /* i might be bigger than 1 for dead (and that's why bad) loops */
+  /* if(i > 1)
     printf("Mehr als eine Iteration!!!!!!!!!!!!!!!!!!!!!!!!!!!!11111\n");
+   */
 }
 
 /* GL ??? my last son is my grandson???  Removes loops with no
@@ -843,12 +843,9 @@ find_tail (ir_node *n) {
     /* It's a completely bad loop: without Phi/Block nodes that can
        be a head. I.e., the code is "dying".  We break the loop by
        setting Bad nodes. */
-    printf(" here!!! \n");
-    dump_irn(n);
     for (i = -1; i < get_irn_arity(n); ++i) {
       set_irn_n(n, i, get_irg_bad(get_irn_irg(n)));
     }
-    dump_irn(n);
     return NULL;
   }
   assert (res_index > -2);
