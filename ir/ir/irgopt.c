@@ -40,9 +40,9 @@ pset *new_identities (void);
 void  del_identities (pset *value_table);
 void  add_identities   (pset *value_table, ir_node *node);
 
-/********************************************************************/
+/*------------------------------------------------------------------*/
 /* apply optimizations of iropt to all nodes.                       */
-/********************************************************************/
+/*------------------------------------------------------------------*/
 
 static void init_link (ir_node *n, void *env) {
   set_irn_link(n, NULL);
@@ -105,31 +105,37 @@ local_optimize_graph (ir_graph *irg) {
   current_ir_graph = rem;
 }
 
-/********************************************************************/
+/*------------------------------------------------------------------*/
 /* Routines for dead node elimination / copying garbage collection  */
 /* of the obstack.                                                  */
-/********************************************************************/
+/*------------------------------------------------------------------*/
 
-/* Remeber the new node in the old node by using a field all nodes have. */
+/**
+ * Remember the new node in the old node by using a field all nodes have.
+ */
 static INLINE void
 set_new_node (ir_node *old, ir_node *new)
 {
   old->link = new;
 }
 
-/* Get this new node, before the old node is forgotton.*/
+/**
+ * Get this new node, before the old node is forgotton.
+ */
 static INLINE ir_node *
 get_new_node (ir_node * n)
 {
   return n->link;
 }
 
-/* We use the block_visited flag to mark that we have computed the
-   number of useful predecessors for this block.
-   Further we encode the new arity in this flag in the old blocks.
-   Remembering the arity is useful, as it saves a lot of pointer
-   accesses.  This function is called for all Phi and Block nodes
-   in a Block. */
+/**
+ * We use the block_visited flag to mark that we have computed the
+ * number of useful predecessors for this block.
+ * Further we encode the new arity in this flag in the old blocks.
+ * Remembering the arity is useful, as it saves a lot of pointer
+ * accesses.  This function is called for all Phi and Block nodes
+ * in a Block.
+ */
 static INLINE int
 compute_new_arity(ir_node *b) {
   int i, res, irn_arity;
@@ -152,6 +158,7 @@ compute_new_arity(ir_node *b) {
   }
 }
 
+/* TODO: add an ir_op operation */
 static INLINE void new_backedge_info(ir_node *n) {
   switch(get_irn_opcode(n)) {
   case iro_Block:
@@ -168,12 +175,14 @@ static INLINE void new_backedge_info(ir_node *n) {
   }
 }
 
-/* Copies the node to the new obstack. The Ins of the new node point to
-   the predecessors on the old obstack.  For block/phi nodes not all
-   predecessors might be copied.  n->link points to the new node.
-   For Phi and Block nodes the function allocates in-arrays with an arity
-   only for useful predecessors.  The arity is determined by counting
-   the non-bad predecessors of the block. */
+/**
+ * Copies the node to the new obstack. The Ins of the new node point to
+ * the predecessors on the old obstack.  For block/phi nodes not all
+ * predecessors might be copied.  n->link points to the new node.
+ * For Phi and Block nodes the function allocates in-arrays with an arity
+ * only for useful predecessors.  The arity is determined by counting
+ * the non-bad predecessors of the block.
+ */
 static void
 copy_node (ir_node *n, void *env) {
   ir_node *nn, *block;
@@ -215,8 +224,10 @@ copy_node (ir_node *n, void *env) {
 
 }
 
-/* Copies new predecessors of old node to new node remembered in link.
-   Spare the Bad predecessors of Phi and Block nodes. */
+/**
+ * Copies new predecessors of old node to new node remembered in link.
+ * Spare the Bad predecessors of Phi and Block nodes.
+ */
 static void
 copy_preds (ir_node *n, void *env) {
   ir_node *nn, *block;
@@ -281,7 +292,9 @@ copy_preds (ir_node *n, void *env) {
     add_identities (current_ir_graph->value_table, nn);
 }
 
-/* Copies the graph recursively, compacts the keepalive of the end node. */
+/**
+ * Copies the graph recursively, compacts the keepalive of the end node.
+ */
 static void
 copy_graph (void) {
   ir_node *oe, *ne; /* old end, new end */
@@ -306,7 +319,7 @@ copy_graph (void) {
   /* copy_preds for the end node ... */
   set_nodes_Block(ne, get_new_node(get_nodes_Block(oe)));
 
-  /** ... and now the keep alives. **/
+  /*- ... and now the keep alives. -*/
   /* First pick the not marked block nodes and walk them.  We must pick these
      first as else we will oversee blocks reachable from Phis. */
   irn_arity = get_irn_arity(oe);
@@ -336,10 +349,12 @@ copy_graph (void) {
   }
 }
 
-/* Copies the graph reachable from current_ir_graph->end to the obstack
-   in current_ir_graph and fixes the environment.
-   Then fixes the fields in current_ir_graph containing nodes of the
-   graph.  */
+/**
+ * Copies the graph reachable from current_ir_graph->end to the obstack
+ * in current_ir_graph and fixes the environment.
+ * Then fixes the fields in current_ir_graph containing nodes of the
+ * graph.
+ */
 static void
 copy_graph_env (void) {
   ir_node *old_end;
@@ -394,12 +409,14 @@ copy_graph_env (void) {
   */
 }
 
-/* Copies all reachable nodes to a new obstack.  Removes bad inputs
-   from block nodes and the corresponding inputs from Phi nodes.
-   Merges single exit blocks with single entry blocks and removes
-   1-input Phis.
-   Adds all new nodes to a new hash table for cse.  Does not
-   perform cse, so the hash table might contain common subexpressions. */
+/**
+ * Copies all reachable nodes to a new obstack.  Removes bad inputs
+ * from block nodes and the corresponding inputs from Phi nodes.
+ * Merges single exit blocks with single entry blocks and removes
+ * 1-input Phis.
+ * Adds all new nodes to a new hash table for cse.  Does not
+ * perform cse, so the hash table might contain common subexpressions.
+ */
 /* Amroq call this emigrate() */
 void
 dead_node_elimination(ir_graph *irg) {
@@ -445,11 +462,13 @@ dead_node_elimination(ir_graph *irg) {
   current_ir_graph = rem;
 }
 
-/* Relink bad predeseccors of a block and store the old in array to the
-   link field. This function is called by relink_bad_predecessors().
-   The array of link field starts with the block operand at position 0.
-   If block has bad predecessors, create a new in array without bad preds.
-   Otherwise let in array untouched. */
+/**
+ * Relink bad predeseccors of a block and store the old in array to the
+ * link field. This function is called by relink_bad_predecessors().
+ * The array of link field starts with the block operand at position 0.
+ * If block has bad predecessors, create a new in array without bad preds.
+ * Otherwise let in array untouched.
+ */
 static void relink_bad_block_predecessors(ir_node *n, void *env) {
   ir_node **new_in, *irn;
   int i, new_irn_n, old_irn_arity, new_irn_arity = 0;
@@ -485,11 +504,13 @@ static void relink_bad_block_predecessors(ir_node *n, void *env) {
   } /* Block is not relinked */
 }
 
-/* Relinks Bad predecesors from Bocks and Phis called by walker
-   remove_bad_predecesors(). If n is a Block, call
-   relink_bad_block_redecessors(). If n is a Phinode, call also the relinking
-   function of Phi's Block. If this block has bad predecessors, relink preds
-   of the Phinode. */
+/**
+ * Relinks Bad predecesors from Bocks and Phis called by walker
+ * remove_bad_predecesors(). If n is a Block, call
+ * relink_bad_block_redecessors(). If n is a Phinode, call also the relinking
+ * function of Phi's Block. If this block has bad predecessors, relink preds
+ * of the Phinode.
+ */
 static void relink_bad_predecessors(ir_node *n, void *env) {
   ir_node *block, **old_in;
   int i, old_irn_arity, new_irn_arity;
@@ -523,29 +544,33 @@ static void relink_bad_predecessors(ir_node *n, void *env) {
   } /* n is a Phi node */
 }
 
-/* Removes Bad Bad predecesors from Blocks and the corresponding
-   inputs to Phi nodes as in dead_node_elimination but without
-   copying the graph.
-   On walking up set the link field to NULL, on walking down call
-   relink_bad_predecessors() (This function stores the old in array
-   to the link field and sets a new in array if arity of predecessors
-   changes) */
+/**
+ * Removes Bad Bad predecesors from Blocks and the corresponding
+ * inputs to Phi nodes as in dead_node_elimination but without
+ * copying the graph.
+ * On walking up set the link field to NULL, on walking down call
+ * relink_bad_predecessors() (This function stores the old in array
+ * to the link field and sets a new in array if arity of predecessors
+ * changes).
+ */
 void remove_bad_predecessors(ir_graph *irg) {
   irg_walk_graph(irg, init_link, relink_bad_predecessors, NULL);
 }
 
 
-/**********************************************************************/
+/*--------------------------------------------------------------------*/
 /*  Funcionality for inlining                                         */
-/**********************************************************************/
+/*--------------------------------------------------------------------*/
 
-/* Copy node for inlineing.  Updates attributes that change when
+/**
+ * Copy node for inlineing.  Updates attributes that change when
  * inlineing but not for dead node elimination.
  *
  * Copies the node by calling copy_node and then updates the entity if
  * it's a local one.  env must be a pointer of the frame type of the
  * inlined procedure. The new entities must be in the link field of
- * the entities. */
+ * the entities.
+ */
 static INLINE void
 copy_node_inline (ir_node *n, void *env) {
   ir_node *new;
@@ -921,8 +946,10 @@ static int pos;
    I didn't get a version with NEW_ARR_F to run. */
 #define MAX_INLINE 1024
 
-/* given an Call node, returns the irg called.  NULL if not
- * known. */
+/**
+ * Returns the irg called from a Call node. If the irg is not
+ * known, NULL is returned.
+ */
 static ir_graph *get_call_called_irg(ir_node *call) {
   ir_node *addr;
   tarval *tv;
@@ -964,12 +991,14 @@ static void collect_calls(ir_node *call, void *env) {
   }
 }
 
-/* Inlines all small methods at call sites where the called address comes
-   from a Const node that references the entity representing the called
-   method.
-   The size argument is a rough measure for the code size of the method:
-   Methods where the obstack containing the firm graph is smaller than
-   size are inlined. */
+/**
+ * Inlines all small methods at call sites where the called address comes
+ * from a Const node that references the entity representing the called
+ * method.
+ * The size argument is a rough measure for the code size of the method:
+ * Methods where the obstack containing the firm graph is smaller than
+ * size are inlined.
+ */
 void inline_small_irgs(ir_graph *irg, int size) {
   int i;
   ir_node *calls[MAX_INLINE];
@@ -1073,12 +1102,14 @@ INLINE static int is_smaller(ir_graph *callee, int size) {
 }
 
 
-/* Inlines small leave methods at call sites where the called address comes
-   from a Const node that references the entity representing the called
-   method.
-   The size argument is a rough measure for the code size of the method:
-   Methods where the obstack containing the firm graph is smaller than
-   size are inlined. */
+/**
+ * Inlines small leave methods at call sites where the called address comes
+ * from a Const node that references the entity representing the called
+ * method.
+ * The size argument is a rough measure for the code size of the method:
+ * Methods where the obstack containing the firm graph is smaller than
+ * size are inlined.
+ */
 void inline_leave_functions(int maxsize, int leavesize, int size) {
   inline_irg_env *env;
   int i, n_irgs = get_irp_n_irgs();
@@ -1208,13 +1239,15 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
   current_ir_graph = rem;
 }
 
-/********************************************************************/
+/*-----------------------------------------------------------------*/
 /*  Code Placement.  Pins all floating nodes to a block where they */
-/*  will be executed only if needed.                                */
-/********************************************************************/
+/*  will be executed only if needed.                               */
+/*-----------------------------------------------------------------*/
 
-/* Find the earliest correct block for N.  --- Place N into the
-   same Block as its dominance-deepest Input.  */
+/**
+ * Find the earliest correct block for N.  --- Place N into the
+ * same Block as its dominance-deepest Input.
+ */
 static void
 place_floats_early(ir_node *n, pdeq *worklist)
 {
@@ -1279,10 +1312,12 @@ place_floats_early(ir_node *n, pdeq *worklist)
   }
 }
 
-/* Floating nodes form subgraphs that begin at nodes as Const, Load,
-   Start, Call and end at pinned nodes as Store, Call.  Place_early
-   places all floating nodes reachable from its argument through floating
-   nodes and adds all beginnings at pinned nodes to the worklist. */
+/**
+ * Floating nodes form subgraphs that begin at nodes as Const, Load,
+ * Start, Call and end at pinned nodes as Store, Call.  Place_early
+ * places all floating nodes reachable from its argument through floating
+ * nodes and adds all beginnings at pinned nodes to the worklist.
+ */
 static INLINE void place_early(pdeq* worklist) {
   assert(worklist);
   inc_irg_visited(current_ir_graph);
@@ -1301,7 +1336,7 @@ static INLINE void place_early(pdeq* worklist) {
 }
 
 
-/* deepest common dominance ancestor of DCA and CONSUMER of PRODUCER */
+/** deepest common dominance ancestor of DCA and CONSUMER of PRODUCER. */
 static ir_node *
 consumer_dom_dca (ir_node *dca, ir_node *consumer, ir_node *producer)
 {
@@ -1342,8 +1377,10 @@ static INLINE int get_irn_loop_depth(ir_node *n) {
   return get_loop_depth(get_irn_loop(n));
 }
 
-/* Move n to a block with less loop depth than it's current block. The
-   new block must be dominated by early. */
+/**
+ * Move n to a block with less loop depth than it's current block. The
+ * new block must be dominated by early.
+ */
 static void
 move_out_of_loops (ir_node *n, ir_node *early)
 {
@@ -1374,12 +1411,14 @@ move_out_of_loops (ir_node *n, ir_node *early)
   }
 }
 
-/* Find the latest legal block for N and place N into the
-   `optimal' Block between the latest and earliest legal block.
-   The `optimal' block is the dominance-deepest block of those
-   with the least loop-nesting-depth.  This places N out of as many
-   loops as possible and then makes it as control dependant as
-   possible. */
+/**
+ * Find the latest legal block for N and place N into the
+ * `optimal' Block between the latest and earliest legal block.
+ * The `optimal' block is the dominance-deepest block of those
+ * with the least loop-nesting-depth.  This places N out of as many
+ * loops as possible and then makes it as control dependant as
+ * possible.
+ */
 static void
 place_floats_late(ir_node *n, pdeq *worklist)
 {
@@ -1492,9 +1531,11 @@ void place_code(ir_graph *irg) {
 /* semantics of Phi nodes.                                          */
 /********************************************************************/
 
-/* Removes Tuples from Block control flow predecessors.
-   Optimizes blocks with equivalent_node().
-   Replaces n by Bad if n is unreachable control flow. */
+/**
+ * Removes Tuples from Block control flow predecessors.
+ * Optimizes blocks with equivalent_node().
+ * Replaces n by Bad if n is unreachable control flow.
+ */
 static void merge_blocks(ir_node *n, void *env) {
   int i;
   set_irn_link(n, NULL);
@@ -1526,9 +1567,11 @@ static void merge_blocks(ir_node *n, void *env) {
   }
 }
 
-/* Collects all Phi nodes in link list of Block.
-   Marks all blocks "block_visited" if they contain a node other
-   than Jmp. */
+/**
+ * Collects all Phi nodes in link list of Block.
+ * Marks all blocks "block_visited" if they contain a node other
+ * than Jmp.
+ */
 static void collect_nodes(ir_node *n, void *env) {
   if (is_no_Block(n)) {
     ir_node *b = get_nodes_Block(n);
@@ -1543,7 +1586,7 @@ static void collect_nodes(ir_node *n, void *env) {
   }
 }
 
-/* Returns true if pred is pred of block */
+/** Returns true if pred is predecessor of block. */
 static int is_pred_of(ir_node *pred, ir_node *b) {
   int i;
   for (i = 0; i < get_Block_n_cfgpreds(b); i++) {
@@ -1614,7 +1657,7 @@ static void optimize_blocks(ir_node *b, void *env) {
   }
   in = (ir_node **) malloc(max_preds * sizeof(ir_node *));
 
-/**
+/*-
   printf(" working on "); DDMN(b);
   for (i = 0; i < get_Block_n_cfgpreds(b); i++) {
     pred = get_nodes_Block(get_Block_cfgpred(b, i));
@@ -1625,9 +1668,9 @@ static void optimize_blocks(ir_node *b, void *env) {
       printf("  removing pred %i ", i); DDMN(pred);
     } else { printf("  Nothing to do for "); DDMN(pred); }
   }
-  * end Debug output **/
+  * end Debug output -*/
 
-  /** Fix the Phi nodes **/
+  /*- Fix the Phi nodes -*/
   phi = get_irn_link(b);
   while (phi) {
     assert(get_irn_op(phi) == op_Phi);
@@ -1673,8 +1716,8 @@ static void optimize_blocks(ir_node *b, void *env) {
     phi = get_irn_link(phi);
   }
 
-/**
-      This happens only if merge between loop backedge and single loop entry. **/
+/*-
+      This happens only if merge between loop backedge and single loop entry. -*/
   for (k = 0; k < get_Block_n_cfgpreds(b); k++) {
     pred = get_nodes_Block(get_Block_cfgpred(b, k));
     if (get_Block_block_visited(pred) +1
@@ -1731,7 +1774,7 @@ static void optimize_blocks(ir_node *b, void *env) {
     }
   }
 
-  /** Fix the block **/
+  /*- Fix the block -*/
   n_preds = 0;
   for (i = 0; i < get_Block_n_cfgpreds(b); i++) {
     pred = get_nodes_Block(get_Block_cfgpred(b, i));
