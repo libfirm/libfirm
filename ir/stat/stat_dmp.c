@@ -116,20 +116,22 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
     }
 
     fprintf(dmp->f, " %swalked %u over blocks %u:\n"
-                    " was inlined   : %u\n"
-		    " got inlined   : %u\n"
-		    " strength red  : %u\n"
-		    " leaf function : %s\n"
-		    " recursive     : %s\n"
-		    " chain call    : %s\n"
-                    " calls         : %u\n"
-                    " indirect calls: %u\n",
+                    " was inlined               : %u\n"
+		    " got inlined               : %u\n"
+		    " strength red              : %u\n"
+		    " leaf function             : %s\n"
+		    " calls only leaf functions : %s\n"
+		    " recursive                 : %s\n"
+		    " chain call                : %s\n"
+                    " calls                     : %u\n"
+                    " indirect calls            : %u\n",
         entry->is_deleted ? "DELETED " : "",
         entry->cnt_walked.cnt[0], entry->cnt_walked_blocks.cnt[0],
         entry->cnt_was_inlined.cnt[0],
         entry->cnt_got_inlined.cnt[0],
 	entry->cnt_strength_red.cnt[0],
 	entry->is_leaf ? "YES" : "NO",
+	entry->is_leaf_call == LCS_NON_LEAF_CALL ? "NO" : (entry->is_leaf_call == LCS_LEAF_CALL ? "Yes" : "Maybe"),
 	entry->is_recursive ? "YES" : "NO",
 	entry->is_chain_call ? "YES" : "NO",
         entry->cnt_all_calls.cnt[0],

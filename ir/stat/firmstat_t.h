@@ -20,6 +20,7 @@
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "pset.h"
+#include "pdeq.h"
 #include "irprog.h"
 #include "irgwalk.h"
 #include "counter.h"
@@ -64,6 +65,12 @@ typedef struct _node_entry_t {
   const ir_op *op;			/**< the op for this entry */
 } node_entry_t;
 
+enum leaf_call_state_t {
+  LCS_UNKNOWN       = 0,      /**< state is unknown yet */
+  LCS_LEAF_CALL     = 1,      /**< only leaf functions will be called */
+  LCS_NON_LEAF_CALL = 2,      /**< at least one non-leaf function will be called or indetermined */
+};
+
 /**
  * An entry for ir_graphs
  */
@@ -84,8 +91,10 @@ typedef struct _graph_entry_t {
   set                     *address_mark;                /**< a set containing the address marks of the nodes */
   unsigned                is_deleted:1;			/**< set if this irg was deleted */
   unsigned                is_leaf:1;			/**< set, if this irg is a leaf function */
+  unsigned                is_leaf_call:2;               /**< set, if this irg calls only leaf functions */
   unsigned                is_recursive:1;		/**< set, if this irg has recursive calls */
   unsigned                is_chain_call:1;		/**< set, if this irg is a chain call */
+  unsigned                is_analyzed:1;                /**< helper: set, if this irg was already analysed */
 } graph_entry_t;
 
 /**
@@ -141,18 +150,19 @@ typedef struct _statistic_info_t {
   struct obstack          cnts;			/**< obstack containing the counters */
   HASH_MAP(graph_entry_t) *irg_hash;		/**< hash map containing the counter for irgs */
   HASH_MAP(ir_op)         *ir_op_hash;		/**< hash map containing all ir_ops (accessible by op_codes) */
+  pdeq                    *wait_q;              /**< wait queue for leaf call decision */
   int                     recursive;		/**< flag for detecting recursive hook calls */
   int                     in_dead_node_elim;	/**< set, if dead node elimination runs */
   ir_op                   *op_Phi0;		/**< pseudo op for Phi0 */
   ir_op                   *op_PhiM;		/**< pseudo op for memory Phi */
+  ir_op                   *op_ProjM;		/**< pseudo op for memory Proj */
   ir_op                   *op_MulC;		/**< pseudo op for multiplication by const */
   ir_op                   *op_DivC;		/**< pseudo op for division by const */
   ir_op                   *op_ModC;		/**< pseudo op for modulo by const */
   ir_op                   *op_DivModC;		/**< pseudo op for DivMod by const */
   dumper_t                *dumper;		/**< list of dumper */
   int                     reassoc_run;          /**< if set, reassociation is running */
-  int                     enable;		/**< if set, statistic is enabled */
-  int                     dag_options;          /**< DAG counting options */
+  int                     stat_options;	        /**< statistic options */
 } stat_info_t;
 
 /**

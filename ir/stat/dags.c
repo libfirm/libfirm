@@ -22,6 +22,9 @@
 enum dag_counting_options_t {
   FIRMSTAT_COPY_CONSTANTS = 0x00000001,		/**< if set, constants will be treated as they are in
 						     the same block as its successors */
+  FIRMSTAT_LOAD_IS_LEAVE  = 0x00000002,         /**< Load nodes are always leaves */
+  FIRMSTAT_CALL_IS_LEAVE  = 0x00000004,         /**< Call nodes are always leaves */
+  FIRMSTAT_ARGS_ARE_ROOTS = 0x00000008,         /**< arguments (Proj(Proj(Start)) are roots */
 };
 
 /**
@@ -81,6 +84,22 @@ static dag_entry_t *get_irn_dag_entry(ir_node *n)
 #define set_irn_dag_entry(n, e) set_irn_link(n, e)
 
 /**
+ * checks wheater a node is an arg
+ */
+static int is_arg(ir_node *node)
+{
+  if (! is_Proj(node))
+    return 0;
+
+  node = get_Proj_pred(node);
+  if (! is_Proj(node))
+    return 0;
+
+  node = get_Proj_pred(node);
+  return get_irn_op(node) == op_Start;
+}
+
+/**
  * walker for connecting DAGs and counting.
  */
 static void connect_dags(ir_node *node, void *env)
@@ -102,6 +121,9 @@ static void connect_dags(ir_node *node, void *env)
     return;
 
   if (is_Phi(node))
+    return;
+
+  if (dag_env->options & FIRMSTAT_ARGS_ARE_ROOTS && is_arg(node))
     return;
 
   mode = get_irn_mode(node);
@@ -129,6 +151,13 @@ static void connect_dags(ir_node *node, void *env)
 
     set_irn_dag_entry(node, entry);
   }
+
+  /* if this option is set, Loads are onways leaves */
+  if (dag_env->options & FIRMSTAT_LOAD_IS_LEAVE && get_irn_op(node) == op_Load)
+    return;
+
+  if (dag_env->options & FIRMSTAT_CALL_IS_LEAVE && get_irn_op(node) == op_Call)
+    return;
 
   /* put the predecessors into the same DAG as the current */
   for (i = 0, arity = get_irn_arity(node); i < arity; ++i) {
@@ -181,6 +210,11 @@ static void connect_dags(ir_node *node, void *env)
   }
 }
 
+#define DEFAULT_RET     1
+#define COLOR_RET       1
+
+static unsigned mark_options;
+
 /**
  * a vcg attribute hook
  */
@@ -190,17 +224,30 @@ static int stat_dag_mark_hook(FILE *F, ir_node *n, ir_node *l)
   dag_entry_t *entry;
 
   /* do not count Bad / NoMem */
-  if (l && (get_irn_op(l) == op_NoMem || get_irn_op(l) == op_Bad))
-    return 0;
+  if (l) {
+    ir_op *op = get_irn_op(l);
+
+    if (op == op_NoMem || op == op_Bad)
+      return DEFAULT_RET;
+
+    /* check for additional options */
+    op = get_irn_op(n);
+
+    if (mark_options & FIRMSTAT_LOAD_IS_LEAVE && op == op_Load)
+      return DEFAULT_RET;
+
+    if (mark_options & FIRMSTAT_CALL_IS_LEAVE && op == op_Call)
+      return DEFAULT_RET;
+  }
 
   entry = get_irn_dag_entry(n);
   if (! entry)
-    return 0;
+    return DEFAULT_RET;
 
   fprintf(F, "color: %s info3: \"DAG id: %u\"", colors[entry->id & 7], entry->id);
 
   /* I know the color! */
-  return 1;
+  return COLOR_RET;
 }
 
 /**
@@ -222,7 +269,7 @@ void count_dags_in_graph(graph_entry_t *global, graph_entry_t *graph)
   obstack_init(&root_env.obst);
   root_env.num_of_dags  = 0;
   root_env.list_of_dags = NULL;
-  root_env.options      = FIRMSTAT_COPY_CONSTANTS;
+  root_env.options      = FIRMSTAT_COPY_CONSTANTS | FIRMSTAT_LOAD_IS_LEAVE | FIRMSTAT_CALL_IS_LEAVE;
 
   /* count them */
   irg_walk_graph(graph->irg, connect_dags, NULL, &root_env);
@@ -244,6 +291,7 @@ void count_dags_in_graph(graph_entry_t *global, graph_entry_t *graph)
 
 #if 1
   /* dump for test */
+  mark_options = root_env.options;
   set_dump_node_vcgattr_hook(stat_dag_mark_hook);
   dump_ir_block_graph(graph->irg, "-dag");
   set_dump_node_vcgattr_hook(NULL);

@@ -57,10 +57,18 @@ static ir_op _op_ModC;
 /** The Div by Const node. */
 static ir_op _op_DivModC;
 
+/** The memory Proj node. */
+static ir_op _op_ProjM;
+
 /* ---------------------------------------------------------------------------------- */
 
+/** Marks the begin of a statistic (hook) function. */
 #define STAT_ENTER		++status->recursive
+
+/** Marks the end of a statistic (hook) functions. */
 #define STAT_LEAVE		--status->recursive
+
+/** Allows to enter a statistic function only when we are not already in a hook. */
 #define STAT_ENTER_SINGLE	do { if (status->recursive > 0) return; ++status->recursive; } while (0)
 
 /**
@@ -306,30 +314,34 @@ static ir_op *stat_get_irn_op(ir_node *node)
 {
   ir_op *op = get_irn_op(node);
 
-  if (op->code == iro_Phi && get_irn_arity(node) == 0) {
+  if (op == op_Phi && get_irn_arity(node) == 0) {
     /* special case, a Phi0 node, count on extra counter */
-    op = status->op_Phi0;
+    op = status->op_Phi0 ? status->op_Phi0 : op;
   }
-  else if (op->code == iro_Phi && get_irn_mode(node) == mode_M) {
+  else if (op == op_Phi && get_irn_mode(node) == mode_M) {
     /* special case, a Memory Phi node, count on extra counter */
-    op = status->op_PhiM;
+    op = status->op_PhiM ? status->op_PhiM : op;
   }
-  else if (op->code == iro_Mul &&
+  else if (op == op_Proj && get_irn_mode(node) == mode_M) {
+    /* special case, a Memory Proj node, count on extra counter */
+    op = status->op_ProjM ? status->op_ProjM : op;
+  }
+  else if (op == op_Mul &&
            (get_irn_op(get_Mul_left(node)) == op_Const || get_irn_op(get_Mul_right(node)) == op_Const)) {
     /* special case, a Multiply by a const, count on extra counter */
-    op = status->op_MulC ? status->op_MulC : op_Mul;
+    op = status->op_MulC ? status->op_MulC : op;
   }
-  else if (op->code == iro_Div && get_irn_op(get_Div_right(node)) == op_Const) {
+  else if (op == op_Div && get_irn_op(get_Div_right(node)) == op_Const) {
     /* special case, a division by a const, count on extra counter */
-    op = status->op_DivC ? status->op_DivC : op_Div;
+    op = status->op_DivC ? status->op_DivC : op;
   }
-  else if (op->code == iro_Mod && get_irn_op(get_Mod_right(node)) == op_Const) {
+  else if (op == op_Mod && get_irn_op(get_Mod_right(node)) == op_Const) {
     /* special case, a module by a const, count on extra counter */
-    op = status->op_ModC ? status->op_ModC : op_Mod;
+    op = status->op_ModC ? status->op_ModC : op;
   }
-  else if (op->code == iro_DivMod && get_irn_op(get_DivMod_right(node)) == op_Const) {
+  else if (op == op_DivMod && get_irn_op(get_DivMod_right(node)) == op_Const) {
     /* special case, a division/modulo by a const, count on extra counter */
-    op = status->op_DivModC ? status->op_DivModC : op_DivMod;
+    op = status->op_DivModC ? status->op_DivModC : op;
   }
 
   return op;
@@ -398,32 +410,38 @@ static void update_call_stat(ir_node *call, graph_entry_t *graph)
   ir_node *block = get_nodes_block(call);
   ir_node *ptr = get_Call_ptr(call);
   entity *ent = NULL;
+  ir_graph *callee = NULL;
 
   /*
    * If the block is bad, the whole subgraph will colabse later
    * so do not count this call.
-   * This happens in dead code
+   * This happens in dead code.
    */
   if (is_Bad(block))
     return;
 
   cnt_inc(&graph->cnt_all_calls);
 
-  /* found a call, is not a leaf function */
+  /* found a call, this function is not a leaf */
   graph->is_leaf = 0;
 
   if (get_irn_op(ptr) == op_SymConst) {
     if (get_SymConst_kind(ptr) == symconst_addr_ent) {
       /* ok, we seems to know the entity */
       ent = get_SymConst_entity(ptr);
+      callee = get_entity_irg(ent);
 
-      if (get_entity_irg(ent) == graph->irg)
+      /* it is recursive, if it calls at least once */
+      if (callee == graph->irg)
 	graph->is_recursive = 1;
     }
   }
   else {
-    /* indirect call */
+    /* indirect call, be could not predict */
     cnt_inc(&graph->cnt_indirect_calls);
+
+    /* NOT a leaf call */
+    graph->is_leaf_call = LCS_NON_LEAF_CALL;
   }
 
   /* check, if it's a chain-call: Then, the call-block
@@ -442,6 +460,55 @@ static void update_call_stat(ir_node *call, graph_entry_t *graph)
     if (curr != block)
       graph->is_chain_call = 0;
   }
+
+  /* check, if the callee is a leaf */
+  if (callee) {
+    graph_entry_t *called = graph_get_entry(callee, status->irg_hash);
+
+    if (called->is_analyzed) {
+      if (! called->is_leaf)
+        graph->is_leaf_call = LCS_NON_LEAF_CALL;
+    }
+  }
+}
+
+/**
+ * update info on calls for graphs on the wait queue
+ */
+static void update_call_stat_2(ir_node *call, graph_entry_t *graph)
+{
+  ir_node *block = get_nodes_block(call);
+  ir_node *ptr = get_Call_ptr(call);
+  entity *ent = NULL;
+  ir_graph *callee = NULL;
+
+  /*
+   * If the block is bad, the whole subgraph will colabse later
+   * so do not count this call.
+   * This happens in dead code.
+   */
+  if (is_Bad(block))
+    return;
+
+  if (get_irn_op(ptr) == op_SymConst) {
+    if (get_SymConst_kind(ptr) == symconst_addr_ent) {
+      /* ok, we seems to know the entity */
+      ent = get_SymConst_entity(ptr);
+      callee = get_entity_irg(ent);
+    }
+  }
+
+  /* check, if the callee is a leaf */
+  if (callee) {
+    graph_entry_t *called = graph_get_entry(callee, status->irg_hash);
+
+    assert(called->is_analyzed);
+
+    if (! called->is_leaf)
+      graph->is_leaf_call = LCS_NON_LEAF_CALL;
+  }
+  else
+    graph->is_leaf_call = LCS_NON_LEAF_CALL;
 }
 
 /**
@@ -464,8 +531,20 @@ static void update_node_stat(ir_node *node, void *env)
   count_block_info(node, graph);
 
   /* check for properties that depends on calls like recursion/leaf/indirect call */
-  if (get_irn_op(node) == op_Call)
+  if (op == op_Call)
     update_call_stat(node, graph);
+}
+
+/**
+ * walker for reachable nodes count for graphs on teh wait_q
+ */
+static void update_node_stat_2(ir_node *node, void *env)
+{
+  graph_entry_t *graph = env;
+
+  /* check for properties that depends on calls like recursion/leaf/indirect call */
+  if (get_irn_op(node) == op_Call)
+    update_call_stat_2(node, graph);
 }
 
 /**
@@ -489,7 +568,9 @@ static void set_adr_mark(graph_entry_t *graph, ir_node *node, unsigned val)
 }
 
 /**
- * a vcg attribute hook
+ * a vcg attribute hook: Color a node with a different color if
+ * it's identified as a part of an address expression or at least referenced
+ * by an address expression.
  */
 static int stat_adr_mark_hook(FILE *F, ir_node *node, ir_node *local)
 {
@@ -555,8 +636,11 @@ static void mark_address_calc(ir_node *node, void *env)
 }
 
 /**
- * called for every graph when the graph is either deleted or stat_finish()
- * is called, must recalculate all statistic info
+ * Called for every graph when the graph is either deleted or stat_finish()
+ * is called, must recalculate all statistic info.
+ *
+ * @param global    The global entry
+ * @param graph     The current entry
  */
 static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
 {
@@ -569,6 +653,7 @@ static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
 
   /* set pessimistic values */
   graph->is_leaf       = 1;
+  graph->is_leaf_call  = LCS_UNKNOWN;
   graph->is_recursive  = 0;
   graph->is_chain_call = 1;
 
@@ -620,6 +705,47 @@ static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
     dump_ir_block_graph(graph->irg, "-adr");
     set_dump_node_vcgattr_hook(NULL);
 #endif
+  }
+
+  /* count the DAG's */
+  if (status->stat_options & FIRMSTAT_COUNT_DAG)
+    count_dags_in_graph(global, graph);
+
+  /* calculate the patterns of this graph */
+  stat_calc_pattern_history(graph->irg);
+
+  /* leaf function did not call others */
+  if (graph->is_leaf)
+    graph->is_leaf_call = LCS_NON_LEAF_CALL;
+  else if (graph->is_leaf_call == LCS_UNKNOWN) {
+    /* we still don't know if this graph calls leaf-functions, so enqueue */
+    pdeq_putl(status->wait_q, graph);
+  }
+
+  /* we have analyzed this graph */
+  graph->is_analyzed = 1;
+}
+
+/**
+ * Called for every graph that was on the wait_q in stat_finish()
+ *  must finish all statistic info calculations.
+ *
+ * @param global    The global entry
+ * @param graph     The current entry
+ */
+static void update_graph_stat_2(graph_entry_t *global, graph_entry_t *graph)
+{
+  if (graph->is_deleted) {
+    /* deleted, ignore */
+    return;
+  }
+
+  if (graph->irg) {
+    /* count the nodes in the graph */
+    irg_walk_graph(graph->irg, update_node_stat_2, NULL, graph);
+
+    if (graph->is_leaf_call == LCS_UNKNOWN)
+      graph->is_leaf_call = LCS_LEAF_CALL;
   }
 }
 
@@ -696,9 +822,9 @@ void init_stat(unsigned enable_options)
 #define X(a)  a, sizeof(a)-1
 
   /* enable statistics */
-  status->enable = enable_options & FIRMSTAT_ENABLED;
+  status->stat_options = enable_options & FIRMSTAT_ENABLED ? enable_options : 0;
 
-  if (! status->enable)
+  if (! status->stat_options)
    return;
 
   obstack_init(&status->cnts);
@@ -707,8 +833,8 @@ void init_stat(unsigned enable_options)
   status->irg_hash   = new_pset(graph_cmp, 8);
   status->ir_op_hash = new_pset(opcode_cmp_2, 1);
 
-  status->op_Phi0    = &_op_Phi0;
-  status->op_PhiM    = &_op_PhiM;
+  /* create the wait queue */
+  status->wait_q     = new_pdeq();
 
   if (enable_options & FIRMSTAT_COUNT_STRONG_OP) {
     /* build the pseudo-ops */
@@ -717,6 +843,9 @@ void init_stat(unsigned enable_options)
 
     _op_PhiM.code    = get_next_ir_opcode();
     _op_PhiM.name    = new_id_from_chars(X("PhiM"));
+
+    _op_ProjM.code   = get_next_ir_opcode();
+    _op_ProjM.name   = new_id_from_chars(X("ProjM"));
 
     _op_MulC.code    = get_next_ir_opcode();
     _op_MulC.name    = new_id_from_chars(X("MulC"));
@@ -730,12 +859,18 @@ void init_stat(unsigned enable_options)
     _op_DivModC.code = get_next_ir_opcode();
     _op_DivModC.name = new_id_from_chars(X("DivModC"));
 
+    status->op_Phi0    = &_op_Phi0;
+    status->op_PhiM    = &_op_PhiM;
+    status->op_ProjM   = &_op_ProjM;
     status->op_MulC    = &_op_MulC;
     status->op_DivC    = &_op_DivC;
     status->op_ModC    = &_op_ModC;
     status->op_DivModC = &_op_DivModC;
   }
   else {
+    status->op_Phi0    = NULL;
+    status->op_PhiM    = NULL;
+    status->op_ProjM   = NULL;
     status->op_MulC    = NULL;
     status->op_DivC    = NULL;
     status->op_ModC    = NULL;
@@ -750,15 +885,13 @@ void init_stat(unsigned enable_options)
 
   /* initialize the pattern hash */
   stat_init_pattern_history(enable_options & FIRMSTAT_PATTERN_ENABLED);
-
-  status->dag_options = enable_options & FIRMSTAT_COUNT_DAG;
 #undef X
 }
 
 /* A new IR op is registered. */
 void stat_new_ir_op(const ir_op *op)
 {
-  if (! status->enable)
+  if (! status->stat_options)
     return;
 
   STAT_ENTER;
@@ -776,7 +909,7 @@ void stat_new_ir_op(const ir_op *op)
 /* An IR op is freed. */
 void stat_free_ir_op(const ir_op *op)
 {
-  if (! status->enable)
+  if (! status->stat_options)
     return;
 
   STAT_ENTER;
@@ -788,7 +921,7 @@ void stat_free_ir_op(const ir_op *op)
 /* A new node is created. */
 void stat_new_node(ir_node *node)
 {
-  if (! status->enable)
+  if (! status->stat_options)
     return;
 
   /* do NOT count during dead node elimination */
@@ -817,7 +950,7 @@ void stat_new_node(ir_node *node)
 /* A node is changed into a Id node */
 void stat_turn_into_id(ir_node *node)
 {
-  if (! status->enable)
+  if (! status->stat_options)
     return;
 
   STAT_ENTER;
@@ -842,7 +975,7 @@ void stat_turn_into_id(ir_node *node)
 /* A new graph was created */
 void stat_new_graph(ir_graph *irg, entity *ent)
 {
-  if (! status->enable)
+  if (! status->stat_options)
     return;
 
   STAT_ENTER;
@@ -853,8 +986,10 @@ void stat_new_graph(ir_graph *irg, entity *ent)
     graph->ent           = ent;
     graph->is_deleted    = 0;
     graph->is_leaf       = 0;
+    graph->is_leaf_call  = 0;
     graph->is_recursive  = 0;
     graph->is_chain_call = 0;
+    graph->is_analyzed   = 0;
   }
   STAT_LEAVE;
 }
@@ -864,7 +999,7 @@ void stat_new_graph(ir_graph *irg, entity *ent)
  */
 void stat_free_graph(ir_graph *irg)
 {
-  if (! status->enable)
+  if (! status->stat_options)
     return;
 
   STAT_ENTER;
@@ -874,15 +1009,10 @@ void stat_free_graph(ir_graph *irg)
 
     graph->is_deleted = 1;
 
-    /* count the nodes of the graph yet, it will be destroyed later */
-    update_graph_stat(global, graph);
-
-    /* count the DAG's */
-    if (status->dag_options & FIRMSTAT_COUNT_DAG)
-      count_dags_in_graph(global, graph);
-
-    /* calculate the pattern */
-    stat_calc_pattern_history(irg);
+    if (status->stat_options & FIRMSTAT_COUNT_DELETED) {
+      /* count the nodes of the graph yet, it will be destroyed later */
+      update_graph_stat(global, graph);
+    }
   }
   STAT_LEAVE;
 }
@@ -892,7 +1022,7 @@ void stat_free_graph(ir_graph *irg)
  */
 void stat_irg_walk(ir_graph *irg, void *pre, void *post)
 {
-  if (! status->enable)
+  if (! status->stat_options)
     return;
 
   STAT_ENTER_SINGLE;
@@ -918,7 +1048,7 @@ void stat_irg_walk_blkwise(ir_graph *irg, void *pre, void *post)
  */
 void stat_irg_block_walk(ir_graph *irg, const ir_node *node, void *pre, void *post)
 {
-  if (! status->enable)
+  if (! status->stat_options)
     return;
 
   STAT_ENTER_SINGLE;
@@ -950,7 +1080,7 @@ void stat_merge_nodes(
     ir_node **old_node_array, int old_num_entries,
     stat_opt_kind opt)
 {
-  if (! status->enable)
+  if (! status->stat_options)
     return;
 
   STAT_ENTER;
@@ -980,7 +1110,7 @@ void stat_merge_nodes(
  */
 void stat_reassociate(int flag)
 {
-  if (! status->enable)
+  if (! status->stat_options)
     return;
 
   STAT_ENTER;
@@ -995,7 +1125,7 @@ void stat_reassociate(int flag)
  */
 void stat_lower(ir_node *node)
 {
-  if (! status->enable)
+  if (! status->stat_options)
     return;
 
   STAT_ENTER;
@@ -1012,7 +1142,7 @@ void stat_lower(ir_node *node)
  */
 void stat_inline(ir_node *call, ir_graph *called_irg)
 {
-  if (! status->enable)
+  if (! status->stat_options)
     return;
 
   STAT_ENTER;
@@ -1032,7 +1162,7 @@ void stat_inline(ir_node *call, ir_graph *called_irg)
  */
 void stat_tail_rec(ir_graph *irg)
 {
-  if (! status->enable)
+  if (! status->stat_options)
     return;
 
   STAT_ENTER;
@@ -1046,7 +1176,7 @@ void stat_tail_rec(ir_graph *irg)
  */
 void stat_strength_red(ir_graph *irg, ir_node *strong, ir_node *cmp)
 {
-  if (! status->enable)
+  if (! status->stat_options)
     return;
 
   STAT_ENTER;
@@ -1064,7 +1194,7 @@ void stat_strength_red(ir_graph *irg, ir_node *strong, ir_node *cmp)
  */
 void stat_dead_node_elim_start(ir_graph *irg)
 {
-  if (! status->enable)
+  if (! status->stat_options)
     return;
 
   ++status->in_dead_node_elim;
@@ -1075,7 +1205,7 @@ void stat_dead_node_elim_start(ir_graph *irg)
  */
 void stat_dead_node_elim_stop(ir_graph *irg)
 {
-  if (! status->enable)
+  if (! status->stat_options)
     return;
 
   --status->in_dead_node_elim;
@@ -1086,7 +1216,7 @@ void stat_dead_node_elim_stop(ir_graph *irg)
  */
 void stat_arch_dep_replace_mul_with_shifts(ir_node *mul)
 {
-  if (! status->enable)
+  if (! status->stat_options)
     return;
 
   STAT_ENTER;
@@ -1102,7 +1232,7 @@ void stat_arch_dep_replace_mul_with_shifts(ir_node *mul)
  */
 void stat_arch_dep_replace_div_by_const(ir_node *div)
 {
-  if (! status->enable)
+  if (! status->stat_options)
     return;
 
   STAT_ENTER;
@@ -1118,7 +1248,7 @@ void stat_arch_dep_replace_div_by_const(ir_node *div)
  */
 void stat_arch_dep_replace_mod_by_const(ir_node *mod)
 {
-  if (! status->enable)
+  if (! status->stat_options)
     return;
 
   STAT_ENTER;
@@ -1134,7 +1264,7 @@ void stat_arch_dep_replace_mod_by_const(ir_node *mod)
  */
 void stat_arch_dep_replace_DivMod_by_const(ir_node *divmod)
 {
-  if (! status->enable)
+  if (! status->stat_options)
     return;
 
   STAT_ENTER;
@@ -1148,7 +1278,7 @@ void stat_arch_dep_replace_DivMod_by_const(ir_node *divmod)
 /* Finish the statistics */
 void stat_finish(const char *name)
 {
-  if (! status->enable)
+  if (! status->stat_options)
     return;
 
   STAT_ENTER;
@@ -1158,7 +1288,7 @@ void stat_finish(const char *name)
 
     stat_dump_init(name);
 
-    /* dump per graph */
+    /* calculate the graph statistics */
     for (entry = pset_first(status->irg_hash); entry; entry = pset_next(status->irg_hash)) {
 
       if (entry->irg == NULL) {
@@ -1169,19 +1299,32 @@ void stat_finish(const char *name)
       if (! entry->is_deleted) {
         /* the graph is still alive, count the nodes on it */
         update_graph_stat(global, entry);
+      }
+    }
 
-        /* count the DAG's */
-        if (status->dag_options & FIRMSTAT_COUNT_DAG)
-          count_dags_in_graph(global, entry);
+    /* some calculations are dependant, we pushed them on the wait_q */
+    while (! pdeq_empty(status->wait_q)) {
+      entry = pdeq_getr(status->wait_q);
 
-        /* calculate the pattern */
-        stat_calc_pattern_history(entry->irg);
+      update_graph_stat_2(global, entry);
+    }
+
+
+    /* dump per graph */
+    for (entry = pset_first(status->irg_hash); entry; entry = pset_next(status->irg_hash)) {
+
+      if (entry->irg == NULL) {
+        /* special entry for the global count */
+        continue;
       }
 
-      stat_dump_graph(entry);
+      if (! entry->is_deleted || status->stat_options & FIRMSTAT_COUNT_DELETED)
+        stat_dump_graph(entry);
 
-      /* clear the counter that are not accumulated */
-      graph_clear_entry(entry, 0);
+      if (! entry->is_deleted) {
+        /* clear the counter that are not accumulated */
+        graph_clear_entry(entry, 0);
+      }
     }
 
     /* dump global */
@@ -1202,7 +1345,7 @@ void stat_finish(const char *name)
     }
 
     /* finished */
-//    status->enable = 0;
+//    status->stat_options = 0;
   }
   STAT_LEAVE;
 }
