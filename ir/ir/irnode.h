@@ -21,10 +21,8 @@
 # include "dbginfo.h"
 # include "exc.h"
 
-/* The typedefiniton of ir_node is also in irgraph.h to resolve
+/* The type definiton of ir_node is also in irgraph.h to resolve
    recursion between irnode.h and irgraph.h */
-#ifndef _IR_NODE_TYPEDEF_
-#define _IR_NODE_TYPEDEF_
 /****s* irnode/irnode
  *
  * NAME ir_node - a datatype representing a Firm node
@@ -48,6 +46,8 @@
  *               turned on.
  * SOURCE
  */
+#ifndef _IR_NODE_TYPEDEF_
+#define _IR_NODE_TYPEDEF_
 typedef struct ir_node ir_node;
 #endif
 
