@@ -1,3 +1,13 @@
+/*
+ * Project:     libFIRM
+ * File name:   ir/ir/iredges_t.h
+ * Purpose:     Everlasting outs -- private header.
+ * Author:      Sebastian Hack
+ * Created:     15.01.2005
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1998-2005 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 /**
  * everlasting outs.
@@ -19,20 +29,22 @@
 
 #include "iredges.h"
 
-#define DBG_EDGES 				"edges"
+#if FIRM_EDGES_INPLACE
+
+#define DBG_EDGES  "edges"
 
 /**
  * An edge.
  */
 typedef struct _ir_edge_t {
 #ifdef DEBUG_libfirm
-	long src_nr;						/**< The node number of the source node. */
+  long src_nr;            /**< The node number of the source node. */
 #endif
-	 ir_node *src;		/**< The source node of the edge. */
-	int pos;								/**< The position of the edge at @p src. */
-	struct list_head list;  /**< The list head to queue all out edges at a node. */
-	unsigned invalid : 1;		/**< edges that are removed are marked invalid. */
-	unsigned present : 1;		/**< Used by the verifier. Don't rely on its content. */
+  ir_node *src;           /**< The source node of the edge. */
+  int pos;                /**< The position of the edge at @p src. */
+  struct list_head list;  /**< The list head to queue all out edges at a node. */
+  unsigned invalid : 1;   /**< edges that are removed are marked invalid. */
+  unsigned present : 1;   /**< Used by the verifier. Don't rely on its content. */
 } ir_edge_t;
 
 /** Accessor for private irn info. */
@@ -56,8 +68,8 @@ typedef struct _ir_edge_t {
  */
 static INLINE const ir_edge_t *_get_irn_out_edge_first(const ir_node *irn)
 {
-	struct list_head *head = _get_irn_outs_head(irn);
-	return list_empty(head) ? NULL : list_entry(head->next, ir_edge_t, list);
+  struct list_head *head = _get_irn_outs_head(irn);
+  return list_empty(head) ? NULL : list_entry(head->next, ir_edge_t, list);
 }
 
 /**
@@ -68,8 +80,8 @@ static INLINE const ir_edge_t *_get_irn_out_edge_first(const ir_node *irn)
  */
 static INLINE const ir_edge_t *_get_irn_out_edge_next(const ir_node *irn, const ir_edge_t *last)
 {
-	struct list_head *next = last->list.next;
-	return next == _get_irn_outs_head(irn) ? NULL : list_entry(next, ir_edge_t, list);
+  struct list_head *next = last->list.next;
+  return next == _get_irn_outs_head(irn) ? NULL : list_entry(next, ir_edge_t, list);
 }
 
 /**
@@ -79,7 +91,7 @@ static INLINE const ir_edge_t *_get_irn_out_edge_next(const ir_node *irn, const 
  * edge.
  */
 #define foreach_out_edge(irn,edge) \
-	for(edge = get_irn_out_edge_first(irn); edge; edge = get_irn_out_edge_next(irn, edge))
+  for(edge = get_irn_out_edge_first(irn); edge; edge = get_irn_out_edge_next(irn, edge))
 
 /**
  * Get the source node of an edge.
@@ -88,7 +100,7 @@ static INLINE const ir_edge_t *_get_irn_out_edge_next(const ir_node *irn, const 
  */
 static INLINE  ir_node *_get_edge_src_irn(const ir_edge_t *edge)
 {
-	return edge ? edge->src : NULL;
+  return edge ? edge->src : NULL;
 }
 
 /**
@@ -98,12 +110,12 @@ static INLINE  ir_node *_get_edge_src_irn(const ir_edge_t *edge)
  */
 static INLINE int _get_edge_src_pos(const ir_edge_t *edge)
 {
-	return edge ? edge->pos : -1;
+  return edge ? edge->pos : -1;
 }
 
 static INLINE int _edges_activated(const ir_graph *irg)
 {
-	return _get_irg_edge_info(irg)->activated;
+  return _get_irg_edge_info(irg)->activated;
 }
 
 void edges_reroute(ir_node *old, ir_node *nw, ir_graph *irg);
@@ -122,10 +134,27 @@ void edges_invalidate(ir_node *irn, ir_graph *irg);
  */
 extern void init_edges(void);
 
-#define get_irn_out_edge_first(irn)					_get_irn_out_edge_first(irn)
-#define get_irn_out_edge_next(irn,last)			_get_irn_out_edge_next(irn, last)
-#define get_edge_src_irn(edge)							_get_edge_src_irn(edge)
-#define get_edge_src_pos(edge)							_get_edge_src_pos(edge)
-#define edges_activated(irg)								_edges_activated(irg)
+#define get_irn_out_edge_first(irn)      _get_irn_out_edge_first(irn)
+#define get_irn_out_edge_next(irn,last)  _get_irn_out_edge_next(irn, last)
+#define get_edge_src_irn(edge)           _get_edge_src_irn(edge)
+#define get_edge_src_pos(edge)           _get_edge_src_pos(edge)
+#define edges_activated(irg)             _edges_activated(irg)
+
+#else
+/* new edges are disabled */
+
+#define init_edges()
+#define edges_reroute(old, nw, irg)
+#define edges_init_graph(irg);
+#define edges_notify_edge(src, pos, tgt, old_tgt, irg)
+#define edges_node_deleted(old, irg)
+#define edges_invalidate(irn, irg)
+#define get_irn_out_edge_first(irn)       NULL
+#define get_irn_out_edge_next(irn,last)   NULL
+#define get_edge_src_irn(edge)            NULL
+#define get_edge_src_pos(edge)            -1
+#define edges_activated(irg)              0
+
+#endif /* FIRM_EDGES_INPLACE */
 
 #endif /* _FIRM_EDGES_T_H */
