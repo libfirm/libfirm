@@ -11,6 +11,9 @@ subdir = firmjni
 # static initializer.
 LIBNAME = libfirmjni.so
 
+# The name of the package containing the Firm JNI
+PACKAGENAME = firmjni
+
 # where to put libfirmjni.so
 libdir = @libdir@
 # where to put the directory firmjni containing the generated
@@ -51,7 +54,7 @@ classfiles: $(CLASSFILES)
 	javac $<
 
 %.h:	%.class
-	javah $(<:.class=)
+	javah -classpath $(topdir) -o $(<:.class=.h) $(PACKAGENAME).$(<:.class=)
 
 %.o:	%.c %.h
 	gcc $(CPPFLAGS) -c $< -o $@

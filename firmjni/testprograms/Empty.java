@@ -59,15 +59,8 @@ class Empty {
 	 * it is not matured.
 	 * Generate the return node into this region. The Return node is needed to
 	 * return at least the memory. */
-	//ir_node *in[0]; /* this is the array containing the return parameters */
 	int []in  = new int[0];
 	int x = Ircons.newReturn (Ircons.getStore(), in.length, in);
-
-	/* Test enumerators */
-	if (Irnode.getIrnModecode(x) != Irmode.irm_X)
-	    System.out.println(" wrong modecode");
-	else
-	    System.out.println(" proper modecode Execution.");
 
 	/* Now we generated all instructions for this block and all its predecessor
 	 * blocks so we can mature it.  (There are not too much.) */
@@ -80,7 +73,7 @@ class Empty {
 	Ircons.matureBlock (Irgraph.getIrgEndBlock(irg));
 
 	/* Verify the graph.  Finds some very bad errors in the graph. */
-	//irg_vrfy(irg);
+	Irvrfy.irgVrfy(irg);
 	Ircons.finalizeCons (irg);
 
 	System.out.println("Done building the graph.  Dumping it.");

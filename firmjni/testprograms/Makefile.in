@@ -10,6 +10,7 @@ srcdir = @srcdir@
 topdir = ..
 subdir = testprograms
 
+SOURCEPATH = @top_srcdir@/firmjni/testprograms/
 
 SOURCES := Makefile.in \
 	Empty.java
@@ -26,11 +27,11 @@ all: 	empty
 
 # bad hack ;-(
 empty:
-	javac -classpath $(MYCLASSPATH) -d . @top_srcdir@/firmjni/testprograms/Empty.java
+	javac -classpath $(MYCLASSPATH) -d . $(SOURCEPATH)Empty.java
 
 
 run:	empty
-	java -cp $(MYCLASSPATH) Empty
+	java -cp $(MYCLASSPATH) -Djava.library.path=$(topdir) Empty
 
 clean:
 	-rm *.class
