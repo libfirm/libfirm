@@ -81,6 +81,7 @@
 # include "irgmod.h"     /* Support to modify ir */
 # include "irgwalk.h"    /* Support to walk ir */
 # include "typewalk.h"   /* Support to walk type information */
+# include "typegmod.h"   /* Support to modify type graph */
 # include "mangle.h"     /* Support for mangling ident names. */
 
 /* @@@ temporarily for jni builder until preprocessor works.

@@ -21,6 +21,7 @@
 # include "tpop_t.h"
 # include "irnode_t.h"
 # include "irmode_t.h"
+# include "irgraph_t.h"
 
 void
 init_firm (void)
@@ -42,6 +43,8 @@ init_firm (void)
   init_mode ();
   /* initialize tarvals, and floating point arithmetic */
   tarval_init_2 ();
+  /* init graph construction */
+  init_irgraph();
   /* kind of obstack initialization */
   init_mangle ();
   /* initalize all op codes an irnode can consist of */
