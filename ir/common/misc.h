@@ -19,7 +19,7 @@
 # else
 #   if defined(_AIX) && !defined(C_ALLOCA)
       /* if your version of AIX chokes on this, use gcc @@@ or alloca.o */
-#pragma alloca
+    #pragma alloca
 #   else
 #     ifndef alloca /* predefined by HP cc +Olibcalls */
 void *alloca ();

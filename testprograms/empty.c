@@ -73,10 +73,7 @@ int main(int argc, char **argv)
    * it is not matured.
    * Generate the return node into this region. The Return node is needed to
    * return at least the memory. */
-  {
-    ir_node *in[0]; /* this is the array containing the return parameters */
-    x = new_Return (get_store(), 0, in);
-  }
+    x = new_Return (get_store(), 0, NULL);
   /* Now we generated all instructions for this block and all its predecessor
    * blocks so we can mature it.  (There are not too much.) */
   mature_block (get_irg_current_block(irg));

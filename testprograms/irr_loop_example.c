@@ -107,10 +107,7 @@ int main(int argc, char **argv)
   new_immBlock();
   add_in_edge(get_irg_current_block(irg), f_l2);
   add_in_edge(get_irg_current_block(irg), f_l1);
-  {
-    ir_node *in[0];
-    x = new_Return (get_store(), 0, in);
-  }
+  x = new_Return (get_store(), 0, NULL);
   mature_block (get_irg_current_block(irg));
 
   add_in_edge (get_irg_end_block(irg), x);

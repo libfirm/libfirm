@@ -48,7 +48,7 @@ static int num_modes;
  *
  * TODO: Add other fields
  **/
-inline static int modes_are_equal(const ir_mode *m, const ir_mode *n)
+INLINE static int modes_are_equal(const ir_mode *m, const ir_mode *n)
 {
   if (m == n) return 1;
   if(!bcmp( m + offsetof(ir_mode,sort) , n + offsetof(ir_mode,sort), offsetof(ir_mode,min)-offsetof(ir_mode,min))) return 1;

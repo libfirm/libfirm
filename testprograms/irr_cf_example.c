@@ -117,10 +117,9 @@ int main(int argc, char **argv)
   new_immBlock();
   add_in_edge(get_irg_current_block(irg), t);
   add_in_edge(get_irg_current_block(irg), jmp);
-  {
-    ir_node *in[0]; /* this is the array containing the return parameters */
-    x = new_Return (get_store(), 0, in);
-  }
+
+  x = new_Return (get_store(), 0, NULL);
+
   mature_block (get_irg_current_block(irg));
 
   add_in_edge (get_irg_end_block(irg), x);

@@ -835,6 +835,7 @@ Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-includedir=add colon seperated list of directories to include search path
+  --with-libdir=add colon seperated list of directories to linker search path
 
 Some influential environment variables:
   CC          C compiler command
@@ -1223,6 +1224,16 @@ if test "${with_includedir+set}" = set; then
 else
   T_FLAG=""
 fi;
+
+
+# Check whether --with-libdir or --without-libdir was given.
+if test "${with_libdir+set}" = set; then
+  withval="$with_libdir"
+  LDFLAGS=$LDFLAGS" -L"`echo $withval|sed 's;\:; -L;g'`
+else
+  T_FLAG=""
+fi;
+
 
 
 # Check whether --enable-debug or --disable-debug was given.

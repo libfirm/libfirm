@@ -93,10 +93,8 @@ int main(int argc, char **argv)
 		     new_Const(mode_Is, new_tarval_from_long (2, mode_Is)));
   set_store(new_Proj(store, mode_M, 0));
 
-  {
-    ir_node *in[0]; /* this is the array containing the return parameters */
-    x = new_Return (get_store(), 0, in);
-  }
+  x = new_Return (get_store(), 0, NULL);
+
   /* Now generate all instructions for this block and all its predecessor blocks
    * so we can mature it. */
   mature_block (get_irg_current_block(irg));

@@ -55,6 +55,11 @@ ir_prog *new_ir_prog (void) {
   /* res->obst      = (struct obstack *) xmalloc (sizeof (struct obstack)); */
   res->graphs = NEW_ARR_F (ir_graph *, 1);
   res->types  = NEW_ARR_F (type *, 1);
+
+#ifdef DEBUG_libfirm
+  res->max_node_nr = 0;
+#endif
+
   res->glob_type = new_type_class(id_from_str (GLOBAL_TYPE_NAME,
 					       strlen(GLOBAL_TYPE_NAME)));
   /* Remove type from type list.  Must be treated differently than
@@ -63,9 +68,6 @@ ir_prog *new_ir_prog (void) {
 
   res->const_code_irg = new_const_code_irg();
 
-#ifdef DEBUG_libfirm
-  res->max_node_nr = 1;
-#endif
 
   return res;
 }
