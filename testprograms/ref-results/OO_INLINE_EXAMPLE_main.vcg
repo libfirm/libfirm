@@ -6,6 +6,9 @@ port_sharing: no
 orientation: bottom_to_top
 classname 1: "Data"
 classname 2: "Block"
+classname 13:"Control Flow"
+classname 14:"Memory"
+classname 15:"Dominators"
 classname 3: "Entity type"
 classname 4: "Entity owner"
 classname 5: "Method Param"
@@ -19,19 +22,19 @@ classname 12: "Member"
 
 graph: { title: "g35" label: "OO_INLINE_EXAMPLE_main" status:clustered color:white
 graph: { title: "n196"  label: "Block 196" status:clustered color:yellow
-edge: {sourcename: "n196" targetname: "n198" label: "0" color: red}
-edge: {sourcename: "n196" targetname: "n197" label: "1" color: red}
+edge: {sourcename: "n196" targetname: "n198" label: "0" class:13 color:red}
+edge: {sourcename: "n196" targetname: "n197" label: "1" class:13 color:red}
 node: {title: "n200" label: "PhiM  200" color: green info1: "visited: 21
 irg:     OO_INLINE_EXAMPLE_main
 arity: 2 backedges:
 "}
-edge: {sourcename: "n200" targetname: "n211" label: "0" color: blue}
-edge: {sourcename: "n200" targetname: "n201" label: "1" color: blue}
+edge: {sourcename: "n200" targetname: "n211" label: "0" class:14 color:blue}
+edge: {sourcename: "n200" targetname: "n201" label: "1" class:14 color:blue}
 node: {title: "n201" label: "Store  201"  info1: "visited: 21
 irg:     OO_INLINE_EXAMPLE_main
 arity: 3
 "}
-edge: {sourcename: "n201" targetname: "n200" label: "0" color: blue}
+edge: {sourcename: "n201" targetname: "n200" label: "0" class:14 color:blue}
 edge: {sourcename: "n201" targetname: "n206" label: "1" }
 edge: {sourcename: "n201" targetname: "n202" label: "2" }
 node: {title: "n206" label: "Sel a 206"  info1: "visited: 21
@@ -40,7 +43,7 @@ arity: 2
 Selecting entity of type int
   from entity of type PRIMA_INLINE
 "}
-edge: {sourcename: "n206" targetname: "n200" label: "0" color: blue}
+edge: {sourcename: "n206" targetname: "n200" label: "0" class:14 color:blue}
 edge: {sourcename: "n206" targetname: "n207" label: "1" }
 node: {title: "n202" label: "PhiIs  202" color: green info1: "visited: 21
 irg:     OO_INLINE_EXAMPLE_main
@@ -61,17 +64,17 @@ arity: 0
 }
 
 graph: { title: "n199"  label: "Block 199" status:clustered color:yellow
-edge: {sourcename: "n199" targetname: "n194" label: "0" color: red}
+edge: {sourcename: "n199" targetname: "n194" label: "0" class:13 color:red}
 node: {title: "n211" label: "ProjM 0 211" color: yellow info1: "visited: 21
 irg:     OO_INLINE_EXAMPLE_main
 arity: 1
 "}
-edge: {sourcename: "n211" targetname: "n212" label: "0" color: blue}
+edge: {sourcename: "n211" targetname: "n212" label: "0" class:14 color:blue}
 node: {title: "n212" label: "Store  212"  info1: "visited: 21
 irg:     OO_INLINE_EXAMPLE_main
 arity: 3
 "}
-edge: {sourcename: "n212" targetname: "n215" label: "0" color: blue}
+edge: {sourcename: "n212" targetname: "n215" label: "0" class:14 color:blue}
 edge: {sourcename: "n212" targetname: "n214" label: "1" }
 edge: {sourcename: "n212" targetname: "n213" label: "2" }
 node: {title: "n214" label: "Sel a 214"  info1: "visited: 21
@@ -80,13 +83,13 @@ arity: 2
 Selecting entity of type int
   from entity of type PRIMA_INLINE
 "}
-edge: {sourcename: "n214" targetname: "n215" label: "0" color: blue}
+edge: {sourcename: "n214" targetname: "n215" label: "0" class:14 color:blue}
 edge: {sourcename: "n214" targetname: "n207" label: "1" }
 node: {title: "n215" label: "ProjM 0 215" color: yellow info1: "visited: 21
 irg:     OO_INLINE_EXAMPLE_main
 arity: 1
 "}
-edge: {sourcename: "n215" targetname: "n208" label: "0" color: blue}
+edge: {sourcename: "n215" targetname: "n208" label: "0" class:14 color:blue}
 node: {title: "n207" label: "ProjP 2 207" color: yellow info1: "visited: 21
 irg:     OO_INLINE_EXAMPLE_main
 arity: 1
@@ -97,7 +100,7 @@ irg:     OO_INLINE_EXAMPLE_main
 arity: 2
 allocating entity of type PRIMA_INLINE
 "}
-edge: {sourcename: "n208" targetname: "n210" label: "0" color: blue}
+edge: {sourcename: "n208" targetname: "n210" label: "0" class:14 color:blue}
 edge: {sourcename: "n208" targetname: "n209" label: "1" }
 node: {title: "n204" label: "0x0Is  204" color: yellow info1: "visited: 21
 irg:     OO_INLINE_EXAMPLE_main
@@ -111,7 +114,7 @@ arity: 0
 }
 
 graph: { title: "n193"  label: "Block 193" status:clustered color:yellow
-edge: {sourcename: "n193" targetname: "n194" label: "0" color: red}
+edge: {sourcename: "n193" targetname: "n194" label: "0" class:13 color:red}
 node: {title: "n213" label: "0x2Is  213" color: yellow info1: "visited: 21
 irg:     OO_INLINE_EXAMPLE_main
 arity: 0
@@ -121,7 +124,7 @@ node: {title: "n210" label: "ProjM 1 210" color: yellow info1: "visited: 21
 irg:     OO_INLINE_EXAMPLE_main
 arity: 1
 "}
-edge: {sourcename: "n210" targetname: "n195" label: "0" color: blue}
+edge: {sourcename: "n210" targetname: "n195" label: "0" class:14 color:blue}
 node: {title: "n209" label: "SymC PRIMA_INLINE size  209"  info1: "visited: 21
 irg:     OO_INLINE_EXAMPLE_main
 arity: 0
@@ -135,7 +138,7 @@ node: {title: "n194" label: "ProjX 0 194" color: yellow info1: "visited: 21
 irg:     OO_INLINE_EXAMPLE_main
 arity: 1
 "}
-edge: {sourcename: "n194" targetname: "n195" label: "0" color: red}
+edge: {sourcename: "n194" targetname: "n195" label: "0" class:13 color:red}
 node: {title: "n195" label: "Start  195" color: blue info1: "visited: 21
 irg:     OO_INLINE_EXAMPLE_main
 arity: 0

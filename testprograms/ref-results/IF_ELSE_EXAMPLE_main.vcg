@@ -6,6 +6,9 @@ port_sharing: no
 orientation: bottom_to_top
 classname 1: "Data"
 classname 2: "Block"
+classname 13:"Control Flow"
+classname 14:"Memory"
+classname 15:"Dominators"
 classname 3: "Entity type"
 classname 4: "Entity owner"
 classname 5: "Method Param"
@@ -19,7 +22,7 @@ classname 12: "Member"
 
 graph: { title: "g26" label: "IF_ELSE_EXAMPLE_main" status:clustered color:white
 graph: { title: "n60"  label: "Block 60" status:clustered color:yellow
-edge: {sourcename: "n60" targetname: "n61" label: "0" color: red}
+edge: {sourcename: "n60" targetname: "n61" label: "0" class:13 color:red}
 node: {title: "n59" label: "End  59" color: blue info1: "visited: 13
 irg:     IF_ELSE_EXAMPLE_main
 arity: 0
@@ -27,7 +30,7 @@ arity: 0
 }
 
 graph: { title: "n64"  label: "Block 64" status:clustered color:yellow
-edge: {sourcename: "n64" targetname: "n65" label: "0" color: red}
+edge: {sourcename: "n64" targetname: "n65" label: "0" class:13 color:red}
 node: {title: "n61" label: "Return  61"  info1: "visited: 13
 irg:     IF_ELSE_EXAMPLE_main
 arity: 3
@@ -35,18 +38,18 @@ return in method of type IF_ELSE_EXAMPLE_main
   res 0 type: int
   res 1 type: int
 "}
-edge: {sourcename: "n61" targetname: "n71" label: "0" color: blue}
+edge: {sourcename: "n61" targetname: "n71" label: "0" class:14 color:blue}
 edge: {sourcename: "n61" targetname: "n70" label: "1" }
 edge: {sourcename: "n61" targetname: "n69" label: "2" }
 }
 
 graph: { title: "n66"  label: "Block 66" status:clustered color:yellow
-edge: {sourcename: "n66" targetname: "n65" label: "0" color: red}
+edge: {sourcename: "n66" targetname: "n65" label: "0" class:13 color:red}
 node: {title: "n71" label: "ProjM 1 71" color: yellow info1: "visited: 13
 irg:     IF_ELSE_EXAMPLE_main
 arity: 1
 "}
-edge: {sourcename: "n71" targetname: "n67" label: "0" color: blue}
+edge: {sourcename: "n71" targetname: "n67" label: "0" class:14 color:blue}
 node: {title: "n70" label: "0x0Is  70" color: yellow info1: "visited: 13
 irg:     IF_ELSE_EXAMPLE_main
 arity: 0
@@ -61,7 +64,7 @@ node: {title: "n65" label: "ProjX 0 65" color: yellow info1: "visited: 13
 irg:     IF_ELSE_EXAMPLE_main
 arity: 1
 "}
-edge: {sourcename: "n65" targetname: "n67" label: "0" color: red}
+edge: {sourcename: "n65" targetname: "n67" label: "0" class:13 color:red}
 node: {title: "n67" label: "Start  67" color: blue info1: "visited: 13
 irg:     IF_ELSE_EXAMPLE_main
 arity: 0

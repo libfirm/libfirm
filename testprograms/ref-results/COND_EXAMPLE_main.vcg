@@ -6,6 +6,9 @@ port_sharing: no
 orientation: bottom_to_top
 classname 1: "Data"
 classname 2: "Block"
+classname 13:"Control Flow"
+classname 14:"Memory"
+classname 15:"Dominators"
 classname 3: "Entity type"
 classname 4: "Entity owner"
 classname 5: "Method Param"
@@ -19,7 +22,7 @@ classname 12: "Member"
 
 graph: { title: "g27" label: "COND_EXAMPLE_main" status:clustered color:white
 graph: { title: "n59"  label: "Block 59" status:clustered color:yellow
-edge: {sourcename: "n59" targetname: "n60" label: "0" color: red}
+edge: {sourcename: "n59" targetname: "n60" label: "0" class:13 color:red}
 node: {title: "n58" label: "End  58" color: blue info1: "visited: 9
 irg:     COND_EXAMPLE_main
 arity: 0
@@ -27,15 +30,15 @@ arity: 0
 }
 
 graph: { title: "n61"  label: "Block 61" status:clustered color:yellow
-edge: {sourcename: "n61" targetname: "n82" label: "0" color: red}
-edge: {sourcename: "n61" targetname: "n62" label: "1" color: red}
+edge: {sourcename: "n61" targetname: "n82" label: "0" class:13 color:red}
+edge: {sourcename: "n61" targetname: "n62" label: "1" class:13 color:red}
 node: {title: "n60" label: "Return  60"  info1: "visited: 9
 irg:     COND_EXAMPLE_main
 arity: 2
 return in method of type main
   res 0 type: int
 "}
-edge: {sourcename: "n60" targetname: "n87" label: "0" color: blue}
+edge: {sourcename: "n60" targetname: "n87" label: "0" class:14 color:blue}
 edge: {sourcename: "n60" targetname: "n85" label: "1" }
 node: {title: "n85" label: "PhiIs  85" color: green info1: "visited: 9
 irg:     COND_EXAMPLE_main
@@ -46,7 +49,7 @@ edge: {sourcename: "n85" targetname: "n76" label: "1" }
 }
 
 graph: { title: "n83"  label: "Block 83" status:clustered color:yellow
-edge: {sourcename: "n83" targetname: "n84" label: "0" color: red}
+edge: {sourcename: "n83" targetname: "n84" label: "0" class:13 color:red}
 node: {title: "n82" label: "Jmp  82"  info1: "visited: 9
 irg:     COND_EXAMPLE_main
 arity: 0
@@ -54,17 +57,17 @@ arity: 0
 }
 
 graph: { title: "n63"  label: "Block 63" status:clustered color:yellow
-edge: {sourcename: "n63" targetname: "n64" label: "0" color: red}
+edge: {sourcename: "n63" targetname: "n64" label: "0" class:13 color:red}
 node: {title: "n84" label: "ProjX 1 84" color: yellow info1: "visited: 9
 irg:     COND_EXAMPLE_main
 arity: 1
 "}
-edge: {sourcename: "n84" targetname: "n67" label: "0" color: red}
+edge: {sourcename: "n84" targetname: "n67" label: "0" class:13 color:red}
 node: {title: "n62" label: "ProjX 0 62" color: yellow info1: "visited: 9
 irg:     COND_EXAMPLE_main
 arity: 1
 "}
-edge: {sourcename: "n62" targetname: "n67" label: "0" color: red}
+edge: {sourcename: "n62" targetname: "n67" label: "0" class:13 color:red}
 node: {title: "n67" label: "Cond  67"  info1: "visited: 9
 irg:     COND_EXAMPLE_main
 arity: 1
@@ -127,12 +130,12 @@ edge: {sourcename: "n76" targetname: "n77" label: "0" }
 }
 
 graph: { title: "n65"  label: "Block 65" status:clustered color:yellow
-edge: {sourcename: "n65" targetname: "n64" label: "0" color: red}
+edge: {sourcename: "n65" targetname: "n64" label: "0" class:13 color:red}
 node: {title: "n87" label: "ProjM 1 87" color: yellow info1: "visited: 9
 irg:     COND_EXAMPLE_main
 arity: 1
 "}
-edge: {sourcename: "n87" targetname: "n66" label: "0" color: blue}
+edge: {sourcename: "n87" targetname: "n66" label: "0" class:14 color:blue}
 node: {title: "n86" label: "0x1Is  86" color: yellow info1: "visited: 9
 irg:     COND_EXAMPLE_main
 arity: 0
@@ -162,7 +165,7 @@ node: {title: "n64" label: "ProjX 0 64" color: yellow info1: "visited: 9
 irg:     COND_EXAMPLE_main
 arity: 1
 "}
-edge: {sourcename: "n64" targetname: "n66" label: "0" color: red}
+edge: {sourcename: "n64" targetname: "n66" label: "0" class:13 color:red}
 node: {title: "n66" label: "Start  66" color: blue info1: "visited: 9
 irg:     COND_EXAMPLE_main
 arity: 0

@@ -6,6 +6,9 @@ port_sharing: no
 orientation: bottom_to_top
 classname 1: "Data"
 classname 2: "Block"
+classname 13:"Control Flow"
+classname 14:"Memory"
+classname 15:"Dominators"
 classname 3: "Entity type"
 classname 4: "Entity owner"
 classname 5: "Method Param"
@@ -19,7 +22,7 @@ classname 12: "Member"
 
 graph: { title: "g26" label: "IF_EXAMPLE_main" status:clustered color:white
 graph: { title: "n16"  label: "Block 16" status:clustered color:yellow
-edge: {sourcename: "n16" targetname: "n50" label: "0" color: red}
+edge: {sourcename: "n16" targetname: "n50" label: "0" class:13 color:red}
 node: {title: "n17" label: "End  17" color: blue info1: "visited: 8
 irg:     IF_EXAMPLE_main
 arity: 0
@@ -27,15 +30,15 @@ arity: 0
 }
 
 graph: { title: "n41"  label: "Block 41" status:clustered color:yellow
-edge: {sourcename: "n41" targetname: "n33" label: "0" color: red}
-edge: {sourcename: "n41" targetname: "n40" label: "1" color: red}
+edge: {sourcename: "n41" targetname: "n33" label: "0" class:13 color:red}
+edge: {sourcename: "n41" targetname: "n40" label: "1" class:13 color:red}
 node: {title: "n50" label: "Return  50"  info1: "visited: 8
 irg:     IF_EXAMPLE_main
 arity: 2
 return in method of type IF_EXAMPLE_main
   res 0 type: int
 "}
-edge: {sourcename: "n50" targetname: "n22" label: "0" color: blue}
+edge: {sourcename: "n50" targetname: "n22" label: "0" class:14 color:blue}
 edge: {sourcename: "n50" targetname: "n43" label: "1" }
 node: {title: "n43" label: "PhiIs  43" color: green info1: "visited: 8
 irg:     IF_EXAMPLE_main
@@ -46,7 +49,7 @@ edge: {sourcename: "n43" targetname: "n38" label: "1" }
 }
 
 graph: { title: "n35"  label: "Block 35" status:clustered color:yellow
-edge: {sourcename: "n35" targetname: "n34" label: "0" color: red}
+edge: {sourcename: "n35" targetname: "n34" label: "0" class:13 color:red}
 node: {title: "n38" label: "SubIs  38"  info1: "visited: 8
 irg:     IF_EXAMPLE_main
 arity: 2
@@ -60,17 +63,17 @@ arity: 0
 }
 
 graph: { title: "n27"  label: "Block 27" status:clustered color:yellow
-edge: {sourcename: "n27" targetname: "n21" label: "0" color: red}
+edge: {sourcename: "n27" targetname: "n21" label: "0" class:13 color:red}
 node: {title: "n33" label: "ProjX 0 33" color: yellow info1: "visited: 8
 irg:     IF_EXAMPLE_main
 arity: 1
 "}
-edge: {sourcename: "n33" targetname: "n32" label: "0" color: red}
+edge: {sourcename: "n33" targetname: "n32" label: "0" class:13 color:red}
 node: {title: "n34" label: "ProjX 1 34" color: yellow info1: "visited: 8
 irg:     IF_EXAMPLE_main
 arity: 1
 "}
-edge: {sourcename: "n34" targetname: "n32" label: "0" color: red}
+edge: {sourcename: "n34" targetname: "n32" label: "0" class:13 color:red}
 node: {title: "n32" label: "Cond  32"  info1: "visited: 8
 irg:     IF_EXAMPLE_main
 arity: 1
@@ -95,12 +98,12 @@ edge: {sourcename: "n28" targetname: "n25" label: "0" }
 }
 
 graph: { title: "n18"  label: "Block 18" status:clustered color:yellow
-edge: {sourcename: "n18" targetname: "n21" label: "0" color: red}
+edge: {sourcename: "n18" targetname: "n21" label: "0" class:13 color:red}
 node: {title: "n22" label: "ProjM 1 22" color: yellow info1: "visited: 8
 irg:     IF_EXAMPLE_main
 arity: 1
 "}
-edge: {sourcename: "n22" targetname: "n19" label: "0" color: blue}
+edge: {sourcename: "n22" targetname: "n19" label: "0" class:14 color:blue}
 node: {title: "n36" label: "0x3Is  36" color: yellow info1: "visited: 8
 irg:     IF_EXAMPLE_main
 arity: 0
@@ -120,7 +123,7 @@ node: {title: "n21" label: "ProjX 0 21" color: yellow info1: "visited: 8
 irg:     IF_EXAMPLE_main
 arity: 1
 "}
-edge: {sourcename: "n21" targetname: "n19" label: "0" color: red}
+edge: {sourcename: "n21" targetname: "n19" label: "0" class:13 color:red}
 node: {title: "n19" label: "Start  19" color: blue info1: "visited: 8
 irg:     IF_EXAMPLE_main
 arity: 0

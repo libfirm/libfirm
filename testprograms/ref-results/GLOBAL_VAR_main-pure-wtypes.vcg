@@ -6,6 +6,9 @@ port_sharing: no
 orientation: bottom_to_top
 classname 1: "Data"
 classname 2: "Block"
+classname 13:"Control Flow"
+classname 14:"Memory"
+classname 15:"Dominators"
 classname 3: "Entity type"
 classname 4: "Entity owner"
 classname 5: "Method Param"
@@ -21,82 +24,82 @@ node: {title: "n42" label: "Block  42" color: lightyellow info1: "visited: 8
 irg:     GLOBAL_VAR_main
 arity: 1 backedges:
 "}
-edge: {sourcename: "n42" targetname: "n41" label: "0" color: red}
+edge: {sourcename: "n42" targetname: "n41" label: "0" class:13 color:red}
 node: {title: "n43" label: "Start  43" color: blue info1: "visited: 8
 irg:     GLOBAL_VAR_main
 arity: 0
 start of method of type GLOBAL_VAR_main
 "}
-edge: { sourcename: "n43" targetname: "n42" class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename: "n43" targetname: "n42" class:2 priority:2 linestyle:dotted}
 node: {title: "n41" label: "ProjX 0 41" color: yellow info1: "visited: 8
 irg:     GLOBAL_VAR_main
 arity: 1
 "}
-edge: {sourcename: "n41" targetname: "n43" label: "0" color: red}
-edge: { sourcename: "n41" targetname: "n42" class: 2 priority: 2 linestyle: dotted}
+edge: {sourcename: "n41" targetname: "n43" label: "0" class:13 color:red}
+edge: { sourcename: "n41" targetname: "n42" class:2 priority:2 linestyle:dotted}
 node: {title: "n40" label: "Block  40" color: lightyellow info1: "visited: 8
 irg:     GLOBAL_VAR_main
 arity: 1 backedges:
 "}
-edge: {sourcename: "n40" targetname: "n41" label: "0" color: red}
+edge: {sourcename: "n40" targetname: "n41" label: "0" class:13 color:red}
 node: {title: "n46" label: "0x2Is  46" color: yellow info1: "visited: 8
 irg:     GLOBAL_VAR_main
 arity: 0
 Const of type type_unknown
 "}
-edge: { sourcename: "n46" targetname: "n42" class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename: "n46" targetname: "n42" class:2 priority:2 linestyle:dotted}
 node: {title: "n48" label: "ProjP 3 48" color: yellow info1: "visited: 8
 irg:     GLOBAL_VAR_main
 arity: 1
 "}
 edge: {sourcename: "n48" targetname: "n43" label: "0" }
-edge: { sourcename: "n48" targetname: "n42" class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename: "n48" targetname: "n42" class:2 priority:2 linestyle:dotted}
 node: {title: "n49" label: "ProjM 1 49" color: yellow info1: "visited: 8
 irg:     GLOBAL_VAR_main
 arity: 1
 "}
-edge: {sourcename: "n49" targetname: "n43" label: "0" color: blue}
-edge: { sourcename: "n49" targetname: "n42" class: 2 priority: 2 linestyle: dotted}
+edge: {sourcename: "n49" targetname: "n43" label: "0" class:14 color:blue}
+edge: { sourcename: "n49" targetname: "n42" class:2 priority:2 linestyle:dotted}
 node: {title: "n47" label: "Sel i 47"  info1: "visited: 8
 irg:     GLOBAL_VAR_main
 arity: 2
 Selecting entity of type int
   from entity of type GlobalType
 "}
-edge: {sourcename: "n47" targetname: "n49" label: "0" color: blue}
+edge: {sourcename: "n47" targetname: "n49" label: "0" class:14 color:blue}
 edge: {sourcename: "n47" targetname: "n48" label: "1" }
-edge: { sourcename: "n47" targetname: "n40" class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename: "n47" targetname: "n40" class:2 priority:2 linestyle:dotted}
 node: {title: "n45" label: "Store  45"  info1: "visited: 8
 irg:     GLOBAL_VAR_main
 arity: 3
 "}
-edge: {sourcename: "n45" targetname: "n49" label: "0" color: blue}
+edge: {sourcename: "n45" targetname: "n49" label: "0" class:14 color:blue}
 edge: {sourcename: "n45" targetname: "n47" label: "1" }
 edge: {sourcename: "n45" targetname: "n46" label: "2" }
-edge: { sourcename: "n45" targetname: "n40" class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename: "n45" targetname: "n40" class:2 priority:2 linestyle:dotted}
 node: {title: "n44" label: "ProjM 0 44" color: yellow info1: "visited: 8
 irg:     GLOBAL_VAR_main
 arity: 1
 "}
-edge: {sourcename: "n44" targetname: "n45" label: "0" color: blue}
-edge: { sourcename: "n44" targetname: "n40" class: 2 priority: 2 linestyle: dotted}
+edge: {sourcename: "n44" targetname: "n45" label: "0" class:14 color:blue}
+edge: { sourcename: "n44" targetname: "n40" class:2 priority:2 linestyle:dotted}
 node: {title: "n39" label: "Return  39"  info1: "visited: 8
 irg:     GLOBAL_VAR_main
 arity: 1
 return in method of type GLOBAL_VAR_main
 "}
-edge: {sourcename: "n39" targetname: "n44" label: "0" color: blue}
-edge: { sourcename: "n39" targetname: "n40" class: 2 priority: 2 linestyle: dotted}
+edge: {sourcename: "n39" targetname: "n44" label: "0" class:14 color:blue}
+edge: { sourcename: "n39" targetname: "n40" class:2 priority:2 linestyle:dotted}
 node: {title: "n38" label: "Block  38" color: lightyellow info1: "visited: 8
 irg:     GLOBAL_VAR_main
 arity: 1 backedges:
 "}
-edge: {sourcename: "n38" targetname: "n39" label: "0" color: red}
+edge: {sourcename: "n38" targetname: "n39" label: "0" class:13 color:red}
 node: {title: "n37" label: "End  37" color: blue info1: "visited: 8
 irg:     GLOBAL_VAR_main
 arity: 0
 "}
-edge: { sourcename: "n37" targetname: "n38" class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename: "n37" targetname: "n38" class:2 priority:2 linestyle:dotted}
 node: {title: "e15" label: "ent i" color: yellow
  info1: "
 id: e15
@@ -147,5 +150,5 @@ node: {title: "t16" label: "class GLOBAL_VAR_mainframe_tp" info1: "state: layout
 size: -1B,
 peculiarity: peculiarity_existent
 " color: green}
-edge: { sourcename: "n47" targetname: "e15"class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename: "n47" targetname: "e15"class:2 priority:2 linestyle:dotted}
 }
