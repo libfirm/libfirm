@@ -398,11 +398,18 @@ static struct ms magic(tarval *d)
   tarval *ad, *anc, *delta, *q1, *r1, *q2, *r2, *t;     /* unsigned */
   pnc_number d_cmp, M_cmp;
 
+  tarval *bits_minus_1, *two_bits_1;
+
   struct ms mag;
 
+  tarval_int_overflow_mode_t rem = tarval_get_integer_overflow_mode();
+
+  /* we need overflow mode to work correctly */
+  tarval_set_integer_overflow_mode(TV_OVERFLOW_WRAP);
+
   /* 2^(bits-1) */
-  tarval *bits_minus_1 = new_tarval_from_long(bits - 1, u_mode);
-  tarval *two_bits_1   = SHL(get_mode_one(u_mode), bits_minus_1);
+  bits_minus_1 = new_tarval_from_long(bits - 1, u_mode);
+  two_bits_1   = SHL(get_mode_one(u_mode), bits_minus_1);
 
   ad  = CNV(ABS(d), u_mode);
   t   = ADD(two_bits_1, SHR(CNV(d, u_mode), bits_minus_1));
@@ -451,6 +458,8 @@ static struct ms magic(tarval *d)
   /* need a sub if d < 0 && M > 0 */
   mag.need_sub = d_cmp & Lt && M_cmp & Gt;
 
+  tarval_set_integer_overflow_mode(rem);
+
   return mag;
 }
 
@@ -471,12 +480,18 @@ static struct mu magicu(tarval *d)
   int bits        = get_mode_size_bits(mode);
   int p;
   tarval *nc, *delta, *q1, *r1, *q2, *r2;
+  tarval *bits_minus_1, *two_bits_1, *seven_ff;
 
   struct mu magu;
 
-  tarval *bits_minus_1 = new_tarval_from_long(bits - 1, mode);
-  tarval *two_bits_1   = SHL(get_mode_one(mode), bits_minus_1);
-  tarval *seven_ff     = SUB(two_bits_1, ONE(mode));
+  tarval_int_overflow_mode_t rem = tarval_get_integer_overflow_mode();
+
+  /* we need overflow mode to work correctly */
+  tarval_set_integer_overflow_mode(TV_OVERFLOW_WRAP);
+
+  bits_minus_1 = new_tarval_from_long(bits - 1, mode);
+  two_bits_1   = SHL(get_mode_one(mode), bits_minus_1);
+  seven_ff     = SUB(two_bits_1, ONE(mode));
 
   magu.need_add = 0;                            /* initialize the add indicator */
   nc = SUB(NEG(ONE(mode)), MOD(NEG(d), d));
@@ -517,6 +532,8 @@ static struct mu magicu(tarval *d)
 
   magu.M = ADD(q2, ONE(mode));                       /* Magic number */
   magu.s = p - bits;                                 /* and shift amount */
+
+  tarval_set_integer_overflow_mode(rem);
 
   return magu;
 }
