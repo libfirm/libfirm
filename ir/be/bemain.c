@@ -23,14 +23,14 @@
 #include "belistsched.h"
 #include "belive_t.h"
 #include "beutil.h"
-#include "bephicongr_t.h"
+#include "phiclass_t.h"
 #include "bechordal.h"
 #include "bechordal.h"
 #include "bephiopt.h"
 #include "phistat.h"
 
-#undef DUMP_ALLOCATED
-#undef DUMP_LOCALIZED
+#define DUMP_ALLOCATED
+#define DUMP_LOCALIZED
 
 #define N_PHASES 256
 
@@ -126,7 +126,8 @@ static void be_main_loop(void)
 #ifdef DUMP_ALLOCATED
 		dump_allocated_irg(irg);
 #endif
-		//be_phi_opt(irg);
+		be_phi_opt(irg);
+		//??be_phi_destruction(irg);
 
 		be_ra_chordal_done(irg);
 		be_numbering_done(irg);
