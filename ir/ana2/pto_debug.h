@@ -16,7 +16,7 @@
 # ifndef _PTO_DEBUG_
 # define _PTO_DEBUG_
 
-# include "irnode_t.h"
+# include "irnode.h"
 
 /* ===================================================
    Global Defines:
@@ -51,6 +51,9 @@ void pto_print_pto (ir_node*);
 
 /*
   $Log$
+  Revision 1.5  2005/01/14 13:33:10  liekweg
+  Use only public irnode interface
+
   Revision 1.4  2004/12/21 15:51:07  beck
   simplifyed
 
