@@ -93,6 +93,6 @@
 /* ident.h */
 #define id_to_strlen(X) get_id_strlen(X)
 #define id_to_str(X)    get_id_str(X)
-#define id_from_str(X)  new_id_from_chars(X)
+#define id_from_str(X, Y)  new_id_from_chars(X, Y)
 
 #endif
