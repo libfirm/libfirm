@@ -16,10 +16,10 @@
 #include "bephicongr_t.h"
 #include "bephicoal_t.h"
 
-#define DEBUG_LVL 1
+#define DEBUG_LVL SET_LEVEL_2
 
 #define MAX_PHI_CLS_SIZE (1<<(sizeof(unsigned char)*8)) /* possible colors added should fit into unsigned char */
-#define MAX_COLORS 32
+#define MAX_COLORS 16
 #define CHANGE_IMPOSSIBLE -1
 #define CHANGE_SAVE 1
 
@@ -32,8 +32,8 @@ typedef struct _phi_unit_t {
 
 	/* 1 phi */
 	ir_node **members;			/**< [0] is the phi node. [1..count-1] the arguments of the phi not interfering with it */
-	int *colors;				/**< [i] is the color to set for members[i]. [i] == NO_COLOR means dont change anything for members[i]*/
 	char *is_live_in;			/**< [i]==1 means members[i] is live-in in (all of) its cf-pred-blocks of the phi node */
+	int *colors;				/**< [i] is the color to set for members[i]. [i] == NO_COLOR means dont change anything for members[i]*/
 	int size;					/**< size of the max independent set of members. The set is markes by colors[i] != NO_COLOR */
 	int changes;				/**< number of re-assigned nodes belonging to phi-classes */
 } phi_unit_t;
@@ -82,16 +82,16 @@ static INLINE void set_color(ir_node *n, int col) {
 static int color_irn(ir_node *n, int col, int dryrun) {
 	ir_node *bl;
 	int res = 0;
-	DBG((dbgphi, 1, "\t\t\t\t%n  %d\n", n, col));
+	DBG((dbgphi, LEVEL_2, "\t\t\t%n --> %d\n", n, col));
 	assert(is_color(col));
 
 	if (get_irn_color(n) == col) {
-		DBG((dbgphi, 1, "\t\t\t\t\tSame\n"));
+		DBG((dbgphi, LEVEL_2, "\t\t\t  Same\n"));
 		return 0;
 	}
 
 	if (pset_find_ptr(pinned_nodes, n)) {
-		DBG((dbgphi, 1, "\t\t\t\t\tPinned\n"));
+		DBG((dbgphi, LEVEL_2, "\t\t\t  Pinned\n"));
 		if (!dryrun)
 			assert(0 && "No prior check with dryrun=1 or buggy");
 		return CHANGE_IMPOSSIBLE;
@@ -99,14 +99,14 @@ static int color_irn(ir_node *n, int col, int dryrun) {
 
 	bl = get_nodes_block(n);
 	if (is_color_free(bl, col) && !is_live_out(bl, n)) {
-		DBG((dbgphi, 1, "\t\t\t\t\tFree\n"));
+		DBG((dbgphi, LEVEL_2, "\t\t\t  Free\n"));
 		if (!dryrun)
 			set_color(n, col);
 		return 1;
 	}
 
 	/* for now, in the aldi-version return impossible */
-	DBG((dbgphi, 1, "\t\t\t\t\tImpossible\n"));
+	DBG((dbgphi, LEVEL_2, "\t\t\t  Impossible\n"));
 	return CHANGE_IMPOSSIBLE;
 
 	return res;
@@ -118,47 +118,55 @@ static int color_irn(ir_node *n, int col, int dryrun) {
  */
 static void try_colors(phi_unit_t *pu, int col, int b_size, int b_changes) {
 	struct obstack ob;
-	int i, o, cand_size, mis_size, changes;
+	struct obstack ob_changes;
+	int i, o, cand_size, total_changes, *changes;
 	ir_node **cand, **mis;
 
 	cand_size = 0;
 	obstack_init(&ob);
+	obstack_init(&ob_changes);
 
 	/* first init pessimistically, so we can just return
 	 * if we see there wont be a better result */
-	pu->size = 0;
 	for (i = 0; i < pu->count; ++i)
 		pu->colors[i] = NO_COLOR;
+	pu->size = 0;
+	pu->changes = 0;
 
 	/* For all members check if color would be possible.
 	 * Does not check if color is possible in combination with
 	 * other members colors being set */
-	changes = 0;
+	total_changes = 0;
 	for (i = 0; i < pu->count; ++i) {
-		int tmp_changes = color_irn(pu->members[i], col, DRYRUN);
-		if (tmp_changes != CHANGE_IMPOSSIBLE) {
-			DBG((dbgphi, 1, "\t\t\tAdding to cand %n\n", pu->members[i]));
+		DBG((dbgphi, 1, "\t\t    Testing %n\n", pu->members[i]));
+		int curr_changes = color_irn(pu->members[i], col, DRYRUN);
+		if (curr_changes != CHANGE_IMPOSSIBLE) {
+			DBG((dbgphi, 1, "\t\t\tAdding to cand\n"));
 			obstack_ptr_grow(&ob, pu->members[i]);
+			obstack_grow(&ob_changes, &curr_changes, sizeof(curr_changes));
 			cand_size++;
-			changes += tmp_changes;
+			total_changes += curr_changes;
+		} else {
+			DBG((dbgphi, 1, "\t\t\tImpossible\n"));
 		}
 		/* if color is not possible for the phi node then exit (phi comes first)*/
 		if (cand_size == 0)
 			goto ret;
 	}
 	cand = obstack_finish(&ob);
+	changes = obstack_finish(&ob_changes);
 
 	/* shortcut: if cand is worse than best the mis wont be better. */
-	if (cand_size < b_size || (cand_size == b_size && changes >= b_changes))
+	if (cand_size < b_size || (cand_size == b_size && total_changes >= b_changes))
 		goto ret;
 
 	/* now take the candidates cand and determine a max independent set
 	 * with respect to edges representing live range interference */
 	/* TODO: make this 'un-greedy' */
-	mis_size = 0;
+	DBG((dbgphi, 1, "\t\t    Max indep set\n"));
 	for (i = 0; i < cand_size; ++i) {
 		int intf_det = 0;
-		for (o = 0; o < mis_size; ++o) {
+		for (o = 0; o < pu->size; ++o) {
 			mis = (ir_node**) obstack_base(&ob);
 			if (values_interfere(cand[i], mis[o])) {
 				intf_det = 1;
@@ -169,7 +177,8 @@ static void try_colors(phi_unit_t *pu, int col, int b_size, int b_changes) {
 		if (!intf_det) {
 			DBG((dbgphi, 1, "\t\t\tAdding to mis %n\n", cand[i]));
 			obstack_ptr_grow(&ob, cand[i]);
-			mis_size++;
+			pu->size++;
+			pu->changes += changes[i];
 		}
 	}
 	mis = obstack_finish(&ob);
@@ -182,11 +191,12 @@ static void try_colors(phi_unit_t *pu, int col, int b_size, int b_changes) {
 	 *   node, it is possible that all changes together will conflict.
 	 */
 	for (i = 0; i < pu->count; ++i)
-		for (o = 0; o < mis_size; ++o)
+		for (o = 0; o < pu->size; ++o)
 			if (pu->members[i] == mis[o] && get_irn_color(pu->members[i]) != col)
 				pu->colors[i] = col;
 
 ret:
+	obstack_free(&ob_changes, NULL);
 	obstack_free(&ob, NULL);
 }
 
@@ -249,7 +259,7 @@ static void coalesce_1_phi(phi_unit_t *pu) {
 			b_changes = pu->changes;
 			b_color = col;
 			memcpy(b_colors, pu->colors, pu->count * sizeof(*b_colors));
-			DBG((dbgphi, 1, "\t\tBetter! Size: %d  Changes: %d\n", b_size, b_changes));
+			DBG((dbgphi, 1, "\t!! Better size: %d  Changes: %d\n", b_size, b_changes));
 		}
 
 		/* shortcut: if all members can be colored we are content and doubt that
@@ -305,7 +315,9 @@ static phi_unit_t *new_phi_unit(pset *pc) {
 		DBG((dbgphi, 1, "Phi-1 class:\n"));
 		pu->count = 1; /*for the phi*/
 		for (n = pset_first(pc); n; n = pset_next(pc)) {
-			if (!is_Phi(n) && !values_interfere(phi, n)) {
+			if (is_Phi(n))
+				continue;
+			if (!values_interfere(phi, n)) {
 				DBG((dbgphi, 1, "\tAdding to members: %n\n", n));
 				obstack_ptr_grow(&ob, n);
 				pu->count++;
