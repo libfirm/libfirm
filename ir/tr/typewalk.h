@@ -49,7 +49,11 @@ void type_walk(type_walk_func *pre,
 	       type_walk_func *post,
 	       void *env);
 
-/** walks over all type information reachable from irg */
+/** Walks over all type information reachable from an ir graph.
+ *
+ *  Walks over all type information reachable from irg, i.e., starts a
+ *  type walk at the irgs entity, the irgs frame type and all types and
+ *  entities that are attributes to firm nodes. */
 void type_walk_irg(ir_graph *irg,
 		   type_walk_func *pre,
 		   type_walk_func *post,

@@ -212,7 +212,7 @@ void
 set_type_state(type *tp, type_state state) {
   assert(tp && tp->kind == k_type);
 
-  if ((tp->type_op == type_pointer) && (tp->type_op == type_primitive) &&
+  if ((tp->type_op == type_pointer) || (tp->type_op == type_primitive) ||
       (tp->type_op == type_method))
     return;
 
@@ -232,7 +232,7 @@ set_type_state(type *tp, type_state state) {
       } break;
     case tpo_struct:
       {
-	/* assert(get_type_size(tp) > -1);    @@@ lowerfirm geht nicht durch */
+	assert(get_type_size(tp) > -1);
 	for (i = 0; i < get_struct_n_members(tp); i++) {
 	  assert(get_entity_offset(get_struct_member(tp, i)) > -1);
 	  assert((get_entity_allocation(get_struct_member(tp, i)) == automatic_allocated));

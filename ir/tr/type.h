@@ -610,7 +610,7 @@ int is_atomic_type(type *tp);
 int is_compound_type(type *tp);
 
 
-/** Outputs a unique number for this node if libfirm is compiled for
+/** Outputs a unique number for this type if libfirm is compiled for
    debugging, (configure with --enable-debug) else returns 0. */
 INLINE long get_type_nr(type *tp);
 

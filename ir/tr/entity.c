@@ -36,7 +36,10 @@ init_entity (void)
 /** ENTITY                                                        **/
 /*******************************************************************/
 
-INLINE type *get_entity_owner (entity *ent);
+/* redeclared to declare INLINE. */
+INLINE entity *get_entity_overwrites   (entity *ent, int pos);
+INLINE entity *get_entity_overwrittenby   (entity *ent, int pos);
+INLINE type   *get_entity_owner (entity *ent);
 
 INLINE void insert_entity_in_owner (entity *ent) {
   type *owner = ent->owner;
@@ -142,6 +145,9 @@ copy_entity_own (entity *old, type *new_owner) {
     new->overwrites = NEW_ARR_F(entity *, 1);
     new->overwrittenby = NEW_ARR_F(entity *, 1);
   }
+#ifdef DEBUG_libfirm
+  new->nr = get_irp_new_node_nr();
+#endif
 
   insert_entity_in_owner (new);
 
@@ -157,8 +163,13 @@ copy_entity_name (entity *old, ident *new_name) {
   memcpy (new, old, sizeof (entity));
   new->name = new_name;
   new->ld_name = NULL;
-  new->overwrites = DUP_ARR_F(entity *, old->overwrites);
-  new->overwrittenby = DUP_ARR_F(entity *, old->overwrittenby);
+  if (is_class_type(new->owner)) {
+    new->overwrites = DUP_ARR_F(entity *, old->overwrites);
+    new->overwrittenby = DUP_ARR_F(entity *, old->overwrittenby);
+  }
+#ifdef DEBUG_libfirm
+  new->nr = get_irp_new_node_nr();
+#endif
 
   insert_entity_in_owner (new);
 

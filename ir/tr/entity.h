@@ -325,6 +325,10 @@ int is_compound_entity(entity *ent);
 bool equal_entity(entity *ent1, entity *ent2);
 
 
+/** Outputs a unique number for this entity if libfirm is compiled for
+   debugging, (configure with --enable-debug) else returns 0. */
+INLINE long get_entity_nr(entity *ent);
+
 unsigned long get_entity_visited(entity *ent);
 void        set_entity_visited(entity *ent, unsigned long num);
 
