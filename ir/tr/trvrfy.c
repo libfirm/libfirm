@@ -101,7 +101,13 @@ static int constants_on_wrong_irg(entity *ent) {
 	return 1;
     }
   } else {
-    return constant_on_wrong_irg(get_atomic_ent_value(ent));
+    /* Might not be set if entity belongs to a description. */
+    if (get_atomic_ent_value(ent))
+      return constant_on_wrong_irg(get_atomic_ent_value(ent));
+    else
+      assert((is_class_type(get_entity_owner(ent)) &&
+	      get_class_peculiarity(get_entity_owner(ent)) == description) &&
+	     "Value in constant atomic entity not set.");
   }
   return 0;
 }
