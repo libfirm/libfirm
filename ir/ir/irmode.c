@@ -107,7 +107,7 @@ init_mode (void)
   mode_c->name = id_from_str ("c", 1);
   mode_c->fsigned = 1;
   mode_c->ffloat = 0;
-  mode_c->ld_align = 0;
+  mode_c->ld_align = 1;
   mode_c->size = 1;
   mode_c->min = tarval_from_long (mode_l, 0xffffff80);
   mode_c->max = tarval_from_long (mode_l, 0x0000007f);
@@ -117,7 +117,7 @@ init_mode (void)
   mode_C->name = id_from_str ("C", 1);
   mode_C->fsigned = 0;
   mode_C->ffloat = 0;
-  mode_C->ld_align = 0;
+  mode_C->ld_align = 1;
   mode_C->size = 1;
   mode_C->min = tarval_from_long (mode_L, 0x00000000);
   mode_C->max = tarval_from_long (mode_L, 0x000000ff);
@@ -127,8 +127,8 @@ init_mode (void)
   mode_h->name = id_from_str ("h", 1);
   mode_h->fsigned = 1;
   mode_h->ffloat = 0;
-  mode_h->ld_align = 1;
-  mode_h->size = 4;
+  mode_h->ld_align = 2;
+  mode_h->size = 2;
   mode_h->min = tarval_from_long (mode_l, 0xffff8000);
   mode_h->max = tarval_from_long (mode_l, 0x00007fff);
   mode_h->null = tarval_from_long (mode_h, 0);
@@ -137,8 +137,8 @@ init_mode (void)
   mode_H->name = id_from_str ("H", 1);
   mode_H->fsigned = 0;
   mode_H->ffloat = 0;
-  mode_H->ld_align = 1;
-  mode_H->size = 4;
+  mode_H->ld_align = 2;
+  mode_H->size = 2;
   mode_H->min = tarval_from_long (mode_L, 0x00000000);
   mode_H->max = tarval_from_long (mode_L, 0x0000ffff);
   mode_H->null = tarval_from_long (mode_H, 0);
@@ -147,7 +147,7 @@ init_mode (void)
   mode_i->name = id_from_str ("i", 1);
   mode_i->fsigned = 1;
   mode_i->ffloat = 0;
-  mode_i->ld_align = 2;
+  mode_i->ld_align = 4;
   mode_i->size = 4;
   mode_i->min = tarval_from_long (mode_l, 0x80000000);
   mode_i->max = tarval_from_long (mode_l, 0x7fffffff);
@@ -157,7 +157,7 @@ init_mode (void)
   mode_I->name = id_from_str ("I", 1);
   mode_I->fsigned = 0;
   mode_I->ffloat = 0;
-  mode_I->ld_align = 2;
+  mode_I->ld_align = 4;
   mode_I->size = 4;
   mode_I->min = tarval_from_long (mode_L, 0x00000000);
   mode_I->max = tarval_from_long (mode_L, 0xffffffff);
@@ -167,7 +167,7 @@ init_mode (void)
   mode_l->name = id_from_str ("l", 1);
   mode_l->fsigned = 1;
   mode_l->ffloat = 0;
-  mode_l->ld_align = 2;
+  mode_l->ld_align = 4;
   mode_l->size = 4;
   mode_l->min = tarval_from_long (mode_l, 0x80000000);
   mode_l->max = tarval_from_long (mode_l, 0x7fffffff);
@@ -177,7 +177,7 @@ init_mode (void)
   mode_L->name = id_from_str ("L", 1);
   mode_L->fsigned = 0;
   mode_L->ffloat = 0;
-  mode_L->ld_align = 2;
+  mode_L->ld_align = 4;
   mode_L->size = 4;
   mode_L->min = tarval_from_long (mode_L, 0x00000000);
   mode_L->max = tarval_from_long (mode_L, 0xffffffff);
@@ -197,7 +197,7 @@ init_mode (void)
   mode_p->name = id_from_str ("p", 1);
   mode_p->fsigned = 0;
   mode_p->ffloat = 0;
-  mode_p->ld_align = 2;
+  mode_p->ld_align = 4;
   mode_p->size = 4;
   mode_p->min = tarval_from_long (mode_L, 0x00000000);
   mode_p->max = tarval_from_long (mode_L, 0xffffffff);

@@ -176,8 +176,13 @@ copy_preds (ir_node *n, void *env) {
     better: */
     if (n != current_ir_graph->end_block) {
       on = optimize_in_place(nn);
-      if (nn != on) exchange(nn, on);
-      nn = on;  /* For cse ... */
+      if ((nn != on)) {
+	if (get_irn_op(on) == op_Bad)
+	  /* if on is Bad it is the old Bad node. */
+	  on = get_new_node(on);
+	exchange(nn, on);
+	nn = on;  /* For cse ... */
+      }
     }
   } else if (get_irn_opcode(n) == iro_Phi) {
     /* Don't copy node if corresponding predecessor in block is Bad.

@@ -84,10 +84,13 @@ void irg_block_walk_2(ir_node *node, void (pre)(ir_node*, void*),
          could be Id chains?? */
       assert(is_cfop(pred) || is_fragile_op(pred));
       pred = get_nodes_Block(pred);
-      assert(get_irn_opcode(pred) == iro_Block);
-
-      /* recursion */
-      irg_block_walk_2(pred, pre, post, env);
+      if(get_irn_opcode(pred) == iro_Block) {
+	/* recursion */
+	irg_block_walk_2(pred, pre, post, env);
+      }
+      else {
+	assert(get_irn_opcode(pred) == iro_Bad);
+      }
     }
 
     if(post)
