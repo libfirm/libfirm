@@ -22,6 +22,13 @@ typedef struct {
   struct ir_node **graph_arr; /* array to store all parameters */
 } block_attr;
 
+/* Cond attributes */
+typedef struct {
+  cond_kind kind;    /* flavor of Cond */
+  long default_proj; /* for optimization: biggest Proj number, i.e. the one
+			used for default. */
+} cond_attr;
+
 /* SymConst attributes */
 /*   This union contains the symbolic information represented by the node */
 typedef union type_or_id {
@@ -50,6 +57,7 @@ typedef struct {
    some have more. Their name is 'irnodename_attr' */
 typedef union {
   block_attr     block; /* For Block: Fields needed to construct it */
+  cond_attr      c;     /* For Cond. */
   struct tarval *con;   /* For Const: contains the value of the constant */
   symconst_attr  i;     /* For SymConst. */
   sel_attr       s;     /* For Sel. */
@@ -57,7 +65,6 @@ typedef union {
   long           proj;  /* For Proj: contains the result position to project */
   alloc_attr     a;     /* For Alloc. */
   type          *f;     /* For Free. */
-  cond_kind      c;     /* For Cond. */
   int            phi0_pos;  /* For Phi. Used to remember the value defined by
 			       this Phi node.  Needed when the Phi is completed
 			       to call get_r_internal_value to find the

@@ -154,8 +154,8 @@ inline void      set_Block_graph_arr (ir_node *node, int pos, ir_node *value);
    exists.  Else it passes control along output n (even if this Proj does not
    exist.)  This Cond we call "fragmentary".  There is a special constructor
    new_defaultProj that automatically sets the flavor.
-   The two switch flavors are distinguished by a flag of type cond_kind.  Default
-   flavor is "dense"
+   The two switch flavors are distinguished by a flag of type cond_kind.
+   Default flavor is "dense"
 */
 typedef enum {
   dense,        /* Default. Missing Proj nodes are dead control flow. */

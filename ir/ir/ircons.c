@@ -147,7 +147,8 @@ new_r_defaultProj (ir_graph *irg, ir_node *block, ir_node *arg,
 {
   ir_node *res;
   assert((arg->op==op_Cond) && (get_irn_mode(arg->in[1]) == mode_I));
-  arg->attr.c = fragmentary;
+  arg->attr.c.kind = fragmentary;
+  arg->attr.c.default_proj = max_proj;
   res = new_r_Proj (irg, block, arg, mode_X, max_proj);
   return res;
 }
@@ -408,7 +409,8 @@ new_r_Cond (ir_graph *irg, ir_node *block, ir_node *c)
   ir_node *in[1] = {c};
   ir_node *res;
   res = new_ir_node (irg, block, op_Cond, mode_T, 1, in);
-  res->attr.c = dense;
+  res->attr.c.kind = dense;
+  res->attr.c.default_proj = 0;
   res = optimize (res);
   irn_vrfy (res);
   return res;
@@ -1305,7 +1307,8 @@ new_defaultProj (ir_node *arg, long max_proj)
 {
   ir_node *res;
   assert((arg->op==op_Cond) && (get_irn_mode(arg->in[1]) == mode_I));
-  arg->attr.c = fragmentary;
+  arg->attr.c.kind = fragmentary;
+  arg->attr.c.default_proj = max_proj;
   res = new_Proj (arg, mode_X, max_proj);
   return res;
 }

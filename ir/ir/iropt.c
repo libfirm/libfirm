@@ -707,13 +707,16 @@ transform_node (ir_node *n)
           set_irn_link(a, new_r_Jmp(current_ir_graph, get_nodes_Block(n)));
         assert(get_irn_op(get_irn_link(a)) == op_Jmp);
         n = get_irn_link(a);
-      } else {
+      } else {/* Not taken control flow, but be careful with the default! */
+	if (get_Proj_proj(n) < a->attr.c.default_proj){
         /* a never taken branch */
-        n = new_Bad();
+	  n = new_Bad();
+	} else {
+	  a->attr.c.default_proj = get_Proj_proj(n);
+	}
       }
     }
-  }
-  break;
+  } break;
   case iro_Eor: { /* @@@ not tested as boolean Eor not allowed any more. */
     a = get_Eor_left(n);
     b = get_Eor_right(n);
