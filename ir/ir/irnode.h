@@ -291,6 +291,8 @@ ir_node  *get_Block_cg_cfgpred(ir_node * node, int pos);
 /* frees the memory. */
 void      remove_Block_cg_cfgpred_arr(ir_node * node);
 
+/** Keep alive dedicated nodes.  These must be either
+ *  PhiM or Block nodes. */
 int  get_End_n_keepalives(ir_node *end);
 ir_node *get_End_keepalive(ir_node *end, int pos);
 void add_End_keepalive (ir_node *end, ir_node *ka);

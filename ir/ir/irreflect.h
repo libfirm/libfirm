@@ -18,17 +18,17 @@
 
 #define RFLCT_MC(m) rflct_ms_ ## m
 typedef enum {
-  RFLCT_MC(None) = 0,
-  RFLCT_MC(Mem) = 2,
-  RFLCT_MC(Bool) = 4,
-  RFLCT_MC(IntS) = 8,
-  RFLCT_MC(IntU) = 16,
+  RFLCT_MC(None)  = 0,
+  RFLCT_MC(Mem)   = 2,
+  RFLCT_MC(Bool)  = 4,
+  RFLCT_MC(IntS)  = 8,
+  RFLCT_MC(IntU)  = 16,
   RFLCT_MC(Float) = 32,
-  RFLCT_MC(Ref) = 64,
-  RFLCT_MC(Char) = 128,
-  RFLCT_MC(X) = 256,
-  RFLCT_MC(BB) = 512,
-  RFLCT_MC(Cf) = RFLCT_MC(X) | RFLCT_MC(BB),
+  RFLCT_MC(Ref)   = 64,
+  RFLCT_MC(Char)  = 128,
+  RFLCT_MC(X)     = 256,
+  RFLCT_MC(BB)    = 512,
+  RFLCT_MC(Cf)    = RFLCT_MC(X) | RFLCT_MC(BB),
 
   RFLCT_MC(Int) = RFLCT_MC(IntS) | RFLCT_MC(IntU),
   RFLCT_MC(Intb) = RFLCT_MC(Int) | RFLCT_MC(Bool),

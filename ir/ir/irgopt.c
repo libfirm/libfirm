@@ -1802,26 +1802,26 @@ static int test_whether_dispensable(ir_node *b, int pos) {
       n_preds = get_Block_n_cfgpreds(pred);
     } else {
       /* b's pred blocks and pred's pred blocks must be pairwise disjunct.
-     Work preds < pos as if they were already removed. */
+	 Work preds < pos as if they were already removed. */
       for (i = 0; i < pos; i++) {
-    ir_node *b_pred = get_nodes_block(get_Block_cfgpred(b, i));
-    if (get_Block_block_visited(b_pred) + 1
-        < get_irg_block_visited(current_ir_graph)) {
-      for (j = 0; j < get_Block_n_cfgpreds(b_pred); j++) {
-        ir_node *b_pred_pred = get_nodes_block(get_Block_cfgpred(b_pred, j));
-        if (is_pred_of(b_pred_pred, pred)) dispensable = 0;
-      }
-    } else {
-      if (is_pred_of(b_pred, pred)) dispensable = 0;
-    }
+	ir_node *b_pred = get_nodes_block(get_Block_cfgpred(b, i));
+	if (get_Block_block_visited(b_pred) + 1
+	    < get_irg_block_visited(current_ir_graph)) {
+	  for (j = 0; j < get_Block_n_cfgpreds(b_pred); j++) {
+	    ir_node *b_pred_pred = get_nodes_block(get_Block_cfgpred(b_pred, j));
+	    if (is_pred_of(b_pred_pred, pred)) dispensable = 0;
+	  }
+	} else {
+	  if (is_pred_of(b_pred, pred)) dispensable = 0;
+	}
       }
       for (i = pos +1; i < get_Block_n_cfgpreds(b); i++) {
-    ir_node *b_pred = get_nodes_block(get_Block_cfgpred(b, i));
-    if (is_pred_of(b_pred, pred)) dispensable = 0;
+	ir_node *b_pred = get_nodes_block(get_Block_cfgpred(b, i));
+	if (is_pred_of(b_pred, pred)) dispensable = 0;
       }
       if (!dispensable) {
-    set_Block_block_visited(pred, get_irg_block_visited(current_ir_graph)-1);
-    n_preds = 1;
+	set_Block_block_visited(pred, get_irg_block_visited(current_ir_graph)-1);
+	n_preds = 1;
       } else {
         n_preds = get_Block_n_cfgpreds(pred);
       }

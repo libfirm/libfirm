@@ -1500,7 +1500,7 @@ set_Phi_pred (ir_node *node, int pos, ir_node *pred) {
 
 
 int is_memop(ir_node *node) {
-  return ((get_irn_op(node) == op_Load) || (get_irn_op(node) == op_Load));
+  return ((get_irn_op(node) == op_Load) || (get_irn_op(node) == op_Store));
 }
 
 ir_node *get_memop_mem (ir_node *node) {
