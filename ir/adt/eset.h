@@ -17,46 +17,46 @@
 
 #include <stdbool.h>
 
-
-/* "eset" ist eine Menge von Adressen. Der Vergleich und das Hashen
- * wird über die Adresse gemacht. "NULL" sollte nicht gespeichert
- * werden. */
-
+/**
+ * "eset" is a set of addresses. The addresses are used for element
+ * compare and hash calculation.
+ * The value "NULL" could not be stored, as it is used as internal sentinel.
+ */
 typedef struct eset eset;
 
-
-/* Erzeugt eine neue leere Menge. */
+/** Creates a new empty set. */
 eset * eset_create(void);
 
-/* Erzeugt eine Kopie der übergebenen Menge. Das Kopieren funktioniert
- * nur, wenn in der übergebenen Menge "NULL" nicht enthalten ist. */
-eset * eset_copy(eset *);
+/**
+ * Creates a copy of the given set. Did NOT work if NULL is contained in source. */
+eset * eset_copy(eset *source);
 
-/* Löscht die Menge. */
-void eset_destroy(eset *);
+/** Deletes a set. */
+void eset_destroy(eset *s);
 
-/* Fügt ein Adresse in die Menge ein, wenn es nicht bereits in der
- * Menge enthalten ist. */
-void eset_insert(eset *, void *);
+/** Inserts an address into the set. */
+void eset_insert(eset *s, void *p);
 
-/* Prüft ob eine Adresse in der Menge enthalten ist. */
-bool eset_contains(eset *, void *);
+/** Checks, wheater an address is element of a set. */
+bool eset_contains(eset *s, void *p);
 
-/* Mit den Funktionen "eset_first" und "eset_next" kann man durch die
- * Menge iterieren. Die Funktion gibt jeweils die Adresse zurück. Wenn
- * keine weiteren Adressen in der Menge sind, geben die Funktionen
- * "NULL" zurück. Warnung: Man sollte deshalb "NULL" nicht in der
- * Menge speichern, weil man sonst nicht durch die Menge iterieren
- * kann.
- * ACHTUNG: Waehrend dem iterieren darf man keine neuen Elemente
- * einfuegen!! */
-void * eset_first(eset *);
-void * eset_next(eset *);
+/**
+ * Starts the iteration over a set and returns the first element or NULL
+ * if the set is empty.
+ *
+ * @note: It is NOT possible to add new elements while iterating through a set.
+ */
+void * eset_first(eset *s);
 
-/* Fügt alle Elemente der Menge "source" der Menge "target"
- * hinzu. Diese Funktion funktioniert nur, wenn in der Menge "source"
- * die "NULL"-Adresse nicht enthalten ist. */
+/**
+ * Continues iteration through a set and returns the next element or NULL if the
+ * iteration is finished.
+ *
+ * @note: It is NOT possible to add new elements while iterating through a set.
+ */
+void * eset_next(eset *s);
+
+/** Inserts all elements of source into target (union). Did NOT work if NULL is contained in source. */
 void eset_insert_all(eset * target, eset * source);
-
 
 #endif /* _ESET_H_ */

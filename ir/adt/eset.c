@@ -23,8 +23,8 @@ struct eset {
 static const int INITIAL_SLOTS = 64;
 
 
-static int pcmp(const void * * p1, const void * * p2, size_t size) {
-  return *p1 == *p2 ? 0 : 1;
+static int pcmp(const void ** p1, const void ** p2, size_t size) {
+  return *p1 != *p2;
 }
 
 
