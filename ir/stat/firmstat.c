@@ -19,6 +19,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "irouts.h"
+#include "irdump.h"
+#include "hashptr.h"
 #include "firmstat_t.h"
 #include "pattern.h"
 #include "dags.h"
@@ -116,6 +119,18 @@ static int opcode_cmp_2(const void *elt, const void *key)
 }
 
 /**
+ * compare two elements of the address_mark set
+ */
+static int address_mark_cmp(const void *elt, const void *key, size_t size)
+{
+  const address_mark_entry_t *e1 = elt;
+  const address_mark_entry_t *e2 = key;
+
+  /* compare only the nodes, the rest is used as data container */
+  return e1->node != e2->node;
+}
+
+/**
  * clears all counter in a node_entry_t
  */
 static void opcode_clear_entry(node_entry_t *elem)
@@ -161,15 +176,6 @@ static ir_op *opcode_find_entry(opcode code, pset *set)
 }
 
 /**
- * calculates a hash value for an irg
- * Addresses are typically aligned at 32bit, so we ignore the lowest bits
- */
-static INLINE unsigned irg_hash(const ir_graph *irg)
-{
-  return (unsigned)irg >> 3;
-}
-
-/**
  * clears all counter in a graph_entry_t
  */
 static void graph_clear_entry(graph_entry_t *elem, int all)
@@ -197,7 +203,7 @@ static graph_entry_t *graph_get_entry(ir_graph *irg, pset *set)
 
   key.irg = irg;
 
-  elem = pset_find(set, &key, irg_hash(irg));
+  elem = pset_find(set, &key, HASH_PTR(irg));
   if (elem)
     return elem;
 
@@ -210,12 +216,13 @@ static graph_entry_t *graph_get_entry(ir_graph *irg, pset *set)
   /* new hash table for opcodes here  */
   elem->opcode_hash  = new_pset(opcode_cmp, 5);
   elem->block_hash   = new_pset(block_cmp, 5);
+  elem->address_mark = new_set(address_mark_cmp, 5);
   elem->irg          = irg;
 
   for (i = 0; i < sizeof(elem->opt_hash)/sizeof(elem->opt_hash[0]); ++i)
     elem->opt_hash[i] = new_pset(opt_cmp, 4);
 
-  return pset_insert(set, elem, irg_hash(irg));
+  return pset_insert(set, elem, HASH_PTR(irg));
 }
 
 /**
@@ -349,9 +356,6 @@ static void count_block_info(ir_node *node, graph_entry_t *graph)
     }
     return;
   }
-  else if (op == op_Call) {
-    // return;
-  }
 
   block   = get_nodes_block(node);
   b_entry = block_get_entry(get_irn_node_nr(block), graph->block_hash);
@@ -386,8 +390,17 @@ static void count_block_info(ir_node *node, graph_entry_t *graph)
  */
 static void update_call_stat(ir_node *call, graph_entry_t *graph)
 {
+  ir_node *block = get_nodes_block(call);
   ir_node *ptr = get_Call_ptr(call);
   entity *ent = NULL;
+
+  /*
+   * If the block is bad, the whole subgraph will colabse later
+   * so do not count this call.
+   * This happens in dead code
+   */
+  if (is_Bad(block))
+    return;
 
   cnt_inc(&graph->cnt_all_calls);
 
@@ -412,7 +425,6 @@ static void update_call_stat(ir_node *call, graph_entry_t *graph)
    * must dominate the end block. */
   {
     ir_node *curr = get_irg_end_block(graph->irg);
-    ir_node *block  = get_nodes_block(call);
     int depth = get_Block_dom_depth(block);
 
     for (; curr != block && get_Block_dom_depth(curr) > depth;) {
@@ -452,7 +464,90 @@ static void update_node_stat(ir_node *node, void *env)
 }
 
 /**
- * called for every graph when the graph is either deleted or stat_finish
+ * get the current address mark
+ */
+static unsigned get_adr_mark(graph_entry_t *graph, ir_node *node)
+{
+  address_mark_entry_t *value = set_find(graph->address_mark, &node, sizeof(*value), HASH_PTR(node));
+
+  return value ? value->mark : 0;
+}
+
+/**
+ * set the current address mark
+ */
+static void set_adr_mark(graph_entry_t *graph, ir_node *node, unsigned val)
+{
+  address_mark_entry_t *value = set_insert(graph->address_mark, &node, sizeof(*value), HASH_PTR(node));
+
+  value->mark = val;
+}
+
+/**
+ * a vcg attribute hook
+ */
+static int stat_adr_mark_hook(FILE *F, ir_node *n)
+{
+  ir_graph *irg        = get_irn_irg(n);
+  graph_entry_t *graph = graph_get_entry(irg, status->irg_hash);
+  unsigned mark        = get_adr_mark(graph, n);
+
+  if (mark & MARK_ADDRESS_CALC)
+    fprintf(F, "color: purple");
+  else if ((mark & (MARK_REF_ADR | MARK_REF_NON_ADR)) == MARK_REF_ADR)
+    fprintf(F, "color: lightblue");
+  else
+    return 0;
+
+  /* I know the color! */
+  return 1;
+}
+
+/**
+ * walker that marks every node that is an address calculation
+ *
+ * predecessor nodes must be visited first. We ensure this by
+ * calling in in the post of an outs walk. This should work even in cycles,
+ * while the pre in a normal walk will not.
+ */
+static void mark_address_calc(ir_node *node, void *env)
+{
+  graph_entry_t *graph = env;
+  ir_mode *mode = get_irn_mode(node);
+  int i, n;
+  unsigned mark_preds = MARK_REF_NON_ADR;
+
+  if (! mode_is_numP(mode))
+    return;
+
+  if (mode_is_reference(mode)) {
+    /* a reference is calculated here, we are sure */
+    set_adr_mark(graph, node, MARK_ADDRESS_CALC);
+
+    mark_preds = MARK_REF_ADR;
+  }
+  else {
+    unsigned mark = get_adr_mark(graph, node);
+
+    if ((mark & (MARK_REF_ADR | MARK_REF_NON_ADR)) == MARK_REF_ADR) {
+      /*
+       * this node has not an reference mode, but is only
+       * referenced by address calculations
+       */
+      mark_preds = MARK_REF_ADR;
+    }
+  }
+
+  /* makr all predecessors */
+  for (i = 0, n = get_irn_arity(node); i < n; ++i) {
+    ir_node *pred = get_irn_n(node, i);
+
+    set_adr_mark(graph, pred, get_adr_mark(graph, pred) | mark_preds);
+  }
+}
+
+/**
+ * called for every graph when the graph is either deleted or stat_finish()
  * is called, must recalculate all statistic info
  */
 static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
@@ -499,6 +594,23 @@ static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
 
   /* update the edge counter */
   cnt_add(&global->cnt_edges, &graph->cnt_edges);
+
+  /* count the number of address calculation */
+  if (graph->irg != get_const_code_irg()) {
+    ir_graph *rem = current_ir_graph;
+
+    if (get_irg_outs_state(graph->irg) != outs_consistent)
+      compute_outs(graph->irg);
+
+    /* Must be done an the outs graph */
+    current_ir_graph = graph->irg;
+    irg_out_walk(get_irg_start(graph->irg), NULL, mark_address_calc, graph);
+    current_ir_graph = rem;
+
+    set_dump_node_vcgattr_hook(stat_adr_mark_hook);
+    dump_ir_block_graph(graph->irg, "-adr");
+    set_dump_node_vcgattr_hook(NULL);
+  }
 }
 
 /**
@@ -573,8 +685,6 @@ void init_stat(unsigned enable_options)
 {
 #define X(a)  a, sizeof(a)-1
 
-  int pseudo_id = 0;
-
   /* enable statistics */
   status->enable = enable_options & FIRMSTAT_ENABLED;
 
@@ -582,25 +692,6 @@ void init_stat(unsigned enable_options)
    return;
 
   obstack_init(&status->cnts);
-
-  /* build the pseudo-ops */
-  _op_Phi0.code = --pseudo_id;
-  _op_Phi0.name = new_id_from_chars(X("Phi0"));
-
-  _op_PhiM.code = --pseudo_id;
-  _op_PhiM.name = new_id_from_chars(X("PhiM"));
-
-  _op_MulC.code = --pseudo_id;
-  _op_MulC.name = new_id_from_chars(X("MulC"));
-
-  _op_DivC.code = --pseudo_id;
-  _op_DivC.name = new_id_from_chars(X("DivC"));
-
-  _op_ModC.code = --pseudo_id;
-  _op_ModC.name = new_id_from_chars(X("ModC"));
-
-  _op_DivModC.code = --pseudo_id;
-  _op_DivModC.name = new_id_from_chars(X("DivModC"));
 
   /* create the hash-tables */
   status->irg_hash   = new_pset(graph_cmp, 8);
@@ -610,6 +701,25 @@ void init_stat(unsigned enable_options)
   status->op_PhiM    = &_op_PhiM;
 
   if (enable_options & FIRMSTAT_COUNT_STRONG_OP) {
+    /* build the pseudo-ops */
+    _op_Phi0.code    = get_next_ir_opcode();
+    _op_Phi0.name    = new_id_from_chars(X("Phi0"));
+
+    _op_PhiM.code    = get_next_ir_opcode();
+    _op_PhiM.name    = new_id_from_chars(X("PhiM"));
+
+    _op_MulC.code    = get_next_ir_opcode();
+    _op_MulC.name    = new_id_from_chars(X("MulC"));
+
+    _op_DivC.code    = get_next_ir_opcode();
+    _op_DivC.name    = new_id_from_chars(X("DivC"));
+
+    _op_ModC.code    = get_next_ir_opcode();
+    _op_ModC.name    = new_id_from_chars(X("ModC"));
+
+    _op_DivModC.code = get_next_ir_opcode();
+    _op_DivModC.name = new_id_from_chars(X("DivModC"));
+
     status->op_MulC    = &_op_MulC;
     status->op_DivC    = &_op_DivC;
     status->op_ModC    = &_op_ModC;

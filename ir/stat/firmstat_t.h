@@ -37,6 +37,22 @@ typedef pset hmap_block_entry_t;
 typedef pset hmap_ir_op;
 typedef pset hmap_distrib_entry_t;
 
+/**
+ * possible address marker values
+ */
+enum adr_marker_t {
+  MARK_ADDRESS_CALC     = 1,    /**< the node is an address expression */
+  MARK_REF_ADR          = 2,    /**< the node is referenced by an address expression */
+  MARK_REF_NON_ADR      = 4,    /**< the node is referenced by a non-address expression */
+};
+
+/**
+ * An entry in the address_mark set
+ */
+typedef struct _address_mark_entry_t {
+  ir_node  *node;               /**< the node which this entry belongs to, needed for compare */
+  unsigned mark;                /**< the mark, a bitmask of enum adr_marker_t */
+} address_mark_entry_t;
 
 /**
  * An entry for ir_nodes, used in ir_graph statistics.
@@ -65,6 +81,7 @@ typedef struct _graph_entry_t {
   HASH_MAP(opt_entry_t)   *opt_hash[STAT_OPT_MAX];	/**< hash maps containing opcode counter for optimizations */
   ir_graph                *irg;				/**< the graph of this object */
   entity                  *ent;				/**< the entity of this graph if one exists */
+  set                     *address_mark;                /**< a set containing the address marks of the nodes */
   unsigned                is_deleted:1;			/**< set if this irg was deleted */
   unsigned                is_leaf:1;			/**< set, if this irg is a leaf function */
   unsigned                is_recursive:1;		/**< set, if this irg has recursive calls */
