@@ -27,6 +27,7 @@
 # include "xmalloc.h"
 
 # include "pto_debug.h"
+# include "gnu_ext.h"
 
 /* Local Defines: */
 # ifndef TRUE
@@ -119,7 +120,8 @@ entity *get_ptr_ent (ir_node *ptr)
   } break;
 
   default: {
-    fprintf (stderr, "get_ptr_ent: no ent for ptr=%s[%ld]\n",
+    fprintf (stderr, "%s: no ent for ptr=%s[%ld]\n",
+             __FUNCTION__,
              get_op_name (get_irn_op (ptr)),
              get_irn_node_nr (ptr));
     assert (0);
@@ -152,6 +154,9 @@ int is_dummy_load_ptr (ir_node *ptr)
 
 /*
   $Log$
+  Revision 1.16  2005/01/14 14:13:32  liekweg
+  fix gnu extension
+
   Revision 1.15  2005/01/10 17:26:34  liekweg
   fixup printfs, don't put environments on the stack
 

@@ -40,6 +40,8 @@
 # include "typalise.h"
 # include "lset.h"
 
+# include "gnu_ext.h"
+
 # define HERE(msg)  fprintf (stdout, "%s:%i %s\n", __FUNCTION__, __LINE__, msg)
 
 /*
@@ -1193,6 +1195,9 @@ void ecg_ecg (void)
 
 /*
   $Log$
+  Revision 1.18  2005/01/14 14:14:43  liekweg
+  fix gnu extension
+
   Revision 1.17  2005/01/14 13:34:25  liekweg
   Factor out call_info_t ctor; fix mallocs; fix initialisation
 

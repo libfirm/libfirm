@@ -33,6 +33,7 @@
 # include "irnode_t.h"
 # include "irgwalk.h"
 # include "xmalloc.h"
+# include "gnu_ext.h"
 
 
 /*
@@ -680,7 +681,8 @@ typalise_t *typalise (ir_node *node)
 
       res = ta_type (tp);       /* can't use ta_exact */
     } else {
-      fprintf (stdout, "can't handle SymConst %s?\n",
+      fprintf (stdout, "%s (%s:%i): can't handle SymConst %s?\n",
+               __FUNCTION__, __FILE__, __LINE__,
                get_op_name (get_irn_op (node)));
       res = NULL;
     }
@@ -706,6 +708,9 @@ typalise_t *typalise (ir_node *node)
 
 /*
   $Log$
+  Revision 1.8  2005/01/14 14:13:24  liekweg
+  fix gnu extension
+
   Revision 1.7  2005/01/10 17:26:34  liekweg
   fixup printfs, don't put environments on the stack
 
