@@ -918,7 +918,7 @@ type *get_unknown_type(void);
  *  @param tp - any type
  *  @return true if type is primitive, pointer or enumeration
  */
-int is_Atomic_type(const type *tp);
+int is_atomic_type(const type *tp);
 
 /* --- Support for compound types --- */
 

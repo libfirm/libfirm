@@ -1658,7 +1658,7 @@ int (is_Primitive_type)(const type *primitive) {
 /*-----------------------------------------------------------------*/
 
 
-int (is_Atomic_type)(const type *tp) {
+int (is_atomic_type)(const type *tp) {
   return _is_atomic_type(tp);
 }
 

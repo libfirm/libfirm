@@ -395,7 +395,7 @@ set_entity_variability (entity *ent, ent_variability var)
     ent->values    = NEW_ARR_F(ir_node *, 0);
     ent->val_paths = NEW_ARR_F(compound_graph_path *, 0);
   }
-  if ((is_Atomic_type(ent->type)) &&
+  if ((is_atomic_type(ent->type)) &&
       (ent->variability == variability_uninitialized) && (var != variability_uninitialized)) {
     /* Set default constant value. */
     ent->value = new_rd_Unknown(get_const_code_irg(), get_type_mode(ent->type));
@@ -619,7 +619,7 @@ int is_proper_compound_graph_path(compound_graph_path *gr, int pos) {
     owner = get_entity_type(node);
   }
   if (pos == get_compound_graph_path_length(gr))
-    if (!is_Atomic_type(owner)) return false;
+    if (!is_atomic_type(owner)) return false;
   return true;
 }
 

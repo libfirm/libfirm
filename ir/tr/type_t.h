@@ -395,6 +395,6 @@ _is_atomic_type(const type *tp) {
 #define is_Enumeration_type(enumeration)  _is_enumeration_type(enumeration)
 #define is_Pointer_type(pointer)          _is_pointer_type(pointer)
 #define is_Primitive_type(primitive)      _is_primitive_type(primitive)
-#define is_Atomic_type(tp)                _is_atomic_type(tp)
+#define is_atomic_type(tp)                _is_atomic_type(tp)
 
 # endif /* _TYPE_T_H_ */
