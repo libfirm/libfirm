@@ -993,8 +993,8 @@ static ir_op *firm_set_default_equivalent_node(ir_op *op)
   CASE(And);
   CASE(Conv);
   CASE(Phi);
-  CASE(Load);		/* dangerous */
-  CASE(Store);		/* dangerous, see todo */
+//  CASE(Load);		/* dangerous */
+//  CASE(Store);		/* dangerous, see todo */
   CASE(Proj);
   CASE(Id);
   default:
@@ -1466,7 +1466,7 @@ static ir_op *firm_set_default_transform_node(ir_op *op)
   CASE(Eor);
   CASE(Not);
   CASE(Proj);
-  CASE(Store);
+//  CASE(Store);	/* dangerous, see todo */
   CASE(Or);
   default:
     op->transform_node  = NULL;
