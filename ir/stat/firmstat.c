@@ -42,10 +42,30 @@ static const char *opt_names[] = {
   "Lowered",
 };
 
-/**
- * need this to be static
+/*
+ * need this to be static:
+ * Special pseudo Opcodes that we need to count some interesting cases
  */
-static ir_op _op_Phi0, _op_PhiM;
+
+/**
+ * The Phi0, a node that is created during SSA construction
+ */
+static ir_op _op_Phi0;
+
+/** The PhiM, just to count memorty Phi's. */
+static ir_op _op_PhiM;
+
+/** The Mul by Const node. */
+static ir_op _op_MulC;
+
+/** The Div by Const node. */
+static ir_op _op_DivC;
+
+/** The Div by Const node. */
+static ir_op _op_ModC;
+
+/** The Div by Const node. */
+static ir_op _op_DivModC;
 
 /* ---------------------------------------------------------------------------------- */
 
@@ -283,7 +303,7 @@ static block_entry_t *block_get_entry(long block_nr, pset *set)
  * Returns the ir_op for an IR-node,
  * handles special cases and return pseudo op codes
  */
-static ir_op *stat_get_irn_op(const ir_node *node)
+static ir_op *stat_get_irn_op(ir_node *node)
 {
   ir_op *op = get_irn_op(node);
 
@@ -295,6 +315,24 @@ static ir_op *stat_get_irn_op(const ir_node *node)
     /* special case, a Memory Phi node, count on extra counter */
     op = status->op_PhiM;
   }
+  else if (op->code == iro_Mul &&
+           (get_irn_op(get_Mul_left(node)) == op_Const || get_irn_op(get_Mul_right(node)) == op_Const)) {
+    /* special case, a Multiply by a const, count on extra counter */
+    op = status->op_MulC ? status->op_MulC : op_Mul;
+  }
+  else if (op->code == iro_Div && get_irn_op(get_Div_right(node)) == op_Const) {
+    /* special case, a division by a const, count on extra counter */
+    op = status->op_DivC ? status->op_DivC : op_Div;
+  }
+  else if (op->code == iro_Mod && get_irn_op(get_Mod_right(node)) == op_Const) {
+    /* special case, a module by a const, count on extra counter */
+    op = status->op_ModC ? status->op_ModC : op_Mod;
+  }
+  else if (op->code == iro_DivMod && get_irn_op(get_DivMod_right(node)) == op_Const) {
+    /* special case, a division/modulo by a const, count on extra counter */
+    op = status->op_DivModC ? status->op_DivModC : op_DivMod;
+  }
+
   return op;
 }
 
@@ -741,12 +779,37 @@ void init_stat(unsigned enable_options)
   _op_PhiM.code = --pseudo_id;
   _op_PhiM.name = new_id_from_chars(X("PhiM"));
 
+  _op_MulC.code = --pseudo_id;
+  _op_MulC.name = new_id_from_chars(X("MulC"));
+
+  _op_DivC.code = --pseudo_id;
+  _op_DivC.name = new_id_from_chars(X("DivC"));
+
+  _op_ModC.code = --pseudo_id;
+  _op_ModC.name = new_id_from_chars(X("ModC"));
+
+  _op_DivModC.code = --pseudo_id;
+  _op_DivModC.name = new_id_from_chars(X("DivModC"));
+
   /* create the hash-tables */
   status->irg_hash   = new_pset(graph_cmp, 8);
   status->ir_op_hash = new_pset(opcode_cmp_2, 1);
 
   status->op_Phi0    = &_op_Phi0;
   status->op_PhiM    = &_op_PhiM;
+
+  if (enable_options & FIRMSTAT_COUNT_STRONG_OP) {
+    status->op_MulC    = &_op_MulC;
+    status->op_DivC    = &_op_DivC;
+    status->op_ModC    = &_op_ModC;
+    status->op_DivModC = &_op_DivModC;
+  }
+  else {
+    status->op_MulC    = NULL;
+    status->op_DivC    = NULL;
+    status->op_ModC    = NULL;
+    status->op_DivModC = NULL;
+  }
 
   stat_register_dumper(&simple_dumper);
   stat_register_dumper(&csv_dumper);
@@ -787,7 +850,7 @@ void stat_free_ir_op(const ir_op *op)
 }
 
 /* A new node is created. */
-void stat_new_node(const ir_node *node)
+void stat_new_node(ir_node *node)
 {
   if (! status->enable)
     return;
@@ -816,7 +879,7 @@ void stat_new_node(const ir_node *node)
 }
 
 /* A node is changed into a Id node */
-void stat_turn_into_id(const ir_node *node)
+void stat_turn_into_id(ir_node *node)
 {
   if (! status->enable)
     return;
@@ -932,7 +995,7 @@ void stat_irg_block_walk(ir_graph *irg, const ir_node *node, void *pre, void *po
  */
 static void removed_due_opt(ir_node *n, pset *set)
 {
-  ir_op *op          = get_irn_op(n);
+  ir_op *op          = stat_get_irn_op(n);
   opt_entry_t *entry = opt_get_entry(op, set);
 
   /* increase global value */
@@ -1136,9 +1199,9 @@ void stat_new_ir_op(const ir_op *op) {}
 
 void stat_free_ir_op(const ir_op *op) {}
 
-void stat_new_node(const ir_node *node) {}
+void stat_new_node(ir_node *node) {}
 
-void stat_turn_into_id(const ir_node *node) {}
+void stat_turn_into_id(ir_node *node) {}
 
 void stat_new_graph(ir_graph *irg, entity *ent) {}
 

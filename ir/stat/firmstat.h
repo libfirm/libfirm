@@ -23,7 +23,8 @@
  */
 enum firmstat_options_t {
   FIRMSTAT_ENABLED         = 0x00000001,	/**< enable statistics */
-  FIRMSTAT_PATTERN_ENABLED = 0x00000002		/**< enable pattern calculation */
+  FIRMSTAT_PATTERN_ENABLED = 0x00000002,	/**< enable pattern calculation */
+  FIRMSTAT_COUNT_STRONG_OP = 0x00000004,	/**< if set, count Mul/Div/Mod/DivMod by constant */
 };
 
 /**
@@ -74,12 +75,12 @@ void stat_free_ir_op(const ir_op *op);
 /**
  * A new node is created.
  */
-void stat_new_node(const ir_node *node);
+void stat_new_node(ir_node *node);
 
 /**
  * A node is changed into a Id node
  */
-void stat_turn_into_id(const ir_node *node);
+void stat_turn_into_id(ir_node *node);
 
 /**
  * A new graph was created

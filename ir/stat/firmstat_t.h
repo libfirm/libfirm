@@ -132,8 +132,12 @@ typedef struct _statistic_info_t {
   HASH_MAP(ir_op)         *ir_op_hash;		/**< hash map containing all ir_ops (accessible by op_codes) */
   int                     recursive;		/**< flag for detecting recursive hook calls */
   int                     in_dead_node_elim;	/**< set, if dead node elimination runs */
-  ir_op                   *op_Phi0;		/**< needed pseudo op */
-  ir_op                   *op_PhiM;		/**< needed pseudo op */
+  ir_op                   *op_Phi0;		/**< pseudo op for Phi0 */
+  ir_op                   *op_PhiM;		/**< pseudo op for memory Phi */
+  ir_op                   *op_MulC;		/**< pseudo op for multiplication by const */
+  ir_op                   *op_DivC;		/**< pseudo op for division by const */
+  ir_op                   *op_ModC;		/**< pseudo op for modulo by const */
+  ir_op                   *op_DivModC;		/**< pseudo op for DivMod by const */
   dumper_t                *dumper;		/**< list of dumper */
   int                     enable;		/**< if set, statistic is enabled */
 } stat_info_t;
