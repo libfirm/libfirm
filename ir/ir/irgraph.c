@@ -159,11 +159,13 @@ new_ir_graph (entity *ent, int n_loc)
 
 /* Make a rudimentary ir graph for the constant code.
    Must look like a correct irg, spare everything else. */
-ir_graph *new_const_code_irg() {
+ir_graph *new_const_code_irg(void) {
   ir_graph *res;
   ir_node *projX;
 
-  res = (ir_graph *) malloc (sizeof (ir_graph));
+  res = (ir_graph *) malloc (sizeof(*res));
+  memset(res, 0, sizeof(*res));
+
   current_ir_graph = res;
   res->n_loc = 1;      /* Only the memory. */
   res->visited = 0;     /* visited flag, for the ir walker */
