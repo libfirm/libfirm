@@ -234,7 +234,8 @@ cg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
     if (is_no_Block(node))
       cg_walk_2(get_nodes_block(node), pre, post, env);
     for (i = get_irn_arity(node) - 1; i >= 0; --i) {
-      rem = switch_irg(node, i);
+      rem = switch_irg(node, i);  /* @@@ AS: Is this wrong? We do have to
+                                             switch to the irg of the predecessor, don't we? */
       cg_walk_2(get_irn_n(node, i), pre, post, env);
       current_ir_graph = rem;
     }

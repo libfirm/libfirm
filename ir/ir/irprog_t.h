@@ -38,6 +38,9 @@ struct ir_prog {
 				     to allocate nodes the represent values
 				     of constant entities. It is not meant as
 				     a procedure.  */
+
+  ir_node **ip_outedges;         /**< Huge Array that contains all out edges
+				    in interprocedural view. */
   ident     *name;
   /*struct obstack *obst;	   * @@@ Should we place all types and
                                      entities on an obstack, too? */

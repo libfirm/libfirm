@@ -204,3 +204,13 @@ ir_graph *get_const_code_irg(void)
 {
   return irp->const_code_irg;
 }
+
+void      set_irp_ip_outedges(ir_node ** ip_outedges)
+{
+  irp -> ip_outedges = ip_outedges;
+}
+
+ir_node** get_irp_ip_outedges(void)
+{
+  return(irp -> ip_outedges);
+}

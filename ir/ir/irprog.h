@@ -137,4 +137,7 @@ const char  *get_irp_prog_name (void);
  */
 ir_graph *get_const_code_irg(void);
 
+void      set_irp_ip_outedges(ir_node ** ip_outedges);
+ir_node** get_irp_ip_outedges(void);
+
 #endif /* ifndef _IRPROG_H_ */
