@@ -52,8 +52,8 @@ int compare_names (const void *tp1, const void *tp2) {
 
 
 /* stuff for comparing two types. */
-//static int compare_strict (type *tp1, type *tp2) {
-static int compare_strict (const void *tp1, const void *tp2) {
+//int compare_strict (type *tp1, type *tp2) {
+int compare_strict (const void *tp1, const void *tp2) {
   type *t1 = (type *) tp1;
   type *t2 = (type *) tp2;
   return t1 != t2;
@@ -82,9 +82,42 @@ type *mature_type(type *tp) {
   if (!o || o == tp) return tp;
 
   exchange_types(tp, o);
-  return o  ;
+
+  return o;
 }
 
+
+/* The function that hashes a type. */
+type *mature_type_free(type *tp) {
+  type *o;
+
+  assert(type_table);
+
+  o = pset_insert (type_table, tp, hash_types_func(tp) );
+
+  if (!o || o == tp) return tp;
+
+  free_type_entities(tp);
+  free_type(tp);
+
+  return o;
+}
+
+/* The function that hashes a type. */
+type *mature_type_free_entities(type *tp) {
+  type *o;
+
+  assert(type_table);
+
+  o = pset_insert (type_table, tp, hash_types_func(tp) );
+
+  if (!o || o == tp) return tp;
+
+  free_type_entities(tp);
+  exchange_types(tp, o);
+
+  return o;
+}
 
 void init_type_identify(void) {
   //type_table = new_pset ((int (const void *, const void *))compare_types_func, 8);

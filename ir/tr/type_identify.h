@@ -89,13 +89,50 @@ extern hash_types_func_tp hash_types_func;
  * Indicate that a type is so far completed that it can be
  * distinguished from other types.  Mature_type hashes the type into a
  * table.  It uses the function in compare_types_func to compare the
- * types.  If it find a type identical to tp it returns this type.  In
- * this case it also turns tp into the Id type.  The caller should free
- * tp if he knows that there are no other references to tp.  The memory
- * of tp is not lost, but will remain alive for an unknown time.
+ * types.
  *
- * @param tp The type to mature.
+ * If it finds a type identical to tp it returns this type.  It turns
+ * tp into the Id type.  All places formerly pointing to tp will now
+ * point to the found type.  All entities of tp now refer to the found
+ * type as their owner, but they are not a member of this type.  This
+ * is invalid firm -- the entities must be replaced by entities of the
+ * found type.  The Id type will be removed from the representation
+ * automatically, but within an unknown time span.  It occupies memory
+ * for this time.
+ *
+ * @param tp     The type to mature.
  */
 type *       mature_type(type *tp);
+
+/** Finalize type construction.
+ *
+ * Indicate that a type is so far completed that it can be
+ * distinguished from other types.  Mature_type hashes the type into a
+ * table.  It uses the function in compare_types_func to compare the
+ * types.
+ *
+ * If it finds a type identical to tp it returns this type.  It frees
+ * type tp and all its entities.
+ *
+ * @param tp     The type to mature.
+ */
+type *       mature_type_free(type *tp);
+
+/** Finalize type construction.
+ *
+ * Indicate that a type is so far completed that it can be
+ * distinguished from other types.  Mature_type hashes the type into a
+ * table.  It uses the function in compare_types_func to compare the
+ * types.
+ *
+ * If it find a type identical to tp it returns this type.  It frees
+ * the entities and turns the type into an Id type.  All places
+ * formerly pointing to tp will now point to the found type.  The Id
+ * type will be removed from the representation automatically, but
+ * within an unknown time span.  It occupies memory for this time.
+ *
+ * @param tp     The type to mature.
+ */
+type *       mature_type_free_entities(type *tp);
 
 # endif /* _TYPE_IDENTIFY_H_ */
