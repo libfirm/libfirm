@@ -144,6 +144,8 @@ main(void)
   /* verify the graph */
   irg_vrfy(main_irg);
 
+  dead_node_elimination(main_irg);
+
   printf("\nDone building the graph.\n");
   printf("Dumping the graph and a type graph.\n");
   dump_ir_block_graph (main_irg);

@@ -108,6 +108,8 @@ int main(int argc, char **argv)
   /* verify the graph */
   irg_vrfy(irg);
 
+  dead_node_elimination(irg);
+
   printf("\nDone building the graph.  Dumping it.\n");
   dump_ir_block_graph (irg);
   dump_ir_graph_w_types (irg);

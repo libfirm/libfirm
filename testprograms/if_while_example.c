@@ -13,8 +13,8 @@
 ***  This file constructs the ir for the following pseudo-program:
 ***
 ***  main() {
-***    int a = 0;
-***    int b = 1;
+***    int a = 0;         // pos 0
+***    int b = 1;         // pos 1
 ***
 ***    if (0 == 0)
 ***      { a = 2; }
@@ -40,6 +40,11 @@ main(void)
   printf("creating an IR graph: IF_WHILE_EXAMPLE...\n");
 
   init_firm ();
+
+
+  set_opt_constant_folding(0);
+  set_opt_cse(1);
+  set_opt_dead_node_elimination (1);
 
 #define METHODNAME "main"
 #define NRARGS 0
@@ -96,7 +101,8 @@ main(void)
   mature_block (r);
 
   /* the code in the loop body,
-     as we are dealing with local variable only the dataflow edges are manipulated */
+     as we are dealing with local variables only the dataflow edges
+     are manipulated */
   set_value (2, get_value (0, mode_I));
   set_value (0, get_value (1, mode_I));
   set_value (1, get_value (2, mode_I));
@@ -120,6 +126,8 @@ main(void)
 
   /* verify the graph */
   irg_vrfy(irg);
+
+  dead_node_elimination(irg);
 
   /* output the vcg file */
   printf("\nDone building the graph.  Dumping it.\n");

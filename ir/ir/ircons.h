@@ -618,9 +618,10 @@
               variable.
 
   Parameters
-    kind       The kind of the symbolic constant: type_tag, size or link_info.
-    *type      Points to the type the tag stands for or to the type
-               whose size is represented by the constant.
+    kind        The kind of the symbolic constant: type_tag, size or link_info.
+    *type_or_id Points to the type the tag stands for or to the type
+                whose size is represented by the constant or to an ident
+                representing the linkage info.
 
   Inputs:
     No inputs except the block it belogns to.
@@ -635,7 +636,7 @@
       If the attr.i.num is type_tag or size, the node contains an attribute
     attr.i.*type     A pointer to a type_class.
       if it is linkage_ptr_info it contains
-    attr.i.*ptrinfo  A ident holding information for the linker.
+    attr.i.*ptrinfo  An ident holding information for the linker.
 
   THE SELECT NODE
   ---------------

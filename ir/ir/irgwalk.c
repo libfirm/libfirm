@@ -25,8 +25,9 @@ void irg_walk_2(ir_node *node,
       pre(node, env);
     }
 
-    if (is_no_Block(node))
+    if (is_no_Block(node)) {
       irg_walk_2(get_nodes_Block(node), pre, post, env);
+    }
     for(i = get_irn_arity(node) - 1; i >= 0; --i) {
       irg_walk_2(get_irn_n(node, i), pre, post, env);
     }

@@ -121,6 +121,8 @@ int main(int argc, char **argv)
   /* verify the graph */
   irg_vrfy(irg);
 
+  dead_node_elimination(irg);
+
   dump_ir_block_graph (irg);
 
   printf("use xvcg to view this graph:\n");

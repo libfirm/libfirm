@@ -3,9 +3,7 @@
 **
 ** Author: Christian Schaefer
 **
-**  dead node elimination
-**  walks one time through the whole graph and copies it into another graph,
-**  so unreachable nodes will be lost.
+** Optimizations for a whole ir graph, i.e., a procedure.
 */
 
 # ifndef _IRGOPT_H_

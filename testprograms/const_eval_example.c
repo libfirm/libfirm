@@ -77,14 +77,12 @@ main(void)
   add_in_edge (irg->end_block, x);
   mature_block (irg->end_block);
 
+  printf("\nDone building the graph.  Dumping it.\n");
   /* verify the graph */
   irg_vrfy(irg);
 
   dead_node_elimination(irg);
 
-  irg_vrfy(irg);
-
-  printf("\nDone building the graph.  Dumping it.\n");
   dump_ir_block_graph (irg);
 
   printf("use xvcg to view this graph:\n");

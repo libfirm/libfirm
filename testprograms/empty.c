@@ -37,7 +37,7 @@ int main(int argc, char **argv)
   init_firm ();
 
   /* Don't optimize anything */
-  set_optimize(0);
+  set_optimize(1);
 
   /* FIRM was designed for oo languages where all methods belong to a class.
    * For imperative languages like C we view a file as a large class containing
@@ -85,6 +85,7 @@ int main(int argc, char **argv)
 
   /* verify the graph */
   irg_vrfy(irg);
+
   dead_node_elimination(irg);
 
   printf("\nDone building the graph.  Dumping it.\n");

@@ -15,13 +15,13 @@
    The second works always but is slower and causes more unnecessary Phi
    nodes.
    Select the implementations by the following preprocessor flag: */
-#define USE_FAST_PHI_CONSTRUCTION 1
+#define USE_FAST_PHI_CONSTRUCTION 0
 
 /* Further there are two versions of the fast Phi node construction.
    If the following flag is set, new_r_Phi_in uses an explicit stack for
    allocating and deallocating Phi nodes.  Else it uses the obstack
    as a stack! */
-#define USE_EXPICIT_PHI_IN_STACK 0
+#define USE_EXPICIT_PHI_IN_STACK 1
 
 /* a list of firm kinds */
 typedef enum {

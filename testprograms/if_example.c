@@ -106,6 +106,8 @@ main(void)
   /* verify the graph */
   irg_vrfy(irg);
 
+  dead_node_elimination(irg);
+
   /* output the vcg file */
   printf("\nDone building the graph.  Dumping it.\n");
 

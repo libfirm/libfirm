@@ -8,6 +8,12 @@
 #include "irnode.h"
 #include "array.h"
 
+/* some constants fixing the positions of nodes predecessors
+   in the in array */
+#define CALL_PARAM_OFFSET 2
+#define SEL_INDEX_OFFSET 2
+#define RETURN_RESULT_OFFSET 1  /* mem is not a result */
+
 static char *pnc_name_arr [] = {"False", "Eq", "Lt", "Le",
 				"Gt", "Ge", "Lg", "Leg", "Uo",
 				"Ue", "Ul", "Ule", "Ug", "Uge",
@@ -168,12 +174,10 @@ get_irn_in (ir_node *node)
    to iterate includind the Block predecessor iterate from i = -1 to
    i < get_irn_arity.
    If it is a block, the entry -1 is NULL. */
-
 inline ir_node *
 get_irn_n (ir_node *node, int n)
 {
   assert (node);
-  /* GL commented the assert in, 12.7.00, let's see whether it works */
   assert (get_irn_arity (node) > n);
   return skip_nop(node->in[n+1]);
 }
@@ -357,7 +361,7 @@ inline ir_node **
 get_Block_cfgpred_arr (ir_node *node)
 {
   assert ((node->op == op_Block));
-  return (ir_node **)get_Block_cfgpred(node, 0);
+  return (ir_node **)&(get_irn_in(node)[1]);
 }
 
 
@@ -450,7 +454,7 @@ get_Return_res_arr (ir_node *node)
 {
   assert ((node->op == op_Return));
   if (get_Return_n_res(node) > 0)
-    return ((ir_node **)get_Return_res(node, 0));
+    return (ir_node **)&(get_irn_in(node)[1 + RETURN_RESULT_OFFSET]);
   else
     return NULL;
 }
@@ -458,7 +462,7 @@ get_Return_res_arr (ir_node *node)
 inline int
 get_Return_n_res (ir_node *node) {
   assert (node->op == op_Return);
-  return (get_irn_arity(node) - 1);
+  return (get_irn_arity(node) - RETURN_RESULT_OFFSET);
 }
 
 /*
@@ -472,13 +476,13 @@ inline ir_node *
 get_Return_res (ir_node *node, int pos) {
   assert (node->op == op_Return);
   assert (get_Return_n_res(node) > pos);
-  return get_irn_n(node, pos+1);
+  return get_irn_n(node, pos + RETURN_RESULT_OFFSET);
 }
 
 inline void
 set_Return_res (ir_node *node, int pos, ir_node *res){
   assert (node->op == op_Return);
-  set_irn_n(node, pos+1, res);
+  set_irn_n(node, pos + RETURN_RESULT_OFFSET, res);
 }
 
 inline ir_node *
@@ -589,7 +593,7 @@ get_Sel_index_arr (ir_node *node)
 {
   assert ((node->op == op_Sel));
   if (get_Sel_n_index(node) > 0)
-    return (ir_node **)get_Sel_index(node, 0);
+    return (ir_node **)& get_irn_in(node)[SEL_INDEX_OFFSET + 1];
   else
     return NULL;
 }
@@ -597,7 +601,7 @@ get_Sel_index_arr (ir_node *node)
 inline int
 get_Sel_n_index (ir_node *node) {
   assert (node->op == op_Sel);
-  return (get_irn_arity(node) - 2);
+  return (get_irn_arity(node) - SEL_INDEX_OFFSET);
 }
 
 /*
@@ -610,13 +614,13 @@ set_Sel_n_index (ir_node *node, int n_index) {
 inline ir_node *
 get_Sel_index (ir_node *node, int pos) {
   assert (node->op == op_Sel);
-  return get_irn_n(node, pos+2);
+  return get_irn_n(node, pos + SEL_INDEX_OFFSET);
 }
 
 inline void
 set_Sel_index (ir_node *node, int pos, ir_node *index) {
   assert (node->op == op_Sel);
-  set_irn_n(node, pos+2, index);
+  set_irn_n(node, pos + SEL_INDEX_OFFSET, index);
 }
 
 inline entity *
@@ -670,16 +674,13 @@ set_Call_ptr (ir_node *node, ir_node *ptr) {
 inline ir_node **
 get_Call_param_arr (ir_node *node) {
   assert (node->op == op_Call);
-  if (get_Call_arity(node) > 0)
-    return ((ir_node **)get_Call_param (node, 0));
-  else
-    return NULL;
+  return (ir_node **)&get_irn_in(node)[CALL_PARAM_OFFSET + 1];
 }
 
 inline int
 get_Call_arity (ir_node *node) {
   assert (node->op == op_Call);
-  return (get_irn_arity(node) - 2);
+  return (get_irn_arity(node) - CALL_PARAM_OFFSET);
 }
 
 /* inline void
@@ -691,13 +692,13 @@ set_Call_arity (ir_node *node, ir_node *arity) {
 inline ir_node *
 get_Call_param (ir_node *node, int pos) {
   assert (node->op == op_Call);
-  return get_irn_n(node, pos+1);
+  return get_irn_n(node, pos + CALL_PARAM_OFFSET);
 }
 
 inline void
 set_Call_param (ir_node *node, int pos, ir_node *param) {
   assert (node->op == op_Call);
-  set_irn_n(node, pos+1, param);
+  set_irn_n(node, pos + CALL_PARAM_OFFSET, param);
 }
 
 inline type_method *
@@ -1392,7 +1393,7 @@ set_Conv_op (ir_node *node, ir_node *op) {
 inline ir_node **
 get_Phi_preds_arr (ir_node *node) {
   assert (node->op == op_Phi);
-  return ((ir_node **)get_Phi_pred(node, 0));
+  return (ir_node **)&(get_irn_in(node)[1]);
 }
 
 inline int
@@ -1580,7 +1581,7 @@ set_Free_type (ir_node *node, type *type) {
 inline ir_node **
 get_Sync_preds_arr (ir_node *node) {
   assert (node->op == op_Sync);
-  return ((ir_node **)get_Sync_pred(node, 0));
+  return (ir_node **)&(get_irn_in(node)[1]);
 }
 
 inline int
@@ -1635,7 +1636,7 @@ set_Proj_proj (ir_node *node, long proj) {
 inline ir_node **
 get_Tuple_preds_arr (ir_node *node) {
   assert (node->op == op_Tuple);
-  return ((ir_node **)get_Tuple_pred(node, 0));
+  return (ir_node **)&(get_irn_in(node)[1]);
 }
 
 inline int

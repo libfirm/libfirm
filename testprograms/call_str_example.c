@@ -25,6 +25,8 @@ int main(int argc, char **argv)
 {
   ir_graph *irg;          /* this variable contains the irgraph */
   type_class *owner;      /* the class in which this method is defined */
+  type_method *proc_main; /* type information for the method main */
+  type_method *proc_called; /* type information for called method f */
   entity *ent;            /* represents this method as entity of owner */
   ir_node *x, *const_str, *proc_ptr, *call;
 
@@ -34,55 +36,64 @@ int main(int argc, char **argv)
   init_firm ();
 
   /* FIRM was designed for oo languages where all methods belong to a class.
-   * For imperative languages like C we view a file as a large class containing
-   * all functions as methods in this file.
-   * Therefore we define a class "CALL_STR_EXAMPLE" with a method main as
-   * an entity.
+   * For imperative languages like C we view a program as a large class containing
+   * all functions of the program as methods in this class.  This class is
+   * automatically generated.
+   * We use the same name for the method type as for the method entity.
    */
-#define CLASSNAME "CALL_STR_EXAMPLE"
+#define METHODNAME "main"
+#define NRARGS 0
+#define NRES 0
+  owner = get_glob_type();
+  proc_main = new_type_method(id_from_str(METHODNAME, strlen(METHODNAME)),
+                              NRARGS, NRES);
+
+  /* Make type information for called method which also belongs to the
+     global type. */
+#define F_METHODNAME "f"
+#define F_NRARGS 1
+#define F_NRES 0
+  owner = get_glob_type();
+  proc_called = new_type_method(id_from_str(F_METHODNAME, strlen(F_METHODNAME)),
+                              F_NRARGS, F_NRES);
+
+  /* Make the entity for main needed for a correct  ir_graph.  */
 #define ENTITYNAME "main"
-
-  owner = new_type_class (id_from_str (CLASSNAME, strlen(CLASSNAME)));
-  ent = new_entity ((type *)owner, id_from_str (ENTITYNAME, strlen(ENTITYNAME)), NULL);
-
+  ent = new_entity ((type *)owner, id_from_str (ENTITYNAME, strlen(ENTITYNAME)),
+                    (type *)proc_main);
 
   /* Generates the basic graph for the method represented by entity ent, that
    * is, generates start and end blocks and nodes and a first, initial block.
    * The constructor needs to know how many local variables the method has.
    */
 #define NUM_OF_LOCAL_VARS 0
-
   irg = new_ir_graph (ent, NUM_OF_LOCAL_VARS);
 
-  /* the string is enterd in the constant table. const_str is a pointer to the string */
+  /* the string is entered in the constant table. const_str is a pointer to the string */
   const_str = new_Const (mode_p, tarval_p_from_str ("Hello world!"));
 
   /* get the pointer to the procedure from the class type */
   /* this is how a pointer to be fixed by the linker is represented after
      lowering a Sel node. */
 #define FUNCTIONNAME "f"
-  proc_ptr = new_Const (mode_p, tarval_p_from_str (FUNCTIONNAME));
+  proc_ptr = new_SymConst ((type_or_id *)ID_FROM_STR (FUNCTIONNAME, strlen(FUNCTIONNAME)),
+			   linkage_ptr_info);
 
   /* call procedure set_a, first built array with parameters */
   {
     ir_node *in[1];
     in[0] = const_str;
-    call = new_Call(get_store(), proc_ptr, 1, in, NULL);
+    call = new_Call(get_store(), proc_ptr, 1, in, proc_called);
   }
-  /* make the possible change of call to memory visible */
+  /* make the possible changes by the called method to memory visible */
   set_store(new_Proj(call, mode_M, 0));
 
-
-  /* The constructor new_ir_graph() generated a region to place nodes in.
-   * This region is accessible via the attribut current_block of irg and
-   * it is not matured.
-   * Generate the return node into this region. The Return node is needed to
-   * return at least the store. */
+  /* Make the return node returning the memory. */
   {
     ir_node *in[0]; /* this is the array containing the return parameters */
     x = new_Return (get_store(), 0, in);
   }
-  /* Now generate all instructions for this block and all its predecessor blocks
+  /* Now we generated all instructions for this block and all its predecessor blocks
    * so we can mature it. */
   mature_block (irg->current_block);
 
@@ -92,10 +103,13 @@ int main(int argc, char **argv)
   /* Now we can mature the end block as all it's predecessors are known. */
   mature_block (irg->end_block);
 
+  printf("\nDone building the graph.  Dumping it.\n");
   /* verify the graph */
   irg_vrfy(irg);
 
-  printf("\nDone building the graph.  Dumping it.\n");
+  set_opt_dead_node_elimination(1);
+  dead_node_elimination(irg);
+
   dump_ir_block_graph (irg);
 
   printf("use xvcg to view this graph:\n");

@@ -203,6 +203,9 @@ main(void)
   /* verify the graph */
   irg_vrfy(main_irg);
 
+  for (i = 0; i < get_irp_n_irgs(); i++)
+    dead_node_elimination(get_irp_irg(i));
+
   printf("\nDone building the graph.\n");
 
   printf("Dumping graphs of all procedures.\n");

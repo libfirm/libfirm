@@ -40,7 +40,8 @@ new_r_Block (ir_graph *irg,  int arity, ir_node **in)
 {
   ir_node *res;
 
-  res = new_ir_node (current_ir_graph, NULL, op_Block, mode_R, arity, in);
+  res = new_ir_node (irg, NULL, op_Block, mode_R, arity, in);
+  set_Block_matured(res, 1);
 
   irn_vrfy (res);
   return res;
@@ -531,7 +532,12 @@ new_r_SymConst (ir_graph *irg, ir_node *block, type_or_id *value,
 {
   ir_node *in[0] = {};
   ir_node *res;
-  res = new_ir_node (irg, block, op_SymConst, mode_I, 0, in);
+  ir_mode *mode;
+  if (symkind == linkage_ptr_info)
+    mode = mode_p;
+  else
+    mode = mode_I;
+  res = new_ir_node (irg, block, op_SymConst, mode, 0, in);
 
   res->attr.i.num = symkind;
   if (symkind == linkage_ptr_info) {

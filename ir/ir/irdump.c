@@ -577,11 +577,12 @@ dump_ir_block (ir_node *block, void *env) {
   ir_graph *irg = (ir_graph *)env;
 
   if (get_irn_opcode(block) == iro_Block) {
+
     /* This is a block. So dump the vcg information to make a block. */
     xfprintf(F, "graph: { title: \"%p\"  label: \"", block);
 #ifdef DEBUG_libfirm
     xfprintf (F, "%ld", get_irn_node_nr(block));
-#elif
+#else
     xfprintf (F, "%I", block->op->name);
 #endif
     xfprintf(F, "\" status:clustered color:lightyellow \n");

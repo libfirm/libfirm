@@ -3,9 +3,7 @@
 **
 ** Author: Christian Schaefer
 **
-**  dead node elimination
-**  walks one time through the whole graph and copies it into another graph,
-**  so unreachable nodes will be lost.
+** Optimizations for a whole ir graph, i.e., a procedure.
 */
 
 # include "irgopt.h"
@@ -17,6 +15,7 @@
 
 /********************************************************************/
 /* apply optimizations of iropt to all nodes.                       */
+
 void
 optimize_in_place_wrapper (ir_node *n, void *env) {
   int i;
@@ -29,7 +28,6 @@ optimize_in_place_wrapper (ir_node *n, void *env) {
     set_irn_n(n, i, optimized);
   }
 }
-
 
 void
 local_optimize_graph (ir_graph *irg) {
@@ -51,9 +49,11 @@ local_optimize_graph (ir_graph *irg) {
 void *
 set_new_node (ir_node *old, ir_node *new)
 {
-  old->in[0] = new;   /* Hi Chris: Benutze old->link, ich hab mich vergewissert dass
+  assert(old != new);
+  /* old->in[0] = new;      Hi Chris: Benutze old->link, ich hab mich vergewissert dass
 			 das hier ueberschrieben werden kann, das erspaart eine
 			 indirektion --> schneller.  */
+  old->link = new;
   return old;
 }
 
@@ -62,8 +62,9 @@ ir_node *
 get_new_node (ir_node * n)
 {
   ir_node *new;
-  new = n->in[0];
+  new = n->link;
   assert(new);
+  assert(new != n);
 
   return new;
 }
@@ -74,7 +75,7 @@ copy_node (ir_node *n, void *env) {
   ir_node *res = NULL;
   ir_node *a = NULL;
   ir_node *b = NULL;
-  int i;
+  int i = 0;
 
   assert (n);
   DDMSG2(n);
@@ -88,10 +89,10 @@ copy_node (ir_node *n, void *env) {
 
   switch (get_irn_opcode(n)) {
   case iro_Block:
-    {
-      ir_node **in = get_Block_cfgpred_arr(n);
-      for (i = 0; i < get_Block_n_cfgpreds(n); i++)
+    { ir_node **in = get_Block_cfgpred_arr(n);
+      for (i = 0; i < get_Block_n_cfgpreds(n); i++) {
 	set_Block_cfgpred(n, i, get_new_node(get_Block_cfgpred(n, i)));
+      }
       res = new_r_Block (current_ir_graph, get_Block_n_cfgpreds(n), in);
     }
     break;
@@ -107,7 +108,6 @@ copy_node (ir_node *n, void *env) {
     res = new_r_Jmp (current_ir_graph, get_new_node(get_nodes_Block(n)));
     break;
   case iro_Cond:
-    DDMSG;
     res = new_r_Cond (current_ir_graph, get_new_node(get_nodes_Block(n)),
 		      get_new_node(get_Cond_selector(n)));
     break;
@@ -115,16 +115,24 @@ copy_node (ir_node *n, void *env) {
     {
       ir_node **in;
       in = get_Return_res_arr(n);
+
+
+/*        printf("1.  n: %p, in: %p,     in[0]: %p, in[1]: %p, in[2]: %p in[3] %p  \n",  */
+/*  	     n, in, in[0], in[1], in[2], in[3]);  */
+
       for (i = 0; i < get_Return_n_res(n); i++) {
+/*  	printf(" old: %p, new: %p \n", get_Return_res(n, i), get_new_node(get_Return_res(n, i))); */
 	set_Return_res(n, i, get_new_node(get_Return_res(n, i)));
       }
-      res = new_r_Return (current_ir_graph, get_new_node(get_nodes_Block(n)),
+      res = new_r_Return (current_ir_graph,
+			  get_new_node(get_nodes_Block(n)),
 			  get_new_node(get_Return_mem(n)),
 			  get_Return_n_res(n), in);
     }
     break;
   case iro_Raise:
-    res = new_r_Raise (current_ir_graph, get_new_node(get_nodes_Block(n)),
+    res = new_r_Raise (current_ir_graph,
+		       get_new_node(get_nodes_Block(n)),
 		       get_new_node(get_Raise_mem(n)),
 		       get_new_node(get_Raise_exo_ptr(n)));
     break;
@@ -165,13 +173,17 @@ copy_node (ir_node *n, void *env) {
     break;
   case  iro_Call:
     {
-      ir_node **in = get_Call_param_arr(n);
+      ir_node **in;
+      in = get_Call_param_arr(n);
+
       for (i = 0; i < get_Call_arity(n); i++)
 	set_Call_param(n, i, get_new_node(get_Call_param(n, i)));
-      res = new_r_Call (current_ir_graph, get_new_node(get_nodes_Block(n)),
+      res = new_r_Call (current_ir_graph,
+			get_new_node(get_nodes_Block(n)),
 			get_new_node(get_Call_mem(n)),
-			get_new_node(get_Call_ptr(n)), get_Call_arity(n),
-			in, get_Call_type (n));
+			get_new_node(get_Call_ptr(n)),
+			get_Call_arity(n), in,
+			get_Call_type (n));
     }
     break;
   case iro_Add:
@@ -232,10 +244,16 @@ copy_node (ir_node *n, void *env) {
     res = new_r_Not (current_ir_graph, get_new_node(get_nodes_Block(n)),
 		     get_new_node(get_Not_op(n)), get_irn_mode(n));
     break;
-  case iro_Cmp:
-    res = new_r_Cmp (current_ir_graph, get_new_node(get_nodes_Block(n)),
+  case iro_Cmp: {
+    DDMSG2(get_new_node(get_Cmp_left(n)));
+    DDMSG2(get_new_node(get_Cmp_right(n)));
+    DDMSG2(get_new_node(get_nodes_Block(n)));
+    DDMSG;
+    res = new_r_Cmp (current_ir_graph,
+		     get_new_node(get_nodes_Block(n)),
 		     get_new_node(get_Cmp_left(n)),
 		     get_new_node(get_Cmp_right(n)));
+  }
     break;
   case iro_Shl:
     res = new_r_Shl (current_ir_graph, get_new_node(get_nodes_Block(n)),
@@ -326,7 +344,7 @@ copy_node (ir_node *n, void *env) {
     res = new_r_Bad ();
     break;
   }
-  /* @@@ Here we could call optimize()!! */
+  /* @@@ Here we could call optimize()!! Not necessary, called in constructor anyways. */
   set_new_node(n, res);
 
   printf(" "); DDMSG2(res);
@@ -342,7 +360,7 @@ dead_node_elimination(ir_graph *irg) {
   ir_graph *rem = current_ir_graph;
   current_ir_graph = irg;
 
-  if (get_opt_dead_node_elimination()) {
+  if (get_optimize() && get_opt_dead_node_elimination()) {
 
     /* A quiet place, where the old obstack can rest in peace,
        until it will be cremated. */
@@ -352,6 +370,9 @@ dead_node_elimination(ir_graph *irg) {
     rebirth_obst = (struct obstack *) xmalloc (sizeof (struct obstack));
     current_ir_graph->obst = rebirth_obst;
     obstack_init (current_ir_graph->obst);
+
+    /* @@@@@ Do we need to do something about cse? */
+    set_opt_cse(0);
 
     /*CS*/
     printf("Before starting the DEAD NODE ELIMINATION !\n");
@@ -368,37 +389,42 @@ dead_node_elimination(ir_graph *irg) {
     new_node = new_r_Block (current_ir_graph, 0, NULL);   /* new_r_Block calls
 						     no optimization --> save */
     irg->start_block = new_node;
+DDMSG2(new_node);
     set_new_node (old_node, new_node);
     set_irn_visited (old_node, get_irg_visited(current_ir_graph)+1);
     /* Copy the Start node */
     old_node = irg->start;
     new_node = new_r_Start (current_ir_graph, irg->start_block);
     irg->start = new_node;
-  DDMSG2(new_node);
+DDMSG2(new_node);
     set_new_node (old_node, new_node);
     set_irn_visited (old_node, get_irg_visited(current_ir_graph)+1);
     /* Copy the Bad node */
     old_node = irg->bad;
     new_node = new_ir_node (irg, irg->start_block, op_Bad, mode_T, 0, NULL);
     irg->bad = new_node;
+DDMSG2(new_node);
     set_new_node (old_node, new_node);
     set_irn_visited (old_node, get_irg_visited(current_ir_graph)+1);
     /* Copy the Projs for the Start's results. */
     old_node = irg->frame;
     new_node = new_r_Proj (irg, irg->start_block, irg->start, mode_p, pns_frame_base);
     irg->frame = new_node;
+DDMSG2(new_node);
     set_new_node (old_node, new_node);
     set_irn_visited (old_node, get_irg_visited(current_ir_graph)+1);
 
     old_node = irg->globals;
     new_node = new_r_Proj (irg, irg->start_block, irg->start, mode_p, pns_globals);
     irg->globals = new_node;
+DDMSG2(new_node);
     set_new_node (old_node, new_node);
     set_irn_visited (old_node, get_irg_visited(current_ir_graph)+1);
 
     old_node = irg->args;
     new_node = new_r_Proj (irg, irg->start_block, irg->start, mode_T, pns_args);
     irg->args = new_node;
+DDMSG2(new_node);
     set_new_node (old_node, new_node);
     set_irn_visited (old_node, get_irg_visited(current_ir_graph)+1);
 
@@ -410,7 +436,8 @@ dead_node_elimination(ir_graph *irg) {
     printf("After the DEAD NODE ELIMINATION !\n");
 
     /* Free memory from old unoptimized obstack */
-    xfree (graveyard_obst);
+    obstack_free(graveyard_obst, 0);  /* First empty the obstack ... */
+    xfree (graveyard_obst);           /* ... then free it.           */
   }
 
   current_ir_graph = rem;

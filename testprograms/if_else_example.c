@@ -6,10 +6,10 @@
 ** testprogram.
 */
 
-#include <stdio.h>
+# include <stdio.h>
 
-# include "irdump.h"
 # include "firm.h"
+# include "irdump.h"
 
 /*
  * das leere FIRM Programm
@@ -49,13 +49,12 @@ int main(int argc, char **argv)
    * Therefore we define a class "IF_ELSE_EXAMPLE" with a method main as an
    * entity.
    */
-#define CLASSNAME "IF_ELSE_EXAMPLE"
 #define ENTITYNAME "main"
 
-  owner = new_type_class (id_from_str (CLASSNAME, strlen(CLASSNAME)));
+  owner = get_glob_type();
   method = new_type_method (id_from_str("main", 4), 0, 2);
-  ent = new_entity ((type *)owner, id_from_str (ENTITYNAME, strlen(ENTITYNAME)), (type *)method);
-
+  ent = new_entity ((type *)owner, id_from_str (ENTITYNAME,
+		    strlen(ENTITYNAME)), (type *)method);
 
   /* Generates the basic graph for the method represented by entity ent, that
    * is, generates start and end blocks and nodes and a first, initial block.
@@ -103,28 +102,33 @@ int main(int argc, char **argv)
   add_in_edge (b, x_then);
   add_in_edge (b, x_else);
 
-
   /* Generate the return node into current region. */
   {
     ir_node *in[2]; /* this is the array containing the return parameters */
     in[0] = get_value(0, mode_i);
     in[1] = get_value(1, mode_i);
     x = new_Return (get_store(), 2, in);
+  DDMSG;
   }
-  /* Now generate all instructions for this block and all its predecessor blocks
-   * so we can mature it. */
+  /* Now generate all instructions for this block and all its predecessor
+     blocks so we can mature it. */
   mature_block (irg->current_block);
 
-  /* This adds the in edge of the end block which originates at the return statement.
-   * The return node passes controlflow to the end block.  */
+  DDMSG;
+  /* This adds the in edge of the end block which originates at the
+     return statement.  The return node passes control flow to the
+     end block.  */
   add_in_edge (irg->end_block, x);
   /* Now we can mature the end block as all it's predecessors are known. */
   mature_block (irg->end_block);
 
+  printf("\nDone building the graph.  Dumping it.\n");
+
   /* verify the graph */
   irg_vrfy(irg);
 
-  printf("\nDone building the graph.  Dumping it.\n");
+  dead_node_elimination(irg);
+
   dump_ir_block_graph (irg);
 
   printf("use xvcg to view this graph:\n");

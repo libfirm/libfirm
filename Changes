@@ -1,3 +1,11 @@
+  15.8.2000 Goetz
+  looking at bug in dead_node_elimination.
+  Following fixes:
+  irnode:  all get_..._arr functions changed
+  ircons:  new_r_Block: set matured flag.
+  ircons:  new_r_SymConst: needs mode_p for linkage_ptr_info.
+  adapted call_str_example to new concepts.
+
   2.8.2000 Goetz
   Implemented simpler Phi construction algorithm that constructs
   correct code for three_cfpred_example in ircons.  This algorithm

@@ -127,9 +127,9 @@ int main(int argc, char **argv)
   irg_vrfy(irg);
 
   printf("\nDone building the graph.\n");
-  set_opt_constant_folding (0);
-  set_optimize(0);
-  set_opt_cse(0);
+  set_opt_constant_folding (1);
+  set_optimize(1);
+  set_opt_cse(1);
   local_optimize_graph (irg);
   dead_node_elimination (irg);
   printf("\nDone local optimization.\n");
