@@ -265,13 +265,25 @@ irn_vrfy (ir_node *n)
     };
     assert ( mymode == mode_T );   /* result T */
     /* Compare arguments of node with those of type */
-      mt = get_Call_type(n);
-      assert(get_Call_n_params(n) == get_method_n_params(mt) &&
-	     "Number of args for Call doesn't match number of args in type.");
-      for (i = 0; i < get_Call_n_params(n); i++)
-	assert((get_irn_mode(get_Call_param(n, i))
-		== get_type_mode(get_method_param_type(mt, i))) &&
-	       "Mode of arg for Call doesn't match mode of arg type.");
+    mt = get_Call_type(n);
+
+    if(get_method_variadicity(mt) == variadic)
+      {
+	assert(get_Call_n_params(n) >= get_method_n_params(mt) &&
+	       "Number of args for Call doesn't match number of args in " \
+	       " variadic type.");
+      }
+    else
+      {
+	assert(get_Call_n_params(n) == get_method_n_params(mt) &&
+	       "Number of args for Call doesn't match number of args in " \
+	       "non variadic type.");
+      }
+
+    for (i = 0; i < get_method_n_params(mt); i++)
+      assert((get_irn_mode(get_Call_param(n, i))
+	      == get_type_mode(get_method_param_type(mt, i))) &&
+	     "Mode of arg for Call doesn't match mode of arg type.");
     break;
   case iro_Add:
     op1mode = get_irn_mode(in[1]);
