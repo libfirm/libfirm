@@ -37,12 +37,15 @@ xmalloc(size_t size) {
   void *res = malloc (size);
 
   if (!res) xnomem();
-
-  memset(res, 0x00, size);
-
   return res;
 }
 
+void *xcalloc(size_t num, size_t size) {
+  void res = calloc(num, size);
+
+  if (!res) xnomem();
+  return res;
+}
 
 void *
 xrealloc(void *ptr, size_t size) {
@@ -50,7 +53,6 @@ xrealloc(void *ptr, size_t size) {
   void *res = ptr ? realloc (ptr, size) : malloc (size);
 
   if (!res) xnomem ();
-
   return res;
 }
 

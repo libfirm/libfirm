@@ -19,6 +19,7 @@
 /* xmalloc() & friends. */
 
 void *xmalloc(size_t size);
+void *xcalloc(size_t num, size_t size);
 void *xrealloc(void *ptr, size_t size);
 char *xstrdup(const char *str);
 void xnomem(void);
