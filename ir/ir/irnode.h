@@ -87,8 +87,7 @@ typedef struct ir_node ir_node;
 #endif
 
 #ifdef __cplusplus
-	extern "C" {
-
+extern "C" {
 #endif
 
 /**
@@ -223,9 +222,13 @@ new_ir_node (dbg_info *db,
  *
  */
 
-/** This works for all except Block.  To express the difference to
- * access routines that work for all nodes we use infix "nodes" and do not
- * name this function get_irn_block. */
+/** Return the block the node belongs to.
+ *
+ * This works for all except Block.  It can return Blocks or the Bad node.
+ *
+ * To express the difference to access routines that work for all
+ * nodes we use infix "nodes" and do not name this function
+ * get_irn_block. */
 ir_node  *get_nodes_block (ir_node *node);
 void      set_nodes_block (ir_node *node, ir_node *block);
 
@@ -429,6 +432,12 @@ void     set_SymConst_entity (ir_node *node, entity *ent);
 union symconst_symbol get_SymConst_symbol (ir_node *node);
 void                  set_SymConst_symbol (ir_node *node,
 					   union symconst_symbol sym);
+
+/** Access the type of the value represented by the SymConst.
+ *
+ *  Example: primitive type int for SymConst size. */
+type *get_SymConst_value_type (ir_node *node);
+void  set_SymConst_value_type (ir_node *node, type *tp);
 
 ir_node *get_Sel_mem (ir_node *node);
 void     set_Sel_mem (ir_node *node, ir_node *mem);
@@ -756,7 +765,7 @@ ir_node *get_Filter_cg_pred(ir_node *node, int pos);
 
 /** Return true if parameter is a memory operation.
  *
- *  A memory operation is an operation that directly changes the
+ *  A memory operation is an operation that changes the
  *  memory.  I.e., a Load or a Store operation.
  */
 int is_memop(ir_node *node);

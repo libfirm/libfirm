@@ -870,6 +870,10 @@ set_Const_type (ir_node *node, type *tp) {
     assert (get_type_mode(tp) == get_irn_mode(node));
   }
 
+  if ((get_irn_node_nr(node) == 259216) && (tp == unknown_type))
+    assert(0);
+
+
   node->attr.con.tp = tp;
 }
 
@@ -930,7 +934,6 @@ void     set_SymConst_entity (ir_node *node, entity *ent) {
   node->attr.i.sym.entity_p  = ent;
 }
 
-
 union symconst_symbol
 get_SymConst_symbol (ir_node *node) {
   assert (node->op == op_SymConst);
@@ -942,6 +945,18 @@ set_SymConst_symbol (ir_node *node, union symconst_symbol sym) {
   assert (node->op == op_SymConst);
   //memcpy (&(node->attr.i.sym), sym, sizeof(type_or_id));
   node->attr.i.sym = sym;
+}
+
+type *
+get_SymConst_value_type (ir_node *node) {
+  assert (node->op == op_SymConst);
+  return node->attr.i.tp = skip_tid(node->attr.i.tp);
+}
+
+void
+set_SymConst_value_type (ir_node *node, type *tp) {
+  assert (node->op == op_SymConst);
+  node->attr.i.tp = tp;
 }
 
 ir_node *
