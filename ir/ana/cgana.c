@@ -222,7 +222,7 @@ static entity ** get_impl_methods(entity * method) {
  */
 static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
 
-  /* SymConst(name)-Operation durch SymConst(ent)-Operation ersetzen. */
+  /* replace SymConst(name)-operations by SymConst(ent) */
   if (get_irn_op(node) == op_SymConst) {
     if (get_SymConst_kind(node) == symconst_addr_name) {
       pmap_entry * entry = pmap_find(ldname_map, (void *) get_SymConst_name(node));
@@ -315,11 +315,12 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
 
 
 /** Datenstruktur initialisieren. Zusätzlich werden alle
- *  SymConst-Operationen, die auf interne Methoden verweisen, durch
- *  Const-Operationen ersetzt. */
+ *  SymConst(name)-Operationen, die auf interne Methoden verweisen, durch
+ *  SymConst(entity)-Operationen ersetzt. */
 static void sel_methods_init(void) {
   int i;
-  pmap * ldname_map = pmap_create();   /* Map entitiy names to entities: to replace SymConst by Const(ent). */
+  pmap * ldname_map = pmap_create();   /* Map entitiy names to entities: to replace SymConst(name) by SymConst(ent). */
+
   assert(entities == NULL);
   entities = eset_create();
   for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
@@ -766,8 +767,7 @@ static entity ** get_free_methods(void)
 }
 
 void cgana(int *length, entity ***free_methods) {
-  entity ** free_meths;
-  int i;
+  entity ** free_meths, **p;
 
   sel_methods_init();
   free_meths = get_free_methods();
@@ -776,9 +776,12 @@ void cgana(int *length, entity ***free_methods) {
 
   /* Convert the flexible array to an array that can be handled
      by standard C. */
-  *length = ARR_LEN(free_meths);
-  *free_methods = (entity **)malloc(sizeof(entity *) * (*length));
-  for (i = 0; i < (*length); i++) (*free_methods)[i] = free_meths[i];
+  p = (entity **)malloc(sizeof(*p) * ARR_LEN(free_meths));
+  memcpy(p, free_meths, ARR_LEN(free_meths) * sizeof(*p));
+
+  *length       = ARR_LEN(free_meths);
+  *free_methods = p;
+
   DEL_ARR_F(free_meths);
 }
 
