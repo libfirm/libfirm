@@ -34,6 +34,35 @@
   concerned with the now resolved cyclic dependency.
   Fixed some bugs in irgopt so that the compilation goes through.
 
+  29.6.2000 Chris
+  Changed the irnode attribut 'visit' into 'visited'.
+  Added some access functions, like get/set_irn_visit etc.
+
+  28.6.2000 Chris
+  Renamed some access funtion in irgraph.*.
+  Deleted two global flags (ir_visited and block_visited) from irgraph.*.
+  Added two attributes to the irgraph struct. The visited flags belongs
+  to a ir graph, not to a whole program.
+
+  26.6.2000 Chris
+  A new optimization has been finished. The dead-node-elimination copies
+  the existing ir graph from one opstack to another. While walking the
+  graph, only the reachable nodes will be copied, so the "dead-nodes"
+  (unreachable in the controlflow) are removed.
+
+  19.6.2000 Chris
+  Solved some problems in the 'copy_node' function. The in array was not
+  as easy as it seamed.
+
+  16.6.2000 Chris
+  Wrote a new 'post' funtion, for future use in 'dead-node-elimination'
+  optimization, which is needed in the paramter list of 'irg_walk'.
+
+  14.6.2000 Chris
+  Moved 'optimze_in_place_wrapper' from iropt.* tothe new files irgopt.*.
+  New functions 'local_optimze_graph' and 'dead_node_elimination' are added,
+  but not finished.
+
   31.5.2000 Chris
   Removed some files from the archive, after dependencies and usage are
   checked:
