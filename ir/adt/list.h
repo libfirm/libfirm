@@ -6,15 +6,7 @@
 #ifndef _FIRM_LIST_H
 #define _FIRM_LIST_H
 
-#include "config.h"
-
-/*
- * These are non-NULL pointers that will result in page faults
- * under normal circumstances, used to verify that nobody uses
- * non-initialized list entries.
- */
-#define LIST_POISON1  ((void *) 0x00100100)
-#define LIST_POISON2  ((void *) 0x00200200)
+#include "firm_config.h"
 
 /*
  * Simple doubly linked list implementation.
@@ -109,8 +101,8 @@ static INLINE void __list_del(struct list_head * prev, struct list_head * next)
 static INLINE void list_del(struct list_head *entry)
 {
 	__list_del(entry->prev, entry->next);
-	entry->next = LIST_POISON1;
-	entry->prev = LIST_POISON2;
+	entry->next = NULL;
+	entry->prev = NULL;
 }
 
 
