@@ -700,9 +700,9 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
 
   fprintf (F, " info1: \"");
   if (opt_dump_pointer_values_to_info)
-    fprintf (F, "addr:    %p \n", (void *)n);
+    fprintf (F, "addr:    %p\n", (void *)n);
   fprintf (F, "mode:    %s\n", get_mode_name(get_irn_mode(n)));
-  fprintf (F, "visited: %ld \n", get_irn_visited(n));
+  fprintf (F, "visited: %ld\n", get_irn_visited(n));
   irg = get_irn_irg(n);
   if (irg != get_const_code_irg())
     fprintf (F, "irg:     %s\n", get_ent_dump_name(get_irg_entity(irg)));
@@ -753,9 +753,9 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
   switch (get_irn_opcode(n)) {
   case iro_Start: {
     type *tp = get_entity_type(get_irg_entity(get_irn_irg(n)));
-    fprintf(F, "start of method of type %s \n", get_type_name_ex(tp, &bad));
+    fprintf(F, "start of method of type %s\n", get_type_name_ex(tp, &bad));
     for (i = 0; i < get_method_n_params(tp); ++i)
-      fprintf(F, "  param %d type: %s \n", i, get_type_name_ex(get_method_param_type(tp, i), &bad));
+      fprintf(F, "  param %d type: %s n", i, get_type_name_ex(get_method_param_type(tp, i), &bad));
     if ((get_irp_ip_view_state() == ip_view_valid) && !get_interprocedural_view()) {
       ir_node *sbl = get_nodes_block(n);
       int i, n_cfgpreds = get_Block_cg_n_cfgpreds(sbl);
@@ -768,10 +768,10 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
     }
   } break;
   case iro_Alloc: {
-    fprintf(F, "allocating entity of type %s \n", get_type_name_ex(get_Alloc_type(n), &bad));
+    fprintf(F, "allocating entity of type %s\n", get_type_name_ex(get_Alloc_type(n), &bad));
   } break;
   case iro_Free: {
-    fprintf(F, "freeing entity of type %s \n", get_type_name_ex(get_Free_type(n), &bad));
+    fprintf(F, "freeing entity of type %s\n", get_type_name_ex(get_Free_type(n), &bad));
   } break;
   case iro_Sel: {
     entity *ent = get_Sel_entity(n);
@@ -787,15 +787,15 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
   } break;
   case iro_Call: {
     type *tp = get_Call_type(n);
-    fprintf(F, "calling method of type %s \n", get_type_name_ex(tp, &bad));
+    fprintf(F, "calling method of type %s\n", get_type_name_ex(tp, &bad));
     if(get_unknown_type() != tp) {
       for (i = 0; i < get_method_n_params(tp); ++i)
-	fprintf(F, "  param %d type: %s \n", i, get_type_name_ex(get_method_param_type(tp, i), &bad));
+	fprintf(F, "  param %d type: %s\n", i, get_type_name_ex(get_method_param_type(tp, i), &bad));
       for (i = 0; i < get_method_n_ress(tp); ++i)
-	fprintf(F, "  resul %d type: %s \n", i, get_type_name_ex(get_method_res_type(tp, i), &bad));
+	fprintf(F, "  resul %d type: %s\n", i, get_type_name_ex(get_method_res_type(tp, i), &bad));
     }
     if (Call_has_callees(n)) {
-      fprintf(F, "possible callees: \n");
+      fprintf(F, "possible callees:\n");
       for (i = 0; i < get_Call_n_callees(n); i++) {
 	fprintf(F, "  %d: %s\n", i, get_ent_dump_name(get_Call_callee(n, i)));
       }
@@ -814,33 +814,33 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
   case iro_Return: {
     if (!get_interprocedural_view()) {
       type *tp = get_entity_type(get_irg_entity(get_irn_irg(n)));
-      fprintf(F, "return in method of type %s \n", get_type_name_ex(tp, &bad));
+      fprintf(F, "return in method of type %s\n", get_type_name_ex(tp, &bad));
       for (i = 0; i < get_method_n_ress(tp); ++i)
-        fprintf(F, "  res %d type: %s \n", i, get_type_name_ex(get_method_res_type(tp, i), &bad));
+        fprintf(F, "  res %d type: %s\n", i, get_type_name_ex(get_method_res_type(tp, i), &bad));
     }
   } break;
   case iro_Const: {
     type *tp = get_Const_type(n);
     assert(tp != none_type);
-    fprintf(F, "Const of type %s \n", get_type_name_ex(get_Const_type(n), &bad));
+    fprintf(F, "Const of type %s\n", get_type_name_ex(get_Const_type(n), &bad));
   } break;
   case iro_SymConst: {
     switch(get_SymConst_kind(n)) {
     case symconst_addr_name:
-      fprintf(F, "kind addr_name\n");
+      fprintf(F, "kind: addr_name\n");
       break;
     case symconst_addr_ent:
-      fprintf(F, "kind addr_ent\n");
+      fprintf(F, "kind: addr_ent\n");
       dump_entity_to_file(F, get_SymConst_entity(n), dump_verbosity_onlynames);
       break;
     case symconst_type_tag:
-      fprintf(F, "kind type_tag\n");
+      fprintf(F, "kind: type_tag\n");
       break;
     case symconst_size:
-      fprintf(F, "kind size\n");
+      fprintf(F, "kind: size\n");
       break;
     }
-    fprintf(F, "SymConst of type %s \n", get_type_name_ex(get_SymConst_value_type(n), &bad));
+    fprintf(F, "SymConst of type: %s\n", get_type_name_ex(get_SymConst_value_type(n), &bad));
   } break;
   case iro_Filter: {
     int i;
@@ -872,7 +872,7 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
   if (get_irg_typeinfo_state(get_irn_irg(n)) == irg_typeinfo_consistent  ||
       get_irg_typeinfo_state(get_irn_irg(n)) == irg_typeinfo_inconsistent  )
     if (get_irn_typeinfo_type(n) != none_type)
-      fprintf (F, "\nAnalysed type: %s", get_type_name_ex(get_irn_typeinfo_type(n), &bad));
+      fprintf (F, "Analysed type: %s\n", get_type_name_ex(get_irn_typeinfo_type(n), &bad));
 
   fprintf (F, "\"");
 
@@ -1923,8 +1923,7 @@ void vcg_close (FILE *F) {
 /* Dump ir graphs, differnt formats and additional information.         */
 /************************************************************************/
 
-/** Routine to dump a graph, blocks as conventional nodes.
- */
+/** Routine to dump a graph, blocks as conventional nodes.  */
 void
 dump_ir_graph (ir_graph *irg, const char *suffix )
 {
@@ -1983,8 +1982,7 @@ dump_ir_block_graph (ir_graph *irg, const char *suffix)
   vcg_close(f);
 }
 
-/** dumps a graph with type information
- */
+/** dumps a graph with type information */
 void
 dump_ir_graph_w_types (ir_graph *irg, const char *suffix)
 {
