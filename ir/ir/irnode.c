@@ -163,7 +163,6 @@ ir_node_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
   return printed;
 }
 
-
 /** getting some parameters from ir_nodes **/
 
 /* returns the number of predecessors without the block predecessor. */

@@ -66,9 +66,11 @@ int edge_label = 1;
 inline void
 dump_node_opcode (ir_node *n)
 {
+
   /* Const */
   if (n->op->code == iro_Const) {
     xfprintf (F, "%v", n->attr.con);
+
   /* SymConst */
   } else if (n->op->code == iro_SymConst) {
     if (get_SymConst_kind(n) == linkage_ptr_info) {
