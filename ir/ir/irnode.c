@@ -2248,6 +2248,7 @@ ir_graph *get_ip_cfop_irg(ir_node *n) {
   default:
     assert(is_ip_cfop(n));
   }
+  return NULL; /* should never be reached */
 }
 
 /* Returns true if the operation can change the control flow because
