@@ -116,9 +116,9 @@ struct type {
   ident *name;
   type_state state;        /**< Represents the types state: layout undefined or
 			      fixed. */
-  int size;                /**< Size of an entity of this type.  This is determined
+  int size;                /**< Size of an entity of this type. This is determined
 			      when fixing the layout of this class.  Size must be
-			      given in bytes. */
+			      given in bits. */
   ir_mode *mode;           /**< The mode for atomic types */
   unsigned long visit;     /**< visited counter for walks of the type information */
   void *link;              /**< holds temporary data - like in irnode_t.h */
@@ -240,9 +240,19 @@ __get_type_nr(type *tp) {
 }
 
 static INLINE int
-__get_type_size(type *tp) {
+__get_type_size_bits(type *tp) {
   assert(tp && tp->kind == k_type);
   return tp->size;
+}
+
+static INLINE int
+__get_type_size_bytes(type *tp) {
+  int size = __get_type_size_bits(tp);
+  if ((size & 7) != 0) {
+    assert(0 && "cannot take byte size of this type");
+    return -1;
+  }
+  return size >> 3;
 }
 
 static INLINE type_state

@@ -177,15 +177,26 @@ ir_mode*    get_type_mode(type *tp);
  */
 void        set_type_mode(type *tp, ir_mode* m);
 
-/** Returns the size of a type. */
-int         get_type_size(type *tp);
+/** Returns the size of a type in bytes, retuns -1 if the size is NOT
+ *  a byte size, ie not dividable by 8. */
+int         get_type_size_bytes(type *tp);
 
-/** Sets the size of a type.
+/** Returns the size of a type in bits. */
+int         get_type_size_bits(type *tp);
+
+/** Sets the size of a type in bytes.
  *
  * For primitive, enumeration, pointer and method types the size
  * is always fixed. This call is legal but has no effect.
  */
-void        set_type_size(type *tp, int size);
+void        set_type_size_bytes(type *tp, int size);
+
+/** Sets the size of a type in bits.
+ *
+ * For primitive, enumeration, pointer and method types the size
+ * is always fixed. This call is legal but has no effect.
+ */
+void        set_type_size_bits(type *tp, int size);
 
 
 unsigned long get_type_visited(type *tp);

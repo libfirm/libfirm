@@ -76,11 +76,11 @@ void init_type(void) {
 
   /* construct none and unknown type. */
   none_type    = new_type(tpop_none,    mode_BAD, new_id_from_str("type_none"));
-  set_type_size  (none_type, 0);
+  set_type_size_bits(none_type, 0);
   set_type_state (none_type, layout_fixed);
   remove_irp_type(none_type);
   unknown_type = new_type(tpop_unknown, mode_ANY, new_id_from_str("type_unknown"));
-  set_type_size  (unknown_type, 0);
+  set_type_size_bits(unknown_type, 0);
   set_type_state (unknown_type, layout_fixed);
   remove_irp_type(unknown_type);
 }
@@ -100,7 +100,7 @@ new_type(tp_op *type_op, ir_mode *mode, ident* name) {
   assert(type_op != type_id);
   assert(!id_contains_char(name, ' ') && "type name should not contain spaces");
 
-  node_size = offsetof (type, attr) +  type_op->attr_size;
+  node_size = offsetof(type, attr) +  type_op->attr_size;
   res = (type *) xmalloc (node_size);
   add_irp_type(res);   /* Remember the new type global. */
 
@@ -204,12 +204,15 @@ void        set_type_mode(type *tp, ir_mode* m) {
 	 ((tp->type_op != type_pointer)     || mode_is_reference(m))   );
 	 /* Modes of pointers must be references. */
 
-  if ((tp->type_op == type_primitive)   ||
-      (tp->type_op == type_enumeration) ||
-      (tp->type_op == type_pointer)       ) {
-    /* For pointer, primitive and enumeration size depends on the mode. */
-    assert((get_mode_size_bytes(m) != -1) && "unorthodox modes not implemented");
-    tp->size = get_mode_size_bytes(m);
+  if (tp->type_op == type_primitive) {
+    /* For primitive size depends on the mode. */
+    tp->size = get_mode_size_bits(m);
+    tp->mode = m;
+  }
+  if ((tp->type_op == type_enumeration) || (tp->type_op == type_pointer)) {
+    /* For pointer and enumeration size depends on the mode, but only byte size allowed. */
+    assert((get_mode_size_bits(m) & 7) == 0 && "unorthodox modes not implemented");
+    tp->size = get_mode_size_bits(m);
     tp->mode = m;
   }
 }
@@ -232,18 +235,33 @@ const char* get_type_name(type *tp) {
   return (get_id_str(tp->name));
 }
 
-int (get_type_size)(type *tp) {
-  return __get_type_size(tp);
+int (get_type_size_bytes)(type *tp) {
+  return __get_type_size_bytes(tp);
+}
+
+int (get_type_size_bits)(type *tp) {
+  return __get_type_size_bits(tp);
 }
 
 void
-set_type_size(type *tp, int size) {
+set_type_size_bits(type *tp, int size) {
   assert(tp && tp->kind == k_type);
   /* For pointer enumeration and primitive size depends on the mode.
      Methods don't have a size. */
   if ((tp->type_op != type_pointer) && (tp->type_op != type_primitive) &&
-      (tp->type_op != type_enumeration) && (tp->type_op != type_method))
-    tp->size = size;
+      (tp->type_op != type_enumeration) && (tp->type_op != type_method)) {
+    if (tp->type_op == type_primitive)
+      tp->size = size;
+    else {
+      tp->size = (size + 7) & ~7;
+      assert(tp->size == size && "setting a bit size is NOT allowed for this type");
+    }
+  }
+}
+
+void
+set_type_size_bytes(type *tp, int size) {
+  set_type_size_bits(tp, 8*size);
 }
 
 type_state (get_type_state)(type *tp) {
@@ -264,12 +282,12 @@ set_type_state(type *tp, type_state state) {
     switch (get_type_tpop_code(tp)) {
     case tpo_class:
       {
-	assert(get_type_size(tp) > -1);
+	assert(get_type_size_bits(tp) > -1);
 	if (tp != get_glob_type())
 	  for (i = 0; i < get_class_n_members(tp); i++) {
-	    if (get_entity_offset(get_class_member(tp, i)) <= -1)
+	    if (get_entity_offset_bits(get_class_member(tp, i)) <= -1)
 	      { DDMT(tp); DDME(get_class_member(tp, i)); }
-	    assert(get_entity_offset(get_class_member(tp, i)) > -1);
+	    assert(get_entity_offset_bits(get_class_member(tp, i)) > -1);
             /* TR ??
 	    assert(is_method_type(get_entity_type(get_class_member(tp, i))) ||
 		   (get_entity_allocation(get_class_member(tp, i)) == allocation_automatic));
@@ -278,9 +296,9 @@ set_type_state(type *tp, type_state state) {
       } break;
     case tpo_struct:
       {
-	assert(get_type_size(tp) > -1);
+	assert(get_type_size_bits(tp) > -1);
 	for (i = 0; i < get_struct_n_members(tp); i++) {
-	  assert(get_entity_offset(get_struct_member(tp, i)) > -1);
+	  assert(get_entity_offset_bits(get_struct_member(tp, i)) > -1);
 	  assert((get_entity_allocation(get_struct_member(tp, i)) == allocation_automatic));
 	}
       } break;
@@ -343,7 +361,7 @@ bool equal_type(type *typ1, type *typ2) {
       (get_type_state(typ1) != get_type_state(typ2)))
     return false;
   if ((get_type_state(typ1) == layout_fixed) &&
-      (get_type_size(typ1) != get_type_size(typ2)))
+      (get_type_size_bits(typ1) != get_type_size_bits(typ2)))
     return false;
 
   switch(get_type_tpop_code(typ1)) {
@@ -560,7 +578,7 @@ bool smaller_type (type *st, type *lt) {
 	  (get_type_state(let) != layout_fixed))
 	return false;
       if (!smaller_type(set, let) ||
-	  get_type_size(set) != get_type_size(let))
+	  get_type_size_bits(set) != get_type_size_bits(let))
 	return false;
     }
     for(i = 0; i < get_array_n_dimensions(st); i++) {
@@ -1458,7 +1476,7 @@ type *new_type_pointer_mode (ident *name, type *points_to, ir_mode *ptr_mode) {
   res = new_type(type_pointer, ptr_mode, name);
   res->attr.pa.points_to = points_to;
   assert((get_mode_size_bytes(res->mode) != -1) && "unorthodox modes not implemented");
-  res->size = get_mode_size_bytes(res->mode);
+  res->size = get_mode_size_bits(res->mode);
   res->state = layout_fixed;
   return res;
 }
@@ -1512,8 +1530,7 @@ type *new_type_primitive (ident *name, ir_mode *mode) {
   type *res;
   /* @@@ assert( mode_is_data(mode) && (!mode_is_reference(mode))); */
   res = new_type(type_primitive, mode, name);
-  assert((get_mode_size_bytes(mode) != -1) && "unorthodox modes not implemented");
-  res->size = get_mode_size_bytes(mode);
+  res->size  = get_mode_size_bits(mode);
   res->state = layout_fixed;
   return res;
 }
@@ -1606,8 +1623,8 @@ void dump_type (type *tp) {
     printf("\n  members: ");
     for (i = 0; i < get_class_n_members(tp); ++i) {
       entity *mem = get_class_member(tp, i);
-      printf("\n    (%2d) %s:\t %s",
-	     get_entity_offset(mem), get_type_name(get_entity_type(mem)), get_entity_name(mem));
+      printf("\n    (%3d) %s:\t %s",
+	     get_entity_offset_bits(mem), get_type_name(get_entity_type(mem)), get_entity_name(mem));
     }
     printf("\n  supertypes: ");
     for (i = 0; i < get_class_n_supertypes(tp); ++i) {
@@ -1628,8 +1645,8 @@ void dump_type (type *tp) {
     printf("\n  members: ");
     for (i = 0; i < get_compound_n_members(tp); ++i) {
       entity *mem = get_compound_member(tp, i);
-      printf("\n    (%2d) %s:\t %s",
-	     get_entity_offset(mem), get_type_name(get_entity_type(mem)), get_entity_name(mem));
+      printf("\n    (%3d) %s:\t %s",
+	     get_entity_offset_bits(mem), get_type_name(get_entity_type(mem)), get_entity_name(mem));
     }
     break;
 
