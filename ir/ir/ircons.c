@@ -590,7 +590,8 @@ new_rd_Load (dbg_info* db, ir_graph *irg, ir_node *block,
   in[0] = store;
   in[1] = adr;
   res = new_ir_node(db, irg, block, op_Load, mode_T, 2, in);
-  res->attr.load.load_mode = mode;
+  res->attr.load.load_mode  = mode;
+  res->attr.load.volatility = volatility_non_volatile;
   res = optimize_node(res);
   IRN_VRFY_IRG(res, irg);
   return res;
@@ -607,6 +608,7 @@ new_rd_Store (dbg_info* db, ir_graph *irg, ir_node *block,
   in[1] = adr;
   in[2] = val;
   res = new_ir_node(db, irg, block, op_Store, mode_T, 3, in);
+  res->attr.store.volatility = volatility_non_volatile;
   res = optimize_node(res);
   IRN_VRFY_IRG(res, irg);
   return res;
