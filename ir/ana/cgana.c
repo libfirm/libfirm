@@ -37,6 +37,8 @@
 
 #include "dbginfo_t.h"
 
+#include "irdump.h"
+
 /* Eindeutige Adresse zur Markierung von besuchten Knoten und zur
  * Darstellung der unbekannten Methode. */
 static void * MARK = &MARK;
@@ -460,7 +462,10 @@ static void callee_ana_node(ir_node * node, eset * methods) {
     entity * ent = tarval_to_entity(get_Const_tarval(node));
     assert(ent && is_method_type(get_entity_type(ent)));
     if (get_entity_visibility(ent) != visibility_external_allocated) {
-      assert(get_entity_irg(ent));
+      if (!get_entity_irg(ent)) {
+	dump_entity(ent);
+	assert(get_entity_irg(ent));
+      }
       eset_insert(methods, ent);
     } else {
       eset_insert(methods, MARK); /* free method -> unknown */
@@ -763,13 +768,34 @@ void cgana(int *length, entity ***free_methods) {
   DEL_ARR_F(free_meths);
 }
 
+
+
+static void destruct_walker(ir_node * node, void * env) {
+  if (get_irn_op(node) == op_Call) {
+    remove_Call_callee_arr(node);
+  }
+}
+
+void free_callee_info(ir_graph *irg) {
+  irg_walk_graph(irg, destruct_walker, NULL, NULL);
+  set_irg_callee_info_state(irg, irg_callee_info_none);
+}
+
+
 /* Optimize the address expressions passed to call nodes.
- * Alle SymConst-Operationen, die auf interne Methoden verweisen,
- * werden durch Const-Operationen ersetzt.
- * Sel Knoten deren entitaeten nicht ueberschrieben werden, werden
- * durch Const ersetzt.
- * Sel Knoten, fuer die keine Implementierung existiert, werden
- * durch Bad ersetzt. */
+ *
+ * This optimization performs the following transformations for
+ * all ir graphs:
+ * - All SymConst operations that refer to intern methods are replaced
+ *   by Const operations refering to the corresponding entity.
+ * - Sel nodes, that select entities that are not overwritten are
+ *   replaced by Const nodes refering to the selected entity.
+ * - Sel nodes, for witch no method exists at all are replaced by Bad
+ *   nodes.
+ * - Sel nodes with a pointer input that is an Alloc node are replaced
+ *   by Const nodes refering to the entity that implements the method in
+ *   the type given by the Alloc node.
+ */
 void opt_call_addrs(void) {
   sel_methods_init();
   sel_methods_dispose();

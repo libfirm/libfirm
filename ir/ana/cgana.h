@@ -38,11 +38,17 @@
 
 /** Analyses a rough estimation of the possible call graph.
  *
- *  Bestimmt fuer jede Call-Operation die Menge der aufrufbaren Methode
- *  und speichert das Ergebnis in der Call-Operation. (siehe
- *  "set_Call_callee"). Die Methode gibt die Menge der
- *  "freien" Methoden zurueck, die vom Aufrufer wieder freigegeben
- *  werden muss (free).
+ *  Determines for each Call node the set of possibly called methods.
+ *  Stores the result in the field 'callees' of the Call node.  If the
+ *  address can not be analysed, e.g. because it is loaded from a
+ *  variable, the array contains NULL. @@@ the array should contain a
+ *  special entity 'unknown'. (See "set_Call_callee"). cgana returns
+ *  the set of 'free' methods, i.e., the methods that can be called
+ *  from external or via function pointers.  This datastructure must
+ *  be freed with 'free()' by the caller of cgana.
+ *
+ *  cgana sets the callee_info_state of each graph to consistent.
+ *
  *  The algorithm implements roughly Static Class Hierarchy Analysis
  *  as described in "Optimization of Object-Oriented Programs Using
  *  Static Class Hierarchy Analysis" by Jeffrey Dean and David Grove
@@ -55,6 +61,12 @@
  *    - Replaces Sel-method by Const if the Method is never overwritten */
 /*  @@@ I assume this can not be called via JNI :-( -- how to obtain the array pointer? */
 void cgana(int *len, entity ***free_methods);
+
+/** Free callee information.
+ *
+ *  Sets callee_info_state of the graph passed to none.
+ */
+void free_callee_info(ir_graph *irg);
 
 /* Optimize the address expressions passed to call nodes.
  * Performs only the optimizations done by cgana. */
