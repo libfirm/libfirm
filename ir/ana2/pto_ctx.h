@@ -3,7 +3,7 @@
 /*
    Project:     libFIRM
    File name:   ir/ana/pto_ctx.h
-   Purpose:     ...
+   Purpose:     Manage context-sensitivity markers
    Author:      Florian
    Modified by:
    Created:     Sat Nov 13 19:35:27 CET 2004
@@ -53,6 +53,9 @@ void pto_ctx_allocs (graph_info_t*, int);
 
 /*
   $Log$
+  Revision 1.3  2005/01/14 13:37:55  liekweg
+  Insert purpose descr
+
   Revision 1.2  2004/11/20 21:21:35  liekweg
   Add pto_ctx_allocs
 

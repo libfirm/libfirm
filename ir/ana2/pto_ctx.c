@@ -3,7 +3,7 @@
 /*
    Project:     libFIRM
    File name:   ir/ana/pto_ctx.c
-   Purpose:     ...
+   Purpose:     Manage context-sensitivity markers
    Author:      Florian
    Modified by:
    Created:     Sat Nov 13 19:35:27 CET 2004
@@ -17,7 +17,7 @@
 # endif
 
 /*
- pto_ctx: ...
+ pto_ctx: Manage context-sensitivity markers
 */
 
 # include "pto_ctx.h"
@@ -85,6 +85,9 @@ ctx_info_t *set_curr_ctx (ctx_info_t *ctx)
 
 /*
   $Log$
+  Revision 1.5  2005/01/14 13:37:55  liekweg
+  Insert purpose descr
+
   Revision 1.4  2004/12/02 16:17:51  beck
   fixed config.h include
 
