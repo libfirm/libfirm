@@ -792,13 +792,25 @@ ir_node * get_array_upper_bound     (const type *array, int dimension);
 /** Works only if bound is Const node with tarval that can be converted to long. */
 long      get_array_upper_bound_int (const type *array, int dimension);
 
+/** Sets an array dimension to a specific order. */
 void set_array_order (type *array, int dimension, int order);
+
+/** Returns the order of an array dimension. */
 int  get_array_order (const type *array, int dimension);
 
+/** Find the array dimension that is placed at order ord. */
+int find_array_dimension(const type *array, int order);
+
+/** Sets the array element type. */
 void  set_array_element_type (type *array, type *tp);
+
+/** Gets the array element type. */
 type *get_array_element_type (type *array);
 
+/** Sets the array element entity. */
 void  set_array_element_entity (type *array, entity *ent);
+
+/** Get the array element entity. */
 entity *get_array_element_entity (const type *array);
 
 /** Returns true if a type is an array type. */

@@ -1338,8 +1338,7 @@ int (is_Union_type)(const type *uni) {
 
 
 /* create a new type array -- set dimension sizes independently */
-type *new_type_array         (ident *name, int n_dimensions,
-                  type *element_type) {
+type *new_type_array(ident *name, int n_dimensions, type *element_type) {
   type *res;
   int i;
   ir_graph *rem = current_ir_graph;
@@ -1353,9 +1352,9 @@ type *new_type_array         (ident *name, int n_dimensions,
 
   current_ir_graph = get_const_code_irg();
   for (i = 0; i < n_dimensions; i++) {
-    res->attr.aa.lower_bound[i]  = new_Unknown(mode_Iu);
-    res->attr.aa.upper_bound[i]  = new_Unknown(mode_Iu);
-    res->attr.aa.order[i] = i;
+    res->attr.aa.lower_bound[i] = new_Unknown(mode_Iu);
+    res->attr.aa.upper_bound[i] = new_Unknown(mode_Iu);
+    res->attr.aa.order[i]       = i;
   }
   current_ir_graph = rem;
 
@@ -1469,9 +1468,22 @@ void set_array_order (type *array, int dimension, int order) {
   assert(array && (array->type_op == type_array));
   array->attr.aa.order[dimension] = order;
 }
+
 int  get_array_order (const type *array, int dimension) {
   assert(array && (array->type_op == type_array));
   return array->attr.aa.order[dimension];
+}
+
+int find_array_dimension(const type *array, int order) {
+  int dim;
+
+  assert(array && (array->type_op == type_array));
+
+  for (dim = 0; dim < array->attr.aa.n_dimensions; ++dim) {
+    if (array->attr.aa.order[dim] == order)
+      return dim;
+  }
+  return -1;
 }
 
 void  set_array_element_type (type *array, type *tp) {
