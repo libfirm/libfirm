@@ -20,6 +20,8 @@
 #ifndef _IRPRINTF_H
 #define _IRPRINTF_H
 
+#include "firm_config.h"
+
 #include <stddef.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -132,4 +134,18 @@ void ir_vsnprintf(char *buf, size_t len, const char *fmt, va_list args);
  */
 void ir_obst_vprintf(struct obstack *obst, const char *fmt, va_list args);
 
-#endif
+#ifdef WITH_LIBCORE
+/* use libcore */
+#define ir_printf       lc_printf
+#define ir_fprintf      lc_fprintf
+#define ir_snprintf     lc_snprintf
+#define ir_vprintf      lc_vprintf
+#define ir_vfprintf     lc_vfprintf
+#define ir_vsnprintf    lc_vsnprintf
+#define ir_obst_vprintf lc_voprintf
+
+#include <libcore/xprintf.h>
+
+#endif /* WITH_LIBCORE */
+
+#endif /* _IRPRINTF_H */
