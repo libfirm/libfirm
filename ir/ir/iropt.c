@@ -1055,17 +1055,23 @@ static ir_node *transform_node_Mul(ir_node *n)
 static ir_node *transform_node_Div(ir_node *n)
 {
   tarval *tv = computed_value(n);
+  ir_node *value = n;
 
   /* BEWARE: it is NOT possible to optimize a/a to 1, as this may cause a exception */
 
-  if (tv != tarval_bad) {
+  if (tv != tarval_bad)
+    value = new_Const(get_tarval_mode(tv), tv);
+  else /* Try architecture dependand optimization */
+    value = arch_dep_replace_div_with_shifts(n);
+
+  if (value != n) {
     /* Turn Div into a tuple (mem, bad, value) */
     ir_node *mem = get_Div_mem(n);
 
     turn_into_tuple(n, 3);
     set_Tuple_pred(n, pn_Div_M, mem);
     set_Tuple_pred(n, pn_Div_X_except, new_Bad());
-    set_Tuple_pred(n, pn_Div_res, new_Const(get_tarval_mode(tv), tv));
+    set_Tuple_pred(n, pn_Div_res, value);
   }
   return n;
 }
@@ -1073,16 +1079,26 @@ static ir_node *transform_node_Div(ir_node *n)
 static ir_node *transform_node_Mod(ir_node *n)
 {
   tarval *tv = computed_value(n);
+  ir_node *value = n;
+  tarval *tb = value_of(get_Mod_right(n));
 
   /* BEWARE: it is NOT possible to optimize a%a to 0, as this may cause a exception */
 
-  if (tv != tarval_bad) {
+  if (tv != tarval_bad)
+    value = new_Const(get_tarval_mode(tv), tv);
+  else if (tb != tarval_bad && tb == get_mode_one(get_tarval_mode(tb))) {   /* x mod 1 == 0 */
+    ir_mode *mode = get_irn_mode(get_DivMod_left(n));
+    value = new_Const(mode, get_mode_null(mode));
+  }
+
+  if (value != n) {
     /* Turn Mod into a tuple (mem, bad, value) */
     ir_node *mem = get_Mod_mem(n);
+
     turn_into_tuple(n, 3);
     set_Tuple_pred(n, pn_Mod_M, mem);
     set_Tuple_pred(n, pn_Mod_X_except, new_Bad());
-    set_Tuple_pred(n, pn_Mod_res, new_Const(get_tarval_mode(tv), tv));
+    set_Tuple_pred(n, pn_Mod_res, value);
   }
   return n;
 }
@@ -1714,6 +1730,8 @@ identify (pset *value_table, ir_node *n)
 
   o = pset_find (value_table, n, ir_node_hash (n));
   if (!o) return n;
+
+  DBG_OPT_CSE(n, o);
 
   return o;
 }
