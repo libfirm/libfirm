@@ -153,12 +153,70 @@ Use xvcg to view these graphs:
 
 Creating an IR graph: IF_EXAMPLE...
 Done building the graph.  Dumping and optimizing it.
-Reduced 0 iteration variables in graph GlobalType.STRENGTH_RED_EXAMPLE_m1
-.Reduced 0 iteration variables in graph GlobalType.STRENGTH_RED_EXAMPLE_m2
-.Reduced 0 iteration variables in graph GlobalType.STRENGTH_RED_EXAMPLE_m3
-.Reduced 0 iteration variables in graph GlobalType.STRENGTH_RED_EXAMPLE_m4
-.Reduced 0 iteration variables in graph GlobalType.STRENGTH_RED_EXAMPLE_m5
-.
+The new Phi node is : reduce(l.321) PhiIs: 92 (0x811fe64)
+reducing operation is : reduce(l.322) MulIs: 64 (0x811d184)
+in graph : reduce(l.323) graph STRENGTH_RED_EXAMPLE_m1: 45 (0x811c7b8) in class GlobalType.
+
+Reducing operation is : reduce(l.428) AddP: 65 (0x811d1cc)
+in graph : reduce(l.429) graph STRENGTH_RED_EXAMPLE_m1: 45 (0x811c7b8) in class GlobalType.
+The new Phi node is : reduce(l.321) PhiIs: 92 (0x811fe64)
+reducing operation is : reduce(l.322) MulIs: 66 (0x811d214)
+in graph : reduce(l.323) graph STRENGTH_RED_EXAMPLE_m1: 45 (0x811c7b8) in class GlobalType.
+
+Reducing operation is : reduce(l.428) AddP: 67 (0x811d25c)
+in graph : reduce(l.429) graph STRENGTH_RED_EXAMPLE_m1: 45 (0x811c7b8) in class GlobalType.
+The new Phi node is : reduce(l.321) PhiIs: 119 (0x8120510)
+reducing operation is : reduce(l.322) MulIs: 106 (0x81201cc)
+in graph : reduce(l.323) graph STRENGTH_RED_EXAMPLE_m1: 45 (0x811c7b8) in class GlobalType.
+
+Reducing operation is : reduce(l.428) AddP: 107 (0x8120214)
+in graph : reduce(l.429) graph STRENGTH_RED_EXAMPLE_m1: 45 (0x811c7b8) in class GlobalType.
+
+ 3 made new_phis und  reduced 6 iteration variables in
+ graph GlobalType.STRENGTH_RED_EXAMPLE_m1.
+The new Phi node is : reduce(l.321) PhiIs: 191 (0x81220dc)
+reducing operation is : reduce(l.322) MulIs: 168 (0x8121ad4)
+in graph : reduce(l.323) graph STRENGTH_RED_EXAMPLE_m2: 148 (0x81210b0) in class GlobalType.
+The new Phi node is : reduce(l.321) PhiIs: 191 (0x81220dc)
+reducing operation is : reduce(l.322) MulIs: 167 (0x8121a8c)
+in graph : reduce(l.323) graph STRENGTH_RED_EXAMPLE_m2: 148 (0x81210b0) in class GlobalType.
+
+ 2 made new_phis und  reduced 3 iteration variables in
+ graph GlobalType.STRENGTH_RED_EXAMPLE_m2.
+The new Phi node is : reduce(l.321) PhiIs: 257 (0x8125994)
+reducing operation is : reduce(l.322) MulIs: 231 (0x81252b4)
+in graph : reduce(l.323) graph STRENGTH_RED_EXAMPLE_m3: 213 (0x8124920) in class GlobalType.
+
+ 1 made new_phis und  reduced 2 iteration variables in
+ graph GlobalType.STRENGTH_RED_EXAMPLE_m3.
+The new Phi node is : reduce(l.321) PhiIs: 324 (0x812a880)
+reducing operation is : reduce(l.322) MulIs: 616 (0x812ad14)
+in graph : reduce(l.323) graph STRENGTH_RED_EXAMPLE_m4: 279 (0x8128220) in class GlobalType.
+The new Phi node is : reduce(l.321) PhiIs: 324 (0x812a880)
+reducing operation is : reduce(l.322) MulIs: 610 (0x812abc4)
+in graph : reduce(l.323) graph STRENGTH_RED_EXAMPLE_m4: 279 (0x8128220) in class GlobalType.
+
+ 2 made new_phis und  reduced 4 iteration variables in
+ graph GlobalType.STRENGTH_RED_EXAMPLE_m4.
+
+Reducing operation is : reduce(l.392) MulIs: 644 (0x812e5f8)
+in graph : reduce(l.393) graph STRENGTH_RED_EXAMPLE_m5: 346 (0x812ba80) in class GlobalType.
+
+ 0 made new_phis und  reduced 2 iteration variables in
+ graph GlobalType.STRENGTH_RED_EXAMPLE_m5.
+
+Reducing operation is : reduce(l.392) MulIs: 669 (0x8131d38)
+in graph : reduce(l.393) graph STRENGTH_RED_EXAMPLE_m6: 412 (0x812f2f0) in class GlobalType.
+
+ 0 made new_phis und  reduced 2 iteration variables in
+ graph GlobalType.STRENGTH_RED_EXAMPLE_m6.
+The new Phi node is : reduce(l.321) PhiIs: 522 (0x8133c2c)
+reducing operation is : reduce(l.322) MulIs: 697 (0x81355d4)
+in graph : reduce(l.323) graph STRENGTH_RED_EXAMPLE_m7: 478 (0x8132bb8) in class GlobalType.
+
+ 1 made new_phis und  reduced 2 iteration variables in
+ graph GlobalType.STRENGTH_RED_EXAMPLE_m7.
+
 Creating an IR graph: THREE_CFPRED_EXAMPLE ...
 Optimizing ...
 Dumping the graph and a control flow graph.

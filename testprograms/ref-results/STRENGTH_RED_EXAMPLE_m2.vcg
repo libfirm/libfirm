@@ -56,7 +56,7 @@ graph: { title: "g148" label: "STRENGTH_RED_EXAMPLE_m2" status:clustered color:w
 graph: { title: "n137"  label: "Block 137" status:clustered color:yellow
 edge: {sourcename: "n137" targetname: "n186" label: "0" class:13 priority:60 color:red}
 node: {title: "n138" label: "End  138"  info1: "mode:    X
-visited: 28
+visited: 17
 irg:     STRENGTH_RED_EXAMPLE_m2
 arity: 1
 "color: blue}
@@ -65,14 +65,14 @@ arity: 1
 graph: { title: "n183"  label: "Block 183" status:clustered color:yellow
 edge: {sourcename: "n183" targetname: "n159" label: "0" class:13 priority:60 color:red}
 node: {title: "n186" label: "Return  186"  info1: "mode:    X
-visited: 28
+visited: 17
 irg:     STRENGTH_RED_EXAMPLE_m2
 arity: 2
 return in method of type STRENGTH_RED_EXAMPLE_meth_tp
   res 0 type: int
 "}
 node: {title: "n186n165" label: "0x4Is  165"  info1: "mode:    Is
-visited: 28
+visited: 17
 irg:     STRENGTH_RED_EXAMPLE_m2
 arity: 0
 Const of type type_unknown
@@ -85,69 +85,43 @@ graph: { title: "n153"  label: "Block 153" status:clustered color:yellow
 edge: {sourcename: "n153" targetname: "n152" label: "0" class:13 priority:60 color:red}
 backedge: {sourcename: "n153" targetname: "n177" label: "1" linestyle:dashed class:13 priority:60 color:red}
 node: {title: "n190" label: "PhiM  190"  info1: "mode:    M
-visited: 28
+visited: 17
 irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 2 backedges:
+arity: 2 backedges:  1
 "color: green}
 edge: {sourcename: "n190" targetname: "n146" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n190" targetname: "n175" label: "1" class:17 priority:10 color:blue}
-node: {title: "n573" label: "PhiIs  573"  info1: "mode:    Is
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 2 backedges:
-"color: green}
-node: {title: "n573n150" label: "0x0Is  150"  info1: "mode:    Is
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 0
-Const of type type_unknown
-"color: yellow}
-edge: {sourcename: "n573" targetname: "n573n150" label: "0" class:16 priority:10}
-edge: {sourcename: "n573" targetname: "n574" label: "1" class:16 priority:10}
-node: {title: "n580" label: "PhiIs  580"  info1: "mode:    Is
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 2 backedges:
-"color: green}
-node: {title: "n580n150" label: "0x0Is  150"  info1: "mode:    Is
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 0
-Const of type type_unknown
-"color: yellow}
-edge: {sourcename: "n580" targetname: "n580n150" label: "0" class:16 priority:10}
-edge: {sourcename: "n580" targetname: "n581" label: "1" class:16 priority:10}
+backedge: {sourcename: "n190" targetname: "n175" label: "1" linestyle:dashed class:17 priority:10 color:blue}
 node: {title: "n159" label: "ProjX 0 159"  info1: "mode:    X
-visited: 28
+visited: 17
 irg:     STRENGTH_RED_EXAMPLE_m2
 arity: 1
 "color: yellow}
 edge: {sourcename: "n159" targetname: "n158" label: "0" class:13 priority:60 color:red}
 node: {title: "n160" label: "ProjX 1 160"  info1: "mode:    X
-visited: 28
+visited: 17
 irg:     STRENGTH_RED_EXAMPLE_m2
 arity: 1
 "color: yellow}
 edge: {sourcename: "n160" targetname: "n158" label: "0" class:13 priority:60 color:red}
 node: {title: "n158" label: "Cond  158"  info1: "mode:    T
-visited: 28
+visited: 17
 irg:     STRENGTH_RED_EXAMPLE_m2
 arity: 1
 "}
 edge: {sourcename: "n158" targetname: "n157" label: "0" class:1  priority:50}
 node: {title: "n157" label: "Projb Gt 157"  info1: "mode:    b
-visited: 28
+visited: 17
 irg:     STRENGTH_RED_EXAMPLE_m2
 arity: 1
 "color: yellow}
 edge: {sourcename: "n157" targetname: "n156" label: "0" class:1  priority:50}
 node: {title: "n156" label: "Cmp  156"  info1: "mode:    T
-visited: 28
+visited: 17
 irg:     STRENGTH_RED_EXAMPLE_m2
 arity: 2
 "}
 node: {title: "n156n155" label: "0xAIs  155"  info1: "mode:    Is
-visited: 28
+visited: 17
 irg:     STRENGTH_RED_EXAMPLE_m2
 arity: 0
 Const of type type_unknown
@@ -155,24 +129,24 @@ Const of type type_unknown
 edge: {sourcename: "n156" targetname: "n156n155" label: "0" class:16 priority:10}
 edge: {sourcename: "n156" targetname: "n191" label: "1" class:1  priority:50}
 node: {title: "n191" label: "PhiIs  191"  info1: "mode:    Is
-visited: 28
+visited: 17
 irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 2 backedges:
+arity: 2 backedges:  1
 "color: green}
 node: {title: "n191n150" label: "0x0Is  150"  info1: "mode:    Is
-visited: 28
+visited: 17
 irg:     STRENGTH_RED_EXAMPLE_m2
 arity: 0
 Const of type type_unknown
 "color: yellow}
 edge: {sourcename: "n191" targetname: "n191n150" label: "0" class:16 priority:10}
-edge: {sourcename: "n191" targetname: "n176" label: "1" class:16 priority:10}
+backedge: {sourcename: "n191" targetname: "n176" label: "1" linestyle:dashed class:16 priority:10}
 }
 
 graph: { title: "n149"  label: "Block 149" status:clustered color:yellow
 edge: {sourcename: "n149" targetname: "n143" label: "0" class:13 priority:60 color:red}
 node: {title: "n152" label: "Jmp  152"  info1: "mode:    X
-visited: 28
+visited: 17
 irg:     STRENGTH_RED_EXAMPLE_m2
 arity: 0
 "}
@@ -181,47 +155,40 @@ arity: 0
 graph: { title: "n161"  label: "Block 161" status:clustered color:yellow
 edge: {sourcename: "n161" targetname: "n160" label: "0" class:13 priority:60 color:red}
 node: {title: "n175" label: "ProjM 0 175"  info1: "mode:    M
-visited: 28
+visited: 17
 irg:     STRENGTH_RED_EXAMPLE_m2
 arity: 1
 "color: yellow}
 edge: {sourcename: "n175" targetname: "n173" label: "0" class:17 priority:10 color:blue}
 node: {title: "n173" label: "Store  173"  info1: "mode:    T
-visited: 28
+visited: 17
 irg:     STRENGTH_RED_EXAMPLE_m2
 arity: 3
 volatility: volatility_non_volatile
 "}
 edge: {sourcename: "n173" targetname: "n190" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n173" targetname: "n565" label: "1" class:1  priority:50}
-edge: {sourcename: "n173" targetname: "n580" label: "2" class:16 priority:10}
-node: {title: "n565" label: "AddP  565"  info1: "mode:    P
-visited: 28
+edge: {sourcename: "n173" targetname: "n171" label: "1" class:1  priority:50}
+edge: {sourcename: "n173" targetname: "n167" label: "2" class:1  priority:50}
+node: {title: "n171" label: "AddP  171"  info1: "mode:    P
+visited: 17
 irg:     STRENGTH_RED_EXAMPLE_m2
 arity: 2
 "}
-edge: {sourcename: "n565" targetname: "n573" label: "0" class:16 priority:10}
-edge: {sourcename: "n565" targetname: "n564" label: "1" class:1  priority:50}
-node: {title: "n574" label: "AddIs  574"  info1: "mode:    Is
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 2
-"}
-node: {title: "n574n165" label: "0x4Is  165"  info1: "mode:    Is
-visited: 28
+node: {title: "n171n163" label: "0xDIs  163"  info1: "mode:    Is
+visited: 17
 irg:     STRENGTH_RED_EXAMPLE_m2
 arity: 0
 Const of type type_unknown
 "color: yellow}
-edge: {sourcename: "n574" targetname: "n574n165" label: "0" class:16 priority:10}
-edge: {sourcename: "n574" targetname: "n573" label: "1" class:16 priority:10}
-node: {title: "n564" label: "AddP  564"  info1: "mode:    P
-visited: 28
+edge: {sourcename: "n171" targetname: "n171n163" label: "0" class:16 priority:10}
+edge: {sourcename: "n171" targetname: "n170" label: "1" class:1  priority:50}
+node: {title: "n170" label: "AddP  170"  info1: "mode:    P
+visited: 17
 irg:     STRENGTH_RED_EXAMPLE_m2
 arity: 2
 "}
-node: {title: "n564n151" label: "SymC &a  151"  info1: "mode:    P
-visited: 28
+node: {title: "n170n151" label: "SymC &a  151"  info1: "mode:    P
+visited: 17
 irg:     STRENGTH_RED_EXAMPLE_m2
 arity: 0
 kind addr_ent
@@ -229,39 +196,46 @@ entity GlobalType.a (135)
 
 SymConst of type type_unknown
 "}
-node: {title: "n564n163" label: "0xDIs  163"  info1: "mode:    Is
-visited: 28
-irg:     STRENGTH_RED_EXAMPLE_m2
-arity: 0
-Const of type type_unknown
-"color: yellow}
-edge: {sourcename: "n564" targetname: "n564n151" label: "0" class:16 priority:10}
-edge: {sourcename: "n564" targetname: "n564n163" label: "1" class:16 priority:10}
-node: {title: "n581" label: "AddIs  581"  info1: "mode:    Is
-visited: 28
+edge: {sourcename: "n170" targetname: "n168" label: "0" class:1  priority:50}
+edge: {sourcename: "n170" targetname: "n170n151" label: "1" class:16 priority:10}
+node: {title: "n168" label: "MulIs  168"  info1: "mode:    Is
+visited: 17
 irg:     STRENGTH_RED_EXAMPLE_m2
 arity: 2
 "}
-node: {title: "n581n162" label: "0xFIs  162"  info1: "mode:    Is
-visited: 28
+node: {title: "n168n165" label: "0x4Is  165"  info1: "mode:    Is
+visited: 17
 irg:     STRENGTH_RED_EXAMPLE_m2
 arity: 0
 Const of type type_unknown
 "color: yellow}
-edge: {sourcename: "n581" targetname: "n581n162" label: "0" class:16 priority:10}
-edge: {sourcename: "n581" targetname: "n580" label: "1" class:16 priority:10}
+edge: {sourcename: "n168" targetname: "n168n165" label: "0" class:16 priority:10}
+edge: {sourcename: "n168" targetname: "n191" label: "1" class:16 priority:10}
+node: {title: "n167" label: "MulIs  167"  info1: "mode:    Is
+visited: 17
+irg:     STRENGTH_RED_EXAMPLE_m2
+arity: 2
+"}
+node: {title: "n167n162" label: "0xFIs  162"  info1: "mode:    Is
+visited: 17
+irg:     STRENGTH_RED_EXAMPLE_m2
+arity: 0
+Const of type type_unknown
+"color: yellow}
+edge: {sourcename: "n167" targetname: "n167n162" label: "0" class:16 priority:10}
+edge: {sourcename: "n167" targetname: "n191" label: "1" class:16 priority:10}
 node: {title: "n177" label: "Jmp  177"  info1: "mode:    X
-visited: 28
+visited: 17
 irg:     STRENGTH_RED_EXAMPLE_m2
 arity: 0
 "}
 node: {title: "n176" label: "AddIs  176"  info1: "mode:    Is
-visited: 28
+visited: 17
 irg:     STRENGTH_RED_EXAMPLE_m2
 arity: 2
 "}
 node: {title: "n176n164" label: "0x1Is  164"  info1: "mode:    Is
-visited: 28
+visited: 17
 irg:     STRENGTH_RED_EXAMPLE_m2
 arity: 0
 Const of type type_unknown
@@ -273,19 +247,19 @@ edge: {sourcename: "n176" targetname: "n191" label: "1" class:16 priority:10}
 graph: { title: "n139"  label: "Block 139" status:clustered color:yellow
 edge: {sourcename: "n139" targetname: "n143" label: "0" class:13 priority:60 color:red}
 node: {title: "n146" label: "ProjM 1 146"  info1: "mode:    M
-visited: 28
+visited: 17
 irg:     STRENGTH_RED_EXAMPLE_m2
 arity: 1
 "color: yellow}
 edge: {sourcename: "n146" targetname: "n140" label: "0" class:17 priority:10 color:blue}
 node: {title: "n143" label: "ProjX 0 143"  info1: "mode:    X
-visited: 28
+visited: 17
 irg:     STRENGTH_RED_EXAMPLE_m2
 arity: 1
 "color: yellow}
 edge: {sourcename: "n143" targetname: "n140" label: "0" class:13 priority:60 color:red}
 node: {title: "n140" label: "Start  140"  info1: "mode:    T
-visited: 28
+visited: 17
 irg:     STRENGTH_RED_EXAMPLE_m2
 arity: 0
 start of method of type STRENGTH_RED_EXAMPLE_meth_tp
