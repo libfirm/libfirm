@@ -38,7 +38,8 @@ init_firm(const firm_parameter_t *param)
 
   if (param) {
     /* check for reasonale size */
-    assert(param->size <= sizeof(def_params) && (param->size & 3) == 0 && "parameter struct not initialized ???");
+    assert(param->size <= sizeof(def_params) && (param->size & 3) == 0 &&
+	   "parameter struct not initialized ???");
     size = sizeof(def_params);
     if (param->size < size)
       size = param->size;

@@ -92,6 +92,7 @@ extern "C" {
 #include "cgana.h"         /* Analysis to construct interprocedural graph */
                            /* including some optimizations */
 #include "irloop.h"        /* loop and backedge analysis */
+#include "callgraph.h"     /* Callgraph construction */
 
 #include "irgmod.h"        /* Support to modify ir */
 #include "irgwalk.h"       /* Support to walk ir */
