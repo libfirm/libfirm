@@ -22,7 +22,9 @@
 
 # include "bs.h"
 
-#  include <stdbool.h>
+#  include "bool.h"
+#define true TRUE
+#define false FALSE
 
 // Data Types:
 
