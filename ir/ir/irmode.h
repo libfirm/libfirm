@@ -304,12 +304,18 @@ ir_mode *get_modeT(void);
 ir_mode *get_modeANY(void);
 ir_mode *get_modeBAD(void);
 
+/** Returns the machine specific pointer mode. */
 ir_mode *get_modeP_mach(void);
-void     set_modeP_mach(ir_mode *p);
 
 /**
-   Functions to check, whether a modecode is signed, float, int, num, data,
-   datab or dataM.
+ * Sets the machine specific pointer mode.
+ * If not set, the predefined mode mode_P will be used.
+ */
+void set_modeP_mach(ir_mode *p);
+
+/**
+   Functions to check, whether a modecode is signed, float, int, character,
+   reference, num, numP, data, datab or dataM.
 
    For more exact definitions read the corresponding pages
    in the firm documentation or the following enumeration
@@ -320,25 +326,26 @@ void     set_modeP_mach(ir_mode *p);
    The set of "int" is defined as:
    int   = {irm_Bs, irm_Bu, irm_Hs, irm_Hu, irm_Is, irm_Iu, irm_Ls, irm_Lu}
 
+   The set of "character" is defined as:
+   character  = {irm_C, irm_U}
+
+   The set of "reference" is defined as:
+   reference  = {irm_P}
+
    The set of "num" is defined as:
-   num   = {irm_F, irm_D, irm_E, irm_Bs, irm_Bu, irm_Hs, irm_Hu,
-            irm_Is, irm_Iu, irm_Ls, irm_Lu}
-            = {float || int}
+   num   = {float || int}
+
+   The set of "numP" is defined as:
+   numP  =  {float || int || reference}
 
    The set of "data" is defined as:
-   data  = {irm_F, irm_D, irm_E irm_Bs, irm_Bu, irm_Hs, irm_Hu,
-            irm_Is, irm_Iu, irm_Ls, irm_Lu, irm_C, irm_U, irm_P}
-            = {num || irm_C || irm_P}
+   data  =  {num || character || reference}
 
    The set of "datab" is defined as:
-   datab = {irm_F, irm_D, irm_E, irm_Bs, irm_Bu, irm_Hs, irm_Hu,
-            irm_Is, irm_Iu, irm_Ls, irm_Lu, irm_C, irm_U, irm_P, irm_b}
-            = {data || irm_b }
+   datab =  {data || irm_b }
 
    The set of "dataM" is defined as:
-   dataM = {irm_F, irm_D, irm_E, irm_Bs, irm_Bu, irm_Hs, irm_Hu,
-            irm_Is, irm_Iu, irm_Ls, irm_Lu, irm_C, irm_U, irm_P, irm_M}
-            = {data || irm_M}
+   dataM =  {data || irm_M}
 */
 /*@}*/
 /* Test for a certain class of modes. */
@@ -348,6 +355,7 @@ int mode_is_int (const ir_mode *mode);
 int mode_is_character (const ir_mode *mode);
 int mode_is_reference (const ir_mode *mode);
 int mode_is_num (const ir_mode *mode);
+int mode_is_numP (const ir_mode *mode);
 int mode_is_data (const ir_mode *mode);
 int mode_is_datab (const ir_mode *mode);
 int mode_is_dataM (const ir_mode *mode);

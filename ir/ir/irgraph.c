@@ -129,8 +129,8 @@ new_ir_graph (entity *ent, int n_loc)
   /* Proj results of start node */
   projX        = new_Proj (res->start, mode_X, pns_initial_exec);
   set_store (new_Proj (res->start, mode_M, pns_global_store));
-  res->frame   = new_Proj (res->start, mode_P, pns_frame_base);
-  res->globals = new_Proj (res->start, mode_P, pns_globals);
+  res->frame   = new_Proj (res->start, mode_P_mach, pns_frame_base);
+  res->globals = new_Proj (res->start, mode_P_mach, pns_globals);
   res->args    = new_Proj (res->start, mode_T, pns_args);
 #ifdef DEBUG_libfirm
   res->graph_nr = get_irp_new_node_nr();

@@ -240,23 +240,23 @@ computed_value (ir_node *n)
             ir_node *aba = skip_nop(skip_Proj(ab));
 	    if (   (   (/* aa is ProjP and aaa is Alloc */
                            (get_irn_op(aa) == op_Proj)
-    	                && (get_irn_mode(aa) == mode_P)
+    	                && (mode_is_reference(get_irn_mode(aa)))
                         && (get_irn_op(aaa) == op_Alloc))
                     && (   (/* ab is constant void */
                                (get_irn_op(ab) == op_Const)
-                            && (get_irn_mode(ab) == mode_P)
-                            && (get_Const_tarval(ab) == get_mode_null(mode_P)))
+                            && (mode_is_reference(get_irn_mode(ab)))
+                            && (get_Const_tarval(ab) == get_mode_null(get_irn_mode(ab))))
 		        || (/* ab is other Alloc */
                                (get_irn_op(ab) == op_Proj)
-    	                    && (get_irn_mode(ab) == mode_P)
+    	                    && (mode_is_reference(get_irn_mode(ab)))
                             && (get_irn_op(aba) == op_Alloc)
 			    && (aaa != aba))))
 		|| (/* aa is void and aba is Alloc */
                        (get_irn_op(aa) == op_Const)
-                    && (get_irn_mode(aa) == mode_P)
-                    && (get_Const_tarval(aa) == get_mode_null(mode_P))
+                    && (mode_is_reference(get_irn_mode(aa)))
+                    && (get_Const_tarval(aa) == get_mode_null(get_irn_mode(aa)))
                     && (get_irn_op(ab) == op_Proj)
-    	            && (get_irn_mode(ab) == mode_P)
+    	            && (mode_is_reference(get_irn_mode(ab)))
                     && (get_irn_op(aba) == op_Alloc)))
 	      /* 3.: */
 	      res = new_tarval_from_long (get_Proj_proj(n) & Ne, mode_b);
@@ -287,8 +287,8 @@ computed_value (ir_node *n)
 static bool
 different_identity (ir_node *a, ir_node *b)
 {
-  assert (get_irn_mode (a) == mode_P
-          && get_irn_mode (b) == mode_P);
+  assert (mode_is_reference(get_irn_mode (a))
+          && mode_is_reference(get_irn_mode (b)));
 
   if (get_irn_op (a) == op_Proj && get_irn_op(b) == op_Proj) {
     ir_node *a1 = get_Proj_pred (a);

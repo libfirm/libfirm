@@ -44,7 +44,7 @@
 
 /* tarval.h */
 #define tarval_from_long(X, Y) new_tarval_from_long(Y, X)
-#define tarval_P_from_entity(X) new_tarval_from_entity(X, mode_P)
+#define tarval_P_from_entity(X) new_tarval_from_entity(X, mode_P_mach)
 #define get_tarval_entity(X) tarval_to_entity(X)
 
 #endif

@@ -184,7 +184,7 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
 	  assert(get_entity_irg(ent));
 	  set_irg_current_block(current_ir_graph, get_nodes_Block(node));
 	  new_node = new_d_Const(get_irn_dbg_info(node),
-				 mode_P, new_tarval_from_entity(ent, mode_P));       DBG_OPT_NORMALIZE;
+				 mode_P_mach, new_tarval_from_entity(ent, mode_P_mach));       DBG_OPT_NORMALIZE;
 	  exchange(node, new_node);
 	}
       }
@@ -382,7 +382,7 @@ static void callee_ana_proj(ir_node * node, long n, eset * methods) {
 static void callee_ana_node(ir_node * node, eset * methods) {
   int i;
 
-  assert((get_irn_mode(node) == mode_P) || is_Bad(node));
+  assert(mode_is_reference(get_irn_mode(node)) || is_Bad(node));
   /* rekursion verhindern */
   if (get_irn_link(node) == MARK) {
     /* already visited */
@@ -550,7 +550,7 @@ static void free_mark_proj(ir_node * node, long n, eset * set) {
 
 static void free_mark(ir_node * node, eset * set) {
   int i;
-  assert(get_irn_mode(node) == mode_P);
+  assert(mode_is_reference(get_irn_mode(node)));
   if (get_irn_link(node) == MARK) {
     return; /* already visited */
   }
@@ -620,7 +620,7 @@ static void free_ana_walker(ir_node * node, eset * set) {
     set_irn_link(node, MARK);
     for (i = get_Call_arity(node) - 1; i >= 0; --i) {
       ir_node * pred = get_Call_param(node, i);
-      if (get_irn_mode(pred) == mode_P) {
+      if (mode_is_reference(get_irn_mode(pred))) {
 	free_mark(pred, set);
       }
     }
@@ -631,7 +631,7 @@ static void free_ana_walker(ir_node * node, eset * set) {
     set_irn_link(node, MARK);
     for (i = get_irn_arity(node) - 1; i >= 0; --i) {
       ir_node * pred = get_irn_n(node, i);
-      if (get_irn_mode(pred) == mode_P) {
+      if (mode_is_reference(get_irn_mode(pred))) {
 	free_mark(pred, set);
       }
     }

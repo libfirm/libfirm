@@ -616,7 +616,7 @@ new_rd_Sel (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *store, ir_node
   r_in[0] = store;
   r_in[1] = objptr;
   memcpy (&r_in[2], in, sizeof (ir_node *) * arity);
-  res = new_ir_node (db, irg, block, op_Sel, mode_P, r_arity, r_in);
+  res = new_ir_node (db, irg, block, op_Sel, mode_P_mach, r_arity, r_in);
 
   res->attr.s.ent = ent;
 
@@ -654,7 +654,7 @@ new_rd_SymConst (dbg_info* db, ir_graph *irg, ir_node *block, type_or_id_p value
   ir_node *res;
   ir_mode *mode;
   if (symkind == linkage_ptr_info)
-    mode = mode_P;
+    mode = mode_P_mach;
   else
     mode = mode_Iu;
   res = new_ir_node (db, irg, block, op_SymConst, mode, 0, NULL);

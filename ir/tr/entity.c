@@ -85,7 +85,7 @@ new_entity (type *owner, ident *name, type *type)
     res->variability = constant;
     rem = current_ir_graph;
     current_ir_graph = get_const_code_irg();
-    res->value = new_Const(mode_P, new_tarval_from_entity(res, mode_P));
+    res->value = new_Const(mode_P_mach, new_tarval_from_entity(res, mode_P_mach));
     current_ir_graph = rem;
   } else {
     res->variability = uninitialized;

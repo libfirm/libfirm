@@ -156,7 +156,9 @@ ir_mode *mode_C;
 ir_mode *mode_U;
 ir_mode *mode_b;
 ir_mode *mode_P;
-ir_mode *mode_P_mach;
+
+/* machine specific modes */
+ir_mode *mode_P_mach;	/* machine specific pointer mode */
 
 /* * *
  * functions defined in irmode.h
@@ -457,6 +459,7 @@ is_mode (void *thing) {
 #  undef mode_is_float
 #  undef mode_is_int
 #  undef mode_is_num
+#  undef mode_is_numP
 #  undef mode_is_data
 #  undef mode_is_datab
 #  undef mode_is_dataM
@@ -505,6 +508,14 @@ mode_is_num (const ir_mode *mode)
   ANNOUNCE();
   assert(mode);
   return (mode_is_int(mode) || mode_is_float(mode));
+}
+
+int
+mode_is_numP (const ir_mode *mode)
+{
+  ANNOUNCE();
+  assert(mode);
+  return (mode_is_int(mode) || mode_is_float(mode) || mode_is_reference(mode));
 }
 
 int
@@ -823,4 +834,7 @@ init_mode (void)
   newmode.size    = 32;
 
   mode_P = register_mode(&newmode);
+
+  /* set the machine specific modes to the predifined ones */
+  mode_P_mach = mode_P;
 }

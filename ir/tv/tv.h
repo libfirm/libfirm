@@ -503,9 +503,20 @@ typedef struct tarval_mode_info {
  * @param mode		a ir_mode that should be associated
  * @param modeinfo	the output format info
  *
- * Returns zero on success.
+ * @return zero on success.
  */
 int tarval_set_mode_output_option(ir_mode *mode, const tarval_mode_info *modeinfo);
+
+/**
+ * Returns the output options of one mode.
+ *
+ * This functions returns the modinfo of a given mode.
+ *
+ * @param mode		a ir_mode that should be associated
+ *
+ * @return the output option
+ */
+const tarval_mode_info *tarval_get_mode_output_option(ir_mode *mode);
 
 /**
  * Returns Bit representation of a tarval value, as string of '0' and '1'

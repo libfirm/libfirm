@@ -835,10 +835,10 @@ build_value_type(ident *name, int len, type **tps) {
    N_param is the number of parameters, n_res the number of results.  */
 INLINE type *new_type_method (ident *name, int n_param, int n_res) {
   type *res;
-  res = new_type(type_method, mode_P, name);
+  res = new_type(type_method, mode_P_mach, name);
   res->state = layout_fixed;
-  assert((get_mode_size_bytes(mode_P) != -1) && "unorthodox modes not implemented");
-  res->size = get_mode_size_bytes(mode_P);
+  assert((get_mode_size_bytes(mode_P_mach) != -1) && "unorthodox modes not implemented");
+  res->size = get_mode_size_bytes(mode_P_mach);
   res->attr.ma.n_params     = n_param;
   res->attr.ma.param_type   = (type **) xmalloc (sizeof (type *) * n_param);
   res->attr.ma.value_params = NULL;
@@ -849,16 +849,19 @@ INLINE type *new_type_method (ident *name, int n_param, int n_res) {
 
   return res;
 }
+
 type *new_d_type_method (ident *name, int n_param, int n_res, dbg_info* db) {
   type *res = new_type_method (name, n_param, n_res);
   set_type_dbg_info(res, db);
   return res;
 }
+
 INLINE void free_method_attrs(type *method) {
   assert(method && (method->type_op == type_method));
   free(method->attr.ma.param_type);
   free(method->attr.ma.res_type);
 }
+
 /* manipulate private fields of method. */
 int   get_method_n_params  (type *method) {
   assert(method && (method->type_op == type_method));
@@ -1281,7 +1284,7 @@ bool  is_pointer_type            (type *pointer) {
 /* create a new type primitive */
 INLINE type *new_type_primitive (ident *name, ir_mode *mode) {
   type *res;
-  /* @@@ assert( mode_is_data(mode) && (!mode == mode_P)); */
+  /* @@@ assert( mode_is_data(mode) && (!mode_is_reference(mode))); */
   res = new_type(type_primitive, mode, name);
   assert((get_mode_size_bytes(mode) != -1) && "unorthodox modes not implemented");
   res->size = get_mode_size_bytes(mode);
