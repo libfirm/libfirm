@@ -66,8 +66,8 @@ init_firm(const firm_parameter_t *param)
   init_hooks();
   /* enhanced statistics, need idents and hooks */
   init_stat(def_params.enable_statistics);
-	/* Edges need hooks. */
-	init_edges();
+  /* Edges need hooks. */
+  init_edges();
   /* create the type kinds. */
   init_tpop();
   /* create an obstack and put all tarvals in a pdeq */
@@ -95,7 +95,7 @@ init_firm(const firm_parameter_t *param)
   /* allocate a hash table. */
   init_type_identify(def_params.ti_if);
   /* Init reflection facility. */
-  init_rflct();
+  firm_init_rflct();
 
   /* Init architecture dependent optimizations. */
   arch_dep_init(arch_dep_default_factory);
