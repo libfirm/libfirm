@@ -76,10 +76,12 @@ extern "C" {
 #include "entity.h"        /* entity representation */
 #include "tv.h"            /* target values */
 #include "ident.h"         /* source code identificators */
+
 /* Functionality */
 #include "ircons.h"        /* construct ir */
 #include "ircgcons.h"      /* construct interprocedural graph */
 
+/* Optimizations */
 #include "irflag.h"        /* optimization flags */
 #include "irgopt.h"        /* optimize ir */
 #include "reassoc.h"       /* optimize ir by reassociation */
@@ -89,13 +91,18 @@ extern "C" {
 #include "ircgopt.h"       /* Optimizations based on interprocedural graph */
 #include "strength_red.h"  /* Strength reduction */
 
+/* Analyses */
 #include "irouts.h"        /* Graph reversal / out edges. */
 #include "irdom.h"         /* Dominator analysis */
 #include "cgana.h"         /* Analysis to construct interprocedural graph */
                            /* including some optimizations */
 #include "irloop.h"        /* loop and backedge analysis */
 #include "callgraph.h"     /* Callgraph construction */
+#include "interval_analysis.h"
+#include "field_temperature.h"
+#include "execution_frequency.h"
 
+/* Support */
 #include "irgmod.h"        /* Support to modify ir */
 #include "irgwalk.h"       /* Support to walk ir */
 #include "typewalk.h"      /* Support to walk type information */
@@ -124,7 +131,7 @@ extern "C" {
 
 /* Makros that define the old function names we decided to rename.
    Use for compatibility with old implementations. */
-#include "old_fctnames.h"
+//#include "old_fctnames.h"
 
 /**
  * libFirm initialization parameters.
