@@ -26,7 +26,7 @@ ac_default_prefix=/usr/local
 ac_help="$ac_help
   --enable-debug          enable assertions and additional debugging routines"
 ac_help="$ac_help
-  --enable-gcc_inline          enable gcc inline C-extension"
+  --enable-gcc_inline     enable gcc inline C-extension"
 ac_help="$ac_help
   --enable-profile        enable profiling"
 ac_help="$ac_help
@@ -591,9 +591,9 @@ fi
 
 
 
-# Check whether --enable-use_gcc_inline or --disable-use_gcc_inline was given.
-if test "${enable_use_gcc_inline+set}" = set; then
-  enableval="$enable_use_gcc_inline"
+# Check whether --enable-gcc_inline or --disable-gcc_inline was given.
+if test "${enable_gcc_inline+set}" = set; then
+  enableval="$enable_gcc_inline"
   if test "$enableval" = yes; then
   cat >> confdefs.h <<\EOF
 #define USE_GCC_INLINE 1

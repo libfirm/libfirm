@@ -37,8 +37,8 @@ fi])
 AC_SUBST(enable_debug_libfirm)
 
 
-AC_ARG_ENABLE(use_gcc_inline,
-[  --enable-gcc_inline          enable gcc inline C-extension],
+AC_ARG_ENABLE(gcc_inline,
+[  --enable-gcc_inline     enable gcc inline C-extension],
 [if test "$enableval" = yes; then
   AC_DEFINE(USE_GCC_INLINE)
 fi])
