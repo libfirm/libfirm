@@ -8,6 +8,7 @@
 
 #include "firm_config.h"
 
+
 /*
  * Simple doubly linked list implementation.
  *
@@ -43,14 +44,14 @@ struct list_head {
  * This is only for internal list manipulation where we know
  * the prev/next entries already!
  */
-static INLINE void __list_add(struct list_head *new,
+static INLINE void __list_add(struct list_head *new_node,
 			      struct list_head *prev,
 			      struct list_head *next)
 {
-	next->prev = new;
-	new->next = next;
-	new->prev = prev;
-	prev->next = new;
+	next->prev = new_node;
+	new_node->next = next;
+	new_node->prev = prev;
+	prev->next = new_node;
 }
 
 /**
@@ -61,9 +62,9 @@ static INLINE void __list_add(struct list_head *new,
  * Insert a new entry after the specified head.
  * This is good for implementing stacks.
  */
-static INLINE void list_add(struct list_head *new, struct list_head *head)
+static INLINE void list_add(struct list_head *new_node, struct list_head *head)
 {
-	__list_add(new, head, head->next);
+	__list_add(new_node, head, head->next);
 }
 
 /**
@@ -74,9 +75,9 @@ static INLINE void list_add(struct list_head *new, struct list_head *head)
  * Insert a new entry before the specified head.
  * This is useful for implementing queues.
  */
-static INLINE void list_add_tail(struct list_head *new, struct list_head *head)
+static INLINE void list_add_tail(struct list_head *new_node, struct list_head *head)
 {
-	__list_add(new, head->prev, head);
+	__list_add(new_node, head->prev, head);
 }
 
 /*
@@ -143,7 +144,7 @@ static INLINE void list_move_tail(struct list_head *list,
  * list_empty - tests whether a list is empty
  * @head: the list to test.
  */
-static INLINE int list_empty(struct list_head *head)
+static INLINE int list_empty(const struct list_head *head)
 {
 	return head->next == head;
 }
