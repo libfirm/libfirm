@@ -141,7 +141,7 @@ static void free_entity_attrs(entity *ent) {
   if (ent->val_paths) {
     if (is_compound_entity(ent))
       for (i = 0; i < get_compound_ent_n_values(ent); i++)
-	if (ent->val_paths[i]) ;
+    if (ent->val_paths[i]) ;
     /* free_compound_graph_path(ent->val_paths[i]) ;  * @@@ warum nich? */
     /* Geht nich: wird mehrfach verwendet!!! ==> mehrfach frei gegeben. */
     /* DEL_ARR_F(ent->val_paths); */
@@ -452,7 +452,7 @@ get_atomic_ent_value(entity *ent)
 {
   assert(ent && is_atomic_entity(ent));
   assert(ent->variability != variability_uninitialized);
-  return ent->value;
+  return skip_Id (ent->value);
 }
 
 void
@@ -759,7 +759,7 @@ remove_entity_overwrites(entity *ent, entity *overwritten) {
   for (i = 0; i < (ARR_LEN (ent->overwrites)); i++)
     if (ent->overwrites[i] == overwritten) {
       for(; i < (ARR_LEN (ent->overwrites))-1; i++)
-	ent->overwrites[i] = ent->overwrites[i+1];
+    ent->overwrites[i] = ent->overwrites[i+1];
       ARR_SETLEN(entity*, ent->overwrites, ARR_LEN(ent->overwrites) - 1);
       break;
     }
@@ -807,7 +807,7 @@ void    remove_entity_overwrittenby(entity *ent, entity *overwrites) {
   for (i = 0; i < (ARR_LEN (ent->overwrittenby)); i++)
     if (ent->overwrittenby[i] == overwrites) {
       for(; i < (ARR_LEN (ent->overwrittenby))-1; i++)
-	ent->overwrittenby[i] = ent->overwrittenby[i+1];
+    ent->overwrittenby[i] = ent->overwrittenby[i+1];
       ARR_SETLEN(entity*, ent->overwrittenby, ARR_LEN(ent->overwrittenby) - 1);
       break;
     }
