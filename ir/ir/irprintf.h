@@ -20,8 +20,6 @@
 #ifndef _IRPRINTF_H
 #define _IRPRINTF_H
 
-#include "config.h"
-
 /**
  * Something that can append strings and chars to something.
  */
@@ -105,19 +103,13 @@ void ir_snprintf(char *buf, size_t n, const char *fmt, ...);
 
 #ifdef DEBUG_libfirm
 
-#define ir_debugf ir_printf
-#define ir_fdebugf ir_fprintf
+#define ir_debugf(p)    ir_printf p
+#define ir_fdebugf(p)   ir_fprintf p
 
 #else
 
-static INLINE void ir_debugf(const char *fmt, ...)
-{
-}
-
-static INLINE void ir_fdebugf(FILE *, const char *fmt, ...)
-{
-}
-
+#define ir_debugf(p)
+#define ir_fdebugf(p)
 
 #endif
 
