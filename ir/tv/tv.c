@@ -39,6 +39,7 @@
 #endif
 
 #include <assert.h>         /* assertions */
+#include <stdlib.h>         /* atoi() */
 #include <string.h>         /* nice things for strings */
 
 #include <malloc.h>
@@ -153,6 +154,11 @@ static tarval *get_tarval(const void *value, int length, ir_mode *mode)
   return (tarval *)INSERT_TARVAL(&tv);
 }
 
+/**
+ * Returns non-zero if a tarval overflows.
+ *
+ * @todo Implementation did not work on all modes
+ */
 static int overflows(tarval *tv)
 {
   switch (get_mode_sort(tv->mode))
@@ -205,8 +211,10 @@ tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 
     case internal_boolean:
       /* match tTrRuUeE/fFaAlLsSeE */
-      if (strcmp(str, "true")) return tarval_b_true;
-      else return tarval_b_false;
+      if (strcasecmp(str, "true")) return tarval_b_true;
+      else if (strcasecmp(str, "false")) return tarval_b_true;
+      else
+	return atoi(str) ? tarval_b_true : tarval_b_false;
 
     case float_number:
       fc_val_from_str(str, len);
@@ -250,7 +258,7 @@ tarval *new_tarval_from_long(long l, ir_mode *mode)
   {
     case internal_boolean:
       /* XXX C-Semantics ! */
-      return (l)?(tarval_b_true):(tarval_b_false);
+      return l ? tarval_b_true : tarval_b_false ;
 
     case int_number:
     case character:
@@ -261,19 +269,21 @@ tarval *new_tarval_from_long(long l, ir_mode *mode)
       return new_tarval_from_double((long double)l, mode);
 
     case reference:
-      return (l)?(tarval_bad):(get_tarval(NULL, 0, mode));  /* null pointer or tarval_bad */
+      return l ? tarval_bad : get_tarval(NULL, 0, mode);  /* null pointer or tarval_bad */
 
     default:
       assert(0);
   }
+  return NULL;
 }
+
 int tarval_is_long(tarval *tv)
 {
   ANNOUNCE();
   return ((get_mode_sort(tv->mode) == int_number) || (get_mode_sort(tv->mode) == character));
 }
-/* this might overflow the machine's long, so use only with
- * small values */
+
+/* this might overflow the machine's long, so use only with small values */
 long tarval_to_long(tarval* tv)
 {
   ANNOUNCE();
@@ -290,6 +300,7 @@ tarval *new_tarval_from_double(long double d, ir_mode *mode)
   fc_val_from_float(d);
   return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 }
+
 int tarval_is_double(tarval *tv)
 {
   ANNOUNCE();
@@ -297,6 +308,7 @@ int tarval_is_double(tarval *tv)
 
   return (get_mode_sort(tv->mode) == float_number);
 }
+
 long double tarval_to_double(tarval *tv)
 {
   ANNOUNCE();
@@ -322,12 +334,18 @@ int tarval_is_entity(tarval *tv)
   /* tv->value == NULL means dereferencing a null pointer */
   return ((get_mode_sort(tv->mode) == reference) && (tv->value != NULL) && (tv->length == 0));
 }
+
 entity *tarval_to_entity(tarval *tv)
 {
   ANNOUNCE();
-  assert(tarval_is_entity(tv));
+  assert(tv);
 
-  return (entity *)tv->value;
+  if (tarval_is_entity(tv))
+    return (entity *)tv->value;
+  else {
+    assert(0 && "tarval did not represent an entity");
+    return NULL;
+  }
 }
 
 /*
@@ -928,7 +946,7 @@ long tarval_classify(tarval *tv)
   return 2;
 }
 
-/** Initialization of the tarval module **/
+/* Initialization of the tarval module: called before init_mode() */
 void init_tarval_1(void)
 {
   ANNOUNCE();
@@ -938,6 +956,7 @@ void init_tarval_1(void)
   values = new_set(memcmp, TUNE_NCONSTANTS);
 }
 
+/* Initialization of the tarval module: called after init_mode() */
 void init_tarval_2(void)
 {
   ANNOUNCE();
