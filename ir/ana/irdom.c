@@ -123,18 +123,15 @@ void dom_tree_walk(ir_node *bl, irg_walk_func *pre,
 {
 	ir_node *p;
 
-  assert(get_irn_irg(bl)->dom_state == dom_consistent
-			&& "The dominators of the irg must be consistent");
+	if(pre)
+		pre(bl, env);
 
 	dominates_for_each(bl, p) {
-		if(pre)
-			pre(p, env);
-
 		dom_tree_walk(p, pre, post, env);
-
-		if(post)
-			post(p, env);
 	}
+
+	if(post)
+		post(bl, env);
 }
 
 void dom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
