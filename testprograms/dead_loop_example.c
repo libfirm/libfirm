@@ -93,7 +93,7 @@ int main(int argc, char **argv)
    in[1] = new_Bad();
    a = new_Phi(2, in, mode_Is);
    set_Add_left(c, a);
-   add_End_keepalive(get_irg_end(irg), a);
+   //add_End_keepalive(get_irg_end(irg), a);
    set_nodes_block(c, new_Bad());
    set_nodes_block(a, new_Bad());
   }
@@ -125,7 +125,7 @@ int main(int argc, char **argv)
   switch_block(loopBlock1);
   x = new_Jmp();
   add_in_edge(loopBlock2, x);
-  add_End_keepalive(get_irg_end(irg), x);
+  add_End_keepalive(get_irg_end(irg), loopBlock1);
   mature_block(loopBlock2);
 
   /* Make the return block */
