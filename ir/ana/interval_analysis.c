@@ -221,23 +221,26 @@ static void construct_interval_block(ir_node *b, ir_loop *l) {
   assert(n_cfgpreds > 0);
 
   for (i = 0; i < n_cfgpreds; ++i) {
+    ir_node *cfop, *pred;
+    ir_loop *pred_l;
+
     if (is_backedge(b, i)) {
       if (b != get_loop_element(l, 0).node) {
-	if (get_firm_verbosity()) {
-	  printf("Loophead not at loop position 0. "); DDMN(b);
-	}
+	    if (get_firm_verbosity()) {
+	      printf("Loophead not at loop position 0. "); DDMN(b);
+	    }
       }
       /* There are no backedges in the interval decomposition. */
       add_region_in(b, NULL);
       continue;
     }
 
-    ir_node *cfop = skip_Proj(get_Block_cfgpred(b, i));
-    ir_node *pred = get_nodes_block(cfop);
+    cfop = skip_Proj(get_Block_cfgpred(b, i));
+    pred = get_nodes_block(cfop);
     /* We want nice blocks. */
     assert(   get_irn_op(pred) != op_Bad
            && get_irn_op(skip_Proj(get_Block_cfgpred(b, i))) != op_Bad);
-    ir_loop *pred_l = get_irn_loop(pred);
+    pred_l = get_irn_loop(pred);
     if (pred_l == l) {
       add_region_in(b, pred);
       //if (is_fragile_op(cfop)) inc_region_n_exc_outs(b);
@@ -245,33 +248,33 @@ static void construct_interval_block(ir_node *b, ir_loop *l) {
     } else {
       int found = find_inner_loop(b, l, pred, cfop);
       if (!found) {
-	if (b != get_loop_element(l, 0).node) {
-	  if (get_firm_verbosity()) {
-	    printf("Loop entry not at loop position 0. "); DDMN(b);
-	  }
-	}
-	found = find_outer_loop(l, pred_l, pred, cfop);
-	if (found) add_region_in(b, NULL);  /* placeholder */
+	    if (b != get_loop_element(l, 0).node) {
+	      if (get_firm_verbosity()) {
+	        printf("Loop entry not at loop position 0. "); DDMN(b);
+	      }
+	    }
+	    found = find_outer_loop(l, pred_l, pred, cfop);
+	    if (found) add_region_in(b, NULL);  /* placeholder */
       }
       if (!found) {
-	found = find_previous_loop(l, pred_l, b, pred, cfop);
+        found = find_previous_loop(l, pred_l, b, pred, cfop);
       }
       if (!found) {
-	DDMG(current_ir_graph);
-	DDMN(b);
-	DDMN(pred);
-	assert(is_backedge(b, i));
-	assert(found && "backedge from inner loop");
+	    DDMG(current_ir_graph);
+	    DDMN(b);
+	    DDMN(pred);
+	    assert(is_backedge(b, i));
+	    assert(found && "backedge from inner loop");
       }
     }
 
     if (b != get_loop_element(l, 0).node) {
       /* Check for improper region */
       if (has_backedges(b)) {
-	printf("Improper Region!!!!!!\n");
-	DDMG(current_ir_graph);
-	DDMN(b);
-	DDML(l);
+	    printf("Improper Region!!!!!!\n");
+	    DDMG(current_ir_graph);
+	    DDMN(b);
+	    DDML(l);
       }
     }
   }
