@@ -97,10 +97,9 @@ inline void          mark_irn_visited (ir_node *node);
 inline int           irn_not_visited  (ir_node *node);
 inline void          set_irn_link          (ir_node *node, ir_node *link);
 inline ir_node      *get_irn_link          (ir_node *node);
-#ifdef DEBUG_libfirm
-/* Outputs a unique number for this node */
+/* Outputs a unique number for this node if libfirm is compiled for
+   debugging, else returns 0. */
 inline long get_irn_node_nr(ir_node *node);
-#endif
 /*****/
 
 /* irnode constructor                                             */
@@ -498,7 +497,6 @@ ir_node *get_fragile_op_mem(ir_node *node);
 /*****/
 
 /* Makros for debugging the libfirm */
-/*#ifdef DEBUG_libfirm*/
 #include "ident.h"
 
 #define DDMSG        printf("%s(l.%i)\n", __FUNCTION__, __LINE__)
@@ -526,6 +524,5 @@ ir_node *get_fragile_op_mem(ir_node *node);
 #define DDME(X)      xprintf("%s(l.%i) %I: %p\n", __FUNCTION__, __LINE__,              \
                      get_entity_ident(X), (X))
 
-/*#endif*/
 
 # endif /* _IRNODE_H_ */

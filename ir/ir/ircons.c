@@ -19,7 +19,7 @@
 # include "irnode_t.h"
 # include "irmode_t.h"
 # include "ircons.h"
-# include "common.h"
+# include "common_t.h"
 # include "irvrfy.h"
 # include "irop.h"
 # include "iropt_t.h"
@@ -28,7 +28,7 @@
 /* memset belongs to string.h */
 # include "string.h"
 
-#if USE_EXPICIT_PHI_IN_STACK
+#if USE_EXPLICIT_PHI_IN_STACK
 /* A stack needed for the automatic Phi node construction in constructor
    Phi_in. Redefinition in irgraph.c!! */
 struct Phi_in_stack {
@@ -714,7 +714,7 @@ new_r_Phi0 (ir_graph *irg, ir_node *block, ir_mode *mode)
    new_r_Phi_in.  The original implementation used the obstack
    to model this stack, now it is explicit.  This reduces side effects.
 */
-#if USE_EXPICIT_PHI_IN_STACK
+#if USE_EXPLICIT_PHI_IN_STACK
 Phi_in_stack *
 new_Phi_in_stack() {
   Phi_in_stack *res;
@@ -775,7 +775,7 @@ alloc_or_pop_from_Phi_in_stack(ir_graph *irg, ir_node *block, ir_mode *mode,
   }
   return res;
 }
-#endif /* USE_EXPICIT_PHI_IN_STACK */
+#endif /* USE_EXPLICIT_PHI_IN_STACK */
 
 /* Creates a Phi node with a given, fixed array **in of predecessors.
    If the Phi node is unnecessary, as the same value reaches the block
@@ -810,7 +810,7 @@ new_r_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
      the in array contains NULLs, there will be missing predecessors in the
      returned node.
      Is this a possible internal state of the Phi node generation? */
-#if USE_EXPICIT_PHI_IN_STACK
+#if USE_EXPLICIT_PHI_IN_STACK
   res = known = alloc_or_pop_from_Phi_in_stack(irg, block, mode, ins, in);
 #else
   res = known = new_ir_node (irg, block, op_Phi, mode, ins, in);
@@ -839,7 +839,7 @@ new_r_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
 
   /* i==ins: there is at most one predecessor, we don't need a phi node. */
   if (i==ins) {
-#if USE_EXPICIT_PHI_IN_STACK
+#if USE_EXPLICIT_PHI_IN_STACK
     free_to_Phi_in_stack(res);
 #else
     obstack_free (current_ir_graph->obst, res);
@@ -1022,7 +1022,7 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
     it starts the recursion.  This causes an Id at the entry of
     every block that has no definition of the value! **/
 
-#if USE_EXPICIT_PHI_IN_STACK
+#if USE_EXPLICIT_PHI_IN_STACK
 /* Just dummies */
 Phi_in_stack * new_Phi_in_stack() {  return NULL; }
 void free_Phi_in_stack(Phi_in_stack *s) { }

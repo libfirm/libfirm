@@ -22,7 +22,7 @@
 
 ir_graph *current_ir_graph;
 
-#if USE_EXPICIT_PHI_IN_STACK
+#if USE_EXPLICIT_PHI_IN_STACK
 /* really defined in ircons.c */
 typedef struct Phi_in_stack Phi_in_stack;
 Phi_in_stack *new_Phi_in_stack();
@@ -67,7 +67,7 @@ new_ir_graph (entity *ent, int n_loc)
   res->visited = 0;     /* visited flag, for the ir walker */
   res->block_visited=0; /* visited flag, for the 'block'-walker */
 
-#if USE_EXPICIT_PHI_IN_STACK
+#if USE_EXPLICIT_PHI_IN_STACK
   res->Phi_in_stack = new_Phi_in_stack();  /* A stack needed for automatic Phi
                                 generation */
 #endif
@@ -134,7 +134,7 @@ ir_graph *new_const_code_irg() {
   res->n_loc = 1;      /* Only the memory. */
   res->visited = 0;     /* visited flag, for the ir walker */
   res->block_visited=0; /* visited flag, for the 'block'-walker */
-#if USE_EXPICIT_PHI_IN_STACK
+#if USE_EXPLICIT_PHI_IN_STACK
   res->Phi_in_stack = NULL;
 #endif
   res->obst      = (struct obstack *) xmalloc (sizeof (struct obstack));
@@ -175,7 +175,7 @@ ir_graph *new_const_code_irg() {
 void free_ir_graph (ir_graph *irg) {
   set_entity_irg(irg->ent, NULL);
   free(irg->obst);
-#if USE_EXPICIT_PHI_IN_STACK
+#if USE_EXPLICIT_PHI_IN_STACK
   free_Phi_in_stack(irg->Phi_in_stack);
 #endif
   free(irg);

@@ -13,6 +13,7 @@
 # include "obst.h"
 # include "pset.h"
 # include "irgraph.h"
+# include "common_t.h"
 
 #define FRAME_TP_SUFFIX "frame_tp"
 
@@ -46,7 +47,7 @@ struct ir_graph {
   irg_dom_state dom_state;           /* Dominator information */
 
   /** Fields for construction **/
-#if USE_EXPICIT_PHI_IN_STACK
+#if USE_EXPLICIT_PHI_IN_STACK
   struct Phi_in_stack *Phi_in_stack; /* needed for automatic Phi construction */
 #endif
   int n_loc;                         /* number of local variable in this

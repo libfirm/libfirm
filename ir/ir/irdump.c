@@ -27,7 +27,8 @@
 # include "irgwalk.h"
 # include "typewalk.h"
 # include "irouts.h"
-#include "irdom.h"
+# include "irdom.h"
+# include "common_t.h"
 
 /* Attributes of nodes */
 #define DEFAULT_NODE_ATTR ""
@@ -1059,6 +1060,7 @@ dump_cfg (ir_graph *irg)
 
   /* walk over the blocks in the graph */
   irg_block_walk(irg->end, dump_block_to_cfg, NULL, NULL);
+  dump_ir_node (irg->bad);
 
   dump_dominator_information_flag = ddif;
   vcg_close();

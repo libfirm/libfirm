@@ -19,7 +19,7 @@
 #include "array.h"
 
 #ifdef DEBUG_libfirm
-#include "irprog.h"
+#include "irprog_t.h"
 #endif
 
 /* some constants fixing the positions of nodes predecessors
@@ -322,14 +322,16 @@ get_irn_link (ir_node *node) {
   return node->link;
 }
 
-#ifdef DEBUG_libfirm
 /* Outputs a unique number for this node */
 inline long
 get_irn_node_nr(ir_node *node) {
   assert(node);
+#ifdef DEBUG_libfirm
   return node->node_nr;
-}
+#else
+  return 0;
 #endif
+}
 
 inline tarval *
 get_irn_const_attr (ir_node *node)
@@ -1844,6 +1846,8 @@ skip_Proj (ir_node *node) {
 inline ir_node *
 skip_Tuple (ir_node *node) {
   ir_node *pred;
+
+  node = skip_nop(node);
   if (get_irn_op(node) == op_Proj) {
     pred = skip_nop(get_Proj_pred(node));
     if (get_irn_op(pred) == op_Proj) /* nested Tuple ? */

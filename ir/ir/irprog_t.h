@@ -5,6 +5,7 @@
 # define _IRPROG_T_H_
 
 #include "irprog.h"
+#include "common_t.h"
 
 struct ir_prog {
   firm_kind kind;
@@ -25,5 +26,10 @@ struct ir_prog {
   long max_node_nr;                /* to generate unique numbers for nodes. */
 #endif
 };
+
+#ifdef DEBUG_libfirm
+/* Returns a new, unique number to number nodes or the like. */
+int get_irp_new_node_nr();
+#endif
 
 #endif /* ifndef _IRPROG_T_H_ */

@@ -43,20 +43,17 @@ void init_link (ir_node *n, void *env) {
 
 void
 optimize_in_place_wrapper (ir_node *n, void *env) {
-  int start, i;
+  int i;
   ir_node *optimized;
 
-  if (get_irn_op(n) == op_Block)
-    start = 0;
-  else
-    start = -1;
-
-  /* optimize all sons after recursion, i.e., the sons' sons are
-     optimized already. */
-  for (i = start; i < get_irn_arity(n); i++) {
+  for (i = 0; i < get_irn_arity(n); i++) {
     optimized = optimize_in_place_2(get_irn_n(n, i));
     set_irn_n(n, i, optimized);
-    assert(get_irn_op(optimized) != op_Id);
+  }
+
+  if (get_irn_op(n) == op_Block) {
+    optimized = optimize_in_place_2(n);
+    if (optimized != n) exchange (n, optimized);
   }
 }
 
@@ -413,7 +410,10 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   int arity, n_ret, n_exc, n_res, i, j, rem_opt;
   type *called_frame, *caller_frame;
 
-  if (!get_opt_inline()) return;
+  if (!get_optimize() || !get_opt_inline()) return;
+  /** Turn off optimizations, this can cause problems when allocating new nodes. **/
+  rem_opt = get_optimize();
+  set_optimize(0);
 
   /* Handle graph state */
   assert(get_irg_phase_state(current_ir_graph) != phase_building);
@@ -428,9 +428,6 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   assert(get_type_tpop(get_Call_type(call)) == type_method);
   if (called_graph == current_ir_graph) return;
 
-  /** Turn off cse, this can cause problems when allocating new nodes. **/
-  rem_opt = get_opt_cse();
-  set_opt_cse(0);
 
   /** Part the Call node into two nodes.  Pre_call collects the parameters of
 	  the procedure and later replaces the Start node of the called graph.
@@ -443,8 +440,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   in[1] = get_Call_mem(call);
   in[2] = get_irg_frame(current_ir_graph);
   in[3] = get_irg_globals(current_ir_graph);
-  in[4] = new_Tuple (get_Call_n_params(call),
-					 get_Call_param_arr(call));
+  in[4] = new_Tuple (get_Call_n_params(call), get_Call_param_arr(call));
   pre_call = new_Tuple(5, in);
   post_call = call;
 
@@ -461,10 +457,10 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   if (get_irg_block_visited(current_ir_graph)< get_irg_block_visited(called_graph))
     set_irg_block_visited(current_ir_graph, get_irg_block_visited(called_graph));
   /* Set pre_call as new Start node in link field of the start node of
-	 calling graph and pre_calls block as new block for the start block
-	 of calling graph.
-	 Further mark these nodes so that they are not visited by the
-	 copying. */
+     calling graph and pre_calls block as new block for the start block
+     of calling graph.
+     Further mark these nodes so that they are not visited by the
+     copying. */
   set_irn_link(get_irg_start(called_graph), pre_call);
   set_irn_visited(get_irg_start(called_graph),
 				  get_irg_visited(current_ir_graph));/***/
@@ -476,8 +472,8 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   /* Initialize for compaction of in arrays */
   inc_irg_block_visited(current_ir_graph);
   /*
-	  set_Block_block_visited(get_irg_start_block(called_graph),
-	  get_irg_block_visited(current_ir_graph) +1 +1); /* count for self edge */
+      set_Block_block_visited(get_irg_start_block(called_graph),
+      get_irg_block_visited(current_ir_graph) +1 +1); /* count for self edge */
 
   /*** Replicate local entities of the called_graph ***/
   /* copy the entities. */
@@ -499,7 +495,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
      entities. */
   /* @@@ endless loops are not copied!! */
   irg_walk(get_irg_end(called_graph), copy_node_inline, copy_preds,
-		   get_irg_frame_type(called_graph));
+	   get_irg_frame_type(called_graph));
 
   /* Repair called_graph */
   set_irg_visited(called_graph, get_irg_visited(current_ir_graph));
@@ -568,11 +564,11 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
     for (j = 0; j < n_res; j++) {
       n_ret = 0;
       for (i = 0; i < arity; i++) {
-		ret = get_irn_n(end_bl, i);
-		if (get_irn_op(ret) == op_Return) {
-		  cf_pred[n_ret] = get_Return_res(ret, j);
-		  n_ret++;
-		}
+	ret = get_irn_n(end_bl, i);
+	if (get_irn_op(ret) == op_Return) {
+	  cf_pred[n_ret] = get_Return_res(ret, j);
+	  n_ret++;
+	}
       }
       phi = new_Phi(n_ret, cf_pred, get_irn_mode(cf_pred[0]));
       res_pred[j] = phi;
@@ -606,15 +602,15 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
       ir_node *ret;
       ret = skip_Proj(get_irn_n(end_bl, i));
       if (get_irn_op(ret) == op_Call) {
-		cf_pred[n_exc] = new_r_Proj(current_ir_graph, get_nodes_Block(ret), ret, mode_M, 3);
-		n_exc++;
+	cf_pred[n_exc] = new_r_Proj(current_ir_graph, get_nodes_Block(ret), ret, mode_M, 3);
+	n_exc++;
       } else if (is_fragile_op(ret)) {
-		/* We rely that all cfops have the memory output at the same position. */
-		cf_pred[n_exc] = new_r_Proj(current_ir_graph, get_nodes_Block(ret), ret, mode_M, 0);
-		n_exc++;
+	/* We rely that all cfops have the memory output at the same position. */
+	cf_pred[n_exc] = new_r_Proj(current_ir_graph, get_nodes_Block(ret), ret, mode_M, 0);
+	n_exc++;
       } else if (get_irn_op(ret) == op_Raise) {
-		cf_pred[n_exc] = new_r_Proj(current_ir_graph, get_nodes_Block(ret), ret, mode_M, 1);
-		n_exc++;
+	cf_pred[n_exc] = new_r_Proj(current_ir_graph, get_nodes_Block(ret), ret, mode_M, 1);
+	n_exc++;
       }
     }
     set_Tuple_pred(call, 3, new_Phi(n_exc, cf_pred, mode_M));
@@ -638,9 +634,9 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
     if (get_irn_op(cf_op) == op_Proj) {
       cf_op = get_Proj_pred(cf_op);
       if (get_irn_op(cf_op) == op_Tuple) {
-		cf_op = get_Tuple_pred(cf_op, 1);
-		assert(get_irn_op(cf_op) == op_Jmp);
-		break;
+	cf_op = get_Tuple_pred(cf_op, 1);
+	assert(get_irn_op(cf_op) == op_Jmp);
+	break;
       }
     }
   }
@@ -660,7 +656,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   }
 
   /** Turn cse back on. **/
-  set_opt_cse(rem_opt);
+  set_optimize(rem_opt);
 }
 
 /********************************************************************/

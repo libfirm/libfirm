@@ -14,8 +14,8 @@
 # include "irnode.h"
 # include "xprintf.h"
 # include "irop_t.h"
-
-#include "irdom_t.h" /* For size of struct dom_info. */
+# include "common_t.h"
+# include "irdom_t.h" /* For size of struct dom_info. */
 
 /** ir node attributes **/
 
