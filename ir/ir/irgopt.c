@@ -701,8 +701,8 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
   type *called_frame;
   irg_inline_property prop = get_irg_inline_property(called_graph);
 
-  if ( (prop != irg_inline_forced) && (!get_opt_optimize() || !get_opt_inline() ||
-                                       (prop == irg_inline_forbidden))) return 0;
+  if ( (prop != irg_inline_forced) &&
+       (!get_opt_optimize() || !get_opt_inline() || (prop == irg_inline_forbidden))) return 0;
 
 
   /*
@@ -1068,16 +1068,15 @@ typedef struct _inline_env_t {
  */
 static ir_graph *get_call_called_irg(ir_node *call) {
   ir_node *addr;
-  tarval *tv;
   ir_graph *called_irg = NULL;
 
   assert(get_irn_op(call) == op_Call);
 
   addr = get_Call_ptr(call);
-  if (get_irn_op(addr) == op_Const) {
-    /* Check whether the constant is the pointer to a compiled entity. */
-    tv = get_Const_tarval(addr);
+  if ((get_irn_op(addr) == op_SymConst) && (get_SymConst_kind (addr) == symconst_addr_ent)) {
+    called_irg = get_entity_irg(get_SymConst_entity(addr));
   }
+
   return called_irg;
 }
 
@@ -1133,8 +1132,6 @@ void inline_small_irgs(ir_graph *irg, int size) {
     collect_phiprojs(irg);
     for (i = 0; i < env.pos; i++) {
       ir_graph *callee;
-      //tv = get_Const_tarval(get_Call_ptr(env.calls[i]));
-      //      callee = get_entity_irg(get_tarval_entity(tv));
       callee = get_entity_irg(get_SymConst_entity(get_Call_ptr(env.calls[i])));
       if (((_obstack_memory_used(callee->obst) - obstack_room(callee->obst)) < size) ||
         (get_irg_inline_property(callee) == irg_inline_forced)) {
@@ -1238,59 +1235,47 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
     free_callee_info(current_ir_graph);
 
     irg_walk(get_irg_end(current_ir_graph), NULL, collect_calls2,
-         get_irg_link(current_ir_graph));
+	     get_irg_link(current_ir_graph));
   }
 
-  /* and now inline.
-     Inline leaves recursively -- we might construct new leaves. */
-  /* int itercnt = 1; */
+  /* -- and now inline. -- */
+
+  /* Inline leaves recursively -- we might construct new leaves. */
   while (did_inline) {
-    /* printf("iteration %d\n", itercnt++); */
     did_inline = 0;
+
     for (i = 0; i < n_irgs; ++i) {
       ir_node *call;
-      eset *walkset;
       int phiproj_computed = 0;
 
       current_ir_graph = get_irp_irg(i);
       env = (inline_irg_env *)get_irg_link(current_ir_graph);
 
-      /* we can not walk and change a set, nor remove from it.
-      So recompute.*/
-      walkset = env->call_nodes;
-      env->call_nodes = eset_create();
-      for (call = eset_first(walkset); call; call = eset_next(walkset)) {
-        inline_irg_env *callee_env;
+      for (call = eset_first(env->call_nodes); call; call = eset_next(env->call_nodes)) {
+	if (get_irn_op(call) == op_Tuple) continue;   /* We already inlined. */
         ir_graph *callee = get_call_called_irg(call);
 
-        if (env->n_nodes > maxsize) break;
-        if (callee &&
-        ((is_leave(callee) && is_smaller(callee, leavesize)) ||
-         (get_irg_inline_property(callee) == irg_inline_forced))) {
+        if (env->n_nodes > maxsize) continue; // break;
+
+        if (callee && (is_leave(callee) && is_smaller(callee, leavesize))) {
           if (!phiproj_computed) {
             phiproj_computed = 1;
             collect_phiprojs(current_ir_graph);
           }
-          callee_env = (inline_irg_env *)get_irg_link(callee);
-/*         printf(" %s: Inlineing %s.\n", get_entity_name(get_irg_entity(current_ir_graph)), */
-/*         get_entity_name(get_irg_entity(callee))); */
-          if (inline_method(call, callee)) {
-            did_inline = 1;
-        env->n_call_nodes--;
-        eset_insert_all(env->call_nodes, callee_env->call_nodes);
-        env->n_call_nodes += callee_env->n_call_nodes;
-        env->n_nodes += callee_env->n_nodes;
-        callee_env->n_callers--;
+	  did_inline = inline_method(call, callee);
+
+          if (did_inline) {
+	    /* Do some statistics */
+	    inline_irg_env *callee_env = (inline_irg_env *)get_irg_link(callee);
+	    env->n_call_nodes --;
+	    env->n_nodes += callee_env->n_nodes;
+	    callee_env->n_callers--;
+	  }
+	}
       }
-        } else {
-          eset_insert(env->call_nodes, call);
-        }
-      }
-      eset_destroy(walkset);
     }
   }
 
-  /* printf("Non leaves\n"); */
   /* inline other small functions. */
   for (i = 0; i < n_irgs; ++i) {
     ir_node *call;
@@ -1305,26 +1290,24 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
     walkset = env->call_nodes;
     env->call_nodes = eset_create();
     for (call = eset_first(walkset); call; call = eset_next(walkset)) {
-      inline_irg_env *callee_env;
+      if (get_irn_op(call) == op_Tuple) continue;   /* We already inlined. */
       ir_graph *callee = get_call_called_irg(call);
 
-      if (env->n_nodes > maxsize) break;
-      if (callee && is_smaller(callee, size)) {
+      if (callee &&
+	  ((is_smaller(callee, size) && (env->n_nodes < maxsize)) ||    /* small function */
+	   (get_irg_inline_property(callee) == irg_inline_forced))) {
         if (!phiproj_computed) {
             phiproj_computed = 1;
             collect_phiprojs(current_ir_graph);
         }
-        callee_env = (inline_irg_env *)get_irg_link(callee);
-/*       printf(" %s: Inlineing %s.\n", get_entity_name(get_irg_entity(current_ir_graph)), */
-/*       get_entity_name(get_irg_entity(callee))); */
         if (inline_method(call, callee)) {
-      did_inline = 1;
-      env->n_call_nodes--;
-      eset_insert_all(env->call_nodes, callee_env->call_nodes);
-      env->n_call_nodes += callee_env->n_call_nodes;
-      env->n_nodes += callee_env->n_nodes;
-      callee_env->n_callers--;
-    }
+	  inline_irg_env *callee_env = (inline_irg_env *)get_irg_link(callee);
+	  env->n_call_nodes--;
+	  eset_insert_all(env->call_nodes, callee_env->call_nodes);  /* @@@ ??? This are the wrong nodes !? Not the copied ones. */
+	  env->n_call_nodes += callee_env->n_call_nodes;
+	  env->n_nodes += callee_env->n_nodes;
+	  callee_env->n_callers--;
+	}
       } else {
         eset_insert(env->call_nodes, call);
       }
@@ -1337,11 +1320,11 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
 #if 0
     env = (inline_irg_env *)get_irg_link(current_ir_graph);
     if ((env->n_call_nodes_orig != env->n_call_nodes) ||
-    (env->n_callers_orig != env->n_callers))
+	(env->n_callers_orig != env->n_callers))
       printf("Nodes:%3d ->%3d, calls:%3d ->%3d, callers:%3d ->%3d, -- %s\n",
-         env->n_nodes_orig, env->n_nodes, env->n_call_nodes_orig, env->n_call_nodes,
-         env->n_callers_orig, env->n_callers,
-         get_entity_name(get_irg_entity(current_ir_graph)));
+	     env->n_nodes_orig, env->n_nodes, env->n_call_nodes_orig, env->n_call_nodes,
+	     env->n_callers_orig, env->n_callers,
+	     get_entity_name(get_irg_entity(current_ir_graph)));
 #endif
     free_inline_irg_env((inline_irg_env *)get_irg_link(current_ir_graph));
   }
@@ -1565,20 +1548,20 @@ place_floats_late(ir_node *n, pdeq *worklist)
     for (i = 0; i < get_irn_n_outs(n); i++) {
       ir_node *succ = get_irn_out(n, i);
       if (irn_not_visited(succ) && (get_irn_op(succ) != op_Phi))
-    place_floats_late(succ, worklist);
+	place_floats_late(succ, worklist);
     }
 
     /* We have to determine the final block of this node... except for
        constants. */
     if ((get_op_pinned(get_irn_op(n)) == op_pin_state_floats) &&
-    (get_irn_op(n) != op_Const) &&
-    (get_irn_op(n) != op_SymConst)) {
+	(get_irn_op(n) != op_Const) &&
+	(get_irn_op(n) != op_SymConst)) {
       ir_node *dca = NULL;  /* deepest common ancestor in the
                    dominator tree of all nodes'
                    blocks depending on us; our final
                    placement has to dominate DCA. */
       for (i = 0; i < get_irn_n_outs(n); i++) {
-    dca = consumer_dom_dca (dca, get_irn_out(n, i), n);
+	dca = consumer_dom_dca (dca, get_irn_out(n, i), n);
       }
       set_nodes_block(n, dca);
 
