@@ -27,6 +27,7 @@
 # include "mangle.h"
 # include "irouts.h"
 # include "firmstat.h"
+# include "irgwalk.h"
 
 ir_graph *current_ir_graph;
 INLINE ir_graph *get_current_ir_graph(void) {
