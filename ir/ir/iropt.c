@@ -251,7 +251,7 @@ computed_value (ir_node *n)
 }  /* compute node */
 
 
-
+#if 0
 /* returns 1 if the a and b are pointers to different locations. */
 static bool
 different_identity (ir_node *a, ir_node *b)
@@ -268,7 +268,7 @@ different_identity (ir_node *a, ir_node *b)
   }
   return 0;
 }
-
+#endif
 
 /* equivalent_node returns a node equivalent to N.  It skips all nodes that
    perform no actual computation, as, e.g., the Id nodes.  It does not create

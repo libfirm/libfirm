@@ -853,7 +853,6 @@ void inline_small_irgs(ir_graph *irg, int size) {
     /* There are calls to inline */
     collect_phiprojs(irg);
     for (i = 0; i < pos; i++) {
-      char buf[1024];
       tarval *tv;
       ir_graph *callee;
       tv = get_Const_tarval(get_Call_ptr(calls[i]));
@@ -1167,7 +1166,7 @@ static void merge_blocks(ir_node *n, void *env) {
       if (!get_optimize() || (!get_opt_control_flow_straightening()
 			      && !get_opt_control_flow_weak_simplification()))
 	/* how could something be optimized if flags are not set? */
-	assert(0 && "strange ??!!");
+	assert(0 && "strange ?? !!");
       exchange (b, new);
       b = new;
       new = equivalent_node(b);

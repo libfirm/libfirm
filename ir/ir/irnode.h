@@ -558,6 +558,7 @@ ir_node *get_fragile_op_mem(ir_node *node);
 #define DDMNB(X)     xprintf("%I%I: %ld (in block %ld)\n", get_irn_opident(X), get_irn_modeident(X), get_irn_node_nr(X), get_irn_node_nr(get_nodes_Block(X)))
 #define DDMT(X)      xprintf("%s(l.%i) %I %I: %p\n", __FUNCTION__, __LINE__, get_type_tpop_nameid(X), get_type_ident(X), (X))
 #define DDME(X)      xprintf("%s(l.%i) %I: %p\n", __FUNCTION__, __LINE__, get_entity_ident(X), (X))
+#define DDMEO(X)     xprintf("%s(l.%i) %I (own: %I): %p\n", __FUNCTION__, __LINE__, get_entity_ident(X), get_type_ident(get_entity_owner(X)), (X))
 #define DDMG(X)      xprintf("%s(l.%i) %I: %p\n", __FUNCTION__, __LINE__, get_irg_ent(get_entity_ident(X)), (X))
 
 #else
@@ -577,6 +578,7 @@ ir_node *get_fragile_op_mem(ir_node *node);
 #define DDMT(X)      xprintf("%s(l.%i) %I %I: %p\n", __FILE__, __LINE__, get_type_tpop_nameid(X), get_type_ident(X), (X))
 #define DDME(X)      xprintf("%s(l.%i) %I: %p\n", __FILE__, __LINE__, get_entity_ident(X), (X))
 #define DDMG(X)      xprintf("%s(l.%i) %I: %p\n", __FILE__, __LINE__, get_irg_ent(get_entity_ident(X)), (X))
+#define DDMI(X)      xprintf("%s(l.%i) %I: %p\n", __FILE__, __LINE__, (X), (X))
 
 #endif /* __GNUC__ */
 

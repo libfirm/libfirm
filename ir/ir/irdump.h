@@ -107,6 +107,7 @@ void dump_all_types (void);
 /**
  *
  *    - Dumps the class hierarchy with or without entities.
+ *   Does not dump the global type.
  *   Dumps a node for all classes and the sub/supertype relations.  If
  *   entities is set to true also dumps the entities of classes, but without
  *   any additional information as the entities type.  The overwrites relation

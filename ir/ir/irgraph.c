@@ -58,7 +58,6 @@ void free_Phi_in_stack(Phi_in_stack *s);
 ir_graph *
 new_ir_graph (entity *ent, int n_loc)
 {
-  int i;
   ir_graph *res;
   ir_node *first_block;
   ir_node *projX;
@@ -475,7 +474,7 @@ inc_irg_visited (ir_graph *irg)
 unsigned long
 get_max_irg_visited(void)
 {
-  int i;
+  //int i;
   //for(i = 0; i < get_irp_n_irgs(); i++)
   //  assert(max_irg_visited >= get_irg_visited(get_irp_irg(i)));
   return max_irg_visited;
@@ -488,7 +487,7 @@ void set_max_irg_visited(int val) {
 unsigned long
 inc_max_irg_visited(void)
 {
-  int i;
+  //int i;
   //  for(i = 0; i < get_irp_n_irgs(); i++)
   //assert(max_irg_visited >= get_irg_visited(get_irp_irg(i)));
   max_irg_visited++;

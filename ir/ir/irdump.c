@@ -174,11 +174,6 @@ dump_node_mode (ir_node *n)
   }
 }
 
-static void dump_node_loop_info(ir_node *n) {
-  //  if (get_irn_loop(n))
-  //  xfprintf(F, "\n in loop %d", get_loop_depth(get_irn_loop(n)));
-}
-
 static INLINE void
 dump_node_nodeattr (ir_node *n)
 {
@@ -757,7 +752,7 @@ static void print_type_info(type *tp) {
     xfprintf(F, "state: layout_fixed,\n");
   }
   if (get_type_mode(tp))
-    xfprintf(F, "mode: %s,\n", get_mode_name(get_type_mode(tp)));
+    xfprintf(F, "mode: %I,\n", get_mode_ident(get_type_mode(tp)));
   xfprintf(F, "size: %dB,\n", get_type_size(tp));
 }
 
@@ -812,34 +807,42 @@ void dump_entity_node(entity *ent) {
   xfprintf (F, DEFAULT_TYPE_ATTRIBUTE);
   xfprintf (F, "label: ");
   xfprintf (F, "\"ent %I\" " ENTITY_NODE_ATTR , get_entity_ident(ent));
+  fprintf (F, "\n info1:\"\nallocation:  ");
   switch (get_entity_allocation(ent)) {
-    case dynamic_allocated:   fprintf (F, " info1:\"dynamic allocated\n");   break;
-    case automatic_allocated: fprintf (F, " info1:\"automatic allocated\n"); break;
-    case static_allocated:    fprintf (F, " info1:\"static allocated\n");    break;
+    case dynamic_allocated:   fprintf (F, "dynamic allocated");   break;
+    case automatic_allocated: fprintf (F, "automatic allocated"); break;
+    case static_allocated:    fprintf (F, "static allocated");    break;
+    case parameter_allocated: fprintf (F, "parameter allocated"); break;
   }
+  fprintf (F, "\nvisibility:  ");
   switch (get_entity_visibility(ent)) {
-    case local:              fprintf (F, "local\n");             break;
-    case external_visible:   fprintf (F, "external_visible\n");  break;
-    case external_allocated: fprintf (F, "external_allocate\n"); break;
+    case local:              fprintf (F, "local");             break;
+    case external_visible:   fprintf (F, "external_visible");  break;
+    case external_allocated: fprintf (F, "external_allocate"); break;
   }
+  fprintf (F, "\nvariability: ");
   switch (get_entity_variability(ent)) {
-    case uninitialized: fprintf (F, "uninitialized\n");break;
-    case initialized:   fprintf (F, "initialized\n");  break;
-    case part_constant: fprintf (F, "part_constant\n");break;
-    case constant:      fprintf (F, "constant\n");     break;
+    case uninitialized: fprintf (F, "uninitialized");break;
+    case initialized:   fprintf (F, "initialized");  break;
+    case part_constant: fprintf (F, "part_constant");break;
+    case constant:      fprintf (F, "constant");     break;
   }
+  fprintf (F, "\nvolatility:  ");
   switch (get_entity_volatility(ent)) {
-    case non_volatile: fprintf (F, "non_volatile\n"); break;
-    case is_volatile:  fprintf (F, "is_volatile\n");  break;
+    case non_volatile: fprintf (F, "non_volatile"); break;
+    case is_volatile:  fprintf (F, "is_volatile");  break;
   }
+  fprintf (F, "\npeculiarity: ");
   switch (get_entity_peculiarity(ent)) {
-    case description: fprintf (F, "description\n"); break;
-    case inherited:   fprintf (F, "inherited\n");   break;
-    case existent:    fprintf (F, "existent\n");    break;
+    case description: fprintf (F, "description"); break;
+    case inherited:   fprintf (F, "inherited");   break;
+    case existent:    fprintf (F, "existent");    break;
   }
+  xfprintf(F, "\nname:    %I\nld_name: %I", get_entity_ident(ent), get_entity_ld_ident(ent));
+  fprintf(F, "\noffset:  %d", get_entity_offset(ent));
   if (is_method_type(get_entity_type(ent)))
-    xfprintf (F, "\n irg = %p ", get_entity_irg(ent));
-  xfprintf(F, "\"}\n");
+    xfprintf (F, "\nirg = %p ", get_entity_irg(ent));
+  xfprintf(F, "\"\n}\n");
 }
 
 /* dumps a type or entity and it's edges. */
@@ -973,6 +976,7 @@ dump_class_hierarchy_node (type_or_ent *tore, void *env) {
   switch (get_kind(tore)) {
   case k_entity: {
     entity *ent = (entity *)tore;
+    if (get_entity_owner(ent) == get_glob_type()) break;
     if ((env) && is_class_type(get_entity_owner(ent))) {
       /* The node */
       dump_entity_node(ent);
@@ -988,6 +992,7 @@ dump_class_hierarchy_node (type_or_ent *tore, void *env) {
   case k_type:
     {
       type *tp = (type *)tore;
+      if (tp == get_glob_type()) break;
       switch (get_type_tpop_code(tp)) {
         case tpo_class: {
 	  print_type_node(tp);
