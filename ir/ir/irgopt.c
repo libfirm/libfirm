@@ -1089,11 +1089,13 @@ static void collect_calls(ir_node *call, void *env) {
   addr = get_Call_ptr(call);
 
   if (get_irn_op(addr) == op_SymConst) {
-    ir_graph *called_irg = get_entity_irg(get_SymConst_entity(addr));
-    inline_env_t *ienv = (inline_env_t *)env;
-    if (called_irg && ienv->pos < MAX_INLINE) {
-      /* The Call node calls a locally defined method.  Remember to inline. */
-      ienv->calls[ienv->pos++] = call;
+    if (get_SymConst_kind(addr) == symconst_addr_ent) {
+      ir_graph *called_irg = get_entity_irg(get_SymConst_entity(addr));
+      inline_env_t *ienv = (inline_env_t *)env;
+      if (called_irg && ienv->pos < MAX_INLINE) {
+	/* The Call node calls a locally defined method.  Remember to inline. */
+	ienv->calls[ienv->pos++] = call;
+      }
     }
   }
 }
