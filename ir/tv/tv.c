@@ -1472,26 +1472,29 @@ const tarval_mode_info *tarval_get_mode_output_option(ir_mode *mode)
   return mode->tv_priv;
 }
 
-
-/* Identifying some tarvals ??? */
-/* Implemented in old tv.c as such:
- *   return 0 for additive neutral,
- *   1 for multiplicative neutral,
- *   -1 for bitwise-and neutral
- *   2 else
+/*
+ * Identifying tarvals values for algebraic simplifications.
  *
- * Implemented for compatibility */
-long tarval_classify(tarval *tv)
+ * Returns:
+ *   - TV_CLASSIFY_NULL    for additive neutral,
+ *   - TV_CLASSIFY_ONE     for multiplicative neutral,
+ *   - TV_CLASSIFY_ALL_ONE for bitwise-and neutral
+ *   - TV_CLASSIFY_OTHER   else
+ */
+tarval_classification_t tarval_classify(tarval *tv)
 {
   ANNOUNCE();
-  if (!tv || tv == tarval_bad) return 2;
+  if (!tv || tv == tarval_bad) return TV_CLASSIFY_OTHER;
 
-  if (tv == get_mode_null(tv->mode)) return 0;
-  else if (tv == get_mode_one(tv->mode)) return 1;
+  if (tv == get_mode_null(tv->mode))
+    return TV_CLASSIFY_NULL;
+  else if (tv == get_mode_one(tv->mode))
+    return TV_CLASSIFY_ONE;
   else if ((get_mode_sort(tv->mode) == irms_int_number)
-           && (tv == new_tarval_from_long(-1, tv->mode))) return -1;
+           && (tv == new_tarval_from_long(-1, tv->mode)))
+    return TV_CLASSIFY_ALL_ONE;
 
-  return 2;
+  return TV_CLASSIFY_OTHER;
 }
 
 /**

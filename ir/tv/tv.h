@@ -560,19 +560,25 @@ char *tarval_bitpattern(tarval *tv);
 unsigned char tarval_sub_bits(tarval *tv, unsigned byte_ofs);
 
 /**
- * Identifying some tarvals ???
- *
- * @return
- *   - 0 for additive neutral,
- *   - +1 for multiplicative neutral,
- *   - -1 for bitwise-and neutral
- *   - 2 else
- *
- * @deprecated
- *   This function is deprecated and its use strongly discouraged.
- *   Implemented for completeness.
+ * Return values of tarval classify
  */
-long tarval_classify(tarval *tv);
+typedef enum _tarval_classification_t {
+  TV_CLASSIFY_NULL    =  0,	/**< the tarval represents the additive neutral element */
+  TV_CLASSIFY_ONE     = +1,	/**< the tarval represents the multiplicative neutral element */
+  TV_CLASSIFY_ALL_ONE = -1,	/**< the tarval represents the bitwise-and neutral element */
+  TV_CLASSIFY_OTHER   =  2,	/*<< all other tarvals */
+} tarval_classification_t;
+
+/**
+ * Identifying tarvals values for algebraic simplifications.
+ * @param tv
+ * @return
+ *   - TV_CLASSIFY_NULL    for additive neutral,
+ *   - TV_CLASSIFY_ONE     for multiplicative neutral,
+ *   - TV_CLASSIFY_ALL_ONE for bitwise-and neutral
+ *   - TV_CLASSIFY_OTHER   else
+ */
+tarval_classification_t tarval_classify(tarval *tv);
 
 /**
  * Initialization of the tarval module.
