@@ -1441,5 +1441,27 @@ type *get_cur_frame_type(void);
 /** Puts the graph into state "phase_high" */
 void finalize_cons (ir_graph *irg);
 
+/* --- Initialization --- */
+
+/**
+ * This function is called, whenever a local variable is used before definition
+ *
+ * @parameter mode      the mode of the local var
+ * @pos                 position choosen be the frontend for this var
+ *
+ * @return a firm node of mode @p mode that initialises the var at position pos
+ *
+ * @note
+ *      Do not return NULL
+ *      If this function is not set, FIRM will create a const node with tarval BAD
+ */
+typedef ir_node *default_initialize_local_variable_func_t(ir_mode *mode, int pos);
+
+/**
+ * Initializes the graph construction.
+ *
+ * @param func  @see default_initialize_local_variable_func_t
+ */
+void init_cons (default_initialize_local_variable_func_t *func);
 
 # endif /* _IRCONS_H_ */

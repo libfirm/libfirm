@@ -39,6 +39,11 @@ struct Phi_in_stack {
 typedef struct Phi_in_stack Phi_in_stack;
 #endif
 
+/*
+ * language dependant initialization variable
+ */
+static default_initialize_local_variable_func_t *default_initialize_local_variable = NULL;
+
 /*** ******************************************** */
 /** privat interfaces, for professional use only */
 
@@ -1461,21 +1466,23 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
      Else we may not set graph_arr as there a later value is remembered. */
   phi0 = NULL;
   if (!block->attr.block.graph_arr[pos]) {
-    /* This is commented out as collapsing to Bads is no good idea.
-       Either we need an assert here, or we need to call a routine
-       that deals with this case as appropriate for the given language.
-       Right now a self referencing Id is created which will crash irg_vrfy().
-
-       Even if all variables are defined before use, it can happen that
-       we get to the start block, if a cond has been replaced by a tuple
-       (bad, jmp).  As the start has a self referencing control flow edge,
-       we get a self referencing Id, which is hard to optimize away.  We avoid
-       this by defining the value as a Bad node.
-       Returning a const with tarval_bad is a preliminary solution.  In some
-       situations we might want a Warning or an Error. */
-
     if (block == get_irg_start_block(current_ir_graph)) {
-      block->attr.block.graph_arr[pos] = new_Const(mode, tarval_bad);
+      /* Collapsing to Bad tarvals is no good idea.
+         So we call a user-supplied routine here that deals with this case as
+         appropriate for the given language. Sorryly the only help we can give
+         here is the position.
+
+         Even if all variables are defined before use, it can happen that
+         we get to the start block, if a cond has been replaced by a tuple
+         (bad, jmp).  In this case we call the function needlessly, eventually
+         generating an non existant error.
+         However, this SHOULD NOT HAPPEN, as bad control flow nodes are intercepted
+         before recuring.
+      */
+      if (default_initialize_local_variable)
+        block->attr.block.graph_arr[pos] = default_initialize_local_variable(mode, pos);
+      else
+        block->attr.block.graph_arr[pos] = new_Const(mode, tarval_bad);
       /* We don't need to care about exception ops in the start block.
 	 There are none by definition. */
       return block->attr.block.graph_arr[pos];
@@ -2200,8 +2207,9 @@ type *get_cur_frame_type() {
 
 /* call once for each run of the library */
 void
-init_cons (void)
+init_cons (default_initialize_local_variable_func_t *func)
 {
+  default_initialize_local_variable = func;
 }
 
 /* call for each graph */
