@@ -879,13 +879,6 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
     }
     break;
 
-  case tpo_pointer:
-    if (verbosity & dump_verbosity_typeattrs) {
-      type *tt = get_pointer_points_to_type(tp);
-      fprintf(F, "\n  points to %s (%ld)", get_type_name(tt), get_type_nr(tt));
-    }
-    break;
-
   case tpo_array:
     if (verbosity & dump_verbosity_typeattrs) {
       int i, n_dim;
@@ -929,6 +922,19 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
                                    "    ", verbosity);
       }
     }
+    break;
+
+  case tpo_pointer:
+    if (verbosity & dump_verbosity_typeattrs) {
+      type *tt = get_pointer_points_to_type(tp);
+      fprintf(F, "\n  points to %s (%ld)", get_type_name(tt), get_type_nr(tt));
+    }
+    break;
+
+  case tpo_primitive:
+  case tpo_id:
+  case tpo_none:
+  case tpo_unknown:
     break;
 
   default:
