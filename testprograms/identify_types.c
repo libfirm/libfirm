@@ -32,9 +32,12 @@ int main(int argc, char **argv)
 
   /** init library */
   firm_parameter_t params;
+  type_identify_if_t params2;
   memset (&params, 0, sizeof(params));
   params.size = sizeof(params);
-  params.compare_types_func = compare_names;
+  params2.cmp = compare_names;
+  params2.hash = NULL;
+  params.ti_if = &params2;
   init_firm(&params);
 
 
