@@ -27,7 +27,7 @@ typedef void (*DUMP_NEW_PATTERN_FUNC)(pattern_dumper_t *self, counter_t *cnt);
 typedef void (*DUMP_FINISH_PATTERN_FUNC)(pattern_dumper_t *self);
 typedef void (*DUMP_NODE_FUNC)(pattern_dumper_t *self, unsigned id, unsigned op_code, unsigned mode_code, void *attr);
 typedef void (*DUMP_REF_FUNC)(pattern_dumper_t *self, unsigned id);
-typedef void (*DUMP_EDGE_FUNC)(pattern_dumper_t *self, unsigned id, unsigned parent, unsigned position);
+typedef void (*DUMP_EDGE_FUNC)(pattern_dumper_t *self, unsigned tgt, unsigned src, unsigned pos, unsigned mode_code);
 typedef void (*DUMP_START_CHILDREN_FUNC)(pattern_dumper_t *self, unsigned id);
 typedef void (*DUMP_FINISH_CHILDREN_FUNC)(pattern_dumper_t *self, unsigned id);
 typedef void (*DUMP_START_FUNC)(pattern_dumper_t *self);
@@ -155,16 +155,18 @@ static void vcg_dump_node(pattern_dumper_t *self, unsigned id,
 /**
  * Dumps an edge.
  */
-static void vcg_dump_edge(pattern_dumper_t *self, unsigned id, unsigned parent, unsigned position)
+static void vcg_dump_edge(pattern_dumper_t *self, unsigned tgt, unsigned src, unsigned pos, unsigned mode_code)
 {
   vcg_private_t *priv = self->data;
 
   if (priv->pattern_id > priv->max_pattern)
     return;
 
-  fprintf(priv->f, "    edge: { sourcename: \"n%u_%u\" targetname: \"n%u_%u\"}\n",
-      priv->pattern_id, parent,
-      priv->pattern_id, id);
+  fprintf(priv->f, "    edge: { sourcename: \"n%u_%u\" targetname: \"n%u_%u\" label: \"%u\" }\n",
+      priv->pattern_id, src,
+      priv->pattern_id, tgt,
+      pos
+  );
 }
 
 /**
@@ -235,11 +237,11 @@ static void stdout_dump_ref(pattern_dumper_t *self, unsigned id)
 /**
  * Dump an edge
  */
-static void stdout_dump_edge(pattern_dumper_t *self, unsigned id, unsigned parent, unsigned position)
+static void stdout_dump_edge(pattern_dumper_t *self, unsigned tgt, unsigned src, unsigned pos, unsigned mode_code)
 {
   FILE *f = self->data;
 
-  if (position > 0)
+  if (pos > 0)
     fprintf(f, ", ");
 }
 
@@ -322,10 +324,10 @@ void pattern_dump_ref(pattern_dumper_t *self, unsigned id)
 /*
  * Dump an edge
  */
-void pattern_dump_edge(pattern_dumper_t *self, unsigned id, unsigned parent, unsigned position)
+void pattern_dump_edge(pattern_dumper_t *self, unsigned tgt, unsigned src, unsigned pos, unsigned mode_code)
 {
   if (self->dump_edge)
-    self->dump_edge(self, id, parent, position);
+    self->dump_edge(self, tgt, src, pos, mode_code);
 }
 
 /*

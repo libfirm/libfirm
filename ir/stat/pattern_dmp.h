@@ -27,8 +27,13 @@ void pattern_dump_ref(pattern_dumper_t *self, unsigned id);
 
 /**
  * Dump an edge
+ *
+ * @param tgt       The target ID
+ * @param src       The source ID
+ * @param pos       The edge position
+ * @param mode_code The mode_code of the edge
  */
-void pattern_dump_edge(pattern_dumper_t *self, unsigned id, unsigned parent, unsigned position);
+void pattern_dump_edge(pattern_dumper_t *self, unsigned tgt, unsigned src, unsigned pos, unsigned mode_code);
 
 /**
  * Start children dumper
