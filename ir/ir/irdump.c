@@ -405,7 +405,14 @@ void print_edge_vcgattr(ir_node *from, int to) {
     xfprintf (F, CF_EDGE_ATTR);
     break;
   case iro_Start:   break;
-  case iro_End:     break;
+  case iro_End:
+    if (to >= 0) {
+      if (get_irn_mode(get_End_keepalive(from, to)) == mode_R)
+	xfprintf (F, CF_EDGE_ATTR);
+      if (get_irn_mode(get_End_keepalive(from, to)) == mode_X)
+	xfprintf (F, MEM_EDGE_ATTR);
+    }
+    break;
   case iro_Jmp:     break;
   case iro_Cond:    break;
   case iro_Return:
@@ -1042,7 +1049,9 @@ dump_block_to_cfg (ir_node *block, void *env) {
 void
 dump_cfg (ir_graph *irg)
 {
-  int rem = dump_dominator_information_flag;
+  ir_graph *rem = current_ir_graph;
+  int ddif = dump_dominator_information_flag;
+  current_ir_graph = irg;
   vcg_open (irg, "-cfg");
 
   if (get_irg_dom_state(irg) != dom_consistent)
@@ -1051,8 +1060,9 @@ dump_cfg (ir_graph *irg)
   /* walk over the blocks in the graph */
   irg_block_walk(irg->end, dump_block_to_cfg, NULL, NULL);
 
-  dump_dominator_information_flag = rem;
+  dump_dominator_information_flag = ddif;
   vcg_close();
+  current_ir_graph = rem;
 }
 
 
