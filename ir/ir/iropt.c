@@ -375,6 +375,8 @@ equivalent_node (ir_node *n)
            themselves.
       */
       int i, n_preds;
+
+
       ir_node *block = NULL;     /* to shutup gcc */
       ir_node *first_val = NULL; /* to shutup gcc */
       ir_node *scnd_val = NULL;  /* to shutup gcc */
@@ -413,6 +415,7 @@ equivalent_node (ir_node *n)
 	}
       }
 #endif
+
       /* Find first non-self-referencing input */
       for (i = 0;  i < n_preds;  ++i) {
         first_val = follow_Id(get_Phi_pred(n, i));
@@ -426,7 +429,7 @@ equivalent_node (ir_node *n)
       }
 
       /* A totally Bad or self-referencing Phi (we didn't break the above loop) */
-      if (i > n_preds) { n = new_Bad();  break; }
+      if (i >= n_preds) { n = new_Bad();  break; }
 
       scnd_val = NULL;
 
@@ -445,8 +448,8 @@ equivalent_node (ir_node *n)
       }
 
       /* Fold, if no multiple distinct non-self-referencing inputs */
-      if (i > n_preds) {
-	n = a;
+      if (i >= n_preds) {
+	n = first_val;
       } else {
       /* skip the remaining Ids. */
 	while (++i < n_preds) {
@@ -974,6 +977,8 @@ optimize_in_place (ir_node *n)
   tarval *tv;
   ir_node *old_n = n;
 
+  if (!get_optimize()) return n;
+
   /* if not optimize return n */
   if (n == NULL) {
     /* Here this is possible.  Why? */
@@ -995,8 +1000,8 @@ optimize_in_place (ir_node *n)
   }
 
   /* remove unnecessary nodes */
-  if (get_opt_constant_folding())
-    //  if (get_opt_constant_folding() || get_irn_op(n) == op_Phi)
+  //if (get_opt_constant_folding())
+  if (get_opt_constant_folding() || get_irn_op(n) == op_Phi)
     n = equivalent_node (n);
 
   /** common subexpression elimination **/

@@ -43,7 +43,9 @@ main(void)
 
   init_firm ();
 
+  set_optimize(1);
   set_opt_constant_folding(0);  /* so that the stupid tests are not optimized. */
+                                /* if 1 aborts ????? @@@ */
   set_opt_cse(1);
   set_opt_dead_node_elimination (1);
 
@@ -126,6 +128,8 @@ main(void)
   mature_block (get_irg_end_block(irg));
 
   printf("Optimizing ...\n");
+
+  local_optimize_graph(irg),
   dead_node_elimination(irg);
 
   /* verify the graph */
