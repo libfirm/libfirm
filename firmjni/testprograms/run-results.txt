@@ -1,7 +1,29 @@
-javac -classpath /usr/public2/java/jdk1.3.1-sun/jre/lib/rt.jar:.:../.. -d . ../../../firmjni/testprograms/Empty.java
-java -cp /usr/public2/java/jdk1.3.1-sun/jre/lib/rt.jar:.:../.. -Djava.library.path=.. Empty
 
 Creating an IR graph: EMPTY...
 Done building the graph.  Dumping it.
+use xvcg to view this graph:
+/ben/goetz/bin/xvcg GRAPHNAME
+
+
+Creating an IR graph: IfElseExample...
+Optimization: 2
+new Nodes: 26,
+old Nodes: 27, 25, 26,
+Optimization: 2
+new Nodes: 10,
+old Nodes: 28, 25, 10,
+Optimization: 4
+new Nodes: 18,
+old Nodes: 33, 26,
+Optimization: 1
+new Nodes: 21,
+old Nodes: 48, 21,
+Optimization: 1
+new Nodes: 19,
+old Nodes: 51, 19,
+Done building the graph.  Optimizing it.
+Optimization: 4
+new Nodes: 18,
+old Nodes: 33, 26,
 use xvcg to view this graph:
 /ben/goetz/bin/xvcg GRAPHNAME

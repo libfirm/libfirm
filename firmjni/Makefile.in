@@ -115,6 +115,10 @@ install:
 #	cp *.java @javadir@
 #	cp *.class @javadir@
 
+
+test:	jni
+	$(MAKE) -C testprograms test
+
 clean:
 	rm -rf sources *.c *.h *.o
 

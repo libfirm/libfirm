@@ -10,6 +10,8 @@ srcdir = @srcdir@
 topdir = ..
 subdir = testprograms
 
+DIFF ?= diff
+
 SOURCEPATH = @top_srcdir@/firmjni/testprograms/
 
 SOURCES := Makefile.in \
@@ -19,6 +21,8 @@ MYCLASSPATH = $(CLASSPATH):../..
 
 LD_LIBRARY_PATH += $srcdir/firmjni
 
+run_bin_EXAMPLES = java -cp $(MYCLASSPATH) -Djava.library.path=$(topdir) Empty; \
+	java -cp $(MYCLASSPATH) -Djava.library.path=$(topdir) IfElseExample
 
 %.class: $(top_srcdir)/firmjni/testprograms/%.java
 	javac -d . $<
@@ -32,12 +36,21 @@ empty:
 ifelseexample:
 	javac -classpath $(MYCLASSPATH) -d . $(SOURCEPATH)IfElseExample.java
 
+test:   realclean all
+	($(run_bin_EXAMPLES))>results.txt
+	($(DIFF) results.txt $(SOURCEPATH)/run-results.txt) || (echo Firmjni test failed; exit 1)
+	@echo Firmjni test successful
+
+reference: realclean all
+	($(run_bin_EXAMPLES))>$(SOURCEPATH)/run-results.txt
+
+
 run:	empty ifelseexample
 	java -cp $(MYCLASSPATH) -Djava.library.path=$(topdir) Empty
 	java -cp $(MYCLASSPATH) -Djava.library.path=$(topdir) IfElseExample
 
 clean:
-	-rm *.class
+	-rm *.class results.txt
 
 realclean:	clean
 	-rm *.vcg

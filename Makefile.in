@@ -44,6 +44,7 @@ libfirm.a: subdir_all $(XOFILES) $(OFILES)
 
 testprograms:	libfirm.a
 	$(MAKE) -C testprograms
+	$(MAKE) -C firmjni
 
 
 # gernerate program documentation
@@ -76,6 +77,7 @@ config.status: configure
 
 test::
 	$(MAKE) -C testprograms test;
+	$(MAKE) -C firmjni test;
 
 test-reference::
 	$(MAKE) -C testprograms reference;
