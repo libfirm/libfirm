@@ -25,6 +25,9 @@
 # include "irgwalk.h"
 # include "reassoc_t.h"
 # include "irhooks.h"
+# include "debug.h"
+
+static firm_dbg_module_t *dbg;
 
 typedef struct _walker_t {
   int changes;          /* set, if a reassociation take place */
@@ -87,8 +90,9 @@ static void get_comm_Binop_ops(ir_node *binop, ir_node **a, ir_node **c)
 /**
  * reassociate a Sub: x - c = (-c) + x
  */
-static int reassoc_Sub(ir_node *n)
+static int reassoc_Sub(ir_node **in)
 {
+	ir_node *n = *in;
   ir_node *right = get_Sub_right(n);
 
   /* FIXME: Do not apply this rule for unsigned Sub's because our code
@@ -107,7 +111,7 @@ static int reassoc_Sub(ir_node *n)
     ir_node *left  = get_Sub_left(n);
     ir_node *block = get_nodes_block(n);
     ir_mode *mode  = get_irn_mode(n);
-    dbg_info *dbg  = get_irn_dbg_info(n);
+    dbg_info *dbi  = get_irn_dbg_info(n);
     ir_node *irn, *c;
 
     switch (get_const_class(left)) {
@@ -115,6 +119,7 @@ static int reassoc_Sub(ir_node *n)
         irn = optimize_in_place(n);
         if (irn != n) {
           exchange(n, irn);
+					*in = irn;
           return 1;
         }
         return 0;
@@ -126,16 +131,15 @@ static int reassoc_Sub(ir_node *n)
     }
 
     c   = new_r_Const(current_ir_graph, block, mode, get_mode_null(mode));
-    irn = new_rd_Sub(dbg, current_ir_graph, block, c, right, mode);
+    irn = new_rd_Sub(dbi, current_ir_graph, block, c, right, mode);
 
-    irn = new_rd_Add(dbg, current_ir_graph, block, left, irn, get_irn_mode(n));
+    irn = new_rd_Add(dbi, current_ir_graph, block, left, irn, get_irn_mode(n));
 
-/*
-    printf("Applied: %s - %s => %s + (-%s)\n",
-        get_irn_opname(get_Sub_left(n)), get_irn_opname(c),
-        get_irn_opname(get_Sub_left(n)), get_irn_opname(c) );
-*/
+    DBG((dbg, LEVEL_5, "Applied: %n - %n => %n + (-%n)\n",
+        get_Sub_left(n), c, get_Sub_left(n), c));
+
     exchange(n, irn);
+		*in = irn;
 
     return 1;
   }
@@ -169,8 +173,9 @@ static ir_mode *get_mode_from_ops(ir_node *op1, ir_node *op2)
  * all two operands are are constant expressions and the third is a
  * constant, so avoid this situation.
  */
-static int reassoc_commutative(ir_node *n)
+static int reassoc_commutative(ir_node **node)
 {
+	ir_node *n     = *node;
   ir_op *op      = get_irn_op(n);
   ir_node *block = get_nodes_block(n);
   ir_node *t1, *c1;
@@ -238,11 +243,9 @@ static int reassoc_commutative(ir_node *n)
       mode = get_mode_from_ops(in[0], in[1]);
       irn   = optimize_node(new_ir_node(NULL, current_ir_graph, block, op, mode, 2, in));
 
-/*
-      printf("Applied: %s .%s. (%s .%s. %s) => (%s .%s. %s) .%s. %s\n",
-          get_irn_opname(c1), get_irn_opname(n), get_irn_opname(c2), get_irn_opname(n), get_irn_opname(t2),
-          get_irn_opname(c1), get_irn_opname(n), get_irn_opname(c2), get_irn_opname(n), get_irn_opname(t2));
-  */
+      DBG((dbg, LEVEL_5, "Applied: %n .%s. (%n .%s. %n) => (%n .%s. %n) .%s. %n\n",
+          c1, get_irn_opname(n), c2, get_irn_opname(n),
+					t2, c1, get_irn_opname(n), c2, get_irn_opname(n), t2));
       /*
        * in some rare cases it can really happen that we get the same node back.
        * This might be happen in dead loops, were the Phi nodes are already gone away.
@@ -250,6 +253,7 @@ static int reassoc_commutative(ir_node *n)
       */
       if (n != irn) {
         exchange(n, irn);
+				*node = irn;
         return 1;
       }
     }
@@ -265,12 +269,13 @@ static int reassoc_commutative(ir_node *n)
 /**
  * reassociate using distributive law for Mul and Add/Sub
  */
-static int reassoc_Mul(ir_node *n)
+static int reassoc_Mul(ir_node **node)
 {
+	ir_node *n = *node;
   ir_node *add_sub, *c;
   ir_op *op;
 
-  if (reassoc_commutative(n))
+  if (reassoc_commutative(&n))
     return 1;
 
   get_comm_Binop_ops(n, &add_sub, &c);
@@ -291,14 +296,10 @@ static int reassoc_Mul(ir_node *n)
     mode  = get_mode_from_ops(in[0], in[1]);
     irn   = optimize_node(new_ir_node(NULL, current_ir_graph, block, op, mode, 2, in));
 
-/*
-    printf("Applied: (%s .%s. %s) %s %s => (%s %s %s) .%s. (%s %s %s)\n",
-        get_irn_opname(t1), get_op_name(op), get_irn_opname(t2), get_irn_opname(n), get_irn_opname(c),
-        get_irn_opname(t1), get_irn_opname(n), get_irn_opname(c),
-        get_op_name(op),
-        get_irn_opname(t2), get_irn_opname(n), get_irn_opname(c));
-*/
+    DBG((dbg, LEVEL_5, "Applied: (%n .%s. %n) %n %n => (%n %n %n) .%s. (%n %n %n)\n",
+        t1, get_op_name(op), t2, n, c, t1, n, c, get_op_name(op), t2, n, c));
     exchange(n, irn);
+		*node = irn;
 
     return 1;
   }
@@ -324,13 +325,7 @@ static void do_reassociation(ir_node *n, void *env)
 
     /* reassociation works only for integer or reference modes */
     if (op->reassociate && (mode_is_int(mode) || mode_is_reference(mode))) {
-      res = op->reassociate(n);
-      if (res) {
-        wenv->changes = 1;
-
-        /* we need a skip here, or we will see an Id in the next iteration */
-        n = skip_Id(n);
-      }
+      res = op->reassociate(&n);
     }
   } while (res == 1);
 
@@ -374,5 +369,8 @@ void firm_init_reassociation(void)
   INIT(And);
   INIT(Or);
   INIT(Eor);
-#undef CASE
+#undef INIT
+
+	dbg = firm_dbg_register("firm.opt.reassoc");
+	firm_dbg_set_mask(dbg, -1);
 }
