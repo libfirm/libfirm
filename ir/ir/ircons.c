@@ -1230,43 +1230,43 @@ alloc_or_pop_from_Phi_in_stack(ir_graph *irg, ir_node *block, ir_mode *mode,
    eliminates itself.
    */
 static INLINE ir_node *
-new_rd_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
-          ir_node **in, int ins)
+new_rd_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode, ir_node **in, int ins)
 {
   int i;
   ir_node *res, *known;
 
-  /* allocate a new node on the obstack.
-     This can return a node to which some of the pointers in the in-array
-     already point.
-     Attention: the constructor copies the in array, i.e., the later changes
-     to the array in this routine do not affect the constructed node!  If
-     the in array contains NULLs, there will be missing predecessors in the
-     returned node.
-     Is this a possible internal state of the Phi node generation? */
+  /* Allocate a new node on the obstack.  This can return a node to
+     which some of the pointers in the in-array already point.
+     Attention: the constructor copies the in array, i.e., the later
+     changes to the array in this routine do not affect the
+     constructed node!  If the in array contains NULLs, there will be
+     missing predecessors in the returned node.  Is this a possible
+     internal state of the Phi node generation? */
 #if USE_EXPLICIT_PHI_IN_STACK
   res = known = alloc_or_pop_from_Phi_in_stack(irg, block, mode, ins, in);
 #else
   res = known = new_ir_node (NULL, irg, block, op_Phi, mode, ins, in);
   res->attr.phi_backedge = new_backedge_arr(irg->obst, ins);
 #endif
+
   /* The in-array can contain NULLs.  These were returned by
      get_r_value_internal if it reached the same block/definition on a
-     second path.
-     The NULLs are replaced by the node itself to simplify the test in the
-     next loop. */
-  for (i=0;  i < ins;  ++i)
-    if (in[i] == NULL) in[i] = res;
+     second path.  The NULLs are replaced by the node itself to
+     simplify the test in the next loop. */
+  for (i = 0;  i < ins;  ++i) {
+    if (in[i] == NULL)
+      in[i] = res;
+  }
 
   /* This loop checks whether the Phi has more than one predecessor.
-     If so, it is a real Phi node and we break the loop.  Else the
-     Phi node merges the same definition on several paths and therefore
-     is not needed. */
-  for (i=0;  i < ins;  ++i)
+     If so, it is a real Phi node and we break the loop.  Else the Phi
+     node merges the same definition on several paths and therefore is
+     not needed. */
+  for (i = 0;  i < ins;  ++i)
   {
-    if (in[i]==res || in[i]==known) continue;
+    if (in[i] == res || in[i] == known) continue;
 
-    if (known==res)
+    if (known == res)
       known = in[i];
     else
       break;
@@ -1464,7 +1464,7 @@ INLINE void free_Phi_in_stack(Phi_in_stack *s) { }
 
 static INLINE ir_node *
 new_rd_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
-          ir_node **in, int ins)
+	       ir_node **in, int ins, ir_node *phi0)
 {
   int i;
   ir_node *res, *known;
@@ -1479,9 +1479,24 @@ new_rd_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
      Phi node merges the same definition on several paths and therefore
      is not needed. Don't consider Bad nodes! */
   known = res;
+  DDMN(res);  // GL
+  if (phi0) DDMN(phi0); else printf(" phi0 == NULL\n");
+
   for (i=0;  i < ins;  ++i)
   {
     assert(in[i]);
+
+    // GL
+    //if (get_irn_op(in[i]) == op_Id)
+    //{ printf("  "); DDMN(in[i]); }
+
+    in[i] = skip_Id(in[i]);  /* increasses the number of freed Phis. */
+
+    /* Optimize self referencing Phis:  We can't detect them yet properly, as
+       they still refer to the Phi0 they will replace.  So replace right now. */
+    if (phi0 && in[i] == phi0) in[i] = res;
+
+    { printf("  "); DDMN(in[i]); } // GL
 
     if (in[i]==res || in[i]==known || is_Bad(in[i])) continue;
 
@@ -1492,7 +1507,8 @@ new_rd_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
   }
 
   /* i==ins: there is at most one predecessor, we don't need a phi node. */
-  if (i==ins) {
+  if (i == ins) {
+    printf("  removing Phi node\n"); // GL
     if (res != known) {
       obstack_free (current_ir_graph->obst, res);
       res = known;
@@ -1501,10 +1517,13 @@ new_rd_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
       res = new_Bad();
     }
   } else {
-    res = optimize_node (res);
+    // GL ir_node *old = res;
+    // GL dump_node (res);
+    res = optimize_node (res);  /* This is necessary to add the node to the hash table for cse. */
+    // GL if (res != old) { printf("optimize not useless!!! \n"); assert(0); }
     irn_vrfy_irg (res, irg);
     /* Memory Phis in endless loops must be kept alive.
-       As we can't distinguish these easily we keep all of the alive. */
+       As we can't distinguish these easily we keep all of them alive. */
     if ((res->op == op_Phi) && (mode == mode_M))
       add_End_keepalive(irg->end, res);
   }
@@ -1645,8 +1664,8 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
       block->attr.block.graph_arr[pos] = phi0;
 #if PRECISE_EXC_CONTEXT
       /* Set graph_arr for fragile ops.  Also here we should break recursion.
-     We could choose a cyclic path through an cfop.  But the recursion would
-     break at some point. */
+	 We could choose a cyclic path through an cfop.  But the recursion would
+	 break at some point. */
       set_frag_value(block->attr.block.graph_arr, pos, phi0);
 #endif
     }
@@ -1683,7 +1702,7 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
      with these predecessors is created.  This constructor contains an
      optimization: If all predecessors of the Phi node are identical it
      returns the only operand instead of a new Phi node.  */
-  res = new_rd_Phi_in (current_ir_graph, block, mode, nin, ins);
+  res = new_rd_Phi_in (current_ir_graph, block, mode, nin, ins, phi0);
 
   /* In case we allocated a Phi0 node at the beginning of this procedure,
      we need to exchange this Phi0 with the real Phi. */
@@ -1803,6 +1822,8 @@ mature_block (ir_node *block)
   int ins;
   ir_node *n, **nin;
   ir_node *next;
+
+  DDMN(block); // GL
 
   assert (get_irn_opcode(block) == iro_Block);
   /* @@@ should be commented in
