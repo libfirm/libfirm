@@ -1331,6 +1331,7 @@ static void clear_link(ir_node * node, void * env) {
 }
 
 static void collect_blocks_floats_cg(ir_node * node, pmap * map) {
+  assert(node); assert(map);
   if (is_Block(node)
       || node_floats(node)
       || get_irn_op(node) == op_Bad
@@ -1340,9 +1341,11 @@ static void collect_blocks_floats_cg(ir_node * node, pmap * map) {
     {
       ir_node ** arr;
       arr = entry->value;
+      assert(arr);
       ARR_APP1(ir_node *, arr , node);
     } else {
       ir_node ** arr = NEW_ARR_F(ir_node *, 1);
+      assert(arr);
       arr[0] = node;
       pmap_insert(map, current_ir_graph, arr);
     }

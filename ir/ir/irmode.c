@@ -156,6 +156,7 @@ ir_mode *mode_C;
 ir_mode *mode_U;
 ir_mode *mode_b;
 ir_mode *mode_P;
+ir_mode *mode_P_mach;
 
 /* * *
  * functions defined in irmode.h
@@ -183,6 +184,14 @@ INLINE ir_mode *get_modeM(void) { ANNOUNCE(); return mode_M; }
 INLINE ir_mode *get_modeBB(void) { ANNOUNCE(); return mode_BB; }
 INLINE ir_mode *get_modeANY(void) { ANNOUNCE(); return mode_ANY; }
 INLINE ir_mode *get_modeBAD(void) { ANNOUNCE(); return mode_BAD; }
+
+
+ir_mode *get_modeP_mach(void)  { ANNOUNCE(); return mode_P_mach; }
+void     set_modeP_mach(ir_mode *p) {
+  ANNOUNCE();
+  assert(mode_is_reference(p));
+  mode_P_mach = p;
+ }
 
 /**
  * Registers a new mode if not defined yet, else returns

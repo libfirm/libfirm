@@ -305,7 +305,7 @@ ir_mode *get_modeANY(void);
 ir_mode *get_modeBAD(void);
 
 ir_mode *get_modeP_mach(void);
-ir_mode *set_modeP_mach(ir_mode *p);
+void     set_modeP_mach(ir_mode *p);
 
 /**
    Functions to check, whether a modecode is signed, float, int, num, data,

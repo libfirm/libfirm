@@ -7,23 +7,23 @@ use xvcg to view this graph:
 
 Creating an IR graph: IfElseExample...
 Optimization: 2
-new Nodes: 26,
-old Nodes: 27, 25, 26,
+new Nodes: 35,
+old Nodes: 36, 34, 35,
 Optimization: 2
-new Nodes: 10,
-old Nodes: 28, 25, 10,
-Optimization: 4
-new Nodes: 18,
-old Nodes: 33, 26,
-Optimization: 1
-new Nodes: 21,
-old Nodes: 48, 21,
-Optimization: 1
 new Nodes: 19,
-old Nodes: 51, 19,
+old Nodes: 37, 34, 19,
+Optimization: 4
+new Nodes: 27,
+old Nodes: 42, 35,
+Optimization: 1
+new Nodes: 30,
+old Nodes: 57, 30,
+Optimization: 1
+new Nodes: 28,
+old Nodes: 60, 28,
 Done building the graph.  Optimizing it.
 Optimization: 4
-new Nodes: 18,
-old Nodes: 33, 26,
+new Nodes: 27,
+old Nodes: 42, 35,
 use xvcg to view this graph:
 /ben/goetz/bin/xvcg GRAPHNAME
