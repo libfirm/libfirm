@@ -1850,12 +1850,16 @@ static ir_node *transform_node_Proj(ir_node *proj)
               /* a-c1 == c2  ==>  a == c2+c1,  a-c1 != c2  ==>  a != c2+c1 */
               if (op == op_Sub) {
                 ir_node *c1 = get_Sub_right(left);
-                tarval *tv2 = tarval_add(tv, value_of(c1));
+                tarval *tv2 = value_of(c1);
 
                 if (tv2 != tarval_bad) {
-                  left    = get_Sub_left(left);
-                  tv      = tv2;
-                  changed = 2;
+                  tv2 = tarval_add(tv, value_of(c1));
+
+                  if (tv2 != tarval_bad) {
+                    left    = get_Sub_left(left);
+                    tv      = tv2;
+                    changed = 2;
+                  }
                 }
               }
               /* a+c1 == c2  ==>  a == c2-c1,  a+c1 != c2  ==>  a != c2-c1 */
@@ -1874,11 +1878,14 @@ static ir_node *transform_node_Proj(ir_node *proj)
                   tv2 = value_of(a_r);
                 }
 
-                tv2 = tarval_sub(tv, tv2);
                 if (tv2 != tarval_bad) {
-                  left    = a;
-                  tv      = tv2;
-                  changed = 2;
+                  tv2 = tarval_sub(tv, tv2);
+
+                  if (tv2 != tarval_bad) {
+                    left    = a;
+                    tv      = tv2;
+                    changed = 2;
+                  }
                 }
               }
             }
@@ -2231,15 +2238,17 @@ static ir_node *transform_node_Mux(ir_node *n)
     ir_node *f   =  get_Mux_false(n);
     ir_node *t   = get_Mux_true(n);
 
-    /*
-     * Note: normalization puts the constant on the right site,
-     * so we check only one case.
-     *
-     * Note further that these optimization work even for floating point
-     * with NaN's because -NaN == NaN.
-     * However, if +0 and -0 is handled differently, we cannot use the first one.
-     */
     if (get_irn_op(cmp) == op_Cmp && classify_Const(get_Cmp_right(cmp)) == CNST_NULL) {
+      ir_node *block = get_nodes_block(n);
+
+      /*
+       * Note: normalization puts the constant on the right site,
+       * so we check only one case.
+       *
+       * Note further that these optimization work even for floating point
+       * with NaN's because -NaN == NaN.
+       * However, if +0 and -0 is handled differently, we cannot use the first one.
+       */
       if (get_irn_op(f) == op_Minus &&
           get_Minus_op(f)   == t &&
           get_Cmp_left(cmp) == t) {
@@ -2248,7 +2257,7 @@ static ir_node *transform_node_Mux(ir_node *n)
           /* Mux(a >=/> 0, -a, a)  ==>  Abs(a) */
           n = new_rd_Abs(get_irn_dbg_info(n),
                 current_ir_graph,
-                get_nodes_block(n),
+                block,
                 t, mode);
           DBG_OPT_ALGSIM0(oldn, n);
         }
@@ -2256,11 +2265,11 @@ static ir_node *transform_node_Mux(ir_node *n)
           /* Mux(a <=/< 0, -a, a)  ==>  Minus(Abs(a)) */
           n = new_rd_Abs(get_irn_dbg_info(n),
                 current_ir_graph,
-                get_nodes_block(n),
+                block,
                 t, mode);
           n = new_rd_Minus(get_irn_dbg_info(n),
                 current_ir_graph,
-                get_nodes_block(n),
+                block,
                 n, mode);
 
           DBG_OPT_ALGSIM0(oldn, n);
@@ -2274,7 +2283,7 @@ static ir_node *transform_node_Mux(ir_node *n)
           /* Mux(a <=/< 0, a, -a)  ==>  Abs(a) */
           n = new_rd_Abs(get_irn_dbg_info(n),
                 current_ir_graph,
-                get_nodes_block(n),
+                block,
                 f, mode);
           DBG_OPT_ALGSIM0(oldn, n);
         }
@@ -2282,13 +2291,51 @@ static ir_node *transform_node_Mux(ir_node *n)
           /* Mux(a >=/> 0, a, -a)  ==>  Minus(Abs(a)) */
           n = new_rd_Abs(get_irn_dbg_info(n),
                 current_ir_graph,
-                get_nodes_block(n),
+                block,
                 f, mode);
           n = new_rd_Minus(get_irn_dbg_info(n),
                 current_ir_graph,
-                get_nodes_block(n),
+                block,
                 n, mode);
 
+          DBG_OPT_ALGSIM0(oldn, n);
+        }
+      }
+
+      if (mode_is_int(mode) && mode_is_signed(mode) &&
+          get_mode_arithmetic(mode) == irma_twos_complement) {
+        /* the following optimization works only with signed integer two-complement mode */
+
+        if ((proj_nr == pn_Cmp_Lt || proj_nr == pn_Cmp_Le) &&
+            classify_Const(t) == CNST_ALL_ONE &&
+            classify_Const(f) == CNST_NULL) {
+          /*
+           * Mux(x:T </<= 0, 0, -1) -> Shrs(x, sizeof_bits(T) - 1)
+           * Conditions:
+           * T must be signed.
+           */
+          n = new_rd_Shrs(get_irn_dbg_info(n),
+                current_ir_graph, block, get_Cmp_left(cmp),
+                new_r_Const_long(current_ir_graph, block, mode_Iu,
+                  get_mode_size_bits(mode) - 1),
+                mode);
+          DBG_OPT_ALGSIM0(oldn, n);
+        }
+        else if ((proj_nr == pn_Cmp_Gt || proj_nr == pn_Cmp_Ge) &&
+                 classify_Const(t) == CNST_ONE &&
+                 classify_Const(f) == CNST_NULL) {
+          /*
+           * Mux(x:T >/>= 0, 0, 1) -> Shr(-x, sizeof_bits(T) - 1)
+           * Conditions:
+           * T must be signed.
+           */
+          n = new_rd_Shr(get_irn_dbg_info(n),
+                current_ir_graph, block,
+                new_r_Minus(current_ir_graph, block,
+                  get_Cmp_left(cmp), mode),
+                new_r_Const_long(current_ir_graph, block, mode_Iu,
+                  get_mode_size_bits(mode) - 1),
+                mode);
           DBG_OPT_ALGSIM0(oldn, n);
         }
       }
