@@ -1384,7 +1384,7 @@ ir_node * get_array_upper_bound  (type *array, int dimension) {
   assert(array && (array->type_op == type_array));
   return array->attr.aa.upper_bound[dimension];
 }
-long     get_array_lower_upper_int  (type *array, int dimension) {
+long     get_array_upper_bound_int  (type *array, int dimension) {
   ir_node *node;
   assert(array && (array->type_op == type_array));
   node = array->attr.aa.upper_bound[dimension];

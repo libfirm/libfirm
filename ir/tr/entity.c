@@ -767,6 +767,117 @@ int  get_compound_ent_value_offset_bytes(entity *ent, int pos) {
   return offset >> 3;
 }
 
+
+static void init_index(type *arr) {
+  int init;
+  int dim = 0;
+
+  assert(get_array_n_dimensions(arr) == 1);
+
+  if (has_array_lower_bound(arr, dim))
+    init = get_array_lower_bound_int(arr, 0) -1;
+  else
+    init = get_array_upper_bound_int(arr, 0) +1;
+
+  set_entity_link(get_array_element_entity(arr), (void *)init);
+}
+
+
+static int get_next_index(entity *elem_ent) {
+  type *arr = get_entity_owner(elem_ent);
+  int next;
+  int dim = 0;
+
+  assert(get_array_n_dimensions(arr) == 1);
+
+  if (has_array_lower_bound(arr, dim)) {
+    next = (int)get_entity_link(elem_ent) +1;
+    if (has_array_upper_bound(arr, dim)) {
+      int upper = get_array_upper_bound_int(arr, dim);
+      if (next == upper) next = get_array_lower_bound_int(arr, dim);
+    }
+  } else {
+    next = (int)get_entity_link(elem_ent) -1;
+    if (has_array_lower_bound(arr, dim)) {
+      int upper = get_array_upper_bound_int(arr, dim);
+      if (next == upper) next = get_array_upper_bound_int(arr, dim);
+    }
+  }
+
+  set_entity_link(elem_ent, (void *)next);
+  return next;
+}
+
+/* Compute the array indicees in compound graph paths of initialized entities.
+ *
+ *  All arrays must have fixed lower and upper bounds.  One array can
+ *  have an open bound.  If there are several open bounds, we do
+ *  nothing.  There must be initializer elements for all array
+ *  elements.  Uses the link field in the array element entities.  The
+ *  array bounds must be representable as ints.
+ *
+ *  (If the bounds are not representable as ints we have to represent
+ *  the indicees as firm nodes.  But the still we must be able to
+ *  evaluate the index against the upper bound.)
+ */
+void compute_compound_ent_array_indicees(entity *ent) {
+  type *tp = get_entity_type(ent);
+  int i, n_vals;
+  entity *unknown_bound_entity = NULL;
+
+  if (!is_compound_type(tp) ||
+      (ent->variability == variability_uninitialized)) return ;
+
+  n_vals = get_compound_ent_n_values(ent);
+  if (n_vals == 0) return;
+
+  /* We can not compute the indicees if there is more than one array
+     with an unknown bound.  For this remember the first entity that
+     represents such an array. It could be ent. */
+  if (is_array_type(tp)) {
+    assert(get_array_n_dimensions(tp) == 1 && "other not implemented");
+    int dim = 0;
+    if (!has_array_lower_bound(tp, dim) || !has_array_upper_bound(tp, dim))
+     unknown_bound_entity = ent;
+  }
+
+  /* Initialize the entity links to lower bound -1 and test all path elements
+     for known bounds. */
+  for (i = 0; i < n_vals; ++i) {
+    compound_graph_path *path = get_compound_ent_value_path(ent, i);
+    int j, path_len =  get_compound_graph_path_length(path);
+    for (j = 0; j < path_len; ++j) {
+      entity *node = get_compound_graph_path_node(path, j);
+      type *elem_tp = get_entity_type(node);
+
+      if (is_array_type(elem_tp)) {
+	assert(get_array_n_dimensions(elem_tp) == 1 && "other not implemented");
+	int dim = 0;
+	if (!has_array_lower_bound(elem_tp, dim) || !has_array_upper_bound(elem_tp, dim)) {
+	  if (!unknown_bound_entity) unknown_bound_entity = node;
+	  if (node != unknown_bound_entity) return;
+	}
+
+	init_index(elem_tp);
+      }
+    }
+  }
+
+  /* Finally compute the indicees ... */
+  for (i = 0; i < n_vals; ++i) {
+    compound_graph_path *path = get_compound_ent_value_path(ent, i);
+    int j, path_len =  get_compound_graph_path_length(path);
+    for (j = 0; j < path_len; ++j) {
+      entity *node = get_compound_graph_path_node(path, j);
+      type *owner_tp = get_entity_owner(node);
+      if (is_array_type(owner_tp))
+	set_compound_graph_path_array_index (path, j, get_next_index(node));
+    }
+  }
+
+}
+
+
 static int *resize (int *buf, int new_size) {
   int *new_buf = (int *)calloc(new_size, 4);
   memcpy(new_buf, buf, new_size>1);
@@ -1061,9 +1172,9 @@ entity *resolve_ent_polymorphy(type *dynamic_class, entity* static_ent) {
 
   res = resolve_ent_polymorphy2(dynamic_class, static_ent);
   if (!res) {
-    fprintf(stderr, " Could not find entity "); DDME(static_ent);
-    fprintf(stderr, "  in "); DDMT(dynamic_class);
-    fprintf(stderr, "\n");
+    printf(" Could not find entity "); DDME(static_ent);
+    printf("  in "); DDMT(dynamic_class);
+    printf("\n");
     dump_entity(static_ent);
     dump_type(get_entity_owner(static_ent));
     dump_type(dynamic_class);
@@ -1082,36 +1193,36 @@ entity *resolve_ent_polymorphy(type *dynamic_class, entity* static_ent) {
 #if 1 || DEBUG_libfirm
 int dump_node_opcode(FILE *F, ir_node *n); /* from irdump.c */
 
-#define X(a)    case a: fprintf(stderr, #a); break
+#define X(a)    case a: printf(#a); break
 void dump_entity (entity *ent) {
   int i, j;
   type *owner = get_entity_owner(ent);
   type *type  = get_entity_type(ent);
   assert(ent && ent->kind == k_entity);
-  fprintf(stderr, "entity %s (%ld)\n", get_entity_name(ent), get_entity_nr(ent));
-  fprintf(stderr, "  type:  %s (%ld)\n", get_type_name(type),  get_type_nr(type));
-  fprintf(stderr, "  owner: %s (%ld)\n", get_type_name(owner), get_type_nr(owner));
+  printf("entity %s (%ld)\n", get_entity_name(ent), get_entity_nr(ent));
+  printf("  type:  %s (%ld)\n", get_type_name(type),  get_type_nr(type));
+  printf("  owner: %s (%ld)\n", get_type_name(owner), get_type_nr(owner));
 
   if (get_entity_n_overwrites(ent) > 0) {
-    fprintf(stderr, "  overwrites:\n");
+    printf("  overwrites:\n");
     for (i = 0; i < get_entity_n_overwrites(ent); ++i) {
       entity *ov = get_entity_overwrites(ent, i);
-      fprintf(stderr, "    %d: %s of class %s\n", i, get_entity_name(ov), get_type_name(get_entity_owner(ov)));
+      printf("    %d: %s of class %s\n", i, get_entity_name(ov), get_type_name(get_entity_owner(ov)));
     }
   } else {
-    fprintf(stderr, "  Does not overwrite other entities. \n");
+    printf("  Does not overwrite other entities. \n");
   }
   if (get_entity_n_overwrittenby(ent) > 0) {
-    fprintf(stderr, "  overwritten by:\n");
+    printf("  overwritten by:\n");
     for (i = 0; i < get_entity_n_overwrittenby(ent); ++i) {
       entity *ov = get_entity_overwrittenby(ent, i);
-      fprintf(stderr, "    %d: %s of class %s\n", i, get_entity_name(ov), get_type_name(get_entity_owner(ov)));
+      printf("    %d: %s of class %s\n", i, get_entity_name(ov), get_type_name(get_entity_owner(ov)));
     }
   } else {
-    fprintf(stderr, "  Is not overwriten by other entities. \n");
+    printf("  Is not overwriten by other entities. \n");
   }
 
-  fprintf(stderr, "  allocation:  ");
+  printf("  allocation:  ");
   switch (get_entity_allocation(ent)) {
     X(allocation_dynamic);
     X(allocation_automatic);
@@ -1119,14 +1230,14 @@ void dump_entity (entity *ent) {
     X(allocation_parameter);
   }
 
-  fprintf(stderr, "\n  visibility:  ");
+  printf("\n  visibility:  ");
   switch (get_entity_visibility(ent)) {
     X(visibility_local);
     X(visibility_external_visible);
     X(visibility_external_allocated);
   }
 
-  fprintf(stderr, "\n  variability: ");
+  printf("\n  variability: ");
   switch (get_entity_variability(ent)) {
     X(variability_uninitialized);
     X(variability_initialized);
@@ -1136,45 +1247,45 @@ void dump_entity (entity *ent) {
 
   if (get_entity_variability(ent) != variability_uninitialized) {
     if (is_atomic_entity(ent)) {
-      fprintf(stderr, "\n  atomic value: ");
+      printf("\n  atomic value: ");
       dump_node_opcode(stdout, get_atomic_ent_value(ent));
     } else {
-      fprintf(stderr, "\n  compound values:");
+      printf("\n  compound values:");
       for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
 	compound_graph_path *path = get_compound_ent_value_path(ent, i);
 	entity *ent0 = get_compound_graph_path_node(path, 0);
-	fprintf(stderr, "\n    %3d ", get_entity_offset_bits(ent0));
+	printf("\n    %3d ", get_entity_offset_bits(ent0));
 	if (get_type_state(type) == layout_fixed)
-	  fprintf(stderr, "(%3d) ",   get_compound_ent_value_offset_bits(ent, i));
-	fprintf(stderr, "%s", get_entity_name(ent0));
+	  printf("(%3d) ",   get_compound_ent_value_offset_bits(ent, i));
+	printf("%s", get_entity_name(ent0));
 	for (j = 0; j < get_compound_graph_path_length(path); ++j) {
 	  entity *node = get_compound_graph_path_node(path, j);
-	  fprintf(stderr, ".%s", get_entity_name(node));
+	  printf(".%s", get_entity_name(node));
 	  if (is_array_type(get_entity_owner(node)))
-	    fprintf(stderr, "[%d]", get_compound_graph_path_array_index(path, j));
+	    printf("[%d]", get_compound_graph_path_array_index(path, j));
 	}
-	fprintf(stderr, "\t = ");
+	printf("\t = ");
 	dump_node_opcode(stdout, get_compound_ent_value(ent, i));
       }
     }
   }
 
-  fprintf(stderr, "\n  volatility:  ");
+  printf("\n  volatility:  ");
   switch (get_entity_volatility(ent)) {
     X(volatility_non_volatile);
     X(volatility_is_volatile);
   }
 
-  fprintf(stderr, "\n  peculiarity: %s", get_peculiarity_string(get_entity_peculiarity(ent)));
-  fprintf(stderr, "\n  ld_name: %s", ent->ld_name ? get_entity_ld_name(ent) : "no yet set");
-  fprintf(stderr, "\n  offset:  %d", get_entity_offset_bits(ent));
+  printf("\n  peculiarity: %s", get_peculiarity_string(get_entity_peculiarity(ent)));
+  printf("\n  ld_name: %s", ent->ld_name ? get_entity_ld_name(ent) : "no yet set");
+  printf("\n  offset:  %d", get_entity_offset_bits(ent));
   if (is_method_type(get_entity_type(ent))) {
     if (get_entity_irg(ent))   /* can be null */
       { printf("\n  irg = %ld", get_irg_graph_nr(get_entity_irg(ent))); }
     else
       { printf("\n  irg = NULL"); }
   }
-  fprintf(stderr, "\n\n");
+  printf("\n\n");
 }
 #undef X
 #else  /* DEBUG_libfirm */

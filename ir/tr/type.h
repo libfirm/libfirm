@@ -705,6 +705,7 @@ type *new_type_array         (ident *name, int n_dimensions,
  * Initializes order to the order of the dimensions.
  * The entity for array elements is built automatically.
  * Set dimension sizes after call to constructor with set_* routines.
+ * A legal array type must have at least one dimension set.
  */
 type *new_d_type_array         (ident *name, int n_dimensions,
 			      type *element_type, dbg_info* db);

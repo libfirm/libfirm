@@ -427,6 +427,18 @@ int  get_compound_ent_value_offset_bits(entity *ent, int pos);
  */
 int  get_compound_ent_value_offset_bytes(entity *ent, int pos);
 
+/** Compute the array indicees in compound graph paths of initialized entities.
+ *
+ * All arrays must have fixed lower and upper bounds.  One array can
+ * have an open upper bound.  If there are several open bounds, we do
+ * nothing.  There must be initializer elements for all array
+ * elements.  Uses the link field in the array element entities.  The
+ * array bounds must be representable as ints.
+ *
+ * @param ent Any entity.
+ */
+void compute_compound_ent_array_indicees(entity *ent);
+
 /** Sort the values of the compound entity by their overall offset.
  *
  * This requires that the layout of all concerned types is fixed.

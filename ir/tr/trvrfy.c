@@ -61,6 +61,17 @@ static int check_class(type *tp) {
 }
 
 /**
+ * Check an array.
+ */
+static int check_array(type *tp) {
+  int i, n_dim = get_array_n_dimensions(tp);
+  for (i = 0; i < n_dim; ++i)
+    assert(has_array_lower_bound(tp, i) || has_array_upper_bound(tp, i));
+
+  return 0;
+}
+
+/**
  * Checks a type.
  *
  * Currently checks class types only.
@@ -69,6 +80,8 @@ static int check_type(type *tp) {
   switch (get_type_tpop_code(tp)) {
   case tpo_class:
     return check_class(tp);
+  case tpo_array:
+    return check_array(tp);
   default: break;
   }
   return 0;
