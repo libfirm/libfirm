@@ -26,7 +26,7 @@ variability: variability_uninitialized
 volatility:  volatility_non_volatile
 peculiarity: peculiarity_existent
 name:    a_tp_elem_ent
-ld_name: a_tp_a_tp_elem_ent
+ld_name: no yet set
 offset:  -1"
 }
 edge: { sourcename: "e18" targetname: "t12"class: 3 label: "type" color: red}
@@ -39,8 +39,6 @@ edge: { sourcename: "n19" targetname: "t17"label: "upper 0"}
 edge: { sourcename: "n20" targetname: "t17"label: "lower 0"}
 node: {title: "n19" label: "0x9Iu  19" color: yellow info1: "visited: 1
 Const of type type_unknown
-"}
-node: {title: "n4" label: "Bad  4"  info1: "visited: 1
 "}
 node: {title: "n20" label: "0x0Iu  20" color: yellow info1: "visited: 1
 Const of type type_unknown
@@ -58,7 +56,7 @@ variability: variability_uninitialized
 volatility:  volatility_non_volatile
 peculiarity: peculiarity_existent
 name:    a
-ld_name: mainframe_tp_a
+ld_name: no yet set
 offset:  -1"
 }
 edge: { sourcename: "e35" targetname: "t17"class: 3 label: "type" color: red}
@@ -75,7 +73,7 @@ variability: variability_constant
 volatility:  volatility_non_volatile
 peculiarity: peculiarity_existent
 name:    main
-ld_name: ARRAY-STACK_EXAMPLE_main
+ld_name: no yet set
 offset:  -1
 irg = g33"
 }

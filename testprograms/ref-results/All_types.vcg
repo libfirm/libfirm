@@ -40,7 +40,7 @@ variability: variability_constant
 volatility:  volatility_non_volatile
 peculiarity: peculiarity_existent
 name:    main
-ld_name: WHILE_EXAMPLE_main
+ld_name: no yet set
 offset:  -1
 irg = g29"
 }
@@ -48,8 +48,6 @@ edge: { sourcename: "e16" targetname: "t13"class: 3 label: "type" color: red}
 edge: { sourcename: "e16" targetname: "n15"label: "value 0"}
 node: {title: "n15" label: "&(WHILE_EXAMPLE_main)P  15" color: yellow info1: "visited: 1
 Const of type type_unknown
-"}
-node: {title: "n4" label: "Bad  4"  info1: "visited: 1
 "}
 node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1B,
