@@ -20,10 +20,8 @@
 #ifndef _TV_H_
 #define _TV_H_
 
-# include "irmode.h"
-/* # include "entity.h" */
-# include "irnode.h"    /* for pnc_number enum */
-
+#include "irmode.h"
+#include "pnc.h"
 
 /****h* libfirm/tv
  *

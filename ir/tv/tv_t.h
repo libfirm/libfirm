@@ -16,6 +16,8 @@
 #ifndef _TV_T_H_
 #define _TV_T_H_
 
+#include "entity.h"
+#include "irmode.h"
 #include "tv.h"
 
 
