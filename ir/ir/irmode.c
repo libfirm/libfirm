@@ -125,6 +125,7 @@ static void set_mode_values(ir_mode* mode)
 {
   switch (get_mode_sort(mode))
   {
+    case irms_character:
     case irms_int_number:
     case irms_float_number:
       mode->min = get_tarval_min(mode);
@@ -143,11 +144,10 @@ static void set_mode_values(ir_mode* mode)
     case irms_reference:
       mode->min = tarval_bad;
       mode->max = tarval_bad;
-      mode->null = (get_mode_modecode(mode)==irm_P)?tarval_P_void:tarval_bad;
+      mode->null = (get_mode_modecode(mode) == irm_P) ? tarval_P_void : tarval_bad;
       mode->one = tarval_bad;
       break;
 
-    case irms_character:
     case irms_auxiliary:
     case irms_memory:
     case irms_control_flow:
