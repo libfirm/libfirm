@@ -24,6 +24,14 @@
 # include "irnode.h"
 # include "irgraph.h"
 
+/** Turns verification of nodes on.
+ *
+ *  This flag turns verification of nodes on.  Per default the
+ *  verification is on.  Turn the verification off
+ *  during development to check partial implementations.
+ */
+void do_node_verification(bool b);
+
 /**
  * Tests the modes of chechnode and its predecessors.
  * Checknode must be in current_ir_graph.

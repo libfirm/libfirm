@@ -38,6 +38,12 @@
 /* @@@ replace use of array "in" by access functions. */
 ir_node **get_irn_in(ir_node *node);
 
+bool opt_do_node_verification = 1;
+void do_node_verification(bool b) {
+  opt_do_node_verification = b;
+}
+
+
 INLINE static int
 vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
   ir_node *pred;
@@ -244,6 +250,8 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
   type *mt; /* A method type */
 
   ir_node **in;
+
+  if (!opt_do_node_verification) return 1;
 
   if (! interprocedural_view) {
     /*
