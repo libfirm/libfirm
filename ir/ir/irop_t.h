@@ -25,11 +25,20 @@ struct ir_op {
   int pinned;           /**< How to deal with the node in cse, pre. */
 };
 
-/** create a new ir operation */
-ir_op * new_ir_op (opcode code, char *name, op_pinned p,
+/**
+ * Create a new ir operation.
+ *
+ * @param code     the opcode, one of type \c opcode
+ * @param name     the printable name of this opcode
+ * @param p        wheater operations of this opcode are pinned or floating
+ * @param labeled  if set, output edge labels on in-edges in vcg graph wil be generated
+ *
+ * @return The genenerated ir operation.
+ */
+ir_op * new_ir_op (opcode code, const char *name, op_pinned p,
 		   int labeled, size_t attr_size);
 
 /** initialize the irop module */
 void init_op (void);
 
-#endif
+#endif /* _IROP_T_H_ */
