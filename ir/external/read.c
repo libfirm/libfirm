@@ -638,6 +638,7 @@ void extern_read (const char *filename)
 
     if (NULL != mod_str) {
       fprintf (stdout, "effects for \"%s\"\n", mod_str);
+      free ((char*) mod_str);
     } else {
       fprintf (stdout, "effects \t0x%08x\n", (int) cur);
     }
@@ -757,6 +758,9 @@ void test_getEffectByName (void)
 
 /*
  * $Log$
+ * Revision 1.6  2004/10/21 11:12:11  liekweg
+ * strdup fix
+ *
  * Revision 1.5  2004/10/18 12:48:20  liekweg
  * avoid warning
  *
