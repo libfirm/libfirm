@@ -368,11 +368,11 @@ void walk_const_code(irg_walk_func pre, irg_walk_func post, void *env) {
   my_env.env = env;
 
   /* Walk all types that can contain constant entities.  */
-  walk_types_entities(get_glob_type(), &walk_entity, &env);
+  walk_types_entities(get_glob_type(), &walk_entity, &my_env);
   for (i = 0; i < get_irp_n_types(); i++)
-    walk_types_entities(get_irp_type(i), &walk_entity, &env);
+    walk_types_entities(get_irp_type(i), &walk_entity, &my_env);
   for (i = 0; i < get_irp_n_irgs(); i++)
-    walk_types_entities(get_irg_frame_type(get_irp_irg(i)), &walk_entity, &env);
+    walk_types_entities(get_irg_frame_type(get_irp_irg(i)), &walk_entity, &my_env);
 
   /* Walk constant array bounds. */
   for (i = 0; i < get_irp_n_types(); i++) {
