@@ -1,3 +1,8 @@
+  7.6.2001 Goetz
+  Dokumentation in ir_dump
+  Habe Routinen fuer einzelne Knoten/Kanten aus header entfernt:
+  Benutzen globale Variable die nicht oeffentlich zugaenglich ist.
+
   28.5.2001 Goetz
   We need an entity for the array elements for the Sel nodes.  This
   entity should be stored in the array type.  Changed constructor
