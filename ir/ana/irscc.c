@@ -163,7 +163,7 @@ static INLINE void free_stack(void) {
 static INLINE void
 push (ir_node *n)
 {
-  //DDMN(n);
+  /*DDMN(n);*/
 
   if (tos == ARR_LEN (stack)) {
     int nlen = ARR_LEN (stack) * 2;
@@ -517,12 +517,10 @@ find_irg_on_stack (ir_node *n) {
     }
     if (i < 0) i = tos;
 
-    //printf(" Here\n");
-
     assert (i >= 0);
     for (; i >= 0; i--) {
       m = stack[i];
-      //printf(" Visiting %d ", i); DDMN(m);
+      /*printf(" Visiting %d ", i); DDMN(m);*/
       if (is_ip_cfop(m)) {
 	current_ir_graph = get_irn_irg(m);
 	break;
@@ -683,8 +681,8 @@ static void scc (ir_node *n) {
 
   if (irn_visited(n)) return;
   mark_irn_visited(n);
-  //printf("mark: %d ", get_irn_visited(n)); DDMN(n);
-  //DDME(get_irg_ent(current_ir_graph));
+  /*printf("mark: %d ", get_irn_visited(n)); DDMN(n);
+  DDME(get_irg_ent(current_ir_graph));*/
 
   /* Initialize the node */
   set_irn_dfn(n, current_dfn);      /* Depth first number for this node */
@@ -703,10 +701,10 @@ static void scc (ir_node *n) {
       ir_node *m;
       if (is_backedge(n, i)) continue;
 
-      m = get_irn_n(n, i); //get_irn_ip_pred(n, i);
+      m = get_irn_n(n, i); /*get_irn_ip_pred(n, i);*/
       if ((!m) || (get_irn_op(m) == op_Unknown)) continue;
       scc (m);
-      //return_recur(n, i);
+      /*return_recur(n, i);*/
 
       if (irn_is_in_stack(m)) {
 	/* Uplink of m is smaller if n->m is a backedge.
@@ -808,12 +806,12 @@ void construct_ip_backedges (void) {
   for (i = 0; i < get_irp_n_irgs(); i++) {
     ir_node *sb;
     current_ir_graph = get_irp_irg(i);
-    //DDME(get_irg_ent(current_ir_graph));
+    /*DDME(get_irg_ent(current_ir_graph));*/
     /* Find real entry points */
     sb = get_irg_start_block(current_ir_graph);
     if ((get_Block_n_cfgpreds(sb) > 1) ||
 	(get_nodes_Block(get_Block_cfgpred(sb, 0)) != sb)) continue;
-    //    printf("running scc for "); DDME(get_irg_ent(current_ir_graph));
+    /*    printf("running scc for "); DDME(get_irg_ent(current_ir_graph));   */
     /* Compute scc for this graph */
     outermost_ir_graph = current_ir_graph;
     set_irg_visited(outermost_ir_graph, get_max_irg_visited());

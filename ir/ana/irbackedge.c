@@ -96,11 +96,11 @@ INLINE void fix_backedges(struct obstack *obst, ir_node *n) {
     return;
   }
   assert(legal_backarray(n));
-  // @@@ more efficient in memory consumption, not possible with
-  // array implementation.
-  //if (ARR_LEN(arr) < ARR_LEN(get_irn_in(n))-1) {
-  //  ARR_SETLEN(int, arr, ARR_LEN(get_irn_in(n))-1);
-  //}
+  /* @@@ more efficient in memory consumption, not possible with
+   array implementation.
+  if (ARR_LEN(arr) < ARR_LEN(get_irn_in(n))-1) {
+    ARR_SETLEN(int, arr, ARR_LEN(get_irn_in(n))-1);
+  }*/
 }
 
 /** Returns true if the predesessor pos is a backedge. */
