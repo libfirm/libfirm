@@ -100,7 +100,7 @@ main(void)
   cmp = new_Cmp(get_value(a_pos, mode_Is), get_value(b_pos, mode_Is)); /*
   cmp = new_Cmp(new_Const (mode_Is, new_tarval_from_long (2, mode_Is)),
                 new_Const (mode_Is, new_tarval_from_long (2, mode_Is)));*/
-  x = new_Cond (new_Proj(cmp, mode_b, Eq));
+  x = new_Cond (new_Proj(cmp, mode_b, pn_Cmp_Eq));
   f = new_Proj (x, mode_X, 0);
   t = new_Proj (x, mode_X, 1);
 

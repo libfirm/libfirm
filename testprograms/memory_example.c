@@ -132,7 +132,7 @@ main(void)
           new_Cmp (
             new_Const (mode_Iu, new_tarval_from_long (0, mode_Is)),
             x),
-          mode_b, Gt));
+          mode_b, pn_Cmp_Gt));
 
   /* build the cfg of the loop */
   add_immBlock_pred (r, new_Proj (x, mode_X, 0));

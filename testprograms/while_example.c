@@ -85,7 +85,7 @@ main(void)
   add_immBlock_pred (r, x);
   x = new_Cond (new_Proj(new_Cmp(new_Const (mode_Is, new_tarval_from_long (0, mode_Is)),
                  get_value(1, mode_Is)),
-                         mode_b, Eq));
+                         mode_b, pn_Cmp_Eq));
   f = new_Proj (x, mode_X, 0);
   t = new_Proj (x, mode_X, 1);
 

@@ -51,6 +51,24 @@
 #define pns_args           pn_Start_T_args
 #define pns_value_arg_base pn_Start_P_value_arg_base
 
+#define pnc_number pn_Cmp
+#define False pn_Cmp_False
+#define Eq    pn_Cmp_Eq
+#define Lt    pn_Cmp_Lt
+#define Le    pn_Cmp_Le
+#define Gt    pn_Cmp_Gt
+#define Ge    pn_Cmp_Ge
+#define Lg    pn_Cmp_Lg
+#define Leg   pn_Cmp_Leg
+#define Uo    pn_Cmp_Uo
+#define Ue    pn_Cmp_Ue
+#define Ul    pn_Cmp_Ul
+#define Ule   pn_Cmp_Ule
+#define Ug    pn_Cmp_Ug
+#define Uge   pn_Cmp_Uge
+#define Ne    pn_Cmp_Ne
+#define True  pn_Cmp_True
+
 /* irmode.h */
 #define get_ident_of_mode        get_mode_ident
 #define get_size_of_mode         get_mode_size
@@ -72,7 +90,6 @@
 /* irdump */
 #define dump_cg_graph dump_ir_graph
 #define dump_cg_block_graph dump_ir_block_graph
-extern char *dump_file_filter;  /* use the setter instead. */
 
 /* type.h */
 #define get_type_nameid(_t_)     get_type_ident(_t_)
@@ -103,5 +120,7 @@ extern char *dump_file_filter;  /* use the setter instead. */
 #define id_to_strlen(X) get_id_strlen(X)
 #define id_to_str(X)    get_id_str(X)
 #define id_from_str(X, Y)  new_id_from_chars(X, Y)
+
+
 
 #endif

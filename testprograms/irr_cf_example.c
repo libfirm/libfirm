@@ -87,7 +87,7 @@ int main(int argc, char **argv)
   c1 = new_Const (mode_Is, new_tarval_from_long (1, mode_Is));
   c2 = new_Const (mode_Is, new_tarval_from_long (2, mode_Is));
 
-  cond = new_Cond(new_Proj(new_Cmp(expr, c1), mode_b, Eq));
+  cond = new_Cond(new_Proj(new_Cmp(expr, c1), mode_b, pn_Cmp_Eq));
   f = new_Proj(cond, mode_X, 0);
   t = new_Proj(cond, mode_X, 1);
   mature_immBlock(get_irg_current_block(irg));
@@ -99,7 +99,7 @@ int main(int argc, char **argv)
 
   new_immBlock();
   add_immBlock_pred(get_irg_current_block(irg), f);
-  cond = new_Cond(new_Proj(new_Cmp(expr, c2), mode_b, Eq));
+  cond = new_Cond(new_Proj(new_Cmp(expr, c2), mode_b, pn_Cmp_Eq));
   f = new_Proj(cond, mode_X, 0);
   t = new_Proj(cond, mode_X, 1);
   mature_immBlock(get_irg_current_block(irg));

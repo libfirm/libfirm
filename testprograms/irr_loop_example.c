@@ -100,20 +100,20 @@ int main(int argc, char **argv)
   c2 = new_Const (mode_Is, new_tarval_from_long (2, mode_Is));
   c3 = new_Const (mode_Is, new_tarval_from_long (2, mode_Is));
 
-  cond = new_Cond(new_Proj(new_Cmp(expr, c1), mode_b, Eq));
+  cond = new_Cond(new_Proj(new_Cmp(expr, c1), mode_b, pn_Cmp_Eq));
   f = new_Proj(cond, mode_X, 0);
   t = new_Proj(cond, mode_X, 1);
   mature_immBlock(get_irg_current_block(irg));
 
   loopBlock1 = new_immBlock();
   add_immBlock_pred(loopBlock1, t);
-  cond = new_Cond(new_Proj(new_Cmp(expr, c2), mode_b, Eq));
+  cond = new_Cond(new_Proj(new_Cmp(expr, c2), mode_b, pn_Cmp_Eq));
   f_l1 = new_Proj(cond, mode_X, 0);
   t_l1 = new_Proj(cond, mode_X, 1);
 
   loopBlock2 = new_immBlock();
   add_immBlock_pred(loopBlock2, f);
-  cond = new_Cond(new_Proj(new_Cmp(expr, c3), mode_b, Eq));
+  cond = new_Cond(new_Proj(new_Cmp(expr, c3), mode_b, pn_Cmp_Eq));
   f_l2 = new_Proj(cond, mode_X, 0);
   t_l2 = new_Proj(cond, mode_X, 1);
 
@@ -151,33 +151,33 @@ int main(int argc, char **argv)
   c4   = new_Const (mode_Is, new_tarval_from_long (4, mode_Is));
   c5   = new_Const (mode_Is, new_tarval_from_long (5, mode_Is));
 
-  cond = new_Cond(new_Proj(new_Cmp(expr, c1), mode_b, Eq));
+  cond = new_Cond(new_Proj(new_Cmp(expr, c1), mode_b, pn_Cmp_Eq));
   f2 = new_Proj(cond, mode_X, 0);
   t = new_Proj(cond, mode_X, 1);
   mature_immBlock(get_irg_current_block(irg));
 
   new_immBlock();
   add_immBlock_pred(get_irg_current_block(irg), t);
-  cond = new_Cond(new_Proj(new_Cmp(expr, c5), mode_b, Eq));
+  cond = new_Cond(new_Proj(new_Cmp(expr, c5), mode_b, pn_Cmp_Eq));
   f = new_Proj(cond, mode_X, 0);
   t = new_Proj(cond, mode_X, 1);
   mature_immBlock(get_irg_current_block(irg));
 
   loopBlock1 = new_immBlock();
   add_immBlock_pred(loopBlock1, t);
-  cond = new_Cond(new_Proj(new_Cmp(expr, c2), mode_b, Eq));
+  cond = new_Cond(new_Proj(new_Cmp(expr, c2), mode_b, pn_Cmp_Eq));
   f_l1 = new_Proj(cond, mode_X, 0);
   t_l1 = new_Proj(cond, mode_X, 1);
 
   loopBlock2 = new_immBlock();
   add_immBlock_pred(loopBlock2, f);
-  cond = new_Cond(new_Proj(new_Cmp(expr, c3), mode_b, Eq));
+  cond = new_Cond(new_Proj(new_Cmp(expr, c3), mode_b, pn_Cmp_Eq));
   f_l2 = new_Proj(cond, mode_X, 0);
   t_l2 = new_Proj(cond, mode_X, 1);
 
   loopBlock3 = new_immBlock();
   add_immBlock_pred(loopBlock3, f2);
-  cond = new_Cond(new_Proj(new_Cmp(expr, c4), mode_b, Eq));
+  cond = new_Cond(new_Proj(new_Cmp(expr, c4), mode_b, pn_Cmp_Eq));
   f_l3 = new_Proj(cond, mode_X, 0);
   t_l3 = new_Proj(cond, mode_X, 1);
 

@@ -84,7 +84,7 @@ int main(int argc, char **argv)
 
   /* the expression that evaluates the condition */
   c2 = new_Const (mode_Is, new_tarval_from_long (2, mode_Is));
-  cmpGt = new_Proj(new_Cmp(get_value(0, mode_Is), c2), mode_b, Gt);
+  cmpGt = new_Proj(new_Cmp(get_value(0, mode_Is), c2), mode_b, pn_Cmp_Gt);
 
   /* the conditional branch */
   x = new_Cond (cmpGt);

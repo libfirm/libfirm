@@ -88,17 +88,17 @@ static void function_begin(type *owner, type *mtp, char *fct_name, loop_dir_t lo
   ir_node *x, *t, *cmp;
 
   int start_value, end_value;
-  pnc_number cmp_dir;
+  pn_Cmp cmp_dir;
 
   if (loop_dir == loop_forward) {
     start_value = 0;
     end_value   = 10;
-    cmp_dir     = Gt;
+    cmp_dir     = pn_Cmp_Gt;
   }
   else {
     start_value = 10;
     end_value   = 0;
-    cmp_dir     = Lt;
+    cmp_dir     = pn_Cmp_Lt;
   }
 
   /* The entity for the procedure */
@@ -258,7 +258,7 @@ main(void)
   r1 = new_immBlock();
   add_immBlock_pred(get_irg_current_block(irg), x);
   cmp = new_Cmp(new_Const_int(10), get_value(i_pos, mode_Is));
-  x = new_Cond(new_Proj(cmp, mode_b, Gt));
+  x = new_Cond(new_Proj(cmp, mode_b, pn_Cmp_Gt));
   f = new_Proj(x, mode_X, 0);
   t = new_Proj(x, mode_X, 1);
 
@@ -297,7 +297,7 @@ main(void)
   ir_node *b1 = new_Const_int(45);
   add_immBlock_pred(get_irg_current_block(irg), f);
   cmp = new_Cmp(new_Const_int(0), b1);
-  x = new_Cond (new_Proj(cmp, mode_b, Lt));
+  x = new_Cond (new_Proj(cmp, mode_b, pn_Cmp_Lt));
   f1 = new_Proj (x, mode_X, 0);
   t1 = new_Proj (x, mode_X, 1);
 

@@ -77,17 +77,17 @@ static void function_begin(type *owner, type *mtp, char *fct_name, loop_dir_t lo
   ir_node *x, *t, *cmp;
 
   int start_value, end_value;
-  pnc_number cmp_dir;
+  pn_Cmp cmp_dir;
 
   if (loop_dir == loop_forward) {
     start_value = 0;
     end_value   = 11;
-    cmp_dir     = Ge;
+    cmp_dir     = pn_Cmp_Ge;
   }
   else {
     start_value = 10;
     end_value   = 0;
-    cmp_dir     = Lt;
+    cmp_dir     = pn_Cmp_Lt;
   }
 
   /* The entity for the procedure */
@@ -247,7 +247,7 @@ main(void)
   r1 = new_immBlock();
   add_immBlock_pred(get_irg_current_block(irg), x);
   cmp = new_Cmp(new_Const_int(10), get_value(i_pos, mode_Is));
-  x = new_Cond(new_Proj(cmp, mode_b, Gt));
+  x = new_Cond(new_Proj(cmp, mode_b, pn_Cmp_Gt));
   f = new_Proj(x, mode_X, 0);
   t = new_Proj(x, mode_X, 1);
 
@@ -286,7 +286,7 @@ main(void)
   ir_node *b1 = new_Const_int(45);
   add_immBlock_pred(get_irg_current_block(irg), f);
   cmp = new_Cmp(new_Const_int(0), b1);
-  x = new_Cond (new_Proj(cmp, mode_b, Lt));
+  x = new_Cond (new_Proj(cmp, mode_b, pn_Cmp_Lt));
   f1 = new_Proj (x, mode_X, 0);
   t1 = new_Proj (x, mode_X, 1);
 
@@ -436,6 +436,26 @@ main(void)
   printf("Done building the graph.  Dumping and optimizing it.\n");
   dump_consts_local(1);
   turn_off_edge_labels();
+
+
+#if 1   /* Use this version for testing.  Loop unrolling creates random node numbers,
+	   therefore we can not compare test graphs. */
+  for (i = 0; i < n_irgs; ++i) {
+    current_ir_graph = get_irp_irg(i);
+    irg_vrfy(current_ir_graph);
+    finalize_cons (current_ir_graph);
+
+    construct_backedges(current_ir_graph);
+
+    set_opt_strength_red_verbose(2);
+    set_firm_verbosity(2);
+    set_optimize(0);
+    set_opt_loop_unrolling(1);
+    optimize_loop_unrolling(current_ir_graph);
+
+    irg_vrfy(current_ir_graph);
+  }
+#else
   for (i = 0; i < n_irgs; ++i) {
     current_ir_graph = get_irp_irg(i);
     irg_vrfy(current_ir_graph);
@@ -443,6 +463,7 @@ main(void)
 
     /* output the vcg file */
     dump_ir_block_graph (current_ir_graph, 0);
+
     construct_backedges(current_ir_graph);
     dump_ir_graph (current_ir_graph, 0);
     dump_all_types(0);
@@ -463,6 +484,7 @@ main(void)
     dump_ir_block_graph (current_ir_graph, "-loop-unrolling");
     // dump_ir_graph (current_ir_graph, "-pure-loop-unrolling");
   }
+#endif
   //printf("use xvcg to view this graph:\n");
   //printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
 
