@@ -152,17 +152,10 @@ struct ir_node {
 typedef struct ir_node ir_node;
 #endif
 
-#if 0 /* I didn't manage to place this here as it causes cyclic inclusion
-         of header files/a cyclic dependency between ir_graph and ir_node. */
 /* irnode constructor                                             */
 /* Create a new irnode in irg, with an op, mode, arity and        */
 /* some incoming irnodes.                                         */
 /* If arity is negative, a node with a dynamic array is created.  */
-/* inline ir_node *new_ir_node (int *irg, ir_node *block, ir_op *op,
-  ir_mode *mode, int arity, ir_node **in);
-*/
-#endif
-
 
 inline ir_node *
 new_ir_node (ir_graph *irg,

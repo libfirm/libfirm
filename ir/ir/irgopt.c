@@ -132,13 +132,13 @@ copy_node (ir_node *n, void *env) {
       value = (type_or_id *) malloc (sizeof (type_or_id));
       if ((get_SymConst_kind(n)==type_tag) || (get_SymConst_kind(n)==size))
 	{
-	  value = get_SymConst_type(n);
+	   value = (type_or_id *) get_SymConst_type(n);
 	}
       else
 	{
 	  if (get_SymConst_kind(n)==linkage_ptr_info)
 	  {
-	    value = get_SymConst_ptrinfo(n);
+	    value = (type_or_id *) get_SymConst_ptrinfo(n);
 	  }
 	}
     res = new_r_SymConst (current_ir_graph, get_new_node(n), value,
@@ -180,7 +180,7 @@ copy_node (ir_node *n, void *env) {
   case iro_Sub:
     {
       ir_node *temp_node;
-      temp_node = get_nodes_block(n);
+      temp_node = get_nodes_Block(n);
       res = new_r_Sub (current_ir_graph, get_new_node(temp_node),
                        get_new_node(a), get_new_node(b), get_irn_mode(n));
       set_new_node(n, res);
@@ -212,7 +212,7 @@ copy_node (ir_node *n, void *env) {
 		     get_new_node(a), get_new_node(b));
     break;
   case iro_Abs:
-    res = new_r_Mod (current_ir_graph, get_new_node(n), get_Abs_op(n),
+    res = new_r_Abs (current_ir_graph, get_new_node(n), get_Abs_op(n),
 		     get_irn_mode(n));
     break;
   case iro_And:

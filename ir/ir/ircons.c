@@ -15,36 +15,6 @@
 /* memset belongs to string.h */
 # include "string.h"
 
-/* irnode constructor                                             */
-/* create a new irnode in irg, with an op, mode, arity and        */
-/* some incoming irnodes                                          */
-/* this constructor is used in every specified irnode constructor */
-inline ir_node *
-new_ir_node (ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mode,
-	     int arity, ir_node **in)
-{
-  ir_node *res;
-  int node_size = offsetof (ir_node, attr) +  op->attr_size;
-
-  res = (ir_node *) obstack_alloc (irg->obst, node_size);
-
-  res->kind = k_ir_node;
-  res->op = op;
-  res->mode = mode;
-  res->visit = 0;
-  res->link = NULL;
-  if (arity < 0) {
-    res->in = NEW_ARR_F (ir_node *, 1);
-  } else {
-    res->in = NEW_ARR_D (ir_node *, irg->obst, (arity+1));
-    memcpy (&res->in[1], in, sizeof (ir_node *) * arity);
-  }
-  res->in[0] = block;
-  return res;
-}
-
-
-
 
 /*********************************************** */
 /** privat interfaces, for professional use only */
