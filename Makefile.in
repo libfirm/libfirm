@@ -53,8 +53,8 @@ $(XOFILES): subdir_all
 
 libfirm.a: $(XOFILES) $(OFILES)
 	$(AR) $(ARFLAGS) $@.new $(XOFILES) $(OFILES)
-	$(RANLIB) $@.new
 	mv -f $@.new $@
+	$(RANLIB) $@
 
 libfirm.so: subdir_all $(XOFILES) $(OFILES)
 	ld -Bshareable -o ./libfirm.so $(XOFILES) -lm -L/usr/public/libxml2/lib -lxml2
