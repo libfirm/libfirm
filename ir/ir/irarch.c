@@ -883,11 +883,13 @@ void arch_dep_replace_divmod_by_const(ir_node **div, ir_node **mod, ir_node *irn
 
 
 static const arch_dep_params_t default_params = {
-  1, /* also use subs */
-  0, /* allow Mulhs */
-  0, /* allow Mulus */
-  4, /* maximum shifts */
-  31 /* maximum shift amount */
+  1,  /* also use subs */
+  4,  /* maximum shifts */
+  31, /* maximum shift amount */
+
+  0,  /* allow Mulhs */
+  0,  /* allow Mulus */
+  32  /* Mulh allowed up to 32 bit */
 };
 
 const arch_dep_params_t *arch_dep_default_factory(void) {
