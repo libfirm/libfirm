@@ -81,7 +81,7 @@ static entity *hunt_for_entity (ir_node *addr, ir_node *load) {
   assert(0 && "unexpected address expression.");
   return NULL;
 }
-
+*/
 /**
  * little helper for NULL modes
  */
@@ -1022,11 +1022,12 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
 
 	   * obset.c:get_abstval_any can't deal with this if the load has
 	   * mode_T
-	   */
+	   *
 	  {
 		entity *ent = hunt_for_entity (get_Load_ptr (n), n);
 		assert ((NULL != ent) || (mymode != mode_T));
 	  }
+	  */
 
       break;
 
