@@ -57,7 +57,7 @@ static typalise_t *ta_exact (type *tp)
   ta->res.type = tp;
   ta->id = ta_id ++;
 
-  assert (is_class_type (tp));
+  assert (is_Class_type (tp));
 
   return (ta);
 }
@@ -79,7 +79,7 @@ static typalise_t *ta_type (type *tp)
   ta->res.type = tp;
   ta->id = ta_id ++;
 
-  assert (is_class_type (tp));
+  assert (is_Class_type (tp));
 
   return (ta);
 }
@@ -479,7 +479,7 @@ static typalise_t *typalise_proj (ir_node *proj)
       } else {
         /* ugh proj arg */
         type *tp = get_method_param_type (get_entity_type (meth), n);
-        if (is_pointer_type (tp)) {
+        if (is_Pointer_type (tp)) {
           tp = get_pointer_points_to_type (tp);
         }
 
@@ -553,10 +553,10 @@ typalise_t *typalise (ir_node *node)
     typalise_t *ta = NULL;
     type *tp = get_Cast_type (node);
 
-    if (is_pointer_type (tp)) {
+    if (is_Pointer_type (tp)) {
       tp = get_pointer_points_to_type (tp);
     }
-    assert (is_class_type (tp));
+    assert (is_Class_type (tp));
 
     ta = typalise (get_Cast_op (node));
 
@@ -595,24 +595,24 @@ typalise_t *typalise (ir_node *node)
     entity *ent = get_Sel_entity (node);
     type *tp = get_entity_type (ent);
 
-    if (is_method_type (tp)) {
+    if (is_Method_type (tp)) {
       tp = get_entity_type (ent);
       tp = get_method_res_type (tp, 0);
 
-      if (is_pointer_type (tp)) {
+      if (is_Pointer_type (tp)) {
         tp = get_pointer_points_to_type (tp);
       }
 
       res = ta_type (tp);
-    } else if (is_class_type (tp)) {
+    } else if (is_Class_type (tp)) {
       tp = get_entity_type (ent);
 
-      if (is_pointer_type (tp)) {
+      if (is_Pointer_type (tp)) {
         tp = get_pointer_points_to_type (tp);
       }
 
       res = ta_type (tp);
-    } else if (is_pointer_type (tp)) {
+    } else if (is_Pointer_type (tp)) {
       tp = get_pointer_points_to_type (tp);
       res = ta_type (tp);
     } else {
@@ -676,7 +676,7 @@ typalise_t *typalise (ir_node *node)
       entity *ent = get_SymConst_entity (node);
       type *tp = get_entity_type (ent);
       tp = get_pointer_points_to_type (tp);
-      assert (is_class_type (tp));
+      assert (is_Class_type (tp));
 
       res = ta_type (tp);       /* can't use ta_exact */
     } else {
@@ -706,6 +706,9 @@ typalise_t *typalise (ir_node *node)
 
 /*
   $Log$
+  Revision 1.6  2005/01/05 14:25:54  beck
+  renames all is_x*_type() functions to is_X*_type() to prevent name clash with EDG fronten
+
   Revision 1.5  2004/12/22 14:43:14  beck
   made allocations C-like
 

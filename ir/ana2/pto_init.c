@@ -111,9 +111,9 @@ static pto_t* new_symconst_pto (ir_node *symconst)
      calculation, but if it's the mumble itself, it's just the same,
      except it's presumably a constant of mumble. In any case, we need to
      branch on this.  "How's that for object fucking oriented? --jwz" */
-  if (is_pointer_type (get_entity_type (ent))) {
+  if (is_Pointer_type (get_entity_type (ent))) {
     desc = new_ent_name (ent);
-  } else if (is_class_type (get_entity_type (ent))) {
+  } else if (is_Class_type (get_entity_type (ent))) {
     desc = new_name (get_entity_type (ent), symconst, -1);
   } else {
     fprintf (stderr, "new_symconst_pto(): not handled: %s[%li] (\"%s\")\n",
@@ -136,7 +136,7 @@ static void clear_type_link (type_or_ent *thing, void *_unused)
   if (is_type (thing)) {
     type *tp = (type*) thing;
 
-    if (is_class_type (tp)) {
+    if (is_Class_type (tp)) {
       DBGPRINT (1, (stdout, "clear_type_link() (\"%s\")\n",
                     get_type_name (tp)));
 
@@ -224,7 +224,7 @@ static void init_pto (ir_node *node, void *env)
     if (mode_is_reference(get_irn_mode (node))) {
       entity *ent = get_SymConst_entity (node);
       type   *tp = get_entity_type (ent);
-      if (is_class_type (tp) || is_pointer_type (tp)) {
+      if (is_Class_type (tp) || is_Pointer_type (tp)) {
         pto_t *symconst_pto = new_symconst_pto (node);
         set_node_pto (node, symconst_pto);
 
@@ -296,11 +296,11 @@ void fake_main_args (ir_graph *graph)
   /* 'main' has signature 'void(int, char[]*[]*)' */
   assert (NULL == args [2]);
 
-  assert (is_pointer_type (ctp));
+  assert (is_Pointer_type (ctp));
 
   ctp = get_pointer_points_to_type (ctp); /* ctp == char[]*[] */
 
-  assert (is_array_type (ctp));
+  assert (is_Array_type (ctp));
 
   arg_desc = new_name (ctp, args [1], -1);
   arg_pto = new_pto (args [1]);
@@ -315,11 +315,11 @@ void fake_main_args (ir_graph *graph)
 # ifdef TEST_MAIN_TYPE
   ctp = get_array_element_type (ctp); /* ctp == char[]* */
 
-  assert (is_pointer_type (ctp));
+  assert (is_Pointer_type (ctp));
 
   ctp = get_pointer_points_to_type (ctp); /* ctp == char[] */
 
-  assert (is_array_type (ctp));
+  assert (is_Array_type (ctp));
 
   ctp = get_array_element_type (ctp); /* ctp == char */
 
@@ -399,6 +399,9 @@ void pto_reset_graph_pto (ir_graph *graph, int ctx_idx)
 
 /*
   $Log$
+  Revision 1.14  2005/01/05 14:25:54  beck
+  renames all is_x*_type() functions to is_X*_type() to prevent name clash with EDG fronten
+
   Revision 1.13  2004/12/21 15:07:55  beck
   removed C99 contructs
   removed unnecessary allocation

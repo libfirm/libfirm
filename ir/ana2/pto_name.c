@@ -199,7 +199,7 @@ static int is_field (entity *ent)
 {
   type *tp = get_entity_type (ent);
 
-  if (is_primitive_type (tp) || is_pointer_type (tp)) {
+  if (is_Primitive_type (tp) || is_Pointer_type (tp)) {
     /* actually, we don't get by by restricting ourselves to pointer types */
     return (TRUE);
   } else {
@@ -338,7 +338,7 @@ static void pto_name_dump_desc (desc_t *desc, FILE *stream)
     for (i = 0; i < obj_desc->n_fields; i ++) {
       entity *field = obj_desc->fields [i];
 
-      if (is_pointer_type (get_entity_type (field))) {
+      if (is_Pointer_type (get_entity_type (field))) {
         const char *ent_name = get_entity_name (field);
 
         fprintf (stream, "|<%i>%s", i, ent_name);
@@ -470,13 +470,13 @@ desc_t *new_name (type *tp, ir_node *node, int ctx)
 {
   desc_t *desc = NULL;
 
-  assert ((is_class_type (tp) || is_array_type (tp)) && "unsuitable type");
+  assert ((is_Class_type (tp) || is_Array_type (tp)) && "unsuitable type");
 
   DBGPRINT (2, (stdout, "new_name(): new name for type \"%s\"\n",
                 get_type_name (tp)));
   fflush (stdout);
 
-  if (is_class_type (tp)) {
+  if (is_Class_type (tp)) {
     obj_desc_t *obj_desc = NALLOC(sizeof(*obj_desc));
     int i;
     int n_fields;
@@ -496,7 +496,7 @@ desc_t *new_name (type *tp, ir_node *node, int ctx)
     }
 
     desc = (desc_t*) obj_desc;
-  } else if (is_array_type (tp)) {
+  } else if (is_Array_type (tp)) {
     arr_desc_t *arr_desc = (arr_desc_t*) NALLOC (sizeof (arr_desc_t));
 
     arr_desc->kind = array;
@@ -529,9 +529,9 @@ desc_t *new_ent_name (entity *ent)
   int missing = TRUE;
   type *tp = get_entity_type (ent);
 
-  assert (is_pointer_type (tp));
+  assert (is_Pointer_type (tp));
   tp = get_pointer_points_to_type (tp);
-  assert (is_class_type (tp));
+  assert (is_Class_type (tp));
 
   DBGPRINT (2, (stdout, "new_ent_name(): new name for entity \"%s\"\n",
                 get_entity_name (ent)));
@@ -649,6 +649,9 @@ void pto_name_cleanup (void)
 
 /*
   $Log$
+  Revision 1.11  2005/01/05 14:25:54  beck
+  renames all is_x*_type() functions to is_X*_type() to prevent name clash with EDG fronten
+
   Revision 1.10  2004/12/22 14:43:14  beck
   made allocations C-like
 
