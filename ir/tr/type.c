@@ -610,7 +610,7 @@ type *new_type_array         (ident *name, int n_dimensions,
     res->attr.aa.order[i] = i;
   }
   res->attr.aa.element_type = element_type;
-  new_entity(res, mangle(name, id_from_str("elem_ent", 8)), element_type);
+  new_entity(res, mangle_u(name, id_from_str("elem_ent", 8)), element_type);
   return res;
 }
 inline void free_array_attrs (type *array) {

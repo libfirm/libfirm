@@ -18,7 +18,7 @@
 # include "irdump.h"
 # include "panic.h"
 # include <string.h>
-# include "entity.h"
+# include "entity_t.h"
 # include <stdlib.h>
 # include "array.h"
 # include "irop_t.h"
@@ -102,11 +102,11 @@ dump_node_opcode (ir_node *n)
   /* SymConst */
   } else if (n->op->code == iro_SymConst) {
     if (get_SymConst_kind(n) == linkage_ptr_info) {
-      xfprintf (F, "%I", get_SymConst_ptrinfo(n));
+      xfprintf (F, "SymC %I", get_SymConst_ptrinfo(n));
     } else {
       assert(get_kind(get_SymConst_type(n)) == k_type);
       assert(get_type_ident(get_SymConst_type(n)));
-      xfprintf (F, "%s ", id_to_str(get_type_ident(get_SymConst_type(n))));
+      xfprintf (F, "SymC %I ", get_type_ident(get_SymConst_type(n)));
       if (get_SymConst_kind == type_tag)
 	xfprintf (F, "tag");
       else
@@ -644,8 +644,9 @@ dump_type_info (type_or_ent *tore, void *env) {
       }
       xfprintf(F, "\"}\n");
       /* The Edges */
+      /* skip this to reduce graph.  Member edge of type is parallel to this edge. *
       xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-                ENT_OWN_EDGE_ATTR "}\n", ent, get_entity_owner(ent));
+                ENT_OWN_EDGE_ATTR "}\n", ent, get_entity_owner(ent));*/
       xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
                 ENT_TYPE_EDGE_ATTR "}\n", ent, get_entity_type(ent));
       for(i = 0; i < get_entity_n_overwrites(ent); i++)
@@ -760,7 +761,8 @@ void vcg_open (ir_graph *irg, char *suffix) {
 
   /** open file for vcg graph */
   ent = get_irg_ent(irg);
-  id    = get_entity_ld_ident (ent);
+  id    = ent->ld_name ? ent->ld_name : ent->name;
+    /* Don't use get_entity_ld_ident (ent) as it computes the mangled name! */
   len   = id_to_strlen (id);
   cp    = id_to_str (id);
   fname = malloc (len + 5 + strlen(suffix));
@@ -1135,11 +1137,11 @@ void dump_all_ir_graphs (void dump_graph(ir_graph*)) {
 
 /* To turn off display of edge labels.  Edge labels offen cause xvcg to
    abort with a segmentation fault. */
-void turn_of_edge_labels() {
+void turn_off_edge_labels() {
   edge_label = 0;
 }
 
-void dump_constant_entity_values() {
+void turn_off_constant_entity_values() {
   const_entities = 0;
 }
 

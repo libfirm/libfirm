@@ -29,6 +29,13 @@ void irg_walk(ir_node *node,
 	      void (pre)(ir_node*, void*), void (post)(ir_node*, void*),
 	      void *env);
 
+/* Executes irg_walk(end, pre, post, env) for all irgraphs in irprog.
+   Sets current_ir_graph properly for each walk.  Conserves current
+   current_ir_graph. */
+void all_irg_walk(void (pre)(ir_node*, void*), void (post)(ir_node*, void*),
+		  void *env);
+
+
 /* Walks only over Block nodes in the graph.  Has it's own visited
    flag, so that it can be interleaved with the other walker.         */
 void irg_block_walk(ir_node *node,

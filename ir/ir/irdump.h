@@ -220,9 +220,9 @@ void dump_all_ir_graphs (void dump_graph(ir_graph*));
 /****m* irdump/turn_of_edge_labels
  *
  * NAME
- *   turn_of_edge_labels
+ *   turn_off_edge_labels
  * SYNOPSIS
- *   void turn_of_edge_labels();
+ *   void turn_off_edge_labels();
  * FUNCTION
  *   Sets the vcg flag "display_edge_labels" to no.  This is necessary
  *   as xvcg and aisee both fail to display graphs with self-edges if these
@@ -235,15 +235,15 @@ void dump_all_ir_graphs (void dump_graph(ir_graph*));
  *
  ***
  */
-void turn_of_edge_labels();
+void turn_off_edge_labels();
 
 
-/****m* irdump/dump_constant_entity_values
+/****m* irdump/turn_off_constant_entity_values
  *
  * NAME
- *   dump_constant_entity_values
+ *   turn_off_constant_entity_values
  * SYNOPSIS
- *   void dump_constant_entity_values()
+ *   void turn_off_constant_entity_values()
  * FUNCTION
  *   Turns off dumping the values of constant entities. Makes type graphs
  *   better readable.
@@ -254,10 +254,10 @@ void turn_of_edge_labels();
  *
  ***
  */
-void dump_constant_entity_values();
+void turn_off_constant_entity_values();
 
 
-/****m* irdump/dump_constant_entity_values
+/****m* irdump/dump_keepalive_edges
  *
  * NAME
  *   dump_keepalive_edges

@@ -59,8 +59,22 @@ mangle_type (type *type)
   return res;
 }
 
-/* Returns a new ident that represents first_scnd. */
+/* Returns a new ident that represents firstscnd. */
 ident *mangle (ident *first, ident* scnd) {
+  char *cp;
+  int len;
+  ident *res;
+
+  xoprintf (&mangle_obst, "%I%I",  first, scnd);
+  len = obstack_object_size (&mangle_obst);
+  cp = obstack_finish (&mangle_obst);
+  res = id_from_str (cp, len);
+  obstack_free (&mangle_obst, cp);
+  return res;
+}
+
+/* Returns a new ident that represents first_scnd. */
+ident *mangle_u (ident *first, ident* scnd) {
   char *cp;
   int len;
   ident *res;
@@ -72,6 +86,7 @@ ident *mangle (ident *first, ident* scnd) {
   obstack_free (&mangle_obst, cp);
   return res;
 }
+
 
 void
 init_mangle (void)

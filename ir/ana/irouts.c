@@ -10,14 +10,6 @@
 
 /* $Id$ */
 
-#define DDMSG2(X)    printf("%s(l.%i) %s%s: %ld\n", __FUNCTION__, __LINE__,          \
-                     id_to_str(get_irn_opident(X)), id_to_str(get_irn_modeident(X)), \
-                     get_irn_node_nr(X))
-#define DDMSG5(X)    printf("%s%s: %ld",          \
-                     id_to_str(get_irn_opident(X)), id_to_str(get_irn_modeident(X)), \
-                     get_irn_node_nr(X))
-
-
 #include "irouts.h"
 #include "irnode_t.h"
 #include "irgraph_t.h"     /* To access irg->outs field (which is private to this module)

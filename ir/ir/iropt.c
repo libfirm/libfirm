@@ -427,6 +427,7 @@ equivalent_node (ir_node *n)
       n_preds = get_Phi_n_preds(n);
 
       block = get_nodes_Block(n);
+      if (is_Bad(block)) return new_Bad();
       assert(get_irn_op (block) == op_Block);
 
       /* there should be no Phi nodes in the Start region. */

@@ -590,6 +590,13 @@
  *      size      The symbolic constant represents the size of a class.
  *      link_info Information for the linker, e.g. the name of a global
  *                variable.
+ *    To represent a pointer to an entity that is represented by an entity
+ *    datastructure don't use
+ *      new_SymConst((type_or_id*)get_entity_ld_ident(ent), linkage_ptr_info);.
+ *    Use a real const instead:
+ *      new_Const(mode_p, tarval_p_from_entity(ent));
+ *    This makes the Constant independent of name changes of the entity due to
+ *    mangling.
  *
  *    Parameters
  *      kind        The kind of the symbolic constant: type_tag, size or link_info.

@@ -14,6 +14,8 @@
 # include "pset.h"
 # include "irgraph.h"
 
+#define FRAME_TP_SUFFIX "frame_tp"
+
 /* ir_graph holds all information for a procedure */
 struct ir_graph {
   /** Basics of the representation **/

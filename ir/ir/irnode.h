@@ -91,6 +91,8 @@ inline ident        *get_irn_opident       (ir_node *node);
 inline const char   *get_irn_opname        (ir_node *node);
 inline void          set_irn_visited (ir_node *node, unsigned long visited);
 inline unsigned long get_irn_visited (ir_node *node);
+/* Sets visited to get_irg_visited(current_ir_graph) */
+inline void          mark_irn_visited (ir_node *node);
 inline void          set_irn_link          (ir_node *node, ir_node *link);
 inline ir_node      *get_irn_link          (ir_node *node);
 #ifdef DEBUG_libfirm
@@ -149,9 +151,11 @@ inline ir_node  *get_Block_graph_arr (ir_node *node, int pos);
 inline void      set_Block_graph_arr (ir_node *node, int pos, ir_node *value);
 
 
+inline int  get_End_n_keepalives(ir_node *end);
+inline ir_node *get_End_keepalive(ir_node *end, int pos);
 inline void add_End_keepalive (ir_node *end, ir_node *ka);
 /* Some parts of the End node are allocated seperately -- their memory
-   is not recovered by dead_node_elimination if a End not is dead.
+   is not recovered by dead_node_elimination if a End node is dead.
    free_End frees these data structures. */
 inline void free_End (ir_node *end);
 
@@ -480,7 +484,8 @@ inline int      is_no_Block (ir_node *node);
    Start, End, Jmp, Cond, Return, Raise, Bad */
 int is_cfop(ir_node *node);
 /* Returns true if the operation can change the control flow because
-   of an exception. */
+   of an exception: Call, Quot, DivMod, Div, Mod, Load, Store, Alloc,
+   Bad. */
 int is_fragile_op(ir_node *node);
 /* Returns the memory operand of fragile operations. */
 ir_node *get_fragile_op_mem(ir_node *node);
@@ -488,7 +493,7 @@ ir_node *get_fragile_op_mem(ir_node *node);
 /*****/
 
 /* Makros for debugging the libfirm */
-#ifdef DEBUG_libfirm
+/*#ifdef DEBUG_libfirm*/
 #include "ident.h"
 
 #define DDMSG        printf("%s(l.%i)\n", __FUNCTION__, __LINE__)
@@ -499,12 +504,23 @@ ir_node *get_fragile_op_mem(ir_node *node);
                      get_irn_node_nr(X))
 #define DDMSG3(X)    printf("%s(l.%i) %s: %p\n", __FUNCTION__, __LINE__,     \
                      print_firm_kind(X), (X))
-#define DDMSG4(X)    printf("%s(l.%i) %s %s: %p\n", __FUNCTION__, __LINE__,     \
-                     get_type_tpop_name(X), get_type_name(X), (X))
+#define DDMSG4(X)    xprintf("%s(l.%i) %I %I: %p\n", __FUNCTION__, __LINE__,     \
+                     get_type_tpop_nameid(X), get_type_ident(X), (X))
 #define DDMSG5(X)    printf("%s%s: %ld",          \
                      id_to_str(get_irn_opident(X)), id_to_str(get_irn_modeident(X)), \
                      get_irn_node_nr(X))
 
-#endif
+
+#define DDMN(X)      xprintf("%s(l.%i) %I%I: %ld (%p)\n", __FUNCTION__, __LINE__,      \
+                     get_irn_opident(X), get_irn_modeident(X), get_irn_node_nr(X), (X))
+#define DDMNB(X)     xprintf("%I%I: %ld (in block %ld)\n",                             \
+		     get_irn_opident(X), get_irn_modeident(X), get_irn_node_nr(X),     \
+		     get_irn_node_nr(get_nodes_Block(X)))
+#define DDMT(X)      xprintf("%s(l.%i) %I %I: %p\n", __FUNCTION__, __LINE__,           \
+                     get_type_tpop_nameid(X), get_type_ident(X), (X))
+#define DDME(X)      xprintf("%s(l.%i) %I: %p\n", __FUNCTION__, __LINE__,              \
+                     get_entity_ident(X), (X))
+
+/*#endif*/
 
 # endif /* _IRNODE_H_ */

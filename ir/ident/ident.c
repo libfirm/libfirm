@@ -98,9 +98,12 @@ id_init (void)
 
 
 #if 1
-inline ident *id_from_str (char *str, int len) {
+inline ident *id_from_str (const char *str, int len) {
   assert (len > 0);
-  return  (const set_entry *)set_hinsert (id_set, (str), (len), ID_HASH ((str), (len)));
+  return  (const set_entry *) set_hinsert (id_set,
+					   (str),
+					   (len),
+					   ID_HASH ((str), (len)));
 }
 
 inline const char *id_to_str   (ident *id) {
@@ -110,5 +113,25 @@ inline const char *id_to_str   (ident *id) {
 inline int id_to_strlen(ident *id) {
   return ((id)->size);
 }
-
 #endif
+
+int id_is_prefix (ident *prefix, ident *id) {
+  int i;
+  if (id_to_strlen(prefix) > id_to_strlen(id)) return 0;
+  if (0 == memcmp(&(prefix->dptr[0]), &(id->dptr[0]), id_to_strlen(prefix)))
+    return 1;
+  return 0;
+}
+
+int id_is_suffix (ident *suffix, ident *id) {
+  int suflen = id_to_strlen(suffix);
+  int idlen = id_to_strlen(id);
+  char *part;
+  if (suflen > idlen) return 0;
+
+  part = (char *) &id->dptr[0];
+  part = part + (idlen - suflen);
+  if (0 == memcmp(&(suffix->dptr[0]), part, suflen))
+    return 1;
+  return 0;
+}

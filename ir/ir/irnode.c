@@ -27,6 +27,7 @@
 #define CALL_PARAM_OFFSET 2
 #define SEL_INDEX_OFFSET 2
 #define RETURN_RESULT_OFFSET 1  /* mem is not a result */
+#define END_KEEPALIVE_OFFSET 0
 
 static char *pnc_name_arr [] = {"False", "Eq", "Lt", "Le",
 				"Gt", "Ge", "Lg", "Leg", "Uo",
@@ -300,6 +301,13 @@ set_irn_visited (ir_node *node, unsigned long visited)
   assert (node);
   node->visited = visited;
 }
+
+inline void
+mark_irn_visited (ir_node *node) {
+  assert (node);
+  node->visited = current_ir_graph->visited;
+}
+
 inline void
 set_irn_link (ir_node *node, ir_node *link) {
   assert (node);
@@ -469,6 +477,18 @@ inline void
 set_Block_graph_arr (ir_node *node, int pos, ir_node *value) {
   assert (node->op == op_Block);
   node->attr.block.graph_arr[pos+1] = value;
+}
+
+inline int
+get_End_n_keepalives(ir_node *end) {
+  assert (end->op == op_End);
+  return (get_irn_arity(end) - END_KEEPALIVE_OFFSET);
+}
+
+inline ir_node *
+get_End_keepalive(ir_node *end, int pos) {
+  assert (end->op == op_End);
+  return get_irn_n(end, pos + END_KEEPALIVE_OFFSET);
 }
 
 inline void
@@ -796,6 +816,7 @@ get_Call_n_params (ir_node *node)  {
 
 inline int
 get_Call_arity (ir_node *node) {
+  assert (node->op == op_Call);
   return get_Call_n_params(node);
 }
 

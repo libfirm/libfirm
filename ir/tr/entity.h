@@ -129,6 +129,7 @@ ident      *get_entity_ident    (entity *ent);
    with mangle_entity() and remembers this new name internally. */
 ident      *get_entity_ld_ident (entity *ent);
 void        set_entity_ld_ident (entity *ent, ident *ld_ident);
+const char *get_entity_ld_name (entity *end);
 
 /*
 char       *get_entity_ld_name  (entity *ent);
@@ -193,17 +194,22 @@ typedef enum {
 ent_volatility get_entity_volatility (entity *ent);
 void           set_entity_volatility (entity *ent, ent_volatility vol);
 
-/* Set has no effect  for entities of type method. */
-ir_node * get_atomic_ent_value(entity *ent);
-void      set_atomic_ent_value(entity *ent, ir_node *val);
+/* Set has no effect for entities of type method. */
+ir_node *get_atomic_ent_value(entity *ent);
+void     set_atomic_ent_value(entity *ent, ir_node *val);
+/* Copies the value represented by the entity to current_block
+   in current_ir_graph. */
+ir_node *copy_atomic_ent_value(entity *ent);
 
-/* A value of a compound entity is a pair of value and the corresponding member of
-   the compound. */
-void      add_compound_ent_value(entity *ent, ir_node *val, entity *member);
-int       get_compound_ent_n_values(entity *ent);
-ir_node  *get_compound_ent_value(entity *ent, int pos);
-entity   *get_compound_ent_value_member(entity *ent, int pos);
-void      set_compound_ent_value(entity *ent, ir_node *val, entity *member, int pos);
+/* A value of a compound entity is a pair of value and the corresponding
+   member of the compound. */
+void     add_compound_ent_value(entity *ent, ir_node *val, entity *member);
+int      get_compound_ent_n_values(entity *ent);
+ir_node *get_compound_ent_value(entity *ent, int pos);
+entity  *get_compound_ent_value_member(entity *ent, int pos);
+void     set_compound_ent_value(entity *ent, ir_node *val, entity *member, int pos);
+/* Copies the value pos of the entity to current_block in current_ir_graph. */
+ir_node *copy_compound_ent_value(entity *ent, int pos);
 
 /* Only set if layout = fixed. */
 int       get_entity_offset (entity *ent);

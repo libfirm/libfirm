@@ -16,7 +16,7 @@
 
 # include "irnode.h"
 # include "irgraph.h" /* visited flag */
-
+# include "irprog.h"
 
 void irg_walk_2(ir_node *node,
 	      void (pre)(ir_node*, void*), void (post)(ir_node*, void*),
@@ -63,6 +63,26 @@ void irg_walk(ir_node *node,
   inc_irg_visited (current_ir_graph);
   irg_walk_2(node, pre, post, env);
   return;
+}
+
+/***************************************************************************/
+
+/* Executes irg_walk(end, pre, post, env) for all irgraphs in irprog.
+   Sets current_ir_graph properly for each walk.  Conserves current
+   current_ir_graph. */
+void all_irg_walk(void (pre)(ir_node*, void*), void (post)(ir_node*, void*),
+		  void *env) {
+  int i;
+  ir_graph *irg, *rem;
+
+  rem = current_ir_graph;
+
+  for (i = 0; i < get_irp_n_irgs(); i++) {
+    irg = get_irp_irg(i);
+    current_ir_graph = irg;
+    irg_walk(get_irg_end(irg), pre, post, env);
+  }
+  current_ir_graph = rem;
 }
 
 /***************************************************************************/

@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "irgwalk.h"
-#include "irgraph.h"
+#include "irgraph_t.h"
 #include "irnode.h"
 #include "irprog.h"
 #include "type_or_entity.h"
@@ -283,9 +283,68 @@ void type_walk_super2sub(void (pre)(type_or_ent*, void*),
 			 void (post)(type_or_ent*, void*),
 			 void *env) {
   int i;
+  type *tp;
   ++type_visited;
   type_walk_s2s_2((type_or_ent *)get_glob_type(), pre, post, env);
   for (i = 0; i < get_irp_n_types(); i++) {
-    type_walk_s2s_2((type_or_ent *)get_irp_type(i), pre, post, env);
+    tp = get_irp_type(i);
+    type_walk_s2s_2((type_or_ent *)tp, pre, post, env);
+  }
+}
+
+/*****************************************************************************/
+
+
+void class_walk_s2s_2(type *tp,
+		     void (pre)(type*, void*),
+		     void (post)(type*, void*),
+		     void *env)
+{
+  int i;
+
+  /* marked? */
+  if (tp->visit >= type_visited) return;
+
+  assert(is_class_type(tp));
+  /* Assure all supertypes are visited before */
+  for (i=0; i < get_class_n_supertype(tp); i++) {
+    if (get_type_visited(get_class_supertype(tp, i)) < type_visited)
+      return;
+  }
+
+  mark_type_visited(tp);
+
+  /* execute pre method */
+  if(pre)
+    pre(tp, env);
+
+  tp = skip_tid((type*)tp);
+  for (i=0; i<get_class_n_subtype(tp); i++) {
+    class_walk_s2s_2(get_class_subtype(tp, i), pre, post, env);
+  }
+  /* execute post method */
+  if(post)
+    post(tp, env);
+
+  return;
+}
+
+
+void class_walk_super2sub(void (pre)(type*, void*),
+			  void (post)(type*, void*),
+			  void *env) {
+  int i;
+  type *tp;
+
+  ++type_visited;
+  for (i = 0; i < get_irp_n_types(); i++) {
+    tp = get_irp_type(i);
+    if (is_class_type(tp) &&
+	(get_class_n_supertype(tp) == 0) &&
+	(tp->visit < type_visited) &&
+	(!is_frame_type(tp)) &&
+	(tp != get_glob_type())) {
+      class_walk_s2s_2(tp, pre, post, env);
+    }
   }
 }

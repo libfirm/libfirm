@@ -88,7 +88,8 @@ new_ir_graph (entity *ent, int n_loc)
 
   /** A type that represents the stack frame.  A class type so that it can
       contain "inner" methods as in Pascal. **/
-  res->frame_type = new_type_class(mangle(get_entity_ident(ent), id_from_str("frame_tp", 8)));
+  res->frame_type = new_type_class(mangle(get_entity_ident(ent),
+       id_from_str(FRAME_TP_SUFFIX, strlen(FRAME_TP_SUFFIX))));
 
   /** Nodes needed in every graph **/
   res->end_block = new_immBlock ();
@@ -330,6 +331,15 @@ set_irg_frame_type (ir_graph *irg, type *ftp)
   irg->frame_type = ftp;
 }
 
+
+/* To test for a frame type */
+int
+is_frame_type(type *ftp) {
+  return ((is_class_type(ftp) || is_struct_type(ftp)) &&
+	  id_is_suffix(id_from_str(FRAME_TP_SUFFIX, strlen(FRAME_TP_SUFFIX)),
+		       get_type_ident(ftp)));
+}
+
 int
 get_irg_n_loc (ir_graph *irg)
 {
@@ -343,7 +353,11 @@ get_irg_n_loc (ir_graph *irg)
 void
 set_irg_n_loc (ir_graph *irg, int n_loc)
 {
-  irg->n_loc = n_loc;
+#if PRECISE_EXC_CONTEXT
+  irg->n_loc = n_loc + 1 + 1;
+#else
+  irg->n_loc = n_loc + 1;
+#endif
 }
 
 irg_phase_state get_irg_phase_state (ir_graph *irg) {

@@ -127,6 +127,8 @@ void     set_irg_ent (ir_graph *irg, entity *ent);
 
 type    *get_irg_frame_type (ir_graph *irg);
 void     set_irg_frame_type (ir_graph *irg, type *ftp);
+/* To test for a frame type */
+int      is_frame_type(type *ftp);
 
 /* Use not encouraged, internal of Phi construction algorithm. */
 int      get_irg_n_loc (ir_graph *irg);
@@ -141,12 +143,13 @@ void     set_irg_n_loc (ir_graph *irg, int n_loc);
    information associated with the graph.  Optimizations invalidate these
    states.  */
 
-/* state: phase
-   values: phase_building, phase_high, phase_low
-   The irg is in phase_building during construction of the irgraph.
-   It is in phase_high after construction.  All nodes are allowed.
-   To get the irgraph into phase_low all Sel nodes must be removed
-   and replaced by explicit address computations.  @@@ More conditions? */
+/* state: phase values: phase_building, phase_high, phase_low.
+   The irg is in phase_building during construction of the irgraph.  It is in
+   phase_high after construction.  All nodes are allowed.  To get the irgraph
+   into phase_low all Sel nodes must be removed and replaced by explicit
+   address computations.  SymConst size and typetag nodes must be removed (@@@
+   really?).  Initialization of memory allocated by Alloc must be explicit.
+   @@@ More conditions? */
 typedef enum {
   phase_building,
   phase_high,

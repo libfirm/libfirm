@@ -57,17 +57,6 @@ typedef enum {
   k_ir_node
 } firm_kind;
 
-#if 0
-  k_type_class,
-  k_type_strct,
-  k_type_method,
-  k_type_union,
-  k_type_array,
-  k_type_enumeration,
-  k_type_pointer,
-  k_type_primitive,
-#endif
-
 /* returns the kind of the thing */
 firm_kind get_kind(void *firm_thing);
 

@@ -177,6 +177,11 @@ set_entity_ld_ident (entity *ent, ident *ld_ident) {
   ent->ld_name = ld_ident;
 }
 
+inline const char *
+get_entity_ld_name (entity *ent) {
+  return id_to_str(get_entity_ld_ident(ent));
+}
+
 /*
 char  *get_entity_ld_name  (entity *);
 void   set_entity_ld_name  (entity *, char *ld_name);
@@ -264,6 +269,30 @@ set_atomic_ent_value(entity *ent, ir_node *val) {
   ent->value = val;
 }
 
+ir_node *copy_value(ir_node *n) {
+  ir_node *nn;
+  ir_mode *m;
+
+  m = get_irn_mode(n);
+  switch(get_irn_opcode(n)) {
+  case iro_Const:
+    nn = new_Const(m, get_Const_tarval(n)); break;
+  case iro_SymConst:
+    nn = new_SymConst(get_SymConst_type_or_id(n), get_SymConst_kind(n)); break;
+  case iro_Add:
+    nn = new_Add(copy_value(get_Add_left(n)), copy_value(get_Add_right(n)), m); break;
+  default:
+    assert(0 && "opdope invalid or not implemented"); break;
+  }
+  return nn;
+}
+
+/* Copies the value represented by the entity to current_block
+   in current_ir_graph. */
+ir_node *copy_atomic_ent_value(entity *ent) {
+  assert(ent && is_atomic_entity(ent) && (ent->variability != uninitialized));
+  return copy_value(ent->value);
+}
 
 /* A value of a compound entity is a pair of value and the corresponding member of
    the compound. */
@@ -284,6 +313,12 @@ inline ir_node  *
 get_compound_ent_value(entity *ent, int pos) {
   assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
   return ent->values[pos+1];
+}
+
+/* Copies the value i of the entity to current_block in current_ir_graph. */
+ir_node *copy_compound_ent_value(entity *ent, int pos) {
+  assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
+  return copy_value(ent->values[pos+1]);
 }
 
 inline entity   *
@@ -362,13 +397,13 @@ set_entity_irg(entity *ent, ir_graph *irg) {
 }
 
 int is_atomic_entity(entity *ent) {
-  type* t = ent->type;
+  type* t = get_entity_type(ent);
   return (is_primitive_type(t) || is_pointer_type(t) ||
 	  is_enumeration_type(t) || is_method_type(t));
 }
 
 int is_compound_entity(entity *ent) {
-  type* t = ent->type;
+  type* t = get_entity_type(ent);
   return (is_class_type(t) || is_struct_type(t) ||
 	  is_array_type(t) || is_union_type(t));
 }

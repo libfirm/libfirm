@@ -20,7 +20,7 @@
  *   ident -- identifiers in the firm library
  * NOTES
  *  Identifiers are used in the firm library. This is the interface to it.
- *
+ *  @@@ we need comparison of the prefis of two idents! (strncmp);
  ******
  */
 
@@ -51,7 +51,7 @@ typedef const struct set_entry ident;
  *  id_to_str, id_to_strlen
  ***
  */
-inline ident      *id_from_str (char *str, int len);
+inline ident      *id_from_str (const char *str, int len);
 
 /****f* ident/id_to_str
  *
@@ -88,6 +88,43 @@ inline const char *id_to_str   (ident *id);
  *  id_from_str, id_to_str
  ***
  */
-inline int         id_to_strlen(ident *id);
+inline int  id_to_strlen(ident *id);
+
+/****f* ident/id_is_suffix
+ *
+ * NAME
+ *
+ * SYNOPSIS
+ *  int id_is_prefix (ident *prefix, ident *id);
+ * FUNCTION
+ *  Returns true if prefix is prefix of id.
+ * INPUTS
+ *  prefix - the prefix
+ *  id - the ident
+ * SEE ALSO
+ *  id_from_str, id_to_str, id_is_prefix
+ ***
+ */
+/*  */
+int id_is_prefix (ident *prefix, ident *id);
+
+/****f* ident/id_is_suffix
+ *
+ * NAME
+ *
+ * SYNOPSIS
+ *  int id_is_suffix (ident *suffix, ident *id);
+ * FUNCTION
+ *  Returns true if suffix is suffix of id.
+ * INPUTS
+ *  suffix - the suffix
+ *  id - the ident
+ * SEE ALSO
+ *  id_from_str, id_to_str, id_is_prefix
+ ***
+ */
+/*  */
+int id_is_suffix (ident *suffix, ident *id);
+
 
 # endif /* _IDENT_H_ */

@@ -21,7 +21,7 @@ void local_optimize_graph (ir_graph *irg);
    inputs to Phi nodes.
    The graph may not be in state phase_building.  The outs datasturcture
    is freed, the outs state set to no_outs. (@@@ Change this? -> inconsistent.)
-   Removes old attributes of nodes.
+   Removes old attributes of nodes.  Sets link field to NULL.
    Attention: the numbers assigned to nodes if the library is compiled for
    development/debugging are not conserved by copying. */
 void dead_node_elimination(ir_graph *irg);
