@@ -1407,7 +1407,8 @@ static void collect_blocks_floats_cg(ir_node * node, pmap * map) {
       ir_node ** arr;
       arr = entry->value;
       assert(arr);
-      ARR_APP1(ir_node *, arr , node);
+      ARR_APP1(ir_node *, arr, node);
+      entry->value = (void *)arr;
     } else {
       ir_node ** arr = NEW_ARR_F(ir_node *, 1);
       assert(arr);
