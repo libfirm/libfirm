@@ -232,7 +232,7 @@ extern tp_op *type_primitive;
  * PURPOSE
  *   This type opcode is an auxiliary opcode dedicated to support transformations
  *   of the type structure.  If a type is changed to another type with another
- *   opcode the new type will be allocated with new memory.  All nodes refereing
+ *   opcode the new type will be allocated with new memory.  All nodes refering
  *   to the old type need to be changed to refer the new one.  This is simplified
  *   by turning the old type into an id type that merely forwards to the new type
  *   that now replaces the old one.
@@ -240,7 +240,7 @@ extern tp_op *type_primitive;
  *   should automatically check for type_id and eventually follow the forward in
  *   type_id.  Two types are exchanged by a call to exchange_types.
  *   If a type_id is visible externally report this as bug.  If it is assured that
- *   this never happens this extern variable can be moved to type_t.h.
+ *   this never happens this extern variable can be moved to tpop_t.h.
  * NOTES
  *   This struct is dynamically allocated but constant for the lifetime
  *   of the library.

@@ -20,6 +20,7 @@ tp_op *type_array;
 tp_op *type_enumeration;
 tp_op *type_pointer;
 tp_op *type_primitive;
+tp_op *type_id;
 
 tp_op *
 new_tpop (tp_opcode code, ident *name, size_t attr_size)

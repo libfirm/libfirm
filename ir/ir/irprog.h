@@ -29,6 +29,20 @@
  *
  * SOURCE
  */
+
+/***s* irprog/irprog
+ *
+ * NAME  Datastructure that holds central information about a program
+ *
+ * NOTE  Preliminary documentation ;-)
+ *
+ * FIELDS
+ *  type   A list containing all types known to the translated program.
+ *         Some types can have several entries in this list (as a result of
+ *         using exchange_types()).
+ * ...
+ * SOURCE
+ */
 typedef struct ir_prog ir_prog;
 
 /* A variable from where everything in the ir can be accessed. */

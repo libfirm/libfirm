@@ -63,6 +63,20 @@ new_type(tp_op *type_op, ir_mode *mode, ident* name) {
   return res;
 }
 
+void free_type_attrs(type *tp) {
+  switch(get_type_tpop_code(tp)) {
+  case tpo_class:       { free_class_attrs(tp);       } break;
+  case tpo_struct:      { free_struct_attrs(tp);      } break;
+  case tpo_method:      { free_method_attrs(tp);      } break;
+  case tpo_union:       { free_union_attrs(tp);       } break;
+  case tpo_array:       { free_array_attrs(tp);       } break;
+  case tpo_enumeration: { free_enumeration_attrs(tp); } break;
+  case tpo_pointer:     { free_pointer_attrs(tp);     } break;
+  case tpo_primitive:   { free_primitive_attrs(tp);   } break;
+  default: break;
+  }
+}
+
 tp_op*      get_type_tpop(type *tp) {
   assert(tp);
   return tp->type_op;
@@ -170,6 +184,12 @@ type   *new_type_class (ident *name) {
 
   return res;
 }
+inline void free_class_attrs(type *clss) {
+  assert(clss && (clss->type_op == type_class));
+  DEL_ARR_F(clss->attr.ca.members);
+  DEL_ARR_F(clss->attr.ca.subtypes);
+  DEL_ARR_F(clss->attr.ca.supertypes);
+}
 /* manipulate private fields of class type  */
 void    add_class_member   (type *clss, entity *member) {
   assert(clss && (clss->type_op == type_class));
@@ -273,6 +293,10 @@ type   *new_type_struct (ident *name) {
   res->attr.sa.members = NEW_ARR_F (entity *, 1);
   return res;
 }
+inline void free_struct_attrs (type *strct) {
+  assert(strct && (strct->type_op == type_struct));
+  DEL_ARR_F(strct->attr.sa.members);
+}
 /* manipulate private fields of struct */
 void    add_struct_member   (type *strct, entity *member) {
   assert(strct && (strct->type_op == type_struct));
@@ -322,7 +346,11 @@ type *new_type_method (ident *name, int n_param, int n_res) {
   res->attr.ma.res_type   = (type **) xmalloc (sizeof (type *) * n_res);
   return res;
 }
-
+inline void free_method_attrs(type *method) {
+  assert(method && (method->type_op == type_method));
+  free(method->attr.ma.param_type);
+  free(method->attr.ma.res_type);
+}
 /* manipulate private fields of method. */
 int   get_method_n_params  (type *method) {
   assert(method && (method->type_op == type_method));
@@ -369,6 +397,10 @@ type  *new_type_uni (ident *name) {
     res->attr.ua.delim_names  = (ident **) xmalloc (sizeof (ident *) * n_types); */
   res->attr.ua.members = NEW_ARR_F (entity *, 1);
   return res;
+}
+inline void free_union_attrs (type *uni) {
+  assert(uni && (uni->type_op == type_union));
+  DEL_ARR_F(uni->attr.ua.members);
 }
 /* manipulate private fields of struct */
 #if 0
@@ -448,6 +480,11 @@ type *new_type_array         (ident *name, int n_dimensions,
   new_entity(res, name, element_type);
   return res;
 }
+inline void free_array_attrs (type *array) {
+  assert(array && (array->type_op == type_array));
+  free(array->attr.aa.lower_bound);
+  free(array->attr.aa.upper_bound);
+}
 
 /* manipulate private fields of array type */
 int   get_array_n_dimensions (type *array) {
@@ -512,6 +549,11 @@ type   *new_type_enumeration    (ident *name, int n_enums) {
   res->attr.ea.enum_nameid = (ident  **) xmalloc (sizeof (ident  *) * n_enums);
   return res;
 }
+inline void free_enumeration_attrs(type *enumeration) {
+  assert(enumeration && (enumeration->type_op == type_enumeration));
+  free(enumeration->attr.ea.enumer);
+  free(enumeration->attr.ea.enum_nameid);
+}
 
 /* manipulate fields of enumeration type. */
 int     get_enumeration_n_enums (type *enumeration) {
@@ -558,6 +600,9 @@ type *new_type_pointer           (ident *name, type *points_to) {
   res->state = layout_fixed;
   return res;
 }
+inline void free_pointer_attrs (type *pointer) {
+  assert(pointer && (pointer->type_op == type_pointer));
+}
 /* manipulate fields of type_pointer */
 void  set_pointer_points_to_type (type *pointer, type *type) {
   assert(pointer && (pointer->type_op == type_pointer));
@@ -586,6 +631,9 @@ type *new_type_primitive (ident *name, ir_mode *mode) {
   res->size = get_mode_size(mode);
   res->state = layout_fixed;
   return res;
+}
+inline void free_primitive_attrs (type *primitive) {
+  assert(primitive && (primitive->type_op == type_primitive));
 }
 
 /* typecheck */

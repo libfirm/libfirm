@@ -12,8 +12,8 @@
 # include <stdlib.h>
 # include <stddef.h>
 # include "entity_t.h"
-# include "entity.h"
 # include "mangle.h"
+# include "typegmod_t.h"
 
 /*******************************************************************/
 /** general                                                       **/

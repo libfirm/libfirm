@@ -108,8 +108,8 @@ int get_irp_n_types (void) {
 type *get_irp_type(int pos) {
   assert (irp && irp->types);
   /* Strangely the first element of the array is NULL.  Why??  */
-  /* Don't set the skip_id result so that no double entries are generated. */
-  return skip_id(irp->types[pos+1]);
+  /* Don't set the skip_tid result so that no double entries are generated. */
+  return skip_tid(irp->types[pos+1]);
 }
 
 void  set_irp_type(int pos, type *typ) {

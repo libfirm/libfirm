@@ -28,8 +28,9 @@
  * SIDE EFFECTS
  *   Old type is replaced by new_type.  All references to old_type
  *   now point to new_type.  The memory for the old type is destroyed,
- *   but still used.  Therefore it is not freed.  The memory will
- *   be lost after a certain while.
+ *   but still used.  Therefore it is not freed.
+ *   All referenced to this memory will be lost after a certain while.
+ *   An exception is the list of types in irp (irprog.h).
  *   In the future there might be a routine to recover the memory, but
  *   this will be at considerable runtime cost.
  ***
