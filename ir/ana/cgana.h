@@ -32,23 +32,24 @@
 
 
 
-/* Analyses a rough estimation of the possible call graph.
- * Bestimmt fuer jede Call-Operation die Menge der aufrufbaren Methode
- * und speichert das Ergebnis in der Call-Operation. (siehe
- * "set_Call_callee"). Die Methode gibt die Menge der
- * "freien" Methoden zurueck, die vom Aufrufer wieder freigegeben
- * werden muss (free).
- * The algorithm implements roughly Static Class Hierarchy Analysis
- * as described in "Optimization of Object-Oriented Programs Using
- * Static Class Hierarchy Analysis" by Jeffrey Dean and David Grove
- * and Craig Chambers.
+/** Analyses a rough estimation of the possible call graph.
  *
- * Performs some optimizations possible by the analysed information:
- *   - Replace SymConst nodes by Const nodes if possible,
- *   - Replace (Sel-method(Alloc)) by Const method,
- *   - Replaces unreachable Sel nodes by Bad  (@@@ was genau meint unreachable?)
- *   - Replaces Sel-method by Const if the Method is never overwritten */
-/* @@@ I assume this can not be called via JNI :-( */
+ *  Bestimmt fuer jede Call-Operation die Menge der aufrufbaren Methode
+ *  und speichert das Ergebnis in der Call-Operation. (siehe
+ *  "set_Call_callee"). Die Methode gibt die Menge der
+ *  "freien" Methoden zurueck, die vom Aufrufer wieder freigegeben
+ *  werden muss (free).
+ *  The algorithm implements roughly Static Class Hierarchy Analysis
+ *  as described in "Optimization of Object-Oriented Programs Using
+ *  Static Class Hierarchy Analysis" by Jeffrey Dean and David Grove
+ *  and Craig Chambers.
+ *
+ *  Performs some optimizations possible by the analysed information:
+ *    - Replace SymConst nodes by Const nodes if possible,
+ *    - Replace (Sel-method(Alloc)) by Const method,
+ *    - Replaces unreachable Sel nodes by Bad  (@@@ was genau meint unreachable?)
+ *    - Replaces Sel-method by Const if the Method is never overwritten */
+/*  @@@ I assume this can not be called via JNI :-( -- how to obtain the array pointer? */
 void cgana(int *len, entity ***free_methods);
 
 /* Optimize the address expressions passed to call nodes.
