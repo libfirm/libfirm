@@ -1,3 +1,15 @@
+  20.6.2001 Goetz
+  Extended iropt, tv.
+  tv now implements Minus, Abs.
+  iropt now optimizes these and Div, Mod, Quot.
+  Still missing: Shrs, Rot.
+  tarval_shr somtimes performs shrs, depending on the compiler/system!!
+  If the ArmRoq implementation is faulty there might appear errors.
+
+  20.6.2001 Goetz
+  Changed ircons: If undefined values are used the Phi construction
+  inserts a constant with value tarval_bad.
+
   19.6.2001 Goetz
   Changed array bounds in type.h to ir_node*.  This allows to
   construct array bounds that are complex constant expressions
