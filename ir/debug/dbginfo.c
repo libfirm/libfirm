@@ -18,9 +18,21 @@
 #endif
 
 #include "dbginfo.h"
+#include "irnode_t.h"
 
 inline void
-dbg_info_copy(ir_node *new, ir_node *old, ident *info) {
+set_irn_dbg_info(ir_node *n, struct dbg_info* db) {
+  n->dbi = db;
+}
+
+inline struct dbg_info *
+get_irn_dbg_info(ir_node *n) {
+  return n->dbi;
+}
+
+inline void
+dbg_info_copy(ir_node *nw, ir_node *old, ident *info) {
+  set_irn_dbg_info(new, get_irn_dbg_info(old));
 }
 
 inline void

@@ -10,14 +10,17 @@ srcdir = @srcdir@
 topdir = ../..
 subdir := ir/debug
 
+INSTALL_HEADERS = dbginfo.h
 
-SOURCES = Makefile.in dbginfo.c dbginfo.h debinfo.c debinfo.h
+SOURCES = $(INSTALL_HEADERS)
+
+SOURCES += Makefile.in dbginfo.c dbginfo.h
 
 include $(topdir)/MakeRules
 
 CPPFLAGS += -I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/ir -I$(top_srcdir)/ir/tv \
-		-I$(top_srcdir)/ir/tr -I$(top_srcdir)/ir/common -I$(top_srcdir)/ir/st \
-		-I$(top_srcdir)/ir/ana
+	    -I$(top_srcdir)/ir/tr -I$(top_srcdir)/ir/common -I$(top_srcdir)/ir/ana \
+            -I$(top_srcdir)/ir/st
 
 include $(top_srcdir)/MakeTargets
 
