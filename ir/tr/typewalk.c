@@ -131,10 +131,12 @@ static void type_walk_2(type_or_ent *tore,
 	break;
       case tpo_primitive:
       case tpo_id:
+      case tpo_none:
+      case tpo_unknown:
 	/* a leave. */
 	break;
       default:
-	printf(" *** Faulty type! \n");
+	assert(0 && "Faulty type");
 	break;
       }
     } break; /* end case k_type */
