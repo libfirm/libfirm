@@ -41,3 +41,8 @@ void register_hook(hook_type_t hook, hook_entry_t *entry) {
 void register_hook(hook_type_t hook, hook_entry_t *entry) {}
 
 #endif /* FIRM_ENABLE_HOOKS */
+
+int init_hooks(void)
+{
+  return (int)register_hook;
+}

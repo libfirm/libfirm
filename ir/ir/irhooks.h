@@ -174,4 +174,7 @@ extern hook_entry_t *hooks[hook_last];
 #define hook_arch_dep_replace_DivMod_by_const(irn) \
   hook_exec(hook_arch_dep_replace_DivMod_by_const, (ctx, irn))
 
+/* the initializer, move to hooks_t.h some day */
+int init_hooks(void);
+
 #endif /* __IRHOOKS_H__ */
