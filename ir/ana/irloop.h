@@ -93,7 +93,7 @@ ir_node *get_loop_node (ir_loop *loop, int pos);
 /** Returns the number of elements contained in loop.  */
 int      get_loop_n_elements (ir_loop *loop);
 /** Returns a loop element.  A loop element can be interpreted as a
-    kind poitner, an ir_node* or an ir_loop*. */
+    kind pointer, an ir_node* or an ir_loop*. */
 loop_element get_loop_element (ir_loop *loop, int pos);
 
 /*

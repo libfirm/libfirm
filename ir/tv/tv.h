@@ -440,7 +440,7 @@ tarval *tarval_abs(tarval *a);
 tarval *tarval_and(tarval *a, tarval *b);
 
 /** Bitwise or. */
-tarval *tarval_or (tarval *a, tarval *b);
+tarval *tarval_or(tarval *a, tarval *b);
 
 /** Bitwise exclusive or. */
 tarval *tarval_eor(tarval *a, tarval *b);
@@ -467,25 +467,25 @@ tarval *tarval_rot(tarval *a, tarval *b);
  * one and let every backend convert it into the 'right' one.
  * However, we can do this in the tarval much simplier...
  */
-enum tv_output_mode {
+typedef enum {
   TVO_NATIVE,			/**< the default output mode, depends on the mode */
   TVO_HEX,			/**< use hex representation, always possible */
   TVO_DECIMAL,			/**< use decimal representation */
   TVO_OCTAL,			/**< use octal representation */
   TVO_BINARY,			/**< use binary representation */
-  TVO_FLOAT,			/**< use floating point representation */
-};
+  TVO_FLOAT			/**< use floating point representation */
+} tv_output_mode;
 
 /**
  * This structure contains helper information to format the output
  * of a tarval of an mode.
  */
 typedef struct tarval_mode_info {
-    enum tv_output_mode mode_output;	/**< if != TVO_NATIVE select a special mode */
-    const char *mode_prefix;		/**< if set, this prefix will be print
+    tv_output_mode mode_output;	        /**< if != TVO_NATIVE select a special mode */
+    const char *mode_prefix;		/**< if set, this prefix will be printed
 					     before a value of this mode */
-    const char *mode_suffix;		/**< if set, this suffixx will be print
-					     before a value of this mode */
+    const char *mode_suffix;		/**< if set, this suffix will be printed
+					     after a value of this mode */
 } tarval_mode_info;
 
 /**
@@ -524,11 +524,6 @@ int tarval_set_mode_output_option(ir_mode *mode, const tarval_mode_info *modeinf
  *    the size member of aforementioned struct
  */
 char *tarval_bitpattern(tarval *tv);
-
-/**
- * Returns bitpattern [from, to[.
- */
-char *tarval_sub_bitpattern(tarval *tv, int from, int to);
 
 /**
  * Returns the bitpattern of the bytes_ofs byte.
@@ -586,7 +581,7 @@ void init_tarval_1(void);
  */
 void init_tarval_2(void);
 
-typedef int printf_func (void* , const char *, ...) ;
-int tarval_xprintf(printf_func , void * , tarval *);
+typedef int printf_func (void* , const char *, ...);
+int tarval_xprintf(printf_func *print_func, void *out, tarval *tv);
 
 #endif  /* _TV_H_ */
