@@ -15,7 +15,6 @@
 /* memset belongs to string.h */
 # include "string.h"
 
-
 /* irnode constructor                                             */
 /* create a new irnode in irg, with an op, mode, arity and        */
 /* some incoming irnodes                                          */

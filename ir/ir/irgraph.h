@@ -12,10 +12,22 @@
 /* # include "lib/obstack.h" */
 
 
-# include "irnode.h"
+/*# include "irnode.h" */
 # include "obst.h"
 # include "tv.h"
 # include "pset.h"
+
+/* @@@ we need at most a subset */
+# include "entity.h"
+
+
+#ifndef _IR_NODE_TYPEDEF_
+#define _IR_NODE_TYPEDEF_
+
+/* to resolve recursion between irnode.h and irgraph.h */
+typedef struct ir_node ir_node;
+
+#endif
 
 /* ir_graph holds all information for a procedure */
 typedef struct {

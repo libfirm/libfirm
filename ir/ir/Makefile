@@ -30,7 +30,7 @@ CFILES = $(MEMBERS:.m=.c)
 HFILES = $(MEMBERS:.m=.h)
 HFILES +=  array.h common.h cookies.h debug.h entity.h gmp.h  \
            host.h ident.h label.h misc.h obst.h pdeq.h pset.h \
-           set.h tune.h tv.h type.h xprintf.h xp_help.h
+           set.h tune.h tv.h type.h xprintf.h xp_help.h irnode2.h
 
 OFILES = $(MEMBERS:%.m=../objects/%.o)
 

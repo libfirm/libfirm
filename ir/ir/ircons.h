@@ -929,9 +929,9 @@
 /* Create a new irnode in irg, with an op, mode, arity and        */
 /* some incoming irnodes.                                         */
 /* If arity is negative, a node with a dynamic array is created.  */
-inline ir_node *new_ir_node (ir_graph *irg, ir_node *block, ir_op *op,
+/*CS inline ir_node *new_ir_node (ir_graph *irg, ir_node *block, ir_op *op,
 			     ir_mode *mode, int arity, ir_node **in);
-
+*/
 /** These headers need not to be here. They are never used by the
     public.
     That's not completely true.  They need not be seen by a frontend,

@@ -11,6 +11,7 @@
 # ifndef _IRNODE_H_
 # define _IRNODE_H_
 
+# include "irgraph.h"
 # include "entity.h"
 # include "common.h"
 # include "irop.h"
@@ -127,7 +128,7 @@ typedef union {
 /* common structure of an irnode */
 /* if the node has some attributes, they are stored in attr */
 
-typedef struct ir_node {
+struct ir_node {
   firm_kind kind;          /* distinguishes this node from others */
   ir_op *op;               /* Opcode of this node. */
   ir_mode *mode;           /* Mode of this node. */
@@ -139,8 +140,15 @@ typedef struct ir_node {
 			      shall replace a node. */
   attr attr;               /* attribute of this node. Depends on opcode. */
                            /* Must be last attribute of struct ir_node. */
-} ir_node;
+} ;
 
+
+/* The typedefiniton of ir_node is also in irgraph.h to resolve
+   recursion between irnode.h and irgraph.h */
+#ifndef _IR_NODE_TYPEDEF_
+#define _IR_NODE_TYPEDEF_
+typedef struct ir_node ir_node;
+#endif
 
 #if 0 /* I didn't manage to place this here as it causes cyclic inclusion
          of header files/a cyclic dependency between ir_graph and ir_node. */
@@ -148,11 +156,23 @@ typedef struct ir_node {
 /* Create a new irnode in irg, with an op, mode, arity and        */
 /* some incoming irnodes.                                         */
 /* If arity is negative, a node with a dynamic array is created.  */
-inline ir_node *new_ir_node (int *irg, ir_node *block, ir_op *op,
-			     ir_mode *mode, int arity, ir_node **in);
+/*CS inline ir_node *new_ir_node (int *irg, ir_node *block, ir_op *op,
+  ir_mode *mode, int arity, ir_node **in);
+*/
 #endif
 
+
+inline ir_node *
+new_ir_node (ir_graph *irg,
+	     ir_node *block,
+	     ir_op *op,
+	     ir_mode *mode,
+	     int arity,
+	     ir_node **in);
+
+
 /* Print IR-Nodes with attributes */
+/* @@@@ brauchen wir dienoch? dann fliegt ev. das xprint raus?*/
 int ir_node_print (XP_PAR1, const xprintf_info *, XP_PARN);
 
 

@@ -6,6 +6,7 @@
 */
 
 #include "irnode.h"
+//#include "irnode2.h"
 #include "array.h"
 
 static char *pnc_name_arr [] = {"False", "Eq", "Lt", "Le",
@@ -53,7 +54,7 @@ init_irnode (void)
 {
 }
 
-#if 0 /* I didn't manage to place this here as it causes cyclic inclusion
+/* I didn't manage to place this here as it causes cyclic inclusion
          of header files/a cyclic dependency between ir_graph and ir_node. */
 /* irnode constructor                                             */
 /* create a new irnode in irg, with an op, mode, arity and        */
@@ -82,7 +83,6 @@ new_ir_node (ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mode,
   res->in[0] = block;
   return res;
 }
-#endif
 
 
 /* IR-Nodes with attributes */
