@@ -1288,8 +1288,7 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
   /* If we get here, the frontend missed a use-before-definition error */
   if (!res) {
     /* Error Message */
-    printf("Error: no value set.  Use of undefined variable.  Initializing
-            to zero.\n");
+    printf("Error: no value set.  Use of undefined variable.  Initializing to zero.\n");
     assert (mode->code >= irm_F && mode->code <= irm_P);
     res = new_rd_Const (NULL, current_ir_graph, block, mode,
 		       tarval_mode_null[mode->code]);
