@@ -1,0 +1,19 @@
+# Hey Emacs, this is a -*- makefile -*-
+#
+# libFIRM Project
+#
+# $Id$
+#
+
+top_srcdir := @top_srcdir@
+srcdir = @srcdir@
+topdir = ..
+subdir := ir
+
+SOURCES = Makefile.in
+
+include $(topdir)/MakeRules
+
+include $(top_srcdir)/MakeTargets
+
+all: subdir.o
