@@ -230,7 +230,6 @@ void      set_nodes_block (ir_node *node, ir_node *block);
  * @function get_irn_block
  * @see get_nodes_block()
  */
-
 /**
  * Projection numbers for result of Start node: use for Proj nodes!
  */
@@ -893,7 +892,7 @@ void    dump_irn(ir_node *n);
 /** Output information about an entity and its owner */
 #define DDMEO(X) printf("%s(l.%i) %s (own: %s): %ld (%p)\n", __MYFUNC__, __LINE__, get_entity_name(X), get_type_name(get_entity_owner(X)), get_entity_nr(X), (void *)(X))
 /** Output information about a graph */
-#define DDMG(X)  printf("%s(l.%i) %s: %ld (%p)\n",           __MYFUNC__, __LINE__, get_entity_name(get_irg_entity(X)), get_irg_graph_nr(X), (void *)(X))
+#define DDMG(X)  printf("%s(l.%i) graph %s: %ld (%p) in %s %s.\n", __MYFUNC__, __LINE__, get_entity_name(get_irg_entity(X)), get_irg_graph_nr(X), (void *)(X), get_type_tpop_name(get_entity_owner(get_irg_entity(X))), get_type_name(get_entity_owner(get_irg_entity(X))))
 /** Output information about an ident */
 #define DDMI(X)  printf("%s(l.%i) %s: %p\n",                 __MYFUNC__, __LINE__, get_id_str(X), (void *)(X))
 /** Output information about a mode */

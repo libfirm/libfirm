@@ -18,6 +18,7 @@
 # include "irgraph_t.h"
 # include "irvrfy.h"
 # include "irgwalk.h"
+# include "irdump.h"
 
 #ifdef NDEBUG
 /*
@@ -34,8 +35,9 @@
 #else
 #define ASSERT_AND_RET(expr, string, ret) \
 do { \
-  if (opt_do_node_verification == NODE_VERIFICATION_ON) \
-    assert((expr) && string); \
+  if (opt_do_node_verification == NODE_VERIFICATION_ON) {\
+    if (!(expr)) dump_ir_block_graph(current_ir_graph, "-assert"); \
+    assert((expr) && string); } \
   if (!(expr)) { \
     if (opt_do_node_verification == NODE_VERIFICATION_REPORT) \
       fprintf(stderr, #expr " : " string "\n"); \
@@ -667,21 +669,20 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
                      );
       break;
 
-  case iro_Const: {
-    ASSERT_AND_RET(
-		   /* Const: BB --> data */
-		   (mode_is_data (mymode) ||
-		    mymode == mode_b)      /* we want boolean constants for static evaluation */
-		   ,"Const node", 0        /* of Cmp. */
-		   );
-    } break;
-
+    case iro_Const: {
+      ASSERT_AND_RET(
+		     /* Const: BB --> data */
+		     (mode_is_data (mymode) ||
+		      mymode == mode_b)      /* we want boolean constants for static evaluation */
+		     ,"Const node", 0        /* of Cmp. */
+		     );
+      } break;
     case iro_SymConst:
       if (get_SymConst_kind(n) == symconst_addr_ent) {
 	entity *ent = get_SymConst_entity(n);
 	if (is_method_type(get_entity_type(ent)) &&
 	    get_irn_irg(n) != get_const_code_irg()) {
-#if 0
+#if 1
 	  ASSERT_AND_RET((get_entity_peculiarity(ent) != peculiarity_description),
 			 "A constant must address an existing method.", 0);
 #endif

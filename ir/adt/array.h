@@ -79,11 +79,11 @@
 #define DEL_ARR_F(arr) (XMALLOC_TRACE _del_arr_f ((arr)))
 
 /**
- * Creates a dynamic array on a obstack.
+ * Creates a dynamic array on an obstack.
  *
  * @param type     The element type of the new array.
- * @param obstack  An struct obstack * were the data will be allocated
- * @param nelts    a size_t expression evaluating to the number of elements
+ * @param obstack  A struct obstack * were the data will be allocated
+ * @param nelts    A size_t expression evaluating to the number of elements
  *
  * This macro creates a dynamic array of a given type at runtime.
  * The size of the array cannot be changed later.

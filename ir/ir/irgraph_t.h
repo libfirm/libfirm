@@ -98,7 +98,6 @@ struct ir_graph {
   ir_graph **callees;                /**< For callgraph analyses. */
   int       *callee_isbe;            /**< For callgraph analyses: set if backedge. */
   int        callgraph_loop_depth;
-  int        callgraph_weighted_loop_depth;
   int        callgraph_recursion_depth;
   ir_loop   *l;
 

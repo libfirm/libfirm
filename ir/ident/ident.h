@@ -109,7 +109,7 @@ int id_is_prefix (ident *prefix, ident *id);
 int id_is_suffix (ident *suffix, ident *id);
 
 /**
- * Returns true if infix is a contained in id.  (Can be suffix or prefix)
+ * Returns true if infix is contained in id.  (Can be suffix or prefix)
  *
  * @param infix  - the infix
  * @param id     - the ident to search in

@@ -72,7 +72,7 @@ int pset_count (pset *pset);
  * Searches an element pointer in a pset.
  *
  * @param pset  the pset to search in
- * @param key   the element to is searched
+ * @param key   the element to search
  * @param hash  the hash value of key
  *
  * @return
@@ -92,7 +92,7 @@ void *pset_find (pset *pset, const void *key, unsigned hash);
  * @note
  *    It is not possible to insert on element more than once. If a element
  *    that should be inserted is already in the set, this functions does
- *    nothing but returning its set_entry.
+ *    nothing but returning its already existing set_entry.
 
  */
 void *pset_insert (pset *pset, const void *key, unsigned hash);

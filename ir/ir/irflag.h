@@ -67,6 +67,9 @@ void set_opt_global_cse (int value);
 
 /** Enables/Disables unreachable code elimination.
  *
+ * If set, evaluate conditions of conditional branch and replace the
+ * branch with a Jmp/Bad Tuple.
+ *
  * If opt_unreachable_code == 1 replace nodes (except Block,
  * Phi and Tuple) with a Bad predecessor by the Bad node.
  * Default: opt_unreachable_code == 1.

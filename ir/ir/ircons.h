@@ -359,39 +359,6 @@
  *    ir_node *new_Free   (ir_node *store, ir_node *ptr, ir_node *size,
  *               type *free_type);
  *    ir_node *new_Proj   (ir_node *arg, ir_mode *mode, long proj);
-=======
- *    ir_node *new_simpleSel(ir_node *store, ir_node *objptr, entity *ent);
- *    ir_node *new_Sel      (ir_node *store, ir_node *objptr, int arity,
- *                           ir_node **in, entity *ent);
- *    ir_node *new_Call     (ir_node *store, ir_node *callee, int arity,
- *                       ir_node **in, type_method *type);
- *    ir_node *new_Add      (ir_node *op1, ir_node *op2, ir_mode *mode);
- *    ir_node *new_Sub      (ir_node *op1, ir_node *op2, ir_mode *mode);
- *    ir_node *new_Minus    (ir_node *op,  ir_mode *mode);
- *    ir_node *new_Mul      (ir_node *op1, ir_node *op2, ir_mode *mode);
- *    ir_node *new_Quot     (ir_node *memop, ir_node *op1, ir_node *op2);
- *    ir_node *new_DivMod   (ir_node *memop, ir_node *op1, ir_node *op2);
- *    ir_node *new_Div      (ir_node *memop, ir_node *op1, ir_node *op2);
- *    ir_node *new_Mod      (ir_node *memop, ir_node *op1, ir_node *op2);
- *    ir_node *new_Abs      (ir_node *op,                ir_mode *mode);
- *    ir_node *new_And      (ir_node *op1, ir_node *op2, ir_mode *mode);
- *    ir_node *new_Or       (ir_node *op1, ir_node *op2, ir_mode *mode);
- *    ir_node *new_Eor      (ir_node *op1, ir_node *op2, ir_mode *mode);
- *    ir_node *new_Not      (ir_node *op,                ir_mode *mode);
- *    ir_node *new_Shl      (ir_node *op,  ir_node *k,   ir_mode *mode);
- *    ir_node *new_Shr      (ir_node *op,  ir_node *k,   ir_mode *mode);
- *    ir_node *new_Shrs     (ir_node *op,  ir_node *k,   ir_mode *mode);
- *    ir_node *new_Rot      (ir_node *op,  ir_node *k,   ir_mode *mode);
- *    ir_node *new_Cmp      (ir_node *op1, ir_node *op2);
- *    ir_node *new_Conv     (ir_node *op, ir_mode *mode);
- *    ir_node *new_Cast     (ir_node *op, type *to_tp);
- *    ir_node *new_Load     (ir_node *store, ir_node *addr);
- *    ir_node *new_Store    (ir_node *store, ir_node *addr, ir_node *val);
- *    ir_node *new_Alloc    (ir_node *store, ir_node *size, type *alloc_type,
- *                           where_alloc where);
- *    ir_node *new_Free     (ir_node *store, ir_node *ptr, ir_node *size,
- *                       type *free_type);
- *    ir_node *new_Proj     (ir_node *arg, ir_mode *mode, long proj);
  *    ir_node *new_FuncCall (ir_node *store, ir_node *callee, int arity,
  *                       ir_node **in, type_method *type);
  *
@@ -3935,6 +3902,7 @@ void add_immBlock_pred (ir_node *immblock, ir_node *jmp);
 
 /** Fix the number of predecessors of an immature block. */
 void mature_immBlock (ir_node *block);
+#define mature_cur_block() mature_immBlock(get_cur_block());
 
 
 /** Get the current value of a local variable.
