@@ -1114,6 +1114,9 @@ static void print_typespecific_info(type *tp) {
     } break;
   case tpo_method:
     {
+      fprintf(F, "variadicity: %s\n", get_variadicity_name(get_method_variadicity(tp)));
+      fprintf(F, "params: %d\n", get_method_n_params(tp));
+      fprintf(F, "results: %d\n", get_method_n_ress(tp));
     } break;
   case tpo_union:
     {
