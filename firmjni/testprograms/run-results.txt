@@ -12,15 +12,24 @@ old Node 32
 Optimization: 2
 new Nodes: 35,
 old Nodes: 36, 34, 35,
+Optimization: 4
+new Nodes: 35,
+old Nodes: 35, 35,
 Optimization: 2
 new Nodes: 20,
 old Nodes: 37, 34, 20,
 Optimization: 4
+new Nodes: 30,
+old Nodes: 43, 30,
+Optimization: 5
 new Nodes: 27,
 old Nodes: 42, 35,
 Done building the graph.  Optimizing it.
-Optimization: 4
+Optimization: 5
 new Nodes: 27,
 old Nodes: 42, 35,
+Optimization: 4
+new Nodes: 35,
+old Nodes: 44, 35,
 use xvcg to view this graph:
 /ben/goetz/bin/xvcg GRAPHNAME
