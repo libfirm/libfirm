@@ -89,6 +89,27 @@ void inline_method(ir_node *call, ir_graph *called_graph);
    combination as control flow operation.  */
 void inline_small_irgs(ir_graph *irg, int size);
 
+
+/** Inlineing with a different heuristic than inline_small_irgs.
+ *
+ *  Inlines leave functions.  If inlinening creates new leave
+ *  function inlines these, too. (If g calls f, and f calls leave h,
+ *  h is first inlined in f and then f in g.)
+ *
+ *  Then inlines all small functions (this is not recursive).
+ *
+ *  For a heuristic this inlineing uses firm node counts.  It does
+ *  not count auxiliary nodes as Proj, Tuple, End, Start, Id, Sync.
+ *
+ *  maxsize   Do not inline any calls if a method has more than
+ *            maxsize firm nodes.  It may reach this limit by
+ *            inlineing.
+ *  leavesize Inline leave functions if they have less than leavesize
+ *            nodes.
+ *  size      Inline all function smaller than size.
+ */
+void inline_leave_functions(int maxsize, int leavesize, int size);
+
 /** Code Placement.  Pinns all floating nodes to a block where they
    will be executed only if needed.   Depends on the flag opt_global_cse.
    Graph may not be in phase_building.  Does not schedule control dead
