@@ -1,0 +1,31 @@
+# Hey Emacs, this is a -*- makefile -*-
+#
+# libFIRM Project
+#
+# $Id$
+#
+
+top_srcdir := @top_srcdir@
+srcdir = @srcdir@
+topdir = ..
+subdir := testprograms
+
+
+SOURCES := Makefile.in \
+	Empty.java
+
+CLASSPATH += $srcdir
+LD_LIBRARY_PATH += $srcdir/firmjni
+
+
+%.class: %.java
+	javac -d $CLASSPATH $<
+
+
+
+
+
+all:	%.class
+
+run:	%.class
+	java $(<:.class=)
