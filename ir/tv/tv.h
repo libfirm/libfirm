@@ -16,12 +16,11 @@
  *
  * Declarations for Target Values.
  */
-
 #ifndef _TV_H_
 #define _TV_H_
 
 #include "irmode.h"
-#include "pnc.h"
+#include "irnode.h"
 
 /****h* libfirm/tv
  *
@@ -59,7 +58,7 @@
  * SEE ALSO
  *    Techreport 1999-14
  *    irmode.h for the modes definitions
- *    irnode.h for the pnc_numbers table
+ *    irnode.h for the pn_Cmp table
  *
  *    tarval_init1 and tarval_init2 for initialization of the
  *   module
@@ -280,6 +279,7 @@ tarval *get_tarval_undefined(void);
 
 /** The mode_b tarval 'false'. */
 extern tarval *tarval_b_false;
+
 /** Returns the mode_b tarval 'false'. */
 tarval *get_tarval_b_false(void);
 
@@ -341,7 +341,7 @@ tarval_int_overflow_mode_t tarval_get_integer_overflow_mode(void);
 /**
  * Compares two tarvals
  *
- * Compare a with b and return a pnc_number describing the relation
+ * Compare a with b and return a pn_Cmp describing the relation
  * between a and b.  This is either Uo, Lt, Eq, Gt, or False if a or b
  * are symbolic pointers which can not be compared at all.
  *
@@ -349,15 +349,15 @@ tarval_int_overflow_mode_t tarval_get_integer_overflow_mode(void);
  * @param b   A tarval to be compared
  *
  * @return
- *   The pnc_number best describing the relation between a and b is returned.
+ *   The pn_Cmp best describing the relation between a and b is returned.
  *   This means the mode with the least bits set is returned, e.g. if the
- *   tarvals are equal the pnc_number 'Eq' is returned, not 'Ge' which
+ *   tarvals are equal the pn_Cmp 'pn_Cmp_Eq' is returned, not 'pn_Cmp_Ge' which
  *   indicates 'greater or equal'
  *
  * @sa
- *    irnode.h for the definition of pnc_numbers
+ *    irnode.h for the definition of pn_Cmp
  */
-pnc_number tarval_cmp(tarval *a, tarval *b);
+pn_Cmp tarval_cmp(tarval *a, tarval *b);
 
 /**
  * Converts a tarval to another mode.
@@ -586,8 +586,6 @@ typedef enum _tarval_classification_t {
  *   - TV_CLASSIFY_OTHER   else
  */
 tarval_classification_t classify_tarval(tarval *tv);
-
-
 
 /**
  * Output of tarvals to a buffer.
