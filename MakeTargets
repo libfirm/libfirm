@@ -71,13 +71,13 @@ install:	$(INCLUDEDIR) install_headers $(LIBDIR) install_libs
 install_headers:	subdir_install_headers local_install_headers
 local_install_headers:
 ifneq ($(strip $(INSTALL_HEADERS)),)
-	$(INSTALL) -C -m u+rw,a+r $(addprefix $(srcdir)/,$(INSTALL_HEADERS)) $(INCLUDEDIR)
+	$(INSTALL)  -m u+rw,a+r $(addprefix $(srcdir)/,$(INSTALL_HEADERS)) $(INCLUDEDIR)
 endif
 
 install_libs:		subdir_install_libs local_install_libs
 local_install_libs:
 ifneq ($(strip $(INSTALL_LIBS)),)
-	$(INSTALL) -C -m u+rw,a+r $(addprefix $(topdir)/,$(INSTALL_LIBS)) $(LIBDIR)
+	$(INSTALL)  -m u+rw,a+r $(addprefix $(topdir)/,$(INSTALL_LIBS)) $(LIBDIR)
 endif
 
 
