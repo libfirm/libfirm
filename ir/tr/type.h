@@ -376,9 +376,6 @@ int   get_method_n_params  (type *method);
 type *get_method_param_type(type *method, int pos);
 void  set_method_param_type(type *method, int pos, type* type);
 
-/* @@@ fuer emitter.h von cggg */
-#define get_method_n_res(X) get_method_n_ress(X)
-
 int   get_method_n_ress   (type *method);
 type *get_method_res_type(type *method, int pos);
 void  set_method_res_type(type *method, int pos, type* type);

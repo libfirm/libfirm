@@ -48,8 +48,10 @@
 
 unsigned long type_visited;
 
-void        free_type(type *tp) {
+void
+free_type(type *tp) {
   /* @@@ not implemented */
+  remove_irp_type(tp);
 }
 
 INLINE type *
