@@ -119,18 +119,18 @@ struct entity {
 
 /* ----------------------- inline functions ------------------------ */
 static INLINE int
-__is_entity(void *thing) {
+__is_entity(const void *thing) {
   return get_kind(thing) == k_entity;
 }
 
 static INLINE const char *
-__get_entity_name(entity *ent) {
+__get_entity_name(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   return get_id_str(get_entity_ident(ent));
 }
 
 static INLINE ident *
-__get_entity_ident(entity *ent) {
+__get_entity_ident(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->name;
 }
@@ -175,7 +175,7 @@ __set_entity_type(entity *ent, type *type) {
 }
 
 static INLINE ent_allocation
-__get_entity_allocation(entity *ent) {
+__get_entity_allocation(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->allocation;
 }
@@ -187,19 +187,19 @@ __set_entity_allocation(entity *ent, ent_allocation al) {
 }
 
 static INLINE ent_visibility
-__get_entity_visibility(entity *ent) {
+__get_entity_visibility(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->visibility;
 }
 
 static INLINE ent_variability
-__get_entity_variability(entity *ent) {
+__get_entity_variability(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->variability;
 }
 
 static INLINE ent_volatility
-__get_entity_volatility(entity *ent) {
+__get_entity_volatility(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->volatility;
 }
@@ -211,7 +211,7 @@ __set_entity_volatility(entity *ent, ent_volatility vol) {
 }
 
 static INLINE peculiarity
-__get_entity_peculiarity(entity *ent) {
+__get_entity_peculiarity(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->peculiarity;
 }
@@ -228,7 +228,7 @@ __set_entity_peculiarity(entity *ent, peculiarity pec) {
 }
 
 static INLINE ent_stickyness
-__get_entity_stickyness(entity *ent) {
+__get_entity_stickyness(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->stickyness;
 }
@@ -241,13 +241,13 @@ __set_entity_stickyness(entity *ent, ent_stickyness stickyness)
 }
 
 static INLINE int
-__get_entity_offset_bits(entity *ent) {
+__get_entity_offset_bits(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->offset;
 }
 
 static INLINE int
-__get_entity_offset_bytes(entity *ent) {
+__get_entity_offset_bytes(const entity *ent) {
   int bits = __get_entity_offset_bits(ent);
 
   if (bits & 7) return -1;
@@ -266,7 +266,7 @@ __set_entity_offset_bytes(entity *ent, int offset) {
 }
 
 static INLINE void *
-__get_entity_link(entity *ent) {
+__get_entity_link(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->link;
 }
@@ -278,7 +278,7 @@ __set_entity_link(entity *ent, void *l) {
 }
 
 static INLINE ir_graph *
-__get_entity_irg(entity *ent) {
+__get_entity_irg(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   assert(is_method_type(ent->type));
   return ent->irg;

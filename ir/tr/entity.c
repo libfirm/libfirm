@@ -221,12 +221,12 @@ get_entity_nr(entity *ent) {
 }
 
 const char *
-(get_entity_name)(entity *ent) {
+(get_entity_name)(const entity *ent) {
   return __get_entity_name(ent);
 }
 
 ident *
-(get_entity_ident)(entity *ent) {
+(get_entity_ident)(const entity *ent) {
   return get_entity_ident(ent);
 }
 
@@ -282,7 +282,7 @@ void
 }
 
 ent_allocation
-(get_entity_allocation)(entity *ent) {
+(get_entity_allocation)(const entity *ent) {
   return __get_entity_allocation(ent);
 }
 
@@ -307,7 +307,7 @@ const char *get_allocation_name(ent_allocation all)
 
 
 ent_visibility
-(get_entity_visibility)(entity *ent) {
+(get_entity_visibility)(const entity *ent) {
   return __get_entity_visibility(ent);
 }
 
@@ -336,7 +336,7 @@ const char *get_visibility_name(ent_visibility vis)
 }
 
 ent_variability
-(get_entity_variability)(entity *ent) {
+(get_entity_variability)(const entity *ent) {
   return __get_entity_variability(ent);
 }
 
@@ -383,7 +383,7 @@ const char *get_variability_name(ent_variability var)
 }
 
 ent_volatility
-(get_entity_volatility)(entity *ent) {
+(get_entity_volatility)(const entity *ent) {
   return __get_entity_volatility(ent);
 }
 
@@ -405,7 +405,7 @@ const char *get_volatility_name(ent_volatility var)
 }
 
 peculiarity
-(get_entity_peculiarity)(entity *ent) {
+(get_entity_peculiarity)(const entity *ent) {
   return __get_entity_peculiarity(ent);
 }
 
@@ -429,7 +429,7 @@ const char *get_peculiarity_name(peculiarity var)
 
 /* Get the entity's stickyness */
 ent_stickyness
-(get_entity_stickyness)(entity *ent) {
+(get_entity_stickyness)(const entity *ent) {
   return __get_entity_stickyness(ent);
 }
 
@@ -461,20 +461,18 @@ set_atomic_ent_value(entity *ent, ir_node *val) {
 int is_irn_const_expression(ir_node *n) {
   ir_mode *m;
 
+  /* we are in dange iff an exception will arise. TODO: be more precisely,
+   * for instance Div. will NOT rise if divisor != 0
+   */
+  if (is_binop(n) && !is_fragile_op(n))
+    return is_irn_const_expression(get_binop_left(n)) && is_irn_const_expression(get_binop_right(n));
+
   m = get_irn_mode(n);
   switch(get_irn_opcode(n)) {
   case iro_Const:
   case iro_SymConst:
   case iro_Unknown:
     return true; break;
-  case iro_Add:
-  case iro_Sub:
-  case iro_Mul:
-  case iro_And:
-  case iro_Or:
-  case iro_Eor:
-    if (is_irn_const_expression(get_binop_left(n)))
-      return is_irn_const_expression(get_binop_right(n));
   case iro_Conv:
   case iro_Cast:
     return is_irn_const_expression(get_irn_n(n, 0));
@@ -524,7 +522,7 @@ ir_node *copy_const_value(ir_node *n) {
     nn = new_Unknown(m); break;
   default:
     DDMN(n);
-    assert(0 && "opdope invalid or not implemented");
+    assert(0 && "opcode invalid or not implemented");
     nn = NULL;
     break;
   }
@@ -963,12 +961,12 @@ void sort_compound_ent_values(entity *ent) {
 }
 
 int
-(get_entity_offset_bytes)(entity *ent) {
+(get_entity_offset_bytes)(const entity *ent) {
   return __get_entity_offset_bytes(ent);
 }
 
 int
-(get_entity_offset_bits)(entity *ent) {
+(get_entity_offset_bits)(const entity *ent) {
   return __get_entity_offset_bits(ent);
 }
 
@@ -1082,7 +1080,7 @@ void    remove_entity_overwrittenby(entity *ent, entity *overwrites) {
 
 /* A link to store intermediate information */
 void *
-(get_entity_link)(entity *ent) {
+(get_entity_link)(const entity *ent) {
   return __get_entity_link(ent);
 }
 
@@ -1092,7 +1090,7 @@ void
 }
 
 ir_graph *
-(get_entity_irg)(entity *ent) {
+(get_entity_irg)(const entity *ent) {
   return __get_entity_irg(ent);
 }
 
@@ -1110,7 +1108,7 @@ set_entity_irg(entity *ent, ir_graph *irg) {
 }
 
 int
-(is_entity)(void *thing) {
+(is_entity)(const void *thing) {
   return __is_entity(thing);
 }
 

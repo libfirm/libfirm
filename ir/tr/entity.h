@@ -175,10 +175,10 @@ entity     *copy_entity_name (entity *old, ident *new_name);
 void        free_entity (entity *ent);
 
 /** Returns the name of an entity. */
-const char *get_entity_name     (entity *ent);
+const char *get_entity_name     (const entity *ent);
 
 /** Returns the ident of an entity. */
-ident      *get_entity_ident    (entity *ent);
+ident      *get_entity_ident    (const entity *ent);
 
 /** Returns the mangled name of the entity.
  *
@@ -225,7 +225,7 @@ typedef enum {
 } ent_allocation;
 
 /** Returns the allocation type of an entity. */
-ent_allocation get_entity_allocation (entity *ent);
+ent_allocation get_entity_allocation (const entity *ent);
 
 /** Sets the allocation type of an entity. */
 void           set_entity_allocation (entity *ent, ent_allocation al);
@@ -249,7 +249,7 @@ typedef enum {
 } ent_visibility;
 
 /** Returns the visibility of an entity. */
-ent_visibility get_entity_visibility (entity *ent);
+ent_visibility get_entity_visibility (const entity *ent);
 
 /** Sets the visibility of an entity. */
 void           set_entity_visibility (entity *ent, ent_visibility vis);
@@ -269,7 +269,7 @@ typedef enum {
 } ent_variability;
 
 /** Returns the variability of an entity. */
-ent_variability get_entity_variability (entity *ent);
+ent_variability get_entity_variability (const entity *ent);
 
 /** Sets the variability of an entity. */
 void            set_entity_variability (entity *ent, ent_variability var);
@@ -284,12 +284,12 @@ typedef enum {
 } ent_volatility;
 
 /** Returns the volatility of an entity. */
-ent_volatility get_entity_volatility (entity *ent);
+ent_volatility get_entity_volatility (const entity *ent);
 
 /** Sets the volatility of an entity. */
 void           set_entity_volatility (entity *ent, ent_volatility vol);
 
-/* Return the name of the volatility. */
+/** Return the name of the volatility. */
 const char *get_volatility_name(ent_volatility var);
 
 /** This enumeration flags the stickyness of an entity. */
@@ -302,16 +302,16 @@ typedef enum {
 } ent_stickyness;
 
 /** Get the entity's stickyness */
-ent_stickyness get_entity_stickyness(entity *ent);
+ent_stickyness get_entity_stickyness(const entity *ent);
 
 /** Set the entity's stickyness */
 void      set_entity_stickyness(entity *ent, ent_stickyness stickyness);
 
 /** Returns the offset of an entity (in a compound) in bytes. Only set if layout = fixed. */
-int       get_entity_offset_bytes(entity *ent);
+int       get_entity_offset_bytes(const entity *ent);
 
 /** Returns the offset of an entity (in a compound) in bits. Only set if layout = fixed. */
-int       get_entity_offset_bits(entity *ent);
+int       get_entity_offset_bits(const entity *ent);
 
 /** Sets the offset of an entity (in a compound) in bytes. */
 void      set_entity_offset_bytes(entity *ent, int offset);
@@ -320,21 +320,21 @@ void      set_entity_offset_bytes(entity *ent, int offset);
 void      set_entity_offset_bits(entity *ent, int offset);
 
 /** Returns the stored intermediate information. */
-void*   get_entity_link(entity *ent);
+void*   get_entity_link(const entity *ent);
 
 /** Stores new intermediate information. */
 void    set_entity_link(entity *ent, void *l);
 
 /* -- Fields of method entities -- */
-/* The entity knows the corresponding irg if the entity is a method.
+/** The entity knows the corresponding irg if the entity is a method.
    This allows to get from a Call to the called irg.
    Only entities of peculiarity "existent" can have a corresponding irg,
    else the field is fixed to NULL.  (Get returns NULL, set asserts.) */
-ir_graph *get_entity_irg(entity *ent);
+ir_graph *get_entity_irg(const entity *ent);
 void      set_entity_irg(entity *ent, ir_graph *irg);
 
 /** Return the peculiarity of an entity. */
-peculiarity get_entity_peculiarity (entity *ent);
+peculiarity get_entity_peculiarity (const entity *ent);
 
 /** Sets the peculiarity of an entity. */
 void        set_entity_peculiarity (entity *ent, peculiarity pec);
@@ -348,8 +348,11 @@ const char *get_peculiarity_name(peculiarity var);
 int      is_irn_const_expression(ir_node *n);
 /* Set current_ir_graph to get_const_code_irg() to generate a constant
    expression. */
-/* Copies a firm subgraph that complies to the restrictions for
-   constant expressions to current_block in current_ir_graph. */
+
+/**
+ * Copies a firm subgraph that complies to the restrictions for
+ * constant expressions to current_block in current_ir_graph.
+ */
 ir_node *copy_const_value(ir_node *n);
 
 /* Set has no effect for existent entities of type method. */
@@ -384,7 +387,8 @@ void     set_compound_ent_value_w_path(entity *ent, ir_node *val, compound_graph
 int      get_compound_ent_n_values(entity *ent);
 ir_node *get_compound_ent_value(entity *ent, int pos);
 compound_graph_path *get_compound_ent_value_path(entity *ent, int pos);
-/* Removes all constant entries where the path ends at value_ent. Does not
+
+/** Removes all constant entries where the path ends at value_ent. Does not
    free the memory of the paths.  (The same path might be used for several
    constant entities. */
 void     remove_compound_ent_value(entity *ent, entity *value_ent);
@@ -393,11 +397,14 @@ void     remove_compound_ent_value(entity *ent, entity *value_ent);
    direct, atomic member of the constant entities type. In this case the
    corresponding entity can be accessed directly.  The following functions
    allow direct access. */
-/* generates a Path with length 1 */
+
+/** generates a Path with length 1 */
 void     add_compound_ent_value(entity *ent, ir_node *val, entity *member);
-/* Returns the last member in the path */
+
+/** Returns the last member in the path */
 entity  *get_compound_ent_value_member(entity *ent, int pos);
-/* Sets the path at pos 0 */
+
+/** Sets the path at pos 0 */
 void     set_compound_ent_value(entity *ent, ir_node *val, entity *member, int pos);
 
 /** Inits the entity ent witch must be of a one dimensional
@@ -482,7 +489,7 @@ void    remove_entity_overwrittenby(entity *ent, entity *overwrites);
  *   @return
  *       true if the thing is an entity, else false
  */
-int is_entity (void *thing);
+int is_entity (const void *thing);
 
 /** Returns true if the type of the entity is a primitive, pointer
    enumeration or method type. */
