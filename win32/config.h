@@ -77,6 +77,9 @@
 /* define to enable debugging stuff. */
 #define DEBUG_libfirm 1
 
+/* define to 1 to use the libcore */
+#undef WITH_LIBCORE
+
 /* Define to disable assertion checking.  */
 /* #undef NDEBUG */
 
