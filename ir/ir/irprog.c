@@ -36,7 +36,11 @@ void init_irprog(void) {
 INLINE void remove_irp_type_from_list (type *typ) {
   int i;
   assert(typ);
+#if 0
   for (i = 1; i < (ARR_LEN (irp->types)); i++) {
+#else
+  for (i = ARR_LEN (irp->types) -1; i >= 0; i--) {
+#endif
     if (irp->types[i] == typ) {
       for(; i < (ARR_LEN (irp->types)) - 1; i++) {
 	irp->types[i] = irp->types[i+1];

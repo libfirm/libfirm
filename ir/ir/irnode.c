@@ -498,7 +498,7 @@ get_Block_cfgpred_arr (ir_node *node)
 int
 get_Block_n_cfgpreds (ir_node *node) {
   assert ((node->op == op_Block));
-  return (get_irn_arity(node));
+  return get_irn_arity(node);
 }
 
 ir_node *
@@ -2016,7 +2016,7 @@ ir_node *get_fragile_op_mem(ir_node *node) {
 
 #ifdef DEBUG_libfirm
 void dump_irn (ir_node *n) {
-  int i;
+  int i, arity = get_irn_arity(n);
   printf("%s%s: %ld (%p)\n", get_irn_opname(n), get_mode_name(get_irn_mode(n)), get_irn_node_nr(n), (void *)n);
   if (!is_Block(n)) {
     ir_node *pred = get_irn_n(n, -1);
@@ -2024,7 +2024,7 @@ void dump_irn (ir_node *n) {
 	   get_irn_node_nr(pred), (void *)pred);
   }
   printf("  preds: \n");
-  for (i = 0; i < get_irn_arity(n); ++i) {
+  for (i = 0; i < arity; ++i) {
     ir_node *pred = get_irn_n(n, i);
     printf("    %d: %s%s: %ld (%p)\n", i, get_irn_opname(pred), get_mode_name(get_irn_mode(pred)),
 	   get_irn_node_nr(pred), (void *)pred);

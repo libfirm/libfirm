@@ -418,10 +418,10 @@ static void move_phis(ir_node * from_block, ir_node * to_block) {
  * "from_block" nach "to_block" verschieben.
  * Verschiebe ebenfalls die Projs aus diesen Operationen. */
 static void move_nodes(ir_node * from_block, ir_node * to_block, ir_node * node) {
-  int i;
+  int i,  arity = get_irn_arity(node);
   ir_node *proj;
 
-  for (i = get_irn_arity(node) - 1; i >= 0; --i) {
+  for (i = arity - 1; i >= 0; --i) {
     ir_node * pred = get_irn_n(node, i);
     if (get_nodes_Block(pred) == from_block) {
       move_nodes(from_block, to_block, pred);

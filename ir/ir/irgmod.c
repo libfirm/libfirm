@@ -118,7 +118,7 @@ void collect_phiprojs(ir_graph *irg) {
  * Does not move predecessors of Phi nodes (or block nodes).
  */
 static void move (ir_node *node, ir_node *from_bl, ir_node *to_bl) {
-  int i;
+  int i, arity;
   ir_node *proj, *pred;
 
   /* move this node */
@@ -129,7 +129,7 @@ static void move (ir_node *node, ir_node *from_bl, ir_node *to_bl) {
     proj = get_irn_link(node);
     while (proj) {
       if (get_nodes_Block(proj) == from_bl)
-    set_nodes_Block(proj, to_bl);
+	set_nodes_Block(proj, to_bl);
       proj = get_irn_link(proj);
     }
   }
@@ -137,7 +137,8 @@ static void move (ir_node *node, ir_node *from_bl, ir_node *to_bl) {
   /* recursion ... */
   if (get_irn_op(node) == op_Phi) return;
 
-  for (i = 0; i < get_irn_arity(node); i++) {
+  arity = get_irn_arity(node);
+  for (i = 0; i < arity; i++) {
     pred = get_irn_n(node, i);
     if (get_nodes_Block(pred) == from_bl)
       move(pred, from_bl, to_bl);

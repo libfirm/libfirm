@@ -38,5 +38,8 @@ ir_node *optimize_node (ir_node *n);
 
 ir_node *optimize_in_place_2 (ir_node *n);
 
+/* Calculate a hash value of a node. */
+unsigned ir_node_hash (ir_node *node);
+
 
 # endif /* _IROPT_T_H_ */
