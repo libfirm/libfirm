@@ -25,7 +25,7 @@
  * The abstract type of a set.
  *
  * This sets stores copies of its elements, so there is no need
- * to store the elements after there were added to a set.
+ * to store the elements after they were added to a set.
  *
  * @see pset
  */
