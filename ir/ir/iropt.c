@@ -146,10 +146,8 @@ computed_value (ir_node *n)
       res = tarval_and (ta, tb);
     } else {
       tarval *v;
-      if ( ( ((v = computed_value (a)) != tarval_bad)
-               && (v == get_mode_null(get_tarval_mode(v))) )
-	|| ( ((v = computed_value (b)) != tarval_bad)
-               && (v == get_mode_null(get_tarval_mode(v))) )) {
+      if (   (tarval_classify ((v = computed_value (a))) == TV_CLASSIFY_NULL)
+	  || (tarval_classify ((v = computed_value (b))) == TV_CLASSIFY_NULL)) {
 	res = v;
       }
     }
@@ -159,8 +157,8 @@ computed_value (ir_node *n)
       res = tarval_or (ta, tb);
     } else {
       tarval *v;
-      if (   (tarval_classify ((v = computed_value (a))) == -1)
-	  || (tarval_classify ((v = computed_value (b))) == -1)) {
+      if (   (tarval_classify ((v = computed_value (a))) == TV_CLASSIFY_ALL_ONE)
+	  || (tarval_classify ((v = computed_value (b))) == TV_CLASSIFY_ALL_ONE)) {
 	res = v;
       }
     }
@@ -398,7 +396,7 @@ equivalent_node (ir_node *n)
 
     /* If this predecessors constant value is zero, the operation is
        unnecessary. Remove it: */
-    if (tarval_classify (tv) == 0) {
+    if (tarval_classify (tv) == TV_CLASSIFY_NULL) {
       n = on;                                                             DBG_OPT_ALGSIM1;
     }
   } break;
@@ -408,7 +406,7 @@ equivalent_node (ir_node *n)
   case iro_Shrs:
   case iro_Rot:
     /* these operations are not commutative.  Test only one predecessor. */
-    if (tarval_classify (computed_value (b)) == 0) {
+    if (tarval_classify (computed_value (b)) == TV_CLASSIFY_NULL) {
       n = a;                                                              DBG_OPT_ALGSIM1;
       /* Test if b > #bits of a ==> return 0 / divide b by #bits
          --> transform node? */
@@ -423,15 +421,15 @@ equivalent_node (ir_node *n)
     break;
   case iro_Mul:
     /* Mul is commutative and has again an other neutral element. */
-    if (tarval_classify (computed_value (a)) == 1) {
+    if (tarval_classify (computed_value (a)) == TV_CLASSIFY_ONE) {
       n = b;                                                              DBG_OPT_ALGSIM1;
-    } else if (tarval_classify (computed_value (b)) == 1) {
+    } else if (tarval_classify (computed_value (b)) == TV_CLASSIFY_ONE) {
       n = a;                                                              DBG_OPT_ALGSIM1;
     }
     break;
   case iro_Div:
     /* Div is not commutative. */
-    if (tarval_classify (computed_value (b)) == 1) { /* div(x, 1) == x */
+    if (tarval_classify (computed_value (b)) == TV_CLASSIFY_ONE) { /* div(x, 1) == x */
       /* Turn Div into a tuple (mem, bad, a) */
       ir_node *mem = get_Div_mem(n);
       turn_into_tuple(n, 3);
@@ -448,24 +446,40 @@ equivalent_node (ir_node *n)
   case iro_And:
     if (a == b) {
       n = a;    /* And has it's own neutral element */
-    } else if (tarval_classify (computed_value (a)) == -1) {
+    } else if (tarval_classify (computed_value (a)) == TV_CLASSIFY_ALL_ONE) {
       n = b;
-    } else if (tarval_classify (computed_value (b)) == -1) {
+    } else if (tarval_classify (computed_value (b)) == TV_CLASSIFY_ALL_ONE) {
       n = a;
     }
     if (n != oldn)                                                        DBG_OPT_ALGSIM1;
     break;
   case iro_Conv:
-    if (get_irn_mode(n) == get_irn_mode(a)) { /* No Conv necessary */
+  {
+    ir_mode *n_mode = get_irn_mode(n);
+    ir_mode *a_mode = get_irn_mode(a);
+
+    if (n_mode == a_mode) { /* No Conv necessary */
       n = a;                                                              DBG_OPT_ALGSIM3;
-    } else if (get_irn_mode(n) == mode_b) {
-      if (get_irn_op(a) == op_Conv &&
-	  get_irn_mode (get_Conv_op(a)) == mode_b) {
-	n = get_Conv_op(a);	/* Convb(Conv*(xxxb(...))) == xxxb(...) */ DBG_OPT_ALGSIM2;
+    } else if (get_irn_op(a) == op_Conv) { /* Conv(Conv(b)) */
+      ir_mode *b_mode;
+
+      b = get_Conv_op(a);
+      n_mode = get_irn_mode(n);
+      b_mode = get_irn_mode(b);
+
+      if (n_mode == b_mode) {
+	if (n_mode == mode_b) {
+	  n = b;	/* Convb(Conv*(xxxb(...))) == xxxb(...) */        DBG_OPT_ALGSIM1;
+	}
+	else if (mode_is_int(n_mode) || mode_is_character(n_mode)) {
+	  if (smaller_mode(b_mode, a_mode)){
+	    n = b;	/* ConvS(ConvL(xxxS(...))) == xxxS(...) */        DBG_OPT_ALGSIM1;
+	  }
+        }
       }
     }
     break;
-
+  }
   case iro_Phi:
     {
       /* Several optimizations:
@@ -779,15 +793,15 @@ transform_node (ir_node *n) {
       set_irn_link(n, new_r_Jmp(current_ir_graph, get_nodes_Block(n)));
       /* We might generate an endless loop, so keep it alive. */
       add_End_keepalive(get_irg_end(current_ir_graph), get_nodes_Block(n));
-    } else if ((get_irn_op(get_Cond_selector(n)) == op_Eor)
-	       && (get_irn_mode(get_Cond_selector(n)) == mode_b)
-	       && (tarval_classify(computed_value(get_Eor_right(a))) == 1)) {
+    } else if ((get_irn_op(a) == op_Eor)
+	       && (get_irn_mode(a) == mode_b)
+	       && (tarval_classify(computed_value(get_Eor_right(a))) == TV_CLASSIFY_ONE)) {
       /* The Eor is a negate.  Generate a new Cond without the negate,
          simulate the negate by exchanging the results. */
       set_irn_link(n, new_r_Cond(current_ir_graph, get_nodes_Block(n),
 				 get_Eor_left(a)));
-    } else if ((get_irn_op(get_Cond_selector(n)) == op_Not)
-	       && (get_irn_mode(get_Cond_selector(n)) == mode_b)) {
+    } else if ((get_irn_op(a) == op_Not)
+	       && (get_irn_mode(a) == mode_b)) {
       /* A Not before the Cond.  Generate a new Cond without the Not,
          simulate the Not by exchanging the results. */
       set_irn_link(n, new_r_Cond(current_ir_graph, get_nodes_Block(n),
@@ -843,13 +857,13 @@ transform_node (ir_node *n) {
     if ((get_irn_mode(n) == mode_b)
 	&& (get_irn_op(a) == op_Proj)
 	&& (get_irn_mode(a) == mode_b)
-	&& (tarval_classify (computed_value (b)) == 1)
+	&& (tarval_classify (computed_value (b)) == TV_CLASSIFY_ONE)
 	&& (get_irn_op(get_Proj_pred(a)) == op_Cmp))
       /* The Eor negates a Cmp. The Cmp has the negated result anyways! */
       n = new_r_Proj(current_ir_graph, get_nodes_Block(n), get_Proj_pred(a),
                      mode_b, get_negated_pnc(get_Proj_proj(a)));
     else if ((get_irn_mode(n) == mode_b)
-	     && (tarval_classify (computed_value (b)) == 1))
+	     && (tarval_classify (computed_value (b)) == TV_CLASSIFY_ONE))
       /* The Eor is a Not. Replace it by a Not. */
       /*   ????!!!Extend to bitfield 1111111. */
       n = new_r_Not(current_ir_graph, get_nodes_Block(n), a, mode_b);
