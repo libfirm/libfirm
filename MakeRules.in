@@ -12,10 +12,13 @@ LIBFIRM_VERSION = @PACKAGE_VERSION@
 CC = @CC@
 CFLAGS := @CFLAGS@
 CPPFLAGS := -I. -I$(topdir) -I$(srcdir) -I$(top_srcdir) @CPPFLAGS@
-
+prefix?=@prefix@
+exec_prefix?=@exec_prefix@
+includedir?=@includedir@
+libdir?=@libdir@
 INSTALL = @INSTALL@
-INCLUDEDIR = @prefix@/@includedir@
-LIBDIR = @exec_prefix@/@libdir@
+INCLUDEDIR ?= ${prefix}/${includedir}/${PACKAGE_NAME}
+LIBDIR ?= ${exec_prefix}/${libdir}
 PACKAGE_NAME = @PACKAGE_NAME@
 
 DEFS = @DEFS@

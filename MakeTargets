@@ -74,12 +74,12 @@ local_tags:	$(TAGFILES)
 	etags -C $^
 
 # installation
-install:	$(INCLUDEDIR)/$(PACKAGE_NAME) install_headers $(LIBDIR) install_libs
+install:	$(INCLUDEDIR) install_headers $(LIBDIR) install_libs
 
 install_headers:	subdir_install_headers local_install_headers
 local_install_headers:
 ifneq ($(strip $(INSTALL_HEADERS)),)
-	$(INSTALL) -C -m u+rw,a+r $(addprefix $(srcdir)/,$(INSTALL_HEADERS)) $(INCLUDEDIR)/$(PACKAGE_NAME)
+	$(INSTALL) -C -m u+rw,a+r $(addprefix $(srcdir)/,$(INSTALL_HEADERS)) $(INCLUDEDIR)
 endif
 
 install_libs:		subdir_install_libs local_install_libs
@@ -89,10 +89,10 @@ ifneq ($(strip $(INSTALL_LIBS)),)
 endif
 
 
-$(LIBDIR):	$(LIBDIR)
+$(LIBDIR):
 	mkdir -p $@
 
-$(INCLUDEDIR)/$(PACKAGE_NAME):	$(INCLUDEDIR)/$(PACKAGE_NAME)
+$(INCLUDEDIR):
 	mkdir -p $@
 
 # generated the directory where all the generated documentation is
