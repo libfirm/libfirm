@@ -133,7 +133,7 @@ main(void)
      in[0] = c3;
      elt = new_Sel(get_store(), array_ptr, 1, in, array_ent);
   }
-  val = new_Load(get_store(), elt);
+  val = new_Load(get_store(), elt, mode_Is);
   set_store(new_Proj(val, mode_M, 0));
   val = new_Proj(val, mode_Is, 2);
 

@@ -257,7 +257,7 @@ main(void)
   add_immBlock_pred (r, f);
   /* Select the entity and load the value */
   a_ptr = new_simpleSel(get_store(), self, a_e);
-  a_val = new_Load(get_store(), a_ptr);
+  a_val = new_Load(get_store(), a_ptr, mode_Is);
   set_store(new_Proj(a_val, mode_M, 0));
   a_val = new_Proj(a_val, mode_Is, 2);
 

@@ -115,11 +115,11 @@ main(void)
 
   /* exchange the content of the two variables. Exceptions not cached. */
   /* load the value and make it's effects visible. */
-  x = new_Load (get_store (), a);
+  x = new_Load (get_store (), a, mode_Iu);
     set_store (new_Proj (x, mode_M, 0));
     x = new_Proj(x, mode_Iu, 2);
   /* the same again: load the value and make it's effects visible. */
-  y = new_Load (get_store (), b);
+  y = new_Load (get_store (), b, mode_Iu);
     set_store (new_Proj (y, mode_M, 0));
     y = new_Proj(y, mode_Iu, 2);
   /* store the exchanged values. */
@@ -146,7 +146,7 @@ main(void)
   /* generate the return block and return the content of VAR_A */
   {
      ir_node *in[1];
-     x = new_Load (get_store (), a);
+     x = new_Load (get_store (), a, mode_Iu);
      in[0] = new_Proj (x, mode_Iu, 2);
 
      x = new_Return (new_Proj(x, mode_M, 0), 1, in);
