@@ -54,7 +54,12 @@
 #define ENT_OVERWRITES_EDGE_ATTR "class: 11 label: \"overwrites\" color:red"
 #define TYPE_MEMBER_EDGE_ATTR "class: 12 label: \"member\" color:blue"
 
+
+#if DEBUG_libfirm && NODEID_AS_LABEL
+#define PRINT_NODEID(X) fprintf(F, "%d", get_irn_node_nr(X))
+#else
 #define PRINT_NODEID(X) fprintf(F, "%p", X)
+#endif
 
 /* file to dump to */
 static FILE *F;
@@ -362,9 +367,13 @@ dump_ir_node (ir_node *n)
 /* dump the edge to the block this node belongs to */
 void
 dump_ir_block_edge(ir_node *n)  {
-  if (is_no_Block(n))
-    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-		BLOCK_EDGE_ATTR "}\n", n, get_nodes_Block(n));
+  if (is_no_Block(n)) {
+    xfprintf (F, "edge: { sourcename: \"");
+    PRINT_NODEID(n);
+    xfprintf (F, "\" targetname: \"");
+    PRINT_NODEID(get_nodes_Block(n));
+    xfprintf (F, "\" "	BLOCK_EDGE_ATTR "}\n");
+  }
 }
 
 void print_edge_vcgattr(ir_node *from, int to) {
@@ -445,8 +454,11 @@ dump_ir_data_edges(ir_node *n)  {
 
   for (i = 0; i < get_irn_arity(n); i++) {
     assert(get_irn_n(n, i));
-    xfprintf (F, "edge: {sourcename: \"%p\" targetname: \"%p\"",
-	      n, get_irn_n(n, i));
+    fprintf (F, "edge: {sourcename: \"");
+    PRINT_NODEID(n);
+    fprintf (F, "\" targetname: \"");
+    PRINT_NODEID(get_irn_n(n, i));
+    fprintf (F, "\"");
     fprintf (F, " label: \"%d\" ", i);
     print_edge_vcgattr(n, i);
     fprintf (F, "}\n");
@@ -461,26 +473,37 @@ void dump_node2type_edges (ir_node *n, void *env)
   switch (get_irn_opcode(n)) {
   case iro_SymConst:
     if (   (get_SymConst_kind(n) == type_tag)
-        || (get_SymConst_kind(n) == size))
-      xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-		NODE2TYPE_EDGE_ATTR "}\n", n, get_SymConst_type(n));
+	   || (get_SymConst_kind(n) == size)) {
+      xfprintf (F, "edge: { sourcename: \"");
+      PRINT_NODEID(n);
+      fprintf (F, "\" targetname: \"%p\" "
+	       NODE2TYPE_EDGE_ATTR "}\n", get_SymConst_type(n));
+    }
     break;
-  case iro_Sel:
-    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-	      NODE2TYPE_EDGE_ATTR "}\n", n, get_Sel_entity(n));
-    break;
-  case iro_Call:
-    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-	      NODE2TYPE_EDGE_ATTR "}\n", n, get_Call_type(n));
-    break;
-  case iro_Alloc:
-    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-	      NODE2TYPE_EDGE_ATTR "}\n", n, get_Alloc_type(n));
-    break;
-  case iro_Free:
-    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-	      NODE2TYPE_EDGE_ATTR "}\n", n, get_Free_type(n));
-    break;
+  case iro_Sel: {
+    xfprintf (F, "edge: { sourcename: \"");
+    PRINT_NODEID(n);
+    fprintf (F, "\" targetname: \"%p\" "
+	     NODE2TYPE_EDGE_ATTR "}\n", get_Sel_entity(n));
+    } break;
+  case iro_Call: {
+    xfprintf (F, "edge: { sourcename: \"");
+    PRINT_NODEID(n);
+    fprintf (F, "\" targetname: \"%p\" "
+	     NODE2TYPE_EDGE_ATTR "}\n", get_Call_type(n));
+    } break;
+  case iro_Alloc: {
+    xfprintf (F, "edge: { sourcename: \"");
+    PRINT_NODEID(n);
+    fprintf (F, "\" targetname: \"%p\" "
+	     NODE2TYPE_EDGE_ATTR "}\n", get_Alloc_type(n));
+    } break;
+  case iro_Free: {
+    xfprintf (F, "edge: { sourcename: \"");
+    PRINT_NODEID(n);
+    fprintf (F, "\" targetname: \"%p\" "
+	     NODE2TYPE_EDGE_ATTR "}\n", get_Free_type(n));
+    } break;
   default:
     break;
   }
@@ -838,8 +861,11 @@ dump_block_to_cfg (ir_node *block, void *env) {
     /* Dump the edges */
     for ( i = 0; i < get_Block_n_cfgpreds(block); i++) {
       pred = get_nodes_Block(skip_Proj(get_Block_cfgpred(block, i)));
-      xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" }\n",
-                block, pred);
+      xfprintf (F, "edge: { sourcename: \"");
+      PRINT_NODEID(block);
+      fprintf (F, "\" targetname: \"");
+      PRINT_NODEID(pred);
+      fprintf (F, "\" }\n");
     }
   }
 }
