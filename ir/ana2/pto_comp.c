@@ -666,11 +666,11 @@ void pto_graph (ir_graph *graph, int ctx_idx, pto_env_t *enc_env)
   int run;
 
   /* Also exported, since we need it in 'pto.c' */
-  pto_env_t *pto_env = xmalloc (sizeof(*pto_env));
-  pto_env->enc_env = enc_env;
-  pto_env->graph   = graph;
-  pto_env->ctx_idx = ctx_idx;
-  pto_env->change  = TRUE;
+  pto_env_t pto_env;
+  pto_env.enc_env = enc_env;
+  pto_env.graph   = graph;
+  pto_env.ctx_idx = ctx_idx;
+  pto_env.change  = TRUE;
 
   /* HERE ("start"); */
 
@@ -679,20 +679,16 @@ void pto_graph (ir_graph *graph, int ctx_idx, pto_env_t *enc_env)
 
   /* todo (here): iterate, obey 'changed' attribute */
   run = 0;
-  while (0 != pto_env->change) {
+  while (0 != pto_env.change) {
     run ++;
-    pto_env->change = FALSE;
-    pto_graph_pass (graph, pto_env);
+    pto_env.change = FALSE;
+    pto_graph_pass (graph, &pto_env);
   }
 
   DBGPRINT (1, (stdout, "pto_graph(): %i runs on \"%s.%s\"\n",
                 run,
                 get_type_name (get_entity_owner (get_irg_entity (graph))),
                 get_entity_name (get_irg_entity (graph))));
-
-
-  memset (pto_env, 0, sizeof(*pto_env));
-  free (pto_env);
   /* HERE ("end"); */
 }
 
@@ -737,6 +733,9 @@ pto_t *get_alloc_pto (ir_node *alloc)
 
 /*
   $Log$
+  Revision 1.12  2004/12/23 15:46:19  beck
+  removed unneeded allocations
+
   Revision 1.11  2004/12/21 14:50:59  beck
   removed C)) and GNUC constructs, add default returns
 
