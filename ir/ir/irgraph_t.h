@@ -98,10 +98,10 @@ struct ir_graph {
   void *link;                        /**< A void* field to link any information to
                     the node. */
 
-  ir_graph **callers;                /**< For callgraph analyses. */
-  int       *caller_isbe;            /**< For callgraph analyses: set if backedge. */
-  ir_graph **callees;                /**< For callgraph analyses. */
-  int       *callee_isbe;            /**< For callgraph analyses: set if backedge. */
+  ir_graph **callers;                /**< For callgraph analysis. */
+  unsigned char *caller_isbe;        /**< For callgraph analysis: set if backedge. */
+  ir_graph **callees;                /**< For callgraph analysis. */
+  unsigned char *callee_isbe;        /**< For callgraph analysis: set if backedge. */
   int        callgraph_loop_depth;
   int        callgraph_recursion_depth;
   ir_loop   *l;
