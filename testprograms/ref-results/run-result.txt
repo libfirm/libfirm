@@ -165,6 +165,44 @@ Use xvcg to view these graphs:
 Creating an IR graph: IF_EXAMPLE...
 Done building the graph.  Dumping and optimizing it.
 
+Creating an IR graph: IF_EXAMPLE...
+Done building the graph.  Dumping and optimizing it.
+
+init 0,
+ iter_end 10,
+ diff 10, cmp_typ
+ 4,
+ unroll_factor 2
+init 0,
+ iter_end 11,
+ diff 11, cmp_typ
+ 5,
+ unroll_factor 2
+init 0,
+ iter_end 10,
+ diff 10, cmp_typ
+ 2,
+ unroll_factor 2
+init 0,
+ iter_end 11,
+ diff 11, cmp_typ
+ 5,
+ unroll_factor 4
+init 0,
+ iter_end 10,
+ diff 10, cmp_typ
+ 2,
+ unroll_factor 2
+init 0,
+ iter_end 11,
+ diff 11, cmp_typ
+ 5,
+ unroll_factor 4
+init 0,
+ iter_end 10,
+ diff 10, cmp_typ
+ 2,
+ unroll_factor 2
 Creating an IR graph: THREE_CFPRED_EXAMPLE ...
 Optimizing ...
 Dumping the graph and a control flow graph.

@@ -1,11 +1,13 @@
+
 /*
  * Project:     libFIRM
- * File name:   testprograms/strength_red_example.c
- * Purpose:     Shows how strength red works
+ * File name:   testprograms/loop_unroll_exapmle.c
+ * Purpose:     Shows how loopunrolling works
  * Author:      Beyhan Veliev
  * Modified by:
  * Created:
  * CVS-ID:      $Id$
+ *
  * Copyright:   (c) 2004 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
@@ -18,36 +20,23 @@
 # include "irvrfy.h"
 # include "irdump.h"
 
+#include "loop_unrolling.h"
 
-/**
-*  This file constructs the ir for the following pseudo-program:
-*
-*  int a[10];
-*
-*  void main(void) {
-*    int i = 0;
-*
-*    while (i < 10)  {
-*       a[i] = 19;
-*       i++
-*    }
-*  }
-**/
 
 #define new_Const_int(n)        new_Const(mode_Is, new_tarval_from_long(n, mode_Is))
 
 
-#define CLASSNAME "STRENGTH_RED_EXAMPLE"
-#define METHODNAME1 "STRENGTH_RED_EXAMPLE_m1"
-#define METHODNAME2 "STRENGTH_RED_EXAMPLE_m2"
-#define METHODNAME3 "STRENGTH_RED_EXAMPLE_m3"
-#define METHODNAME4 "STRENGTH_RED_EXAMPLE_m4"
-#define METHODNAME5 "STRENGTH_RED_EXAMPLE_m5"
-#define METHODNAME6 "STRENGTH_RED_EXAMPLE_m6"
-#define METHODNAME7 "STRENGTH_RED_EXAMPLE_m7"
-#define METHODNAME8 "STRENGTH_RED_EXAMPLE_m8"
-#define METHODNAME9 "STRENGTH_RED_EXAMPLE_m9"
-#define METHODTPNAME "STRENGTH_RED_EXAMPLE_meth_tp"
+#define CLASSNAME "LOOP_UNROLL_EXAMPLE"
+#define METHODNAME1 "LOOP_UNROLL_EXAMPLE_m1"
+#define METHODNAME2 "LOOP_UNROLL_EXAMPLE_m2"
+#define METHODNAME3 "LOOP_UNROLL_EXAMPLE_m3"
+#define METHODNAME4 "LOOP_UNROLL_EXAMPLE_m4"
+#define METHODNAME5 "LOOP_UNROLL_EXAMPLE_m5"
+#define METHODNAME6 "LOOP_UNROLL_EXAMPLE_m6"
+#define METHODNAME7 "LOOP_UNROLL_EXAMPLE_m7"
+#define METHODNAME8 "LOOP_UNROLL_EXAMPLE_m8"
+#define METHODNAME9 "LOOP_UNROLL_EXAMPLE_m9"
+#define METHODTPNAME "LOOP_UNROLL_EXAMPLE_meth_tp"
 #define NRARGS 1
 #define NRES 1
 #define L_BOUND 0
@@ -92,8 +81,8 @@ static void function_begin(type *owner, type *mtp, char *fct_name, loop_dir_t lo
 
   if (loop_dir == loop_forward) {
     start_value = 0;
-    end_value   = 10;
-    cmp_dir     = Gt;
+    end_value   = 11;
+    cmp_dir     = Ge;
   }
   else {
     start_value = 10;
@@ -335,16 +324,13 @@ main(void)
   /* -------------------------------------------------------------------------------- */
 
   function_begin(owner, proc_tp, METHODNAME2, loop_forward);
-  ir_node *mul, *q;
+  ir_node *q;
   q =  new_Const_int(15);
-  ir_node *q1 = new_Const_int(13);
-  c = new_Const_int(1);
+  c = new_Const_int(5);
   b = new_Const_int(4);
-  mul = new_Mul(q, get_value(i_pos, mode_Is), mode_Is);
 
   res = new_Add(get_value(arr_pos, mode_P), new_Mul(get_value(i_pos, mode_Is), b, mode_Is), mode_P);
-  res = new_Add(q1, res, mode_P);
-  set_store(new_Proj(new_Store (get_store(), res, mul), mode_M, 0));
+  set_store(new_Proj(new_Store (get_store(), res, q), mode_M, 0));
 
   set_value(i_pos, new_Add(get_value(i_pos, mode_Is), c, mode_Is));
 
@@ -456,23 +442,26 @@ main(void)
     finalize_cons (current_ir_graph);
 
     /* output the vcg file */
-    //dump_ir_block_graph (current_ir_graph, "-early");
-    construct_backedges(current_ir_graph);
     dump_ir_block_graph (current_ir_graph, 0);
+    construct_backedges(current_ir_graph);
+    dump_ir_graph (current_ir_graph, 0);
     dump_all_types(0);
-    set_opt_strength_red_verbose(0);
-    set_firm_verbosity(0);
-    optimize_reassociation(current_ir_graph);
-    reduce_strength(current_ir_graph);
+    set_opt_strength_red_verbose(2);
+    set_firm_verbosity(2);
+    set_optimize(0);
+    set_opt_loop_unrolling(1);
+    optimize_loop_unrolling(current_ir_graph);
+    // optimize_reassociation(current_ir_graph);
+    //reduce_strength(current_ir_graph);
+
 
     // remove_critical_cf_edges(current_ir_graph);
     //set_opt_global_cse(1);
     //place_code(current_ir_graph);
     //set_opt_global_cse(0);
-    // optimize_reassociation(current_ir_graph);
-
     dump_loop_tree(current_ir_graph, "");
-    dump_ir_block_graph (current_ir_graph, "-strength_reduced");
+    dump_ir_block_graph (current_ir_graph, "-loop-unrolling");
+    // dump_ir_graph (current_ir_graph, "-pure-loop-unrolling");
   }
   //printf("use xvcg to view this graph:\n");
   //printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");

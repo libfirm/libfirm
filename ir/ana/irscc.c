@@ -1454,7 +1454,7 @@ int is_loop_variant(ir_loop *l, ir_loop *b) {
  *               start off with a block loop to find all proper uses.
  *
  * Returns true, if the node n is not changed in the loop block
- * belongs to or in inner loops of this block. */
+ * belongs to or in inner loops of this blocks loop. */
 int is_loop_invariant(ir_node *n, ir_node *block) {
   ir_loop *l = get_irn_loop(block);
   ir_node *b = (is_Block(n)) ? n : get_nodes_block(n);

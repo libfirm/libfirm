@@ -1,0 +1,864 @@
+graph: { title: "ir graph of LOOP_UNROLL_EXAMPLE_m1"
+display_edge_labels: no
+layoutalgorithm: mindepth
+manhattan_edges: yes
+port_sharing: no
+orientation: bottom_to_top
+classname 1:  "intrablock Data"
+classname 16: "interblock Data"
+classname 2:  "Block"
+classname 13: "Control Flow"
+classname 18: "Exception Control Flow for Interval Analysis"
+classname 14: "intrablock Memory"
+classname 17: "interblock Memory"
+classname 15: "Dominators"
+classname 3:  "Entity type"
+classname 4:  "Entity owner"
+classname 5:  "Method Param"
+classname 6:  "Method Res"
+classname 7:  "Super"
+classname 8:  "Union"
+classname 9:  "Points-to"
+classname 10: "Array Element Type"
+classname 11: "Overwrites"
+classname 12: "Member"
+infoname 1: "Attribute"
+infoname 2: "Verification errors"
+colorentry 100:    0   0    0
+colorentry 101:   20   0    0
+colorentry 102:   40   0    0
+colorentry 103:   60   0    0
+colorentry 104:   80   0    0
+colorentry 105:  100   0    0
+colorentry 106:  120   0    0
+colorentry 107:  140   0    0
+colorentry 108:  150   0    0
+colorentry 109:  180   0    0
+colorentry 110:  200   0    0
+colorentry 111:  220   0    0
+colorentry 112:  240   0    0
+colorentry 113:  255   0    0
+colorentry 113:  255  20   20
+colorentry 114:  255  40   40
+colorentry 115:  255  60   60
+colorentry 116:  255  80   80
+colorentry 117:  255 100  100
+colorentry 118:  255 120  120
+colorentry 119:  255 140  140
+colorentry 120:  255 150  150
+colorentry 121:  255 180  180
+colorentry 122:  255 200  200
+colorentry 123:  255 220  220
+colorentry 124:  255 240  240
+colorentry 125:  255 250  250
+
+node: {title: "n37" label: "Start  37"  info1: "Start 37
+  mode:    T
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   0
+  pred nodes:
+    -1:    Block 36
+  Private Attributes:
+  in loop 520 with depth 0
+  start of method of type LOOP_UNROLL_EXAMPLE_meth_tp
+    param 0 type: int
+"
+color: blue}
+edge: { sourcename: "n37" targetname: "n36" class:2  priority:50 linestyle:dotted}
+node: {title: "n40" label: "ProjX 0 40"  info1: "Proj 40
+  mode:    X
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   1
+  pred nodes:
+    -1:    Block 36
+     0:    Start 37
+  Private Attributes:
+  in loop 520 with depth 0
+"
+color: yellow}
+edge: {sourcename: "n40" targetname: "n37" label: "0" class:13 priority:60 color:red}
+edge: { sourcename: "n40" targetname: "n36" class:2  priority:50 linestyle:dotted}
+node: {title: "n36" label: "Block  36"  info1: "Block 36
+  mode:    BB
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   1
+  pred nodes:
+     0:    Proj 40
+  Private Attributes:
+  backedges:
+  in loop 520 with depth 0
+  block visited: 0
+  dominator info: output not implemented
+"
+color: lightyellow}
+edge: {sourcename: "n36" targetname: "n40" label: "0" class:13 priority:60 color:red}
+node: {title: "n34" label: "Block  34"  info1: "Block 34
+  mode:    BB
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   1
+  pred nodes:
+     0:    Bad 38
+  Private Attributes:
+  backedges:
+  in loop 520 with depth 0
+  block visited: 0
+  dominator info: output not implemented
+"
+color: lightyellow}
+node: {title: "n34n38" label: "Bad  38"  info1: "Bad 38
+  mode:    T
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   0
+  pred nodes:
+    -1:    Block 36
+  Private Attributes:
+  pinned state: op_pin_state_pinned
+  in loop 520 with depth 0
+"
+}
+edge: {sourcename: "n34" targetname: "n34n38" label: "0" class:13 priority:60 color:red}
+node: {title: "n100" label: "Jmp  100"  info1: "Jmp 100
+  mode:    X
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   0
+  pred nodes:
+    -1:    Block 93
+  Private Attributes:
+  in loop 524 with depth 1
+"
+}
+edge: { sourcename: "n100" targetname: "n93" class:2  priority:50 linestyle:dotted}
+node: {title: "n103" label: "Block  103"  info1: "Block 103
+  mode:    BB
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   1
+  pred nodes:
+     0:    Jmp 100
+  Private Attributes:
+  backedges:
+  in loop 524 with depth 1
+  block visited: 0
+  dominator info: output not implemented
+"
+color: lightyellow}
+edge: {sourcename: "n103" targetname: "n100" label: "0" class:13 priority:60 color:red}
+node: {title: "n114" label: "Jmp  114"  info1: "Jmp 114
+  mode:    X
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   0
+  pred nodes:
+    -1:    Block 103
+  Private Attributes:
+  in loop 524 with depth 1
+"
+}
+edge: { sourcename: "n114" targetname: "n103" class:2  priority:50 linestyle:dotted}
+node: {title: "n84" label: "AddIs  84"  info1: "Add 84
+  mode:    Is
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   2
+  pred nodes:
+    -1:    Block 57
+     0:    0x1 58
+     1:    Phi 92
+  Private Attributes:
+  in loop 521 with depth 1
+"
+}
+node: {title: "n84n58" label: "0x1Is  58"  info1: "0x1 58
+  mode:    Is
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   0
+  pred nodes:
+    -1:    Block 36
+  Private Attributes:
+  in loop 520 with depth 0
+  Const of type type_unknown
+"
+color: yellow}
+edge: {sourcename: "n84" targetname: "n84n58" label: "0" class:16 priority:10}
+edge: {sourcename: "n84" targetname: "n92" label: "1" class:16 priority:10}
+edge: { sourcename: "n84" targetname: "n57" class:2  priority:50 linestyle:dotted}
+node: {title: "n92" label: "PhiIs  92"  info1: "Phi 92
+  mode:    Is
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   2
+  pred nodes:
+    -1:    Block 49
+     0:    0x0 47
+     1: be Add 84
+  Private Attributes:
+  backedges:  1
+  in loop 521 with depth 1
+"
+color: green}
+node: {title: "n92n47" label: "0x0Is  47"  info1: "0x0 47
+  mode:    Is
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   0
+  pred nodes:
+    -1:    Block 36
+  Private Attributes:
+  in loop 520 with depth 0
+  Const of type type_unknown
+"
+color: yellow}
+edge: {sourcename: "n92" targetname: "n92n47" label: "0" class:16 priority:10}
+backedge: {sourcename: "n92" targetname: "n84" label: "1" linestyle:dashed class:16 priority:10}
+edge: { sourcename: "n92" targetname: "n49" class:2  priority:50 linestyle:dotted}
+node: {title: "n52" label: "Cmp  52"  info1: "Cmp 52
+  mode:    T
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   2
+  pred nodes:
+    -1:    Block 49
+     0:    0xA 51
+     1:    Phi 92
+  Private Attributes:
+  in loop 522 with depth 2
+"
+}
+node: {title: "n52n51" label: "0xAIs  51"  info1: "0xA 51
+  mode:    Is
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   0
+  pred nodes:
+    -1:    Block 36
+  Private Attributes:
+  in loop 520 with depth 0
+  Const of type type_unknown
+"
+color: yellow}
+edge: {sourcename: "n52" targetname: "n52n51" label: "0" class:16 priority:10}
+edge: {sourcename: "n52" targetname: "n92" label: "1" class:1  priority:50}
+edge: { sourcename: "n52" targetname: "n49" class:2  priority:50 linestyle:dotted}
+node: {title: "n53" label: "Projb Gt 53"  info1: "Proj 53
+  mode:    b
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   1
+  pred nodes:
+    -1:    Block 49
+     0:    Cmp 52
+  Private Attributes:
+  in loop 522 with depth 2
+"
+color: yellow}
+edge: {sourcename: "n53" targetname: "n52" label: "0" class:1  priority:50}
+edge: { sourcename: "n53" targetname: "n49" class:2  priority:50 linestyle:dotted}
+node: {title: "n54" label: "Cond  54"  info1: "Cond 54
+  mode:    T
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   1
+  pred nodes:
+    -1:    Block 49
+     0:    Proj 53
+  Private Attributes:
+  in loop 522 with depth 2
+  condition kind: dense
+  default ProjNr: 0
+"
+}
+edge: {sourcename: "n54" targetname: "n53" label: "0" class:1  priority:50}
+edge: { sourcename: "n54" targetname: "n49" class:2  priority:50 linestyle:dotted}
+node: {title: "n56" label: "ProjX 1 56"  info1: "Proj 56
+  mode:    X
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   1
+  pred nodes:
+    -1:    Block 49
+     0:    Cond 54
+  Private Attributes:
+  in loop 522 with depth 2
+"
+color: yellow}
+edge: {sourcename: "n56" targetname: "n54" label: "0" class:13 priority:60 color:red}
+edge: { sourcename: "n56" targetname: "n49" class:2  priority:50 linestyle:dotted}
+node: {title: "n57" label: "Block  57"  info1: "Block 57
+  mode:    BB
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   1
+  pred nodes:
+     0:    Proj 56
+  Private Attributes:
+  backedges:
+  in loop 522 with depth 2
+  block visited: 0
+  dominator info: output not implemented
+"
+color: lightyellow}
+edge: {sourcename: "n57" targetname: "n56" label: "0" class:13 priority:60 color:red}
+node: {title: "n85" label: "Jmp  85"  info1: "Jmp 85
+  mode:    X
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   0
+  pred nodes:
+    -1:    Block 57
+  Private Attributes:
+  in loop 522 with depth 2
+"
+}
+edge: { sourcename: "n85" targetname: "n57" class:2  priority:50 linestyle:dotted}
+node: {title: "n46" label: "Block  46"  info1: "Block 46
+  mode:    BB
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   1
+  pred nodes:
+     0:    Proj 40
+  Private Attributes:
+  backedges:
+  in loop 520 with depth 0
+  block visited: 0
+  dominator info: output not implemented
+"
+color: lightyellow}
+edge: {sourcename: "n46" targetname: "n40" label: "0" class:13 priority:60 color:red}
+node: {title: "n48" label: "Jmp  48"  info1: "Jmp 48
+  mode:    X
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   0
+  pred nodes:
+    -1:    Block 46
+  Private Attributes:
+  in loop 520 with depth 0
+"
+}
+edge: { sourcename: "n48" targetname: "n46" class:2  priority:50 linestyle:dotted}
+node: {title: "n49" label: "Block  49"  info1: "Block 49
+  mode:    BB
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   2
+  pred nodes:
+     0:    Jmp 48
+     1: be Jmp 85
+  Private Attributes:
+  backedges:  1
+  in loop 522 with depth 2
+  block visited: 0
+  dominator info: output not implemented
+"
+color: lightyellow}
+edge: {sourcename: "n49" targetname: "n48" label: "0" class:13 priority:60 color:red}
+backedge: {sourcename: "n49" targetname: "n85" label: "1" linestyle:dashed class:13 priority:60 color:red}
+node: {title: "n55" label: "ProjX 0 55"  info1: "Proj 55
+  mode:    X
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   1
+  pred nodes:
+    -1:    Block 49
+     0:    Cond 54
+  Private Attributes:
+  in loop 520 with depth 0
+"
+color: yellow}
+edge: {sourcename: "n55" targetname: "n54" label: "0" class:13 priority:60 color:red}
+edge: { sourcename: "n55" targetname: "n49" class:2  priority:50 linestyle:dotted}
+node: {title: "n93" label: "Block  93"  info1: "Block 93
+  mode:    BB
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   2
+  pred nodes:
+     0:    Proj 55
+     1: be Jmp 114
+  Private Attributes:
+  backedges:  1
+  in loop 524 with depth 1
+  block visited: 0
+  dominator info: output not implemented
+"
+color: lightyellow}
+edge: {sourcename: "n93" targetname: "n55" label: "0" class:13 priority:60 color:red}
+backedge: {sourcename: "n93" targetname: "n114" label: "1" linestyle:dashed class:13 priority:60 color:red}
+node: {title: "n113" label: "SubIs  113"  info1: "Sub 113
+  mode:    Is
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   2
+  pred nodes:
+    -1:    Block 103
+     0:    Phi 119
+     1:    0x1 58
+  Private Attributes:
+  in loop 525 with depth 1
+"
+}
+node: {title: "n113n58" label: "0x1Is  58"  info1: "0x1 58
+  mode:    Is
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   0
+  pred nodes:
+    -1:    Block 36
+  Private Attributes:
+  in loop 520 with depth 0
+  Const of type type_unknown
+"
+color: yellow}
+edge: {sourcename: "n113" targetname: "n119" label: "0" class:16 priority:10}
+edge: {sourcename: "n113" targetname: "n113n58" label: "1" class:16 priority:10}
+edge: { sourcename: "n113" targetname: "n103" class:2  priority:50 linestyle:dotted}
+node: {title: "n119" label: "PhiIs  119"  info1: "Phi 119
+  mode:    Is
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   2
+  pred nodes:
+    -1:    Block 93
+     0:    Phi 92
+     1: be Sub 113
+  Private Attributes:
+  backedges:  1
+  in loop 525 with depth 1
+"
+color: green}
+edge: {sourcename: "n119" targetname: "n92" label: "0" class:16 priority:10}
+backedge: {sourcename: "n119" targetname: "n113" label: "1" linestyle:dashed class:16 priority:10}
+edge: { sourcename: "n119" targetname: "n93" class:2  priority:50 linestyle:dotted}
+node: {title: "n106" label: "MulIs  106"  info1: "Mul 106
+  mode:    Is
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   2
+  pred nodes:
+    -1:    Block 103
+     0:    0x4 59
+     1:    Phi 119
+  Private Attributes:
+  in loop 520 with depth 0
+"
+}
+node: {title: "n106n59" label: "0x4Is  59"  info1: "0x4 59
+  mode:    Is
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   0
+  pred nodes:
+    -1:    Block 36
+  Private Attributes:
+  in loop 520 with depth 0
+  Const of type type_unknown
+"
+color: yellow}
+edge: {sourcename: "n106" targetname: "n106n59" label: "0" class:16 priority:10}
+edge: {sourcename: "n106" targetname: "n119" label: "1" class:16 priority:10}
+edge: { sourcename: "n106" targetname: "n103" class:2  priority:50 linestyle:dotted}
+node: {title: "n107" label: "AddP  107"  info1: "Add 107
+  mode:    P
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   2
+  pred nodes:
+    -1:    Block 103
+     0:    SymC &a 61
+     1:    Mul 106
+  Private Attributes:
+  in loop 520 with depth 0
+"
+}
+node: {title: "n107n61" label: "SymC &a  61"  info1: "SymC &a 61
+  mode:    P
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   0
+  pred nodes:
+    -1:    Block 36
+  Private Attributes:
+  in loop 520 with depth 0
+  kind:   addr_ent
+  entity: entity GlobalType.a (31)
+
+  type of value: type_unknown
+"
+}
+edge: {sourcename: "n107" targetname: "n107n61" label: "0" class:16 priority:10}
+edge: {sourcename: "n107" targetname: "n106" label: "1" class:1  priority:50}
+edge: { sourcename: "n107" targetname: "n103" class:2  priority:50 linestyle:dotted}
+node: {title: "n110" label: "Store  110"  info1: "Store 110
+  mode:    T
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   3
+  pred nodes:
+    -1:    Block 103
+     0:    Phi 120
+     1:    Add 107
+     2:    0x13 68
+  Private Attributes:
+  pinned state: op_pin_state_pinned
+  in loop 526 with depth 1
+  volatility: volatility_non_volatile
+"
+}
+node: {title: "n110n68" label: "0x13Is  68"  info1: "0x13 68
+  mode:    Is
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   0
+  pred nodes:
+    -1:    Block 36
+  Private Attributes:
+  in loop 520 with depth 0
+  Const of type type_unknown
+"
+color: yellow}
+edge: {sourcename: "n110" targetname: "n120" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n110" targetname: "n107" label: "1" class:1  priority:50}
+edge: {sourcename: "n110" targetname: "n110n68" label: "2" class:16 priority:10}
+edge: { sourcename: "n110" targetname: "n103" class:2  priority:50 linestyle:dotted}
+node: {title: "n112" label: "ProjM 0 112"  info1: "Proj 112
+  mode:    M
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   1
+  pred nodes:
+    -1:    Block 103
+     0:    Store 110
+  Private Attributes:
+  in loop 526 with depth 1
+"
+color: yellow}
+edge: {sourcename: "n112" targetname: "n110" label: "0" class:17 priority:10 color:blue}
+edge: { sourcename: "n112" targetname: "n103" class:2  priority:50 linestyle:dotted}
+node: {title: "n64" label: "MulIs  64"  info1: "Mul 64
+  mode:    Is
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   2
+  pred nodes:
+    -1:    Block 57
+     0:    0x4 59
+     1:    Phi 92
+  Private Attributes:
+  in loop 520 with depth 0
+"
+}
+node: {title: "n64n59" label: "0x4Is  59"  info1: "0x4 59
+  mode:    Is
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   0
+  pred nodes:
+    -1:    Block 36
+  Private Attributes:
+  in loop 520 with depth 0
+  Const of type type_unknown
+"
+color: yellow}
+edge: {sourcename: "n64" targetname: "n64n59" label: "0" class:16 priority:10}
+edge: {sourcename: "n64" targetname: "n92" label: "1" class:16 priority:10}
+edge: { sourcename: "n64" targetname: "n57" class:2  priority:50 linestyle:dotted}
+node: {title: "n65" label: "AddP  65"  info1: "Add 65
+  mode:    P
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   2
+  pred nodes:
+    -1:    Block 57
+     0:    SymC &a 61
+     1:    Mul 64
+  Private Attributes:
+  in loop 520 with depth 0
+"
+}
+node: {title: "n65n61" label: "SymC &a  61"  info1: "SymC &a 61
+  mode:    P
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   0
+  pred nodes:
+    -1:    Block 36
+  Private Attributes:
+  in loop 520 with depth 0
+  kind:   addr_ent
+  entity: entity GlobalType.a (31)
+
+  type of value: type_unknown
+"
+}
+edge: {sourcename: "n65" targetname: "n65n61" label: "0" class:16 priority:10}
+edge: {sourcename: "n65" targetname: "n64" label: "1" class:1  priority:50}
+edge: { sourcename: "n65" targetname: "n57" class:2  priority:50 linestyle:dotted}
+node: {title: "n66" label: "MulIs  66"  info1: "Mul 66
+  mode:    Is
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   2
+  pred nodes:
+    -1:    Block 57
+     0:    0xC 60
+     1:    Phi 92
+  Private Attributes:
+  in loop 520 with depth 0
+"
+}
+node: {title: "n66n60" label: "0xCIs  60"  info1: "0xC 60
+  mode:    Is
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   0
+  pred nodes:
+    -1:    Block 36
+  Private Attributes:
+  in loop 520 with depth 0
+  Const of type type_unknown
+"
+color: yellow}
+edge: {sourcename: "n66" targetname: "n66n60" label: "0" class:16 priority:10}
+edge: {sourcename: "n66" targetname: "n92" label: "1" class:16 priority:10}
+edge: { sourcename: "n66" targetname: "n57" class:2  priority:50 linestyle:dotted}
+node: {title: "n67" label: "AddP  67"  info1: "Add 67
+  mode:    P
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   2
+  pred nodes:
+    -1:    Block 57
+     0:    SymC &a2 62
+     1:    Mul 66
+  Private Attributes:
+  in loop 520 with depth 0
+"
+}
+node: {title: "n67n62" label: "SymC &a2  62"  info1: "SymC &a2 62
+  mode:    P
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   0
+  pred nodes:
+    -1:    Block 36
+  Private Attributes:
+  in loop 520 with depth 0
+  kind:   addr_ent
+  entity: entity GlobalType.a2 (32)
+
+  type of value: type_unknown
+"
+}
+edge: {sourcename: "n67" targetname: "n67n62" label: "0" class:16 priority:10}
+edge: {sourcename: "n67" targetname: "n66" label: "1" class:1  priority:50}
+edge: { sourcename: "n67" targetname: "n57" class:2  priority:50 linestyle:dotted}
+node: {title: "n70" label: "Store  70"  info1: "Store 70
+  mode:    T
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   3
+  pred nodes:
+    -1:    Block 57
+     0:    Phi 91
+     1:    Add 65
+     2:    0x13 68
+  Private Attributes:
+  pinned state: op_pin_state_pinned
+  in loop 523 with depth 1
+  volatility: volatility_non_volatile
+"
+}
+node: {title: "n70n68" label: "0x13Is  68"  info1: "0x13 68
+  mode:    Is
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   0
+  pred nodes:
+    -1:    Block 36
+  Private Attributes:
+  in loop 520 with depth 0
+  Const of type type_unknown
+"
+color: yellow}
+edge: {sourcename: "n70" targetname: "n91" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n70" targetname: "n65" label: "1" class:1  priority:50}
+edge: {sourcename: "n70" targetname: "n70n68" label: "2" class:16 priority:10}
+edge: { sourcename: "n70" targetname: "n57" class:2  priority:50 linestyle:dotted}
+node: {title: "n72" label: "ProjM 0 72"  info1: "Proj 72
+  mode:    M
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   1
+  pred nodes:
+    -1:    Block 57
+     0:    Store 70
+  Private Attributes:
+  in loop 523 with depth 1
+"
+color: yellow}
+edge: {sourcename: "n72" targetname: "n70" label: "0" class:17 priority:10 color:blue}
+edge: { sourcename: "n72" targetname: "n57" class:2  priority:50 linestyle:dotted}
+node: {title: "n74" label: "Store  74"  info1: "Store 74
+  mode:    T
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   3
+  pred nodes:
+    -1:    Block 57
+     0:    Proj 72
+     1:    Add 67
+     2:    0x10 73
+  Private Attributes:
+  pinned state: op_pin_state_pinned
+  in loop 523 with depth 1
+  volatility: volatility_non_volatile
+"
+}
+node: {title: "n74n73" label: "0x10Is  73"  info1: "0x10 73
+  mode:    Is
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   0
+  pred nodes:
+    -1:    Block 36
+  Private Attributes:
+  in loop 520 with depth 0
+  Const of type type_unknown
+"
+color: yellow}
+edge: {sourcename: "n74" targetname: "n72" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n74" targetname: "n67" label: "1" class:1  priority:50}
+edge: {sourcename: "n74" targetname: "n74n73" label: "2" class:16 priority:10}
+edge: { sourcename: "n74" targetname: "n57" class:2  priority:50 linestyle:dotted}
+node: {title: "n76" label: "ProjM 0 76"  info1: "Proj 76
+  mode:    M
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   1
+  pred nodes:
+    -1:    Block 57
+     0:    Store 74
+  Private Attributes:
+  in loop 523 with depth 1
+"
+color: yellow}
+edge: {sourcename: "n76" targetname: "n74" label: "0" class:17 priority:10 color:blue}
+edge: { sourcename: "n76" targetname: "n57" class:2  priority:50 linestyle:dotted}
+node: {title: "n81" label: "Store  81"  info1: "Store 81
+  mode:    T
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   3
+  pred nodes:
+    -1:    Block 57
+     0:    Proj 76
+     1:    Add 65
+     2:    0xF 80
+  Private Attributes:
+  pinned state: op_pin_state_pinned
+  in loop 523 with depth 1
+  volatility: volatility_non_volatile
+"
+}
+node: {title: "n81n80" label: "0xFIs  80"  info1: "0xF 80
+  mode:    Is
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   0
+  pred nodes:
+    -1:    Block 36
+  Private Attributes:
+  in loop 520 with depth 0
+  Const of type type_unknown
+"
+color: yellow}
+edge: {sourcename: "n81" targetname: "n76" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n81" targetname: "n65" label: "1" class:1  priority:50}
+edge: {sourcename: "n81" targetname: "n81n80" label: "2" class:16 priority:10}
+edge: { sourcename: "n81" targetname: "n57" class:2  priority:50 linestyle:dotted}
+node: {title: "n83" label: "ProjM 0 83"  info1: "Proj 83
+  mode:    M
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   1
+  pred nodes:
+    -1:    Block 57
+     0:    Store 81
+  Private Attributes:
+  in loop 523 with depth 1
+"
+color: yellow}
+edge: {sourcename: "n83" targetname: "n81" label: "0" class:17 priority:10 color:blue}
+edge: { sourcename: "n83" targetname: "n57" class:2  priority:50 linestyle:dotted}
+node: {title: "n43" label: "ProjM 1 43"  info1: "Proj 43
+  mode:    M
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   1
+  pred nodes:
+    -1:    Block 36
+     0:    Start 37
+  Private Attributes:
+  in loop 520 with depth 0
+"
+color: yellow}
+edge: {sourcename: "n43" targetname: "n37" label: "0" class:17 priority:10 color:blue}
+edge: { sourcename: "n43" targetname: "n36" class:2  priority:50 linestyle:dotted}
+node: {title: "n91" label: "PhiM  91"  info1: "Phi 91
+  mode:    M
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   2
+  pred nodes:
+    -1:    Block 49
+     0:    Proj 43
+     1: be Proj 83
+  Private Attributes:
+  backedges:  1
+  in loop 523 with depth 1
+"
+color: green}
+edge: {sourcename: "n91" targetname: "n43" label: "0" class:17 priority:10 color:blue}
+backedge: {sourcename: "n91" targetname: "n83" label: "1" linestyle:dashed class:17 priority:10 color:blue}
+edge: { sourcename: "n91" targetname: "n49" class:2  priority:50 linestyle:dotted}
+node: {title: "n120" label: "PhiM  120"  info1: "Phi 120
+  mode:    M
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   2
+  pred nodes:
+    -1:    Block 93
+     0:    Phi 91
+     1: be Proj 112
+  Private Attributes:
+  backedges:  1
+  in loop 526 with depth 1
+"
+color: green}
+edge: {sourcename: "n120" targetname: "n91" label: "0" class:17 priority:10 color:blue}
+backedge: {sourcename: "n120" targetname: "n112" label: "1" linestyle:dashed class:17 priority:10 color:blue}
+edge: { sourcename: "n120" targetname: "n93" class:2  priority:50 linestyle:dotted}
+node: {title: "n35" label: "End  35"  info1: "End 35
+  mode:    X
+  visited: 27
+  irg:     LOOP_UNROLL_EXAMPLE_m1
+  arity:   3
+  pred nodes:
+    -1:    Block 34
+     0:    Phi 91
+     1:    Block 93
+     2:    Phi 120
+  Private Attributes:
+  in loop 520 with depth 0
+"
+color: blue}
+edge: { sourcename: "n35" targetname: "n34" class:2  priority:50 linestyle:dotted}
+}

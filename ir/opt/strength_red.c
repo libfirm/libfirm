@@ -45,29 +45,6 @@ reduce_itervar(induct_var_info *iv)
 # include "firmstat.h"
 
 
-/* The information needed for an induction variable */
-typedef struct _induct_var_info {
-  ir_op   *operation_code;              /**< the opcode of the induction variable, either op_Add or op_Sub */
-  ir_node *increment;                   /**< the increment/decrement expression of the induction vriable */
-  ir_node *init;                        /**< the init expression */
-  ir_node *op;                          /**< the modify expression of the induction variable, ie the Add/Sub */
-  ir_node *itervar_phi;                 /**< the Phi operation of the induction variable */
-  ir_node *c, *new_phi, *new_increment, *new_init;
-  ir_node *new_op, *new_add, *reducible_node;
-  ir_node *old_ind, *symconst, *new_cmp;
-  ir_node *cmp_const;                   /**< the (loop invariant) expression that compared with the induction variable */
-  ir_node *cmp_init_block;
-  ir_node *cmp;                         /**< if set, the cmp at the end of the loop using the induction variable */
-  ir_loop *l_itervar_phi;               /**< the loop of the induction variable */
-  int      strong_reduced;
-  int      init_pred_pos;               /**< the position of the init expression in the inductions Phi */
-  int      op_pred_pos;                 /**< the position of the induction operation in the inductions Phi */
-  int      out_loop_res;
-  int      phi_pred;                    /**< number of users of the induction variable's phi */
-  int      reducible;                   /**< set if reducible */
-} induct_var_info;
-
-
 /** Counter for verbose information about optimization. */
 static int n_reduced_expressions;
 static int n_made_new_phis;
@@ -90,9 +67,10 @@ static int n_made_new_phis;
  * op or loop invariant.
  *
  * @param n     A phi node.
- * @param info  After call contains the induction variable information
+ * @param info  After call contains the induction variable information.
  */
-static induct_var_info *is_induction_variable (induct_var_info *info) {
+
+induct_var_info *is_induction_variable (induct_var_info *info) {
 
   int i;
   int op_pred, Store_in_op, Store_in_phi, cmp_in_phi;

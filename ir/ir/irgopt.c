@@ -266,7 +266,7 @@ firm_copy_node (ir_node *n, void *env) {
  * Copies new predecessors of old node to new node remembered in link.
  * Spare the Bad predecessors of Phi and Block nodes.
  */
-static void
+void
 copy_preds (ir_node *n, void *env) {
   ir_node *nn, *block;
   int i, j, irn_arity;
