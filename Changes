@@ -1,7 +1,7 @@
   20.6.2001 Goetz
   Extended iropt, tv.
   tv now implements Minus, Abs.
-  iropt now optimizes these and Div, Mod, Quot.
+  iropt now optimizes these and Div, Mod, Quot, DivMod.
   Still missing: Shrs, Rot.
   tarval_shr somtimes performs shrs, depending on the compiler/system!!
   If the ArmRoq implementation is faulty there might appear errors.
