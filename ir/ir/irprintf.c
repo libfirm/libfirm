@@ -24,6 +24,9 @@
 #ifdef HAVE_STRING_H
 #include <string.h>
 #endif
+#ifdef HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -225,8 +228,8 @@ static void dump_with_settings(const appender_t *app, void *object, size_t limit
 	if(settings->width >= 0) {
 		int i;
 		size_t n = strlen(str);
-		int lim = MIN(settings->width, limit);
-		int to_print = MIN(lim, n);
+		int lim = MIN(settings->width, (int)limit);
+		int to_print = MIN(lim, (int)n);
 		int to_pad = to_print - lim;
 
 		if(!settings->left_just)
@@ -398,7 +401,7 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 
 							case len_long_long:
 								{
-									long long arg = va_arg(args, long long);
+									int64_t arg = va_arg(args, int64_t);
 									snprintf(buf, sizeof(buf), fmt_str, arg);
 								}
 								break;

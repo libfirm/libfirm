@@ -1055,7 +1055,9 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
 
       break;
 
-    case iro_Store:
+    case iro_Store: {
+      entity *target;
+
       op1mode = get_irn_mode(in[1]);
       op2mode = get_irn_mode(in[2]);
       op3mode = get_irn_mode(in[3]);
@@ -1066,7 +1068,7 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
                      );
       ASSERT_AND_RET(mymode == mode_T, "Store node", 0);
 
-      entity *target = get_ptr_entity(in[2]);
+      target = get_ptr_entity(in[2]);
       if (vrfy_entities && target && get_irg_phase_state(current_ir_graph) == phase_high) {
         /*
          * If lowered code, any Sels that add 0 may be removed, causing
@@ -1078,6 +1080,7 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       }
 
       break;
+    }
 
     case iro_Alloc:
       op1mode = get_irn_mode(in[1]);

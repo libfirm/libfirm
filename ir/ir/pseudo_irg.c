@@ -57,10 +57,12 @@ new_pseudo_ir_graph(entity *ent, int n_loc) {
 /** Returns true ir ir_graph is pseudo graph. */
 int is_pseudo_ir_graph(ir_graph *irg)
 {
+  int i, n_pseudo_irgs;
+
   assert(irg && "nothing here");
   assert(is_ir_graph(irg) && "no ir_graph given");
 
-  int i, n_pseudo_irgs = get_irp_n_pseudo_irgs();
+  n_pseudo_irgs = get_irp_n_pseudo_irgs();
   for (i = 0; i < n_pseudo_irgs; ++i) {
     if (irg == get_irp_pseudo_irg(i)) return true;
   }
