@@ -62,6 +62,7 @@ $scndlastline = "";
 $lastline = "";
 
 $eat = 0;
+$multiline = 0;
 
 foreach $line (@lines) {
 
@@ -71,10 +72,22 @@ foreach $line (@lines) {
 	$eat = 2;
     } elsif ($eat > 0) {
 	$eat = $eat -1;
-    } elsif (($line =~ /^\#/)   ) {
+    } elsif ($multiline > 0) {
+        # this line connects a previous one, kill it
+        if ($line =~ /\\$/) {
+          $multiline = 1;
+        } else {
+          $multiline = 0;
+        }
+    } elsif ($line =~ /^\#/) {
 	# eat the line
 	$scndlastline = $lastline;
 	$lastline = $line;
+        if ($line =~ /\\$/) {
+          $multiline = 1;
+        } else {
+          $multiline = 0;
+        }
     } elsif ($openbracket == 1) {
 	print TDF "$line";
 	if ((index($line, "}") > -1)) {
