@@ -782,6 +782,9 @@ static void destruct_walker(ir_node * node, void * env) {
     exchange(node, new_Jmp());
   } else if (get_irn_op(node) == op_Call) {
     remove_Call_callee_arr(node);
+  } else if (get_irn_op(node) == op_Proj) {
+    // some ProjX end up in strage blocks.
+    set_nodes_block(node, get_nodes_block(get_Proj_pred(node)));
   }
 }
 

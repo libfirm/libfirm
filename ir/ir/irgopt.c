@@ -778,7 +778,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
       if (get_irn_op(cf_op) == op_Proj) {
 	cf_op = get_Proj_pred(cf_op);
 	if ((get_irn_op(cf_op) == op_Tuple) && (cf_op == call)) {
-	    // There are unoptimized tuples from inlineing before when no exc
+	  // There are unoptimized tuples from inlineing before when no exc
 	  assert(get_Proj_proj(get_Block_cfgpred(end_bl, i)) == pn_Call_X_except);
 	  cf_op = get_Tuple_pred(cf_op, pn_Call_X_except);
 	  assert(get_irn_op(cf_op) == op_Jmp);
@@ -799,6 +799,8 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
 	cf_pred[j] = get_Block_cfgpred(end_bl, j-get_Block_n_cfgpreds(bl) +1);
       set_irn_in(end_bl, arity, cf_pred);
       free(cf_pred);
+      // Remove the exception pred from post-call Tuple.
+      set_Tuple_pred(call, pn_Call_X_except, new_Bad());
     }
   }
 
