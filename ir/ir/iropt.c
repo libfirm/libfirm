@@ -438,7 +438,9 @@ static tarval *computed_value_Proj(ir_node *n)
     ab = get_Cmp_right(a);
     proj_nr = get_Proj_proj(n);
 
-    if (aa == ab && !mode_is_float(get_irn_mode(aa))) { /* 1.: */
+    if (aa == ab && (
+        !mode_is_float(get_irn_mode(aa)) || proj_nr == pn_Cmp_Lt ||  proj_nr == pn_Cmp_Gt)
+        ) { /* 1.: */
       /* BEWARE: a == a is NOT always True for floating Point!!! */
       /* This is a trick with the bits used for encoding the Cmp
          Proj numbers, the following statement is not the same:
@@ -1087,17 +1089,66 @@ static ir_node *equivalent_node_Mux(ir_node *n)
   ir_node *oldn = n, *sel = get_Mux_sel(n);
   tarval *ts = value_of(sel);
 
+  /* Mux(true, f, t) == t */
   if (ts == get_tarval_b_true()) {
     n = get_Mux_true(n);
     DBG_OPT_ALGSIM0(oldn, n);
   }
+  /* Mux(false, f, t) == f */
   else if (ts == get_tarval_b_false()) {
     n = get_Mux_false(n);
     DBG_OPT_ALGSIM0(oldn, n);
   }
-  else if(get_Mux_false(n) == get_Mux_true(n)) {
-		n = get_Mux_true(n);
+  /* Mux(v, x, x) == x */
+  else if (get_Mux_false(n) == get_Mux_true(n)) {
+    n = get_Mux_true(n);
     DBG_OPT_ALGSIM0(oldn, n);
+  }
+  else if (get_irn_op(sel) == op_Proj && !mode_honor_signed_zeros(get_irn_mode(n))) {
+    ir_node *cmp = get_Proj_pred(sel);
+    long proj_nr = get_Proj_proj(sel);
+    ir_node *b   = get_Mux_false(n);
+    ir_node *a   = get_Mux_true(n);
+
+    /*
+     * Note: normalization puts the constant on the right site,
+     * so we check only one case.
+     *
+     * Note further that these optimization work even for floating point
+     * with NaN's because -NaN == NaN.
+     * However, if +0 and -0 is handled differently, we cannot use the first one.
+     */
+    if (get_irn_op(cmp) == op_Cmp && get_Cmp_left(cmp) == a) {
+      if (classify_Const(get_Cmp_right(cmp)) == CNST_NULL) {
+        /* Mux(a CMP 0, X, a) */
+        if (get_irn_op(b) == op_Minus && get_Minus_op(b) == a) {
+          /* Mux(a CMP 0, -a, a) */
+          if (proj_nr == pn_Cmp_Eq) {
+            /* Mux(a == 0, -a, a)  ==>  -a */
+            n = b;
+            DBG_OPT_ALGSIM0(oldn, n);
+          }
+          else if (proj_nr == pn_Cmp_Lg || proj_nr == pn_Cmp_Ne) {
+            /* Mux(a != 0, -a, a)  ==> a */
+            n = a;
+            DBG_OPT_ALGSIM0(oldn, n);
+          }
+        }
+        else if (classify_Const(b) == CNST_NULL) {
+          /* Mux(a CMP 0, 0, a) */
+          if (proj_nr == pn_Cmp_Lg || proj_nr == pn_Cmp_Ne) {
+            /* Mux(a != 0, 0, a) ==> a */
+            n = a;
+            DBG_OPT_ALGSIM0(oldn, n);
+          }
+          else if (proj_nr == pn_Cmp_Eq) {
+            /* Mux(a == 0, 0, a) ==> 0 */
+            n = b;
+            DBG_OPT_ALGSIM0(oldn, n);
+          }
+        }
+      }
+    }
   }
 
   return n;
@@ -1597,7 +1648,7 @@ static ir_node *transform_node_Cast(ir_node *n) {
  *
  * Optimizes jump tables by removing all impossible cases.
  *
- * Normalizes Cmp nodes.
+ * Normalizes and optimizes Cmp nodes.
  */
 static ir_node *transform_node_Proj(ir_node *proj)
 {
@@ -1756,6 +1807,7 @@ static ir_node *transform_node_Proj(ir_node *proj)
             changed |= 2;
           }
 
+          /* for integer modes, we have more */
           if (mode_is_int(mode)) {
             /* Ne includes Unordered which is not possible on integers.
              * However, frontends often use this wrong, so fix it here */
@@ -1779,13 +1831,55 @@ static ir_node *transform_node_Proj(ir_node *proj)
               changed |= 2;
             }
 
+            /* the following reassociations work only for == and != */
+
             /* a-b == 0  ==>  a == b,  a-b != 0  ==>  a != b */
             if (classify_tarval(tv) == TV_CLASSIFY_NULL && get_irn_op(left) == op_Sub) {
               if (proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg) {
                 right = get_Sub_right(left);
                 left  = get_Sub_left(left);
 
-                changed &= ~2;
+                tv = value_of(right);
+                changed = 1;
+              }
+            }
+
+            if (tv != tarval_bad) {
+              ir_op *op = get_irn_op(left);
+
+              /* a-c1 == c2  ==>  a == c2+c1,  a-c1 != c2  ==>  a != c2+c1 */
+              if (op == op_Sub) {
+                ir_node *c1 = get_Sub_right(left);
+                tarval *tv2 = tarval_add(tv, value_of(c1));
+
+                if (tv2 != tarval_bad) {
+                  left    = get_Sub_left(left);
+                  tv      = tv2;
+                  changed = 2;
+                }
+              }
+              /* a+c1 == c2  ==>  a == c2-c1,  a+c1 != c2  ==>  a != c2-c1 */
+              else if (op == op_Add) {
+                ir_node *a_l = get_Add_left(left);
+                ir_node *a_r = get_Add_right(left);
+                ir_node *a;
+                tarval *tv2;
+
+                if (get_irn_op(a_l) == op_Const) {
+                  a = a_r;
+                  tv2 = value_of(a_l);
+                }
+                else {
+                  a = a_l;
+                  tv2 = value_of(a_r);
+                }
+
+                tv2 = tarval_sub(tv, tv2);
+                if (tv2 != tarval_bad) {
+                  left    = a;
+                  tv      = tv2;
+                  changed = 2;
+                }
               }
             }
           }
@@ -2105,11 +2199,16 @@ static ir_node *transform_node_shift(ir_node *n)
   return n;
 }
 
-static ir_node * transform_node_End(ir_node *n) {
+#define transform_node_Shr  transform_node_shift
+#define transform_node_Shrs transform_node_shift
+#define transform_node_Shl  transform_node_shift
+
+/**
+ * Remove dead blocks in keepalive list.  We do not generate a new End node.
+ */
+static ir_node *transform_node_End(ir_node *n) {
   int i, n_keepalives = get_End_n_keepalives(n);
 
-  /* Remove dead blocks in keepalive list.
-     We do not generate a new End node. */
   for (i = 0; i < n_keepalives; ++i) {
     ir_node *ka = get_End_keepalive(n, i);
     if (is_Block(ka) && is_Block_dead(ka))
@@ -2118,6 +2217,85 @@ static ir_node * transform_node_End(ir_node *n) {
   return n;
 }
 
+/**
+ * Optimize a Mux into some simplier cases
+ */
+static ir_node *transform_node_Mux(ir_node *n)
+{
+  ir_node *oldn = n, *sel = get_Mux_sel(n);
+  ir_mode *mode = get_irn_mode(n);
+
+  if (get_irn_op(sel) == op_Proj && !mode_honor_signed_zeros(mode)) {
+    ir_node *cmp = get_Proj_pred(sel);
+    long proj_nr = get_Proj_proj(sel);
+    ir_node *f   =  get_Mux_false(n);
+    ir_node *t   = get_Mux_true(n);
+
+    /*
+     * Note: normalization puts the constant on the right site,
+     * so we check only one case.
+     *
+     * Note further that these optimization work even for floating point
+     * with NaN's because -NaN == NaN.
+     * However, if +0 and -0 is handled differently, we cannot use the first one.
+     */
+    if (get_irn_op(cmp) == op_Cmp && classify_Const(get_Cmp_right(cmp)) == CNST_NULL) {
+      if (get_irn_op(f) == op_Minus &&
+          get_Minus_op(f)   == t &&
+          get_Cmp_left(cmp) == t) {
+
+        if (proj_nr == pn_Cmp_Ge || proj_nr == pn_Cmp_Gt) {
+          /* Mux(a >=/> 0, -a, a)  ==>  Abs(a) */
+          n = new_rd_Abs(get_irn_dbg_info(n),
+                current_ir_graph,
+                get_nodes_block(n),
+                t, mode);
+          DBG_OPT_ALGSIM0(oldn, n);
+        }
+        else if (proj_nr == pn_Cmp_Le || proj_nr == pn_Cmp_Lt) {
+          /* Mux(a <=/< 0, -a, a)  ==>  Minus(Abs(a)) */
+          n = new_rd_Abs(get_irn_dbg_info(n),
+                current_ir_graph,
+                get_nodes_block(n),
+                t, mode);
+          n = new_rd_Minus(get_irn_dbg_info(n),
+                current_ir_graph,
+                get_nodes_block(n),
+                n, mode);
+
+          DBG_OPT_ALGSIM0(oldn, n);
+        }
+      }
+      else if (get_irn_op(t) == op_Minus &&
+          get_Minus_op(t)   == f &&
+          get_Cmp_left(cmp) == f) {
+
+        if (proj_nr == pn_Cmp_Le || proj_nr == pn_Cmp_Lt) {
+          /* Mux(a <=/< 0, a, -a)  ==>  Abs(a) */
+          n = new_rd_Abs(get_irn_dbg_info(n),
+                current_ir_graph,
+                get_nodes_block(n),
+                f, mode);
+          DBG_OPT_ALGSIM0(oldn, n);
+        }
+        else if (proj_nr == pn_Cmp_Ge || proj_nr == pn_Cmp_Gt) {
+          /* Mux(a >=/> 0, a, -a)  ==>  Minus(Abs(a)) */
+          n = new_rd_Abs(get_irn_dbg_info(n),
+                current_ir_graph,
+                get_nodes_block(n),
+                f, mode);
+          n = new_rd_Minus(get_irn_dbg_info(n),
+                current_ir_graph,
+                get_nodes_block(n),
+                n, mode);
+
+          DBG_OPT_ALGSIM0(oldn, n);
+        }
+      }
+    }
+  }
+  return n;
+}
 
 /**
  * Tries several [inplace] [optimizing] transformations and returns an
@@ -2154,14 +2332,13 @@ static ir_op *firm_set_default_transform_node(ir_op *op)
   CASE(Not);
   CASE(Cast);
   CASE(Proj);
-  CASE(Or);
-  CASE(End);
   CASE(Sel);
-  case iro_Shr:
-  case iro_Shrs:
-  case iro_Shl:
-    op->transform_node  = transform_node_shift;
-    break;
+  CASE(Or);
+  CASE(Shr);
+  CASE(Shrs);
+  CASE(Shl);
+  CASE(End);
+  CASE(Mux);
   default:
     op->transform_node  = NULL;
   }
