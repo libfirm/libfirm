@@ -52,7 +52,7 @@ autodoc: $(AUTODOCDIR) $(AUTODOCINDEXFILE)
 
 .PHONY: $(AUTDOCINDEXFILE)
 $(AUTODOCINDEXFILE): $(CFILES) $(HFILES)
-	$(AUTODOC) $(srcdir)/$(AUTODOCFILE)
+	$(AUTODOC) $(AUTODOCFILE)
 
 
 #${srcdir}/configure: configure.in aclocal.m4
