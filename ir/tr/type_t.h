@@ -17,6 +17,7 @@
  * @see  type.h tpop_t.h tpop.h
  */
 
+/** class attributes */
 typedef struct {
   entity **members;    /**< fields and methods of this class */
   type   **subtypes;   /**< direct subtypes */
@@ -25,11 +26,13 @@ typedef struct {
   int dfn;             /**< number used for 'instanceof' operator */
 } cls_attr;
 
+/** struct attributs */
 typedef struct {
   entity **members;    /**< fields of this struct. No method entities
 			  allowed. */
 } stc_attr;
 
+/** method attributes */
 typedef struct {
   int n_params;        /**< number of parameters */
   type **param_type;   /**< code generation needs this information.
@@ -42,6 +45,7 @@ typedef struct {
   variadicity variadicity; /**< variadicity of the method */
 } mtd_attr;
 
+/** union attributs */
 typedef struct {
   int     n_types;
   /* type  **unioned_type; * a list of unioned types. */
@@ -51,6 +55,7 @@ typedef struct {
 
 } uni_attr;
 
+/** array attributs */
 typedef struct {
   int   n_dimensions;  /**< Number of array dimensions.  */
   ir_node **lower_bound;   /**< Lower bounds of dimensions.  Usually all 0. */
@@ -61,6 +66,7 @@ typedef struct {
 			  element selection with Sel. */
 } arr_attr;
 
+/** enum attributs */
 typedef struct {
   int      n_enums;    /**< Number of enumerators. */
   tarval **enumer;     /**< Contains all constants that represent a member
@@ -69,6 +75,7 @@ typedef struct {
                           the source program */
 } enm_attr;
 
+/** pointer attributs */
 typedef struct {
   type *points_to;     /**< The type of the enitity the pointer points to. */
 } ptr_attr;
@@ -83,7 +90,7 @@ typedef struct {        * No private attr, must be smaller than others! *
 } id_attr;
 */
 
-
+/** general type attributs */
 typedef union {
   cls_attr ca;
   stc_attr sa;
@@ -94,6 +101,7 @@ typedef union {
   ptr_attr pa;
 } tp_attr;
 
+/** the structure of a type */
 struct type {
   firm_kind kind;
   tp_op *type_op;
@@ -112,8 +120,8 @@ struct type {
 };
 
 /**
+ *   Creates a new type representation:
  *
- *   creates a new type representation
  *   @param type_op - the kind of this type.  May not be type_id.
  *   @param mode    - the mode to be used for this type, may be NULL
  *   @param name    - an ident for the name of this type.
