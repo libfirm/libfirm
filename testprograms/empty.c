@@ -82,6 +82,9 @@ int main(int argc, char **argv)
   /* Now we can mature the end block as all it's predecessors are known. */
   mature_block (irg->end_block);
 
+  /* verify the graph */
+  vrfy_graph(irg);
+
   printf("\nDone building the graph.  Dumping it.\n");
   dump_ir_block_graph (irg);
 
@@ -89,6 +92,4 @@ int main(int argc, char **argv)
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n");
 
   return (0);
-
-
 }

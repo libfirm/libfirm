@@ -111,12 +111,15 @@ main(void)
   add_in_edge (irg->end_block, x);
   mature_block (irg->end_block);
 
+  /* verify the graph */
+  vrfy_graph(irg);
+
   /* output the vcg file */
   printf("\nDone building the graph.  Dumping it.\n");
   dump_ir_block_graph (irg);
 
   printf("use xvcg to view this graph:\n");
-  printf("/ben/trapp/bin/i486/xvcg GRAPHNAME\n");
+  printf("/ben/goetz/bin/xvcg GRAPHNAME\n");
 
   return (0);
 }

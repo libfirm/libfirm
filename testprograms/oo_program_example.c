@@ -200,6 +200,9 @@ main(void)
   add_in_edge (c_irg->end_block, x);
   mature_block (c_irg->end_block);
 
+  /* verify the graph */
+  vrfy_graph(main_irg);
+
   printf("\nDone building the graph.\n");
   printf("Dumping the graph and a type graph.\n");
   dump_ir_block_graph (c_irg);
@@ -208,7 +211,7 @@ main(void)
   /****************************************************************************/
 
   printf("\nuse xvcg to view these graphs:\n");
-  printf("/ben/trapp/bin/i486/xvcg GRAPHNAME\n");
+  printf("/ben/goetz/bin/xvcg GRAPHNAME\n");
 
   return (1);
 }
