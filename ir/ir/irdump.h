@@ -245,7 +245,7 @@ void turn_of_edge_labels();
  * SYNOPSIS
  *   void dump_constant_entity_values()
  * FUNCTION
- *   Turns off dumping the values of constant entities. Maked type graphs
+ *   Turns off dumping the values of constant entities. Makes type graphs
  *   better readable.
  * INPUTS
  *   No inputs

@@ -531,15 +531,66 @@ void dump_const_expression(ir_node *value) {
 }
 
 
+void print_type_info(type *tp) {
+  if (get_type_state(tp) == layout_undefined) {
+    xfprintf(F, "state: layout_undefined\n");
+  } else {
+    xfprintf(F, "state: layout_fixed,\n");
+  }
+  if (get_type_mode(tp))
+    xfprintf(F, "mode: %s,\n", get_mode_name(get_type_mode(tp)));
+  xfprintf(F, "size: %dB,\n", get_type_size(tp));
+}
+
+
+void print_typespecific_info(type *tp) {
+  switch (get_type_tpop_code(tp)) {
+  case tpo_class:
+    {
+	   xfprintf (F, " " TYPE_CLASS_NODE_ATTR);
+    } break;
+  case tpo_struct:
+    {
+      xfprintf (F, " " TYPE_METH_NODE_ATTR);
+    } break;
+  case tpo_method:
+    {
+    } break;
+  case tpo_union:
+    {
+    } break;
+  case tpo_array:
+    {
+    } break;
+  case tpo_enumeration:
+    {
+    } break;
+  case tpo_pointer:
+    {
+    } break;
+  case tpo_primitive:
+    {
+    } break;
+  default: break;
+  } /* switch type */
+}
+
+void print_type_node(type *tp) {
+  xfprintf (F, "node: {title: \"%p\" ", tp);
+  xfprintf (F, "label: \"%I %I\"", get_type_tpop_nameid(tp), get_type_ident(tp));
+  xfprintf (F, "info1: \"");
+  print_type_info(tp);
+  xfprintf (F, "\"");
+  print_typespecific_info(tp);
+  xfprintf (F, "}\n");
+}
+
 /* dumps a type or entity and it's edges. */
 void
 dump_type_info (type_or_ent *tore, void *env) {
   int i = 0;  /* to shutup gcc */
 
   /* dump this type or entity */
-  xfprintf (F, "node: {title: \"%p\" ", tore);
-  xfprintf (F, DEFAULT_TYPE_ATTRIBUTE);
-  xfprintf (F, "label: ");
 
   switch (get_kind(tore)) {
   case k_entity:
@@ -547,6 +598,9 @@ dump_type_info (type_or_ent *tore, void *env) {
       entity *ent = (entity *)tore;
       ir_node *value;
       /* The node */
+      xfprintf (F, "node: {title: \"%p\" ", tore);
+      xfprintf (F, DEFAULT_TYPE_ATTRIBUTE);
+      xfprintf (F, "label: ");
       xfprintf (F, "\"ent %I\" " ENTITY_NODE_ATTR , get_entity_ident(ent));
       if(dynamic_allocated == get_entity_allocation(ent))
 	xfprintf (F, " info1:\"dynamic allocated\n");
@@ -598,12 +652,11 @@ dump_type_info (type_or_ent *tore, void *env) {
   case k_type:
     {
       type *tp = (type *)tore;
-      xfprintf (F, "\"%I %I", get_type_tpop_nameid(tp), get_type_ident(tp));
-
+      print_type_node(tp);
+      /* and now the edges */
       switch (get_type_tpop_code(tp)) {
       case tpo_class:
 	{
-	  xfprintf (F, "\" " TYPE_CLASS_NODE_ATTR "}\n");
 	  for (i=0; i < get_class_n_supertype(tp); i++)
 	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
 		      TYPE_SUPER_EDGE_ATTR "}\n",
@@ -615,7 +668,6 @@ dump_type_info (type_or_ent *tore, void *env) {
 	} break;
       case tpo_struct:
 	{
-	  xfprintf (F, "\"}\n");
 	  for (i=0; i < get_struct_n_member(tp); i++)
 	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
 		      TYPE_MEMBER_EDGE_ATTR "}\n",
@@ -623,7 +675,6 @@ dump_type_info (type_or_ent *tore, void *env) {
 	} break;
       case tpo_method:
 	{
-	  xfprintf (F, "\" " TYPE_METH_NODE_ATTR "}\n");
 	  for (i = 0; i < get_method_n_params(tp); i++)
 	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
 		      METH_PAR_EDGE_ATTR "}\n",
@@ -635,7 +686,6 @@ dump_type_info (type_or_ent *tore, void *env) {
 	} break;
       case tpo_union:
 	{
-	  xfprintf (F, "\"}\n");
 	  for (i = 0; i < get_union_n_members(tp); i++)
 	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
 		      "label: \"\"f" UNION_EDGE_ATTR "}\n",
@@ -643,7 +693,6 @@ dump_type_info (type_or_ent *tore, void *env) {
 	} break;
       case tpo_array:
 	{
-	  xfprintf (F, "\"}\n");
 	  xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
 		    ARR_ELT_TYPE_EDGE_ATTR "}\n", tp, get_array_element_type(tp), i);
 	  xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
@@ -651,18 +700,15 @@ dump_type_info (type_or_ent *tore, void *env) {
 	} break;
       case tpo_enumeration:
 	{
-	  xfprintf (F, "\"}\n");
 	} break;
       case tpo_pointer:
 	{
-	  xfprintf (F, "\"}\n");
 	  xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
 		    PTR_PTS_TO_EDGE_ATTR "}\n", tp,
 		    get_pointer_points_to_type(tp), i);
 	} break;
       case tpo_primitive:
 	{
-	  xfprintf (F, " (mode %I)\"}\n", get_mode_ident(get_type_mode(tp)));
 	} break;
       default: break;
       } /* switch type */
@@ -670,7 +716,6 @@ dump_type_info (type_or_ent *tore, void *env) {
     break; /* case k_type */
   default:
     {
-      xfprintf (F, "\" faulty type \"}\n");
       printf(" *** irdump,  %s(l.%i), faulty type.\n", __FUNCTION__, __LINE__);
     } break;
   } /* switch kind_or_entity */
@@ -686,12 +731,13 @@ void vcg_open (ir_graph *irg, char *suffix) {
   ident *id;
   int len;
   char label[4];
+  entity *ent;
 
   /** open file for vcg graph */
-  id    = get_entity_ld_ident (get_irg_ent(irg));
+  ent = get_irg_ent(irg);
+  id    = get_entity_ld_ident (ent);
   len   = id_to_strlen (id);
   cp    = id_to_str (id);
-
   fname = malloc (len + 5 + strlen(suffix));
   strncpy (fname, cp, len);      /* copy the filename */
   fname[len] = '\0';
