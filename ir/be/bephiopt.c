@@ -21,13 +21,14 @@
 #include "phistat.h"
 
 #define DEBUG_LVL SET_LEVEL_1
-#define DO_PHI_STATISTICS
-#define CHECK_RESULTS
-#define COUNT_COPY_SAVINGS
+#define DO_PHI_STATISTICS  0
+#define CHECK_RESULTS      1
+#define COUNT_COPY_SAVINGS 1
+#define DUMP_OPT_DIFF      1
 
-#undef DUMP_IRG_PHI_STAT
-#define DUMP_DIR_PHI_STAT
-#define DUMP_ALL_PHI_STAT
+#define DUMP_IRG_PHI_STAT  1
+#define DUMP_DIR_PHI_STAT  1
+#define DUMP_ALL_PHI_STAT  1
 
 #define PHI_STAT_FILE "all.phistat"
 #define ENV_PHI_STAT "PHI_STAT"
@@ -46,7 +47,6 @@ static void node_collector(ir_node *node, void *env) {
 }
 
 
-#ifdef CHECK_RESULTS
 static void check_result(ir_graph *irg) {
 	struct obstack ob;
 	ir_node **nodes, *n1, *n2;
@@ -54,41 +54,40 @@ static void check_result(ir_graph *irg) {
 
 	obstack_init(&ob);
 	irg_walk_graph(irg, node_collector, NULL, &ob);
+	obstack_ptr_grow(&ob, NULL);
 	nodes = (ir_node **) obstack_finish(&ob);
 	for (i = 0, n1 = nodes[i]; n1; n1 = nodes[++i])
 		for (o = i+1, n2 = nodes[o]; n2; n2 = nodes[++o])
 			if (phi_ops_interfere(n1, n2) && get_irn_color(n1) == get_irn_color(n2)) {
-				DBG((dbgphi, 1, "Ouch! %n -- %n\n", n1, n2));
+				DBG((dbgphi, 1, "Ouch!\n   %n in %n\n   %n in %n\n", n1, get_nodes_block(n1), n2, get_nodes_block(n2)));
 				assert(0 && "Interfering values have the same color!");
 			}
 
 	obstack_free(&ob, NULL);
 }
-#endif
 
 
-#ifdef COUNT_COPY_SAVINGS
 /* TODO: how to count copies in case of phi swapping */
-static int count_copies(pset *all_phi_nodes) {
-	int i, max, phi_color, res = 0;
+static void count_copies(pset *all_phi_nodes, int *copies, int *inevitable) {
+	int i, max, phi_color;
 	ir_node *phi;
 
 	for (phi = pset_first(all_phi_nodes); phi; phi = pset_next(all_phi_nodes)) {
 		phi_color = get_irn_color(phi);
-		for (i = 0, max = get_irn_arity(phi); i < max; ++i)
-			if (phi_color != get_irn_color(get_irn_n(phi, i)))
-				res++;
+		for (i = 0, max = get_irn_arity(phi); i < max; ++i) {
+			ir_node *arg = get_irn_n(phi, i);
+			if (phi_color != get_irn_color(arg))
+				(*copies)++;
+			if (phi_ops_interfere(phi, arg))
+				(*inevitable)++;
+		}
 	}
-	return res;
 }
-#endif
 
 
 void be_phi_opt(ir_graph* irg) {
 	pset *all_phi_nodes, *all_phi_classes;
-#ifdef COUNT_COPY_SAVINGS
-	int before, after;
-#endif
+	int before, after, inevitable;
 
 	DBG((dbgphi, 1, "\n\n=======================> IRG: %s\n\n", get_entity_name(get_irg_entity(irg))));
 
@@ -105,43 +104,53 @@ void be_phi_opt(ir_graph* irg) {
 
 
 	/* do some statistics */
-#ifdef DO_PHI_STATISTICS
-	DBG((dbgphi, 1, "-----------------------> Collecting phi stats <-----------------------\n"));
-	phi_stat_reset();
-	phi_stat_collect(irg, all_phi_nodes, all_phi_classes);
-#  ifdef DUMP_IRG_PHI_STAT
-	{
-		char buf[1024];
-		snprintf(buf, sizeof(buf), "%s.phistat", get_entity_name(get_irg_entity(irg)));
-		/*phi_stat_dump(buf);*/
-		phi_stat_dump_pretty(buf);
+	if (DO_PHI_STATISTICS) {
+		DBG((dbgphi, 1, "-----------------------> Collecting phi stats <-----------------------\n"));
+		phi_stat_reset();
+		phi_stat_collect(irg, all_phi_nodes, all_phi_classes);
+		if (DUMP_IRG_PHI_STAT) {
+			char buf[1024];
+			snprintf(buf, sizeof(buf), "%s.phistat", get_entity_name(get_irg_entity(irg)));
+			/*phi_stat_dump(buf);*/
+			phi_stat_dump_pretty(buf);
+		}
+		if (DUMP_DIR_PHI_STAT)
+			phi_stat_update(PHI_STAT_FILE);
+		if (DUMP_ALL_PHI_STAT)
+			phi_stat_update(getenv(ENV_PHI_STAT));
 	}
-#  endif
-#  ifdef DUMP_DIR_PHI_STAT
-	phi_stat_update(PHI_STAT_FILE);
-#  endif
-#  ifdef DUMP_ALL_PHI_STAT
-	phi_stat_update(getenv(ENV_PHI_STAT));
-#  endif
-#endif
 
 
 	/* try to coalesce the colors of each phi class */
 	DBG((dbgphi, 1, "-----------------------> Coalescing <---------------------------------\n"));
 	compute_outs(irg);
 	compute_doms(irg);
-	check_result(irg);
-#ifdef COUNT_COPY_SAVINGS
-	before = count_copies(all_phi_nodes);
-#endif
+
+	if (COUNT_COPY_SAVINGS) {
+		before = 0;
+		count_copies(all_phi_nodes, &before, &inevitable);
+	}
+
+	if (CHECK_RESULTS)
+		check_result(irg);
+
+	if (DUMP_OPT_DIFF)
+		dump_allocated_irg(irg, "-before");
+
 	be_phi_coalesce(all_phi_classes);
-#ifdef CHECK_RESULTS
-	check_result(irg);
-#endif
-#ifdef COUNT_COPY_SAVINGS
-	after = count_copies(all_phi_nodes);
-	DBG((dbgphi, 1, "Irg: %s. Copies form %d to %d\n", get_entity_name(get_irg_entity(irg)), before, after));
-#endif
+
+	if (DUMP_OPT_DIFF)
+		dump_allocated_irg(irg, "-opt");
+
+	if (CHECK_RESULTS)
+		check_result(irg);
+
+	if (COUNT_COPY_SAVINGS) {
+		after = 0;
+		inevitable = 0;
+		count_copies(all_phi_nodes, &after, &inevitable);
+		DBG((dbgphi, 1, "Irg: %s. Copies form %d to %d. %d phi-interfers\n", get_entity_name(get_irg_entity(irg)), before, after, inevitable));
+	}
 	free_dom_and_peace(irg);
 }
 

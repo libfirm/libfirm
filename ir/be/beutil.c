@@ -49,12 +49,12 @@ static void dump_allocated_block(ir_node *block, void *env)
 	}
 }
 
-void dump_allocated_irg(ir_graph *irg)
+void dump_allocated_irg(ir_graph *irg, char *suffix)
 {
 	char buf[1024];
 	FILE *f;
 
-	snprintf(buf, sizeof(buf), "%s-alloc.vcg", get_entity_name(get_irg_entity(irg)));
+	snprintf(buf, sizeof(buf), "%s-alloc%s.vcg", get_entity_name(get_irg_entity(irg)), suffix);
 
 	if((f = fopen(buf, "wt")) != NULL) {
 		fprintf(f, "graph:{title:\"prg\"\n");

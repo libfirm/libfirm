@@ -14,7 +14,7 @@
 #include "irdom.h"
 
 #include "bechordal.h"
-#include "belive.h"
+#include "belive_t.h"
 #include "bera_t.h"
 #include "phiclass_t.h"
 #include "bephicoal_t.h"
@@ -290,10 +290,26 @@ static ir_node *_pu_color_irn(phi_unit_t *pu, ir_node *irn, int col, const ir_no
 	{
 		struct obstack q;
 		int in, out;
+		ir_node *irn_bl;
 
-		/* setup the queue */
+		irn_bl = get_nodes_block(irn);
+
+		/* first check for a conflicting node which is 'living in' the irns block */
+		{
+			ir_node *n;
+			pset *live_ins = get_live_in(irn_bl);
+			for (n = pset_first(live_ins); n; n = pset_next(live_ins))
+				if (is_allocatable_irn(n) && n != trigger && pu_get_new_color(pu, n) == col && phi_ops_interfere(irn, n)) {
+					DBG((dbgphi, LEVEL_3, "\t\t\t\t\t ******************** %n %n\n", irn, n));
+					obstack_ptr_grow(&confl_ob, n);
+					pset_break(live_ins);
+					break;
+				}
+		}
+
+		/* setup the queue of blocks */
 		obstack_init(&q);
-		obstack_ptr_grow(&q, get_nodes_block(irn));
+		obstack_ptr_grow(&q, irn_bl);
 		in = 1;
 		out = 0;
 
@@ -308,9 +324,7 @@ static ir_node *_pu_color_irn(phi_unit_t *pu, ir_node *irn, int col, const ir_no
 			 * and interfere with the irn */
 			for (i = 0, max = get_irn_n_outs(curr_bl); i < max; ++i) {
 				ir_node *n = get_irn_out(curr_bl, i);
-				if (!is_allocatable_irn(n))
-					continue;
-				if (n != trigger && pu_get_new_color(pu, n) == col && phi_ops_interfere(irn, n))
+				if (is_allocatable_irn(n) && n != trigger && pu_get_new_color(pu, n) == col && phi_ops_interfere(irn, n))
 					obstack_ptr_grow(&confl_ob, n);
 			}
 
