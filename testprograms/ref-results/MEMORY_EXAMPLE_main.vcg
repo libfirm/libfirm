@@ -17,180 +17,214 @@ classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
 
-graph: { title: "g29" label: "MEMORY_EXAMPLE_main" status:clustered color:white
-graph: { title: "n78"  label: "Block 78" status:clustered color:yellow
-edge: {sourcename: "n78" targetname: "n79" label: "0" color: red}
-node: {title: "n77" label: "End  77" color: blue info1: "visited: 15
+graph: { title: "g27" label: "MEMORY_EXAMPLE_main" status:clustered color:white
+graph: { title: "n76"  label: "Block 76" status:clustered color:yellow
+edge: {sourcename: "n76" targetname: "n77" label: "0" color: red}
+node: {title: "n75" label: "End  75" color: blue info1: "visited: 15
 irg:     MEMORY_EXAMPLE_main
+arity: 1
 "}
 }
 
-graph: { title: "n80"  label: "Block 80" status:clustered color:yellow
-edge: {sourcename: "n80" targetname: "n81" label: "0" color: red}
-node: {title: "n79" label: "Return  79"  info1: "visited: 15
+graph: { title: "n78"  label: "Block 78" status:clustered color:yellow
+edge: {sourcename: "n78" targetname: "n79" label: "0" color: red}
+node: {title: "n77" label: "Return  77"  info1: "visited: 15
 irg:     MEMORY_EXAMPLE_main
+arity: 2
 return in method of type main
   res 0 type: int
 "}
-edge: {sourcename: "n79" targetname: "n115" label: "0" color: blue}
-edge: {sourcename: "n79" targetname: "n113" label: "1" }
-node: {title: "n115" label: "ProjM 0 115" color: yellow info1: "visited: 15
+edge: {sourcename: "n77" targetname: "n113" label: "0" color: blue}
+edge: {sourcename: "n77" targetname: "n111" label: "1" }
+node: {title: "n113" label: "ProjM 0 113" color: yellow info1: "visited: 15
 irg:     MEMORY_EXAMPLE_main
+arity: 1
 "}
-edge: {sourcename: "n115" targetname: "n114" label: "0" color: blue}
-node: {title: "n113" label: "ProjIu 2 113" color: yellow info1: "visited: 15
+edge: {sourcename: "n113" targetname: "n112" label: "0" color: blue}
+node: {title: "n111" label: "ProjIu 2 111" color: yellow info1: "visited: 15
 irg:     MEMORY_EXAMPLE_main
+arity: 1
 "}
-edge: {sourcename: "n113" targetname: "n114" label: "0" }
-node: {title: "n114" label: "Load  114"  info1: "visited: 15
+edge: {sourcename: "n111" targetname: "n112" label: "0" }
+node: {title: "n112" label: "Load  112"  info1: "visited: 15
 irg:     MEMORY_EXAMPLE_main
+arity: 2
 "}
-edge: {sourcename: "n114" targetname: "n97" label: "0" color: blue}
-edge: {sourcename: "n114" targetname: "n89" label: "1" }
+edge: {sourcename: "n112" targetname: "n95" label: "0" color: blue}
+edge: {sourcename: "n112" targetname: "n87" label: "1" }
 }
 
-graph: { title: "n82"  label: "Block 82" status:clustered color:yellow
-edge: {sourcename: "n82" targetname: "n112" label: "0" color: red}
-edge: {sourcename: "n82" targetname: "n83" label: "1" color: red}
-node: {title: "n81" label: "ProjX 1 81" color: yellow info1: "visited: 15
+graph: { title: "n80"  label: "Block 80" status:clustered color:yellow
+edge: {sourcename: "n80" targetname: "n110" label: "0" color: red}
+edge: {sourcename: "n80" targetname: "n81" label: "1" color: red}
+node: {title: "n79" label: "ProjX 1 79" color: yellow info1: "visited: 15
 irg:     MEMORY_EXAMPLE_main
+arity: 1
 "}
-edge: {sourcename: "n81" targetname: "n84" label: "0" color: red}
-node: {title: "n83" label: "ProjX 0 83" color: yellow info1: "visited: 15
+edge: {sourcename: "n79" targetname: "n82" label: "0" color: red}
+node: {title: "n81" label: "ProjX 0 81" color: yellow info1: "visited: 15
 irg:     MEMORY_EXAMPLE_main
+arity: 1
 "}
-edge: {sourcename: "n83" targetname: "n84" label: "0" color: red}
-node: {title: "n84" label: "Cond  84"  info1: "visited: 15
+edge: {sourcename: "n81" targetname: "n82" label: "0" color: red}
+node: {title: "n82" label: "Cond  82"  info1: "visited: 15
 irg:     MEMORY_EXAMPLE_main
+arity: 1
 "}
-edge: {sourcename: "n84" targetname: "n85" label: "0" }
-node: {title: "n85" label: "Projb Gt 85" color: yellow info1: "visited: 15
+edge: {sourcename: "n82" targetname: "n83" label: "0" }
+node: {title: "n83" label: "Projb Gt 83" color: yellow info1: "visited: 15
 irg:     MEMORY_EXAMPLE_main
+arity: 1
+"}
+edge: {sourcename: "n83" targetname: "n84" label: "0" }
+node: {title: "n84" label: "CmpT  84"  info1: "visited: 15
+irg:     MEMORY_EXAMPLE_main
+arity: 2
+"}
+edge: {sourcename: "n84" targetname: "n109" label: "0" }
+edge: {sourcename: "n84" targetname: "n85" label: "1" }
+node: {title: "n85" label: "ProjIu 2 85" color: yellow info1: "visited: 15
+irg:     MEMORY_EXAMPLE_main
+arity: 1
 "}
 edge: {sourcename: "n85" targetname: "n86" label: "0" }
-node: {title: "n86" label: "CmpT  86"  info1: "visited: 15
+node: {title: "n86" label: "Load  86"  info1: "visited: 15
 irg:     MEMORY_EXAMPLE_main
+arity: 2
 "}
-edge: {sourcename: "n86" targetname: "n111" label: "0" }
+edge: {sourcename: "n86" targetname: "n94" label: "0" color: blue}
 edge: {sourcename: "n86" targetname: "n87" label: "1" }
-node: {title: "n87" label: "ProjIu 2 87" color: yellow info1: "visited: 15
+node: {title: "n94" label: "PhiM  94" color: green info1: "visited: 15
 irg:     MEMORY_EXAMPLE_main
+arity: 2 backedges:
 "}
-edge: {sourcename: "n87" targetname: "n88" label: "0" }
-node: {title: "n88" label: "Load  88"  info1: "visited: 15
+edge: {sourcename: "n94" targetname: "n104" label: "0" color: blue}
+edge: {sourcename: "n94" targetname: "n95" label: "1" color: blue}
+node: {title: "n95" label: "ProjM 0 95" color: yellow info1: "visited: 15
 irg:     MEMORY_EXAMPLE_main
+arity: 1
 "}
-edge: {sourcename: "n88" targetname: "n96" label: "0" color: blue}
-edge: {sourcename: "n88" targetname: "n89" label: "1" }
-node: {title: "n96" label: "PhiM  96" color: green info1: "visited: 15
+edge: {sourcename: "n95" targetname: "n96" label: "0" color: blue}
+node: {title: "n96" label: "Store  96"  info1: "visited: 15
 irg:     MEMORY_EXAMPLE_main
+arity: 3
 "}
-edge: {sourcename: "n96" targetname: "n106" label: "0" color: blue}
-edge: {sourcename: "n96" targetname: "n97" label: "1" color: blue}
-node: {title: "n97" label: "ProjM 0 97" color: yellow info1: "visited: 15
+edge: {sourcename: "n96" targetname: "n98" label: "0" color: blue}
+edge: {sourcename: "n96" targetname: "n97" label: "1" }
+edge: {sourcename: "n96" targetname: "n85" label: "2" }
+node: {title: "n98" label: "ProjM 0 98" color: yellow info1: "visited: 15
 irg:     MEMORY_EXAMPLE_main
+arity: 1
 "}
-edge: {sourcename: "n97" targetname: "n98" label: "0" color: blue}
-node: {title: "n98" label: "Store  98"  info1: "visited: 15
+edge: {sourcename: "n98" targetname: "n99" label: "0" color: blue}
+node: {title: "n99" label: "Store  99"  info1: "visited: 15
 irg:     MEMORY_EXAMPLE_main
+arity: 3
 "}
-edge: {sourcename: "n98" targetname: "n100" label: "0" color: blue}
-edge: {sourcename: "n98" targetname: "n99" label: "1" }
-edge: {sourcename: "n98" targetname: "n87" label: "2" }
-node: {title: "n100" label: "ProjM 0 100" color: yellow info1: "visited: 15
+edge: {sourcename: "n99" targetname: "n103" label: "0" color: blue}
+edge: {sourcename: "n99" targetname: "n87" label: "1" }
+edge: {sourcename: "n99" targetname: "n100" label: "2" }
+node: {title: "n103" label: "ProjM 0 103" color: yellow info1: "visited: 15
 irg:     MEMORY_EXAMPLE_main
+arity: 1
 "}
-edge: {sourcename: "n100" targetname: "n101" label: "0" color: blue}
-node: {title: "n101" label: "Store  101"  info1: "visited: 15
+edge: {sourcename: "n103" targetname: "n101" label: "0" color: blue}
+node: {title: "n100" label: "ProjIu 2 100" color: yellow info1: "visited: 15
 irg:     MEMORY_EXAMPLE_main
+arity: 1
 "}
-edge: {sourcename: "n101" targetname: "n105" label: "0" color: blue}
-edge: {sourcename: "n101" targetname: "n89" label: "1" }
-edge: {sourcename: "n101" targetname: "n102" label: "2" }
-node: {title: "n105" label: "ProjM 0 105" color: yellow info1: "visited: 15
+edge: {sourcename: "n100" targetname: "n101" label: "0" }
+node: {title: "n101" label: "Load  101"  info1: "visited: 15
 irg:     MEMORY_EXAMPLE_main
+arity: 2
 "}
-edge: {sourcename: "n105" targetname: "n103" label: "0" color: blue}
-node: {title: "n102" label: "ProjIu 2 102" color: yellow info1: "visited: 15
+edge: {sourcename: "n101" targetname: "n102" label: "0" color: blue}
+edge: {sourcename: "n101" targetname: "n97" label: "1" }
+node: {title: "n102" label: "ProjM 0 102" color: yellow info1: "visited: 15
 irg:     MEMORY_EXAMPLE_main
+arity: 1
 "}
-edge: {sourcename: "n102" targetname: "n103" label: "0" }
-node: {title: "n103" label: "Load  103"  info1: "visited: 15
+edge: {sourcename: "n102" targetname: "n86" label: "0" color: blue}
+}
+
+graph: { title: "n88"  label: "Block 88" status:clustered color:yellow
+edge: {sourcename: "n88" targetname: "n89" label: "0" color: red}
+node: {title: "n110" label: "Jmp  110"  info1: "visited: 15
 irg:     MEMORY_EXAMPLE_main
+arity: 0
 "}
-edge: {sourcename: "n103" targetname: "n104" label: "0" color: blue}
-edge: {sourcename: "n103" targetname: "n99" label: "1" }
 node: {title: "n104" label: "ProjM 0 104" color: yellow info1: "visited: 15
 irg:     MEMORY_EXAMPLE_main
+arity: 1
 "}
-edge: {sourcename: "n104" targetname: "n88" label: "0" color: blue}
+edge: {sourcename: "n104" targetname: "n105" label: "0" color: blue}
+node: {title: "n105" label: "Store  105"  info1: "visited: 15
+irg:     MEMORY_EXAMPLE_main
+arity: 3
+"}
+edge: {sourcename: "n105" targetname: "n107" label: "0" color: blue}
+edge: {sourcename: "n105" targetname: "n97" label: "1" }
+edge: {sourcename: "n105" targetname: "n106" label: "2" }
+node: {title: "n107" label: "ProjM 0 107" color: yellow info1: "visited: 15
+irg:     MEMORY_EXAMPLE_main
+arity: 1
+"}
+edge: {sourcename: "n107" targetname: "n108" label: "0" color: blue}
+node: {title: "n108" label: "Store  108"  info1: "visited: 15
+irg:     MEMORY_EXAMPLE_main
+arity: 3
+"}
+edge: {sourcename: "n108" targetname: "n93" label: "0" color: blue}
+edge: {sourcename: "n108" targetname: "n87" label: "1" }
+edge: {sourcename: "n108" targetname: "n109" label: "2" }
+node: {title: "n97" label: "Sel VAR_B 97"  info1: "visited: 15
+irg:     MEMORY_EXAMPLE_main
+arity: 2
+Selecting entity of type int
+  from entity of type GlobalType
+"}
+edge: {sourcename: "n97" targetname: "n93" label: "0" color: blue}
+edge: {sourcename: "n97" targetname: "n92" label: "1" }
+node: {title: "n87" label: "Sel VAR_A 87"  info1: "visited: 15
+irg:     MEMORY_EXAMPLE_main
+arity: 2
+Selecting entity of type int
+  from entity of type GlobalType
+"}
+edge: {sourcename: "n87" targetname: "n93" label: "0" color: blue}
+edge: {sourcename: "n87" targetname: "n92" label: "1" }
 }
 
 graph: { title: "n90"  label: "Block 90" status:clustered color:yellow
-edge: {sourcename: "n90" targetname: "n91" label: "0" color: red}
-node: {title: "n112" label: "Jmp  112"  info1: "visited: 15
+edge: {sourcename: "n90" targetname: "n89" label: "0" color: red}
+node: {title: "n109" label: "0x0Iu  109" color: yellow info1: "visited: 15
 irg:     MEMORY_EXAMPLE_main
-"}
-node: {title: "n106" label: "ProjM 0 106" color: yellow info1: "visited: 15
-irg:     MEMORY_EXAMPLE_main
-"}
-edge: {sourcename: "n106" targetname: "n107" label: "0" color: blue}
-node: {title: "n107" label: "Store  107"  info1: "visited: 15
-irg:     MEMORY_EXAMPLE_main
-"}
-edge: {sourcename: "n107" targetname: "n109" label: "0" color: blue}
-edge: {sourcename: "n107" targetname: "n99" label: "1" }
-edge: {sourcename: "n107" targetname: "n108" label: "2" }
-node: {title: "n109" label: "ProjM 0 109" color: yellow info1: "visited: 15
-irg:     MEMORY_EXAMPLE_main
-"}
-edge: {sourcename: "n109" targetname: "n110" label: "0" color: blue}
-node: {title: "n110" label: "Store  110"  info1: "visited: 15
-irg:     MEMORY_EXAMPLE_main
-"}
-edge: {sourcename: "n110" targetname: "n95" label: "0" color: blue}
-edge: {sourcename: "n110" targetname: "n89" label: "1" }
-edge: {sourcename: "n110" targetname: "n111" label: "2" }
-node: {title: "n99" label: "Sel VAR_B 99"  info1: "visited: 15
-irg:     MEMORY_EXAMPLE_main
-Selecting entity of type int
-  from entity of type GlobalType
-"}
-edge: {sourcename: "n99" targetname: "n95" label: "0" color: blue}
-edge: {sourcename: "n99" targetname: "n94" label: "1" }
-node: {title: "n89" label: "Sel VAR_A 89"  info1: "visited: 15
-irg:     MEMORY_EXAMPLE_main
-Selecting entity of type int
-  from entity of type GlobalType
-"}
-edge: {sourcename: "n89" targetname: "n95" label: "0" color: blue}
-edge: {sourcename: "n89" targetname: "n94" label: "1" }
-}
-
-graph: { title: "n92"  label: "Block 92" status:clustered color:yellow
-edge: {sourcename: "n92" targetname: "n91" label: "0" color: red}
-node: {title: "n111" label: "0x0Iu  111" color: yellow info1: "visited: 15
-irg:     MEMORY_EXAMPLE_main
+arity: 0
 Const of type type_unknown
 "}
-node: {title: "n108" label: "0x1Iu  108" color: yellow info1: "visited: 15
+node: {title: "n106" label: "0x1Iu  106" color: yellow info1: "visited: 15
 irg:     MEMORY_EXAMPLE_main
+arity: 0
 Const of type type_unknown
 "}
-node: {title: "n95" label: "ProjM 1 95" color: yellow info1: "visited: 15
+node: {title: "n93" label: "ProjM 1 93" color: yellow info1: "visited: 15
 irg:     MEMORY_EXAMPLE_main
+arity: 1
 "}
-edge: {sourcename: "n95" targetname: "n93" label: "0" color: blue}
-node: {title: "n94" label: "ProjP 3 94" color: yellow info1: "visited: 15
+edge: {sourcename: "n93" targetname: "n91" label: "0" color: blue}
+node: {title: "n92" label: "ProjP 3 92" color: yellow info1: "visited: 15
 irg:     MEMORY_EXAMPLE_main
+arity: 1
 "}
-edge: {sourcename: "n94" targetname: "n93" label: "0" }
-node: {title: "n91" label: "ProjX 0 91" color: yellow info1: "visited: 15
+edge: {sourcename: "n92" targetname: "n91" label: "0" }
+node: {title: "n89" label: "ProjX 0 89" color: yellow info1: "visited: 15
 irg:     MEMORY_EXAMPLE_main
+arity: 1
 "}
-edge: {sourcename: "n91" targetname: "n93" label: "0" color: red}
-node: {title: "n93" label: "Start  93" color: blue info1: "visited: 15
+edge: {sourcename: "n89" targetname: "n91" label: "0" color: red}
+node: {title: "n91" label: "Start  91" color: blue info1: "visited: 15
 irg:     MEMORY_EXAMPLE_main
+arity: 0
 start of method of type main
 "}
 }

@@ -18,23 +18,23 @@
 # include "firm.h"
 
 /**
-*  This file constructs a control flow of following shape:
-*
-*
-*         firstBlock
-*          /      \
-*         /        \
-*       |/_        _\|
-*            ---->
-* LoopBlock1       LoopBlock2
-*            <----
-*        \              /
-* 	    \            /
-* 	    _\|        |/_
-*           nextBlock
-*
-*
-**/
+ *  This file constructs a control flow of following shape:
+ *
+ *
+ *         firstBlock
+ *          /      \
+ *         /        \
+ *       |/_        _\|
+ *            ---->
+ * LoopBlock1       LoopBlock2
+ *            <----
+ *        \              /
+ *         \            /
+ * 	   _\|        |/_
+ *           nextBlock
+ *
+ *
+ **/
 
 int main(int argc, char **argv)
 {

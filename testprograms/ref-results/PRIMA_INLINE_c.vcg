@@ -17,87 +17,102 @@ classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
 
-graph: { title: "g94" label: "PRIMA_INLINE_c" status:clustered color:white
-graph: { title: "n248"  label: "Block 248" status:clustered color:yellow
-edge: {sourcename: "n248" targetname: "n250" label: "0" color: red}
-edge: {sourcename: "n248" targetname: "n249" label: "1" color: red}
-node: {title: "n252" label: "PhiM  252" color: green info1: "visited: 21
+graph: { title: "g90" label: "PRIMA_INLINE_c" status:clustered color:white
+graph: { title: "n242"  label: "Block 242" status:clustered color:yellow
+edge: {sourcename: "n242" targetname: "n244" label: "0" color: red}
+edge: {sourcename: "n242" targetname: "n243" label: "1" color: red}
+node: {title: "n246" label: "PhiM  246" color: green info1: "visited: 21
 irg:     PRIMA_INLINE_c
+arity: 2 backedges:
 "}
-edge: {sourcename: "n252" targetname: "n261" label: "0" color: blue}
-edge: {sourcename: "n252" targetname: "n253" label: "1" color: blue}
-node: {title: "n253" label: "Store  253"  info1: "visited: 21
+edge: {sourcename: "n246" targetname: "n255" label: "0" color: blue}
+edge: {sourcename: "n246" targetname: "n247" label: "1" color: blue}
+node: {title: "n247" label: "Store  247"  info1: "visited: 21
 irg:     PRIMA_INLINE_c
+arity: 3
 "}
-edge: {sourcename: "n253" targetname: "n252" label: "0" color: blue}
-edge: {sourcename: "n253" targetname: "n259" label: "1" }
-edge: {sourcename: "n253" targetname: "n254" label: "2" }
-node: {title: "n259" label: "Sel a 259"  info1: "visited: 21
+edge: {sourcename: "n247" targetname: "n246" label: "0" color: blue}
+edge: {sourcename: "n247" targetname: "n253" label: "1" }
+edge: {sourcename: "n247" targetname: "n248" label: "2" }
+node: {title: "n253" label: "Sel a 253"  info1: "visited: 21
 irg:     PRIMA_INLINE_c
+arity: 2
 Selecting entity of type int
   from entity of type PRIMA_INLINE
 "}
-edge: {sourcename: "n259" targetname: "n252" label: "0" color: blue}
-edge: {sourcename: "n259" targetname: "n260" label: "1" }
-node: {title: "n254" label: "PhiIs  254" color: green info1: "visited: 21
+edge: {sourcename: "n253" targetname: "n246" label: "0" color: blue}
+edge: {sourcename: "n253" targetname: "n254" label: "1" }
+node: {title: "n248" label: "PhiIs  248" color: green info1: "visited: 21
 irg:     PRIMA_INLINE_c
+arity: 2 backedges:
 "}
-edge: {sourcename: "n254" targetname: "n257" label: "0" }
-edge: {sourcename: "n254" targetname: "n255" label: "1" }
-node: {title: "n255" label: "PhiIs  255" color: green info1: "visited: 21
+edge: {sourcename: "n248" targetname: "n251" label: "0" }
+edge: {sourcename: "n248" targetname: "n249" label: "1" }
+node: {title: "n249" label: "PhiIs  249" color: green info1: "visited: 21
 irg:     PRIMA_INLINE_c
+arity: 2 backedges:
 "}
-edge: {sourcename: "n255" targetname: "n256" label: "0" }
-edge: {sourcename: "n255" targetname: "n254" label: "1" }
-node: {title: "n249" label: "Jmp  249"  info1: "visited: 21
+edge: {sourcename: "n249" targetname: "n250" label: "0" }
+edge: {sourcename: "n249" targetname: "n248" label: "1" }
+node: {title: "n243" label: "Jmp  243"  info1: "visited: 21
 irg:     PRIMA_INLINE_c
-"}
-}
-
-graph: { title: "n251"  label: "Block 251" status:clustered color:yellow
-edge: {sourcename: "n251" targetname: "n246" label: "0" color: red}
-node: {title: "n260" label: "ProjP 0 260" color: yellow info1: "visited: 21
-irg:     PRIMA_INLINE_c
-"}
-edge: {sourcename: "n260" targetname: "n258" label: "0" }
-node: {title: "n257" label: "ProjIs 1 257" color: yellow info1: "visited: 21
-irg:     PRIMA_INLINE_c
-"}
-edge: {sourcename: "n257" targetname: "n258" label: "0" }
-node: {title: "n250" label: "Jmp  250"  info1: "visited: 21
-irg:     PRIMA_INLINE_c
+arity: 0
 "}
 }
 
 graph: { title: "n245"  label: "Block 245" status:clustered color:yellow
-edge: {sourcename: "n245" targetname: "n246" label: "0" color: red}
-node: {title: "n261" label: "ProjM 1 261" color: yellow info1: "visited: 21
+edge: {sourcename: "n245" targetname: "n240" label: "0" color: red}
+node: {title: "n254" label: "ProjP 0 254" color: yellow info1: "visited: 21
 irg:     PRIMA_INLINE_c
+arity: 1
 "}
-edge: {sourcename: "n261" targetname: "n247" label: "0" color: blue}
-node: {title: "n258" label: "ProjT 4 258" color: yellow info1: "visited: 21
+edge: {sourcename: "n254" targetname: "n252" label: "0" }
+node: {title: "n251" label: "ProjIs 1 251" color: yellow info1: "visited: 21
 irg:     PRIMA_INLINE_c
+arity: 1
 "}
-edge: {sourcename: "n258" targetname: "n247" label: "0" }
-node: {title: "n256" label: "0x0Is  256" color: yellow info1: "visited: 21
+edge: {sourcename: "n251" targetname: "n252" label: "0" }
+node: {title: "n244" label: "Jmp  244"  info1: "visited: 21
 irg:     PRIMA_INLINE_c
+arity: 0
+"}
+}
+
+graph: { title: "n239"  label: "Block 239" status:clustered color:yellow
+edge: {sourcename: "n239" targetname: "n240" label: "0" color: red}
+node: {title: "n255" label: "ProjM 1 255" color: yellow info1: "visited: 21
+irg:     PRIMA_INLINE_c
+arity: 1
+"}
+edge: {sourcename: "n255" targetname: "n241" label: "0" color: blue}
+node: {title: "n252" label: "ProjT 4 252" color: yellow info1: "visited: 21
+irg:     PRIMA_INLINE_c
+arity: 1
+"}
+edge: {sourcename: "n252" targetname: "n241" label: "0" }
+node: {title: "n250" label: "0x0Is  250" color: yellow info1: "visited: 21
+irg:     PRIMA_INLINE_c
+arity: 0
 Const of type type_unknown
 "}
-node: {title: "n246" label: "ProjX 0 246" color: yellow info1: "visited: 21
+node: {title: "n240" label: "ProjX 0 240" color: yellow info1: "visited: 21
 irg:     PRIMA_INLINE_c
+arity: 1
 "}
-edge: {sourcename: "n246" targetname: "n247" label: "0" color: red}
-node: {title: "n247" label: "Start  247" color: blue info1: "visited: 21
+edge: {sourcename: "n240" targetname: "n241" label: "0" color: red}
+node: {title: "n241" label: "Start  241" color: blue info1: "visited: 21
 irg:     PRIMA_INLINE_c
+arity: 0
 start of method of type c
   param 0 type: class_prima_ptr
   param 1 type: int
 "}
 }
 
-graph: { title: "n243"  label: "Block 243" status:clustered color:yellow
-node: {title: "n242" label: "End  242" color: blue info1: "visited: 21
+graph: { title: "n237"  label: "Block 237" status:clustered color:yellow
+node: {title: "n236" label: "End  236" color: blue info1: "visited: 21
 irg:     PRIMA_INLINE_c
+arity: 2
 "}
 }
 

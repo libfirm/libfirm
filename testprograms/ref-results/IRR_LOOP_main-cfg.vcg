@@ -17,22 +17,23 @@ classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
 
+node: {title: "n60" label: "Block n60" }
+edge: { sourcename: "n60" targetname: "n62"}
 node: {title: "n62" label: "Block n62" }
+edge: { sourcename: "n62" targetname: "n66"}
 edge: { sourcename: "n62" targetname: "n64"}
 node: {title: "n64" label: "Block n64" }
-edge: { sourcename: "n64" targetname: "n68"}
+edge: { sourcename: "n64" targetname: "n77"}
 edge: { sourcename: "n64" targetname: "n66"}
 node: {title: "n66" label: "Block n66" }
-edge: { sourcename: "n66" targetname: "n79"}
-edge: { sourcename: "n66" targetname: "n68"}
-node: {title: "n68" label: "Block n68" }
-edge: { sourcename: "n68" targetname: "n79"}
-edge: { sourcename: "n68" targetname: "n66"}
-node: {title: "n79" label: "Block n79" }
-edge: { sourcename: "n79" targetname: "n74"}
-node: {title: "n74" label: "Block n74" }
-edge: { sourcename: "n74" targetname: "n74"}
-node: {title: "n96" label: "Bad  96"  info1: "visited: 0
+edge: { sourcename: "n66" targetname: "n77"}
+edge: { sourcename: "n66" targetname: "n64"}
+node: {title: "n77" label: "Block n77" }
+edge: { sourcename: "n77" targetname: "n72"}
+node: {title: "n72" label: "Block n72" }
+edge: { sourcename: "n72" targetname: "n72"}
+node: {title: "n94" label: "Bad  94"  info1: "visited: 0
 irg:     IRR_LOOP_main
+arity: 0
 "}
 }

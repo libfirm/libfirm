@@ -17,41 +17,47 @@ classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
 
-graph: { title: "g28" label: "FLOAT_EXAMPLE_main" status:clustered color:white
-graph: { title: "n17"  label: "Block 17" status:clustered color:yellow
-edge: {sourcename: "n17" targetname: "n32" label: "0" color: red}
-node: {title: "n18" label: "End  18" color: blue info1: "visited: 4
+graph: { title: "g26" label: "FLOAT_EXAMPLE_main" status:clustered color:white
+graph: { title: "n16"  label: "Block 16" status:clustered color:yellow
+edge: {sourcename: "n16" targetname: "n30" label: "0" color: red}
+node: {title: "n17" label: "End  17" color: blue info1: "visited: 4
 irg:     FLOAT_EXAMPLE_main
+arity: 0
 "}
 }
 
-graph: { title: "n29"  label: "Block 29" status:clustered color:yellow
-edge: {sourcename: "n29" targetname: "n23" label: "0" color: red}
-node: {title: "n32" label: "Return  32"  info1: "visited: 4
+graph: { title: "n27"  label: "Block 27" status:clustered color:yellow
+edge: {sourcename: "n27" targetname: "n21" label: "0" color: red}
+node: {title: "n30" label: "Return  30"  info1: "visited: 4
 irg:     FLOAT_EXAMPLE_main
+arity: 2
 return in method of type FLOAT_EXAMPLE_main
   res 0 type: dbl
 "}
-edge: {sourcename: "n32" targetname: "n24" label: "0" color: blue}
-edge: {sourcename: "n32" targetname: "n30" label: "1" }
+edge: {sourcename: "n30" targetname: "n22" label: "0" color: blue}
+edge: {sourcename: "n30" targetname: "n28" label: "1" }
 }
 
-graph: { title: "n19"  label: "Block 19" status:clustered color:yellow
-edge: {sourcename: "n19" targetname: "n23" label: "0" color: red}
-node: {title: "n24" label: "ProjM 1 24" color: yellow info1: "visited: 4
+graph: { title: "n18"  label: "Block 18" status:clustered color:yellow
+edge: {sourcename: "n18" targetname: "n21" label: "0" color: red}
+node: {title: "n22" label: "ProjM 1 22" color: yellow info1: "visited: 4
 irg:     FLOAT_EXAMPLE_main
+arity: 1
 "}
-edge: {sourcename: "n24" targetname: "n20" label: "0" color: blue}
-node: {title: "n30" label: "1.234567890123456716800000000000E+19D  30" color: yellow info1: "visited: 4
+edge: {sourcename: "n22" targetname: "n19" label: "0" color: blue}
+node: {title: "n28" label: "1.234567890123456716800000000000E+19D  28" color: yellow info1: "visited: 4
 irg:     FLOAT_EXAMPLE_main
+arity: 0
 Const of type type_unknown
 "}
-node: {title: "n23" label: "ProjX 0 23" color: yellow info1: "visited: 4
+node: {title: "n21" label: "ProjX 0 21" color: yellow info1: "visited: 4
 irg:     FLOAT_EXAMPLE_main
+arity: 1
 "}
-edge: {sourcename: "n23" targetname: "n20" label: "0" color: red}
-node: {title: "n20" label: "Start  20" color: blue info1: "visited: 4
+edge: {sourcename: "n21" targetname: "n19" label: "0" color: red}
+node: {title: "n19" label: "Start  19" color: blue info1: "visited: 4
 irg:     FLOAT_EXAMPLE_main
+arity: 0
 start of method of type FLOAT_EXAMPLE_main
 "}
 }

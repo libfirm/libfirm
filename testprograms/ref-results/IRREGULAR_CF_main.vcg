@@ -17,120 +17,141 @@ classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
 
-graph: { title: "g28" label: "IRREGULAR_CF_main" status:clustered color:white
-graph: { title: "n65"  label: "Block 65" status:clustered color:yellow
-edge: {sourcename: "n65" targetname: "n66" label: "0" color: red}
-node: {title: "n64" label: "End  64" color: blue info1: "visited: 5
+graph: { title: "g26" label: "IRREGULAR_CF_main" status:clustered color:white
+graph: { title: "n63"  label: "Block 63" status:clustered color:yellow
+edge: {sourcename: "n63" targetname: "n64" label: "0" color: red}
+node: {title: "n62" label: "End  62" color: blue info1: "visited: 5
 irg:     IRREGULAR_CF_main
+arity: 0
+"}
+}
+
+graph: { title: "n65"  label: "Block 65" status:clustered color:yellow
+edge: {sourcename: "n65" targetname: "n87" label: "0" color: red}
+edge: {sourcename: "n65" targetname: "n66" label: "1" color: red}
+node: {title: "n64" label: "Return  64"  info1: "visited: 5
+irg:     IRREGULAR_CF_main
+arity: 1
+return in method of type main
+"}
+edge: {sourcename: "n64" targetname: "n90" label: "0" color: blue}
+}
+
+graph: { title: "n88"  label: "Block 88" status:clustered color:yellow
+edge: {sourcename: "n88" targetname: "n89" label: "0" color: red}
+node: {title: "n87" label: "Jmp  87"  info1: "visited: 5
+irg:     IRREGULAR_CF_main
+arity: 0
 "}
 }
 
 graph: { title: "n67"  label: "Block 67" status:clustered color:yellow
-edge: {sourcename: "n67" targetname: "n89" label: "0" color: red}
+edge: {sourcename: "n67" targetname: "n80" label: "0" color: red}
 edge: {sourcename: "n67" targetname: "n68" label: "1" color: red}
-node: {title: "n66" label: "Return  66"  info1: "visited: 5
+node: {title: "n66" label: "Jmp  66"  info1: "visited: 5
 irg:     IRREGULAR_CF_main
-return in method of type main
+arity: 0
 "}
-edge: {sourcename: "n66" targetname: "n92" label: "0" color: blue}
 }
 
-graph: { title: "n90"  label: "Block 90" status:clustered color:yellow
-edge: {sourcename: "n90" targetname: "n91" label: "0" color: red}
-node: {title: "n89" label: "Jmp  89"  info1: "visited: 5
+graph: { title: "n81"  label: "Block 81" status:clustered color:yellow
+edge: {sourcename: "n81" targetname: "n82" label: "0" color: red}
+node: {title: "n89" label: "ProjX 0 89" color: yellow info1: "visited: 5
 irg:     IRREGULAR_CF_main
+arity: 1
 "}
+edge: {sourcename: "n89" targetname: "n83" label: "0" color: red}
+node: {title: "n80" label: "ProjX 1 80" color: yellow info1: "visited: 5
+irg:     IRREGULAR_CF_main
+arity: 1
+"}
+edge: {sourcename: "n80" targetname: "n83" label: "0" color: red}
+node: {title: "n83" label: "Cond  83"  info1: "visited: 5
+irg:     IRREGULAR_CF_main
+arity: 1
+"}
+edge: {sourcename: "n83" targetname: "n84" label: "0" }
+node: {title: "n84" label: "Projb Eq 84" color: yellow info1: "visited: 5
+irg:     IRREGULAR_CF_main
+arity: 1
+"}
+edge: {sourcename: "n84" targetname: "n85" label: "0" }
+node: {title: "n85" label: "CmpT  85"  info1: "visited: 5
+irg:     IRREGULAR_CF_main
+arity: 2
+"}
+edge: {sourcename: "n85" targetname: "n79" label: "0" }
+edge: {sourcename: "n85" targetname: "n86" label: "1" }
 }
 
 graph: { title: "n69"  label: "Block 69" status:clustered color:yellow
-edge: {sourcename: "n69" targetname: "n82" label: "0" color: red}
-edge: {sourcename: "n69" targetname: "n70" label: "1" color: red}
+edge: {sourcename: "n69" targetname: "n70" label: "0" color: red}
 node: {title: "n68" label: "Jmp  68"  info1: "visited: 5
 irg:     IRREGULAR_CF_main
+arity: 0
 "}
-}
-
-graph: { title: "n83"  label: "Block 83" status:clustered color:yellow
-edge: {sourcename: "n83" targetname: "n84" label: "0" color: red}
-node: {title: "n91" label: "ProjX 0 91" color: yellow info1: "visited: 5
-irg:     IRREGULAR_CF_main
-"}
-edge: {sourcename: "n91" targetname: "n85" label: "0" color: red}
-node: {title: "n82" label: "ProjX 1 82" color: yellow info1: "visited: 5
-irg:     IRREGULAR_CF_main
-"}
-edge: {sourcename: "n82" targetname: "n85" label: "0" color: red}
-node: {title: "n85" label: "Cond  85"  info1: "visited: 5
-irg:     IRREGULAR_CF_main
-"}
-edge: {sourcename: "n85" targetname: "n86" label: "0" }
-node: {title: "n86" label: "Projb Eq 86" color: yellow info1: "visited: 5
-irg:     IRREGULAR_CF_main
-"}
-edge: {sourcename: "n86" targetname: "n87" label: "0" }
-node: {title: "n87" label: "CmpT  87"  info1: "visited: 5
-irg:     IRREGULAR_CF_main
-"}
-edge: {sourcename: "n87" targetname: "n81" label: "0" }
-edge: {sourcename: "n87" targetname: "n88" label: "1" }
 }
 
 graph: { title: "n71"  label: "Block 71" status:clustered color:yellow
 edge: {sourcename: "n71" targetname: "n72" label: "0" color: red}
-node: {title: "n70" label: "Jmp  70"  info1: "visited: 5
+node: {title: "n82" label: "ProjX 0 82" color: yellow info1: "visited: 5
 irg:     IRREGULAR_CF_main
+arity: 1
 "}
+edge: {sourcename: "n82" targetname: "n75" label: "0" color: red}
+node: {title: "n70" label: "ProjX 1 70" color: yellow info1: "visited: 5
+irg:     IRREGULAR_CF_main
+arity: 1
+"}
+edge: {sourcename: "n70" targetname: "n75" label: "0" color: red}
+node: {title: "n75" label: "Cond  75"  info1: "visited: 5
+irg:     IRREGULAR_CF_main
+arity: 1
+"}
+edge: {sourcename: "n75" targetname: "n76" label: "0" }
+node: {title: "n76" label: "Projb Eq 76" color: yellow info1: "visited: 5
+irg:     IRREGULAR_CF_main
+arity: 1
+"}
+edge: {sourcename: "n76" targetname: "n77" label: "0" }
+node: {title: "n77" label: "CmpT  77"  info1: "visited: 5
+irg:     IRREGULAR_CF_main
+arity: 2
+"}
+edge: {sourcename: "n77" targetname: "n79" label: "0" }
+edge: {sourcename: "n77" targetname: "n78" label: "1" }
 }
 
 graph: { title: "n73"  label: "Block 73" status:clustered color:yellow
-edge: {sourcename: "n73" targetname: "n74" label: "0" color: red}
-node: {title: "n84" label: "ProjX 0 84" color: yellow info1: "visited: 5
+edge: {sourcename: "n73" targetname: "n72" label: "0" color: red}
+node: {title: "n90" label: "ProjM 1 90" color: yellow info1: "visited: 5
 irg:     IRREGULAR_CF_main
+arity: 1
 "}
-edge: {sourcename: "n84" targetname: "n77" label: "0" color: red}
-node: {title: "n72" label: "ProjX 1 72" color: yellow info1: "visited: 5
+edge: {sourcename: "n90" targetname: "n74" label: "0" color: blue}
+node: {title: "n86" label: "0x2Is  86" color: yellow info1: "visited: 5
 irg:     IRREGULAR_CF_main
-"}
-edge: {sourcename: "n72" targetname: "n77" label: "0" color: red}
-node: {title: "n77" label: "Cond  77"  info1: "visited: 5
-irg:     IRREGULAR_CF_main
-"}
-edge: {sourcename: "n77" targetname: "n78" label: "0" }
-node: {title: "n78" label: "Projb Eq 78" color: yellow info1: "visited: 5
-irg:     IRREGULAR_CF_main
-"}
-edge: {sourcename: "n78" targetname: "n79" label: "0" }
-node: {title: "n79" label: "CmpT  79"  info1: "visited: 5
-irg:     IRREGULAR_CF_main
-"}
-edge: {sourcename: "n79" targetname: "n81" label: "0" }
-edge: {sourcename: "n79" targetname: "n80" label: "1" }
-}
-
-graph: { title: "n75"  label: "Block 75" status:clustered color:yellow
-edge: {sourcename: "n75" targetname: "n74" label: "0" color: red}
-node: {title: "n92" label: "ProjM 1 92" color: yellow info1: "visited: 5
-irg:     IRREGULAR_CF_main
-"}
-edge: {sourcename: "n92" targetname: "n76" label: "0" color: blue}
-node: {title: "n88" label: "0x2Is  88" color: yellow info1: "visited: 5
-irg:     IRREGULAR_CF_main
+arity: 0
 Const of type type_unknown
 "}
-node: {title: "n81" label: "0x0Is  81" color: yellow info1: "visited: 5
+node: {title: "n79" label: "0x0Is  79" color: yellow info1: "visited: 5
 irg:     IRREGULAR_CF_main
+arity: 0
 Const of type type_unknown
 "}
-node: {title: "n80" label: "0x1Is  80" color: yellow info1: "visited: 5
+node: {title: "n78" label: "0x1Is  78" color: yellow info1: "visited: 5
 irg:     IRREGULAR_CF_main
+arity: 0
 Const of type type_unknown
 "}
-node: {title: "n74" label: "ProjX 0 74" color: yellow info1: "visited: 5
+node: {title: "n72" label: "ProjX 0 72" color: yellow info1: "visited: 5
 irg:     IRREGULAR_CF_main
+arity: 1
 "}
-edge: {sourcename: "n74" targetname: "n76" label: "0" color: red}
-node: {title: "n76" label: "Start  76" color: blue info1: "visited: 5
+edge: {sourcename: "n72" targetname: "n74" label: "0" color: red}
+node: {title: "n74" label: "Start  74" color: blue info1: "visited: 5
 irg:     IRREGULAR_CF_main
+arity: 0
 start of method of type main
 "}
 }

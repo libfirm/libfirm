@@ -17,301 +17,356 @@ classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
 
-node: {title: "n112" label: "Block  112" color: lightyellow info1: "visited: 33
+node: {title: "n108" label: "Block  108" color: lightyellow info1: "visited: 33
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
+arity: 1 backedges:
 "}
-edge: {sourcename: "n112" targetname: "n111" label: "0" color: red}
-node: {title: "n113" label: "Start GlobalType_OO_PROGRAM_EXAMPLE_main  113" color: blue info1: "visited: 33
+edge: {sourcename: "n108" targetname: "n107" label: "0" color: red}
+node: {title: "n109" label: "Start GlobalType_OO_PROGRAM_EXAMPLE_main  109" color: blue info1: "visited: 33
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
+arity: 0
 start of method of type OO_PROGRAM_EXAMPLE_main
 "}
-edge: { sourcename: "n113" targetname: "n112" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n111" label: "ProjX 0 111" color: yellow info1: "visited: 33
+edge: { sourcename: "n109" targetname: "n108" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n107" label: "ProjX 0 107" color: yellow info1: "visited: 33
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
+arity: 1
 "}
-edge: {sourcename: "n111" targetname: "n113" label: "0" color: red}
-edge: { sourcename: "n111" targetname: "n112" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n189" label: "Block  189" color: lightyellow info1: "visited: 33
+edge: {sourcename: "n107" targetname: "n109" label: "0" color: red}
+edge: { sourcename: "n107" targetname: "n108" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n182" label: "Block  182" color: lightyellow info1: "visited: 33
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
+arity: 1 backedges:
 "}
-edge: {sourcename: "n189" targetname: "n111" label: "0" color: red}
-node: {title: "n191" label: "CallBegin  191"  info1: "visited: 33
+edge: {sourcename: "n182" targetname: "n107" label: "0" color: red}
+node: {title: "n184" label: "CallBegin  184"  info1: "visited: 33
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
+arity: 1
 possible callees:
   0: PRIMA_set_a
 "}
-node: {title: "n191n173" label: "&(PRIMA_set_a)P  173" color: yellow info1: "visited: 33
+node: {title: "n184n166" label: "&(PRIMA_set_a)P  166" color: yellow info1: "visited: 33
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
+arity: 0
 Const of type type_unknown
 "}
-edge: {sourcename: "n191" targetname: "n191n173" label: "0" }
-edge: { sourcename: "n191" targetname: "n189" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n193" label: "ProjX 0 193" color: yellow info1: "visited: 33
+edge: {sourcename: "n184" targetname: "n184n166" label: "0" }
+edge: { sourcename: "n184" targetname: "n182" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n186" label: "ProjX 0 186" color: yellow info1: "visited: 33
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
+arity: 1
 "}
-edge: {sourcename: "n193" targetname: "n191" label: "0" color: red}
-edge: { sourcename: "n193" targetname: "n189" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n139" label: "Block  139" color: lightyellow info1: "visited: 33
+edge: {sourcename: "n186" targetname: "n184" label: "0" color: red}
+edge: { sourcename: "n186" targetname: "n182" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n134" label: "Block  134" color: lightyellow info1: "visited: 33
 irg:     PRIMA_set_a
+arity: 1 backedges:
 "}
-edge: {sourcename: "n139" targetname: "n193" label: "0" color: red}
-node: {title: "n140" label: "Start PRIMA_set_a  140" color: blue info1: "visited: 33
+edge: {sourcename: "n134" targetname: "n186" label: "0" color: red}
+node: {title: "n135" label: "Start PRIMA_set_a  135" color: blue info1: "visited: 33
 irg:     PRIMA_set_a
+arity: 0
 start of method of type set_a
   param 0 type: class_prima_ptr
   param 1 type: int
 "}
-edge: { sourcename: "n140" targetname: "n139" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n138" label: "ProjX 0 138" color: yellow info1: "visited: 33
+edge: { sourcename: "n135" targetname: "n134" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n133" label: "ProjX 0 133" color: yellow info1: "visited: 33
 irg:     PRIMA_set_a
+arity: 1
 "}
-edge: {sourcename: "n138" targetname: "n140" label: "0" color: red}
-edge: { sourcename: "n138" targetname: "n139" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n137" label: "Block  137" color: lightyellow info1: "visited: 33
+edge: {sourcename: "n133" targetname: "n135" label: "0" color: red}
+edge: { sourcename: "n133" targetname: "n134" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n132" label: "Block  132" color: lightyellow info1: "visited: 33
 irg:     PRIMA_set_a
+arity: 1 backedges:
 "}
-edge: {sourcename: "n137" targetname: "n138" label: "0" color: red}
-node: {title: "n185" label: "Jmp  185"  info1: "visited: 33
+edge: {sourcename: "n132" targetname: "n133" label: "0" color: red}
+node: {title: "n178" label: "Jmp  178"  info1: "visited: 33
 irg:     PRIMA_set_a
+arity: 0
 "}
-edge: { sourcename: "n185" targetname: "n137" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n186" label: "Block  186" color: lightyellow info1: "visited: 33
+edge: { sourcename: "n178" targetname: "n132" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n179" label: "Block  179" color: lightyellow info1: "visited: 33
 irg:     PRIMA_set_a
+arity: 1 backedges:
 "}
-edge: {sourcename: "n186" targetname: "n185" label: "0" color: red}
-node: {title: "n187" label: "EndReg  187" color: blue info1: "visited: 33
+edge: {sourcename: "n179" targetname: "n178" label: "0" color: red}
+node: {title: "n180" label: "EndReg  180" color: blue info1: "visited: 33
 irg:     PRIMA_set_a
+arity: 0
 "}
-edge: { sourcename: "n187" targetname: "n186" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n192" label: "ProjX 0 192" color: yellow info1: "visited: 33
+edge: { sourcename: "n180" targetname: "n179" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n185" label: "ProjX 0 185" color: yellow info1: "visited: 33
 irg:     PRIMA_set_a
+arity: 1
 "}
-edge: {sourcename: "n192" targetname: "n187" label: "0" color: red}
-edge: { sourcename: "n192" targetname: "n186" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n195" label: "Block  195" color: lightyellow info1: "visited: 33
+edge: {sourcename: "n185" targetname: "n180" label: "0" color: red}
+edge: { sourcename: "n185" targetname: "n179" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n188" label: "Block  188" color: lightyellow info1: "visited: 33
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
+arity: 1 backedges:
 "}
-edge: {sourcename: "n195" targetname: "n192" label: "0" color: red}
-node: {title: "n197" label: "CallBegin  197"  info1: "visited: 33
+edge: {sourcename: "n188" targetname: "n185" label: "0" color: red}
+node: {title: "n190" label: "CallBegin  190"  info1: "visited: 33
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
+arity: 1
 possible callees:
   0: PRIMA_c
 "}
-node: {title: "n197n172" label: "&(PRIMA_c)P  172" color: yellow info1: "visited: 33
+node: {title: "n190n165" label: "&(PRIMA_c)P  165" color: yellow info1: "visited: 33
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
+arity: 0
 Const of type type_unknown
 "}
-edge: {sourcename: "n197" targetname: "n197n172" label: "0" }
-edge: { sourcename: "n197" targetname: "n195" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n199" label: "ProjX 0 199" color: yellow info1: "visited: 33
+edge: {sourcename: "n190" targetname: "n190n165" label: "0" }
+edge: { sourcename: "n190" targetname: "n188" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n192" label: "ProjX 0 192" color: yellow info1: "visited: 33
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
+arity: 1
 "}
-edge: {sourcename: "n199" targetname: "n197" label: "0" color: red}
-edge: { sourcename: "n199" targetname: "n195" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n157" label: "Block  157" color: lightyellow info1: "visited: 33
+edge: {sourcename: "n192" targetname: "n190" label: "0" color: red}
+edge: { sourcename: "n192" targetname: "n188" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n151" label: "Block  151" color: lightyellow info1: "visited: 33
 irg:     PRIMA_c
+arity: 1 backedges:
 "}
-edge: {sourcename: "n157" targetname: "n199" label: "0" color: red}
-node: {title: "n158" label: "Start PRIMA_c  158" color: blue info1: "visited: 33
+edge: {sourcename: "n151" targetname: "n192" label: "0" color: red}
+node: {title: "n152" label: "Start PRIMA_c  152" color: blue info1: "visited: 33
 irg:     PRIMA_c
+arity: 0
 start of method of type c
   param 0 type: class_prima_ptr
   param 1 type: int
 "}
-edge: { sourcename: "n158" targetname: "n157" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n156" label: "ProjX 0 156" color: yellow info1: "visited: 33
+edge: { sourcename: "n152" targetname: "n151" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n150" label: "ProjX 0 150" color: yellow info1: "visited: 33
 irg:     PRIMA_c
+arity: 1
 "}
-edge: {sourcename: "n156" targetname: "n158" label: "0" color: red}
-edge: { sourcename: "n156" targetname: "n157" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n155" label: "Block  155" color: lightyellow info1: "visited: 33
+edge: {sourcename: "n150" targetname: "n152" label: "0" color: red}
+edge: { sourcename: "n150" targetname: "n151" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n149" label: "Block  149" color: lightyellow info1: "visited: 33
 irg:     PRIMA_c
+arity: 1 backedges:
 "}
-edge: {sourcename: "n155" targetname: "n156" label: "0" color: red}
-node: {title: "n177" label: "Jmp  177"  info1: "visited: 33
+edge: {sourcename: "n149" targetname: "n150" label: "0" color: red}
+node: {title: "n170" label: "Jmp  170"  info1: "visited: 33
 irg:     PRIMA_c
+arity: 0
 "}
-edge: { sourcename: "n177" targetname: "n155" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n178" label: "Block  178" color: lightyellow info1: "visited: 33
+edge: { sourcename: "n170" targetname: "n149" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n171" label: "Block  171" color: lightyellow info1: "visited: 33
 irg:     PRIMA_c
+arity: 1 backedges:
 "}
-edge: {sourcename: "n178" targetname: "n177" label: "0" color: red}
-node: {title: "n179" label: "EndReg  179" color: blue info1: "visited: 33
+edge: {sourcename: "n171" targetname: "n170" label: "0" color: red}
+node: {title: "n172" label: "EndReg  172" color: blue info1: "visited: 33
 irg:     PRIMA_c
+arity: 0
 "}
-edge: { sourcename: "n179" targetname: "n178" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n198" label: "ProjX 0 198" color: yellow info1: "visited: 33
+edge: { sourcename: "n172" targetname: "n171" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n191" label: "ProjX 0 191" color: yellow info1: "visited: 33
 irg:     PRIMA_c
+arity: 1
 "}
-edge: {sourcename: "n198" targetname: "n179" label: "0" color: red}
-edge: { sourcename: "n198" targetname: "n178" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n110" label: "Block  110" color: lightyellow info1: "visited: 33
+edge: {sourcename: "n191" targetname: "n172" label: "0" color: red}
+edge: { sourcename: "n191" targetname: "n171" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n106" label: "Block  106" color: lightyellow info1: "visited: 33
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
+arity: 1 backedges:
 "}
-edge: {sourcename: "n110" targetname: "n198" label: "0" color: red}
-node: {title: "n174" label: "FilterIs 1 174" color: yellow info1: "visited: 33
+edge: {sourcename: "n106" targetname: "n191" label: "0" color: red}
+node: {title: "n167" label: "FilterIs 1 167" color: yellow info1: "visited: 33
 irg:     PRIMA_c
+arity: 1 backedges:
 intra predecessor nodes:
-  ProjT 164
+  ProjT 158
 "}
-node: {title: "n174n117" label: "0x5Is  117" color: yellow info1: "visited: 33
+node: {title: "n167n113" label: "0x5Is  113" color: yellow info1: "visited: 33
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
+arity: 0
 Const of type type_unknown
 "}
-edge: {sourcename: "n174" targetname: "n174n117" label: "0" }
-edge: { sourcename: "n174" targetname: "n157" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n121" label: "ProjM 1 121" color: yellow info1: "visited: 33
+edge: {sourcename: "n167" targetname: "n167n113" label: "0" }
+edge: { sourcename: "n167" targetname: "n151" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n117" label: "ProjM 1 117" color: yellow info1: "visited: 33
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
+arity: 1
 "}
-edge: {sourcename: "n121" targetname: "n113" label: "0" color: blue}
-edge: { sourcename: "n121" targetname: "n112" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n119" label: "Alloc  119"  info1: "visited: 33
+edge: {sourcename: "n117" targetname: "n109" label: "0" color: blue}
+edge: { sourcename: "n117" targetname: "n108" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n115" label: "Alloc  115"  info1: "visited: 33
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
+arity: 2
 allocating entity of type PRIMA
 "}
-node: {title: "n119n120" label: "SymC PRIMA size  120"  info1: "visited: 33
+node: {title: "n115n116" label: "SymC PRIMA size  116"  info1: "visited: 33
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
+arity: 0
 "}
-edge: {sourcename: "n119" targetname: "n121" label: "0" color: blue}
-edge: {sourcename: "n119" targetname: "n119n120" label: "1" }
-edge: { sourcename: "n119" targetname: "n189" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n118" label: "ProjP 2 118" color: yellow info1: "visited: 33
+edge: {sourcename: "n115" targetname: "n117" label: "0" color: blue}
+edge: {sourcename: "n115" targetname: "n115n116" label: "1" }
+edge: { sourcename: "n115" targetname: "n182" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n114" label: "ProjP 2 114" color: yellow info1: "visited: 33
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
+arity: 1
 "}
-edge: {sourcename: "n118" targetname: "n119" label: "0" }
-edge: { sourcename: "n118" targetname: "n189" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n176" label: "FilterP 0 176" color: yellow info1: "visited: 33
+edge: {sourcename: "n114" targetname: "n115" label: "0" }
+edge: { sourcename: "n114" targetname: "n182" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n169" label: "FilterP 0 169" color: yellow info1: "visited: 33
 irg:     PRIMA_c
+arity: 1 backedges:
 intra predecessor nodes:
-  ProjT 164
+  ProjT 158
 "}
-edge: {sourcename: "n176" targetname: "n118" label: "0" }
-edge: { sourcename: "n176" targetname: "n157" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n184" label: "FilterIs 1 184" color: yellow info1: "visited: 33
+edge: {sourcename: "n169" targetname: "n114" label: "0" }
+edge: { sourcename: "n169" targetname: "n151" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n177" label: "FilterIs 1 177" color: yellow info1: "visited: 33
 irg:     PRIMA_set_a
+arity: 1 backedges:
 intra predecessor nodes:
-  ProjT 144
+  ProjT 139
 "}
-node: {title: "n184n125" label: "0x2Is  125" color: yellow info1: "visited: 33
+node: {title: "n177n121" label: "0x2Is  121" color: yellow info1: "visited: 33
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
+arity: 0
 Const of type type_unknown
 "}
-edge: {sourcename: "n184" targetname: "n184n125" label: "0" }
-edge: { sourcename: "n184" targetname: "n139" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n183" label: "FilterP 0 183" color: yellow info1: "visited: 33
+edge: {sourcename: "n177" targetname: "n177n121" label: "0" }
+edge: { sourcename: "n177" targetname: "n134" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n176" label: "FilterP 0 176" color: yellow info1: "visited: 33
 irg:     PRIMA_set_a
+arity: 1 backedges:
 intra predecessor nodes:
-  ProjT 144
+  ProjT 139
 "}
-edge: {sourcename: "n183" targetname: "n118" label: "0" }
-edge: { sourcename: "n183" targetname: "n139" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n127" label: "ProjM 0 127" color: yellow info1: "visited: 33
+edge: {sourcename: "n176" targetname: "n114" label: "0" }
+edge: { sourcename: "n176" targetname: "n134" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n123" label: "ProjM 0 123" color: yellow info1: "visited: 33
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
+arity: 1
 "}
-edge: {sourcename: "n127" targetname: "n119" label: "0" color: blue}
-edge: { sourcename: "n127" targetname: "n189" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n182" label: "FilterM 1 182" color: yellow info1: "visited: 33
-irg:     PRIMA_set_a
-intra predecessor nodes:
-  StartT 140
-"}
-edge: {sourcename: "n182" targetname: "n127" label: "0" color: blue}
-edge: { sourcename: "n182" targetname: "n139" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n145" label: "Sel a 145"  info1: "visited: 33
-irg:     PRIMA_set_a
-Selecting entity of type int
-  from entity of type PRIMA
-"}
-edge: {sourcename: "n145" targetname: "n182" label: "0" color: blue}
-edge: {sourcename: "n145" targetname: "n183" label: "1" }
-edge: { sourcename: "n145" targetname: "n137" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n142" label: "Store  142"  info1: "visited: 33
-irg:     PRIMA_set_a
-"}
-edge: {sourcename: "n142" targetname: "n182" label: "0" color: blue}
-edge: {sourcename: "n142" targetname: "n145" label: "1" }
-edge: {sourcename: "n142" targetname: "n184" label: "2" }
-edge: { sourcename: "n142" targetname: "n137" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n141" label: "ProjM 0 141" color: yellow info1: "visited: 33
-irg:     PRIMA_set_a
-"}
-edge: {sourcename: "n141" targetname: "n142" label: "0" color: blue}
-edge: { sourcename: "n141" targetname: "n137" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n194" label: "FilterM 0 194" color: yellow info1: "visited: 33
-irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
-intra predecessor nodes:
-  CallT 124
-"}
-edge: {sourcename: "n194" targetname: "n141" label: "0" color: blue}
-edge: { sourcename: "n194" targetname: "n195" class: 2 priority: 2 linestyle: dotted}
+edge: {sourcename: "n123" targetname: "n115" label: "0" color: blue}
+edge: { sourcename: "n123" targetname: "n182" class: 2 priority: 2 linestyle: dotted}
 node: {title: "n175" label: "FilterM 1 175" color: yellow info1: "visited: 33
-irg:     PRIMA_c
+irg:     PRIMA_set_a
+arity: 1 backedges:
 intra predecessor nodes:
-  StartT 158
+  StartT 135
 "}
-edge: {sourcename: "n175" targetname: "n194" label: "0" color: blue}
-edge: { sourcename: "n175" targetname: "n157" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n162" label: "Sel a 162"  info1: "visited: 33
-irg:     PRIMA_c
+edge: {sourcename: "n175" targetname: "n123" label: "0" color: blue}
+edge: { sourcename: "n175" targetname: "n134" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n140" label: "Sel a 140"  info1: "visited: 33
+irg:     PRIMA_set_a
+arity: 2
 Selecting entity of type int
   from entity of type PRIMA
 "}
-edge: {sourcename: "n162" targetname: "n175" label: "0" color: blue}
-edge: {sourcename: "n162" targetname: "n176" label: "1" }
-edge: { sourcename: "n162" targetname: "n155" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n161" label: "Load  161"  info1: "visited: 33
-irg:     PRIMA_c
+edge: {sourcename: "n140" targetname: "n175" label: "0" color: blue}
+edge: {sourcename: "n140" targetname: "n176" label: "1" }
+edge: { sourcename: "n140" targetname: "n132" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n137" label: "Store  137"  info1: "visited: 33
+irg:     PRIMA_set_a
+arity: 3
 "}
-edge: {sourcename: "n161" targetname: "n175" label: "0" color: blue}
-edge: {sourcename: "n161" targetname: "n162" label: "1" }
-edge: { sourcename: "n161" targetname: "n155" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n160" label: "ProjIs 2 160" color: yellow info1: "visited: 33
-irg:     PRIMA_c
+edge: {sourcename: "n137" targetname: "n175" label: "0" color: blue}
+edge: {sourcename: "n137" targetname: "n140" label: "1" }
+edge: {sourcename: "n137" targetname: "n177" label: "2" }
+edge: { sourcename: "n137" targetname: "n132" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n136" label: "ProjM 0 136" color: yellow info1: "visited: 33
+irg:     PRIMA_set_a
+arity: 1
 "}
-edge: {sourcename: "n160" targetname: "n161" label: "0" }
-edge: { sourcename: "n160" targetname: "n155" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n159" label: "AddIs  159"  info1: "visited: 33
-irg:     PRIMA_c
-"}
-edge: {sourcename: "n159" targetname: "n160" label: "0" }
-edge: {sourcename: "n159" targetname: "n174" label: "1" }
-edge: { sourcename: "n159" targetname: "n155" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n201" label: "FilterIs 0 201" color: yellow info1: "visited: 33
+edge: {sourcename: "n136" targetname: "n137" label: "0" color: blue}
+edge: { sourcename: "n136" targetname: "n132" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n187" label: "FilterM 0 187" color: yellow info1: "visited: 33
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
+arity: 1 backedges:
 intra predecessor nodes:
-  ProjT 115
+  CallT 120
 "}
-edge: {sourcename: "n201" targetname: "n159" label: "0" }
-edge: { sourcename: "n201" targetname: "n110" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n167" label: "ProjM 0 167" color: yellow info1: "visited: 33
+edge: {sourcename: "n187" targetname: "n136" label: "0" color: blue}
+edge: { sourcename: "n187" targetname: "n188" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n168" label: "FilterM 1 168" color: yellow info1: "visited: 33
 irg:     PRIMA_c
-"}
-edge: {sourcename: "n167" targetname: "n161" label: "0" color: blue}
-edge: { sourcename: "n167" targetname: "n155" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n200" label: "FilterM 0 200" color: yellow info1: "visited: 33
-irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
+arity: 1 backedges:
 intra predecessor nodes:
-  CallT 116
+  StartT 152
 "}
-edge: {sourcename: "n200" targetname: "n167" label: "0" color: blue}
-edge: { sourcename: "n200" targetname: "n110" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n109" label: "Return  109"  info1: "visited: 33
+edge: {sourcename: "n168" targetname: "n187" label: "0" color: blue}
+edge: { sourcename: "n168" targetname: "n151" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n156" label: "Sel a 156"  info1: "visited: 33
+irg:     PRIMA_c
+arity: 2
+Selecting entity of type int
+  from entity of type PRIMA
+"}
+edge: {sourcename: "n156" targetname: "n168" label: "0" color: blue}
+edge: {sourcename: "n156" targetname: "n169" label: "1" }
+edge: { sourcename: "n156" targetname: "n149" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n155" label: "Load  155"  info1: "visited: 33
+irg:     PRIMA_c
+arity: 2
+"}
+edge: {sourcename: "n155" targetname: "n168" label: "0" color: blue}
+edge: {sourcename: "n155" targetname: "n156" label: "1" }
+edge: { sourcename: "n155" targetname: "n149" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n154" label: "ProjIs 2 154" color: yellow info1: "visited: 33
+irg:     PRIMA_c
+arity: 1
+"}
+edge: {sourcename: "n154" targetname: "n155" label: "0" }
+edge: { sourcename: "n154" targetname: "n149" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n153" label: "AddIs  153"  info1: "visited: 33
+irg:     PRIMA_c
+arity: 2
+"}
+edge: {sourcename: "n153" targetname: "n154" label: "0" }
+edge: {sourcename: "n153" targetname: "n167" label: "1" }
+edge: { sourcename: "n153" targetname: "n149" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n194" label: "FilterIs 0 194" color: yellow info1: "visited: 33
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
+arity: 1 backedges:
+intra predecessor nodes:
+  ProjT 111
 "}
-edge: {sourcename: "n109" targetname: "n200" label: "0" color: blue}
-edge: {sourcename: "n109" targetname: "n201" label: "1" }
-edge: { sourcename: "n109" targetname: "n110" class: 2 priority: 2 linestyle: dotted}
-node: {title: "n108" label: "Block  108" color: lightyellow info1: "visited: 33
+edge: {sourcename: "n194" targetname: "n153" label: "0" }
+edge: { sourcename: "n194" targetname: "n106" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n161" label: "ProjM 0 161" color: yellow info1: "visited: 33
+irg:     PRIMA_c
+arity: 1
+"}
+edge: {sourcename: "n161" targetname: "n155" label: "0" color: blue}
+edge: { sourcename: "n161" targetname: "n149" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n193" label: "FilterM 0 193" color: yellow info1: "visited: 33
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
+arity: 1 backedges:
+intra predecessor nodes:
+  CallT 112
 "}
-edge: {sourcename: "n108" targetname: "n109" label: "0" color: red}
-node: {title: "n107" label: "End  107" color: blue info1: "visited: 33
+edge: {sourcename: "n193" targetname: "n161" label: "0" color: blue}
+edge: { sourcename: "n193" targetname: "n106" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n105" label: "Return  105"  info1: "visited: 33
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
+arity: 2
 "}
-edge: { sourcename: "n107" targetname: "n108" class: 2 priority: 2 linestyle: dotted}
-node: {title: "e15" label: "ent a" color: yellow
+edge: {sourcename: "n105" targetname: "n193" label: "0" color: blue}
+edge: {sourcename: "n105" targetname: "n194" label: "1" }
+edge: { sourcename: "n105" targetname: "n106" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n104" label: "Block  104" color: lightyellow info1: "visited: 33
+irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
+arity: 1 backedges:
+"}
+edge: {sourcename: "n104" targetname: "n105" label: "0" color: red}
+node: {title: "n103" label: "End  103" color: blue info1: "visited: 33
+irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
+arity: 0
+"}
+edge: { sourcename: "n103" targetname: "n104" class: 2 priority: 2 linestyle: dotted}
+node: {title: "e14" label: "ent a" color: yellow
  info1: "
-id: e15
+id: e14
 allocation:  allocation_automatic
 visibility:  visibility_local
 variability: variability_uninitialized
@@ -321,17 +376,17 @@ name:    a
 ld_name: no yet set
 offset:  -1"
 }
-edge: { sourcename: "e15" targetname: "t12"class: 3 label: "type" color: red}
-node: {title: "t13" label: "class PRIMA" info1: "state: layout_undefined
+edge: { sourcename: "e14" targetname: "t11"class: 3 label: "type" color: red}
+node: {title: "t12" label: "class PRIMA" info1: "state: layout_undefined
 size: -1B,
 peculiarity: peculiarity_existent
 " color: green}
-edge: { sourcename: "t13" targetname: "e15"class: 12 label: "member" color:blue}
-edge: { sourcename: "t13" targetname: "e18"class: 12 label: "member" color:blue}
-edge: { sourcename: "t13" targetname: "e21"class: 12 label: "member" color:blue}
-node: {title: "e18" label: "ent PRIMA_set_a" color: yellow
+edge: { sourcename: "t12" targetname: "e14"class: 12 label: "member" color:blue}
+edge: { sourcename: "t12" targetname: "e17"class: 12 label: "member" color:blue}
+edge: { sourcename: "t12" targetname: "e20"class: 12 label: "member" color:blue}
+node: {title: "e17" label: "ent PRIMA_set_a" color: yellow
  info1: "
-id: e18
+id: e17
 allocation:  allocation_static
 visibility:  visibility_local
 variability: variability_constant
@@ -340,31 +395,32 @@ peculiarity: peculiarity_existent
 name:    PRIMA_set_a
 ld_name: PRIMA_set_a
 offset:  -1
-irg = g71"
+irg = g68"
 }
-edge: { sourcename: "e18" targetname: "t16"class: 3 label: "type" color: red}
-edge: { sourcename: "e18" targetname: "n17"label: "value 0"}
-node: {title: "n17" label: "&(PRIMA_set_a)P  17" color: yellow info1: "visited: 36
+edge: { sourcename: "e17" targetname: "t15"class: 3 label: "type" color: red}
+edge: { sourcename: "e17" targetname: "n16"label: "value 0"}
+node: {title: "n16" label: "&(PRIMA_set_a)P  16" color: yellow info1: "visited: 36
+arity: 0
 Const of type type_unknown
 "}
-node: {title: "t16" label: "method set_a" info1: "state: layout_fixed,
+node: {title: "t15" label: "method set_a" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
 "}
-edge: { sourcename: "t16" targetname: "t14"class: 5 label: "param 0" color: green}
-edge: { sourcename: "t16" targetname: "t12"class: 5 label: "param 1" color: green}
-node: {title: "t14" label: "pointer class_prima_ptr" info1: "state: layout_fixed,
+edge: { sourcename: "t15" targetname: "t13"class: 5 label: "param 0" color: green}
+edge: { sourcename: "t15" targetname: "t11"class: 5 label: "param 1" color: green}
+node: {title: "t13" label: "pointer class_prima_ptr" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
 "}
-edge: { sourcename: "t14" targetname: "t13"class: 9 label: "points to" color:green}
-node: {title: "t12" label: "primitive int" info1: "state: layout_fixed,
+edge: { sourcename: "t13" targetname: "t12"class: 9 label: "points to" color:green}
+node: {title: "t11" label: "primitive int" info1: "state: layout_fixed,
 mode: Is,
 size: 4B,
 "}
-node: {title: "e21" label: "ent PRIMA_c" color: yellow
+node: {title: "e20" label: "ent PRIMA_c" color: yellow
  info1: "
-id: e21
+id: e20
 allocation:  allocation_static
 visibility:  visibility_local
 variability: variability_constant
@@ -373,23 +429,24 @@ peculiarity: peculiarity_existent
 name:    PRIMA_c
 ld_name: PRIMA_c
 offset:  -1
-irg = g94"
+irg = g90"
 }
-edge: { sourcename: "e21" targetname: "t19"class: 3 label: "type" color: red}
-edge: { sourcename: "e21" targetname: "n20"label: "value 0"}
-node: {title: "n20" label: "&(PRIMA_c)P  20" color: yellow info1: "visited: 37
+edge: { sourcename: "e20" targetname: "t18"class: 3 label: "type" color: red}
+edge: { sourcename: "e20" targetname: "n19"label: "value 0"}
+node: {title: "n19" label: "&(PRIMA_c)P  19" color: yellow info1: "visited: 37
+arity: 0
 Const of type type_unknown
 "}
-node: {title: "t19" label: "method c" info1: "state: layout_fixed,
+node: {title: "t18" label: "method c" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
 "}
-edge: { sourcename: "t19" targetname: "t14"class: 5 label: "param 0" color: green}
-edge: { sourcename: "t19" targetname: "t12"class: 5 label: "param 1" color: green}
-edge: { sourcename: "t19" targetname: "t12"class: 6 label: "res 0" color: green}
-node: {title: "e24" label: "ent GlobalType_OO_PROGRAM_EXAMPLE_main" color: yellow
+edge: { sourcename: "t18" targetname: "t13"class: 5 label: "param 0" color: green}
+edge: { sourcename: "t18" targetname: "t11"class: 5 label: "param 1" color: green}
+edge: { sourcename: "t18" targetname: "t11"class: 6 label: "res 0" color: green}
+node: {title: "e23" label: "ent GlobalType_OO_PROGRAM_EXAMPLE_main" color: yellow
  info1: "
-id: e24
+id: e23
 allocation:  allocation_static
 visibility:  visibility_local
 variability: variability_constant
@@ -398,29 +455,30 @@ peculiarity: peculiarity_existent
 name:    GlobalType_OO_PROGRAM_EXAMPLE_main
 ld_name: GlobalType_OO_PROGRAM_EXAMPLE_main
 offset:  -1
-irg = g37"
+irg = g35"
 }
-edge: { sourcename: "e24" targetname: "t22"class: 3 label: "type" color: red}
-edge: { sourcename: "e24" targetname: "n23"label: "value 0"}
-node: {title: "n23" label: "&(GlobalType_OO_PROGRAM_EXAMPLE_main)P  23" color: yellow info1: "visited: 38
+edge: { sourcename: "e23" targetname: "t21"class: 3 label: "type" color: red}
+edge: { sourcename: "e23" targetname: "n22"label: "value 0"}
+node: {title: "n22" label: "&(GlobalType_OO_PROGRAM_EXAMPLE_main)P  22" color: yellow info1: "visited: 38
+arity: 0
 Const of type type_unknown
 "}
 node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1B,
 peculiarity: peculiarity_existent
 " color: green}
-edge: { sourcename: "t0" targetname: "e24"class: 12 label: "member" color:blue}
-node: {title: "t22" label: "method OO_PROGRAM_EXAMPLE_main" info1: "state: layout_fixed,
+edge: { sourcename: "t0" targetname: "e23"class: 12 label: "member" color:blue}
+node: {title: "t21" label: "method OO_PROGRAM_EXAMPLE_main" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
 "}
-edge: { sourcename: "t22" targetname: "t12"class: 6 label: "res 0" color: green}
-node: {title: "t25" label: "class OO_PROGRAM_EXAMPLE_mainframe_tp" info1: "state: layout_undefined
+edge: { sourcename: "t21" targetname: "t11"class: 6 label: "res 0" color: green}
+node: {title: "t24" label: "class OO_PROGRAM_EXAMPLE_mainframe_tp" info1: "state: layout_undefined
 size: -1B,
 peculiarity: peculiarity_existent
 " color: green}
-edge: { sourcename: "n162" targetname: "e15"class: 2 priority: 2 linestyle: dotted}
-edge: { sourcename: "n119" targetname: "t13"class: 2 priority: 2 linestyle: dotted}
-edge: { sourcename: "n120" targetname: "t13"class: 2 priority: 2 linestyle: dotted}
-edge: { sourcename: "n145" targetname: "e15"class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename: "n156" targetname: "e14"class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename: "n115" targetname: "t12"class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename: "n116" targetname: "t12"class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename: "n140" targetname: "e14"class: 2 priority: 2 linestyle: dotted}
 }

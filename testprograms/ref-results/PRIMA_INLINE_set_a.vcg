@@ -17,64 +17,75 @@ classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
 
-graph: { title: "g71" label: "PRIMA_INLINE_set_a" status:clustered color:white
-graph: { title: "n225"  label: "Block 225" status:clustered color:yellow
-edge: {sourcename: "n225" targetname: "n226" label: "0" color: red}
-node: {title: "n224" label: "End  224" color: blue info1: "visited: 16
+graph: { title: "g68" label: "PRIMA_INLINE_set_a" status:clustered color:white
+graph: { title: "n220"  label: "Block 220" status:clustered color:yellow
+edge: {sourcename: "n220" targetname: "n221" label: "0" color: red}
+node: {title: "n219" label: "End  219" color: blue info1: "visited: 16
 irg:     PRIMA_INLINE_set_a
+arity: 0
 "}
 }
 
-graph: { title: "n227"  label: "Block 227" status:clustered color:yellow
-edge: {sourcename: "n227" targetname: "n228" label: "0" color: red}
-node: {title: "n226" label: "Return  226"  info1: "visited: 16
+graph: { title: "n222"  label: "Block 222" status:clustered color:yellow
+edge: {sourcename: "n222" targetname: "n223" label: "0" color: red}
+node: {title: "n221" label: "Return  221"  info1: "visited: 16
 irg:     PRIMA_INLINE_set_a
+arity: 1
 return in method of type set_a
 "}
-edge: {sourcename: "n226" targetname: "n231" label: "0" color: blue}
-node: {title: "n231" label: "ProjM 0 231" color: yellow info1: "visited: 16
+edge: {sourcename: "n221" targetname: "n226" label: "0" color: blue}
+node: {title: "n226" label: "ProjM 0 226" color: yellow info1: "visited: 16
 irg:     PRIMA_INLINE_set_a
+arity: 1
 "}
-edge: {sourcename: "n231" targetname: "n232" label: "0" color: blue}
-node: {title: "n232" label: "Store  232"  info1: "visited: 16
+edge: {sourcename: "n226" targetname: "n227" label: "0" color: blue}
+node: {title: "n227" label: "Store  227"  info1: "visited: 16
 irg:     PRIMA_INLINE_set_a
+arity: 3
 "}
-edge: {sourcename: "n232" targetname: "n237" label: "0" color: blue}
-edge: {sourcename: "n232" targetname: "n235" label: "1" }
-edge: {sourcename: "n232" targetname: "n233" label: "2" }
-node: {title: "n235" label: "Sel a 235"  info1: "visited: 16
+edge: {sourcename: "n227" targetname: "n232" label: "0" color: blue}
+edge: {sourcename: "n227" targetname: "n230" label: "1" }
+edge: {sourcename: "n227" targetname: "n228" label: "2" }
+node: {title: "n230" label: "Sel a 230"  info1: "visited: 16
 irg:     PRIMA_INLINE_set_a
+arity: 2
 Selecting entity of type int
   from entity of type PRIMA_INLINE
 "}
-edge: {sourcename: "n235" targetname: "n237" label: "0" color: blue}
-edge: {sourcename: "n235" targetname: "n236" label: "1" }
-node: {title: "n236" label: "ProjP 0 236" color: yellow info1: "visited: 16
+edge: {sourcename: "n230" targetname: "n232" label: "0" color: blue}
+edge: {sourcename: "n230" targetname: "n231" label: "1" }
+node: {title: "n231" label: "ProjP 0 231" color: yellow info1: "visited: 16
 irg:     PRIMA_INLINE_set_a
+arity: 1
 "}
-edge: {sourcename: "n236" targetname: "n234" label: "0" }
-node: {title: "n233" label: "ProjIs 1 233" color: yellow info1: "visited: 16
+edge: {sourcename: "n231" targetname: "n229" label: "0" }
+node: {title: "n228" label: "ProjIs 1 228" color: yellow info1: "visited: 16
 irg:     PRIMA_INLINE_set_a
+arity: 1
 "}
-edge: {sourcename: "n233" targetname: "n234" label: "0" }
+edge: {sourcename: "n228" targetname: "n229" label: "0" }
 }
 
-graph: { title: "n229"  label: "Block 229" status:clustered color:yellow
-edge: {sourcename: "n229" targetname: "n228" label: "0" color: red}
-node: {title: "n237" label: "ProjM 1 237" color: yellow info1: "visited: 16
+graph: { title: "n224"  label: "Block 224" status:clustered color:yellow
+edge: {sourcename: "n224" targetname: "n223" label: "0" color: red}
+node: {title: "n232" label: "ProjM 1 232" color: yellow info1: "visited: 16
 irg:     PRIMA_INLINE_set_a
+arity: 1
 "}
-edge: {sourcename: "n237" targetname: "n230" label: "0" color: blue}
-node: {title: "n234" label: "ProjT 4 234" color: yellow info1: "visited: 16
+edge: {sourcename: "n232" targetname: "n225" label: "0" color: blue}
+node: {title: "n229" label: "ProjT 4 229" color: yellow info1: "visited: 16
 irg:     PRIMA_INLINE_set_a
+arity: 1
 "}
-edge: {sourcename: "n234" targetname: "n230" label: "0" }
-node: {title: "n228" label: "ProjX 0 228" color: yellow info1: "visited: 16
+edge: {sourcename: "n229" targetname: "n225" label: "0" }
+node: {title: "n223" label: "ProjX 0 223" color: yellow info1: "visited: 16
 irg:     PRIMA_INLINE_set_a
+arity: 1
 "}
-edge: {sourcename: "n228" targetname: "n230" label: "0" color: red}
-node: {title: "n230" label: "Start  230" color: blue info1: "visited: 16
+edge: {sourcename: "n223" targetname: "n225" label: "0" color: red}
+node: {title: "n225" label: "Start  225" color: blue info1: "visited: 16
 irg:     PRIMA_INLINE_set_a
+arity: 0
 start of method of type set_a
   param 0 type: class_prima_ptr
   param 1 type: int
