@@ -147,6 +147,9 @@ Use xvcg to view these graphs:
 /ben/goetz/bin/xvcg GRAPHNAME
 
 Dumping Callgraph.
+Use xvcg to view these graphs:
+/ben/goetz/bin/xvcg GRAPHNAME
+
 
 Creating an IR graph: THREE_CFPRED_EXAMPLE ...
 Optimizing ...
@@ -159,12 +162,4 @@ Creating an IR graph: WHILE_EXAMPLE...
 Optimizing ...
 Done building the graph.  Dumping it.
 Use xvcg to view this graph:
-/ben/goetz/bin/xvcg GRAPHNAME
-
-Dumping Graphs.
-Use xvcg to view these graphs:
-/ben/goetz/bin/xvcg GRAPHNAME
-
-Dumping Graphs.
-Use xvcg to view these graphs:
 /ben/goetz/bin/xvcg GRAPHNAME
