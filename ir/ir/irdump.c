@@ -495,7 +495,11 @@ dump_type_info (type_or_ent *tore, void *env) {
   case k_entity:
     {
       entity *ent = (entity *)tore;
-      xfprintf (F, "\"ent %I\" " ENTITY_NODE_ATTR "}\n", get_entity_ident(ent));
+      xfprintf (F, "\"ent %I\" " ENTITY_NODE_ATTR , get_entity_ident(ent));
+      if(dynamic_allocated == get_entity_allocation(ent))
+	xfprintf (F, " info1:\"dynamic allocated\"}\n");
+      else
+	xfprintf (F, " info1:\"static allocated\"}\n");
       xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
                 ENT_OWN_EDGE_ATTR "}\n", tore, get_entity_owner(ent));
       xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
@@ -680,14 +684,16 @@ void vcg_open_name (const char *name) {
 	    "orientation: bottom_to_top\n"
 	    "classname 1: \"Data\"\n"
 	    "classname 2: \"Block\"\n"
-	    "classname 3: \"Entity type\""
-	    "classname 4: \"Entity owner\""
-	    "classname 5: \"Method Param\""
-	    "classname 6: \"Method Res\""
-	    "classname 7: \"Super\""
-	    "classname 8: \"Union\""
-	    "classname 9: \"Points-to\""
-	    "classname 10: \"Array Element Type\""
+	    "classname 3: \"Entity type\"\n"
+	    "classname 4: \"Entity owner\"\n"
+	    "classname 5: \"Method Param\"\n"
+	    "classname 6: \"Method Res\"\n"
+	    "classname 7: \"Super\"\n"
+	    "classname 8: \"Union\"\n"
+	    "classname 9: \"Points-to\"\n"
+	    "classname 10: \"Array Element Type\"\n"
+	    "classname 11: \"Overwrites\"\n"
+	    "classname 12: \"Member\"\n"
 	    , name, label);
 
   xfprintf (F, "\n");		/* a separator */
