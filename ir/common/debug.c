@@ -80,6 +80,8 @@ static void *make_msg_info(const firm_dbg_module_t *mod, const char *fmt, va_lis
 
 	obstack_grow(&dbg_obst, msg_header, sizeof(msg_header) - 1);
 	ir_obst_vprintf(&dbg_obst, fmt, args);
+	obstack_1grow(&dbg_obst, '\0');
+
 	res->msg = obstack_finish(&dbg_obst);
 	res->mod = mod;
 	return res;
