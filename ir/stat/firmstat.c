@@ -1220,7 +1220,7 @@ void stat_arch_dep_replace_mul_with_shifts(ir_node *mul)
 /**
  * A division was replaced by a series of Shifts/Muls
  */
-void stat_arch_dep_replace_div_with_shifts(ir_node *div)
+void stat_arch_dep_replace_div_by_const(ir_node *div)
 {
   if (! status->enable)
     return;
@@ -1236,7 +1236,7 @@ void stat_arch_dep_replace_div_with_shifts(ir_node *div)
 /**
  * A modulo was replaced by a series of Shifts/Muls
  */
-void stat_arch_dep_replace_mod_with_shifts(ir_node *mod)
+void stat_arch_dep_replace_mod_by_const(ir_node *mod)
 {
   if (! status->enable)
     return;
@@ -1252,7 +1252,7 @@ void stat_arch_dep_replace_mod_with_shifts(ir_node *mod)
 /**
  * A DivMod was replaced by a series of Shifts/Muls
  */
-void stat_arch_dep_replace_DivMod_with_shifts(ir_node *divmod)
+void stat_arch_dep_replace_DivMod_by_const(ir_node *divmod)
 {
   if (! status->enable)
     return;
@@ -1372,10 +1372,10 @@ void stat_dead_node_elim_stop(ir_graph *irg) {}
 
 void stat_arch_dep_replace_mul_with_shifts(ir_node *mul) {}
 
-void stat_arch_dep_replace_div_with_shifts(ir_node *div) {}
+void stat_arch_dep_replace_div_by_const(ir_node *div) {}
 
-void stat_arch_dep_replace_mod_with_shifts(ir_node *mod) {}
+void stat_arch_dep_replace_mod_by_const(ir_node *mod) {}
 
-void stat_arch_dep_replace_DivMod_with_shifts(ir_node *divmod) {}
+void stat_arch_dep_replace_DivMod_by_const(ir_node *divmod) {}
 
 #endif

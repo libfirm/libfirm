@@ -155,17 +155,17 @@ void stat_arch_dep_replace_mul_with_shifts(ir_node *mul);
 /**
  * A division was replaced by a series of Shifts/Muls
  */
-void stat_arch_dep_replace_div_with_shifts(ir_node *div);
+void stat_arch_dep_replace_div_by_const(ir_node *div);
 
 /**
  * A modulo was replaced by a series of Shifts/Muls
  */
-void stat_arch_dep_replace_mod_with_shifts(ir_node *mod);
+void stat_arch_dep_replace_mod_by_const(ir_node *mod);
 
 /**
  * A Divod was replaced by a series of Shifts/Muls
  */
-void stat_arch_dep_replace_DivMod_with_shifts(ir_node *divmod);
+void stat_arch_dep_replace_DivMod_by_const(ir_node *divmod);
 
 /**
  * helper: get an ir_op from an opcode
@@ -197,9 +197,9 @@ ir_op *stat_get_op_from_opcode(opcode code);
 #define stat_dead_node_elim_start(irg)
 #define stat_dead_node_elim_stop(irg)
 #define stat_arch_dep_replace_mul_with_shifts(irn)
-#define stat_arch_dep_replace_div_with_shifts(irn)
-#define stat_arch_dep_replace_mod_with_shifts(irn)
-#define stat_arch_dep_replace_DivMod_with_shifts(irn)
+#define stat_arch_dep_replace_div_by_const(irn)
+#define stat_arch_dep_replace_mod_by_const(irn)
+#define stat_arch_dep_replace_DivMod_by_const(irn)
 
 #endif
 
