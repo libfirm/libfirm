@@ -778,7 +778,7 @@ ir_op *stat_get_op_from_opcode(opcode code)
 }
 
 /* initialize the statistics module. */
-void init_stat(void)
+void init_stat(unsigned enable_options)
 {
 #define X(a)  a, sizeof(a)-1
 

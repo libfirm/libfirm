@@ -55,8 +55,7 @@ typedef enum {
  *
  * @param enable_options  Bitmask containing the statistic options
  */
-
-void init_stat(void);
+void init_stat(unsigned enable_options);
 
 /**
  * Finish the statistics.
@@ -152,7 +151,7 @@ ir_op *stat_get_op_from_opcode(opcode code);
 
 #else
 
-#define init_stat()
+#define init_stat(enable_options)
 #define stat_finish()
 #define stat_new_ir_op(op)
 #define stat_free_ir_op(op)
