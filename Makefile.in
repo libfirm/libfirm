@@ -73,3 +73,12 @@ stamp-h: config.h.in config.status
 
 config.status: configure
 	./config.status --recheck
+
+test::
+	$(MAKE) -C testprograms test;
+
+test-reference::
+	$(MAKE) -C testprograms reference;
+
+test-clean:
+	$(MAKE) -C testprograms realclean

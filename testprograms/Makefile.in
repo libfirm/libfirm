@@ -10,6 +10,8 @@ srcdir = @srcdir@
 topdir = ..
 subdir := testprograms
 
+DIFF ?= diff
+REF_DIR = $(srcdir)/ref-results
 
 SOURCES := Makefile.in \
 	array-heap_example.c   empty.c                irr_cf_example.c		\
@@ -41,3 +43,19 @@ all:	$(bin_EXAMPLES) $(topdir)/libfirm.a
 
 run:
 	$(run_bin_EXAMPLES)
+
+test:   clean all
+	($(run_bin_EXAMPLES))>run-result.txt
+	($(DIFF) run-result.txt $(REF_DIR)/run-result.txt) || (echo Libfirm test failed; exit 1)
+	for g in $(REF_DIR)/*.vcg; do\
+		($(DIFF) -s `basename $$g` $$g)||   (echo Libfirm test failed; exit 1) \
+	done;
+	@echo Libfirm test successful
+
+reference: clean all
+	rm -f $(REF_DIR)/*.vcg
+	($(run_bin_EXAMPLES))>$(REF_DIR)/run-result.txt
+	install -c -m0644 *.vcg $(REF_DIR)
+
+subdir_clean:
+	rm -f run-result.txt *.vcg $(bin_EXAMPLES)

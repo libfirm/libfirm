@@ -17,78 +17,78 @@ classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
 
-node: {title: "0x809e0c0" label: "primitive int"info1: "state: layout_fixed,
+node: {title: "0x809fe40" label: "primitive int"info1: "state: layout_fixed,
 mode: I,
 size: 4B,
 "}
-node: {title: "0x809e0e8" label: "class PRIMA"info1: "state: layout_undefined
+node: {title: "0x809fe68" label: "class PRIMA"info1: "state: layout_undefined
 size: -1B,
 " color: green}
-edge: { sourcename: "0x809e0e8" targetname: "0x809e1b0" class: 12 label: "member" color:blue}
-edge: { sourcename: "0x809e0e8" targetname: "0x809e2d0" class: 12 label: "member" color:blue}
-edge: { sourcename: "0x809e0e8" targetname: "0x809e3a0" class: 12 label: "member" color:blue}
-node: {title: "0x809e1b0" label: "ent a" color: yellow info1:"automatic allocated
+edge: { sourcename: "0x809fe68" targetname: "0x809ff18" class: 12 label: "member" color:blue}
+edge: { sourcename: "0x809fe68" targetname: "0x80a0038" class: 12 label: "member" color:blue}
+edge: { sourcename: "0x809fe68" targetname: "0x80a0110" class: 12 label: "member" color:blue}
+node: {title: "0x809ff18" label: "ent a" color: yellow info1:"automatic allocated
 local
 uninitialized
 non_volatile
 existent
 "}
-edge: { sourcename: "0x809e1b0" targetname: "0x809e0c0" class: 3 label: "type" color: red}
-node: {title: "0x809e2d0" label: "ent set_a" color: yellow info1:"static allocated
+edge: { sourcename: "0x809ff18" targetname: "0x809fe40" class: 3 label: "type" color: red}
+node: {title: "0x80a0038" label: "ent set_a" color: yellow info1:"static allocated
 local
 constant
 non_volatile
 existent
 
- irg = 0x80a0ae0 "}
-edge: { sourcename: "0x809e2d0" targetname: "0x809e238" class: 3 label: "type" color: red}
-edge: { sourcename: "0x809e2d0" targetname: "0x809be78" label: "value "}
-node: {title: "0x809be78" label: "&(PRIMA_set_a)P " color: yellow}
-node: {title: "0x809e238" label: "method set_a"info1: "state: layout_fixed,
+ irg = 0x80a2880 "}
+edge: { sourcename: "0x80a0038" targetname: "0x809ffc0" class: 3 label: "type" color: red}
+edge: { sourcename: "0x80a0038" targetname: "1" label: "value "}
+node: {title: "1" label: "&(PRIMA_set_a)P  1" color: yellow}
+node: {title: "0x809ffc0" label: "method set_a"info1: "state: layout_fixed,
 mode: P,
 size: 4B,
 "}
-edge: { sourcename: "0x809e238" targetname: "0x809e180" class: 5 label: "param 0" color: green}
-edge: { sourcename: "0x809e238" targetname: "0x809e0c0" class: 5 label: "param 1" color: green}
-node: {title: "0x809e180" label: "pointer class_prima_ptr"info1: "state: layout_fixed,
+edge: { sourcename: "0x809ffc0" targetname: "0x809fee8" class: 5 label: "param 0" color: green}
+edge: { sourcename: "0x809ffc0" targetname: "0x809fe40" class: 5 label: "param 1" color: green}
+node: {title: "0x809fee8" label: "pointer class_prima_ptr"info1: "state: layout_fixed,
 mode: P,
 size: 4B,
 "}
-edge: { sourcename: "0x809e180" targetname: "0x809e0e8" class: 9 label: "points to" color:green}
-node: {title: "0x809e3a0" label: "ent c" color: yellow info1:"static allocated
+edge: { sourcename: "0x809fee8" targetname: "0x809fe68" class: 9 label: "points to" color:green}
+node: {title: "0x80a0110" label: "ent c" color: yellow info1:"static allocated
 local
 constant
 non_volatile
 existent
 
- irg = 0x80a30e8 "}
-edge: { sourcename: "0x809e3a0" targetname: "0x809e340" class: 3 label: "type" color: red}
-edge: { sourcename: "0x809e3a0" targetname: "0x809beb0" label: "value "}
-node: {title: "0x809beb0" label: "&(PRIMA_c)P " color: yellow}
-node: {title: "0x809e340" label: "method c"info1: "state: layout_fixed,
+ irg = 0x80a4e48 "}
+edge: { sourcename: "0x80a0110" targetname: "0x80a00d0" class: 3 label: "type" color: red}
+edge: { sourcename: "0x80a0110" targetname: "2" label: "value "}
+node: {title: "2" label: "&(PRIMA_c)P  2" color: yellow}
+node: {title: "0x80a00d0" label: "method c"info1: "state: layout_fixed,
 mode: P,
 size: 4B,
 "}
-edge: { sourcename: "0x809e340" targetname: "0x809e180" class: 5 label: "param 0" color: green}
-edge: { sourcename: "0x809e340" targetname: "0x809e0c0" class: 5 label: "param 1" color: green}
-edge: { sourcename: "0x809e340" targetname: "0x809e0c0" class: 6 label: "res 0" color: green}
-node: {title: "0x809e428" label: "method OO_INLINE_EXAMPLE_main"info1: "state: layout_fixed,
+edge: { sourcename: "0x80a00d0" targetname: "0x809fee8" class: 5 label: "param 0" color: green}
+edge: { sourcename: "0x80a00d0" targetname: "0x809fe40" class: 5 label: "param 1" color: green}
+edge: { sourcename: "0x80a00d0" targetname: "0x809fe40" class: 6 label: "res 0" color: green}
+node: {title: "0x80a0198" label: "method OO_INLINE_EXAMPLE_main"info1: "state: layout_fixed,
 mode: P,
 size: 4B,
 "}
-edge: { sourcename: "0x809e428" targetname: "0x809e0c0" class: 6 label: "res 0" color: green}
-node: {title: "0x809bae0" label: "class GlobalType"info1: "state: layout_undefined
+edge: { sourcename: "0x80a0198" targetname: "0x809fe40" class: 6 label: "res 0" color: green}
+node: {title: "0x809d860" label: "class GlobalType"info1: "state: layout_undefined
 size: -1B,
 " color: green}
-edge: { sourcename: "0x809bae0" targetname: "0x809e488" class: 12 label: "member" color:blue}
-node: {title: "0x809e488" label: "ent OO_INLINE_EXAMPLE_main" color: yellow info1:"static allocated
+edge: { sourcename: "0x809d860" targetname: "0x80a01f8" class: 12 label: "member" color:blue}
+node: {title: "0x80a01f8" label: "ent OO_INLINE_EXAMPLE_main" color: yellow info1:"static allocated
 local
 constant
 non_volatile
 existent
 
- irg = 0x809e510 "}
-edge: { sourcename: "0x809e488" targetname: "0x809e428" class: 3 label: "type" color: red}
-edge: { sourcename: "0x809e488" targetname: "0x809bee8" label: "value "}
-node: {title: "0x809bee8" label: "&(GlobalType_OO_INLINE_EXAMPLE_main)P " color: yellow}
+ irg = 0x80a02a0 "}
+edge: { sourcename: "0x80a01f8" targetname: "0x80a0198" class: 3 label: "type" color: red}
+edge: { sourcename: "0x80a01f8" targetname: "3" label: "value "}
+node: {title: "3" label: "&(GlobalType_OO_INLINE_EXAMPLE_main)P  3" color: yellow}
 }
