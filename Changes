@@ -1,3 +1,5 @@
+  25.2. Goetz
+  Bugfix Optmierung Binops mit mode Tupel.
 
   22.2. Goetz
   irgopt: inline_small_irgs implemented
