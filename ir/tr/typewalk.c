@@ -14,6 +14,9 @@
 #include "irnode.h"
 #include "type_or_entity.h"
 
+/* Make types visible to allow most efficient access */
+# include "entity_t.h"
+
 typedef struct type_walk_env {
   void *pre;
   void *post;

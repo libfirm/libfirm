@@ -11,6 +11,9 @@
 # include "entity.h"
 # include <stdlib.h>
 
+/* Make types visible to allow most efficient access */
+# include "entity_t.h"
+
 static struct obstack mangle_obst;
 
 ident *

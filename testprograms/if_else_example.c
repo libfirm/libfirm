@@ -34,6 +34,7 @@ int main(int argc, char **argv)
 {
   ir_graph *irg;          /* this variable contains the irgraph */
   type_class *owner;      /* the class in which this method is defined */
+  type_method *method;    /* the type of this method */
   entity *ent;            /* represents this method as entity of owner */
   ir_node *x, *x_then, *x_else, *c0, *c1, *c2, *cmpGt, *f, *t, *b;
 
@@ -52,7 +53,8 @@ int main(int argc, char **argv)
 #define ENTITYNAME "main"
 
   owner = new_type_class (id_from_str (CLASSNAME, strlen(CLASSNAME)));
-  ent = new_entity ((type *)owner, id_from_str (ENTITYNAME, strlen(ENTITYNAME)), NULL);
+  method = new_type_method (id_from_str("main", 4), 0, 2);
+  ent = new_entity ((type *)owner, id_from_str (ENTITYNAME, strlen(ENTITYNAME)), (type *)method);
 
 
   /* Generates the basic graph for the method represented by entity ent, that

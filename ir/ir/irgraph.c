@@ -55,7 +55,7 @@ new_ir_graph (entity *ent, int params)
 
   /** Type inforamtion for the procedure of the graph **/
   res->ent = ent;
-  ent->irg = res;
+  set_entity_irg(ent, res);
 
   /** Nodes needed in every graph **/
   res->end_block = new_Block ();

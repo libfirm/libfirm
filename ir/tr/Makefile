@@ -30,7 +30,7 @@ HFILES = $(MEMBERS:.m=.h)
 HFILES +=  type_or_entity.h
 HFILES +=  common.h debug.h gmp.h host.h ident.h irgraph.h  \
            irgwalk.h irmode.h irnode.h irop.h label.h misc.h \
-           obst.h pset.h set.h tv.h xprintf.h xp_help.h
+           obst.h pset.h set.h tv.h xprintf.h xp_help.h entity_t.h
 
 OFILES = $(MEMBERS:%.m=../objects/%.o)
 

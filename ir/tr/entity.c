@@ -6,6 +6,7 @@
 */
 
 # include <stdlib.h>
+# include "entity_t.h"
 # include "entity.h"
 # include "mangle.h"
 
@@ -23,7 +24,6 @@ init_entity (void)
 /*******************************************************************/
 
 entity *
-// new_entity (type_class *owner, ident *name, type *type)
 new_entity (type *owner, ident *name, type *type)
 {
   entity *res;
@@ -45,38 +45,46 @@ new_entity (type *owner, ident *name, type *type)
   return res;
 }
 
-/*
-  char  *get_entity_name     (entity *);  */
+#if 0
+inline char *
+get_entity_name (entity *ent) {
+  assert (ent);
+  return id_to_str(get_entity_ident(ent));
+  /* GL:
+     entity.c:52: warning: return discards `const' from pointer target type
+     -- ned so guud
+  */
+}
+#endif
 
 ident *
 get_entity_ident    (entity *ent) {
   assert(ent);
   return ent->name;
 }
+
 /*
 void   set_entity_ld_name  (entity *, char *ld_name);
 void   set_entity_ld_ident (entity *, ident *ld_ident);
 */
 
-//inline type_class *
 inline type *
-get_entity_owner (entity *entity) {
-  return entity->owner;
+get_entity_owner (entity *ent) {
+  return ent->owner;
 }
 
 inline void
-// set_entity_owner (entity *entity, type_class *owner) {
-set_entity_owner (entity *entity, type *owner) {
+set_entity_owner (entity *ent, type *owner) {
   assert_legal_owner_of_ent(owner);
-  entity->owner = owner;
+  ent->owner = owner;
 }
 
 inline void   /* should this go into type.c? */
-assert_legal_owner_of_ent(type *type) {
-  assert (type->clss.kind   == k_type_class ||
-          type->uni.kind    == k_type_union ||
-          type->array.kind  == k_type_array ||
-          type->method.kind == k_type_method );
+assert_legal_owner_of_ent(type *owner) {
+  assert (owner->clss.kind   == k_type_class ||
+          owner->uni.kind    == k_type_union ||
+          owner->array.kind  == k_type_array ||
+          owner->method.kind == k_type_method );
 }
 
 inline ident *
@@ -93,11 +101,26 @@ void   set_entity_ld_ident (entity *, ident *ld_ident);
 */
 
 inline type *
-get_entity_type (entity *entity) {
-  return entity->type;
+get_entity_type (entity *ent) {
+  return ent->type;
 }
 
 inline void
-set_entity_type (entity *entity, type *type) {
-  entity->type = type;
+set_entity_type (entity *ent, type *type) {
+  ent->type = type;
+}
+
+inline ir_graph *
+get_entity_irg(entity *ent) {
+  assert (ent);
+  assert (get_kind(ent->type) == k_type_method);
+  return ent->irg;
+}
+
+inline void
+set_entity_irg(entity *ent, ir_graph *irg) {
+  assert (ent && ent->type);
+  assert (irg);
+  assert (get_kind(ent->type) == k_type_method);
+  ent->irg = irg;
 }

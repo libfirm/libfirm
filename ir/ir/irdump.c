@@ -98,8 +98,10 @@ dump_node_nodeattr (ir_node *n)
     }
     break;
   case iro_Sel:
-    assert(n->attr.s.ent->kind == k_entity);
-    xfprintf (F, "%s", id_to_str(n->attr.s.ent->name));
+    /*assert(n->attr.s.ent->kind == k_entity);*/
+    assert(get_kind(get_Sel_entity(n)) == k_entity);
+    xfprintf (F, "%s", id_to_str(get_entity_ident(get_Sel_entity(n))));
+
     /*  xdoesn't work for some reason.
 	fprintf (F, "\"%I %I\" ", n->op->name, n->attr.s.ent); */
     break;
@@ -285,9 +287,11 @@ dump_ir_node (ir_node *n)
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Sel:
-    assert(n->attr.s.ent->kind == k_entity);
+    assert(get_kind(get_Sel_entity(n)) == k_entity);
+    /*assert(n->attr.s.ent->kind == k_entity);*/
     xfprintf (F, "\"%I ", n->op->name);
-    xfprintf (F, "%s\" ", id_to_str(n->attr.s.ent->name));
+    /*xfprintf (F, "%s\" ", id_to_str(n->attr.s.ent->name));*/
+    xfprintf (F, "%s", id_to_str(get_entity_ident(get_Sel_entity(n))));
     /*  xdoesn't work for some reason.
 	fprintf (F, "\"%I %I\" ", n->op->name, n->attr.s.ent); */
     xfprintf (F, DEFAULT_NODE_ATTR);

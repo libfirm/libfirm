@@ -12,6 +12,9 @@
 # include "irvrfy.h"
 # include "tv.h"
 
+/* Make types visible to allow most efficient access */
+# include "entity_t.h"
+
 /* Trivial inlineable routine for copy propagation.
    Does follow Ids, needed to optimize inlined code. */
 static inline ir_node *

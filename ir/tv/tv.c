@@ -43,6 +43,8 @@
 #include "ident.h"
 #include "tv.h"
 
+# include "entity_t.h"
+
 static struct obstack tv_obst;	/* obstack for all the target values */
 static pset *tarvals;		/* pset containing pointers to _all_ tarvals */
 

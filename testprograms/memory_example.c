@@ -54,6 +54,7 @@ main(void)
 {
   ir_graph *irg;
   type_class *owner;
+  type_method *method;    /* the type of this method */
   entity *ent;
   ir_node *a, *b, *x, *y, *r;
 
@@ -63,7 +64,8 @@ main(void)
 
   /* a class to get started with, containing the main procedure */
   owner = new_type_class (id_from_str ("MEMORY_EXAMPLE", 14));
-  ent = new_entity ((type *)owner, id_from_str ("main", 4), NULL);
+  method = new_type_method (id_from_str("main", 4), 0, 2);
+  ent = new_entity ((type *)owner, id_from_str ("main", 4), (type *)method);
 
   /* Generates start and end blocks and nodes and a first, initial block */
   irg = new_ir_graph (ent, 4);

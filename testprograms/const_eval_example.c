@@ -27,14 +27,13 @@ main(void)
 {
   ir_graph *irg;
   type_class *owner;
+  type_method *method;
   entity *ent;
   ir_node *a, *b, *c, *d, *x;
 
   printf("creating an IR graph: CONST_EVAL_EXAMPLE...\n");
 
-
   init_firm ();
-
 
   /* Try both optimizations: */
   set_opt_constant_folding(1);
@@ -42,7 +41,8 @@ main(void)
   set_opt_dead_node_elimination (0);
 
   owner = new_type_class (id_from_str ("CONST_EVAL_EXAMPLE", 18));
-  ent = new_entity ((type *)owner, id_from_str ("main", 4), NULL);
+  method = new_type_method (id_from_str("main", 4), 0, 2);
+  ent = new_entity ((type *)owner, id_from_str ("main", 4), (type *)method);
 
   irg = new_ir_graph (ent, 4);
 
