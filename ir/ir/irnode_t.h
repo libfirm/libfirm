@@ -1,10 +1,14 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
 * All rights reserved.
-*
-* Authors: Martin Trapp, Christian Schaefer
-*
-* declarations of an ir node
 */
+
+/**
+ * @file irnode_t.h
+ *
+ * Declarations of an ir node.
+ *
+ * @author Martin Trapp, Christian Schaefer
+ */
 
 /* $Id$ */
 
@@ -22,36 +26,37 @@
 
 /** ir node attributes **/
 
-/* Block attributes */
+/** Block attributes */
 typedef struct {
-  unsigned long block_visited;  /* for the walker that walks over all blocks. */
+  unsigned long block_visited;  /**< for the walker that walks over all blocks. */
   /* Attributes private to construction: */
-  bool matured;               /* if set, all in-nodes of the block are fixed */
-  struct ir_node **graph_arr; /* array to store all parameters */
-  struct dom_info dom;        /* Datastructure that holds information about dominators.
-				 @@@ Eventually overlay with graph_arr as only valid
-				 in different phases.  Eventually inline the whole
-				 datastructure. */
-  exc_t exc;		      /* role of this block for exception handling */
-  ir_node *handler_entry;     /* handler entry block iff this block is part of a region */
-  ir_node ** in_cg;           /* array with predecessors in
+  bool matured;               /**< if set, all in-nodes of the block are fixed */
+  struct ir_node **graph_arr; /**< array to store all parameters */
+  struct dom_info dom;        /**< Datastructure that holds information about dominators.
+				 @todo
+           Eventually overlay with graph_arr as only valid
+				   in different phases.  Eventually inline the whole
+				   datastructure. */
+  exc_t exc;		      /**< role of this block for exception handling */
+  ir_node *handler_entry;     /**< handler entry block iff this block is part of a region */
+  ir_node ** in_cg;           /**< array with predecessors in
 			       * interprocedural_view, if they differ
 			       * from intraprocedural predecessors */
-  int *backedge;              /* Field n set to true if pred n is backedge.
-			         @@@ Ev. replace by bitfield! */
-  int *cg_backedge;           /* Field n set to true if pred n is interprocedural backedge.
-			         @@@ Ev. replace by bitfield! */
+  int *backedge;              /**< Field n set to true if pred n is backedge.
+			         @todo Ev. replace by bitfield! */
+  int *cg_backedge;           /**< Field n set to true if pred n is interprocedural backedge.
+			         @todo Ev. replace by bitfield! */
 } block_attr;
 
-/* Cond attributes */
+/** Cond attributes */
 typedef struct {
-  cond_kind kind;    /* flavor of Cond */
-  long default_proj; /* for optimization: biggest Proj number, i.e. the one
+  cond_kind kind;    /**< flavor of Cond */
+  long default_proj; /**< for optimization: biggest Proj number, i.e. the one
 			used for default. */
 } cond_attr;
 
-/* SymConst attributes */
-/*   This union contains the symbolic information represented by the node */
+/** SymConst attributes
+    This union contains the symbolic information represented by the node */
 typedef union type_or_id {
   type *typ;
   ident *ptrinfo;
@@ -62,129 +67,129 @@ typedef struct {
   symconst_kind num;
 } symconst_attr;
 
-/* Sel attributes */
+/** Sel attributes */
 typedef struct {
-  entity *ent;          /* entity to select */
+  entity *ent;          /**< entity to select */
 } sel_attr;
 
 typedef struct {
-  type *cld_tp;         /* type of called procedure */
+  type *cld_tp;         /**< type of called procedure */
 #if PRECISE_EXC_CONTEXT
-  struct ir_node **frag_arr; /* For Phi node construction in case of exceptions */
+  struct ir_node **frag_arr; /**< For Phi node construction in case of exceptions */
 #endif
-  entity ** callee_arr; /* result of callee analysis */
+  entity ** callee_arr; /**< result of callee analysis */
 } call_attr;
 
-/* Alloc attributes */
+/** Alloc attributes */
 typedef struct {
-  type *type;           /* Type of the allocated object.  */
-  where_alloc where;    /* stack, heap or other managed part of memory */
+  type *type;           /**< Type of the allocated object.  */
+  where_alloc where;    /**< stack, heap or other managed part of memory */
 #if PRECISE_EXC_CONTEXT
-  struct ir_node **frag_arr; /* For Phi node construction in case of exceptions */
+  struct ir_node **frag_arr; /**< For Phi node construction in case of exceptions */
 #endif
 } alloc_attr;
 
-/* InstOf attributes */
+/** InstOf attributes */
 typedef struct
 {
   type *ent;
   int dfn;
 } io_attr;
 
-/* Filter attributes */
+/** Filter attributes */
 typedef struct {
-  long proj;                 /* contains the result position to project (Proj) */
-  ir_node ** in_cg;          /* array with interprocedural predecessors (Phi) */
-  int *backedge;              /* Field n set to true if pred n is backedge.
-			         @@@ Ev. replace by bitfield! */
+  long proj;                 /**< contains the result position to project (Proj) */
+  ir_node ** in_cg;          /**< array with interprocedural predecessors (Phi) */
+  int *backedge;              /**< Field n set to true if pred n is backedge.
+			         @todo Ev. replace by bitfield! */
 } filter_attr;
 
-/* EndReg/EndExcept attributes */
+/** EndReg/EndExcept attributes */
 typedef struct {
-  ir_graph * irg;            /* ir_graph this node belongs to (for
+  ir_graph * irg;            /**< ir_graph this node belongs to (for
 			      * navigating in interprocedural graphs) */
 } end_attr;
 
-/* CallBegin attributes */
+/** CallBegin attributes */
 typedef struct {
-  ir_graph * irg;            /* ir_graph this node belongs to (for
+  ir_graph * irg;            /**< ir_graph this node belongs to (for
 			      * navigating in interprocedural graphs) */
-  ir_node * call;            /* associated Call-operation */
+  ir_node * call;            /**< associated Call-operation */
 } callbegin_attr;
 
-/* Some irnodes just have one attribute, these are stored here,
+/** Some irnodes just have one attribute, these are stored here,
    some have more. Their name is 'irnodename_attr' */
 typedef union {
-  block_attr     block; /* For Block: Fields needed to construct it */
-  cond_attr      c;     /* For Cond. */
-  struct tarval *con;   /* For Const: contains the value of the constant */
-  symconst_attr  i;     /* For SymConst. */
-  sel_attr       s;     /* For Sel. */
-  call_attr      call;  /* For Call: pointer to the type of the method to call */
-  callbegin_attr callbegin; /* For CallBegin */
-  alloc_attr     a;     /* For Alloc. */
-  io_attr	 io;	/* For InstOf */
-  type          *f;     /* For Free. */
-  int            phi0_pos;  /* For Phi. Used to remember the value defined by
+  block_attr     block; /**< For Block: Fields needed to construct it */
+  cond_attr      c;     /**< For Cond. */
+  struct tarval *con;   /**< For Const: contains the value of the constant */
+  symconst_attr  i;     /**< For SymConst. */
+  sel_attr       s;     /**< For Sel. */
+  call_attr      call;  /**< For Call: pointer to the type of the method to call */
+  callbegin_attr callbegin; /**< For CallBegin */
+  alloc_attr     a;     /**< For Alloc. */
+  io_attr	 io;	/**< For InstOf */
+  type          *f;     /**< For Free. */
+  int            phi0_pos;  /**< For Phi. Used to remember the value defined by
 			       this Phi node.  Needed when the Phi is completed
 			       to call get_r_internal_value to find the
 			       predecessors. If this attribute is set, the Phi
 			       node takes the role of the obsolete Phi0 node,
 			       therefore the name. */
-  int *phi_backedge;    /* For Phi after construction.
+  int *phi_backedge;    /**< For Phi after construction.
 			   Field n set to true if pred n is backedge.
-			   @@@ Ev. replace by bitfield! */
-  long           proj;  /* For Proj: contains the result position to project */
-  filter_attr    filter;    /* For Filter */
-  end_attr       end;       /* For EndReg, EndExcept */
+			   @todo Ev. replace by bitfield! */
+  long           proj;  /**< For Proj: contains the result position to project */
+  filter_attr    filter;    /**< For Filter */
+  end_attr       end;       /**< For EndReg, EndExcept */
 #if PRECISE_EXC_CONTEXT
-  struct ir_node **frag_arr; /* For Phi node construction in case of exceptions
+  struct ir_node **frag_arr; /**< For Phi node construction in case of exceptions
 			       for nodes Store, Load, Div, Mod, Quot, DivMod. */
 #endif
 } attr;
 
 
-/* common structure of an irnode */
-/* if the node has some attributes, they are stored in attr */
-
+/** common structure of an irnode
+    if the node has some attributes, they are stored in attr */
 struct ir_node {
-  /** Basics of the representation **/
-  firm_kind kind;          /* distinguishes this node from others */
-  ir_op *op;               /* Opcode of this node. */
-  ir_mode *mode;           /* Mode of this node. */
-  unsigned long visited;   /* visited counter for walks of the graph */
-  struct ir_node **in;     /* array with predecessors / operands */
-  void *link;              /* to attach additional information to the node, e.g.
+  /* ------- Basics of the representation  ------- */
+  firm_kind kind;          /**< distinguishes this node from others */
+  ir_op *op;               /**< Opcode of this node. */
+  ir_mode *mode;           /**< Mode of this node. */
+  unsigned long visited;   /**< visited counter for walks of the graph */
+  struct ir_node **in;     /**< array with predecessors / operands */
+  void *link;              /**< to attach additional information to the node, e.g.
                               used while construction to link Phi0 nodes and
 			      during optimization to link to nodes that
 			      shall replace a node. */
-  /**  Fields for optimizations / analysis information **/
-  struct ir_node **out;    /* array of out edges */
-  struct dbg_info* dbi;    /* A pointer to information for debug support. */
-  /** For debugging **/
+  /* ------- Fields for optimizations / analysis information ------- */
+  struct ir_node **out;    /**< array of out edges */
+  struct dbg_info* dbi;    /**< A pointer to information for debug support. */
+  /* ------- For debugging ------- */
 #ifdef DEBUG_libfirm
-  int node_nr;             /* a unique node number for each node to make output
+  int node_nr;             /**< a unique node number for each node to make output
 			      readable. */
 #endif
-  attr attr;               /* attribute of this node. Depends on opcode. */
-                           /* Must be last field of struct ir_node. */
+  attr attr;               /**< attribute of this node. Depends on opcode.
+                              Must be last field of struct ir_node. */
 };
 
-/* Copies all attributes stored in the old node  to the new node.
-   Assumes both have the same opcode and sufficient size. */
+/** Copies all attributes stored in the old node  to the new node.
+    Assumes both have the same opcode and sufficient size. */
 void
 copy_attrs (ir_node *old, ir_node *new);
 
 
-/* Print IR-Nodes with attributes */
-/* @@@@ brauchen wir dienoch? dann fliegt ev. das xprint raus?*/
+/** Print IR-Nodes with attributes
+    @todo brauchen wir dienoch? dann fliegt ev. das xprint raus? */
 int ir_node_print (XP_PAR1, const xprintf_info *, XP_PARN);
 
-/* Returns the array with the ins.  The content of the array may not be
+/** Returns the array with the ins.  The content of the array may not be
    changed.  */
 ir_node     **get_irn_in            (ir_node *node);
 
-/** access attributes directly **/
+/*@{*/
+/** access attributes directly */
 INLINE tarval       *get_irn_const_attr    (ir_node *node);
 INLINE long          get_irn_proj_attr     (ir_node *node);
 INLINE alloc_attr    get_irn_alloc_attr    (ir_node *node);
@@ -194,5 +199,6 @@ type         *get_irn_call_attr     (ir_node *node);
 sel_attr      get_irn_sel_attr      (ir_node *node);
 int           get_irn_phi_attr      (ir_node *node);
 block_attr    get_irn_block_attr   (ir_node *node);
+/*@}*/
 
 # endif /* _IRNODE_T_H_ */
