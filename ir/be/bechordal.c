@@ -131,11 +131,11 @@ static void draw_interval_graphs(ir_node *block,
 				int pos = last_pos - seen[nr];
 				int end_pos = last_pos - b->step;
 				int live_in = is_live_in(block, irn);
-				int live_out = is_live_out(block, irn);
+				int live_end = is_live_end(block, irn);
 				int y_val = y_dist * col;
 
 				int red = 0;
-				int green = live_out;
+				int green = live_end;
 				int blue = live_in;
 
 				fprintf(f, "0 0 0 setrgbcolor\n");
@@ -211,7 +211,7 @@ static void block_alloc(ir_node *block, void *env_ptr)
 	border_t *b;
 	struct list_head head;
 	pset *live_in = get_live_in(block);
-	pset *live_out = get_live_out(block);
+	pset *live_end = get_live_end(block);
 	ir_node *idom = get_Block_idom(block);
 
 	/*
@@ -240,7 +240,7 @@ static void block_alloc(ir_node *block, void *env_ptr)
 	 * Make final uses of all values live out of the block.
 	 * They are neccessary to build up real intervals.
 	 */
-	for(irn = pset_first(live_out); irn; irn = pset_next(live_out)) {
+	for(irn = pset_first(live_end); irn; irn = pset_next(live_end)) {
 		DBG((dbg, LEVEL_3, "Making live: %n/%d\n", irn, get_irn_graph_nr(irn)));
 		bitset_set(live, get_irn_graph_nr(irn));
 		if(!is_Phi(irn) && is_allocatable_irn(irn))
@@ -449,6 +449,12 @@ void be_ra_chordal_done(ir_graph *irg)
 
 int phi_ops_interfere(const ir_node *a, const ir_node *b)
 {
+	return values_interfere(a, b);
+}
+
+#if 0
+int phi_ops_interfere(const ir_node *a, const ir_node *b)
+{
 	ir_graph *irg = get_irn_irg(a);
 	env_t *env = get_irg_ra_link(irg);
 
@@ -456,3 +462,4 @@ int phi_ops_interfere(const ir_node *a, const ir_node *b)
 
 	return are_connected(env, get_irn_graph_nr(a), get_irn_graph_nr(b));
 }
+#endif

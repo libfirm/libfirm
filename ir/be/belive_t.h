@@ -15,6 +15,8 @@
 typedef struct _block_live_info_t {
 	pset *in; 				/**< The set of all values live in at that block. */
 	pset *out;				/**< The set of all values live out. */
+	pset *end;				/**< The set of all values live at the end
+											of the block (contains all live out). */
 } block_live_info_t;
 
 typedef struct _node_live_info_t {
@@ -58,6 +60,14 @@ static INLINE int __is_live_out(const ir_node *block, const ir_node *irn)
 	return pset_find_ptr(info->out, irn) != NULL;
 }
 
+static INLINE int __is_live_end(const ir_node *block, const ir_node *irn)
+{
+	block_live_info_t *info = get_block_live_info(block);
+
+	assert(is_Block(block) && "Need a block here");
+	return pset_find_ptr(info->end, irn) != NULL;
+}
+
 static INLINE pset *__get_live_in(const ir_node *block)
 {
 	assert(is_Block(block) && "Need a block here");
@@ -70,11 +80,19 @@ static INLINE pset *__get_live_out(const ir_node *block)
 	return get_block_live_info(block)->out;
 }
 
+static INLINE pset *__get_live_end(const ir_node *block)
+{
+	assert(is_Block(block) && "Need a block here");
+	return get_block_live_info(block)->end;
+}
+
 #define is_phi_operand(irn)			__is_phi_operand(irn)
 #define is_live_in(bl,irn) 			__is_live_in(bl, irn)
 #define is_live_out(bl,irn) 		__is_live_out(bl, irn)
+#define is_live_end(bl,irn) 		__is_live_end(bl, irn)
 #define get_live_in(bl)					__get_live_in(bl)
 #define get_live_out(bl)				__get_live_out(bl)
+#define get_live_end(bl)				__get_live_end(bl)
 
 /**
  * Initialize the liveness module.

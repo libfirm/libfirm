@@ -76,7 +76,7 @@ static void localize_const_walker(ir_node *irn, void *data)
 
 				/* Special treatment for phi nodes, because phi-usage is different */
 				tgt_block = get_nodes_block(irn);
-				if (is_Phi(irn))
+				if(is_Phi(irn))
 					tgt_block = get_nodes_block(get_irn_n(tgt_block, i));
 
 				/*

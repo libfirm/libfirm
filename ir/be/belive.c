@@ -15,8 +15,11 @@
 #include "beutil.h"
 #include "belive_t.h"
 
+#define DEFAULT_LIVE_SET_SIZE 				8
+
 FIRM_IMPL2(is_live_in, int, const ir_node *, const ir_node *)
 FIRM_IMPL2(is_live_out, int, const ir_node *, const ir_node *)
+FIRM_IMPL2(is_live_end, int, const ir_node *, const ir_node *)
 
 /** The offset of the liveness information in a firm node. */
 size_t live_irn_data_offset = 0;
@@ -38,6 +41,12 @@ static INLINE void mark_live_out(ir_node *block, const ir_node *irn)
 	pset_insert_ptr(info->out, irn);
 }
 
+static INLINE void mark_live_end(ir_node *block, const ir_node *irn)
+{
+	block_live_info_t *info = get_block_live_info(block);
+	pset_insert_ptr(info->end, irn);
+}
+
 /**
  * Mark a node (value) live out at a certain block. Do this also
  * transitively, i.e. if the block is not the block of the value's
@@ -45,14 +54,20 @@ static INLINE void mark_live_out(ir_node *block, const ir_node *irn)
  * @param def The node (value).
  * @param block The block to mark the value live out of.
  * @param visited A set were all visited blocks are recorded.
+ * @param is_true_out Is the node real out there or only live at the end
+ * of the block.
  */
-static void live_out_at_block(ir_node *def, ir_node *block, pset *visited)
+static void live_end_at_block(ir_node *def, ir_node *block,
+		pset *visited, int is_true_out)
 {
 	if(pset_find_ptr(visited, block))
 		return;
 
 	pset_insert_ptr(visited, block);
-	mark_live_out(block, def);
+	mark_live_end(block, def);
+
+	if(is_true_out)
+		mark_live_out(block, def);
 
 	/*
 	 * If this block is not the definition block, we have to go up
@@ -64,7 +79,7 @@ static void live_out_at_block(ir_node *def, ir_node *block, pset *visited)
 		mark_live_in(block, def);
 
 		for(i = 0, n = get_irn_arity(block); i < n; ++i)
-			live_out_at_block(def, get_nodes_block(get_irn_n(block, i)), visited);
+			live_end_at_block(def, get_nodes_block(get_irn_n(block, i)), visited, 1);
 	}
 }
 
@@ -124,7 +139,7 @@ static void liveness_for_node(ir_node *irn, void *env)
 			for(i = 0, n = get_irn_arity(use); i < n; ++i) {
 				if(get_irn_n(use, i) == irn) {
 					ir_node *pred_block = get_nodes_block(get_irn_n(use_block, i));
-					live_out_at_block(irn, pred_block, visited);
+					live_end_at_block(irn, pred_block, visited, 0);
 				}
 			}
 		}
@@ -140,7 +155,7 @@ static void liveness_for_node(ir_node *irn, void *env)
 
 			for(i = 0, n = get_irn_arity(use_block); i < n; ++i) {
 				ir_node *pred_block = get_nodes_block(get_irn_n(use_block, i));
-				live_out_at_block(irn, pred_block, visited);
+				live_end_at_block(irn, pred_block, visited, 1);
 			}
 		}
 	}
@@ -151,8 +166,9 @@ static void liveness_for_node(ir_node *irn, void *env)
 static void create_sets(ir_node *block, void *env)
 {
 	block_live_info_t *info = get_block_live_info(block);
-	info->in = pset_new_ptr(128);
-	info->out = pset_new_ptr(128);
+	info->in = pset_new_ptr(DEFAULT_LIVE_SET_SIZE);
+	info->out = pset_new_ptr(DEFAULT_LIVE_SET_SIZE);
+	info->end = pset_new_ptr(DEFAULT_LIVE_SET_SIZE);
 }
 
 
@@ -165,6 +181,7 @@ static void liveness_dump(ir_node *block, void *env)
 	ir_fprintf(f, "liveness at block %n\n", block);
 	ir_fprintf(f, "\tlive  in: %*n\n", pset_iterator, info->in);
 	ir_fprintf(f, "\tlive out: %*n\n", pset_iterator, info->out);
+	ir_fprintf(f, "\tlive end: %*n\n", pset_iterator, info->end);
 }
 
 void be_liveness_dump(FILE *f, ir_graph *irg)

@@ -38,5 +38,12 @@ int (is_live_in)(const ir_node *block, const ir_node *irn);
  */
 int (is_live_out)(const ir_node *block, const ir_node *irn);
 
+/**
+ * Check, if a node is live at the end of a block.
+ * @param block The block.
+ * @param irn The node to check for.
+ * @return 1, if @p irn is live at the end of the block, 0 if not.
+ */
+int (is_live_end)(const ir_node *block, const ir_node *irn);
 
 #endif
