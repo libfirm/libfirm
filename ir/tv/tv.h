@@ -244,26 +244,29 @@ int tarval_is_double(tarval *tv);
 /** Returns the mode of the tarval. */
 ir_mode *get_tarval_mode (tarval *tv);
 
+/** Returns the contents of the 'link' field of the tarval */
+/* void *get_tarval_link (tarval*); */
+
 /* Testing properties of the represented values */
 
 /**
  * Returns 1 if tv is negative
  *
- * @param a	the tarval
+ * @param a the tarval
  */
 int tarval_is_negative(tarval *a);
 
 /**
  * Returns 1 if tv is null
  *
- * @param a	the tarval
+ * @param a the tarval
  */
 int tarval_is_null(tarval *a);
 
 /**
  * Returns 1 if tv is the "one"
  *
- * @param a	the tarval
+ * @param a the tarval
  */
 int tarval_is_one(tarval *a);
 
@@ -466,12 +469,12 @@ int tarval_carry(void);
  * However, we can do this in the tarval much simplier...
  */
 typedef enum {
-  TVO_NATIVE,			/**< the default output mode, depends on the mode */
-  TVO_HEX,			/**< use hex representation, always possible */
-  TVO_DECIMAL,			/**< use decimal representation */
-  TVO_OCTAL,			/**< use octal representation */
-  TVO_BINARY,			/**< use binary representation */
-  TVO_FLOAT,			/**< use floating point representation (i.e 1.342e-2)*/
+  TVO_NATIVE,           /**< the default output mode, depends on the mode */
+  TVO_HEX,          /**< use hex representation, always possible */
+  TVO_DECIMAL,          /**< use decimal representation */
+  TVO_OCTAL,            /**< use octal representation */
+  TVO_BINARY,           /**< use binary representation */
+  TVO_FLOAT,            /**< use floating point representation (i.e 1.342e-2)*/
   TVO_HEXFLOAT                  /**< use hexadecimal floating point representation (i.e 0x1.ea32p-12)*/
 } tv_output_mode;
 
@@ -480,11 +483,11 @@ typedef enum {
  * of a tarval of a mode.
  */
 typedef struct tarval_mode_info {
-    tv_output_mode mode_output;	        /**< if != TVO_NATIVE select a special mode */
-    const char *mode_prefix;		/**< if set, this prefix will be printed
-					     before a value of this mode */
-    const char *mode_suffix;		/**< if set, this suffix will be printed
-					     after a value of this mode */
+    tv_output_mode mode_output;         /**< if != TVO_NATIVE select a special mode */
+    const char *mode_prefix;        /**< if set, this prefix will be printed
+                         before a value of this mode */
+    const char *mode_suffix;        /**< if set, this suffix will be printed
+                         after a value of this mode */
 } tarval_mode_info;
 
 /**
@@ -492,8 +495,8 @@ typedef struct tarval_mode_info {
  *
  * This functions stores the modinfo, so DO NOT DESTROY it.
  *
- * @param mode		a ir_mode that should be associated
- * @param modeinfo	the output format info
+ * @param mode      a ir_mode that should be associated
+ * @param modeinfo  the output format info
  *
  * @return zero on success.
  */
@@ -504,7 +507,7 @@ int  set_tarval_mode_output_option(ir_mode *mode, const tarval_mode_info *modein
  *
  * This functions returns the modinfo of a given mode.
  *
- * @param mode		a ir_mode that should be associated
+ * @param mode      a ir_mode that should be associated
  *
  * @return the output option
  */
@@ -554,8 +557,8 @@ char *get_tarval_bitpattern(tarval *tv);
  * - concatenation (endian dependance MUST be handled by the CALLER)
  * - bitwise logical operations to select/mask bits
  *
- * @param tv		the tarval
- * @param byte_ofs	the byte offset
+ * @param tv        the tarval
+ * @param byte_ofs  the byte offset
  *
  * @note
  *   The result of this funcion is undefined if the mode is neither integer nor float.
@@ -566,10 +569,10 @@ unsigned char get_tarval_sub_bits(tarval *tv, unsigned byte_ofs);
  * Return values of tarval classify
  */
 typedef enum _tarval_classification_t {
-  TV_CLASSIFY_NULL    =  0,	/**< the tarval represents the additive neutral element */
-  TV_CLASSIFY_ONE     = +1,	/**< the tarval represents the multiplicative neutral element */
-  TV_CLASSIFY_ALL_ONE = -1,	/**< the tarval represents the bitwise-and neutral element */
-  TV_CLASSIFY_OTHER   =  2	/**< all other tarvals */
+  TV_CLASSIFY_NULL    =  0, /**< the tarval represents the additive neutral element */
+  TV_CLASSIFY_ONE     = +1, /**< the tarval represents the multiplicative neutral element */
+  TV_CLASSIFY_ALL_ONE = -1, /**< the tarval represents the bitwise-and neutral element */
+  TV_CLASSIFY_OTHER   =  2  /**< all other tarvals */
 } tarval_classification_t;
 
 /**

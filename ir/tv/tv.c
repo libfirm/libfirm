@@ -415,6 +415,15 @@ ir_mode *get_tarval_mode (tarval *tv)       /* get the mode of the tarval */
 }
 
 /*
+void *get_tarval_link (tarval *tv)
+{
+  ANNOUNCE ();
+  assert (tv);
+  return (tv->link);
+}
+*/
+
+/*
  * Special value query functions ============================================
  *
  * These functions calculate and return a tarval representing the requested
@@ -1432,19 +1441,19 @@ int tarval_snprintf(char *buf, size_t len, tarval *tv)
     case irms_reference:
       if (tv == tarval_P_void) return snprintf(buf, len, "NULL");
       if (tv->value != NULL){
-	  if (len > tv->length) {
-	    memcpy(buf, tv->value, tv->length);
-	    buf[tv->length] = '\0';
-	  }
-	  else {
-	    /* truncated */
-	    memcpy(buf, tv->value, len-1);
-	    buf[len-1] = '\0';
-	  }
-	  return tv->length;
+      if (len > tv->length) {
+        memcpy(buf, tv->value, tv->length);
+        buf[tv->length] = '\0';
+      }
+      else {
+        /* truncated */
+        memcpy(buf, tv->value, len-1);
+        buf[len-1] = '\0';
+      }
+      return tv->length;
          }
       else
-	return snprintf(buf, len, "void");
+    return snprintf(buf, len, "void");
 
     case irms_internal_boolean:
       switch (mode_info->mode_output) {
@@ -1496,7 +1505,7 @@ char *get_tarval_bitpattern(tarval *tv)
     byte = get_tarval_sub_bits(tv, i);
     for(j = 1; j < 256; j <<= 1)
       if(pos < n)
-	res[pos++] = j & byte ? '1' : '0';
+    res[pos++] = j & byte ? '1' : '0';
   }
 
   res[n] = '\0';

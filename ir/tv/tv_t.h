@@ -52,9 +52,10 @@ void finish_tarval(void);
  *   irmode.h for predefined modes
  */
 struct tarval {
-    ir_mode *mode; 		/**< the mode of the stored value */
-    const void *value; 		/**< the value stored in an internal way... */
-    unsigned int length; 	/**< the length of the stored value */
+    ir_mode *mode;      /**< the mode of the stored value */
+    const void *value;      /**< the value stored in an internal way... */
+    unsigned int length;    /**< the length of the stored value */
+  /* void *link; */                   /**< some opaque information */
 };
 
 /** remove tarval representing an entity that is about to be destroyed */
