@@ -70,6 +70,7 @@ ir_op *op_Tuple;	   ir_op *get_op_Tuple     () { return op_Tuple;     }
 ir_op *op_Proj;		   ir_op *get_op_Proj      () { return op_Proj;      }
 ir_op *op_Id;		   ir_op *get_op_Id        () { return op_Id;        }
 ir_op *op_Bad;		   ir_op *get_op_Bad       () { return op_Bad;       }
+ir_op *op_Confirm;	   ir_op *get_op_Confirm   () { return op_Confirm;   }
 
 ir_op *op_Unknown;	   ir_op *get_op_Unknown   () { return op_Unknown;   }
 ir_op *op_Filter;	   ir_op *get_op_Filter    () { return op_Filter;    }
@@ -146,13 +147,14 @@ init_op(void)
   op_Free  = new_ir_op (iro_Free,  "Free",   pinned, 1, sizeof (type *));
   op_Sync  = new_ir_op (iro_Sync,  "Sync",   pinned, 0, 0);
 
-  op_Proj  = new_ir_op (iro_Proj,  "Proj",   floats, 0, sizeof (long));
-  op_Tuple = new_ir_op (iro_Tuple, "Tuple",  floats, 1, 0);
-  op_Id    = new_ir_op (iro_Id,    "Id",     floats, 0, 0);
-  op_Bad   = new_ir_op (iro_Bad,   "Bad",    floats, 0, 0);
+  op_Proj      = new_ir_op (iro_Proj,      "Proj",      floats, 0, sizeof (long));
+  op_Tuple     = new_ir_op (iro_Tuple,     "Tuple",     floats, 1, 0);
+  op_Id        = new_ir_op (iro_Id,        "Id",        floats, 0, 0);
+  op_Bad       = new_ir_op (iro_Bad,       "Bad",       floats, 0, 0);
+  op_Confirm   = new_ir_op (iro_Confirm,   "Confirm",   floats, 1, sizeof (confirm_attr));
 
   op_Unknown   = new_ir_op (iro_Unknown,   "Unknown",   floats, 0, 0);
-  op_Filter    = new_ir_op (iro_Filter,    "Filter",    pinned, 0, sizeof(filter_attr));
+  op_Filter    = new_ir_op (iro_Filter,    "Filter",    pinned, 1, sizeof(filter_attr));
   op_Break     = new_ir_op (iro_Break,     "Break",     pinned, 0, 0);
   op_CallBegin = new_ir_op (iro_CallBegin, "CallBegin", pinned, 0, sizeof(callbegin_attr));
   op_EndReg    = new_ir_op (iro_EndReg,    "EndReg",    pinned, 0, sizeof(end_attr));

@@ -2126,6 +2126,31 @@ set_Id_pred (ir_node *node, ir_node *pred) {
   set_irn_n(node, 0, pred);
 }
 
+INLINE ir_node *get_Confirm_value (ir_node *node) {
+  assert (node->op == op_Confirm);
+  return get_irn_n(node, 0);
+}
+INLINE void     set_Confirm_value (ir_node *node, ir_node *value) {
+  assert (node->op == op_Confirm);
+  set_irn_n(node, 0, value);
+}
+INLINE ir_node *get_Confirm_bound (ir_node *node) {
+  assert (node->op == op_Confirm);
+  return get_irn_n(node, 1);
+}
+INLINE void     set_Confirm_bound (ir_node *node, ir_node *bound) {
+  assert (node->op == op_Confirm);
+  set_irn_n(node, 0, bound);
+}
+INLINE pn_Cmp   get_Confirm_cmp   (ir_node *node) {
+  assert (node->op == op_Confirm);
+  return node->attr.confirm_cmp;
+}
+INLINE void     set_Confirm_cmp   (ir_node *node, pn_Cmp cmp) {
+  assert (node->op == op_Confirm);
+  node->attr.confirm_cmp = cmp;
+}
+
 
 INLINE ir_node *
 get_Filter_pred (ir_node *node) {

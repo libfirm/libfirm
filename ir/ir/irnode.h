@@ -668,6 +668,15 @@ INLINE void      set_Tuple_pred (ir_node *node, int pos, ir_node *pred);
 INLINE ir_node  *get_Id_pred (ir_node *node);
 INLINE void      set_Id_pred (ir_node *node, ir_node *pred);
 
+/** Confirm has a single result and returns 'value' unchanged.
+ *  The node expresses a restriction on 'value':
+ *  'value' 'cmp' 'bound' == true.                                 */
+INLINE ir_node *get_Confirm_value (ir_node *node);
+INLINE void     set_Confirm_value (ir_node *node, ir_node *value);
+INLINE ir_node *get_Confirm_bound (ir_node *node);
+INLINE void     set_Confirm_bound (ir_node *node, ir_node *bound);
+INLINE pn_Cmp   get_Confirm_cmp   (ir_node *node);
+INLINE void     set_Confirm_cmp   (ir_node *node, pn_Cmp cmp);
 
 /*
  *

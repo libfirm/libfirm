@@ -679,7 +679,7 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
           /* Free: BB x M x ref --> M */
           op1mode == mode_M && mode_is_reference(op2mode) &&
           mymode == mode_M,
-          "Free node",0
+          "Free node", 0
           );
       break;
 
@@ -693,6 +693,18 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
 
     case iro_Proj:
       return vrfy_Proj_proj(n, irg);
+      break;
+
+    case iro_Confirm:
+      op1mode = get_irn_mode(in[1]);
+      op2mode = get_irn_mode(in[2]);
+      ASSERT_AND_RET(
+          /* Confirm: BB x T x T --> T */
+          op1mode == mymode &&
+	  op2mode == mymode,
+          "Confirm node", 0
+          );
+
       break;
 
     default:

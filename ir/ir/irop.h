@@ -38,7 +38,7 @@ typedef enum {
   iro_Cmp,  iro_Shl, iro_Shr, iro_Shrs, iro_Rot, iro_Conv, iro_Cast,
   iro_Phi,
   iro_Load, iro_Store, iro_Alloc, iro_Free, iro_Sync,
-  iro_Proj, iro_Tuple, iro_Id, iro_Bad,
+  iro_Proj, iro_Tuple, iro_Id, iro_Bad, iro_Confirm,
   iro_Unknown, iro_Filter, iro_Break, iro_CallBegin, iro_EndReg, iro_EndExcept
 } opcode;
 
@@ -93,6 +93,7 @@ extern ir_op *op_Tuple;           ir_op *get_op_Tuple     (void);
 extern ir_op *op_Proj;            ir_op *get_op_Proj      (void);
 extern ir_op *op_Id;              ir_op *get_op_Id        (void);
 extern ir_op *op_Bad;             ir_op *get_op_Bad       (void);
+extern ir_op *op_Confirm;         ir_op *get_op_Confirm   (void);
 
 extern ir_op *op_Unknown;         ir_op *get_op_Unknown   (void);
 extern ir_op *op_Filter;          ir_op *get_op_Filter    (void);

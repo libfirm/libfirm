@@ -715,6 +715,22 @@ new_rd_Bad (ir_graph *irg)
 }
 
 INLINE ir_node *
+new_rd_Confirm (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *val, ir_node *bound, pn_Cmp cmp)
+{
+  ir_node *in[2], *res;
+  in[0] = val;
+  in[1] = bound;
+
+  res = new_ir_node (db, irg, block, op_Confirm, get_irn_mode(val), 2, in);
+
+  res->attr.confirm_cmp = cmp;
+
+  res = optimize_node (res);
+  irn_vrfy_irg(res, irg);
+  return res;
+}
+
+INLINE ir_node *
 new_rd_Unknown (ir_graph *irg)
 {
   return irg->unknown;
@@ -2128,7 +2144,7 @@ ir_node *
 new_d_Sync (dbg_info* db, int arity, ir_node** in)
 {
   return new_rd_Sync (db, current_ir_graph, current_ir_graph->current_block,
-		     arity, in);
+		      arity, in);
 }
 
 
@@ -2136,6 +2152,13 @@ ir_node *
 new_d_Bad (void)
 {
   return current_ir_graph->bad;
+}
+
+ir_node *
+new_d_Confirm (dbg_info *db, ir_node *val, ir_node *bound, pn_Cmp cmp)
+{
+  return new_rd_Confirm (db, current_ir_graph, current_ir_graph->current_block,
+			 val, bound, cmp);
 }
 
 ir_node *
@@ -2458,6 +2481,9 @@ ir_node *new_Id     (ir_node *val, ir_mode *mode) {
 }
 ir_node *new_Bad    (void) {
   return new_d_Bad();
+}
+ir_node *new_Confirm (ir_node *val, ir_node *bound, pn_Cmp cmp) {
+  return new_d_Confirm (NULL, val, bound, cmp);
 }
 ir_node *new_Unknown(void) {
   return new_d_Unknown();

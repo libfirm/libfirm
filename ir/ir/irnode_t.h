@@ -144,6 +144,8 @@ typedef struct {
   type *totype;
 } cast_attr;
 
+typedef pn_Cmp confirm_attr; /** Attribute to hold compare operation */
+
 /** Some irnodes just have one attribute, these are stored here,
    some have more. Their name is 'irnodename_attr' */
 typedef union {
@@ -169,6 +171,7 @@ typedef union {
 			   Field n set to true if pred n is backedge.
 			   @todo Ev. replace by bitfield! */
   long           proj;  /**< For Proj: contains the result position to project */
+  confirm_attr   confirm_cmp;   /**< For Confirm: compare operation */
   filter_attr    filter;    /**< For Filter */
   end_attr       end;       /**< For EndReg, EndExcept */
 #if PRECISE_EXC_CONTEXT

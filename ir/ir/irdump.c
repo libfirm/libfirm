@@ -146,13 +146,15 @@ dump_node_opcode (ir_node *n)
   char buf[1024];
   int res;
 
-  /* Const */
-  if (get_irn_opcode(n) == iro_Const) {    res = tarval_snprintf(buf, sizeof(buf), get_Const_tarval(n));
+  switch(get_irn_opcode(n)) {
+
+  case iro_Const: {
+    res = tarval_snprintf(buf, sizeof(buf), get_Const_tarval(n));
     assert(res < sizeof(buf) && "buffer to small for tarval_snprintf");
     fprintf(F, buf);
+  } break;
 
-  /* SymConst */
-  } else if (get_irn_opcode(n) == iro_SymConst) {
+  case iro_SymConst: {
     if (get_SymConst_kind(n) == linkage_ptr_info) {
       /* don't use get_SymConst_ptr_info as it mangles the name. */
       fprintf (F, "SymC %s", get_id_str(get_SymConst_ptrinfo(n)));
@@ -165,15 +167,17 @@ dump_node_opcode (ir_node *n)
       else
         fprintf (F, "size");
     }
+  } break;
 
-  /* Filter */
-  } else if (get_irn_opcode(n) == iro_Filter && !interprocedural_view) {
-    fprintf(F, "Proj'");
+  case iro_Filter: {
+    if (!interprocedural_view) fprintf(F, "Proj'");
+  } break;
 
-  /* all others */
-  } else {
+  default: {
     fprintf (F, "%s", get_id_str(get_irn_opident(n)));
   }
+
+  }  /* end switch */
 }
 
 static INLINE void
@@ -197,6 +201,7 @@ dump_node_mode (ir_node *n)
   case iro_Shr:
   case iro_Abs:
   case iro_Cmp:
+  case iro_Confirm:
     fprintf (F, "%s", get_mode_name(get_irn_mode(n)));
     break;
   default:
@@ -242,6 +247,10 @@ dump_node_nodeattr (ir_node *n)
   case iro_Cast: {
     fprintf (F, "(%s)", get_type_name(get_Cast_type(n)));
     } break;
+  case iro_Confirm: {
+    fprintf (F, "%s", get_pnc_string(get_Confirm_cmp(n)));
+    } break;
+
   default:
     ;
   } /* end switch */
