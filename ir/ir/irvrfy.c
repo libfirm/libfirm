@@ -290,10 +290,10 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
 
     case iro_Cond:
       ASSERT_AND_RET_DBG(
-	(
-          (proj >= 0 && mode == mode_X && get_irn_mode(get_Cond_selector(pred)) == mode_b) ||	/* compare */
-	  (mode == mode_X && mode_is_int(get_irn_mode(get_Cond_selector(pred))))		/* switch */
-	),
+        (
+          (proj >= 0 && mode == mode_X && get_irn_mode(get_Cond_selector(pred)) == mode_b) ||   /* compare */
+          (mode == mode_X && mode_is_int(get_irn_mode(get_Cond_selector(pred))))                /* switch */
+        ),
         "wrong Proj from Cond", 0,
         show_proj_failure(p);
       );
@@ -355,7 +355,7 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
          (proj == pn_Div_X_except && mode == mode_X) ||
          (proj == pn_Div_res      && mode_is_int(mode))),
         "wrong Proj from Div or Mod", 0,
-	show_proj_failure(p);
+        show_proj_failure(p);
       );
       break;
 
@@ -379,31 +379,31 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
 
     case iro_Load:
       if (proj == pn_Load_res) {
-	ir_node *ptr = get_Load_ptr(pred);
-	entity *ent = get_ptr_entity(ptr);
+        ir_node *ptr = get_Load_ptr(pred);
+        entity *ent = get_ptr_entity(ptr);
 
-	if (vrfy_entities && ent && get_irg_phase_state(current_ir_graph) == phase_high) {
-	  /* do NOT check this for lowered phases, see comment on Store */
-	  ASSERT_AND_RET_DBG(
-			     (mode == get_type_mode(get_entity_type(ent))),
-			     "wrong data Proj from Load, entity type_mode failed", 0,
-			     show_proj_failure_ent(p, ent);
-			     );
-	}
-	else {
-	  ASSERT_AND_RET_DBG(
-			     mode_is_data(mode) && mode == get_Load_mode(pred),
-			     "wrong data Proj from Load", 0,
-			     show_proj_failure(p);
-			     );
-	}
+        if (vrfy_entities && ent && get_irg_phase_state(current_ir_graph) == phase_high) {
+          /* do NOT check this for lowered phases, see comment on Store */
+          ASSERT_AND_RET_DBG(
+                             (mode == get_type_mode(get_entity_type(ent))),
+                             "wrong data Proj from Load, entity type_mode failed", 0,
+                             show_proj_failure_ent(p, ent);
+                             );
+        }
+        else {
+          ASSERT_AND_RET_DBG(
+                             mode_is_data(mode) && mode == get_Load_mode(pred),
+                             "wrong data Proj from Load", 0,
+                             show_proj_failure(p);
+                             );
+        }
       } else {
-	ASSERT_AND_RET_DBG(
-			   ((proj == pn_Load_M        && mode == mode_M) ||
-			    (proj == pn_Load_X_except && mode == mode_X)),
-			   "wrong Proj from Load", 0,
-			   show_proj_failure(p);
-			   );
+        ASSERT_AND_RET_DBG(
+                           ((proj == pn_Load_M        && mode == mode_M) ||
+                            (proj == pn_Load_X_except && mode == mode_X)),
+                           "wrong Proj from Load", 0,
+                           show_proj_failure(p);
+                           );
       }
       break;
 
@@ -440,31 +440,31 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
           case iro_Start:
             mt = get_entity_type(get_irg_entity(irg));
 
-        if (nr == pn_Start_T_args) {
-              ASSERT_AND_RET(
-                  (proj >= 0 && mode_is_data(mode)),
-                  "wrong Proj from Proj from Start", 0);
-              ASSERT_AND_RET(
-                (proj < get_method_n_params(mt)),
-                "More Projs for args than args in type", 0
-              );
-              if ((mode_is_reference(mode)) && is_compound_type(get_method_param_type(mt, proj)))
-                /* value argument */ break;
+            if (nr == pn_Start_T_args) {
+                  ASSERT_AND_RET(
+                      (proj >= 0 && mode_is_data(mode)),
+                      "wrong Proj from Proj from Start", 0);
+                  ASSERT_AND_RET(
+                    (proj < get_method_n_params(mt)),
+                    "More Projs for args than args in type", 0
+                  );
+                  if ((mode_is_reference(mode)) && is_compound_type(get_method_param_type(mt, proj)))
+                    /* value argument */ break;
 
+                  ASSERT_AND_RET(
+                      (mode == get_type_mode(get_method_param_type(mt, proj))),
+                      "Mode of Proj from Start doesn't match mode of param type.", 0);
+                }
+            else if (nr == pn_Start_P_value_arg_base) {
               ASSERT_AND_RET(
-                  (mode == get_type_mode(get_method_param_type(mt, proj))),
-                  "Mode of Proj from Start doesn't match mode of param type.", 0);
+                      (proj >= 0 && mode_is_reference(mode)),
+                      "wrong Proj from Proj from Start", 0
+                  );
+                  ASSERT_AND_RET(
+                    (proj < get_method_n_params(mt)),
+                    "More Projs for args than args in type", 0
+                  );
             }
-        else if (nr == pn_Start_P_value_arg_base) {
-          ASSERT_AND_RET(
-                  (proj >= 0 && mode_is_reference(mode)),
-                  "wrong Proj from Proj from Start", 0
-              );
-              ASSERT_AND_RET(
-                (proj < get_method_n_params(mt)),
-                "More Projs for args than args in type", 0
-              );
-        }
             break;
 
           case iro_Call:
@@ -482,12 +482,15 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
               ASSERT_AND_RET(
                   (mode == get_type_mode(get_method_res_type(mt, proj))),
                   "Mode of Proj from Call doesn't match mode of result type.", 0);
-
             }
             break;
 
           case iro_Tuple:
             /* We don't test */
+            break;
+
+          case iro_Bad:
+            /* hmm, optimization did not remove it */
             break;
 
           default:
@@ -666,22 +669,22 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
 
     case iro_Const: {
       ASSERT_AND_RET(
-		     /* Const: BB --> data */
-		     (mode_is_data (mymode) ||
-		      mymode == mode_b)      /* we want boolean constants for static evaluation */
-		     ,"Const node", 0        /* of Cmp. */
-		     );
+                     /* Const: BB --> data */
+                     (mode_is_data (mymode) ||
+                      mymode == mode_b)      /* we want boolean constants for static evaluation */
+                     ,"Const node", 0        /* of Cmp. */
+                     );
       } break;
     case iro_SymConst:
       if (get_SymConst_kind(n) == symconst_addr_ent) {
-	entity *ent = get_SymConst_entity(n);
-	if (is_method_type(get_entity_type(ent)) &&
-	    get_irn_irg(n) != get_const_code_irg()) {
+        entity *ent = get_SymConst_entity(n);
+        if (is_method_type(get_entity_type(ent)) &&
+            get_irn_irg(n) != get_const_code_irg()) {
 #if 1
-	  ASSERT_AND_RET((get_entity_peculiarity(ent) != peculiarity_description),
-			 "A constant must address an existing method.", 0);
+          ASSERT_AND_RET((get_entity_peculiarity(ent) != peculiarity_description),
+                         "A constant must address an existing method.", 0);
 #endif
-	}
+        }
       }
       ASSERT_AND_RET(
                      /* SymConst: BB --> int*/
@@ -721,7 +724,7 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
 
       mt = get_Call_type(n);
       if(get_unknown_type() == mt) {
-	break;
+        break;
       }
 
       for (i=3; i < get_irn_arity(n); i++) {
@@ -747,30 +750,30 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       }
 
       for (i = 0; i < get_method_n_params(mt); i++) {
-	type *t = get_method_param_type(mt, i);
+        type *t = get_method_param_type(mt, i);
 
-	if (is_atomic_type(t)) {
-	  ASSERT_AND_RET_DBG(
-			     get_irn_mode(get_Call_param(n, i)) == get_type_mode(t),
-			     "Mode of arg for Call doesn't match mode of arg type.", 0,
-			     show_call_param(n, mt);
-			     );
-	}
-	else {
-	  /* call with a compound type, mode must be reference */
-	  ASSERT_AND_RET_DBG(
-			     mode_is_reference(get_irn_mode(get_Call_param(n, i))),
-			     "Mode of arg for Call doesn't match mode of arg type.", 0,
-			     show_call_param(n, mt);
-			     );
-	}
+        if (is_atomic_type(t)) {
+          ASSERT_AND_RET_DBG(
+                             get_irn_mode(get_Call_param(n, i)) == get_type_mode(t),
+                             "Mode of arg for Call doesn't match mode of arg type.", 0,
+                             show_call_param(n, mt);
+                             );
+        }
+        else {
+          /* call with a compound type, mode must be reference */
+          ASSERT_AND_RET_DBG(
+                             mode_is_reference(get_irn_mode(get_Call_param(n, i))),
+                             "Mode of arg for Call doesn't match mode of arg type.", 0,
+                             show_call_param(n, mt);
+                             );
+        }
       }
 
 #if 0
       if (Call_has_callees(n)) {
-	for (i = 0; i < get_Call_n_callees(n); i++) {
-	  ASSERT_AND_RET(is_entity(get_Call_callee(n, i)), "callee array must contain entities.", 0);
-	}
+        for (i = 0; i < get_Call_n_callees(n); i++) {
+          ASSERT_AND_RET(is_entity(get_Call_callee(n, i)), "callee array must contain entities.", 0);
+        }
       }
 #endif
       break;
@@ -1007,10 +1010,10 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       if (! is_Bad(block) && get_irg_phase_state(get_irn_irg(n)) != phase_building) {
         /* a Phi node MUST have the same number of inputs as its block */
         ASSERT_AND_RET_DBG(
-	  get_irn_arity(n) == get_irn_arity(block),
-	  "wrong number of inputs in Phi node", 0,
-	  show_phi_inputs(n, block);
-	);
+          get_irn_arity(n) == get_irn_arity(block),
+          "wrong number of inputs in Phi node", 0,
+          show_phi_inputs(n, block);
+        );
       }
 
       /* Phi: BB x dataM^n --> dataM */
@@ -1065,13 +1068,13 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
 
       entity *target = get_ptr_entity(in[2]);
       if (vrfy_entities && target && get_irg_phase_state(current_ir_graph) == phase_high) {
-	/*
-	 * If lowered code, any Sels that add 0 may be removed, causing
-	 * an direct access to entities of array or compound type.
-	 * Prevent this by checking the phase.
-	 */
-	ASSERT_AND_RET( op3mode == get_type_mode(get_entity_type(target)),
-			"Store node", 0);
+        /*
+         * If lowered code, any Sels that add 0 may be removed, causing
+         * an direct access to entities of array or compound type.
+         * Prevent this by checking the phase.
+         */
+        ASSERT_AND_RET( op3mode == get_type_mode(get_entity_type(target)),
+                        "Store node", 0);
       }
 
       break;
@@ -1215,16 +1218,16 @@ static void check_bads(ir_node *node, void *env)
       for (i = 0; i < arity; ++i) {
         ir_node *pred = get_irn_n(node, i);
 
-	if (is_Bad(pred)) {
-	  venv->res |= BAD_CF;
+        if (is_Bad(pred)) {
+          venv->res |= BAD_CF;
 
-	  if (opt_do_node_verification == NODE_VERIFICATION_REPORT) {
-	    fprintf(stderr, "irg_vrfy_bads: Block %ld has Bad predecessor\n", get_irn_node_nr(node));
-	  }
-	  if (opt_do_node_verification == NODE_VERIFICATION_ON) {
-	    assert(0 && "Bad CF detected");
-	  }
-	}
+          if (opt_do_node_verification == NODE_VERIFICATION_REPORT) {
+            fprintf(stderr, "irg_vrfy_bads: Block %ld has Bad predecessor\n", get_irn_node_nr(node));
+          }
+          if (opt_do_node_verification == NODE_VERIFICATION_ON) {
+            assert(0 && "Bad CF detected");
+          }
+        }
       }
     }
   }
@@ -1233,27 +1236,27 @@ static void check_bads(ir_node *node, void *env)
 
       /* check for Bad Block */
       if (is_Bad(get_nodes_block(node))) {
-	venv->res |= BAD_BLOCK;
+        venv->res |= BAD_BLOCK;
 
-	if (opt_do_node_verification == NODE_VERIFICATION_REPORT) {
-	  fprintf(stderr, "irg_vrfy_bads: node %ld has Bad Block\n", get_irn_node_nr(node));
-	}
-	if (opt_do_node_verification == NODE_VERIFICATION_ON) {
-	  assert(0 && "Bad CF detected");
-	}
+        if (opt_do_node_verification == NODE_VERIFICATION_REPORT) {
+          fprintf(stderr, "irg_vrfy_bads: node %ld has Bad Block\n", get_irn_node_nr(node));
+        }
+        if (opt_do_node_verification == NODE_VERIFICATION_ON) {
+          assert(0 && "Bad CF detected");
+        }
       }
     }
 
     if ((venv->flags & TUPLE) == 0) {
       if (get_irn_op(node) == op_Tuple) {
-	venv->res |= TUPLE;
+        venv->res |= TUPLE;
 
-	if (opt_do_node_verification == NODE_VERIFICATION_REPORT) {
-	  fprintf(stderr, "irg_vrfy_bads: node %ld is a Tuple\n", get_irn_node_nr(node));
-	}
-	if (opt_do_node_verification == NODE_VERIFICATION_ON) {
-	  assert(0 && "Tuple detected");
-	}
+        if (opt_do_node_verification == NODE_VERIFICATION_REPORT) {
+          fprintf(stderr, "irg_vrfy_bads: node %ld is a Tuple\n", get_irn_node_nr(node));
+        }
+        if (opt_do_node_verification == NODE_VERIFICATION_ON) {
+          assert(0 && "Tuple detected");
+        }
       }
     }
 
@@ -1261,33 +1264,33 @@ static void check_bads(ir_node *node, void *env)
       ir_node *pred = get_irn_n(node, i);
 
       if (is_Bad(pred)) {
-	/* check for Phi with Bad inputs */
-	if (is_Phi(node) && !is_Bad(get_nodes_block(node)) && is_Bad(get_irn_n(get_nodes_block(node), i))) {
-	  if (venv->flags & BAD_CF)
-	    continue;
-	  else {
-	    venv->res |= BAD_CF;
+        /* check for Phi with Bad inputs */
+        if (is_Phi(node) && !is_Bad(get_nodes_block(node)) && is_Bad(get_irn_n(get_nodes_block(node), i))) {
+          if (venv->flags & BAD_CF)
+            continue;
+          else {
+            venv->res |= BAD_CF;
 
-	    if (opt_do_node_verification == NODE_VERIFICATION_REPORT) {
-	      fprintf(stderr, "irg_vrfy_bads: Phi %ld has Bad Input\n", get_irn_node_nr(node));
-	    }
-	    if (opt_do_node_verification == NODE_VERIFICATION_ON) {
-	      assert(0 && "Bad CF detected");
-	    }
-	  }
-	}
+            if (opt_do_node_verification == NODE_VERIFICATION_REPORT) {
+              fprintf(stderr, "irg_vrfy_bads: Phi %ld has Bad Input\n", get_irn_node_nr(node));
+            }
+            if (opt_do_node_verification == NODE_VERIFICATION_ON) {
+              assert(0 && "Bad CF detected");
+            }
+          }
+        }
 
-	/* Bad node input */
-	if ((venv->flags & BAD_DF) == 0) {
-	  venv->res |= BAD_DF;
+        /* Bad node input */
+        if ((venv->flags & BAD_DF) == 0) {
+          venv->res |= BAD_DF;
 
-	  if (opt_do_node_verification == NODE_VERIFICATION_REPORT) {
-	    fprintf(stderr, "irg_vrfy_bads: node %ld has Bad Input\n", get_irn_node_nr(node));
-	  }
-	  if (opt_do_node_verification == NODE_VERIFICATION_ON) {
-	    assert(0 && "Bad NON-CF detected");
-	  }
-	}
+          if (opt_do_node_verification == NODE_VERIFICATION_REPORT) {
+            fprintf(stderr, "irg_vrfy_bads: node %ld has Bad Input\n", get_irn_node_nr(node));
+          }
+          if (opt_do_node_verification == NODE_VERIFICATION_ON) {
+            assert(0 && "Bad NON-CF detected");
+          }
+        }
       }
     }
   }
