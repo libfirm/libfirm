@@ -284,14 +284,6 @@ static void clear_link(ir_node * node, void * env) {
 }
 
 /**
- * Returns non-zero if a node is in floating state.
- */
-static int node_floats(ir_node *n) {
-  return ((get_irn_pinned(n) == op_pin_state_floats) &&
-      (get_irg_pinned(current_ir_graph) == op_pin_state_floats));
-}
-
-/**
  * If the entity has a ld_name, returns it, else returns the name of the entity.
  */
 static const char *get_ent_dump_name(entity *ent) {
@@ -310,6 +302,14 @@ const char *get_irg_dump_name(ir_graph *irg) {
 }
 
 /**
+ * Returns non-zero if a node is in floating state.
+ */
+static int node_floats(ir_node *n) {
+  return ((get_irn_pinned(n) == op_pin_state_floats) &&
+      (get_irg_pinned(current_ir_graph) == op_pin_state_floats));
+}
+
+/**
  * Walker, allocates an array for all blocks and puts it's nodes non-floating nodes into this array.
  */
 static void collect_node(ir_node * node, void *env) {
@@ -324,8 +324,18 @@ static void collect_node(ir_node * node, void *env) {
     ird_set_irg_link(get_irn_irg(node), arr);    /* arr is an l-value, APP_ARR might change it! */
   } else {
     ir_node * block = get_nodes_block(node);
-    ird_set_irn_link(node, ird_get_irn_link(block));
-    ird_set_irn_link(block, node);
+
+    if (is_Bad(block)) {
+      /* this node is in a Bad block, so we must place it into the graph's list */
+      ir_node ** arr = (ir_node **) ird_get_irg_link(get_irn_irg(node));
+      if (!arr) arr = NEW_ARR_F(ir_node *, 0);
+      ARR_APP1(ir_node *, arr, node);
+      ird_set_irg_link(get_irn_irg(node), arr);    /* arr is an l-value, APP_ARR might change it! */
+    }
+    else {
+      ird_set_irn_link(node, ird_get_irn_link(block));
+      ird_set_irn_link(block, node);
+    }
   }
 }
 
@@ -349,10 +359,12 @@ static ir_node ** construct_block_lists(ir_graph *irg) {
 
   /* Collect also EndReg and EndExcept. We do not want to change the walker. */
   set_interprocedural_view(false);
+
   set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph)-1);
   irg_walk(get_irg_end_reg(current_ir_graph), clear_link, collect_node, current_ir_graph);
   set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph)-1);
   irg_walk(get_irg_end_except(current_ir_graph), clear_link, collect_node, current_ir_graph);
+
   set_interprocedural_view(rem_view);
 
   current_ir_graph = rem;
@@ -928,6 +940,36 @@ static void dump_const_node_local(FILE *F, ir_node *n) {
   }
 }
 
+/** If the block of an edge is a const_like node, dump it local with an edge */
+static void dump_const_block_local(FILE *F, ir_node *n) {
+  if (!get_opt_dump_const_local()) return;
+
+  ir_node *blk = get_nodes_block(n);
+  if (is_constlike_node(blk)) {
+    int bad = 0;
+
+    /* Generate a new name for the node by appending the names of
+       n and blk. */
+    fprintf(F, "node: {title: \""); PRINT_CONSTBLKID(n, blk);
+    fprintf(F, "\" label: \"");
+    bad |= dump_node_opcode(F, blk);
+    bad |= dump_node_mode(F, blk);
+    bad |= dump_node_typeinfo(F, blk);
+    fprintf (F, " ");
+    bad |= dump_node_nodeattr(F, blk);
+    fprintf(F, " %ld", get_irn_node_nr(blk));
+    fprintf(F, "\" ");
+    bad |= dump_node_info(F, blk);
+    dump_node_vcgattr(F, blk, bad);
+    fprintf(F, "}\n");
+
+    fprintf (F, "edge: { sourcename: \"");
+    PRINT_NODEID(n);
+    fprintf (F, "\" targetname: \""); PRINT_CONSTBLKID(n,blk);
+    fprintf (F, "\" "   BLOCK_EDGE_ATTR "}\n");
+  }
+}
+
 /**
  * prints the error message of a node to a file F as info2.
  */
@@ -947,7 +989,9 @@ static void dump_node(FILE *F, ir_node *n)
   int bad = 0;
   const char *p;
 
-  if (get_opt_dump_const_local() && is_constlike_node(n)) return;
+  if (get_opt_dump_const_local() && is_constlike_node(n))
+    return;
+
   /* dump this node */
   fprintf(F, "node: {title: \""); PRINT_NODEID(n); fprintf(F, "\" label: \"");
 
@@ -977,11 +1021,16 @@ dump_ir_block_edge(FILE *F, ir_node *n)  {
   if (is_no_Block(n)) {
     ir_node *block = get_nodes_block(n);
 
-    fprintf (F, "edge: { sourcename: \"");
-    PRINT_NODEID(n);
-    fprintf (F, "\" targetname: ");
-    fprintf(F, "\""); PRINT_NODEID(block); fprintf(F, "\"");
-    fprintf (F, " "   BLOCK_EDGE_ATTR "}\n");
+    if (get_opt_dump_const_local() && is_constlike_node(block)) {
+      dump_const_block_local(F, n);
+    }
+    else {
+      fprintf (F, "edge: { sourcename: \"");
+      PRINT_NODEID(n);
+      fprintf (F, "\" targetname: ");
+      fprintf(F, "\""); PRINT_NODEID(block); fprintf(F, "\"");
+      fprintf (F, " "   BLOCK_EDGE_ATTR "}\n");
+    }
   }
 }
 
@@ -1260,6 +1309,9 @@ dump_block_graph(FILE *F, ir_graph *irg) {
     } else {
       /* Nodes that are not in a Block. */
       dump_node(F, node);
+      if (is_Bad(get_nodes_block(node)) && !node_floats(node)) {
+        dump_const_block_local(F, node);
+      }
       dump_ir_data_edges(F, node);
     }
   }
