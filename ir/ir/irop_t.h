@@ -36,6 +36,7 @@ typedef enum {
 
 /** The irop flags */
 typedef enum {
+  irop_flag_none        = 0x00000000,   /**< nothing */
   irop_flag_labeled     = 0x00000001,	/**< if set, Output edge labels on in-edges in vcg graph */
   irop_flag_commutative = 0x00000002,	/**< operation is commutative */
   irop_flag_cfopcode    = 0x00000004,   /**< is a control flow operation */
