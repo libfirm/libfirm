@@ -1210,6 +1210,95 @@ void  set_CallBegin_call (ir_node *node, ir_node *call) {
   node->attr.callbegin.call = call;
 }
 
+INLINE ir_node *
+get_FuncCall_ptr (ir_node *node) {
+  assert (node->op == op_FuncCall);
+  return get_irn_n(node, 0);
+}
+
+INLINE void
+set_FuncCall_ptr (ir_node *node, ir_node *ptr) {
+  assert (node->op == op_FuncCall);
+  set_irn_n(node, 0, ptr);
+}
+
+INLINE ir_node **
+get_FuncCall_param_arr (ir_node *node) {
+  assert (node->op == op_FuncCall);
+  return (ir_node **)&get_irn_in(node)[CALL_PARAM_OFFSET];
+}
+
+INLINE int
+get_FuncCall_n_params (ir_node *node)  {
+  assert (node->op == op_FuncCall);
+  return (get_irn_arity(node) - CALL_PARAM_OFFSET);
+}
+
+INLINE int
+get_FuncCall_arity (ir_node *node) {
+  assert (node->op == op_FuncCall);
+  return get_FuncCall_n_params(node);
+}
+
+/* INLINE void
+set_FuncCall_arity (ir_node *node, ir_node *arity) {
+  assert (node->op == op_FuncCall);
+}
+*/
+
+INLINE ir_node *
+get_FuncCall_param (ir_node *node, int pos) {
+  assert (node->op == op_FuncCall);
+  return get_irn_n(node, pos + CALL_PARAM_OFFSET);
+}
+
+INLINE void
+set_FuncCall_param (ir_node *node, int pos, ir_node *param) {
+  assert (node->op == op_FuncCall);
+  set_irn_n(node, pos + CALL_PARAM_OFFSET, param);
+}
+
+INLINE type *
+get_FuncCall_type (ir_node *node) {
+  assert (node->op == op_FuncCall);
+  return node->attr.call.cld_tp = skip_tid(node->attr.call.cld_tp);
+}
+
+INLINE void
+set_FuncCall_type (ir_node *node, type *tp) {
+  assert (node->op == op_FuncCall);
+  assert (is_method_type(tp));
+  node->attr.call.cld_tp = tp;
+}
+
+int FuncCall_has_callees(ir_node *node) {
+  return (node->attr.call.callee_arr != NULL);
+}
+
+int get_FuncCall_n_callees(ir_node * node) {
+  assert(node->op == op_FuncCall && node->attr.call.callee_arr);
+  return ARR_LEN(node->attr.call.callee_arr);
+}
+
+entity * get_FuncCall_callee(ir_node * node, int pos) {
+  assert(node->op == op_FuncCall && node->attr.call.callee_arr);
+  return node->attr.call.callee_arr[pos];
+}
+
+void set_FuncCall_callee_arr(ir_node * node, int n, entity ** arr) {
+  assert(node->op == op_FuncCall);
+  if (node->attr.call.callee_arr == NULL || get_Call_n_callees(node) != n) {
+    node->attr.call.callee_arr = NEW_ARR_D(entity *, current_ir_graph->obst, n);
+  }
+  memcpy(node->attr.call.callee_arr, arr, n * sizeof(entity *));
+}
+
+void remove_FuncCall_callee_arr(ir_node * node) {
+  assert(node->op == op_FuncCall);
+  node->attr.call.callee_arr = NULL;
+}
+
+
 #define BINOP(OP)					\
 ir_node * get_##OP##_left(ir_node *node) {		\
   assert(node->op == op_##OP);				\

@@ -466,6 +466,33 @@ ir_graph *get_CallBegin_irg  (ir_node *node);
 ir_node  *get_CallBegin_call (ir_node *node);
 void      set_CallBegin_call (ir_node *node, ir_node *call);
 
+INLINE ir_node *get_FuncCall_ptr (ir_node *node);
+INLINE void     set_FuncCall_ptr (ir_node *node, ir_node *ptr);
+INLINE ir_node **get_FuncCall_param_arr (ir_node *node);
+/** Gets the number of parameters of a func call. */
+INLINE int      get_FuncCall_n_params (ir_node *node);
+/** Gets the func call parameter at position pos. */
+INLINE ir_node *get_FuncCall_param (ir_node *node, int pos);
+/** Sets the func call parameter at position pos. */
+INLINE void     set_FuncCall_param (ir_node *node, int pos, ir_node *param);
+/** Gets the type of a func call. */
+INLINE type    *get_FuncCall_type (ir_node *node);
+/** Sets the type of a func call. */
+INLINE void     set_FuncCall_type (ir_node *node, type *tp);
+/** Gets the arity of a func call. Identical to get_FuncCall_n_params(). */
+INLINE int      get_FuncCall_arity (ir_node *node);
+
+/* Set, get and remove the callee-analysis.
+   The array is only accessible if information is valid.
+   It contains NULL for called methods that are not within
+   the compilation unit. */
+int     FuncCall_has_callees      (ir_node *node);
+int     get_FuncCall_n_callees    (ir_node * node);
+entity *get_FuncCall_callee       (ir_node * node, int pos);
+/* assumes current_ir_graph set properly! */
+void    set_FuncCall_callee_arr   (ir_node * node, int n, entity ** arr);
+void    remove_FuncCall_callee_arr(ir_node * node);
+
 /* For unary and binary arithmetic operations the access to the
    operands can be factored out.  Left is the first, right the
    second arithmetic value  as listed in tech report 1999-44.

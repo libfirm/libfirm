@@ -277,6 +277,18 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
       );
       break;
 
+    case iro_FuncCall:
+      ASSERT_AND_RET_DBG(
+        ((proj == pn_Call_M_regular        && mode == mode_M) ||
+         (proj == pn_Call_X_except         && mode == mode_X) ||
+         (proj == pn_Call_T_result         && mode == mode_T) ||
+         (proj == pn_Call_M_except         && mode == mode_M) ||
+	 (proj == pn_Call_P_value_res_base && mode == mode_P)),
+        "wrong Proj from FuncCall", 0,
+        show_proj_failure(p);
+      );
+      break;
+
     case iro_Quot:
       ASSERT_AND_RET_DBG(
         ((proj == pn_Quot_M        && mode == mode_M) ||
@@ -425,6 +437,24 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
               ASSERT_AND_RET(
                   (mode == get_type_mode(get_method_res_type(mt, proj))),
                   "Mode of Proj from Call doesn't match mode of result type.", 0);
+            }
+            break;
+
+          case iro_FuncCall:
+            {
+              ASSERT_AND_RET(
+                  (proj >= 0 && mode_is_data(mode)),
+                  "wrong Proj from Proj from FuncCall", 0);
+              mt = get_FuncCall_type(pred);
+              ASSERT_AND_RET(
+                  (proj < get_method_n_ress(mt)),
+                  "More Projs for results than results in type.", 0);
+              if ((mode_is_reference(mode)) && is_compound_type(get_method_res_type(mt, proj)))
+                /* value result */ break;
+
+              ASSERT_AND_RET(
+                  (mode == get_type_mode(get_method_res_type(mt, proj))),
+                  "Mode of Proj from FuncCall doesn't match mode of result type.", 0);
             }
             break;
 

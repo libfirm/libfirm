@@ -826,7 +826,7 @@ new_rd_FuncCall (dbg_info* db, ir_graph *irg, ir_node *block,
   res = new_ir_node (db, irg, block, op_FuncCall, mode_T, r_arity, r_in);
 
   assert(is_method_type(tp));
-  set_Call_type(res, tp);
+  set_FuncCall_type(res, tp);
   res->attr.call.callee_arr = NULL;
   res = optimize_node (res);
   irn_vrfy_irg (res, irg);
