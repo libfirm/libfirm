@@ -15,7 +15,7 @@ srcdir = @srcdir@
 topdir = ../..
 subdir := ir/common
 
-INSTALL_HEADERS := firm_common.h firm.h firmwalk.h statistics.h old_fctnames.h
+INSTALL_HEADERS := firm_common.h firm.h firmwalk.h statistics.h old_fctnames.h firm_config.h
 
 SOURCES = $(INSTALL_HEADERS)
 
@@ -28,7 +28,8 @@ include $(topdir)/MakeRules
 CPPFLAGS += -I$(top_srcdir)/ir/common -I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/tr \
 		-I$(top_srcdir)/ir/adt -I$(top_srcdir)/ir/tv -I$(top_srcdir)/ir/ir \
 		-I$(top_srcdir)/ir/ana -I$(top_srcdir)/ir/st -I$(top_srcdir)/ir/debug \
-		-I$(top_srcdir)/ir/opt -I$(top_srcdir)/ir/stat -I$(top_srcdir)/ir/external
+		-I$(top_srcdir)/ir/opt -I$(top_srcdir)/ir/arch -I$(top_srcdir)/ir/stat \
+                -I$(top_srcdir)/ir/external
 
 include $(top_srcdir)/MakeTargets
 
