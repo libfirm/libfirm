@@ -17,24 +17,26 @@
 #define ARG_CNT_MAX 10
 #define PHI_CLS_MAX 10
 
-#define I_PHI_CNT   0
-#define I_BLK_CNT   (I_PHI_CNT+1)
-#define I_SPACE3    (I_BLK_CNT+1)
-#define I_ARG_CNT_S (I_SPACE3+1)
-#define I_ARG_CNT_E (I_ARG_CNT_S+ARG_CNT_MAX)
-#define I_SPACE1    (I_ARG_CNT_E+1)
-#define I_PHI_CLS_S (I_SPACE1+1)
-#define I_PHI_CLS_E (I_PHI_CLS_S+PHI_CLS_MAX)
-#define I_SPACE2    (I_PHI_CLS_E+1)
-#define I_INTERFP	(I_SPACE2+1)         /* number of interfering pairs */
-#define I_INTERFV	(I_INTERFP+1)        /* number of interfering values */
-#define I_PHICLSCNT (I_INTERFV+1)        /* number of phi classes */
-#define I_INTERFPHI	(I_PHICLSCNT+1)      /* number of phi classes which have interfering vals */
-#define I_CONST     (I_INTERFPHI+1)
-#define I_PRED      (I_CONST+1)
-#define I_GLOB      (I_PRED+1)
+enum vals_t {
+	I_PHI_CNT   = 0,
+	I_BLK_CNT,
+	I_SPACE3,
+	I_ARG_CNT_S,
+	I_ARG_CNT_E = I_ARG_CNT_S+ARG_CNT_MAX,
+	I_SPACE1,
+	I_PHI_CLS_S,
+	I_PHI_CLS_E = I_PHI_CLS_S+PHI_CLS_MAX,
+	I_SPACE2,
+	I_INTERFP,          /* number of interfering pairs */
+	I_INTERFV,          /* number of interfering values */
+	I_PHICLSCNT,        /* number of phi classes */
+	I_INTERFPHI,        /* number of phi classes which have interfering vals */
+	I_CONST,
+	I_PRED,
+	I_GLOB,
+	ASIZE
+};
 
-#define ASIZE (I_GLOB+1)
 static int curr_vals[ASIZE];
 
 
