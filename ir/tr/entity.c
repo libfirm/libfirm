@@ -27,8 +27,6 @@
 /** general                                                       **/
 /*******************************************************************/
 
-unsigned long entity_visited;
-
 void
 init_entity (void)
 {
@@ -37,6 +35,8 @@ init_entity (void)
 /*******************************************************************/
 /** ENTITY                                                        **/
 /*******************************************************************/
+
+INLINE type *get_entity_owner (entity *ent);
 
 INLINE void insert_entity_in_owner (entity *ent) {
   type *owner = ent->owner;
@@ -558,5 +558,5 @@ void        set_entity_visited(entity *entity, unsigned long num) {
 /* Sets visited field in entity to entity_visited. */
 void        mark_entity_visited(entity *entity) {
   assert (entity);
-  entity->visit = entity_visited;
+  entity->visit = type_visited;
 }
