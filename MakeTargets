@@ -87,7 +87,7 @@ install_libs:		subdir_install_libs local_install_libs
 local_install_libs:
 ifneq ($(strip $(INSTALL_LIBS)),)
 	$(INSTALL)  -m u+rw,a+r $(addprefix $(topdir)/,$(INSTALL_LIBS)) $(LIBDIR)
-	@# the '.a' are ranlib'ed already, and the '.so' doesn't need ranlib-ing
+	@# the '.a' is ranlib'ed already, and the '.so' doesn't need ranlib-ing
 	@# $(RANLIB) $(addprefix $(LIBDIR)/,$(INSTALL_LIBS))
 endif
 
