@@ -1,8 +1,14 @@
-
-dnl libFIRM Project
-
-dnl Macros for autoconf
-dnl $Id$
+dnl
+dnl Project:     libFIRM
+dnl File name:   aclocal.m4
+dnl Purpose:     Macros for autoconf
+dnl Author:      Till Riedel
+dnl Modified by:
+dnl Created:
+dnl CVS-ID:      $Id$
+dnl Copyright:   (c) 2002-2003 Universität Karlsruhe
+dnl Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+dnl
 
 
 dnl Set variable `LD' to the name of the linker program.

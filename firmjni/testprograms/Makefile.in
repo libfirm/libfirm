@@ -1,8 +1,13 @@
-# Hey Emacs, this is a -*- makefile -*-
 #
-# libFIRM Project
-#
-# $Id$
+# Project:     libFIRM
+# File name:   firmjni/testprograms/Makefile.in
+# Purpose:
+# Author:      Till Riedel, Goetz Lindenmaier
+# Modified by:
+# Created:
+# CVS-ID:      $Id$
+# Copyright:   (c) 2002-2003 Universität Karlsruhe
+# Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
 #
 
 top_srcdir = @top_srcdir@

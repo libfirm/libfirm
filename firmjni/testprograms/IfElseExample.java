@@ -1,10 +1,14 @@
-/* Copyright (C) 2003 by Universitaet Karlsruhe
-* All rights reserved.
-*
-* Authors: Goetz Lindenmaier
-*
-* testprogram for Java native interface
-*/
+/*
+ * Project:     libFIRM
+ * File name:   firmjni/testprograms/IfElseExample.java
+ * Purpose:     This is an example of how to use the JNI interface of Firm.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2002 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 import firmjni.*;
 

@@ -1,18 +1,15 @@
 package firmjni;
 
-/**
- * @(#)Mydbginfo.java
- *
- * @author   Goetz Lindenmaier
- * CVS-ID:   $Id$
- * Copyright (c) 2003 University of Karlsruhe
- *            All rights reserved.
- *           Use is subject to license terms.
- * Created:  26.2.2003
- * Project:  Recoder frontend for libfirm
- *
- * Please report bugs with a detailed description to
- * goetz@ipd.info.uni-karlsruhe.de
+/*
+ * Project:     libFIRM / Recoder frontend for libFIRM.
+ * File name:   firmjni/Dbginfo.java
+ * Purpose:
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:     26.2.2003
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
 import firmjni.*;

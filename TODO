@@ -3,7 +3,7 @@
     class members.  Entfernen um Speicher zu sparen.
     Ev. auch attribute an firm Knoten optimieren, per bitfield.
 
-  * 24.3.2003 Goetz
+  + 24.3.2003 Goetz
     tarval requirements:
     zu register_mode:
     Ich haette ganz gerne
@@ -27,13 +27,14 @@
       (is this standard C??)
     - add routine that outputs the position of the largest set bit.
 
-  * 29.10.2002 Goetz
+  + 29.10.2002 Goetz
     Representation of value compounds is not good, especially with
     calls.
 
-  * 29.10.2002 Goetz
+  + 29.10.2002 Goetz
     We can not represent bitfield members of structs in C.
-    A struct can have fields with n bits, n e.g. set to 3...
+    Decision: generate explicit code for it, using shifts etc.
+    No special support.
 
   * 29.10.2002 Goetz
     If parameter variables are dereferenced they must be represented
@@ -74,12 +75,12 @@
     Extend dead node elimination to update and compact this list.
     Extend inlining to inline this list.)
 
-  * 7.11.2001 Goetz
+  + 7.11.2001 Goetz
     Implement checking whether layout is fixed when setting corresponding
     flag.  See firmtut, 3.1.4.
     Maybe write a checker for the type information.
 
-  * 19.6.2001 Goetz
+  + 19.6.2001 Goetz
     What happens if undefined values are allowed?  See ircons.c,
     grep for get_irg_start_block.
 
@@ -125,9 +126,10 @@
    These nodes can be derived from Cmp nodes in conjunction with dataflow
    information.
 
- * think again about implementation of boolean expressions  (0<1) && (2<3)
+ + think again about implementation of boolean expressions  (0<1) && (2<3)
+   Cast now possible
 
- * Add evaluation routines for Rotate, Not, Minus, ShrA to target value,
+ + Add evaluation routines for Rotate, Not, Minus, ShrA to target value,
    extend optimization to cover these nodes.
 
  * do we need remainder (Rem) operator?

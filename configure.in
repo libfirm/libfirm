@@ -1,8 +1,15 @@
-dnl Process this file withautoconf to produce a configure script.
-dnl Copyright (c) 2001 IPD, Universität Karlsruhe (TH)
+dnl
+dnl Project:     libFIRM
+dnl File name:   configure.in
+dnl Purpose:
+dnl Author:      Till Riedel
+dnl Modified by:
+dnl Created:
+dnl CVS-ID:      $Id$
+dnl Copyright:   (c) 2002-2003 Universität Karlsruhe
+dnl Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+dnl
 
-dnl libFIRM Project
-dnl $Id$
 
 AC_REVISION($Id$)
 

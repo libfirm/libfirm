@@ -1,16 +1,15 @@
-/**
- * @file firmjni/Dbginfo.cc
- *
- *
- *
- * @author   Goetz Lindenmaier
- * CVS-ID:   $Id$
- * Copyright (c) 2003 University of Karlsruhe
- * Created:  26.2.2003
- * Project:  Recoder frontend for libfirm
- *
- *
+/*
+ * Project:     libFIRM / Recoder frontend for libFIRM
+ * File name:   firmjni/Dbginfo.c
+ * Purpose:     Testing callback.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:     26.2.2003
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
+
 #include "Dbginfo.h"
 
 #include <firm.h>

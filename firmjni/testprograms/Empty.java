@@ -1,15 +1,16 @@
-import firmjni.*;
+/*
+ * Project:     libFIRM
+ * File name:   firmjni/testprograms/Empty.java
+ * Purpose:     This is an example of how to use the JNI interface of Firm.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2002 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
-/* Copyright (C) 2002 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Author: Goetz Lindenmaier
-**
-** $id$
-**
-** This is an example of how to use the JNI interface of Firm.
-**
-*/
+import firmjni.*;
 
 /**
 ***  An empty Firm program.
