@@ -460,7 +460,7 @@ dump_ir_data_edges(ir_node *n)  {
     else
       fprintf (F, "edge: {sourcename: \"");
     PRINT_NODEID(n);
-    fprintf (F, " \" targetname: ");
+    fprintf (F, "\" targetname: ");
     if ((get_opt_dump_const_local()) && is_constlike_node(pred))
     {
       PRINT_CONSTID(n,pred);
@@ -897,16 +897,16 @@ static void vcg_open (ir_graph *irg, char *suffix) {
 	    "orientation: bottom_to_top\n"
 	    "classname 1: \"Data\"\n"
 	    "classname 2: \"Block\"\n"
-	    "classname 3: \"Entity type\""
-	    "classname 4: \"Entity owner\""
-	    "classname 5: \"Method Param\""
-	    "classname 6: \"Method Res\""
-	    "classname 7: \"Super\""
-	    "classname 8: \"Union\""
-	    "classname 9: \"Points-to\""
-	    "classname 10: \"Array Element Type\""
-	    "classname 11: \"Overwrites\""
-	    "classname 12: \"Member\""
+	    "classname 3: \"Entity type\"\n"
+	    "classname 4: \"Entity owner\"\n"
+	    "classname 5: \"Method Param\"\n"
+	    "classname 6: \"Method Res\"\n"
+	    "classname 7: \"Super\"\n"
+	    "classname 8: \"Union\"\n"
+	    "classname 9: \"Points-to\"\n"
+	    "classname 10: \"Array Element Type\"\n"
+	    "classname 11: \"Overwrites\"\n"
+	    "classname 12: \"Member\"\n"
 	    , cp, label);
 
   fprintf (F, "\n");		/* a separator */
