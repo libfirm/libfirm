@@ -68,7 +68,7 @@ int main(int argc, char **argv)
 #define METHODNAME "main"
 #define NRARGS 1
 #define NRES 1
-  printf("creating an IR graph: ...\n");
+  printf("\nCreating an IR graph: ...\n");
 
   owner = get_glob_type();
   proc_main = new_type_method(id_from_str(METHODNAME, strlen(METHODNAME)),
@@ -141,18 +141,17 @@ int main(int argc, char **argv)
   add_in_edge (irg->end_block, x);
   mature_block (irg->end_block);
 
-  printf("\nDone building the graph.\n");
+  printf("Optimizing ...\n");
+  dead_node_elimination(irg);
 
   /* verify the graph */
   irg_vrfy(irg);
 
-  dead_node_elimination(irg);
-
   printf("Dumping the graph and a control flow graph.\n");
   dump_ir_block_graph (irg);
   dump_cfg (irg);
-  printf("use xvcg to view these graphs:\n");
-  printf("/ben/goetz/bin/xvcg GRAPHNAME\n");
+  printf("Use xvcg to view these graphs:\n");
+  printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
 
   return (0);
 }

@@ -15,6 +15,7 @@
 ***  main() {
 ***    int a = 0;         // pos 0
 ***    int b = 1;         // pos 1
+***    int h;             // pos 2
 ***
 ***    if (0 == 0)
 ***      { a = 2; }
@@ -26,6 +27,7 @@
 ***    }
 ***
 ***    return a-b;
+***  }
 **/
 
 int
@@ -37,12 +39,11 @@ main(void)
   entity *ent;
   ir_node *b, *x, *r, *t, *f;
 
-  printf("creating an IR graph: IF_WHILE_EXAMPLE...\n");
+  printf("\nCreating an IR graph: IF_WHILE_EXAMPLE...\n");
 
   init_firm ();
 
-
-  set_opt_constant_folding(0);
+  set_opt_constant_folding(0);  /* so that the stupid tests are not optimized. */
   set_opt_cse(1);
   set_opt_dead_node_elimination (1);
 
@@ -124,17 +125,17 @@ main(void)
   add_in_edge (irg->end_block, x);
   mature_block (irg->end_block);
 
+  printf("Optimizing ...\n");
+  dead_node_elimination(irg);
+
   /* verify the graph */
   irg_vrfy(irg);
 
-  dead_node_elimination(irg);
-
   /* output the vcg file */
-  printf("\nDone building the graph.  Dumping it.\n");
+  printf("Done building the graph.  Dumping it.\n");
   dump_ir_block_graph (irg);
-
-  printf("use xvcg to view this graph:\n");
-  printf("/ben/goetz/bin/xvcg GRAPHNAME\n");
+  printf("Use xvcg to view this graph:\n");
+  printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
 
   return (0);
 }

@@ -1,3 +1,15 @@
+  16.8.2000 Goetz
+  irgopt: Correct copy of self pointer in start block.
+  irgopt: Correct treatment of loops: pre function in walker
+    breaks all possible loops in Phi and Block nodes.
+  irr_loop_example: wrong Return statement
+  Now I fixed all but one error: in memory_example.
+  This error showed a conceptual problem, so I wrote
+  a slightly different algorithm.  This now runs for
+  all testprograms.
+  dead_node_example: cse is buggy!! merges start and the
+  following block!
+
   15.8.2000 Goetz
   looking at bug in dead_node_elimination.
   Following fixes:

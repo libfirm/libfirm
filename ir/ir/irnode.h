@@ -185,6 +185,11 @@ new_ir_node (ir_graph *irg,
 	     int arity,
 	     ir_node **in);
 
+/* Copies all attributes stored in the old node  to the new node.
+   Assumes both have the same opcode and sufficient size. */
+void
+copy_attrs (ir_node *old, ir_node *new);
+
 
 /* Print IR-Nodes with attributes */
 /* @@@@ brauchen wir dienoch? dann fliegt ev. das xprint raus?*/

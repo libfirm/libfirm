@@ -11,7 +11,7 @@
    1 - lets see, if there is a better graph */
 int opt_cse = 1;
 int opt_constant_folding = 1;
-int opt_dead_node_elimination = 0;
+int opt_dead_node_elimination = 1;
 int optimized = 1;
 
 /* set the flags with set_flagname, get the flag with get_flagname */

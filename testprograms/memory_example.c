@@ -58,9 +58,11 @@ main(void)
   entity *ent;
   ir_node *a, *b, *x, *y, *r;
 
-  printf("creating an IR graph: MEMORY_EXAMPLE...\n");
+  printf("\nCreating an IR graph: MEMORY_EXAMPLE...\n");
 
   init_firm ();
+
+  set_opt_dead_node_elimination (1);
 
   /* a class to get started with, containing the main procedure */
   owner = new_type_class (id_from_str ("MEMORY_EXAMPLE", 14));
@@ -112,6 +114,7 @@ main(void)
             new_Const (mode_I, tarval_from_long (mode_i, 0)),
             x),
           mode_b, Gt));
+
   /* build the cfg of the loop */
   add_in_edge (r, new_Proj (x, mode_X, 0));
   x = new_Proj (x, mode_X, 1);
@@ -133,16 +136,16 @@ main(void)
   add_in_edge (irg->end_block, x);
   mature_block (irg->end_block);
 
+  printf("Optimizing ...\n");
+  dead_node_elimination(irg);
+
   /* verify the graph */
   irg_vrfy(irg);
 
-  dead_node_elimination(irg);
-
-  printf("\nDone building the graph.  Dumping it.\n");
+  printf("Done building the graph.  Dumping it.\n");
   dump_ir_block_graph (irg);
-
-  printf("use xvcg to view this graph:\n");
-  printf("/ben/goetz/bin/xvcg GRAPHNAME\n");
+  printf("Use xvcg to view this graph:\n");
+  printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
 
   return (0);
 }

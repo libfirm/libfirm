@@ -31,14 +31,14 @@ main(void)
   entity *ent;
   ir_node *a, *b, *c, *d, *x;
 
-  printf("creating an IR graph: CONST_EVAL_EXAMPLE...\n");
+  printf("\nCreating an IR graph: CONST_EVAL_EXAMPLE...\n");
 
   init_firm ();
 
   /* Try both optimizations: */
   set_opt_constant_folding(1);
   set_opt_cse(1);
-  set_opt_dead_node_elimination (0);
+  set_opt_dead_node_elimination (1);
 
   owner = new_type_class (id_from_str ("CONST_EVAL_EXAMPLE", 18));
   method = new_type_method (id_from_str("main", 4), 0, 2);
@@ -77,16 +77,17 @@ main(void)
   add_in_edge (irg->end_block, x);
   mature_block (irg->end_block);
 
-  printf("\nDone building the graph.  Dumping it.\n");
+  printf("Optimizing ...\n");
+  dead_node_elimination(irg);
+
+  printf("Done building the graph.  Dumping it.\n");
   /* verify the graph */
   irg_vrfy(irg);
-
-  dead_node_elimination(irg);
 
   dump_ir_block_graph (irg);
 
   printf("use xvcg to view this graph:\n");
-  printf("/ben/goetz/bin/xvcg GRAPHNAME\n");
+  printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
 
   return (0);
 }

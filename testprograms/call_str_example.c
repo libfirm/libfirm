@@ -30,7 +30,7 @@ int main(int argc, char **argv)
   entity *ent;            /* represents this method as entity of owner */
   ir_node *x, *const_str, *proc_ptr, *call;
 
-  printf("creating an IR graph: CALL_STR_EXAMPLE...\n");
+  printf("\nCreating an IR graph: CALL_STR_EXAMPLE...\n");
 
   /* init library */
   init_firm ();
@@ -103,16 +103,15 @@ int main(int argc, char **argv)
   /* Now we can mature the end block as all it's predecessors are known. */
   mature_block (irg->end_block);
 
-  printf("\nDone building the graph.  Dumping it.\n");
+  printf("Optimizing ...\n");
+  dead_node_elimination(irg);
+
   /* verify the graph */
   irg_vrfy(irg);
 
-  set_opt_dead_node_elimination(1);
-  dead_node_elimination(irg);
-
+  printf("Done building the graph.  Dumping it.\n");
   dump_ir_block_graph (irg);
-
-  printf("use xvcg to view this graph:\n");
+  printf("Use xvcg to view this graph:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n");
 
   return (0);

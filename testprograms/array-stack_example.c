@@ -63,7 +63,7 @@ main(void)
 
   init_firm ();
 
-  printf("creating an IR graph: ARRAY-STACK_EXAMPLE...\n");
+  printf("\nCreating an IR graph: ARRAY-STACK_EXAMPLE...\n");
 
   /* make basic type information for primitive type int.
      In Sather primitive types are represented by a class.
@@ -127,18 +127,18 @@ main(void)
   add_in_edge (main_irg->end_block, x);
   mature_block (main_irg->end_block);
 
+  printf("Optimizing ...\n");
+  dead_node_elimination(main_irg);
+
   /* verify the graph */
   irg_vrfy(main_irg);
 
-  dead_node_elimination(main_irg);
 
-  printf("\nDone building the graph.\n");
   printf("Dumping the graph and a type graph.\n");
   dump_ir_block_graph (main_irg);
   dump_type_graph(main_irg);
-
-  printf("\nuse xvcg to view these graphs:\n");
-  printf("/ben/goetz/bin/xvcg GRAPHNAME\n");
+  printf("Use xvcg to view these graphs:\n");
+  printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
 
   return (1);
 }

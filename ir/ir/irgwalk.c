@@ -19,20 +19,29 @@ void irg_walk_2(ir_node *node,
   int i;
 
   assert(node);
-  if(get_irn_visited(node) < get_irg_visited(current_ir_graph)) {
+/*      printf(" - "); DDMSG2(node);  */
+
+  if (get_irn_visited(node) < get_irg_visited(current_ir_graph)) {
+
+/*      printf(" -> "); DDMSG2(node);  */
     set_irn_visited(node, get_irg_visited(current_ir_graph));
-    if(pre) {
+
+    if (pre) {
       pre(node, env);
     }
 
     if (is_no_Block(node)) {
       irg_walk_2(get_nodes_Block(node), pre, post, env);
     }
-    for(i = get_irn_arity(node) - 1; i >= 0; --i) {
+    for (i = get_irn_arity(node) - 1; i >= 0; --i) {
+/*        printf("   "); DDMSG2(node); */
+/*        printf("   "); DDMSG2(get_irn_n(node, i)); */
+
       irg_walk_2(get_irn_n(node, i), pre, post, env);
     }
 
-    if(post)
+/*      printf(" <- "); DDMSG2(node);  */
+    if (post)
       post(node, env);
   }
   return;

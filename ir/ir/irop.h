@@ -91,4 +91,8 @@ ir_op * new_ir_op (opcode code, ident *name, size_t attr_size, int labeled);
 /* initialize the irop module */
 void init_op (void);
 
+/* returns the attribute size of the operator. */
+int get_op_attr_size (ir_op *op);
+
+
 # endif /* _IROP_H_ */

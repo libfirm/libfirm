@@ -46,7 +46,9 @@ int main(int argc, char **argv)
 
   /* init library */
   init_firm ();
-  set_opt_constant_folding (1);
+  set_opt_constant_folding (0);  /* so that the stupid tests are not optimized. */
+  set_opt_cse(1);
+  set_opt_dead_node_elimination(1);
 
   /* FIRM was designed for oo languages where all methods belong to a class.
    * For imperative languages like C we view a file as a large class containing
@@ -58,7 +60,7 @@ int main(int argc, char **argv)
 #define METHODNAME "main"
 #define NRARGS 0
 #define NRES 0
-  printf("creating an IR graph: %s...\n", CLASSNAME);
+  printf("\nCreating an IR graph: %s...\n", CLASSNAME);
 
   owner = new_type_class (id_from_str (CLASSNAME, strlen(CLASSNAME)));
   proc_main = new_type_method(id_from_str(METHODNAME, strlen(METHODNAME)),
@@ -71,7 +73,7 @@ int main(int argc, char **argv)
 
   irg = new_ir_graph (ent, NUM_OF_LOCAL_VARS);
 
-  /* two make three conditionals  */
+  /* to make three conditionals  */
   expr = new_Const (mode_i, tarval_from_long (mode_i, 0));
   c1 = new_Const (mode_i, tarval_from_long (mode_i, 1));
   c2 = new_Const (mode_i, tarval_from_long (mode_i, 2));
@@ -104,25 +106,24 @@ int main(int argc, char **argv)
   add_in_edge(irg->current_block, f_l1);
   {
     ir_node *in[0];
-    x = new_Return (get_store(), 1, in);
+    x = new_Return (get_store(), 0, in);
   }
   mature_block (irg->current_block);
 
   add_in_edge (irg->end_block, x);
   mature_block (irg->end_block);
 
+  printf("Optimizing ...\n");
+  dead_node_elimination(irg);
+
   /* verify the graph */
   irg_vrfy(irg);
 
-  dead_node_elimination(irg);
-
-  printf("\nDone building the graph..\n");
   printf("Dumping the graph and a control flow graph.\n");
   dump_ir_block_graph (irg);
   dump_cfg (irg);
-
-  printf("use xvcg to view these graphs:\n");
-  printf("/ben/goetz/bin/xvcg GRAPHNAME\n");
+  printf("Use xvcg to view these graphs:\n");
+  printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
 
   return (0);
 }

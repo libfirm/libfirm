@@ -38,7 +38,7 @@ int main(int argc, char **argv)
   entity *ent;            /* represents this method as entity of owner */
   ir_node *x, *x_then, *x_else, *c0, *c1, *c2, *cmpGt, *f, *t, *b;
 
-  printf("creating an IR graph: IF_ELSE_EXAMPLE...\n");
+  printf("\ncreating an IR graph: IF_ELSE_EXAMPLE...\n");
 
   /* init library */
   init_firm ();
@@ -108,13 +108,11 @@ int main(int argc, char **argv)
     in[0] = get_value(0, mode_i);
     in[1] = get_value(1, mode_i);
     x = new_Return (get_store(), 2, in);
-  DDMSG;
   }
   /* Now generate all instructions for this block and all its predecessor
      blocks so we can mature it. */
   mature_block (irg->current_block);
 
-  DDMSG;
   /* This adds the in edge of the end block which originates at the
      return statement.  The return node passes control flow to the
      end block.  */
@@ -122,17 +120,16 @@ int main(int argc, char **argv)
   /* Now we can mature the end block as all it's predecessors are known. */
   mature_block (irg->end_block);
 
-  printf("\nDone building the graph.  Dumping it.\n");
+  printf("Optimizing ...\n");
+  dead_node_elimination(irg);
 
   /* verify the graph */
   irg_vrfy(irg);
 
-  dead_node_elimination(irg);
-
+  printf("Done building the graph.  Dumping it.\n");
   dump_ir_block_graph (irg);
-
   printf("use xvcg to view this graph:\n");
-  printf("/ben/goetz/bin/xvcg GRAPHNAME\n");
+  printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
 
   return (0);
 }

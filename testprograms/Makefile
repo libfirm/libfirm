@@ -31,13 +31,13 @@ realclean:	clean
 
 run:
 	./empty; 		\
-	const_eval_example	\
+	const_eval_example;	\
 	if_example; 		\
-	if_else_example 	\
+	if_else_example; 	\
 	if_while_example; 	\
-	cond_example 		\
+	cond_example; 		\
 	call_str_example; 	\
-	memory_example		\
+	memory_example;		\
 	array-stack_example;	\
 	array-heap_example; 	\
 	oo_program_example;	\
@@ -45,7 +45,7 @@ run:
 	irr_loop_example;	\
 	dead_block_example;	\
 	global_var_example;	\
-	three_cfpred_example
+	three_cfpred_example;
 
 empty: empty.o
 	gcc -o empty empty.o $(LIBDIRS) $(LIBS)

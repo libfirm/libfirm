@@ -253,7 +253,8 @@ equivalent_node (ir_node *n)
 	 calls the optimization. */
       assert(get_Block_matured(n));
 
-      /* a single entry Block following a single exit Block can be merged */
+      /* A single entry Block following a single exit Block can be merged,
+         if it is not the Start block. */
       /* !!! Beware, all Phi-nodes of n must have been optimized away.
 	 This is true, as the block is matured before optimize is called.   */
       if (get_Block_n_cfgpreds(n) == 1

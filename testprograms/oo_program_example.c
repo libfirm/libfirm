@@ -34,8 +34,6 @@
 ***
 **/
 
-#define OPTIMIZE_NODE 0
-
 int
 main(void)
 {
@@ -54,14 +52,15 @@ main(void)
 
   init_firm ();
 
-  set_opt_constant_folding(0);
-  set_opt_cse(0);
+  set_opt_constant_folding(1);
+  set_opt_cse(1);
+  set_opt_dead_node_elimination(1);
 
   /* make basic type information for primitive type int.*/
   prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_i);
 
   /* first build procedure main */
-  printf("creating an IR graph: OO_PROGRAM_EXAMPLE...\n");
+  printf("\nCreating an IR graph: OO_PROGRAM_EXAMPLE...\n");
   owner = get_glob_type();
   proc_main = new_type_method(id_from_str("main", 4), 0, 1);
   set_method_res_type(proc_main, 0, (type *)prim_t_int);
@@ -140,12 +139,11 @@ main(void)
   add_in_edge (main_irg->end_block, x);
   mature_block (main_irg->end_block);
 
-  printf("\nDone building the graph.\n");
   irg_vrfy(main_irg);
 
   /****************************************************************************/
 
-  printf("\ncreating IR graph for set_a: \n");
+  printf("Creating IR graph for set_a: \n");
 
   set_a_irg = new_ir_graph (proc_set_e, 4);
 
@@ -168,12 +166,11 @@ main(void)
   add_in_edge (set_a_irg->end_block, x);
   mature_block (set_a_irg->end_block);
 
-  printf("\nDone building the graph.\n");
   irg_vrfy(set_a_irg);
 
   /****************************************************************************/
 
-  printf("\ncreating IR graph for c: \n");
+  printf("Creating IR graph for c: \n");
 
   c_irg = new_ir_graph (proc_c_e, 4);
 
@@ -203,22 +200,23 @@ main(void)
   /* verify the graph */
   irg_vrfy(main_irg);
 
+  printf("Optimizing ...\n");
+  /*
   for (i = 0; i < get_irp_n_irgs(); i++)
     dead_node_elimination(get_irp_irg(i));
+  */
+  dead_node_elimination(main_irg );
+  dead_node_elimination(c_irg    );
+  dead_node_elimination(set_a_irg);
 
-  printf("\nDone building the graph.\n");
+  /****************************************************************************/
 
   printf("Dumping graphs of all procedures.\n");
-
   for (i = 0; i < get_irp_n_irgs(); i++) {
     dump_ir_block_graph (get_irp_irg(i));
     dump_type_graph(get_irp_irg(i));
   }
-
-  /****************************************************************************/
-
-  printf("\nuse xvcg to view these graphs:\n");
-  printf("/ben/goetz/bin/xvcg GRAPHNAME\n");
-
+  printf("Use xvcg to view these graphs:\n");
+  printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
   return (1);
 }

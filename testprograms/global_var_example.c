@@ -38,7 +38,7 @@ int main(int argc, char **argv)
   entity *i_ent;          /* the entity representing the global variable i */
   ir_node *x, *i_ptr, *store;
 
-  printf("creating an IR graph: GLOBAL_VAR ...\n");
+  printf("\nCreating an IR graph: GLOBAL_VAR ...\n");
 
   /* init library */
   init_firm ();
@@ -105,17 +105,17 @@ int main(int argc, char **argv)
   /* Now we can mature the end block as all it's predecessors are known. */
   mature_block (irg->end_block);
 
+  printf("Optimizing ...\n");
+  dead_node_elimination(irg);
+
   /* verify the graph */
   irg_vrfy(irg);
 
-  dead_node_elimination(irg);
-
-  printf("\nDone building the graph.  Dumping it.\n");
+  printf("Done building the graph.  Dumping it.\n");
   dump_ir_block_graph (irg);
   dump_ir_graph_w_types (irg);
-
-  printf("use xvcg to view this graph:\n");
-  printf("/ben/goetz/bin/xvcg GRAPHNAME\n");
+  printf("Use xvcg to view this graph:\n");
+  printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
 
   return (0);
 }

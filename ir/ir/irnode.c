@@ -90,6 +90,13 @@ new_ir_node (ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mode,
   return res;
 }
 
+/* Copies all attributes stored in the old node to the new node.
+   Assumes both have the same opcode and sufficient size. */
+void
+copy_attrs (ir_node *old, ir_node *new) {
+  assert (get_irn_opcode(old) == get_irn_opcode(new));
+  memcpy (&new->attr, &old->attr, get_op_attr_size(get_irn_op(old)));
+}
 
 /* IR-Nodes with attributes */
 int

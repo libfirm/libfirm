@@ -35,7 +35,7 @@ main(void)
   int a_pos, b_pos;
   FILE *outfile;
 
-  printf("creating an IR graph: IF_EXAMPLE...\n");
+  printf("\nCreating an IR graph: IF_EXAMPLE...\n");
 
   init_firm ();
 
@@ -103,18 +103,18 @@ main(void)
   add_in_edge (irg->end_block, x);
   mature_block (irg->end_block);
 
+
+  printf("Optimizing ...\n");
+  dead_node_elimination(irg);
+
   /* verify the graph */
   irg_vrfy(irg);
 
-  dead_node_elimination(irg);
-
   /* output the vcg file */
-  printf("\nDone building the graph.  Dumping it.\n");
-
+  printf("Done building the graph.  Dumping it.\n");
   dump_ir_block_graph (irg);
-
   printf("use xvcg to view this graph:\n");
-  printf("/ben/goetz/bin/xvcg GRAPHNAME\n");
+  printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
 
   return (0);
 }

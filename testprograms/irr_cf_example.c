@@ -51,10 +51,11 @@ int main(int argc, char **argv)
   entity *ent;            /* represents this method as entity of owner */
   ir_node *expr, *c1, *c2, *cond, *f, *t, *jmp, *x;
 
-  printf("creating an IR graph: IRR_CF...\n");
+  printf("\nCreating an IR graph: IRR_CF...\n");
 
   /* init library */
   init_firm ();
+  set_opt_constant_folding(0); /* so that stupid test are not evaluated. */
 
   /* FIRM was designed for oo languages where all methods belong to a class.
    * For imperative languages like C we view a file as a large class containing
@@ -123,18 +124,17 @@ int main(int argc, char **argv)
   add_in_edge (irg->end_block, x);
   mature_block (irg->end_block);
 
+  printf("Optimizing ...\n");
+  dead_node_elimination(irg);
+
   /* verify the graph */
   irg_vrfy(irg);
 
-  dead_node_elimination(irg);
-
-  printf("\nDone building the graph.\n");
   printf("Dumping the graph and a control flow graph.\n");
   dump_ir_block_graph (irg);
   dump_cfg (irg);
-
-  printf("use xvcg to view these graphs:\n");
-  printf("/ben/goetz/bin/xvcg GRAPHNAME\n");
+  printf("Use xvcg to view these graphs:\n");
+  printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
 
   return (0);
 }

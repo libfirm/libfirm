@@ -31,7 +31,7 @@ int main(int argc, char **argv)
   entity *ent;            /* represents this method as entity of owner */
   ir_node *x;
 
-  printf("creating an IR graph: EMPTY...\n");
+  printf("\nCreating an IR graph: EMPTY...\n");
 
   /* init library */
   init_firm ();
@@ -86,13 +86,14 @@ int main(int argc, char **argv)
   /* verify the graph */
   irg_vrfy(irg);
 
+  printf("Optimizing ...\n");
   dead_node_elimination(irg);
 
-  printf("\nDone building the graph.  Dumping it.\n");
+  printf("Done building the graph.  Dumping it.\n");
   dump_ir_block_graph (irg);
 
   printf("use xvcg to view this graph:\n");
-  printf("/ben/goetz/bin/xvcg GRAPHNAME\n");
+  printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
 
   return (0);
 }
