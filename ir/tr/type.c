@@ -301,7 +301,7 @@ bool equal_type(type *typ1, type *typ2) {
   if (typ1 == typ2) return true;
 
   if ((get_type_tpop_code(typ1) != get_type_tpop_code(typ2)) ||
-      (get_type_name(typ1) != get_type_name(typ2)) ||
+      (get_type_ident(typ1) != get_type_ident(typ2)) ||
       (get_type_mode(typ1) != get_type_mode(typ2)) ||
       (get_type_state(typ1) != get_type_state(typ2)))
     return false;
@@ -340,7 +340,7 @@ bool equal_type(type *typ1, type *typ2) {
       type *t1 = get_class_supertype(typ1, i);
       for (j = 0; j < get_class_n_supertypes(typ2); j++) {
 	type *t2 = get_class_supertype(typ2, j);
-	if (get_type_name(t2) == get_type_name(t1))
+	if (get_type_ident(t2) == get_type_ident(t1))
 	  t[i] = t2;
       }
     }
