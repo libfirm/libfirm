@@ -1,7 +1,7 @@
 /* -*- c -*- */
 
 /*
- * Time-stamp: <30.11.2004 14:17:24h liekweg>
+ * Time-stamp: <05.12.2004 21:39:34h liekweg>
  * Project:     libFIRM
  * File name:   ir/ana2/qset.c
  * Purpose:     yet another set implementation
@@ -675,7 +675,9 @@ sortable_t *qset_start (qset_t *qset)
 {
   qset->cursor = 0;
 
-  return (qset_next (qset));    /* works for empty sets, too */
+  sortable_t *start = qset_next (qset);
+
+  return (start);    /* works for empty sets, too */
 }
 
 /*
@@ -721,6 +723,9 @@ int qset_test_main (int argc, char **argv)
 
 /*
   $Log$
+  Revision 1.8  2004/12/06 12:49:26  liekweg
+  virtually no change
+
   Revision 1.7  2004/11/30 14:47:11  liekweg
   insert report changes
 
