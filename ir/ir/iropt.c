@@ -896,6 +896,10 @@ static ir_node *equivalent_node_Conv(ir_node *n)
   return n;
 }
 
+/**
+ * A Cast may be removed if the type of the previous node
+ * is already to type of the Cast.
+ */
 static ir_node *equivalent_node_Cast(ir_node *n) {
   ir_node *pred = get_Cast_op(n);
   if (get_irn_type(pred) == get_Cast_type(n))
@@ -903,14 +907,14 @@ static ir_node *equivalent_node_Cast(ir_node *n) {
   return n;
 }
 
+/* Several optimizations:
+   - no Phi in start block.
+   - remove Id operators that are inputs to Phi
+   - fold Phi-nodes, iff they have only one predecessor except
+           themselves.
+*/
 static ir_node *equivalent_node_Phi(ir_node *n)
 {
-  /* Several optimizations:
-     - no Phi in start block.
-     - remove Id operators that are inputs to Phi
-     - fold Phi-nodes, iff they have only one predecessor except
-             themselves.
-  */
   int i, n_preds;
 
   ir_node *oldn = n;
@@ -1124,6 +1128,71 @@ optimize_preds(ir_node *n) {
   } /* end switch */
 }
 
+/**
+ * Transform AddP(P, ConvIs(Iu)), AddP(P, ConvIu(Is)) and
+ * SubP(P, ConvIs(Iu)), SubP(P, ConvIu(Is)) if possible.
+ */
+static ir_node *transform_node_AddSub(ir_node *n)
+{
+  ir_mode *mode = get_irn_mode(n);
+
+  if (mode_is_reference(mode)) {
+    ir_node *left  = get_binop_left(n);
+    ir_node *right = get_binop_right(n);
+    int ref_bits   = get_mode_size_bits(mode);
+
+    if (get_irn_op(left) == op_Conv) {
+      ir_mode *mode = get_irn_mode(left);
+      int bits      = get_mode_size_bits(mode);
+
+      if (ref_bits == bits &&
+          mode_is_int(mode) &&
+          get_mode_arithmetic(mode) == irma_twos_complement) {
+        ir_node *pre      = get_Conv_op(left);
+        ir_mode *pre_mode = get_irn_mode(pre);
+
+        if (mode_is_int(pre_mode) &&
+            get_mode_size_bits(pre_mode) == bits &&
+            get_mode_arithmetic(pre_mode) == irma_twos_complement) {
+          /* ok, this conv just changes to sign, moreover the calculation
+           * is done with same number of bits as our address mode, so
+           * we can ignore the conv as address calculation can be viewed
+           * as either signed or unsigned
+           */
+          set_binop_left(n, pre);
+        }
+      }
+    }
+
+    if (get_irn_op(right) == op_Conv) {
+      ir_mode *mode = get_irn_mode(right);
+      int bits      = get_mode_size_bits(mode);
+
+      if (ref_bits == bits &&
+          mode_is_int(mode) &&
+          get_mode_arithmetic(mode) == irma_twos_complement) {
+        ir_node *pre      = get_Conv_op(right);
+        ir_mode *pre_mode = get_irn_mode(pre);
+
+        if (mode_is_int(pre_mode) &&
+            get_mode_size_bits(pre_mode) == bits &&
+            get_mode_arithmetic(pre_mode) == irma_twos_complement) {
+          /* ok, this conv just changes to sign, moreover the calculation
+           * is done with same number of bits as our address mode, so
+           * we can ignore the conv as address calculation can be viewed
+           * as either signed or unsigned
+           */
+          set_binop_right(n, pre);
+        }
+      }
+    }
+  }
+  return n;
+}
+
+#define transform_node_Add      transform_node_AddSub
+#define transform_node_Sub      transform_node_AddSub
+
 /** Do architecture dependend optimizations on Mul nodes */
 static ir_node *transform_node_Mul(ir_node *n) {
   return arch_dep_replace_mul_with_shifts(n);
@@ -1282,6 +1351,9 @@ static ir_node *transform_node_Cond(ir_node *n)
   return n;
 }
 
+/**
+ * Transform an Eor.
+ */
 static ir_node *transform_node_Eor(ir_node *n)
 {
   ir_node *a = get_Eor_left(n);
@@ -1648,6 +1720,8 @@ static ir_op *firm_set_default_transform_node(ir_op *op)
     break
 
   switch (op->code) {
+  CASE(Add);
+  CASE(Sub);
   CASE(Mul);
   CASE(Div);
   CASE(Mod);
