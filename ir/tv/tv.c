@@ -1090,7 +1090,7 @@ int tarval_snprintf(char *buf, size_t len, tarval *tv)
       if (tv->value != NULL)
         if (tarval_is_entity(tv))
           if (get_entity_peculiarity((entity *)tv->value) == existent)
-            return snprintf(buf, len, "&(%s)", id_to_str(get_entity_ld_ident((entity *)tv->value)));
+            return snprintf(buf, len, "&(%s)", get_entity_ld_name((entity *)tv->value));
           else
             return snprintf(buf, len, "NULL");
         else {
