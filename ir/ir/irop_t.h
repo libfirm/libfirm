@@ -33,11 +33,11 @@ typedef enum {
 
 /** the type of an ir_op */
 struct ir_op {
-  opcode code;
-  ident *name;
+  opcode code;            /**< the unique opcode of the op */
+  ident *name;            /**< the name of the op */
   size_t attr_size;       /**< Space needed in memory for private attributes */
   int labeled;            /**< Output edge labels on in-edges in vcg graph */
-  int pinned;             /**< How to deal with the node in cse, pre. */
+  op_pinned pinned;       /**< How to deal with the node in cse, pre. */
   op_arity opar;          /**< arity of operator. */
 };
 
@@ -54,10 +54,10 @@ struct ir_op {
 ir_op * new_ir_op (opcode code, const char *name, op_pinned p,
 		   int labeled, op_arity opar, size_t attr_size);
 
-/** initialize the irop module */
+/** Initialize the irop module. */
 void init_op (void);
 
-/* free memory used by irop module. */
+/** Free memory used by irop module. */
 void finish_op(void);
 
 #endif /* _IROP_T_H_ */
