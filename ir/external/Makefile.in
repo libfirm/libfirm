@@ -12,7 +12,7 @@
 
 # set LIBXML2 to the installation directory of libxml2
 # temporary fix until libxml is integrated:
-LIBXML2		?= invalid
+LIBXML2		?= /usr/public/libxml2
 
 top_srcdir := @top_srcdir@
 srcdir = @srcdir@
