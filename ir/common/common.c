@@ -13,7 +13,7 @@
 # include <config.h>
 #endif
 
-#include "common.h"
+#include "common_t.h"
 #include "irgraph.h"
 
 /* returns the kind of the thing */
