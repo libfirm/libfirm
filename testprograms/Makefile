@@ -1,5 +1,5 @@
 DIRS = adt common debug ident ir tr tv
-INCDIRS = -I../include
+INCDIRS = -I../include -I../ir/include
 
 LIBDIRS=-L.. -L/usr/public/lib/gmp/
 
