@@ -61,6 +61,9 @@ void      set_irp_main_irg(ir_graph *main_irg);
 
 /* Adds irg to the list of ir graphs in irp. */
 void      add_irp_irg(ir_graph *irg);
+/* Removes irg from the list or irgs, shrinks the list by one.
+   @@@ does not work properly. */
+void      remove_irp_irg(ir_graph *irg);
 int       get_irp_n_irgs();
 ir_graph *get_irp_irg(int pos);
 void      set_irp_irg(int pos, ir_graph *irg);

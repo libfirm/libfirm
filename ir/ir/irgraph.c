@@ -102,6 +102,8 @@ new_ir_graph (entity *ent, int n_loc)
 /* Frees the passed irgraph.
    Deallocates all nodes in this graph and the ir_graph structure.
    Sets the field irgraph in the corresponding entity to NULL.
+   Does not remove the irgraph from the list in irprog (requires
+   inefficient search, call remove_irp_irg by hand).
    Does not free types, entities or modes that are used only by this
    graph, nor the entity standing for this graph. */
 void free_ir_graph (ir_graph *irg) {

@@ -67,10 +67,24 @@ type *get_glob_type(void) {
 }
 
 /* Adds irg to the list of ir graphs in irp. */
-void      add_irp_irg(ir_graph *irg) {
+void add_irp_irg(ir_graph *irg) {
   assert (irg != NULL);
   assert(irp && irp->graphs);
   ARR_APP1 (ir_graph *, irp->graphs, irg);
+}
+
+/* Removes irg from the list or irgs, shrinks the list by one.
+   @@@ does not work properly. */
+void remove_irp_irg(ir_graph *irg){
+  int i;
+  assert(irg);
+  for (i = 1; i < (ARR_LEN (irp->graphs))-1; i++)
+    if (irp->graphs[i+1] == irg) {
+      for(i++; i < (ARR_LEN (irp->graphs)) - 1; i++)
+	irp->graphs[i] = irp->graphs[i+1];
+      ARR_SETLEN(ir_graph*, irp->graphs, (ARR_LEN(irp->graphs)) - 1);
+      break;
+    }
 }
 
 int get_irp_n_irgs() {
