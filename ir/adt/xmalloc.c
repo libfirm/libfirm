@@ -30,6 +30,9 @@ void *
   void *res = malloc (size);
 
   if (!res) xnomem ();
+
+  memset (res, 0x00, size);
+
   return res;
 }
 
@@ -41,6 +44,9 @@ void *
   void *res = ptr ? realloc (ptr, size) : malloc (size);
 
   if (!res) xnomem ();
+
+  memset (res, 0x00, size);
+
   return res;
 }
 
