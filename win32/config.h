@@ -12,15 +12,6 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
-/* define to enable debugging stuff. */
-#define DEBUG_libfirm 1
-
-/* Define to disable assertion checking.  */
-/* #undef NDEBUG */
-
-/* Remove to disable inlining */
-#define USE_INLINING 1
-
 /* Define to 1 if you have the <alloca.h> header file. */
 /* #undef HAVE_ALLOCA_H */
 
@@ -32,10 +23,6 @@
 
 /* Define to 1 if you have the <jni.h> header file. */
 /* #undef HAVE_JNI_H */
-
-/* Define to 1 if long double works and has more range or precision than
-   double. */
-/* #undef HAVE_LONG_DOUBLE */
 
 /* Define to 1 if you have the <math.h> header file. */
 #define HAVE_MATH_H 1
@@ -85,12 +72,27 @@
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
 
+/* ---------------snip, snip ---------------------- */
+
+/* define to enable debugging stuff. */
+#define DEBUG_libfirm 1
+
+/* Define to disable assertion checking.  */
+/* #undef NDEBUG */
+
+/* Remove to disable inlining */
+#define USE_INLINING 1
+
+/* Define to 1 if long double works and has more range or precision than
+   double. */
+/* #undef HAVE_LONG_DOUBLE */
+
 /* Define to 1 if your processor stores words with the most significant byte
    first (like Motorola and SPARC, unlike Intel and VAX). */
 /* #undef WORDS_BIGENDIAN */
 
 /* Define to 1 if Firm statistics are activated */
-/* #undef FIRM_STATISTICS */
+#define FIRM_STATISTICS
 
 /* Define the right volatile token */
 /* #undef volatile */
@@ -111,3 +113,4 @@
 #define strcasecmp  stricmp
 
 typedef unsigned __int32 uint32_t;
+typedef __int64 int64_t;
