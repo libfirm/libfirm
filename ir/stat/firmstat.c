@@ -15,44 +15,30 @@
 
 # include <string.h>
 
+#include <stdio.h>
+#include <stdlib.h>
+
+#ifdef FIRM_STATISTICS
+
+#include "firmstat.h"
 # include "irop_t.h"
 # include "irnode_t.h"
 # include "irgraph_t.h"
 # include "pset.h"
 # include "irprog.h"
 # include "irgwalk.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-
-#undef obstack_chunk_alloc
-#undef obstack_chunk_free
-#define obstack_chunk_alloc	malloc
-#define obstack_chunk_free	free
-#include <obstack.h>
-
-#ifdef FIRM_STATISTICS
-
-#include "firmstat.h"
+# include "pattern.h"
+# include "counter.h"
 
 /*
  * just be make some things clear :-), the
  * poor man "generics"
  */
-#define HASH_MAP(type)	pset_##type
+#define HASH_MAP(type) pset_##type
 
 typedef pset pset_node_entry_t;
 typedef pset pset_graph_entry_t;
 typedef pset pset_opt_entry_t;
-
-/*
- * 32 bit should be enough for now
- */
-#define STAT_CNT_NUM 1
-
-typedef struct _counter_t {
-  unsigned cnt[STAT_CNT_NUM];
-} counter_t;
 
 /*
  * An entry for ir_nodes
@@ -137,6 +123,7 @@ typedef struct _statistic_info_t {
   ir_op                   *op_Phi0;		/**< needed pseudo op */
   ir_op                   *op_PhiM;		/**< needed pseudo op */
   dumper_t                *dumper;		/**< list of dumper */
+  int                     enable;		/**< if set, statistic is enabled */
 } stat_info_t;
 
 /**
@@ -170,87 +157,6 @@ static ir_op _op_Phi0, _op_PhiM;
  * global status
  */
 static stat_info_t _status, *status = &_status;
-
-/**
- * increase a counter
- */
-static INLINE void cnt_inc(counter_t *cnt)
-{
-  int i;
-
-  for (i = 0; i < STAT_CNT_NUM; ++i) {
-    if (++cnt->cnt[i])
-      break;
-  }
-}
-
-/**
- * decreace a counter
- */
-static INLINE void cnt_dec(counter_t *cnt)
-{
-  int i;
-
-  for (i = 0; i < STAT_CNT_NUM; ++i) {
-    if (--cnt->cnt[i] != -1)
-      break;
-  }
-}
-
-/**
- * set a counter to zero
- */
-static INLINE void cnt_clr(counter_t *cnt)
-{
-  memset(cnt->cnt, 0, sizeof(cnt->cnt));
-}
-
-/**
- * add a counter to another
- */
-static inline void cnt_add(counter_t *dst, const counter_t *src)
-{
-  int i, carry = 0;
-
-  for (i = 0; i < STAT_CNT_NUM; ++i) {
-    unsigned a = dst->cnt[i] + src->cnt[i] + carry;
-
-    if (carry)
-      carry = a <= dst->cnt[i];
-    else
-      carry = a < dst->cnt[i];
-
-    dst->cnt[i] = a;
-
-    if (! carry)
-      break;
-  }
-}
-
-/**
- * add an integer to an counter
- */
-static inline void cnt_add_i(counter_t *dst, int src)
-{
-  int i;
-  unsigned a = dst->cnt[0] + src;
-  unsigned carry = a < dst->cnt[i];
-
-  dst->cnt[0] = a;
-  if (! carry)
-    return;
-
-  for (i = 1; i < STAT_CNT_NUM; ++i) {
-    unsigned a = dst->cnt[i] + carry;
-
-    carry = a < dst->cnt[i];
-
-    dst->cnt[i] = a;
-
-    if (! carry)
-      break;
-  }
-}
 
 /*
  * compare two elements of the opcode hash
@@ -401,8 +307,8 @@ static ir_op *stat_get_irn_op(const ir_node *node)
  * environment for the count walker
  */
 typedef struct _cnt_env_t {
-  pset      *set;		/**< the hash map containing the ir_ops */
-  counter_t *cnt_edges;		/**< the edges counter */
+  pset      *set;        /**< the hash map containing the ir_ops */
+  counter_t *cnt_edges;  /**< the edges counter */
 } cnt_env_t;
 
 /**
@@ -503,7 +409,7 @@ static void simple_dump_opcode_hash(dumper_t *dmp, pset *set)
   fprintf(dmp->f, "%-16s %-8s %-8s %-8s\n", "Opcode", "alive", "created", "->Id");
   for (entry = pset_first(set); entry; entry = pset_next(set)) {
     fprintf(dmp->f, "%-16s %8d %8d %8d\n",
-	get_id_str(entry->op->name), entry->cnt_alive.cnt[0], entry->new_node.cnt[0], entry->into_Id.cnt[0]);
+      get_id_str(entry->op->name), entry->cnt_alive.cnt[0], entry->new_node.cnt[0], entry->into_Id.cnt[0]);
 
     cnt_add(&f_alive,    &entry->cnt_alive);
     cnt_add(&f_new_node, &entry->new_node);
@@ -529,7 +435,7 @@ static void simple_dump_opt_hash(dumper_t *dmp, pset *set, int index)
 
     for (; entry; entry = pset_next(set)) {
       fprintf(dmp->f, "%-16s %8d\n",
-	  get_id_str(entry->op->name), entry->count.cnt[0]);
+        get_id_str(entry->op->name), entry->count.cnt[0]);
     }
   }
 }
@@ -557,16 +463,16 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
     }
     else {
       if (entry->ent)
-	fprintf(dmp->f, "\nEntity %s, Irg %p", get_entity_name(entry->ent), (void *)entry->irg);
+        fprintf(dmp->f, "\nEntity %s, Irg %p", get_entity_name(entry->ent), (void *)entry->irg);
       else
-	fprintf(dmp->f, "\nIrg %p", (void *)entry->irg);
+        fprintf(dmp->f, "\nIrg %p", (void *)entry->irg);
     }
 
     fprintf(dmp->f, " %swalked %d over blocks %d was inlined %d got inlined %d:\n",
-	entry->deleted ? "DELETED " : "",
-	entry->cnt_walked.cnt[0], entry->cnt_walked_blocks.cnt[0],
-	entry->cnt_was_inlined.cnt[0],
-	entry->cnt_got_inlined.cnt[0]
+        entry->deleted ? "DELETED " : "",
+        entry->cnt_walked.cnt[0], entry->cnt_walked_blocks.cnt[0],
+        entry->cnt_was_inlined.cnt[0],
+        entry->cnt_got_inlined.cnt[0]
     );
   }
   else {
@@ -671,20 +577,20 @@ static void csv_dump_graph(dumper_t *dmp, graph_entry_t *entry)
     }
     else {
       if (entry->ent)
-	name = get_entity_name(entry->ent);
+        name = get_entity_name(entry->ent);
       else
-	name = "<UNKNOWN IRG>";
+        name = "<UNKNOWN IRG>";
     }
 
     csv_count_nodes(entry, cnt);
 
     fprintf(dmp->f, "%-40s, %p, %d, %d, %d, %d\n",
-	name,
-	entry->irg,
-	cnt[0].cnt[0],
-	cnt[1].cnt[0],
-	cnt[2].cnt[0],
-	cnt[3].cnt[0]
+        name,
+        entry->irg,
+        cnt[0].cnt[0],
+        cnt[1].cnt[0],
+        cnt[2].cnt[0],
+        cnt[3].cnt[0]
     );
   }
 }
@@ -723,9 +629,15 @@ static dumper_t csv_dumper = {
 /* initialize the statistics module. */
 void stat_init(void)
 {
-#define X(a)	a, sizeof(a)-1
+#define X(a)  a, sizeof(a)-1
 
   int pseudo_id = 0;
+
+  /* enable statistics */
+  status->enable = 1;
+
+  if (! status->enable)
+   return;
 
   obstack_init(&status->cnts);
 
@@ -745,12 +657,17 @@ void stat_init(void)
   stat_register_dumper(&simple_dumper, "firmstat.txt");
   stat_register_dumper(&csv_dumper, "firmstat.csv");
 
+  /* initialize the pattern hash */
+  stat_init_pattern_history(status->enable);
 #undef X
 }
 
 /* A new IR op is registered. */
 void stat_new_ir_op(const ir_op *op)
 {
+  if (! status->enable)
+    return;
+
   STAT_ENTER;
   {
     graph_entry_t *graph = graph_get_entry(NULL, status->irg_hash);
@@ -764,6 +681,9 @@ void stat_new_ir_op(const ir_op *op)
 /* An IR op is freed. */
 void stat_free_ir_op(const ir_op *op)
 {
+  if (! status->enable)
+    return;
+
   STAT_ENTER;
   {
   }
@@ -773,6 +693,9 @@ void stat_free_ir_op(const ir_op *op)
 /* A new node is created. */
 void stat_new_node(const ir_node *node)
 {
+  if (! status->enable)
+    return;
+
   /* do NOT count during dead node elimination */
   if (status->in_dead_node_elim > 0)
     return;
@@ -799,6 +722,9 @@ void stat_new_node(const ir_node *node)
 /* A node is changed into a Id node */
 void stat_turn_into_id(const ir_node *node)
 {
+  if (! status->enable)
+    return;
+
   STAT_ENTER;
   {
     node_entry_t *entry;
@@ -821,6 +747,9 @@ void stat_turn_into_id(const ir_node *node)
 /* A new graph was created */
 void stat_new_graph(ir_graph *irg, entity *ent)
 {
+  if (! status->enable)
+    return;
+
   STAT_ENTER;
   {
     /* execute for side effect :-) */
@@ -837,6 +766,9 @@ void stat_new_graph(ir_graph *irg, entity *ent)
  */
 void stat_free_graph(ir_graph *irg)
 {
+  if (! status->enable)
+    return;
+
   STAT_ENTER;
   {
     graph_entry_t *graph  = graph_get_entry(irg, status->irg_hash);
@@ -846,6 +778,9 @@ void stat_free_graph(ir_graph *irg)
 
     /* count the nodes of the graph yet, it will be destroyed later */
     count_nodes_in_graph(global, graph);
+
+    /* calculate the pattern */
+    stat_calc_pattern_history(irg);
   }
   STAT_LEAVE;
 }
@@ -855,6 +790,9 @@ void stat_free_graph(ir_graph *irg)
  */
 void stat_irg_walk(ir_graph *irg, void *pre, void *post)
 {
+  if (! status->enable)
+    return;
+
   STAT_ENTER_SINGLE;
   {
     graph_entry_t *graph = graph_get_entry(irg, status->irg_hash);
@@ -869,6 +807,9 @@ void stat_irg_walk(ir_graph *irg, void *pre, void *post)
  */
 void stat_irg_block_walk(ir_graph *irg, const ir_node *node, void *pre, void *post)
 {
+  if (! status->enable)
+    return;
+
   STAT_ENTER_SINGLE;
   {
     graph_entry_t *graph = graph_get_entry(irg, status->irg_hash);
@@ -898,6 +839,9 @@ void stat_merge_nodes(
     ir_node **old_node_array, int old_num_entries,
     stat_opt_kind opt)
 {
+  if (! status->enable)
+    return;
+
   STAT_ENTER;
   {
     int i, j;
@@ -905,12 +849,12 @@ void stat_merge_nodes(
 
     for (i = 0; i < old_num_entries; ++i) {
       for (j = 0; j < new_num_entries; ++j)
-	if (old_node_array[i] == new_node_array[j])
-	  break;
+        if (old_node_array[i] == new_node_array[j])
+          break;
 
       /* nodes might be in new and old, these are NOT removed */
       if (j >= new_num_entries) {
-	removed_due_opt(old_node_array[i], graph->opt_hash[opt]);
+        removed_due_opt(old_node_array[i], graph->opt_hash[opt]);
       }
     }
   }
@@ -922,6 +866,9 @@ void stat_merge_nodes(
  */
 void stat_lower(ir_node *node)
 {
+  if (! status->enable)
+    return;
+
   STAT_ENTER;
   {
     graph_entry_t *graph = graph_get_entry(current_ir_graph, status->irg_hash);
@@ -936,6 +883,9 @@ void stat_lower(ir_node *node)
  */
 void stat_inline(ir_node *call, ir_graph *called_irg)
 {
+  if (! status->enable)
+    return;
+
   STAT_ENTER;
   {
     ir_graph *irg = get_irn_irg(call);
@@ -953,6 +903,9 @@ void stat_inline(ir_node *call, ir_graph *called_irg)
  */
 void stat_dead_node_elim_start(ir_graph *irg)
 {
+  if (! status->enable)
+    return;
+
   ++status->in_dead_node_elim;
 }
 
@@ -961,12 +914,18 @@ void stat_dead_node_elim_start(ir_graph *irg)
  */
 void stat_dead_node_elim_stop(ir_graph *irg)
 {
+  if (! status->enable)
+    return;
+
   --status->in_dead_node_elim;
 }
 
 /* Finish the statistics */
 void stat_finish(void)
 {
+  if (! status->enable)
+    return;
+
   STAT_ENTER;
   {
     graph_entry_t *entry;
@@ -976,13 +935,16 @@ void stat_finish(void)
     for (entry = pset_first(status->irg_hash); entry; entry = pset_next(status->irg_hash)) {
 
       if (entry->irg == NULL) {
-	/* special entry for the global count */
-	continue;
+        /* special entry for the global count */
+        continue;
       }
 
       if (! entry->deleted) {
-	/* the graph is still alive, count the nodes on it */
-	count_nodes_in_graph(global, entry);
+        /* the graph is still alive, count the nodes on it */
+        count_nodes_in_graph(global, entry);
+
+        /* calculate the pattern */
+        stat_calc_pattern_history(entry->irg);
       }
 
       dump_graph(entry);
@@ -992,6 +954,10 @@ void stat_finish(void)
     dump_graph(global);
     dump_finish();
 
+    stat_finish_pattern_history();
+
+    /* finished */
+    status->enable = 0;
   }
   STAT_LEAVE;
 }
