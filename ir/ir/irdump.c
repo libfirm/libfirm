@@ -136,11 +136,16 @@ static void dump_whole_node(ir_node *n, void* env);
 static INLINE void
 dump_node_opcode (ir_node *n)
 {
+  char buf[1024];
+  int res;
+
   assert(n && n->op);
 
   /* Const */
   if (n->op->code == iro_Const) {
-    tarval_xprintf ((printf_func*) fprintf,F,n->attr.con);
+    res = tarval_snprintf(buf, sizeof(buf), n->attr.con);
+    assert(res < sizeof(buf) && "buffer to small for tarval_snprintf");
+    fprintf(F, buf);
 
   /* SymConst */
   } else if (n->op->code == iro_SymConst) {
@@ -333,6 +338,9 @@ dump_node (ir_node *n, pmap * map) {
 static void
 dump_ir_node (ir_node *n)
 {
+  char buf[1024];
+  int res;
+
   /* dump this node */
   fprintf (F, "node: {title: \""); PRINT_NODEID(n); fprintf(F, "\" label: ");
 
@@ -361,9 +369,10 @@ dump_ir_node (ir_node *n)
       PRINT_DEFAULT_NODE_ATTR;
     break;
   case iro_Const:
-    fprintf (F, "\"");
-    tarval_xprintf((printf_func*) fprintf,F,n->attr.con);
-    fprintf (F, "%s\" color: yellow ",id_to_str(get_irn_modeident(n)));
+    res = tarval_snprintf(buf, sizeof(buf), n->attr.con);
+    assert(res < sizeof(buf) && "buffer to small for tarval_snprintf");
+
+    fprintf (F, "\"%s%s\" color: yellow ", buf, id_to_str(get_irn_modeident(n)));
     PRINT_DEFAULT_NODE_ATTR;
     break;
   case iro_Proj:
