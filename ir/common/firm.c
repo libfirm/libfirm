@@ -24,7 +24,7 @@
 # include "irgraph_t.h"
 
 void
-init_firm (void)
+init_firm (default_initialize_local_variable_func_t *func)
 {
   /* register the character 'I' as variable for ident outputs. */
   xprintf_register ('I', ident_print);
@@ -49,8 +49,8 @@ init_firm (void)
   init_mangle ();
   /* initalize all op codes an irnode can consist of */
   init_op ();
-  /* called once for each run of this library, empty right now... @@@!!!
-     init_cons (); */
+  /* called once for each run of this library */
+  init_cons (func);
   /* Builds a construct allowing to access all information to be constructed
      later. */
   init_irprog ();

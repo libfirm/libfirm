@@ -92,7 +92,13 @@
 
 /**
  * Initialize the firm library.
+ *
+ * @param func    This function is called, whenever a local variable is used before definition
+ *
+ * The parameter func may be NULL. In that case, the old FIRM behavior is conserved.
+ *
+ * @see default_initialize_local_variable_func_t
  */
-void init_firm (void);
+void init_firm (default_initialize_local_variable_func_t *func);
 
 # endif /* _FIRM_H_ */
