@@ -10,19 +10,19 @@ static int check_class(type *tp) {
   int i, j, k;
   int found;
 
-  //printf("\n"); DDMT(tp);
+  /*printf("\n"); DDMT(tp);*/
 
   for (i = 0; i < get_class_n_members(tp); i++) {
 
     entity *mem = get_class_member(tp, i);
     assert(mem && "NULL members not allowed");
-    //printf(" %d, %d", get_entity_n_overwrites(mem), get_class_n_supertypes(tp)); DDME(mem);
+    /*printf(" %d, %d", get_entity_n_overwrites(mem), get_class_n_supertypes(tp)); DDME(mem);*/
     if (!mem) return error_null_mem;
 
     assert(get_entity_n_overwrites(mem) <= get_class_n_supertypes(tp));
     for (j = 0; j < get_entity_n_overwrites(mem); j++) {
       entity *ovw = get_entity_overwrites(mem, j);
-      //printf(" overwrites: "); DDME(ovw);
+      /*printf(" overwrites: "); DDME(ovw);*/
       /* Check whether ovw is member of one of tp's supertypes. If so,
 	 the representation is correct. */
       found = false;

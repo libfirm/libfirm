@@ -97,8 +97,11 @@ static void _fail_verify(tarval *tv, const char* file, int line)
     printf("%s:%d: Invalid tarval (null)", file, line);
   assert(0);
 }
+#ifdef __GNUC__
+INLINE static void tarval_verify(tarval *tv) __attribute__ ((unused));
+#endif
 
-inline static void tarval_verify(tarval *tv)
+INLINE static void tarval_verify(tarval *tv)
 {
   assert(tv);
   assert(tv->mode);
@@ -208,6 +211,8 @@ tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 
   switch (get_mode_sort(mode))
   {
+    case irms_control_flow:
+    case irms_memory:
     case irms_auxiliary:
       assert(0);
       break;
@@ -258,7 +263,7 @@ char *tarval_to_str(tarval *tv)
 tarval *new_tarval_from_long(long l, ir_mode *mode)
 {
   ANNOUNCE();
-  assert(mode && !(get_mode_sort(mode) == irms_auxiliary));
+  assert(mode && !((get_mode_sort(mode) == irms_memory)||(get_mode_sort(mode)==irms_control_flow)||(get_mode_sort(mode)==irms_auxiliary)));
 
   switch(get_mode_sort(mode))
   {
@@ -340,7 +345,8 @@ int tarval_is_entity(tarval *tv)
   ANNOUNCE();
   assert(tv);
   /* tv->value == NULL means dereferencing a null pointer */
-  return ((get_mode_sort(tv->mode) == irms_reference) && (tv->value != NULL) && (tv->length == 0));
+  return ((get_mode_sort(tv->mode) == irms_reference) && (tv->value != NULL) && (tv->length == 0)
+	  && (tv != tarval_P_void));
 }
 
 entity *tarval_to_entity(tarval *tv)
@@ -425,6 +431,8 @@ tarval *get_tarval_max(ir_mode *mode)
   switch(get_mode_sort(mode))
   {
     case irms_reference:
+    case irms_control_flow:
+    case irms_memory:
     case irms_auxiliary:
       assert(0);
       break;
@@ -452,6 +460,8 @@ tarval *get_tarval_min(ir_mode *mode)
   switch(get_mode_sort(mode))
   {
     case irms_reference:
+    case irms_control_flow:
+    case irms_memory:
     case irms_auxiliary:
       assert(0);
       break;
@@ -478,6 +488,8 @@ tarval *get_tarval_null(ir_mode *mode)
 
   switch(get_mode_sort(mode))
   {
+    case irms_control_flow:
+    case irms_memory:
     case irms_auxiliary:
     case irms_internal_boolean:
       assert(0);
@@ -503,6 +515,8 @@ tarval *get_tarval_one(ir_mode *mode)
 
   switch(get_mode_sort(mode))
   {
+    case irms_control_flow:
+    case irms_memory:
     case irms_auxiliary:
     case irms_internal_boolean:
     case irms_reference:
@@ -605,6 +619,8 @@ pnc_number tarval_cmp(tarval *a, tarval *b)
   /* Here the two tarvals are unequal and of the same mode */
   switch (get_mode_sort(a->mode))
   {
+    case irms_control_flow:
+    case irms_memory:
     case irms_auxiliary:
       return False;
 
@@ -629,9 +645,9 @@ pnc_number tarval_cmp(tarval *a, tarval *b)
  */
 tarval *tarval_convert_to(tarval *src, ir_mode *m)
 {
-  ANNOUNCE();
   tarval tv;
 
+  ANNOUNCE();
   assert(src);
   assert(m);
 
@@ -639,6 +655,8 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m)
 
   switch (get_mode_sort(src->mode))
   {
+    case irms_control_flow:
+    case irms_memory:
     case irms_auxiliary:
       break;
 
@@ -1082,6 +1100,8 @@ int tarval_snprintf(char *buf, size_t len, tarval *tv)
         return snprintf(buf, len, "%s%s%s", prefix, (tv == tarval_b_true) ? "true" : "false", suffix);
       }
 
+    case irms_control_flow:
+    case irms_memory:
     case irms_auxiliary:
       return snprintf(buf, len, "<BAD>");
   }

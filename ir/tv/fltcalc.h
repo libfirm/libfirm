@@ -12,7 +12,7 @@ enum {
   FC_SUB,
   FC_MUL,
   FC_DIV,
-  FC_NEG,
+  FC_NEG
 };
 
 #define fc_add(a, b) fc_calc((a), (b), FC_ADD)

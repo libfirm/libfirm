@@ -784,7 +784,7 @@ static void _shr(const char *val1, char *buffer, long offset, int radius, unsign
       break;
     }
   }
-  if ((carry_flag == 0) && (_val(val1[counter]) & shift != 0))
+  if ((carry_flag == 0) && (_val(val1[counter]) & shift) != 0)
     carry_flag = 1;
 
   /* shift digits to the right with offset, carry and all */
@@ -832,13 +832,6 @@ static void _rot(const char *val1, char *buffer, long offset, int radius, unsign
 {
   char temp1[CALC_BUFFER_SIZE];
   char temp2[CALC_BUFFER_SIZE];
-
-  const char *shl;
-  char carry = SC_0;
-
-  int counter, old_counter;
-  int shift;
-  int bitoffset;
 
   offset = offset % radius;
 
@@ -1216,7 +1209,6 @@ int sc_get_highest_set_bit(const void *value)
 {
   const char *val = (const char*)value;
   int high, counter;
-  char sign;
 
   high = CALC_BUFFER_SIZE * 4;
 

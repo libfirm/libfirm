@@ -23,14 +23,15 @@
 #include "irprog.h"
 #include "type_or_entity.h"
 #include "typegmod.h"
+#include "typewalk.h"
 
 /* Make types visible to allow most efficient access */
 #include "entity_t.h"
 #include "type_t.h"
 
 typedef struct type_walk_env {
-  void *pre;
-  void *post;
+  type_walk_func *pre;
+  type_walk_func *post;
   void *env;
 } type_walk_env;
 
@@ -145,9 +146,13 @@ static void type_walk_2(type_or_ent *tore,
 /**  Check wether node contains types or entities as an attribute.
      If so start a walk over that information. */
 static void start_type_walk(ir_node *node, void *env) {
-  void *pre  = ((type_walk_env *)env)->pre;
-  void *post = ((type_walk_env *)env)->post;
-  void *envi = ((type_walk_env *)env)->env;
+ type_walk_func *pre;
+ type_walk_func *post;
+ void *envi;
+
+  pre  = ((type_walk_env *)env)->pre;
+  post = ((type_walk_env *)env)->post;
+  envi = ((type_walk_env *)env)->env;
 
   assert(node);
 

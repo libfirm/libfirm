@@ -290,8 +290,8 @@ set_entity_visibility (entity *ent, ent_visibility vis) {
   if (vis != local)
     assert((ent->allocation == static_allocated) ||
 	   (ent->allocation == automatic_allocated));
-  // @@@ Test that the owner type is not local, but how??
-  //       && get_class_visibility(get_entity_owner(ent)) != local));
+  /* @@@ Test that the owner type is not local, but how??
+         && get_class_visibility(get_entity_owner(ent)) != local));*/
   ent->visibility = vis;
 }
 

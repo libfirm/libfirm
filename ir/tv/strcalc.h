@@ -63,7 +63,7 @@ enum {
   SC_C,
   SC_D,
   SC_E,
-  SC_F,
+  SC_F
 };
 
 /**
@@ -83,7 +83,7 @@ enum {
   SC_AND,		/**< Bitwise And */
   SC_OR,		/**< Bitwise Or */
   SC_NOT,		/**< Bitwise Not */
-  SC_XOR,		/**< Bitwise Exclusive Or */
+  SC_XOR		/**< Bitwise Exclusive Or */
 };
 
 /**
@@ -94,7 +94,7 @@ enum base_t {
   SC_HEX,	/**< hexadecimal output with BIG letters */
   SC_DEC,	/**< decimal output */
   SC_OCT,	/**< octal output */
-  SC_BIN,	/**< binary output */
+  SC_BIN	/**< binary output */
 };
 
 /*

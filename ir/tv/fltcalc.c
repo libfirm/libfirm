@@ -156,7 +156,6 @@ void fc_calc(const void *a, const void *b, int opcode)
 
 int fc_comp(const void *a, const void *b)
 {
-  char buf1[40], buf2[40];
 
   if (CAST_IN(a) == CAST_IN(b)) {
     return 0;

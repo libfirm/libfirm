@@ -31,7 +31,7 @@
 # include "misc.h"
 
 /* init globals: */
-static dtree_t *trees = 0;
+/*static*/ dtree_t *trees = 0;
 /*
 static dtree_t *last  = 0;
 */

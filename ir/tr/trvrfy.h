@@ -26,7 +26,7 @@ enum  trvrfy_error_codes {
   no_error                 = 0,		/**< no error */
   error_ent_not_cont       = 1,		/**< overwritten entity not in superclass */
   error_null_mem           = 2,		/**< compound contains NULL member */
-  error_const_on_wrong_irg = 3,		/**< constant placed on wrong IRG */
+  error_const_on_wrong_irg = 3		/**< constant placed on wrong IRG */
 };
 
 
