@@ -494,23 +494,26 @@ static ir_node *equivalent_node_Block(ir_node *n)
      This should be true, as the block is matured before optimize is called.
      But what about Phi-cycles with the Phi0/Id that could not be resolved?
      Remaining Phi nodes are just Ids. */
-  if (get_Block_n_cfgpreds(n) == 1) {
-    ir_node *cfgpred = skip_Proj(get_Block_cfgpred(n, 0));
-    ir_node *predblock = get_nodes_Block(cfgpred);
-    if (get_irn_op(cfgpred) == op_Jmp) {
-      if (predblock == oldn) {
-	/* Jmp jumps into the block it is in -- deal self cycle. */
-	n = new_Bad();                                      DBG_OPT_DEAD;
-      } else if (get_opt_control_flow_straightening()) {
-	n = predblock;                                      DBG_OPT_STG;
-      }
-    } else if ((get_irn_op(cfgpred) == op_Cond) && (predblock == oldn)) {
-      /* Cond jumps into the block it is in -- deal self cycle. */
-      n = new_Bad();                                      DBG_OPT_DEAD;
-    }
-
-  } else if ((get_Block_n_cfgpreds(n) == 2) &&
-	     (get_opt_control_flow_weak_simplification())) {
+   if ((get_Block_n_cfgpreds(n) == 1) &&
+       (get_irn_op(get_Block_cfgpred(n, 0)) == op_Jmp)) {
+     ir_node *predblock = get_nodes_Block(get_Block_cfgpred(n, 0));
+     if (predblock == oldn) {
+       /* Jmp jumps into the block it is in -- deal self cycle. */
+       n = new_Bad();                                      DBG_OPT_DEAD;
+     } else if (get_opt_control_flow_straightening()) {
+       n = predblock;                                      DBG_OPT_STG;
+     }
+   }
+   else if ((get_Block_n_cfgpreds(n) == 1) &&
+	    (get_irn_op(skip_Proj(get_Block_cfgpred(n, 0))) == op_Cond)) {
+     ir_node *predblock = get_nodes_Block(get_Block_cfgpred(n, 0));
+     if (predblock == oldn) {
+       /* Jmp jumps into the block it is in -- deal self cycle. */
+       n = new_Bad();                                      DBG_OPT_DEAD;
+     }
+   }
+   else if ((get_Block_n_cfgpreds(n) == 2) &&
+	    (get_opt_control_flow_weak_simplification())) {
     /* Test whether Cond jumps twice to this block
        @@@ we could do this also with two loops finding two preds from several ones. */
     ir_node *a = get_Block_cfgpred(n, 0);
