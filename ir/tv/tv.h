@@ -52,11 +52,12 @@ typedef struct tarval tarval;
 #endif
 
 /* how to represent target types on host */
-typedef float  tarval_f;
-typedef double tarval_d;
-typedef long   tarval_chil;
-typedef unsigned long tarval_CHIL;
-typedef int tarval_Z;   /* Do not use!!! */
+typedef float  tarval_F;
+typedef double tarval_D;
+typedef long double tarval_E;
+typedef long   tarval_sInt;
+typedef unsigned long tarval_uInt;
+typedef char tarval_C;
 typedef struct {
   /* if ent then xname is missing or mangled from ent,
      else if xname then xname is a linker symbol that is not mangled
@@ -67,24 +68,18 @@ typedef struct {
   const char *xname;
   entity *ent;
   tarval *tv;
-} tarval_p;
-typedef struct {
-  unsigned char *p;		/* may contain embedded 0, not 0-terminated */
-  size_t n;
-} tarval_s;
-typedef tarval_s tarval_B;
+} tarval_P;
 
 struct tarval {
   union {
-    tarval_f f;			/* float */
-    tarval_d d;			/* double */
-    tarval_chil chil;		/* signed integral */
-    tarval_CHIL CHIL;		/* unsigned integral */
-    tarval_Z Z;                 /* @@@ Do not use!!! universal int */
-    tarval_p p;			/* pointer */
-    bool b;			/* boolean */
-    tarval_B B;			/* universal bits */
-    tarval_s s;			/* string */
+    tarval_F F;         /* float */
+    tarval_D D;         /* double */
+    tarval_E E;;        /* extended */
+    tarval_sInt sInt;   /* signed integral */
+    tarval_uInt uInt;   /* unsigned integral */
+    tarval_C C;         /* character */
+    tarval_P P;         /* pointer */
+    bool b;             /* boolean */
   } u;
   ir_mode *mode;
 };
@@ -94,9 +89,9 @@ extern tarval *tarval_bad;                  tarval *get_tarval_bad();
 /* We should have a tarval_undefined */
 extern tarval *tarval_b_false;              tarval *get_tarval_b_false  ();
 extern tarval *tarval_b_true;               tarval *get_tarval_b_true   ();
-extern tarval *tarval_d_NaN;                tarval *get_tarval_d_NaN    ();
-extern tarval *tarval_d_Inf;                tarval *get_tarval_d_Inf    ();
-extern tarval *tarval_p_void;               tarval *get_tarval_p_void   ();
+extern tarval *tarval_D_NaN;                tarval *get_tarval_D_NaN    ();
+extern tarval *tarval_D_Inf;                tarval *get_tarval_D_Inf    ();
+extern tarval *tarval_P_void;               tarval *get_tarval_P_void   ();
 extern tarval *tarval_mode_null[];          tarval *get_tarval_mode_null(ir_mode *mode);
 /* @@@ These are not initialized!! Don't use. */
 extern tarval *tarval_mode_min[];           tarval *get_tarval_mode_min (ir_mode *mode);
@@ -106,16 +101,15 @@ void tarval_init_1 (void);
 void tarval_init_2 (void);
 
 /* ************************ Constructors for tarvals ************************ */
-/*tarval *tarval_Z_from_str (const char *s, size_t len, int base);*/
-tarval *tarval_f_from_str (const char *s, size_t len);
-tarval *tarval_d_from_str (const char *s, size_t len);
+tarval *tarval_F_from_str (const char *s, size_t len);
+tarval *tarval_D_from_str (const char *s, size_t len);
 tarval *tarval_int_from_str (const char *s, size_t len, int base, ir_mode *m);
 tarval *tarval_from_long  (ir_mode *m, long val);
 
-tarval *tarval_p_from_str (const char *xname);
+tarval *tarval_P_from_str (const char *xname);
 /* The tarval represents the address of the entity.  As the address must
    be constant the entity must have as owner the global type. */
-tarval *tarval_p_from_entity (entity *ent);
+tarval *tarval_P_from_entity (entity *ent);
 
 tarval *tarval_convert_to (tarval *src, ir_mode *m);
 
@@ -128,7 +122,7 @@ tarval *tarval_cancel (void); /* returns tarval_bad */
 
 /* The flags for projecting a comparison result */
 typedef enum {
-  irpn_False=0,		/* 0000 false */
+  irpn_False=0,	/* 0000 false */
   irpn_Eq,		/* 0001 equal */
   irpn_Lt,		/* 0010 less */
   irpn_Le,		/* 0011 less or equal */
@@ -173,11 +167,10 @@ long tarval_classify (tarval *tv);
 long tarval_ord (tarval *tv, int *fail);
 
 /* return a mode-specific value */
-tarval_f tv_val_f (tarval *tv);
-tarval_d tv_val_d (tarval *tv);
-tarval_chil tv_val_chil (tarval *tv);
-tarval_CHIL tv_val_CHIL (tarval *tv);
-/*tarval_Z tv_val_Z (tarval *tv);*/
+tarval_F tv_val_F (tarval *tv);
+tarval_D tv_val_D (tarval *tv);
+tarval_sInt tv_val_sInt (tarval *tv);
+tarval_uInt tv_val_uInt (tarval *tv);
 /* @@@ temporarily removed.
    jni builder can not deal with the return value.
    All definitions of types are interpreted as pointer values until

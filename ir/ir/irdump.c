@@ -531,7 +531,7 @@ void print_edge_vcgattr(ir_node *from, int to) {
   case iro_Start:   break;
   case iro_End:
     if (to >= 0) {
-      if (get_irn_mode(get_End_keepalive(from, to)) == mode_R)
+      if (get_irn_mode(get_End_keepalive(from, to)) == mode_BB)
 	xfprintf (F, CF_EDGE_ATTR);
       if (get_irn_mode(get_End_keepalive(from, to)) == mode_X)
 	xfprintf (F, MEM_EDGE_ATTR);

@@ -298,11 +298,11 @@
  *    add_in_edge(this_block, cf_pred1);
  *    add_in_edge(this_block, cf_pred2);
  *    mature_block(this_block);
- *    a_val = get_value(42, mode_I);
+ *    a_val = get_value(42, mode_Iu);
  *    mem = get_store();
  *    div = new_Div(mem, a_val, a_val);
  *    mem = new_Proj(div, mode_M, 0);   * for the numbers for Proj see docu *
- *    res = new_Proj(div, mode_I, 2);
+ *    res = new_Proj(div, mode_Iu, 2);
  *    set_store(mem);
  *    set_value(res, 42);
  *    cf_op = new_Jmp();
@@ -595,7 +595,7 @@
  *    datastructure don't use
  *      new_SymConst((type_or_id*)get_entity_ld_ident(ent), linkage_ptr_info);.
  *    Use a real const instead:
- *      new_Const(mode_p, tarval_p_from_entity(ent));
+ *      new_Const(mode_P, tarval_p_from_entity(ent));
  *    This makes the Constant independent of name changes of the entity due to
  *    mangling.
  *
@@ -616,10 +616,10 @@
  *                        - size
  *  		      - linkage_ptr_info
  *        If the attr.i.num is type_tag or size, the node contains an attribute
- *      attr.i.*type,    a pointer to a type_class.  The mode of the node is mode_i.
+ *      attr.i.*type,    a pointer to a type_class.  The mode of the node is mode_Is.
  *        if it is linkage_ptr_info it contains
  *      attr.i.*ptrinfo,  an ident holding information for the linker.  The mode
- *        of the node is mode_p.
+ *        of the node is mode_P.
  *
  *    THE SELECT NODE
  *    ---------------

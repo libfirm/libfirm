@@ -50,7 +50,7 @@ new_rd_Block (dbg_info* db, ir_graph *irg,  int arity, ir_node **in)
 {
   ir_node *res;
 
-  res = new_ir_node (db, irg, NULL, op_Block, mode_R, arity, in);
+  res = new_ir_node (db, irg, NULL, op_Block, mode_BB, arity, in);
   set_Block_matured(res, 1);
   set_Block_block_visited(res, 0);
 
@@ -162,7 +162,7 @@ new_rd_defaultProj (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *arg,
 		   long max_proj)
 {
   ir_node *res;
-  assert((arg->op==op_Cond) && (get_irn_mode(arg->in[1]) == mode_I));
+  assert((arg->op==op_Cond) && (get_irn_mode(arg->in[1]) == mode_Iu));
   arg->attr.c.kind = fragmentary;
   arg->attr.c.default_proj = max_proj;
   res = new_rd_Proj (db, irg, block, arg, mode_X, max_proj);
@@ -556,7 +556,7 @@ new_rd_Sel (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *store, ir_node
   r_in[0] = store;
   r_in[1] = objptr;
   memcpy (&r_in[2], in, sizeof (ir_node *) * arity);
-  res = new_ir_node (db, irg, block, op_Sel, mode_p, r_arity, r_in);
+  res = new_ir_node (db, irg, block, op_Sel, mode_P, r_arity, r_in);
 
   res->attr.s.ent = ent;
 
@@ -595,9 +595,9 @@ new_rd_SymConst (dbg_info* db, ir_graph *irg, ir_node *block, type_or_id_p value
   ir_node *res;
   ir_mode *mode;
   if (symkind == linkage_ptr_info)
-    mode = mode_p;
+    mode = mode_P;
   else
-    mode = mode_I;
+    mode = mode_Iu;
   res = new_ir_node (db, irg, block, op_SymConst, mode, 0, in);
 
   res->attr.i.num = symkind;
@@ -1299,7 +1299,7 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
     /* Error Message */
     printf("Error: no value set.  Use of undefined variable.  Initializing
             to zero.\n");
-    assert (mode->code >= irm_f && mode->code <= irm_p);
+    assert (mode->code >= irm_F && mode->code <= irm_P);
     res = new_rd_Const (NULL, current_ir_graph, block, mode,
 		       tarval_mode_null[mode->code]);
   }
@@ -1629,7 +1629,7 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
     /* Error Message */
     printf("Error: no value set.  Use of undefined variable.  Initializing
             to zero.\n");
-    assert (mode->code >= irm_f && mode->code <= irm_p);
+    assert (mode->code >= irm_F && mode->code <= irm_P);
     res = new_rd_Const (NULL, current_ir_graph, block, mode,
 		       tarval_mode_null[mode->code]);
   }
@@ -1720,7 +1720,7 @@ ir_node *
 new_d_defaultProj (dbg_info* db, ir_node *arg, long max_proj)
 {
   ir_node *res;
-  assert((arg->op==op_Cond) && (get_irn_mode(arg->in[1]) == mode_I));
+  assert((arg->op==op_Cond) && (get_irn_mode(arg->in[1]) == mode_Iu));
   arg->attr.c.kind = fragmentary;
   arg->attr.c.default_proj = max_proj;
   res = new_Proj (arg, mode_X, max_proj);
@@ -2094,7 +2094,7 @@ ir_node *new_d_immBlock (dbg_info* db) {
 
   assert(get_irg_phase_state (current_ir_graph) == phase_building);
   /* creates a new dynamic in-array as length of in is -1 */
-  res = new_ir_node (db, current_ir_graph, NULL, op_Block, mode_R, -1, NULL);
+  res = new_ir_node (db, current_ir_graph, NULL, op_Block, mode_BB, -1, NULL);
   current_ir_graph->current_block = res;
   res->attr.block.matured = 0;
   res->attr.block.exc = exc_normal;

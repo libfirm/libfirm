@@ -77,17 +77,17 @@ computed_value (ir_node *n)
   case iro_SymConst:
     if ((get_SymConst_kind(n) == size) &&
 	(get_type_state(get_SymConst_type(n))) == layout_fixed)
-      res = tarval_from_long (mode_i, get_type_size(get_SymConst_type(n)));
+      res = tarval_from_long (mode_Is, get_type_size(get_SymConst_type(n)));
     break;
   case iro_Add:
     if (ta && tb && (get_irn_mode(a) == get_irn_mode(b))
-	&& (get_irn_mode(a) != mode_p)) {
+	&& (get_irn_mode(a) != mode_P)) {
       res = tarval_add (ta, tb);
     }
     break;
   case iro_Sub:
     if (ta && tb && (get_irn_mode(a) == get_irn_mode(b))
-	&& (get_irn_mode(a) != mode_p)) {
+	&& (get_irn_mode(a) != mode_P)) {
       res = tarval_sub (ta, tb);
     } else if (a == b) {
       res = tarval_mode_null [get_irn_modecode (n)];
@@ -209,23 +209,23 @@ computed_value (ir_node *n)
             ir_node *aba = skip_nop(skip_Proj(ab));
 	    if (   (   (/* aa is ProjP and aaa is Alloc */
                            (get_irn_op(aa) == op_Proj)
-    	                && (get_irn_mode(aa) == mode_p)
+    	                && (get_irn_mode(aa) == mode_P)
                         && (get_irn_op(aaa) == op_Alloc))
                     && (   (/* ab is constant void */
                                (get_irn_op(ab) == op_Const)
-                            && (get_irn_mode(ab) == mode_p)
-                            && (get_Const_tarval(ab) == tarval_p_void))
+                            && (get_irn_mode(ab) == mode_P)
+                            && (get_Const_tarval(ab) == tarval_P_void))
 		        || (/* ab is other Alloc */
                                (get_irn_op(ab) == op_Proj)
-    	                    && (get_irn_mode(ab) == mode_p)
+    	                    && (get_irn_mode(ab) == mode_P)
                             && (get_irn_op(aba) == op_Alloc)
 			    && (aaa != aba))))
 		|| (/* aa is void and aba is Alloc */
                        (get_irn_op(aa) == op_Const)
-                    && (get_irn_mode(aa) == mode_p)
-                    && (get_Const_tarval(aa) == tarval_p_void)
+                    && (get_irn_mode(aa) == mode_P)
+                    && (get_Const_tarval(aa) == tarval_P_void)
                     && (get_irn_op(ab) == op_Proj)
-    	            && (get_irn_mode(ab) == mode_p)
+    	            && (get_irn_mode(ab) == mode_P)
                     && (get_irn_op(aba) == op_Alloc)))
 	      /* 3.: */
 	      res = tarval_from_long (mode_b, get_Proj_proj(n) & irpn_Ne);
@@ -256,8 +256,8 @@ computed_value (ir_node *n)
 bool
 different_identity (ir_node *a, ir_node *b)
 {
-  assert (get_irn_mode (a) == mode_p
-          && get_irn_mode (b) == mode_p);
+  assert (get_irn_mode (a) == mode_P
+          && get_irn_mode (b) == mode_P);
 
   if (get_irn_op (a) == op_Proj && get_irn_op(b) == op_Proj) {
     ir_node *a1 = get_Proj_pred (a);
@@ -706,7 +706,7 @@ transform_node (ir_node *n)
       /* We might generate an endless loop, so keep it alive. */
       add_End_keepalive(get_irg_end(current_ir_graph), get_nodes_Block(n));
     } else if (ta &&
-	       (get_irn_mode(a) == mode_I) &&
+	       (get_irn_mode(a) == mode_Iu) &&
 	       (get_Cond_kind(n) == dense) &&
 	       (get_opt_unreachable_code())) {
       /* I don't want to allow Tuples smaller than the biggest Proj.
@@ -752,12 +752,12 @@ transform_node (ir_node *n)
       else
         set_Proj_proj(n, 0);
     } else if ((get_irn_op(a) == op_Cond)
-	       && (get_irn_mode(get_Cond_selector(a)) == mode_I)
+	       && (get_irn_mode(get_Cond_selector(a)) == mode_Iu)
 	       && value_of(a)
 	       && (get_Cond_kind(a) == dense)
 	       && (get_opt_unreachable_code())) {
       /* The Cond is a Switch on a Constant */
-      if (get_Proj_proj(n) == tv_val_CHIL(value_of(a))) {
+      if (get_Proj_proj(n) == tv_val_uInt(value_of(a))) {
         /* The always taken branch, reuse the existing Jmp. */
         if (!get_irn_link(a)) /* well, if it exists ;-> */
           set_irn_link(a, new_r_Jmp(current_ir_graph, get_nodes_Block(n)));

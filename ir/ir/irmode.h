@@ -32,73 +32,59 @@ typedef struct tarval tarval;
 #endif
 
 typedef enum { /* irm is short for `ir mode' */
-  irm_T,                        /* former irm_N */
-  irm_f, irm_d,                 /* 1, 2 */
-  irm_c, irm_C, irm_h, irm_H, irm_i, irm_I, irm_l, irm_L, /* 3 .. 10 */
-  irm_B, irm_b,                 /* 11, 12 */
-  irm_p,
-  irm_s, irm_S,                 /* 14, 15 */
-  irm_X, irm_M, irm_R, irm_Z,
-  irm_max
-  /*  according to tech report 1999-14:
+  /*  according to tech report 1999-14: */
   irm_BB, irm_X,                 // basic block, execution
-  irm_F, irm_D, irm_E,           // float, double, extended
-  irm_B, irm_Bu, irm_H, irm_Hu, irm_I, irm_Iu, irm_L, irm_Lu,
+  irm_F, irm_D, irm_E,           // float(32), double(64), extended(80)
+  irm_Bs, irm_Bu, irm_Hs, irm_Hu, irm_Is, irm_Iu, irm_Ls, irm_Lu,
                                  // byte(8), short(16), int(32), long(64)
   irm_C,                         // character
   irm_P,                         // pointer
   irm_b,                         // internal boolean
   irm_M,                         // memory
   irm_T,                         // tuple
-  irm_max */
+  irm_max
 } modecode;
 
 typedef struct ir_mode ir_mode;
 
-extern ir_mode *mode_T; /* tuple (none) */
-extern ir_mode *mode_f; /* signed float */
-extern ir_mode *mode_d; /* signed double */
-/* extern ir_mode *mode_e; * signed extended */
-extern ir_mode *mode_c; /* signed byte (former char) */
-extern ir_mode *mode_C; /* unsigned byte (former char) */
-extern ir_mode *mode_h; /* signed short integer */
-extern ir_mode *mode_H; /* unsigened short integer */
-extern ir_mode *mode_i; /* signed integer */
-extern ir_mode *mode_I; /* unsigned integer */
-extern ir_mode *mode_l; /* signed long integer */
-extern ir_mode *mode_L; /* unsigned long integer */
-extern ir_mode *mode_B; /* bits */             /* oblivious */
-/* extern ir_mode *mode_c;  * char */
-extern ir_mode *mode_p; /* pointer */
-extern ir_mode *mode_b; /* internal boolean */
-extern ir_mode *mode_s;                        /* oblivious  */
-extern ir_mode *mode_S;                        /* oblivious */
-extern ir_mode *mode_X; /* execution */
-extern ir_mode *mode_M; /* memory */
-extern ir_mode *mode_R; /* block */
-extern ir_mode *mode_Z; /* infinit integers */ /* oblivious */
+extern ir_mode *mode_T;  /* tuple (none) */
+extern ir_mode *mode_F;	 /* signed float(32) */
+extern ir_mode *mode_D;  /* signed double(64) */
+extern ir_mode *mode_E;  /* signed extended(80) */
+extern ir_mode *mode_Bs; /* signed byte (former char) */
+extern ir_mode *mode_Bu;  /* unsigned byte (former char) */
+extern ir_mode *mode_Hs; /* signed short integer */
+extern ir_mode *mode_Hu; /* unsigened short integer */
+extern ir_mode *mode_Is; /* signed integer */
+extern ir_mode *mode_Iu; /* unsigned integer */
+extern ir_mode *mode_Ls; /* signed long integer */
+extern ir_mode *mode_Lu; /* unsigned long integer */
+extern ir_mode *mode_C;  /* char */
+extern ir_mode *mode_P;  /* pointer */
+extern ir_mode *mode_b;  /* internal boolean */
+extern ir_mode *mode_X;  /* execution */
+extern ir_mode *mode_M;	 /* memory */
+extern ir_mode *mode_BB; /* block */
 
 /* Access routines for JNI Interface */
 ir_mode *get_modeT();
-ir_mode *get_modef();
-ir_mode *get_moded();
-ir_mode *get_modec();
+ir_mode *get_modeF();
+ir_mode *get_modeD();
+ir_mode *get_modeE();
+ir_mode *get_modeBs();
+ir_mode *get_modeBu();
+ir_mode *get_modeHs();
+ir_mode *get_modeHu();
+ir_mode *get_modeIs();
+ir_mode *get_modeIu();
+ir_mode *get_modeLs();
+ir_mode *get_modeLu();
 ir_mode *get_modeC();
-ir_mode *get_modeh();
-ir_mode *get_modeH();
-ir_mode *get_modei();
-ir_mode *get_modeI();
-ir_mode *get_model();
-ir_mode *get_modeL();
-ir_mode *get_modeB();
-ir_mode *get_modep();
+ir_mode *get_modeP();
 ir_mode *get_modeb();
-ir_mode *get_modes();
-ir_mode *get_modeS();
 ir_mode *get_modeX();
 ir_mode *get_modeM();
-ir_mode *get_modeR();
-ir_mode *get_modeZ();
+ir_mode *get_modeBB();
 
 /* An enum for this mode */
 modecode get_mode_modecode (ir_mode *mode);

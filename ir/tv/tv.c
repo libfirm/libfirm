@@ -25,9 +25,6 @@
    values is cheaper than the extra obstack_alloc()/free() for
    discarded ones.  */
 
-/* Defining this causes inclusions of functions renamed with new gmp.h */
-#define _TARVAL_GMP_ 0
-
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
@@ -65,9 +62,9 @@ static pset *tarvals;		/* pset containing pointers to _all_ tarvals */
 tarval *tarval_bad;
 tarval *tarval_b_false;
 tarval *tarval_b_true;
-tarval *tarval_d_NaN;
-tarval *tarval_d_Inf;
-tarval *tarval_p_void;
+tarval *tarval_D_NaN;
+tarval *tarval_D_Inf;
+tarval *tarval_P_void;
 tarval *tarval_mode_null[irm_max];
 tarval *tarval_mode_min[irm_max];
 tarval *tarval_mode_max[irm_max];
@@ -75,9 +72,9 @@ tarval *tarval_mode_max[irm_max];
 tarval *get_tarval_bad      ()              { return tarval_bad;     }
 tarval *get_tarval_b_false  ()              { return tarval_b_false; }
 tarval *get_tarval_b_true   ()              { return tarval_b_true;  }
-tarval *get_tarval_d_NaN    ()              { return tarval_d_NaN;   }
-tarval *get_tarval_d_Inf    ()              { return tarval_d_Inf;   }
-tarval *get_tarval_p_void   ()              { return tarval_p_void;  }
+tarval *get_tarval_D_NaN    ()              { return tarval_D_NaN;   }
+tarval *get_tarval_D_Inf    ()              { return tarval_D_Inf;   }
+tarval *get_tarval_P_void   ()              { return tarval_P_void;  }
 tarval *get_tarval_mode_null(ir_mode *mode)
   { return tarval_mode_null[get_mode_modecode(mode)]; }
 tarval *get_tarval_mode_min (ir_mode *mode)
@@ -87,13 +84,13 @@ tarval *get_tarval_mode_max (ir_mode *mode)
 
 # if 0
 /* @@@ depends on order of ir_mode */
-static tarval_chil min_chil[8] = {
+static tarval_sInt min_sInt[8] = {
   TARGET_SIMIN (c), 0,
   TARGET_SIMIN (h), 0,
   TARGET_SIMIN (i), 0,
   TARGET_SIMIN (l), 0
 };
-static tarval_chil max_chil[8] = {
+static tarval_sInt max_sInt[8] = {
   TARGET_SIMAX (c), TARGET_UIMAX (C),
   TARGET_SIMAX (h), TARGET_UIMAX (H),
   TARGET_SIMAX (i), TARGET_UIMAX (I),
@@ -102,44 +99,44 @@ static tarval_chil max_chil[8] = {
 # endif
 
 /* Used to be in irmode.h, replaced now. */
-# define is_chilCHIL(m) ((m) <= irm_L && (m) >= irm_c) /* old */
+# define is_Int(m) ((m) <= irm_Lu && (m) >= irm_Bs) /* old */
 
 /* return a mode-specific value */
 
-tarval_f
-tv_val_f (tarval *tv)
+tarval_F
+tv_val_F (tarval *tv)
 {
-  return tv->u.f;
+  return tv->u.F;
 }
 
-tarval_d
-tv_val_d (tarval *tv)
+tarval_D
+tv_val_D (tarval *tv)
 {
-  return tv->u.d;
+  return tv->u.D;
 }
 
-tarval_chil
-tv_val_chil (tarval *tv)
+tarval_E
+tv_val_E (tarval *tv)
 {
-  return tv->u.chil;
+  return tv->u.E;
 }
 
-tarval_CHIL
-tv_val_CHIL (tarval *tv)
+tarval_sInt
+tv_val_sInt (tarval *tv)
 {
-  return tv->u.CHIL;
+  return tv->u.sInt;
 }
 
-tarval_Z
-tv_val_Z (tarval *tv)
+tarval_uInt
+tv_val_uInt (tarval *tv)
 {
-  return tv->u.Z;
+  return tv->u.uInt;
 }
 
-tarval_p
-tv_val_p (tarval *tv)
+tarval_P
+tv_val_P (tarval *tv)
 {
-  return tv->u.p;
+  return tv->u.P;
 }
 
 bool
@@ -148,37 +145,25 @@ tv_val_b (tarval *tv)
   return tv->u.b;
 }
 
-tarval_B
-tv_val_B (tarval *tv)
-{
-  return tv->u.B;
-}
 
-tarval_s
-tv_val_s (tarval *tv)
-{
-  return tv->u.s;
-}
-
-
-/* Overflows `chil' signed integral `mode'?  */
+/* Overflows `sInt' signed integral `mode'?  */
 static INLINE bool
-chil_overflow (tarval_chil chil, ir_mode *mode)
+sInt_overflow (tarval_sInt sInt, ir_mode *mode)
 {
-  assert (is_chilCHIL(get_mode_modecode(mode)));
+  assert (is_Int(get_mode_modecode(mode)));
   return (get_mode_min(mode) && get_mode_max(mode)  /* only valid after firm initialization */
-	  && (chil < tv_val_chil (get_mode_min(mode))
-	      || tv_val_chil (get_mode_max(mode)) < chil));
+	  && (sInt < tv_val_sInt (get_mode_min(mode))
+	      || tv_val_sInt (get_mode_max(mode)) < sInt));
 }
 
 
-/* Overflows `CHIL' unsigned integral `mode'?  */
+/* Overflows `uInt' unsigned integral `mode'?  */
 static INLINE bool
-CHIL_overflow (tarval_CHIL CHIL, ir_mode *mode)
+uInt_overflow (tarval_uInt uInt, ir_mode *mode)
 {
-  assert (is_chilCHIL(get_mode_modecode(mode)));
+  assert (is_Int(get_mode_modecode(mode)));
   return (get_mode_max(mode)   /* only valid after firm initialization */
-	  && tv_val_CHIL (get_mode_max(mode)) < CHIL);
+	  && tv_val_uInt (get_mode_max(mode)) < uInt);
 }
 
 
@@ -189,28 +174,23 @@ _tarval_vrfy (const tarval *val)
   assert (val);
   switch (get_mode_modecode(val->mode)) {
     /* floating */
-  case irm_f:
-  case irm_d:
+  case irm_F:
+  case irm_D:
+  case irm_E:
     break;
     /* integral */
-  case irm_C: case irm_H: case irm_I: case irm_L:
-    assert (!CHIL_overflow (val->u.CHIL, val->mode)); break;
-  case irm_c: case irm_h: case irm_i: case irm_l:
-    assert (!chil_overflow (val->u.chil, val->mode)); break;
-  case irm_Z:
+  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
+    assert (!uInt_overflow (val->u.uInt, val->mode)); break;
+  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
+    assert (!sInt_overflow (val->u.sInt, val->mode)); break;
+  case irm_C:
     break;
-    /* strange */
-  case irm_p:
-    if (val->u.p.ent)
-      assert (val->u.p.ent->kind == k_entity);
-    assert (   val->u.p.xname || val->u.p.ent
-	    || !tarval_p_void || (val == tarval_p_void));
+  case irm_P:
+    if (val->u.P.ent)
+      assert (val->u.P.ent->kind == k_entity);
+    assert (   val->u.P.xname || val->u.P.ent
+	    || !tarval_P_void || (val == tarval_P_void));
     break;
-  case irm_s:
-  case irm_S:
-    assert (val->u.s.p); break;
-  case irm_B:
-    assert (val->u.B.p); break;
   case irm_b:
     assert ((unsigned)val->u.b <= 1); break;
   default:
@@ -265,45 +245,34 @@ tarval_cmp (const void *p, const void *q)
 
   switch (get_mode_modecode(a->mode)) {
     /* floating */
-  case irm_f:
-    return memcmp (&a->u.f, &b->u.f, sizeof (a->u.f));
-  case irm_d:
-    return memcmp (&a->u.d, &b->u.d, sizeof (a->u.d));
+  case irm_F:
+    return memcmp (&a->u.F, &b->u.F, sizeof (a->u.F));
+  case irm_D:
+    return memcmp (&a->u.D, &b->u.D, sizeof (a->u.D));
+  case irm_E:
+    return memcmp (&a->u.E, &b->u.E, sizeof (a->u.E));
     /* unsigned */
-  case irm_C: case irm_H: case irm_I: case irm_L:
-    if (sizeof (int) == sizeof (tarval_CHIL)) {
-      return a->u.CHIL - b->u.CHIL;
+  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
+    if (sizeof (int) == sizeof (tarval_uInt)) {
+      return a->u.uInt - b->u.uInt;
     }
-    return a->u.CHIL != b->u.CHIL;
+    return a->u.uInt != b->u.uInt;
     /* signed */
-  case irm_c: case irm_h: case irm_i: case irm_l:
-    if (sizeof (int) == sizeof (tarval_chil)) {
-      return a->u.chil - b->u.chil;
+  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
+    if (sizeof (int) == sizeof (tarval_sInt)) {
+      return a->u.sInt - b->u.sInt;
     }
-    return a->u.chil != b->u.chil;
-  case irm_Z:
-#if _TARVAL_GMP_
-    return mpz_cmp (&a->u.Z, &b->u.Z);
-#else
-    return 99; /* ?? */
-#endif
-    /* strange */
-  case irm_p:
-    if (a->u.p.ent || b->u.p.ent)
-      return (char *)a->u.p.ent - (char *)b->u.p.ent;
-    if (a->u.p.xname && b->u.p.xname)
-      return strcmp (a->u.p.xname, b->u.p.xname);
-    return a->u.p.xname - b->u.p.xname;
+    return a->u.sInt != b->u.sInt;
+  case irm_C:
+    return a->u.C - b->u.C;
+  case irm_P:
+    if (a->u.P.ent || b->u.P.ent)
+      return (char *)a->u.P.ent - (char *)b->u.P.ent;
+    if (a->u.P.xname && b->u.P.xname)
+      return strcmp (a->u.P.xname, b->u.P.xname);
+    return a->u.P.xname - b->u.P.xname;
   case irm_b:
     return a->u.b - b->u.b;
-  case irm_B:
-    return (  a->u.B.n - b->u.B.n
-	    ? memcmp (a->u.B.p, b->u.B.p, a->u.B.n)
-	    : a->u.B.n - b->u.B.n);
-  case irm_s: case irm_S:
-    return (  a->u.s.n == b->u.s.n
-	    ? memcmp (a->u.s.p, b->u.s.p, a->u.s.n)
-	    : a->u.s.n - b->u.s.n);
   default: assert (0);
   }
 }
@@ -318,53 +287,50 @@ tarval_hash (tarval *tv)
   switch (get_mode_modecode(tv->mode)) {
   case irm_T:
     h = 0x94b527ce; break;
-  case irm_f:
+  case irm_F:
     /* quick & dirty */
     { union { float f; unsigned u; } u;
       assert (sizeof (float) <= sizeof (unsigned));
-      u.u = 0; u.f = tv->u.f;
+      u.u = 0; u.f = tv->u.F;
       h ^= u.u;
       break;
     }
-  case irm_d:
+  case irm_D:
     /* quick & dirty */
     { union { double d; unsigned u[2]; } u;
       assert (sizeof (double) <= 2*sizeof (unsigned));
-      u.u[0] = u.u[1] = 0; u.d = tv->u.d;
+      u.u[0] = u.u[1] = 0; u.d = tv->u.D;
       h ^= u.u[0] ^ u.u[1];
       break;
     }
-  case irm_C: case irm_H: case irm_I: case irm_L:
-    h ^= tv->u.CHIL; break;
-  case irm_c: case irm_h: case irm_i: case irm_l:
-    h ^= tv->u.chil; break;
-  case irm_Z:
-#if _TARVAL_GMP_
-    h ^= mpz_get_ui (&tv->u.Z); break;
-#else
-    h ^= (unsigned int) tv; break; /* tut das? */
-#endif
-  case irm_p:
-    if (tv->u.p.ent) {
+  case irm_E:
+    { union { long double e; unsigned u[3]; } u;
+      assert (sizeof (long double) <= 3*sizeof (unsigned));
+      u.u[0] = u.u[1] = u.u[2] = 0; u.e = tv->u.E;
+      h ^= u.u[0] ^ u.u[1] ^ u.u[2];
+      break;
+    }
+  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
+    h ^= tv->u.uInt; break;
+  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
+    h ^= tv->u.sInt; break;
+  case irm_C:
+    h ^= tv->u.C; break;
+  case irm_P:
+    if (tv->u.P.ent) {
       /* @@@ lower bits not random, watch for collisions; perhaps
 	 replace by tv->u.p.ent - (entity *)0 */
-      h ^= ((char *)tv->u.p.ent - (char *)0) / 64;
-    } else if (tv->u.p.xname) {
+      h ^= ((char *)tv->u.P.ent - (char *)0) / 64;
+    } else if (tv->u.P.xname) {
       /* Of course, strlen() in a hash function is a mistake, but this
          case should be really rare.  */
-      h ^= ID_HASH (tv->u.p.xname, strlen (tv->u.p.xname));
+      h ^= ID_HASH (tv->u.P.xname, strlen (tv->u.P.xname));
     } else {			/* void */
       h^= 0x2b592b88;
     }
     break;
   case irm_b:
     h ^= tv->u.b; break;
-  case irm_B:
-    h ^= tv->u.B.n; break; /* @@@ not really good */
-  case irm_s:
-    h ^= tv->u.s.p[0]<<12 ^ tv->u.s.p[tv->u.s.n]<<4 ^ tv->u.s.n; break;
-  case irm_S:
-    h ^= tv->u.s.p[0]<<4 ^ tv->u.s.p[tv->u.s.n]<<12 ^ tv->u.s.n; break;
   default:
     assert(0);
   }
@@ -372,7 +338,6 @@ tarval_hash (tarval *tv)
 }
 
 
-
 /*** ***************** Initialization ************************************* ***/
 
 void
@@ -397,7 +362,7 @@ tarval_init_2 (void)
   assert (sizeof (double) * CHAR_BIT == 64);
 
 # if 0
-  /* assumed by tarval_chil & friends: */
+  /* assumed by tarval_sInt & friends: */
   assert (   (irm_C == irm_c+1) && (irm_h == irm_C+1)
 	  && (irm_H == irm_h+1) && (irm_i == irm_H+1)
 	  && (irm_I == irm_i+1) && (irm_l == irm_I+1)
@@ -405,9 +370,9 @@ tarval_init_2 (void)
 
   /* assumed everywhere: */
   for (i = 0;  i <= irm_L-irm_c;  i += 2) {
-    assert (   IS_POW2 (max_chil[i+1]+1)
-	    && (min_chil[i] == -max_chil[i]-1)
-	    && ((tarval_CHIL)max_chil[i+1] == (tarval_CHIL)max_chil[i]-min_chil[i]));
+    assert (   IS_POW2 (max_sInt[i+1]+1)
+	    && (min_sInt[i] == -max_sInt[i]-1)
+	    && ((tarval_uInt)max_sInt[i+1] == (tarval_uInt)max_sInt[i]-min_sInt[i]));
   }
 # endif
 
@@ -421,52 +386,53 @@ tarval_init_2 (void)
 
   /* IsInf <-> exponent == 0x7ff && ! (bits | fraction_low) */
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-  tv->mode = mode_d;
+  tv->mode = mode_D;
   x.ieee.negative = 0;
   x.ieee.exponent = 0x7ff;
   x.ieee.mantissa0 = 0;
   x.ieee.mantissa1 = 0;
-  tv->u.d = x.d;
-  tarval_d_Inf = tarval_identify (tv);
+  tv->u.D = x.d;
+  tarval_D_Inf = tarval_identify (tv);
 
   /* IsNaN <-> exponent==0x7ff  && (qnan_bit | bits | fraction_low) */
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-  tv->mode = mode_d;
+  tv->mode = mode_D;
   x.ieee_nan.negative = 0;
   x.ieee_nan.exponent = 0x7ff;
   x.ieee_nan.quiet_nan = 1;	/* @@@ quiet or signalling? */
   x.ieee_nan.mantissa0 = 42;
   x.ieee_nan.mantissa1 = 0;
   assert(x.d != x.d /* x.d is NaN */);
-  tv->u.d = x.d;
-  tarval_d_NaN = tarval_identify (tv);
+  tv->u.D = x.d;
+  tarval_D_NaN = tarval_identify (tv);
 
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-  tv->mode = mode_p;
-  tv->u.p.xname = NULL;
-  tv->u.p.ent = NULL;
-  tv->u.p.tv = NULL;
-  tarval_p_void = tarval_identify (tv);
+  tv->mode = mode_P;
+  tv->u.P.xname = NULL;
+  tv->u.P.ent = NULL;
+  tv->u.P.tv = NULL;
+  tarval_P_void = tarval_identify (tv);
 
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
 
 
-  tarval_mode_null [irm_f] = tarval_from_long (mode_f, 0);
-  tarval_mode_null [irm_d] = tarval_from_long (mode_d, 0);
-  tarval_mode_null [irm_c] = tarval_from_long (mode_c, 0);
+  tarval_mode_null [irm_F] = tarval_from_long (mode_F, 0);
+  tarval_mode_null [irm_D] = tarval_from_long (mode_D, 0);
+  tarval_mode_null [irm_E] = tarval_from_long (mode_E, 0);
+  tarval_mode_null [irm_Bs] = tarval_from_long (mode_Bs, 0);
+  tarval_mode_null [irm_Bu] = tarval_from_long (mode_Bu, 0);
+  tarval_mode_null [irm_Hs] = tarval_from_long (mode_Hs, 0);
+  tarval_mode_null [irm_Hu] = tarval_from_long (mode_Hu, 0);
+  tarval_mode_null [irm_Is] = tarval_from_long (mode_Is, 0);
+  tarval_mode_null [irm_Iu] = tarval_from_long (mode_Iu, 0);
+  tarval_mode_null [irm_Ls] = tarval_from_long (mode_Ls, 0);
+  tarval_mode_null [irm_Lu] = tarval_from_long (mode_Lu, 0);
   tarval_mode_null [irm_C] = tarval_from_long (mode_C, 0);
-  tarval_mode_null [irm_h] = tarval_from_long (mode_h, 0);
-  tarval_mode_null [irm_H] = tarval_from_long (mode_H, 0);
-  tarval_mode_null [irm_i] = tarval_from_long (mode_i, 0);
-  tarval_mode_null [irm_I] = tarval_from_long (mode_I, 0);
-  tarval_mode_null [irm_l] = tarval_from_long (mode_l, 0);
-  tarval_mode_null [irm_L] = tarval_from_long (mode_L, 0);
   tarval_mode_null [irm_b] = tarval_b_false;
-  tarval_mode_null [irm_p] = tarval_p_void;
+  tarval_mode_null [irm_P] = tarval_P_void;
 }
 
 
-
 /*** ********************** Constructors for tarvals ********************** ***/
 
 /* copy from src to dst len chars omitting '_'. */
@@ -484,103 +450,8 @@ stripcpy (char *dst, const char *src, size_t len)
   return dst;
 }
 
-
 tarval *
-tarval_Z_from_str (const char *s, size_t len, int base)
-{
-  tarval *tv;
-  char *buf;
-
-  assert (!BUILDING);
-
-  buf = alloca (len+1);
-  stripcpy (buf, s, len);
-
-  tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-  tv->mode = mode_Z;
-#if _TARVAL_GMP_
-  if (mpz_init_set_str (&tv->u.Z, buf, base)) assert (0);
-#else
-  assert(0 && "no support for Z in tv!");
-#endif
-
-  return tarval_identify (tv);
-}
-
-
-tarval *
-tarval_B_from_str (const char *s, size_t len)
-{
-  tarval *tv;
-  size_t n;			/* size of B */
-  const char *r;		/* read ptr */
-  unsigned x;			/* bit store */
-  int b;			/* bits in x */
-  int shift;			/* base shift */
-
-  assert (!BUILDING);
-  assert (len >= 3);
-
-  tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-  tv->mode = mode_B;
-
-  assert (s[0] == '0');
-  switch (s[1]) {
-  case 'o':
-  case 'O': shift = 3; break;
-  case 'x':
-  case 'X': shift = 4; break;
-  default: assert(0);
-  }
-
-  r = s+len;			/* set r past input */
-  s += 2;			/* skip header */
-  x = 0; b = 0; n = 0;
-  while (--r >= s) {
-    int d;			/* digit */
-
-    if (*r == '_') continue;	/* skip _ styropor */
-    if (('0' <= *r) && (*r <= '9')) {
-      d = *r - '0';
-    } else if (('a' <= *r) && (*r <= 'f')) {
-      d = *r - 'a' + 10;
-    } else { assert (('A' <= *r) && (*r <= 'F'));
-      d = *r - 'A' + 10;
-    }
-
-    x |= d << b;		/* insert d into x above the b present bits */
-    b += shift;			/* x now contains shift more bits */
-
-    if (b >= 8) {		/* we've accumulated at least a byte */
-      char c = x & 0xFF;	/* extract the lower 8 bits from x */
-      obstack_grow (&tv_obst, &c, 1);  /* and stuff them into B */
-      x >>= 8;			/* remove the lower 8 bits from x */
-      b -= 8;			/* x now contains 8 bits fewer */
-      ++n;			/* B grew a byte */
-    }
-  }
-
-  if (b >= 0) {			/* flush the rest of the bits */
-    char c = x;			/* extract them */
-    obstack_grow (&tv_obst, &c, 1); /* and stuff them into B */
-    ++n;			/* B grew a byte */
-  }
-
-  { unsigned char *p = obstack_finish (&tv_obst);
-    unsigned char *q = p + n;
-
-    tv->u.B.p = p;
-    tv->u.B.n = n;
-    /* reverse p in place */
-    while (p < q) { char c = *p; *p++ = *q; *q-- = c; }
-  }
-
-  return tarval_identify (tv);
-}
-
-
-tarval *
-tarval_f_from_str (const char *s, size_t len)
+tarval_F_from_str (const char *s, size_t len)
 {
   tarval *tv;
   char *buf;
@@ -592,8 +463,8 @@ tarval_f_from_str (const char *s, size_t len)
   stripcpy (buf, s, len);
 
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-  tv->mode = mode_f;
-  tv->u.f = (float)strtod (buf, &eptr);
+  tv->mode = mode_F;
+  tv->u.F = (float)strtod (buf, &eptr);
   assert (eptr == buf+strlen(buf));
 
   return tarval_identify (tv);
@@ -601,7 +472,7 @@ tarval_f_from_str (const char *s, size_t len)
 
 
 tarval *
-tarval_d_from_str (const char *s, size_t len)
+tarval_D_from_str (const char *s, size_t len)
 {
   tarval *tv;
   char *buf;
@@ -613,47 +484,16 @@ tarval_d_from_str (const char *s, size_t len)
   stripcpy (buf, s, len);
 
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-  tv->mode = mode_d;
-  tv->u.d = strtod (buf, &eptr);
+  tv->mode = mode_D;
+  tv->u.D = strtod (buf, &eptr);
   assert (eptr == buf+strlen(buf));
 
   return tarval_identify (tv);
 }
 
-
 tarval *
-tarval_s_from_str (const char *s, size_t len)
+tarval_int_from_str (const char *s, size_t len, int base, ir_mode *m)
 {
-  tarval *tv;
-
-  assert (!BUILDING);
-
-  tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-
-  tv->mode = mode_s;
-  tv->u.s.n = len;
-  tv->u.s.p = obstack_copy (&tv_obst, s, len);
-
-  return tarval_identify (tv);
-}
-
-tarval *
-tarval_S_from_str (const char *s, size_t len)
-{
-  tarval *tv;
-
-  assert (!BUILDING);
-
-  tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-
-  tv->mode = mode_S;
-  tv->u.s.n = len;
-  tv->u.s.p = obstack_copy (&tv_obst, s, len);
-
-  return tarval_identify (tv);
-}
-
-tarval *tarval_int_from_str (const char *s, size_t len, int base, ir_mode *m) {
   long val;
   char *eptr;
   char *buf;
@@ -668,7 +508,7 @@ tarval *tarval_int_from_str (const char *s, size_t len, int base, ir_mode *m) {
   val = strtol(buf, &eptr, base);    /* strtoll */
   assert (eptr == buf+strlen(buf));
   if ((errno == ERANGE)               &&
-      ((m == mode_l) || (m == mode_L))  ) {
+      ((m == mode_Ls) || (m == mode_Lu))  ) {
     printf("WARNING: Constant %s not representable. Continuing with %ld.\n",
 	   s, val);
   }
@@ -676,7 +516,7 @@ tarval *tarval_int_from_str (const char *s, size_t len, int base, ir_mode *m) {
   return tarval_from_long(m, val);
 }
 
-/* Create a tarval with mode `m' and value `i' casted to the type that
+/* Create a tarval with mode `m' and value `val' casted to the type that
    represents such tarvals on host.  The resulting value must be legal
    for mode `m'.  */
 tarval *
@@ -693,28 +533,25 @@ tarval_from_long (ir_mode *m, long val)
   tv->mode = m;
   switch (get_mode_modecode(m)) {
     /* floating */
-  case irm_f:
-    tv->u.f = val; break;
-  case irm_d:
-    tv->u.d = val; break;
-    /* unsigned */
-  case irm_C: case irm_H: case irm_I: case irm_L:
-    tv->u.CHIL = val; break;
-    /* signed */
-  case irm_c: case irm_h: case irm_i: case irm_l:
-    tv->u.chil = val; break;
-  case irm_Z:
-#if _TARVAL_GMP_
-    mpz_init_set_si (&tv->u.Z, val);
-#else
-    assert(0 && "no support for Z in tv!");
-#endif
+  case irm_F:
+    tv->u.F = val; break;
+  case irm_D:
+    tv->u.D = val; break;
+  case irm_E:
+    /* @@@ not yet implemented */
     break;
-    /* strange */
-  case irm_p:
+    /* unsigned */
+  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
+    tv->u.uInt = val; break;
+    /* signed */
+  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
+    tv->u.sInt = val; break;
+  case irm_P:
     assert(!val);
     obstack_free (&tv_obst, tv);
-    return tarval_p_void;
+    return tarval_P_void;
+  case irm_C:
+    tv->u.C = val; break;
   case irm_b:
     tv->u.b = !!val;		/* u.b must be 0 or 1 */
     break;
@@ -727,7 +564,7 @@ tarval_from_long (ir_mode *m, long val)
 
 
 tarval *
-tarval_p_from_str (const char *xname)
+tarval_P_from_str (const char *xname)
 {
   tarval *tv;
 
@@ -735,16 +572,16 @@ tarval_p_from_str (const char *xname)
 
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
 
-  tv->mode = mode_p;
-  tv->u.p.xname = obstack_copy0 (&tv_obst, xname, strlen (xname));
-  tv->u.p.ent = NULL;
-  tv->u.p.tv = NULL;
+  tv->mode = mode_P;
+  tv->u.P.xname = obstack_copy0 (&tv_obst, xname, strlen (xname));
+  tv->u.P.ent = NULL;
+  tv->u.P.tv = NULL;
   return tarval_identify (tv);
 }
 
 
 tarval *
-tarval_p_from_entity (entity *ent)
+tarval_P_from_entity (entity *ent)
 {
   tarval *tv;
 
@@ -752,10 +589,10 @@ tarval_p_from_entity (entity *ent)
 
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
 
-  tv->mode = mode_p;
-  tv->u.p.xname = NULL;
-  tv->u.p.ent = ent;
-  tv->u.p.tv = NULL;
+  tv->mode = mode_P;
+  tv->u.P.xname = NULL;
+  tv->u.P.ent = ent;
+  tv->u.P.tv = NULL;
   return tarval_identify (tv);
 }
 
@@ -763,7 +600,7 @@ tarval_p_from_entity (entity *ent)
 /* Routines for building a tarval step by step follow.
    Legal calling sequences:
      tarval_start()
-     No contructors except tarval_append() and tarval_append1 ()
+     No constructors except tarval_append() and tarval_append1 ()
      tarval_finish_as() or tarval_cancel() */
 
 /* Begin building a tarval.  */
@@ -794,7 +631,7 @@ tarval_append1 (char ch)
 
 
 /* Finish the tarval currently under construction and give id mode `m'.
-   `m' must be irm_C, irm_B, irm_s or irm_S.
+   `m' must be irm_Bu,
    Return NULL if the value does not make sense for this mode, this
    can only happen in mode C.  */
 tarval *
@@ -806,7 +643,7 @@ tarval_finish_as (ir_mode *m)
   char ch = 0;			/* initialized to shut up gcc */
 
   assert (BUILDING && (size >= 0));
-  if (m == mode_C) {
+  if (m == mode_Bu) {
     if (size != 1) return tarval_cancel();
     p = (unsigned char *)obstack_base (&tv_obst) + sizeof (tarval);
     ch = *p;
@@ -817,20 +654,11 @@ tarval_finish_as (ir_mode *m)
   tv->mode = m;
 
   switch (get_mode_modecode(m)) {
-  case irm_C:
-    tv->u.CHIL = ch;
+  case irm_Bu:
+    tv->u.uInt = ch;
     break;
-  case irm_B:
-    tv->u.B.n = size;
-    tv->u.B.p = p;
-    break;
-  case irm_s:
-  case irm_S:
-    tv->u.s.n = size;
-    tv->u.s.p = p;
-    break;
-  case irm_p:
-    tv->u.p.tv = NULL;
+  case irm_P:
+    tv->u.P.tv = NULL;
     break;
   default:
     assert (0);
@@ -850,7 +678,6 @@ tarval_cancel (void)
 }
 
 
-
 /*** ****************** Arithmethic operations on tarvals ***************** ***/
 
 /* Return `src' converted to mode `m' if representable, else NULL.
@@ -867,92 +694,44 @@ tarval_convert_to (tarval *src, ir_mode *m)
 
   switch (get_mode_modecode(src->mode)) {
 
-  case irm_d:
-    if (m != mode_f) goto fail;
-    tv->u.f = src->u.d;
+  case irm_D:
+    if (m != mode_F) goto fail;
+    tv->u.F = src->u.D;
     break;
 
-  case irm_Z:
-#if _TARVAL_GMP_
+  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
     switch (get_mode_modecode(m)) {
-
-    case irm_C: case irm_H: case irm_I: case irm_L:
-      if (mpz_cmp_si (&src->u.Z, 0) < 0) goto fail;
-      if (mpz_size (&src->u.Z) > 1) goto fail;
-      tv->u.CHIL = mpz_get_ui (&src->u.Z);
-      if (CHIL_overflow (tv->u.CHIL, m)) goto fail;
+    case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
+      tv->u.sInt = src->u.sInt;
+      if (sInt_overflow (tv->u.sInt, m)) goto fail;
       break;
 
-    case irm_c: case irm_h: case irm_i: case irm_l:
-      tv->u.chil = mpz_get_si (&src->u.Z);
-      if (chil_overflow (tv->u.chil, m)) goto fail;
+    case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
+      tv->u.uInt = src->u.sInt;
+      if (uInt_overflow (tv->u.uInt, m)) goto fail;
       break;
 
     case irm_b:
-      tv ->u.b = !mpz_cmp_ui (&src->u.Z, 0);
-      break;
-
-    case irm_p:
-      if (mpz_cmp_ui (&src->u.Z, 0)) goto fail;
-      obstack_free (&tv_obst, tv);
-      return tarval_p_void;
-
-    default: goto fail;
-    }
-#else
-    goto fail;
-#endif
-    break;
-
-  case irm_c: case irm_h: case irm_i: case irm_l:
-    switch (get_mode_modecode(m)) {
-    case irm_c: case irm_h: case irm_i: case irm_l:
-      tv->u.chil = src->u.chil;
-      if (chil_overflow (tv->u.chil, m)) goto fail;
-      break;
-
-    case irm_C: case irm_H: case irm_I: case irm_L:
-      tv->u.CHIL = src->u.chil;
-      if (CHIL_overflow (tv->u.CHIL, m)) goto fail;
-      break;
-
-    case irm_Z:
-#if _TARVAL_GMP_
-      mpz_init_set_si (&tv->u.Z, src->u.chil);
-#else
-      goto fail;
-#endif
-      break;
-
-    case irm_b:
-      tv->u.b = !!src->u.chil;
+      tv->u.b = !!src->u.sInt;
       break;
 
     default: goto fail;
     }
 
-  case irm_C: case irm_H: case irm_I: case irm_L:
+  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
     switch (get_mode_modecode(m)) {
-    case irm_c: case irm_h: case irm_i: case irm_l:
-      tv->u.chil = src->u.CHIL;
-      if (chil_overflow (tv->u.chil, m)) goto fail;
+    case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
+      tv->u.sInt = src->u.uInt;
+      if (sInt_overflow (tv->u.sInt, m)) goto fail;
       break;
 
-    case irm_C: case irm_H: case irm_I: case irm_L:
-      tv->u.CHIL = src->u.CHIL;
-      if (CHIL_overflow (tv->u.CHIL, m)) goto fail;
-      break;
-
-    case irm_Z:
-#if _TARVAL_GMP_
-      mpz_init_set_ui (&tv->u.Z, src->u.CHIL);
-#else
-      goto fail;
-#endif
+    case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
+      tv->u.uInt = src->u.uInt;
+      if (uInt_overflow (tv->u.uInt, m)) goto fail;
       break;
 
     case irm_b:
-      tv->u.b = !!src->u.CHIL;
+      tv->u.b = !!src->u.uInt;
       break;
 
     default: goto fail;
@@ -961,12 +740,12 @@ tarval_convert_to (tarval *src, ir_mode *m)
 
   case irm_b:
     switch (get_mode_modecode(m)) {
-    case irm_c: case irm_h: case irm_i: case irm_l:
-      tv->u.chil = src->u.b;
+    case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
+      tv->u.sInt = src->u.b;
       break;
 
-    case irm_C: case irm_H: case irm_I: case irm_L:
-      tv->u.CHIL = src->u.b;
+    case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
+      tv->u.uInt = src->u.b;
 
     default: goto fail;
     }
@@ -996,32 +775,21 @@ tarval_neg (tarval *a)
 
   switch (get_mode_modecode(a->mode)) {
     /* floating */
-  case irm_f: tv->u.f = -a->u.f; break;
-  case irm_d: tv->u.d = -a->u.d; break;
+  case irm_F: tv->u.F = -a->u.F; break;
+  case irm_D: tv->u.D = -a->u.D; break;
     /* unsigned */
-  case irm_C: case irm_H: case irm_I: case irm_L:
-    tv->u.CHIL = -a->u.CHIL & tv_val_CHIL (get_mode_max(a->mode));
+  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
+    tv->u.uInt = -a->u.uInt & tv_val_uInt (get_mode_max(a->mode));
     break;
     /* signed */
-  case irm_c: case irm_h: case irm_i: case irm_l:
-    tv->u.chil = -a->u.chil;
-    if (   chil_overflow (tv->u.chil, a->mode)
-	|| ((tv->u.chil >= 0) == (a->u.chil >= 0))) {
+  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
+    tv->u.sInt = -a->u.sInt;
+    if (   sInt_overflow (tv->u.sInt, a->mode)
+	|| ((tv->u.sInt >= 0) == (a->u.sInt >= 0))) {
       obstack_free (&tv_obst, tv);
       return NULL;
     }
     break;
-  case irm_Z:
-#if _TARVAL_GMP_
-    mpz_init (&tv->u.Z);
-    mpz_neg (&tv->u.Z, &a->u.Z);
-#else
-    obstack_free (&tv_obst, tv);
-    tv = a;
-    printf("\nWrong negation\n\n");
-#endif
-    break;
-    /* strange */
   case irm_b: tv->u.b = !a->u.b; break;
   default: assert(0);
   }
@@ -1044,44 +812,36 @@ tarval_comp (tarval *a, tarval *b)
 
   switch (get_mode_modecode(a->mode)) {
     /* floating */
-  case irm_f: return (  a->u.f == b->u.f ? irpn_Eq
-		      : a->u.f > b->u.f ? irpn_Gt
-		      : a->u.f < b->u.f ? irpn_Lt
+  case irm_F: return (  a->u.F == b->u.F ? irpn_Eq
+		      : a->u.F > b->u.F ? irpn_Gt
+		      : a->u.F < b->u.F ? irpn_Lt
 		      : irpn_Uo);
-  case irm_d: return (  a->u.d == b->u.d ? irpn_Eq
-		      : a->u.d > b->u.d ? irpn_Gt
-		      : a->u.d < b->u.d ? irpn_Lt
+  case irm_D: return (  a->u.D == b->u.D ? irpn_Eq
+		      : a->u.D > b->u.D ? irpn_Gt
+		      : a->u.D < b->u.D ? irpn_Lt
 		      : irpn_Uo);
+  case irm_E: return (  a->u.E == b-> u.E ? irpn_Eq
+              : a->u.E > b->u.E ? irpn_Gt
+              : a->u.E < b->u.E ? irpn_Lt
+              : irpn_Uo);
     /* unsigned */
-  case irm_C: case irm_H: case irm_I: case irm_L:
-    return (  a->u.CHIL == b->u.CHIL ? irpn_Eq
-	    : a->u.CHIL > b->u.CHIL ? irpn_Gt
+  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
+    return (  a->u.uInt == b->u.uInt ? irpn_Eq
+	    : a->u.uInt > b->u.uInt ? irpn_Gt
 	    : irpn_Lt);
     /* signed */
-  case irm_c: case irm_h: case irm_i: case irm_l:
-    return (  a->u.chil == b->u.chil ? irpn_Eq
-	    : a->u.chil > b->u.chil ? irpn_Gt
+  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
+    return (  a->u.sInt == b->u.sInt ? irpn_Eq
+	    : a->u.sInt > b->u.sInt ? irpn_Gt
 	    : irpn_Lt);
-  case irm_Z:
-    {
-#if _TARVAL_GMP_
-      int cmp = mpz_cmp (&a->u.Z, &b->u.Z);
-      return (  cmp == 0 ? irpn_Eq
-	      : cmp > 0 ? irpn_Gt
-	      : irpn_Lt);
-#else
-      return irpn_False;
-#endif
-    }
-    /* strange */
   case irm_b: return (  a->u.b == b->u.b ? irpn_Eq
 		      : a->u.b > b->u.b ? irpn_Gt
 		      : irpn_Lt);
   /* The following assumes that pointers are unsigned, which is valid
      for all sane CPUs (transputers are insane). */
-  case irm_p: return (  a == b ? irpn_Eq
-		      : a == tarval_p_void ? irpn_Lt
-		      : b == tarval_p_void ? irpn_Gt
+  case irm_P: return (  a == b ? irpn_Eq
+		      : a == tarval_P_void ? irpn_Lt
+		      : b == tarval_P_void ? irpn_Gt
 		      : irpn_False); /* unknown */
   default: assert (0);
   }
@@ -1103,31 +863,22 @@ tarval_add (tarval *a, tarval *b)
 
   switch (get_mode_modecode(a->mode)) {
     /* floating */
-  case irm_f: tv->u.f = a->u.f + b->u.f; break;	/* @@@ overflow etc */
-  case irm_d: tv->u.d = a->u.d + b->u.d; break; /* @@@ dto. */
+  case irm_F: tv->u.F = a->u.F + b->u.F; break;	/* @@@ overflow etc */
+  case irm_D: tv->u.D = a->u.D + b->u.D; break; /* @@@ dto. */
+  case irm_E: tv->u.E = a->u.E + b->u.E; break; /* @@@ dto. */
     /* unsigned */
-  case irm_C: case irm_H: case irm_I: case irm_L:
-    tv->u.CHIL = (a->u.CHIL + b->u.CHIL) & tv_val_CHIL (get_mode_max(a->mode));
+  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
+    tv->u.uInt = (a->u.uInt + b->u.uInt) & tv_val_uInt (get_mode_max(a->mode));
     break;
     /* signed */
-  case irm_c: case irm_h: case irm_i: case irm_l:
-    tv->u.chil = a->u.chil + b->u.chil;
-    if (   chil_overflow (tv->u.chil, a->mode)
-	|| ((tv->u.chil > a->u.chil) ^ (b->u.chil > 0))) {
+  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
+    tv->u.sInt = a->u.sInt + b->u.sInt;
+    if (   sInt_overflow (tv->u.sInt, a->mode)
+	|| ((tv->u.sInt > a->u.sInt) ^ (b->u.sInt > 0))) {
       obstack_free (&tv_obst, tv);
       return NULL;
     }
     break;
-  case irm_Z:
-#if _TARVAL_GMP_
-    mpz_init (&tv->u.Z);
-    mpz_add (&tv->u.Z, &a->u.Z, &b->u.Z);
-#else
-    obstack_free (&tv_obst, tv);
-    return NULL;
-#endif
-    break;
-    /* strange */
   case irm_b: tv->u.b = a->u.b | b->u.b; break;	/* u.b is in canonical form */
   default: assert(0);
   }
@@ -1151,31 +902,22 @@ tarval_sub (tarval *a, tarval *b)
 
   switch (get_mode_modecode(a->mode)) {
     /* floating */
-  case irm_f: tv->u.f = a->u.f - b->u.f; break;	/* @@@ overflow etc */
-  case irm_d: tv->u.d = a->u.d - b->u.d; break; /* @@@ dto. */
+  case irm_F: tv->u.F = a->u.F - b->u.F; break;	/* @@@ overflow etc */
+  case irm_D: tv->u.D = a->u.D - b->u.D; break; /* @@@ dto. */
+  case irm_E: tv->u.E = a->u.E - b->u.E; break; /* @@@ dto. */
     /* unsigned */
-  case irm_C: case irm_H: case irm_I: case irm_L:
-    tv->u.CHIL = (a->u.CHIL - b->u.CHIL) & tv_val_CHIL (get_mode_max(a->mode));
+  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
+    tv->u.uInt = (a->u.uInt - b->u.uInt) & tv_val_uInt (get_mode_max(a->mode));
     break;
     /* signed */
-  case irm_c: case irm_h: case irm_i: case irm_l:
-    tv->u.chil = a->u.chil - b->u.chil;
-    if (   chil_overflow (tv->u.chil, a->mode)
-	|| ((tv->u.chil > a->u.chil) ^ (b->u.chil < 0))) {
+  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
+    tv->u.sInt = a->u.sInt - b->u.sInt;
+    if (   sInt_overflow (tv->u.sInt, a->mode)
+	|| ((tv->u.sInt > a->u.sInt) ^ (b->u.sInt < 0))) {
       obstack_free (&tv_obst, tv);
       return NULL;
     }
     break;
-  case irm_Z:
-#if _TARVAL_GMP_
-    mpz_init (&tv->u.Z);
-    mpz_sub (&tv->u.Z, &a->u.Z, &b->u.Z);
-#else
-    obstack_free (&tv_obst, tv);
-    return NULL;
-#endif
-    break;
-    /* strange */
   case irm_b: tv->u.b = a->u.b & ~b->u.b; break; /* u.b is in canonical form */
   default: assert(0);
   }
@@ -1198,31 +940,22 @@ tarval_mul (tarval *a, tarval *b)
 
   switch (get_mode_modecode(a->mode)) {
     /* floating */
-  case irm_f: tv->u.f = a->u.f * b->u.f; break;	/* @@@ overflow etc */
-  case irm_d: tv->u.d = a->u.d * b->u.d; break; /* @@@ dto. */
+  case irm_F: tv->u.F = a->u.F * b->u.F; break;	/* @@@ overflow etc */
+  case irm_D: tv->u.D = a->u.D * b->u.D; break; /* @@@ dto. */
+  case irm_E: tv->u.E = a->u.E * b->u.E; break; /* @@@ dto. */
     /* unsigned */
-  case irm_C: case irm_H: case irm_I: case irm_L:
-    tv->u.CHIL = (a->u.CHIL * b->u.CHIL) & tv_val_CHIL (get_mode_max(a->mode));
+  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
+    tv->u.uInt = (a->u.uInt * b->u.uInt) & tv_val_uInt (get_mode_max(a->mode));
     break;
     /* signed */
-  case irm_c: case irm_h: case irm_i: case irm_l:
-    tv->u.chil = a->u.chil * b->u.chil;
-    if (   chil_overflow (tv->u.chil, a->mode)
-	|| (b->u.chil && (tv->u.chil / b->u.chil != a->u.chil))) {
+  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
+    tv->u.sInt = a->u.sInt * b->u.sInt;
+    if (   sInt_overflow (tv->u.sInt, a->mode)
+	|| (b->u.sInt && (tv->u.sInt / b->u.sInt != a->u.sInt))) {
       obstack_free (&tv_obst, tv);
       return NULL;
     }
     break;
-  case irm_Z:
-#if _TARVAL_GMP_
-    mpz_init (&tv->u.Z);
-    mpz_mul (&tv->u.Z, &a->u.Z, &b->u.Z);
-#else
-    obstack_free (&tv_obst, tv);
-    return NULL;
-#endif
-    break;
-    /* strange */
   case irm_b: tv->u.b = a->u.b & b->u.b; break;	/* u.b is in canonical form */
   default: assert(0);
   }
@@ -1232,7 +965,7 @@ tarval_mul (tarval *a, tarval *b)
 
 
 /* Return floating-point `a/b' if computable, else NULL.
-   Modes must be equal, non-floating-point operands are converted to irm_d.  */
+   Modes must be equal, non-floating-point operands are converted to irm_D.  */
 tarval *
 tarval_quo (tarval *a, tarval *b)
 {
@@ -1243,19 +976,19 @@ tarval_quo (tarval *a, tarval *b)
 
   switch (get_mode_modecode(a->mode)) {
     /* floating */
-  case irm_f:
+  case irm_F:
     tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-    tv->mode = mode_f;
-    tv->u.f = a->u.f / b->u.f;	/* @@@ overflow etc */
+    tv->mode = mode_F;
+    tv->u.F = a->u.F / b->u.F;	/* @@@ overflow etc */
     break;
-  case irm_d:
+  case irm_D:
     tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-    tv->mode = mode_d;
-    tv->u.d = a->u.d / b->u.d;	/* @@@ overflow etc */
+    tv->mode = mode_D;
+    tv->u.D = a->u.D / b->u.D;	/* @@@ overflow etc */
     break;
   default:
-    a = tarval_convert_to (a, mode_d);
-    b = tarval_convert_to (b, mode_d);
+    a = tarval_convert_to (a, mode_D);
+    b = tarval_convert_to (b, mode_D);
     return a && b ? tarval_quo (a, b) : NULL;
   }
 
@@ -1278,33 +1011,24 @@ tarval_div (tarval *a, tarval *b)
 
   switch (get_mode_modecode(a->mode)) {
     /* floating */
-  case irm_f: tv->u.f = floor (a->u.f / b->u.f); break; /* @@@ overflow etc */
-  case irm_d: tv->u.d = floor (a->u.d / b->u.d); break; /* @@@ dto. */
+  case irm_F: tv->u.F = floor (a->u.F / b->u.F); break; /* @@@ overflow etc */
+  case irm_D: tv->u.D = floor (a->u.D / b->u.D); break; /* @@@ dto. */
+  case irm_E: tv->u.E = floor (a->u.E / b->u.E); break; /* @@@ dto. */
     /* unsigned */
-  case irm_C: case irm_H: case irm_I: case irm_L:
-    if (!b->u.CHIL) goto fail;
-    tv->u.CHIL = a->u.CHIL / b->u.CHIL;
+  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
+    if (!b->u.uInt) goto fail;
+    tv->u.uInt = a->u.uInt / b->u.uInt;
     break;
     /* signed */
-  case irm_c: case irm_h: case irm_i: case irm_l:
-    if (   !b->u.chil
-	|| ((b->u.chil == -1) && (a->u.chil == tv_val_chil (get_mode_max(a->mode)) ))) {
+  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
+    if (   !b->u.sInt
+	|| ((b->u.sInt == -1) && (a->u.sInt == tv_val_sInt (get_mode_max(a->mode)) ))) {
     fail:
       obstack_free (&tv_obst, tv);
       return NULL;
     }
-    tv->u.chil = a->u.chil / b->u.chil;
+    tv->u.sInt = a->u.sInt / b->u.sInt;
     break;
-  case irm_Z:
-#if _TARVAL_GMP_
-    if (!mpz_cmp_ui (&b->u.Z, 0)) goto fail;
-    mpz_init (&tv->u.Z);
-    mpz_div (&tv->u.Z, &a->u.Z, &b->u.Z);
-#else
-    goto fail;
-#endif
-    break;
-    /* strange */
   case irm_b: tv->u.b = a->u.b ^ b->u.b; break;	/* u.b is in canonical form */
   default: assert(0);
   }
@@ -1328,32 +1052,23 @@ tarval_mod (tarval *a, tarval *b)
 
   switch (get_mode_modecode(a->mode)) {
     /* floating */
-  case irm_f: tv->u.f = fmod (a->u.f, b->u.f); break; /* @@@ overflow etc */
-  case irm_d: tv->u.d = fmod (a->u.d, b->u.d); break; /* @@@ dto */
+  case irm_F: tv->u.F = fmod (a->u.F, b->u.F); break; /* @@@ overflow etc */
+  case irm_D: tv->u.D = fmod (a->u.D, b->u.D); break; /* @@@ dto */
+  case irm_E: tv->u.E = fmod (a->u.E, b->u.E); break; /* @@@ dto. */
     /* unsigned */
-  case irm_C: case irm_H: case irm_I: case irm_L:
-    if (!b->u.CHIL) goto fail;
-    tv->u.CHIL = a->u.CHIL % b->u.CHIL;
+  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
+    if (!b->u.uInt) goto fail;
+    tv->u.uInt = a->u.uInt % b->u.uInt;
     break;
     /* signed */
-  case irm_c: case irm_h: case irm_i: case irm_l:
-    if (!b->u.chil) {
+  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
+    if (!b->u.sInt) {
     fail:
       obstack_free (&tv_obst, tv);
       return NULL;
     }
-    tv->u.chil = a->u.chil % b->u.chil;
+    tv->u.sInt = a->u.sInt % b->u.sInt;
     break;
-  case irm_Z:
-#if _TARVAL_GMP_
-    if (!mpz_cmp_ui (&b->u.Z, 0)) goto fail;
-    mpz_init (&tv->u.Z);
-    mpz_mod (&tv->u.Z, &a->u.Z, &b->u.Z);
-#else
-    goto fail;
-#endif
-    break;
-    /* strange */
   case irm_b: tv->u.b = a->u.b ^ b->u.b; break;	/* u.b is in canonical form */
   default: assert(0);
   }
@@ -1375,17 +1090,16 @@ tv_is_negative(tarval *a) {
   TARVAL_VRFY (a);
   switch (get_mode_modecode(a->mode)) {
     /* floating */
-  case irm_f: return (a->u.f<0); break;
-  case irm_d: return (a->u.d<0); break;
+  case irm_F: return (a->u.F<0);
+  case irm_D: return (a->u.D<0);
+  case irm_E: return (a->u.E<0);
     /* unsigned */
-  case irm_C: case irm_H: case irm_I: case irm_L:
+  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
     return 0;
     break;
     /* signed */
-  case irm_c: case irm_h: case irm_i: case irm_l:
-    return (a->u.chil < 0);
-    break;
-  case irm_Z:
+  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
+    return (a->u.sInt < 0);
     break;
   case irm_b: break;
   default: assert(0);
@@ -1410,20 +1124,11 @@ tarval_and (tarval *a, tarval *b)
 
   switch (get_mode_modecode(a->mode)) {
     /* unsigned */
-  case irm_C: case irm_H: case irm_I: case irm_L:
-    tv->u.CHIL = a->u.CHIL & b->u.CHIL; break;
+  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
+    tv->u.uInt = a->u.uInt & b->u.uInt; break;
     /* signed */
-  case irm_c: case irm_h: case irm_i: case irm_l:
-    tv->u.chil = a->u.chil & b->u.chil; break;
-  case irm_Z:
-#if _TARVAL_GMP_
-    mpz_init (&tv->u.Z);
-    mpz_and (&tv->u.Z, &a->u.Z, &b->u.Z);
-#else
-    assert(0);
-#endif
-    break;
-    /* strange */
+  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
+    tv->u.sInt = a->u.sInt & b->u.sInt; break;
   case irm_b: tv->u.b = a->u.b & b->u.b; break;	/* u.b is in canonical form */
   default: assert(0);
   }
@@ -1447,20 +1152,11 @@ tarval_or (tarval *a, tarval *b)
 
   switch (get_mode_modecode(a->mode)) {
     /* unsigned */
-  case irm_C: case irm_H: case irm_I: case irm_L:
-    tv->u.CHIL = a->u.CHIL | b->u.CHIL; break;
+  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
+    tv->u.uInt = a->u.uInt | b->u.uInt; break;
     /* signed */
-  case irm_c: case irm_h: case irm_i: case irm_l:
-    tv->u.chil = a->u.chil | b->u.chil; break;
-  case irm_Z:
-#if _TARVAL_GMP_
-    mpz_init (&tv->u.Z);
-    mpz_ior (&tv->u.Z, &a->u.Z, &b->u.Z);
-#else
-    assert(0);
-#endif
-    break;
-    /* strange */
+  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
+    tv->u.sInt = a->u.sInt | b->u.sInt; break;
   case irm_b: tv->u.b = a->u.b | b->u.b; break;	/* u.b is in canonical form */
   default: assert(0);
   }
@@ -1478,29 +1174,17 @@ tarval_eor (tarval *a, tarval *b)
   TARVAL_VRFY (a); TARVAL_VRFY (b);
   assert (a->mode == b->mode);
 
-#if 1 /* see case irm_Z below */
-  if (a->mode == mode_Z) return NULL;
-#endif
-
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
 
   tv->mode = a->mode;
 
   switch (get_mode_modecode(a->mode)) {
     /* unsigned */
-  case irm_C: case irm_H: case irm_I: case irm_L:
-    tv->u.CHIL = a->u.CHIL ^ b->u.CHIL; break;
+  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
+    tv->u.uInt = a->u.uInt ^ b->u.uInt; break;
     /* signed */
-  case irm_c: case irm_h: case irm_i: case irm_l:
-    tv->u.chil = a->u.chil ^ b->u.chil; break;
-  case irm_Z:
-#if 0
-    /* gmp-1.3.2 declares but does not define mpz_xor() */
-    mpz_init (&tv->u.Z);
-    mpz_xor (&tv->u.Z, &a->u.Z, &b->u.Z);
-#endif
-    break;
-    /* strange */
+  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
+    tv->u.sInt = a->u.sInt ^ b->u.sInt; break;
   case irm_b: tv->u.b = a->u.b ^ b->u.b; break;	/* u.b is in canonical form */
   default: assert(0);
   }
@@ -1522,7 +1206,7 @@ tarval_shl (tarval *a, tarval *b)
   shift = tarval_ord (b, &b_is_huge);
   if (   b_is_huge
       || (shift < 0)
-      || ((shift >= get_mode_size(mode_l)*target_bits) && (a->mode != mode_Z))) {
+      || ((shift >= get_mode_size(mode_Ls)*target_bits))) {
     return NULL;
   }
 
@@ -1531,20 +1215,12 @@ tarval_shl (tarval *a, tarval *b)
 
   switch (get_mode_modecode(a->mode)) {
     /* unsigned */
-  case irm_C: case irm_H: case irm_I: case irm_L:
-    tv->u.CHIL = a->u.CHIL << shift;
+  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
+    tv->u.uInt = a->u.uInt << shift;
     break;
     /* signed */
-  case irm_c: case irm_h: case irm_i: case irm_l:
-    tv->u.chil = a->u.chil << shift;
-    break;
-  case irm_Z:
-#if _TARVAL_GMP_
-    mpz_init (&tv->u.Z);
-    mpz_mul_2exp (&tv->u.Z, &a->u.Z, shift);
-#else
-    assert(0);
-#endif
+  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
+    tv->u.sInt = a->u.sInt << shift;
     break;
   default: assert (0);
   }
@@ -1568,7 +1244,7 @@ tarval_shr (tarval *a, tarval *b)
   shift = tarval_ord (b, &b_is_huge);
   if (   b_is_huge
       || (shift < 0)
-      || ((shift >= get_mode_size(mode_l)*target_bits) && (a->mode != mode_Z))) {
+      || ((shift >= get_mode_size(mode_Ls)*target_bits))) {
     return NULL;
   }
 
@@ -1577,20 +1253,12 @@ tarval_shr (tarval *a, tarval *b)
 
   switch (get_mode_modecode(a->mode)) {
     /* unsigned */
-  case irm_C: case irm_H: case irm_I: case irm_L:
-    tv->u.CHIL = a->u.CHIL >> shift;
+  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
+    tv->u.uInt = a->u.uInt >> shift;
     break;
     /* signed */
-  case irm_c: case irm_h: case irm_i: case irm_l:
-    tv->u.chil = a->u.chil >> shift;
-    break;
-  case irm_Z:
-#if _TARVAL_GMP_
-    mpz_init (&tv->u.Z);
-    mpz_div_2exp (&tv->u.Z, &a->u.Z, shift);
-#else
-    assert(0);
-#endif
+  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
+    tv->u.sInt = a->u.sInt >> shift;
     break;
   default: assert (0);
   }
@@ -1612,49 +1280,26 @@ tarval_classify (tarval *tv)
 
   switch (get_mode_modecode(tv->mode)) {
     /* floating */
-  case irm_f: case irm_d:
+  case irm_F: case irm_D: case irm_E:
     return 2;
     /* unsigned */
-  case irm_C:
-    return (long)((tv->u.CHIL+1) & tv_val_CHIL (get_mode_max(mode_C))) - 1;
-  case irm_H:
-    return (long)((tv->u.CHIL+1) & tv_val_CHIL (get_mode_max(mode_H))) - 1;
-  case irm_I:
-    return (long)((tv->u.CHIL+1) & tv_val_CHIL (get_mode_max(mode_I))) - 1;
-  case irm_L:
-    return (long)((tv->u.CHIL+1) & tv_val_CHIL (get_mode_max(mode_L))) - 1;
+  case irm_Bu:
+    return (long)((tv->u.uInt+1) & tv_val_uInt (get_mode_max(mode_Bu))) - 1;
+  case irm_Hu:
+    return (long)((tv->u.uInt+1) & tv_val_uInt (get_mode_max(mode_Hu))) - 1;
+  case irm_Iu:
+    return (long)((tv->u.uInt+1) & tv_val_uInt (get_mode_max(mode_Iu))) - 1;
+  case irm_Lu:
+    return (long)((tv->u.uInt+1) & tv_val_uInt (get_mode_max(mode_Lu))) - 1;
     /* signed */
-  case irm_c: case irm_h: case irm_i: case irm_l:
-    return tv->u.chil;
-  case irm_Z:
-#if _TARVAL_GMP_
-    if      (mpz_cmp_si (&tv->u.Z, 0)) return 0;
-    else if (mpz_cmp_si (&tv->u.Z, 1)) return 1;
-    else if (mpz_cmp_si (&tv->u.Z,-1)) return -1;
-#endif
-    return 2;
-    /* strange */
+  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
+    return tv->u.sInt;
   case irm_b:
     return tv->u.b;
   default:
     return 2;
   }
 }
-
-
-#if _TARVAL_GMP_
-bool
-tarval_s_fits (tarval *tv, long min, long max) {
-  return ((  mpz_cmp_si (&tv->u.Z, min) >= 0)
-	  && mpz_cmp_si (&tv->u.Z, max) <= 0);
-}
-
-bool
-tarval_u_fits (tarval *tv, unsigned long max) {
-  return ((  mpz_sgn (&tv->u.Z) >= 0)
-	  && mpz_cmp_si (&tv->u.Z, max) <= 0);
-}
-#endif
 
 /* Convert `tv' into type `long', set `fail' if not representable.
    If `fail' gets set for an unsigned `tv', the correct result can be
@@ -1666,23 +1311,13 @@ tarval_ord (tarval *tv, int *fail)
 
   switch (get_mode_modecode(tv->mode)) {
     /* unsigned */
-  case irm_C: case irm_H: case irm_I: case irm_L:
-    *fail = tv->u.CHIL > tv_val_CHIL (get_mode_max(mode_l));
-    return tv->u.CHIL;
+  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
+    *fail = tv->u.uInt > tv_val_uInt (get_mode_max(mode_Ls));
+    return tv->u.uInt;
     /* signed */
-  case irm_c: case irm_h: case irm_i: case irm_l:
+  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
     *fail = 0;
-    return tv->u.chil;
-  case irm_Z:
-#if _TARVAL_GMP_
-    *fail = (   (mpz_cmp_si (&tv->u.Z, tv_val_chil(get_mode_max(mode_l))) > 0)
-	     || (mpz_cmp_si (&tv->u.Z, tv_val_chil(get_mode_max(mode_l))) < 0));
-    return mpz_get_si (&tv->u.Z);
-#else
-    *fail = 1;
-    return 0;
-#endif
-    /* strange */
+    return tv->u.sInt;
   case irm_b:
     *fail = 0;
     return tv->u.b;
@@ -1692,7 +1327,6 @@ tarval_ord (tarval *tv, int *fail)
   }
 }
 
-
 int
 tarval_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
 {
@@ -1708,45 +1342,40 @@ tarval_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
     printed = XPSR ("<bad>");
     break;
 
-  case irm_f:			/* float */
-    sprintf (buf, "%1.9e", (float)(val->u.f));
+  case irm_F:			/* float */
+    sprintf (buf, "%1.9e", (float)(val->u.F));
     printed = XPF1R ("%s", buf);
     break;
-  case irm_d:			/* double */
-    printed = XPF1R ("%1.30g", (double)(val->u.d));
+  case irm_D:			/* double */
+    printed = XPF1R ("%1.30g", (double)(val->u.D));
     break;
 
-  case irm_c:			/* signed char */
-  case irm_C:			/* unsigned char */
-    if ((isprint (val->u.chil)) &&
-	(val->u.chil != '\\')   && (val->u.chil != '\'')) {
-      printed = XPF1R ("'%c'", val->u.chil);
+  case irm_C:           /* character */
+    if ((isprint (val->u.C)) &&
+	(val->u.C != '\\')   && (val->u.C != '\'')) {
+      printed = XPF1R ("'%c'", val->u.C);
     } else {
-      printed = XPF1R ("0x%x", (unsigned long)val->u.chil);
+      printed = XPF1R ("0x%x", (unsigned long)val->u.C);
     }
     break;
 
-  case irm_h: case irm_i: case irm_l: /* signed num */
-    printed = XPF1R ("%ld", (long)val->u.chil);
+  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls: /* signed num */
+    printed = XPF1R ("%ld", (long)val->u.sInt);
     break;
-  case irm_H: case irm_I: case irm_L: /* unsigned num */
-    printed = XPF1R ("%lu", (unsigned long)val->u.CHIL);
-    break;
-
-  case irm_Z:			/* mp int */
-    printed = XPF1R ("%Z", &val->u.Z);
+  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu: /* unsigned num */
+    printed = XPF1R ("%lu", (unsigned long)val->u.uInt);
     break;
 
-  case irm_p:			/* pointer */
-    if (val->u.p.xname) {
-      printed = XPR (val->u.p.xname);
-    } else if (val->u.p.ent) {
-      if (get_entity_peculiarity(val->u.p.ent) == existent)
-	printed = XPF1R ("&(%I)", get_entity_ld_ident(val->u.p.ent));
+  case irm_P:			/* pointer */
+    if (val->u.P.xname) {
+      printed = XPR (val->u.P.xname);
+    } else if (val->u.P.ent) {
+      if (get_entity_peculiarity(val->u.P.ent) == existent)
+	printed = XPF1R ("&(%I)", get_entity_ld_ident(val->u.P.ent));
       else
 	printed = XPSR ("(NULL)");
     } else {
-      assert (val == tarval_p_void);
+      assert (val == tarval_P_void);
       printed = XPSR ("(void)");
     }
     break;
@@ -1756,38 +1385,8 @@ tarval_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
     else	  printed = XPSR ("false");
     break;
 
-  case irm_B:			/* universal bits */
-    printed = XPSR ("<@@@ some bits>");
-    break;
-
-  case irm_s:			/* string */
-  case irm_S:
-    { size_t i;
-      char *buf = alloca (val->u.s.n + 2);
-      char *bp;
-
-      printed = 0;
-      buf[0] = '\'';
-      bp = buf + 1;
-      for (i = 0;  i < val->u.s.n;  ++i) {
-	if (isprint (val->u.s.p[i])) {
-	  *bp++ = val->u.s.p[i];
-	} else {
-	  if (bp != buf) {
-	    XPM (buf, bp-buf);
-	    bp = buf;
-	  }
-	  XPF1 ("'\\%03o'", val->u.s.p[i]);
-	}
-      }
-      *bp++ = '\'';
-      XPM (buf, bp-buf);
-      break;
-    }
-
-
   case irm_M:			/* memory */
-  case irm_R:			/* region */
+  case irm_BB:			/* region */
   default:
     assert (0);
   }
@@ -1807,12 +1406,12 @@ get_tv_mode (tarval *tv)
 entity *get_tv_entity(tarval *tv) {
   entity *ent = NULL;
 
-  if (tv->mode == mode_p) {
-    if (tv->u.p.xname) {
+  if (tv->mode == mode_P) {
+    if (tv->u.P.xname) {
       assert(0);
       /* not an entity */
-    } else if (tv->u.p.ent) {
-      ent = tv->u.p.ent;
+    } else if (tv->u.P.ent) {
+      ent = tv->u.P.ent;
     } else {
       /* not an entity */
     }

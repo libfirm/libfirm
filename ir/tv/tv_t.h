@@ -9,17 +9,6 @@
 # include "tv.h"
 # include "misc.h"
 
-#include "gmp.h"
-#undef __need_size_t		/* erroneously defined by 1.3.2's gmp.h */
-
-
-tarval *tarval_S_from_str (const char *s, size_t len);
-tarval *tarval_s_from_str (const char *s, size_t len);
-tarval *tarval_B_from_str (const char *s, size_t len);
-tarval_B tv_val_B (tarval *tv);
-tarval_s tv_val_s (tarval *tv);
-
-
 int tarval_print (XP_PAR1, const xprintf_info *, XP_PARN);
 
 /* Hash function on tarvals */
