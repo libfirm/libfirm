@@ -108,7 +108,7 @@ irg:     WHILE_EXAMPLE_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n36" targetname: "n35" label: "0" class:1  priority:50}
-node: {title: "n35" label: "CmpT  35"  info1: "mode:    T
+node: {title: "n35" label: "Cmp  35"  info1: "mode:    T
 visited: 18
 irg:     WHILE_EXAMPLE_main
 arity: 2

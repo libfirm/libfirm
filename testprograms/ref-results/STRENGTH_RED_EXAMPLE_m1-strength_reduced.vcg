@@ -108,7 +108,7 @@ irg:     STRENGTH_RED_EXAMPLE_m1
 arity: 1
 "color: yellow}
 edge: {sourcename: "n72" targetname: "n71" label: "0" class:1  priority:50}
-node: {title: "n71" label: "CmpT  71"  info1: "mode:    T
+node: {title: "n71" label: "Cmp  71"  info1: "mode:    T
 visited: 30
 irg:     STRENGTH_RED_EXAMPLE_m1
 arity: 2
@@ -248,7 +248,7 @@ irg:     STRENGTH_RED_EXAMPLE_m1
 arity: 1
 "color: yellow}
 edge: {sourcename: "n41" targetname: "n40" label: "0" class:1  priority:50}
-node: {title: "n40" label: "CmpT  40"  info1: "mode:    T
+node: {title: "n40" label: "Cmp  40"  info1: "mode:    T
 visited: 30
 irg:     STRENGTH_RED_EXAMPLE_m1
 arity: 2

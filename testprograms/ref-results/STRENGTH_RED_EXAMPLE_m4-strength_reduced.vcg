@@ -114,7 +114,7 @@ irg:     STRENGTH_RED_EXAMPLE_m4
 arity: 1
 "color: yellow}
 edge: {sourcename: "n254" targetname: "n253" label: "0" class:1  priority:50}
-node: {title: "n253" label: "CmpT  253"  info1: "mode:    T
+node: {title: "n253" label: "Cmp  253"  info1: "mode:    T
 visited: 25
 irg:     STRENGTH_RED_EXAMPLE_m4
 arity: 2

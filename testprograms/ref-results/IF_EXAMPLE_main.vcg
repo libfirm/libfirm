@@ -124,7 +124,7 @@ irg:     IF_EXAMPLE_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n31" targetname: "n30" label: "0" class:1  priority:50}
-node: {title: "n30" label: "CmpT  30"  info1: "mode:    T
+node: {title: "n30" label: "Cmp  30"  info1: "mode:    T
 visited: 8
 irg:     IF_EXAMPLE_main
 arity: 2

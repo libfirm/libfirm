@@ -121,7 +121,7 @@ irg:     MEMORY_EXAMPLE_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n62" targetname: "n61" label: "0" class:1  priority:50}
-node: {title: "n61" label: "CmpT  61"  info1: "mode:    T
+node: {title: "n61" label: "Cmp  61"  info1: "mode:    T
 visited: 18
 irg:     MEMORY_EXAMPLE_main
 arity: 2

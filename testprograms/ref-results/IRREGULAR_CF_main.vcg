@@ -118,7 +118,7 @@ irg:     IRREGULAR_CF_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n40" targetname: "n39" label: "0" class:1  priority:50}
-node: {title: "n39" label: "CmpT  39"  info1: "mode:    T
+node: {title: "n39" label: "Cmp  39"  info1: "mode:    T
 visited: 8
 irg:     IRREGULAR_CF_main
 arity: 2
@@ -162,7 +162,7 @@ irg:     IRREGULAR_CF_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n32" targetname: "n31" label: "0" class:1  priority:50}
-node: {title: "n31" label: "CmpT  31"  info1: "mode:    T
+node: {title: "n31" label: "Cmp  31"  info1: "mode:    T
 visited: 8
 irg:     IRREGULAR_CF_main
 arity: 2

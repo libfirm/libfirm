@@ -114,7 +114,7 @@ irg:     IRR_LOOP_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n39" targetname: "n38" label: "0" class:1  priority:50}
-node: {title: "n38" label: "CmpT  38"  info1: "mode:    T
+node: {title: "n38" label: "Cmp  38"  info1: "mode:    T
 visited: 8
 irg:     IRR_LOOP_main
 arity: 2
@@ -157,7 +157,7 @@ irg:     IRR_LOOP_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n45" targetname: "n44" label: "0" class:1  priority:50}
-node: {title: "n44" label: "CmpT  44"  info1: "mode:    T
+node: {title: "n44" label: "Cmp  44"  info1: "mode:    T
 visited: 8
 irg:     IRR_LOOP_main
 arity: 2
@@ -192,7 +192,7 @@ irg:     IRR_LOOP_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n33" targetname: "n32" label: "0" class:1  priority:50}
-node: {title: "n32" label: "CmpT  32"  info1: "mode:    T
+node: {title: "n32" label: "Cmp  32"  info1: "mode:    T
 visited: 8
 irg:     IRR_LOOP_main
 arity: 2

@@ -78,7 +78,7 @@ arity: 0
 Const of type type_unknown
 "color: yellow}
 edge: { sourcename: "n35" targetname: "n19" class:2  priority:50 linestyle:dotted}
-node: {title: "n37" label: "CmpT  37"  info1: "mode:    T
+node: {title: "n37" label: "Cmp  37"  info1: "mode:    T
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 2
@@ -118,4 +118,4 @@ visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 0
 "}
-edge: { sourcename: "
+edge: { sourcename: "n

@@ -158,7 +158,7 @@ node was pinned in Block 27
 arity: 1
 "color: yellow}
 edge: {sourcename: "n31" targetname: "n30" label: "0" class:1  priority:50}
-node: {title: "n30" label: "CmpT  30"  info1: "mode:    T
+node: {title: "n30" label: "Cmp  30"  info1: "mode:    T
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
 node was pinned in Block 27
