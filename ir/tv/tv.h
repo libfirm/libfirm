@@ -317,9 +317,12 @@ tarval *get_tarval_one(ir_mode *mode);
 tarval *get_tarval_nan(ir_mode *mode);
 
 /** Return +inf for float_number modes. */
-tarval *get_tarval_inf(ir_mode *mode);
+tarval *get_tarval_plus_inf(ir_mode *mode);
 
-/* ******************** Arithmethic operations on tarvals ******************** */
+/** Return -inf for float_number modes. */
+tarval *get_tarval_minus_inf(ir_mode *mode);
+
+/* ******************** Arithmetic operations on tarvals ******************** */
 
 typedef enum _tarval_int_overflow_mode_t {
   TV_OVERFLOW_BAD,      /**< tarval module will return tarval_bad if a overflow occurs */

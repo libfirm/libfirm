@@ -644,7 +644,7 @@ tarval *get_tarval_nan(ir_mode *mode)
   }
 }
 
-tarval *get_tarval_inf(ir_mode *mode)
+tarval *get_tarval_plus_inf(ir_mode *mode)
 {
   ANNOUNCE();
   assert(mode);
@@ -666,6 +666,37 @@ tarval *get_tarval_inf(ir_mode *mode)
       case 80:
         fc_get_plusinf(15, 64, NULL);
         break;
+    }
+    return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
+  }
+  else {
+    assert(0 && "tarval is not floating point");
+    return tarval_bad;
+  }
+}
+
+tarval *get_tarval_minus_inf(ir_mode *mode)
+{
+  ANNOUNCE();
+  assert(mode);
+
+  if (get_mode_n_vector_elems(mode) > 1) {
+    /* vector arithmetic not implemented yet */
+    return tarval_bad;
+  }
+
+  if (get_mode_sort(mode) == irms_float_number) {
+    switch(get_mode_size_bits(mode))
+    {
+    case 32:
+      fc_get_minusinf(8, 23, NULL);
+      break;
+    case 64:
+      fc_get_minusinf(11, 52, NULL);
+      break;
+    case 80:
+      fc_get_minusinf(15, 64, NULL);
+      break;
     }
     return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
   }

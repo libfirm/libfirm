@@ -492,7 +492,7 @@ get_mode_infinite(ir_mode *mode)
   assert(get_mode_modecode(mode) < num_modes);
   assert(mode_is_float(mode));
 
-  return get_tarval_inf(mode);
+  return get_tarval_plus_inf(mode);
 }
 
 tarval *
