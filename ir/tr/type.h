@@ -125,7 +125,7 @@ void        set_type_ident(type *tp, ident* id);
 const char* get_type_name(type *tp);
 
 int         get_type_size(type *tp);
-/* For primitives, enumerationsm, pointer and method types the size
+/* For primitives, enumerations, pointer and method types the size
    is always fixed. This call is legal but has no effect. */
 void        set_type_size(type *tp, int size);
 
@@ -281,6 +281,10 @@ typedef enum peculiarity {
 inline peculiarity get_class_peculiarity (type *clss);
 inline void        set_class_peculiarity (type *clss, peculiarity pec);
 
+/* Set and get a class' dfn */
+void set_class_dfn (type*, int);
+int  get_class_dfn (type*);
+
 /* typecheck */
 bool    is_class_type(type *clss);
 /*****/
@@ -429,7 +433,7 @@ void   set_union_delim_nameid (type *uni, int pos, ident *id);
    Entity for array elements is built automatically.
    Set dimension sizes after call to constructor with set_* routines. */
 type *new_type_array         (ident *name, int n_dimensions,
-			      type *element_type);
+							  type *element_type);
 
 /* manipulate private fields of array type */
 int   get_array_n_dimensions (type *array);

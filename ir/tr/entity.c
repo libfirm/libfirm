@@ -354,7 +354,8 @@ get_compound_ent_value(entity *ent, int pos) {
 }
 
 /* Copies the value i of the entity to current_block in current_ir_graph. */
-ir_node *copy_compound_ent_value(entity *ent, int pos) {
+ir_node *
+copy_compound_ent_value(entity *ent, int pos) {
   assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
   return copy_const_value(ent->values[pos+1]);
 }

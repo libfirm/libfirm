@@ -150,7 +150,7 @@ void        set_type_ident(type *tp, ident* id) {
 
 const char* get_type_name(type *tp) {
   assert(tp && tp->kind == k_type);
-  return id_to_str(tp->name);
+  return (id_to_str(tp->name));
 }
 
 int         get_type_size(type *tp) {
@@ -263,6 +263,7 @@ type   *new_type_class (ident *name) {
   res->attr.ca.subtypes   = NEW_ARR_F (type *, 1);
   res->attr.ca.supertypes = NEW_ARR_F (type *, 1);
   res->attr.ca.peculiarity = existent;
+  res->attr.ca.dfn        = 0;
 
   return res;
 }
@@ -393,6 +394,16 @@ inline peculiarity get_class_peculiarity (type *clss) {
 inline void        set_class_peculiarity (type *clss, peculiarity pec) {
   assert(clss && (clss->type_op == type_class));
   clss->attr.ca.peculiarity = pec;
+}
+
+void set_class_dfn (type *clss, int dfn)
+{
+  clss->attr.ca.dfn        = dfn;
+}
+
+int get_class_dfn (type *clss)
+{
+  return (clss->attr.ca.dfn);
 }
 
 /* typecheck */
@@ -607,7 +618,7 @@ bool   is_union_type         (type *uni) {
 
 /* create a new type array -- set dimension sizes independently */
 type *new_type_array         (ident *name, int n_dimensions,
-			      type *element_type) {
+							  type *element_type) {
   type *res;
   int i;
   assert((element_type->type_op != type_method));
@@ -627,6 +638,7 @@ type *new_type_array         (ident *name, int n_dimensions,
   new_entity(res, mangle_u(name, id_from_str("elem_ent", 8)), element_type);
   return res;
 }
+
 inline void free_array_attrs (type *array) {
   assert(array && (array->type_op == type_array));
   free(array->attr.aa.lower_bound);

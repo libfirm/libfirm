@@ -39,7 +39,7 @@
 **		    of owner is determined.
 **  ir_graph *irg;  If (type == method_type) this is the corresponding irg.
 **		    The ir_graph constructor automatically sets this field.
-**                  If (type !- method_type) access of this field will cause
+**                  If (type != method_type) access of this field will cause
 **                  an assertion.
 */
 
@@ -175,7 +175,7 @@ typedef enum {
   external_visible,   /* The entity is visible to other external program parts, but
 			 it is defined here.  It may not be optimized away.  The entity must
 		         be static_allocated. */
-  external_allocated  /* The entity is defined and allocated externaly.  This compilation
+  external_allocated  /* The entity is defined and allocated externally.  This compilation
 			 must not allocate memory for this entity. The entity must
 		         be static_allocated. */
 } ent_visibility;

@@ -26,6 +26,7 @@ typedef struct {
   type   **subtypes;   /* direct subtypes */
   type   **supertypes; /* direct supertypes */
   peculiarity peculiarity;
+  int dfn;             /* number used for 'instanceof' operator */
 } cls_attr;
 
 typedef struct {
