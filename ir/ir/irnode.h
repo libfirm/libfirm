@@ -449,8 +449,9 @@ typedef enum {
   pn_Call_P_value_res_base = 4,/**< A pointer to the memory region containing copied results
                  passed by value (for compound result types). */
   pn_Call_X_except  = 1,  /**< The control flow result branching to the exception handler */
-  pn_Call_M_except  = 3   /**< The memory result in case the called method terminated with
+  pn_Call_M_except  = 3,  /**< The memory result in case the called method terminated with
                  an exception */
+  pn_Call_max       = 5   /**< number of prejections from a Call */
 } pn_Call;   /* Projection numbers for Call. */
 
 ir_node *get_Call_mem (ir_node *node);
@@ -865,16 +866,16 @@ int is_fragile_op(ir_node *node);
 /** Returns the memory operand of fragile operations. */
 ir_node *get_fragile_op_mem(ir_node *node);
 
-/*******************************************************************/
+/*-----------------------------------------------------------------*/
 /** Debug aides                                                   **/
-/*******************************************************************/
+/*-----------------------------------------------------------------*/
 
 
 /** Debug print the node.
  *
  *  Writes the node, all its attributes and the predecessors to stdout if DEBUG_libfirm
  *  is set.  Else does nothing. */
-void    dump_node (ir_node *n);
+void    dump_irn(ir_node *n);
 
 #include "ident.h"
 
