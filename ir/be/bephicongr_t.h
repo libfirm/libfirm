@@ -17,8 +17,6 @@ typedef struct _phi_info_t {
 
 extern size_t phi_irn_data_offset;
 
-extern pset *all_phi_classes;
-
 /**
  * Setting this to 0 will treat const nodes like
  * all other nodes when computing phi congruence classes.
@@ -34,7 +32,7 @@ extern pset *all_phi_classes;
 #define get_phi_class(irn)      get_irn_phi_info(irn)->phi_class /* Only for phi nodes */
 
 void be_phi_congr_class_init(void);
-void be_phi_congr_classes(pset *phis);
+pset *be_phi_congr_classes(pset *all_phi_nodes);
 
 
 #endif

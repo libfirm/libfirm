@@ -19,8 +19,6 @@
 #include "beutil.h"
 
 
-pset *all_phi_classes = NULL;
-
 size_t phi_irn_data_offset = 0;
 static firm_dbg_module_t *dbgmod = NULL;
 
@@ -115,20 +113,22 @@ static void det_phi_congr_class(ir_node *curr_phi) {
  * Determines the phi congruence classes of
  * all phi nodes in a given pset
  */
-void be_phi_congr_classes(pset *phis) {
+pset *be_phi_congr_classes(pset *all_phi_nodes) {
 	int i;
 	ir_node *phi;
-	pset *phi_class;
+	pset *phi_class, *all_phi_classes;
 
 	/* determine all phi classes */
-	for (i = 0, phi = (ir_node *)pset_first(phis); phi; phi = (ir_node *)pset_next(phis))
+	for (i = 0, phi = (ir_node *)pset_first(all_phi_nodes); phi; phi = (ir_node *)pset_next(all_phi_nodes))
 		det_phi_congr_class(phi);
 
 	/* store them in a pset for fast retrieval */
 	all_phi_classes = pset_new_ptr(64);
-	for (i = 0, phi = (ir_node *)pset_first(phis); phi; phi = (ir_node *)pset_next(phis)) {
+	for (i = 0, phi = (ir_node *)pset_first(all_phi_nodes); phi; phi = (ir_node *)pset_next(all_phi_nodes)) {
 		phi_class = get_phi_class(phi);
 		if (phi_class)
 			pset_insert_ptr(all_phi_classes, phi_class);
 	}
+
+	return all_phi_classes;
 }

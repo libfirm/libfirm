@@ -13,12 +13,11 @@
 #include "bephicoal_t.h"
 
 
-firm_dbg_module_t *dbgmod = NULL;
+static firm_dbg_module_t *dbgmod = NULL;
 
 
 void be_phi_coal_init(void) {
 	dbgmod = firm_dbg_register("Phi coalescing");
-	firm_dbg_register("Testsdflkjsdf");
 	firm_dbg_set_mask(dbgmod, 1);
 	DBG((dbgmod, 1, "Phi coalescing dbg enabled"));
 }
@@ -50,8 +49,8 @@ static INLINE pset *clone(pset *theset) {
 }
 
 
-static void coalesce_locals(pset *phi_class) {
-	int i, count, phi_count, arity, intf_det, phi_col;
+static void coalesce_locals(pset *phi_class, dominfo_t *dominfo) {
+	int i, count, phi_count, arity, intf_det, phi_col, allfree;
 	pset *pc, *intffree;
 	ir_node *phi, *n, *m;
 //	ir_node **members;
@@ -101,7 +100,7 @@ static void coalesce_locals(pset *phi_class) {
 	/* determine a greedy set of non-interfering members
 	 * crucial: starting with the phi node
 	 */
-	DBG((dbgmod, 1, "Building greedy non-intfering set\n"));
+	DBG((dbgmod, 1, "Building greedy non-interfering set\n"));
 	intffree = pset_new_ptr(4);
 
 	pset_remove_ptr(pc, phi);
@@ -130,13 +129,35 @@ static void coalesce_locals(pset *phi_class) {
 	}
 
 	/*
-	 * color the intffree set
+	 * color the non interfering set
 	 */
 	DBG((dbgmod, 1, "Coloring...\n"));
 	phi_col = get_irn_color(phi);
-	DBG((dbgmod, 1, "phi-color: %d\n", tgt_col));
+	DBG((dbgmod, 1, "phi-color: %d\n", grnfxt));
 
+	/* check if phi color is free in blocks of all members */
+	allfree = 1;
+	for (n = (ir_node *)pset_first(intffree); n; n = (ir_node *)pset_next(intffree)) {
+		ir_node *block;
+		if (n == phi)
+			continue;
 
+		block = get_nodes_block(n);
+/* TODO
+		if (! COLORFREE(block, phi_col)) {
+			allfree = 0;
+			break;
+		}
+*/
+	}
+/*
+	if (allfree) {
+		for (n = (ir_node *)pset_first(intffree); n; n = (ir_node *)pset_next(intffree))
+			set_irn_color(n, phi_col);
+	} else {
+
+	}
+*/
 
 exit:
 	del_pset(pc);
@@ -144,12 +165,9 @@ exit:
 }
 
 
-void be_phi_coalesce_locals(pset *all_phi_classes) {
+void be_phi_coalesce_locals(pset *all_phi_classes, dominfo_t *dominfo) {
 	pset *phi_class;
 
-	DBG((dbgmod, 1, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n"));
-
-	/* determine all phi classes */
 	for (phi_class = (pset *)pset_first(all_phi_classes); phi_class; phi_class = (pset *)pset_next(all_phi_classes))
-		coalesce_locals(phi_class);
+		coalesce_locals(phi_class, dominfo);
 }

@@ -29,7 +29,6 @@
 #include "phistat.h"
 
 #define N_PHASES 256
-#define DO_STATISTICS
 
 typedef struct _be_graph_info_t {
 	bitset_t *applied_phases;
@@ -115,21 +114,16 @@ static void be_main_loop(void)
 		list_sched(irg, trivial_selector, NULL);
 		be_liveness(irg);
 		be_ra_chordal(irg);
-		be_phi_opt(irg);
+		//be_phi_opt(irg);
 
-		// dump_allocated_irg(irg);
+		//dump_allocated_irg(irg);
 
-#ifndef DO_STATISTICS
 		be_ra_chordal_done(irg);
 		be_numbering_done(irg);
-#endif
 	}
 }
 
 void be_main(int argc, const char *argv[])
 {
 	be_main_loop();
-#ifdef DO_STATISTICS
-	do_phi_statistics();
-#endif
 }

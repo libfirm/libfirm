@@ -64,7 +64,7 @@ void list_sched(ir_graph *irg, list_sched_selector_t *selector, void *select_env
         compute_outs(irg);
 
     /* Dump the graph. */
-    dump_ir_block_graph(irg, "-before-sched");
+    //dump_ir_block_graph(irg, "-before-sched");
 
     /* Schedule each single block. */
     irg_block_walk_graph(irg, list_sched_block, NULL, &env);

@@ -8,9 +8,7 @@
 
 #include "irgraph.h"
 
-
 void be_phi_opt_init(void);
 void be_phi_opt(ir_graph* irg);
-
 
 #endif
