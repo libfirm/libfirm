@@ -67,8 +67,43 @@ void set_entity_access(entity *ent, int pos, ir_node *n) {
 
 
 /* *************************************************************************** */
-/*   Access routines for nodes                                                 */
+/*   Access routines for types                                                 */
 /* *************************************************************************** */
+
+/** Number of Alloc nodes that create an instance of this type */
+int get_type_n_allocations(type *tp) {
+  assert(tp && is_type(tp));
+
+  if (!tp->allocations) { tp->allocations = NEW_ARR_F(ir_node *, 0); }
+
+  return ARR_LEN(tp->allocations);
+}
+
+/** Alloc node that create an instance of this type */
+ir_node *get_type_allocation(type *tp, int pos) {
+  assert(0 <= pos && pos < get_type_n_allocations(tp));
+
+  return tp->allocations[pos];
+}
+
+void add_type_allocation(type *tp, ir_node *n) {
+  assert(tp && is_type(tp));
+  assert(n && is_ir_node(n));
+
+  if (!tp->allocations) tp->allocations = NEW_ARR_F(ir_node *, 0);
+
+  ARR_APP1(ir_node *, tp->allocations, n);
+}
+
+void set_type_allocation(type *tp, int pos, ir_node *n) {
+  assert(0 <= pos && pos < get_type_n_allocations(tp));
+  assert(n && is_ir_node(n));
+
+  tp->allocations[pos] = n;
+}
+
+
+
 
 /* *************************************************************************** */
 /*   Access routines for irnodes                                               */
@@ -169,6 +204,11 @@ void init_field_temperature(void) {
 void chain_accesses(ir_node *n, void *env) {
   int i, n_ents;
   ir_node *addr;
+
+  if (get_irn_op(n) == op_Alloc) {
+    add_type_allocation(get_Alloc_type(n), n);
+    return;
+  }
 
   if (is_memop(n)) {
     addr = get_memop_ptr(n);
