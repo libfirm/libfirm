@@ -84,10 +84,11 @@ irg:     ARRAY-HEAP_EXAMPLE_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n45" targetname: "n42" label: "0" class:1  priority:50}
-node: {title: "n42" label: "Load  42"  info1: "mode:    T
+node: {title: "n42" label: "Load[Is]  42"  info1: "mode:    T
 visited: 11
 irg:     ARRAY-HEAP_EXAMPLE_main
 arity: 2
+volatility: volatility_non_volatile
 "}
 edge: {sourcename: "n42" targetname: "n38" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n42" targetname: "n41" label: "1" class:1  priority:50}

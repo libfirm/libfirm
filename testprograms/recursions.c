@@ -172,7 +172,7 @@ main(void)
 
   entity **free_methods;
   int arr_len;
-  cgana(&arr_len, &free_methods, 0);
+  cgana(&arr_len, &free_methods);
   compute_callgraph();
   find_callgraph_recursions();
   //dump_callgraph("");  /* Order of edges depends on set.c, which is not deterministic. */

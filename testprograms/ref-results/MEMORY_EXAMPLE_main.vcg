@@ -84,10 +84,11 @@ irg:     MEMORY_EXAMPLE_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n71" targetname: "n69" label: "0" class:1  priority:50}
-node: {title: "n69" label: "Load  69"  info1: "mode:    T
+node: {title: "n69" label: "Load[Iu]  69"  info1: "mode:    T
 visited: 18
 irg:     MEMORY_EXAMPLE_main
 arity: 2
+volatility: volatility_non_volatile
 "}
 edge: {sourcename: "n69" targetname: "n59" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n69" targetname: "n31" label: "1" class:16 priority:10}
@@ -133,10 +134,11 @@ irg:     MEMORY_EXAMPLE_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n49" targetname: "n46" label: "0" class:1  priority:50}
-node: {title: "n46" label: "Load  46"  info1: "mode:    T
+node: {title: "n46" label: "Load[Iu]  46"  info1: "mode:    T
 visited: 18
 irg:     MEMORY_EXAMPLE_main
 arity: 2
+volatility: volatility_non_volatile
 "}
 edge: {sourcename: "n46" targetname: "n66" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n46" targetname: "n31" label: "1" class:16 priority:10}
@@ -157,6 +159,7 @@ node: {title: "n57" label: "Store  57"  info1: "mode:    T
 visited: 18
 irg:     MEMORY_EXAMPLE_main
 arity: 3
+volatility: volatility_non_volatile
 "}
 edge: {sourcename: "n57" targetname: "n56" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n57" targetname: "n33" label: "1" class:16 priority:10}
@@ -171,6 +174,7 @@ node: {title: "n54" label: "Store  54"  info1: "mode:    T
 visited: 18
 irg:     MEMORY_EXAMPLE_main
 arity: 3
+volatility: volatility_non_volatile
 "}
 edge: {sourcename: "n54" targetname: "n52" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n54" targetname: "n31" label: "1" class:16 priority:10}
@@ -187,10 +191,11 @@ irg:     MEMORY_EXAMPLE_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n53" targetname: "n50" label: "0" class:1  priority:50}
-node: {title: "n50" label: "Load  50"  info1: "mode:    T
+node: {title: "n50" label: "Load[Iu]  50"  info1: "mode:    T
 visited: 18
 irg:     MEMORY_EXAMPLE_main
 arity: 2
+volatility: volatility_non_volatile
 "}
 edge: {sourcename: "n50" targetname: "n48" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n50" targetname: "n33" label: "1" class:16 priority:10}
@@ -219,6 +224,7 @@ node: {title: "n39" label: "Store  39"  info1: "mode:    T
 visited: 18
 irg:     MEMORY_EXAMPLE_main
 arity: 3
+volatility: volatility_non_volatile
 "}
 edge: {sourcename: "n39" targetname: "n37" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n39" targetname: "n33" label: "1" class:1  priority:50}
@@ -233,6 +239,7 @@ node: {title: "n35" label: "Store  35"  info1: "mode:    T
 visited: 18
 irg:     MEMORY_EXAMPLE_main
 arity: 3
+volatility: volatility_non_volatile
 "}
 edge: {sourcename: "n35" targetname: "n25" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n35" targetname: "n31" label: "1" class:1  priority:50}

@@ -222,6 +222,7 @@ node: {title: "n74" label: "Store  74"  info1: "mode:    T
 visited: 34
 irg:     PRIMA_set_a
 arity: 3
+volatility: volatility_non_volatile
 "}
 edge: {sourcename: "n74" targetname: "n175" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n74" targetname: "n73" label: "1" class:1  priority:50}
@@ -329,10 +330,11 @@ irg:     PRIMA_c
 arity: 1
 "color: yellow}
 edge: {sourcename: "n99" targetname: "n96" label: "0" class:1  priority:50}
-node: {title: "n96" label: "Load  96"  info1: "mode:    T
+node: {title: "n96" label: "Load[Is]  96"  info1: "mode:    T
 visited: 34
 irg:     PRIMA_c
 arity: 2
+volatility: volatility_non_volatile
 "}
 edge: {sourcename: "n96" targetname: "n168" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n96" targetname: "n95" label: "1" class:1  priority:50}

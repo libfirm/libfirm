@@ -112,6 +112,7 @@ node: {title: "n32" label: "Store  32"  info1: "mode:    T
 visited: 11
 irg:     GLOBAL_VAR_main
 arity: 3
+volatility: volatility_non_volatile
 "}
 edge: {sourcename: "n32" targetname: "n25" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n32" targetname: "n30" label: "1" class:1  priority:50}
