@@ -607,51 +607,48 @@ set_Block_graph_arr (ir_node *node, int pos, ir_node *value) {
   node->attr.block.graph_arr[pos+1] = value;
 }
 
-/* handler handling for Blocks * /
+/* handler handling for Blocks */
 void
 set_Block_handler (ir_node *block, ir_node *handler)  {
   assert ((block->op == op_Block));
   assert ((handler->op == op_Block));
-  block->attr.block.handler_entry = handler;
 }
 
 ir_node *
 get_Block_handler (ir_node *block) {
   assert ((block->op == op_Block));
-  return (block->attr.block.handler_entry);
+  return (NULL);
 }
 
-/ * handler handling for Nodes * /
+/* handler handling for Nodes */
 void
 set_Node_handler (ir_node *node, ir_node *handler) {
-  set_Block_handler (get_nodes_block (node), handler);
+
 }
 
 ir_node *
 get_Node_handler (ir_node *node) {
-  return (get_Block_handler (get_nodes_block (node)));
+  return (NULL);
 }
 
-/ * exc_t handling for Blocks * /
+/* exc_t handling for Blocks */
 void set_Block_exc (ir_node *block, exc_t exc) {
   assert ((block->op == op_Block));
-  block->attr.block.exc = exc;
 }
 
 exc_t get_Block_exc (ir_node *block) {
   assert ((block->op == op_Block));
-  return (block->attr.block.exc);
+  return (0);
 }
 
-/ * exc_t handling for Nodes * /
+/* exc_t handling for Nodes */
 void set_Node_exc (ir_node *node, exc_t exc) {
-  set_Block_exc (get_nodes_block (node), exc);
+
 }
 
 exc_t get_Node_exc (ir_node *node) {
-  return (get_Block_exc (get_nodes_block (node)));
+  return (0);
 }
-*/
 
 void set_Block_cg_cfgpred_arr(ir_node * node, int arity, ir_node ** in) {
   assert(node->op == op_Block);
@@ -1160,7 +1157,7 @@ set_Call_type (ir_node *node, type *tp) {
 int Call_has_callees(ir_node *node) {
   assert(node && node->op == op_Call);
   return ((get_irg_callee_info_state(get_irn_irg(node)) != irg_callee_info_none) &&
-	  (node->attr.call.callee_arr != NULL));
+      (node->attr.call.callee_arr != NULL));
 }
 
 int get_Call_n_callees(ir_node * node) {
@@ -1266,7 +1263,7 @@ set_FuncCall_type (ir_node *node, type *tp) {
 
 int FuncCall_has_callees(ir_node *node) {
   return ((get_irg_callee_info_state(get_irn_irg(node)) != irg_callee_info_none) &&
-	  (node->attr.call.callee_arr != NULL));
+      (node->attr.call.callee_arr != NULL));
 }
 
 int get_FuncCall_n_callees(ir_node * node) {
