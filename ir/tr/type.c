@@ -1533,3 +1533,35 @@ INLINE int is_compound_type(type *tp) {
   return (is_class_type(tp) || is_struct_type(tp) ||
 	  is_array_type(tp) || is_union_type(tp));
 }
+
+
+
+
+
+#if 1 || DEBUG_libfirm
+INLINE int dump_node_opcode(FILE *F, ir_node *n); /* from irdump.c */
+
+void dump_type (type *tp) {
+  int i;
+
+  printf("%s type %s (%ld)\n", get_tpop_name(get_type_tpop(tp)), get_type_name(tp), get_type_nr(tp));
+
+  switch (get_type_tpop_code(tp)) {
+
+  case tpo_class: {
+    printf("  members: ");
+    for (i = 0; i < get_class_n_members(tp); ++i) {
+      entity *mem = get_class_member(tp, i);
+      printf("\n    (%2d) %s:\t %s",
+	     get_entity_offset(mem), get_type_name(get_entity_type(mem)), get_entity_name(mem));
+    }
+
+  } break;
+  default:
+    printf("not implemented\n");
+  }
+  printf("\n\n");
+}
+#else  /* DEBUG_libfirm */
+void dump_type (type *tp) {}
+#endif /* DEBUG_libfirm */

@@ -996,15 +996,6 @@ void dump_entity (entity *ent) {
     else
       { printf ("\n  irg = NULL"); }
   }
-
-
-  printf("\n");
-  printf("\n");
-  printf("\n");
-  printf("\n");
-  printf("\n");
-
-
 }
 #undef X
 #else  /* DEBUG_libfirm */
