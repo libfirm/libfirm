@@ -83,7 +83,7 @@ inline ir_node  *get_nodes_Block (ir_node *node);
 inline void      set_nodes_Block (ir_node *node, ir_node *block);
 
 /* Projection numbers for result of Start node: use for Proj nodes! */
-enum {
+typedef enum {
   pns_initial_exec,     /* Projection on an executable, the initial control
 			   flow. */
   pns_global_store,     /* Projection on the global store */
@@ -260,7 +260,7 @@ inline ir_node *get_Not_op (ir_node *node);
 inline void     set_Not_op (ir_node *node, ir_node *op);
 
 /* Projection numbers of compare: use for Proj nodes! */
-enum {
+typedef enum {
   False,		/* false */
   Eq,			/* equal */
   Lt,			/* less */

@@ -1,3 +1,7 @@
+  20.12.2000 Goetz
+  external to declaration of irp
+  typedef before pns and pnc_number.
+
   18.12.2000 Goetz
   Changed parameter of Methods in type.h and type.c from
   class to clss.  Class is a C++ keyword.
