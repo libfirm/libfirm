@@ -4,7 +4,11 @@
  * @author Sebastian Hack
  * @brief Reflection for Firm operations.
  *
+<<<<<<< irreflect.h
  * $Id$
+=======
+ * $Id$
+>>>>>>> 1.2
  */
 
 #ifndef __REFLECT_H
@@ -62,24 +66,9 @@ typedef struct {
 			must be the same. If false, they can differ. */
 } rflct_arg_t;
 
-typedef unsigned int rflct_mode_set_t;
-
-#define rflct_modeset_contains(mode_set,modecode) \
-  (((mode_set) & (1 << modecode)) != 0)
-
-#define rflct_modeset_issubset(s1,s2) \
-  (((s1) & (s2)) == (s1))
-
-#define rflct_modeset_union(s1,s2) \
-  ((s1) | (s2))
-
-#define rflct_modeset_intersect(s1,s2) \
-  ((s1) & (s2))
-
-#define rflct_modeset_diff(s1,s2) \
-  ((s1) & ~(s2))
-
+#define RFLCT_ARG_IS_A(arg,modes) (((arg)->accepted_modes & modes) != 0)
 #define RFLCT_ARG_VALID(arg) ((arg)->name != NULL)
+#define RFLCT_SIG_VALID(sig) ((sig) != INT_MAX)
 
 /**
  * Get the mode class for an IR mode.
@@ -143,8 +132,23 @@ const rflct_arg_t *rflct_get_in_args(opcode opc, int sig);
  */
 const rflct_arg_t *rflct_get_out_args(opcode opc, int sig);
 
+/**
+ * Make a string representation of a signature of an opcode.
+ * @param buf The buffer to put the string to.
+ * @param n The size of buf.
+ * @param opc The opcode.
+ * @param sig The signature.
+ * @return buf.
+ */
 char *rflct_to_string(char *buf, int n, opcode opc, int sig);
 
+/**
+ * Get a string representation of a mode class.
+ * @param str The buffer to put the string to.
+ * @param n The size of the buffer.
+ * @param mc The mode class.
+ * @return str.
+ */
 char *rflct_mode_class_name(char *str, int n, rflct_mode_class_t mc);
 
 #endif
