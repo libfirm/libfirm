@@ -29,7 +29,7 @@ MEMBERS = $(DISTRIBMEMBERS)
 CFILES = $(MEMBERS:.m=.c)
 
 HFILES = $(MEMBERS:.m=.h)
-HFILES +=  irnode_t.h irgraph_t.h ir_op_t.h
+HFILES +=  irnode_t.h irgraph_t.h irop_t.h
 HFILES +=  array.h common.h cookies.h debug.h entity.h gmp.h  \
            host.h ident.h label.h misc.h obst.h pdeq.h pset.h \
            set.h tune.h tv.h type.h xprintf.h xp_help.h irnode2.h
