@@ -61,8 +61,8 @@ class IfElseExample {
 	int irg = Irgraph.newIrGraph (ent, 2);
 
 	/* Generate two constants */
-	int c0 = Ircons.newConst (Irmode.getModeIs(), Tv.tarvalFromLong (Irmode.getModeIs(), 0));
-	int c1 = Ircons.newConst (Irmode.getModeIs(), Tv.tarvalFromLong (Irmode.getModeIs(), 1));
+	int c0 = Ircons.newConst (Irmode.getModeIs(), Tv.newTarvalFromLong (0, Irmode.getModeIs()));
+	int c1 = Ircons.newConst (Irmode.getModeIs(), Tv.newTarvalFromLong (1, Irmode.getModeIs()));
 
 	/* Set a and b to constants */
 	Ircons.setValue (0, c0);  /* this (0) is variable a */
@@ -70,7 +70,7 @@ class IfElseExample {
 
 	/* The expression that evaluates the condition */
 	int c2 = Ircons.newConst(Irmode.getModeIs(),
-				 Tv.tarvalFromLong (Irmode.getModeIs(), 2));
+				 Tv.newTarvalFromLong (2, Irmode.getModeIs()));
 	int cmpGt = Ircons.newProj(Ircons.newCmp(Ircons.getValue(0, Irmode.getModeIs()), c2),
 				   Irmode.getModeb(), Irnode.Gt);
 	int x = Ircons.newCond (cmpGt);
@@ -90,7 +90,7 @@ class IfElseExample {
 	b = Ircons.newImmBlock ();
 	Ircons.addInEdge (b, f);
 	Ircons.setValue (1, Ircons.newConst (Irmode.getModeIs(),
-					     Tv.tarvalFromLong (Irmode.getModeIs(), 2)));
+					     Tv.newTarvalFromLong (2, Irmode.getModeIs())));
 	Ircons.matureBlock (b);
 	int x_else = Ircons.newJmp ();
 
