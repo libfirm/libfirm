@@ -211,7 +211,7 @@ void irg_out_block_walk(ir_node *node,
 
 
 /** Returns the amount of out edges for not yet visited successors. */
-static int count_outs(ir_node *n) {
+static int _count_outs(ir_node *n) {
   int start, i, res, irn_arity;
 
   set_irn_visited(n, get_irg_visited(current_ir_graph));
@@ -228,11 +228,32 @@ static int count_outs(ir_node *n) {
 
     /* count outs for successors */
     if (get_irn_visited(succ) < get_irg_visited(current_ir_graph)) {
-      res += count_outs(succ);
+      res += _count_outs(succ);
     }
     /* Count my outs */
     succ->out = (ir_node **)( (int)succ->out + 1);
   }
+  return res;
+}
+
+
+/** Returns the amount of out edges for not yet visited successors.
+ *  This version handles some special nodes like irg_frame etc.
+ */
+static int count_outs(ir_graph *irg) {
+  ir_node *n;
+  int res;
+
+  inc_irg_visited(irg);
+  res = _count_outs(get_irg_end(irg));
+
+  /* now handle special nodes */
+  n = get_irg_frame(irg);
+  if (get_irn_visited(n) < get_irg_visited(current_ir_graph)) {
+    n->out = (ir_node **)1;
+    ++res;
+  }
+
   return res;
 }
 
@@ -244,7 +265,7 @@ static int count_outs(ir_node *n) {
  *
  * @return The next free address
  */
-static ir_node **set_out_edges(ir_node *n, ir_node **free) {
+static ir_node **_set_out_edges(ir_node *n, ir_node **free) {
   int n_outs, start, i, irn_arity;
   ir_node *succ;
 
@@ -269,13 +290,42 @@ static ir_node **set_out_edges(ir_node *n, ir_node **free) {
     succ = get_irn_n(n, i);
     /* Recursion */
     if (get_irn_visited(succ) < get_irg_visited(current_ir_graph))
-      free = set_out_edges(succ, free);
+      free = _set_out_edges(succ, free);
     /* Remember our back edge */
     succ->out[get_irn_n_outs(succ)+1] = n;
     succ->out[0] = (ir_node *) (get_irn_n_outs(succ) + 1);
   }
   return free;
 }
+
+/**
+ * Enter memory for the outs to a node. Handles special nodes
+ *
+ * @param irg    the graph
+ * @param free   current free address in the chunk allocated for the outs
+ *
+ * @return The next free address
+ */
+static ir_node **set_out_edges(ir_graph *irg, ir_node **free) {
+  ir_node *n;
+  int n_outs;
+
+  inc_irg_visited(irg);
+  free = _set_out_edges(get_irg_end(irg), free);
+
+  n = get_irg_frame(irg);
+  if (get_irn_visited(n) < get_irg_visited(current_ir_graph)) {
+    n_outs = (int)n->out;
+    n->out = free;
+#ifdef DEBUG_libfirm
+    n->out_valid = 1;
+#endif /* defined DEBUG_libfirm */
+    free += n_outs;
+  }
+
+  return free;
+}
+
 
 /* We want that the out of ProjX from Start contains the next block at
    position 1, the Start block at position 2.  This is necessary for
@@ -317,8 +367,7 @@ void compute_outs(ir_graph *irg) {
 
   /* This first iteration counts the overall number of out edges and the
      number of out edges for each node. */
-  inc_irg_visited(irg);
-  n_out_edges = count_outs(get_irg_end(irg));
+  n_out_edges = count_outs(irg);
 
   /* allocate memory for all out edges. */
   irg->outs = xcalloc(n_out_edges, sizeof(irg->outs[0]));
@@ -328,8 +377,7 @@ void compute_outs(ir_graph *irg) {
 
   /* The second iteration splits the irg->outs array into smaller arrays
      for each node and writes the back edges into this array. */
-  inc_irg_visited(irg);
-  end = set_out_edges(get_irg_end(irg), irg->outs);
+  end = set_out_edges(irg, irg->outs);
 
   /* Check how much memory we have used */
   assert (end == (irg->outs + n_out_edges));
