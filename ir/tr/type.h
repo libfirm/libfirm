@@ -1,4 +1,4 @@
-/****h* libfirm/type
+/****h* libfirm/type6 2002/03/19 13:08:33
  *
  * NAME
  *   file type.h - datastructure to hold type information.
@@ -270,7 +270,7 @@ void    set_class_supertype   (type *clss, type *supertype, int pos);
 void    remove_class_supertype(type *clss, type *supertype);
 
 /* This enumeration flags the peculiarity of entities and types. */
-typedef enum {
+typedef enum peculiarity {
   description,     /* Represents only a description.  The entity/type is never
 	  	      allocated, no code/data exists for this entity/type. */
   existent         /* The entity/type (can) exist. */

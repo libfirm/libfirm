@@ -1,4 +1,4 @@
-/*
+/*10 2002/03/19 13:08:33
 **  Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
 **  All rights reserved.
 **
@@ -64,12 +64,10 @@ struct entity {
   void *link;           /* To store some intermediate information */
   unsigned long visit;  /* visited counter for walks of the type information */
   /* for methods */
+  enum peculiarity peculiarity;
   ir_graph *irg;        /* If (type == method_type) this is the corresponding irg.
 			   The ir_graph constructor automatically sets this field.
-		 	   @@@ Does this go here, or should it be in type_method,
-			   or should Call have an attribute ent??
 			   Yes, it must be here. */
-  peculiarity peculiarity;
 };
 
 

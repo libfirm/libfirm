@@ -410,6 +410,7 @@ set_entity_irg(entity *ent, ir_graph *irg) {
   assert (ent && ent->type);
   assert (irg);
   assert (is_method_type(ent->type));
+  assert (ent->peculiarity == existent);
   ent->irg = irg;
 }
 

@@ -246,7 +246,9 @@ void*   get_entity_link(entity *ent);
 void    set_entity_link(entity *ent, void *l);
 
 /* The entity knows the corresponding irg if the entity is a method.
-   This allows to get from a Call to the called irg. */
+   This allows to get from a Call to the called irg.
+   Only entities of peculiarity "existent" can have a corresponding irg,
+   else the field is fixed to NULL.  (Get returns NULL, set asserts.) */
 ir_graph *get_entity_irg(entity *ent);
 void      set_entity_irg(entity *ent, ir_graph *irg);
 

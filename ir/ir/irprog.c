@@ -40,7 +40,7 @@ ir_prog *new_ir_prog (void) {
   res->types  = NEW_ARR_F (type *, 1);
   res->glob_type = new_type_class(id_from_str (GLOBAL_TYPE_NAME,
 					       strlen(GLOBAL_TYPE_NAME)));
-  add_irp_type((type *)res->glob_type);
+  add_irp_type(res->glob_type);
 
   res->const_code_irg = new_const_code_irg();
 
