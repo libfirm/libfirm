@@ -22,6 +22,43 @@ typedef struct ir_node ir_node;
 typedef struct ir_graph ir_graph;
 #endif
 
+/***** irgraph/irgraph
+ *
+ * NAME  Datastructure that holds central information about a procedure
+ *
+ * NOTE
+ **    ir_graph *new_ir_graph (entity *ent, int params);
+ *    -------------------------------------------------
+ *
+ *    This constructor generates the basic infrastructure needed to
+ *    represent a procedure in FIRM.
+ *
+ *    The parameters of new_ir_graph are:
+ *
+ *      *ent             A pointer to an entity representing the procedure.
+ *
+ *      params           An integer giving the number of local variables in the
+ *                       procedure.
+ *
+ *    It allocates an ir_graph and sets current_ir_graph to point to this
+ *    graph.  Further it allocates the following nodes needed for every
+ *    procedure:
+ *
+ *    * The start block containing a start node and Proj nodes for it's
+ *      five results (X, M, P, P, T).
+ *    * The end block containing an end node. This block is not matured
+ *      after executing new_ir_graph as predecessors need to be added to it.
+ *      (Maturing a block means fixing it's number of predecessors.)
+ *    * The current block, which is empty and also not matured.
+ *
+ *    Further it enters the global store into the datastructure of the start
+ *    block that contanis all valid values in this block (set_store()).  This
+ *    datastructure is used to build the Phi nodes and removed after
+ *    completion of the graph.  There is no path from end to start in the
+ *    graph after calling ir_graph.
+ * SOURCE
+ */
+
 /* Global variable holding the current_ir_graph.  This global variable
    is used by the ir construction interface in ircons and by the
    optimizations. */
@@ -30,7 +67,7 @@ extern ir_graph *current_ir_graph;
 /* Create a new ir graph to built ir for a procedure.
    ent is the entity representing this procedure, i.e., the type of the
    entity must be of a method type.  The constructor automatically sets the
-   field irg of the entity to the new ir graph.
+   field irg of the entity as well as current_ir_graph to the new ir graph.
    n_loc is the number of local variables in this procedure including
    the procedure parameters. */
 ir_graph *new_ir_graph (entity *ent, int n_loc);
@@ -83,5 +120,6 @@ void     set_irg_visited(ir_graph *irg, unsigned long i);
 void     inc_irg_block_visited(ir_graph *irg);
 unsigned long get_irg_block_visited (ir_graph *irg);
 void     set_irg_block_visited(ir_graph *irg, unsigned long i);
+/*****/
 
 # endif /* _IRGRAPH_H_ */

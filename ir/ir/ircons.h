@@ -194,7 +194,7 @@
  *    ------------------
  *                       Not yet documented. See irmode.h.
  *
- *    GLOBAL VARIABLES
+ *    GLOBAL VARIABLES -- now also fields of ir_graph.
  *    ================
  *
  *    current_ir_graph   Points to the current ir_graph.  All constructors for
@@ -209,41 +209,11 @@
  *
  *
  *
- *    CONSTRUCTOR FOR IR_GRAPH
+ *    CONSTRUCTOR FOR IR_GRAPH --> see irgraph.h
  *    ========================
  *
- *    ir_graph *new_ir_graph (entity *ent, int params);
- *    -------------------------------------------------
  *
- *    This constructor generates the basic infrastructure needed to
- *    represent a procedure in FIRM.
- *
- *    The parameters of new_ir_graph are:
- *
- *      *ent             A pointer to an entity representing the procedure.
- *
- *      params           An integer giving the number of local variables in the
- *                       procedure.
- *
- *    It allocates an ir_graph and sets current_ir_graph to point to this
- *    graph.  Further it allocates the following nodes needed for every
- *    procedure:
- *
- *    * The start block containing a start node and Proj nodes for it's
- *      five results (X, M, P, P, T).
- *    * The end block containing an end node. This block is not matured
- *      after executing new_ir_graph as predecessors need to be added to it.
- *      (Maturing a block means fixing it's number of predecessors.)
- *    * The current block, which is empty and also not matured.
- *
- *    Further it enters the global store into the datastructure of the start
- *    block that contanis all valid values in this block (set_store()).  This
- *    datastructure is used to build the Phi nodes and removed after completion
- *    of the graph.
- *    There is no path from end to start in the graph after calling ir_graph.
- *
- *
- *    PROCEDURE TO CONSTRUCT AN IR GRAPH
+ *    PROCEDURE TO CONSTRUCT AN IR GRAPH --> see also Firm tutorial
  *    ==================================
  *
  *    This library supplies several interfaces to construct a FIRM graph for
@@ -269,7 +239,7 @@
  *    First the Frontend needs to decide which variables and values used in
  *    a procedure can be represented by dataflow edges.  These are variables
  *    that need not be saved to memory as they cause no side effects visible
- *    out of the procedure.  In general these are all compiler generated
+ *    out of the procedure.  Often these are all compiler generated
  *    variables and simple local variables of the procedure as integers,
  *    reals and pointers.  The frontend has to count and number these variables.
  *
@@ -1197,7 +1167,7 @@ ir_node *new_Return (ir_node *store, int arity, ir_node **in);
 ir_node *new_Raise  (ir_node *store, ir_node *obj);
 ir_node *new_Const  (ir_mode *mode, tarval *con);
 ir_node *new_SymConst (type_or_id_p value, symconst_kind kind);
-ir_node *new_simpleSel (ir_node *store, ir_node *objptr, entity *ent);
+ir_node *new_simpleSel(ir_node *store, ir_node *objptr, entity *ent);
 ir_node *new_Sel    (ir_node *store, ir_node *objptr, int arity, ir_node **in,
                      entity *ent);
 ir_node *new_Call   (ir_node *store, ir_node *callee, int arity, ir_node **in,

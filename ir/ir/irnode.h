@@ -21,21 +21,31 @@
    recursion between irnode.h and irgraph.h */
 #ifndef _IR_NODE_TYPEDEF_
 #define _IR_NODE_TYPEDEF_
+/****s* irnode/irnode
+ *
+ * NAME ir_node - a datatype representing a Firm node
+ *
+ * NOTE Not properly documented ;-)
+ *
+ * ATTRIBUTES
+ *  The common fields are:
+ *
+ *  firm_kind    A firm_kind tag containing k_type.  This is useful
+ *               for dynamically checking whether a node is a ir_node.
+ *  arity        The number of predecessors in the Firm graph.
+ *  in           A list with the predecessors in the Firm graph.  There are
+ *               routines to access individual elements and to obtain the
+ *               array.  The method returning the array should not be used.
+ *  mode         The mode of the node.  There are routines to get the mode but
+ *               also to access the mode's fields directly.
+ *  opcode       The opcode of the node.  There are routines to get the opcode but
+ *               also to access the opcode's fields directly.
+ *  node_nr      A unique number for the node.  Available only if debugging is
+ *               turned on.
+ * SOURCE
+ */
 typedef struct ir_node ir_node;
 #endif
-
-/* irnode constructor                                             */
-/* Create a new irnode in irg, with an op, mode, arity and        */
-/* some incoming irnodes.                                         */
-/* If arity is negative, a node with a dynamic array is created.  */
-
-inline ir_node *
-new_ir_node (ir_graph *irg,
-	     ir_node *block,
-	     ir_op *op,
-	     ir_mode *mode,
-	     int arity,
-	     ir_node **in);
 
 /** Manipulate the fields of ir_node.  With these access routines
     you can work on the graph without considering the different types
@@ -75,8 +85,29 @@ inline ir_node      *get_irn_link          (ir_node *node);
 /* Outputs a unique number for this node */
 inline long get_irn_node_nr(ir_node *node);
 #endif
+/*****/
 
-/** Manipulate fields of individual nodes. **/
+/* irnode constructor                                             */
+/* Create a new irnode in irg, with an op, mode, arity and        */
+/* some incoming irnodes.                                         */
+/* If arity is negative, a node with a dynamic array is created.  */
+
+inline ir_node *
+new_ir_node (ir_graph *irg,
+	     ir_node *block,
+	     ir_op *op,
+	     ir_mode *mode,
+	     int arity,
+	     ir_node **in);
+
+/****s* irnode/other
+ *
+ * NAME access functions for node fields.
+ *
+ * NOTE Not properly documented ;-)
+ *
+ * SOURCE
+ */
 
 /* this works for all except Block */
 inline ir_node  *get_nodes_Block (ir_node *node);
@@ -375,11 +406,16 @@ inline void      set_Tuple_pred (ir_node *node, int pos, ir_node *pred);
 inline ir_node  *get_Id_pred (ir_node *node);
 inline void      set_Id_pred (ir_node *node, ir_node *pred);
 
+/*****/
 
-
-/******************************************************************/
-/*  Auxiliary routines                                            */
-/******************************************************************/
+/****s* irnode/other2
+ *
+ * NAME Auxiliary routines
+ *
+ * NOTE Not properly documented ;-)
+ *
+ * SOURCE
+ */
 
 /* returns operand of node if node is a Proj. */
 inline ir_node *skip_Proj (ir_node *node);
@@ -396,7 +432,7 @@ int is_cfop(ir_node *node);
    of an exception. */
 int is_fragile_op(ir_node *node);
 
-
+/*****/
 
 /* Makros for debugging the libfirm */
 #ifdef DEBUG_libfirm

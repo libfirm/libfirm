@@ -21,7 +21,14 @@
 # include "irnode.h"
 # include "type.h"
 
-
+/***** irprog/irprog
+ *
+ * NAME  Datastructure that holds central information about a program
+ *
+ * NOTE  Preliminary documentation ;-)
+ *
+ * SOURCE
+ */
 typedef struct ir_prog ir_prog;
 
 /* A variable from where everything in the ir can be accessed. */
@@ -57,5 +64,6 @@ type *get_glob_type(void);
 /* Returns a new, unique number to number nodes or the like. */
 int get_irp_new_node_nr();
 #endif
+/*****/
 
 #endif /* ifndef _IRPROG_H_ */
