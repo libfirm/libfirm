@@ -8,6 +8,9 @@
 #ifndef __BECHORDAL_H
 #define __BECHORDAL_H
 
+#include "irgraph.h"
+#include "irnode.h"
+
 /**
  * Allocate registers for an ir graph.
  * @param irg The graph.

@@ -21,12 +21,13 @@
 #include "besched_t.h"
 #include "belistsched.h"
 #include "belive_t.h"
-#include "bephicongr_t.h"
 #include "beutil.h"
 #include "bechordal.h"
+#include "bephiopt.h"
 #include "phistat.h"
 
 #define N_PHASES 256
+#define DO_STATISTICS
 
 typedef struct _be_graph_info_t {
 	bitset_t *applied_phases;
@@ -94,7 +95,7 @@ void be_init(void)
 	be_liveness_init();
 	be_numbering_init();
 	be_ra_init();
-	be_phi_congr_class_init();
+	be_phi_opt_init();
 }
 
 extern void be_ra_chordal(ir_graph *irg);
@@ -110,19 +111,22 @@ static void be_main_loop(void)
 		list_sched(irg, trivial_selector, NULL);
 		be_liveness(irg);
 		be_ra_chordal(irg);
-		be_phi_congr_classes(irg);
+		be_phi_opt(irg);
 
 
-		dump_allocated_irg(irg);
+		//dump_allocated_irg(irg);
 
-
+#ifndef DO_STATISTICS
 		be_ra_chordal_done(irg);
 		be_numbering_done(irg);
+#endif
 	}
 }
 
 void be_main(int argc, const char *argv[])
 {
 	be_main_loop();
+#ifdef DO_STATISTICS
 	do_phi_statistics();
+#endif
 }
