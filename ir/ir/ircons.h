@@ -650,7 +650,7 @@
  *    ir_node *new_Minus (ir_node *op, ir_mode *mode)
  *    -----------------------------------------------
  *
- *    Unary Minus operations on floating point values.
+ *    Unary Minus operations on integer and floating point values.
  *
  *    ir_node *new_Mul (ir_node *op1, ir_node *op2, ir_mode *mode)
  *    ------------------------------------------------------------
