@@ -1,3 +1,14 @@
+/*
+ * Project:     libFIRM
+ * File name:   ir/common/firmwalk.c
+ * Purpose:     Walker that touches all Firm data structures
+ * Author:      Sebastian Felis
+ * Modified by:
+ * Created:     7.2003
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>

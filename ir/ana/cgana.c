@@ -1,14 +1,23 @@
-/* -------------------------------------------------------------------
- * $Id$
- * -------------------------------------------------------------------
+/*
+ * Project:     libFIRM
+ * File name:   ir/ana/cgana.c
+ * Purpose:     Intraprozedural analyses to estimate the call graph.
+ * Author:      Hubert Schmid
+ * Modified by:
+ * Created:     09.06.2002
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1999-2003 Universit‰t Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
+
+/**
  * Intraprozedurale Analyse zur Absch‰tzung der Aufrulrelation. Es
  * wird eine Menge von freien Methoden und anschlieﬂend die an den
  * Call-Operationen aufrufbaren Methoden bestimmt.
  *
- * Erstellt: Hubert Schmid, 09.06.2002
- * ---------------------------------------------------------------- */
+ */
 
-#include "stdlib.h"
+#include <stdlib.h>
 #include "cgana.h"
 
 

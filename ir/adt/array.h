@@ -1,8 +1,14 @@
-/* Declarations for Array.
-   Copyright (C) 1995, 1996 Markus Armbruster
-   All rights reserved. */
-
-/* $Id$ */
+/*
+ * Project:     libFIRM
+ * File name:   ir/adt/array.h
+ * Purpose:     Declarations for Array.
+ * Author:      Markus Armbruster
+ * Modified by:
+ * Created:     1999 by getting from fiasco
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1995, 1996 Markus Armbruster
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 /* @@@ growing a dynamic on an obstack */
 

@@ -1,7 +1,15 @@
-/* Pdeq --- double ended queue of generic pointers.
-   Copyright (C) 1995, 1996 Christian von Roques */
+/*
+ * Project:     libFIRM
+ * File name:   ir/adt/pdeq.c
+ * Purpose:     Pdeq --- double ended queue of generic pointers.
+ * Author:      Christian von Roques
+ * Modified by:
+ * Created:     1999 by getting from fiasco
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1995, 1996 Markus Armbruster
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
-/* $Id$ */
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>

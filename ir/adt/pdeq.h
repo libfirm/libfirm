@@ -1,10 +1,18 @@
-/* Declarations for pdeq.
-   Copyright (C) 1995, 1996 Christian von Roques */
+/*
+ * Project:     libFIRM
+ * File name:   ir/adt/pdeq.h
+ * Purpose:     Declarations for pdeq.
+ * Author:      Christian von Roques
+ * Modified by:
+ * Created:     1999 by getting from fiasco
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1995, 1996 Markus Armbruster
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
-/* $Id$ */
 
-#ifndef _PDEQ_H
-#define _PDEQ_H
+#ifndef _PDEQ_H_
+#define _PDEQ_H_
 
 #include <string.h>
 #include "misc.h"
@@ -32,4 +40,4 @@ void *pdeq_getr (pdeq *);
 void _pdeq_vrfy(pdeq *dq);
 #endif
 
-#endif
+#endif /* _PDEQ_H_ */

@@ -1,13 +1,14 @@
-/* Copyright (C) 2002 by Universitaet Karlsruhe
-* All rights reserved.
-*
-* Authors:  Goetz Lindenmaier
-*
-* irdom.c --- Dominator tree.
-*
-*/
-
-/* $Id$ */
+/*
+ * Project:     libFIRM
+ * File name:   ir/ana/irdom.c
+ * Purpose:     Construct and access dominator tree.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:     2.2002
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2002-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 #include "irouts.h"
 

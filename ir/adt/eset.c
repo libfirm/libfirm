@@ -1,15 +1,17 @@
-/* -------------------------------------------------------------------
- * $Id$
- * -------------------------------------------------------------------
- * Datentyp: Vereinfachte Menge (hash-set) zum Speichern von
- * Zeigern/Adressen.
- *
- * Erstellt: Hubert Schmid, 09.06.2002
- * ---------------------------------------------------------------- */
-
+/*
+ * Project:     libFIRM
+ * File name:   ir/adt/eset.c
+ * Purpose:     Datentyp: Vereinfachte Menge (hash-set) zum Speichern von
+ *              Zeigern/Adressen.
+ * Author:      Hubert Schmid
+ * Modified by:
+ * Created:     09.06.2002
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2002 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 #include "eset.h"
-
 #include "set.h"
 
 

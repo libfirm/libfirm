@@ -10,9 +10,9 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
-#include "Dbginfo.h"
+#include "Dbginfo.h"   /* Generated. */
 
-#include <firm.h>
+#include "firm.h"
 #include "dbginfo.h"
 #include <stdio.h>
 

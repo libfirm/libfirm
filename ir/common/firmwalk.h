@@ -1,3 +1,15 @@
+/*
+ * Project:     libFIRM
+ * File name:   ir/common/firmwalk.h
+ * Purpose:     Walker that touches all Firm data structures
+ * Author:      Sebastian Felis
+ * Modified by:
+ * Created:     7.2003
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
+
 /**
  *  @file firmwalk.h
  *

@@ -1,11 +1,19 @@
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-* All rights reserved.
-*
-* Authors: Martin Trapp, Christian Schaefer, Goetz Lindenmaier.
-*/
+/*
+ * Project:     libFIRM
+ * File name:   ir/common/firm.h
+ * Purpose:     Central firm header.
+ * Author:      Martin Trapp, Christian Schaefer
+ * Modified by: Goetz Lindenmaier
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 /**
  @file firm.h
+
+ This documentation no more  maintained since 2001!!!
 
     Central FIRM header.
 

@@ -1,7 +1,14 @@
-/* Xmalloc --- never failing wrappers for malloc() & friends.
-   Copyright (C) 1995, 1996 Markus Armbruster */
-
-/* $Id$ */
+/*
+ * Project:     libFIRM
+ * File name:   ir/adt/xmalloc.c
+ * Purpose:     Xmalloc --- never failing wrappers for malloc() & friends.
+ * Author:      Markus Armbruster
+ * Modified by:
+ * Created:     1999 by getting from fiasco
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1995, 1996 Markus Armbruster
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 /* @@@ ToDo: replace this file with the one from liberty.
    [reimplement xstrdup, ... ] */

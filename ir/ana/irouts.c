@@ -1,3 +1,17 @@
+/*
+ * Project:     libFIRM
+ * File name:   ir/ana/irouts.c
+ * Purpose:     Compute and access out edges.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:     1.2002
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2002-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
+
+
+
  /* Copyright (C) 2002 by Universitaet Karlsruhe
 * All rights reserved.
 *

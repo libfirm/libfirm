@@ -1,7 +1,14 @@
-/* Xfprintf --- extended formatted output to obstacks.
-   Copyright (C) 1995, 1996 Christian von Roques */
-
-/* $Id$ */
+/*
+ * Project:     libFIRM
+ * File name:   ir/common/xoprintf.c
+ * Purpose:     Xoprintf --- extended formatted output to obstacks.
+ * Author:      Christian von Roques
+ * Modified by:
+ * Created:     1999 by getting from fiasco
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1995, 1996 Christian von Roques
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>

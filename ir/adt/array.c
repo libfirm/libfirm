@@ -1,8 +1,14 @@
-/* Array --- dynamic & flexible arrays.
-   Copyright (C) 1995, 1996 Markus Armbruster
-   All rights reserved. */
-
-/* $Id$ */
+/*
+ * Project:     libFIRM
+ * File name:   ir/adt/array.c
+ * Purpose:     Array --- dynamic & flexible arrays.
+ * Author:      Markus Armbruster
+ * Modified by:
+ * Created:     1999 by getting from fiasco
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1995, 1996 Markus Armbruster
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -82,7 +88,7 @@ _arr_setlen (void *elts, int nelts, size_t elts_size)
   return dp->v.elts;
 }
 
-
+\
 void *
 _arr_resize (void *elts, int nelts, size_t eltsize)
 {

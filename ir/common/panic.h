@@ -1,6 +1,14 @@
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-* All rights reserved.
-*/
+/*
+ * Project:     libFIRM
+ * File name:   ir/common/panic.h
+ * Purpose:
+ * Author:      Martin Trapp, Christian Schaefer
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 /**
  * @file panic.h
@@ -8,7 +16,6 @@
  * @author Martin Trapp, Christian Schaefer
  */
 
-/* $Id$ */
 
 # ifndef _PANIC_H_
 # define _PANIC_H_

@@ -1,14 +1,15 @@
-/* Copyright (C) 2002 by Universitaet Karlsruhe
-* All rights reserved.
-*
-* Authors:  Goetz Lindenmaier
-*
-* irscc.c  Computing the strongly connected regions and building
-* backedge/loop datastructures.
-*
-*/
-
-/* $Id$ */
+/*
+ * Project:     libFIRM
+ * File name:   ir/ana/irscc.c
+ * Purpose:     Compute the strongly connected regions and build
+ *              backedge/loop datastructures.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:     7.2002
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2002-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 #include <string.h>
 

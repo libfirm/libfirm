@@ -1,20 +1,21 @@
-/* Copyright (C) 2002 by Universitaet Karlsruhe
-* All rights reserved.
-*
-* Authors:  Goetz Lindenmaier
-*
-* irbackedges.c  Access function for backedges.
-*
-*/
-
-/* $Id$ */
+/*
+ * Project:     libFIRM
+ * File name:   ir/ana/irbackedge.c
+ * Purpose:     Access function for backedges.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:     7.2002
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2002-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 #include "irnode_t.h"
 #include "array.h"
 #include "irbackedge_t.h"
 
 /*--------------------------------------------------------------------*/
-/* Backedge information. *                                            */
+/* Backedge information.                                              */
 /*--------------------------------------------------------------------*/
 
 

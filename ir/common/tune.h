@@ -1,7 +1,14 @@
-/* Tune --- tunable parameters.
-   Copyright (C) 1995, 1996 Markus Armbruster & Christian von Roques */
-
-/* $Id$ */
+/*
+ * Project:     libFIRM
+ * File name:   ir/common/tune.h
+ * Purpose:     Tune --- tunable parameters.
+ * Author:      Markus Armbruster & Christian von Roques
+ * Modified by:
+ * Created:     1999 by getting from fiasco
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1995, 1996 Markus Armbruster & Christian von Roques
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 #ifndef _TUNE_H
 #define _TUNE_H

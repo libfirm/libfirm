@@ -1,12 +1,13 @@
-/* Declarations for pset.
-   Copyright (C) 1995, 1996 Markus Armbruster */
-
-/* $Id$ */
-
-/**
- * @file pset.h
- *
- * Declarations for pset.
+/*
+ * Project:     libFIRM
+ * File name:   ir/adt/pset.h
+ * Purpose:     Declarations for pset.
+ * Author:      Markus Armbruster
+ * Modified by:
+ * Created:     1999 by getting from fiasco
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1995, 1996 Markus Armbruster
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
 #ifndef _PSET_H

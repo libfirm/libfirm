@@ -1,8 +1,15 @@
-/* Declarations for debug
-   Copyright (C) 1995, 1996 Christian von Roques
-   All rights reserved.  */
+/*
+ * Project:     libFIRM
+ * File name:   ir/adt/debug.h
+ * Purpose:     Declarations for debug
+ * Author:      Christian von Roques
+ * Modified by:
+ * Created:     1999 by getting from fiasco
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1995, 1996 Markus Armbruster
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
-/* $Id$ */
 
 #ifndef _DEBUG_H_
 #define _DEBUG_H_

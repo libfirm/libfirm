@@ -1,8 +1,15 @@
-/* Misc. declarations.
-   Copyright (C) 1995, 1996 Markus Armbruster
-   All rights reserved. */
+/*
+ * Project:     libFIRM
+ * File name:   ir/common/misc.h
+ * Purpose:     Misc. declarations.
+ * Author:      Markus Armbruster
+ * Modified by:
+ * Created:     1999 by getting from fiasco
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1995, 1996 Markus Armbruster
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
-/* $Id$ */
 
 #ifndef _MISC_H_
 #define _MISC_H_

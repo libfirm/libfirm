@@ -1,17 +1,25 @@
-/* Copyright (C) 2002 by Universitaet Karlsruhe
-* All rights reserved.
-*/
+/*
+ * Project:     libFIRM
+ * File name:   ir/ana/irdom_t.h
+ * Purpose:     Construct and access dominator tree -- private datastructures.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:     2.2002
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2002-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
+
 
 /**
  * @file irdom_t.h
  *
- * dDominator information private datastructures.
+ * Dominator information private datastructures.
  *
  * @author Goetz Lindenmaier
  *
  */
 
-/* $Id$ */
 
 # ifndef _IRDOM_T_H_
 # define _IRDOM_T_H_

@@ -1,16 +1,22 @@
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-* All rights reserved.
-*/
+/*
+ * Project:     libFIRM
+ * File name:   ir/common/firm_common.c
+ * Purpose:     Internal preprocessor directives.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1999-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 /**
  * @file firm_common_t.h
  *
  * preprocessor flags
  *
- * @author Martin Trapp, Christian Schaefer & Goetz Lindenmaier
+ * @author Goetz Lindenmaier
  */
-
-/* $Id$ */
 
 # ifndef _COMMON_T_H_
 # define _COMMON_T_H_

@@ -1,7 +1,14 @@
-/* Xgprintf --- extended formatted output via generic printer functions.
-   Copyright (C) 1995, 1996 Christian von Roques */
-
-/* $Id$ */
+/*
+ * Project:     libFIRM
+ * File name:   ir/common/xgprintf.c
+ * Purpose:     Xgprintf --- extended formatted output via generic printer functions.
+ * Author:      Christian von Roques
+ * Modified by:
+ * Created:     1999 by getting from fiasco
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1995, 1996 Christian von Roques
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 /* Implements ANSI-C printf formats minus locale plus extensions,
    noteably GNU Libc-like registering of specifier-handlers.  */

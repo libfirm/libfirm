@@ -1,7 +1,15 @@
-/* Declarations for xprintf & friends.
-   Copyright (C) 1995, 1996 Christian von Roques */
+/*
+ * Project:     libFIRM
+ * File name:   ir/common/xprintf.h
+ * Purpose:     Declarations for xprintf & friends.
+ * Author:      Christian von Roques
+ * Modified by:
+ * Created:     1999 by getting from fiasco
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1995, 1996 Christian von Roques
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
-/* $Id$ */
 
 /* Parts of this file are adapted from the GNU C Library.
 Copyright (C) 1991, 1992, 1993 Free Software Foundation, Inc.

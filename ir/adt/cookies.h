@@ -1,8 +1,15 @@
-/* Magic cookies for dynamic data structures
-   Copyright (C) 1995, 1996 Christian von Roques & Markus Armbruster
-   All rights reserved.  */
+/*
+ * Project:     libFIRM
+ * File name:   ir/adt/cookies.h
+ * Purpose:     Magic cookies for dynamic data structures.
+ * Author:      Christian von Roques & Markus Armbruster
+ * Modified by:
+ * Created:     1999 by getting from fiasco
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1995, 1996 Markus Armbruster
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
-/* $Id$ */
 
 #ifndef _COOKIES_H
 #define _COOKIES_H

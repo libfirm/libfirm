@@ -1,20 +1,26 @@
-/* -------------------------------------------------------------------
- * $Id$
- * -------------------------------------------------------------------
- * Intraprozedurale Analyse zur Abschaetzung der Aufrulrelation. Es
- * wird eine Menge von freien Methoden und anschliessend die an den
+/*
+ * Project:     libFIRM
+ * File name:   ir/ana/cgana.h
+ * Purpose:     Intraprozedural analyses to estimate the call graph.
+ * Author:      Hubert Schmid
+ * Modified by:
+ * Created:     09.06.2002
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1999-2003 Universit‰t Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
+
+/**
+ * Intraprozedurale Analyse zur Absch‰tzung der Aufrulrelation. Es
+ * wird eine Menge von freien Methoden und anschlieﬂend die an den
  * Call-Operationen aufrufbaren Methoden bestimmt.
  *
- * Erstellt: Hubert Schmid, 09.06.2002
- * ---------------------------------------------------------------- */
-
+ */
 
 #ifndef _CGANA_H_
 #define _CGANA_H_
 
-
 #include "entity.h"
-
 
 /* Methoden sind "frei", wenn ihr Funktionszeiger (potentiell)
  *"explizit" bekannt ist, d.h.:
@@ -29,8 +35,6 @@
  * Die main-Methode ist immer in der Menge enthalten.
  *
  * Die Links an den "ir_node"s werden geloescht. */
-
-
 
 /** Analyses a rough estimation of the possible call graph.
  *

@@ -1,8 +1,14 @@
-/* Debug --- run time debug level management
-   Copyright (C) 1995, 1996 Christian von Roques
-   All rights reserved. */
-
-/* $Id$ */
+/*
+ * Project:     libFIRM
+ * File name:   ir/adt/debug.c
+ * Purpose:     Debug --- run time debug level management
+ * Author:      Christian von Roques
+ * Modified by:
+ * Created:     1999 by getting from fiasco
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1995, 1996 Markus Armbruster
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>

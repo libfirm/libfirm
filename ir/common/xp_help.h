@@ -1,7 +1,15 @@
-/* Macros to help writing output handlers.
-   Copyright (C) 1996 Markus Armbruster */
+/*
+ * Project:     libFIRM
+ * File name:   ir/common/xp_help.h
+ * Purpose:     Macros to help writing output handlers.
+ * Author:      Markus Armbruster
+ * Modified by:
+ * Created:     1999 by getting from fiasco
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1996 Markus Armbruster
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
-/* $Id$ */
 
 #ifndef _XP_HELP_H
 #define _XP_HELP_H

@@ -1,6 +1,14 @@
-/* Copyright (C) 2002 by Universitaet Karlsruhe
-* All rights reserved.
-*/
+/*
+ * Project:     libFIRM
+ * File name:   ir/ana/irloop_t.h
+ * Purpose:     Loop datastructure and access functions.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:     7.2002
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2002-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 /**
 * @file irloop.h
@@ -12,8 +20,6 @@
 *  Only Block and Phi/Filter nodes can have incoming backedges.
 *  Constructs loops data structure: indicates loop nesting.
 */
-
-/* $Id$ */
 
 # ifndef _IRLOOP_H_
 # define _IRLOOP_H_

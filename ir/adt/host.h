@@ -1,8 +1,14 @@
-/* Declarations describing the host machine and C compiler.
-   Copyright (C) 1995, 1996 Markus Armbruster
-   All rights reserved.*/
-
-/* $Id$ */
+/*
+ * Project:     libFIRM
+ * File name:   ir/adt/host.h
+ * Purpose:     Declarations describing the host machine and C compiler.
+ * Author:      Markus Armbruster
+ * Modified by:
+ * Created:     1999 by getting from fiasco
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1995, 1996 Markus Armbruster
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 #ifndef _HOST_H
 #define _HOST_H

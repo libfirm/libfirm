@@ -1,7 +1,15 @@
-/* Xfprintf --- extended formatted output to files.
-   Copyright (C) 1995, 1996 Christian von Roques */
+/*
+ * Project:     libFIRM
+ * File name:   ir/common/xfprintf.c
+ * Purpose:     Xfprintf --- extended formatted output to files.
+ * Author:      Christian von Roques
+ * Modified by:
+ * Created:     1999 by getting from fiasco
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1995, 1996 Christian von Roques
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
-/* $Id$ */
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
