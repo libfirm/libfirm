@@ -32,6 +32,7 @@
 # include "firm_common_t.h"
 # include "irdom_t.h" /* For size of struct dom_info. */
 # include "dbginfo.h"
+# include "irloop.h"
 
 # include "exc.h"
 
@@ -209,6 +210,9 @@ struct ir_node {
   int node_nr;             /**< a unique node number for each node to make output
 			      readable. */
 #endif
+  /* ------- For analyses -------- */
+  ir_loop *loop;           /**< the loop the node is in. Access routines in irloop.h */
+  /* ------- Opcode depending fields -------- */
   attr attr;               /**< attribute of this node. Depends on opcode.
                               Must be last field of struct ir_node. */
 };

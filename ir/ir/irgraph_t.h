@@ -63,6 +63,7 @@ struct ir_graph {
   irg_typeinfo_state typeinfo_state; /**< Validity of type information */
   irg_callee_info_state callee_info_state; /**< Validity of callee information */
   irg_inline_property inline_property;     /**< How to handle inlineing. */
+  irg_loopinfo_state loopinfo_state; /**< state of loop information */
 
   /* -- Fields for construction -- */
 #if USE_EXPLICIT_PHI_IN_STACK

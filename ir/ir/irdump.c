@@ -43,7 +43,7 @@
 # include "eset.h"
 
 /* #undef HEAPANAL  */
-# undef HEAPANAL
+#undef HEAPANAL
 #ifdef HEAPANAL
 void dump_chi_term(FILE *FL, ir_node *n);
 void dump_state(FILE *FL, ir_node *n);
@@ -610,6 +610,15 @@ static INLINE int dump_node_info(ir_node *n)
       if (is_backedge(n, i)) { fprintf(F, "%c %d", comma, i); comma = ','; }
   }
   fprintf(F, "\n");
+
+  /* Loop node   Someone else please tell me what's wrong ...
+  if (get_irn_loop(n)) {
+    ir_loop *loop = get_irn_loop(n);
+    assert(loop);
+    fprintf(F, " in loop %d with depth %d\n",
+	    get_loop_loop_nr(loop), get_loop_depth(loop));
+  }
+  */
 
   /* Source types */
   switch (get_irn_opcode(n)) {
@@ -1964,7 +1973,7 @@ void dump_all_ir_graphs (dump_graph_func *dmp_grph) {
 
 
 void dump_loops_standalone (ir_loop *loop) {
-  int i, loop_node_started = 0, son_number = 0, first = 0;
+  int i = 0, loop_node_started = 0, son_number = 0, first = 0;
   loop_element le;
   ir_loop *son = NULL;
 

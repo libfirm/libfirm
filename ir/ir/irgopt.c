@@ -434,7 +434,7 @@ dead_node_elimination(ir_graph *irg) {
   free_outs(current_ir_graph);
 
   /* @@@ so far we loose loops when copying */
-  set_irg_loop(current_ir_graph, NULL);
+  free_loop_information(current_ir_graph);
 
   if (get_opt_optimize() && get_opt_dead_node_elimination()) {
 
@@ -1496,7 +1496,10 @@ void place_code(ir_graph *irg) {
   if (get_irg_dom_state(irg) != dom_consistent)
     compute_doms(irg);
 
-  construct_backedges(irg);
+  if (get_irg_loopinfo_state(irg) != loopinfo_consistent) {
+    free_loop_information(irg);
+    construct_backedges(irg);
+  }
 
   /* Place all floating nodes as early as possible. This guarantees
      a legal code placement. */
@@ -1510,6 +1513,7 @@ void place_code(ir_graph *irg) {
   place_late(worklist);
 
   set_irg_outs_inconsistent(current_ir_graph);
+  set_irg_loopinfo_inconsistent(current_ir_graph);
   del_pdeq(worklist);
   current_ir_graph = rem;
 }

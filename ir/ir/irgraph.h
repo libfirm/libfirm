@@ -244,13 +244,15 @@ void set_irg_dom_inconsistent(ir_graph *irg);
 /* state: loopinfo_state
    Loop information describes the loops within the control and
    data flow of the procedure.  */
-/* @@@ make unrecognizable for jni script!!! -- Why??? */
 typedef enum {
-  no_loopinfo,
-  loopinfo_consistent,
-  loopinfo_inconsistent
+  loopinfo_none,            /**< No loop information is constructed. Default. */
+  loopinfo_consistent,      /**< IntRAprocedural loop information constructed and valid. */
+  loopinfo_inconsistent,    /**< IntRAprocedural loop information constructed and invalid. */
+  loopinfo_ip_consistent,   /**< IntERprocedural loop information constructed and valid. */
+  loopinfo_ip_inconsistent  /**< IntERprocedural loop information constructed and invalid. */
 } irg_loopinfo_state;
 irg_loopinfo_state get_irg_loopinfo_state(ir_graph *irg);
+void set_irg_loopinfo_state(ir_graph *irg, irg_loopinfo_state s);
 void set_irg_loopinfo_inconsistent(ir_graph *irg);
 
 

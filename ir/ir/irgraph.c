@@ -112,6 +112,7 @@ new_ir_graph (entity *ent, int n_loc)
   res->outs_state = no_outs;
   res->dom_state = no_dom;
   res->typeinfo_state = irg_typeinfo_none;
+  res->loopinfo_state = loopinfo_none;
 
   /** Type information for the procedure of the graph **/
   res->ent = ent;
@@ -520,13 +521,19 @@ set_irg_dom_inconsistent(ir_graph *irg) {
 
 irg_loopinfo_state
 get_irg_loopinfo_state(ir_graph *irg) {
-  assert(0 && "not implemented");
-  return 999;
+  return irg->loopinfo_state;
+}
+
+void set_irg_loopinfo_state(ir_graph *irg, irg_loopinfo_state s) {
+  irg->loopinfo_state = s;
 }
 
 void
 set_irg_loopinfo_inconsistent(ir_graph *irg) {
-  assert(0 && "not implemented");
+  if (irg->loopinfo_state == loopinfo_ip_consistent)
+    irg->loopinfo_state = loopinfo_ip_inconsistent;
+  else
+    irg->loopinfo_state = loopinfo_inconsistent;
 }
 
 INLINE void
