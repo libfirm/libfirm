@@ -691,7 +691,6 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
   if ( (prop != irg_inline_forced) && (!get_opt_optimize() || !get_opt_inline() ||
                                        (prop == irg_inline_forbidden))) return 0;
 
-
   /*
    * currently, we cannot inline two cases:
    * - call with compound arguments
@@ -1066,6 +1065,8 @@ static ir_graph *get_call_called_irg(ir_node *call) {
     tv = get_Const_tarval(addr);
     if (get_tarval_entity(tv))
       called_irg = get_entity_irg(get_tarval_entity(tv));
+  } else if (get_irn_op(addr) == op_SymConst && get_SymConst_kind(addr) == symconst_addr_ent) {
+    called_irg = get_entity_irg(get_SymConst_entity(addr));
   }
   return called_irg;
 }
@@ -1268,12 +1269,12 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
 /*         get_entity_name(get_irg_entity(callee))); */
           if (inline_method(call, callee)) {
             did_inline = 1;
-        env->n_call_nodes--;
-        eset_insert_all(env->call_nodes, callee_env->call_nodes);
-        env->n_call_nodes += callee_env->n_call_nodes;
-        env->n_nodes += callee_env->n_nodes;
-        callee_env->n_callers--;
-      }
+	    env->n_call_nodes--;
+	    eset_insert_all(env->call_nodes, callee_env->call_nodes);
+	    env->n_call_nodes += callee_env->n_call_nodes;
+	    env->n_nodes += callee_env->n_nodes;
+	    callee_env->n_callers--;
+	  }
         } else {
           eset_insert(env->call_nodes, call);
         }
