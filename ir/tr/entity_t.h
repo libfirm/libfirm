@@ -51,9 +51,9 @@ struct compound_graph_path {
   type *tp;             /**< The type this path belongs to. */
   int len;              /**< length of the path */
   int *arr_indicees;    /**< List of array indicees.  To compute position of
-			     array elements */
+                 array elements */
   entity *nodes[1];     /**< List of entities of length len to express the
-			     access path. */
+                 access path. */
 };
 
 /** the type of an entity */
@@ -77,7 +77,7 @@ struct entity {
   ent_volatility volatility;    /**< Specifies volatility of entities content */
   ent_stickyness stickyness;    /**< Specifies whether this entity is sticky  */
   int  offset;          /**< Offset in bits for this entity.  Fixed when layout
-			   of owner is determined.  */
+               of owner is determined.  */
   void *link;           /**< To store some intermediate information */
   unsigned long visit;  /**< visited counter for walks of the type information */
   struct dbg_info* dbi;    /**< A pointer to information for debug support. */
@@ -90,10 +90,10 @@ struct entity {
   /* ------------- fields for compound entities ---------------*/
 
   ir_node **values;     /**< constant values of compound entities. Only available if
-			   variablility not uninitialized.  Must be set for variability constant
+               variablility not uninitialized.  Must be set for variability constant
                            */
   compound_graph_path **val_paths; /**< paths corresponding to constant values. Only available if
-				      variablility not uninitialized.  Must be set for variability constant */
+                      variablility not uninitialized.  Must be set for variability constant */
 
   /* ------------- fields for entities owned by a class type ---------------*/
 
@@ -104,8 +104,8 @@ struct entity {
 
   enum peculiarity peculiarity;
   ir_graph *irg;        /**< If (type == method_type) this is the corresponding irg.
-			   The ir_graph constructor automatically sets this field.
-			   Yes, it must be here. */
+               The ir_graph constructor automatically sets this field.
+               Yes, it must be here. */
 
   /* ------------- fields for analyses ---------------*/
 
@@ -113,8 +113,9 @@ struct entity {
 
 #ifdef DEBUG_libfirm
   int nr;             /**< a unique node number for each node to make output
-			 readable. */
-#endif
+             readable. */
+  char *c_name;                 /**< Since idents are ipaque, provide the name in cleartext */
+# endif /* DEBUG_libfirm */
 };
 
 /* ----------------------- inline functions ------------------------ */

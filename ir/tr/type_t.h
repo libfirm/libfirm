@@ -40,7 +40,7 @@ typedef struct {
 /** struct attributs */
 typedef struct {
   entity **members;    /**< fields of this struct. No method entities
-			  allowed. */
+              allowed. */
 } stc_attr;
 
 /** method attributes */
@@ -61,7 +61,7 @@ typedef struct {
   /* type  **unioned_type; * a list of unioned types. */
   /* ident **delim_names;  * names of the union delimiters. */
   entity **members;    /**< fields of this union. No method entities
-			  allowed.  */
+              allowed.  */
 
 } uni_attr;
 
@@ -73,7 +73,7 @@ typedef struct {
   int *order;              /**< Ordering of dimensions. */
   type *element_type;  /**< The type of the array elements. */
   entity *element_ent; /**< Entity for the array elements, to be used for
-			  element selection with Sel. */
+              element selection with Sel. */
 } arr_attr;
 
 /** enum attributs */
@@ -102,13 +102,13 @@ typedef struct {        * No private attr, must be smaller than others! *
 
 /** General type attributs. */
 typedef union {
-  cls_attr ca;  	/**< attributes of a class type */
-  stc_attr sa;		/**< attributes of a struct type */
-  mtd_attr ma;		/**< attributes of a method type */
-  uni_attr ua;		/**< attributes of an union type */
-  arr_attr aa;		/**< attributes of an array type */
-  enm_attr ea;		/**< attributes of an enumeration type */
-  ptr_attr pa;		/**< attributes of a pointer type */
+  cls_attr ca;      /**< attributes of a class type */
+  stc_attr sa;      /**< attributes of a struct type */
+  mtd_attr ma;      /**< attributes of a method type */
+  uni_attr ua;      /**< attributes of an union type */
+  arr_attr aa;      /**< attributes of an array type */
+  enm_attr ea;      /**< attributes of an enumeration type */
+  ptr_attr pa;      /**< attributes of a pointer type */
 } tp_attr;
 
 /** the structure of a type */
@@ -117,10 +117,10 @@ struct type {
   tp_op *type_op;
   ident *name;
   type_state state;        /**< Represents the types state: layout undefined or
-			      fixed. */
+                  fixed. */
   int size;                /**< Size of an entity of this type. This is determined
-			      when fixing the layout of this class.  Size must be
-			      given in bits. */
+                  when fixing the layout of this class.  Size must be
+                  given in bits. */
   int align;               /**< Alignment of an entity of this type. This should be
                                 set according to the source language needs. If not set it's
                                 calculated automatically by get_type_alignment().
@@ -132,14 +132,15 @@ struct type {
 
   /* ------------- fields for analyses ---------------*/
   ir_node **allocations;    /**< array of all Alloc nodes with this type
-			      @@@ Should not be in here, hash table! */
+                  @@@ Should not be in here, hash table! */
 
 #ifdef DEBUG_libfirm
   int nr;             /**< a unique node number for each node to make output
-			      readable. */
+                  readable. */
+  char *c_name;                 /**< since idents are opaque, provide the name in cleartext */
 #endif
   tp_attr attr;            /* type kind specific fields. This must be the last
-			      entry in this struct!  Varying size! */
+                  entry in this struct!  Varying size! */
 };
 
 /**
@@ -154,8 +155,8 @@ struct type {
  */
 INLINE type *
 new_type(tp_op *type_op,
-	 ir_mode *mode,
-	 ident* name);
+     ir_mode *mode,
+     ident* name);
 void free_type_attrs       (type *tp);
 
 INLINE void free_class_entities      (type *clss);
@@ -375,7 +376,7 @@ static INLINE int
 __is_atomic_type(const type *tp) {
   assert(tp && tp->kind == k_type);
   return (is_primitive_type(tp) || is_pointer_type(tp) ||
-	  is_enumeration_type(tp));
+      is_enumeration_type(tp));
 }
 
 
