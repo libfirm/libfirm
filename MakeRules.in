@@ -15,7 +15,7 @@ CPPFLAGS := -I. -I$(topdir) -I$(srcdir) -I$(top_srcdir) @CPPFLAGS@
 
 INSTALL = @INSTALL@
 INCLUDEDIR = @prefix@/@includedir@
-LIBDIR = @prefix@/@libdir@
+LIBDIR = @exec_prefix@/@libdir@
 PACKAGE_NAME = @PACKAGE_NAME@
 
 DEFS = @DEFS@

@@ -6,11 +6,8 @@ dnl $Id$
 
 
 dnl Set variable `LD' to the name of the linker program.
-AC_DEFUN(LIBFIRM_PROG_LD,
+AC_DEFUN(LIBFIRM_PROG_LD,[
 dnl AC_REQUIRE([AC_PROG_CC])
-[if test -z "$LD" && test "$GCC" = yes; then
-  AC_CHECK_TOOL(LD, gld, "")
-fi
 if test -z "$LD"; then
   AC_CHECK_TOOL(LD, ld)
 fi
