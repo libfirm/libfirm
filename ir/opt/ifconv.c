@@ -3,6 +3,7 @@
  * Make Mux nodes from Conds where it its possible.
  * @author Sebastian Hack
  * @date 4.2.2005
+ * $Id$
  */
 
 #include <stdlib.h>
@@ -20,13 +21,14 @@
 #include "ifconv.h"
 #include "irflag_t.h"
 
+#include "irprintf.h"
 #include "debug.h"
 #include "obst.h"
 #include "set.h"
 #include "bitset.h"
 #include "bitfiddle.h"
 
-#define MAX_DEPTH 4
+#define MAX_DEPTH 				20
 
 /*
  * Mux optimization routines.
@@ -225,7 +227,7 @@ static ir_node *optimize_mux_chain(ir_node *mux)
  * Default options.
  */
 static opt_if_conv_info_t default_info = {
-	4
+	MAX_DEPTH
 };
 
 /** The debugging module. */
@@ -324,7 +326,7 @@ static int _can_move_to(ir_node *expr, ir_node *dest_block, int depth, int max_d
 	}
 
 end:
-	DBG((dbg, LEVEL_5, "\t\t\t%Dcan move to %n: %d\n", depth, expr, res));
+	DBG((dbg, LEVEL_3, "\t\t\t%Dcan move to %n: %d\n", depth, expr, res));
 
 	return res;
 }
@@ -365,7 +367,7 @@ static void move_to(ir_node *expr, ir_node *dest_block)
 	set_nodes_block(expr, dest_block);
 }
 
-static ir_node *common_idom(ir_node *b1, ir_node *b2)
+static INLINE ir_node *common_idom(ir_node *b1, ir_node *b2)
 {
 	if(block_dominates(b1, b2))
 		return b1;
@@ -379,15 +381,16 @@ static ir_node *common_idom(ir_node *b1, ir_node *b2)
 	}
 }
 
+
 /**
  * Information about a cond node.
  */
 typedef struct _cond_t {
 	ir_node *cond;					/**< The cond node. */
-	ir_node *mux;						/**< The mux node, that will be generated for this cond. */
 	struct list_head list;	/**< List head which is used for queueing this cond
 														into the cond bunch it belongs to. */
 	unsigned in_list : 1;
+	unsigned is_new : 1;
 	struct _cond_t *link;
 	long visited_nr;
 
@@ -401,9 +404,9 @@ typedef struct _cond_t {
 													reached. It is -1, if this branch is
 													only reached through another cond. */
 
-		ir_node *masked_by;	/**< If this cond's branch is only reached
-													through another cond, we store this
-													cond ir_node here. */
+		struct _cond_t *masked_by;	/**< If this cond's branch is only reached
+																	through another cond, we store this
+																	cond ir_node here. */
 	} cases[2];
 } cond_t;
 
@@ -419,7 +422,7 @@ static INLINE cond_t *get_cond(ir_node *irn, set *cond_set)
 typedef void (cond_walker_t)(cond_t *cond, void *env);
 
 static void _walk_conds(cond_t *cond, cond_walker_t *pre, cond_walker_t *post,
-		long visited_nr, set *cond_set, void *env)
+			long visited_nr, void *env)
 {
 	int i;
 
@@ -432,22 +435,20 @@ static void _walk_conds(cond_t *cond, cond_walker_t *pre, cond_walker_t *post,
 		pre(cond, env);
 
 	for(i = 0; i < 2; ++i) {
-		cond_t *c = get_cond(cond->cases[i].masked_by, cond_set);
+		cond_t *c = cond->cases[i].masked_by;
 
 		if(c)
-			_walk_conds(c, pre, post, visited_nr, cond_set, env);
+			_walk_conds(c, pre, post, visited_nr, env);
 	}
 
 	if(post)
 		post(cond, env);
 }
 
-static void walk_conds(cond_t *cond, cond_walker_t *pre, cond_walker_t *post,
-		set *cond_set, void *env)
+static void walk_conds(cond_t *cond, cond_walker_t *pre, cond_walker_t *post, void *env)
 {
 	static long visited_nr = 0;
-
-	_walk_conds(cond, pre, post, ++visited_nr, cond_set, env);
+	_walk_conds(cond, pre, post, ++visited_nr, env);
 }
 
 static void link_conds(cond_t *cond, void *env)
@@ -492,15 +493,20 @@ typedef struct _cond_info_t {
 /**
  * @see find_conds.
  */
-static void _find_conds(ir_node *irn, ir_node *base_block, long visited_nr,
-		ir_node *dominator, ir_node *masked_by, int pos, int depth, cond_info_t *ci)
+static void _find_conds(ir_node *irn, long visited_nr,
+		ir_node *dominator, cond_t *masked_by, int pos, int depth, cond_info_t *ci)
 {
 	ir_node *block;
+	int is_modeb_cond = 0;
 
 	block = get_nodes_block(irn);
 
-	if(block_dominates(dominator, block)) {
-		ir_node *cond = NULL;
+	/*
+	 * Only check this block if it is dominated by the specified
+	 * dominator or it has not been visited yet.
+	 */
+	if(block_dominates(dominator, block) && get_Block_block_visited(block) < visited_nr) {
+		cond_t *res = NULL;
 		int i, n;
 
 		/* check, if we're on a ProjX
@@ -512,36 +518,36 @@ static void _find_conds(ir_node *irn, ir_node *base_block, long visited_nr,
 		if(is_Proj(irn) && get_irn_mode(irn) == mode_X) {
 
 			int proj = get_Proj_proj(irn);
-			cond = get_Proj_pred(irn);
+			ir_node *cond = get_Proj_pred(irn);
+
+			/* true, if the mode is a mode_b cond _NO_ switch cond */
+			is_modeb_cond = get_irn_opcode(cond) == iro_Cond
+				&& get_irn_mode(get_Cond_selector(cond)) == mode_b;
 
 			/* Check, if the pred of the proj is a Cond
 			 * with a Projb as selector.
 			 */
-			if(get_irn_opcode(cond) == iro_Cond
-					&& get_irn_mode(get_Cond_selector(cond)) == mode_b) {
-
-				cond_t *res, c;
+			if(is_modeb_cond) {
+				cond_t c;
 
 				memset(&c, 0, sizeof(c));
 				c.cond = cond;
-				INIT_LIST_HEAD(&c.list);
+				c.is_new = 1;
 				c.cases[0].pos = -1;
 				c.cases[1].pos = -1;
 
 				/* get or insert the cond info into the set. */
 				res = set_insert(ci->cond_set, &c, sizeof(c), HASH_PTR(cond));
 
+				if(res->is_new) {
+					res->is_new = 0;
+					INIT_LIST_HEAD(&res->list);
+				}
+
 				if(!res->in_list) {
 					res->in_list = 1;
 					list_add(&res->list, &ci->roots);
 				}
-
-				/*
-				 * Link it to the cond ir_node. We need that later, since
-				 * one cond masks the other we want to retreive the cond_t
-				 * data from the masking cond ir_node.
-				 */
-				set_irn_link(cond, res);
 
 				/*
 				 * Set masked by (either NULL or another cond node.
@@ -552,6 +558,7 @@ static void _find_conds(ir_node *irn, ir_node *base_block, long visited_nr,
 				 * to this branch, so we choose -1.
 				 */
 				res->cases[proj].masked_by = masked_by;
+
 				if(!masked_by)
 					res->cases[proj].pos = pos;
 
@@ -559,31 +566,15 @@ static void _find_conds(ir_node *irn, ir_node *base_block, long visited_nr,
 				 * Since the masked_by nodes masks a cond, remove it from the
 				 * root list of the conf trees.
 				 */
-				else {
-					cond_t *m = get_cond(masked_by, ci->cond_set);
-					struct list_head *list = &m->list;
-
-					/*
-					 * If this cond was not removed before,
-					 * remove it now from the list.
-					 */
-					if(!list_empty(list))
-						list_del_init(list);
+				else if(!list_empty(&masked_by->list)) {
+					list_del_init(&masked_by->list);
 				}
 
-				DBG((dbg, LEVEL_5, "%{firm:indent}found cond %n (%s branch) "
+				DBG((dbg, LEVEL_2, "%{firm:indent}found cond %n (%s branch) "
 							"for pos %d in block %n reached by %n\n",
-							depth, cond, get_Proj_proj(irn) ? "true" : "false", pos, block, masked_by));
+							depth, cond, get_Proj_proj(irn) ? "true" : "false", pos,
+							block, masked_by ? masked_by->cond : NULL));
 			}
-
-			/*
-			 * We set cond to NULL if the cond was an switch cond, since it is
-			 * passed (as the masked_by argument) to recursive calls to this
-			 * function. We do not consider switch conds as masking conds for
-			 * other conds.
-			 */
-			else
-				cond = NULL;
 		}
 
 		if(get_Block_block_visited(block) < visited_nr) {
@@ -600,7 +591,7 @@ static void _find_conds(ir_node *irn, ir_node *base_block, long visited_nr,
 				 * as given by the caller. We also increase the depth for the
 				 * recursively called functions.
 				 */
-				_find_conds(pred, base_block, visited_nr, dominator, cond, pos, depth + 1, ci);
+				_find_conds(pred, visited_nr, dominator, res, pos, depth + 1, ci);
 			}
 		}
 	}
@@ -620,23 +611,17 @@ static INLINE void find_conds(ir_node *irn, cond_info_t *ci)
 	int i, n;
 	long visited_nr;
 	ir_node *block = get_nodes_block(irn);
+	ir_node *dom = get_Block_idom(block);
 
-	inc_irg_block_visited(current_ir_graph);
-	visited_nr = get_irg_block_visited(current_ir_graph);
 
 	for(i = 0, n = get_irn_arity(block); i < n; ++i) {
 		ir_node *pred = get_irn_n(block, i);
-		ir_node *pred_block = get_nodes_block(pred);
-		ir_node *dom = get_Block_idom(pred_block);
 
-		/*
-		 * If the pred_block is the start block, its idom is NULL
-		 * so we treat the block itself as its immediate dominator.
-		 */
-		if(dom == NULL)
-			dom = pred_block;
-
-		_find_conds(pred, pred_block, visited_nr, dom, NULL, i, 0, ci);
+		inc_irg_block_visited(current_ir_graph);
+		visited_nr = get_irg_block_visited(current_ir_graph);
+		set_Block_block_visited(block, visited_nr);
+		DBG((dbg, LEVEL_2, "find conds at pred %d (%n) and idom %n\n", i, pred, dom));
+		_find_conds(pred, visited_nr, dom, NULL, i, 0, ci);
 	}
 }
 
@@ -648,40 +633,40 @@ static INLINE void find_conds(ir_node *irn, cond_info_t *ci)
  * @param cond The cond information.
  * @return The mux node made for this cond.
  */
-static ir_node *make_mux_on_demand(ir_node *phi, ir_node *dom, cond_t *cond, set *cond_set)
+static ir_node *make_mux_on_demand(ir_node *phi, ir_node *dom, cond_t *cond,
+		int max_depth, ir_node **mux, bitset_t *positions)
 {
 	int i;
 	ir_node *projb = get_Cond_selector(cond->cond);
+	ir_node *bl = get_nodes_block(cond->cond);
 	ir_node *operands[2];
+	int set[2];
 
-	operands[0] = NULL;
-	operands[1] = NULL;
-	cond->mux = NULL;
-
+	DBG((dbg, LEVEL_2, "%n\n", cond->cond));
 	for(i = 0; i < 2; ++i) {
+		cond_t *masked_by = cond->cases[i].masked_by;
+		int pos = cond->cases[i].pos;
+
+		operands[i] = NULL;
+		set[i] = -1;
 
 		/*
 		 * If this cond branch is masked by another cond, make the mux
 		 * for that cond first, since the mux for this cond takes
 		 * it as an operand.
 		 */
-		if(cond->cases[i].masked_by) {
-			cond_t templ;
-			cond_t *masking_cond;
-
-			templ.cond = cond->cases[i].masked_by;
-			masking_cond = set_find(cond_set, &templ, sizeof(templ), HASH_PTR(templ.cond));
-
-			operands[i] = make_mux_on_demand(phi, dom, masking_cond, cond_set);
+		if(masked_by) {
+			assert(pos < 0);
+			operands[i] = make_mux_on_demand(phi, dom, masked_by, max_depth, mux, positions);
 		}
 
 		/*
 		 * If this cond branch is not masked by another cond, take
 		 * the corresponding phi operand as an operand to the mux.
 		 */
-		else {
-			if(cond->cases[i].pos >= 0)
-				operands[i] = get_irn_n(phi, cond->cases[i].pos);
+		else if(pos >= 0) {
+			operands[i] = get_irn_n(phi, pos);
+			set[i] = pos;
 		}
 	}
 
@@ -691,17 +676,26 @@ static ir_node *make_mux_on_demand(ir_node *phi, ir_node *dom, cond_t *cond, set
 	 * out of them, since one of their branches cannot be reached from
 	 * the phi block. In that case we do not make a mux and return NULL.
 	 */
-	if(operands[0] && operands[1]) {
-		move_to(operands[0], dom);
-		move_to(operands[1], dom);
-		move_to(projb, dom);
+	if(operands[0] && operands[1]
+			&& can_move_to(operands[0], bl, max_depth)
+			&& can_move_to(operands[1], bl, max_depth)) {
+
+		move_to(operands[0], bl);
+		move_to(operands[1], bl);
 
 		/* Make the mux. */
-		cond->mux = new_r_Mux(current_ir_graph, dom, projb,
+		*mux = new_r_Mux(current_ir_graph, bl, projb,
 				operands[0], operands[1], get_irn_mode(operands[0]));
+
+		DBG((dbg, LEVEL_2, "\t%n(%n, %n, %n)[%d, %d]\n",
+					*mux, projb, operands[0], operands[1], set[0], set[1]));
+
+		for(i = 0; i < 2; ++i)
+			if(set[i] >= 0)
+				bitset_set(positions, set[i]);
 	}
 
-	return cond->mux;
+	return *mux;
 }
 
 typedef struct _phi_info_t {
@@ -719,91 +713,53 @@ typedef struct _phi_info_t {
 static void check_out_phi(phi_info_t *phi_info, opt_if_conv_info_t *info)
 {
 	int max_depth = info->max_depth;
-	int i, n;
 	ir_node *irn = phi_info->irn;
 	ir_node *block, *nw;
 	cond_info_t *cond_info = phi_info->cond_info;
 	cond_t *cond;
-	int arity;
-
-	set *cond_set = cond_info->cond_set;
+	int i, arity;
 	bitset_t *positions;
 
 	block = get_nodes_block(irn);
 	arity = get_irn_arity(irn);
+	positions = bitset_alloca(arity);
 
 	assert(is_Phi(irn));
 	assert(get_irn_arity(irn) == get_irn_arity(block));
 	assert(arity > 0);
 
-	positions = bitset_alloca(arity);
-
-	DBG((dbg, LEVEL_5, "phi candidate: %n\n", irn));
+	DBG((dbg, LEVEL_2, "phi candidate: %n\n", irn));
 
 	list_for_each_entry(cond_t, cond, &cond_info->roots, list) {
-		int cannot_move = 0;
-		ir_node *cidom = get_nodes_block(cond->cond);
-
+		ir_node *cidom = block;
+		ir_node *mux = NULL;
 		cond_t *p, *head = NULL;
+		long pos;
 
-		DBG((dbg, LEVEL_5, "\tcond root: %n\n", cond->cond));
-
-		/* clear the position array. */
 		bitset_clear_all(positions);
 
+		DBG((dbg, LEVEL_2, "\tcond root: %n\n", cond->cond));
 		/*
 		 * Link all conds which are in the subtree of
 		 * the current cond in the list together.
 		 */
-		walk_conds(cond, link_conds, NULL, cond_set, &head);
+		walk_conds(cond, link_conds, NULL, &head);
 
-		for(p = head, n = 0; p; p = p->link)
-			cidom = common_idom(cidom, get_nodes_block(p->cond));
-
-		DBG((dbg, LEVEL_5, "\tcommon idom: %n\n", cidom));
-
-		for(p = head, n = 0; p && !cannot_move; p = p->link) {
-
-			if(!can_move_to(get_Cond_selector(p->cond), cidom, max_depth)) {
-				DBG((dbg, LEVEL_5, "\tcannot move selector of %n\n", p->cond));
-				cannot_move = 1;
-				break;
-			}
-
+		cidom = block;
+		for(p = head; p; p = p->link) {
 			for(i = 0; i < 2; ++i) {
 				int pos = p->cases[i].pos;
-
-				if(pos != -1) {
-					bitset_set(positions, pos);
-
-					if(!can_move_to(get_irn_n(irn, pos), cidom, max_depth)) {
-						cannot_move = 1;
-						DBG((dbg, LEVEL_5, "\tcannot move phi operand %d\n", pos));
-						break;
-					}
-
-					DBG((dbg, LEVEL_5, "\tcan move phi operand %d\n", pos));
-				}
+				if(pos != -1)
+					cidom = common_idom(cidom, get_nodes_block(get_irn_n(block, pos)));
 			}
 		}
 
-		/*
-		 * If all operands and the cond condition can be moved to
-		 * the common immediate dominator, move them there, make a
-		 * mux and associate the corresponding phi operands with
-		 * the mux.
-		 */
-		if(!cannot_move) {
-			ir_node *mux = make_mux_on_demand(irn, cidom, cond, cond_info->cond_set);
+		DBG((dbg, LEVEL_2, "\tcommon idom: %n\n", cidom));
+		make_mux_on_demand(irn, cidom, cond, max_depth, &mux, positions);
 
-			/* If a mux could be made, associate the phi operands with it. */
-			DBG((dbg, LEVEL_5, "\tassociating:\n"));
-			if(mux) {
-				unsigned long elm;
-				bitset_foreach(positions, elm) {
-					DBG((dbg, LEVEL_5, "\t\t%d\n", positions[i]));
-					set_irn_n(irn, (int) elm, mux);
-				}
+		if(mux) {
+			bitset_foreach(positions, pos) {
+				set_irn_n(irn, (int) pos, mux);
 			}
 		}
 	}
@@ -858,7 +814,7 @@ static void annotate_cond_info_post(ir_node *irn, void *data)
 			 */
 			list_add(&cwi->cond_info_head, &ci->list);
 
-			DBG((dbg, LEVEL_5, "searching conds at %n\n", irn));
+			DBG((dbg, LEVEL_2, "searching conds at %n\n", irn));
 
 			/*
 			 * Fill the set with conds we find on the way from
@@ -872,13 +828,14 @@ static void annotate_cond_info_post(ir_node *irn, void *data)
 			 */
 			if(set_count(ci->cond_set) == 0) {
 				del_set(ci->cond_set);
-				ci->cond_set = NULL;
+				list_del(&ci->list);
 				obstack_free(cwi->obst, ci);
+				ci = NULL;
 			}
 		}
 
 		else
-			DBG((dbg, LEVEL_5, "conds already computed for %n\n", irn));
+			DBG((dbg, LEVEL_2, "conds already computed for %n\n", irn));
 
 		set_irn_link(block, ci);
 
@@ -890,6 +847,51 @@ static void annotate_cond_info_post(ir_node *irn, void *data)
 			list_add(&pi->list, &cwi->phi_head);
 		}
 
+	}
+}
+
+static void dump_conds(cond_t *cond, void *env)
+{
+	int i;
+	FILE *f = env;
+
+	ir_fprintf(f, "node:{title:\"n%p\" label:\"%n(%d, %d)\n%n\"}\n",
+			cond, cond->cond, cond->cases[0].pos, cond->cases[1].pos,
+			get_nodes_block(cond->cond));
+
+	for(i = 0; i < 2; ++i)
+		if(cond->cases[i].masked_by)
+			ir_fprintf(f, "edge:{sourcename:\"n%p\" targetname:\"n%p\" label:\"%d\"}\n",
+					cond, cond->cases[i].masked_by, i);
+}
+
+static void vcg_dump_conds(ir_graph *irg, cond_walk_info_t *cwi)
+{
+	char buf[512];
+	FILE *f;
+
+	snprintf(buf, sizeof(buf), "%s-conds.vcg", get_entity_name(get_irg_entity(irg)));
+
+	if((f = fopen(buf, "wt")) != NULL) {
+		cond_info_t *ci;
+		phi_info_t *phi;
+		cond_t *cond;
+
+		ir_fprintf(f, "graph:{\ndisplay_edge_labels:yes\n");
+		list_for_each_entry(cond_info_t, ci, &cwi->cond_info_head, list) {
+			ir_fprintf(f, "node:{title:\"n%p\" label:\"cond info\"}\n", ci);
+			list_for_each_entry(cond_t, cond, &ci->roots, list) {
+				walk_conds(cond, NULL, dump_conds, f);
+				ir_fprintf(f, "edge:{sourcename:\"n%p\" targetname:\"n%p\"}\n", ci, cond);
+			}
+		}
+
+		list_for_each_entry(phi_info_t, phi, &cwi->phi_head, list) {
+			ir_fprintf(f, "node:{title:\"n%p\" label:\"%n\n%n\"}\n",
+					phi->irn, phi->irn, get_nodes_block(phi->irn));
+			ir_fprintf(f, "edge:{sourcename:\"n%p\" targetname:\"n%p\"}\n", phi->irn, phi->cond_info);
+		}
+		fprintf(f, "}\n");
 	}
 }
 
@@ -926,12 +928,14 @@ void opt_if_conv(ir_graph *irg, opt_if_conv_info_t *params)
 
 	/* Init the debug stuff. */
 	dbg = firm_dbg_register("firm.opt.ifconv");
-	firm_dbg_set_mask(dbg, 0);
+#if 0
+	firm_dbg_set_mask(dbg, LEVEL_1 | LEVEL_2 | LEVEL_3);
+#endif
 
 	/* Ensure, that the dominators are computed. */
 	compute_doms(irg);
 
-	DBG((dbg, LEVEL_4, "if conversion for irg %s(%p)\n",
+	DBG((dbg, LEVEL_2, "if conversion for irg %s(%p)\n",
 				get_entity_name(get_irg_entity(irg)), irg));
 
 	/*
@@ -942,6 +946,10 @@ void opt_if_conv(ir_graph *irg, opt_if_conv_info_t *params)
 	 * of 'lower' ones.
 	 */
 	irg_walk_graph(irg, annotate_cond_info_pre, annotate_cond_info_post, &cwi);
+
+#if 0
+	vcg_dump_conds(irg, &cwi);
+#endif
 
 	/* Process each suitable phi found. */
 	list_for_each_entry(phi_info_t, phi_info, &cwi.phi_head, list) {
