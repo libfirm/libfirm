@@ -92,6 +92,8 @@ typedef struct ir_node ir_node;
  */
 typedef struct type type;
 
+void*       get_type_link(type *tp);
+void        set_type_link(type *tp, void *l);
 tp_op*      get_type_tpop(type *tp);
 ident*      get_type_tpop_nameid(type *tp);
 const char* get_type_tpop_name(type *tp);

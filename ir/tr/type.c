@@ -59,6 +59,7 @@ new_type(tp_op *type_op, ir_mode *mode, ident* name) {
   res->state = layout_undefined;
   res->size = -1;
   res->visit = 0;
+  res -> link = NULL;
 
   return res;
 }
@@ -75,6 +76,19 @@ void free_type_attrs(type *tp) {
   case tpo_primitive:   { free_primitive_attrs(tp);   } break;
   default: break;
   }
+}
+
+/* set/get the link field */
+void *get_type_link(type *tp)
+{
+  assert(tp);
+  return(tp -> link);
+}
+
+void set_type_link(type *tp, void *l)
+{
+  assert(tp);
+  tp -> link = l;
 }
 
 tp_op*      get_type_tpop(type *tp) {
@@ -250,6 +264,7 @@ void    remove_class_subtype(type *clss, type *subtype) {
 
 void    add_class_supertype   (type *clss, type *supertype) {
   assert(clss && (clss->type_op == type_class));
+  assert(supertype && (supertype -> type_op == type_class));
   ARR_APP1 (type *, clss->attr.ca.supertypes, supertype);
   ARR_APP1 (type *, supertype->attr.ca.subtypes, clss);
 }

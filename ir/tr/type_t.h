@@ -103,6 +103,7 @@ struct type {
 			      when fixing the layout of this class.  Size must be
 			      given in bytes. */
   unsigned long visit;     /* visited counter for walks of the type information */
+  void *link;              /* holds temporary data - like in irnode_t.h */
   tp_attr attr;            /* type kind specific fields. This must be the last
 			      entry in this struct!  Varying size! */
 };
