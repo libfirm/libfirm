@@ -79,30 +79,30 @@
 
 
 typedef struct element {
-  struct element *chain;	/* for chaining Elements */
+  struct element *chain;	/**< for chaining Elements */
   MANGLEP (entry) entry;
 } Element, *Segment;
 
 
 struct SET {
-  unsigned p;			/* Next bucket to be split	*/
-  unsigned maxp;		/* upper bound on p during expansion	*/
-  unsigned nkey;		/* current # keys	*/
-  unsigned nseg;		/* current # segments	*/
+  unsigned p;			/**< Next bucket to be split	*/
+  unsigned maxp;		/**< upper bound on p during expansion	*/
+  unsigned nkey;		/**< current # keys	*/
+  unsigned nseg;		/**< current # segments	*/
   Segment *dir[DIRECTORY_SIZE];
-  MANGLEP(cmp_fun) cmp;		/* function comparing entries */
+  MANGLEP(cmp_fun) cmp;		/**< function comparing entries */
   unsigned iter_i, iter_j;
-  Element *iter_tail;		/* non-NULL while iterating over elts */
+  Element *iter_tail;		/**< non-NULL while iterating over elts */
 #ifdef PSET
-  Element *free_list;		/* list of free Elements */
+  Element *free_list;		/**< list of free Elements */
 #endif
-  struct obstack obst;		/* obstack for allocation all data */
+  struct obstack obst;		/**< obstack for allocation all data */
 #ifdef STATS
   int naccess, ncollision, ndups;
   int max_chain_len;
 #endif
 #ifdef DEBUG
-  const char *tag;
+  const char *tag;              /**< an optionally tag for distinguishing sets */
 #endif
 };
 
