@@ -181,7 +181,7 @@ static type *find_type_for_node(ir_node *n) {
   /* compute the type */
   case iro_Const:  tp = get_Const_type(n); break;
   case iro_SymConst:
-    tp = unknown_type; break;
+    tp = get_SymConst_value_type(n); break;
   case iro_Sel:
     tp = find_pointer_type_to(get_entity_type(get_Sel_entity(n))); break;
   /* assymetric binops */
@@ -199,7 +199,7 @@ static type *find_type_for_node(ir_node *n) {
     if (n_preds == 0)  {tp = none_type; break; }
 
     /* initialize this Phi */
-    set_irn_type(n, phi_cycle_type);
+    set_irn_typeinfo_type(n, phi_cycle_type);
 
     /* find a first real type */
     for (i = 0; i < n_preds; ++i) {
@@ -233,7 +233,7 @@ static type *find_type_for_node(ir_node *n) {
     if (get_irn_op(a) == op_Sel)
       tp = get_entity_type(get_Sel_entity(a));
     else if (is_pointer_type(compute_irn_type(a))) {
-      tp = get_pointer_points_to_type(get_irn_type(a));
+      tp = get_pointer_points_to_type(get_irn_typeinfo_type(a));
       if (is_array_type(tp)) tp = get_array_element_type(tp);
     } else {
       VERBOSE_UNKNOWN_TYPE(("Load %ld with typeless address. result: unknown type\n", get_irn_node_nr(n)));
@@ -254,16 +254,16 @@ static type *find_type_for_node(ir_node *n) {
   /* catch special cases with fallthrough to binop/unop cases in default. */
   case iro_Sub: {
     if (mode_is_int(get_irn_mode(n))       &&
-    mode_is_reference(get_irn_mode(a)) &&
-    mode_is_reference(get_irn_mode(b))   ) {
+	mode_is_reference(get_irn_mode(a)) &&
+	mode_is_reference(get_irn_mode(b))   ) {
       VERBOSE_UNKNOWN_TYPE(("Sub %ld ptr - ptr = int: unknown type\n", get_irn_node_nr(n)));
       tp =  unknown_type; break;
     }
   } /* fall through to Add. */
   case iro_Add: {
     if (mode_is_reference(get_irn_mode(n)) &&
-    mode_is_reference(get_irn_mode(a)) &&
-    mode_is_int(get_irn_mode(b))         ) {
+	mode_is_reference(get_irn_mode(a)) &&
+	mode_is_int(get_irn_mode(b))         ) {
       tp = tp1; break;
     }
     if (mode_is_reference(get_irn_mode(n)) &&
@@ -292,15 +292,15 @@ static type *find_type_for_node(ir_node *n) {
 
     if (is_binop(n)) {
       if (tp1 == tp2) {
-    tp = tp1;
-    break;
+	tp = tp1;
+	break;
       }
       if((tp1 == phi_cycle_type) || (tp2 == phi_cycle_type)) {
-    tp = phi_cycle_type;
-    break;
+	tp = phi_cycle_type;
+	break;
       }
       VERBOSE_UNKNOWN_TYPE(("Binop %ld with two different types: %s, %s: unknown type \n", get_irn_node_nr(n),
-                get_type_name(tp1), get_type_name(tp2)));
+			    get_type_name(tp1), get_type_name(tp2)));
       tp = unknown_type;
       break;
     }
@@ -316,13 +316,11 @@ static type *find_type_for_node(ir_node *n) {
 
 
 static type* compute_irn_type(ir_node *n) {
-  /* DDMN(n); */
+  type *tp = get_irn_typeinfo_type(n);
 
-  type *tp = get_irn_type(n);
-
-  if ((tp == initial_type)) {
+  if (tp == initial_type) {
     tp = find_type_for_node(n);
-    set_irn_type(n, tp);
+    set_irn_typeinfo_type(n, tp);
   }
 
   /* printf (" found %s ", get_type_name(tp)); DDM; */
@@ -332,10 +330,10 @@ static type* compute_irn_type(ir_node *n) {
 
 static void compute_type(ir_node *n, void *env) {
 
-  type *tp = get_irn_type(n);
+  type *tp = get_irn_typeinfo_type(n);
   if (tp ==  phi_cycle_type) {
     /* printf(" recomputing for phi_cycle_type "); DDMN(n); */
-    set_irn_type(n, initial_type);
+    set_irn_typeinfo_type(n, initial_type);
   }
 
   compute_irn_type(n);
