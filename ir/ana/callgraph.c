@@ -130,7 +130,12 @@ int get_irg_callee_loop_depth(ir_graph *irg, int pos) {
 
 /* --------------------- Compute the callgraph ------------------------ */
 
+/* Hash an address */
+#define HASH_ADDRESS(adr)       (((unsigned)(adr)) >> 3)
 
+/**
+ * Walker called by compute_callgraph()
+ */
 static void ana_Call(ir_node *n, void *env) {
   int i, n_callees;
   ir_graph *irg;
@@ -143,17 +148,17 @@ static void ana_Call(ir_node *n, void *env) {
     entity *callee_e = get_Call_callee(n, i);
     if (callee_e != unknown_entity) {  /* For unknown caller */
       ir_graph *callee = get_entity_irg(callee_e);
-      pset_insert((pset *)callee->callers, irg, (unsigned)irg >> 3);
+      pset_insert((pset *)callee->callers, irg, HASH_ADDRESS(irg));
 
       ana_entry buf = { callee, NULL, 0};
-      ana_entry *found = pset_find((pset *)irg->callees, &buf, (unsigned)callee >> 3);
+      ana_entry *found = pset_find((pset *)irg->callees, &buf, HASH_ADDRESS(callee));
       if (found) {  /* add Call node to list, compute new nesting. */
       } else { /* New node, add Call node and init nesting. */
 	found = (ana_entry *) obstack_alloc (irg->obst, sizeof (ana_entry));
 	found->irg = callee;
 	found->call_list = NULL;
 	found->max_depth = 0;
-	pset_insert((pset *)irg->callees, found, (unsigned)callee >> 3);
+	pset_insert((pset *)irg->callees, found, HASH_ADDRESS(callee));
       }
       int depth = get_loop_depth(get_irn_loop(get_nodes_block(n)));
       found->max_depth = (depth > found->max_depth) ? depth : found->max_depth;
@@ -161,14 +166,14 @@ static void ana_Call(ir_node *n, void *env) {
   }
 }
 
-/* compare two ir graphs */
+/** compare two ir graphs in a ana_entry */
 static int ana_entry_cmp(const void *elt, const void *key) {
-  ana_entry *e1 = (ana_entry *)elt;
-  ana_entry *e2 = (ana_entry *)key;
+  const ana_entry *e1 = elt;
+  const ana_entry *e2 = key;
   return e1->irg != e2->irg;
 }
 
-/* compare two ir graphs */
+/** compare two ir graphs */
 static int graph_cmp(const void *elt, const void *key) {
   return elt != key;
 }
