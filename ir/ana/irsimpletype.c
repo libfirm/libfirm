@@ -71,9 +71,10 @@ static type *find_type_for_Proj(ir_node *n) {
 
   switch(get_irn_opcode(pred)) {
   case iro_Proj: {
+    ir_node *pred_pred;
     /* Deal with Start / Call here: we need to know the Proj Nr. */
     assert(get_irn_mode(pred) == mode_T);
-    ir_node *pred_pred = get_Proj_pred(pred);
+    pred_pred = get_Proj_pred(pred);
     if (get_irn_op(pred_pred) == op_Start)  {
       type *mtp = get_entity_type(get_irg_ent(get_Start_irg(pred_pred)));
       tp = get_method_param_type(mtp, get_Proj_proj(n));
