@@ -16,10 +16,16 @@
 # include "irvrfy.h"
 # include "irgwalk.h"
 
-/* @@@ replace use of array "in" by access functions. */
-ir_node **get_irn_in (ir_node *node);
+#ifdef NDEBUG
+#define ASSERT_AND_RET(expr, string, ret)	if (!(expr)) return (ret)
+#else
+#define ASSERT_AND_RET(expr, string, ret)	do { assert((expr) && string); if (!(expr)) return (ret); } while(0)
+#endif
 
-INLINE static void
+/* @@@ replace use of array "in" by access functions. */
+ir_node **get_irn_in(ir_node *node);
+
+INLINE static int
 vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
   ir_node *pred;
   ir_mode *mode;
@@ -32,105 +38,118 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
 
   switch (get_irn_opcode(pred)) {
   case iro_Start:
-    assert (((proj == 0 && mode == mode_X) ||
-	     (proj == 1 && mode == mode_M) ||
-	     (proj == 2 && mode == mode_P) ||
-	     (proj == 3 && mode == mode_P) ||
-	     (proj == 4 && mode == mode_T))   &&
-	    "wrong Proj from Start"  );
+    ASSERT_AND_RET(
+      ((proj == 0 && mode == mode_X) ||
+       (proj == 1 && mode == mode_M) ||
+       (proj == 2 && mode == mode_P) ||
+       (proj == 3 && mode == mode_P) ||
+       (proj == 4 && mode == mode_T)),
+      "wrong Proj from Start", 0);
     break;
   case iro_Cond:
-    assert ((proj >= 0 && mode == mode_X) &&
-	    "wrong Proj from Cond");
+    ASSERT_AND_RET( (proj >= 0 && mode == mode_X), "wrong Proj from Cond", 0);
     break;
   case iro_Raise:
-    assert (((proj == 0 && mode == mode_X) ||
-	     (proj == 1 && mode == mode_M))   &&
-	    "wrong Proj from Raise" );
+    ASSERT_AND_RET( ((proj == 0 && mode == mode_X) || (proj == 1 && mode == mode_M)),
+	    "wrong Proj from Raise", 0);
     break;
   case iro_InstOf:
-	assert (((proj >= 0 && mode == mode_X) &&
-			 "wrong Proj from InstOf"));
-	break;
+    ASSERT_AND_RET( (proj >= 0 && mode == mode_X), "wrong Proj from InstOf", 0);
+    break;
   case iro_Call:
-    assert (((proj == 0 && mode == mode_M) ||
-	     (proj == 1 && mode == mode_X) ||
-	     (proj == 2 && mode == mode_T) ||
-	     (proj == 3 && mode == mode_M))   &&
-	    "wrong Proj from Call" );
+    ASSERT_AND_RET(
+      ((proj == 0 && mode == mode_M) ||
+       (proj == 1 && mode == mode_X) ||
+       (proj == 2 && mode == mode_T) ||
+       (proj == 3 && mode == mode_M)),
+      "wrong Proj from Call", 0);
     break;
   case iro_Quot:
-    assert (((proj == 0 && mode == mode_M) ||
-	     (proj == 1 && mode == mode_X) ||
-	     (proj == 2 && mode_is_float(mode)))  &&
-	    "wrong Proj from Quot");
+    ASSERT_AND_RET(
+      ((proj == 0 && mode == mode_M) ||
+       (proj == 1 && mode == mode_X) ||
+       (proj == 2 && mode_is_float(mode))),
+      "wrong Proj from Quot", 0);
     break;
   case iro_DivMod:
-    assert (((proj == 0 && mode == mode_M) ||
-	     (proj == 1 && mode == mode_X) ||
-	     (proj == 2 && mode == mode_Is) ||
-	     (proj == 3 && mode == mode_Is))   &&
-	    "wrong Proj from DivMod" );
+    ASSERT_AND_RET(
+      ((proj == 0 && mode == mode_M) ||
+       (proj == 1 && mode == mode_X) ||
+       (proj == 2 && mode == mode_Is) ||
+       (proj == 3 && mode == mode_Is)),
+      "wrong Proj from DivMod", 0);
     break;
   case iro_Div:
   case iro_Mod:
-    assert (((proj == 0 && mode == mode_M) ||
-	     (proj == 1 && mode == mode_X) ||
-	     (proj == 2 && mode == mode_Is))   &&
-	     "wrong Proj from Div or Mod" );
+    ASSERT_AND_RET(
+      ((proj == 0 && mode == mode_M) ||
+       (proj == 1 && mode == mode_X) ||
+       (proj == 2 && mode == mode_Is)),
+      "wrong Proj from Div or Mod", 0);
     break;
   case iro_Cmp:
-    assert ((proj >= 0 && proj <= 15 && mode == mode_b) &&
-	    "wrong Proj from Cmp");
+    ASSERT_AND_RET(
+      (proj >= 0 && proj <= 15 && mode == mode_b),
+      "wrong Proj from Cmp", 0);
     break;
   case iro_Load:
-    assert (((proj == 0 && mode == mode_M) ||
-	     (proj == 1 && mode == mode_X) ||
-	     (proj == 2 && mode_is_data(mode)))  &&
-	    "wrong Proj from Load");
+    ASSERT_AND_RET(
+      ((proj == 0 && mode == mode_M) ||
+       (proj == 1 && mode == mode_X) ||
+       (proj == 2 && mode_is_data(mode))),
+      "wrong Proj from Load", 0);
     break;
   case iro_Store:
-    assert (((proj == 0 && mode == mode_M) ||
-	     (proj == 1 && mode == mode_X))    &&
-	    "wrong Proj from Store");
+    ASSERT_AND_RET(
+      ((proj == 0 && mode == mode_M) ||
+       (proj == 1 && mode == mode_X)),
+      "wrong Proj from Store", 0);
     break;
   case iro_Alloc:
-    assert (((proj == 0 && mode == mode_M) ||
-	     (proj == 1 /* && mode == mode_X*/) ||
-	     (proj == 2 && mode == mode_P))      &&
-	    "wrong Proj from Alloc");
+    ASSERT_AND_RET(
+      ((proj == 0 && mode == mode_M) ||
+       (proj == 1 /* && mode == mode_X*/) ||
+       (proj == 2 && mode == mode_P)),
+      "wrong Proj from Alloc", 0);
     break;
   case iro_Proj: {
     type *mt; /* A method type */
     pred = skip_nop(get_Proj_pred(pred));
-    assert(get_irn_mode(pred) == mode_T);
+    ASSERT_AND_RET((get_irn_mode(pred) == mode_T), "Proj from something not a tuple", 0);
     switch (get_irn_opcode(pred)) {
     case iro_Start: {
-      assert (proj >= 0 && mode_is_data(mode) &&
-	      "wrong Proj from Proj from Start");
+      ASSERT_AND_RET(
+	(proj >= 0 && mode_is_data(mode)),
+	"wrong Proj from Proj from Start", 0);
       mt = get_entity_type(get_irg_ent(irg));
-      assert(proj < get_method_n_params(mt) &&
-	     "More Projs for args than args in type");
+      ASSERT_AND_RET(
+	(proj < get_method_n_params(mt)),
+        "More Projs for args than args in type", 0);
       if ((mode == mode_P) && is_compound_type(get_method_param_type(mt, proj)))
 	/* value argument */ break;
-      assert(mode == get_type_mode(get_method_param_type(mt, proj)) &&
-      "Mode of Proj from Start doesn't match mode of param type.");
+      ASSERT_AND_RET(
+	(mode == get_type_mode(get_method_param_type(mt, proj))),
+        "Mode of Proj from Start doesn't match mode of param type.", 0);
     } break;
     case iro_Call: {
-      assert (proj >= 0 && mode_is_data(mode) &&
-	      "wrong Proj from Proj from Call");
+      ASSERT_AND_RET(
+	(proj >= 0 && mode_is_data(mode)),
+        "wrong Proj from Proj from Call", 0);
       mt = get_Call_type(pred);
-      assert(proj < get_method_n_ress(mt) &&
-	     "More Projs for results than results in type.");
+      ASSERT_AND_RET(
+	(proj < get_method_n_ress(mt)),
+        "More Projs for results than results in type.", 0);
       if ((mode == mode_P) && is_compound_type(get_method_res_type(mt, proj)))
 	/* value result */ break;
-      assert(mode == get_type_mode(get_method_res_type(mt, proj)) &&
-      "Mode of Proj from Call doesn't match mode of result type.");
+      ASSERT_AND_RET(
+	(mode == get_type_mode(get_method_res_type(mt, proj))),
+        "Mode of Proj from Call doesn't match mode of result type.", 0);
     } break;
     case iro_Tuple: ;
       /* We don't test */
       break;
-    default: assert(0);
+    default:
+      ASSERT_AND_RET(0, "Unknown opcode", 0);
     } break;
   }
   case iro_Tuple:
@@ -142,12 +161,15 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
     break;
   case iro_EndExcept:
     break;
-  default: assert(0);
+  default:
+    ASSERT_AND_RET(0, "Unknown opcode", 0);
   }
+
+  /* all went ok */
+  return 1;
 }
 
-void
-irn_vrfy_irg (ir_node *n, ir_graph *irg)
+int irn_vrfy_irg(ir_node *n, ir_graph *irg)
 {
   int i;
   int opcode, opcode1;
@@ -164,7 +186,7 @@ irn_vrfy_irg (ir_node *n, ir_graph *irg)
      * do NOT check placement in interprocedural view, as we don't always know
      * the "right" graph ...
      */
-    assert(node_is_in_irgs_storage(irg, n) && "Node is not stored on proper IR graph!");
+    ASSERT_AND_RET(node_is_in_irgs_storage(irg, n), "Node is not stored on proper IR graph!", 0);
   }
 
   opcode = get_irn_opcode (n);
@@ -175,7 +197,7 @@ irn_vrfy_irg (ir_node *n, ir_graph *irg)
     for (i = 0; i < get_irn_arity(n); i++) {
       opcode1 = get_irn_opcode(get_irn_n(n, i));
       if (opcode1 == iro_Bad || opcode1 == iro_Unknown)
-	return;
+	return 1;
     }
 
   mymode = get_irn_mode (n);
@@ -184,134 +206,135 @@ irn_vrfy_irg (ir_node *n, ir_graph *irg)
   switch (opcode) {
 
   case iro_Start:
-    assert (
+    ASSERT_AND_RET(
 	    /* Start: BB --> X x M x P x data1 x ... x datan */
-	    mymode == mode_T && "Start node"
+	    mymode == mode_T, "Start node", 0
 	   );
     break;
   case iro_Jmp:
-    assert (
+    ASSERT_AND_RET(
 	    /* Jmp: BB --> X */
-	    mymode == mode_X && "Jmp node"
+	    mymode == mode_X, "Jmp node", 0
 	   );
     break;
   case iro_Break:
-    assert (
+    ASSERT_AND_RET(
 	    /* Jmp: BB --> X */
-	    mymode == mode_X && "Jmp node"
+	    mymode == mode_X, "Jmp node", 0
 	   );
     break;
   case iro_Cond:
     op1mode = get_irn_mode(in[1]);
-    assert (
+    ASSERT_AND_RET(
 	    /* Cond: BB x b --> X x X */
 	    (op1mode == mode_b
 	    /* Cond: BB x Iu --> X^n */
-	    || op1mode == mode_Iu) && "Cond node"
+	    || op1mode == mode_Iu), "Cond node", 0
            );
-    assert (mymode == mode_T);
+    ASSERT_AND_RET(mymode == mode_T, "Cond mode is not a tuple", 0);
     break;
   case iro_Return:
     op1mode = get_irn_mode(in[1]);
     /* Return: BB x M x data1 x ... x datan --> X */
     /* printf("mode: %s, code %s\n", ID_TO_STR(n->mode->name), ID_TO_STR(n->op->name));*/
-    assert ( op1mode == mode_M  && "Return node" );  /* operand M */
+    ASSERT_AND_RET( op1mode == mode_M, "Return node", 0 );  /* operand M */
     for (i=2; i < get_irn_arity(n); i++) {
-      assert ( mode_is_data(get_irn_mode(in[i]))  && "Return node");  /* operand datai */
+      ASSERT_AND_RET( mode_is_data(get_irn_mode(in[i])), "Return node", 0 );  /* operand datai */
     };
-    assert ( mymode == mode_X );   /* result X */
+    ASSERT_AND_RET( mymode == mode_X, "Result X", 0 );   /* result X */
     /* Compare returned results with result types of method type */
     mt = get_entity_type(get_irg_ent(irg));
-    assert(get_Return_n_ress(n) == get_method_n_ress(mt) &&
-	     "Number of results for Return doesn't match number of results in type.");
+    ASSERT_AND_RET( get_Return_n_ress(n) == get_method_n_ress(mt),
+      "Number of results for Return doesn't match number of results in type.", 0 );
     for (i = 0; i < get_Return_n_ress(n); i++)
-      assert((get_irn_mode(get_Return_res(n, i))
-	      == get_type_mode(get_method_res_type(mt, i))) &&
-	     "Mode of result for Return doesn't match mode of result type.");
-
+      ASSERT_AND_RET(
+	get_irn_mode(get_Return_res(n, i)) == get_type_mode(get_method_res_type(mt, i)),
+	"Mode of result for Return doesn't match mode of result type.", 0);
     break;
   case iro_Raise:
     op1mode = get_irn_mode(in[1]);
     op2mode = get_irn_mode(in[2]);
-    assert (
+    ASSERT_AND_RET(
 	    /* Sel: BB x M x P --> X x M */
 	    op1mode == mode_M && op2mode == mode_P
-	    && mymode == mode_T && "Raise node"
+	    && mymode == mode_T, "Raise node", 0
 	   );
     break;
   case iro_Const:
-    assert (
+    ASSERT_AND_RET(
 	    /* Const: BB --> data */
 	    (mode_is_data (mymode) ||
 	     mymode == mode_b)      /* we want boolean constants for static evaluation */
-             && "Const node"        /* of Cmp. */
+            ,"Const node", 0        /* of Cmp. */
 	   );
     break;
   case iro_SymConst:
-    assert (
+    ASSERT_AND_RET(
 	    /* SymConst: BB --> Iu or
                          BB --> P */
-	    ((mymode == mode_Iu) || (mymode == mode_P))  && "SymConst node"
+	    ((mymode == mode_Iu) || (mymode == mode_P)), "SymConst node", 0
 	   );
     break;
   case iro_Sel:
     op1mode = get_irn_mode(in[1]);
     op2mode = get_irn_mode(in[2]);
-    assert (
+    ASSERT_AND_RET(
 	    /* Sel: BB x M x P x Iu^n --> P */
 	    op1mode == mode_M && op2mode == mode_P
-            && mymode == mode_P && "Sel node"
+            && mymode == mode_P, "Sel node", 0
 	   );
     for (i=3; i < get_irn_arity(n); i++) {
-	    assert (get_irn_mode(in[i]) == mode_Iu && "Sel node"); }
+      ASSERT_AND_RET(get_irn_mode(in[i]) == mode_Iu, "Sel node", 0);
+    }
     break;
   case iro_InstOf:
-	assert (mode_T == mymode);
-	assert (mode_is_data (op1mode));
+	ASSERT_AND_RET(mode_T == mymode, "mode of Instof is not a tuple", 0);
+	ASSERT_AND_RET(mode_is_data(op1mode), "Instof not on data", 0);
 	break;
   case iro_Call:
     op1mode = get_irn_mode(in[1]);
     op2mode = get_irn_mode(in[2]);
       /* Call: BB x M x P x data1 x ... x datan
                  --> M x datan+1 x ... x data n+m */
-    assert ( op1mode == mode_M && op2mode == mode_P  && "Call node");  /* operand M x P */
+    ASSERT_AND_RET( op1mode == mode_M && op2mode == mode_P, "Call node", 0 );  /* operand M x P */
     for (i=3; i < get_irn_arity(n); i++) {
-      assert ( mode_is_data(get_irn_mode(in[i])) && "Call node");  /* operand datai */
+      ASSERT_AND_RET( mode_is_data(get_irn_mode(in[i])), "Call node", 0 );  /* operand datai */
     };
-    assert ( mymode == mode_T );   /* result T */
+    ASSERT_AND_RET( mymode == mode_T, "Call result not a tuple", 0 );   /* result T */
     /* Compare arguments of node with those of type */
     mt = get_Call_type(n);
 
-    if(get_method_variadicity(mt) == variadic)
-      {
-	assert(get_Call_n_params(n) >= get_method_n_params(mt) &&
-	       "Number of args for Call doesn't match number of args in " \
-	       " variadic type.");
+    if (get_method_variadicity(mt) == variadic) {
+      ASSERT_AND_RET(
+        get_Call_n_params(n) >= get_method_n_params(mt),
+        "Number of args for Call doesn't match number of args in variadic type.",
+	0);
       }
-    else
-      {
-	assert(get_Call_n_params(n) == get_method_n_params(mt) &&
-	       "Number of args for Call doesn't match number of args in " \
-	       "non variadic type.");
+    else {
+      ASSERT_AND_RET(
+	get_Call_n_params(n) == get_method_n_params(mt),
+        "Number of args for Call doesn't match number of args in non variadic type.",
+	0);
       }
 
-    for (i = 0; i < get_method_n_params(mt); i++)
-      assert((get_irn_mode(get_Call_param(n, i))
-	      == get_type_mode(get_method_param_type(mt, i))) &&
-	     "Mode of arg for Call doesn't match mode of arg type.");
+    for (i = 0; i < get_method_n_params(mt); i++) {
+      ASSERT_AND_RET(
+	get_irn_mode(get_Call_param(n, i)) == get_type_mode(get_method_param_type(mt, i)),
+       "Mode of arg for Call doesn't match mode of arg type.", 0);
+    }
     break;
   case iro_Add:
     op1mode = get_irn_mode(in[1]);
     op2mode = get_irn_mode(in[2]);
-    assert (
+    ASSERT_AND_RET(
 	    /* common Add: BB x num x num --> num */
 	    ((mymode == op1mode && mymode == op2mode
 	      && (mode_is_num(mymode) || mymode == mode_P))
 	     ||  /* Pointer Add: BB x P x Is --> P */
 	     (op1mode == mode_P && op2mode == mode_Is && mymode == mode_P)
 	     ||  /* Pointer Add: BB x Is x P --> P */
-	     (op1mode == mode_Is && op2mode == mode_P && mymode == mode_P))
-	    && "Add node"
+	     (op1mode == mode_Is && op2mode == mode_P && mymode == mode_P)),
+	    "Add node", 0
            );
       if (op1mode == mode_P || op2mode == mode_P) {
 	/* BB x P x Is --> P or BB x Is x P --> P */
@@ -324,7 +347,7 @@ irn_vrfy_irg (ir_node *n, ir_graph *irg)
   case iro_Sub:
     op1mode = get_irn_mode(in[1]);
     op2mode = get_irn_mode(in[2]);
-    assert (
+    ASSERT_AND_RET(
 	    /* common Sub: BB x num x num --> num */
 	    ((mymode ==op1mode && mymode == op2mode
 	      && mode_is_num(op1mode))
@@ -333,8 +356,8 @@ irn_vrfy_irg (ir_node *n, ir_graph *irg)
 	     ||  /* Pointer Sub: BB x Is x P --> P */
 	     (op1mode == mode_Is && op2mode == mode_P && mymode == mode_P)
 	     ||  /* Pointer Sub: BB x P x P --> Is */
-	     (op1mode == mode_P && op2mode == mode_P && mymode == mode_Is))
-	    && "Sub node"
+	     (op1mode == mode_P && op2mode == mode_P && mymode == mode_Is)),
+	    "Sub node", 0
            );
       if (op1mode == mode_P && op2mode == mode_P) {
         op_is_symmetric = 1; /* ArmRoq */
@@ -346,19 +369,19 @@ irn_vrfy_irg (ir_node *n, ir_graph *irg)
     break;
   case iro_Minus:
     op1mode = get_irn_mode(in[1]);
-    assert (
+    ASSERT_AND_RET(
 	    /* Minus: BB x float --> float */
-	    op1mode == mymode && mode_is_float (op1mode)  && "Minus node"
+	    op1mode == mymode && mode_is_float(op1mode), "Minus node", 0
 	   );
     op_is_symmetric = 2;
     break;
   case iro_Mul:
     op1mode = get_irn_mode(in[1]);
     op2mode = get_irn_mode(in[2]);
-    assert (
+    ASSERT_AND_RET(
 	    /* Mul: BB x num x num --> num */
-	    mymode == op1mode && mymode == op2mode
-	    && mode_is_num (op1mode) && "Mul node"
+	    mymode == op1mode && mymode == op2mode && mode_is_num(op1mode),
+	    "Mul node", 0
 	   );
     op_is_symmetric = 2;
     break;
@@ -366,10 +389,11 @@ irn_vrfy_irg (ir_node *n, ir_graph *irg)
     op1mode = get_irn_mode(in[1]);
     op2mode = get_irn_mode(in[2]);
     op3mode = get_irn_mode(in[3]);
-    assert (
+    ASSERT_AND_RET(
 	    /* Quot: BB x M x float x float --> M x X x float */
 	    op1mode == mode_M && op2mode == op3mode
-	    && mode_is_float(op2mode) && mymode == mode_T && "Quot node"
+	    && mode_is_float(op2mode) && mymode == mode_T,
+	    "Quot node", 0
 	   );
     op_is_symmetric = 2;
     break;
@@ -377,10 +401,11 @@ irn_vrfy_irg (ir_node *n, ir_graph *irg)
     op1mode = get_irn_mode(in[1]);
     op2mode = get_irn_mode(in[2]);
     op3mode = get_irn_mode(in[3]);
-    assert (
+    ASSERT_AND_RET(
 	    /* DivMod: BB x M x num x num --> M x X x Is x Is */
 	    op1mode == mode_M && op2mode == op3mode
-	    && mode_is_num (op2mode) && mymode == mode_T && "DivMod node"
+	    && mode_is_num (op2mode) && mymode == mode_T,
+	    "DivMod node", 0
            );
     op_is_symmetric = 1;
     break;
@@ -389,18 +414,19 @@ irn_vrfy_irg (ir_node *n, ir_graph *irg)
     op1mode = get_irn_mode(in[1]);
     op2mode = get_irn_mode(in[2]);
     op3mode = get_irn_mode(in[3]);
-    assert (
+    ASSERT_AND_RET(
 	    /* Div or Mod: BB x M x num x num --> M x X x Is */
 	    op1mode == mode_M && op2mode == op3mode &&
-	    mode_is_num (op2mode) && mymode == mode_T && "Div or Mod node"
+	    mode_is_num (op2mode) && mymode == mode_T,
+	    "Div or Mod node", 0
            );
     op_is_symmetric = 1;
     break;
   case iro_Abs:
     op1mode = get_irn_mode(in[1]);
-    assert (
+    ASSERT_AND_RET(
 	    /* Abs: BB x num --> num */
-	    op1mode == mymode && mode_is_num (op1mode) && "Abs node"
+	    op1mode == mymode && mode_is_num (op1mode), "Abs node", 0
 	   );
     op_is_symmetric = 2;
     break;
@@ -409,19 +435,19 @@ irn_vrfy_irg (ir_node *n, ir_graph *irg)
   case iro_Eor:
     op1mode = get_irn_mode(in[1]);
     op2mode = get_irn_mode(in[2]);
-    assert(
+    ASSERT_AND_RET(
 	   /* And or Or or Eor: BB x int x int --> int */
-	   mymode == op1mode && mymode == op2mode
-	   && mode_is_int (mymode) && "And, Or or Eor node"
+	   mymode == op1mode && mymode == op2mode && mode_is_int(mymode),
+           "And, Or or Eor node", 0
 	  );
     op_is_symmetric = 2;
     break;
   case iro_Not:
     op1mode = get_irn_mode(in[1]);
-    assert(
+    ASSERT_AND_RET(
 	   /* Not: BB x int --> int */
-	   mymode == op1mode
-	   && mode_is_int (mymode) && "Not node"
+	   mymode == op1mode && mode_is_int(mymode),
+           "Not node", 0
 	  );
     op_is_symmetric = 2;
     break;
@@ -429,10 +455,10 @@ irn_vrfy_irg (ir_node *n, ir_graph *irg)
   case iro_Cmp:
     op1mode = get_irn_mode(in[1]);
     op2mode = get_irn_mode(in[2]);
-    assert(
+    ASSERT_AND_RET(
 	   /* Cmp: BB x datab x datab --> b16 */
-           op1mode == op2mode && mode_is_data (op1mode)
-           && mymode == mode_T && "Cmp node"
+           op1mode == op2mode && mode_is_data(op1mode) && mymode == mode_T,
+	   "Cmp node", 0
 	  );
     break;
   case iro_Shl:
@@ -441,18 +467,18 @@ irn_vrfy_irg (ir_node *n, ir_graph *irg)
   case iro_Rot:
     op1mode = get_irn_mode(in[1]);
     op2mode = get_irn_mode(in[2]);
-    assert(
+    ASSERT_AND_RET(
 	   /* Shl, Shr, Shrs or Rot: BB x int x Iu --> int */
-	   mode_is_int (op1mode) && op2mode == mode_Iu
-           && op1mode == mymode && "Shl, Shr, Shr or Rot node"
+	   mode_is_int(op1mode) && op2mode == mode_Iu && op1mode == mymode,
+	   "Shl, Shr, Shr or Rot node", 0
 	  );
     break;
   case iro_Conv:
     op1mode = get_irn_mode(in[1]);
-    assert(
+    ASSERT_AND_RET(
            /* Conv: BB x datab1 --> datab2 */
-	   mode_is_datab (op1mode)
-           && mode_is_data (mymode) && "Conv node"
+	   mode_is_datab(op1mode) && mode_is_data(mymode),
+           "Conv node", 0
 	  );
     break;
   case iro_Phi:
@@ -460,87 +486,96 @@ irn_vrfy_irg (ir_node *n, ir_graph *irg)
     /* for some reason "<=" aborts. Is there a problem with get_store? */
     for (i=1; i < get_irn_arity(n); i++) {
       if (!is_Bad(in[i]) && (get_irn_op(in[i]) != op_Unknown))
-	assert ( get_irn_mode(in[i]) == mymode  && "Phi node");
+	ASSERT_AND_RET( get_irn_mode(in[i]) == mymode, "Phi node", 0);
     };
-    assert ( mode_is_dataM(mymode)  && "Phi node");
+    ASSERT_AND_RET( mode_is_dataM(mymode), "Phi node", 0 );
     break;
   case iro_Load:
     op1mode = get_irn_mode(in[1]);
     op2mode = get_irn_mode(in[2]);
-    assert(
+    ASSERT_AND_RET(
            /* Load: BB x M x P --> M x X x data */
-           op1mode == mode_M && op2mode == mode_P  && "Load node"
+           op1mode == mode_M && op2mode == mode_P,
+           "Load node", 0
 	  );
-    assert ( mymode == mode_T  && "Load node");
+    ASSERT_AND_RET( mymode == mode_T, "Load node", 0 );
     break;
   case iro_Store:
     op1mode = get_irn_mode(in[1]);
     op2mode = get_irn_mode(in[2]);
     op3mode = get_irn_mode(in[3]);
-    assert(
+    ASSERT_AND_RET(
            /* Load: BB x M x P x data --> M x X */
-           op1mode == mode_M && op2mode == mode_P
-           && mode_is_data (op3mode) && "Store node"
+           op1mode == mode_M && op2mode == mode_P && mode_is_data(op3mode),
+	   "Store node", 0
 	  );
-    assert(mymode == mode_T && "Store node");
+    ASSERT_AND_RET(mymode == mode_T, "Store node", 0);
     break;
   case iro_Alloc:
     op1mode = get_irn_mode(in[1]);
     op2mode = get_irn_mode(in[2]);
-    assert(
+    ASSERT_AND_RET(
            /* Alloc: BB x M x Iu --> M x X x P */
-           op1mode == mode_M && op2mode == mode_Iu
-           && mymode == mode_T && "Alloc node"
+           op1mode == mode_M && op2mode == mode_Iu && mymode == mode_T,
+	   "Alloc node", 0
 	  );
     break;
   case iro_Free:
     op1mode = get_irn_mode(in[1]);
     op2mode = get_irn_mode(in[2]);
     op3mode = get_irn_mode(in[3]);
-    assert(
+    ASSERT_AND_RET(
            /* Free: BB x M x P x Iu --> M */
-           op1mode == mode_M && op2mode == mode_P && op3mode == mode_Iu
-           && mymode == mode_M && "Free node"
+           op1mode == mode_M && op2mode == mode_P && op3mode == mode_Iu && mymode == mode_M,
+	   "Free node", 0
 	  );
     break;
   case iro_Sync:
            /* Sync: BB x M^n --> M */
     for (i=1; i < get_irn_arity(n); i++) {
-      assert ( get_irn_mode(in[i]) == mode_M  && "Sync node");
+      ASSERT_AND_RET( get_irn_mode(in[i]) == mode_M, "Sync node", 0 );
     };
-    assert ( mymode == mode_M  && "Sync node");
+    ASSERT_AND_RET( mymode == mode_M, "Sync node", 0 );
     break;
   case iro_Proj:
-    vrfy_Proj_proj(n, irg);
+    return vrfy_Proj_proj(n, irg);
     break;
   default: ;
   }
+
+  /* All went ok */
+  return 1;
 }
 
-void
-irn_vrfy (ir_node *n)
+int irn_vrfy(ir_node *n)
 {
-  irn_vrfy_irg(n, current_ir_graph);
+  return irn_vrfy_irg(n, current_ir_graph);
 }
 
 /*******************************************************************/
 /* Verify the whole graph.                                         */
 /*******************************************************************/
 
-static void
-vrfy_wrap (ir_node *node, void *env) {
-  irn_vrfy(node);
+static void vrfy_wrap(ir_node *node, void *env)
+{
+  int *res = env;
+
+  *res = irn_vrfy(node);
 }
 
-void irg_vrfy (ir_graph *irg)
+int irg_vrfy(ir_graph *irg)
 {
+  int res = 1;
   ir_graph *rem;
+
   rem = current_ir_graph;
   current_ir_graph = irg;
 
   assert(get_irg_pinned(irg) == pinned);
 
-  irg_walk(irg->end, vrfy_wrap, NULL, NULL);
+  irg_walk(irg->end, vrfy_wrap, NULL, &res);
 
   current_ir_graph = rem;
+
+  return res;
 }
