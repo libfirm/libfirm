@@ -557,45 +557,42 @@ ir_node *get_fragile_op_mem(ir_node *node);
 /*@{*/
 /** Makros for debugging the libfirm */
 #ifdef __GNUC__
-/*
- * GNU C has the __FUNCTION__ extension
- */
-#define DDMSG        printf("%s(l.%i)\n", __FUNCTION__, __LINE__)
-#define DDMSG1(X)    printf("%s(l.%i) %s\n", __FUNCTION__, __LINE__, id_to_str(get_irn_opident(X)))
-#define DDMSG2(X)    printf("%s(l.%i) %s%s: %ld\n", __FUNCTION__, __LINE__, id_to_str(get_irn_opident(X)), id_to_str(get_irn_modeident(X)), get_irn_node_nr(X))
-#define DDMSG3(X)    printf("%s(l.%i) %s: %p\n", __FUNCTION__, __LINE__, print_firm_kind(X), (X))
-#define DDMSG4(X)    xprintf("%s(l.%i) %I %I: %p\n", __FUNCTION__, __LINE__, get_type_tpop_nameid(X), get_type_ident(X), (X))
-#define DDMSG5(X)    printf("%s%s: %ld", id_to_str(get_irn_opident(X)), id_to_str(get_irn_modeident(X)), get_irn_node_nr(X))
-
-
-#define DDMN(X)      xprintf("%s(l.%i) %I%I: %ld (%p)\n", __FUNCTION__, __LINE__, get_irn_opident(X), get_irn_modeident(X), get_irn_node_nr(X), (X))
-#define DDMNB(X)     xprintf("%I%I: %ld (in block %ld)\n", get_irn_opident(X), get_irn_modeident(X), get_irn_node_nr(X), get_irn_node_nr(get_nodes_Block(X)))
-#define DDMT(X)      xprintf("%s(l.%i) %I %I: %p\n", __FUNCTION__, __LINE__, get_type_tpop_nameid(X), get_type_ident(X), (X))
-#define DDME(X)      xprintf("%s(l.%i) %I: %p\n", __FUNCTION__, __LINE__, get_entity_ident(X), (X))
-#define DDMEO(X)     xprintf("%s(l.%i) %I (own: %I): %p\n", __FUNCTION__, __LINE__, get_entity_ident(X), get_type_ident(get_entity_owner(X)), (X))
-#define DDMG(X)      xprintf("%s(l.%i) %I: %p\n", __FUNCTION__, __LINE__, get_irg_ent(get_entity_ident(X)), (X))
-
+/* GNU C has the  extension */
+#define __MYFUNC__ __FUNCTION__
 #else
-/*
- * use Filename instead
- */
-#define DDMSG        printf("%s(l.%i)\n", __FILE__, __LINE__)
-#define DDMSG1(X)    printf("%s(l.%i) %s\n", __FILE__, __LINE__, id_to_str(get_irn_opident(X)))
-#define DDMSG2(X)    printf("%s(l.%i) %s%s: %ld\n", __FILE__, __LINE__, id_to_str(get_irn_opident(X)), id_to_str(get_irn_modeident(X)), get_irn_node_nr(X))
-#define DDMSG3(X)    printf("%s(l.%i) %s: %p\n", __FILE__, __LINE__, print_firm_kind(X), (X))
-#define DDMSG4(X)    xprintf("%s(l.%i) %I %I: %p\n", __FILE__, __LINE__, get_type_tpop_nameid(X), get_type_ident(X), (X))
-#define DDMSG5(X)    printf("%s%s: %ld", id_to_str(get_irn_opident(X)), id_to_str(get_irn_modeident(X)), get_irn_node_nr(X))
+/* use Filename instead */
+#define __MYFUNC__ __FILE__
+#endif
 
+/** Output the firm kind of the node */
+#define DDMK(X)  printf("%s(l.%i) %s: %p\n",                 __MYFUNC__, __LINE__,  \
+                        print_firm_kind(X), (X));
+/** Output information about a node */
+#define DDMN(X)  printf("%s(l.%i) %s%s: %ld (%p)\n",         __MYFUNC__, __LINE__,  \
+                        get_irn_opname(X), get_mode_name(get_irn_mode(X)), get_irn_node_nr(X), (X))
+/** Output information about a node and its block */
+#define DDMNB(X) printf("%s%s: %ld (in block %ld)\n", get_irn_opname(X),  \
+                        get_mode_name(get_irn_mode(X)), get_irn_node_nr(X), \
+			get_irn_node_nr(get_nodes_Block(X)))
+/** Output information about a type */
+#define DDMT(X)  printf("%s(l.%i) %s %s: %ld (%p)\n",        __MYFUNC__, __LINE__, \
+			get_type_tpop_name(X), get_type_name(X), get_type_nr(X), (X))
+/** Output information about an entity */
+#define DDME(X)  printf("%s(l.%i) %s: %ld (%p\n",            __MYFUNC__, __LINE__, \
+			get_entity_name(X), get_entity_nr(X), (X))
+/** Output information about an entity and its owner */
+#define DDMEO(X) printf("%s(l.%i) %s (own: %s): %ld (%p)\n", __MYFUNC__, __LINE__, \
+			get_entity_name(X), get_type_name(get_entity_owner(X)), get_entity_nr(X), (X))
+/** Output information about a graph */
+#define DDMG(X)  printf("%s(l.%i) %s: %ld (%p)\n",           __MYFUNC__, __LINE__, \
+			get_entity_name(get_irg_ent(X)), get_irg_graph_nr(X), (X))
+/** Output information about an ident */
+#define DDMI(X)  printf("%s(l.%i) %s: %p\n",                 __MYFUNC__, __LINE__, \
+			id_to_str(X), (X))
+/** Output information about a mode */
+#define DDMM(X)  printf("%s(l.%i) %s: %p\n",                 __MYFUNC__, __LINE__, \
+			get_mode_name(X), (X))
 
-#define DDMN(X)      xprintf("%s(l.%i) %I%I: %ld (%p)\n", __FILE__, __LINE__, get_irn_opident(X), get_irn_modeident(X), get_irn_node_nr(X), (X))
-#define DDMNB(X)     xprintf("%I%I: %ld (in block %ld)\n", get_irn_opident(X), get_irn_modeident(X), get_irn_node_nr(X), get_irn_node_nr(get_nodes_Block(X)))
-#define DDMT(X)      xprintf("%s(l.%i) %I %I: %p\n", __FILE__, __LINE__, get_type_tpop_nameid(X), get_type_ident(X), (X))
-#define DDME(X)      xprintf("%s(l.%i) %I: %p\n", __FILE__, __LINE__, get_entity_ident(X), (X))
-#define DDMG(X)      xprintf("%s(l.%i) %I: %p\n", __FILE__, __LINE__, get_irg_ent(get_entity_ident(X)), (X))
-#define DDMI(X)      xprintf("%s(l.%i) %I: %p\n", __FILE__, __LINE__, (X), (X))
-#define DDMM(X)      xprintf("%s(l.%i) %I: %p\n", __FILE__, __LINE__, get_mode_ident(X), (X))
-
-#endif /* __GNUC__ */
 /*@}*/  /* Macros for debug.. */
 
 /*@}*/ /* end of ir_node group definition */

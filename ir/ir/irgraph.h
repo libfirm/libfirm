@@ -147,6 +147,8 @@ void     set_irg_unknown (ir_graph *irg, ir_node *node);
 
 int      get_irg_n_locs (ir_graph *irg);
 
+INLINE long get_irg_graph_nr(ir_graph *irg);
+
 /********************************************************************************/
 /* States of an ir_graph.                                                       */
 /********************************************************************************/

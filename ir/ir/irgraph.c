@@ -23,7 +23,7 @@
 # include "mangle.h"
 
 ir_graph *current_ir_graph;
-INLINE ir_graph *get_current_ir_graph() {
+INLINE ir_graph *get_current_ir_graph(void) {
   return current_ir_graph;
 }
 INLINE void set_current_ir_graph(ir_graph *graph) {
@@ -32,11 +32,16 @@ INLINE void set_current_ir_graph(ir_graph *graph) {
 
 
 bool interprocedural_view = false;
-INLINE bool get_interprocedural_view() {
+INLINE bool get_interprocedural_view(void) {
   return interprocedural_view;
 }
 INLINE void set_interprocedural_view(bool state) {
   interprocedural_view = state;
+}
+
+static ident* frame_type_suffix = NULL;
+void init_irgraph(void) {
+  frame_type_suffix = id_from_str(FRAME_TP_SUFFIX, strlen(FRAME_TP_SUFFIX));
 }
 
 #if USE_EXPLICIT_PHI_IN_STACK
@@ -106,8 +111,7 @@ new_ir_graph (entity *ent, int n_loc)
 
 /**
       contain "inner" methods as in Pascal. **/
-  res->frame_type = new_type_class(mangle(get_entity_ident(ent),
-	  id_from_str(FRAME_TP_SUFFIX, strlen(FRAME_TP_SUFFIX))));
+  res->frame_type = new_type_class(mangle(get_entity_ident(ent), frame_type_suffix));
   /* Remove type from type list.  Must be treated differently than other types. */
   remove_irp_type_from_list(res->frame_type);
 

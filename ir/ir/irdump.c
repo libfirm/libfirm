@@ -12,28 +12,32 @@
 # include <config.h>
 #endif
 
+# include <string.h>
+# include <stdlib.h>
+
 # include "irnode_t.h"
 # include "irgraph_t.h"
-# include "irprog.h"
-# include "irdump.h"
-# include "panic.h"
-# include <string.h>
 # include "entity_t.h"
-# include <stdlib.h>
-# include "array.h"
 # include "irop_t.h"
-# include "tv.h"
-# include "type_or_entity.h"
+# include "firm_common_t.h"
+
+# include "irdump.h"
+
 # include "irgwalk.h"
 # include "typewalk.h"
+# include "irprog.h"
+# include "tv.h"
+# include "type_or_entity.h"
 # include "irouts.h"
 # include "irdom.h"
-# include "firm_common_t.h"
-# include  "irloop.h"
+# include "irloop.h"
+
+# include "panic.h"
+# include "array.h"
+# include "pmap.h"
 
 # include "exc.h"
 
-# include "pmap.h"
 
 /* Attributes of nodes */
 #define DEFAULT_NODE_ATTR ""
@@ -847,8 +851,12 @@ void dump_entity_node(entity *ent) {
   }
   xfprintf(F, "\nname:    %I\nld_name: %I", get_entity_ident(ent), get_entity_ld_ident(ent));
   fprintf(F, "\noffset:  %d", get_entity_offset(ent));
-  if (is_method_type(get_entity_type(ent)))
-    { fprintf (F, "\nirg = "); PRINT_IRGID(get_entity_irg(ent)); }
+  if (is_method_type(get_entity_type(ent))) {
+    if (get_entity_irg(ent))   /* can be null */
+      { fprintf (F, "\nirg = "); PRINT_IRGID(get_entity_irg(ent)); }
+    else
+      { fprintf (F, "\nirg = NULL"); }
+  }
   fprintf(F, "\"\n}\n");
 }
 
@@ -870,10 +878,10 @@ dump_type_info (type_or_ent *tore, void *env) {
       /* skip this to reduce graph.  Member edge of type is parallel to this edge. *
       fprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
                 ENT_OWN_EDGE_ATTR "}\n", ent, get_entity_owner(ent));*/
-      PRINT_ENT_TYPE_EDGE(ent,get_entity_type(ent),ENT_TYPE_EDGE_ATTR);
+      PRINT_ENT_TYPE_EDGE(ent, get_entity_type(ent), ENT_TYPE_EDGE_ATTR);
       if(is_class_type(get_entity_owner(ent))) {
 	for(i = 0; i < get_entity_n_overwrites(ent); i++){
-		PRINT_ENT_ENT_EDGE(ent,get_entity_overwrites(ent, i), ENT_OVERWRITES_EDGE_ATTR);
+	  PRINT_ENT_ENT_EDGE(ent, get_entity_overwrites(ent, i), ENT_OVERWRITES_EDGE_ATTR);
 	}
       }
       /* attached subgraphs */
@@ -881,8 +889,8 @@ dump_type_info (type_or_ent *tore, void *env) {
 	if (is_atomic_entity(ent)) {
 	  value = get_atomic_ent_value(ent);
 	  if (value) {
-            PRINT_ENT_NODE_EDGE(ent,value,ENT_VALUE_EDGE_ATTR,i);
-	      /*
+            PRINT_ENT_NODE_EDGE(ent, value, ENT_VALUE_EDGE_ATTR, i);
+	    /*
 	    fprintf (F, "edge: { sourcename: \"%p\" targetname: \"", GET_ENTID(ent));
 	    PRINT_NODEID(value);
 	    fprintf(F, "\" " ENT_VALUE_EDGE_ATTR "\"}\n");
@@ -896,12 +904,12 @@ dump_type_info (type_or_ent *tore, void *env) {
 	    if (value) {
               PRINT_ENT_NODE_EDGE(ent,value,ENT_VALUE_EDGE_ATTR,i);
 	      dump_const_expression(value);
-	      PRINT_ENT_ENT_EDGE(ent,get_compound_ent_value_member(ent, i),ENT_CORR_EDGE_ATTR,i);
+	      PRINT_ENT_ENT_EDGE(ent, get_compound_ent_value_member(ent, i), ENT_CORR_EDGE_ATTR, i);
 	      /*
-	      fprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-			ENT_CORR_EDGE_ATTR  "}\n", GET_ENTID(ent),
-			get_compound_ent_value_member(ent, i), i);
-			*/
+		fprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
+		ENT_CORR_EDGE_ATTR  "}\n", GET_ENTID(ent),
+		get_compound_ent_value_member(ent, i), i);
+	      */
 	    }
 	  }
 	}
@@ -909,31 +917,24 @@ dump_type_info (type_or_ent *tore, void *env) {
     } break;
   case k_type:
     {
-#ifndef DEBUG
       type *tp = (type *)tore;
-#endif
-
-
       print_type_node(tp);
       /* and now the edges */
       switch (get_type_tpop_code(tp)) {
       case tpo_class:
 	{
-	  for (i=0; i < get_class_n_supertypes(tp); i++)
-	  {
-		  PRINT_TYPE_TYPE_EDGE(tp,get_class_supertype(tp, i),TYPE_SUPER_EDGE_ATTR);
+	  for (i=0; i < get_class_n_supertypes(tp); i++) {
+	    PRINT_TYPE_TYPE_EDGE(tp,get_class_supertype(tp, i),TYPE_SUPER_EDGE_ATTR);
 	  }
 
-	  for (i=0; i < get_class_n_members(tp); i++)
-	  {
-		  PRINT_TYPE_ENT_EDGE(tp,get_class_member(tp, i),TYPE_MEMBER_EDGE_ATTR);
+	  for (i=0; i < get_class_n_members(tp); i++) {
+	    PRINT_TYPE_ENT_EDGE(tp,get_class_member(tp, i),TYPE_MEMBER_EDGE_ATTR);
 	  }
 	} break;
       case tpo_struct:
 	{
-	  for (i=0; i < get_struct_n_members(tp); i++)
-	  {
-		  PRINT_TYPE_ENT_EDGE(tp,get_struct_member(tp, i),TYPE_MEMBER_EDGE_ATTR);
+	  for (i=0; i < get_struct_n_members(tp); i++) {
+	    PRINT_TYPE_ENT_EDGE(tp,get_struct_member(tp, i),TYPE_MEMBER_EDGE_ATTR);
 	  }
 	} break;
       case tpo_method:
