@@ -389,8 +389,8 @@ typedef struct _cond_t {
 	ir_node *cond;					/**< The cond node. */
 	struct list_head list;	/**< List head which is used for queueing this cond
 														into the cond bunch it belongs to. */
-	unsigned in_list : 1;
 	unsigned is_new : 1;
+	unsigned totally_covers : 1;
 	struct _cond_t *link;
 	long visited_nr;
 
@@ -445,10 +445,11 @@ static void _walk_conds(cond_t *cond, cond_walker_t *pre, cond_walker_t *post,
 		post(cond, env);
 }
 
+static long cond_visited_nr = 0;
+
 static void walk_conds(cond_t *cond, cond_walker_t *pre, cond_walker_t *post, void *env)
 {
-	static long visited_nr = 0;
-	_walk_conds(cond, pre, post, ++visited_nr, env);
+	_walk_conds(cond, pre, post, ++cond_visited_nr, env);
 }
 
 static void link_conds(cond_t *cond, void *env)
@@ -487,6 +488,7 @@ typedef struct _cond_info_t {
 																other (all conds in this list have to dominate the
 																block this struct is attached to. */
 
+	ir_node *first_phi;					/**< The first phi node this cond info was made for. */
 	set *cond_set;							/**< A set of all dominating reachable conds. */
 } cond_info_t;
 
@@ -506,7 +508,7 @@ static void _find_conds(ir_node *irn, long visited_nr,
 	 * dominator or it has not been visited yet.
 	 */
 	if(block_dominates(dominator, block) && get_Block_block_visited(block) < visited_nr) {
-		cond_t *res = NULL;
+		cond_t *res = masked_by;
 		int i, n;
 
 		/* check, if we're on a ProjX
@@ -539,13 +541,15 @@ static void _find_conds(ir_node *irn, long visited_nr,
 				/* get or insert the cond info into the set. */
 				res = set_insert(ci->cond_set, &c, sizeof(c), HASH_PTR(cond));
 
+				/*
+				 * If this cond is already masked by the masked_by cond
+				 * return immediately, since we don't have anything to add.
+				 */
+				if(masked_by && res->cases[proj].masked_by == masked_by)
+					return;
+
 				if(res->is_new) {
 					res->is_new = 0;
-					INIT_LIST_HEAD(&res->list);
-				}
-
-				if(!res->in_list) {
-					res->in_list = 1;
 					list_add(&res->list, &ci->roots);
 				}
 
@@ -566,13 +570,14 @@ static void _find_conds(ir_node *irn, long visited_nr,
 				 * Since the masked_by nodes masks a cond, remove it from the
 				 * root list of the conf trees.
 				 */
-				else if(!list_empty(&masked_by->list)) {
+				else {
+					assert(res->cases[proj].pos < 0);
 					list_del_init(&masked_by->list);
 				}
 
-				DBG((dbg, LEVEL_2, "%{firm:indent}found cond %n (%s branch) "
+				DBG((dbg, LEVEL_2, "%D%n (%s branch) "
 							"for pos %d in block %n reached by %n\n",
-							depth, cond, get_Proj_proj(irn) ? "true" : "false", pos,
+							depth, cond, proj ? "true" : "false", pos,
 							block, masked_by ? masked_by->cond : NULL));
 			}
 		}
@@ -591,7 +596,7 @@ static void _find_conds(ir_node *irn, long visited_nr,
 				 * as given by the caller. We also increase the depth for the
 				 * recursively called functions.
 				 */
-				_find_conds(pred, visited_nr, dominator, res, pos, depth + 1, ci);
+				_find_conds(pred, visited_nr, dominator, res, pos, depth + (res != masked_by), ci);
 			}
 		}
 	}
@@ -620,11 +625,11 @@ static INLINE void find_conds(ir_node *irn, cond_info_t *ci)
 		inc_irg_block_visited(current_ir_graph);
 		visited_nr = get_irg_block_visited(current_ir_graph);
 		set_Block_block_visited(block, visited_nr);
+
 		DBG((dbg, LEVEL_2, "find conds at pred %d (%n) and idom %n\n", i, pred, dom));
 		_find_conds(pred, visited_nr, dom, NULL, i, 0, ci);
 	}
 }
-
 
 /**
  * Make the mux for a given cond.
@@ -634,7 +639,7 @@ static INLINE void find_conds(ir_node *irn, cond_info_t *ci)
  * @return The mux node made for this cond.
  */
 static ir_node *make_mux_on_demand(ir_node *phi, ir_node *dom, cond_t *cond,
-		int max_depth, ir_node **mux, bitset_t *positions)
+		int max_depth, ir_node **mux, bitset_t *positions, int *muxes_made, long visited_nr)
 {
 	int i;
 	ir_node *projb = get_Cond_selector(cond->cond);
@@ -642,6 +647,7 @@ static ir_node *make_mux_on_demand(ir_node *phi, ir_node *dom, cond_t *cond,
 	ir_node *operands[2];
 	int set[2];
 
+	cond->visited_nr = visited_nr;
 	DBG((dbg, LEVEL_2, "%n\n", cond->cond));
 	for(i = 0; i < 2; ++i) {
 		cond_t *masked_by = cond->cases[i].masked_by;
@@ -657,7 +663,9 @@ static ir_node *make_mux_on_demand(ir_node *phi, ir_node *dom, cond_t *cond,
 		 */
 		if(masked_by) {
 			assert(pos < 0);
-			operands[i] = make_mux_on_demand(phi, dom, masked_by, max_depth, mux, positions);
+			DBG((dbg, LEVEL_2, "\tmasked by: %n\n", masked_by->cond));
+			if(masked_by->visited_nr < visited_nr)
+				operands[i] = make_mux_on_demand(phi, dom, masked_by, max_depth, mux, positions, muxes_made, visited_nr);
 		}
 
 		/*
@@ -687,6 +695,8 @@ static ir_node *make_mux_on_demand(ir_node *phi, ir_node *dom, cond_t *cond,
 		*mux = new_r_Mux(current_ir_graph, bl, projb,
 				operands[0], operands[1], get_irn_mode(operands[0]));
 
+		*muxes_made += 1;
+
 		DBG((dbg, LEVEL_2, "\t%n(%n, %n, %n)[%d, %d]\n",
 					*mux, projb, operands[0], operands[1], set[0], set[1]));
 
@@ -710,7 +720,7 @@ typedef struct _phi_info_t {
  * @param irn A phi node.
  * @param info Parameters for the if conversion algorithm.
  */
-static void check_out_phi(phi_info_t *phi_info, opt_if_conv_info_t *info)
+static int check_out_phi(phi_info_t *phi_info, opt_if_conv_info_t *info)
 {
 	int max_depth = info->max_depth;
 	ir_node *irn = phi_info->irn;
@@ -718,6 +728,7 @@ static void check_out_phi(phi_info_t *phi_info, opt_if_conv_info_t *info)
 	cond_info_t *cond_info = phi_info->cond_info;
 	cond_t *cond;
 	int i, arity;
+	int muxes_made = 0;
 	bitset_t *positions;
 
 	block = get_nodes_block(irn);
@@ -755,12 +766,11 @@ static void check_out_phi(phi_info_t *phi_info, opt_if_conv_info_t *info)
 		}
 
 		DBG((dbg, LEVEL_2, "\tcommon idom: %n\n", cidom));
-		make_mux_on_demand(irn, cidom, cond, max_depth, &mux, positions);
+		make_mux_on_demand(irn, cidom, cond, max_depth, &mux, positions, &muxes_made, ++cond_visited_nr);
 
 		if(mux) {
-			bitset_foreach(positions, pos) {
+			bitset_foreach(positions, pos)
 				set_irn_n(irn, (int) pos, mux);
-			}
 		}
 	}
 
@@ -771,6 +781,8 @@ static void check_out_phi(phi_info_t *phi_info, opt_if_conv_info_t *info)
 	nw = optimize_in_place_2(irn);
 	if(nw != irn)
 		exchange(irn, nw);
+
+	return muxes_made;
 }
 
 typedef struct _cond_walk_info_t {
@@ -804,6 +816,8 @@ static void annotate_cond_info_post(ir_node *irn, void *data)
 		if(!ci) {
 			ci = obstack_alloc(cwi->obst, sizeof(*ci));
 			ci->cond_set = new_set(cond_cmp, log2_ceil(get_irn_arity(block)));
+			ci->first_phi = irn;
+
 			INIT_LIST_HEAD(&ci->roots);
 			INIT_LIST_HEAD(&ci->list);
 
@@ -835,7 +849,7 @@ static void annotate_cond_info_post(ir_node *irn, void *data)
 		}
 
 		else
-			DBG((dbg, LEVEL_2, "conds already computed for %n\n", irn));
+			DBG((dbg, LEVEL_2, "conds already computed for %n (look at %n)\n", irn, ci->first_phi));
 
 		set_irn_link(block, ci);
 
@@ -895,21 +909,9 @@ static void vcg_dump_conds(ir_graph *irg, cond_walk_info_t *cwi)
 	}
 }
 
-#if 0
-/**
- * Free the sets which are put at some blocks.
- */
-static void free_sets(ir_node *irn, void *data)
-{
-	if(is_Block(irn) && get_irn_link(irn)) {
-		set *conds = get_irn_link(irn);
-		del_set(conds);
-	}
-}
-#endif
-
 void opt_if_conv(ir_graph *irg, opt_if_conv_info_t *params)
 {
+	int muxes_made = 0;
 	struct obstack obst;
 	phi_info_t *phi_info;
 	cond_info_t *cond_info;
@@ -929,13 +931,13 @@ void opt_if_conv(ir_graph *irg, opt_if_conv_info_t *params)
 	/* Init the debug stuff. */
 	dbg = firm_dbg_register("firm.opt.ifconv");
 #if 0
-	firm_dbg_set_mask(dbg, LEVEL_1 | LEVEL_2 | LEVEL_3);
+	firm_dbg_set_mask(dbg, LEVEL_1);
 #endif
 
 	/* Ensure, that the dominators are computed. */
 	compute_doms(irg);
 
-	DBG((dbg, LEVEL_2, "if conversion for irg %s(%p)\n",
+	DBG((dbg, LEVEL_1, "if conversion for irg %s(%p)\n",
 				get_entity_name(get_irg_entity(irg)), irg));
 
 	/*
@@ -953,13 +955,15 @@ void opt_if_conv(ir_graph *irg, opt_if_conv_info_t *params)
 
 	/* Process each suitable phi found. */
 	list_for_each_entry(phi_info_t, phi_info, &cwi.phi_head, list) {
-		DBG((dbg, LEVEL_4, "phi node %n\n", phi_info->irn));
-		check_out_phi(phi_info, p);
+		DBG((dbg, LEVEL_2, "phi node %n\n", phi_info->irn));
+		muxes_made += check_out_phi(phi_info, p);
 	}
 
 	list_for_each_entry(cond_info_t, cond_info, &cwi.cond_info_head, list) {
 		del_set(cond_info->cond_set);
 	}
+
+	DBG((dbg, LEVEL_1, "muxes made: %d\n", muxes_made));
 
 	obstack_free(&obst, NULL);
 }
