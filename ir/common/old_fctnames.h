@@ -21,6 +21,7 @@
 #define add_in_edge(X, Y)     add_immBlock_pred(X, Y)
 #define mature_block(X)	      mature_immBlock(X)
 #define switch_block(X)	      set_cur_block(X)
+#define finalize_cons(X)      irg_finalize_cons(X)
 
 /* irgraph */
 #define get_irg_ent(X)        get_irg_entity(X)

@@ -77,23 +77,24 @@ extern "C" {
 #include "loop_unrolling.h" /* Do loop unrolling*/
 
 /* Analyses */
-#include "irouts.h"        /* Graph reversal / out edges. */
-#include "irdom.h"         /* Dominator analysis */
-#include "cgana.h"         /* Analysis to construct interprocedural graph */
-                           /* including some optimizations */
-#include "irloop.h"        /* loop and backedge analysis */
-#include "callgraph.h"     /* Callgraph construction */
+#include "irouts.h"         /* Graph reversal / out edges. */
+#include "irdom.h"          /* Dominator analysis */
+#include "cgana.h"          /* Analysis to construct interprocedural graph */
+                            /* including some optimizations */
+#include "irloop.h"         /* loop and backedge analysis */
+#include "callgraph.h"      /* Callgraph construction */
 #include "interval_analysis.h"
 #include "field_temperature.h"
 #include "execution_frequency.h"
 
 /* Support */
-#include "irgmod.h"        /* Support to modify ir */
-#include "irgwalk.h"       /* Support to walk ir */
-#include "typewalk.h"      /* Support to walk type information */
-#include "typegmod.h"      /* Support to modify type graph */
-#include "type_identify.h" /* Support for type identification */
-#include "mangle.h"        /* Support for mangling ident names. */
+#include "irgmod.h"         /* Support to modify ir */
+#include "irgwalk.h"        /* Support to walk ir */
+#include "typewalk.h"       /* Support to walk type information */
+#include "typegmod.h"       /* Support to modify type graph */
+#include "type_identify.h"  /* Support for type identification */
+#include "mangle.h"         /* Support for mangling ident names. */
+#include "tr_inheritance.h" /* Support to handle inheritance. */
 
 #include "irarch.h"        /* architecture dependant optimizations */
 //#include "modeconv.h"      /* architecture dependant mode conversion */
