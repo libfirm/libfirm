@@ -5,9 +5,19 @@
 /**
  * @file irdump.h
  *
- * Dump an ir graph, for further use with xvcg.
+ * Dump routines for the ir graph and all type information.
  *
  * @author Martin Trapp, Christian Schaefer
+ *
+ * The dump format of most functions is vcg.  This is a text based graph
+ * representation. Some use the original format,
+ * but most generate an extended format that is only read by some special
+ * versions of xvcg or by the comercialized version now calles aiSee.
+ * A test version of aiSee is available at
+ * http://www.absint.de/aisee/download/index.htm.
+ *
+ * Most routines use the name of the passed entity as the name of the
+ * file dumped to.
  */
 
 /* $Id$ */
@@ -19,19 +29,9 @@
 # include "irgraph.h"
 
 /**
- *   Dump routines for the graph and all type information.
+ * The value of this string will be added to the file name before .vcg
  *
- *   The dump format of most functions is vcg.  This is a text based graph
- *   representation. Some use the original format,
- *   but most generate an extended format that is only read by some special
- *   versions of xvcg or by the comercialized version now calles aiSee.
- *   A test version of aiSee is available at
- *   http://www.absint.de/aisee/download/index.htm.
- *
- *   Most routines use the name of the passed entity as the name of the
- *   file dumped to.
- *
- * @note GL: A hack
+ * @todo  GL: A hack
  */
 extern char *dump_file_suffix;
 
