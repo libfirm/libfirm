@@ -12,6 +12,7 @@
  * Licence:     This file is protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
+# define _GNU_SOURCE
 # include "read.h"
 
 static type_t *types = NULL;
@@ -24,12 +25,12 @@ static int _ent_id = 0;
 static const char*
 getNodeModule (xmlNodePtr node)
 {
-  char *mod_str = (char*) xmlGetProp (node, BAD_CAST "module");
+  const char *mod_str = (const char*) xmlGetProp (node, BAD_CAST "module");
 
   if (NULL == mod_str) {
     return (NULL);
   } else {
-    const char *res = strdup (mod_str);
+    char *res = strdup (mod_str);
 
     return (res);
   }
@@ -756,6 +757,9 @@ void test_getEffectByName ()
 
 /*
  * $Log$
+ * Revision 1.3  2004/10/13 13:36:28  rubino
+ * fix for strdup
+ *
  * Revision 1.2  2004/10/11 15:56:09  liekweg
  * Cleanup, comments ...
  * Added init func --flo
