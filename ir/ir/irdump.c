@@ -737,10 +737,13 @@ void dump_node2type_edges (ir_node *n, void *env)
 
 void dump_const_expression(ir_node *value) {
   ir_graph *rem = current_ir_graph;
+  int rem_dump_const_local = dump_const_local;
+  dump_const_local = 0;
   current_ir_graph = get_const_code_irg();
   irg_walk(value, dump_ir_blocks_nodes, NULL, get_nodes_Block(value));
   set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph) -1);
   current_ir_graph = rem;
+  dump_const_local = rem_dump_const_local;
 }
 
 
