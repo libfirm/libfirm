@@ -42,6 +42,16 @@
 /*                                 GRAPH DUMPERS                                */
 /* **************************************************************************** */
 
+/**
+ * This hook is called to dump the vcg attributes of a node to a file.
+ * If this function returns zero, the default attributes are added, else
+ * removed.
+ */
+typedef int (*DUMP_NODE_VCGATTR_FUNC)(FILE *F, ir_node *n);
+
+/** Set the node_vcgattr hook. */
+void set_dump_node_vcgattr_hook(DUMP_NODE_VCGATTR_FUNC hook);
+
 /** Dump a firm graph.
  *
  *  @param irg  The firm graph to be dumped.
