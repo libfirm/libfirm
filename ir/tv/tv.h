@@ -280,12 +280,6 @@ int tarval_is_entity(tarval *tv);
  */
 
 /** Returns the mode of the tarval. */
-#ifdef TARVAL_ACCESS_DEFINES
-#  include "tv_t.h"
-#  define get_tarval_mode(tv) (tv)->mode
-#else
-ir_mode *get_tarval_mode (tarval *tv);
-#endif
 
 /* Testing properties of the represented values */
 

@@ -18,8 +18,7 @@
 #ifndef _STRCALC_H_
 #define _STRCALC_H_
 
-#define BIGGEST_INTEGER_SIZE_IN_BYTES 8
-#define SCDEBUG
+#define DEFAULT_PRECISION_IN_BYTES 8
 
 /*****************************************************************************
  * typedefs, enums and structs
@@ -104,10 +103,12 @@ void sc_min_from_bits(unsigned int num_bits, unsigned int sign);
 void sc_max_from_bits(unsigned int num_bits, unsigned int sign);
 
 void sc_calc(const void *val1, const void *val2, unsigned op);
-void sc_bitcalc(const void *val1, const void *val2, unsigned radius, unsigned sign, unsigned op);
+void sc_bitcalc(const void *val1, const void *val2, int radius, int sign, unsigned op);
 int  sc_comp(const void *val1, const void *val2);
 
-unsigned char sc_sub_bits(const void *val, int len, unsigned byte_ofs);
+int sc_get_highest_set_bit(const void *value);
+int sc_get_lowest_set_bit(const void *value);
+unsigned char sc_sub_bits(const void *value, int len, unsigned byte_ofs);
 
 /**
  * Converts a tarval into a string.
@@ -117,5 +118,8 @@ unsigned char sc_sub_bits(const void *val, int len, unsigned byte_ofs);
  * @param base		output base
  */
 const char *sc_print(const void *val1, unsigned bits, enum base_t base);
+
+void init_strcalc(int precision_in_bytes);
+int get_precision();
 
 #endif /* _STRCALC_H_ */

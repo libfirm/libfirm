@@ -135,7 +135,7 @@ static int hash_val(const void *value, unsigned int length)
   return hash;
 }
 
-/* finds tarval with value/mode or creates new tarval*/
+/* finds tarval with value/mode or creates new tarval */
 static tarval *get_tarval(const void *value, int length, ir_mode *mode)
 {
   tarval tv;
@@ -348,21 +348,30 @@ entity *tarval_to_entity(tarval *tv)
   }
 }
 
+void free_tarval_entity(entity *ent) {
+  /* There can be a tarval referencing this entity.  Even if the
+     tarval is not used by the code any more, it can still reference
+     the entity as tarvals live indepently of the entity referenced.
+     Further the tarval is hashed into a set. If a hash function
+     evaluation happens to collide with this tarval, we will vrfy that
+     it contains a proper entity and we will crash if the entity is
+     freed.
+
+     Unluckily, tarvals can neither be changed nor deleted, and to find
+     one, all existing reference modes have to be tried -> a facility
+     to retrieve all modes of a kind is needed. */
+  ANNOUNCE();
+}
+
 /*
  * Access routines for tarval fields ========================================
  */
-#ifdef TARVAL_ACCESS_DEFINES
-#  undef get_tarval_mode
-#endif
 ir_mode *get_tarval_mode (tarval *tv)       /* get the mode of the tarval */
 {
   ANNOUNCE();
   assert(tv);
   return tv->mode;
 }
-#ifdef TARVAL_ACCESS_DEFINES
-#  define get_tarval_mode(tv) (tv)->mode
-#endif
 
 /*
  * Special value query functions ============================================
@@ -982,6 +991,9 @@ void init_tarval_1(void)
    * an initial size, which is the expected number of constants */
   tarvals = new_set(memcmp, TUNE_NCONSTANTS);
   values = new_set(memcmp, TUNE_NCONSTANTS);
+  /* init with default precision */
+  init_strcalc(0);
+  /* init_fltcalc(0); not yet*/
 }
 
 /* Initialization of the tarval module: called after init_mode() */
@@ -1008,17 +1020,3 @@ void init_tarval_2(void)
 /****************************************************************************
  *   end of tv.c
  ****************************************************************************/
-
-void
-free_tarval_entity(entity *ent) {
-  /* There can be a tarval referencing this entity.  Even if the
-     tarval is not used by the code any more, it can still reference
-     the entity as tarvals live forever (They live on an obstack.).
-     Further the tarval is hashed into a set.  If a hash function
-     evaluation happens to collide with this tarval, we will vrfy that
-     it contains a proper entity and we will crash if the entity is
-     freed.  We cannot remove tarvals from the obstack but we can
-     remove the entry in the hash table. */
-  /* this will be re-implemented later */
-  ANNOUNCE();
-}
