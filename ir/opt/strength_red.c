@@ -23,17 +23,17 @@
 # include "ircons.h"
 # include "irgmod.h"
 # include "irdump.h"
+# include "firmstat.h"
 
 
 /* The information needed for an induction variable */
-struct induct_var_info {
+typedef struct _induct_var_info {
   ir_op   *operation_code;
   ir_node *increment, *init, *op;
   int      be_pos;
   int      init_pred_pos;
   int      op_pred_pos;
-};
-static struct induct_var_info ivi;
+} induct_var_info;
 
 /** Counter for verbose information about optimization. */
 static int n_reduced_expressions;
@@ -55,22 +55,21 @@ static int n_reduced_expressions;
  * We could expand this to Phi nodes where all preds are either
  * op or loop invariant.
  *
- * @param n A phi node.
+ * @param n     A phi node.
+ * @param info  After call contains the induction variable information
  */
-static struct induct_var_info *is_induction_variable (ir_node *n) {
+static induct_var_info *is_induction_variable (ir_node *n, induct_var_info *info) {
 
   ir_node  *phi_pred_0, *phi_pred_1, *add_r, *add_l, *sub_r, *sub_l ;
   ir_op    *phi_pred_0_op, *phi_pred_1_op;
-  struct   induct_var_info *info;
 
-  info = &ivi;
   info->operation_code = NULL;
-  info->increment = NULL;
-  info->init = NULL;
-  info->op = NULL;
-  info->be_pos = -1;
-  info->init_pred_pos = -1;
-  info->op_pred_pos = -1;
+  info->increment      = NULL;
+  info->init           = NULL;
+  info->op             = NULL;
+  info->be_pos         = -1;
+  info->init_pred_pos  = -1;
+  info->op_pred_pos    = -1;
 
   assert(get_irn_op(n) == op_Phi);
 
@@ -84,8 +83,8 @@ static struct induct_var_info *is_induction_variable (ir_node *n) {
   phi_pred_1 = get_Phi_pred(n, 1);
 
   /*The operation of the predecessors. */
-  phi_pred_0_op = get_irn_op(get_Phi_pred(n, 0));
-  phi_pred_1_op = get_irn_op(get_Phi_pred(n, 1));
+  phi_pred_0_op = get_irn_op(phi_pred_0);
+  phi_pred_1_op = get_irn_op(phi_pred_1);
 
   /*Compute if the induction variable is added or substracted wiht a constant . */
   if (phi_pred_0_op == op_Add){
@@ -171,15 +170,16 @@ const char *get_irg_dump_name(ir_graph *irg);
  * phi.
  */
 
-void reduce_itervar(ir_node *itervar_phi, void *env) {
+static void reduce_itervar(ir_node *itervar_phi, void *env) {
   ir_node *strong = NULL, *cmp = NULL, *c, *cmp_const;
   int phi_pred, strong_in_Phi = 0, cmp_in_phi = 0, out_loop_res = 1;
+  induct_var_info ivi;
 
   // This "if" finds the node to reduce.
 
   // This "if" finds the Phi predecessors for the node that must be reduced.
   if ((get_irn_op(itervar_phi) == op_Phi)    &&
-      is_induction_variable(itervar_phi) != NULL ) {
+      is_induction_variable(itervar_phi, &ivi) != NULL ) {
     phi_pred = get_irn_n_outs(itervar_phi);
     ir_loop *l_itervar_phi = get_irn_loop(get_nodes_block(itervar_phi));
 
@@ -230,6 +230,9 @@ void reduce_itervar(ir_node *itervar_phi, void *env) {
       block_init = init_block;
     else
       block_init = c_block;
+
+    /* we will do a strenght reduction */
+    stat_strength_red(current_ir_graph, strong, cmp);
 
     /* Compute new loop invariant increment and initialization values. */
     inc  = new_r_Mul (current_ir_graph, block_inc,  ivi.increment, c, get_irn_mode(c));
