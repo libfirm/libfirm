@@ -37,7 +37,7 @@
 #include "type.h"
 #include "tv.h"
 
-#define VERBOSE_PRINTING 1
+#define VERBOSE_PRINTING 0
 
 #if VERBOSE_PRINTING
 # define VERBOSE_PRINT(s) fprintf s
@@ -1247,67 +1247,13 @@ static void create_abstract_call(ir_graph *irg, proc_t *proc, eff_t *eff)
   }
 }
 
-static void create_abstract_join2 (ir_graph *irg, proc_t *proc, eff_t *eff)
-{
-  ir_node *unknown = NULL;
-  ir_node *cond    = NULL;
-  ir_node *phi     = NULL;
-
-  ir_node *ins   [2];
-  ir_node *block [2];
-  ir_node *projX [2];
-  ir_node *jmp   [2];
-
-  eff_t *in_eff  = NULL;
-  int n_ins = -1;
-
-  VERBOSE_PRINT((stdout, "create join2 in %s\n",
-                 get_id_str(proc -> proc_ident)));
-
-  assert (eff_join == eff->kind);
-
-  n_ins = eff->effect.join.n_ins;
-  assert (2 == n_ins);
-
-  in_eff = find_valueid_in_proc_effects (eff->effect.join.ins [0], proc);
-  ins [0] = in_eff->firmnode;
-  in_eff = find_valueid_in_proc_effects (eff->effect.join.ins [1], proc);
-  ins [1] = in_eff->firmnode;
-
-  unknown = new_Unknown (mode_Iu);
-  cond    = new_Cond (unknown);
-
-  projX [0] = new_Proj (cond, mode_X, 0);
-  projX [1] = new_Proj (cond, mode_X, 1);
-
-  mature_immBlock (get_cur_block ());
-
-  block [0] = new_immBlock ();
-  add_immBlock_pred (block [0], projX [0]);
-  jmp [0] = new_Jmp ();
-  mature_immBlock (block [0]);
-
-  block [1] = new_immBlock ();
-  add_immBlock_pred (block [1], projX [1]);
-  jmp [1] = new_Jmp ();
-  mature_immBlock (block [1]);
-
-  new_Block (2, jmp);
-
-  phi = new_Phi (2, ins, get_irn_mode (ins [0]));
-  VERBOSE_PRINT ((stdout, "%s: phi.nr = %li\n", __FUNCTION__, get_irn_node_nr (phi)));
-
-  eff->firmnode = phi;
-
-  add_value_to_proc (proc, eff);
-}
-
 static void create_abstract_join (ir_graph *irg, proc_t *proc, eff_t *eff)
 {
   ir_node **ins    = NULL;
   ir_node *unknown = NULL;
   ir_node *cond    = NULL;
   ir_node *block   = NULL;
+  ir_node *c_block = NULL;
   ir_node *phi     = NULL;
   ir_mode *join_md = mode_ANY;
   int n_ins = -1;
@@ -1319,24 +1265,31 @@ static void create_abstract_join (ir_graph *irg, proc_t *proc, eff_t *eff)
   assert (eff_join == eff->kind);
 
   n_ins = eff->effect.join.n_ins;
-  /* hmm ... special-case n_ins==2? */
-  assert (2 == n_ins);
 
-  if (2 == n_ins) {
-    create_abstract_join2 (irg, proc, eff);
-    return;
-  }
+  /* seems like current_module is not always mature at this point */
+  mature_immBlock (get_cur_block ());
 
+  block = get_cur_block ();     /* remember this so we can put the ProjXs into it */
+
+  /* jump based on an unknown condition so all values are possible */
   unknown = new_Unknown (mode_Iu);
   cond    = new_Cond (unknown);
-  block   = new_immBlock ();
+
+  c_block   = new_immBlock ();  /* for the Phi after the branch(es) */
 
   ins = (ir_node**) malloc (n_ins * sizeof (ir_node*));
   for (i = 0; i < n_ins; i ++) {
-    ir_node *s_block = new_immBlock ();
-    ir_node *projX   = new_Proj (cond, mode_X, (long) i);
+    ir_node *projX   = NULL;
+    ir_node *s_block = NULL;
     ir_node *jmp     = NULL;
     eff_t *in_eff;
+
+    /* make sure the projX is in the 'switch' block */
+    set_cur_block (block);
+    projX   = new_Proj (cond, mode_X, (long) i);
+
+    /* this also sets current_block, so the rest of the code ends up there: */
+    s_block = new_immBlock ();
 
     add_immBlock_pred (s_block, projX);
     mature_immBlock (s_block);
@@ -1344,17 +1297,21 @@ static void create_abstract_join (ir_graph *irg, proc_t *proc, eff_t *eff)
     in_eff = find_valueid_in_proc_effects (eff->effect.join.ins [i], proc);
 
     ins [i] = in_eff->firmnode;
+
+    /* need to find a suitable mode for the Phi node */
     if (mode_ANY != get_irn_mode (ins [i])) {
       join_md = get_irn_mode (ins [i]);
     }
 
     jmp = new_Jmp ();
-    add_immBlock_pred (block, jmp);
+    add_immBlock_pred (c_block, jmp);
   }
 
-  mature_immBlock (block);
-  set_cur_block (block);
+  set_cur_block (c_block);
+
   phi = new_Phi (n_ins, ins, join_md);
+
+  mature_immBlock (c_block);
   memset (ins, 0x00, n_ins * sizeof (ir_node*));
   free (ins);
 
@@ -1618,6 +1575,9 @@ void create_abstraction(const char *filename)
 
 /*
  * $Log$
+ * Revision 1.12  2004/11/02 14:30:31  liekweg
+ * fixed multi-input join (thx, Boris) --flo
+ *
  * Revision 1.11  2004/10/29 18:51:53  liekweg
  * Added Join
  *
