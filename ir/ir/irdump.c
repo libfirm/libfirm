@@ -17,6 +17,7 @@
 
 # include <string.h>
 # include <stdlib.h>
+# include <stdarg.h>
 
 # include "irnode_t.h"
 # include "irgraph_t.h"
@@ -93,13 +94,90 @@
 #define PRINT_CONSTID(X,Y) fprintf(F, "\"n%pn%p\"", (void*) X, (void*) Y)
 #endif
 
-#define PRINT_TYPE_TYPE_EDGE(S,T,...){fprintf (F, "edge: { sourcename: "); PRINT_TYPEID(S); fprintf (F, " targetname: "); PRINT_TYPEID(T); fprintf (F, ##__VA_ARGS__); fprintf(F,"}\n"); }
-#define PRINT_TYPE_ENT_EDGE(S,T,...) {fprintf (F, "edge: { sourcename: "); PRINT_TYPEID(S); fprintf (F, " targetname: \""); PRINT_ENTID(T); fprintf(F, "\"");  fprintf (F, ##__VA_ARGS__); fprintf(F,"}\n"); }
-#define PRINT_ENT_ENT_EDGE(S,T,...)  {fprintf (F, "edge: { sourcename: \""); PRINT_ENTID(S);  fprintf (F, "\" targetname: \""); PRINT_ENTID(T);  fprintf(F, "\""); fprintf (F, ##__VA_ARGS__); fprintf(F,"}\n"); }
-#define PRINT_ENT_TYPE_EDGE(S,T,...) {fprintf (F, "edge: { sourcename: \""); PRINT_ENTID(S);  fprintf (F, "\" targetname: "); PRINT_TYPEID(T); fprintf (F, ##__VA_ARGS__); fprintf(F,"}\n"); }
-#define PRINT_NODE_TYPE_EDGE(S,T,...){fprintf (F, "edge: { sourcename: \""); PRINT_NODEID(S); fprintf (F, "\" targetname: "); PRINT_TYPEID(T); fprintf (F, ##__VA_ARGS__); fprintf(F,"}\n"); }
-#define PRINT_NODE_ENT_EDGE(S,T,...) {fprintf (F, "edge: { sourcename: \""); PRINT_NODEID(S); fprintf (F, "\" targetname: \""); PRINT_ENTID(T);  fprintf(F, "\""); fprintf (F, ##__VA_ARGS__); fprintf(F,"}\n"); }
-#define PRINT_ENT_NODE_EDGE(S,T,...) {fprintf (F, "edge: { sourcename: \""); PRINT_ENTID(S);  fprintf (F, "\" targetname: \""); PRINT_NODEID(T); fprintf(F, "\""); fprintf (F, ##__VA_ARGS__); fprintf(F,"}\n"); }
+static void print_type_type_edge(FILE *F, type *S, type *T, const char *fmt, ...)
+{
+  va_list ap;
+
+  va_start(ap, fmt);
+  fprintf(F, "edge: { sourcename: "); PRINT_TYPEID(S);
+  fprintf(F, " targetname: "); PRINT_TYPEID(T);
+  vfprintf(F, fmt, ap);
+  fprintf(F,"}\n");
+  va_end(ap);
+}
+
+static void print_type_ent_edge(FILE *F, type *T, entity *E, const char *fmt, ...)
+{
+  va_list ap;
+
+  va_start(ap, fmt);
+  fprintf(F, "edge: { sourcename: "); PRINT_TYPEID(T);
+  fprintf(F, " targetname: \""); PRINT_ENTID(E); fprintf(F, "\"");
+  vfprintf(F, fmt, ap);
+  fprintf(F, "}\n");
+  va_end(ap);
+}
+
+static void print_ent_ent_edge(FILE *F, entity *E, entity *T, const char *fmt, ...)
+{
+  va_list ap;
+
+  va_start(ap, fmt);
+  fprintf(F, "edge: { sourcename: \""); PRINT_ENTID(E);
+  fprintf(F, "\" targetname: \""); PRINT_ENTID(T);  fprintf(F, "\"");
+  vfprintf(F, fmt, ap);
+  fprintf(F, "}\n");
+  va_end(ap);
+}
+
+static void print_ent_type_edge(FILE *F, entity *E, type *T, const char *fmt, ...)
+{
+  va_list ap;
+
+  va_start(ap, fmt);
+  fprintf(F, "edge: { sourcename: \""); PRINT_ENTID(E);
+  fprintf(F, "\" targetname: "); PRINT_TYPEID(T);
+  vfprintf(F, fmt, ap);
+  fprintf(F,"}\n");
+  va_end(ap);
+}
+
+static void print_node_type_edge(FILE *F, const ir_node *N, type *T, const char *fmt, ...)
+{
+  va_list ap;
+
+  va_start(ap, fmt);
+  fprintf(F, "edge: { sourcename: \""); PRINT_NODEID(N);
+  fprintf(F, "\" targetname: "); PRINT_TYPEID(T);
+  vfprintf(F, fmt, ap);
+  fprintf(F,"}\n");
+  va_end(ap);
+}
+
+static void print_node_ent_edge(FILE *F, const ir_node *N, entity *E, const char *fmt, ...)
+{
+  va_list ap;
+
+  va_start(ap, fmt);
+  fprintf(F, "edge: { sourcename: \""); PRINT_NODEID(N);
+  fprintf(F, "\" targetname: \""); PRINT_ENTID(E);
+  fprintf(F, "\"");
+  vfprintf(F, fmt, ap);
+  fprintf(F,"}\n");
+  va_end(ap);
+}
+
+static void print_ent_node_edge(FILE *F, entity *E, const ir_node *N, const char *fmt, ...)
+{
+  va_list ap;
+
+  va_start(ap, fmt);
+  fprintf(F, "edge: { sourcename: \""); PRINT_ENTID(E);
+  fprintf(F, "\" targetname: \""); PRINT_NODEID(N); fprintf(F, "\"");
+  vfprintf(F, fmt, ap);
+  fprintf(F,"}\n");
+  va_end(ap);
+}
 
 /*******************************************************************/
 /* global and ahead declarations                                   */
@@ -797,8 +875,8 @@ static void
 dump_block_graph (ir_graph *irg) {
   int i;
   ir_graph *rem = current_ir_graph;
-  current_ir_graph = irg;
   ir_node **arr = ird_get_irg_link(irg);
+  current_ir_graph = irg;
 
   for (i = ARR_LEN(arr) - 1; i >= 0; --i) {
     ir_node * node = arr[i];
@@ -851,23 +929,23 @@ static void dump_node2type_edges (ir_node *n, void *env)
     if (   (get_SymConst_kind(n) == type_tag)
 	   || (get_SymConst_kind(n) == size))
       {
-	PRINT_NODE_TYPE_EDGE(n,get_SymConst_type(n),NODE2TYPE_EDGE_ATTR);
+	print_node_type_edge(F,n,get_SymConst_type(n),NODE2TYPE_EDGE_ATTR);
       }
     break;
   case iro_Sel: {
-      PRINT_NODE_ENT_EDGE(n,get_Sel_entity(n),NODE2TYPE_EDGE_ATTR);
+      print_node_ent_edge(F,n,get_Sel_entity(n),NODE2TYPE_EDGE_ATTR);
     } break;
   case iro_Call: {
-      PRINT_NODE_TYPE_EDGE(n,get_Call_type(n),NODE2TYPE_EDGE_ATTR);
+      print_node_type_edge(F,n,get_Call_type(n),NODE2TYPE_EDGE_ATTR);
     } break;
   case iro_Alloc: {
-      PRINT_NODE_TYPE_EDGE(n,get_Alloc_type(n),NODE2TYPE_EDGE_ATTR);
+      print_node_type_edge(F,n,get_Alloc_type(n),NODE2TYPE_EDGE_ATTR);
     } break;
   case iro_Free: {
-      PRINT_NODE_TYPE_EDGE(n,get_Free_type(n),NODE2TYPE_EDGE_ATTR);
+      print_node_type_edge(F,n,get_Free_type(n),NODE2TYPE_EDGE_ATTR);
     } break;
   case iro_Cast: {
-      PRINT_NODE_TYPE_EDGE(n,get_Cast_type(n),NODE2TYPE_EDGE_ATTR);
+      print_node_type_edge(F,n,get_Cast_type(n),NODE2TYPE_EDGE_ATTR);
     } break;
   default:
     break;
@@ -1037,10 +1115,10 @@ dump_type_info (type_or_ent *tore, void *env) {
       /* skip this to reduce graph.  Member edge of type is parallel to this edge. *
       fprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
                 ENT_OWN_EDGE_ATTR "}\n", ent, get_entity_owner(ent));*/
-      PRINT_ENT_TYPE_EDGE(ent, get_entity_type(ent), ENT_TYPE_EDGE_ATTR);
+      print_ent_type_edge(F,ent, get_entity_type(ent), ENT_TYPE_EDGE_ATTR);
       if(is_class_type(get_entity_owner(ent))) {
 	for(i = 0; i < get_entity_n_overwrites(ent); i++){
-	  PRINT_ENT_ENT_EDGE(ent, get_entity_overwrites(ent, i), ENT_OVERWRITES_EDGE_ATTR);
+	  print_ent_ent_edge(F,ent, get_entity_overwrites(ent, i), ENT_OVERWRITES_EDGE_ATTR);
 	}
       }
       /* attached subgraphs */
@@ -1048,7 +1126,7 @@ dump_type_info (type_or_ent *tore, void *env) {
 	if (is_atomic_entity(ent)) {
 	  value = get_atomic_ent_value(ent);
 	  if (value) {
-            PRINT_ENT_NODE_EDGE(ent, value, ENT_VALUE_EDGE_ATTR, i);
+            print_ent_node_edge(F,ent, value, ENT_VALUE_EDGE_ATTR, i);
 	    /* DDMN(value);  $$$ */
 	    dump_const_expression(value);
 	  }
@@ -1057,9 +1135,9 @@ dump_type_info (type_or_ent *tore, void *env) {
 	  for (i = 0; i < get_compound_ent_n_values(ent); i++) {
 	    value = get_compound_ent_value(ent, i);
 	    if (value) {
-              PRINT_ENT_NODE_EDGE(ent,value,ENT_VALUE_EDGE_ATTR,i);
+              print_ent_node_edge(F,ent,value,ENT_VALUE_EDGE_ATTR,i);
 	      dump_const_expression(value);
-	      PRINT_ENT_ENT_EDGE(ent, get_compound_ent_value_member(ent, i), ENT_CORR_EDGE_ATTR, i);
+	      print_ent_ent_edge(F,ent, get_compound_ent_value_member(ent, i), ENT_CORR_EDGE_ATTR, i);
 	      /*
 		fprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
 		ENT_CORR_EDGE_ATTR  "}\n", GET_ENTID(ent),
@@ -1079,46 +1157,46 @@ dump_type_info (type_or_ent *tore, void *env) {
       case tpo_class:
 	{
 	  for (i=0; i < get_class_n_supertypes(tp); i++) {
-	    PRINT_TYPE_TYPE_EDGE(tp,get_class_supertype(tp, i),TYPE_SUPER_EDGE_ATTR);
+	    print_type_type_edge(F, tp,get_class_supertype(tp, i),TYPE_SUPER_EDGE_ATTR);
 	  }
 
 	  for (i=0; i < get_class_n_members(tp); i++) {
-	    PRINT_TYPE_ENT_EDGE(tp,get_class_member(tp, i),TYPE_MEMBER_EDGE_ATTR);
+	    print_type_ent_edge(F,tp,get_class_member(tp, i),TYPE_MEMBER_EDGE_ATTR);
 	  }
 	} break;
       case tpo_struct:
 	{
 	  for (i=0; i < get_struct_n_members(tp); i++) {
-	    PRINT_TYPE_ENT_EDGE(tp,get_struct_member(tp, i),TYPE_MEMBER_EDGE_ATTR);
+	    print_type_ent_edge(F,tp,get_struct_member(tp, i),TYPE_MEMBER_EDGE_ATTR);
 	  }
 	} break;
       case tpo_method:
 	{
 	  for (i = 0; i < get_method_n_params(tp); i++)
 	  {
-		  PRINT_TYPE_TYPE_EDGE(tp,get_method_param_type(tp, i),METH_PAR_EDGE_ATTR,i);
+             print_type_type_edge(F,tp,get_method_param_type(tp, i),METH_PAR_EDGE_ATTR,i);
 	  }
 	  for (i = 0; i < get_method_n_ress(tp); i++)
 	  {
-		  PRINT_TYPE_TYPE_EDGE(tp,get_method_res_type(tp, i),METH_RES_EDGE_ATTR,i);
+             print_type_type_edge(F,tp,get_method_res_type(tp, i),METH_RES_EDGE_ATTR,i);
 	  }
 	} break;
       case tpo_union:
 	{
 	  for (i = 0; i < get_union_n_members(tp); i++)
 	  {
-		  PRINT_TYPE_ENT_EDGE(tp,get_union_member(tp, i),UNION_EDGE_ATTR);
+		  print_type_ent_edge(F,tp,get_union_member(tp, i),UNION_EDGE_ATTR);
 	  }
 	} break;
       case tpo_array:
 	{
-		  PRINT_TYPE_TYPE_EDGE(tp,get_array_element_type(tp),ARR_ELT_TYPE_EDGE_ATTR);
-		  PRINT_TYPE_ENT_EDGE(tp,get_array_element_entity(tp),ARR_ENT_EDGE_ATTR);
+		  print_type_type_edge(F,tp,get_array_element_type(tp),ARR_ELT_TYPE_EDGE_ATTR);
+		  print_type_ent_edge(F,tp,get_array_element_entity(tp),ARR_ENT_EDGE_ATTR);
 		  for (i = 0; i < get_array_n_dimensions(tp); i++) {
 		    ir_node *upper = get_array_upper_bound(tp, i);
 		    ir_node *lower = get_array_lower_bound(tp, i);
-		    PRINT_NODE_TYPE_EDGE(upper, tp, "label: \"upper %d\"", get_array_order(tp, i));
-		    PRINT_NODE_TYPE_EDGE(lower, tp, "label: \"lower %d\"", get_array_order(tp, i));
+		    print_node_type_edge(F,upper, tp, "label: \"upper %d\"", get_array_order(tp, i));
+		    print_node_type_edge(F,lower, tp, "label: \"lower %d\"", get_array_order(tp, i));
 		    dump_const_expression(upper);
 		    dump_const_expression(lower);
 		  }
@@ -1129,7 +1207,7 @@ dump_type_info (type_or_ent *tore, void *env) {
 	} break;
       case tpo_pointer:
 	{
-		  PRINT_TYPE_TYPE_EDGE(tp,get_pointer_points_to_type(tp), PTR_PTS_TO_EDGE_ATTR);
+		  print_type_type_edge(F,tp,get_pointer_points_to_type(tp), PTR_PTS_TO_EDGE_ATTR);
 	} break;
       case tpo_primitive:
 	{
@@ -1162,10 +1240,10 @@ dump_class_hierarchy_node (type_or_ent *tore, void *env) {
       /* The node */
       dump_entity_node(ent);
       /* The edges */
-      PRINT_TYPE_ENT_EDGE(get_entity_owner(ent),ent,TYPE_MEMBER_EDGE_ATTR);
+      print_type_ent_edge(F,get_entity_owner(ent),ent,TYPE_MEMBER_EDGE_ATTR);
       for(i = 0; i < get_entity_n_overwrites(ent); i++)
       {
-      PRINT_ENT_ENT_EDGE(get_entity_overwrites(ent, i),ent, ENT_OVERWRITES_EDGE_ATTR);
+      print_ent_ent_edge(F,get_entity_overwrites(ent, i),ent, ENT_OVERWRITES_EDGE_ATTR);
       }
     }
   } break; /* case k_entity */
@@ -1179,7 +1257,7 @@ dump_class_hierarchy_node (type_or_ent *tore, void *env) {
 	  /* and now the edges */
 	  for (i=0; i < get_class_n_supertypes(tp); i++)
 	  {
-		  PRINT_TYPE_TYPE_EDGE(tp,get_class_supertype(tp, i),TYPE_SUPER_EDGE_ATTR);
+		  print_type_type_edge(F,tp,get_class_supertype(tp, i),TYPE_SUPER_EDGE_ATTR);
 	  }
         } break;
         default: break;
@@ -1416,8 +1494,7 @@ dump_ir_block_graph (ir_graph *irg)
 void
 dump_ir_graph_w_types (ir_graph *irg)
 {
-  ir_graph *rem;
-  rem = current_ir_graph;
+  ir_graph *rem = current_ir_graph;
   char *suffix;
   current_ir_graph = irg;
 
