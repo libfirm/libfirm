@@ -34,7 +34,10 @@
 #include "eset.h"
 #include "array.h"
 
-/* walk over an interprocedural graph (callgraph). Visits only graphs in irg_set. */
+/**
+ * Walk over an interprocedural graph (callgraph).
+ * Visits only graphs in irg_set.
+ */
 static void irg_walk_cg(ir_node * node, int visited, eset * irg_set,
                         irg_walk_func *pre, irg_walk_func *post, void * env) {
   int i;
@@ -105,7 +108,9 @@ static void irg_walk_cg(ir_node * node, int visited, eset * irg_set,
 }
 
 
-/* Insert all ir_graphs in irg_set, that are (transitive) reachable. */
+/**
+ * Insert all ir_graphs in irg_set, that are (transitive) reachable.
+ */
 static void collect_irgs(ir_node * node, eset * irg_set) {
   if (get_irn_op(node) == op_Call) {
     int i;
@@ -231,7 +236,9 @@ void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
   return;
 }
 
-
+/*
+ * walk over a graph
+ */
 void irg_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env) {
   ir_graph * rem = current_ir_graph;
 
@@ -453,7 +460,9 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void
   return;
 }
 
-
+/*
+ * walk over a graph block wise
+ */
 void irg_block_walk_graph(ir_graph *irg, irg_walk_func *pre,
               irg_walk_func *post, void *env) {
   ir_graph * rem = current_ir_graph;
@@ -470,7 +479,9 @@ typedef struct walk_env {
   void *env;
 } walk_env;
 
-/* Walk to all constant expressions in this entity. */
+/**
+ * Walk to all constant expressions in this entity.
+ */
 static void walk_entity(entity *ent, void *env)
 {
   walk_env *my_env = (walk_env *)env;
@@ -513,11 +524,10 @@ void walk_const_code(irg_walk_func *pre, irg_walk_func *post, void *env) {
     type *tp = get_irp_type(i);
     if (is_array_type(tp)) {
       for (j = 0; j < get_array_n_dimensions(tp); j++) {
-	ir_node *n;
-	n = get_array_lower_bound(tp, j);
-	if (n) irg_walk(n, pre, post, env);
-	n = get_array_upper_bound(tp, j);
-	if (n) irg_walk(n, pre, post, env);
+        ir_node *n = get_array_lower_bound(tp, j);
+        if (n) irg_walk(n, pre, post, env);
+        n = get_array_upper_bound(tp, j);
+        if (n) irg_walk(n, pre, post, env);
       }
     }
   }
