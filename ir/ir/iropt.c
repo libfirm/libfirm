@@ -39,6 +39,7 @@
 # include "irhooks.h"
 # include "irarch.h"
 # include "hashptr.h"
+# include "archop.h"
 # include "opt_polymorphy.h"
 
 /* Make types visible to allow most efficient access */
@@ -60,7 +61,7 @@ follow_Id (ir_node *n)
  */
 static tarval *computed_value_Const(ir_node *n)
 {
-    return get_Const_tarval(n);
+  return get_Const_tarval(n);
 }
 
 /**
@@ -603,9 +604,26 @@ different_identity (ir_node *a, ir_node *b)
 }
 #endif
 
+/**
+ * Returns a equivalent block for another block.
+ * If the block has only one predecessor, this is
+ * the equivalent one. If the only predecessor of a block is
+ * the block itself, this is a dead block.
+ *
+ * If both predecessors of a block are the branches of a binary
+ * Cond, the equivalent block is Cond's block.
+ *
+ * If all predecessors of a block are bad or lies in a dead
+ * block, the current block is dead as well.
+ *
+ * Note, that blocks are NEVER turned into Bad's, instead
+ * the dead_block flag is set. So, never test for is_Bad(block),
+ * always use is_dead_Block(block).
+ */
 static ir_node *equivalent_node_Block(ir_node *n)
 {
   ir_node *oldn = n;
+  int n_preds   = get_Block_n_cfgpreds(n);
 
   /* The Block constructor does not call optimize, but mature_immBlock
      calls the optimization. */
@@ -617,8 +635,7 @@ static ir_node *equivalent_node_Block(ir_node *n)
      This should be true, as the block is matured before optimize is called.
      But what about Phi-cycles with the Phi0/Id that could not be resolved?
      Remaining Phi nodes are just Ids. */
-   if ((get_Block_n_cfgpreds(n) == 1) &&
-       (get_irn_op(get_Block_cfgpred(n, 0)) == op_Jmp)) {
+   if ((n_preds == 1) && (get_irn_op(get_Block_cfgpred(n, 0)) == op_Jmp)) {
      ir_node *predblock = get_nodes_block(get_Block_cfgpred(n, 0));
      if (predblock == oldn) {
        /* Jmp jumps into the block it is in -- deal self cycle. */
@@ -629,7 +646,7 @@ static ir_node *equivalent_node_Block(ir_node *n)
        DBG_OPT_STG(oldn, n);
      }
    }
-   else if ((get_Block_n_cfgpreds(n) == 1) &&
+   else if ((n_preds == 1) &&
             (get_irn_op(skip_Proj(get_Block_cfgpred(n, 0))) == op_Cond)) {
      ir_node *predblock = get_nodes_block(get_Block_cfgpred(n, 0));
      if (predblock == oldn) {
@@ -638,7 +655,7 @@ static ir_node *equivalent_node_Block(ir_node *n)
        DBG_OPT_DEAD(oldn, n);
      }
    }
-   else if ((get_Block_n_cfgpreds(n) == 2) &&
+   else if ((n_preds == 2) &&
             (get_opt_control_flow_weak_simplification())) {
     /* Test whether Cond jumps twice to this block
        @@@ we could do this also with two loops finding two preds from several ones. */
@@ -1749,7 +1766,7 @@ static ir_node *transform_node_Proj(ir_node *proj)
     return proj;
 
   case iro_Cmp:
-    if (0 && get_opt_reassociation()) {
+    if (get_opt_reassociation()) {
       ir_node *left  = get_Cmp_left(n);
       ir_node *right = get_Cmp_right(n);
       ir_node *c     = NULL;
@@ -1797,11 +1814,15 @@ static ir_node *transform_node_Proj(ir_node *proj)
         tv = get_Const_tarval(c);
 
         if (tv != tarval_bad) {
-          /* the following optimization is possibe on non-int values either:
-           * -a CMP c  ==>  a swap(CMP) -c */
-          if (get_opt_constant_folding() && get_irn_op(left) == op_Minus) {
+          /* the following optimization is possibe on floating point values only:
+           * -a CMP c  ==>  a swap(CMP) -c
+           *
+           * Beware: for two-complement it is NOT true, see this:
+           * -MININT < 0 =/=> MININT > 0 !!!
+           */
+          if (mode_is_float(mode) && get_opt_constant_folding() && get_irn_op(left) == op_Minus) {
             left = get_Minus_op(left);
-            tv = tarval_sub(get_tarval_one(mode), tv);
+            tv = tarval_sub(get_tarval_null(mode), tv);
 
             proj_nr = get_swapped_pnc(proj_nr);
             changed |= 2;
@@ -2259,7 +2280,8 @@ static ir_node *transform_node_Mux(ir_node *n)
                 current_ir_graph,
                 block,
                 t, mode);
-          DBG_OPT_ALGSIM0(oldn, n);
+          DBG_OPT_ALGSIM1(oldn, cmp, sel, n);
+          return n;
         }
         else if (proj_nr == pn_Cmp_Le || proj_nr == pn_Cmp_Lt) {
           /* Mux(a <=/< 0, -a, a)  ==>  Minus(Abs(a)) */
@@ -2272,7 +2294,8 @@ static ir_node *transform_node_Mux(ir_node *n)
                 block,
                 n, mode);
 
-          DBG_OPT_ALGSIM0(oldn, n);
+          DBG_OPT_ALGSIM1(oldn, cmp, sel, n);
+          return n;
         }
       }
       else if (get_irn_op(t) == op_Minus &&
@@ -2285,7 +2308,8 @@ static ir_node *transform_node_Mux(ir_node *n)
                 current_ir_graph,
                 block,
                 f, mode);
-          DBG_OPT_ALGSIM0(oldn, n);
+          DBG_OPT_ALGSIM1(oldn, cmp, sel, n);
+          return n;
         }
         else if (proj_nr == pn_Cmp_Ge || proj_nr == pn_Cmp_Gt) {
           /* Mux(a >=/> 0, a, -a)  ==>  Minus(Abs(a)) */
@@ -2298,7 +2322,8 @@ static ir_node *transform_node_Mux(ir_node *n)
                 block,
                 n, mode);
 
-          DBG_OPT_ALGSIM0(oldn, n);
+          DBG_OPT_ALGSIM1(oldn, cmp, sel, n);
+          return n;
         }
       }
 
@@ -2319,7 +2344,8 @@ static ir_node *transform_node_Mux(ir_node *n)
                 new_r_Const_long(current_ir_graph, block, mode_Iu,
                   get_mode_size_bits(mode) - 1),
                 mode);
-          DBG_OPT_ALGSIM0(oldn, n);
+          DBG_OPT_ALGSIM1(oldn, cmp, sel, n);
+          return n;
         }
         else if ((proj_nr == pn_Cmp_Gt || proj_nr == pn_Cmp_Ge) &&
                  classify_Const(t) == CNST_ONE &&
@@ -2336,12 +2362,13 @@ static ir_node *transform_node_Mux(ir_node *n)
                 new_r_Const_long(current_ir_graph, block, mode_Iu,
                   get_mode_size_bits(mode) - 1),
                 mode);
-          DBG_OPT_ALGSIM0(oldn, n);
+          DBG_OPT_ALGSIM1(oldn, cmp, sel, n);
+          return n;
         }
       }
     }
   }
-  return n;
+  return arch_transform_node_Mux(n);
 }
 
 /**
@@ -2387,7 +2414,7 @@ static ir_op *firm_set_default_transform_node(ir_op *op)
   CASE(End);
   CASE(Mux);
   default:
-    op->transform_node  = NULL;
+    op->transform_node = NULL;
   }
 
   return op;
