@@ -215,7 +215,7 @@ typedef enum {
   allocation_automatic, /**< The entity is allocated during runtime, implicitly
                  as component of a compound type.   This is the default. */
   allocation_parameter, /**< The entity is a parameter.  It is also automatic allocated.
-                 We distinguish the allocation of paramters from the allocation
+                 We distinguish the allocation of parameters from the allocation
                  of local variables as their placement depends on the calling
                  conventions. */
   allocation_dynamic,   /**< The entity is allocated during runtime, explicitly

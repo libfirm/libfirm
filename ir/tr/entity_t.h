@@ -51,7 +51,7 @@ struct compound_graph_path {
   firm_kind kind;       /**< dynamic type tag for compound graph path. */
   type *tp;             /**< The type this path belongs to. */
   int len;              /**< length of the path */
-  int *arr_indicees;    /**< List of array indicees.  To compute position of
+  int *arr_indicees;    /**< List of array indeces.  To compute position of
                  array elements */
   entity *nodes[1];     /**< List of entities of length len to express the
                  access path. */
@@ -63,7 +63,7 @@ struct entity {
   ident *name;          /**< name of this entity */
   ident *ld_name;       /**< Unique name of this entity, i.e., the mangled
                            name.  If the field is read before written a default
-                           magling is applies.  The name of the owner is prepended
+                           mangling is applies.  The name of the owner is prepended
                            to the name of the entity, separated by a underscore.
                            E.g.,  for a class `A' with field `a' this
                            is the ident for `A_a'. */
@@ -113,8 +113,7 @@ struct entity {
 
 #ifdef DEBUG_libfirm
   int nr;             /**< a unique node number for each node to make output
-             readable. */
-  char *c_name;                 /**< Since idents are ipaque, provide the name in cleartext */
+                           readable. */
 # endif /* DEBUG_libfirm */
 };
 

@@ -69,7 +69,7 @@ char* fc_val_from_str(const char *str, unsigned int len, char exp_size, char man
 /** get the representation of a floating point value
  * This function tries to builds a representation having the same value as the
  * float number passed.
- * If the wished precision is less than the precicion of LLDBL the value built
+ * If the wished precision is less than the precision of LLDBL the value built
  * will be rounded. Therefore only an approximation of the passed float can be
  * expected in this case.
  *
@@ -191,7 +191,7 @@ int fc_comp(const void *a, const void *b);
  *    Values too big to represent will round to the biggest/smallest
  *    representable value.
  *
- * These modes correspond to the modes required by the ieee standard.
+ * These modes correspond to the modes required by the IEEE standard.
  *
  * @param mode The new rounding mode. Any value other than the four
  *        defined values will have no effect.
@@ -212,20 +212,20 @@ fc_rounding_mode_t fc_get_rounding_mode(void);
 
 /** Get bit representation of a value
  * This function allows to read a value in encoded form, bytewise.
- * The value will be packed corresponding to the way used by the ieee
+ * The value will be packed corresponding to the way used by the IEEE
  * encoding formats, i.e.
  *        One bit   sign
  *   exp_size bits  exponent + bias
  *  mant_size bits  mantissa, without leading 1
  *
- * As in ieee, an exponent of 0 indicates a denormalized number, which
+ * As in IEEE, an exponent of 0 indicates a denormalized number, which
  * implies a most significant bit of zero instead of one; an exponent
  * of all ones (2**exp_size - 1) encodes infinity if the mantissa is
- * all zeroes, else Not A Number.
+ * all zeros, else Not A Number.
  *
  * @param val A pointer to the value. If NULL is passed a copy of the
  *        most recent value passed to this function is used, saving the
- *        packing step. This behaviour may be changed in the future.
+ *        packing step. This behavior may be changed in the future.
  * @param num_bit The maximum number of bits to return. Any bit beyond
  *        num_bit will be returned as zero.
  * @param byte_ofs The byte index to read, 0 is the least significant

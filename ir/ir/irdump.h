@@ -389,7 +389,7 @@ void only_dump_method_with_name(ident *name);
 /**  Sets the vcg flag "display_edge_labels" to no.
  *
  *   This is necessary as xvcg and aisee both fail to display graphs
- *   with self-edges if these edges have labes.
+ *   with self-edges if these edges have lables.
  */
 void turn_off_edge_labels(void);
 

@@ -32,9 +32,9 @@ INLINE void exchange_types(type *old_type, type *new_type) {
        Maybe it's better to remove the id entry and shrink the list.
        Does this conflict with the walker?  Might a type be left out
        during the walk?
-     * Deallocation:  if the Id is removed from the list it will eventualle
+     * Deallocation:  if the Id is removed from the list it will eventually
        disappear in a memory leak.  When is impossible to determine so we
-       need to hold it in a seperate list for deallocation.
+       need to hold it in a separate list for deallocation.
   */
 
   /* Exchange the types */
