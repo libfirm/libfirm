@@ -1132,12 +1132,17 @@ void set_irg_method_execution_frequency (ir_graph *irg, double freq) {
 }
 
 static void compute_method_execution_frequency (ir_graph *irg, void *env) {
+  int i, n_callers;
+  double freq;
+  int    found_edge;
+  int    n_callees;
+
   if (cg_irg_visited(irg)) return;
 
   /* We need the values of all predecessors (except backedges).
      So they must be marked.  Else we will reach the node through
      one of the unmarked ones. */
-  int i, n_callers = get_irg_n_callers(irg);
+  n_callers = get_irg_n_callers(irg);
   for (i = 0; i < n_callers; i++) {
     ir_graph *m = get_irg_caller(irg, i);
     if (is_irg_caller_backedge(irg, i)) continue;
@@ -1148,14 +1153,15 @@ static void compute_method_execution_frequency (ir_graph *irg, void *env) {
   mark_cg_irg_visited(irg);
 
   /* Compute the new freqency. */
-  double freq = 0;
-  int found_edge = 0;
+  freq = 0;
+  found_edge = 0;
   for (i = 0; i < n_callers; i++) {
-    if (is_irg_caller_backedge(irg, i)) continue;
-    double edge_freq = get_irg_caller_method_execution_freqency(irg, i);
-    assert(edge_freq >= 0);
-    freq += edge_freq;
-    found_edge = 1;
+    if (! is_irg_caller_backedge(irg, i)) {
+      double edge_freq = get_irg_caller_method_execution_freqency(irg, i);
+      assert(edge_freq >= 0);
+      freq += edge_freq;
+      found_edge = 1;
+    }
   }
 
   if (!found_edge) {
@@ -1167,7 +1173,7 @@ static void compute_method_execution_frequency (ir_graph *irg, void *env) {
   set_irg_method_execution_frequency(irg, freq);
 
   /* recur */
-  int n_callees = get_irg_n_callees(irg);
+  n_callees = get_irg_n_callees(irg);
   for (i = 0; i < n_callees; i++) {
     compute_method_execution_frequency (get_irg_callee(irg, i), NULL);
   }
