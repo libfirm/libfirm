@@ -255,6 +255,14 @@ get_irn_mode (const ir_node *node)
   return node->mode;
 }
 
+INLINE void
+set_irn_mode (ir_node *node, ir_mode *mode)
+{
+  assert (node);
+  node->mode=mode;
+  return;
+}
+
 INLINE modecode
 get_irn_modecode (const ir_node *node)
 {
