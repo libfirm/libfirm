@@ -1,3 +1,6 @@
+  17.12.2001 Boris
+  Removed all obsolete Makefiles
+
   10.12.2001 Goetz
   Added support for constant entities.  A new example program illustrates
   their use.  Extended dumper routines to dump constant values.
