@@ -146,6 +146,7 @@ node: {title: "n116n117" label: "SymC PRIMA size  117"  info1: "mode:    Iu
 visited: 19
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 0
+kind size
 "}
 edge: {sourcename: "n116" targetname: "n118" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n116" targetname: "n116n117" label: "1" class:16 priority:10}

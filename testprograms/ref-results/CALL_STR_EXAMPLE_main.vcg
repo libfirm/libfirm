@@ -73,11 +73,13 @@ node: {title: "n66" label: "SymC f  66"  info1: "mode:    P
 visited: 9
 irg:     CALL_STR_EXAMPLE_main
 arity: 0
+kind addr_name
 "}
 node: {title: "n65" label: "SymC &constStr  65"  info1: "mode:    P
 visited: 9
 irg:     CALL_STR_EXAMPLE_main
 arity: 0
+kind addr_ent
 "}
 node: {title: "n60" label: "ProjX 0 60"  info1: "mode:    X
 visited: 9

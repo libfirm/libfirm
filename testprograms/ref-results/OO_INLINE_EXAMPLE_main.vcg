@@ -149,6 +149,7 @@ node: {title: "n208" label: "SymC PRIMA_INLINE size  208"  info1: "mode:    Iu
 visited: 25
 irg:     OO_INLINE_EXAMPLE_main
 arity: 0
+kind size
 "}
 node: {title: "n204" label: "0x5Is  204"  info1: "mode:    Is
 visited: 25

@@ -50,7 +50,7 @@ irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1 backedges:
 "color: lightyellow}
 edge: {sourcename: "n182" targetname: "n108" label: "0" class:13 priority:60 color:red}
-node: {title: "n184" label: "CallBegin  184"  info1: "mode:    T
+node: {title: "n184" label: "CallBegin set_a  184"  info1: "mode:    T
 visited: 32
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1
@@ -61,6 +61,7 @@ node: {title: "n184n166" label: "SymC &set_a  166"  info1: "mode:    P
 visited: 32
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 0
+kind addr_ent
 "}
 edge: {sourcename: "n184" targetname: "n184n166" label: "0" class:16 priority:10}
 edge: { sourcename: "n184" targetname: "n182" class:2  priority:50 linestyle:dotted}
@@ -111,7 +112,7 @@ irg:     PRIMA_set_a
 arity: 1 backedges:
 "color: lightyellow}
 edge: {sourcename: "n179" targetname: "n178" label: "0" class:13 priority:60 color:red}
-node: {title: "n180" label: "EndReg  180"  info1: "mode:    T
+node: {title: "n180" label: "EndReg PRIMA_set_a  180"  info1: "mode:    T
 visited: 32
 irg:     PRIMA_set_a
 arity: 0
@@ -130,7 +131,7 @@ irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1 backedges:
 "color: lightyellow}
 edge: {sourcename: "n188" targetname: "n185" label: "0" class:13 priority:60 color:red}
-node: {title: "n190" label: "CallBegin  190"  info1: "mode:    T
+node: {title: "n190" label: "CallBegin c  190"  info1: "mode:    T
 visited: 32
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1
@@ -141,6 +142,7 @@ node: {title: "n190n165" label: "SymC &c  165"  info1: "mode:    P
 visited: 32
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 0
+kind addr_ent
 "}
 edge: {sourcename: "n190" targetname: "n190n165" label: "0" class:16 priority:10}
 edge: { sourcename: "n190" targetname: "n188" class:2  priority:50 linestyle:dotted}
@@ -191,7 +193,7 @@ irg:     PRIMA_c
 arity: 1 backedges:
 "color: lightyellow}
 edge: {sourcename: "n171" targetname: "n170" label: "0" class:13 priority:60 color:red}
-node: {title: "n172" label: "EndReg  172"  info1: "mode:    T
+node: {title: "n172" label: "EndReg PRIMA_c  172"  info1: "mode:    T
 visited: 32
 irg:     PRIMA_c
 arity: 0
@@ -242,6 +244,7 @@ node: {title: "n116n117" label: "SymC PRIMA size  117"  info1: "mode:    Iu
 visited: 32
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 0
+kind size
 "}
 edge: {sourcename: "n116" targetname: "n118" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n116" targetname: "n116n117" label: "1" class:16 priority:10}
@@ -418,7 +421,7 @@ irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1 backedges:
 "color: lightyellow}
 edge: {sourcename: "n105" targetname: "n106" label: "0" class:13 priority:60 color:red}
-node: {title: "n103" label: "End  103"  info1: "mode:    X
+node: {title: "n103" label: "End OO_PROGRAM_EXAMPLE_main  103"  info1: "mode:    X
 visited: 32
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 2

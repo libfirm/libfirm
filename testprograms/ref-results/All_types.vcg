@@ -43,23 +43,29 @@ peculiarity: peculiarity_existent
 " color: green}
 edge: { sourcename: "t13" targetname: "e15"class: 12 label: "member" color:blue}
 node: {title: "e15" label: "ent WHILE_EXAMPLE_main" color: yellow
- info1: "
-id: e15
-allocation:  allocation_static
-visibility:  visibility_local
-variability: variability_constant
-volatility:  volatility_non_volatile
-peculiarity:  peculiarity_existent
-name:         main
-ld_name:      WHILE_EXAMPLE_main
-offset(bits): -1
-irg = g27"
+ info1: "entity main (15)
+  type:  main_tp (12)
+  owner: WHILE_EXAMPLE (13)
+  Does not overwrite other entities.
+  Is not overwriten by other entities.
+  allocation:  allocation_static
+  visibility:  visibility_local
+  variability: variability_constant
+  atomic value: SymC &main
+  volatility:  volatility_non_volatile
+  peculiarity: peculiarity_existent
+  ld_name: WHILE_EXAMPLE_main
+  offset:  -1
+  irg = 27
+
+"
 }
 edge: { sourcename: "e15" targetname: "t12"class: 3 label: "type" color: red}
 edge: { sourcename: "e15" targetname: "n14"label: "value 0"}
 node: {title: "n14" label: "SymC &main  14"  info1: "mode:    P
 visited: 1
 arity: 0
+kind addr_ent
 "}
 node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1b,
