@@ -51,6 +51,8 @@
  *  -  int    align:            byte alignment
  *  -  unsigned sign:1:         signedness of this mode
  *  -  ... more to come
+ *  -  modulo_shift             specifies for modes of kind irms_int_number
+ *                              whether shift applies modulo to value of bits to shift
  *
  * SEE ALSO:
  *    The tech report 1999-44 describing FIRM and predefined modes
@@ -141,6 +143,7 @@ typedef enum {
  * @param align		the byte alignment for an entity of this mode (in bits)
  * @param sign		non-zero if this is a signed mode
  * @param arithmetic    arithmetic operations possible with a mode
+ * @param modulo_shift  Is ignored for modes other than integer.
  *
  * This function constructs a new mode given by the parameters.
  * If the parameters match an already defined mode, this mode is returned
@@ -154,9 +157,10 @@ typedef enum {
  *
  * @note
  * 	It is allowed to construct the default modes. So, a call
- * 	new_ir_mode("Is", irms_int_number, 32, 4, 1) will return mode_Is.
+ * 	new_ir_mode("Is", irms_int_number, 32, 4, 1, 32) will return mode_Is.
  */
-ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align, int sign, mode_arithmetic arithmetic);
+ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align,
+		     int sign, mode_arithmetic arithmetic, unsigned int modulo_shift);
 
 /**
  *   Checks whether a pointer points to a mode.
@@ -197,6 +201,13 @@ int get_mode_sign (const ir_mode *mode);
 
 /** Returns the arithmetic of a mode */
 int get_mode_arithmetic (const ir_mode *mode);
+
+/** Attribute modulo shift specifies for modes of kind irms_int_number
+ *  whether shift applies modulo to value of bits to shift.  Zero for
+ *  modes that are not integer.
+ */
+unsinged int get_mode_modulo_shift(const ir_mode *mode);
+
 
 /** Returns the stored intermediate information. */
 void* get_mode_link(const ir_mode *mode);

@@ -56,9 +56,13 @@ static int num_modes;
 INLINE static int modes_are_equal(const ir_mode *m, const ir_mode *n)
 {
   if (m == n) return 1;
-  if (m->sort == n->sort && m->arithmetic == n->arithmetic && m->size == n->size && m->align == n->align && m->sign == n->sign)
+  if (m->sort == n->sort &&
+      m->arithmetic == n->arithmetic &&
+      m->size == n->size &&
+      m->align == n->align &&
+      m->sign == n->sign  &&
+      m->modulo_shift == n->modulo_shift)
     return 1;
-//  if (0 == memcmp(&m->sort, &n->sort, offsetof(ir_mode,min) - offsetof(ir_mode,sort))) return 1;
 
   return 0;
 }
@@ -228,19 +232,21 @@ static ir_mode *register_mode(const ir_mode* new_mode)
 /*
  * Creates a new mode.
  */
-ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align, int sign, mode_arithmetic arithmetic )
+ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align, int sign,
+		     mode_arithmetic arithmetic, unsigned int modulo_shift )
 {
   ir_mode mode_tmpl;
   ir_mode *mode;
 
-  mode_tmpl.name        = new_id_from_str(name);
-  mode_tmpl.sort        = sort;
-  mode_tmpl.size        = bit_size;
-  mode_tmpl.align       = align;
-  mode_tmpl.sign        = sign ? 1 : 0;
-  mode_tmpl.arithmetic  = arithmetic;
-  mode_tmpl.link        = NULL;
-  mode_tmpl.tv_priv     = NULL;
+  mode_tmpl.name         = new_id_from_str(name);
+  mode_tmpl.sort         = sort;
+  mode_tmpl.size         = bit_size;
+  mode_tmpl.align        = align;
+  mode_tmpl.sign         = sign ? 1 : 0;
+  mode_tmpl.modulo_shift = (mode_tmpl.sort == irms_int_number) ? modulo_shift : 0;
+  mode_tmpl.arithmetic   = arithmetic;
+  mode_tmpl.link         = NULL;
+  mode_tmpl.tv_priv      = NULL;
 
   mode = find_mode(&mode_tmpl);
   if (mode)
@@ -331,6 +337,15 @@ int get_mode_arithmetic (const ir_mode *mode)
 {
   ANNOUNCE();
   return mode->arithmetic;
+}
+
+
+/* Attribute modulo shift specifies for modes of kind irms_int_number
+ *  whether shift applies modulo to value of bits to shift.  Asserts
+ *  if mode is not irms_int_number.
+ */
+unsinged int get_mode_modulo_shift(const ir_mode *mode) {
+  return mode->modulo_shift;
 }
 
 void* get_mode_link(const ir_mode *mode)
@@ -633,12 +648,13 @@ init_mode (void)
   /* initialize predefined modes */
 
   /* Internal Modes */
-  newmode.arithmetic = irma_none;
-  newmode.size    = 0;
-  newmode.align   = 0;
-  newmode.sign    = 0;
-  newmode.link    = NULL;
-  newmode.tv_priv = NULL;
+  newmode.arithmetic   = irma_none;
+  newmode.size         = 0;
+  newmode.align        = 0;
+  newmode.sign         = 0;
+  newmode.modulo_shift = 0;
+  newmode.link         = NULL;
+  newmode.tv_priv      = NULL;
 
   /* Control Flow Modes*/
   newmode.sort    = irms_control_flow;
@@ -737,6 +753,7 @@ init_mode (void)
   newmode.sign    = 1;
   newmode.align   = 1;
   newmode.size    = 8;
+  newmode.modulo_shift = 32;
 
   mode_Bs = register_mode(&newmode);
 
@@ -747,6 +764,7 @@ init_mode (void)
   newmode.sign    = 0;
   newmode.align   = 1;
   newmode.size    = 8;
+  newmode.modulo_shift = 32;
 
   mode_Bu = register_mode(&newmode);
 
@@ -756,6 +774,7 @@ init_mode (void)
   newmode.sign    = 1;
   newmode.align   = 2;
   newmode.size    = 16;
+  newmode.modulo_shift = 32;
 
   mode_Hs = register_mode(&newmode);
 
@@ -765,6 +784,7 @@ init_mode (void)
   newmode.sign    = 0;
   newmode.align   = 2;
   newmode.size    = 16;
+  newmode.modulo_shift = 32;
 
   mode_Hu = register_mode(&newmode);
 
@@ -774,6 +794,7 @@ init_mode (void)
   newmode.sign    = 1;
   newmode.align   = 4;
   newmode.size    = 32;
+  newmode.modulo_shift = 32;
 
   mode_Is = register_mode(&newmode);
 
@@ -783,6 +804,7 @@ init_mode (void)
   newmode.sign    = 0;
   newmode.align   = 4;
   newmode.size    = 32;
+  newmode.modulo_shift = 32;
 
   mode_Iu = register_mode(&newmode);
 
@@ -792,6 +814,7 @@ init_mode (void)
   newmode.sign    = 1;
   newmode.align   = 4;
   newmode.size    = 64;
+  newmode.modulo_shift = 64;
 
   mode_Ls = register_mode(&newmode);
 
@@ -801,6 +824,7 @@ init_mode (void)
   newmode.sign    = 0;
   newmode.align   = 4;
   newmode.size    = 64;
+  newmode.modulo_shift = 64;
 
   mode_Lu = register_mode(&newmode);
 
@@ -814,6 +838,7 @@ init_mode (void)
   newmode.sign    = 0;
   newmode.align   = 1;
   newmode.size    = 8;
+  newmode.modulo_shift = 32;
 
   mode_C = register_mode(&newmode);
 
@@ -823,6 +848,7 @@ init_mode (void)
   newmode.sign    = 0;
   newmode.align   = 2;
   newmode.size    = 16;
+  newmode.modulo_shift = 32;
 
   mode_U = register_mode(&newmode);
 
@@ -836,6 +862,7 @@ init_mode (void)
   newmode.sign    = 0;
   newmode.align   = 4;
   newmode.size    = 32;
+  newmode.modulo_shift = 0;
 
   mode_P = register_mode(&newmode);
 

@@ -28,7 +28,7 @@ struct ir_mode {
   ident             *name;      /**< Name ident of this mode */
 
   /* ----------------------------------------------------------------------- */
-  /* On changing this struct you have to valuate the mode_are_equal function!*/
+  /* On changing this struct you have to evaluate the mode_are_equal function!*/
   mode_sort         sort;       /**< coarse classification of this mode:
                                      int, float, reference ...
                                      (see irmode.h) */
@@ -36,6 +36,7 @@ struct ir_mode {
   int               size;       /**< size of the mode in Bits. */
   int               align;      /**< byte alignment */
   unsigned          sign:1;     /**< signedness of this mode */
+  unsigned int      modulo_shift;
 
   /* ----------------------------------------------------------------------- */
   tarval            *min;

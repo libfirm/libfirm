@@ -144,9 +144,11 @@ ir_node *get_irg_cstore (ir_graph *irg);
 void     set_irg_cstore (ir_graph *irg, ir_node *node);
 /* end oblivious */
 
+/* node that represents frame pointer */
 ir_node *get_irg_frame (ir_graph *irg);
 void     set_irg_frame (ir_graph *irg, ir_node *node);
 
+/* node that represents global pointer */
 ir_node *get_irg_globals (ir_graph *irg);
 void     set_irg_globals (ir_graph *irg, ir_node *node);
 
