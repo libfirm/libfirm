@@ -640,7 +640,7 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       for (i = 0; i < get_Return_n_ress(n); i++) {
         type *res_type = get_method_res_type(mt, i);
 
-        if (is_Atomic_type(res_type)) {
+        if (is_atomic_type(res_type)) {
           ASSERT_AND_RET_DBG(
             get_irn_mode(get_Return_res(n, i)) == get_type_mode(res_type),
             "Mode of result for Return doesn't match mode of result type.", 0,
@@ -752,7 +752,7 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       for (i = 0; i < get_method_n_params(mt); i++) {
         type *t = get_method_param_type(mt, i);
 
-        if (is_Atomic_type(t)) {
+        if (is_atomic_type(t)) {
           ASSERT_AND_RET_DBG(
                              get_irn_mode(get_Call_param(n, i)) == get_type_mode(t),
                              "Mode of arg for Call doesn't match mode of arg type.", 0,

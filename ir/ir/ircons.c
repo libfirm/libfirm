@@ -163,9 +163,7 @@ new_rd_Const_type (dbg_info* db, ir_graph *irg, ir_node *block, ir_mode *mode, t
 ir_node *
 new_rd_Const (dbg_info* db, ir_graph *irg, ir_node *block, ir_mode *mode, tarval *con)
 {
-  type *tp = firm_unknown_type;
-  /* removing this somehow causes errors in jack. */
-  return new_rd_Const_type (db, irg, block, mode, con, tp);
+  return new_rd_Const_type (db, irg, block, mode, con, firm_unknown_type);
 }
 
 ir_node *
@@ -227,7 +225,7 @@ new_rd_Cast (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *op, type *to_
 {
   ir_node *res;
 
-  assert(is_Atomic_type(to_tp));
+  assert(is_atomic_type(to_tp));
 
   res = new_ir_node(db, irg, block, op_Cast, get_irn_mode(op), 1, &op);
   res->attr.cast.totype = to_tp;

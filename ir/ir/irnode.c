@@ -251,6 +251,7 @@ void
 set_irn_n (ir_node *node, int n, ir_node *in) {
   assert(node && node->kind == k_ir_node && -1 <= n && n < get_irn_arity(node));
   assert(in && in->kind == k_ir_node);
+
   if ((n == -1) && (get_irn_opcode(node) == iro_Filter)) {
     /* Change block pred in both views! */
     node->in[n + 1] = in;
@@ -898,7 +899,7 @@ void
 set_Const_type (ir_node *node, type *tp) {
   assert (node->op == op_Const);
   if (tp != firm_unknown_type) {
-    assert (is_Atomic_type(tp));
+    assert (is_atomic_type(tp));
     assert (get_type_mode(tp) == get_irn_mode(node));
   }
   node->attr.con.tp = tp;
