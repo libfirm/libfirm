@@ -156,6 +156,10 @@ SOURCE=..\ir\adt\iterator.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\adt\Makefile.in
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\adt\misc.h
 # End Source File
 # Begin Source File
@@ -309,6 +313,10 @@ SOURCE=..\ir\ana\irtypeinfo.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\ana\Makefile.in
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\ana\phiclass.c
 # End Source File
 # Begin Source File
@@ -366,6 +374,10 @@ SOURCE=..\ir\ana2\lset.c
 # Begin Source File
 
 SOURCE=..\ir\ana2\lset.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana2\Makefile.in
 # End Source File
 # Begin Source File
 
@@ -585,6 +597,10 @@ SOURCE=..\ir\be\beutil.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\be\Makefile.in
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\be\phistat.c
 # End Source File
 # Begin Source File
@@ -633,6 +649,10 @@ SOURCE=..\ir\common\firmwalk.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\common\Makefile.in
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\common\panic.c
 # End Source File
 # Begin Source File
@@ -663,10 +683,18 @@ SOURCE=..\ir\debug\dbginfo.h
 
 SOURCE=..\ir\debug\dbginfo_t.h
 # End Source File
+# Begin Source File
+
+SOURCE=..\ir\debug\Makefile.in
+# End Source File
 # End Group
 # Begin Group "external"
 
 # PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\ir\external\Makefile.in
+# End Source File
 # Begin Source File
 
 SOURCE=..\ir\external\read.c
@@ -695,6 +723,10 @@ SOURCE=..\ir\ident\ident.h
 # Begin Source File
 
 SOURCE=..\ir\ident\ident_t.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ident\Makefile.in
 # End Source File
 # End Group
 # Begin Group "ir"
@@ -926,6 +958,10 @@ SOURCE=..\ir\ir\irvrfy.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\ir\Makefile.in
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\ir\pnc.h
 # End Source File
 # Begin Source File
@@ -954,6 +990,18 @@ SOURCE=..\ir\opt\funccall.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\opt\funccall.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\ifconv.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\ifconv.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\opt\ldstopt.c
 # End Source File
 # Begin Source File
@@ -970,6 +1018,18 @@ SOURCE=..\ir\opt\loop_unrolling.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\opt\Makefile.in
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\opt_polymorphy.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\opt_polymorphy.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\opt\reassoc.c
 # End Source File
 # Begin Source File
@@ -979,6 +1039,18 @@ SOURCE=..\ir\opt\reassoc.h
 # Begin Source File
 
 SOURCE=..\ir\opt\reassoc_t.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\return.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\return.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\scalar_replace.c
 # End Source File
 # Begin Source File
 
@@ -1011,6 +1083,10 @@ SOURCE=..\ir\st\exc.c
 # Begin Source File
 
 SOURCE=..\ir\st\exc.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\st\Makefile.in
 # End Source File
 # Begin Source File
 
@@ -1054,6 +1130,10 @@ SOURCE=..\ir\stat\firmstat_t.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\stat\Makefile.in
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\stat\pattern.c
 # End Source File
 # Begin Source File
@@ -1094,6 +1174,10 @@ SOURCE=..\ir\tr\entity_t.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\tr\Makefile.in
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\tr\mangle.c
 # End Source File
 # Begin Source File
@@ -1111,6 +1195,14 @@ SOURCE=..\ir\tr\tpop.h
 # Begin Source File
 
 SOURCE=..\ir\tr\tpop_t.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\tr\tr_inheritance.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\tr\tr_inheritance.h
 # End Source File
 # Begin Source File
 
@@ -1175,6 +1267,10 @@ SOURCE=..\ir\tv\fltcalc.c
 # Begin Source File
 
 SOURCE=..\ir\tv\fltcalc.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\tv\Makefile.in
 # End Source File
 # Begin Source File
 
