@@ -115,10 +115,12 @@ tarval *tarval_B_from_str (const char *, size_t);
 tarval *tarval_d_from_str (const char *, size_t);
 tarval *tarval_s_from_str (const char *, size_t);
 tarval *tarval_S_from_str (const char *, size_t);
+tarval *tarval_int_from_str (const char *, size_t, int base, ir_mode *m);
 tarval *tarval_from_long  (ir_mode *, long);
+
 tarval *tarval_p_from_str (const char *);
-/* The tarval represents the address of the entity.  As the address must be constant
-   the entity must have as owner the global type. */
+/* The tarval represents the address of the entity.  As the address must
+   be constant the entity must have as owner the global type. */
 tarval *tarval_p_from_entity (entity *);
 
 tarval *tarval_convert_to (tarval *, ir_mode *);
