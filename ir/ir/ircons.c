@@ -647,7 +647,7 @@ new_rd_Alloc (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *store,
 
 ir_node *
 new_rd_Free (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *store,
-        ir_node *ptr, ir_node *size, type *free_type)
+        ir_node *ptr, ir_node *size, type *free_type, where_alloc where)
 {
   ir_node *in[3];
   ir_node *res;
@@ -655,8 +655,9 @@ new_rd_Free (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *store,
   in[0] = store;
   in[1] = ptr;
   in[2] = size;
-  res = new_ir_node (db, irg, block, op_Free, mode_T, 3, in);
-  res->attr.f = free_type;
+  res = new_ir_node (db, irg, block, op_Free, mode_M, 3, in);
+  res->attr.f.where = where;
+  res->attr.f.type  = free_type;
   res = optimize_node(res);
   IRN_VRFY_IRG(res, irg);
   return res;
@@ -1026,8 +1027,8 @@ ir_node *new_r_Alloc  (ir_graph *irg, ir_node *block, ir_node *store,
   return new_rd_Alloc(NULL, irg, block, store, size, alloc_type, where);
 }
 ir_node *new_r_Free   (ir_graph *irg, ir_node *block, ir_node *store,
-               ir_node *ptr, ir_node *size, type *free_type) {
-  return new_rd_Free(NULL, irg, block, store, ptr, size, free_type);
+               ir_node *ptr, ir_node *size, type *free_type, where_alloc where) {
+  return new_rd_Free(NULL, irg, block, store, ptr, size, free_type, where);
 }
 ir_node *new_r_Sync   (ir_graph *irg, ir_node *block, int arity, ir_node **in) {
   return new_rd_Sync(NULL, irg, block, arity, in);
@@ -2275,10 +2276,11 @@ new_d_Alloc (dbg_info* db, ir_node *store, ir_node *size, type *alloc_type,
 }
 
 ir_node *
-new_d_Free (dbg_info* db, ir_node *store, ir_node *ptr, ir_node *size, type *free_type)
+new_d_Free (dbg_info* db, ir_node *store, ir_node *ptr,
+    ir_node *size, type *free_type, where_alloc where)
 {
   return new_rd_Free (db, current_ir_graph, current_ir_graph->current_block,
-             store, ptr, size, free_type);
+             store, ptr, size, free_type, where);
 }
 
 ir_node *
@@ -2659,8 +2661,8 @@ ir_node *new_Alloc  (ir_node *store, ir_node *size, type *alloc_type,
   return new_d_Alloc(NULL, store, size, alloc_type, where);
 }
 ir_node *new_Free   (ir_node *store, ir_node *ptr, ir_node *size,
-             type *free_type) {
-  return new_d_Free(NULL, store, ptr, size, free_type);
+             type *free_type, where_alloc where) {
+  return new_d_Free(NULL, store, ptr, size, free_type, where);
 }
 ir_node *new_Sync   (int arity, ir_node **in) {
   return new_d_Sync(NULL, arity, in);
