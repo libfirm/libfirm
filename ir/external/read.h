@@ -15,6 +15,13 @@
 # ifndef _READ_H_
 # define _READ_H_
 
+# if 0
+/* we need strdup */
+# ifndef _GNU_SOURCE
+#  define _GNU_SOURCE
+# endif /* ! defined _GNU_SOURCE */
+# endif /* 0 */
+
 # include <stdio.h>
 # include <string.h>
 # include <stdlib.h>
@@ -27,10 +34,6 @@
 # include "type.h"
 # include "entity.h"
 
-/* we need strdup */
-# ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-# endif /* ! defined _GNU_SOURCE */
 
 # define MY_ENCODING "ISO-8859-1"
 
@@ -210,6 +213,9 @@ void extern_cleanup (void);
 
 /*
   $Log$
+  Revision 1.4  2004/10/13 11:56:16  liekweg
+  need strdup, don't need _GNU_SOURCE (wtf?)
+
   Revision 1.3  2004/10/13 08:39:59  liekweg
   need strdup
 
