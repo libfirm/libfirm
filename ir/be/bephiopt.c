@@ -10,6 +10,7 @@
 #include "irgraph.h"
 #include "irnode.h"
 #include "irgwalk.h"
+#include "irouts.h"
 #include "irdom.h"
 
 #include "bephiopt.h"
@@ -74,6 +75,7 @@ void be_phi_opt(ir_graph* irg) {
 
 	/* try to coalesce the colors of each phi class */
 	DBG((dbgphi, 1, "-----------------------> Coalescing <---------------------------------\n\n"));
+	compute_outs(irg);
 	compute_doms(irg);
 	be_phi_coalesce(all_phi_classes);
 	free_dom_and_peace(irg);
