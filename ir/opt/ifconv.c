@@ -941,7 +941,7 @@ void opt_if_conv(ir_graph *irg, const opt_if_conv_info_t *params)
   if (params)
     memcpy(&p, params, sizeof(p));
   else
-    memcpy(&p, &default_info, sizeof(params));
+    memcpy(&p, &default_info, sizeof(p));
 
   if (! p.allow_mux)
     p.allow_mux = default_info.allow_mux;
