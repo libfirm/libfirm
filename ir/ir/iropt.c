@@ -1124,7 +1124,7 @@ static ir_node *transform_node_Div(ir_node *n)
   if (tv != tarval_bad)
     value = new_Const(get_tarval_mode(tv), tv);
   else /* Try architecture dependand optimization */
-    value = arch_dep_replace_div_with_shifts(n);
+    value = arch_dep_replace_div_by_const(n);
 
   if (value != n) {
     /* Turn Div into a tuple (mem, bad, value) */
@@ -1148,7 +1148,7 @@ static ir_node *transform_node_Mod(ir_node *n)
   if (tv != tarval_bad)
     value = new_Const(get_tarval_mode(tv), tv);
   else /* Try architecture dependand optimization */
-    value = arch_dep_replace_mod_with_shifts(n);
+    value = arch_dep_replace_mod_by_const(n);
 
   if (value != n) {
     /* Turn Mod into a tuple (mem, bad, value) */
@@ -1193,7 +1193,7 @@ static ir_node *transform_node_DivMod(ir_node *n)
       evaluated = 1;
     }
     else { /* Try architecture dependand optimization */
-      arch_dep_replace_divmod_with_shifts(&a, &b, n);
+      arch_dep_replace_divmod_by_const(&a, &b, n);
       evaluated = a != NULL;
     }
   } else if (ta == get_mode_null(mode)) {
@@ -1530,6 +1530,65 @@ static ir_node *transform_node_Or(ir_node *or)
   return transform_node_Or(or);
 }
 
+/* forward */
+static ir_node *transform_node(ir_node *n);
+
+/**
+ * Optimize (a >> c1) >> c2), works for Shr, Shrs, Shl
+ */
+static ir_node * transform_node_shift(ir_node *n)
+{
+  ir_node *left;
+  tarval *tv1, *tv2, *res;
+  ir_mode *mode;
+  int modulo_shf, flag;
+
+  left = get_binop_left(n);
+
+  /* different operations */
+  if (get_irn_op(left) != get_irn_op(n))
+    return n;
+
+  tv1 = computed_value(get_binop_right(n));
+  if (tv1 == tarval_bad)
+    return n;
+
+  tv2 = computed_value(get_binop_right(left));
+  if (tv1 == tarval_bad)
+    return n;
+
+  res = tarval_add(tv1, tv2);
+
+  /* beware: a simple replacement works only, if res < modulo shift */
+  mode = get_irn_mode(n);
+
+  flag = 0;
+
+  modulo_shf = get_mode_modulo_shift(mode);
+  if (modulo_shf > 0) {
+    tarval *modulo = new_tarval_from_long(modulo_shf, get_tarval_mode(res));
+
+    if (tarval_cmp(res, modulo) & Lt)
+      flag = 1;
+  }
+  else
+    flag = 1;
+
+  if (flag) {
+    /* ok, we can replace it */
+    ir_node *in[2], *irn, *block = get_nodes_block(n);
+
+    in[0] = get_binop_left(left);
+    in[1] = new_r_Const(current_ir_graph, block, get_tarval_mode(res), res);
+
+    irn = new_ir_node(NULL, current_ir_graph, block, get_irn_op(n), mode, 2, in);
+
+    return transform_node(irn);
+  }
+  return n;
+}
+
+
 /**
  * Tries several [inplace] [optimizing] transformations and returns an
  * equivalent node.  The difference to equivalent_node() is that these
@@ -1563,6 +1622,11 @@ static ir_op *firm_set_default_transform_node(ir_op *op)
   CASE(Not);
   CASE(Proj);
   CASE(Or);
+  case iro_Shr:
+  case iro_Shrs:
+  case iro_Shl:
+    op->transform_node  = transform_node_shift;
+    break;
   default:
     op->transform_node  = NULL;
   }
