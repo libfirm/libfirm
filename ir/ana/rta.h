@@ -16,8 +16,6 @@ void rta_cleanup(void);
 int rta_is_alive_class(type *clazz);
 /* Inquire whether the given graph is alive */
 int rta_is_alive_graph(ir_graph *graph);
-/* Inquire whether the given field is alive */
-int rta_is_alive_field(entity *field);
 /* dump our opinion */
 void rta_report (void);
 
@@ -25,6 +23,9 @@ void rta_report (void);
 
 /*
  * $Log$
+ * Revision 1.8  2004/06/18 17:34:31  liekweg
+ * Removed field checks --flo
+ *
  * Revision 1.7  2004/06/18 13:12:43  liekweg
  * final bug fix (calls via consts)
  *
