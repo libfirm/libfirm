@@ -78,6 +78,7 @@ struct ir_graph {
   pset *value_table;                 /**< hash table for global value numbering (cse)
                     for optimizing use in iropt.c */
   struct ir_node **outs;             /**< Space for the out arrays. */
+  int             n_outs;       /* < Size wasted for outs */
   struct ir_loop *loop;              /**< The outermost loop */
   void *link;                        /**< A void* field to link any information to
                     the node. */

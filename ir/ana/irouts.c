@@ -38,8 +38,19 @@
 /** Accessing the out datastructures                                 **/
 /**********************************************************************/
 
+static void reset_outs (ir_node *node, void *unused)
+{
+  node->out = NULL;
+#ifdef DEBUG_libfirm
+  node->out_valid = 0;
+#endif
+}
+
 /* returns the number of successors of the node: */
 INLINE int get_irn_n_outs    (ir_node *node) {
+#ifdef DEBUG_libfirm
+  assert (node->out_valid);
+#endif
   return (int)(node->out[0]);
 }
 
@@ -47,12 +58,18 @@ INLINE int get_irn_n_outs    (ir_node *node) {
 INLINE ir_node *get_irn_out      (ir_node *node, int pos) {
   assert(node);
   assert(pos >= 0 && pos < get_irn_n_outs(node));
+#ifdef DEBUG_libfirm
+  assert (node->out_valid);
+#endif
   return node->out[pos+1];
 }
 
 INLINE void set_irn_out      (ir_node *node, int pos, ir_node *out) {
   assert(node && out);
   assert(pos >= 0 && pos < get_irn_n_outs(node));
+#ifdef DEBUG_libfirm
+  assert (node->out_valid);
+#endif
   node->out[pos+1] = out;
 }
 
@@ -60,6 +77,9 @@ INLINE void set_irn_out      (ir_node *node, int pos, ir_node *out) {
 INLINE int get_Block_n_cfg_outs (ir_node *bl) {
   int i, n_cfg_outs = 0;
   assert(bl && (get_irn_op(bl) == op_Block));
+#ifdef DEBUG_libfirm
+  assert (bl->out_valid);
+#endif
   for (i = 0; i < (int)bl->out[0]; i++)
     if ((intern_get_irn_mode(bl->out[i+1]) == mode_X) &&
     (intern_get_irn_op(bl->out[i+1]) != op_End)) n_cfg_outs++;
@@ -70,6 +90,9 @@ INLINE int get_Block_n_cfg_outs (ir_node *bl) {
 INLINE ir_node *get_Block_cfg_out  (ir_node *bl, int pos) {
   int i, out_pos = 0;
   assert(bl && (get_irn_op(bl) == op_Block));
+#ifdef DEBUG_libfirm
+  assert (bl->out_valid);
+#endif
   for (i = 0; i < (int)bl->out[0]; i++)
     if ((intern_get_irn_mode(bl->out[i+1]) == mode_X)  &&
     (intern_get_irn_op(bl->out[i+1]) != op_End)) {
@@ -195,8 +218,9 @@ static int count_outs(ir_node *n) {
     succ = skip_Tuple(intern_get_irn_n(n, i));
     set_irn_n(n, i, succ);
     /* count outs for successors */
-    if (get_irn_visited(succ) < get_irg_visited(current_ir_graph))
+    if (get_irn_visited(succ) < get_irg_visited(current_ir_graph)) {
       res += count_outs(succ);
+    }
     /* Count my outs */
     succ->out = (ir_node **)( (int)succ->out +1);
   }
@@ -212,6 +236,9 @@ static ir_node **set_out_edges(ir_node *n, ir_node **free) {
   /* Allocate my array */
   n_outs = (int) n->out;
   n->out = free;
+#ifdef DEBUG_libfirm
+  n->out_valid = 1;
+#endif
   free = &free[n_outs];
   /* We count the successors again, the space will be sufficient.
      We use this counter to remember the position for the next back
@@ -251,6 +278,7 @@ static INLINE void fix_start_proj(ir_graph *irg) {
 void compute_outs(ir_graph *irg) {
   ir_graph *rem = current_ir_graph;
   int n_out_edges = 0;
+  ir_node *end = NULL;
 
   current_ir_graph = irg;
 
@@ -265,12 +293,16 @@ void compute_outs(ir_graph *irg) {
   n_out_edges = count_outs(get_irg_end(irg));
 
   /* allocate memory for all out edges. */
-  irg->outs = (ir_node **) malloc (n_out_edges * sizeof(ir_node *));
+  irg->outs = (ir_node **) xmalloc (n_out_edges * sizeof(ir_node *));
+  irg->n_outs = n_out_edges;
 
   /* The second iteration splits the irg->outs array into smaller arrays
      for each node and writes the back edges into this array. */
   inc_irg_visited(irg);
-  set_out_edges(get_irg_end(irg), irg->outs);
+  end = set_out_edges(get_irg_end(irg), irg->outs);
+
+  /* Check how much memory we have used */
+  assert (end == (irg->outs + n_out_edges));
 
   /* We want that the out of ProjX from Start contains the next block at
      position 1, the Start block at position 2.  This is necessary for
@@ -357,7 +389,7 @@ static void set_array_pointer(ir_node *node, void *env) {
   /* Allocate my array */
   n_outs = (int) node -> out;  /* We wrote the count here in count_ip_outs */
   dummy_count += n_outs;
-  assert(dummy_count <= global_count && "More outedges than initialliy counted!");
+  assert(dummy_count <= global_count && "More outedges than initially counted!");
   node -> out = *free;
   *free = &((*free)[n_outs]);
   /* We count the successors again, the space will be sufficient.
@@ -410,7 +442,7 @@ void compute_ip_outs(void) {
   ir_node **out_edges;
 
   assert(get_irp_ip_view_state() == ip_view_valid &&
-	 "Cannot construct outs for invalid ip view.");
+     "Cannot construct outs for invalid ip view.");
 
   if (irp->outs_state != no_outs) free_ip_outs();
 
@@ -434,8 +466,15 @@ void free_ip_outs(void)
 
 void free_outs(ir_graph *irg) {
 
-  current_ir_graph->outs_state = no_outs;
+/*   current_ir_graph->outs_state = no_outs; */
+  irg->outs_state = no_outs;
 
-  if (irg->outs) free(irg->outs);
-  irg->outs = NULL;
+  if (irg->outs) {
+    bzero (irg->outs, irg->n_outs);
+    free(irg->outs);
+    irg->outs = NULL;
+    irg->n_outs = 0;
+  }
+
+  irg_walk (get_irg_end_block (irg), reset_outs, NULL, NULL);
 }
