@@ -8,6 +8,8 @@
 #ifndef _BECHORDAL_T_H
 #define _BECHORDAL_T_H
 
+#define BUILD_GRAPH
+
 /**
  * A liveness interval border.
  */
@@ -26,6 +28,14 @@ typedef struct _border_t {
 																	at block beginnings or ends to ensure that inside
 																	a block, each value has one begin and one end. */
 } border_t;
+
+#ifdef BUILD_GRAPH
+typedef struct _if_edge_t {
+	int src, tgt;
+} if_edge_t;
+
+set *be_ra_get_ifg(ir_graph *irg);
+#endif
 
 extern void be_ra_chordal_spill(ir_graph *irg);
 

@@ -33,9 +33,8 @@
 
 #undef DUMP_INTERVALS
 #undef DUMP_PRESSURE
-#define DUMP_IFG
+#undef DUMP_IFG
 
-#define BUILD_GRAPH
 
 #ifdef DEBUG_libfirm
 #include "fourcc.h"
@@ -263,9 +262,6 @@ static void dump_interval_tree(ir_graph *irg, const tree_layout_params_t *params
 
 #ifdef BUILD_GRAPH
 
-typedef struct _if_edge_t {
-	int src, tgt;
-} if_edge_t;
 
 #define IF_EDGE_HASH(e) ((e)->src)
 
@@ -485,7 +481,7 @@ static INLINE border_t *border_add(env_t *env, struct list_head *head,
 #endif
 	}
 
-
+	b->pressure = pressure;
 	b->is_def = is_def;
 	b->is_real = is_real;
 	b->irn = irn;
@@ -767,7 +763,7 @@ static void assign(ir_node *block, void *env_ptr)
 void be_ra_chordal_init(void)
 {
 	dbg = firm_dbg_register(DBG_BERA);
-	/* firm_dbg_set_mask(dbg, -1);  */
+	firm_dbg_set_mask(dbg, 0);
 }
 
 void be_ra_chordal(ir_graph *irg)
@@ -835,3 +831,9 @@ int phi_ops_interfere(const ir_node *a, const ir_node *b)
 	return values_interfere(a, b);
 #endif /* BUILD_GRAPH */
 }
+
+#ifdef BUILD_GRAPH
+set *be_ra_get_ifg(ir_graph *irg) {
+	return ((env_t *)get_irg_ra_link(irg))->graph;
+}
+#endif
