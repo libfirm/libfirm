@@ -191,7 +191,7 @@ AC_FUNC_OBSTACK
 
 #AC_CHECK_HEADERS(obstack.h, ac_obstack_headers="yes", ac_obstack_headers="no")
 #if test "$ac_obstack_headers" != yes; then
-if test $ac_cv_func_obstack != yes; then
+if test "$ac_cv_func_obstack" != "yes"; then
   dnl obstack header not found.
   AC_MSG_ERROR("no obstack support")
 fi
