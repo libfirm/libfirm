@@ -123,7 +123,6 @@ Dumping the graph and a control flow graph.
 Use xvcg to view these graphs:
 /ben/goetz/bin/xvcg GRAPHNAME
 
-Loop entry not at loop position 0. construct_interval_block(l.239) BlockBB: 47 (0x811b910)
 
 Creating an IR graph: MEMORY_EXAMPLE...
 Optimizing ...
