@@ -1,0 +1,29 @@
+# Hey Emacs, this is a -*- makefile -*-
+#
+# libFIRM Project
+#
+# $Id$
+#
+
+top_srcdir := @top_srcdir@
+srcdir = @srcdir@
+topdir = ../..
+subdir := ir/ana
+
+INSTALL_HEADERS = irouts.h
+
+SOURCES = $(INSTALL_HEADERS)
+
+SOURCES += Makefile.in \
+		irouts.c
+
+
+include $(topdir)/MakeRules
+
+CPPFLAGS += -I$(top_srcdir)/ir/adt -I$(top_srcdir)/ir/ir -I$(top_srcdir)/ir/common  \
+		-I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/tr -I$(top_srcdir)/ir/tv \
+		-I$(top_srcdir)/ir/debug -I$(top_srcdir)/ir/ana
+
+include $(top_srcdir)/MakeTargets
+
+all: subdir.o
