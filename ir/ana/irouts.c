@@ -278,7 +278,7 @@ static INLINE void fix_start_proj(ir_graph *irg) {
 void compute_outs(ir_graph *irg) {
   ir_graph *rem = current_ir_graph;
   int n_out_edges = 0;
-  ir_node *end = NULL;
+  ir_node **end = NULL;
 
   current_ir_graph = irg;
 
@@ -315,13 +315,13 @@ void compute_outs(ir_graph *irg) {
 
 
 
-/****************************************************************
- **  This computes the outedges for in interprocedural graph.  **
- **  There is one quirk:                                       **
- **  The number of the outedges for each node is saved in      **
- **  the first member of the ir_node** array. Maybe we should  **
- **  change this to make it more portable...                   **
- ****************************************************************/
+/*------------------------------------------------------------*
+ *  This computes the outedges for in interprocedural graph.  *
+ *  There is one quirk:                                       *
+ *  The number of the outedges for each node is saved in      *
+ *  the first member of the ir_node** array. Maybe we should  *
+ *  change this to make it more portable...                   *
+ *------------------------------------------------------------*/
 
 
 /* ------------------------------------------
@@ -351,11 +351,10 @@ static void node_arity_count(ir_node * node, void * env)
   *anz += arity;
 
   start = (is_Block(node)) ? 0 : -1;
-  for(i = start; i < intern_get_irn_arity(node); i++)
-    {
-      succ = intern_get_irn_n(node, i);
-      succ->out = (ir_node **)((int)succ->out + 1);
-    }
+  for(i = start; i < intern_get_irn_arity(node); i++) {
+    succ = intern_get_irn_n(node, i);
+    succ->out = (ir_node **)((int)succ->out + 1);
+  }
 }
 
 
@@ -470,7 +469,7 @@ void free_outs(ir_graph *irg) {
   irg->outs_state = no_outs;
 
   if (irg->outs) {
-    bzero (irg->outs, irg->n_outs);
+    memset(irg->outs, 0, irg->n_outs);
     free(irg->outs);
     irg->outs = NULL;
     irg->n_outs = 0;
