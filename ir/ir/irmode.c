@@ -508,3 +508,14 @@ mode_is_dataM (ir_mode *mode)
   }
   return res;
 }
+
+/* Returns true if sm can be converted to lm without loss. */
+bool
+smaller_mode(ir_mode *sm, ir_mode *lm) {
+  if ((mode_is_int(sm) && mode_is_int(lm)) &&
+      get_mode_modecode(sm) <= get_mode_modecode(lm))
+    return true;
+  if ((mode_is_float(sm) && mode_is_float(lm)) &&
+      get_mode_modecode(sm) <= get_mode_modecode(lm))
+    return true;
+}

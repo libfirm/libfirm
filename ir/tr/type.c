@@ -255,6 +255,251 @@ int is_type            (void *thing) {
     return 0;
 }
 
+
+bool equal_type(type *typ1, type *typ2) {
+  entity **m;
+  type **t;
+  int i, j;
+
+  if (typ1 == typ2) return true;
+
+  if ((get_type_tpop_code(typ1) != get_type_tpop_code(typ2)) ||
+      (get_type_name(typ1) != get_type_name(typ2)) ||
+      (get_type_mode(typ1) != get_type_mode(typ2)) ||
+      (get_type_state(typ1) != get_type_state(typ2)))
+    return false;
+  if ((get_type_state(typ1) == layout_fixed) &&
+      (get_type_size(typ1) != get_type_size(typ2)))
+    return false;
+
+  switch(get_type_tpop_code(typ1)) {
+  case tpo_class:       {
+    if (get_class_n_members(typ1) != get_class_n_members(typ2)) return false;
+    if (get_class_n_subtypes(typ1) != get_class_n_subtypes(typ2)) return false;
+    if (get_class_n_supertypes(typ1) != get_class_n_supertypes(typ2)) return false;
+    if (get_class_peculiarity(typ1) != get_class_peculiarity(typ2)) return false;
+    /** Compare the members **/
+    m = alloca(sizeof(entity *) * get_class_n_members(typ1));
+    memset(m, 0, sizeof(entity *) * get_class_n_members(typ1));
+    /* First sort the members of typ2 */
+    for (i = 0; i < get_class_n_members(typ1); i++) {
+      entity *e1 = get_class_member(typ1, i);
+      for (j = 0; j < get_class_n_members(typ2); j++) {
+	entity *e2 = get_class_member(typ2, j);
+	if (get_entity_name(e1) == get_entity_name(e2))
+	  m[i] = e2;
+      }
+    }
+    for (i = 0; i < get_class_n_members(typ1); i++) {
+      if (!m[i]  ||  /* Found no counterpart */
+	  !equal_entity(get_class_member(typ1, i), m[i]))
+	return false;
+    }
+    /** Compare the supertypes **/
+    t = alloca(sizeof(entity *) * get_class_n_supertypes(typ1));
+    memset(t, 0, sizeof(entity *) * get_class_n_supertypes(typ1));
+    /* First sort the supertypes of typ2 */
+    for (i = 0; i < get_class_n_supertypes(typ1); i++) {
+      type *t1 = get_class_supertype(typ1, i);
+      for (j = 0; j < get_class_n_supertypes(typ2); j++) {
+	type *t2 = get_class_supertype(typ2, j);
+	if (get_type_name(t2) == get_type_name(t1))
+	  t[i] = t2;
+      }
+    }
+    for (i = 0; i < get_class_n_supertypes(typ1); i++) {
+      if (!t[i]  ||  /* Found no counterpart */
+	  get_class_supertype(typ1, i) != t[i])
+	return false;
+    }
+  } break;
+  case tpo_struct:      {
+    if (get_struct_n_members(typ1) != get_struct_n_members(typ2)) return false;
+    m = alloca(sizeof(entity *) * get_struct_n_members(typ1));
+    memset(m, 0, sizeof(entity *) * get_struct_n_members(typ1));
+    /* First sort the members of lt */
+    for (i = 0; i < get_struct_n_members(typ1); i++) {
+      entity *e1 = get_struct_member(typ1, i);
+      for (j = 0; j < get_struct_n_members(typ2); j++) {
+	entity *e2 = get_struct_member(typ2, j);
+	if (get_entity_name(e1) == get_entity_name(e2))
+	  m[i] = e2;
+      }
+    }
+    for (i = 0; i < get_struct_n_members(typ1); i++) {
+      if (!m[i]  ||  /* Found no counterpart */
+	  !equal_entity(get_struct_member(typ1, i), m[i]))
+	return false;
+    }
+  } break;
+  case tpo_method:      {
+    if (get_method_n_params(typ1) != get_method_n_params(typ2)) return false;
+    if (get_method_n_ress(typ1) != get_method_n_ress(typ2)) return false;
+    for (i = 0; i < get_method_n_params(typ1); i++) {
+      if (!equal_type(get_method_param_type(typ1, i), get_method_param_type(typ2, i)))
+	return false;
+    }
+    for (i = 0; i < get_method_n_ress(typ1); i++) {
+      if (!equal_type(get_method_res_type(typ1, i), get_method_res_type(typ2, i)))
+	return false;
+    }
+  } break;
+  case tpo_union:       {
+    if (get_union_n_members(typ1) != get_union_n_members(typ2)) return false;
+    m = alloca(sizeof(entity *) * get_union_n_members(typ1));
+    memset(m, 0, sizeof(entity *) * get_union_n_members(typ1));
+    /* First sort the members of lt */
+    for (i = 0; i < get_union_n_members(typ1); i++) {
+      entity *e1 = get_union_member(typ1, i);
+      for (j = 0; j < get_union_n_members(typ2); j++) {
+	entity *e2 = get_union_member(typ2, j);
+	if (get_entity_name(e1) == get_entity_name(e2))
+	  m[i] = e2;
+      }
+    }
+    for (i = 0; i < get_union_n_members(typ1); i++) {
+      if (!m[i]  ||  /* Found no counterpart */
+	  !equal_entity(get_union_member(typ1, i), m[i]))
+	return false;
+    }
+  } break;
+  case tpo_array:       {
+    type *set, *let;  /* small/large elt. type */
+    if (get_array_n_dimensions(typ1) != get_array_n_dimensions(typ2))
+      return false;
+    if (!equal_type(get_array_element_type(typ1), get_array_element_type(typ2)))
+      return false;
+    for(i = 0; i < get_array_n_dimensions(typ1); i++) {
+      if (get_array_lower_bound(typ1, i) != get_array_lower_bound(typ2, i) ||
+	  get_array_upper_bound(typ1, i) != get_array_upper_bound(typ2, i))
+	return false;
+      if (get_array_order(typ1, i) != get_array_order(typ2, i))
+	assert(0 && "type compare with different dimension orders not implemented");
+    }
+  } break;
+  case tpo_enumeration: {
+    assert(0 && "enumerations not implemented");
+  } break;
+  case tpo_pointer:     {
+    if (get_pointer_points_to_type(typ1) != get_pointer_points_to_type(typ2))
+      return false;
+  } break;
+  case tpo_primitive:   {
+  } break;
+  default: break;
+  }
+  return true;
+}
+
+bool smaller_type (type *st, type *lt) {
+  entity **m;
+  int i, j;
+
+  if (st == lt) return true;
+
+  if (get_type_tpop_code(st) != get_type_tpop_code(lt))
+    return false;
+
+  switch(get_type_tpop_code(st)) {
+  case tpo_class:       {
+    return is_subclass_of(st, lt);
+  } break;
+  case tpo_struct:      {
+    if (get_struct_n_members(st) != get_struct_n_members(lt)) return false;
+    m = alloca(sizeof(entity *) * get_struct_n_members(st));
+    memset(m, 0, sizeof(entity *) * get_struct_n_members(st));
+    /* First sort the members of lt */
+    for (i = 0; i < get_struct_n_members(st); i++) {
+      entity *se = get_struct_member(st, i);
+      for (j = 0; j < get_struct_n_members(lt); j++) {
+	entity *le = get_struct_member(lt, j);
+	if (get_entity_name(le) == get_entity_name(se))
+	  m[i] = le;
+      }
+    }
+    for (i = 0; i < get_struct_n_members(st); i++) {
+      if (!m[i]  ||  /* Found no counterpart */
+	  !smaller_type(get_entity_type(get_struct_member(st, i)),
+			get_entity_type(m[i])))
+	return false;
+    }
+  } break;
+  case tpo_method:      {
+    if (get_method_n_params(st) != get_method_n_params(lt)) return false;
+    if (get_method_n_ress(st) != get_method_n_ress(lt)) return false;
+    for (i = 0; i < get_method_n_params(st); i++) {
+      if (!smaller_type(get_method_param_type(st, i), get_method_param_type(lt, i)))
+	return false;
+    }
+    for (i = 0; i < get_method_n_ress(st); i++) {
+      if (!smaller_type(get_method_res_type(st, i), get_method_res_type(lt, i)))
+	return false;
+    }
+  } break;
+  case tpo_union:       {
+    if (get_union_n_members(st) != get_union_n_members(lt)) return false;
+    m = alloca(sizeof(entity *) * get_union_n_members(st));
+    memset(m, 0, sizeof(entity *) * get_union_n_members(st));
+    /* First sort the members of lt */
+    for (i = 0; i < get_union_n_members(st); i++) {
+      entity *se = get_union_member(st, i);
+      for (j = 0; j < get_union_n_members(lt); j++) {
+	entity *le = get_union_member(lt, j);
+	if (get_entity_name(le) == get_entity_name(se))
+	  m[i] = le;
+      }
+    }
+    for (i = 0; i < get_union_n_members(st); i++) {
+      if (!m[i]  ||  /* Found no counterpart */
+	  !smaller_type(get_entity_type(get_union_member(st, i)),
+			get_entity_type(m[i])))
+	return false;
+    }
+  } break;
+  case tpo_array:       {
+    type *set, *let;  /* small/large elt. type */
+    if (get_array_n_dimensions(st) != get_array_n_dimensions(lt))
+      return false;
+    set = get_array_element_type(st);
+    let = get_array_element_type(lt);
+    if (set != let) {
+      /* If the elt types are different, set must be convertible
+	 to let, and they must have the same size so that address
+	 computations work out.  To have a size the layout must
+	 be fixed. */
+      if ((get_type_state(set) != layout_fixed) ||
+	  (get_type_state(let) != layout_fixed))
+	return false;
+      if (!smaller_type(set, let) ||
+	  get_type_size(set) != get_type_size(let))
+	return false;
+    }
+    for(i = 0; i < get_array_n_dimensions(st); i++) {
+      if (get_array_lower_bound(lt, i))
+	if(get_array_lower_bound(st, i) != get_array_lower_bound(lt, i))
+	  return false;
+      if (get_array_upper_bound(lt, i))
+	if(get_array_upper_bound(st, i) != get_array_upper_bound(lt, i))
+	  return false;
+    }
+  } break;
+  case tpo_enumeration: {
+    assert(0 && "enumerations not implemented");
+  } break;
+  case tpo_pointer:     {
+    if (!smaller_type(get_pointer_points_to_type(st),
+		      get_pointer_points_to_type(lt)))
+      return false;
+  } break;
+  case tpo_primitive:   {
+    if (!smaller_mode(get_type_mode(st), get_type_mode(lt)))
+      return false;
+  } break;
+  default: break;
+  }
+  return true;
+}
+
 /*******************************************************************/
 /** TYPE_CLASS                                                    **/
 /*******************************************************************/
@@ -418,6 +663,20 @@ int get_class_dfn (type *clss)
 bool    is_class_type(type *clss) {
   assert(clss);
   if (clss->type_op == type_class) return 1; else return 0;
+}
+
+bool is_subclass_of(type *low, type *high) {
+  int i;
+  assert(is_class_type(low) && is_class_type(high));
+  if (low == high) return true;
+  /* depth first search from high downwards. */
+  for (i = 0; i < get_class_n_subtypes(high); i++) {
+    if (low == get_class_subtype(high, i))
+      return true;
+    if (is_subclass_of(low, get_class_subtype(high, i)))
+      return true;
+  }
+  return false;
 }
 
 /*******************************************************************/

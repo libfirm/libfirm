@@ -432,6 +432,8 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   /** Check preconditions **/
   assert(get_irn_op(call) == op_Call);
   /* assert(get_Call_type(call) == get_entity_type(get_irg_ent(called_graph))); */
+  assert(smaller_type(get_entity_type(get_irg_ent(called_graph)),
+		      get_Call_type(call)));
   assert(get_type_tpop(get_Call_type(call)) == type_method);
   if (called_graph == current_ir_graph) return;
 

@@ -20,6 +20,7 @@ reimplementation of the tarval module.
 # define _IRMODE_H_
 
 #include "ident.h"
+#include "bool.h"
 
 # define target_bits 8
 
@@ -127,5 +128,9 @@ int mode_is_num (ir_mode *mode);
 int mode_is_data (ir_mode *mode);
 int mode_is_datab (ir_mode *mode);
 int mode_is_dataM (ir_mode *mode);
+
+/* Returns true if sm can be converted to lm without loss
+   according to firm definiton */
+bool smaller_mode(ir_mode *sm, ir_mode *lm);
 
 # endif /* _IRMODE_H_ */

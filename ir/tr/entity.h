@@ -277,6 +277,11 @@ int is_atomic_entity(entity *ent);
    array or union type. */
 int is_compound_entity(entity *ent);
 
+/* Returns true if ent1 and ent2 have are equal except for their owner.
+   Two entities are equal if
+    - they have the same type (the same C-struct)
+*/
+bool equal_entity(entity *ent1, entity *ent2);
 
 /*****/
 

@@ -189,6 +189,86 @@ extern unsigned long type_visited;
  */
 int is_type            (void *thing);
 
+/****f* type/equal_types
+ *
+ * NAME
+ *   equal_type - Checks whether two types are structural equal.
+ * SYNOPSIS
+ *   bool equal_types   (type *typ1, type *typ2);
+ * INPUTS
+ *   two pointer types
+ * RESULT
+ *   true if the types are equal, else false.
+ *   Types are equal if
+ *    - they are the same type kind
+ *    - they have the same name
+ *    - they have the same mode (if applicable)
+ *    - they have the same type_state and, ev., the same size
+ *    - they are class types and have
+ *      - the same members (see same_entity in entity.h)
+ *      - the same supertypes -- the C-pointers are compared --> no recursive call.
+ *      - the same number of subtypes.  Subtypes are not compared,
+ *        as this could cause a cyclic test.
+ *      - the same peculiarity
+ *    - they are structure types and have the same members
+ *    - they are method types and have
+ *      - the same parameter types
+ *      - the same result types
+ *    - they are union types and have the same members
+ *    - they are array types and have
+ *      - the same number of dimensions
+ *      - the same dimension bounds
+ *      - the same dimension order
+ *      - the same element type
+ *    - they are enumeration types and have the same enumerator names
+ *    - they are pointer types and have the identical points_to type
+ *      (i.e., the same C-struct to represent the type, type_id is skipped.
+ *       This is to avoid endless recursions; with pointer types circlic
+ *       type graphs are possible.)
+ *
+ ***
+ */
+bool equal_type(type *tpy1, type *typ2);
+
+/****f* type/smaller_type
+ *
+ * NAME
+ *   smaller_type - Checks whether two types are structural comparable.
+ * SYNOPSIS
+ *   bool smaller_type   (type *st, type *lt);
+ * INPUTS
+ *   two pointer type
+ * RESULT
+ *   true if type st is smaller than type lt, i.e. whenever
+ *   lt is expected a st can be used.
+ *   This is true if
+ *    - they are the same type kind
+ *    - mode(st) < mode (lt)  (if applicable)
+ *    - they are class types and st is (transitive) subtype of lt,
+ *    - they are structure types and
+ *       - the members of st have exactly one counterpart in lt with the same name,
+ *       - the counterpart has a bigger type.
+ *    - they are method types and have
+ *      - the same number of parameter and result types,
+ *      - the parameter types of st are smaller than those of lt,
+ *      - the result types of st are smaller than those of lt
+ *    - they are union types and have the members of st have exactly one
+ *      counterpart in lt and the type is smaller
+ *    - they are array types and have
+ *      - the same number of dimensions
+ *      - all bounds of lt are bound of st
+ *      - the same dimension order
+ *      - the same element type
+ *      or
+ *      - the element type of st is smaller than that of lt
+ *      - the element types have the same size and fixed layout.
+ *    - they are enumeration types and have the same enumerator names
+ *    - they are pointer types and have the points_to type of st is
+ *      smaller than the points_to type of lt.
+ ***
+ */
+bool smaller_type (type *st, type *lt);
+
 /****** type/class
  * NAME
  *  Representation of a class type.
@@ -301,7 +381,9 @@ void set_class_dfn (type*, int);
 int  get_class_dfn (type*);
 
 /* typecheck */
-bool    is_class_type(type *clss);
+bool is_class_type(type *clss);
+/* Returns true if low is subclass of high. */
+bool is_subclass_of(type *low, type *high);
 /*****/
 
 /****** type/struct

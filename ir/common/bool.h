@@ -23,4 +23,9 @@ typedef unsigned char bool;
 #  define FALSE 0
 # endif /* ndef TRUE */
 
+# ifndef true
+#  define true  1
+#  define false 0
+# endif /* ndef TRUE */
+
 # endif /* _BOOL_H_ */

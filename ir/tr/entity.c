@@ -506,3 +506,7 @@ int is_compound_entity(entity *ent) {
   return (is_class_type(t) || is_struct_type(t) ||
 	  is_array_type(t) || is_union_type(t));
 }
+
+bool equal_entity(entity *ent1, entity *ent2) {
+  return true;
+}
