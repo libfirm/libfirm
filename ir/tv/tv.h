@@ -221,7 +221,8 @@ int tarval_is_double(tarval *tv);
 tarval *new_tarval_from_entity (entity *ent, ir_mode *mode);
 
 /**
- * Returns the associated entity of a tarval.
+ * Returns the associated entity of a tarval.  Asserts if tarval does not
+ * contain an entity.
  */
 #define get_tarval_entity tarval_to_entity
 entity *tarval_to_entity(tarval *tv);
