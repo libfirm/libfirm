@@ -1718,7 +1718,10 @@ tarval_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
     if (val->u.p.xname) {
       printed = XPR (val->u.p.xname);
     } else if (val->u.p.ent) {
-      printed = XPF1R ("(%I)", get_entity_ld_ident(val->u.p.ent));
+      if (get_entity_peculiarity(val->u.p.ent) == existent)
+	printed = XPF1R ("&(%I)", get_entity_ld_ident(val->u.p.ent));
+      else
+	printed = XPSR ("(NULL)");
     } else {
       assert (val == tarval_p_void);
       printed = XPSR ("(void)");
