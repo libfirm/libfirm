@@ -33,8 +33,8 @@ typedef struct entity {
   type *type;           /* The type of this entity, e.g., a method type, a
                            basic type of the language or a class itself */
   type *owner;          /* The class this entity belongs to */
-  /* for methods */
-  ir_graph *irg;        /* If (type == method_type) this is the corresponding irg.
+  /* for methods *
+  ir_graph *irg;        * If (type == method_type) this is the corresponding irg.
 			   The ir_graph constructor automatically sets this field.
 		 	   @@@ Does this go here, or should it be in type_mehtod,
 			   or should Call have an attribute ent?? */
