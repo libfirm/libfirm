@@ -919,9 +919,14 @@ static ir_node *equivalent_node_Load(ir_node *n)
     c = get_Store_value(a);
     turn_into_tuple(n, 3);
     set_Tuple_pred(n, pn_Load_M,        mem);
-    set_Tuple_pred(n, pn_Load_res,      c);
-    set_Tuple_pred(n, pn_Load_X_except, new_Bad());                DBG_OPT_RAW;
+    set_Tuple_pred(n, pn_Load_X_except, new_Bad());
+    set_Tuple_pred(n, pn_Load_res,      c);              DBG_OPT_RAW;
   }
+  else if (get_irn_op(a) == op_Load && get_Load_ptr(a) == b) {
+    /* We load immediately after a Load -- a read after read. */
+    return a;
+  }
+
   return n;
 }
 
@@ -959,6 +964,9 @@ static ir_node *equivalent_node_Store(ir_node *n)
   return n;
 }
 
+/**
+ * optimize Proj(Tuple) and gigo for ProjX in Bad block
+ */
 static ir_node *equivalent_node_Proj(ir_node *n)
 {
   ir_node *oldn = n;
@@ -971,10 +979,7 @@ static ir_node *equivalent_node_Proj(ir_node *n)
       n = get_Tuple_pred(a, get_Proj_proj(n));                     DBG_OPT_TUPLE;
     } else {
       assert(0); /* This should not happen! */
-//      n = new_Bad();
-      //dump_ir_block_graph(current_ir_graph, "-CRASH");
-      //printf(">>>%d\n", get_irn_node_nr(n));
-      //exit(1);
+      n = new_Bad();
     }
   } else if (get_irn_mode(n) == mode_X &&
 	     is_Bad(get_nodes_block(n))) {
@@ -994,12 +999,6 @@ static ir_node *equivalent_node_Id(ir_node *n)
   n = follow_Id(n);                                                 DBG_OPT_ID;
   return n;
 }
-
-/*
-case iro_Mod, Quot, DivMod
-  DivMod allocates new nodes --> it's treated in transform node.
-  What about Quot, DivMod?
-*/
 
 /**
  * equivalent_node() returns a node equivalent to input n. It skips all nodes that
@@ -1266,7 +1265,8 @@ static ir_node *transform_node_Not(ir_node *n)
 
 /**
  * Transform a Div/Mod/DivMod with a non-zero constant. Must be
- * done here to avoid that this optimization runs more than once...
+ * done here instead of equivalent node because in creates new
+ * nodes.
  */
 static ir_node *transform_node_Proj(ir_node *proj)
 {
@@ -1374,6 +1374,27 @@ static ir_node *transform_node_Proj(ir_node *proj)
       }
     }
     return proj;
+
+  /*
+   * Ugly case: due to the walk order it may happen, that a proj is visited
+   * before the preceding Load/Store is optimized (happens in cycles).
+   * This will lead to a Tuple that will be alive after local_optimize(), which
+   * is bad. So, we do it here again.
+   */
+  case iro_Load:
+  case iro_Store:
+    {
+      ir_node *old_n = n;
+      n = equivalent_node(n);
+      if (n != old_n) {
+	set_Proj_pred(proj, n);
+      }
+    }
+    break;
+
+  case iro_Tuple:
+    /* should not happen, but if it doest will optimize */
+    break;
 
   default:
     /* do nothing */
@@ -1890,7 +1911,7 @@ optimize_node (ir_node *n)
       tv = computed_value (n);
       if ((get_irn_mode(n) != mode_T) && (tv != tarval_bad)) {
 	/*
-	 * we MUST copy the node here temparary, because it's still needed
+	 * we MUST copy the node here temporary, because it's still needed
 	 * for DBG_OPT_ALGSIM0
 	 */
 	int node_size = offsetof(ir_node, attr) +  n->op->attr_size;
@@ -1992,7 +2013,6 @@ optimize_in_place_2 (ir_node *n)
   }
 
   /* remove unnecessary nodes */
-  /*if (get_opt_constant_folding()) */
   if (get_opt_constant_folding() ||
       (iro == iro_Phi)  ||   /* always optimize these nodes. */
       (iro == iro_Id)   ||   /* ... */
@@ -2047,6 +2067,7 @@ optimize_in_place (ir_node *n)
     set_irg_pinned(current_ir_graph, op_pin_state_floats);
   if (get_irg_outs_state(current_ir_graph) == outs_consistent)
     set_irg_outs_inconsistent(current_ir_graph);
+
   /* Maybe we could also test whether optimizing the node can
      change the control graph. */
   if (get_irg_dom_state(current_ir_graph) == dom_consistent)
