@@ -43,18 +43,6 @@ follow_Id (ir_node *n)
 }
 
 /**
- * Returns the tarval of a Const node or tarval_bad for all other nodes.
- */
-static INLINE tarval *
-value_of (ir_node *n)
-{
-  if ((n != NULL) && (get_irn_op(n) == op_Const))
-    return get_Const_tarval(n); /* might return tarval_bad */
-  else
-    return tarval_bad;
-}
-
-/**
  * return the value of a Constant
  */
 static tarval *computed_value_Const(ir_node *n)
@@ -1728,7 +1716,7 @@ vt_cmp (const void *elt, const void *key)
     return 1;
 
   /* for block-local cse and op_pin_state_pinned nodes: */
-  if (!get_opt_global_cse() || (get_op_pinned(get_irn_op(a)) == op_pin_state_pinned)) {
+  if (!get_opt_global_cse() || (get_irn_pinned(a) == op_pin_state_pinned)) {
     if (get_irn_n(a, -1) != get_irn_n(b, -1))
       return 1;
   }

@@ -27,7 +27,7 @@
 
 # include "ident.h"
 
-/** the opcodes */
+/** The opcodes of the libFirm predefined operations. */
 typedef enum {
   iro_Block,
   iro_Start, iro_End, iro_Jmp, iro_Cond, iro_Return, iro_Raise,
@@ -127,5 +127,8 @@ op_pin_state get_op_pinned(const ir_op *op);
 /** Sets pinned in the opcode.  Setting it to floating has no effect
    for Block, Phi and control flow nodes. */
 void set_op_pinned(ir_op *op, op_pin_state pinned);
+
+/** Returns the next free IR opcode number, allows to register user ops */
+unsigned get_next_ir_opcode(void);
 
 # endif /* _IROP_H_ */

@@ -41,5 +41,16 @@ ir_node *optimize_in_place_2 (ir_node *n);
 /* Calculate a hash value of a node. */
 unsigned ir_node_hash (ir_node *node);
 
+/**
+ * Returns the tarval of a Const node or tarval_bad for all other nodes.
+ */
+static INLINE tarval *
+value_of(ir_node *n) {
+  if ((n != NULL) && (get_irn_op(n) == op_Const))
+    return get_Const_tarval(n); /* might return tarval_bad */
+  else
+    return tarval_bad;
+}
+
 
 # endif /* _IROPT_T_H_ */

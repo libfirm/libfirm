@@ -24,6 +24,9 @@
 
 # include "xmalloc.h"
 
+/** the available next opcode */
+static unsigned next_iro = iro_MaxOpcode;
+
 ir_op *op_Block;       ir_op *get_op_Block     (void) { return op_Block;     }
 
 ir_op *op_Start;       ir_op *get_op_Start     (void) { return op_Start;     }
@@ -273,4 +276,8 @@ op_pin_state (get_op_pinned)(const ir_op *op){
 void      set_op_pinned(ir_op *op, op_pin_state op_pin_state_pinned) {
   if (op == op_Block || op == op_Phi || is_cfopcode(op)) return;
   op->op_pin_state_pinned = op_pin_state_pinned;
+}
+
+unsigned get_next_ir_opcode(void) {
+  return next_iro++;
 }
