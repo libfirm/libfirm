@@ -1631,7 +1631,7 @@ get_r_frag_value_internal (ir_node *block, ir_node *cfOp, int pos, ir_mode *mode
 static ir_node *
 phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
 {
-  ir_node *prevBlock, *prevCfOp, *res, *phi0;
+  ir_node *prevBlock, *prevCfOp, *res, *phi0, *phi0_all;
   int i;
 
   /* If this block has no value at pos create a Phi0 and remember it
@@ -1657,7 +1657,7 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
       else
         block->attr.block.graph_arr[pos] = new_Const(mode, tarval_bad);
       /* We don't need to care about exception ops in the start block.
-     There are none by definition. */
+	 There are none by definition. */
       return block->attr.block.graph_arr[pos];
     } else {
       phi0 = new_rd_Phi0(current_ir_graph, block, mode);
@@ -1698,11 +1698,26 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
     }
   }
 
+  /* We want to pass the Phi0 node to the constructor: this finds additional
+     optimization possibilities.
+     The Phi0 node either is allocated in this function, or it comes from
+     a former call to get_r_value_internal. In this case we may not yet
+     exchange phi0, as this is done in mature_block. */
+  if (!phi0) {
+    phi0_all = block->attr.block.graph_arr[pos];
+    if (!((get_irn_op(phi0_all) == op_Phi) &&
+	  (get_irn_arity(phi0_all) == 0)   &&
+	  (get_nodes_block(phi0_all) == block)))
+      phi0_all = NULL;
+  } else {
+    phi0_all = phi0;
+  }
+
   /* After collecting all predecessors into the array nin a new Phi node
      with these predecessors is created.  This constructor contains an
      optimization: If all predecessors of the Phi node are identical it
      returns the only operand instead of a new Phi node.  */
-  res = new_rd_Phi_in (current_ir_graph, block, mode, nin, ins, phi0);
+  res = new_rd_Phi_in (current_ir_graph, block, mode, nin, ins, phi0_all);
 
   /* In case we allocated a Phi0 node at the beginning of this procedure,
      we need to exchange this Phi0 with the real Phi. */
@@ -1800,7 +1815,7 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
     printf("Error: no value set.  Use of undefined variable.  Initializing to zero.\n");
     assert (mode->code >= irm_F && mode->code <= irm_P);
     res = new_rd_Const (NULL, current_ir_graph, block, mode,
-               get_mode_null(mode));
+			get_mode_null(mode));
   }
 
   /* The local valid value is available now. */
