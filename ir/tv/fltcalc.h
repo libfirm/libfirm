@@ -30,14 +30,14 @@ typedef enum {
   FC_div,   /**< divide */
   FC_neg,   /**< negate */
   FC_int,   /**< truncate to integer */
-  FC_rnd,   /**< round to integer */
+  FC_rnd   /**< round to integer */
 } fc_op_t;
 
 enum {
   FC_DEC,
   FC_HEX,
   FC_BIN,
-  FC_PACKED,
+  FC_PACKED
 };
 
 /* rounding modes */
@@ -45,7 +45,7 @@ typedef enum {
   FC_TONEAREST,
   FC_TOPOSITIVE,
   FC_TONEGATIVE,
-  FC_TOZERO,
+  FC_TOZERO
 } fc_rounding_mode_t;
 
 #define FC_DEFAULT_PRECISION 64

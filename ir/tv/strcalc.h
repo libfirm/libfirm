@@ -67,31 +67,31 @@ enum {
  * Possible operations on integer values.
  */
 typedef enum {
-  SC_ADD = 0,		/**< Addition */
-  SC_SUB,		/**< Substraction */
-  SC_NEG,		/**< Unary Minus */
-  SC_MUL,		/**< Multiplication */
-  SC_DIV,		/**< Integer Division (with rounding toward zero ?) */
-  SC_MOD,		/**< Devision Remainder */
-  SC_SHL,		/**< Left Shift */
-  SC_SHR,		/**< Logical (unsigned) Right Shift */
-  SC_SHRS,		/**< Arithmetic (signed) Right Shift */
-  SC_ROT,		/**< Rotation (both directions) */
-  SC_AND,		/**< Bitwise And */
-  SC_OR,		/**< Bitwise Or */
-  SC_NOT,		/**< Bitwise Not */
-  SC_XOR,		/**< Bitwise Exclusive Or */
+  SC_ADD = 0,       /**< Addition */
+  SC_SUB,       /**< Substraction */
+  SC_NEG,       /**< Unary Minus */
+  SC_MUL,       /**< Multiplication */
+  SC_DIV,       /**< Integer Division (with rounding toward zero ?) */
+  SC_MOD,       /**< Devision Remainder */
+  SC_SHL,       /**< Left Shift */
+  SC_SHR,       /**< Logical (unsigned) Right Shift */
+  SC_SHRS,      /**< Arithmetic (signed) Right Shift */
+  SC_ROT,       /**< Rotation (both directions) */
+  SC_AND,       /**< Bitwise And */
+  SC_OR,        /**< Bitwise Or */
+  SC_NOT,       /**< Bitwise Not */
+  SC_XOR        /**< Bitwise Exclusive Or */
 } sc_op_t;
 
 /**
  * The output mode for ntger values.
  */
 enum base_t {
-  SC_hex,	/**< hexadecimal output with small letters */
-  SC_HEX,	/**< hexadecimal output with BIG letters */
-  SC_DEC,	/**< decimal output */
-  SC_OCT,	/**< octal output */
-  SC_BIN	/**< binary output */
+  SC_hex,   /**< hexadecimal output with small letters */
+  SC_HEX,   /**< hexadecimal output with BIG letters */
+  SC_DEC,   /**< decimal output */
+  SC_OCT,   /**< octal output */
+  SC_BIN    /**< binary output */
 };
 
 /*
@@ -139,9 +139,9 @@ unsigned char sc_sub_bits(const void *value, int len, unsigned byte_ofs);
 /**
  * Converts a tarval into a string.
  *
- * @param val1		the value pointer
- * @param bits		number of valid bits in this value
- * @param base		output base
+ * @param val1      the value pointer
+ * @param bits      number of valid bits in this value
+ * @param base      output base
  */
 const char *sc_print(const void *val1, unsigned bits, enum base_t base);
 

@@ -104,7 +104,7 @@ typedef enum
   FW_WITH_LOOPS         = 1<<3, /**< nyi */
   FW_DUMP_BLOCK_AS_IRN  = 1<<4, /**< Dump all block nodes as irn nodes
                                       additionally */
-  FW_DUMP_IRN_IN_PREFIX = 1<<5, /**< Dumps all ir nodes in prefix order
+  FW_DUMP_IRN_IN_PREFIX = 1<<5  /**< Dumps all ir nodes in prefix order
                                       according to the internal firm graph
                                       structure */
 } firm_walk_flags;

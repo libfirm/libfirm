@@ -18,23 +18,23 @@
  * @remark there are numbers with normalized names below!
  */
 typedef enum {
-  False = 0,		/**< false */
-  Eq,			/**< equal */
-  Lt,			/**< less */
-  Le,			/**< less or equal */
-  Gt,			/**< greater */
-  Ge,			/**< greater or equal */
-  Lg,			/**< less or greater */
-  Leg = 7,		/**< less, equal or greater = ordered */
-  Uo,			/**< unordered */
-  Ue,			/**< unordered or equal */
-  Ul,			/**< unordered or less */
-  Ule,			/**< unordered, less or equal */
-  Ug,			/**< unordered or greater */
-  Uge,			/**< unordered, greater or equal */
-  Ne,			/**< unordered, less or greater = not equal */
-  True = 15	        /**< true */
-  /* not_mask = Leg*/	/* bits to flip to negate comparison * @@ hack for jni interface */
+  False = 0,        /**< false */
+  Eq,           /**< equal */
+  Lt,           /**< less */
+  Le,           /**< less or equal */
+  Gt,           /**< greater */
+  Ge,           /**< greater or equal */
+  Lg,           /**< less or greater */
+  Leg = 7,      /**< less, equal or greater = ordered */
+  Uo,           /**< unordered */
+  Ue,           /**< unordered or equal */
+  Ul,           /**< unordered or less */
+  Ule,          /**< unordered, less or equal */
+  Ug,           /**< unordered or greater */
+  Uge,          /**< unordered, greater or equal */
+  Ne,           /**< unordered, less or greater = not equal */
+  True = 15         /**< true */
+  /* not_mask = Leg*/   /* bits to flip to negate comparison * @@ hack for jni interface */
 } pnc_number;   /* pnc: Projection Number Cmp */
 #define not_mask Leg
 
@@ -114,7 +114,7 @@ INLINE int           get_irn_inter_arity   (const ir_node *node);
    "in" must contain all predecessors except the block that are required for
    the nodes opcode. */
 INLINE void          set_irn_in            (ir_node *node, int arity,
-					    ir_node *in[]);
+                        ir_node *in[]);
 /* to iterate through the predecessors without touching the array. No
    order of predecessors guaranteed.
    To iterate over the operands iterate from 0 to i < get_irn_arity(),
@@ -182,12 +182,12 @@ INLINE long          get_irn_node_nr  (const ir_node *node);
  */
 INLINE ir_node *
 new_ir_node (dbg_info *db,
-	     ir_graph *irg,
-	     ir_node *block,
-	     ir_op *op,
-	     ir_mode *mode,
-	     int arity,
-	     ir_node *in[]);
+         ir_graph *irg,
+         ir_node *block,
+         ir_op *op,
+         ir_mode *mode,
+         int arity,
+         ir_node *in[]);
 
 /*
  *
@@ -212,10 +212,10 @@ typedef enum {
   pn_Start_M,               /**< Projection on the initial memory. */
   pn_Start_P_frame_base,    /**< Projection on the frame base pointer. */
   pn_Start_P_globals,       /**< Projection on the pointer to the data segment
-			       containing _all_ global entities. */
+                   containing _all_ global entities. */
   pn_Start_T_args,          /**< Projection on all arguments. */
   pn_Start_P_value_arg_base /**< Pointer to region of compound value arguments as defined by
-			       type of this method. */
+                   type of this method. */
 } pn_Start; /* Projection numbers for Start. */
 
 /**
@@ -224,14 +224,14 @@ typedef enum {
  */
 typedef enum {
   pns_initial_exec,     /**< Projection on an executable, the initial control
-			   flow. */
+               flow. */
   pns_global_store,     /**< Projection on the global store */
   pns_frame_base,       /**< Projection on the frame base */
   pns_globals,          /**< Projection on the pointer to the data segment
-			     containing _all_ global entities. */
+                 containing _all_ global entities. */
   pns_args,             /**< Projection on all arguments */
   pns_value_arg_base    /**< Pointer to region of compound value arguments as defined by
-  			     type of this method. */
+                 type of this method. */
 } pns_number; /* pns: Projection Number Start */
 
 /** Test whether arbitrary node is frame pointer.
@@ -320,7 +320,7 @@ ir_graph *get_EndExcept_irg (ir_node *end);
 typedef enum {
   dense,        /**< Default. Missing Proj nodes are dead control flow. */
   fragmentary   /**< Special. No control flow optimizations allowed.  Missing
-		   Proj nodes mean default control flow, i.e., Proj(n). */
+           Proj nodes mean default control flow, i.e., Proj(n). */
 } cond_kind;
 
 INLINE ir_node  *get_Cond_selector (ir_node *node);
@@ -370,11 +370,11 @@ INLINE void     set_Const_type   (ir_node *node, type *tp);
      this flag. */
 typedef enum {
   type_tag,          /**< The SymConst is a type tag for the given type.
-			Type_or_id_p is type *. */
+            Type_or_id_p is type *. */
   size,              /**< The SymConst is the size of the given type.
-			Type_or_id_p is type *. */
+            Type_or_id_p is type *. */
   linkage_ptr_info   /**< The SymConst is a symbolic pointer to be filled in
-			by the linker. Type_or_id_p is ident *. */
+            by the linker. Type_or_id_p is ident *. */
 } symconst_kind;
 
 typedef union type_or_id * type_or_id_p;
@@ -412,9 +412,9 @@ typedef enum {
   pncl_exc_target = 1,    /**< The control flow result branching to the exception handler */
   pncl_result_tuple = 2,  /**< The tuple containing all (0, 1, 2, ...) results */
   pncl_exc_memory = 3,    /**< The memory result in case the called method terminated with
-			      an exception */
+                  an exception */
   pncl_value_res_base = 4 /**< A pointer to the memory region containing copied results
-			      passed by value (for compound result types). */
+                  passed by value (for compound result types). */
 } pncl_number;   /* pncl: Projection Number CaLl */
 
 /**
@@ -424,10 +424,10 @@ typedef enum {
   pn_Call_M_regular = 0,  /**< The memory result. */
   pn_Call_T_result  = 2,  /**< The tuple containing all (0, 1, 2, ...) results */
   pn_Call_P_value_res_base = 4,/**< A pointer to the memory region containing copied results
-			     passed by value (for compound result types). */
+                 passed by value (for compound result types). */
   pn_Call_X_except  = 1,  /**< The control flow result branching to the exception handler */
   pn_Call_M_except  = 3   /**< The memory result in case the called method terminated with
-			     an exception */
+                 an exception */
 } pn_Call;   /* Projection numbers for Call. */
 
 INLINE ir_node *get_Call_mem (ir_node *node);
@@ -620,22 +620,22 @@ INLINE void     set_Not_op (ir_node *node, ir_node *op);
  */
 typedef enum {
   pn_Cmp_False = 0,   /**< false */
-  pn_Cmp_Eq,	      /**< equal */
-  pn_Cmp_Lt,	      /**< less */
-  pn_Cmp_Le,	      /**< less or equal */
-  pn_Cmp_Gt,	      /**< greater */
-  pn_Cmp_Ge,	      /**< greater or equal */
-  pn_Cmp_Lg,	      /**< less or greater */
+  pn_Cmp_Eq,          /**< equal */
+  pn_Cmp_Lt,          /**< less */
+  pn_Cmp_Le,          /**< less or equal */
+  pn_Cmp_Gt,          /**< greater */
+  pn_Cmp_Ge,          /**< greater or equal */
+  pn_Cmp_Lg,          /**< less or greater */
   pn_Cmp_Leg = 7,     /**< less, equal or greater = ordered */
-  pn_Cmp_Uo,	      /**< unordered */
-  pn_Cmp_Ue,	      /**< unordered or equal */
-  pn_Cmp_Ul,	      /**< unordered or less */
-  pn_Cmp_Ule,	      /**< unordered, less or equal */
-  pn_Cmp_Ug,	      /**< unordered or greater */
-  pn_Cmp_Uge,	      /**< unordered, greater or equal */
-  pn_Cmp_Ne,	      /**< unordered, less or greater = not equal */
+  pn_Cmp_Uo,          /**< unordered */
+  pn_Cmp_Ue,          /**< unordered or equal */
+  pn_Cmp_Ul,          /**< unordered or less */
+  pn_Cmp_Ule,         /**< unordered, less or equal */
+  pn_Cmp_Ug,          /**< unordered or greater */
+  pn_Cmp_Uge,         /**< unordered, greater or equal */
+  pn_Cmp_Ne,          /**< unordered, less or greater = not equal */
   pn_Cmp_True = 15    /**< true */
-  /* not_mask = Leg*/	/* bits to flip to negate comparison * @@ hack for jni interface */
+  /* not_mask = Leg*/   /* bits to flip to negate comparison * @@ hack for jni interface */
 } pn_Cmp;   /* Projection numbers for Cmp */
 //#define not_mask pn_Cmp_Leg
 
