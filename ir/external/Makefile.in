@@ -28,7 +28,9 @@ SOURCES += 	Makefile.in \
 
 include $(topdir)/MakeRules
 
-CPPFLAGS += 	-I$(top_srcdir)/ir/tr \
+CPPFLAGS += 	-I$(top_srcdir)/ir/tr -I$(top_srcdir)/ir/ident \
+				-I$(top_srcdir)/ir/common -I$(top_srcdir)/ir/ir  \
+				-I$(top_srcdir)/ir/debug \
 				-I$(LIBXML2)/include/libxml2
 
 include $(top_srcdir)/MakeTargets
