@@ -95,6 +95,7 @@ new_entity (type *owner, ident *name, type *type)
   }
   res->peculiarity   = peculiarity_existent;
   res->volatility    = volatility_non_volatile;
+  res->stickyness    = stickyness_unsticky;
   res->ld_name       = NULL;
   if (is_class_type(owner)) {
     res->overwrites    = NEW_ARR_F(entity *, 0);
@@ -444,6 +445,22 @@ const char *get_peculiarity_name(peculiarity var)
     default: return "BAD VALUE";
   }
 #undef X
+}
+
+/** Get the entity's stickyness */
+ent_stickyness get_entity_stickyness (entity *ent)
+{
+  assert (ent && is_entity (ent));
+
+  return (ent->stickyness);
+}
+
+/** Set the entity's stickyness */
+void set_entity_stickyness (entity *ent, ent_stickyness stickyness)
+{
+  assert (ent && is_entity (ent));
+
+  ent->stickyness = stickyness;
 }
 
 /* Set has no effect for existent entities of type method. */
@@ -840,7 +857,9 @@ set_entity_irg(entity *ent, ir_graph *irg) {
    * Methode selbst nicht mehr aufgerufen werden kann, die Entität
    * aber erhalten bleiben soll. */
   /* assert(irg); */
-  assert(ent->peculiarity == peculiarity_existent);
+  assert((irg  && ent->peculiarity == peculiarity_existent) ||
+         (!irg && ent->peculiarity == peculiarity_description) ||
+         (!irg && ent->peculiarity == peculiarity_inherited));
   ent->irg = irg;
 }
 
