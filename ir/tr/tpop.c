@@ -55,8 +55,8 @@ init_tpop(void)
   type_pointer     = new_tpop (tpo_pointer    , id_from_str("pointer"     , 7), sizeof (ptr_attr));
   type_primitive   = new_tpop (tpo_primitive  , id_from_str("primitive"   , 9), /* sizeof (pri_attr) */ 0);
   type_id          = new_tpop (tpo_id         , id_from_str("type_id"     , 7), /* sizeof (id_attr)  */ 0);
-  tpop_none        = new_tpop (tpo_none       , id_from_str("type_none"   , 9), /* sizeof (non_attr) */ 0);
-  tpop_unknown     = new_tpop (tpo_unknown    , id_from_str("type_unknown",12), /* sizeof (ukn_attr) */ 0);
+  tpop_none        = new_tpop (tpo_none       , id_from_str("tpop_none"   , 9), /* sizeof (non_attr) */ 0);
+  tpop_unknown     = new_tpop (tpo_unknown    , id_from_str("tpop_unknown",12), /* sizeof (ukn_attr) */ 0);
 }
 
 /* Returns the string for the tp_opcode. */

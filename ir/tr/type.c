@@ -1340,6 +1340,20 @@ bool  is_pointer_type            (type *pointer) {
   if (pointer->type_op == type_pointer) return 1; else return 0;
 }
 
+/* Returns the first pointer type that has as points_to tp.
+ *  Not efficient: O(#types).
+ *  If not found returns unknown_type. */
+type *find_pointer_type_to_type (type *tp) {
+  int i;
+  for (i = 0; i < get_irp_n_types(); ++i) {
+    type *found = get_irp_type(i);
+    if (is_pointer_type(found) && get_pointer_points_to_type(found) == tp)
+      return (found);
+  }
+  return unknown_type;
+}
+
+
 
 /*******************************************************************/
 /** TYPE_PRIMITIVE                                                **/

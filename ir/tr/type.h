@@ -745,6 +745,11 @@ type *get_pointer_points_to_type (type *pointer);
 /** Returns true if a type is a pointer type. */
 bool  is_pointer_type            (type *pointer);
 
+/** Returns the first pointer type that has as points_to tp.
+ *  Not efficient: O(#types).
+ *  If not found returns unknown_type. */
+type *find_pointer_type_to_type (type *tp);
+
 /**
  * @page primitive_type Representation of a primitive type
  *
