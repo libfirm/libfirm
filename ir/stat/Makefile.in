@@ -20,7 +20,8 @@ INSTALL_HEADERS = firmstat.h
 SOURCES = $(INSTALL_HEADERS)
 
 SOURCES += 	Makefile.in \
-		firmstat.c
+		firmstat.c \
+		pattern.c
 
 include $(topdir)/MakeRules
 
