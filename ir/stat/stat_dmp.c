@@ -40,11 +40,11 @@ static const char *opt_names[] = {
 };
 
 static const char *if_conv_names[] = {
-  "if conv done              :",
-  "if conv side effect       :",
-  "if conv Phi node found    :",
-  "if conv to deep DAG's     :",
-  "if conv bad control flow  :",
+  "if conv done             ",
+  "if conv side effect      ",
+  "if conv Phi node found   ",
+  "if conv to deep DAG's    ",
+  "if conv bad control flow ",
 };
 
 /**
@@ -63,7 +63,7 @@ static void simple_dump_opcode_hash(dumper_t *dmp, pset *set)
 
   fprintf(dmp->f, "%-16s %-8s %-8s %-8s\n", "Opcode", "alive", "created", "->Id");
   for (entry = pset_first(set); entry; entry = pset_next(set)) {
-    fprintf(dmp->f, "%-16s %8d %8d %8d\n",
+    fprintf(dmp->f, "%-16s %8u %8u %8u\n",
       get_id_str(entry->op->name), entry->cnt_alive.cnt[0], entry->new_node.cnt[0], entry->into_Id.cnt[0]);
 
     cnt_add(&f_alive,    &entry->cnt_alive);
@@ -71,14 +71,14 @@ static void simple_dump_opcode_hash(dumper_t *dmp, pset *set)
     cnt_add(&f_Id,       &entry->into_Id);
   }
   fprintf(dmp->f, "-------------------------------------------\n");
-  fprintf(dmp->f, "%-16s %8d %8d %8d\n", "Sum",
+  fprintf(dmp->f, "%-16s %8u %8u %8u\n", "Sum",
      f_alive.cnt[0],
      f_new_node.cnt[0],
      f_Id.cnt[0]);
 }
 
 /**
- * dumps a optimization hash into human readable form
+ * dumps an optimization hash into human readable form
  */
 static void simple_dump_opt_hash(dumper_t *dmp, pset *set, int index)
 {
@@ -89,9 +89,32 @@ static void simple_dump_opt_hash(dumper_t *dmp, pset *set, int index)
     fprintf(dmp->f, "%-16s %-8s\n", "Opcode", "deref");
 
     for (; entry; entry = pset_next(set)) {
-      fprintf(dmp->f, "%-16s %8d\n",
+      fprintf(dmp->f, "%-16s %8u\n",
         get_id_str(entry->op->name), entry->count.cnt[0]);
     }
+  }
+}
+
+/**
+ * dumps the number of real_function_call optimization
+ */
+static void simple_dump_real_func_calls(dumper_t *dmp, counter_t *cnt)
+{
+  if (! cnt_eq(cnt, 0)) {
+    fprintf(dmp->f, "\nReal Function Calls optimized:\n");
+    fprintf(dmp->f, "%-16s %8u\n",
+      "Call", cnt->cnt[0]);
+  }
+}
+
+/**
+ * dumps the number of tail_recursion optimization
+ */
+static void simple_dump_tail_recursion(dumper_t *dmp, unsigned num_tail_recursion)
+{
+  if (num_tail_recursion > 0) {
+    fprintf(dmp->f, "\nTail recursion optimized:\n");
+    fprintf(dmp->f, "%-16s %8u\n", "Call", num_tail_recursion);
   }
 }
 
@@ -132,8 +155,8 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 		    " calls only leaf functions : %s\n"
 		    " recursive                 : %s\n"
 		    " chain call                : %s\n"
-                    " calls                     : %u\n"
-                    " indirect calls            : %u\n",
+        " calls                     : %u\n"
+        " indirect calls            : %u\n",
         entry->is_deleted ? "DELETED " : "",
         entry->cnt_walked.cnt[0], entry->cnt_walked_blocks.cnt[0],
         entry->cnt_was_inlined.cnt[0],
@@ -165,6 +188,9 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
   if (dump_opts) {
     int i;
 
+    simple_dump_real_func_calls(dmp, &entry->cnt_real_func_call);
+    simple_dump_tail_recursion(dmp, entry->num_tail_recursion);
+
     for (i = 0; i < sizeof(entry->opt_hash)/sizeof(entry->opt_hash[0]); ++i) {
       simple_dump_opt_hash(dmp, entry->opt_hash[i], i);
     }
@@ -172,15 +198,15 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
     /* dump block info */
     fprintf(dmp->f, "\n%12s %12s %12s %12s %12s %12s\n", "Block Nr", "Nodes", "intern E", "incoming E", "outgoing E", "quot");
     for (b_entry = pset_first(entry->block_hash);
-	 b_entry;
-	 b_entry = pset_next(entry->block_hash)) {
+	       b_entry;
+	       b_entry = pset_next(entry->block_hash)) {
       fprintf(dmp->f, "BLK %12ld %12u %12u %12u %12u %4.8f\n",
-	  b_entry->block_nr,
-	  b_entry->cnt_nodes.cnt[0],
-	  b_entry->cnt_edges.cnt[0],
-	  b_entry->cnt_in_edges.cnt[0],
-	  b_entry->cnt_out_edges.cnt[0],
-	  (double)b_entry->cnt_edges.cnt[0] / (double)b_entry->cnt_nodes.cnt[0]
+	      b_entry->block_nr,
+	      b_entry->cnt_nodes.cnt[0],
+	      b_entry->cnt_edges.cnt[0],
+	      b_entry->cnt_in_edges.cnt[0],
+	      b_entry->cnt_out_edges.cnt[0],
+	      (double)b_entry->cnt_edges.cnt[0] / (double)b_entry->cnt_nodes.cnt[0]
       );
     }
   }
