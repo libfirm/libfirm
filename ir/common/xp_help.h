@@ -16,6 +16,7 @@
 # define XPMR(p,n) fwrite ((p), 1, (n), stream)
 # define XPR(p) fputs ((p), stream)
 # define XPF1R(fmt, arg) fprintf (stream, (fmt), (arg))
+# define XPF3R(fmt, a1, a2, a3) fprintf (stream, (fmt), (a1), (a2), (a3))
 # define XPCR(p) (putc (*(p), stream) == EOF ? -1 : 1)
 #else /* !USE_PRINTF */
 # define XP_ARG1 f, a
@@ -24,6 +25,7 @@
 # define XPMR(p,n) f (a, (p), (n))
 # define XPR(p) f (a, (p), strlen((p)))
 # define XPF1R(fmt, arg) xgprintf (f, a, (fmt), (arg))
+# define XPF3R(fmt, a1, a2, a3) xgprintf (f, a, (fmt), (a1), (a2), (a3))
 # define XPCR(p) XPMR (p, 1)
 #endif /* !USE_PRINTF */
 
