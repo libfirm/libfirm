@@ -763,16 +763,16 @@ int tarval_is_one(tarval *a)
 /*
  * comparison
  */
-pnc_number tarval_cmp(tarval *a, tarval *b)
+pn_Cmp tarval_cmp(tarval *a, tarval *b)
 {
   ANNOUNCE();
   assert(a);
   assert(b);
 
   if (a == tarval_bad || b == tarval_bad) assert(0 && "Comparison with tarval_bad");
-  if (a == tarval_undefined || b == tarval_undefined) return False;
-  if (a == b) return Eq;
-  if (a->mode != b->mode) return False;
+  if (a == tarval_undefined || b == tarval_undefined) return pn_Cmp_False;
+  if (a == b) return pn_Cmp_Eq;
+  if (a->mode != b->mode) return pn_Cmp_False;
 
   if (get_mode_n_vector_elems(a->mode) > 1) {
     /* vector arithmetic not implemented yet */
@@ -786,24 +786,24 @@ pnc_number tarval_cmp(tarval *a, tarval *b)
     case irms_memory:
     case irms_auxiliary:
     case irms_reference:
-      return False;
+      return pn_Cmp_False;
 
     case irms_float_number:
       switch (fc_comp(a->value, b->value)) {
-        case -1: return Lt;
-        case  0: assert(0 && "different tarvals compare equal"); return Eq;
-        case  1: return Gt;
-        case  2: return Uo;
-        default: return False;
+        case -1: return pn_Cmp_Lt;
+        case  0: assert(0 && "different tarvals compare equal"); return pn_Cmp_Eq;
+        case  1: return pn_Cmp_Gt;
+        case  2: return pn_Cmp_Uo;
+        default: return pn_Cmp_False;
       }
     case irms_int_number:
     case irms_character:
-      return (sc_comp(a->value, b->value)==1)?(Gt):(Lt);
+      return sc_comp(a->value, b->value) == 1 ? pn_Cmp_Gt : pn_Cmp_Lt;
 
     case irms_internal_boolean:
-      return (a == tarval_b_true)?(Gt):(Lt);
+      return a == tarval_b_true ? pn_Cmp_Gt : pn_Cmp_Lt;
   }
-  return False;
+  return pn_Cmp_False;
 }
 
 /*
