@@ -45,8 +45,9 @@ typedef int (*pset_cmp_fun) (const void *elt, const void *key);
 /**
  * Creates a new pset.
  *
- * @param func    the compare function of this pset
- * @param slots   number of initial slots
+ * @param func    The compare function of this pset.
+ * @param slots   Initial number of collision chains.  I.e., #slots
+ *                different keys can be hashed without collisions.
  *
  * @returns
  *    created pset
@@ -55,6 +56,8 @@ pset *new_pset (pset_cmp_fun func, int slots);
 
 /**
  * Deletes a pset.
+ *
+ * @param pset   the pset
  *
  * @note
  *    This does NOT delete the elements of this pset, just it's pointers!

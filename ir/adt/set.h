@@ -59,8 +59,9 @@ typedef int (*set_cmp_fun) (const void *elt, const void *key, size_t size);
 /**
  * Creates a new set.
  *
- * @param func    the compare function of this set
- * @param slots   number of initial slots
+ * @param func    The compare function of this set.
+ * @param slots   Initial number of collision chains.  I.e., #slots
+ *                different keys can be hashed without collisions.
  *
  * @returns
  *    created set
