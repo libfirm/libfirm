@@ -46,11 +46,10 @@ int main(int argc, char **argv)
 {
   ir_graph *irg;          /* this variable contains the irgraph */
   type_class *owner;      /* the class in which this method is defined */
-  type_method *proc_main; /* typeinformation for the method main */
+  type_method *proc_main; /* type information for the method main */
   entity *ent;            /* represents this method as entity of owner */
   ir_node *c1, *c2, *cond, *f, *t, *endBlock, *Block1, *jmp, *Block2,
           *deadBlock, *x;
-
 
   /* init library */
   init_firm ();
