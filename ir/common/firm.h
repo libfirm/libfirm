@@ -101,6 +101,8 @@ extern "C" {
 
 #include "firmstat.h"      /* statistics */
 
+#include "irreflect.h"     /* reflection */
+
 /* @@@ temporarily for jni builder until preprocessor works.
    Then it should be sufficient to include <file.h> instead
    of firm.h as not all enums are needed in the implementation

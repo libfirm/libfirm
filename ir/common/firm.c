@@ -29,6 +29,7 @@
 # include "type_t.h"
 # include "type_identify.h"
 # include "firmstat.h"
+# include "irreflect_t.h"
 
 void
 init_firm(const firm_parameter_t *param)
@@ -76,6 +77,9 @@ init_firm(const firm_parameter_t *param)
   init_type();
   /* allocate a hash table. */
   init_type_identify(def_params.compare_types_func, def_params.hash_types_func);
+  /* Init reflection facility. */
+  init_rflct();
+
 }
 
 
