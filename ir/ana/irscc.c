@@ -18,7 +18,7 @@
 #include "array.h"
 #include "xprintf.h"
 #include "irgwalk.h"
-
+#include "irprog.h"
 
 ir_graph *outermost_ir_graph;      /* The outermost graph the scc is computed
 				      for */
@@ -261,7 +261,6 @@ int get_loop_depth (ir_loop *loop) {
   return loop->depth;
 }
 
-/* @@@ sons are the inner loops _and_ all nodes within them. */
 /* Returns the number of inner loops */
 int      get_loop_n_sons (ir_loop *loop) {
   assert(loop && loop->kind == k_ir_loop);
@@ -310,8 +309,34 @@ ir_loop *get_irg_loop(ir_graph *irg) {
 
 static INLINE void
 init_node (ir_node *n, void *env) {
+  int i;
   set_irn_link (n, new_scc_info());
   clear_backedges(n);
+#if 0
+  /* Also init nodes not visible in intraproc_view. */
+    /* @@@ init_node is called for too many nodes -- this wastes memory!.
+       The mem is not lost as its on the obstack. */
+  if (get_irn_op(n) == op_Filter) {
+    for (i = 0; i < get_Filter_n_cg_preds(n); i++)
+      init_node(get_Filter_cg_pred(n, i), NULL);
+  }
+  if (get_irn_op(n) == op_Block) {
+    for (i = 0; i < get_Block_cg_n_cfgpreds(n); i++) {
+      init_node(get_Block_cg_cfgpred(n, i), NULL);
+    }
+  }
+  /* The following pattern matches only after a call from above pattern. */
+  if ((get_irn_op(n) == op_Proj) /*&& (get_Proj_proj(n) == 0)*/) {
+    /* @@@ init_node is called for every proj -- this wastes memory!.
+       The mem is not lost as its on the obstack. */
+    ir_node *cb = get_Proj_pred(n);
+    if ((get_irn_op(cb) == op_CallBegin) ||
+	(get_irn_op(cb) == op_EndReg) ||
+	(get_irn_op(cb) == op_EndExcept)) {
+      init_node(cb, NULL);
+      init_node(get_nodes_Block(cb), NULL);
+    }
+#endif
 }
 
 static INLINE void
@@ -325,16 +350,52 @@ init_scc (ir_graph *irg) {
   */
 }
 
+static INLINE void
+init_ip_scc () {
+  current_dfn = 1;
+  loop_node_cnt = 0;
+  init_stack();
+  cg_walk (init_node, NULL, NULL);
+}
+#if 0
+Works, but is inefficient.
+static INLINE void
+init_ip_scc () {
+  int i;
+  interprocedural_view = 1;
+  current_dfn = 1;
+  loop_node_cnt = 0;
+  init_stack();
+  for (i = 0; i < get_irp_n_irgs(); i++) {
+    current_ir_graph = get_irp_irg(i);
+    irg_walk_graph (current_ir_graph, init_node, NULL, NULL);
+    /* @@@ decrease max_visited to avoide double walks */
+  }
+}
+#endif
+
 /* Condition for breaking the recursion. */
 bool is_outermost_Start(ir_node *n) {
   /* Test whether this is the outermost Start node.  If so
      recursion must end. */
+  if ((get_irn_op(n) == op_Block)     &&
+      (get_Block_n_cfgpreds(n) == 1)  &&
+      (get_irn_op(skip_Proj(get_Block_cfgpred(n, 0))) == op_Start) &&
+      (get_nodes_Block(skip_Proj(get_Block_cfgpred(n, 0))) == n)) {
+    return true;
+  }
+#if 0
+  /*  @@@ Bad condition:
+      not possible in interprocedural view as outermost_graph is
+      not necessarily the only with a dead-end start block.
+      Besides current_ir_graph is not set properly. */
   if ((get_irn_op(n) == op_Block) &&
       (n == get_irg_start_block(current_ir_graph))) {
     if ((!interprocedural_view)  ||
 	(current_ir_graph == outermost_ir_graph))
       return true;
   }
+#endif
   return false;
 }
 
@@ -411,6 +472,23 @@ find_irg_on_stack (ir_node *n) {
   }
 
   return old_current;
+}
+
+static void test(ir_node *pred, ir_node *root, ir_node *this) {
+  int i;
+  if (get_irn_uplink(pred) >= get_irn_uplink(root)) return;
+
+  printf("this: %d ", get_irn_uplink(this)); DDMN(this);
+  printf("pred: %d ", get_irn_uplink(pred)); DDMN(pred);
+  printf("root: %d ", get_irn_uplink(root)); DDMN(root);
+
+  printf("tos: %d\n", tos);
+
+  for (i = tos; i >= 0; i--) {
+    ir_node *n = stack[i];
+    if (!n) continue;
+    printf(" uplink: %d, pos: %d ", get_irn_uplink(n), i); DDMN(n);
+  }
 }
 
 /* Returns true if n is a loop header, i.e., it is a Block, Phi
@@ -531,6 +609,8 @@ void scc (ir_node *n) {
 
   if (irn_visited(n)) return;
   mark_irn_visited(n);
+  //printf("mark: %d ", get_irn_visited(n)); DDMN(n);
+  //DDME(get_irg_ent(current_ir_graph));
 
   /* Initialize the node */
   set_irn_dfn(n, current_dfn);      /* Depth first number for this node */
@@ -549,10 +629,10 @@ void scc (ir_node *n) {
       ir_node *m;
       if (is_backedge(n, i)) continue;
 
-      m = get_irn_ip_pred(n, i);
-      if (!m) continue;
+      m = get_irn_n(n, i); //get_irn_ip_pred(n, i);
+      if ((!m) || (get_irn_op(m) == op_Unknown)) continue;
       scc (m);
-      return_recur(n, i);
+      //return_recur(n, i);
 
       if (irn_is_in_stack(m)) {
 	/* Uplink of m is smaller if n->m is a backedge.
@@ -592,6 +672,9 @@ void construct_backedges(ir_graph *irg) {
   ir_loop *head_rem;
   int i;
 
+  assert(!interprocedural_view &&
+	 "not implemented, use construct_ip_backedges");
+
   current_ir_graph = irg;
   outermost_ir_graph = irg;
 
@@ -627,4 +710,47 @@ void construct_backedges(ir_graph *irg) {
   }
   */
   current_ir_graph = rem;
+}
+
+
+
+void construct_ip_backedges () {
+  ir_graph *rem = current_ir_graph;
+  int rem_ipv = interprocedural_view;
+  int i, j;
+
+  outermost_ir_graph = get_irp_main_irg();
+
+  init_ip_scc();
+
+  current_loop = NULL;
+  new_loop();  /* sets current_loop */
+  interprocedural_view = 1;
+
+  inc_max_irg_visited();
+  for (i = 0; i < get_irp_n_irgs(); i++)
+    set_irg_visited(get_irp_irg(i), get_max_irg_visited());
+
+  for (i = 0; i < get_irp_n_irgs(); i++) {
+    ir_node *sb;
+    current_ir_graph = get_irp_irg(i);
+    //DDME(get_irg_ent(current_ir_graph));
+    /* Find real entry points */
+    sb = get_irg_start_block(current_ir_graph);
+    if ((get_Block_n_cfgpreds(sb) > 1) ||
+	(get_nodes_Block(get_Block_cfgpred(sb, 0)) != sb)) continue;
+    //    printf("running scc for "); DDME(get_irg_ent(current_ir_graph));
+    /* Compute scc for this graph */
+    outermost_ir_graph = current_ir_graph;
+    set_irg_visited(outermost_ir_graph, get_max_irg_visited());
+    scc(get_irg_end(current_ir_graph));
+    for (j = 0; j < get_End_n_keepalives(get_irg_end(outermost_ir_graph)); j++)
+      scc(get_End_keepalive(get_irg_end(outermost_ir_graph), j));
+  }
+
+  set_irg_loop(outermost_ir_graph, current_loop);
+  assert(get_irg_loop(outermost_ir_graph)->kind == k_ir_loop);
+
+  current_ir_graph = rem;
+  interprocedural_view = rem_ipv;
 }

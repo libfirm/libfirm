@@ -44,5 +44,7 @@
  *   - Replaces Sel-method by Const if the Method is never overwritten */
 void cgana(int *len, entity ***free_methods);
 
-
+/* Performs only the optimizations done by cgana. */
+/* @@@ move to irgopt ?! */
+void opt_call_addrs(void);
 #endif /* _CGANA_H_ */

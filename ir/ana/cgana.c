@@ -105,7 +105,7 @@ void collect_impls(entity *method, eset *set, int *size, bool *open) {
   }
   /** recursive descend **/
   for (i = get_entity_n_overwrittenby(method) - 1; i >= 0; --i)
-    collect_impls(get_entity_overwrittenby(method, i) ,set, size, open);
+    collect_impls(get_entity_overwrittenby(method, i), set, size, open);
 }
 
 
@@ -652,4 +652,31 @@ void cgana(int *length, entity ***free_methods) {
   *free_methods = (entity **)malloc(sizeof(entity *) * (*length));
   for (i = 0; i < (*length); i++) (*free_methods)[i] = free_meths[i];
   DEL_ARR_F(free_meths);
+}
+
+/* Alle SymConst-Operationen, die auf interne Methoden verweisen,
+ * werden durch Const-Operationen ersetzt.
+ * Sel Knoten deren entitaeten nicht ueberschrieben werden, werden
+ * durch Const ersetzt.
+ * Sel Knoten, fuer die keine Implementierung existiert, werden
+ * durch Bad ersetzt. */
+void opt_call_addrs(void) {
+  sel_methods_init();
+  sel_methods_dispose();
+#if 0
+  int i;
+  pmap * ldname_map = pmap_create();
+  assert(entities == NULL);
+  entities = eset_create();
+  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+    entity * ent = get_irg_ent(get_irp_irg(i));
+    /* Nur extern sichtbare Methoden können überhaupt mit SymConst
+     * aufgerufen werden. */
+    if (get_entity_visibility(ent) != local) {
+      pmap_insert(ldname_map, (void *) get_entity_ld_ident(ent), ent);
+    }
+  }
+  all_irg_walk((irg_walk_func) sel_methods_walker, NULL, ldname_map);
+  pmap_destroy(ldname_map);
+#endif
 }

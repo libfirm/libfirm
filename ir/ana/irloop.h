@@ -83,11 +83,14 @@ ir_node *get_loop_node (ir_loop *loop, int pos);
 /* Constructing and destructing the loop/backedge information.       **/
 /**********************************************************************/
 
-/* Constructs backedge information for irg. In interprocedural view constructs
-   backedges for all methods called by irg, too.
-   @@@ I'm not sure what happens if irg is within a recursion in iterproc_view.
-   @@@ Interprocedural backedge construction is not yet functioning!!!
-*/
+/* Constructs backedge information for irg in intraprocedural view. */
 void construct_backedges(ir_graph *irg);
+
+/* Constructs backedges for all irgs in interprocedural view.  All
+   loops in the graph will be marked as such, not only realizeable
+   loops and recursions in the program.  E.g., if the same funcion is
+   called twice, there is a loop between the first funcion return and
+   the second call.  */
+void construct_ip_backedges();
 
 #endif /* _IRLOOP_H_ */
