@@ -8,11 +8,15 @@
 #include "belistsched.h"
 #include "belive_t.h"
 #include "belive.h"
+#include "bephicongr_t.h"
+
+#include "phistat.h"
 
 void be_init(void)
 {
 	be_sched_init();
 	be_liveness_init();
+	be_phi_congr_class_init();
 }
 
 static void be_main_loop(void)
@@ -33,4 +37,6 @@ static void be_main_loop(void)
 void be_main(int argc, const char *argv[])
 {
 	be_main_loop();
+	/* next line only for statistics */
+	do_phi_statistics();
 }
