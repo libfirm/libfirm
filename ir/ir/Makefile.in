@@ -12,7 +12,7 @@ subdir := ir
 
 INSTALL_HEADERS = irprog.h irgraph.h irnode.h irmode.h irop.h ircons.h 		\
 		irflag.h irvrfy.h irgwalk.h irgmod.h iropt.h irdump.h 		\
-		old_fctnames.h
+		irgopt.h old_fctnames.h
 
 SOURCES = INSTALL_HEADERS
 
