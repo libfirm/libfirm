@@ -38,6 +38,7 @@
 
 /*------------------------------------------------------------------*/
 /* Control flow optimization.                                       */
+/*                                                                  */
 /* Removes Bad control flow predecessors and empty blocks.  A block */
 /* is empty if it contains only a Jmp node.                         */
 /* Blocks can only be removed if they are not needed for the        */
@@ -155,6 +156,32 @@ static int is_pred_of(ir_node *pred, ir_node *b) {
 }
 
 
+/** Test wether we can optimize away pred block pos of b.
+ *
+ *  @param  b    A block node.
+ *  @param  pos  The position of the predecessor block to judge about.
+ *
+ *  @returns     The number of predecessors
+ *
+ *  The test is rather tricky.
+ *
+ *  The situation is something like the following:
+ *
+ *                 if-block
+ *                  /   \
+ *              then-b  else-b
+ *                  \   /
+ *                    b
+ *
+ *     b merges the control flow of an if-then-else.  We may not remove
+ *     the 'then' _and_ the 'else' block of an 'if' if there is a Phi
+ *     node in b, even if both are empty.  The destruction of this Phi
+ *     requires that a copy is added before the merge.  We have to
+ *     keep one of the case blocks to place the copies in.
+ *
+ *     To perform the test for pos, we must regard preds before pos
+ *     as already removed.
+ **/
 static int test_whether_dispensable(ir_node *b, int pos) {
   int i, j, n_preds = 1;
   int dispensable = 1;
@@ -163,14 +190,16 @@ static int test_whether_dispensable(ir_node *b, int pos) {
 
   if (get_Block_block_visited(pred) + 1
       < get_irg_block_visited(current_ir_graph)) {
+
     if (!get_opt_optimize() || !get_opt_control_flow_strong_simplification()) {
-      /* Mark block so that is will not be removed. */
+      /* Mark block so that is will not be removed: optimization is turned off. */
       set_Block_block_visited(pred, get_irg_block_visited(current_ir_graph)-1);
       return 1;
     }
-    /* Seems to be empty. */
+
+    /* Seems to be empty. At least we detected this in collect_nodes. */
     if (!get_irn_link(b)) {
-      /* There are no Phi nodes ==> dispensable. */
+      /* There are no Phi nodes ==> all predecessors are dispensable. */
       n_preds = get_Block_n_cfgpreds(pred);
     } else {
       /* b's pred blocks and pred's pred blocks must be pairwise disjunct.
@@ -203,6 +232,51 @@ static int test_whether_dispensable(ir_node *b, int pos) {
   return n_preds;
 }
 
+
+/* This method removed Bad cf preds from Blocks and Phis, and removes
+ * empty blocks.  A block is empty if it only contains Phi and Jmp nodes.
+ *
+ * We first adapt Phi nodes, then Block nodes, as we need the old ins
+ * of the Block to adapt the Phi nodes.  We do this by computing new
+ * in arrays, and then replacing the old ones.  So far we compute new in arrays
+ * for all nodes, not regarding whether there is a possibility for optimization.
+ *
+ * For each predecessor p of a Block b there are three cases:
+ *  1. The predecessor p is a Bad node:  just skip it.  The in array of b shrinks by one.
+ *  2. The predecessor p is empty.  Remove p.  All predecessors of p are now
+ *     predecessors of b.
+ *  3. The predecessor p is a block containing useful code.  Just keep p as is.
+ *
+ * For Phi nodes f we have to check the conditions at the Block of f.
+ * For cases 1 and 3 we proceed as for Blocks.  For case 2 we can have two
+ * cases:
+ *  2a: The old precessor of the Phi f is a Phi pred_f IN THE BLOCK REMOVED.  In this
+ *      case we proceed as for blocks. We remove pred_f.  All
+ *      predecessors of pred_f now are predecessors of f.
+ *  2b: The old predecessor of f is NOT in the block removed. It might be a Phi, too.
+ *      We have to replicate f for each predecessor of the removed block. Or, with
+ *      other words, the removed predecessor block has exactly one predecessor.
+ *
+ * Further there is a special case for self referencing blocks:
+ *
+ *    then_b     else_b                              then_b  else_b
+ *       \      /				       \      /
+ *        \    /				        |    /
+ *        pred_b				        |   /
+ *         |   ____				        |  /  ____
+ *         |  |    |				        |  | |    |
+ *         |  |    |       === optimized to ===>        \  | |    |
+ *        loop_b   |				         loop_b   |
+ *         |  |    |				          |  |    |
+ *         |  |____|				          |  |____|
+ *         |     				          |
+ *
+ * If there is a Phi in pred_b, but we remove pred_b, we have to generate a
+ * Phi in loop_b, that has the ins of the Phi in pred_b and a self referencing
+ * backedge.
+ * @@@ It is negotiable whether we should do this ... there might end up a copy
+ * from the Phi in the loop when removing the Phis.
+ */
 static void optimize_blocks(ir_node *b, void *env) {
   int i, j, k, max_preds, n_preds;
   ir_node *pred, *phi;
@@ -238,40 +312,50 @@ static void optimize_blocks(ir_node *b, void *env) {
     for (i = 0; i < get_Block_n_cfgpreds(b); i++) {
       pred = get_nodes_block(get_Block_cfgpred(b, i));
       if (is_Bad(get_Block_cfgpred(b, i))) {
-        /* Do nothing */
+        /* case Phi 1: Do nothing */
       } else if (get_Block_block_visited(pred) + 1
                  < get_irg_block_visited(current_ir_graph)) {
-        /* It's an empty block and not yet visited. */
+        /* case Phi 2: It's an empty block and not yet visited. */
         ir_node *phi_pred = get_Phi_pred(phi, i);
 
         for (j = 0; j < get_Block_n_cfgpreds(pred); j++) {
           if (get_nodes_block(phi_pred) == pred) {
+	    /* case Phi 2a: */
             assert(get_irn_op(phi_pred) == op_Phi);  /* Block is empty!! */
             in[n_preds] = get_Phi_pred(phi_pred, j);
           } else {
+	    /* case Phi 2b: */
             in[n_preds] = phi_pred;
           }
           n_preds++;
         }
+
         /* The Phi_pred node is replaced now if it is a Phi.
-           In Schleifen kann offenbar der entfernte Phi Knoten legal verwendet werden.
-           Daher muss der Phiknoten durch den neuen ersetzt werden.
-           Weiter muss der alte Phiknoten entfernt werden (durch ersetzen oder
-           durch einen Bad) damit er aus den keep_alive verschwinden kann.
-           Man sollte also, falls keine Schleife vorliegt, exchange mit new_Bad
-           aufrufen.  */
+
+	   Somehow the removed Phi node can be used legally in loops.
+	   Therefore we replace the old phi by the new one.
+
+	   Further we have to remove the old Phi node by replacing it
+	   by Bad.  Else it will remain in the keepalive array of End
+	   and cause illegal situations.  So if there is no loop, we should
+	   replace it by Bad.
+	*/
         if (get_nodes_block(phi_pred) == pred) {
           /* remove the Phi as it might be kept alive. Further there
              might be other users. */
           exchange(phi_pred, phi);  /* geht, ist aber doch semantisch falsch! Warum?? */
         }
+
       } else {
+	/* case Phi 3: */
         in[n_preds] = get_Phi_pred(phi, i);
         n_preds ++;
       }
     }
+
     /* Fix the node */
     if (n_preds == 1)
+      /* By removal of Bad ins the Phi might be degenerated. */
       exchange(phi, in[0]);
     else
       set_irn_in(phi, n_preds, in);
@@ -279,7 +363,8 @@ static void optimize_blocks(ir_node *b, void *env) {
     phi = get_irn_link(phi);
   }
 
-  /*- This happens only if merge between loop backedge and single loop entry. -*/
+  /*- This happens only if merge between loop backedge and single loop entry.
+      See special case above. -*/
   for (k = 0; k < get_Block_n_cfgpreds(b); k++) {
     pred = get_nodes_block(get_Block_cfgpred(b, k));
     if (get_Block_block_visited(pred)+1 < get_irg_block_visited(current_ir_graph)) {
@@ -343,10 +428,10 @@ static void optimize_blocks(ir_node *b, void *env) {
   for (i = 0; i < get_Block_n_cfgpreds(b); i++) {
     pred = get_nodes_block(get_Block_cfgpred(b, i));
     if (is_Bad(get_Block_cfgpred(b, i))) {
-      /* Do nothing */
+      /* case 1: Do nothing */
     } else if (get_Block_block_visited(pred) +1
            < get_irg_block_visited(current_ir_graph)) {
-      /* It's an empty block and not yet visited. */
+      /* case 2: It's an empty block and not yet visited. */
       assert(get_Block_n_cfgpreds(b) > 1);
                         /* Else it should be optimized by equivalent_node. */
       for (j = 0; j < get_Block_n_cfgpreds(pred); j++) {
@@ -356,14 +441,36 @@ static void optimize_blocks(ir_node *b, void *env) {
       /* Remove block as it might be kept alive. */
       exchange(pred, b/*new_Bad()*/);
     } else {
+      /* case 3: */
       in[n_preds] = get_Block_cfgpred(b, i);
       n_preds ++;
     }
   }
   set_irn_in(b, n_preds, in);
+
   free(in);
 }
 
+
+/* Optimizations of the control flow that also reqire changes of Phi nodes.
+ *
+ * This optimization performs two passes over the graph.
+ *
+ * The first pass collects all Phi nodes in a link list in the block
+ * nodes.  Further it performs simple control flow optimizations.
+ * Finally it marks all blocks that do not contain useful
+ * computations, i.e., these blocks might be removed.
+ *
+ * The second pass performs the optimizations intended by this algorithm.
+ * It walks only over block nodes and adapts these and the Phi nodes in these blocks,
+ * which it finds in a linked list computed by the first pass.
+ *
+ * We use the block_visited flag to mark empty blocks in the first
+ * phase.
+ * @@@ It would be better to add a struct in the link field
+ * that keeps the Phi list and the mark.  Place it on an obstack, as
+ * we will lose blocks and thereby generate mem leaks.
+ */
 void optimize_cf(ir_graph *irg) {
   int i;
   ir_node **in;
