@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /I "../../obstack" /I "../win32" /I "../ir/adt" /I "../ir/ana" /I "../ir/common" /I "../ir/debug" /I "../ir/ident" /I "../ir/ir" /I "../ir/st" /I "../ir/tr" /I "../ir/tv" /I "../ir/stat" /D "NDEBUG" /D "WIN32" /D "_MBCS" /D "_LIB" /D "HAVE_CONFIG_H" /YX /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /I "../../obstack" /I "../win32" /I "../ir/adt" /I "../ir/ana" /I "../ir/common" /I "../ir/debug" /I "../ir/ident" /I "../ir/ir" /I "../ir/opt" /I "../ir/st" /I "../ir/stat" /I "../ir/tr" /I "../ir/tv" /D "NDEBUG" /D "WIN32" /D "_MBCS" /D "_LIB" /D "HAVE_CONFIG_H" /YX /FD /c
 # ADD BASE RSC /l 0x407 /d "NDEBUG"
 # ADD RSC /l 0x407 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -49,7 +49,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
-# ADD LIB32 /nologo
+# ADD LIB32 /nologo /out:"w:\ipd\lib\libfirm.lib"
 
 !ELSEIF  "$(CFG)" == "libfirm - Win32 Debug"
 
@@ -64,7 +64,7 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "Debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "../../obstack" /I "../win32" /I "../ir/adt" /I "../ir/ana" /I "../ir/common" /I "../ir/debug" /I "../ir/ident" /I "../ir/ir" /I "../ir/st" /I "../ir/tr" /I "../ir/tv" /I "../ir/stat" /D "_DEBUG" /D "WIN32" /D "_MBCS" /D "_LIB" /D "HAVE_CONFIG_H" /YX /FD /GZ /c
+# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "../../obstack" /I "../win32" /I "../ir/adt" /I "../ir/ana" /I "../ir/common" /I "../ir/debug" /I "../ir/ident" /I "../ir/ir" /I "../ir/opt" /I "../ir/st" /I "../ir/stat" /I "../ir/tr" /I "../ir/tv" /D "_DEBUG" /D "WIN32" /D "_MBCS" /D "_LIB" /D "HAVE_CONFIG_H" /YX /FD /GZ /c
 # ADD BASE RSC /l 0x407 /d "_DEBUG"
 # ADD RSC /l 0x407 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -72,7 +72,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
-# ADD LIB32 /nologo
+# ADD LIB32 /nologo /out:"w:\ipd\lib\libfirm_g.lib"
 
 !ENDIF 
 
@@ -89,6 +89,10 @@ SOURCE=.\config.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\firm_config.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\math.c
 # End Source File
 # End Group
@@ -100,23 +104,15 @@ SOURCE=.\math.c
 # PROP Default_Filter ""
 # Begin Source File
 
+SOURCE=..\ir\adt\align.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\adt\array.c
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\adt\array.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\adt\cookies.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\adt\debug.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\adt\debug.h
 # End Source File
 # Begin Source File
 
@@ -128,7 +124,19 @@ SOURCE=..\ir\adt\eset.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\ir\adt\host.h
+SOURCE=..\ir\adt\fourcc.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\adt\hashptr.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\adt\iterator.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\adt\iterator.h
 # End Source File
 # Begin Source File
 
@@ -185,11 +193,43 @@ SOURCE=..\ir\adt\xmalloc.h
 # PROP Default_Filter ""
 # Begin Source File
 
+SOURCE=..\ir\ana\callgraph.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana\callgraph.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\ana\cgana.c
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\ana\cgana.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana\execution_frequency.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana\execution_frequency.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana\field_temperature.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana\field_temperature.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana\interval_analysis.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana\interval_analysis.h
 # End Source File
 # Begin Source File
 
@@ -247,6 +287,206 @@ SOURCE=..\ir\ana\irtypeinfo.c
 
 SOURCE=..\ir\ana\irtypeinfo.h
 # End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana\rta.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana\rta.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana\trouts.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana\trouts.h
+# End Source File
+# End Group
+# Begin Group "ana2"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\ir\ana2\ecg.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana2\ecg.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana2\irmemwalk.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana2\irmemwalk.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana2\lset.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana2\lset.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana2\pto.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana2\pto.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana2\pto_comp.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana2\pto_comp.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana2\pto_ctx.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana2\pto_ctx.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana2\pto_debug.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana2\pto_debug.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana2\pto_init.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana2\pto_init.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana2\pto_mod.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana2\pto_mod.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana2\pto_name.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana2\pto_name.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana2\pto_util.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana2\pto_util.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana2\qset.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana2\qset.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana2\timing.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana2\timing.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana2\typalise.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana2\typalise.h
+# End Source File
+# End Group
+# Begin Group "arch"
+
+# PROP Default_Filter ""
+# End Group
+# Begin Group "be"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\ir\be\be.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\belistsched.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\belistsched.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\belive.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\belive.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\belive_t.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bemain.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bephicongr.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bephicongr_t.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\besched.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\besched.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\besched_t.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beutil.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\phistat.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\phistat.h
+# End Source File
 # End Group
 # Begin Group "common"
 
@@ -287,6 +527,14 @@ SOURCE=..\ir\common\panic.c
 
 SOURCE=..\ir\common\panic.h
 # End Source File
+# Begin Source File
+
+SOURCE=..\ir\common\statistics.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\common\statistics.h
+# End Source File
 # End Group
 # Begin Group "debug"
 
@@ -302,6 +550,23 @@ SOURCE=..\ir\debug\dbginfo.h
 # Begin Source File
 
 SOURCE=..\ir\debug\dbginfo_t.h
+# End Source File
+# End Group
+# Begin Group "external"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\ir\external\read.c
+# PROP Exclude_From_Build 1
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\external\read.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\external\read_t.h
 # End Source File
 # End Group
 # Begin Group "ident"
@@ -323,6 +588,14 @@ SOURCE=..\ir\ident\ident_t.h
 # Begin Group "ir"
 
 # PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\ir\ir\irarch.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ir\irarch.h
+# End Source File
 # Begin Source File
 
 SOURCE=..\ir\ir\ircgcons.c
@@ -357,6 +630,10 @@ SOURCE=..\ir\ir\irdump.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\ir\irdumptxt.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\ir\irflag.c
 # End Source File
 # Begin Source File
@@ -382,6 +659,10 @@ SOURCE=..\ir\ir\irgopt.c
 # Begin Source File
 
 SOURCE=..\ir\ir\irgopt.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ir\irgopt_t.h
 # End Source File
 # Begin Source File
 
@@ -457,6 +738,18 @@ SOURCE=..\ir\ir\iropt_t.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\ir\irprintf.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ir\irprintf.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ir\irprintf_t.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\ir\irprog.c
 # End Source File
 # Begin Source File
@@ -469,6 +762,18 @@ SOURCE=..\ir\ir\irprog_t.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\ir\irreflect.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ir\irreflect.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ir\irreflect_t.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\ir\irvrfy.c
 # End Source File
 # Begin Source File
@@ -477,7 +782,71 @@ SOURCE=..\ir\ir\irvrfy.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\ir\ir\old_fctnames.h
+SOURCE=..\ir\ir\pseudo_irg.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ir\pseudo_irg.h
+# End Source File
+# End Group
+# Begin Group "opt"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\ir\opt\cfopt.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\cfopt.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\funccall.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\ldstopt.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\ldstopt.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\loop_unrolling.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\loop_unrolling.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\reassoc.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\reassoc.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\reassoc_t.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\strength_red.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\strength_red.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\tailrec.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\tailrec.h
 # End Source File
 # End Group
 # Begin Group "st"
@@ -502,6 +871,62 @@ SOURCE=..\ir\st\st.c
 # Begin Source File
 
 SOURCE=..\ir\st\st.h
+# End Source File
+# End Group
+# Begin Group "stat"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\ir\stat\counter.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\stat\dags.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\stat\dags.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\stat\distrib.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\stat\firmstat.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\stat\firmstat.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\stat\firmstat_t.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\stat\pattern.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\stat\pattern.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\stat\pattern_dmp.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\stat\pattern_dmp.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\stat\stat_dmp.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\stat\stat_dmp.h
 # End Source File
 # End Group
 # Begin Group "tr"
@@ -554,6 +979,18 @@ SOURCE=..\ir\tr\type.c
 # Begin Source File
 
 SOURCE=..\ir\tr\type.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\tr\type_identify.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\tr\type_identify.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\tr\type_identify_t.h
 # End Source File
 # Begin Source File
 
@@ -610,18 +1047,6 @@ SOURCE=..\ir\tv\tv.h
 # Begin Source File
 
 SOURCE=..\ir\tv\tv_t.h
-# End Source File
-# End Group
-# Begin Group "stat"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\ir\stat\firmstat.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\stat\firmstat.h
 # End Source File
 # End Group
 # End Group
