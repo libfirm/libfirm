@@ -113,6 +113,16 @@ int id_is_prefix (ident *prefix, ident *id);
 int id_is_suffix (ident *suffix, ident *id);
 
 /**
+ * Returns true if infix is a contained in id.  (Can be suffix or prefix)
+ *
+ * @param infix  - the infix
+ * @param id     - the ident to search in
+ *
+ * @see new_get_id_str(), id_from_str(), get_id_str(), id_is_prefix()
+ */
+//int id_contains(ident *infix, ident *id);
+
+/**
  * Return true if an ident contains a given character.
  *
  * @param id     - the ident
