@@ -668,16 +668,20 @@ dump_node_nodeattr(FILE *F, ir_node *n)
  * dumps the attributes of a node n into the file F.
  * Currently this is only the color of a node.
  */
-static void dump_node_vcgattr(FILE *F, ir_node *n, int bad)
+static void dump_node_vcgattr(FILE *F, ir_node *node, ir_node *local, int bad)
 {
+  ir_node *n;
+
   if (bad) {
     fprintf(F, "color: red");
     return;
   }
 
   if (dump_node_vcgattr_hook)
-    if (dump_node_vcgattr_hook(F, n))
+    if (dump_node_vcgattr_hook(F, node, local))
       return;
+
+  n = local ? local : node;
 
   switch (get_irn_opcode(n)) {
   case iro_Start:
@@ -765,7 +769,7 @@ static void dump_const_node_local(FILE *F, ir_node *n) {
       fprintf(F, " %ld", get_irn_node_nr(con));
       fprintf(F, "\" ");
       bad |= dump_node_info(F, con);
-      dump_node_vcgattr(F, con, bad);
+      dump_node_vcgattr(F, n, con, bad);
       fprintf(F, "}\n");
     }
   }
@@ -791,7 +795,7 @@ static void dump_const_block_local(FILE *F, ir_node *n) {
     fprintf(F, " %ld", get_irn_node_nr(blk));
     fprintf(F, "\" ");
     bad |= dump_node_info(F, blk);
-    dump_node_vcgattr(F, blk, bad);
+    dump_node_vcgattr(F, n, blk, bad);
     fprintf(F, "}\n");
 
     fprintf (F, "edge: { sourcename: \"");
@@ -836,7 +840,7 @@ static void dump_node(FILE *F, ir_node *n)
   fprintf(F, "\" ");
   bad |= dump_node_info(F, n);
   print_node_error(F, p);
-  dump_node_vcgattr(F, n, bad);
+  dump_node_vcgattr(F, n, NULL, bad);
   fprintf(F, "}\n");
   dump_const_node_local(F, n);
 #if DO_HEAPANALYSIS

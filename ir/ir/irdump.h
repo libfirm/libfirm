@@ -47,7 +47,7 @@
  * If this function returns zero, the default attributes are added, else
  * removed.
  */
-typedef int (*DUMP_NODE_VCGATTR_FUNC)(FILE *F, ir_node *n);
+typedef int (*DUMP_NODE_VCGATTR_FUNC)(FILE *F, ir_node *node, ir_node *local);
 
 /** Set the node_vcgattr hook. */
 void set_dump_node_vcgattr_hook(DUMP_NODE_VCGATTR_FUNC hook);
