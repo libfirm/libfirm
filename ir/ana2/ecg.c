@@ -440,7 +440,6 @@ static void ecg_fill_ctxs_alloc (void)
   /* allocate the memory needed for the ctxts: */
   graph_info_t *ginfo = graph_infos_list;
 
-  HERE ("start");
   while (NULL != ginfo) {
     ginfo->ctxs = (ctx_info_t **) xmalloc (ginfo->n_ctxs * sizeof (ctx_info_t*));
 
@@ -453,7 +452,6 @@ static void ecg_fill_ctxs_alloc (void)
     assert (ginfo != ginfo->prev);
     ginfo = ginfo->prev;
   }
-  HERE ("end");
 }
 
 /**
@@ -501,9 +499,7 @@ static void ecg_fill_ctxs_write (ir_graph *graph, ctx_info_t *enc_ctx)
 static void ecg_fill_ctxs (void)
 {
   ecg_fill_ctxs_count (get_irp_main_irg ());
-  HERE ("start");
   ecg_fill_ctxs_alloc ();
-  HERE ("start");
 
   ctx_info_t *main_ctx = new_ctx (get_irp_main_irg (), NULL, NULL);
   ir_graph *main_irg = get_irp_main_irg ();
@@ -925,7 +921,6 @@ void ecg_init (int typalise)
   graph_infos = pmap_create ();
 
   ecg_fill_calls ();
-  HERE ("start");
   ecg_fill_ctxs ();
   ecg_ecg ();
 }
@@ -985,13 +980,13 @@ void ecg_report ()
   FILE *dot = fopen ("calls.dot", "w");
 
   fprintf (dot, "digraph \"calls\" {\n");
+  fprintf (dot, "\tgraph [rankdir=\"LR\", ordering=\"out\"];\n");
   fprintf (dot, "\tnode [shape = \"record\", style = \"filled\"];\n");
   fprintf (dot, "\tedge [color = \"black\"];\n");
   fprintf (dot, "\n");
   fprintf (dot, "\tsize = \"11, 7\";\n");
   fprintf (dot, "\trotate = \"90\";\n");
   fprintf (dot, "\tratio = \"fill\";\n");
-  fprintf (dot, "\trankdir = \"LR\";\n");
   fprintf (dot, "\n");
 
   for (i = 0; i < get_irp_n_irgs (); i++) {
@@ -1128,6 +1123,9 @@ void ecg_ecg ()
 
 /*
   $Log$
+  Revision 1.8  2004/11/30 14:45:44  liekweg
+  fix graph dumping, remove 'HERE's
+
   Revision 1.7  2004/11/26 16:01:56  liekweg
   debugging annotations
 
