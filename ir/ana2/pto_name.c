@@ -622,8 +622,8 @@ void pto_name_init (void)
   assert (NULL == name_obst);
   assert (NULL == qset_obst);
 
-  name_obst = xmalloc (sizeof (struct obstack));
-  qset_obst = xmalloc (sizeof (struct obstack));
+  name_obst = xmalloc (sizeof(*name_obst));
+  qset_obst = xmalloc (sizeof(*qset_obst));
 
   obstack_init (name_obst);
   obstack_init (qset_obst);
@@ -649,6 +649,9 @@ void pto_name_cleanup (void)
 
 /*
   $Log$
+  Revision 1.10  2004/12/22 14:43:14  beck
+  made allocations C-like
+
   Revision 1.9  2004/12/21 15:34:09  beck
   removed C99 constructs
   make const float

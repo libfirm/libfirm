@@ -219,7 +219,7 @@ void irg_walk_mem (ir_graph *graph,
                    void *env)
 {
   ir_node *end_block = get_irg_end_block (graph);
-  walk_mem_env_t *walk_env = (walk_mem_env_t*) xmalloc (sizeof (walk_mem_env_t));
+  walk_mem_env_t *walk_env = xmalloc(sizeof(*walk_env));
 
   assert (! get_irg_is_mem_visited (graph));
 
@@ -261,6 +261,9 @@ void irg_walk_mem (ir_graph *graph,
 
 /*
   $Log$
+  Revision 1.8  2004/12/22 14:43:14  beck
+  made allocations C-like
+
   Revision 1.7  2004/12/21 14:25:35  beck
   removed C99 constructs
   make visit counter of same type as irn visit counter

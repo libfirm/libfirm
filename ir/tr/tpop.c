@@ -34,7 +34,7 @@ new_tpop (tp_opcode code, ident *name, size_t attr_size)
 {
   tp_op *res;
 
-  res = (tp_op *) xmalloc (sizeof (tp_op));
+  res = xmalloc(sizeof(*res));
   res->code = code;
   res->name = name;
   res->attr_size = attr_size;

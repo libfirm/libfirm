@@ -98,8 +98,8 @@ new_rd_entity (dbg_info *db, type *owner, ident *name, type *type)
 
   assert(!id_contains_char(name, ' ') && "entity name should not contain spaces");
 
-  res = (entity *) xmalloc (sizeof (entity));
-  memset(res, 0, sizeof(res));
+  res = xmalloc(sizeof(*res));
+  memset(res, 0, sizeof(*res));
   res->kind = k_entity;
   res->owner = owner;
   res->name = name;
@@ -196,49 +196,49 @@ static void free_entity_attrs(entity *ent) {
 
 entity *
 copy_entity_own (entity *old, type *new_owner) {
-  entity *new;
+  entity *newe;
   assert(old && old->kind == k_entity);
   assert_legal_owner_of_ent(new_owner);
 
   if (old->owner == new_owner) return old;
-  new = (entity *) xmalloc (sizeof (entity));
-  memcpy (new, old, sizeof (entity));
-  new->owner = new_owner;
+  newe = xmalloc(sizeof(*newe));
+  memcpy (newe, old, sizeof(*newe));
+  newe->owner = new_owner;
   if (is_class_type(new_owner)) {
-    new->overwrites    = NEW_ARR_F(entity *, 0);
-    new->overwrittenby = NEW_ARR_F(entity *, 0);
+    newe->overwrites    = NEW_ARR_F(entity *, 0);
+    newe->overwrittenby = NEW_ARR_F(entity *, 0);
   }
 #ifdef DEBUG_libfirm
-  new->nr = get_irp_new_node_nr();
+  newe->nr = get_irp_new_node_nr();
 #endif
 
-  insert_entity_in_owner (new);
+  insert_entity_in_owner (newe);
 
-  return new;
+  return newe;
 }
 
 entity *
 copy_entity_name (entity *old, ident *new_name) {
-  entity *new;
+  entity *newe;
   assert(old && old->kind == k_entity);
 
   if (old->name == new_name) return old;
-  new = (entity *) xmalloc (sizeof (entity));
-  memcpy (new, old, sizeof (entity));
-  new->name = new_name;
-  new->ld_name = NULL;
-  if (is_class_type(new->owner)) {
-    new->overwrites    = DUP_ARR_F(entity *, old->overwrites);
-    new->overwrittenby = DUP_ARR_F(entity *, old->overwrittenby);
+  newe = xmalloc(sizeof(*newe));
+  memcpy(newe, old, sizeof(*newe));
+  newe->name = new_name;
+  newe->ld_name = NULL;
+  if (is_class_type(newe->owner)) {
+    newe->overwrites    = DUP_ARR_F(entity *, old->overwrites);
+    newe->overwrittenby = DUP_ARR_F(entity *, old->overwrittenby);
   }
 #ifdef DEBUG_libfirm
-  new->nr = get_irp_new_node_nr();
-  new->c_name = (char *)get_id_str (new->name);
+  newe->nr = get_irp_new_node_nr();
+  newe->c_name = (char *)get_id_str (newe->name);
 #endif
 
-  insert_entity_in_owner (new);
+  insert_entity_in_owner (newe);
 
-  return new;
+  return newe;
 }
 
 

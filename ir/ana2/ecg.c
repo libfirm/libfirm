@@ -82,7 +82,7 @@ void set_main_ctx (ctx_info_t*);
    ==================== */
 static void append_alloc (graph_info_t *ginfo, ir_node *alloc, type *tp)
 {
-  alloc_info_t *ainfo = (alloc_info_t*) xmalloc (sizeof (alloc_info_t));
+  alloc_info_t *ainfo = xmalloc(sizeof(*ainfo));
 
   ainfo->graph = ginfo->graph;
   ainfo->alloc = alloc;
@@ -101,7 +101,7 @@ static void append_alloc (graph_info_t *ginfo, ir_node *alloc, type *tp)
 */
 static callEd_info_t *append_callEd_info (callEd_info_t *ced, ir_graph *callEd)
 {
-  callEd_info_t *nced = (callEd_info_t*) xmalloc (sizeof (sizeof (callEd_info_t)));
+  callEd_info_t *nced = xmalloc(sizeof(*nced));
 
   nced->callEd = callEd;
   nced->prev = ced;
@@ -114,7 +114,7 @@ static callEd_info_t *append_callEd_info (callEd_info_t *ced, ir_graph *callEd)
 */
 static void append_calls (graph_info_t *info, ir_node *call, lset_t *callEds)
 {
-  call_info_t *cinfo = xmalloc (sizeof(*cinfo));
+  call_info_t *cinfo = xmalloc(sizeof(*cinfo));
   ir_graph *callEd;
 
   /* setup */
@@ -347,7 +347,7 @@ static void ecg_calls_act (ir_node *node, void *env)
 */
 static void ecg_fill_graph_calls (ir_graph *graph)
 {
-  graph_info_t *ginfo = (graph_info_t*) xmalloc (sizeof (graph_info_t));
+  graph_info_t *ginfo = xmalloc(sizeof(*ginfo));
 
   /* memset (ginfo, 0x00, sizeof (graph_info_t)); */
   assert (ginfo != graph_infos_list);
@@ -389,7 +389,7 @@ static void ecg_fill_calls (void)
 */
 static ctx_info_t *new_ctx (ir_graph *graph, ir_node *call, ctx_info_t *enc)
 {
-  ctx_info_t *res = xmalloc (sizeof (ctx_info_t));
+  ctx_info_t *res = xmalloc(sizeof(*res));
 
   res->graph = graph;
   res->call = call;
@@ -442,7 +442,7 @@ static void ecg_fill_ctxs_alloc (void)
   graph_info_t *ginfo = graph_infos_list;
 
   while (NULL != ginfo) {
-    ginfo->ctxs = (ctx_info_t **) xmalloc (ginfo->n_ctxs * sizeof (ctx_info_t*));
+    ginfo->ctxs = xmalloc(ginfo->n_ctxs * sizeof(*ginfo->ctxs));
 
     /*
       fprintf (stdout, "graph of \"%s\": n_ctxs = %i\n",
@@ -514,7 +514,7 @@ static void ecg_fill_ctxs (void)
   /* Grrr, have to add this ctx manually to main.ginfo ... */
   ginfo = ecg_get_info (main_irg);
   ginfo->n_ctxs = 1;
-  ginfo->ctxs = xmalloc (1 * sizeof (ctx_info_t*));
+  ginfo->ctxs = xmalloc(1 * sizeof(*ginfo->ctxs));
   ginfo->ctxs [0] = main_ctx;
 
   ecg_fill_ctxs_write (main_irg, main_ctx);
@@ -1175,6 +1175,9 @@ void ecg_ecg (void)
 
 /*
   $Log$
+  Revision 1.14  2004/12/22 14:43:14  beck
+  made allocations C-like
+
   Revision 1.13  2004/12/21 14:21:16  beck
   removed C99 constructs
 

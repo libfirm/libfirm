@@ -76,10 +76,9 @@ ir_node **find_irg_args (ir_graph *graph)
 {
   type *tp = get_entity_type (get_irg_entity (graph));
   const int n_args = get_method_n_params (tp);
-  ir_node **args = (ir_node**) xmalloc (sizeof (ir_node*) * (n_args+1));
+  ir_node **args = xmalloc (sizeof(*args) * (n_args+1));
   ir_node *arg = get_irg_args (graph);
-  find_irg_args_env_t *arg_env =
-    (find_irg_args_env_t*) xmalloc (sizeof (find_irg_args_env_t));
+  find_irg_args_env_t *arg_env = xmalloc(sizeof(*arg_env));
 
   arg_env->args = args;
   arg_env->arg  = arg;
@@ -151,6 +150,9 @@ int is_dummy_load_ptr (ir_node *ptr)
 
 /*
   $Log$
+  Revision 1.13  2004/12/22 14:43:14  beck
+  made allocations C-like
+
   Revision 1.12  2004/12/21 15:53:12  beck
   removed GNUC constructs
 

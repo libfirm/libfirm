@@ -38,7 +38,7 @@
 /* create a new lset */
 lset_t *lset_create (void)
 {
-  lset_t *lset = xmalloc (sizeof (lset_t));
+  lset_t *lset = xmalloc(sizeof(*lset));
 
   return (lset);
 }
@@ -71,7 +71,7 @@ int lset_empty (lset_t *lset)
 void lset_insert (lset_t *lset, void *data)
 {
   if (! lset_contains (lset, data)) {
-    lset_entry_t *entry = xmalloc (sizeof (lset_entry_t));
+    lset_entry_t *entry = xmalloc(sizeof(*entry));
     entry->data = data;
     entry->next = lset->first;
     lset->first = entry;
@@ -194,6 +194,9 @@ void lset_destroy (lset_t *lset)
 
 /*
   $Log$
+  Revision 1.3  2004/12/22 14:43:14  beck
+  made allocations C-like
+
   Revision 1.2  2004/12/02 16:17:51  beck
   fixed config.h include
 

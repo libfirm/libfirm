@@ -52,7 +52,7 @@ static typalise_t *typalise_proj (ir_node*);
 */
 static typalise_t *ta_exact (type *tp)
 {
-  typalise_t *ta = (typalise_t*) xmalloc (sizeof (typalise_t));
+  typalise_t *ta = xmalloc (sizeof(*ta));
   ta->kind = type_exact;
   ta->res.type = tp;
   ta->id = ta_id ++;
@@ -64,7 +64,7 @@ static typalise_t *ta_exact (type *tp)
 
 static typalise_t *ta_types (lset_t *set)
 {
-  typalise_t *ta = (typalise_t*) xmalloc (sizeof (typalise_t));
+  typalise_t *ta = xmalloc (sizeof(*ta));
   ta->kind = type_types;
   ta->res.types = set;
   ta->id = ta_id ++;
@@ -74,7 +74,7 @@ static typalise_t *ta_types (lset_t *set)
 
 static typalise_t *ta_type (type *tp)
 {
-  typalise_t *ta = (typalise_t*) xmalloc (sizeof (typalise_t));
+  typalise_t *ta = xmalloc (sizeof(*ta));
   ta->kind = type_type;
   ta->res.type = tp;
   ta->id = ta_id ++;
@@ -706,6 +706,9 @@ typalise_t *typalise (ir_node *node)
 
 /*
   $Log$
+  Revision 1.5  2004/12/22 14:43:14  beck
+  made allocations C-like
+
   Revision 1.4  2004/12/21 15:50:18  beck
   removed C99 constructs
 

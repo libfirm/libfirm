@@ -112,8 +112,8 @@ new_type(tp_op *type_op, ir_mode *mode, ident* name) {
   assert(!id_contains_char(name, ' ') && "type name should not contain spaces");
 
   node_size = offsetof(type, attr) +  type_op->attr_size;
-  res = (type *) xmalloc (node_size);
-  memset((void *)res, 0, node_size);
+  res = xmalloc (node_size);
+  memset(res, 0, node_size);
   add_irp_type(res);   /* Remember the new type global. */
 
   res->kind    = k_type;
@@ -1037,10 +1037,10 @@ type *new_type_method (ident *name, int n_param, int n_res) {
   res->state                        = layout_fixed;
   res->size                         = get_mode_size_bits(mode_P_mach);
   res->attr.ma.n_params             = n_param;
-  res->attr.ma.param_type           = (type **) xmalloc (sizeof (type *) * n_param);
+  res->attr.ma.param_type           = xmalloc(sizeof(*res->attr.ma.param_type) * n_param);
   res->attr.ma.value_params         = NULL;
   res->attr.ma.n_res                = n_res;
-  res->attr.ma.res_type             = (type **) xmalloc (sizeof (type *) * n_res);
+  res->attr.ma.res_type             = xmalloc(sizeof(*res->attr.ma.res_type) * n_res);
   res->attr.ma.value_ress           = NULL;
   res->attr.ma.variadicity          = variadicity_non_variadic;
   res->attr.ma.first_variadic_param = -1;
@@ -1241,8 +1241,8 @@ int (is_method_type)(const type *method) {
 type  *new_type_union (ident *name) {
   type *res;
   res = new_type(type_union, NULL, name);
-  /*res->attr.ua.unioned_type = (type **)  xmalloc (sizeof (type *)  * n_types);
-    res->attr.ua.delim_names  = (ident **) xmalloc (sizeof (ident *) * n_types); */
+  /*res->attr.ua.unioned_type = xmalloc(sizeof(*res->attr.ua.unioned_type)  * n_types);
+    res->attr.ua.delim_names  = xmalloc(sizeof(*res->attr.ua.delim_names) * n_types); */
   res->attr.ua.members = NEW_ARR_F (entity *, 0);
   return res;
 }
@@ -1343,9 +1343,9 @@ type *new_type_array         (ident *name, int n_dimensions,
 
   res = new_type(type_array, NULL, name);
   res->attr.aa.n_dimensions = n_dimensions;
-  res->attr.aa.lower_bound  = (ir_node **) xmalloc (sizeof (ir_node *) * n_dimensions);
-  res->attr.aa.upper_bound  = (ir_node **) xmalloc (sizeof (ir_node *) * n_dimensions);
-  res->attr.aa.order  = (int *) xmalloc (sizeof (int) * n_dimensions);
+  res->attr.aa.lower_bound  = xmalloc(sizeof(*res->attr.aa.lower_bound) * n_dimensions);
+  res->attr.aa.upper_bound  = xmalloc(sizeof(*res->attr.aa.upper_bound) * n_dimensions);
+  res->attr.aa.order        = xmalloc(sizeof(*res->attr.aa.order) * n_dimensions);
 
   current_ir_graph = get_const_code_irg();
   for (i = 0; i < n_dimensions; i++) {
@@ -1505,8 +1505,8 @@ type   *new_type_enumeration    (ident *name, int n_enums) {
   type *res;
   res = new_type(type_enumeration, NULL, name);
   res->attr.ea.n_enums     = n_enums;
-  res->attr.ea.enumer      = (tarval **)xmalloc(sizeof(res->attr.ea.enumer[0]) * n_enums);
-  res->attr.ea.enum_nameid = (ident  **)xmalloc(sizeof(res->attr.ea.enum_nameid[0]) * n_enums);
+  res->attr.ea.enumer      = xmalloc(sizeof(res->attr.ea.enumer[0]) * n_enums);
+  res->attr.ea.enum_nameid = xmalloc(sizeof(res->attr.ea.enum_nameid[0]) * n_enums);
   memset(res->attr.ea.enumer,      0, sizeof(res->attr.ea.enumer[0])      * n_enums);
   memset(res->attr.ea.enum_nameid, 0, sizeof(res->attr.ea.enum_nameid[0]) * n_enums);
   return res;

@@ -80,7 +80,7 @@ void pto_init (int lvl)
   ecg_iterate_graphs (pto_init_graph_wrapper, NULL);
 
   /* debugging only */
-  spaces = (char*) xmalloc (512 * sizeof (char));
+  spaces = xmalloc (512 * sizeof(spaces[0]));
   memset (spaces, ' ', 512);
   spaces += 511;
   *spaces = '\0';
@@ -137,6 +137,9 @@ void pto_cleanup (void)
 
 /*
   $Log$
+  Revision 1.16  2004/12/22 14:43:14  beck
+  made allocations C-like
+
   Revision 1.15  2004/12/21 14:26:53  beck
   removed C99 constructs
 

@@ -321,7 +321,7 @@ void compute_outs(ir_graph *irg) {
   n_out_edges = count_outs(get_irg_end(irg));
 
   /* allocate memory for all out edges. */
-  irg->outs = (ir_node **) xmalloc (n_out_edges * sizeof(ir_node *));
+  irg->outs = xmalloc (n_out_edges * sizeof(*irg->outs));
 #ifdef DEBUG_libfirm
   irg->n_outs = n_out_edges;
 #endif /* defined DEBUG_libfirm */
@@ -470,7 +470,7 @@ void compute_ip_outs(void) {
   }
 
   global_count = n_out_edges = count_ip_outs();
-  out_edges = (ir_node **) xmalloc (n_out_edges * sizeof(ir_node *));
+  out_edges = xmalloc(n_out_edges * sizeof(*out_edges));
   set_irp_ip_outedges(out_edges);
   set_ip_outs();
 }

@@ -186,8 +186,8 @@ void compute_doms(ir_graph *irg) {
   irg_block_walk(get_irg_end(current_ir_graph), count_and_init_blocks, NULL, &n_blocks);
 
   /* Memory for temporary information. */
-  tdi_list = xmalloc(n_blocks * sizeof(tmp_dom_info));
-  memset(tdi_list, 0, n_blocks * sizeof(tmp_dom_info));
+  tdi_list = xmalloc(n_blocks * sizeof(*tdi_list));
+  memset(tdi_list, 0, n_blocks * sizeof(*tdi_list));
 
   /* We need the out datastructure. */
   if (current_ir_graph->outs_state != outs_consistent)
