@@ -241,7 +241,6 @@ static ir_loop *new_loop (void) {
    of current_ir_graph. */
 static void mature_loop (ir_loop *loop) {
   ir_loop **new_sons;
-  ir_node **new_nods;
 
   new_sons = NEW_ARR_D (ir_loop *, current_ir_graph->obst, ARR_LEN(loop->sons));
   memcpy (new_sons, loop->sons, sizeof (ir_loop *) * ARR_LEN(loop->sons));
@@ -309,7 +308,6 @@ ir_loop *get_irg_loop(ir_graph *irg) {
 
 static INLINE void
 init_node (ir_node *n, void *env) {
-  int i;
   set_irn_link (n, new_scc_info());
   clear_backedges(n);
 #if 0

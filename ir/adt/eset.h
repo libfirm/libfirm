@@ -44,7 +44,9 @@ bool eset_contains(eset *, void *);
  * keine weiteren Adressen in der Menge sind, geben die Funktionen
  * "NULL" zurück. Warnung: Man sollte deshalb "NULL" nicht in der
  * Menge speichern, weil man sonst nicht durch die Menge iterieren
- * kann. */
+ * kann.
+ * ACHTUNG: Waehrend dem iterieren darf man keine neuen Elemente
+ * einfuergen!! */
 void * eset_first(eset *);
 void * eset_next(eset *);
 

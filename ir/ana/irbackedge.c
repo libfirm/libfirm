@@ -24,6 +24,7 @@
 static INLINE int *mere_get_backarray(ir_node *n) {
   switch(get_irn_opcode(n)) {
   case iro_Block:
+    if (!get_Block_matured(n)) return NULL;
     if (interprocedural_view && n->attr.block.in_cg) {
       assert(n->attr.block.cg_backedge && "backedge array not allocated!");
       return n->attr.block.cg_backedge;

@@ -29,13 +29,7 @@
 
 /* Vormals Debugunterstuetzung, entfernt (debug.h). */
 # define ID_VRFY(id) ((void)0)
-
-#ifdef NDEBUG
 # define IDS_VRFY(id) ((void)0)
-#else
-# define IDS_VRFY(id) ids_vrfy ((id))
-static void ids_vrfy (ident **id);
-#endif
 
 #ifdef STATS
 # define id_stats() set_stats (id_set)
@@ -65,7 +59,6 @@ new_id_derived (const char *pfx, ident *id)
   return ID_FROM_STR (str, pfx_len + ID_TO_STRLEN (id));
 }
 
-
 static ident *
 new_id_internal (void)
 {
@@ -92,19 +85,6 @@ id_is_internal (ident *id)
 }
 #endif
 
-#ifndef NDEBUG
-
-static void
-ids_vrfy (ident **id)
-{
-  int i;
-
-  for (i = 0;  i < ARR_LEN (id);  ++i) {
-    ID_VRFY (id[i]);
-  }
-}
-
-#endif
 
 int
 ident_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
