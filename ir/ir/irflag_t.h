@@ -78,8 +78,8 @@ typedef enum {
   /** precise exception context */
   OPT_PRECISE_EXC_CONTEXT                = 0x00008000,
 
-  /** Free never called methods */
-  OPT_DEAD_METHOD_ELIMINATION_VERBOSE    = 0x00010000,
+
+  /** EMPTY SLOT !!! TO BE ASSIGNED */
 
   /** Do Strength reduction */
   OPT_STRENGTH_RED                       = 0x00020000,
@@ -93,6 +93,10 @@ typedef enum {
 } libfirm_opts_t;
 
 extern optimization_state_t libFIRM_opt;
+extern optimization_state_t libFIRM_verb;
+
+extern int firm_verbosity_level;
+
 
 /** Returns constant folding optimization setting. */
 static INLINE int get_opt_cse(void)
@@ -111,12 +115,10 @@ static INLINE int get_opt_strength_red(void)
   return libFIRM_opt & OPT_STRENGTH_RED;
 }
 
-/** Returns verbosity for strength reduction.
- * 1: output number of reduced expressions for each run
- * 2: output each reduced expression . */
+/** Returns verbosity for strength reduction.   */
 static INLINE int get_opt_strength_red_verbosity(void)
 {
-  return 0;  // @@@ not yet implemented.
+  return libFIRM_verb & OPT_STRENGTH_RED;
 }
 
 /** Returns global constant subexpression elimination setting. */
@@ -182,13 +184,17 @@ static INLINE int get_opt_dead_method_elimination(void)
 /** Returns dead method elimination setting. */
 static INLINE int get_opt_dead_method_elimination_verbose(void)
 {
-  return libFIRM_opt & OPT_DEAD_METHOD_ELIMINATION_VERBOSE;
+  return libFIRM_verb & OPT_DEAD_METHOD_ELIMINATION;
 }
 
 /** Returns global optimization setting */
 static INLINE int get_opt_optimize(void)
 {
   return libFIRM_opt & OPT_OPTIMIZED;
+}
+
+static INLINE int __get_firm_verbosity (void) {
+  return firm_verbosity_level;
 }
 
 /** Returns inlining setting. */
@@ -218,5 +224,9 @@ static INLINE int get_opt_precise_exc_context(void)
 {
   return libFIRM_opt & OPT_PRECISE_EXC_CONTEXT;
 }
+
+
+
+#define get_firm_verbosity()  __get_firm_verbosity()
 
 #endif /* _IRFLAG_T_H_ */

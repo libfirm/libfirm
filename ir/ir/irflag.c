@@ -44,6 +44,30 @@ optimization_state_t libFIRM_opt =
   ENABLE(OPT_PRECISE_EXC_CONTEXT)                |
   0;
 
+optimization_state_t libFIRM_verb =
+  DISABLE(OPT_OPTIMIZED)                          |
+  DISABLE(OPT_CSE)                                |
+  DISABLE(OPT_GLOBAL_CSE)                         |
+  DISABLE(OPT_STRENGTH_RED)                       |
+  DISABLE(OPT_CONSTANT_FOLDING)                   |
+  DISABLE(OPT_REDUNDANT_LOADSTORE)                |
+  DISABLE(OPT_UNREACHABLE_CODE)                   |
+  DISABLE(OPT_CONTROL_FLOW_STRAIGHTENING)         |
+  DISABLE(OPT_CONTROL_FLOW_WEAK_SIMPLIFICATION)   |
+  DISABLE(OPT_CONTROL_FLOW_STRONG_SIMPLIFICATION) |
+  DISABLE(OPT_CRITICAL_EDGES)                     |
+  DISABLE(OPT_DEAD_NODE_ELIMINATION)              |
+  DISABLE(OPT_DEAD_METHOD_ELIMINATION)            |
+  DISABLE(OPT_REASSOCIATION)                      |
+  DISABLE(OPT_INLINE)                             |
+  DISABLE(OPT_DYN_METH_DISPATCH)                  |
+  DISABLE(OPT_NORMALIZE)                          |
+  DISABLE(OPT_TAIL_RECURSION)                     |
+  DISABLE(OPT_PRECISE_EXC_CONTEXT)                |
+  0;
+
+int firm_verbosity_level;
+
 /* set the flags with set_flagname, get the flag with get_flagname */
 void set_opt_cse (int value)
 {
@@ -67,6 +91,14 @@ void set_opt_strength_red (int value)
     libFIRM_opt |= OPT_STRENGTH_RED;
   else
     libFIRM_opt &= ~OPT_STRENGTH_RED;
+}
+
+void set_opt_strength_red_verbose (int value)
+{
+  if (value)
+    libFIRM_verb |= OPT_STRENGTH_RED;
+  else
+    libFIRM_verb &= ~OPT_STRENGTH_RED;
 }
 
 void
@@ -163,9 +195,9 @@ void set_opt_dead_method_elimination (int value) {
 
 void set_opt_dead_method_elimination_verbose (int value) {
   if (value)
-    libFIRM_opt |= OPT_DEAD_METHOD_ELIMINATION_VERBOSE;
+    libFIRM_verb |= OPT_DEAD_METHOD_ELIMINATION;
   else
-    libFIRM_opt &= ~OPT_DEAD_METHOD_ELIMINATION_VERBOSE;
+    libFIRM_verb &= ~OPT_DEAD_METHOD_ELIMINATION;
 }
 
 void set_optimize(int value)
@@ -180,6 +212,17 @@ int get_optimize(void)
 {
   return get_opt_optimize();
 }
+
+
+void set_firm_verbosity (int value) {
+  firm_verbosity_level = value;
+}
+
+int  (get_firm_verbosity) (void) {
+  return __get_firm_verbosity();
+}
+
+
 
 /* Enable/Disables inlining. */
 void set_opt_inline(int value)

@@ -3,7 +3,7 @@
  * File name:   ir/ir/irflag.h
  * Purpose:     Flags to control optimizations.
  * Author:      Christian Schaefer, Goetz Lindenmaier
- * Modified by:
+ * Modified by: Michael Beck
  * Created:
  * CVS-ID:      $Id$
  * Copyright:   (c) 1999-2003 Universität Karlsruhe
@@ -13,9 +13,22 @@
 /**
  * @file irflag.h
  *
- * Optimization flags.
+ * Flags to customize the behaviour of libfirm.
  *
  * @author Christian Schaefer
+ *
+ * There are the following groups of flags:
+ * 1. Optimization flags.
+ *    a)  There is a flag, 'optimize' to turn on/off all optimizations.
+ *    b)  There are flags for each individual optimization.  Some flags turns
+ *        transformations in several algorithms on/off.
+ * 2. Normalization flags.
+ *    These flags steer transformations of the ir that improve it, as removing
+ *    dump Phi nodes (one predecessor, all preds are equal ...), Ids, Tuples ...
+ * 3. Verbosity flags.
+ *    a) Flags to steer the level of the information.
+ *    b) Flags to steer in which phase information should be dumped.
+ *
  */
 
 #ifndef _IRFLAG_H_
@@ -33,7 +46,17 @@ typedef unsigned optimization_state_t;
  * Default: optimize == 1.
  */
 void set_optimize (int value);
-int get_optimize(void);
+int  get_optimize(void);
+
+/** This function enables/disables output of information about phases and
+ *  controls the verbosity level.
+ *
+ *  0: no output at all.
+ *  1: very short output
+ *  >>1: very verbose output.
+ */
+void set_firm_verbosity (int value);
+int  get_firm_verbosity (void);
 
 /** Enables/Disables constant folding optimization.
  *
@@ -81,6 +104,10 @@ void set_opt_global_cse (int value);
  * Default: opt_strength_red = 1;
  */
 void set_opt_strength_red (int value);
+
+/** Enables/Disables output of information about strength reduction.
+ */
+void set_opt_strength_red_verbose (int value);
 
 /** Enables/Disables unreachable code elimination.
  *
