@@ -109,4 +109,4 @@ test -z "$$fail"
 endef
 endif
 
-targets = all clean depend realclean tags install autodoc autodoc_xref autodoc_html dist distrib
+targets = all clean depend realclean tags install autodoc autodoc_xref autodoc_html dist distrib install_headers install_libs
