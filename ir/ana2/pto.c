@@ -106,6 +106,12 @@ void pto_run ()
   DBGPRINT (1, (stdout, "END   PTO\n"));
 }
 
+/* Dump all interesting stuff to a bunch of files */
+void pto_dump ()
+{
+  pto_dump_names ("names.dot");
+}
+
 void pto_cleanup ()
 {
   /* todo: clean up our own mess */
@@ -126,6 +132,9 @@ void pto_cleanup ()
 
 /*
   $Log$
+  Revision 1.11  2004/11/30 15:49:27  liekweg
+  include 'dump'
+
   Revision 1.10  2004/11/30 14:46:41  liekweg
   Correctly reset main graph; remove dbugging stuff
 

@@ -74,7 +74,7 @@ typedef struct arr_desc_str
    Global Prototypes:
    =================================================== */
 /* Dump all names to a file of the given name */
-void pto_dump (const char*);
+void pto_dump_names (const char*);
 
 /* Find the given descriptor's entry for the given entity */
 qset_t *get_entry (desc_t*, entity*);
@@ -102,6 +102,9 @@ void pto_name_cleanup (void);
 
 /*
   $Log$
+  Revision 1.4  2004/11/30 15:49:27  liekweg
+  include 'dump'
+
   Revision 1.3  2004/11/30 14:47:54  liekweg
   fix initialisation; do correct iteration
 

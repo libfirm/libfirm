@@ -366,7 +366,7 @@ desc_t *new_ent_name (entity *ent)
 # undef N_GLOB_INITIAL_FIELDS
 
 /* Dump all names to a file of the given name */
-void pto_dump (const char *name)
+void pto_dump_names (const char *name)
 {
   desc_t *desc = all_descs;
   FILE *stream = fopen (name, "w");
@@ -424,6 +424,9 @@ void pto_name_cleanup ()
 
 /*
   $Log$
+  Revision 1.4  2004/11/30 15:49:27  liekweg
+  include 'dump'
+
   Revision 1.3  2004/11/30 14:47:54  liekweg
   fix initialisation; do correct iteration
 

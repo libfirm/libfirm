@@ -33,6 +33,9 @@
 /* Perform PTO on all visible graphs. */
 void pto_init (int);
 void pto_run (void);
+/* Dump all interesting stuff to a bunch of files */
+void pto_dump (void);
+/* Clean up our mess */
 void pto_cleanup (void);
 
 /* ===================================================
@@ -46,6 +49,9 @@ void pto_cleanup (void);
 
 /*
   $Log$
+  Revision 1.7  2004/11/30 15:49:27  liekweg
+  include 'dump'
+
   Revision 1.6  2004/11/24 14:53:55  liekweg
   Bugfixes
 
