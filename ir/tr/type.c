@@ -234,8 +234,13 @@ void    remove_class_member(type *clss, entity *member) {
 }
 
 void    add_class_subtype   (type *clss, type *subtype) {
+  int i;
   assert(clss && (clss->type_op == type_class));
   ARR_APP1 (type *, clss->attr.ca.subtypes, subtype);
+  for (i = 0; i < get_class_n_subtype(subtype); i++)
+    if (get_class_subtype(subtype, i) == clss)
+      /* Class already registered */
+      return;
   ARR_APP1 (type *, subtype->attr.ca.supertypes, clss);
 }
 int     get_class_n_subtype (type *clss) {
@@ -263,9 +268,14 @@ void    remove_class_subtype(type *clss, type *subtype) {
 }
 
 void    add_class_supertype   (type *clss, type *supertype) {
+  int i;
   assert(clss && (clss->type_op == type_class));
   assert(supertype && (supertype -> type_op == type_class));
   ARR_APP1 (type *, clss->attr.ca.supertypes, supertype);
+  for (i = 0; i < get_class_n_supertype(supertype); i++)
+    if (get_class_supertype(supertype, i) == clss)
+      /* Class already registered */
+      return;
   ARR_APP1 (type *, supertype->attr.ca.subtypes, clss);
 }
 int     get_class_n_supertype (type *clss) {

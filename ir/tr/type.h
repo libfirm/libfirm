@@ -206,8 +206,9 @@ void    set_class_member   (type *clss, entity *member, int pos);
 void    remove_class_member(type *clss, entity *member);
 
 
-/* Adds subtype as subtype to clss and also
-   clss as supertype to subtype */
+/* Adds subtype as subtype to clss.
+   Checks whether clss is a supertype of subtype.  If not
+   adds also clss as supertype to subtype.  */
 void    add_class_subtype   (type *clss, type *subtype);
 /* Returns the number of subtypes */
 int     get_class_n_subtype (type *clss);
@@ -221,8 +222,9 @@ void    set_class_subtype   (type *clss, type *subtype, int pos);
 void    remove_class_subtype(type *clss, type *subtype);
 
 
-/* Adds supertype as supertype to class and also
-   class as subtype to supertype. */
+/* Adds supertype as supertype to class.
+   Checks whether clss is a subtype of supertype.  If not
+   adds also clss as subtype to supertype.  */
 void    add_class_supertype   (type *clss, type *supertype);
 /* Returns the number of supertypes */
 int     get_class_n_supertype (type *clss);
