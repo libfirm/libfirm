@@ -462,8 +462,8 @@ main(void)
     construct_backedges(current_ir_graph);
     dump_ir_block_graph (current_ir_graph, 0);
     dump_all_types(0);
-    set_opt_strength_red_verbose(2);
-    set_firm_verbosity(2);
+    set_opt_strength_red_verbose(0);
+    set_firm_verbosity(0);
     optimize_reassociation(current_ir_graph);
     reduce_strength(current_ir_graph);
 
