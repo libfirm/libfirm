@@ -226,29 +226,6 @@ ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align, 
   ir_mode mode_tmpl;
   ir_mode *mode;
 
-  /* sanity checks */
-  switch (sort)
-  {
-    case irms_auxiliary:
-    case irms_control_flow:
-    case irms_memory:
-    case irms_internal_boolean:
-      assert(0 && "internal modes cannot be user defined");
-      return NULL;
-      break;
-
-    case irms_float_number:
-      if(arithmetic != irma_ieee754) {
-	assert(0 && "not yet implemented");
-	return NULL;
-      }
-      break;
-
-    case irms_int_number:
-    case irms_reference:
-    case irms_character:
-      break;
-  }
   mode_tmpl.name        = new_id_from_str(name);
   mode_tmpl.sort        = sort;
   mode_tmpl.size        = bit_size;
@@ -258,16 +235,32 @@ ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align, 
   mode_tmpl.link        = NULL;
   mode_tmpl.tv_priv     = NULL;
 
-  /* first check if there already is a matching mode */
   mode = find_mode(&mode_tmpl);
   if (mode)
   {
     return mode;
   }
-  else
+
+  /* sanity checks */
+  switch (sort)
   {
-    return register_mode(&mode_tmpl);
+    case irms_auxiliary:
+    case irms_control_flow:
+    case irms_memory:
+    case irms_internal_boolean:
+      assert(0 && "internal modes cannot be user defined");
+      return NULL;
+
+    case irms_float_number:
+      assert(0 && "not yet implemented");
+      return NULL;
+
+    case irms_int_number:
+    case irms_reference:
+    case irms_character:
+      return register_mode(&mode_tmpl);
   }
+  return NULL; /* to shut up gcc */
 }
 
 /* Functions for the direct access to all attributes od a ir_mode */
