@@ -36,16 +36,11 @@ init_entity (void)
 {
 }
 
-/*******************************************************************/
-/** ENTITY                                                        **/
-/*******************************************************************/
+/*-----------------------------------------------------------------*/
+/* ENTITY                                                          */
+/*-----------------------------------------------------------------*/
 
-/* redeclared to declare INLINE. */
-INLINE entity *get_entity_overwrites   (entity *ent, int pos);
-INLINE entity *get_entity_overwrittenby   (entity *ent, int pos);
-INLINE type   *get_entity_owner (entity *ent);
-
-INLINE void insert_entity_in_owner (entity *ent) {
+void insert_entity_in_owner (entity *ent) {
   type *owner = ent->owner;
   switch (get_type_tpop_code(owner)) {
   case tpo_class: {
@@ -123,13 +118,13 @@ new_d_entity (type *owner, ident *name, type *type, dbg_info *db) {
   return res;
 }
 
-INLINE void    free_compound_graph_path (compound_graph_path *gr);
-INLINE int     is_compound_graph_path(void *thing);
-INLINE int     get_compound_graph_path_length(compound_graph_path *gr);
-INLINE entity *get_compound_graph_path_node(compound_graph_path *gr, int pos);
-INLINE int     get_compound_ent_n_values(entity *ent);
+void    free_compound_graph_path (compound_graph_path *gr);
+int     is_compound_graph_path(void *thing);
+int     get_compound_graph_path_length(compound_graph_path *gr);
+entity *get_compound_graph_path_node(compound_graph_path *gr, int pos);
+int     get_compound_ent_n_values(entity *ent);
 
-INLINE void free_entity_attrs(entity *ent) {
+void free_entity_attrs(entity *ent) {
   int i;
   assert(ent);
   if (get_type_tpop(get_entity_owner(ent)) == type_class) {
@@ -214,7 +209,7 @@ free_entity (entity *ent) {
 }
 
 /* Outputs a unique number for this node */
-INLINE long
+long
 get_entity_nr(entity *ent) {
   assert(ent);
 #ifdef DEBUG_libfirm
@@ -224,7 +219,7 @@ get_entity_nr(entity *ent) {
 #endif
 }
 
-INLINE const char *
+const char *
 get_entity_name (entity *ent) {
   assert (ent);
   return get_id_str(get_entity_ident(ent));
@@ -241,18 +236,18 @@ void   set_entitye_ld_name  (entity *, char *ld_name);
 void   set_entity_ld_ident (entity *, ident *ld_ident);
 */
 
-INLINE type *
+type *
 get_entity_owner (entity *ent) {
   return ent->owner = skip_tid(ent->owner);
 }
 
-INLINE void
+void
 set_entity_owner (entity *ent, type *owner) {
   assert_legal_owner_of_ent(owner);
   ent->owner = owner;
 }
 
-INLINE void   /* should this go into type.c? */
+void   /* should this go into type.c? */
 assert_legal_owner_of_ent(type *owner) {
   assert (get_type_tpop_code(owner) == tpo_class ||
           get_type_tpop_code(owner) == tpo_union ||
@@ -261,7 +256,7 @@ assert_legal_owner_of_ent(type *owner) {
 							-- to select fields! */
 }
 
-INLINE ident *
+ident *
 get_entity_ld_ident (entity *ent)
 {
   if (ent->ld_name == NULL)
@@ -269,12 +264,12 @@ get_entity_ld_ident (entity *ent)
   return ent->ld_name;
 }
 
-INLINE void
+void
 set_entity_ld_ident (entity *ent, ident *ld_ident) {
   ent->ld_name = ld_ident;
 }
 
-INLINE const char *
+const char *
 get_entity_ld_name (entity *ent) {
   return get_id_str(get_entity_ld_ident(ent));
 }
@@ -284,23 +279,23 @@ char  *get_entity_ld_name  (entity *);
 void   set_entity_ld_name  (entity *, char *ld_name);
 */
 
-INLINE type *
+type *
 get_entity_type (entity *ent) {
   return ent->type = skip_tid(ent->type);
 }
 
-INLINE void
+void
 set_entity_type (entity *ent, type *type) {
   ent->type = type;
 }
 
 
-INLINE ent_allocation
+ent_allocation
 get_entity_allocation (entity *ent) {
   return ent->allocation;
 }
 
-INLINE void
+void
 set_entity_allocation (entity *ent, ent_allocation al) {
   ent->allocation = al;
 }
@@ -320,12 +315,12 @@ const char *get_allocation_name(ent_allocation all)
 }
 
 
-INLINE ent_visibility
+ent_visibility
 get_entity_visibility (entity *ent) {
   return ent->visibility;
 }
 
-INLINE void
+void
 set_entity_visibility (entity *ent, ent_visibility vis) {
   if (vis != visibility_local)
     assert((ent->allocation == allocation_static) ||
@@ -348,12 +343,12 @@ const char *get_visibility_name(ent_visibility vis)
 #undef X
 }
 
-INLINE ent_variability
+ent_variability
 get_entity_variability (entity *ent) {
   return ent->variability;
 }
 
-INLINE void
+void
 set_entity_variability (entity *ent, ent_variability var)
 {
   if (var == variability_part_constant)
@@ -389,13 +384,13 @@ const char *get_variability_name(ent_variability var)
 #undef X
 }
 
-INLINE ent_volatility
+ent_volatility
 get_entity_volatility (entity *ent) {
   assert (ent);
   return ent->volatility;
 }
 
-INLINE void
+void
 set_entity_volatility (entity *ent, ent_volatility vol) {
   assert (ent);
   ent->volatility = vol;
@@ -413,13 +408,13 @@ const char *get_volatility_name(ent_volatility var)
 #undef X
 }
 
-INLINE peculiarity
+peculiarity
 get_entity_peculiarity (entity *ent) {
   assert (ent);
   return ent->peculiarity;
 }
 
-INLINE void
+void
 set_entity_peculiarity (entity *ent, peculiarity pec) {
   assert (ent);
   /* @@@ why peculiarity only for methods? */
@@ -441,7 +436,7 @@ const char *get_peculiarity_name(peculiarity var)
 }
 
 /* Set has no effect for existent entities of type method. */
-INLINE ir_node *
+ir_node *
 get_atomic_ent_value(entity *ent)
 {
   assert(ent);
@@ -450,7 +445,7 @@ get_atomic_ent_value(entity *ent)
   return ent->value;
 }
 
-INLINE void
+void
 set_atomic_ent_value(entity *ent, ir_node *val) {
   assert(ent && is_atomic_entity(ent) && (ent->variability != variability_uninitialized));
   if (is_method_type(ent->type) && (ent->peculiarity == peculiarity_existent))
@@ -525,21 +520,21 @@ new_compound_graph_path(type *tp, int length) {
   return res;
 }
 
-INLINE void
+void
 free_compound_graph_path (compound_graph_path *gr) {
   assert(gr && is_compound_graph_path(gr));
   gr->kind = k_BAD;
   free(gr);
 }
 
-INLINE int
+int
 is_compound_graph_path(void *thing) {
   return (get_kind(thing) == k_ir_compound_graph_path);
 }
 
 /* checks whether nodes 0..pos are correct (all lie on a path.) */
 /* @@@ not implemented */
-INLINE int is_proper_compound_graph_path(compound_graph_path *gr, int pos) {
+int is_proper_compound_graph_path(compound_graph_path *gr, int pos) {
   int i;
   entity *node;
   type *owner = gr->tp;
@@ -553,20 +548,20 @@ INLINE int is_proper_compound_graph_path(compound_graph_path *gr, int pos) {
   return true;
 }
 
-INLINE int
+int
 get_compound_graph_path_length(compound_graph_path *gr) {
   assert(gr && is_compound_graph_path(gr));
   return gr->len;
 }
 
-INLINE entity *
+entity *
 get_compound_graph_path_node(compound_graph_path *gr, int pos) {
   assert(gr && is_compound_graph_path(gr));
   assert(pos >= 0 && pos < gr->len);
   return gr->nodes[pos];
 }
 
-INLINE void
+void
 set_compound_graph_path_node(compound_graph_path *gr, int pos, entity *node) {
   assert(gr && is_compound_graph_path(gr));
   assert(pos >= 0 && pos < gr->len);
@@ -577,33 +572,33 @@ set_compound_graph_path_node(compound_graph_path *gr, int pos, entity *node) {
 
 /* A value of a compound entity is a pair of value and the corresponding path to a member of
    the compound. */
-INLINE void
+void
 add_compound_ent_value_w_path(entity *ent, ir_node *val, compound_graph_path *path) {
   assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
   ARR_APP1 (ir_node *, ent->values, val);
   ARR_APP1 (compound_graph_path *, ent->val_paths, path);
 }
 
-INLINE void
+void
 set_compound_ent_value_w_path(entity *ent, ir_node *val, compound_graph_path *path, int pos) {
   assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
   ent->values[pos] = val;
   ent->val_paths[pos] = path;
 }
 
-INLINE int
+int
 get_compound_ent_n_values(entity *ent) {
   assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
   return (ARR_LEN (ent->values));
 }
 
-INLINE ir_node  *
+ir_node  *
 get_compound_ent_value(entity *ent, int pos) {
   assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
   return ent->values[pos];
 }
 
-INLINE compound_graph_path *
+compound_graph_path *
 get_compound_ent_value_path(entity *ent, int pos) {
   assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
   return ent->val_paths[pos];
@@ -627,7 +622,7 @@ remove_compound_ent_value(entity *ent, entity *value_ent) {
   }
 }
 
-INLINE void
+void
 add_compound_ent_value(entity *ent, ir_node *val, entity *member) {
   compound_graph_path *path;
   assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
@@ -639,7 +634,7 @@ add_compound_ent_value(entity *ent, ir_node *val, entity *member) {
 /* Copies the firm subgraph referenced by val to const_code_irg and adds
    the node as constant initialization to ent.
    The subgraph may not contain control flow operations.
-INLINE void
+void
 copy_and_add_compound_ent_value(entity *ent, ir_node *val, entity *member) {
   ir_graph *rem = current_ir_graph;
 
@@ -658,7 +653,7 @@ copy_compound_ent_value(entity *ent, int pos) {
   return copy_const_value(ent->values[pos+1]);
   }*/
 
-INLINE entity   *
+entity   *
 get_compound_ent_value_member(entity *ent, int pos) {
   compound_graph_path *path;
   assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
@@ -667,7 +662,7 @@ get_compound_ent_value_member(entity *ent, int pos) {
   return get_compound_graph_path_node(path, get_compound_graph_path_length(path)-1);
 }
 
-INLINE void
+void
 set_compound_ent_value(entity *ent, ir_node *val, entity *member, int pos) {
   compound_graph_path *path;
   assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
@@ -698,17 +693,17 @@ set_array_entity_values(entity *ent, tarval **values, int num_vals) {
   current_ir_graph = rem;
 }
 
-INLINE int
+int
 get_entity_offset (entity *ent) {
   return ent->offset;
 }
 
-INLINE void
+void
 set_entity_offset (entity *ent, int offset) {
   ent->offset = offset;
 }
 
-INLINE void
+void
 add_entity_overwrites   (entity *ent, entity *overwritten) {
   assert(ent);
   assert(is_class_type(get_entity_owner(ent)));
@@ -716,7 +711,7 @@ add_entity_overwrites   (entity *ent, entity *overwritten) {
   ARR_APP1 (entity *, overwritten->overwrittenby, ent);
 }
 
-INLINE int
+int
 get_entity_n_overwrites (entity *ent) {
   assert(ent);
   assert(is_class_type(get_entity_owner(ent)));
@@ -733,7 +728,7 @@ get_entity_overwrites_index(entity *ent, entity *overwritten) {
   return -1;
 }
 
-INLINE entity *
+entity *
 get_entity_overwrites   (entity *ent, int pos) {
   assert(ent);
   assert(is_class_type(get_entity_owner(ent)));
@@ -741,7 +736,7 @@ get_entity_overwrites   (entity *ent, int pos) {
   return ent->overwrites[pos];
 }
 
-INLINE void
+void
 set_entity_overwrites   (entity *ent, int pos, entity *overwritten) {
   assert(ent);
   assert(is_class_type(get_entity_owner(ent)));
@@ -762,14 +757,14 @@ remove_entity_overwrites(entity *ent, entity *overwritten) {
     }
 }
 
-INLINE void
+void
 add_entity_overwrittenby   (entity *ent, entity *overwrites) {
   assert(ent);
   assert(is_class_type(get_entity_owner(ent)));
   add_entity_overwrites(overwrites, ent);
 }
 
-INLINE int
+int
 get_entity_n_overwrittenby (entity *ent) {
   assert(ent);
   assert(is_class_type(get_entity_owner(ent)));
@@ -786,7 +781,7 @@ get_entity_overwrittenby_index(entity *ent, entity *overwrites) {
   return -1;
 }
 
-INLINE entity *
+entity *
 get_entity_overwrittenby   (entity *ent, int pos) {
   assert(ent);
   assert(is_class_type(get_entity_owner(ent)));
@@ -794,7 +789,7 @@ get_entity_overwrittenby   (entity *ent, int pos) {
   return ent->overwrittenby[pos];
 }
 
-INLINE void
+void
 set_entity_overwrittenby   (entity *ent, int pos, entity *overwrites) {
   assert(ent);
   assert(is_class_type(get_entity_owner(ent)));
@@ -827,14 +822,14 @@ set_entity_link(entity *ent, void *l) {
   ent->link = l;
 }
 
-INLINE ir_graph *
+ir_graph *
 get_entity_irg(entity *ent) {
   assert (ent);
   assert (is_method_type(ent->type));
   return ent->irg;
 }
 
-INLINE void
+void
 set_entity_irg(entity *ent, ir_graph *irg) {
   assert (ent && ent->type);
   /* Wie kann man die Referenz auf einen IRG löschen, z.B. wenn die
@@ -888,16 +883,16 @@ void        mark_entity_visited(entity *ent) {
 }
 
 
-INLINE bool entity_visited(entity *ent) {
+bool entity_visited(entity *ent) {
   return get_entity_visited(ent) >= type_visited;
 }
 
-INLINE bool entity_not_visited(entity *ent) {
+bool entity_not_visited(entity *ent) {
   return get_entity_visited(ent) < type_visited;
 }
 
 /* Need two routines because I want to assert the result. */
-static INLINE entity *resolve_ent_polymorphy2 (type *dynamic_class, entity* static_ent) {
+static entity *resolve_ent_polymorphy2 (type *dynamic_class, entity* static_ent) {
   int i, n_overwrittenby;
   entity *res = NULL;
 
@@ -938,7 +933,7 @@ entity *resolve_ent_polymorphy(type *dynamic_class, entity* static_ent) {
 
 
 #if 1 || DEBUG_libfirm
-INLINE int dump_node_opcode(FILE *F, ir_node *n); /* from irdump.c */
+int dump_node_opcode(FILE *F, ir_node *n); /* from irdump.c */
 
 #define X(a)	case a: printf(#a); break
 void dump_entity (entity *ent) {

@@ -272,34 +272,3 @@ void      set_op_pinned(ir_op *op, op_pinned pinned) {
   if (op == op_Block || op == op_Phi || is_cfopcode(op)) return;
   op->pinned = pinned;
 }
-
-/* repeat 'inline' methods here */
-
-# ifndef USE_GCC_INLINE
-/** Returns the attribute size of nodes of this opcode.
-   @note Use not encouraged, internal feature. */
-int get_op_attr_size (const ir_op *op) { /* used in irnode.c */
-  return op->attr_size;
-}
-
-/** Returns non-zero if op is one of Start, End, Jmp, Cond, Return, Raise or Bad. */
-int is_cfopcode(const ir_op *op) { /* used in irnode.c */
-  return op->flags & irop_flag_cfopcode;
-}
-
-/** Returns true if the operation manipulates interprocedural control flow:
-   CallBegin, EndReg, EndExcept */
-int is_ip_cfopcode(const ir_op *op) { /* used in irnode.c */
-  return op->flags & irop_flag_ip_cfopcode;
-}
-
-/* Returns non-zero if operation is commutative */
-int is_op_commutative(const ir_op *op) { /* used in iropt.c */
-  return op->flags & irop_flag_commutative;
-}
-
-/* Returns non-zero if operation is fragile */
-int is_op_fragile(const ir_op *op) { /* used in irnode.c */
-  return op->flags & irop_flag_fragile;
-}
-# endif /* not defined USE_GCC_INLINE */

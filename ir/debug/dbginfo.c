@@ -21,12 +21,12 @@
 #include "entity_t.h"
 
 
-INLINE void
+void
 dbg_info_merge_pair(ir_node *nw, ir_node *old, dbg_action info) {
   set_irn_dbg_info(nw, get_irn_dbg_info(old));
 }
 
-INLINE void
+void
 dbg_info_merge_sets(ir_node **new_nodes, int n_new_nodes,
 		    ir_node **old_nodes, int n_old_nodes,
 		    dbg_action info) {
@@ -49,12 +49,12 @@ void dbg_init( merge_pair_func *mpf, merge_sets_func *msf )
 }
 
 
-INLINE void
+void
 set_irn_dbg_info(ir_node *n, struct dbg_info* db) {
   n->dbi = db;
 }
 
-INLINE struct dbg_info *
+struct dbg_info *
 get_irn_dbg_info(ir_node *n) {
   return n->dbi;
 }
@@ -62,17 +62,17 @@ get_irn_dbg_info(ir_node *n) {
 
 /* Routines to access the field of an entity containing the
    debugging information. */
-INLINE void set_entity_dbg_info(entity *ent, dbg_info* db) {
+void set_entity_dbg_info(entity *ent, dbg_info* db) {
   ent->dbi = db;
 }
-INLINE dbg_info *get_entity_dbg_info(entity *ent) {
+dbg_info *get_entity_dbg_info(entity *ent) {
   return ent->dbi;
 }
 /* Routines to access the field of a type containing the
    debugging information. */
-INLINE void set_type_dbg_info(type *tp, dbg_info* db) {
+void set_type_dbg_info(type *tp, dbg_info* db) {
   tp->dbi = db;
 }
-INLINE dbg_info *get_type_dbg_info(type *tp) {
+dbg_info *get_type_dbg_info(type *tp) {
   return tp->dbi;
 }

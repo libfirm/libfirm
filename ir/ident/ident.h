@@ -64,7 +64,7 @@ ident *new_id_from_str (const char *str);
  *
  * @see new_get_id_str(), get_id_strlen()
  */
-INLINE ident *id_from_str (const char *str, int len);
+ident *id_from_str (const char *str, int len);
 
 /**
  * Returns a string represented by an ident.
@@ -78,7 +78,7 @@ INLINE ident *id_from_str (const char *str, int len);
  *
  * @see new_get_id_str(), id_from_str(), get_id_strlen()
  */
-INLINE const char *get_id_str  (ident *id);
+const char *get_id_str  (ident *id);
 #define id_to_str  get_id_str
 
 /**
@@ -90,7 +90,7 @@ INLINE const char *get_id_str  (ident *id);
  *
  * @see new_get_id_str(), id_from_str(), get_id_str()
  */
-INLINE int  get_id_strlen(ident *id);
+int  get_id_strlen(ident *id);
 #define id_to_strlen get_id_strlen
 /**
  * Returns true if prefix is a prefix of an ident.

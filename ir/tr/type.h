@@ -428,8 +428,8 @@ char *get_peculiarity_string(peculiarity p);
 
 /* The peculiarity of the class.  The enumeration peculiarity is defined
    in entity.h */
-INLINE peculiarity get_class_peculiarity (type *clss);
-INLINE void        set_class_peculiarity (type *clss, peculiarity pec);
+peculiarity get_class_peculiarity (type *clss);
+void        set_class_peculiarity (type *clss, peculiarity pec);
 
 /* Set and get a class' dfn --
    @todo This is an undocumented field, subject to change! */
@@ -878,7 +878,7 @@ int is_compound_type(type *tp);
  *  debugging, (configure with --enable-debug) else returns the address
  *  of the type cast to long.
  */
-INLINE long get_type_nr(type *tp);
+long get_type_nr(type *tp);
 
 /*******************************************************************/
 /** Debug aides                                                   **/

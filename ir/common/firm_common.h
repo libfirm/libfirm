@@ -21,14 +21,6 @@
 # ifndef _FIRM_COMMON_H_
 # define _FIRM_COMMON_H_
 
-#ifndef INLINE
-#ifdef USE_GCC_INLINE
-#define INLINE inline
-#else
-#define INLINE
-#endif
-#endif
-
 /** a list of firm kinds
  @@@ not all datatypes are tagged yet. */
 typedef enum {

@@ -18,8 +18,8 @@
 /* Define to disable assertion checking.  */
 /* #undef NDEBUG */
 
-/* Define to value "inline" for gcc inlineing. */
-/* #undef USE_GCC_INLINE */
+/* Remove to disable inlining */
+#define USE_INLINING 1
 
 /* Define to 1 if you have the <alloca.h> header file. */
 /* #undef HAVE_ALLOCA_H */
@@ -89,7 +89,23 @@
    first (like Motorola and SPARC, unlike Intel and VAX). */
 /* #undef WORDS_BIGENDIAN */
 
-#define INLINE __inline
+/* Define to 1 if Firm statistics are activated */
+/* #undef FIRM_STATISTICS */
+
+/* Define the right volatile token */
+/* #undef volatile */
+
+/* Define the right inline token */
+#define inline __inline
+
+/* Define the right const token */
+/* #undef const */
+
+#ifdef USE_INLINING
+#define INLINE inline
+#else
+#define INLINE
+#endif
 
 #define snprintf    _snprintf
 #define strcasecmp  stricmp

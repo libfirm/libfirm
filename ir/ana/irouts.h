@@ -41,17 +41,17 @@
 int             get_irn_n_outs (ir_node *node);
 
 /** Get predecessor n */
-INLINE ir_node *get_irn_out  (ir_node *node, int pos);
+ir_node *get_irn_out  (ir_node *node, int pos);
 
 /** Set predecessor n */
-INLINE void     set_irn_out  (ir_node *node, int pos, ir_node *out);
+void     set_irn_out  (ir_node *node, int pos, ir_node *out);
 
 /* Methods to iterate through the control flow graph. Iterate from 0 to
    i < get_Block_cfg_outs(block). No order of successors guaranteed. */
 int             get_Block_n_cfg_outs (ir_node *node);
 
 /** Access predecessor n. */
-INLINE ir_node *get_Block_cfg_out  (ir_node *node, int pos);
+ir_node *get_Block_cfg_out  (ir_node *node, int pos);
 
 #ifndef _IRG_WALK_FUNC_TYPEDEF_
 #define _IRG_WALK_FUNC_TYPEDEF_

@@ -86,12 +86,12 @@ void init_type(void) {
 }
 
 unsigned long type_visited;
-INLINE void set_master_type_visited(unsigned long val) { type_visited = val; }
-INLINE unsigned long get_master_type_visited() { return type_visited; }
-INLINE void inc_master_type_visited() { type_visited++; }
+void set_master_type_visited(unsigned long val) { type_visited = val; }
+unsigned long get_master_type_visited() { return type_visited; }
+void inc_master_type_visited() { type_visited++; }
 
 
-INLINE type *
+type *
 new_type(tp_op *type_op, ir_mode *mode, ident* name) {
   type *res;
   int node_size ;
@@ -230,7 +230,7 @@ void        set_type_ident(type *tp, ident* id) {
 }
 
 /* Outputs a unique number for this node */
-INLINE long
+long
 get_type_nr(type *tp) {
   assert(tp);
 #ifdef DEBUG_libfirm
@@ -605,7 +605,7 @@ bool smaller_type (type *st, type *lt) {
 /*******************************************************************/
 
 /* create a new class type */
-INLINE type   *new_type_class (ident *name) {
+type   *new_type_class (ident *name) {
   type *res;
 
   res = new_type(type_class, NULL, name);
@@ -624,14 +624,14 @@ type   *new_d_type_class (ident *name, dbg_info* db) {
   return res;
 }
 
-INLINE void free_class_entities(type *clss) {
+void free_class_entities(type *clss) {
   int i;
   assert(clss && (clss->type_op == type_class));
   for (i = get_class_n_members(clss)-1; i >= 0; --i)
     free_entity(get_class_member(clss, i));
 }
 
-INLINE void free_class_attrs(type *clss) {
+void free_class_attrs(type *clss) {
   assert(clss && (clss->type_op == type_class));
   DEL_ARR_F(clss->attr.ca.members);
   DEL_ARR_F(clss->attr.ca.subtypes);
@@ -789,11 +789,11 @@ char *get_peculiarity_string(peculiarity p) {
   return "peculiarity_existent";
 }
 
-INLINE peculiarity get_class_peculiarity (type *clss) {
+peculiarity get_class_peculiarity (type *clss) {
   assert(clss && (clss->type_op == type_class));
   return clss->attr.ca.peculiarity;
 }
-INLINE void        set_class_peculiarity (type *clss, peculiarity pec) {
+void        set_class_peculiarity (type *clss, peculiarity pec) {
   assert(clss && (clss->type_op == type_class));
   assert(pec != peculiarity_inherited);  /* There is no inheritance of types in libFirm. */
   clss->attr.ca.peculiarity = pec;
@@ -834,7 +834,7 @@ bool is_subclass_of(type *low, type *high) {
 /*******************************************************************/
 
 /* create a new type struct */
-INLINE type   *new_type_struct (ident *name) {
+type   *new_type_struct (ident *name) {
   type *res;
   res = new_type(type_struct, NULL, name);
   res->attr.sa.members = NEW_ARR_F (entity *, 1);
@@ -845,13 +845,13 @@ type   *new_d_type_struct (ident *name, dbg_info* db) {
   set_type_dbg_info(res, db);
   return res;
 }
-INLINE void free_struct_entities (type *strct) {
+void free_struct_entities (type *strct) {
   int i;
   assert(strct && (strct->type_op == type_struct));
   for (i = get_struct_n_members(strct)-1; i >= 0; --i)
     free_entity(get_struct_member(strct, i));
 }
-INLINE void free_struct_attrs (type *strct) {
+void free_struct_attrs (type *strct) {
   assert(strct && (strct->type_op == type_struct));
   DEL_ARR_F(strct->attr.sa.members);
 }
@@ -917,7 +917,7 @@ build_value_type(ident *name, int len, type **tps) {
 
 /* Create a new method type.
    N_param is the number of parameters, n_res the number of results.  */
-INLINE type *new_type_method (ident *name, int n_param, int n_res) {
+type *new_type_method (ident *name, int n_param, int n_res) {
   type *res;
   res = new_type(type_method, mode_P_mach, name);
   res->state = layout_fixed;
@@ -940,11 +940,11 @@ type *new_d_type_method (ident *name, int n_param, int n_res, dbg_info* db) {
   return res;
 }
 
-INLINE void free_method_entities(type *method) {
+void free_method_entities(type *method) {
   assert(method && (method->type_op == type_method));
 }
 /* Attention: also frees entities in value parameter subtypes! */
-INLINE void free_method_attrs(type *method) {
+void free_method_attrs(type *method) {
   assert(method && (method->type_op == type_method));
   free(method->attr.ma.param_type);
   free(method->attr.ma.res_type);
@@ -1075,7 +1075,7 @@ bool  is_method_type     (type *method) {
 /*******************************************************************/
 
 /* create a new type uni */
-INLINE type  *new_type_union (ident *name) {
+type  *new_type_union (ident *name) {
   type *res;
   res = new_type(type_union, NULL, name);
   /*res->attr.ua.unioned_type = (type **)  xmalloc (sizeof (type *)  * n_types);
@@ -1088,13 +1088,13 @@ type  *new_d_type_union (ident *name, dbg_info* db) {
   set_type_dbg_info(res, db);
   return res;
 }
-INLINE void free_union_entities (type *uni) {
+void free_union_entities (type *uni) {
   int i;
   assert(uni && (uni->type_op == type_union));
   for (i = get_union_n_members(uni)-1; i >= 0; --i)
     free_entity(get_union_member(uni, i));
 }
-INLINE void free_union_attrs (type *uni) {
+void free_union_attrs (type *uni) {
   assert(uni && (uni->type_op == type_union));
   DEL_ARR_F(uni->attr.ua.members);
 }
@@ -1172,7 +1172,7 @@ bool   is_union_type         (type *uni) {
 
 
 /* create a new type array -- set dimension sizes independently */
-INLINE type *new_type_array         (ident *name, int n_dimensions,
+type *new_type_array         (ident *name, int n_dimensions,
 			      type *element_type) {
   type *res;
   int i;
@@ -1205,10 +1205,10 @@ type *new_d_type_array (ident *name, int n_dimensions,
   return res;
 }
 
-INLINE void free_array_entities (type *array) {
+void free_array_entities (type *array) {
   assert(array && (array->type_op == type_array));
 }
-INLINE void free_array_attrs (type *array) {
+void free_array_attrs (type *array) {
   assert(array && (array->type_op == type_array));
   free(array->attr.aa.lower_bound);
   free(array->attr.aa.upper_bound);
@@ -1220,7 +1220,7 @@ int   get_array_n_dimensions (type *array) {
   return array->attr.aa.n_dimensions;
 }
 
-INLINE void
+void
 set_array_bounds (type *array, int dimension, ir_node * lower_bound,
 		  ir_node * upper_bound) {
   assert(array && (array->type_op == type_array));
@@ -1240,7 +1240,7 @@ set_array_bounds_int (type *array, int dimension, int lower_bound,
 		    new_Const(mode_Iu, new_tarval_from_long (upper_bound, mode_Iu )));
   current_ir_graph = rem;
 }
-INLINE void
+void
 set_array_lower_bound  (type *array, int dimension, ir_node * lower_bound) {
   assert(array && (array->type_op == type_array));
   assert(lower_bound && "lower_bound node may not be NULL.");
@@ -1253,7 +1253,7 @@ void  set_array_lower_bound_int (type *array, int dimension, int lower_bound) {
 			  new_Const(mode_Iu, new_tarval_from_long (lower_bound, mode_Iu)));
   current_ir_graph = rem;
 }
-INLINE void
+void
 set_array_upper_bound  (type *array, int dimension, ir_node * upper_bound) {
   assert(array && (array->type_op == type_array));
   assert(upper_bound && "upper_bound node may not be NULL.");
@@ -1324,7 +1324,7 @@ bool   is_array_type         (type *array) {
 /*******************************************************************/
 
 /* create a new type enumeration -- set the enumerators independently */
-INLINE type   *new_type_enumeration    (ident *name, int n_enums) {
+type   *new_type_enumeration    (ident *name, int n_enums) {
   type *res;
   res = new_type(type_enumeration, NULL, name);
   res->attr.ea.n_enums     = n_enums;
@@ -1340,10 +1340,10 @@ type   *new_d_type_enumeration    (ident *name, int n_enums, dbg_info* db) {
   return res;
 }
 
-INLINE void free_enumeration_entities(type *enumeration) {
+void free_enumeration_entities(type *enumeration) {
   assert(enumeration && (enumeration->type_op == type_enumeration));
 }
-INLINE void free_enumeration_attrs(type *enumeration) {
+void free_enumeration_attrs(type *enumeration) {
   assert(enumeration && (enumeration->type_op == type_enumeration));
   free(enumeration->attr.ea.enumer);
   free(enumeration->attr.ea.enum_nameid);
@@ -1391,7 +1391,7 @@ bool    is_enumeration_type     (type *enumeration) {
 /*******************************************************************/
 
 /* Create a new type pointer */
-INLINE type *new_type_pointer_mode (ident *name, type *points_to, ir_mode *ptr_mode) {
+type *new_type_pointer_mode (ident *name, type *points_to, ir_mode *ptr_mode) {
   type *res;
   assert(mode_is_reference(ptr_mode));
   res = new_type(type_pointer, ptr_mode, name);
@@ -1406,10 +1406,10 @@ type *new_d_type_pointer (ident *name, type *points_to, ir_mode *ptr_mode, dbg_i
   set_type_dbg_info(res, db);
   return res;
 }
-INLINE void free_pointer_entities (type *pointer) {
+void free_pointer_entities (type *pointer) {
   assert(pointer && (pointer->type_op == type_pointer));
 }
-INLINE void free_pointer_attrs (type *pointer) {
+void free_pointer_attrs (type *pointer) {
   assert(pointer && (pointer->type_op == type_pointer));
 }
 /* manipulate fields of type_pointer */
@@ -1448,7 +1448,7 @@ type *find_pointer_type_to_type (type *tp) {
 /*******************************************************************/
 
 /* create a new type primitive */
-INLINE type *new_type_primitive (ident *name, ir_mode *mode) {
+type *new_type_primitive (ident *name, ir_mode *mode) {
   type *res;
   /* @@@ assert( mode_is_data(mode) && (!mode_is_reference(mode))); */
   res = new_type(type_primitive, mode, name);
@@ -1462,10 +1462,10 @@ type *new_d_type_primitive (ident *name, ir_mode *mode, dbg_info* db) {
   set_type_dbg_info(res, db);
   return res;
 }
-INLINE void free_primitive_entities (type *primitive) {
+void free_primitive_entities (type *primitive) {
   assert(primitive && (primitive->type_op == type_primitive));
 }
-INLINE void free_primitive_attrs (type *primitive) {
+void free_primitive_attrs (type *primitive) {
   assert(primitive && (primitive->type_op == type_primitive));
 }
 
@@ -1480,7 +1480,7 @@ bool  is_primitive_type  (type *primitive) {
 /*******************************************************************/
 
 
-INLINE int is_atomic_type(type *tp) {
+int is_atomic_type(type *tp) {
   assert(tp && tp->kind == k_type);
   return (is_primitive_type(tp) || is_pointer_type(tp) ||
 	  is_enumeration_type(tp));
@@ -1528,7 +1528,7 @@ entity *get_compound_member(type *tp, int pos)
 }
 
 
-INLINE int is_compound_type(type *tp) {
+int is_compound_type(type *tp) {
   assert(tp && tp->kind == k_type);
   return (is_class_type(tp) || is_struct_type(tp) ||
 	  is_array_type(tp) || is_union_type(tp));
@@ -1539,7 +1539,7 @@ INLINE int is_compound_type(type *tp) {
 
 
 #if 1 || DEBUG_libfirm
-INLINE int dump_node_opcode(FILE *F, ir_node *n); /* from irdump.c */
+int dump_node_opcode(FILE *F, ir_node *n); /* from irdump.c */
 
 void dump_type (type *tp) {
   int i;

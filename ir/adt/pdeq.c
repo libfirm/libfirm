@@ -32,14 +32,6 @@
 /** Size of pdeq block cache */
 #define TUNE_NSAVED_PDEQS 16
 
-#ifndef INLINE
-#ifdef USE_GCC_INLINE
-#define INLINE inline
-#else
-#define INLINE
-#endif
-#endif
-
 /* # of data items in block */
 #define NDATA ((int)((PREF_MALLOC_SIZE - offsetof (pdeq, data)) / sizeof (void *)))
 

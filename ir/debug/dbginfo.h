@@ -66,32 +66,32 @@ typedef struct dbg_info dbg_info;
 /**
  * Sets the debug information of a node.
  */
-INLINE void set_irn_dbg_info(ir_node *n, dbg_info* db);
+void set_irn_dbg_info(ir_node *n, dbg_info* db);
 
 /**
  * Returns the debug information of an node.
  */
-INLINE dbg_info *get_irn_dbg_info(ir_node *n);
+dbg_info *get_irn_dbg_info(ir_node *n);
 
 /**
  * Sets the debug information of an entity.
  */
-INLINE void set_entity_dbg_info(entity *ent, dbg_info* db);
+void set_entity_dbg_info(entity *ent, dbg_info* db);
 
 /**
  * Returns the debug information of an entity.
  */
-INLINE dbg_info *get_entity_dbg_info(entity *ent);
+dbg_info *get_entity_dbg_info(entity *ent);
 
 /**
  * Sets the debug information of a type.
  */
-INLINE void set_type_dbg_info(type *tp, dbg_info* db);
+void set_type_dbg_info(type *tp, dbg_info* db);
 
 /**
  * Returns the debug information of a type.
  */
-INLINE dbg_info *get_type_dbg_info(type *tp);
+dbg_info *get_type_dbg_info(type *tp);
 
 /**
  * An enumeration indicating the action performed by a transformation.
@@ -120,10 +120,10 @@ typedef enum {
  * Converts enum values to strings.
  */
 #ifdef __GNUC__
-INLINE static const char* dbg_action_2_str(dbg_action) __attribute__ ((unused));
+static const char* dbg_action_2_str(dbg_action) __attribute__ ((unused));
 #endif
 
-INLINE static const char* dbg_action_2_str(dbg_action a) {
+static const char* dbg_action_2_str(dbg_action a) {
   switch(a) {
   case dbg_error: return "dbg_error"; break;
   case dbg_opt_ssa: return "dbg_opt_ssa"; break;

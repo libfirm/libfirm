@@ -202,7 +202,7 @@ type       *get_entity_owner (entity *ent);
 void        set_entity_owner (entity *ent, type *owner);
 
 /** Asserts if the type owner is neither a compound type or an array */
-INLINE void assert_legal_owner_of_ent(type *owner);
+void assert_legal_owner_of_ent(type *owner);
 
 /** Returns the type of an entity. */
 type     *get_entity_type (entity *ent);
@@ -434,7 +434,7 @@ bool equal_entity(entity *ent1, entity *ent2);
 
 /** Outputs a unique number for this entity if libfirm is compiled for
    debugging, (configure with --enable-debug) else returns 0. */
-INLINE long get_entity_nr(entity *ent);
+long get_entity_nr(entity *ent);
 
 /** Returns the entitys visited count. */
 unsigned long get_entity_visited(entity *ent);
@@ -456,9 +456,9 @@ bool        entity_not_visited(entity *ent);
 entity *resolve_ent_polymorphy(type *dynamic_class, entity* static_ent);
 
 
-/*******************************************************************/
-/** Debug aides                                                   **/
-/*******************************************************************/
+/*-----------------------------------------------------------------*/
+/*  Debug aides                                                    */
+/*-----------------------------------------------------------------*/
 
 
 /** Write the entity and all its attributes to stdout.
