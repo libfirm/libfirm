@@ -428,6 +428,8 @@ dead_node_elimination(ir_graph *irg) {
   struct obstack *graveyard_obst = NULL;
   struct obstack *rebirth_obst   = NULL;
 
+  stat_dead_node_elim_start(irg);
+
   /* Remember external state of current_ir_graph. */
   rem = current_ir_graph;
   current_ir_graph = irg;
@@ -463,6 +465,8 @@ dead_node_elimination(ir_graph *irg) {
     obstack_free(graveyard_obst, 0);  /* First empty the obstack ... */
     xfree (graveyard_obst);           /* ... then free it.           */
   }
+
+  stat_dead_node_elim_stop(irg);
 
   current_ir_graph = rem;
   interprocedural_view = rem_ipview;
