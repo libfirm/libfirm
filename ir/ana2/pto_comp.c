@@ -2,7 +2,7 @@
 
 /*
    Project:     libFIRM
-   File name:   ir/ana/pto_comp.c
+   File name:   ir/ana2/pto_comp.c
    Purpose:     Main Implementation of PTO
    Author:      Florian
    Modified by:
@@ -673,7 +673,7 @@ void pto_graph (ir_graph *graph, int ctx_idx, pto_env_t *enc_env)
   pto_env_t *pto_env;
 
   /* Also exported, since we need it in 'pto.c' */
-  pto_env = (pto_env_t*) xmalloc (sizeof (pto_env_t*));
+  pto_env = xmalloc (sizeof (pto_env_t));
   pto_env->enc_env = enc_env;
   pto_env->graph   = graph;
   pto_env->ctx_idx = ctx_idx;
@@ -698,7 +698,7 @@ void pto_graph (ir_graph *graph, int ctx_idx, pto_env_t *enc_env)
                 run,
                 get_type_name (get_entity_owner (get_irg_entity (graph))),
                 get_entity_name (get_irg_entity (graph))));
-  memset (pto_env, 0, sizeof(*pto_env));
+  memset (pto_env, 0, sizeof (pto_env_t));
   free (pto_env);
   /* HERE ("end"); */
 }
@@ -744,6 +744,9 @@ pto_t *get_alloc_pto (ir_node *alloc)
 
 /*
   $Log$
+  Revision 1.14  2005/01/14 13:37:26  liekweg
+  fix allocation (size); don't cast malloc
+
   Revision 1.13  2005/01/10 17:26:34  liekweg
   fixup printfs, don't put environments on the stack
 
