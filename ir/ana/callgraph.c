@@ -997,7 +997,7 @@ void compute_loop_depth (ir_graph *irg, void *env) {
 
 
 /* For callees, we want to remember the Call nodes, too. */
-typedef struct struct ana_entry2 {
+typedef struct ana_entry2 {
   ir_loop **loop_stack;   /**< a stack of ir_loop entries */
   int tos;                /**< the top of stack entry */
   int recursion_nesting;
