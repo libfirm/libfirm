@@ -1,10 +1,14 @@
-/****i* strcalc/implementation
- *
- * AUTHORS
- *    Matthias Heil
- *
- * NOTES
- ******/
+/*
+ * Project:     libFIRM
+ * File name:   ir/tv/strcalc.c
+ * Purpose:
+ * Author:      Mathias Heil
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 #include "strcalc.h"
 

@@ -1,5 +1,13 @@
 /*
- * (C) 2001 by Universitaet Karlsruhe
+ * Project:     libFIRM
+ * File name:   ir/tr/type.h
+ * Purpose:     Representation of types.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2001-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
 /**
@@ -25,10 +33,8 @@
  *  on the level of the programming language, modes at the level of
  *  the target processor.
  *
- * @see  tpop.h
+ *  @see  tpop.h
  */
-
-/* $Id$ */
 
 # ifndef _TYPE_H_
 # define _TYPE_H_

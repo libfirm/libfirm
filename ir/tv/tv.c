@@ -1,17 +1,21 @@
-/* TV --- Target Values, aka Constant Table.
-   Copyright (C) 1995, 1996 Christian von Roques */
+/*
+ * Project:     libFIRM
+ * File name:   ir/tv/tv.c
+ * Purpose:     Representation of and static computations on target machine
+ *              values.
+ * Author:      Mathias Heil
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
-/* $Id$ */
-
-/****i* tv/implementation
- *
- * AUTHORS
- *    Matthias Heil
- *
- * NOTES
+/*
  *    Values are stored in a format depending upon chosen arithmetic
  *    module. Default uses strcalc and fltcalc.
- ******/
+ *
+ */
 
 /* This implementation assumes:
  *  - target has IEEE-754 floating-point arithmetic.  */

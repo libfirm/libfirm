@@ -1,9 +1,21 @@
+/*
+ * Project:     libFIRM
+ * File name:   ir/tr/type.c
+ * Purpose:     Representation of types.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2001-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
+
 /**
  *
  *   file type.c - implementation of the datastructure to hold
  *   type information.
  *  (C) 2001 by Universitaet Karlsruhe
- *  Martin Trapp, Christian Schaefer, Goetz Lindenmaier
+ *  Goetz Lindenmaier
  *
  *  This module supplies a datastructure to represent all types
  *  known in the compiled program.  This includes types specified
@@ -23,7 +35,6 @@
  * @see  type_t.h type tpop
  */
 
-/* $Id$ */
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
@@ -35,7 +46,7 @@
 # include "type_t.h"
 # include "tpop_t.h"
 # include "irprog_t.h"
-# include "typegmod_t.h"
+# include "typegmod.h"
 # include "array.h"
 # include "irprog.h"
 # include "mangle.h"

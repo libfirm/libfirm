@@ -1,6 +1,15 @@
-/*   (C) 2001 by Universitaet Karlsruhe  */
+/*
+ * Project:     libFIRM
+ * File name:   ir/tr/tpop_t.h
+ * Purpose:     Opcode of types -- private header.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2001-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
-/* $Id$ */
 
 # ifndef _TPOP_T_H_
 # define _TPOP_T_H_

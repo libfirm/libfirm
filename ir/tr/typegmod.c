@@ -1,13 +1,16 @@
-/* Copyright (C) 2001 by Universitaet Karlsruhe
-* All rights reserved.
-*
-* Authors: Goetz Lindenmaier
-*
-*/
+/*
+ * Project:     libFIRM
+ * File name:   ir/tr/typegmod.c
+ * Purpose:     Functionality to modify the type graph.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2001-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
-/* $Id$ */
-
-# include "typegmod_t.h"
+# include "typegmod.h"
 # include "type_t.h"
 # include "tpop_t.h"
 # include "irmode.h"
@@ -37,6 +40,7 @@ INLINE void exchange_types(type *old_type, type *new_type) {
 }
 
 INLINE type *skip_tid(type *tp) {
+  /* @@@ implement the self cycle killing trick of skip_id(ir_node *) */
   while (tp->type_op == type_id)
     tp = (type *) tp->mode;
   return tp;

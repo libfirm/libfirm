@@ -1,8 +1,13 @@
-# Hey Emacs, this is a -*- makefile -*-
 #
-# libFIRM Project
-#
-# $Id$
+# Project:     libFIRM
+# File name:   ir/tr/Makefile.in
+# Purpose:
+# Author:      Boris Boesler, Till Riedel
+# Modified by:
+# Created:
+# CVS-ID:      $Id$
+# Copyright:   (c) 1999-2003 Universität Karlsruhe
+# Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
 #
 
 top_srcdir := @top_srcdir@
@@ -17,7 +22,7 @@ SOURCES = $(INSTALL_HEADERS)
 
 SOURCES += Makefile.in \
 		entity.c entity_t.h mangle.c tpop.c tpop_t.h type.c type_t.h	\
-	        typewalk.c typegmod.c typegmod_t.h trvrfy.h trvrfy.c
+	        typewalk.c typegmod.c trvrfy.h trvrfy.c
 
 
 include $(topdir)/MakeRules

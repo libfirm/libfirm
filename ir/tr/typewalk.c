@@ -1,15 +1,22 @@
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-* All rights reserved.
-*
-* Author: Goetz Lindenmaier
-*
-* traverse the type information.  The walker walks the whole ir graph
-* to find the distinct type trees in the type graph forest.
-* - execute the pre function before recursion
-* - execute the post function after recursion
-*/
+/*
+ * Project:     libFIRM
+ * File name:   ir/tr/typewalk.c
+ * Purpose:     Traverse the type information.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1999-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
-/* $Id$ */
+/*
+ * traverse the type information.  The walker walks the whole ir graph
+ * to find the distinct type trees in the type graph forest.
+ * - execute the pre function before recursion
+ * - execute the post function after recursion
+ */
+
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>

@@ -1,3 +1,14 @@
+/*
+ * Project:     libFIRM
+ * File name:   ir/tr/trvrfy.c
+ * Purpose:     Check types and entities for correctness.
+ * Author:      Michael Beck, Goetz Lindenmaier
+ * Modified by:
+ * Created:     29.1.2003
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 #include "trvrfy.h"
 #include "irgraph_t.h"  /* for checking whether constant code is allocated

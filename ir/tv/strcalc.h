@@ -1,19 +1,24 @@
-  /****h* tools/strcalc
+/*
+ * Project:     libFIRM
+ * File name:   ir/tv/strcalc.h
+ * Purpose:     Provides basic mathematical operations on values represented as strings.
+ * Author:      Mathias Heil
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
+
+/**
+ * @file strcalc.h
  *
- * NAME
- *   strcalc -- calculations using strings
- *   Provides basic mathematical operations on values represented as strings
+ * The module uses a string to represent values, and provides operations
+ * to perform calculations with these values.
+ * Results are stored in an internal buffer, so you have to make a copy
+ * of them if you need to store the result.
  *
- * AUTHORS
- *   Matthias Heil
- *
- * DESCRIPTION
- *    The module uses a string to represent values, and provides operations
- *   to perform calculations with these values.
- *    Results are stored in an internal buffer, so you have to make a copy
- *   of them if you need to store the result.
- *
- ******/
+ */
 
 #ifndef _STRCALC_H_
 #define _STRCALC_H_

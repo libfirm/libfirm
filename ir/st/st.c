@@ -1,7 +1,14 @@
-/* Copyright (c) 2002 by Universität Karlsruhe (TH).  All Rights Reserved */
 /*
-* Time-stamp: <Thursday, 31.10.2002, 16:03:00 goetz@i44pc2.info.uni-karlsruhe.de>
-*/
+ * Project:     libFIRM
+ * File name:   ir/st/st.c
+ * Purpose:     Provide some auxilliary structures for firm graphs.
+ * Author:      Florian Liekweg
+ * Modified by:
+ * Created:     26.2.2002
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2002-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 /**
    NAME
@@ -10,10 +17,6 @@
      provide some auxilliary structures for firm graphs.
    S
      not quite complete
-   HISTORY
-     liekweg - Feb 26, 2002: Created.
-   CVS:
-     $Id$
 ***/
 
 #ifdef HAVE_CONFIG_H

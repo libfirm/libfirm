@@ -1,5 +1,15 @@
+/*
+ * Project:     libFIRM
+ * File name:   ir/ir/irop_t.h
+ * Purpose:     Representation of opcode of intermediate operation -- private header.
+ * Author:      Christian Schaefer
+ * Modified by: Goetz Lindenmaier
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
-/* $Id$ */
 
 # ifndef _IROP_T_H_
 # define _IROP_T_H_

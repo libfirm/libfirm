@@ -1,11 +1,15 @@
 /*
- * typegmod.h
- *
- * (C) 2001 by Universitaet Karlsruhe
- * Goetz Lindenmaier
- *
- * $Id$
+ * Project:     libFIRM
+ * File name:   ir/tr/typegmod.h
+ * Purpose:     Functionality to modify the type graph.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2001-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
+
 
 # ifndef _TYPEGMOD_H_
 # define _TYPEGMOD_H_

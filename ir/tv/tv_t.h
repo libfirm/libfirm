@@ -1,12 +1,17 @@
-/* Declarations for Target Values. */
+/*
+ * Project:     libFIRM
+ * File name:   ir/tv/tv_t.h
+ * Purpose:     Representation of and static computations on target machine
+ *              values -- private header.
+ * Author:      Mathias Heil
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
-/**
-* @file tv_t.h
-*
-* @author Mathias Heil
-*/
 
-/* $Id$ */
 
 #ifndef _TV_T_H_
 #define _TV_T_H_

@@ -1,8 +1,13 @@
-# Hey Emacs, this is a -*- makefile -*-
 #
-# libFIRM Project
-#
-# $Id$
+# Project:     libFIRM
+# File name:   ir/tv/Makefile.in
+# Purpose:
+# Author:      Boris Boesler, Till Riedel
+# Modified by:
+# Created:
+# CVS-ID:      $Id$
+# Copyright:   (c) 1999-2003 Universität Karlsruhe
+# Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
 #
 
 top_srcdir := @top_srcdir@
@@ -18,9 +23,9 @@ SOURCES += Makefile.in tv.c tv_t.h strcalc.c strcalc.h fltcalc.c fltcalc.h
 
 include $(topdir)/MakeRules
 
-CPPFLAGS += -I$(top_srcdir)/ir/common -I$(top_srcdir)/ir/tr -I$(top_srcdir)/ir/adt \
-	    -I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/ir -I$(top_srcdir)/ir/debug \
-	    -I$(top_srcdir)/ir/st -I$(top_srcdir)/ir/ana \
+CPPFLAGS += -I$(top_srcdir)/ir/common -I$(top_srcdir)/ir/tr -I$(top_srcdir)/ir/adt   \
+	    -I$(top_srcdir)/ir/ident  -I$(top_srcdir)/ir/ir -I$(top_srcdir)/ir/debug \
+	    -I$(top_srcdir)/ir/st     -I$(top_srcdir)/ir/ana
 
 tv.o: tv.h tv.c fltcalc.h fltcalc.c strcalc.h strcalc.c
 

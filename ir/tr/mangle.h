@@ -1,34 +1,42 @@
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-* All rights reserved.
-*/
+/*
+ * Project:     libFIRM
+ * File name:   ir/tr/mangle.h
+ * Purpose:     Methods to manipulate names.
+ * Author:      Martin Trapp, Christian Schaefer
+ * Modified by: Goetz Lindenmaier
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 /**
 * @file mangle.h
 *
-* FIRM name mangling.
+* FIRM name mangling -- methods to manipulate names.
 *
 * @author Martin Trapp, Christian Schaefer
 */
 
-/* $Id$ */
+#ifndef _MANGLE_H_
+#define _MANGLE_H_
 
 # include "ident.h"
 # include "entity.h"
 # include "type.h"
 
 /** initializes the name mangling code */
-void init_mangle (void);
+void   init_mangle (void);
 
 /** Computes a definite name for this entity by concatenating
    the name of the owner type and the name of the entity with
-   a separating "_". f*/
+   a separating "_". */
 ident *mangle_entity (entity *ent);
-
-/** Sorry, I'm not sure what this does... seems to copy the string. */
-ident *mangle_type   (type *tp);
 
 /** mangle underscore: Returns a new ident that represents first_scnd. */
 ident *mangle_u (ident *first, ident* scnd);
 
 /** mangle: Returns a new ident that represents firstscnd. */
 ident *mangle (ident *first, ident* scnd);
+
+#endif /* _MANGLE_H_ */

@@ -1,5 +1,14 @@
-/* Copyright (c) 2002 by Universitaet Karlsruhe (TH).  All Rights Reserved  */
-
+/*
+ * Project:     libFIRM
+ * File name:   ir/st/st.h
+ * Purpose:     Provide some auxilliary structures for firm graphs.
+ * Author:      Florian Liekweg
+ * Modified by:
+ * Created:     26.2.2002
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2002-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 /**
    @file st.h
 
@@ -9,13 +18,6 @@
 
    @note
      not quite complete
-*/
-
-/*
-   HISTORY
-     liekweg - Feb 26, 2002: Created.
-   CVS:
-     $Id$
 */
 
 # ifndef _ST_H_

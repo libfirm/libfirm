@@ -1,6 +1,6 @@
 /*
  * Project:     libFIRM
- * File name:   ir/common
+ * File name:   ir/ir/ircgcons.c
  * Purpose:     Construction and removal of interprocedural representation
  *              (explicit interprocedural dependencies).
  * Author:      Hubert Schmid

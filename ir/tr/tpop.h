@@ -1,6 +1,14 @@
-/* (C) 2001 by Universitaet Karlsruhe */
-
-/* $Id$ */
+/*
+ * Project:     libFIRM
+ * File name:   ir/tr/tpop.h
+ * Purpose:     Opcode of types.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2001-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 # ifndef _TYPEOP_H_
 # define _TYPEOP_H_

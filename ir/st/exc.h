@@ -1,7 +1,15 @@
-/* Copyright (c) 2002 by Universität Karlsruhe (TH).  All Rights Reserved */
 /*
-* Time-stamp: <Thursday, 19.12.2002, 15:45:43 goetz@i44pc2.info.uni-karlsruhe.de>
-*/
+ * Project:     libFIRM
+ * File name:   ir/st/exc.h
+ * Purpose:     Helper functions for jack exceptions.
+ * Author:      Florian Liekweg
+ * Modified by:
+ * Created:     4.3.2002
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2002-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
+
 
 /**
    NAME
@@ -10,10 +18,6 @@
      Helper functions for exceptions
    S
      not quite complete
-   HISTORY
-     liekweg - Mar 4, 2002: Created.
-   CVS:
-     $Id$
 ***/
 
 # include "irnode.h"

@@ -1,10 +1,21 @@
+/*
+ * Project:     libFIRM
+ * File name:   ir/tv/tv.h
+ * Purpose:     Representation of and static computations on target machine
+ *              values.
+ * Author:      Mathias Heil
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
+
 /**
  * @file tv.h
  *
  * Declarations for Target Values.
  */
-
-/* $Id$ */
 
 #ifndef _TV_H_
 #define _TV_H_

@@ -1,3 +1,15 @@
+/*
+ * Project:     libFIRM
+ * File name:   ir/tv/fltcalc.h
+ * Purpose:
+ * Author:
+ * Modified by:
+ * Created:     2003
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
+
 #ifndef _FLTCALC_H_
 #define _FLTCALC_H_
 

@@ -1,7 +1,14 @@
-/*10 2002/03/19 13:08:33
-*  Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-*  All rights reserved.
-*/
+/*
+ * Project:     libFIRM
+ * File name:   ir/tr/entity_t.h
+ * Purpose:     Representation of all program known entities -- private header.
+ * Author:      Martin Trapp, Christian Schaefer
+ * Modified by: Goetz Lindenmaier
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 /**
 * @file entity_t.h
@@ -28,7 +35,6 @@
 *  enclosing procedure.
 */
 
-/* $Id$ */
 
 # ifndef _ENTITY_T_H_
 # define _ENTITY_T_H_

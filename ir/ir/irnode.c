@@ -19,7 +19,7 @@
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "irmode_t.h"
-#include "typegmod_t.h"
+#include "typegmod.h"
 #include "array.h"
 #include "irbackedge_t.h"
 #include "irdump.h"

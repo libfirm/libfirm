@@ -1,4 +1,14 @@
-/* Copyright (c) 2002 by Universitaet Karlsruhe (TH).  All Rights Reserved */
+/*
+ * Project:     libFIRM
+ * File name:   ir/st/bs.h
+ * Purpose:     Provides a simple bit set.
+ * Author:      Florian Liekweg
+ * Modified by:
+ * Created:     4.3.2002
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2002-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 /**
    @file bs.h
@@ -8,7 +18,6 @@
    Not quite complete
 */
 
-/* $Id$ */
 
 # ifndef _BS_H_
 # define _BS_H_

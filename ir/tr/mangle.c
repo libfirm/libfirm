@@ -1,11 +1,16 @@
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-* All rights reserved.
-*
-* Authors: Martin Trapp, Christian Schaefer
-*
-*/
+/*
+ * Project:     libFIRM
+ * File name:   ir/tr/mangle.c
+ * Purpose:     Methods to manipulate names.
+ * Author:      Martin Trapp, Christian Schaefer
+ * Modified by: Goetz Lindenmaier
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
-/* $Id$ */
+
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -21,6 +26,13 @@
 # include "tpop_t.h"
 
 static struct obstack mangle_obst;
+
+static INLINE ident *
+mangle_type (type *tp)
+{
+  assert (tp->kind == k_type);
+  return tp->name;
+}
 
 ident *
 mangle_entity (entity *ent)
@@ -41,12 +53,6 @@ mangle_entity (entity *ent)
   return res;
 }
 
-ident *
-mangle_type (type *tp)
-{
-  assert (tp->kind == k_type);
-  return tp->name;
-}
 
 /* Returns a new ident that represents firstscnd. */
 ident *mangle (ident *first, ident* scnd) {

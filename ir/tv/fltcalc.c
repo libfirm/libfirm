@@ -1,6 +1,15 @@
-/* fltcalc.c
- * Authors: Matthias Heil
+/*
+ * Project:     libFIRM
+ * File name:   ir/tv/fltcalc.c
+ * Purpose:
+ * Author:
+ * Modified by:
+ * Created:     2003
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
+
 
 #include "fltcalc.h"
 #include "strcalc.h"
