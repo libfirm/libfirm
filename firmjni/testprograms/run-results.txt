@@ -1,0 +1,7 @@
+javac -classpath /usr/public2/java/jdk1.3.1-sun/jre/lib/rt.jar:.:../.. -d . ../../../firmjni/testprograms/Empty.java
+java -cp /usr/public2/java/jdk1.3.1-sun/jre/lib/rt.jar:.:../.. -Djava.library.path=.. Empty
+
+Creating an IR graph: EMPTY...
+Done building the graph.  Dumping it.
+use xvcg to view this graph:
+/ben/goetz/bin/xvcg GRAPHNAME
