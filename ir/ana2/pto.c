@@ -89,8 +89,9 @@ void pto_init (int lvl)
   set_curr_ctx (get_main_ctx ());
 }
 
-void pto_run ()
+void pto_run (void)
 {
+  ir_graph *save;
   ir_graph *graph = get_irp_main_irg ();
 
   pto_reset_graph_pto (graph, 0);
@@ -103,7 +104,7 @@ void pto_run ()
                 get_entity_name (get_irg_entity (graph))));
 
   /* we need some kind of environment here: NULL */
-  ir_graph *save = get_current_ir_graph ();
+  save = get_current_ir_graph ();
   pto_graph (graph, 0, NULL);
   set_current_ir_graph (save);
 
@@ -111,12 +112,12 @@ void pto_run ()
 }
 
 /* Dump all interesting stuff to a bunch of files */
-void pto_dump ()
+void pto_dump (void)
 {
   pto_dump_names ("names.dot");
 }
 
-void pto_cleanup ()
+void pto_cleanup (void)
 {
   /* todo: clean up our own mess */
   spaces -= 511;                /* hope that all changes to spaces are
@@ -136,6 +137,9 @@ void pto_cleanup ()
 
 /*
   $Log$
+  Revision 1.15  2004/12/21 14:26:53  beck
+  removed C99 constructs
+
   Revision 1.14  2004/12/20 17:41:14  liekweg
   __unused -> _unused
 
