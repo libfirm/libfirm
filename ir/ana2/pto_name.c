@@ -156,11 +156,11 @@ static int pto_name_alloc_arr_color (arr_desc_t *arr_desc)
 /* allocate nice colors for the given descriptor */
 static int pto_name_alloc_color (desc_t *desc)
 {
+  int col_idx = 0;
+
   if (0 != desc->col_idx) {
     return (desc->col_idx);
   }
-
-  int col_idx = 0;
 
   if (FALSE == desc->visit) {
     desc->visit = TRUE;
@@ -236,36 +236,38 @@ static void _collect_fields (type *clazz, struct obstack *obst)
   The last entry of the array is written NULL. */
 static entity **collect_fields (type *clazz)
 {
+  struct obstack obst;
+  int n_fields;
+  entity ** fields;
+  void *tmp;
+
   if (NULL != get_type_link (clazz)) {
-    DBGPRINT (3, (stdout, "%s: reusing field list for \"%s\"\n",
-                  __FUNCTION__, get_type_name (clazz)));
+    DBGPRINT (3, (stdout, "collect_fields(): reusing field list for \"%s\"\n",
+                  get_type_name (clazz)));
 
     return ((entity **) get_type_link (clazz));
   } else {
-    DBGPRINT (2, (stdout, "%s: new field list for \"%s\"\n",
-                  __FUNCTION__, get_type_name (clazz)));
+    DBGPRINT (2, (stdout, "collect_fields(): new field list for \"%s\"\n",
+                  get_type_name (clazz)));
   }
-
-  struct obstack obst;
 
   obstack_init (&obst);
 
   _collect_fields (clazz, &obst);
 
   /* append terminating NULL */
-  int *the_null = NULL;
-  obstack_ptr_grow (&obst, the_null);
+  obstack_ptr_grow (&obst, NULL);
 
-  int n_fields = obstack_object_size (&obst) / sizeof (void*);
+  n_fields = obstack_object_size (&obst) / sizeof (void*);
 
-  entity ** fields = (entity**) NALLOC (n_fields * sizeof (entity*));
-  void *tmp = obstack_finish (&obst);
+  fields = NALLOC(n_fields * sizeof(*fields));
+  tmp = obstack_finish(&obst);
 
-  memcpy (fields, tmp, n_fields * sizeof (entity*));
+  memcpy (fields, tmp, n_fields * sizeof(*fields));
 
   obstack_free (&obst, NULL);
 
-  set_type_link (clazz, (void*) fields);
+  set_type_link (clazz, fields);
 
   return (fields);
 }
@@ -295,6 +297,7 @@ static void pto_name_dump_desc (desc_t *desc, FILE *stream)
 {
   type *tp = desc->tp;
   const char *tp_name = get_type_name (tp);
+  ir_node *nd;
 
   fprintf (stream, "\t/* %s \"%s\" */\n",
            object == desc->kind ? "Object" : "Array",
@@ -312,7 +315,7 @@ static void pto_name_dump_desc (desc_t *desc, FILE *stream)
   fprintf (stream, "\\lname=\\\"%s\\\"",
            tp_name);
 
-  ir_node *nd = desc->node;
+  nd = desc->node;
 
   if (NULL != nd) {
     ir_graph *graph = get_irn_irg (nd);
@@ -351,46 +354,47 @@ static void pto_name_dump_desc (desc_t *desc, FILE *stream)
   fprintf (stream, "\"");
 
 # ifdef PTO_COLOR
-  int col_idx = desc->col_idx;
-  float hue = (float) col_idx / (float) last_col_idx;
-  float sat = 1.000;            /* 0.300 .. 1.000 */
-  float val = 0.800;            /* 0.300 .. 1.000 */
+  {
+    const char *fontcolor;
+    int col_idx = desc->col_idx;
+    float hue = (float) col_idx / (float) last_col_idx;
+    float sat = 1.000f;            /* 0.300 .. 1.000 */
+    float val = 0.800f;            /* 0.300 .. 1.000 */
 
-# define MAX_COLORS 12
-  if (last_col_idx > MAX_COLORS) {
-    /* too many colors ... vary value too */
-    float div = (float) MAX_COLORS / (float) last_col_idx;
+  # define MAX_COLORS 12
+    if (last_col_idx > MAX_COLORS) {
+      /* too many colors ... vary value too */
+      float div = (float) MAX_COLORS / (float) last_col_idx;
 
-    sat = (div * ((col_idx / MAX_COLORS)));
-    val = (div * ((col_idx / MAX_COLORS)));
+      sat = (div * ((col_idx / MAX_COLORS)));
+      val = (div * ((col_idx / MAX_COLORS)));
 
-    col_idx = col_idx % MAX_COLORS;
-    hue = (float) col_idx / (float) MAX_COLORS;
+      col_idx = col_idx % MAX_COLORS;
+      hue = (float) col_idx / (float) MAX_COLORS;
 
-    // re-adjust sat and val
-    {
-      const float sat_min = 0.200; /* 0.200 .. 0.400 */
-      const float val_min = 0.300; /* 0.300 .. 0.400 */
+      // re-adjust sat and val
+      {
+        const float sat_min = 0.200f; /* 0.200 .. 0.400 */
+        const float val_min = 0.300f; /* 0.300 .. 0.400 */
 
-      sat = sat_min + ((1.0 - sat_min) * sat);
-      val = val_min + ((1.0 - val_min) * val);
+        sat = sat_min + ((1.0f - sat_min) * sat);
+        val = val_min + ((1.0f - val_min) * val);
+      }
     }
+  # undef MAX_COLORS
+
+    fprintf (stream, ", color=\"%01.3f, %01.3f, %01.3f\"", hue, sat, val);
+
+    if ((hue > 0.3) && (sat < 0.5)) {
+      fontcolor = "white";
+    } else if (sat < 0.4) {
+      fontcolor = "white";
+    } else {
+      fontcolor = "black";
+    }
+
+    fprintf (stream, ", fontcolor=\"%s\"", fontcolor);
   }
-# undef MAX_COLORS
-
-  fprintf (stream, ", color=\"%01.3f, %01.3f, %01.3f\"", hue, sat, val);
-
-  char *fontcolor;
-
-  if ((hue > 0.3) && (sat < 0.5)) {
-    fontcolor = "white";
-  } else if (sat < 0.4) {
-    fontcolor = "white";
-  } else {
-    fontcolor = "black";
-  }
-
-  fprintf (stream, ", fontcolor=\"%s\"", fontcolor);
 # else /* if defined PTO_COLOR */
   fprintf (stream, ", color=\"lightgrey\"");
 # endif /* defined PTO_COLOR */
@@ -456,6 +460,7 @@ qset_t *get_entry (desc_t *desc, entity *ent)
     return (arr_desc->value);
   } else {
     assert (0 && "invalid descriptor");
+    return NULL;
   }
 }
 
@@ -467,12 +472,12 @@ desc_t *new_name (type *tp, ir_node *node, int ctx)
 
   assert ((is_class_type (tp) || is_array_type (tp)) && "unsuitable type");
 
-  DBGPRINT (2, (stdout, "%s: new name for type \"%s\"\n", __FUNCTION__,
+  DBGPRINT (2, (stdout, "new_name(): new name for type \"%s\"\n",
                 get_type_name (tp)));
   fflush (stdout);
 
   if (is_class_type (tp)) {
-    obj_desc_t *obj_desc = (obj_desc_t*) NALLOC (sizeof (obj_desc_t));
+    obj_desc_t *obj_desc = NALLOC(sizeof(*obj_desc));
     int i;
     int n_fields;
 
@@ -528,7 +533,7 @@ desc_t *new_ent_name (entity *ent)
   tp = get_pointer_points_to_type (tp);
   assert (is_class_type (tp));
 
-  DBGPRINT (2, (stdout, "%s: new name for entity \"%s\"\n", __FUNCTION__,
+  DBGPRINT (2, (stdout, "new_ent_name(): new name for entity \"%s\"\n",
                 get_entity_name (ent)));
   DBGEXE (2, (fflush (stdout)));
 
@@ -593,8 +598,8 @@ void pto_dump_names (const char *name)
 
   errno = 0;
   if  (NULL == stream) {
-    fprintf (stderr, "%s: unable to open %s (%s)\n",
-             __FUNCTION__, name, strerror (errno));
+    fprintf (stderr, "pto_dump_names(): unable to open %s (%s)\n",
+             name, strerror (errno));
     return;
   }
 
@@ -611,9 +616,9 @@ void pto_dump_names (const char *name)
 }
 
 /* Initialise the name module */
-void pto_name_init ()
+void pto_name_init (void)
 {
-  DBGPRINT (3, (stdout, "(%s:%i) %s\n", __FILE__, __LINE__, __FUNCTION__));
+  DBGPRINT (3, (stdout, "(%s:%i) pto_name_init()\n", __FILE__, __LINE__));
   assert (NULL == name_obst);
   assert (NULL == qset_obst);
 
@@ -625,9 +630,9 @@ void pto_name_init ()
 }
 
 /* Cleanup the name module */
-void pto_name_cleanup ()
+void pto_name_cleanup (void)
 {
-  DBGPRINT (3, (stdout, "(%s:%i) %s\n", __FILE__, __LINE__, __FUNCTION__));
+  DBGPRINT (3, (stdout, "(%s:%i) pto_name_cleanup()\n", __FILE__, __LINE__));
   obstack_free (name_obst, NULL);
   obstack_free (qset_obst, NULL);
 
@@ -644,6 +649,11 @@ void pto_name_cleanup ()
 
 /*
   $Log$
+  Revision 1.9  2004/12/21 15:34:09  beck
+  removed C99 constructs
+  make const float
+  add default return
+
   Revision 1.8  2004/12/15 13:30:30  liekweg
   use DBGEXE correctly; print yet nicer names
 
