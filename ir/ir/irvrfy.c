@@ -242,7 +242,10 @@ static void show_phi_failure(ir_node *phi, ir_node *pred, int pos)
     get_irn_node_nr(pred), get_mode_name_ex(get_irn_mode(pred)));
 }
 
-INLINE static int
+/**
+ * verify the Proj number
+ */
+static int
 vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
   ir_node *pred;
   ir_mode *mode;
