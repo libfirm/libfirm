@@ -41,7 +41,7 @@
 # include "pmap.h"
 # include "eset.h"
 
-//#define HEAPANAL
+#undef HEAPANAL
 #ifdef HEAPANAL
 void dump_chi_term(FILE *FL, ir_node *n);
 void dump_state(FILE *FL, ir_node *n);
@@ -1813,7 +1813,7 @@ void dump_all_ir_graphs (dump_graph_func *dmp_grph) {
 
 
 void dump_loops_standalone (ir_loop *loop) {
-  int i, loop_node_started = 0, son_number = 0;
+  int i, loop_node_started = 0, son_number = 0, first;
   loop_element le;
 
   /* Dump a new loop node. */
@@ -1832,6 +1832,11 @@ void dump_loops_standalone (ir_loop *loop) {
 	  if(loop_node_started) /* Close the "firm-nodes" node first if we started one. */
 	    {
 	      fprintf(F, "\" }\n");
+	      fprintf (F, "edge: {sourcename: \"");
+	      PRINT_LOOPID(loop);
+	      fprintf (F, "\" targetname: \"");
+	      PRINT_LOOPID(loop);
+	      fprintf (F, "-%d-nodes\" label:\"%d...%d\"}\n", first, first, i-1);
 	      loop_node_started = 0;
 	    }
 	  dump_loop_son_edge(loop, son_number++);
@@ -1846,16 +1851,11 @@ void dump_loops_standalone (ir_loop *loop) {
 	  if (!loop_node_started)
 	    {
 	      /* Start a new node which contains all firm nodes of the current loop */
-	      fprintf (F, "edge: {sourcename: \"");
-	      PRINT_LOOPID(loop);
-	      fprintf (F, "\" targetname: \"");
-	      PRINT_LOOPID(loop);
-	      fprintf (F, "-%d-nodes\" label:\"%d ...\"}\n", i, i);
-
 	      fprintf (F, "node: { title: \"");
 	      PRINT_LOOPID(loop);
 	      fprintf (F, "-%d-nodes\" color: lightyellow label: \"", i);
 	      loop_node_started = 1;
+	      first = i;
 	    }
 	  else
 	    fprintf(F, "\n");
@@ -1872,6 +1872,11 @@ void dump_loops_standalone (ir_loop *loop) {
   if(loop_node_started)
     {
       fprintf(F, "\" }\n");
+      fprintf (F, "edge: {sourcename: \"");
+      PRINT_LOOPID(loop);
+      fprintf (F, "\" targetname: \"");
+      PRINT_LOOPID(loop);
+      fprintf (F, "-%d-nodes\" label:\"%d...%d\"}\n", first, first, i-1);
       loop_node_started = 0;
     }
 }
@@ -1912,11 +1917,7 @@ void collect_nodeloop(ir_loop *loop, eset *loopnodes) {
       /* Recur */
       collect_nodeloop(le.son, loopnodes);
     } else {
-      //if (!is_Block(le.node)) dump_ir_block_edge(le.node);
-      //dump_ir_data_edges(le.node);
-      //dump_node(le.node);
       if (dump_loop_information_flag) dump_loop_node_edge(loop, node_number++);
-      /* collect all nodes into a set so we can dump the nodes edges selectively. */
       eset_insert(loopnodes, le.node);
     }
   }
@@ -1950,9 +1951,7 @@ void dump_loop (ir_loop *l, char *suffix) {
   char name[50];
   eset *loopnodes = eset_create();
   eset *extnodes = eset_create();
-  int dc_rem = dump_const_local;
   ir_node *n, *b;
-  dump_const_local = 1;
 
   sprintf(name, "loop_%d", get_loop_loop_nr(l));
   vcg_open_name (name, suffix);
@@ -2031,5 +2030,4 @@ void dump_loop (ir_loop *l, char *suffix) {
   eset_destroy(loopnodes);
   eset_destroy(extnodes);
   vcg_close();
-  dump_const_local = dc_rem;
 }
