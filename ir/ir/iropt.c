@@ -966,8 +966,11 @@ static ir_node *equivalent_node_Proj(ir_node *n)
     if ( get_Proj_proj(n) <= get_Tuple_n_preds(a) ) {
       n = get_Tuple_pred(a, get_Proj_proj(n));                     DBG_OPT_TUPLE;
     } else {
-      assert(0); /* This should not happen! */
-      n = new_Bad();
+//      assert(0); /* This should not happen! */
+//      n = new_Bad();
+      dump_ir_block_graph(current_ir_graph, "-CRASH");
+      printf(">>>%d\n", get_irn_node_nr(n));
+      exit(1);
     }
   } else if (get_irn_mode(n) == mode_X &&
 	     is_Bad(get_nodes_block(n))) {
@@ -1038,8 +1041,8 @@ static ir_op *firm_set_default_equivalent_node(ir_op *op)
   CASE(And);
   CASE(Conv);
   CASE(Phi);
-//  CASE(Load);		/* dangerous */
-//  CASE(Store);		/* dangerous, see todo */
+  CASE(Load);		/* dangerous */
+  CASE(Store);		/* dangerous, see todo */
   CASE(Proj);
   CASE(Id);
   default:
@@ -1534,7 +1537,7 @@ static ir_op *firm_set_default_transform_node(ir_op *op)
   CASE(Eor);
   CASE(Not);
   CASE(Proj);
-//  CASE(Store);	/* dangerous, see todo */
+  CASE(Store);	/* dangerous, see todo */
   CASE(Or);
   default:
     op->transform_node  = NULL;
