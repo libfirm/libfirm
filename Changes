@@ -1,3 +1,7 @@
+  27.12.2000 Goetz
+  Now outputs warning if faulty type in irdump, dump_type_info.
+  Explicit string termination in irdump, vcg_open.
+
   20.12.2000 Goetz
   Added external to declaration of irp.
   Added typedef before pns and pnc_number.

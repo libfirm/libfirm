@@ -377,7 +377,6 @@ void dump_node2type_edges (ir_node *n, void *env)
 	      NODE2TYPE_EDGE_ATTR "}\n", n, get_Alloc_type(n));
     break;
   case iro_Free:
-    printf(" in irdum\n");
     xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
 	      NODE2TYPE_EDGE_ATTR "}\n", n, get_Free_type(n));
     break;
@@ -408,8 +407,7 @@ dump_type_info (type_or_ent *tore, void *env) {
       xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
                 " label: \"type\" "
 		TYPE_EDGE_ATTR "}\n", tore, get_entity_type(ent));
-    }
-    break;
+    } break;
   case k_type_class:
     {
       type_class *type = (type_class *)tore;
@@ -418,14 +416,12 @@ dump_type_info (type_or_ent *tore, void *env) {
 	xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
 		  " label: \"supertype\" " TYPE_EDGE_ATTR "}\n",
 		  type, get_class_supertype(type, i));
-    }
-    break;
+    } break;
   case k_type_strct:
     {
       type_strct *type = (type_strct *)tore;
       xfprintf (F, "\"strct %I\"}\n", get_strct_ident(type));
-    }
-    break;
+    } break;
   case k_type_method:
     {
       type_method *type = (type_method *)tore;
@@ -438,29 +434,25 @@ dump_type_info (type_or_ent *tore, void *env) {
 	xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
 		  " label: \"res %d\" " TYPE_EDGE_ATTR "}\n",
 		  tore, get_method_res_type(type, i), i);
-    }
-    break;
+    } break;
   case k_type_union:
     {
       type_union *type = (type_union *)tore;
       xfprintf (F, "\"union %I\"}\n", get_union_ident(type));
       /* edges !!!??? */
-    }
-    break;
+    } break;
   case k_type_array:
     {
       type_array *type = (type_array *)tore;
       xfprintf (F, "\"array %I\"}\n", get_array_ident(type));
       xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
 		TYPE_EDGE_ATTR "}\n", tore, get_array_element_type(type), i);
-    }
-    break;
+    } break;
   case k_type_enumeration:
     {
       type_enumeration *type = (type_enumeration *)tore;
       xfprintf (F, "\"enum %I\"}\n", get_enumeration_ident(type));
-    }
-    break;
+    } break;
   case k_type_pointer:
     {
       type_pointer *type = (type_pointer *)tore;
@@ -468,19 +460,19 @@ dump_type_info (type_or_ent *tore, void *env) {
       xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
 		TYPE_EDGE_ATTR "}\n", tore,
 		get_pointer_points_to_type(type), i);
-    }
-    break;
+    } break;
   case k_type_primitive:
     {
       type_primitive *type = (type_primitive *)tore;
       xfprintf (F, "\"prim %I, mode %I\"}\n", get_primitive_ident(type),
 		get_mode_ident(get_primitive_mode(type)));
-    }
-    break;
+    } break;
   default:
-    break;
+    {
+      xfprintf (F, "\" faulty type \"}\n");
+      printf(" *** irdump,  %s(l.%i), faulty type.\n", __FUNCTION__, __LINE__);
+    } break;
   }
-
 }
 
 /************************************************************************/
@@ -497,11 +489,21 @@ void vcg_open (ir_graph *irg, char *suffix) {
   id    = get_entity_ld_name (get_irg_ent(irg));
   len   = id_to_strlen (id);
   cp    = id_to_str (id);
+
   fname = malloc (len + 5 + strlen(suffix));
-  strcpy (fname, cp);      /* copy the filename */
+  strncpy (fname, cp, len);      /* copy the filename */
+  fname[len] = '\0';
   strcat (fname, suffix);  /* append file suffix */
-  strcat (fname, ".vcg");  /* append the .vcg suffix */
-  F = fopen (fname, "w");  /* open file for writing */
+
+  fname = malloc (len + 5 + strlen(suffix));
+  strncpy (fname, cp, len); /* copy the filename */
+  fname[len] = '\0';        /* ensure string termination */
+  /*strcpy (fname, cp);      * copy the filename *
+    this produces wrong, too long strings in conjuction with the
+    jocca frontend.  The \0 seems to be missing. */
+  strcat (fname, suffix);   /* append file suffix */
+  strcat (fname, ".vcg");   /* append the .vcg suffix */
+  F = fopen (fname, "w");   /* open file for writing */
   if (!F) {
     panic ("cannot open %s for writing (%m)", fname);  /* not reached */
   }
