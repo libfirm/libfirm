@@ -197,8 +197,9 @@ copy_preds (ir_node *n, void *env) {
        in array contained Bads.  Now it's possible.
        We don't call optimize_in_place as it requires
        that the fields in ir_graph are set properly. */
-    if (get_Block_n_cfgpreds(nn) == 1
-	&& get_irn_op(get_Block_cfgpred(nn, 0)) == op_Jmp)
+    if ((get_opt_control_flow()) &&
+	(get_Block_n_cfgpreds(nn) == 1) &&
+	(get_irn_op(get_Block_cfgpred(nn, 0)) == op_Jmp))
       exchange(nn, get_nodes_Block(get_Block_cfgpred(nn, 0)));
   } else if (get_irn_opcode(n) == iro_Phi) {
     /* Don't copy node if corresponding predecessor in block is Bad.
