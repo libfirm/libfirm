@@ -29,8 +29,10 @@ enum firmstat_options_t {
 /**
  * Finish the statistics.
  * Never called from libFirm should be called from user.
+ *
+ * @param name   basename of the statistic output file
  */
-void stat_finish(void);
+void stat_finish(const char *name);
 
 #ifdef FIRM_STATISTICS
 
@@ -56,11 +58,6 @@ typedef enum {
  * @param enable_options  Bitmask containing the statistic options
  */
 void init_stat(unsigned enable_options);
-
-/**
- * Finish the statistics.
- */
-void stat_finish(void);
 
 /**
  * A new IR op is registered.
@@ -152,7 +149,7 @@ ir_op *stat_get_op_from_opcode(opcode code);
 #else
 
 #define init_stat(enable_options)
-#define stat_finish()
+#define stat_finish(name)
 #define stat_new_ir_op(op)
 #define stat_free_ir_op(op)
 #define stat_new_node(node)

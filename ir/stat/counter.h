@@ -111,7 +111,6 @@ static INLINE int cnt_cmp(const counter_t *a, const counter_t *b)
   int i;
   unsigned va, vb;
 
-
   for (i = STAT_CNT_NUM - 1 ; i >= 0; --i) {
     va = a->cnt[i];
     vb = b->cnt[i];
@@ -123,6 +122,25 @@ static INLINE int cnt_cmp(const counter_t *a, const counter_t *b)
   if (va != vb)
     return va < vb ? -1 : 1;
   return 0;
+}
+
+/**
+ * convert a counter into a double
+ */
+static INLINE double cnt_to_dbl(const counter_t *a)
+{
+  int i;
+  double res = 0.0, scale = 1.0, tmp;
+
+  i = (1 << (sizeof(a->cnt[i]) * 4));
+  tmp = ((double)i) * ((double)i);
+
+  for (i = 0; i < STAT_CNT_NUM; ++i) {
+    res += scale * (double)a->cnt[i];
+
+    scale *= tmp;
+  }
+  return res;
 }
 
 #endif /* _COUNTER_H_ */

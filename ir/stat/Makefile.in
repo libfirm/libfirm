@@ -25,7 +25,8 @@ SOURCES += 	Makefile.in \
 		firmstat.c
 
 ifeq ($(enable_statistics),yes)
-SOURCES += pattern.c pattern.h counter.h pattern_dmp.c pattern_dmp.h
+SOURCES += firmstat_t.h pattern.c pattern.h dags.c dags.h counter.h \
+           pattern_dmp.c pattern_dmp.h distrib.c
 endif
 
 
