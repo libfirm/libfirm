@@ -221,7 +221,7 @@ void compute_callgraph(void) {
     callee_set = (pset *)irg->callees;
     count = pset_count(callee_set);
     irg->callees = NEW_ARR_F(ir_graph *, count);
-    irg->callee_isbe = calloc(count, sizeof(*irg->callee_isbe));
+    irg->callee_isbe = xcalloc(count, sizeof(irg->callee_isbe[0]));
     c = pset_first(callee_set);
     for (j = 0; j < count; ++j) {
       irg->callees[j] = c;
@@ -233,7 +233,7 @@ void compute_callgraph(void) {
     caller_set = (pset *)irg->callers;
     count = pset_count(caller_set);
     irg->callers = NEW_ARR_F(ir_graph *, count);
-    irg->caller_isbe =  calloc(count, sizeof(*irg->caller_isbe));
+    irg->caller_isbe =  xcalloc(count, sizeof(irg->caller_isbe[0]));
     c = pset_first(caller_set);
     for (j = 0; j < count; ++j) {
       irg->callers[j] = c;
