@@ -121,7 +121,7 @@ static void vcg_dump_finish_pattern(pattern_dumper_t *self)
   fprintf(priv->f, "  }\n");
 
   if (priv->pattern_id > 0)
-    fprintf(priv->f, "  edge: { sourcename: \"g%u\" targetname: \"g%u\"}\n",
+    fprintf(priv->f, "  edge: { sourcename: \"g%u\" targetname: \"g%u\" linestyle:invisible}\n",
       priv->pattern_id,
       priv->pattern_id - 1);
 
