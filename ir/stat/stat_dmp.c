@@ -35,7 +35,16 @@ static const char *opt_names[] = {
   "Architecture dependant optimization",
   "Reassociation optimization",
   "Polymorphic call optimization",
+  "an if conversion was tried",
   "Lowered",
+};
+
+static const char *if_conv_names[] = {
+  "if conv done              :",
+  "if conv side effect       :",
+  "if conv Phi node found    :",
+  "if conv to deep DAG's     :",
+  "if conv bad control flow  :",
 };
 
 /**
@@ -99,7 +108,7 @@ static void simple_dump_edges(dumper_t *dmp, counter_t *cnt)
  */
 static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 {
-  int dump_opts = 1;
+  int i, dump_opts = 1;
   block_entry_t *b_entry;
 
   if (entry->irg) {
@@ -129,14 +138,19 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
         entry->cnt_walked.cnt[0], entry->cnt_walked_blocks.cnt[0],
         entry->cnt_was_inlined.cnt[0],
         entry->cnt_got_inlined.cnt[0],
-	    entry->cnt_strength_red.cnt[0],
-	    entry->is_leaf ? "YES" : "NO",
-	    entry->is_leaf_call == LCS_NON_LEAF_CALL ? "NO" : (entry->is_leaf_call == LCS_LEAF_CALL ? "Yes" : "Maybe"),
-	    entry->is_recursive ? "YES" : "NO",
-	    entry->is_chain_call ? "YES" : "NO",
+	      entry->cnt_strength_red.cnt[0],
+	      entry->is_leaf ? "YES" : "NO",
+	      entry->is_leaf_call == LCS_NON_LEAF_CALL ? "NO" : (entry->is_leaf_call == LCS_LEAF_CALL ? "Yes" : "Maybe"),
+	      entry->is_recursive ? "YES" : "NO",
+	      entry->is_chain_call ? "YES" : "NO",
         entry->cnt_all_calls.cnt[0],
         entry->cnt_indirect_calls.cnt[0]
     );
+
+    for (i = 0; i < sizeof(entry->cnt_if_conv)/sizeof(entry->cnt_if_conv[0]); ++i) {
+      fprintf(dmp->f, " %s : %u\n", if_conv_names[i], entry->cnt_if_conv[i].cnt[0]);
+    }
+
   }
   else {
     fprintf(dmp->f, "\nGlobals counts:\n");

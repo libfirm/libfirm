@@ -1261,6 +1261,24 @@ static void stat_dead_node_elim_stop(void *ctx, ir_graph *irg)
 }
 
 /**
+ * if-conversion was tried
+ */
+static void stat_if_conversion(void *context, ir_graph *irg, ir_node *phi,
+                               int pos, ir_node *mux, if_result_t reason)
+{
+  if (! status->stat_options)
+    return;
+
+  STAT_ENTER;
+  {
+    graph_entry_t *graph = graph_get_entry(irg, status->irg_hash);
+
+    cnt_inc(&graph->cnt_if_conv[reason]);
+  }
+  STAT_LEAVE;
+}
+
+/**
  * A multiply was replaced by a series of Shifts/Adds/Subs
  *
  * @param ctx  the hook context
@@ -1444,6 +1462,7 @@ void init_stat(unsigned enable_options)
   HOOK(hook_strength_red,                     stat_strength_red);
   HOOK(hook_dead_node_elim_start,             stat_dead_node_elim_start);
   HOOK(hook_dead_node_elim_stop,              stat_dead_node_elim_stop);
+  HOOK(hook_if_conversion,                    stat_if_conversion);
   HOOK(hook_arch_dep_replace_mul_with_shifts, stat_arch_dep_replace_mul_with_shifts);
   HOOK(hook_arch_dep_replace_div_by_const,    stat_arch_dep_replace_div_by_const);
   HOOK(hook_arch_dep_replace_mod_by_const,    stat_arch_dep_replace_mod_by_const);
