@@ -1457,5 +1457,4 @@ free_tv_entity(entity *ent) {
   }
   if (found)
     pset_remove(tarvals, found, tarval_hash(found));
-  }
 }
