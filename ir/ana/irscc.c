@@ -839,7 +839,18 @@ find_tail (ir_node *n) {
     }
 
   }
-  if (res_index <= -2) return NULL;
+  if (res_index <= -2) {
+    /* It's a completely bad loop: without Phi/Block nodes that can
+       be a head. I.e., the code is "dying".  We break the loop by
+       setting Bad nodes. */
+    printf(" here!!! \n");
+    dump_irn(n);
+    for (i = -1; i < get_irn_arity(n); ++i) {
+      set_irn_n(n, i, get_irg_bad(get_irn_irg(n)));
+    }
+    dump_irn(n);
+    return NULL;
+  }
   assert (res_index > -2);
 
   set_backedge (m, res_index);
