@@ -999,7 +999,7 @@ static void scc (ir_node *n) {
 
       /* The current backedge has been marked, that is temporarily eliminated,
 	 by find tail. Start the scc algorithm
-	 anew on the subgraph thats left (the current loop without the backedge)
+	 anew on the subgraph that is left (the current loop without the backedge)
 	 in order to find more inner loops. */
       scc (tail);
 
@@ -1097,7 +1097,7 @@ static void my_scc (ir_node *n) {
 
       /* The current backedge has been marked, that is temporarily eliminated,
 	 by find tail. Start the scc algorithm
-	 anew on the subgraph thats left (the current loop without the backedge)
+	 anew on the subgraph that is left (the current loop without the backedge)
 	 in order to find more inner loops. */
       my_scc (tail);
 

@@ -60,8 +60,12 @@ INLINE double get_region_exec_freq(void *reg) {
   ef.reg  = reg;
 
   found = set_find(exec_freq_set, &ef, sizeof(ef), exec_freq_hash(&ef));
-  assert(found);
-  return found->freq;
+
+  /* Not found if information is invalid. */
+  if (found)
+    return found->freq;
+  else
+    return 0;
 }
 
 /* Returns the number of times the block is executed. */

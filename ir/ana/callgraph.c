@@ -1129,6 +1129,9 @@ double get_irg_method_execution_frequency (ir_graph *irg) {
 
 void set_irg_method_execution_frequency (ir_graph *irg, double freq) {
   irg->method_execution_frequency = freq;
+
+  if (irp->max_method_execution_frequency < freq)
+    irp->max_method_execution_frequency = freq;
 }
 
 static void compute_method_execution_frequency (ir_graph *irg, void *env) {
@@ -1285,10 +1288,6 @@ void compute_performance_estimates(void) {
   }
 
   DEL_ARR_F(e.loop_stack);
-
-  //dump_callgraph("-with_nesting");
-  //dump_callgraph_loop_tree(current_loop, "-after_cons");
-
 
   /* -- compute the execution frequency -- */
   irp->max_method_execution_frequency = 0;
