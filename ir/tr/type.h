@@ -1,22 +1,19 @@
-/*
- * Project:     libFIRM
- * File name:   ir/tr/type.h
- * Purpose:     Representation of types.
- * Author:      Goetz Lindenmaier
- * Modified by:
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 2001-2003 Universität Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- */
-
 /**
  *
- *  @file type.h
+ * @file type.h
+ *
+ * Project:     libFIRM                                                   <br>
+ * File name:   ir/tr/type.h                                              <br>
+ * Purpose:     Representation of types.                                  <br>
+ * Author:      Goetz Lindenmaier                                         <br>
+ * Modified by:                                                           <br>
+ * Created:                                                               <br>
+ * Copyright:   (c) 2001-2003 Universität Karlsruhe                       <br>
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE. <br>
+ * CVS-ID:      $Id$
+ *
  *
  *  Datastructure to hold type information.
- *
- *  @author Goetz Lindenmaier
  *
  *  This module supplies a datastructure to represent all types
  *  known in the compiled program.  This includes types specified
@@ -39,11 +36,12 @@
 # ifndef _TYPE_H_
 # define _TYPE_H_
 
+# include <stdbool.h>
+
 # include "tpop.h"
 # include "firm_common.h"
 # include "ident.h"
 # include "irmode.h"
-# include <stdbool.h>
 # include "dbginfo.h"
 
 
