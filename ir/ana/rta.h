@@ -1,5 +1,35 @@
 /* -*- c -*- */
 
+/*
+ * Project:     libFIRM
+ * File name:   ir/ana/rta.h
+ * Purpose:     Interprocedural analysis to improve the call graph estimate.
+ * Author:      Florian
+ * Modified by:
+ * Created:     09.06.2002
+ * CVS-ID:      $$
+ * Copyright:   (c) 1999-2004 Universität Karlsruhe
+ * Licence:     This file is protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
+
+/**
+ * Intraprozedurale Analyse zur Abschätzung der Aufrufrelation. Es wird
+ * die Menge der instantiierten Klassen bestimmt, und daraus eine Abschätzung
+ * der aufgerufenen Methoden.
+ *
+ * Voraussetzung ist, dass das Programm keine Methodenzeiger handhaben kann.
+ * In diesem Fall koennten Methoden verloren gehen.  Oder wir muessen nach
+ * allen "freien" Methoden suchen (siehe cgana).
+ *
+ * @@@ Die Analyse sollte wissen, von welchen Klassen Instanzen ausserhalb
+ * der Uebersetzungseinheit alloziert werden koennen.  Diese muessen in
+ * die initiale Menge allozierter Klassen aufgenommern werden.
+ *
+ * Nach: David F. Bacon and Peter F. Sweeney,
+ *       Fast static analysis of C++ virtual function calls
+ *       OOPSLA 1996
+ */
+
 #ifndef _RTA_H_
 #define _RTA_H_
 
@@ -35,6 +65,9 @@ void rta_report (void);
 
 /*
  * $Log$
+ * Revision 1.13  2004/10/21 07:23:34  goetz
+ * comments
+ *
  * Revision 1.12  2004/10/20 14:59:27  liekweg
  * Removed ecg
  *

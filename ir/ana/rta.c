@@ -12,19 +12,6 @@
  * Licence:     This file is protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
-/**
- * Intraprozedurale Analyse zur Abschätzung der Aufrufrelation. Es wird
- * die Menge der instantiierten Klassen bestimmt, und daraus eine Abschätzung
- * der aufgerufenen Methoden.
- *
- * Voraussetzung ist, dass das Programm keine Methodenzeiger handhaben kann.
- * In diesem Fall koennten Methoden verloren gehen.  Oder wir muessen nach
- * allen "freien" Methoden suchen (siehe cgana).
- *
- * @@@ Die Analyse sollte wissen, von welchen Klassen Instanzen ausserhalb
- * der Uebersetzungseinheit alloziert werden koennen.  Diese muessen in
- * die initiale Menge allozierter Klassen aufgenommern werden.
- */
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -194,10 +181,10 @@ static void rta_act (ir_node *node, void *env)
           /* it's an external allocated thing. */
         }
       } else if (get_SymConst_kind(ptr) == symconst_addr_name) {
-        /* If this SymConst refers to a method the method is external_visible
-           and therefore must be considered live anyways. */
-        if (get_SymConst_name(ptr) != new_id_from_str("iro_Catch"))
-          assert (ent && "couldn't determine entity of call to symConst");
+	/* Entities of kind addr_name may not be allocated in this compilation unit.
+	   If so, the frontend built faulty Firm.  So just ignore. */
+	/* if (get_SymConst_name(ptr) != new_id_from_str("iro_Catch"))
+	  assert (ent && "couldn't determine entity of call to SymConst of kind addr_name."); */
       } else {
         /* other symconst. */
         assert(0 && "This SymConst can not be an address for a method call.");
@@ -533,6 +520,9 @@ void rta_report (void)
 
 /*
  * $Log$
+ * Revision 1.27  2004/10/21 07:23:34  goetz
+ * comments
+ *
  * Revision 1.26  2004/10/20 14:59:27  liekweg
  * Removed ecg
  *
