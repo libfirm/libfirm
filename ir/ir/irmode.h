@@ -115,10 +115,8 @@ typedef enum {
  * 	The new mode or NULL on error.
  *
  * @note
- * 	FIRM modes are unique independant of its name. So, you cannot expect
- * 	that the returned mode will have the mode name.
  * 	It is allowed to construct the default modes. So, a call
- * 	new_ir_mode("Int", irms_int_number, 32, 4, 1) will return mode_Is.
+ * 	new_ir_mode("Is", irms_int_number, 32, 4, 1) will return mode_Is.
  */
 ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align, int sign);
 

@@ -54,7 +54,8 @@ static int modes_are_equal(ir_mode *m, ir_mode *n)
 {
   if (m == n) return 1;
   if ( (m->sort == n->sort) && (m->size == n->size) &&
-      (m->align == n->align) && (m->sign == n->sign)
+      (m->align == n->align) && (m->sign == n->sign) &&
+      (m->name == n->name)
      )
     return 1;
 
@@ -531,207 +532,218 @@ init_mode (void)
   /* initialize predefined modes */
   /* Basic Block */
   mode_BB = &modes[irm_BB];
-  mode_BB->name = id_from_str("BB", 2);
-  mode_BB->code = irm_BB;
-  mode_BB->sort = irms_auxiliary;
-  mode_BB->sign = 0;
+  mode_BB->name    = id_from_str("BB", 2);
+  mode_BB->code    = irm_BB;
+  mode_BB->sort    = irms_auxiliary;
+  mode_BB->size    = 0;
+  mode_BB->align   = 0;
+  mode_BB->sign    = 0;
   mode_BB->tv_priv = NULL;
 
   /* eXecution */
   mode_X = &modes[irm_X];
-  mode_X->name = id_from_str("X", 1);
-  mode_X->code = irm_X;
-  mode_X->sort = irms_auxiliary;
-  mode_X->sign = 0;
+  mode_X->name    = id_from_str("X", 1);
+  mode_X->code    = irm_X;
+  mode_X->sort    = irms_auxiliary;
+  mode_X->size    = 0;
+  mode_X->align   = 0;
+  mode_X->sign    = 0;
   mode_X->tv_priv = NULL;
 
   /* Memory */
   mode_M = &modes[irm_M];
-  mode_M->name = id_from_str("M", 1);
-  mode_M->code = irm_M;
-  mode_M->sort = irms_auxiliary;
-  mode_M->sign = 0;
+  mode_M->name    = id_from_str("M", 1);
+  mode_M->code    = irm_M;
+  mode_M->sort    = irms_auxiliary;
+  mode_M->size    = 0;
+  mode_M->align   = 0;
+  mode_M->sign    = 0;
   mode_M->tv_priv = NULL;
 
   /* Tuple */
   mode_T = &modes[irm_T];
-  mode_T->name = id_from_str("T", 1);
-  mode_T->code = irm_T;
-  mode_T->sign = 0;
+  mode_T->name    = id_from_str("T", 1);
+  mode_T->code    = irm_T;
+  mode_T->sort    = irms_auxiliary,
+  mode_T->size    = 0;
+  mode_T->align   = 0;
+  mode_T->sign    = 0;
   mode_T->tv_priv = NULL;
 
   /* boolean */
   mode_b = &modes[irm_b];
-  mode_b->name = id_from_str("b", 1);
-  mode_b->code = irm_b;
-  mode_b->sort = irms_internal_boolean;
-  mode_b->sign = 0;
+  mode_b->name    = id_from_str("b", 1);
+  mode_b->code    = irm_b;
+  mode_b->sort    = irms_internal_boolean;
+  mode_b->size    = 0;
+  mode_b->align   = 0;
+  mode_b->sign    = 0;
   mode_b->tv_priv = NULL;
 
   /* float */
   mode_F = &modes[irm_F];
-  mode_F->name = id_from_str("F", 1);
-  mode_F->code = irm_F;
-  mode_F->sort = irms_float_number;
-  mode_F->sign = 1;
-  mode_F->align = 32;
-  mode_F->size = 32;
+  mode_F->name    = id_from_str("F", 1);
+  mode_F->code    = irm_F;
+  mode_F->sort    = irms_float_number;
+  mode_F->sign    = 1;
+  mode_F->align   = 32;
+  mode_F->size    = 32;
   mode_F->tv_priv = NULL;
 
   set_mode_values(mode_F);
 
   /* double */
   mode_D = &modes[irm_D];
-  mode_D->name = id_from_str("D", 1);
-  mode_D->code = irm_D;
-  mode_D->sort = irms_float_number;
-  mode_D->sign = 1;
-  mode_D->align = 32;
-  mode_D->size = 64;
+  mode_D->name    = id_from_str("D", 1);
+  mode_D->code    = irm_D;
+  mode_D->sort    = irms_float_number;
+  mode_D->sign    = 1;
+  mode_D->align   = 32;
+  mode_D->size    = 64;
   mode_D->tv_priv = NULL;
 
   set_mode_values(mode_D);
 
   /* extended */
   mode_E = &modes[irm_E];
-  mode_E->name = id_from_str("E", 1);
-  mode_E->code = irm_E;
-  mode_E->sort = irms_float_number;
-  mode_E->sign = 1;
-  mode_E->align = 32;
-  mode_E->size = 80;
+  mode_E->name    = id_from_str("E", 1);
+  mode_E->code    = irm_E;
+  mode_E->sort    = irms_float_number;
+  mode_E->sign    = 1;
+  mode_E->align   = 32;
+  mode_E->size    = 80;
   mode_E->tv_priv = NULL;
 
   set_mode_values(mode_E);
 
   /* signed byte */
   mode_Bs = &modes[irm_Bs];
-  mode_Bs->name = id_from_str("Bs", 2);
-  mode_Bs->code = irm_Bs;
-  mode_Bs->sort = irms_int_number;
-  mode_Bs->sign = 1;
-  mode_Bs->align = 8;
-  mode_Bs->size = 8;
+  mode_Bs->name    = id_from_str("Bs", 2);
+  mode_Bs->code    = irm_Bs;
+  mode_Bs->sort    = irms_int_number;
+  mode_Bs->sign    = 1;
+  mode_Bs->align   = 8;
+  mode_Bs->size    = 8;
   mode_Bs->tv_priv = NULL;
 
   set_mode_values(mode_Bs);
 
   /* unsigned byte */
   mode_Bu = &modes[irm_Bu];
-  mode_Bu->name = id_from_str("Bu", 2);
-  mode_Bu->code = irm_Bu;
-  mode_Bu->sort = irms_int_number;
-  mode_Bu->sign = 0;
-  mode_Bu->align = 8;
-  mode_Bu->size = 8;
+  mode_Bu->name    = id_from_str("Bu", 2);
+  mode_Bu->code    = irm_Bu;
+  mode_Bu->sort    = irms_int_number;
+  mode_Bu->sign    = 0;
+  mode_Bu->align   = 8;
+  mode_Bu->size    = 8;
   mode_Bu->tv_priv = NULL;
 
   set_mode_values(mode_Bu);
 
   /* signed short integer */
   mode_Hs = &modes[irm_Hs];
-  mode_Hs->name = id_from_str("Hs", 2);
-  mode_Hs->code = irm_Hs;
-  mode_Hs->sort = irms_int_number;
-  mode_Hs->sign = 1;
-  mode_Hs->align = 16;
-  mode_Hs->size = 16;
+  mode_Hs->name    = id_from_str("Hs", 2);
+  mode_Hs->code    = irm_Hs;
+  mode_Hs->sort    = irms_int_number;
+  mode_Hs->sign    = 1;
+  mode_Hs->align   = 16;
+  mode_Hs->size    = 16;
   mode_Hs->tv_priv = NULL;
 
   set_mode_values(mode_Hs);
 
   /* unsigned short integer */
   mode_Hu = &modes[irm_Hu];
-  mode_Hu->name = id_from_str("Hu", 2);
-  mode_Hu->code = irm_Hu;
-  mode_Hu->sort = irms_int_number;
-  mode_Hu->sign = 0;
-  mode_Hu->align = 16;
-  mode_Hu->size = 16;
+  mode_Hu->name    = id_from_str("Hu", 2);
+  mode_Hu->code    = irm_Hu;
+  mode_Hu->sort    = irms_int_number;
+  mode_Hu->sign    = 0;
+  mode_Hu->align   = 16;
+  mode_Hu->size    = 16;
   mode_Hu->tv_priv = NULL;
 
   set_mode_values(mode_Hu);
 
   /* signed integer */
   mode_Is = &modes[irm_Is];
-  mode_Is->name = id_from_str("Is", 2);
-  mode_Is->code = irm_Is;
-  mode_Is->sort = irms_int_number;
-  mode_Is->sign = 1;
-  mode_Is->align = 32;
-  mode_Is->size = 32;
+  mode_Is->name    = id_from_str("Is", 2);
+  mode_Is->code    = irm_Is;
+  mode_Is->sort    = irms_int_number;
+  mode_Is->sign    = 1;
+  mode_Is->align   = 32;
+  mode_Is->size    = 32;
   mode_Is->tv_priv = NULL;
 
   set_mode_values(mode_Is);
 
   /* unsigned integer */
   mode_Iu = &modes[irm_Iu];
-  mode_Iu->name = id_from_str("Iu", 2);
-  mode_Iu->code = irm_Iu;
-  mode_Iu->sort = irms_int_number;
-  mode_Iu->sign = 0;
-  mode_Iu->align = 32;
-  mode_Iu->size = 32;
+  mode_Iu->name    = id_from_str("Iu", 2);
+  mode_Iu->code    = irm_Iu;
+  mode_Iu->sort    = irms_int_number;
+  mode_Iu->sign    = 0;
+  mode_Iu->align   = 32;
+  mode_Iu->size    = 32;
   mode_Iu->tv_priv = NULL;
 
   set_mode_values(mode_Iu);
 
   /* signed long integer */
   mode_Ls = &modes[irm_Ls];
-  mode_Ls->name = id_from_str("Ls", 2);
-  mode_Ls->code = irm_Ls;
-  mode_Ls->sort = irms_int_number;
-  mode_Ls->sign = 1;
-  mode_Ls->align = 32;
-  mode_Ls->size = 64;
+  mode_Ls->name    = id_from_str("Ls", 2);
+  mode_Ls->code    = irm_Ls;
+  mode_Ls->sort    = irms_int_number;
+  mode_Ls->sign    = 1;
+  mode_Ls->align   = 32;
+  mode_Ls->size    = 64;
   mode_Ls->tv_priv = NULL;
 
   set_mode_values(mode_Ls);
 
   /* unsigned long integer */
   mode_Lu = &modes[irm_Lu];
-  mode_Lu->name = id_from_str("Lu", 2);
-  mode_Lu->code = irm_Lu;
-  mode_Lu->sort = irms_int_number;
-  mode_Lu->sign = 0;
-  mode_Lu->align = 32;
-  mode_Lu->size = 64;
+  mode_Lu->name    = id_from_str("Lu", 2);
+  mode_Lu->code    = irm_Lu;
+  mode_Lu->sort    = irms_int_number;
+  mode_Lu->sign    = 0;
+  mode_Lu->align   = 32;
+  mode_Lu->size    = 64;
   mode_Lu->tv_priv = NULL;
 
   set_mode_values(mode_Lu);
 
   /* Character */
   mode_C = &modes[irm_C];
-  mode_C->name = id_from_str("C", 1);
-  mode_C->code = irm_C;
-  mode_C->sort = irms_character;
-  mode_C->sign = 0;
-  mode_C->align = 8;
-  mode_C->size = 8;
+  mode_C->name    = id_from_str("C", 1);
+  mode_C->code    = irm_C;
+  mode_C->sort    = irms_character;
+  mode_C->sign    = 0;
+  mode_C->align   = 8;
+  mode_C->size    = 8;
   mode_C->tv_priv = NULL;
 
   set_mode_values(mode_C);
 
   /* Unicode character */
   mode_U = &modes[irm_U];
-  mode_U->name = id_from_str("U", 1);
-  mode_U->code = irm_U;
-  mode_U->sort = irms_character;
-  mode_U->sign = 0;
-  mode_U->align = 16;
-  mode_U->size = 16;
+  mode_U->name    = id_from_str("U", 1);
+  mode_U->code    = irm_U;
+  mode_U->sort    = irms_character;
+  mode_U->sign    = 0;
+  mode_U->align   = 16;
+  mode_U->size    = 16;
   mode_U->tv_priv = NULL;
 
   set_mode_values(mode_U);
 
   /* pointer */
   mode_P = &modes[irm_P];
-  mode_P->name = id_from_str("P", 1);
-  mode_P->code = irm_P;
-  mode_P->sort = irms_reference;
-  mode_P->sign = 0;
-  mode_P->align = 32;
-  mode_P->size = 32;
+  mode_P->name    = id_from_str("P", 1);
+  mode_P->code    = irm_P;
+  mode_P->sort    = irms_reference;
+  mode_P->sign    = 0;
+  mode_P->align   = 32;
+  mode_P->size    = 32;
   mode_P->tv_priv = NULL;
 
   num_modes = irm_max;
