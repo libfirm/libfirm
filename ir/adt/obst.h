@@ -13,7 +13,6 @@
 
 # include <obstack.h>
 # include <stdlib.h>
-# include <strings.h>
 
 # include "xmalloc.h"
 
