@@ -46,6 +46,11 @@
 #define get_ip_cfop_irg(X)    get_irn_irg(X)
 #define skip_nop(X)           skip_Id(X)
 
+#define pns_initial_exec   pn_Start_X_initial_exec
+#define pns_global_store   pn_Start_M
+#define pns_frame_base     pn_Start_P_frame_base
+#define pns_args           pn_Start_T_args
+#define pns_value_arg_base pn_Start_P_value_arg_base
 
 /* irmode.h */
 #define get_ident_of_mode        get_mode_ident
