@@ -77,9 +77,4 @@ irg_typeinfo_state get_irg_typeinfo_state(ir_graph *irg);
 type *get_irn_typeinfo_type(ir_node *n);
 void  set_irn_typeinfo_type(ir_node *n, type *tp);
 
-/** Return the type associated with the value produced by n
- *  if the node remarks this type as it is the case for
- *  Cast, Const, SymConst and some Proj nodes. */
-type *get_irn_type(ir_node *n);
-
 #endif /* _IRTYPEINFO_H_ */

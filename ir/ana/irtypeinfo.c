@@ -35,6 +35,7 @@
 
 #include "irgraph_t.h"   /* for setting the state flag. */
 #include "irprog_t.h"
+#include "irnode_t.h"
 #include "pmap.h"
 
 /* ------------ The map. ---------------------------------------------- */
@@ -50,7 +51,6 @@ static pmap *type_node_map = NULL;
  *  free_irtypeinfo.
  */
 type *initial_type = NULL;
-
 
 /* ------------ Initializing this module. ----------------------------- */
 
@@ -127,44 +127,4 @@ void set_irn_typeinfo_type(ir_node *n, type *tp) {
   	 get_irg_typeinfo_state(current_ir_graph) == irg_typeinfo_inconsistent  );
 
   pmap_insert(type_node_map, (void *)n, (void *)tp);
-}
-
-type *get_irn_type(ir_node *n) {
-  type *tp = NULL;
-  switch(get_irn_opcode(n)) {
-  case iro_Const:     tp = get_Const_type(n); break;
-  case iro_SymConst:  tp = get_SymConst_value_type(n); break;
-  case iro_Cast:      tp = get_Cast_type(n);  break;
-  case iro_Proj: {
-    ir_node *pred = get_Proj_pred(n);
-    switch (get_irn_opcode(pred)) {
-    case iro_Proj: {
-      ir_node *pred_pred;
-      /* Deal with Start / Call here: we need to know the Proj Nr. */
-      assert(get_irn_mode(pred) == mode_T);
-      pred_pred = get_Proj_pred(pred);
-      if (get_irn_op(pred_pred) == op_Start)  {
-	type *mtp = get_entity_type(get_irg_entity(get_irn_irg(pred_pred)));
-	tp = get_method_param_type(mtp, get_Proj_proj(n));
-      } else if (get_irn_op(pred_pred) == op_Call) {
-	type *mtp = get_Call_type(pred_pred);
-	tp = get_method_res_type(mtp, get_Proj_proj(n));
-      }
-    } break;
-    case iro_Start: break;
-    case iro_Call: break;
-    case iro_Load: {
-      ir_node *a = get_Load_ptr(pred);
-      if (get_irn_op(a) == op_Sel)
-	tp = get_entity_type(get_Sel_entity(a));
-    } break;
-    default:
-      break;
-    }
-  } break; /* iro_Proj */
-  default:
-    tp = NULL;
-  }
-
-  return tp;
 }
