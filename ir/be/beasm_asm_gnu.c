@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <stdlib.h>
 #include <string.h>
@@ -270,7 +273,7 @@ assembler_t *gnuasm_create_assembler ( void ) {
 
 static void gnuasm_dump_obst(struct obstack *obst, FILE *out) {
 	obstack_grow0 (obst, NULL, 0);
-	fprintf(out, "%s", obstack_finish(obst));
+	fprintf(out, "%s", (char *)obstack_finish(obst));
 }
 
 void gnuasm_dump( assembler_t *assembler, FILE *out ) {
