@@ -157,7 +157,7 @@ node: {title: "n48" label: "Cond 48"  info1: "Cond 48
 "
 }
 edge: {sourcename: "n48" targetname: "n47" label: "0" class:1  priority:50}
-node: {title: "n47" label: "Projb Ne 47"  info1: "Proj 47
+node: {title: "n47" label: "Projb Lg 47"  info1: "Proj 47
   mode:    b
   visited: 12
   irg:     COND_EXAMPLE_main
