@@ -30,14 +30,14 @@
 
 /* A variable from where everything in the ir can be accessed. */
 ir_prog *irp;
-ir_prog *get_irp() { return irp; }
+ir_prog *get_irp(void) { return irp; }
 
 /* initializes ir_prog. Calles the constructor for an ir_prog. */
 void init_irprog(void) {
   new_ir_prog ();
 }
 
-INLINE void remove_irp_type_from_list (type *typ) {
+void remove_irp_type_from_list (type *typ) {
   int i;
   assert(typ);
 #if 0
@@ -47,7 +47,7 @@ INLINE void remove_irp_type_from_list (type *typ) {
 #endif
     if (irp->types[i] == typ) {
       for(; i < (ARR_LEN (irp->types)) - 1; i++) {
-	irp->types[i] = irp->types[i+1];
+        irp->types[i] = irp->types[i+1];
       }
       ARR_SETLEN(type*, irp->types, (ARR_LEN(irp->types)) - 1);
       break;
@@ -88,7 +88,7 @@ ir_prog *new_ir_prog (void) {
 
 /* frees all memory used by irp.  Types in type list, irgs in irg
     list and entities in global type must be freed by hand before. */
-void     free_ir_prog() {
+void     free_ir_prog(void) {
   free_type(irp->glob_type);
   /* @@@ * free_ir_graph(irp->const_code_irg); * ?? End has no in?? */
   DEL_ARR_F(irp->graphs);
@@ -102,7 +102,7 @@ void     free_ir_prog() {
 
 
 /* Access the main routine of the compiled program. */
-ir_graph *get_irp_main_irg() {
+ir_graph *get_irp_main_irg(void) {
   assert (irp);
   return irp->main_irg;
 }
@@ -131,7 +131,7 @@ void remove_irp_irg_from_list(ir_graph *irg){
     if (irp->graphs[i] == irg) {
       found = true;
       for(; i < (ARR_LEN (irp->graphs)) - 1; i++) {
-	irp->graphs[i] = irp->graphs[i+1];
+        irp->graphs[i] = irp->graphs[i+1];
       }
       ARR_SETLEN(ir_graph*, irp->graphs, (ARR_LEN(irp->graphs)) - 1);
       break;
@@ -140,11 +140,11 @@ void remove_irp_irg_from_list(ir_graph *irg){
   if (!found) {
     for (i = 0; i < (ARR_LEN (irp->pseudo_graphs)); i++) {
       if (irp->pseudo_graphs[i] == irg) {
-	for(; i < (ARR_LEN (irp->pseudo_graphs)) - 1; i++) {
-	  irp->pseudo_graphs[i] = irp->pseudo_graphs[i+1];
-	}
-	ARR_SETLEN(ir_graph*, irp->pseudo_graphs, (ARR_LEN(irp->pseudo_graphs)) - 1);
-	break;
+	      for(; i < (ARR_LEN (irp->pseudo_graphs)) - 1; i++) {
+	        irp->pseudo_graphs[i] = irp->pseudo_graphs[i+1];
+	      }
+	      ARR_SETLEN(ir_graph*, irp->pseudo_graphs, (ARR_LEN(irp->pseudo_graphs)) - 1);
+	      break;
       }
     }
   }
@@ -253,12 +253,12 @@ void set_irp_ip_outs_inconsistent() {
 
 void      set_irp_ip_outedges(ir_node ** ip_outedges)
 {
-  irp -> ip_outedges = ip_outedges;
+  irp->ip_outedges = ip_outedges;
 }
 
 ir_node** get_irp_ip_outedges(void)
 {
-  return(irp -> ip_outedges);
+  return irp->ip_outedges;
 }
 
 
