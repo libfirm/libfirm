@@ -22,7 +22,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
 
 # include "timing.h"
 
@@ -31,6 +30,14 @@ struct timing_env
   struct timeval *start;
   struct timeval *end;
 };
+
+#ifdef _WIN32
+/* no support yet */
+timing_t *start_timing (void) {}
+int end_timing (timing_t *t) {}
+
+#else
+#include <sys/time.h>
 
 
 /*
@@ -92,10 +99,14 @@ end_timing (timing_t *t)
 
   return (time);
 }
+#endif /* _WIN32 */
 
 
 /*
   $Log$
+  Revision 1.3  2005/01/05 14:25:38  beck
+  added Win32 "support"
+
   Revision 1.2  2004/12/21 15:52:23  beck
   moved struct timing_env to .c file, added config.h
 
