@@ -50,19 +50,17 @@ typedef const struct set_entry ident;
  */
 ident *new_id_from_str (const char *str);
 
-/**
- *  Store a string and create an ident.
+/** Store a string and create an ident.
  *
- *  Stores a string in the ident module and returns a handle for the string.
- *
- *  Copies the string. This version can take non-zero-terminated strings
+ * Stores a string in the ident module and returns a handle for the string.
+ * Copies the string. This version takes non-zero-terminated strings.
  *
  * @param str - the string (or whatever) which shall be stored
  * @param len - the length of the data in bytes
  *
  * @return id - a handle for the generated ident
  *
- * @see new_get_id_str(), get_id_strlen()
+ * @see new_id_from_str(), get_id_strlen()
  */
 ident *id_from_str (const char *str, int len);
 
@@ -76,10 +74,9 @@ ident *id_from_str (const char *str, int len);
  *
  * @return cp - a string
  *
- * @see new_get_id_str(), id_from_str(), get_id_strlen()
+ * @see new_id_from_str(), id_from_str(), get_id_strlen()
  */
 const char *get_id_str  (ident *id);
-#define id_to_str  get_id_str
 
 /**
  * Returns the length of the string represented by an ident.
@@ -88,17 +85,16 @@ const char *get_id_str  (ident *id);
  *
  * @return len - the length of the string
  *
- * @see new_get_id_str(), id_from_str(), get_id_str()
+ * @see new_id_from_str(), id_from_str(), get_id_str()
  */
 int  get_id_strlen(ident *id);
-#define id_to_strlen get_id_strlen
 /**
  * Returns true if prefix is a prefix of an ident.
  *
  * @param prefix - the prefix
  * @param id     - the ident
  *
- * @see new_get_id_str(), id_from_str(), get_id_str(), id_is_prefix()
+ * @see new_id_from_str(), id_from_str(), get_id_str(), id_is_prefix()
  */
 int id_is_prefix (ident *prefix, ident *id);
 
@@ -108,7 +104,7 @@ int id_is_prefix (ident *prefix, ident *id);
  * @param suffix - the suffix
  * @param id     - the ident
  *
- * @see new_get_id_str(), id_from_str(), get_id_str(), id_is_prefix()
+ * @see new_id_from_str(), id_from_str(), get_id_str(), id_is_prefix()
  */
 int id_is_suffix (ident *suffix, ident *id);
 
@@ -118,7 +114,7 @@ int id_is_suffix (ident *suffix, ident *id);
  * @param infix  - the infix
  * @param id     - the ident to search in
  *
- * @see new_get_id_str(), id_from_str(), get_id_str(), id_is_prefix()
+ * @see new_id_from_str(), id_from_str(), get_id_str(), id_is_prefix()
  */
 /* int id_contains(ident *infix, ident *id); */
 
@@ -128,7 +124,7 @@ int id_is_suffix (ident *suffix, ident *id);
  * @param id     - the ident
  * @param c      - the character
  *
- * @see new_get_id_str(), id_from_str(), get_id_str()
+ * @see new_id_from_str(), id_from_str(), get_id_str()
  */
 int id_contains_char (ident *id, char c);
 
@@ -138,9 +134,9 @@ int id_contains_char (ident *id, char c);
  * @param id - The ident to be printed.
  *
  * @return
- *    number of btes written
+ *    number of bytes written
  *
- * @see new_get_id_str(), id_from_str(), get_id_str(), id_is_prefix(), fprint_id()
+ * @see new_id_from_str(), id_from_str(), get_id_str(), id_is_prefix(), fprint_id()
  */
 int print_id (ident *id);
 
@@ -153,7 +149,7 @@ int print_id (ident *id);
  * @return
  *    number of btes written
  *
- * @see new_get_id_str(), id_from_str(), get_id_str(), id_is_prefix(), print_id()
+ * @see new_id_from_str(), id_from_str(), get_id_str(), id_is_prefix(), print_id()
  */
 int fprint_id (FILE *F, ident *id);
 

@@ -69,6 +69,8 @@
 extern "C" {
 #endif
 
+# include "old_fctnames.h"
+
 /* The representations */
 # include "firm_common.h"/* common type tags. */
 # include "irprog.h"     /* control flow and data of a program */

@@ -82,9 +82,9 @@ static entity *get_inherited_methods_implementation(entity *inh_meth) {
   assert(addr && "constant entity without value");
 
   if (get_irn_op(addr) == op_Const) {
-    impl_meth = tarval_to_entity(get_Const_tarval(addr));
+    impl_meth = get_tarval_entity(get_Const_tarval(addr));
   } else if ((get_irn_op(addr) == op_SymConst) &&
-         (get_SymConst_kind(addr) == symconst_addr_ent)) {
+	     (get_SymConst_kind(addr) == symconst_addr_ent)) {
     impl_meth = get_SymConst_entity(addr);
   } else {
     assert(0 && "Complex constant values not supported -- address of method should be straight constant!");
@@ -474,7 +474,7 @@ static void callee_ana_node(ir_node * node, eset * methods) {
 
   case iro_Const: {
     /* interne Methode */
-    entity * ent = tarval_to_entity(get_Const_tarval(node));
+    entity * ent = get_tarval_entity(get_Const_tarval(node));
     assert(ent && is_method_type(get_entity_type(ent)));
     if (get_entity_visibility(ent) != visibility_external_allocated) {
       if (!get_entity_irg(ent)) {
@@ -668,7 +668,7 @@ static void free_mark(ir_node * node, eset * set) {
   case iro_Const: {
     tarval * val = get_Const_tarval(node);
     if (tarval_is_entity(val)) { /* filter null pointer */
-      entity * ent = tarval_to_entity(val);
+      entity * ent = get_tarval_entity(val);
       if (is_method_type(get_entity_type(ent))) {
         eset_insert(set, ent);
       }

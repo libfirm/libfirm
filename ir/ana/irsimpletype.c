@@ -234,7 +234,7 @@ static type *find_type_for_node(ir_node *n) {
       tp = get_entity_type(get_Sel_entity(a));
     else if ((get_irn_op(a) == op_Const) &&
     (tarval_is_entity(get_Const_tarval(a))))
-      tp = get_entity_type(tarval_to_entity(get_Const_tarval(a)));
+      tp = get_entity_type(get_tarval_entity(get_Const_tarval(a)));
     else if (is_pointer_type(compute_irn_type(a))) {
       tp = get_pointer_points_to_type(get_irn_type(a));
       if (is_array_type(tp)) tp = get_array_element_type(tp);

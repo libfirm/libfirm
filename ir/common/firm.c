@@ -18,8 +18,8 @@
 # include "ident_t.h"
 # include "firm.h"
 # include "mangle.h"
-# include "tv_t.h"
 /* init functions are not public */
+# include "tv_t.h"
 # include "tpop_t.h"
 # include "irnode_t.h"
 # include "irmode_t.h"

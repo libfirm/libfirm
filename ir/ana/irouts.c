@@ -29,8 +29,7 @@
 
 #include "irouts.h"
 #include "irnode_t.h"
-#include "irgraph_t.h"     /* To access irg->outs field (which is private to this module)
-                  without public access routine */
+#include "irgraph_t.h"
 #include "irprog_t.h"
 #include "irgwalk.h"
 #include "string.h"

@@ -15,7 +15,7 @@ srcdir = @srcdir@
 topdir = ../..
 subdir := ir/common
 
-INSTALL_HEADERS := firm_common.h firm.h firmwalk.h statistics.h
+INSTALL_HEADERS := firm_common.h firm.h firmwalk.h statistics.h old_fctnames.h
 
 SOURCES = $(INSTALL_HEADERS)
 
