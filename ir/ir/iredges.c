@@ -3,6 +3,9 @@
  * @author Sebastian Hack
  * @date 14.1.2005
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "irnode_t.h"
 #include "iredges_t.h"
@@ -252,7 +255,7 @@ static void verify_set_presence(ir_node *irn, void *data)
 		if(e != NULL)
 			e->present = 1;
 		else
-			ir_fprintf(stderr, "edge %n,%d is missing\n", irn, templ.pos);
+			DBG((dbg, LEVEL_DEFAULT, "edge %n,%d is missing\n", irn, templ.pos));
 	}
 }
 
@@ -263,8 +266,8 @@ static void verify_list_presence(ir_node *irn, void *data)
 	foreach_out_edge(irn, e) {
 		ir_node *tgt = get_irn_n(e->src, e->pos);
 		if(irn != tgt)
-			ir_fprintf(stderr, "edge %n,%d is no out edge of %n but of %n\n",
-					e->src, e->pos, irn, tgt);
+			DBG((dbg, LEVEL_DEFAULT, "edge %n,%d is no out edge of %n but of %n\n",
+					e->src, e->pos, irn, tgt));
 	}
 
 }
@@ -287,7 +290,7 @@ void edges_verify(ir_graph *irg)
 	 */
 	for(e = set_first(edges); e; e = set_next(edges)) {
 		if(!e->invalid && !e->present)
-			ir_fprintf(stderr, "edge %n,%d is superfluous\n", e->src, e->pos);
+			DBG((dbg, LEVEL_DEFAULT, "edge %n,%d is superfluous\n", e->src, e->pos));
 	}
 }
 

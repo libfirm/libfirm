@@ -1,6 +1,6 @@
 /*
  * Project:     libFIRM
- * File name:   ir/ir/irgmod.h
+ * File name:   ir/ir/irgmod.c
  * Purpose:     Support for ir graph modification.
  * Author:      Martin Trapp, Christian Schaefer
  * Modified by: Goetz Lindenmaier
