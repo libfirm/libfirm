@@ -24,78 +24,78 @@ classname 12: "Member"
 infoname 1: "Attribute"
 infoname 2: "Verification errors"
 
-node: {title: "n109" label: "Block  109"  info1: "mode:    BB
+node: {title: "n108" label: "Block  108"  info1: "mode:    BB
 visited: 20
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1 backedges:
 "color: lightyellow}
-edge: {sourcename: "n109" targetname: "n108" label: "0" class:13 priority:60 color:red}
-node: {title: "n110" label: "Start  110"  info1: "mode:    T
+edge: {sourcename: "n108" targetname: "n107" label: "0" class:13 priority:60 color:red}
+node: {title: "n109" label: "Start  109"  info1: "mode:    T
 visited: 20
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 0
 start of method of type OO_PROGRAM_EXAMPLE_main
 "color: blue}
-edge: { sourcename: "n110" targetname: "n109" class:2  priority:50 linestyle:dotted}
-node: {title: "n108" label: "ProjX 0 108"  info1: "mode:    X
+edge: { sourcename: "n109" targetname: "n108" class:2  priority:50 linestyle:dotted}
+node: {title: "n107" label: "ProjX 0 107"  info1: "mode:    X
 visited: 20
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n108" targetname: "n110" label: "0" class:13 priority:60 color:red}
-edge: { sourcename: "n108" targetname: "n109" class:2  priority:50 linestyle:dotted}
-node: {title: "n107" label: "Block  107"  info1: "mode:    BB
+edge: {sourcename: "n107" targetname: "n109" label: "0" class:13 priority:60 color:red}
+edge: { sourcename: "n107" targetname: "n108" class:2  priority:50 linestyle:dotted}
+node: {title: "n106" label: "Block  106"  info1: "mode:    BB
 visited: 20
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1 backedges:
 "color: lightyellow}
-edge: {sourcename: "n107" targetname: "n108" label: "0" class:13 priority:60 color:red}
-node: {title: "n118" label: "ProjM 1 118"  info1: "mode:    M
+edge: {sourcename: "n106" targetname: "n107" label: "0" class:13 priority:60 color:red}
+node: {title: "n117" label: "ProjM 1 117"  info1: "mode:    M
 visited: 20
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n118" targetname: "n110" label: "0" class:17 priority:10 color:blue}
-edge: { sourcename: "n118" targetname: "n109" class:2  priority:50 linestyle:dotted}
-node: {title: "n116" label: "Alloc  116"  info1: "mode:    T
+edge: {sourcename: "n117" targetname: "n109" label: "0" class:17 priority:10 color:blue}
+edge: { sourcename: "n117" targetname: "n108" class:2  priority:50 linestyle:dotted}
+node: {title: "n115" label: "Alloc  115"  info1: "mode:    T
 visited: 20
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 2
 allocating entity of type PRIMA
 "}
-node: {title: "n116n117" label: "SymC PRIMA size  117"  info1: "mode:    Iu
+node: {title: "n115n116" label: "SymC PRIMA size  116"  info1: "mode:    Iu
 visited: 20
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 0
 "}
-edge: {sourcename: "n116" targetname: "n118" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n116" targetname: "n116n117" label: "1" class:16 priority:10}
-edge: { sourcename: "n116" targetname: "n107" class:2  priority:50 linestyle:dotted}
-node: {title: "n115" label: "ProjP 2 115"  info1: "mode:    P
+edge: {sourcename: "n115" targetname: "n117" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n115" targetname: "n115n116" label: "1" class:16 priority:10}
+edge: { sourcename: "n115" targetname: "n106" class:2  priority:50 linestyle:dotted}
+node: {title: "n114" label: "ProjP 2 114"  info1: "mode:    P
 visited: 20
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n115" targetname: "n116" label: "0" class:1  priority:50}
-edge: { sourcename: "n115" targetname: "n107" class:2  priority:50 linestyle:dotted}
-node: {title: "n124" label: "ProjM 0 124"  info1: "mode:    M
+edge: {sourcename: "n114" targetname: "n115" label: "0" class:1  priority:50}
+edge: { sourcename: "n114" targetname: "n106" class:2  priority:50 linestyle:dotted}
+node: {title: "n123" label: "ProjM 0 123"  info1: "mode:    M
 visited: 20
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n124" targetname: "n116" label: "0" class:17 priority:10 color:blue}
-edge: { sourcename: "n124" targetname: "n107" class:2  priority:50 linestyle:dotted}
-node: {title: "n123" label: "Sel PRIMA_set_a 123"  info1: "mode:    P
+edge: {sourcename: "n123" targetname: "n115" label: "0" class:17 priority:10 color:blue}
+edge: { sourcename: "n123" targetname: "n106" class:2  priority:50 linestyle:dotted}
+node: {title: "n122" label: "Sel PRIMA_set_a 122"  info1: "mode:    P
 visited: 20
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 2
 Selecting entity of type set_a
   from entity of type PRIMA
 "}
-edge: {sourcename: "n123" targetname: "n124" label: "0" class:14 priority:50 color:blue}
-edge: {sourcename: "n123" targetname: "n115" label: "1" class:1  priority:50}
-edge: { sourcename: "n123" targetname: "n107" class:2  priority:50 linestyle:dotted}
-node: {title: "n121" label: "Call  121"  info1: "mode:    T
+edge: {sourcename: "n122" targetname: "n123" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n122" targetname: "n114" label: "1" class:1  priority:50}
+edge: { sourcename: "n122" targetname: "n106" class:2  priority:50 linestyle:dotted}
+node: {title: "n120" label: "Call  120"  info1: "mode:    T
 visited: 20
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 4
@@ -103,35 +103,35 @@ calling method of type set_a
   param 0 type: class_prima_ptr
   param 1 type: int
 "}
-node: {title: "n121n122" label: "0x2Is  122"  info1: "mode:    Is
+node: {title: "n120n121" label: "0x2Is  121"  info1: "mode:    Is
 visited: 20
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 0
 Const of type type_unknown
 "color: yellow}
-edge: {sourcename: "n121" targetname: "n124" label: "0" class:14 priority:50 color:blue}
-edge: {sourcename: "n121" targetname: "n123" label: "1" class:1  priority:50}
-edge: {sourcename: "n121" targetname: "n115" label: "2" class:1  priority:50}
-edge: {sourcename: "n121" targetname: "n121n122" label: "3" class:16 priority:10}
-edge: { sourcename: "n121" targetname: "n107" class:2  priority:50 linestyle:dotted}
-node: {title: "n120" label: "ProjM 0 120"  info1: "mode:    M
+edge: {sourcename: "n120" targetname: "n123" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n120" targetname: "n122" label: "1" class:1  priority:50}
+edge: {sourcename: "n120" targetname: "n114" label: "2" class:1  priority:50}
+edge: {sourcename: "n120" targetname: "n120n121" label: "3" class:16 priority:10}
+edge: { sourcename: "n120" targetname: "n106" class:2  priority:50 linestyle:dotted}
+node: {title: "n119" label: "ProjM 0 119"  info1: "mode:    M
 visited: 20
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n120" targetname: "n121" label: "0" class:17 priority:10 color:blue}
-edge: { sourcename: "n120" targetname: "n107" class:2  priority:50 linestyle:dotted}
-node: {title: "n119" label: "Sel PRIMA_c 119"  info1: "mode:    P
+edge: {sourcename: "n119" targetname: "n120" label: "0" class:17 priority:10 color:blue}
+edge: { sourcename: "n119" targetname: "n106" class:2  priority:50 linestyle:dotted}
+node: {title: "n118" label: "Sel PRIMA_c 118"  info1: "mode:    P
 visited: 20
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 2
 Selecting entity of type c
   from entity of type PRIMA
 "}
-edge: {sourcename: "n119" targetname: "n120" label: "0" class:14 priority:50 color:blue}
-edge: {sourcename: "n119" targetname: "n115" label: "1" class:1  priority:50}
-edge: { sourcename: "n119" targetname: "n107" class:2  priority:50 linestyle:dotted}
-node: {title: "n113" label: "Call  113"  info1: "mode:    T
+edge: {sourcename: "n118" targetname: "n119" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n118" targetname: "n114" label: "1" class:1  priority:50}
+edge: { sourcename: "n118" targetname: "n106" class:2  priority:50 linestyle:dotted}
+node: {title: "n112" label: "Call  112"  info1: "mode:    T
 visited: 20
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 4
@@ -140,85 +140,85 @@ calling method of type c
   param 1 type: int
   resul 0 type: int
 "}
-node: {title: "n113n114" label: "0x5Is  114"  info1: "mode:    Is
+node: {title: "n112n113" label: "0x5Is  113"  info1: "mode:    Is
 visited: 20
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 0
 Const of type type_unknown
 "color: yellow}
-edge: {sourcename: "n113" targetname: "n120" label: "0" class:14 priority:50 color:blue}
-edge: {sourcename: "n113" targetname: "n119" label: "1" class:1  priority:50}
-edge: {sourcename: "n113" targetname: "n115" label: "2" class:1  priority:50}
-edge: {sourcename: "n113" targetname: "n113n114" label: "3" class:16 priority:10}
-edge: { sourcename: "n113" targetname: "n107" class:2  priority:50 linestyle:dotted}
-node: {title: "n112" label: "ProjT 2 112"  info1: "mode:    T
-visited: 20
-irg:     OO_PROGRAM_EXAMPLE_main
-arity: 1
-"color: yellow}
-edge: {sourcename: "n112" targetname: "n113" label: "0" class:1  priority:50}
-edge: { sourcename: "n112" targetname: "n107" class:2  priority:50 linestyle:dotted}
-node: {title: "n111" label: "ProjIs 0 111"  info1: "mode:    Is
+edge: {sourcename: "n112" targetname: "n119" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n112" targetname: "n118" label: "1" class:1  priority:50}
+edge: {sourcename: "n112" targetname: "n114" label: "2" class:1  priority:50}
+edge: {sourcename: "n112" targetname: "n112n113" label: "3" class:16 priority:10}
+edge: { sourcename: "n112" targetname: "n106" class:2  priority:50 linestyle:dotted}
+node: {title: "n111" label: "ProjT 2 111"  info1: "mode:    T
 visited: 20
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n111" targetname: "n112" label: "0" class:1  priority:50}
-edge: { sourcename: "n111" targetname: "n107" class:2  priority:50 linestyle:dotted}
-node: {title: "n125" label: "ProjM 0 125"  info1: "mode:    M
+edge: { sourcename: "n111" targetname: "n106" class:2  priority:50 linestyle:dotted}
+node: {title: "n110" label: "ProjIs 0 110"  info1: "mode:    Is
 visited: 20
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n125" targetname: "n113" label: "0" class:17 priority:10 color:blue}
-edge: { sourcename: "n125" targetname: "n107" class:2  priority:50 linestyle:dotted}
-node: {title: "n106" label: "Return  106"  info1: "mode:    X
+edge: {sourcename: "n110" targetname: "n111" label: "0" class:1  priority:50}
+edge: { sourcename: "n110" targetname: "n106" class:2  priority:50 linestyle:dotted}
+node: {title: "n124" label: "ProjM 0 124"  info1: "mode:    M
+visited: 20
+irg:     OO_PROGRAM_EXAMPLE_main
+arity: 1
+"color: yellow}
+edge: {sourcename: "n124" targetname: "n112" label: "0" class:17 priority:10 color:blue}
+edge: { sourcename: "n124" targetname: "n106" class:2  priority:50 linestyle:dotted}
+node: {title: "n105" label: "Return  105"  info1: "mode:    X
 visited: 20
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 2
 return in method of type OO_PROGRAM_EXAMPLE_main
   res 0 type: int
 "}
-edge: {sourcename: "n106" targetname: "n125" label: "0" class:14 priority:50 color:blue}
-edge: {sourcename: "n106" targetname: "n111" label: "1" class:1  priority:50}
-edge: { sourcename: "n106" targetname: "n107" class:2  priority:50 linestyle:dotted}
-node: {title: "n105" label: "Block  105"  info1: "mode:    BB
+edge: {sourcename: "n105" targetname: "n124" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n105" targetname: "n110" label: "1" class:1  priority:50}
+edge: { sourcename: "n105" targetname: "n106" class:2  priority:50 linestyle:dotted}
+node: {title: "n104" label: "Block  104"  info1: "mode:    BB
 visited: 20
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1 backedges:
 "color: lightyellow}
-edge: {sourcename: "n105" targetname: "n106" label: "0" class:13 priority:60 color:red}
-node: {title: "n103" label: "End  103"  info1: "mode:    X
+edge: {sourcename: "n104" targetname: "n105" label: "0" class:13 priority:60 color:red}
+node: {title: "n102" label: "End  102"  info1: "mode:    X
 visited: 20
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 0
 "color: blue}
-edge: { sourcename: "n103" targetname: "n105" class:2  priority:50 linestyle:dotted}
-node: {title: "t18" label: "method c" info1: "state: layout_fixed,
+edge: { sourcename: "n102" targetname: "n104" class:2  priority:50 linestyle:dotted}
+node: {title: "t17" label: "method c" info1: "state: layout_fixed,
 mode: P,
 size: 32b,
 variadicity: variadicity_non_variadic
 params: 2
 results: 1
 "}
-edge: { sourcename: "t18" targetname: "t13"class: 5 label: "param 0" color: green}
-edge: { sourcename: "t18" targetname: "t11"class: 5 label: "param 1" color: green}
-edge: { sourcename: "t18" targetname: "t11"class: 6 label: "res 0" color: green}
-node: {title: "t13" label: "pointer class_prima_ptr" info1: "state: layout_fixed,
+edge: { sourcename: "t17" targetname: "t12"class: 5 label: "param 0" color: green}
+edge: { sourcename: "t17" targetname: "t10"class: 5 label: "param 1" color: green}
+edge: { sourcename: "t17" targetname: "t10"class: 6 label: "res 0" color: green}
+node: {title: "t12" label: "pointer class_prima_ptr" info1: "state: layout_fixed,
 mode: P,
 size: 32b,
 "}
-edge: { sourcename: "t13" targetname: "t12"class: 9 label: "points to" color:green}
-node: {title: "t12" label: "class PRIMA" info1: "state: layout_undefined
+edge: { sourcename: "t12" targetname: "t11"class: 9 label: "points to" color:green}
+node: {title: "t11" label: "class PRIMA" info1: "state: layout_undefined
 size: -1b,
 peculiarity: peculiarity_existent
 " color: green}
-edge: { sourcename: "t12" targetname: "e14"class: 12 label: "member" color:blue}
-edge: { sourcename: "t12" targetname: "e17"class: 12 label: "member" color:blue}
-edge: { sourcename: "t12" targetname: "e20"class: 12 label: "member" color:blue}
-node: {title: "e14" label: "ent a" color: yellow
+edge: { sourcename: "t11" targetname: "e13"class: 12 label: "member" color:blue}
+edge: { sourcename: "t11" targetname: "e16"class: 12 label: "member" color:blue}
+edge: { sourcename: "t11" targetname: "e19"class: 12 label: "member" color:blue}
+node: {title: "e13" label: "ent a" color: yellow
  info1: "
-id: e14
+id: e13
 allocation:  allocation_automatic
 visibility:  visibility_local
 variability: variability_uninitialized
@@ -228,14 +228,14 @@ name:         a
 ld_name:      no yet set
 offset(bits): -1"
 }
-edge: { sourcename: "e14" targetname: "t11"class: 3 label: "type" color: red}
-node: {title: "t11" label: "primitive int" info1: "state: layout_fixed,
+edge: { sourcename: "e13" targetname: "t10"class: 3 label: "type" color: red}
+node: {title: "t10" label: "primitive int" info1: "state: layout_fixed,
 mode: Is,
 size: 32b,
 "}
-node: {title: "e17" label: "ent PRIMA_set_a" color: yellow
+node: {title: "e16" label: "ent PRIMA_set_a" color: yellow
  info1: "
-id: e17
+id: e16
 allocation:  allocation_static
 visibility:  visibility_local
 variability: variability_constant
@@ -244,26 +244,26 @@ peculiarity:  peculiarity_existent
 name:         set_a
 ld_name:      PRIMA_set_a
 offset(bits): -1
-irg = g68"
+irg = g67"
 }
-edge: { sourcename: "e17" targetname: "t15"class: 3 label: "type" color: red}
-edge: { sourcename: "e17" targetname: "n16"label: "value 0"}
-node: {title: "n16" label: "SymC &set_a  16"  info1: "mode:    P
+edge: { sourcename: "e16" targetname: "t14"class: 3 label: "type" color: red}
+edge: { sourcename: "e16" targetname: "n15"label: "value 0"}
+node: {title: "n15" label: "SymC &set_a  15"  info1: "mode:    P
 visited: 1
 arity: 0
 "}
-node: {title: "t15" label: "method set_a" info1: "state: layout_fixed,
+node: {title: "t14" label: "method set_a" info1: "state: layout_fixed,
 mode: P,
 size: 32b,
 variadicity: variadicity_non_variadic
 params: 2
 results: 0
 "}
-edge: { sourcename: "t15" targetname: "t13"class: 5 label: "param 0" color: green}
-edge: { sourcename: "t15" targetname: "t11"class: 5 label: "param 1" color: green}
-node: {title: "e20" label: "ent PRIMA_c" color: yellow
+edge: { sourcename: "t14" targetname: "t12"class: 5 label: "param 0" color: green}
+edge: { sourcename: "t14" targetname: "t10"class: 5 label: "param 1" color: green}
+node: {title: "e19" label: "ent PRIMA_c" color: yellow
  info1: "
-id: e20
+id: e19
 allocation:  allocation_static
 visibility:  visibility_local
 variability: variability_constant
@@ -272,17 +272,17 @@ peculiarity:  peculiarity_existent
 name:         c
 ld_name:      PRIMA_c
 offset(bits): -1
-irg = g90"
+irg = g89"
 }
-edge: { sourcename: "e20" targetname: "t18"class: 3 label: "type" color: red}
-edge: { sourcename: "e20" targetname: "n19"label: "value 0"}
-node: {title: "n19" label: "SymC &c  19"  info1: "mode:    P
+edge: { sourcename: "e19" targetname: "t17"class: 3 label: "type" color: red}
+edge: { sourcename: "e19" targetname: "n18"label: "value 0"}
+node: {title: "n18" label: "SymC &c  18"  info1: "mode:    P
 visited: 1
 arity: 0
 "}
-node: {title: "e23" label: "ent OO_PROGRAM_EXAMPLE_main" color: yellow
+node: {title: "e22" label: "ent OO_PROGRAM_EXAMPLE_main" color: yellow
  info1: "
-id: e23
+id: e22
 allocation:  allocation_static
 visibility:  visibility_local
 variability: variability_constant
@@ -291,11 +291,11 @@ peculiarity:  peculiarity_existent
 name:         OO_PROGRAM_EXAMPLE_main
 ld_name:      no yet set
 offset(bits): -1
-irg = g35"
+irg = g34"
 }
-edge: { sourcename: "e23" targetname: "t21"class: 3 label: "type" color: red}
-edge: { sourcename: "e23" targetname: "n22"label: "value 0"}
-node: {title: "n22" label: "SymC &OO_PROGRAM_EXAMPLE_main  22"  info1: "mode:    P
+edge: { sourcename: "e22" targetname: "t20"class: 3 label: "type" color: red}
+edge: { sourcename: "e22" targetname: "n21"label: "value 0"}
+node: {title: "n21" label: "SymC &OO_PROGRAM_EXAMPLE_main  21"  info1: "mode:    P
 visited: 1
 arity: 0
 "}
@@ -303,23 +303,23 @@ node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1b,
 peculiarity: peculiarity_existent
 " color: green}
-edge: { sourcename: "t0" targetname: "e23"class: 12 label: "member" color:blue}
-node: {title: "t21" label: "method OO_PROGRAM_EXAMPLE_main" info1: "state: layout_fixed,
+edge: { sourcename: "t0" targetname: "e22"class: 12 label: "member" color:blue}
+node: {title: "t20" label: "method OO_PROGRAM_EXAMPLE_main" info1: "state: layout_fixed,
 mode: P,
 size: 32b,
 variadicity: variadicity_non_variadic
 params: 0
 results: 1
 "}
-edge: { sourcename: "t21" targetname: "t11"class: 6 label: "res 0" color: green}
-node: {title: "t24" label: "class OO_PROGRAM_EXAMPLE_mainframe_tp" info1: "state: layout_undefined
+edge: { sourcename: "t20" targetname: "t10"class: 6 label: "res 0" color: green}
+node: {title: "t23" label: "class OO_PROGRAM_EXAMPLE_mainframe_tp" info1: "state: layout_undefined
 size: -1b,
 peculiarity: peculiarity_existent
 " color: green}
-edge: { sourcename: "n113" targetname: "t18"class:2 priority:2 linestyle:dotted}
-edge: { sourcename: "n116" targetname: "t12"class:2 priority:2 linestyle:dotted}
-edge: { sourcename: "n117" targetname: "t12"class:2 priority:2 linestyle:dotted}
-edge: { sourcename: "n119" targetname: "e20"class:2 priority:2 linestyle:dotted}
-edge: { sourcename: "n121" targetname: "t15"class:2 priority:2 linestyle:dotted}
-edge: { sourcename: "n123" targetname: "e17"class:2 priority:2 linestyle:dotted}
+edge: { sourcename: "n112" targetname: "t17"class:2 priority:2 linestyle:dotted}
+edge: { sourcename: "n115" targetname: "t11"class:2 priority:2 linestyle:dotted}
+edge: { sourcename: "n116" targetname: "t11"class:2 priority:2 linestyle:dotted}
+edge: { sourcename: "n118" targetname: "e19"class:2 priority:2 linestyle:dotted}
+edge: { sourcename: "n120" targetname: "t14"class:2 priority:2 linestyle:dotted}
+edge: { sourcename: "n122" targetname: "e16"class:2 priority:2 linestyle:dotted}
 }

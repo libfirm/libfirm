@@ -100,13 +100,6 @@ use xvcg to view this graph:
 /ben/goetz/bin/xvcg GRAPHNAME
 
 
-Creating an IR graph: IF_WHILE_EXAMPLE...
-Optimizing ...
-Done building the graph.  Dumping it with out-edges.
-Use xvcg to view this graph:
-/ben/goetz/bin/xvcg GRAPHNAME
-
-
 Creating type information for INHERITANCE_EXAMPLE ...
 Done building the graph.  Dumping it.
 use xvcg to view this graph:

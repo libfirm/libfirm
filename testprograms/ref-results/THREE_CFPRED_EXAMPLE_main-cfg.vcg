@@ -24,25 +24,25 @@ classname 12: "Member"
 infoname 1: "Attribute"
 infoname 2: "Verification errors"
 
-node: {title: "n76" label: "Block n76" }
-edge: { sourcename: "n76" targetname: "n78"}
-node: {title: "n78" label: "Block n78" }
-edge: { sourcename: "n78" targetname: "n102"}
-edge: { sourcename: "n78" targetname: "n99"}
-edge: { sourcename: "n78" targetname: "n80"}
-node: {title: "n80" label: "Block n80" }
-edge: { sourcename: "n80" targetname: "n82"}
-node: {title: "n82" label: "Block n82" }
-edge: { sourcename: "n82" targetname: "n84"}
-node: {title: "n84" label: "Block n84" }
-edge: { sourcename: "n84" targetname: "n86"}
-node: {title: "n86" label: "Block n86" }
-edge: { sourcename: "n86" targetname: "n86"}
-node: {title: "n99" label: "Block n99" }
-edge: { sourcename: "n99" targetname: "n82"}
-node: {title: "n102" label: "Block n102" }
-edge: { sourcename: "n102" targetname: "n84"}
-node: {title: "n75" label: "Bad  75"  info1: "mode:    T
+node: {title: "n75" label: "Block n75" }
+edge: { sourcename: "n75" targetname: "n77"}
+node: {title: "n77" label: "Block n77" }
+edge: { sourcename: "n77" targetname: "n101"}
+edge: { sourcename: "n77" targetname: "n98"}
+edge: { sourcename: "n77" targetname: "n79"}
+node: {title: "n79" label: "Block n79" }
+edge: { sourcename: "n79" targetname: "n81"}
+node: {title: "n81" label: "Block n81" }
+edge: { sourcename: "n81" targetname: "n83"}
+node: {title: "n83" label: "Block n83" }
+edge: { sourcename: "n83" targetname: "n85"}
+node: {title: "n85" label: "Block n85" }
+edge: { sourcename: "n85" targetname: "n85"}
+node: {title: "n98" label: "Block n98" }
+edge: { sourcename: "n98" targetname: "n81"}
+node: {title: "n101" label: "Block n101" }
+edge: { sourcename: "n101" targetname: "n83"}
+node: {title: "n74" label: "Bad  74"  info1: "mode:    T
 visited: 0
 irg:     THREE_CFPRED_EXAMPLE_main
 arity: 0

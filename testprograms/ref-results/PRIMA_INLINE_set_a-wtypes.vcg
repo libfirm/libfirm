@@ -24,83 +24,83 @@ classname 12: "Member"
 infoname 1: "Attribute"
 infoname 2: "Verification errors"
 
-graph: { title: "g68" label: "PRIMA_INLINE_set_a" status:clustered color:white
-graph: { title: "n220"  label: "Block 220" status:clustered color:yellow
-edge: {sourcename: "n220" targetname: "n221" label: "0" class:13 priority:60 color:red}
-node: {title: "n218" label: "End  218"  info1: "mode:    X
+graph: { title: "g67" label: "PRIMA_INLINE_set_a" status:clustered color:white
+graph: { title: "n219"  label: "Block 219" status:clustered color:yellow
+edge: {sourcename: "n219" targetname: "n220" label: "0" class:13 priority:60 color:red}
+node: {title: "n217" label: "End  217"  info1: "mode:    X
 visited: 20
 irg:     PRIMA_INLINE_set_a
 arity: 0
 "color: blue}
 }
 
-graph: { title: "n222"  label: "Block 222" status:clustered color:yellow
-edge: {sourcename: "n222" targetname: "n223" label: "0" class:13 priority:60 color:red}
-node: {title: "n221" label: "Return  221"  info1: "mode:    X
+graph: { title: "n221"  label: "Block 221" status:clustered color:yellow
+edge: {sourcename: "n221" targetname: "n222" label: "0" class:13 priority:60 color:red}
+node: {title: "n220" label: "Return  220"  info1: "mode:    X
 visited: 20
 irg:     PRIMA_INLINE_set_a
 arity: 1
 return in method of type set_a
 "}
-edge: {sourcename: "n221" targetname: "n226" label: "0" class:14 priority:50 color:blue}
-node: {title: "n226" label: "ProjM 0 226"  info1: "mode:    M
+edge: {sourcename: "n220" targetname: "n225" label: "0" class:14 priority:50 color:blue}
+node: {title: "n225" label: "ProjM 0 225"  info1: "mode:    M
 visited: 20
 irg:     PRIMA_INLINE_set_a
 arity: 1
 "color: yellow}
-edge: {sourcename: "n226" targetname: "n227" label: "0" class:17 priority:10 color:blue}
-node: {title: "n227" label: "Store  227"  info1: "mode:    T
+edge: {sourcename: "n225" targetname: "n226" label: "0" class:17 priority:10 color:blue}
+node: {title: "n226" label: "Store  226"  info1: "mode:    T
 visited: 20
 irg:     PRIMA_INLINE_set_a
 arity: 3
 "}
-edge: {sourcename: "n227" targetname: "n232" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n227" targetname: "n230" label: "1" class:1  priority:50}
-edge: {sourcename: "n227" targetname: "n228" label: "2" class:1  priority:50}
-node: {title: "n230" label: "Sel a 230"  info1: "mode:    P
+edge: {sourcename: "n226" targetname: "n231" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n226" targetname: "n229" label: "1" class:1  priority:50}
+edge: {sourcename: "n226" targetname: "n227" label: "2" class:1  priority:50}
+node: {title: "n229" label: "Sel a 229"  info1: "mode:    P
 visited: 20
 irg:     PRIMA_INLINE_set_a
 arity: 2
 Selecting entity of type int
   from entity of type PRIMA_INLINE
 "}
-edge: {sourcename: "n230" targetname: "n232" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n230" targetname: "n231" label: "1" class:1  priority:50}
-node: {title: "n231" label: "ProjP 0 231"  info1: "mode:    P
+edge: {sourcename: "n229" targetname: "n231" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n229" targetname: "n230" label: "1" class:1  priority:50}
+node: {title: "n230" label: "ProjP 0 230"  info1: "mode:    P
 visited: 20
 irg:     PRIMA_INLINE_set_a
 arity: 1
 "color: yellow}
-edge: {sourcename: "n231" targetname: "n229" label: "0" class:16 priority:10}
-node: {title: "n228" label: "ProjIs 1 228"  info1: "mode:    Is
+edge: {sourcename: "n230" targetname: "n228" label: "0" class:16 priority:10}
+node: {title: "n227" label: "ProjIs 1 227"  info1: "mode:    Is
 visited: 20
 irg:     PRIMA_INLINE_set_a
 arity: 1
 "color: yellow}
-edge: {sourcename: "n228" targetname: "n229" label: "0" class:16 priority:10}
+edge: {sourcename: "n227" targetname: "n228" label: "0" class:16 priority:10}
 }
 
-graph: { title: "n224"  label: "Block 224" status:clustered color:yellow
-edge: {sourcename: "n224" targetname: "n223" label: "0" class:13 priority:60 color:red}
-node: {title: "n232" label: "ProjM 1 232"  info1: "mode:    M
+graph: { title: "n223"  label: "Block 223" status:clustered color:yellow
+edge: {sourcename: "n223" targetname: "n222" label: "0" class:13 priority:60 color:red}
+node: {title: "n231" label: "ProjM 1 231"  info1: "mode:    M
 visited: 20
 irg:     PRIMA_INLINE_set_a
 arity: 1
 "color: yellow}
-edge: {sourcename: "n232" targetname: "n225" label: "0" class:17 priority:10 color:blue}
-node: {title: "n229" label: "ProjT 4 229"  info1: "mode:    T
+edge: {sourcename: "n231" targetname: "n224" label: "0" class:17 priority:10 color:blue}
+node: {title: "n228" label: "ProjT 4 228"  info1: "mode:    T
 visited: 20
 irg:     PRIMA_INLINE_set_a
 arity: 1
 "color: yellow}
-edge: {sourcename: "n229" targetname: "n225" label: "0" class:1  priority:50}
-node: {title: "n223" label: "ProjX 0 223"  info1: "mode:    X
+edge: {sourcename: "n228" targetname: "n224" label: "0" class:1  priority:50}
+node: {title: "n222" label: "ProjX 0 222"  info1: "mode:    X
 visited: 20
 irg:     PRIMA_INLINE_set_a
 arity: 1
 "color: yellow}
-edge: {sourcename: "n223" targetname: "n225" label: "0" class:13 priority:60 color:red}
-node: {title: "n225" label: "Start  225"  info1: "mode:    T
+edge: {sourcename: "n222" targetname: "n224" label: "0" class:13 priority:60 color:red}
+node: {title: "n224" label: "Start  224"  info1: "mode:    T
 visited: 20
 irg:     PRIMA_INLINE_set_a
 arity: 0
@@ -112,9 +112,9 @@ start of method of type set_a
 
 }
 
-node: {title: "e14" label: "ent a" color: yellow
+node: {title: "e13" label: "ent a" color: yellow
  info1: "
-id: e14
+id: e13
 allocation:  allocation_automatic
 visibility:  visibility_local
 variability: variability_uninitialized
@@ -124,17 +124,17 @@ name:         a
 ld_name:      no yet set
 offset(bits): -1"
 }
-edge: { sourcename: "e14" targetname: "t11"class: 3 label: "type" color: red}
-node: {title: "t12" label: "class PRIMA_INLINE" info1: "state: layout_undefined
+edge: { sourcename: "e13" targetname: "t10"class: 3 label: "type" color: red}
+node: {title: "t11" label: "class PRIMA_INLINE" info1: "state: layout_undefined
 size: -1b,
 peculiarity: peculiarity_existent
 " color: green}
-edge: { sourcename: "t12" targetname: "e14"class: 12 label: "member" color:blue}
-edge: { sourcename: "t12" targetname: "e17"class: 12 label: "member" color:blue}
-edge: { sourcename: "t12" targetname: "e20"class: 12 label: "member" color:blue}
-node: {title: "e17" label: "ent PRIMA_INLINE_set_a" color: yellow
+edge: { sourcename: "t11" targetname: "e13"class: 12 label: "member" color:blue}
+edge: { sourcename: "t11" targetname: "e16"class: 12 label: "member" color:blue}
+edge: { sourcename: "t11" targetname: "e19"class: 12 label: "member" color:blue}
+node: {title: "e16" label: "ent PRIMA_INLINE_set_a" color: yellow
  info1: "
-id: e17
+id: e16
 allocation:  allocation_static
 visibility:  visibility_local
 variability: variability_constant
@@ -143,35 +143,35 @@ peculiarity:  peculiarity_existent
 name:         set_a
 ld_name:      PRIMA_INLINE_set_a
 offset(bits): -1
-irg = g68"
+irg = g67"
 }
-edge: { sourcename: "e17" targetname: "t15"class: 3 label: "type" color: red}
-edge: { sourcename: "e17" targetname: "n16"label: "value 0"}
-node: {title: "n16" label: "SymC &set_a  16"  info1: "mode:    P
+edge: { sourcename: "e16" targetname: "t14"class: 3 label: "type" color: red}
+edge: { sourcename: "e16" targetname: "n15"label: "value 0"}
+node: {title: "n15" label: "SymC &set_a  15"  info1: "mode:    P
 visited: 2
 arity: 0
 "}
-node: {title: "t15" label: "method set_a" info1: "state: layout_fixed,
+node: {title: "t14" label: "method set_a" info1: "state: layout_fixed,
 mode: P,
 size: 32b,
 variadicity: variadicity_non_variadic
 params: 2
 results: 0
 "}
-edge: { sourcename: "t15" targetname: "t13"class: 5 label: "param 0" color: green}
-edge: { sourcename: "t15" targetname: "t11"class: 5 label: "param 1" color: green}
-node: {title: "t13" label: "pointer class_prima_ptr" info1: "state: layout_fixed,
+edge: { sourcename: "t14" targetname: "t12"class: 5 label: "param 0" color: green}
+edge: { sourcename: "t14" targetname: "t10"class: 5 label: "param 1" color: green}
+node: {title: "t12" label: "pointer class_prima_ptr" info1: "state: layout_fixed,
 mode: P,
 size: 32b,
 "}
-edge: { sourcename: "t13" targetname: "t12"class: 9 label: "points to" color:green}
-node: {title: "t11" label: "primitive int" info1: "state: layout_fixed,
+edge: { sourcename: "t12" targetname: "t11"class: 9 label: "points to" color:green}
+node: {title: "t10" label: "primitive int" info1: "state: layout_fixed,
 mode: Is,
 size: 32b,
 "}
-node: {title: "e20" label: "ent PRIMA_INLINE_c" color: yellow
+node: {title: "e19" label: "ent PRIMA_INLINE_c" color: yellow
  info1: "
-id: e20
+id: e19
 allocation:  allocation_static
 visibility:  visibility_local
 variability: variability_constant
@@ -180,27 +180,27 @@ peculiarity:  peculiarity_existent
 name:         c
 ld_name:      PRIMA_INLINE_c
 offset(bits): -1
-irg = g90"
+irg = g89"
 }
-edge: { sourcename: "e20" targetname: "t18"class: 3 label: "type" color: red}
-edge: { sourcename: "e20" targetname: "n19"label: "value 0"}
-node: {title: "n19" label: "SymC &c  19"  info1: "mode:    P
+edge: { sourcename: "e19" targetname: "t17"class: 3 label: "type" color: red}
+edge: { sourcename: "e19" targetname: "n18"label: "value 0"}
+node: {title: "n18" label: "SymC &c  18"  info1: "mode:    P
 visited: 2
 arity: 0
 "}
-node: {title: "t18" label: "method c" info1: "state: layout_fixed,
+node: {title: "t17" label: "method c" info1: "state: layout_fixed,
 mode: P,
 size: 32b,
 variadicity: variadicity_non_variadic
 params: 2
 results: 1
 "}
-edge: { sourcename: "t18" targetname: "t13"class: 5 label: "param 0" color: green}
-edge: { sourcename: "t18" targetname: "t11"class: 5 label: "param 1" color: green}
-edge: { sourcename: "t18" targetname: "t11"class: 6 label: "res 0" color: green}
-node: {title: "t57" label: "class set_aframe_tp" info1: "state: layout_undefined
+edge: { sourcename: "t17" targetname: "t12"class: 5 label: "param 0" color: green}
+edge: { sourcename: "t17" targetname: "t10"class: 5 label: "param 1" color: green}
+edge: { sourcename: "t17" targetname: "t10"class: 6 label: "res 0" color: green}
+node: {title: "t56" label: "class set_aframe_tp" info1: "state: layout_undefined
 size: -1b,
 peculiarity: peculiarity_existent
 " color: green}
-edge: { sourcename: "n230" targetname: "e14"class:2 priority:2 linestyle:dotted}
+edge: { sourcename: "n229" targetname: "e13"class:2 priority:2 linestyle:dotted}
 }
