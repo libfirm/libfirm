@@ -31,6 +31,7 @@
 # include "firmstat.h"
 # include "irreflect_t.h"
 # include "irarch.h"
+# include "reassoc_t.h"
 
 void
 init_firm(const firm_parameter_t *param)
@@ -71,6 +72,8 @@ init_firm(const firm_parameter_t *param)
   init_op();
   /* called once for each run of this library */
   init_cons(def_params.initialize_local_func);
+  /* initialize reassociation */
+  firm_init_reassociation();
   /* Builds a construct allowing to access all information to be constructed
      later. */
   init_irprog();

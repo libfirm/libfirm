@@ -82,12 +82,12 @@ extern "C" {
 
 #include "irflag.h"        /* optimization flags */
 #include "irgopt.h"        /* optimize ir */
+#include "reassoc.h"       /* optimize ir by reassociation */
 #include "ldstopt.h"       /* optimize Load/Store */
 #include "cfopt.h"         /* optimize control flow */
 #include "tailrec.h"       /* optimize tail-recursion calls */
 #include "ircgopt.h"       /* Optimizations based on interprocedural graph */
 #include "strength_red.h"  /* Strength reduction */
-#include "irarch.h"        /* architecture dependant optimizations */
 
 #include "irouts.h"        /* Graph reversal / out edges. */
 #include "irdom.h"         /* Dominator analysis */
@@ -102,6 +102,9 @@ extern "C" {
 #include "typegmod.h"      /* Support to modify type graph */
 #include "type_identify.h" /* Support for type identification */
 #include "mangle.h"        /* Support for mangling ident names. */
+
+#include "irarch.h"        /* architecture dependant optimizations */
+//#include "modeconv.h"      /* architecture dependant mode conversion */
 
 #include "firmstat.h"      /* statistics */
 

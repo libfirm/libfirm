@@ -11,8 +11,8 @@
  */
 
 #include "statistics.h"
-#include "irgraph.h"
-#include "irnode.h"
+#include "irgraph_t.h"
+#include "irnode_t.h"
 #include "irprog.h"
 #include "irgwalk.h"
 
@@ -29,10 +29,10 @@ static void count_nodes(ir_node *n, void *env) {
  *  totals. */
 void print_graph_counts(int verbosity) {
   int i, counter, total = 0;
-  int view = interprocedural_view;
+  int view = get_interprocedural_view();
   ir_graph *old = current_ir_graph;
 
-  interprocedural_view = 0;
+  set_interprocedural_view(0);
 
   for (i = 0; i < get_irp_n_irgs(); i++) {
     counter = 0;
@@ -44,7 +44,7 @@ void print_graph_counts(int verbosity) {
   printf(" +++ There are %d graphs with total %d nodes.\n", get_irp_n_irgs(), total);
 
   current_ir_graph = old;
-  interprocedural_view = view;
+  set_interprocedural_view(view);
 }
 
 /** Prints number of types, number of entities and totals.
