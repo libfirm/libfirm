@@ -362,6 +362,17 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 					buf[1] = '\0';
 					break;
 
+				/* Indent */
+				case '>':
+					{
+						int i, n = va_arg(args, int);
+						for(i = 0; i < n && i < sizeof(buf) - 1; ++i)
+							buf[i] = ' ';
+
+						buf[i] = '\0';
+					}
+					break;
+
 				case 'c':
 					buf[0] = va_arg(args, int);
 					buf[1] = '\0';

@@ -51,6 +51,7 @@ typedef void (ir_printf_cb_t)(const appender_t *app, void *object, size_t limit,
  * This function rudimentarily implements a kind of printf(3) for ir
  * nodes. Following conversion specifiers. No length, special or field
  * width specifiers are accepted.
+ * - @%> Print as many white spaces as given in the parameter.
  * - @%p A pointer.
  * - @%s A string.
  * - @%I An ident.
