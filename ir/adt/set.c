@@ -167,6 +167,9 @@ MANGLEP(describe) (SET *table)
       }
     }
   }
+#ifdef STATS
+  MANGLEP(stats)(table);
+#endif
 }
 
 #endif /* !DEBUG */
@@ -405,7 +408,6 @@ MANGLE(_,_search) (SET *table,
   int chain_len = 0;
 
   assert (table);
-  assert (!table->iter_tail);
   assert (key);
 #ifdef DEBUG
   MANGLEP(tag) = table->tag;
@@ -428,6 +430,8 @@ MANGLE(_,_search) (SET *table,
   stat_chain_len (table, chain_len);
 
   if (!q && (action != MANGLE(_,_find))) { /* not found, insert */
+    assert (!table->iter_tail && "insert an element into a set that is iterated");
+
     if (CurrentSegment[SegmentIndex]) stat_dup (table);
 
 #ifdef PSET
