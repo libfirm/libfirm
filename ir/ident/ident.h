@@ -39,9 +39,10 @@ typedef const struct set_entry ident;
  * NAME
  *  id_from_str - store a string and create an ident
  * SYNOPSIS
- *  ident *id = id_from_str (char *str, int len);
+ *  ident *id = id_from_str (const char *str, int len);
  * FUNCTION
  *  Stores a string in the ident module and returns a handle for the string.
+ *  Copies the string.
  * INPUTS
  *  str - the string (or whatever) which shall be stored
  *  len - the length of the data in bytes
@@ -61,7 +62,7 @@ inline ident      *id_from_str (const char *str, int len);
  *  char *cp = id_to_str (ident *id);
  * FUNCTION
  *  Returns the string cp represented by id. This string cp is not
- *  Null terminated!
+ *  Null terminated!  The string may not be changed.
  * INPUTS
  *  id - the ident
  * RESULT
