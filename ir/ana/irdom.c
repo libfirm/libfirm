@@ -152,6 +152,7 @@ static void assign_tree_pre_order(ir_node *bl, void *data)
 {
 	unsigned *num = data;
 	dom_info *bi = get_dom_info(bl);
+
 	bi->tree_pre_num = (*num)++;
 }
 
@@ -160,13 +161,16 @@ static void assign_tree_pre_order_max(ir_node *bl, void *data)
 	dom_info *bi = get_dom_info(bl);
 	ir_node *p;
 	unsigned max = 0;
+	unsigned children = 0;
 
 	for(p = bi->first; p; p = get_dom_info(p)->next) {
 		unsigned max_p = get_dom_info(p)->max_subtree_pre_num;
 		max = max > max_p ? max : max_p;
+		children++;
 	}
 
-	bi->max_subtree_pre_num = max;
+	bi->max_subtree_pre_num = children > 0 ? max : bi->tree_pre_num;
+	assert(bi->max_subtree_pre_num >= bi->tree_pre_num);
 }
 
 /*--------------------------------------------------------------------*/
