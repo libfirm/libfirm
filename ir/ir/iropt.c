@@ -16,6 +16,7 @@
 
 # include "irnode_t.h"
 # include "irgraph_t.h"
+# include "irmode_t.h"
 # include "iropt_t.h"
 # include "ircons.h"
 # include "irgmod.h"
@@ -1079,7 +1080,7 @@ static ir_node *transform_node_DivMod(ir_node *n)
 	b = new_Const (mode, resb);
 	evaluated = 1;
       }
-    } else if (ta == get_mode_null(get_tarval_mode(ta))) {
+    } else if (ta == get_mode_null(mode)) {
       b = a;
       evaluated = 1;
     }
