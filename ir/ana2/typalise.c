@@ -25,6 +25,7 @@
 # endif /* not defined TRUE */
 
 # include <assert.h>
+# include <string.h>
 
 # include "irnode.h"
 # include "irgwalk.h"
@@ -331,7 +332,7 @@ static typalise_t *ta_join (typalise_t *one, typalise_t *two)
 # ifdef SHUT_UP_GCC
 static const char *ta_name (typalise_t *ta)
 {
-  /* # define BUF_SIZE 1024 */
+# define BUF_SIZE 1024
   static char buf [BUF_SIZE];
 
   int len = sprintf (buf, "[%d] ", ta->id);
@@ -462,23 +463,29 @@ static typalise_t *typalise_proj (ir_node *proj)
 
     proj_in = get_Proj_pred (proj_in);
     if (iro_Start == get_irn_opcode (proj_in)) {
+      ir_graph *graph = get_irn_irg (proj);
+      entity   *meth  = get_irg_entity (graph);
+
       long n = get_Proj_proj (proj);
+
       if (1 == n) {
         /* yay proj this */
-        ir_graph *graph = get_irn_irg (proj);
-        entity   *meth  = get_irg_entity (graph);
         type     *tp    = get_entity_owner (meth);
 
         /* res = ta_exact (tp); */
         res = ta_type (tp);     /* TODO */
       } else {
         /* ugh proj arg */
-        /* hey, even 'filtering' this NULL by the select of the actual
-           call is probably as "precise" as anything: */
-        return (NULL);
+        type *tp = get_method_param_type (get_entity_type (meth), n);
+        if (is_pointer_type (tp)) {
+          tp = get_pointer_points_to_type (tp);
+        }
+
+        res = ta_type (tp);
       }
     } else if (iro_Call == get_irn_opcode (proj_in)) {
       /* call result ... 'whatever' */
+      /* hey, this is redundant (or the check for iro_Call further down) */
       ir_node *call_ptr = get_Call_ptr (proj_in);
 
       res = typalise (call_ptr);
@@ -575,7 +582,6 @@ typalise_t *typalise (ir_node *node)
   } break;
 
   case (iro_Load): {
-    /* presumably it's call (load (ptr)) we're analyzing. */
     ir_node *load_ptr = get_Load_ptr (node);
 
     res = typalise (load_ptr);
@@ -698,6 +704,9 @@ typalise_t *typalise (ir_node *node)
 
 /*
   $Log$
+  Revision 1.2  2004/10/22 09:53:10  liekweg
+  Correctly handle proj_args
+
   Revision 1.1  2004/10/21 11:09:37  liekweg
   Moved memwalk stuf into irmemwalk
   Moved lset stuff into lset
