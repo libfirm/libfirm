@@ -37,6 +37,7 @@ typedef enum desc_kind_enum {
 /* abstract super class for all descriptors */
 typedef struct desc_str
 {
+  int id;
   desc_kind_t kind;
   type *tp;
   ir_node *node;                /* allocation node */
@@ -46,6 +47,7 @@ typedef struct desc_str
 /* object descriptor */
 typedef struct obj_desc_str
 {
+  int id;
   desc_kind_t kind;
   type *tp;
   ir_node *node;                /* allocation node */
@@ -59,6 +61,7 @@ typedef struct obj_desc_str
 /* array descriptor */
 typedef struct arr_desc_str
 {
+  int id;
   desc_kind_t kind;
   type *tp;
   ir_node *node;                /* allocation node */
@@ -70,6 +73,12 @@ typedef struct arr_desc_str
 /* ===================================================
    Global Prototypes:
    =================================================== */
+/* Dump all names to a file of the given name */
+void pto_dump (const char*);
+
+/* Find the given descriptor's entry for the given entity */
+qset_t *get_entry (desc_t*, entity*);
+
 /* get a new descriptor for the given type at the given node */
 desc_t *new_name (type*, ir_node*);
 
@@ -93,6 +102,9 @@ void pto_name_cleanup (void);
 
 /*
   $Log$
+  Revision 1.3  2004/11/30 14:47:54  liekweg
+  fix initialisation; do correct iteration
+
   Revision 1.2  2004/11/24 14:53:56  liekweg
   Bugfixes
 

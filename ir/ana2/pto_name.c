@@ -26,6 +26,7 @@
 
 # include <string.h>            /* for memcpy */
 # include <obstack.h>
+# include <errno.h>
 
 # include "irnode.h"
 # include "irprog.h"
@@ -44,6 +45,10 @@
 /* Local Variables: */
 struct obstack *qset_obst = NULL;
 struct obstack *name_obst = NULL;
+
+static desc_t *all_descs = NULL;
+
+static int name_id = 0;
 
 /* Local Prototypes: */
 
@@ -126,12 +131,124 @@ static entity **collect_fields (type *clazz)
   return (fields);
 }
 
+/* Write the intro text for a name dump into the given stream */
+static void pto_name_dump_start (FILE *stream)
+{
+  fprintf (stream, "digraph \"Names\" {\n");
+  fprintf (stream, "\tgraph [rankdir=\"LR\", ordering=\"out\"];\n");
+  fprintf (stream, "\tnode [shape=\"record\", style=\"filled\"];\n");
+  fprintf (stream, "\tedge [color=\"black\"];\n");
+  fprintf (stream, "\n");
+}
+
+/* Write the extro text for a name dump into the given stream */
+static void pto_name_dump_finish (FILE *stream)
+{
+  fprintf (stream, "}\n");
+}
+
+/* Write a node for the given descriptor into the given stream */
+static void pto_name_dump_desc (desc_t *desc, FILE *stream)
+{
+  type *tp = desc->tp;
+  const char *tp_name = get_type_name (tp);
+
+  fprintf (stream, "\t/* %s \"%s\" */\n",
+           object == desc->kind ? "Object" : "Array",
+           tp_name);
+
+  fprintf (stream, "\tdesc_%i [label=\"<HEAD>type=\\\"%s\\\"",
+           desc->id,
+           tp_name);
+
+  ir_node *nd = desc->node;
+
+  if (NULL != nd) {
+    fprintf (stream, "|<NODE>node=%s\\[%li\\]",
+             get_op_name (get_irn_op (nd)),
+             get_irn_node_nr (nd));
+  }
+
+  if (desc->kind == object) {
+    obj_desc_t *obj_desc = (obj_desc_t*) desc;
+
+    int i;
+    for (i = 0; i < obj_desc->n_fields; i ++) {
+      const char *ent_name = get_entity_name (obj_desc->fields [i]);
+
+      fprintf (stream, "|<%i>%s", i, ent_name);
+    }
+  } else if (array == desc->kind) {
+    arr_desc_t *arr_desc = (arr_desc_t*) desc;
+
+    fprintf (stream, "|<arr>[]");
+  } else {
+    assert (0 && "invalid descriptor");
+  }
+
+  fprintf (stream, "\"];\n");
+  fprintf (stream, "\n");
+
+  /* now the edges */
+  if (desc->kind == object) {
+    obj_desc_t *obj_desc = (obj_desc_t*) desc;
+
+    int i;
+    for (i = 0; i < obj_desc->n_fields; i ++) {
+      desc_t *tgt = (desc_t*) qset_start (obj_desc->values [i]);
+
+      while (NULL != tgt) {
+        fprintf (stream, "\tdesc_%i:%i -> desc_%i:HEAD;\n",
+                 desc->id, i, tgt->id);
+
+        tgt = (desc_t*) qset_next (obj_desc->values [i]);
+      }
+    }
+  } else if (array == desc->kind) {
+    arr_desc_t *arr_desc = (arr_desc_t*) desc;
+
+    desc_t *tgt = (desc_t*) qset_start (arr_desc->value);
+
+    while (NULL != tgt) {
+      fprintf (stream, "\tdesc_%i:arr -> desc_%i:HEAD;\n",
+               desc->id, tgt->id);
+
+      tgt = (desc_t*) qset_next (arr_desc->value);
+    }
+  }
+
+  fprintf (stream, "\n");
+}
 
 
 /* ===================================================
    Exported Implementation:
    =================================================== */
-static desc_t *all_descs = NULL;
+/* Find the given descriptor's entry for the given entity */
+qset_t *get_entry (desc_t *desc, entity *ent)
+{
+
+  if (desc->kind == object) {
+    obj_desc_t *obj_desc = (obj_desc_t*) desc;
+    int i;
+    const int n_fields = obj_desc->n_fields;
+
+    for (i = 0; i < n_fields; i ++) {
+      if (ent == obj_desc->fields [i]) {
+        return (obj_desc->values [i]);
+      }
+    }
+
+    assert (0 && "entry not found");
+  } else if (desc->kind = array) {
+    arr_desc_t *arr_desc = (arr_desc_t*) desc;
+
+    return (arr_desc->value);
+  } else {
+    assert (0 && "invalid descriptor");
+  }
+}
+
 
 /* get a new descriptor for the given type at the given node */
 desc_t *new_name (type *tp, ir_node *node)
@@ -173,6 +290,7 @@ desc_t *new_name (type *tp, ir_node *node)
     desc = (desc_t*) arr_desc;
   }
 
+  desc->id   = name_id ++;
   desc->tp   = tp;
   desc->node = node;
 
@@ -204,6 +322,7 @@ desc_t *new_ent_name (entity *ent)
   if (NULL == obj_glob) {
     obj_glob = (obj_desc_t*) NALLOC (sizeof (obj_desc_t));
 
+    obj_glob->id   = name_id ++;
     obj_glob->kind = object;
     obj_glob->tp   = get_glob_type ();
     obj_glob->node = NULL;
@@ -246,6 +365,31 @@ desc_t *new_ent_name (entity *ent)
 }
 # undef N_GLOB_INITIAL_FIELDS
 
+/* Dump all names to a file of the given name */
+void pto_dump (const char *name)
+{
+  desc_t *desc = all_descs;
+  FILE *stream = fopen (name, "w");
+
+  errno = 0;
+  if  (NULL == stream) {
+    fprintf (stderr, "%s: unable to open %s (%s)\n",
+             __FUNCTION__, name, strerror (errno));
+    return;
+  }
+
+  pto_name_dump_start (stream);
+
+  while (NULL != desc) {
+    pto_name_dump_desc (desc, stream);
+
+    desc = desc->prev;
+  }
+
+  pto_name_dump_finish (stream);
+  fclose (stream);
+}
+
 /* Initialise the name module */
 void pto_name_init ()
 {
@@ -280,6 +424,9 @@ void pto_name_cleanup ()
 
 /*
   $Log$
+  Revision 1.3  2004/11/30 14:47:54  liekweg
+  fix initialisation; do correct iteration
+
   Revision 1.2  2004/11/24 14:53:56  liekweg
   Bugfixes
 

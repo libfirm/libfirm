@@ -183,28 +183,51 @@ static void reset_node_pto (ir_node *node, void *env)
   int ctx_idx = reset_env->ctx_idx;
   const opcode op = get_irn_opcode (node);
 
+  /* HERE ("start"); */
+
   switch (op) {
   case (iro_Load):
-    /* case (iro_SymConst): */ /* WHY? */
-  case (iro_Const):
+    /* case (iro_Const): */
   case (iro_Call):
   case (iro_Block):             /* END BLOCK only */
   case (iro_Phi): {
     /* allocate 'empty' pto values */
     pto_t *pto = new_pto (node);
     set_node_pto (node, pto);
-    } break;
+  } break;
 
   case (iro_Alloc): {
     /* set alloc to 'right' current pto */
+
+    /* HERE ("alloc"); */
+
     alloc_pto_t *alloc_pto = (alloc_pto_t*) get_irn_link (node);
     alloc_pto->curr_pto = alloc_pto->ptos [ctx_idx];
+
+    DBGPRINT (1, (stdout, "%s: setting pto of \"%s[%li]\" for ctx %i\n",
+                  __FUNCTION__,
+                  OPNAME (node),
+                  OPNUM (node),
+                  ctx_idx));
+
+    assert (alloc_pto->curr_pto);
+  } break;
+  case (iro_Const):
+  case (iro_SymConst): {
+      /* nothing, leave as-is */
     } break;
 
   default: {
-    /* nothing */
+    /* basically, nothing */
+    DBGPRINT (2, (stdout, "%s: resetting pto of \"%s[%li]\"\n",
+                  __FUNCTION__,
+                  OPNAME (node),
+                  OPNUM (node)));
+    set_node_pto (node, NULL);
   } break;
   }
+
+  /* HERE ("end"); */
 }
 
 /* Temporary fix until we get 'real' ptos: Allocate some dummy for pto */
@@ -222,7 +245,7 @@ static void init_pto (ir_node *node, void *env)
       entity *ent = get_SymConst_entity (node);
       if (is_class_type (get_entity_type (ent)) ||
           is_pointer_type (get_entity_type (ent))) {
-        DBGPRINT (0, (stdout, "%s: new name \"%s\" for \"%s[%li]\"\n",
+        DBGPRINT (1, (stdout, "%s: new name \"%s\" for \"%s[%li]\"\n",
                       __FUNCTION__,
                       get_entity_name (ent),
                       OPNAME (node),
@@ -238,7 +261,7 @@ static void init_pto (ir_node *node, void *env)
     alloc_pto_t *alloc_pto = new_alloc_pto (node, n_ctxs);
     set_alloc_pto (node, alloc_pto);
 
-    DBGPRINT (0, (stdout, "%s: %i names \"%s\" for \"%s[%li]\"\n",
+    DBGPRINT (1, (stdout, "%s: %i names \"%s\" for \"%s[%li]\"\n",
                   __FUNCTION__,
                   n_ctxs,
                   get_type_name (tp),
@@ -274,14 +297,14 @@ static void pto_init_graph_allocs (ir_graph *graph)
   init_env_t *init_env = xmalloc (sizeof (init_env_t));
   init_env->n_ctxs = n_ctxs;
 
-  HERE ("start");
+  /* HERE ("start"); */
 
   irg_walk_graph (graph, init_pto, NULL, init_env);
 
   memset (init_env, 0x00, sizeof (init_env_t));
   free (init_env);
 
-  HERE ("end");
+  /* HERE ("end"); */
 }
 
 /* ===================================================
@@ -290,7 +313,7 @@ static void pto_init_graph_allocs (ir_graph *graph)
 /* "Fake" the arguments to the main method */
 void fake_main_args (ir_graph *graph)
 {
-  HERE ("start");
+  /* HERE ("start"); */
 
   entity *ent = get_irg_entity (graph);
   type *mtp = get_entity_type (ent);
@@ -313,6 +336,9 @@ void fake_main_args (ir_graph *graph)
 
   set_node_pto (args [1], arg_pto);
 
+  DBGPRINT (1, (stdout, "%s:%i (%s[%li])\n",
+                __FUNCTION__, __LINE__, OPNAME (args [1]), OPNUM (args [1])));
+
 # ifdef TEST_MAIN_TYPE
   ctp = get_array_element_type (ctp); /* ctp == char[]* */
 
@@ -327,7 +353,7 @@ void fake_main_args (ir_graph *graph)
   assert (is_primitive_type (ctp));
 # endif /* defined  TEST_MAIN_TYPE */
 
-  HERE ("end");
+  /* HERE ("end"); */
 }
 
 /* Initialise the Init module */
@@ -351,9 +377,9 @@ void pto_init_cleanup ()
 /* Initialise the Names of the Types/Entities */
 void pto_init_type_names ()
 {
-  HERE ("start");
+  /* HERE ("start"); */
   type_walk (clear_type_link, NULL, NULL);
-  HERE ("end");
+  /* HERE ("end"); */
 }
 
 /* Initialise the given graph for a new pass run */
@@ -367,21 +393,21 @@ void pto_init_graph (ir_graph *graph)
   const char *ent_name = (char*) get_entity_name (ent);
   const char *own_name = (char*) get_type_name (get_entity_owner (ent));
 
-  DBGPRINT (0, (stdout, "%s: init \"%s.%s\" for %i ctxs\n", __FUNCTION__,
+  DBGPRINT (1, (stdout, "%s: init \"%s.%s\" for %i ctxs\n", __FUNCTION__,
                 own_name, ent_name, n_ctxs));
 
-  HERE ("start");
+  /* HERE ("start"); */
 
   clear_graph_links     (graph);
   pto_init_graph_allocs (graph);
 
-  HERE ("end");
+  /* HERE ("end"); */
 }
 
 /* Reset the given graph for a new pass run */
 void pto_reset_graph_pto (ir_graph *graph, int ctx_idx)
 {
-  HERE ("start");
+  /* HERE ("start"); */
 
   reset_env_t *reset_env = (reset_env_t*) xmalloc (sizeof (reset_env_t));
   reset_env->ctx_idx = ctx_idx;
@@ -390,12 +416,15 @@ void pto_reset_graph_pto (ir_graph *graph, int ctx_idx)
 
   memset (reset_env, 0x00, sizeof (reset_env_t));
   free (reset_env);
-  HERE ("end");
+  /* HERE ("end"); */
 }
 
 
 /*
   $Log$
+  Revision 1.7  2004/11/30 14:47:54  liekweg
+  fix initialisation; do correct iteration
+
   Revision 1.6  2004/11/26 16:00:41  liekweg
   recognize class consts vs. ptr-to-class consts
 
