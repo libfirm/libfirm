@@ -79,9 +79,7 @@ static INLINE void assure_opcode_capacity(int opcode)
 {
 	if(opcode >= opcodes_size) {
 		int new_size = 2 * opcode;
-		rflct_opcode_t **new_opcodes = xmalloc(sizeof(new_opcodes[0]) * new_size);
-
-		memset(new_opcodes, 0, sizeof(*new_opcodes) * new_size);
+		rflct_opcode_t **new_opcodes = xcalloc(new_size, sizeof(new_opcodes[0]));
 
 		if(opcodes != NULL) {
 			memcpy(new_opcodes, opcodes, sizeof(*opcodes) * opcodes_size);
