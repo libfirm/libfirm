@@ -15,20 +15,22 @@
  * Replace this code ASAP.
  */
 #include "fltcalc.h"
-#include "ieee754.h"
 #include <string.h>
 #include <float.h>
 #include <stdlib.h>
 #include <stdio.h>
+
+/* only defined in C99 mode */
+extern long double strtold(const char *str, char **end);
 
 /********
  * globals
  ********/
 static long double value;
 
-#define CAST_IN(val) ({ long double xxx = *(long double *)(val); printf("CAST to %Lg\n", xxx); xxx; })
+//#define CAST_IN(val) ({ long double xxx = *(long double *)(val); printf("CAST to %Lg\n", xxx); xxx; })
 
-//#define CAST_IN(val) (*((long double *)((val))))
+#define CAST_IN(val) (*((long double *)((val))))
 #define CAST_OUT(val) ((void *)&(val))
 
 #define CLEAR_BUFFER() memset((char*)&value, 0, sizeof(long double))
@@ -51,9 +53,6 @@ const int fc_get_buffer_length(void)
 
 void fc_val_from_str(const char *str, unsigned int len)
 {
-  extern long double strtold(const char *str, char **end);
-
-  printf("-> %s\n", str);
   CLEAR_BUFFER();
   value = strtold(str, NULL);
 }
@@ -107,33 +106,13 @@ void fc_get_max(unsigned int num_bits)
 
 void fc_get_nan(void)
 {
-  /* nan: all exponent bit set, non-zero mantissa. not signalling wheni
-   * msb of mantissa is set (easily found using this struct */
-  union ieee854_long_double ld;
+  value = strtold("nan", NULL);
 
-  CLEAR_BUFFER();
-  ld.ieee_nan.negative = 0;
-  ld.ieee_nan.exponent = 0x7FFF;
-  ld.ieee_nan.quiet_nan = 1;
-  ld.ieee_nan.mantissa0 = 42;
-
-  value = ld.d;
 }
 
 void fc_get_inf(void)
 {
-  /* +-inf: all exponent bit set, sign is easy, one is strange XXX */
-  union ieee854_long_double ld;
-
-  CLEAR_BUFFER();
-  ld.ieee_nan.negative = 0;
-  ld.ieee_nan.exponent = 0x7FFF;
-  ld.ieee_nan.quiet_nan = 0;
-  ld.ieee_nan.one = 1;
-  ld.ieee_nan.mantissa0 = 0;
-  ld.ieee_nan.mantissa1 = 0;
-
-  value = ld.d;
+  value = strtold("inf", NULL);
 }
 
 void fc_calc(const void *a, const void *b, int opcode)
@@ -155,7 +134,6 @@ void fc_calc(const void *a, const void *b, int opcode)
       break;
     case FC_NEG:
       value = -CAST_IN(a);
-      printf("-> NEG %Lg\n", value);
       break;
   }
 }
