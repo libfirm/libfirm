@@ -466,6 +466,42 @@ set_nodes_Block (ir_node *node, ir_node *block) {
   set_irn_n(node, -1, block);
 }
 
+/* Test whether arbitrary node is frame pointer, i.e. Proj(pn_Start_P_frame_base)
+ * from Start.  If so returns frame type, else Null. */
+type *is_frame_pointer(ir_node *n) {
+  if ((get_irn_op(n) == op_Proj) &&
+      (get_Proj_proj(n) == pn_Start_P_frame_base)) {
+    ir_node *start = get_Proj_pred(n);
+    if (get_irn_op(start) == op_Start) {
+      return get_irg_frame_type(get_irn_irg(start));
+    }
+  }
+  return NULL;
+}
+
+/* Test whether arbitrary node is globals pointer, i.e. Proj(pn_Start_P_globals)
+ * from Start.  If so returns global type, else Null. */
+type *is_globals_pointer(ir_node *n) {
+  if ((get_irn_op(n) == op_Proj) &&
+      (get_Proj_proj(n) == pn_Start_P_globals)) {
+    ir_node *start = get_Proj_pred(n);
+    if (get_irn_op(start) == op_Start) {
+      return get_glob_type();
+    }
+  }
+  return NULL;
+}
+
+/* Test whether arbitrary node is value arg base, i.e. Proj(pn_Start_P_value_arg_base)
+ * from Start.  If so returns 1, else 0. */
+int is_value_arg_pointer(ir_node *n) {
+  if ((get_irn_op(n) == op_Proj) &&
+      (get_Proj_proj(n) == pn_Start_P_value_arg_base) &&
+      (get_irn_op(get_Proj_pred(n)) == op_Start))
+    return 1;
+  return 0;
+}
+
 /* Returns an array with the predecessors of the Block. Depending on
    the implementation of the graph datastructure this can be a copy of
    the internal representation of predecessors as well as the internal

@@ -212,6 +212,24 @@ typedef enum {
 			       type of this method. */
 } pn_Start; /* Projection numbers for Start. */
 
+/** Test whether arbitrary node is frame pointer.
+ *
+ * Test whether arbitrary node is frame pointer, i.e. Proj(pn_Start_P_frame_base)
+ * from Start.  If so returns frame type, else Null. */
+type *is_frame_pointer(ir_node *n);
+
+/** Test whether arbitrary node is globals pointer.
+ *
+ * Test whether arbitrary node is globals pointer, i.e. Proj(pn_Start_P_globals)
+ * from Start.  If so returns global type, else Null. */
+type *is_globals_pointer(ir_node *n);
+
+/** Test whether arbitrary node is value arg base.
+ *
+ * Test whether arbitrary node is value arg base, i.e. Proj(pn_Start_P_value_arg_base)
+ * from Start.   If so returns 1, else 0. */
+int   is_value_arg_pointer(ir_node *n);
+
 
 /* @@@ no more supported  */
 INLINE ir_node **get_Block_cfgpred_arr (ir_node *node);
