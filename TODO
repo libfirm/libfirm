@@ -33,12 +33,12 @@
     bei allen Phi Knoten dann sofort die neu bekannten Werte.  Jetzt kann
     genau der Status zum Zeitpunkt der Exception abgebildet werden.
 
-  * 7.11.2001 Goetz
+  + 7.11.2001 Goetz
     Model Stack frame of a method as class type as for Global type?
     (Class so that methods defined within methods can be represented?)
     So far local entities are added to GlobalType.
 
-  * 7.11.2001 Goetz
+  + 7.11.2001 Goetz
     Implement support for endless loops.
     (Add Jump target block to a list if optimizing Cond nodes.
     Extend walker to start walking at this list.
@@ -54,7 +54,7 @@
     What happens if undefined values are allowed?  See ircons.c,
     grep for get_irg_start_block.
 
-  * 23.5.2001 Goetz
+  + 23.5.2001 Goetz
     Does the array type contain a field with the array entity?
     This entity should be constructed automatically with the array type.
 
@@ -62,10 +62,10 @@
     All compound types need a flag saying whether the order of the members
     must be conserved.
 
-  * 23.5.2001 Goetz
+  + 23.5.2001 Goetz
     Add element_type to array constructor
 
-  * 15.3.2001 Goetz
+  + 15.3.2001 Goetz
     mode, size in type:  Wann gibt es einen mode, wann die size?
     Kann man den mode aendern?  Nicht bei prim, enum, pointer da
     schon irreversibel in Programmcode umgesetzt.  Die anderen
@@ -73,7 +73,7 @@
     in get_type_mode die typen asserten, und set_mode verbieten,
     dafuer im enum konstruktor mode mitgeben?
 
-  * 14.3.2001 Boris
+  + 14.3.2001 Boris
     make dist should create an archive which has the directory libfirm/
     as top-level
 =======
@@ -84,12 +84,12 @@
 
 *********** old stuff ***********
 
- * Problem mit endlosen Schleifen loesen.
+ + Problem mit endlosen Schleifen loesen.
 
  * Automatisches generieren und set_value der Argumente-projs in
    new_ir_graph
 
- * Define and implement procedure-global extensions, e.g., the call graph.
+ + Define and implement procedure-global extensions, e.g., the call graph.
 
  * Implement Confirm node: Added by optimization to annotate dataflow
    edge with information as (value > 0).  This improves dataflow analysis.

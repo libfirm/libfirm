@@ -11,9 +11,9 @@ capitalizing the letter after an underscore.)
 The static fields are derived from the enumerators in libfirm.
 
 The generator copies the comments from the header files to the Java
-files.  Sometimes it places the comments slightly wrong, i.e. one
-definition too high or too low.  As the comments are directly copied
-they refer to the C names.
+files.  Sometimes it places the comments slightly wrong, i.e. a bit
+too high or too low.  As the comments are directly copied they refer
+to the C names.
 
 Generating the JNI requires various syntactic properties of the
 header files that restrict legal C.  These restrictions will be
