@@ -19,7 +19,10 @@ static int check_class(type *tp) {
     /*printf(" %d, %d", get_entity_n_overwrites(mem), get_class_n_supertypes(tp)); DDME(mem);*/
     if (!mem) return error_null_mem;
 
-    assert(get_entity_n_overwrites(mem) <= get_class_n_supertypes(tp));
+    if (get_entity_n_overwrites(mem) > get_class_n_supertypes(tp)) {
+      DDMT(tp); DDME(mem);
+      assert(get_entity_n_overwrites(mem) <= get_class_n_supertypes(tp));
+    }
     for (j = 0; j < get_entity_n_overwrites(mem); j++) {
       entity *ovw = get_entity_overwrites(mem, j);
       /*printf(" overwrites: "); DDME(ovw);*/
@@ -133,6 +136,7 @@ static int check_entity(entity *ent) {
  */
 static void check_tore(type_or_ent *tore, void *env) {
   int *res = env;
+  assert(tore);
   if (is_type(tore)) {
     *res = check_type((type *)tore);
   } else {
