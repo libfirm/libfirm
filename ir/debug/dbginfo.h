@@ -60,20 +60,16 @@ INLINE void set_type_dbg_info(type *tp, dbg_info* db);
 INLINE dbg_info *get_type_dbg_info(type *tp);
 
 /**
- *
- *   An enumeration indicating the action performed by a
- *   transformation.
+ * An enumeration indicating the action performed by a transformation.
  */
 typedef enum {
   dbg_error = 0,
-  dbg_opt_ssa,        /* Optimization of the SSA representation, e.g., removal
-			 of superfluent phi nodes. */
-  dbg_opt_auxnode,    /* Removal of unnecessary auxilliary nodes. */
-  dbg_const_eval,     /* A Firm subgraph was evaluated to a single constant. */
-  dbg_straightening,  /* A Firm subgraph was replaced by a single, existing
-			 block. */
-  dbg_if_simplification, /* The control flow of an if is changed as either the
-			    else, the then or both blocks are empty. */
+  dbg_opt_ssa,           /**< Optimization of the SSA representation, e.g., removal of superfluent phi nodes. */
+  dbg_opt_auxnode,       /**< Removal of unnecessary auxilliary nodes. */
+  dbg_const_eval,        /**< A Firm subgraph was evaluated to a single constant. */
+  dbg_straightening,     /**< A Firm subgraph was replaced by a single, existing block. */
+  dbg_if_simplification, /**< The control flow of an if is changed as either the
+			                        else, the then or both blocks are empty. */
   dbg_algebraic_simplification,
   dbg_write_after_write,
   dbg_write_after_read,
@@ -82,11 +78,9 @@ typedef enum {
 
 
 /**
- *
- *   converts enum to string
- *
+ *   converts enum values to strings
  */
-static const char* dbg_action_2_str(dbg_action a) {
+extern INLINE const char* dbg_action_2_str(dbg_action a) {
   switch(a) {
   case dbg_error: return "dbg_error"; break;
   case dbg_opt_ssa: return "dbg_opt_ssa"; break;
@@ -106,35 +100,49 @@ static const char* dbg_action_2_str(dbg_action a) {
   }
 }
 
+/**
+ * The type of the debug info merge function.
+ *
+ * @see dbg_init()
+ */
+typedef void merge_pair_func(ir_node *, ir_node *, dbg_action);
 
 /**
+ * The type of the debug info merge function.
  *
- *   initializes the debug support.
- *   @param Pointers to two functions that merge the debug information when a
- *   @param transformation of a firm graph is performed.
- *   @param Firm transformations call one of these functions.
+ * @see dbg_init()
+ */
+typedef void merge_sets_func(ir_node **, int, ir_node **, int, dbg_action);
+
+/**
+ *   Initializes the debug support.
+ *
+ *   @param dbg_info_merge_pair   see function description
+ *   @param dbg_info_merge_sets   see function description
+ *
+ *   This function takes Pointers to two functions that merge the debug information when a
+ *   transformation of a firm graph is performed.
+ *   Firm transformations call one of these functions.
+ *
  *   - dbg_info_merge_pair() is called in the following situation:
- *     @param The optimization replaced the old node by the new one.  The new node
- *     @param might be a recent allocated node not containing any debug information,
- *     @param or just another node from somewhere in the graph with the same
- *     @param semantics.
+ *     The optimization replaced the old node by the new one.  The new node
+ *     might be a recent allocated node not containing any debug information,
+ *     or just another node from somewhere in the graph with the same
+ *     semantics.
  *   - dbg_info_merge_sets() is called in the following situation:
- *     @param The optimization replaced a subgraph by another subgraph.  There is no
- *     @param obviouse mapping between single nodes in both subgraphs.  The optimization
- *     @param simply passes two lists to the debug module, one containing the nodes in
- *     @param the old subgraph, the other containing the nodes in the new subgraph.
- *     @param The same node can be in both lists.
- *   @param Further both functions pass an enumeration indicating the action
- *   @param performed by the transformation, e.g. the kind of optimization performed.
+ *     The optimization replaced a subgraph by another subgraph.  There is no
+ *     obviouse mapping between single nodes in both subgraphs.  The optimization
+ *     simply passes two lists to the debug module, one containing the nodes in
+ *     the old subgraph, the other containing the nodes in the new subgraph.
+ *     The same node can be in both lists.
+ *
+ *   Further both functions pass an enumeration indicating the action
+ *   performed by the transformation, e.g. the kind of optimization performed.
+ *
  *   @return No result.
  *
  */
-
-
-typedef void (merge_pair_func)(ir_node *, ir_node *, dbg_action);
-typedef void (merge_sets_func)(ir_node **, int, ir_node **, int, dbg_action);
-
-void dbg_init(merge_pair_func *mpf, merge_sets_func *msf);
+void dbg_init(merge_pair_func *dbg_info_merge_pair, merge_sets_func *dbg_info_merge_sets);
 
 
 #endif /* _DBGINFO_H_ */
