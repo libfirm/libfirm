@@ -235,7 +235,7 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
   int proj;
 
   pred = skip_nop(get_Proj_pred(p));
-  assert(get_irn_mode(pred) == mode_T);
+  ASSERT_AND_RET(get_irn_mode(pred) == mode_T, "mode of a 'projed' node is not Tuple", 0);
   mode = get_irn_mode(p);
   proj = get_Proj_proj(p);
 
@@ -414,7 +414,7 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
     case iro_Proj:
       {
         type *mt; /* A method type */
-    long nr = get_Proj_proj(pred);
+        long nr = get_Proj_proj(pred);
 
         pred = skip_nop(get_Proj_pred(pred));
         ASSERT_AND_RET((get_irn_mode(pred) == mode_T), "Proj from something not a tuple", 0);
@@ -667,15 +667,16 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
   case iro_Const: {
       tarval *tv = get_Const_tarval(n);
       if (tarval_is_entity(tv))
-	  assert((get_irn_irg(n) == get_const_code_irg() ||
-		 get_entity_peculiarity(tarval_to_entity(tv)) != peculiarity_description) &&
-		 "descriptions have no address!");
-      ASSERT_AND_RET(
-                     /* Const: BB --> data */
-                     (mode_is_data (mymode) ||
-                      mymode == mode_b)      /* we want boolean constants for static evaluation */
-                     ,"Const node", 0        /* of Cmp. */
-                     );
+	  ASSERT_AND_RET(
+	                 (get_irn_irg(n) == get_const_code_irg()) ||
+	                 (get_entity_peculiarity(tarval_to_entity(tv)) != peculiarity_description),
+	                 "descriptions have no address", 0);
+	  ASSERT_AND_RET(
+			 /* Const: BB --> data */
+			 (mode_is_data (mymode) ||
+			  mymode == mode_b)      /* we want boolean constants for static evaluation */
+			 ,"Const node", 0        /* of Cmp. */
+			 );
      } break;
 
     case iro_SymConst:
