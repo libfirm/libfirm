@@ -1,3 +1,7 @@
+  14.3.2001 Boris
+  added creation of a tar archive for distribution
+  replaced ir/.dummy.in by ir/Makefile.in
+
   13.3.2001 Goetz
   Changed equivalent_node() and copy_preds() so that the end block
   is not optimized away if it has no real predecessors.  This fixes
