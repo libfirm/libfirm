@@ -142,6 +142,8 @@ static void type_walk_2(type_or_ent *tore,
   return;
 }
 
+/**  Check wether node contains types or entities as an attribute.
+     If so start a walk over that information. */
 static void start_type_walk(ir_node *node, void *env) {
   void *pre  = ((type_walk_env *)env)->pre;
   void *post = ((type_walk_env *)env)->post;
@@ -186,26 +188,38 @@ void type_walk(void (pre)(type_or_ent*, void*),
 }
 
 void type_walk_irg (ir_graph *irg,
-		    void (pre)(type_or_ent*, void*),
-		    void (post)(type_or_ent*, void*),
+		    void (*pre)(type_or_ent*, void*),
+		    void (*post)(type_or_ent*, void*),
 		    void *env)
 {
+  ir_graph *rem = current_ir_graph;
   /* this is needed to pass the parameters to the walker that actually
      walks the type information */
-  type_walk_env* type_env;
-  type_env = (type_walk_env *) malloc (sizeof(type_walk_env));
-  type_env->pre = pre;
-  type_env->post = post;
-  type_env->env = env;
+  type_walk_env type_env;
 
+  type_env.pre  = pre;
+  type_env.post = post;
+  type_env.env  = env;
+
+  current_ir_graph = irg;
+
+  /* We walk over the irg to find all irnodes that contain an attribute
+     with type information.  If we find one we call a type walker to
+     touch the reachable type information.
+     The same type can be referenced by several irnodes.  To avoid
+     repeated visits of the same type node we must decrease the
+     type visited flag for each walk.  This is done in start_type_walk().
+     Here we initially increase the flag.  We only call type_walk_2 that does
+     not increase the flag.
+  */
   ++type_visited;
-  irg_walk(get_irg_end(irg), start_type_walk, NULL, type_env);
+  irg_walk(get_irg_end(irg), start_type_walk, NULL, &type_env);
 
   type_walk_2((type_or_ent *)get_irg_ent(irg), pre, post, env);
 
   type_walk_2((type_or_ent *)get_irg_frame_type(irg), pre, post, env);
 
-  free(type_env);
+  current_ir_graph = rem;
   return;
 }
 
