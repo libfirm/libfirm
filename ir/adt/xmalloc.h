@@ -14,41 +14,16 @@
 #ifndef _XMALLOC_H_
 #define _XMALLOC_H_
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include <stddef.h>
 
-#ifdef HAVE_ALLOCA_H
-#include <alloca.h>
-#endif
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#endif
+/* xmalloc() & friends. */
 
-#include "host.h"
+void *xmalloc(size_t size);
+void *xrealloc(void *ptr, size_t size);
+char *xstrdup(const char *str);
+void xnomem(void);
+void free(void *ptr);
 
-/* xmalloc() & friends.
-
-   The macros set tmalloc_tag to __FILE__, the functions leave it
-   alone.  Use the latter if you set it yourself.  See tmalloc.c for
-   details.  */
-
-extern void *xmalloc (size_t);
-extern void *xrealloc (void *, size_t);
-extern char *xstrdup (const char *);
-extern void  xnomem (void);
-extern void  free (void *);
-
-# define xmalloc(size)       (XMALLOC_TRACE (xmalloc) ((size)))
-# define xrealloc(ptr, size) (XMALLOC_TRACE (xrealloc) ((ptr), (size)))
-# define xstrdup(str)        (XMALLOC_TRACE (xstrdup) ((str)))
-# define xfree(ptr)          (XMALLOC_TRACE free ((ptr)))
-
-#if defined(HAVE_GNU_MALLOC) && defined(DEBUG)
-extern const char *tmalloc_tag;
-# define XMALLOC_TRACE tmalloc_tag = __FILE__,
-#else
-# define XMALLOC_TRACE
-#endif
+#define xfree(ptr)      free(ptr)
 
 #endif /* _XMALLOC_H_ */
