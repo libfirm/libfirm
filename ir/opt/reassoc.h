@@ -13,6 +13,7 @@
  * @file reassoc.h
  *
  * Reassociation optimization.
+ * Uses the "firm.opt.reassoc" debug space
  *
  * @author Michael Beck
  */
@@ -30,6 +31,8 @@
  *
  * See Muchnik 12.3.1 Algebraic Simplification and Reassociation of
  * Addressing Expressions.
+ *
+ *
  */
 void optimize_reassociation(ir_graph *irg);
 

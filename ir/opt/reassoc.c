@@ -373,6 +373,5 @@ void firm_init_reassociation(void)
   INIT(Eor);
 #undef INIT
 
-	dbg = firm_dbg_register("firm.opt.reassoc");
-	firm_dbg_set_mask(dbg, -1);
+  dbg = firm_dbg_register("firm.opt.reassoc");
 }
