@@ -363,4 +363,7 @@ void          inc_irg_block_visited (ir_graph *irg);
 unsigned long get_irg_block_visited (const ir_graph *irg);
 void          set_irg_block_visited (ir_graph *irg, unsigned long i);
 
+/** put the proj's into the same block as its predecessors */
+void normalize_proj_nodes(ir_graph *irg);
+
 # endif /* _IRGRAPH_H_ */

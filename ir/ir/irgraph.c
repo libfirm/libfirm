@@ -684,3 +684,27 @@ void
 (inc_irg_block_visited)(ir_graph *irg) {
   __inc_irg_block_visited(irg);
 }
+
+
+/**
+ * walker Start->End: places Proj nodes into the same block
+ * as it's predecessors
+ *
+ * @param n    the node
+ * @param env  ignored
+ */
+static void normalize_proj_walker(ir_node *n, void *env)
+{
+  if (is_Proj(n)) {
+    ir_node *pred  = get_Proj_pred(n);
+    ir_node *block = get_nodes_block(pred);
+
+    set_nodes_block(n, block);
+  }
+}
+
+/* put the proj's into the same block as its predecessors */
+void normalize_proj_nodes(ir_graph *irg)
+{
+  irg_walk_graph(irg, NULL, normalize_proj_walker, NULL);
+}
