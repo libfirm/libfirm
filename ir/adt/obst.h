@@ -12,8 +12,6 @@
 
 
 # include <obstack.h>
-# include <stdlib.h>
-
 # include "xmalloc.h"
 
 # define obstack_chunk_alloc xmalloc
