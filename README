@@ -15,8 +15,11 @@ cd testprograms
 make
 make run
 
-if you have set up the include and libdir using configure you can install
-the library and its headers by 'make install'
+If you have set up the include and libdir using configure you can install
+the library and its headers by 'make install'.  This is encouraged if the
+library is hooked up to any other modules, e.g., a front end.  Only the
+external headers are guaranteed to remain stable, the implementation might
+change.
 
 For more documentation see /include/firm.h.
 To generate FIRM code from a compiler frontend read the documentation
