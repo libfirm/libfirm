@@ -1,3 +1,7 @@
+
+  19.3.2002 Goetz
+  Added flag "peculiarity" to entity.h, type.h.
+
   15.3. Goetz
   Bug: dominator construction aborts for BreakTest with flag 3.31
   Problem: optimization of many subsequent blocks (Jmp-chains)

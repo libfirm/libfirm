@@ -262,6 +262,7 @@ type   *new_type_class (ident *name) {
   res->attr.ca.members    = NEW_ARR_F (entity *, 1);
   res->attr.ca.subtypes   = NEW_ARR_F (type *, 1);
   res->attr.ca.supertypes = NEW_ARR_F (type *, 1);
+  res->attr.ca.peculiarity = existent;
 
   return res;
 }

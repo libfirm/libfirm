@@ -80,6 +80,7 @@ new_entity (type *owner, ident *name, type *type)
   } else {
     res->variability = uninitialized;
   }
+  res->peculiarity = existent;
   res->volatility = non_volatile;
   res->ld_name = NULL;
   res->overwrites = NEW_ARR_F(entity *, 1);
