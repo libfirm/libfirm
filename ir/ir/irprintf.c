@@ -1,5 +1,18 @@
+/*
+ * Project:     libFIRM
+ * File name:   ir/ir/irprintf.c
+ * Purpose:     A little printf helper unterstanding firm types
+ * Author:      Sebastian Hack
+ * Created:     29.11.2004
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1998-2004 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
+
 /**
- * A little printf helper funterstanding firm types.
+ * @file irprinf.c
+ *
+ * A little printf helper unterstanding firm types.
  * @author Sebastian Hack
  * @date 29.11.2004
  */
@@ -8,15 +21,19 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include "irmode.h"
-#include "irnode.h"
+#include "ident.h"
+#include "irmode_t.h"
+#include "irnode_t.h"
+#include "entity_t.h"
 #include "tv.h"
 #include "irprintf.h"
 #include "pset.h"
 #include "iterator.h"
 
 
-
+/**
+ * append a char to a string buffer
+ */
 static void str_append_char(void *object, size_t n, char ch)
 {
 	char buf[2];
@@ -27,26 +44,41 @@ static void str_append_char(void *object, size_t n, char ch)
 	strncat(object, buf, n);
 }
 
+/**
+ * append a string to a string buffer
+ */
 static void str_append_str(void *object, size_t n, const char *str)
 {
 	strncat(object, str, n);
 }
 
+/**
+ * append a char to a file
+ */
 static void file_append_char(void *object, size_t n, char ch)
 {
 	fputc(ch, object);
 }
 
+/**
+ * append a string to a file
+ */
 static void file_append_str(void *object, size_t n, const char *str)
 {
 	fputs(str, object);
 }
 
+/**
+ * the file appender
+ */
 static const appender_t file_appender = {
 	file_append_char,
 	file_append_str
 };
 
+/**
+ * the string buffer appender
+ */
 static const appender_t str_appender = {
 	str_append_char,
 	str_append_str
@@ -99,6 +131,18 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 				case 's':
 					DUMP_STR(va_arg(args, const char *));
 					break;
+
+                                case 'I':
+                                        DUMP_STR(get_id_str(va_arg(args, ident *)));
+                                        break;
+
+                                case 'e':
+                                        DUMP_STR(get_entity_name(va_arg(args, entity *)));
+                                        break;
+
+                                case 'E':
+                                        DUMP_STR(get_entity_ldname(va_arg(args, entity *)));
+                                        break;
 
 				case 'p':
 					snprintf(buf, sizeof(buf), "%p", va_arg(args, void *));
