@@ -23,6 +23,7 @@ void local_optimize_graph (ir_graph *irg);
    `opt_dead_node_elimination' are set.
    The graph may not be in state phase_building.  The outs datasturcture
    is freed, the outs state set to no_outs. (@@@ Change this? -> inconsistent.)
+   Backedge information is conserved.
    Removes old attributes of nodes.  Sets link field to NULL.
    Attention: the numbers assigned to nodes if the library is compiled for
    development/debugging are not conserved by copying. */

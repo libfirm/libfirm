@@ -312,6 +312,7 @@ equivalent_node (ir_node *n)
 	  (get_irn_op(get_Block_cfgpred(n, 0)) == op_Jmp) &&
 	  (get_opt_control_flow())) {
 	n = get_nodes_Block(get_Block_cfgpred(n, 0));                     DBG_OPT_STG;
+
       } else if ((get_Block_n_cfgpreds(n) == 2) &&
 		 (get_opt_control_flow())) {
 	/* Test whether Cond jumps twice to this block

@@ -197,3 +197,12 @@ int is_cfopcode(ir_op *op) {
 	  || (op == op_EndReg)
 	  || (op == op_EndExcept));
 }
+
+/* Returns true if the operation manipulates interprocedural control flow:
+   CallBegin, EndReg, EndExcept */
+int is_ip_cfopcode(ir_op *op) {
+  return ((op == op_CallBegin)
+	  || (op == op_EndReg)
+	  || (op == op_EndExcept));
+
+}

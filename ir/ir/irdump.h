@@ -351,5 +351,7 @@ void dump_out_edges();
  */
 void dump_dominator_information();
 
+void dump_loop_information();
+void dont_dump_loop_information();
 
 # endif /* _IRDUMP_H_ */

@@ -412,14 +412,22 @@ void set_irg_dom_inconsistent(ir_graph *irg) {
 }
 
 INLINE void
-set_irg_pinned (ir_graph *irg, op_pinned p)
-{
+set_irg_pinned (ir_graph *irg, op_pinned p) {
   irg->pinned = p;
 }
 
-/* maximum of all ir_graphs */
-static int max_irg_visited = 0;
+INLINE void
+set_irg_link (ir_graph *irg, void *thing) {
+  irg->link = thing;
+}
 
+INLINE void *
+get_irg_link (ir_graph *irg) {
+  return irg->link;
+}
+
+/* maximum visited flag content of all ir_graph visited fields. */
+static int max_irg_visited = 0;
 
 unsigned long
 get_irg_visited (ir_graph *irg)
@@ -431,6 +439,9 @@ void
 set_irg_visited (ir_graph *irg, unsigned long visited)
 {
   irg->visited = visited;
+  if (irg->visited > max_irg_visited) {
+    max_irg_visited = irg->visited;
+  }
 }
 
 void
@@ -444,6 +455,19 @@ inc_irg_visited (ir_graph *irg)
 unsigned long
 get_max_irg_visited(void)
 {
+  int i;
+  for(i = 0; i < get_irp_n_irgs(); i++)
+    assert(max_irg_visited >= get_irg_visited(get_irp_irg(i)));
+  return max_irg_visited;
+}
+
+unsigned long
+inc_max_irg_visited(void)
+{
+  int i;
+  for(i = 0; i < get_irp_n_irgs(); i++)
+    assert(max_irg_visited >= get_irg_visited(get_irp_irg(i)));
+  max_irg_visited++;
   return max_irg_visited;
 }
 

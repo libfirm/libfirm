@@ -205,11 +205,28 @@ typedef enum {
 irg_dom_state get_irg_dom_state(ir_graph *irg);
 void set_irg_dom_inconsistent(ir_graph *irg);
 
+/* state: loopinfo_state
+   Loop information describes the loops within the control and
+   data flow of the procedure.
+typedef enum {
+  no_loopinfo,
+  loopinfo_consistent,
+  loopinfo_inconsistent
+} irg_loopinfo_state;
+irg_loopinfo_state get_irg_loopinfo_state(ir_graph *irg);
+void set_irg_loopinfo_inconsistent(ir_graph *irg);
+*/
+
+/* A void * field to link arbritary information to the node. */
+void set_irg_link (ir_graph *irg, void *thing);
+void *get_irg_link (ir_graph *irg);
+
 /* increments visited by one */
 void     inc_irg_visited(ir_graph *irg);
 unsigned long get_irg_visited (ir_graph *irg);
 void     set_irg_visited(ir_graph *irg, unsigned long i);
 unsigned long get_max_irg_visited(void);
+unsigned long inc_max_irg_visited(void);
 
 /* increments block_visited by one */
 void     inc_irg_block_visited(ir_graph *irg);

@@ -37,6 +37,10 @@ typedef struct {
   ir_node ** in_cg;           /* array with predecessors in
 			       * interprocedural_view, if they differ
 			       * from intraprocedural predecessors */
+  int *backedge;              /* Field n set to true if pred n is backedge.
+			         @@@ Ev. replace by bitfield! */
+  int *cg_backedge;           /* Field n set to true if pred n is interprocedural backedge.
+			         @@@ Ev. replace by bitfield! */
 } block_attr;
 
 /* Cond attributes */
@@ -91,6 +95,8 @@ typedef struct
 typedef struct {
   long proj;                 /* contains the result position to project (Proj) */
   ir_node ** in_cg;          /* array with interprocedural predecessors (Phi) */
+  int *backedge;              /* Field n set to true if pred n is backedge.
+			         @@@ Ev. replace by bitfield! */
 } filter_attr;
 
 /* EndReg/EndExcept attributes */
@@ -117,7 +123,7 @@ typedef union {
   call_attr      call;  /* For Call: pointer to the type of the method to call */
   callbegin_attr callbegin; /* For CallBegin */
   alloc_attr     a;     /* For Alloc. */
-  io_attr		 io;	/* For InstOf */
+  io_attr	 io;	/* For InstOf */
   type          *f;     /* For Free. */
   int            phi0_pos;  /* For Phi. Used to remember the value defined by
 			       this Phi node.  Needed when the Phi is completed
@@ -125,7 +131,10 @@ typedef union {
 			       predecessors. If this attribute is set, the Phi
 			       node takes the role of the obsolete Phi0 node,
 			       therefore the name. */
-  long           proj;   /* For Proj: contains the result position to project */
+  int *phi_backedge;    /* For Phi after construction.
+			   Field n set to true if pred n is backedge.
+			   @@@ Ev. replace by bitfield! */
+  long           proj;  /* For Proj: contains the result position to project */
   filter_attr    filter;    /* For Filter */
   end_attr       end;       /* For EndReg, EndExcept */
 #if PRECISE_EXC_CONTEXT

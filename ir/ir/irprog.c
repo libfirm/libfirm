@@ -42,10 +42,9 @@ ir_prog *new_ir_prog (void) {
   res->types  = NEW_ARR_F (type *, 1);
   res->glob_type = new_type_class(id_from_str (GLOBAL_TYPE_NAME,
 					       strlen(GLOBAL_TYPE_NAME)));
-  /* Remove type from type list.  Must be treated differently than other types. */
+  /* Remove type from type list.  Must be treated differently than
+     other types. */
   remove_irp_type_from_list(res->glob_type);
-  /* @@@ Das ist hier das 2. mal!!
-     add_irp_type(res->glob_type);  */
 
   res->const_code_irg = new_const_code_irg();
 

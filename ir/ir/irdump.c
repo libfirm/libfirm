@@ -29,6 +29,7 @@
 # include "irouts.h"
 # include "irdom.h"
 # include "common_t.h"
+# include  "irloop.h"
 
 # include "exc.h"
 
@@ -43,6 +44,8 @@
 #define CF_EDGE_ATTR    "color: red"
 #define MEM_EDGE_ATTR   "color: blue"
 #define DOMINATOR_EDGE_ATTR "color: red"
+
+#define BACK_EDGE_ATTR "linestyle: dashed "
 
 /* Attributes of edges between Firm nodes and type/entity nodes */
 #define NODE2TYPE_EDGE_ATTR "class: 2 priority: 2 linestyle: dotted"
@@ -85,13 +88,13 @@ int edge_label = 1;
 int const_entities = 1;
 /* A compiler option to dump the keep alive edges */
 int dump_keepalive = 0;
-/* A compiler option to dump the out edges in dump_ir_graph */
+/* Compiler options to dump analysis information in dump_ir_graph */
 int dump_out_edge_flag = 0;
 int dump_dominator_information_flag = 0;
+int dump_loop_information_flag = 0;
 
 /* A global variable to record output of the Bad node. */
 int Bad_dumped;
-
 
 void dump_ir_blocks_nodes (ir_node *n, void *env);
 void dump_whole_node (ir_node *n, void* env);
@@ -163,10 +166,20 @@ dump_node_mode (ir_node *n)
   }
 }
 
+void dump_node_loop_info(ir_node *n) {
+  //  if (get_irn_loop(n))
+  //  xfprintf(F, "\n in loop %d", get_loop_depth(get_irn_loop(n)));
+}
+
 INLINE void
 dump_node_nodeattr (ir_node *n)
 {
   switch (n->op->code) {
+  case iro_Start:
+    if (false && interprocedural_view) {
+      xfprintf (F, "%I", get_entity_ident(get_irg_ent(current_ir_graph)));
+    }
+    break;
   case iro_Proj:
     if (n->in[1]->op->code == iro_Cmp) {
       xfprintf (F, "%s", get_pnc_string(n->attr.proj));
@@ -222,6 +235,7 @@ dump_node (ir_node *n) {
 
   dump_node_opcode(n);
   dump_node_mode (n);
+  //if (dump_loop_information_flag) dump_node_loop_info(n);
   xfprintf (F, " ");
   dump_node_nodeattr(n);
 #ifdef DEBUG_libfirm
@@ -441,6 +455,8 @@ dump_ir_block_edge(ir_node *n)  {
 void print_edge_vcgattr(ir_node *from, int to) {
   assert(from);
 
+  if (is_backedge(from, to)) xfprintf (F, BACK_EDGE_ATTR);
+
   switch (get_irn_opcode(from)) {
   case iro_Block:
     xfprintf (F, CF_EDGE_ATTR);
@@ -533,8 +549,12 @@ dump_ir_data_edges(ir_node *n)  {
   for (i = 0; i < get_irn_arity(n); i++) {
     ir_node * pred = get_irn_n(n, i);
     assert(pred);
-    if (interprocedural_view && get_irn_visited(pred) < visited) continue; /* pred not dumped */
-    fprintf (F, "edge: {sourcename: \"");
+    if (interprocedural_view && get_irn_visited(pred) < visited)
+      continue; /* pred not dumped */
+    if (is_backedge(n, i))
+      fprintf (F, "backedge: {sourcename: \"");
+    else
+      fprintf (F, "edge: {sourcename: \"");
     PRINT_NODEID(n);
     fprintf (F, "\" targetname: \"");
     PRINT_NODEID(pred);
@@ -558,6 +578,43 @@ dump_out_edge (ir_node *n, void* env) {
     fprintf (F, "\" color: red linestyle: dashed");
     fprintf (F, "}\n");
   }
+}
+
+static INLINE void
+dump_loop_node_edge (ir_loop *loop, int i) {
+  assert(loop);
+  fprintf (F, "edge: {sourcename: \"%p\" targetname: \"", loop);
+  PRINT_NODEID(get_loop_node(loop, i));
+  fprintf (F, "\" color: green");
+  fprintf (F, "}\n");
+}
+
+static
+void dump_loops (ir_loop *loop) {
+  int i;
+  /* dump this loop node */
+  xfprintf (F, "node: {title: \"%p\" label: \"loop %d, %d sons, %d nodes\" }\n",
+	    loop, get_loop_depth(loop), get_loop_n_sons(loop), get_loop_n_nodes(loop));
+  /* dump edges to nodes in loop -- only if it is a real loop */
+  if (get_loop_depth(loop) != 0) {
+    for (i = 0; i < get_loop_n_nodes(loop); i++) {
+      dump_loop_node_edge(loop, i);
+    }
+  }
+  for (i = 0; i < get_loop_n_sons(loop); i++) {
+    dump_loops(get_loop_son(loop, i));
+  }
+}
+
+static INLINE
+void dump_loop_info(ir_graph *irg) {
+  ir_graph *rem = current_ir_graph;
+  current_ir_graph = irg;
+
+  if (get_irg_loop(irg))
+    dump_loops(get_irg_loop(irg));
+
+  current_ir_graph = rem;
 }
 
 
@@ -947,7 +1004,6 @@ vcg_close () {
 /************************************************************************/
 
 int node_floats(ir_node *n) {
-
   return ((get_op_pinned(get_irn_op(n)) == floats) &&
 	  (get_irg_pinned(current_ir_graph) == floats));
 }
@@ -1070,6 +1126,10 @@ dump_ir_block_graph (ir_graph *irg)
   vcg_open (irg, "");
 
   dump_ir_block_graph_2 (irg);
+
+  if (dump_loop_information_flag) {
+    dump_loop_info(irg);
+  }
 
   vcg_close();
   current_ir_graph = rem;
@@ -1268,6 +1328,13 @@ void dump_dominator_information() {
   dump_dominator_information_flag = 1;
 }
 
+void dump_loop_information() {
+  dump_loop_information_flag = 1;
+}
+
+void dont_dump_loop_information() {
+  dump_loop_information_flag = 0;
+}
 
 static void clear_link(ir_node * node, void * env) {
   set_irn_link(node, NULL);
@@ -1349,8 +1416,11 @@ void dump_cg_block_graph(ir_graph * irg) {
     for (i = ARR_LEN(arr) - 1; i >= 0; --i) {
       ir_node * node = arr[i];
       if (is_Block(node)) {
+	/* Dumps the block and all the nodes in the block , with are to be found in
+	   Block->link. */
 	dump_cg_ir_block(node, NULL);
       } else {
+	/* Node that are not in a Block. */
 	dump_node(node);
 	dump_ir_data_edges(node);
       }
@@ -1363,6 +1433,10 @@ void dump_cg_block_graph(ir_graph * irg) {
   }
 
   pmap_destroy(map);
+
+  if (dump_loop_information_flag) {
+    dump_loop_info(irg);
+  }
 
   vcg_close();
 }

@@ -18,6 +18,7 @@
 #include "irmode_t.h"
 #include "typegmod_t.h"
 #include "array.h"
+#include "irbackedge_t.h"
 
 #ifdef DEBUG_libfirm
 #include "irprog_t.h"
@@ -30,7 +31,7 @@
 #define RETURN_RESULT_OFFSET 1  /* mem is not a result */
 #define END_KEEPALIVE_OFFSET 0
 
-/* Declarations for INLINEing */
+/* Declarations for inlineing */
 INLINE ir_node ** get_irn_in (ir_node *node);
 INLINE ir_mode *get_irn_mode (ir_node *node);
 INLINE ir_op *get_irn_op (ir_node *node);
@@ -256,7 +257,12 @@ set_irn_in (ir_node *node, int arity, ir_node **in) {
    If it is a block, the entry -1 is NULL. */
 INLINE ir_node *
 get_irn_n (ir_node *node, int n) {
-  assert(node && -1 <= n && n < get_irn_arity(node));
+  /* debug @@@ */
+  if (-1 > n || get_irn_arity(node) <= n) {
+    printf("pos: %d, arity: %d ", n, get_irn_arity(node));
+    DDMN(node);
+  }
+  assert(node); assert(-1 <= n && n < get_irn_arity(node));
   if (interprocedural_view) { /* handle Filter and Block specially */
     if (get_irn_opcode(node) == iro_Filter) {
       assert(node->attr.filter.in_cg);
@@ -375,6 +381,12 @@ INLINE int
 irn_not_visited  (ir_node *node) {
   assert (node);
   return (node->visited < current_ir_graph->visited);
+}
+
+INLINE int
+irn_visited  (ir_node *node) {
+  assert (node);
+  return (node->visited >= current_ir_graph->visited);
 }
 
 INLINE void
@@ -498,7 +510,14 @@ get_Block_n_cfgpreds (ir_node *node) {
 
 INLINE ir_node *
 get_Block_cfgpred (ir_node *node, int pos) {
+  /* debug @@@ */
   assert (node->op == op_Block);
+  if (-1 > pos || get_irn_arity(node) <= pos) {
+    dump_ir_block_graph(current_ir_graph);
+    printf("pos: %d, arity: %d ", pos, get_irn_arity(node));
+    DDMN(node);
+  }
+  assert(node); assert(-1 <= pos && pos < get_irn_arity(node));
   return get_irn_n(node, pos);
 }
 
@@ -532,12 +551,14 @@ set_Block_block_visited (ir_node *node, unsigned long visit) {
 }
 
 /* For this current_ir_graph must be set. */
-INLINE void mark_Block_block_visited (ir_node *node) {
+INLINE void
+mark_Block_block_visited (ir_node *node) {
   assert (node->op == op_Block);
   node->attr.block.block_visited = get_irg_block_visited(current_ir_graph);
 }
 
-INLINE int Block_not_block_visited(ir_node *node) {
+INLINE int
+Block_not_block_visited(ir_node *node) {
   assert (node->op == op_Block);
   return (node->attr.block.block_visited < get_irg_block_visited(current_ir_graph));
 }
@@ -555,55 +576,48 @@ set_Block_graph_arr (ir_node *node, int pos, ir_node *value) {
 }
 
 /* handler handling for Blocks */
-void set_Block_handler (ir_node *block, ir_node *handler)
-{
+void
+set_Block_handler (ir_node *block, ir_node *handler)  {
   assert ((block->op == op_Block));
   assert ((handler->op == op_Block));
-
   block->attr.block.handler_entry = handler;
 }
 
-ir_node *get_Block_handler (ir_node *block)
-{
+ir_node *
+get_Block_handler (ir_node *block) {
   assert ((block->op == op_Block));
-
   return (block->attr.block.handler_entry);
 }
 
 /* handler handling for Nodes */
-void set_Node_handler (ir_node *node, ir_node *handler)
-{
+void
+set_Node_handler (ir_node *node, ir_node *handler) {
   set_Block_handler (get_nodes_Block (node), handler);
 }
 
-ir_node *get_Node_handler (ir_node *node)
-{
+ir_node *
+get_Node_handler (ir_node *node) {
   return (get_Block_handler (get_nodes_Block (node)));
 }
 
-
 /* exc_t handling for Blocks */
-void set_Block_exc (ir_node *block, exc_t exc)
-{
+void set_Block_exc (ir_node *block, exc_t exc) {
   assert ((block->op == op_Block));
   block->attr.block.exc = exc;
 }
 
-exc_t get_Block_exc (ir_node *block)
-{
+exc_t get_Block_exc (ir_node *block) {
   assert ((block->op == op_Block));
 
   return (block->attr.block.exc);
 }
 
 /* exc_t handling for Nodes */
-void set_Node_exc (ir_node *node, exc_t exc)
-{
+void set_Node_exc (ir_node *node, exc_t exc) {
   set_Block_exc (get_nodes_Block (node), exc);
 }
 
-exc_t get_Node_exc (ir_node *node)
-{
+exc_t get_Node_exc (ir_node *node) {
   return (get_Block_exc (get_nodes_Block (node)));
 }
 
@@ -612,6 +626,7 @@ void set_Block_cg_cfgpred_arr(ir_node * node, int arity, ir_node ** in) {
   if (node->attr.block.in_cg == NULL || arity != ARR_LEN(node->attr.block.in_cg) - 1) {
     node->attr.block.in_cg = NEW_ARR_D(ir_node *, current_ir_graph->obst, arity + 1);
     node->attr.block.in_cg[0] = NULL;
+    node->attr.block.cg_backedge = new_backedge_arr(current_ir_graph->obst, arity);
   }
   memcpy(node->attr.block.in_cg + 1, in, sizeof(ir_node *) * arity);
 }
@@ -631,6 +646,11 @@ ir_node ** get_Block_cg_cfgpred_arr(ir_node * node) {
 int get_Block_cg_n_cfgpreds(ir_node * node) {
   assert(node->op == op_Block && node->attr.block.in_cg);
   return ARR_LEN(node->attr.block.in_cg) - 1;
+}
+
+ir_node * get_Block_cg_cfgpred(ir_node * node, int pos) {
+  assert(node->op == op_Block && node->attr.block.in_cg);
+  return node->attr.block.in_cg[pos + 1];
 }
 
 void remove_Block_cg_cfgpred_arr(ir_node * node) {
@@ -2084,18 +2104,35 @@ set_Filter_proj (ir_node *node, long proj) {
   node->attr.filter.proj = proj;
 }
 
+/* Don't use get_irn_arity, get_irn_n in implementation as access
+   shall work independent of view!!! */
 void set_Filter_cg_pred_arr(ir_node * node, int arity, ir_node ** in) {
   assert(node->op == op_Filter);
   if (node->attr.filter.in_cg == NULL || arity != ARR_LEN(node->attr.filter.in_cg) - 1) {
     node->attr.filter.in_cg = NEW_ARR_D(ir_node *, current_ir_graph->obst, arity + 1);
+    node->attr.filter.backedge = NEW_ARR_D (int, current_ir_graph->obst, arity);
+    memset(node->attr.filter.backedge, 0, sizeof(int) * arity);
     node->attr.filter.in_cg[0] = node->in[0];
   }
   memcpy(node->attr.filter.in_cg + 1, in, sizeof(ir_node *) * arity);
 }
 
 void set_Filter_cg_pred(ir_node * node, int pos, ir_node * pred) {
-  assert(node->op == op_Filter && node->attr.filter.in_cg && 0 <= pos && pos < ARR_LEN(node->attr.filter.in_cg) - 1);
+  assert(node->op == op_Filter && node->attr.filter.in_cg &&
+	 0 <= pos && pos < ARR_LEN(node->attr.filter.in_cg) - 1);
   node->attr.filter.in_cg[pos + 1] = pred;
+}
+int get_Filter_n_cg_preds(ir_node *node) {
+  assert(node->op == op_Filter && node->attr.filter.in_cg);
+  return (ARR_LEN(node->attr.filter.in_cg) - 1);
+}
+ir_node *get_Filter_cg_pred(ir_node *node, int pos) {
+  int arity;
+  assert(node->op == op_Filter && node->attr.filter.in_cg &&
+	 0 <= pos);
+  arity = ARR_LEN(node->attr.filter.in_cg);
+  assert(pos <  arity - 1);
+  return node->attr.filter.in_cg[pos + 1];
 }
 
 
@@ -2103,7 +2140,8 @@ INLINE ir_graph *
 get_irn_irg(ir_node *node) {
   if (get_irn_op(node) == op_CallBegin) {
     return node->attr.callbegin.irg;
-  } else if (get_irn_op(node) == op_EndReg || get_irn_op(node) == op_EndExcept) {
+  } else if (get_irn_op(node) == op_EndReg ||
+	     get_irn_op(node) == op_EndExcept) {
     return node->attr.end.irg;
   } else {
     assert(0 && "no irg attr");
@@ -2184,6 +2222,12 @@ is_Proj (ir_node *node) {
 int
 is_cfop(ir_node *node) {
   return is_cfopcode(get_irn_op(node));
+}
+
+/* Returns true if the operation manipulates interprocedural control flow:
+   CallBegin, EndReg, EndExcept */
+int is_ip_cfop(ir_node *node) {
+  return is_ip_cfopcode(get_irn_op(node));
 }
 
 /* Returns true if the operation can change the control flow because

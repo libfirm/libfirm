@@ -95,6 +95,8 @@ INLINE unsigned long get_irn_visited (ir_node *node);
 INLINE void          mark_irn_visited (ir_node *node);
 /* Returns 1 if visited < get_irg_visited(current_ir_graph).  */
 INLINE int           irn_not_visited  (ir_node *node);
+/* Returns 1 if visited >= get_irg_visited(current_ir_graph).  */
+INLINE int           irn_visited      (ir_node *node);
 INLINE void          set_irn_link          (ir_node *node, void *link);
 INLINE void         *get_irn_link          (ir_node *node);
 /* Outputs a unique number for this node if libfirm is compiled for
@@ -156,6 +158,17 @@ INLINE void      set_Block_block_visited (ir_node *node, unsigned long visit);
 INLINE void      mark_Block_block_visited(ir_node *node);
 INLINE int       Block_not_block_visited(ir_node *node);
 
+/* Set and remove interprocedural predecessors. If the interprocedural
+ * predecessors are removed, the node has the same predecessors in
+ * both views. */
+void set_Block_cg_cfgpred_arr(ir_node * node, int arity, ir_node ** in);
+void set_Block_cg_cfgpred(ir_node * node, int pos, ir_node * pred);
+/* @@@ not supported */
+ir_node ** get_Block_cg_cfgpred_arr(ir_node * node);
+int get_Block_cg_n_cfgpreds(ir_node * node);
+ir_node * get_Block_cg_cfgpred(ir_node * node, int pos);
+void remove_Block_cg_cfgpred_arr(ir_node * node);
+
 /* exc handling @@@ ajacs specific -- not supported */
 void     set_Block_exc     (ir_node*, exc_t);
 exc_t    get_Block_exc     (ir_node*);
@@ -169,15 +182,6 @@ ir_node* get_Block_handler (ir_node*);
 
 void     set_Node_handler  (ir_node*, ir_node*);
 ir_node* get_Node_handler  (ir_node*);
-/* Set and remove interprocedural predecessors. If the interprocedural
- * predecessors are removed, the node has the same predecessors in
- * both views. */
-void set_Block_cg_cfgpred_arr(ir_node * node, int arity, ir_node ** in);
-void set_Block_cg_cfgpred(ir_node * node, int pos, ir_node * pred);
-/* @@@ not supported */
-ir_node ** get_Block_cg_cfgpred_arr(ir_node * node);
-int get_Block_cg_n_cfgpreds(ir_node * node);
-void remove_Block_cg_cfgpred_arr(ir_node * node);
 
 INLINE int  get_End_n_keepalives(ir_node *end);
 INLINE ir_node *get_End_keepalive(ir_node *end, int pos);
@@ -446,9 +450,11 @@ INLINE ir_node  *get_Filter_pred(ir_node *node);
 INLINE void      set_Filter_pred(ir_node *node, ir_node *pred);
 INLINE long      get_Filter_proj(ir_node *node);
 INLINE void      set_Filter_proj(ir_node *node, long proj);
-/* set the interprocedural predecessors */
+/* set the interprocedural predecessors, ...d_arr uses current_ir_graph. */
 void             set_Filter_cg_pred_arr(ir_node * node, int arity, ir_node ** in);
 void             set_Filter_cg_pred(ir_node * node, int pos, ir_node * pred);
+int              get_Filter_n_cg_preds(ir_node *node);
+ir_node *        get_Filter_cg_pred(ir_node *node, int pos);
 
 INLINE ir_node *get_Load_mem (ir_node *node);
 INLINE void     set_Load_mem (ir_node *node, ir_node *mem);
@@ -529,8 +535,12 @@ INLINE int      is_no_Block (ir_node *node);
  * intraprocedural view */
 INLINE int      is_Proj (ir_node *node);
 /* Returns true if the operation manipulates control flow:
-   Start, End, Jmp, Cond, Return, Raise, Bad */
+   Start, End, Jmp, Cond, Return, Raise, Bad, CallBegin, EndReg, EndExcept */
 int is_cfop(ir_node *node);
+
+/* Returns true if the operation manipulates interprocedural control flow:
+   CallBegin, EndReg, EndExcept */
+int is_ip_cfop(ir_node *node);
 /* Returns true if the operation can change the control flow because
    of an exception: Call, Quot, DivMod, Div, Mod, Load, Store, Alloc,
    Bad. */

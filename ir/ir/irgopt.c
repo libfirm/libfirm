@@ -27,6 +27,8 @@
 # include "pset.h"
 # include "pdeq.h"       /* Fuer code placement */
 # include "irouts.h"
+# include "irloop.h"
+# include "irbackedge_t.h"
 
 /* Defined in iropt.c */
 pset *new_identities (void);
@@ -128,13 +130,29 @@ compute_new_arity(ir_node *b) {
   }
 }
 
+static INLINE new_backedge_info(ir_node *n) {
+  switch(get_irn_opcode(n)) {
+  case iro_Block:
+    n->attr.block.cg_backedge = NULL;
+    n->attr.block.backedge = new_backedge_arr(current_ir_graph->obst, get_irn_arity(n));
+    break;
+  case iro_Phi:
+    n->attr.phi_backedge = new_backedge_arr(current_ir_graph->obst, get_irn_arity(n));
+    break;
+  case iro_Filter:
+    n->attr.filter.backedge = new_backedge_arr(current_ir_graph->obst, get_irn_arity(n));
+    break;
+  default: ;
+  }
+}
+
 /* Copies the node to the new obstack. The Ins of the new node point to
    the predecessors on the old obstack.  For block/phi nodes not all
    predecessors might be copied.  n->link points to the new node.
    For Phi and Block nodes the function allocates in-arrays with an arity
    only for useful predecessors.  The arity is determined by counting
    the non-bad predecessors of the block. */
-void
+static void
 copy_node (ir_node *n, void *env) {
   ir_node *nn, *block;
   int new_arity;
@@ -142,6 +160,7 @@ copy_node (ir_node *n, void *env) {
   if (get_irn_opcode(n) == iro_Block) {
     block = NULL;
     new_arity = compute_new_arity(n);
+    n->attr.block.graph_arr = NULL;
   } else {
     block = get_nodes_Block(n);
     if (get_irn_opcode(n) == iro_Phi) {
@@ -161,6 +180,7 @@ copy_node (ir_node *n, void *env) {
      was allocated on the old obstack the pointers now are dangling.  This
      frees e.g. the memory of the graph_arr allocated in new_immBlock. */
   copy_attrs(n, nn);
+  new_backedge_info(nn);
   set_new_node(n, nn);
 
   /*  printf("\n old node: "); DDMSG2(n);
@@ -170,7 +190,7 @@ copy_node (ir_node *n, void *env) {
 
 /* Copies new predecessors of old node to new node remembered in link.
    Spare the Bad predecessors of Phi and Block nodes. */
-void
+static void
 copy_preds (ir_node *n, void *env) {
   ir_node *nn, *block;
   int i, j;
@@ -187,6 +207,7 @@ copy_preds (ir_node *n, void *env) {
     for (i = 0; i < get_irn_arity(n); i++)
       if (get_irn_opcode(get_irn_n(n, i)) != iro_Bad) {
 	set_irn_n (nn, j, get_new_node(get_irn_n(n, i)));
+	//if (is_backedge(n, i)) set_backedge(nn, j);
 	j++;
       }
     /* repair the block visited flag from above misuse. Repair it in both
@@ -210,6 +231,7 @@ copy_preds (ir_node *n, void *env) {
     for (i = 0; i < get_irn_arity(n); i++)
       if (get_irn_opcode(get_irn_n(block, i)) != iro_Bad) {
 	set_irn_n (nn, j, get_new_node(get_irn_n(n, i)));
+	//if (is_backedge(n, i)) set_backedge(nn, j);
 	j++;
       }
     /* If the pre walker reached this Phi after the post walker visited the
@@ -230,7 +252,7 @@ copy_preds (ir_node *n, void *env) {
 }
 
 /* Copies the graph recursively, compacts the keepalive of the end node. */
-void
+static void
 copy_graph () {
   ir_node *oe, *ne; /* old end, new end */
   ir_node *ka;      /* keep alive */
@@ -288,6 +310,7 @@ copy_graph () {
    graph.  */
 void
 copy_graph_env () {
+  ir_node *old_end;
   /* Not all nodes remembered in current_ir_graph might be reachable
      from the end node.  Assure their link is set to NULL, so that
      we can test whether new nodes have been computed. */
@@ -302,8 +325,9 @@ copy_graph_env () {
   copy_graph();
 
   /* fix the fields in current_ir_graph */
-  free_End(get_irg_end(current_ir_graph));
-  set_irg_end        (current_ir_graph, get_new_node(get_irg_end(current_ir_graph)));
+  old_end = get_irg_end(current_ir_graph);
+  set_irg_end (current_ir_graph, get_new_node(old_end));
+  free_End(old_end);
   set_irg_end_block  (current_ir_graph, get_new_node(get_irg_end_block(current_ir_graph)));
   if (get_irn_link(get_irg_frame(current_ir_graph)) == NULL) {
     copy_node (get_irg_frame(current_ir_graph), NULL);
@@ -357,6 +381,9 @@ dead_node_elimination(ir_graph *irg) {
   assert(get_irg_phase_state(current_ir_graph) != phase_building);
   free_outs(current_ir_graph);
 
+  /* @@@ so far we loose loops when copying */
+  set_irg_loop(current_ir_graph, NULL);
+
   if (get_optimize() && get_opt_dead_node_elimination()) {
 
     /* A quiet place, where the old obstack can rest in peace,
@@ -391,7 +418,7 @@ dead_node_elimination(ir_graph *irg) {
    then updates the entity if it's a local one.  env must be a pointer
    to the frame type of the procedure. The new entities must be in
    the link field of the entities. */
-void
+static INLINE void
 copy_node_inline (ir_node *n, void *env) {
   ir_node *new;
   type *frame_tp = (type *)env;
@@ -443,9 +470,9 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
 
 
   /** Part the Call node into two nodes.  Pre_call collects the parameters of
-	  the procedure and later replaces the Start node of the called graph.
-	  Post_call is the old Call node and collects the results of the called
-	  graph. Both will end up being a tuple.  **/
+      the procedure and later replaces the Start node of the called graph.
+      Post_call is the old Call node and collects the results of the called
+      graph. Both will end up being a tuple.  **/
   post_bl = get_nodes_Block(call);
   set_irg_current_block(current_ir_graph, post_bl);
   /* XxMxPxP of Start + parameter of Call */
@@ -604,7 +631,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
     }
   }
   if (n_exc > 0) {
-    new_Block(n_exc, cf_pred);      /* whatch it: current_block is changed! */
+    new_Block(n_exc, cf_pred);      /* watch it: current_block is changed! */
     set_Tuple_pred(call, 1, new_Jmp());
     /* The Phi for the memories with the exception objects */
     n_exc = 0;
@@ -877,28 +904,41 @@ consumer_dom_dca (ir_node *dca, ir_node *consumer, ir_node *producer)
   return dca;
 }
 
-#if 0
-/* @@@ Needs loop informations.  Will implement later interprocedural. */
+int get_irn_loop_depth(ir_node *n) {
+  return get_loop_depth(get_irn_loop(n));
+}
+
+/* Move n to a block with less loop depth than it's current block. The
+   new block must be dominated by early. */
 static void
-move_out_of_loops (ir_node *n, ir_node *dca)
+move_out_of_loops (ir_node *n, ir_node *early)
 {
-  assert(dca);
+  ir_node *best, *dca;
+  assert(n && early);
+
 
   /* Find the region deepest in the dominator tree dominating
      dca with the least loop nesting depth, but still dominated
      by our early placement. */
-  ir_node *best = dca;
-  while (dca != get_nodes_Block(n)) {
+  dca = get_nodes_Block(n);
+  best = dca;
+  while (dca != early) {
     dca = get_Block_idom(dca);
     if (!dca) break; /* should we put assert(dca)? */
-    if (get_Block_loop_depth(dca) < get_Block_loop_depth(best)) {
+    if (get_irn_loop_depth(dca) < get_irn_loop_depth(best)) {
       best = dca;
     }
   }
-  if (get_Block_dom_depth(best) >= get_Block_dom_depth(get_nodes_Block(n)))
+  if (best != get_nodes_Block(n)) {
+    /* debug output
+    printf("Moving out of loop: "); DDMN(n);
+    printf(" Outermost block: "); DDMN(early);
+    printf(" Best block: "); DDMN(best);
+    printf(" Innermost block: "); DDMN(get_nodes_Block(n));
+    */
     set_nodes_Block(n, best);
+  }
 }
-#endif
 
 /* Find the latest legal block for N and place N into the
    `optimal' Block between the latest and earliest legal block.
@@ -910,11 +950,17 @@ static void
 place_floats_late (ir_node *n)
 {
   int i;
+  ir_node *early;
 
   assert (irn_not_visited(n)); /* no multiple placement */
 
   /* no need to place block nodes, control nodes are already placed. */
-  if ((get_irn_op(n) != op_Block) && (!is_cfop(n)) && (get_irn_mode(n) != mode_X)) {
+  if ((get_irn_op(n) != op_Block) &&
+      (!is_cfop(n)) &&
+      (get_irn_mode(n) != mode_X)) {
+    /* Remember the early palacement of this block to move it
+       out of loop no further than the early placement. */
+    early = get_nodes_Block(n);
     /* Assure that our users are all placed, except the Phi-nodes.
        --- Each dataflow cycle contains at least one Phi-node.  We
        have to break the `user has to be placed before the
@@ -929,7 +975,8 @@ place_floats_late (ir_node *n)
 	place_floats_late (succ);
     }
 
-    /* We have to determine the final block of this node... except for constants. */
+    /* We have to determine the final block of this node... except for
+       constants. */
     if ((get_op_pinned(get_irn_op(n)) == floats) &&
 	(get_irn_op(n) != op_Const) &&
 	(get_irn_op(n) != op_SymConst)) {
@@ -941,8 +988,8 @@ place_floats_late (ir_node *n)
 	dca = consumer_dom_dca (dca, get_irn_out(n, i), n);
       }
       set_nodes_Block(n, dca);
-#if 0
-      move_out_of_loops (n, dca);
+#if 1
+      move_out_of_loops (n, early);
 #endif
     }
   }
@@ -971,6 +1018,8 @@ INLINE void place_late() {
   }
 }
 
+#include "irdump.h"
+
 void place_code(ir_graph *irg) {
   ir_graph *rem = current_ir_graph;
   current_ir_graph = irg;
@@ -981,6 +1030,8 @@ void place_code(ir_graph *irg) {
   assert(get_irg_phase_state(irg) != phase_building);
   if (get_irg_dom_state(irg) != dom_consistent)
     compute_doms(irg);
+
+  construct_backedges(irg);
 
   /* Place all floating nodes as early as possible. This guarantees
      a legal code placement. */
@@ -1107,13 +1158,13 @@ void optimize_blocks(ir_node *b, void *env) {
   ir_node *pred, *phi;
   ir_node **in;
 
+  /* Count the number of predecessor if this block is merged with pred blocks
+     that are empty. */
   max_preds = 0;
   for (i = 0; i < get_Block_n_cfgpreds(b); i++) {
-    pred = get_Block_cfgpred(b, i);
     max_preds += test_whether_dispensable(b, i);
   }
   in = (ir_node **) malloc(max_preds * sizeof(ir_node *));
-
 
   /** Debug output **
   printf(" working on "); DDMN(b);
@@ -1126,7 +1177,7 @@ void optimize_blocks(ir_node *b, void *env) {
       printf("  removing pred %i ", i); DDMN(pred);
     } else { printf("  Nothing to do for "); DDMN(pred); }
   }
- ** end Debug output **/
+  ** end Debug output **/
 
   /** Fix the Phi nodes **/
   phi = get_irn_link(b);

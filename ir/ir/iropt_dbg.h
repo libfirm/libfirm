@@ -3,11 +3,11 @@
 /* This file contains makros that generate the calls to
    update the debug information after a transformation. */
 
-#define DBG_OPT_STG                                                 \
-        {                                                           \
-	  ir_node *ons[2];                                          \
-	  ons[0] = oldn;                                               \
-	  ons[1] = get_Block_cfgpred(n, 0);                         \
+#define DBG_OPT_STG                                                \
+        {                                                          \
+	  ir_node *ons[2];                                         \
+	  ons[0] = oldn;                                           \
+	  ons[1] = get_Block_cfgpred(oldn, 0);                     \
 	  __dbg_info_merge_sets(&n, 1, ons, 2, dbg_straightening); \
 	}
 

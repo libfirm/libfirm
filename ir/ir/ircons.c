@@ -27,8 +27,7 @@
 # include "array.h"
 /* memset belongs to string.h */
 # include "string.h"
-
-/* # include "exc.h" */
+# include "irbackedge_t.h"
 
 #if USE_EXPLICIT_PHI_IN_STACK
 /* A stack needed for the automatic Phi node construction in constructor
@@ -57,7 +56,9 @@ new_rd_Block (dbg_info* db, ir_graph *irg,  int arity, ir_node **in)
 
   res->attr.block.exc = exc_normal;
   res->attr.block.handler_entry = 0;
+  res->attr.block.backedge = new_backedge_arr(irg->obst, arity);
   res->attr.block.in_cg = NULL;
+  res->attr.block.cg_backedge = NULL;
 
   irn_vrfy (res);
   return res;
@@ -96,6 +97,8 @@ new_rd_Phi (dbg_info* db, ir_graph *irg, ir_node *block, int arity, ir_node **in
   assert( get_irn_arity(block) == arity );
 
   res = new_ir_node (db, irg, block, op_Phi, mode, arity, in);
+
+  res->attr.phi_backedge = new_backedge_arr(irg->obst, arity);
 
   res = optimize (res);
   irn_vrfy (res);
@@ -692,6 +695,7 @@ new_rd_Filter (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg, ir_mod
   res = new_ir_node (db, irg, block, op_Filter, mode, 1, in);
   res->attr.filter.proj = proj;
   res->attr.filter.in_cg = NULL;
+  res->attr.filter.backedge = NULL;
 
   assert(res);
   assert(get_Proj_pred(res));
@@ -1044,6 +1048,7 @@ alloc_or_pop_from_Phi_in_stack(ir_graph *irg, ir_node *block, ir_mode *mode,
   if (pos == 0) {
     /* We need to allocate a new node */
     res = new_ir_node (db, irg, block, op_Phi, mode, arity, in);
+    res->attr.phi_backedge = new_backedge_arr(irg->obst, arity);
   } else {
     /* reuse the old node and initialize it again. */
     res = stack[pos-1];
@@ -1054,7 +1059,7 @@ alloc_or_pop_from_Phi_in_stack(ir_graph *irg, ir_node *block, ir_mode *mode,
     res->visited = 0;
     res->link = NULL;
     assert (arity >= 0);
-    /* ???!!! How to free the old in array??  */
+    /* ???!!! How to free the old in array??  Not at all: on obstack ?!! */
     res->in = NEW_ARR_D (ir_node *, irg->obst, (arity+1));
     res->in[0] = block;
     memcpy (&res->in[1], in, sizeof (ir_node *) * arity);
@@ -1102,6 +1107,7 @@ new_rd_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
   res = known = alloc_or_pop_from_Phi_in_stack(irg, block, mode, ins, in);
 #else
   res = known = new_ir_node (NULL, irg, block, op_Phi, mode, ins, in);
+  res->attr.phi_backedge = new_backedge_arr(irg->obst, ins);
 #endif
   /* The in-array can contain NULLs.  These were returned by
      get_r_value_internal if it reached the same block/definition on a
@@ -1326,6 +1332,7 @@ new_rd_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
   /* Allocate a new node on the obstack.  The allocation copies the in
      array. */
   res = new_ir_node (NULL, irg, block, op_Phi, mode, ins, in);
+  res->attr.phi_backedge = new_backedge_arr(irg->obst, ins);
 
   /* This loop checks whether the Phi has more than one predecessor.
      If so, it is a real Phi node and we break the loop.  Else the
@@ -1652,9 +1659,11 @@ mature_block (ir_node *block)
      assert (!get_Block_matured(block) && "Block already matured"); */
 
   if (!get_Block_matured(block)) {
+    ins = ARR_LEN (block->in)-1;
+    /* Fix block parameters */
+    block->attr.block.backedge = new_backedge_arr(current_ir_graph->obst, ins);
 
     /* An array for building the Phi nodes. */
-    ins = ARR_LEN (block->in)-1;
     NEW_ARR_A (ir_node *, nin, ins);
 
     /* Traverse a chain of Phi nodes attached to this block and mature
@@ -2090,7 +2099,9 @@ ir_node *new_d_immBlock (dbg_info* db) {
   res->attr.block.matured = 0;
   res->attr.block.exc = exc_normal;
   res->attr.block.handler_entry = 0;
+  res->attr.block.backedge = NULL;
   res->attr.block.in_cg = NULL;
+  res->attr.block.cg_backedge = NULL;
   set_Block_block_visited(res, 0);
 
   /* Create and initialize array for Phi-node construction. */
