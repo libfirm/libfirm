@@ -242,7 +242,7 @@ struct ir_node {
   struct abstval *av;
   struct section *sec;
 #endif
-#ifdef FIRM_EDGES_INPLACE
+#if FIRM_EDGES_INPLACE
 	irn_edge_info_t edge_info;
 #endif
   /* ------- Opcode depending fields -------- */
