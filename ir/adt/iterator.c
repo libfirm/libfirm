@@ -5,13 +5,6 @@
 #include "list.h"
 #include "iterator.h"
 
-#define ITERATOR_MAGIC "ITR"
-
-int is_iterator(const void *ptr)
-{
-	const iterator_t *it = ptr;
-	return strncmp(it->magic, ITERATOR_MAGIC, sizeof(ITERATOR_MAGIC)) == 0;
-}
 
 static void *it_pset_start(void *collection)
 {
@@ -34,7 +27,7 @@ static const iterator_t iterator_pset = {
 	it_pset_finish
 };
 
-const iterator_t *it_pset = &iterator_pset;
+const iterator_t *pset_iterator = &iterator_pset;
 
 
 static void *it_list_next(void *coll, void *it)
@@ -60,4 +53,4 @@ static const iterator_t iterator_list = {
 	it_list_finish
 };
 
-const iterator_t *it_list = &iterator_list;
+const iterator_t *list_iterator = &iterator_list;
