@@ -106,7 +106,7 @@ typedef enum {
 		               Floating point computations can be performed. */
   irms_reference,         /**< A mode to represent entities.
 		               Restricted int computations can be performed */
-  irms_character,         /**< A mode to represent characters/symbols
+  irms_character          /**< A mode to represent characters/symbols
 		               ?? Are computations allowed? as int?? */
 } mode_sort;
 
