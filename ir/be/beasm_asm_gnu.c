@@ -1,13 +1,14 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "obst.h"
 #include "beasm_asm_gnu.h"
 
 static struct obstack *get_obstack_for_segment ( gnuasm_privdata_t *privdata, asm_segment_t segment ) {
 
-	switch(segment) {
+	switch (segment) {
 		case ASM_SEGMENT_CONST:
 			return &privdata->rdata_obst;
 			break;
@@ -24,21 +25,22 @@ static struct obstack *get_obstack_for_segment ( gnuasm_privdata_t *privdata, as
 			assert(0 && "unknown segment type");
 			break;
 	}
+  return NULL;
 }
 
 
-/*
+/**
  * the dumper callbacks
- **/
-
-void gnuasm_dump_align( gnuasm_privdata_t *privdata, asm_segment_t segment, int align ) {
-	struct obstack* obst = get_obstack_for_segment ( privdata, segment );
+ */
+static void gnuasm_dump_align(void *data, asm_segment_t segment, int align) {
+  gnuasm_privdata_t *privdata = data;
+	struct obstack* obst = get_obstack_for_segment( privdata, segment );
  	obstack_printf(obst, "\t.align %d\n", align);
 }
 
-void gnuasm_dump_arith_tarval ( gnuasm_privdata_t *privdata, asm_segment_t segment,
-			tarval *tv, int bytes ) {
-
+static void gnuasm_dump_arith_tarval(void *data, asm_segment_t segment,	tarval *tv, int bytes)
+{
+  gnuasm_privdata_t *privdata = data;
 	struct obstack* obst = get_obstack_for_segment ( privdata, segment );
 
 	switch (bytes) {
@@ -67,9 +69,10 @@ get_tarval_sub_bits(tv, 7), get_tarval_sub_bits(tv, 6), get_tarval_sub_bits(tv, 
 }
 
 
-void gnuasm_dump_atomic_decl ( gnuasm_privdata_t *privdata, asm_segment_t segment, int bytes ) {
-
-	struct obstack* obst = get_obstack_for_segment ( privdata, segment );
+static void gnuasm_dump_atomic_decl(void *data, asm_segment_t segment, int bytes)
+{
+  gnuasm_privdata_t *privdata = data;
+	struct obstack* obst = get_obstack_for_segment( privdata, segment );
 
 	switch (bytes) {
 
@@ -97,8 +100,9 @@ void gnuasm_dump_atomic_decl ( gnuasm_privdata_t *privdata, asm_segment_t segmen
 //	obstack_printf(obst, "\n");
 }
 
-void gnuasm_dump_string ( gnuasm_privdata_t *privdata, asm_segment_t segment, entity* ent ) {
-
+static void gnuasm_dump_string(void *data, asm_segment_t segment, entity *ent)
+{
+  gnuasm_privdata_t *privdata = data;
   int i, n;
 
   struct obstack* obst = get_obstack_for_segment ( privdata, segment );
@@ -120,23 +124,24 @@ void gnuasm_dump_string ( gnuasm_privdata_t *privdata, asm_segment_t segment, en
     case '\t': obstack_printf(obst, "\\t");  break;
     default:
       if (isprint(c))
-	obstack_printf(obst, "%c", c);
+	      obstack_printf(obst, "%c", c);
       else
-	obstack_printf(obst, "%O", c);
+	      obstack_printf(obst, "%O", c);
       break;
     }
   }
   obstack_printf(obst, "\"\n");
-
 }
 
 
-void gnuasm_dump_declare_initialized_symbol(gnuasm_privdata_t* priv_data, asm_segment_t segment, const char* ld_name, int bytes, int align, ent_visibility visibility) {
+static void gnuasm_dump_declare_initialized_symbol(void *data, asm_segment_t segment, const char* ld_name, int bytes, int align, ent_visibility visibility)
+{
+  gnuasm_privdata_t* priv_data = data;
 
-  // get the obstack for the given segment (const, data)
+  /* get the obstack for the given segment (const, data) */
   struct obstack* obst = get_obstack_for_segment ( priv_data, segment );
 
-  // if the symbol is externally visibile, declare it so.
+  /* if the symbol is externally visible, declare it so. */
   if (visibility == visibility_external_visible)
     obstack_printf(obst, ".globl\t%s\n", ld_name);
 
@@ -146,25 +151,29 @@ void gnuasm_dump_declare_initialized_symbol(gnuasm_privdata_t* priv_data, asm_se
   obstack_printf(obst, "\t%s:\n", ld_name);
 }
 
-void gnuasm_dump_declare_uninitialized_symbol(gnuasm_privdata_t* priv_data, asm_segment_t segment, const char* ld_name, int bytes, int align, ent_visibility visibility) {
+static void gnuasm_dump_declare_uninitialized_symbol(void *data, asm_segment_t segment, const char* ld_name, int bytes, int align, ent_visibility visibility)
+{
+  gnuasm_privdata_t *priv_data = data;
 
-  // external symbols are not required to be declared in gnuasm.
+  /* external symbols are not required to be declared in gnuasm. */
   if(visibility == visibility_external_allocated) return;
 
-  // declare local, uninitialized symbol to the uninit-obst
+  /* declare local, uninitialized symbol to the uninit-obst */
   obstack_printf(&priv_data->common_obst, "\t.comm\t%s,%d,%d\n", ld_name, bytes, align);
 }
 
-
-void gnuasm_dump_zero_padding ( gnuasm_privdata_t *privdata, asm_segment_t segment, int size ) {
-
+static void gnuasm_dump_zero_padding(void *data, asm_segment_t segment, int size)
+{
+  gnuasm_privdata_t *privdata = data;
 	struct obstack* obst = get_obstack_for_segment ( privdata, segment );
 	obstack_printf(obst, "\t.zero\t%d\n", size);
 }
 
 ////////////////////////////////////////////////////////////////////////////
 
-void gnuasm_dump_arith_op ( gnuasm_privdata_t *privdata, asm_segment_t segment, asm_arith_operation_t op ) {
+static void gnuasm_dump_arith_op(void *data, asm_segment_t segment, asm_arith_operation_t op)
+{
+  gnuasm_privdata_t *privdata = data;
 	struct obstack* obst = get_obstack_for_segment ( privdata, segment );
 	switch (op) {
 		case ASM_ARITH_OPERATION_ADD:
@@ -180,8 +189,9 @@ void gnuasm_dump_arith_op ( gnuasm_privdata_t *privdata, asm_segment_t segment, 
 	//obstack_printf(obst, "+");
 }
 
-void gnuasm_dump_symconst ( gnuasm_privdata_t *privdata, asm_segment_t segment, ir_node *init ) {
-
+static void gnuasm_dump_symconst(void *data, asm_segment_t segment, ir_node *init)
+{
+  gnuasm_privdata_t *privdata = data;
   struct obstack* obst = get_obstack_for_segment ( privdata, segment );
   switch (get_SymConst_kind(init)) {
     case symconst_addr_name:
@@ -201,23 +211,25 @@ void gnuasm_dump_symconst ( gnuasm_privdata_t *privdata, asm_segment_t segment, 
     }
 }
 
-void gnuasm_dump_newline ( gnuasm_privdata_t *privdata, asm_segment_t segment ) {
+static void gnuasm_dump_newline(void *data, asm_segment_t segment)
+{
+  gnuasm_privdata_t *privdata = data;
 	struct obstack* obst = get_obstack_for_segment ( privdata, segment );
 	obstack_printf(obst, "\n");
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-void gnuasm_dump_header ( gnuasm_privdata_t *privdata ) {
-
+static void gnuasm_dump_header(void *data) {
+  gnuasm_privdata_t *privdata = data;
 }
 
-void gnuasm_dump_footer ( gnuasm_privdata_t *privdata ) {
-
+static void gnuasm_dump_footer(void *data) {
+  gnuasm_privdata_t *privdata = data;
 }
 
-void gnuasm_dump_segment_header ( gnuasm_privdata_t *privdata ) {
-
+static void gnuasm_dump_segment_header(void *data) {
+  gnuasm_privdata_t *privdata = data;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -235,35 +247,33 @@ assembler_t *gnuasm_create_assembler ( void ) {
 	obstack_init (&priv_data->code_obst);
 
 
-  assembler->dump_declare_uninitialized_symbol = (dump_declare_uninitialized_symbol_proc) &gnuasm_dump_declare_uninitialized_symbol;
-  assembler->dump_declare_initialized_symbol = (dump_declare_initialized_symbol_proc) &gnuasm_dump_declare_initialized_symbol;
+  assembler->dump_declare_uninitialized_symbol = gnuasm_dump_declare_uninitialized_symbol;
+  assembler->dump_declare_initialized_symbol   = gnuasm_dump_declare_initialized_symbol;
 
 //  assembler->dump_align = (dump_align_proc) &gnuasm_dump_align;
-	assembler->dump_arith_tarval = (dump_arith_tarval_proc) &gnuasm_dump_arith_tarval;
-	assembler->dump_atomic_decl = (dump_atomic_decl_proc) gnuasm_dump_atomic_decl;
-	assembler->dump_string = (dump_string_proc) &gnuasm_dump_string;
- 	assembler->dump_zero_padding = (dump_zero_padding_proc) &gnuasm_dump_zero_padding;
-	assembler->dump_arith_op = (dump_arith_op_proc) &gnuasm_dump_arith_op;
-	assembler->dump_symconst = (dump_symconst_proc) &gnuasm_dump_symconst;
-	assembler->dump_newline = (dump_newline_proc) &gnuasm_dump_newline;
+	assembler->dump_arith_tarval = gnuasm_dump_arith_tarval;
+	assembler->dump_atomic_decl  = gnuasm_dump_atomic_decl;
+	assembler->dump_string       = gnuasm_dump_string;
+ 	assembler->dump_zero_padding = gnuasm_dump_zero_padding;
+	assembler->dump_arith_op     = gnuasm_dump_arith_op;
+	assembler->dump_symconst     = gnuasm_dump_symconst;
+	assembler->dump_newline      = gnuasm_dump_newline;
 
-	assembler->dump_header = (dump_header_proc) &gnuasm_dump_header;
-	assembler->dump_footer = (dump_footer_proc) &gnuasm_dump_footer;
-	assembler->dump_segment_header = (dump_segment_header_proc) &gnuasm_dump_segment_header;
+	assembler->dump_header         = gnuasm_dump_header;
+	assembler->dump_footer         = gnuasm_dump_footer;
+	assembler->dump_segment_header = gnuasm_dump_segment_header;
 
 
 	return assembler;
 
 }
 
-static void gnuasm_dump_obst ( struct obstack* obst, FILE* out ) {
-
+static void gnuasm_dump_obst(struct obstack *obst, FILE *out) {
 	obstack_grow0 (obst, NULL, 0);
-	void *data = obstack_finish (obst);
-	fprintf(out, "%s", data);
+	fprintf(out, "%s", obstack_finish(obst));
 }
 
-void gnuasm_dump ( assembler_t *assembler, FILE* out ) {
+void gnuasm_dump( assembler_t *assembler, FILE *out ) {
 
 	gnuasm_privdata_t *privdata = assembler->private_data;
 
@@ -276,11 +286,9 @@ void gnuasm_dump ( assembler_t *assembler, FILE* out ) {
 	fprintf(out, ".text\n");
 	gnuasm_dump_obst ( &privdata->code_obst, out);
 	//////
-
 }
 
-void gnuasm_delete_assembler ( assembler_t *assembler ) {
-
-	free ( assembler->private_data );
-	free ( assembler );
+void gnuasm_delete_assembler( assembler_t *assembler ) {
+	free( assembler->private_data );
+	free( assembler );
 }
