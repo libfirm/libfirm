@@ -807,6 +807,8 @@ ir_node *skip_Id  (ir_node *node);   /* Same as skip_nop. */
 /* returns corresponding operand of Tuple if node is a Proj from
    a Tuple. */
 ir_node *skip_Tuple (ir_node *node);
+/** returns operand of node if node is a Cast */
+ir_node *skip_Cast  (ir_node *node);
 /** returns true if node is a Bad node. */
 int      is_Bad    (ir_node *node);
 /** returns true if the node is not a Block */

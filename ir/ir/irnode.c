@@ -1817,6 +1817,8 @@ ir_graph *
 get_irn_irg(ir_node *node) {
   if (get_irn_op(node) != op_Block)
     node = get_nodes_block(node);
+  if (is_Bad(node))  /* sometimes bad is predecessor of nodes instead of block: in case of optimization */
+    node = get_nodes_block(node);
   assert(get_irn_op(node) == op_Block);
   return node->attr.block.irg;
 }
@@ -1851,6 +1853,15 @@ skip_Tuple (ir_node *node) {
       return get_Tuple_pred(pred, get_Proj_proj(node));
   }
   return node;
+}
+
+/** returns operand of node if node is a Cast */
+ir_node *skip_Cast  (ir_node *node) {
+  if (node && get_irn_op(node) == op_Cast) {
+    return skip_nop(get_irn_n(node, 0));
+  } else {
+    return node;
+  }
 }
 
 #if 0
