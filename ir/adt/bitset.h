@@ -16,11 +16,13 @@
 #include "firm_config.h"
 #include "bitfiddle.h"
 
+#include "bitset_std.h"
+
+/*
 #if defined(__GNUC__) && defined(__i386__)
 #include "bitset_ia32.h"
-#else
-#include "bitset_std.h"
 #endif
+*/
 
 typedef struct _bitset_t {
 	unsigned long units;
@@ -345,7 +347,6 @@ static INLINE void bitset_fprint(FILE *file, const bitset_t *bs)
  * Here, the binary operations follow.
  * And, Or, And Not, Xor are available.
  */
-
 #define BINARY_OP(op) \
 static INLINE bitset_t *bitset_ ## op(bitset_t *tgt, const bitset_t *src) \
 { \
@@ -353,12 +354,25 @@ static INLINE bitset_t *bitset_ ## op(bitset_t *tgt, const bitset_t *src) \
 	int n = tgt->units > src->units ? src->units : tgt->units; \
 	for(i = 0; i < n; i += _BITSET_BINOP_UNITS_INC) \
 		_bitset_inside_binop_ ## op(&tgt->data[i], &src->data[i]); \
-	for(i = n; i < tgt->units; i += _BITSET_BINOP_UNITS_INC) \
-		_bitset_inside_binop_with_zero_ ## op(&tgt->data[i]); \
+	if(n < tgt->units) \
+		_bitset_clear_rest(&tgt->data[i], tgt->units - i); \
 	return tgt; \
 }
 
+/*
+ * Define the clear rest macro for the and, since it is the only case,
+ * were non existed (treated as 0) units in the src must be handled.
+ * For all other operations holds: x Op 0 = x for Op in { Andnot, Or, Xor }
+ *
+ * For and, each bitset implementer has to provide the macro
+ * _bitset_clear_units(data, n), which clears n units from the pointer
+ * data on.
+ */
+#define _bitset_clear_rest(data,n) _bitset_inside_clear_units(data, n)
 BINARY_OP(and)
+#undef _bitset_clear_rest
+#define _bitset_clear_rest(data,n)
+
 BINARY_OP(andnot)
 BINARY_OP(or)
 BINARY_OP(xor)
