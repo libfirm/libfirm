@@ -222,7 +222,9 @@ static int optimize_load(ir_node *load)
      * throw an exception when the previous Store was quiet.
      */
     if (! info->projs[pn_Load_X_except] || get_nodes_block(load) == get_nodes_block(pred)) {
+      DBG_OPT_RAW(pred, load);
       exchange( info->projs[pn_Load_res], get_Store_value(pred) );
+
       if (info->projs[pn_Load_M])
 	exchange(info->projs[pn_Load_M], mem);
 
@@ -242,6 +244,8 @@ static int optimize_load(ir_node *load)
      */
     if (! info->projs[pn_Load_X_except] || get_nodes_block(load) == get_nodes_block(pred)) {
       ldst_info_t *pred_info = get_irn_link(pred);
+
+      DBG_OPT_RAR(pred, load);
 
       if (pred_info->projs[pn_Load_res]) {
 	/* we need a data proj from the previous load for this optimization */
@@ -310,6 +314,7 @@ static int optimize_store(ir_node *store)
      * TODO: What, if both have the same exception handler ???
      */
     if (get_Store_volatility(pred) != volatility_is_volatile && !pred_info->projs[pn_Store_X_except]) {
+      DBG_OPT_WAW(pred, store);
       exchange( pred_info->projs[pn_Store_M], get_Store_mem(pred) );
       res = 1;
     }
@@ -321,6 +326,7 @@ static int optimize_store(ir_node *store)
      * We may remove the second Store, if it does not have an exception handler.
      */
     if (! info->projs[pn_Store_X_except]) {
+      DBG_OPT_WAR(pred, store);
       exchange( info->projs[pn_Store_M], mem );
       res = 1;
     }
