@@ -53,16 +53,22 @@ value_of (ir_node *n)
     return tarval_bad;
 }
 
+/**
+ * return the value of a Constant
+ */
 static tarval *computed_value_Const(ir_node *n)
 {
     return get_Const_tarval(n);
 }
 
+/**
+ * return the value of a 'sizeof' SymConst
+ */
 static tarval *computed_value_SymConst(ir_node *n)
 {
-  if ((get_SymConst_kind(n) ==symconst_size) &&
+  if ((get_SymConst_kind(n) == symconst_size) &&
       (get_type_state(get_SymConst_type(n))) == layout_fixed)
-    return new_tarval_from_long(get_type_size_bytes(get_SymConst_type(n)), mode_Is);
+    return new_tarval_from_long(get_type_size_bytes(get_SymConst_type(n)), get_irn_mode(n));
   return tarval_bad;
 }
 
@@ -346,12 +352,13 @@ static tarval *computed_value_Proj(ir_node *n)
      3. The predecessors are Allocs or void* constants.  Allocs never
 	return NULL, they raise an exception.   Therefore we can predict
 	the Cmp result. */
-  if (get_irn_op(a) == op_Cmp) {
+  switch (get_irn_opcode(a)) {
+  case iro_Cmp:
     aa = get_Cmp_left(a);
     ab = get_Cmp_right(a);
 
     if (aa == ab) { /* 1.: */
-      /* This is a tric with the bits used for encoding the Cmp
+      /* This is a trick with the bits used for encoding the Cmp
 	 Proj numbers, the following statement is not the same:
       return new_tarval_from_long ((get_Proj_proj(n) == Eq), mode_b) */
       return new_tarval_from_long ((get_Proj_proj(n) & Eq), mode_b);
@@ -393,18 +400,54 @@ static tarval *computed_value_Proj(ir_node *n)
 	  return new_tarval_from_long (get_Proj_proj(n) & Ne, mode_b);
       }
     }
-  } else if (get_irn_op(a) == op_DivMod) {
+    break;
+
+  case iro_DivMod:
+  {
     tarval *tb = value_of(b = get_DivMod_right(a));
     tarval *ta = value_of(a = get_DivMod_left(a));
 
     if ((ta != tarval_bad)  && (tb != tarval_bad) && (get_irn_mode(a) == get_irn_mode(b))) {
       if (tb == get_mode_null(get_tarval_mode(tb)))  /* div by zero: return tarval_bad */
 	return tarval_bad;
-      if (get_Proj_proj(n)== 0) /* Div */
+      if (get_Proj_proj(n)== pn_DivMod_res_div)
 	return tarval_div(ta, tb);
-      else /* Mod */
+      else if (get_Proj_proj(n)== pn_DivMod_res_mod)
 	return tarval_mod(ta, tb);
     }
+    break;
+  }
+
+  case iro_Div:
+  {
+    tarval *tb = value_of(b = get_Div_right(a));
+    tarval *ta = value_of(a = get_Div_left(a));
+
+    if ((ta != tarval_bad)  && (tb != tarval_bad) && (get_irn_mode(a) == get_irn_mode(b))) {
+      if (tb == get_mode_null(get_tarval_mode(tb)))  /* div by zero: return tarval_bad */
+	return tarval_bad;
+      if (get_Proj_proj(n)== pn_Div_res)
+	return tarval_div(ta, tb);
+    }
+    break;
+  }
+
+  case iro_Mod:
+  {
+    tarval *tb = value_of(b = get_Mod_right(a));
+    tarval *ta = value_of(a = get_Mod_left(a));
+
+    if ((ta != tarval_bad)  && (tb != tarval_bad) && (get_irn_mode(a) == get_irn_mode(b))) {
+      if (tb == get_mode_null(get_tarval_mode(tb)))  /* div by zero: return tarval_bad */
+	return tarval_bad;
+      if (get_Proj_proj(n)== pn_Mod_res)
+	return tarval_mod(ta, tb);
+    }
+    break;
+  }
+
+  default:
+    return tarval_bad;
   }
   return tarval_bad;
 }
@@ -412,6 +455,8 @@ static tarval *computed_value_Proj(ir_node *n)
 /**
  * If the parameter n can be computed, return its value, else tarval_bad.
  * Performs constant folding.
+ *
+ * @param n  The node this should be evaluated
  */
 tarval *computed_value(ir_node *n)
 {
