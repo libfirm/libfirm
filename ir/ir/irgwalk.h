@@ -24,6 +24,12 @@
 typedef void (irg_walk_func)(ir_node *, void *);
 #endif
 
+/* Allocates some necessary datastructures. */
+void init_ip_walk(void);
+
+/* Frees some necessary datastructures. */
+void finish_ip_walk(void);
+
 /* Walks over the ir graph, starting at the node given as first argument.
    Executes pre before visiting the predecessor of a node, post after.
    irg_walk uses the visited flag in irg and the nodes to determine visited
