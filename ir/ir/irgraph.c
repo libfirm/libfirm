@@ -85,16 +85,16 @@ new_ir_graph (entity *ent, int n_loc)
   /*-- initialized for each graph. --*/
   if (get_opt_precise_exc_context()) {
     res->n_loc = n_loc + 1 + 1; /* number of local variables that are never
-				   dereferenced in this graph plus one for
-				   the store plus one for links to fragile
-				   operations.  n_loc is not the number of
-				   parameters to the procedure!  */
+                   dereferenced in this graph plus one for
+                   the store plus one for links to fragile
+                   operations.  n_loc is not the number of
+                   parameters to the procedure!  */
   }
   else {
     res->n_loc = n_loc + 1;  /* number of local variables that are never
-				dereferenced in this graph plus one for
-				the store. This is not the number of parameters
-				to the procedure!  */
+                dereferenced in this graph plus one for
+                the store. This is not the number of parameters
+                to the procedure!  */
   }
 
   res->visited = 0;     /* visited flag, for the ir walker */
@@ -237,7 +237,13 @@ void free_ir_graph (ir_graph *irg) {
   if (irg->outs_state != no_outs) free_outs(irg);
   if (irg->frame_type)  free_type(irg->frame_type);
   if (irg->value_table) del_identities(irg->value_table);
-  if (irg->ent) set_entity_irg(irg->ent, NULL);  /* not set in const code irg */
+  if (irg->ent) {
+    peculiarity pec = get_entity_peculiarity (irg->ent);
+    set_entity_peculiarity (irg->ent, peculiarity_description);
+    set_entity_irg(irg->ent, NULL);  /* not set in const code irg */
+    set_entity_peculiarity (irg->ent, pec);
+  }
+
   free_End(irg->end);
   obstack_free(irg->obst,NULL);
   free(irg->obst);
