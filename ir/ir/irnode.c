@@ -2124,6 +2124,11 @@ int
 }
 
 int
+(is_Const)(const ir_node *node) {
+	return _is_Const(node);
+}
+
+int
 (is_no_Block)(const ir_node *node) {
   return _is_no_Block(node);
 }

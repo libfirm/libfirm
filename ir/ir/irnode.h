@@ -896,6 +896,8 @@ ir_node *skip_Id  (ir_node *node);   /* Same as skip_nop. */
 ir_node *skip_Tuple (ir_node *node);
 /** returns operand of node if node is a Cast */
 ir_node *skip_Cast  (ir_node *node);
+/** returns true if irn is a Const node. */
+int			 is_Const(const ir_node *node);
 /** returns true if node is a Bad node. */
 int      is_Bad    (const ir_node *node);
 /** returns true if the node is not a Block */
