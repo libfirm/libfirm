@@ -1,11 +1,20 @@
-<!-- effect.dtd - DTD to model effects of external procedures inside firm. -->
-<!-- $Id$ -->
+<!--
+* Project:     libFIRM
+* File name:   effect.dtd
+* Purpose:     DTD to model effects of external procedures inside firm.
+* Author:      Florian Liekweg
+* Modified by: Boris Boesler
+* Created:     Y.X.2004
+* CVS-ID:      $Id$
+* Copyright:   (c) 1999-2004 Universität Karlsruhe
+* Licence:     This file is protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+-->
 
 <!-- upload this file to http://www/~firm/ after making changes -->
 
 <!-- content model for all nodes -->
 <!-- allow nodes/entity accesses to reference other nodes/an entity -->
-<!ENTITY	% firm.id			"id ID #REQUIRED">
+<!ENTITY	% firm.id		"id ID #REQUIRED">
 
 <!-- allow a node to specify a type -->
 <!ENTITY	% firm.type		"type CDATA #REQUIRED">
@@ -42,7 +51,7 @@
 <!ELEMENT  	effect (arg*, (load|store|alloc|call|join|unknown)*, raise?, ret)>
 <!ATTLIST  	effect
 			procname	CDATA		#REQUIRED;
-			%firm.type;>
+			%firm.owner;>
 
 <!-- procedure argument -->
 <!ELEMENT	arg			EMPTY>
@@ -75,7 +84,7 @@
 		                %firm.type;>
 
 <!-- call effect -->
-<!ELEMENT	call		(select,(valref)*)>
+<!ELEMENT	call		((select|valref),(valref)*)>
 <!ATTLIST	call		%firm.id;>
 
 <!-- unknown value -->
@@ -91,11 +100,14 @@
 <!ATTLIST	raise		%firm.type;>
 
 <!-- ret effect -->
-<!ELEMENT	ret			(valref?)>
+<!ELEMENT	ret		(valref?)>
 
 <!--
 
  $Log$
+ Revision 1.8  2004/10/25 13:51:32  boesler
+ minor changes like owner
+
  Revision 1.7  2004/10/21 15:32:21  boesler
  minor changes
 
