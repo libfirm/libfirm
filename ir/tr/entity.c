@@ -40,7 +40,7 @@ init_entity (void)
 /* ENTITY                                                          */
 /*-----------------------------------------------------------------*/
 
-void insert_entity_in_owner (entity *ent) {
+static void insert_entity_in_owner (entity *ent) {
   type *owner = ent->owner;
   switch (get_type_tpop_code(owner)) {
   case tpo_class: {
@@ -128,9 +128,8 @@ int     get_compound_graph_path_length(compound_graph_path *gr);
 entity *get_compound_graph_path_node(compound_graph_path *gr, int pos);
 int     get_compound_ent_n_values(entity *ent);
 
-void free_entity_attrs(entity *ent) {
+static void free_entity_attrs(entity *ent) {
   int i;
-  assert(ent);
   if (get_type_tpop(get_entity_owner(ent)) == type_class) {
     DEL_ARR_F(ent->overwrites);    ent->overwrites = NULL;
     DEL_ARR_F(ent->overwrittenby); ent->overwrittenby = NULL;
@@ -154,8 +153,9 @@ void free_entity_attrs(entity *ent) {
 entity *
 copy_entity_own (entity *old, type *new_owner) {
   entity *new;
-
+  assert(old && old->kind == k_entity);
   assert_legal_owner_of_ent(new_owner);
+
   if (old->owner == new_owner) return old;
   new = (entity *) xmalloc (sizeof (entity));
   memcpy (new, old, sizeof (entity));
@@ -176,6 +176,7 @@ copy_entity_own (entity *old, type *new_owner) {
 entity *
 copy_entity_name (entity *old, ident *new_name) {
   entity *new;
+  assert(old && old->kind == k_entity);
 
   if (old->name == new_name) return old;
   new = (entity *) xmalloc (sizeof (entity));
@@ -198,6 +199,7 @@ copy_entity_name (entity *old, ident *new_name) {
 
 void
 free_entity (entity *ent) {
+  assert(ent && ent->kind == k_entity);
   free_tarval_entity(ent);
   free_entity_attrs(ent);
   ent->kind = k_BAD;
@@ -207,7 +209,7 @@ free_entity (entity *ent) {
 /* Outputs a unique number for this node */
 long
 get_entity_nr(entity *ent) {
-  assert(ent);
+  assert(ent && ent->kind == k_entity);
 #ifdef DEBUG_libfirm
   return ent->nr;
 #else
@@ -217,13 +219,13 @@ get_entity_nr(entity *ent) {
 
 const char *
 get_entity_name (entity *ent) {
-  assert (ent);
+  assert(ent && ent->kind == k_entity);
   return get_id_str(get_entity_ident(ent));
 }
 
 ident *
 get_entity_ident    (entity *ent) {
-  assert(ent);
+  assert(ent && ent->kind == k_entity);
   return ent->name;
 }
 
@@ -234,18 +236,20 @@ void   set_entity_ld_ident (entity *, ident *ld_ident);
 
 type *
 get_entity_owner (entity *ent) {
+  assert(ent && ent->kind == k_entity);
   return ent->owner = skip_tid(ent->owner);
 }
 
 void
 set_entity_owner (entity *ent, type *owner) {
+  assert(ent && ent->kind == k_entity);
   assert_legal_owner_of_ent(owner);
   ent->owner = owner;
 }
 
 void   /* should this go into type.c? */
 assert_legal_owner_of_ent(type *owner) {
-  assert (get_type_tpop_code(owner) == tpo_class ||
+  assert(get_type_tpop_code(owner) == tpo_class ||
           get_type_tpop_code(owner) == tpo_union ||
           get_type_tpop_code(owner) == tpo_struct ||
       get_type_tpop_code(owner) == tpo_array);   /* Yes, array has an entity
@@ -255,6 +259,7 @@ assert_legal_owner_of_ent(type *owner) {
 ident *
 get_entity_ld_ident (entity *ent)
 {
+  assert(ent && ent->kind == k_entity);
   if (ent->ld_name == NULL)
     ent->ld_name = mangle_entity (ent);
   return ent->ld_name;
@@ -262,11 +267,13 @@ get_entity_ld_ident (entity *ent)
 
 void
 set_entity_ld_ident (entity *ent, ident *ld_ident) {
+  assert(ent && ent->kind == k_entity);
   ent->ld_name = ld_ident;
 }
 
 const char *
 get_entity_ld_name (entity *ent) {
+  assert(ent && ent->kind == k_entity);
   return get_id_str(get_entity_ld_ident(ent));
 }
 
@@ -277,22 +284,26 @@ void   set_entity_ld_name  (entity *, char *ld_name);
 
 type *
 get_entity_type (entity *ent) {
+  assert(ent && ent->kind == k_entity);
   return ent->type = skip_tid(ent->type);
 }
 
 void
 set_entity_type (entity *ent, type *type) {
+  assert(ent && ent->kind == k_entity);
   ent->type = type;
 }
 
 
 ent_allocation
 get_entity_allocation (entity *ent) {
+  assert(ent && ent->kind == k_entity);
   return ent->allocation;
 }
 
 void
 set_entity_allocation (entity *ent, ent_allocation al) {
+  assert(ent && ent->kind == k_entity);
   ent->allocation = al;
 }
 
@@ -313,11 +324,13 @@ const char *get_allocation_name(ent_allocation all)
 
 ent_visibility
 get_entity_visibility (entity *ent) {
+  assert(ent && ent->kind == k_entity);
   return ent->visibility;
 }
 
 void
 set_entity_visibility (entity *ent, ent_visibility vis) {
+  assert(ent && ent->kind == k_entity);
   if (vis != visibility_local)
     assert((ent->allocation == allocation_static) ||
        (ent->allocation == allocation_automatic));
@@ -341,12 +354,14 @@ const char *get_visibility_name(ent_visibility vis)
 
 ent_variability
 get_entity_variability (entity *ent) {
+  assert(ent && ent->kind == k_entity);
   return ent->variability;
 }
 
 void
 set_entity_variability (entity *ent, ent_variability var)
 {
+  assert(ent && ent->kind == k_entity);
   if (var == variability_part_constant)
     assert(is_class_type(ent->type) || is_struct_type(ent->type));
 
@@ -382,13 +397,13 @@ const char *get_variability_name(ent_variability var)
 
 ent_volatility
 get_entity_volatility (entity *ent) {
-  assert (ent);
+  assert(ent && ent->kind == k_entity);
   return ent->volatility;
 }
 
 void
 set_entity_volatility (entity *ent, ent_volatility vol) {
-  assert (ent);
+  assert(ent && ent->kind == k_entity);
   ent->volatility = vol;
 }
 
@@ -406,15 +421,15 @@ const char *get_volatility_name(ent_volatility var)
 
 peculiarity
 get_entity_peculiarity (entity *ent) {
-  assert (ent);
+  assert(ent && ent->kind == k_entity);
   return ent->peculiarity;
 }
 
 void
 set_entity_peculiarity (entity *ent, peculiarity pec) {
-  assert (ent);
+  assert(ent && ent->kind == k_entity);
   /* @@@ why peculiarity only for methods? */
-  assert (is_method_type(ent->type));
+  assert(is_method_type(ent->type));
   ent->peculiarity = pec;
 }
 
@@ -435,15 +450,14 @@ const char *get_peculiarity_name(peculiarity var)
 ir_node *
 get_atomic_ent_value(entity *ent)
 {
-  assert(ent);
-  assert(is_atomic_entity(ent));
+  assert(ent && is_atomic_entity(ent));
   assert(ent->variability != variability_uninitialized);
   return ent->value;
 }
 
 void
 set_atomic_ent_value(entity *ent, ir_node *val) {
-  assert(ent && is_atomic_entity(ent) && (ent->variability != variability_uninitialized));
+  assert(is_atomic_entity(ent) && (ent->variability != variability_uninitialized));
   if (is_method_type(ent->type) && (ent->peculiarity == peculiarity_existent))
     return;
   ent->value = val;
@@ -570,40 +584,40 @@ set_compound_graph_path_node(compound_graph_path *gr, int pos, entity *node) {
    the compound. */
 void
 add_compound_ent_value_w_path(entity *ent, ir_node *val, compound_graph_path *path) {
-  assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
+  assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
   ARR_APP1 (ir_node *, ent->values, val);
   ARR_APP1 (compound_graph_path *, ent->val_paths, path);
 }
 
 void
 set_compound_ent_value_w_path(entity *ent, ir_node *val, compound_graph_path *path, int pos) {
-  assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
+  assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
   ent->values[pos] = val;
   ent->val_paths[pos] = path;
 }
 
 int
 get_compound_ent_n_values(entity *ent) {
-  assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
+  assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
   return (ARR_LEN (ent->values));
 }
 
 ir_node  *
 get_compound_ent_value(entity *ent, int pos) {
-  assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
+  assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
   return ent->values[pos];
 }
 
 compound_graph_path *
 get_compound_ent_value_path(entity *ent, int pos) {
-  assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
+  assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
   return ent->val_paths[pos];
 }
 
 void
 remove_compound_ent_value(entity *ent, entity *value_ent) {
   int i;
-  assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
+  assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
   for (i = 0; i < (ARR_LEN (ent->val_paths)); i++) {
     compound_graph_path *path = ent->val_paths[i];
     if (path->nodes[path->len-1] == value_ent) {
@@ -621,7 +635,7 @@ remove_compound_ent_value(entity *ent, entity *value_ent) {
 void
 add_compound_ent_value(entity *ent, ir_node *val, entity *member) {
   compound_graph_path *path;
-  assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
+  assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
   path = new_compound_graph_path(get_entity_owner(ent), 1);
   path->nodes[0] = member;
   add_compound_ent_value_w_path(ent, val, path);
@@ -645,14 +659,14 @@ copy_and_add_compound_ent_value(entity *ent, ir_node *val, entity *member) {
 /* Copies the value i of the entity to current_block in current_ir_graph.
 ir_node *
 copy_compound_ent_value(entity *ent, int pos) {
-  assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
+  assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
   return copy_const_value(ent->values[pos+1]);
   }*/
 
 entity   *
 get_compound_ent_value_member(entity *ent, int pos) {
   compound_graph_path *path;
-  assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
+  assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
   path = get_compound_ent_value_path(ent, pos);
 
   return get_compound_graph_path_node(path, get_compound_graph_path_length(path)-1);
@@ -661,7 +675,7 @@ get_compound_ent_value_member(entity *ent, int pos) {
 void
 set_compound_ent_value(entity *ent, ir_node *val, entity *member, int pos) {
   compound_graph_path *path;
-  assert(ent && is_compound_entity(ent) && (ent->variability != variability_uninitialized));
+  assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
   path = get_compound_ent_value_path(ent, pos);
   set_compound_graph_path_node(path, 0, member);
   set_compound_ent_value_w_path(ent, val, path, pos);
@@ -691,26 +705,26 @@ set_array_entity_values(entity *ent, tarval **values, int num_vals) {
 
 int
 get_entity_offset (entity *ent) {
+  assert(ent && ent->kind == k_entity);
   return ent->offset;
 }
 
 void
 set_entity_offset (entity *ent, int offset) {
+  assert(ent && ent->kind == k_entity);
   ent->offset = offset;
 }
 
 void
 add_entity_overwrites   (entity *ent, entity *overwritten) {
-  assert(ent);
-  assert(is_class_type(get_entity_owner(ent)));
+  assert(ent && is_class_type(get_entity_owner(ent)));
   ARR_APP1 (entity *, ent->overwrites, overwritten);
   ARR_APP1 (entity *, overwritten->overwrittenby, ent);
 }
 
 int
 get_entity_n_overwrites (entity *ent) {
-  assert(ent);
-  assert(is_class_type(get_entity_owner(ent)));
+  assert(ent && is_class_type(get_entity_owner(ent)));
   return (ARR_LEN (ent->overwrites));
 }
 
@@ -726,16 +740,14 @@ get_entity_overwrites_index(entity *ent, entity *overwritten) {
 
 entity *
 get_entity_overwrites   (entity *ent, int pos) {
-  assert(ent);
-  assert(is_class_type(get_entity_owner(ent)));
+  assert(ent && is_class_type(get_entity_owner(ent)));
   assert(pos < get_entity_n_overwrites(ent));
   return ent->overwrites[pos];
 }
 
 void
 set_entity_overwrites   (entity *ent, int pos, entity *overwritten) {
-  assert(ent);
-  assert(is_class_type(get_entity_owner(ent)));
+  assert(ent && is_class_type(get_entity_owner(ent)));
   assert(pos < get_entity_n_overwrites(ent));
   ent->overwrites[pos] = overwritten;
 }
@@ -755,15 +767,13 @@ remove_entity_overwrites(entity *ent, entity *overwritten) {
 
 void
 add_entity_overwrittenby   (entity *ent, entity *overwrites) {
-  assert(ent);
-  assert(is_class_type(get_entity_owner(ent)));
+  assert(ent && is_class_type(get_entity_owner(ent)));
   add_entity_overwrites(overwrites, ent);
 }
 
 int
 get_entity_n_overwrittenby (entity *ent) {
-  assert(ent);
-  assert(is_class_type(get_entity_owner(ent)));
+  assert(ent && is_class_type(get_entity_owner(ent)));
   return (ARR_LEN (ent->overwrittenby));
 }
 
@@ -779,23 +789,21 @@ get_entity_overwrittenby_index(entity *ent, entity *overwrites) {
 
 entity *
 get_entity_overwrittenby   (entity *ent, int pos) {
-  assert(ent);
-  assert(is_class_type(get_entity_owner(ent)));
+  assert(ent && is_class_type(get_entity_owner(ent)));
   assert(pos < get_entity_n_overwrittenby(ent));
   return ent->overwrittenby[pos];
 }
 
 void
 set_entity_overwrittenby   (entity *ent, int pos, entity *overwrites) {
-  assert(ent);
-  assert(is_class_type(get_entity_owner(ent)));
+  assert(ent && is_class_type(get_entity_owner(ent)));
   assert(pos < get_entity_n_overwrittenby(ent));
   ent->overwrittenby[pos] = overwrites;
 }
 
 void    remove_entity_overwrittenby(entity *ent, entity *overwrites) {
   int i;
-  assert(ent && is_class_type(get_entity_owner(ent)));
+  assert(ent  && is_class_type(get_entity_owner(ent)));
   for (i = 0; i < (ARR_LEN (ent->overwrittenby)); i++)
     if (ent->overwrittenby[i] == overwrites) {
       for(; i < (ARR_LEN (ent->overwrittenby))-1; i++)
@@ -808,32 +816,31 @@ void    remove_entity_overwrittenby(entity *ent, entity *overwrites) {
 /* A link to store intermediate information */
 void *
 get_entity_link(entity *ent) {
-  assert(ent);
+  assert(ent && ent->kind == k_entity);
   return ent->link;
 }
 
 void
 set_entity_link(entity *ent, void *l) {
-  assert(ent);
+  assert(ent && ent->kind == k_entity);
   ent->link = l;
 }
 
 ir_graph *
 get_entity_irg(entity *ent) {
-  assert (ent);
-  assert (is_method_type(ent->type));
+  assert(ent && ent->kind == k_entity);
+  assert(is_method_type(ent->type));
   return ent->irg;
 }
 
 void
 set_entity_irg(entity *ent, ir_graph *irg) {
-  assert (ent && ent->type);
+  assert(ent && is_method_type(get_entity_type(ent)));
   /* Wie kann man die Referenz auf einen IRG löschen, z.B. wenn die
    * Methode selbst nicht mehr aufgerufen werden kann, die Entität
    * aber erhalten bleiben soll. */
-  /* assert (irg); */
-  assert (is_method_type(ent->type));
-  assert (ent->peculiarity == peculiarity_existent);
+  /* assert(irg); */
+  assert(ent->peculiarity == peculiarity_existent);
   ent->irg = irg;
 }
 
@@ -847,12 +854,14 @@ int is_entity (void *thing) {
 
 int is_atomic_entity(entity *ent) {
   type* t = get_entity_type(ent);
+  assert(ent && ent->kind == k_entity);
   return (is_primitive_type(t) || is_pointer_type(t) ||
       is_enumeration_type(t) || is_method_type(t));
 }
 
 int is_compound_entity(entity *ent) {
   type* t = get_entity_type(ent);
+  assert(ent && ent->kind == k_entity);
   return (is_class_type(t) || is_struct_type(t) ||
       is_array_type(t) || is_union_type(t));
 }
@@ -865,25 +874,27 @@ bool equal_entity(entity *ent1, entity *ent2) {
 
 
 unsigned long get_entity_visited(entity *ent) {
-  assert (ent);
+  assert(ent && ent->kind == k_entity);
   return ent->visit;
 }
 void        set_entity_visited(entity *ent, unsigned long num) {
-  assert (ent);
+  assert(ent && ent->kind == k_entity);
   ent->visit = num;
 }
 /* Sets visited field in entity to entity_visited. */
 void        mark_entity_visited(entity *ent) {
-  assert (ent);
+  assert(ent && ent->kind == k_entity);
   ent->visit = type_visited;
 }
 
 
 bool entity_visited(entity *ent) {
+  assert(ent && ent->kind == k_entity);
   return get_entity_visited(ent) >= type_visited;
 }
 
 bool entity_not_visited(entity *ent) {
+  assert(ent && ent->kind == k_entity);
   return get_entity_visited(ent) < type_visited;
 }
 
@@ -907,7 +918,10 @@ static entity *resolve_ent_polymorphy2 (type *dynamic_class, entity* static_ent)
  *  dynamic type are given.
  *  Search downwards in overwritten tree. */
 entity *resolve_ent_polymorphy(type *dynamic_class, entity* static_ent) {
-  entity *res = resolve_ent_polymorphy2(dynamic_class, static_ent);
+  entity *res;
+  assert(static_ent && static_ent->kind == k_entity);
+
+  res = resolve_ent_polymorphy2(dynamic_class, static_ent);
   if (!res) {
     printf(" Could not find entity "); DDME(static_ent);
     printf("  in "); DDMT(dynamic_class);
@@ -936,6 +950,7 @@ void dump_entity (entity *ent) {
   int i, j;
   type *owner = get_entity_owner(ent);
   type *type  = get_entity_type(ent);
+  assert(ent && ent->kind == k_entity);
   printf("entity %s (%ld)\n", get_entity_name(ent), get_entity_nr(ent));
   printf("  type:  %s (%ld)\n", get_type_name(type),  get_type_nr(type));
   printf("  owner: %s (%ld)\n", get_type_name(owner), get_type_nr(owner));
