@@ -106,9 +106,13 @@ loop_element get_loop_element (ir_loop *loop, int pos);
 int get_loop_element_pos(ir_loop *loop, void *le);
 
 /** Returns a unique node number for the loop node to make output
-    readable. */
+    readable. Casten pointer if libfirm_debug not set. */
 int get_loop_loop_nr(ir_loop *loop);
 
+/** A field to connect additional information to a loop.  Only valid
+    if libfirm_debug is set, else returns NULL.  */
+void  set_loop_link (ir_loop *loop, void *link);
+void *get_loop_link (const ir_loop *loop);
 
 /*
  * Constructing and destructing the loop/backedge information.

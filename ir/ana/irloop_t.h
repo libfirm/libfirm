@@ -46,6 +46,7 @@ struct ir_loop {
 #ifdef DEBUG_libfirm
   int loop_nr;             /**< a unique node number for each loop node to make output
 			      readable. */
+  void *link;              /**< GL @@@ For debuging the analyses. */
 #endif
 
 };

@@ -299,6 +299,7 @@ static ir_loop *new_loop (void) {
 
 #ifdef DEBUG_libfirm
   son->loop_nr = get_irp_new_node_nr();
+  son->link = NULL;
 #endif
 
   current_loop = son;
@@ -444,6 +445,24 @@ int get_loop_loop_nr(ir_loop *loop) {
 #endif
 }
 
+
+/** A field to connect additional information to a loop.  Only valid
+    if libfirm_debug is set. */
+void  set_loop_link (ir_loop *loop, void *link) {
+  assert(loop && loop->kind == k_ir_loop);
+#ifdef DEBUG_libfirm
+  loop->link = link;
+#endif
+}
+void *get_loop_link (const ir_loop *loop) {
+  assert(loop && loop->kind == k_ir_loop);
+#ifdef DEBUG_libfirm
+  return loop->link;
+#else
+  return NULL;
+#endif
+}
+
 /* The outermost loop is remarked in the surrounding graph. */
 void     set_irg_loop(ir_graph *irg, ir_loop *loop) {
   assert(irg);
@@ -572,6 +591,7 @@ switch_irg (ir_node *n, int index) {
   return old_current;
 }
 
+#if 0
 /* Walks up the stack passing n and then finding the node
    where we walked into the irg n is contained in.
    Here we switch the irg. */
@@ -613,6 +633,7 @@ find_irg_on_stack (ir_node *n) {
 
   return old_current;
 }
+#endif
 
 #if 0
 static void test(ir_node *pred, ir_node *root, ir_node *this) {
@@ -996,17 +1017,32 @@ void construct_ip_backedges (void) {
 }
 #endif
 
-static void reset_backedges(ir_node *n, void *env) {
-  if (is_possible_loop_head(n))
+static void reset_backedges(ir_node *n) {
+  if (is_possible_loop_head(n)) {
+    int rem = interprocedural_view;
+    interprocedural_view = 1;
     clear_backedges(n);
+    interprocedural_view = 0;
+    clear_backedges(n);
+    interprocedural_view = rem;
+  }
+}
+
+static void loop_reset_backedges(ir_loop *l) {
+  int i;
+  reset_backedges(get_loop_node(l, 0));
+  for (i = 0; i < get_loop_n_sons(l); ++i) {
+    loop_reset_backedges(get_loop_son(l, i));
+  }
 }
 
 /** Removes all loop information.
     Resets all backedges */
 void free_loop_information(ir_graph *irg) {
+  if (get_irg_loop(irg))
+    loop_reset_backedges(get_irg_loop(irg));
   set_irg_loop(irg, NULL);
   /* We cannot free the loop nodes, they are on the obstack. */
-  irg_walk_graph(irg, NULL, reset_backedges, NULL);
 }
 
 
@@ -1056,20 +1092,32 @@ static int test_loop_node(ir_loop *l) {
     dump_loop(l, "-ha");
   }
 
+  if ((get_loop_depth(l) != 0) &&
+      (*(le.kind) == k_ir_node) && !has_backedges(le.node)) {
+    printf(" Loop head has no backedges! "); DDML(l);
+    printf("                             "); DDMN(le.node);
+    found_problem = 1;
+    dump_loop(l, "-ha");
+  }
+
   /* Recur */
+  has_node = 0;
   for (i = 0; i < get_loop_n_elements(l); ++i) {
     le = get_loop_element(l, i);
     if (*(le.kind) == k_ir_node)
-      has_node = 1;
+      has_node++;
     else
       if (test_loop_node(le.son)) found_problem = 1;
   }
 
-  if (!has_node) {
+  if (has_node == 0) {
     printf(" Loop has no firm node! "); DDML(l);
     found_problem = 1;
     dump_loop(l, "-ha");
   }
+
+  if (get_loop_loop_nr(l) == 11819)
+    dump_loop(l, "-ha-debug");
 
   return found_problem;
 }
