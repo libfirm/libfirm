@@ -1095,6 +1095,8 @@ INLINE void
 set_array_bounds (type *array, int dimension, ir_node * lower_bound,
 		  ir_node * upper_bound) {
   assert(array && (array->type_op == type_array));
+  assert(lower_bound && "lower_bound node may not be NULL.");
+  assert(upper_bound && "upper_bound node may not be NULL.");
   array->attr.aa.lower_bound[dimension] = lower_bound;
   array->attr.aa.upper_bound[dimension] = upper_bound;
 }
@@ -1111,6 +1113,7 @@ set_array_bounds_int (type *array, int dimension, int lower_bound,
 INLINE void
 set_array_lower_bound  (type *array, int dimension, ir_node * lower_bound) {
   assert(array && (array->type_op == type_array));
+  assert(lower_bound && "lower_bound node may not be NULL.");
   array->attr.aa.lower_bound[dimension] = lower_bound;
 }
 void  set_array_lower_bound_int (type *array, int dimension, int lower_bound) {
@@ -1123,6 +1126,7 @@ void  set_array_lower_bound_int (type *array, int dimension, int lower_bound) {
 INLINE void
 set_array_upper_bound  (type *array, int dimension, ir_node * upper_bound) {
   assert(array && (array->type_op == type_array));
+  assert(upper_bound && "upper_bound node may not be NULL.");
   array->attr.aa.upper_bound[dimension] = upper_bound;
 }
 void  set_array_upper_bound_int (type *array, int dimension, int upper_bound) {
