@@ -308,6 +308,14 @@ dump_node_info (ir_node *n) {
     for (i = 0; i < get_method_n_ress(tp); ++i)
       fprintf(F, "  resul %d type: %s \n", i, get_type_name(get_method_res_type(tp, i)));
   } break;
+  case iro_Return: {
+    if (!interprocedural_view) {
+      type *tp = get_entity_type(get_irg_ent(current_ir_graph));
+      fprintf(F, "return in method of type %s \n", get_type_name(tp));
+      for (i = 0; i < get_method_n_ress(tp); ++i)
+	fprintf(F, "  res %d type: %s \n", i, get_type_name(get_method_res_type(tp, i)));
+    }
+    } break;
   case iro_Const: {
     type *tp = get_Const_type(n);
     assert(tp != none_type);

@@ -179,8 +179,11 @@ new_ir_node (dbg_info *db,
  *
  */
 
-/* this works for all except Block */
+/* This works for all except Block.  To express the difference to
+ * access routines that work for all nodes we use infix "nodes". */
+#define get_nodes_block get_nodes_Block
 INLINE ir_node  *get_nodes_Block (ir_node *node);
+#define set_nodes_block set_nodes_Block
 INLINE void      set_nodes_Block (ir_node *node, ir_node *block);
 
 /** Projection numbers for result of Start node: use for Proj nodes! */
@@ -190,7 +193,7 @@ typedef enum {
   pns_global_store,     /**< Projection on the global store */
   pns_frame_base,       /**< Projection on the frame base */
   pns_globals,          /**< Projection on the pointer to the data segment
-			   containing _all_ global entities. */
+			     containing _all_ global entities. */
   pns_args,             /**< Projection on all arguments */
   pns_value_arg_base    /**< Pointer to region of compound value arguments as defined by
   			     type of this method. */
@@ -489,6 +492,12 @@ INLINE void     set_Rot_right (ir_node *node, ir_node *right);
 INLINE ir_node *get_Conv_op (ir_node *node);
 INLINE void     set_Conv_op (ir_node *node, ir_node *op);
 
+/* Does Cast need a mem operator?
+ * Cast should only depend on the type, not on the state of an
+ * entity.  But:  we initialzie various fields after Alloc, that
+ * are accessed in the cast.  This required some precaution, to
+ * get the right memory into the Loads generated from the cast.
+ */
 INLINE ir_node *get_Cast_op (ir_node *node);
 INLINE void     set_Cast_op (ir_node *node, ir_node *op);
 INLINE type    *get_Cast_type (ir_node *node);
