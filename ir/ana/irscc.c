@@ -591,12 +591,16 @@ static bool is_outermost_Start(ir_node *n) {
 /* Don't walk from nodes to blocks except for Control flow operations. */
 static INLINE int
 get_start_index(ir_node *n) {
-  /*  if (is_cfop(n) || is_fragile_op(n) || intern_get_irn_op(n) == op_Start)
+#if 1
+  if (is_cfop(n) || is_fragile_op(n) || intern_get_irn_op(n) == op_Start)
       // this should be sufficient.
     return -1;
   else
     return 0;
-  */
+#else
+  /* This version causes deeper loop trees (at least we verified this for Polymor).
+     But it guarantees that Blocks are analysed before nodes contained in the
+     block.  If so, we can set the value to undef if the block is not executed. */
   if (intern_get_irn_op(n) == op_Phi   ||
       intern_get_irn_op(n) == op_Block ||
       (intern_get_irn_op(n) == op_Filter && interprocedural_view))
@@ -604,6 +608,7 @@ get_start_index(ir_node *n) {
     return 0;
   else
     return -1;
+#endif
 }
 #if 0
 /* Returns current_ir_graph and set it to the irg of predecessor index
