@@ -365,22 +365,22 @@ static void prepare_irg_end_except(ir_graph * irg, irg_data_t * data) {
     data->except = new_EndExcept();
     /* mem */
     for (i = n_except - 1; i >= 0; --i) {
-      ir_node * node = skip_Proj(except_arr[i]);
+      ir_node * node = skip_Proj(skip_Tuple(except_arr[i]));
       if (get_irn_op(node) == op_Call) {
-    in[i] = new_r_Proj(irg, get_nodes_Block(node), node, mode_M, 3);
+	in[i] = new_r_Proj(irg, get_nodes_Block(node), node, mode_M, 3);
       } else if (get_irn_op(node) == op_Raise) {
-    in[i] = new_r_Proj(irg, get_nodes_Block(node), node, mode_M, 1);
+	in[i] = new_r_Proj(irg, get_nodes_Block(node), node, mode_M, 1);
       } else {
-    assert(is_fragile_op(node));
-    /* We rely that all cfops have the memory output at the same position. */
-    in[i] = new_r_Proj(irg, get_nodes_Block(node), node, mode_M, 0);
+	assert(is_fragile_op(node));
+	/* We rely that all cfops have the memory output at the same position. */
+	in[i] = new_r_Proj(irg, get_nodes_Block(node), node, mode_M, 0);
       }
     }
     data->except_mem = new_Phi(n_except, in, mode_M);
     /* This Phi is a merge, therefor needs not be kept alive.
        It might be optimized away, though.  */
     if (get_End_keepalive(end, get_End_n_keepalives(end)-1 )
-    == data->except_mem)
+	== data->except_mem)
       set_End_keepalive(end, get_End_n_keepalives(end)-1, new_Bad());
     DEL_ARR_F(in);
   }

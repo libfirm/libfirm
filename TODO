@@ -1,5 +1,6 @@
 
-  * Error in removing dead code:
+  * Goetz 10.6.04
+    Error in removing dead code:
     In an if condition is a loop.  We optimized the if condition to Jmp/Bad,
     the loop now is unreachable.  It should be removed by gigo or the like.
     It remains in the representation as all blocks in the loop have a
@@ -7,9 +8,17 @@
     a pass walking and marking starting at the Start node to remove this loop.
     Currently scc causes an segmetation fault for this situation.
 
+  * Goetz 10.6.04
+    Error in irscc:  If we have an unreachable loop, or a loop
+    resulting from an exiting endless recursion, irscc finds
+    no tail ==> issues an assertion.
+
+  * Goetz 10.6.04
+    Error in interprocedural view:  Endless recursions are lost.
+
   * print routines for all enums!
 
-    Add flag whether mode is associative, float modes are not!!
+  * Add flag whether mode is associative, float modes are not!!
 
   * 25.2.04 Goetz
     Fix memory leak in irprog: free_ir_prog.

@@ -1543,18 +1543,24 @@ static INLINE ir_node ** new_frag_arr (ir_node *n)
 {
   ir_node **arr;
   int opt;
+
   arr = NEW_ARR_D (ir_node *, current_ir_graph->obst, current_ir_graph->n_loc);
   memcpy(arr, current_ir_graph->current_block->attr.block.graph_arr,
      sizeof(ir_node *)*current_ir_graph->n_loc);
+
   /* turn off optimization before allocating Proj nodes, as res isn't
      finished yet. */
   opt = get_opt_optimize(); set_optimize(0);
   /* Here we rely on the fact that all frag ops have Memory as first result! */
   if (get_irn_op(n) == op_Call)
-    arr[0] = new_Proj(n, mode_M, 3);
-  else
-    arr[0] = new_Proj(n, mode_M, 0);
+    arr[0] = new_Proj(n, mode_M, pn_Call_M_except);
+  else {
+    assert(pn_Raise_M == pn_Quot_M == pn_DivMod_M == pn_Div_M == pn_Mod_M == pn_Load_M
+	   == pn_Store_M == pn_Alloc_M);
+    arr[0] = new_Proj(n, mode_M, pn_Alloc_M);
+  }
   set_optimize(opt);
+
   current_ir_graph->current_block->attr.block.graph_arr[current_ir_graph->n_loc-1] = n;
   return arr;
 }

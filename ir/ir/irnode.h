@@ -393,11 +393,14 @@ void     set_Const_type   (ir_node *node, type *tp);
      this flag. */
 typedef enum {
   type_tag,          /**< The SymConst is a type tag for the given type.
-            Type_or_id_p is type *. */
+			Type_or_id_p is type *. */
   size,              /**< The SymConst is the size of the given type.
-            Type_or_id_p is type *. */
+			Type_or_id_p is type *. */
   linkage_ptr_info   /**< The SymConst is a symbolic pointer to be filled in
-            by the linker. Type_or_id_p is ident *. */
+			by the linker. Type_or_id_p is ident *.  If the name
+			refers to an entity also compiled, this entity must be external_visible,
+			so that it is not removed by some optimization.  An optimization must
+			not analyse linkage_ptr_info SymConsts. */
 } symconst_kind;
 
 typedef union type_or_id * type_or_id_p;

@@ -234,11 +234,11 @@ void  del_identities (pset *value_table);
    graph, nor the entity standing for this graph. */
 void free_ir_graph (ir_graph *irg) {
   stat_free_graph(irg);
-  if (irg->ent) set_entity_irg(irg->ent, NULL);  /* not set in const code irg */
-  free_End(irg->end);
+  if (irg->outs_state != no_outs) free_outs(irg);
   if (irg->frame_type)  free_type(irg->frame_type);
   if (irg->value_table) del_identities(irg->value_table);
-  if (irg->outs_state != no_outs) free_outs(irg);
+  if (irg->ent) set_entity_irg(irg->ent, NULL);  /* not set in const code irg */
+  free_End(irg->end);
   obstack_free(irg->obst,NULL);
   free(irg->obst);
 #if USE_EXPLICIT_PHI_IN_STACK
