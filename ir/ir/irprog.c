@@ -218,3 +218,12 @@ ir_node** get_irp_ip_outedges(void)
 {
   return(irp -> ip_outedges);
 }
+
+
+irg_callee_info_state get_irp_callee_info_state(void) {
+  return irp->callee_info_state;
+}
+
+void set_irp_callee_info_state(irg_callee_info_state s) {
+  irp->callee_info_state = s;
+}

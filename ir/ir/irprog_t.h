@@ -27,29 +27,40 @@
 #include "firm_common_t.h"
 #include "typegmod.h"
 
+#include "callgraph.h"
+
 #include "array.h"
 
 /** ir_prog */
 struct ir_prog {
   firm_kind kind;
+  ident     *name;                /**< A file name or the like. */
   ir_graph  *main_irg;            /**< entry point to the compiled program
-				     @@@ or a list, in case we compile a library or the like? */
+				       @@@ or a list, in case we compile a library or the like? */
   ir_graph **graphs;              /**< all graphs in the ir */
-  type      *glob_type;           /**< global type.  Must be a class as it can
-				     have fields and procedures.  */
-  type     **types;               /**< all types in the ir */
   ir_graph  *const_code_irg;      /**< This ir graph gives the proper environment
-				     to allocate nodes the represent values
-				     of constant entities. It is not meant as
-				     a procedure.  */
+				       to allocate nodes the represent values
+				       of constant entities. It is not meant as
+				       a procedure.  */
+  type      *glob_type;           /**< global type.  Must be a class as it can
+			  	       have fields and procedures.  */
+  type     **types;               /**< all types in the ir */
 
-  irg_outs_state outs_state;     /**< Out edges. */
-  ir_node **ip_outedges;         /**< Huge Array that contains all out edges
-				    in interprocedural view. */
-  ip_view_state ip_view;         /**< State of interprocedural view. */
-  ident     *name;
-  /*struct obstack *obst;	   * @@@ Should we place all types and
-                                     entities on an obstack, too? */
+  /* -- states of and access to generated information -- */
+
+  ip_view_state ip_view;          /**< State of interprocedural view. */
+
+  irg_outs_state outs_state;      /**< Out edges. */
+  ir_node **ip_outedges;          /**< Huge Array that contains all out edges
+				       in interprocedural view. */
+
+  irg_callee_info_state callee_info_state; /**< Validity of callee information.
+				            Contains the lowest value or all irgs.  */
+
+
+  irp_callgraph_state callgraph_state; /**< State of the callgraph. */
+  struct ir_loop *outermost_cg_loop;   /**< For callgraph analysis: entry point
+					    to looptree over callgraph. */
 
 #ifdef DEBUG_libfirm
   long max_node_nr;                /**< to generate unique numbers for nodes. */

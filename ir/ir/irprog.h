@@ -154,4 +154,8 @@ ir_graph *get_const_code_irg(void);
 irg_outs_state get_irp_ip_outs_state(void);
 void           set_irp_ip_outs_inconsistent(void);
 
+
+irg_callee_info_state get_irp_callee_info_state(void);
+void                  set_irp_callee_info_state(irg_callee_info_state s);
+
 #endif /* ifndef _IRPROG_H_ */
