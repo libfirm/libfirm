@@ -101,6 +101,9 @@
     *Phi_in_stack;   a stack needed for automatic Phi construction, needed only
 		     during ir construction.
 
+    visited          A int used as flag to traverse the ir_graph.
+
+    block_visited    A int used as a flag to traverse block nodes in the graph.
 
   Three kinds of nodes
   --------------------
@@ -200,7 +203,6 @@
                      graph.
 
                      Others not yet documented.
-
 
 
 
@@ -1266,7 +1268,6 @@ ir_node *get_store (void);
 
 /* Write a store. */
 void set_store (ir_node *store);
-
 
 /* This function is for internal use only.  It is visible as it is needed
    in irgraph.c to create the stack that is needed for automatic Phi

@@ -886,6 +886,8 @@ optimize (ir_node *n)
   tarval *tv;
   ir_node *old_n = n;
 
+  if (!get_optimize()) return NULL;
+
   /* if not optimize return n */
   if (n == NULL) {
     printf(" attention: empty node!!! \n");
@@ -949,7 +951,6 @@ optimize (ir_node *n)
     pdeq_putr (current_ir_graph->keep.living, n);
   }
 #endif
-
   return n;
 }
 

@@ -9,13 +9,6 @@
 # include "irgmod.h"
 # include "array.h"
 
-/*  ir_node * */
-/*  arg_access (ir_mode *mode, long proj) */
-/*  { */
-/*    return new_r_Proj (current_ir_graph, current_ir_graph->start,  */
-/*  		     current_ir_graph->args, mode, proj); */
-/*  } */
-
 /* Turns a node into a "useless" Tuple.  The Tuple just forms a tuple
    from several inputs.
    This is useful if a node returning a tuple is removed, but the Projs

@@ -15,10 +15,6 @@
 
 ir_graph *current_ir_graph;
 
-unsigned long ir_visited = 0;
-unsigned long block_visited = 0;
-
-
 /* Allocates a list of nodes:
     - The start block containing a start node and Proj nodes for it's four
       results (X, M, P, Tuple).
@@ -45,14 +41,17 @@ new_ir_graph (entity *ent, int params)
                                 dereferenced in this graph plus one for
 				the store. This is not the number of parameters
                                 to the procedure!  */
+  res->visited = 0;     /* visited flag, for the ir walker */
+  res->block_visited=0; /* visited flag, for the 'block'-walker */
+
 #if USE_EXPICIT_PHI_IN_STACK
   res->Phi_in_stack = new_Phi_in_stack();  /* A stack needed for automatic Phi
                                 generation */
 #endif
   res->obst      = (struct obstack *) xmalloc (sizeof (struct obstack));
   obstack_init (res->obst);
-  res->value_table = new_identities (); /* Symbol table for local variables
-					   of this procedure */
+  res->value_table = new_identities (); /* value table for global value numbering
+				      for optimizing use in iropt.c */
 
   /** Type inforamtion for the procedure of the graph **/
   res->ent = ent;
@@ -86,80 +85,82 @@ new_ir_graph (entity *ent, int params)
   return res;
 }
 
-/* access routines for all ir_graph attributes */
+/* access routines for all ir_graph attributes:
+   templates:
+   {attr type} get_irg_{attribute name} (ir_graph *irg);
+   void set_irg_{attr name} (ir_graph *irg, {attr type} {attr}); */
 
 ir_node *
-get_start_block_of_irgraph (ir_graph *irg)
+get_irg_start_block (ir_graph *irg)
 {
   return irg->start_block;
 }
 
 void
-set_start_block_of_irgraph (ir_graph *irg, ir_node *node)
+set_irg_start_block (ir_graph *irg, ir_node *node)
 {
   irg->start_block = node;
 }
 
 ir_node *
-get_start_of_irgraph (ir_graph *irg)
+get_irg_start (ir_graph *irg)
 {
   return irg->start;
 }
 
 void
-set_start_of_irgraph(ir_graph *irg, ir_node *node)
+set_irg_start(ir_graph *irg, ir_node *node)
 {
   irg->start = node;
 }
 
 ir_node *
-get_end_block_of_irgraph (ir_graph *irg)
+get_irg_end_block (ir_graph *irg)
 {
   return irg->end_block;
 }
 
 void
-set_end_block_of_irgraph (ir_graph *irg, ir_node *node)
+set_irg_end_block (ir_graph *irg, ir_node *node)
 {
   irg->end_block = node;
 }
 
 ir_node *
-get_end_of_irgraph (ir_graph *irg)
+get_irg_end (ir_graph *irg)
 {
   return irg->end;
 }
 
 void
-set_end_of_irgraph (ir_graph *irg, ir_node *node)
+set_irg_end (ir_graph *irg, ir_node *node)
 {
   irg->end = node;
 }
 
 ir_node *
-get_cstore_of_irgraph (ir_graph *irg)
+get_irg_cstore (ir_graph *irg)
 {
   return irg->cstore;
 }
 
 void
-set_cstore_of_irgraph (ir_graph *irg, ir_node *node)
+set_irg_cstore (ir_graph *irg, ir_node *node)
 {
   irg->cstore = node;
 }
 
 ir_node *
-get_frame_of_irgraph (ir_graph *irg)
+get_irg_frame (ir_graph *irg)
 {
   return irg->frame;
 }
 
 void
-set_frame_of_irgraph(ir_graph *irg, ir_node *node)
+set_irg_frame (ir_graph *irg, ir_node *node)
 {
   irg->frame = node;
 }
-
 
 ir_node *
 get_irg_globals (ir_graph *irg)
@@ -173,64 +174,98 @@ set_irg_globals (ir_graph *irg, ir_node *node)
   irg->globals = node;
 }
 
-
-
 ir_node *
-get_args_of_irgraph (ir_graph *irg)
+get_irg_args (ir_graph *irg)
 {
   return irg->args;
 }
 
 void
-set_args_of_irgraph(ir_graph *irg, ir_node *node)
+set_irg_args (ir_graph *irg, ir_node *node)
 {
   irg->args = node;
 }
 
 ir_node *
-get_bad_of_irgraph (ir_graph *irg)
+get_irg_bad (ir_graph *irg)
 {
   return irg->bad;
 }
 
 void
-set_bad_of_irgraph(ir_graph *irg, ir_node *node)
+set_irg_bad (ir_graph *irg, ir_node *node)
 {
   irg->bad = node;
 }
 
 ir_node *
-get_current_block_of_irgraph (ir_graph *irg)
+get_irg_current_block (ir_graph *irg)
 {
   return irg->current_block;
 }
 
 void
-set_current_block_of_irgraph(ir_graph *irg, ir_node *node)
+set_irg_current_block (ir_graph *irg, ir_node *node)
 {
   irg->current_block = node;
 }
 
 entity *
-get_ent_of_irgraph(ir_graph *irg)
+get_irg_ent (ir_graph *irg)
 {
   return irg->ent;
 }
 
 void
-set_ent_of_irgraph(ir_graph *irg, entity *ent)
+set_irg_ent (ir_graph *irg, entity *ent)
 {
   irg->ent = ent;
 }
 
 int
-get_params_of_irgraph(ir_graph *irg)
+get_irg_params (ir_graph *irg)
 {
   return irg->params;
 }
 
 void
-set_params_of_irgraph(ir_graph *irg, int params)
+set_irg_params (ir_graph *irg, int params)
 {
   irg->params = params;
+}
+
+unsigned long
+get_irg_visited (ir_graph *irg)
+{
+  return irg->visited;
+}
+
+void
+set_irg_visited (ir_graph *irg, unsigned long visited)
+{
+  irg->visited = visited;
+}
+
+void
+inc_irg_visited (ir_graph *irg)
+{
+  irg->visited = irg->visited++;
+}
+
+unsigned long
+get_irg_block_visited (ir_graph *irg)
+{
+  return irg->block_visited;
+}
+
+void
+set_irg_block_visited (ir_graph *irg, unsigned long visited)
+{
+  irg->block_visited = visited;
+}
+
+void
+inc_irg_block_visited (ir_graph *irg)
+{
+  irg->block_visited = irg->block_visited++;
 }

@@ -22,7 +22,7 @@ MAKE    = /usr/bin/make -k
 SHELL   = /bin/sh
 
 CXX         = gcc
-CFLAGS      = -pipe -Wall #-ansi -pedantic # -g
+CFLAGS      = -pipe -Wall # -ansi -pedantic # -g
 COPTFLAGS   = -O3 -ffast-math # -fno-caller-saves
 
 TARGET	= libfirm.a
@@ -31,7 +31,7 @@ TARGET	= libfirm.a
 
 $(TARGET):
 #	mkdir objects
-	for i in $(SUBDIRS); do $(MAKE) "INCLUDES=$(INCLUDES)" -C $$i; done
+	for i in $(SUBDIRS); do $(MAKE) "INCLUDES=$(INCLUDES)" "CXXFLAGS=-g" -C $$i; done
 	$(AR) $(TARGET) objects/*.o
 	mv $(TARGET) ..
 

@@ -6,7 +6,6 @@
 */
 
 #include "irnode.h"
-//#include "irnode2.h"
 #include "array.h"
 
 static char *pnc_name_arr [] = {"False", "Eq", "Lt", "Le",
@@ -47,8 +46,6 @@ static char *pns_name_arr [] = {"initial_exec", "global_store",
 
 static char *symconst_name_arr [] = {"type_tag", "size", "linkage_ptr_info"};
 
-
-
 void
 init_irnode (void)
 {
@@ -70,7 +67,7 @@ new_ir_node (ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mode,
   res->kind = k_ir_node;
   res->op = op;
   res->mode = mode;
-  res->visit = 0;
+  res->visited = 0;
   res->link = NULL;
   if (arity < 0) {
     res->in = NEW_ARR_F (ir_node *, 1);
@@ -148,7 +145,12 @@ get_irn_arity (ir_node *node)
   return (ARR_LEN((node)->in)-1);
 }
 
-/* returns the array with ins */
+/* Returns the array with ins. This array is shifted with respect to the
+   array accessed by get_irn_n: The block operand is at position 0 not -1.
+   (@@@ This should be changed.)
+   The order of the predecessors in this array is not guaranteed, except that
+   lists of operands as predecessors of Block or arguments of a Call are
+   consecutive. */
 inline ir_node **
 get_irn_in (ir_node *node)
 {
@@ -159,7 +161,9 @@ get_irn_in (ir_node *node)
 /* to iterate through the predecessors without touching the array */
 /* To iterate over the operands iterate from 0 to i < get_irn_arity(),
    to iterate includind the Block predecessor iterate from i = -1 to
-   i < get_irn_arity. */
+   i < get_irn_arity.
+   If it is a block, the entry -1 is NULL. */
+
 inline ir_node *
 get_irn_n (ir_node *node, int n)
 {
@@ -203,6 +207,20 @@ set_irn_op (ir_node *node, ir_op *op)
 {
   assert (node);
   node->op = op;
+}
+
+inline void
+set_irn_visited (ir_node *node, unsigned long visited)
+{
+  assert (node);
+  node->visited = visited;
+}
+
+inline unsigned long
+get_irn_visited (ir_node *node)
+{
+  assert (node);
+  return node->visited;
 }
 
 inline opcode
@@ -302,6 +320,18 @@ set_nodes_Block (ir_node *node, ir_node *block) {
   set_irn_n(node, -1, block);
 }
 
+/* Returns an array with the predecessors of the Block. Depending on
+   the implementation of the graph datastructure this can be a copy of
+   the internal representation of predecessors as well as the internal
+   array itself. Therefore writing to this array might obstruct the ir. */
+inline ir_node **
+get_Block_cfgpred_arr (ir_node *node)
+{
+  assert ((node->op == op_Block));
+  return (ir_node **)get_Block_cfgpred(node, 0);
+}
+
+
 inline int
 get_Block_n_cfgpreds (ir_node *node) {
   assert ((node->op == op_Block));
@@ -376,7 +406,7 @@ set_Cond_selector (ir_node *node, ir_node *selector) {
 
 inline ir_node *
 get_Return_mem (ir_node *node) {
-  assert (node->op == op_Cond);
+  assert (node->op == op_Return);
   return get_irn_n(node, 0);
 }
 
@@ -384,6 +414,13 @@ inline void
 set_Return_mem (ir_node *node, ir_node *mem) {
   assert (node->op == op_Return);
   set_irn_n(node, 0, mem);
+}
+
+inline ir_node **
+get_Return_res_arr (ir_node *node)
+{
+  assert ((node->op == op_Return));
+  return ((ir_node **)get_Return_res(node, 0));
 }
 
 inline int
@@ -407,7 +444,7 @@ get_Return_res (ir_node *node, int pos) {
 
 inline void
 set_Return_res (ir_node *node, int pos, ir_node *res){
-  assert (node->op == op_Raise);
+  assert (node->op == op_Return);
   set_irn_n(node, pos+1, res);
 }
 
@@ -514,6 +551,13 @@ set_Sel_ptr (ir_node *node, ir_node *ptr) {
   set_irn_n(node, 1, ptr);
 }
 
+inline ir_node **
+get_Sel_index_arr (ir_node *node)
+{
+  assert ((node->op == op_Sel));
+  return (ir_node **)get_Sel_index(node, 0);
+}
+
 inline int
 get_Sel_n_index (ir_node *node) {
   assert (node->op == op_Sel);
@@ -585,6 +629,12 @@ inline void
 set_Call_ptr (ir_node *node, ir_node *ptr) {
   assert (node->op == op_Call);
   set_irn_n(node, 1, ptr);
+}
+
+inline ir_node **
+get_Call_param_arr (ir_node *node) {
+  assert (node->op == op_Call);
+  return ((ir_node **)get_Call_param (node, 0));
 }
 
 inline int
@@ -1300,6 +1350,12 @@ set_Conv_op (ir_node *node, ir_node *op) {
   set_irn_n(node, 0, op);
 }
 
+inline ir_node **
+get_Phi_preds_arr (ir_node *node) {
+  assert (node->op == op_Phi);
+  return ((ir_node **)get_Phi_pred(node, 0));
+}
+
 inline int
 get_Phi_n_preds (ir_node *node) {
   assert (node->op == op_Phi);
@@ -1482,6 +1538,12 @@ set_Free_type (ir_node *node, type *type) {
   node->attr.f = type;
 }
 
+inline ir_node **
+get_Sync_preds_arr (ir_node *node) {
+  assert (node->op == op_Sync);
+  return ((ir_node **)get_Sync_pred(node, 0));
+}
+
 inline int
 get_Sync_n_preds (ir_node *node) {
   assert (node->op == op_Sync);
@@ -1529,6 +1591,12 @@ inline void
 set_Proj_proj (ir_node *node, long proj) {
   assert (node->op == op_Proj);
   node->attr.proj = proj;
+}
+
+inline ir_node **
+get_Tuple_preds_arr (ir_node *node) {
+  assert (node->op == op_Tuple);
+  return ((ir_node **)get_Tuple_pred(node, 0));
 }
 
 inline int

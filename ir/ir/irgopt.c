@@ -59,17 +59,23 @@ set_new_node (ir_node *old, ir_node *new)
 ir_node *
 get_new_node (ir_node * n)
 {
+  ir_node *new;
+  new = n->in[0];
+  assert(new);
+
   return n->in[0];
+
 }
 
 /* Create this node on a new obstack. */
 void
 copy_node (ir_node *n, void *env) {
+  ir_node *res = NULL;
+  ir_node *a = NULL;
+  ir_node *b = NULL;
   int i;
-  ir_node *res, *a, *b;
-  res = (ir_node *) malloc (sizeof (ir_node));
-  a = (ir_node *) malloc (sizeof (ir_node));
-  b = (ir_node *) malloc (sizeof (ir_node));
+
+  assert (n);
 
   if (is_binop(n)) {
     a = get_binop_left(n);
@@ -81,61 +87,52 @@ copy_node (ir_node *n, void *env) {
   switch (get_irn_opcode(n)) {
   case iro_Block:
     {
-      /*CS malloc*/
-      ir_node *in [get_Block_n_cfgpreds(n)];
-
-      for (i=0; i <(get_Block_n_cfgpreds(n)); i++) {
-	in[i] = get_Block_cfgpred (n, i);
-      }
+      ir_node **in = get_Block_cfgpred_arr(n);
+      for (i = 0; i < get_Block_n_cfgpreds(n); i++)
+	set_Block_cfgpred(n, i, get_new_node(get_Block_cfgpred(n, i)));
       res = new_r_Block (current_ir_graph, get_Block_n_cfgpreds(n), in);
-      set_new_node(n, res);
     }
     break;
   case iro_Start:
-    res = new_r_Start (current_ir_graph, get_new_node(n));
-    set_new_node(n, res);
+    res = new_r_Start (current_ir_graph, get_new_node(get_nodes_Block(n)));
     break;
   case iro_End:
     res = new_r_End (current_ir_graph, get_new_node(n));
-    set_new_node(n, res);
+    current_ir_graph -> end = res;
+    current_ir_graph -> end_block = get_new_node(get_nodes_Block(n));
     break;
   case iro_Jmp:
     res = new_r_Jmp (current_ir_graph, get_new_node(n));
-    set_new_node(n, res);
     break;
   case iro_Cond:
     res = new_r_Cond (current_ir_graph, get_new_node(n),
 		      get_Cond_selector(n));
-    set_new_node(n, res);
     break;
   case iro_Return:
     {
-      /*CS malloc*/
-      ir_node *in [get_Return_n_res(n)];
-      for (i=0; i <(get_Return_n_res(n)); i++) {
-	in[i] = get_Return_res (n, i);
-      }
+      ir_node **in ;
+      in = get_Return_res_arr(n);
+      for (i = 0; i < get_Return_n_res(n); i++)
+	set_Return_res(n, i, get_new_node(get_Return_res(n, i)));
       res = new_r_Return (current_ir_graph, get_new_node(n),
 			  get_Return_mem (n), get_Return_n_res(n), in);
-      set_new_node(n, res);
     }
     break;
   case iro_Raise:
     res = new_r_Raise (current_ir_graph, get_new_node(n),
-		       get_Raise_mem(n), get_Raise_exoptr(n));
-    set_new_node(n, res);
+		       get_Raise_mem(n), get_Raise_exo_ptr(n));
     break;
   case iro_Const:
     res = new_r_Const (current_ir_graph, get_new_node(n),
 		       get_irn_mode(n), get_Const_tarval(n));
-    set_new_node(n, res);
     break;
   case iro_SymConst:
     {
-      type_or_id *value;
-      value = (type_or_id *) malloc (sizeof (type_or_id));
+      type_or_id *value = NULL;
+
       if ((get_SymConst_kind(n)==type_tag) || (get_SymConst_kind(n)==size))
 	{
+
 	   value = (type_or_id *) get_SymConst_type(n);
 	}
       else
@@ -147,39 +144,27 @@ copy_node (ir_node *n, void *env) {
 	}
     res = new_r_SymConst (current_ir_graph, get_new_node(n), value,
 			  get_SymConst_kind (n));
-    set_new_node(n, res);
     }
     break;
   case iro_Sel:
     {
-      /*CS*/
-      ir_node *in [get_Sel_n_index(n)];
-      for (i=0; i <(get_Sel_n_index(n)); i++) {
-	in[i] = get_Sel_index (n, i);
-      }
+      ir_node **in = get_Sel_index_arr(n);
       res = new_r_Sel (current_ir_graph, get_new_node(n),
 		       get_Sel_mem(n), get_Sel_ptr(n), get_Sel_n_index(n),
 		       in, get_Sel_entity(n));
-      set_new_node(n, res);
     }
     break;
   case  iro_Call:
     {
-      /*CS*/
-      ir_node *in [get_Call_arity(n)];
-      for (i=0; i <(get_Call_arity(n)); i++) {
-	in[i] = get_Call_param (n, i);
-      }
+      ir_node **in = get_Call_param_arr(n);
       res = new_r_Call (current_ir_graph, get_new_node(n), get_Call_mem(n),
 			get_Call_ptr(n), get_Call_arity(n),
 			in, get_Call_type (n));
-      set_new_node(n, res);
     }
     break;
   case iro_Add:
     res = new_r_Add (current_ir_graph, get_new_node(n),
 		     get_new_node(a), get_new_node(b), get_irn_mode(n));
-    set_new_node(n, res);
     break;
   case iro_Sub:
     {
@@ -187,13 +172,11 @@ copy_node (ir_node *n, void *env) {
       temp_node = get_nodes_Block(n);
       res = new_r_Sub (current_ir_graph, get_new_node(temp_node),
                        get_new_node(a), get_new_node(b), get_irn_mode(n));
-      set_new_node(n, res);
     }
     break;
   case iro_Minus:
     res = new_r_Minus (current_ir_graph, get_new_node(n), get_new_node(a),
 		       get_irn_mode(n));
-    set_new_node(n, res);
     break;
   case iro_Mul:
     res = new_r_Mul (current_ir_graph, get_new_node(n), get_new_node(a),
@@ -260,15 +243,10 @@ copy_node (ir_node *n, void *env) {
 		     get_irn_mode(n));
     break;
   case iro_Phi:
-    /*CS malloc*/
     {
-      ir_node *in [get_Phi_n_preds(n)];
-      for (i=0; i <(get_Phi_n_preds(n)); i++) {
-	in[i] = get_Phi_pred (n, i);
-      }
+      ir_node **in = get_Phi_preds_arr(n);
       res = new_r_Phi (current_ir_graph, get_new_node(n),
 		       get_Phi_n_preds(n), in, get_irn_mode(n));
-      set_new_node(n, res);
     }
     break;
   case iro_Load:
@@ -291,32 +269,22 @@ copy_node (ir_node *n, void *env) {
 		      get_Free_size(n), get_Free_type(n));
     break;
   case iro_Sync:
-    /*CS malloc*/
     {
-      ir_node *in [get_Sync_n_preds(n)];
-      for (i=0; i <(get_Sync_n_preds(n)); i++) {
-	in[i] = get_Sync_pred (n, i);
-      }
+      ir_node **in = get_Sync_preds_arr(n);
       res = new_r_Sync (current_ir_graph, get_new_node(n),
 			get_Sync_n_preds(n), in);
-      set_new_node(n, res);
     }
     break;
   case iro_Proj:
-    res = new_r_Proj (current_ir_graph, get_new_node(n),
-		      get_Proj_pred(n), get_irn_mode(n),
+    res = new_r_Proj (current_ir_graph, get_new_node(get_nodes_Block(n)),
+		      get_new_node(get_Proj_pred(n)), get_irn_mode(n),
 		      get_Proj_proj(n));
     break;
   case iro_Tuple:
-    /*CS malloc*/
     {
-      ir_node *in [get_Tuple_n_preds(n)];
-      for (i=0; i <(get_Tuple_n_preds(n)); i++) {
-	in[i] = get_Tuple_pred (n, i);
-      }
+      ir_node **in = get_Tuple_preds_arr(n);
       res = new_r_Tuple (current_ir_graph, get_new_node(n),
 			 get_Tuple_n_preds(n), in);
-      set_new_node(n, res);
     }
     break;
   case iro_Id:
@@ -327,28 +295,51 @@ copy_node (ir_node *n, void *env) {
     res = new_r_Bad (get_new_node(n));
     break;
   }
+  set_new_node(n, res);
 }
 
 
 void
-dead_node_elemination(ir_graph *irg) {
-  struct obstack *graveyard_obst;
+dead_node_elimination(ir_graph *irg) {
+  struct obstack *graveyard_obst=NULL;
   struct obstack *rebirth_obst;
+
+  ir_node *old_node, *new_node;
   ir_graph *rem = current_ir_graph;
   current_ir_graph = irg;
 
-  /* A quiet place, where the old obstack can rest in peace,
-     until it will be cremated. */
-  graveyard_obst = irg->obst;
+  if (get_opt_dead_node_elimination()) {
 
-  /* A new obstack, where the reachable nodes will be copied to. */
-  rebirth_obst = (struct obstack *) xmalloc (sizeof (struct obstack));
-  current_ir_graph->obst = rebirth_obst;
-  obstack_init (current_ir_graph->obst);
+    /* A quiet place, where the old obstack can rest in peace,
+       until it will be cremated. */
+    graveyard_obst = irg->obst;
 
-  /* Walks the graph once, and at the recursive way do the copy thing.
-     all reachable nodes will be copied to a new obstack. */
-  irg_walk(irg->end, NULL, copy_node, NULL);
+    /* A new obstack, where the reachable nodes will be copied to. */
+    rebirth_obst = (struct obstack *) xmalloc (sizeof (struct obstack));
+    current_ir_graph->obst = rebirth_obst;
+    obstack_init (current_ir_graph->obst);
+
+    /* Walks the graph once, and at the recursive way do the copy thing.
+       all reachable nodes will be copied to a new obstack. */
+
+    /*CS*/
+    printf("Before starting the DEAD NODE ELIMINATION !\n");
+
+    old_node = irg->start_block;
+    new_node = new_r_Block (current_ir_graph, 0, NULL);
+    irg->start_block = new_node;                       ;
+    set_new_node (old_node, new_node);
+    set_irn_visited (new_node, get_irg_visited(current_ir_graph)+1);
+    /*CS  Start node und alle Proj nodes muessen hier per hand eingetragen
+       werden! */
+
+    irg_walk(irg->end, NULL, copy_node, NULL);
+    /*CS*/
+    printf("After the DEAD NODE ELIMINATION !\n");
+
+    /* Free memory from old unoptimized obstack */
+    xfree (graveyard_obst);
+  }
 
   /* Free memory from old unoptimized obstack */
   xfree (graveyard_obst);

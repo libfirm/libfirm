@@ -18,6 +18,7 @@
 # include "array.h"
 /* memset belongs to string.h */
 # include "string.h"
+# include "irnode.h"
 
 #if USE_EXPICIT_PHI_IN_STACK
 /* A stack needed for the automatic Phi node construction in constructor
@@ -31,13 +32,14 @@ struct Phi_in_stack {
 /*********************************************** */
 /** privat interfaces, for professional use only */
 
+/* Constructs a Block with a fixed number of predecessors.*/
 
 inline ir_node *
 new_r_Block (ir_graph *irg,  int arity, ir_node **in)
 {
   ir_node *res;
 
-  res = new_ir_node (current_ir_graph, NULL, op_Block, mode_R, -1, NULL);
+  res = new_ir_node (current_ir_graph, NULL, op_Block, mode_R, arity, in);
 
   return res;
 }
@@ -142,7 +144,7 @@ alloc_or_pop_from_Phi_in_stack(ir_graph *irg, ir_node *block, ir_mode *mode,
     assert (res->kind == k_ir_node);
     assert (res->op == op_Phi);
     res->mode = mode;
-    res->visit = 0;
+    res->visited = 0;
     res->link = NULL;
     assert (arity >= 0);
     /* ???!!! How to free the old in array??  */
@@ -261,13 +263,20 @@ new_r_Id (ir_graph *irg, ir_node *block, ir_node *val, ir_mode *mode)
 }
 
 ir_node *
-new_r_Proj (ir_graph *irg, ir_node *block, ir_node *arg, ir_mode *mode, long proj)
+new_r_Proj (ir_graph *irg, ir_node *block, ir_node *arg, ir_mode *mode,
+	    long proj)
 {
   ir_node *in[1] = {arg};
   ir_node *res;
   res = new_ir_node (irg, block, op_Proj, mode, 1, in);
   res->attr.proj = proj;
+
+  assert(res);
+  assert(get_Proj_pred(res));
+  assert(get_nodes_Block(get_Proj_pred(res)));
+
   res = optimize (res);
+
   ir_vrfy (res);
   return res;
 
@@ -565,17 +574,11 @@ new_r_Return (ir_graph *irg, ir_node *block,
   int r_arity;
 
   r_arity = arity+1;
-
   NEW_ARR_A (ir_node *, r_in, r_arity);
-
   r_in[0] = store;
-
   memcpy (&r_in[1], in, sizeof (ir_node *) * arity);
-
   res = new_ir_node (irg, block, op_Return, mode_X, r_arity, r_in);
-
   res = optimize (res);
-
   ir_vrfy (res);
   return res;
 }
@@ -868,10 +871,10 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
   */
 
   /* case 4 -- already visited. */
-  if (block->visit == ir_visited) return NULL;
+  if (get_irn_visited(block) == get_irg_visited(current_ir_graph)) return NULL;
 
   /* visited the first time */
-  block->visit = ir_visited;
+  set_irn_visited(block, get_irg_visited(current_ir_graph));
 
   /* Get the local valid value */
   res = block->attr.block.graph_arr[pos];
@@ -941,7 +944,7 @@ mature_block (ir_node *block)
     /* Traverse a chain of Phi nodes attached to this block and mature
        these, too. **/
     for (n = block->link;  n;  n=next) {
-      ir_visited++;
+      inc_irg_visited(current_ir_graph);
       next = n->link;
       exchange (n, phi_merge (block, n->attr.phi0_pos, n->mode, nin, ins));
     }
@@ -1253,7 +1256,7 @@ switch_block (ir_node *target)
 ir_node *
 get_value (int pos, ir_mode *mode)
 {
-  ++ir_visited;
+  inc_irg_visited(current_ir_graph);
   return get_r_value_internal (current_ir_graph->current_block, pos + 1, mode);
 }
 
@@ -1269,7 +1272,7 @@ inline ir_node *
 get_store (void)
 {
   /* GL: one could call get_value instead */
-  ++ir_visited;
+  inc_irg_visited(current_ir_graph);
   return get_r_value_internal (current_ir_graph->current_block, 0, mode_M);
 }
 

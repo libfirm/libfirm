@@ -15,6 +15,11 @@
 
 # include "irnode.h"
 
+/* Walks over the ir graph, starting at the node given as first argument.
+   Executes pre before visiting the predecessor of a node, post after.
+   irg_walk uses the visited flag in irg and the nodes to determine visited
+   nodes.  It executes inc_irg_visited(current_ir_graph) to generate a new
+   flag. */
 void irg_walk(ir_node *node,
 	      void (pre)(ir_node*, void*), void (post)(ir_node*, void*),
 	      void *env);
