@@ -1,30 +1,27 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
 * All rights reserved.
-*
-* Authors: Martin Trapp, Christian Schaefer,
-*          Goetz Lindenmaier
-*
-* ircons.h ir node construction
 */
 
 /* $Id$ */
 
 /**
-* Ideas for imrovement:
-*
- Handle construction of exceptions more comfortable:
- Add new constructors that pass the exception region (or better the
- Phi for the memories, the ex. region can be found from there) as parameter,
- constructor then adds all Proj nodes and returns the pointer
- to the Proj node that selects the result of the arithmetic operation.
-
- Maybe hide the exception region in a global variable, especially if
- it is always unambiguous.
-**/
+ @todo
+ Ideas for imrovement:
+ -# Handle construction of exceptions more comfortable:
+    Add new constructors that pass the exception region (or better the
+    Phi for the memories, the ex. region can be found from there) as parameter,
+    constructor then adds all Proj nodes and returns the pointer
+    to the Proj node that selects the result of the arithmetic operation.
+ -# Maybe hide the exception region in a global variable, especially if
+    it is always unambiguous.
+*/
 
 /**
+ *  @file ircons.h
  *
- *   file ircons.h
+ *  ir node construction.
+ *
+ *  @author Martin Trapp, Christian Schaefer, Goetz Lindenmaier
  *
  *    This file documents all datatypes and constructors needed to
  *    build a FIRM representation of a pocedure.  The constructors are
@@ -1075,9 +1072,9 @@
 # include "type.h"
 # include "dbginfo.h"
 
-/***************************************************************************/
+/*-------------------------------------------------------------------------*/
 /* The raw interface                                                       */
-/***************************************************************************/
+/*-------------------------------------------------------------------------*/
 
 /* Constructs a Block with a fixed number of predecessors.
    Does not set current_block.  Can not be used with automatic
@@ -1167,9 +1164,9 @@ ir_node *new_rd_Break  (dbg_info *db, ir_graph *irg, ir_node *block);
 ir_node *new_rd_Filter (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg,
 		       ir_mode *mode, long proj);
 
-/***************************************************************************/
+/*-------------------------------------------------------------------------*/
 /* The raw interface without debug support                                 */
-/***************************************************************************/
+/*-------------------------------------------------------------------------*/
 
 /* Constructs a Block with a fixed number of predecessors.
    Does not set current_block.  Can not be used with automatic
@@ -1259,11 +1256,11 @@ ir_node *new_r_Break  (ir_graph *irg, ir_node *block);
 ir_node *new_r_Filter (ir_graph *irg, ir_node *block, ir_node *arg,
 		       ir_mode *mode, long proj);
 
-/*************************************************************************/
+/*-----------------------------------------------------------------------*/
 /* The block oriented interface                                          */
-/*************************************************************************/
+/*-----------------------------------------------------------------------*/
 
-/* Sets the current block in which the following constructors place the
+/** Sets the current block in which the following constructors place the
    nodes they construct. */
 void switch_block (ir_node *target);
 
@@ -1325,9 +1322,9 @@ ir_node *new_d_EndExcept(dbg_info *db);
 ir_node *new_d_Break (dbg_info *db);
 ir_node *new_d_Filter (dbg_info *db, ir_node *arg, ir_mode *mode, long proj);
 
-/*************************************************************************/
+/*-----------------------------------------------------------------------*/
 /* The block oriented interface without debug support                    */
-/*************************************************************************/
+/*-----------------------------------------------------------------------*/
 
 /* Needed from the interfase with debug support:
 void switch_block (ir_node *target);   */
@@ -1389,61 +1386,59 @@ ir_node *new_Id     (ir_node *val, ir_mode *mode);
 ir_node *new_Bad    (void);
 ir_node *new_Unknown(void);
 
-/***********************************************************************/
+/*---------------------------------------------------------------------*/
 /* The comfortable interface.                                          */
 /* Supports automatic Phi node construction.                           */
 /* All routines of the block oriented interface except new_Block are   */
 /* needed also.                                                        */
-/***********************************************************************/
+/*---------------------------------------------------------------------*/
 
-/** Block construction **/
+/* --- Block construction --- */
 /* immature Block without predecessors */
 ir_node *new_d_immBlock (dbg_info* db);
 ir_node *new_immBlock (void);
 
-/* Add a control flow edge to an immature block. */
+/** Add a control flow edge to an immature block. */
 void add_in_edge (ir_node *immblock, ir_node *jmp);
 
-/* fixes the number of predecessors of a block. */
+/** fixes the number of predecessors of a block. */
 void mature_block (ir_node *block);
 
-/** Parameter administration **/
+/* --- Parameter administration --- */
 /* Read a value from the array with the local variables.  Use this
    function to obtain the last definition of the value associated with
    pos.  Pos may not exceed the value passed as n_loc to new_ir_graph. */
 ir_node *get_d_value (dbg_info* db, int pos, ir_mode *mode);
 ir_node *get_value (int pos, ir_mode *mode);
 
-/* Write a value in the array with the local variables. Use this function
+/** Write a value in the array with the local variables. Use this function
    to remember a new definition of the value associated with pos. Pos may
    not exceed the value passed as n_loc to new_ir_graph. */
 void set_value (int pos, ir_node *value);
 
-/* Read a store.
+/** Read a store.
    Use this function to get the most recent version of the store (type M).
    Internally it does the same as get_value. */
 ir_node *get_store (void);
 
-/* Write a store. */
+/** Write a store. */
 void set_store (ir_node *store);
 
-/* keep this node alive even if End is not control-reachable from it */
+/** keep this node alive even if End is not control-reachable from it */
 void keep_alive (ir_node *ka);
 
-/** Useful access routines **/
-/* Returns the current block of the current graph.  To set the current
+/* --- Useful access routines --- */
+/** Returns the current block of the current graph.  To set the current
    block use switch_block(). */
 ir_node *get_cur_block();
 
-/* Returns the frame type of the current graph */
+/** Returns the frame type of the current graph */
 type *get_cur_frame_type();
 
 
-/***********************************************************************/
-/* initialize and finalize ir construction                             */
-/***********************************************************************/
+/* --- initialize and finalize ir construction --- */
 
-/* Puts the graph into state "phase_high" */
+/** Puts the graph into state "phase_high" */
 void finalize_cons (ir_graph *irg);
 
 

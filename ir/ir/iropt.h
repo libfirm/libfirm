@@ -1,9 +1,13 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
 * All rights reserved.
-*
-* Authors: Martin Trapp, Christian Schaefer
+*/
+
+/**
+* @file iropt.h
 *
 * Declarations for optimizations intertwined with IR construction.
+*
+* @author Martin Trapp, Christian Schaefer
 */
 
 /* $Id$ */

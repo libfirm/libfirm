@@ -1,9 +1,13 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
 * All rights reserved.
-*
-* Authors: Martin Trapp, Christian Schaefer
+*/
+
+/**
+* @file iropt_t.h
 *
 * Declarations for optimizations intertwined with IR construction.
+*
+* @author Martin Trapp, Christian Schaefer
 */
 
 /* $Id$ */
@@ -16,10 +20,13 @@
 
 ir_node *equivalent_node (ir_node *n);
 
-/* For cse */
+/*@{*/
+
+/** For cse */
 pset *new_identities (void);
 void  del_identities (pset *value_table);
 void  add_identities (pset *value_table, ir_node *node);
+/*@}*/
 
 ir_node *optimize_node (ir_node *n);
 

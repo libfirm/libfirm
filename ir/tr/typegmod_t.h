@@ -8,9 +8,11 @@
 # include "typegmod.h"
 
 /**
- * @file typegmod.h
- *   Goetz Lindenmaier
+ * @file typegmod_t.h
+ *
  *  This module supplies routines that support changing the type graph.
+ *
+ *  @author Goetz Lindenmaier
  */
 
 

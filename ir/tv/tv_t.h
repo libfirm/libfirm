@@ -1,6 +1,12 @@
 /* Declarations for Target Values.
    Copyright (C) 1995, 1996 Christian von Roques */
 
+/**
+* @file tv_t.h
+*
+* @author Christian von Roques
+*/
+
 /* $Id$ */
 
 #ifndef _TV_T_H_
@@ -11,7 +17,7 @@
 
 int tarval_print (XP_PAR1, const xprintf_info *, XP_PARN);
 
-/* Hash function on tarvals */
+/** Hash function on tarvals */
 unsigned tarval_hash (tarval *);
 
 
