@@ -148,7 +148,16 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
 	/* Die Sel-Operation kann nie einen Zeiger auf eine aufrufbare
 	 * Methode zurückgeben. Damit ist sie insbesondere nicht
 	 * ausführbar und nicht erreichbar. */
-	exchange(node, new_Bad());
+	/* Gib eine Warnung aus wenn die Entitaet eine Beschreibung ist
+	   fuer die es keine Implementierung gibt. */
+	if (get_entity_peculiarity(ent) == description) {
+	  /* @@@ GL Methode um Fehler anzuzeigen aufrufen! */
+	  xprintf("WARNING: Calling method description %I in method %I which has "
+		  "no implementation!\n", get_entity_ident(ent),
+		  get_entity_ident(get_irg_ent(current_ir_graph)));
+	} else {
+	  exchange(node, new_Bad());
+	}
       } else {
 	entity ** arr = get_entity_link(ent);
 	if (ARR_LEN(arr) == 1 && arr[0] != NULL) {
@@ -157,7 +166,8 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
 	   * Sel-Operation durch eine Const- bzw. SymConst-Operation
 	   * ersetzen. */
 	  if (get_entity_visibility(arr[0]) == external_allocated) {
-	    exchange(node, new_SymConst((type_or_id_p) get_entity_ld_ident(arr[0]), linkage_ptr_info));
+	    exchange(node, new_SymConst((type_or_id_p) get_entity_ld_ident(arr[0]),
+					linkage_ptr_info));
 	  } else {
 	    exchange(node, new_Const(mode_p, tarval_p_from_entity(arr[0])));
 	  }
