@@ -22,8 +22,8 @@ ac_output_file="Makefile MakeRules ir/Makefile ir/adt/Makefile ir/debug/Makefile
 		ir/tv/Makefile ir/common/Makefile ir/ident/Makefile ir/ir/Makefile \
 		ir/ana/Makefile ir/tr/Makefile ir/ana2/Makefile ir/stat/Makefile \
 		ir/opt/Makefile ir/external/Makefile ir/config/Makefile \
+		ir/arch/Makefile ir/be/Makefile \
 		testprograms/Makefile firmjni/Makefile firmjni/testprograms/Makefile \
-		ir/be/Makefile \
 		libfirm.doxygen"
 
 dnl generate the config header file

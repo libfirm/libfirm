@@ -34,7 +34,7 @@ CPPFLAGS += -I$(top_srcdir)/ir/adt -I$(top_srcdir)/ir/ir -I$(top_srcdir)/ir/comm
 		-I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/tr -I$(top_srcdir)/ir/tv \
 		-I$(top_srcdir)/ir/debug -I$(top_srcdir)/ir/ana -I$(top_srcdir)/ir/st \
 		-I$(top_srcdir)/ir/opt   -I$(top_srcdir)/ir/arch -I$(top_srcdir)/ir/stat \
-                -I$(top_srcdir)/ir/external -I$(topdir)/ir/config
+                -I$(top_srcdir)/ir/external -I$(topdir)/ir/config -I$(top_srcdir)/ir/arch
 
 include $(top_srcdir)/MakeTargets
 

@@ -51,7 +51,7 @@ CPPFLAGS += 	-I$(top_srcdir)/ir/ir  -I$(top_srcdir)/ir/common  	\
 	        -I$(top_srcdir)/ir/tv -I$(top_srcdir)/ir/debug 		\
 	        -I$(top_srcdir)/ir/ana -I$(top_srcdir)/ir/opt		\
 		-I$(top_srcdir)/ir/st -I$(top_srcdir)/ir/stat           \
-		-I$(topdir)/ir/config                                   \
+		-I$(topdir)/ir/config -I$(top_srcdir)/arch              \
 		-I$(topdir)
 
 LDFLAGS += -L$(libdir)
@@ -91,7 +91,7 @@ FIRM_PATH_HEADERS=common/firm.h common/firm_common.h \
 	ir/ircons.h ir/ircgcons.h ir/irflag.h ir/irvrfy.h ir/irdump.h \
 	ir/iropt.h ir/irgopt.h ir/ircgopt.h \
 	ana/irouts.h ana/irdom.h ana/irloop.h ana/cgana.h \
-	ir/irgmod.h tr/typegmod.h opt/tailrec.h
+	ir/irgmod.h tr/typegmod.h opt/tailrec.h arch/archop.h
 
 FIRM_SOURCE_DIR_HEADERS=$(addprefix $(SOURCE_DIR)/,$(FIRM_HEADERS))
 
