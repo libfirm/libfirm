@@ -16,6 +16,7 @@
 # include "irop_t.h"
 # include "common_t.h"
 # include "irdom_t.h" /* For size of struct dom_info. */
+# include "dbginfo.h"
 
 # include "exc.h"
 
@@ -116,6 +117,7 @@ struct ir_node {
 			      shall replace a node. */
   /**  Fields for optimizations / analysis information **/
   struct ir_node **out;    /* array of out edges */
+  struct dbg_info* dbi;           /* A pointer to information for debug support. */
   /** For debugging **/
 #ifdef DEBUG_libfirm
   int node_nr;             /* a unique node number for each node to make output

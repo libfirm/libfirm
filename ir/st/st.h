@@ -23,6 +23,7 @@
 # include "bs.h"
 
 #  include "bool.h"
+
 #define true TRUE
 #define false FALSE
 

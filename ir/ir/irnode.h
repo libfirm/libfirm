@@ -18,6 +18,7 @@
 # include "irmode.h"
 # include "tv.h"
 # include "type.h"
+# include "dbginfo.h"
 
 /* The typedefiniton of ir_node is also in irgraph.h to resolve
    recursion between irnode.h and irgraph.h */
@@ -108,7 +109,8 @@ inline long get_irn_node_nr(ir_node *node);
 /* If arity is negative, a node with a dynamic array is created.  */
 
 inline ir_node *
-new_ir_node (ir_graph *irg,
+new_ir_node (dbg_info *db,
+	     ir_graph *irg,
 	     ir_node *block,
 	     ir_op *op,
 	     ir_mode *mode,

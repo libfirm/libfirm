@@ -98,7 +98,7 @@ new_ir_graph (entity *ent, int n_loc)
 
   res->start_block = new_immBlock ();
   res->start   = new_Start ();
-  res->bad     = new_ir_node (res, res->start_block, op_Bad, mode_T, 0, NULL);
+  res->bad     = new_ir_node (NULL, res, res->start_block, op_Bad, mode_T, 0, NULL);
 
   /* Proj results of start node */
   projX        = new_Proj (res->start, mode_X, pns_initial_exec);
@@ -149,7 +149,7 @@ ir_graph *new_const_code_irg() {
   res->end_block = new_immBlock ();
   res->end       = new_End ();
   mature_block(get_cur_block());
-  res->bad = new_ir_node (res, res->start_block, op_Bad, mode_T, 0, NULL);
+  res->bad = new_ir_node (NULL, res, res->start_block, op_Bad, mode_T, 0, NULL);
   res->start   = new_Start ();
   /* Proj results of start node */
   projX        = new_Proj (res->start, mode_X, pns_initial_exec);

@@ -77,7 +77,7 @@ init_irnode (void)
 /* some incoming irnodes                                          */
 /* this constructor is used in every specified irnode constructor */
 inline ir_node *
-new_ir_node (ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mode,
+new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mode,
 	     int arity, ir_node **in)
 {
   ir_node *res;
@@ -97,6 +97,7 @@ new_ir_node (ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mode,
     memcpy (&res->in[1], in, sizeof (ir_node *) * arity);
   }
   res->in[0] = block;
+  set_irn_dbg_info(res, db);
   res->out = NULL;
 
 #ifdef DEBUG_libfirm

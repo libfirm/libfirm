@@ -20,7 +20,7 @@
 # include "irvrfy.h"
 # include "tv.h"
 # include "tune.h"
-# include "debinfo.h"
+# include "dbginfo_t.h"
 
 /* Make types visible to allow most efficient access */
 # include "entity_t.h"
@@ -1096,6 +1096,7 @@ optimize_in_place_2 (ir_node *n)
     return n;
   }
 
+
   /* constant expression evaluation / constant folding */
   if (get_opt_constant_folding()) {
     /* constants can not be evaluated */
@@ -1105,7 +1106,7 @@ optimize_in_place_2 (ir_node *n)
       if ((get_irn_mode(n) != mode_T) && (tv != NULL)) {
         /* evaluation was succesful -- replace the node. */
 	n = new_Const (get_tv_mode (tv), tv);
-	deb_info_copy(n, old_n, id_from_str("const_eval", 10));
+	__dbg_info_merge_pair(n, old_n, id_from_str("const_eval", 10));
 	return n;
         /* xprintf("* optimize: computed node %I\n", n->op->name);*/
       }

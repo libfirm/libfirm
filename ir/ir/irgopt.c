@@ -150,7 +150,8 @@ copy_node (ir_node *n, void *env) {
       new_arity = get_irn_arity(n);
     }
   }
-  nn = new_ir_node(current_ir_graph,
+  nn = new_ir_node(get_irn_dbg_info(n),
+		   current_ir_graph,
 		   block,
 		   get_irn_op(n),
 		   get_irn_mode(n),
@@ -236,7 +237,8 @@ copy_graph () {
 
   oe = get_irg_end(current_ir_graph);
   /* copy the end node by hand, allocate dynamic in array! */
-  ne = new_ir_node(current_ir_graph,
+  ne = new_ir_node(get_irn_dbg_info(oe),
+		   current_ir_graph,
 		   NULL,
 		   op_End,
 		   mode_X,

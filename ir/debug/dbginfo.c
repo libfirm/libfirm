@@ -17,8 +17,36 @@
 # include <config.h>
 #endif
 
-#include "dbginfo.h"
+#include "dbginfo_t.h"
 #include "irnode_t.h"
+
+
+inline void
+dbg_info_merge_pair(ir_node *nw, ir_node *old, ident *info) {
+  set_irn_dbg_info(nw, get_irn_dbg_info(old));
+}
+
+inline void
+dbg_info_merge_sets(ir_node **new_nodes, ir_node **old_nodes, ident *info) {
+}
+
+
+void (*__dbg_info_merge_pair)(ir_node *nw, ir_node *old, ident *info)
+     = &dbg_info_merge_pair;
+
+void (*__dbg_info_merge_sets)(ir_node **new_nodes, ir_node **old_nodes,
+			      ident *info)
+     = &dbg_info_merge_sets;
+
+
+void dbg_init( void (merge_pair)(ir_node *nw, ir_node *old, ident *info) ,
+	       void (merge_sets)(ir_node **new_nodes, ir_node **old_nodes,
+				  ident *info)
+	       ) {
+  __dbg_info_merge_pair = merge_pair;
+  __dbg_info_merge_sets = merge_sets;
+}
+
 
 inline void
 set_irn_dbg_info(ir_node *n, struct dbg_info* db) {
@@ -28,13 +56,4 @@ set_irn_dbg_info(ir_node *n, struct dbg_info* db) {
 inline struct dbg_info *
 get_irn_dbg_info(ir_node *n) {
   return n->dbi;
-}
-
-inline void
-dbg_info_copy(ir_node *nw, ir_node *old, ident *info) {
-  set_irn_dbg_info(new, get_irn_dbg_info(old));
-}
-
-inline void
-dbg_info_merge(ir_node **new_nodes, ir_node **old_nodes, ident *info) {
 }
