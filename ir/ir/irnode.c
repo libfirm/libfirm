@@ -2161,6 +2161,7 @@ skip_Tuple (ir_node *node) {
   return node;
 }
 
+#if 1
 INLINE ir_node *
 skip_nop (ir_node *node) {
   /* don't assert node !!! */
@@ -2176,6 +2177,37 @@ skip_nop (ir_node *node) {
     return node;
   }
 }
+#else
+
+/* This should compact Id-cycles to self-cycles. It has the same (or less?) complexity
+   than any other approach, as Id chains are resolved and all point to the real node, or
+   all id's are self loops. */
+INLINE ir_node *
+skip_nop (ir_node *node) {
+  /* don't assert node !!! */
+
+  if (!get_opt_normalize()) return node;
+
+  /* Don't use get_Id_pred:  We get into an endless loop for
+     self-referencing Ids. */
+  if (node && (node->op == op_Id) && (node != node->in[0+1])) {
+    ir_node *rem_pred = node->in[0+1];
+    ir_node *res;
+
+    assert (get_irn_arity (node) > 0);
+
+    node->in[0+1] = node;
+    res = skip_nop(pred);
+    if (res->op == op_Id) /* self-loop */ return node;
+
+    node->in[0+1] = res;
+    return res;
+  } else {
+    return node;
+  }
+}
+
+#endif
 
 INLINE ir_node *
 skip_Id (ir_node *node) {
