@@ -17,19 +17,5 @@
  *****
  */
 
-/****f* tpop/skip_tid
- *
- * NAME
- *   skip_tid -- skip id types until a useful type is reached.
- * SYNOPSIS
- *   type *skip_tid(type *tp)
- * INPUTS
- *   A type of arbitrary kind.
- * RETURNS
- *   tp if it is not an id type.
- *   If tp is an id type retruns the real type it stands for.
- ***
- */
-inline type *skip_tid(type *tp);
 
 # endif /*_TYPEGMOD_T_H_ */
