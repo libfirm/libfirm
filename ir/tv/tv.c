@@ -579,6 +579,16 @@ int tarval_is_negative(tarval *a)
 }
 
 /*
+ * test if null, 1 means 'yes'
+ */
+int tarval_is_null(tarval *a)
+{
+  ir_mode *m = get_tarval_mode(a);
+
+  return a == get_tarval_null(m);
+}
+
+/*
  * comparison
  */
 pnc_number tarval_cmp(tarval *a, tarval *b)

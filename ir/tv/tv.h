@@ -284,12 +284,19 @@ ir_mode *get_tarval_mode (tarval *tv);
 
 /* Testing properties of the represented values */
 
-/** Returns 0 if tv is positive, else > 0.
+/**
+ * Returns 1 if tv is negative
  *
- * @todo
- *   not tested!
+ * @param a	the tarval
  */
 int tarval_is_negative(tarval *a);
+
+/**
+ * Returns 1 if tv is null
+ *
+ * @param a	the tarval
+ */
+int tarval_is_null(tarval *a);
 
 /** The 'bad' tarval. */
 extern tarval *tarval_bad;
