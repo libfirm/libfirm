@@ -11,8 +11,6 @@
 #include "pmap.h"
 #include "list.h"
 
-#include "besched_t.h"
-
 /**
  * The selection function.
  * It picks one node out of the ready list to be scheduled next.

@@ -38,5 +38,6 @@ static INLINE int is_data_node(const ir_node *irn)
 }
 
 
+void dump_allocated_irg(ir_graph *irg);
 
 #endif

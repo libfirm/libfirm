@@ -38,4 +38,5 @@ int (is_live_in)(const ir_node *block, const ir_node *irn);
  */
 int (is_live_out)(const ir_node *block, const ir_node *irn);
 
+
 #endif

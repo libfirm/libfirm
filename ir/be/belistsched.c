@@ -166,7 +166,8 @@ static INLINE void make_users_ready(block_sched_env_t *env, ir_node *irn)
 
     for(i = 0, n = get_irn_n_outs(irn); i < n; ++i) {
         ir_node *user = get_irn_out(irn, i);
-        make_ready(env, user);
+				if(!is_Phi(user))
+					make_ready(env, user);
     }
 }
 

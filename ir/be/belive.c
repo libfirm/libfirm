@@ -4,12 +4,16 @@
  * @date 6.12.2004
  */
 
+#include "impl.h"
 #include "irouts.h"
 #include "irgwalk.h"
-#include "irprintf.h"
+#include "irprintf_t.h"
 
 #include "beutil.h"
 #include "belive_t.h"
+
+FIRM_IMPL2(is_live_in, int, const ir_node *, const ir_node *)
+FIRM_IMPL2(is_live_out, int, const ir_node *, const ir_node *)
 
 /** The offset of the liveness information in a firm node. */
 size_t live_irn_data_offset = 0;
@@ -17,16 +21,6 @@ size_t live_irn_data_offset = 0;
 void be_liveness_init(void)
 {
 	live_irn_data_offset = register_additional_node_data(sizeof(live_info_t));
-}
-
-int (is_live_in)(const ir_node *block, const ir_node *irn)
-{
-	return _is_live_in(block, irn);
-}
-
-int (is_live_out)(const ir_node *block, const ir_node *irn)
-{
-	return _is_live_in(block, irn);
 }
 
 static INLINE void mark_live_in(ir_node *block, const ir_node *irn)
@@ -121,6 +115,9 @@ static void liveness_for_node(ir_node *irn, void *env)
 		if(is_Phi(use)) {
 			int i, n;
 
+			/* Mark the node as a phi operand, since a use by a phi was found. */
+			get_node_live_info(irn)->is_phi_op = 1;
+
 			for(i = 0, n = get_irn_arity(use); i < n; ++i) {
 				if(get_irn_n(use, i) == irn) {
 					ir_node *pred_block = get_nodes_block(get_irn_n(use_block, i));
@@ -151,15 +148,8 @@ static void liveness_for_node(ir_node *irn, void *env)
 static void create_sets(ir_node *block, void *env)
 {
 	block_live_info_t *info = get_block_live_info(block);
-
 	info->in = pset_new_ptr(128);
 	info->out = pset_new_ptr(128);
-}
-
-void be_liveness(ir_graph *irg)
-{
-	irg_block_walk_graph(irg, create_sets, NULL, NULL);
-	irg_walk_graph(irg, liveness_for_node, NULL, NULL);
 }
 
 
@@ -169,7 +159,6 @@ static void liveness_dump(ir_node *block, void *env)
 	block_live_info_t *info = get_block_live_info(block);
 
 	assert(is_Block(block) && "Need a block here");
-
 	ir_fprintf(f, "liveness at block %n\n", block);
 	ir_fprintf(f, "\tlive  in: %*n\n", pset_iterator, info->in);
 	ir_fprintf(f, "\tlive out: %*n\n", pset_iterator, info->out);
@@ -178,4 +167,10 @@ static void liveness_dump(ir_node *block, void *env)
 void be_liveness_dump(FILE *f, ir_graph *irg)
 {
 	irg_block_walk_graph(irg, liveness_dump, NULL, f);
+}
+
+void be_liveness(ir_graph *irg)
+{
+	irg_block_walk_graph(irg, create_sets, NULL, NULL);
+	irg_walk_graph(irg, liveness_for_node, NULL, NULL);
 }
