@@ -847,6 +847,11 @@ Optional Features:
   --enable-autodoc        enable auto documentation
   --enable-firmjni        check for tools necesarry to construct a java native interface for Firm
 
+Optional Packages:
+  --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
+  --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-includedir=dir add directory to include search path
+
 Some influential environment variables:
   CC          C compiler command
   CFLAGS      C compiler flags
@@ -1284,6 +1289,14 @@ ac_output_file="Makefile MakeRules ir/Makefile ir/adt/Makefile ir/debug/Makefile
 libfirm_conf_env="${CC+CC='$CC'} ${CFLAGS+CFLAGS='$CFLAGS'} ${CPP+CPP='$CPP'} ${CPPFLAGS+CPPFLAGS='$CPPFLAGS'} ${LDFLAGS+LDFLAGS='$LDFLAGS'} ${LIBS+LIBS='$LIBS'}"
 
 
+
+# Check whether --with-includedir or --without-includedir was given.
+if test "${with_includedir+set}" = set; then
+  withval="$with_includedir"
+  CPPFLAGS=$CPPFLAGS" -I"$withval
+else
+  T_FLAG=""
+fi;
 
 
 # Check whether --enable-debug or --disable-debug was given.
