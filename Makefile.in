@@ -23,13 +23,18 @@ subdir := .
 enable_statistics := @enable_statistics@
 # do we want external description of effects
 enable_external_effects := @enable_external_effects@
+# do we want to test the firm internal backend stuff?
+enable_backend := @enable_backend@
 
-ifeq (@enable_external_effects@,yes)
-build_subdirs := ir/adt ir/debug ir/tv ir/common ir/ident ir/ir \
-		ir/opt ir/tr ir/ana ir/stat ir/ana2 ir/external
-else
 build_subdirs := ir/adt ir/debug ir/tv ir/common ir/ident ir/ir \
 		ir/opt ir/tr ir/ana ir/stat ir/ana2
+
+ifeq (@enable_external_effects@,yes)
+build_subdirs += ir/external
+endif
+
+ifeq (@enable_backend@,yes)
+build_subdirs += ir/be
 endif
 
 subdirs := $(build_subdirs) ir/config
