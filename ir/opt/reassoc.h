@@ -4,7 +4,7 @@
  * Purpose:     Reassociation
  * Author:      Michael Beck
  * Created:
- * CVS-ID:      $Id:
+ * CVS-ID:      $Id$
  * Copyright:   (c) 1998-2004 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
