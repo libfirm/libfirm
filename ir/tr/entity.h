@@ -97,6 +97,32 @@ inline void  assert_legal_owner_of_ent(type *owner);
 type     *get_entity_type (entity *ent);
 void      set_entity_type (entity *ent, type *type);
 
+typedef enum {
+  dynamic_allocated,  /* The entity is allocated during runtime, either explicitly
+			 by an Alloc node or implicitly as component of a compound
+			 type.  This is the default. */
+  static_allocated    /* The entity is allocated statically.  We can use a
+			  SymConst as address of the entity. */
+} ent_allocation;
+
+ent_allocation get_entity_allocation (entity *ent);
+void           set_entity_allocation (entity *ent, ent_allocation al);
+
+/* This enumeration flags the visibility of entities.  This is necessary
+   for partial compilation. */
+typedef enum {
+  local,              /* The entity is only visible locally.  This is the default. */
+  external_visible,   /* The entity is visible to other external program parts, but
+			 it is defined here.  It may not be optimized away.  The entity must
+		         be static_allocated. */
+  external_allocated  /* The entity is defined and allocated externaly.  This compilation
+			 must not allocate memory for this entity. The entity must
+		         be static_allocated. */
+} ent_visibility;
+
+ent_visibility get_entity_visibility (entity *ent);
+void           set_entity_visibility (entity *ent, ent_visibility vis);
+
 int       get_entity_offset (entity *ent);
 void      set_entity_offset (entity *ent, int offset);
 

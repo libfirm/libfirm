@@ -47,6 +47,10 @@ struct entity {
                            basic type of the language or a class itself */
   type *owner;          /* The class this entity belongs to.  In case of local
 			   variables the method they are defined in. */
+  ent_allocation allocation;  /* Distinguishes static and dynamically allocated
+				 entities. */
+  ent_visibility visibility;  /* Specifies visibility to external program
+				 fragments */
   int  offset;          /* Offset in byte for this entity.  Fixed when layout
 			   of owner is determined.  */
   /* for methods */

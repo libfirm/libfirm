@@ -91,6 +91,8 @@ struct type {
   tp_op *type_op;
   ir_mode *mode;
   ident *name;
+  type_state state;        /* Represents the types state: layout undefined or
+			      fixed. */
   int size;                /* Size of an entity of this type.  This is determined
 			      when fixing the layout of this class.  Size must be
 			      given in bytes. */
@@ -111,7 +113,7 @@ struct type {
  *   name    - an ident for the name of this type.
  * RESULT
  *   a new type of the given type.  The remaining private attributes are not
- *   initalized.
+ *   initalized.  The type is in state layout_undefined.
  ***
  */
 inline type *

@@ -105,7 +105,27 @@ void        set_type_nameid(type *tp, ident* id);
 const char* get_type_name(type *tp);
 
 int         get_type_size(type *tp);
+/* For primitives and pointer types the size is always fixed.
+   This call is legal but has no effect. */
 void        set_type_size(type *tp, int size);
+
+typedef enum {
+  layout_undefined,    /* The layout of this type is not defined.
+			  Address computation to access fields is not
+			  possible, fields must be accessed by Sel nodes.
+			  This is the default value except for pointer and
+			  primitive types. */
+  layout_fixed         /* The layout is fixed, all component/member entities
+			  have an offset assigned.  Size of the type is known.
+			  Arrays can be accessed by explicit address
+			  computation. Default for pointer and primitive types.
+		       */
+} type_state;
+
+type_state  get_type_state(type *tp);
+/* For primitives and pointer types the layout is always fixed.
+   This call is legal but has no effect. */
+void        set_type_state(type *tp, type_state state);
 
 unsigned long get_type_visited(type *tp);
 void        set_type_visited(type *tp, unsigned long num);

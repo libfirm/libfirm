@@ -52,6 +52,7 @@ new_type(tp_op *type_op, ir_mode *mode, ident* name) {
   res->type_op = type_op;
   res->mode = mode;
   res->name = name;
+  res->state = layout_undefined;
   res->size = -1;
   res->visit = 0;
 
@@ -102,16 +103,34 @@ int         get_type_size(type *tp) {
   assert(tp);
   return tp->size;
 }
-void        set_type_size(type *tp, int size) {
+
+void
+set_type_size(type *tp, int size) {
   assert(tp);
   /* For pointer and primitive size depends on the mode. */
-  assert((tp->type_op != type_pointer) && (tp->type_op != type_primitive));
-  tp->size = size;
+  if ((tp->type_op != type_pointer) && (tp->type_op != type_primitive))
+    tp->size = size;
 }
+
+type_state
+get_type_state(type *tp) {
+  assert(tp);
+  return tp->state;
+}
+
+void
+set_type_state(type *tp, type_state state) {
+  assert(tp);
+  /* For pointer and primitive always fixed. */
+  if ((tp->type_op != type_pointer) && (tp->type_op != type_primitive))
+    tp->state = state;
+}
+
 unsigned long get_type_visited(type *tp) {
   assert(tp);
   return tp->visit;
 }
+
 void        set_type_visited(type *tp, unsigned long num) {
   assert(tp);
   tp->visit = num;
@@ -475,6 +494,7 @@ type *new_type_pointer           (ident *name, type *points_to) {
   res = new_type(type_pointer, mode_p, name);
   res->attr.pa.points_to = points_to;
   res->size = get_mode_size(res->mode);
+  res->state = layout_fixed;
   return res;
 }
 /* manipulate fields of type_pointer */
@@ -503,6 +523,7 @@ type *new_type_primitive (ident *name, ir_mode *mode) {
   type *res;
   res = new_type(type_primitive, mode, name);
   res->size = get_mode_size(mode);
+  res->state = layout_fixed;
   return res;
 }
 

@@ -39,6 +39,8 @@ new_entity (type *owner, ident *name, type *type)
   res->owner = owner;
   res->name = name;
   res->type = type;
+  res->allocation = dynamic_allocated;
+  res->visibility = local;
   res->ld_name = NULL;
 
   res->visit = 0;
@@ -120,6 +122,29 @@ get_entity_type (entity *ent) {
 inline void
 set_entity_type (entity *ent, type *type) {
   ent->type = type;
+}
+
+
+inline ent_allocation
+get_entity_allocation (entity *ent) {
+  return ent->allocation;
+}
+
+inline void
+set_entity_allocation (entity *ent, ent_allocation al) {
+  ent->allocation = al;
+}
+
+
+inline ent_visibility
+get_entity_visibility (entity *ent) {
+  return ent->visibility;
+}
+
+inline void
+set_entity_visibility (entity *ent, ent_visibility vis) {
+  if (vis != local) assert(ent->allocation == static_allocated);
+  ent->visibility = vis;
 }
 
 inline int
