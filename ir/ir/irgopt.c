@@ -17,6 +17,10 @@
 # include "misc.h"
 # include "irgmod.h"
 
+# include "pset.h"
+pset *new_identities (void);
+void  del_identities (pset *value_table);
+
 /********************************************************************/
 /* apply optimizations of iropt to all nodes.                       */
 /********************************************************************/
@@ -38,6 +42,10 @@ void
 local_optimize_graph (ir_graph *irg) {
   ir_graph *rem = current_ir_graph;
   current_ir_graph = irg;
+
+  /* Should we clean the value_table in irg for the cse? Better do so... */
+  del_identities(irg->value_table);
+  irg->value_table = new_identities();
 
   /* walk over the graph */
   irg_walk(irg->end, NULL, optimize_in_place_wrapper, NULL);
@@ -94,7 +102,7 @@ compute_new_arity(ir_node *b) {
 
 /* Copies the node to the new obstack. The Ins of the new node point to
    the predecessors on the old obstack.  n->link points to the new node.
-   For Phi and Block nodes the function allocate in arrays with an arity
+   For Phi and Block nodes the function allocates in-arrays with an arity
    only for useful predecessors.  The arity is determined by counting
    the non-bad predecessors of the block. */
 inline void
@@ -119,6 +127,9 @@ copy_node (ir_node *n, void *env) {
 		   get_irn_mode(n),
 		   new_arity,
 		   get_irn_in(n));
+  /* Copy the attributes.  These might point to additional data.  If this
+     was allocated on the old obstack the pointers now are dangling.  This
+     frees e.g. the memory of the graph_arr allocated in new_immBlock. */
   copy_attrs(n, nn);
   set_new_node(n, nn);
 }
@@ -127,7 +138,7 @@ copy_node (ir_node *n, void *env) {
    Spare the Bad predecessors of Phi and Block nodes. */
 inline void
 copy_preds (ir_node *n, void *env) {
-  ir_node *nn, *block/*, *on*/;
+  ir_node *nn, *block, *on;
   int i, j;
 
   nn = get_new_node(n);
@@ -143,9 +154,9 @@ copy_preds (ir_node *n, void *env) {
     /* repair the block visited flag from above misuse */
     set_Block_block_visited(nn, 0);
     /* Local optimization could not merge two subsequent blocks if
-       in array contained Bads.  Now it's possible.  *
+       in array contained Bads.  Now it's possible.  */
     on = optimize_in_place(nn);
-    if (nn != on) exchange(nn, on);*/
+    if (nn != on) exchange(nn, on);
   } else if (get_irn_opcode(n) == iro_Phi) {
     /* Don't copy node if corresponding predecessor in block is Bad.
        The Block itself should not be Bad. */
@@ -158,9 +169,9 @@ copy_preds (ir_node *n, void *env) {
 	j++;
       }
     /* Compacting the Phi's ins might generate Phis with only one
-       predecessor. *
+       predecessor. */
     if (get_irn_arity(n) == 1)
-    exchange(n, get_irn_n(n, 0)); */
+    exchange(n, get_irn_n(n, 0));
   } else {
     for (i = -1; i < get_irn_arity(n); i++)
       set_irn_n (nn, i, get_new_node(get_irn_n(n, i)));

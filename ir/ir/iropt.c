@@ -260,7 +260,8 @@ equivalent_node (ir_node *n)
       /* A single entry Block following a single exit Block can be merged,
          if it is not the Start block. */
       /* !!! Beware, all Phi-nodes of n must have been optimized away.
-	 This is true, as the block is matured before optimize is called.   */
+	 This should be true, as the block is matured before optimize is called.
+         But what about Phi-cycles with the Phi0/Id that could not be resolved? */
       if (get_Block_n_cfgpreds(n) == 1
 	  && get_irn_op(get_Block_cfgpred(n, 0)) == op_Jmp) {
 	n = get_nodes_Block(get_Block_cfgpred(n, 0));
@@ -973,7 +974,6 @@ optimize (ir_node *n)
 ir_node *
 optimize_in_place (ir_node *n)
 {
-
   tarval *tv;
   ir_node *old_n = n;
 
@@ -1028,12 +1028,11 @@ optimize_in_place (ir_node *n)
   /* Now we can verify the node, as it has no dead inputs any more. */
   irn_vrfy(n);
 
-  /* Now we have a legal, useful node. Enter it in hash table for cse */
-  if (get_opt_cse()) {
-    /* aborts ??! set/pset can not handle several hash tables??!
-       No, suddenly it works. */
+  /* Now we have a legal, useful node. Enter it in hash table for cse.
+     Blocks should be unique anyways.  (Except the successor of start:
+     is cse with the start block!) */
+  if (get_opt_cse() && (get_irn_opcode(n) != iro_Block))
     n = identify_remember (current_ir_graph->value_table, n);
-  }
 
   return n;
 }

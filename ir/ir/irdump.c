@@ -21,11 +21,29 @@
 # include "irgwalk.h"
 # include "typewalk.h"
 
+/* Attributes of nodes */
 #define DEFAULT_NODE_ATTR ""
-#define BLOCK_EDGE_ATTR "class: 2 priority: 2 linestyle: dotted"
-#define NODE2TYPE_EDGE_ATTR ""
 #define DEFAULT_TYPE_ATTRIBUTE ""
-#define TYPE_EDGE_ATTR ""
+
+/* Attributes of edges between Firm nodes */
+#define BLOCK_EDGE_ATTR "class: 2 priority: 2 linestyle: dotted"
+#define CF_EDGE_ATTR    "color: red"
+#define MEM_EDGE_ATTR   "color: blue"
+
+/* Attributes of edges between Firm nodes and type/entity nodes */
+#define NODE2TYPE_EDGE_ATTR ""
+
+/* Attributes of edges in type/entity graphs. */
+#define TYPE_METH_NODE_ATTR  "color: lightyellow"
+#define TYPE_CLASS_NODE_ATTR "color: green"
+#define ENTITY_NODE_ATTR     "color: yellow"
+#define ENT_TYPE_EDGE_ATTR   "label: \"type\" color: red"
+#define ENT_OWN_EDGE_ATTR    "label: \"owner\" color: black"
+#define METH_PAR_EDGE_ATTR   "label: \"param %d\" color: green"
+#define METH_RES_EDGE_ATTR   "label: \"res %d\" color: green"
+#define TYPE_SUPER_EDGE_ATTR "label: \"supertype\" color: blue"
+#define PTR_PTS_TO_EDGE_ATTR "label: \"points to\" color:green"
+#define ARR_ELT_TYPE_EDGE_ATTR "label: \"arr elt\" color:green"
 
 #define PRINT_NODEID(X) fprintf(F, "%p", X)
 
@@ -101,14 +119,10 @@ dump_node_nodeattr (ir_node *n)
       xfprintf (F, "%ld", n->attr.proj);
     }
     break;
-  case iro_Sel:
-    /*assert(n->attr.s.ent->kind == k_entity);*/
+  case iro_Sel: {
     assert(get_kind(get_Sel_entity(n)) == k_entity);
     xfprintf (F, "%s", id_to_str(get_entity_ident(get_Sel_entity(n))));
-
-    /*  xdoesn't work for some reason.
-	fprintf (F, "\"%I %I\" ", get_irn_opident(n), n->attr.s.ent); */
-    break;
+    } break;
   default:
   } /* end switch */
 }
@@ -295,8 +309,6 @@ dump_ir_node (ir_node *n)
     assert(get_kind(get_Sel_entity(n)) == k_entity);
     xfprintf (F, "\"%I ", get_irn_opident(n));
     xfprintf (F, "%s", id_to_str(get_entity_ident(get_Sel_entity(n))));
-    /*  xdoesn't work for some reason.
-	fprintf (F, "\"%I %I\" ", get_irn_opident(n), get_entity_ident(get_Sel_entity(n))); */
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_SymConst:
@@ -340,6 +352,76 @@ dump_ir_block_edge(ir_node *n)  {
 		BLOCK_EDGE_ATTR "}\n", n, get_nodes_Block(n));
 }
 
+void print_edge_vcgattr(ir_node *from, int to) {
+  assert(from);
+
+  switch (get_irn_opcode(from)) {
+  case iro_Block:
+    xfprintf (F, CF_EDGE_ATTR);
+    break;
+  case iro_Start:   break;
+  case iro_End:     break;
+  case iro_Jmp:     break;
+  case iro_Cond:    break;
+  case iro_Return:
+  case iro_Raise:
+    if (to == 0) xfprintf (F, MEM_EDGE_ATTR);
+    break;
+  case iro_Const:   break;
+  case iro_SymConst:break;
+  case iro_Sel:
+  case iro_Call:
+    if (to == 0) xfprintf (F, MEM_EDGE_ATTR);
+    break;
+  case iro_Add:     break;
+  case iro_Sub:     break;
+  case iro_Minus:   break;
+  case iro_Mul:     break;
+  case iro_Quot:
+  case iro_DivMod:
+  case iro_Div:
+  case iro_Mod:
+    if (to == 0) xfprintf (F, MEM_EDGE_ATTR);
+    break;
+  case iro_Abs:    break;
+  case iro_And:    break;
+  case iro_Or:     break;
+  case iro_Eor:    break;
+  case iro_Shl:    break;
+  case iro_Shr:    break;
+  case iro_Shrs:   break;
+  case iro_Rot:    break;
+  case iro_Cmp:    break;
+  case iro_Conv:   break;
+  case iro_Phi:
+    if (get_irn_modecode(from) == irm_M) xfprintf (F, MEM_EDGE_ATTR);
+    break;
+  case iro_Load:
+  case iro_Store:
+  case iro_Alloc:
+  case iro_Free:
+    if (to == 0) xfprintf (F, MEM_EDGE_ATTR);
+    break;
+  case iro_Sync:
+    xfprintf (F, MEM_EDGE_ATTR);
+    break;
+  case iro_Tuple:  break;
+  case iro_Proj:
+    switch (get_irn_modecode(from)) {
+    case irm_X:
+      xfprintf (F, CF_EDGE_ATTR);
+      break;
+    case irm_M:
+      xfprintf (F, MEM_EDGE_ATTR);
+      break;
+    default: break;
+    }
+    break;
+  case iro_Bad:    break;
+  case iro_Id:     break;
+  default:
+  }
+}
 
 /* dump edges to our inputs */
 void
@@ -350,7 +432,8 @@ dump_ir_data_edges(ir_node *n)  {
     assert(get_irn_n(n, i));
     xfprintf (F, "edge: {sourcename: \"%p\" targetname: \"%p\"",
 	      n, get_irn_n(n, i));
-    fprintf (F, " label: \"%d\"", i+1);
+    fprintf (F, " label: \"%d\" ", i+1);
+    print_edge_vcgattr(n, i);
     fprintf (F, "}\n");
   }
 }
@@ -403,39 +486,38 @@ dump_type_info (type_or_ent *tore, void *env) {
   case k_entity:
     {
       entity *ent = (entity *)tore;
-      xfprintf (F, "\"ent %I\"}\n", get_entity_ident(ent));
+      xfprintf (F, "\"ent %I\" " ENTITY_NODE_ATTR "}\n", get_entity_ident(ent));
       xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-                " label: \"owner\" "
-		TYPE_EDGE_ATTR "}\n", tore, get_entity_owner(ent));
+                ENT_OWN_EDGE_ATTR "}\n", tore, get_entity_owner(ent));
       xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-                " label: \"type\" "
-		TYPE_EDGE_ATTR "}\n", tore, get_entity_type(ent));
+                ENT_TYPE_EDGE_ATTR "}\n", tore, get_entity_type(ent));
     } break;
   case k_type_class:
     {
       type_class *type = (type_class *)tore;
-      xfprintf (F, "\"class %I\"}\n", get_class_ident(type));
+      xfprintf (F, "\"class %I\" " TYPE_CLASS_NODE_ATTR "}\n", get_class_ident(type));
       for (i=0; i < get_class_n_supertype(type); i++)
 	xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-		  " label: \"supertype\" " TYPE_EDGE_ATTR "}\n",
+		  TYPE_SUPER_EDGE_ATTR "}\n",
 		  type, get_class_supertype(type, i));
     } break;
   case k_type_strct:
     {
       type_strct *type = (type_strct *)tore;
       xfprintf (F, "\"strct %I\"}\n", get_strct_ident(type));
+      /* edges !!!??? */
     } break;
   case k_type_method:
     {
       type_method *type = (type_method *)tore;
-      xfprintf (F, "\"meth %I\"}\n", get_method_ident(type));
+      xfprintf (F, "\"meth %I\" " TYPE_METH_NODE_ATTR "}\n", get_method_ident(type));
       for (i = 0; i < get_method_arity(type); i++)
 	xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-		  " label: \"param %d\" " TYPE_EDGE_ATTR "}\n",
+		  METH_PAR_EDGE_ATTR "}\n",
 		  tore, get_method_param_type(type, i), i);
       for (i = 0; i < get_method_n_res(type); i++)
 	xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-		  " label: \"res %d\" " TYPE_EDGE_ATTR "}\n",
+		  METH_RES_EDGE_ATTR "}\n",
 		  tore, get_method_res_type(type, i), i);
     } break;
   case k_type_union:
@@ -449,7 +531,8 @@ dump_type_info (type_or_ent *tore, void *env) {
       type_array *type = (type_array *)tore;
       xfprintf (F, "\"array %I\"}\n", get_array_ident(type));
       xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-		TYPE_EDGE_ATTR "}\n", tore, get_array_element_type(type), i);
+	        ARR_ELT_TYPE_EDGE_ATTR "}\n", tore, get_array_element_type(type), i);
+      /* edges !!!??? */
     } break;
   case k_type_enumeration:
     {
@@ -461,7 +544,7 @@ dump_type_info (type_or_ent *tore, void *env) {
       type_pointer *type = (type_pointer *)tore;
       xfprintf (F, "\"ptr %I\"}\n", get_pointer_ident(type));
       xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-		TYPE_EDGE_ATTR "}\n", tore,
+		PTR_PTS_TO_EDGE_ATTR "}\n", tore,
 		get_pointer_points_to_type(type), i);
     } break;
   case k_type_primitive:
