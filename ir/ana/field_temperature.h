@@ -16,14 +16,13 @@
 /**
  * @file field_temperature.h
  *
+ *  @author Goetz Lindenmaier
+ *
  *  Watch it! This is highly java dependent.
  *
  * - All Sel nodes get an array with possibly accessed entities.
  *   (resolve polymorphy on base of inherited entities.)
  *   (the mentioned entity in first approximation.)
- *
- * - Each entity gets all SymConst/Sel nodes, that reference the
- *   entity (Sel: references as accessed entity.)
  *
  * - We compute a value for the entity based on the Sel nodes.
  */
@@ -33,24 +32,16 @@
 
 
 
-/** The entities that can be accessed by this Sel node. */
+/** The entities that can be accessed by this Sel node. *
 int     get_Sel_n_accessed_entities(ir_node *sel);
 entity *get_Sel_accessed_entity    (ir_node *sel, int pos);
-
+*/
 
 
 /** Get the weighted interprocedural loop depth of the node.
     The depth is estimated by a heuristic. */
 int get_weighted_loop_depth(ir_node *n);
 
-
-
-
-/** compute the field temperature. */
-void compute_field_temperature(void);
-
-/** free occupied memory, reset */
-void free_field_temperature(void);
 
 
 
