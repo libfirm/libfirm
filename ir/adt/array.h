@@ -293,11 +293,11 @@
    ... or at the IPD, either. */
 #ifdef NDEBUG
 # define _ARR_DBGINF_DECL
-# define _ARR_SET_DBGINF(descr, co, es) ((co), (es))
+# define _ARR_SET_DBGINF(descr, co, es)
 #else
 # define _ARR_DBGINF_DECL int cookie; size_t eltsize;
 # define _ARR_SET_DBGINF(descr, co, es)					\
-    ((descr)->cookie = (co), (descr)->eltsize = (es))
+    ( (descr)->cookie = (co), (descr)->eltsize = (es) )
 #endif
 
 /**
