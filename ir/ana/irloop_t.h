@@ -51,10 +51,12 @@ struct ir_loop {
 
 };
 
-static INLINE void
+INLINE void
 add_loop_son(ir_loop *loop, ir_loop *son);
 
-static INLINE void
+INLINE void
 add_loop_node(ir_loop *loop, ir_node *n);
 
+/* The following functions are needed in ircfloop.c */
+void set_irn_loop (ir_node *n, ir_loop* loop);
 #endif /* _IRLOOP_T_H_ */

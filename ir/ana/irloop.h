@@ -129,6 +129,10 @@ void construct_backedges(ir_graph *irg);
     the second call.  */
 void construct_ip_backedges(void);
 
+/* Construct loop tree only for control flow. */
+void construct_cf_backedges(ir_graph *irg);
+void construct_ip_cf_backedges (void);
+
 /** Removes all loop information.
     Resets all backedges */
 void free_loop_information(ir_graph *irg);

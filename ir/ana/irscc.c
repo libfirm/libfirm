@@ -131,7 +131,7 @@ get_irn_dfn (ir_node *n) {
 /* Replaced node loop map by real field as hash access dominates runtime
  * of the algorithm. ! */
 /* Uses temporary information to set the loop */
-static INLINE void
+INLINE void
 set_irn_loop (ir_node *n, ir_loop* loop) {
   assert(node_loop_map && "not initialized!");
   pmap_insert(node_loop_map, (void *)n, (void *)loop);
@@ -149,7 +149,7 @@ get_irn_loop (ir_node *n) {
   return res;
 }
 #else
-static INLINE void
+INLINE void
 set_irn_loop (ir_node *n, ir_loop* loop) {
   n->loop = loop;
 }
@@ -262,7 +262,7 @@ pop_scc_to_loop (ir_node *n)
 /* GL ??? my last son is my grandson???  Removes loops with no
    ir_nodes in them.  Such loops have only another loop as son. (Why
    can't they have two loops as sons? Does it never get that far? ) */
-void close_loop (ir_loop *l)
+static void close_loop (ir_loop *l)
 {
   int last = get_loop_n_elements(l) - 1;
   loop_element lelement = get_loop_element(l, last);
@@ -307,7 +307,7 @@ pop_scc_unmark_visit (ir_node *n)
 
 /* Allocates a new loop as son of current_loop.  Sets current_loop
    to the new loop and returns the father. */
-static ir_loop *new_loop (void) {
+ir_loop *new_loop (void) {
   ir_loop *father, *son;
 
   father = current_loop;
@@ -389,7 +389,7 @@ ir_loop *get_loop_son (ir_loop *loop, int pos) {
 /* Use EXCLUSIVELY this function to add sons, otherwise the loop->n_sons
    is invalid! */
 
-static INLINE void
+INLINE void
 add_loop_son(ir_loop *loop, ir_loop *son) {
   loop_element lson;
   lson.son = son;
@@ -430,7 +430,7 @@ ir_node *get_loop_node (ir_loop *loop, int pos) {
 /* Use EXCLUSIVELY this function to add nodes, otherwise the loop->n_nodes
    is invalid! */
 
-static INLINE void
+INLINE void
 add_loop_node(ir_loop *loop, ir_node *n) {
   loop_element ln;
   ln.node = n;
@@ -920,13 +920,13 @@ ir_node *get_projx_link(ir_node *cb_projx)
 
 
 
-/*************************************************************
+/*-----------------------------------------------------------*
  *                   The core algorithm.                     *
- *************************************************************/
+ *-----------------------------------------------------------*/
 
 
 static void scc (ir_node *n) {
-  int i, *visited;
+  int i;
   if (irn_visited(n)) return;
   mark_irn_visited(n);
 
@@ -1166,6 +1166,8 @@ void construct_ip_backedges (void) {
   ir_graph *rem = current_ir_graph;
   int rem_ipv = interprocedural_view;
   int i;
+
+  assert(get_irp_ip_view_state() == ip_view_valid);
 
   outermost_ir_graph = get_irp_main_irg();
 
