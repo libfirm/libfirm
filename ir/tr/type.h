@@ -131,7 +131,8 @@ void        free_type_entities(type *tp);
  * belonging to the type, except for the array element entity.  Does
  * not free if tp is "none" or "unknown".  Frees entities in value
  * param subtypes of method types!!! Make sure these are not
- * referenced any more. */
+ * referenced any more.  Further make sure there is no pointer type
+ * that refers to this type.                           */
 void        free_type(type *tp);
 
 tp_op*      get_type_tpop(type *tp);
