@@ -13,6 +13,12 @@
 <!-- allow a node to specify a field -->
 <!ENTITY	% firm.entity		"entity CDATA #REQUIRED">
 
+<!-- allow a node to specify a typeid -->
+<!ENTITY	% typeid		"typeid CDATA #REQUIRED">
+
+<!-- allow a node to specify an owner -->
+<!ENTITY	% firm.owner		"owner CDATA #REQUIRED">
+
 <!-- the root element -->
 <!ELEMENT	effects (type*, entity*, effect*)>
 <!ATTLIST  	effects
@@ -29,18 +35,21 @@
 <!ATTLIST	entity
 			%firm.id;
 			%firm.type;
-			%firm.entity;>
+			%firm.entity;
+			%firm.owner;>
 
 <!-- a single effect -->
 <!ELEMENT  	effect (arg*, (load|store|alloc|call|join|unknown)*, raise?, ret)>
 <!ATTLIST  	effect
-			procname	CDATA		#REQUIRED>
+			procname	CDATA		#REQUIRED;
+			%firm.type;>
 
 <!-- procedure argument -->
 <!ELEMENT	arg			EMPTY>
 <!ATTLIST 	arg
 			%firm.id;
-			number		CDATA		#REQUIRED>
+			number		CDATA		#REQUIRED;
+		        %firm.type>
 
 <!-- reference another value -->
 <!ELEMENT	valref		EMPTY>
@@ -62,7 +71,8 @@
 
 <!-- alloc effect -->
 <!ELEMENT	alloc		EMPTY>
-<!ATTLIST	alloc		%firm.id;%firm.type;>
+<!ATTLIST	alloc		%firm.id;
+		                %firm.type;>
 
 <!-- call effect -->
 <!ELEMENT	call		(select,(valref)*)>
@@ -86,6 +96,9 @@
 <!--
 
  $Log$
+ Revision 1.7  2004/10/21 15:32:21  boesler
+ minor changes
+
  Revision 1.6  2004/10/11 09:55:19  liekweg
  Renamed 'return' to 'ret' -flo
 
