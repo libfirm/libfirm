@@ -376,6 +376,10 @@ void    set_compound_graph_path_node(compound_graph_path *gr, int pos, entity *n
 int     get_compound_graph_path_array_index(compound_graph_path *gr, int pos);
 void    set_compound_graph_path_array_index(compound_graph_path *gr, int pos, int index);
 
+/** Checks wether the path up to pos is correct. If the path contains a NULL,
+ *  assumes the path is not complete and returns 'true'. */
+int is_proper_compound_graph_path(compound_graph_path *gr, int pos);
+
 /* A value of a compound entity is a pair of a value and the description of the
    corresponding access path to the member of the compound.  */
 void     add_compound_ent_value_w_path(entity *ent, ir_node *val, compound_graph_path *path);

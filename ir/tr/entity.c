@@ -615,6 +615,9 @@ int is_proper_compound_graph_path(compound_graph_path *gr, int pos) {
   type *owner = gr->tp;
   for (i = 0; i <= pos; i++) {
     node = get_compound_graph_path_node(gr, i);
+    if (node == NULL)
+      /* Path not yet complete. */
+      return true;
     if (get_entity_owner(node) != owner) return false;
     owner = get_entity_type(node);
   }
