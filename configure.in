@@ -38,7 +38,6 @@ AC_ARG_WITH(includedir, [  --with-includedir=add colon seperated list of directo
 AC_ARG_WITH(libdir, [  --with-libdir=add colon seperated list of directories to linker search path],
     LDFLAGS=$LDFLAGS" -L"`echo $withval|sed 's;\:; -L;g'`, T_FLAG="")
 
-
 dnl Package options
 dnl ===============
 
@@ -53,12 +52,14 @@ else
 fi])
 AC_SUBST(enable_debug_libfirm)
 
-AC_ARG_ENABLE(gcc_inline,
-[  --enable-gcc_inline     enable gcc inline C-extension],
+AC_ARG_ENABLE(inlining,
+[  --disable-inlining      disable inline C-extension],
+[enable_inlining=yes],
 [if test "$enableval" = yes; then
-  AC_DEFINE(USE_GCC_INLINE)
-fi])
-AC_SUBST(enable_gcc_inline)
+  AC_DEFINE(USE_INLINING)
+fi]
+)
+AC_SUBST(enable_inlining)
 
 
 dnl set profiling
@@ -260,6 +261,9 @@ fi
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 dnl ==============================================================
+AC_C_CONST
+AC_C_VOLATILE
+AC_C_INLINE
 AC_C_BIGENDIAN(,,,)
 AC_C_LONG_DOUBLE
 
