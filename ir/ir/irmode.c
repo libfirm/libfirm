@@ -51,7 +51,9 @@ static int num_modes;
 INLINE static int modes_are_equal(const ir_mode *m, const ir_mode *n)
 {
   if (m == n) return 1;
-  if (0 == memcmp(&m->sort, &n->sort, offsetof(ir_mode,min) - offsetof(ir_mode,sort))) return 1;
+  if (m->sort == n->sort && m->arithmetic == n->arithmetic && m->size == n->size && m->align == n->align && m->sign == n->sign)
+    return 1;
+//  if (0 == memcmp(&m->sort, &n->sort, offsetof(ir_mode,min) - offsetof(ir_mode,sort))) return 1;
 
   return 0;
 }
@@ -66,18 +68,18 @@ static ir_mode *find_mode(const ir_mode *m)
   ir_mode *n;
   struct _obstack_chunk	*p;
 
-  p=modes.chunk;
-  for( n=(ir_mode*) p->contents; (char *)n < modes.next_free; n+=sizeof(ir_mode) )
-  {
-    if(modes_are_equal(n,m)) return n;
+  p = modes.chunk;
+  for ( n = (ir_mode *)p->contents; (char *)(n+1) <= modes.next_free; ++n) {
+    assert(is_mode(n));
+    if (modes_are_equal(n, m))
+      return n;
   }
 
-  for (p = p->prev; p; p = p->prev)
-  {
-    for( n=(ir_mode*) p->contents; (char *)n < p->limit; n+=sizeof(ir_mode) )
-    {
-      if(modes_are_equal(n,m)) return n;
-    }
+  for (p = p->prev; p; p = p->prev) {
+    for (n = (ir_mode *)p->contents; (char *)(n+1) < p->limit; ++n)
+      assert(is_mode(n));
+      if (modes_are_equal(n, m))
+	return n;
   }
 
   return NULL;
