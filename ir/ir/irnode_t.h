@@ -168,8 +168,8 @@ typedef union {
   call_attr      call;  /**< For Call: pointer to the type of the method to call */
   callbegin_attr callbegin; /**< For CallBegin */
   alloc_attr     a;     /**< For Alloc. */
-  io_attr    io;    /**< For InstOf */
-  type          *f;     /**< For Free. */
+  io_attr        io;    /**< For InstOf */
+  type           *f;    /**< For Free. */
   cast_attr      cast;  /**< For Cast. */
   int            phi0_pos;  /**< For Phi. Used to remember the value defined by
                    this Phi node.  Needed when the Phi is completed
@@ -229,7 +229,7 @@ copy_attrs(const ir_node *old_node, ir_node *new_node);
    changed.  */
 ir_node     **get_irn_in            (const ir_node *node);
 
-/*@{*/
+/** @{ */
 /** access attributes directly */
 INLINE const_attr    get_irn_const_attr    (ir_node *node);
 INLINE long          get_irn_proj_attr     (ir_node *node);
@@ -241,23 +241,29 @@ type         *get_irn_funccall_attr (ir_node *node);
 sel_attr      get_irn_sel_attr      (ir_node *node);
 int           get_irn_phi_attr      (ir_node *node);
 block_attr    get_irn_block_attr   (ir_node *node);
-/*@}*/
+/** @} */
 
-/*********************************************************************/
+/*-------------------------------------------------------------------*/
 /*  These function are most used in libfirm.  Give them as static    */
 /*  functions so they can be inlined.                                */
-/*********************************************************************/
+/*-------------------------------------------------------------------*/
 
 
 
-/* returns the number of predecessors without the block predecessor. */
+/**
+ * Returns the number of predecessors without the block predecessor.
+ * Intern version for libFirm.
+ */
 static INLINE int
 intern_get_irn_intra_arity (const ir_node *node) {
   assert(node);
   return ARR_LEN(node->in) - 1;
 }
 
-/* returns the number of predecessors without the block predecessor. */
+/**
+ * Returns the number of predecessors without the block predecessor.
+ * Intern version for libFirm.
+ */
 static INLINE int
 intern_get_irn_inter_arity (const ir_node *node) {
   assert(node);
@@ -270,7 +276,10 @@ intern_get_irn_inter_arity (const ir_node *node) {
   return intern_get_irn_intra_arity(node);
 }
 
-/* returns the number of predecessors without the block predecessor. */
+/**
+ * Returns the number of predecessors without the block predecessor.
+ * Intern version for libFirm.
+ */
 static INLINE int
 intern_get_irn_arity (const ir_node *node) {
   assert(node);
@@ -278,11 +287,17 @@ intern_get_irn_arity (const ir_node *node) {
   return intern_get_irn_intra_arity(node);
 }
 
+/**
+ * Intern version for libFirm.
+ */
 static INLINE ir_node *
 intern_get_irn_intra_n (ir_node *node, int n) {
   return (node->in[n + 1] = skip_nop(node->in[n + 1]));
 }
 
+/**
+ * Intern version for libFirm.
+ */
 static INLINE ir_node*
 intern_get_irn_inter_n (ir_node *node, int n) {
   /* handle Filter and Block specially */
@@ -296,11 +311,14 @@ intern_get_irn_inter_n (ir_node *node, int n) {
   return get_irn_intra_n (node, n);
 }
 
-/* to iterate through the predecessors without touching the array */
-/* To iterate over the operands iterate from 0 to i < get_irn_arity(),
-   to iterate including the Block predecessor iterate from i = -1 to
-   i < get_irn_arity.
-   If it is a block, the entry -1 is NULL. */
+/**
+ * Access to the predecessors of a node.
+ * To iterate over the operands iterate from 0 to i < intern_get_irn_arity(),
+ * to iterate including the Block predecessor iterate from i = -1 to
+ * i < get_irn_arity.
+ * If it is a block, the entry -1 is NULL.
+ * Intern version for libFirm.
+ */
 static INLINE ir_node *
 intern_get_irn_n (ir_node *node, int n) {
   assert(node); assert(-1 <= n && n < intern_get_irn_arity(node));
@@ -308,6 +326,10 @@ intern_get_irn_n (ir_node *node, int n) {
   return get_irn_intra_n (node, n);
 }
 
+/**
+ * Gets the mode of a node.
+ * Intern version for libFirm.
+ */
 static INLINE ir_mode *
 intern_get_irn_mode (const ir_node *node)
 {
@@ -315,6 +337,10 @@ intern_get_irn_mode (const ir_node *node)
   return node->mode;
 }
 
+/**
+ * Gets the op of a node.
+ * Intern version for libFirm.
+ */
 static INLINE ir_op *
 intern_get_irn_op (const ir_node *node)
 {
@@ -322,6 +348,10 @@ intern_get_irn_op (const ir_node *node)
   return node->op;
 }
 
+/**
+ * Gets the opcode of a node.
+ * Intern version for libFirm.
+ */
 static INLINE opcode
 intern_get_irn_opcode (const ir_node *node)
 {
