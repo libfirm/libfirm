@@ -10,8 +10,11 @@
 #include "irnode.h"
 
 typedef struct _phi_info_t {
-	ir_node *phi;      			   /* only set in args of phi nodes (which could be a phi itslef). Points to a phi node or NULL */
-	pset *phi_class;               /* only set in phi nodes. A set containing the members of the phi congruence class this phi node belongs to */
+	ir_node *phi;		/**< For all nodes of a phi class points to a phi node
+							 representing the phi class and holding the ptr to
+							 the pset phi_class      or NULL */
+	pset *phi_class;	/**< Only set in phi nodes. A set containing the members
+							 of the phi congruence class this phi node represents */
 } phi_info_t;
 
 extern size_t phi_irn_data_offset;
