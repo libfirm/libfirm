@@ -9,7 +9,10 @@
  *
  * @author Christian Schaefer, Matthias Heil
  *
- * This module specifies the modes that type the firm nodes.
+ * This module specifies the modes that type the firm nodes.  It defines
+ * a datasturcture that describes a mode and implements constructors and
+ * access routines to this datastructure. Further it defines a set of
+ * predefined modes.
  *
  * SEE ALSO:
  *    UKA tech report 1999-44 for more information about modes.
@@ -29,12 +32,12 @@
  * Contains relevant information about a mode.
  *
  * Neccessary information about a mode is stored in this struct
- * which is used by the tarval modul to perform calculations
+ * which is used by the tarval module to perform calculations
  * and comparisons of values of a such described mode.
  *
  * ATTRIBUTES:
- *  -  modecode code: An unambigous int for the mode
- *  -  ident *name:             Name of this mode
+ *  -  modecode code:           An unambigous int (enum) for the mode
+ *  -  ident *name:             Name of this mode. Two modes are different if the name is different.
  *  -  mode_sort sort:          sort of mode specifying possible usage kategories
  *  -  int    size:             size of the mode in Bits.
  *  -  int    align:            byte alignment
@@ -75,12 +78,11 @@ typedef enum { /* irm is short for `ir mode' */
   irm_max                       /**< maximum value for modecode */
 } modecode;
 
-/** These values represent the different arithmetics used to
- *  manipulate values.
+/** These values represent the different mode classes of value representations.
  */
 typedef enum {
   /* Predefined sorts of modes */
-  irms_auxiliary,         /**< Only for Firm use, predefined. */
+  irms_auxiliary,         /**< Only for Firm use, predefined. (irm_BB, irm_X, irm_T, irm_M) */
   irms_internal_boolean,  /**< Internal boolean representation.
 		               Storing to memory impossible, convert first. */
   /** user-extensible sorts of modes **/
@@ -94,12 +96,35 @@ typedef enum {
 		               ?? Are computations allowed? as int?? */
 } mode_sort;
 
+/** These values represent the different arithmetic operations possible with a mode.
+    Further arithmetics can be defined, e.g., for @@@ modes.
+ */
+typedef enum {
+  irma_uninitialized = 0,
+  irma_none = 1,              /**< For modes for which no representation is specified.
+				   These are modes of sort auxiliary, internal_boolean and
+				   character. */
+  irma_twos_complement = 2    /**< Values of the mode are represented as two's complement.
+				   Only legal for modes of sort int_number and reference. */
+  irma_ones_complement,       /**< Values of the mode are represented  as one's complement.
+			           Only legal for modes of sort int_number and reference. */
+  irma_int_BCD,               /**< Values of the mode are represented as binary coded decimals.
+			           Only legal for modes of sort int_number and reference. */
+  irma_ieee754 = 256,         /**< Values of the mode are represented according to ieee754
+				   floatingpoint standard.  Only legal for modes of sort float_number. */
+  irma_float_BCD,             /**< Values of the mode are represented  as binary coded decimals
+				   according to @@@ which standars??? Only legal for modes of
+				   sort float_number. */
+  irma_max
+} mode_arithmetic;
+
+
 /* ********** Constructor for user defined modes **************** */
 /**
  * Creates a new mode.
  *
  * @param name		the name of the mode to be created
- * @param sort		the mode_sort of teh mode to be created
+ * @param sort		the mode_sort of the mode to be created
  * @param bit_size	number of bits this mode allocate
  * @param align		the byte alignment for an entity of this mode (in bits)
  * @param sign		non-zero if this is a signed mode
@@ -249,7 +274,7 @@ ir_mode *get_modeBB(void);
    datab or dataM.
 
    For more exact definitions read the corresponding pages
-   in the firm documentation or the followingenumeration
+   in the firm documentation or the following enumeration
 
    The set of "float" is defined as:
    float = {irm_F, irm_D, irm_E}
@@ -282,6 +307,8 @@ ir_mode *get_modeBB(void);
 int mode_is_signed (ir_mode *mode);
 int mode_is_float (ir_mode *mode);
 int mode_is_int (ir_mode *mode);
+int mode_is_character (ir_mode *mode);
+int mode_is_reference (ir_mode *mode);
 int mode_is_num (ir_mode *mode);
 int mode_is_data (ir_mode *mode);
 int mode_is_datab (ir_mode *mode);
