@@ -1,7 +1,7 @@
 /* -*- c -*- */
 
 /*
- * Time-stamp: <09.11.2004 11:42:19h liekweg>
+ * Time-stamp: <11.11.2004 16:42:15h liekweg>
  * Project:     libFIRM
  * File name:   ir/ana2/qset.c
  * Purpose:     yet another set implementation
@@ -22,18 +22,24 @@
 # include "timing.h"
 # include "qset.h"
 
+/* local globals */
+int qset_id = 0;
+
 /* local protos */
 
-/* Check whether the given list of sortables is sorted. */
 # ifdef UNSINN
+/* Check whether the given list of sortables is sorted. */
 static void q_check (sortable_t*, const int);
 # endif /* defined UNSINN */
+
 /* Test whether the given val is among values.  Return the index of
    val in values, or -1. */
 static int q_test (sortable_t*, const sortable_t, const int);
+
 /* Sort n_elems entries  in 'values' */
 static void q_sort (sortable_t*, const int);
 
+/* Compare funktion, meant to be qsort(3)-compatible */
 static __inline__ int sortable_compare (const void *pa, const void *pb)
 {
   const int a = * (unsigned int*) pa;
@@ -444,6 +450,7 @@ qset_t *qset_new (const int n_elems)
   qset->n_slots = n_elems;
   qset->n_elems = 0;
   qset->is_sorted = FALSE;
+  qset->id = qset_id ++;
 
   return (qset);
 }
@@ -683,6 +690,12 @@ sortable_t *qset_next (qset_t *qset)
     return (NULL);
   }
 
+  /* quick fix to skip NULL entries */
+  while ((qset->cursor < qset->n_elems) &&
+         (NULL == qset->values [qset->cursor])) {
+    qset->cursor ++;
+  }
+
   return (qset->values [qset->cursor++]);
 }
 
@@ -711,6 +724,9 @@ int qset_test_main (int argc, char **argv)
 
 /*
   $Log$
+  Revision 1.4  2004/11/18 16:35:45  liekweg
+  Added unique ids for debugging
+
   Revision 1.3  2004/11/09 16:45:36  liekweg
   print pointers
 

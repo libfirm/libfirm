@@ -1,7 +1,7 @@
 /* -*- c -*- */
 
 /*
- * Time-stamp: <08.11.2004 13:29:19h liekweg>
+ * Time-stamp: <11.11.2004 16:42:22h liekweg>
  * Project:     libFIRM
  * File name:   ir/ana2/qset.h
  * Purpose:     yet another set implementation
@@ -34,6 +34,7 @@ typedef struct qset_str
   int n_elems;
   int is_sorted;
   int cursor;                   /* for qset_start/qset_next */
+  int id;
 } qset_t;
 
 
@@ -90,6 +91,9 @@ sortable_t *qset_next (qset_t*);
 
 /*
  $Log$
+ Revision 1.3  2004/11/18 16:35:46  liekweg
+ Added unique ids for debugging
+
  Revision 1.2  2004/11/08 12:32:00  liekweg
  Moved q_* methods into private section
 
