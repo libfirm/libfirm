@@ -1744,6 +1744,19 @@ static ir_node * transform_node_shift(ir_node *n)
   return n;
 }
 
+static ir_node * transform_node_End(ir_node *n) {
+  int i, n_keepalives = get_End_n_keepalives(n);
+
+  /* Remove dead blocks in keepalive list.
+     We do not generate a new End node. */
+  for (i = 0; i < n_keepalives; ++i) {
+    ir_node *ka = get_End_keepalive(n, i);
+    if (is_Block(ka) && is_Block_dead(ka))
+      set_End_keepalive(n, i, new_Bad());
+  }
+  return n;
+}
+
 
 /**
  * Tries several [inplace] [optimizing] transformations and returns an
@@ -1781,6 +1794,7 @@ static ir_op *firm_set_default_transform_node(ir_op *op)
   CASE(Cast);
   CASE(Proj);
   CASE(Or);
+  CASE(End);
   case iro_Shr:
   case iro_Shrs:
   case iro_Shl:
@@ -2258,7 +2272,7 @@ optimize_node (ir_node *n)
 
 
 /**
- * These optimizations never deallocate nodes.  This can cause dead
+ * These optimizations never deallocate nodes (in place).  This can cause dead
  * nodes lying on the obstack.  Remove these by a dead node elimination,
  * i.e., a copying garbage collection.
  */
