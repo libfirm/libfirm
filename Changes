@@ -1,3 +1,8 @@
+  7.7.2000 Chris
+  Fixed some bugs in irgopt.c
+  Added some missing 'get_new_node' methods, so the new obstack contains
+  the correct nodes.
+
   6.7.2000 Chris
   Renamed ir_vrfy to irn_vrfy and vrfy_graphg to irg_vrfy.
   Solved some copy'n'paste problems. Deleted most debug-code!
