@@ -250,6 +250,8 @@ __get_type_size_bits(type *tp) {
 static INLINE int
 __get_type_size_bytes(type *tp) {
   int size = __get_type_size_bits(tp);
+  if (size < 0)
+    return -1;
   if ((size & 7) != 0) {
     assert(0 && "cannot take byte size of this type");
     return -1;
