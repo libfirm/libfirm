@@ -22,8 +22,8 @@ INSTALL_HEADERS = irprog.h irgraph.h irnode.h irmode.h irop.h ircons.h	\
 SOURCES = $(INSTALL_HEADERS)
 
 SOURCES += 	Makefile.in \
-		ircons.c ircons_t.h irgmod.c irgraph_t.h irnode.c iropt.c irvrfy.c \
-		irgwalk.c irgwalk_blk.c irdump.c irgopt.c irnode_t.h iropt_t.h	\
+		ircons.c ircons_t.h irgmod.c irgraph_t.h irnode.c iropt.c iropt_t.h irvrfy.c \
+		irgwalk.c irgwalk_blk.c irdump.c irdumptxt.c irgopt.c irnode_t.h 	\
 		irmode.c irop.c irprog.c irflag.c irflag_t.h irgraph.c \
 		irmode_t.h irop_t.h irprog_t.h ircgcons.c ircgopt.c
 

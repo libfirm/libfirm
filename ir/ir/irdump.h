@@ -38,11 +38,11 @@
 # include "irloop.h"
 
 
-/** Set this to the name (not the ld_name) of the method to be dumped. */
-extern char *dump_file_filter;
+/* **************************************************************************** */
+/*                                 GRAPH DUMPERS                                */
+/* **************************************************************************** */
 
-/**
- *  Dump a firm graph.
+/** Dump a firm graph.
  *
  *  @param irg  The firm graph to be dumped.
  *
@@ -59,10 +59,8 @@ extern char *dump_file_filter;
  * @see turn_off_edge_labels()
  */
 void dump_ir_graph (ir_graph *irg, const char *suffix);
-#define dump_cg_graph dump_ir_graph
 
-/**
- *  Dump a firm graph without explicit block nodes.
+/** Dump a firm graph without explicit block nodes.
  *
  *  @param irg   The firm graph to be dumped.
  *
@@ -79,14 +77,12 @@ void dump_ir_graph (ir_graph *irg, const char *suffix);
  * @see turn_off_edge_labels()
  */
 void dump_ir_block_graph (ir_graph *irg, const char *suffix);
-#define dump_cg_block_graph dump_ir_block_graph
 
 /** Dumps all graphs in interprocedural view to a file named All_graphs.vcg.
  */
 void dump_all_cg_block_graph(const char *suffix);
 
-/**
- *  Dumps a firm graph and  all the type information needed for Calls,
+/** Dumps a firm graph and  all the type information needed for Calls,
  *  Sels, ... in this graph.
  *
  *  @param irg   The firm graph to be dumped with its type information.
@@ -102,8 +98,7 @@ void dump_all_cg_block_graph(const char *suffix);
  */
 void dump_ir_graph_w_types (ir_graph *irg, const char *suffix);
 
-/**
- *  Dumps a firm graph and  all the type information needed for Calls,
+/** Dumps a firm graph and  all the type information needed for Calls,
  *  Sels, ... in this graph.
  *
  *  @param irg   The firm graph to be dumped with its type information.
@@ -120,15 +115,13 @@ void dump_ir_graph_w_types (ir_graph *irg, const char *suffix);
  */
 void dump_ir_block_graph_w_types (ir_graph *irg, const char *suffix);
 
-/**
- *   The type of a walker function that is called for each graph.
+/** The type of a walker function that is called for each graph.
  *
- *   @param irg   current visited graph
+ *  @param irg   current visited graph
  */
 typedef void dump_graph_func(ir_graph *irg, const char *suffix);
 
-/**
- *   A walker that calls a dumper for each graph.
+/**  A walker that calls a dumper for each graph.
  *
  *   @param dump_graph    The dumper to be used for dumping.
  *
@@ -148,8 +141,7 @@ typedef void dump_graph_func(ir_graph *irg, const char *suffix);
 void dump_all_ir_graphs (dump_graph_func *dump_graph, const char *suffix);
 
 
-/**
- *   Dump the control flow graph of a procedure.
+/**  Dump the control flow graph of a procedure.
  *
  *   @param irg  The firm graph whose CFG shall be dumped.
  *
@@ -166,11 +158,20 @@ void dump_all_ir_graphs (dump_graph_func *dump_graph, const char *suffix);
 void dump_cfg (ir_graph *irg, const char *suffix);
 
 
+/* **************************************************************************** */
+/*                              CALLGRAPH DUMPERS                               */
+/* **************************************************************************** */
+
+
 /** Dump the call graph.
  *
  * Dumps the callgraph to a file "Callgraph"<suffix>".vcg".
  */
 void dump_callgraph(const char *suffix);
+
+/* **************************************************************************** */
+/*                              TYPEGRAPH DUMPERS                               */
+/* **************************************************************************** */
 
 /**
  *  Dumps all the type information needed for Calls, Sels, ... in this graph.
@@ -188,8 +189,7 @@ void dump_callgraph(const char *suffix);
  */
 void dump_type_graph (ir_graph *irg, const char *suffix);
 
-/**
- *   Dumps all type information.
+/**  Dumps all type information.
  *
  *   @return
  *      A file containing all type information for the program in standard
@@ -203,8 +203,7 @@ void dump_type_graph (ir_graph *irg, const char *suffix);
  */
 void dump_all_types (const char *suffix);
 
-/**
- *   Dumps the class hierarchy with or without entities.
+/**  Dumps the class hierarchy with or without entities.
  *
  *   @param entities    Flag whether to dump the entities.
  *
@@ -221,6 +220,9 @@ void dump_all_types (const char *suffix);
  */
 void dump_class_hierarchy (bool entities, const char *suffix);
 
+/* **************************************************************************** */
+/*                              LOOPTREE DUMPERS                                */
+/* **************************************************************************** */
 
 /**
  * Dump a standalone loop tree, which contains the loop nodes and the firm nodes
@@ -236,8 +238,8 @@ void dump_class_hierarchy (bool entities, const char *suffix);
 void dump_loop_tree(ir_graph *irg, const char *suffix);
 
 /** Dumps the firm nodes in the sub-loop-tree of loop to a graph.
- *  Dumps the loop nodes if dump_loop_information() is set.
  *
+ *  Dumps the loop nodes if dump_loop_information() is set.
  *  The name of the file is loop_<loop_nr><suffix>.vcg.
  *
  *  @arg loop    Dump the loop tree for this loop.
@@ -252,7 +254,90 @@ void dump_loop (ir_loop *l, const char *suffix);
  *
  *  @arg suffix  Suffix to filename.
  */
-void dump_callgraph_loop_tree(char *suffix);
+void dump_callgraph_loop_tree(const char *suffix);
+
+
+/* **************************************************************************** */
+/*                                TEXT DUMPERS                                  */
+/* **************************************************************************** */
+
+/** Verbosity for text dumpers */
+typedef enum {
+  dump_verbosity_onlynames         = 0x00000001,   /**< only dump type names. turns off all other
+						      flags up to 0x00010000. */
+  dump_verbosity_fields            = 0x00000002,   /**< dump types and fields (like a type declaration) */
+  dump_verbosity_methods           = 0x00000004,   /**< dump types and methods (like a type declaration) */
+  dump_verbosity_typeattrs         = 0x00000008,   /**< dump all type attributes */
+  dump_verbosity_entattrs          = 0x00000010,   /**< dump all entity attributes */
+  dump_verbosity_entconsts         = 0x00000020,   /**< dump entity constants */
+
+  dump_verbosity_noClassTypes      = 0x00001000,   /**< dump no class       types */
+  dump_verbosity_noStructTypes     = 0x00002000,   /**< dump no struct      types */
+  dump_verbosity_noUnionTypes      = 0x00004000,   /**< dump no union       types */
+  dump_verbosity_noArrayTypes      = 0x00008000,   /**< dump no array       types */
+  dump_verbosity_noPointerTypes    = 0x00010000,   /**< dump no pointer     types */
+  dump_verbosity_noMethodTypes     = 0x00020000,   /**< dump no method      types */
+  dump_verbosity_noPrimitiveTypes  = 0x00040000,   /**< dump no primitive   types */
+  dump_verbosity_noEnumerationTypes= 0x00080000,   /**< dump no enumeration types */
+
+  dump_verbosity_onlyClassTypes     = 0x000FE000,  /**< dump only class     types */
+  dump_verbosity_onlyStructTypes    = 0x000FD000,  /**< dump only struct    types */
+  dump_verbosity_onlyUnionTypes     = 0x000FB000,  /**< dump only union     types */
+  dump_verbosity_onlyArrayTypes     = 0x000F8000,  /**< dump only array     types */
+  dump_verbosity_onlyPointerTypes   = 0x000EF000,  /**< dump only pointer   types */
+  dump_verbosity_onlyMethodTypes    = 0x000DF000,  /**< dump only method    types */
+  dump_verbosity_onlyPrimitiveTypes = 0x000BF000,  /**< dump only primitive types */
+  dump_verbosity_onlyEnumerationTypes=0x0008F000,  /**< dump only enumeration types */
+
+  dump_verbosity_max               = 0x48888888,   /**< turn on all verbosity. */
+} dump_verbosity;
+
+
+/** Write the entity and all its attributes to the passed file.
+ *  */
+void    dump_entity_to_file (FILE *F, entity *ent, unsigned verbosity);
+
+/** Write the entity and all its attributes to the stdout.
+ *
+ *  Calls dump_entity_to_file().  */
+void    dump_entity (entity *ent);
+
+/** Write the type and all its attributes to the file passed.
+ * */
+void    dump_type_to_file (FILE *f, type *tp, unsigned verbosity);
+
+/** Write the type and all its attributes to stdout.
+ *  */
+void    dump_type (type *tp);
+
+
+/** Dump type information as text.
+ *
+ *  Often type graphs are unhandy in their vcg representation.  The text
+ *  dumper represents the information for a single type more compact, but
+ *  the relations between the types only implicitly.
+ *  Dumps only 'real' types, i.e., those in the type list.  Does not dump
+ *  the global type nor frame types or the like.
+ *
+ *  The file name is the program name (get_irp_name()), or 'TextTypes'
+ *  if the program name is not set appended by <suffix>-types.txt.
+ */
+void dump_types_as_text(unsigned verbosity, const char *suffix);
+
+/* **************************************************************************** */
+/*                                    FLAGS                                     */
+/* **************************************************************************** */
+
+/** Output a selected graph.
+ *
+ *  All graph dumpers check this name.  If the name is != "" and
+ *  not a prefix of the graph to be dumped, the dumper does not
+ *  dump the graph.
+ *
+ *  @param name The prefix of the name (not the ld_name) of the method
+ *              entity to be dumped.
+ */
+void only_dump_method_with_name(ident *name);
 
 /**  Sets the vcg flag "display_edge_labels" to no.
  *
@@ -263,7 +348,7 @@ void turn_off_edge_labels(void);
 
 /**
  *  If set to true constants will be replicated for every use. In non
- *  blocked view edges from constant to block are scipped.  Vcg then
+ *  blocked view edges from constant to block are skipped.  Vcg then
  *  layouts the graphs more compact, this makes them better readable.
  *  The flag is automatically and temporarily set to false if other
  *  edges are dumped, as outs, loop, ...
@@ -277,35 +362,33 @@ void dump_consts_local(bool b);
  */
 bool get_opt_dump_const_local(void);
 
-/**
- *   Turns off dumping the values of constant entities. Makes type graphs
+/**  Turns off dumping the values of constant entities. Makes type graphs
  *   better readable.
  */
 void turn_off_constant_entity_values(void);
 
-/**
- *   Turns on dumping the edges from the End node to nodes to be kept
- *   alive
+/**  Turns on dumping the edges from the End node to nodes to be kept
+ *   alive.
  */
 void dump_keepalive_edges(bool b);
 bool get_opt_dump_keepalive_edges(void);
 
-/**
- *   Turns on dumping the out edges starting from the Start block in
- *   dump_ir_graph.  To test the consistency of the out datastructure.
+/** Turns on dumping the out edges starting from the Start block in
+ *  dump_ir_graph.
+ *
+ *  To test the consistency of the out datastructure.
  */
 void dump_out_edges(void);
 
-/**
- *   If this flag is set the dumper dumps edges to immediate dominator in cfg.
+/** If this flag is set the dumper dumps edges to immediate dominator in cfg.
  */
 void dump_dominator_information(void);
 
-/**
- *   If this flag is set the dumper dumps loop nodes and edges from
- *   these nodes to the contained ir nodes.
- *   Can be turned off with dont_dump_loop_information().
- *   If the loops are interprocedural nodes can be missing.
+/** If this flag is set the dumper dumps loop nodes and edges from
+ *  these nodes to the contained ir nodes.
+ *
+ *  Can be turned off with dont_dump_loop_information().
+ *  If the loops are interprocedural nodes can be missing.
  */
 void dump_loop_information(void);
 
@@ -314,23 +397,24 @@ void dump_loop_information(void);
  */
 void dont_dump_loop_information(void);
 
-/**
- * If set and backedge info is computed, backedges are dumped dashed
- * and as vcg 'backedge' construct.  Default: set.
+/** If set and backedge info is computed, backedges are dumped dashed
+ *  and as vcg 'backedge' construct.
+ *
+ *  Default: set.
  */
 void dump_backedge_information(bool b);
 
-/**
- *  Dump the information of type field specified in ana/irtypeinfo.h.
+/** Dump the information of type field specified in ana/irtypeinfo.h.
+ *
  *  If the flag is set, the type name is output in [] in the node label,
  *  else it is output as info.
  */
 void dump_analysed_type_info(bool b);
 
-/**
- * Write the address of a node into the vcg info.
- * This is off per default for automatic comparisons of
- * vcg graphs -- these will differ in the pointer values!
+/** Write the address of a node into the vcg info.
+ *
+ *  This is off per default for automatic comparisons of
+ *  vcg graphs -- these will differ in the pointer values!
  */
 void dump_pointer_values_to_info(bool b);
 

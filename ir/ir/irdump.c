@@ -11,20 +11,17 @@
  */
 
 
-#ifdef HAVE_CONFIG_H
-# include <config.h>
-#endif
-
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
+
+#include "firm_common_t.h"
 
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "irprog_t.h"
 #include "entity_t.h"
 #include "irop_t.h"
-#include "firm_common_t.h"
 
 #include "irdump.h"
 
@@ -113,7 +110,9 @@ SeqNo get_Block_seqno(ir_node *n);
 #endif
 
 
-int my_special_flag = 0;
+/* basis for a color range for vcg */
+static int n_colors   = 0;
+static int base_color = 0;
 
 static const char *get_mode_name_ex(ir_mode *mode, int *bad)
 {
@@ -236,10 +235,6 @@ static void print_enum_item_edge(FILE *F, type *E, int item, const char *fmt, ..
 /* global and ahead declarations                                   */
 /*******************************************************************/
 
-/* A suffix to manipulate the file name. */
-
-char *dump_file_filter = "";
-
 static void dump_whole_node(ir_node *n, void *env);
 static INLINE void dump_loop_nodes_into_graph(FILE *F, ir_graph *irg);
 
@@ -360,6 +355,8 @@ static ir_node ** construct_block_lists(ir_graph *irg) {
 /* flags to steer output                                           */
 /*******************************************************************/
 
+const char *dump_file_filter = "";
+
 /* A compiler option to turn off edge labels */
 int edge_label = 1;
 /* A compiler option to turn off dumping values of constant entities */
@@ -383,6 +380,11 @@ INLINE bool get_opt_dump_const_local(void) {
   else
     return false;
 }
+
+void only_dump_method_with_name(ident *name) {
+  dump_file_filter = get_id_str(name);
+}
+
 
 /* To turn off display of edge labels.  Edge labels offen cause xvcg to
    abort with a segmentation fault. */
@@ -1338,16 +1340,20 @@ static int print_type_node(FILE *F, type *tp)
 }
 
 #define X(a)    case a: fprintf(F, #a); break
-void dump_entity_node(FILE *F, entity *ent)
+void dump_entity_node(FILE *F, entity *ent, int color)
 {
   fprintf (F, "node: {title: \"");
   PRINT_ENTID(ent); fprintf(F, "\"");
   fprintf (F, DEFAULT_TYPE_ATTRIBUTE);
   fprintf (F, "label: ");
-  fprintf (F, "\"ent %s\" " ENTITY_NODE_ATTR , get_ent_dump_name(ent));
+  fprintf (F, "\"ent %s\" ", get_ent_dump_name(ent));
+  if (color)
+    fprintf(F, "color: %d", color);
+  else
+    fprintf (F, ENTITY_NODE_ATTR);
   fprintf (F, "\n info1: \"");
 
-  dump_entity_to_file(F, ent);
+  dump_entity_to_file(F, ent, dump_verbosity_max);
 
   fprintf(F, "\"\n}\n");
 }
@@ -1382,7 +1388,7 @@ dump_type_info(type_or_ent *tore, void *env) {
       entity *ent = (entity *)tore;
       ir_node *value;
       /* The node */
-      dump_entity_node(F, ent);
+      dump_entity_node(F, ent, 0);
       /* The Edges */
       /* skip this to reduce graph.  Member edge of type is parallel to this edge. *
       fprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
@@ -1511,7 +1517,7 @@ dump_class_hierarchy_node (type_or_ent *tore, void *ctx) {
     if (!is_method_type(get_entity_type(ent))) break;  /* GL */
     if (env->dump_ent && is_class_type(get_entity_owner(ent))) {
       /* The node */
-      dump_entity_node(F, ent);
+      dump_entity_node(F, ent, 0);
       /* The edges */
       print_type_ent_edge(F,get_entity_owner(ent),ent,TYPE_MEMBER_EDGE_ATTR);
       for(i = 0; i < get_entity_n_overwrites(ent); i++)
@@ -1684,6 +1690,39 @@ dump_vcg_header(FILE *F, const char *name, const char *orientation) {
        "infoname 2: \"Verification errors\"\n",
        name, label, orientation);
 
+  /* don't use all, the range is too whith/black. */
+  n_colors   = 18;
+  base_color = 105;
+  fprintf (F,
+       "colorentry 100:    0   0    0\n"
+       "colorentry 101:   20   0    0\n"
+       "colorentry 102:   40   0    0\n"
+       "colorentry 103:   60   0    0\n"
+       "colorentry 104:   80   0    0\n"
+       "colorentry 105:  100   0    0\n"
+       "colorentry 106:  120   0    0\n"
+       "colorentry 107:  140   0    0\n"
+       "colorentry 108:  150   0    0\n"
+       "colorentry 109:  180   0    0\n"
+       "colorentry 110:  200   0    0\n"
+       "colorentry 111:  220   0    0\n"
+       "colorentry 112:  240   0    0\n"
+       "colorentry 113:  255   0    0\n"
+       "colorentry 113:  255  20   20\n"
+       "colorentry 114:  255  40   40\n"
+       "colorentry 115:  255  60   60\n"
+       "colorentry 116:  255  80   80\n"
+       "colorentry 117:  255 100  100\n"
+       "colorentry 118:  255 120  120\n"
+       "colorentry 119:  255 140  140\n"
+       "colorentry 120:  255 150  150\n"
+       "colorentry 121:  255 180  180\n"
+       "colorentry 122:  255 200  200\n"
+       "colorentry 123:  255 220  220\n"
+       "colorentry 124:  255 240  240\n"
+       "colorentry 125:  255 250  250\n"
+	   );
+
   fprintf (F, "\n");        /* a separator */
 }
 
@@ -1804,7 +1843,7 @@ dump_ir_graph (ir_graph *irg, const char *suffix )
   char *suffix1;
   rem = current_ir_graph;
 
-  if(strncmp(get_entity_name(get_irg_entity(irg)), dump_file_filter, strlen(dump_file_filter))!=0) return;
+  if (strncmp(get_entity_name(get_irg_entity(irg)), dump_file_filter, strlen(dump_file_filter)) != 0) return;
   current_ir_graph = irg;
   if (interprocedural_view) suffix1 = "-pure-ip";
   else                      suffix1 = "-pure";
@@ -2001,13 +2040,51 @@ dump_cfg (ir_graph *irg, const char *suffix)
   current_ir_graph = rem;
 }
 
+static int weight_overall(int rec, int loop) {
+  return 2*rec + loop;
+}
+
+static int compute_color (int my, int max) {
+  int color;
+  if (!max) {
+    color = 0;
+  } else {
+    /* if small, scale to the full color range. */
+    if (max < n_colors)
+      my = my * (n_colors/max);
+
+    int step = 1 + (max / n_colors);
+
+    color = my/step;
+  }
+  return base_color + n_colors - color;
+}
+
+static int get_entity_color(entity *ent) {
+  assert(get_entity_irg(ent));
+  ir_graph *irg = get_entity_irg(ent);
+
+  int rec_depth     = get_irg_recursion_depth(irg);
+  int loop_depth    = get_irg_loop_depth(irg);
+  int overall_depth = weight_overall(rec_depth, loop_depth);
+
+  int max_rec_depth     = irp->max_callgraph_recursion_depth;
+  int max_loop_depth    = irp->max_callgraph_loop_depth;
+  int max_overall_depth = weight_overall(max_rec_depth, max_loop_depth);
+
+  int my_rec_color     = compute_color(rec_depth, max_rec_depth);
+  int my_loop_color    = compute_color(loop_depth, max_loop_depth);
+  int my_overall_color = compute_color(overall_depth, max_overall_depth);;
+
+  return my_overall_color;
+}
+
 void dump_callgraph(const char *suffix) {
   FILE *F;
   int i, n_irgs = get_irp_n_irgs();
   int rem = edge_label;
   edge_label = 1;
-
-  my_special_flag = 1;
+  //ident *prefix = new_id_from_str("java/");
 
   F = vcg_open_name("Callgraph", suffix);
   dump_vcg_header(F, "Callgraph", NULL);
@@ -2017,19 +2094,22 @@ void dump_callgraph(const char *suffix) {
     entity *ent = get_irg_entity(irg);
     int j, n_callees = get_irg_n_callees(irg);
 
-    dump_entity_node(F, ent);
+    /* Do not dump runtime system. */
+    //if (id_is_prefix(prefix, get_entity_ld_ident(ent))) continue;
+
+    dump_entity_node(F, ent, get_entity_color(ent));
     for (j = 0; j < n_callees; ++j) {
       entity *c = get_irg_entity(get_irg_callee(irg, j));
+      //if (id_is_prefix(prefix, get_entity_ld_ident(c))) continue;
       int be = is_irg_callee_backedge(irg, j);
       char *attr;
       attr = (be) ?
-        "label:\"recursion %d\" color:red" :
-        "label:\"calls %d\"";
-      print_ent_ent_edge(F, ent, c, be, attr, get_irg_callee_loop_depth(irg, j));
+        "label:\"recursion %d\" color: %d" :
+        "label:\"calls %d\" color: %d";
+      print_ent_ent_edge(F, ent, c, be, attr, get_irg_callee_loop_depth(irg, j), get_entity_color(ent));
     }
   }
 
-  my_special_flag = 0;
   edge_label = rem;
   vcg_close(F);
 }
@@ -2247,7 +2327,7 @@ void dump_loop_tree(ir_graph *irg, const char *suffix)
   current_ir_graph = rem;
 }
 
-void dump_callgraph_loop_tree(char *suffix) {
+void dump_callgraph_loop_tree(const char *suffix) {
   FILE *F;
   F = vcg_open_name("Callgraph_looptree", suffix);
   dump_vcg_header(F, "callgraph looptree", "top_to_bottom");
