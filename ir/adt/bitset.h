@@ -269,6 +269,10 @@ static INLINE unsigned long _bitset_next(const bitset_t *bs,
 #define bitset_foreach(bitset,elm) \
   for(elm = bitset_next_set(bitset,0); elm != -1; elm = bitset_next_set(bitset,elm+1))
 
+
+#define bitset_foreach_clear(bitset,elm) \
+  for(elm = bitset_next_clear(bitset,0); elm != -1; elm = bitset_next_clear(bitset,elm+1))
+
 /**
  * Count the bits set.
  * This can also be seen as the cardinality of the set.
