@@ -22,9 +22,9 @@
     <style in="changelog.xml"
            out="changelog.html"
            style="${ant.home}/etc/changelog.xsl">
-      <param name="title" expression="Ant ChangeLog"/>
-      <param name="module" expression="jakarta-ant"/>
-      <param name="cvsweb" expression="http://cvs.apache.org/viewcvs/"/>
+      <param name="title" expression="LibFirm ChangeLog"/>
+      <param name="module" expression="libfirm"/>
+      <param name="cvsweb" expression="http://www.info.uni-karlsruhe.de/viewcvs/"/>
     </style>
   </target>
 
