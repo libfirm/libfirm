@@ -635,6 +635,8 @@ new_rd_Sel (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *store, ir_node
   ir_node *res;
   int r_arity;
 
+  assert(ent != NULL && is_entity(ent) && "entity expected in Sel construction");
+
   r_arity = arity + 2;
   NEW_ARR_A (ir_node *, r_in, r_arity);  /* uses alloca */
   r_in[0] = store;
