@@ -192,7 +192,9 @@ set_type_state(type *tp, type_state state) {
 	if (tp != get_glob_type())
 	  for (i = 0; i < get_class_n_member(tp); i++) {
 	    assert(get_entity_offset(get_class_member(tp, i)) > -1);
-	    /* assert(get_entity_allocation(get_class_member(tp, i)) == automatic_allocated);    @@@ lowerfirm geht nicht durch */
+	    assert(is_method_type(get_entity_type(get_class_member(tp, i))) ||
+		   (get_entity_allocation(get_class_member(tp, i)) == automatic_allocated));
+	    /*    @@@ lowerfirm geht nicht durch */
 	  }
       } break;
     case tpo_struct:
@@ -200,7 +202,7 @@ set_type_state(type *tp, type_state state) {
 	/* assert(get_type_size(tp) > -1);    @@@ lowerfirm geht nicht durch */
 	for (i = 0; i < get_struct_n_member(tp); i++) {
 	  assert(get_entity_offset(get_struct_member(tp, i)) > -1);
-	  /* assert(get_entity_allocation(get_struct_member(tp, i)) == automatic_allocated);    @@@ lowerfirm geht nicht durch */
+	  assert((get_entity_allocation(get_struct_member(tp, i)) == automatic_allocated));
 	}
       } break;
     case tpo_union:
@@ -406,7 +408,8 @@ inline void free_struct_attrs (type *strct) {
 /* manipulate private fields of struct */
 void    add_struct_member   (type *strct, entity *member) {
   assert(strct && (strct->type_op == type_struct));
-  /*assert(get_type_tpop(get_entity_type(member)) != type_method);	     @@@ lowerfirm geht nicht durch */
+  assert(get_type_tpop(get_entity_type(member)) != type_method);
+    /*    @@@ lowerfirm geht nicht durch */
   ARR_APP1 (entity *, strct->attr.sa.members, member);
 }
 int     get_struct_n_member (type *strct) {
@@ -421,7 +424,7 @@ entity *get_struct_member   (type *strct, int pos) {
 void    set_struct_member   (type *strct, int pos, entity *member) {
   assert(strct && (strct->type_op == type_struct));
   assert(pos >= 0 && pos < get_struct_n_member(strct));
-  /* assert(get_entity_type(member)->type_op != type_method); @@@ lowerfirm !!*/
+  assert(get_entity_type(member)->type_op != type_method);/* @@@ lowerfirm !!*/
   strct->attr.sa.members[pos+1] = member;
 }
 void    remove_struct_member(type *strct, entity *member) {
@@ -643,6 +646,15 @@ void  set_array_bounds (type *array, int dimension, ir_node * lower_bound,
   array->attr.aa.lower_bound[dimension] = lower_bound;
   array->attr.aa.upper_bound[dimension] = upper_bound;
 }
+void  set_array_lower_bound_int (type *array, int dimension, int lower_bound) {
+  ir_graph *rem;
+  assert(array && (array->type_op == type_array));
+  rem = current_ir_graph;
+  current_ir_graph = get_const_code_irg();
+  array->attr.aa.lower_bound[dimension] =
+    new_Const(mode_I, tarval_from_long (mode_I, lower_bound));
+  current_ir_graph = rem;
+}
 void  set_array_lower_bound  (type *array, int dimension, ir_node * lower_bound) {
   assert(array && (array->type_op == type_array));
   array->attr.aa.lower_bound[dimension] = lower_bound;
@@ -794,6 +806,7 @@ bool  is_pointer_type            (type *pointer) {
 /* create a new type primitive */
 type *new_type_primitive (ident *name, ir_mode *mode) {
   type *res;
+  /* @@@ assert( mode_is_data(mode) && (!mode == mode_p)); */
   res = new_type(type_primitive, mode, name);
   res->size = get_mode_size(mode);
   res->state = layout_fixed;

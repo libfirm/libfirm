@@ -109,7 +109,11 @@ typedef struct entity entity;
 #endif
 
 /* Creates a new entity.
-   Automatically inserts the entity as a member of owner. */
+   Automatically inserts the entity as a member of owner.
+   Entity is automatic_allocated and uninitialize except if the type
+   is type_method, then it is static_allocated and constant.  The constant
+   value is a pointer to the method.
+   Visibility is local, offset -1, and it is not volatile. */
 entity     *new_entity (type *owner, ident *name, type *type);
 /* Copies the entity if the new_owner is different from the
    owner of the old entity.  Else returns the old entity.

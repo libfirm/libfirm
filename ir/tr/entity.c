@@ -84,6 +84,8 @@ new_entity (type *owner, ident *name, type *type)
   res->ld_name = NULL;
   res->overwrites = NEW_ARR_F(entity *, 1);
 
+  res->irg = NULL;
+
   res->visit = 0;
 
   /* Remember entity in it's owner. */

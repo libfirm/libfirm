@@ -419,7 +419,6 @@ equivalent_node (ir_node *n)
       */
       int i, n_preds;
 
-
       ir_node *block = NULL;     /* to shutup gcc */
       ir_node *first_val = NULL; /* to shutup gcc */
       ir_node *scnd_val = NULL;  /* to shutup gcc */

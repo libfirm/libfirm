@@ -1,3 +1,10 @@
+
+  22.2. Goetz
+  irgopt: inline_small_irgs implemented
+
+  30.1. - 20.2. Goetz
+  Bugfixes, some access functions ...
+
   29.1.2002 Goetz
   New directory: ana for analyses.  Adapted configure/makefiles
   implemented irout: backedges.  Added one field to ir_graph, one to ir_node.

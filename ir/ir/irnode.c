@@ -1830,11 +1830,16 @@ skip_Proj (ir_node *node) {
 
 inline ir_node *
 skip_Tuple (ir_node *node) {
-  if ((node->op == op_Proj) && (get_irn_op(get_Proj_pred(node)) == op_Tuple))
-    return get_Tuple_pred(get_Proj_pred(node), get_Proj_proj(node));
+  ir_node *pred;
+  if (get_irn_op(node) == op_Proj) {
+    pred = skip_nop(get_Proj_pred(node));
+    if (get_irn_op(pred) == op_Proj) /* nested Tuple ? */
+      pred = skip_nop(skip_Tuple(pred));
+    if (get_irn_op(pred) == op_Tuple)
+      return get_Tuple_pred(pred, get_Proj_proj(node));
+  }
   return node;
 }
-
 
 inline ir_node *
 skip_nop (ir_node *node) {

@@ -274,7 +274,6 @@ main(void)
 
   /****************************************************************************/
 
-
   collect_phiprojs(main_irg);
   current_ir_graph = main_irg;
   printf("Inlining set_a ...\n");

@@ -19,12 +19,20 @@ void local_optimize_graph (ir_graph *irg);
 /* Performs dead node elimination by copying the ir graph to a new obstack.
    Further removes Bad predecesors from Blocks and the corresponding
    inputs to Phi nodes.
+   Optimization is only performed if options `optimize' and
+   `opt_dead_node_elimination' are set.
    The graph may not be in state phase_building.  The outs datasturcture
    is freed, the outs state set to no_outs. (@@@ Change this? -> inconsistent.)
    Removes old attributes of nodes.  Sets link field to NULL.
    Attention: the numbers assigned to nodes if the library is compiled for
    development/debugging are not conserved by copying. */
 void dead_node_elimination(ir_graph *irg);
+
+/* Removes Bad Bad predecesors from Blocks and the corresponding
+   inputs to Phi nodes as in dead_node_elimination but without
+   copying the graph.
+   @@@ not implemented! */
+void remove_bad_predecessors(ir_graph *irg);
 
 /* Inlines a method at the given call site.
    Assumes that call is a Call node in current_ir_graph and that
@@ -33,19 +41,35 @@ void dead_node_elimination(ir_graph *irg);
    Further it assumes that all Phi nodes in a block of current_ir_graph
    are assembled in a "link" list in the link field of the corresponding
    block nodes.  Further assumes that all Proj nodes are in a "link" list
-   in the nodes producing the tuple.  (This is only a optical feature
+   in the nodes producing the tuple.  (This is only an optical feature
    for the graph.)  Conserves this feature for the old
    nodes of the graph.  This precondition can be established by a call to
    collect_phisprojs(), see irgmod.h.
    Called_graph must be unequal to current_ir_graph.   Will not inline
    if they are equal.
-   Sets visited masterflag in curren_ir_graph to max of flag in current
-   and called graphs.
+   Sets visited masterflag in current_ir_graph to the max of the flag in
+   current and called graph.
    Removes the call node and splits the basic block the call node
    belongs to.  Inserts a copy of the called graph between these nodes.
    It is recommended to call local_optimize_graph after inlining as this
    function leaves a set of obscure Tuple nodes, e.g. a Proj-Tuple-Jmp
    combination as control flow operation. */
 void inline_method(ir_node *call, ir_graph *called_graph);
+
+
+/* Inlines all small methods at call sites where the called address comes
+   from a Const node that references the entity representing the called
+   method.
+   The size argument is a rough measure for the code size of the method:
+   Methods where the obstack containing the firm graph is smaller than
+   size are inlined.  Further only a limited number of calls are inlined.
+   If the method contains more than 1024 inlineable calls none will be
+   inlined.
+   Inlining is only performed if flags `optimize' and `inlineing' are set.
+   The graph may not be in state phase_building.
+   It is recommended to call local_optimize_graph after inlining as this
+   function leaves a set of obscure Tuple nodes, e.g. a Proj-Tuple-Jmp
+   combination as control flow operation.  */
+void inline_small_irgs(ir_graph *irg, int size);
 
 # endif /* _IRGOPT_H_ */

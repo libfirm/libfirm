@@ -421,6 +421,7 @@ void  set_array_bounds_int   (type *array, int dimension, int lower_bound,
 void  set_array_bounds       (type *array, int dimension, ir_node *lower_bound,
                                                           ir_node *upper_bound);
 void  set_array_lower_bound  (type *array, int dimension, ir_node *lower_bound);
+void  set_array_lower_bound_int (type *array, int dimension, int lower_bound);
 void  set_array_upper_bound  (type *array, int dimension, ir_node *upper_bound);
 ir_node * get_array_lower_bound  (type *array, int dimension);
 ir_node * get_array_upper_bound  (type *array, int dimension);

@@ -102,7 +102,8 @@ dump_node_opcode (ir_node *n)
   /* SymConst */
   } else if (n->op->code == iro_SymConst) {
     if (get_SymConst_kind(n) == linkage_ptr_info) {
-      xfprintf (F, "SymC %I", get_SymConst_ptrinfo(n));
+      /* don't use get_SymConst_ptr_info as it mangles the name. */
+      xfprintf (F, "SymC %I", n->attr.i.tori.ptrinfo);
     } else {
       assert(get_kind(get_SymConst_type(n)) == k_type);
       assert(get_type_ident(get_SymConst_type(n)));
@@ -157,7 +158,7 @@ dump_node_nodeattr (ir_node *n)
     break;
   case iro_Sel: {
     assert(get_kind(get_Sel_entity(n)) == k_entity);
-    xfprintf (F, "%s", id_to_str(get_entity_ident(get_Sel_entity(n))));
+    xfprintf (F, "%I", get_entity_ident(get_Sel_entity(n)));
     } break;
   default:
   } /* end switch */
@@ -344,7 +345,7 @@ dump_ir_node (ir_node *n)
   case iro_Sel:
     assert(get_kind(get_Sel_entity(n)) == k_entity);
     xfprintf (F, "\"%I ", get_irn_opident(n));
-    xfprintf (F, "%s", id_to_str(get_entity_ident(get_Sel_entity(n))));
+    xfprintf (F, "%I", get_entity_ident(get_Sel_entity(n)));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_SymConst:
@@ -634,7 +635,7 @@ dump_type_info (type_or_ent *tore, void *env) {
       switch (get_entity_visibility(ent)) {
 	case local:              fprintf (F, "local\n");             break;
 	case external_visible:   fprintf (F, "external_visible\n");  break;
-	case external_allocated: fprintf (F, "external_allocate\nd");break;
+	case external_allocated: fprintf (F, "external_allocate\n");break;
       }
       switch (get_entity_variability(ent)) {
 	case uninitialized: fprintf (F, "uninitialized");break;
@@ -642,6 +643,8 @@ dump_type_info (type_or_ent *tore, void *env) {
 	case part_constant: fprintf (F, "part_constant");break;
 	case constant:      fprintf (F, "constant");     break;
       }
+      if (is_method_type(get_entity_type(ent)))
+	xfprintf (F, "\n irg = %p ", get_entity_irg(ent));
       xfprintf(F, "\"}\n");
       /* The Edges */
       /* skip this to reduce graph.  Member edge of type is parallel to this edge. *
@@ -1005,8 +1008,9 @@ dump_block_to_cfg (ir_node *block, void *env) {
 
   if (get_irn_opcode(block) == iro_Block) {
     /* This is a block. Dump a node for the block. */
-    xfprintf (F, "node: {title: \"%p\" label: \"%I\"}", block,
-	      block->op->name);
+    xfprintf (F, "node: {title:\""); PRINT_NODEID(block);
+    xfprintf (F, "\" label: \"%I ", block->op->name); PRINT_NODEID(block);
+    xfprintf (F, "\"}\n");
     /* Dump the edges */
     for ( i = 0; i < get_Block_n_cfgpreds(block); i++) {
       pred = get_nodes_Block(skip_Proj(get_Block_cfgpred(block, i)));

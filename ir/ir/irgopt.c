@@ -14,6 +14,7 @@
 
 # include <assert.h>
 
+# include "irprog.h"
 # include "irgopt.h"
 # include "irnode_t.h"
 # include "irgraph_t.h"
@@ -22,7 +23,7 @@
 # include "ircons.h"
 # include "misc.h"
 # include "irgmod.h"
-
+# include "array.h"
 # include "pset.h"
 
 /* Defined in iropt.c */
@@ -49,14 +50,20 @@ void init_link (ir_node *n, void *env) {
 
 void
 optimize_in_place_wrapper (ir_node *n, void *env) {
-  int i;
+  int start, i;
   ir_node *optimized;
+
+  if (get_irn_op(n) == op_Block)
+    start = 0;
+  else
+    start = -1;
 
   /* optimize all sons after recursion, i.e., the sons' sons are
      optimized already. */
-  for (i = -1; i < get_irn_arity(n); i++) {
+  for (i = start; i < get_irn_arity(n); i++) {
     optimized = optimize_in_place_2(get_irn_n(n, i));
     set_irn_n(n, i, optimized);
+    assert(get_irn_op(optimized) != op_Id);
   }
 }
 
@@ -66,7 +73,7 @@ local_optimize_graph (ir_graph *irg) {
   current_ir_graph = irg;
 
   /* Handle graph state */
-  // assert(get_irg_phase_state(irg) != phase_building);
+  assert(get_irg_phase_state(irg) != phase_building);
   if (get_opt_global_cse())
     set_irg_pinned(current_ir_graph, floats);
   if (get_irg_outs_state(current_ir_graph) == outs_consistent)
@@ -100,7 +107,6 @@ get_new_node (ir_node * n)
 {
   return n->link;
 }
-
 
 /* We use the block_visited flag to mark that we have computed the
    number of useful predecessors for this block.
@@ -223,11 +229,13 @@ copy_preds (ir_node *n, void *env) {
     for (i = -1; i < get_irn_arity(n); i++)
       set_irn_n (nn, i, get_new_node(get_irn_n(n, i)));
   }
-  /* Now the new node is complete.  We can add it to the hash table for cse. */
-  add_identities (current_ir_graph->value_table, nn);
+  /* Now the new node is complete.  We can add it to the hash table for cse.
+     @@@ inlinening aborts if we identify End. Why? */
+  if(get_irn_op(nn) != op_End)
+    add_identities (current_ir_graph->value_table, nn);
 }
 
-/* Copies the graph resucsively, compacts the keepalive of the end node. */
+/* Copies the graph recursively, compacts the keepalive of the end node. */
 void
 copy_graph () {
   ir_node *oe, *ne; /* old end, new end */
@@ -346,7 +354,7 @@ dead_node_elimination(ir_graph *irg) {
   current_ir_graph = irg;
 
   /* Handle graph state */
-  // assert(get_irg_phase_state(current_ir_graph) != phase_building);
+  assert(get_irg_phase_state(current_ir_graph) != phase_building);
   free_outs(current_ir_graph);
 
   if (get_optimize() && get_opt_dead_node_elimination()) {
@@ -413,7 +421,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   if (!get_opt_inline()) return;
 
   /* Handle graph state */
-  // assert(get_irg_phase_state(current_ir_graph) != phase_building);
+  assert(get_irg_phase_state(current_ir_graph) != phase_building);
   if (get_irg_outs_state(current_ir_graph) == outs_consistent)
     set_irg_outs_inconsistent(current_ir_graph);
 
@@ -649,4 +657,83 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
     set_irn_in(end_bl, arity, cf_pred);
     free(cf_pred);
   }
+}
+
+/********************************************************************/
+/* Apply inlineing to small methods.                                */
+/********************************************************************/
+
+static int pos;
+
+/* It makes no sense to inline too many calls in one procedure. Anyways,
+   I didn't get a version with NEW_ARR_F to run. */
+#define MAX_INLINE 1024
+
+static void collect_calls(ir_node *call, void *env) {
+  ir_node **calls = (ir_node **)env;
+  ir_node *addr;
+  tarval *tv;
+  ir_graph *called_irg;
+
+  if (get_irn_op(call) != op_Call) return;
+
+  addr = get_Call_ptr(call);
+  if (get_irn_op(addr) == op_Const) {
+    /* Check whether the constant is the pointer to a compiled entity. */
+    tv = get_Const_tarval(addr);
+    if (tv->u.p.ent) {
+      called_irg = get_entity_irg(tv->u.p.ent);
+      if (called_irg && pos < MAX_INLINE) {
+	/* The Call node calls a locally defined method.  Remember to inline. */
+	calls[pos] = call;
+	pos++;
+      }
+    }
+  }
+}
+
+
+/* Inlines all small methods at call sites where the called address comes
+   from a Const node that references the entity representing the called
+   method.
+   The size argument is a rough measure for the code size of the method:
+   Methods where the obstack containing the firm graph is smaller than
+   size are inlined. */
+void inline_small_irgs(ir_graph *irg, int size) {
+  int i;
+  ir_node *calls[MAX_INLINE];
+  ir_graph *rem = current_ir_graph;
+
+  if (!(get_optimize() && get_opt_inline())) return;
+
+  /*DDME(get_irg_ent(current_ir_graph));*/
+
+  current_ir_graph = irg;
+  /* Handle graph state */
+  assert(get_irg_phase_state(current_ir_graph) != phase_building);
+
+  /* Find Call nodes to inline.
+     (We can not inline during a walk of the graph, as inlineing the same
+     method several times changes the visited flag of the walked graph:
+     after the first inlineing visited of the callee equals visited of
+     the caller.  With the next inlineing both are increased.) */
+  pos = 0;
+  irg_walk(get_irg_end(irg), NULL, collect_calls, (void *) calls);
+
+  if ((pos > 0) && (pos < MAX_INLINE)) {
+    /* There are calls to inline */
+    collect_phiprojs(irg);
+    for (i = 0; i < pos; i++) {
+      tarval *tv;
+      ir_graph *callee;
+      tv = get_Const_tarval(get_Call_ptr(calls[i]));
+      callee = get_entity_irg(tv->u.p.ent);
+      if ((_obstack_memory_used(callee->obst) - obstack_room(callee->obst)) < size) {
+	/*printf(" inlineing "); DDME(tv->u.p.ent);*/
+	inline_method(calls[i], callee);
+      }
+    }
+  }
+
+  current_ir_graph = rem;
 }
