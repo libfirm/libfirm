@@ -85,7 +85,9 @@ main(void)
 # define L_BOUND 0
 # define U_BOUND 9
   array_type = new_type_array(id_from_str("a", 1), N_DIMS, prim_t_int);
-  set_array_bounds(array_type, 1, L_BOUND, U_BOUND);
+  set_array_bounds(array_type, 1,
+		   new_Const(mode_I, tarval_from_long (mode_I, L_BOUND)),
+		   new_Const(mode_I, tarval_from_long (mode_I, U_BOUND)));
   /* The array is an entity of the method, placed on the mehtod's own memory,
      the stack frame. */
   array_ent = get_array_element_entity(array_type);
