@@ -140,7 +140,7 @@ main(void)
   /* output the vcg file */
   printf("Done building the graph.  Dumping it.\n");
   //turn_of_edge_labels();
-  dump_keepalive_edges();
+  dump_keepalive_edges(true);
   dump_all_types();
   dump_ir_block_graph (irg);
   printf("Use xvcg to view this graph:\n");
