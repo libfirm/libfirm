@@ -17,9 +17,20 @@
 # include "irgwalk.h"
 
 #ifdef NDEBUG
-#define ASSERT_AND_RET(expr, string, ret)  if (!(expr)) return (ret)
+/*
+ * in RELEASE mode, returns ret if the expression expr evaluates to zero
+ * in ASSERT mode, asserts the expression expr (and the string string).
+ */
+#define ASSERT_AND_RET(expr, string, ret)  		if (!(expr)) return (ret)
+
+/*
+ * in RELEASE mode, returns ret if the expression expr evaluates to zero
+ * in ASSERT mode, executes blk if the expression expr evaluates to zero and asserts
+ */
+#define ASSERT_AND_RET_DBG(expr, string, ret, blk)  	if (!(expr)) return (ret)
 #else
-#define ASSERT_AND_RET(expr, string, ret)  do { assert((expr) && string); if (!(expr)) return (ret); } while(0)
+#define ASSERT_AND_RET(expr, string, ret)  		do { assert((expr) && string); if (!(expr)) return (ret); } while(0)
+#define ASSERT_AND_RET_DBG(expr, string, ret, blk) 	do { if (!(expr)) { { blk } assert(0 && string); return (ret); } } while(0)
 #endif
 
 /* @@@ replace use of array "in" by access functions. */
@@ -366,9 +377,25 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       }
 
       for (i = 0; i < get_method_n_params(mt); i++) {
-        ASSERT_AND_RET(
+        ASSERT_AND_RET_DBG(
             get_irn_mode(get_Call_param(n, i)) == get_type_mode(get_method_param_type(mt, i)),
-            "Mode of arg for Call doesn't match mode of arg type.", 0);
+            "Mode of arg for Call doesn't match mode of arg type.", 0,
+	    {
+	      int i;
+
+	      fprintf(stderr, "Assertion for Call type-check failed: %s(", get_type_name(mt));
+	      for (i = 0; i < get_method_n_params(mt); ++i) {
+		fprintf(stderr, "%s ", get_mode_name(get_type_mode(get_method_param_type(mt, i))));
+	      }
+	      fprintf(stderr, ") != CALL(");
+
+	      for (i = 0; i < get_Call_n_params(n); ++i) {
+		fprintf(stderr, "%s ", get_mode_name(get_irn_mode(get_Call_param(n, i))));
+	      }
+	      fprintf(stderr, ")\n");
+
+	    }
+	    );
       }
       break;
 
