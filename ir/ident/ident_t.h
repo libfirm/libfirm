@@ -14,37 +14,27 @@
 # define _IDENT_T_H_
 
 # include "ident.h"
-# include "set.h"
 
-void init_ident (int initial_n_idents);
+/**
+ * Initialize the ident module.
+ *
+ * @param id_if             The ident module interface, if NULL, the default
+ *                          libFirm ident module will be used.
+ * @param initial_n_idents  Only used in the default libFirm ident module, initial
+ *                          number of entries in the hash table.
+ */
+void init_ident (ident_if_t *id_if, int initial_n_idents);
+
+/**
+ * Finishes the ident module, frees all entries.
+ */
 void finish_ident (void);
 
+/** The hash function of the internal ident module implementation. */
 #define ID_HASH(str, len) \
   (((  ((unsigned char *)(str))[0] * 33 \
      + ((unsigned char *)(str))[(len)>>1]) * 31 \
     + ((unsigned char *)(str))[(len)-1]) * 9 \
    + (len))
-
-
-/* ------------------------ *
- * inline functions         *
- * ------------------------ */
-extern set *__id_set;
-
-static INLINE ident *
-__id_from_str(const char *str, int len)
-{
-  assert(len > 0);
-  return set_hinsert0(__id_set, str, len, ID_HASH(str, len));
-}
-
-static INLINE const char * __get_id_str(ident *id) { return (const char *)id->dptr; }
-
-static INLINE int __get_id_strlen(ident *id) { return id->size; }
-
-
-#define new_id_from_chars(str, len)    __id_from_str(str, len)
-#define get_id_str(id)           __get_id_str(id)
-#define get_id_strlen(id)        __get_id_strlen(id)
 
 # endif /* _IDENT_T_H_ */

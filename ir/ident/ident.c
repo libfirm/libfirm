@@ -21,58 +21,166 @@
 #include <stdlib.h>
 
 #include "ident_t.h"
+#include "set.h"
 
-set *__id_set;
+/** The current ident module implementation. */
+static ident_if_t impl;
 
-void init_ident(int initial_n_idents)
+/**
+ * Stores a string in the ident module and returns a handle for the string.
+ *
+ * @param handle   the handle for the set
+ * @param str      the string which shall be stored
+ *
+ * @return id - a handle for the generated ident
+ *
+ * Default implementation using libfirm sets.
+ */
+static ident *set_new_id_from_chars(void *handle, const char *str, int len)
 {
-  __id_set = new_set(memcmp, initial_n_idents);
+  set *id_set = handle;
+
+  assert(len > 0);
+  return (ident *)set_hinsert0(id_set, str, len, ID_HASH(str, len));
 }
 
-void finish_ident (void) {
-  del_set(__id_set);
-  __id_set = NULL;
+/**
+ * Stores a string in the ident module and returns a handle for the string.
+ *
+ * @param handle   the handle for the set
+ * @param str      the string (or whatever) which shall be stored
+ * @param len      the length of the data in bytes
+ *
+ * Default implementation using libfirm sets.
+ */
+static ident *set_new_id_from_str(void *handle, const char *str)
+{
+  assert(str);
+  return (ident *)set_new_id_from_chars(handle, str, strlen(str));
 }
 
-ident *(new_id_from_chars)(const char *str, int len)
+/**
+ * Returns a string represented by an ident.
+ *
+ * @param handle   the handle for the set
+ * @param id       the ident
+ *
+ * Default implementation using libfirm sets.
+ */
+static const char *set_get_id_str(void *handle, ident *id)
 {
-  return __id_from_str(str, len);
+  struct set_entry *entry = (struct set_entry *)id;
+
+  return (const char *)entry->dptr;
+}
+
+/**
+ * Returns the length of the string represented by an ident.
+ *
+ * @param handle   the handle for the set
+ * @param id       the ident
+ *
+ * Default implementation using libfirm sets.
+ */
+static int set_get_id_strlen(void *handle, ident *id)
+{
+  struct set_entry *entry = (struct set_entry *)id;
+
+  return entry->size;
+}
+
+/**
+ * Default implementation using libfirm sets.
+ */
+void set_finish_ident(void *handle) {
+  set *id_set = handle;
+
+  del_set(id_set);
+}
+
+/**
+ * Default implementation if no new_id_from_str() is provided.
+ */
+static ident *def_new_id_from_str(void *handle, const char *str)
+{
+  return impl.new_id_from_chars(handle, str, strlen(str));
+}
+
+/**
+ * Default implementation if no get_id_strlen() is provided.
+ */
+static int def_get_id_strlen(void *handle, ident *id)
+{
+  return strlen(impl.get_id_str(handle, id));
+}
+
+/* Initialize the ident module. */
+void init_ident(ident_if_t *id_if, int initial_n_idents)
+{
+  if (id_if) {
+    memcpy(&impl, id_if, sizeof(impl));
+
+    if (! impl.new_id_from_str)
+      impl.new_id_from_str = def_new_id_from_str;
+    if (! impl.get_id_strlen)
+      impl.get_id_strlen = def_get_id_strlen;
+  }
+  else {
+   impl.new_id_from_str   = set_new_id_from_str;
+   impl.new_id_from_chars = set_new_id_from_chars;
+   impl.get_id_str        = set_get_id_str;
+   impl.get_id_strlen     = set_get_id_strlen;
+   impl.finish_ident      = set_finish_ident;
+
+   impl.handle = new_set(memcmp, initial_n_idents);
+  }
 }
 
 ident *new_id_from_str(const char *str)
 {
   assert(str);
-  return new_id_from_chars(str, strlen(str));
+  return impl.new_id_from_str(impl.handle, str);
 }
 
-const char *(get_id_str)(ident *id)
+ident *new_id_from_chars(const char *str, int len)
 {
-  return __get_id_str(id);
+  assert(len > 0);
+  return impl.new_id_from_chars(impl.handle, str, len);
 }
 
-int (get_id_strlen)(ident *id)
+const char *get_id_str(ident *id)
 {
-  return __get_id_strlen(id);
+  return impl.get_id_str(impl.handle, id);
+}
+
+int get_id_strlen(ident *id)
+{
+  return impl.get_id_strlen(impl.handle, id);
+}
+
+void finish_ident(void) {
+  if (impl.finish_ident)
+    impl.finish_ident(impl.handle);
 }
 
 int id_is_prefix(ident *prefix, ident *id)
 {
   if (get_id_strlen(prefix) > get_id_strlen(id)) return 0;
-  return 0 == memcmp(prefix->dptr, id->dptr, get_id_strlen(prefix));
+  return 0 == memcmp(get_id_str(prefix), get_id_str(id), get_id_strlen(prefix));
 }
 
 int id_is_suffix(ident *suffix, ident *id)
 {
   int suflen = get_id_strlen(suffix);
   int idlen  = get_id_strlen(id);
-  char *part;
+  const char *part;
 
   if (suflen > idlen) return 0;
 
-  part = (char *)id->dptr;
+  part = get_id_str(id);
   part = part + (idlen - suflen);
 
-  return 0 == memcmp(suffix->dptr, part, suflen);
+  return 0 == memcmp(get_id_str(suffix), part, suflen);
 }
 
 int id_contains_char(ident *id, char c)

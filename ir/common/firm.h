@@ -142,17 +142,17 @@ struct _firm_parameter_t {
   default_initialize_local_variable_func_t *initialize_local_func;
 
   /**
-   * The compare function is used to identify equal types.  If not set
-   * it is initialized with the function compare_strict().
+   * The interface functions for the type identification module.
+   * If not set, the default implementation with compare_strict() and
+   * hash_name() will be used.
    */
-  compare_types_func_t                     *compare_types_func;
-  /**
-   * The hash function is used to identify equal types.  It calculates a hash
-   * value of a type. Note, that the hash value for equal types must be identical.
-   * If not set it is initialized with the function hash_name().
-   */
-  hash_types_func_t                        *hash_types_func;
+  type_identify_if_t *ti_if;
 
+  /**
+   * The interface for the ident module.
+   * If not set, the default libFirm ident module (using hash sets).
+   */
+  ident_if_t *id_if;
 };
 
 

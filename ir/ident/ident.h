@@ -33,7 +33,52 @@
  *  An ident represents an unique string. The == operator
  *  is sufficient to compare two idents.
  */
-typedef const struct set_entry ident;
+typedef const struct ident ident;
+
+/**
+ * The ident module interface.
+ */
+typedef struct _ident_if_t {
+  /**
+   * Store a string and create an ident.
+   * This function may be NULL, new_id_from_chars()
+   * is then used to emulate it's behavior.
+   *
+   * @param str - the string which shall be stored
+   */
+  ident *(*new_id_from_str)(void *handle, const char *str);
+
+  /**
+   * Store a string and create an ident.
+   *
+   * @param str - the string (or whatever) which shall be stored
+   * @param len - the length of the data in bytes
+   */
+  ident *(*new_id_from_chars)(void *handle, const char *str, int len);
+
+  /**
+   * Returns a string represented by an ident.
+   */
+  const char *(*get_id_str)(void *handle, ident *id);
+
+  /**
+   * Returns the length of the string represented by an ident.
+   * This function may be NULL, get_id_str() is then used
+   * to emulate it's behavior.
+   *
+   * @param id - the ident
+   */
+  int  (*get_id_strlen)(void *handle, ident *id);
+
+  /**
+   * Finish the ident module and frees all idents, may be NULL.
+   */
+  void (*finish_ident)(void *handle);
+
+  /** The handle. */
+  void *handle;
+
+} ident_if_t;
 
 /**
  *  Store a string and create an ident.

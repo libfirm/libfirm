@@ -51,7 +51,7 @@ init_firm(const firm_parameter_t *param)
   }
 
   /* initialize all ident stuff */
-  init_ident(1024);
+  init_ident(def_params.id_if, 1024);
   /* enhanced statistics, need idents */
   init_stat(def_params.enable_statistics);
   /* create the type kinds. */
@@ -76,10 +76,9 @@ init_firm(const firm_parameter_t *param)
   /* Constructs some idents needed. */
   init_type();
   /* allocate a hash table. */
-  init_type_identify(def_params.compare_types_func, def_params.hash_types_func);
+  init_type_identify(def_params.ti_if);
   /* Init reflection facility. */
   init_rflct();
-
 }
 
 
