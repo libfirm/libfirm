@@ -4,8 +4,8 @@
  * @date 8.12.2004
  */
 
-#ifndef _BERA_H
-#define _BERA_H
+#ifndef _BERA_T_H
+#define _BERA_T_H
 
 #include "firm_config.h"
 #include "bitset.h"
