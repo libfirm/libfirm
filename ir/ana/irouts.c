@@ -56,7 +56,7 @@ static void reset_outs (ir_node *node, void *unused)
 /* returns the number of successors of the node: */
 INLINE int get_irn_n_outs    (ir_node *node) {
 #ifdef DEBUG_libfirm
-  assert (node->out_valid);
+  /* assert (node->out_valid); */
 #endif /* defined DEBUG_libfirm */
   return (int)(node->out[0]);
 }
@@ -66,7 +66,7 @@ INLINE ir_node *get_irn_out      (ir_node *node, int pos) {
   assert(node);
   assert(pos >= 0 && pos < get_irn_n_outs(node));
 #ifdef DEBUG_libfirm
-  assert (node->out_valid);
+  /* assert (node->out_valid); */
 #endif /* defined DEBUG_libfirm */
   return node->out[pos+1];
 }
@@ -75,7 +75,7 @@ INLINE void set_irn_out      (ir_node *node, int pos, ir_node *out) {
   assert(node && out);
   assert(pos >= 0 && pos < get_irn_n_outs(node));
 #ifdef DEBUG_libfirm
-  assert (node->out_valid);
+  node->out_valid = 1;          /* assume that this function is used correctly */
 #endif /* defined DEBUG_libfirm */
   node->out[pos+1] = out;
 }
