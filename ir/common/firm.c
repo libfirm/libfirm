@@ -29,39 +29,54 @@
 # include "firmstat.h"
 
 void
-init_firm (default_initialize_local_variable_func_t *func)
+init_firm(const firm_parameter_t *param)
 {
+  firm_parameter_t def_params;
+  unsigned int     size;
+
+  memset(&def_params, 0, sizeof(def_params));
+
+  if (param) {
+    /* check for reasonale size */
+    assert(param->size <= sizeof(def_params) && (param->size & 3) == 0 && "parameter struct not initialized ???");
+    size = sizeof(def_params);
+    if (param->size < size)
+      size = param->size;
+
+    memcpy(&def_params, param, size);
+  }
+
   /* initialize all ident stuff */
-  id_init (1024);
+  id_init(1024);
   /* enhanced statistics, need idents */
-  stat_init();
+  stat_init(def_params.enable_statistics);
   /* create the type kinds. */
-  init_tpop ();
+  init_tpop();
   /* create an obstack and put all tarvals in a pdeq */
-  init_tarval_1 ();
+  init_tarval_1();
   /* initialize all modes an ir node can consist of */
-  init_mode ();
+  init_mode();
   /* initialize tarvals, and floating point arithmetic */
-  init_tarval_2 ();
+  init_tarval_2();
   /* init graph construction */
   init_irgraph();
   /* kind of obstack initialization */
-  init_mangle ();
+  init_mangle();
   /* initalize all op codes an irnode can consist of */
-  init_op ();
+  init_op();
   /* called once for each run of this library */
-  init_cons (func);
+  init_cons(def_params.initialize_local_func);
   /* Builds a construct allowing to access all information to be constructed
      later. */
-  init_irprog ();
+  init_irprog();
   /* Constructs some idents needed. */
   init_type();
   /* allocate a hash table. */
-  init_type_identify();
+  init_type_identify(def_params.compare_types_func, def_params.hash_types_func);
 }
 
 
-void free_firm (void) {
+void free_firm(void) {
   int i;
 
   for (i = 0; i < get_irp_n_irgs(); i++)
