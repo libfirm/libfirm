@@ -34,16 +34,16 @@
 # define _TYPE_H_
 
 # include "tpop.h"
-# include "common.h"
+# include "firm_common.h"
 # include "ident.h"
 # include "irmode.h"
 # include "bool.h"
 # include "dbginfo.h"
 
 
+/* to resolve recursion between entity.h and type.h */
 #ifndef _ENTITY_TYPEDEF_
 #define _ENTITY_TYPEDEF_
-/* to resolve recursion between entity.h and type.h */
 typedef struct entity entity;
 #endif
 
@@ -385,8 +385,8 @@ INLINE void        set_class_peculiarity (type *clss, peculiarity pec);
 
 /* Set and get a class' dfn --
    @@@ This is an undocumented field, subject to change! */
-void set_class_dfn (type*, int);
-int  get_class_dfn (type*);
+void set_class_dfn (type *clss, int dfn);
+int  get_class_dfn (type *clss);
 
 /* typecheck */
 bool is_class_type(type *clss);
@@ -465,11 +465,11 @@ type *new_d_type_method (ident *name, int n_param, int n_res, dbg_info* db);
 /* manipulate private fields of method. */
 int   get_method_n_params  (type *method);
 type *get_method_param_type(type *method, int pos);
-void  set_method_param_type(type *method, int pos, type* type);
+void  set_method_param_type(type *method, int pos, type* tp);
 
 int   get_method_n_ress   (type *method);
 type *get_method_res_type(type *method, int pos);
-void  set_method_res_type(type *method, int pos, type* type);
+void  set_method_res_type(type *method, int pos, type* tp);
 
 /* typecheck */
 bool  is_method_type     (type *method);
@@ -549,7 +549,7 @@ ir_node * get_array_upper_bound  (type *array, int dimension);
 void set_array_order (type *array, int dimension, int order);
 int  get_array_order (type *array, int dimension);
 
-void  set_array_element_type (type *array, type *type);
+void  set_array_element_type (type *array, type *tp);
 type *get_array_element_type (type *array);
 
 void  set_array_element_entity (type *array, entity *ent);
@@ -606,7 +606,7 @@ type *new_type_pointer           (ident *name, type *points_to);
 type *new_d_type_pointer           (ident *name, type *points_to, dbg_info* db);
 
 /* manipulate fields of type_pointer */
-void  set_pointer_points_to_type (type *pointer, type *type);
+void  set_pointer_points_to_type (type *pointer, type *tp);
 type *get_pointer_points_to_type (type *pointer);
 
 /* typecheck */

@@ -552,16 +552,16 @@ bool equal_entity(entity *ent1, entity *ent2) {
 }
 
 
-unsigned long get_entity_visited(entity *entity) {
-  assert (entity);
-  return entity->visit;
+unsigned long get_entity_visited(entity *ent) {
+  assert (ent);
+  return ent->visit;
 }
-void        set_entity_visited(entity *entity, unsigned long num) {
-  assert (entity);
-  entity->visit = num;
+void        set_entity_visited(entity *ent, unsigned long num) {
+  assert (ent);
+  ent->visit = num;
 }
 /* Sets visited field in entity to entity_visited. */
-void        mark_entity_visited(entity *entity) {
-  assert (entity);
-  entity->visit = type_visited;
+void        mark_entity_visited(entity *ent) {
+  assert (ent);
+  ent->visit = type_visited;
 }

@@ -864,11 +864,11 @@ get_SymConst_type (ir_node *node) {
 }
 
 INLINE void
-set_SymConst_type (ir_node *node, type *type) {
+set_SymConst_type (ir_node *node, type *tp) {
   assert (   (node->op == op_SymConst)
           && (   get_SymConst_kind(node) == type_tag
               || get_SymConst_kind(node) == size));
-  node->attr.i.tori.typ = type;
+  node->attr.i.tori.typ = tp;
 }
 
 INLINE ident *
@@ -1073,10 +1073,10 @@ get_Call_type (ir_node *node) {
 }
 
 INLINE void
-set_Call_type (ir_node *node, type *type) {
+set_Call_type (ir_node *node, type *tp) {
   assert (node->op == op_Call);
-  assert (is_method_type(type));
-  node->attr.call.cld_tp = type;
+  assert (is_method_type(tp));
+  node->attr.call.cld_tp = tp;
 }
 
 int get_Call_n_callees(ir_node * node) {
@@ -1918,9 +1918,9 @@ get_Alloc_type (ir_node *node) {
 }
 
 INLINE void
-set_Alloc_type (ir_node *node, type *type) {
+set_Alloc_type (ir_node *node, type *tp) {
   assert (node->op == op_Alloc);
-  node->attr.a.type = type;
+  node->attr.a.type = tp;
 }
 
 INLINE where_alloc
@@ -1979,9 +1979,9 @@ get_Free_type (ir_node *node) {
 }
 
 INLINE void
-set_Free_type (ir_node *node, type *type) {
+set_Free_type (ir_node *node, type *tp) {
   assert (node->op == op_Free);
-  node->attr.f = type;
+  node->attr.f = tp;
 }
 
 INLINE ir_node **

@@ -28,7 +28,7 @@
 # include "typewalk.h"
 # include "irouts.h"
 # include "irdom.h"
-# include "common_t.h"
+# include "firm_common_t.h"
 # include  "irloop.h"
 
 # include "exc.h"
@@ -1501,7 +1501,7 @@ void dump_cg_block_graph(ir_graph * irg) {
 
   vcg_open(irg, "");
 
-  irg_walk_graph(irg, clear_link, (irg_walk_func) collect_blocks_floats_cg, map);
+  irg_walk_graph(irg, clear_link, (irg_walk_func *) collect_blocks_floats_cg, map);
   for (entry = pmap_first(map); entry; entry = pmap_next(map))
     pmap_insert(map2, entry->key, entry->value);
   for (entry = pmap_first(map); entry; entry = pmap_next(map)) {
@@ -1574,7 +1574,7 @@ void dump_cg_graph(ir_graph * irg) {
   pmap_entry * entry;
   vcg_open(irg, "");
 
-  irg_walk_graph(irg, clear_link, (irg_walk_func) collect_blocks_floats_cg, map);
+  irg_walk_graph(irg, clear_link, (irg_walk_func *) collect_blocks_floats_cg, map);
   for (entry = pmap_first(map); entry; entry = pmap_next(map))
     pmap_insert(map2, entry->key, entry->value);
   for (entry = pmap_first(map); entry; entry = pmap_next(map)) {

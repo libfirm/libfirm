@@ -8,7 +8,7 @@
 
 /* $Id$ */
 
-#include "common.h"
+#include "firm_common.h"
 #include "irloop.h"
 
 #ifndef _IRLOOP_T_H_

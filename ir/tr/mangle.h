@@ -20,7 +20,7 @@ void init_mangle (void);
 ident *mangle_entity (entity *ent);
 
 /* Sorry, I'm not sure what this does... seems to copy the string. */
-ident *mangle_type   (type *type);
+ident *mangle_type   (type *tp);
 
 /* mangle underscore: Returns a new ident that represents first_scnd. */
 ident *mangle_u (ident *first, ident* scnd);

@@ -239,7 +239,7 @@ static void sel_methods_init(void) {
       pmap_insert(ldname_map, (void *) get_entity_ld_ident(ent), ent);
     }
   }
-  all_irg_walk((irg_walk_func) sel_methods_walker, NULL, ldname_map);
+  all_irg_walk((irg_walk_func *) sel_methods_walker, NULL, ldname_map);
   pmap_destroy(ldname_map);
 }
 
@@ -622,7 +622,7 @@ static entity ** get_free_methods(void) {
     if (get_entity_visibility(ent) != local) {
       eset_insert(set, ent);
     }
-    irg_walk_graph(irg, NULL, (irg_walk_func) free_ana_walker, set);
+    irg_walk_graph(irg, NULL, (irg_walk_func *) free_ana_walker, set);
   }
   /* Hauptprogramm ist auch frei, auch wenn es nicht "external
    * visible" ist. */
@@ -676,7 +676,7 @@ void opt_call_addrs(void) {
       pmap_insert(ldname_map, (void *) get_entity_ld_ident(ent), ent);
     }
   }
-  all_irg_walk((irg_walk_func) sel_methods_walker, NULL, ldname_map);
+  all_irg_walk((irg_walk_func *) sel_methods_walker, NULL, ldname_map);
   pmap_destroy(ldname_map);
 #endif
 }

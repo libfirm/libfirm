@@ -47,7 +47,7 @@ void gc_irgs(int n_keep, entity ** keep_arr) {
       ir_graph * irg = get_entity_irg(marked[i]);
       ir_node * node = get_irg_end(irg);
       /* collect calls */
-      irg_walk_graph(irg, clear_link, (irg_walk_func) collect_call, node);
+      irg_walk_graph(irg, clear_link, (irg_walk_func *) collect_call, node);
       /* iterate calls */
       for (node = get_irn_link(node); node; node = get_irn_link(node)) {
 	int i;

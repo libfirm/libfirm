@@ -51,15 +51,12 @@ Discussion of new interface, proposals by Prof. Waite:
 typedef struct tarval tarval;
 #endif
 
-#include "gmp.h"
-#undef __need_size_t		/* erroneously defined by 1.3.2's gmp.h */
-
 /* how to represent target types on host */
 typedef float  tarval_f;
 typedef double tarval_d;
 typedef long   tarval_chil;
 typedef unsigned long tarval_CHIL;
-typedef MP_INT tarval_Z;
+typedef int tarval_Z;   /* Do not use!!! */
 typedef struct {
   /* if ent then xname is missing or mangled from ent,
      else if xname then xname is a linker symbol that is not mangled
@@ -83,7 +80,7 @@ struct tarval {
     tarval_d d;			/* double */
     tarval_chil chil;		/* signed integral */
     tarval_CHIL CHIL;		/* unsigned integral */
-    tarval_Z Z;                 /* universal int */
+    tarval_Z Z;                 /* @@@ Do not use!!! universal int */
     tarval_p p;			/* pointer */
     bool b;			/* boolean */
     tarval_B B;			/* universal bits */
@@ -91,6 +88,7 @@ struct tarval {
   } u;
   ir_mode *mode;
 };
+
 
 extern tarval *tarval_bad;                  tarval *get_tarval_bad();
 /* We should have a tarval_undefined */
@@ -107,34 +105,27 @@ extern tarval *tarval_mode_max[];           tarval *get_tarval_mode_max (ir_mode
 void tarval_init_1 (void);
 void tarval_init_2 (void);
 
-/* Hash function on tarvals */
-unsigned tarval_hash (tarval *);
-
 /* ************************ Constructors for tarvals ************************ */
-tarval *tarval_Z_from_str (const char *, size_t, int base);
-tarval *tarval_B_from_str (const char *, size_t);
-tarval *tarval_f_from_str (const char *, size_t);
-tarval *tarval_d_from_str (const char *, size_t);
-tarval *tarval_s_from_str (const char *, size_t);
-tarval *tarval_S_from_str (const char *, size_t);
-tarval *tarval_int_from_str (const char *, size_t, int base, ir_mode *m);
-tarval *tarval_from_long  (ir_mode *, long);
+/*tarval *tarval_Z_from_str (const char *s, size_t len, int base);*/
+tarval *tarval_f_from_str (const char *s, size_t len);
+tarval *tarval_d_from_str (const char *s, size_t len);
+tarval *tarval_int_from_str (const char *s, size_t len, int base, ir_mode *m);
+tarval *tarval_from_long  (ir_mode *m, long val);
 
-tarval *tarval_p_from_str (const char *);
+tarval *tarval_p_from_str (const char *xname);
 /* The tarval represents the address of the entity.  As the address must
    be constant the entity must have as owner the global type. */
-tarval *tarval_p_from_entity (entity *);
+tarval *tarval_p_from_entity (entity *ent);
 
-tarval *tarval_convert_to (tarval *, ir_mode *);
+tarval *tarval_convert_to (tarval *src, ir_mode *m);
 
 /* Building an irm_C, irm_s, irm_S or irm_B target value step by step. */
 void tarval_start (void);
-void tarval_append (const char *, size_t);
-void tarval_append1 (char);
-tarval *tarval_finish_as (ir_mode *);
+void tarval_append (const char *p, size_t n);
+void tarval_append1 (char ch);
+tarval *tarval_finish_as (ir_mode *m);
 tarval *tarval_cancel (void); /* returns tarval_bad */
 
-
 /* The flags for projecting a comparison result */
 typedef enum {
   irpn_False=0,		/* 0000 false */
@@ -152,9 +143,10 @@ typedef enum {
   irpn_Ug,		/* 1100 unordered or greater */
   irpn_Uge,		/* 1101 unordered, greater or equal */
   irpn_Ne,		/* 1110 unordered, less or greater = not equal */
-  irpn_True,		/* 1111 true */
-  irpn_notmask = irpn_Leg
+  irpn_True		/* 1111 true */
+  /*irpn_notmask = irpn_Leg  @@@ removed for JNI builder */
 } ir_pncmp;
+#define irpn_notmask irpn_Leg
 
 /* ******************** Arithmethic operations on tarvals ******************** */
 /* Compare a with b and return an ir_pncmp describing the relation
@@ -163,37 +155,36 @@ typedef enum {
 ir_pncmp tarval_comp (tarval *a, tarval *b);
 
 tarval *tarval_neg (tarval *a);
-tarval *tarval_add (tarval *, tarval *);
-tarval *tarval_sub (tarval *, tarval *);
-tarval *tarval_mul (tarval *, tarval *);
-tarval *tarval_quo (tarval *, tarval *);
-tarval *tarval_div (tarval *, tarval *);
-tarval *tarval_mod (tarval *, tarval *);
-tarval *tarval_abs (tarval *);
-tarval *tarval_and (tarval *, tarval *);
-tarval *tarval_or  (tarval *, tarval *);
-tarval *tarval_eor (tarval *, tarval *);
-tarval *tarval_shl (tarval *, tarval *);
-tarval *tarval_shr (tarval *, tarval *);
+tarval *tarval_add (tarval *a, tarval *b);
+tarval *tarval_sub (tarval *a, tarval *b);
+tarval *tarval_mul (tarval *a, tarval *b);
+tarval *tarval_quo (tarval *a, tarval *b);
+tarval *tarval_div (tarval *a, tarval *b);
+tarval *tarval_mod (tarval *a, tarval *b);
+tarval *tarval_abs (tarval *a);
+tarval *tarval_and (tarval *a, tarval *b);
+tarval *tarval_or  (tarval *a, tarval *b);
+tarval *tarval_eor (tarval *a, tarval *b);
+tarval *tarval_shl (tarval *a, tarval *b);
+tarval *tarval_shr (tarval *a, tarval *b);
 
 /* Identifying some tarvals */
-long tarval_classify (tarval *);
-long tarval_ord (tarval *, int *fail);
-
-/* moved to tv_t.h
-   int tarval_print (XP_PAR1, const xprintf_info *, XP_PARN); */
+long tarval_classify (tarval *tv);
+long tarval_ord (tarval *tv, int *fail);
 
 /* return a mode-specific value */
-
 tarval_f tv_val_f (tarval *tv);
 tarval_d tv_val_d (tarval *tv);
 tarval_chil tv_val_chil (tarval *tv);
 tarval_CHIL tv_val_CHIL (tarval *tv);
-tarval_Z tv_val_Z (tarval *tv);
-tarval_p tv_val_p (tarval *tv);
+/*tarval_Z tv_val_Z (tarval *tv);*/
+/* @@@ temporarily removed.
+   jni builder can not deal with the return value.
+   All definitions of types are interpreted as pointer values until
+   type analysis exists for crecoder.
+   tarval_p tv_val_p (tarval *tv);
+*/;
 bool     tv_val_b (tarval *tv);
-tarval_B tv_val_B (tarval *tv);
-tarval_s tv_val_s (tarval *tv);
 
 ir_mode *get_tv_mode (tarval *tv);
 /* Returns the entity if the tv is a pointer to an entity, else

@@ -43,16 +43,16 @@ mangle_entity (entity *ent)
 }
 
 ident *
-mangle_type (type *type)
+mangle_type (type *tp)
 {
   char *cp;
   int len;
   ident *res;
 
-  assert (type->kind == k_type);
-  /* assert (type->type_op->code == tpo_class); */
+  assert (tp->kind == k_type);
+  /* assert (tp->type_op->code == tpo_class); */
 
-  xoprintf (&mangle_obst, "%I", type->name);
+  xoprintf (&mangle_obst, "%I", tp->name);
   len = obstack_object_size (&mangle_obst);
   cp = obstack_finish (&mangle_obst);
   res = id_from_str (cp, len);

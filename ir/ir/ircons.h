@@ -583,7 +583,7 @@
  *      attr.con   A tarval* pointer to the proper entry in the constant
  *                 table.
  *
- *    ir_node *new_SymConst (type *type, symconst_kind kind)
+ *    ir_node *new_SymConst (type *tp, symconst_kind kind)
  *    ------------------------------------------------------------
  *
  *    There are three kinds of symbolic constants:
@@ -1074,7 +1074,7 @@
 # ifndef _IRCONS_H_
 # define _IRCONS_H_
 
-# include "common.h"
+# include "firm_common.h"
 # include "irgraph.h"
 # include "irnode.h"
 # include "irmode.h"
@@ -1108,7 +1108,7 @@ ir_node *new_rd_Sel    (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *st
 		       entity *ent);
 ir_node *new_rd_Call   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
 		       ir_node *callee, int arity, ir_node **in,
-		       type *type);
+		       type *tp);
 ir_node *new_rd_Add    (dbg_info *db, ir_graph *irg, ir_node *block,
 		       ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_rd_Sub    (dbg_info *db, ir_graph *irg, ir_node *block,
@@ -1200,7 +1200,7 @@ ir_node *new_r_Sel    (ir_graph *irg, ir_node *block, ir_node *store,
 		       entity *ent);
 ir_node *new_r_Call   (ir_graph *irg, ir_node *block, ir_node *store,
 		       ir_node *callee, int arity, ir_node **in,
-		       type *type);
+		       type *tp);
 ir_node *new_r_Add    (ir_graph *irg, ir_node *block,
 		       ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_r_Sub    (ir_graph *irg, ir_node *block,
@@ -1293,7 +1293,7 @@ ir_node *new_d_simpleSel(dbg_info* db, ir_node *store, ir_node *objptr, entity *
 ir_node *new_d_Sel    (dbg_info* db, ir_node *store, ir_node *objptr, int arity, ir_node **in,
                      entity *ent);
 ir_node *new_d_Call   (dbg_info* db, ir_node *store, ir_node *callee, int arity, ir_node **in,
-		     type *type);
+		     type *tp);
 ir_node *new_d_Add    (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_d_Sub    (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_d_Minus  (dbg_info* db, ir_node *op,  ir_mode *mode);
@@ -1360,7 +1360,7 @@ ir_node *new_Sel    (ir_node *store, ir_node *objptr, int arity, ir_node **in,
                      entity *ent);
 ir_node *new_InstOf (ir_node *store, ir_node *objptr, type *ent);
 ir_node *new_Call   (ir_node *store, ir_node *callee, int arity, ir_node **in,
-		     type *type);
+		     type *tp);
 ir_node *new_CallBegin(ir_node *callee);
 ir_node *new_Add    (ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_Sub    (ir_node *op1, ir_node *op2, ir_mode *mode);

@@ -33,12 +33,6 @@
 
 # include "entity.h"
 
-#ifndef _IR_GRAPH_TYPEDEF_
-#define _IR_GRAPH_TYPEDEF_
-/* to resolve recursion between entity.h and irgraph.h */
-typedef struct ir_graph ir_graph;
-#endif
-
 struct entity {
   firm_kind kind;
   ident *name;          /* name of this entity */

@@ -247,7 +247,8 @@ void dump_all_cg_block_graph();
  *  turn_of_edge_labels
  ***
  */
-void dump_all_ir_graphs (void dump_graph(ir_graph*));
+typedef void (dump_graph_func)(ir_graph *);
+void dump_all_ir_graphs (dump_graph_func *dump_graph);
 
 /****m* irdump/turn_off_edge_labels
  *

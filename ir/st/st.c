@@ -1,6 +1,6 @@
 /* Copyright (c) 2002 by Universität Karlsruhe (TH).  All Rights Reserved */
 /*
-** Time-stamp: <Friday, 05.07.2002, 11:06:38 goetz@i44pc2.info.uni-karlsruhe.de>
+** Time-stamp: <Thursday, 31.10.2002, 16:03:00 goetz@i44pc2.info.uni-karlsruhe.de>
 */
 
 /***
@@ -326,7 +326,7 @@ static void update_dominators (ir_node *block, void *env)
 
   if (new_mask != old_mask)
 	{
-	  w->changed = TRUE;
+	  w->changed = true;
 	  _set_mask (dt, block_index, new_mask);
 
 # ifdef VERBOSE_libfirm
@@ -505,7 +505,7 @@ void build_dominator_tree (ir_graph *graph)
 
   w->dt          = dt;
   w->start_block = start_block;
-  w->changed     = TRUE;	/* at least one walk */
+  w->changed     = true;	/* at least one walk */
 
   /* do the walk: */
   {
@@ -513,7 +513,7 @@ void build_dominator_tree (ir_graph *graph)
 
 	while (w->changed)
 	  {
-		w->changed = FALSE;
+		w->changed = false;
 		irg_block_walk (end_block, update_dominators, update_dominators, (void*) w);
 		walks ++;
 	  }

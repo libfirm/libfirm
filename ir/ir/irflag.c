@@ -13,7 +13,7 @@
 #endif
 
 #include "irflag.h"
-#include "common.h"
+#include "firm_common.h"
 
 
 /* 0 - don't do this optimization

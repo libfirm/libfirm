@@ -19,7 +19,7 @@
 # include "irnode_t.h"
 # include "irmode_t.h"
 # include "ircons.h"
-# include "common_t.h"
+# include "firm_common_t.h"
 # include "irvrfy.h"
 # include "irop.h"
 # include "iropt_t.h"
@@ -434,7 +434,7 @@ new_rd_Cond (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *c)
 
 ir_node *
 new_rd_Call (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *store,
-	    ir_node *callee, int arity, ir_node **in, type *type)
+	    ir_node *callee, int arity, ir_node **in, type *tp)
 {
   ir_node **r_in;
   ir_node *res;
@@ -448,8 +448,8 @@ new_rd_Call (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *store,
 
   res = new_ir_node (db, irg, block, op_Call, mode_T, r_arity, r_in);
 
-  assert(is_method_type(type));
-  set_Call_type(res, type);
+  assert(is_method_type(tp));
+  set_Call_type(res, tp);
   res->attr.call.callee_arr = NULL;
   res = optimize (res);
   irn_vrfy (res);
@@ -750,8 +750,8 @@ INLINE ir_node *new_r_InstOf (ir_graph *irg, ir_node *block, ir_node *store, ir_
 }
 INLINE ir_node *new_r_Call   (ir_graph *irg, ir_node *block, ir_node *store,
 		       ir_node *callee, int arity, ir_node **in,
-		       type *type) {
-  return new_rd_Call(NULL, irg, block, store, callee, arity, in, type);
+		       type *tp) {
+  return new_rd_Call(NULL, irg, block, store, callee, arity, in, tp);
 }
 INLINE ir_node *new_r_Add    (ir_graph *irg, ir_node *block,
 		       ir_node *op1, ir_node *op2, ir_mode *mode) {
@@ -1914,11 +1914,11 @@ new_d_Cond (dbg_info* db, ir_node *c)
 
 ir_node *
 new_d_Call (dbg_info* db, ir_node *store, ir_node *callee, int arity, ir_node **in,
-	  type *type)
+	  type *tp)
 {
   ir_node *res;
   res = new_rd_Call (db, current_ir_graph, current_ir_graph->current_block,
-		     store, callee, arity, in, type);
+		     store, callee, arity, in, tp);
 #if PRECISE_EXC_CONTEXT
   if ((current_ir_graph->phase_state == phase_building) &&
       (get_irn_op(res) == op_Call))  /* Could be optimized away. */
@@ -2236,7 +2236,7 @@ ir_node *new_Jmp    (void) {
 ir_node *new_Cond   (ir_node *c) {
   return new_d_Cond(NULL, c);
 }
-ir_node *new_Return (ir_node *store, int arity, ir_node **in) {
+ir_node *new_Return (ir_node *store, int arity, ir_node *in[]) {
   return new_d_Return(NULL, store, arity, in);
 }
 ir_node *new_Raise  (ir_node *store, ir_node *obj) {
@@ -2259,8 +2259,8 @@ ir_node *new_InstOf (ir_node *store, ir_node *objptr, type *ent) {
   return (new_d_InstOf (NULL, store, objptr, ent));
 }
 ir_node *new_Call   (ir_node *store, ir_node *callee, int arity, ir_node **in,
-		     type *type) {
-  return new_d_Call(NULL, store, callee, arity, in, type);
+		     type *tp) {
+  return new_d_Call(NULL, store, callee, arity, in, tp);
 }
 ir_node *new_Add    (ir_node *op1, ir_node *op2, ir_mode *mode) {
   return new_d_Add(NULL, op1, op2, mode);

@@ -79,26 +79,26 @@ extern ir_mode *mode_R; /* block */
 extern ir_mode *mode_Z; /* infinit integers */ /* oblivious */
 
 /* Access routines for JNI Interface */
-ir_mode *get_mode_T();
-ir_mode *get_mode_f();
-ir_mode *get_mode_d();
-ir_mode *get_mode_c();
-ir_mode *get_mode_C();
-ir_mode *get_mode_h();
-ir_mode *get_mode_H();
-ir_mode *get_mode_i();
-ir_mode *get_mode_I();
-ir_mode *get_mode_l();
-ir_mode *get_mode_L();
-ir_mode *get_mode_B();
-ir_mode *get_mode_p();
-ir_mode *get_mode_b();
-ir_mode *get_mode_s();
-ir_mode *get_mode_S();
-ir_mode *get_mode_X();
-ir_mode *get_mode_M();
-ir_mode *get_mode_R();
-ir_mode *get_mode_Z();
+ir_mode *get_modeT();
+ir_mode *get_modef();
+ir_mode *get_moded();
+ir_mode *get_modec();
+ir_mode *get_modeC();
+ir_mode *get_modeh();
+ir_mode *get_modeH();
+ir_mode *get_modei();
+ir_mode *get_modeI();
+ir_mode *get_model();
+ir_mode *get_modeL();
+ir_mode *get_modeB();
+ir_mode *get_modep();
+ir_mode *get_modeb();
+ir_mode *get_modes();
+ir_mode *get_modeS();
+ir_mode *get_modeX();
+ir_mode *get_modeM();
+ir_mode *get_modeR();
+ir_mode *get_modeZ();
 
 /* An enum for this mode */
 modecode get_mode_modecode (ir_mode *mode);

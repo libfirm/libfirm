@@ -27,9 +27,9 @@
 typedef struct ir_node ir_node;
 #endif
 
+/* to resolve recursion between entity.h and type.h */
 #ifndef _ENTITY_TYPEDEF_
 #define _ENTITY_TYPEDEF_
-/* to resolve recursion between entity.h and type.h */
 typedef struct entity entity;
 #endif
 
@@ -150,11 +150,12 @@ static const char* dbg_action_2_str(dbg_action a) {
  *   No result.
  ***
  */
-void dbg_init( void (merge_pair)(ir_node *nw, ir_node *old, dbg_action info),
-	       void (merge_sets)(ir_node **new_nodes, int n_new_nodes,
-				 ir_node **old_nodes, int n_old_nodes,
-				 dbg_action info)
-	       );
+
+
+typedef void (merge_pair_func)(ir_node *, ir_node *, dbg_action);
+typedef void (merge_sets_func)(ir_node **, int, ir_node **, int, dbg_action);
+
+void dbg_init(merge_pair_func *mpf, merge_sets_func *msf);
 
 
 #endif /* _DBGINFO_H_ */

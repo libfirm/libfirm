@@ -63,9 +63,9 @@ void init_entity (void);
 /** ENTITY                                                        **/
 /*******************************************************************/
 
+/* to resolve recursion between entity.h and irgraph.h */
 #ifndef _IR_GRAPH_TYPEDEF_
 #define _IR_GRAPH_TYPEDEF_
-/* to resolve recursion between entity.h and irgraph.h */
 typedef struct ir_graph ir_graph;
 #endif
 
@@ -113,9 +113,9 @@ typedef struct ir_graph ir_graph;
  * SOURCE
  */
 
+/* to resolve recursion between entity.h and type.h */
 #ifndef _ENTITY_TYPEDEF_
 #define _ENTITY_TYPEDEF_
-/* to resolve recursion between entity.h and type.h */
 typedef struct entity entity;
 #endif
 
@@ -298,10 +298,10 @@ int is_compound_entity(entity *ent);
 bool equal_entity(entity *ent1, entity *ent2);
 
 
-unsigned long get_entity_visited(entity *entity);
-void        set_entity_visited(entity *entity, unsigned long num);
+unsigned long get_entity_visited(entity *ent);
+void        set_entity_visited(entity *ent, unsigned long num);
 /* Sets visited field in entity to entity_visited. */
-void        mark_entity_visited(entity *entity);
+void        mark_entity_visited(entity *ent);
 
 
 /*****/

@@ -1,6 +1,6 @@
 /* Copyright (c) 2002 by Universität Karlsruhe (TH).  All Rights Reserved */
 /*
-** Time-stamp: <Friday, 05.07.2002, 11:09:07 goetz@i44pc2.info.uni-karlsruhe.de>
+** Time-stamp: <Monday, 04.11.2002, 17:28:27 goetz@i44pc2.info.uni-karlsruhe.de>
 */
 
 /***
@@ -115,7 +115,7 @@ bool is_handler_entry (ir_graph *graph, ir_node *block)
 
   if (exc_invalid == get_Block_exc (block))
 	{
-	  for (i = 0; (i < n) && is_entry; i ++)
+	  for (i = 0; (i < n) && (is_entry == true); i ++)
 		if (is_exc_jmp (get_irn_n (block, i)))
 		  continue;
 		else
@@ -145,7 +145,7 @@ bool is_region_entry  (ir_graph *graph, ir_node *block)
 
 	  bool no_handler = true;
 
-	  for (i = 0; (i < n) && no_handler; i ++)
+	  for (i = 0; (i < n) && (no_handler == true); i ++)
 		{
 		  succ = get_irn_out (block, i);
 
@@ -159,7 +159,7 @@ bool is_region_entry  (ir_graph *graph, ir_node *block)
 
   return (exc_region == get_Block_exc (block));
 
-  return (TRUE);
+  return (true);
 }
 
 /*
@@ -181,7 +181,7 @@ bool is_handler_block (ir_graph *graph, ir_node *block)
 	  int n_blocks    = env->dt->n_blocks;
 	  int i           = 0;
 
-	  for (i = 0; (i < n_blocks) && no_handler; i ++)
+	  for (i = 0; (i < n_blocks) && (no_handler == true); i ++)
 		if (0 != (env->dt->masks [i] & block_mask)) /* if dominator */
 		  if (is_handler_entry (graph, env->dt->blocks [i])) /* is handler entry */
 			no_handler = false;

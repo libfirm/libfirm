@@ -15,7 +15,6 @@
 # include "irgraph.h"
 # include "irnode.h"
 
-
 /**********************************************************************/
 /** Accessing the out datastructures.                                **/
 /** These routines only work properly if the ir_graph is in state    **/
@@ -37,18 +36,22 @@ int             get_Block_n_cfg_outs (ir_node *node);
 /* Access predecessor n. */
 INLINE ir_node *get_Block_cfg_out  (ir_node *node, int pos);
 
+#ifndef _IRG_WALK_FUNC_TYPEDEF_
+#define _IRG_WALK_FUNC_TYPEDEF_
+typedef void (irg_walk_func)(ir_node *, void *);
+#endif
 
 /* Walks over the graph starting at node.  Walks also if graph is in state
    "outs_inconsistent".  Assumes current_ir_graph is set properly. */
 void irg_out_walk(ir_node *node,
-		  void (pre)(ir_node*, void*), void (post)(ir_node*, void*),
+		  irg_walk_func *pre, irg_walk_func *post,
 		  void *env);
 
 /* Walks only over Block nodes in the graph.  Has it's own visited
    flag, so that it can be interleaved with the other walker.
    node must be either op_Block or mode_X.  */
 void irg_out_block_walk(ir_node *node,
-			void (pre)(ir_node*, void*), void (post)(ir_node*, void*),
+			irg_walk_func *pre, irg_walk_func *post,
 			void *env);
 
 /**********************************************************************/

@@ -5,7 +5,7 @@
 # define _IRPROG_T_H_
 
 #include "irprog.h"
-#include "common_t.h"
+#include "firm_common_t.h"
 
 struct ir_prog {
   firm_kind kind;

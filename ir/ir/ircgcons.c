@@ -132,7 +132,7 @@ static void collect_phicallproj(void) {
     link(start, get_irg_frame(irg));
     link(start, get_irg_globals(irg));
     /* walk */
-    irg_walk_graph(irg, clear_link, (irg_walk_func) collect_phicallproj_walker, &end);
+    irg_walk_graph(irg, clear_link, (irg_walk_func *) collect_phicallproj_walker, &end);
   }
 }
 

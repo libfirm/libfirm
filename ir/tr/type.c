@@ -793,10 +793,10 @@ type *get_method_param_type(type *method, int pos) {
   assert(pos >= 0 && pos < get_method_n_params(method));
   return method->attr.ma.param_type[pos] = skip_tid(method->attr.ma.param_type[pos]);
 }
-void  set_method_param_type(type *method, int pos, type* type) {
+void  set_method_param_type(type *method, int pos, type* tp) {
   assert(method && (method->type_op == type_method));
   assert(pos >= 0 && pos < get_method_n_params(method));
-  method->attr.ma.param_type[pos] = type;
+  method->attr.ma.param_type[pos] = tp;
 }
 
 int   get_method_n_ress   (type *method) {
@@ -808,10 +808,10 @@ type *get_method_res_type(type *method, int pos) {
   assert(pos >= 0 && pos < get_method_n_ress(method));
   return method->attr.ma.res_type[pos] = skip_tid(method->attr.ma.res_type[pos]);
 }
-void  set_method_res_type(type *method, int pos, type* type) {
+void  set_method_res_type(type *method, int pos, type* tp) {
   assert(method && (method->type_op == type_method));
   assert(pos >= 0 && pos < get_method_n_ress(method));
-  method->attr.ma.res_type[pos] = type;
+  method->attr.ma.res_type[pos] = tp;
 }
 
 /* typecheck */
@@ -854,10 +854,10 @@ type  *get_union_unioned_type (type *uni, int pos) {
   assert(pos >= 0 && pos < get_union_n_types(uni));
   return uni->attr.ua.unioned_type[pos] = skip_tid(uni->attr.ua.unioned_type[pos]);
 }
-void   set_union_unioned_type (type *uni, int pos, type *type) {
+void   set_union_unioned_type (type *uni, int pos, type *tp) {
   assert(uni && (uni->type_op == type_union));
   assert(pos >= 0 && pos < get_union_n_types(uni));
-  uni->attr.ua.unioned_type[pos] = type;
+  uni->attr.ua.unioned_type[pos] = tp;
 }
 ident *get_union_delim_nameid (type *uni, int pos) {
   assert(uni && (uni->type_op == type_union));
@@ -1015,10 +1015,10 @@ int  get_array_order (type *array, int dimension) {
   return array->attr.aa.order[dimension];
 }
 
-void  set_array_element_type (type *array, type *type) {
+void  set_array_element_type (type *array, type *tp) {
   assert(array && (array->type_op == type_array));
-  assert(!is_method_type(type));
-  array->attr.aa.element_type = type;
+  assert(!is_method_type(tp));
+  array->attr.aa.element_type = tp;
 }
 type *get_array_element_type (type *array) {
   assert(array && (array->type_op == type_array));
@@ -1131,9 +1131,9 @@ INLINE void free_pointer_attrs (type *pointer) {
   assert(pointer && (pointer->type_op == type_pointer));
 }
 /* manipulate fields of type_pointer */
-void  set_pointer_points_to_type (type *pointer, type *type) {
+void  set_pointer_points_to_type (type *pointer, type *tp) {
   assert(pointer && (pointer->type_op == type_pointer));
-  pointer->attr.pa.points_to = type;
+  pointer->attr.pa.points_to = tp;
 }
 type *get_pointer_points_to_type (type *pointer) {
   assert(pointer && (pointer->type_op == type_pointer));

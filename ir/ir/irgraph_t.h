@@ -13,7 +13,7 @@
 # include "obst.h"
 # include "pset.h"
 # include "irgraph.h"
-# include "common_t.h"
+# include "firm_common_t.h"
 
 #define FRAME_TP_SUFFIX "frame_tp"
 

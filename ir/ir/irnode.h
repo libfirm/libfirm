@@ -13,7 +13,7 @@
 
 # include "irgraph.h"
 # include "entity.h"
-# include "common.h"
+# include "firm_common.h"
 # include "irop.h"
 # include "irmode.h"
 # include "tv.h"
@@ -172,20 +172,6 @@ ir_node * get_Block_cg_cfgpred(ir_node * node, int pos);
 /* frees the memory. */
 void remove_Block_cg_cfgpred_arr(ir_node * node);
 
-/* exc handling @@@ ajacs specific -- not supported */
-void     set_Block_exc     (ir_node*, exc_t);
-exc_t    get_Block_exc     (ir_node*);
-
-void     set_Node_exc      (ir_node*, exc_t);
-exc_t    get_Node_exc      (ir_node*);
-
-/* handler handling  @@@ ajacs specific -- not supported  */
-void     set_Block_handler (ir_node*, ir_node*);
-ir_node* get_Block_handler (ir_node*);
-
-void     set_Node_handler  (ir_node*, ir_node*);
-ir_node* get_Node_handler  (ir_node*);
-
 INLINE int  get_End_n_keepalives(ir_node *end);
 INLINE ir_node *get_End_keepalive(ir_node *end, int pos);
 INLINE void add_End_keepalive (ir_node *end, ir_node *ka);
@@ -261,7 +247,7 @@ INLINE symconst_kind get_SymConst_kind (ir_node *node);
 INLINE void          set_SymConst_kind (ir_node *node, symconst_kind num);
 /* Only to access SymConst of kind type_tag or size.  Else assertion: */
 INLINE type    *get_SymConst_type (ir_node *node);
-INLINE void     set_SymConst_type (ir_node *node, type *type);
+INLINE void     set_SymConst_type (ir_node *node, type *tp);
 /* Only to access SymConst of kind linkage_ptr_info.  Else assertion: */
 INLINE ident   *get_SymConst_ptrinfo (ir_node *node);
 INLINE void     set_SymConst_ptrinfo (ir_node *node, ident *ptrinfo);
@@ -282,12 +268,12 @@ INLINE entity  *get_Sel_entity (ir_node *node); /* entity to select */
 INLINE void     set_Sel_entity (ir_node *node, entity *ent);
 
 /* @@@ ajacs specific node -- not supported */
-type           *get_InstOf_ent   (ir_node*);
-void            set_InstOf_ent   (ir_node*, type*);
-ir_node        *get_InstOf_obj   (ir_node*);
-void            set_InstOf_obj   (ir_node*, ir_node*);
-ir_node        *get_InstOf_store (ir_node*);
-void            set_InstOf_store (ir_node*, ir_node*);
+type           *get_InstOf_ent   (ir_node *node);
+void            set_InstOf_ent   (ir_node *node, type *ent);
+ir_node        *get_InstOf_obj   (ir_node *node);
+void            set_InstOf_obj   (ir_node *node, ir_node *obj);
+ir_node        *get_InstOf_store (ir_node *node);
+void            set_InstOf_store (ir_node *node, ir_node *obj);
 
 INLINE ir_node *get_Call_mem (ir_node *node);
 INLINE void     set_Call_mem (ir_node *node, ir_node *mem);
@@ -298,7 +284,7 @@ INLINE int      get_Call_n_params (ir_node *node);
 INLINE ir_node *get_Call_param (ir_node *node, int pos);
 INLINE void     set_Call_param (ir_node *node, int pos, ir_node *param);
 INLINE type    *get_Call_type (ir_node *node);
-INLINE void     set_Call_type (ir_node *node, type *type);
+INLINE void     set_Call_type (ir_node *node, type *tp);
 INLINE int      get_Call_arity (ir_node *node);
 
 /* Set, get and remove the callee-analysis. */
@@ -412,9 +398,10 @@ typedef enum {
   Ug,			/* unordered or greater */
   Uge,			/* unordered, greater or equal */
   Ne,			/* unordered, less or greater = not equal */
-  True,		        /* true */
-  not_mask = Leg	/* bits to flip to negate comparison */
+  True		        /* true */
+  /* not_mask = Leg	/* bits to flip to negate comparison * @@ hack for jni interface */
 } pnc_number;
+#define not_mask Leg
 INLINE char *get_pnc_string(int pnc);
 INLINE int   get_negated_pnc(int pnc);
 INLINE ir_node *get_Cmp_left (ir_node *node);
@@ -478,7 +465,7 @@ INLINE void     set_Alloc_mem (ir_node *node, ir_node *mem);
 INLINE ir_node *get_Alloc_size (ir_node *node);
 INLINE void     set_Alloc_size (ir_node *node, ir_node *size);
 INLINE type    *get_Alloc_type (ir_node *node);
-INLINE void     set_Alloc_type (ir_node *node, type *type);
+INLINE void     set_Alloc_type (ir_node *node, type *tp);
 typedef enum {
   stack_alloc,          /* Alloc allocates the object on the stack. */
   heap_alloc            /* Alloc allocates the object on the heap. */
@@ -493,7 +480,7 @@ INLINE void     set_Free_ptr (ir_node *node, ir_node *ptr);
 INLINE ir_node *get_Free_size (ir_node *node);
 INLINE void     set_Free_size (ir_node *node, ir_node *size);
 INLINE type    *get_Free_type (ir_node *node);
-INLINE void     set_Free_type (ir_node *node, type *type);
+INLINE void     set_Free_type (ir_node *node, type *tp);
 
 INLINE ir_node **get_Sync_preds_arr (ir_node *node);
 INLINE int       get_Sync_n_preds (ir_node *node);
@@ -563,29 +550,17 @@ ir_node *get_fragile_op_mem(ir_node *node);
 #include "ident.h"
 
 #define DDMSG        printf("%s(l.%i)\n", __FUNCTION__, __LINE__)
-#define DDMSG1(X)    printf("%s(l.%i) %s\n", __FUNCTION__, __LINE__,         \
-                            id_to_str(get_irn_opident(X)))
-#define DDMSG2(X)    printf("%s(l.%i) %s%s: %ld\n", __FUNCTION__, __LINE__,          \
-                     id_to_str(get_irn_opident(X)), id_to_str(get_irn_modeident(X)), \
-                     get_irn_node_nr(X))
-#define DDMSG3(X)    printf("%s(l.%i) %s: %p\n", __FUNCTION__, __LINE__,     \
-                     print_firm_kind(X), (X))
-#define DDMSG4(X)    xprintf("%s(l.%i) %I %I: %p\n", __FUNCTION__, __LINE__,     \
-                     get_type_tpop_nameid(X), get_type_ident(X), (X))
-#define DDMSG5(X)    printf("%s%s: %ld",          \
-                     id_to_str(get_irn_opident(X)), id_to_str(get_irn_modeident(X)), \
-                     get_irn_node_nr(X))
+#define DDMSG1(X)    printf("%s(l.%i) %s\n", __FUNCTION__, __LINE__, id_to_str(get_irn_opident(X)))
+#define DDMSG2(X)    printf("%s(l.%i) %s%s: %ld\n", __FUNCTION__, __LINE__, id_to_str(get_irn_opident(X)), id_to_str(get_irn_modeident(X)), get_irn_node_nr(X))
+#define DDMSG3(X)    printf("%s(l.%i) %s: %p\n", __FUNCTION__, __LINE__, print_firm_kind(X), (X))
+#define DDMSG4(X)    xprintf("%s(l.%i) %I %I: %p\n", __FUNCTION__, __LINE__, get_type_tpop_nameid(X), get_type_ident(X), (X))
+#define DDMSG5(X)    printf("%s%s: %ld", id_to_str(get_irn_opident(X)), id_to_str(get_irn_modeident(X)), get_irn_node_nr(X))
 
 
-#define DDMN(X)      xprintf("%s(l.%i) %I%I: %ld (%p)\n", __FUNCTION__, __LINE__,      \
-                     get_irn_opident(X), get_irn_modeident(X), get_irn_node_nr(X), (X))
-#define DDMNB(X)     xprintf("%I%I: %ld (in block %ld)\n",                             \
-		     get_irn_opident(X), get_irn_modeident(X), get_irn_node_nr(X),     \
-		     get_irn_node_nr(get_nodes_Block(X)))
-#define DDMT(X)      xprintf("%s(l.%i) %I %I: %p\n", __FUNCTION__, __LINE__,           \
-                     get_type_tpop_nameid(X), get_type_ident(X), (X))
-#define DDME(X)      xprintf("%s(l.%i) %I: %p\n", __FUNCTION__, __LINE__,              \
-                     get_entity_ident(X), (X))
+#define DDMN(X)      xprintf("%s(l.%i) %I%I: %ld (%p)\n", __FUNCTION__, __LINE__, get_irn_opident(X), get_irn_modeident(X), get_irn_node_nr(X), (X))
+#define DDMNB(X)     xprintf("%I%I: %ld (in block %ld)\n", get_irn_opident(X), get_irn_modeident(X), get_irn_node_nr(X), get_irn_node_nr(get_nodes_Block(X)))
+#define DDMT(X)      xprintf("%s(l.%i) %I %I: %p\n", __FUNCTION__, __LINE__, get_type_tpop_nameid(X), get_type_ident(X), (X))
+#define DDME(X)      xprintf("%s(l.%i) %I: %p\n", __FUNCTION__, __LINE__, get_entity_ident(X), (X))
 
 
 # endif /* _IRNODE_H_ */

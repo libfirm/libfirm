@@ -21,18 +21,20 @@
 # include "type_or_entity.h"
 
 
+typedef void (type_walk_func)(type_or_ent *, void *);
+
 /** Walks over all type information reachable from global roots.
     Touches every type and entity in unspecified order.  If new
     types/entities are created during the traversal these will
     be visited, too. **/
-void type_walk(void (pre)(type_or_ent*, void*),
-	       void (post)(type_or_ent*, void*),
+void type_walk(type_walk_func *pre,
+	       type_walk_func *post,
 	       void *env);
 
 /** walks over all type information reachable from irg **/
 void type_walk_irg(ir_graph *irg,
-		   void (pre)(type_or_ent*, void*),
-		   void (post)(type_or_ent*, void*),
+		   type_walk_func *pre,
+		   type_walk_func *post,
 		   void *env);
 
 /** Walks over all type information reachable from global roots.
@@ -43,8 +45,8 @@ void type_walk_irg(ir_graph *irg,
     during the traversal these will be visited, too. **/
 /** @@@ should be named class-walk **/
 /*  @@@ will be removed? */
-void type_walk_super2sub(void (pre)(type_or_ent*, void*),
-			 void (post)(type_or_ent*, void*),
+void type_walk_super2sub(type_walk_func *pre,
+			 type_walk_func *post,
 			 void *env);
 
 /** Walks over all type information reachable from global roots.
@@ -53,8 +55,8 @@ void type_walk_super2sub(void (pre)(type_or_ent*, void*),
     - second the class itself
     If new classes are created during the traversal these
     will be visited, too. **/
-void type_walk_super(void (pre)(type_or_ent*, void*),
-		     void (post)(type_or_ent*, void*),
+void type_walk_super(type_walk_func *pre,
+		     type_walk_func *post,
 		     void *env);
 
 /* Same as type_walk_super2sub, but visits only class types.
@@ -64,13 +66,14 @@ void type_walk_super(void (pre)(type_or_ent*, void*),
    Does not visit global type, frame types.
 */
 /* @@@ ?? something is wrong with this. */
-void class_walk_super2sub(void (pre)(type*, void*),
-			  void (post)(type*, void*),
+void class_walk_super2sub(type_walk_func *pre,
+			  type_walk_func *post,
 			  void *env);
 
 
 /* Walks over all entities in the type */
+typedef void (entity_walk_func)(entity *, void *);
 void walk_types_entities(type *tp,
-			 void (doit)(entity*, void*),
+			 entity_walk_func *doit,
 			 void *env);
 #endif /* _TYPEWALK_H_ */

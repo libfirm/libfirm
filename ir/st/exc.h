@@ -1,6 +1,6 @@
 /* Copyright (c) 2002 by Universität Karlsruhe (TH).  All Rights Reserved */
 /*
-** Time-stamp: <Friday, 26.07.2002 15:43:30h liekweg@i44pc11.info.uni-karlsruhe.de>
+** Time-stamp: <Monday, 04.11.2002, 17:32:28 goetz@i44pc2.info.uni-karlsruhe.de>
 */
 
 /***
@@ -25,7 +25,7 @@
 # include "irop.h"
 # include "irouts.h"
 
-# include <bool.h>
+#include "bool.h"
 
 typedef enum {
   exc_invalid = 0,					/* not yet computed */
@@ -50,5 +50,17 @@ bool is_region_entry  (ir_graph*, ir_node*);
 bool is_handler_block (ir_graph*, ir_node*);
 bool is_cont_entry    (ir_graph*, ir_node*);
 
+void     set_Block_exc     (ir_node*, exc_t);
+exc_t    get_Block_exc     (ir_node*);
+
+void     set_Node_exc      (ir_node*, exc_t);
+exc_t    get_Node_exc      (ir_node*);
+
+/* handler handling  @@@ ajacs specific -- not supported  */
+void     set_Block_handler (ir_node*, ir_node*);
+ir_node* get_Block_handler (ir_node*);
+
+void     set_Node_handler  (ir_node*, ir_node*);
+ir_node* get_Node_handler  (ir_node*);
 
 # endif /* def _EXC_H_ */

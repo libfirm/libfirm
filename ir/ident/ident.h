@@ -14,7 +14,7 @@
 
 # include <stdio.h>
 # include <assert.h>
-# include "common.h"
+# include "firm_common.h"
 
 /****h* libfirm/ident
  *

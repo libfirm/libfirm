@@ -64,8 +64,8 @@ INLINE ir_node *get_Block_cfg_out  (ir_node *bl, int pos) {
   return NULL;
 }
 
-void irg_out_walk_2(ir_node *node,  void (pre)(ir_node*, void*),
-		    void (post)(ir_node*, void*), void *env) {
+void irg_out_walk_2(ir_node *node,  irg_walk_func *pre,
+		    irg_walk_func *post, void *env) {
   int i;
   ir_node *succ;
 
