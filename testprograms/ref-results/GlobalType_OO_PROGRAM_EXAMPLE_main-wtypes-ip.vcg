@@ -356,7 +356,7 @@ visibility:  visibility_local
 variability: variability_constant
 volatility:  volatility_non_volatile
 peculiarity: peculiarity_existent
-name:    PRIMA_set_a
+name:    set_a
 ld_name: PRIMA_set_a
 offset:  -1
 irg = g68"
@@ -393,7 +393,7 @@ visibility:  visibility_local
 variability: variability_constant
 volatility:  volatility_non_volatile
 peculiarity: peculiarity_existent
-name:    PRIMA_c
+name:    c
 ld_name: PRIMA_c
 offset:  -1
 irg = g90"
@@ -422,7 +422,7 @@ visibility:  visibility_local
 variability: variability_constant
 volatility:  volatility_non_volatile
 peculiarity: peculiarity_existent
-name:    GlobalType_OO_PROGRAM_EXAMPLE_main
+name:    OO_PROGRAM_EXAMPLE_main
 ld_name: GlobalType_OO_PROGRAM_EXAMPLE_main
 offset:  -1
 irg = g35"

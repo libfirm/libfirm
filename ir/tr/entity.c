@@ -917,6 +917,15 @@ static INLINE entity *resolve_ent_polymorphy2 (type *dynamic_class, entity* stat
  *  Search downwards in overwritten tree. */
 entity *resolve_ent_polymorphy(type *dynamic_class, entity* static_ent) {
   entity *res = resolve_ent_polymorphy2(dynamic_class, static_ent);
+  if (!res) {
+    printf(" Could not find entity "); DDME(static_ent);
+    printf("  in class"); DDMT(dynamic_class);
+    printf("\n");
+    dump_entity(static_ent);
+    dump_type(get_entity_owner(static_ent));
+    dump_type(dynamic_class);
+
+  }
   assert(res);
   return res;
 }
@@ -996,6 +1005,7 @@ void dump_entity (entity *ent) {
     else
       { printf ("\n  irg = NULL"); }
   }
+  printf("\n\n");
 }
 #undef X
 #else  /* DEBUG_libfirm */

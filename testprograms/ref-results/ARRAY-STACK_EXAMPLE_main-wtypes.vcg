@@ -165,7 +165,7 @@ visibility:  visibility_local
 variability: variability_constant
 volatility:  volatility_non_volatile
 peculiarity: peculiarity_existent
-name:    ARRAY-STACK_EXAMPLE_main
+name:    main
 ld_name: ARRAY-STACK_EXAMPLE_main
 offset:  -1
 irg = g33"

@@ -1544,17 +1544,29 @@ INLINE int dump_node_opcode(FILE *F, ir_node *n); /* from irdump.c */
 void dump_type (type *tp) {
   int i;
 
-  printf("%s type %s (%ld)\n", get_tpop_name(get_type_tpop(tp)), get_type_name(tp), get_type_nr(tp));
+  printf("%s type %s (%ld)", get_tpop_name(get_type_tpop(tp)), get_type_name(tp), get_type_nr(tp));
 
   switch (get_type_tpop_code(tp)) {
 
   case tpo_class: {
-    printf("  members: ");
+    printf("\n  members: ");
     for (i = 0; i < get_class_n_members(tp); ++i) {
       entity *mem = get_class_member(tp, i);
       printf("\n    (%2d) %s:\t %s",
 	     get_entity_offset(mem), get_type_name(get_entity_type(mem)), get_entity_name(mem));
     }
+    printf("\n  suptertypes: ");
+    for (i = 0; i < get_class_n_supertypes(tp); ++i) {
+      type *stp = get_class_supertype(tp, i);
+      printf("\n    %s", get_type_name(stp));
+    }
+    printf("\n  subtypes: ");
+    for (i = 0; i < get_class_n_subtypes(tp); ++i) {
+      type *stp = get_class_subtype(tp, i);
+      printf("\n    %s", get_type_name(stp));
+    }
+
+    printf("\n  peculiarity: %s", get_peculiarity_string(get_class_peculiarity(tp)));
 
   } break;
   default:
