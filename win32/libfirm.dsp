@@ -690,6 +690,14 @@ SOURCE=..\ir\ir\irgwalk.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\ir\irhooks.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ir\irhooks.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\ir\irmode.c
 # End Source File
 # Begin Source File
