@@ -52,10 +52,65 @@ char *spaces = NULL;
 
 /* Local Prototypes: */
 static void pto_call (ir_graph*, ir_node*, pto_env_t*);
+static pto_t *get_pto (ir_node*);
 
 /* ===================================================
    Local Implementation:
    =================================================== */
+/* Transfer the actual arguments to the formal arguments */
+static void set_graph_args (ir_graph *graph, ir_node *call)
+{
+  assert (iro_Call == get_irn_opcode (call));
+
+  type *meth = get_entity_type (get_irg_entity (graph));
+  ir_node **args = find_irg_args (graph);
+  int n_args = get_Call_n_params (call);
+  int i;
+
+  for (i = 0; i < n_args; i ++) {
+    if (NULL != args [i]) {
+      if (mode_P == get_type_mode (get_method_param_type (meth, i))) {
+        ir_node *call_arg = get_Call_param (call, i);
+        pto_t *pto = get_pto (call_arg);
+        assert (pto);
+        set_node_pto (args [i], pto);
+
+        DBGPRINT (0, (stdout, "%s: arg [%i]: %s[%li] -> %s[%li] (%p)\n",
+                      __FUNCTION__,
+                      i,
+                      OPNAME (call_arg), OPNUM (call_arg),
+                      OPNAME (args [i]), OPNUM (args [i]),
+                      (void*) pto));
+      }
+    }
+  }
+}
+
+/* Transfer the graph's result to the call */
+static void set_graph_result (ir_graph *graph, ir_node *call)
+{
+  type *tp = get_entity_type (get_irg_entity (graph));
+
+  if (0 == get_method_n_ress (tp)) {
+    return;
+  }
+
+  tp = get_method_res_type (tp, 0);
+
+  if (mode_P != get_type_mode (tp)) {
+    set_node_pto (call, NULL);
+    return;
+  }
+
+  ir_node *end_block = get_irg_end_block (graph);
+  pto_t *ret_pto = get_node_pto (end_block);
+
+  pto_t *call_pto = get_node_pto (call);
+
+  assert (call_pto);
+
+  qset_insert_all (call_pto->values, ret_pto->values);
+}
 
 /* Propagation of PTO values */
 static pto_t *get_pto_proj (ir_node *proj)
@@ -91,8 +146,10 @@ static pto_t *get_pto_proj (ir_node *proj)
       if (NULL != proj_pto) {
         return (proj_pto);
       } else {
-        in_pto = get_node_pto (proj_in);
+        in_pto = get_pto (proj_in);
         set_node_pto (proj, in_pto);
+
+        assert (in_pto);
 
         return (in_pto);
       }
@@ -109,7 +166,7 @@ static pto_t *get_pto_proj (ir_node *proj)
     if (NULL != proj_pto) {
       return (proj_pto);
     } else {
-      in_pto = get_node_pto (proj_in);
+      in_pto = get_pto (proj_in);
       assert (in_pto);
 
       set_node_pto (proj, in_pto);
@@ -127,7 +184,25 @@ static pto_t *get_pto_proj (ir_node *proj)
 
 static pto_t *get_pto_phi (ir_node *phi)
 {
-  return (NULL);
+  assert (mode_P == get_irn_mode (phi));
+
+  pto_t *pto = get_node_pto (phi);
+
+  assert (pto);                 /* must be initialised */
+
+  int n_ins = get_irn_arity (phi);
+  int i;
+
+  for (i = 0; i < n_ins; i ++) {
+    ir_node *in = get_irn_n (phi, i);
+    pto_t *in_pto = get_pto (in);
+
+    assert (in_pto);
+
+    qset_insert_all (pto->values, in_pto->values);
+  }
+
+  return (pto);
 }
 
 static pto_t *get_pto_sel (ir_node *sel)
@@ -137,7 +212,7 @@ static pto_t *get_pto_sel (ir_node *sel)
   if (NULL == pto) {
     ir_node *in = get_Sel_ptr (sel);
 
-    pto = get_node_pto (in);
+    pto = get_pto (in);
     set_node_pto (sel, pto);
   }
 
@@ -151,9 +226,11 @@ static pto_t *get_pto_ret (ir_node *ret)
   if (NULL == pto) {
     ir_node *in = get_Return_res (ret, 0);
 
-    pto = get_node_pto (in);
+    pto = get_pto (in);
     set_node_pto (ret, pto);
   }
+
+  assert (pto);
 
   return (pto);
 }
@@ -169,7 +246,13 @@ static pto_t *get_pto (ir_node *node)
   case (iro_Proj):   return (get_pto_proj (node));
   case (iro_Phi):    return (get_pto_phi (node));
   case (iro_Sel):    return (get_pto_sel (node));
+  case (iro_Alloc):  return (get_alloc_pto (node));
   case (iro_Return): return (get_pto_ret (node));
+
+  case (iro_Call):              /* FALLTHROUGH */
+  case (iro_Load):              /* FALLTHROUGH */
+  case (iro_Const):             /* FALLTHROUGH */
+  case (iro_SymConst): return (get_node_pto (node));
 
   default:
     /* stopgap measure */
@@ -187,38 +270,71 @@ static pto_t *get_pto (ir_node *node)
 static void pto_load (ir_node *load, pto_env_t *pto_env)
 {
   /* perform load */
-  DBGPRINT (0, (stdout, "%s (%s[%li]): pto = %p\n", __FUNCTION__, OPNAME (load), OPNUM (load), (void*) get_node_pto (load)));
+  DBGPRINT (1, (stdout, "%s (%s[%li]): pto = %p\n", __FUNCTION__,
+                OPNAME (load), OPNUM (load), (void*) get_node_pto (load)));
 
   ir_node *ptr = get_Load_ptr (load);
+
+  if (is_dummy_load_ptr (ptr)) {
+    return;
+  }
+
+  entity *ent = get_ptr_ent (ptr);
+
   pto_t *ptr_pto = get_pto (ptr);
 
-  DBGPRINT (0, (stdout, "%s (%s[%li]): ptr = %p\n", __FUNCTION__, OPNAME (ptr), OPNUM (ptr), (void*) ptr_pto));
+  assert (ptr_pto);
+
+  DBGPRINT (0, (stdout, "%s (%s[%li]): ptr = %p\n", __FUNCTION__,
+                OPNAME (ptr), OPNUM (ptr), (void*) ptr_pto));
 }
 
 static void pto_store (ir_node *store, pto_env_t *pto_env)
 {
   /* perform store */
-  DBGPRINT (0, (stdout, "%s (%s[%li]) (no pto)\n", __FUNCTION__,
+  DBGPRINT (1, (stdout, "%s (%s[%li]) (no pto)\n", __FUNCTION__,
                 OPNAME (store), OPNUM (store)));
+
+  ir_node *ptr = get_Store_ptr (store);
+  ir_node *val = get_Store_value (store);
+
+  if (mode_P != get_irn_mode (val)) {
+    return;
+  }
+
+  entity *ent = get_ptr_ent (ptr);
+
+  pto_t *ptr_pto = get_pto (ptr);
+  pto_t *val_pto = get_pto (val);
+
+  assert (ptr_pto);
+  assert (val_pto);
+
+  DBGPRINT (0, (stdout, "%s (%s[%li]): ptr_pto = %p\n", __FUNCTION__,
+                OPNAME (store), OPNUM (store), (void*) ptr_pto));
+  DBGPRINT (0, (stdout, "%s (%s[%li]): val_pto = %p\n", __FUNCTION__,
+                OPNAME (store), OPNUM (store), (void*) val_pto));
 }
 
 static void pto_method (ir_node *call, pto_env_t *pto_env)
 {
-  DBGPRINT (0, (stdout, "%s:%i (%s[%li]): pto = %p\n",
-                __FUNCTION__, __LINE__, OPNAME (call), OPNUM (call), (void*) get_node_pto (call)));
+  DBGPRINT (1, (stdout, "%s:%i (%s[%li]): pto = %p\n",
+                __FUNCTION__, __LINE__, OPNAME (call), OPNUM (call),
+                (void*) get_node_pto (call)));
 
   callEd_info_t *callEd_info = ecg_get_callEd_info (call);
 
+  if (NULL == callEd_info) {
+    DBGPRINT (1, (stdout, "%s:%i (%s[%li]), no graph\n",
+                  __FUNCTION__, __LINE__, OPNAME (call), OPNUM (call)));
+  }
+
   int i = 0;
   while (NULL != callEd_info) {
-    DBGPRINT (0, (stdout, "%s:%i (%s[%li]), graph %i\n",
+    DBGPRINT (1, (stdout, "%s:%i (%s[%li]), graph %i\n",
                   __FUNCTION__, __LINE__, OPNAME (call), OPNUM (call), i ++));
 
-    /* dike this out until we do procedure arguments and return
-       values */
-    if (0) {
-      pto_call (callEd_info->callEd, call, pto_env);
-    }
+    pto_call (callEd_info->callEd, call, pto_env);
 
     callEd_info = callEd_info->prev;
   }
@@ -244,10 +360,11 @@ static void pto_call (ir_graph *graph, ir_node *call, pto_env_t *pto_env)
     int ctx_idx = find_ctx_idx (call, ginfo, get_curr_ctx ());
     ctx_info_t *call_ctx = get_ctx (ginfo, ctx_idx);
     ctx_info_t *old_ctx = set_curr_ctx (call_ctx);
-    DBGPRINT (1, (stdout, "%s>CTX: ", -- spaces));
-    DBGEXE (1, ecg_print_ctx (call_ctx, stdout));
+    DBGPRINT (2, (stdout, "%s>CTX: ", -- spaces));
+    DBGEXE (2, ecg_print_ctx (call_ctx, stdout));
 
     /* Todo: Compute Arguments */
+    set_graph_args (graph, call);
 
     /* Initialise Alloc Names and Node values (nope, done in pto_graph ()) */
     /* pto_reset_graph_pto (graph, ctx_idx); */
@@ -258,15 +375,17 @@ static void pto_call (ir_graph *graph, ir_node *call, pto_env_t *pto_env)
     /* Restore CTX */
     set_curr_ctx (old_ctx);
 
-    DBGPRINT (1, (stdout, "%s<CTX: ", spaces ++));
-    DBGEXE (1, ecg_print_ctx (call_ctx, stdout));
+    set_graph_result (graph, call);
+
+    DBGPRINT (2, (stdout, "%s<CTX: ", spaces ++));
+    DBGEXE (2, ecg_print_ctx (call_ctx, stdout));
 
     /* Don't need to reset alloc names unless we handle recursion here  */
 
 
     /* Get Return Value from Graph */
   } else {
-    DBGPRINT (0, (stdout, "%s: recursion into \"%s.%s\"\n",
+    DBGPRINT (1, (stdout, "%s: recursion into \"%s.%s\"\n",
                   __FUNCTION__, own_name, ent_name));
   }
 
@@ -277,21 +396,52 @@ static void pto_call (ir_graph *graph, ir_node *call, pto_env_t *pto_env)
 static void pto_raise (ir_node *raise, pto_env_t *pto_env)
 {
   /* perform raise */
-  DBGPRINT (0, (stdout, "%s (%s[%li]): pto = %p\n", __FUNCTION__,
+  DBGPRINT (1, (stdout, "%s (%s[%li]): pto = %p\n", __FUNCTION__,
                 OPNAME (raise), OPNUM (raise), (void*) get_node_pto (raise)));
 }
 
 static void pto_end_block (ir_node *end_block, pto_env_t *pto_env)
 {
   /* perform end block */
-  DBGPRINT (0, (stdout, "%s (%s[%li]): pto = %p\n", __FUNCTION__,
+  type *tp = get_entity_type (get_irg_entity (get_irn_irg (end_block)));
+
+  if (0 == get_method_n_ress (tp)) {
+    return;
+  }
+
+  tp = get_method_res_type (tp, 0);
+
+  if (mode_P != get_type_mode (tp)) {
+    return;
+  }
+
+  DBGPRINT (1, (stdout, "%s (%s[%li]): pto = %p\n", __FUNCTION__,
                 OPNAME (end_block), OPNUM (end_block),
                 (void*) get_node_pto (end_block)));
+
+  pto_t *end_pto = get_node_pto (end_block);
+
+  assert (end_pto);
+
+  int n_ins = get_irn_arity (end_block);
+  int i;
+  for (i = 0; i < n_ins; i ++) {
+    ir_node *in = get_irn_n (end_block, i);
+
+    if (iro_Return == get_irn_opcode (in)) {
+      pto_t *in_pto = get_pto (in);
+
+      qset_insert_all (end_pto->values, in_pto->values);
+    }
+  }
 }
 
 /* Perform the appropriate action on the given node */
 static void pto_node_node (ir_node *node, pto_env_t *pto_env)
 {
+  DBGPRINT (0, (stdout, "%s (%s[%li])\n", __FUNCTION__,
+                OPNAME (node), OPNUM (node)));
+
   const opcode op = get_irn_opcode (node);
 
   switch (op) {
@@ -377,7 +527,6 @@ static void pto_graph_pass (ir_graph *graph, void *pto_env)
   HERE3 ("end  ", own_name, ent_name);
 }
 
-
 /* ===================================================
    Exported Implementation:
    =================================================== */
@@ -389,7 +538,7 @@ void pto_graph (ir_graph *graph, int ctx_idx)
 
   /* HERE ("start"); */
 
-  DBGPRINT (0, (stdout, "%s: start for ctx %i\n",
+  DBGPRINT (1, (stdout, "%s: start for ctx %i\n",
                 __FUNCTION__,
                 ctx_idx));
 
@@ -441,6 +590,9 @@ pto_t *get_alloc_pto (ir_node *alloc)
 
 /*
   $Log$
+  Revision 1.4  2004/11/26 15:59:40  liekweg
+  verify pto_{load,store}
+
   Revision 1.3  2004/11/24 14:53:55  liekweg
   Bugfixes
 
