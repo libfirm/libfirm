@@ -1197,6 +1197,11 @@ void init_tarval_1(void)
   /* init with default precision */
   init_strcalc(0);
   /* init_fltcalc(0); not yet*/
+  tarval_bad = (tarval*)malloc(sizeof(tarval));
+  tarval_undefined = (tarval*)malloc(sizeof(tarval));
+  tarval_b_true = (tarval*)malloc(sizeof(tarval));
+  tarval_b_false = (tarval*)malloc(sizeof(tarval));
+  tarval_P_void = (tarval*)malloc(sizeof(tarval));
 }
 
 /**
@@ -1225,19 +1230,10 @@ void init_tarval_2(void)
 {
   ANNOUNCE();
 
-  tarval_bad = (tarval*)malloc(sizeof(tarval));
   tarval_bad->mode = mode_BAD;
-
-  tarval_undefined = (tarval*)malloc(sizeof(tarval));
   tarval_undefined->mode = mode_ANY;
-
-  tarval_b_true = (tarval*)malloc(sizeof(tarval));
   tarval_b_true->mode = mode_b;
-
-  tarval_b_false = (tarval*)malloc(sizeof(tarval));
   tarval_b_false->mode = mode_b;
-
-  tarval_P_void = (tarval*)malloc(sizeof(tarval));
   tarval_P_void->mode = mode_P;
 
   /*
