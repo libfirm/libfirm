@@ -3,7 +3,7 @@
 */
 
 /**
-* @file irgraph.h
+* @file irvrfy.h
 *
 * ir graph verification.
 *
