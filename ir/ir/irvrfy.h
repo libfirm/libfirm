@@ -73,4 +73,24 @@ int irn_vrfy_irg_dump(struct ir_node *checknode, ir_graph *irg, const char **bad
  */
 int irg_vrfy(ir_graph *irg);
 
+/**
+ * Possible flags for irg_vrfy_bads().
+ */
+enum verify_bad_flags_t {
+  BAD_CF      = 1,	/**< Bad nodes are allowed as predecessors of Blocks and Phis. */
+  BAD_DF      = 2,	/**< Bad nodes are allowed as dataflow predecessors. */
+  BAD_BLOCK   = 4,	/**< Bad nodes are allowed as Block input. */
+  TUPLE       = 8	/**< Tuple nodes are allowed. */
+};
+
+/**
+ * Verify occurance of bad nodes in a graph.
+ *
+ * @param irg    The graph to verify
+ * @param flags  combination of verify_bad_flags_t flags describing
+ *               which Bads are allowed
+ * @returns      a value combined of verify_bad_flags_t indicating the problems found.
+ */
+int irg_vrfy_bads(ir_graph *irg, int flags);
+
 # endif /* _IRVRFY_H_ */

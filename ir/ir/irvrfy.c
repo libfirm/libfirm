@@ -1163,7 +1163,7 @@ int irg_vrfy(ir_graph *irg)
 
   assert(get_irg_pinned(irg) == op_pin_state_pinned);
 
-  irg_walk(irg->end, vrfy_wrap, NULL, &res);
+  irg_walk_graph(irg, vrfy_wrap, NULL, &res);
 
   current_ir_graph = rem;
 
@@ -1192,4 +1192,115 @@ int irn_vrfy_irg_dump(ir_node *n, ir_graph *irg, const char **bad_string)
   *bad_string = bad_msg;
 
   return res;
+}
+
+
+typedef struct _vrfy_bad_env_t {
+  int flags;
+  int res;
+} vrfy_bad_env_t;
+
+static void check_bads(ir_node *node, void *env)
+{
+  vrfy_bad_env_t *venv = env;
+  int i, arity = get_irn_arity(node);
+
+  if (is_Block(node)) {
+    if ((venv->flags & BAD_CF) == 0) {
+
+      /* check for Bad Block predecessor */
+      for (i = 0; i < arity; ++i) {
+        ir_node *pred = get_irn_n(node, i);
+
+	if (is_Bad(pred)) {
+	  venv->res |= BAD_CF;
+
+	  if (opt_do_node_verification == NODE_VERIFICATION_REPORT) {
+	    fprintf(stderr, "irg_vrfy_bads: Block %ld has Bad predecessor\n", get_irn_node_nr(node));
+	  }
+	  if (opt_do_node_verification == NODE_VERIFICATION_ON) {
+	    assert(0 && "Bad CF detected");
+	  }
+	}
+      }
+    }
+  }
+  else {
+    if ((venv->flags & BAD_BLOCK) == 0) {
+
+      /* check for Bad Block */
+      if (is_Bad(get_nodes_block(node))) {
+	venv->res |= BAD_BLOCK;
+
+	if (opt_do_node_verification == NODE_VERIFICATION_REPORT) {
+	  fprintf(stderr, "irg_vrfy_bads: node %ld has Bad Block\n", get_irn_node_nr(node));
+	}
+	if (opt_do_node_verification == NODE_VERIFICATION_ON) {
+	  assert(0 && "Bad CF detected");
+	}
+      }
+    }
+
+    if ((venv->flags & TUPLE) == 0) {
+      if (get_irn_op(node) == op_Tuple) {
+	venv->res |= TUPLE;
+
+	if (opt_do_node_verification == NODE_VERIFICATION_REPORT) {
+	  fprintf(stderr, "irg_vrfy_bads: node %ld is a Tuple\n", get_irn_node_nr(node));
+	}
+	if (opt_do_node_verification == NODE_VERIFICATION_ON) {
+	  assert(0 && "Tuple detected");
+	}
+      }
+    }
+
+    for (i = 0; i < arity; ++i) {
+      ir_node *pred = get_irn_n(node, i);
+
+      if (is_Bad(pred)) {
+	/* check for Phi with Bad inputs */
+	if (is_Phi(node) && !is_Bad(get_nodes_block(node)) && is_Bad(get_irn_n(get_nodes_block(node), i))) {
+	  if (venv->flags & BAD_CF)
+	    continue;
+	  else {
+	    venv->res |= BAD_CF;
+
+	    if (opt_do_node_verification == NODE_VERIFICATION_REPORT) {
+	      fprintf(stderr, "irg_vrfy_bads: Phi %ld has Bad Input\n", get_irn_node_nr(node));
+	    }
+	    if (opt_do_node_verification == NODE_VERIFICATION_ON) {
+	      assert(0 && "Bad CF detected");
+	    }
+	  }
+	}
+
+	/* Bad node input */
+	if ((venv->flags & BAD_DF) == 0) {
+	  venv->res |= BAD_DF;
+
+	  if (opt_do_node_verification == NODE_VERIFICATION_REPORT) {
+	    fprintf(stderr, "irg_vrfy_bads: node %ld has Bad Input\n", get_irn_node_nr(node));
+	  }
+	  if (opt_do_node_verification == NODE_VERIFICATION_ON) {
+	    assert(0 && "Bad NON-CF detected");
+	  }
+	}
+      }
+    }
+  }
+}
+
+/*
+ * verify occurance of bad nodes
+ */
+int irg_vrfy_bads(ir_graph *irg, int flags)
+{
+  vrfy_bad_env_t env;
+
+  env.flags = flags;
+  env.res   = 0;
+
+  irg_walk_graph(irg, check_bads, NULL, &env);
+
+  return env.res;
 }
