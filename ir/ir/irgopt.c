@@ -510,10 +510,13 @@ void remove_bad_predecessors(ir_graph *irg) {
 /*  Funcionality for inlining                                         */
 /**********************************************************************/
 
-/* Copy node for inlineing.  Copies the node by calling copy_node and
-   then updates the entity if it's a local one.  env must be a pointer
-   to the frame type of the procedure. The new entities must be in
-   the link field of the entities. */
+/* Copy node for inlineing.  Updates attributes that change when
+ * inlineing but not for dead node elimination.
+ *
+ * Copies the node by calling copy_node and then updates the entity if
+ * it's a local one.  env must be a pointer of the frame type of the
+ * inlined procedure. The new entities must be in the link field of
+ * the entities. */
 static INLINE void
 copy_node_inline (ir_node *n, void *env) {
   ir_node *new;
@@ -526,10 +529,12 @@ copy_node_inline (ir_node *n, void *env) {
     if (get_entity_owner(get_Sel_entity(n)) == frame_tp) {
       set_Sel_entity(new, get_entity_link(get_Sel_entity(n)));
     }
+  } else if (get_irn_op(n) == op_Block) {
+    new = get_new_node (n);
+    new->attr.block.irg = current_ir_graph;
   }
 }
 
-#include "irdump.h"
 
 void inline_method(ir_node *call, ir_graph *called_graph) {
   ir_node *pre_call;
@@ -888,8 +893,6 @@ void inline_small_irgs(ir_graph *irg, int size) {
 /*  Code Placement.  Pinns all floating nodes to a block where they */
 /*  will be executed only if needed.                                */
 /********************************************************************/
-
-#include "irdump.h"
 
 static pdeq *worklist;		/* worklist of ir_node*s */
 

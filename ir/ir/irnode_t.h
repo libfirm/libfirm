@@ -39,29 +39,33 @@
 
 /** Block attributes */
 typedef struct {
+  /* General attributes */
+  ir_graph *irg;
   unsigned long block_visited;  /**< for the walker that walks over all blocks. */
   /* Attributes private to construction: */
   bool matured;               /**< if set, all in-nodes of the block are fixed */
   struct ir_node **graph_arr; /**< array to store all parameters */
+  /* Attributes holding analyses information */
   struct dom_info dom;        /**< Datastructure that holds information about dominators.
-				 @todo
-           Eventually overlay with graph_arr as only valid
-				   in different phases.  Eventually inline the whole
-				   datastructure. */
-  exc_t exc;		      /**< role of this block for exception handling */
-  ir_node *handler_entry;     /**< handler entry block iff this block is part of a region */
+				 @@@ @todo
+				 Eventually overlay with graph_arr as only valid
+				 in different phases.  Eventually inline the whole
+				 datastructure. */
+  //  exc_t exc;		      /**< role of this block for exception handling */
+  //  ir_node *handler_entry;     /**< handler entry block iff this block is part of a region */
   ir_node ** in_cg;           /**< array with predecessors in
 			       * interprocedural_view, if they differ
 			       * from intraprocedural predecessors */
   int *backedge;              /**< Field n set to true if pred n is backedge.
-			         @todo Ev. replace by bitfield! */
+			         @@@ @todo Ev. replace by bitfield! */
   int *cg_backedge;           /**< Field n set to true if pred n is interprocedural backedge.
-			         @todo Ev. replace by bitfield! */
+			         @@@ @todo Ev. replace by bitfield! */
 } block_attr;
 
 /** Start attributes */
 typedef struct {
-  ir_graph *irg;
+  char dummy;
+  //  ir_graph *irg;   @@@ now in block
 } start_attr;
 
 /** Cond attributes */
@@ -128,14 +132,17 @@ typedef struct {
 
 /** EndReg/EndExcept attributes */
 typedef struct {
-  ir_graph * irg;            /**< ir_graph this node belongs to (for
-			      * navigating in interprocedural graphs) */
+  char dummy;
+  //  ir_graph * irg;            /**< ir_graph this node belongs to (for
+  //                              * navigating in interprocedural graphs)
+  //         			  @@@ now in block */
 } end_attr;
 
 /** CallBegin attributes */
 typedef struct {
-  ir_graph * irg;            /**< ir_graph this node belongs to (for
-			      * navigating in interprocedural graphs) */
+  //  ir_graph * irg;            / **< ir_graph this node belongs to (for
+  //			      * navigating in interprocedural graphs) */
+  //                           @@@ now in block
   ir_node * call;            /**< associated Call-operation */
 } callbegin_attr;
 

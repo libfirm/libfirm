@@ -146,17 +146,18 @@ INLINE void          mark_irn_visited (ir_node *node);
 INLINE int           irn_not_visited  (const ir_node *node);
 /** Returns 1 if visited >= get_irg_visited(current_ir_graph).  */
 INLINE int           irn_visited      (const ir_node *node);
-INLINE void          set_irn_link          (ir_node *node, void *link);
-INLINE void         *get_irn_link          (const ir_node *node);
+INLINE void          set_irn_link     (ir_node *node, void *link);
+INLINE void         *get_irn_link     (const ir_node *node);
+
+/** Returns the ir_graph this node belongs to. Only valid if irg
+ *  is in state pinned (irg is only stored in the block. */
+INLINE ir_graph     *get_irn_irg      (ir_node *node);
 
 /** Outputs a unique number for this node if libfirm is compiled for
    debugging, (configure with --enable-debug) else returns address
    of node cast to long. */
-INLINE long          get_irn_node_nr(const ir_node *node);
+INLINE long          get_irn_node_nr  (const ir_node *node);
 
-/** Returns the ir_graph this node belongs to. Only valid for
- * CallBegin, EndReg, EndExcept and Start */
-INLINE ir_graph     *get_irn_irg(ir_node *node);
 
 /**
  * irnode constructor.
@@ -258,9 +259,9 @@ ir_node  *get_Block_cg_cfgpred(ir_node * node, int pos);
 /* frees the memory. */
 void      remove_Block_cg_cfgpred_arr(ir_node * node);
 
-/* Start references the irg it is in. */
+/* Start references the irg it is in.
+ @@@ old -- use get_irn_irg instead! */
 ir_graph *get_Start_irg(ir_node *node);
-void      set_Start_irg(ir_node *node, ir_graph *irg);
 
 INLINE int  get_End_n_keepalives(ir_node *end);
 INLINE ir_node *get_End_keepalive(ir_node *end, int pos);
@@ -271,8 +272,9 @@ INLINE void set_End_keepalive(ir_node *end, int pos, ir_node *ka);
    free_End frees these data structures. */
 INLINE void free_End (ir_node *end);
 
-ir_graph *get_EndReg_irg (const ir_node *end);
-ir_graph *get_EndExcept_irg  (const ir_node *end);
+/* @@@ old -- use get_irn_irg instead!  */
+ir_graph *get_EndReg_irg (ir_node *end);
+ir_graph *get_EndExcept_irg (ir_node *end);
 
 /* We distinguish three kinds of Cond nodes.  These can be distinguished
    by the mode of the selector operand and an internal flag of type cond_kind.
@@ -420,6 +422,7 @@ void    remove_Call_callee_arr(ir_node * node);
 
 ir_node  *get_CallBegin_ptr  (ir_node *node);
 void      set_CallBegin_ptr  (ir_node *node, ir_node *ptr);
+/* @@@ old -- use get_irn_irg instead!  */
 ir_graph *get_CallBegin_irg  (ir_node *node);
 ir_node  *get_CallBegin_call (ir_node *node);
 void      set_CallBegin_call (ir_node *node, ir_node *call);
@@ -725,14 +728,15 @@ INLINE int      is_Proj (const ir_node *node);
    Start, End, Jmp, Cond, Return, Raise, Bad, CallBegin, EndReg, EndExcept */
 int is_cfop(ir_node *node);
 
-/** Returns true if the operation manipulates interprocedural control flow:
-   CallBegin, EndReg, EndExcept */
-int is_ip_cfop(ir_node *node);
-/** Returns true if the operation can change the control flow because
-   of an exception: Call, Quot, DivMod, Div, Mod, Load, Store, Alloc,
-   Bad. */
+/* @@@ old -- use get_irn_irg instead!  */
 ir_graph *get_ip_cfop_irg(ir_node *n);
 
+/** Returns true if the operation manipulates interprocedural control flow:
+    CallBegin, EndReg, EndExcept */
+int is_ip_cfop(ir_node *node);
+/** Returns true if the operation can change the control flow because
+    of an exception: Call, Quot, DivMod, Div, Mod, Load, Store, Alloc,
+    Bad. */
 int is_fragile_op(ir_node *node);
 /** Returns the memory operand of fragile operations. */
 ir_node *get_fragile_op_mem(ir_node *node);

@@ -587,7 +587,7 @@ set_Block_graph_arr (ir_node *node, int pos, ir_node *value) {
   node->attr.block.graph_arr[pos+1] = value;
 }
 
-/* handler handling for Blocks */
+/* handler handling for Blocks * /
 void
 set_Block_handler (ir_node *block, ir_node *handler)  {
   assert ((block->op == op_Block));
@@ -601,7 +601,7 @@ get_Block_handler (ir_node *block) {
   return (block->attr.block.handler_entry);
 }
 
-/* handler handling for Nodes */
+/ * handler handling for Nodes * /
 void
 set_Node_handler (ir_node *node, ir_node *handler) {
   set_Block_handler (get_nodes_Block (node), handler);
@@ -612,7 +612,7 @@ get_Node_handler (ir_node *node) {
   return (get_Block_handler (get_nodes_Block (node)));
 }
 
-/* exc_t handling for Blocks */
+/ * exc_t handling for Blocks * /
 void set_Block_exc (ir_node *block, exc_t exc) {
   assert ((block->op == op_Block));
   block->attr.block.exc = exc;
@@ -620,11 +620,10 @@ void set_Block_exc (ir_node *block, exc_t exc) {
 
 exc_t get_Block_exc (ir_node *block) {
   assert ((block->op == op_Block));
-
   return (block->attr.block.exc);
 }
 
-/* exc_t handling for Nodes */
+/ * exc_t handling for Nodes * /
 void set_Node_exc (ir_node *node, exc_t exc) {
   set_Block_exc (get_nodes_Block (node), exc);
 }
@@ -632,6 +631,7 @@ void set_Node_exc (ir_node *node, exc_t exc) {
 exc_t get_Node_exc (ir_node *node) {
   return (get_Block_exc (get_nodes_Block (node)));
 }
+*/
 
 void set_Block_cg_cfgpred_arr(ir_node * node, int arity, ir_node ** in) {
   assert(node->op == op_Block);
@@ -681,15 +681,15 @@ void remove_Block_cg_cfgpred_arr(ir_node * node) {
 /* Start references the irg it is in. */
 INLINE ir_graph *
 get_Start_irg(ir_node *node) {
-  assert(node->op == op_Start);
-  return node->attr.start.irg;
+  return get_irn_irg(node);
 }
 
 INLINE void
 set_Start_irg(ir_node *node, ir_graph *irg) {
   assert(node->op == op_Start);
   assert(is_ir_graph(irg));
-  node->attr.start.irg = irg;
+  assert(0 && " Why set irg? ");
+  //node->attr.start.irg = irg;
 }
 
 INLINE int
@@ -725,14 +725,12 @@ free_End (ir_node *end) {
 		       in array afterwards ... */
 }
 
-ir_graph *get_EndReg_irg (const ir_node *end) {
-  assert (end->op == op_EndReg);
-  return end->attr.end.irg;
+ir_graph *get_EndReg_irg (ir_node *end) {
+  return get_irn_irg(end);
 }
 
-ir_graph *get_EndExcept_irg  (const ir_node *end) {
-  assert (end->op == op_EndReg);
-  return end->attr.end.irg;
+ir_graph *get_EndExcept_irg  (ir_node *end) {
+  return get_irn_irg(end);
 }
 
 /*
@@ -1167,8 +1165,7 @@ void set_CallBegin_ptr (ir_node *node, ir_node *ptr) {
   set_irn_n(node, 0, ptr);
 }
 ir_graph * get_CallBegin_irg (ir_node *node) {
-  assert(node->op == op_CallBegin);
-  return node->attr.callbegin.irg;
+  return get_irn_irg(node);
 }
 ir_node * get_CallBegin_call (ir_node *node) {
   assert(node->op == op_CallBegin);
@@ -2243,17 +2240,10 @@ ir_node *get_Filter_cg_pred(ir_node *node, int pos) {
 
 INLINE ir_graph *
 get_irn_irg(ir_node *node) {
-  if (get_irn_op(node) == op_CallBegin) {
-    return node->attr.callbegin.irg;
-  } else if (get_irn_op(node) == op_EndReg ||
-	     get_irn_op(node) == op_EndExcept) {
-    return node->attr.end.irg;
-  } else if (get_irn_op(node) == op_Start) {
-    return node->attr.start.irg;
-  } else {
-    assert(0 && "no irg attr");
-    return NULL;
-  }
+  if (get_irn_op(node) != op_Block)
+    node = get_nodes_block(node);
+  assert(get_irn_op(node) == op_Block);
+  return node->attr.block.irg;
 }
 
 
@@ -2361,17 +2351,7 @@ INLINE int is_ip_cfop(ir_node *node) {
 }
 
 ir_graph *get_ip_cfop_irg(ir_node *n) {
-  switch (get_irn_opcode(n)) {
-  case iro_EndReg:
-    return get_EndReg_irg(n);
-  case iro_EndExcept:
-    return get_EndExcept_irg(n);
-  case iro_CallBegin:
-    return get_CallBegin_irg(n);
-  default:
-    assert(is_ip_cfop(n));
-  }
-  return NULL; /* should never be reached */
+  return get_irn_irg(n);
 }
 
 /* Returns true if the operation can change the control flow because
