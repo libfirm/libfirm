@@ -47,6 +47,10 @@ void stat_finish(const char *name);
  */
 void init_stat(unsigned enable_options);
 
+#else
+
+#define init_stat(enable_options)
+
 #endif /* FIRM_STATISTICS */
 
 #endif /* _FIRMSTAT_H_ */
