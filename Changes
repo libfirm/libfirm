@@ -1,3 +1,7 @@
+  28.2	Goetz
+  block walk in irouts.
+  irdom implemented: dominator information.
+
   25.2. Goetz
   Bugfix Optmierung Binops mit mode Tupel.
 
