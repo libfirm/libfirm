@@ -15,7 +15,7 @@
 
 #include "trvrfy.h"
 #include "irgraph_t.h"  /* for checking whether constant code is allocated
-			   on proper obstack */
+               on proper obstack */
 
 /**
  * Check a class
@@ -41,18 +41,18 @@ static int check_class(type *tp) {
       entity *ovw = get_entity_overwrites(mem, j);
       /*printf(" overwrites: "); DDME(ovw);*/
       /* Check whether ovw is member of one of tp's supertypes. If so,
-	 the representation is correct. */
+     the representation is correct. */
       found = false;
       for (k = 0; k < get_class_n_supertypes(tp); k++) {
-	if (get_class_member_index(get_class_supertype(tp, k), ovw) >= 0) {
-	  found = true;
-	  break;
-	}
+    if (get_class_member_index(get_class_supertype(tp, k), ovw) >= 0) {
+      found = true;
+      break;
+    }
       }
       if (!found) {
-	DDMT(tp); DDME(mem);
-	assert(found && "overwrites an entity not contained in direct supertype");
-	return error_ent_not_cont;
+    DDMT(tp); DDME(mem);
+    assert(found && "overwrites an entity not contained in direct supertype");
+    return error_ent_not_cont;
       }
     }
 
@@ -118,7 +118,7 @@ static void on_irg_storage(ir_node *n, void *env) {
 
   /* We also test whether the setting of the visited flag is legal. */
   assert(get_irn_visited(n) <= get_irg_visited(myenv->irg) &&
-	 "Visited flag of node is larger than that of corresponding irg.");
+     "Visited flag of node is larger than that of corresponding irg.");
 }
 
 /**
@@ -145,7 +145,7 @@ static int constants_on_wrong_irg(entity *ent) {
     int i;
     for (i = 0; i < get_compound_ent_n_values(ent); i++) {
       if (constant_on_wrong_irg(get_compound_ent_value(ent, i)))
-	return 1;
+    return 1;
     }
   } else {
     /* Might not be set if entity belongs to a description or is external allocated. */
@@ -153,8 +153,8 @@ static int constants_on_wrong_irg(entity *ent) {
       return constant_on_wrong_irg(get_atomic_ent_value(ent));
     else if (get_entity_visibility(ent) != visibility_external_allocated)
       assert((is_class_type(get_entity_owner(ent)) &&
-	      get_class_peculiarity(get_entity_owner(ent)) == peculiarity_description) &&
-	     "Value in constant atomic entity not set.");
+          get_class_peculiarity(get_entity_owner(ent)) == peculiarity_description) &&
+         "Value in constant atomic entity not set.");
   }
   return 0;
 }
@@ -164,8 +164,8 @@ static int constants_on_wrong_irg(entity *ent) {
  * are build on the const irg graph.
  *
  * @return
- * 	0 	if no error encountered
- * 	!= 0	else
+ *  0   if no error encountered
+ *  != 0    else
  */
 static int check_entity(entity *ent) {
   current_ir_graph =  get_const_code_irg();
@@ -185,7 +185,7 @@ static int check_entity(entity *ent) {
   if (get_entity_peculiarity(ent) == peculiarity_inherited) {
     entity *impl = get_SymConst_entity(get_atomic_ent_value(ent));
     assert(get_entity_peculiarity(impl) == peculiarity_existent &&
-	   "inherited entities must have constant pointing to existent entity.");
+           "inherited entities must have constant pointing to existent entity.");
   }
 
   return 0;

@@ -20,7 +20,6 @@
 #include "type_t.h"
 #include "entity_t.h"
 
-
 void
 dbg_info_merge_pair(ir_node *nw, ir_node *old, dbg_action info) {
   set_irn_dbg_info(nw, get_irn_dbg_info(old));
@@ -28,8 +27,8 @@ dbg_info_merge_pair(ir_node *nw, ir_node *old, dbg_action info) {
 
 void
 dbg_info_merge_sets(ir_node **new_nodes, int n_new_nodes,
-		    ir_node **old_nodes, int n_old_nodes,
-		    dbg_action info) {
+            ir_node **old_nodes, int n_old_nodes,
+            dbg_action info) {
 }
 
 
@@ -37,8 +36,8 @@ void (*__dbg_info_merge_pair)(ir_node *nw, ir_node *old, dbg_action info)
      = &dbg_info_merge_pair;
 
 void (*__dbg_info_merge_sets)(ir_node **new_nodes, int n_new_nodes,
-			      ir_node **old_nodes, int n_old_nodes,
-			      dbg_action info)
+                  ir_node **old_nodes, int n_old_nodes,
+                  dbg_action info)
      = &dbg_info_merge_sets;
 
 
