@@ -3230,9 +3230,9 @@ fi
 
 #AC_CHECK_HEADERS(obstack.h, ac_obstack_headers="yes", ac_obstack_headers="no")
 #if test "$ac_obstack_headers" != yes; then
-if test "x$HAVE_OBSTACK" = x; then
-    { { echo "$as_me:$LINENO: error: \"obstack header file not found\"" >&5
-echo "$as_me: error: \"obstack header file not found\"" >&2;}
+if test "x$HAVE_OBSTACK" = 0; then
+    { { echo "$as_me:$LINENO: error: \"no obstack support\"" >&5
+echo "$as_me: error: \"no obstack support\"" >&2;}
    { (exit 1); exit 1; }; }
 fi
 

@@ -164,8 +164,10 @@ int id_is_suffix (ident *suffix, ident *id) {
 
 int print_id (ident *id) {
   xprintf("%I", id);
+  return(0);
 }
 
 int fprint_id (FILE *F, ident *id) {
   xfprintf(F, "%I", id);
+  return(0);
 }

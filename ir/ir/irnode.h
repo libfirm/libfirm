@@ -395,7 +395,7 @@ typedef enum {
   Uge,			/* unordered, greater or equal */
   Ne,			/* unordered, less or greater = not equal */
   True		        /* true */
-  /* not_mask = Leg	/* bits to flip to negate comparison * @@ hack for jni interface */
+  /* not_mask = Leg*/	/* bits to flip to negate comparison * @@ hack for jni interface */
 } pnc_number;
 #define not_mask Leg
 INLINE char *get_pnc_string(int pnc);

@@ -342,6 +342,8 @@ INLINE opcode
 get_irn_opcode (ir_node *node)
 {
   assert (node);
+  assert (k_ir_node == get_kind(node));
+  assert (node -> op);
   return node->op->code;
 }
 

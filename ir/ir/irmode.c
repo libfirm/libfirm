@@ -265,6 +265,7 @@ init_mode (void)
 modecode
 get_mode_modecode (ir_mode *mode)
 {
+  assert(mode && "no mode given");
   return mode->code;
 }
 
@@ -279,6 +280,7 @@ set_mode_modecode (ir_mode *mode, modecode code)
 ident *
 get_mode_ident (ir_mode *mode)
 {
+  assert(mode && "no mode given");
   return mode->name;
 }
 
@@ -300,6 +302,7 @@ get_mode_name       (ir_mode *mode) {
 int
 get_mode_size (ir_mode *mode)
 {
+  assert(mode && "no mode given");
   return mode->size;
 }
 /*
@@ -313,6 +316,7 @@ set_mode_size (ir_mode *mode, int size)
 int
 get_mode_ld_align (ir_mode *mode)
 {
+  assert(mode && "no mode given");
   return mode->ld_align;
 }
 
@@ -327,6 +331,7 @@ set_mode_ld_align (ir_mode *mode, int ld_align)
 tarval *
 get_mode_min (ir_mode *mode)
 {
+  assert(mode && "no mode given");
   return mode->min;
 }
 
@@ -341,6 +346,7 @@ mode->min = min;
 tarval *
 get_mode_max (ir_mode *mode)
 {
+  assert(mode && "no mode given");
   return mode->max;
 }
 
@@ -355,6 +361,7 @@ set_mode_max (ir_mode *mode, tarval *max)
 tarval *
 get_mode_null (ir_mode *mode)
 {
+  assert(mode && "no mode given");
   return mode->null;
 }
 
@@ -369,6 +376,7 @@ set_mode_null (ir_mode *mode, tarval *null)
 unsigned
 get_mode_fsigned (ir_mode *mode)
 {
+  assert(mode && "no mode given");
   return mode->fsigned;
 }
 
@@ -383,6 +391,7 @@ set_mode_fsigned (ir_mode *mode, unsigned fsigned)
 unsigned
 get_mode_ffloat (ir_mode *mode)
 {
+  assert(mode && "no mode given");
   return mode->ffloat;
 }
 
@@ -434,47 +443,53 @@ set_mode_ffloat (ir_mode *mode, unsigned ffloat)
 int
 mode_is_signed (ir_mode *mode)
 {
-   int res;
-   unsigned fsigned;
-   fsigned = get_mode_fsigned (mode);
-   if (fsigned == 1) {
-     res = 1;
-    }
-   else {
-     res = 0;
-   }
-   return res;
+  int res;
+  unsigned fsigned;
+
+  assert(mode && "no mode given");
+  fsigned = get_mode_fsigned (mode);
+  if (fsigned == 1) {
+    res = 1;
+  }
+  else {
+    res = 0;
+  }
+  return res;
 }
 
 INLINE int
 mode_is_float (ir_mode *mode)
 {
-   int res;
-   unsigned ffloat;
-   ffloat = get_mode_ffloat (mode);
-   if (ffloat == 1) {
-      res = 1;
-    }
-   else {
-     res = 0;
-   }
-   return res;
+  int res;
+  unsigned ffloat;
+
+  assert(mode && "no mode given");
+  ffloat = get_mode_ffloat (mode);
+  if (ffloat == 1) {
+    res = 1;
+  }
+  else {
+    res = 0;
+  }
+  return res;
 }
 
 
 INLINE int
 mode_is_int (ir_mode *mode)
 {
-   int res;
-   modecode code;
-   code = get_mode_modecode (mode);
-   if ((code >= irm_Bs) &&  (code <= irm_Lu)) {
-      res = 1;
-    }
-   else {
-     res = 0;
-   }
-   return res;
+  int res;
+  modecode code;
+
+  assert(mode && "no mode given");
+  code = get_mode_modecode (mode);
+  if ((code >= irm_Bs) &&  (code <= irm_Lu)) {
+    res = 1;
+  }
+  else {
+    res = 0;
+  }
+  return res;
 }
 
 
@@ -482,6 +497,8 @@ INLINE int
 mode_is_num (ir_mode *mode)
 {
   int res;
+
+  assert(mode && "no mode given");
   if (mode_is_int (mode) || mode_is_float (mode)) {
     res = 1;
   }
@@ -496,6 +513,8 @@ mode_is_data (ir_mode *mode)
 {
   int res;
   modecode code;
+
+  assert(mode && "no mode given");
   code = get_mode_modecode (mode);
   if (mode_is_num (mode) ||
       code == irm_C || code == irm_U || code == irm_P) {
@@ -512,6 +531,8 @@ mode_is_datab (ir_mode *mode)
 {
   int res;
   modecode code;
+
+  assert(mode && "no mode given");
   code = get_mode_modecode (mode);
   if (mode_is_data (mode) || code == irm_b ) {
     res = 1;
@@ -527,6 +548,8 @@ mode_is_dataM (ir_mode *mode)
 {
   int res;
   modecode code;
+
+  assert(mode && "no mode given");
   code = get_mode_modecode (mode);
   if (mode_is_data (mode) || code == irm_M) {
     res = 1;

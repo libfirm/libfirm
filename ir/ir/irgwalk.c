@@ -20,6 +20,7 @@
 # include "irgraph.h" /* visited flag */
 # include "irprog.h"
 # include "irgwalk.h"
+# include "typewalk.h"
 
 # include "eset.h"
 # include "array.h"
