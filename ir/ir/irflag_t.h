@@ -92,8 +92,11 @@ typedef enum {
   /** Optimize Fragile OPs */
   OPT_FRAGILE_OPS                        = 0x00080000,
 
-	/** If conversion. */
-	OPT_IF_CONVERSION                      = 0x00100000,
+  /** If conversion. */
+  OPT_IF_CONVERSION                      = 0x00100000,
+
+  /** Optimize real function calls. */
+  OPT_REAL_FUNC_CALL                     = 0x00200000,
 
   /** Turn off all optimizations. */
   OPT_OPTIMIZED                          = 0x40000000,
@@ -262,6 +265,11 @@ static INLINE int get_opt_if_conversion(void)
   return libFIRM_opt & OPT_IF_CONVERSION;
 }
 
+/** Returns real function call optimization setting. */
+static INLINE int get_opt_real_func_call(void)
+{
+  return libFIRM_opt & OPT_REAL_FUNC_CALL;
+}
 
 #define get_opt_cse()                 _get_opt_cse()
 #define get_firm_verbosity()          _get_firm_verbosity()

@@ -45,6 +45,7 @@ optimization_state_t libFIRM_opt =
   ENABLE(OPT_PRECISE_EXC_CONTEXT)                |
   DISABLE(OPT_FRAGILE_OPS)                       |
   ENABLE(OPT_IF_CONVERSION)                      |
+  ENABLE(OPT_REAL_FUNC_CALL)                     |
   0;
 
 optimization_state_t libFIRM_verb =
@@ -70,6 +71,7 @@ optimization_state_t libFIRM_verb =
   DISABLE(OPT_PRECISE_EXC_CONTEXT)                |
   DISABLE(OPT_FRAGILE_OPS)                        |
   DISABLE(OPT_IF_CONVERSION)                      |
+  DISABLE(OPT_REAL_FUNC_CALL)                     |
   0;
 
 /** The Firm verbosity level */
@@ -319,7 +321,17 @@ void set_opt_fragile_ops(int value)
     libFIRM_opt &= ~OPT_FRAGILE_OPS;
 }
 
+/* Enable/Disable if conversion. */
 void set_opt_if_conversion(int value)
+{
+  if (value)
+    libFIRM_opt |= OPT_IF_CONVERSION;
+  else
+    libFIRM_opt &= ~OPT_IF_CONVERSION;
+}
+
+/* Enable/Disable real function call optimization. */
+void set_opt_real_function_call(int value)
 {
   if (value)
     libFIRM_opt |= OPT_IF_CONVERSION;

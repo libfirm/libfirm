@@ -220,6 +220,14 @@ void set_opt_fragile_ops(int value);
  */
 void set_opt_if_conversion(int value);
 
+/**
+ * Enable/Disable real function call optimization.
+ *
+ * Real function call optimization detects "real functions" and
+ * allows the floationg of Call nodes.
+ */
+void set_opt_real_function_call(int value);
+
 /** Enable/Disable normalizations of the firm representation.
  *
  *  This flag guards transformations that normalize the firm representation
