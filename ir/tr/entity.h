@@ -224,6 +224,13 @@ int      get_compound_ent_n_values(entity *ent);
 ir_node *get_compound_ent_value(entity *ent, int pos);
 entity  *get_compound_ent_value_member(entity *ent, int pos);
 void     set_compound_ent_value(entity *ent, ir_node *val, entity *member, int pos);
+/* Inits the entity ent witch must be of a one dimensional
+   array type with the values given in the values array.
+   The array must have a lower and an upper bound.  Keeps the
+   order of values. Does not test whether the number of values
+   fits into the given array size.  Does not test whether the
+   values have the proper mode for the array. */
+void set_array_entity_values(entity *ent, tarval **values, int num_vals);
 /* Copies the value pos of the entity to current_block in current_ir_graph. */
 ir_node *copy_compound_ent_value(entity *ent, int pos);
 

@@ -355,6 +355,26 @@ set_compound_ent_value(entity *ent, ir_node *val, entity *member, int pos) {
   ent->val_ents[pos+1] = member;
 }
 
+void
+set_array_entity_values(entity *ent, tarval **values, int num_vals) {
+  int i;
+  ir_graph *rem = current_ir_graph;
+  type *arrtp = get_entity_type(ent);
+  ir_node *val;
+
+  assert(is_array_type(arrtp));
+  assert(get_array_n_dimensions(arrtp) == 1);
+  assert(get_array_lower_bound (arrtp, 0) && get_array_upper_bound (arrtp, 0));
+  assert(get_entity_variability(ent) != uninitialized);
+  current_ir_graph = get_const_code_irg();
+
+  for (i = 0; i < num_vals; i++) {
+    val = new_Const(get_tv_mode (values[i]), values[i]);
+    set_compound_ent_value(ent, val, get_array_element_entity(arrtp), i);
+  }
+  current_ir_graph = rem;
+}
+
 inline int
 get_entity_offset (entity *ent) {
   return ent->offset;
