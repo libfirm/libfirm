@@ -6,7 +6,7 @@
  * Modified by:
  * Created:     1999 by getting from fiasco
  * CVS-ID:      $Id$
- * Copyright:   (c) 1995, 1996 Markus Armbruster
+ * Copyright:   (c) 1995, 1996 Christian von Roques & Markus Armbruster
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 

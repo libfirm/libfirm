@@ -224,8 +224,8 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
   int opcode, opcode1;
   ir_mode *mymode, *op1mode = NULL, *op2mode, *op3mode;
   int op_is_symmetric = 1;  /*  0: asymmetric
-1: operands have identical modes
-2: modes of operands == mode of this node */
+				1: operands have identical modes
+				2: modes of operands == mode of this node */
   type *mt; /* A method type */
 
   ir_node **in;
@@ -417,7 +417,7 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
           );
       if (mode_is_reference(op1mode) != mode_is_reference(op2mode)) {
         /* BB x ref x int --> ref or BB x int x ref --> ref */
-        op_is_symmetric = 0; /* ArmRoq */
+        op_is_symmetric = 0;
       } else {
         /* BB x num x num --> num or BB x ref x ref */
         op_is_symmetric = 2;
@@ -439,7 +439,7 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
           "Sub node", 0
           );
       if (mode_is_reference(op1mode) != mode_is_reference(op2mode)) {
-        op_is_symmetric = 0; /* ArmRoq */
+        op_is_symmetric = 0;
       } else {
         op_is_symmetric = 2;
       }
