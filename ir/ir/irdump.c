@@ -499,6 +499,7 @@ dump_type_info (type_or_ent *tore, void *env) {
     } break;
   case k_type:
     {
+      /* why can't I cast here??? @@@ */
       type *type = tore;
       xfprintf (F, "\"%I %I", get_type_tpop_nameid(type), get_type_nameid(type));
 
@@ -530,10 +531,10 @@ dump_type_info (type_or_ent *tore, void *env) {
       case tpo_union:
 	{
 	  xfprintf (F, "\"}\n");
-	  for (i = 0; i < get_union_n_types(type); i++)
+	  for (i = 0; i < get_union_n_members(type); i++)
 	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-		      "label: \"%I\"f" UNION_EDGE_ATTR "}\n",
-		      type, get_union_unioned_type(type, i), get_union_delim_nameid(type, i));
+		      "label: \"\"f" UNION_EDGE_ATTR "}\n",
+		      type, get_union_member(type, i));
 	} break;
       case tpo_array:
 	{

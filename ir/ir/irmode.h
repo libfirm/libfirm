@@ -6,12 +6,12 @@
 irmode.h Modes for ir operators.
 
 This module specifies the modes that type the firm nodes.  See
-UKA tech report 1999-44 for more information about modes.
+UKA tech report 1999-14 for more information about modes.
 
 
 @@@ This file is at the level of the original fiasco.  It needs to be ported
-to the version of the tech report!!! This will be done with the reimplementation
-of the tarval module.
+to the version of the tech report!!! This will be done with the
+reimplementation of the tarval module.
 */
 
 # ifndef _IRMODE_H_
@@ -30,14 +30,14 @@ typedef struct tarval tarval;
 
 typedef enum { /* irm is short for `ir mode' */
   irm_T,                        /* former irm_N */
-  irm_f, irm_d,
-  irm_c, irm_C, irm_h, irm_H, irm_i, irm_I, irm_l, irm_L,
-  irm_B, irm_b,
+  irm_f, irm_d,                 /* 1, 2 */
+  irm_c, irm_C, irm_h, irm_H, irm_i, irm_I, irm_l, irm_L, /* 3 .. 10 */
+  irm_B, irm_b,                 /* 11, 12 */
   irm_p,
-  irm_s, irm_S,
+  irm_s, irm_S,                 /* 14, 15 */
   irm_X, irm_M, irm_R, irm_Z,
   irm_max
-  /*  according to tech report 1999-44:
+  /*  according to tech report 1999-14:
   irm_BB, irm_X,                 // basic block, execution
   irm_F, irm_D, irm_E,           // float, double, extended
   irm_B, irm_Bu, irm_H, irm_Hu, irm_I, irm_Iu, irm_L, irm_Lu,

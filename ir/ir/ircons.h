@@ -263,7 +263,7 @@
  *    To use the functionality of the comfortable interface correctly the Front
  *    End needs to follow certain protocols.  This is explained in the following.
  *    To build a correct IR with the other interfaces study the semantics of
- *    the firm node (See tech-reprot UKA 1999-44).  For the construction of
+ *    the firm node (See tech-reprot UKA 1999-14).  For the construction of
  *    types and entities see the documentation in those modules.
  *
  *    First the Frontend needs to decide which variables and values used in
@@ -327,13 +327,13 @@
  *    add_in_edge(this_block, cf_pred1);
  *    add_in_edge(this_block, cf_pred2);
  *    mature_block(this_block);
- *    a_val = get_value(17, mode_I);
+ *    a_val = get_value(42, mode_I);
  *    mem = get_store();
  *    div = new_Div(mem, a_val, a_val);
  *    mem = new_Proj(div, mode_M, 0);   * for the numbers for Proj see docu *
  *    res = new_Proj(div, mode_I, 2);
  *    set_store(mem);
- *    set_value(res, 17);
+ *    set_value(res, 42);
  *    cf_op = new_Jmp();
  *
  *    For further information look at the documentation of the nodes and
