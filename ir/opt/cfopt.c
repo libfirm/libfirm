@@ -67,13 +67,15 @@ static void merge_blocks(ir_node *n, void *env) {
       if (get_opt_normalize())
         set_Block_cfgpred(n, i, skip_Tuple(get_Block_cfgpred(n, i)));
     }
+
+    /* see below */
     new_block = equivalent_node(n);
-    if (new_block != n)
+    if (new_block != n && ! is_Bad(new_block))
       exchange (n, new_block);
 
   } else if (get_opt_optimize() && (get_irn_mode(n) == mode_X)) {
     /* We will soon visit a block.  Optimize it before visiting! */
-    ir_node *b        = get_nodes_block(n);
+    ir_node *b = get_nodes_block(skip_Proj(n));
 
     if (!is_Bad(b)) {
       new_block = equivalent_node(b);
@@ -83,39 +85,45 @@ static void merge_blocks(ir_node *n, void *env) {
            promote it directly below. Nevertheless, we sometimes reach a block
            the first time through a dataflow node.  In this case we optimized the
            block as such and have to promote the Bad here. */
-        assert(((b == new_block) ||
-            get_opt_control_flow_straightening() ||
-            get_opt_control_flow_weak_simplification()) &&
-           ("strange flag setting"));
+        assert((get_opt_control_flow_straightening() ||
+                get_opt_control_flow_weak_simplification()) &&
+               ("strange flag setting"));
         exchange (b, new_block);
         b = new_block;
         new_block = equivalent_node(b);
       }
-      b = new_block;
-    }
 
-    /*
-     * BEWARE: do not kill floating notes here as they might be needed in
-     * valid blocks because of global CSE.
-     */
-    if (is_Bad(b) && get_opt_normalize() &&
-      get_op_pinned(get_irn_op(n)) == op_pin_state_pinned)
-      exchange(n, new_Bad());
+      /* normally, we would create a Bad block here, but this must be
+       * prevented, so just set it's cf to Bad.
+       */
+      if (is_Bad(new_block))
+	exchange(n, new_Bad());
+    }
   }
 }
 
 /**
- * Remove dead block by inspecting dominance info
+ * Remove cf from dead block by inspecting dominance info
+ * Do not replace blocks by Bad.  This optimization shall
+ * ensure, that all Bad cfg preds are removed, and no new
+ * other Bads are introduced.
+ *
+ * Must be run in the post walker.
  */
-static void remove_dead_blocks(ir_node *block, void *env) {
-  /* delete dead blocks: if we have dominator information, this can easily be detected.
-   * Here, new Bad blocks my be introduced.
-   *
-   * BEWARE: don't kill the end block */
-  if (block != get_irg_end_block(current_ir_graph) &&
-      get_Block_dom_depth(block) == -1 &&
-      get_opt_unreachable_code()) {
-    exchange (block, new_Bad());
+static void remove_dead_block_cf(ir_node *block, void *env)
+{
+  int i, n;
+
+  /* check block predecessors and turn control flow into bad */
+  for (i = 0, n = get_Block_n_cfgpreds(block); i < n; ++i) {
+    ir_node *pred_X = get_Block_cfgpred(block, i);
+
+    if (! is_Bad(pred_X)) {
+      ir_node *pred_bl = get_nodes_block(skip_Proj(pred_X));
+
+      if (is_Bad(pred_bl) || (get_Block_dom_depth(pred_bl) == -1))
+        exchange (pred_X, new_Bad());
+    }
   }
 }
 
@@ -130,16 +138,7 @@ static void collect_nodes(ir_node *n, void *env) {
   if (is_no_Block(n)) {
     ir_node *b = get_nodes_block(n);
 
-    /*
-     * BEWARE: do not kill floating notes here as they might be needed in
-     * valid blocks because of global CSE.
-     */
-    if (is_Bad(b) &&
-      get_op_pinned(get_irn_op(n)) == op_pin_state_pinned) {
-      /* previous merge_blocks() may have killed dead blocks */
-      exchange(n, new_Bad());
-    }
-    else if ((get_irn_op(n) == op_Phi)) {
+    if ((get_irn_op(n) == op_Phi)) {
       /* Collect Phi nodes to compact ins along with block's ins. */
       set_irn_link(n, get_irn_link(b));
       set_irn_link(b, n);
@@ -193,6 +192,10 @@ static int test_whether_dispensable(ir_node *b, int pos) {
   int dispensable = 1;
   ir_node *cfop = get_Block_cfgpred(b, pos);
   ir_node *pred = get_nodes_block(cfop);
+
+  /* Bad blocks will be optimized away, so we don't need space for them */
+  if (is_Bad(pred))
+    return 0;
 
   if (get_Block_block_visited(pred) + 1
       < get_irg_block_visited(current_ir_graph)) {
@@ -363,6 +366,7 @@ static void optimize_blocks(ir_node *b, void *env) {
         in[p_preds++] = get_Phi_pred(phi, i);
       }
     }
+    assert(p_preds <= max_preds);
 
     /* Fix the node */
     if (p_preds == 1)
@@ -444,7 +448,8 @@ static void optimize_blocks(ir_node *b, void *env) {
           else
             set_irn_in(phi, q_preds, in);
 
-//          assert(p_preds == q_preds && "Wrong Phi Fix");
+          assert(q_preds <= max_preds);
+//        assert(p_preds == q_preds && "Wrong Phi Fix");
         }
         phi = get_irn_link(phi);
       }
@@ -478,6 +483,8 @@ static void optimize_blocks(ir_node *b, void *env) {
       in[n_preds++] = get_Block_cfgpred(b, i);
     }
   }
+  assert(n_preds <= max_preds);
+
   set_irn_in(b, n_preds, in);
 
   assert(get_irn_link(b) == NULL || (n_preds == p_preds && "Wrong Phi Fix"));
@@ -506,7 +513,7 @@ static void optimize_blocks(ir_node *b, void *env) {
  * we will lose blocks and thereby generate mem leaks.
  */
 void optimize_cf(ir_graph *irg) {
-  int i;
+  int i, n;
   ir_node **in;
   ir_node *end = get_irg_end(irg);
   ir_graph *rem = current_ir_graph;
@@ -520,9 +527,21 @@ void optimize_cf(ir_graph *irg) {
   if (get_irg_dom_state(current_ir_graph) == dom_consistent)
     set_irg_dom_inconsistent(current_ir_graph);
 
-  if (dom_state == dom_consistent) {
+  if (dom_state == dom_consistent && get_opt_optimize() && get_opt_unreachable_code()) {
+    ir_node *end = get_irg_end(irg);
+
     /* we have dominace info, we can kill dead block */
-    irg_block_walk(get_irg_end_block(irg), NULL, remove_dead_blocks, NULL);
+    irg_block_walk_graph(irg, NULL, remove_dead_block_cf, NULL);
+
+    /* fix the keep-alives */
+    for (i = 0, n = get_End_n_keepalives(end); i < n; ++i) {
+      ir_node *ka = get_End_keepalive(end, i);
+
+      if (is_Block(ka) && (get_Block_dom_depth(ka) == -1))
+	set_End_keepalive(end, i, new_Bad());
+      if (is_Phi(ka) && (get_Block_dom_depth(get_nodes_block(ka)) == -1))
+	set_End_keepalive(end, i, new_Bad());
+    }
   }
 
   /* Use block visited flag to mark non-empty blocks. */
@@ -538,7 +557,7 @@ void optimize_cf(ir_graph *irg) {
   in[0] = get_nodes_block(end);
   inc_irg_visited(current_ir_graph);
 
-  for(i = 0; i < get_End_n_keepalives(end); i++) {
+  for (i = 0; i < get_End_n_keepalives(end); i++) {
     ir_node *ka = get_End_keepalive(end, i);
 
     if (irn_not_visited(ka)) {
@@ -557,11 +576,14 @@ void optimize_cf(ir_graph *irg) {
   /* DEL_ARR_F(end->in);   GL @@@ tut nicht ! */
   end->in = in;
 
-  /* after optimize_cf(), only Bad data flow may remain. */
-  if (irg_vrfy_bads(irg, BAD_DF | BAD_BLOCK | TUPLE)) {
-    dump_ir_block_graph(irg, "-vrfy-cf");
-    dump_ir_graph(irg, "-vrfy-cf");
-    fprintf(stderr, "VRFY_BAD in optimize_cf()\n");
+  /* the verifyer doesn't work yet with floating nodes */
+  if (get_irg_pinned(irg) == op_pin_state_pinned) {
+    /* after optimize_cf(), only Bad data flow may remain. */
+    if (irg_vrfy_bads(irg, BAD_DF | BAD_BLOCK | TUPLE)) {
+      dump_ir_block_graph(irg, "-vrfy-cf");
+      dump_ir_graph(irg, "-vrfy-cf");
+      fprintf(stderr, "VRFY_BAD in optimize_cf()\n");
+    }
   }
 
   current_ir_graph = rem;
