@@ -1577,9 +1577,9 @@ new_rd_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
         res = optimize_in_place_2(known);
         if (res != known)
           exchange(known, res);
-        else
-          res = known;
       }
+      else
+        res = known;
     } else {
       /* A undefined value, e.g., in unreachable code. */
       res = new_Bad();
