@@ -14,14 +14,20 @@ top_srcdir := @top_srcdir@
 srcdir = @srcdir@
 topdir = ../..
 subdir := ir/ir
+# do we want statistics
+enable_statistics := @enable_statistics@
 
 INSTALL_HEADERS = firmstat.h
 
 SOURCES = $(INSTALL_HEADERS)
 
 SOURCES += 	Makefile.in \
-		firmstat.c \
-		pattern.c
+		firmstat.c
+
+ifeq ($(enable_statistics),yes)
+SOURCES += pattern.c
+endif
+
 
 include $(topdir)/MakeRules
 
