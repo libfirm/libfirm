@@ -103,7 +103,7 @@ set_irn_uplink (ir_node *n, int uplink) {
   ((scc_info *)n->link)->uplink = uplink;
 }
 
-static INLINE int
+INLINE int
 get_irn_uplink (ir_node *n) {
   assert(get_irn_link(n));
   /*  from fast to slow */
@@ -119,7 +119,7 @@ set_irn_dfn (ir_node *n, int dfn) {
   ((scc_info *)n->link)->dfn = dfn;
 }
 
-static INLINE int
+INLINE int
 get_irn_dfn (ir_node *n) {
   assert(get_irn_link(n));
   /*  to slow */
@@ -247,6 +247,9 @@ pop_scc_to_loop (ir_node *n)
   do
     {
     m = pop();
+
+    //printf(" dfn: %d, upl %d upl-new %d ", get_irn_dfn(m), get_irn_uplink(m), loop_node_cnt+1); DDMN(m);
+
     loop_node_cnt++;
     set_irn_dfn(m, loop_node_cnt);
     add_loop_node(current_loop, m);
@@ -636,72 +639,6 @@ get_start_index(ir_node *n) {
 
 
 #if 0
-/* Returns current_ir_graph and set it to the irg of predecessor index
-   of node n. */
-static INLINE ir_graph *
-switch_irg (ir_node *n, int index) {
-  ir_graph *old_current = current_ir_graph;
-
-  if (interprocedural_view) {
-    /* Only Filter and Block nodes can have predecessors in other graphs. */
-    if (get_irn_op(n) == op_Filter)
-      n = get_nodes_Block(n);
-    if (get_irn_op(n) == op_Block) {
-      ir_node *cfop = skip_Proj(get_Block_cfgpred(n, index));
-      if (is_ip_cfop(cfop)) {
-    current_ir_graph = get_irn_irg(cfop);
-    set_irg_visited(current_ir_graph, get_max_irg_visited());
-      }
-    }
-  }
-
-  return old_current;
-}
-
-/* Walks up the stack passing n and then finding the node
-   where we walked into the irg n is contained in.
-   Here we switch the irg. */
-static ir_graph *
-find_irg_on_stack (ir_node *n) {
-  ir_node *m;
-  ir_graph *old_current = current_ir_graph;
-  int i;
-
-  if (interprocedural_view) {
-    for (i = tos; i >= 0; i--) {
-      if (stack[i] == n) break;
-    }
-    if (i < 0) i = tos;
-
-    assert (i >= 0);
-    for (; i >= 0; i--) {
-      m = stack[i];
-      /*printf(" Visiting %d ", i); DDMN(m);*/
-      if (is_ip_cfop(m)) {
-    current_ir_graph = get_irn_irg(m);
-    break;
-      }
-      if (get_irn_op(m) == op_Filter) {
-    /* Find the corresponding ip_cfop */
-    ir_node *pred = stack[i+1];
-    int j;
-    for (j = 0; j < get_Filter_n_cg_preds(m); j++)
-      if (get_Filter_cg_pred(m, j) == pred) break;
-    if (j >= get_Filter_n_cg_preds(m))
-      /* It is a filter we didn't pass as the predecessors are marked. */
-      continue;
-    assert(get_Filter_cg_pred(m, j) == pred);
-    switch_irg(m, j);
-    break;
-      }
-    }
-  }
-
-  return old_current;
-}
-#endif
-
-#if 0
 static void test(ir_node *pred, ir_node *root, ir_node *this) {
   int i;
   if (get_irn_uplink(pred) >= get_irn_uplink(root)) return;
@@ -751,16 +688,49 @@ is_head (ir_node *n, ir_node *root)
       if (!irn_is_in_stack(pred)) {
 	some_outof_loop = 1;
       } else {
-	if(get_irn_uplink(pred) < get_irn_uplink(root))
-	  {
-	    DDMN(pred); DDMN(root);
-	  }
-	assert(get_irn_uplink(pred) >= get_irn_uplink(root));
+	if(get_irn_uplink(pred) < get_irn_uplink(root)) {
+	  DDMN(n); DDMN(pred); DDMN(root);
+	  assert(get_irn_uplink(pred) >= get_irn_uplink(root));
+	}
 	some_in_loop = 1;
       }
     }
   }
   return some_outof_loop && some_in_loop;
+}
+
+/* Returns true if n is possible loop head of an endless loop.
+   I.e., it is a Block, Phi or Filter node and has only predecessors
+   within the loop.
+   @arg root: only needed for assertion. */
+static bool
+is_endless_head (ir_node *n, ir_node *root)
+{
+  int i, arity;
+  int some_outof_loop = 0, some_in_loop = 0;
+
+  /* Test for legal loop header: Block, Phi, ... */
+  if (!is_possible_loop_head(n))
+    return false;
+
+  if (!is_outermost_Start(n)) {
+    arity = get_irn_arity(n);
+    for (i = get_start_index(n); i < arity; i++) {
+      ir_node *pred = get_irn_n(n, i);
+      assert(pred);
+      if (is_backedge(n, i)) { continue; }
+      if (!irn_is_in_stack(pred)) {
+	some_outof_loop = 1; //printf(" some out of loop ");
+      } else {
+	if(get_irn_uplink(pred) < get_irn_uplink(root)) {
+	  DDMN(pred); DDMN(root);
+	  assert(get_irn_uplink(pred) >= get_irn_uplink(root));
+	}
+	some_in_loop = 1;
+      }
+    }
+  }
+  return !some_outof_loop && some_in_loop;
 }
 
 /* Returns index of the predecessor with the smallest dfn number
@@ -805,11 +775,14 @@ largest_dfn_pred (ir_node *n)
   return index;
 }
 
-/* Searches the stack for possible loop heads.  Tests these for backedges.
-   If it finds a head with an unmarked backedge it marks this edge and
-   returns the tail of the loop.
-   If it finds no backedge returns NULL.
-   ("disable_backedge" in fiasco) */
+/** Searches the stack for possible loop heads.  Tests these for backedges.
+    If it finds a head with an unmarked backedge it marks this edge and
+    returns the tail of the loop.
+    If it finds no backedge returns NULL.
+    ("disable_backedge" in fiasco)
+*
+*  @param n  A node where uplink == dfn.
+**/
 
 static ir_node *
 find_tail (ir_node *n) {
@@ -819,7 +792,6 @@ find_tail (ir_node *n) {
   /*
     if (!icfg && rm_cyclic_phis && remove_cyclic_phis (n)) return NULL;
   */
-
   m = stack[tos-1];  /* tos = top of stack */
   if (is_head (m, n)) {
     res_index = smallest_dfn_pred(m, 0);
@@ -827,16 +799,45 @@ find_tail (ir_node *n) {
     (n ==  m))
       return NULL;
   } else {
-    if (m == n) return NULL;
-    for (i = tos-2; ; --i) {
+    if (m == n) return NULL;    // Is this to catch Phi - self loops?
+    for (i = tos-2; i >= 0; --i) {
       m = stack[i];
+
       if (is_head (m, n)) {
 	res_index = smallest_dfn_pred (m, get_irn_dfn(m) + 1);
 	if (res_index == -2)  /* no smallest dfn pred found. */
 	  res_index = largest_dfn_pred (m);
+
+	if ((m == n) && (res_index == -2)) {
+	  i = -1;
+	}
 	break;
       }
+
+      /* We should not walk past our selves on the stack:  The upcoming nodes
+	 are not in this loop. We assume a loop not reachable from Start. */
+      if (m == n) {
+	i = -1;
+	break;
+      }
+
     }
+
+    if (i < 0) {
+      /* A dead loop not reachable from Start. */
+      for (i = tos-2; i >= 0; --i) {
+	m = stack[i];
+	if (is_endless_head (m, n)) {
+	  res_index = smallest_dfn_pred (m, get_irn_dfn(m) + 1);
+	  if (res_index == -2)  /* no smallest dfn pred found. */
+	    res_index = largest_dfn_pred (m);
+	  break;
+	}
+	if (m == n) { break; }  /* It's not an unreachable loop, either. */
+      }
+      //assert(0 && "no head found on stack");
+    }
+
   }
   assert (res_index > -2);
 
@@ -986,7 +987,6 @@ static void scc (ir_node *n) {
 	for (i = get_start_index(n); i < arity; i++) {
 	  ir_node *m;
 	  if (is_backedge(n, i)) continue;
-	  /*	  printf("i: %d\n", i); */
 	  m = get_irn_n(n, i); /* get_irn_ip_pred(n, i); */
 	  /* if ((!m) || (get_irn_op(m) == op_Unknown)) continue; */
 	  scc (m);

@@ -13,7 +13,7 @@
  */
 
 /**
- * Intraprozedurale Analyse zur Abschätzung der Aufrufrelation. Es
+nn * Intraprozedurale Analyse zur Abschätzung der Aufrufrelation. Es
  * die Menge der instantiierten Klassen bestimmt, und daraus existierende Methoden
  * bestimmt.
  */
@@ -87,7 +87,10 @@ static void rta_act (ir_node *node, void *env)
       ent = get_tarval_entity (get_Const_tarval (ptr));
 
     } else if (iro_SymConst == get_irn_opcode (ptr)) { /* CALL SYMCONST */
-      assert (ent && "couldn't determine entity of call to symConst");
+      /* If this SymConst refers to a method the method is external_visible
+	 and therefore must be considered executed anyways. */
+      //dump_ir_block_graph(get_irn_irg(ptr));
+      //assert (ent && "couldn't determine entity of call to symConst");
     }
 
     if (ent) {
@@ -285,7 +288,13 @@ static int has_live_call (entity *method, ir_graph *graph)
   int i, n_over;
 
   /* stop searching if a overwriting method comes with a new graph */
-  if (get_irg_ent (graph) != method) { /* shouldn't we compare GRAPHS here????? */
+  /* if (get_irg_ent (graph) != method) *
+     { /* shouldn't we compare GRAPHS here????? *
+     return (FALSE);
+     }
+  */
+
+  if (graph != get_entity_irg (method)) {
     return (FALSE);
   }
 
@@ -442,6 +451,8 @@ static void remove_irg (ir_graph *graph)
 {
   entity *ent = get_irg_entity (graph);
 
+  //DDMEO(get_irg_ent(graph));
+
   /* delete the ir_graph data */
   remove_irp_irg (graph);
   /* remove reference to the graph */
@@ -534,7 +545,14 @@ void rta_delete_dead_graphs ()
       eset_insert (dead_graphs, graph);
     }
   }
-
+  /*
+  for (i = 0; i < get_irp_n_types(); ++i) {
+    type *tp = get_irp_type(i);
+    if (is_class_type(tp) && !rta_is_alive_class(tp)) {
+      printf(" never allocated: "); DDMT(tp);
+    }
+  }
+  */
   /* now delete the graphs. */
   for (graph = eset_first (dead_graphs);
        graph;
@@ -620,6 +638,11 @@ int  rta_is_alive_field  (entity *field)
 
 /*
  * $Log$
+ * Revision 1.10  2004/06/17 10:31:41  goetz
+ * irscc: bugfix, can now deal with loops not reachable from start
+ * cgana: bugfix, skip_Tuple
+ * rta: improved
+ *
  * Revision 1.9  2004/06/17 08:56:03  liekweg
  * Fixed typos in comments
  *

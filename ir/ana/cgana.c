@@ -49,9 +49,9 @@ static void * MARK = &MARK;
 static eset * entities = NULL;
 
 
-/* Bestimmt die eindeutige Methode, die die Methode für den
- * übergebenene (dynamischen) Typ überschreibt. */
-entity * get_implementation(type * class, entity * method) {
+/** Bestimmt die eindeutige Methode, die die Methode für den
+ * übergebenen (dynamischen) Typ überschreibt. */
+static entity * get_implementation(type * class, entity * method) {
   int i;
   if (get_entity_peculiarity(method) != peculiarity_description &&
       get_entity_owner(method) == class) {
@@ -73,9 +73,9 @@ entity * get_implementation(type * class, entity * method) {
   return NULL;
 }
 
-/* Returns the entity that contains the implementation of the inherited
-   entity if available, else returns the entity passed. */
-entity *get_inherited_methods_implementation(entity *inh_meth) {
+/** Returns the entity that contains the implementation of the inherited
+    entity if available, else returns the entity passed. */
+static entity *get_inherited_methods_implementation(entity *inh_meth) {
   entity *impl_meth = NULL;
   ir_node *addr = get_atomic_ent_value(inh_meth);
   assert(addr && "constant entity without value");
@@ -112,6 +112,7 @@ entity *get_inherited_methods_implementation(entity *inh_meth) {
  */
 static void collect_impls(entity *method, eset *set, int *size, bool *open) {
   int i;
+
   if (get_entity_peculiarity(method) == peculiarity_existent) {
     if (get_entity_visibility(method) == visibility_external_allocated) {
       assert(get_entity_irg(method) == NULL);
@@ -124,6 +125,7 @@ static void collect_impls(entity *method, eset *set, int *size, bool *open) {
       }
     }
   }
+
   if (get_entity_peculiarity(method) == peculiarity_inherited) {
     entity *impl_ent = get_inherited_methods_implementation(method);
     assert(impl_ent && "no implementation for inherited entity");
@@ -200,15 +202,29 @@ static entity ** get_impl_methods(entity * method) {
       __dbg_info_merge_pair(new_node, node, dbg_rem_poly_call)
 
 
+
+/** Analyse address computations.
+ *
+ *  - If the node is a SymConst replace it by Const(ent) if possible.
+ *  - If the node is a Sel:
+ *    * If the pointer to the Sel comes directly from an Alloc node
+ *      replace the Sel by a Const(ent).
+ *
+ *
+ *  @param node The node to analyze
+ *  @param ldname_map A map that mapps names of entities to the entities.
+ */
 static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
+
   if (get_irn_op(node) == op_SymConst) {
     /* Wenn möglich SymConst-Operation durch Const-Operation
      * ersetzen. */
     if (get_SymConst_kind(node) == linkage_ptr_info) {
-      pmap_entry * entry = pmap_find(ldname_map, (void *) get_SymConst_ptrinfo(node));
+      pmap_entry *entry = pmap_find(ldname_map, (void *) get_SymConst_ptrinfo(node));
       if (entry != NULL) { /* Method is declared in the compiled code */
-        entity * ent = entry->value;
-        if (get_opt_normalize() && (get_entity_visibility(ent) != visibility_external_allocated)) { /* Meth. is defined */
+        entity *ent = entry->value;
+        if (get_opt_normalize() && (get_entity_visibility(ent) != visibility_external_allocated)) {
+	  /* Meth. is defined */
           ir_node *new_node;
           assert(get_entity_irg(ent));
           set_irg_current_block(current_ir_graph, get_nodes_Block(node));
@@ -300,12 +316,12 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
 }
 
 
-/* Datenstruktur initialisieren. Zusätzlich werden alle
- * SymConst-Operationen, die auf interne Methoden verweisen, durch
- * Const-Operationen ersetzt. */
+/** Datenstruktur initialisieren. Zusätzlich werden alle
+ *  SymConst-Operationen, die auf interne Methoden verweisen, durch
+ *  Const-Operationen ersetzt. */
 static void sel_methods_init(void) {
   int i;
-  pmap * ldname_map = pmap_create();
+  pmap * ldname_map = pmap_create();   /* Map entitiy names to entities: to replace SymConst by Const(ent). */
   assert(entities == NULL);
   entities = eset_create();
   for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
