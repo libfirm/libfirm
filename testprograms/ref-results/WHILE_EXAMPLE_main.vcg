@@ -63,8 +63,8 @@ edge: {sourcename: "n71" targetname: "n73" label: "0" color: red}
 node: {title: "n73" label: "Start  73" color: blue}
 node: {title: "n74" label: "ProjT 4 74" color: yellow}
 edge: {sourcename: "n74" targetname: "n73" label: "0" }
-node: {title: "n75" label: "0x00000001Is  75" color: yellow}
-node: {title: "n76" label: "0x00000000Is  76" color: yellow}
+node: {title: "n75" label: "0x1Is  75" color: yellow}
+node: {title: "n76" label: "0x0Is  76" color: yellow}
 node: {title: "n79" label: "ProjM 1 79" color: yellow}
 edge: {sourcename: "n79" targetname: "n73" label: "0" color: blue}
 }

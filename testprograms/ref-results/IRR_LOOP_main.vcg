@@ -77,12 +77,12 @@ edge: {sourcename: "n76" targetname: "n69" label: "0" color: red}
 
 graph: { title: "n63"  label: "63" status:clustered color:yellow
 edge: {sourcename: "n63" targetname: "n64" label: "0" color: red}
-node: {title: "n62" label: "0x00000002Is  62" color: yellow}
+node: {title: "n62" label: "0x2Is  62" color: yellow}
 node: {title: "n64" label: "ProjX 0 64" color: yellow}
 edge: {sourcename: "n64" targetname: "n65" label: "0" color: red}
 node: {title: "n65" label: "Start  65" color: blue}
-node: {title: "n66" label: "0x00000000Is  66" color: yellow}
-node: {title: "n72" label: "0x00000001Is  72" color: yellow}
+node: {title: "n66" label: "0x0Is  66" color: yellow}
+node: {title: "n72" label: "0x1Is  72" color: yellow}
 node: {title: "n81" label: "ProjM 1 81" color: yellow}
 edge: {sourcename: "n81" targetname: "n65" label: "0" color: blue}
 }

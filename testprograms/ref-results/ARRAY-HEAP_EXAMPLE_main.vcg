@@ -42,8 +42,8 @@ edge: {sourcename: "n42" targetname: "n41" label: "0" color: red}
 node: {title: "n41" label: "ProjX 0 41" color: yellow}
 edge: {sourcename: "n41" targetname: "n43" label: "0" color: red}
 node: {title: "n43" label: "Start  43" color: blue}
-node: {title: "n47" label: "0x00000003Iu  47" color: yellow}
-node: {title: "n50" label: "0x00000140Iu  50" color: yellow}
+node: {title: "n47" label: "0x3Iu  47" color: yellow}
+node: {title: "n50" label: "0x28Iu  50" color: yellow}
 node: {title: "n51" label: "ProjM 1 51" color: yellow}
 edge: {sourcename: "n51" targetname: "n43" label: "0" color: blue}
 }

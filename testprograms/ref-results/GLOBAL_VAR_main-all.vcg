@@ -31,7 +31,7 @@ edge: { sourcename: "n36" targetname: "n31" class: 2 priority: 2 linestyle: dott
 edge: {sourcename: "n36" targetname: "n40" label: "0" color: blue}
 edge: {sourcename: "n36" targetname: "n38" label: "1" }
 edge: {sourcename: "n36" targetname: "n37" label: "2" }
-node: {title: "n37" label: "0x00000002Is  37" color: yellow}
+node: {title: "n37" label: "0x2Is  37" color: yellow}
 edge: { sourcename: "n37" targetname: "n33" class: 2 priority: 2 linestyle: dotted}
 node: {title: "n38" label: "Sel i 38" }
 edge: { sourcename: "n38" targetname: "n31" class: 2 priority: 2 linestyle: dotted}
