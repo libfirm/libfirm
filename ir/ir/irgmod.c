@@ -129,6 +129,10 @@ void part_block(ir_node *node) {
   ir_node *old_block;
   ir_node *phi;
 
+  /* Turn off optimizations so that blocks are not merged again. */
+  int rem_opt = get_optimize();
+  set_optimize(0);
+
   /* Transform the control flow */
   old_block = get_nodes_Block(node);
   new_block = new_Block(get_Block_n_cfgpreds(old_block),
@@ -152,4 +156,6 @@ void part_block(ir_node *node) {
     set_nodes_Block(phi, new_block);
     phi = get_irn_link(phi);
   }
+
+  set_optimize(rem_opt);
 }
