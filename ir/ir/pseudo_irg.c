@@ -24,13 +24,13 @@
 #include "array.h"
 
 
-/** Returns the number of pseudo graphs in the program. */
+/* Returns the number of pseudo graphs in the program. */
 int get_irp_n_pseudo_irgs(void) {
   assert (irp && irp->pseudo_graphs);
   return ARR_LEN(irp->pseudo_graphs);
 }
 
-/** Returns the number of pseudo graphs in the program. */
+/* Returns the pos'th  pseudo graph in the program. */
 ir_graph *get_irp_pseudo_irg(int pos) {
   assert(0 <= pos && pos <= get_irp_n_pseudo_irgs());
   return irp->pseudo_graphs[pos];
@@ -54,7 +54,7 @@ new_pseudo_ir_graph(entity *ent, int n_loc) {
   return res;
 }
 
-/** Returns true ir ir_graph is pseudo graph. */
+/* Returns true ir ir_graph is pseudo graph. */
 int is_pseudo_ir_graph(ir_graph *irg)
 {
   int i, n_pseudo_irgs;
