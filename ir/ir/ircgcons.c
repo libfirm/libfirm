@@ -125,6 +125,7 @@ static void collect_phicallproj(void) {
     ir_graph * irg = get_irp_irg(i);
     ir_node * start = get_irg_start(irg);
     ir_node * end = get_irg_end(irg);
+    current_ir_graph = irg;
     assert(irg && start);
     /* Die speziellen Parameter der Start-Operation extra verlinken,
      * auch wenn sie nicht im intraprozeduralen Graphen erreichbar

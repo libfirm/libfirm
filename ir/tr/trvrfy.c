@@ -75,6 +75,10 @@ static void on_irg_storage(ir_node *n, void *env) {
   struct myenv * myenv = env;
 
   myenv->res = node_is_in_irgs_storage(myenv->irg, n);
+
+  /* We also test whether the setting of the visited flag is legal. */
+  assert(get_irn_visited(n) <= get_irg_visited(myenv->irg) &&
+	 "Visited flag of node is larger than that of corresponding irg.");
 }
 
 /**
@@ -124,6 +128,7 @@ static int constants_on_wrong_irg(entity *ent) {
  * 	!= 0	else
  */
 static int check_entity(entity *ent) {
+  current_ir_graph =  get_const_code_irg();
   if (constants_on_wrong_irg(ent)) {
     assert(0 && "Contants placed on wrong IRG");
     return error_const_on_wrong_irg;

@@ -411,7 +411,7 @@ const char *get_peculiarity_name(peculiarity var)
 #undef X
 }
 
-/* Set has no effect for entities of type method. */
+/* Set has no effect for existent entities of type method. */
 INLINE ir_node *
 get_atomic_ent_value(entity *ent) {
   assert(ent); assert(is_atomic_entity(ent));
@@ -422,7 +422,7 @@ get_atomic_ent_value(entity *ent) {
 INLINE void
 set_atomic_ent_value(entity *ent, ir_node *val) {
   assert(ent && is_atomic_entity(ent) && (ent->variability != uninitialized));
-  if (is_method_type(ent->type)) return;
+  if ((is_method_type(ent->type)) && (ent->peculiarity==existent)) return;
   ent->value = val;
 }
 

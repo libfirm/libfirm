@@ -236,6 +236,8 @@ set_type_state(type *tp, type_state state) {
 	assert(get_type_size(tp) > -1);
 	if (tp != get_glob_type())
 	  for (i = 0; i < get_class_n_members(tp); i++) {
+	    if (get_entity_offset(get_class_member(tp, i)) <= -1)
+	      { DDMT(tp); DDME(get_class_member(tp, i)); }
 	    assert(get_entity_offset(get_class_member(tp, i)) > -1);
 	    assert(is_method_type(get_entity_type(get_class_member(tp, i))) ||
 		   (get_entity_allocation(get_class_member(tp, i)) == automatic_allocated));

@@ -322,7 +322,7 @@ const char *get_peculiarity_name(peculiarity var);
    constant expressions to current_block in current_ir_graph. */
 ir_node *copy_const_value(ir_node *n);
 
-/* Set has no effect for entities of type method. */
+/* Set has no effect for existent entities of type method. */
 ir_node *get_atomic_ent_value(entity *ent);
 void     set_atomic_ent_value(entity *ent, ir_node *val);
 

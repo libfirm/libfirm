@@ -589,7 +589,7 @@ ir_node *get_fragile_op_mem(ir_node *node);
 /* !!!!!!!!! @@@
    Don't format with "\", firmjni gets problems */
 /** Output location */
-#define DDM(X)   printf("%s(l.%i).\n",                       __MYFUNC__, __LINE__);
+#define DDM      printf("%s(l.%i).\n",                       __MYFUNC__, __LINE__);
 /** Output the firm kind of the node */
 #define DDMK(X)  printf("%s(l.%i) %s: %p\n",                 __MYFUNC__, __LINE__,  print_firm_kind(X), (X));
 /** Output information about a node */
@@ -599,7 +599,7 @@ ir_node *get_fragile_op_mem(ir_node *node);
 /** Output information about a type */
 #define DDMT(X)  printf("%s(l.%i) %s %s: %ld (%p)\n",        __MYFUNC__, __LINE__, get_type_tpop_name(X), get_type_name(X), get_type_nr(X), (X))
 /** Output information about an entity */
-#define DDME(X)  printf("%s(l.%i) %s: %ld (%p\n",            __MYFUNC__, __LINE__, get_entity_name(X), get_entity_nr(X), (X))
+#define DDME(X)  printf("%s(l.%i) %s: %ld (%p)\n",           __MYFUNC__, __LINE__, get_entity_name(X), get_entity_nr(X), (X))
 /** Output information about an entity and its owner */
 #define DDMEO(X) printf("%s(l.%i) %s (own: %s): %ld (%p)\n", __MYFUNC__, __LINE__, get_entity_name(X), get_type_name(get_entity_owner(X)), get_entity_nr(X), (X))
 /** Output information about a graph */
