@@ -348,6 +348,18 @@ set_type_alignment_bytes(type *tp, int align) {
   set_type_size_bits(tp, 8*align);
 }
 
+/* Returns a human readable string for the enum entry. */
+const char *get_type_state_name(type_state s) {
+#define X(a)    case a: return #a;
+  switch (s) {
+    X(layout_undefined);
+    X(layout_fixed);
+  }
+  return "<unknown>";
+#undef X
+}
+
+
 type_state (get_type_state)(const type *tp) {
   return _get_type_state(tp);
 }

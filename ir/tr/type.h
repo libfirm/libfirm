@@ -162,6 +162,9 @@ typedef enum {
               types.  */
 } type_state;
 
+/** Returns a human readable string for the enum entry. */
+const char *get_type_state_name(type_state s);
+
 /** Returns the type layout state of a type. */
 type_state  get_type_state(const type *tp);
 
