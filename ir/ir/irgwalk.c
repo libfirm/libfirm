@@ -39,7 +39,7 @@ static void irg_walk_cg(ir_node * node, int visited, eset * irg_set,
   ir_graph * rem = current_ir_graph;
   ir_node * pred;
 
-  assert(node && node->kind==k_ir_node);
+  assert(node && node->kind == k_ir_node);
   if (get_irn_visited(node) >= visited) return;
 
   set_irn_visited(node, visited);
@@ -146,10 +146,10 @@ void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
     irg_walk(node, (irg_walk_func *) collect_irgs, NULL, irg_set);
     interprocedural_view = true;
     visited = get_max_irg_visited() + 1;
-    irg_walk_cg(node, visited, irg_set, pre, post, env);
     for (irg = eset_first(irg_set); irg; irg = eset_next(irg_set)) {
       set_irg_visited(irg, visited);
     }
+    irg_walk_cg(node, visited, irg_set, pre, post, env);
     eset_destroy(irg_set);
   } else {
     inc_irg_visited(current_ir_graph);
@@ -251,10 +251,23 @@ void cg_walk(irg_walk_func *pre, irg_walk_func *post, void *env) {
     current_ir_graph = get_irp_irg(i);
 
     sb = get_irg_start_block(current_ir_graph);
+
     if ((get_Block_n_cfgpreds(sb) > 1) ||
 	(get_nodes_block(get_Block_cfgpred(sb, 0)) != sb)) continue;
 
     cg_walk_2(get_irg_end(current_ir_graph), pre, post, env);
+  }
+
+  /* Check whether we walked all procedures: there could be procedures
+     with cyclic calls but no call from the outside. */
+  for (i = 0; i < get_irp_n_irgs(); i++) {
+    ir_node *eb;
+    current_ir_graph = get_irp_irg(i);
+
+    eb = get_irg_start_block(current_ir_graph);
+    if (get_irn_visited(eb) < get_irg_visited(current_ir_graph)) {
+      cg_walk_2(get_irg_end(current_ir_graph), pre, post, env);
+    }
   }
 
   interprocedural_view = rem_view;

@@ -529,13 +529,17 @@ dump_node_vcgattr (ir_node *n)
 static INLINE void
 dump_node_info (ir_node *n) {
   int i;
+  ir_graph *irg;
   fprintf (F, " info1: \"");
   if (opt_dump_pointer_values_to_info)
-    fprintf (F, "addr: %p \n", (void *)n);
+    fprintf (F, "addr:    %p \n", (void *)n);
   fprintf (F, "visited: %ld \n", get_irn_visited(n));
+  irg = get_irn_irg(n);
+  if (irg != get_const_code_irg())
+    fprintf (F, "irg:     %s\n", get_entity_name(get_irg_entity(irg)));
 
   /* Source types */
-  switch(get_irn_opcode(n)) {
+  switch (get_irn_opcode(n)) {
   case iro_Start: {
     type *tp = get_entity_type(get_irg_ent(get_irn_irg(n)));
     fprintf(F, "start of method of type %s \n", get_type_name(tp));
@@ -573,8 +577,26 @@ dump_node_info (ir_node *n) {
     assert(tp != none_type);
     fprintf(F, "Const of type %s \n", get_type_name(get_Const_type(n)));
   } break;
+  case iro_Filter: {
+    int i;
+    if (interprocedural_view) {
+      fprintf(F, "intra predecessor nodes:\n");
+      for (i = 0; i < get_irn_intra_arity(n); i++) {
+	ir_node *pred = get_irn_intra_n(n, i);
+	fprintf(F, "  %s%s %ld\n", get_irn_opname(pred), get_irn_modename(pred), get_irn_node_nr(pred));
+      }
+    } else {
+      fprintf(F, "inter predecessor nodes:\n");
+      for (i = 0; i < get_irn_inter_arity(n); i++) {
+	ir_node *pred = get_irn_inter_n(n, i);
+	fprintf(F, "  %s%s %ld \tin graph %s\n", get_irn_opname(pred), get_irn_modename(pred),
+		get_irn_node_nr(pred), get_entity_name(get_irg_entity(get_irn_irg(pred))));
+      }
+    }
+  } break;
   default: ;
   }
+
 
   if (get_irg_typeinfo_state(get_irn_irg(n)) == irg_typeinfo_consistent  ||
       get_irg_typeinfo_state(get_irn_irg(n)) == irg_typeinfo_inconsistent  )
@@ -582,14 +604,6 @@ dump_node_info (ir_node *n) {
       fprintf (F, "\nAnalysed type: %s", get_type_name(get_irn_type(n)));
 
   fprintf (F, "\"");
-}
-
-/* Returns true if n and pred pos are in different graphs. */
-static bool pred_in_wrong_graph(ir_node *n, int pos) {
-  ir_node *pred = get_irn_n(n, pos);
-
-  if (get_irn_irg(n) != get_irn_irg(pred)) return true;
-  return false;
 }
 
 
@@ -601,36 +615,34 @@ bool is_constlike_node(ir_node *n) {
 
 
 /* outputs the predecessors of n, that are constants, local.  I.e.,
-   generates a copy of the constant for each node called with. */
+   generates a copy of the constant predecessors for each node called with. */
 static void dump_const_node_local(ir_node *n) {
   int i;
   if (!get_opt_dump_const_local()) return;
+
   /* Use visited flag to avoid outputting nodes twice.
      initialize it first. */
   for (i = 0; i < get_irn_arity(n); i++) {
     ir_node *con = get_irn_n(n, i);
     if (is_constlike_node(con)) {
-      if (pred_in_wrong_graph(n, i)) continue; /* pred not dumped */
       set_irn_visited(con, get_irg_visited(current_ir_graph)-1);
     }
   }
+
   for (i = 0; i < get_irn_arity(n); i++) {
     ir_node *con = get_irn_n(n, i);
     if (is_constlike_node(con) && irn_not_visited(con)) {
-      if (pred_in_wrong_graph(n, i)) continue; /* pred not dumped */
       mark_irn_visited(con);
       /* Generate a new name for the node by appending the names of
 	 n and const. */
-      fprintf (F, "node: {title: "); PRINT_CONSTID(n,con);
+      fprintf (F, "node: {title: "); PRINT_CONSTID(n, con);
       fprintf(F, " label: \"");
       dump_node_opcode(con);
       dump_node_mode (con);
       dump_node_typeinfo(con);
       fprintf (F, " ");
       dump_node_nodeattr(con);
-#ifdef DEBUG_libfirm
       fprintf (F, " %ld", get_irn_node_nr(con));
-#endif
       fprintf (F, "\" ");
       dump_node_vcgattr(con);
       dump_node_info(con);
@@ -642,7 +654,6 @@ static void dump_const_node_local(ir_node *n) {
 static void
 dump_node (ir_node *n) {
   if (get_opt_dump_const_local() && is_constlike_node(n)) return;
-
   /* dump this node */
   fprintf (F, "node: {title: \""); PRINT_NODEID(n); fprintf(F, "\" label: \"");
 
@@ -651,9 +662,7 @@ dump_node (ir_node *n) {
   dump_node_typeinfo(n);
   fprintf (F, " ");
   dump_node_nodeattr(n);
-#ifdef DEBUG_libfirm
   fprintf (F, " %ld", get_irn_node_nr(n));
-#endif
   fprintf (F, "\" ");
   dump_node_vcgattr(n);
   dump_node_info(n);
@@ -773,16 +782,17 @@ dump_ir_data_edges(ir_node *n)  {
   for (i = 0; i < get_irn_arity(n); i++) {
     ir_node * pred = get_irn_n(n, i);
     assert(pred);
+
     if ((interprocedural_view && get_irn_visited(pred) < visited))
       continue; /* pred not dumped */
+
     if (dump_backedge_information_flag && is_backedge(n, i))
       fprintf (F, "backedge: {sourcename: \"");
     else
       fprintf (F, "edge: {sourcename: \"");
     PRINT_NODEID(n);
     fprintf (F, "\" targetname: ");
-    if ((get_opt_dump_const_local()) && is_constlike_node(pred) &&
-	!pred_in_wrong_graph(n, i)) {
+    if ((get_opt_dump_const_local()) && is_constlike_node(pred)) {
       PRINT_CONSTID(n, pred);
     } else {
       fprintf(F, "\""); PRINT_NODEID(pred); fprintf(F, "\"");
@@ -1472,11 +1482,11 @@ dump_ir_block_graph (ir_graph *irg)
   int i;
   char *suffix;
 
-  construct_block_lists(irg);
-
   if (interprocedural_view) suffix = "-ip";
   else                      suffix = "";
   vcg_open (irg, suffix);
+
+  construct_block_lists(irg);
 
   for (i = 0; i < get_irp_n_irgs(); i++) {
     ir_node **arr = ird_get_irg_link(get_irp_irg(i));
@@ -1634,6 +1644,7 @@ void dump_all_cg_block_graph(void) {
   /* dump all graphs */
   for (i = 0; i < get_irp_n_irgs(); i++) {
     current_ir_graph = get_irp_irg(i);
+    assert(ird_get_irg_link(current_ir_graph));
     dump_graph(current_ir_graph);
     DEL_ARR_F(ird_get_irg_link(current_ir_graph));
   }

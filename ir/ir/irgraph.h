@@ -89,12 +89,14 @@ bool get_interprocedural_view(void);
 void set_interprocedural_view(bool state);
 
 /** Create a new ir graph to built ir for a procedure.
-   ent is the entity representing this procedure, i.e., the type of the
-   entity must be of a method type.  The constructor automatically sets the
-   field irg of the entity as well as current_ir_graph to the new ir graph.
-   n_loc is the number of local variables in this procedure including
-   the procedure parameters.
-   The state of the ir graph is:  phase_building, pinned, no_outs. */
+ *
+ *  ent is the entity representing this procedure, i.e., the type of the
+ *  entity must be of a method type.  The constructor automatically sets the
+ *  field irg of the entity as well as current_ir_graph to the new ir graph.
+ *  n_loc is the number of local variables in this procedure including
+ *  the procedure parameters.
+ *  The constructor adds the new irgraph to the list in ir_prog.
+ *  The state of the ir graph is:  phase_building, pinned, no_outs. */
 ir_graph *new_ir_graph (entity *ent, int n_loc);
 
 /** Frees the passed irgraph.

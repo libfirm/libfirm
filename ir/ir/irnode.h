@@ -102,6 +102,8 @@ is_ir_node (void *thing);
 
 /** returns the number of predecessors without the block predecessor: */
 int                  get_irn_arity         (const ir_node *node);
+INLINE int           get_irn_intra_arity   (const ir_node *node);
+INLINE int           get_irn_inter_arity   (const ir_node *node);
 
 /** Replaces the old in array by a new one that will contain the ins given in
    the parameters.  Conserves the block predecessor.  It copies the array passed.
@@ -119,6 +121,8 @@ INLINE void          set_irn_in            (ir_node *node, int arity,
 /* Access predecessor n */
 /* get_irn_n removes Id predecessors. */
 INLINE ir_node      *get_irn_n             (ir_node *node, int n);
+INLINE ir_node      *get_irn_intra_n       (ir_node *node, int n);
+INLINE ir_node      *get_irn_inter_n       (ir_node *node, int n);
 INLINE void          set_irn_n             (ir_node *node, int n, ir_node *in);
 /** Sets the mode struct of node */
 INLINE void          set_irn_mode (ir_node *node, ir_mode *mode);
@@ -128,6 +132,8 @@ INLINE ir_mode      *get_irn_mode          (const ir_node *node);
 INLINE modecode      get_irn_modecode      (const ir_node *node);
 /** Gets the ident for a string representation of the mode .*/
 INLINE ident        *get_irn_modeident     (const ir_node *node);
+/** Gets the string representation of the mode .*/
+INLINE const char   *get_irn_modename      (const ir_node *node);
 /** Gets the opcode struct of the node */
 INLINE ir_op        *get_irn_op            (const ir_node *node);
 /** Sets the opcode struct of the node. */

@@ -26,19 +26,17 @@
 
 /* Datenstruktur für jede Methode */
 typedef struct {
-  int count;
+  int count;                      /* GL: anzahl aufrufer */
   bool open;			  /* offene Methode (mit unbekanntem Aufrufer) */
   ir_node * reg, * mem, ** res;   /* EndReg, Mem und Rückgabewerte */
   ir_node * except, * except_mem; /* EndExcept und Mem für Ausnahmeabbruch */
 } irg_data_t;
-
 
 static irg_data_t * irg_data_create(void) {
   irg_data_t * data = xmalloc(sizeof(irg_data_t));
   memset(data, 0, sizeof(irg_data_t)); /* init */
   return data;
 }
-
 
 /* Die Anzahl der Aufrufer jeder Methode zählen (irg_data_t->count), und die
  * offenen Methoden (mit unbekannten Vorgänger) markieren. */
@@ -147,7 +145,6 @@ static ir_node * exchange_proj(ir_node * proj) {
   ir_node * filter;
   assert(get_irn_op(proj) == op_Proj);
   filter = new_Filter(get_Proj_pred(proj), get_irn_mode(proj), get_Proj_proj(proj));
-  assert(get_Proj_proj(proj) == get_Filter_proj(filter)); /* XXX:SID */
   /* Die Proj- (Id-) Operation sollte im gleichen Grundblock stehen, wie die
    * Filter-Operation. */
   set_nodes_Block(proj, get_nodes_Block(filter));
@@ -239,12 +236,13 @@ static void prepare_irg(ir_graph * irg, irg_data_t * data) {
 
 /* Künstlicher Steuerzusammenfluss EndReg einfügen. */
 static void prepare_irg_end(ir_graph * irg, irg_data_t * data) {
-  ir_node * end_block = get_irg_end_block(irg);
-  ir_node * end  = get_irg_end(irg);
-  ir_node ** ret_arr = NULL;
+  ir_node * end_block   = get_irg_end_block(irg);
+  ir_node * end         = get_irg_end(irg);
+  ir_node **ret_arr     = NULL;
+  ir_node **cfgpred_arr = get_Block_cfgpred_arr(end_block);
   int i, j;
   int n_ret = 0;
-  ir_node ** cfgpred_arr = get_Block_cfgpred_arr(end_block);
+
   for (i = get_Block_n_cfgpreds(end_block) - 1; i >= 0; --i) {
     if (get_irn_op(cfgpred_arr[i]) == op_Return) {
       if (ret_arr) {
@@ -256,26 +254,31 @@ static void prepare_irg_end(ir_graph * irg, irg_data_t * data) {
       ++n_ret;
     }
   }
+
   if (n_ret > 0) {
     int n_res = get_method_n_ress(get_entity_type(get_irg_ent(irg)));
     ir_node ** in = NEW_ARR_F(ir_node *, n_ret);
+
     /* block */
     for (i = n_ret - 1; i >= 0; --i) {
       set_irg_current_block(irg, get_nodes_Block(ret_arr[i]));
       in[i] = new_Jmp();
     }
     create_Block(n_ret, in);
+
     /* end */
     data->reg = new_EndReg();
+
     /* mem */
     for (i = n_ret - 1; i >= 0; --i) {
       in[i] = get_Return_mem(ret_arr[i]);
     }
     data->mem = new_Phi(n_ret, in, mode_M);
-    /* This Phi is a merge, therefor needs not be kept alive.
+    /* This Phi is a merge, therefore needs not be kept alive.
        It might be optimized away, though.  */
     if (get_End_keepalive(end, get_End_n_keepalives(end)-1 ) == data->mem)
       set_End_keepalive(end, get_End_n_keepalives(end)-1, new_Bad());
+
     /* res */
     data->res = NEW_ARR_F(ir_node *, n_res);
     for (j = n_res - 1; j >= 0; --j) {
@@ -291,8 +294,10 @@ static void prepare_irg_end(ir_graph * irg, irg_data_t * data) {
       else  /* All preds are Bad */
 	data->res[j] = new_Bad();
     }
+
     DEL_ARR_F(in);
   }
+
   if (ret_arr) DEL_ARR_F(ret_arr);
 }
 
@@ -373,7 +378,8 @@ static void move_phis(ir_node * from_block, ir_node * to_block) {
 
 
 /* Rekursiv die Operation "node" und alle ihre Vorgänger aus dem Block
- * "from_block" nach "to_block" verschieben. */
+ * "from_block" nach "to_block" verschieben.
+ * Verschiebe ebenfalls die Projs aus diesen Operationen. */
 static void move_nodes(ir_node * from_block, ir_node * to_block, ir_node * node) {
   int i;
   for (i = get_irn_arity(node) - 1; i >= 0; --i) {
@@ -383,6 +389,14 @@ static void move_nodes(ir_node * from_block, ir_node * to_block, ir_node * node)
     }
   }
   set_nodes_Block(node, to_block);
+
+  /* Move projs of this node. */
+  ir_node *proj = get_irn_link(node);
+  for (; proj; proj = skip_Id(get_irn_link(proj))) {
+    if (get_irn_op(proj) != op_Proj && get_irn_op(proj) != op_Filter) continue;
+    if ((get_nodes_Block(proj) == from_block) && (skip_Proj(get_irn_n(proj, 0)) == node))
+      set_nodes_Block(proj, to_block);
+  }
 }
 
 
@@ -390,14 +404,16 @@ static void move_nodes(ir_node * from_block, ir_node * to_block, ir_node * node)
  * Start-Block auf den Aufrufer hinzufügen. */
 static void construct_start(entity * caller, entity * callee,
 			    ir_node * call, ir_node * exec) {
-  irg_data_t * data = get_entity_link(callee);
-  ir_graph * irg = get_entity_irg(callee);
-  ir_node * start = get_irg_start(irg), * filter;
+  irg_data_t *data  = get_entity_link(callee);
+  ir_graph   *irg   = get_entity_irg(callee);
+  ir_node    *start = get_irg_start(irg);
+  ir_node    *filter;
 
   assert(irg);
   assert(get_entity_peculiarity(callee) == peculiarity_existent); /* Else data is not initalized. */
   assert((0 <= data->count) &&
 	 (data->count < get_Block_cg_n_cfgpreds(get_nodes_Block(start))));
+
   set_Block_cg_cfgpred(get_nodes_Block(start), data->count, exec);
   for (filter = get_irn_link(start); filter; filter = get_irn_link(filter)) {
     if (get_irn_op(filter) != op_Filter) continue;
@@ -556,8 +572,6 @@ static void construct_call(ir_node * call) {
   /* Operationen verschieben */
   move_phis(post_block, pre_block);
   move_nodes(post_block, pre_block, call);
-  /* @@@ GL Wer setzt die Laenge des PostBlock cgfpred array auf 1?
-     GL: na, dieser Befehl... generiert neuen array. */
   set_irn_in(post_block, 1, &jmp);
 
   /* Wiederverwendete Daten initialisieren. */
@@ -596,7 +610,6 @@ static void construct_call(ir_node * call) {
   if ((proj = get_except(call)) != NULL) {
     int preds = 0;
     bool exc_to_end = false;
-#if 1
     if (exc_branches_to_end(current_ir_graph, proj)) {
       /* The Call aborts the procedure if it returns with an exception.
 	 If this is an outermost procedure, the normal handling of exceptions
@@ -606,11 +619,10 @@ static void construct_call(ir_node * call) {
       if (is_outermost_graph(current_ir_graph)) {
 	except_block = get_irg_end_block(current_ir_graph);
       } else {
-	irg_data_t * data = get_entity_link(get_irg_ent(current_ir_graph));
-	except_block = get_nodes_block(data->except);
+	irg_data_t * tmp_data = get_entity_link(get_irg_ent(current_ir_graph));
+	except_block = get_nodes_block(tmp_data->except);
       }
     } else
-#endif
       {
       except_block = create_Block(1, &proj);
       set_nodes_Block(proj, except_block);
@@ -669,10 +681,12 @@ static void construct_call(ir_node * call) {
   /* Proj-Operationen in Filter-Operationen umwandeln und
    * interprozedurale Vorgänger einfügen. */
   set_irg_current_block(current_ir_graph, post_block);
-  for (proj = get_irn_link(call); proj && get_irn_op(proj) == op_Proj; proj = get_irn_link(proj)) {
+  for (proj = get_irn_link(call); proj; proj = get_irn_link(proj)) {
+    if (get_irn_op(proj) != op_Proj) continue;
+    if (skip_Proj(get_Proj_pred(proj)) != call) continue;
     if (get_Proj_pred(proj) == call) {
       if (get_Proj_proj(proj) == 0) { /* memory */
-	/* memory */
+	set_nodes_Block(proj, post_block);
 	ir_node * filter = exchange_proj(proj);
 	/* filter in die Liste der Phis aufnehmen */
 	if (get_irn_link(filter) == NULL) { /* note CSE */
@@ -684,9 +698,9 @@ static void construct_call(ir_node * call) {
       } else if (get_Proj_proj(proj) == 1) { /* except */
 	/* nothing: siehe oben */
       } else if (get_Proj_proj(proj) == 2) { /* results */
-	set_nodes_Block(proj, pre_block);
+	/* nothing */
       } else if (get_Proj_proj(proj) == 3) { /* except_mem */
-	/* except_mem */
+	set_nodes_Block(proj, post_block);
 	ir_node * filter;
 	assert(except_block);
 	set_irg_current_block(current_ir_graph, except_block);
@@ -702,11 +716,12 @@ static void construct_call(ir_node * call) {
       } else {
 	assert(0 && "not reached");
       }
-    } else {
-      /* result */
+    } else { /* result */
+      assert(is_Proj(get_Proj_pred(proj)) && get_Proj_pred(get_Proj_pred(proj)) == call);
+      set_nodes_Block(proj, post_block);
       ir_node * filter = exchange_proj(proj);
       /* filter in die Liste der Phis aufnehmen */
-      if (get_irn_link(filter) == NULL) { /* note CSE */
+      if (get_irn_link(filter) == NULL) { /* not CSE */
 	set_irn_link(filter, get_irn_link(post_block));
 	set_irn_link(post_block, filter);
       }

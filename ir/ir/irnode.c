@@ -152,18 +152,30 @@ is_ir_node (void *thing) {
 
 /* returns the number of predecessors without the block predecessor. */
 INLINE int
+get_irn_intra_arity (const ir_node *node) {
+  assert(node);
+  return ARR_LEN(node->in) - 1;
+}
+
+/* returns the number of predecessors without the block predecessor. */
+INLINE int
+get_irn_inter_arity (const ir_node *node) {
+  assert(node);
+  if (get_irn_opcode(node) == iro_Filter) {
+    assert(node->attr.filter.in_cg);
+    return ARR_LEN(node->attr.filter.in_cg) - 1;
+  } else if (get_irn_opcode(node) == iro_Block && node->attr.block.in_cg) {
+    return ARR_LEN(node->attr.block.in_cg) - 1;
+  }
+  return get_irn_intra_arity(node);
+}
+
+/* returns the number of predecessors without the block predecessor. */
+INLINE int
 get_irn_arity (const ir_node *node) {
   assert(node);
-  if (interprocedural_view) { /* handle Filter and Block specially */
-    if (get_irn_opcode(node) == iro_Filter) {
-      assert(node->attr.filter.in_cg);
-      return ARR_LEN(node->attr.filter.in_cg) - 1;
-    } else if (get_irn_opcode(node) == iro_Block && node->attr.block.in_cg) {
-      return ARR_LEN(node->attr.block.in_cg) - 1;
-    }
-    /* else fall through */
-  }
-  return ARR_LEN(node->in) - 1;
+  if (interprocedural_view) return get_irn_inter_arity(node);
+  return get_irn_intra_arity(node);
 }
 
 /* Returns the array with ins. This array is shifted with respect to the
@@ -212,6 +224,24 @@ set_irn_in (ir_node *node, int arity, ir_node **in) {
   memcpy((*arr) + 1, in, sizeof(ir_node *) * arity);
 }
 
+INLINE ir_node *
+get_irn_intra_n (ir_node *node, int n) {
+  return (node->in[n + 1] = skip_nop(node->in[n + 1]));
+}
+
+INLINE ir_node*
+get_irn_inter_n (ir_node *node, int n) {
+  /* handle Filter and Block specially */
+  if (get_irn_opcode(node) == iro_Filter) {
+    assert(node->attr.filter.in_cg);
+    return (node->attr.filter.in_cg[n + 1] = skip_nop(node->attr.filter.in_cg[n + 1]));
+  } else if (get_irn_opcode(node) == iro_Block && node->attr.block.in_cg) {
+    return (node->attr.block.in_cg[n + 1] = skip_nop(node->attr.block.in_cg[n + 1]));
+  }
+
+  return get_irn_intra_n (node, n);
+}
+
 /* to iterate through the predecessors without touching the array */
 /* To iterate over the operands iterate from 0 to i < get_irn_arity(),
    to iterate includind the Block predecessor iterate from i = -1 to
@@ -219,23 +249,16 @@ set_irn_in (ir_node *node, int arity, ir_node **in) {
    If it is a block, the entry -1 is NULL. */
 INLINE ir_node *
 get_irn_n (ir_node *node, int n) {
-  /* debug @@@
+  /* debug @@@ */
   if (-1 > n || get_irn_arity(node) <= n) {
     printf("pos: %d, arity: %d ", n, get_irn_arity(node));
     DDMN(node);
-    } */
+    } /**/
   assert(node); assert(-1 <= n && n < get_irn_arity(node));
-  if (interprocedural_view) { /* handle Filter and Block specially */
-    if (get_irn_opcode(node) == iro_Filter) {
-      assert(node->attr.filter.in_cg);
-      return (node->attr.filter.in_cg[n + 1] = skip_nop(node->attr.filter.in_cg[n + 1]));
-    } else if (get_irn_opcode(node) == iro_Block && node->attr.block.in_cg) {
-      return (node->attr.block.in_cg[n + 1] = skip_nop(node->attr.block.in_cg[n + 1]));
-    }
-    /* else fall through */
-  }
-  return (node->in[n + 1] = skip_nop(node->in[n + 1]));
+  if (interprocedural_view)  return get_irn_inter_n (node, n);
+  return get_irn_intra_n (node, n);
 }
+
 
 INLINE void
 set_irn_n (ir_node *node, int n, ir_node *in) {
@@ -283,6 +306,13 @@ get_irn_modecode (const ir_node *node)
   return node->mode->code;
 }
 
+/** Gets the string representation of the mode .*/
+INLINE const char *
+get_irn_modename (const ir_node *node)
+{
+  assert(node);
+  return get_mode_name(node->mode);
+}
 
 INLINE ident *
 get_irn_modeident (const ir_node *node)
