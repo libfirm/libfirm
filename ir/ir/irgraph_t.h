@@ -42,6 +42,8 @@ struct ir_graph {
   struct ir_node *start;         /**< start node of this ir_graph */
   struct ir_node *end_block;         /**< block the end node will belong to */
   struct ir_node *end;           /**< end node of this ir_graph */
+  struct ir_node *end_reg;       /**< end node of this ir_graph */
+  struct ir_node *end_except;    /**< end node of this ir_graph */
   struct ir_node *cstore;        /**< constant store -- no more needed!! */
   struct ir_node *frame;             /**< method's frame */
   struct ir_node *globals;           /**< pointer to the data segment containing all

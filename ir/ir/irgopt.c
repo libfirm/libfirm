@@ -374,6 +374,8 @@ copy_graph_env (void) {
   /* fix the fields in current_ir_graph */
   old_end = get_irg_end(current_ir_graph);
   set_irg_end (current_ir_graph, get_new_node(old_end));
+  set_irg_end_except (current_ir_graph, get_irg_end(current_ir_graph));
+  set_irg_end_reg    (current_ir_graph, get_irg_end(current_ir_graph));
   free_End(old_end);
   set_irg_end_block  (current_ir_graph, get_new_node(get_irg_end_block(current_ir_graph)));
   if (get_irn_link(get_irg_frame(current_ir_graph)) == NULL) {
@@ -1276,22 +1278,22 @@ place_floats_early(ir_node *n, pdeq *worklist)
       ir_node *dep_block;
       if ((irn_not_visited(dep)) &&
       (get_op_pinned(intern_get_irn_op(dep)) == floats)) {
-    place_floats_early(dep, worklist);
+	place_floats_early(dep, worklist);
       }
       /* Because all loops contain at least one pinned node, now all
          our inputs are either pinned or place_early has already
          been finished on them.  We do not have any unfinished inputs!  */
       dep_block = get_nodes_Block(dep);
       if ((!is_Bad(dep_block)) &&
-      (get_Block_dom_depth(dep_block) > depth)) {
-    b = dep_block;
-    depth = get_Block_dom_depth(dep_block);
+	  (get_Block_dom_depth(dep_block) > depth)) {
+	b = dep_block;
+	depth = get_Block_dom_depth(dep_block);
       }
       /* Avoid that the node is placed in the Start block */
       if ((depth == 1) && (get_Block_dom_depth(get_nodes_Block(n)) > 1)) {
-    b = get_Block_cfg_out(get_irg_start_block(current_ir_graph), 0);
-    assert(b != get_irg_start_block(current_ir_graph));
-    depth = 2;
+	b = get_Block_cfg_out(get_irg_start_block(current_ir_graph), 0);
+	assert(b != get_irg_start_block(current_ir_graph));
+	depth = 2;
       }
     }
     set_nodes_Block(n, b);

@@ -318,7 +318,7 @@ static void collect_node(ir_node * node, void *env) {
  * graphs not visited.
  * Free the list with DEL_ARR_F.  */
 static ir_node ** construct_block_lists(ir_graph *irg) {
-  int i;
+  int i, rem_view = interprocedural_view;
   ir_graph *rem = current_ir_graph;
   current_ir_graph = irg;
 
@@ -326,6 +326,14 @@ static ir_node ** construct_block_lists(ir_graph *irg) {
     ird_set_irg_link(get_irp_irg(i), NULL);
 
   irg_walk_graph(current_ir_graph, clear_link, collect_node, current_ir_graph);
+
+  /* Collect also EndReg and EndExcept. We do not want to change the walker. */
+  interprocedural_view = 0;
+  set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph)-1);
+  irg_walk(get_irg_end_reg(current_ir_graph), clear_link, collect_node, current_ir_graph);
+  set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph)-1);
+  irg_walk(get_irg_end_except(current_ir_graph), clear_link, collect_node, current_ir_graph);
+  interprocedural_view = rem_view;
 
   current_ir_graph = rem;
   return ird_get_irg_link(irg);
@@ -1678,9 +1686,7 @@ dump_ir_graph (ir_graph *irg)
   char *suffix;
   rem = current_ir_graph;
 
-  /* printf("comparing %s %s\n", get_irg_dump_name(irg), dump_file_filter); */
-
-  if(strncmp(get_irg_dump_name(irg),dump_file_filter,strlen(dump_file_filter))!=0) return;
+  if(strncmp(get_entity_name(get_irg_ent(irg)),dump_file_filter,strlen(dump_file_filter))!=0) return;
 
   current_ir_graph = irg;
   if (interprocedural_view) suffix = "-pure-ip";
@@ -1709,8 +1715,7 @@ dump_ir_block_graph (ir_graph *irg)
   int i;
   char *suffix;
 
-  /* printf("comparing %s %s\n", get_irg_dump_name(irg), dump_file_filter); */
-  if(strncmp(get_irg_dump_name(irg),dump_file_filter,strlen(dump_file_filter))!=0) return;
+  if(strncmp(get_entity_name(get_irg_ent(irg)),dump_file_filter,strlen(dump_file_filter))!=0) return;
 
   if (interprocedural_view) suffix = "-ip";
   else                      suffix = "";

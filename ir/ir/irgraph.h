@@ -143,6 +143,16 @@ void     set_irg_end_block (ir_graph *irg, ir_node *node);
 ir_node *get_irg_end (ir_graph *irg);
 void     set_irg_end (ir_graph *irg, ir_node *node);
 
+/* The fields end_reg and end_except contain the end nodes of the
+   interprocedural view.  If the view is not constructed they contain
+   the nomal end node. */
+ir_node *get_irg_end_reg (ir_graph *irg);
+void     set_irg_end_reg (ir_graph *irg, ir_node *node);
+
+ir_node *get_irg_end_except (ir_graph *irg);
+void     set_irg_end_except (ir_graph *irg, ir_node *node);
+
+
 /* @@@ oblivious, no more supported. */
 ir_node *get_irg_cstore (ir_graph *irg);
 void     set_irg_cstore (ir_graph *irg, ir_node *node);

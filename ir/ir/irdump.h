@@ -43,6 +43,7 @@
  * @todo  GL: A hack -- add parameter to dumper function.
  */
 extern char *dump_file_suffix;
+/** Set this to the name (not the ld_name) of the method to be dumped. */
 extern char *dump_file_filter;
 
 /**

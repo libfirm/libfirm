@@ -761,7 +761,7 @@ new_rd_EndReg (dbg_info *db, ir_graph *irg, ir_node *block)
   ir_node *res;
 
   res = new_ir_node (db, irg, block, op_EndReg, mode_T, -1, NULL);
-  /* res->attr.end.irg = irg; */
+  irg->end_reg = res;
 
   irn_vrfy_irg (res, irg);
   return res;
@@ -773,7 +773,7 @@ new_rd_EndExcept (dbg_info *db, ir_graph *irg, ir_node *block)
   ir_node *res;
 
   res = new_ir_node (db, irg, block, op_EndExcept, mode_T, -1, NULL);
-  /* res->attr.end.irg = irg; */
+  irg->end_except = res;
 
   irn_vrfy_irg (res, irg);
   return res;

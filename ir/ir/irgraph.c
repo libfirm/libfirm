@@ -125,8 +125,10 @@ new_ir_graph (entity *ent, int n_loc)
   remove_irp_type_from_list(res->frame_type);
 
   /** Nodes needed in every graph **/
-  res->end_block = new_immBlock ();
-  res->end       = new_End ();
+  res->end_block  = new_immBlock ();
+  res->end        = new_End ();
+  res->end_reg    = res->end;
+  res->end_except = res->end;
 
   res->start_block = new_immBlock ();
   res->start   = new_Start ();
@@ -187,8 +189,10 @@ ir_graph *new_const_code_irg(void) {
   res->ent = NULL;
   res->frame_type = NULL;
   res->start_block = new_immBlock ();
-  res->end_block = new_immBlock ();
-  res->end       = new_End ();
+  res->end_block  = new_immBlock ();
+  res->end        = new_End ();
+  res->end_reg    = res->end;
+  res->end_except = res->end;
   mature_block(get_cur_block());
   res->bad = new_ir_node (NULL, res, res->start_block, op_Bad, mode_T, 0, NULL);
   /* res->unknown = new_ir_node (NULL, res, res->start_block, op_Unknown, mode_T, 0, NULL); */
@@ -307,6 +311,24 @@ void
 set_irg_end (ir_graph *irg, ir_node *node)
 {
   irg->end = node;
+}
+
+ir_node *
+get_irg_end_reg (ir_graph *irg) {
+  return irg->end_reg;
+}
+void     set_irg_end_reg (ir_graph *irg, ir_node *node) {
+  assert(get_irn_op(node) == op_EndReg || get_irn_op(node) == op_End);
+  irg->end_reg = node;
+}
+
+ir_node *get_irg_end_except (ir_graph *irg) {
+  return irg->end_except;
+}
+
+void     set_irg_end_except (ir_graph *irg, ir_node *node) {
+  assert(get_irn_op(node) == op_EndExcept || get_irn_op(node) == op_End);
+  irg->end_except = node;
 }
 
 ir_node *
