@@ -7,31 +7,22 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "config.h"
-#include "irgraph.h"
-#include "irnode.h"
-#include "irop.h"
-#include "irprog.h"
 #include "debug.h"
-#include "pset.h"
-
+#include "impl.h"
+#include "irprog.h"
+#include "irgwalk.h"
+#include "irop.h"
 #include "bephicongr_t.h"
-#include "beutil.h"
 
 #define DEBUG_LVL 0
 
 size_t phi_irn_data_offset = 0;
 static firm_dbg_module_t *dbgphi = NULL;
 
-void be_phi_congr_class_init(void) {
-	dbgphi = firm_dbg_register("Phi classes");
-	firm_dbg_set_mask(dbgphi, DEBUG_LVL);
-	phi_irn_data_offset = register_additional_node_data(sizeof(phi_info_t));
-}
-
-#define get_phi(irn)            get_irn_phi_info(irn)->phi
-#define set_phi(irn, p)         get_irn_phi_info(irn)->phi = p
-#define set_phi_class(irn, cls) get_irn_phi_info(irn)->phi_class = cls
+#define _get_phi(irn)            get_irn_phi_info(irn)->phi
+#define _set_phi(irn, p)         get_irn_phi_info(irn)->phi = p
+#define _get_phi_class(irn)		get_irn_phi_info(irn)->phi_class
+#define _set_phi_class(irn, cls) get_irn_phi_info(irn)->phi_class = cls
 
 #define is_Const(n)       (get_irn_opcode(n) == iro_Const)
 
@@ -45,7 +36,7 @@ void be_phi_congr_class_init(void) {
 static INLINE void phi_class_insert(pset *class, ir_node *phi, ir_node *member) {
 	DBG((dbgphi, 1, "\tinsert %n in %n\n", member, phi));
 	if (!(is_Const(member) && CONSTS_SPLIT_PHI_CLASSES))
-		set_phi(member, phi);
+		_set_phi(member, phi);
 	pset_insert_ptr(class, member);
 }
 
@@ -63,14 +54,14 @@ static void phi_class_union(ir_node *n, ir_node *new_tgt) {
 	DBG((dbgphi, 1, "\tcorrect %n\n", n));
 
 	/* copy all class members from n to new_tgt. Duplicates eliminated by pset */
-	src = get_phi_class(n);
-	tgt = get_phi_class(new_tgt);
+	src = _get_phi_class(n);
+	tgt = _get_phi_class(new_tgt);
 	for (p = (ir_node *)pset_first(src); p; p = (ir_node *)pset_next(src))
 		phi_class_insert(tgt, new_tgt, p);
 
 	/* phi class of n is no longer needed */
 	del_pset(src);
-	set_phi_class(n, NULL);
+	_set_phi_class(n, NULL);
 }
 
 
@@ -85,10 +76,10 @@ static void det_phi_congr_class(ir_node *curr_phi) {
     assert(is_Phi(curr_phi) && "This must be a phi node.");
     DBG((dbgphi, 1, "Det. phi class of %n.\n", curr_phi));
 
-	pc = get_phi_class(curr_phi);
+	pc = _get_phi_class(curr_phi);
 	if (!pc) {
 		pc = pset_new_ptr(2);
-		set_phi_class(curr_phi, pc);
+		_set_phi_class(curr_phi, pc);
 		phi_class_insert(pc, curr_phi, curr_phi);
 	}
 
@@ -98,7 +89,7 @@ static void det_phi_congr_class(ir_node *curr_phi) {
 		arg = get_irn_n(curr_phi, i);
 		DBG((dbgphi, 1, "    Arg %n\n", arg));
 
-		phi = get_phi(arg);
+		phi = _get_phi(arg);
 		if (phi == NULL) { /* Argument is not assigned to another phi class. */
 			phi_class_insert(pc, curr_phi, arg);
 		} else if (phi != curr_phi) {
@@ -106,14 +97,29 @@ static void det_phi_congr_class(ir_node *curr_phi) {
 			phi_class_union(phi, curr_phi);
 		}
 	}
-	DBG((dbgphi, 1, "Size now: %d\n", pset_count(get_phi_class(curr_phi))));
+	DBG((dbgphi, 1, "Size now: %d\n", pset_count(_get_phi_class(curr_phi))));
 }
 
 
-/**
- * Determines the phi congruence classes of
- * all phi nodes in a given pset
- */
+static void phi_node_walker(ir_node *node, void *env) {
+	if (is_Phi(node) && mode_is_datab(get_irn_mode(node)))
+		det_phi_congr_class(node);
+}
+
+
+void be_phi_congr_compute(ir_graph *irg) {
+	irg_walk_graph(irg, phi_node_walker, NULL, NULL);
+}
+
+
+pset *get_phi_class(const ir_node *irn) {
+	ir_node *phi = _get_phi(irn);
+	if (phi)
+		return _get_phi_class(phi);
+	else
+		return NULL;
+}
+
 pset *be_phi_congr_classes(pset *all_phi_nodes) {
 	int i;
 	ir_node *phi;
@@ -126,10 +132,17 @@ pset *be_phi_congr_classes(pset *all_phi_nodes) {
 	/* store them in a pset for fast retrieval */
 	all_phi_classes = pset_new_ptr(64);
 	for (i = 0, phi = (ir_node *)pset_first(all_phi_nodes); phi; phi = (ir_node *)pset_next(all_phi_nodes)) {
-		phi_class = get_phi_class(phi);
+		phi_class = _get_phi_class(phi);
 		if (phi_class)
 			pset_insert_ptr(all_phi_classes, phi_class);
 	}
 
 	return all_phi_classes;
+}
+
+
+void be_phi_congr_class_init(void) {
+	dbgphi = firm_dbg_register("Phi classes");
+	firm_dbg_set_mask(dbgphi, DEBUG_LVL);
+	phi_irn_data_offset = register_additional_node_data(sizeof(phi_info_t));
 }
