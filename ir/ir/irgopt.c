@@ -400,7 +400,6 @@ copy_node2 (ir_node *n, void *env) {
    graph.  */
 void
 copy_graph () {
-  DDMSG;
   /* Not all nodes remembered in current_ir_graph might be reachable
      from the end node.  Assure their link is set to NULL so that
      we can test whether new nodes have been computed. */
@@ -431,8 +430,6 @@ copy_graph () {
     copy_preds(get_irg_bad(current_ir_graph), NULL);
   }
   set_irg_bad(current_ir_graph, get_new_node(get_irg_bad(current_ir_graph)));
-
-  DDMSG;
 }
 
 void
