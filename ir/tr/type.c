@@ -1239,17 +1239,18 @@ bool    is_enumeration_type     (type *enumeration) {
 /*******************************************************************/
 
 /* Create a new type pointer */
-INLINE type *new_type_pointer           (ident *name, type *points_to) {
+INLINE type *new_type_pointer_mode (ident *name, type *points_to, ir_mode *ptr_mode) {
   type *res;
-  res = new_type(type_pointer, mode_P, name);
+  assert(mode_is_reference(ptr_mode));
+  res = new_type(type_pointer, ptr_mode, name);
   res->attr.pa.points_to = points_to;
   assert((get_mode_size_bytes(res->mode) != -1) && "unorthodox modes not implemented");
   res->size = get_mode_size_bytes(res->mode);
   res->state = layout_fixed;
   return res;
 }
-type *new_d_type_pointer           (ident *name, type *points_to, dbg_info* db) {
-  type *res = new_type_pointer (name, points_to);
+type *new_d_type_pointer (ident *name, type *points_to, ir_mode *ptr_mode, dbg_info* db) {
+  type *res = new_type_pointer_mode (name, points_to, ptr_mode);
   set_type_dbg_info(res, db);
   return res;
 }

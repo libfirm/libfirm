@@ -707,14 +707,21 @@ bool    is_enumeration_type     (type *enumeration);
 /**
  * @page pointer_type	Representation of a pointer type
  *
+ * The mode of the pointer type must be a mode_reference.
+ *
  * Pointer types:
  * - points_to:      The type of the entity this pointer points to.
  */
-/** Creates a new type pointer. */
-type *new_type_pointer           (ident *name, type *points_to);
 
-/** Creates a new type pointer with debug information. */
-type *new_d_type_pointer         (ident *name, type *points_to, dbg_info* db);
+/** Creates a new type pointer with mode mode_p. */
+#define new_type_pointer(N, P) new_type_pointer_mode(N, P, mode_P)
+//type *new_type_pointer           (ident *name, type *points_to);
+
+/** Creates a new type pointer with given pointer mode. */
+type *new_type_pointer_mode      (ident *name, type *points_to, ir_mode *ptr_mode);
+
+/** Creates a new type pointer given pointer mode and with debug information. */
+type *new_d_type_pointer         (ident *name, type *points_to, ir_mode *ptr_mode, dbg_info* db);
 
 /* --- manipulate fields of type_pointer --- */
 

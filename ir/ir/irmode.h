@@ -247,11 +247,7 @@ tarval *get_mode_infinite(ir_mode *mode);
  */
 tarval *get_mode_NAN(ir_mode *mode);
 
-/* -- Auxiliary modes necessary for the Firm representation -- */
-extern ir_mode *mode_T;  /**< tuple (none) */
-extern ir_mode *mode_X;  /**< execution */
 extern ir_mode *mode_M;	 /**< memory */
-extern ir_mode *mode_BB; /**< block */
 
 /* -- A set of predifined, numerical modes according to Techreport 1999-44 -- */
 extern ir_mode *mode_F;	 /**< signed float(32) */
@@ -266,17 +262,23 @@ extern ir_mode *mode_Iu; /**< unsigned integer */
 extern ir_mode *mode_Ls; /**< signed long integer */
 extern ir_mode *mode_Lu; /**< unsigned long integer */
 
-extern ir_mode *mode_b;  /**< internal boolean */
 extern ir_mode *mode_C;  /**< 8 bit char */
 extern ir_mode *mode_U;  /**< 16 bit unicode char */
+
 extern ir_mode *mode_P;  /**< pointer */
 
+/* -- Auxiliary modes necessary for the Firm representation -- */
+extern ir_mode *mode_b;  /**< internal boolean */
+
+extern ir_mode *mode_X;  /**< execution */
+extern ir_mode *mode_BB; /**< block */
+
+extern ir_mode *mode_T;  /**< tuple (none) */
 extern ir_mode *mode_ANY;/**< undefined mode */
 extern ir_mode *mode_BAD;/**< bad mode */
 
 /*@{*/
 /** Access routines for JNI Interface */
-ir_mode *get_modeT(void);
 ir_mode *get_modeF(void);
 ir_mode *get_modeD(void);
 ir_mode *get_modeE(void);
@@ -293,8 +295,9 @@ ir_mode *get_modeU(void);
 ir_mode *get_modeP(void);
 ir_mode *get_modeb(void);
 ir_mode *get_modeX(void);
-ir_mode *get_modeM(void);
 ir_mode *get_modeBB(void);
+ir_mode *get_modeM(void);
+ir_mode *get_modeT(void);
 ir_mode *get_modeANY(void);
 ir_mode *get_modeBAD(void);
 
