@@ -211,11 +211,11 @@ fi
 
 
 AC_CHECK_HEADERS(alloca.h, ac_alloca_headers="yes", ac_alloca_headers="no")
-if test "$ac_alloca_headers" != yes; then
-  if test "$ac_cv_header_stdc" == no; then
-    AC_MSG_ERROR("alloca.h and stdlib.h not found")
-  else
+if test "$ac_alloca_headers" = "yes"; then
     AC_DEFINE(HAVE_ALLOCA_H)
+else
+  if test "$ac_cv_header_stdc" = "no"; then
+    AC_MSG_ERROR("alloca.h and stdlib.h not found")
   fi
 fi
 
