@@ -19,7 +19,7 @@ INSTALL_HEADERS := firm_common.h firm.h firmwalk.h
 
 SOURCES = $(INSTALL_HEADERS)
 
-SOURCES += Makefile.in panic.c tune.h firm_common.c firm.c firmwalk.c \
+SOURCES += Makefile.in panic.c firm_common.c firm.c firmwalk.c \
 		misc.h panic.h firm_common_t.h
 
 include $(topdir)/MakeRules

@@ -29,7 +29,7 @@
 
 #include "tv_t.h"
 #include "set.h"            /* to store tarvals in */
-#include "tune.h"           /* some constants */
+//#include "tune.h"           /* some constants */
 #include "entity_t.h"       /* needed to store pointers to entities */
 #include "irmode.h"         /* defines modes etc */
 #include "irmode_t.h"
@@ -37,6 +37,10 @@
 #include "host.h"
 #include "strcalc.h"
 #include "fltcalc.h"
+
+/** Size of hash tables.  Should correspond to average number of distinct constant
+    target values */
+#define N_CONSTANTS	2048
 
 /* XXX hack until theres's a proper interface */
 #define BAD 1
@@ -1425,8 +1429,8 @@ void init_tarval_1(void)
   ANNOUNCE();
   /* initialize the sets holding the tarvals with a comparison function and
    * an initial size, which is the expected number of constants */
-  tarvals = new_set(memcmp, TUNE_NCONSTANTS);
-  values = new_set(memcmp, TUNE_NCONSTANTS);
+  tarvals = new_set(memcmp, N_CONSTANTS);
+  values  = new_set(memcmp, N_CONSTANTS);
   /* init strcalc with precision of 68 to support floating point values with 64
    * bit mantissa (needs extra bits for rounding and overflow) */
   init_strcalc(68);

@@ -21,7 +21,6 @@
 # include "irgmod.h"
 # include "irvrfy.h"
 # include "tv.h"
-# include "tune.h"
 # include "dbginfo_t.h"
 # include "iropt_dbg.h"
 
@@ -846,6 +845,10 @@ transform_node (ir_node *n)
 
 /* **************** Common Subexpression Elimination **************** */
 
+/** The size of the hash table used, should estimate the number of nodes
+    in a graph. */
+#define N_IR_NODES 512
+
 /* Compare function for two nodes in the hash table.   Gets two       */
 /* nodes as parameters.  Returns 0 if the nodes are a cse.            */
 static int
@@ -935,7 +938,7 @@ ir_node_hash (ir_node *node)
 pset *
 new_identities (void)
 {
-  return new_pset (vt_cmp, TUNE_NIR_NODES);
+  return new_pset (vt_cmp, N_IR_NODES);
 }
 
 void

@@ -21,11 +21,14 @@
 # ifdef HAVE_STRING_H
 #  include <string.h>
 # endif
-#include "tune.h"
+
 #include "cookies.h"
 #include "debug.h"
 #include "pdeq.h"
 
+
+/** Size of pdeq block cache */
+#define TUNE_NSAVED_PDEQS 16
 
 #ifndef INLINE
 #ifdef USE_GCC_INLINE
