@@ -86,6 +86,11 @@ typedef enum {
 typedef struct ir_node ir_node;
 #endif
 
+#ifdef __cplusplus
+	extern "C" {
+
+#endif
+
 /**
  *   you can work on the graph without considering the different types
  *   of nodes, it's just a big graph.
@@ -942,5 +947,9 @@ void    dump_irn(ir_node *n);
 
 /*@}*/ /* end of ir_node group definition */
 
+
+#ifdef __cplusplus
+}
+#endif
 
 # endif /* _IRNODE_H_ */
