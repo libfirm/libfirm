@@ -576,7 +576,7 @@ void optimize_cf(ir_graph *irg) {
     }
   }
 
-	irg_block_walk_graph(current_ir_graph, NULL, remove_senseless_conds, NULL);
+  irg_block_walk_graph(current_ir_graph, NULL, remove_senseless_conds, NULL);
   /* Use block visited flag to mark non-empty blocks. */
   inc_irg_block_visited(irg);
   irg_walk(end, merge_blocks, collect_nodes, NULL);
