@@ -1653,7 +1653,7 @@ tarval_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
     if (isprint (val->u.chil)) {
       printed = XPF1R ("'%c'", val->u.chil);
     } else {
-      printed = XPF1R ("'\\%03o'", val->u.chil);
+      printed = XPF1R ("0x%x", (unsigned long)val->u.chil);
     }
     break;
 
