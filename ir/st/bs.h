@@ -1,17 +1,14 @@
-/* Copyright (c) 2002 by Universität Karlsruhe (TH).  All Rights Reserved */
+/* Copyright (c) 2002 by Universitaet Karlsruhe (TH).  All Rights Reserved */
 
-/*
-   NAME
-     bs
-   PURPOSE
-     provide bs_t
-   S
-     not quite complete
-   HISTORY
-     liekweg - Feb 27, 2002: Created.
-   CVS:
-     $Id$
- */
+/**
+   @file bs.h
+
+   Provides a simple bit set.
+
+   Not quite complete
+*/
+
+/* $Id$ */
 
 # ifndef _BS_H_
 # define _BS_H_
