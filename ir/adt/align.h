@@ -1,7 +1,7 @@
 /*
  * Project:     libFIRM
- * File name:   ir/adt/host.h
- * Purpose:     Declarations describing the host machine and C compiler.
+ * File name:   ir/adt/align.h
+ * Purpose:     macros for alignment.
  * Author:      Markus Armbruster
  * Modified by:
  * Created:     1999 by getting from fiasco
@@ -9,9 +9,8 @@
  * Copyright:   (c) 1995, 1996 Markus Armbruster
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
-
-#ifndef _HOST_H
-#define _HOST_H
+#ifndef _ALIGN_H
+#define _ALIGN_H
 
 #include <stddef.h>
 
@@ -54,4 +53,4 @@ typedef union {
 /** Maximal alignment required for any type.  */
 #define MAX_ALIGN ALIGNOF (aligned_type)
 
-#endif
+#endif /* _ALIGN_H */
