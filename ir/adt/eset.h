@@ -10,12 +10,8 @@
  * Copyright:   (c) 2002 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
-
-
 #ifndef _ESET_H_
 #define _ESET_H_
-
-#include <stdbool.h>
 
 /**
  * "eset" is a set of addresses. The addresses are used for element
@@ -25,11 +21,11 @@
 typedef struct eset eset;
 
 /** Creates a new empty set. */
-eset * eset_create(void);
+eset *eset_create(void);
 
 /**
  * Creates a copy of the given set. Did NOT work if NULL is contained in source. */
-eset * eset_copy(eset *source);
+eset *eset_copy(eset *source);
 
 /** Deletes a set. */
 void eset_destroy(eset *s);
@@ -38,7 +34,7 @@ void eset_destroy(eset *s);
 void eset_insert(eset *s, void *p);
 
 /** Checks, wheater an address is element of a set. */
-bool eset_contains(eset *s, void *p);
+int eset_contains(eset *s, void *p);
 
 /**
  * Starts the iteration over a set and returns the first element or NULL
@@ -46,7 +42,7 @@ bool eset_contains(eset *s, void *p);
  *
  * @note: It is NOT possible to add new elements while iterating through a set.
  */
-void * eset_first(eset *s);
+void *eset_first(eset *s);
 
 /**
  * Continues iteration through a set and returns the next element or NULL if the
@@ -54,9 +50,9 @@ void * eset_first(eset *s);
  *
  * @note: It is NOT possible to add new elements while iterating through a set.
  */
-void * eset_next(eset *s);
+void *eset_next(eset *s);
 
 /** Inserts all elements of source into target (union). Did NOT work if NULL is contained in source. */
-void eset_insert_all(eset * target, eset * source);
+void eset_insert_all(eset *target, eset *source);
 
 #endif /* _ESET_H_ */

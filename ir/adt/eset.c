@@ -57,7 +57,7 @@ void eset_insert(eset *s, void *p) {
 }
 
 
-bool eset_contains(eset *s, void *p) {
+int eset_contains(eset *s, void *p) {
   return set_find((set *)s, &p, sizeof(p), HASH_PTR(p)) != NULL;
 }
 

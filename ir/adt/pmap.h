@@ -14,10 +14,6 @@
 #ifndef _PMAP_H_
 #define _PMAP_H_
 
-
-#include <stdbool.h>
-
-
 /* Map die Adressen auf Adressen abbildet. Der Vergleich und das
  * Hashen findet über die Adresse statt. */
 
@@ -41,7 +37,7 @@ void pmap_destroy(pmap *);
 void pmap_insert(pmap *, void * key, void * value);
 
 /* Prüft ob ein Eintrag zu "key" exisitiert. */
-bool pmap_contains(pmap *, void * key);
+int pmap_contains(pmap *, void * key);
 
 /* Gibt den Eintrag zu "key" zurück. */
 pmap_entry * pmap_find(pmap *, void * key);

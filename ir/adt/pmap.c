@@ -57,7 +57,7 @@ void pmap_insert(pmap *map, void *key, void *value) {
 }
 
 
-bool pmap_contains(pmap *map, void *key) {
+int pmap_contains(pmap *map, void *key) {
   return set_find((set *)map, &key, sizeof(pmap_entry), HASH_PTR(key)) != NULL;
 }
 
