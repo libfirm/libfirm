@@ -837,7 +837,7 @@ static void dump_node(FILE *F, ir_node *n)
 
   bad = ! irn_vrfy_irg_dump(n, current_ir_graph, &p);
   bad |= dump_node_label(F, n);
-  dump_node_ana_info(F, n);
+  //dump_node_ana_info(F, n);
   fprintf(F, "\" ");
   bad |= dump_node_info(F, n);
   print_node_error(F, p);
