@@ -230,7 +230,8 @@ fi
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 dnl ==============================================================
-
+AC_C_BIGENDIAN(,,,)
+AC_C_LONG_DOUBLE
 
 dnl Checks for library functions.
 dnl =============================

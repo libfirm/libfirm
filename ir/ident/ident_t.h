@@ -14,11 +14,8 @@
 
 # include "ident.h"
 
-# include "xprintf.h"
-# include "xp_help.h"
 
 void id_init (void);
-int ident_print (XP_PAR1, const xprintf_info *, XP_PARN);
 
 /* @@@ tune */
 #define ID_HASH(str, len) \

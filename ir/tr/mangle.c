@@ -11,11 +11,11 @@
 # include <config.h>
 #endif
 
-# include "xprintf.h"
 # include "mangle.h"
 # include <obstack.h>
 # include "obst.h"
 # include <stdlib.h>
+# include <stdio.h>
 # include "misc.h"
 
 /* Make types visible to allow most efficient access */
@@ -34,10 +34,10 @@ mangle_entity (entity *ent)
   ident *res;
 
   type_id = mangle_type ((type *) ent->owner);
-  xoprintf (&mangle_obst, "%s_%s", id_to_str(type_id), id_to_str(ent->name));
+  obstack_printf (&mangle_obst, "%s_%s", id_to_str(type_id), id_to_str(ent->name));
   len = obstack_object_size (&mangle_obst);
   cp = obstack_finish (&mangle_obst);
-  res = id_from_str (cp, len);
+  res = id_from_str(cp, len);
   obstack_free (&mangle_obst, cp);
   return res;
 }
@@ -52,7 +52,7 @@ mangle_type (type *tp)
   assert (tp->kind == k_type);
   /* assert (tp->type_op->code == tpo_class); */
 
-  xoprintf (&mangle_obst, "%s", id_to_str(tp->name));
+  obstack_printf (&mangle_obst, "%s", id_to_str(tp->name));
   len = obstack_object_size (&mangle_obst);
   cp = obstack_finish (&mangle_obst);
   res = id_from_str (cp, len);
@@ -66,7 +66,7 @@ ident *mangle (ident *first, ident* scnd) {
   int len;
   ident *res;
 
-  xoprintf (&mangle_obst, "%s%s",  id_to_str(first), id_to_str(scnd));
+  obstack_printf (&mangle_obst, "%s%s",  id_to_str(first), id_to_str(scnd));
   len = obstack_object_size (&mangle_obst);
   cp = obstack_finish (&mangle_obst);
   res = id_from_str (cp, len);
@@ -80,7 +80,7 @@ ident *mangle_u (ident *first, ident* scnd) {
   int len;
   ident *res;
 
-  xoprintf (&mangle_obst, "%s_%s",  id_to_str(first), id_to_str(scnd));
+  obstack_printf (&mangle_obst, "%s_%s",  id_to_str(first), id_to_str(scnd));
   len = obstack_object_size (&mangle_obst);
   cp = obstack_finish (&mangle_obst);
   res = id_from_str (cp, len);

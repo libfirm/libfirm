@@ -20,7 +20,6 @@
 #endif
 
 # include "irnode.h"
-# include "xprintf.h"
 # include "irop_t.h"
 # include "firm_common_t.h"
 # include "irdom_t.h" /* For size of struct dom_info. */
@@ -183,10 +182,6 @@ struct ir_node {
 void
 copy_attrs (ir_node *old, ir_node *new);
 
-
-/** Print IR-Nodes with attributes
-    @todo brauchen wir dienoch? dann fliegt ev. das xprint raus? */
-int ir_node_print (XP_PAR1, const xprintf_info *, XP_PARN);
 
 /** Returns the array with the ins.  The content of the array may not be
    changed.  */

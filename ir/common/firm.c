@@ -15,7 +15,7 @@
 # include "ident_t.h"
 # include "firm.h"
 # include "mangle.h"
-# include "xp_help.h"
+//# include "xp_help.h"
 # include "tv_t.h"
 /* init functions are not public */
 # include "tpop_t.h"
@@ -26,13 +26,6 @@
 void
 init_firm (default_initialize_local_variable_func_t *func)
 {
-  /* register the character 'I' as variable for ident outputs. */
-  xprintf_register ('I', ident_print);
-  /* register the character 'v' as variable for tarval outputs. */
-  xprintf_register ('v', tarval_print);
-  /* register the character 'R' as variable for ir node outputs. */
-  xprintf_register ('R', ir_node_print);
-
   /* initialize all ident stuff */
   id_init ();
   /* create the type kinds. */

@@ -13,7 +13,6 @@
 #define _TV_T_H_
 
 #include "tv.h"
-#include "xprintf.h"
 
 /**
  * This struct represents the aforementioned tarvals.
@@ -33,9 +32,6 @@ struct tarval {
     const void *value; 		/**< the value stored in an internal way... */
     unsigned int length; 	/**< the length of the stored value */
 };
-
-/** xfprint output */
-int tarval_print (XP_PAR1, const xprintf_info *, XP_PARN);
 
 /** remove tarval representing an entity that is about to be destroyed */
 void free_tarval_entity(entity *ent);

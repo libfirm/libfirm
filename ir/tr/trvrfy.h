@@ -18,7 +18,6 @@
  */
 
 #include "firm.h"
-#include "xprintf.h"
 
 /**
  * possible trvrfy() error codes

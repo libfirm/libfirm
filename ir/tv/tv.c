@@ -50,8 +50,6 @@
 #include "irmode.h"         /* defines modes etc */
 #include "irmode_t.h"
 #include "irnode.h"         /* defines boolean return values */
-#include "xprintf.h"
-#include "xp_help.h"
 #include "host.h"
 #include "strcalc.h"
 #include "fltcalc.h"
@@ -100,7 +98,7 @@ static void _fail_verify(tarval *tv, const char* file, int line)
   assert(0);
 }
 
-static void tarval_verify(tarval *tv)
+inline static void tarval_verify(tarval *tv)
 {
   assert(tv);
   assert(tv->mode);
@@ -961,85 +959,6 @@ tarval *tarval_rot(tarval *a, tarval *b)
   return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 }
 
-/*
- * Output of tarvals
- */
-int tarval_print(XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
-{
-  static const tarval_mode_info default_info = { TVO_NATIVE, NULL, NULL };
-
-  tarval *tv;
-  const char *str;
-  char buf[100];
-  const tarval_mode_info *mode_info;
-  const char *prefix, *suffix;
-
-  ANNOUNCE();
-
-  tv = XP_GETARG(tarval *, 0);
-  mode_info = tv->mode->tv_priv;
-  if (! mode_info)
-    mode_info = &default_info;
-  prefix = mode_info->mode_prefix ? mode_info->mode_prefix : "";
-  suffix = mode_info->mode_suffix ? mode_info->mode_suffix : "";
-
-  switch (get_mode_sort(tv->mode))
-  {
-    case irms_int_number:
-    case irms_character:
-      switch (mode_info->mode_output) {
-
-      case TVO_DECIMAL:
-        str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_DEC);
-	break;
-
-      case TVO_OCTAL:
-        str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_OCT);
-	break;
-
-      case TVO_HEX:
-      case TVO_NATIVE:
-      default:
-        str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_HEX);
-	break;
-      }
-      return XPF3R("%s%s%s", prefix, str, suffix);
-
-    case irms_float_number:
-      return XPF3R("%s%s%s", prefix, fc_print_dec(tv->value, buf, sizeof(buf)), suffix);
-
-    case irms_reference:
-      if (tv->value != NULL)
-        if (tarval_is_entity(tv))
-          if (get_entity_peculiarity((entity *)tv->value) == existent)
-            return XPF1R("&(%I)", get_entity_ld_ident((entity *)tv->value));
-          else
-            return XPSR("NULL");
-        else
-          return XPMR((char*)tv->value, tv->length);
-      else
-        return XPSR("void");
-
-    case irms_internal_boolean:
-      switch (mode_info->mode_output) {
-
-      case TVO_DECIMAL:
-      case TVO_OCTAL:
-      case TVO_HEX:
-      case TVO_BINARY:
-        return XPF3R("%s%c%s", prefix, (tv == tarval_b_true) ? '1' : '0', suffix);
-
-      case TVO_NATIVE:
-      default:
-        return XPF3R("%s%s%s", prefix, (tv == tarval_b_true) ? "true" : "false", suffix);
-      }
-
-    case irms_auxiliary:
-      return XPSR("<BAD>");
-  }
-
-  return 0;
-}
 
 /*
  * Output of tarvals

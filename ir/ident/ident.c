@@ -98,10 +98,3 @@ int fprint_id (FILE *F, ident *id)
 {
   return fprintf(F, "%s", id_to_str(id));
 }
-
-int
-ident_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
-{
-  ident *id = XP_GETARG (ident *, 0);
-  return XPMR (ID_TO_STR (id), ID_TO_STRLEN (id));
-}

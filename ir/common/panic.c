@@ -14,7 +14,9 @@
 # include <stdlib.h>
 
 # include "panic.h"
-# include "xprintf.h"
+# include <stdio.h>
+# include <stdarg.h>
+
 
 void
 panic (const char *fmt, ...)

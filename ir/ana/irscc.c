@@ -16,7 +16,6 @@
 #include "irnode.h"
 #include "irgraph_t.h"
 #include "array.h"
-#include "xprintf.h"
 #include "irgwalk.h"
 #include "irprog.h"
 

@@ -19,7 +19,6 @@
 #include "irgwalk.h"
 #include "ircons.h"
 #include "irgmod.h"
-#include "xprintf.h"
 #include "irnode.h"
 #include "irflag.h"
 

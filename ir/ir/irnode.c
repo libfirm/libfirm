@@ -14,7 +14,6 @@
 
 #include "irnode_t.h"
 #include "irgraph_t.h"
-#include "xp_help.h"
 #include "irmode_t.h"
 #include "typegmod_t.h"
 #include "array.h"
@@ -134,64 +133,6 @@ void
 copy_attrs (ir_node *old, ir_node *new) {
   assert (get_irn_op(old) == get_irn_op(new));
   memcpy (&new->attr, &old->attr, get_op_attr_size(get_irn_op(old)));
-}
-
-/* IR-Nodes with attributes */
-int
-ir_node_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
-{
-  int printed = 0;
-  ir_node *np = XP_GETARG (ir_node *, 0);
-
-  if (!np) {
-    XPS ("<null ir_node>");
-    return printed;
-  }
-
-  XPF1 ("%I", get_irn_opident(np));
-
-  switch (get_irn_opcode (np)) {	/* node label */
-  case iro_Const:
-    XPF1 ("%I", get_irn_mode(np)->name);
-    XPS (" : ");
-    XPF1 ("%v", get_irn_const_attr);
-    break;
-  case iro_Proj:
-    if (get_irn_mode (np) == mode_b) {
-      XPC (" ");
-      XP (pnc_name_arr[get_irn_proj_attr(np)]);
-    } else if (get_irn_opcode (get_irn_in (np)[1]) == iro_Start) {
-      XPC (" ");
-      XP (pns_name_arr[get_irn_proj_attr(np)]);
-    } else {
-      XPF1 ("%I", get_irn_mode(np)->name);
-      XPC (" ");
-      XPF1 ("%d", get_irn_proj_attr(np));
-    }
-    break;
-  case iro_SymConst:
-    XPF1 ("%I", get_irn_mode(np)->name);
-    XPC  (" ");
-    XP   (symconst_name_arr[get_irn_symconst_attr(np).num]);
-    XPF1 (" %#N", get_type_ident(get_SymConst_type(np)));
-    break;
-  case iro_Start:		/* don't dump mode of these */
-  case iro_Cond:
-  case iro_Block:
-  case iro_Call:
-  case iro_Jmp:
-  case iro_Return:
-  case iro_End:
-  case iro_Break:
-  case iro_EndReg:
-  case iro_EndExcept:
-  case iro_CallBegin:
-    break;
-  default:
-    XPF1 ("%I", get_irn_mode(np)->name);
-  }
-
-  return printed;
 }
 
 /** getting some parameters from ir_nodes **/
