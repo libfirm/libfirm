@@ -79,6 +79,7 @@ init_firm(const firm_parameter_t *param)
   init_irprog();
   /* Constructs some idents needed. */
   init_type();
+  init_entity();
   /* allocate a hash table. */
   init_type_identify(def_params.ti_if);
   /* Init reflection facility. */
