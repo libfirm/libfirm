@@ -37,12 +37,7 @@
 # include "irgraph.h"
 # include "irloop.h"
 
-/**
- * The value of this string will be added to the file name before .vcg
- *
- * @todo  GL: A hack -- add parameter to dumper function.
- */
-extern char *dump_file_suffix;
+
 /** Set this to the name (not the ld_name) of the method to be dumped. */
 extern char *dump_file_filter;
 
@@ -173,7 +168,7 @@ void dump_cfg (ir_graph *irg, const char *suffix);
 
 /** Dump the call graph.
  *
- * Dumps the callgraph to a file "callgraph"<filesuffix>".vcg".
+ * Dumps the callgraph to a file "Callgraph"<suffix>".vcg".
  */
 void dump_callgraph(const char *suffix);
 
@@ -250,25 +245,32 @@ void dump_loop_tree(ir_graph *irg, const char *suffix);
  */
 void dump_loop (ir_loop *l, const char *suffix);
 
-/**
- *   Sets the vcg flag "display_edge_labels" to no.
+/** Dumps the loop tree over the call graph.
  *
- *   This is necessary
- *   as xvcg and aisee both fail to display graphs with self-edges if these
- *   edges have labes.
- *   Dumpers will generate vcg flags with a different header.
+ *  See for yourself what you can use this for.
+ *  The filename is "Callgraph_looptree<suffix>.vcg".
+ *
+ *  @arg suffix  Suffix to filename.
+ */
+void dump_callgraph_loop_tree(char *suffix);
+
+/**  Sets the vcg flag "display_edge_labels" to no.
+ *
+ *   This is necessary as xvcg and aisee both fail to display graphs
+ *   with self-edges if these edges have labes.
  */
 void turn_off_edge_labels(void);
 
 /**
- *   If set to true constants will be replicated for every use. In non blocked
- *   view edges from constant to block are scipped.  Vcg
- *   then layouts the graphs more compact, this makes them better readable.
- *   The flag is automatically and temporarily set to false if other
- *   edges are dumped, as outs, loop, ...
- *   Default setting: false.
+ *  If set to true constants will be replicated for every use. In non
+ *  blocked view edges from constant to block are scipped.  Vcg then
+ *  layouts the graphs more compact, this makes them better readable.
+ *  The flag is automatically and temporarily set to false if other
+ *  edges are dumped, as outs, loop, ...
+ *  Default setting: false.
  */
 void dump_consts_local(bool b);
+
 /**
  * Returns false if dump_out_edge_flag or dump_loop_information_flag
  * are set, else returns dump_const_local_flag.

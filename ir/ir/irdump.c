@@ -21,6 +21,7 @@
 
 #include "irnode_t.h"
 #include "irgraph_t.h"
+#include "irprog_t.h"
 #include "entity_t.h"
 #include "irop_t.h"
 #include "firm_common_t.h"
@@ -29,7 +30,6 @@
 
 #include "irgwalk.h"
 #include "typewalk.h"
-#include "irprog.h"
 #include "tv_t.h"
 #include "type_or_entity.h"
 #include "irouts.h"
@@ -111,6 +111,9 @@ SeqNo get_Block_seqno(ir_node *n);
 #define PRINT_LOOPID(X) fprintf(F, "l%p", (void *)(X))
 #define PRINT_ITEMID(X,Y)  fprintf(F, "i%pT%d", (void *) (X), (Y))
 #endif
+
+
+int my_special_flag = 0;
 
 static const char *get_mode_name_ex(ir_mode *mode, int *bad)
 {
@@ -475,7 +478,7 @@ dump_node_opcode(FILE *F, ir_node *n)
 
   case iro_Filter: {
     if (!interprocedural_view) fprintf(F, "Proj'");
-    else                       fprintf(F, "%s", get_irn_opname(n));
+    else                       goto default_case;
   } break;
 
   case iro_Proj: {
@@ -490,16 +493,31 @@ dump_node_opcode(FILE *F, ir_node *n)
  *     fprintf (F, "Arg");
  */
     else
-      fprintf (F, "%s", get_irn_opname(n));
+      goto default_case;
   } break;
-
-  case iro_Start: {
+  case iro_Start:
+  case iro_End:
+  case iro_EndExcept:
+  case iro_EndReg: {
     if (interprocedural_view) {
       fprintf(F, "%s %s", get_irn_opname(n), get_ent_dump_name(get_irg_entity(get_irn_irg(n))));
       break;
-    }
-  } /* fall through */
+    } else
+      goto default_case;
+  }
+  case iro_CallBegin: {
+    ir_node *addr = get_CallBegin_ptr(n);
+    entity *ent = NULL;
+    if (get_irn_op(addr) == op_Sel)
+      ent = get_Sel_entity(addr);
+    else if ((get_irn_op(addr) == op_SymConst) && (get_SymConst_kind(addr) == symconst_addr_ent))
+      ent = get_SymConst_entity(addr);
+    fprintf (F, "%s", get_irn_opname(n));
+    if (ent) fprintf (F, " %s", get_entity_name(ent));
+    break;
+  }
 
+default_case:
   default: {
     fprintf (F, "%s", get_irn_opname(n));
   }
@@ -696,14 +714,14 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
       fprintf(F, "  param %d type: %s \n", i, get_type_name_ex(get_method_param_type(tp, i), &bad));
     for (i = 0; i < get_method_n_ress(tp); ++i)
       fprintf(F, "  resul %d type: %s \n", i, get_type_name_ex(get_method_res_type(tp, i), &bad));
-    if (Call_has_callees(n)) {
+    if (0 && Call_has_callees(n)) {
       fprintf(F, "possible callees: \n");
       for (i = 0; i < get_Call_n_callees(n); i++) {
-    if (!get_Call_callee(n, i)) {
-      fprintf(F, "  %d external method\n", i);
-    } else {
-      fprintf(F, "  %d: %s\n", i, get_ent_dump_name(get_Call_callee(n, i)));
-    }
+	if (!get_Call_callee(n, i)) {
+	  fprintf(F, "  %d external method\n", i);
+	} else {
+	  fprintf(F, "  %d: %s\n", i, get_ent_dump_name(get_Call_callee(n, i)));
+	}
       }
     }
   } break;
@@ -732,6 +750,22 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
     type *tp = get_Const_type(n);
     assert(tp != none_type);
     fprintf(F, "Const of type %s \n", get_type_name_ex(get_Const_type(n), &bad));
+  } break;
+  case iro_SymConst: {
+    switch(get_SymConst_kind(n)) {
+    case symconst_addr_name:
+      fprintf(F, "kind addr_name\n");
+      break;
+    case symconst_addr_ent:
+      fprintf(F, "kind addr_ent\n");
+      break;
+    case symconst_type_tag:
+      fprintf(F, "kind type_tag\n");
+      break;
+    case symconst_size:
+      fprintf(F, "kind size\n");
+      break;
+    }
   } break;
   case iro_Filter: {
     int i;
@@ -1311,47 +1345,10 @@ void dump_entity_node(FILE *F, entity *ent)
   fprintf (F, DEFAULT_TYPE_ATTRIBUTE);
   fprintf (F, "label: ");
   fprintf (F, "\"ent %s\" " ENTITY_NODE_ATTR , get_ent_dump_name(ent));
-  fprintf (F, "\n info1: \"\nid: "); PRINT_ENTID(ent);
+  fprintf (F, "\n info1: \"");
 
-  fprintf (F, "\nallocation:  ");
-  switch (get_entity_allocation(ent)) {
-    X(allocation_dynamic);
-    X(allocation_automatic);
-    X(allocation_static);
-    X(allocation_parameter);
-  }
+  dump_entity_to_file(F, ent);
 
-  fprintf (F, "\nvisibility:  ");
-  switch (get_entity_visibility(ent)) {
-    X(visibility_local);
-    X(visibility_external_visible);
-    X(visibility_external_allocated);
-  }
-
-  fprintf (F, "\nvariability: ");
-  switch (get_entity_variability(ent)) {
-    X(variability_uninitialized);
-    X(variability_initialized);
-    X(variability_part_constant);
-    X(variability_constant);
-  }
-
-  fprintf (F, "\nvolatility:  ");
-  switch (get_entity_volatility(ent)) {
-    X(volatility_non_volatile);
-    X(volatility_is_volatile);
-  }
-
-  fprintf(F, "\npeculiarity:  %s", get_peculiarity_string(get_entity_peculiarity(ent)));
-  fprintf(F, "\nname:         %s\nld_name:      %s",
-      get_entity_name(ent), ent->ld_name ? get_entity_ld_name(ent) : "no yet set");
-  fprintf(F, "\noffset(bits): %d", get_entity_offset_bits(ent));
-  if (is_method_type(get_entity_type(ent))) {
-    if (get_entity_irg(ent))   /* can be null */
-      { fprintf (F, "\nirg = "); PRINT_IRGID(get_entity_irg(ent)); }
-    else
-      { fprintf (F, "\nirg = NULL"); }
-  }
   fprintf(F, "\"\n}\n");
 }
 #undef X
@@ -1511,13 +1508,14 @@ dump_class_hierarchy_node (type_or_ent *tore, void *ctx) {
   case k_entity: {
     entity *ent = (entity *)tore;
     if (get_entity_owner(ent) == get_glob_type()) break;
+    if (!is_method_type(get_entity_type(ent))) break;  /* GL */
     if (env->dump_ent && is_class_type(get_entity_owner(ent))) {
       /* The node */
       dump_entity_node(F, ent);
       /* The edges */
       print_type_ent_edge(F,get_entity_owner(ent),ent,TYPE_MEMBER_EDGE_ATTR);
       for(i = 0; i < get_entity_n_overwrites(ent); i++)
-        print_ent_ent_edge(F,get_entity_overwrites(ent, i),ent, 0, ENT_OVERWRITES_EDGE_ATTR);
+        print_ent_ent_edge(F, get_entity_overwrites(ent, i), ent, 0, ENT_OVERWRITES_EDGE_ATTR);
     }
   } break; /* case k_entity */
   case k_type:
@@ -1806,7 +1804,7 @@ dump_ir_graph (ir_graph *irg, const char *suffix )
   char *suffix1;
   rem = current_ir_graph;
 
-  if(strncmp(get_entity_name(get_irg_entity(irg)),dump_file_filter,strlen(dump_file_filter))!=0) return;
+  if(strncmp(get_entity_name(get_irg_entity(irg)), dump_file_filter, strlen(dump_file_filter))!=0) return;
   current_ir_graph = irg;
   if (interprocedural_view) suffix1 = "-pure-ip";
   else                      suffix1 = "-pure";
@@ -1864,7 +1862,7 @@ dump_ir_graph_w_types (ir_graph *irg, const char *suffix)
   char *suffix1;
 
   /* if a filter is set, dump only the irg's that match the filter */
-  if (strncmp(get_irg_dump_name(irg), dump_file_filter, strlen(dump_file_filter)) != 0)
+  if (strncmp(get_entity_name(get_irg_entity(irg)), dump_file_filter, strlen(dump_file_filter)) != 0)
     return;
 
   current_ir_graph = irg;
@@ -1895,7 +1893,7 @@ dump_ir_block_graph_w_types (ir_graph *irg, const char *suffix)
   ir_graph *rem = current_ir_graph;
 
   /* if a filter is set, dump only the irg's that match the filter */
-  if (strncmp(get_irg_dump_name(irg), dump_file_filter, strlen(dump_file_filter)) != 0)
+  if (strncmp(get_entity_name(get_irg_entity(irg)), dump_file_filter, strlen(dump_file_filter)) != 0)
     return;
 
   if (interprocedural_view) suffix1 = "-wtypes-ip";
@@ -1977,7 +1975,7 @@ dump_cfg (ir_graph *irg, const char *suffix)
   int ipv = interprocedural_view;
 
   /* if a filter is set, dump only the irg's that match the filter */
-  if (strncmp(get_irg_dump_name(irg), dump_file_filter, strlen(dump_file_filter)) != 0)
+  if (strncmp(get_entity_name(get_irg_entity(irg)), dump_file_filter, strlen(dump_file_filter)) != 0)
     return;
 
   current_ir_graph = irg;
@@ -2003,11 +2001,13 @@ dump_cfg (ir_graph *irg, const char *suffix)
   current_ir_graph = rem;
 }
 
-
-
 void dump_callgraph(const char *suffix) {
   FILE *F;
   int i, n_irgs = get_irp_n_irgs();
+  int rem = edge_label;
+  edge_label = 1;
+
+  my_special_flag = 1;
 
   F = vcg_open_name("Callgraph", suffix);
   dump_vcg_header(F, "Callgraph", NULL);
@@ -2023,15 +2023,16 @@ void dump_callgraph(const char *suffix) {
       int be = is_irg_callee_backedge(irg, j);
       char *attr;
       attr = (be) ?
-        "label:\"recursion\" color:red" :
-        "label:\"calls\"";
-      print_ent_ent_edge(F, ent, c, be, attr);
+        "label:\"recursion %d\" color:red" :
+        "label:\"calls %d\"";
+      print_ent_ent_edge(F, ent, c, be, attr, get_irg_callee_loop_depth(irg, j));
     }
   }
 
+  my_special_flag = 0;
+  edge_label = rem;
   vcg_close(F);
 }
-
 
 /* Dump all irgs in interprocedural view to a single file. */
 void dump_all_cg_block_graph(const char *suffix) {
@@ -2073,7 +2074,7 @@ dump_type_graph (ir_graph *irg, const char *suffix)
   rem = current_ir_graph;
 
   /* if a filter is set, dump only the irg's that match the filter */
-  if (strncmp(get_irg_dump_name(irg), dump_file_filter, strlen(dump_file_filter)) != 0) return;
+  if (strncmp(get_entity_name(get_irg_entity(irg)), dump_file_filter, strlen(dump_file_filter)) != 0) return;
 
   current_ir_graph = irg;
 
@@ -2137,10 +2138,8 @@ void dump_all_ir_graphs(dump_graph_func *dmp_grph, const char *suffix) {
 
 /**********************************************************************************
  * Dumps a stand alone loop graph with firm nodes which belong to one loop nodes  *
- * packed together in one subgraph                                                *
+ * packed together in one subgraph/box                                            *
  **********************************************************************************/
-
-
 
 void dump_loops_standalone(FILE *F, ir_loop *loop) {
   int i = 0, loop_node_started = 0, son_number = 0, first = 0;
@@ -2193,14 +2192,11 @@ void dump_loops_standalone(FILE *F, ir_loop *loop) {
       fprintf (F, " ");
       bad |= dump_node_nodeattr(F, n);
       fprintf (F, " %ld", get_irn_node_nr(n));
-    }
-#if CALLGRAPH_LOOP_TREE
-    else {
+      if (is_Block(n)) fprintf (F, "\t ->%d", (int)get_irn_link(n));
+    } else { /* for callgraph loop tree */
       assert(get_kind(son) == k_ir_graph);
       /* We are a loop node -> Collect firm graphs */
-
       ir_graph *n = (ir_graph *)le.node;
-
       if (!loop_node_started) {
 	/* Start a new node which contains all firm nodes of the current loop */
 	fprintf (F, "node: { title: \"");
@@ -2211,10 +2207,9 @@ void dump_loops_standalone(FILE *F, ir_loop *loop) {
       }
       else
 	fprintf(F, "\n");
-
       fprintf (F, " %s", get_irg_dump_name(n));
+      /* fprintf (F, " %s (depth %d)", get_irg_dump_name(n), n->callgraph_weighted_loop_depth); */
     }
-#endif
   }
 
   if (loop_node_started) {
@@ -2236,7 +2231,7 @@ void dump_loop_tree(ir_graph *irg, const char *suffix)
   edge_label = 1;
 
   /* if a filter is set, dump only the irg's that match the filter */
-  if (strncmp(get_irg_dump_name(irg), dump_file_filter, strlen(dump_file_filter)) != 0)
+  if (strncmp(get_entity_name(get_irg_entity(irg)), dump_file_filter, strlen(dump_file_filter)) != 0)
     return;
 
   current_ir_graph = irg;
@@ -2252,15 +2247,13 @@ void dump_loop_tree(ir_graph *irg, const char *suffix)
   current_ir_graph = rem;
 }
 
-#if CALLGRAPH_LOOP_TREE
-/* works, but the tree is meaningless. */
-void dump_callgraph_loop_tree(ir_loop *l, const char *suffix) {
-  vcg_open_name("callgraph_looptree", suffix);
-  dump_vcg_header("callgraph_looptree", "top_to_bottom");
-  dump_loops_standalone(l);
-  vcg_close();
+void dump_callgraph_loop_tree(char *suffix) {
+  FILE *F;
+  F = vcg_open_name("Callgraph_looptree", suffix);
+  dump_vcg_header(F, "callgraph looptree", "top_to_bottom");
+  dump_loops_standalone(F, irp->outermost_cg_loop);
+  vcg_close(F);
 }
-#endif
 
 
 /*******************************************************************************/
