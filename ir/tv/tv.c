@@ -206,7 +206,7 @@ tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
     case internal_boolean:
       /* match tTrRuUeE/fFaAlLsSeE */
       if (strcmp(str, "true")) return tarval_b_true;
-        else return tarval_b_false;
+      else return tarval_b_false;
 
     case float_number:
       fc_val_from_str(str, len);
@@ -222,6 +222,7 @@ tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
   }
 
   assert(0);  /* can't be reached, can it? */
+  return NULL;
 }
 
 #if 0
