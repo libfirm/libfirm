@@ -28,6 +28,7 @@
 # include "irgwalk.h"           /* for irg_walk_func */
 # include "irprog.h"            /* for get_irp_main_irg */
 # include "xmalloc.h"
+# include "gnu_ext.h"
 
 # ifndef TRUE
 #  define TRUE 1
@@ -263,6 +264,9 @@ void irg_walk_mem (ir_graph *graph,
 
 /*
   $Log$
+  Revision 1.11  2005/01/26 12:20:20  beck
+  gnu_ext.h included
+
   Revision 1.10  2005/01/14 13:34:48  liekweg
   Don't cast malloc
 
