@@ -7,7 +7,7 @@
 */
 
 # include "irgopt.h"
-# include "irnode.h"
+# include "irnode_t.h"
 # include "iropt.h"
 # include "irgwalk.h"
 # include "irgraph.h"
@@ -193,18 +193,18 @@ copy_node2 (ir_node *n, void *env) {
     break;
   case iro_SymConst:
     {
-      type_or_id *value = NULL;
+      type_or_id_p value = NULL;
 
       if ((get_SymConst_kind(n)==type_tag) || (get_SymConst_kind(n)==size))
 	{
 
-	   value = (type_or_id *) get_SymConst_type(n);
+	   value = (type_or_id_p) get_SymConst_type(n);
 	}
       else
 	{
 	  if (get_SymConst_kind(n)==linkage_ptr_info)
 	  {
-	    value = (type_or_id *) get_SymConst_ptrinfo(n);
+	    value = (type_or_id_p) get_SymConst_ptrinfo(n);
 	  }
 	}
     res = new_r_SymConst (current_ir_graph, get_new_node(get_nodes_Block(n)),

@@ -6,6 +6,7 @@
 ** iropt --- optimizations intertwined with IR construction.
 */
 
+# include "irnode_t.h"
 # include "iropt.h"
 # include "ircons.h"
 # include "irgmod.h"

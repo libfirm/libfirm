@@ -17,154 +17,6 @@
 # include "tv.h"
 # include "type.h"
 
-
-/** Global flags.  Set these by autoconf?? **/
-/* If this is defined debuging aids are created, e.g. a field in
-   ir_node uniquely numbering the nodes. */
-/* @@@???? this is also set in firm.h */
-#define DEBUG_libfirm
-#ifdef DEBUG_libfirm
-#include "irprog.h"
-#endif
-
-/* projection numbers of compare. */
-enum {
-  False,		/* false */
-  Eq,			/* equal */
-  Lt,			/* less */
-  Le,			/* less or equal */
-  Gt,			/* greater */
-  Ge,			/* greater or equal */
-  Lg,			/* less or greater */
-  Leg,			/* less, equal or greater = ordered */
-  Uo,			/* unordered */
-  Ue,			/* unordered or equal */
-  Ul,			/* unordered or less */
-  Ule,			/* unordered, less or equal */
-  Ug,			/* unordered or greater */
-  Uge,			/* unordered, greater or equal */
-  Ne,			/* unordered, less or greater = not equal */
-  True,		        /* true */
-  not_mask = Leg	/* bits to flip to negate comparison */
-} pnc_number;
-
-inline char *
-get_pnc_string(int pnc);
-
-int
-get_negated_pnc(int pnc);
-
-
-/* projection numbers for result of Start node. */
-enum {
-  pns_initial_exec,     /* Projection on an executable, the initial control
-			   flow. */
-  pns_global_store,     /* Projection on the global store */
-  pns_frame_base,       /* Projection on the frame base */
-  pns_globals,          /* Projection on the pointer to the data segment
-			   containing _all_ global entities. */
-  pns_args              /* Projection on all arguments */
-} pns_number;
-
-/** ir node attributes **/
-/* Block attributes */
-typedef struct {
-  unsigned long block_visited;  /* for the walker that walks over all blocks. */
-  /* Attributes private to construction: */
-  bool matured;               /* if set, all in-nodes of the block are fixed */
-  struct ir_node **graph_arr; /* array to store all parameters */
-} block_attr;
-
-/* SymConst attributes */
-/*   This enum names the three different kinds of symbolic Constants
-     represented by SymConst.  The content of the attribute type_or_id
-     depends on this tag. */
-typedef enum {
-  type_tag,          /* The SymConst is a type tag for the given type.
-			Type_or_id is type */
-  size,              /* The SymConst is the size of the given type.
-			Type_or_id is type */
-  linkage_ptr_info   /* The SymConst is a symbolic pointer to be filled in
-			by the linker. Type_or_id is ident */
-} symconst_kind;
-
-/*   This union contains the symbolic information represented by the node */
-typedef union {
-  type *typ;
-  ident *ptrinfo;
-} type_or_id;
-
-typedef struct {
-  type_or_id tori;
-  symconst_kind num;
-} symconst_attr;
-
-/* Sel attributes */
-typedef enum {
-  static_linkage,       /* entity is used internal and not visible out of this
-			   file/class. */
-  external_linkage,     /* */
-  no_linkage
-} linkage_type;
-
-typedef struct {
-  entity *ent;          /* entity to select */
-  linkage_type ltyp;    /* linkage type of the entity */
-} sel_attr;
-
-/* Alloc attributes */
-typedef enum {
-  stack_alloc,          /* Alloc allocates the object on the stack. */
-  heap_alloc            /* Alloc allocates the object on the heap. */
-} where_alloc;
-
-typedef struct {
-  type *type;           /* Type of the allocated object.  */
-  where_alloc where;    /* stack, heap or other managed part of memory */
-} alloc_attr;
-
-/* Some irnodes just have one attribute, these are stored here,
-   some have more. Their name is 'irnodename_attr' */
-typedef union {
-  block_attr     block; /* For Block: Fields needed to construct it */
-  struct tarval *con;   /* For Const: contains the value of the constant */
-  symconst_attr  i;     /* For SymConst. */
-  sel_attr       s;     /* For Sel. */
-  type_method   *call;  /* For Call: pointer to the type of the method to call */
-  long           proj;  /* For Proj: contains the result position to project */
-  alloc_attr     a;     /* For Alloc. */
-  type          *f;     /* For Free. */
-  int            phi0_pos;  /* For Phi. Used to remember the value defined by
-			       this Phi node.  Needed when the Phi is completed
-			       to call get_r_internal_value to find the
-			       predecessors. If this attribute is set, the Phi
-			       node takes the role of the obsolete Phi0 node,
-			       therefore the name. */
-} attr;
-
-
-/* common structure of an irnode */
-/* if the node has some attributes, they are stored in attr */
-
-struct ir_node {
-  firm_kind kind;          /* distinguishes this node from others */
-  ir_op *op;               /* Opcode of this node. */
-  ir_mode *mode;           /* Mode of this node. */
-  unsigned long visited;   /* visited counter for walks of the graph */
-  struct ir_node **in;     /* array with predecessors / operands */
-  struct ir_node *link;    /* for linking nodes somehow to a list, e.g.
-                              used while construction to link Phi0 nodes and
-			      during optimization to link to nodes that
-			      shall replace a node. */
-#ifdef DEBUG_libfirm
-  int node_nr;             /* a unique node number for each node to make output
-			      readable. */
-#endif
-  attr attr;               /* attribute of this node. Depends on opcode. */
-                           /* Must be last field of struct ir_node. */
-};
-
-
 /* The typedefiniton of ir_node is also in irgraph.h to resolve
    recursion between irnode.h and irgraph.h */
 #ifndef _IR_NODE_TYPEDEF_
@@ -185,18 +37,9 @@ new_ir_node (ir_graph *irg,
 	     int arity,
 	     ir_node **in);
 
-/* Copies all attributes stored in the old node  to the new node.
-   Assumes both have the same opcode and sufficient size. */
-void
-copy_attrs (ir_node *old, ir_node *new);
-
-
-/* Print IR-Nodes with attributes */
-/* @@@@ brauchen wir dienoch? dann fliegt ev. das xprint raus?*/
-int ir_node_print (XP_PAR1, const xprintf_info *, XP_PARN);
-
-
-/** manipulate the fields of ir_node **/
+/** Manipulate the fields of ir_node.  With these access routines
+    you can work on the graph without considering the different types
+    of nodes, it's just a big graph. **/
 
 /* returns the number of predecessors without the block predecessor: */
 int                  get_irn_arity         (ir_node *node);
@@ -205,7 +48,7 @@ inline ir_node     **get_irn_in            (ir_node *node);
 /* to iterate through the predecessors without touching the array. No
    order of predecessors guaranteed.
    To iterate over the operands iterate from 0 to i < get_irn_arity(),
-   to iterate includind the Block predecessor iterate from i = -1 to
+   to iterate including the Block predecessor iterate from i = -1 to
    i < get_irn_arity. */
 /* Access predecessor n */
 inline ir_node      *get_irn_n             (ir_node *node, int n);
@@ -227,32 +70,31 @@ inline void          set_irn_visited (ir_node *node, unsigned long visited);
 inline unsigned long get_irn_visited (ir_node *node);
 inline void          set_irn_link          (ir_node *node, ir_node *link);
 inline ir_node      *get_irn_link          (ir_node *node);
-
 #ifdef DEBUG_libfirm
 /* Outputs a unique number for this node */
 inline long get_irn_node_nr(ir_node *node);
 #endif
 
-/** access attributes directly **/
-inline tarval       *get_irn_const_attr    (ir_node *node);
-inline long          get_irn_proj_attr     (ir_node *node);
-inline alloc_attr    get_irn_alloc_attr    (ir_node *node);
-inline type         *get_irn_free_attr     (ir_node *node);
-inline symconst_attr get_irn_symconst_attr (ir_node *node);
-type_method  *get_irn_call_attr     (ir_node *node);
-sel_attr      get_irn_sel_attr      (ir_node *node);
-int           get_irn_phi_attr      (ir_node *node);
-block_attr    get_irn_return_attr   (ir_node *node);
-
-/** manipulate fields of individual nodes **/
+/** Manipulate fields of individual nodes. **/
 
 /* this works for all except Block */
 inline ir_node  *get_nodes_Block (ir_node *node);
 inline void      set_nodes_Block (ir_node *node, ir_node *block);
+
+/* Projection numbers for result of Start node: use for Proj nodes! */
+enum {
+  pns_initial_exec,     /* Projection on an executable, the initial control
+			   flow. */
+  pns_global_store,     /* Projection on the global store */
+  pns_frame_base,       /* Projection on the frame base */
+  pns_globals,          /* Projection on the pointer to the data segment
+			   containing _all_ global entities. */
+  pns_args              /* Projection on all arguments */
+} pns_number;
+
 inline ir_node **get_Block_cfgpred_arr (ir_node *node);
 int              get_Block_n_cfgpreds (ir_node *node);
 /* inline void    set_Block_n_cfgpreds (ir_node *node, int n_preds); */
-
 inline ir_node  *get_Block_cfgpred (ir_node *node, int pos);
 inline void      set_Block_cfgpred (ir_node *node, int pos, ir_node *pred);
 inline bool      get_Block_matured (ir_node *node);
@@ -281,6 +123,19 @@ inline void     set_Raise_exo_ptr (ir_node *node, ir_node *exoptr);
 inline tarval  *get_Const_tarval (ir_node *node);
 inline void     set_Const_tarval (ir_node *node, tarval *con);
 
+/*   This enum names the three different kinds of symbolic Constants
+     represented by SymConst.  The content of the attribute type_or_id
+     depends on this tag.  Use the proper access routine after testing
+     this flag. */
+typedef enum {
+  type_tag,          /* The SymConst is a type tag for the given type.
+			Type_or_id_p is type * */
+  size,              /* The SymConst is the size of the given type.
+			Type_or_id_p is type * */
+  linkage_ptr_info   /* The SymConst is a symbolic pointer to be filled in
+			by the linker. Type_or_id_p is ident * */
+} symconst_kind;
+typedef union type_or_id * type_or_id_p;
 inline symconst_kind get_SymConst_kind (ir_node *node);
 inline void          set_SymConst_kind (ir_node *node, symconst_kind num);
 inline type    *get_SymConst_type (ir_node *node);
@@ -299,6 +154,12 @@ inline ir_node *get_Sel_index (ir_node *node, int pos);
 inline void     set_Sel_index (ir_node *node, int pos, ir_node *index);
 inline entity  *get_Sel_entity (ir_node *node); /* entity to select */
 inline void     set_Sel_entity (ir_node *node, entity *ent);
+typedef enum {
+  static_linkage,       /* entity is used internal and not visible out of this
+			   file/class. */
+  external_linkage,     /* */
+  no_linkage
+} linkage_type;
 inline linkage_type get_Sel_linkage_type (ir_node *node);
 inline void     set_Sel_linkage_type (ir_node *node, linkage_type lt);
 
@@ -396,6 +257,28 @@ inline void     set_Eor_right (ir_node *node, ir_node *right);
 inline ir_node *get_Not_op (ir_node *node);
 inline void     set_Not_op (ir_node *node, ir_node *op);
 
+/* Projection numbers of compare: use for Proj nodes! */
+enum {
+  False,		/* false */
+  Eq,			/* equal */
+  Lt,			/* less */
+  Le,			/* less or equal */
+  Gt,			/* greater */
+  Ge,			/* greater or equal */
+  Lg,			/* less or greater */
+  Leg,			/* less, equal or greater = ordered */
+  Uo,			/* unordered */
+  Ue,			/* unordered or equal */
+  Ul,			/* unordered or less */
+  Ule,			/* unordered, less or equal */
+  Ug,			/* unordered or greater */
+  Uge,			/* unordered, greater or equal */
+  Ne,			/* unordered, less or greater = not equal */
+  True,		        /* true */
+  not_mask = Leg	/* bits to flip to negate comparison */
+} pnc_number;
+inline char *get_pnc_string(int pnc);
+inline int   get_negated_pnc(int pnc);
 inline ir_node *get_Cmp_left (ir_node *node);
 inline void     set_Cmp_left (ir_node *node, ir_node *left);
 inline ir_node *get_Cmp_right (ir_node *node);
@@ -448,6 +331,10 @@ inline ir_node *get_Alloc_size (ir_node *node);
 inline void     set_Alloc_size (ir_node *node, ir_node *size);
 inline type    *get_Alloc_type (ir_node *node);
 inline void     set_Alloc_type (ir_node *node, type *type);
+typedef enum {
+  stack_alloc,          /* Alloc allocates the object on the stack. */
+  heap_alloc            /* Alloc allocates the object on the heap. */
+} where_alloc;
 inline where_alloc  get_Alloc_where (ir_node *node);
 inline void         set_Alloc_where (ir_node *node, where_alloc where);
 

@@ -1112,7 +1112,7 @@ ir_node *new_r_Raise  (ir_graph *irg, ir_node *block,
 ir_node *new_r_Const  (ir_graph *irg, ir_node *block,
 		       ir_mode *mode, tarval *con);
 ir_node *new_r_SymConst (ir_graph *irg, ir_node *block,
-                       type_or_id *value, symconst_kind symkind);
+                       type_or_id_p value, symconst_kind symkind);
 ir_node *new_r_Sel    (ir_graph *irg, ir_node *block, ir_node *store,
                        ir_node *objptr, int n_index, ir_node **index,
 		       entity *ent);
@@ -1200,7 +1200,7 @@ ir_node *new_Cond   (ir_node *c);
 ir_node *new_Return (ir_node *store, int arity, ir_node **in);
 ir_node *new_Raise  (ir_node *store, ir_node *obj);
 ir_node *new_Const  (ir_mode *mode, tarval *con);
-ir_node *new_SymConst (type_or_id *value, symconst_kind kind);
+ir_node *new_SymConst (type_or_id_p value, symconst_kind kind);
 ir_node *new_simpleSel (ir_node *store, ir_node *objptr, entity *ent);
 ir_node *new_Sel    (ir_node *store, ir_node *objptr, int arity, ir_node **in,
                      entity *ent);

@@ -5,8 +5,12 @@
 **
 */
 
-#include "irnode.h"
+#include "irnode_t.h"
 #include "array.h"
+
+#ifdef DEBUG_libfirm
+#include "irprog.h"
+#endif
 
 /* some constants fixing the positions of nodes predecessors
    in the in array */

@@ -168,5 +168,7 @@ void type_walk(ir_graph *irg,
   ++type_visited;
   irg_walk(irg->end, start_type_walk, NULL, type_env);
 
+  type_walk_2((type_or_ent *)get_irg_ent(irg), pre, post, env);
+
   return;
 }

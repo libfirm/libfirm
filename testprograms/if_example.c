@@ -57,7 +57,7 @@ main(void)
   set_method_res_type(proc_main, 0, (type*)typ);
 
   /* Generates start and end blocks and nodes and a first, initial block */
-  irg = new_ir_graph (ent, 1);
+  irg = new_ir_graph (ent, 2);
 
   /* The value position used for a: */
   a_pos = 0;

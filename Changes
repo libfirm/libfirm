@@ -1,3 +1,7 @@
+  23.8.2000 Goetz
+  type_dump also dumps irg->ent
+  if_example: corrected nr of locals
+
   16.8.2000 Goetz
   irgopt: Correct copy of self pointer in start block.
   irgopt: Correct treatment of loops: pre function in walker

@@ -8,6 +8,7 @@
 
 # include <assert.h>
 # include "irdump.h"
+# include "irnode_t.h"
 # include "panic.h"
 # include <string.h>
 # include "entity.h"

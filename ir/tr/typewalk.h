@@ -17,6 +17,8 @@
 
 # include "type_or_entity.h"
 
+
+/** dumps all type information reachable from irg **/
 void type_walk(ir_graph *irg,
 	      void (pre)(type_or_ent*, void*), void (post)(type_or_ent*, void*),
               void *env);

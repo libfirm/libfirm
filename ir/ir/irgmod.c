@@ -6,6 +6,7 @@
 ** irgmod: ir graph modification
 */
 
+# include "irnode_t.h"
 # include "irgmod.h"
 # include "array.h"
 

@@ -68,13 +68,6 @@
 # include "xprintf.h"
 
 
-/** Global flags.  Set these by autoconf?? **/
-/* If this is defined debuging aids are created, e.g. a field in
-   ir_node uniquely numbering the nodes. */
-/* @@@???? this is also set in irnode.h */
-#define DEBUG_libfirm
-
-
 /* initialize firm */
 void init_firm (void);
 

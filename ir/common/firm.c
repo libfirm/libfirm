@@ -10,6 +10,7 @@
 # include "firm.h"
 # include "mangle.h"
 # include "xp_help.h"
+# include "irnode_t.h"
 
 void
 init_firm (void)

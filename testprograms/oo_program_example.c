@@ -77,7 +77,7 @@ main(void)
 
   /* allocate the defined object and generate the type information */
   class_prima = new_type_class(id_from_str ("PRIMA", 5));
-  obj_size = new_SymConst((type_or_id *)class_prima, size);
+  obj_size = new_SymConst((type_or_id_p)class_prima, size);
   obj_o    = new_Alloc(get_store(), obj_size, (type *)class_prima, heap_alloc);
   set_store(new_Proj(obj_o, mode_M, 0));  /* make the changed memory visible */
   obj_o    = new_Proj(obj_o, mode_p, 1);  /* remember the pointer to the object */

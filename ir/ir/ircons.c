@@ -18,7 +18,7 @@
 # include "array.h"
 /* memset belongs to string.h */
 # include "string.h"
-# include "irnode.h"
+# include "irnode_t.h"
 
 #if USE_EXPICIT_PHI_IN_STACK
 /* A stack needed for the automatic Phi node construction in constructor
@@ -527,7 +527,7 @@ new_r_Sel (ir_graph *irg, ir_node *block, ir_node *store, ir_node *objptr,
 }
 
 inline ir_node *
-new_r_SymConst (ir_graph *irg, ir_node *block, type_or_id *value,
+new_r_SymConst (ir_graph *irg, ir_node *block, type_or_id_p value,
                 symconst_kind symkind)
 {
   ir_node *in[0] = {};
@@ -1479,7 +1479,7 @@ new_Sel (ir_node *store, ir_node *objptr, int n_index, ir_node **index, entity *
 }
 
 ir_node *
-new_SymConst (type_or_id *value, symconst_kind kind)
+new_SymConst (type_or_id_p value, symconst_kind kind)
 {
   return new_r_SymConst (current_ir_graph, current_ir_graph->current_block,
                          value, kind);

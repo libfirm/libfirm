@@ -76,7 +76,7 @@ int main(int argc, char **argv)
   /* this is how a pointer to be fixed by the linker is represented after
      lowering a Sel node. */
 #define FUNCTIONNAME "f"
-  proc_ptr = new_SymConst ((type_or_id *)ID_FROM_STR (FUNCTIONNAME, strlen(FUNCTIONNAME)),
+  proc_ptr = new_SymConst ((type_or_id_p)ID_FROM_STR (FUNCTIONNAME, strlen(FUNCTIONNAME)),
 			   linkage_ptr_info);
 
   /* call procedure set_a, first built array with parameters */
@@ -112,7 +112,7 @@ int main(int argc, char **argv)
   printf("Done building the graph.  Dumping it.\n");
   dump_ir_block_graph (irg);
   printf("Use xvcg to view this graph:\n");
-  printf("/ben/goetz/bin/xvcg GRAPHNAME\n");
+  printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
 
   return (0);
 }

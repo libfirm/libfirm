@@ -6,7 +6,7 @@
 */
 
 # include "irop.h"
-# include "irnode.h"
+# include "irnode_t.h"
 
 ir_op *op_Block;
 

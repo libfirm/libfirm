@@ -10,6 +10,8 @@
 # ifndef _COMMON_H_
 # define _COMMON_H_
 
+/** Global flags.  Set these by autoconf?? **/
+
 /* There are two implementations of the Phi node construction.  The first
    is faster, but does not work for blocks with more than 2 predecessors.
    The second works always but is slower and causes more unnecessary Phi
@@ -22,6 +24,10 @@
    allocating and deallocating Phi nodes.  Else it uses the obstack
    as a stack! */
 #define USE_EXPICIT_PHI_IN_STACK 1
+
+/* If this is defined debuging aids are created, e.g. a field in
+   ir_node uniquely numbering the nodes. */
+#define DEBUG_libfirm 1
 
 /* a list of firm kinds */
 typedef enum {
