@@ -1216,7 +1216,7 @@ static void stat_inline(void *ctx, ir_node *call, ir_graph *called_irg)
  *
  * @param ctx  the hook context
  */
-static void stat_tail_rec(void *ctx, ir_graph *irg)
+static void stat_tail_rec(void *ctx, ir_graph *irg, int n_calls)
 {
   if (! status->stat_options)
     return;
@@ -1225,7 +1225,7 @@ static void stat_tail_rec(void *ctx, ir_graph *irg)
   {
     graph_entry_t *graph = graph_get_entry(irg, status->irg_hash);
 
-    graph->num_tail_recursion++;
+    graph->num_tail_recursion += n_calls;
   }
   STAT_LEAVE;
 }
