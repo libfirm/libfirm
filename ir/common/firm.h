@@ -74,7 +74,9 @@ extern "C" {
 #include "tailrec.h"        /* optimize tail-recursion calls */
 #include "ircgopt.h"        /* Optimizations based on interprocedural graph */
 #include "strength_red.h"   /* Strength reduction */
-#include "loop_unrolling.h" /* Do loop unrolling*/
+#include "loop_unrolling.h" /* Do loop unrolling */
+#include "ifconv.h"         /* if conversion */
+#include "funccall.h"       /* real function call optimization */
 
 /* Analyses */
 #include "irouts.h"         /* Graph reversal / out edges. */
