@@ -703,8 +703,13 @@ void     set_Cast_op (ir_node *node, ir_node *op);
 type    *get_Cast_type (ir_node *node);
 void     set_Cast_type (ir_node *node, type *to_tp);
 
-/* Returns true if n is Phi or Filter in interprocedural_view. */
+/** Returns true if n is Phi or Filter in interprocedural_view.
+   Returns false if irg in phase building and the Phi has zero
+   predecessors: it's a Phi0. */
 int       is_Phi (ir_node *n);
+/** Returns true  if irg in phase building and the Phi has zero
+   predecessors: it's a Phi0. */
+int       is_Phi0 (ir_node *n);
 /* These routines also work for Filter nodes in interprocedural view. */
 ir_node **get_Phi_preds_arr (ir_node *node);
 int       get_Phi_n_preds (ir_node *node);
@@ -859,6 +864,17 @@ int is_ip_cfop(ir_node *node);
 int is_fragile_op(ir_node *node);
 /** Returns the memory operand of fragile operations. */
 ir_node *get_fragile_op_mem(ir_node *node);
+
+/*******************************************************************/
+/** Debug aides                                                   **/
+/*******************************************************************/
+
+
+/** Debug print the node.
+ *
+ *  Writes the node, all its attributes and the predecessors to stdout if DEBUG_libfirm
+ *  is set.  Else does nothing. */
+void    dump_node (ir_node *n);
 
 #include "ident.h"
 

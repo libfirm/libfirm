@@ -300,6 +300,9 @@ const char *
 get_irn_opname (const ir_node *node)
 {
   assert(node);
+  if ((get_irn_op((ir_node *)node) == op_Phi) &&
+      (get_irg_phase_state(get_irn_irg((ir_node *)node)) == phase_building) &&
+      (get_irn_arity((ir_node *)node) == 0)) return "Phi0";
   return get_id_str(node->op->name);
 }
 
@@ -1430,7 +1433,22 @@ int is_Phi (ir_node *n) {
 
   assert(n);
   op = get_irn_op(n);
-  return (op == op_Phi) || (op == op_Filter && interprocedural_view);
+
+  if (op == op_Filter) return interprocedural_view;
+
+  if (op == op_Phi)
+    return  ((get_irg_phase_state(get_irn_irg(n)) !=  phase_building) ||
+	     (get_irn_arity(n) > 0));
+
+  return 0;
+}
+
+int is_Phi0 (ir_node *n) {
+  assert(n);
+
+  return ((get_irn_op(n) == op_Phi) &&
+	  (get_irn_arity(n) == 0) &&
+	  (get_irg_phase_state(get_irn_irg(n)) !=  phase_building));
 }
 
 ir_node **
@@ -1999,3 +2017,24 @@ ir_node *get_fragile_op_mem(ir_node *node) {
     return NULL;
   }
 }
+
+#ifdef DEBUG_libfirm
+void dump_node (ir_node *n) {
+  int i;
+  printf("%s%s: %ld (%p)\n", get_irn_opname(n), get_mode_name(get_irn_mode(n)), get_irn_node_nr(n), (void *)n);
+  if (!is_Block(n)) {
+    ir_node *pred = get_irn_n(n, -1);
+    printf("  block: %s%s: %ld (%p)\n", get_irn_opname(pred), get_mode_name(get_irn_mode(pred)),
+	   get_irn_node_nr(pred), (void *)pred);
+  }
+  printf("  preds: \n");
+  for (i = 0; i < get_irn_arity(n); ++i) {
+    ir_node *pred = get_irn_n(n, i);
+    printf("    %d: %s%s: %ld (%p)\n", i, get_irn_opname(pred), get_mode_name(get_irn_mode(pred)),
+	   get_irn_node_nr(pred), (void *)pred);
+  }
+}
+
+#else  /* DEBUG_libfirm */
+void dump_node (ir_node *n) {}
+#endif /* DEBUG_libfirm */
