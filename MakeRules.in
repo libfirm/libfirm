@@ -7,6 +7,8 @@
 
 VPATH = $(srcdir)
 
+LIBFIRM_VERSION = 0.3.0
+
 CC = @CC@
 CFLAGS := @CFLAGS@
 CPPFLAGS := -I. -I$(topdir) -I$(srcdir) -I$(top_srcdir) @CPPFLAGS@
@@ -21,6 +23,8 @@ LD := @LD@
 LDFLAGS := @LDFLAGS@
 LD_R := @libfirm_cv_prog_ld_r@
 
+LN_S := @LN_S@
+
 # profiling enabled?
 ifeq (@enable_profile_libfirm@,yes)
 LDFLAGS += -g -pg
@@ -30,7 +34,9 @@ AR := @AR@
 ARFLAGS := rc
 
 TAR := @TAR@
-TARFLAGS = -C $(top_srcdir) -uf $(topdir)/libfirm.tar
+TARDIRNAME := libfirm-$(LIBFIRM_VERSION)
+TARFILENAME := $(topdir)/$(TARDIRNAME).tar
+TARFLAGS = -uhf $(TARFILENAME)
 
 RANLIB := @RANLIB@
 
@@ -41,7 +47,7 @@ GLOBALXREFFILE := $(AUTODOCDIR)/libfirm.html.xrefs
 LOCALXREFSFILE := .xrefs
 
 DISTFILES += $(addprefix $(srcdir)/, $(SOURCES))
-ARCHIVEDISTFILES += $(addprefix $(subdir)/, $(SOURCES))
+ARCHIVEDISTFILES += $(addprefix $(TARDIRNAME)/$(subdir)/, $(SOURCES))
 CFILES = $(filter %.c,$(SOURCES) $(GENFILES))
 HFILES = $(filter %.h,$(SOURCES) $(GENFILES))
 OFILES = $(CFILES:.c=.o)
@@ -103,4 +109,4 @@ test -z "$$fail"
 endef
 endif
 
-targets = all clean depend realclean tags install autodoc autodoc_xref autodoc_html dist
+targets = all clean depend realclean tags install autodoc autodoc_xref autodoc_html dist distrib

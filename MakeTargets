@@ -24,7 +24,7 @@ local_clean:
 	$(RM) $(OFILES) subdir.o core
 
 realclean: subdir_realclean local_clean
-	$(RM) $(GENFILES) .depend TAGS
+	$(RM) $(GENFILES) .depend TAGS $(TARDIRNAME)
 
 depend:	subdir_depend local_depend
 .PHONY: local_depend
@@ -45,13 +45,18 @@ local_autodoc_html: $(HTMLFILES)
 
 
 # generate an archive for distribution
-dist:	subdir_dist local_dist
+distrib: dist
+	$(MAKE) -C testprograms dist
+
+dist:	subdir_dist local_dist $(TARDIRNAME)
 #	@echo create archive with $(DISTFILES)
 #	@echo tar -C $(top_srcdir) -uf libfirm.tar $(ARCHIVEDISTFILES)
 	$(TAR) $(TARFLAGS) $(ARCHIVEDISTFILES)
 .PHONY:	local_dist
 local_dist:	$(DISTFILES)
 
+$(TARDIRNAME):
+	$(LN_S) $(top_srcdir) $@
 
 # dont know about this
 # Recurse into $(subdirs) for $(targets)
