@@ -1047,6 +1047,8 @@ new_r_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
   known = res;
   for (i=0;  i < ins;  ++i)
   {
+	assert(in[i]);
+
     if (in[i]==res || in[i]==known || is_Bad(in[i])) continue;
 
     if (known==res)
@@ -1122,28 +1124,31 @@ get_r_frag_value_internal (ir_node *block, ir_node *cfOp, int pos, ir_mode *mode
   ir_node **rem;
   ir_node **frag_arr;
 
-  assert(is_fragile_op(cfOp));
+  assert(is_fragile_op(cfOp) && (get_irn_op(cfOp) != op_Bad));
 
   frag_arr = get_frag_arr(cfOp);
   res = frag_arr[pos];
   if (!res) {
     if (block->attr.block.graph_arr[pos]) {
       /* There was a set_value after the cfOp and no get_value before that
-	 set_value.  We must build a Phi node now. */
+		 set_value.  We must build a Phi node now. */
       if (block->attr.block.matured) {
-	int ins = get_irn_arity(block);
-	ir_node **nin;
-	NEW_ARR_A (ir_node *, nin, ins);
-	phi_merge(block, pos, mode, nin, ins);
+		int ins = get_irn_arity(block);
+		ir_node **nin;
+		NEW_ARR_A (ir_node *, nin, ins);
+		res = phi_merge(block, pos, mode, nin, ins);
       } else {
-	res = new_r_Phi0 (current_ir_graph, block, mode);
-	res->attr.phi0_pos = pos;
-	res->link = block->link;
-	block->link = res;
+		res = new_r_Phi0 (current_ir_graph, block, mode);
+		res->attr.phi0_pos = pos;
+		res->link = block->link;
+		block->link = res;
       }
-      set_frag_value(frag_arr, pos, res);
+	  assert(res);
+	  /* It's a Phi, we can write this into all graph_arrs with NULL */
+      set_frag_value(block->attr.block.graph_arr, pos, res);
     } else {
       res = get_r_value_internal(block, pos, mode);
+      set_frag_value(block->attr.block.graph_arr, pos, res);
     }
   }
   return res;
@@ -1211,11 +1216,13 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
     assert (prevBlock);
     if (!is_Bad(prevBlock)) {
 #if PRECISE_EXC_CONTEXT
-      if (is_fragile_op(prevCfOp))
-	nin[i-1] = get_r_frag_value_internal (prevBlock, prevCfOp, pos, mode);
-      else
+      if (is_fragile_op(prevCfOp) && (get_irn_op (prevCfOp) != op_Bad)) {
+		assert(get_r_frag_value_internal (prevBlock, prevCfOp, pos, mode));
+
+		nin[i-1] = get_r_frag_value_internal (prevBlock, prevCfOp, pos, mode);
+       } else
 #endif
-	nin[i-1] = get_r_value_internal (prevBlock, pos, mode);
+ 	  nin[i-1] = get_r_value_internal (prevBlock, pos, mode);
     } else {
       nin[i-1] = new_Bad();
     }
@@ -1351,16 +1358,15 @@ mature_block (ir_node *block)
 
   if (!get_Block_matured(block)) {
 
-    /* turn the dynamic in-array into a static one. */
+    /* an  in-array for phi-merge with same size. */
     ins = ARR_LEN (block->in)-1;
     NEW_ARR_A (ir_node *, nin, ins);
-    /*  @@@ something is strange here... why isn't the array copied? */
 
     /* Traverse a chain of Phi nodes attached to this block and mature
        these, too. **/
     for (n = block->link;  n;  n=next) {
       inc_irg_visited(current_ir_graph);
-      next = n->link;
+e      next = n->link;
       exchange (n, phi_merge (block, n->attr.phi0_pos, n->mode, nin, ins));
     }
 

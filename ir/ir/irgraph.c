@@ -333,7 +333,11 @@ set_irg_frame_type (ir_graph *irg, type *ftp)
 int
 get_irg_n_loc (ir_graph *irg)
 {
-  return irg->n_loc;
+#if PRECISE_EXC_CONTEXT
+  return irg->n_loc - 1 - 1;
+#else
+  return irg->n_loc - 1;
+#endif
 }
 
 void
