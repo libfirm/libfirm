@@ -14,6 +14,8 @@
 
 static firm_dbg_module_t *dbg;
 
+#if FIRM_EDGES_INPLACE
+
 #define TIMES37(x) (((x) << 5) + ((x) << 2) + (x))
 
 #define get_irn_out_list_head(irn) (&get_irn_out_info(irn)->outs)
@@ -315,3 +317,5 @@ int (get_edge_src_pos)(const ir_edge_t *edge)
 {
 	return _get_edge_src_pos(edge);
 }
+
+#endif /* FIRM_EDGES_INPLACE */
