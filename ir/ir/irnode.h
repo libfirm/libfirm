@@ -146,7 +146,7 @@ inline void     set_SymConst_type (ir_node *node, type *type);
 inline ident   *get_SymConst_ptrinfo (ir_node *node);
 inline void     set_SymConst_ptrinfo (ir_node *node, ident *ptrinfo);
 /* Sets both: type and ptrinfo.  Needed to treat the node independent of
-   its semantics: */
+   its semantics.  Does a memcpy for the memory tori points to. */
 inline type_or_id_p get_SymConst_type_or_id (ir_node *node);
 inline void set_SymConst_type_or_id (ir_node *node, type_or_id_p tori);
 

@@ -22,7 +22,7 @@
    Executes pre before visiting the predecessor of a node, post after.
    irg_walk uses the visited flag in irg and the nodes to determine visited
    nodes.  It executes inc_irg_visited(current_ir_graph) to generate a new
-   flag.
+   flag.  It marks the node as visited before executing pre.
    The void* env can be used to pass status information between the
    pre and post functions.  */
 void irg_walk(ir_node *node,

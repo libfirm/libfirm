@@ -1730,7 +1730,10 @@ skip_nop (ir_node *node) {
   /* don't assert node !!! */
 
   if (node && (node->op == op_Id) && (node != get_Id_pred(node))) {
-    return get_Id_pred(node);
+    /* Don't use get_Id_pred:  We get into an endless loop for
+       self-referencing Ids. */
+    assert (get_irn_arity (node) > 0);
+    return node->in[0+1];
   } else {
     return node;
   }

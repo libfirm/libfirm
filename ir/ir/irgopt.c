@@ -18,6 +18,7 @@
 
 /********************************************************************/
 /* apply optimizations of iropt to all nodes.                       */
+/********************************************************************/
 
 void
 optimize_in_place_wrapper (ir_node *n, void *env) {
@@ -46,6 +47,7 @@ local_optimize_graph (ir_graph *irg) {
 /********************************************************************/
 /* Routines for dead node elimination / copying garbage collection  */
 /* of the obstack.                                                  */
+/********************************************************************/
 
 /* Remeber the new node in the old node by using a field all nodes have. */
 inline void
@@ -61,38 +63,181 @@ get_new_node (ir_node * n)
   return n->link;
 }
 
-/* Copies the node to the new obstack. In's point to the predecessors
-   on the old obstack.  n->link points to the new node. */
+
+/* We use the block_visited flag to mark that we have computed the
+   number of useful predecessors for this block.
+   Further we encode the new arity in this flag.  Remembering the arity is useful,
+   as it saves a lot of pointer accesses.  This function is called for all
+   Phi and Block nodes in a Block. */
+inline int
+compute_new_arity(ir_node *b) {
+  int i, res;
+  int irg_v, block_v;
+
+  irg_v = get_irg_block_visited(current_ir_graph);
+  block_v = get_Block_block_visited(b);
+  if (block_v >= irg_v) {
+    /* we computed the number of preds for this block and saved it in the
+       block_v flag */
+    return block_v - irg_v;
+  } else {
+    /* compute the number of good predecessors */
+    res = get_irn_arity(b);
+    for (i = 0; i < get_irn_arity(b); i++)
+      if (get_irn_opcode(get_irn_n(b, i)) == iro_Bad) res--;
+    /* save it in the flag. */
+    set_Block_block_visited(b, irg_v + res);
+    return res;
+  }
+}
+
+/* Copies the node to the new obstack. The Ins of the new node point to
+   the predecessors on the old obstack.  n->link points to the new node.
+   For Phi and Block nodes the function allocate in arrays with an arity
+   only for useful predecessors.  The arity is determined by counting
+   the non-bad predecessors of the block. */
 inline void
 copy_node (ir_node *n, void *env) {
   ir_node *nn, *block;
+  int new_arity;
 
   if (get_irn_opcode(n) == iro_Block) {
     block = NULL;
+    new_arity = compute_new_arity(n);
   } else {
     block = get_nodes_Block(n);
+    if (get_irn_opcode(n) == iro_Phi) {
+      new_arity = compute_new_arity(block);
+    } else {
+      new_arity = get_irn_arity(n);
+    }
   }
   nn = new_ir_node(current_ir_graph,
 		   block,
 		   get_irn_op(n),
 		   get_irn_mode(n),
-		   get_irn_arity(n),
+		   new_arity,
 		   get_irn_in(n));
   copy_attrs(n, nn);
   set_new_node(n, nn);
 }
 
-/* Copies new predecessors of old node to new node remembered in link. */
+/* Copies new predecessors of old node to new node remembered in link.
+   Spare the Bad predecessors of Phi and Block nodes. */
 inline void
 copy_preds (ir_node *n, void *env) {
-  ir_node *nn;
-  int start, i;
+  ir_node *nn, *block;
+  int i, j;
 
   nn = get_new_node(n);
-  if (get_irn_opcode(n) == iro_Block) start = 0; else start = -1;
-  for (i = start; i < get_irn_arity(n); i++)
-    set_irn_n (nn, i, get_new_node(get_irn_n(n, i)));
+
+  if (get_irn_opcode(n) == iro_Block) {
+    /* Don't copy Bad nodes. */
+    j = 0;
+    for (i = 0; i < get_irn_arity(n); i++)
+      if (get_irn_opcode(get_irn_n(n, i)) != iro_Bad) {
+	set_irn_n (nn, j, get_new_node(get_irn_n(n, i)));
+	j++;
+      }
+    /* repair the block visited flag from above misuse */
+    set_Block_block_visited(nn, 0);
+  } else if (get_irn_opcode(n) == iro_Phi) {
+    /* Don't copy node if corresponding predecessor in block is Bad.
+       The Block itself should not be Bad. */
+    block = get_nodes_Block(n);
+    set_irn_n (nn, -1, get_new_node(block));
+    j = 0;
+    for (i = 0; i < get_irn_arity(n); i++)
+      if (get_irn_opcode(get_irn_n(block, i)) != iro_Bad) {
+	set_irn_n (nn, j, get_new_node(get_irn_n(n, i)));
+	j++;
+      }
+  } else {
+    for (i = -1; i < get_irn_arity(n); i++)
+      set_irn_n (nn, i, get_new_node(get_irn_n(n, i)));
+  }
 }
+
+/* Copies the graph reachable from current_ir_graph->end to the obstack
+   in current_ir_graph.
+   Then fixes the fields in current_ir_graph containing nodes of the
+   graph.  */
+void
+copy_graph () {
+  /* Not all nodes remembered in current_ir_graph might be reachable
+     from the end node.  Assure their link is set to NULL so that
+     we can test whether new nodes have been computed. */
+  set_irn_link(get_irg_frame  (current_ir_graph), NULL);
+  set_irn_link(get_irg_globals(current_ir_graph), NULL);
+  set_irn_link(get_irg_args   (current_ir_graph), NULL);
+
+  /* we use the block walk flag for removing Bads from Blocks ins. */
+  inc_irg_block_visited(current_ir_graph);
+
+  /* copy the graph */
+  irg_walk(get_irg_end(current_ir_graph), copy_node, copy_preds, NULL);
+
+  /* fix the fields in current_ir_graph */
+  set_irg_end        (current_ir_graph, get_new_node(get_irg_end(current_ir_graph)));
+  set_irg_end_block  (current_ir_graph, get_new_node(get_irg_end_block(current_ir_graph)));
+  if (get_irn_link(get_irg_frame(current_ir_graph)) == NULL)
+    irg_walk(get_irg_frame(current_ir_graph), copy_node, copy_preds, NULL);
+  if (get_irn_link(get_irg_globals(current_ir_graph)) == NULL)
+    irg_walk(get_irg_globals(current_ir_graph), copy_node, copy_preds, NULL);
+  if (get_irn_link(get_irg_args(current_ir_graph)) == NULL)
+    irg_walk(get_irg_args(current_ir_graph), copy_node, copy_preds, NULL);
+  set_irg_start  (current_ir_graph, get_new_node(get_irg_start(current_ir_graph)));
+  set_irg_start_block(current_ir_graph,
+		      get_new_node(get_irg_start_block(current_ir_graph)));
+  set_irg_frame  (current_ir_graph, get_new_node(get_irg_frame(current_ir_graph)));
+  set_irg_globals(current_ir_graph, get_new_node(get_irg_globals(current_ir_graph)));
+  set_irg_args   (current_ir_graph, get_new_node(get_irg_args(current_ir_graph)));
+  if (get_irn_link(get_irg_bad(current_ir_graph)) == NULL) {
+    copy_node(get_irg_bad(current_ir_graph), NULL);
+    copy_preds(get_irg_bad(current_ir_graph), NULL);
+  }
+  set_irg_bad(current_ir_graph, get_new_node(get_irg_bad(current_ir_graph)));
+}
+
+
+/* Amroq call this emigrate() */
+void
+dead_node_elimination(ir_graph *irg) {
+  ir_graph *rem;
+  struct obstack *graveyard_obst = NULL;
+  struct obstack *rebirth_obst   = NULL;
+
+  /* Remember external state of current_ir_graph. */
+  rem = current_ir_graph;
+  current_ir_graph = irg;
+
+  if (get_optimize() && get_opt_dead_node_elimination()) {
+
+    /* A quiet place, where the old obstack can rest in peace,
+       until it will be cremated. */
+    graveyard_obst = irg->obst;
+
+    /* A new obstack, where the reachable nodes will be copied to. */
+    rebirth_obst = (struct obstack *) xmalloc (sizeof (struct obstack));
+    current_ir_graph->obst = rebirth_obst;
+    obstack_init (current_ir_graph->obst);
+
+    /* Copy the graph from the old to the new obstack */
+    copy_graph();
+
+    /* Free memory from old unoptimized obstack */
+    obstack_free(graveyard_obst, 0);  /* First empty the obstack ... */
+    xfree (graveyard_obst);           /* ... then free it.           */
+  }
+
+  current_ir_graph = rem;
+}
+
+
+
+
+
+#if 0  /* An old implementation */
 
 /* To break the recursion of the graph walk if there are loops in
    the graph we have to allocate new nodes for Phis and blocks
@@ -397,44 +542,6 @@ copy_node2 (ir_node *n, void *env) {
   printf(" "); DDMSG2(res);
 }
 
-/* Copies the graph reachable from current_ir_graph->end to the obstack
-   in current_ir_graph.
-   Then fixes the fields in current_ir_graph containing nodes of the
-   graph.  */
-void
-copy_graph () {
-  /* Not all nodes remembered in current_ir_graph might be reachable
-     from the end node.  Assure their link is set to NULL so that
-     we can test whether new nodes have been computed. */
-  set_irn_link(get_irg_frame  (current_ir_graph), NULL);
-  set_irn_link(get_irg_globals(current_ir_graph), NULL);
-  set_irn_link(get_irg_args   (current_ir_graph), NULL);
-
-  /* copy the graph */
-  irg_walk(get_irg_end(current_ir_graph), copy_node, copy_preds, NULL);
-
-  /* fix the fields in current_ir_graph */
-  set_irg_end        (current_ir_graph, get_new_node(get_irg_end(current_ir_graph)));
-  set_irg_end_block  (current_ir_graph, get_new_node(get_irg_end_block(current_ir_graph)));
-  if (get_irn_link(get_irg_frame(current_ir_graph)) == NULL)
-    irg_walk(get_irg_frame(current_ir_graph), copy_node, copy_preds, NULL);
-  if (get_irn_link(get_irg_globals(current_ir_graph)) == NULL)
-    irg_walk(get_irg_globals(current_ir_graph), copy_node, copy_preds, NULL);
-  if (get_irn_link(get_irg_args(current_ir_graph)) == NULL)
-    irg_walk(get_irg_args(current_ir_graph), copy_node, copy_preds, NULL);
-  set_irg_start  (current_ir_graph, get_new_node(get_irg_start(current_ir_graph)));
-  set_irg_start_block(current_ir_graph,
-		      get_new_node(get_irg_start_block(current_ir_graph)));
-  set_irg_frame  (current_ir_graph, get_new_node(get_irg_frame(current_ir_graph)));
-  set_irg_globals(current_ir_graph, get_new_node(get_irg_globals(current_ir_graph)));
-  set_irg_args   (current_ir_graph, get_new_node(get_irg_args(current_ir_graph)));
-  if (get_irn_link(get_irg_bad(current_ir_graph)) == NULL) {
-    copy_node(get_irg_bad(current_ir_graph), NULL);
-    copy_preds(get_irg_bad(current_ir_graph), NULL);
-  }
-  set_irg_bad(current_ir_graph, get_new_node(get_irg_bad(current_ir_graph)));
-}
-
 void
 copy_graph2 () {
   ir_node *old_node, *new_node, *projX;
@@ -505,36 +612,4 @@ copy_graph2 () {
   /*CS*/
   printf("After DEAD NODE ELIMINATION !\n");
 }
-
-/* Amroq call this emigrate() */
-void
-dead_node_elimination(ir_graph *irg) {
-  ir_graph *rem;
-  struct obstack *graveyard_obst = NULL;
-  struct obstack *rebirth_obst   = NULL;
-
-  /* Remember external state of current_ir_graph. */
-  rem = current_ir_graph;
-  current_ir_graph = irg;
-
-  if (get_optimize() && get_opt_dead_node_elimination()) {
-
-    /* A quiet place, where the old obstack can rest in peace,
-       until it will be cremated. */
-    graveyard_obst = irg->obst;
-
-    /* A new obstack, where the reachable nodes will be copied to. */
-    rebirth_obst = (struct obstack *) xmalloc (sizeof (struct obstack));
-    current_ir_graph->obst = rebirth_obst;
-    obstack_init (current_ir_graph->obst);
-
-    /* Copy the graph from the old to the new obstack */
-    copy_graph();
-
-    /* Free memory from old unoptimized obstack */
-    //    obstack_free(graveyard_obst, 0);  /* First empty the obstack ... */
-    //xfree (graveyard_obst);           /* ... then free it.           */
-  }
-
-  current_ir_graph = rem;
-}
+#endif
