@@ -82,6 +82,9 @@ local_install_headers:
 ifneq ($(strip $(INSTALL_HEADERS)),)
 	$(INSTALL)  -m u+rw,a+r $(addprefix $(srcdir)/,$(INSTALL_HEADERS)) $(INCLUDEDIR)
 endif
+ifneq ($(strip $(INSTALL_GENERATED_HEADERS)),)
+	$(INSTALL)  -m u+rw,a+r $(INSTALL_GENERATED_HEADERS) $(INCLUDEDIR)
+endif
 ifneq ($(strip $(INSTALL_HEADERS_ADT)),)
 	$(INSTALL)  -m u+rw,a+r $(addprefix $(srcdir)/,$(INSTALL_HEADERS_ADT)) $(INCLUDEDIR)/adt
 endif

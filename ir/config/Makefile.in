@@ -15,9 +15,10 @@ srcdir = @srcdir@
 topdir = ../..
 subdir := ir/common
 
-INSTALL_HEADERS := firm_config.h
+# generated header file
+INSTALL_GENERATED_HEADERS := firm_config.h
 
-SOURCES = $(INSTALL_HEADERS)
+SOURCES = $(INSTALL_GENERATED_HEADERS)
 
 include $(topdir)/MakeRules
 

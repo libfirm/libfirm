@@ -22,7 +22,8 @@ SOURCES = $(INSTALL_HEADERS)
 
 SOURCES += 	Makefile.in \
 		cfopt.c tailrec.c strength_red.c ldstopt.c reassoc.c \
-		loop_unrolling.c funccall.c
+		loop_unrolling.c
+
 
 include $(topdir)/MakeRules
 

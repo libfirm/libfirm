@@ -1,4 +1,3 @@
-
 #
 # Project:     libFIRM
 # File name:   testprograms/Makefile.in
@@ -62,7 +61,7 @@ CPPFLAGS += -I$(top_srcdir)/ir/adt -I$(top_srcdir)/ir/common -I$(top_srcdir)/ir/
 
 LDFLAGS = -L$(topdir)
 LDFLAGS+= @LDFLAGS@
-LDLIBS += -lfirm -liberty -L/usr/public/libxml2 -lxml2
+LDLIBS += -lfirm -liberty @LIBS@
 # @@@ TODO replace hand crafted stuff (xml2) for configure
 
 GENFILES := $(bin_EXAMPLES) *.vcg

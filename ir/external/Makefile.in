@@ -10,10 +10,6 @@
 # Licence:     This file is protected by GPL -  GNU GENERAL PUBLIC LICENSE.
 #
 
-# set LIBXML2 to the installation directory of libxml2
-# temporary fix until libxml2 is integrated:
-LIBXML2		?= /usr/public/libxml2
-
 top_srcdir := @top_srcdir@
 srcdir = @srcdir@
 topdir = ../..
@@ -31,7 +27,7 @@ include $(topdir)/MakeRules
 CPPFLAGS += 	-I$(top_srcdir)/ir/adt   -I$(top_srcdir)/ir/ir  -I$(top_srcdir)/ir/common  \
 		-I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/tr  -I$(top_srcdir)/ir/tv \
 		-I$(top_srcdir)/ir/debug -I$(top_srcdir)/ir/ana -I$(top_srcdir)/ir/st \
-		-I$(top_srcdir)/ir/stat  -I$(topdir)/ir/config -I$(LIBXML2)/include/libxml2
+		-I$(top_srcdir)/ir/stat  -I$(topdir)/ir/config
 
 include $(top_srcdir)/MakeTargets
 
