@@ -10,13 +10,16 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
-/**
- * @file cgana.c
- * Intraprozedurale Analyse zur Abschätzung der Aufrufrelation. Es
- * wird eine Menge von freien Methoden und anschließend die an den
- * Call-Operationen aufrufbaren Methoden bestimmt.
+/** @file cgana.c
  *
+ * Interprocedural analysis to estimate the calling relation.
+ *
+ * This analysis computes all entities representing methods that
+ * can be called at a Call node.  Further it computes a set of
+ * methods that are 'free', i.e., their adress is handled by
+ * the program directly, or they are visible external.
  */
+
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
@@ -35,6 +38,7 @@
 #include "irgwalk.h"
 #include "ircons.h"
 #include "irgmod.h"
+#include "iropt.h"
 
 #include "irflag_t.h"
 #include "dbginfo_t.h"
@@ -48,41 +52,23 @@
 
 #include "irhooks.h"
 
+
+
 /* Eindeutige Adresse zur Markierung von besuchten Knoten und zur
  * Darstellung der unbekannten Methode. */
-static void * MARK = &MARK;
+static void *MARK = &MARK;
+
+static eset *entities = NULL;
+
+/*--------------------------------------------------------------------------*/
+/* The analysis                                                             */
+/*--------------------------------------------------------------------------*/
 
 
-
-/* --- sel methods ---------------------------------------------------------- */
-
-
-static eset * entities = NULL;
-
-
-/** Bestimmt die eindeutige Methode, die die Methode für den
- *  übergebenen (dynamischen) Typ überschreibt. */
-static entity * get_implementation(type * class, entity * method) {
-  int i;
-  if (get_entity_peculiarity(method) != peculiarity_description &&
-      get_entity_owner(method) == class) {
-    return method;
-  }
-  for (i = get_entity_n_overwrittenby(method) - 1; i >= 0; --i) {
-    entity * e = get_entity_overwrittenby(method, i);
-    if (get_entity_peculiarity(e) != peculiarity_description && get_entity_owner(e) == class) {
-      return e;
-    }
-  }
-  for (i = get_class_n_supertypes(class) - 1; i >= 0; --i) {
-    entity * e = get_implementation(get_class_supertype(class, i), method);
-    if (e) {
-      return e;
-    }
-  }
-  assert(0 && "implementation not found");
-  return NULL;
-}
+/*--------------------------------------------------------------------------*/
+/* Initialize datastructures, remove unwanted constructs, optimize          */
+/* call target computations.                                                */
+/*--------------------------------------------------------------------------*/
 
 /** Returns the entity that contains the implementation of the inherited
     entity if available, else returns the entity passed. */
@@ -93,34 +79,7 @@ static entity *get_inherited_methods_implementation(entity *inh_meth) {
 	 "Complex constant values not supported -- address of method should be straight constant!");
 
   return get_SymConst_entity(get_atomic_ent_value(inh_meth));
-
-#if 0  // this stuff is outdated, I think. GL 10.11.04
-  entity *impl_meth = NULL;
-  ir_node *addr = get_atomic_ent_value(inh_meth);
-
-  assert(get_atomic_ent_value(inh_meth) && "constant entity without value");
-
-  if ((get_irn_op(addr) == op_SymConst) &&
-      (get_SymConst_kind(addr) == symconst_addr_ent)) {
-    impl_meth = get_SymConst_entity(addr);
-  } else {
-    assert(0 && "Complex constant values not supported -- address of method should be straight constant!");
-  }
-
-  if (impl_meth && (get_entity_peculiarity(impl_meth) != peculiarity_existent)) {
-    /*
-      printf("this_meth: "); DDMEO(inh_meth);
-      printf("impl meth: "); DDMEO(impl_meth);
-      assert(!impl_meth || get_entity_peculiarity(impl_meth) == peculiarity_existent);
-    */
-    assert(0);
-    impl_meth = NULL;
-  }
-  assert((impl_meth || inh_meth) && "no implementation for inherited entity");
-  return impl_meth? impl_meth : inh_meth;
-#endif
 }
-
 
 /** Collect the entity representing the implementation of this
  *  entity (not the same if inherited) and all entities for overwriting
@@ -139,36 +98,6 @@ static void collect_impls(entity *method, eset *set, int *size, bool *open) {
   int i;
   entity *impl;
 
-#if 0
-  if (get_entity_peculiarity(method) == peculiarity_existent) {
-    if ((get_entity_visibility(method) == visibility_external_allocated)
-	&& (NULL == get_entity_irg(method))) {
-      /* We could also add these entities to the callees, but right now we
-	 subsume them by unknown_entity. */
-      *open = true;
-    } else {
-      assert(get_entity_irg(method) != NULL);
-      if (!eset_contains(set, method)) {
-        eset_insert(set, method);
-        ++(*size);
-      }
-    }
-  }
-
-  if (get_entity_peculiarity(method) == peculiarity_inherited) {
-    entity *impl_ent = get_inherited_methods_implementation(method);
-    if (get_entity_visibility(impl_ent) == visibility_external_allocated) {
-      assert(get_entity_irg(impl_ent) == NULL);
-      *open = true;
-    } else {
-      assert(get_entity_irg(impl_ent) != NULL);
-      if (!eset_contains(set, impl_ent)) {
-        eset_insert(set, impl_ent);
-        ++(*size);
-      }
-    }
-  }
-#endif
   /* Only the assertions: */
   if (get_entity_peculiarity(method) == peculiarity_existent) {
     if ((get_entity_visibility(method) == visibility_external_allocated)
@@ -215,7 +144,6 @@ static void collect_impls(entity *method, eset *set, int *size, bool *open) {
     collect_impls(get_entity_overwrittenby(method, i), set, size, open);
 }
 
-
 /** Alle Methoden bestimmen, die die übergebene Methode überschreiben
  *  (und implementieren). In der zurückgegebenen Reihung kommt jede
  *  Methode nur einmal vor. Der Wert 'NULL' steht für unbekannte
@@ -257,11 +185,18 @@ static entity ** get_impl_methods(entity * method) {
 
 /** Analyze address computations.
  *
- *  - If the node is a SymConst(name) replace it by SymConst(ent) if possible.
- *  - If the node is a Sel:
- *    * If the pointer to the Sel comes directly from an Alloc node
- *      replace the Sel by a SymConst(ent).
+ *  Compute for all Sel nodes the set of methods that can be selected.
  *
+ *  Further do some optimizations:
+ *  - Call standard optimizations for Sel nodes: this removes polymorphic
+ *    calls.
+ *  - If the node is a SymConst(name) replace it by SymConst(ent) if possible.
+ *    For this we precomputed a map name->entity.
+ *  - If the node is a Sel:
+ *     If we found only a single method that can be called, replace the Sel
+ *     by a SymConst.  This is more powerful than the analysis in opt_polymorphy,
+ *     as here we walk the typegraph.  In opt_polymorphy we only apply a local
+ *     pattern.
  *
  *  @param node The node to analyze
  *  @param env  A map that maps names of entities to the entities.
@@ -269,118 +204,97 @@ static entity ** get_impl_methods(entity * method) {
 static void sel_methods_walker(ir_node * node, void *env) {
   pmap *ldname_map = env;
 
+  if (get_irn_op(node) == op_Sel) {
+    ir_node *new_node = optimize_in_place(node);
+    if (node != new_node) exchange(node, new_node);
+  }
+
   /* replace SymConst(name)-operations by SymConst(ent) */
   if (get_irn_op(node) == op_SymConst) {
     if (get_SymConst_kind(node) == symconst_addr_name) {
       pmap_entry * entry = pmap_find(ldname_map, (void *) get_SymConst_name(node));
       if (entry != NULL) { /* Method is declared in the compiled code */
-	    entity * ent = entry->value;
-	    if (get_opt_normalize() && (get_entity_visibility(ent) != visibility_external_allocated)) { /* Meth. is defined */
+	assert(0 && "There should not be a SymConst[addr_name] addressing a method with an implementation"
+	       "in this compilation unit.  Use a SymConst[addr_ent].");
+#if 0
+	entity * ent = entry->value;
+	if (get_opt_normalize() &&
+	    (get_entity_visibility(ent) != visibility_external_allocated)) { /* Meth. is defined */
           ir_node *new_node;
 
-	      set_irg_current_block(current_ir_graph, get_nodes_block(node));
-	      new_node = copy_const_value(get_atomic_ent_value(ent));
+	  set_irg_current_block(current_ir_graph, get_nodes_block(node));
+	  new_node = copy_const_value(get_atomic_ent_value(ent));
 
-	      DBG_OPT_CSTEVAL(node, new_node);
+	  DBG_OPT_CSTEVAL(node, new_node);
 
-	      assert(get_entity_irg(ent));
-	      DDMN(new_node);
-	      exchange(node, new_node);
-	    }
+	  assert(get_entity_irg(ent));
+	  DDMN(new_node);
+	  exchange(node, new_node);
+	}
+#endif
       }
     }
   }
   else if (get_irn_op(node) == op_Sel &&
 	   is_Method_type(get_entity_type(get_Sel_entity(node)))) {
     entity * ent = get_Sel_entity(node);
+    assert(get_entity_peculiarity(ent) != peculiarity_inherited);
 
-    /* Sel from Alloc: replace by constant */
-    if (get_opt_optimize() && get_opt_dyn_meth_dispatch() &&
-        (get_irn_op(skip_Proj(get_Sel_ptr(node))) == op_Alloc)) {
-      ir_node *new_node;
-      entity *called_ent;
-
-      /* We know which method will be called, no dispatch necessary. */
-      called_ent = resolve_ent_polymorphy(get_Alloc_type(skip_Proj(get_Sel_ptr(node))), ent);
-      set_irg_current_block(current_ir_graph, get_nodes_block(node));
-
-      /* called_ent may not be description: has no Address/Const to Call! */
-      assert(get_entity_peculiarity(called_ent) != peculiarity_description);
-      new_node = copy_const_value(get_atomic_ent_value(called_ent));
-
-      DBG_OPT_POLY_ALLOC(node, new_node);
-      exchange(node, new_node);
+    if (!eset_contains(entities, ent)) {
+      /* Entity noch nicht behandelt. Alle (intern oder extern)
+       * implementierten Methoden suchen, die diese Entity
+       * überschreiben. Die Menge an entity.link speichern. */
+      set_entity_link(ent, get_impl_methods(ent));
+      eset_insert(entities, ent);
     }
-    else {
-      assert(get_entity_peculiarity(ent) != peculiarity_inherited);
-      if (!eset_contains(entities, ent)) {
-        /* Entity noch nicht behandelt. Alle (intern oder extern)
-         * implementierten Methoden suchen, die diese Entity
-         * überschreiben. Die Menge an entity.link speichern. */
-        set_entity_link(ent, get_impl_methods(ent));
-        eset_insert(entities, ent);
-      }
-      if (get_entity_link(ent) == NULL) {
-        /* Die Sel-Operation kann nie einen Zeiger auf eine aufrufbare
-         * Methode zurückgeben. Damit ist sie insbesondere nicht
-         * ausführbar und nicht erreichbar. */
-        /* Gib eine Warnung aus wenn die Entitaet eine Beschreibung ist
-           fuer die es keine Implementierung gibt. */
-        if (get_entity_peculiarity(ent) == peculiarity_description) {
-          /* This is possible:  We call a method in a dead part of the program. */
-        } else {
-	      DDMN(node);
-	      assert(0);  /* Why should this happen ??? */
-          //exchange(node, new_Bad());
-        }
+
+    /* -- As an add on we get an optimization that removes polymorphic calls.
+       This optimization is more powerful than that in transform_node_Sel.  -- */
+    if (get_entity_link(ent) == NULL) {
+      /* Die Sel-Operation kann nie einen Zeiger auf eine aufrufbare
+       * Methode zurückgeben. Damit ist sie insbesondere nicht
+       * ausführbar und nicht erreichbar. */
+      /* Gib eine Warnung aus wenn die Entitaet eine Beschreibung ist
+	 fuer die es keine Implementierung gibt. */
+      if (get_entity_peculiarity(ent) == peculiarity_description) {
+	/* This is possible:  We call a method in a dead part of the program. */
       } else {
-        entity ** arr = get_entity_link(ent);
-
-#if 0
-        int i;
-        printf("\nCall site "); DDMN(node);
-        printf("  in "); DDME(get_irg_entity(current_ir_graph));
-        printf("  can call:\n");
-        for (i = 0; i < ARR_LEN(arr); i++) {
-          printf("   - "); DDME(arr[i]);
-          printf("     with owner "); DDMT(get_entity_owner(arr[i]));
-        }
-        printf("\n");
-#endif
-
-        if (get_opt_optimize() && get_opt_dyn_meth_dispatch() &&
-            (ARR_LEN(arr) == 1 && arr[0] != NULL)) {
-          ir_node *new_node;
-          /* Die Sel-Operation kann immer nur _einen_ Wert auf eine
-           * interne Methode zurückgeben. Wir können daher die
-           * Sel-Operation durch eine Const- bzw. SymConst-Operation
-           * ersetzen. */
-          set_irg_current_block(current_ir_graph, get_nodes_block(node));
-          assert(get_entity_peculiarity(get_SymConst_entity(get_atomic_ent_value(arr[0]))) ==
-	         peculiarity_existent);
-          new_node = copy_const_value(get_atomic_ent_value(arr[0]));
-          DBG_OPT_POLY(node, new_node);
-          exchange (node, new_node);
-        }
+	DDMN(node);
+	assert(0);  /* Why should this happen ??? */
+	//exchange(node, new_Bad());
+      }
+    } else {
+      entity ** arr = get_entity_link(ent);
+      if (get_opt_optimize() && get_opt_dyn_meth_dispatch() &&
+	  (ARR_LEN(arr) == 1 && arr[0] != NULL)) {
+	ir_node *new_node;
+	/* Die Sel-Operation kann immer nur _einen_ Wert auf eine
+	 * interne Methode zurückgeben. Wir können daher die
+	 * Sel-Operation durch eine Const- bzw. SymConst-Operation
+	 * ersetzen. */
+	set_irg_current_block(current_ir_graph, get_nodes_block(node));
+	assert(get_entity_peculiarity(get_SymConst_entity(get_atomic_ent_value(arr[0]))) ==
+	       peculiarity_existent);
+	new_node = copy_const_value(get_atomic_ent_value(arr[0]));
+	DBG_OPT_POLY(node, new_node);
+	exchange (node, new_node);
       }
     }
   }
 }
-
 
 /** Datenstruktur initialisieren. Zusätzlich werden alle
  *  SymConst(name)-Operationen, die auf interne Methoden verweisen, durch
  *  SymConst(entity)-Operationen ersetzt. */
 static void sel_methods_init(void) {
   int i;
-  pmap * ldname_map = pmap_create();   /* Map entity names to entities: to replace SymConst(name) by SymConst(ent). */
-
+  pmap * ldname_map = pmap_create();   /* Map entity names to entities: to replace
+					  SymConst(name) by SymConst(ent). */
   assert(entities == NULL);
   entities = eset_create();
   for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-    ir_graph *irg = get_irp_irg(i);
-    entity * ent = get_irg_entity(irg);
-    /* Nur extern sichtbare Methoden können überhaupt mit SymConst
+    entity * ent = get_irg_entity(get_irp_irg(i));
+    /* Nur extern sichtbare Methoden können überhaupt mit SymConst_ptr_name
      * aufgerufen werden. */
     if (get_entity_visibility(ent) != visibility_local) {
       pmap_insert(ldname_map, (void *) get_entity_ld_ident(ent), ent);
@@ -390,23 +304,12 @@ static void sel_methods_init(void) {
   pmap_destroy(ldname_map);
 }
 
-/*****************************************************************************/
-
-/** Frees the allocated entity map */
-static void sel_methods_dispose(void) {
-  entity * ent;
-  assert(entities);
-  for (ent = eset_first(entities); ent; ent = eset_next(entities)) {
-    entity ** arr = get_entity_link(ent);
-    if (arr) {
-      DEL_ARR_F(arr);
-    }
-    set_entity_link(ent, NULL);
-  }
-  eset_destroy(entities);
-  entities = NULL;
-}
-
+/*--------------------------------------------------------------------------*/
+/* Find free methods.
+ *
+ * We expect that each entity has an array with all implementations in its
+ * link field.                                                              */
+/*--------------------------------------------------------------------------*/
 
 /**
  * Returns an array of all methods that could be called at a Sel node.
@@ -449,13 +352,195 @@ static entity * get_Sel_method(ir_node * sel, int pos) {
   return arr[pos];
 }
 
+static void free_mark(ir_node * node, eset * set);
+
+static void free_mark_proj(ir_node * node, long n, eset * set) {
+  assert(get_irn_mode(node) == mode_T);
+  if (get_irn_link(node) == MARK) {
+    /* already visited */
+    return;
+  }
+  set_irn_link(node, MARK);
+  switch (get_irn_opcode(node)) {
+  case iro_Proj: {
+    /* proj_proj: in einem "sinnvollen" Graphen kommt jetzt ein
+     * op_Tuple oder ein Knoten, der in "free_ana_walker" behandelt
+     * wird. */
+    ir_node * pred = get_Proj_pred(node);
+    if (get_irn_link(pred) != MARK && get_irn_op(pred) == op_Tuple) {
+      free_mark_proj(get_Tuple_pred(pred, get_Proj_proj(node)), n, set);
+    } else {
+      /* nothing: da in "free_ana_walker" behandelt. */
+    }
+    break;
+  }
+
+  case iro_Tuple:
+    free_mark(get_Tuple_pred(node, n), set);
+    break;
+
+  case iro_Id:
+    free_mark_proj(get_Id_pred(node), n, set);
+    break;
+
+  case iro_Start:
+  case iro_Alloc:
+  case iro_Load:
+    /* nothing: Die Operationen werden in "free_ana_walker" selbst
+     * behandelt. */
+    break;
+
+  default:
+    assert(0 && "unexpected opcode or opcode not implemented");
+    break;
+  }
+  set_irn_link(node, NULL);
+}
 
 
-/* --- callee analysis ------------------------------------------------------ */
+static void free_mark(ir_node * node, eset * set) {
+  int i;
 
+  if (get_irn_link(node) == MARK) {
+    return; /* already visited */
+  }
+  set_irn_link(node, MARK);
+  switch (get_irn_opcode(node)) {
+  case iro_Sel: {
+    entity * ent = get_Sel_entity(node);
+    if (is_Method_type(get_entity_type(ent))) {
+      for (i = get_Sel_n_methods(node) - 1; i >= 0; --i) {
+        eset_insert(set, get_Sel_method(node, i));
+      }
+    }
+    break;
+  }
+  case iro_SymConst:
+    if (get_SymConst_kind(node) == symconst_addr_ent) {
+      entity * ent = get_SymConst_entity(node);
+      if (is_Method_type(get_entity_type(ent))) {
+        eset_insert(set, ent);
+      }
+    } else {
+      assert(get_SymConst_kind(node) == symconst_addr_name);
+      /* nothing: SymConst points to extern method */
+    }
+    break;
+
+  case iro_Phi:
+    for (i = get_Phi_n_preds(node) - 1; i >= 0; --i) {
+      free_mark(get_Phi_pred(node, i), set);
+    }
+    break;
+  case iro_Id:
+    free_mark(get_Id_pred(node), set);
+    break;
+  case iro_Proj:
+    free_mark_proj(get_Proj_pred(node), get_Proj_proj(node), set);
+    break;
+  default:
+    /* nothing: Wird unten behandelt! */
+    break;
+  }
+  set_irn_link(node, NULL);
+}
+
+
+static void free_ana_walker(ir_node * node, eset * set) {
+  int i;
+  if (get_irn_link(node) == MARK) {
+    /* bereits in einem Zyklus besucht. */
+    return;
+  }
+  switch (get_irn_opcode(node)) {
+  /* special nodes */
+  case iro_Sel:
+  case iro_SymConst:
+  case iro_Const:
+  case iro_Phi:
+  case iro_Id:
+  case iro_Proj:
+  case iro_Tuple:
+    /* nothing */
+    break;
+  /* Sonderbehandlung, da der Funktionszeigereingang natürlich kein
+   * Verräter ist. */
+  case iro_Call:
+    set_irn_link(node, MARK);
+    for (i = get_Call_arity(node) - 1; i >= 0; --i) {
+      ir_node * pred = get_Call_param(node, i);
+      if (mode_is_reference(get_irn_mode(pred))) {
+        free_mark(pred, set);
+      }
+    }
+    break;
+  /* other nodes: Alle anderen Knoten nehmen wir als Verräter an, bis
+   * jemand das Gegenteil implementiert. */
+  default:
+    set_irn_link(node, MARK);
+    for (i = get_irn_arity(node) - 1; i >= 0; --i) {
+      ir_node * pred = get_irn_n(node, i);
+      if (mode_is_reference(get_irn_mode(pred))) {
+        free_mark(pred, set);
+      }
+    }
+    break;
+  }
+  set_irn_link(node, NULL);
+}
+
+/* Die Datenstrukturen für sel-Methoden (sel_methods) muß vor dem
+ * Aufruf von "get_free_methods" aufgebaut sein. Die (internen)
+ * SymConst(name)-Operationen müssen in passende SymConst(ent)-Operationen
+ * umgewandelt worden sein, d.h. SymConst-Operationen verweisen immer
+ * auf eine echt externe Methode. */
+static entity ** get_free_methods(void)
+{
+  eset * set = eset_create();
+  int i;
+  entity ** arr = NEW_ARR_F(entity *, 0);
+  entity * ent;
+
+  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+    ir_graph * irg = get_irp_irg(i);
+    entity * ent = get_irg_entity(irg);
+    /* insert "external visible" methods. */
+    if (get_entity_visibility(ent) != visibility_local) {
+      eset_insert(set, ent);
+    }
+    /* Finde alle Methoden die in dieser Methode extern sichtbar werden,
+       z.B. da die Adresse einer Methode abgespeichert wird. */
+    irg_walk_graph(irg, NULL, (irg_walk_func *) free_ana_walker, set);
+  }
+
+  /* insert sticky methods, too */
+  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+    entity * ent = get_irg_entity(get_irp_irg(i));
+    /* insert "external visible" methods. */
+    if (get_entity_stickyness (ent) == stickyness_sticky) {
+      eset_insert(set, ent);
+    }
+  }
+
+  /* Hauptprogramm ist auch dann frei, wenn es nicht "external
+   * visible" ist. */
+  if (get_irp_main_irg()) {
+    eset_insert(set, get_irg_entity(get_irp_main_irg()));
+  }
+  /* Wandle Menge in Feld um.  Effizienter. */
+  for (ent = eset_first(set); ent; ent = eset_next(set)) {
+    ARR_APP1(entity *, arr, ent);
+  }
+  eset_destroy(set);
+
+  return arr;
+}
+
+/*--------------------------------------------------------------------------*/
+/* Callee analysis.                                                         */
+/*--------------------------------------------------------------------------*/
 
 static void callee_ana_node(ir_node * node, eset * methods);
-
 
 static void callee_ana_proj(ir_node * node, long n, eset * methods) {
   assert(get_irn_mode(node) == mode_T);
@@ -610,7 +695,6 @@ static void callee_walker(ir_node * call, void * env) {
       int i;
       for (i = 0; i < ARR_LEN(arr); ++i) {
 	assert(arr[i]);
-	//if (arr[i] == unknown_entity) arr[i] = NULL;
       }
 
       set_Call_callee_arr(call, ARR_LEN(arr), arr);
@@ -644,196 +728,38 @@ static void callee_ana(void) {
   set_irp_callee_info_state(irg_callee_info_consistent);
 }
 
+/*--------------------------------------------------------------------------*/
+/* Cleanup after analyses.                                                  */
+/*--------------------------------------------------------------------------*/
 
-
-/* --- free method analysis ------------------------------------------------- */
-
-
-static void free_mark(ir_node * node, eset * set);
-
-static void free_mark_proj(ir_node * node, long n, eset * set) {
-  assert(get_irn_mode(node) == mode_T);
-  if (get_irn_link(node) == MARK) {
-    /* already visited */
-    return;
-  }
-  set_irn_link(node, MARK);
-  switch (get_irn_opcode(node)) {
-  case iro_Proj: {
-    /* proj_proj: in einem "sinnvollen" Graphen kommt jetzt ein
-     * op_Tuple oder ein Knoten, der in "free_ana_walker" behandelt
-     * wird. */
-    ir_node * pred = get_Proj_pred(node);
-    if (get_irn_link(pred) != MARK && get_irn_op(pred) == op_Tuple) {
-      free_mark_proj(get_Tuple_pred(pred, get_Proj_proj(node)), n, set);
-    } else {
-      /* nothing: da in "free_ana_walker" behandelt. */
-    }
-    break;
-  }
-
-  case iro_Tuple:
-    free_mark(get_Tuple_pred(node, n), set);
-    break;
-
-  case iro_Id:
-    free_mark_proj(get_Id_pred(node), n, set);
-    break;
-
-  case iro_Start:
-  case iro_Alloc:
-  case iro_Load:
-    /* nothing: Die Operationen werden in "free_ana_walker" selbst
-     * behandelt. */
-    break;
-
-  default:
-    assert(0 && "unexpected opcode or opcode not implemented");
-    break;
-  }
-  set_irn_link(node, NULL);
-}
-
-
-static void free_mark(ir_node * node, eset * set) {
-  int i;
-
-  if (get_irn_link(node) == MARK) {
-    return; /* already visited */
-  }
-  set_irn_link(node, MARK);
-  switch (get_irn_opcode(node)) {
-  case iro_Sel: {
-    entity * ent = get_Sel_entity(node);
-    if (is_Method_type(get_entity_type(ent))) {
-      for (i = get_Sel_n_methods(node) - 1; i >= 0; --i) {
-        eset_insert(set, get_Sel_method(node, i));
-      }
-    }
-    break;
-  }
-  case iro_SymConst:
-    if (get_SymConst_kind(node) == symconst_addr_ent) {
-      entity * ent = get_SymConst_entity(node);
-      if (is_Method_type(get_entity_type(ent))) {
-        eset_insert(set, ent);
-      }
-    } else {
-      assert(get_SymConst_kind(node) == symconst_addr_name);
-      /* nothing: SymConst points to extern method */
-    }
-    break;
-
-  case iro_Phi:
-    for (i = get_Phi_n_preds(node) - 1; i >= 0; --i) {
-      free_mark(get_Phi_pred(node, i), set);
-    }
-    break;
-  case iro_Id:
-    free_mark(get_Id_pred(node), set);
-    break;
-  case iro_Proj:
-    free_mark_proj(get_Proj_pred(node), get_Proj_proj(node), set);
-    break;
-  default:
-    /* nothing: Wird unten behandelt! */
-    break;
-  }
-  set_irn_link(node, NULL);
-}
-
-
-static void free_ana_walker(ir_node * node, eset * set) {
-  int i;
-  if (get_irn_link(node) == MARK) {
-    /* bereits in einem Zyklus besucht. */
-    return;
-  }
-  switch (get_irn_opcode(node)) {
-  /* special nodes */
-  case iro_Sel:
-  case iro_SymConst:
-  case iro_Const:
-  case iro_Phi:
-  case iro_Id:
-  case iro_Proj:
-  case iro_Tuple:
-    /* nothing */
-    break;
-  /* Sonderbehandlung, da der Funktionszeigereingang natürlich kein
-   * Verräter ist. */
-  case iro_Call:
-    set_irn_link(node, MARK);
-    for (i = get_Call_arity(node) - 1; i >= 0; --i) {
-      ir_node * pred = get_Call_param(node, i);
-      if (mode_is_reference(get_irn_mode(pred))) {
-        free_mark(pred, set);
-      }
-    }
-    break;
-  /* other nodes: Alle anderen Knoten nehmen wir als Verräter an, bis
-   * jemand das Gegenteil implementiert. */
-  default:
-    set_irn_link(node, MARK);
-    for (i = get_irn_arity(node) - 1; i >= 0; --i) {
-      ir_node * pred = get_irn_n(node, i);
-      if (mode_is_reference(get_irn_mode(pred))) {
-        free_mark(pred, set);
-      }
-    }
-    break;
-  }
-  set_irn_link(node, NULL);
-}
-
-
-/* Die Datenstrukturen für sel-Methoden (sel_methods) muß vor dem
- * Aufruf von "get_free_methods" aufgebaut sein. Die (internen)
- * SymConst-Operationen müssen in passende Const-Operationen
- * umgewandelt worden sein, d.h. SymConst-Operationen verweisen immer
- * auf eine echt externe Methode.  */
-static entity ** get_free_methods(void)
-{
-  eset * set = eset_create();
-  int i;
-  entity ** arr = NEW_ARR_F(entity *, 0);
+/** Frees intermediate data structures. */
+static void sel_methods_dispose(void) {
   entity * ent;
-
-  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-    ir_graph * irg = get_irp_irg(i);
-    entity * ent = get_irg_entity(irg);
-    /* insert "external visible" methods. */
-    if (get_entity_visibility(ent) != visibility_local) {
-      eset_insert(set, ent);
+  assert(entities);
+  for (ent = eset_first(entities); ent; ent = eset_next(entities)) {
+    entity ** arr = get_entity_link(ent);
+    if (arr) {
+      DEL_ARR_F(arr);
     }
-    /* Finde alle Methoden die in dieser Methode extern sichtbar werden,
-       z.B. da die Adresse einer Methode abgespeichert wird. */
-    irg_walk_graph(irg, NULL, (irg_walk_func *) free_ana_walker, set);
+    set_entity_link(ent, NULL);
   }
-
-  /* insert sticky methods, too */
-  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-    ir_graph * irg = get_irp_irg(i);
-    entity * ent = get_irg_entity(irg);
-    /* insert "external visible" methods. */
-    if (get_entity_stickyness (ent) == stickyness_sticky) {
-      eset_insert(set, ent);
-    }
-  }
-
-  /* Hauptprogramm ist auch dann frei, wenn es nicht "external
-   * visible" ist. */
-  if (get_irp_main_irg()) {
-    eset_insert(set, get_irg_entity(get_irp_main_irg()));
-  }
-  /* Wandle Menge in Feld um.  Effizienter. */
-  for (ent = eset_first(set); ent; ent = eset_next(set)) {
-    ARR_APP1(entity *, arr, ent);
-  }
-  eset_destroy(set);
-
-  return arr;
+  eset_destroy(entities);
+  entities = NULL;
 }
+
+/*--------------------------------------------------------------------------*/
+/* Freeing the callee arrays.                                               */
+/*--------------------------------------------------------------------------*/
+
+static void destruct_walker(ir_node * node, void * env) {
+  if (get_irn_op(node) == op_Call) {
+    remove_Call_callee_arr(node);
+  }
+}
+
+/*--------------------------------------------------------------------------*/
+/* Main drivers.                                                            */
+/*--------------------------------------------------------------------------*/
 
 void cgana(int *length, entity ***free_methods) {
   entity ** free_meths, **p;
@@ -854,19 +780,10 @@ void cgana(int *length, entity ***free_methods) {
   DEL_ARR_F(free_meths);
 }
 
-
-
-static void destruct_walker(ir_node * node, void * env) {
-  if (get_irn_op(node) == op_Call) {
-    remove_Call_callee_arr(node);
-  }
-}
-
 void free_callee_info(ir_graph *irg) {
   irg_walk_graph(irg, destruct_walker, NULL, NULL);
   set_irg_callee_info_state(irg, irg_callee_info_none);
 }
-
 
 /* Optimize the address expressions passed to call nodes.
  *
@@ -876,7 +793,7 @@ void free_callee_info(ir_graph *irg) {
  *   by Const operations refering to the corresponding entity.
  * - Sel nodes, that select entities that are not overwritten are
  *   replaced by Const nodes refering to the selected entity.
- * - Sel nodes, for witch no method exists at all are replaced by Bad
+ * - Sel nodes, for which no method exists at all are replaced by Bad
  *   nodes.
  * - Sel nodes with a pointer input that is an Alloc node are replaced
  *   by Const nodes refering to the entity that implements the method in

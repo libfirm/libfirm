@@ -34,20 +34,22 @@
  *
  * Die main-Methode ist immer in der Menge enthalten.
  *
- * Die Links an den "ir_node"s werden geloescht. */
+ * Die Links an den "ir_node"s werden geloescht.
+ */
 
 /** Analyses a rough estimation of the possible call graph.
  *
  *  Determines for each Call node the set of possibly called methods.
  *  Stores the result in the field 'callees' of the Call node.  If the
  *  address can not be analysed, e.g. because it is loaded from a
- *  variable, the array contains NULL. @@@ the array should contain a
- *  special entity 'unknown'. (See "set_Call_callee"). cgana returns
- *  the set of 'free' methods, i.e., the methods that can be called
- *  from external or via function pointers.  This datastructure must
- *  be freed with 'free()' by the caller of cgana.
+ *  variable, the array contains the unknown_entity. (See
+ *  "set_Call_callee"). cgana returns the set of 'free' methods, i.e.,
+ *  the methods that can be called from external or via function
+ *  pointers.  This datastructure must be freed with 'free()' by the
+ *  caller of cgana.
  *
- *  cgana sets the callee_info_state of each graph to consistent.
+ *  cgana sets the callee_info_state of each graph and the program to
+ *  consistent.
  *
  *  The algorithm implements roughly Static Class Hierarchy Analysis
  *  as described in "Optimization of Object-Oriented Programs Using
@@ -58,7 +60,7 @@
  *    - Replace SymConst-name nodes by SymConst-entity nodes if possible.
  *    - Replace (Sel-method(Alloc)) by SymConst-entity.
  *    - Replaces Sel nodes by Bad if there is no implementation for the
- *         selected entity.  (@@@ was genau meint unreachable?)
+ *         selected entity.
  *    - Replaces Sel-method by SymConst-entity if the method is never overwritten.
  *    - Replaces Calls by Tuple containing Bads if callee array is empty
  *         (there is no implementation to call)

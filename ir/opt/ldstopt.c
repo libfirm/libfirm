@@ -307,12 +307,15 @@ static long get_Sel_array_index_long(ir_node *n, int dim) {
   return get_tarval_long(get_Const_tarval(index));
 }
 
-compound_graph_path *rec_get_accessed_path(ir_node *ptr, int depth) {
+static compound_graph_path *rec_get_accessed_path(ir_node *ptr, int depth) {
   compound_graph_path *res;
   if (get_irn_op(ptr) == op_SymConst) {
     assert(get_SymConst_kind(ptr) == symconst_addr_ent);
     entity *root = get_SymConst_entity(ptr);
-    res = new_compound_graph_path(get_entity_type(root), depth);
+    if (depth == 0)
+      res = NULL;
+    else
+      res = new_compound_graph_path(get_entity_type(root), depth);
   } else {
     assert(get_irn_op(ptr) == op_Sel);
     res = rec_get_accessed_path(get_Sel_ptr(ptr), depth+1);
@@ -328,7 +331,10 @@ compound_graph_path *rec_get_accessed_path(ir_node *ptr, int depth) {
   return res;
 }
 
-compound_graph_path *get_accessed_path(ir_node *ptr) {
+
+/** Returns an access path or NULL.  The access path is only
+ *  valid, if the graph is in phase_high and _no_ address computation is used. */
+static compound_graph_path *get_accessed_path(ir_node *ptr) {
   return rec_get_accessed_path(ptr, 0);
 }
 
@@ -463,27 +469,30 @@ static int optimize_load(ir_node *load)
 	printf("  ptr:  "); DDMN(ptr);
 
 	compound_graph_path *path = get_accessed_path(ptr);
-	assert(is_proper_compound_graph_path(path, get_compound_graph_path_length(path)-1));
-	ir_node *c = get_compound_ent_value_by_path(ent, path);
+	if (path) {
+	  assert(is_proper_compound_graph_path(path, get_compound_graph_path_length(path)-1));
+	  ir_node *c = get_compound_ent_value_by_path(ent, path);
 
-	printf("  cons: "); DDMN(c);
+	  printf("  cons: "); DDMN(c);
 
-        if (info->projs[pn_Load_M])
-          exchange(info->projs[pn_Load_M], mem);
-        if (info->projs[pn_Load_res])
-	  exchange(info->projs[pn_Load_res], copy_const_value(c));
+	  if (info->projs[pn_Load_M])
+	    exchange(info->projs[pn_Load_M], mem);
+	  if (info->projs[pn_Load_res])
+	    exchange(info->projs[pn_Load_res], copy_const_value(c));
 
-	{
-	int j;
-	        for (j = 0; j < get_compound_graph_path_length(path); ++j) {
-	          entity *node = get_compound_graph_path_node(path, j);
-	          fprintf(stdout, ".%s", get_entity_name(node));
-	          if (is_Array_type(get_entity_owner(node)))
-	            fprintf(stdout, "[%d]", get_compound_graph_path_array_index(path, j));
-	        }
-		printf("\n");
+	  {
+	    int j;
+	    for (j = 0; j < get_compound_graph_path_length(path); ++j) {
+	      entity *node = get_compound_graph_path_node(path, j);
+	      fprintf(stdout, ".%s", get_entity_name(node));
+	      if (is_Array_type(get_entity_owner(node)))
+		fprintf(stdout, "[%d]", get_compound_graph_path_array_index(path, j));
+	    }
+	    printf("\n");
+	  }
+	} else {
+	  printf("cannot optimize.\n");
 	}
-
       }
 
       /* we changed the irg, but try further */
