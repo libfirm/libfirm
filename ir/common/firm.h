@@ -66,14 +66,15 @@ extern "C" {
 #include "ircgcons.h"      /* construct interprocedural graph */
 
 /* Optimizations */
-#include "irflag.h"        /* optimization flags */
-#include "irgopt.h"        /* optimize ir */
-#include "reassoc.h"       /* optimize ir by reassociation */
-#include "ldstopt.h"       /* optimize Load/Store */
-#include "cfopt.h"         /* optimize control flow */
-#include "tailrec.h"       /* optimize tail-recursion calls */
-#include "ircgopt.h"       /* Optimizations based on interprocedural graph */
-#include "strength_red.h"  /* Strength reduction */
+#include "irflag.h"         /* optimization flags */
+#include "irgopt.h"         /* optimize ir */
+#include "reassoc.h"        /* optimize ir by reassociation */
+#include "ldstopt.h"        /* optimize Load/Store */
+#include "cfopt.h"          /* optimize control flow */
+#include "tailrec.h"        /* optimize tail-recursion calls */
+#include "ircgopt.h"        /* Optimizations based on interprocedural graph */
+#include "strength_red.h"   /* Strength reduction */
+#include "loop_unrolling.h" /* Do loop unrolling*/
 
 /* Analyses */
 #include "irouts.h"        /* Graph reversal / out edges. */
