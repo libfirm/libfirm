@@ -30,6 +30,7 @@ ir_mode *mode_Iu;
 ir_mode *mode_Ls;
 ir_mode *mode_Lu;
 ir_mode *mode_C;
+ir_mode *mode_U;
 ir_mode *mode_b;
 ir_mode *mode_P;
 ir_mode *mode_X;
@@ -49,6 +50,7 @@ INLINE ir_mode *get_modeIu() { return mode_Iu; }
 INLINE ir_mode *get_modeLs() { return mode_Ls; }
 INLINE ir_mode *get_modeLu() { return mode_Lu; }
 INLINE ir_mode *get_modeC() { return mode_C; }
+INLINE ir_mode *get_modeU() { return mode_U; }
 INLINE ir_mode *get_modeb() { return mode_b; }
 INLINE ir_mode *get_modeP() { return mode_P; }
 INLINE ir_mode *get_modeX() { return mode_X; }
@@ -74,6 +76,7 @@ init_mode (void)
   mode_Ls = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_Ls, 0, sizeof(ir_mode));
   mode_Lu = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_Lu, 0, sizeof(ir_mode));
   mode_C  = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_C, 0, sizeof(ir_mode));
+  mode_U  = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_U, 0, sizeof(ir_mode));
   mode_b  = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_b, 0, sizeof(ir_mode));
   mode_P  = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_P, 0, sizeof(ir_mode));
   mode_X  = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_X, 0, sizeof(ir_mode));
@@ -93,6 +96,7 @@ init_mode (void)
   mode_Ls->code = irm_Ls;
   mode_Lu->code = irm_Lu;
   mode_C->code = irm_C;
+  mode_U->code = irm_U;
   mode_b->code = irm_b;
   mode_P->code = irm_P;
   mode_X->code = irm_X;
@@ -215,6 +219,16 @@ init_mode (void)
   mode_C->min = tarval_from_long (mode_Ls, 0xffffff80);
   mode_C->max = tarval_from_long (mode_Ls, 0x0000007f);
   mode_C->null = tarval_from_long (mode_C, 0);
+
+  /* unicode character */
+  mode_C->name = id_from_str ("U", 1);
+  mode_C->fsigned = 0;
+  mode_C->ffloat = 0;
+  mode_C->ld_align = 1;
+  mode_C->size = 2;
+  mode_C->min = tarval_from_long (mode_Ls, 0xffff8000);
+  mode_C->max = tarval_from_long (mode_Ls, 0x00007fff);
+  mode_C->null = tarval_from_long (mode_U, 0);
 
   /* boolean */
   mode_b->name = id_from_str ("b", 1);
@@ -401,19 +415,19 @@ set_mode_ffloat (ir_mode *mode, unsigned ffloat)
    The set of "data" is defined as:
    -------------------------------
    data  = {irm_F, irm_D, irm_E irm_Bs, irm_Bu, irm_Hs, irm_Hu,
-            irm_Is, irm_Iu, irm_Ls, irm_Lu, irm_C, irm_p}
+            irm_Is, irm_Iu, irm_Ls, irm_Lu, irm_C, irm_U, irm_p}
             = {num || irm_C || irm_P}
 
    The set of "datab" is defined as:
    ---------------------------------
    datab = {irm_F, irm_D, irm_E, irm_Bs, irm_Bu, irm_Hs, irm_Hu,
-            irm_Is, irm_Iu, irm_Ls, irm_Lu, irm_C, irm_P, irm_b}
+            irm_Is, irm_Iu, irm_Ls, irm_Lu, irm_C, irm_U, irm_P, irm_b}
             = {data || irm_b }
 
    The set of "dataM" is defined as:
    ---------------------------------
    dataM = {irm_F, irm_D, irm_E, irm_Bs, irm_Bu, irm_Hs, irm_Hu,
-            irm_Is, irm_Iu, irm_Ls, irm_Lu, irm_P, irm_M}
+            irm_Is, irm_Iu, irm_Ls, irm_Lu, irm_C, irm_U, irm_P, irm_M}
             = {data || irm_M}
 */
 
@@ -432,7 +446,7 @@ mode_is_signed (ir_mode *mode)
    return res;
 }
 
-int
+INLINE int
 mode_is_float (ir_mode *mode)
 {
    int res;
@@ -448,7 +462,7 @@ mode_is_float (ir_mode *mode)
 }
 
 
-int
+INLINE int
 mode_is_int (ir_mode *mode)
 {
    int res;
@@ -464,7 +478,7 @@ mode_is_int (ir_mode *mode)
 }
 
 
-int
+INLINE int
 mode_is_num (ir_mode *mode)
 {
   int res;
@@ -477,13 +491,14 @@ mode_is_num (ir_mode *mode)
   return res;
 }
 
-int
+INLINE int
 mode_is_data (ir_mode *mode)
 {
   int res;
   modecode code;
   code = get_mode_modecode (mode);
-  if (mode_is_num (mode) || code == irm_C || code == irm_P) {
+  if (mode_is_num (mode) ||
+      code == irm_C || code == irm_U || code == irm_P) {
     res = 1;
   }
   else {
