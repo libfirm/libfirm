@@ -167,16 +167,16 @@ static int set_graph_result (ir_graph *graph, ir_node *call)
 
   assert (call_pto);
 
-    DBGPRINT (0, (stdout, "%s: before change args\n", __FUNCTION__));
-    DBGEXE (0, pto_print_pto (end_block));
-    DBGEXE (0, pto_print_pto (call));
+  DBGPRINT (1, (stdout, "%s: before change args\n", __FUNCTION__));
+  DBGEXE (1, pto_print_pto (end_block));
+  DBGEXE (1, pto_print_pto (call));
 
   change = qset_insert_all (call_pto->values, ret_pto->values);
 
   if (change) {
-    DBGPRINT (0, (stdout, "%s: after change args\n", __FUNCTION__));
-    DBGEXE (0, pto_print_pto (end_block));
-    DBGEXE (0, pto_print_pto (call));
+    DBGPRINT (1, (stdout, "%s: after change args\n", __FUNCTION__));
+    DBGEXE (1, pto_print_pto (end_block));
+    DBGEXE (1, pto_print_pto (call));
     /* assert (0); */
   }
 
@@ -756,6 +756,9 @@ pto_t *get_alloc_pto (ir_node *alloc)
 
 /*
   $Log$
+  Revision 1.16  2005/01/27 15:51:19  liekweg
+  whitespace change
+
   Revision 1.15  2005/01/14 14:14:26  liekweg
   fix gnu extension, fix fprintf's
 
