@@ -1271,7 +1271,7 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
     block->attr.block.graph_arr[pos] = res;
   } else {
     /*  printf(" value already computed by %s\n",
-        id_to_str(block->attr.block.graph_arr[pos]->op->name));  */
+        get_id_str(block->attr.block.graph_arr[pos]->op->name));  */
   }
 
   return res;

@@ -1,12 +1,14 @@
-/* Declarations for ident.
-   Copyright (C) 1995, 1996 Markus Armbruster */
-
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-* All rights reserved.
-*
-* Authors: Martin Trapp, Christian Schaefer
-*/
-
+/*
+ * Project:     libFIRM
+ * File name:   ir/common/ident_t.h
+ * Purpose:     Data type for unique names.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1999-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 /**
  * @file ident.h
  *
@@ -15,7 +17,6 @@
  * Identifiers are used in the firm library. This is the interface to it.
  */
 
-/* $Id$ */
 
 # ifndef _IDENT_H_
 # define _IDENT_H_
@@ -25,13 +26,6 @@
 # include "firm_common.h"
 
 /* Identifiers */
-
-/**
- * Initialises the ident handling.
- *
- * Must be called before any id_*() function can be called.
- */
-void id_init(void);
 
 /**
  *  The abstract data type ident.
@@ -52,7 +46,7 @@ typedef const struct set_entry ident;
  *
  * @return id - a handle for the generated ident
  *
- * @see id_to_str(), id_to_strlen()
+ * @see get_id_str(), get_id_strlen()
  */
 ident *new_id_from_str (const char *str);
 
@@ -68,9 +62,9 @@ ident *new_id_from_str (const char *str);
  *
  * @return id - a handle for the generated ident
  *
- * @see new_id_to_str(), id_to_strlen()
+ * @see new_get_id_str(), get_id_strlen()
  */
-INLINE ident      *id_from_str (const char *str, int len);
+INLINE ident *id_from_str (const char *str, int len);
 
 /**
  * Returns a string represented by an ident.
@@ -82,9 +76,11 @@ INLINE ident      *id_from_str (const char *str, int len);
  *
  * @return cp - a string
  *
- * @see new_id_to_str(), id_from_str(), id_to_strlen()
+ * @see new_get_id_str(), id_from_str(), get_id_strlen()
  */
-INLINE const char *id_to_str   (ident *id);
+INLINE const char *get_id_str  (ident *id);
+//INLINE const char *get_id_str  (ident *id);    /* No more supported */
+#define id_to_str  get_id_str
 
 /**
  * Returns the length of the string represented by an ident.
@@ -93,17 +89,17 @@ INLINE const char *id_to_str   (ident *id);
  *
  * @return len - the length of the string
  *
- * @see new_id_to_str(), id_from_str(), id_to_str()
+ * @see new_get_id_str(), id_from_str(), get_id_str()
  */
-INLINE int  id_to_strlen(ident *id);
-
+INLINE int  get_id_strlen(ident *id);
+#define id_to_strlen get_id_strlen
 /**
  * Returns true if prefix is a prefix of an ident.
  *
  * @param prefix - the prefix
  * @param id     - the ident
  *
- * @see new_id_to_str(), id_from_str(), id_to_str(), id_is_prefix()
+ * @see new_get_id_str(), id_from_str(), get_id_str(), id_is_prefix()
  */
 int id_is_prefix (ident *prefix, ident *id);
 
@@ -113,7 +109,7 @@ int id_is_prefix (ident *prefix, ident *id);
  * @param suffix - the suffix
  * @param id     - the ident
  *
- * @see new_id_to_str(), id_from_str(), id_to_str(), id_is_prefix()
+ * @see new_get_id_str(), id_from_str(), get_id_str(), id_is_prefix()
  */
 int id_is_suffix (ident *suffix, ident *id);
 
@@ -123,7 +119,7 @@ int id_is_suffix (ident *suffix, ident *id);
  * @param id     - the ident
  * @param c      - the character
  *
- * @see new_id_to_str(), id_from_str(), id_to_str()
+ * @see new_get_id_str(), id_from_str(), get_id_str()
  */
 int id_contains_char (ident *id, char c);
 
@@ -135,7 +131,7 @@ int id_contains_char (ident *id, char c);
  * @return
  *    number of btes written
  *
- * @see new_id_to_str(), id_from_str(), id_to_str(), id_is_prefix(), fprint_id()
+ * @see new_get_id_str(), id_from_str(), get_id_str(), id_is_prefix(), fprint_id()
  */
 int print_id (ident *id);
 
@@ -148,7 +144,7 @@ int print_id (ident *id);
  * @return
  *    number of btes written
  *
- * @see new_id_to_str(), id_from_str(), id_to_str(), id_is_prefix(), print_id()
+ * @see new_get_id_str(), id_from_str(), get_id_str(), id_is_prefix(), print_id()
  */
 int fprint_id (FILE *F, ident *id);
 

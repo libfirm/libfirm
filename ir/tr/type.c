@@ -143,7 +143,7 @@ ident*      get_type_tpop_nameid(type *tp) {
 
 const char* get_type_tpop_name(type *tp) {
   assert(tp && tp->kind == k_type);
-  return id_to_str(tp->type_op->name);
+  return get_id_str(tp->type_op->name);
 }
 
 tp_opcode    get_type_tpop_code(type *tp) {
@@ -195,7 +195,7 @@ get_type_nr(type *tp) {
 
 const char* get_type_name(type *tp) {
   assert(tp && tp->kind == k_type);
-  return (id_to_str(tp->name));
+  return (get_id_str(tp->name));
 }
 
 int         get_type_size(type *tp) {
@@ -996,7 +996,7 @@ ident *get_union_delim_nameid (type *uni, int pos) {
 const char *get_union_delim_name (type *uni, int pos) {
   assert(uni && (uni->type_op == type_union));
   assert(pos >= 0 && pos < get_union_n_types(uni));
-  return id_to_str(uni->attr.ua.delim_names[pos]);
+  return get_id_str(uni->attr.ua.delim_names[pos]);
 }
 void   set_union_delim_nameid (type *uni, int pos, ident *id) {
   assert(uni && (uni->type_op == type_union));
@@ -1248,7 +1248,7 @@ ident  *get_enumeration_nameid  (type *enumeration, int pos) {
 const char *get_enumeration_name(type *enumeration, int pos) {
   assert(enumeration && (enumeration->type_op == type_enumeration));
   assert(pos >= 0 && pos < get_enumeration_n_enums(enumeration));
-  return id_to_str(enumeration->attr.ea.enum_nameid[pos]);
+  return get_id_str(enumeration->attr.ea.enum_nameid[pos]);
 }
 
 /* typecheck */

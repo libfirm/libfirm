@@ -1,17 +1,15 @@
 /*
-*  Copyright (C) 2001 by Universitaet Karlsruhe
-*  All rights reserved.
-*
-*  Authors: Goetz Lindenmaier
-*
-*  dbginfo: This is a empty implementation of the Firm interface to
-*  debugging support.  It only guarantees that the Firm library compiles
-*  and runs without any real debugging support.
-*  The functions herein are declared weak so that they can be overriden
-*  by a real implementation.
-*/
+ * Project:     libFIRM
+ * File name:   ir/debug/dbginfo.c
+ * Purpose:     Implements the Firm interface to debug information.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:     2001
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2001-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
-/* $Id$ */
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>

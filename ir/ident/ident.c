@@ -1,8 +1,14 @@
-/* Ident --- unique handles for identifiers
-   Copyright (C) 1995, 1996 Markus Armbruster
-   All rights reserved. */
-
-/* $Id$ */
+/*
+ * Project:     libFIRM
+ * File name:   ir/common/ident.c
+ * Purpose:     Hash table to store names.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1999-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -16,30 +22,13 @@
 
 #include "ident_t.h"
 #include "array.h"
-#include "tune.h"
-#include "misc.h"
 #include "set.h"
-
-#define ID_TO_STR(id) ((const char *)&(id)->dptr[0])
-#define ID_TO_STRLEN(id) ((id)->size)
-#define ID_TO_HASH(id) ((long)(id) + (id)->hash)
-
-/* Vormals Debugunterstuetzung, entfernt (debug.h). */
-# define ID_VRFY(id) ((void)0)
-# define IDS_VRFY(id) ((void)0)
-
-#ifdef STATS
-# define id_stats() set_stats (id_set)
-#else
-# define id_stats() ((void)0)
-#endif
-
 
 static set *id_set;
 
-void id_init(void)
+void id_init(int initial_n_idents)
 {
-  id_set = new_set(memcmp, TUNE_NIDENTS);
+  id_set = new_set(memcmp, initial_n_idents);
 }
 
 INLINE ident *id_from_str (const char *str, int len)
@@ -54,26 +43,26 @@ ident *new_id_from_str(const char *str)
   return id_from_str(str, strlen(str));
 }
 
-INLINE const char *id_to_str(ident *id)
+INLINE const char *get_id_str(ident *id)
 {
   return (const char *)id->dptr;
 }
 
-INLINE int id_to_strlen(ident *id)
+INLINE int get_id_strlen(ident *id)
 {
   return id->size;
 }
 
 int id_is_prefix(ident *prefix, ident *id)
 {
-  if (id_to_strlen(prefix) > id_to_strlen(id)) return 0;
-  return 0 == memcmp(prefix->dptr, id->dptr, id_to_strlen(prefix));
+  if (get_id_strlen(prefix) > get_id_strlen(id)) return 0;
+  return 0 == memcmp(prefix->dptr, id->dptr, get_id_strlen(prefix));
 }
 
 int id_is_suffix(ident *suffix, ident *id)
 {
-  int suflen = id_to_strlen(suffix);
-  int idlen  = id_to_strlen(id);
+  int suflen = get_id_strlen(suffix);
+  int idlen  = get_id_strlen(id);
   char *part;
 
   if (suflen > idlen) return 0;
@@ -86,15 +75,15 @@ int id_is_suffix(ident *suffix, ident *id)
 
 int id_contains_char(ident *id, char c)
 {
-  return strchr(id_to_str(id), c) != NULL;
+  return strchr(get_id_str(id), c) != NULL;
 }
 
 int print_id (ident *id)
 {
-  return printf("%s", id_to_str(id));
+  return printf("%s", get_id_str(id));
 }
 
 int fprint_id (FILE *F, ident *id)
 {
-  return fprintf(F, "%s", id_to_str(id));
+  return fprintf(F, "%s", get_id_str(id));
 }

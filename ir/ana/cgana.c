@@ -234,8 +234,8 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
 	if (get_entity_peculiarity(ent) == description) {
 	  /* @@@ GL Methode um Fehler anzuzeigen aufrufen! */
 	  printf("WARNING: Calling method description %s in method %s which has "
-		  "no implementation!\n", id_to_str(get_entity_ident(ent)),
-		  id_to_str(get_entity_ident(get_irg_ent(current_ir_graph))));
+		  "no implementation!\n", get_entity_name(ent),
+		  get_entity_name(get_irg_ent(current_ir_graph)));
 	} else {
 	  exchange(node, new_Bad());
 	}

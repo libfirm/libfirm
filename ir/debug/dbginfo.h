@@ -1,7 +1,14 @@
 /*
-*  Copyright (C) 2001 by Universitaet Karlsruhe
-*  All rights reserved.
-*/
+ * Project:     libFIRM
+ * File name:   ir/debug/dbginfo.h
+ * Purpose:     Implements the Firm interface to debug information.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:     2001
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2001-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 /**
 * @file  dbginfo.h
@@ -10,18 +17,15 @@
 *
 *  @author Goetz Lindenmaier
 *
-*  Firm requires
-*  a debugging module fulfilling this interface, else no debugging information
-*  is passed to the backend.
-*  The interface requires a datatype representing the debugging information.
-*  Firm supports administrating a reference to the debug information
-*  in every firm node.  Further Firm optimizations call routines to
-*  propagate debug information from old nodes to new nodes if the optimization
-*  replaces the old ones by the new ones.
+*  Firm requires a debugging module fulfilling this interface, else no
+*  debugging information is passed to the backend.
+*  The interface requires a datatype representing the debugging
+*  information.  Firm supports administrating a reference to the debug
+*  information in every firm node.  Further Firm optimizations call
+*  routines to propagate debug information from old nodes to new nodes
+*  if the optimization replaces the old ones by the new ones.
 *
 */
-
-/* $Id$ */
 
 # ifndef _DBGINFO_H_
 # define _DBGINFO_H_

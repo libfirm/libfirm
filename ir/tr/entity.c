@@ -201,7 +201,7 @@ get_entity_nr(entity *ent) {
 INLINE const char *
 get_entity_name (entity *ent) {
   assert (ent);
-  return id_to_str(get_entity_ident(ent));
+  return get_id_str(get_entity_ident(ent));
 }
 
 ident *
@@ -250,7 +250,7 @@ set_entity_ld_ident (entity *ent, ident *ld_ident) {
 
 INLINE const char *
 get_entity_ld_name (entity *ent) {
-  return id_to_str(get_entity_ld_ident(ent));
+  return get_id_str(get_entity_ld_ident(ent));
 }
 
 /*

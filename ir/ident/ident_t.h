@@ -1,23 +1,22 @@
-/* Declarations for ident.
-   Copyright (C) 1995, 1996 Markus Armbruster */
-
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-* All rights reserved.
-*
-* Authors: Martin Trapp, Christian Schaefer
-*/
-
-/* $Id$ */
+/*
+ * Project:     libFIRM
+ * File name:   ir/common/ident_t.h
+ * Purpose:     Hash table to store names -- private header.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1999-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 # ifndef _IDENT_T_H_
 # define _IDENT_T_H_
 
 # include "ident.h"
 
+void id_init (int initial_n_idents);
 
-void id_init (void);
-
-/* @@@ tune */
 #define ID_HASH(str, len) \
   (((  ((unsigned char *)(str))[0] * 33 \
      + ((unsigned char *)(str))[(len)>>1]) * 31 \

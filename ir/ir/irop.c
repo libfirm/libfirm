@@ -157,7 +157,7 @@ init_op(void)
 
 /* Returns the string for the opcode. */
 const char  *get_op_name      (ir_op *op) {
-  return id_to_str(op->name);
+  return get_id_str(op->name);
 }
 
 opcode get_op_code (ir_op *op){

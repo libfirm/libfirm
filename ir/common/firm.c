@@ -30,7 +30,7 @@ void
 init_firm (default_initialize_local_variable_func_t *func)
 {
   /* initialize all ident stuff */
-  id_init ();
+  id_init (1024);
   /* create the type kinds. */
   init_tpop ();
   /* create an obstack and put all tarvals in a pdeq */

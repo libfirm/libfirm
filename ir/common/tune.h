@@ -45,9 +45,6 @@
    larger values generally mean slower startup.  */
 
 
-/** Expected number of distinct identifiers */
-#define TUNE_NIDENTS 1024
-
 /** Expected number of classes */
 #define TUNE_NCLASSES 128
 

@@ -53,7 +53,7 @@ init_tpop(void)
 
 /* Returns the string for the tp_opcode. */
 const char  *get_tpop_name      (tp_op *op) {
-  return id_to_str(op->name);
+  return get_id_str(op->name);
 }
 
 tp_opcode get_tpop_code (tp_op *op){

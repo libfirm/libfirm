@@ -1,8 +1,13 @@
-# Hey Emacs, this is a -*- makefile -*-
 #
-# libFIRM Project
-#
-# $Id$
+# Project:     libFIRM
+# File name:   ir/ident/Makefile.in
+# Purpose:
+# Author:      Boris Boesler, Till Riedel
+# Modified by:
+# Created:
+# CVS-ID:      $Id$
+# Copyright:   (c) 1999-2003 Universität Karlsruhe
+# Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
 #
 
 top_srcdir := @top_srcdir@

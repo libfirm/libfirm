@@ -614,7 +614,7 @@ ir_node *get_fragile_op_mem(ir_node *node);
 /** Output information about a graph */
 #define DDMG(X)  printf("%s(l.%i) %s: %ld (%p)\n",           __MYFUNC__, __LINE__, get_entity_name(get_irg_ent(X)), get_irg_graph_nr(X), (X))
 /** Output information about an ident */
-#define DDMI(X)  printf("%s(l.%i) %s: %p\n",                 __MYFUNC__, __LINE__, id_to_str(X), (X))
+#define DDMI(X)  printf("%s(l.%i) %s: %p\n",                 __MYFUNC__, __LINE__, get_id_str(X), (X))
 /** Output information about a mode */
 #define DDMM(X)  printf("%s(l.%i) %s: %p\n",                 __MYFUNC__, __LINE__, get_mode_name(X), (X))
 /** Output information about a loop */

@@ -1,7 +1,14 @@
 /*
-*  Copyright (C) 2001 by Universitaet Karlsruhe
-*  All rights reserved.
-*/
+ * Project:     libFIRM
+ * File name:   ir/debug/dbginfo.h
+ * Purpose:     Implements the Firm interface to debug information -- private header.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:     2001
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2001-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 /**
 * @file dbginfo_t.h
@@ -13,7 +20,6 @@
 *  and runs without any real debugging support.
 */
 
-/* $Id$ */
 
 #ifndef __DBGINFO_T_H__
 #define __DBGINFO_T_H__

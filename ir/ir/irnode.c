@@ -12,6 +12,7 @@
 #endif
 #include <string.h>
 
+#include "ident.h"
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "irmode_t.h"
@@ -315,7 +316,7 @@ INLINE const char *
 get_irn_opname (const ir_node *node)
 {
   assert(node);
-  return id_to_str(node->op->name);
+  return get_id_str(node->op->name);
 }
 
 INLINE ident *

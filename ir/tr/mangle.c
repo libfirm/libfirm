@@ -31,9 +31,9 @@ mangle_entity (entity *ent)
   ident *res;
 
   type_id = mangle_type ((type *) ent->owner);
-  obstack_grow(&mangle_obst, id_to_str(type_id), id_to_strlen(type_id));
+  obstack_grow(&mangle_obst, get_id_str(type_id), get_id_strlen(type_id));
   obstack_1grow(&mangle_obst,'_');
-  obstack_grow(&mangle_obst,id_to_str(ent->name),id_to_strlen(ent->name));
+  obstack_grow(&mangle_obst,get_id_str(ent->name),get_id_strlen(ent->name));
   len = obstack_object_size (&mangle_obst);
   cp = obstack_finish (&mangle_obst);
   res = id_from_str(cp, len);
@@ -54,8 +54,8 @@ ident *mangle (ident *first, ident* scnd) {
   int len;
   ident *res;
 
-  obstack_grow(&mangle_obst, id_to_str(first), id_to_strlen(first));
-  obstack_grow(&mangle_obst, id_to_str(scnd), id_to_strlen(scnd));
+  obstack_grow(&mangle_obst, get_id_str(first), get_id_strlen(first));
+  obstack_grow(&mangle_obst, get_id_str(scnd), get_id_strlen(scnd));
   len = obstack_object_size (&mangle_obst);
   cp = obstack_finish (&mangle_obst);
   res = id_from_str (cp, len);
@@ -69,9 +69,9 @@ ident *mangle_u (ident *first, ident* scnd) {
   int len;
   ident *res;
 
-  obstack_grow(&mangle_obst, id_to_str(first), id_to_strlen(first));
+  obstack_grow(&mangle_obst, get_id_str(first), get_id_strlen(first));
   obstack_1grow(&mangle_obst,'_');
-  obstack_grow(&mangle_obst,id_to_str(scnd),id_to_strlen(scnd));
+  obstack_grow(&mangle_obst,get_id_str(scnd),get_id_strlen(scnd));
   len = obstack_object_size (&mangle_obst);
   cp = obstack_finish (&mangle_obst);
   res = id_from_str (cp, len);

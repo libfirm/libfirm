@@ -284,7 +284,7 @@ const char *
 get_mode_name(const ir_mode *mode)
 {
   ANNOUNCE();
-  return id_to_str(mode->name);
+  return get_id_str(mode->name);
 }
 
 mode_sort
