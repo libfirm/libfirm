@@ -29,6 +29,10 @@
 # include "pto_debug.h"
 
 /* Local Defines: */
+# ifndef TRUE
+#  define TRUE 1
+#  define FALSE 0
+# endif /* not defined TRUE */
 
 /* Local Data Types: */
 /* Environment for find_irg_args */
@@ -92,12 +96,16 @@ ir_node **find_irg_args (ir_graph *graph)
 
   return (args);
 }
+
 /* Get the entity of a ptr */
 entity *get_ptr_ent (ir_node *ptr)
 {
   entity *ent = NULL;
   const opcode ptr_op = get_irn_opcode (ptr);
   switch (ptr_op) {
+  case (iro_Cast): {
+    ent = get_ptr_ent (get_Cast_op (ptr));
+  } break;
   case (iro_Sel): {
     ent = get_Sel_entity (ptr);
   } break;
@@ -118,11 +126,34 @@ entity *get_ptr_ent (ir_node *ptr)
   return (ent);
 }
 
+/* Check whether the load of the given ptr is a dummy */
+int is_dummy_load_ptr (ir_node *ptr)
+{
+  const opcode ptr_op = get_irn_opcode (ptr);
+
+  switch (ptr_op) {
+  case (iro_Cast): {
+    return (is_dummy_load_ptr (get_Cast_op (ptr)));
+  } break;
+  case (iro_Sel):
+  case (iro_SymConst): {
+    return (FALSE);
+  } break;
+
+  default: {
+    return (TRUE);
+  }
+  }
+}
+
 
 
 
 /*
   $Log$
+  Revision 1.8  2004/11/26 15:59:14  liekweg
+  recognize dummy loads
+
   Revision 1.7  2004/11/24 14:53:56  liekweg
   Bugfixes
 

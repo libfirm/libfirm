@@ -37,6 +37,9 @@ entity *get_ptr_ent (ir_node*);
   result array has 'n+1' entries, the last of which is written NULL. */
 ir_node **find_irg_args (ir_graph*);
 
+/* Check whether the load of the given ptr is a dummy */
+int is_dummy_load_ptr (ir_node*);
+
 /* ===================================================
    Global Variables:
    =================================================== */
@@ -48,6 +51,9 @@ ir_node **find_irg_args (ir_graph*);
 
 /*
   $Log$
+  Revision 1.6  2004/11/26 15:59:14  liekweg
+  recognize dummy loads
+
   Revision 1.5  2004/11/24 14:53:56  liekweg
   Bugfixes
 
