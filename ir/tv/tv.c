@@ -501,6 +501,11 @@ tarval *get_tarval_max(ir_mode *mode)
   ANNOUNCE();
   assert(mode);
 
+  if (get_mode_vector_elems(mode) > 1) {
+    /* vector arithmetic not implemented yet */
+    return tarval_bad;
+  }
+
   switch(get_mode_sort(mode))
   {
     case irms_reference:
@@ -540,6 +545,11 @@ tarval *get_tarval_min(ir_mode *mode)
 {
   ANNOUNCE();
   assert(mode);
+
+  if (get_mode_vector_elems(mode) > 1) {
+    /* vector arithmetic not implemented yet */
+    return tarval_bad;
+  }
 
   switch(get_mode_sort(mode))
   {
@@ -581,6 +591,11 @@ tarval *get_tarval_null(ir_mode *mode)
   ANNOUNCE();
   assert(mode);
 
+  if (get_mode_vector_elems(mode) > 1) {
+    /* vector arithmetic not implemented yet */
+    return tarval_bad;
+  }
+
   switch(get_mode_sort(mode))
   {
     case irms_control_flow:
@@ -608,6 +623,11 @@ tarval *get_tarval_one(ir_mode *mode)
   ANNOUNCE();
   assert(mode);
 
+  if (get_mode_vector_elems(mode) > 1) {
+    /* vector arithmetic not implemented yet */
+    return tarval_bad;
+  }
+
   switch(get_mode_sort(mode))
   {
     case irms_control_flow:
@@ -634,6 +654,11 @@ tarval *get_tarval_nan(ir_mode *mode)
   ANNOUNCE();
   assert(mode);
 
+  if (get_mode_vector_elems(mode) > 1) {
+    /* vector arithmetic not implemented yet */
+    return tarval_bad;
+  }
+
   if (get_mode_sort(mode) == irms_float_number) {
     switch(get_mode_size_bits(mode))
     {
@@ -659,6 +684,11 @@ tarval *get_tarval_inf(ir_mode *mode)
 {
   ANNOUNCE();
   assert(mode);
+
+  if (get_mode_vector_elems(mode) > 1) {
+    /* vector arithmetic not implemented yet */
+    return tarval_bad;
+  }
 
   if (get_mode_sort(mode) == irms_float_number) {
     switch(get_mode_size_bits(mode))
@@ -692,6 +722,12 @@ int tarval_is_negative(tarval *a)
 {
   ANNOUNCE();
   assert(a);
+
+  if (get_mode_vector_elems(a->mode) > 1) {
+    /* vector arithmetic not implemented yet */
+    assert(0 && "tarval_is_negative is not allowed for vector modes");
+    return 0;
+  }
 
   switch (get_mode_sort(a->mode))
   {
@@ -741,7 +777,12 @@ pnc_number tarval_cmp(tarval *a, tarval *b)
   if (a == tarval_bad || b == tarval_bad) assert(0 && "Comparison with tarval_bad");
   if (a == tarval_undefined || b == tarval_undefined) return False;
   if (a == b) return Eq;
-  if (get_tarval_mode(a) != get_tarval_mode(b)) return False;
+  if (a->mode != b->mode) return False;
+
+  if (get_mode_vector_elems(a->mode) > 1) {
+    /* vector arithmetic not implemented yet */
+    assert(0 && "cmp not implemented for vector modes");
+  }
 
   /* Here the two tarvals are unequal and of the same mode */
   switch (get_mode_sort(a->mode))
@@ -782,6 +823,11 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m)
   assert(m);
 
   if (src->mode == m) return src;
+
+  if (get_mode_vector_elems(src->mode) > 1) {
+    /* vector arithmetic not implemented yet */
+    return tarval_bad;
+  }
 
   switch (get_mode_sort(src->mode))
   {
@@ -908,6 +954,8 @@ tarval *tarval_not(tarval *a)
   assert(a);
   assert(mode_is_int(a->mode)); /* bitwise negation is only allowed for integer */
 
+  /* works for vector mode without changes */
+
   switch (get_mode_sort(a->mode))
   {
     case irms_int_number:
@@ -931,6 +979,11 @@ tarval *tarval_neg(tarval *a)
   assert(a);
   assert(mode_is_num(a->mode)); /* negation only for numerical values */
   assert(mode_is_signed(a->mode)); /* negation is difficult without negative numbers, isn't it */
+
+  if (get_mode_vector_elems(a->mode) > 1) {
+    /* vector arithmetic not implemented yet */
+    return tarval_bad;
+  }
 
   switch (get_mode_sort(a->mode))
   {
@@ -959,6 +1012,11 @@ tarval *tarval_add(tarval *a, tarval *b)
   assert(a);
   assert(b);
   assert((a->mode == b->mode) || (get_mode_sort(a->mode) == irms_character && mode_is_int(b->mode)));
+
+  if (get_mode_vector_elems(a->mode) > 1 || get_mode_vector_elems(b->mode)) {
+    /* vector arithmetic not implemented yet */
+    return tarval_bad;
+  }
 
   switch (get_mode_sort(a->mode))
   {
@@ -990,6 +1048,10 @@ tarval *tarval_sub(tarval *a, tarval *b)
   assert(b);
   assert((a->mode == b->mode) || (get_mode_sort(a->mode) == irms_character && mode_is_int(b->mode)));
 
+  if (get_mode_vector_elems(a->mode) > 1 || get_mode_vector_elems(b->mode)) {
+    /* vector arithmetic not implemented yet */
+    return tarval_bad;
+  }
   switch (get_mode_sort(a->mode))
   {
     case irms_character:
@@ -1020,6 +1082,11 @@ tarval *tarval_mul(tarval *a, tarval *b)
   assert(b);
   assert((a->mode == b->mode) && mode_is_num(a->mode));
 
+  if (get_mode_vector_elems(a->mode) > 1) {
+    /* vector arithmetic not implemented yet */
+    return tarval_bad;
+  }
+
   switch (get_mode_sort(a->mode))
   {
     case irms_int_number:
@@ -1047,6 +1114,11 @@ tarval *tarval_quo(tarval *a, tarval *b)
   assert(b);
   assert((a->mode == b->mode) && mode_is_float(a->mode));
 
+  if (get_mode_vector_elems(a->mode) > 1) {
+    /* vector arithmetic not implemented yet */
+    return tarval_bad;
+  }
+
   fc_div(a->value, b->value, NULL);
   return get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), a->mode);
 }
@@ -1061,6 +1133,11 @@ tarval *tarval_div(tarval *a, tarval *b)
   assert(a);
   assert(b);
   assert((a->mode == b->mode) && mode_is_int(a->mode));
+
+  if (get_mode_vector_elems(a->mode) > 1) {
+    /* vector arithmetic not implemented yet */
+    return tarval_bad;
+  }
 
   /* x/0 error */
   if (b == get_mode_null(b->mode)) return tarval_bad;
@@ -1080,6 +1157,11 @@ tarval *tarval_mod(tarval *a, tarval *b)
   assert(b);
   assert((a->mode == b->mode) && mode_is_int(a->mode));
 
+  if (get_mode_vector_elems(a->mode) > 1) {
+    /* vector arithmetic not implemented yet */
+    return tarval_bad;
+  }
+
   /* x/0 error */
   if (b == get_mode_null(b->mode)) return tarval_bad;
   /* modes of a,b are equal */
@@ -1097,6 +1179,11 @@ tarval *tarval_abs(tarval *a)
   ANNOUNCE();
   assert(a);
   assert(mode_is_num(a->mode));
+
+  if (get_mode_vector_elems(a->mode) > 1) {
+    /* vector arithmetic not implemented yet */
+    return tarval_bad;
+  }
 
   switch (get_mode_sort(a->mode))
   {
@@ -1133,6 +1220,8 @@ tarval *tarval_and(tarval *a, tarval *b)
   assert(b);
   assert(a->mode == b->mode);
 
+  /* works even for vector modes */
+
   switch(get_mode_sort(a->mode))
   {
     case irms_internal_boolean:
@@ -1158,6 +1247,8 @@ tarval *tarval_or (tarval *a, tarval *b)
   assert(b);
   assert(a->mode == b->mode);
 
+  /* works even for vector modes */
+
   switch (get_mode_sort(a->mode))
   {
     case irms_internal_boolean:
@@ -1182,6 +1273,8 @@ tarval *tarval_eor(tarval *a, tarval *b)
   assert(a);
   assert(b);
   assert((a->mode == b->mode));
+
+  /* works even for vector modes */
 
   switch (get_mode_sort(a->mode))
   {
@@ -1209,6 +1302,11 @@ tarval *tarval_shl(tarval *a, tarval *b)
   assert(b);
   assert(mode_is_int(a->mode) && mode_is_int(b->mode));
 
+  if (get_mode_vector_elems(a->mode) > 1 || get_mode_vector_elems(a->mode) > 1) {
+    /* vector arithmetic not implemented yet */
+    return tarval_bad;
+  }
+
   if (get_mode_modulo_shift(a->mode) != 0)
   {
     temp_val = alloca(sc_get_buffer_length());
@@ -1233,6 +1331,11 @@ tarval *tarval_shr(tarval *a, tarval *b)
   assert(a);
   assert(b);
   assert(mode_is_int(a->mode) && mode_is_int(b->mode));
+
+  if (get_mode_vector_elems(a->mode) > 1 || get_mode_vector_elems(a->mode) > 1) {
+    /* vector arithmetic not implemented yet */
+    return tarval_bad;
+  }
 
   if (get_mode_modulo_shift(a->mode) != 0)
   {
@@ -1259,6 +1362,11 @@ tarval *tarval_shrs(tarval *a, tarval *b)
   assert(b);
   assert(mode_is_int(a->mode) && mode_is_int(b->mode));
 
+  if (get_mode_vector_elems(a->mode) > 1 || get_mode_vector_elems(a->mode) > 1) {
+    /* vector arithmetic not implemented yet */
+    return tarval_bad;
+  }
+
   if (get_mode_modulo_shift(a->mode) != 0)
   {
     temp_val = alloca(sc_get_buffer_length());
@@ -1283,6 +1391,11 @@ tarval *tarval_rot(tarval *a, tarval *b)
   assert(a);
   assert(b);
   assert(mode_is_int(a->mode) && mode_is_int(b->mode));
+
+  if (get_mode_vector_elems(a->mode) > 1 || get_mode_vector_elems(a->mode) > 1) {
+    /* vector arithmetic not implemented yet */
+    return tarval_bad;
+  }
 
   if (get_mode_modulo_shift(a->mode) != 0)
   {
