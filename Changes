@@ -1,10 +1,19 @@
+
+  10.9.2001 Goetz
+  Bugfix: dead node elimination did not replace the hash table
+  for cse.
+
+  29.8.2001 Goetz
+  Added routine remove_irp_irg.
+  Changed comment to free_ir_graph.
+
   29.8.2001 Goetz
   Added routine to free irgraphs.
 
   17.7.2001 Goetz
   Improved add routines to sub, supertype in type.c
 
-  12.r7.2001 Goetz
+  12.7.2001 Goetz
   Added implementation of overwrites stuff.
 
   11.7.2001 Goetz

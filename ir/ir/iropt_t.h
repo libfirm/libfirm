@@ -14,5 +14,6 @@
 
 pset *new_identities (void);
 void del_identities (pset *value_table);
+void add_identity (pset *value_table, ir_node *node);
 
 # endif /* _IROPT_T_H_ */

@@ -24,6 +24,14 @@
 # include "pset.h"
 pset *new_identities (void);
 void  del_identities (pset *value_table);
+void  add_identity   (pset *value_table, ir_node *node);
+
+
+/* To fill the hash table */
+void
+add_identity (pset *value_table, ir_node *n) {
+  /* identify_remember (value_table, n);*/
+}
 
 /********************************************************************/
 /* apply optimizations of iropt to all nodes.                       */
@@ -79,9 +87,10 @@ get_new_node (ir_node * n)
 
 /* We use the block_visited flag to mark that we have computed the
    number of useful predecessors for this block.
-   Further we encode the new arity in this flag.  Remembering the arity is
-   useful, as it saves a lot of pointer accesses.  This function is called
-   for all Phi and Block nodes in a Block. */
+   Further we encode the new arity in this flag in the old blocks.
+   Remembering the arity is useful, as it saves a lot of pointer
+   accesses.  This function is called for all Phi and Block nodes
+   in a Block. */
 inline int
 compute_new_arity(ir_node *b) {
   int i, res;
@@ -160,9 +169,16 @@ copy_preds (ir_node *n, void *env) {
     /* Local optimization could not merge two subsequent blocks if
        in array contained Bads.  Now it's possible, but don't do it for
        the end block!  */
-    if (n != current_ir_graph->end_block) on = optimize_in_place(nn);
+    /* GL: this is inefficient!!
+    if (n != current_ir_graph->end_block)  on = optimize_in_place(nn);
     else on = nn;
     if (nn != on) exchange(nn, on);
+    better: */
+    if (n != current_ir_graph->end_block) {
+      on = optimize_in_place(nn);
+      if (nn != on) exchange(nn, on);
+      nn = on;  /* For cse ... */
+    }
   } else if (get_irn_opcode(n) == iro_Phi) {
     /* Don't copy node if corresponding predecessor in block is Bad.
        The Block itself should not be Bad. */
@@ -177,11 +193,13 @@ copy_preds (ir_node *n, void *env) {
     /* Compacting the Phi's ins might generate Phis with only one
        predecessor. */
     if (get_irn_arity(n) == 1)
-    exchange(n, get_irn_n(n, 0));
+      exchange(n, get_irn_n(n, 0));
   } else {
     for (i = -1; i < get_irn_arity(n); i++)
       set_irn_n (nn, i, get_new_node(get_irn_n(n, i)));
   }
+  /* Now the new node is complete.  We can add it to the hash table for cse. */
+  add_identity (current_ir_graph->value_table, nn);
 }
 
 /* Copies the graph reachable from current_ir_graph->end to the obstack
@@ -191,7 +209,7 @@ copy_preds (ir_node *n, void *env) {
 void
 copy_graph () {
   /* Not all nodes remembered in current_ir_graph might be reachable
-     from the end node.  Assure their link is set to NULL so that
+     from the end node.  Assure their link is set to NULL, so that
      we can test whether new nodes have been computed. */
   set_irn_link(get_irg_frame  (current_ir_graph), NULL);
   set_irn_link(get_irg_globals(current_ir_graph), NULL);
@@ -225,7 +243,12 @@ copy_graph () {
   set_irg_bad(current_ir_graph, get_new_node(get_irg_bad(current_ir_graph)));
 }
 
-
+/* Copies all reachable nodes to a new obstack.  Removes bad inputs
+   from block nodes and the corresponding inputs from Phi nodes.
+   Merges single exit blocks with single entry blocks and removes
+   1-input Phis.
+   Adds all new nodes to a new hash table for cse.  Does not
+   perform cse, so the hash table might contain common subexpressions. */
 /* Amroq call this emigrate() */
 void
 dead_node_elimination(ir_graph *irg) {
@@ -247,6 +270,10 @@ dead_node_elimination(ir_graph *irg) {
     rebirth_obst = (struct obstack *) xmalloc (sizeof (struct obstack));
     current_ir_graph->obst = rebirth_obst;
     obstack_init (current_ir_graph->obst);
+
+    /* We also need a new hash table for cse */
+    del_identities (irg->value_table);
+    irg->value_table = new_identities ();
 
     /* Copy the graph from the old to the new obstack */
     copy_graph();

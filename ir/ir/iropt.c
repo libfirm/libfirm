@@ -855,6 +855,11 @@ del_identities (pset *value_table)
   del_pset (value_table);
 }
 
+void
+add_identities (pset *value_table, ir_node *node) {
+  identify_remember (value_table, node);
+}
+
 /* Return the canonical node computing the same value as n.
    Looks up the node in a hash table. */
 static inline ir_node *
