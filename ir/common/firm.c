@@ -37,6 +37,7 @@
 # include "irreflect_t.h"
 # include "irarch.h"
 # include "reassoc_t.h"
+# include "irhooks.h"
 
 void
 init_firm(const firm_parameter_t *param)
@@ -59,7 +60,9 @@ init_firm(const firm_parameter_t *param)
 
   /* initialize all ident stuff */
   init_ident(def_params.id_if, 1024);
-  /* enhanced statistics, need idents */
+  /* initialize Firm hooks */
+  init_hooks();
+  /* enhanced statistics, need idents and hooks */
   init_stat(def_params.enable_statistics);
   /* create the type kinds. */
   init_tpop();
