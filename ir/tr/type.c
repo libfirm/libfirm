@@ -10,6 +10,7 @@
 # include "type.h"
 # include "irprog.h"  /* So that constructors can add the type to global
 			 data structure. */
+# include "array.h"
 
 unsigned long type_visited = 0;
 
@@ -32,6 +33,9 @@ new_type_class (ident *name)//, int members)
   res->kind = k_type_class;
   res->name = name;
 
+  res->members = NEW_ARR_F (entity *, 1);
+  res->subtypes = NEW_ARR_F (type_class *, 1);
+  res->supertypes = NEW_ARR_F (type_class *, 1);
   // res->n_members = 0;
   // res->max_members = members;
   // res->member = (entity **) xmalloc (sizeof (entity*) * members);
@@ -42,14 +46,13 @@ new_type_class (ident *name)//, int members)
 }
 
 /* manipulate fields of type_class */
-/*
-char  *
+char *
 get_class_name  (type_class *class) {
   assert(class);
   return ID_TO_STR(class->name);
 }
-*/
 
+/* field: ident */
 ident *
 get_class_ident (type_class *class) {
   assert(class);
@@ -61,6 +64,65 @@ void   set_class_name  (type_class *class, char *name);
 void   set_class_ident (type_class *class, ident* ident);
 */
 
+/* field: member */
+void
+add_class_member (type_class *class, entity *member)
+{
+  ARR_APP1 (entity *, class->members, member);
+}
+
+entity *
+get_class_member (type_class *class, int pos)
+{
+  assert (class);
+  return class->members[pos+1];
+}
+
+void
+set_class_member (type_class *class, entity *member, int pos)
+{
+  class->members[pos+1] = member;
+}
+
+/* field: subtype */
+void
+add_class_subtype (type_class *class,  type_class *subtype)
+{
+  ARR_APP1 (type_class *, class->subtypes, subtype);
+}
+
+type_class *
+get_class_subtype (type_class *class, int pos)
+{
+  assert (class);
+  return class->subtypes[pos+1];
+}
+
+void
+set_class_subtype (type_class *class, type_class *subtype, int pos)
+{
+  class->subtypes[pos+1] = subtype;
+}
+
+/* field: supertype */
+void
+add_class_supertype (type_class *class, type_class *supertype)
+{
+  ARR_APP1 (type_class *, class->supertypes, supertype);
+}
+
+type_class *
+get_class_supertype (type_class *class, int pos)
+{
+  assert (class);
+  return class->supertypes[pos+1];
+}
+
+void
+set_class_supertype (type_class *class, type_class *supertype, int pos)
+{
+  class->supertypes[pos+1] = supertype;
+}
 
 /*******************************************************************/
 /** TYPE_STRCT                                                   **/

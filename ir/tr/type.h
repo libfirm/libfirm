@@ -183,9 +183,14 @@ or lowering phases.
 # include "common.h"
 # include "ident.h"
 # include "irmode.h"
+# include "entity.h"
 
 /* for recursive type definiton */
+#ifndef _TYPE_TYPEDEF_
+#define _TYPE_TYPEDEF_
+/* to resolve recursion between entity.h and irgraph.h */
 typedef union type type;
+#endif
 
 /* visited flag to traverse the type information */
 extern unsigned long type_visited;
@@ -194,30 +199,46 @@ extern unsigned long type_visited;
 /** TYPE_CLASS                                                    **/
 /*******************************************************************/
 
-typedef struct {
+typedef struct type_class type_class;
+
+struct type_class {
   firm_kind kind;
-  ident *name;
-  /** needs list with it's entities -- does it really??
-      Entities can be added during their creation.
-  entities **member; **/
-  /** to represent inheritance
-  type_class **subtypes;    * direct subtypes *
-  type_class **supertypes;  * direct supertypes *
-  **/
-  unsigned long visit;     /* visited counter for walks of the type information */
-} type_class;
+  ident *name;             /* needs list with it's entities
+			      does it really??
+			      Entities can be added during their creation. */
+  struct entity **members;        /* to represent inheritance */
+  type_class **subtypes;   /* direct subtypes */
+  type_class **supertypes; /* direct supertypes */
+  unsigned long visit;     /* visited counter for walks of
+			      the type information */
+};
 
 
 /* create a new type_class */
 type_class *new_type_class (ident *name);
 
 /* manipulate fields of type_class */
-char  *get_class_name  (type_class *clss);
-ident *get_class_ident (type_class *clss);
-/*
-void   set_class_name  (type_class *clss, char *name);
-void   set_class_ident (type_class *clss, ident* ident);
+
+char  *get_class_name  (type_class *class);
+ident *get_class_ident (type_class *class);
+
+/* Not necessary now!
+void   set_class_name  (type_class *class, char *name);
+void   set_class_ident (type_class *class, ident* ident);
 */
+
+void add_class_member (type_class *class, entity *member);
+entity *get_class_member (type_class *class, int pos);
+void set_class_member (type_class *class, entity *member, int pos);
+
+void add_class_subtype (type_class *class,  type_class *subtype);
+type_class *get_class_subtype (type_class *class, int pos);
+void set_class_subtype (type_class *class, type_class *subtype, int pos);
+
+void add_class_supertype (type_class *class, type_class *supertype);
+type_class *get_class_supertype (type_class *class, int pos);
+void set_class_supertype (type_class *class, type_class *supertype, int pos);
+
 
 /*  get_class_entity_arr
     get_class_n_entities
@@ -472,6 +493,7 @@ union type {
   type_pointer pointer;
   type_primitive primitive;
 };
+
 
 int is_type(void *thing);
 
