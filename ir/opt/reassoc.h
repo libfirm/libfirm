@@ -23,7 +23,7 @@
 
 /** Reassociation.
  *
- * Applies Reassiciation rules to integer expressions.
+ * Applies Reassociation rules to integer expressions.
  * Beware: Works only if integer overflow might be ignored, as for C, Java
  * and for address expression.
  * Works only if Constant folding is activated.
