@@ -1,4 +1,12 @@
   * 23.5.2001 Goetz
+    Does the array type contain a field with the array entity?
+    This entity should be constructed automatically with the array type.
+
+  * 23.5.2005 Goetz
+    All compound types need a flag saying whether the order of the members
+    must be conserved.
+
+  * 23.5.2001 Goetz
     Add element_type to array constructor
 
   * 15.3.2001 Goetz
