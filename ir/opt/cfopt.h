@@ -26,9 +26,9 @@
  * Removes empty blocks doing if simplifications and loop simplifications.
  * A block is empty if it contains only a Jmp node and Phi nodes.
  * Merges single entry single exit blocks with their predecessor
- * and propagates dead control flow by calling equivalent_node.
+ * and propagates dead control flow by calling equivalent_node().
  * Independent of compiler flag it removes Tuples from cf edges,
- * Bad predecessors form Blocks and Phis, and unnecessary predecessors of End.
+ * Bad predecessors from Blocks and Phis, and unnecessary predecessors of End.
  *
  * @bug So far destroys backedge information.
  * @bug Chokes on Id nodes if called in a certain order with other
