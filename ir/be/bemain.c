@@ -126,7 +126,7 @@ static void be_main_loop(void)
 #ifdef DUMP_ALLOCATED
 		dump_allocated_irg(irg);
 #endif
-		be_phi_opt(irg);
+		//be_phi_opt(irg);
 
 		be_ra_chordal_done(irg);
 		be_numbering_done(irg);
