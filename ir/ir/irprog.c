@@ -88,7 +88,7 @@ void     free_ir_prog() {
   irp->const_code_irg = NULL;
 }
 
-/** Functions to access the fields of ir_prog **/
+/*- Functions to access the fields of ir_prog -*/
 
 
 /* Access the main routine of the compiled program. */
@@ -188,7 +188,7 @@ int get_irp_new_node_nr() {
 }
 #endif
 
-/** File name / executable name or the like **/
+/*- File name / executable name or the like -*/
 void   set_irp_prog_name(ident *name) {
   irp->name = name;
 }
