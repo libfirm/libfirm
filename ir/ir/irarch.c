@@ -20,10 +20,9 @@
 #include "dbginfo_t.h"
 #include "iropt_dbg.h"
 #include "irflag_t.h"
-#include "firmstat.h"
+#include "irhooks.h"
 #include "ircons.h"
 #include "irarch.h"
-#include "firmstat.h"
 
 #undef DEB
 
@@ -338,7 +337,7 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn)
   }
 
   if (res != irn)
-    stat_arch_dep_replace_mul_with_shifts(irn);
+    hook_arch_dep_replace_mul_with_shifts(irn);
 
   return res;
 }
@@ -706,7 +705,7 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn)
   }
 
   if (res != irn)
-    stat_arch_dep_replace_div_by_const(irn);
+    hook_arch_dep_replace_div_by_const(irn);
 
   return res;
 }
@@ -797,7 +796,7 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn)
   }
 
   if (res != irn)
-    stat_arch_dep_replace_mod_by_const(irn);
+    hook_arch_dep_replace_mod_by_const(irn);
 
   return res;
 }
@@ -904,7 +903,7 @@ void arch_dep_replace_divmod_by_const(ir_node **div, ir_node **mod, ir_node *irn
   }
 
   if (*div)
-    stat_arch_dep_replace_DivMod_by_const(irn);
+    hook_arch_dep_replace_DivMod_by_const(irn);
 }
 
 

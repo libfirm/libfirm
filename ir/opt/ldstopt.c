@@ -35,7 +35,7 @@
 # include "iropt_dbg.h"
 # include "irflag_t.h"
 # include "array.h"
-# include "firmstat.h"
+# include "irhooks.h"
 
 #undef IMAX
 #define IMAX(a,b)	((a) > (b) ? (a) : (b))

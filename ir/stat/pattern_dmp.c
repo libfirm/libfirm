@@ -21,7 +21,7 @@
 #include "ident.h"
 #include "irop_t.h"
 #include "irmode.h"
-#include "firmstat.h"
+#include "firmstat_t.h"
 #include "pattern_dmp.h"
 
 /* dumper operations */

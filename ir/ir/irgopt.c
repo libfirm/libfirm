@@ -39,7 +39,7 @@
 #include "cgana.h"
 
 #include "irflag_t.h"
-#include "firmstat.h"
+#include "irhooks.h"
 
 /* Defined in iropt.c */
 pset *new_identities (void);
@@ -508,7 +508,7 @@ dead_node_elimination(ir_graph *irg) {
   struct obstack *rebirth_obst   = NULL;
 
   /* inform statistics that we started a dead-node elimination run */
-  stat_dead_node_elim_start(irg);
+  hook_dead_node_elim_start(irg);
 
   /* Remember external state of current_ir_graph. */
   rem = current_ir_graph;
@@ -546,7 +546,7 @@ dead_node_elimination(ir_graph *irg) {
   }
 
   /* inform statistics that the run is over */
-  stat_dead_node_elim_stop(irg);
+  hook_dead_node_elim_stop(irg);
 
   current_ir_graph = rem;
   set_interprocedural_view(rem_ipview);
@@ -796,7 +796,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
   }
 
   /* here we know we WILL inline, so inform the statistics */
-  stat_inline(call, called_graph);
+  hook_inline(call, called_graph);
 
   /* -- Decide how to handle exception control flow: Is there a handler
      for the Call node, or do we branch directly to End on an exception?

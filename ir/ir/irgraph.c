@@ -31,7 +31,7 @@
 # include "irgmod.h"
 # include "mangle.h"
 # include "irouts.h"
-# include "firmstat.h"
+# include "irhooks.h"
 # include "irgwalk.h"
 
 /**
@@ -124,7 +124,7 @@ new_r_ir_graph (entity *ent, int n_loc)
   res->kind = k_ir_graph;
 
   /* inform statistics here, as blocks will be already build on this graph */
-  stat_new_graph(res, ent);
+  hook_new_graph(res, ent);
 
   current_ir_graph = res;
 
@@ -232,7 +232,7 @@ ir_graph *new_const_code_irg(void) {
   res = alloc_graph();
 
   /* inform statistics here, as blocks will be already build on this graph */
-  stat_new_graph(res, NULL);
+  hook_new_graph(res, NULL);
 
   current_ir_graph = res;
   res->n_loc = 1;       /* Only the memory. */
@@ -297,7 +297,7 @@ void  del_identities (pset *value_table);
    graph, nor the entity standing for this graph. */
 void free_ir_graph (ir_graph *irg) {
 
-  stat_free_graph(irg);
+  hook_free_graph(irg);
   if (irg->outs_state != outs_none) free_outs(irg);
   if (irg->frame_type)  free_type(irg->frame_type);
   if (irg->value_table) del_identities(irg->value_table);

@@ -24,7 +24,7 @@
 # include "irflag_t.h"
 # include "irgwalk.h"
 # include "reassoc_t.h"
-# include "firmstat.h"
+# include "irhooks.h"
 
 typedef struct _walker_t {
   int changes;          /* set, if a reassociation take place */
@@ -313,7 +313,7 @@ static void do_reassociation(ir_node *n, void *env)
   walker_t *wenv = env;
   int res;
 
-  stat_reassociate(1);
+  hook_reassociate(1);
 
   /* reassociation must run until fixpoint */
   do {
@@ -334,7 +334,7 @@ static void do_reassociation(ir_node *n, void *env)
     }
   } while (res == 1);
 
-  stat_reassociate(0);
+  hook_reassociate(0);
 }
 
 /*

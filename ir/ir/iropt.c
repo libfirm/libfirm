@@ -35,7 +35,7 @@
 # include "dbginfo_t.h"
 # include "iropt_dbg.h"
 # include "irflag_t.h"
-# include "firmstat.h"
+# include "irhooks.h"
 # include "irarch.h"
 # include "hashptr.h"
 

@@ -28,7 +28,7 @@
 #include "irop_t.h"
 #include "irprog_t.h"
 
-#include "firmstat.h"
+#include "irhooks.h"
 
 /* some constants fixing the positions of nodes predecessors
    in the in array */
@@ -155,7 +155,7 @@ new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mo
   res->node_nr = get_irp_new_node_nr();
 #endif
 
-  stat_new_node(res);
+  hook_new_node(res);
 
   return res;
 }

@@ -32,6 +32,7 @@
 #include "dags.h"
 #include "stat_dmp.h"
 #include "xmalloc.h"
+#include "irhooks.h"
 
 /*
  * need this to be static:
@@ -817,80 +818,8 @@ ir_op *stat_get_op_from_opcode(opcode code)
   return opcode_find_entry(code, status->ir_op_hash);
 }
 
-/* initialize the statistics module. */
-void init_stat(unsigned enable_options)
-{
-#define X(a)  a, sizeof(a)-1
-
-  /* enable statistics */
-  status->stat_options = enable_options & FIRMSTAT_ENABLED ? enable_options : 0;
-
-  if (! status->stat_options)
-   return;
-
-  obstack_init(&status->cnts);
-
-  /* create the hash-tables */
-  status->irg_hash   = new_pset(graph_cmp, 8);
-  status->ir_op_hash = new_pset(opcode_cmp_2, 1);
-
-  /* create the wait queue */
-  status->wait_q     = new_pdeq();
-
-  if (enable_options & FIRMSTAT_COUNT_STRONG_OP) {
-    /* build the pseudo-ops */
-    _op_Phi0.code    = get_next_ir_opcode();
-    _op_Phi0.name    = new_id_from_chars(X("Phi0"));
-
-    _op_PhiM.code    = get_next_ir_opcode();
-    _op_PhiM.name    = new_id_from_chars(X("PhiM"));
-
-    _op_ProjM.code   = get_next_ir_opcode();
-    _op_ProjM.name   = new_id_from_chars(X("ProjM"));
-
-    _op_MulC.code    = get_next_ir_opcode();
-    _op_MulC.name    = new_id_from_chars(X("MulC"));
-
-    _op_DivC.code    = get_next_ir_opcode();
-    _op_DivC.name    = new_id_from_chars(X("DivC"));
-
-    _op_ModC.code    = get_next_ir_opcode();
-    _op_ModC.name    = new_id_from_chars(X("ModC"));
-
-    _op_DivModC.code = get_next_ir_opcode();
-    _op_DivModC.name = new_id_from_chars(X("DivModC"));
-
-    status->op_Phi0    = &_op_Phi0;
-    status->op_PhiM    = &_op_PhiM;
-    status->op_ProjM   = &_op_ProjM;
-    status->op_MulC    = &_op_MulC;
-    status->op_DivC    = &_op_DivC;
-    status->op_ModC    = &_op_ModC;
-    status->op_DivModC = &_op_DivModC;
-  }
-  else {
-    status->op_Phi0    = NULL;
-    status->op_PhiM    = NULL;
-    status->op_ProjM   = NULL;
-    status->op_MulC    = NULL;
-    status->op_DivC    = NULL;
-    status->op_ModC    = NULL;
-    status->op_DivModC = NULL;
-  }
-
-  /* register the dumper */
-  stat_register_dumper(&simple_dumper);
-
-  if (enable_options & FIRMSTAT_CSV_OUTPUT)
-    stat_register_dumper(&csv_dumper);
-
-  /* initialize the pattern hash */
-  stat_init_pattern_history(enable_options & FIRMSTAT_PATTERN_ENABLED);
-#undef X
-}
-
-/* A new IR op is registered. */
-void stat_new_ir_op(const ir_op *op)
+/** A new IR op is registered. */
+static void stat_new_ir_op(void *ctx, ir_op *op)
 {
   if (! status->stat_options)
     return;
@@ -907,8 +836,8 @@ void stat_new_ir_op(const ir_op *op)
   STAT_LEAVE;
 }
 
-/* An IR op is freed. */
-void stat_free_ir_op(const ir_op *op)
+/** An IR op is freed. */
+static void stat_free_ir_op(void *ctx, ir_op *op)
 {
   if (! status->stat_options)
     return;
@@ -919,8 +848,8 @@ void stat_free_ir_op(const ir_op *op)
   STAT_LEAVE;
 }
 
-/* A new node is created. */
-void stat_new_node(ir_node *node)
+/** A new node is created. */
+static void stat_new_node(void *ctx, ir_node *node)
 {
   if (! status->stat_options)
     return;
@@ -948,8 +877,8 @@ void stat_new_node(ir_node *node)
   STAT_LEAVE;
 }
 
-/* A node is changed into a Id node */
-void stat_turn_into_id(ir_node *node)
+/** A node is changed into a Id node */
+static void stat_turn_into_id(void *ctx, ir_node *node)
 {
   if (! status->stat_options)
     return;
@@ -973,8 +902,8 @@ void stat_turn_into_id(ir_node *node)
   STAT_LEAVE;
 }
 
-/* A new graph was created */
-void stat_new_graph(ir_graph *irg, entity *ent)
+/** A new graph was created */
+static void stat_new_graph(void *ctx, ir_graph *irg, entity *ent)
 {
   if (! status->stat_options)
     return;
@@ -995,10 +924,10 @@ void stat_new_graph(ir_graph *irg, entity *ent)
   STAT_LEAVE;
 }
 
-/*
+/**
  * A graph will be deleted
  */
-void stat_free_graph(ir_graph *irg)
+static void stat_free_graph(void *ctx, ir_graph *irg)
 {
   if (! status->stat_options)
     return;
@@ -1018,10 +947,10 @@ void stat_free_graph(ir_graph *irg)
   STAT_LEAVE;
 }
 
-/*
+/**
  * A walk over a graph is initiated. Do not count walks from statistic code.
  */
-void stat_irg_walk(ir_graph *irg, void *pre, void *post)
+static void stat_irg_walk(void *ctx, ir_graph *irg, void *pre, void *post)
 {
   if (! status->stat_options)
     return;
@@ -1035,19 +964,19 @@ void stat_irg_walk(ir_graph *irg, void *pre, void *post)
   STAT_LEAVE;
 }
 
-/*
+/**
  * A walk over a graph in block-wise order is initiated. Do not count walks from statistic code.
  */
-void stat_irg_walk_blkwise(ir_graph *irg, void *pre, void *post)
+static void stat_irg_walk_blkwise(void *ctx, ir_graph *irg, void *pre, void *post)
 {
   /* for now, do NOT differentiate between blockwise and normal */
-  stat_irg_walk(irg, pre, post);
+  stat_irg_walk(ctx, irg, pre, post);
 }
 
-/*
+/**
  * A walk over the graph's blocks is initiated. Do not count walks from statistic code.
  */
-void stat_irg_block_walk(ir_graph *irg, const ir_node *node, void *pre, void *post)
+static void stat_irg_block_walk(void *ctx, ir_graph *irg, ir_node *node, void *pre, void *post)
 {
   if (! status->stat_options)
     return;
@@ -1073,13 +1002,14 @@ static void removed_due_opt(ir_node *n, pset *set)
   cnt_inc(&entry->count);
 }
 
-/*
+/**
  * Some nodes were optimized into some others due to an optimization
  */
-void stat_merge_nodes(
+static void stat_merge_nodes(
+    void *ctx,
     ir_node **new_node_array, int new_num_entries,
     ir_node **old_node_array, int old_num_entries,
-    stat_opt_kind opt)
+    hook_opt_kind opt)
 {
   if (! status->stat_options)
     return;
@@ -1090,7 +1020,7 @@ void stat_merge_nodes(
     graph_entry_t *graph = graph_get_entry(current_ir_graph, status->irg_hash);
 
     if (status->reassoc_run)
-      opt = STAT_OPT_REASSOC;
+      opt = HOOK_OPT_REASSOC;
 
     for (i = 0; i < old_num_entries; ++i) {
       for (j = 0; j < new_num_entries; ++j)
@@ -1106,10 +1036,10 @@ void stat_merge_nodes(
   STAT_LEAVE;
 }
 
-/*
+/**
  * reassociation started/stopped.
  */
-void stat_reassociate(int flag)
+static void stat_reassociate(void *ctx, int flag)
 {
   if (! status->stat_options)
     return;
@@ -1121,10 +1051,10 @@ void stat_reassociate(int flag)
   STAT_LEAVE;
 }
 
-/*
+/**
  * A node was lowered into other nodes
  */
-void stat_lower(ir_node *node)
+static void stat_lower(void *ctx, ir_node *node)
 {
   if (! status->stat_options)
     return;
@@ -1133,15 +1063,15 @@ void stat_lower(ir_node *node)
   {
     graph_entry_t *graph = graph_get_entry(current_ir_graph, status->irg_hash);
 
-    removed_due_opt(node, graph->opt_hash[STAT_LOWERED]);
+    removed_due_opt(node, graph->opt_hash[HOOK_LOWERED]);
   }
   STAT_LEAVE;
 }
 
-/*
+/**
  * A graph was inlined
  */
-void stat_inline(ir_node *call, ir_graph *called_irg)
+static void stat_inline(void *ctx, ir_node *call, ir_graph *called_irg)
 {
   if (! status->stat_options)
     return;
@@ -1158,10 +1088,10 @@ void stat_inline(ir_node *call, ir_graph *called_irg)
   STAT_LEAVE;
 }
 
-/*
+/**
  * A graph with tail-recursions was optimized.
  */
-void stat_tail_rec(ir_graph *irg)
+static void stat_tail_rec(void *ctx, ir_graph *irg)
 {
   if (! status->stat_options)
     return;
@@ -1172,10 +1102,10 @@ void stat_tail_rec(ir_graph *irg)
   STAT_LEAVE;
 }
 
-/*
+/**
  * Strength reduction was performed on an iteration variable.
  */
-void stat_strength_red(ir_graph *irg, ir_node *strong, ir_node *cmp)
+static void stat_strength_red(void *ctx, ir_graph *irg, ir_node *strong, ir_node *cmp)
 {
   if (! status->stat_options)
     return;
@@ -1185,15 +1115,15 @@ void stat_strength_red(ir_graph *irg, ir_node *strong, ir_node *cmp)
     graph_entry_t *graph = graph_get_entry(irg, status->irg_hash);
     cnt_inc(&graph->cnt_strength_red);
 
-    removed_due_opt(strong, graph->opt_hash[STAT_OPT_STRENGTH_RED]);
+    removed_due_opt(strong, graph->opt_hash[HOOK_OPT_STRENGTH_RED]);
   }
   STAT_LEAVE;
 }
 
-/*
+/**
  * Start the dead node elimination.
  */
-void stat_dead_node_elim_start(ir_graph *irg)
+static void stat_dead_node_elim_start(void *ctx, ir_graph *irg)
 {
   if (! status->stat_options)
     return;
@@ -1201,10 +1131,10 @@ void stat_dead_node_elim_start(ir_graph *irg)
   ++status->in_dead_node_elim;
 }
 
-/*
+/**
  * Stops the dead node elimination.
  */
-void stat_dead_node_elim_stop(ir_graph *irg)
+static void stat_dead_node_elim_stop(void *ctx, ir_graph *irg)
 {
   if (! status->stat_options)
     return;
@@ -1212,10 +1142,10 @@ void stat_dead_node_elim_stop(ir_graph *irg)
   --status->in_dead_node_elim;
 }
 
-/*
+/**
  * A multiply was replaced by a series of Shifts/Adds/Subs
  */
-void stat_arch_dep_replace_mul_with_shifts(ir_node *mul)
+static void stat_arch_dep_replace_mul_with_shifts(void *ctx, ir_node *mul)
 {
   if (! status->stat_options)
     return;
@@ -1223,7 +1153,7 @@ void stat_arch_dep_replace_mul_with_shifts(ir_node *mul)
   STAT_ENTER;
   {
     graph_entry_t *graph = graph_get_entry(current_ir_graph, status->irg_hash);
-    removed_due_opt(mul, graph->opt_hash[STAT_OPT_ARCH_DEP]);
+    removed_due_opt(mul, graph->opt_hash[HOOK_OPT_ARCH_DEP]);
   }
   STAT_LEAVE;
 }
@@ -1231,7 +1161,7 @@ void stat_arch_dep_replace_mul_with_shifts(ir_node *mul)
 /**
  * A division was replaced by a series of Shifts/Muls
  */
-void stat_arch_dep_replace_div_by_const(ir_node *div)
+static void stat_arch_dep_replace_div_by_const(void *ctx, ir_node *div)
 {
   if (! status->stat_options)
     return;
@@ -1239,7 +1169,7 @@ void stat_arch_dep_replace_div_by_const(ir_node *div)
   STAT_ENTER;
   {
     graph_entry_t *graph = graph_get_entry(current_ir_graph, status->irg_hash);
-    removed_due_opt(div, graph->opt_hash[STAT_OPT_ARCH_DEP]);
+    removed_due_opt(div, graph->opt_hash[HOOK_OPT_ARCH_DEP]);
   }
   STAT_LEAVE;
 }
@@ -1247,7 +1177,7 @@ void stat_arch_dep_replace_div_by_const(ir_node *div)
 /**
  * A modulo was replaced by a series of Shifts/Muls
  */
-void stat_arch_dep_replace_mod_by_const(ir_node *mod)
+static void stat_arch_dep_replace_mod_by_const(void *ctx, ir_node *mod)
 {
   if (! status->stat_options)
     return;
@@ -1255,7 +1185,7 @@ void stat_arch_dep_replace_mod_by_const(ir_node *mod)
   STAT_ENTER;
   {
     graph_entry_t *graph = graph_get_entry(current_ir_graph, status->irg_hash);
-    removed_due_opt(mod, graph->opt_hash[STAT_OPT_ARCH_DEP]);
+    removed_due_opt(mod, graph->opt_hash[HOOK_OPT_ARCH_DEP]);
   }
   STAT_LEAVE;
 }
@@ -1263,7 +1193,7 @@ void stat_arch_dep_replace_mod_by_const(ir_node *mod)
 /**
  * A DivMod was replaced by a series of Shifts/Muls
  */
-void stat_arch_dep_replace_DivMod_by_const(ir_node *divmod)
+static void stat_arch_dep_replace_DivMod_by_const(void *ctx, ir_node *divmod)
 {
   if (! status->stat_options)
     return;
@@ -1271,7 +1201,7 @@ void stat_arch_dep_replace_DivMod_by_const(ir_node *divmod)
   STAT_ENTER;
   {
     graph_entry_t *graph = graph_get_entry(current_ir_graph, status->irg_hash);
-    removed_due_opt(divmod, graph->opt_hash[STAT_OPT_ARCH_DEP]);
+    removed_due_opt(divmod, graph->opt_hash[HOOK_OPT_ARCH_DEP]);
   }
   STAT_LEAVE;
 }
@@ -1351,57 +1281,104 @@ void stat_finish(const char *name)
   STAT_LEAVE;
 }
 
-#else
+static hook_entry_t stat_hooks[hook_last];
 
-/* need this for prototypes */
-#define FIRM_STATISTICS
-#include "firmstat.h"
+/* initialize the statistics module. */
+void init_stat(unsigned enable_options)
+{
+#define X(a)  a, sizeof(a)-1
+#define HOOK(h, fkt) \
+  stat_hooks[h].hook._##h = fkt; register_hook(h, &stat_hooks[h])
 
-void init_stat(unsigned enable_options) {}
+  /* enable statistics */
+  status->stat_options = enable_options & FIRMSTAT_ENABLED ? enable_options : 0;
 
-void stat_finish(const char *name) {}
+  if (! status->stat_options)
+    return;
 
-void stat_new_ir_op(const ir_op *op) {}
+  /* register all hooks */
+  HOOK(hook_new_ir_op,                        stat_new_ir_op);
+  HOOK(hook_free_ir_op,                       stat_free_ir_op);
+  HOOK(hook_new_node,                         stat_new_node);
+  HOOK(hook_turn_into_id,                     stat_turn_into_id);
+  HOOK(hook_new_graph,                        stat_new_graph);
+  HOOK(hook_free_graph,                       stat_free_graph);
+  HOOK(hook_irg_walk,                         stat_irg_walk);
+  HOOK(hook_irg_walk_blkwise,                 stat_irg_walk_blkwise);
+  HOOK(hook_irg_block_walk,                   stat_irg_block_walk);
+  HOOK(hook_merge_nodes,                      stat_merge_nodes);
+  HOOK(hook_reassociate,                      stat_reassociate);
+  HOOK(hook_lower,                            stat_lower);
+  HOOK(hook_inline,                           stat_inline);
+  HOOK(hook_tail_rec,                         stat_tail_rec);
+  HOOK(hook_strength_red,                     stat_strength_red);
+  HOOK(hook_dead_node_elim_start,             stat_dead_node_elim_start);
+  HOOK(hook_dead_node_elim_stop,              stat_dead_node_elim_stop);
+  HOOK(hook_arch_dep_replace_mul_with_shifts, stat_arch_dep_replace_mul_with_shifts);
+  HOOK(hook_arch_dep_replace_div_by_const,    stat_arch_dep_replace_div_by_const);
+  HOOK(hook_arch_dep_replace_mod_by_const,    stat_arch_dep_replace_mod_by_const);
+  HOOK(hook_arch_dep_replace_DivMod_by_const, stat_arch_dep_replace_DivMod_by_const);
 
-void stat_free_ir_op(const ir_op *op) {}
+  obstack_init(&status->cnts);
 
-void stat_new_node(ir_node *node) {}
+  /* create the hash-tables */
+  status->irg_hash   = new_pset(graph_cmp, 8);
+  status->ir_op_hash = new_pset(opcode_cmp_2, 1);
 
-void stat_turn_into_id(ir_node *node) {}
+  /* create the wait queue */
+  status->wait_q     = new_pdeq();
 
-void stat_new_graph(ir_graph *irg, entity *ent) {}
+  if (enable_options & FIRMSTAT_COUNT_STRONG_OP) {
+    /* build the pseudo-ops */
+    _op_Phi0.code    = get_next_ir_opcode();
+    _op_Phi0.name    = new_id_from_chars(X("Phi0"));
 
-void stat_free_graph(ir_graph *irg) {}
+    _op_PhiM.code    = get_next_ir_opcode();
+    _op_PhiM.name    = new_id_from_chars(X("PhiM"));
 
-void stat_irg_walk(ir_graph *irg, void *pre, void *post) {}
+    _op_ProjM.code   = get_next_ir_opcode();
+    _op_ProjM.name   = new_id_from_chars(X("ProjM"));
 
-void stat_irg_block_walk(ir_graph *irg, const ir_node *node, void *pre, void *post) {}
+    _op_MulC.code    = get_next_ir_opcode();
+    _op_MulC.name    = new_id_from_chars(X("MulC"));
 
-void stat_merge_nodes(
-    ir_node **new_node_array, int new_num_entries,
-    ir_node **old_node_array, int old_num_entries,
-    stat_opt_kind opt) {}
+    _op_DivC.code    = get_next_ir_opcode();
+    _op_DivC.name    = new_id_from_chars(X("DivC"));
 
-void stat_reassociate(int start) {}
+    _op_ModC.code    = get_next_ir_opcode();
+    _op_ModC.name    = new_id_from_chars(X("ModC"));
 
-void stat_lower(ir_node *node) {}
+    _op_DivModC.code = get_next_ir_opcode();
+    _op_DivModC.name = new_id_from_chars(X("DivModC"));
 
-void stat_inline(ir_node *call, ir_graph *irg) {}
+    status->op_Phi0    = &_op_Phi0;
+    status->op_PhiM    = &_op_PhiM;
+    status->op_ProjM   = &_op_ProjM;
+    status->op_MulC    = &_op_MulC;
+    status->op_DivC    = &_op_DivC;
+    status->op_ModC    = &_op_ModC;
+    status->op_DivModC = &_op_DivModC;
+  }
+  else {
+    status->op_Phi0    = NULL;
+    status->op_PhiM    = NULL;
+    status->op_ProjM   = NULL;
+    status->op_MulC    = NULL;
+    status->op_DivC    = NULL;
+    status->op_ModC    = NULL;
+    status->op_DivModC = NULL;
+  }
 
-void stat_tail_rec(ir_graph *irg) {}
+  /* register the dumper */
+  stat_register_dumper(&simple_dumper);
 
-void stat_strength_red(ir_graph *irg, ir_node *strong, ir_node *cmp) {}
+  if (enable_options & FIRMSTAT_CSV_OUTPUT)
+    stat_register_dumper(&csv_dumper);
 
-void stat_dead_node_elim_start(ir_graph *irg) {}
+  /* initialize the pattern hash */
+  stat_init_pattern_history(enable_options & FIRMSTAT_PATTERN_ENABLED);
+#undef HOOK
+#undef X
+}
 
-void stat_dead_node_elim_stop(ir_graph *irg) {}
-
-void stat_arch_dep_replace_mul_with_shifts(ir_node *mul) {}
-
-void stat_arch_dep_replace_div_by_const(ir_node *div) {}
-
-void stat_arch_dep_replace_mod_by_const(ir_node *mod) {}
-
-void stat_arch_dep_replace_DivMod_by_const(ir_node *divmod) {}
-
-#endif
+#endif /* FIRM_STATISTICS */

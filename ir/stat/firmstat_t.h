@@ -24,6 +24,7 @@
 #include "irprog.h"
 #include "irgwalk.h"
 #include "counter.h"
+#include "irhooks.h"
 
 /*
  * just be make some things clear :-), the
@@ -85,7 +86,7 @@ typedef struct _graph_entry_t {
   counter_t               cnt_edges;			/**< number of DF edges in this graph */
   counter_t               cnt_all_calls;                /**< number of all calls */
   counter_t               cnt_indirect_calls;           /**< number of indirect calls */
-  HASH_MAP(opt_entry_t)   *opt_hash[STAT_OPT_MAX];	/**< hash maps containing opcode counter for optimizations */
+  HASH_MAP(opt_entry_t)   *opt_hash[HOOK_OPT_LAST];	/**< hash maps containing opcode counter for optimizations */
   ir_graph                *irg;				/**< the graph of this object */
   entity                  *ent;				/**< the entity of this graph if one exists */
   set                     *address_mark;                /**< a set containing the address marks of the nodes */
@@ -177,6 +178,10 @@ struct _dumper_t {
   dumper_t                *next;		/**< link to the next dumper */
 };
 
+/**
+ * helper: get an ir_op from an opcode
+ */
+ir_op *stat_get_op_from_opcode(opcode code);
 
 /**
  * An entry in a distribution table

@@ -18,7 +18,7 @@
 #include "irgwalk.h"
 #include "pdeq.h"
 #include "pset.h"
-#include "firmstat.h"
+#include "irhooks.h"
 
 /**
  * Metadata for block walker
@@ -217,7 +217,7 @@ void irg_walk_blkwise_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *po
 {
   ir_graph * rem = current_ir_graph;
 
-  stat_irg_walk_blkwise(irg, (void *)pre, (void *)post);
+  hook_irg_walk_blkwise(irg, (void *)pre, (void *)post);
   current_ir_graph = irg;
   irg_walk_blkwise(get_irg_end(irg), pre, post, env);
   current_ir_graph = rem;

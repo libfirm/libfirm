@@ -46,7 +46,7 @@
 
 #include "irdump.h"
 
-#include "firmstat.h"
+#include "irhooks.h"
 
 /* Eindeutige Adresse zur Markierung von besuchten Knoten und zur
  * Darstellung der unbekannten Methode. */

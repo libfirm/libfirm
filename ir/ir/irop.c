@@ -20,7 +20,7 @@
 
 # include "irop_t.h"
 # include "irnode_t.h"
-# include "firmstat.h"
+# include "irhooks.h"
 
 # include "iropt_t.h"             /* for firm_set_default_operations */
 
@@ -149,12 +149,12 @@ new_ir_op(opcode code, const char *name, op_pin_state p, unsigned flags, op_arit
   firm_set_default_operations(res);
   firm_set_default_copy_attr(res);
 
-  stat_new_ir_op(res);
+  hook_new_ir_op(res);
   return res;
 }
 
 void free_ir_op(ir_op *code) {
-  stat_free_ir_op(code);
+  hook_free_ir_op(code);
   free(code);
 }
 

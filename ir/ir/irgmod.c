@@ -22,7 +22,7 @@
 # include "irgmod.h"
 # include "array.h"
 # include "ircons.h"
-# include "firmstat.h"
+# include "irhooks.h"
 
 /* Turns a node into a "useless" Tuple.  The Tuple just forms a tuple
    from several inputs.
@@ -56,7 +56,7 @@ exchange (ir_node *old, ir_node *nw)
   assert (irg);
   assert(get_irn_op(old)->opar != oparity_dynamic);
 
-  stat_turn_into_id(old);
+  hook_turn_into_id(old);
 
   block = old->in[0];
   if (!block) {

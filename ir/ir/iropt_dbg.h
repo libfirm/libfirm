@@ -25,7 +25,7 @@
 	  ir_node *ons[2];                                         \
 	  ons[0] = oldn;                                           \
 	  ons[1] = get_Block_cfgpred(oldn, 0);                     \
-	  stat_merge_nodes(&n, 1, ons, SIZ(ons), STAT_OPT_STG);	   \
+	  hook_merge_nodes(&n, 1, ons, SIZ(ons), HOOK_OPT_STG);	   \
 	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_dead_code); \
 	} while(0)
 
@@ -38,7 +38,7 @@
 	  ir_node *ons[2];                                         \
 	  ons[0] = oldn;                                           \
 	  ons[1] = get_Block_cfgpred(oldn, 0);                     \
-	  stat_merge_nodes(&n, 1, ons, SIZ(ons), STAT_OPT_STG);	   \
+	  hook_merge_nodes(&n, 1, ons, SIZ(ons), HOOK_OPT_STG);	   \
 	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_straightening); \
 	} while(0)
 
@@ -52,7 +52,7 @@
 	  ons[1] = a;                                                 \
 	  ons[2] = b;                                                 \
 	  ons[3] = get_Proj_pred(a);                                  \
-	  stat_merge_nodes(&n, 1, ons, SIZ(ons), STAT_OPT_IFSIM);     \
+	  hook_merge_nodes(&n, 1, ons, SIZ(ons), HOOK_OPT_IFSIM);     \
 	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_if_simplification); \
 	} while(0)
 
@@ -61,7 +61,7 @@
  */
 #define DBG_OPT_CSTEVAL(oldn, n)                                     	\
   do {                                                          	\
-	  stat_merge_nodes(&n, 1, &oldn, 1, STAT_OPT_CONST_EVAL);    	\
+	  hook_merge_nodes(&n, 1, &oldn, 1, HOOK_OPT_CONST_EVAL);    	\
           __dbg_info_merge_pair(n, oldn, dbg_const_eval);	        \
   } while(0)
 
@@ -71,7 +71,7 @@
 	  ons[0] = oldn;                                              \
 	  ons[1] = a;                                                 \
 	  ons[2] = b;                                                 \
-	  stat_merge_nodes(&n, 1, ons, SIZ(ons), STAT_OPT_ALGSIM);    \
+	  hook_merge_nodes(&n, 1, ons, SIZ(ons), HOOK_OPT_ALGSIM);    \
 	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_algebraic_simplification); \
   } while(0)
 
@@ -81,7 +81,7 @@
 	  ons[0] = oldn;                                              \
 	  ons[1] = pred;                                              \
 	  ons[2] = n;                                                 \
-	  stat_merge_nodes(&n, 1, ons, SIZ(ons), STAT_OPT_ALGSIM);    \
+	  hook_merge_nodes(&n, 1, ons, SIZ(ons), HOOK_OPT_ALGSIM);    \
 	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_algebraic_simplification); \
   } while(0)
 
@@ -90,7 +90,7 @@
 	  ir_node *ons[2];                                            \
 	  ons[0] = oldn;                                              \
 	  ons[1] = a;                                                 \
-	  stat_merge_nodes(&n, 1, ons, SIZ(ons), STAT_OPT_ALGSIM);    \
+	  hook_merge_nodes(&n, 1, ons, SIZ(ons), HOOK_OPT_ALGSIM);    \
 	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_algebraic_simplification); \
   } while(0)
 
@@ -99,7 +99,7 @@
 	  ir_node *ons[2];                                            \
 	  ons[0] = oldn;                                              \
 	  ons[1] = first_val;                                         \
-	  stat_merge_nodes(&n, 1, ons, SIZ(ons), STAT_OPT_PHI);	      \
+	  hook_merge_nodes(&n, 1, ons, SIZ(ons), HOOK_OPT_PHI);	      \
 	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_opt_ssa);   \
   } while(0)
 
@@ -113,7 +113,7 @@
 	  ir_node *ons[2];                                            \
 	  ons[0] = oldst;                                             \
 	  ons[1] = st;                                                \
-	  stat_merge_nodes(&st, 1, ons, SIZ(ons), STAT_OPT_WAW);      \
+	  hook_merge_nodes(&st, 1, ons, SIZ(ons), HOOK_OPT_WAW);      \
 	  __dbg_info_merge_sets(&st, 1, ons, SIZ(ons), dbg_write_after_write); \
   } while(0)
 
@@ -126,7 +126,7 @@
 	  ir_node *ons[2];                                            \
 	  ons[0] = store;                                             \
 	  ons[1] = load;                                              \
-	  stat_merge_nodes(&load, 1, ons, SIZ(ons), STAT_OPT_WAR);    \
+	  hook_merge_nodes(&load, 1, ons, SIZ(ons), HOOK_OPT_WAR);    \
 	  __dbg_info_merge_sets(&load, 1, ons, SIZ(ons), dbg_write_after_read); \
   } while(0)
 
@@ -139,7 +139,7 @@
 	  ir_node *ons[2];                                            \
 	  ons[0] = store;                                             \
 	  ons[1] = load;                                              \
-	  stat_merge_nodes(&store, 1, ons, SIZ(ons), STAT_OPT_RAW);   \
+	  hook_merge_nodes(&store, 1, ons, SIZ(ons), HOOK_OPT_RAW);   \
 	  __dbg_info_merge_sets(&store, 1, ons, SIZ(ons), dbg_read_after_write); \
   } while(0)
 
@@ -152,7 +152,7 @@
 	  ir_node *ons[2];                                            \
 	  ons[0] = oldld;                                             \
 	  ons[1] = ld;                                                \
-	  stat_merge_nodes(&ld, 1, ons, SIZ(ons), STAT_OPT_RAR);      \
+	  hook_merge_nodes(&ld, 1, ons, SIZ(ons), HOOK_OPT_RAR);      \
 	  __dbg_info_merge_sets(&ld, 1, ons, SIZ(ons), dbg_read_after_read); \
   } while(0)
 
@@ -165,7 +165,7 @@
 	  ir_node *ons[2];                                            \
 	  ons[0] = ld;                                                \
 	  ons[1] = c;                                                 \
-	  stat_merge_nodes(&c, 1, ons, SIZ(ons), STAT_OPT_RC);        \
+	  hook_merge_nodes(&c, 1, ons, SIZ(ons), HOOK_OPT_RC);        \
 	  __dbg_info_merge_sets(&ld, 1, ons, SIZ(ons), dbg_read_a_const); \
 	} while(0)
 
@@ -175,7 +175,7 @@
 	  ons[0] = oldn;                                              \
 	  ons[1] = a;                                                 \
 	  ons[2] = n;                                                 \
-	  stat_merge_nodes(&n, 1, ons, SIZ(ons), STAT_OPT_TUPLE);     \
+	  hook_merge_nodes(&n, 1, ons, SIZ(ons), HOOK_OPT_TUPLE);     \
 	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_opt_auxnode);      \
   } while(0)
 
@@ -184,7 +184,7 @@
 	  ir_node *ons[2];                                            \
 	  ons[0] = oldn;                                              \
 	  ons[1] = n;                                                 \
-	  stat_merge_nodes(&n, 1, ons, SIZ(ons), STAT_OPT_ID);	      \
+	  hook_merge_nodes(&n, 1, ons, SIZ(ons), HOOK_OPT_ID);	      \
 	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_opt_auxnode);      \
   } while(0)
 
@@ -196,7 +196,7 @@
 	  ir_node *ons[2];                                            \
 	  ons[0] = oldn;                                              \
 	  ons[1] = n;                                                 \
-	  stat_merge_nodes(&n, 1, ons, SIZ(ons), STAT_OPT_CSE);	      \
+	  hook_merge_nodes(&n, 1, ons, SIZ(ons), HOOK_OPT_CSE);	      \
 	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_opt_cse);   \
   } while(0)
 
@@ -206,12 +206,12 @@
     ons[0] = oldn;                                                  \
     ons[1] = skip_Proj(get_Sel_ptr(oldn));                          \
     ons[2] = n;                                                     \
-    stat_merge_nodes(&n, 1, ons, SIZ(ons), STAT_OPT_POLY_CALL);	    \
+    hook_merge_nodes(&n, 1, ons, SIZ(ons), HOOK_OPT_POLY_CALL);	    \
     __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_rem_poly_call); \
   } while(0)
 
 #define DBG_OPT_POLY(oldn, n)                                   \
   do {                                                          \
-    stat_merge_nodes(&n, 1, &oldn, 1, STAT_OPT_POLY_CALL);    	\
+    hook_merge_nodes(&n, 1, &oldn, 1, HOOK_OPT_POLY_CALL);    	\
     __dbg_info_merge_pair(n, oldn, dbg_rem_poly_call);          \
   } while(0)
