@@ -25,7 +25,7 @@
 /**********************************************************************/
 /** Accessing the dopminator datastructure.                          **/
 /** These routines only work properly if the ir_graph is in state    **/
-/** outs_consistent or outs_inconsistent.                            **/
+/** dom_consistent or dom_inconsistent.                              **/
 /**********************************************************************/
 
 ir_node *get_Block_idom(ir_node *bl);
