@@ -159,7 +159,7 @@ dump_node_opcode (ir_node *n)
     } else {
       assert(get_kind(get_SymConst_type(n)) == k_type);
       assert(get_type_ident(get_SymConst_type(n)));
-      fprintf (F, "SymC %s ", get_id_str(get_type_ident(get_SymConst_type(n))));
+      fprintf (F, "SymC %s ", get_type_name(get_SymConst_type(n)));
       if (get_SymConst_kind(n) == type_tag)
         fprintf (F, "tag");
       else
@@ -197,7 +197,7 @@ dump_node_mode (ir_node *n)
   case iro_Shr:
   case iro_Abs:
   case iro_Cmp:
-    fprintf (F, "%s", get_id_str(get_mode_ident(get_irn_mode(n))));
+    fprintf (F, "%s", get_mode_name(get_irn_mode(n)));
     break;
   default:
     ;
@@ -222,7 +222,7 @@ dump_node_nodeattr (ir_node *n)
   switch (get_irn_opcode(n)) {
   case iro_Start:
     if (false && interprocedural_view) {
-      fprintf (F, "%s", get_id_str(get_entity_ident(get_irg_ent(current_ir_graph))));
+      fprintf (F, "%s", get_entity_name(get_irg_ent(current_ir_graph)));
     }
     break;
   case iro_Proj:
@@ -240,7 +240,7 @@ dump_node_nodeattr (ir_node *n)
     fprintf (F, "%s", get_entity_name(get_Sel_entity(n)));
     } break;
   case iro_Cast: {
-    fprintf (F, "to %s", get_type_name(get_Cast_type(n)));
+    fprintf (F, "(%s)", get_type_name(get_Cast_type(n)));
     } break;
   default:
     ;
@@ -659,7 +659,7 @@ static void print_type_info(type *tp) {
     fprintf(F, "state: layout_fixed,\n");
   }
   if (get_type_mode(tp))
-    fprintf(F, "mode: %s,\n", get_id_str(get_mode_ident(get_type_mode(tp))));
+    fprintf(F, "mode: %s,\n", get_mode_name(get_type_mode(tp)));
   fprintf(F, "size: %dB,\n", get_type_size(tp));
 }
 
@@ -703,7 +703,7 @@ static void print_type_node(type *tp)
 {
   fprintf (F, "node: {title: ");
   PRINT_TYPEID(tp);
-  fprintf (F, " label: \"%s %s\"", get_id_str(get_type_tpop_nameid(tp)), get_id_str(get_type_ident(tp)));
+  fprintf (F, " label: \"%s %s\"", get_type_tpop_name(tp), get_type_name(tp));
   fprintf (F, " info1: \"");
   print_type_info(tp);
   fprintf (F, "\"");
@@ -718,7 +718,7 @@ void dump_entity_node(entity *ent)
   PRINT_ENTID(ent); fprintf(F, "\"");
   fprintf (F, DEFAULT_TYPE_ATTRIBUTE);
   fprintf (F, "label: ");
-  fprintf (F, "\"ent %s\" " ENTITY_NODE_ATTR , get_id_str(get_entity_ident(ent)));
+  fprintf (F, "\"ent %s\" " ENTITY_NODE_ATTR , get_entity_name(ent));
   fprintf (F, "\n info1: \"\nid: "); PRINT_ENTID(ent);
 
   fprintf (F, "\nallocation:  ");
@@ -757,8 +757,7 @@ void dump_entity_node(entity *ent)
     X(peculiarity_existent);
   }
   fprintf(F, "\nname:    %s\nld_name: %s",
-	  get_id_str(get_entity_ident(ent)),
-	  get_id_str(get_entity_ld_ident(ent)));
+	  get_entity_name(ent), get_entity_ld_name(ent));
   fprintf(F, "\noffset:  %d", get_entity_offset(ent));
   if (is_method_type(get_entity_type(ent))) {
     if (get_entity_irg(ent))   /* can be null */
@@ -1492,7 +1491,7 @@ static void d_cg_block_graph(ir_graph *irg, ir_node **arr, pmap *irgmap) {
   int i;
 
   fprintf(F, "graph: { title: %p label: %s status:clustered color:white \n",
-	   (void*) irg, get_id_str(get_entity_ident(get_irg_ent(irg))));
+	   (void*) irg, get_entity_name(get_irg_ent(irg)));
 
   for (i = ARR_LEN(arr) - 1; i >= 0; --i) {
     ir_node * node = arr[i];
