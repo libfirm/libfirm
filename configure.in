@@ -127,7 +127,7 @@ if test "$enable_auto_documentation" = yes; then
   fi
   AC_CHECK_PROG(DOT, dot, "dot", "")
   if test "$DOT" != "dot"; then
-    AC_MSG_ERROR(need dot for doxygen documentation (for class graphs))
+    AC_MSG_ERROR(need dot for doxygen documentation (for class graphs) (IPD: module add Graphviz))
   fi
 fi
 
