@@ -14,6 +14,7 @@
 # define _IDENT_T_H_
 
 # include "ident.h"
+# include "set.h"
 
 void id_init (int initial_n_idents);
 void id_finish (void);
@@ -23,5 +24,27 @@ void id_finish (void);
      + ((unsigned char *)(str))[(len)>>1]) * 31 \
     + ((unsigned char *)(str))[(len)-1]) * 9 \
    + (len))
+
+
+/* ------------------------ *
+ * inline functions         *
+ * ------------------------ */
+extern set *__id_set;
+
+static INLINE ident *
+__id_from_str(const char *str, int len)
+{
+  assert(len > 0);
+  return set_hinsert0(__id_set, str, len, ID_HASH(str, len));
+}
+
+static INLINE const char * __get_id_str(ident *id) { return (const char *)id->dptr; }
+
+static INLINE int __get_id_strlen(ident *id) { return id->size; }
+
+
+#define id_from_str(str, len)    __id_from_str(str, len)
+#define get_id_str(id)           __get_id_str(id)
+#define get_id_strlen(id)        __get_id_strlen(id)
 
 # endif /* _IDENT_T_H_ */

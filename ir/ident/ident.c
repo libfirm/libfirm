@@ -21,25 +21,22 @@
 #include <stdlib.h>
 
 #include "ident_t.h"
-#include "array.h"
-#include "set.h"
 
-static set *id_set;
+set *__id_set;
 
 void id_init(int initial_n_idents)
 {
-  id_set = new_set(memcmp, initial_n_idents);
+  __id_set = new_set(memcmp, initial_n_idents);
 }
 
 void id_finish (void) {
-  del_set(id_set);
-  id_set = NULL;
+  del_set(__id_set);
+  __id_set = NULL;
 }
 
-INLINE ident *id_from_str (const char *str, int len)
+ident *(id_from_str)(const char *str, int len)
 {
-  assert(len > 0);
-  return set_hinsert0(id_set, str, len, ID_HASH(str, len));
+  return __id_from_str(str, len);
 }
 
 ident *new_id_from_str(const char *str)
@@ -48,14 +45,14 @@ ident *new_id_from_str(const char *str)
   return id_from_str(str, strlen(str));
 }
 
-INLINE const char *get_id_str(ident *id)
+const char *(get_id_str)(ident *id)
 {
-  return (const char *)id->dptr;
+  return __get_id_str(id);
 }
 
-INLINE int get_id_strlen(ident *id)
+int (get_id_strlen)(ident *id)
 {
-  return id->size;
+  return __get_id_strlen(id);
 }
 
 int id_is_prefix(ident *prefix, ident *id)
