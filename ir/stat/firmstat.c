@@ -38,6 +38,7 @@ static const char *opt_names[] = {
   "Tuple optimization",
   "ID optimization",
   "Constant evaluation",
+  "Common subexpression elimination",
   "Strength reduction",
   "Architecture dependant optimization",
   "Lowered",
@@ -396,6 +397,45 @@ static void count_block_info(ir_node *node, graph_entry_t *graph)
 }
 
 /**
+ * update info on calls
+ */
+static void count_call(ir_node *call, graph_entry_t *graph)
+{
+  ir_node *ptr = get_Call_ptr(call);
+  entity *ent = NULL;
+
+  /* found a call, is not a leaf function */
+  graph->is_leaf = 0;
+
+  if (get_irn_op(ptr) == op_SymConst) {
+    if (get_SymConst_kind(ptr) == symconst_addr_ent) {
+      /* ok, we seems to know the entity */
+      ent = get_SymConst_entity(ptr);
+
+      if (get_entity_irg(ent) == graph->irg)
+	graph->is_recursive = 1;
+    }
+  }
+
+  /* check, if it's a chain-call */
+  {
+    ir_node *curr = get_irg_end_block(graph->irg);
+    ir_node *block  = get_nodes_block(call);
+    int depth = get_Block_dom_depth(block);
+
+    for (; curr != block && get_Block_dom_depth(curr) > depth;) {
+      curr = get_Block_idom(curr);
+
+      if (! curr || is_no_Block(curr))
+	break;
+    }
+
+    if (curr != block)
+      graph->is_chain_call = 0;
+  }
+}
+
+/**
  * walker for reachable nodes count
  */
 static void count_nodes(ir_node *node, void *env)
@@ -413,6 +453,10 @@ static void count_nodes(ir_node *node, void *env)
 
   /* count block edges */
   count_block_info(node, graph);
+
+  /* check for leaf functions */
+  if (get_irn_op(node) == op_Call)
+    count_call(node, graph);
 }
 
 /**
@@ -427,8 +471,29 @@ static void count_nodes_in_graph(graph_entry_t *global, graph_entry_t *graph)
     cnt_clr(&entry->cnt_alive);
   }
 
+  /* set pessimistic values */
+  graph->is_leaf       = 1;
+  graph->is_recursive  = 0;
+  graph->is_chain_call = 1;
+
+  /* we need dominance info */
+  if (graph->irg != get_const_code_irg())
+    compute_doms(graph->irg);
+
   /* count the nodes in the graph */
   irg_walk_graph(graph->irg, count_nodes, NULL, graph);
+
+#if 0
+  entry = opcode_get_entry(op_Call, graph->opcode_hash);
+
+  /* check if we have more than 1 call */
+  if (cnt_gt(entry->cnt_alive, 1))
+    graph->is_chain_call = 0;
+#endif
+
+  /* recursive functions are never chain calls, leafs don't have calls */
+  if (graph->is_recursive || graph->is_leaf)
+    graph->is_chain_call = 0;
 
   /* assume we walk every graph only ONCE, we could sum here the global count */
   for (entry = pset_first(graph->opcode_hash); entry; entry = pset_next(graph->opcode_hash)) {
@@ -569,12 +634,21 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
         fprintf(dmp->f, "\nIrg %p", (void *)entry->irg);
     }
 
-    fprintf(dmp->f, " %swalked %d over blocks %d was inlined %d got inlined %d strength red %d:\n",
-        entry->deleted ? "DELETED " : "",
+    fprintf(dmp->f, " %swalked %d over blocks %d:\n"
+                    " was inlined:   %d\n"
+		    " got inlined:   %d\n"
+		    " strength red:  %d\n"
+		    " leaf function: %s\n"
+		    " recursive    : %s\n"
+		    " chain call   : %s\n",
+        entry->is_deleted ? "DELETED " : "",
         entry->cnt_walked.cnt[0], entry->cnt_walked_blocks.cnt[0],
         entry->cnt_was_inlined.cnt[0],
         entry->cnt_got_inlined.cnt[0],
-	entry->cnt_strength_red.cnt[0]
+	entry->cnt_strength_red.cnt[0],
+	entry->is_leaf ? "YES" : "NO",
+	entry->is_recursive ? "YES" : "NO",
+	entry->is_chain_call ? "YES" : "NO"
     );
   }
   else {
@@ -689,7 +763,7 @@ static void csv_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 
   counter_t cnt[4];
 
-  if (entry->irg && !entry->deleted) {
+  if (entry->irg && !entry->is_deleted) {
     ir_graph *const_irg = get_const_code_irg();
 
     if (entry->irg == const_irg) {
@@ -915,8 +989,11 @@ void stat_new_graph(ir_graph *irg, entity *ent)
     /* execute for side effect :-) */
     graph_entry_t * graph = graph_get_entry(irg, status->irg_hash);
 
-    graph->ent     = ent;
-    graph->deleted = 0;
+    graph->ent           = ent;
+    graph->is_deleted    = 0;
+    graph->is_leaf       = 0;
+    graph->is_recursive  = 0;
+    graph->is_chain_call = 0;
   }
   STAT_LEAVE;
 }
@@ -934,7 +1011,7 @@ void stat_free_graph(ir_graph *irg)
     graph_entry_t *graph  = graph_get_entry(irg, status->irg_hash);
     graph_entry_t *global = graph_get_entry(NULL, status->irg_hash);
 
-    graph->deleted = 1;
+    graph->is_deleted = 1;
 
     /* count the nodes of the graph yet, it will be destroyed later */
     count_nodes_in_graph(global, graph);
@@ -1140,6 +1217,54 @@ void stat_arch_dep_replace_mul_with_shifts(ir_node *mul)
   STAT_LEAVE;
 }
 
+/**
+ * A division was replaced by a series of Shifts/Muls
+ */
+void stat_arch_dep_replace_div_with_shifts(ir_node *div)
+{
+  if (! status->enable)
+    return;
+
+  STAT_ENTER;
+  {
+    graph_entry_t *graph = graph_get_entry(current_ir_graph, status->irg_hash);
+    removed_due_opt(div, graph->opt_hash[STAT_OPT_ARCH_DEP]);
+  }
+  STAT_LEAVE;
+}
+
+/**
+ * A modulo was replaced by a series of Shifts/Muls
+ */
+void stat_arch_dep_replace_mod_with_shifts(ir_node *mod)
+{
+  if (! status->enable)
+    return;
+
+  STAT_ENTER;
+  {
+    graph_entry_t *graph = graph_get_entry(current_ir_graph, status->irg_hash);
+    removed_due_opt(mod, graph->opt_hash[STAT_OPT_ARCH_DEP]);
+  }
+  STAT_LEAVE;
+}
+
+/**
+ * A DivMod was replaced by a series of Shifts/Muls
+ */
+void stat_arch_dep_replace_DivMod_with_shifts(ir_node *divmod)
+{
+  if (! status->enable)
+    return;
+
+  STAT_ENTER;
+  {
+    graph_entry_t *graph = graph_get_entry(current_ir_graph, status->irg_hash);
+    removed_due_opt(divmod, graph->opt_hash[STAT_OPT_ARCH_DEP]);
+  }
+  STAT_LEAVE;
+}
+
 /* Finish the statistics */
 void stat_finish(const char *name)
 {
@@ -1161,7 +1286,7 @@ void stat_finish(const char *name)
         continue;
       }
 
-      if (! entry->deleted) {
+      if (! entry->is_deleted) {
         /* the graph is still alive, count the nodes on it */
         count_nodes_in_graph(global, entry);
 
@@ -1246,5 +1371,11 @@ void stat_dead_node_elim_start(ir_graph *irg) {}
 void stat_dead_node_elim_stop(ir_graph *irg) {}
 
 void stat_arch_dep_replace_mul_with_shifts(ir_node *mul) {}
+
+void stat_arch_dep_replace_div_with_shifts(ir_node *div) {}
+
+void stat_arch_dep_replace_mod_with_shifts(ir_node *mod) {}
+
+void stat_arch_dep_replace_DivMod_with_shifts(ir_node *divmod) {}
 
 #endif

@@ -49,6 +49,7 @@ typedef enum {
   STAT_OPT_TUPLE,		/**< Tuple optimization */
   STAT_OPT_ID,			/**< ID optimization */
   STAT_OPT_CONST_EVAL,		/**< constant evaluation */
+  STAT_OPT_CSE,                 /**< common subexpression elimination */
   STAT_OPT_STRENGTH_RED,	/**< strenght reduction */
   STAT_OPT_ARCH_DEP,		/**< architecture dependant optimization */
   STAT_LOWERED,			/**< lowered */
@@ -152,6 +153,21 @@ void stat_dead_node_elim_stop(ir_graph *irg);
 void stat_arch_dep_replace_mul_with_shifts(ir_node *mul);
 
 /**
+ * A division was replaced by a series of Shifts/Muls
+ */
+void stat_arch_dep_replace_div_with_shifts(ir_node *div);
+
+/**
+ * A modulo was replaced by a series of Shifts/Muls
+ */
+void stat_arch_dep_replace_mod_with_shifts(ir_node *mod);
+
+/**
+ * A Divod was replaced by a series of Shifts/Muls
+ */
+void stat_arch_dep_replace_DivMod_with_shifts(ir_node *divmod);
+
+/**
  * helper: get an ir_op from an opcode
  *
  * @param code  the opcode
@@ -181,6 +197,9 @@ ir_op *stat_get_op_from_opcode(opcode code);
 #define stat_dead_node_elim_start(irg)
 #define stat_dead_node_elim_stop(irg)
 #define stat_arch_dep_replace_mul_with_shifts(irn)
+#define stat_arch_dep_replace_div_with_shifts(irn)
+#define stat_arch_dep_replace_mod_with_shifts(irn)
+#define stat_arch_dep_replace_DivMod_with_shifts(irn)
 
 #endif
 
