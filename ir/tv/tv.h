@@ -136,22 +136,22 @@ tarval *tarval_cancel (void); /* returns tarval_bad */
 
 /* The flags for projecting a comparison result */
 typedef enum {
-  irpn_False=0,		/* false */
-  irpn_Eq,		/* equal */
-  irpn_Lt,		/* less */
-  irpn_Le,		/* less or equal */
-  irpn_Gt,		/* greater */
-  irpn_Ge,		/* greater of equal */
-  irpn_Lg,		/* less or greater */
-  irpn_Leg,		/* less, equal or greater = ordered */
-  irpn_Uo,		/* unordered */
-  irpn_Ue,		/* unordered or equal */
-  irpn_Ul,		/* unordered or less */
-  irpn_Ule,		/* unordered, less or equal */
-  irpn_Ug,		/* unordered or greater */
-  irpn_Uge,		/* unordered, greater or equal */
-  irpn_Ne,		/* unordered, less or greater = not equal */
-  irpn_True,		/* true */
+  irpn_False=0,		/* 0000 false */
+  irpn_Eq,		/* 0001 equal */
+  irpn_Lt,		/* 0010 less */
+  irpn_Le,		/* 0011 less or equal */
+  irpn_Gt,		/* 0100 greater */
+  irpn_Ge,		/* 0101 greater of equal */
+  irpn_Lg,		/* 0110 less or greater */
+  irpn_Leg,		/* 0111 less, equal or greater = ordered */
+  irpn_Uo,		/* 1000 unordered */
+  irpn_Ue,		/* 1001 unordered or equal */
+  irpn_Ul,		/* 1010 unordered or less */
+  irpn_Ule,		/* 1011 unordered, less or equal */
+  irpn_Ug,		/* 1100 unordered or greater */
+  irpn_Uge,		/* 1101 unordered, greater or equal */
+  irpn_Ne,		/* 1110 unordered, less or greater = not equal */
+  irpn_True,		/* 1111 true */
   irpn_notmask = irpn_Leg
 } ir_pncmp;
 
@@ -212,9 +212,6 @@ ir_mode *get_tv_mode (tarval *tv);
    returns NULL; */
 entity *get_tv_entity(tarval *tv);
 
-
-/* Returns absolute of tarval @@@ not tested! */
-tarval *tarval_abs (tarval *a);
 /* Returns 0 if tv is positive, else > 0. @@@ not tested! */
 int tv_is_negative(tarval *a);
 #endif

@@ -86,6 +86,9 @@ static tarval_chil max_chil[8] = {
 };
 # endif
 
+/* Used to be in irmode.h, replaced now. */
+# define is_chilCHIL(m) ((m) <= irm_L && (m) >= irm_c) /* old */
+
 /* return a mode-specific value */
 
 tarval_f
