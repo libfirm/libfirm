@@ -100,6 +100,8 @@ ir_mode *mode_T;
 ir_mode *mode_X;
 ir_mode *mode_M;
 ir_mode *mode_BB;
+ir_mode *mode_ANY;
+ir_mode *mode_BAD;
 
 /* predefined numerical modes: */
 ir_mode *mode_F;    /* float */
@@ -144,6 +146,8 @@ INLINE ir_mode *get_modeP(void) { ANNOUNCE(); return mode_P; }
 INLINE ir_mode *get_modeX(void) { ANNOUNCE(); return mode_X; }
 INLINE ir_mode *get_modeM(void) { ANNOUNCE(); return mode_M; }
 INLINE ir_mode *get_modeBB(void) { ANNOUNCE(); return mode_BB; }
+INLINE ir_mode *get_modeANY(void) { ANNOUNCE(); return mode_ANY; }
+INLINE ir_mode *get_modeBAD(void) { ANNOUNCE(); return mode_BAD; }
 
 /**
  * Registers a new mode if not defined yet, else returns
@@ -583,6 +587,26 @@ init_mode (void)
   mode_T->align   = 0;
   mode_T->sign    = 0;
   mode_T->tv_priv = NULL;
+
+  /* ANY */
+  mode_ANY = &modes[irm_ANY];
+  mode_ANY->name    = id_from_str("ANY", 3);
+  mode_ANY->code    = irm_ANY;
+  mode_ANY->sort    = irms_auxiliary;
+  mode_ANY->sign    = 0;
+  mode_ANY->align   = 0;
+  mode_ANY->size    = 0;
+  mode_ANY->tv_priv = NULL;
+
+  /* BAD */
+  mode_BAD = &modes[irm_BAD];
+  mode_BAD->name    = id_from_str("BAD", 3);
+  mode_BAD->code    = irm_BAD;
+  mode_BAD->sort    = irms_auxiliary;
+  mode_BAD->sign    = 0;
+  mode_BAD->align   = 0;
+  mode_BAD->size    = 0;
+  mode_BAD->tv_priv = NULL;
 
   /* boolean */
   mode_b = &modes[irm_b];

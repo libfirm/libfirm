@@ -46,10 +46,13 @@ static void init_link (ir_node *n, void *env) {
 static void
 optimize_in_place_wrapper (ir_node *n, void *env) {
   int i;
-  ir_node *optimized;
+  ir_node *optimized, *old;
 
   for (i = 0; i < get_irn_arity(n); i++) {
-    optimized = optimize_in_place_2(get_irn_n(n, i));
+    /* get?irn_n skips Id nodes, so comparison old != optimized does not
+       show all optimizations. Therefore always set new predecessor. */
+    old = get_irn_n(n, i);
+    optimized = optimize_in_place_2(old);
     set_irn_n(n, i, optimized);
   }
 

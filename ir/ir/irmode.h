@@ -75,6 +75,8 @@ typedef enum { /* irm is short for `ir mode' */
   irm_M,                        /**< memory */
   irm_T,                        /**< tuple */
   irm_U,                        /**< unicode character */
+  irm_ANY,                      /**< undefined mode */
+  irm_BAD,                      /**< bad mode */
   irm_max                       /**< maximum value for modecode */
 } modecode;
 
@@ -82,7 +84,7 @@ typedef enum { /* irm is short for `ir mode' */
  */
 typedef enum {
   /* Predefined sorts of modes */
-  irms_auxiliary,         /**< Only for Firm use. Not extensible. (irm_T) */
+  irms_auxiliary,         /**< Only for Firm use. Not extensible. (irm_T, irm_ANY, irm_BAD) */
   /* irms_control_flow    **< Marks all control flow modes. Not extensible. (irm_BB, irm_X) */
   /* irms_memory          **< Marks the memory mode.  Not extensible. (irm_M) */
   irms_internal_boolean,  /**< Internal boolean representation.
@@ -249,6 +251,9 @@ extern ir_mode *mode_C;  /**< 8 bit char */
 extern ir_mode *mode_U;  /**< 16 bit unicode char */
 extern ir_mode *mode_P;  /**< pointer */
 
+extern ir_mode *mode_ANY;/**< undefined mode */
+extern ir_mode *mode_BAD;/**< bad mode */
+
 /*@{*/
 /** Access routines for JNI Interface */
 ir_mode *get_modeT(void);
@@ -270,6 +275,8 @@ ir_mode *get_modeb(void);
 ir_mode *get_modeX(void);
 ir_mode *get_modeM(void);
 ir_mode *get_modeBB(void);
+ir_mode *get_modeANY(void);
+ir_mode *get_modeBAD(void);
 
 /**
    Functions to check, whether a modecode is signed, float, int, num, data,
@@ -315,6 +322,7 @@ int mode_is_num (const ir_mode *mode);
 int mode_is_data (const ir_mode *mode);
 int mode_is_datab (const ir_mode *mode);
 int mode_is_dataM (const ir_mode *mode);
+
 /** Returns true if sm can be converted to lm without loss
    according to firm definiton */
 int smaller_mode(const ir_mode *sm, const ir_mode *lm);

@@ -607,11 +607,12 @@ static void _divmod(const char *dividend, const char *divisor, char *quot, char 
   memset(quot, SC_0, CALC_BUFFER_SIZE);
   memset(rem, SC_0, CALC_BUFFER_SIZE);
 
+  /* if the divisor is zero this won't work (quot is zero) */
+  if (sc_comp(divisor, quot) == 0) assert(0 && "division by zero!");
+
   /* if the dividend is zero result is zero (quot is zero)*/
   if (sc_comp(dividend, quot) == 0)
     return;
-  /* if the divisor is zero this won't work (quot is zero) */
-  if (sc_comp(divisor, quot) == 0) assert(0 && "division by zero!");
 
   if (_sign(dividend) == -1)
   {

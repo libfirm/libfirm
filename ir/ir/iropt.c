@@ -44,7 +44,7 @@ value_of (ir_node *n)
     return tarval_bad;
 }
 
-/* if n can be computed, return the value, else NULL. Performs
+/* if n can be computed, return the value, else tarval_bad. Performs
    constant folding. GL: Only if n is arithmetic operator? */
 tarval *
 computed_value (ir_node *n)
@@ -389,9 +389,9 @@ equivalent_node (ir_node *n)
     ir_node *on;
     /* After running compute_node there is only one constant predecessor.
        Find this predecessors value and remember the other node: */
-    if ((tv = computed_value (a))) {
+    if ((tv = computed_value (a)) != tarval_bad) {
       on = b;
-    } else if ((tv = computed_value (b))) {
+    } else if ((tv = computed_value (b)) != tarval_bad) {
       on = a;
     } else break;
 
