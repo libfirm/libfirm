@@ -1,7 +1,7 @@
 /* -*- c -*- */
 
 /*
- * Time-stamp: <23.11.2004 13:23:46h liekweg>
+ * Time-stamp: <30.11.2004 14:16:04h liekweg>
  * Project:     libFIRM
  * File name:   ir/ana2/qset.h
  * Purpose:     yet another set implementation
@@ -63,11 +63,12 @@ int qset_contains (qset_t*, sortable_t);
 /* Delete the given value from the given qset (if it exists) */
 void qset_remove (qset_t*, sortable_t);
 
-/* Insert the given elem into the given qset. */
-void qset_insert (qset_t*, sortable_t);
+/* Insert the given elem into the given qset; return nonzero iff any involved values change. */
+int qset_insert (qset_t*, sortable_t);
 
-/* Insert all elems of qset2 into qset1. qset2 is deleted. */
-void qset_insert_all (qset_t*, qset_t*);
+/* Insert all elems of qset2 into qset1. qset2 is deleted; return
+   nonzero iff any involved values change. */
+int qset_insert_all (qset_t*, qset_t*);
 
 /* Compare two qsets. */
 int qset_compare (qset_t*, qset_t*);
@@ -96,6 +97,9 @@ sortable_t *qset_next (qset_t*);
 
 /*
  $Log$
+ Revision 1.5  2004/11/30 14:47:11  liekweg
+ insert report changes
+
  Revision 1.4  2004/11/24 14:53:56  liekweg
  Bugfixes
 

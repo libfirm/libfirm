@@ -1,7 +1,7 @@
 /* -*- c -*- */
 
 /*
- * Time-stamp: <26.11.2004 16:53:35h liekweg>
+ * Time-stamp: <30.11.2004 14:17:24h liekweg>
  * Project:     libFIRM
  * File name:   ir/ana2/qset.c
  * Purpose:     yet another set implementation
@@ -419,39 +419,6 @@ static void q_sort (sortable_t *values, const int n_elems)
   _q_sort (values, 0, n_elems-1);
 }
 
-/*
-  Merge two sorted lists.  Keep duplicates (if present)
-*/
-static sortable_t *q_merge (sortable_t *list1, const int n1_elems,
-                            sortable_t *list2, const int n2_elems,
-                            struct obstack *obst)
-{
-  const int n_elems = n1_elems + n2_elems;
-  sortable_t *res = alloc_list (n_elems, obst);
-
-  int i1 = 0;
-  int i2 = 0;
-  int i  = 0;
-
-  while ((i < n_elems) && (i1 < n1_elems) && (i2 < n2_elems)) {
-    if (COMPARE (list1 [i1], list2 [i2])) {
-      res [i ++] = list1 [i1 ++];
-    } else {
-      res [i ++] = list2 [i2 ++];
-    }
-  }
-
-  while (i1 < n1_elems) {
-    res [i ++] = list1 [i1 ++];
-  }
-
-  while (i2 < n2_elems) {
-    res [i ++] = list2 [i2 ++];
-  }
-
-  return (res);
-}
-
 /* PUBLIC INTERFACE */
 
 /*
@@ -583,9 +550,10 @@ void qset_remove (qset_t *qset, sortable_t val)
 }
 
 /*
-  Insert the given elem into the given qset.
+  Insert the given elem into the given qset; return nonzero iff any
+  involved values change.
 */
-void qset_insert (qset_t *qset, sortable_t val)
+int qset_insert (qset_t *qset, sortable_t val)
 {
   int i;
   const int n_elems = qset->n_elems;
@@ -595,7 +563,7 @@ void qset_insert (qset_t *qset, sortable_t val)
 
   for (i = 0; i < n_elems; i ++) {
     if (EQUAL (val, qset->values [i])) {
-      return;
+      return (FALSE);
     }
   }
 
@@ -603,33 +571,28 @@ void qset_insert (qset_t *qset, sortable_t val)
 
   qset->values [qset->n_elems++] = val;
   qset->is_sorted = FALSE;
+
+  return (TRUE);
 }
 
 /*
-  Insert all elems of qset2 into qset1. qset2 is *not* deleted.
+  Insert all elems of qset2 into qset1; return nonzero iff any
+  involved values change. qset2 is *not* deleted.
 */
-void qset_insert_all (qset_t *qset1, qset_t *qset2)
+int qset_insert_all (qset_t *qset1, qset_t *qset2)
 {
-  sortable_t *values = qset1->values;
-  const int n_elems = qset1->n_slots;
+  int change = FALSE;
+  sortable_t val = qset_start (qset2);
 
-  qset_sort (qset1);
-  qset_sort (qset2);
+  while (0 != val) {
+    change |= qset_insert (qset1, val);
 
-  qset1->values = q_merge (qset1->values, qset1->n_elems,
-                           qset2->values, qset2->n_elems,
-                           qset1->obst);
-
-  qset1->n_elems = qset1->n_elems + qset2->n_elems;
-  qset1->n_slots = qset1->n_elems;
-
-  qset_sort (qset1);
-
-  memset (values, 0x00, n_elems * sizeof (sortable_t));
-
-  if (NULL == qset1->obst) {
-    free (values);
+    val = qset_next (qset2);
   }
+
+  qset_sort (qset1);
+
+  return (change);
 }
 
 /*
@@ -758,6 +721,9 @@ int qset_test_main (int argc, char **argv)
 
 /*
   $Log$
+  Revision 1.7  2004/11/30 14:47:11  liekweg
+  insert report changes
+
   Revision 1.6  2004/11/26 15:58:30  liekweg
   don't free inside obstacks (thx, michael)
 
