@@ -15,12 +15,12 @@ srcdir = @srcdir@
 topdir = ../..
 subdir := ir/ir
 
-INSTALL_HEADERS = tailrec.h strength_red.h
+INSTALL_HEADERS = cfopt.h tailrec.h ldstopt.h strength_red.h
 
 SOURCES = $(INSTALL_HEADERS)
 
 SOURCES += 	Makefile.in \
-		tailrec.c strength_red.c
+		tailrec.c strength_red.c ldstopt.c
 
 include $(topdir)/MakeRules
 
