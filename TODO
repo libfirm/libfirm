@@ -1,7 +1,34 @@
+  * 19.11.2001 Goetz
+    SymConst mit ident taugt nicht:  Wenn man z.B. die Prozedur kennt
+    sollte man die entitaet der Prozedur angeben koennen.  Ermoeglicht
+    einfachere Navigation im Callgraphen.
+
+  * 13.11.2001 Goetz
+    Aufbau Exceptions tut nicht:
+    1) mache exception handle block
+    2) baue code auf, verzweige von fragile ops zu dem Handler
+    3) mature exception block
+    --> Dann werden natuerlich die Werte am Ende der Bloecke mit den
+       fragile ops verwendet!  Diese sind ev. nicht berechnet.  Trifft
+       insbesondere auf memory zu ...
+    Loesung z.B.:
+    immExcBlock konstruktor.  Neuer "mature" status.  immExcBlocks duerfen
+    keine zyklen bilden.  In immExcBlocks werden PhiKnoten sofort eingesetzt,
+    aber wie immBlock mit flexibler vorgaenger liste.  add_in_edge ergaenzt
+    bei allen Phi Knoten dann sofort die neu bekannten Werte.  Jetzt kann
+    genau der Status zum Zeitpunkt der Exception abgebildet werden.
+
   * 7.11.2001 Goetz
     Model Stack frame of a method as class type as for Global type?
     (Class so that methods defined within methods can be represented?)
     So far local entities are added to GlobalType.
+
+  * 7.11.2001 Goetz
+    Implement support for endless loops.
+    (Add Jump target block to a list if optimizing Cond nodes.
+    Extend walker to start walking at this list.
+    Extend dead node elimination to update and compact this list.
+    Extend inlining to inline this list.)
 
   * 7.11.2001 Goetz
     Implement checking whether layout is fixed when setting corresponding

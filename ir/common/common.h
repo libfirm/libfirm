@@ -26,8 +26,9 @@
 #define USE_EXPICIT_PHI_IN_STACK 1
 
 /* If this is defined debuging aids are created, e.g. a field in
-   ir_node uniquely numbering the nodes. */
-/* #define DEBUG_libfirm 1 */
+   ir_node uniquely numbering the nodes.
+   Warum war das auskommentiert?? (--enable-debug hat das nicht gesetzt.*/
+#define DEBUG_libfirm 1
 /*
  * this is now set by the configure script as an option
  * use

@@ -1,3 +1,18 @@
+
+
+
+  8.11.2001 Goetz
+  Added method to replace in array of a node in irnode.c/h
+  Added funcionality to irgmod:
+   * collect all Phi nodes as link-list in the Blocks link field
+   * collect all Proj nodes as link-list in node producing the tuple.
+   * Seperate a Block into two
+  Added inlining transformation in irgopt.h
+  Improved output of dump_ir_block_graph.  Now also dumps nodes that
+  don't belong to a block.
+  Added flag opt_unreachable_code, opt_inline.
+  Changed irvrfy so that it accepts nodes with Bad predecessors.
+
   19.10.2001 Boris
   renamed get_type_nameid to get_type_ident
 
