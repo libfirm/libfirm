@@ -251,15 +251,24 @@ void normalize_n_returns(ir_graph *irg)
 
       new_ret = new_r_Return(irg, new_bl, in[0], n_ret_vals - 1, &in[1]);
 
-      if (can_move_ret(new_ret)) {
-        set_irn_link(new_ret, list);
-        list = new_ret;
-        ++n_rets;
-      }
-      else {
-        set_irn_link(new_ret, final);
-        final = new_ret;
-        ++n_finals;
+      if (! is_Bad(new_ret)) {
+        /*
+         * The newly created node might be bad, if we
+         * create it in a block with only Bad predecessors.
+         * In that case ignore this block.
+         *
+         * We could even kill the jmp then ...
+         */
+        if (can_move_ret(new_ret)) {
+          set_irn_link(new_ret, list);
+          list = new_ret;
+          ++n_rets;
+        }
+        else {
+          set_irn_link(new_ret, final);
+          final = new_ret;
+          ++n_finals;
+        }
       }
     }
 
