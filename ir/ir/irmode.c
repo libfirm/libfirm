@@ -291,9 +291,6 @@ ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align, 
       return NULL;
 
     case irms_float_number:
-      assert(0 && "not yet implemented");
-      return NULL;
-
     case irms_int_number:
     case irms_reference:
     case irms_character:
