@@ -4,7 +4,7 @@
 ** Authors: Martin Trapp, Christian Schaefer
 **
 ** ircons.c: basic and more detailed irnode constructors
-**           store, block and parameter administration ,
+**           store, block and parameter administration.
 ** Adapted to extended FIRM nodes (exceptions...) and commented
 **   by Goetz Lindenmaier
 */
@@ -657,7 +657,13 @@ new_r_Phi0 (ir_graph *irg, ir_node *block, ir_mode *mode)
   return res;
 }
 
-#if 0
+/* There are two implementations of the Phi node construction.  The first
+   is faster, but does not work for blocks with more than 2 predecessors.
+   The second works always but is slower and causes more unnecessary Phi
+   nodes.
+   Select the implementations by the following preprocessor flag set in
+   common/common.h: */
+#if USE_FAST_PHI_CONSTRUCTION
 
 /* This is a stack used for allocating and deallocating nodes in
    new_r_Phi_in.  The original implementation used the obstack
@@ -964,8 +970,10 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
     it starts the recursion.  This causes an Id at the entry of
     every block that has no definition of the value! **/
 
+#if USE_EXPICIT_PHI_IN_STACK
 /* Just a dummy */
 Phi_in_stack * new_Phi_in_stack() {  return NULL; }
+#endif
 
 inline ir_node *
 new_r_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
@@ -977,11 +985,6 @@ new_r_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
   /* Allocate a new node on the obstack.  The allocation copies the in
      array. */
   res = new_ir_node (irg, block, op_Phi, mode, ins, in);
-
-  /* @@@GL The in-array should not contain NULLS with this algorithm.
-     Remove this test if it never is true. Just to make sure the algorithm runs. */
-  for (i=0;  i < ins;  ++i)
-    if (in[i] == NULL) assert(0);
 
   /* This loop checks whether the Phi has more than one predecessor.
      If so, it is a real Phi node and we break the loop.  Else the
@@ -1048,8 +1051,8 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
     }
   }
 
-  /* This loop goes to all predecessor blocks of the block the Phi node is in
-     and there finds the operands of the Phi node by calling
+  /* This loop goes to all predecessor blocks of the block the Phi node
+     is in and there finds the operands of the Phi node by calling
      get_r_value_internal.  */
   for (i = 1;  i <= ins;  ++i) {
     assert (block->in[i]);
@@ -1123,6 +1126,8 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
 
   /* case 4 -- already visited. */
   if (get_irn_visited(block) == get_irg_visited(current_ir_graph)) {
+    /* As phi_merge allocates a Phi0 this value is always defined. Here
+     is the critical difference of the two algorithms. */
     assert(block->attr.block.graph_arr[pos]);
     return block->attr.block.graph_arr[pos];
   }
@@ -1134,7 +1139,7 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
   res = block->attr.block.graph_arr[pos];
 
   /* case 2 -- If the value is actually computed, return it. */
-  if (res) { return res;};
+  if (res) { return res; };
 
   if (block->attr.block.matured) { /* case 3 */
 
@@ -1176,7 +1181,7 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
   return res;
 }
 
-#endif /* if 0 */
+#endif /* USE_FAST_PHI_CONSTRUCTION */
 
 /****************************************************************************/
 

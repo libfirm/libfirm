@@ -121,12 +121,12 @@ computed_value (ir_node *n)
     }
     break;
   case iro_Eor: if (ta && tb) { res = tarval_eor (ta, tb); } break;
-  case iro_Not: if(ta) { /*res = tarval_not (ta)*/; } break;
+  case iro_Not: if (ta)       { /*res = tarval_not (ta)*/; } break;
   case iro_Shl: if (ta && tb) { res = tarval_shl (ta, tb); } break;
   case iro_Shr: if (ta && tb) { res = tarval_shr (ta, tb); } break;
   case iro_Shrs: if(ta && tb) { /*res = tarval_shrs (ta, tb)*/; } break;
-  case iro_Rot: if(ta && tb) { /*res = tarval_rot (ta, tb)*/; } break;
-  case iro_Conv: if (ta) { res = tarval_convert_to (ta, get_irn_mode (n)); }
+  case iro_Rot: if (ta && tb) { /*res = tarval_rot (ta, tb)*/; } break;
+  case iro_Conv: if(ta)    { res = tarval_convert_to (ta, get_irn_mode (n)); }
     break;
   case iro_Proj:
     {
@@ -253,7 +253,7 @@ equivalent_node (ir_node *n)
 	 calls the optimization. */
       assert(get_Block_matured(n));
 
-      /* a single entry Region following a single exit Region can be merged */
+      /* a single entry Block following a single exit Block can be merged */
       /* !!! Beware, all Phi-nodes of n must have been optimized away.
 	 This is true, as the block is matured before optimize is called.   */
       if (get_Block_n_cfgpreds(n) == 1
@@ -414,7 +414,7 @@ equivalent_node (ir_node *n)
         /* skip Id's */
         set_Phi_pred(n, i, first_val);
 	if (   (first_val != n)                            /* not self pointer */
-	       && (get_irn_op(first_val) != op_Bad)           /* value not dead */
+	       && (get_irn_op(first_val) != op_Bad)        /* value not dead */
             && !(is_Bad (get_Block_cfgpred(block, i))) ) { /* not dead control flow */
 	  break;                         /* then found first value. */
 	}
@@ -684,7 +684,7 @@ transform_node (ir_node *n)
       n = new_r_Not(current_ir_graph, get_nodes_Block(n), a, mode_b);
   }
   break;
-  case iro_Not: { /* @@@ not tested as boolean Eor not allowed any more. */
+  case iro_Not: {
     a = get_Not_op(n);
 
     if (   (get_irn_mode(n) == mode_b)
@@ -885,6 +885,7 @@ optimize (ir_node *n)
   tarval *tv;
   ir_node *old_n = n;
 
+  /* Allways optimize Phi nodes: part of the construction. */
   if ((!get_optimize()) && (get_irn_op(n) != op_Phi)) return n;
 
   /* if not optimize return n */
@@ -997,11 +998,9 @@ optimize_in_place (ir_node *n)
     /* The AmRoq fiasco returns n here.  Martin's version doesn't. */
   }
 
-#if 0
   /* Some more constant expression evaluation. */
   if (get_opt_constant_folding())
     n = transform_node (n);
-#endif
 
   /* Remove nodes with dead (Bad) input. */
   n = gigo (n);

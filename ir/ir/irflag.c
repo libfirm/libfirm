@@ -6,7 +6,6 @@
 ** irflag --- optimization flags
 */
 
-# include "irflag.h"
 
 /* 0 - don't do this optimization
    1 - lets see, if there is a better graph */

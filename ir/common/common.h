@@ -10,14 +10,18 @@
 # ifndef _COMMON_H_
 # define _COMMON_H_
 
+/* There are two implementations of the Phi node construction.  The first
+   is faster, but does not work for blocks with more than 2 predecessors.
+   The second works always but is slower and causes more unnecessary Phi
+   nodes.
+   Select the implementations by the following preprocessor flag: */
+#define USE_FAST_PHI_CONSTRUCTION 1
 
-/* set to compile with extensions for compiler constructon lab. */
-# define UEBPRAKT 1
-
-/* If this flag is set, new_r_Phi_in uses an explicit stack for
+/* Further there are two versions of the fast Phi node construction.
+   If the following flag is set, new_r_Phi_in uses an explicit stack for
    allocating and deallocating Phi nodes.  Else it uses the obstack
    as a stack! */
-#define USE_EXPICIT_PHI_IN_STACK 1
+#define USE_EXPICIT_PHI_IN_STACK 0
 
 /* a list of firm kinds */
 typedef enum {
