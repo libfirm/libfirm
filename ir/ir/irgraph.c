@@ -195,7 +195,6 @@ ir_graph *new_const_code_irg(void) {
                        iropt.c */
   res->ent = NULL;
   res->frame_type  = NULL;
-  res->initial_mem = new_Proj (res->start, mode_M, pn_Start_M);
   res->start_block = new_immBlock ();
   res->end_block  = new_immBlock ();
   res->end        = new_End ();
@@ -204,6 +203,7 @@ ir_graph *new_const_code_irg(void) {
   mature_immBlock(get_cur_block());  /* mature the end block */
   res->bad = new_ir_node (NULL, res, res->start_block, op_Bad, mode_T, 0, NULL);
   res->start   = new_Start ();
+  res->initial_mem = new_Proj (res->start, mode_M, pn_Start_M);
 
   /* Proj results of start node */
   projX        = new_Proj (res->start, mode_X, pn_Start_X_initial_exec);
