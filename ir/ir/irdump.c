@@ -46,6 +46,7 @@
 /* Attributes of edges in type/entity graphs. */
 #define TYPE_METH_NODE_ATTR  "color: lightyellow"
 #define TYPE_CLASS_NODE_ATTR "color: green"
+#define TYPE_DESCRIPTION_NODE_ATTR "color: lightgreen"
 #define ENTITY_NODE_ATTR     "color: yellow"
 #define ENT_TYPE_EDGE_ATTR   "class: 3 label: \"type\" color: red"
 #define ENT_OWN_EDGE_ATTR    "class: 4 label: \"owner\" color: black"
@@ -586,7 +587,10 @@ void print_typespecific_info(type *tp) {
   switch (get_type_tpop_code(tp)) {
   case tpo_class:
     {
-	   xfprintf (F, " " TYPE_CLASS_NODE_ATTR);
+      if(existent == get_class_peculiarity(tp))
+	xfprintf (F, " " TYPE_CLASS_NODE_ATTR);
+      else
+	xfprintf (F, " " TYPE_DESCRIPTION_NODE_ATTR);
     } break;
   case tpo_struct:
     {
