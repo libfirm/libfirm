@@ -24,4 +24,4 @@ change.
 For more documentation see /include/firm.h.
 To generate FIRM code from a compiler frontend read the documentation
 in ./include/ircons.h.
-About Firm you can learn in UKA tech-report 1999-44.
+About Firm you can learn in UKA tech-report 1999-14.
