@@ -25,6 +25,7 @@ int foo() { return 0; }
 EOF
   if eval $ac_compile && mv conftest.o conftest2.o; then
     cat > conftest.$ac_ext <<EOF
+extern int foo();
 int main() { return foo(); }
 EOF
     if eval $ac_compile; then
