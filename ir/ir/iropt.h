@@ -29,7 +29,7 @@
 /** If the expression referenced can be evaluated statically
  *  computed_value returns a tarval representing the result.
  *  Else returns tarval_bad. */
-tarval  *computed_value (ir_node *n);
+tarval *computed_value (ir_node*);
 
 /** Applies all optimizations to n that are expressible as a pattern
  *  in Firm, i.e., they need not a walk of the graph.
@@ -39,6 +39,11 @@ tarval  *computed_value (ir_node *n);
  *  An equivalent optimization is applied in the constructors defined in
  *  ircons.ch.  There n is freed if a better node could be found.
  */
-ir_node *optimize_in_place (ir_node *n);
+ir_node *optimize_in_place (ir_node*);
+
+/**
+ * set the default ir op operations
+ */
+ir_op *firm_set_default_operations(ir_op*);
 
 # endif /* _IROPT_H_ */

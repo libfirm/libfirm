@@ -20,67 +20,69 @@
 # include "irnode_t.h"
 # include "firmstat.h"
 
+# include "iropt.h"             /* for firm_set_default_operations */
+
 # include "xmalloc.h"
 
 ir_op *op_Block;           ir_op *get_op_Block     (void) { return op_Block;     }
 
-ir_op *op_Start;	   ir_op *get_op_Start     (void) { return op_Start;     }
-ir_op *op_End;		   ir_op *get_op_End       (void) { return op_End;       }
-ir_op *op_Jmp;		   ir_op *get_op_Jmp       (void) { return op_Jmp;       }
-ir_op *op_Cond;		   ir_op *get_op_Cond      (void) { return op_Cond;      }
-ir_op *op_Return;	   ir_op *get_op_Return    (void) { return op_Return;    }
-ir_op *op_Raise;	   ir_op *get_op_Raise     (void) { return op_Raise;     }
+ir_op *op_Start;       ir_op *get_op_Start     (void) { return op_Start;     }
+ir_op *op_End;         ir_op *get_op_End       (void) { return op_End;       }
+ir_op *op_Jmp;         ir_op *get_op_Jmp       (void) { return op_Jmp;       }
+ir_op *op_Cond;        ir_op *get_op_Cond      (void) { return op_Cond;      }
+ir_op *op_Return;      ir_op *get_op_Return    (void) { return op_Return;    }
+ir_op *op_Raise;       ir_op *get_op_Raise     (void) { return op_Raise;     }
 
-ir_op *op_Sel;		   ir_op *get_op_Sel       (void) { return op_Sel;       }
-ir_op *op_InstOf;	   ir_op *get_op_InstOf    (void) { return op_InstOf;    }
+ir_op *op_Sel;         ir_op *get_op_Sel       (void) { return op_Sel;       }
+ir_op *op_InstOf;      ir_op *get_op_InstOf    (void) { return op_InstOf;    }
 
-ir_op *op_Const;	   ir_op *get_op_Const     (void) { return op_Const;     }
-ir_op *op_SymConst;	   ir_op *get_op_SymConst  (void) { return op_SymConst;  }
+ir_op *op_Const;       ir_op *get_op_Const     (void) { return op_Const;     }
+ir_op *op_SymConst;    ir_op *get_op_SymConst  (void) { return op_SymConst;  }
 
-ir_op *op_Call;		   ir_op *get_op_Call      (void) { return op_Call;      }
-ir_op *op_Add;		   ir_op *get_op_Add       (void) { return op_Add;       }
-ir_op *op_Sub;		   ir_op *get_op_Sub       (void) { return op_Sub;       }
-ir_op *op_Minus;	   ir_op *get_op_Minus     (void) { return op_Minus;     }
-ir_op *op_Mul;		   ir_op *get_op_Mul       (void) { return op_Mul;       }
-ir_op *op_Quot;		   ir_op *get_op_Quot      (void) { return op_Quot;      }
-ir_op *op_DivMod;	   ir_op *get_op_DivMod    (void) { return op_DivMod;    }
-ir_op *op_Div;		   ir_op *get_op_Div       (void) { return op_Div;       }
-ir_op *op_Mod;		   ir_op *get_op_Mod       (void) { return op_Mod;       }
-ir_op *op_Abs;		   ir_op *get_op_Abs       (void) { return op_Abs;       }
-ir_op *op_And;		   ir_op *get_op_And       (void) { return op_And;       }
-ir_op *op_Or;		   ir_op *get_op_Or        (void) { return op_Or;        }
-ir_op *op_Eor;		   ir_op *get_op_Eor       (void) { return op_Eor;       }
-ir_op *op_Not;		   ir_op *get_op_Not       (void) { return op_Not;       }
-ir_op *op_Cmp;		   ir_op *get_op_Cmp       (void) { return op_Cmp;       }
-ir_op *op_Shl;		   ir_op *get_op_Shl       (void) { return op_Shl;       }
-ir_op *op_Shr;		   ir_op *get_op_Shr       (void) { return op_Shr;       }
-ir_op *op_Shrs;		   ir_op *get_op_Shrs      (void) { return op_Shrs;      }
-ir_op *op_Rot;		   ir_op *get_op_Rot       (void) { return op_Rot;       }
-ir_op *op_Conv;		   ir_op *get_op_Conv      (void) { return op_Conv;      }
+ir_op *op_Call;        ir_op *get_op_Call      (void) { return op_Call;      }
+ir_op *op_Add;         ir_op *get_op_Add       (void) { return op_Add;       }
+ir_op *op_Sub;         ir_op *get_op_Sub       (void) { return op_Sub;       }
+ir_op *op_Minus;       ir_op *get_op_Minus     (void) { return op_Minus;     }
+ir_op *op_Mul;         ir_op *get_op_Mul       (void) { return op_Mul;       }
+ir_op *op_Quot;        ir_op *get_op_Quot      (void) { return op_Quot;      }
+ir_op *op_DivMod;      ir_op *get_op_DivMod    (void) { return op_DivMod;    }
+ir_op *op_Div;         ir_op *get_op_Div       (void) { return op_Div;       }
+ir_op *op_Mod;         ir_op *get_op_Mod       (void) { return op_Mod;       }
+ir_op *op_Abs;         ir_op *get_op_Abs       (void) { return op_Abs;       }
+ir_op *op_And;         ir_op *get_op_And       (void) { return op_And;       }
+ir_op *op_Or;          ir_op *get_op_Or        (void) { return op_Or;        }
+ir_op *op_Eor;         ir_op *get_op_Eor       (void) { return op_Eor;       }
+ir_op *op_Not;         ir_op *get_op_Not       (void) { return op_Not;       }
+ir_op *op_Cmp;         ir_op *get_op_Cmp       (void) { return op_Cmp;       }
+ir_op *op_Shl;         ir_op *get_op_Shl       (void) { return op_Shl;       }
+ir_op *op_Shr;         ir_op *get_op_Shr       (void) { return op_Shr;       }
+ir_op *op_Shrs;        ir_op *get_op_Shrs      (void) { return op_Shrs;      }
+ir_op *op_Rot;         ir_op *get_op_Rot       (void) { return op_Rot;       }
+ir_op *op_Conv;        ir_op *get_op_Conv      (void) { return op_Conv;      }
 ir_op *op_Cast;            ir_op *get_op_Cast      (void) { return op_Cast;      }
 
-ir_op *op_Phi;		   ir_op *get_op_Phi       (void) { return op_Phi;       }
+ir_op *op_Phi;         ir_op *get_op_Phi       (void) { return op_Phi;       }
 
-ir_op *op_Load;		   ir_op *get_op_Load      (void) { return op_Load;      }
-ir_op *op_Store;	   ir_op *get_op_Store     (void) { return op_Store;     }
-ir_op *op_Alloc;	   ir_op *get_op_Alloc     (void) { return op_Alloc;     }
-ir_op *op_Free;		   ir_op *get_op_Free      (void) { return op_Free;      }
-ir_op *op_Sync;		   ir_op *get_op_Sync      (void) { return op_Sync;      }
+ir_op *op_Load;        ir_op *get_op_Load      (void) { return op_Load;      }
+ir_op *op_Store;       ir_op *get_op_Store     (void) { return op_Store;     }
+ir_op *op_Alloc;       ir_op *get_op_Alloc     (void) { return op_Alloc;     }
+ir_op *op_Free;        ir_op *get_op_Free      (void) { return op_Free;      }
+ir_op *op_Sync;        ir_op *get_op_Sync      (void) { return op_Sync;      }
 
-ir_op *op_Tuple;	   ir_op *get_op_Tuple     (void) { return op_Tuple;     }
-ir_op *op_Proj;		   ir_op *get_op_Proj      (void) { return op_Proj;      }
-ir_op *op_Id;		   ir_op *get_op_Id        (void) { return op_Id;        }
-ir_op *op_Bad;		   ir_op *get_op_Bad       (void) { return op_Bad;       }
-ir_op *op_Confirm;	   ir_op *get_op_Confirm   (void) { return op_Confirm;   }
+ir_op *op_Tuple;       ir_op *get_op_Tuple     (void) { return op_Tuple;     }
+ir_op *op_Proj;        ir_op *get_op_Proj      (void) { return op_Proj;      }
+ir_op *op_Id;          ir_op *get_op_Id        (void) { return op_Id;        }
+ir_op *op_Bad;         ir_op *get_op_Bad       (void) { return op_Bad;       }
+ir_op *op_Confirm;     ir_op *get_op_Confirm   (void) { return op_Confirm;   }
 
-ir_op *op_Unknown;	   ir_op *get_op_Unknown   (void) { return op_Unknown;   }
-ir_op *op_Filter;	   ir_op *get_op_Filter    (void) { return op_Filter;    }
-ir_op *op_Break;	   ir_op *get_op_Break     (void) { return op_Break;     }
-ir_op *op_CallBegin;	   ir_op *get_op_CallBegin (void) { return op_CallBegin; }
-ir_op *op_EndReg;	   ir_op *get_op_EndReg    (void) { return op_EndReg;    }
-ir_op *op_EndExcept;	   ir_op *get_op_EndExcept (void) { return op_EndExcept; }
+ir_op *op_Unknown;     ir_op *get_op_Unknown   (void) { return op_Unknown;   }
+ir_op *op_Filter;      ir_op *get_op_Filter    (void) { return op_Filter;    }
+ir_op *op_Break;       ir_op *get_op_Break     (void) { return op_Break;     }
+ir_op *op_CallBegin;       ir_op *get_op_CallBegin (void) { return op_CallBegin; }
+ir_op *op_EndReg;      ir_op *get_op_EndReg    (void) { return op_EndReg;    }
+ir_op *op_EndExcept;       ir_op *get_op_EndExcept (void) { return op_EndExcept; }
 
-ir_op *op_FuncCall;	   ir_op *get_op_FuncCall  (void) { return op_FuncCall; }
+ir_op *op_FuncCall;    ir_op *get_op_FuncCall  (void) { return op_FuncCall; }
 
 
 ir_op *
@@ -110,11 +112,11 @@ void free_ir_op(ir_op *code) {
 void
 init_op(void)
 {
-#define L	irop_flag_labeled
-#define C	irop_flag_commutative
-#define X	irop_flag_cfopcode
-#define I	irop_flag_ip_cfopcode
-#define F	irop_flag_fragile
+#define L   irop_flag_labeled
+#define C   irop_flag_commutative
+#define X   irop_flag_cfopcode
+#define I   irop_flag_ip_cfopcode
+#define F   irop_flag_fragile
 
   op_Block     = new_ir_op(iro_Block,     "Block",     pinned, L,   oparity_variable, -1, sizeof(block_attr));
 
@@ -270,3 +272,34 @@ void      set_op_pinned(ir_op *op, op_pinned pinned) {
   if (op == op_Block || op == op_Phi || is_cfopcode(op)) return;
   op->pinned = pinned;
 }
+
+/* repeat 'inline' methods here */
+
+# ifndef USE_GCC_INLINE
+/** Returns the attribute size of nodes of this opcode.
+   @note Use not encouraged, internal feature. */
+int get_op_attr_size (const ir_op *op) { /* used in irnode.c */
+  return op->attr_size;
+}
+
+/** Returns non-zero if op is one of Start, End, Jmp, Cond, Return, Raise or Bad. */
+int is_cfopcode(const ir_op *op) { /* used in irnode.c */
+  return op->flags & irop_flag_cfopcode;
+}
+
+/** Returns true if the operation manipulates interprocedural control flow:
+   CallBegin, EndReg, EndExcept */
+int is_ip_cfopcode(const ir_op *op) { /* used in irnode.c */
+  return op->flags & irop_flag_ip_cfopcode;
+}
+
+/* Returns non-zero if operation is commutative */
+int is_op_commutative(const ir_op *op) { /* used in iropt.c */
+  return op->flags & irop_flag_commutative;
+}
+
+/* Returns non-zero if operation is fragile */
+int is_op_fragile(const ir_op *op) { /* used in irnode.c */
+  return op->flags & irop_flag_fragile;
+}
+# endif /* not defined USE_GCC_INLINE */

@@ -25,21 +25,21 @@ typedef enum {
   oparity_trinary,            /**< an trinary operator  -- considering 'numeric' arguments.*/
   oparity_zero,               /**< no operators, as e.g. Const. */
   oparity_variable,           /**< arity not fixed by opcode, but statically
-				 known.  E.g., number of arguments to call. */
+                 known.  E.g., number of arguments to call. */
   oparity_dynamic,            /**< arity depends on state of firm representation.
-				 Can change by optimizations...
-				 We must allocate a dynamic in array for the node! */
-  oparity_any,                /**< other arity */
+                 Can change by optimizations...
+                 We must allocate a dynamic in array for the node! */
+  oparity_any                /**< other arity */
 } op_arity;
 
 
 /** The irop flags */
 typedef enum {
-  irop_flag_labeled     = 0x00000001,	/**< if set, Output edge labels on in-edges in vcg graph */
-  irop_flag_commutative = 0x00000002,	/**< operation is commutative */
+  irop_flag_labeled     = 0x00000001,   /**< if set, Output edge labels on in-edges in vcg graph */
+  irop_flag_commutative = 0x00000002,   /**< operation is commutative */
   irop_flag_cfopcode    = 0x00000004,   /**< is a control flow operation */
-  irop_flag_ip_cfopcode = 0x00000008,	/**< operation manipulates interprocedural control flow */
-  irop_flag_fragile     = 0x00000010,	/**< set if the operation can change the control flow because
+  irop_flag_ip_cfopcode = 0x00000008,   /**< operation manipulates interprocedural control flow */
+  irop_flag_fragile     = 0x00000010   /**< set if the operation can change the control flow because
                                              of an exception */
 } irop_flags;
 
@@ -89,10 +89,10 @@ struct ir_op {
   unsigned flags;         /**< flags describing the behavior of the ir_op, a bitmaks of irop_flags */
 
   /* CallBacks */
-  computed_value_func	computed_value;		/**< evaluates a node into a tarval if possible. */
-  equivalent_node_func  equivalent_node;	/**< optimizes the node by returning an equivalent one. */
-  transform_node_func   transform_node;		/**< optimizes the node by transforming it. */
-  node_cmp_attr_func    node_cmp_attr;		/**< compares two node attributes. */
+  computed_value_func   computed_value;     /**< evaluates a node into a tarval if possible. */
+  equivalent_node_func  equivalent_node;    /**< optimizes the node by returning an equivalent one. */
+  transform_node_func   transform_node;     /**< optimizes the node by transforming it. */
+  node_cmp_attr_func    node_cmp_attr;      /**< compares two node attributes. */
 };
 
 /**
@@ -110,7 +110,7 @@ struct ir_op {
  * @return The genenerated ir operation.
  */
 ir_op * new_ir_op(opcode code, const char *name, op_pinned p,
-		   unsigned flags, op_arity opar, int op_index, size_t attr_size);
+           unsigned flags, op_arity opar, int op_index, size_t attr_size);
 
 /**
  * Frees a newly created ir operation.
@@ -123,31 +123,64 @@ void init_op(void);
 /** Free memory used by irop module. */
 void finish_op(void);
 
+# ifndef INLINE
+# ifdef USE_GCC_INLINE
+# define INLINE __extension__ ((__inline__))
+# else /* defined USE_GCC_INLINE */
+# define INLINE
+# endif /* define USE_GCC_INLINE */
+# endif /* defined INLINE */
+
 /** Returns the attribute size of nodes of this opcode.
    @note Use not encouraged, internal feature. */
-static INLINE int get_op_attr_size (const ir_op *op) {
+INLINE int get_op_attr_size (const ir_op *op)
+# ifdef USE_GCC_INLINE
+{
   return op->attr_size;
 }
+# else /* defined USE_GCC_INLINE */
+;
+# endif /* not defined USE_GCC_INLINE */
 
 /** Returns non-zero if op is one of Start, End, Jmp, Cond, Return, Raise or Bad. */
-static INLINE int is_cfopcode(const ir_op *op) {
+INLINE int is_cfopcode(const ir_op *op)
+# ifdef USE_GCC_INLINE
+{
   return op->flags & irop_flag_cfopcode;
 }
+# else /* defined USE_GCC_INLINE */
+;
+# endif /* not defined USE_GCC_INLINE */
 
 /** Returns true if the operation manipulates interprocedural control flow:
    CallBegin, EndReg, EndExcept */
-static INLINE int is_ip_cfopcode(const ir_op *op) {
+INLINE int is_ip_cfopcode(const ir_op *op)
+# ifdef USE_GCC_INLINE
+{
   return op->flags & irop_flag_ip_cfopcode;
 }
+# else /* defined USE_GCC_INLINE */
+;
+# endif /* not defined USE_GCC_INLINE */
 
 /* Returns non-zero if operation is commutative */
-static INLINE int is_op_commutative(const ir_op *op) {
+INLINE int is_op_commutative(const ir_op *op)
+# ifdef USE_GCC_INLINE
+{
   return op->flags & irop_flag_commutative;
 }
+# else /* defined USE_GCC_INLINE */
+;
+# endif /* not defined USE_GCC_INLINE */
 
 /* Returns non-zero if operation is fragile */
-static INLINE int is_op_fragile(const ir_op *op) {
+INLINE int is_op_fragile(const ir_op *op)
+# ifdef USE_GCC_INLINE
+{
   return op->flags & irop_flag_fragile;
 }
+# else /* defined USE_GCC_INLINE */
+;
+# endif /* not defined USE_GCC_INLINE */
 
 #endif /* _IROP_T_H_ */

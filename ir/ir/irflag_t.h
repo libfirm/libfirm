@@ -70,91 +70,158 @@ typedef enum {
   OPT_NORMALIZE                          = 0x00001000,
 
   /** Turn off all optimizations. */
-  OPT_OPTIMIZED                          = 0x40000000,
+  OPT_OPTIMIZED                          = 0x40000000
 } libfirm_opts_t;
 
 extern optimization_state_t libFIRM_opt;
 
+/* take care of the INLINE/USE_GCC_INLINE mess */
+
+# ifndef INLINE
+# ifdef USE_GCC_INLINE
+# define INLINE __extension__ ((__inline__))
+# else /* defined USE_GCC_INLINE */
+# define INLINE
+# endif /* define USE_GCC_INLINE */
+# endif /* defined INLINE */
+
+
 /** Returns constant folding optimization setting. */
-static INLINE int get_opt_cse(void)
+INLINE int get_opt_cse(void)
+# ifdef USE_GCC_INLINE
 {
   return libFIRM_opt & OPT_CSE;
 }
+# else /* defined USE_GCC_INLINE */
+;
+# endif /* not defined USE_GCC_INLINE */
 
 /** Returns constant subexpression elimination setting. */
-static INLINE int get_opt_global_cse(void)
+INLINE int get_opt_global_cse(void)
+# ifdef USE_GCC_INLINE
 {
   return libFIRM_opt & OPT_GLOBAL_CSE;
 }
+# else /* defined USE_GCC_INLINE */
+;
+# endif /* not defined USE_GCC_INLINE */
 
 /** Returns global constant subexpression elimination setting. */
-static INLINE int get_opt_constant_folding(void)
+INLINE int get_opt_constant_folding(void)
+# ifdef USE_GCC_INLINE
 {
   return libFIRM_opt & OPT_CONSTANT_FOLDING;
 }
+# else /* defined USE_GCC_INLINE */
+;
+# endif /* not defined USE_GCC_INLINE */
 
 /** Returns unreachable code elimination setting. */
-static INLINE int get_opt_unreachable_code(void)
+INLINE int get_opt_unreachable_code(void)
+# ifdef USE_GCC_INLINE
 {
   return libFIRM_opt & OPT_UNREACHABLE_CODE;
 }
+# else /* defined USE_GCC_INLINE */
+;
+# endif /* not defined USE_GCC_INLINE */
 
 /** Returns Straightening setting. */
-static INLINE int get_opt_control_flow_straightening(void)
+INLINE int get_opt_control_flow_straightening(void)
+# ifdef USE_GCC_INLINE
 {
   return libFIRM_opt & OPT_CONTROL_FLOW_STRAIGHTENING;
 }
+# else /* defined USE_GCC_INLINE */
+;
+# endif /* not defined USE_GCC_INLINE */
 
 /** Returns if simplifications in local optimizations setting. */
-static INLINE int get_opt_control_flow_weak_simplification(void)
+INLINE int get_opt_control_flow_weak_simplification(void)
+# ifdef USE_GCC_INLINE
 {
   return libFIRM_opt & OPT_CONTROL_FLOW_WEAK_SIMPLIFICATION;
 }
+# else /* defined USE_GCC_INLINE */
+;
+# endif /* not defined USE_GCC_INLINE */
 
 /** Returns strong if and loop simplification setting */
-static INLINE int get_opt_control_flow_strong_simplification(void)
+INLINE int get_opt_control_flow_strong_simplification(void)
+# ifdef USE_GCC_INLINE
 {
   return libFIRM_opt & OPT_CONTROL_FLOW_STRONG_SIMPLIFICATION;
 }
+# else /* defined USE_GCC_INLINE */
+;
+# endif /* not defined USE_GCC_INLINE */
 
 /** Returns whether critical edges are removed */
-static INLINE int get_opt_critical_edges(void)
+INLINE int get_opt_critical_edges(void)
+# ifdef USE_GCC_INLINE
 {
   return libFIRM_opt & OPT_CRITICAL_EDGES;
 }
+# else /* defined USE_GCC_INLINE */
+;
+# endif /* not defined USE_GCC_INLINE */
 
 /** Returns reassociation setting. */
-static INLINE int get_opt_reassociation(void)
+INLINE int get_opt_reassociation(void)
+# ifdef USE_GCC_INLINE
 {
   return libFIRM_opt & OPT_REASSOCIATION;
 }
+# else /* defined USE_GCC_INLINE */
+;
+# endif /* not defined USE_GCC_INLINE */
 
 /** Returns dead node elimination setting. */
-static INLINE int get_opt_dead_node_elimination(void)
+INLINE int get_opt_dead_node_elimination(void)
+# ifdef USE_GCC_INLINE
 {
   return libFIRM_opt & OPT_DEAD_NODE_ELIMINATION;
 }
+# else /* defined USE_GCC_INLINE */
+;
+# endif /* not defined USE_GCC_INLINE */
 
 /** Returns global optimization setting */
-static INLINE int get_opt_optimize(void)
+INLINE int get_opt_optimize(void)
+# ifdef USE_GCC_INLINE
 {
   return libFIRM_opt & OPT_OPTIMIZED;
 }
+# else /* defined USE_GCC_INLINE */
+;
+# endif /* not defined USE_GCC_INLINE */
 
 /** Returns inlining setting. */
-static INLINE int get_opt_inline(void)
+INLINE int get_opt_inline(void)
+# ifdef USE_GCC_INLINE
 {
   return libFIRM_opt & OPT_INLINE;
 }
+# else /* defined USE_GCC_INLINE */
+;
+# endif /* not defined USE_GCC_INLINE */
 
-static INLINE int get_opt_dyn_meth_dispatch(void)
+INLINE int get_opt_dyn_meth_dispatch(void)
+# ifdef USE_GCC_INLINE
 {
   return libFIRM_opt & OPT_DYN_METH_DISPATCH;
 }
+# else /* defined USE_GCC_INLINE */
+;
+# endif /* not defined USE_GCC_INLINE */
 
-static INLINE int get_opt_normalize(void)
+INLINE int get_opt_normalize(void)
+# ifdef USE_GCC_INLINE
 {
   return libFIRM_opt & OPT_NORMALIZE;
 }
+# else /* defined USE_GCC_INLINE */
+;
+# endif /* not defined USE_GCC_INLINE */
 
 #endif /* _IRFLAG_T_H_ */
