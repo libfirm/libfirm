@@ -97,7 +97,7 @@ static tarval *computed_value_Sub(ir_node *n)
   tarval *tb;
 
   /* a - a */
-  if (a == b)
+  if (a == b && !is_Bad(a))
     return get_tarval_null(get_irn_mode(n));
 
   ta = value_of(a);
