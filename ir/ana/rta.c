@@ -231,33 +231,6 @@ static void rta_fill_all (int rerun)
 }
 
 /**
-   Find out whether the given method could be the target of a
-   polymorphic call.
-*/
-static int is_call_target (entity *method)
-{
-  int is_target = FALSE;
-  int i;
-  int n_over;
-
-  /* The method could be the target of a polymorphic call if it is
-     called or if it overrides a method that is called. */
-
-  if (eset_contains (_called_methods, (entity*) method)) {
-    return (TRUE);
-  }
-
-  /* not called?  check methods in superclass(es) */
-  n_over = get_entity_n_overwrites ((entity*) method);
-  for (i = 0; !is_target && (i < n_over); i ++) {
-    entity *over = get_entity_overwrites ((entity*) method, i);
-    is_target |= is_call_target (over);
-  }
-
-  return (is_target);
-}
-
-/**
    Given a method, find the firm graph that implements that method.
 */
 static ir_graph *get_implementing_graph (entity *method)
@@ -279,6 +252,38 @@ static ir_graph *get_implementing_graph (entity *method)
   /* assert (graph && "no graph"); */
 
   return (graph);
+}
+
+/* -------------------------------------------------------------------
+   Method Calls
+   ------------------------------------------------------------------- */
+/**
+   Find out whether the given method could be the target of a
+   polymorphic call.
+*/
+static int has_live_upcall (entity *method)
+{
+  int is_target = FALSE;
+  int i;
+  int n_over;
+
+  /* The method could be the target of a polymorphic call if it is
+     called or if it overrides a method that is called. */
+
+  if (eset_contains (_called_methods, (entity*) method)) {
+    /* fprintf (stdout, "RTA: found call to "); DDMEO (meth); */
+    return (TRUE);
+  }
+
+  /* not called?  check methods in superclass(es) */
+  n_over = get_entity_n_overwrites ((entity*) method);
+  for (i = 0; !is_target && (i < n_over); i ++) {
+    entity *over = get_entity_overwrites ((entity*) method, i);
+    /* fprintf (stdout, "RTA: check in superclass "); DDMEO (over); */
+    is_target |= has_live_upcall (over);
+  }
+
+  return (is_target);
 }
 
 /**
@@ -315,7 +320,7 @@ static int has_live_downcall (entity *method, ir_graph *graph)
 static int has_live_call (entity *method, ir_graph *graph)
 {
   /* maybe we're called (possibly through polymorphy)? */
-  if (is_call_target (method)) {
+  if (has_live_upcall (method)) {
     return (TRUE);
   }
 
@@ -327,6 +332,64 @@ static int has_live_call (entity *method, ir_graph *graph)
   return (FALSE);
 }
 
+/* -------------------------------------------------------------------
+   Class Instantiations
+   ------------------------------------------------------------------- */
+static int has_live_superclass (entity *method, ir_graph *graph)
+{
+  int has_super = FALSE;
+  int i;
+  int n_over;
+
+  /* The method could be the target of a polymorphic call if it is
+     called or if it overrides a method that is called. */
+
+  if (eset_contains (_live_classes, get_entity_owner (method))) {
+    return (TRUE);
+  }
+
+  /* not allocated?  check methods in superclass(es) */
+  n_over = get_entity_n_overwrites ((entity*) method);
+  for (i = 0; !has_super && (i < n_over); i ++) {
+    entity *over = get_entity_overwrites ((entity*) method, i);
+    /* fprintf (stdout, "RTA: check in superclass "); DDMEO (over); */
+    has_super |= has_live_superclass (over, graph);
+  }
+
+  return (has_super);
+}
+
+static int has_live_subclass (entity *method, ir_graph *graph)
+{
+  int has_sub = FALSE;
+  int i;
+  int n_over;
+
+  /* a class that doesn't use the graph in question can't help here: */
+  ir_graph *impl = get_implementing_graph (method);
+
+  /* this function is only called starting at 'graph's method, and
+     we're checking *downwards*, so impl must be != NULL */
+  assert (impl);
+  if (impl != graph) {
+    return (FALSE);
+  }
+
+  /* otherwise, an instantiated class helps a lot! */
+  if (rta_is_alive_class (get_entity_owner (method))) {
+    return (TRUE);
+  }
+
+  /* maybe our subclasses use this graph *and* have been instantiated ? */
+  n_over = get_entity_n_overwrittenby ((entity*) method);
+  for (i = 0; !has_sub && (i < n_over); i ++) {
+    entity *over = get_entity_overwrittenby ((entity*) method, i);
+    has_sub |= has_live_subclass (over, graph);
+  }
+
+  return (has_sub);
+}
+
 
 /**
    Determine whether the given method could be used in a call to the
@@ -334,26 +397,18 @@ static int has_live_call (entity *method, ir_graph *graph)
 */
 static int has_live_class (entity *method, ir_graph *graph)
 {
-  int has_class = FALSE;
-  int i;
-  int n_over;
-  type *clazz;
-
-  /* DON'T stop searching when an overwriting method provides a new graph */
-
-  clazz = get_entity_owner (method);
-
-  if (rta_is_alive_class (clazz)) {
+  /* maybe we're called (possibly through polymorphy)? */
+  if (has_live_superclass (method, graph)) {
     return (TRUE);
   }
 
-  n_over = get_entity_n_overwrites (method);
-  for (i = 0; !has_class && (i < n_over); i ++) {
-    entity *over = get_entity_overwrites (method, i);
-    has_class |= has_live_class (over, graph);
+  /* maybe our subclasses have seen a call? */
+  if (has_live_subclass (method, graph)) {
+    return (TRUE);
   }
 
-  return (has_class);
+  return (FALSE);
+
 }
 
 /*
@@ -451,11 +506,13 @@ static void remove_irg (ir_graph *graph)
 /* Initialise the RTA data structures, and perform RTA.
    @param   verbose Iff != 0, print statistics as we go along
 */
-void rta_init (int verbose, int whole_world)
+void rta_init (int verbose, int do_whole_world)
 {
   int n_live_graphs = get_irp_n_irgs ();
   int n_graphs = 0;
   int n_runs = 0;
+
+  whole_world = do_whole_world;
 
 # ifdef DEBUG_libfirm
   int i;
@@ -597,6 +654,22 @@ int  rta_is_alive_graph (ir_graph *graph)
   has_call  = has_live_call (meth, graph);
   has_class = has_live_class (meth, graph);
 
+  fprintf (stdout, "RTA: checking  "); DDMEO (meth);
+
+  if (has_call) {
+    fprintf (stdout, "RTA: has_call  "); DDMEO (meth);
+  }
+
+  if (has_class) {
+    fprintf (stdout, "RTA: has_class "); DDMEO (meth);
+  }
+
+  if (has_call && has_class) {
+    fprintf (stdout, "RTA: is_called "); DDMEO (meth);
+  } else {
+    fprintf (stdout, "RTA: UNCALLED  "); DDMEO (meth);
+  }
+
   if (has_call && has_class) {
     eset_insert (_live_graphs, graph);
 
@@ -637,6 +710,9 @@ void rta_report (FILE *stream)
 
 /*
  * $Log$
+ * Revision 1.12  2004/06/17 16:33:33  liekweg
+ * minor bug fix
+ *
  * Revision 1.11  2004/06/17 14:21:13  liekweg
  * major bugfix
  *
