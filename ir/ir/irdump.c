@@ -63,7 +63,7 @@
 #define TYPE_CLASS_NODE_ATTR "color: green"
 #define TYPE_DESCRIPTION_NODE_ATTR "color: lightgreen"
 #define ENTITY_NODE_ATTR     "color: yellow"
-#define ENT_TYPE_EDGE_ATTR   "class: 3 label \"type\" color: red"
+#define ENT_TYPE_EDGE_ATTR   "class: 3 label: \"type\" color: red"
 #define ENT_OWN_EDGE_ATTR    "class: 4 label: \"owner\" color: black"
 #define METH_PAR_EDGE_ATTR   "class: 5 label: \"param %d\" color: green"
 #define METH_RES_EDGE_ATTR   "class: 6 label: \"res %d\" color: green"
