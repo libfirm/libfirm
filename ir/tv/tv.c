@@ -558,6 +558,27 @@ tarval_B_from_str (const char *s, size_t len)
 
 
 tarval *
+tarval_f_from_str (const char *s, size_t len)
+{
+  tarval *tv;
+  char *buf;
+  char *eptr;
+
+  assert (!BUILDING);
+
+  buf = alloca (len+1);
+  stripcpy (buf, s, len);
+
+  tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
+  tv->mode = mode_f;
+  tv->u.f = (float)strtod (buf, &eptr);
+  assert (eptr == buf+strlen(buf));
+
+  return tarval_identify (tv);
+}
+
+
+tarval *
 tarval_d_from_str (const char *s, size_t len)
 {
   tarval *tv;
@@ -1655,6 +1676,7 @@ tarval_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
 {
   tarval *val = XP_GETARG (tarval *, 0);
   int printed;
+  char buf[40];
 
   TARVAL_VRFY (val);
 
@@ -1665,10 +1687,11 @@ tarval_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
     break;
 
   case irm_f:			/* float */
-    printed = XPF1R ("%g", (double)(val->u.f));
+    sprintf (buf, "%1.9e", (float)(val->u.f));
+    printed = XPF1R ("%s", buf);
     break;
   case irm_d:			/* double */
-    printed = XPF1R ("%g", (double)(val->u.d));
+    printed = XPF1R ("%1.30g", (double)(val->u.d));
     break;
 
   case irm_c:			/* signed char */

@@ -112,6 +112,7 @@ unsigned tarval_hash (tarval *);
 /* ************************ Constructors for tarvals ************************ */
 tarval *tarval_Z_from_str (const char *, size_t, int base);
 tarval *tarval_B_from_str (const char *, size_t);
+tarval *tarval_f_from_str (const char *, size_t);
 tarval *tarval_d_from_str (const char *, size_t);
 tarval *tarval_s_from_str (const char *, size_t);
 tarval *tarval_S_from_str (const char *, size_t);
