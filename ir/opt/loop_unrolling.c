@@ -157,7 +157,7 @@ static int is_Phi_in_loop_head(ir_node *phi, ir_node *loop_head) {
 static void
 set_preds (set *l_n, copies_t *value, induct_var_info *info, int unroll_factor, void *env)
 {
-  int i, irn_arity;
+  int i, irn_arity, p;
   copies_t *value_pred;
 
   ir_node *loop_head = get_loop_node(info->l_itervar_phi, 0);
@@ -174,13 +174,13 @@ set_preds (set *l_n, copies_t *value, induct_var_info *info, int unroll_factor, 
 
     if (value->irn != loop_head && !is_Phi_in_loop_head(value->irn, loop_head)) {
       if (value_pred == NULL) {
-	  /* Is loop invariant. */
-	for(int p = 0; p < unroll_factor -1; p++)
-	  set_irn_n (value->copy[p], i, pred);
+      /* Is loop invariant. */
+    for(p = 0; p < unroll_factor -1; p++)
+      set_irn_n (value->copy[p], i, pred);
 
       } else
-	for(int p = 0; p < unroll_factor -1; p++)
-	  set_irn_n (value->copy[p], i, value_pred->copy[p]);
+    for(p = 0; p < unroll_factor -1; p++)
+      set_irn_n (value->copy[p], i, value_pred->copy[p]);
     }
   }
 }
@@ -246,10 +246,10 @@ static int
 is_natural_loop ( induct_var_info *info)
 {
   ir_node *l_node;
-  int l_n_node = 0;
+  int i, l_n_node = 0;
   l_n_node = get_loop_n_nodes (info->l_itervar_phi);
 
-  for (int i = 1; i < (l_n_node); i ++) {
+  for (i = 1; i < (l_n_node); i ++) {
     l_node = get_loop_node (info->l_itervar_phi, i);
     if (is_loop_head(l_node, info)) return 0;
 
@@ -268,30 +268,31 @@ is_natural_loop ( induct_var_info *info)
 static void
 find_loop_nodes(ir_node *node, ir_node *loop_head, set *l_n)
 {
+  int i;
   copies_t key, *value;
 
   /* Add this node to the list. */
   key.irn  = node;
-  for(int i = 0; i < 4 ;i++)
+  for(i = 0; i < 4 ;i++)
     key.copy[i] = NULL;
   value = set_insert(l_n, &key, sizeof(key), HASH_PTR(key.irn));
 
   /* Add all outs of this node to the list, if they are within the loop. */
-  for (int i = get_irn_n_outs(node) - 1; i >= 0; i--) {
+  for (i = get_irn_n_outs(node) - 1; i >= 0; i--) {
     ir_node *pred = get_irn_out(node, i);
     key.irn = pred;
     if (!is_loop_invariant(pred, loop_head)         &&
-	set_find( l_n, &key, sizeof(key), HASH_PTR(key.irn)) == NULL ) {
+    set_find( l_n, &key, sizeof(key), HASH_PTR(key.irn)) == NULL ) {
       find_loop_nodes(pred, loop_head, l_n);
     }
   }
 
   /* Add all ins if they are within the loop. */
-  for(int i = get_irn_arity(node) -1; i >=0; i--) {
+  for(i = get_irn_arity(node) -1; i >=0; i--) {
     ir_node *pred = get_irn_n(node, i);
     key.irn = pred;
     if (!is_loop_invariant(pred, loop_head)         &&
-	set_find( l_n, &key, sizeof(key), HASH_PTR(key.irn)) == NULL ){
+    set_find( l_n, &key, sizeof(key), HASH_PTR(key.irn)) == NULL ){
       find_loop_nodes(pred, loop_head, l_n);
     }
   }
@@ -309,6 +310,7 @@ static void
 new_loop_head (set *l_n, induct_var_info *info, copies_t *value, int unroll_factor)
 {
   copies_t block, *value_backedge_jmp, *backedge_jmp_block;
+  int i;
 
   ir_node *backedge_jmp = get_Block_cfgpred(value->irn, info->op_pred_pos);
   block.irn = backedge_jmp;
@@ -318,7 +320,7 @@ new_loop_head (set *l_n, induct_var_info *info, copies_t *value, int unroll_fact
     ir_node *new_loop_head = new_Block(1, &backedge_jmp);
     value->copy[0] = new_loop_head;
 
-    for(int i = 1; i<unroll_factor - 1; i++){
+    for(i = 1; i<unroll_factor - 1; i++){
       ir_node *new_loop_head1 = new_Block(1, &value_backedge_jmp->copy[i-1]);
       value->copy[i] = new_loop_head1;
     }
@@ -329,7 +331,7 @@ new_loop_head (set *l_n, induct_var_info *info, copies_t *value, int unroll_fact
 
     set_irn_n(backedge_jmp_block->copy[0], 0, value_backedge_jmp->irn) ;
 
-    for(int i = 1; i<unroll_factor - 1; i++)
+    for(i = 1; i<unroll_factor - 1; i++)
       set_irn_n(backedge_jmp_block->copy[i], 0, value_backedge_jmp->copy[i - 1]);
   }
 
@@ -345,8 +347,9 @@ new_loop_head (set *l_n, induct_var_info *info, copies_t *value, int unroll_fact
 static void
 set_Phi_copies(copies_t *phi, copies_t *phi_pred, int unroll_factor)
 {
+  int p;
   phi->copy[0] = phi_pred->irn;
-  for(int p = 1; p < unroll_factor -1; p++)
+  for(p = 1; p < unroll_factor -1; p++)
     phi->copy[p] =  phi_pred->copy[p -1];
 }
 
@@ -367,17 +370,17 @@ loop_head_nodes(set *l_n, induct_var_info *info)
        get_nodes_block(value->irn) == loop_head)
       switch(get_irn_opcode(value->irn)) {
       case iro_Cond:
-	break;
+    break;
       case iro_Phi:
-	break;
+    break;
       case iro_Proj:
-	break;
+    break;
       case iro_Const:
-	break;
+    break;
       case iro_Cmp:
-	break;
+    break;
       default:
-	copy_loop_head = 1;
+    copy_loop_head = 1;
       }
 }
 
@@ -391,7 +394,7 @@ static void
 copy_loop_body(set *l_n, induct_var_info *info, int unroll_factor)
 {
   copies_t *value, *info_op, *phi, *loop_h, key, *value1;
-
+  int i;
   ir_node *loop_head = get_loop_node(info->l_itervar_phi, 0);
 
 
@@ -401,19 +404,19 @@ copy_loop_body(set *l_n, induct_var_info *info, int unroll_factor)
     else if (is_Phi_in_loop_head(value->irn, loop_head))
       phi = value;
     else if(copy_loop_head){
-      for (int i = 0; i<unroll_factor -1; i++){
-	copy_node(value->irn, NULL);
-	value->copy[i] = get_irn_link(value->irn);
+      for (i = 0; i<unroll_factor -1; i++){
+    copy_node(value->irn, NULL);
+    value->copy[i] = get_irn_link(value->irn);
       }
     } else {
       if((value->irn->op == op_Block            &&
-	  value->irn != loop_head)              ||
-	 (value->irn->op != op_Block             &&
-	  get_nodes_block(value->irn) != loop_head))
-	for (int i = 0; i<unroll_factor -1; i++){
-	  copy_node(value->irn, NULL);
-	  value->copy[i] = get_irn_link(value->irn);
-	}
+      value->irn != loop_head)              ||
+     (value->irn->op != op_Block             &&
+      get_nodes_block(value->irn) != loop_head))
+    for (i = 0; i<unroll_factor -1; i++){
+      copy_node(value->irn, NULL);
+      value->copy[i] = get_irn_link(value->irn);
+    }
     }
   }
   /* Treat the loop head block */
@@ -423,7 +426,7 @@ copy_loop_body(set *l_n, induct_var_info *info, int unroll_factor)
   key.irn = info->op;
   info_op = set_find( l_n, &key, sizeof(key), HASH_PTR(key.irn));
   assert(info_op->irn == get_Phi_pred(info->itervar_phi, info->op_pred_pos));
-  for (int i = 0; i < get_irn_n_outs(loop_head); ++i) {
+  for (i = 0; i < get_irn_n_outs(loop_head); ++i) {
     ir_node *phi = get_irn_out(loop_head, i);
 
     if (is_Phi(phi)) {
@@ -437,6 +440,7 @@ copy_loop_body(set *l_n, induct_var_info *info, int unroll_factor)
 
 
   for (value = set_first(l_n); value != NULL; value = set_next(l_n)) {
+    int p;
 
     if(copy_loop_head)
       set_preds(l_n, value, info, unroll_factor, NULL);
@@ -450,14 +454,14 @@ copy_loop_body(set *l_n, induct_var_info *info, int unroll_factor)
       ir_node *nodes_block = get_nodes_block(value->irn);
 
       if(!copy_loop_head && nodes_block == loop_head)
-	continue;
+    continue;
 
       key.irn = nodes_block;
       value1 = set_find( l_n, &key, sizeof(key), HASH_PTR(key.irn));
 
-      for(int p = 0; p < unroll_factor - 1; p++){
-	set_nodes_block(value->copy[p], value1->copy[p]);
-	//add_End_keepalive(get_irg_end(current_ir_graph), value->copy[p]);
+      for(p = 0; p < unroll_factor - 1; p++){
+    set_nodes_block(value->copy[p], value1->copy[p]);
+    //add_End_keepalive(get_irg_end(current_ir_graph), value->copy[p]);
       }
     }
   }
@@ -467,18 +471,19 @@ static void
 set_loop_outs(set *l_n, induct_var_info *info, int unroll_factor)
 {
   copies_t *value, key;
+  int p, i;
   ir_node *loop_head = get_loop_node(info->l_itervar_phi, 0);
 
   value = set_first(l_n);
   for( ; value != NULL; value = set_next(l_n))
     if(value->irn != info->op && !is_Phi_in_loop_head(value->irn, loop_head) &&
        get_irn_opcode(value->irn) != iro_Proj)
-    for(int i = 0; i < get_irn_n_outs(value->irn); i++){
+    for(i = 0; i < get_irn_n_outs(value->irn); i++){
       key.irn = get_irn_out(value->irn, i);
-	if(set_find( l_n, &key, sizeof(key), HASH_PTR(key.irn)) == NULL)
-	  for(int p = 0; p < get_irn_arity(key.irn); p++)
-	    if(value->irn == get_irn_n(key.irn, p))
-	      set_irn_n (key.irn, p, value->copy[unroll_factor-2]);
+    if(set_find( l_n, &key, sizeof(key), HASH_PTR(key.irn)) == NULL)
+      for(p = 0; p < get_irn_arity(key.irn); p++)
+        if(value->irn == get_irn_n(key.irn, p))
+          set_irn_n (key.irn, p, value->copy[unroll_factor-2]);
     }
 }
 
@@ -518,7 +523,7 @@ static void do_loop_unroll(ir_node *n, void *env){
 
   int cmp_typ =  get_Proj_proj(cmp_out);
   int init = get_tarval_long(get_Const_tarval
-			      (get_Phi_pred(info.itervar_phi, info.init_pred_pos)));
+                  (get_Phi_pred(info.itervar_phi, info.init_pred_pos)));
   int iter_end = get_tarval_long(get_Const_tarval(info.cmp_const));
   int iter_increment = get_tarval_long(get_Const_tarval(info.increment));
   int diff, iter_number;
