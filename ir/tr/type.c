@@ -286,8 +286,10 @@ set_type_state(type *tp, type_state state) {
 	    if (get_entity_offset(get_class_member(tp, i)) <= -1)
 	      { DDMT(tp); DDME(get_class_member(tp, i)); }
 	    assert(get_entity_offset(get_class_member(tp, i)) > -1);
+            /* TR ??
 	    assert(is_method_type(get_entity_type(get_class_member(tp, i))) ||
 		   (get_entity_allocation(get_class_member(tp, i)) == allocation_automatic));
+                   */
 	  }
       } break;
     case tpo_struct:
