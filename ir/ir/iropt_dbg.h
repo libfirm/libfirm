@@ -16,6 +16,9 @@
 
 #define SIZ(x)    sizeof(x)/sizeof((x)[0])
 
+/**
+ * Merge the debug info due to a straightening optimization
+ */
 #define DBG_OPT_STG                                                \
   do {                                                       \
 	  ir_node *ons[2];                                         \
@@ -24,6 +27,9 @@
 	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_straightening); \
 	} while(0)
 
+/**
+ * Merge the debug info due to an if simplification
+ */
 #define DBG_OPT_IFSIM                                                 \
   do {                                                          \
 	  ir_node *ons[4];                                            \
@@ -34,6 +40,9 @@
 	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_if_simplification); \
 	} while(0)
 
+/**
+ * Merge the debug info due to an algebraic_simplification
+ */
 #define DBG_OPT_ALGSIM1                                               \
   do {                                                          \
 	  ir_node *ons[3];                                            \
@@ -48,7 +57,7 @@
 	  ir_node *ons[3];                                            \
 	  ons[0] = oldn;                                              \
 	  ons[1] = get_unop_op(n);                                    \
-    ons[2] = n;                                                 \
+	  ons[2] = n;                                                 \
 	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_algebraic_simplification); \
 	} while(0)
 
