@@ -182,7 +182,22 @@ typedef enum {
 irg_outs_state get_irg_outs_state(ir_graph *irg);
 void set_irg_outs_inconsistent(ir_graph *irg);
 
-
+/* state: dom_state
+   Signals the state of the dominator infomation.
+   Values:  no_dom, dom_consistent, dom_inconsistent
+   no_dom: doms are not computed, no memory is allocated.  The access routines
+   may not be used.
+   dom_consistent:  dominator information is computed and correct,
+   dom_inconsistent: dominator information is computed, memory is still allocated,
+   but the graph has been changed since. Using the access routines is possible,
+   obtained information may be incorrect. */
+typedef enum {
+  no_dom,
+  dom_consistent,
+  dom_inconsistent
+} irg_dom_state;
+irg_dom_state get_irg_dom_state(ir_graph *irg);
+void set_irg_dom_inconsistent(ir_graph *irg);
 
 /* increments visited by one */
 void     inc_irg_visited(ir_graph *irg);

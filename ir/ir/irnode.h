@@ -147,6 +147,8 @@ inline bool      get_Block_matured (ir_node *node);
 inline void      set_Block_matured (ir_node *node, bool matured);
 inline unsigned long get_Block_block_visited (ir_node *node);
 inline void      set_Block_block_visited (ir_node *node, unsigned long visit);
+/* For this current_ir_graph must be set. */
+inline void      mark_Block_block_visited(ir_node *node);
 inline ir_node  *get_Block_graph_arr (ir_node *node, int pos);
 inline void      set_Block_graph_arr (ir_node *node, int pos, ir_node *value);
 

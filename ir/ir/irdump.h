@@ -276,7 +276,7 @@ void turn_off_constant_entity_values();
 void dump_keepalive_edges();
 
 
-/****m* irdump/dump_constant_entity_values
+/****m* irdump/dump_out_edges
  *
  * NAME
  *   dump_out_edges
@@ -293,4 +293,24 @@ void dump_keepalive_edges();
  ***
  */
 void dump_out_edges();
+
+
+/****m* irdump/dump_dominator_information
+ *
+ * NAME
+ *   dump_dominator_information
+ * SYNOPSIS
+ *   void dump_dominator_information()
+ * FUNCTION
+ *   If this flag is set the dumper dumps edges to immediate dominator in cfg.
+ * INPUTS
+ *   No inputs
+ * RESULT
+ * SEE ALSO
+ *
+ ***
+ */
+void dump_dominator_information();
+
+
 # endif /* _IRDUMP_H_ */

@@ -386,7 +386,7 @@ equivalent_node (ir_node *n)
     }
     break;
     /* GL: Why are they skipped?  DivMod allocates new nodes --> it's
-       teated in transform node.
+       treated in transform node.
 	   case iro_Mod, Quot, DivMod
     */
   case iro_And:
@@ -589,6 +589,28 @@ transform_node (ir_node *n)
   tarval *ta, *tb;
 
   switch (get_irn_opcode(n)) {
+  case iro_Div: {
+    ta = computed_value(n);
+    if (ta) {
+      /* Turn Div into a tuple (mem, bad, value) */
+      ir_node *mem = get_Div_mem(n);
+      turn_into_tuple(n, 3);
+      set_Tuple_pred(n, 0, mem);
+      set_Tuple_pred(n, 1, new_Bad());
+      set_Tuple_pred(n, 2, new_Const(get_tv_mode(ta), ta));
+    }
+  } break;
+  case iro_Mod: {
+    ta = computed_value(n);
+    if (ta) {
+      /* Turn Div into a tuple (mem, bad, value) */
+      ir_node *mem = get_Mod_mem(n);
+      turn_into_tuple(n, 3);
+      set_Tuple_pred(n, 0, mem);
+      set_Tuple_pred(n, 1, new_Bad());
+      set_Tuple_pred(n, 2, new_Const(get_tv_mode(ta), ta));
+    }
+  } break;
   case iro_DivMod: {
 
     int evaluated = 0;
@@ -598,8 +620,8 @@ transform_node (ir_node *n)
     b = get_DivMod_right(n);
     mode = get_irn_mode(a);
 
-    if (!(   mode_is_int(get_irn_mode(a))
-			 && mode_is_int(get_irn_mode(b))))
+    if (!(mode_is_int(get_irn_mode(a))
+	  && mode_is_int(get_irn_mode(b))))
       break;
 
     if (a == b) {

@@ -43,6 +43,7 @@ struct ir_graph {
   irg_phase_state phase_state;       /* compiler phase */
   op_pinned pinned;                  /* Flag for status of nodes */
   irg_outs_state outs_state;         /* Out edges. */
+  irg_dom_state dom_state;           /* Dominator information */
 
   /** Fields for construction **/
 #if USE_EXPICIT_PHI_IN_STACK

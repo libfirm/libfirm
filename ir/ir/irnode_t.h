@@ -15,13 +15,20 @@
 # include "xprintf.h"
 # include "irop_t.h"
 
+#include "irdom_t.h" /* For size of struct dom_info. */
+
 /** ir node attributes **/
+
 /* Block attributes */
 typedef struct {
   unsigned long block_visited;  /* for the walker that walks over all blocks. */
   /* Attributes private to construction: */
   bool matured;               /* if set, all in-nodes of the block are fixed */
   struct ir_node **graph_arr; /* array to store all parameters */
+  struct dom_info dom;        /* Datastructure that holds information about dominators.
+				 @@@ Eventually overlay with graph_arr as only valid
+				 in different phases.  Eventually inline the whole
+				 datastructure. */
 } block_attr;
 
 /* Cond attributes */

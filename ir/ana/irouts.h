@@ -7,7 +7,7 @@
 **  @@@ eventually add reverse conrtol flow graph. (If needed.)
 */
 
-/* $ID$ */
+/* $Id$ */
 
 # ifndef _IROUTS_H_
 # define _IROUTS_H_
@@ -31,6 +31,12 @@ int             get_irn_n_outs (ir_node *node);
 inline ir_node *get_irn_out  (ir_node *node, int pos);
 inline void     set_irn_out  (ir_node *node, int pos, ir_node *out);
 
+/* Methods to iterate through the control flow graph. Iterate from 0 to
+   i < get_Block_cfg_outs(block). No order of successors guaranteed. */
+int             get_Block_n_cfg_outs (ir_node *node);
+/* Access predecessor n. */
+inline ir_node *get_Block_cfg_out  (ir_node *node, int pos);
+
 
 /* Walks over the graph starting at node.  Walks also if graph is in state
    "outs_inconsistent".  Assumes current_ir_graph is set properly. */
@@ -40,7 +46,7 @@ void irg_out_walk(ir_node *node,
 
 /* Walks only over Block nodes in the graph.  Has it's own visited
    flag, so that it can be interleaved with the other walker.
-   @@@ not yet implemented!! */
+   node must be either op_Block or mode_X.  */
 void irg_out_block_walk(ir_node *node,
 			void (pre)(ir_node*, void*), void (post)(ir_node*, void*),
 			void *env);
@@ -52,7 +58,7 @@ void irg_out_block_walk(ir_node *node,
 /* Computes the out edges.  Sets a flag in irg to "outs_consistent".  If the
    graph is changed this flag must be set to "outs_inconsistent".  Computes
    out edges from block to floating nodes even if graph is in state
-   "floats". */
+   "floats".   Optimizes Tuple nodes. */
 void compute_outs(ir_graph *irg);
 /* Frees the out datastructures.  Sets the flag in irg to "no_outs". */
 void free_outs(ir_graph *irg);

@@ -467,6 +467,13 @@ set_Block_block_visited (ir_node *node, unsigned long visit) {
   node->attr.block.block_visited = visit;
 }
 
+/* For this current_ir_graph must be set. */
+inline void mark_Block_block_visited (ir_node *node) {
+  assert (node->op == op_Block);
+  node->attr.block.block_visited = get_irg_block_visited(current_ir_graph);
+}
+
+
 inline ir_node *
 get_Block_graph_arr (ir_node *node, int pos) {
   assert (node->op == op_Block);

@@ -33,6 +33,7 @@
    as a stack! */
 #define USE_EXPICIT_PHI_IN_STACK 1
 
+#define DEBUG_libfirm 1
 /* If this is defined debuging aids are created, e.g. a field in
    ir_node uniquely numbering the nodes.
    Warum war das auskommentiert?? (--enable-debug hat das nicht gesetzt.

@@ -20,21 +20,46 @@
 /**********************************************************************/
 
 /* returns the number of successors of the node: */
-inline int              get_irn_n_outs    (ir_node *node) {
+inline int get_irn_n_outs    (ir_node *node) {
   return (int)(node->out[0]);
 }
 
 /* Access successor n */
-inline ir_node  *get_irn_out      (ir_node *node, int pos) {
+inline ir_node *get_irn_out      (ir_node *node, int pos) {
   assert(node);
   assert(pos >= 0 && pos < get_irn_n_outs(node));
   return node->out[pos+1];
 }
 
-inline void      set_irn_out      (ir_node *node, int pos, ir_node *out) {
+inline void set_irn_out      (ir_node *node, int pos, ir_node *out) {
   assert(node && out);
   assert(pos >= 0 && pos < get_irn_n_outs(node));
   node->out[pos+1] = out;
+}
+
+
+inline int get_Block_n_cfg_outs (ir_node *bl) {
+  int i, n_cfg_outs = 0;
+  assert(bl && (get_irn_op(bl) == op_Block));
+  for (i = 0; i < (int)bl->out[0]; i++)
+    if ((get_irn_mode(bl->out[i+1]) == mode_X) &&
+	(get_irn_op(bl->out[i+1]) != op_End)) n_cfg_outs++;
+  return n_cfg_outs;
+}
+
+
+inline ir_node *get_Block_cfg_out  (ir_node *bl, int pos) {
+  int i, out_pos = 0;
+  assert(bl && (get_irn_op(bl) == op_Block));
+  for (i = 0; i < (int)bl->out[0]; i++)
+    if (get_irn_mode(bl->out[i+1]) == mode_X)
+      if (out_pos == pos) {
+	ir_node *cfop = bl->out[i+1];
+	return cfop->out[0+1];
+      } else {
+	out_pos++;
+      }
+  return NULL;
 }
 
 void irg_out_walk_2(ir_node *node,  void (pre)(ir_node*, void*),
@@ -74,11 +99,50 @@ void irg_out_walk(ir_node *node,
   return;
 }
 
+void irg_out_block_walk2(ir_node *bl,
+			void (pre)(ir_node*, void*), void (post)(ir_node*, void*),
+			void *env) {
+  int i, out_pos;
+
+  assert(get_irn_opcode(bl) == iro_Block);
+
+  if(get_Block_block_visited(bl) < get_irg_block_visited(current_ir_graph)) {
+    set_Block_block_visited(bl, get_irg_block_visited(current_ir_graph));
+
+    if(pre)
+      pre(bl, env);
+
+    for(i = 0; i < get_Block_n_cfg_outs(bl); i++) {
+      /* find the corresponding predecessor block. */
+      ir_node *pred = get_Block_cfg_out(bl, i);
+      assert(get_irn_opcode(pred) == iro_Block);
+      /* recursion */
+      irg_out_block_walk2(pred, pre, post, env);
+    }
+
+    if(post)
+      post(bl, env);
+  }
+  return;
+}
+
 /* Walks only over Block nodes in the graph.  Has it's own visited
    flag, so that it can be interleaved with the other walker.         */
 void irg_out_block_walk(ir_node *node,
 			void (pre)(ir_node*, void*), void (post)(ir_node*, void*),
 			void *env) {
+
+  assert((get_irn_op(node) == op_Block) || (get_irn_mode(node) == mode_X));
+
+  inc_irg_block_visited(current_ir_graph);
+
+  if (get_irn_mode(node) == mode_X) node = node->out[1];
+  assert(get_irn_opcode(node)  == iro_Block);
+
+  irg_out_block_walk2(node, pre, post, env);
+
+  return;
+
 }
 
 /**********************************************************************/
@@ -111,7 +175,9 @@ int count_outs(ir_node *n) {
   if ((get_irn_op(n) == op_Block)) start = 0; else start = -1;
   res = get_irn_arity(n) - start +1;  /* --1 or --0; 1 for array size. */
   for (i = start; i < get_irn_arity(n); i++) {
-    succ = get_irn_n(n, i);
+    /* Optimize Tuples.  They annoy if walking the cfg. */
+    succ = skip_Tuple(get_irn_n(n, i));
+    set_irn_n(n, i, succ);
     /* count outs for successors */
     if (get_irn_visited(succ) < get_irg_visited(current_ir_graph))
       res += count_outs(succ);
@@ -149,6 +215,22 @@ ir_node **set_out_edges(ir_node *n, ir_node **free) {
   return free;
 }
 
+inline void fix_start_proj(ir_graph *irg) {
+  ir_node *proj, *startbl;
+  int i;
+  if (get_Block_n_cfg_outs(get_irg_start_block(irg))) {
+    startbl = get_irg_start_block(irg);
+    for (i = 0; i < get_irn_n_outs(startbl); i++)
+      if (get_irn_mode(get_irn_out(startbl, i)) == mode_X)
+	proj = get_irn_out(startbl, i);
+    if (get_irn_out(proj, 0) == startbl) {
+      assert(get_irn_n_outs(proj) == 2);
+      set_irn_out(proj, 0, get_irn_out(proj, 1));
+      set_irn_out(proj, 1, startbl);
+    }
+  }
+}
+
 void compute_outs(ir_graph *irg) {
   ir_graph *rem = current_ir_graph;
   int n_out_edges = 0;
@@ -172,13 +254,18 @@ void compute_outs(ir_graph *irg) {
   inc_irg_visited(irg);
   set_out_edges(get_irg_end(irg), irg->outs);
 
+  /* We want that the out of ProjX from Start contains the next block at
+     position 1, the Start block at position 2.  This is necessary for
+     the out block walker. */
+  fix_start_proj(irg);
+
   current_ir_graph = rem;
 }
 
 void free_outs(ir_graph *irg) {
 
   /* Update graph state */
-  // assert(get_irg_phase_state(current_ir_graph) != phase_building);
+  assert(get_irg_phase_state(current_ir_graph) != phase_building);
   current_ir_graph->outs_state = no_outs;
 
   if (irg->outs) free(irg->outs);

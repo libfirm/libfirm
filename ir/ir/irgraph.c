@@ -81,6 +81,7 @@ new_ir_graph (entity *ent, int n_loc)
   res->phase_state = phase_building;
   res->pinned = pinned;
   res->outs_state = no_outs;
+  res->dom_state = no_dom;
 
   /** Type inforamtion for the procedure of the graph **/
   res->ent = ent;
@@ -379,6 +380,14 @@ irg_outs_state get_irg_outs_state(ir_graph *irg) {
 
 void set_irg_outs_inconsistent(ir_graph *irg) {
   irg->outs_state = outs_inconsistent;
+}
+
+irg_dom_state get_irg_dom_state(ir_graph *irg) {
+  return irg->dom_state;
+}
+
+void set_irg_dom_inconsistent(ir_graph *irg) {
+  irg->dom_state = dom_inconsistent;
 }
 
 inline void

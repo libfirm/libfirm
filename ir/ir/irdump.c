@@ -27,6 +27,7 @@
 # include "irgwalk.h"
 # include "typewalk.h"
 # include "irouts.h"
+#include "irdom.h"
 
 /* Attributes of nodes */
 #define DEFAULT_NODE_ATTR ""
@@ -36,6 +37,7 @@
 #define BLOCK_EDGE_ATTR "class: 2 priority: 2 linestyle: dotted"
 #define CF_EDGE_ATTR    "color: red"
 #define MEM_EDGE_ATTR   "color: blue"
+#define DOMINATOR_EDGE_ATTR "color: red"
 
 /* Attributes of edges between Firm nodes and type/entity nodes */
 #define NODE2TYPE_EDGE_ATTR "class: 2 priority: 2 linestyle: dotted"
@@ -76,7 +78,7 @@ int const_entities = 1;
 int dump_keepalive = 0;
 /* A compiler option to dump the out edges in dump_ir_graph */
 int dump_out_edge_flag = 0;
-
+int dump_dominator_information_flag = 0;
 
 /* A global variable to record output of the Bad node. */
 int Bad_dumped;
@@ -1012,13 +1014,24 @@ dump_block_to_cfg (ir_node *block, void *env) {
     xfprintf (F, "\" label: \"%I ", block->op->name); PRINT_NODEID(block);
     xfprintf (F, "\"}\n");
     /* Dump the edges */
-    for ( i = 0; i < get_Block_n_cfgpreds(block); i++) {
-      pred = get_nodes_Block(skip_Proj(get_Block_cfgpred(block, i)));
+    for ( i = 0; i < get_Block_n_cfgpreds(block); i++)
+      if (get_irn_op(skip_Proj(get_Block_cfgpred(block, i))) != op_Bad) {
+	pred = get_nodes_Block(skip_Proj(get_Block_cfgpred(block, i)));
+	xfprintf (F, "edge: { sourcename: \"");
+	PRINT_NODEID(block);
+	fprintf (F, "\" targetname: \"");
+	PRINT_NODEID(pred);
+	fprintf (F, "\" }\n");
+      }
+
+    /* Dump dominator information */
+    if (dump_dominator_information_flag && get_Block_idom(block)) {
+      pred = get_Block_idom(block);
       xfprintf (F, "edge: { sourcename: \"");
       PRINT_NODEID(block);
       fprintf (F, "\" targetname: \"");
       PRINT_NODEID(pred);
-      fprintf (F, "\" }\n");
+      fprintf (F, "\" " DOMINATOR_EDGE_ATTR "}\n");
     }
   }
 }
@@ -1026,11 +1039,16 @@ dump_block_to_cfg (ir_node *block, void *env) {
 void
 dump_cfg (ir_graph *irg)
 {
+  int rem = dump_dominator_information_flag;
   vcg_open (irg, "-cfg");
+
+  if (get_irg_dom_state(irg) != dom_consistent)
+    dump_dominator_information_flag = 0;
 
   /* walk over the blocks in the graph */
   irg_block_walk(irg->end, dump_block_to_cfg, NULL, NULL);
 
+  dump_dominator_information_flag = rem;
   vcg_close();
 }
 
@@ -1155,4 +1173,8 @@ void dump_keepalive_edges() {
 
 void dump_out_edges() {
   dump_out_edge_flag = 1;
+}
+
+void dump_dominator_information() {
+  dump_dominator_information_flag = 1;
 }
