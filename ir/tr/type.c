@@ -952,7 +952,7 @@ type *new_type_method (ident *name, int n_param, int n_res) {
   assert((get_mode_size_bytes(mode_P_mach) != -1) && "unorthodox modes not implemented");
   res = new_type(type_method, mode_P_mach, name);
   res->state                        = layout_fixed;
-  res->size                         = get_mode_size_bytes(mode_P_mach);
+  res->size                         = get_mode_size_bits(mode_P_mach);
   res->attr.ma.n_params             = n_param;
   res->attr.ma.param_type           = (type **) xmalloc (sizeof (type *) * n_param);
   res->attr.ma.value_params         = NULL;
