@@ -119,9 +119,9 @@ static dt_t *new_dt (ir_graph *graph)
 
   res->n_blocks = n_blocks;
   res->graph    = graph;
-  res->blocks   = (ir_node**) calloc (n_blocks, sizeof (ir_node*));
-  res->idoms    = (ir_node**) calloc (n_blocks, sizeof (ir_node*));
-  res->masks    = (bs_t*)     calloc (n_blocks, sizeof (bs_t));
+  res->blocks   = calloc(n_blocks, sizeof(*res->blocks));
+  res->idoms    = calloc(n_blocks, sizeof(*res->idoms));
+  res->masks    = calloc(n_blocks, sizeof(*res->masks));
 
   assert (res && "no dt");
 
@@ -438,7 +438,7 @@ ir_node *get_idom (ir_graph *g, ir_node *a)
 */
 dom_env_t *get_dom_env (ir_graph *graph, ir_node *a)
 {
-  dom_env_t *env = (dom_env_t*) calloc (1, sizeof (dom_env_t));
+  dom_env_t *env = calloc(1, sizeof(*env));
 
   env->graph   = graph;
   env->dt      = get_dominator_tree (graph);

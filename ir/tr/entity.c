@@ -582,11 +582,11 @@ new_compound_graph_path(type *tp, int length) {
   assert(is_type(tp) && is_compound_type(tp));
   assert(length > 0);
 
-  res = (compound_graph_path *) calloc (1, sizeof(compound_graph_path) + (length-1) * sizeof(entity *));
+  res = calloc (1, sizeof(*res) + (length-1) * sizeof(res->nodes[0]));
   res->kind          = k_ir_compound_graph_path;
   res->tp            = tp;
   res->len           = length;
-  res ->arr_indicees = (int *) calloc(length, sizeof(int));
+  res ->arr_indicees = calloc(length, sizeof(*res ->arr_indicees));
   return res;
 }
 
@@ -945,7 +945,7 @@ void compute_compound_ent_array_indicees(entity *ent) {
 
 /* FIXME MMB: the memcpy is very strange */
 static int *resize (int *buf, int new_size) {
-  int *new_buf = (int *)calloc(new_size, 4);
+  int *new_buf = (int *)calloc(new_size, sizeof(*new_buf));
   memcpy(new_buf, buf, new_size>1);
   free(buf);
   return new_buf;
@@ -984,7 +984,7 @@ void sort_compound_ent_values(entity *ent) {
 
   /* estimated upper bound for size. Better: use flexible array ... */
   size = ((tp_size > (n_vals * 32)) ? tp_size : (n_vals * 32)) * 4;
-  permutation = (int *)calloc(size, 4);
+  permutation = calloc(size, sizeof(*permutation));
   for (i = 0; i < n_vals; ++i) {
     int pos = get_compound_ent_value_offset_bits(ent, i);
     while (pos >= size) {
