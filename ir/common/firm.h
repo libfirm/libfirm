@@ -160,7 +160,7 @@ struct _firm_parameter_t {
   /**
    * The interface functions for the type identification module.
    * If not set, the default implementation with compare_strict() and
-   * hash_name() will be used.
+   * firm_hash_name() will be used.
    */
   type_identify_if_t *ti_if;
 
