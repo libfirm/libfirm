@@ -1,5 +1,18 @@
+  4.7.2000 Goetz
+  Commented a whole bunch of stuff, e.g. in ircons.h  (Procedure to construct)
+  We should change the naming of the Block constructor.
+
+  4.7.2000 Goetz
+  Removed acces routines to attr. "closed" of Block.
+
+  4.7.2000 Goetz
+  Removed second implementation of new_ir_node from ircons and some comments
+  concerned with the now resolved cyclic dependency.
+  Fixed some bugs in irgopt so that the compilation goes through.
+
   31.5.2000 Chris
-  Removed some files from the archive, after dependences and usage are checked:
+  Removed some files from the archive, after dependencies and usage are
+  checked:
   - 'ir/common/strerror.c'
   was nowhere used;
   - 'ir/ident/xx_ident.h'
@@ -17,7 +30,29 @@
   Moved the 'new_ir_node' constructor from ircons.* to irnode.* and fixed
   afterwards some recursive includes, so libfirm works again.
 
-*** Goetz has to complete this lines - several changes are not annotated yet! ***
+  2+3.2000 Goetz
+  Did a lot of changes, which I never commented until now (4.7.00).
+
+  * Added new result to Start node: Pointer to global data segment.
+  * Extended Semantics of SymConst node to represent information for the
+    linker.
+  * Added arithmeitc nodes (Shrs, Minus ...)
+
+  Rearranged the directory structure and adjusted the makefiles.
+  The directories contain:
+  ir:       everything for the intermediate representation (better: src?)
+    /ir:    the ir itself, and standard optimizations.
+    /tv:    the target value module
+    /tr:    the type and entity representation
+    /adt:   abstract data types
+    /common:  stuff needed by all other dirs
+    /debug: debugging Unterstuetzung
+    /ident:
+  include:  external files needen as includes
+  testprograms: examples to test the lib.
+
+  The makefiles generate files with extension .d that contain the dependencies
+  between the files.
 
   15.2.2000 Goetz
   Added access routine to attribute link of irnode in irnode.ch.
@@ -34,7 +69,7 @@
 
   10.2.2000 Goetz
   Changed tests from comparing enums to comparing pointers. This is more
-  efficient and reads better.  e.g., instead get_irn_opcode == irm_And
+  efficient (is it?) and reads better.  e.g., instead get_irn_opcode == irm_And
   now get_irn_op == op_And
 
   10.2.2000 Goetz

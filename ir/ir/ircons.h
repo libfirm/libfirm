@@ -9,7 +9,7 @@
 
 
 /** !!!
-*** Ideas for improvement:
+*** Ideas for imrovement:
 ***
  Handle construction of exceptions more comfortable:
  Add new constructors that pass the exception region (or better the
@@ -20,7 +20,6 @@
  Maybe hide the exception region in a global variable, especially if
  it is always unambiguous.
 **/
-
 
 /**
 ***  IRCONS
@@ -62,23 +61,23 @@
     The following nodes are Projs from the start node, held in ir_graph for
     simple access:
 
-    *frame           The ir_node producing the pointer to the stack frame of the
-                     procedure as output.  This is the Proj node on the third
-                     output of the start node.  This output of the start node
-                     is tagged as pns_frame_base.  In FIRM most lokal
+    *frame           The ir_node producing the pointer to the stack frame of
+                     the procedure as output.  This is the Proj node on the
+                     third output of the start node.  This output of the start
+                     node is tagged as pns_frame_base.  In FIRM most lokal
                      variables are modeled as data flow edges.  Static
                      allocated arrays can not be represented as dataflow
                      edges. Therefore FIRM has to represent them in the stack
                      frame.
 
-    *globals         This models a pointer to a  space in the memory where _all_
-		     global things are held.  Select from this pointer with a Sel
-		     node the pointer to a global variable / procedure / compiler
-		     known function... .
+    *globals	     This models a pointer to a space in the memory where
+		     _all_ global things are held.  Select from this pointer
+		     with a Sel node the pointer to a global variable /
+		     procedure / compiler known function... .
 
-    *args            The ir_node that produces the arguments of the method as it's
-                     result.  This is a Proj node on the fourth output of the start
-                     node.  This output is tagged as pns_args.
+    *args	     The ir_node that produces the arguments of the method as
+		     it's result.  This is a Proj node on the fourth output of
+		     the start node.  This output is tagged as pns_args.
 
     *bad             The bad node is an auxiliary node. It is needed only once,
                      so there is this globally reachable node.
@@ -87,16 +86,17 @@
 
     *obst            An obstack that contains all nodes.
 
-    *current_block   A pointer to the current block.  Any node created with one
-                     of the node constructors (new_<opcode>) are assigned to this
-                     block.  It can be set with switch_block(block).  Only needed
-		     for ir construction.
+    *current_block   A pointer to the current block.  Any node created with
+                     one of the node constructors (new_<opcode>) are assigned
+                     to this block.  It can be set with switch_block(block).
+                     Only needed for ir construction.
 
-    params/n_loc     An int giving the number of local variables in this procedure.
-	             This is neede for ir construction. Name will be changed.
+    params/n_loc     An int giving the number of local variables in this
+		     procedure.  This is neede for ir construction. Name will
+		     be changed.
 
-    *value_table     This pset is used for global value numbering for optimizing
-                     use in iropt.c.
+    *value_table     This hash table (pset) is used for global value numbering
+		     for optimizing use in iropt.c.
 
     *Phi_in_stack;   a stack needed for automatic Phi construction, needed only
 		     during ir construction.
@@ -105,7 +105,7 @@
   Three kinds of nodes
   --------------------
 
-    There are three kinds of nodes known to the ir:  enties,
+    There are three kinds of nodes known to the ir:  entities,
     types, and ir_nodes
 
     + ir_nodes are the actual nodes of the FIRM intermediate representation.
@@ -113,11 +113,13 @@
       operations.
 
     + entity ==> implemented in entity.h
-      Refers to a single entity of the compiled program, e.g. a field of a class or
-      a method.
+      Refers to a single entity of the compiled program, e.g. a field of a
+      class or a method.  If a method or variable can not be assigned to
+      a method or class or the like, it is a global object.
 
     + types ==> implemented in type.h
-      With types type information is represented.  There are several type nodes.
+      With types type information is represented.  There are several type
+      nodes.
 
   Implementation of the FIRM operations: ir_node
   ----------------------------------------------
@@ -158,10 +160,10 @@
                      and the number of attributes of an ir_node.  There is
                      one statically allocated struct ir_op for each opcode.
 
-    *mode            The ir_mode of the operation represented by this firm node.
-                     The mode of the operation is the mode of it's result.  A Firm
-                     mode is a datatype as known to the target, not a type of the
-                     source language.
+    *mode            The ir_mode of the operation represented by this firm
+                     node.  The mode of the operation is the mode of it's
+                     result.  A Firm mode is a datatype as known to the target,
+		     not a type of the source language.
 
     visit            A flag for traversing the ir.
 
@@ -175,8 +177,8 @@
 		     annotate a node with a better, optimized version of it.
 
     attr             An attr struct containing the attributes of the nodes. The
-                     attributes depend on the opcode of the node.  The number of
-                     these attributes is given in op.
+                     attributes depend on the opcode of the node.  The number
+		     of these attributes is given in op.
 
   The struct ir_op
   ----------------
@@ -189,12 +191,13 @@
   GLOBAL VARIABLES
   ================
 
-  current_ir_graph   Points to the current ir_graph.  All constructors for nodes
-                     add nodes to this graph.
+  current_ir_graph   Points to the current ir_graph.  All constructors for
+                     nodes add nodes to this graph.
 
-  ir_visited         A int used as flag to traverse the ir_graph.
+  ir_visited         An int used as flag to traverse the ir_graph.
 
-  block_visited      A int used as a flag to traverse block nodes in the graph.
+  block_visited      An int used as a flag to traverse block nodes in the
+                     graph.
 
                      Others not yet documented.
 
@@ -222,7 +225,7 @@
   procedure:
 
   * The start block containing a start node and Proj nodes for it's
-    four results (X, M, P, T).
+    five results (X, M, P, P, T).
   * The end block containing an end node. This block is not matured
     after executing new_ir_graph as predecessors need to be added to it.
     (Maturing a block means fixing it's number of predecessors.)
@@ -233,6 +236,152 @@
   datastructure is used to build the Phi nodes and removed after completion
   of the graph.
   There is no path from end to start in the graph after calling ir_graph.
+
+
+  PROCEDURE TO CONSTRUCT AN IR GRAPH
+  ==================================
+
+  This library supplies several interfaces to construct a FIRM graph for
+  a program:
+  * A comfortable interface generating SSA automatically.  Automatically
+    computed predecessors of nodes need not be specified in the constructors.
+  * A less comfortable interface where all predecessors except the block
+    an operation belongs to need to be specified.  SSA must be constructed
+    by hand.  (new_<Node>) constructors).
+  * An even less comfortable interface where the block needs to be specified
+    explicitly.  (new_r_<Node> constructors).
+
+  To use the functionality of the comfortable interface correctly the Front
+  End needs to follow certain protocols.  This is explained in the following.
+  To build a correct IR with the other interfaces study the semantics of
+  the firm node (See tech-reprot UKA 1999-44).  For the construction of
+  types and entities see the documentation in those modules.
+
+  First the Frontend needs to decide which variables and values used in
+  a procedure can be represented by dataflow edges.  These are variables
+  that need not be saved to memory as they cause no side effects visible
+  out of the procedure.  In general these are all compiler generated
+  variables and simple local variables of the procedure as integers,
+  reals and pointers.  The frontend has to count and number these variables.
+
+  First an ir_graph needs to be constructed with new_ir_graph.  The
+  constructor gets the number of local variables.  The graph is hold in the
+  global variable irg.
+
+  Now the construction of the procedure can start.  Several basic blocks can
+  be constructed in parallel, but the code within each block needs to
+  be constructed (almost) in program order.
+
+  A global variable holds the current basic block.  All (non block) nodes
+  generated are added to this block.  The current block can be set with
+  switch_block(block).  If several blocks are constructed in parallel block
+  switches need to be performed constantly.
+
+  To generate a Block node (with the comfortable interface) it's predecessor
+  control flow nodes need not be known.  In case of cyclic control flow these
+  can not be known when the block is constructed.  With add_in_edge(block,
+  cfnode) predecessors can be added to the block.  If all predecessors are
+  added to the block mature_block(b) needs to be called.  Calling mature_block
+  early improves the efficiency of the Phi node construction algorithm.
+  But if several  blocks are constructed at once, mature_block must only
+  be called after performing all set_values and set_stores in the block!
+  (See documentation of new_immBlock constructor.)
+
+  The constructors of arithmetic nodes require that their predecessors
+  are mentioned.  Sometimes these are available in the Frontend as the
+  predecessors have just been generated by the frontend.  If they are local
+  values the predecessors can be obtained from the library with a call to
+  get_value(local_val_nr).  (local_val_nr needs to be administered by
+  the Frontend.)  A call to get_value triggers the generation of Phi nodes.
+  If an arithmetic operation produces a local value this value needs to be
+  passed to the library by set_value(node, local_val_nr).
+  In straight line code these two operations just remember and return the
+  pointer to nodes producing the value.  If the value passes block boundaries
+  Phi nodes can be inserted.
+  Similar routines exist to manage the Memory operands: set_store and
+  get_store.
+
+  Several nodes produce more than one result.  An example is the Div node.
+  Such nodes return tuples of values.  From these individual values can be
+  extracted by proj nodes.
+
+  The following example illustrates the construction of a simple basic block
+  with two predecessors stored in variables cf_pred1 and cf_pred2, containing
+  the code
+    a = a div a;
+  and finally jumping to an other block.  The variable a got the local_val_nr
+  42 by the frontend.
+
+  ir_node *this_block, *cf_pred1, *cf_pred2, *a_val, *mem, *div, *res, *cf_op;
+
+  this_block = new_immBlock();
+  add_in_edge(this_block, cf_pred1);
+  add_in_edge(this_block, cf_pred2);
+  mature_block(this_block);
+  a_val = get_value(17, mode_I);
+  mem = get_store();
+  div = new_Div(mem, a_val, a_val);
+  mem = new_Proj(div, mode_M, 0);   * for the numbers for Proj see docu *
+  res = new_Proj(div, mode_I, 2);
+  set_store(mem);
+  set_value(res, 17);
+  cf_op = new_Jmp();
+
+  For further information look at the documentation of the nodes and
+  constructors and at the paragraph COPING WITH DATA OBJECTS at the
+  end of this documentation.
+
+  The comfortable interface contains the following routines further explained
+  below:
+
+  ir_node *new_immBlock  (void);
+  ir_node *new_Start  (void);
+  ir_node *new_End    (void);
+  ir_node *new_Jmp    (void);
+  ir_node *new_Cond   (ir_node *c);
+  ir_node *new_Return (ir_node *store, int arity, ir_node **in);
+  ir_node *new_Raise  (ir_node *store, ir_node *obj);
+  ir_node *new_Const  (ir_mode *mode, tarval *con);
+  ir_node *new_SymConst (type_or_id *value, symconst_kind kind);
+  ir_node *new_simpleSel (ir_node *store, ir_node *objptr, entity *ent);
+  ir_node *new_Sel    (ir_node *store, ir_node *objptr, int arity,
+                       ir_node **in, entity *ent);
+  ir_node *new_Call   (ir_node *store, ir_node *callee, int arity,
+		       ir_node **in, type_method *type);
+  ir_node *new_Add    (ir_node *op1, ir_node *op2, ir_mode *mode);
+  ir_node *new_Sub    (ir_node *op1, ir_node *op2, ir_mode *mode);
+  ir_node *new_Minus  (ir_node *op,  ir_mode *mode);
+  ir_node *new_Mul    (ir_node *op1, ir_node *op2, ir_mode *mode);
+  ir_node *new_Quot   (ir_node *memop, ir_node *op1, ir_node *op2);
+  ir_node *new_DivMod (ir_node *memop, ir_node *op1, ir_node *op2);
+  ir_node *new_Div    (ir_node *memop, ir_node *op1, ir_node *op2);
+  ir_node *new_Mod    (ir_node *memop, ir_node *op1, ir_node *op2);
+  ir_node *new_Abs    (ir_node *op,                ir_mode *mode);
+  ir_node *new_And    (ir_node *op1, ir_node *op2, ir_mode *mode);
+  ir_node *new_Or     (ir_node *op1, ir_node *op2, ir_mode *mode);
+  ir_node *new_Eor    (ir_node *op1, ir_node *op2, ir_mode *mode);
+  ir_node *new_Not    (ir_node *op,                ir_mode *mode);
+  ir_node *new_Shl    (ir_node *op,  ir_node *k,   ir_mode *mode);
+  ir_node *new_Shr    (ir_node *op,  ir_node *k,   ir_mode *mode);
+  ir_node *new_Shrs   (ir_node *op,  ir_node *k,   ir_mode *mode);
+  ir_node *new_Rot    (ir_node *op,  ir_node *k,   ir_mode *mode);
+  ir_node *new_Cmp    (ir_node *op1, ir_node *op2);
+  ir_node *new_Conv   (ir_node *op, ir_mode *mode);
+  ir_node *new_Load   (ir_node *store, ir_node *addr);
+  ir_node *new_Store  (ir_node *store, ir_node *addr, ir_node *val);
+  ir_node *new_Alloc  (ir_node *store, ir_node *size, type *alloc_type,
+                       where_alloc where);
+  ir_node *new_Free   (ir_node *store, ir_node *ptr, ir_node *size,
+  		     type *free_type);
+  ir_node *new_Proj   (ir_node *arg, ir_mode *mode, long proj);
+
+  void add_in_edge (ir_node *block, ir_node *jmp);
+  void     mature_block (ir_node *block);
+  void switch_block (ir_node *target);
+  ir_node *get_value (int pos, ir_mode *mode);
+  void set_value (int pos, ir_node *value);
+  ir_node *get_store (void);
+  void set_store (ir_node *store);
 
 
   IR_NODES AND CONSTRUCTORS FOR IR_NODES
@@ -249,19 +398,18 @@
   Watch for my inconsistent use of input and predecessor (dataflow view)
   and `the node points to' (implementation view).
 
-  The following description of the nodes lists four properties them if these are
-  of interest:
+  The following description of the nodes lists four properties them if these
+  are of interest:
    - the parameters to the constructor
    - the inputs of the Firm node
    - the outputs of the Firm node
    - attributes to the node
 
-
   BASIC BLOCKS
   ------------
 
-  ir_node *new_Block (void)
-  --------------------------
+  ir_node *new_immBlock (void)
+  ----------------------------
 
   Creates a new block.  Sets current_block to itself.  When a new block is
   created it cannot be known how many predecessors this block will have in the
@@ -278,7 +426,10 @@
   of this block are called after maturing it and before calling get_value
   in some block that is control flow dependent on this block, the construction
   is correct.
-  Example for faulty ir construction:
+
+  Example for faulty ir construction:  (draw the graph on a paper and you'll
+                                        get it ;-)
+
     block_before_loop = new_block();
     set_value(x);
     mature_block(block_before_loop);
@@ -299,7 +450,8 @@
 
     get_value(loop_body, x);   // gets the Phi in loop_header
     set_value(loop_header, x); // sets the value the above get_value should
-                               // have returned!!!
+    // have returned!!!
+
   Mature_block also fixes the number of inputs to the Phi nodes.  Mature_block
   should be called as early as possible, as afterwards the generation of Phi
   nodes is more efficient.
@@ -310,17 +462,24 @@
     Possible predecessors:  Start, Jmp, Cond, Raise or Return or any node
     possibly causing an exception.  (Often the real predecessors are Projs.)
   Output:
-    Mode R, all nodes belonging to this block should consume this output.
+    Mode BB (R), all nodes belonging to this block should consume this output.
     As they are strict (except Block and Phi node) it is a necessary condition
-    that the block node executed before any other node in this block
-    executes.
+    that the block node executed before any other node in this block executes.
   Attributes:
     block.matured  Indicates whether the block is mature.
-    block.closed   ???
     block.**graph_arr
                     This attribute contains all local values valid in this
                     block. This is needed to build the Phi nodes and removed
-                    if the graph is complete.
+                    if the graph is complete.  This field is used by the
+		    internal construction algorithm and should not be accessed
+		    from outside.
+
+
+  ir_node *new_Block (int arity, ir_node **in)
+  --------------------------------------------
+
+  Creates a new Block with the given list of predecessors.  This block
+  is mature.
 
 
   CONTROL FLOW OPERATIONS
@@ -333,8 +492,8 @@
   ir_node *new_Start (void)
   -------------------------
 
-  Creates a start node.  Not actually needed public.  Created
-  by new_ir_graph.
+  Creates a start node.  Not actually needed public.  There is only one such
+  node in each procedure which is automatically created by new_ir_graph.
 
   Inputs:
     No inputs except the block it belogns to.
@@ -345,20 +504,21 @@
                      mode X, points to the first block to be executed.
     * pns_global_store
                      mode M, the global store
-    * pns_frame_base mode P, a pointer to the base of the procedures stack frame.
-    * pns_globals    mode P, a pointer to the part of the memory containing _all_
-                             global things.
+    * pns_frame_base mode P, a pointer to the base of the procedures
+ 		             stack frame.
+    * pns_globals    mode P, a pointer to the part of the memory containing
+                             _all_ global things.
     * pns_args       mode T, a tuple containing all arguments of the procedure.
 
 
   ir_node *new_End (void)
   -----------------------
 
-  Creates an end node.  Not actually needed public.  Created by
-  new_ir_graph.
+  Creates an end node.  Not actually needed public.  There is only one such
+  node in each procedure which is automatically created by new_ir_graph.
 
   Inputs:
-    No inputs except the block it belogns to.
+    No inputs except the block it belongs to.
   Output:
     No output.
 
@@ -445,13 +605,14 @@
   ir_node *new_SymConst (type *type, symconst_kind kind)
   ------------------------------------------------------------
 
-  There are two kinds of symbolic constants:
+  There are three kinds of symbolic constants:
     type_tag  The symbolic constant represents a type tag.
     size      The symbolic constant represents the size of a class.
-    link_info Information for the linker.
+    link_info Information for the linker, e.g. the name of a global
+              variable.
 
   Parameters
-    kind       The kind of the symbolic constant: type_tag or size.
+    kind       The kind of the symbolic constant: type_tag, size or link_info.
     *type      Points to the type the tag stands for or to the type
                whose size is represented by the constant.
 
@@ -465,7 +626,7 @@
                       - type_tag
                       - size
 		      - linkage_ptr_info
-      If the attr.i.num is type_tag of size, the node contains an attribute
+      If the attr.i.num is type_tag or size, the node contains an attribute
     attr.i.*type     A pointer to a type_class.
       if it is linkage_ptr_info it contains
     attr.i.*ptrinfo  A ident holding information for the linker.
@@ -481,8 +642,8 @@
   a method.
 
   Parameters:
-    *store     The memory in which the object the entity should be selected from
-               is allocated.
+    *store     The memory in which the object the entity should be selected
+               from is allocated.
     *frame     The pointer to the object.
     *sel       The entity to select.
 
@@ -537,11 +698,11 @@
   Creates a procedure call.
 
   Parameters
-    *store           The actual store.  Why not also the stack frame?
+    *store           The actual store.
     *callee          A pointer to the called procedure.
     arity            The number of procedure parameters.
     **in             An array with the pointers to the parameters.
-                     This array is copied in the constructor.
+                     The constructor copies this array.
     *type            Type information of the procedure called.
 
   Inputs:
@@ -925,17 +1086,6 @@
 # include "pdeq.h"
 # include "irvrfy.h"
 
-/* irnode constructor                                             */
-/* Create a new irnode in irg, with an op, mode, arity and        */
-/* some incoming irnodes.                                         */
-/* If arity is negative, a node with a dynamic array is created.  */
-/* inline ir_node *new_ir_node (ir_graph *irg, ir_node *block, ir_op *op,
-			     ir_mode *mode, int arity, ir_node **in);
-*/
-/** These headers need not to be here. They are never used by the
-    public.
-    That's not completely true.  They need not be seen by a frontend,
-    but they might be useful for optimizations changing the IR. **/
 
 #if USE_EXPICIT_PHI_IN_STACK
 /* A stack needed for the automatic Phi node construction in constructor
@@ -945,6 +1095,7 @@ typedef struct Phi_in_stack {
   int       pos;
 } Phi_in_stack;
 #endif
+
 
 /* privat interfaces */
 /* more detailed construction */
@@ -1028,6 +1179,14 @@ ir_node *new_r_Bad (ir_node *block);
 
 /* public interfaces */
 /* normal constructors */
+
+/* Chris: please rename the Block constructor:
+   new_Block to new_immBlock
+   and add a new one so dass das dann so aussieht: */
+#if 0
+ir_node *new_immBlock (void);  /* immature Block without predecessors */
+ir_node *new_Block(int arity, ir_node **in);          /* mature Block */
+#endif
 
 ir_node *new_Block  (void);
 ir_node *new_Start  (void);

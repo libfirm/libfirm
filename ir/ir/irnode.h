@@ -58,7 +58,8 @@ enum {
   pns_args              /* Projection on all arguments */
 } pns_number;
 
-/* ir node attributes */
+/** ir node attributes **/
+/* Block attributes */
 typedef struct {
   unsigned long block_visit;  /* for the walker that walks over all blocks. */
   /* Attributes private to construction: */
@@ -66,6 +67,10 @@ typedef struct {
   struct ir_node **graph_arr; /* array to store all parameters */
 } block_attr;
 
+/* SymConst attributes */
+/*   This enum names the three different kinds of symbolic Constants
+     represented by SymConst.  The content of the attribute type_or_id
+     depends on this tag. */
 typedef enum {
   type_tag,          /* The SymConst is a type tag for the given type.
 			Type_or_id is type */
@@ -75,6 +80,7 @@ typedef enum {
 			by the linker. Type_or_id is ident */
 } symconst_kind;
 
+/*   This union contains the symbolic information represented by the node */
 typedef union {
   type *typ;
   ident *ptrinfo;
@@ -85,6 +91,7 @@ typedef struct {
   symconst_kind num;
 } symconst_attr;
 
+/* Sel attributes */
 typedef enum {
   static_linkage,       /* entity is used internal and not visible out of this
 			   file/class. */
@@ -97,9 +104,10 @@ typedef struct {
   linkage_type *ltyp;   /* linkage type of the entity */
 } sel_attr;
 
+/* Alloc attributes */
 typedef enum {
   stack_alloc,          /* Alloc allocates the object on the stack. */
-  heap_alloc            /* lloc allocates the object on the heap. */
+  heap_alloc            /* Alloc allocates the object on the heap. */
 } where_alloc;
 
 typedef struct {
@@ -141,8 +149,8 @@ struct ir_node {
 			      during optimization to link to nodes that
 			      shall replace a node. */
   attr attr;               /* attribute of this node. Depends on opcode. */
-                           /* Must be last attribute of struct ir_node. */
-} ;
+                           /* Must be last field of struct ir_node. */
+};
 
 
 /* The typedefiniton of ir_node is also in irgraph.h to resolve
@@ -217,8 +225,6 @@ inline ir_node *get_Block_cfgpred (ir_node *node, int pos);
 inline void     set_Block_cfgpred (ir_node *node, int pos, ir_node *pred);
 inline bool     get_Block_matured (ir_node *node);
 inline void     set_Block_matured (ir_node *node, bool matured);
-inline bool     get_Block_closed (ir_node *node);
-inline void     set_Block_closed (ir_node *node, bool closed);
 inline unsigned long get_Block_block_visit (ir_node *node);
 inline void     set_Block_block_visit (ir_node *node, unsigned long visit);
 inline ir_node *get_Block_graph_arr (ir_node *node, int pos);
@@ -454,7 +460,7 @@ inline int      is_no_Block (ir_node *node);
    Start, End, Jmp, Cond, Return, Raise */
 int is_cfop(ir_node *node);
 /* Returns true if the operation can change the control flow because
-   of a exception. */
+   of an exception. */
 int is_fragile_op(ir_node *node);
 
 # endif /* _IRNODE_H_ */
