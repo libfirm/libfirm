@@ -26,6 +26,8 @@
 #include "irflag_t.h"
 
 
+// # define CATE_jni
+
 /* Datenstruktur für jede Methode */
 typedef struct {
   int count;                      /* GL: anzahl aufrufer */
@@ -61,8 +63,10 @@ static void caller_init(int arr_length, entity ** free_methods) {
 	entity * ent = get_Call_callee(call, j);
 	if (ent) {
 	  irg_data_t * data = get_entity_link(ent);
+# ifndef CATE_jni
 	  assert(get_entity_irg(ent) && data);
 	  ++data->count;
+# endif /* ndef CATE_jni */
 	}
       }
     }
