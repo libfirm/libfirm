@@ -730,11 +730,11 @@ transform_node (ir_node *n)
       jmp = new_r_Jmp(current_ir_graph, get_nodes_Block(n));
       turn_into_tuple(n, 2);
       if (ta == tarval_b_true) {
-		set_Tuple_pred(n, 0, new_Bad());
-		set_Tuple_pred(n, 1, jmp);
+	set_Tuple_pred(n, 0, new_Bad());
+	set_Tuple_pred(n, 1, jmp);
       } else {
-		set_Tuple_pred(n, 0, jmp);
-		set_Tuple_pred(n, 1, new_Bad());
+	set_Tuple_pred(n, 0, jmp);
+	set_Tuple_pred(n, 1, new_Bad());
       }
       /* We might generate an endless loop, so keep it alive. */
       add_End_keepalive(get_irg_end(current_ir_graph), get_nodes_Block(n));

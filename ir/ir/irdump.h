@@ -240,6 +240,11 @@ void turn_off_edge_labels(void);
  *   Default setting: false.
  */
 void dump_consts_local(bool b);
+/**
+ * Returns false if dump_out_edge_flag or dump_loop_information_flag
+ * are set, else returns dump_const_local_flag.
+ */
+bool get_opt_dump_const_local(void);
 
 /**
  *   Turns off dumping the values of constant entities. Makes type graphs
@@ -252,6 +257,7 @@ void turn_off_constant_entity_values(void);
  *   alive
  */
 void dump_keepalive_edges(bool b);
+bool get_opt_dump_keepalive_edges(void);
 
 /**
  *   Turns on dumping the out edges starting from the Start block in

@@ -114,7 +114,7 @@ int dump_dominator_information_flag = 0;
 int dump_loop_information_flag = 0;
 int dump_const_local = 0;
 
-static INLINE bool dump_const_local_set(void) {
+INLINE bool get_opt_dump_const_local(void) {
   if (!dump_out_edge_flag && !dump_loop_information_flag)
     return dump_const_local;
   else
@@ -139,19 +139,16 @@ dump_node_opcode (ir_node *n)
   char buf[1024];
   int res;
 
-  assert(n && n->op);
-
   /* Const */
-  if (n->op->code == iro_Const) {
-    res = tarval_snprintf(buf, sizeof(buf), n->attr.con);
+  if (get_irn_opcode(n) == iro_Const) {    res = tarval_snprintf(buf, sizeof(buf), get_Const_tarval(n));
     assert(res < sizeof(buf) && "buffer to small for tarval_snprintf");
     fprintf(F, buf);
 
   /* SymConst */
-  } else if (n->op->code == iro_SymConst) {
+  } else if (get_irn_opcode(n) == iro_SymConst) {
     if (get_SymConst_kind(n) == linkage_ptr_info) {
       /* don't use get_SymConst_ptr_info as it mangles the name. */
-      fprintf (F, "SymC %s", id_to_str(n->attr.i.tori.ptrinfo));
+      fprintf (F, "SymC %s", id_to_str(get_SymConst_ptrinfo(n)));
     } else {
       assert(get_kind(get_SymConst_type(n)) == k_type);
       assert(get_type_ident(get_SymConst_type(n)));
@@ -163,7 +160,7 @@ dump_node_opcode (ir_node *n)
     }
 
   /* Filter */
-  } else if (n->op->code == iro_Filter && !interprocedural_view) {
+  } else if (get_irn_opcode(n) == iro_Filter && !interprocedural_view) {
     fprintf(F, "Proj'");
 
   /* all others */
@@ -175,7 +172,7 @@ dump_node_opcode (ir_node *n)
 static INLINE void
 dump_node_mode (ir_node *n)
 {
-  switch (n->op->code) {
+  switch (get_irn_opcode(n)) {
   case iro_Phi:
   case iro_Const:
   case iro_Id:
@@ -193,7 +190,7 @@ dump_node_mode (ir_node *n)
   case iro_Shr:
   case iro_Abs:
   case iro_Cmp:
-    fprintf (F, "%s", id_to_str(get_mode_ident(n->mode)));
+    fprintf (F, "%s", id_to_str(get_mode_ident(get_irn_mode(n))));
     break;
   default:
     ;
@@ -203,21 +200,21 @@ dump_node_mode (ir_node *n)
 static INLINE void
 dump_node_nodeattr (ir_node *n)
 {
-  switch (n->op->code) {
+  switch (get_irn_opcode(n)) {
   case iro_Start:
     if (false && interprocedural_view) {
       fprintf (F, "%s", id_to_str(get_entity_ident(get_irg_ent(current_ir_graph))));
     }
     break;
   case iro_Proj:
-    if (n->in[1]->op->code == iro_Cmp) {
-      fprintf (F, "%s", get_pnc_string(n->attr.proj));
+    if (get_irn_opcode(get_Proj_pred(n)) == iro_Cmp) {
+      fprintf (F, "%s", get_pnc_string(get_Proj_proj(n)));
     } else {
-      fprintf (F, "%ld", n->attr.proj);
+      fprintf (F, "%ld", get_Proj_proj(n));
     }
     break;
   case iro_Filter:
-    fprintf (F, "%ld", n->attr.filter.proj);
+    fprintf (F, "%ld", get_Filter_proj(n));
     break;
   case iro_Sel: {
     assert(get_kind(get_Sel_entity(n)) == k_entity);
@@ -231,7 +228,7 @@ dump_node_nodeattr (ir_node *n)
 static INLINE void
 dump_node_vcgattr (ir_node *n)
 {
-  switch (n->op->code) {
+  switch (get_irn_opcode(n)) {
   case iro_Start:
   case iro_EndReg:
     /* fall through */
@@ -282,7 +279,7 @@ bool is_constlike_node(ir_node *n) {
 
 static void dump_const_node_local(ir_node *n, pmap *irgmap) {
   int i;
-  if (!dump_const_local_set()) return;
+  if (!get_opt_dump_const_local()) return;
   /* Use visited flag to avoid outputting nodes twice.
      initialize it first. */
   for (i = 0; i < get_irn_arity(n); i++) {
@@ -317,7 +314,7 @@ static void dump_const_node_local(ir_node *n, pmap *irgmap) {
 
 static void
 dump_node (ir_node *n, pmap * map) {
-  if (dump_const_local_set() && is_constlike_node(n)) return;
+  if (get_opt_dump_const_local() && is_constlike_node(n)) return;
 
   /* dump this node */
   fprintf (F, "node: {title: \""); PRINT_NODEID(n); fprintf(F, "\" label: \"");
@@ -335,161 +332,10 @@ dump_node (ir_node *n, pmap * map) {
   dump_const_node_local(n, map);
 }
 
-static void
-dump_ir_node (ir_node *n)
-{
-  char buf[1024];
-  int res;
-
-  /* dump this node */
-  fprintf (F, "node: {title: \""); PRINT_NODEID(n); fprintf(F, "\" label: ");
-
-  switch (n->op->code) {  /* node label */
-  case iro_Start:
-    fprintf (F, "\"%s\" color: blue ", id_to_str(get_irn_opident(n)));
-    PRINT_DEFAULT_NODE_ATTR;
-     break;
-  case iro_EndReg:
-    /* fall through */
-  case iro_EndExcept:
-    /* fall through */
-  case iro_End:
-    fprintf (F, "\"%s\" color: blue ", id_to_str(get_irn_opident(n)));
-    PRINT_DEFAULT_NODE_ATTR;
-    break;
-  case iro_Block:
-    fprintf (F, "\"%s\" color: lightyellow ", id_to_str(get_irn_opident(n)));
-    PRINT_DEFAULT_NODE_ATTR;
-    break;
-  case iro_Phi:
-    fprintf (F, "\"%s%s\" color: green", id_to_str(get_irn_opident(n)), id_to_str(get_irn_modeident(n)));
-    if (get_irn_modecode(n) == irm_M)
-      fprintf (F, DEFAULT_NODE_ATTR " color: green");
-    else
-      PRINT_DEFAULT_NODE_ATTR;
-    break;
-  case iro_Const:
-    res = tarval_snprintf(buf, sizeof(buf), n->attr.con);
-    assert(res < sizeof(buf) && "buffer to small for tarval_snprintf");
-
-    fprintf (F, "\"%s%s\" color: yellow ", buf, id_to_str(get_irn_modeident(n)));
-    PRINT_DEFAULT_NODE_ATTR;
-    break;
-  case iro_Proj:
-    if (n->in[1]->op->code == iro_Cmp) {
-      fprintf (F, "\"%s%s %s\" color: yellow", id_to_str(get_irn_opident(n)), id_to_str(get_irn_modeident(n)),
-                get_pnc_string(n->attr.proj));
-    } else {
-      fprintf (F, "\"%s%s %ld\"", id_to_str(get_irn_opident(n)), id_to_str(get_irn_modeident(n)), n->attr.proj);
-    }
-    PRINT_DEFAULT_NODE_ATTR;
-    break;
-  case iro_Filter:
-    fprintf (F, "\"%s%s %ld\"", id_to_str(get_irn_opident(n)), id_to_str(get_irn_modeident(n)), n->attr.filter.proj);
-    PRINT_DEFAULT_NODE_ATTR;
-    break;
-#if 0
-  case iro_Id:
-    /* fall through */
-  case iro_Conv:
-    /* fall through */
-  case iro_Tuple:
-    /* fall through */
-  case iro_Add:
-    /* fall through */
-  case iro_Sub:
-    /* fall through */
-  case iro_Mul:
-    /* fall through */
-  case iro_Quot:
-    /* fall through */
-  case iro_DivMod:
-    /* fall through */
-  case iro_Div:
-    /* fall through */
-  case iro_Mod:
-    /* fall through */
-  case iro_And:
-    /* fall through */
-  case iro_Or:
-    /* fall through */
-  case iro_Eor:
-    /* fall through */
-  case iro_Shl:
-    /* fall through */
-  case iro_Shr:
-    /* fall through */
-  case iro_Abs:
-    /* fall through */
-  case iro_Cmp:
-    /* fall through */
-  case iro_Raise:
-    /* fall through */
-  case iro_Unknown:
-    /* fall through */
-  case iro_Bad:
-    /* fall through */
-  case iro_Load:
-    /* fall through */
-  case iro_Store:
-    fprintf (F, "\"%s%s\"", id_to_str(get_irn_opident(n)), id_to_str(get_irn_modeident(n)));
-    PRINT_DEFAULT_NODE_ATTR;
-    break;
-#endif
-  case iro_Jmp:
-    /* fall through */
-  case iro_Break:
-    /* fall through */
-  case iro_Cond:
-    /* fall through */
-  case iro_Call:
-    /* fall through */
-  case iro_CallBegin:
-    /* fall through */
-  case iro_Return:
-    /* fall through */
-  case iro_Alloc:
-    fprintf (F, "\"%s\"", id_to_str(get_irn_opident(n)));
-    PRINT_DEFAULT_NODE_ATTR;
-    break;
-  case iro_Sel:
-    assert(get_kind(get_Sel_entity(n)) == k_entity);
-    fprintf (F, "\"%s ", id_to_str(get_irn_opident(n)));
-    fprintf (F, "%s", id_to_str(get_entity_ident(get_Sel_entity(n))));
-    PRINT_DEFAULT_NODE_ATTR;
-    break;
-  case iro_SymConst:
-    assert(get_kind(get_SymConst_type(n)) == k_type);
-    assert(get_type_ident(get_SymConst_type(n)));
-    fprintf (F, "\"%s ", get_type_name(get_SymConst_type(n)));
-    switch (n->attr.i.num){
-    case type_tag:
-      fprintf (F, "tag\" ");
-      break;
-    case size:
-      fprintf (F, "size\" ");
-      break;
-    default:
-      assert(0);
-      break;
-    }
-    PRINT_DEFAULT_NODE_ATTR;
-    break;
-  case iro_Sync:
-    fprintf (F, "\"%s\" ", id_to_str(get_irn_opident(n)));
-    fprintf (F, DEFAULT_NODE_ATTR " color: green");
-    break;
-  default:
-    fprintf (F, "\"%s%s\" ", id_to_str(get_irn_opident(n)), id_to_str(get_irn_modeident(n)));
-  }
-  fprintf (F, "}\n");		/* footer */
-}
-
-
 /* dump the edge to the block this node belongs to */
 static void
 dump_ir_block_edge(ir_node *n)  {
-  if (dump_const_local_set() && is_constlike_node(n)) return;
+  if (get_opt_dump_const_local() && is_constlike_node(n)) return;
   if (is_no_Block(n)) {
     fprintf (F, "edge: { sourcename: \"");
     PRINT_NODEID(n);
@@ -605,7 +451,7 @@ dump_ir_data_edges(ir_node *n)  {
       fprintf (F, "edge: {sourcename: \"");
     PRINT_NODEID(n);
     fprintf (F, "\" targetname: \"");
-    if ((dump_const_local_set()) && is_constlike_node(pred))
+    if ((get_opt_dump_const_local()) && is_constlike_node(pred))
       PRINT_NODEID(n);
     PRINT_NODEID(pred);
     fprintf (F, "\"");
@@ -1137,11 +983,11 @@ dump_ir_graph (ir_graph *irg)
 
   /* walk over the graph */
   /* dump_whole_node must be called in post visiting predecessors */
-  irg_walk(irg->end, NULL, dump_whole_node, NULL);
+  irg_walk(get_irg_end(irg), NULL, dump_whole_node, NULL);
 
   /* dump the out edges in a separate walk */
   if ((dump_out_edge_flag) && (get_irg_outs_state(irg) != no_outs)) {
-    irg_out_walk(irg->start, dump_out_edge, NULL, NULL);
+    irg_out_walk(get_irg_start(irg), dump_out_edge, NULL, NULL);
   }
 
   vcg_close();
@@ -1178,7 +1024,7 @@ dump_ir_block (ir_node *block, void *env) {
 #ifdef DEBUG_libfirm
     fprintf (F, "%ld", get_irn_node_nr(block));
 #else
-    fprintf (F, "%s", id_to_str(block->op->name));
+    fprintf (F, "%s", get_op_name(get_irn_op(block)));
 #endif
     if (exc_normal != get_Block_exc (block))
       fprintf (F, " (%s)", exc_to_string (get_Block_exc (block)));
@@ -1189,7 +1035,7 @@ dump_ir_block (ir_node *block, void *env) {
     dump_ir_data_edges(block);
 
     /* dump the nodes that go into the block */
-    irg_walk(irg->end, dump_ir_blocks_nodes, NULL, block);
+    irg_walk(get_irg_end(irg), dump_ir_blocks_nodes, NULL, block);
 
     /* Close the vcg information for the block */
     fprintf(F, "}\n\n");
@@ -1218,10 +1064,10 @@ static void dump_ir_block_graph_2  (ir_graph *irg)
 {
   Bad_dumped = 0;
   /* walk over the blocks in the graph */
-  irg_block_walk(irg->end, dump_ir_block, NULL, irg);
+  irg_block_walk(get_irg_end(irg), dump_ir_block, NULL, irg);
 
   /* dump all nodes that are not in a Block */
-  irg_walk(irg->end, dump_blockless_nodes, NULL, NULL);
+  irg_walk(get_irg_end(irg), dump_blockless_nodes, NULL, NULL);
 
   /* dump the Bad node */
   if (!Bad_dumped)
@@ -1259,10 +1105,10 @@ dump_block_to_cfg (ir_node *block, void *env) {
   if (get_irn_opcode(block) == iro_Block) {
     /* This is a block. Dump a node for the block. */
     fprintf (F, "node: {title:\""); PRINT_NODEID(block);
-    fprintf (F, "\" label: \"%s ", id_to_str(block->op->name)); PRINT_NODEID(block);
+    fprintf (F, "\" label: \"%s ", get_op_name(get_irn_op(block))); PRINT_NODEID(block);
 
-	if (exc_normal != get_Block_exc (block))
-	  fprintf (F, " (%s)", exc_to_string (get_Block_exc (block)));
+    if (exc_normal != get_Block_exc (block))
+      fprintf (F, " (%s)", exc_to_string (get_Block_exc (block)));
 
     fprintf (F, "\" ");
     if (dump_dominator_information_flag)
@@ -1303,8 +1149,8 @@ dump_cfg (ir_graph *irg)
     dump_dominator_information_flag = 0;
 
   /* walk over the blocks in the graph */
-  irg_block_walk(irg->end, dump_block_to_cfg, NULL, NULL);
-  dump_ir_node (irg->bad);
+  irg_block_walk(get_irg_end(irg), dump_block_to_cfg, NULL, NULL);
+  dump_node (get_irg_bad(irg), NULL);
 
   dump_dominator_information_flag = ddif;
   vcg_close();
@@ -1379,12 +1225,12 @@ dump_ir_graph_w_types (ir_graph *irg)
   vcg_open (irg, "-all");
 
   /* dump common ir graph */
-  irg_walk(irg->end, dump_whole_node, NULL, NULL);
+  irg_walk(get_irg_end(irg), dump_whole_node, NULL, NULL);
   /* dump type info */
   type_walk_irg(irg, dump_type_info, NULL, NULL);
   inc_irg_visited(get_const_code_irg());
   /* dump edges from graph to type info */
-  irg_walk(irg->end, dump_node2type_edges, NULL, NULL);
+  irg_walk(get_irg_end(irg), dump_node2type_edges, NULL, NULL);
 
   vcg_close();
   current_ir_graph = rem;
@@ -1405,7 +1251,7 @@ dump_ir_block_graph_w_types (ir_graph *irg)
   type_walk_irg(irg, dump_type_info, NULL, NULL);
   inc_irg_visited(get_const_code_irg());
   /* dump edges from graph to type info */
-  irg_walk(irg->end, dump_node2type_edges, NULL, NULL);
+  irg_walk(get_irg_end(irg), dump_node2type_edges, NULL, NULL);
 
   vcg_close();
   current_ir_graph = rem;
@@ -1444,6 +1290,10 @@ void turn_off_constant_entity_values(void) {
 
 void dump_keepalive_edges(bool b) {
   dump_keepalive = b;
+}
+
+bool get_opt_dump_keepalive_edges(void) {
+  return dump_keepalive;
 }
 
 void dump_out_edges(void) {
@@ -1497,7 +1347,7 @@ static void dump_cg_ir_block(ir_node * block, void * env) {
 #ifdef DEBUG_libfirm
   fprintf (F, "%ld", get_irn_node_nr(block));
 #else
-  fprintf (F, "%s", id_to_str(block->op->name));
+  fprintf (F, "%s", get_op_name(get_irn_op(block));
 #endif
   if (exc_normal != get_Block_exc(block)) {
     fprintf (F, " (%s)", exc_to_string (get_Block_exc(block)));

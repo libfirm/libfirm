@@ -169,6 +169,8 @@ irn_vrfy_irg (ir_node *n, ir_graph *irg)
 
   opcode = get_irn_opcode (n);
 
+  /* We don't want to test nodes whose predecessors are Bad or Unknown,
+     as we would have to special case that for each operation. */
   if (opcode != iro_Phi && opcode != iro_Block)
     for (i = 0; i < get_irn_arity(n); i++) {
       opcode1 = get_irn_opcode(get_irn_n(n, i));

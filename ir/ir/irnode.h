@@ -573,7 +573,8 @@ ir_node *get_fragile_op_mem(ir_node *node);
 
 /* !!!!!!!!! @@@
    Don't format with "\", firmjni gets problems */
-
+/** Output location */
+#define DDM(X)   printf("%s(l.%i).\n",                       __MYFUNC__, __LINE__);
 /** Output the firm kind of the node */
 #define DDMK(X)  printf("%s(l.%i) %s: %p\n",                 __MYFUNC__, __LINE__,  print_firm_kind(X), (X));
 /** Output information about a node */
@@ -592,8 +593,10 @@ ir_node *get_fragile_op_mem(ir_node *node);
 #define DDMI(X)  printf("%s(l.%i) %s: %p\n",                 __MYFUNC__, __LINE__, id_to_str(X), (X))
 /** Output information about a mode */
 #define DDMM(X)  printf("%s(l.%i) %s: %p\n",                 __MYFUNC__, __LINE__, get_mode_name(X), (X))
-/** Output information about a loope */
+/** Output information about a loop */
 #define DDML(X)  printf("%s(l.%i) loop with depth %d: %p\n", __MYFUNC__, __LINE__, get_loop_depth(X), (X))
+/** Output information about a tarVal */
+#define DDMV(X)  printf("%s(l.%i) tarval: ",__MYFUNC__, __LINE__); tarval_printf(X); printf(" (%p)\n", (X));
 
 /*@}*/ /* end of ir_node group definition */
 

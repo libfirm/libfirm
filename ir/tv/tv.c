@@ -894,7 +894,12 @@ tarval *tarval_and(tarval *a, tarval *b)
   ANNOUNCE();
   assert(a);
   assert(b);
-  assert((a->mode == b->mode) && mode_is_int(a->mode));
+  assert(a->mode == b->mode);
+
+  /* GL: needed for easy optimization. */
+  if (a->mode == mode_b) return (a == tarval_b_false) ? a : b;
+
+  assert(mode_is_int(a->mode));
 
   sc_and(a->value, b->value);
   return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
@@ -908,7 +913,13 @@ tarval *tarval_or (tarval *a, tarval *b)
   ANNOUNCE();
   assert(a);
   assert(b);
-  assert((a->mode == b->mode) && mode_is_int(a->mode));
+  assert(a->mode == b->mode);
+
+  /* GL: needed for easy optimization. */
+  if (a->mode == mode_b) return (a == tarval_b_true) ? a : b;
+
+
+  assert(mode_is_int(a->mode));
 
   sc_or(a->value, b->value);
   return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
@@ -1077,6 +1088,21 @@ int tarval_snprintf(char *buf, size_t len, tarval *tv)
 
   return 0;
 }
+
+
+/**
+ * Output of tarvals to stdio.
+ */
+int tarval_printf(tarval *tv) {
+  char buf[1024];
+  int res;
+
+  res = tarval_snprintf(buf, sizeof(buf), tv);
+  assert(res < sizeof(buf) && "buffer to small for tarval_snprintf");
+  printf(buf);
+  return res;
+}
+
 
 char *tarval_bitpattern(tarval *tv)
 {

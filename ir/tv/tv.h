@@ -589,8 +589,13 @@ void init_tarval_1(void);
 void init_tarval_2(void);
 
 /**
- * Output of tarvals.
+ * Output of tarvals to a buffer.
  */
 int tarval_snprintf(char *buf, size_t buflen, tarval *tv);
+
+/**
+ * Output of tarvals to stdio.
+ */
+int tarval_printf(tarval *tv);
 
 #endif  /* _TV_H_ */

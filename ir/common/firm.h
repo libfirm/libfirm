@@ -60,6 +60,7 @@
 # define _FIRM_H_
 
 /* The representations */
+# include "firm_common.h"/* common type tags. */
 # include "irprog.h"     /* control flow and data of a program */
 # include "type.h"       /* type representation */
 # include "entity.h"     /* entity representation */
