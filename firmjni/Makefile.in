@@ -49,7 +49,11 @@ CPPFLAGS += 	-I$(top_srcdir)/ir/ir  -I$(top_srcdir)/ir/common  	\
 	        -I$(top_srcdir)/ir/ana -I$(top_srcdir)/ir/opt		\
 		-I$(top_srcdir)/ir/st -I$(top_srcdir)/ir/stat
 
-LDFLAGS += -I$(topdir) -L$(libdir) -lfirmlower -labor
+LDFLAGS += -I$(topdir)
+
+ifeq ($enable_heapanal,yes)
+LDFLAGS += -L$(libdir) -lfirmlower -labor
+endif
 
 FIRM_HEADERS=$(notdir $(FIRM_PATH_HEADERS))
 MEMBERS=$(subst .h,.m,$(shell echo $(FIRM_HEADERS)|$(SHELL_TOUPPER)))
