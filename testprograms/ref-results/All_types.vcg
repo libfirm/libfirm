@@ -17,17 +17,17 @@ classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
 
-node: {title: "t1" label: "primitive int"info1: "state: layout_fixed,
+node: {title: "t10" label: "primitive int" info1: "state: layout_fixed,
 mode: Is,
 size: 4B,
 "}
-node: {title: "t2" label: "class PRIMA"info1: "state: layout_undefined
+node: {title: "t11" label: "class PRIMA" info1: "state: layout_undefined
 size: -1B,
 " color: green}
-edge: { sourcename:"t2" targetname: "e4" class: 12 label: "member" color:blue}
-edge: { sourcename:"t2" targetname: "e7" class: 12 label: "member" color:blue}
-edge: { sourcename:"t2" targetname: "e10" class: 12 label: "member" color:blue}
-node: {title: "e4"label: "ent a" color: yellow
+edge: { sourcename: "t11" targetname: "e13"class: 12 label: "member" color:blue}
+edge: { sourcename: "t11" targetname: "e16"class: 12 label: "member" color:blue}
+edge: { sourcename: "t11" targetname: "e19"class: 12 label: "member" color:blue}
+node: {title: "e13" label: "ent a" color: yellow
  info1:"
 allocation:  automatic allocated
 visibility:  local
@@ -38,8 +38,8 @@ name:    a
 ld_name: PRIMA_a
 offset:  -1"
 }
-edge: { sourcename:"e4" targetname: "t1" class: 3 label: "type" color: red}
-node: {title: "e7"label: "ent set_a" color: yellow
+edge: { sourcename: "e13" targetname: "t10"class: 3 label: "type" color: red}
+node: {title: "e16" label: "ent set_a" color: yellow
  info1:"
 allocation:  static allocated
 visibility:  local
@@ -49,23 +49,23 @@ peculiarity: existent
 name:    set_a
 ld_name: PRIMA_set_a
 offset:  -1
-irg = g60"
+irg = g69"
 }
-edge: { sourcename:"e7" targetname: "t5" class: 3 label: "type" color: red}
-edge: { sourcename:"e7" targetname: "n6" label: "value 0"}
-node: {title: "n6" label: "&(PRIMA_set_a)P  6" color: yellow}
-node: {title: "t5" label: "method set_a"info1: "state: layout_fixed,
+edge: { sourcename: "e16" targetname: "t14"class: 3 label: "type" color: red}
+edge: { sourcename: "e16" targetname: "n15"label: "value 0"}
+node: {title: "n15" label: "&(PRIMA_set_a)P  15" color: yellow}
+node: {title: "t14" label: "method set_a" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
 "}
-edge: { sourcename:"t5" targetname: "t3" class: 5 label: "param 0" color: green}
-edge: { sourcename:"t5" targetname: "t1" class: 5 label: "param 1" color: green}
-node: {title: "t3" label: "pointer class_prima_ptr"info1: "state: layout_fixed,
+edge: { sourcename: "t14" targetname: "t12"class: 5 label: "param 0" color: green}
+edge: { sourcename: "t14" targetname: "t10"class: 5 label: "param 1" color: green}
+node: {title: "t12" label: "pointer class_prima_ptr" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
 "}
-edge: { sourcename:"t3" targetname: "t2" class: 9 label: "points to" color:green}
-node: {title: "e10"label: "ent c" color: yellow
+edge: { sourcename: "t12" targetname: "t11"class: 9 label: "points to" color:green}
+node: {title: "e19" label: "ent c" color: yellow
  info1:"
 allocation:  static allocated
 visibility:  local
@@ -75,28 +75,28 @@ peculiarity: existent
 name:    c
 ld_name: PRIMA_c
 offset:  -1
-irg = g83"
+irg = g92"
 }
-edge: { sourcename:"e10" targetname: "t8" class: 3 label: "type" color: red}
-edge: { sourcename:"e10" targetname: "n9" label: "value 0"}
-node: {title: "n9" label: "&(PRIMA_c)P  9" color: yellow}
-node: {title: "t8" label: "method c"info1: "state: layout_fixed,
+edge: { sourcename: "e19" targetname: "t17"class: 3 label: "type" color: red}
+edge: { sourcename: "e19" targetname: "n18"label: "value 0"}
+node: {title: "n18" label: "&(PRIMA_c)P  18" color: yellow}
+node: {title: "t17" label: "method c" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
 "}
-edge: { sourcename:"t8" targetname: "t3" class: 5 label: "param 0" color: green}
-edge: { sourcename:"t8" targetname: "t1" class: 5 label: "param 1" color: green}
-edge: { sourcename:"t8" targetname: "t1" class: 6 label: "res 0" color: green}
-node: {title: "t11" label: "method OO_INLINE_EXAMPLE_main"info1: "state: layout_fixed,
+edge: { sourcename: "t17" targetname: "t12"class: 5 label: "param 0" color: green}
+edge: { sourcename: "t17" targetname: "t10"class: 5 label: "param 1" color: green}
+edge: { sourcename: "t17" targetname: "t10"class: 6 label: "res 0" color: green}
+node: {title: "t20" label: "method OO_INLINE_EXAMPLE_main" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
 "}
-edge: { sourcename:"t11" targetname: "t1" class: 6 label: "res 0" color: green}
-node: {title: "t0" label: "class GlobalType"info1: "state: layout_undefined
+edge: { sourcename: "t20" targetname: "t10"class: 6 label: "res 0" color: green}
+node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1B,
 " color: green}
-edge: { sourcename:"t0" targetname: "e13" class: 12 label: "member" color:blue}
-node: {title: "e13"label: "ent OO_INLINE_EXAMPLE_main" color: yellow
+edge: { sourcename: "t0" targetname: "e22"class: 12 label: "member" color:blue}
+node: {title: "e22" label: "ent OO_INLINE_EXAMPLE_main" color: yellow
  info1:"
 allocation:  static allocated
 visibility:  local
@@ -106,9 +106,9 @@ peculiarity: existent
 name:    OO_INLINE_EXAMPLE_main
 ld_name: GlobalType_OO_INLINE_EXAMPLE_main
 offset:  -1
-irg = g26"
+irg = g35"
 }
-edge: { sourcename:"e13" targetname: "t11" class: 3 label: "type" color: red}
-edge: { sourcename:"e13" targetname: "n12" label: "value 0"}
-node: {title: "n12" label: "&(GlobalType_OO_INLINE_EXAMPLE_main)P  12" color: yellow}
+edge: { sourcename: "e22" targetname: "t20"class: 3 label: "type" color: red}
+edge: { sourcename: "e22" targetname: "n21"label: "value 0"}
+node: {title: "n21" label: "&(GlobalType_OO_INLINE_EXAMPLE_main)P  21" color: yellow}
 }
