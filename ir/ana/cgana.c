@@ -71,6 +71,7 @@ entity *get_inherited_methods_implementation(entity *inh_meth) {
   return impl_meth? impl_meth : inh_meth;
 }
 
+
 /* A recursive descend in the overwritten relation.
    Cycle-free, therefore must terminate. */
 void collect_impls(entity *method, eset *set, int *size, bool *open) {
@@ -81,8 +82,12 @@ void collect_impls(entity *method, eset *set, int *size, bool *open) {
       *open = true;
     } else {
       assert(get_entity_irg(method) != NULL);
-      eset_insert(set, method);
-      ++(*size);
+      if (!eset_contains(set, method)) {
+	eset_insert(set, method);
+	++(*size);
+	//printf("Adding existent method %d ", *size); DDME(method);
+	//printf(" with owner "); DDMT(get_entity_owner(method));
+      }
     }
   }
   if (get_entity_peculiarity(method) == inherited) {
@@ -96,6 +101,8 @@ void collect_impls(entity *method, eset *set, int *size, bool *open) {
       if (!eset_contains(set, impl_ent)) {
 	eset_insert(set, impl_ent);
 	++(*size);
+	//	printf("Adding inherited method %d ", *size); DDME(impl_ent);
+	//printf(" with owner "); DDMT(get_entity_owner(impl_ent));
       }
     }
   }
@@ -115,12 +122,14 @@ void collect_impls(entity *method, eset *set, int *size, bool *open) {
 static entity ** get_impl_methods(entity * method) {
   eset * set = eset_create();
   int size = 0;
-  int i;
   entity ** arr;
   bool open = false;
 
   /** Collect all method entities that can be called here **/
   collect_impls(method, set, &size, &open);
+
+
+  //printf("Size is  %d \n\n", size);
 
   /** Gefunden Entitaeten in ein Feld kopieren, ev. Unbekannten
      Vorgaenger einfuegen. **/
