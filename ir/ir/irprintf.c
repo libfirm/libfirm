@@ -12,38 +12,34 @@
 #include "irnode.h"
 #include "tv.h"
 #include "irprintf.h"
+#include "pset.h"
+#include "iterator.h"
 
-/**
- * Something that can append strings and chars to somewhere.
- */
-typedef struct _appender_t {
-	void (*append_char)(void *subject, size_t n, char ch);
-	void (*append_str)(void *subject, size_t n, const char *str);
-} appender_t;
 
-static void str_append_char(void *subject, size_t n, char ch)
+
+static void str_append_char(void *object, size_t n, char ch)
 {
 	char buf[2];
 
 	buf[0] = ch;
 	buf[1] = 0;
 
-	strncat(subject, buf, n);
+	strncat(object, buf, n);
 }
 
-static void str_append_str(void *subject, size_t n, const char *str)
+static void str_append_str(void *object, size_t n, const char *str)
 {
-	strncat(subject, str, n);
+	strncat(object, str, n);
 }
 
-static void file_append_char(void *subject, size_t n, char ch)
+static void file_append_char(void *object, size_t n, char ch)
 {
-	fputc(ch, subject);
+	fputc(ch, object);
 }
 
-static void file_append_str(void *subject, size_t n, const char *str)
+static void file_append_str(void *object, size_t n, const char *str)
 {
-	fputs(str, subject);
+	fputs(str, object);
 }
 
 static const appender_t file_appender = {
@@ -56,24 +52,36 @@ static const appender_t str_appender = {
 	str_append_str
 };
 
+static void ir_common_vprintf(const appender_t *app, void *object,
+		size_t limit, const char *fmt, va_list args);
+
+static INLINE void ir_common_printf(const appender_t *app, void *object,
+		size_t limit, const char *fmt, ...)
+{
+	va_list args;
+
+	va_start(args, fmt);
+	ir_common_vprintf(app, object, limit, fmt, args);
+	va_end(args);
+}
 
 /**
  * A small printf helper routine for ir nodes.
  * @param app An appender (this determines where the stuff is dumped
  * to).
- * @param subject A target passed to the appender.
+ * @param object A target passed to the appender.
  * @param limit The maximum number of characters to dump.
  * @param fmt The format string.
  * @param args A va_list.
  */
-static void ir_common_vprintf(const appender_t *app, void *subject,
+static void ir_common_vprintf(const appender_t *app, void *object,
 		size_t limit, const char *fmt, va_list args)
 {
 	char buf[256];
 	int i, n;
 
-#define DUMP_STR(s) app->append_str(subject, limit, s)
-#define DUMP_CH(ch) app->append_char(subject, limit, ch)
+#define DUMP_STR(s) app->append_str(object, limit, s)
+#define DUMP_CH(ch) app->append_char(object, limit, ch)
 
 	for(i = 0, n = strlen(fmt); i < n; ++i) {
 		char ch = fmt[i];
@@ -123,6 +131,39 @@ static void ir_common_vprintf(const appender_t *app, void *subject,
 				case 'b':
 					snprintf(buf, sizeof(buf), "%ld",
 							get_irn_node_nr(get_nodes_block(va_arg(args, ir_node *))));
+					break;
+
+				case '+':
+					{
+						iterator_t *it = va_arg(args, iterator_t *);
+						void *collection = va_arg(args, void *);
+						void *curr;
+						const char *prefix = "";
+						char format = fmt[++i];
+						ir_printf_cb_t *cb = format == 'C' ? va_arg(args, ir_printf_cb_t *) : NULL;
+
+						assert(is_iterator(it) && "Pass an iterator interface and the collection");
+
+						snprintf(buf, sizeof(buf), "%%%c", format);
+
+						DUMP_CH('[');
+						for(curr = it->start(collection); curr; curr = it->next(collection, curr)) {
+							DUMP_STR(prefix);
+
+							if(cb)
+								cb(app, object, limit, curr);
+							else
+								ir_common_printf(app, object, limit, buf, curr);
+
+							prefix = ", ";
+						}
+						it->finish(collection, curr);
+
+						DUMP_CH(']');
+					}
+
+					/* clean the buffer again */
+					buf[0] = '\0';
 					break;
 			}
 
