@@ -34,6 +34,7 @@
 # include <string.h>
 # include "type_t.h"
 # include "tpop_t.h"
+# include "irprog_t.h"
 # include "typegmod_t.h"
 # include "array.h"
 # include "irprog.h"
@@ -49,6 +50,15 @@
 /** Returns a new, unique number to number nodes or the like. */
 int get_irp_new_node_nr(void);
 #endif
+
+/* Suffixes added to types used for pass-by-value representations. */
+static ident *value_params_suffix = NULL;
+static ident *value_ress_suffix = NULL;
+
+void init_type(void) {
+  value_params_suffix = id_from_str(VALUE_PARAMS_SUFFIX, strlen(VALUE_PARAMS_SUFFIX));
+  value_ress_suffix   = id_from_str(VALUE_RESS_SUFFIX,   strlen(VALUE_RESS_SUFFIX));
+}
 
 unsigned long type_visited;
 INLINE void set_master_type_visited(unsigned long val) { type_visited = val; }
@@ -806,6 +816,21 @@ bool    is_struct_type(type *strct) {
 /** TYPE_METHOD                                                   **/
 /*******************************************************************/
 
+/* Lazy construction of value argument / result representation. */
+static INLINE type *
+build_value_type(ident *name, int len, type **tps) {
+  int i;
+  type *res = new_type_struct(name);
+  /* Remove type from type list.  Must be treated differently than other types. */
+  remove_irp_type_from_list(res);
+  for (i = 0; i < len; i++) {
+    type *elt_type = res;   /* use res as default if corresponding type is not yet set. */
+    if (tps[i]) elt_type = tps[i];
+    new_entity(res, mangle_u(name, get_type_ident(elt_type)), elt_type);
+  }
+  return res;
+}
+
 /* Create a new method type.
    N_param is the number of parameters, n_res the number of results.  */
 INLINE type *new_type_method (ident *name, int n_param, int n_res) {
@@ -814,11 +839,13 @@ INLINE type *new_type_method (ident *name, int n_param, int n_res) {
   res->state = layout_fixed;
   assert((get_mode_size_bytes(mode_P) != -1) && "unorthodox modes not implemented");
   res->size = get_mode_size_bytes(mode_P);
-  res->attr.ma.n_params   = n_param;
-  res->attr.ma.param_type = (type **) xmalloc (sizeof (type *) * n_param);
-  res->attr.ma.n_res      = n_res;
-  res->attr.ma.res_type   = (type **) xmalloc (sizeof (type *) * n_res);
-  res->attr.ma.variadicity = non_variadic;
+  res->attr.ma.n_params     = n_param;
+  res->attr.ma.param_type   = (type **) xmalloc (sizeof (type *) * n_param);
+  res->attr.ma.value_params = NULL;
+  res->attr.ma.n_res        = n_res;
+  res->attr.ma.res_type     = (type **) xmalloc (sizeof (type *) * n_res);
+  res->attr.ma.value_ress   = NULL;
+  res->attr.ma.variadicity  = non_variadic;
 
   return res;
 }
@@ -846,6 +873,24 @@ void  set_method_param_type(type *method, int pos, type* tp) {
   assert(method && (method->type_op == type_method));
   assert(pos >= 0 && pos < get_method_n_params(method));
   method->attr.ma.param_type[pos] = tp;
+  /* If information constructed set pass-by-value representation. */
+  if (method->attr.ma.value_params) {
+    assert(get_method_n_params(method) == get_struct_n_members(method->attr.ma.value_params));
+    set_entity_type(get_struct_member(method->attr.ma.value_params, pos), tp);
+  }
+}
+/* Returns an entity that represents the copied value argument.  Only necessary
+   for compounds passed by value. */
+entity *get_method_value_param_ent(type *method, int pos) {
+  assert(method && (method->type_op == type_method));
+  assert(pos >= 0 && pos < get_method_n_params(method));
+  if (!method->attr.ma.value_params)
+    method->attr.ma.value_params
+      = build_value_type(mangle_u(get_type_ident(method), value_params_suffix),
+			 get_method_n_params(method), method->attr.ma.param_type);
+  assert((get_entity_type(get_struct_member(method->attr.ma.value_params, pos)) != method->attr.ma.value_params)
+	 && "param type not yet set");
+  return get_struct_member(method->attr.ma.value_params, pos);
 }
 
 int   get_method_n_ress   (type *method) {
@@ -860,7 +905,26 @@ type *get_method_res_type(type *method, int pos) {
 void  set_method_res_type(type *method, int pos, type* tp) {
   assert(method && (method->type_op == type_method));
   assert(pos >= 0 && pos < get_method_n_ress(method));
+  /* set the result type */
   method->attr.ma.res_type[pos] = tp;
+  /* If information constructed set pass-by-value representation. */
+  if (method->attr.ma.value_ress) {
+    assert(get_method_n_ress(method) == get_struct_n_members(method->attr.ma.value_ress));
+    set_entity_type(get_struct_member(method->attr.ma.value_ress, pos), tp);
+  }
+}
+/* Returns an entity that represents the copied value result.  Only necessary
+   for compounds passed by value. */
+entity *get_method_value_res_ent(type *method, int pos) {
+  assert(method && (method->type_op == type_method));
+  assert(pos >= 0 && pos < get_method_n_ress(method));
+  if (!method->attr.ma.value_ress)
+    method->attr.ma.value_ress
+      = build_value_type(mangle_u(get_type_ident(method), value_ress_suffix),
+			 get_method_n_ress(method), method->attr.ma.res_type);
+  assert((get_entity_type(get_struct_member(method->attr.ma.value_ress, pos)) != method->attr.ma.value_ress)
+	 && "result type not yet set");
+  return get_struct_member(method->attr.ma.value_ress, pos);
 }
 
 variadicity get_method_variadicity(type *method)

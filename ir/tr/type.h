@@ -473,13 +473,26 @@ bool    is_struct_type(type *strct);
  *               in the parameter tuple that is a result of the start node.
  *               (See ircons.h for more information.)
  *
+ * - value_param_ents
+ *               A list of entities (whose owner is a struct private to the
+ *               method type) that represent parameters passed by value.
+ *
  * - n_res:      The number of results of the method.  In general, procedures
  *               have zero results, functions one.
  *
  * - res_type:   A list with the types of parameters.  This list is ordered.
  *               The nth type in this list corresponds to the nth input to
  *               Return nodes.  (See ircons.h for more information.)
+ *
+ * - value_res_ents
+ *               A list of entities (whose owner is a struct private to the
+ *               method type) that represent results passed by value.
  */
+
+/* These makros define the suffixes for the types and entities used
+   to represent value parameters / results. */
+#define VALUE_PARAMS_SUFFIX  "val_param"
+#define VALUE_RESS_SUFFIX    "val_res"
 
 /** Create a new method type.
  *
@@ -511,13 +524,23 @@ int   get_method_n_params  (type *method);
 
 /** Returns the type of the parameter at position pos of a method. */
 type *get_method_param_type(type *method, int pos);
-
-/** Sets the type of the parameter at position pos of a method. */
+/** Sets the type of the parameter at position pos of a method.
+    Also changes the type in the pass-by-value representation by just
+    changing the type of the corresponding entity if the representation is constructed. */
 void  set_method_param_type(type *method, int pos, type* tp);
+/* Returns an entity that represents the copied value argument.  Only necessary
+   for compounds passed by value. This information is constructed only on demand. */
+entity *get_method_value_param_ent(type *method, int pos);
 
 int   get_method_n_ress   (type *method);
 type *get_method_res_type(type *method, int pos);
+/** Sets the type of the result at position pos of a method.
+    Also changes the type in the pass-by-value representation by just
+    changing the type of the corresponding entity if the representation is constructed. */
 void  set_method_res_type(type *method, int pos, type* tp);
+/* Returns an entity that represents the copied value result.  Only necessary
+   for compounds passed by value. This information is constructed only on demand. */
+entity *get_method_value_res_ent(type *method, int pos);
 
 /**
  * this enum flags the variadicity of methods (methods with a

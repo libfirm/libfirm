@@ -12,6 +12,7 @@
 
 /** This struct is supposed to completely define a mode. **/
 struct ir_mode {
+  firm_kind  kind;         /**< is set to k_ir_mode */
   modecode   code;         /**< unambiguous identifier of a mode */
   ident      *name;        /**< Name ident of this mode */
   mode_sort  sort;         /**< coarse classification of this mode:

@@ -1,7 +1,8 @@
+
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
 * All rights reserved.
 *
-* Authors: Martin Trapp, Christian Schaefer
+* Authors: Martin Trapp, Christian Schaefer, Goetz Lindenmaier
 *
 */
 
@@ -22,6 +23,7 @@
 # include "irnode_t.h"
 # include "irmode_t.h"
 # include "irgraph_t.h"
+# include "type_t.h"
 
 void
 init_firm (default_initialize_local_variable_func_t *func)
@@ -47,4 +49,6 @@ init_firm (default_initialize_local_variable_func_t *func)
   /* Builds a construct allowing to access all information to be constructed
      later. */
   init_irprog ();
+  /* Constructs some idents needed. */
+  init_type();
 }

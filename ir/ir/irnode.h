@@ -9,14 +9,14 @@
 
 /** Projection numbers of compare: use for Proj nodes! */
 typedef enum {
-  False,		/**< false */
+  False = 0,		/**< false */
   Eq,			/**< equal */
   Lt,			/**< less */
   Le,			/**< less or equal */
   Gt,			/**< greater */
   Ge,			/**< greater or equal */
   Lg,			/**< less or greater */
-  Leg,			/**< less, equal or greater = ordered */
+  Leg = 7,		/**< less, equal or greater = ordered */
   Uo,			/**< unordered */
   Ue,			/**< unordered or equal */
   Ul,			/**< unordered or less */
@@ -24,7 +24,7 @@ typedef enum {
   Ug,			/**< unordered or greater */
   Uge,			/**< unordered, greater or equal */
   Ne,			/**< unordered, less or greater = not equal */
-  True		        /**< true */
+  True = 15	        /**< true */
   /* not_mask = Leg*/	/* bits to flip to negate comparison * @@ hack for jni interface */
 } pnc_number;
 #define not_mask Leg
@@ -172,7 +172,9 @@ typedef enum {
   pns_frame_base,       /**< Projection on the frame base */
   pns_globals,          /**< Projection on the pointer to the data segment
 			   containing _all_ global entities. */
-  pns_args              /**< Projection on all arguments */
+  pns_args,             /**< Projection on all arguments */
+  pns_value_arg_base    /**< Pointer to region of compound value arguments as defined by
+  			     type of this method. */
 } pns_number;
 
 /* @@@ no more supported  */
