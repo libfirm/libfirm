@@ -43,7 +43,7 @@ static firm_dbg_module_t *dbgphi = NULL;
 
 /**
  * Contains ir_nodes of phi-classes whose colors were reassigned during coalescing.
- * So one can check not to switch them twice or more.
+ * So one can perform a check not to switch them twice or more.
  */
 static pset *pinned_nodes = NULL;
 
@@ -60,7 +60,7 @@ static pset *free_nodes = NULL;
 #define is_color_free(bl,col) (!bitset_is_set(get_ra_block_info(bl)->used_colors, col))
 
 /**
- * Set the color of node @p n to @p col, but acts
+ * Sets the color of node @p n to @p col, but acts
  * pinning aware.
  */
 static INLINE void set_color(ir_node *n, int col) {
@@ -71,7 +71,8 @@ static INLINE void set_color(ir_node *n, int col) {
 }
 
 /**
- * Tries to set the color of @p n to @p col.
+ * Tries to set the color of @p n to @p col. Performs recoloring of other nodes
+ * as required to preserve correctness.
  * @param  n The node to set the color for
  * @param  col The color to set.
  * @param  dryrun If true no colors are actually set, only testing is performed.
@@ -87,13 +88,15 @@ static int color_irn(ir_node *n, int col, int dryrun) {
 
 	if (get_irn_color(n) == col) {
 		DBG((dbgphi, LEVEL_2, "\t\t\t  Same\n"));
+		/* to insert it into pinned_nodes color it with its color :) */
+		set_color(n, col);
 		return 0;
 	}
 
 	if (pset_find_ptr(pinned_nodes, n)) {
 		DBG((dbgphi, LEVEL_2, "\t\t\t  Pinned\n"));
 		if (!dryrun)
-			assert(0 && "No prior check with dryrun=1 or buggy");
+			assert(0 && "No prior check with dryrun or buggy");
 		return CHANGE_IMPOSSIBLE;
 	}
 
@@ -115,6 +118,12 @@ static int color_irn(ir_node *n, int col, int dryrun) {
 
 /**
  * Tries to set as much members of a phi unit as possible to color @p col.
+ * - Each change taken alone is guaranteed to be conflict free.
+ * - _If_ all members are neither live-in nor live-out in their cf-pred-blocks
+ *   _then_ all changes together can be applied conflivt free.
+ * - _If_ there is a member, which is live-in or live-out in its cf-pred-block
+ *    of the phi node, it is possible that all changes together will conflict.
+ * - TODO: Write sth. about dom-tree influence on this.
  */
 static void try_colors(phi_unit_t *pu, int col, int b_size, int b_changes) {
 	struct obstack ob;
@@ -156,7 +165,7 @@ static void try_colors(phi_unit_t *pu, int col, int b_size, int b_changes) {
 	cand = obstack_finish(&ob);
 	changes = obstack_finish(&ob_changes);
 
-	/* shortcut: if cand is worse than best the mis wont be better. */
+	/* shortcut: if cand is worse than best then mis wont be better. */
 	if (cand_size < b_size || (cand_size == b_size && total_changes >= b_changes))
 		goto ret;
 
@@ -183,13 +192,7 @@ static void try_colors(phi_unit_t *pu, int col, int b_size, int b_changes) {
 	}
 	mis = obstack_finish(&ob);
 
-	/* Now set the colors of all nodes in the mis to col.
-	 * - Each change taken alone is conflict free.
-	 * - If all members are not live-in in their cf-pred-blocks there will be no
-	 *   conflict applying all changes
-	 * - If there is a member, which is live-in in its cf-pred-block of the phi
-	 *   node, it is possible that all changes together will conflict.
-	 */
+	/* Now set the colors of all nodes in the mis to col. */
 	for (i = 0; i < pu->count; ++i)
 		for (o = 0; o < pu->size; ++o)
 			if (pu->members[i] == mis[o] && get_irn_color(pu->members[i]) != col)
@@ -206,6 +209,8 @@ ret:
  * Each single change must be conflict free (checked by try_colors).
  * In some cases not all colors can be set.
  */
+ /*TODO : BUGGY due to false reasoning with live-outs
+  * 	  thus fallback to save variant with testing all before setting. */
 static void set_colors(phi_unit_t *pu) {
 	int i;
 	int change_is_save, live_in_occured = 0;
@@ -215,8 +220,8 @@ static void set_colors(phi_unit_t *pu) {
 			if (pu->is_live_in[i])
 				live_in_occured = 1;
 
-			change_is_save = CHANGE_SAVE;
-			if (live_in_occured)
+//			change_is_save = CHANGE_SAVE;
+//			if (live_in_occured)
 				change_is_save = color_irn(pu->members[i], pu->colors[i], DRYRUN);
 
 			/* HINT: Dont change to == CHANGE_SAVE */
@@ -234,7 +239,7 @@ static void set_colors(phi_unit_t *pu) {
  * Tries to re-allocate colors of this phi-class, to achieve a lower number of
  * copies placed during phi destruction. Optimized version. Works only for
  * phi-classes/phi-units with exactly 1 phi node, which is the case for approx.
- * 80%.
+ * 80% of all phi classes.
  */
 static void coalesce_1_phi(phi_unit_t *pu) {
 	int *b_colors, b_size, b_changes, b_color;
@@ -288,7 +293,10 @@ static void coalesce_n_phi(phi_unit_t *pu) {
 }
 
 /**
- * Prepare a phi class for further processing as a phi unit.
+ * Prepares a phi class for further processing as a phi unit.
+ * @param pc The phi class to prepare.
+ * @return A so called phi unit containing some prepared informations
+ *         needed by the following coalescing phase.
  */
 static phi_unit_t *new_phi_unit(pset *pc) {
 	phi_unit_t *pu;
@@ -296,6 +304,7 @@ static phi_unit_t *new_phi_unit(pset *pc) {
 
 	assert(pset_count(pc) <= MAX_PHI_CLS_SIZE && "Phi class too large!");
 
+	/* get the phi count of this class */
 	pu = malloc(sizeof(*pu));
 	pu->phi_count = 0;
 	for (n = pset_first(pc); n; n = pset_next(pc))
@@ -372,6 +381,7 @@ static phi_unit_t *new_phi_unit(pset *pc) {
 	DBG((dbgphi, 1, "\n"));
 	return pu;
 }
+
 
 /**
  * Deletes a phi unit
