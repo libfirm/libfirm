@@ -102,16 +102,20 @@ assert_legal_owner_of_ent(type *owner) {
 }
 
 inline ident *
-get_entity_ld_name (entity *ent)
+get_entity_ld_ident (entity *ent)
 {
-  if (ent->ld_name != NULL) return ent->ld_name;
-  return mangle_entity (ent);
+  if (ent->ld_name == NULL)
+    ent->ld_name = mangle_entity (ent);
+  return ent->ld_name;
+}
+
+void   set_entity_ld_ident (entity *, ident *ld_ident) {
+  ent->ld_name = ld_ident;
 }
 
 /*
 char  *get_entity_ld_name  (entity *);
 void   set_entity_ld_name  (entity *, char *ld_name);
-void   set_entity_ld_ident (entity *, ident *ld_ident);
 */
 
 inline type *

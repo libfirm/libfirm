@@ -79,15 +79,15 @@ entity     *new_entity (type *owner, ident *name, type *type);
 /* manipulate fields of entity */
 const char *get_entity_name     (entity *ent);
 ident      *get_entity_ident    (entity *ent);
-/* returns the mangled name of the entity */
-ident      *get_entity_ld_name  (entity *ent);
+/* returns the mangled name of the entity.  If the mangled name is
+   set it returns the existing name.  Else it generates a name
+   with mangle_entity() and remembers this new name internally. */
+ident      *get_entity_ld_ident (entity *ent);
+void        set_entity_ld_ident (entity *ent, ident *ld_ident);
 
 /*
 char     *get_entity_ld_name  (entity *ent);
 void      set_entity_ld_name  (entity *ent, char *ld_name);
-
-ident    *get_entity_ld_ident (entity *ent);
-void      set_entity_ld_ident (entity *ent, ident *ld_ident);
 */
 
 type     *get_entity_owner (entity *ent);
