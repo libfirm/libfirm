@@ -723,11 +723,12 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   post_bl = get_nodes_Block(call);
   set_irg_current_block(current_ir_graph, post_bl);
   /* XxMxPxP of Start + parameter of Call */
-  in[0] = new_Jmp();
-  in[1] = get_Call_mem(call);
-  in[2] = get_irg_frame(current_ir_graph);
-  in[3] = get_irg_globals(current_ir_graph);
-  in[4] = new_Tuple (get_Call_n_params(call), get_Call_param_arr(call));
+  in[pn_Start_X_initial_exec] = new_Jmp();
+  in[pn_Start_M]              = get_Call_mem(call);
+  in[pn_Start_P_frame_base]   = get_irg_frame(current_ir_graph);
+  in[pn_Start_P_globals]      = get_irg_globals(current_ir_graph);
+  in[pn_Start_T_arg]          = new_Tuple(get_Call_n_params(call), get_Call_param_arr(call));
+  /* in[pn_Start_P_value_arg_base] = ??? */
   pre_call = new_Tuple(5, in);
   post_call = call;
 
@@ -844,7 +845,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
     }
   }
   phi = new_Phi(n_ret, cf_pred, mode_M);
-  set_Tuple_pred(call, 0, phi);
+  set_Tuple_pred(call, pn_Call_M_regular, phi);
   /* Conserve Phi-list for further inlinings -- but might be optimized */
   if (get_nodes_Block(phi) == post_bl) {
     set_irn_link(phi, get_irn_link(post_bl));
@@ -855,23 +856,23 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
     for (j = 0; j < n_res; j++) {
       n_ret = 0;
       for (i = 0; i < arity; i++) {
-    ret = intern_get_irn_n(end_bl, i);
-    if (intern_get_irn_op(ret) == op_Return) {
-      cf_pred[n_ret] = get_Return_res(ret, j);
-      n_ret++;
-    }
+	ret = intern_get_irn_n(end_bl, i);
+	if (intern_get_irn_op(ret) == op_Return) {
+	  cf_pred[n_ret] = get_Return_res(ret, j);
+	  n_ret++;
+	}
       }
       phi = new_Phi(n_ret, cf_pred, intern_get_irn_mode(cf_pred[0]));
       res_pred[j] = phi;
       /* Conserve Phi-list for further inlinings -- but might be optimized */
       if (get_nodes_Block(phi) == post_bl) {
-    set_irn_link(phi, get_irn_link(post_bl));
-    set_irn_link(post_bl, phi);
+	set_irn_link(phi, get_irn_link(post_bl));
+	set_irn_link(post_bl, phi);
       }
     }
-    set_Tuple_pred(call, 2, new_Tuple(n_res, res_pred));
+    set_Tuple_pred(call, pn_Call_T_result, new_Tuple(n_res, res_pred));
   } else {
-    set_Tuple_pred(call, 2, new_Bad());
+    set_Tuple_pred(call, pn_Call_T_result, new_Bad());
   }
   /* Finally the exception control flow.
      We have two (three) possible situations:
@@ -895,7 +896,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
     }
     if (n_exc > 0) {
       new_Block(n_exc, cf_pred);      /* watch it: current_block is changed! */
-      set_Tuple_pred(call, 1, new_Jmp());
+      set_Tuple_pred(call, pn_Call_X_except, new_Jmp());
       /* The Phi for the memories with the exception objects */
       n_exc = 0;
       for (i = 0; i < arity; i++) {
@@ -913,10 +914,10 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
       n_exc++;
     }
       }
-      set_Tuple_pred(call, 3, new_Phi(n_exc, cf_pred, mode_M));
+      set_Tuple_pred(call, pn_Call_M_except, new_Phi(n_exc, cf_pred, mode_M));
     } else {
-      set_Tuple_pred(call, 1, new_Bad());
-      set_Tuple_pred(call, 3, new_Bad());
+      set_Tuple_pred(call, pn_Call_X_except, new_Bad());
+      set_Tuple_pred(call, pn_Call_M_except, new_Bad());
     }
   } else {
     ir_node *main_end_bl;
@@ -942,8 +943,8 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
     for (i = 0; i < n_exc; ++i)
       end_preds[main_end_bl_arity + i] = cf_pred[i];
     set_irn_in(main_end_bl, n_exc + main_end_bl_arity, end_preds);
-    set_Tuple_pred(call, 1, new_Bad());
-    set_Tuple_pred(call, 3, new_Bad());
+    set_Tuple_pred(call, pn_Call_X_except, new_Bad());
+    set_Tuple_pred(call, pn_Call_X_except, new_Bad());
     free(end_preds);
   }
   free(res_pred);

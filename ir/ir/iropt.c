@@ -697,9 +697,9 @@ static ir_node *equivalent_node_Div(ir_node *n)
     /* Turn Div into a tuple (mem, bad, a) */
     ir_node *mem = get_Div_mem(n);
     turn_into_tuple(n, 3);
-    set_Tuple_pred(n, 0, mem);
-    set_Tuple_pred(n, 1, new_Bad());
-    set_Tuple_pred(n, 2, a);
+    set_Tuple_pred(n, pn_Div_M,        mem);
+    set_Tuple_pred(n, pn_Div_X_except, new_Bad());	/* no exception */
+    set_Tuple_pred(n, pn_Div_res,      a);
   }
   return n;
 }
@@ -883,8 +883,8 @@ static ir_node *equivalent_node_Store(ir_node *n)
        doesn't change the memory -- a write after read. */
     a = get_Store_mem(n);
     turn_into_tuple(n, 2);
-    set_Tuple_pred(n, 0, a);
-    set_Tuple_pred(n, 1, new_Bad());                               DBG_OPT_WAR;
+    set_Tuple_pred(n, pn_Store_M,        a);
+    set_Tuple_pred(n, pn_Store_X_except, new_Bad());               DBG_OPT_WAR;
   }
   return n;
 }
@@ -1023,9 +1023,9 @@ static ir_node *transform_node_Div(ir_node *n)
     ir_node *mem = get_Div_mem(n);
 
     turn_into_tuple(n, 3);
-    set_Tuple_pred(n, 0, mem);
-    set_Tuple_pred(n, 1, new_Bad());
-    set_Tuple_pred(n, 2, new_Const(get_tarval_mode(ta), ta));
+    set_Tuple_pred(n, pn_Div_M, mem);
+    set_Tuple_pred(n, pn_Div_X_except, new_Bad());
+    set_Tuple_pred(n, pn_Div_res, new_Const(get_tarval_mode(ta), ta));
   }
   return n;
 }
@@ -1038,9 +1038,9 @@ static ir_node *transform_node_Mod(ir_node *n)
     /* Turn Mod into a tuple (mem, bad, value) */
     ir_node *mem = get_Mod_mem(n);
     turn_into_tuple(n, 3);
-    set_Tuple_pred(n, 0, mem);
-    set_Tuple_pred(n, 1, new_Bad());
-    set_Tuple_pred(n, 2, new_Const(get_tarval_mode(ta), ta));
+    set_Tuple_pred(n, pn_Mod_M, mem);
+    set_Tuple_pred(n, pn_Mod_X_except, new_Bad());
+    set_Tuple_pred(n, pn_Mod_res, new_Const(get_tarval_mode(ta), ta));
   }
   return n;
 }
@@ -1087,10 +1087,10 @@ static ir_node *transform_node_DivMod(ir_node *n)
   if (evaluated) { /* replace by tuple */
     ir_node *mem = get_DivMod_mem(n);
     turn_into_tuple(n, 4);
-    set_Tuple_pred(n, 0, mem);
-    set_Tuple_pred(n, 1, new_Bad());  /* no exception */
-    set_Tuple_pred(n, 2, a);
-    set_Tuple_pred(n, 3, b);
+    set_Tuple_pred(n, pn_DivMod_M,        mem);
+    set_Tuple_pred(n, pn_DivMod_X_except, new_Bad());  /* no exception */
+    set_Tuple_pred(n, pn_DivMod_res_div,  a);
+    set_Tuple_pred(n, pn_DivMod_res_mod,  b);
     assert(get_nodes_Block(n));
   }
 
@@ -1113,11 +1113,11 @@ static ir_node *transform_node_Cond(ir_node *n)
     jmp = new_r_Jmp(current_ir_graph, get_nodes_Block(n));
     turn_into_tuple(n, 2);
     if (ta == tarval_b_true) {
-      set_Tuple_pred(n, 0, new_Bad());
-      set_Tuple_pred(n, 1, jmp);
+      set_Tuple_pred(n, pn_Cond_false, new_Bad());
+      set_Tuple_pred(n, pn_Cond_true, jmp);
     } else {
-      set_Tuple_pred(n, 0, jmp);
-      set_Tuple_pred(n, 1, new_Bad());
+      set_Tuple_pred(n, pn_Cond_false, jmp);
+      set_Tuple_pred(n, pn_Cond_true, new_Bad());
     }
     /* We might generate an endless loop, so keep it alive. */
     add_End_keepalive(get_irg_end(current_ir_graph), get_nodes_Block(n));
