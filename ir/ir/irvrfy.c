@@ -850,9 +850,9 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
     case iro_Minus:
       op1mode = get_irn_mode(in[1]);
       ASSERT_AND_RET_DBG(
-                         /* Minus: BB x float --> float */
-                         op1mode == mymode && mode_is_float(op1mode), "Minus node", 0,
-                         show_unop_failure(n , "/* Minus: BB x float --> float */");
+                         /* Minus: BB x num --> num */
+                         op1mode == mymode && mode_is_num(op1mode), "Minus node", 0,
+                         show_unop_failure(n , "/* Minus: BB x num --> num */");
                          );
       op_is_symmetric = 2;
       break;

@@ -1249,7 +1249,30 @@ static ir_node *transform_node_AddSub(ir_node *n)
 }
 
 #define transform_node_Add      transform_node_AddSub
-#define transform_node_Sub      transform_node_AddSub
+
+/**
+ * Do the AddSub optimization, then Transform Sub(0,a) into Minus(a).
+ */
+static ir_node *transform_node_Sub(ir_node *n)
+{
+  ir_mode *mode;
+
+  n = transform_node_AddSub(n);
+
+  mode = get_irn_mode(n);
+  if (mode_is_num(mode)) {
+    if (classify_Const(get_Sub_left(n)) == CNST_NULL) {
+      n = new_rd_Minus(
+            get_irn_dbg_info(n),
+            current_ir_graph,
+            get_nodes_block(n),
+            get_Sub_right(n),
+            mode);
+    }
+  }
+
+  return n;
+}
 
 /** Do architecture dependend optimizations on Mul nodes */
 static ir_node *transform_node_Mul(ir_node *n) {
