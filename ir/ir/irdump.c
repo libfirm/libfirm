@@ -1973,8 +1973,11 @@ dump_block_to_cfg(ir_node *block, void *env) {
     PRINT_NODEID(block);
     fprintf (F, "\" ");
     fprintf(F, "info1:\"");
-    if (dump_dominator_information_flag)
+    if (dump_dominator_information_flag) {
       fprintf(F, "dom depth %d\n", get_Block_dom_depth(block));
+      fprintf(F, "tree pre num %d\n", get_Block_dom_tree_pre_num(block));
+      fprintf(F, "max subtree pre num %d\n", get_Block_dom_max_subtree_pre_num(block));
+		}
 
     /* show arity and possible Bad predecessors of the block */
     fprintf(F, "arity: %d\n", get_Block_n_cfgpreds(block));
