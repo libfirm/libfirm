@@ -20,11 +20,11 @@
 
 #define MAX_PHI_CLS_SIZE (1<<(sizeof(unsigned char)*8)) /* possible colors added should fit into unsigned char */
 #define MAX_COLORS 16
-#define CHANGE_IMPOSSIBLE -1
+#define CHANGE_IMPOSSIBLE 0
 #define CHANGE_SAVE 1
 
-#define DRYRUN 1
-#define PERFORM 0
+#define DRYRUN 0
+#define PERFORM 1
 
 typedef struct _phi_unit_t {
 	unsigned char count;
@@ -32,10 +32,8 @@ typedef struct _phi_unit_t {
 
 	/* 1 phi */
 	ir_node **members;			/**< [0] is the phi node. [1..count-1] the arguments of the phi not interfering with it */
-	char *is_live_in;			/**< [i]==1 means members[i] is live-in in (all of) its cf-pred-blocks of the phi node */
 	int *colors;				/**< [i] is the color to set for members[i]. [i] == NO_COLOR means dont change anything for members[i]*/
-	int size;					/**< size of the max independent set of members. The set is markes by colors[i] != NO_COLOR */
-	int changes;				/**< number of re-assigned nodes belonging to phi-classes */
+	char *is_live_in;			/**< [i]==1 means members[i] is live-in in (all of) its cf-pred-blocks of the phi node */
 } phi_unit_t;
 
 
@@ -80,22 +78,24 @@ static INLINE void set_color(ir_node *n, int col) {
  * @return If setting the color is impossible CHANGE_IMPOSSIBLE is returned
  *         else the number of nodes that need a (cascading) change is returned.
  */
-static int color_irn(ir_node *n, int col, int dryrun) {
+static int color_irn(ir_node *n, int col, int perform) {
 	ir_node *bl;
-	int res = 0;
+	int res = CHANGE_IMPOSSIBLE;
 	DBG((dbgphi, LEVEL_2, "\t\t\t%n --> %d\n", n, col));
 	assert(is_color(col));
 
 	if (get_irn_color(n) == col) {
 		DBG((dbgphi, LEVEL_2, "\t\t\t  Same\n"));
-		/* to insert it into pinned_nodes color it with its color :) */
-		set_color(n, col);
-		return 0;
+		/* insert it into pinned_nodes */
+		if (perform)
+			if (belongs_to_a_phi_class(n) && !pset_find_ptr(free_nodes, n))
+				pset_insert_ptr(pinned_nodes, n);
+		return CHANGE_SAVE;
 	}
 
 	if (pset_find_ptr(pinned_nodes, n)) {
 		DBG((dbgphi, LEVEL_2, "\t\t\t  Pinned\n"));
-		if (!dryrun)
+		if (perform)
 			assert(0 && "No prior check with dryrun or buggy");
 		return CHANGE_IMPOSSIBLE;
 	}
@@ -103,9 +103,9 @@ static int color_irn(ir_node *n, int col, int dryrun) {
 	bl = get_nodes_block(n);
 	if (is_color_free(bl, col) && !is_live_out(bl, n)) {
 		DBG((dbgphi, LEVEL_2, "\t\t\t  Free\n"));
-		if (!dryrun)
+		if (perform)
 			set_color(n, col);
-		return 1;
+		return CHANGE_SAVE;
 	}
 
 	/* for now, in the aldi-version return impossible */
@@ -120,41 +120,35 @@ static int color_irn(ir_node *n, int col, int dryrun) {
  * Tries to set as much members of a phi unit as possible to color @p col.
  * - Each change taken alone is guaranteed to be conflict free.
  * - _If_ all members are neither live-in nor live-out in their cf-pred-blocks
- *   _then_ all changes together can be applied conflivt free.
+ *   _then_ all changes together can be applied conflict free.
  * - _If_ there is a member, which is live-in or live-out in its cf-pred-block
  *    of the phi node, it is possible that all changes together will conflict.
+ * TODO: check above comment with swapping complete colors in mind
  * - TODO: Write sth. about dom-tree influence on this.
  */
-static void try_colors(phi_unit_t *pu, int col, int b_size, int b_changes) {
+static int try_colors(phi_unit_t *pu, int col, int b_size) {
 	struct obstack ob;
-	struct obstack ob_changes;
-	int i, o, cand_size, total_changes, *changes;
+	int i, o, cand_size, mis_size;
 	ir_node **cand, **mis;
 
-	cand_size = 0;
 	obstack_init(&ob);
-	obstack_init(&ob_changes);
 
 	/* first init pessimistically, so we can just return
 	 * if we see there wont be a better result */
+	mis_size = 0;
 	for (i = 0; i < pu->count; ++i)
 		pu->colors[i] = NO_COLOR;
-	pu->size = 0;
-	pu->changes = 0;
 
 	/* For all members check if color would be possible.
 	 * Does not check if color is possible in combination with
 	 * other members colors being set */
-	total_changes = 0;
+	cand_size = 0;
 	for (i = 0; i < pu->count; ++i) {
 		DBG((dbgphi, 1, "\t\t    Testing %n\n", pu->members[i]));
-		int curr_changes = color_irn(pu->members[i], col, DRYRUN);
-		if (curr_changes != CHANGE_IMPOSSIBLE) {
+		if (color_irn(pu->members[i], col, DRYRUN) == CHANGE_SAVE) {
 			DBG((dbgphi, 1, "\t\t\tAdding to cand\n"));
 			obstack_ptr_grow(&ob, pu->members[i]);
-			obstack_grow(&ob_changes, &curr_changes, sizeof(curr_changes));
 			cand_size++;
-			total_changes += curr_changes;
 		} else {
 			DBG((dbgphi, 1, "\t\t\tImpossible\n"));
 		}
@@ -163,10 +157,9 @@ static void try_colors(phi_unit_t *pu, int col, int b_size, int b_changes) {
 			goto ret;
 	}
 	cand = obstack_finish(&ob);
-	changes = obstack_finish(&ob_changes);
 
 	/* shortcut: if cand is worse than best then mis wont be better. */
-	if (cand_size < b_size || (cand_size == b_size && total_changes >= b_changes))
+	if (cand_size < b_size)
 		goto ret;
 
 	/* now take the candidates cand and determine a max independent set
@@ -175,7 +168,7 @@ static void try_colors(phi_unit_t *pu, int col, int b_size, int b_changes) {
 	DBG((dbgphi, 1, "\t\t    Max indep set\n"));
 	for (i = 0; i < cand_size; ++i) {
 		int intf_det = 0;
-		for (o = 0; o < pu->size; ++o) {
+		for (o = 0; o < mis_size; ++o) {
 			mis = (ir_node**) obstack_base(&ob);
 			if (values_interfere(cand[i], mis[o])) {
 				intf_det = 1;
@@ -186,21 +179,21 @@ static void try_colors(phi_unit_t *pu, int col, int b_size, int b_changes) {
 		if (!intf_det) {
 			DBG((dbgphi, 1, "\t\t\tAdding to mis %n\n", cand[i]));
 			obstack_ptr_grow(&ob, cand[i]);
-			pu->size++;
-			pu->changes += changes[i];
+			mis_size++;
 		}
 	}
 	mis = obstack_finish(&ob);
 
-	/* Now set the colors of all nodes in the mis to col. */
+	/* Now set the colors of all nodes in the mis to col.
+	 * HINT: Set the color of all nodes, even if one has the same color already */
 	for (i = 0; i < pu->count; ++i)
-		for (o = 0; o < pu->size; ++o)
-			if (pu->members[i] == mis[o] && get_irn_color(pu->members[i]) != col)
+		for (o = 0; o < mis_size; ++o)
+			if (pu->members[i] == mis[o])
 				pu->colors[i] = col;
 
 ret:
-	obstack_free(&ob_changes, NULL);
 	obstack_free(&ob, NULL);
+	return mis_size;
 }
 
 
@@ -213,23 +206,14 @@ ret:
   * 	  thus fallback to save variant with testing all before setting. */
 static void set_colors(phi_unit_t *pu) {
 	int i;
-	int change_is_save, live_in_occured = 0;
 
 	for (i = 0; i < pu->count; ++i)
 		if (pu->colors[i] != NO_COLOR) {
-			if (pu->is_live_in[i])
-				live_in_occured = 1;
-
-//			change_is_save = CHANGE_SAVE;
-//			if (live_in_occured)
-				change_is_save = color_irn(pu->members[i], pu->colors[i], DRYRUN);
-
-			/* HINT: Dont change to == CHANGE_SAVE */
-			if (change_is_save != CHANGE_IMPOSSIBLE) {
+			if (color_irn(pu->members[i], pu->colors[i], DRYRUN) == CHANGE_SAVE) {
 				DBG((dbgphi, 1, "\t\tSetting %n to %d\n", pu->members[i], pu->colors[i]));
 				color_irn(pu->members[i], pu->colors[i], PERFORM);
 			} else {
-				DBG((dbgphi, 1, "\t\tConflict due to a live-in: %n\n", pu->members[i]));
+				DBG((dbgphi, 1, "\t\tConflict due to sth.: %n\n", pu->members[i]));
 			}
 		}
 }
@@ -242,44 +226,42 @@ static void set_colors(phi_unit_t *pu) {
  * 80% of all phi classes.
  */
 static void coalesce_1_phi(phi_unit_t *pu) {
-	int *b_colors, b_size, b_changes, b_color;
-	int i, col;
+	int *b_colors, b_size, b_color;
+	int i, size, col;
 
 	/* init best search result */
 	b_colors = malloc(pu->count * sizeof(*b_colors));
+	b_size = 0;
+	b_color = NO_COLOR;
 	for (i = 0; i < pu->count; ++i)
 		b_colors[i] = NO_COLOR;
-	b_size = 0;
-	b_changes = 0;
-	b_color = NO_COLOR;
 
 	/* find optimum of all colors */
 	for (col = MAX_COLORS-1; col >= 0; --col) {
 		DBG((dbgphi, 1, "\tTrying color %d\n", col));
-		try_colors(pu, col, b_size, b_changes);
+		size = try_colors(pu, col, b_size);
 
 		/* did we find a better max ind. set? */
-		if (pu->size > b_size || (pu->size == b_size && pu->changes < b_changes)) {
-			b_size = pu->size;
-			b_changes = pu->changes;
+		if (size > b_size) {
+			b_size = size;
 			b_color = col;
 			memcpy(b_colors, pu->colors, pu->count * sizeof(*b_colors));
-			DBG((dbgphi, 1, "\t!! Better size: %d  Changes: %d\n", b_size, b_changes));
+			DBG((dbgphi, 1, "\t!! Better size: %d\n", b_size));
 		}
 
-		/* shortcut: if all members can be colored we are content and doubt that
-		 * reducing b_changes justifies all the further trying. */
+		/* shortcut: if all members can be colored we are content */
 		if (b_size == pu->count)
 			break;
 	}
+	DBG((dbgphi, 1, "\tBest color: %d  Copies: %d/%d\n", b_color, pu->count-b_size, pu->count));
+	if (b_color == NO_COLOR)
+		goto ret;
 
 	/* now apply the found optimum */
-	DBG((dbgphi, 1, "\tBest color: %d  Copies: %d/%d  Changes: %d\n", b_color, pu->count-b_size, pu->count, b_changes));
-	pu->size = b_size;
-	pu->changes = b_changes;
 	memcpy(pu->colors, b_colors, pu->count * sizeof(*b_colors));
 	set_colors(pu);
 
+ret:
 	free(b_colors);
 }
 
