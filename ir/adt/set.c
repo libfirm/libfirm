@@ -33,8 +33,9 @@
 #define INLINE
 #endif
 
-/* bcopy is not ISO C */
+/* bcopy is not ISO C *
 #define bcopy(X, Y, Z) memcpy((Y), (X), (Z))
+*/
 
 #ifdef PSET
 # define SET pset
