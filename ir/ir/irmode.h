@@ -425,5 +425,14 @@ int mode_is_int_vector (const ir_mode *mode);
    according to firm definiton */
 int smaller_mode(const ir_mode *sm, const ir_mode *lm);
 
+/**
+ * Returns a matching unsigned mode for a given integer signed mode.
+ */
+ir_mode *find_unsigned_mode(const ir_mode *mode);
+
+/**
+ * Returns a matching signed mode for a given integer unsigned mode.
+ */
+ir_mode *find_signed_mode(const ir_mode *mode);
 
 #endif /* _IRMODE_H_ */

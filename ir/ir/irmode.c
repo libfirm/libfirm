@@ -915,6 +915,24 @@ init_mode (void)
   mode_P_mach = mode_P;
 }
 
+ir_mode *find_unsigned_mode(const ir_mode *mode)
+{
+  ir_mode n = *mode;
+
+  assert(mode->sort == irms_int_number);
+  n.sign = 0;
+  return find_mode(&n);
+}
+
+ir_mode *find_signed_mode(const ir_mode *mode)
+{
+  ir_mode n = *mode;
+
+  assert(mode->sort == irms_int_number);
+  n.sign = 1;
+  return find_mode(&n);
+}
+
 
 void finish_mode(void) {
   obstack_free(&modes, 0);
