@@ -293,16 +293,28 @@ tarval *new_tarval_from_long(long l, ir_mode *mode)
 int tarval_is_long(tarval *tv)
 {
   ANNOUNCE();
-  return ((get_mode_sort(tv->mode) == irms_int_number) || (get_mode_sort(tv->mode) == irms_character));
+  if (get_mode_sort(tv->mode) != irms_int_number) return 0;
+
+  if (get_mode_size_bits(tv->mode) > sizeof(long)<<3)
+  {
+    /* the value might be too big to fit in a long */
+    sc_max_from_bits(sizeof(long)<<3, 0);
+    if (sc_comp(sc_get_buffer(), tv->value) == -1)
+    {
+      /* really doesn't fit */
+      return 0;
+    }
+  }
+  return 1;
 }
 
 /* this might overflow the machine's long, so use only with small values */
 long tarval_to_long(tarval* tv)
 {
   ANNOUNCE();
-  assert(tv && get_mode_sort(tv->mode) == irms_int_number);
+  assert(tarval_is_long(tv) && "tarval too big to fit in long");
 
-  return sc_val_to_long(tv->value); /* might overflow */
+  return sc_val_to_long(tv->value);
 }
 
 tarval *new_tarval_from_double(long double d, ir_mode *mode)

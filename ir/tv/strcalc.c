@@ -1285,6 +1285,7 @@ unsigned char sc_sub_bits(const void *value, int len, unsigned byte_ofs)
 
 /*
  * convert to a string
+ * XXX Doesn't check buffer bounds
  */
 const char *sc_print(const void *value, unsigned bits, enum base_t base)
 {
@@ -1305,7 +1306,7 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base)
   const char *digits = small_digits;
 
   pos = output_buffer + BIT_PATTERN_SIZE ;
-  *pos = '\0';
+  *(--pos) = '\0';
 
   /* special case */
   if (bits == 0) {
