@@ -2,6 +2,9 @@
  * @author Daniel Grund
  * @date 04.01.2005
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <stdlib.h>
 
