@@ -50,7 +50,7 @@ static int num_modes;
  * Compare modes that don't need to have their code field
  * correctly set
  */
-static int modes_are_equal(ir_mode *m, ir_mode *n)
+static int modes_are_equal(const ir_mode *m, const ir_mode *n)
 {
   if (m == n) return 1;
   if ( (m->sort == n->sort) && (m->size == n->size) &&
@@ -125,25 +125,25 @@ ir_mode *mode_P;
  * * */
 
 /* JNI access functions */
-INLINE ir_mode *get_modeT() { ANNOUNCE(); return mode_T; }
-INLINE ir_mode *get_modeF() { ANNOUNCE(); return mode_F; }
-INLINE ir_mode *get_modeD() { ANNOUNCE(); return mode_D; }
-INLINE ir_mode *get_modeE() { ANNOUNCE(); return mode_E; }
-INLINE ir_mode *get_modeBs() { ANNOUNCE(); return mode_Bs; }
-INLINE ir_mode *get_modeBu() { ANNOUNCE(); return mode_Bu; }
-INLINE ir_mode *get_modeHs() { ANNOUNCE(); return mode_Hs; }
-INLINE ir_mode *get_modeHu() { ANNOUNCE(); return mode_Hu; }
-INLINE ir_mode *get_modeIs() { ANNOUNCE(); return mode_Is; }
-INLINE ir_mode *get_modeIu() { ANNOUNCE(); return mode_Iu; }
-INLINE ir_mode *get_modeLs() { ANNOUNCE(); return mode_Ls; }
-INLINE ir_mode *get_modeLu() { ANNOUNCE(); return mode_Lu; }
-INLINE ir_mode *get_modeC() { ANNOUNCE(); return mode_C; }
-INLINE ir_mode *get_modeU() { ANNOUNCE(); return mode_U; }
-INLINE ir_mode *get_modeb() { ANNOUNCE(); return mode_b; }
-INLINE ir_mode *get_modeP() { ANNOUNCE(); return mode_P; }
-INLINE ir_mode *get_modeX() { ANNOUNCE(); return mode_X; }
-INLINE ir_mode *get_modeM() { ANNOUNCE(); return mode_M; }
-INLINE ir_mode *get_modeBB() { ANNOUNCE(); return mode_BB; }
+INLINE ir_mode *get_modeT(void) { ANNOUNCE(); return mode_T; }
+INLINE ir_mode *get_modeF(void) { ANNOUNCE(); return mode_F; }
+INLINE ir_mode *get_modeD(void) { ANNOUNCE(); return mode_D; }
+INLINE ir_mode *get_modeE(void) { ANNOUNCE(); return mode_E; }
+INLINE ir_mode *get_modeBs(void) { ANNOUNCE(); return mode_Bs; }
+INLINE ir_mode *get_modeBu(void) { ANNOUNCE(); return mode_Bu; }
+INLINE ir_mode *get_modeHs(void) { ANNOUNCE(); return mode_Hs; }
+INLINE ir_mode *get_modeHu(void) { ANNOUNCE(); return mode_Hu; }
+INLINE ir_mode *get_modeIs(void) { ANNOUNCE(); return mode_Is; }
+INLINE ir_mode *get_modeIu(void) { ANNOUNCE(); return mode_Iu; }
+INLINE ir_mode *get_modeLs(void) { ANNOUNCE(); return mode_Ls; }
+INLINE ir_mode *get_modeLu(void) { ANNOUNCE(); return mode_Lu; }
+INLINE ir_mode *get_modeC(void) { ANNOUNCE(); return mode_C; }
+INLINE ir_mode *get_modeU(void) { ANNOUNCE(); return mode_U; }
+INLINE ir_mode *get_modeb(void) { ANNOUNCE(); return mode_b; }
+INLINE ir_mode *get_modeP(void) { ANNOUNCE(); return mode_P; }
+INLINE ir_mode *get_modeX(void) { ANNOUNCE(); return mode_X; }
+INLINE ir_mode *get_modeM(void) { ANNOUNCE(); return mode_M; }
+INLINE ir_mode *get_modeBB(void) { ANNOUNCE(); return mode_BB; }
 
 /**
  * Registers a new mode if not defined yet, else returns
@@ -220,56 +220,56 @@ ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align, 
 
 /* Functions for the direct access to all attributes od a ir_mode */
 modecode
-get_mode_modecode(ir_mode *mode)
+get_mode_modecode(const ir_mode *mode)
 {
   ANNOUNCE();
   return mode->code;
 }
 
 ident *
-get_mode_ident(ir_mode *mode)
+get_mode_ident(const ir_mode *mode)
 {
   ANNOUNCE();
   return mode->name;
 }
 
 const char *
-get_mode_name(ir_mode *mode)
+get_mode_name(const ir_mode *mode)
 {
   ANNOUNCE();
   return id_to_str(mode->name);
 }
 
 mode_sort
-get_mode_sort(ir_mode* mode)
+get_mode_sort(const ir_mode* mode)
 {
   ANNOUNCE();
   return mode->sort;
 }
 
 INLINE int
-get_mode_size_bits(ir_mode *mode)
+get_mode_size_bits(const ir_mode *mode)
 {
   ANNOUNCE();
   return mode->size;
 }
 
-int get_mode_size_bytes(ir_mode *mode) {
+int get_mode_size_bytes(const ir_mode *mode) {
   ANNOUNCE();
   int size = get_mode_size_bits(mode);
-  if ((size % 8) != 0) return -1;
-  return size / 8;
+  if ((size & 7) != 0) return -1;
+  return size >> 3;
 }
 
 int
-get_mode_align (ir_mode *mode)
+get_mode_align (const ir_mode *mode)
 {
   ANNOUNCE();
   return mode->align;
 }
 
 int
-get_mode_sign (ir_mode *mode)
+get_mode_sign (const ir_mode *mode)
 {
   ANNOUNCE();
   return mode->sign;
@@ -388,7 +388,7 @@ get_mode_NAN(ir_mode *mode)
 #  undef mode_is_dataM
 #endif
 int
-mode_is_signed (ir_mode *mode)
+mode_is_signed (const ir_mode *mode)
 {
   ANNOUNCE();
   assert(mode);
@@ -396,7 +396,7 @@ mode_is_signed (ir_mode *mode)
 }
 
 int
-mode_is_float (ir_mode *mode)
+mode_is_float (const ir_mode *mode)
 {
   ANNOUNCE();
   assert(mode);
@@ -404,21 +404,21 @@ mode_is_float (ir_mode *mode)
 }
 
 int
-mode_is_int (ir_mode *mode)
+mode_is_int (const ir_mode *mode)
 {
   ANNOUNCE();
   assert(mode);
   return (get_mode_sort(mode) == irms_int_number);
 }
 
-int mode_is_character (ir_mode *mode)
+int mode_is_character (const ir_mode *mode)
 {
   ANNOUNCE();
   assert(mode);
   return (get_mode_sort(mode) == irms_character);
 }
 
-int mode_is_reference (ir_mode *mode)
+int mode_is_reference (const ir_mode *mode)
 {
   ANNOUNCE();
   assert(mode);
@@ -426,7 +426,7 @@ int mode_is_reference (ir_mode *mode)
 }
 
 int
-mode_is_num (ir_mode *mode)
+mode_is_num (const ir_mode *mode)
 {
   ANNOUNCE();
   assert(mode);
@@ -434,7 +434,7 @@ mode_is_num (ir_mode *mode)
 }
 
 int
-mode_is_data (ir_mode *mode)
+mode_is_data (const ir_mode *mode)
 {
   ANNOUNCE();
   assert(mode);
@@ -442,7 +442,7 @@ mode_is_data (ir_mode *mode)
 }
 
 int
-mode_is_datab (ir_mode *mode)
+mode_is_datab (const ir_mode *mode)
 {
   ANNOUNCE();
   assert(mode);
@@ -450,7 +450,7 @@ mode_is_datab (ir_mode *mode)
 }
 
 int
-mode_is_dataM (ir_mode *mode)
+mode_is_dataM (const ir_mode *mode)
 {
   ANNOUNCE();
   assert(mode);
@@ -467,7 +467,7 @@ mode_is_dataM (ir_mode *mode)
 #endif
 /* Returns true if sm can be converted to lm without loss. */
 int
-smaller_mode(ir_mode *sm, ir_mode *lm)
+smaller_mode(const ir_mode *sm, const ir_mode *lm)
 {
   ANNOUNCE();
   assert(sm);

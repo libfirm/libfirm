@@ -150,29 +150,29 @@ ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align, 
 /* ********** Access methods to read mode information *********** */
 
 /** Returns the classification of the mode */
-modecode get_mode_modecode(ir_mode *mode);
+modecode get_mode_modecode(const ir_mode *mode);
 
 /** Returns the ident* of the mode */
-ident *get_mode_ident(ir_mode *mode);
+ident *get_mode_ident(const ir_mode *mode);
 
 /** Returns the null-terminated name of this mode. */
-const char *get_mode_name(ir_mode *mode);
+const char *get_mode_name(const ir_mode *mode);
 
 /** Returns a coarse classification of the mode. */
-mode_sort get_mode_sort(ir_mode *mode);
+mode_sort get_mode_sort(const ir_mode *mode);
 
 /** Returns the size of values of the mode in bits. */
-int get_mode_size_bits(ir_mode *mode);
+int get_mode_size_bits(const ir_mode *mode);
 
 /** Returns the size of values of the mode in bytes.  If the size is not
     dividable by 8 returns -1. */
-int get_mode_size_bytes(ir_mode *mode);
+int get_mode_size_bytes(const ir_mode *mode);
 
 /** Returns the alignment of values of the mode in bytes. */
-int get_mode_align(ir_mode *mode);
+int get_mode_align(const ir_mode *mode);
 
 /** Returns the signess of a mode */
-int get_mode_sign (ir_mode *mode);
+int get_mode_sign (const ir_mode *mode);
 
 /**
  * Returns the smallest representable value of a given mode.
@@ -306,18 +306,18 @@ ir_mode *get_modeBB(void);
 */
 /*@}*/
 /* Test for a certain class of modes. */
-int mode_is_signed (ir_mode *mode);
-int mode_is_float (ir_mode *mode);
-int mode_is_int (ir_mode *mode);
-int mode_is_character (ir_mode *mode);
-int mode_is_reference (ir_mode *mode);
-int mode_is_num (ir_mode *mode);
-int mode_is_data (ir_mode *mode);
-int mode_is_datab (ir_mode *mode);
-int mode_is_dataM (ir_mode *mode);
+int mode_is_signed (const ir_mode *mode);
+int mode_is_float (const ir_mode *mode);
+int mode_is_int (const ir_mode *mode);
+int mode_is_character (const ir_mode *mode);
+int mode_is_reference (const ir_mode *mode);
+int mode_is_num (const ir_mode *mode);
+int mode_is_data (const ir_mode *mode);
+int mode_is_datab (const ir_mode *mode);
+int mode_is_dataM (const ir_mode *mode);
 /** Returns true if sm can be converted to lm without loss
    according to firm definiton */
-int smaller_mode(ir_mode *sm, ir_mode *lm);
+int smaller_mode(const ir_mode *sm, const ir_mode *lm);
 
 /** mode module initialization, call once before use of any other function **/
 void init_mode (void);
