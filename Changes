@@ -1,3 +1,19 @@
+  15.3. Goetz
+  Bug: dominator construction aborts for BreakTest with flag 3.31
+  Problem: optimization of many subsequent blocks (Jmp-chains)
+  where one is inlined (Tuple control flow) in a loop.  Not all
+  nodes in merged blocks are moved to remaining block.
+  Fix:  different calling order to optimize_in_place_2 from
+  optimize_in_place_wrapper.
+  Bug: dumping cfg when a block is Bad.  Fix: Output Bad node.
+  Change: not only turn off cse but all optimizations during
+  inlining.
+
+  15.3. Goetz
+  Parted common.h into two files common_t.h.  By this config.h
+  as well as the preprocessor flags are no more visible externaly.
+  Adapted include directives.
+
   12.3. Goetz
   Bugfix in inlining: problems in combination with cse.
 
