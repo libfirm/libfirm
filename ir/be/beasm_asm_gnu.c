@@ -35,11 +35,13 @@ static struct obstack *get_obstack_for_segment ( gnuasm_privdata_t *privdata, as
 /**
  * the dumper callbacks
  */
+/*
 static void gnuasm_dump_align(void *data, asm_segment_t segment, int align) {
   gnuasm_privdata_t *privdata = data;
 	struct obstack* obst = get_obstack_for_segment( privdata, segment );
  	obstack_printf(obst, "\t.align %d\n", align);
 }
+*/
 
 static void gnuasm_dump_arith_tarval(void *data, asm_segment_t segment,	tarval *tv, int bytes)
 {
@@ -224,15 +226,15 @@ static void gnuasm_dump_newline(void *data, asm_segment_t segment)
 //////////////////////////////////////////////////////////////////////////////
 
 static void gnuasm_dump_header(void *data) {
-  gnuasm_privdata_t *privdata = data;
+  /*gnuasm_privdata_t *privdata = data;*/
 }
 
 static void gnuasm_dump_footer(void *data) {
-  gnuasm_privdata_t *privdata = data;
+  /*gnuasm_privdata_t *privdata = data;*/
 }
 
 static void gnuasm_dump_segment_header(void *data) {
-  gnuasm_privdata_t *privdata = data;
+  /*gnuasm_privdata_t *privdata = data;*/
 }
 
 //////////////////////////////////////////////////////////////////////////////

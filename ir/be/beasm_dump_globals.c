@@ -209,8 +209,8 @@ static void asm_dump_global ( assembler_t *assembler, entity *ent)
 {
   type *ty            = get_entity_type(ent);
   const char *ld_name = get_entity_ld_name(ent);
-  int align, is_constant, h;
-  int i,j,size = 0;
+  int align, /*is_constant,*/ h;
+  int i, /*j,*/ size = 0;
   ent_variability variability;
   ent_visibility  visibility;
 
@@ -314,14 +314,14 @@ static void asm_dump_global ( assembler_t *assembler, entity *ent)
 
         	/* collect the values and store them at the offsets */
 		for(i = 0; i < get_compound_ent_n_values(ent); ++i) {
-		    int graph_length, aipos, offset, stepsize;
+		  int graph_length, aipos, offset/*, stepsize*/;
 		    struct arr_info *ai;
-		    int found                 = 0;
+		    /*int found                 = 0;*/
 		    int all_n                 = 1;
-		    entity *member            = get_compound_ent_value_member(ent, i);
+		    /*entity *member            = get_compound_ent_value_member(ent, i); */
 		    compound_graph_path *path = get_compound_ent_value_path(ent, i);
 		    entity *node              = get_compound_graph_path_node(path, 0);
-		    type *node_type           = get_entity_type(node);
+		    /*type *node_type           = get_entity_type(node);*/
 
 		    /* get the access path to the costant value */
 		    graph_length = get_compound_graph_path_length(path);
