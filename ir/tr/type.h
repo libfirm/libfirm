@@ -139,7 +139,7 @@ void        free_type_entities(type *tp);
  * that refers to this type.                           */
 void        free_type(type *tp);
 
-tp_op*      get_type_tpop(const type *tp);
+const tp_op*get_type_tpop(const type *tp);
 ident*      get_type_tpop_nameid(const type *tp);
 const char* get_type_tpop_name(const type *tp);
 tp_opcode   get_type_tpop_code(const type *tp);

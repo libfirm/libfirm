@@ -113,7 +113,7 @@ typedef union {
 /** the structure of a type */
 struct type {
   firm_kind kind;          /**< the firm kind, must be k_type */
-  tp_op *type_op;          /**< the type operation of the type */
+  const tp_op *type_op;    /**< the type operation of the type */
   ident *name;             /**< The name of the type */
   type_state state;        /**< Represents the types state: layout undefined or
                   fixed. */
@@ -200,7 +200,7 @@ __set_type_link(type *tp, void *l) {
   tp -> link = l;
 }
 
-static INLINE tp_op*
+static INLINE const tp_op*
 __get_type_tpop(const type *tp) {
   assert(tp && tp->kind == k_type);
   return tp->type_op;
