@@ -495,6 +495,8 @@ static int stat_adr_mark_hook(FILE *F, ir_node *n)
   if (mark & MARK_ADDRESS_CALC)
     fprintf(F, "color: purple");
   else if ((mark & (MARK_REF_ADR | MARK_REF_NON_ADR)) == MARK_REF_ADR)
+    fprintf(F, "color: lightpurple");
+  else if ((mark & (MARK_REF_ADR | MARK_REF_NON_ADR)) == (MARK_REF_ADR|MARK_REF_NON_ADR))
     fprintf(F, "color: lightblue");
   else
     return 0;
@@ -607,9 +609,11 @@ static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
     irg_out_walk(get_irg_start(graph->irg), NULL, mark_address_calc, graph);
     current_ir_graph = rem;
 
+#if 0
     set_dump_node_vcgattr_hook(stat_adr_mark_hook);
     dump_ir_block_graph(graph->irg, "-adr");
     set_dump_node_vcgattr_hook(NULL);
+#endif
   }
 }
 
@@ -634,7 +638,7 @@ static void stat_register_dumper(const dumper_t *dumper)
 /**
  * dumps an irg
  */
-static void dump_graph(graph_entry_t *entry)
+static void stat_dump_graph(graph_entry_t *entry)
 {
   dumper_t *dumper;
 
@@ -647,7 +651,7 @@ static void dump_graph(graph_entry_t *entry)
 /**
  * initialise the dumper
  */
-static void dump_init(const char *name)
+static void stat_dump_init(const char *name)
 {
   dumper_t *dumper;
 
@@ -660,7 +664,7 @@ static void dump_init(const char *name)
 /**
  * finish the dumper
  */
-static void dump_finish(void)
+static void stat_dump_finish(void)
 {
   dumper_t *dumper;
 
@@ -1143,7 +1147,7 @@ void stat_finish(const char *name)
     graph_entry_t *entry;
     graph_entry_t *global = graph_get_entry(NULL, status->irg_hash);
 
-    dump_init(name);
+    stat_dump_init(name);
 
     /* dump per graph */
     for (entry = pset_first(status->irg_hash); entry; entry = pset_next(status->irg_hash)) {
@@ -1164,15 +1168,15 @@ void stat_finish(const char *name)
         stat_calc_pattern_history(entry->irg);
       }
 
-      dump_graph(entry);
+      stat_dump_graph(entry);
 
       /* clear the counter that are not accumulated */
       graph_clear_entry(entry, 0);
     }
 
     /* dump global */
-    dump_graph(global);
-    dump_finish();
+    stat_dump_graph(global);
+    stat_dump_finish();
 
     stat_finish_pattern_history();
 
