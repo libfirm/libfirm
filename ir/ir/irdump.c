@@ -1680,7 +1680,7 @@ dump_ir_graph (ir_graph *irg)
   char *suffix;
   rem = current_ir_graph;
 
-  printf("comparing %s %s\n", get_irg_dump_name(irg), dump_file_filter);
+  //printf("comparing %s %s\n", get_irg_dump_name(irg), dump_file_filter);
 
   if(strncmp(get_irg_dump_name(irg),dump_file_filter,strlen(dump_file_filter))!=0) return;
 
@@ -1711,7 +1711,7 @@ dump_ir_block_graph (ir_graph *irg)
   int i;
   char *suffix;
 
-  printf("comparing %s %s\n", get_irg_dump_name(irg), dump_file_filter);
+  //printf("comparing %s %s\n", get_irg_dump_name(irg), dump_file_filter);
   if(strncmp(get_irg_dump_name(irg),dump_file_filter,strlen(dump_file_filter))!=0) return;
 
   if (interprocedural_view) suffix = "-ip";
