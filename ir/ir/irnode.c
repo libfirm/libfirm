@@ -1209,115 +1209,39 @@ void  set_CallBegin_call (ir_node *node, ir_node *call) {
   node->attr.callbegin.call = call;
 }
 
-INLINE ir_node *
-get_Add_left (ir_node *node) {
-  assert (node->op == op_Add);
-  return get_irn_n(node, 0);
+#define BINOP(OP)					\
+ir_node * get_##OP##_left(ir_node *node) {		\
+  assert(node->op == op_##OP);				\
+  return get_irn_n(node, node->op->op_index);		\
+}							\
+void set_##OP##_left(ir_node *node, ir_node *left) {	\
+  assert(node->op == op_##OP);				\
+  set_irn_n(node, node->op->op_index, left);		\
+}							\
+ir_node *get_##OP##_right(ir_node *node) {		\
+  assert(node->op == op_##OP);				\
+  return get_irn_n(node, node->op->op_index + 1);	\
+}							\
+void set_##OP##_right(ir_node *node, ir_node *right) {	\
+  assert(node->op == op_##OP);				\
+  set_irn_n(node, node->op->op_index + 1, right);	\
 }
 
-INLINE void
-set_Add_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_Add);
-  set_irn_n(node, 0, left);
+#define UNOP(OP)					\
+ir_node *get_##OP##_op(ir_node *node) {			\
+  assert(node->op == op_##OP);				\
+  return get_irn_n(node, node->op->op_index);		\
+}							\
+void set_##OP##_op (ir_node *node, ir_node *op) {	\
+  assert(node->op == op_##OP);				\
+  set_irn_n(node, node->op->op_index, op);		\
 }
 
-INLINE ir_node *
-get_Add_right (ir_node *node) {
-  assert (node->op == op_Add);
-  return get_irn_n(node, 1);
-}
-
-INLINE void
-set_Add_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_Add);
-  set_irn_n(node, 1, right);
-}
-
-INLINE ir_node *
-get_Sub_left (ir_node *node) {
-  assert (node->op == op_Sub);
-  return get_irn_n(node, 0);
-}
-
-INLINE void
-set_Sub_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_Sub);
-  set_irn_n(node, 0, left);
-}
-
-INLINE ir_node *
-get_Sub_right (ir_node *node) {
-  assert (node->op == op_Sub);
-  return get_irn_n(node, 1);
-}
-
-INLINE void
-set_Sub_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_Sub);
-  set_irn_n(node, 1, right);
-}
-
-
-INLINE ir_node *
-get_Minus_op (ir_node *node) {
-  assert (node->op == op_Minus);
-  return get_irn_n(node, 0);
-}
-
-INLINE void
-set_Minus_op (ir_node *node, ir_node *op) {
-  assert (node->op == op_Minus);
-  set_irn_n(node, 0, op);
-}
-
-
-INLINE ir_node *
-get_Mul_left (ir_node *node) {
-  assert (node->op == op_Mul);
-  return get_irn_n(node, 0);
-}
-
-INLINE void
-set_Mul_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_Mul);
-  set_irn_n(node, 0, left);
-}
-
-INLINE ir_node *
-get_Mul_right (ir_node *node) {
-  assert (node->op == op_Mul);
-  return get_irn_n(node, 1);
-}
-
-INLINE void
-set_Mul_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_Mul);
-  set_irn_n(node, 1, right);
-}
-
-INLINE ir_node *
-get_Quot_left (ir_node *node) {
-  assert (node->op == op_Quot);
-  return get_irn_n(node, 1);
-}
-
-INLINE void
-set_Quot_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_Quot);
-  set_irn_n(node, 1, left);
-}
-
-INLINE ir_node *
-get_Quot_right (ir_node *node) {
-  assert (node->op == op_Quot);
-  return get_irn_n(node, 2);
-}
-
-INLINE void
-set_Quot_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_Quot);
-  set_irn_n(node, 2, right);
-}
+BINOP(Add)
+BINOP(Sub)
+UNOP(Minus)
+BINOP(Mul)
+BINOP(Quot)
 
 INLINE ir_node *
 get_Quot_mem (ir_node *node) {
@@ -1331,29 +1255,7 @@ set_Quot_mem (ir_node *node, ir_node *mem) {
   set_irn_n(node, 0, mem);
 }
 
-INLINE ir_node *
-get_DivMod_left (ir_node *node) {
-  assert (node->op == op_DivMod);
-  return get_irn_n(node, 1);
-}
-
-INLINE void
-set_DivMod_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_DivMod);
-  set_irn_n(node, 1, left);
-}
-
-INLINE ir_node *
-get_DivMod_right (ir_node *node) {
-  assert (node->op == op_DivMod);
-  return get_irn_n(node, 2);
-}
-
-INLINE void
-set_DivMod_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_DivMod);
-  set_irn_n(node, 2, right);
-}
+BINOP(DivMod)
 
 INLINE ir_node *
 get_DivMod_mem (ir_node *node) {
@@ -1367,29 +1269,7 @@ set_DivMod_mem (ir_node *node, ir_node *mem) {
   set_irn_n(node, 0, mem);
 }
 
-INLINE ir_node *
-get_Div_left (ir_node *node) {
-  assert (node->op == op_Div);
-  return get_irn_n(node, 1);
-}
-
-INLINE void
-set_Div_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_Div);
-  set_irn_n(node, 1, left);
-}
-
-INLINE ir_node *
-get_Div_right (ir_node *node) {
-  assert (node->op == op_Div);
-  return get_irn_n(node, 2);
-}
-
-INLINE void
-set_Div_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_Div);
-  set_irn_n(node, 2, right);
-}
+BINOP(Div)
 
 INLINE ir_node *
 get_Div_mem (ir_node *node) {
@@ -1403,29 +1283,7 @@ set_Div_mem (ir_node *node, ir_node *mem) {
   set_irn_n(node, 0, mem);
 }
 
-INLINE ir_node *
-get_Mod_left (ir_node *node) {
-  assert (node->op == op_Mod);
-  return get_irn_n(node, 1);
-}
-
-INLINE void
-set_Mod_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_Mod);
-  set_irn_n(node, 1, left);
-}
-
-INLINE ir_node *
-get_Mod_right (ir_node *node) {
-  assert (node->op == op_Mod);
-  return get_irn_n(node, 2);
-}
-
-INLINE void
-set_Mod_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_Mod);
-  set_irn_n(node, 2, right);
-}
+BINOP(Mod)
 
 INLINE ir_node *
 get_Mod_mem (ir_node *node) {
@@ -1439,247 +1297,18 @@ set_Mod_mem (ir_node *node, ir_node *mem) {
   set_irn_n(node, 0, mem);
 }
 
-INLINE ir_node *
-get_Abs_op (ir_node *node) {
-  assert (node->op == op_Abs);
-  return get_irn_n(node, 0);
-}
-
-INLINE void
-set_Abs_op (ir_node *node, ir_node *op) {
-  assert (node->op == op_Abs);
-  set_irn_n(node, 0, op);
-}
-
-INLINE ir_node *
-get_And_left (ir_node *node) {
-  assert (node->op == op_And);
-  return get_irn_n(node, 0);
-}
-
-INLINE void
-set_And_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_And);
-  set_irn_n(node, 0, left);
-}
-
-INLINE ir_node *
-get_And_right (ir_node *node) {
-  assert (node->op == op_And);
-  return get_irn_n(node, 1);
-}
-
-INLINE void
-set_And_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_And);
-  set_irn_n(node, 1, right);
-}
-
-INLINE ir_node *
-get_Or_left (ir_node *node) {
-  assert (node->op == op_Or);
-  return get_irn_n(node, 0);
-}
-
-INLINE void
-set_Or_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_Or);
-  set_irn_n(node, 0, left);
-}
-
-INLINE ir_node *
-get_Or_right (ir_node *node) {
-  assert (node->op == op_Or);
-  return get_irn_n(node, 1);
-}
-
-INLINE void
-set_Or_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_Or);
-  set_irn_n(node, 1, right);
-}
-
-INLINE ir_node *
-get_Eor_left (ir_node *node) {
-  assert (node->op == op_Eor);
-  return get_irn_n(node, 0);
-}
-
-INLINE void
-set_Eor_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_Eor);
-  set_irn_n(node, 0, left);
-}
-
-INLINE ir_node *
-get_Eor_right (ir_node *node) {
-  assert (node->op == op_Eor);
-  return get_irn_n(node, 1);
-}
-
-INLINE void
-set_Eor_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_Eor);
-  set_irn_n(node, 1, right);
-}
-
-
-INLINE ir_node *
-get_Not_op (ir_node *node) {
-  assert (node->op == op_Not);
-  return get_irn_n(node, 0);
-}
-
-INLINE void
-set_Not_op (ir_node *node, ir_node *op) {
-  assert (node->op == op_Not);
-  set_irn_n(node, 0, op);
-}
-
-
-INLINE ir_node *
-get_Shl_left (ir_node *node) {
-  assert (node->op == op_Shl);
-  return get_irn_n(node, 0);
-}
-
-INLINE void
-set_Shl_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_Shl);
-  set_irn_n(node, 0, left);
-}
-
-INLINE ir_node *
-get_Shl_right (ir_node *node) {
-  assert (node->op == op_Shl);
-  return get_irn_n(node, 1);
-}
-
-INLINE void
-set_Shl_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_Shl);
-  set_irn_n(node, 1, right);
-}
-
-INLINE ir_node *
-get_Shr_left (ir_node *node) {
-  assert (node->op == op_Shr);
-  return get_irn_n(node, 0);
-}
-
-INLINE void
-set_Shr_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_Shr);
-  set_irn_n(node, 0, left);
-}
-
-INLINE ir_node *
-get_Shr_right (ir_node *node) {
-  assert (node->op == op_Shr);
-  return get_irn_n(node, 1);
-}
-
-INLINE void
-set_Shr_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_Shr);
-  set_irn_n(node, 1, right);
-}
-
-INLINE ir_node *
-get_Shrs_left (ir_node *node) {
-  assert (node->op == op_Shrs);
-  return get_irn_n(node, 0);
-}
-
-INLINE void
-set_Shrs_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_Shrs);
-  set_irn_n(node, 0, left);
-}
-
-INLINE ir_node *
-get_Shrs_right (ir_node *node) {
-  assert (node->op == op_Shrs);
-  return get_irn_n(node, 1);
-}
-
-INLINE void
-set_Shrs_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_Shrs);
-  set_irn_n(node, 1, right);
-}
-
-INLINE ir_node *
-get_Rot_left (ir_node *node) {
-  assert (node->op == op_Rot);
-  return get_irn_n(node, 0);
-}
-
-INLINE void
-set_Rot_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_Rot);
-  set_irn_n(node, 0, left);
-}
-
-INLINE ir_node *
-get_Rot_right (ir_node *node) {
-  assert (node->op == op_Rot);
-  return get_irn_n(node, 1);
-}
-
-INLINE void
-set_Rot_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_Rot);
-  set_irn_n(node, 1, right);
-}
-
-INLINE ir_node *
-get_Cmp_left (ir_node *node) {
-  assert (node->op == op_Cmp);
-  return get_irn_n(node, 0);
-}
-
-INLINE void
-set_Cmp_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_Cmp);
-  set_irn_n(node, 0, left);
-}
-
-INLINE ir_node *
-get_Cmp_right (ir_node *node) {
-  assert (node->op == op_Cmp);
-  return get_irn_n(node, 1);
-}
-
-INLINE void
-set_Cmp_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_Cmp);
-  set_irn_n(node, 1, right);
-}
-
-INLINE ir_node *
-get_Conv_op (ir_node *node) {
-  assert (node->op == op_Conv);
-  return get_irn_n(node, 0);
-}
-
-INLINE void
-set_Conv_op (ir_node *node, ir_node *op) {
-  assert (node->op == op_Conv);
-  set_irn_n(node, 0, op);
-}
-
-INLINE ir_node *
-get_Cast_op (ir_node *node) {
-  assert (node->op == op_Cast);
-  return get_irn_n(node, 0);
-}
-
-INLINE void
-set_Cast_op (ir_node *node, ir_node *op) {
-  assert (node->op == op_Cast);
-  set_irn_n(node, 0, op);
-}
+UNOP(Abs)
+BINOP(And)
+BINOP(Or)
+BINOP(Eor)
+UNOP(Not)
+BINOP(Shl)
+BINOP(Shr)
+BINOP(Shrs)
+BINOP(Rot)
+BINOP(Cmp)
+UNOP(Conv)
+UNOP(Cast)
 
 INLINE type *
 get_Cast_type (ir_node *node) {
@@ -1700,152 +1329,66 @@ is_unop (ir_node *node) {
 
 INLINE ir_node *
 get_unop_op (ir_node *node) {
-  assert (is_unop(node));
-  switch (get_irn_opcode (node)) {
-    case iro_Minus: return get_Minus_op(node); break;
-    case iro_Abs:   return get_Abs_op(node);   break;
-    case iro_Not:   return get_Not_op(node);   break;
-    case iro_Conv:  return get_Conv_op(node);  break;
-    case iro_Cast:  return get_Cast_op(node);  break;
-    default: return NULL;
-  }
+  if (node->op->opar == oparity_unary)
+    return get_irn_n(node, node->op->op_index);
+
+  assert(node->op->opar == oparity_unary);
+  return NULL;
 }
 
 INLINE void
 set_unop_op (ir_node *node, ir_node *op) {
-  assert (is_unop(node));
-  switch (get_irn_opcode (node)) {
-    case iro_Minus:   set_Minus_op(node, op); break;
-    case iro_Abs:     set_Abs_op(node, op);   break;
-    case iro_Not:     set_Not_op(node, op);   break;
-    case iro_Conv:    set_Conv_op(node, op);  break;
-    case iro_Cast:    set_Cast_op(node, op);  break;
-    default:  ;
-  }
+  if (node->op->opar == oparity_unary)
+    set_irn_n(node, node->op->op_index, op);
 
+  assert(node->op->opar == oparity_unary);
 }
 
 int
 is_binop (ir_node *node) {
   return (node->op->opar == oparity_binary);
-  /*  return (node->op == op_Add    ||
-          node->op == op_Cmp    ||
-          node->op == op_Sub    ||
-          node->op == op_Mul    ||
-          node->op == op_Quot   ||
-          node->op == op_DivMod ||
-          node->op == op_Div    ||
-          node->op == op_Mod    ||
-          node->op == op_And    ||
-          node->op == op_Or     ||
-          node->op == op_Eor    ||
-          node->op == op_Shl    ||
-          node->op == op_Shr    ||
-          node->op == op_Shrs   ||
-	  node->op == op_Rot      );
-  */
 }
 
 INLINE ir_node *
 get_binop_left (ir_node *node) {
-  assert (node->op->opar == oparity_binary);
+  if (node->op->opar == oparity_binary)
+    return get_irn_n(node, node->op->op_index);
 
-    switch (get_irn_opcode (node)) {
-      case iro_Add   :     return get_Add_left(node);  break;
-      case iro_Sub   :     return get_Sub_left(node);  break;
-      case iro_Mul   :     return get_Mul_left(node);  break;
-      case iro_Quot  :     return get_Quot_left(node); break;
-      case iro_DivMod:     return get_DivMod_left(node);  break;
-      case iro_Div   :     return get_Div_left(node);  break;
-      case iro_Mod   :     return get_Mod_left(node);  break;
-      case iro_And   :     return get_And_left(node);  break;
-      case iro_Or    :     return get_Or_left(node);   break;
-      case iro_Eor   :     return get_Eor_left(node);  break;
-      case iro_Shl   :     return get_Shl_left(node);  break;
-      case iro_Shr   :     return get_Shr_left(node);  break;
-      case iro_Shrs  :     return get_Shrs_left(node); break;
-      case iro_Rot   :     return get_Rot_left(node);  break;
-      case iro_Cmp   :     return get_Cmp_left(node);  break;
-    default:  return NULL;
-  };
+  assert(node->op->opar == oparity_binary);
+  return NULL;
 }
 
 INLINE void
 set_binop_left (ir_node *node, ir_node *left) {
-  assert (node->op->opar == oparity_binary);
+  if (node->op->opar == oparity_binary)
+    set_irn_n(node, node->op->op_index, left);
 
-    switch (get_irn_opcode (node)) {
-      case iro_Add   :     set_Add_left(node, left);  break;
-      case iro_Sub   :     set_Sub_left(node, left);  break;
-      case iro_Mul   :     set_Mul_left(node, left);  break;
-      case iro_Quot  :     set_Quot_left(node, left); break;
-      case iro_DivMod:     set_DivMod_left(node, left);  break;
-      case iro_Div   :     set_Div_left(node, left);  break;
-      case iro_Mod   :     set_Mod_left(node, left);  break;
-      case iro_And   :     set_And_left(node, left);  break;
-      case iro_Or    :     set_Or_left(node, left);   break;
-      case iro_Eor   :     set_Eor_left(node, left);  break;
-      case iro_Shl   :     set_Shl_left(node, left);  break;
-      case iro_Shr   :     set_Shr_left(node, left);  break;
-      case iro_Shrs  :     set_Shrs_left(node, left); break;
-      case iro_Rot   :     set_Rot_left(node, left);  break;
-      case iro_Cmp   :     set_Cmp_left(node, left);  break;
-    default:  ;
-  };
+  assert (node->op->opar == oparity_binary);
 }
 
 INLINE ir_node *
 get_binop_right (ir_node *node) {
-  assert (node->op->opar == oparity_binary);
+  if (node->op->opar == oparity_binary)
+    return get_irn_n(node, node->op->op_index + 1);
 
-    switch (get_irn_opcode (node)) {
-      case iro_Add   :     return get_Add_right(node);  break;
-      case iro_Sub   :     return get_Sub_right(node);  break;
-      case iro_Mul   :     return get_Mul_right(node);  break;
-      case iro_Quot  :     return get_Quot_right(node); break;
-      case iro_DivMod:     return get_DivMod_right(node);  break;
-      case iro_Div   :     return get_Div_right(node);  break;
-      case iro_Mod   :     return get_Mod_right(node);  break;
-      case iro_And   :     return get_And_right(node);  break;
-      case iro_Or    :     return get_Or_right(node);   break;
-      case iro_Eor   :     return get_Eor_right(node);  break;
-      case iro_Shl   :     return get_Shl_right(node);  break;
-      case iro_Shr   :     return get_Shr_right(node);  break;
-      case iro_Shrs  :     return get_Shrs_right(node); break;
-      case iro_Rot   :     return get_Rot_right(node);  break;
-      case iro_Cmp   :     return get_Cmp_right(node);  break;
-    default:  return NULL;
-  };
+  assert(node->op->opar == oparity_binary);
+  return NULL;
 }
 
 INLINE void
 set_binop_right (ir_node *node, ir_node *right) {
-  assert (node->op->opar == oparity_binary);
+  if (node->op->opar == oparity_binary)
+    set_irn_n(node, node->op->op_index + 1, right);
 
-    switch (get_irn_opcode (node)) {
-      case iro_Add   :     set_Add_right(node, right);  break;
-      case iro_Sub   :     set_Sub_right(node, right);  break;
-      case iro_Mul   :     set_Mul_right(node, right);  break;
-      case iro_Quot  :     set_Quot_right(node, right); break;
-      case iro_DivMod:     set_DivMod_right(node, right);  break;
-      case iro_Div   :     set_Div_right(node, right);  break;
-      case iro_Mod   :     set_Mod_right(node, right);  break;
-      case iro_And   :     set_And_right(node, right);  break;
-      case iro_Or    :     set_Or_right(node, right);   break;
-      case iro_Eor   :     set_Eor_right(node, right);  break;
-      case iro_Shl   :     set_Shl_right(node, right);  break;
-      case iro_Shr   :     set_Shr_right(node, right);  break;
-      case iro_Shrs  :     set_Shrs_right(node, right); break;
-      case iro_Rot   :     set_Rot_right(node, right);  break;
-      case iro_Cmp   :     set_Cmp_right(node, right);  break;
-    default: ;
-  };
+  assert (node->op->opar == oparity_binary);
 }
 
 INLINE int is_Phi (ir_node *n) {
+  ir_op *op;
+
   assert(n);
-  return ((get_irn_op(n) == op_Phi) ||
-	  (get_irn_op(n) == op_Filter && interprocedural_view));
+  op = get_irn_op(n);
+  return (op == op_Phi) || (op == op_Filter && interprocedural_view);
 }
 
 INLINE ir_node **
@@ -2227,9 +1770,9 @@ get_irn_irg(ir_node *node) {
 }
 
 
-/******************************************************************/
+/*----------------------------------------------------------------*/
 /*  Auxiliary routines                                            */
-/******************************************************************/
+/*----------------------------------------------------------------*/
 
 INLINE ir_node *
 skip_Proj (ir_node *node) {
@@ -2381,18 +1924,8 @@ ir_graph *get_ip_cfop_irg(ir_node *n) {
    of an exception. */
 int
 is_fragile_op(ir_node *node) {
-  return (   (get_irn_opcode(node) == iro_Call)
-          || (get_irn_opcode(node) == iro_Quot)
-          || (get_irn_opcode(node) == iro_DivMod)
-          || (get_irn_opcode(node) == iro_Div)
-          || (get_irn_opcode(node) == iro_Mod)
-          || (get_irn_opcode(node) == iro_Load)
-          || (get_irn_opcode(node) == iro_Store)
-          || (get_irn_opcode(node) == iro_Alloc)
-          || (get_irn_opcode(node) == iro_Bad)
-          || (get_irn_opcode(node) == iro_Unknown));
+  return is_op_fragile(get_irn_op(node));
 }
-
 
 /* Returns the memory operand of fragile operations. */
 ir_node *get_fragile_op_mem(ir_node *node) {

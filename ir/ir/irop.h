@@ -127,15 +127,4 @@ op_pinned get_op_pinned(const ir_op *op);
    for Block, Phi and control flow nodes. */
 void set_op_pinned(ir_op *op, op_pinned pinned);
 
-/** Returns true if op is one of Start, End, Jmp, Cond, Return, Raise or Bad. */
-int is_cfopcode(const ir_op *op);
-
-/** Returns true if the operation manipulates interprocedural control flow:
-   CallBegin, EndReg, EndExcept */
-int is_ip_cfopcode(const ir_op *op);
-
-/** Returns the attribute size of nodes of this opcode.
-   @note Use not encouraged, internal feature. */
-int get_op_attr_size (const ir_op *op);
-
 # endif /* _IROP_H_ */

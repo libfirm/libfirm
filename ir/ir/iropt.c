@@ -1026,22 +1026,13 @@ identify (pset *value_table, ir_node *n)
 
   /* TODO: use a generic commutative attribute */
   if (get_opt_reassociation()) {
-    switch (get_irn_opcode (n)) {
-    case iro_Add:
-    case iro_Mul:
-    case iro_Or:
-    case iro_And:
-    case iro_Eor:
-      {
-	/* for commutative operators perform  a OP b == b OP a */
-	if (get_binop_left(n) > get_binop_right(n)) {
-	  ir_node *h = get_binop_left(n);
-	  set_binop_left(n, get_binop_right(n));
-	  set_binop_right(n, h);
-	}
+    if (is_op_commutative(get_irn_op(n))) {
+      /* for commutative operators perform  a OP b == b OP a */
+      if (get_binop_left(n) > get_binop_right(n)) {
+	ir_node *h = get_binop_left(n);
+	set_binop_left(n, get_binop_right(n));
+	set_binop_right(n, h);
       }
-      break;
-    default: break;
     }
   }
 
