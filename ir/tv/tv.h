@@ -178,7 +178,7 @@ tarval_uInt tv_val_uInt (tarval *tv);
    All definitions of types are interpreted as pointer values until
    type analysis exists for crecoder.
    tarval_p tv_val_p (tarval *tv);
-*/;
+*/
 bool     tv_val_b (tarval *tv);
 
 ir_mode *get_tv_mode (tarval *tv);
