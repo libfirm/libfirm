@@ -101,6 +101,7 @@ typedef enum {
   dbg_opt_ssa,           /**< Optimization of the SSA representation, e.g., removal of superfluent phi nodes. */
   dbg_opt_auxnode,       /**< Removal of unnecessary auxilliary nodes. */
   dbg_const_eval,        /**< A Firm subgraph was evaluated to a single constant. */
+  dbg_opt_cse,           /**< A Firm node was replaced due to common subexpression elimination. */
   dbg_straightening,     /**< A Firm subgraph was replaced by a single, existing block. */
   dbg_if_simplification, /**< The control flow of an if is changed as either the
 			                        else, the then or both blocks are empty. */
@@ -134,6 +135,7 @@ static const char* dbg_action_2_str(dbg_action a) {
   case dbg_opt_ssa: return "dbg_opt_ssa"; break;
   case dbg_opt_auxnode: return "dbg_opt_auxnode"; break;
   case dbg_const_eval: return "dbg_const_eval"; break;
+  case dbg_opt_cse: return "dbg_opt_cse"; break;
   case dbg_straightening: return "dbg_straightening"; break;
   case dbg_if_simplification: return "dbg_if_simplification"; break;
   case dbg_algebraic_simplification:
