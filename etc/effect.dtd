@@ -1,5 +1,8 @@
 <!-- effect.dtd - DTD to model effects of external procedures inside firm. -->
 <!-- $Id$ -->
+
+<!-- upload this file to http://www/~firm/ after making changes -->
+
 <!-- content model for all nodes -->
 <!-- allow nodes/entity accesses to reference other nodes/an entity -->
 <!ENTITY	% firm.id			"id ID #REQUIRED">
@@ -77,6 +80,9 @@
 <!ELEMENT	return		(valref?)>
 
 <!-- $Log$
+<!-- Revision 1.2  2004/10/05 15:46:59  liekweg
+<!-- Added comment about this DTD's public location --flo
+<!--
 <!-- Revision 1.1  2004/10/05 14:34:13  liekweg
 <!-- Added DTD for external effects description --flo
 <!-- -->
