@@ -607,30 +607,6 @@ set_Block_graph_arr (ir_node *node, int pos, ir_node *value) {
   node->attr.block.graph_arr[pos+1] = value;
 }
 
-/* handler handling for Blocks */
-void
-set_Block_handler (ir_node *block, ir_node *handler)  {
-  assert ((block->op == op_Block));
-  assert ((handler->op == op_Block));
-}
-
-ir_node *
-get_Block_handler (ir_node *block) {
-  assert ((block->op == op_Block));
-  return (NULL);
-}
-
-/* handler handling for Nodes */
-void
-set_Node_handler (ir_node *node, ir_node *handler) {
-
-}
-
-ir_node *
-get_Node_handler (ir_node *node) {
-  return (NULL);
-}
-
 void set_Block_cg_cfgpred_arr(ir_node * node, int arity, ir_node ** in) {
   assert(node->op == op_Block);
   if (node->attr.block.in_cg == NULL || arity != ARR_LEN(node->attr.block.in_cg) - 1) {

@@ -104,13 +104,37 @@ static bool is_cfg_jmp (ir_node *node)
 }
 #endif
 
-void set_Block_exc(ir_node *n, ir_node *exc) {
+void set_Block_exc(ir_node *n, exc_t exc) {
 }
 
-ir_node * get_Block_exc(ir_node *n) {
-  return NULL;
+exc_t get_Block_exc(ir_node *n) {
+  return 0;
 }
 
+
+/* handler handling for Blocks */
+void
+set_Block_handler (ir_node *block, ir_node *handler)  {
+  assert (is_Block(block));
+  assert (is_Block(handler));
+}
+
+ir_node *
+get_Block_handler (ir_node *block) {
+  assert (is_Block(block));
+  return (NULL);
+}
+
+/* handler handling for Nodes */
+void
+set_Node_handler (ir_node *node, ir_node *handler) {
+
+}
+
+ir_node *
+get_Node_handler (ir_node *node) {
+  return (NULL);
+}
 
 
 /*
