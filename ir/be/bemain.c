@@ -28,6 +28,9 @@
 #include "bephiopt.h"
 #include "phistat.h"
 
+#include "beasm_dump_globals.h"
+#include "beasm_asm_gnu.h"
+
 #define DUMP_ALLOCATED
 #undef DUMP_LOCALIZED
 
@@ -135,4 +138,12 @@ static void be_main_loop(void)
 void be_main(int argc, const char *argv[])
 {
 	be_main_loop();
+	assembler_t *gnu_assembler = gnuasm_create_assembler();
+	FILE *asm_output_file = fopen("asm_output.asm", "w");
+
+	asm_dump_globals ( gnu_assembler );
+	gnuasm_dump ( gnu_assembler, asm_output_file );
+	gnuasm_delete_assembler ( gnu_assembler );
+	fclose(asm_output_file);
+
 }
