@@ -6,7 +6,7 @@ LIBDIRS=-L.. -L/usr/public/lib/gmp/
 LIBS=-lfirm -lgmp -lm
 
 %.o:	%.c
-	gcc -c $(INCDIRS) $<
+	gcc -c $(INCDIRS) -g $<
 
 all: empty const_eval_example 					\
      if_example if_else_example if_while_example cond_example	\

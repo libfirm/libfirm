@@ -55,6 +55,10 @@ int main(int argc, char **argv)
   /* init library */
   init_firm ();
   set_opt_constant_folding (1);
+  set_optimize(1);
+  set_opt_cse(1);
+  set_opt_dead_node_elimination(1);
+
 
   /* FIRM was designed for oo languages where all methods belong to a class.
    * For imperative languages like C we view a file as a large class containing
@@ -127,7 +131,14 @@ int main(int argc, char **argv)
   vrfy_graph(irg);
 
   printf("\nDone building the graph.\n");
+  local_optimize_graph (irg);
+  printf("\nDone local optimization.\n");
+  set_opt_constant_folding (1);
+  set_optimize(0);
+  set_opt_cse(1);
+  dead_node_elimination (irg);
   printf("Dumping the graph and a control flow graph.\n");
+
   dump_ir_block_graph (irg);
   dump_cfg (irg);
 
