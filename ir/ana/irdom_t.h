@@ -1,9 +1,9 @@
 /* Copyright (C) 2002 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Goetz Lindenmaier
-**
-** irdom_t.h:  private datastructures
+* All rights reserved.
+*
+* Authors: Goetz Lindenmaier
+*
+* irdom_t.h:  private datastructures
 */
 
 /* $Id$ */

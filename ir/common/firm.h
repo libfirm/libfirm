@@ -1,13 +1,13 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Martin Trapp, Christian Schaefer, Goetz Lindenmaier.
-**
-** firm.h: Central FIRM header.
-**
-**
-**
-**
+* All rights reserved.
+*
+* Authors: Martin Trapp, Christian Schaefer, Goetz Lindenmaier.
+*
+* firm.h: Central FIRM header.
+*
+*
+*
+*
     FIRM is a full graph based intermediate representation in SSA Form
     with a novel concept to model side effects.  It allows fast, aggressive
     optimizations.
@@ -50,7 +50,7 @@
 
      irgwalk: walker for ir graphs.
      irvrfy:  verify the correctness of a firm node.
-**
+*
 */
 
 /* $Id$ */

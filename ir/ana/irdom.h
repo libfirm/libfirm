@@ -1,16 +1,16 @@
 /* Copyright (C) 2002 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Goetz Lindenmaier
-**
-** irdom.h:  This file contains routines to construct and access dominator
-**   information.
-**   The dominator information is stored in three fields of block nodes:
-**     idom: a reference to the block that is the immediate dominator of
-**       this block.
-**     dom_depth: a number giving the depth of the block in the dominator
-**       tree.
-**     pre_num:  Number in preorder traversal.
+* All rights reserved.
+*
+* Authors: Goetz Lindenmaier
+*
+* irdom.h:  This file contains routines to construct and access dominator
+*   information.
+*   The dominator information is stored in three fields of block nodes:
+*     idom: a reference to the block that is the immediate dominator of
+*       this block.
+*     dom_depth: a number giving the depth of the block in the dominator
+*       tree.
+*     pre_num:  Number in preorder traversal.
 */
 
 /* $Id$ */

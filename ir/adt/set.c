@@ -14,9 +14,9 @@
     Submitted-By: Esmond Pitt <ejp@ausmelb.oz.AU>
     Archive-name: dynamic-hash
 
-    ** Dynamic hashing, after CACM April 1988 pp 446-457, by Per-Ake Larson.
-    ** Coded into C, with minor code improvements, and with hsearch(3) interface,
-    ** by ejp@ausmelb.oz, Jul 26, 1988: 13:16;
+    * Dynamic hashing, after CACM April 1988 pp 446-457, by Per-Ake Larson.
+    * Coded into C, with minor code improvements, and with hsearch(3) interface,
+    * by ejp@ausmelb.oz, Jul 26, 1988: 13:16;
 
     TODO: Fix Esmond's ugly MixedCapsIdentifiers ;->
  */

@@ -1,10 +1,10 @@
 /* Copyright (C) 2002 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors:  Goetz Lindenmaier
-**
-** irdom.c --- Dominator tree.
-**
+* All rights reserved.
+*
+* Authors:  Goetz Lindenmaier
+*
+* irdom.c --- Dominator tree.
+*
 */
 
 /* $Id$ */
@@ -191,7 +191,7 @@ void compute_doms(ir_graph *irg) {
   if (current_ir_graph->outs_state != outs_consistent)
     compute_outs(current_ir_graph);
 
-  /** Initialize the temporary information, add link to parent.  We don't do
+/**
       this with a standard walker as passing the parent to the sons isn't
       simple. **/
   used = 0;

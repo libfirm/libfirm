@@ -1,11 +1,11 @@
 /* Copyright (C) 2002 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors:  Goetz Lindenmaier
-**
-** irscc.c  Computing the strongly connected regions and building
-** backedge/loop datastructures.
-**
+* All rights reserved.
+*
+* Authors:  Goetz Lindenmaier
+*
+* irscc.c  Computing the strongly connected regions and building
+* backedge/loop datastructures.
+*
 */
 
 /* $Id$ */

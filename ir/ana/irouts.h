@@ -1,10 +1,10 @@
 /* Copyright (C) 2002 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Goetz Lindenmaier
-**
-**  irouts.h:  Implements Def-Use edges, also called outedges.
-**  @@@ eventually add reverse conrtol flow graph. (If needed.)
+* All rights reserved.
+*
+* Authors: Goetz Lindenmaier
+*
+*  irouts.h:  Implements Def-Use edges, also called outedges.
+*  @@@ eventually add reverse conrtol flow graph. (If needed.)
 */
 
 /* $Id$ */

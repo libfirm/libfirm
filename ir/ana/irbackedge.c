@@ -1,10 +1,10 @@
 /* Copyright (C) 2002 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors:  Goetz Lindenmaier
-**
-** irbackedges.c  Access function for backedges.
-**
+* All rights reserved.
+*
+* Authors:  Goetz Lindenmaier
+*
+* irbackedges.c  Access function for backedges.
+*
 */
 
 /* $Id$ */

@@ -1,9 +1,9 @@
 /* Copyright (C) 2002 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Goetz Lindenmaier
-**
-**  irloops_t.h:
+* All rights reserved.
+*
+* Authors: Goetz Lindenmaier
+*
+*  irloops_t.h:
 */
 
 /* $Id$ */

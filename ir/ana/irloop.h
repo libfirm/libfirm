@@ -1,11 +1,11 @@
 /* Copyright (C) 2002 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Goetz Lindenmaier
-**
-**  irloops.h:  Computes backedges in the control and data flow.
-**  Only Block and Phi/Filter nodes can have incoming backedges.
-**  Constructs loops data structure: indicates loop nesting.
+* All rights reserved.
+*
+* Authors: Goetz Lindenmaier
+*
+*  irloops.h:  Computes backedges in the control and data flow.
+*  Only Block and Phi/Filter nodes can have incoming backedges.
+*  Constructs loops data structure: indicates loop nesting.
 */
 
 /* $Id$ */

@@ -1,11 +1,11 @@
  /* Copyright (C) 2002 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors:  Goetz Lindenmaier
-**
-** irouts.c --- Compute out edges for ir nodes (also called def-use
-** edges).
-**
+* All rights reserved.
+*
+* Authors:  Goetz Lindenmaier
+*
+* irouts.c --- Compute out edges for ir nodes (also called def-use
+* edges).
+*
 */
 
 /* $Id$ */

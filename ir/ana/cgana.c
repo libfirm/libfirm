@@ -130,7 +130,7 @@ static entity ** get_impl_methods(entity * method) {
   /** Collect all method entities that can be called here **/
   collect_impls(method, set, &size, &open);
 
-  /** Gefunden Entitaeten in ein Feld kopieren, ev. Unbekannten
+/**
      Vorgaenger einfuegen. **/
   if (size == 0 && !open) {
     /* keine implementierte überschriebene Methode */
