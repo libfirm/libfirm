@@ -271,26 +271,44 @@ typedef enum {
 irg_dom_state get_irg_dom_state(ir_graph *irg);
 void set_irg_dom_inconsistent(ir_graph *irg);
 
-/* state: loopinfo_state
+/** state: loopinfo_state
    Loop information describes the loops within the control and
    data flow of the procedure.  */
 typedef enum {
-  loopinfo_none,            /**< No loop information is constructed. Default. */
-  loopinfo_consistent,      /**< IntRAprocedural loop information constructed and valid. */
-  loopinfo_inconsistent,    /**< IntRAprocedural loop information constructed and invalid. */
-  loopinfo_ip_consistent,   /**< IntERprocedural loop information constructed and valid. */
-  loopinfo_ip_inconsistent, /**< IntERprocedural loop information constructed and invalid. */
-  loopinfo_cf_consistent,      /**< IntRAprocedural control loop information constructed and valid. */
-  loopinfo_cf_inconsistent,    /**< IntRAprocedural control loop information constructed and invalid. */
-  loopinfo_cf_ip_consistent,   /**< IntERprocedural control loop information constructed and valid. */
-  loopinfo_cf_ip_inconsistent  /**< IntERprocedural control loop information constructed and invalid. */
+  loopinfo_none             = 0,       /**< No loop information is constructed. Default. */
+  loopinfo_constructed      = 1,       /**< Some kind of loop information is constructed. */
+  loopinfo_valid            = 2,       /**< Loop information is valid. */
+  loopinfo_cf               = 4,       /**< Loop information constructed for control flow only. */
+  loopinfo_inter            = 8,       /**< Loop information for interprocedural view. */
+
+  /** IntRAprocedural loop information constructed and valid. */
+  loopinfo_consistent         = loopinfo_constructed | loopinfo_valid,
+  /** IntRAprocedural loop information constructed and invalid. */
+  loopinfo_inconsistent       = loopinfo_constructed,
+
+  /** IntERprocedural loop information constructed and valid. */
+  loopinfo_ip_consistent      = loopinfo_constructed | loopinfo_inter | loopinfo_valid,
+  /** IntERprocedural loop information constructed and invalid. */
+  loopinfo_ip_inconsistent    = loopinfo_constructed | loopinfo_inter,
+
+  /** IntRAprocedural control loop information constructed and valid. */
+  loopinfo_cf_consistent      = loopinfo_constructed | loopinfo_cf | loopinfo_valid,
+  /** IntRAprocedural control loop information constructed and invalid. */
+  loopinfo_cf_inconsistent    = loopinfo_constructed | loopinfo_cf,
+
+  /** IntERprocedural control loop information constructed and valid. */
+  loopinfo_cf_ip_consistent   = loopinfo_constructed | loopinfo_cf | loopinfo_inter | loopinfo_valid,
+  /** IntERprocedural control loop information constructed and invalid. */
+  loopinfo_cf_ip_inconsistent = loopinfo_constructed | loopinfo_cf | loopinfo_inter
 } irg_loopinfo_state;
+
 irg_loopinfo_state get_irg_loopinfo_state(ir_graph *irg);
 void set_irg_loopinfo_state(ir_graph *irg, irg_loopinfo_state s);
 /* Sets the loopinformation state to the appropriate inconsistent state.
    If state is 'none' does not change. */
 void set_irg_loopinfo_inconsistent(ir_graph *irg);
-
+/** Returns true if irg has consistent loop info. */
+int get_irg_loopinfo_state_consistent(ir_graph *irg);
 
 /** state: callee_information_state
  *  Call nodes contain a list of possible callees.  This list must be
