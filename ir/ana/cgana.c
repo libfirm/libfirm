@@ -21,6 +21,7 @@
 #include "irgmod.h"
 #include "xprintf.h"
 #include "irnode.h"
+#include "irflag.h"
 
 #include "dbginfo_t.h"
 
