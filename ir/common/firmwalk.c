@@ -320,13 +320,18 @@ void firm_walk_init(firm_walk_flags flags)
   /* insert internal modes to mode hash. The link field will be cleared
      in the walk_do_mode() callback function.
      Other used modes are added by collecting types */
-  pmap_insert(mode_map, mode_BB, NULL);
-  pmap_insert(mode_map, mode_T, NULL);
-  pmap_insert(mode_map, mode_ANY, NULL);
-  pmap_insert(mode_map, mode_BAD, NULL);
-  pmap_insert(mode_map, mode_X, NULL);
-  pmap_insert(mode_map, mode_M, NULL);
-  pmap_insert(mode_map, mode_b, NULL);
+
+  /*
+     ### RG: should be done by inspection the mode of all irn
+
+     pmap_insert(mode_map, mode_BB, NULL);
+     pmap_insert(mode_map, mode_T, NULL);
+     pmap_insert(mode_map, mode_ANY, NULL);
+     pmap_insert(mode_map, mode_BAD, NULL);
+     pmap_insert(mode_map, mode_X, NULL);
+     pmap_insert(mode_map, mode_M, NULL);
+     pmap_insert(mode_map, mode_b, NULL);
+  */
 
   // Collect all types (also unused types) if flag is set
   if (FW_WITH_ALL_TYPES & flags)
