@@ -780,6 +780,12 @@ set_Cond_kind (ir_node *node, cond_kind kind) {
   node->attr.c.kind = kind;
 }
 
+long
+get_Cond_defaultProj (ir_node *node) {
+  assert (node->op == op_Cond);
+  return node->attr.c.default_proj;
+}
+
 ir_node *
 get_Return_mem (ir_node *node) {
   assert (node->op == op_Return);

@@ -327,6 +327,7 @@ ir_node  *get_Cond_selector (ir_node *node);
 void      set_Cond_selector (ir_node *node, ir_node *selector);
 cond_kind get_Cond_kind (ir_node *node);
 void      set_Cond_kind (ir_node *node, cond_kind kind);
+long      get_Cond_defaultProj (ir_node *node);
 
 /**
  * Projection numbers for conditions.
