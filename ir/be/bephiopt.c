@@ -17,13 +17,14 @@
 #include "bephicoal_t.h"
 #include "phistat.h"
 
+#define DEBUG_LVL SET_LEVEL_1
+
 #define DO_PHI_STATISTICS
 #undef DUMP_IRG_PHI_STAT
-#define DUMP_ALL_PHI_STAT
 
-#define DEBUG_LVL 1
-
+#define DUMP_CUMULATIVE
 #define CUMULATIVE_FILE "all.phistat"
+
 #define ENV_PHI_STAT "PHI_STAT"
 
 static firm_dbg_module_t *dbgphi = NULL;
@@ -64,7 +65,7 @@ void be_phi_opt(ir_graph* irg) {
 		phi_stat_dump_pretty(buf);
 	}
 #endif
-#ifdef DUMP_ALL_PHI_STAT
+#ifdef DUMP_CUMULATIVE
 	phi_stat_update(CUMULATIVE_FILE);
 #endif
 	phi_stat_update(getenv(ENV_PHI_STAT));

@@ -59,9 +59,6 @@ enum vals_t {
 static int curr_vals[ASIZE];
 
 
-/**
- * Resets the array holding the data
- */
 void phi_stat_reset(void) {
 	int i;
 
@@ -144,8 +141,8 @@ static void phi_class_stat(pset *pc) {
 		curr_vals[I_CLS_SIZE_S + size]++;
 
 	/* get an array of all members for double iterating */
-	members = (ir_node **) malloc(size * sizeof(ir_node*));
-	for (i=0, p = (ir_node *)pset_first(pc); p; p = (ir_node *)pset_next(pc))
+	members = malloc(size * sizeof(*members));
+	for (i = 0, p = pset_first(pc); p; p = pset_next(pc))
 		members[i++] = p;
 	assert(i == size);
 
@@ -174,9 +171,6 @@ static void phi_class_stat(pset *pc) {
 }
 
 
-/**
- * Collect all stat data
- */
 void phi_stat_collect(ir_graph *irg, pset *all_phi_nodes, pset *all_phi_classes) {
 	ir_node *n;
 	pset *pc;
@@ -184,10 +178,10 @@ void phi_stat_collect(ir_graph *irg, pset *all_phi_nodes, pset *all_phi_classes)
 	irg_walk_graph(irg, stat_walker, NULL, NULL);
 	curr_vals[I_BLOCKS] -= 2;
 
-	for (n = (ir_node *)pset_first(all_phi_nodes); n; n = (ir_node *)pset_next(all_phi_nodes))
+	for (n = pset_first(all_phi_nodes); n; n = pset_next(all_phi_nodes))
 		phi_node_stat(n);
 
-	for (pc = (pset *)pset_first(all_phi_classes); pc; pc = (pset *)pset_next(all_phi_classes))
+	for (pc = pset_first(all_phi_classes); pc; pc = pset_next(all_phi_classes))
 		phi_class_stat(pc);
 }
 
@@ -217,9 +211,6 @@ static void dump_file(char *filename, int stat[ASIZE]) {
 }
 
 
-/**
- * Updates a cumulative file with the current values.
- */
 void phi_stat_update(char *filename) {
     int i;
 	FILE *all;
@@ -255,20 +246,12 @@ void phi_stat_update(char *filename) {
 }
 
 
-/**
- * Dumps the current contents of the values array to a file.
- * Updates a cumulative file.
- */
 void phi_stat_dump(char *filename) {
 	if (filename)
 		dump_file(filename, curr_vals);
 }
 
 
-/**
- * Dumps the current contents of the values array
- * and annotations to a file.
- */
 void phi_stat_dump_pretty(char *filename) {
 	int i;
 	FILE *out;
