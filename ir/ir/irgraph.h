@@ -100,6 +100,18 @@ ir_graph *new_ir_graph (entity *ent, int n_loc);
 void free_ir_graph (ir_graph *irg);
 
 /* --- access routines for all ir_graph attributes --- */
+
+/**
+ *   Checks whether a pointer points to a ir graph.
+ *
+ *   @param thing     an arbitrary pointer
+ *
+ *   @return
+ *       true if the thing is a ir graph, else false
+ */
+int
+is_ir_graph(void *thing);
+
 entity  *get_irg_ent (ir_graph *irg);
 void     set_irg_ent (ir_graph *irg, entity *ent);
 

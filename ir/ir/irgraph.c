@@ -95,6 +95,7 @@ new_ir_graph (entity *ent, int n_loc)
   res->Phi_in_stack = new_Phi_in_stack();  /* A stack needed for automatic Phi
                                 generation */
 #endif
+  res->kind = k_ir_graph;
   res->obst      = (struct obstack *) xmalloc (sizeof (struct obstack));
   obstack_init (res->obst);
   res->value_table = new_identities (); /* value table for global value
@@ -167,6 +168,7 @@ ir_graph *new_const_code_irg() {
 #if USE_EXPLICIT_PHI_IN_STACK
   res->Phi_in_stack = NULL;
 #endif
+  res->kind = k_ir_graph;
   res->obst      = (struct obstack *) xmalloc (sizeof (struct obstack));
   obstack_init (res->obst);
   res->phase_state = phase_building;
@@ -217,6 +219,15 @@ void free_ir_graph (ir_graph *irg) {
    templates:
    {attr type} get_irg_{attribute name} (ir_graph *irg);
    void set_irg_{attr name} (ir_graph *irg, {attr type} {attr}); */
+
+int
+is_ir_graph(void *thing) {
+  assert(thing);
+  if (get_kind(thing) == k_ir_graph)
+    return 1;
+  else
+    return 0;
+}
 
 /* Outputs a unique number for this node */
 
