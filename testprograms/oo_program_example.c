@@ -262,7 +262,7 @@ main(void)
 
   entity **free_methods;
   int arr_len;
-  cgana(&arr_len, &free_methods);
+  cgana(&arr_len, &free_methods, 0);
   cg_construct(arr_len, free_methods);
 
   interprocedural_view = 1;
