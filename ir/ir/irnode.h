@@ -542,6 +542,10 @@ ir_node *get_fragile_op_mem(ir_node *node);
 /* Makros for debugging the libfirm */
 #include "ident.h"
 
+#ifdef __GNUC__
+/*
+ * GNU C has the __FUNCTION__ extension
+ */
 #define DDMSG        printf("%s(l.%i)\n", __FUNCTION__, __LINE__)
 #define DDMSG1(X)    printf("%s(l.%i) %s\n", __FUNCTION__, __LINE__, id_to_str(get_irn_opident(X)))
 #define DDMSG2(X)    printf("%s(l.%i) %s%s: %ld\n", __FUNCTION__, __LINE__, id_to_str(get_irn_opident(X)), id_to_str(get_irn_modeident(X)), get_irn_node_nr(X))
@@ -555,6 +559,26 @@ ir_node *get_fragile_op_mem(ir_node *node);
 #define DDMT(X)      xprintf("%s(l.%i) %I %I: %p\n", __FUNCTION__, __LINE__, get_type_tpop_nameid(X), get_type_ident(X), (X))
 #define DDME(X)      xprintf("%s(l.%i) %I: %p\n", __FUNCTION__, __LINE__, get_entity_ident(X), (X))
 #define DDMG(X)      xprintf("%s(l.%i) %I: %p\n", __FUNCTION__, __LINE__, get_irg_ent(get_entity_ident(X)), (X))
+
+#else
+/*
+ * use Filename instead
+ */
+#define DDMSG        printf("%s(l.%i)\n", __FILE__, __LINE__)
+#define DDMSG1(X)    printf("%s(l.%i) %s\n", __FILE__, __LINE__, id_to_str(get_irn_opident(X)))
+#define DDMSG2(X)    printf("%s(l.%i) %s%s: %ld\n", __FILE__, __LINE__, id_to_str(get_irn_opident(X)), id_to_str(get_irn_modeident(X)), get_irn_node_nr(X))
+#define DDMSG3(X)    printf("%s(l.%i) %s: %p\n", __FILE__, __LINE__, print_firm_kind(X), (X))
+#define DDMSG4(X)    xprintf("%s(l.%i) %I %I: %p\n", __FILE__, __LINE__, get_type_tpop_nameid(X), get_type_ident(X), (X))
+#define DDMSG5(X)    printf("%s%s: %ld", id_to_str(get_irn_opident(X)), id_to_str(get_irn_modeident(X)), get_irn_node_nr(X))
+
+
+#define DDMN(X)      xprintf("%s(l.%i) %I%I: %ld (%p)\n", __FILE__, __LINE__, get_irn_opident(X), get_irn_modeident(X), get_irn_node_nr(X), (X))
+#define DDMNB(X)     xprintf("%I%I: %ld (in block %ld)\n", get_irn_opident(X), get_irn_modeident(X), get_irn_node_nr(X), get_irn_node_nr(get_nodes_Block(X)))
+#define DDMT(X)      xprintf("%s(l.%i) %I %I: %p\n", __FILE__, __LINE__, get_type_tpop_nameid(X), get_type_ident(X), (X))
+#define DDME(X)      xprintf("%s(l.%i) %I: %p\n", __FILE__, __LINE__, get_entity_ident(X), (X))
+#define DDMG(X)      xprintf("%s(l.%i) %I: %p\n", __FILE__, __LINE__, get_irg_ent(get_entity_ident(X)), (X))
+
+#endif /* __GNUC__ */
 
 
 # endif /* _IRNODE_H_ */
