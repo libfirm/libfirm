@@ -1,0 +1,26 @@
+#
+# Project:     libFIRM
+# File name:   ir/config/Makefile.in
+# Purpose:
+# Author:      Boris Boesler, Till Riedel
+# Modified by:
+# Created:
+# CVS-ID:      $Id$
+# Copyright:   (c) 1999-2003 Universität Karlsruhe
+# Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+#
+
+top_srcdir := @top_srcdir@
+srcdir = @srcdir@
+topdir = ../..
+subdir := ir/common
+
+INSTALL_HEADERS := firm_config.h
+
+SOURCES = $(INSTALL_HEADERS)
+
+include $(topdir)/MakeRules
+
+include $(top_srcdir)/MakeTargets
+
+all:

@@ -21,15 +21,15 @@ INSTALL_HEADERS = cfopt.h tailrec.h ldstopt.h strength_red.h reassoc.h \
 SOURCES = $(INSTALL_HEADERS)
 
 SOURCES += 	Makefile.in \
-		cfopt.c tailrec.c strength_red.c ldstopt.c reassoc.c    \
-		loop_unrolling.c
+		cfopt.c tailrec.c strength_red.c ldstopt.c reassoc.c \
+		loop_unrolling.c funccall.c
 
 include $(topdir)/MakeRules
 
 CPPFLAGS += 	-I$(top_srcdir)/ir/adt   -I$(top_srcdir)/ir/ir  -I$(top_srcdir)/ir/common  \
 		-I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/tr  -I$(top_srcdir)/ir/tv \
 		-I$(top_srcdir)/ir/debug -I$(top_srcdir)/ir/ana -I$(top_srcdir)/ir/st \
-		-I$(top_srcdir)/ir/stat -I$(top_srcdir)/ir/external
+		-I$(top_srcdir)/ir/stat -I$(top_srcdir)/ir/external -I$(topdir)/ir/config
 
 include $(top_srcdir)/MakeTargets
 

@@ -17,7 +17,8 @@ subdir := ir/ir
 
 INSTALL_HEADERS = irprog.h irgraph.h irnode.h irmode.h irop.h ircons.h	\
 		irflag.h irvrfy.h irgwalk.h irgmod.h iropt.h irdump.h	\
-		irgopt.h ircgcons.h ircgopt.h irreflect.h irarch.h irprintf.h
+		irgopt.h ircgcons.h ircgopt.h irreflect.h irarch.h irprintf.h \
+		irlwrdw.h
 
 SOURCES = $(INSTALL_HEADERS)
 
@@ -25,14 +26,15 @@ SOURCES += 	Makefile.in \
 		ircons.c ircons_t.h irgmod.c irgraph_t.h irnode.c iropt.c iropt_t.h irvrfy.c \
 		irgwalk.c irgwalk_blk.c irdump.c irdumptxt.c irgopt.c irgopt_t.h irnode_t.h 	\
 		irmode.c irop.c irprog.c irflag.c irflag_t.h irgraph.c irprintf_t.h \
-		irmode_t.h irop_t.h irprog_t.h ircgcons.c ircgopt.c irreflect.c irarch.c irprintf.c
+		irmode_t.h irop_t.h irprog_t.h ircgcons.c ircgopt.c irreflect.c irarch.c irprintf.c \
+		irlwrdw.c
 
 include $(topdir)/MakeRules
 
 CPPFLAGS += 	-I$(top_srcdir)/ir/adt   -I$(top_srcdir)/ir/ir  -I$(top_srcdir)/ir/common  \
 		-I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/tr  -I$(top_srcdir)/ir/tv \
 		-I$(top_srcdir)/ir/debug -I$(top_srcdir)/ir/ana -I$(top_srcdir)/ir/st \
-		-I$(top_srcdir)/ir/stat -I$(top_srcdir)/ir/external
+		-I$(top_srcdir)/ir/stat -I$(top_srcdir)/ir/external -I$(topdir)/ir/config
 
 include $(top_srcdir)/MakeTargets
 

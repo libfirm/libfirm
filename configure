@@ -1210,9 +1210,11 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 ac_output_file="Makefile MakeRules ir/Makefile ir/adt/Makefile ir/debug/Makefile \
 		ir/tv/Makefile ir/common/Makefile ir/ident/Makefile ir/ir/Makefile \
 		ir/ana/Makefile ir/tr/Makefile ir/ana2/Makefile ir/stat/Makefile \
-		ir/opt/Makefile ir/external/Makefile \
+		ir/opt/Makefile ir/external/Makefile ir/config/Makefile \
 		testprograms/Makefile firmjni/Makefile firmjni/testprograms/Makefile \
 		libfirm.doxygen"
+
+CONF_DIR_NAME=`dirname $0`
 
 ac_config_headers="$ac_config_headers config.h"
 
@@ -5414,4 +5416,4 @@ if test "$no_create" != yes; then
 fi
 
 
-gawk -f filter.awk < config.h | sed -f filter.sed > ir/common/firm_config.h
+gawk -f $CONF_DIR_NAME/filter.awk < config.h | sed -f $CONF_DIR_NAME/filter.sed > ir/config/firm_config.h

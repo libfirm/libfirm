@@ -22,7 +22,10 @@ subdir := .
 # do we want statistics
 enable_statistics := @enable_statistics@
 
-subdirs := ir/adt ir/debug ir/tv ir/common ir/ident ir/ir ir/opt ir/tr ir/ana ir/stat ir/external ir/ana2
+build_subdirs := ir/adt ir/debug ir/tv ir/common ir/ident ir/ir ir/opt ir/tr ir/ana \
+	ir/stat ir/external ir/ana2
+
+subdirs := $(build_subdirs) ir/config
 
 SOURCES := Makefile.in MakeRules.in MakeTargets\
 	   aclocal.m4 config.h.in\
@@ -38,7 +41,7 @@ GENFILES := stamp-h config.log config.cache
 
 include $(topdir)/MakeRules
 
-XOFILES += $(addsuffix /subdir.o, $(subdirs))
+XOFILES += $(addsuffix /subdir.o, $(build_subdirs))
 
 include $(top_srcdir)/MakeTargets
 

@@ -21,9 +21,12 @@ dnl if other files should be generated just add them to ac_output_files
 ac_output_file="Makefile MakeRules ir/Makefile ir/adt/Makefile ir/debug/Makefile \
 		ir/tv/Makefile ir/common/Makefile ir/ident/Makefile ir/ir/Makefile \
 		ir/ana/Makefile ir/tr/Makefile ir/ana2/Makefile ir/stat/Makefile \
-		ir/opt/Makefile ir/external/Makefile \
+		ir/opt/Makefile ir/external/Makefile ir/config/Makefile \
 		testprograms/Makefile firmjni/Makefile firmjni/testprograms/Makefile \
 		libfirm.doxygen"
+
+dnl where is the configure file
+CONF_DIR_NAME=`dirname $0`
 
 dnl generate the config header file
 AC_CONFIG_HEADER(config.h)
@@ -297,5 +300,5 @@ dnl ===============
 
 AC_OUTPUT($ac_output_file,[ touch stamp-h ])
 
-dnl snip the lower prt of config.h and put it to ir/common/firm_config.h
-gawk -f filter.awk < config.h | sed -f filter.sed > ir/common/firm_config.h
+dnl snip the lower prt of config.h and put it to ir/config/firm_config.h
+gawk -f $CONF_DIR_NAME/filter.awk < config.h | sed -f $CONF_DIR_NAME/filter.sed > ir/config/firm_config.h

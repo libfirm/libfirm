@@ -28,7 +28,7 @@ endif
 
 include $(topdir)/MakeRules
 
-CPPFLAGS += -I$(top_srcdir)/ir/adt -I$(top_srcdir)/ir/common -I$(top_srcdir)/ir/debug
+CPPFLAGS += -I$(top_srcdir)/ir/adt -I$(top_srcdir)/ir/common -I$(top_srcdir)/ir/debug -I$(topdir)/ir/config
 OFILES += pset.o
 
 include $(top_srcdir)/MakeTargets
