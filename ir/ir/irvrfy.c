@@ -426,7 +426,7 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       ASSERT_AND_RET(
           /* Mul: BB x int1 x int1 --> int2 */
           ((mode_is_int(op1mode)   && op2mode == op1mode && mode_is_int(mymode)) ||
-	   (mode_is_float(op1mode) && op2mode == op1mode && mymode == op1mode))
+	   (mode_is_float(op1mode) && op2mode == op1mode && mymode == op1mode)),
           "Mul node",0
           );
       op_is_symmetric = 2;
