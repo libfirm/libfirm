@@ -29,10 +29,15 @@
 #include <assert.h>         /* assertions */
 #include <stdlib.h>         /* atoi() */
 #include <string.h>         /* nice things for strings */
+#ifdef HAVE_STRINGS_H
 #include <strings.h>        /* strings.h also includes bsd only function strcasecmp */
+#endif
 #include <stdlib.h>
 #ifdef HAVE_ALLOCA_H
 # include <alloca.h>
+#endif
+#ifdef HAVE_MALLOC_H
+# include <malloc.h>
 #endif
 
 #include "tv_t.h"

@@ -22,6 +22,9 @@
 #ifdef HAVE_ALLOCA_H
 # include <alloca.h>
 #endif
+#ifdef HAVE_MALLOC_H
+# include <malloc.h>
+#endif
 #include <assert.h>   /* assertions */
 #include <string.h>   /* memset/memcmp */
 #include <stdio.h>    /* output for error messages */
