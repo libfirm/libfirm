@@ -403,7 +403,7 @@ static struct ms magic(tarval *d)
   int bits        = get_mode_size_bits(u_mode);
   int p;
   tarval *ad, *anc, *delta, *q1, *r1, *q2, *r2, *t;     /* unsigned */
-  pnc_number d_cmp, M_cmp;
+  pn_Cmp d_cmp, M_cmp;
 
   tarval *bits_minus_1, *two_bits_1;
 
@@ -432,7 +432,7 @@ static struct ms magic(tarval *d)
     q1 = ADD(q1, q1);                           /* Update q1 = 2^p/|nc| */
     r1 = ADD(r1, r1);                           /* Update r1 = rem(2^p, |nc|) */
 
-    if (CMP(r1, anc) & Ge) {
+    if (CMP(r1, anc) & pn_Cmp_Ge) {
       q1 = ADD(q1, ONE(u_mode));
       r1 = SUB(r1, anc);
     }
@@ -440,17 +440,17 @@ static struct ms magic(tarval *d)
     q2 = ADD(q2, q2);                           /* Update q2 = 2^p/|d| */
     r2 = ADD(r2, r2);                           /* Update r2 = rem(2^p, |d|) */
 
-    if (CMP(r2, ad) & Ge) {
+    if (CMP(r2, ad) & pn_Cmp_Ge) {
       q2 = ADD(q2, ONE(u_mode));
       r2 = SUB(r2, ad);
     }
 
     delta = SUB(ad, r2);
-  } while (CMP(q1, delta) & Lt || (CMP(q1, delta) & Eq && CMP(r1, ZERO(u_mode)) & Eq));
+  } while (CMP(q1, delta) & pn_Cmp_Lt || (CMP(q1, delta) & pn_Cmp_Eq && CMP(r1, ZERO(u_mode)) & pn_Cmp_Eq));
 
   d_cmp = CMP(d, ZERO(mode));
 
-  if (d_cmp & Ge)
+  if (d_cmp & pn_Cmp_Ge)
     mag.M = ADD(CNV(q2, mode), ONE(mode));
   else
     mag.M = SUB(ZERO(mode), ADD(CNV(q2, mode), ONE(mode)));
@@ -460,10 +460,10 @@ static struct ms magic(tarval *d)
   mag.s = p - bits;
 
   /* need an add if d > 0 && M < 0 */
-  mag.need_add = d_cmp & Gt && M_cmp & Lt;
+  mag.need_add = d_cmp & pn_Cmp_Gt && M_cmp & pn_Cmp_Lt;
 
   /* need a sub if d < 0 && M > 0 */
-  mag.need_sub = d_cmp & Lt && M_cmp & Gt;
+  mag.need_sub = d_cmp & pn_Cmp_Lt && M_cmp & pn_Cmp_Gt;
 
   tarval_set_integer_overflow_mode(rem);
 
@@ -510,7 +510,7 @@ static struct mu magicu(tarval *d)
 
   do {
     ++p;
-    if (CMP(r1, SUB(nc, r1)) & Ge) {
+    if (CMP(r1, SUB(nc, r1)) & pn_Cmp_Ge) {
       q1 = ADD(ADD(q1, q1), ONE(mode));
       r1 = SUB(ADD(r1, r1), nc);
     }
@@ -519,15 +519,15 @@ static struct mu magicu(tarval *d)
       r1 = ADD(r1, r1);
     }
 
-    if (CMP(ADD(r2, ONE(mode)), SUB(d, r2)) & Ge) {
-      if (CMP(q2, seven_ff) & Ge)
+    if (CMP(ADD(r2, ONE(mode)), SUB(d, r2)) & pn_Cmp_Ge) {
+      if (CMP(q2, seven_ff) & pn_Cmp_Ge)
         magu.need_add = 1;
 
       q2 = ADD(ADD(q2, q2), ONE(mode));
       r2 = SUB(ADD(ADD(r2, r2), ONE(mode)), d);
     }
     else {
-      if (CMP(q2, two_bits_1) & Ge)
+      if (CMP(q2, two_bits_1) & pn_Cmp_Ge)
         magu.need_add = 1;
 
       q2 = ADD(q2, q2);
@@ -535,7 +535,7 @@ static struct mu magicu(tarval *d)
     }
     delta = SUB(SUB(d, ONE(mode)), r2);
   } while (p < 2*bits &&
-          (CMP(q1, delta) & Lt || (CMP(q1, delta) & Eq && CMP(r1, ZERO(mode)) & Eq)));
+          (CMP(q1, delta) & pn_Cmp_Lt || (CMP(q1, delta) & pn_Cmp_Eq && CMP(r1, ZERO(mode)) & pn_Cmp_Eq)));
 
   magu.M = ADD(q2, ONE(mode));                       /* Magic number */
   magu.s = p - bits;                                 /* and shift amount */
