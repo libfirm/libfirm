@@ -91,6 +91,12 @@ static int reassoc_Sub(ir_node *n)
 {
   ir_node *right = get_Sub_right(n);
 
+  /* FIXME: Do not apply this rule for unsigned Sub's because our code
+   * generation is currently buggy :-)
+   */
+  if (! mode_is_signed(get_irn_mode(n)))
+      return 0;
+
   /* handles rule R6:
    * convert x - c => (-c) + x
    *
@@ -98,19 +104,35 @@ static int reassoc_Sub(ir_node *n)
    * for non-real constants yet.
    * */
   if (get_const_class(right) == REAL_CONSTANT) {
-    ir_node *block = get_nodes_block(right);
-    ir_mode *mode  = get_irn_mode(right);
-    dbg_info *dbg  = get_irn_dbg_info(right);
+    ir_node *left  = get_Sub_left(n);
+    ir_node *block = get_nodes_block(n);
+    ir_mode *mode  = get_irn_mode(n);
+    dbg_info *dbg  = get_irn_dbg_info(n);
     ir_node *irn, *c;
+
+    switch (get_const_class(left)) {
+      case REAL_CONSTANT:
+        irn = optimize_in_place(n);
+        if (irn != n) {
+          exchange(n, irn);
+          return 1;
+        }
+        return 0;
+      case NO_CONSTANT:
+        break;
+      default:
+        /* already constant, nothing to do */
+        return 0;
+    }
 
     c   = new_r_Const(current_ir_graph, block, mode, get_mode_null(mode));
     irn = new_rd_Sub(dbg, current_ir_graph, block, c, right, mode);
 
-    irn = new_rd_Add(dbg, current_ir_graph, block, irn, get_Sub_left(n), get_irn_mode(n));
+    irn = new_rd_Add(dbg, current_ir_graph, block, left, irn, get_irn_mode(n));
 
-    printf("Applied: %s - %s => (-%s) + %s\n",
+    printf("Applied: %s - %s => %s + (-%s)\n",
         get_irn_opname(get_Sub_left(n)), get_irn_opname(c),
-        get_irn_opname(c), get_irn_opname(get_Sub_left(n)) );
+        get_irn_opname(get_Sub_left(n)), get_irn_opname(c) );
 
     exchange(n, irn);
 
