@@ -1061,6 +1061,7 @@ int tarval_snprintf(char *buf, size_t len, tarval *tv)
       return snprintf(buf, len, "%s%s%s", prefix, fc_print_dec(tv->value, tv_buf, sizeof(tv_buf)), suffix);
 
     case irms_reference:
+      if (tv==tarval_P_void) return snprintf(buf, len, "NULL");
       if (tv->value != NULL)
         if (tarval_is_entity(tv)) {
           if (get_entity_peculiarity((entity *)tv->value) == existent)
