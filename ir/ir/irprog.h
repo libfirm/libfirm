@@ -30,22 +30,30 @@
 /**
  * Datastructure that holds central information about a program
  *
- *   Preliminary documentation ;-)
+ * Preliminary documentation ;-)
  *
- *  - main_irg  The ir graph that is the entry point to the program.
+ * - main_irg:  The ir graph that is the entry point to the program.
  *              (Anything not reachable from here may be optimized away.
  *              If we want to translate libraries or the like correctly
  *              we must replace this by a list.)
- *  - irg       List of all ir graphs in the program.
- *  - type      A list containing all types known to the translated program.
+ * - irg:       List of all ir graphs in the program.
+ * - type:      A list containing all types known to the translated program.
  *              Some types can have several entries in this list (as a result of
  *              using exchange_types()).
- *  - glob_type The unique global type that is owner of all global entities.
+ * - glob_type: The unique global type that is owner of all global entities.
  *
  */
 typedef struct ir_prog ir_prog;
 
-/** A variable from where everything in the ir can be accessed. */
+/**
+ * A variable from where everything in the ir can be accessed.
+ * This variable contains the irp, the "immediate representation program".
+ * This variable should be considered constant. Moreover, one should use get_irp()
+ * to get access the the irp.
+ *
+ * @note
+ * 	Think of the irp as the "handle" of libFirm.
+ */
 extern ir_prog *irp;
 
 /**
@@ -70,23 +78,37 @@ void      set_irp_main_irg(ir_graph *main_irg);
 
 /** Adds irg to the list of ir graphs in irp. */
 void      add_irp_irg(ir_graph *irg);
+
 /** Removes irg from the list of irgs, deallocates it and
    shrinks the list by one. */
 void      remove_irp_irg(ir_graph *irg);
+
+/** Returns the number of ir graphs in the irp. */
 int       get_irp_n_irgs(void);
+
+/** Returns the ir graph at position pos in the irp. */
 ir_graph *get_irp_irg(int pos);
+
+/** Sets the ir graph at position pos. */
 void      set_irp_irg(int pos, ir_graph *irg);
 
 /** Adds type to the list of types in irp. */
 void  add_irp_type(type *typ);
-/* Removes type from the list of types, deallocates it and
+
+/** Removes type from the list of types, deallocates it and
    shrinks the list by one. */
 void  remove_irp_type(type *typ);
+
+/** Returns the number of all types in the irp. */
 int   get_irp_n_types(void);
+
+/** Returns the type at position pos in the irp. */
 type *get_irp_type(int pos);
+
+/** Overwrites the type at position pos with another type. */
 void  set_irp_type(int pos, type *typ);
 
-/* --- Functions to access the fields of ir_prog --- */
+/** Returns the "global" type of the irp. */
 type *get_glob_type(void);
 
 
