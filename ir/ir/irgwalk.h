@@ -51,6 +51,10 @@ void irg_block_walk(ir_node *node, irg_walk_func pre, irg_walk_func post, void *
  * ir graph, starting at the end block. */
 void irg_block_walk_graph(ir_graph *irg, irg_walk_func pre, irg_walk_func post, void *env);
 
+/* Walks over all code in const_code_irg.
+   Uses visited flag in const_code_irg. */
+void walk_const_code(irg_walk_func pre, irg_walk_func post, void *env);
+
 /********************************************************************/
 /** Walking support for interprocedural analysis                   **/
 /**                                                                **/

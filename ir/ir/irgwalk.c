@@ -25,7 +25,8 @@
 # include "array.h"
 
 /* walk over an interprocedural graph (callgraph). Visits only graphs in irg_set. */
-static void irg_walk_cg(ir_node * node, int visited, eset * irg_set, irg_walk_func pre, irg_walk_func post, void * env) {
+static void irg_walk_cg(ir_node * node, int visited, eset * irg_set,
+			irg_walk_func pre, irg_walk_func post, void * env) {
   int i;
   ir_graph * rem = current_ir_graph;
   ir_node * pred;
@@ -279,7 +280,65 @@ void irg_block_walk_graph(ir_graph *irg, irg_walk_func pre, irg_walk_func post, 
   current_ir_graph = rem;
 }
 
+/********************************************************************/
 
+typedef struct walk_env {
+  void *pre;
+  void *post;
+  void *env;
+} walk_env;
+
+/* Walk to all constant expressions in this entity. */
+void walk_entity(entity *ent, void *env) {
+  walk_env *my_env = (walk_env *)env;
+  if (get_entity_variability(ent) != uninitialized) {
+    if (is_atomic_entity(ent)) {
+      irg_walk(get_atomic_ent_value(ent), my_env->pre, my_env->post, my_env->env);
+    } else {
+      int i;
+      for (i = 0; i < get_compound_ent_n_values(ent); i++) {
+	irg_walk(get_compound_ent_value(ent, i), my_env->pre, my_env->post, my_env->env);
+      }
+    }
+  }
+}
+
+/* Walks over all code in const_code_irg. */
+void walk_const_code(irg_walk_func pre, irg_walk_func post, void *env) {
+  int i, j;
+  walk_env my_env;
+
+  ir_graph *rem = current_ir_graph;
+  current_ir_graph = get_const_code_irg();
+  inc_irg_visited(current_ir_graph);
+
+  my_env.pre = pre;
+  my_env.post = post;
+  my_env.env = env;
+
+  /* Walk all types that can contain constant entities.  */
+  walk_types_entities(get_glob_type(), &walk_entity, &env);
+  for (i = 0; i < get_irp_n_types(); i++)
+    walk_types_entities(get_irp_type(i), &walk_entity, &env);
+  for (i = 0; i < get_irp_n_irgs(); i++)
+    walk_types_entities(get_irg_frame_type(get_irp_irg(i)), &walk_entity, &env);
+
+  /* Walk constant array bounds. */
+  for (i = 0; i < get_irp_n_types(); i++) {
+    type *tp = get_irp_type(i);
+    if (is_array_type(tp)) {
+      for (j = 0; j < get_array_n_dimensions(tp); j++) {
+	ir_node *n;
+	n = get_array_lower_bound(tp, j);
+	if (n) irg_walk(n, pre, post, env);
+	n = get_array_upper_bound(tp, j);
+	if (n) irg_walk(n, pre, post, env);
+      }
+    }
+  }
+
+  current_ir_graph = rem;
+}
 
 /********************************************************************/
 /** Walking support for interprocedural analysis                   **/
