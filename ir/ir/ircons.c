@@ -1578,6 +1578,7 @@ get_value (int pos, ir_mode *mode)
   return get_r_value_internal (current_ir_graph->current_block, pos + 1, mode);
 }
 
+
 /* set a value at position pos in the parameter array from the current block */
 inline void
 set_value (int pos, ir_node *value)

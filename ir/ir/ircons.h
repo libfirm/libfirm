@@ -707,9 +707,7 @@
  *    ir_node *new_Minus (ir_node *op, ir_mode *mode)
  *    -----------------------------------------------
  *
- *    This constructor is for unary Minus operations on floating point
- *    values.  Such a Minus can trap if it is implemented as a Sub from
- *    zero due to rounding errors.
+ *    Unary Minus operations on floating point values.
  *
  *    ir_node *new_Mul (ir_node *op1, ir_node *op2, ir_mode *mode)
  *    ------------------------------------------------------------
@@ -1022,6 +1020,7 @@
  *    adds the value to the array of used values at position pos.  Pos
  *    has to be a unique identifier for an entry in the procedure's
  *    definition table.  It can be used to access the value again.
+ *    Requires current_block to be set correctly.
  *
  *    ir_node *get_value (int pos, ir_mode *mode)
  *    -------------------------------------------
@@ -1034,7 +1033,7 @@
  *    definition reaches the currend block on several different
  *    paths.  This Phi node will be eliminated if optimizations are
  *    turned on right after it's creation.
- *
+ *    Requires current_block to be set correctly.
  *
  *    There are two special routines for the global store:
  *
@@ -1043,11 +1042,13 @@
  *
  *    Adds the store to the array of known values at a reserved
  *    position.
+ *    Requires current_block to be set correctly.
  *
  *    inline ir_node *get_store (void)
  *    --------------------------------
  *
  *    Returns the node defining the actual store.
+ *    Requires current_block to be set correctly.
  *****
  */
 
