@@ -153,13 +153,13 @@ if test "$ac_math_headers" != yes; then
 fi
 
 
-dnl check for the gnu multiprecission (gmp) header file
+#dnl check for the gnu multiprecission (gmp) header file
 
-AC_CHECK_HEADERS(gmp.h, ac_gmp_headers="yes", ac_gmp_headers="no")
-if test "$ac_gmp_headers" != yes; then
-  dnl gmp header not found.
-  AC_MSG_ERROR("GNU multiprecission gmp header file not found")
-fi
+#AC_CHECK_HEADERS(gmp.h, ac_gmp_headers="yes", ac_gmp_headers="no")
+#if test "$ac_gmp_headers" != yes; then
+#  dnl gmp header not found.
+#  AC_MSG_ERROR("GNU multiprecission gmp header file not found")
+#fi
 
 
 dnl check for the obstack header file
@@ -184,13 +184,13 @@ fi
 dnl Checks for libraries.
 dnl =====================
 
-dnl check for the gnu multiprecission (gmp) library
+#dnl check for the gnu multiprecission (gmp) library
 
-AC_CHECK_LIB(gmp, main, ac_gmp_library="yes", ac_gmp_library="no")
-if test "$ac_gmp_library" != yes; then
-  dnl gmp library not found.
-  AC_MSG_ERROR("GNU multiprecission gmp library not found")
-fi
+#AC_CHECK_LIB(gmp, main, ac_gmp_library="yes", ac_gmp_library="no")
+#if test "$ac_gmp_library" != yes; then
+#  dnl gmp library not found.
+#  AC_MSG_ERROR("GNU multiprecission gmp library not found")
+#fi
 
 
 AC_CHECK_LIB(m, main, ac_m_library="yes", ac_m_library="no")
