@@ -403,7 +403,10 @@ MANGLE(_,_search) (SET *table,
     q->entry.dptr = (void *)key;
 #else
     obstack_blank (&table->obst, offsetof (Element, entry.dptr));
-    obstack_grow (&table->obst, key, size);
+    if (action == _set_hinsert0)
+      obstack_grow0 (&table->obst, key, size);
+    else
+      obstack_grow (&table->obst, key, size);
     q = obstack_finish (&table->obst);
     q->entry.size = size;
 #endif
@@ -417,7 +420,11 @@ MANGLE(_,_search) (SET *table,
   }
 
   if (!q) return NULL;
-  if (action == MANGLE(_,_hinsert)) return &q->entry;
+#ifdef PSET
+  if (action == _pset_hinsert) return &q->entry;
+#else
+  if (action == _set_hinsert || action == _set_hinsert0) return &q->entry;
+#endif
   return q->entry.dptr;
 }
 

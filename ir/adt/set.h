@@ -110,6 +110,23 @@ void *set_insert (set *set, const void *key, size_t size, unsigned hash);
  */
 set_entry *set_hinsert (set *set, const void *key, size_t size, unsigned hash);
 
+/**
+ * Inserts an element into a set, zero-terminate it and returns its set_entry.
+ *
+ * @param set   the set to insert in
+ * @param key   a pointer to the element to be inserted
+ * @param size  the size of the element that should be inserted
+ * @param hash  the hash-value of the element
+ *
+ * @return a pointer to the set_entry of the inserted element
+ *
+ * @note
+ *    It is not possible to insert on element more than once. If a element
+ *    that should be inserted is already in the set, this functions does
+ *    nothing but returning its set_entry.
+ */
+set_entry *set_hinsert0 (set *set, const void *key, size_t size, unsigned hash);
+
 /** Returns the first element of a set. */
 void *set_first (set *set);
 
@@ -127,6 +144,8 @@ void set_break (set *set);
   _set_search ((set), (key), (size), (hash), _set_insert)
 #define set_hinsert(set, key, size, hash) \
   ((set_entry *)_set_search ((set), (key), (size), (hash), _set_hinsert))
+#define set_hinsert0(set, key, size, hash) \
+  ((set_entry *)_set_search ((set), (key), (size), (hash), _set_hinsert0))
 
 #define SET_VRFY(set) (void)0
 
@@ -143,7 +162,7 @@ void set_describe (set *);
 
 /* Private */
 
-typedef enum { _set_find, _set_insert, _set_hinsert } _set_action;
+typedef enum { _set_find, _set_insert, _set_hinsert, _set_hinsert0 } _set_action;
 
 void *_set_search (set *, const void *, size_t, unsigned, _set_action);
 
