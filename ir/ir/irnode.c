@@ -954,7 +954,8 @@ set_SymConst_symbol (ir_node *node, union symconst_symbol sym) {
 type *
 get_SymConst_value_type (ir_node *node) {
   assert (node->op == op_SymConst);
-  return node->attr.i.tp = skip_tid(node->attr.i.tp);
+  if (node->attr.i.tp) node->attr.i.tp = skip_tid(node->attr.i.tp);
+  return node->attr.i.tp;
 }
 
 void
