@@ -15,6 +15,7 @@
 # define _IROP_T_H_
 
 # include "irop.h"
+# include "tv.h"
 
 /** The allowed parities */
 typedef enum {
@@ -43,7 +44,41 @@ typedef enum {
 } irop_flags;
 
 
-/** the type of an ir_op */
+/**
+ * The compute value operation.
+ * This operation evaluates an IR node into a tarval if possible,
+ * returning tarval_bad otherwise.
+ */
+typedef tarval *(*computed_value_func)(ir_node *n);
+
+/**
+ * The equivalent node operation.
+ * This operation returns an equivalent node for the input node.
+ * It does not create new nodes.  It is therefore safe to free n
+ * if the node returned is not n.
+ * If a node returns a Tuple we can not just skip it.  If the size of the
+ * in array fits, we transform n into a tuple (e.g., possible for Div).
+ */
+typedef ir_node *(*equivalent_node_func)(ir_node *n);
+
+/**
+ * The transform node operation.
+ * This operation tries several [inplace] [optimizing] transformations
+ * and returns an equivalent node.
+ * The difference to equivalent_node() is that these
+ * transformations _do_ generate new nodes, and thus the old node must
+ * not be freed even if the equivalent node isn't the old one.
+ */
+typedef ir_node *(*transform_node_func)(ir_node *n);
+
+/**
+ * The node attribute compare operation.
+ * Compares the nodes attributes of two nodes of identical opcode
+ * and returns 0 if the attributes are identical, 1 if they differ.
+ */
+typedef int (*node_cmp_attr_func)(ir_node *a, ir_node *b);
+
+/** The type of an ir_op. */
 struct ir_op {
   opcode code;            /**< the unique opcode of the op */
   ident *name;            /**< the name of the op */
@@ -52,6 +87,12 @@ struct ir_op {
   op_arity opar;          /**< arity of operator. */
   int op_index;           /**< the index of the first data operand, 0 for most cases, 1 for Div etc. */
   unsigned flags;         /**< flags describing the behavior of the ir_op, a bitmaks of irop_flags */
+
+  /* CallBacks */
+  computed_value_func	computed_value;		/**< evaluates a node into a tarval if possible. */
+  equivalent_node_func  equivalent_node;	/**< optimizes the node by returning an equivalent one. */
+  transform_node_func   transform_node;		/**< optimizes the node by transforming it. */
+  node_cmp_attr_func    node_cmp_attr;		/**< compares two node attributes. */
 };
 
 /**

@@ -95,6 +95,8 @@ new_ir_op(opcode code, const char *name, op_pinned p, unsigned flags, op_arity o
   res->flags     = flags;
   res->opar      = opar;
   res->op_index  = op_index;
+
+  firm_set_default_operations(res);
   return res;
 }
 
