@@ -56,7 +56,7 @@
 /** general                                                       **/
 /*******************************************************************/
 
-/* initalize entity module */
+/** initalize entity module */
 void init_entity (void);
 
 /*******************************************************************/
@@ -115,7 +115,7 @@ typedef struct entity entity;
 #endif
 
 
-/* Creates a new entity.
+/** Creates a new entity.
    Automatically inserts the entity as a member of owner.
    Entity is automatic_allocated and uninitialize except if the type
    is type_method, then it is static_allocated and constant.  The constant
@@ -123,17 +123,17 @@ typedef struct entity entity;
    Visibility is local, offset -1, and it is not volatile. */
 entity     *new_entity (type *owner, ident *name, type *tp);
 entity     *new_d_entity (type *owner, ident *name, type *tp, dbg_info *db);
-/* Copies the entity if the new_owner is different from the
+/** Copies the entity if the new_owner is different from the
    owner of the old entity.  Else returns the old entity.
    Automatically inserts the new entity as a member of owner.
    Resets the overwrites/overwritten_by fields. */
 entity     *copy_entity_own (entity *old, type *new_owner);
-/* Copies the entity if the new_name is different from the
+/** Copies the entity if the new_name is different from the
    name of the old entity.  Else returns the old entity.
    Automatically inserts the new entity as a member of owner.
    The mangled name ld_name is set to NULL. */
 entity     *copy_entity_name (entity *old, ident *new_name);
-/* Frees the entity.  The owner will still contain the pointer to this
+/** Frees the entity.  The owner will still contain the pointer to this
    entity, as well as all other references! */
 void        free_entity (entity *ent);
 
@@ -158,15 +158,15 @@ type     *get_entity_type (entity *ent);
 void      set_entity_type (entity *ent, type *tp);
 
 typedef enum {
-  automatic_allocated, /* The entity is allocated during runtime, implicitly
+  automatic_allocated, /**< The entity is allocated during runtime, implicitly
 		  	  as component of a compound type.   This is the default. */
-  parameter_allocated, /* The entity is a parameter.  It is also automatic allocated.
+  parameter_allocated, /**< The entity is a parameter.  It is also automatic allocated.
 			  We distinguish the allocation of paramters from the allocation
 			  of local variables as their placement depends on the calling
 			  conventions. */
-  dynamic_allocated,   /* The entity is allocated during runtime, explicitly
+  dynamic_allocated,   /**< The entity is allocated during runtime, explicitly
 			  by an Alloc node. */
-  static_allocated     /* The entity is allocated statically.  We can use a
+  static_allocated     /**< The entity is allocated statically.  We can use a
                           SymConst(?) as address of the entity. */
 } ent_allocation;
 
@@ -176,11 +176,11 @@ void           set_entity_allocation (entity *ent, ent_allocation al);
 /* This enumeration flags the visibility of entities.  This is necessary
    for partial compilation. */
 typedef enum {
-  local,              /* The entity is only visible locally.  This is the default. */
-  external_visible,   /* The entity is visible to other external program parts, but
+  local,              /**< The entity is only visible locally.  This is the default. */
+  external_visible,   /**< The entity is visible to other external program parts, but
 			 it is defined here.  It may not be optimized away.  The entity must
 		         be static_allocated. */
-  external_allocated  /* The entity is defined and allocated externally.  This compilation
+  external_allocated  /**< The entity is defined and allocated externally.  This compilation
 			 must not allocate memory for this entity. The entity must
 		         be static_allocated.  This can also be an external defined
 			 method. */
@@ -189,15 +189,15 @@ typedef enum {
 ent_visibility get_entity_visibility (entity *ent);
 void           set_entity_visibility (entity *ent, ent_visibility vis);
 
-/* This enumeration flags the variability of entities. */
+/** This enumeration flags the variability of entities. */
 typedef enum {
-  uninitialized,    /* The content of the entity is completely unknown. */
-  initialized,      /* After allocation the entity is initalized with the
+  uninitialized,    /**< The content of the entity is completely unknown. */
+  initialized,      /**< After allocation the entity is initalized with the
 		       value given somewhere in the entity. */
-  part_constant,    /* For entities of compound types.  Some members of the entity
+  part_constant,    /**< For entities of compound types.  Some members of the entity
 		       are constant.  The others are uninitialized.  Those members
 		       given a value for are constant. */
-  constant          /* The entity is constant. */
+  constant          /**< The entity is constant. */
 } ent_variability;
 
 ent_variability get_entity_variability (entity *ent);
@@ -293,14 +293,14 @@ void    remove_entity_overwrittenby(entity *ent, entity *overwrites);
  */
 int is_entity (void *thing);
 
-/* Returns true if the type of the entity is a primitive, pointer
+/** Returns true if the type of the entity is a primitive, pointer
    enumeration or method type. */
 int is_atomic_entity(entity *ent);
-/* Returns true if the type of the entity is a class, structure,
+/** Returns true if the type of the entity is a class, structure,
    array or union type. */
 int is_compound_entity(entity *ent);
 
-/* Returns true if ent1 and ent2 have are equal except for their owner.
+/** Returns true if ent1 and ent2 have are equal except for their owner.
    Two entities are equal if
     - they have the same type (the same C-struct)
     - ...?
@@ -310,7 +310,7 @@ bool equal_entity(entity *ent1, entity *ent2);
 
 unsigned long get_entity_visited(entity *ent);
 void        set_entity_visited(entity *ent, unsigned long num);
-/* Sets visited field in entity to entity_visited. */
+/** Sets visited field in entity to entity_visited. */
 void        mark_entity_visited(entity *ent);
 bool        entity_visited(entity *ent);
 bool        entity_not_visited(entity *ent);
