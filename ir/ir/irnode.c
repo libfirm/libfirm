@@ -1163,6 +1163,10 @@ set_Call_type (ir_node *node, type *tp) {
   node->attr.call.cld_tp = tp;
 }
 
+int Call_has_callees(ir_node *node) {
+  return (node->attr.call.callee_arr != NULL);
+}
+
 int get_Call_n_callees(ir_node * node) {
   assert(node->op == op_Call && node->attr.call.callee_arr);
   return ARR_LEN(node->attr.call.callee_arr);
@@ -1897,6 +1901,11 @@ set_binop_right (ir_node *node, ir_node *right) {
   };
 }
 
+INLINE int is_Phi (ir_node *n) {
+  assert(n);
+  return ((get_irn_op(n) == op_Phi) ||
+	  (get_irn_op(n) == op_Filter && interprocedural_view));
+}
 
 INLINE ir_node **
 get_Phi_preds_arr (ir_node *node) {
@@ -1906,7 +1915,7 @@ get_Phi_preds_arr (ir_node *node) {
 
 INLINE int
 get_Phi_n_preds (ir_node *node) {
-  assert (node->op == op_Phi);
+  assert (is_Phi(node));
   return (get_irn_arity(node));
 }
 
@@ -1918,13 +1927,13 @@ INLINE void set_Phi_n_preds (ir_node *node, int n_preds) {
 
 INLINE ir_node *
 get_Phi_pred (ir_node *node, int pos) {
-  assert (node->op == op_Phi);
+  assert (is_Phi(node));
   return get_irn_n(node, pos);
 }
 
 INLINE void
 set_Phi_pred (ir_node *node, int pos, ir_node *pred) {
-  assert (node->op == op_Phi);
+  assert (is_Phi(node));
   set_irn_n(node, pos, pred);
 }
 

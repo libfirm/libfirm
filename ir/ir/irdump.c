@@ -254,11 +254,16 @@ static int node_floats(ir_node *n) {
 	  (get_irg_pinned(current_ir_graph) == floats));
 }
 
-static ident *get_irg_dump_name (ir_graph *irg) {
+static const char *get_ent_dump_name (entity *ent) {
+  /* Don't use get_entity_ld_ident (ent) as it computes the mangled name! */
+  if (ent->ld_name) return get_id_str(ent->ld_name);
+  return get_id_str(ent->name);
+}
+
+static const char *get_irg_dump_name (ir_graph *irg) {
   /* Don't use get_entity_ld_ident (ent) as it computes the mangled name! */
   entity *ent = get_irg_ent(irg);
-  if (ent->ld_name) return ent->ld_name;
-  return ent->name;
+  return get_ent_dump_name(ent);
 }
 
 static void collect_node(ir_node * node, void *env) {
@@ -418,7 +423,7 @@ dump_node_opcode (ir_node *n)
 
   case iro_Start: {
     if (interprocedural_view) {
-      fprintf(F, "%s %s", get_irn_opname(n), get_entity_name(get_irg_ent(get_irn_irg(n))));
+      fprintf(F, "%s %s", get_irn_opname(n), get_ent_dump_name(get_irg_ent(get_irn_irg(n))));
       break;
     }
   } /* fall through */
@@ -477,7 +482,7 @@ dump_node_nodeattr (ir_node *n)
   switch (get_irn_opcode(n)) {
   case iro_Start:
     if (false && interprocedural_view) {
-      fprintf (F, "%s", get_entity_name(get_irg_ent(current_ir_graph)));
+      fprintf (F, "%s", get_ent_dump_name(get_irg_ent(current_ir_graph)));
     }
     break;
   case iro_Proj:
@@ -491,7 +496,7 @@ dump_node_nodeattr (ir_node *n)
     fprintf (F, "%ld", get_Filter_proj(n));
     break;
   case iro_Sel: {
-    fprintf (F, "%s", get_entity_name(get_Sel_entity(n)));
+    fprintf (F, "%s", get_ent_dump_name(get_Sel_entity(n)));
     } break;
   case iro_Cast: {
     fprintf (F, "(%s)", get_type_name(get_Cast_type(n)));
@@ -544,7 +549,7 @@ dump_node_info (ir_node *n) {
   fprintf (F, "visited: %ld \n", get_irn_visited(n));
   irg = get_irn_irg(n);
   if (irg != get_const_code_irg())
-    fprintf (F, "irg:     %s\n", get_entity_name(get_irg_entity(irg)));
+    fprintf (F, "irg:     %s\n", get_ent_dump_name(get_irg_entity(irg)));
 
   /* Source types */
   switch (get_irn_opcode(n)) {
@@ -571,6 +576,29 @@ dump_node_info (ir_node *n) {
       fprintf(F, "  param %d type: %s \n", i, get_type_name(get_method_param_type(tp, i)));
     for (i = 0; i < get_method_n_ress(tp); ++i)
       fprintf(F, "  resul %d type: %s \n", i, get_type_name(get_method_res_type(tp, i)));
+    if (Call_has_callees(n)) {
+      fprintf(F, "possible callees: \n");
+      for (i = 0; i < get_Call_n_callees(n); i++) {
+	if (!get_Call_callee(n, i)) {
+	  fprintf(F, "  %d external method\n", i);
+	} else {
+	  fprintf(F, "  %d: %s\n", i, get_ent_dump_name(get_Call_callee(n, i)));
+	}
+      }
+    }
+  } break;
+  case iro_CallBegin: {
+    ir_node *call = get_CallBegin_call(n);
+    if (Call_has_callees(call)) {
+      fprintf(F, "possible callees: \n");
+      for (i = 0; i < get_Call_n_callees(call); i++) {
+	if (!get_Call_callee(call, i)) {
+	  fprintf(F, "  %d external method\n", i);
+	} else {
+	  fprintf(F, "  %d: %s\n", i, get_ent_dump_name(get_Call_callee(call, i)));
+	}
+      }
+    }
   } break;
   case iro_Return: {
     if (!interprocedural_view) {
@@ -598,7 +626,7 @@ dump_node_info (ir_node *n) {
       for (i = 0; i < get_irn_inter_arity(n); i++) {
 	ir_node *pred = get_irn_inter_n(n, i);
 	fprintf(F, "  %s%s %ld \tin graph %s\n", get_irn_opname(pred), get_irn_modename(pred),
-		get_irn_node_nr(pred), get_entity_name(get_irg_entity(get_irn_irg(pred))));
+		get_irn_node_nr(pred), get_ent_dump_name(get_irg_entity(get_irn_irg(pred))));
       }
     }
   } break;
@@ -932,7 +960,7 @@ static void dump_graph(ir_graph *irg) {
   fprintf(F, "graph: { title: \"");
   PRINT_IRGID(irg);
   fprintf(F, "\" label: \"%s\" status:clustered color:white \n",
-	  get_entity_name(get_irg_ent(irg)));
+	  get_ent_dump_name(get_irg_ent(irg)));
 
   dump_block_graph (irg);
 
@@ -1079,7 +1107,7 @@ void dump_entity_node(entity *ent)
   PRINT_ENTID(ent); fprintf(F, "\"");
   fprintf (F, DEFAULT_TYPE_ATTRIBUTE);
   fprintf (F, "label: ");
-  fprintf (F, "\"ent %s\" " ENTITY_NODE_ATTR , get_entity_name(ent));
+  fprintf (F, "\"ent %s\" " ENTITY_NODE_ATTR , get_ent_dump_name(ent));
   fprintf (F, "\n info1: \"\nid: "); PRINT_ENTID(ent);
 
   fprintf (F, "\nallocation:  ");
@@ -1113,7 +1141,7 @@ void dump_entity_node(entity *ent)
 
   fprintf(F, "\npeculiarity: %s", get_peculiarity_string(get_entity_peculiarity(ent)));
   fprintf(F, "\nname:    %s\nld_name: %s",
-	  get_entity_name(ent), ent->ld_name ? get_entity_ld_name(ent) : "no yet set");
+	  get_ent_dump_name(ent), ent->ld_name ? get_entity_ld_name(ent) : "no yet set");
   fprintf(F, "\noffset:  %d", get_entity_offset(ent));
   if (is_method_type(get_entity_type(ent))) {
     if (get_entity_irg(ent))   /* can be null */
@@ -1402,8 +1430,8 @@ dump_vcg_header(const char *name) {
 }
 
 static void vcg_open (ir_graph *irg, char * suffix1, char *suffix2) {
-  ident *id = get_irg_dump_name(irg);
-  int len = get_id_strlen(id);
+  const char *nm = get_irg_dump_name(irg);
+  int len = strlen(nm);
   char *fname;  /* filename to put the vcg information in */
 
   if (!suffix1) suffix1 = "";
@@ -1411,7 +1439,7 @@ static void vcg_open (ir_graph *irg, char * suffix1, char *suffix2) {
 
   /** open file for vcg graph */
   fname = malloc (len + strlen(suffix1) + strlen(suffix2) + 5);
-  strncpy (fname, get_id_str(id), len);      /* copy the filename */
+  strncpy (fname, nm, len);      /* copy the filename */
   fname[len] = '\0';
   strcat (fname, suffix1);  /* append file suffix */
   strcat (fname, suffix2);  /* append file suffix */
@@ -1422,7 +1450,7 @@ static void vcg_open (ir_graph *irg, char * suffix1, char *suffix2) {
   }
   free(fname);
 
-  dump_vcg_header(get_id_str(id));
+  dump_vcg_header(nm);
 }
 
 static void vcg_open_name (const char *name, char *suffix) {

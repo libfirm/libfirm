@@ -420,7 +420,11 @@ INLINE void     set_Call_type (ir_node *node, type *tp);
 /** Gets the arity of a call. Identical to get_Call_n_params(). */
 INLINE int      get_Call_arity (ir_node *node);
 
-/* Set, get and remove the callee-analysis. */
+/* Set, get and remove the callee-analysis.
+   The array is only accessible if intformation is valid.
+   It contains NULL for called methods that are not within
+   the compilation unit. */
+int     Call_has_callees      (ir_node *node);
 int     get_Call_n_callees    (ir_node * node);
 entity *get_Call_callee       (ir_node * node, int pos);
 void    set_Call_callee_arr   (ir_node * node, int n, entity ** arr);
@@ -606,6 +610,9 @@ INLINE void     set_Cast_op (ir_node *node, ir_node *op);
 INLINE type    *get_Cast_type (ir_node *node);
 INLINE void     set_Cast_type (ir_node *node, type *to_tp);
 
+/* returns true if n is Phi or Filter in interprocedural_view. */
+INLINE int      is_Phi (ir_node *n);
+/* These routines also work for Filter nodes in interprocedural view. */
 INLINE ir_node **get_Phi_preds_arr (ir_node *node);
 INLINE int       get_Phi_n_preds (ir_node *node);
 INLINE ir_node  *get_Phi_pred (ir_node *node, int pos);
