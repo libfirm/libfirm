@@ -26,8 +26,14 @@ SOURCES += 	Makefile.in \
 		ircons.c ircons_t.h irgmod.c irgraph_t.h irnode.c iropt.c iropt_t.h irvrfy.c \
 		irgwalk.c irgwalk_blk.c irdump.c irdumptxt.c irgopt.c irgopt_t.h irnode_t.h 	\
 		irmode.c irop.c irprog.c irflag.c irflag_t.h irgraph.c irprintf_t.h \
-		irmode_t.h irop_t.h irprog_t.h ircgcons.c ircgopt.c irreflect.c irarch.c irprintf.c \
+		irmode_t.h irop_t.h irprog_t.h ircgcons.c ircgopt.c irreflect.c irarch.c \
 		pseudo_irg.c irhooks.c iredges.c
+
+ifeq ($(with_libcore),no)
+SOURCES +=	irprintf.c
+else
+SOURCES +=	irargs.c
+endif
 
 include $(topdir)/MakeRules
 
