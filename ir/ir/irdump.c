@@ -195,6 +195,8 @@ static void print_ent_node_edge(FILE *F, entity *E, const ir_node *N, const char
 /* A suffix to manipulate the file name. */
 char *dump_file_suffix = "";
 
+char *dump_file_filter = "";
+
 /* file to dump to */
 static FILE *F;
 
@@ -1550,8 +1552,10 @@ dump_ir_graph (ir_graph *irg)
   ir_graph *rem;
   char *suffix;
   rem = current_ir_graph;
-  current_ir_graph = irg;
 
+  if(strncmp(get_irg_dump_name(irg),dump_file_filter,strlen(dump_file_filter))!=0) return;
+
+  current_ir_graph = irg;
   if (interprocedural_view) suffix = "-pure-ip";
   else                      suffix = "-pure";
   vcg_open (irg, dump_file_suffix, suffix);
@@ -1578,6 +1582,8 @@ dump_ir_block_graph (ir_graph *irg)
   int i;
   char *suffix;
 
+  if(strncmp(get_irg_dump_name(irg),dump_file_filter,strlen(dump_file_filter))!=0) return;
+
   if (interprocedural_view) suffix = "-ip";
   else                      suffix = "";
   vcg_open (irg, dump_file_suffix, suffix);
@@ -1603,6 +1609,9 @@ dump_ir_graph_w_types (ir_graph *irg)
 {
   ir_graph *rem = current_ir_graph;
   char *suffix;
+
+  if(strncmp(get_irg_dump_name(irg),dump_file_filter,strlen(dump_file_filter))!=0) return;
+
   current_ir_graph = irg;
 
   if (interprocedural_view) suffix = "-pure-wtypes-ip";
@@ -1628,6 +1637,8 @@ dump_ir_block_graph_w_types (ir_graph *irg)
   int i;
   char *suffix;
   ir_graph *rem = current_ir_graph;
+
+  if(strncmp(get_irg_dump_name(irg),dump_file_filter,strlen(dump_file_filter))!=0) return;
 
   if (interprocedural_view) suffix = "-wtypes-ip";
   else                      suffix = "-wtypes";
@@ -1704,6 +1715,9 @@ dump_cfg (ir_graph *irg)
   ir_graph *rem = current_ir_graph;
   int ddif = dump_dominator_information_flag;
   int ipv = interprocedural_view;
+
+  if(strncmp(get_irg_dump_name(irg),dump_file_filter,strlen(dump_file_filter))!=0) return;
+
   current_ir_graph = irg;
 
   vcg_open (irg, dump_file_suffix, "-cfg");
@@ -1765,6 +1779,9 @@ dump_type_graph (ir_graph *irg)
 {
   ir_graph *rem;
   rem = current_ir_graph;
+
+  if(strncmp(get_irg_dump_name(irg),dump_file_filter,strlen(dump_file_filter))!=0) return;
+
   current_ir_graph = irg;
 
   vcg_open (irg, dump_file_suffix, "-type");
@@ -1829,7 +1846,7 @@ void dump_all_ir_graphs (dump_graph_func *dmp_grph) {
 
 
 void dump_loops_standalone (ir_loop *loop) {
-  int i, loop_node_started = 0, son_number = 0, first;
+  int i, loop_node_started = 0, son_number = 0, first = 0;
   loop_element le;
 
   /* Dump a new loop node. */
@@ -1903,6 +1920,8 @@ void dump_loop_tree(ir_graph *irg, char *suffix)
   ir_graph *rem = current_ir_graph;
   int el_rem = edge_label;
   edge_label = 1;
+
+  if(strncmp(get_irg_dump_name(irg),dump_file_filter,strlen(dump_file_filter))!=0) return;
 
   current_ir_graph = irg;
 

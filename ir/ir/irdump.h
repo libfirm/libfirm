@@ -43,6 +43,7 @@
  * @todo  GL: A hack -- add parameter to dumper function.
  */
 extern char *dump_file_suffix;
+extern char *dump_file_filter;
 
 /**
  *  Dump a firm graph.
