@@ -28,6 +28,8 @@
 /* memset belongs to string.h */
 # include "string.h"
 
+# include "exc.h"
+
 #if USE_EXPLICIT_PHI_IN_STACK
 /* A stack needed for the automatic Phi node construction in constructor
    Phi_in. Redefinition in irgraph.c!! */
@@ -52,6 +54,8 @@ new_r_Block (ir_graph *irg,  int arity, ir_node **in)
   res = new_ir_node (irg, NULL, op_Block, mode_R, arity, in);
   set_Block_matured(res, 1);
   set_Block_block_visited(res, 0);
+
+  res->attr.block.exc = exc_invalid;
 
   irn_vrfy (res);
   return res;
@@ -497,6 +501,7 @@ new_r_Store (ir_graph *irg, ir_node *block,
   res = new_ir_node (irg, block, op_Store, mode_T, 3, in);
 
   res = optimize (res);
+
   irn_vrfy (res);
   return res;
 }
@@ -1135,21 +1140,21 @@ get_r_frag_value_internal (ir_node *block, ir_node *cfOp, int pos, ir_mode *mode
   if (!res) {
     if (block->attr.block.graph_arr[pos]) {
       /* There was a set_value after the cfOp and no get_value before that
-	 set_value.  We must build a Phi node now. */
+		 set_value.  We must build a Phi node now. */
       if (block->attr.block.matured) {
-	int ins = get_irn_arity(block);
-	ir_node **nin;
-	NEW_ARR_A (ir_node *, nin, ins);
-	res = phi_merge(block, pos, mode, nin, ins);
+		int ins = get_irn_arity(block);
+		ir_node **nin;
+		NEW_ARR_A (ir_node *, nin, ins);
+		res = phi_merge(block, pos, mode, nin, ins);
       } else {
-	res = new_r_Phi0 (current_ir_graph, block, mode);
-	res->attr.phi0_pos = pos;
-	res->link = block->link;
-	block->link = res;
+		res = new_r_Phi0 (current_ir_graph, block, mode);
+		res->attr.phi0_pos = pos;
+		res->link = block->link;
+		block->link = res;
       }
       assert(res);
       /* @@@ tested by Flo: set_frag_value(frag_arr, pos, res);
-	 but this should be better: (remove comment if this works) */
+		 but this should be better: (remove comment if this works) */
       /* It's a Phi, we can write this into all graph_arrs with NULL */
       set_frag_value(block->attr.block.graph_arr, pos, res);
     } else {
@@ -1193,15 +1198,15 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
     if (block == get_irg_start_block(current_ir_graph)) {
       block->attr.block.graph_arr[pos] = new_Const(mode, tarval_bad);
       /* We don't need to care about exception ops in the start block.
-	 There are none by definition. */
+		 There are none by definition. */
       return block->attr.block.graph_arr[pos];
     } else {
       phi0 = new_r_Phi0(current_ir_graph, block, mode);
       block->attr.block.graph_arr[pos] = phi0;
 #if PRECISE_EXC_CONTEXT
       /* Set graph_arr for fragile ops.  Also here we should break recursion.
-	 We could choose a cyclic path through an cfop.  But the recursion would
-	 break at some point. */
+		 We could choose a cyclic path through an cfop.  But the recursion would
+		 break at some point. */
       set_frag_value(block->attr.block.graph_arr, pos, phi0);
 #endif
     }
@@ -1215,7 +1220,7 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
     assert (prevCfOp);
     if (is_Bad(prevCfOp)) {
       /* In case a Cond has been optimized we would get right to the start block
-	 with an invalid definition. */
+		 with an invalid definition. */
       nin[i-1] = new_Bad();
       continue;
     }
@@ -1224,11 +1229,11 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
     if (!is_Bad(prevBlock)) {
 #if PRECISE_EXC_CONTEXT
       if (is_fragile_op(prevCfOp) && (get_irn_op (prevCfOp) != op_Bad)) {
-	assert(get_r_frag_value_internal (prevBlock, prevCfOp, pos, mode));
-	nin[i-1] = get_r_frag_value_internal (prevBlock, prevCfOp, pos, mode);
+		assert(get_r_frag_value_internal (prevBlock, prevCfOp, pos, mode));
+		nin[i-1] = get_r_frag_value_internal (prevBlock, prevCfOp, pos, mode);
       } else
 #endif
-	nin[i-1] = get_r_value_internal (prevBlock, pos, mode);
+		nin[i-1] = get_r_value_internal (prevBlock, pos, mode);
     } else {
       nin[i-1] = new_Bad();
     }
@@ -1751,6 +1756,7 @@ ir_node *new_immBlock (void) {
   res = new_ir_node (current_ir_graph, NULL, op_Block, mode_R, -1, NULL);
   current_ir_graph->current_block = res;
   res->attr.block.matured = 0;
+  res->attr.block.exc = exc_invalid;
   set_Block_block_visited(res, 0);
 
   /* Create and initialize array for Phi-node construction. */
@@ -1793,6 +1799,7 @@ get_value (int pos, ir_mode *mode)
 {
   assert(get_irg_phase_state (current_ir_graph) == phase_building);
   inc_irg_visited(current_ir_graph);
+
   return get_r_value_internal (current_ir_graph->current_block, pos + 1, mode);
 }
 
