@@ -63,6 +63,13 @@ void clear_backedges (ir_node *n);
  */
 typedef struct ir_loop ir_loop;
 
+/* Loop elements are loop nodes and ir nodes */
+typedef union {
+    firm_kind *kind;    /* is either k_ir_node or k_ir_loop */
+    ir_node *node;      /* Pointer to a loop tree element */
+    ir_loop *son;       /* Pointer to a ir_graph element */
+} loop_element;
+
 void     set_irg_loop(ir_graph *irg, ir_loop *l);
 ir_loop *get_irg_loop(ir_graph *irg);
 
@@ -83,6 +90,9 @@ ir_loop *get_loop_son (ir_loop *loop, int pos);
 int      get_loop_n_nodes (ir_loop *loop);
 ir_node *get_loop_node (ir_loop *loop, int pos);
 
+/** Returns the number of elements contained in loop.  */
+int      get_loop_n_elements (ir_loop *loop);
+loop_element get_loop_element (ir_loop *loop, int pos);
 
 /*
  * Constructing and destructing the loop/backedge information.

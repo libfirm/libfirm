@@ -21,9 +21,13 @@ struct ir_loop {
   firm_kind kind;		    /**< A type tag, set to k_ir_loop. */
 
   struct ir_loop *outer_loop;       /**< The outer loop */
-  struct ir_loop **sons;            /**< Inner loops */
-  struct ir_node **nodes;           /**< Nodes in loop. */
+  loop_element   *children;         /**< Mixed array: Contains sons and loop_nodes */
+/*  struct ir_loop **sons; */           /**< Inner loops */
+/*  struct ir_node **nodes; */          /**< Nodes in loop. */
   int depth;                        /**< Nesting depth */
+  int n_sons;                       /**< Number of ir_nodes in array "children" */
+  int n_nodes;                      /**< Number of loop_nodes in array "childern" */
+
   /*
   struct state_entry *mem_phis;
   struct state_entry *states;

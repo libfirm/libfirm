@@ -226,8 +226,14 @@ static ir_loop *new_loop (void) {
   son = (ir_loop *) obstack_alloc (outermost_ir_graph->obst, sizeof (ir_loop));
   memset (son, 0, sizeof (ir_loop));
   son->kind = k_ir_loop;
-  son->sons = NEW_ARR_F (ir_loop *, 0);
+/*  son->sons = NEW_ARR_F (ir_loop *, 0);
   son->nodes = NEW_ARR_F (ir_node *, 0);
+  A. Schoesser: Removed, because array children was introduced,
+                which contains both, nodes AND sons.
+                This comment may be removed after beeing read by all important persons :) */
+  son->children = NEW_ARR_F (loop_element, 0);
+  son->n_nodes = 0;
+  son->n_sons=0;
   if (father) {
     son->outer_loop = father;
     add_loop_son(father, son);
@@ -243,7 +249,8 @@ static ir_loop *new_loop (void) {
 
 #if 0
 /* Finishes the datastructures, copies the arrays to the obstack
-   of current_ir_graph. */
+   of current_ir_graph.
+   A. Schoesser: Caution: loop -> sons is gone. */
 static void mature_loop (ir_loop *loop) {
   ir_loop **new_sons;
 
@@ -269,31 +276,70 @@ int get_loop_depth (ir_loop *loop) {
 /* Returns the number of inner loops */
 int      get_loop_n_sons (ir_loop *loop) {
   assert(loop && loop->kind == k_ir_loop);
-  return ARR_LEN(loop->sons);
+  return(loop -> n_sons);
 }
+
+/* Returns the pos`th loop_node-child              *
+ * TODO: This method isn`t very efficient !        *
+ * Returns NULL if there isnt`t a pos`th loop_node */
 ir_loop *get_loop_son (ir_loop *loop, int pos) {
+  int child_nr = 0, loop_nr = -1;
+
   assert(loop && loop->kind == k_ir_loop);
-  return loop->sons[pos];
+  while(child_nr < ARR_LEN(loop->children));
+   {
+    if(*(loop -> children[child_nr].kind) == k_ir_loop)
+      loop_nr++;
+    if(loop_nr == pos)
+      return(loop -> children[child_nr].son);
+    child_nr++;
+   }
+  return NULL;
 }
+
+/* Use EXCLUSIVELY this function to add sons, otherwise the loop->n_sons
+   is invalid! */
+
 static INLINE void
 add_loop_son(ir_loop *loop, ir_loop *son) {
   assert(loop && loop->kind == k_ir_loop);
-  ARR_APP1 (ir_loop *, loop->sons, son);
+  ARR_APP1 (loop_element, loop->children, (loop_element) son);
+  loop -> n_sons++;
 }
 
 /* Returns the number of nodes in the loop */
 int      get_loop_n_nodes (ir_loop *loop) {
   assert(loop); assert(loop->kind == k_ir_loop);
-  return ARR_LEN(loop->nodes);
+  return loop -> n_nodes;
+/*  return ARR_LEN(loop->nodes); */
 }
+
+/* Returns the pos`th ir_node-child                *
+ * TODO: This method isn`t very efficient !        *
+ * Returns NULL if there isnt`t a pos`th ir_node   */
 ir_node *get_loop_node (ir_loop *loop, int pos) {
+  int child_nr = 0, node_nr = -1;
+
   assert(loop && loop->kind == k_ir_loop);
-  return loop->nodes[pos];
+  while(child_nr < ARR_LEN(loop->children));
+   {
+    if(*(loop -> children[child_nr].kind) == k_ir_node)
+      node_nr++;
+    if(node_nr == pos)
+      return(loop -> children[child_nr].node);
+    child_nr++;
+   }
+  return NULL;
 }
+
+/* Use EXCLUSIVELY this function to add nodes, otherwise the loop->n_nodes
+   is invalid! */
+
 static INLINE void
 add_loop_node(ir_loop *loop, ir_node *n) {
   assert(loop && loop->kind == k_ir_loop);
-  ARR_APP1 (ir_node *, loop->nodes, n);
+  ARR_APP1 (loop_element, loop->children, (loop_element) n);
+  loop->n_nodes++;
 }
 
 /* The outermost loop is remarked in the surrounding graph. */
@@ -305,6 +351,27 @@ ir_loop *get_irg_loop(ir_graph *irg) {
   assert(irg);
   return irg->loop;
 }
+
+/** Returns the number of elements contained in loop.  */
+int get_loop_n_elements (ir_loop *loop)
+ {
+  assert(loop && loop->kind == k_ir_loop);
+  return(ARR_LEN(loop->children));
+ }
+
+/*
+ Returns the pos`th loop element.
+ This may be a loop_node or a ir_node. The caller of this function has
+ to check the *(loop_element.kind) field for "k_ir_node" or "k_ir_loop"
+ and then select the apropriate "loop_element.ir_node" or "loop_element.ir_son".
+*/
+
+loop_element get_loop_element (ir_loop *loop, int pos)
+ {
+  assert(loop && loop->kind == k_ir_loop && pos < ARR_LEN(loop->children));
+
+  return(loop -> children[pos]);
+ }
 
 /**********************************************************************/
 /* Constructing and destructing the loop/backedge information.       **/
