@@ -28,42 +28,42 @@
  * Scheduling environment for the whole graph.
  */
 typedef struct _sched_env_t {
-	const ir_graph *irg;						/**< The graph to schedule. */
-	list_sched_selector_t *select;  /**< The node selector. */
-	void *select_env;								/**< A pointer to give to the selector. */
+    const ir_graph *irg;                        /**< The graph to schedule. */
+    list_sched_selector_t *select;  /**< The node selector. */
+    void *select_env;                               /**< A pointer to give to the selector. */
 } sched_env_t;
 
 ir_node *trivial_selector(void *env, ir_node *block, int curr_time,
-		pset *already_scheduled, pset *ready_list)
+        pset *already_scheduled, pset *ready_list)
 {
-	ir_node *res = pset_first(ready_list);
-	pset_break(ready_list);
-	return res;
+    ir_node *res = pset_first(ready_list);
+    pset_break(ready_list);
+    return res;
 }
 
 static void list_sched_block(ir_node *block, void *env_ptr);
 
 void list_sched(ir_graph *irg, list_sched_selector_t *selector, void *select_env)
 {
-	sched_env_t env;
+    sched_env_t env;
 
-	memset(&env, 0, sizeof(env));
-	env.select = selector;
-	env.select_env = select_env;
-	env.irg = irg;
+    memset(&env, 0, sizeof(env));
+    env.select = selector;
+    env.select_env = select_env;
+    env.irg = irg;
 
-	/* Normalize proj nodes. */
-	normalize_proj_nodes(irg);
+    /* Normalize proj nodes. */
+    normalize_proj_nodes(irg);
 
-	/* Compute the outs */
-	if(get_irg_outs_state(irg) != outs_consistent)
-		compute_outs(irg);
+    /* Compute the outs */
+    if(get_irg_outs_state(irg) != outs_consistent)
+        compute_outs(irg);
 
-	/* Dump the graph. */
-	dump_ir_block_graph(irg, "-before-sched");
+    /* Dump the graph. */
+    dump_ir_block_graph(irg, "-before-sched");
 
-	/* Schedule each single block. */
-	irg_block_walk_graph(irg, list_sched_block, NULL, &env);
+    /* Schedule each single block. */
+    irg_block_walk_graph(irg, list_sched_block, NULL, &env);
 }
 
 
@@ -71,10 +71,10 @@ void list_sched(ir_graph *irg, list_sched_selector_t *selector, void *select_env
  * Environment for a block scheduler.
  */
 typedef struct _block_sched_env_t {
-	int curr_time;
-	pset *ready_set;
-	pset *already_scheduled;
-	ir_node *block;
+    int curr_time;
+    pset *ready_set;
+    pset *already_scheduled;
+    ir_node *block;
 } block_sched_env_t;
 
 
@@ -87,15 +87,15 @@ typedef struct _block_sched_env_t {
  */
 static INLINE int to_appear_in_schedule(ir_node *irn)
 {
-	int i, n;
+    int i, n;
 
-	for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
-		ir_node *op = get_irn_n(irn, i);
-		if(mode_is_datab(get_irn_mode(op)))
-			return 1;
-	}
+    for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
+        ir_node *op = get_irn_n(irn, i);
+        if(mode_is_datab(get_irn_mode(op)))
+            return 1;
+    }
 
-	return mode_is_datab(get_irn_mode(irn));
+    return mode_is_datab(get_irn_mode(irn));
 }
 
 
@@ -107,32 +107,32 @@ static INLINE int to_appear_in_schedule(ir_node *irn)
  */
 static INLINE int make_ready(block_sched_env_t *env, ir_node *irn)
 {
-	int i, n;
+    int i, n;
 
-	/* Blocks cannot be scheduled. */
-	if(is_Block(irn))
-		return 0;
+    /* Blocks cannot be scheduled. */
+    if(is_Block(irn))
+        return 0;
 
-	/*
-	 * Check, if the given ir node is in a different block as the
-	 * currently scheduled one. If that is so, don't make the node ready.
-	 */
-	if(env->block != get_nodes_block(irn))
-		return 0;
+    /*
+     * Check, if the given ir node is in a different block as the
+     * currently scheduled one. If that is so, don't make the node ready.
+     */
+    if(env->block != get_nodes_block(irn))
+        return 0;
 
-	for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
-		ir_node *op = get_irn_n(irn, i);
+    for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
+        ir_node *op = get_irn_n(irn, i);
 
-		/* If the operand is local to the scheduled block and not yet
-		 * scheduled, this nodes cannot be made ready, so exit. */
-		if(!pset_find_ptr(env->already_scheduled, op) && get_nodes_block(op) == env->block)
-			return 0;
-	}
+        /* If the operand is local to the scheduled block and not yet
+         * scheduled, this nodes cannot be made ready, so exit. */
+        if(!pset_find_ptr(env->already_scheduled, op) && get_nodes_block(op) == env->block)
+            return 0;
+    }
 
-	ir_debugf("\tmaking ready: %n\n", irn);
-	pset_insert_ptr(env->ready_set, irn);
+    ir_debugf("\tmaking ready: %n\n", irn);
+    pset_insert_ptr(env->ready_set, irn);
 
-	return 1;
+    return 1;
 }
 
 /**
@@ -162,12 +162,12 @@ static INLINE int make_ready(block_sched_env_t *env, ir_node *irn)
  */
 static INLINE void make_users_ready(block_sched_env_t *env, ir_node *irn)
 {
-	int i, n;
+    int i, n;
 
-	for(i = 0, n = get_irn_n_outs(irn); i < n; ++i) {
-		ir_node *user = get_irn_out(irn, i);
-		make_ready(env, user);
-	}
+    for(i = 0, n = get_irn_n_outs(irn); i < n; ++i) {
+        ir_node *user = get_irn_out(irn, i);
+        make_ready(env, user);
+    }
 }
 
 /**
@@ -178,7 +178,7 @@ static INLINE void make_users_ready(block_sched_env_t *env, ir_node *irn)
  */
 static int node_cmp_func(const void *p1, const void *p2)
 {
-	return p1 != p2;
+    return p1 != p2;
 }
 
 /**
@@ -189,24 +189,24 @@ static int node_cmp_func(const void *p1, const void *p2)
  */
 static ir_node *add_to_sched(block_sched_env_t *env, ir_node *irn)
 {
-	/* If the node consumes/produces data, it is appended to the schedule
-	 * list, otherwise, it is not put into the list */
-	if(to_appear_in_schedule(irn)) {
-		sched_info_t *info = get_irn_sched_info(irn);
-		INIT_LIST_HEAD(&info->list);
-		sched_add(env->block, irn);
+    /* If the node consumes/produces data, it is appended to the schedule
+     * list, otherwise, it is not put into the list */
+    if(to_appear_in_schedule(irn)) {
+        sched_info_t *info = get_irn_sched_info(irn);
+        INIT_LIST_HEAD(&info->list);
+        sched_add(env->block, irn);
 
-		ir_debugf("\tadding %n\n", irn);
-	}
+        ir_debugf("\tadding %n\n", irn);
+    }
 
-	/* Insert the node in the set of all already scheduled nodes. */
-	pset_insert_ptr(env->already_scheduled, irn);
+    /* Insert the node in the set of all already scheduled nodes. */
+    pset_insert_ptr(env->already_scheduled, irn);
 
-	/* Remove the node from the ready set */
-	if(pset_find_ptr(env->ready_set, irn))
-		pset_remove_ptr(env->ready_set, irn);
+    /* Remove the node from the ready set */
+    if(pset_find_ptr(env->ready_set, irn))
+        pset_remove_ptr(env->ready_set, irn);
 
-	return irn;
+    return irn;
 }
 
 
@@ -230,21 +230,21 @@ static ir_node *add_to_sched(block_sched_env_t *env, ir_node *irn)
  */
 static void add_tuple_projs(block_sched_env_t *env, ir_node *irn)
 {
-	int i, n;
-	assert(get_irn_mode(irn) == mode_T && "Mode of node must be tuple");
+    int i, n;
+    assert(get_irn_mode(irn) == mode_T && "Mode of node must be tuple");
 
-	for(i = 0, n = get_irn_n_outs(irn); i < n; ++i) {
-		ir_node *out = get_irn_out(irn, i);
+    for(i = 0, n = get_irn_n_outs(irn); i < n; ++i) {
+        ir_node *out = get_irn_out(irn, i);
 
-		assert(is_Proj(out) && "successor of a modeT node must be a proj");
+        assert(is_Proj(out) && "successor of a modeT node must be a proj");
 
-		if(get_irn_mode(out) == mode_T)
-			add_tuple_projs(env, out);
-		else {
-			add_to_sched(env, out);
-			make_users_ready(env, out);
-		}
-	}
+        if(get_irn_mode(out) == mode_T)
+            add_tuple_projs(env, out);
+        else {
+            add_to_sched(env, out);
+            make_users_ready(env, out);
+        }
+    }
 }
 
 /**
@@ -260,97 +260,99 @@ static void add_tuple_projs(block_sched_env_t *env, ir_node *irn)
  */
 static void list_sched_block(ir_node *block, void *env_ptr)
 {
-	sched_env_t *env = env_ptr;
-	block_sched_env_t be;
+    sched_env_t *env = env_ptr;
+    block_sched_env_t be;
 
-	ir_node *irn;
-	int j, m;
-	int phi_seen = 0;
-	sched_info_t *info = get_irn_sched_info(block);
+    ir_node *irn;
+    int j, m;
+    int phi_seen = 0;
+    sched_info_t *info = get_irn_sched_info(block);
 
-	/* Initialize the block's list head that will hold the schedule. */
-	INIT_LIST_HEAD(&info->list);
+    /* Initialize the block's list head that will hold the schedule. */
+    INIT_LIST_HEAD(&info->list);
 
-	/* Initialize the block scheduling environment */
-	be.block = block;
-	be.curr_time = 0;
-	be.ready_set = new_pset(node_cmp_func, get_irn_n_outs(block));
-	be.already_scheduled = new_pset(node_cmp_func, get_irn_n_outs(block));
+    /* Initialize the block scheduling environment */
+    be.block = block;
+    be.curr_time = 0;
+    be.ready_set = new_pset(node_cmp_func, get_irn_n_outs(block));
+    be.already_scheduled = new_pset(node_cmp_func, get_irn_n_outs(block));
 
-	ir_debugf("scheduling %n\n", block);
+    ir_debugf("scheduling %n\n", block);
 
-	/* Then one can add all nodes are ready to the set. */
-	for(int i = 0, n = get_irn_n_outs(block); i < n; ++i) {
-		ir_node *irn = get_irn_out(block, i);
+    /* Then one can add all nodes are ready to the set. */
+    int i;
+    int n;
+    for(i = 0, n = get_irn_n_outs(block); i < n; ++i) {
+        ir_node *irn = get_irn_out(block, i);
 
-		/* Phi functions are scheduled immediately, since they only transfer
-		 * data flow from the predecessors to this block. */
-		if(is_Phi(irn)) {
-			add_to_sched(&be, irn);
-			make_users_ready(&be, irn);
-			phi_seen = 1;
-		}
+        /* Phi functions are scheduled immediately, since they only transfer
+         * data flow from the predecessors to this block. */
+        if(is_Phi(irn)) {
+            add_to_sched(&be, irn);
+            make_users_ready(&be, irn);
+            phi_seen = 1;
+        }
 
-		/* Other nodes must have all operands in other blocks to be made
-		 * ready */
-		else {
-			bool ready = true;
+        /* Other nodes must have all operands in other blocks to be made
+         * ready */
+        else {
+            bool ready = true;
 
-			/* Check, if the operands of a node are not local to this block */
-			for(j = 0, m = get_irn_arity(irn); j < m; ++j) {
-				ir_node *operand = get_irn_n(irn, j);
+            /* Check, if the operands of a node are not local to this block */
+            for(j = 0, m = get_irn_arity(irn); j < m; ++j) {
+                ir_node *operand = get_irn_n(irn, j);
 
-				if(get_nodes_block(operand) == block) {
-					ready = false;
-					break;
-				}
-			}
+                if(get_nodes_block(operand) == block) {
+                    ready = false;
+                    break;
+                }
+            }
 
-			/* Make the node ready, if all operands live in a foreign block */
-			if(ready) {
-				ir_debugf("\timmediately ready: %n\n", irn);
-				make_ready(&be, irn);
-			}
-		}
-	}
+            /* Make the node ready, if all operands live in a foreign block */
+            if(ready) {
+                ir_debugf("\timmediately ready: %n\n", irn);
+                make_ready(&be, irn);
+            }
+        }
+    }
 
-	/* Increase the time, if some phi functions have been scheduled */
-	be.curr_time += phi_seen;
+    /* Increase the time, if some phi functions have been scheduled */
+    be.curr_time += phi_seen;
 
-	while(pset_count(be.ready_set) > 0) {
-		ir_debugf("\tready set: %*n\n", pset_iterator, be.ready_set);
-		// pset_print(stdout, be.ready_set, irn_printer);
+    while(pset_count(be.ready_set) > 0) {
+        ir_debugf("\tready set: %*n\n", pset_iterator, be.ready_set);
+        // pset_print(stdout, be.ready_set, irn_printer);
 
-		/* select a node to be scheduled and check if it was ready */
-		irn = env->select(env->select_env, block, be.curr_time,
-				be.already_scheduled, be.ready_set);
+        /* select a node to be scheduled and check if it was ready */
+        irn = env->select(env->select_env, block, be.curr_time,
+                be.already_scheduled, be.ready_set);
 
-		ir_debugf("\tpicked node %n\n", irn);
+        ir_debugf("\tpicked node %n\n", irn);
 
-		/* Add the node to the schedule. */
-		add_to_sched(&be, irn);
+        /* Add the node to the schedule. */
+        add_to_sched(&be, irn);
 
-		if(get_irn_mode(irn) == mode_T)
-			add_tuple_projs(&be, irn);
-		else
-			make_users_ready(&be, irn);
+        if(get_irn_mode(irn) == mode_T)
+            add_tuple_projs(&be, irn);
+        else
+            make_users_ready(&be, irn);
 
-		/* Increase the time step. */
-		be.curr_time += 1;
+        /* Increase the time step. */
+        be.curr_time += 1;
 
-		/* remove the scheduled node from the ready list. */
-		if(pset_find_ptr(be.ready_set, irn))
-			pset_remove_ptr(be.ready_set, irn);
-	}
+        /* remove the scheduled node from the ready list. */
+        if(pset_find_ptr(be.ready_set, irn))
+            pset_remove_ptr(be.ready_set, irn);
+    }
 
-	del_pset(be.ready_set);
-	del_pset(be.already_scheduled);
+    del_pset(be.ready_set);
+    del_pset(be.already_scheduled);
 
-	{
-		sched_info_t *inf;
-		list_for_each_entry(sched_info_t, inf, &info->list, list) {
-			ir_node *irn = get_sched_info_irn(inf);
-			ir_debugf("node: %n, pos: %d\n", irn, inf->time_step);
-		}
-	}
+    {
+        sched_info_t *inf;
+        list_for_each_entry(sched_info_t, inf, &info->list, list) {
+            ir_node *irn = get_sched_info_irn(inf);
+            ir_debugf("node: %n, pos: %d\n", irn, inf->time_step);
+        }
+    }
 }
