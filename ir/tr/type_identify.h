@@ -112,13 +112,23 @@ type *       mature_type_free(type *tp);
 type *       mature_type_free_entities(type *tp);
 
 /**
+ * The interface type for the type identify module;
+ */
+typedef struct _type_identify_if_t {
+  compare_types_func_t *cmp;    /**< The function that should be used to compare two types.
+                                     If NULL, compare_strict() will be used. */
+  hash_types_func_t *hash;      /**< The function that should be used to calculate a hash
+                                     value of a type. If NULL, hash_name() will be used. */
+} type_identify_if_t;
+
+/**
  * Initialise the type identifier module.
  *
- * @param cmp   The function that should be used to compare two types.
- *              If NULL, compare_strict() will be used.
- * @param hash  The function that should be used to calculate a hash
- *              value of a type. If NULL, hash_name() will be used.
+ * @param ti_if    The interface functions for this module.
+ *
+ * If the parameter ti_if is NULL, the default functions compare_strict() and
+ * hash_name() will be used.
  */
-void init_type_identify(compare_types_func_t *cmp, hash_types_func_t *hash);
+void init_type_identify(type_identify_if_t *ti_if);
 
 # endif /* _TYPE_IDENTIFY_H_ */

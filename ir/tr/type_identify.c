@@ -116,9 +116,9 @@ type *mature_type_free_entities(type *tp) {
 }
 
 /* initialize this module */
-void init_type_identify(compare_types_func_t *cmp, hash_types_func_t *hash) {
-  compare_types_func = cmp  ? cmp  : compare_strict;
-  hash_types_func    = hash ? hash : hash_name;
+void init_type_identify(type_identify_if_t *ti_if) {
+  compare_types_func = ti_if && ti_if->cmp  ? ti_if->cmp  : compare_strict;
+  hash_types_func    = ti_if && ti_if->hash ? ti_if->hash : hash_name;
 
   type_table = new_pset (compare_types_func, 8);
 }
