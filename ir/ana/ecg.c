@@ -1516,8 +1516,8 @@ void ecg_ecg ()
   ecg_ecg_graph (dot, main_graph);
 
   fprintf (dot, "\t/* Grand Total: */\n");
-  fprintf (dot, "\t/* calls:  %i */\n", _calls);
-  fprintf (dot, "\t/* graphs: %i */\n", _graphs);
+  fprintf (dot, "\t/* calls:  %ld */\n", _calls);
+  fprintf (dot, "\t/* graphs: %ld */\n", _graphs);
   fprintf (dot, "\t/* (sales tax not included) */\n");
 
   fprintf (dot, "}\n");
