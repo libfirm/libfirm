@@ -253,7 +253,8 @@ set_type_size_bits(type *tp, int size) {
     if (tp->type_op == type_primitive)
       tp->size = size;
     else {
-      tp->size = (size + 7) & ~7;
+      /* argh: we must allow to set negative values as "invalid size" */
+      tp->size = (size >= 0) ? (size + 7) & ~7 : size;
       assert(tp->size == size && "setting a bit size is NOT allowed for this type");
     }
   }
