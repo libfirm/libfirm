@@ -170,11 +170,24 @@ int fc_comp(const void *a, const void *b)
 
 char *fc_print_dec(const void *a, char *buf, int buflen)
 {
+  int n;
+
 #ifdef USE_LONG_DOUBLE
-  snprintf(buf, buflen, "%1.30Lg", CAST_IN(a));
+  n = snprintf(buf, buflen, "%1.30Lg", CAST_IN(a));
 #else
-  snprintf(buf, buflen, "%1.30g", CAST_IN(a));
+  n = snprintf(buf, buflen, "%1.30g", CAST_IN(a));
 #endif
+
+  if (n > -1 && n < buflen) {
+    /*
+     * for some backends we always want to present 0 as 0.0
+     * as I could not find the best format to express this, add
+     * a .0 explicitely if not found
+     */
+    if (NULL == strrchr(buf, '.'))
+      strncat(buf, ".0", buflen);
+  }
+
   return buf;
 }
 
