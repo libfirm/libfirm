@@ -74,7 +74,7 @@ struct tarval {
   union {
     tarval_F F;         /* float */
     tarval_D D;         /* double */
-    tarval_E E;;        /* extended */
+    tarval_E E;         /* extended */
     tarval_sInt sInt;   /* signed integral */
     tarval_uInt uInt;   /* unsigned integral */
     tarval_C C;         /* character */
