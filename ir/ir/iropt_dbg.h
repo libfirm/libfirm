@@ -3,12 +3,14 @@
 /* This file contains makros that generate the calls to
    update the debug information after a transformation. */
 
+#define SIZ(x)    sizeof(x)/sizeof((x)[0])
+
 #define DBG_OPT_STG                                                \
   do {                                                       \
 	  ir_node *ons[2];                                         \
 	  ons[0] = oldn;                                           \
 	  ons[1] = get_Block_cfgpred(oldn, 0);                     \
-	  __dbg_info_merge_sets(&n, 1, ons, 2, dbg_straightening); \
+	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_straightening); \
 	} while(0)
 
 #define DBG_OPT_IFSIM                                                 \
@@ -18,7 +20,7 @@
 	  ons[1] = a;                                                 \
 	  ons[2] = b;                                                 \
 	  ons[3] = get_Proj_pred(a);                                  \
-	  __dbg_info_merge_sets(&n, 1, ons, 4, dbg_if_simplification); \
+	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_if_simplification); \
 	} while(0)
 
 #define DBG_OPT_ALGSIM1                                               \
@@ -27,7 +29,7 @@
 	  ons[0] = oldn;                                              \
 	  ons[1] = a;                                                 \
 	  ons[2] = b;                                                 \
-	  __dbg_info_merge_sets(&n, 1, ons, 3, dbg_algebraic_simplification); \
+	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_algebraic_simplification); \
 	} while(0)
 
 #define DBG_OPT_ALGSIM2                                               \
@@ -35,8 +37,8 @@
 	  ir_node *ons[3];                                            \
 	  ons[0] = oldn;                                              \
 	  ons[1] = get_unop_op(n);                                    \
-          ons[2] = n;                                                 \
-	  __dbg_info_merge_sets(&n, 1, ons, 3, dbg_algebraic_simplification); \
+    ons[2] = n;                                                 \
+	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_algebraic_simplification); \
 	} while(0)
 
 #define DBG_OPT_ALGSIM3                                               \
@@ -44,7 +46,7 @@
 	  ir_node *ons[2];                                            \
 	  ons[0] = oldn;                                              \
 	  ons[1] = a;                                                 \
-	  __dbg_info_merge_sets(&n, 1, ons, 2, dbg_algebraic_simplification); \
+	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_algebraic_simplification); \
 	} while(0)
 
 #define DBG_OPT_PHI                                                   \
@@ -52,7 +54,7 @@
 	  ir_node *ons[2];                                            \
 	  ons[0] = oldn;                                              \
 	  ons[1] = first_val;                                         \
-	  __dbg_info_merge_sets(&n, 1, ons, 2, dbg_opt_ssa);          \
+	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_opt_ssa);          \
 	} while(0)
 
 
@@ -61,7 +63,7 @@
 	  ir_node *ons[2];                                            \
 	  ons[0] = oldn;                                              \
 	  ons[1] = n;                                                 \
-	  __dbg_info_merge_sets(&n, 1, ons, 2, dbg_write_after_write);\
+	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_write_after_write);\
 	} while(0)
 
 #define DBG_OPT_WAR                                                   \
@@ -69,7 +71,7 @@
 	  ir_node *ons[2];                                            \
 	  ons[0] = oldn;                                              \
 	  ons[1] = c;                                                 \
-	  __dbg_info_merge_sets(&c, 1, ons, 2, dbg_write_after_read); \
+	  __dbg_info_merge_sets(&c, 1, ons, SIZ(ons), dbg_write_after_read); \
 	} while(0)
 
 #define DBG_OPT_TUPLE                                                 \
@@ -78,7 +80,7 @@
 	  ons[0] = oldn;                                              \
 	  ons[1] = a;                                                 \
 	  ons[2] = n;                                                 \
-	  __dbg_info_merge_sets(&n, 1, ons, 3, dbg_opt_auxnode);      \
+	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_opt_auxnode);      \
 	} while(0)
 
 #define DBG_OPT_ID                                                \
@@ -86,5 +88,5 @@
 	  ir_node *ons[2];                                            \
 	  ons[0] = oldn;                                              \
 	  ons[1] = n;                                                 \
-	  __dbg_info_merge_sets(&n, 1, ons, 2, dbg_opt_auxnode);      \
+	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_opt_auxnode);      \
 	} while(0)
