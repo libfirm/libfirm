@@ -42,12 +42,6 @@
 /* Make types visible to allow most efficient access */
 # include "entity_t.h"
 
-# ifdef DO_HEAPANALYSIS
-/* heapanal can't cope with NoMems */
-# else /* if defined DO_HEAPANALYSIS */
-#  define USE_NOMEM
-# endif /* defined DO_HEAPANALYSIS */
-
 /**
  * Trivial INLINEable routine for copy propagation.
  * Does follow Ids, needed to optimize INLINEd code.
@@ -1504,9 +1498,7 @@ static ir_node *transform_node_Proj(ir_node *proj)
       } else {
         /* the memory Proj can be removed */
         ir_node *res = get_Div_mem(n);
-# ifdef USE_NOMEM
         set_Div_mem(n, get_irg_no_mem(current_ir_graph));
-# endif /* defined USE_NOMEM */
         if (proj_nr == pn_Div_M)
           return res;
       }
@@ -1528,9 +1520,7 @@ static ir_node *transform_node_Proj(ir_node *proj)
       } else {
         /* the memory Proj can be removed */
         ir_node *res = get_Mod_mem(n);
-# ifdef USE_NOMEM
         set_Mod_mem(n, get_irg_no_mem(current_ir_graph));
-# endif /* defined USE_NOMEM */
         if (proj_nr == pn_Mod_M)
           return res;
       }
@@ -1553,9 +1543,7 @@ static ir_node *transform_node_Proj(ir_node *proj)
       else {
         /* the memory Proj can be removed */
         ir_node *res = get_DivMod_mem(n);
-# ifdef USE_NOMEM
         set_DivMod_mem(n, get_irg_no_mem(current_ir_graph));
-# endif /* defined USE_NOMEM */
         if (proj_nr == pn_DivMod_M)
           return res;
       }
