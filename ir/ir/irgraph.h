@@ -294,14 +294,18 @@ void set_irg_loopinfo_inconsistent(ir_graph *irg);
 
 /** state: callee_information_state
  *  Call nodes contain a list of possible callees.  This list must be
- *  computed by an anlysis.  */
+ *  computed by an anlysis.
+ *
+ *  It's strange that this state is administered on irg basis, as the
+ *  information must be computed for the whole program, or not?
+ */
 typedef enum {
   irg_callee_info_none,
   irg_callee_info_consistent,
   irg_callee_info_inconsistent
 } irg_callee_info_state;
 irg_callee_info_state get_irg_callee_info_state(ir_graph *irg);
-void set_irg_callee_info_state(ir_graph *irg, irg_callee_info_state s);
+void                  set_irg_callee_info_state(ir_graph *irg, irg_callee_info_state s);
 
 /** property:
  *  Tells how to handle an ir graph in inlineing.

@@ -19,13 +19,19 @@
  */
 
 
-# ifndef _IRGRAPH_T_H_
-# define _IRGRAPH_T_H_
-# include "obst.h"
-# include "pset.h"
-# include "irgraph.h"
-# include "firm_common_t.h"
-# include "irtypeinfo.h"
+#ifndef _IRGRAPH_T_H_
+#define _IRGRAPH_T_H_
+
+#include "irgraph.h"
+
+#include "firm_common_t.h"
+#include "irtypeinfo.h"
+#include "irprog.h"
+
+#include "irloop.h"
+
+#include "obst.h"
+#include "pset.h"
 
 #define FRAME_TP_SUFFIX "frame_tp"
 
@@ -91,6 +97,10 @@ struct ir_graph {
   int       *caller_isbe;            /**< For callgraph analyses: set if backedge. */
   ir_graph **callees;                /**< For callgraph analyses. */
   int       *callee_isbe;            /**< For callgraph analyses: set if backedge. */
+  int        callgraph_loop_depth;
+  int        callgraph_weighted_loop_depth;
+  int        callgraph_recursion_depth;
+  ir_loop   *l;
 
   /* -- Fields for Walking the graph -- */
   unsigned long visited;             /**< this flag is an identifier for
@@ -372,7 +382,14 @@ __get_irg_callee_info_state(ir_graph *irg) {
 
 static INLINE void
 __set_irg_callee_info_state(ir_graph *irg, irg_callee_info_state s) {
+  irg_callee_info_state irp_state = get_irp_callee_info_state();
+
   irg->callee_info_state = s;
+
+  /* I could compare ... but who knows? */
+  if ((irp_state == irg_callee_info_consistent)  ||
+      ((irp_state == irg_callee_info_inconsistent) && (s == irg_callee_info_none)))
+      set_irp_callee_info_state(s);
 }
 
 static INLINE irg_inline_property
