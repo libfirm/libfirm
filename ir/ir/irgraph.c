@@ -463,7 +463,7 @@ int node_is_in_irgs_storage(ir_graph *irg, ir_node *n)
 
   /*
    * checks wheater the ir_node pointer i on the obstack.
-   * A more sophisticated chaeck would test the "whole" ir_node
+   * A more sophisticated check would test the "whole" ir_node
    */
   for (p = irg->obst->chunk; p; p = p->prev) {
     if (((char *)p->contents <= (char *)n) && ((char *)n < (char *)p->limit))
