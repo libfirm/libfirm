@@ -1353,7 +1353,7 @@ void dump_entity_node(FILE *F, entity *ent, int color)
     fprintf (F, ENTITY_NODE_ATTR);
   fprintf (F, "\n info1: \"");
 
-  dump_entity_to_file(F, ent, dump_verbosity_max);
+  dump_entity_to_file(F, ent, dump_verbosity_entattrs | dump_verbosity_entconsts);
 
   fprintf(F, "\"\n}\n");
 }

@@ -289,7 +289,7 @@ typedef enum {
   dump_verbosity_onlyPrimitiveTypes = 0x000BF000,  /**< dump only primitive types */
   dump_verbosity_onlyEnumerationTypes=0x0008F000,  /**< dump only enumeration types */
 
-  dump_verbosity_max               = 0x48888888,   /**< turn on all verbosity. */
+  dump_verbosity_max               = 0x48888887,   /**< turn on all verbosity. */
 } dump_verbosity;
 
 

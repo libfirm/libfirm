@@ -23,6 +23,33 @@ classname 11: "Overwrites"
 classname 12: "Member"
 infoname 1: "Attribute"
 infoname 2: "Verification errors"
+colorentry 100:    0   0    0
+colorentry 101:   20   0    0
+colorentry 102:   40   0    0
+colorentry 103:   60   0    0
+colorentry 104:   80   0    0
+colorentry 105:  100   0    0
+colorentry 106:  120   0    0
+colorentry 107:  140   0    0
+colorentry 108:  150   0    0
+colorentry 109:  180   0    0
+colorentry 110:  200   0    0
+colorentry 111:  220   0    0
+colorentry 112:  240   0    0
+colorentry 113:  255   0    0
+colorentry 113:  255  20   20
+colorentry 114:  255  40   40
+colorentry 115:  255  60   60
+colorentry 116:  255  80   80
+colorentry 117:  255 100  100
+colorentry 118:  255 120  120
+colorentry 119:  255 140  140
+colorentry 120:  255 150  150
+colorentry 121:  255 180  180
+colorentry 122:  255 200  200
+colorentry 123:  255 220  220
+colorentry 124:  255 240  240
+colorentry 125:  255 250  250
 
 node: {title: "n152" label: "Block  152"  info1: "mode:    BB
 visited: 11

@@ -1,3 +1,13 @@
+  * 27.8.2004 Goetz
+    Classes need a flag comparable to visibility of entities.
+    This flag must express whether these classes are accessed from
+    outside, i.e., the fields must have a specific layout.
+    Further it should express whether the outside can allocate classes
+    of the type.  Then we can determine whether the class can be turned
+    into a description class by, e.g., rta.
+
+  *
+
   * 5.7.04 Goetz
     in free_type: check the types that there is no pointer type that points
     to the freed type.  If so report error.

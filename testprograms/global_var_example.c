@@ -94,7 +94,7 @@ int main(int argc, char **argv)
 
   store = new_Store (get_store(), i_ptr,
 		     new_Const(mode_Is, new_tarval_from_long (2, mode_Is)));
-  set_store(new_Proj(store, mode_M, 0));
+  set_store(new_Proj(store, mode_M, pn_Store_M));
 
   x = new_Return (get_store(), 0, NULL);
 
