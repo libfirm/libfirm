@@ -69,8 +69,15 @@ ir_node *get_type_allocation(type *tp, int pos);
 /*------------------------------------------------------------------*/
 
 
+/** Compute the outs of types and entities.
+ *
+ *  Collects all reference from irnodes to types or entities in the
+ *  corresponding types/entities.
+ *
+ *  @todo @@@ We need a flag that signs the consistency of the out information. */
 void compute_trouts(void);
 
+/** Free trout data. */
 void free_trouts(void);
 
 

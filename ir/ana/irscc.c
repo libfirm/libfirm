@@ -512,32 +512,6 @@ static INLINE void
 init_node (ir_node *n, void *env) {
   set_irn_link (n, new_scc_info());
   clear_backedges(n);
-#if 0
-  /* Also init nodes not visible in intraproc_view. */
-    /* @@@ init_node is called for too many nodes -- this wastes memory!.
-       The mem is not lost as its on the obstack. */
-  if (get_irn_op(n) == op_Filter) {
-    for (i = 0; i < get_Filter_n_cg_preds(n); i++)
-      init_node(get_Filter_cg_pred(n, i), NULL);
-  }
-  if (get_irn_op(n) == op_Block) {
-    for (i = 0; i < get_Block_cg_n_cfgpreds(n); i++) {
-      init_node(get_Block_cg_cfgpred(n, i), NULL);
-    }
-  }
-  /* The following pattern matches only after a call from above pattern. */
-  if ((get_irn_op(n) == op_Proj) /*&& (get_Proj_proj(n) == 0)*/) {
-    /* @@@ init_node is called for every proj -- this wastes memory!.
-       The mem is not lost as its on the obstack. */
-    ir_node *cb = get_Proj_pred(n);
-    if ((get_irn_op(cb) == op_CallBegin) ||
-    (get_irn_op(cb) == op_EndReg) ||
-    (get_irn_op(cb) == op_EndExcept)) {
-      init_node(cb, NULL);
-      init_node(get_nodes_block(cb), NULL);
-    }
-  }
-#endif
 }
 
 static INLINE void
