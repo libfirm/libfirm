@@ -74,7 +74,7 @@ new_ir_graph (entity *ent, int n_loc)
 
   res = (ir_graph *) malloc (sizeof (ir_graph));
   memset(res, 0, sizeof (ir_graph));
-  res->kind=k_ir_graph;
+  res->kind = k_ir_graph;
 
   /* inform statistics here, as blocks will be already build on this graph */
   stat_new_graph(res, ent);
@@ -98,7 +98,7 @@ new_ir_graph (entity *ent, int n_loc)
   }
 
   res->visited = 0;     /* visited flag, for the ir walker */
-  res->block_visited=0; /* visited flag, for the 'block'-walker */
+  res->block_visited = 0; /* visited flag, for the 'block'-walker */
 
 #if USE_EXPLICIT_PHI_IN_STACK
   res->Phi_in_stack = new_Phi_in_stack();  /* A stack needed for automatic Phi
@@ -123,7 +123,7 @@ new_ir_graph (entity *ent, int n_loc)
   res->ent = ent;
   set_entity_irg(ent, res);
 
-  /*-- contain "inner" methods as in Pascal. --*/
+  /*--  a class type so that it can contain "inner" methods as in Pascal. --*/
   res->frame_type = new_type_class(mangle(get_entity_ident(ent), frame_type_suffix));
 
   /* Remove type from type list.  Must be treated differently than other types. */
