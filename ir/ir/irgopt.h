@@ -101,14 +101,16 @@ void place_code(ir_graph *irg);
 
 /** Control flow optimization.
  * Removes empty blocks doing if simplifications and loop simplifications.
- * A block is empty if it contains only a Jmp node and
- * Phi nodes.
+ * A block is empty if it contains only a Jmp node and Phi nodes.
  * Merges single entry single exit blocks with their predecessor
  * and propagates dead control flow by calling equivalent_node.
  * Independent of compiler flag it removes Tuples from cf edges,
  * Bad predecessors form blocks and unnecessary predecessors of End.
  *
  * @bug So far destroys backedge information.
+ * @bug Chokes on Id nodes if called in a certain order with other
+ *      optimizations.  Call local_optimize_graph before to remove
+ *      Ids.
  */
 void optimize_cf(ir_graph *irg);
 
@@ -117,9 +119,7 @@ void optimize_cf(ir_graph *irg);
 
    A critical control flow edge is an edge from a block with several
    control exits to a block with several control entries (See Muchnic
-   p. 407).
-
-   @todo not yet implemented!!! */
+   p. 407).  */
 void remove_critical_cf_edges(ir_graph *irg);
 
 # endif /* _IRGOPT_H_ */
