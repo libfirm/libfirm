@@ -265,7 +265,7 @@ main(void)
   cgana(&arr_len, &free_methods);
   cg_construct(arr_len, free_methods);
 
-  interprocedural_view = 1;
+  set_interprocedural_view(true);
   dump_ir_graph(main_irg, "");
   dump_ir_block_graph(main_irg, "");
   dump_ir_graph_w_types(main_irg, "");
