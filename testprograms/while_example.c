@@ -49,7 +49,7 @@ main(void)
   set_opt_cse(1);
   set_opt_dead_node_elimination (1);
 
-  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_i);
+  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_Is);
 
 #define METHODNAME "main_tp"
 #define NRARGS 1
@@ -68,8 +68,8 @@ main(void)
   irg = new_ir_graph (ent, 4);
 
   /* Generate two values */
-  set_value (0, new_Proj(get_irg_args(irg), mode_i, 0));
-  set_value (1, new_Const (mode_i, tarval_from_long (mode_i, 1)));
+  set_value (0, new_Proj(get_irg_args(irg), mode_Is, 0));
+  set_value (1, new_Const (mode_Is, tarval_from_long (mode_Is, 1)));
   x = new_Jmp();
   mature_block (get_irg_current_block(irg));
 
@@ -77,8 +77,8 @@ main(void)
   /* generate a block for the loop header and the conditional branch */
   r = new_immBlock ();
   add_in_edge (r, x);
-  x = new_Cond (new_Proj(new_Cmp(new_Const (mode_i, tarval_from_long (mode_i, 0)),
-				 get_value(1, mode_i)),
+  x = new_Cond (new_Proj(new_Cmp(new_Const (mode_Is, tarval_from_long (mode_Is, 0)),
+				 get_value(1, mode_Is)),
                          mode_b, Eq));
   f = new_Proj (x, mode_X, 0);
   t = new_Proj (x, mode_X, 1);
@@ -92,9 +92,9 @@ main(void)
   /* The code in the loop body,
      as we are dealing with local variables only the dataflow edges
      are manipulated. */
-  set_value (2, get_value (0, mode_i));
-  set_value (0, get_value (1, mode_i));
-  set_value (1, get_value (2, mode_i));
+  set_value (2, get_value (0, mode_Is));
+  set_value (0, get_value (1, mode_Is));
+  set_value (1, get_value (2, mode_Is));
   mature_block (b);
   mature_block (r);
 
@@ -105,7 +105,7 @@ main(void)
 
   {
      ir_node *in[1];
-     in[0] = new_Sub (get_value (0, mode_i), get_value (1, mode_i), mode_i);
+     in[0] = new_Sub (get_value (0, mode_Is), get_value (1, mode_Is), mode_Is);
 
      x = new_Return (get_store (), 1, in);
   }

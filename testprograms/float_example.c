@@ -52,7 +52,7 @@ int main(int argc, char **argv)
 #define NRARGS 0
 #define NRES 1
   /* The type of the method */
-  prim_t_dbl = new_type_primitive(id_from_str ("dbl", 3), mode_d);
+  prim_t_dbl = new_type_primitive(id_from_str ("dbl", 3), mode_D);
   proc_main = new_type_method(id_from_str(METHODNAME, strlen(METHODNAME)),
                               NRARGS, NRES);
   set_method_res_type(proc_main, 0, prim_t_dbl);
@@ -80,7 +80,7 @@ int main(int argc, char **argv)
 
   {
     ir_node *in[1]; /* this is the array containing the return parameters */
-    in[0] = new_Const(mode_d, tv);
+    in[0] = new_Const(mode_D, tv);
     x = new_Return (get_store(), 1, in);
   }
   /* Now we generated all instructions for this block and all its predecessor

@@ -63,7 +63,7 @@ int main(int argc, char **argv)
 
   /** make the type information needed */
   /* Language defined types */
-  intt = new_type_primitive(inti, mode_I);
+  intt = new_type_primitive(inti, mode_Iu);
   /* Program defined types */
   it = new_type_class(ii);           /* The fact that this is an interface is
 					of no interest.  It's just a class without

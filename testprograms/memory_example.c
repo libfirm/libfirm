@@ -71,7 +71,7 @@ main(void)
   set_opt_dead_node_elimination (1);
 
   /*** Make basic type information for primitive type int. ***/
-  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_I);
+  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_Iu);
 
   /* a class to get started with, containing the main procedure */
   owner = new_type_class (id_from_str ("MEMORY_EXAMPLE", 14));
@@ -84,16 +84,16 @@ main(void)
 
   /* generate two constant pointers to string constants */
   /* this simulates two global variables, a and b point to these variables */
-  a = new_Const (mode_p, tarval_p_from_str ("VAR_A"));
-  b = new_Const (mode_p, tarval_p_from_str ("VAR_B"));
+  a = new_Const (mode_P, tarval_P_from_str ("VAR_A"));
+  b = new_Const (mode_P, tarval_P_from_str ("VAR_B"));
 
   /* set VAR_A and VAR_B to constant values */
   set_store (new_Proj (new_Store (get_store (), a,
-		     	          new_Const (mode_I, tarval_from_long (mode_i, 0))),
+		     	          new_Const (mode_Iu, tarval_from_long (mode_Is, 0))),
                        mode_M, 0));
 
   set_store (new_Proj (new_Store (get_store (), b,
-			          new_Const (mode_I, tarval_from_long (mode_i, 1))),
+			          new_Const (mode_Iu, tarval_from_long (mode_Is, 1))),
                        mode_M, 0));
 
   /* finish this first block */
@@ -108,11 +108,11 @@ main(void)
   /* load the value and make it's effects visible. */
   x = new_Load (get_store (), a);
     set_store (new_Proj (x, mode_M, 0));
-    x = new_Proj(x, mode_I, 2);
+    x = new_Proj(x, mode_Iu, 2);
   /* the same again: load the value and make it's effects visible. */
   y = new_Load (get_store (), b);
     set_store (new_Proj (y, mode_M, 0));
-    y = new_Proj(y, mode_I, 2);
+    y = new_Proj(y, mode_Iu, 2);
   /* store the exchanged values. */
   set_store (new_Proj (new_Store (get_store (), a, y), mode_M, 0));
   set_store (new_Proj (new_Store (get_store (), b, x), mode_M, 0));
@@ -121,7 +121,7 @@ main(void)
   x = new_Cond (
         new_Proj (
           new_Cmp (
-            new_Const (mode_I, tarval_from_long (mode_i, 0)),
+            new_Const (mode_Iu, tarval_from_long (mode_Is, 0)),
             x),
           mode_b, Gt));
 
@@ -138,7 +138,7 @@ main(void)
   {
      ir_node *in[1];
      x = new_Load (get_store (), a);
-     in[0] = new_Proj (x, mode_I, 2);
+     in[0] = new_Proj (x, mode_Iu, 2);
 
      x = new_Return (new_Proj(x, mode_M, 0), 1, in);
   }

@@ -50,7 +50,7 @@ int main(int argc, char **argv)
      This is the modeling appropriate for other languages.
      Mode_i says that all integers shall be implemented as a
      32 bit integer value.  */
-  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_i);
+  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_Is);
 
   /* FIRM was designed for oo languages where all methods belong to a class.
    * For imperative languages like C we view a file or compilation unit as
@@ -90,7 +90,7 @@ int main(int argc, char **argv)
   i_ptr = new_simpleSel(get_store(), get_irg_globals(irg), i_ent);
 
   store = new_Store (get_store(), i_ptr,
-		     new_Const(mode_i, tarval_from_long (mode_i, 2)));
+		     new_Const(mode_Is, tarval_from_long (mode_Is, 2)));
   set_store(new_Proj(store, mode_M, 0));
 
   {

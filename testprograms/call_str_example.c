@@ -41,7 +41,7 @@ int main(int argc, char **argv)
   string_ptr = new_type_pointer (
 		 id_from_str ("ptr_to_string", 13),
 		 new_type_array (id_from_str ("char_arr", 8), 1,
-			         new_type_primitive (id_from_str("char", 4), mode_c)));
+			         new_type_primitive (id_from_str("char", 4), mode_Bu)));
   /* FIRM was designed for oo languages where all methods belong to a class.
    * For imperative languages like C we view a program as a large class containing
    * all functions of the program as methods in this class.  This class is
@@ -78,7 +78,7 @@ int main(int argc, char **argv)
   irg = new_ir_graph (ent, NUM_OF_LOCAL_VARS);
 
   /* the string is entered in the constant table. const_str is a pointer to the string */
-  const_str = new_Const (mode_p, tarval_p_from_str ("Hello world!"));
+  const_str = new_Const (mode_P, tarval_P_from_str ("Hello world!"));
 
   /* get the pointer to the procedure from the class type */
   /* this is how a pointer to be fixed by the linker is represented after

@@ -76,7 +76,7 @@ main(void)
      This is the modeling appropriate for other languages.
      Mode_i says that all integers shall be implemented as a
      32 bit integer value.  */
-  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_i);
+  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_Is);
 
   printf("\nCreating an IR graph: ARRAY-HEAP_EXAMPLE...\n");
 
@@ -93,8 +93,8 @@ main(void)
 # define U_BOUND 9
   array_type = new_type_array(id_from_str("a", 1), N_DIMS, prim_t_int);
   set_array_bounds(array_type, 1,
-		   new_Const(mode_I, tarval_from_long (mode_I, L_BOUND)),
-		   new_Const(mode_I, tarval_from_long (mode_I, U_BOUND)));
+		   new_Const(mode_Iu, tarval_from_long (mode_Iu, L_BOUND)),
+		   new_Const(mode_Iu, tarval_from_long (mode_Iu, U_BOUND)));
   /* As the array is accessed by Sel nodes, we need information about
      the entity the node selects.  Entities of an array are it's elements
      which are, in this case, integers. */
@@ -109,11 +109,11 @@ main(void)
   /*   better: read bounds out of array type information */
   size = (U_BOUND - L_BOUND + 1) * get_mode_size(elt_type_mode);
   /*   make constant representing the size */
-  arr_size  = new_Const(mode_I, tarval_from_long (mode_I, size));
+  arr_size  = new_Const(mode_Iu, tarval_from_long (mode_Iu, size));
   /*   allocate and generate the Proj nodes. */
   array     = new_Alloc(get_store(), arr_size, (type*)array_type, stack_alloc);
   set_store(new_Proj(array, mode_M, 0));   /* make the changed memory visible */
-  array_ptr = new_Proj(array, mode_p, 2);  /* remember the pointer to the array */
+  array_ptr = new_Proj(array, mode_P, 2);  /* remember the pointer to the array */
 
   /* Now the "real" program: */
   /* Load element 3 of the array. For this first generate the pointer to this
@@ -121,7 +121,7 @@ main(void)
      by (three * elt_size), but this complicates some optimizations. The
      type information accessible via the entity allows to generate the
      pointer increment later. */
-  c3 = new_Const (mode_I, tarval_from_long (mode_I, 3));
+  c3 = new_Const (mode_Iu, tarval_from_long (mode_Iu, 3));
   {
      ir_node *in[1];
      in[0] = c3;
@@ -129,7 +129,7 @@ main(void)
   }
   val = new_Load(get_store(), elt);
   set_store(new_Proj(val, mode_M, 0));
-  val = new_Proj(val, mode_i, 2);
+  val = new_Proj(val, mode_Is, 2);
 
   /* return the result of procedure main */
   {
@@ -158,5 +158,5 @@ main(void)
   printf("use xvcg to view these graphs:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
 
-  return (1);
+  return (0);
 }

@@ -41,7 +41,7 @@ main(void)
   init_firm ();
 
   /*** Make basic type information for primitive type int. ***/
-  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_i);
+  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_Is);
 
   /* Try both optimizations: */
   set_opt_constant_folding(1);
@@ -56,8 +56,8 @@ main(void)
 
   irg = new_ir_graph (ent, 4);
 
-  a = new_Const (mode_i, tarval_from_long (mode_i, 7));
-  b = new_Const (mode_i, tarval_from_long (mode_i, 5));
+  a = new_Const (mode_Is, tarval_from_long (mode_Is, 7));
+  b = new_Const (mode_Is, tarval_from_long (mode_Is, 5));
 
   x = new_Jmp ();
   mature_block (get_irg_current_block(irg));
@@ -65,16 +65,16 @@ main(void)
   /*  To test const eval on DivMod
   c = new_DivMod(get_store(), a, b);
   set_store(new_Proj(c, mode_M, 0));
-  d = new_Proj(c, mode_i, 3);
-  c = new_Proj(c, mode_i, 2);
+  d = new_Proj(c, mode_Is, 3);
+  c = new_Proj(c, mode_Is, 2);
   */
 
-  c = new_Add (new_Const (mode_i, tarval_from_long (mode_i, 5)),
-	       new_Const (mode_i, tarval_from_long (mode_i, 7)),
-	       mode_i);
-  d = new_Add (new_Const (mode_i, tarval_from_long (mode_i, 7)),
-	       new_Const (mode_i, tarval_from_long (mode_i, 5)),
-	       mode_i);
+  c = new_Add (new_Const (mode_Is, tarval_from_long (mode_Is, 5)),
+	       new_Const (mode_Is, tarval_from_long (mode_Is, 7)),
+	       mode_Is);
+  d = new_Add (new_Const (mode_Is, tarval_from_long (mode_Is, 7)),
+	       new_Const (mode_Is, tarval_from_long (mode_Is, 5)),
+	       mode_Is);
 
   {
      ir_node *in[2];

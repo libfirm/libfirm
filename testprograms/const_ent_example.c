@@ -66,7 +66,7 @@ int main(int argc, char **argv)
 
   /** make the type information needed */
   /* Language defined types */
-  intt = new_type_primitive(inti, mode_i);
+  intt = new_type_primitive(inti, mode_Is);
   /* Program defined types */
   Ct = new_type_class(Ci);
   ft = new_type_method(fti, 0, 0);  /* 0 parameters, 0 results */
@@ -89,7 +89,7 @@ int main(int argc, char **argv)
   current_ir_graph = get_const_code_irg();
   /* The pointer to the dispatch table is constant. */
   /* The constant is the address of the given entity */
-  n = new_Const(mode_p, tarval_p_from_entity(dipte));
+  n = new_Const(mode_P, tarval_p_from_entity(dipte));
   set_entity_variability(diptpe, constant);
   set_atomic_ent_value(diptpe, n);
 
@@ -109,7 +109,7 @@ int main(int argc, char **argv)
 
   /** The array type **/
   /* Don't reuse int type so that graph layout is better readable */
-  intt = new_type_primitive(inti, mode_i);
+  intt = new_type_primitive(inti, mode_Is);
   arrt = new_type_array(arrti, 1, intt);
   set_array_bounds_int(arrt, 0, 0, 4);
   arrelte = get_array_element_entity(arrt);
@@ -118,13 +118,13 @@ int main(int argc, char **argv)
   arre = new_entity(get_glob_type(), arrei, arrt);
   set_entity_variability(arre, constant);
   current_ir_graph = get_const_code_irg();
-  n = new_Const(mode_i, tarval_from_long (mode_i, 7));
+  n = new_Const(mode_Is, tarval_from_long (mode_Is, 7));
   add_compound_ent_value(arre, n, arrelte);
-  n = new_Const(mode_i, tarval_from_long (mode_i, 2));
+  n = new_Const(mode_Is, tarval_from_long (mode_Is, 2));
   add_compound_ent_value(arre, n, arrelte);
-  n = new_Const(mode_i, tarval_from_long (mode_i, 13));
+  n = new_Const(mode_Is, tarval_from_long (mode_Is, 13));
   add_compound_ent_value(arre, n, arrelte);
-  n = new_Const(mode_i, tarval_from_long (mode_i, 92));
+  n = new_Const(mode_Is, tarval_from_long (mode_Is, 92));
   add_compound_ent_value(arre, n, arrelte);
 }
   printf("Done building the graph.  Dumping it.\n");

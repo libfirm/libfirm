@@ -68,7 +68,7 @@ main(void)
      This is the modeling appropriate for other languages.
      Mode_i says that all language-integers shall be implemented
      as a 32 bit processor-integer value.  */
-  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_i);
+  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_Is);
 
   /* build typeinformation of procedure main */
   owner = new_type_class (id_from_str ("ARRAY-STACK_EXAMPLE", 19));
@@ -84,8 +84,8 @@ main(void)
 # define U_BOUND 9
   array_type = new_type_array(id_from_str("a_tp", 4), N_DIMS, prim_t_int);
   set_array_bounds(array_type, 1,
-		   new_Const(mode_I, tarval_from_long (mode_I, L_BOUND)),
-		   new_Const(mode_I, tarval_from_long (mode_I, U_BOUND)));
+		   new_Const(mode_Iu, tarval_from_long (mode_Iu, L_BOUND)),
+		   new_Const(mode_Iu, tarval_from_long (mode_Iu, U_BOUND)));
   /* The array is an entity of the method, placed on the mehtod's own memory,
      the stack frame. */
   array_ent = new_entity(get_cur_frame_type(), id_from_str("a", 1), array_type);
@@ -105,7 +105,7 @@ main(void)
      array pointer by (three * elt_size), but this complicates some
      optimizations.) The type information accessible via the entity
      allows to generate the pointer increment later. */
-  c3 = new_Const (mode_I, tarval_from_long (mode_I, 3));
+  c3 = new_Const (mode_Iu, tarval_from_long (mode_Iu, 3));
   {
      ir_node *in[1];
      in[0] = c3;
@@ -113,7 +113,7 @@ main(void)
   }
   val = new_Load(get_store(), elt);
   set_store(new_Proj(val, mode_M, 0));
-  val = new_Proj(val, mode_i, 2);
+  val = new_Proj(val, mode_Is, 2);
 
   /* return the result of procedure main */
   {
@@ -143,5 +143,5 @@ main(void)
   printf("Use xvcg to view these graphs:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
 
-  return (1);
+  return (0);
 }

@@ -67,7 +67,7 @@ main(void)
   set_opt_dead_node_elimination(1);
 
   /*** Make basic type information for primitive type int. ***/
-  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_i);
+  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_Is);
 
   /*** Make type information for the class (PRIMA). ***/
   /* The type of the class */
@@ -115,26 +115,26 @@ main(void)
   set_irp_main_irg(main_irg);
 
   /* Make the constants.  They are independent of a block. */
-  c2 = new_Const (mode_i, tarval_from_long (mode_i, 2));
-  c5 = new_Const (mode_i, tarval_from_long (mode_i, 5));
+  c2 = new_Const (mode_Is, tarval_from_long (mode_Is, 2));
+  c5 = new_Const (mode_Is, tarval_from_long (mode_Is, 5));
 
   /* There is only one block in main, it contains the allocation and the calls. */
   /* Allocate the defined object and generate the type information. */
   obj_size = new_SymConst((type_or_id_p)class_prima, size);
   obj_o    = new_Alloc(get_store(), obj_size, class_prima, heap_alloc);
   set_store(new_Proj(obj_o, mode_M, 0));  /* make the changed memory visible */
-  obj_o    = new_Proj(obj_o, mode_p, 2);  /* remember the pointer to the object */
+  obj_o    = new_Proj(obj_o, mode_P, 2);  /* remember the pointer to the object */
   set_value(o_pos, obj_o);
 
   /* Get the pointer to the procedure from the object.  */
   proc_ptr = new_simpleSel(get_store(),             /* The memory containing the object. */
-			   get_value(o_pos, mode_p),/* The pointer to the object. */
+			   get_value(o_pos, mode_P),/* The pointer to the object. */
 			   proc_set_a_e );            /* The feature to select. */
 
   /* Call procedure set_a, first built array with parameters. */
   {
     ir_node *in[2];
-    in[0] = get_value(o_pos, mode_p);
+    in[0] = get_value(o_pos, mode_P);
     in[1] = c2;
     set_a_call = new_Call(get_store(), proc_ptr, 2, in, proc_set_a);
 
@@ -143,12 +143,12 @@ main(void)
   set_store(new_Proj(set_a_call, mode_M, 0));
 
   /* Get the pointer to the nest procedure from the object. */
-  proc_ptr = new_simpleSel(get_store(), get_value(o_pos, mode_p), proc_c_e);
+  proc_ptr = new_simpleSel(get_store(), get_value(o_pos, mode_P), proc_c_e);
 
   /* call procedure c, first built array with parameters */
   {
     ir_node *in[2];
-    in[0] = get_value(o_pos, mode_p);
+    in[0] = get_value(o_pos, mode_P);
     in[1] = c5;
     c_call = new_Call(get_store(), proc_ptr, 2, in, proc_c);
   }
@@ -156,7 +156,7 @@ main(void)
   set_store(new_Proj(c_call, mode_M, 0));
   /* Get the result of the procedure: select the result tuple from the call,
      then the proper result from the tuple. */
-  res = new_Proj(new_Proj(c_call, mode_T, 2), mode_i, 0);
+  res = new_Proj(new_Proj(c_call, mode_T, 2), mode_Is, 0);
 
   /* return the results of procedure main */
   {
@@ -182,9 +182,9 @@ main(void)
   self_pos = 0; e_pos = 1;
 
   /* get the procedure parameter */
-  self = new_Proj(get_irg_args(set_a_irg), mode_p, 0);
+  self = new_Proj(get_irg_args(set_a_irg), mode_P, 0);
   set_value(self_pos, self);
-  par1 = new_Proj(get_irg_args(set_a_irg), mode_i, 1);
+  par1 = new_Proj(get_irg_args(set_a_irg), mode_Is, 1);
   set_value(e_pos, par1);
   /* Create and select the entity to set */
   a_ptr = new_simpleSel(get_store(), self, a_e);
@@ -211,11 +211,11 @@ main(void)
   c_irg = new_ir_graph (proc_c_e, 5);
 
   /* get the procedure parameter */
-  self = new_Proj(get_irg_args(c_irg), mode_p, 0);
+  self = new_Proj(get_irg_args(c_irg), mode_P, 0);
   set_value(0, self);
-  par1 = new_Proj(get_irg_args(c_irg), mode_i, 1);
+  par1 = new_Proj(get_irg_args(c_irg), mode_Is, 1);
   set_value(1, par1);
-  set_value(2, new_Const (mode_i, tarval_from_long (mode_i, 0)));
+  set_value(2, new_Const (mode_Is, tarval_from_long (mode_Is, 0)));
 
   x = new_Jmp();
   mature_block (get_irg_current_block(c_irg));
@@ -223,12 +223,12 @@ main(void)
   /* generate a block for the loop header and the conditional branch */
   r = new_immBlock ();
   add_in_edge (r, x);
-  x = new_Cond (new_Proj(new_Cmp(new_Const (mode_i, tarval_from_long (mode_i, 0)),
-				 new_Const (mode_i, tarval_from_long (mode_i, 0))),
+  x = new_Cond (new_Proj(new_Cmp(new_Const (mode_Is, tarval_from_long (mode_Is, 0)),
+				 new_Const (mode_Is, tarval_from_long (mode_Is, 0))),
 			 mode_b, Eq));
 
-  /*  x = new_Cond (new_Proj(new_Cmp(new_Const (mode_i, tarval_from_long (mode_i, 0)),
-				 get_value(1, mode_i)),
+  /*  x = new_Cond (new_Proj(new_Cmp(new_Const (mode_Is, tarval_from_long (mode_Is, 0)),
+				 get_value(1, mode_Is)),
 				 mode_b, Eq));*/
   f = new_Proj (x, mode_X, 0);
   t = new_Proj (x, mode_X, 1);
@@ -240,11 +240,11 @@ main(void)
   /* The code in the loop body,
      as we are dealing with local variables only the dataflow edges
      are manipulated. */
-  set_value (3, get_value (1, mode_i));
-  set_value (1, get_value (2, mode_i));
-  set_value (2, get_value (3, mode_i));
+  set_value (3, get_value (1, mode_Is));
+  set_value (1, get_value (2, mode_Is));
+  set_value (2, get_value (3, mode_Is));
   a_ptr = new_simpleSel(get_store(), self, a_e);
-  set_store(new_Store(get_store(), a_ptr, get_value(2, mode_i)));
+  set_store(new_Store(get_store(), a_ptr, get_value(2, mode_Is)));
   x = new_Jmp ();
   add_in_edge(r, x);
   mature_block (b);
@@ -257,12 +257,12 @@ main(void)
   a_ptr = new_simpleSel(get_store(), self, a_e);
   a_val = new_Load(get_store(), a_ptr);
   set_store(new_Proj(a_val, mode_M, 0));
-  a_val = new_Proj(a_val, mode_i, 2);
+  a_val = new_Proj(a_val, mode_Is, 2);
 
   /* return the result */
   {
     ir_node *in[1];
-    in[0] = new_Add(par1, a_val, mode_i);
+    in[0] = new_Add(par1, a_val, mode_Is);
 
     x = new_Return (get_store (), 1, in);
   }
@@ -300,5 +300,5 @@ main(void)
 
   printf("Use xvcg to view these graphs:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
-  return (1);
+  return (0);
 }

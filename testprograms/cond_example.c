@@ -38,7 +38,7 @@ int main(int argc, char **argv)
   init_firm ();
 
   /*** Make basic type information for primitive type int. ***/
-  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_i);
+  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_Is);
 
   /* FIRM was designed for oo languages where all methods belong to a class.
    * For imperative languages like C we view a file as a large class containing
@@ -65,26 +65,26 @@ int main(int argc, char **argv)
   irg = new_ir_graph (ent, NUM_OF_LOCAL_VARS);
 
   /* get the first argument a of method main - see irgraph.h */
-  arg1 = new_Proj(get_irg_args(irg), mode_i, 0);
+  arg1 = new_Proj(get_irg_args(irg), mode_Is, 0);
 
   /* arg1 as first first local variable - makes things simple */
   set_value(0, arg1);
 
   /* the expression that evaluates the condition */
   /* cmpGt = a > 2 */
-  c2 = new_Const (mode_i, tarval_from_long (mode_i, 2));
-  cmpGt = new_Proj(new_Cmp(get_value(0, mode_i), c2), mode_b, Gt);
-  cmpGt = new_Conv(cmpGt, mode_i);
+  c2 = new_Const (mode_Is, tarval_from_long (mode_Is, 2));
+  cmpGt = new_Proj(new_Cmp(get_value(0, mode_Is), c2), mode_b, Gt);
+  cmpGt = new_Conv(cmpGt, mode_Is);
 
   /* cmpLt = a < 10 */
-  c10 = new_Const (mode_i, tarval_from_long (mode_i, 10));
-  cmpLt = new_Proj(new_Cmp(get_value(0, mode_i), c10), mode_b, Lt);
-  cmpLt = new_Conv(cmpLt, mode_i);
+  c10 = new_Const (mode_Is, tarval_from_long (mode_Is, 10));
+  cmpLt = new_Proj(new_Cmp(get_value(0, mode_Is), c10), mode_b, Lt);
+  cmpLt = new_Conv(cmpLt, mode_Is);
 
   /* cmpGt && cmpLt */
-  and = new_And(cmpGt, cmpLt, mode_i);
+  and = new_And(cmpGt, cmpLt, mode_Is);
   /* compare result and 0 because we have no cast from integer to bool */
-  and = new_Cmp(and, new_Const (mode_i, tarval_from_long (mode_i, 0)));
+  and = new_Cmp(and, new_Const (mode_Is, tarval_from_long (mode_Is, 0)));
   and = new_Proj(and, mode_b, Ne);
 
   /* the conditional branch */
@@ -97,7 +97,7 @@ int main(int argc, char **argv)
   /* generate and fill the then block */
   b = new_immBlock ();
   add_in_edge (b, t);
-  set_value (0, new_Const (mode_i, tarval_from_long (mode_i, 1)));
+  set_value (0, new_Const (mode_Is, tarval_from_long (mode_Is, 1)));
   mature_block (b);
   x_then = new_Jmp ();
 
@@ -110,7 +110,7 @@ int main(int argc, char **argv)
   /* Generate the return node into current region. */
   {
     ir_node *in[1]; /* this is the array containing the return parameters */
-    in[0] = get_value(0, mode_i);
+    in[0] = get_value(0, mode_Is);
     x = new_Return (get_store(), 1, in);
   }
   /* Now generate all instructions for this block and all its predecessor blocks

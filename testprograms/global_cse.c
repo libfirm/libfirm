@@ -69,7 +69,7 @@ main(void)
   /* The type int.  This type is necessary to model the result and parameters
      the procedure. */
 #define PRIM_NAME "int"
-  typ = new_type_primitive(id_from_str(PRIM_NAME, strlen(PRIM_NAME)), mode_i);
+  typ = new_type_primitive(id_from_str(PRIM_NAME, strlen(PRIM_NAME)), mode_Is);
   /* The parameter and result types of the procedure. */
   set_method_param_type(proc_main, 0, typ);
   set_method_res_type(proc_main, 0, typ);
@@ -86,18 +86,18 @@ main(void)
 
   /* Get the procedure parameter and assign it to the parameter variable
      a. */
-  set_value (a_pos, new_Proj (get_irg_args(irg), mode_i, 0));
+  set_value (a_pos, new_Proj (get_irg_args(irg), mode_Is, 0));
   /* Generate the constant and assign it to b. The assignment is resovled to a
      dataflow edge. */
-  set_value (b_pos, new_Const (mode_i, tarval_from_long (mode_i, 2)));
+  set_value (b_pos, new_Const (mode_Is, tarval_from_long (mode_Is, 2)));
   /* We know all predecessors of the block and all set_values and set_stores are
      preformed.   We can mature the block.  */
   mature_block (get_irg_current_block(irg));
 
   /* Generate a conditional branch */
-  cmp = new_Cmp(get_value(a_pos, mode_i), get_value(b_pos, mode_i)); /*
-  cmp = new_Cmp(new_Const (mode_i, tarval_from_long (mode_i, 2)),
-                new_Const (mode_i, tarval_from_long (mode_i, 2)));*/
+  cmp = new_Cmp(get_value(a_pos, mode_Is), get_value(b_pos, mode_Is)); /*
+  cmp = new_Cmp(new_Const (mode_Is, tarval_from_long (mode_Is, 2)),
+                new_Const (mode_Is, tarval_from_long (mode_Is, 2)));*/
   x = new_Cond (new_Proj(cmp, mode_b, Eq));
   f = new_Proj (x, mode_X, 0);
   t = new_Proj (x, mode_X, 1);
@@ -105,9 +105,9 @@ main(void)
   /* generate and fill the then block */
   r = new_immBlock ();
   add_in_edge (r, t);
-  a = new_Sub(get_value(a_pos, mode_i),
-              new_Const (mode_i, tarval_from_long (mode_i, 3)),
-  	      mode_i);
+  a = new_Sub(get_value(a_pos, mode_Is),
+              new_Const (mode_Is, tarval_from_long (mode_Is, 3)),
+  	      mode_Is);
   set_value (a_pos, a);
 
   mature_block (r);
@@ -116,10 +116,10 @@ main(void)
   /* generate the else block */
   r = new_immBlock ();
   add_in_edge (r, f);
-  a = new_Sub(get_value(a_pos, mode_i),
-              new_Const (mode_i, tarval_from_long (mode_i, 3)),
-  	      mode_i);
-  a = new_Add(a, new_Const (mode_i, tarval_from_long (mode_i, 5)), mode_i);
+  a = new_Sub(get_value(a_pos, mode_Is),
+              new_Const (mode_Is, tarval_from_long (mode_Is, 3)),
+  	      mode_Is);
+  a = new_Add(a, new_Const (mode_Is, tarval_from_long (mode_Is, 5)), mode_Is);
   set_value (a_pos, a);
 
   mature_block (r);
@@ -133,7 +133,7 @@ main(void)
   /* The Return statement */
   {
      ir_node *in[1], *store ;
-     in[0] = get_value (a_pos, mode_i);
+     in[0] = get_value (a_pos, mode_Is);
      store = get_store();
 
      x = new_Return (store, 1, in);

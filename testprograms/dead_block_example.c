@@ -58,7 +58,7 @@ int main(int argc, char **argv)
   init_firm ();
 
   /*** Make basic type information for primitive type int. ***/
-  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_i);
+  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_Is);
 
   /* FIRM was designed for oo languages where all methods belong to a class.
    * For imperative languages like C we view a file as a large class containing
@@ -85,8 +85,8 @@ int main(int argc, char **argv)
   irg = new_ir_graph (ent, NUM_OF_LOCAL_VARS);
 
   /* to make a condition  */
-  c1 = new_Const (mode_i, tarval_from_long (mode_i, 1));
-  c2 = new_Const (mode_i, tarval_from_long (mode_i, 2));
+  c1 = new_Const (mode_Is, tarval_from_long (mode_Is, 1));
+  c2 = new_Const (mode_Is, tarval_from_long (mode_Is, 2));
   set_value(0, c2);
 
   cond = new_Cond(new_Proj(new_Cmp(c1, c2), mode_b, Eq));
@@ -121,7 +121,7 @@ int main(int argc, char **argv)
   switch_block(endBlock);
   {
     ir_node *in[1];
-    in[0] = get_value(0, mode_i);
+    in[0] = get_value(0, mode_Is);
     get_store();
     x = new_Return (get_store(), 1, in);
   }

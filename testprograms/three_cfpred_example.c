@@ -64,7 +64,7 @@ int main(int argc, char **argv)
   set_optimize(1);
 
   /*** Make basic type information for primitive type int. ***/
-  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_i);
+  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_Is);
 
   /* FIRM was designed for oo languages where all methods belong to a class.
    * For imperative languages like C we view a file as a large class containing
@@ -91,12 +91,12 @@ int main(int argc, char **argv)
   irg = new_ir_graph (ent, NUM_OF_LOCAL_VARS);
 
   /* to make a condition  */
-  c1 = new_Const (mode_i, tarval_from_long (mode_i, 1));
-  c2 = new_Proj (get_irg_args(irg), mode_i, 0);
+  c1 = new_Const (mode_Is, tarval_from_long (mode_Is, 1));
+  c2 = new_Proj (get_irg_args(irg), mode_Is, 0);
   set_value(1, c2);
 
   cond = new_Cond(new_Proj(new_Cmp(c1, c2), mode_b, Eq));
-  set_value(0, new_Const (mode_i, tarval_from_long (mode_i, 6)));
+  set_value(0, new_Const (mode_Is, tarval_from_long (mode_Is, 6)));
   f = new_Proj(cond, mode_X, 0);
   t = new_Proj(cond, mode_X, 1);
   mature_block(get_irg_current_block(irg));
@@ -108,7 +108,7 @@ int main(int argc, char **argv)
   Block1 = new_immBlock();
   add_in_edge(Block1, t);
   mature_block(Block1);
-  set_value(0, new_Const (mode_i, tarval_from_long (mode_i, 5)));
+  set_value(0, new_Const (mode_Is, tarval_from_long (mode_Is, 5)));
   jmp = new_Jmp();
   add_in_edge(endBlock, jmp);
 
@@ -116,8 +116,8 @@ int main(int argc, char **argv)
   scndCondBlock = new_immBlock();
   add_in_edge(scndCondBlock, f);
   mature_block(scndCondBlock);
-  c1 = new_Const (mode_i, tarval_from_long (mode_i, 3));
-  cond = new_Cond(new_Proj(new_Cmp(c1, get_value(1, mode_i)), mode_b, Eq));
+  c1 = new_Const (mode_Is, tarval_from_long (mode_Is, 3));
+  cond = new_Cond(new_Proj(new_Cmp(c1, get_value(1, mode_Is)), mode_b, Eq));
   f = new_Proj(cond, mode_X, 0);
   t = new_Proj(cond, mode_X, 1);
   mature_block(get_irg_current_block(irg));
@@ -140,7 +140,7 @@ int main(int argc, char **argv)
   switch_block(endBlock);
   {
     ir_node *in[1];
-    in[0] = get_value(0, mode_i);
+    in[0] = get_value(0, mode_Is);
     x = new_Return (get_store(), 1, in);
   }
   mature_block (get_irg_current_block(irg));

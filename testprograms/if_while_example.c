@@ -56,7 +56,7 @@ main(void)
   set_opt_dead_node_elimination (1);
 
   /*** Make basic type information for primitive type int. ***/
-  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_I);
+  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_Iu);
 
 #define METHODNAME "main"
 #define NRARGS 0
@@ -72,8 +72,8 @@ main(void)
   irg = new_ir_graph (ent, 4);
 
   /* Generate two constants */
-  set_value (0, new_Const (mode_I, tarval_from_long (mode_I, 0)));
-  set_value (1, new_Const (mode_I, tarval_from_long (mode_I, 1)));
+  set_value (0, new_Const (mode_Iu, tarval_from_long (mode_Iu, 0)));
+  set_value (1, new_Const (mode_Iu, tarval_from_long (mode_Iu, 1)));
   mature_block (get_irg_current_block(irg));
 
   /* Generate a conditional branch */
@@ -88,8 +88,8 @@ main(void)
   /* generate a block for the loop header and the conditional branch */
   r = new_immBlock ();
   add_in_edge (r, x);
-  x = new_Cond (new_Proj(new_Cmp(new_Const (mode_I, tarval_from_long (mode_i, 0)),
-                                 new_Const (mode_I, tarval_from_long (mode_i, 0))),
+  x = new_Cond (new_Proj(new_Cmp(new_Const (mode_Iu, tarval_from_long (mode_Is, 0)),
+                                 new_Const (mode_Iu, tarval_from_long (mode_Is, 0))),
                          mode_b, Eq));
   f = new_Proj (x, mode_X, 0);
   t = new_Proj (x, mode_X, 1);
@@ -104,9 +104,9 @@ main(void)
   /* the code in the loop body,
      as we are dealing with local variables only the dataflow edges
      are manipulated */
-  set_value (2, get_value (0, mode_I));
-  set_value (0, get_value (1, mode_I));
-  set_value (1, get_value (2, mode_I));
+  set_value (2, get_value (0, mode_Iu));
+  set_value (0, get_value (1, mode_Iu));
+  set_value (1, get_value (2, mode_Iu));
   mature_block (b);
 
   /* generate the return block */
@@ -116,7 +116,7 @@ main(void)
 
   {
      ir_node *in[1];
-     in[0] = new_Sub (get_value (0, mode_I), get_value (1, mode_I), mode_I);
+     in[0] = new_Sub (get_value (0, mode_Iu), get_value (1, mode_Iu), mode_Iu);
 
      x = new_Return (get_store (), 1, in);
   }
