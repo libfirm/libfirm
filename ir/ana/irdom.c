@@ -27,8 +27,8 @@
 #include "irnode_t.h"
 #include "ircons_t.h"
 
-#define get_dom_info(bl) (&(bl)->attr.block.dom)
 
+#define get_dom_info(bl) (&(bl)->attr.block.dom)
 
 /*--------------------------------------------------------------------*/
 /** Accessing the dominator data structures                          **/
@@ -100,12 +100,13 @@ int block_dominates(const ir_node *a, const ir_node *b)
 	const dom_info *ai, *bi;
 
 	if (is_Block(a) && is_Block(b)) {
-          ai = get_dom_info(a);
-          bi = get_dom_info(b);
-          return bi->tree_pre_num - ai->tree_pre_num
-                  <= ai->max_subtree_pre_num - ai->tree_pre_num;
-        }
-        return 0;
+		ai = get_dom_info(a);
+		bi = get_dom_info(b);
+		return bi->tree_pre_num - ai->tree_pre_num
+			<= ai->max_subtree_pre_num - ai->tree_pre_num;
+	}
+
+	return 0;
 }
 
 ir_node *get_Block_dominated_first(const ir_node *bl)
