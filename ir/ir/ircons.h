@@ -1081,6 +1081,7 @@
 # ifndef _IRCONS_H_
 # define _IRCONS_H_
 
+# include "common.h"
 # include "irgraph.h"
 # include "irnode.h"
 # include "irmode.h"

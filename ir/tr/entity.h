@@ -24,7 +24,13 @@ void init_entity (void);
 /** ENTITY                                                        **/
 /*******************************************************************/
 
-typedef struct entity {
+#ifndef _IR_GRAPH_TYPEDEF_
+#define _IR_GRAPH_TYPEDEF_
+/* to resolve recursion between entity.h and irgraph.h */
+typedef struct ir_graph ir_graph;
+#endif
+
+struct entity {
   firm_kind kind;
   ident *name;          /* name of this entity */
   ident *ld_name;       /* Unique name of this entity, i.e., the mangled
@@ -33,14 +39,20 @@ typedef struct entity {
   type *type;           /* The type of this entity, e.g., a method type, a
                            basic type of the language or a class itself */
   type *owner;          /* The class this entity belongs to */
-  /* for methods *
-  ir_graph *irg;        * If (type == method_type) this is the corresponding irg.
+  /* for methods */
+  ir_graph *irg;        /* If (type == method_type) this is the corresponding irg.
 			   The ir_graph constructor automatically sets this field.
 		 	   @@@ Does this go here, or should it be in type_mehtod,
 			   or should Call have an attribute ent?? */
   /* Do we need to remember the initializer of fields? */
   unsigned long visit;  /* visited counter for walks of the type information */
-} entity;
+};
+
+#ifndef _ENTITY_TYPEDEF_
+#define _ENTITY_TYPEDEF_
+/* to resolve recursion between entity.h and irgraph.h */
+typedef struct entity entity;
+#endif
 
 /* create a new entity */
 entity   *new_entity (type *owner, ident *name, type *type);
@@ -49,9 +61,10 @@ entity   *new_entity (type *owner, ident *name, type *type);
 char     *get_entity_name     (entity *);
 ident    *get_entity_ident    (entity *);
 
+ident    *get_entity_ld_name  (entity *);
 /*
 char     *get_entity_ld_name  (entity *);
-char     *get_entity_ld_ident (entity *);
+ident    *get_entity_ld_ident (entity *);
 void      set_entity_ld_name  (entity *, char *ld_name);
 void      set_entity_ld_ident (entity *, ident *ld_ident);
 */

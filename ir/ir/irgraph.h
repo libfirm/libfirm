@@ -12,9 +12,6 @@
 # include "obst.h"
 # include "tv.h"
 # include "pset.h"
-/* @@@ we need at most a subset */
-# include "entity.h"
-
 
 #ifndef _IR_NODE_TYPEDEF_
 #define _IR_NODE_TYPEDEF_
@@ -23,7 +20,7 @@ typedef struct ir_node ir_node;
 #endif
 
 /* ir_graph holds all information for a procedure */
-typedef struct {
+struct ir_graph {
   struct entity  *ent;               /* The entity of this procedure, i.e.,
 					the type of the procedure and the
 					class it belongs to. */
@@ -57,7 +54,14 @@ typedef struct {
 					the graph */
   unsigned long block_visited;       /* same as visited, for a
 					complete block */
-} ir_graph;
+};
+
+
+#ifndef _IR_GRAPH_TYPEDEF_
+#define _IR_GRAPH_TYPEDEF_
+/* to resolve recursion between entity.h and irgraph.h */
+typedef struct ir_graph ir_graph;
+#endif
 
 
 /* Global variable holding the current_ir_graph.  This global variable
