@@ -23,7 +23,6 @@
 # endif
 
 #include "cookies.h"
-#include "debug.h"
 #include "pdeq.h"
 #include "xmalloc.h"
 
@@ -39,8 +38,7 @@
 #ifdef NDEBUG
 # define VRFY(dq) ((void)0)
 #else
-# define VRFY(dq) \
-    (d_(df_vrfy_level,1) ? _pdeq_vrfy ((dq)) : assert ((dq) && ((dq)->cookie == PDEQ_COOKIE1)))
+# define VRFY(dq) assert((dq) && ((dq)->cookie == PDEQ_COOKIE1))
 #endif
 
 /**
@@ -81,10 +79,8 @@ static INLINE void free_pdeq_block (pdeq *p)
   p->cookie = 0xbadf00d1;
 #endif
   if (pdeqs_cached < TUNE_NSAVED_PDEQS) {
-    if (d_ (df_pdeq, 2)) printf ("[%p ==> pdeq_block_cache] ", p);
     pdeq_block_cache[pdeqs_cached++] = p;
   } else {
-    if (d_ (df_pdeq, 2)) printf ("[%p ==> free] ", p);
     xfree (p);
   }
 }
@@ -99,10 +95,8 @@ static INLINE pdeq *alloc_pdeq_block (void)
   pdeq *p;
   if (TUNE_NSAVED_PDEQS && pdeqs_cached) {
     p = pdeq_block_cache[--pdeqs_cached];
-    if (d_ (df_pdeq, 2)) printf ("[pdeq_block_cache ==> %p] ", p);
   } else {
     p = xmalloc (PREF_MALLOC_SIZE);
-    if (d_ (df_pdeq, 2)) printf ("[malloc ==> %p] ", p);
   }
   return p;
 }
@@ -118,7 +112,6 @@ void _pdeq_vrfy(pdeq *dq)
 {
   pdeq *q;
 
-  if (d_ (df_pdeq, 5)) printf ("[pdeq_vrfy %p] ", dq);
 
   assert (   dq
 	  && (dq->cookie == PDEQ_COOKIE1)
@@ -152,7 +145,6 @@ pdeq *new_pdeq(void)
   dq->n = dq->p = 0;
 
   VRFY(dq);
-  if (d_(df_pdeq, 1)) printf("(new_pdeq ==> %p)\n", dq);
   return dq;
 }
 
@@ -181,14 +173,12 @@ void del_pdeq(pdeq *dq)
     free_pdeq_block(q);
   } while ((q = qq));
 
-  if (d_(df_pdeq, 1)) printf("(del_pdeq %p)\n", dq);
 }
 
 /* Checks if a list is empty. */
 int pdeq_empty(pdeq *dq)
 {
   VRFY(dq);
-  if (d_(df_pdeq, 4)) printf("(pdeq_empty %p ==> %d)\n", dq, dq->l_end->n == 0);
   return dq->l_end->n == 0;
 }
 
@@ -207,7 +197,6 @@ int pdeq_len(pdeq *dq)
     q = q->r;
   }  while (q);
 
-  if (d_(df_pdeq, 4)) printf("(pdeq_len %p ==> %d)\n", dq, n);
   return n;
 }
 
@@ -216,7 +205,6 @@ pdeq * pdeq_putr(pdeq *dq, const void *x)
 {
   pdeq *rdq;
   int n;
-  int pr = 0;
 
   VRFY(dq);
 
@@ -228,7 +216,6 @@ pdeq * pdeq_putr(pdeq *dq, const void *x)
     if (dq->n) {		/* ... if trunk used */
       /* allocate and init new block */
       ndq = alloc_pdeq_block();
-      pr = d_(df_pdeq, 2);
 #ifndef NDEBUG
       ndq->cookie = PDEQ_COOKIE2;
 #endif
@@ -248,7 +235,6 @@ pdeq * pdeq_putr(pdeq *dq, const void *x)
   rdq->data[n] = x;
 
   VRFY(dq);
-  if (d_(df_pdeq, 3) || pr) printf("(pdeq_putr %p %p)\n", dq, x);
   return dq;
 }
 
@@ -257,7 +243,6 @@ pdeq *pdeq_putl(pdeq *dq, const void *x)
 {
   pdeq *ldq;
   int p;
-  int pr = 0;
 
   VRFY(dq);
 
@@ -269,7 +254,6 @@ pdeq *pdeq_putl(pdeq *dq, const void *x)
     if (dq->n) {		/* ... if trunk used */
       /* allocate and init new block */
       ndq = alloc_pdeq_block();
-      pr = d_(df_pdeq, 2);
 #ifndef NDEBUG
       ndq->cookie = PDEQ_COOKIE2;
 #endif
@@ -291,7 +275,6 @@ pdeq *pdeq_putl(pdeq *dq, const void *x)
   ldq->data[p] = x;
 
   VRFY(dq);
-  if (d_(df_pdeq, 3) || pr) printf("(pdeq_putl %p %p)\n", dq, x);
   return dq;
 }
 
@@ -301,7 +284,6 @@ void *pdeq_getr(pdeq *dq)
   pdeq *rdq;
   const void *x;
   int n;
-  int pr = 0;
 
   VRFY(dq);
   assert(dq->l_end->n);
@@ -321,12 +303,10 @@ void *pdeq_getr(pdeq *dq)
     }
     if (dq != rdq) {
       free_pdeq_block(rdq);
-      pr = d_(df_pdeq, 2);
     }
   }
 
   VRFY(dq);
-  if (d_(df_pdeq, 3) || pr) printf("(pdeq_getr %p ==> %p)\n", dq, x);
   return (void *)x;
 }
 
@@ -336,7 +316,6 @@ void *pdeq_getl(pdeq *dq)
   pdeq *ldq;
   const void *x;
   int p;
-  int pr = 0;
 
   VRFY(dq);
   assert(dq->l_end->n);
@@ -357,12 +336,10 @@ void *pdeq_getl(pdeq *dq)
     }
     if (dq != ldq) {
       free_pdeq_block(ldq);
-      pr = d_(df_pdeq, 2);
     }
   }
 
   VRFY(dq);
-  if (d_(df_pdeq, 3) || pr) printf("(pdeq_getl %p ==> %p)\n", dq, x);
   return (void *)x;
 }
 
@@ -383,22 +360,21 @@ int pdeq_contains(pdeq *dq, const void *x)
     p = q->p; ep = p + q->n;
 
     if (ep > NDATA) {
-      do if (q->data[p] == x) goto found; while (++p < NDATA);
+      do {
+	if (q->data[p] == x) return 1;
+      } while (++p < NDATA);
       p = 0;
       ep -= NDATA;
     }
 
-    while (p < ep) if (q->data[p++] == x) goto found;
+    while (p < ep) {
+      if (q->data[p++] == x) return 1;
+    }
 
     q = q->r;
   } while (q);
 
-  if (d_(df_pdeq, 3)) printf("(pdeq_contains %p %p ==> 0)\n", dq, x);
   return 0;
-
-found:  /* The two gotos can be optimized away, if !DEBUG */
-  if (d_(df_pdeq, 3)) printf("(pdeq_contains %p %p ==> 1)\n", dq, x);
-  return 1;
 }
 
 /*
@@ -421,23 +397,21 @@ void *pdeq_search(pdeq *dq, cmp_fun cmp, const void *key)
     p = q->p; ep = p + q->n;
 
     if (ep > NDATA) {
-      do if (!cmp (q->data[p], key)) goto found; while (++p < NDATA);
+      do {
+	if (!cmp (q->data[p], key)) return (void *)q->data[p-1];
+      } while (++p < NDATA);
       p = 0;
       ep -= NDATA;
     }
 
-    while (p < ep) if (!cmp (q->data[p++], key)) goto found;
+    while (p < ep) {
+      if (!cmp (q->data[p++], key)) return (void *)q->data[p-1];
+    }
 
     q = q->r;
   } while (q);
 
-  if (d_(df_pdeq, 3)) printf("(pdeq_search %p %p %p ==> 0)\n", dq, cmp, key);
   return NULL;
-
-found:  /* The two gotos can be optimized away, if !DEBUG */
-  if (d_(df_pdeq, 3)) printf("(pdeq_contains %p %p %p ==> %p)\n",
-			     dq, cmp, key, q->data[p]);
-  return (void *)q->data[p-1];
 }
 
 /*
@@ -468,7 +442,6 @@ void **pdeq_copyl(pdeq *dq, const void **dst)
     q = q->r;
   }
 
-  if (d_(df_pdeq, 3)) printf("(pdeq_copyl %p %p ==> %p)\n", dq, dst, d);
   return (void **)dst;
 }
 
@@ -499,6 +472,5 @@ void **pdeq_copyr(pdeq *dq, const void **dst)
     q = q->l;
   }
 
-  if (d_(df_pdeq, 3)) printf("(pdeq_copyr %p %p ==> %p)\n", dq, dst, d);
   return (void **)dst;
 }
