@@ -372,6 +372,170 @@ ir_node *arch_dep_replace_div_with_shifts(ir_node *irn)
   return res;
 }
 
+ir_node *arch_dep_replace_mod_with_shifts(ir_node *irn)
+{
+  ir_node *res  = irn;
+
+  /* If the architecture dependent optimizations were not initialized
+     or this optimization was not enabled. */
+  if (params == NULL || (opts & arch_dep_mod_to_shift) == 0)
+    return irn;
+
+  if (get_irn_opcode(irn) == iro_Mod) {
+    ir_node *c = get_Mod_right(irn);
+    ir_node *block, *left;
+    ir_mode *mode;
+    tarval *tv;
+    dbg_info *dbg;
+    int n, bits;
+    int i, k, num;
+
+    if (get_irn_op(c) != op_Const)
+      return irn;
+
+    left  = get_Mod_left(irn);
+    mode  = get_irn_mode(left);
+    block = get_nodes_block(irn);
+    dbg   = get_irn_dbg_info(irn);
+    tv    = get_Const_tarval(c);
+
+    bits = get_mode_size_bits(mode);
+    n    = (bits + 7) / 8;
+
+    for (num = i = 0; i < n; ++i) {
+      unsigned char v = get_tarval_sub_bits(tv, i);
+
+      if (v) {
+        int j;
+
+        for (j = 0; j < 8; ++j)
+          if ((1 << j) & v) {
+            ++num;
+            k = 8 * i + j;
+          }
+      }
+    }
+
+    if (num == 1) { /* remainder by 2^k */
+
+      if (mode_is_signed(mode)) {
+        ir_node *k_node;
+        ir_node *curr = left;
+
+        if (k != 1) {
+          k_node = new_r_Const(current_ir_graph, block, mode_Iu, new_tarval_from_long(k - 1, mode_Iu));
+          curr   = new_rd_Shrs(dbg, current_ir_graph, block, left, k_node, mode);
+        }
+
+        k_node = new_r_Const(current_ir_graph, block, mode_Iu, new_tarval_from_long(bits - k, mode_Iu));
+        curr   = new_rd_Shr(dbg, current_ir_graph, block, curr, k_node, mode);
+
+        curr   = new_rd_Add(dbg, current_ir_graph, block, left, curr, mode);
+
+        k_node = new_r_Const(current_ir_graph, block, mode, new_tarval_from_long((-1) << k, mode));
+        curr   = new_rd_And(dbg, current_ir_graph, block, curr, k_node, mode);
+
+        res    = new_rd_Sub(dbg, current_ir_graph, block, left, curr, mode);
+      }
+      else {      /* unsigned case */
+        ir_node *k_node;
+
+        k_node = new_r_Const(current_ir_graph, block, mode, new_tarval_from_long((1 << k) - 1, mode));
+        res    = new_rd_And(dbg, current_ir_graph, block, left, k_node, mode);
+      }
+    }
+  }
+
+  if (res != irn)
+    stat_arch_dep_replace_mod_with_shifts(irn);
+
+  return res;
+}
+
+void arch_dep_replace_divmod_with_shifts(ir_node **div, ir_node **mod, ir_node *irn)
+{
+  *div = *mod = NULL;
+
+  /* If the architecture dependent optimizations were not initialized
+     or this optimization was not enabled. */
+  if (params == NULL || (opts & arch_dep_mod_to_shift) == 0)
+    return;
+
+  if (get_irn_opcode(irn) == iro_DivMod) {
+    ir_node *c = get_DivMod_right(irn);
+    ir_node *block, *left;
+    ir_mode *mode;
+    tarval *tv;
+    dbg_info *dbg;
+    int n, bits;
+    int i, k, num;
+
+    if (get_irn_op(c) != op_Const)
+      return;
+
+    left  = get_DivMod_left(irn);
+    mode  = get_irn_mode(left);
+    block = get_nodes_block(irn);
+    dbg   = get_irn_dbg_info(irn);
+    tv    = get_Const_tarval(c);
+
+    bits = get_mode_size_bits(mode);
+    n    = (bits + 7) / 8;
+
+    for (num = i = 0; i < n; ++i) {
+      unsigned char v = get_tarval_sub_bits(tv, i);
+
+      if (v) {
+        int j;
+
+        for (j = 0; j < 8; ++j)
+          if ((1 << j) & v) {
+            ++num;
+            k = 8 * i + j;
+          }
+      }
+    }
+
+    if (num == 1) { /* division & remainder by 2^k */
+
+      if (mode_is_signed(mode)) {
+        ir_node *k_node;
+        ir_node *curr = left;
+
+        if (k != 1) {
+          k_node = new_r_Const(current_ir_graph, block, mode_Iu, new_tarval_from_long(k - 1, mode_Iu));
+          curr   = new_rd_Shrs(dbg, current_ir_graph, block, left, k_node, mode);
+        }
+
+        k_node = new_r_Const(current_ir_graph, block, mode_Iu, new_tarval_from_long(bits - k, mode_Iu));
+        curr   = new_rd_Shr(dbg, current_ir_graph, block, curr, k_node, mode);
+
+        curr   = new_rd_Add(dbg, current_ir_graph, block, left, curr, mode);
+
+        k_node = new_r_Const(current_ir_graph, block, mode_Iu, new_tarval_from_long(k, mode_Iu));
+        *div   = new_rd_Shrs(dbg, current_ir_graph, block, curr, k_node, mode);
+
+        k_node = new_r_Const(current_ir_graph, block, mode, new_tarval_from_long((-1) << k, mode));
+        curr   = new_rd_And(dbg, current_ir_graph, block, curr, k_node, mode);
+
+        *mod   = new_rd_Sub(dbg, current_ir_graph, block, left, curr, mode);
+      }
+      else {      /* unsigned case */
+        ir_node *k_node;
+
+        k_node = new_r_Const(current_ir_graph, block, mode_Iu, new_tarval_from_long(k, mode_Iu));
+        *div   = new_rd_Shl(dbg, current_ir_graph, block, left, k_node, mode);
+
+        k_node = new_r_Const(current_ir_graph, block, mode, new_tarval_from_long((1 << k) - 1, mode));
+        *mod   = new_rd_And(dbg, current_ir_graph, block, left, k_node, mode);
+      }
+    }
+  }
+
+  if (*div)
+    stat_arch_dep_replace_DivMod_with_shifts(irn);
+}
+
 
 static const arch_dep_params_t default_params = {
   1, /* also use subs */
