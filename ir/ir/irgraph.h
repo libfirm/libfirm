@@ -304,7 +304,10 @@ typedef enum {
   phase_low
 } irg_phase_state;
 
+/** returns the phase_state of an IR graph. */
 irg_phase_state get_irg_phase_state (const ir_graph *irg);
+
+/** sets the phase state of an IR graph. */
 void set_irg_phase_low(ir_graph *irg);
 
 /** state: op_pin_state_pinned
@@ -345,7 +348,11 @@ typedef enum {
   dom_consistent,       /**< dominator information is computed and correct */
   dom_inconsistent      /**<  dominator information is computed but the graph has been changed since */
 } irg_dom_state;
+
+/** returns the dom_state of an IR graph. */
 irg_dom_state get_irg_dom_state(const ir_graph *irg);
+
+/** sets the dom_state of an IR graph. */
 void set_irg_dom_inconsistent(ir_graph *irg);
 
 /** state: loopinfo_state
@@ -400,7 +407,11 @@ typedef enum {
   irg_callee_info_consistent,
   irg_callee_info_inconsistent
 } irg_callee_info_state;
+
+/** returns the callee_info_state of an IR graph. */
 irg_callee_info_state get_irg_callee_info_state(const ir_graph *irg);
+
+/** sets the callee_info_state of an IR graph. */
 void                  set_irg_callee_info_state(ir_graph *irg, irg_callee_info_state s);
 
 /** property:
@@ -418,11 +429,11 @@ irg_inline_property get_irg_inline_property(const ir_graph *irg);
 /** Sets the inline property of a graph. */
 void set_irg_inline_property(ir_graph *irg, irg_inline_property s);
 
-/** A void * field to link arbritary information to the node. */
+/** A void * field to link arbitrary information to the node. */
 void  set_irg_link (ir_graph *irg, void *thing);
 void *get_irg_link (const ir_graph *irg);
 
-/* increments visited by one */
+/** increments visited by one */
 void          inc_irg_visited (ir_graph *irg);
 unsigned long get_irg_visited (const ir_graph *irg);
 void          set_irg_visited (ir_graph *irg, unsigned long i);
@@ -430,13 +441,19 @@ unsigned long get_max_irg_visited (void);
 void          set_max_irg_visited (int val);
 unsigned long inc_max_irg_visited (void);
 
-/* increments block_visited by one */
+/** increments block_visited by one */
 void          inc_irg_block_visited (ir_graph *irg);
 unsigned long get_irg_block_visited (const ir_graph *irg);
 void          set_irg_block_visited (ir_graph *irg, unsigned long i);
 
-/** put the proj's into the same block as its predecessors */
+/** move Proj nodes into the same block as its predecessors */
 void normalize_proj_nodes(ir_graph *irg);
+
+/** set a description for local value n */
+void set_irg_loc_description(ir_graph *irg, int n, void *description);
+
+/** get the description for local value n */
+void *get_irg_loc_description(ir_graph *irg, int n);
 
 /**
  * Access custom graph data.

@@ -75,20 +75,23 @@ void (set_interprocedural_view)(int state) {
   }
 }
 
-static ident* frame_type_suffix = NULL;
+/** contains the suffix for frame type names */
+static ident *frame_type_suffix = NULL;
+
+/* initialize the IR graph module */
 void init_irgraph(void) {
   frame_type_suffix = new_id_from_str(FRAME_TP_SUFFIX);
 	forbid_new_data = 1;
 }
 
 /**
- * Allocate a new ir graph.
+ * Allocate a new IR graph.
  * This function respects the registered graph data. The only reason for
  * this function is, that there are two locations, where graphs are
  * allocated (new_r_ir_graph, new_const_code_irg).
  * @return Memory for a new graph.
  */
-ir_graph *alloc_graph(void)
+static ir_graph *alloc_graph(void)
 {
 	size_t size = sizeof(ir_graph) + additional_graph_data_size;
 	char *ptr = xmalloc(size);
@@ -143,7 +146,10 @@ new_r_ir_graph (entity *ent, int n_loc)
                 to the procedure!  */
   }
 
-  res->visited = 0;     /* visited flag, for the ir walker */
+  /* descriptions will be allocated on demand */
+  res->loc_descriptions = NULL;
+
+  res->visited       = 0; /* visited flag, for the ir walker */
   res->block_visited = 0; /* visited flag, for the 'block'-walker */
 
 #if USE_EXPLICIT_PHI_IN_STACK
@@ -151,7 +157,7 @@ new_r_ir_graph (entity *ent, int n_loc)
                                 generation */
 #endif
   res->kind = k_ir_graph;
-  res->obst      = xmalloc (sizeof(*res->obst));
+  res->obst = xmalloc (sizeof(*res->obst));
   obstack_init (res->obst);
   res->value_table = new_identities (); /* value table for global value
                        numbering for optimizing use in
@@ -316,6 +322,8 @@ void free_ir_graph (ir_graph *irg) {
 #if USE_EXPLICIT_PHI_IN_STACK
   free_Phi_in_stack(irg->Phi_in_stack);
 #endif
+  if (irg->loc_descriptions)
+    free(irg->loc_descriptions);
   irg->kind = k_BAD;
   free(irg);
 }
@@ -753,19 +761,38 @@ static void normalize_proj_walker(ir_node *n, void *env)
   }
 }
 
-/* put the proj's into the same block as its predecessors */
+/* move Proj nodes into the same block as its predecessors */
 void normalize_proj_nodes(ir_graph *irg)
 {
   irg_walk_graph(irg, NULL, normalize_proj_walker, NULL);
-	set_irg_outs_inconsistent(irg);
+  set_irg_outs_inconsistent(irg);
 }
 
+/* set a description for local value n */
+void set_irg_loc_description(ir_graph *irg, int n, void *description)
+{
+  assert(0 <= n && n < irg->n_loc);
+
+  if (! irg->loc_descriptions)
+    irg->loc_descriptions = xmalloc(sizeof(*irg->loc_descriptions) * irg->n_loc);
+
+  irg->loc_descriptions[n] = description;
+}
+
+/* get the description for local value n */
+void *get_irg_loc_description(ir_graph *irg, int n)
+{
+  assert(0 <= n && n < irg->n_loc);
+  return irg->loc_descriptions ? irg->loc_descriptions[n] : NULL;
+}
+
+/* register additional space in an IR graph */
 size_t register_additional_graph_data(size_t size)
 {
-	assert(!forbid_new_data && "Too late to register additional node data");
+  assert(!forbid_new_data && "Too late to register additional node data");
 
-	if(forbid_new_data)
-		return 0;
+  if (forbid_new_data)
+    return 0;
 
-	return additional_graph_data_size += size;
+  return additional_graph_data_size += size;
 }
