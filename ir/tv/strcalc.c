@@ -17,14 +17,20 @@
 /*
  * local definitions and macros
  */
-#define CLEAR_CALC_BUFFER() assert(calc_buffer); memset(calc_buffer, SC_0, CALC_BUFFER_SIZE)
+#define CLEAR_BUFFER(b) assert(b); memset(b, SC_0, CALC_BUFFER_SIZE)
 #define _val(a) ((a)-SC_0)
 #define _digit(a) ((a)+SC_0)
 #define _bitisset(digit, pos) (and_table[_val(digit)][_val(shift_table[pos])] != SC_0)
 
 #define fail_char(a, b, c, d) _fail_char((a), (b), (c), (d), __FILE__,  __LINE__)
 
-#ifdef STRCALC_DEBUG_COMPUTATION
+/* shortcut output for debugging */
+#  define sc_print_hex(a) sc_print((a), 0, SC_HEX)
+#  define sc_print_dec(a) sc_print((a), 0, SC_DEC)
+#  define sc_print_oct(a) sc_print((a), 0, SC_OCT)
+#  define sc_print_bin(a) sc_print((a), 0, SC_BIN)
+
+#ifdef STRCALC_DEBUG_PRINTCOMP
 #  define DEBUGPRINTF_COMPUTATION(x) printf x
 #else
 #  define DEBUGPRINTF_COMPUTATION(x) ((void)0)
@@ -768,6 +774,9 @@ static void _shr(const char *val1, char *buffer, long offset, int radius, unsign
   /* if shifting far enough the result is either 0 or -1 */
   if (offset >= radius)
   {
+    if (!sc_is_zero(val1)) {
+      carry_flag = 1;
+    }
     memset(buffer, sign, CALC_BUFFER_SIZE);
     return;
   }
@@ -775,18 +784,19 @@ static void _shr(const char *val1, char *buffer, long offset, int radius, unsign
   shift = offset % 4;
   offset = offset / 4;
 
-  /* check if any bits are lost, and set carry_flag is so */
+  /* check if any bits are lost, and set carry_flag if so */
   for (counter = 0; counter < offset; counter++)
   {
-    if (val1[counter] != carry_flag)
+    if (val1[counter] != 0)
     {
       carry_flag = 1;
       break;
     }
   }
-  if ((carry_flag == 0) && (_val(val1[counter]) & shift) != 0)
+  if ((_val(val1[counter]) & ((1<<shift)-1)) != 0)
+  {
     carry_flag = 1;
-
+  }
   /* shift digits to the right with offset, carry and all */
   counter = 0;
   if (radius/4 - offset > 0) {
@@ -861,7 +871,7 @@ const int sc_get_buffer_length(void)
 }
 
 /* XXX doesn't check for overflows */
-void sc_val_from_str(const char *str, unsigned int len)
+void sc_val_from_str(const char *str, unsigned int len, void *buffer)
 {
   const char *orig_str = str;
   unsigned int orig_len = len;
@@ -875,7 +885,9 @@ void sc_val_from_str(const char *str, unsigned int len)
   /* a string no characters long is an error */
   assert(len);
 
-  CLEAR_CALC_BUFFER();
+  if (buffer == NULL) buffer = calc_buffer;
+
+  CLEAR_BUFFER(buffer);
   memset(base, SC_0, CALC_BUFFER_SIZE);
   memset(val, SC_0, CALC_BUFFER_SIZE);
 
@@ -1005,12 +1017,14 @@ void sc_val_from_str(const char *str, unsigned int len)
   }
 }
 
-void sc_val_from_long(long value)
+void sc_val_from_long(long value, void *buffer)
 {
   char *pos;
   char sign, is_minlong;
 
-  pos = calc_buffer;
+  if (buffer == NULL) buffer = calc_buffer;
+  pos = buffer;
+
   sign = (value < 0);
   is_minlong = value == LONG_MIN;
 
@@ -1022,18 +1036,34 @@ void sc_val_from_long(long value)
       value = -value;
   }
 
-  CLEAR_CALC_BUFFER();
+  CLEAR_BUFFER(buffer);
 
-  while ((value != 0) && (pos < calc_buffer + CALC_BUFFER_SIZE))
+  while ((value != 0) && (pos < (char*)buffer + CALC_BUFFER_SIZE))
   {
-    *pos++ = _digit(value % 16);
-    value /= 16;
+    *pos++ = _digit(value & 0xf);
+    value >>= 4;
   }
 
 
   if (sign) {
-    if (is_minlong) _inc(calc_buffer, calc_buffer);
-    _negate(calc_buffer, calc_buffer);
+    if (is_minlong)
+      _inc(buffer, buffer);
+
+    _negate(buffer, buffer);
+  }
+}
+
+void sc_val_from_ulong(unsigned long value, void *buffer)
+{
+  char *pos;
+
+  if (buffer == NULL) buffer = calc_buffer;
+  pos = buffer;
+
+  while (pos < (char*)buffer + CALC_BUFFER_SIZE)
+  {
+    *pos++ = _digit(value & 0xf);
+    value >>= 4;
   }
 }
 
@@ -1049,15 +1079,17 @@ long sc_val_to_long(const void *val)
   return l;
 }
 
-void sc_min_from_bits(unsigned int num_bits, unsigned int sign)
+void sc_min_from_bits(unsigned int num_bits, unsigned int sign, void *buffer)
 {
   char* pos;
   int i, bits;
 
-  CLEAR_CALC_BUFFER();
+  if (buffer == NULL) buffer = calc_buffer;
+  CLEAR_BUFFER(buffer);
+
   if (!sign) return;  /* unsigned means minimum is 0(zero) */
 
-  pos = calc_buffer;
+  pos = buffer;
 
   bits = num_bits - 1;
   for (i = 0; i < bits/4; i++)
@@ -1069,13 +1101,14 @@ void sc_min_from_bits(unsigned int num_bits, unsigned int sign)
     *pos++ = SC_F;
 }
 
-void sc_max_from_bits(unsigned int num_bits, unsigned int sign)
+void sc_max_from_bits(unsigned int num_bits, unsigned int sign, void *buffer)
 {
   char* pos;
   int i, bits;
 
-  CLEAR_CALC_BUFFER();
-  pos = calc_buffer;
+  if (buffer == NULL) buffer = calc_buffer;
+  CLEAR_BUFFER(buffer);
+  pos = buffer;
 
   bits = num_bits - sign;
   for (i = 0; i < bits/4; i++)
@@ -1087,13 +1120,14 @@ void sc_max_from_bits(unsigned int num_bits, unsigned int sign)
     *pos++ = SC_0;
 }
 
-void sc_calc(const void* value1, const void* value2, unsigned op)
+void sc_calc(const void* value1, const void* value2, unsigned op, void *buffer)
 {
   char unused_res[CALC_BUFFER_SIZE]; /* temp buffer holding unused result of divmod */
 
   const char *val1 = (const char *)value1;
   const char *val2 = (const char *)value2;
-  CLEAR_CALC_BUFFER();
+
+  CLEAR_BUFFER(calc_buffer);
   carry_flag = 0;
 
   DEBUGPRINTF_COMPUTATION(("%s ", sc_print_hex(value1)));
@@ -1145,9 +1179,14 @@ void sc_calc(const void* value1, const void* value2, unsigned op)
   }
   DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
   DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
+
+  if ((buffer != NULL) && (buffer != calc_buffer))
+  {
+    memcpy(buffer, calc_buffer, CALC_BUFFER_SIZE);
+  }
 }
 
-void sc_bitcalc(const void* value1, const void* value2, int radius, int sign, unsigned op)
+void sc_bitcalc(const void* value1, const void* value2, int radius, int sign, unsigned op, void* buffer)
 {
   const char *val1 = (const char *)value1;
   const char *val2 = (const char *)value2;
@@ -1160,25 +1199,30 @@ void sc_bitcalc(const void* value1, const void* value2, int radius, int sign, un
   switch (op)
   {
     case SC_SHL:
-      DEBUGPRINTF_COMPUTATION(("<< %d ", offset));
+      DEBUGPRINTF_COMPUTATION(("<< %ld ", offset));
       _shl(val1, calc_buffer, offset, radius, sign);
       break;
     case SC_SHR:
-      DEBUGPRINTF_COMPUTATION((">> %d ", offset));
+      DEBUGPRINTF_COMPUTATION((">> %ld ", offset));
       _shr(val1, calc_buffer, offset, radius, sign, 0);
       break;
     case SC_SHRS:
-      DEBUGPRINTF_COMPUTATION((">>> %d ", offset));
+      DEBUGPRINTF_COMPUTATION((">>> %ld ", offset));
       _shr(val1, calc_buffer, offset, radius, sign, 1);
       break;
     case SC_ROT:
-      DEBUGPRINTF_COMPUTATION(("<<>> %d ", offset));
+      DEBUGPRINTF_COMPUTATION(("<<>> %ld ", offset));
       _rot(val1, calc_buffer, offset, radius, sign);
       break;
     default:
       assert(0);
   }
   DEBUGPRINTF_COMPUTATION(("-> %s\n", sc_print_hex(calc_buffer)));
+
+  if ((buffer != NULL) && (buffer != calc_buffer))
+  {
+    memmove(buffer, calc_buffer, CALC_BUFFER_SIZE);
+  }
 }
 
 int sc_comp(const void* value1, const void* value2)
@@ -1210,7 +1254,7 @@ int sc_get_highest_set_bit(const void *value)
   const char *val = (const char*)value;
   int high, counter;
 
-  high = CALC_BUFFER_SIZE * 4;
+  high = CALC_BUFFER_SIZE * 4 - 1;
 
   for (counter = CALC_BUFFER_SIZE-1; counter >= 0; counter--) {
     if (val[counter] == SC_0) high -= 4;
@@ -1242,7 +1286,7 @@ int sc_get_lowest_set_bit(const void *value)
       else return low + 3;
     }
   }
-  return low;
+  return -1;
 }
 
 int sc_is_zero(const void *value)
@@ -1305,7 +1349,7 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base)
   char *pos;
   const char *digits = small_digits;
 
-  pos = output_buffer + BIT_PATTERN_SIZE ;
+  pos = output_buffer + BIT_PATTERN_SIZE;
   *(--pos) = '\0';
 
   /* special case */
@@ -1422,20 +1466,24 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base)
     break;
 
   default:
+    printf("%i\n", base);
     assert(0);
     return NULL;
 }
   return pos;
 }
 
-void init_strcalc(int precision_in_bytes)
+void init_strcalc(int precision)
 {
   if (calc_buffer == NULL) {
-    if (precision_in_bytes <= 0) precision_in_bytes = DEFAULT_PRECISION_IN_BYTES;
+    if (precision <= 0) precision = SC_DEFAULT_PRECISION;
 
-    BIT_PATTERN_SIZE = (8 * precision_in_bytes);
-    CALC_BUFFER_SIZE = (4 * precision_in_bytes);
-    MAX_VALUE_SIZE   = (2 * precision_in_bytes);
+    /* round up to multiple of 4 */
+    if (precision & 0x3) precision += 4 - (precision&0x3);
+
+    BIT_PATTERN_SIZE = (precision);
+    CALC_BUFFER_SIZE = (precision / 2);
+    MAX_VALUE_SIZE   = (precision / 4);
 
     calc_buffer = malloc(CALC_BUFFER_SIZE+1 * sizeof(char));
     output_buffer = malloc(BIT_PATTERN_SIZE+1 * sizeof(char));
@@ -1446,10 +1494,10 @@ void init_strcalc(int precision_in_bytes)
       exit(-1);
     }
 
-    DEBUGPRINTF(("init strcalc: \n\tPRECISION: %d\n\tCALC_BUFFER_SIZE = %d\n\tMAX_VALUE_SIZE = %d\n\tbuffer pointer: %p\n", precision_in_bytes, CALC_BUFFER_SIZE, MAX_VALUE_SIZE, calc_buffer));
+    DEBUGPRINTF(("init strcalc: \n\tPRECISION: %d\n\tCALC_BUFFER_SIZE = %d\n\tMAX_VALUE_SIZE = %d\n\tbuffer pointer: %p\n", precision, CALC_BUFFER_SIZE, MAX_VALUE_SIZE, calc_buffer));
   }
 }
-int get_precision()
+int sc_get_precision(void)
 {
-  return CALC_BUFFER_SIZE/4;
+  return BIT_PATTERN_SIZE;
 }

@@ -33,19 +33,11 @@
 #  endif
 #endif
 
-#ifdef STRCALC_DEBUG
-  /* shortcut output for debugging */
-#  define sc_print_hex(a) sc_print((a), 0, SC_HEX)
-#  define sc_print_dec(a) sc_print((a), 0, SC_DEC)
-#  define sc_print_oct(a) sc_print((a), 0, SC_OCT)
-#  define sc_print_bin(a) sc_print((a), 0, SC_BIN)
-#endif
-
 /*
  * constants, typedefs, enums
  */
 
-#define DEFAULT_PRECISION_IN_BYTES 8
+#define SC_DEFAULT_PRECISION 64
 
 enum {
   SC_0 = 0,
@@ -69,7 +61,7 @@ enum {
 /**
  * Possible operations on integer values.
  */
-enum {
+typedef enum {
   SC_ADD = 0,		/**< Addition */
   SC_SUB,		/**< Substraction */
   SC_NEG,		/**< Unary Minus */
@@ -83,8 +75,8 @@ enum {
   SC_AND,		/**< Bitwise And */
   SC_OR,		/**< Bitwise Or */
   SC_NOT,		/**< Bitwise Not */
-  SC_XOR		/**< Bitwise Exclusive Or */
-};
+  SC_XOR,		/**< Bitwise Exclusive Or */
+} sc_op_t;
 
 /**
  * The output mode for ntger values.
@@ -100,20 +92,20 @@ enum base_t {
 /*
  * definitions and macros
  */
-#define sc_add(a, b) sc_calc((a), (b), SC_ADD)
-#define sc_sub(a, b) sc_calc((a), (b), SC_SUB)
-#define sc_neg(a) sc_calc((a), NULL, SC_NEG)
-#define sc_and(a, b) sc_calc((a), (b), SC_AND)
-#define sc_or(a, b) sc_calc((a), (b), SC_OR)
-#define sc_xor(a, b) sc_calc((a), (b), SC_XOR)
-#define sc_not(a) sc_calc((a), NULL, SC_NOT)
-#define sc_mul(a, b) sc_calc((a), (b), SC_MUL)
-#define sc_div(a, b) sc_calc((a), (b), SC_DIV)
-#define sc_mod(a, b) sc_calc((a), (b), SC_MOD)
-#define sc_shl(a, b, c, d) sc_bitcalc((a), (b), (c), (d), SC_SHL)
-#define sc_shr(a, b, c, d) sc_bitcalc((a), (b), (c), (d), SC_SHR)
-#define sc_shrs(a, b, c, d) sc_bitcalc((a), (b), (c), (d), SC_SHRS)
-#define sc_rot(a, b, c, d) sc_bitcalc((a), (b), (c), (d), SC_ROT)
+#define sc_add(a, b, c) sc_calc((a), (b), SC_ADD, (c))
+#define sc_sub(a, b, c) sc_calc((a), (b), SC_SUB, (c))
+#define sc_neg(a, c) sc_calc((a), NULL, SC_NEG, (c))
+#define sc_and(a, b, c) sc_calc((a), (b), SC_AND, (c))
+#define sc_or(a, b, c) sc_calc((a), (b), SC_OR, (c))
+#define sc_xor(a, b, c) sc_calc((a), (b), SC_XOR, (c))
+#define sc_not(a, c) sc_calc((a), NULL, SC_NOT, (c))
+#define sc_mul(a, b, c) sc_calc((a), (b), SC_MUL, (c))
+#define sc_div(a, b, c) sc_calc((a), (b), SC_DIV, (c))
+#define sc_mod(a, b, c) sc_calc((a), (b), SC_MOD, (c))
+#define sc_shl(a, b, c, d, e) sc_bitcalc((a), (b), (c), (d), SC_SHL, (e))
+#define sc_shr(a, b, c, d, e) sc_bitcalc((a), (b), (c), (d), SC_SHR, (e))
+#define sc_shrs(a, b, c, d, e) sc_bitcalc((a), (b), (c), (d), SC_SHRS, (e))
+#define sc_rot(a, b, c, d, e) sc_bitcalc((a), (b), (c), (d), SC_ROT, (e))
 
 /*
  * function declarations
@@ -121,14 +113,15 @@ enum base_t {
 const void *sc_get_buffer(void);
 const int sc_get_buffer_length(void);
 
-void sc_val_from_str(const char *str, unsigned int len);
-void sc_val_from_long(long l);
+void sc_val_from_str(const char *str, unsigned int len, void *buffer);
+void sc_val_from_long(long l, void *buffer);
+void sc_val_from_ulong(unsigned long l, void *buffer);
 long sc_val_to_long(const void *val);
-void sc_min_from_bits(unsigned int num_bits, unsigned int sign);
-void sc_max_from_bits(unsigned int num_bits, unsigned int sign);
+void sc_min_from_bits(unsigned int num_bits, unsigned int sign, void *buffer);
+void sc_max_from_bits(unsigned int num_bits, unsigned int sign, void *buffer);
 
-void sc_calc(const void *val1, const void *val2, unsigned op);
-void sc_bitcalc(const void *val1, const void *val2, int radius, int sign, unsigned op);
+void sc_calc(const void *val1, const void *val2, unsigned op, void *buffer);
+void sc_bitcalc(const void *val1, const void *val2, int radius, int sign, unsigned op, void *buffer);
 int  sc_comp(const void *val1, const void *val2);
 
 int sc_get_highest_set_bit(const void *value);
@@ -147,7 +140,14 @@ unsigned char sc_sub_bits(const void *value, int len, unsigned byte_ofs);
  */
 const char *sc_print(const void *val1, unsigned bits, enum base_t base);
 
+/** Init strcalc module
+ * Sets up internal data structures and constants
+ * After the first call subsequent calls have no effect
+ *
+ * @param precision_in_bytes Specifies internal precision to be used
+ *   for calculations. The reason for being multiples of 8 eludes me
+ */
 void init_strcalc(int precision_in_bytes);
-int get_precision(void);
+int sc_get_precision(void);
 
 #endif /* _STRCALC_H_ */
