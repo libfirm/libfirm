@@ -45,9 +45,9 @@
 *  - type *type:     The type of this entity, e.g., a method type, a
 *                    basic type of the language or a class itself.
 *  - type *owner:    The class this entity belongs to.  In case of local
-*                variables the method they are defined in.
-*  - int offset:     Offset in byte for this entity.  Fixed when layout
-*                of owner is determined.
+* 	             variables the method they are defined in.
+*  - int offset:     Offset in bits for this entity.  Fixed when layout
+* 	             of owner is determined.
 *  - ir_graph *irg:  If (type == method_type) this is the corresponding irg.
 *                The ir_graph constructor automatically sets this field.
 *                    If (type != method_type) access of this field will cause
@@ -95,7 +95,7 @@ typedef struct ir_graph ir_graph;
  *   @param variability A flag indicating the variability of this entity (values:
  *              uninitialized, initalized, part_constant, constant)
  *   @param volatility @@@
- *   @param offset     The offset of the entity within the compound object.  Only set
+ *   @param offset     The offset of the entity within the compound object in bits.  Only set
  *              if the owner in the state "layout_fixed".
  *   @param overwrites A list of entities overwritten by this entity.  This list is only
  *              existent if the owner of this entity is a class.  The members in
@@ -295,23 +295,29 @@ const char *get_volatility_name(ent_volatility var);
 /** This enumeration flags the stickyness of an entity. */
 typedef enum {
   stickyness_unsticky,          /**< The entity can be removed from
-                                   the program, unles contraindicated
+                                   the program, unless contraindicated
                                    by other attributes */
   stickyness_sticky             /**< The entity must remain in the
                                    program in any case */
 } ent_stickyness;
 
 /** Get the entity's stickyness */
-ent_stickyness get_entity_stickyness (entity *ent);
+ent_stickyness get_entity_stickyness(entity *ent);
 
 /** Set the entity's stickyness */
-void set_entity_stickyness (entity *ent, ent_stickyness stickyness);
+void      set_entity_stickyness(entity *ent, ent_stickyness stickyness);
 
-/** Returns the offset of an entity (in a compound). Only set if layout = fixed. */
-int       get_entity_offset (entity *ent);
+/** Returns the offset of an entity (in a compound) in bytes. Only set if layout = fixed. */
+int       get_entity_offset_bytes(entity *ent);
 
-/** Sets the offset of an entity (in a compound). */
-void      set_entity_offset (entity *ent, int offset);
+/** Returns the offset of an entity (in a compound) in bits. Only set if layout = fixed. */
+int       get_entity_offset_bits(entity *ent);
+
+/** Sets the offset of an entity (in a compound) in bytes. */
+void      set_entity_offset_bytes(entity *ent, int offset);
+
+/** Sets the offset of an entity (in a compound) in bits. */
+void      set_entity_offset_bits(entity *ent, int offset);
 
 /** Returns the stored intermediate information. */
 void*   get_entity_link(entity *ent);

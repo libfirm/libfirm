@@ -219,15 +219,13 @@ get_entity_nr(entity *ent) {
 }
 
 const char *
-get_entity_name (entity *ent) {
-  assert(ent && ent->kind == k_entity);
-  return get_id_str(get_entity_ident(ent));
+(get_entity_name)(entity *ent) {
+  return __get_entity_name(ent);
 }
 
 ident *
-get_entity_ident    (entity *ent) {
-  assert(ent && ent->kind == k_entity);
-  return ent->name;
+(get_entity_ident)(entity *ent) {
+  return get_entity_ident(ent);
 }
 
 /*
@@ -236,9 +234,8 @@ void   set_entity_ld_ident (entity *, ident *ld_ident);
 */
 
 type *
-get_entity_owner (entity *ent) {
-  assert(ent && ent->kind == k_entity);
-  return ent->owner = skip_tid(ent->owner);
+(get_entity_owner)(entity *ent) {
+  return __get_entity_owner(ent);
 }
 
 void
@@ -258,54 +255,38 @@ assert_legal_owner_of_ent(type *owner) {
 }
 
 ident *
-get_entity_ld_ident (entity *ent)
-{
-  assert(ent && ent->kind == k_entity);
-  if (ent->ld_name == NULL)
-    ent->ld_name = mangle_entity (ent);
-  return ent->ld_name;
+(get_entity_ld_ident)(entity *ent) {
+  return __get_entity_ld_ident(ent);
 }
 
 void
-set_entity_ld_ident (entity *ent, ident *ld_ident) {
-  assert(ent && ent->kind == k_entity);
-  ent->ld_name = ld_ident;
+(set_entity_ld_ident)(entity *ent, ident *ld_ident) {
+   __set_entity_ld_ident(ent, ld_ident);
 }
 
 const char *
-get_entity_ld_name (entity *ent) {
-  assert(ent && ent->kind == k_entity);
-  return get_id_str(get_entity_ld_ident(ent));
+(get_entity_ld_name)(entity *ent) {
+  return __get_entity_ld_name(ent);
 }
-
-/*
-char  *get_entity_ld_name  (entity *);
-void   set_entity_ld_name  (entity *, char *ld_name);
-*/
 
 type *
-get_entity_type (entity *ent) {
-  assert(ent && ent->kind == k_entity);
-  return ent->type = skip_tid(ent->type);
+(get_entity_type)(entity *ent) {
+  return __get_entity_type(ent);
 }
 
 void
-set_entity_type (entity *ent, type *type) {
-  assert(ent && ent->kind == k_entity);
-  ent->type = type;
+(set_entity_type)(entity *ent, type *type) {
+  __set_entity_type(ent, type);
 }
-
 
 ent_allocation
-get_entity_allocation (entity *ent) {
-  assert(ent && ent->kind == k_entity);
-  return ent->allocation;
+(get_entity_allocation)(entity *ent) {
+  return __get_entity_allocation(ent);
 }
 
 void
-set_entity_allocation (entity *ent, ent_allocation al) {
-  assert(ent && ent->kind == k_entity);
-  ent->allocation = al;
+(set_entity_allocation)(entity *ent, ent_allocation al) {
+  __set_entity_allocation(ent, al);
 }
 
 /* return the name of the visibility */
@@ -324,9 +305,8 @@ const char *get_allocation_name(ent_allocation all)
 
 
 ent_visibility
-get_entity_visibility (entity *ent) {
-  assert(ent && ent->kind == k_entity);
-  return ent->visibility;
+(get_entity_visibility)(entity *ent) {
+  return __get_entity_visibility(ent);
 }
 
 void
@@ -354,9 +334,8 @@ const char *get_visibility_name(ent_visibility vis)
 }
 
 ent_variability
-get_entity_variability (entity *ent) {
-  assert(ent && ent->kind == k_entity);
-  return ent->variability;
+(get_entity_variability)(entity *ent) {
+  return __get_entity_variability(ent);
 }
 
 void
@@ -397,15 +376,13 @@ const char *get_variability_name(ent_variability var)
 }
 
 ent_volatility
-get_entity_volatility (entity *ent) {
-  assert(ent && ent->kind == k_entity);
-  return ent->volatility;
+(get_entity_volatility)(entity *ent) {
+  return __get_entity_volatility(ent);
 }
 
 void
-set_entity_volatility (entity *ent, ent_volatility vol) {
-  assert(ent && ent->kind == k_entity);
-  ent->volatility = vol;
+(set_entity_volatility)(entity *ent, ent_volatility vol) {
+  __set_entity_volatility(ent, vol);
 }
 
 /* return the name of the volatility */
@@ -421,17 +398,13 @@ const char *get_volatility_name(ent_volatility var)
 }
 
 peculiarity
-get_entity_peculiarity (entity *ent) {
-  assert(ent && ent->kind == k_entity);
-  return ent->peculiarity;
+(get_entity_peculiarity)(entity *ent) {
+  return __get_entity_peculiarity(ent);
 }
 
 void
-set_entity_peculiarity (entity *ent, peculiarity pec) {
-  assert(ent && ent->kind == k_entity);
-  /* @@@ why peculiarity only for methods? */
-  assert(is_method_type(ent->type));
-  ent->peculiarity = pec;
+(set_entity_peculiarity)(entity *ent, peculiarity pec) {
+  __set_entity_peculiarity(ent, pec);
 }
 
 /* return the name of the peculiarity */
@@ -447,20 +420,16 @@ const char *get_peculiarity_name(peculiarity var)
 #undef X
 }
 
-/** Get the entity's stickyness */
-ent_stickyness get_entity_stickyness (entity *ent)
-{
-  assert (ent && is_entity (ent));
-
-  return (ent->stickyness);
+/* Get the entity's stickyness */
+ent_stickyness
+(get_entity_stickyness)(entity *ent) {
+  return __get_entity_stickyness(ent);
 }
 
-/** Set the entity's stickyness */
-void set_entity_stickyness (entity *ent, ent_stickyness stickyness)
-{
-  assert (ent && is_entity (ent));
-
-  ent->stickyness = stickyness;
+/* Set the entity's stickyness */
+void
+(set_entity_stickyness)(entity *ent, ent_stickyness stickyness) {
+  __set_entity_stickyness(ent, stickyness);
 }
 
 /* Set has no effect for existent entities of type method. */
@@ -492,8 +461,13 @@ int is_irn_const_expression(ir_node *n) {
   case iro_Unknown:
     return true; break;
   case iro_Add:
-    if (is_irn_const_expression(get_Add_left(n)))
-      return is_irn_const_expression(get_Add_right(n));
+  case iro_Sub:
+  case iro_Mul:
+  case iro_And:
+  case iro_Or:
+  case iro_Eor:
+    if (is_irn_const_expression(get_binop_left(n)))
+      return is_irn_const_expression(get_binop_right(n));
   case iro_Conv:
   case iro_Cast:
     return is_irn_const_expression(get_irn_n(n, 0));
@@ -518,6 +492,21 @@ ir_node *copy_const_value(ir_node *n) {
   case iro_Add:
     nn = new_Add(copy_const_value(get_Add_left(n)),
          copy_const_value(get_Add_right(n)), m); break;
+  case iro_Sub:
+    nn = new_Sub(copy_const_value(get_Sub_left(n)),
+         copy_const_value(get_Sub_right(n)), m); break;
+  case iro_Mul:
+    nn = new_Mul(copy_const_value(get_Mul_left(n)),
+         copy_const_value(get_Mul_right(n)), m); break;
+  case iro_And:
+    nn = new_And(copy_const_value(get_And_left(n)),
+         copy_const_value(get_And_right(n)), m); break;
+  case iro_Or:
+    nn = new_Or(copy_const_value(get_Or_left(n)),
+         copy_const_value(get_Or_right(n)), m); break;
+  case iro_Eor:
+    nn = new_Eor(copy_const_value(get_Eor_left(n)),
+         copy_const_value(get_Eor_right(n)), m); break;
   case iro_Cast:
     nn = new_Cast(copy_const_value(get_Cast_op(n)), get_Cast_type(n)); break;
   case iro_Conv:
@@ -721,28 +710,36 @@ set_array_entity_values(entity *ent, tarval **values, int num_vals) {
 }
 
 int
-get_entity_offset (entity *ent) {
-  assert(ent && ent->kind == k_entity);
-  return ent->offset;
-}
-
-void
-set_entity_offset (entity *ent, int offset) {
-  assert(ent && ent->kind == k_entity);
-  ent->offset = offset;
-}
-
-void
-add_entity_overwrites   (entity *ent, entity *overwritten) {
-  assert(ent && is_class_type(get_entity_owner(ent)));
-  ARR_APP1 (entity *, ent->overwrites, overwritten);
-  ARR_APP1 (entity *, overwritten->overwrittenby, ent);
+(get_entity_offset_bytes)(entity *ent) {
+  return __get_entity_offset_bytes(ent);
 }
 
 int
-get_entity_n_overwrites (entity *ent) {
+(get_entity_offset_bits)(entity *ent) {
+  return __get_entity_offset_bits(ent);
+}
+
+void
+(set_entity_offset_bytes)(entity *ent, int offset) {
+  __set_entity_offset_bytes(ent, offset);
+}
+
+void
+(set_entity_offset_bits)(entity *ent, int offset) {
+  __set_entity_offset_bits(ent, offset);
+}
+
+void
+add_entity_overwrites(entity *ent, entity *overwritten) {
   assert(ent && is_class_type(get_entity_owner(ent)));
-  return (ARR_LEN (ent->overwrites));
+  ARR_APP1(entity *, ent->overwrites, overwritten);
+  ARR_APP1(entity *, overwritten->overwrittenby, ent);
+}
+
+int
+get_entity_n_overwrites(entity *ent) {
+  assert(ent && is_class_type(get_entity_owner(ent)));
+  return (ARR_LEN(ent->overwrites));
 }
 
 int
@@ -832,22 +829,18 @@ void    remove_entity_overwrittenby(entity *ent, entity *overwrites) {
 
 /* A link to store intermediate information */
 void *
-get_entity_link(entity *ent) {
-  assert(ent && ent->kind == k_entity);
-  return ent->link;
+(get_entity_link)(entity *ent) {
+  return __get_entity_link(ent);
 }
 
 void
-set_entity_link(entity *ent, void *l) {
-  assert(ent && ent->kind == k_entity);
-  ent->link = l;
+(set_entity_link)(entity *ent, void *l) {
+  __set_entity_link(ent, l);
 }
 
 ir_graph *
-get_entity_irg(entity *ent) {
-  assert(ent && ent->kind == k_entity);
-  assert(is_method_type(ent->type));
-  return ent->irg;
+(get_entity_irg)(entity *ent) {
+  return __get_entity_irg(ent);
 }
 
 void
@@ -863,12 +856,9 @@ set_entity_irg(entity *ent, ir_graph *irg) {
   ent->irg = irg;
 }
 
-int is_entity (void *thing) {
-  assert(thing);
-  if (get_kind(thing) == k_entity)
-    return 1;
-  else
-    return 0;
+int
+(is_entity)(void *thing) {
+  return __is_entity(thing);
 }
 
 int is_atomic_entity(entity *ent) {
@@ -885,7 +875,8 @@ int is_compound_entity(entity *ent) {
       is_array_type(t) || is_union_type(t));
 }
 
-/* @@@ not implemnted!!! */
+/**
+ * @todo not implemnted!!! */
 bool equal_entity(entity *ent1, entity *ent2) {
   printf(" calling unimplemented equal entity!!! \n");
   return true;
@@ -1025,7 +1016,7 @@ void dump_entity (entity *ent) {
       for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
     compound_graph_path *path = get_compound_ent_value_path(ent, i);
     entity *ent0 = get_compound_graph_path_node(path, 0);
-    printf("\n    %2d %s", get_entity_offset(ent0), get_entity_name(ent0));
+    printf("\n    %3d %s", get_entity_offset_bits(ent0), get_entity_name(ent0));
     for (j = 1; j < get_compound_graph_path_length(path); ++j)
       printf(".%s", get_entity_name(get_compound_graph_path_node(path, j)));
     printf("\t = ");
@@ -1042,7 +1033,7 @@ void dump_entity (entity *ent) {
 
   printf("\n  peculiarity: %s", get_peculiarity_string(get_entity_peculiarity(ent)));
   printf("\n  ld_name: %s", ent->ld_name ? get_entity_ld_name(ent) : "no yet set");
-  printf("\n  offset:  %d", get_entity_offset(ent));
+  printf("\n  offset:  %d", get_entity_offset_bits(ent));
   if (is_method_type(get_entity_type(ent))) {
     if (get_entity_irg(ent))   /* can be null */
       { printf ("\n  irg = %ld", get_irg_graph_nr(get_entity_irg(ent))); }
