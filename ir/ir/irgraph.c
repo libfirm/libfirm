@@ -202,6 +202,8 @@ ir_graph *new_const_code_irg(void) {
   set_irn_visited(get_cur_block(), -1);
   set_Block_block_visited(get_cur_block(), -1);
   set_Block_block_visited(res->start_block, -1);
+  set_irn_visited(res->start_block, -1);
+  set_irn_visited(res->bad, -1);
   return res;
 }
 
@@ -502,6 +504,17 @@ get_irg_dom_state(ir_graph *irg) {
 void
 set_irg_dom_inconsistent(ir_graph *irg) {
   irg->dom_state = dom_inconsistent;
+}
+
+irg_loopinfo_state
+get_irg_loopinfo_state(ir_graph *irg) {
+  assert(0 && "not implemented");
+  return 999;
+}
+
+void
+set_irg_loopinfo_inconsistent(ir_graph *irg) {
+  assert(0 && "not implemented");
 }
 
 INLINE void
