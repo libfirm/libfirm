@@ -211,6 +211,8 @@ static void asm_dump_global ( assembler_t *assembler, entity *ent)
   const char *ld_name = get_entity_ld_name(ent);
   int align, is_constant, h;
   int i,j,size = 0;
+  ent_variability variability;
+  ent_visibility  visibility;
 
   asm_segment_t target_segment = ASM_SEGMENT_DATA_INIT;
 
@@ -219,19 +221,19 @@ static void asm_dump_global ( assembler_t *assembler, entity *ent)
    */
 
   /* ignore methods, they are emitted later */
-  if(is_Method_type(ty))
+  if (is_Method_type(ty))
 	  return;
 
   /* get the properties of the entity */
-  ent_variability variability = get_entity_variability(ent);
-  ent_visibility  visibility  = get_entity_visibility(ent);
+  variability = get_entity_variability(ent);
+  visibility  = get_entity_visibility(ent);
 
   if (variability == variability_constant) {
      /* a constant entity, put it into the const segment */
      target_segment = ASM_SEGMENT_CONST;
   }
 
-  /* check, wether it is initialized, if yes create data */
+  /* check, whether it is initialized, if yes create data */
   if (variability != variability_uninitialized ) {
 
 /*  	if (visibility == visibility_external_visible) {
