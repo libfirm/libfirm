@@ -20,9 +20,7 @@
 # include <strings.h>
 #endif
 
-#define obstack_chunk_alloc malloc
-#define obstack_chunk_free free
-#include <obstack.h>
+#include "obst.h"
 
 #include "irmode.h"
 #include "irreflect.h"
@@ -81,7 +79,7 @@ static INLINE void assure_opcode_capacity(int opcode)
 {
 	if(opcode >= opcodes_size) {
 		int new_size = 2 * opcode;
-		rflct_opcode_t **new_opcodes = malloc(sizeof(*new_opcodes) * new_size);
+		rflct_opcode_t **new_opcodes = xmalloc(sizeof(new_opcodes[0]) * new_size);
 
 		memset(new_opcodes, 0, sizeof(*new_opcodes) * new_size);
 
@@ -437,7 +435,7 @@ bool rflct_opcode_add_signature(opcode opc, rflct_sig_t *sig)
 
 rflct_sig_t *rflct_signature_allocate(int defs, int uses)
 {
-	rflct_sig_t *sig = malloc(sizeof(*sig));
+	rflct_sig_t *sig = xmalloc(sizeof(*sig));
 
 	rflct_arg_t *args =
 		obstack_alloc(&obst, sizeof(*args) * (defs + uses + 2));
