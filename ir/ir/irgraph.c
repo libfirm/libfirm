@@ -666,8 +666,8 @@ void *
   return __get_irg_link(irg);
 }
 
-/* maximum visited flag content of all ir_graph visited fields. */
-static int max_irg_visited = 0;
+/** maximum visited flag content of all ir_graph visited fields. */
+static unsigned long max_irg_visited = 0;
 
 unsigned long
 (get_irg_visited)(const ir_graph *irg) {
