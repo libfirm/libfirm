@@ -829,19 +829,24 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
       set_Tuple_pred(call, 3, new_Bad());
     }
   } else {
+    ir_node *main_end_bl;
+    int main_end_bl_arity;
+    ir_node **end_preds;
+
     /* assert(exc_handler == 1 || no exceptions. ) */
     n_exc = 0;
     for (i = 0; i < arity; i++) {
-      ir_node *ret;
-      ret = get_irn_n(end_bl, i);
+      ir_node *ret = get_irn_n(end_bl, i);
+
       if (is_fragile_op(skip_Proj(ret)) || (get_irn_op(skip_Proj(ret)) == op_Raise)) {
-	cf_pred[n_exc] = ret;
-	n_exc++;
+        cf_pred[n_exc] = ret;
+        n_exc++;
       }
     }
-    ir_node *main_end_bl = get_irg_end_block(current_ir_graph);
-    int main_end_bl_arity = get_irn_arity(main_end_bl);
-    ir_node **end_preds =  (ir_node **) malloc ((n_exc + main_end_bl_arity) * sizeof (ir_node *));
+    main_end_bl = get_irg_end_block(current_ir_graph);
+    main_end_bl_arity = get_irn_arity(main_end_bl);
+    end_preds =  (ir_node **) malloc ((n_exc + main_end_bl_arity) * sizeof (ir_node *));
+
     for (i = 0; i < main_end_bl_arity; ++i)
       end_preds[i] = get_irn_n(main_end_bl, i);
     for (i = 0; i < n_exc; ++i)
@@ -934,12 +939,12 @@ static ir_graph *get_call_called_irg(ir_node *call) {
 
 static void collect_calls(ir_node *call, void *env) {
 
-  if (get_irn_op(call) != op_Call) return;
-
   ir_node **calls = (ir_node **)env;
   ir_node *addr;
   tarval *tv;
   ir_graph *called_irg;
+
+  if (get_irn_op(call) != op_Call) return;
 
   addr = get_Call_ptr(call);
   if (get_irn_op(addr) == op_Const) {
@@ -948,9 +953,9 @@ static void collect_calls(ir_node *call, void *env) {
     if (tarval_to_entity(tv)) {
       called_irg = get_entity_irg(tarval_to_entity(tv));
       if (called_irg && pos < MAX_INLINE) {
-	/* The Call node calls a locally defined method.  Remember to inline. */
-	calls[pos] = call;
-	pos++;
+        /* The Call node calls a locally defined method.  Remember to inline. */
+        calls[pos] = call;
+        pos++;
       }
     }
   }
@@ -991,7 +996,7 @@ void inline_small_irgs(ir_graph *irg, int size) {
       tv = get_Const_tarval(get_Call_ptr(calls[i]));
       callee = get_entity_irg(tarval_to_entity(tv));
       if ((_obstack_memory_used(callee->obst) - obstack_room(callee->obst)) < size) {
-	inline_method(calls[i], callee);
+        inline_method(calls[i], callee);
       }
     }
   }
@@ -1029,6 +1034,7 @@ static void free_inline_irg_env(inline_irg_env *env) {
 static void collect_calls2(ir_node *call, void *env) {
   inline_irg_env *x = (inline_irg_env *)env;
   ir_op *op = get_irn_op(call);
+  ir_graph *callee;
 
   /* count nodes in irg */
   if (op != op_Proj && op != op_Tuple && op != op_Sync) {
@@ -1044,7 +1050,7 @@ static void collect_calls2(ir_node *call, void *env) {
   x->n_call_nodes_orig++;
 
   /* count all static callers */
-  ir_graph *callee = get_call_called_irg(call);
+  callee = get_call_called_irg(call);
   if (callee) {
     ((inline_irg_env *)get_irg_link(callee))->n_callers++;
     ((inline_irg_env *)get_irg_link(callee))->n_callers_orig++;
@@ -1104,30 +1110,32 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
       env = (inline_irg_env *)get_irg_link(current_ir_graph);
 
       /* we can not walk and change a set, nor remove from it.
-	 So recompute.*/
+      So recompute.*/
       walkset = env->call_nodes;
       env->call_nodes = eset_create();
       for (call = eset_first(walkset); call; call = eset_next(walkset)) {
-	ir_graph *callee = get_call_called_irg(call);
-	if (env->n_nodes > maxsize) break;
-	if (callee && is_leave(callee) && is_smaller(callee, leavesize)) {
-	  if (!phiproj_computed) {
-	    phiproj_computed = 1;
-	    collect_phiprojs(current_ir_graph);
-	  }
-	  inline_irg_env *callee_env = (inline_irg_env *)get_irg_link(callee);
-	  // printf(" %s: Inlineing %s.\n", get_entity_name(get_irg_entity(current_ir_graph)),
-	  //	 get_entity_name(get_irg_entity(callee)));
-	  inline_method(call, callee);
-	  did_inline = 1;
-	  env->n_call_nodes--;
-	  eset_insert_all(env->call_nodes, callee_env->call_nodes);
-	  env->n_call_nodes += callee_env->n_call_nodes;
-	  env->n_nodes += callee_env->n_nodes;
-	  callee_env->n_callers--;
-	} else {
-	  eset_insert(env->call_nodes, call);
-	}
+        inline_irg_env *callee_env;
+        ir_graph *callee = get_call_called_irg(call);
+
+        if (env->n_nodes > maxsize) break;
+        if (callee && is_leave(callee) && is_smaller(callee, leavesize)) {
+          if (!phiproj_computed) {
+            phiproj_computed = 1;
+            collect_phiprojs(current_ir_graph);
+          }
+          callee_env = (inline_irg_env *)get_irg_link(callee);
+//        printf(" %s: Inlineing %s.\n", get_entity_name(get_irg_entity(current_ir_graph)),
+//	      get_entity_name(get_irg_entity(callee)));
+          inline_method(call, callee);
+          did_inline = 1;
+          env->n_call_nodes--;
+          eset_insert_all(env->call_nodes, callee_env->call_nodes);
+          env->n_call_nodes += callee_env->n_call_nodes;
+          env->n_nodes += callee_env->n_nodes;
+          callee_env->n_callers--;
+        } else {
+          eset_insert(env->call_nodes, call);
+        }
       }
       eset_destroy(walkset);
     }
@@ -1148,25 +1156,27 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
     walkset = env->call_nodes;
     env->call_nodes = eset_create();
     for (call = eset_first(walkset); call; call = eset_next(walkset)) {
+      inline_irg_env *callee_env;
       ir_graph *callee = get_call_called_irg(call);
+
       if (env->n_nodes > maxsize) break;
       if (callee && is_smaller(callee, size)) {
-	if (!phiproj_computed) {
-	  phiproj_computed = 1;
-	  collect_phiprojs(current_ir_graph);
-	}
-	inline_irg_env *callee_env = (inline_irg_env *)get_irg_link(callee);
-	//printf(" %s: Inlineing %s.\n", get_entity_name(get_irg_entity(current_ir_graph)),
-	//       get_entity_name(get_irg_entity(callee)));
-	inline_method(call, callee);
-	did_inline = 1;
-	env->n_call_nodes--;
-	eset_insert_all(env->call_nodes, callee_env->call_nodes);
-	env->n_call_nodes += callee_env->n_call_nodes;
-	env->n_nodes += callee_env->n_nodes;
-	callee_env->n_callers--;
+        if (!phiproj_computed) {
+	        phiproj_computed = 1;
+	        collect_phiprojs(current_ir_graph);
+        }
+        callee_env = (inline_irg_env *)get_irg_link(callee);
+//      printf(" %s: Inlineing %s.\n", get_entity_name(get_irg_entity(current_ir_graph)),
+//      get_entity_name(get_irg_entity(callee)));
+        inline_method(call, callee);
+        did_inline = 1;
+        env->n_call_nodes--;
+        eset_insert_all(env->call_nodes, callee_env->call_nodes);
+        env->n_call_nodes += callee_env->n_call_nodes;
+        env->n_nodes += callee_env->n_nodes;
+        callee_env->n_callers--;
       } else {
-	eset_insert(env->call_nodes, call);
+        eset_insert(env->call_nodes, call);
       }
     }
     eset_destroy(walkset);

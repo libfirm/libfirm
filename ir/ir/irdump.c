@@ -1856,66 +1856,61 @@ void dump_loops_standalone (ir_loop *loop) {
   dump_loop_node(loop);
 
   /* Dump the loop elements. */
-  for(i = 0; i < get_loop_n_elements(loop); i++)
-    {
-      le = get_loop_element(loop, i);
+  for(i = 0; i < get_loop_n_elements(loop); i++) {
+    ir_loop *son;
 
-      ir_loop *son = le.son;
-      if (get_kind(son) == k_ir_loop)
-	{
-	  /* We are a loop son -> Recurse */
+    le = get_loop_element(loop, i);
 
-	  if(loop_node_started) /* Close the "firm-nodes" node first if we started one. */
-	    {
-	      fprintf(F, "\" }\n");
-	      fprintf (F, "edge: {sourcename: \"");
-	      PRINT_LOOPID(loop);
-	      fprintf (F, "\" targetname: \"");
-	      PRINT_LOOPID(loop);
-	      fprintf (F, "-%d-nodes\" label:\"%d...%d\"}\n", first, first, i-1);
-	      loop_node_started = 0;
-	    }
-	  dump_loop_son_edge(loop, son_number++);
-	  dump_loops_standalone(son);
-	}
+    son = le.son;
+    if (get_kind(son) == k_ir_loop) {
+      /* We are a loop son -> Recurse */
+
+      if(loop_node_started) { /* Close the "firm-nodes" node first if we started one. */
+	fprintf(F, "\" }\n");
+	fprintf (F, "edge: {sourcename: \"");
+	PRINT_LOOPID(loop);
+	fprintf (F, "\" targetname: \"");
+	PRINT_LOOPID(loop);
+	fprintf (F, "-%d-nodes\" label:\"%d...%d\"}\n", first, first, i-1);
+	loop_node_started = 0;
+      }
+      dump_loop_son_edge(loop, son_number++);
+      dump_loops_standalone(son);
+    }
+    else {
+      /* We are a loop node -> Collect firm nodes */
+
+      ir_node *n = le.node;
+
+      if (!loop_node_started) {
+	/* Start a new node which contains all firm nodes of the current loop */
+	fprintf (F, "node: { title: \"");
+	PRINT_LOOPID(loop);
+	fprintf (F, "-%d-nodes\" color: lightyellow label: \"", i);
+	loop_node_started = 1;
+	first = i;
+      }
       else
-	{
-	  /* We are a loop node -> Collect firm nodes */
+	fprintf(F, "\n");
 
-	  ir_node *n = le.node;
-
-	  if (!loop_node_started)
-	    {
-	      /* Start a new node which contains all firm nodes of the current loop */
-	      fprintf (F, "node: { title: \"");
-	      PRINT_LOOPID(loop);
-	      fprintf (F, "-%d-nodes\" color: lightyellow label: \"", i);
-	      loop_node_started = 1;
-	      first = i;
-	    }
-	  else
-	    fprintf(F, "\n");
-
-	  dump_node_opcode(n);
-	  dump_node_mode (n);
-	  dump_node_typeinfo(n);
-	  fprintf (F, " ");
-	  dump_node_nodeattr(n);
-	  fprintf (F, " %ld", get_irn_node_nr(n));
-
-	}
+      dump_node_opcode(n);
+      dump_node_mode (n);
+      dump_node_typeinfo(n);
+      fprintf (F, " ");
+      dump_node_nodeattr(n);
+      fprintf (F, " %ld", get_irn_node_nr(n));
     }
+  }
 
-  if(loop_node_started)
-    {
-      fprintf(F, "\" }\n");
-      fprintf (F, "edge: {sourcename: \"");
-      PRINT_LOOPID(loop);
-      fprintf (F, "\" targetname: \"");
-      PRINT_LOOPID(loop);
-      fprintf (F, "-%d-nodes\" label:\"%d...%d\"}\n", first, first, i-1);
-      loop_node_started = 0;
-    }
+  if (loop_node_started) {
+    fprintf(F, "\" }\n");
+    fprintf (F, "edge: {sourcename: \"");
+    PRINT_LOOPID(loop);
+    fprintf (F, "\" targetname: \"");
+    PRINT_LOOPID(loop);
+    fprintf (F, "-%d-nodes\" label:\"%d...%d\"}\n", first, first, i-1);
+    loop_node_started = 0;
+  }
 }
 
 void dump_loop_tree(ir_graph *irg, char *suffix)

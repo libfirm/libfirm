@@ -48,8 +48,11 @@ turn_into_tuple (ir_node *node, int arity)
 INLINE void
 exchange (ir_node *old, ir_node *nw)
 {
+  ir_node *block;
+
   assert(get_irn_op(old)->opar != oparity_dynamic);
-  ir_node *block = old->in[0];
+
+  block = old->in[0];
 
   old->op = op_Id;
   old->in = NEW_ARR_D (ir_node *, current_ir_graph->obst, 2);
@@ -57,9 +60,9 @@ exchange (ir_node *old, ir_node *nw)
   old->in[1] = nw;
 }
 
-/**********************************************************************/
-/*  Functionality for collect_phis                                     */
-/**********************************************************************/
+/*--------------------------------------------------------------------*/
+/*  Functionality for collect_phis                                    */
+/*--------------------------------------------------------------------*/
 
 static void
 clear_link (ir_node *n, void *env) {
@@ -95,9 +98,9 @@ void collect_phiprojs(ir_graph *irg) {
 }
 
 
-/**********************************************************************/
-/*  Funcionality for part_block                                       */
-/**********************************************************************/
+/*--------------------------------------------------------------------*/
+/*  Functionality for part_block                                      */
+/*--------------------------------------------------------------------*/
 
 /* Moves node and all predecessors of node from from_bl to to_bl.
    Does not move predecessors of Phi nodes (or block nodes). */

@@ -2296,9 +2296,10 @@ skip_nop (ir_node *node) {
   /* Don't use get_Id_pred:  We get into an endless loop for
      self-referencing Ids. */
   if (node && (node->op == op_Id) && (node != (pred = node->in[0+1]))) {
+    ir_node *rem_pred, *res;
+
     if (pred->op != op_Id) return pred; /* shortcut */
-    ir_node *rem_pred = pred;
-    ir_node *res;
+    rem_pred = pred;
 
     assert (get_irn_arity (node) > 0);
 
