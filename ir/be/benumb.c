@@ -10,6 +10,7 @@
 
 #include "irnode_t.h"
 #include "irgwalk.h"
+#include "xmalloc.h"
 
 #include "be_t.h"
 #include "benumb_t.h"
@@ -59,7 +60,7 @@ void be_numbering(ir_graph *irg)
 
 	irg_walk_graph(irg, numbering_walker, NULL, NULL);
 
-	reverse_map = calloc(get_graph_node_count(irg), sizeof(*reverse_map));
+	reverse_map = xcalloc(get_graph_node_count(irg), sizeof(reverse_map[0]));
 	irg_walk_graph(irg, reverse_walker, NULL, reverse_map);
 
 	get_irg_numbering(irg)->reverse_map = reverse_map;
