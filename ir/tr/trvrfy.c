@@ -168,13 +168,15 @@ static int constants_on_wrong_irg(entity *ent) {
  *  != 0    else
  */
 static int check_entity(entity *ent) {
+  int rem_vpi;
+
   current_ir_graph =  get_const_code_irg();
   if (constants_on_wrong_irg(ent)) {
     assert(0 && "Contants placed on wrong IRG");
     return error_const_on_wrong_irg;
   }
 
-  int rem_vpi = get_visit_pseudo_irgs();
+  rem_vpi = get_visit_pseudo_irgs();
   set_visit_pseudo_irgs(1);
   if ((get_entity_peculiarity(ent) == peculiarity_existent) &&
       (get_entity_visibility(ent) != visibility_external_allocated) &&
