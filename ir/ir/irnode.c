@@ -96,7 +96,7 @@ init_irnode (void)
  */
 ir_node *
 new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mode,
-	     int arity, ir_node **in)
+         int arity, ir_node **in)
 {
   ir_node *res;
   int node_size = offsetof (ir_node, attr) +  op->attr_size;
@@ -617,7 +617,7 @@ void set_Block_cg_cfgpred_arr(ir_node * node, int arity, ir_node ** in) {
     node->attr.block.cg_backedge = new_backedge_arr(current_ir_graph->obst, arity);
     {
       /* Fix backedge array.  fix_backedges operates depending on
-	 interprocedural_view. */
+     interprocedural_view. */
       bool ipv = interprocedural_view;
       interprocedural_view = true;
       fix_backedges(current_ir_graph->obst, node);
@@ -629,8 +629,8 @@ void set_Block_cg_cfgpred_arr(ir_node * node, int arity, ir_node ** in) {
 
 void set_Block_cg_cfgpred(ir_node * node, int pos, ir_node * pred) {
   assert(node->op == op_Block &&
-	 node->attr.block.in_cg &&
-	 0 <= pos && pos < ARR_LEN(node->attr.block.in_cg) - 1);
+     node->attr.block.in_cg &&
+     0 <= pos && pos < ARR_LEN(node->attr.block.in_cg) - 1);
   node->attr.block.in_cg[pos + 1] = pred;
 }
 
@@ -697,7 +697,7 @@ free_End (ir_node *end) {
   end->kind = k_BAD;
   DEL_ARR_F(end->in);  /* GL @@@ tut nicht ! */
   end->in = NULL;   /* @@@ make sure we get an error if we use the
-		       in array afterwards ... */
+               in array afterwards ... */
 }
 
 ir_graph *get_EndReg_irg (ir_node *end) {
@@ -869,9 +869,9 @@ set_Const_type (ir_node *node, type *tp) {
     assert (is_atomic_type(tp));
     assert (get_type_mode(tp) == get_irn_mode(node));
     assert (!tarval_is_entity(get_Const_tarval(node)) ||
-	    (is_pointer_type(tp) &&
-	     (get_pointer_points_to_type(tp) ==
-	      get_entity_type(get_tarval_entity(get_Const_tarval(node))))));
+        (is_pointer_type(tp) &&
+         (get_pointer_points_to_type(tp) ==
+          get_entity_type(get_tarval_entity(get_Const_tarval(node))))));
   }
 
   node->attr.con.tp = tp;
@@ -924,7 +924,7 @@ set_SymConst_name (ir_node *node, ident *name) {
 /* Only to access SymConst of kind symconst_addr_ent.  Else assertion: */
 entity   *get_SymConst_entity (ir_node *node) {
   assert (   (node->op == op_SymConst)
-          && (get_SymConst_kind(node) == symconst_addr_ent));
+          && (get_SymConst_kind (node) == symconst_addr_ent));
   return node->attr.i.sym.entity_p;
 }
 
@@ -1266,32 +1266,32 @@ void remove_FuncCall_callee_arr(ir_node * node) {
 }
 
 
-#define BINOP(OP)					\
-ir_node * get_##OP##_left(ir_node *node) {		\
-  assert(node->op == op_##OP);				\
-  return get_irn_n(node, node->op->op_index);		\
-}							\
-void set_##OP##_left(ir_node *node, ir_node *left) {	\
-  assert(node->op == op_##OP);				\
-  set_irn_n(node, node->op->op_index, left);		\
-}							\
-ir_node *get_##OP##_right(ir_node *node) {		\
-  assert(node->op == op_##OP);				\
-  return get_irn_n(node, node->op->op_index + 1);	\
-}							\
-void set_##OP##_right(ir_node *node, ir_node *right) {	\
-  assert(node->op == op_##OP);				\
-  set_irn_n(node, node->op->op_index + 1, right);	\
+#define BINOP(OP)                   \
+ir_node * get_##OP##_left(ir_node *node) {      \
+  assert(node->op == op_##OP);              \
+  return get_irn_n(node, node->op->op_index);       \
+}                           \
+void set_##OP##_left(ir_node *node, ir_node *left) {    \
+  assert(node->op == op_##OP);              \
+  set_irn_n(node, node->op->op_index, left);        \
+}                           \
+ir_node *get_##OP##_right(ir_node *node) {      \
+  assert(node->op == op_##OP);              \
+  return get_irn_n(node, node->op->op_index + 1);   \
+}                           \
+void set_##OP##_right(ir_node *node, ir_node *right) {  \
+  assert(node->op == op_##OP);              \
+  set_irn_n(node, node->op->op_index + 1, right);   \
 }
 
-#define UNOP(OP)					\
-ir_node *get_##OP##_op(ir_node *node) {			\
-  assert(node->op == op_##OP);				\
-  return get_irn_n(node, node->op->op_index);		\
-}							\
-void set_##OP##_op (ir_node *node, ir_node *op) {	\
-  assert(node->op == op_##OP);				\
-  set_irn_n(node, node->op->op_index, op);		\
+#define UNOP(OP)                    \
+ir_node *get_##OP##_op(ir_node *node) {         \
+  assert(node->op == op_##OP);              \
+  return get_irn_n(node, node->op->op_index);       \
+}                           \
+void set_##OP##_op (ir_node *node, ir_node *op) {   \
+  assert(node->op == op_##OP);              \
+  set_irn_n(node, node->op->op_index, op);      \
 }
 
 BINOP(Add)
@@ -1450,7 +1450,7 @@ int is_Phi (ir_node *n) {
 
   if (op == op_Phi)
     return  ((get_irg_phase_state(get_irn_irg(n)) !=  phase_building) ||
-	     (get_irn_arity(n) > 0));
+         (get_irn_arity(n) > 0));
 
   return 0;
 }
@@ -1459,8 +1459,8 @@ int is_Phi0 (ir_node *n) {
   assert(n);
 
   return ((get_irn_op(n) == op_Phi) &&
-	  (get_irn_arity(n) == 0) &&
-	  (get_irg_phase_state(get_irn_irg(n)) ==  phase_building));
+      (get_irn_arity(n) == 0) &&
+      (get_irg_phase_state(get_irn_irg(n)) ==  phase_building));
 }
 
 ir_node **
@@ -1816,7 +1816,7 @@ void set_Filter_cg_pred_arr(ir_node * node, int arity, ir_node ** in) {
 
 void set_Filter_cg_pred(ir_node * node, int pos, ir_node * pred) {
   assert(node->op == op_Filter && node->attr.filter.in_cg &&
-	 0 <= pos && pos < ARR_LEN(node->attr.filter.in_cg) - 1);
+     0 <= pos && pos < ARR_LEN(node->attr.filter.in_cg) - 1);
   node->attr.filter.in_cg[pos + 1] = pred;
 }
 int get_Filter_n_cg_preds(ir_node *node) {
@@ -1826,7 +1826,7 @@ int get_Filter_n_cg_preds(ir_node *node) {
 ir_node *get_Filter_cg_pred(ir_node *node, int pos) {
   int arity;
   assert(node->op == op_Filter && node->attr.filter.in_cg &&
-	 0 <= pos);
+     0 <= pos);
   arity = ARR_LEN(node->attr.filter.in_cg);
   assert(pos <  arity - 1);
   return node->attr.filter.in_cg[pos + 1];
@@ -2037,13 +2037,13 @@ void dump_irn (ir_node *n) {
   if (!is_Block(n)) {
     ir_node *pred = get_irn_n(n, -1);
     printf("  block: %s%s: %ld (%p)\n", get_irn_opname(pred), get_mode_name(get_irn_mode(pred)),
-	   get_irn_node_nr(pred), (void *)pred);
+       get_irn_node_nr(pred), (void *)pred);
   }
   printf("  preds: \n");
   for (i = 0; i < arity; ++i) {
     ir_node *pred = get_irn_n(n, i);
     printf("    %d: %s%s: %ld (%p)\n", i, get_irn_opname(pred), get_mode_name(get_irn_mode(pred)),
-	   get_irn_node_nr(pred), (void *)pred);
+       get_irn_node_nr(pred), (void *)pred);
   }
 }
 
