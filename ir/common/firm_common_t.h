@@ -48,4 +48,11 @@
  *  Sometimes it's useful to see the pointer values, though. */
 #define NODEID_AS_LABEL 1
 
+/**
+ * Enable the possibility for automatic out edges.
+ * Note, that you have to enable them manually to use them by
+ * calling edges_activate().
+ */
+#define FIRM_EDGES_INPLACE 1
+
 # endif /*_COMMON_T_H_ */
