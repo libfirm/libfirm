@@ -15,32 +15,34 @@
 # include <config.h>
 #endif
 
-# include <string.h>
-# include <stdlib.h>
-# include <stdarg.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdarg.h>
 
-# include "irnode_t.h"
-# include "irgraph_t.h"
-# include "entity_t.h"
-# include "irop_t.h"
-# include "firm_common_t.h"
+#include "irnode_t.h"
+#include "irgraph_t.h"
+#include "entity_t.h"
+#include "irop_t.h"
+#include "firm_common_t.h"
 
-# include "irdump.h"
+#include "irdump.h"
 
-# include "irgwalk.h"
-# include "typewalk.h"
-# include "irprog.h"
-# include "tv_t.h"
-# include "type_or_entity.h"
-# include "irouts.h"
-# include "irdom.h"
-# include "irloop.h"
-# include "irvrfy.h"
+#include "irgwalk.h"
+#include "typewalk.h"
+#include "irprog.h"
+#include "tv_t.h"
+#include "type_or_entity.h"
+#include "irouts.h"
+#include "irdom.h"
+#include "irloop.h"
+#include "callgraph.h"
 
-# include "panic.h"
-# include "array.h"
-# include "pmap.h"
-# include "eset.h"
+#include "irvrfy.h"
+
+#include "panic.h"
+#include "array.h"
+#include "pmap.h"
+#include "eset.h"
 
 #if DO_HEAPANALYSIS
 void dump_chi_term(FILE *FL, ir_node *n);
@@ -71,24 +73,25 @@ SeqNo get_Block_seqno(ir_node *n);
 #define NODE2TYPE_EDGE_ATTR "class:2 priority:2 linestyle:dotted"
 
 /* Attributes of edges in type/entity graphs. */
-#define TYPE_METH_NODE_ATTR  "color: lightyellow"
-#define TYPE_CLASS_NODE_ATTR "color: green"
+#define TYPE_METH_NODE_ATTR      "color: lightyellow"
+#define TYPE_CLASS_NODE_ATTR     "color: green"
 #define TYPE_DESCRIPTION_NODE_ATTR "color: lightgreen"
-#define ENTITY_NODE_ATTR     "color: yellow"
-#define ENT_TYPE_EDGE_ATTR   "class: 3 label: \"type\" color: red"
-#define ENT_OWN_EDGE_ATTR    "class: 4 label: \"owner\" color: black"
-#define METH_PAR_EDGE_ATTR   "class: 5 label: \"param %d\" color: green"
-#define METH_RES_EDGE_ATTR   "class: 6 label: \"res %d\" color: green"
-#define TYPE_SUPER_EDGE_ATTR "class: 7 label: \"supertype\" color: red"
-#define UNION_EDGE_ATTR      "class: 8 label: \"component\" color: blue"
-#define PTR_PTS_TO_EDGE_ATTR "class: 9 label: \"points to\" color:green"
-#define ARR_ELT_TYPE_EDGE_ATTR "class: 10 label: \"arr elt tp\" color:green"
-#define ARR_ENT_EDGE_ATTR    "class: 10 label: \"arr ent\" color: green"
+#define ENTITY_NODE_ATTR         "color: yellow"
+#define ENT_TYPE_EDGE_ATTR       "class: 3 label: \"type\" color: red"
+#define ENT_OWN_EDGE_ATTR        "class: 4 label: \"owner\" color: black"
+#define METH_PAR_EDGE_ATTR       "class: 5 label: \"param %d\" color: green"
+#define METH_RES_EDGE_ATTR       "class: 6 label: \"res %d\" color: green"
+#define TYPE_SUPER_EDGE_ATTR     "class: 7 label: \"supertype\" color: red"
+#define UNION_EDGE_ATTR          "class: 8 label: \"component\" color: blue"
+#define PTR_PTS_TO_EDGE_ATTR     "class: 9 label: \"points to\" color:green"
+#define ARR_ELT_TYPE_EDGE_ATTR   "class: 10 label: \"arr elt tp\" color:green"
+#define ARR_ENT_EDGE_ATTR        "class: 10 label: \"arr ent\" color: green"
 #define ENT_OVERWRITES_EDGE_ATTR "class: 11 label: \"overwrites\" color:red"
-#define ENT_VALUE_EDGE_ATTR "label: \"value %d\""
-#define ENT_CORR_EDGE_ATTR "label: \"value %d corresponds to \" "
-#define TYPE_MEMBER_EDGE_ATTR "class: 12 label: \"member\" color:blue"
-#define ENUM_ITEM_NODE_ATTR  "color: green"
+#define ENT_VALUE_EDGE_ATTR      "label: \"value %d\""
+#define ENT_CORR_EDGE_ATTR       "label: \"value %d corresponds to \" "
+#define TYPE_MEMBER_EDGE_ATTR    "class: 12 label: \"member\" color:blue"
+#define ENUM_ITEM_NODE_ATTR      "color: green"
+#define CALLGRAPH_EDGE_ATTR      "calls"
 
 #if DEBUG_libfirm && NODEID_AS_LABEL
 #define PRINT_NODEID(X) fprintf(F, "n%ld", get_irn_node_nr(X))
@@ -149,12 +152,16 @@ static void print_type_ent_edge(FILE *F, type *T, entity *E, const char *fmt, ..
   va_end(ap);
 }
 
-static void print_ent_ent_edge(FILE *F, entity *E, entity *T, const char *fmt, ...)
+static void print_ent_ent_edge(FILE *F, entity *E, entity *T, int backedge, const char *fmt, ...)
 {
   va_list ap;
 
   va_start(ap, fmt);
-  fprintf(F, "edge: { sourcename: \""); PRINT_ENTID(E);
+  if (backedge)
+    fprintf(F, "backedge: { sourcename: \"");
+   else
+    fprintf(F, "edge: { sourcename: \"");
+  PRINT_ENTID(E);
   fprintf(F, "\" targetname: \""); PRINT_ENTID(T);  fprintf(F, "\"");
   vfprintf(F, fmt, ap);
   fprintf(F, "}\n");
@@ -1382,7 +1389,7 @@ dump_type_info (type_or_ent *tore, void *env) {
       print_ent_type_edge(F,ent, get_entity_type(ent), ENT_TYPE_EDGE_ATTR);
       if(is_class_type(get_entity_owner(ent))) {
     for(i = 0; i < get_entity_n_overwrites(ent); i++){
-      print_ent_ent_edge(F,ent, get_entity_overwrites(ent, i), ENT_OVERWRITES_EDGE_ATTR);
+      print_ent_ent_edge(F,ent, get_entity_overwrites(ent, i), 0, ENT_OVERWRITES_EDGE_ATTR);
     }
       }
       /* attached subgraphs */
@@ -1401,7 +1408,7 @@ dump_type_info (type_or_ent *tore, void *env) {
         if (value) {
               print_ent_node_edge(F,ent,value,ENT_VALUE_EDGE_ATTR,i);
           dump_const_expression(value);
-          print_ent_ent_edge(F,ent, get_compound_ent_value_member(ent, i), ENT_CORR_EDGE_ATTR, i);
+          print_ent_ent_edge(F,ent, get_compound_ent_value_member(ent, i), 0, ENT_CORR_EDGE_ATTR, i);
           /*
         fprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
         ENT_CORR_EDGE_ATTR  "}\n", GET_ENTID(ent),
@@ -1511,7 +1518,7 @@ dump_class_hierarchy_node (type_or_ent *tore, void *env) {
       print_type_ent_edge(F,get_entity_owner(ent),ent,TYPE_MEMBER_EDGE_ATTR);
       for(i = 0; i < get_entity_n_overwrites(ent); i++)
       {
-      print_ent_ent_edge(F,get_entity_overwrites(ent, i),ent, ENT_OVERWRITES_EDGE_ATTR);
+      print_ent_ent_edge(F,get_entity_overwrites(ent, i),ent, 0, ENT_OVERWRITES_EDGE_ATTR);
       }
     }
   } break; /* case k_entity */
@@ -1938,7 +1945,7 @@ dump_cfg (ir_graph *irg)
   int ddif = dump_dominator_information_flag;
   int ipv = interprocedural_view;
 
-  if(strncmp(get_irg_dump_name(irg),dump_file_filter,strlen(dump_file_filter))!=0) return;
+  if(strncmp(get_irg_dump_name(irg), dump_file_filter, strlen(dump_file_filter)) != 0) return;
 
   current_ir_graph = irg;
 
@@ -1963,6 +1970,33 @@ dump_cfg (ir_graph *irg)
   current_ir_graph = rem;
 }
 
+
+
+void dump_callgraph(char *filesuffix) {
+  int i, n_irgs = get_irp_n_irgs();
+
+  vcg_open_name  ("Callgraph", filesuffix);
+  dump_vcg_header("Callgraph", NULL);
+
+  for (i = 0; i < n_irgs; ++i) {
+    ir_graph *irg = get_irp_irg(i);
+    entity *ent = get_irg_ent(irg);
+    int j, n_callees = get_irg_n_callees(irg);
+
+    dump_entity_node(ent);
+    for (j = 0; j < n_callees; ++j) {
+      entity *c = get_irg_entity(get_irg_callee(irg, j));
+      int be = is_irg_callee_backedge(irg, j);
+      char *attr;
+      attr = (be) ?
+	"label:\"recursion\" color:red" :
+	"label:\"calls\"";
+      print_ent_ent_edge(F, ent, c, be, attr);
+    }
+  }
+
+  vcg_close();
+}
 
 
 /* Dump all irgs in interprocedural view to a single file. */
@@ -2097,7 +2131,7 @@ void dump_loops_standalone (ir_loop *loop) {
         dump_loop_son_edge(loop, son_number++);
         dump_loops_standalone(son);
       }
-      else {
+      else if (get_kind(son) == k_ir_node) {
         /* We are a loop node -> Collect firm nodes */
 
         ir_node *n = le.node;
@@ -2121,6 +2155,27 @@ void dump_loops_standalone (ir_loop *loop) {
         bad |= dump_node_nodeattr(n);
         fprintf (F, " %ld", get_irn_node_nr(n));
       }
+#if CALLGRAPH_LOOP_TREE
+      else {
+	assert(get_kind(son) == k_ir_graph);
+        /* We are a loop node -> Collect firm graphs */
+
+        ir_graph *n = (ir_graph *)le.node;
+
+        if (!loop_node_started) {
+          /* Start a new node which contains all firm nodes of the current loop */
+          fprintf (F, "node: { title: \"");
+          PRINT_LOOPID(loop);
+          fprintf (F, "-%d-nodes\" color: lightyellow label: \"", i);
+          loop_node_started = 1;
+          first = i;
+        }
+        else
+          fprintf(F, "\n");
+
+        fprintf (F, " %s", get_irg_dump_name(n));
+      }
+#endif
     }
 
   if (loop_node_started) {
@@ -2155,6 +2210,16 @@ void dump_loop_tree(ir_graph *irg, char *suffix)
   edge_label = el_rem;
   current_ir_graph = rem;
 }
+
+#if CALLGRAPH_LOOP_TREE
+/* works, but the tree is meaningless. */
+void dump_callgraph_loop_tree(ir_loop *l, char *suffix) {
+  vcg_open_name("callgraph_looptree", suffix);
+  dump_vcg_header("callgraph_looptree", "top_to_bottom");
+  dump_loops_standalone(l);
+  vcg_close();
+}
+#endif
 
 
 /*******************************************************************************/

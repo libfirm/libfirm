@@ -63,10 +63,10 @@ struct ir_graph {
   op_pinned pinned;                  /**< Flag for status of nodes */
   irg_outs_state outs_state;         /**< Out edges. */
   irg_dom_state dom_state;           /**< Dominator information */
-  irg_typeinfo_state typeinfo_state; /**< Validity of type information */
+  irg_typeinfo_state typeinfo_state;       /**< Validity of type information */
   irg_callee_info_state callee_info_state; /**< Validity of callee information */
   irg_inline_property inline_property;     /**< How to handle inlineing. */
-  irg_loopinfo_state loopinfo_state; /**< state of loop information */
+  irg_loopinfo_state loopinfo_state;       /**< state of loop information */
 
   /* -- Fields for construction -- */
 #if USE_EXPLICIT_PHI_IN_STACK
@@ -81,11 +81,16 @@ struct ir_graph {
   struct ir_node **outs;             /**< Space for the out arrays. */
 
 #ifdef DEBUG_libfirm
-  int             n_outs;       /* < Size wasted for outs */
+  int             n_outs;            /* < Size wasted for outs */
 #endif /* defined DEBUG_libfirm */
   struct ir_loop *loop;              /**< The outermost loop */
   void *link;                        /**< A void* field to link any information to
                     the node. */
+
+  ir_graph **callers;                /**< For callgraph analyses. */
+  int       *caller_isbe;            /**< For callgraph analyses: set if backedge. */
+  ir_graph **callees;                /**< For callgraph analyses. */
+  int       *callee_isbe;            /**< For callgraph analyses: set if backedge. */
 
   /* -- Fields for Walking the graph -- */
   unsigned long visited;             /**< this flag is an identifier for

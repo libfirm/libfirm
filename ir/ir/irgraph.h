@@ -204,13 +204,22 @@ long     get_irg_graph_nr(ir_graph *irg);
    information associated with the graph.  Optimizations invalidate these
    states.  */
 
-/** state: phase values: phase_building, phase_high, phase_low.
-   The irg is in phase_building during construction of the irgraph.  It is in
-   phase_high after construction.  All nodes are allowed.  To get the irgraph
-   into phase_low all Sel nodes must be removed and replaced by explicit
-   address computations.  SymConst size and typetag nodes must be removed (@@@
-   really?).  Initialization of memory allocated by Alloc must be explicit.
-   @@@ More conditions? */
+/** The states of an ir graph.
+ *
+ * state phase values: phase_building, phase_high, phase_low.
+ *
+ * The graph is in phase_building during construction of the irgraph.
+ * The construction is finished by a call to finalize_cons().
+ *
+ * Finalize_cons() sets the state to phase_high.  All Firm nodes are
+ * allowed.
+ *
+ * To get the irgraph into phase_low all Sel nodes must be removed and
+ * replaced by explicit address computations.  SymConst size and
+ * typetag nodes must be removed (@@@ really?).  Initialization of
+ * memory allocated by Alloc must be explicit.  @@@ More conditions?
+ *
+ */
 typedef enum {
   phase_building,
   phase_high,
@@ -284,7 +293,7 @@ void set_irg_loopinfo_inconsistent(ir_graph *irg);
 
 /** state: callee_information_state
  *  Call nodes contain a list of possible callees.  This list must be
- *  computed by an anlyses.  */
+ *  computed by an anlysis.  */
 typedef enum {
   irg_callee_info_none,
   irg_callee_info_consistent,

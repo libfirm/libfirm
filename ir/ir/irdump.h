@@ -170,6 +170,13 @@ void dump_all_ir_graphs (dump_graph_func *dump_graph);
  */
 void dump_cfg (ir_graph *irg);
 
+
+/** Dump the call graph.
+ *
+ * Dumps the callgraph to a file "callgraph"<filesuffix>".vcg".
+ */
+void dump_callgraph(char *filesuffix);
+
 /**
  *  Dumps all the type information needed for Calls, Sels, ... in this graph.
  *  Does not dump the graph!
