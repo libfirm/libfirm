@@ -364,7 +364,7 @@ long get_tarval_long(tarval* tv)
   ANNOUNCE();
   assert(tarval_is_long(tv) && "tarval too big to fit in long");
 
-  return sc_val_to_long(tv->value, get_mode_size_bits(tv->mode), mode_is_signed(tv->mode));
+  return sc_val_to_long(tv->value);
 }
 
 tarval *new_tarval_from_double(long double d, ir_mode *mode)
