@@ -118,6 +118,12 @@ typedef struct {
   where_alloc where;            /**< stack, heap or other managed part of memory */
 } alloc_attr;
 
+/** Free attributes */
+typedef struct {
+  type *type;                   /**< Type of the allocated object.  */
+  where_alloc where;            /**< stack, heap or other managed part of memory */
+} free_attr;
+
 /** InstOf attributes */
 typedef struct
 {
@@ -174,9 +180,9 @@ typedef union {
   sel_attr       s;     /**< For Sel. */
   call_attr      call;  /**< For Call: pointer to the type of the method to call */
   callbegin_attr callbegin; /**< For CallBegin */
-  alloc_attr     a;     /**< For Alloc. */
+  alloc_attr     a;    /**< For Alloc. */
+  free_attr      f;    /**< For Free. */
   io_attr        io;    /**< For InstOf */
-  type          *f;     /**< For Free. */
   cast_attr      cast;  /**< For Cast. */
   load_attr      load;  /**< For Load. */
   store_attr     store;  /**< For Store. */
@@ -240,7 +246,7 @@ ir_node     **get_irn_in            (const ir_node *node);
 const_attr    get_irn_const_attr    (ir_node *node);
 long          get_irn_proj_attr     (ir_node *node);
 alloc_attr    get_irn_alloc_attr    (ir_node *node);
-type         *get_irn_free_attr     (ir_node *node);
+free_attr     get_irn_free_attr     (ir_node *node);
 symconst_attr get_irn_symconst_attr (ir_node *node);
 type         *get_irn_call_attr     (ir_node *node);
 type         *get_irn_funccall_attr (ir_node *node);
