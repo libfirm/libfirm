@@ -262,6 +262,9 @@ ent_variability get_entity_variability (entity *ent);
 /** Sets the variability of an entity. */
 void            set_entity_variability (entity *ent, ent_variability var);
 
+/** Return the name of the variablity. */
+const char *get_variablity_name(ent_variability var);
+
 /** This enumeration flags the volatility of entities. */
 typedef enum {
   non_volatile,    /**< The entity is not volatile */
@@ -273,6 +276,9 @@ ent_volatility get_entity_volatility (entity *ent);
 
 /** Sets the volatility of an entity. */
 void           set_entity_volatility (entity *ent, ent_volatility vol);
+
+/* Return the name of the volatility. */
+const char *get_volatility_name(ent_volatility var);
 
 /** Returns the offset of an entity (in a compound). Only set if layout = fixed. */
 int       get_entity_offset (entity *ent);
@@ -294,9 +300,14 @@ void    set_entity_link(entity *ent, void *l);
 ir_graph *get_entity_irg(entity *ent);
 void      set_entity_irg(entity *ent, ir_graph *irg);
 
-/* For the definition of enumeration peculiarity see type.h */
+/** Return the peculiarity of an entity. */
 peculiarity get_entity_peculiarity (entity *ent);
+
+/** Sets the peculiarity of an entity. */
 void        set_entity_peculiarity (entity *ent, peculiarity pec);
+
+/** Return the name of the peculiarity. */
+const char *get_peculiarity_name(peculiarity var);
 
 /* -- Representation of constant values of entites -- */
 /* Set current_ir_graph to get_const_code_irg() to generate a constant
@@ -393,6 +404,5 @@ bool        entity_visited(entity *ent);
 
 /** Returns true if this entity was not visited. */
 bool        entity_not_visited(entity *ent);
-
 
 # endif /* _ENTITY_H_ */

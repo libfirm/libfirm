@@ -319,6 +319,19 @@ set_entity_variability (entity *ent, ent_variability var){
   ent->variability = var;
 }
 
+/* return the name of the variablity */
+const char *get_variablity_name(ent_variability var)
+{
+#define X(a)	case a: return #a
+  switch (var) {
+    X(uninitialized);
+    X(initialized);
+    X(part_constant);
+    X(constant);
+    default: return "BAD VALUE";
+  }
+#undef X
+}
 
 INLINE ent_volatility
 get_entity_volatility (entity *ent) {
@@ -330,6 +343,18 @@ INLINE void
 set_entity_volatility (entity *ent, ent_volatility vol) {
   assert (ent);
   ent->volatility = vol;
+}
+
+/* return the name of the volatility */
+const char *get_volatility_name(ent_volatility var)
+{
+#define X(a)	case a: return #a
+  switch (var) {
+    X(non_volatile);
+    X(is_volatile);
+    default: return "BAD VALUE";
+  }
+#undef X
 }
 
 INLINE peculiarity
@@ -344,6 +369,19 @@ set_entity_peculiarity (entity *ent, peculiarity pec) {
   /* @@@ why peculiarity only for methods? */
   assert (is_method_type(ent->type));
   ent->peculiarity = pec;
+}
+
+/* return the name of the peculiarity */
+const char *get_peculiarity_name(peculiarity var)
+{
+#define X(a)	case a: return #a
+  switch (var) {
+    X(description);
+    X(inherited);
+    X(existent);
+    default: return "BAD VALUE";
+  }
+#undef X
 }
 
 /* Set has no effect for entities of type method. */
