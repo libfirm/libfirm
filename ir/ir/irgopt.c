@@ -1495,6 +1495,21 @@ static INLINE void place_early(pdeq *worklist) {
   current_ir_graph->op_pin_state_pinned = op_pin_state_pinned;
 }
 
+/** Compute the deepest common ancestor of block and dca. */
+static ir_node *calc_dca(ir_node *dca, ir_node *block)
+{
+  assert(block);
+  if (!dca) return block;
+  while (get_Block_dom_depth(block) > get_Block_dom_depth(dca))
+    block = get_Block_idom(block);
+  while (get_Block_dom_depth(dca) > get_Block_dom_depth(block)) {
+    dca = get_Block_idom(dca);
+  }
+  while (block != dca)
+    { block = get_Block_idom(block); dca = get_Block_idom(dca); }
+
+  return dca;
+}
 
 /** Deepest common dominance ancestor of DCA and CONSUMER of PRODUCER.
  * I.e., DCA is the block where we might place PRODUCER.
@@ -1516,7 +1531,12 @@ consumer_dom_dca (ir_node *dca, ir_node *consumer, ir_node *producer)
 
     for (i = 0;  i < irn_arity; i++) {
       if (get_irn_n(consumer, i) == producer) {
-        block = get_nodes_block(get_Block_cfgpred(phi_block, i));
+        ir_node *new_block = get_nodes_block(get_Block_cfgpred(phi_block, i));
+
+        if (block)
+          block = calc_dca(block, new_block);
+        else
+          block = new_block;
       }
     }
   } else {
@@ -1525,17 +1545,7 @@ consumer_dom_dca (ir_node *dca, ir_node *consumer, ir_node *producer)
   }
 
   /* Compute the deepest common ancestor of block and dca. */
-  assert(block);
-  if (!dca) return block;
-  while (get_Block_dom_depth(block) > get_Block_dom_depth(dca))
-    block = get_Block_idom(block);
-  while (get_Block_dom_depth(dca) > get_Block_dom_depth(block)) {
-    dca = get_Block_idom(dca);
-  }
-  while (block != dca)
-    { block = get_Block_idom(block); dca = get_Block_idom(dca); }
-
-  return dca;
+  return calc_dca(dca, block);
 }
 
 static INLINE int get_irn_loop_depth(ir_node *n) {
@@ -1650,8 +1660,9 @@ place_floats_late(ir_node *n, pdeq *worklist)
   /* Add predecessors of all non-floating nodes on list. (Those of floating
      nodes are placeded already and therefore are marked.)  */
   for (i = 0; i < get_irn_n_outs(n); i++) {
+    ir_node *succ = get_irn_out(n, i);
     if (irn_not_visited(get_irn_out(n, i))) {
-      pdeq_putr (worklist, get_irn_out(n, i));
+      pdeq_putr (worklist, succ);
     }
   }
 }
