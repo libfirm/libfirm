@@ -489,8 +489,10 @@ int      get_Call_arity (ir_node *node);
  *
  *  The callee information lists all method entities that can be called
  *  from this node.  If the address expression can not be analyzed fully,
- *  e.g., as there are external methods that could be called, the array
- *  contains a single NULL entry.
+ *  e.g., as entities can be called that are not in the compilation unit,
+ *  the array contains the unknown_entity.  The array contains only entities
+ *  with peculiarity_existent, but with all kinds of visibility.  The entities
+ *  not necessarily contain an irg.
  *
  *  The array is only accessible if callee information is valid.  See flag
  *  in graph.
