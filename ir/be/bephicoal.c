@@ -22,11 +22,12 @@
 #include "phiclass_t.h"
 #include "bephicoal_t.h"
 
-#define DEBUG_LVL SET_LEVEL_3
+#define DEBUG_LVL 0
+//SET_LEVEL_1
 #define MAX_COLORS 16
 
 #define INITIAL_SLOTS_PINNED_GLOBAL 256
-#define INITIAL_SLOTS_FREE_NODES    128
+//#define INITIAL_SLOTS_FREE_NODES    128
 #define INITIAL_SLOTS_CHANGED_NODES 32
 
 /* some things for readable code */
@@ -37,7 +38,7 @@
 
 /**
  * Models conflicts between nodes. These may be life range conflicts or
- * pinning conflicts which may occur while changing colors
+ * pinning conflicts, which may occur while changing colors
  */
 typedef struct _conflict_t {
 	ir_node *n1, *n2;
@@ -82,7 +83,7 @@ static firm_dbg_module_t *dbgphi = NULL;
  * Contains ir_nodes of phi-classes whose colors may change unlimited times.
  * These nodes are not optimizable, so there is no need to pin their color.
  */
-static pset *free_nodes = NULL;
+//static pset *free_nodes = NULL;
 
 /**
  * Contains already optimized ir_nodes of phi-classes fully processed.
@@ -237,13 +238,25 @@ static INLINE int pu_are_conflicting(phi_unit_t *pu, ir_node *n1, ir_node *n2) {
 }
 
 /**
+ * Checks if a node is a member of a phi unit.
+ * Other nodes should not be pinned global.
+ */
+static INLINE int pu_is_global_pinnable(phi_unit_t *pu, ir_node *irn) {
+	int i;
+	for (i = 0; i < pu->node_count; ++i)
+		if (pu->nodes[i] == irn)
+			return 1;
+	return 0;
+}
+
+/**
  * Determines a maximum independent set with respect to the conflict edges
  * in pu->conflicts and the nodes beeing all non-removed nodes of pu->nodes.
  * TODO: make this 'un-greedy'
  * TODO: be aware that phi nodes should find their way in the set.
  *       for 1 phi in greedy version this is no prob, cause is comes first at [0].
  */
-static int pu_get_max_ind_set(phi_unit_t *pu, struct obstack *res) {
+static int pu_get_mis(phi_unit_t *pu, struct obstack *res) {
 	int i, o, size = 0;
 	ir_node **mis;
 
@@ -254,7 +267,7 @@ static int pu_get_max_ind_set(phi_unit_t *pu, struct obstack *res) {
 			continue;
 		mis = (ir_node**) obstack_base(res);
 		for (o = 0; o < size; ++o)
-			if (phi_ops_interfere(pu->nodes[i], mis[o])) {
+			if (pu_are_conflicting(pu, pu->nodes[i], mis[o])) {
 				intf_det = 1;
 				break;
 			}
@@ -418,16 +431,12 @@ static int pu_try_color(phi_unit_t *pu, int col, int b_size) {
 	int i, redo, mis_size;
 	ir_node **mis;
 
-	/* first init pessimistically. Just return if we can't get a better result */
-	mis_size = 0;
-
 	obstack_init(&ob_mis);
 	redo = 1;
 	while (redo) {
-		int impossibles = 0;
 		redo = 0;
 		/* get a max independent set regarding current conflicts */
-		mis_size = pu_get_max_ind_set(pu, &ob_mis);
+		mis_size = pu_get_mis(pu, &ob_mis);
 		mis = obstack_finish(&ob_mis);
 
 		/* shortcut: if mis size is worse than best, then mis won't be better. */
@@ -444,33 +453,35 @@ static int pu_try_color(phi_unit_t *pu, int col, int b_size) {
 
 			if (confl_node == CHANGE_SAVE) {
 				DBG((dbgphi, LEVEL_2, "\t    Save\n"));
-				if (!pset_find_ptr(free_nodes, test_node))
+				//if (!pset_find_ptr(free_nodes, test_node))
 					pu_pin_node(pu, test_node);
-				continue;
+			} else if (confl_node == CHANGE_NYI) {
+				DBG((dbgphi, 0, "\t    NYI\n"));
+			} else if (confl_node == CHANGE_IMPOSSIBLE) {
+				/* TODO: this may happen due to reg constraints --> remove from set ?? */
 			} else {
 				DBG((dbgphi, LEVEL_2, "\t    Conflicting\n"));
-				/* adjust conflict graph */
-				if (is_conflicting_node(confl_node)) {
-					impossibles++;
-					if (pu_is_node_pinned(pu, confl_node)) {
-						pu_add_conflict(pu, confl_node, test_node);
-						redo = 1;
-					}
-					if (pset_find_ptr(pinned_global, confl_node)) {
-						pu_remove_node(pu, test_node);
-						redo = 1;
-					}
+				assert(is_conflicting_node(confl_node));
+
+				if (pu_is_node_pinned(pu, confl_node)) {
+					/* changing test_node would change back a node of current phi unit */
+					pu_add_conflict(pu, confl_node, test_node);
+					redo = 1;
 				}
-				/* TODO: CHANGE_IMPOSSIBLE due to reg constraints --> remove from set ?? */
+				if (pset_find_ptr(pinned_global, confl_node)) {
+					/* changing test_node would change back a node of a prior phi unit */
+					pu_remove_node(pu, test_node);
+					redo = 1;
+				}
 			}
 
-			/* shortcut: color not possible for phi node (phi comes first) ==> exit */
-			if (i == 0)
-				goto ret;
-
-			/* shortcut: if the best size achievable with this mis is worse than best, then get another mis. */
-			if (mis_size - impossibles < b_size) {
-				redo = 1;
+			if (confl_node != CHANGE_SAVE) {
+				/* shortcut: color not possible for phi node (phi comes first) ==> exit */
+				if (i == 0) {
+					mis_size = 0;
+					goto ret;
+				}
+				/* break iteration over current mis, because it will change */
 				break;
 			}
 		}
@@ -488,7 +499,7 @@ ret:
  * Works only for phi-classes/phi-units with exactly 1 phi node, which is the
  * case for approximately 80% of all phi units.
  */
-static void pu_coalesce_1_phi(phi_unit_t *pu) {
+static void pu_coal_1_phi(phi_unit_t *pu) {
 	int size, col, b_size, b_color;
 	set *b_changes;
 
@@ -526,13 +537,15 @@ static void pu_coalesce_1_phi(phi_unit_t *pu) {
 	/* now apply the found optimum */
 	if (b_changes) {
 		node_stat_t *ns;
-		DBG((dbgphi, 1, "\tBest color: %d  Copies: %d/%d\n", b_color, pu->node_count-b_size, pu->node_count-1));
+		DBG((dbgphi, 0, "\tBest color: %d  Copies: %d/%d\n", b_color, pu->node_count-b_size, pu->node_count-1));
 		for (ns = set_first(b_changes); ns; ns = set_next(b_changes)) {
 			/* NO_COLOR is possible, if we had an undo; so the irn stays in the
 			 * pu->changed_nodes with new color set to NO_COLOR. */
 			if (ns->color != NO_COLOR) {
 				DBG((dbgphi, 1, "\t    color(%n) := %d\n", ns->irn, ns->color));
 				set_irn_color(ns->irn, ns->color);
+				if (pu_is_global_pinnable(pu, ns->irn) && ns->color == pu_get_new_color(pu, pu->nodes[0]))
+					pset_insert_ptr(pinned_global, ns->irn);
 			}
 		}
 		free(b_changes);
@@ -546,7 +559,7 @@ static void pu_coalesce_1_phi(phi_unit_t *pu) {
  * number of copy instructions placed during phi destruction.
  * General purpose version.
  */
-static void pu_coalesce_n_phi(phi_unit_t *pu) {
+static void pu_coal_n_phi(phi_unit_t *pu) {
 	/* TODO */
 }
 
@@ -576,8 +589,12 @@ static phi_unit_t *new_pu(pset *pc) {
 		obstack_init(&ob);
 
 		/* build member set not containing phi interferers */
-		DBG((dbgphi, 1, "\tPhi-1 class:\n"));
-		pu->node_count = 1; /*for the phi*/
+		DBG((dbgphi, 1, "\tPhi-1 unit:\n"));
+
+		DBG((dbgphi, 1, "\t    %n\n", phi));
+		obstack_ptr_grow(&ob, phi);
+		pu->node_count = 1;
+
 		for (n = pset_first(pc); n; n = pset_next(pc)) {
 			if (is_Phi(n))
 				continue;
@@ -587,13 +604,13 @@ static phi_unit_t *new_pu(pset *pc) {
 				pu->node_count++;
 			} else {
 				DBG((dbgphi, 1, "\t    %n \tdropped\n", n));
-				pset_insert_ptr(free_nodes, n);
+				/* TODO: What if the irn is only free wrt one phi class? */
+				//pset_insert_ptr(free_nodes, n);
 			}
 		}
 		tmp = obstack_finish(&ob);
 		pu->nodes = malloc(pu->node_count * sizeof(*pu->nodes));
-		pu->nodes[0] = phi;
-		memcpy(&pu->nodes[1], tmp, (pu->node_count-1) * sizeof(*tmp));
+		memcpy(&pu->nodes[0], tmp, pu->node_count * sizeof(*tmp));
 
 		/* init conlict graph to life range interference */
 		DBG((dbgphi, 1, "\tInitial conflicts:\n"));
@@ -607,7 +624,7 @@ static phi_unit_t *new_pu(pset *pc) {
 
 		obstack_free(&ob, NULL);
 	} else {
-		DBG((dbgphi, 1, "\tPhi-n class:\n"));
+		DBG((dbgphi, 1, "\tPhi-n unit:\n"));
 		/* TODO */
 	}
 
@@ -635,18 +652,18 @@ void be_phi_coalesce(pset *all_phi_classes) {
 	pset *pc;
 
 	pinned_global = pset_new_ptr(INITIAL_SLOTS_PINNED_GLOBAL);
-	free_nodes = pset_new_ptr(INITIAL_SLOTS_FREE_NODES);
+//	free_nodes = pset_new_ptr(INITIAL_SLOTS_FREE_NODES);
 
 	for (pc = pset_first(all_phi_classes); pc; pc = pset_next(all_phi_classes)) {
 		phi_unit_t *pu = new_pu(pc);
 		if (pu->phi_count == 1)
-			pu_coalesce_1_phi(pu);
+			pu_coal_1_phi(pu);
 		else
-			pu_coalesce_n_phi(pu);
+			pu_coal_n_phi(pu);
 		free_pu(pu);
 	}
 
-	del_pset(free_nodes);
+//	del_pset(free_nodes);
 	del_pset(pinned_global);
 }
 

@@ -24,12 +24,13 @@
 #include "bephicoal_t.h"
 #include "phistat.h"
 
-#define DEBUG_LVL SET_LEVEL_1
-#define DO_PHI_STATISTICS  0
+#define DEBUG_LVL 0
+//SET_LEVEL_1
 #define CHECK_RESULTS      1
 #define COUNT_COPY_SAVINGS 1
-#define DUMP_OPT_DIFF      1
+#define DUMP_OPT_DIFF      0
 
+#define DO_PHI_STATISTICS  0
 #define DUMP_IRG_PHI_STAT  1
 #define DUMP_DIR_PHI_STAT  1
 #define DUMP_ALL_PHI_STAT  1
@@ -61,12 +62,14 @@ static void check_result(ir_graph *irg) {
 	irg_walk_graph(irg, node_collector, NULL, &ob);
 	obstack_ptr_grow(&ob, NULL);
 	nodes = (ir_node **) obstack_finish(&ob);
-	for (i = 0, n1 = nodes[i]; n1; n1 = nodes[++i])
+	for (i = 0, n1 = nodes[i]; n1; n1 = nodes[++i]) {
+		assert(! (is_allocatable_irn(n1) && get_irn_color(n1) == NO_COLOR));
 		for (o = i+1, n2 = nodes[o]; n2; n2 = nodes[++o])
 			if (phi_ops_interfere(n1, n2) && get_irn_color(n1) == get_irn_color(n2)) {
 				DBG((dbgphi, 1, "Ouch!\n   %n in %n\n   %n in %n\n", n1, get_nodes_block(n1), n2, get_nodes_block(n2)));
 				assert(0 && "Interfering values have the same color!");
 			}
+	}
 
 	obstack_free(&ob, NULL);
 }
@@ -154,7 +157,7 @@ void be_phi_opt(ir_graph* irg) {
 		after = 0;
 		inevitable = 0;
 		count_copies(all_phi_nodes, &after, &inevitable);
-		DBG((dbgphi, 1, "Irg: %s. Copies form %d to %d. %d phi-interfers\n", get_entity_name(get_irg_entity(irg)), before, after, inevitable));
+		DBG((dbgphi, 0, "Irg: %s. Copies form %d to %d. %d phi-interferers\n", get_entity_name(get_irg_entity(irg)), before, after, inevitable));
 	}
 	free_dom_and_peace(irg);
 }
