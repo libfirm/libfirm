@@ -74,7 +74,7 @@ static void connect_dags(ir_node *node, void *env)
   if (is_Block(node))
     return;
 
-  block = get_nodes_Block(node);
+  block = get_nodes_block(node);
 
   /* ignore start end end blocks */
   if (block == get_irg_start_block(current_ir_graph) ||
@@ -120,7 +120,7 @@ static void connect_dags(ir_node *node, void *env)
       }
     }
 
-    if (get_nodes_Block(prev) == block) {
+    if (get_nodes_block(prev) == block) {
       dag_link_t *prev_link = get_irn_link(prev);
 
       if (! prev_link) {
