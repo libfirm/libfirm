@@ -65,6 +65,10 @@
 # ifndef _FIRM_H_
 # define _FIRM_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* The representations */
 # include "firm_common.h"/* common type tags. */
 # include "irprog.h"     /* control flow and data of a program */
@@ -113,5 +117,9 @@ void init_firm (default_initialize_local_variable_func_t *func);
  * Frees all memory occupied by the firm library.
  */
 void free_firm (void);
+
+#ifdef __cplusplus
+}
+#endif
 
 # endif /* _FIRM_H_ */
