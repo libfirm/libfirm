@@ -85,25 +85,25 @@ extern ir_mode *mode_BB; /**< block */
 
 /*@{*/
 /** Access routines for JNI Interface */
-ir_mode *get_modeT();
-ir_mode *get_modeF();
-ir_mode *get_modeD();
-ir_mode *get_modeE();
-ir_mode *get_modeBs();
-ir_mode *get_modeBu();
-ir_mode *get_modeHs();
-ir_mode *get_modeHu();
-ir_mode *get_modeIs();
-ir_mode *get_modeIu();
-ir_mode *get_modeLs();
-ir_mode *get_modeLu();
-ir_mode *get_modeC();
-ir_mode *get_modeU();
-ir_mode *get_modeP();
-ir_mode *get_modeb();
-ir_mode *get_modeX();
-ir_mode *get_modeM();
-ir_mode *get_modeBB();
+ir_mode *get_modeT(void);
+ir_mode *get_modeF(void);
+ir_mode *get_modeD(void);
+ir_mode *get_modeE(void);
+ir_mode *get_modeBs(void);
+ir_mode *get_modeBu(void);
+ir_mode *get_modeHs(void);
+ir_mode *get_modeHu(void);
+ir_mode *get_modeIs(void);
+ir_mode *get_modeIu(void);
+ir_mode *get_modeLs(void);
+ir_mode *get_modeLu(void);
+ir_mode *get_modeC(void);
+ir_mode *get_modeU(void);
+ir_mode *get_modeP(void);
+ir_mode *get_modeb(void);
+ir_mode *get_modeX(void);
+ir_mode *get_modeM(void);
+ir_mode *get_modeBB(void);
 /*@}*/
 
 /** An enum for this mode */

@@ -98,13 +98,13 @@ struct tarval {
 };
 
 
-extern tarval *tarval_bad;                  tarval *get_tarval_bad();
+extern tarval *tarval_bad;                  tarval *get_tarval_bad(void);
 /* We should have a tarval_undefined */
-extern tarval *tarval_b_false;              tarval *get_tarval_b_false  ();
-extern tarval *tarval_b_true;               tarval *get_tarval_b_true   ();
-extern tarval *tarval_D_NaN;                tarval *get_tarval_D_NaN    ();
-extern tarval *tarval_D_Inf;                tarval *get_tarval_D_Inf    ();
-extern tarval *tarval_P_void;               tarval *get_tarval_P_void   ();
+extern tarval *tarval_b_false;              tarval *get_tarval_b_false  (void);
+extern tarval *tarval_b_true;               tarval *get_tarval_b_true   (void);
+extern tarval *tarval_D_NaN;                tarval *get_tarval_D_NaN    (void);
+extern tarval *tarval_D_Inf;                tarval *get_tarval_D_Inf    (void);
+extern tarval *tarval_P_void;               tarval *get_tarval_P_void   (void);
 extern tarval *tarval_mode_null[];          tarval *get_tarval_mode_null(ir_mode *mode);
 
 /*@{*/

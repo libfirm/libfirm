@@ -72,13 +72,13 @@ typedef struct ir_graph ir_graph;
    is used by the ir construction interface in ircons and by the
    optimizations. */
 extern ir_graph *current_ir_graph;
-ir_graph *get_current_ir_graph();
+ir_graph *get_current_ir_graph(void);
 void set_current_ir_graph(ir_graph *graph);
 
 /** This flag indicate the current view. The behaviour of some methods
  * (get_irn_*, set_irn_*) is influenced by this flag. */
 extern bool interprocedural_view;
-bool get_interprocedural_view();
+bool get_interprocedural_view(void);
 void set_interprocedural_view(bool state);
 
 /** Create a new ir graph to built ir for a procedure.

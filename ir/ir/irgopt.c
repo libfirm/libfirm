@@ -253,7 +253,7 @@ copy_preds (ir_node *n, void *env) {
 
 /* Copies the graph recursively, compacts the keepalive of the end node. */
 static void
-copy_graph () {
+copy_graph (void) {
   ir_node *oe, *ne; /* old end, new end */
   ir_node *ka;      /* keep alive */
   int i;
@@ -309,7 +309,7 @@ copy_graph () {
    Then fixes the fields in current_ir_graph containing nodes of the
    graph.  */
 static void
-copy_graph_env () {
+copy_graph_env (void) {
   ir_node *old_end;
   /* Not all nodes remembered in current_ir_graph might be reachable
      from the end node.  Assure their link is set to NULL, so that
@@ -941,7 +941,7 @@ place_floats_early (ir_node *n)
    Start, Call and end at pinned nodes as Store, Call.  Place_early
    places all floating nodes reachable from its argument through floating
    nodes and adds all beginnings at pinned nodes to the worklist. */
-static INLINE void place_early () {
+static INLINE void place_early (void) {
   assert(worklist);
   inc_irg_visited(current_ir_graph);
 
@@ -1095,7 +1095,7 @@ place_floats_late (ir_node *n)
   }
 }
 
-static INLINE void place_late() {
+static INLINE void place_late(void) {
   assert(worklist);
   inc_irg_visited(current_ir_graph);
 

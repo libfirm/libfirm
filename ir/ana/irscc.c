@@ -46,7 +46,7 @@ typedef struct scc_info {
   */
 } scc_info;
 
-static INLINE scc_info* new_scc_info() {
+static INLINE scc_info* new_scc_info(void) {
   scc_info *info = obstack_alloc (outermost_ir_graph->obst, sizeof (scc_info));
   memset (info, 0, sizeof (scc_info));
   return info;
@@ -144,7 +144,7 @@ ir_loop * get_irn_loop(ir_node *n) {
 static ir_node **stack = NULL;
 static int tos = 0;                /* top of stack */
 
-static INLINE void init_stack() {
+static INLINE void init_stack(void) {
   if (stack) {
     ARR_RESIZE (ir_node *, stack, 1000);
   } else {
@@ -154,7 +154,7 @@ static INLINE void init_stack() {
 }
 
 #if 0
-static INLINE void free_stack() {
+static INLINE void free_stack(void) {
   DEL_ARR_F(stack);
   stack = NULL;
   tos = 0;
@@ -355,7 +355,7 @@ init_scc (ir_graph *irg) {
 }
 
 static INLINE void
-init_ip_scc () {
+init_ip_scc (void) {
   current_dfn = 1;
   loop_node_cnt = 0;
   init_stack();
@@ -365,7 +365,7 @@ init_ip_scc () {
 #if 0
 Works, but is inefficient.
 static INLINE void
-init_ip_scc () {
+init_ip_scc (void) {
   int i;
   interprocedural_view = 1;
   current_dfn = 1;
@@ -721,7 +721,7 @@ void construct_backedges(ir_graph *irg) {
 
 
 
-void construct_ip_backedges () {
+void construct_ip_backedges (void) {
   ir_graph *rem = current_ir_graph;
   int rem_ipv = interprocedural_view;
   int i, j;

@@ -1155,8 +1155,8 @@ ir_node *new_rd_Tuple  (dbg_info *db, ir_graph *irg, ir_node *block,
 		       int arity, ir_node *in[]);
 ir_node *new_rd_Id     (dbg_info *db, ir_graph *irg, ir_node *block,
 		       ir_node *val, ir_mode *mode);
-ir_node *new_rd_Bad    ();
-ir_node *new_rd_Unknown();
+ir_node *new_rd_Bad    (void);
+ir_node *new_rd_Unknown(void);
 ir_node *new_rd_CallBegin(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *callee);
 ir_node *new_rd_EndReg (dbg_info *db, ir_graph *irg, ir_node *block);
 ir_node *new_rd_EndExcept(dbg_info *db, ir_graph *irg, ir_node *block);
@@ -1247,8 +1247,8 @@ ir_node *new_r_Tuple  (ir_graph *irg, ir_node *block,
 		       int arity, ir_node *in[]);
 ir_node *new_r_Id     (ir_graph *irg, ir_node *block,
 		       ir_node *val, ir_mode *mode);
-ir_node *new_r_Bad    ();
-ir_node *new_r_Unknown();
+ir_node *new_r_Bad    (void);
+ir_node *new_r_Unknown(void);
 ir_node *new_r_CallBegin(ir_graph *irg, ir_node *block, ir_node *callee);
 ir_node *new_r_EndReg (ir_graph *irg, ir_node *block);
 ir_node *new_r_EndExcept(ir_graph *irg, ir_node *block);
@@ -1430,10 +1430,10 @@ void keep_alive (ir_node *ka);
 /* --- Useful access routines --- */
 /** Returns the current block of the current graph.  To set the current
    block use switch_block(). */
-ir_node *get_cur_block();
+ir_node *get_cur_block(void);
 
 /** Returns the frame type of the current graph */
-type *get_cur_frame_type();
+type *get_cur_frame_type(void);
 
 
 /* --- initialize and finalize ir construction --- */

@@ -39,61 +39,61 @@ typedef enum {
 
 typedef struct ir_op ir_op;
 
-extern ir_op *op_Block;           ir_op *get_op_Block     ();
+extern ir_op *op_Block;           ir_op *get_op_Block     (void);
 
-extern ir_op *op_Start;           ir_op *get_op_Start     ();
-extern ir_op *op_End;             ir_op *get_op_End       ();
-extern ir_op *op_Jmp;             ir_op *get_op_Jmp       ();
-extern ir_op *op_Cond;            ir_op *get_op_Cond      ();
-extern ir_op *op_Return;          ir_op *get_op_Return    ();
-extern ir_op *op_Raise;           ir_op *get_op_Raise     ();
-extern ir_op *op_Sel;             ir_op *get_op_Sel       ();
-extern ir_op *op_InstOf;          ir_op *get_op_InstOf    ();
+extern ir_op *op_Start;           ir_op *get_op_Start     (void);
+extern ir_op *op_End;             ir_op *get_op_End       (void);
+extern ir_op *op_Jmp;             ir_op *get_op_Jmp       (void);
+extern ir_op *op_Cond;            ir_op *get_op_Cond      (void);
+extern ir_op *op_Return;          ir_op *get_op_Return    (void);
+extern ir_op *op_Raise;           ir_op *get_op_Raise     (void);
+extern ir_op *op_Sel;             ir_op *get_op_Sel       (void);
+extern ir_op *op_InstOf;          ir_op *get_op_InstOf    (void);
 
-extern ir_op *op_Const;           ir_op *get_op_Const     ();
-extern ir_op *op_SymConst;        ir_op *get_op_SymConst  ();
+extern ir_op *op_Const;           ir_op *get_op_Const     (void);
+extern ir_op *op_SymConst;        ir_op *get_op_SymConst  (void);
 
-extern ir_op *op_Call;            ir_op *get_op_Call      ();
-extern ir_op *op_Add;		  ir_op *get_op_Add       ();
-extern ir_op *op_Sub;		  ir_op *get_op_Sub       ();
-extern ir_op *op_Minus;		  ir_op *get_op_Minus     ();
-extern ir_op *op_Mul;		  ir_op *get_op_Mul       ();
-extern ir_op *op_Quot;		  ir_op *get_op_Quot      ();
-extern ir_op *op_DivMod;	  ir_op *get_op_DivMod    ();
-extern ir_op *op_Div;		  ir_op *get_op_Div       ();
-extern ir_op *op_Mod;		  ir_op *get_op_Mod       ();
-extern ir_op *op_Abs;		  ir_op *get_op_Abs       ();
-extern ir_op *op_And;		  ir_op *get_op_And       ();
-extern ir_op *op_Or;              ir_op *get_op_Or        ();
-extern ir_op *op_Eor;		  ir_op *get_op_Eor       ();
-extern ir_op *op_Not;		  ir_op *get_op_Not       ();
-extern ir_op *op_Cmp;		  ir_op *get_op_Cmp       ();
-extern ir_op *op_Shl;		  ir_op *get_op_Shl       ();
-extern ir_op *op_Shr;		  ir_op *get_op_Shr       ();
-extern ir_op *op_Shrs;		  ir_op *get_op_Shrs      ();
-extern ir_op *op_Rot;		  ir_op *get_op_Rot       ();
-extern ir_op *op_Conv;		  ir_op *get_op_Conv      ();
+extern ir_op *op_Call;            ir_op *get_op_Call      (void);
+extern ir_op *op_Add;             ir_op *get_op_Add       (void);
+extern ir_op *op_Sub;             ir_op *get_op_Sub       (void);
+extern ir_op *op_Minus;           ir_op *get_op_Minus     (void);
+extern ir_op *op_Mul;             ir_op *get_op_Mul       (void);
+extern ir_op *op_Quot;            ir_op *get_op_Quot      (void);
+extern ir_op *op_DivMod;          ir_op *get_op_DivMod    (void);
+extern ir_op *op_Div;             ir_op *get_op_Div       (void);
+extern ir_op *op_Mod;             ir_op *get_op_Mod       (void);
+extern ir_op *op_Abs;             ir_op *get_op_Abs       (void);
+extern ir_op *op_And;             ir_op *get_op_And       (void);
+extern ir_op *op_Or;              ir_op *get_op_Or        (void);
+extern ir_op *op_Eor;             ir_op *get_op_Eor       (void);
+extern ir_op *op_Not;             ir_op *get_op_Not       (void);
+extern ir_op *op_Cmp;             ir_op *get_op_Cmp       (void);
+extern ir_op *op_Shl;             ir_op *get_op_Shl       (void);
+extern ir_op *op_Shr;             ir_op *get_op_Shr       (void);
+extern ir_op *op_Shrs;            ir_op *get_op_Shrs      (void);
+extern ir_op *op_Rot;             ir_op *get_op_Rot       (void);
+extern ir_op *op_Conv;            ir_op *get_op_Conv      (void);
 
-extern ir_op *op_Phi;		  ir_op *get_op_Phi       ();
+extern ir_op *op_Phi;             ir_op *get_op_Phi       (void);
 
-extern ir_op *op_Load;            ir_op *get_op_Load      ();
-extern ir_op *op_Store;		  ir_op *get_op_Store     ();
-extern ir_op *op_Alloc;		  ir_op *get_op_Alloc     ();
-extern ir_op *op_Free;		  ir_op *get_op_Free      ();
+extern ir_op *op_Load;            ir_op *get_op_Load      (void);
+extern ir_op *op_Store;           ir_op *get_op_Store     (void);
+extern ir_op *op_Alloc;           ir_op *get_op_Alloc     (void);
+extern ir_op *op_Free;            ir_op *get_op_Free      (void);
 
-extern ir_op *op_Sync;		  ir_op *get_op_Sync      ();
+extern ir_op *op_Sync;            ir_op *get_op_Sync      (void);
 
-extern ir_op *op_Tuple;		  ir_op *get_op_Tuple     ();
-extern ir_op *op_Proj;		  ir_op *get_op_Proj      ();
-extern ir_op *op_Id;		  ir_op *get_op_Id        ();
-extern ir_op *op_Bad;		  ir_op *get_op_Bad       ();
+extern ir_op *op_Tuple;           ir_op *get_op_Tuple     (void);
+extern ir_op *op_Proj;            ir_op *get_op_Proj      (void);
+extern ir_op *op_Id;              ir_op *get_op_Id        (void);
+extern ir_op *op_Bad;             ir_op *get_op_Bad       (void);
 
-extern ir_op *op_Unknown;         ir_op *get_op_Unknown   ();
-extern ir_op *op_Filter;	  ir_op *get_op_Filter    ();
-extern ir_op *op_Break;		  ir_op *get_op_Break     ();
-extern ir_op *op_CallBegin;	  ir_op *get_op_CallBegin ();
-extern ir_op *op_EndReg;	  ir_op *get_op_EndReg    ();
-extern ir_op *op_EndExcept;  	  ir_op *get_op_EndExcept ();
+extern ir_op *op_Unknown;         ir_op *get_op_Unknown   (void);
+extern ir_op *op_Filter;          ir_op *get_op_Filter    (void);
+extern ir_op *op_Break;           ir_op *get_op_Break     (void);
+extern ir_op *op_CallBegin;       ir_op *get_op_CallBegin (void);
+extern ir_op *op_EndReg;          ir_op *get_op_EndReg    (void);
+extern ir_op *op_EndExcept;       ir_op *get_op_EndExcept (void);
 
 
 /** Returns the ident for the opcode name */

@@ -76,7 +76,7 @@ struct ir_graph {
 
 /** Make a rudimentary ir graph for the constant code.
    Must look like a correct irg, spare everything else. */
-ir_graph *new_const_code_irg();
+ir_graph *new_const_code_irg(void);
 
 INLINE void
 set_irg_pinned (ir_graph *irg, op_pinned p);

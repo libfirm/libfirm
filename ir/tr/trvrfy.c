@@ -62,7 +62,7 @@ static void check_tore(type_or_ent *tore, void *env) {
 }
 
 
-int tr_vrfy() {
+int tr_vrfy(void) {
   int res;
 
   type_walk(check_tore, NULL, &res);

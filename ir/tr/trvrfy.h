@@ -36,6 +36,6 @@ enum  trvrfy_error_codes {
  *    0 if graph is correct
  *    else error code.
  */
-int tr_vrfy();
+int tr_vrfy(void);
 
 #endif /* TRVRFY_H */
