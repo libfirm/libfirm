@@ -37,6 +37,7 @@ typedef struct {
                           methods? */
   int n_res;           /* number of results */
   type **res_type;     /* array with result types */
+  variadicity variadicity; /* variadicity of the method */
 } mtd_attr;
 
 typedef struct {

@@ -337,6 +337,7 @@ bool equal_type(type *typ1, type *typ2) {
     }
   } break;
   case tpo_method:      {
+    if (get_method_variadicity(typ1) != get_method_variadicity(typ2)) return false;
     if (get_method_n_params(typ1) != get_method_n_params(typ2)) return false;
     if (get_method_n_ress(typ1) != get_method_n_ress(typ2)) return false;
     for (i = 0; i < get_method_n_params(typ1); i++) {
@@ -429,6 +430,7 @@ bool smaller_type (type *st, type *lt) {
     }
   } break;
   case tpo_method:      {
+    if (get_method_variadicity(st) != get_method_variadicity(lt)) return false;
     if (get_method_n_params(st) != get_method_n_params(lt)) return false;
     if (get_method_n_ress(st) != get_method_n_ress(lt)) return false;
     for (i = 0; i < get_method_n_params(st); i++) {
@@ -765,6 +767,7 @@ INLINE type *new_type_method (ident *name, int n_param, int n_res) {
   res->attr.ma.param_type = (type **) xmalloc (sizeof (type *) * n_param);
   res->attr.ma.n_res      = n_res;
   res->attr.ma.res_type   = (type **) xmalloc (sizeof (type *) * n_res);
+  res->attr.ma.variadicity = non_variadic;
   return res;
 }
 type *new_d_type_method (ident *name, int n_param, int n_res, dbg_info* db) {
@@ -806,6 +809,18 @@ void  set_method_res_type(type *method, int pos, type* tp) {
   assert(method && (method->type_op == type_method));
   assert(pos >= 0 && pos < get_method_n_ress(method));
   method->attr.ma.res_type[pos] = tp;
+}
+
+variadicity get_method_variadicity(type *method)
+{
+  assert(method && (method->type_op == type_method));
+  return method->attr.ma.variadicity;
+}
+
+void set_method_variadicity(type *method, variadicity vari)
+{
+  assert(method && (method->type_op == type_method));
+  method->attr.ma.variadicity = vari;
 }
 
 /* typecheck */

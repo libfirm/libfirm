@@ -425,6 +425,19 @@ int   get_method_n_ress   (type *method);
 type *get_method_res_type(type *method, int pos);
 void  set_method_res_type(type *method, int pos, type* tp);
 
+/*
+ * this enum flags the variadicity of methods (methods with a
+ * variable amount of arguments (e.g. C's printf). Default is
+ * non_variadic.
+ */
+typedef enum variadicity {
+  non_variadic,
+  variadic
+} variadicity;
+
+variadicity get_method_variadicity(type *method);
+void set_method_variadicity(type *method, variadicity vari);
+
 /* typecheck */
 bool  is_method_type     (type *method);
 
