@@ -64,22 +64,22 @@ void stat_turn_into_id(const ir_node *node);
 /**
  * A new graph was created
  */
-void stat_new_graph(const ir_graph *irg, entity *ent);
+void stat_new_graph(ir_graph *irg, entity *ent);
 
 /**
  * A graph was deleted
  */
-void stat_free_graph(const ir_graph *irg);
+void stat_free_graph(ir_graph *irg);
 
 /**
  * A walk over a graph is initiated
  */
-void stat_irg_walk(const ir_graph *irg, void *pre, void *post);
+void stat_irg_walk(ir_graph *irg, void *pre, void *post);
 
 /**
  * A walk over the graph's blocks is initiated
  */
-void stat_irg_block_walk(const ir_graph *irg, const ir_node *node, void *pre, void *post);
+void stat_irg_block_walk(ir_graph *irg, const ir_node *node, void *pre, void *post);
 
 /**
  * Some nodes were optimized into some others due to an optimization
@@ -97,7 +97,17 @@ void stat_lower(ir_node *node);
 /**
  * A graph was inlined
  */
-void stat_inline(const ir_node *call, const ir_graph *irg);
+void stat_inline(ir_node *call, ir_graph *irg);
+
+/**
+ * Start the dead node elimination.
+ */
+void stat_dead_node_elim_start(ir_graph *irg);
+
+/**
+ * Stops the dead node elimination.
+ */
+void stat_dead_node_elim_stop(ir_graph *irg);
 
 #else
 
@@ -114,6 +124,8 @@ void stat_inline(const ir_node *call, const ir_graph *irg);
 #define stat_merge_nodes(new_node_array, new_num_entries, old_node_array, old_num_entries, opt)
 #define stat_lower(node)
 #define stat_inline(call, irg)
+#define stat_dead_node_elim_start(irg)
+#define stat_dead_node_elim_start(irg)
 
 #endif
 
