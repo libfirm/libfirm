@@ -422,6 +422,8 @@ void rta_delete_dead_graphs (void)
   int n_graphs = get_irp_n_irgs ();
   ir_graph *graph = NULL;
 
+  if (!get_optimize() || !get_opt_dead_method_elimination()) return;
+
   eset *dead_graphs = eset_create ();
 
   for (i = 0; i < n_graphs; i++) {
@@ -445,7 +447,7 @@ void rta_delete_dead_graphs (void)
        graph;
        graph = (ir_graph*) eset_next (dead_graphs)) {
 
-    if (verbose) {
+    if (verbose || get_opt_dead_method_elimination_verbose ()) {
       fprintf(stdout, "RTA: removing graph of ");
       DDMEO(get_irg_ent (graph));
     }
@@ -515,6 +517,9 @@ void rta_report (void)
 
 /*
  * $Log$
+ * Revision 1.16  2004/06/24 06:42:14  goetz
+ * test of firm flags
+ *
  * Revision 1.15  2004/06/18 15:47:19  liekweg
  * minor bug fix (go forward, not backward) --flo
  *
