@@ -18,6 +18,8 @@
  */
 typedef struct {
   int also_use_subs : 1; /**< Use also Subs when resolving muls to shifts */
+  int allow_mulhs   : 1; /**< Use the Mulhs operation for division by constant */
+  int allow_mulhu   : 1; /**< Use the Mulhu operation for division by constant */
 
   int maximum_shifts;    /**< The maximum number of shifts that shall be
 			    inserted for a mul. */
@@ -25,7 +27,6 @@ typedef struct {
   int highest_shift_amount; /**< The highest shift amount you want to
 			       tolerate. Muls which would require a higher
 			       shift constant are left. */
-
 } arch_dep_params_t;
 
 /**
@@ -45,8 +46,8 @@ const arch_dep_params_t *arch_dep_default_factory(void);
 typedef enum {
   arch_dep_none         = 0,
   arch_dep_mul_to_shift = 1,	/**< optimize Mul into Shift/Add/Sub */
-  arch_dep_div_to_shift = 2,	/**< optimize Div into Shift/Add/Mul */
-  arch_dep_mod_to_shift = 4	/**< optimize Mod into Shift/Add/Mul */
+  arch_dep_div_by_const = 2,	/**< optimize Div into Shift/Add/Mulh */
+  arch_dep_mod_by_const = 4	/**< optimize Mod into Shift/Add/Mulh */
 } arch_dep_opts_t;
 
 /**
@@ -82,56 +83,52 @@ void arch_dep_set_opts(arch_dep_opts_t opts);
 ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn);
 
 /**
- * Replace Divs with Shifts and Add/Subs.
+ * Replace Divs with Shifts and Add/Subs and Mulh.
  * This function is driven by the 3 parameters:
- * - also_use_subs
- * - maximum_shifts
- * - highest_shift_amount
+ * - allow_mulhu
+ * - allow_mulhs
  *
  * If irn is a Div with a Const, The constant is inspected, if it meets the
- * requirements of the three variables stated above. If a Shl/Add/Sub
+ * requirements of the variables stated above. If a Shl/Add/Sub/Mulh
  * sequence can be generated, that meets these requirements, this expression
  * is returned. In each other case, irn is returned unmodified.
  *
  * @param irn       The Firm node to inspect.
  * @return          A replacement expression for irn.
  */
-ir_node *arch_dep_replace_div_with_shifts(ir_node *irn);
+ir_node *arch_dep_replace_div_by_const(ir_node *irn);
 
 /**
- * Replace Mods with Shifts and Add/Subs.
+ * Replace Mods with Shifts and Add/Subs and Mulh.
  * This function is driven by the 3 parameters:
- * - also_use_subs
- * - maximum_shifts
- * - highest_shift_amount
+ * - allow_mulhu
+ * - allow_mulhs
  *
- * If irn is a Div with a Const, The constant is inspected, if it meets the
- * requirements of the three variables stated above. If a Shl/Add/Sub
+ * If irn is a Mod with a Const, The constant is inspected, if it meets the
+ * requirements of the variables stated above. If a Shl/Add/Sub/Mulh
  * sequence can be generated, that meets these requirements, this expression
  * is returned. In each other case, irn is returned unmodified.
  *
  * @param irn       The Firm node to inspect.
  * @return          A replacement expression for irn.
  */
-ir_node *arch_dep_replace_mod_with_shifts(ir_node *irn);
+ir_node *arch_dep_replace_mod_by_const(ir_node *irn);
 
 /**
- * Replace Mods with Shifts and Add/Subs.
+ * Replace DivMods with Shifts and Add/Subs and Mulh.
  * This function is driven by the 3 parameters:
- * - also_use_subs
- * - maximum_shifts
- * - highest_shift_amount
+ * - allow_mulhu
+ * - allow_mulhs
  *
- * If irn is a Div with a Const, The constant is inspected, if it meets the
- * requirements of the three variables stated above. If a Shl/Add/Sub
+ * If irn is a DivMod with a Const, The constant is inspected, if it meets the
+ * requirements of the variables stated above. If a Shl/Add/Sub/Mulh
  * sequence can be generated, that meets these requirements, this expression
  * is returned. In each other case, irn is returned unmodified.
  *
  * @param div       After call contains the Firm node div result or NULL.
  * @param mod       After call contains the Firm node mod result or NULL.
  * @param irn       The Firm node to inspect.
- * @return          A replacement expression for irn.
  */
-void arch_dep_replace_divmod_with_shifts(ir_node **div, ir_node **mod, ir_node *irn);
+void arch_dep_replace_divmod_by_const(ir_node **div, ir_node **mod, ir_node *irn);
 
 #endif
