@@ -1088,17 +1088,22 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode);
 static inline ir_node *
 phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins);
 
-inline ir_node **
+ir_node **
 new_frag_arr (ir_node *n) {
   ir_node **arr;
+  int opt;
   arr = NEW_ARR_D (ir_node *, current_ir_graph->obst, current_ir_graph->n_loc);
   memcpy(arr, current_ir_graph->current_block->attr.block.graph_arr,
 	 sizeof(ir_node *)*current_ir_graph->n_loc);
+  /* turn off optimization before allocating Proj nodes, as res isn't
+     finished yet. */
+  opt = get_optimize(); set_optimize(0);
   /* Here we rely on the fact that all frag ops have Memory as first result! */
   if (get_irn_op(n) == op_Call)
     arr[0] = new_Proj(n, mode_M, 3);
   else
     arr[0] = new_Proj(n, mode_M, 0);
+  set_optimize(opt);
   current_ir_graph->current_block->attr.block.graph_arr[current_ir_graph->n_loc-1] = n;
   return arr;
 }
@@ -1480,7 +1485,8 @@ new_Quot (ir_node *memop, ir_node *op1, ir_node *op2)
   res = new_r_Quot (current_ir_graph, current_ir_graph->current_block,
 		     memop, op1, op2);
 #if PRECISE_EXC_CONTEXT
-  if (current_ir_graph->phase_state == phase_building)
+  if ((current_ir_graph->phase_state == phase_building) &&
+      (get_irn_op(res) == op_Quot))  /* Could be optimized away. */
     res->attr.frag_arr = new_frag_arr(res);
 #endif
 
@@ -1494,7 +1500,8 @@ new_DivMod (ir_node *memop, ir_node *op1, ir_node *op2)
   res = new_r_DivMod (current_ir_graph, current_ir_graph->current_block,
 		       memop, op1, op2);
 #if PRECISE_EXC_CONTEXT
-  if (current_ir_graph->phase_state == phase_building)
+  if ((current_ir_graph->phase_state == phase_building) &&
+      (get_irn_op(res) == op_DivMod))   /* Could be optimized away. */
     res->attr.frag_arr = new_frag_arr(res);
 #endif
 
@@ -1508,7 +1515,8 @@ new_Div (ir_node *memop, ir_node *op1, ir_node *op2)
   res = new_r_Div (current_ir_graph, current_ir_graph->current_block,
 		    memop, op1, op2);
 #if PRECISE_EXC_CONTEXT
-  if (current_ir_graph->phase_state == phase_building)
+  if ((current_ir_graph->phase_state == phase_building) &&
+      (get_irn_op(res) == op_Div))  /* Could be optimized away. */
     res->attr.frag_arr = new_frag_arr(res);
 #endif
 
@@ -1522,7 +1530,8 @@ new_Mod (ir_node *memop, ir_node *op1, ir_node *op2)
   res = new_r_Mod (current_ir_graph, current_ir_graph->current_block,
 		    memop, op1, op2);
 #if PRECISE_EXC_CONTEXT
-  if (current_ir_graph->phase_state == phase_building)
+  if ((current_ir_graph->phase_state == phase_building) &&
+      (get_irn_op(res) == op_Mod))  /* Could be optimized away. */
     res->attr.frag_arr = new_frag_arr(res);
 #endif
 
@@ -1619,7 +1628,8 @@ new_Call (ir_node *store, ir_node *callee, int arity, ir_node **in,
   res = new_r_Call (current_ir_graph, current_ir_graph->current_block,
 		     store, callee, arity, in, type);
 #if PRECISE_EXC_CONTEXT
-  if (current_ir_graph->phase_state == phase_building)
+  if ((current_ir_graph->phase_state == phase_building) &&
+      (get_irn_op(res) == op_Call))  /* Could be optimized away. */
     res->attr.call.frag_arr = new_frag_arr(res);
 #endif
 
@@ -1647,7 +1657,8 @@ new_Load (ir_node *store, ir_node *addr)
   res = new_r_Load (current_ir_graph, current_ir_graph->current_block,
 		     store, addr);
 #if PRECISE_EXC_CONTEXT
-  if (current_ir_graph->phase_state == phase_building)
+  if ((current_ir_graph->phase_state == phase_building) &&
+      (get_irn_op(res) == op_Load))  /* Could be optimized away. */
     res->attr.frag_arr = new_frag_arr(res);
 #endif
 
@@ -1661,7 +1672,8 @@ new_Store (ir_node *store, ir_node *addr, ir_node *val)
   res = new_r_Store (current_ir_graph, current_ir_graph->current_block,
 		      store, addr, val);
 #if PRECISE_EXC_CONTEXT
-  if (current_ir_graph->phase_state == phase_building)
+  if ((current_ir_graph->phase_state == phase_building) &&
+      (get_irn_op(res) == op_Store))  /* Could be optimized away. */
     res->attr.frag_arr = new_frag_arr(res);
 #endif
 
@@ -1676,7 +1688,8 @@ new_Alloc (ir_node *store, ir_node *size, type *alloc_type,
   res = new_r_Alloc (current_ir_graph, current_ir_graph->current_block,
 		      store, size, alloc_type, where);
 #if PRECISE_EXC_CONTEXT
-  if (current_ir_graph->phase_state == phase_building)
+  if ((current_ir_graph->phase_state == phase_building) &&
+      (get_irn_op(res) == op_Alloc))  /* Could be optimized away. */
     res->attr.a.frag_arr = new_frag_arr(res);
 #endif
 

@@ -988,7 +988,7 @@ optimize (ir_node *n)
     if  (get_irn_op(n) != op_Const) {
       /* try to evaluate */
       tv = computed_value (n);
-      if (tv != NULL) {
+      if ((get_irn_mode(n) != mode_T) && (tv != NULL)) {
         /* evaluation was succesful -- replace the node. */
 	obstack_free (current_ir_graph->obst, n);
 	return new_Const (get_tv_mode (tv), tv);
@@ -1062,7 +1062,7 @@ optimize_in_place_2 (ir_node *n)
     if  (get_irn_op(n) != op_Const) {
       /* try to evaluate */
       tv = computed_value (n);
-      if (tv != NULL) {
+      if ((get_irn_mode(n) != mode_T) && (tv != NULL)) {
         /* evaluation was succesful -- replace the node. */
 	n = new_Const (get_tv_mode (tv), tv);
 	deb_info_copy(n, old_n, id_from_str("const_eval", 10));
