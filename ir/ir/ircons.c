@@ -606,7 +606,6 @@ new_End (void)
   return res;
 }
 
-#if 1
 /* Constructs a Block with a fixed number of predecessors.
    Does set current_block.  Can be used with automatic Phi
    node construction. */
@@ -628,13 +627,6 @@ new_Block (int arity, ir_node **in)
 
   return res;
 }
-#else
-ir_node *
-new_Block (void)
-{
-  return new_immBlock();
-}
-#endif
 
 /*************************************************************************/
 /* Methods necessary for automatic Phi node creation                     */
