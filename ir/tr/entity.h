@@ -151,7 +151,8 @@ void        set_entity_ld_ident (entity *ent, ident *ld_ident);
 const char *get_entity_ld_name (entity *end);
 
 type       *get_entity_owner (entity *ent);
-/* Sets the owner field in entity to owner. */
+/* Sets the owner field in entity to owner.  Don't forget to add
+   ent to owner!! */
 void        set_entity_owner (entity *ent, type *owner);
 INLINE void assert_legal_owner_of_ent(type *owner);
 
@@ -247,6 +248,7 @@ int      get_compound_ent_n_values(entity *ent);
 ir_node *get_compound_ent_value(entity *ent, int pos);
 entity  *get_compound_ent_value_member(entity *ent, int pos);
 void     set_compound_ent_value(entity *ent, ir_node *val, entity *member, int pos);
+void     remove_compound_ent_value(entity *ent, entity *value_ent);
 /* Inits the entity ent witch must be of a one dimensional
    array type with the values given in the values array.
    The array must have a lower and an upper bound.  Keeps the

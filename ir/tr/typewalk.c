@@ -182,6 +182,7 @@ void type_walk(void (pre)(type_or_ent*, void*),
   for (i = 0; i < get_irp_n_types(); i++) {
     type_walk_2((type_or_ent *)get_irp_type(i), pre, post, env);
   }
+  type_walk_2((type_or_ent *)get_glob_type(), pre, post, env);
 }
 
 void type_walk_irg (ir_graph *irg,
@@ -456,5 +457,37 @@ void class_walk_super2sub(void (pre)(type*, void*),
       assert(tp != get_glob_type());
       class_walk_s2s_2(tp, pre, post, env);
     }
+  }
+}
+
+
+/* Walks over all entities in the type */
+void walk_types_entities(type *tp,
+			 void (doit)(entity*, void*),
+			 void *env) {
+  int i;
+  switch(get_type_tpop_code(tp)) {
+  case tpo_class: {
+    for (i=0; i<get_class_n_members(tp); i++)
+      doit(get_class_member(tp, i), env);
+  } break;
+  case tpo_struct: {
+    for (i=0; i<get_struct_n_members(tp); i++)
+      doit(get_struct_member(tp, i), env);
+  } break;
+  case tpo_union: {
+    for (i = 0; i < get_union_n_members(tp); i++)
+      doit(get_union_member(tp, i), env);
+  } break;
+  case tpo_array: {
+      doit(get_array_element_entity(tp), env);
+  } break;
+  case tpo_method:
+  case tpo_enumeration:
+  case tpo_pointer:
+  case tpo_primitive:
+  case tpo_id:
+  default:
+    break;
   }
 }

@@ -564,13 +564,14 @@ void    set_class_members  (type *clss, entity **members, int arity) {
 void    remove_class_member(type *clss, entity *member) {
   int i;
   assert(clss && (clss->type_op == type_class));
-  for (i = 1; i < (ARR_LEN (clss->attr.ca.members)); i++)
+  for (i = 1; i < (ARR_LEN (clss->attr.ca.members)); i++) {
     if (clss->attr.ca.members[i] == member) {
       for(; i < (ARR_LEN (clss->attr.ca.members)) - 1; i++)
 	clss->attr.ca.members[i] = clss->attr.ca.members[i + 1];
       ARR_SETLEN(entity*, clss->attr.ca.members, ARR_LEN(clss->attr.ca.members) - 1);
       break;
     }
+  }
 }
 
 void    add_class_subtype   (type *clss, type *subtype) {

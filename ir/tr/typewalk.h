@@ -67,4 +67,10 @@ void type_walk_super(void (pre)(type_or_ent*, void*),
 void class_walk_super2sub(void (pre)(type*, void*),
 			  void (post)(type*, void*),
 			  void *env);
+
+
+/* Walks over all entities in the type */
+void walk_types_entities(type *tp,
+			 void (doit)(entity*, void*),
+			 void *env);
 #endif /* _TYPEWALK_H_ */

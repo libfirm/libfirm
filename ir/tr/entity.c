@@ -389,6 +389,23 @@ set_compound_ent_value(entity *ent, ir_node *val, entity *member, int pos) {
 }
 
 void
+remove_compound_ent_value(entity *ent, entity *value_ent) {
+  int i;
+  assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
+  for (i = 1; i < (ARR_LEN (ent->val_ents)); i++) {
+    if (ent->val_ents[i] == value_ent) {
+      for(; i < (ARR_LEN (ent->val_ents))-1; i++) {
+	ent->val_ents[i] = ent->val_ents[i+1];
+	ent->values[i]   = ent->values[i+1];
+      }
+      ARR_SETLEN(entity*,  ent->val_ents, ARR_LEN(ent->val_ents) - 1);
+      ARR_SETLEN(ir_node*, ent->values,   ARR_LEN(ent->values) - 1);
+      break;
+    }
+  }
+}
+
+void
 set_array_entity_values(entity *ent, tarval **values, int num_vals) {
   int i;
   ir_graph *rem = current_ir_graph;
