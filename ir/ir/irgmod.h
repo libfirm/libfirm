@@ -6,6 +6,9 @@
 ** irgmod.h: ir graph modification
 */
 
+# ifndef _IRGMOD_H_
+# define _IRGMOD_H_
+
 # include "irnode.h"
 
 
@@ -19,3 +22,5 @@ void turn_into_tuple (ir_node *node, int arity);
 /* Exchanges two nodes by conserving edges leaving old (i.e., pointers)
    pointing to old. */
 inline void exchange (ir_node *old, ir_node *new);
+
+#endif /* ifndef _IRGMOD_H_ */

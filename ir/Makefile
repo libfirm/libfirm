@@ -12,7 +12,7 @@
 # Further it updates the TAGS file with each recompilation
 
 SUBDIRS = adt common debug ident ir tr tv
-INCLUDES = -I../adt -I../common -I../debug -I../ident -I../include \
+INCLUDES = -I../adt -I../common -I../debug -I../ident -I../../include \
 	   -I../ir -I../tr -I../tv
 OFILES =
 

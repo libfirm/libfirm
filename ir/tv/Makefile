@@ -14,7 +14,7 @@ DEPENDFLAGS = -M
 LIBPATH     =
 LIBS        =
 X_LIBS      =
-INCLUDES    = -I../adt -I../common -I../debug -I../ident -I../include \
+INCLUDES    = -I../adt -I../common -I../debug -I../ident -I../../include \
 	      -I../ir -I../tr -I../tv
 X_INCLUDES  =
 
