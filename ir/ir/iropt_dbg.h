@@ -20,8 +20,8 @@
 /**
  * Merge the debug info due to dead code elimination
  */
-#define DBG_OPT_DEAD                                                \
-  do {                                                       \
+#define DBG_OPT_DEAD(oldn, n)                                      \
+  do {                                                             \
 	  ir_node *ons[2];                                         \
 	  ons[0] = oldn;                                           \
 	  ons[1] = get_Block_cfgpred(oldn, 0);                     \
@@ -33,8 +33,8 @@
 /**
  * Merge the debug info due to a straightening optimization
  */
-#define DBG_OPT_STG                                                \
-  do {                                                       \
+#define DBG_OPT_STG(oldn, n)                                       \
+  do {                                                             \
 	  ir_node *ons[2];                                         \
 	  ons[0] = oldn;                                           \
 	  ons[1] = get_Block_cfgpred(oldn, 0);                     \
@@ -45,28 +45,28 @@
 /**
  * Merge the debug info due to an if simplification
  */
-#define DBG_OPT_IFSIM                                                 \
-  do {                                                          \
+#define DBG_OPT_IFSIM(oldn, a, b, n)                                  \
+  do {                                                                \
 	  ir_node *ons[4];                                            \
-	  ons[0] = oldn;                                                 \
+	  ons[0] = oldn;                                              \
 	  ons[1] = a;                                                 \
 	  ons[2] = b;                                                 \
 	  ons[3] = get_Proj_pred(a);                                  \
-	  stat_merge_nodes(&n, 1, ons, SIZ(ons), STAT_OPT_IFSIM);	   \
+	  stat_merge_nodes(&n, 1, ons, SIZ(ons), STAT_OPT_IFSIM);     \
 	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_if_simplification); \
 	} while(0)
 
 /**
  * Merge the debug info due to an algebraic_simplification
  */
-#define DBG_OPT_ALGSIM0                                               	\
+#define DBG_OPT_ALGSIM0(oldn, n)                                      	\
   do {                                                          	\
 	  stat_merge_nodes(&n, 1, &oldn, 1, STAT_OPT_CONST_EVAL);    	\
           __dbg_info_merge_pair(n, oldn, dbg_const_eval);		\
 	} while(0)
 
-#define DBG_OPT_ALGSIM1                                               \
-  do {                                                          \
+#define DBG_OPT_ALGSIM1(oldn, a, b, n)                                \
+  do {                                                                \
 	  ir_node *ons[3];                                            \
 	  ons[0] = oldn;                                              \
 	  ons[1] = a;                                                 \
@@ -75,18 +75,18 @@
 	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_algebraic_simplification); \
 	} while(0)
 
-#define DBG_OPT_ALGSIM2                                               \
+#define DBG_OPT_ALGSIM2(oldn, pred, n)                                \
   do {                                                                \
 	  ir_node *ons[3];                                            \
 	  ons[0] = oldn;                                              \
-	  ons[1] = get_unop_op(oldn);                                 \
+	  ons[1] = pred;                                              \
 	  ons[2] = n;                                                 \
 	  stat_merge_nodes(&n, 1, ons, SIZ(ons), STAT_OPT_ALGSIM);    \
 	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_algebraic_simplification); \
 	} while(0)
 
-#define DBG_OPT_ALGSIM3                                               \
-  do {                                                          \
+#define DBG_OPT_ALGSIM3(oldn, a, n)                                   \
+  do {                                                                \
 	  ir_node *ons[2];                                            \
 	  ons[0] = oldn;                                              \
 	  ons[1] = a;                                                 \
@@ -94,8 +94,8 @@
 	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_algebraic_simplification); \
 	} while(0)
 
-#define DBG_OPT_PHI                                                   \
-  do {                                                          \
+#define DBG_OPT_PHI(oldn, first_val, n)                               \
+  do {                                                                \
 	  ir_node *ons[2];                                            \
 	  ons[0] = oldn;                                              \
 	  ons[1] = first_val;                                         \
@@ -140,8 +140,8 @@
 	  __dbg_info_merge_sets(&ld1, 1, ons, SIZ(ons), dbg_read_after_read); \
 	} while(0)
 
-#define DBG_OPT_TUPLE                                                 \
-  do {                                                          \
+#define DBG_OPT_TUPLE(oldn, a, n)                                     \
+  do {                                                                \
 	  ir_node *ons[3];                                            \
 	  ons[0] = oldn;                                              \
 	  ons[1] = a;                                                 \
@@ -150,8 +150,8 @@
 	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_opt_auxnode);      \
 	} while(0)
 
-#define DBG_OPT_ID                                                \
-  do {                                                          \
+#define DBG_OPT_ID(oldn, n)                                           \
+  do {                                                                \
 	  ir_node *ons[2];                                            \
 	  ons[0] = oldn;                                              \
 	  ons[1] = n;                                                 \

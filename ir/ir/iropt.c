@@ -549,9 +549,11 @@ static ir_node *equivalent_node_Block(ir_node *n)
      ir_node *predblock = get_nodes_block(get_Block_cfgpred(n, 0));
      if (predblock == oldn) {
        /* Jmp jumps into the block it is in -- deal self cycle. */
-       n = new_Bad();                                      DBG_OPT_DEAD;
+       n = new_Bad();
+       DBG_OPT_DEAD(oldn, n);
      } else if (get_opt_control_flow_straightening()) {
-       n = predblock;                                      DBG_OPT_STG;
+       n = predblock;
+       DBG_OPT_STG(oldn, n);
      }
    }
    else if ((get_Block_n_cfgpreds(n) == 1) &&
@@ -559,7 +561,8 @@ static ir_node *equivalent_node_Block(ir_node *n)
      ir_node *predblock = get_nodes_block(get_Block_cfgpred(n, 0));
      if (predblock == oldn) {
        /* Jmp jumps into the block it is in -- deal self cycle. */
-       n = new_Bad();                                      DBG_OPT_DEAD;
+       n = new_Bad();
+       DBG_OPT_DEAD(oldn, n);
      }
    }
    else if ((get_Block_n_cfgpreds(n) == 2) &&
@@ -576,7 +579,8 @@ static ir_node *equivalent_node_Block(ir_node *n)
         (get_irn_mode(get_Cond_selector(get_Proj_pred(a))) == mode_b)) {
       /* Also a single entry Block following a single exit Block.  Phis have
          twice the same operand and will be optimized away. */
-      n = get_nodes_block(a);                                         DBG_OPT_IFSIM;
+      n = get_nodes_block(a);
+      DBG_OPT_IFSIM(oldn, a, b, n);
     }
   } else if (get_opt_unreachable_code() &&
              (n != current_ir_graph->start_block) &&
@@ -628,7 +632,9 @@ static ir_node *equivalent_node_Or(ir_node *n)
 
   /* remove a v a */
   if (a == b) {
-    n = a;                                                             DBG_OPT_ALGSIM1;
+    n = a;
+
+    DBG_OPT_ALGSIM1(oldn, a, b, n);
   }
 
   return n;
@@ -660,7 +666,9 @@ static ir_node *equivalent_node_neutral_zero(ir_node *n)
   /* If this predecessors constant value is zero, the operation is
      unnecessary. Remove it: */
   if (classify_tarval (tv) == TV_CLASSIFY_NULL) {
-    n = on;                                                             DBG_OPT_ALGSIM1;
+    n = on;
+
+    DBG_OPT_ALGSIM1(oldn, a, b, n);
   }
 
   return n;
@@ -681,7 +689,9 @@ static ir_node *equivalent_node_left_zero(ir_node *n)
   ir_node *b = get_binop_right(n);
 
   if (classify_tarval(computed_value(b)) == TV_CLASSIFY_NULL) {
-    n = a;                                                              DBG_OPT_ALGSIM1;
+    n = a;
+
+    DBG_OPT_ALGSIM1(oldn, a, b, n);
   }
 
   return n;
@@ -703,7 +713,8 @@ static ir_node *equivalent_node_symmetric_unop(ir_node *n)
 
   /* optimize symmetric unop */
   if (get_irn_op(pred) == get_irn_op(n)) {
-    n = get_unop_op(pred);                                             DBG_OPT_ALGSIM2;
+    n = get_unop_op(pred);
+    DBG_OPT_ALGSIM2(oldn, pred, n);
   }
   return n;
 }
@@ -727,9 +738,11 @@ static ir_node *equivalent_node_Mul(ir_node *n)
 
   /* Mul is commutative and has again an other neutral element. */
   if (classify_tarval (computed_value (a)) == TV_CLASSIFY_ONE) {
-    n = b;                                                              DBG_OPT_ALGSIM1;
+    n = b;
+    DBG_OPT_ALGSIM1(oldn, a, b, n);
   } else if (classify_tarval (computed_value (b)) == TV_CLASSIFY_ONE) {
-    n = a;                                                              DBG_OPT_ALGSIM1;
+    n = a;
+    DBG_OPT_ALGSIM1(oldn, a, b, n);
   }
   return n;
 }
@@ -768,10 +781,11 @@ static ir_node *equivalent_node_And(ir_node *n)
     n = a;    /* And has it's own neutral element */
   } else if (classify_tarval(computed_value(a)) == TV_CLASSIFY_ALL_ONE) {
     n = b;
+    DBG_OPT_ALGSIM1(oldn, a, b, n);
   } else if (classify_tarval(computed_value(b)) == TV_CLASSIFY_ALL_ONE) {
     n = a;
+    DBG_OPT_ALGSIM1(oldn, a, b, n);
   }
-  if (n != oldn)                                                        DBG_OPT_ALGSIM1;
   return n;
 }
 
@@ -788,7 +802,8 @@ static ir_node *equivalent_node_Conv(ir_node *n)
   ir_mode *a_mode = get_irn_mode(a);
 
   if (n_mode == a_mode) { /* No Conv necessary */
-    n = a;                                                              DBG_OPT_ALGSIM3;
+    n = a;
+    DBG_OPT_ALGSIM3(oldn, a, n);
   } else if (get_irn_op(a) == op_Conv) { /* Conv(Conv(b)) */
     ir_mode *b_mode;
 
@@ -798,11 +813,13 @@ static ir_node *equivalent_node_Conv(ir_node *n)
 
     if (n_mode == b_mode) {
       if (n_mode == mode_b) {
-        n = b; /* Convb(Conv*(xxxb(...))) == xxxb(...) */               DBG_OPT_ALGSIM1;
+        n = b; /* Convb(Conv*(xxxb(...))) == xxxb(...) */
+	DBG_OPT_ALGSIM1(oldn, a, b, n);
       }
       else if (mode_is_int(n_mode) || mode_is_character(n_mode)) {
         if (smaller_mode(b_mode, a_mode)){
-          n = b;        /* ConvS(ConvL(xxxS(...))) == xxxS(...) */      DBG_OPT_ALGSIM1;
+          n = b;        /* ConvS(ConvL(xxxS(...))) == xxxS(...) */
+	  DBG_OPT_ALGSIM1(oldn, a, b, n);
         }
       }
     }
@@ -894,7 +911,8 @@ static ir_node *equivalent_node_Phi(ir_node *n)
 
   /* Fold, if no multiple distinct non-self-referencing inputs */
   if (i >= n_preds) {
-    n = first_val;                                     DBG_OPT_PHI;
+    n = first_val;
+    DBG_OPT_PHI(oldn, first_val, n);
   } else {
     /* skip the remaining Ids (done in get_Phi_pred). */
     /* superfluous, since we walk all to propagate Block's Bads.
@@ -915,7 +933,8 @@ static ir_node *equivalent_node_Proj(ir_node *n)
   if ( get_irn_op(a) == op_Tuple) {
     /* Remove the Tuple/Proj combination. */
     if ( get_Proj_proj(n) <= get_Tuple_n_preds(a) ) {
-      n = get_Tuple_pred(a, get_Proj_proj(n));                     DBG_OPT_TUPLE;
+      n = get_Tuple_pred(a, get_Proj_proj(n));
+      DBG_OPT_TUPLE(oldn, a, n);
     } else {
       assert(0); /* This should not happen! */
       n = new_Bad();
@@ -935,7 +954,8 @@ static ir_node *equivalent_node_Id(ir_node *n)
 {
   ir_node *oldn = n;
 
-  n = follow_Id(n);                                                 DBG_OPT_ID;
+  n = follow_Id(n);
+  DBG_OPT_ID(oldn, n);
   return n;
 }
 
@@ -1809,15 +1829,19 @@ optimize_node (ir_node *n)
          * for DBG_OPT_ALGSIM0
          */
         int node_size = offsetof(ir_node, attr) +  n->op->attr_size;
-        ir_node *x = alloca(node_size);
+        oldn = alloca(node_size);
 
-        memcpy(x, n, node_size);
-        oldn = x;
+        memcpy(oldn, n, node_size);
+	CLONE_ARR_A(ir_node *, oldn->in, n->in);
+
+	/* ARG, copy the in array, we need it for statistics */
+	memcpy(oldn->in, n->in, ARR_LEN(n->in) * sizeof(n->in[0]));
 
         /* evaluation was successful -- replace the node. */
         obstack_free (current_ir_graph->obst, n);
         n = new_Const (get_tarval_mode (tv), tv);
-                                                        DBG_OPT_ALGSIM0;
+
+        DBG_OPT_ALGSIM0(oldn, n);
         return n;
       }
     }
@@ -1900,7 +1924,8 @@ optimize_in_place_2 (ir_node *n)
       if ((get_irn_mode(n) != mode_T) && (tv != tarval_bad)) {
         /* evaluation was successful -- replace the node. */
         n = new_Const (get_tarval_mode (tv), tv);
-                                                DBG_OPT_ALGSIM0;
+
+        DBG_OPT_ALGSIM0(oldn, n);
         return n;
       }
     }
