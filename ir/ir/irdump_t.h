@@ -57,7 +57,6 @@
 #define PRINT_ITEMID(X,Y)     fprintf(F, "i%ldT%d", get_type_nr(X), (Y))
 
 extern int dump_dominator_information_flag;
-extern const char *dump_file_filter;
 extern bool opt_dump_pointer_values_to_info;
 
 FILE *vcg_open (ir_graph *irg, const char * suffix1, const char *suffix2);

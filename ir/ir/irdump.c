@@ -60,6 +60,9 @@ extern SeqNo get_Block_seqno(ir_node *n);
 static int n_colors   = 0;
 static int base_color = 0;
 
+/** Dump only irgs with names that start with this string */
+static ident *dump_file_filter_id = NULL;
+
 #define ERROR_TXT       "<ERROR>"
 
 /**
@@ -241,8 +244,8 @@ static void init_irdump(void) {
   /* We need a new, empty map. */
   if (irdump_link_map) pmap_destroy(irdump_link_map);
   irdump_link_map = pmap_create();
+  dump_file_filter_id = new_id_from_str("");
 }
-
 /**
  * Returns the private link field.
  */
@@ -382,9 +385,6 @@ static ir_node ** construct_block_lists(ir_graph *irg) {
 /* flags to steer output                                           */
 /*******************************************************************/
 
-/** Dump only irgs with names start with this string */
-const char *dump_file_filter = "";
-
 /** A compiler option to turn off edge labels */
 static int edge_label = 1;
 /** A compiler option to turn off dumping values of constant entities */
@@ -419,9 +419,18 @@ INLINE bool get_opt_dump_const_local(void) {
 }
 
 void only_dump_method_with_name(ident *name) {
-  dump_file_filter = get_id_str(name);
+  dump_file_filter_id = name;
 }
 
+ident *get_dump_file_filter_ident(void) {
+  return dump_file_filter_id;
+}
+
+/** Returns true if dump file filter is not set, or if it is a
+ *  prefix of name. */
+int is_filtered_dump_name(ident *name) {
+  return id_is_prefix(dump_file_filter_id, name);
+}
 
 /* To turn off display of edge labels.  Edge labels offen cause xvcg to
    abort with a segmentation fault. */
@@ -1828,8 +1837,7 @@ dump_ir_graph (ir_graph *irg, const char *suffix )
   char *suffix1;
   rem = current_ir_graph;
 
-  if (strncmp(get_entity_name(get_irg_entity(irg)),
-          dump_file_filter, strlen(dump_file_filter)) != 0) return;
+  if (!is_filtered_dump_name(get_entity_ident(get_irg_entity(irg)))) return;
 
   current_ir_graph = irg;
   if (get_interprocedural_view()) suffix1 = "-pure-ip";
@@ -1859,7 +1867,7 @@ dump_ir_block_graph (ir_graph *irg, const char *suffix)
   int i;
   char *suffix1;
 
-  if (strncmp(get_entity_name(get_irg_entity(irg)), dump_file_filter, strlen(dump_file_filter)) != 0)
+  if (!is_filtered_dump_name(get_entity_ident(get_irg_entity(irg))))
     return;
 
   if (get_interprocedural_view()) suffix1 = "-ip";
@@ -1889,7 +1897,7 @@ dump_ir_graph_w_types (ir_graph *irg, const char *suffix)
   char *suffix1;
 
   /* if a filter is set, dump only the irg's that match the filter */
-  if (strncmp(get_entity_name(get_irg_entity(irg)), dump_file_filter, strlen(dump_file_filter)) != 0)
+  if (!is_filtered_dump_name(get_entity_ident(get_irg_entity(irg))))
     return;
 
   current_ir_graph = irg;
@@ -1920,7 +1928,7 @@ dump_ir_block_graph_w_types (ir_graph *irg, const char *suffix)
   ir_graph *rem = current_ir_graph;
 
   /* if a filter is set, dump only the irg's that match the filter */
-  if (strncmp(get_entity_name(get_irg_entity(irg)), dump_file_filter, strlen(dump_file_filter)) != 0)
+  if (!is_filtered_dump_name(get_entity_ident(get_irg_entity(irg))))
     return;
 
   if (get_interprocedural_view()) suffix1 = "-wtypes-ip";
@@ -2035,7 +2043,7 @@ dump_cfg (ir_graph *irg, const char *suffix)
   int ipv = get_interprocedural_view();
 
   /* if a filter is set, dump only the irg's that match the filter */
-  if (strncmp(get_entity_name(get_irg_entity(irg)), dump_file_filter, strlen(dump_file_filter)) != 0)
+  if (!is_filtered_dump_name(get_entity_ident(get_irg_entity(irg))))
     return;
 
   current_ir_graph = irg;
@@ -2211,7 +2219,7 @@ dump_type_graph (ir_graph *irg, const char *suffix)
   rem = current_ir_graph;
 
   /* if a filter is set, dump only the irg's that match the filter */
-  if (strncmp(get_entity_name(get_irg_entity(irg)), dump_file_filter, strlen(dump_file_filter)) != 0) return;
+  if (!is_filtered_dump_name(get_entity_ident(get_irg_entity(irg)))) return;
 
   current_ir_graph = irg;
 
@@ -2366,8 +2374,7 @@ void dump_loop_tree(ir_graph *irg, const char *suffix)
   edge_label = 1;
 
   /* if a filter is set, dump only the irg's that match the filter */
-  if (strncmp(get_entity_name(get_irg_entity(irg)), dump_file_filter, strlen(dump_file_filter)) != 0)
-    return;
+  if (!is_filtered_dump_name(get_entity_ident(get_irg_entity(irg)))) return;
 
   current_ir_graph = irg;
 

@@ -324,6 +324,9 @@ typedef enum {
 						      flags up to 0x00010000. */
   dump_verbosity_fields            = 0x00000002,   /**< dump types and fields (like a type declaration) */
   dump_verbosity_methods           = 0x00000004,   /**< dump types and methods (like a type declaration) */
+  dump_verbosity_nostatic          = 0x00000040,   /**< dump types and dynamic allocated fields (like a
+						        type declaration). This excludes methods and
+						        static, polymorphic fields. */
   dump_verbosity_typeattrs         = 0x00000008,   /**< dump all type attributes */
   dump_verbosity_entattrs          = 0x00000010,   /**< dump all entity attributes */
   dump_verbosity_entconsts         = 0x00000020,   /**< dump entity constants */
@@ -350,7 +353,8 @@ typedef enum {
   dump_verbosity_onlyEnumerationTypes=0x0007F000,  /**< dump only enumeration types */
 
   dump_verbosity_max                = 0x4FF00FFE   /**< turn on all verbosity.
-						        @@@ Because of a bug in gcc 3.2 we can not set the first two bits. */
+						        @@@ Because of a bug in gcc 3.2 we can not set the
+							first two bits. */
 } dump_verbosity;
 
 
@@ -399,7 +403,14 @@ void dump_types_as_text(unsigned verbosity, const char *suffix);
  *  @param name The prefix of the name (not the ld_name) of the method
  *              entity to be dumped.
  */
-void only_dump_method_with_name(ident *name);
+void   only_dump_method_with_name(ident *name);
+
+/** Returns the name set with only_dump_method_with_name(). */
+ident *get_dump_file_filter_ident(void);
+
+/** Returns true if dump file filter is not set, or if it is a
+ *  prefix of name. */
+int is_filtered_dump_name(ident *name);
 
 /**  Sets the vcg flag "display_edge_labels" to no.
  *
@@ -465,7 +476,7 @@ void dump_backedge_information(bool b);
  *  If the flag is set, the type name is output in [] in the node label,
  *  else it is output as info.
  */
-void dump_analysed_type_info(bool b);
+void set_opt_dump_analysed_type_info(bool b);
 
 /** Write the address of a node into the vcg info.
  *

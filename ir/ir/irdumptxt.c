@@ -199,7 +199,8 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 
     if (ent) {
       fprintf(F, "  Selecting entity of type %s\n", get_type_name_ex(get_entity_type(ent), &bad));
-      fprintf(F, "    from entity of type %s\n", get_type_name_ex(get_entity_owner(ent), &bad));
+      fprintf(F, "    from entity %s (%ld)\n", get_entity_name(ent), get_entity_nr(ent));
+      fprintf(F, "    of type %s\n", get_type_name_ex(get_entity_owner(ent), &bad));
     }
     else {
       fprintf(F, "  <NULL entity>\n");
@@ -286,8 +287,8 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
   default: ;
   }
 
-  if (get_irg_typeinfo_state(get_irn_irg(n)) == irg_typeinfo_consistent  ||
-      get_irg_typeinfo_state(get_irn_irg(n)) == irg_typeinfo_inconsistent  )
+  if (get_irg_typeinfo_state(get_irn_irg(n)) == ir_typeinfo_consistent  ||
+      get_irg_typeinfo_state(get_irn_irg(n)) == ir_typeinfo_inconsistent  )
     if (get_irn_typeinfo_type(n) != firm_none_type)
       fprintf (F, "  Analysed type: %s\n", get_type_name_ex(get_irn_typeinfo_type(n), &bad));
 
@@ -366,8 +367,9 @@ int addr_is_alloc(ir_node *acc) {
       break;
 
     default:
-      DDMN(addr);
-      assert(0 && "unexpected address node");
+      //DDMN(addr);
+      //assert(0 && "unexpected address node");
+      ;
     }
     addr_op = get_irn_opcode(addr);
   }
@@ -508,6 +510,7 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
   }
 
   if (verbosity & dump_verbosity_accessStats) {
+#if 0
     int n_acc = get_entity_n_accesses(ent);
     int max_depth = 0;
     int max_L_freq = -1;
@@ -608,6 +611,16 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
 
     /* free allocated space */
     free(L_freq);
+#endif
+    if (get_trouts_state() != outs_none) {
+      if (is_Method_type(get_entity_type(ent))) {
+	fprintf(F, "%s  Estimated #Calls:    %lf\n", prefix, get_entity_estimated_n_calls(ent));
+	fprintf(F, "%s  Estimated #dynCalls: %lf\n", prefix, get_entity_estimated_n_calls(ent));
+      } else {
+	fprintf(F, "%s  Estimated #Loads:  %lf\n", prefix, get_entity_estimated_n_loads(ent));
+	fprintf(F, "%s  Estimated #Stores: %lf\n", prefix, get_entity_estimated_n_stores(ent));
+      }
+    }
   }
 
 }
@@ -624,7 +637,8 @@ void dump_entity (entity *ent) {
 
 void    dump_entitycsv_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned verbosity,
 				       int *max_disp, int disp[], const char *comma) {
-  int i, max_depth = 0;
+
+#if 0   /* Outputs loop depth of all occurences. */
   int n_acc = get_entity_n_accesses(ent);
   int max_L_freq = -1;
   int max_S_freq = -1;
@@ -634,6 +648,7 @@ void    dump_entitycsv_to_file_prefix (FILE *F, entity *ent, char *prefix, unsig
   int *S_freq;
   int *LA_freq;
   int *SA_freq;
+  int i, max_depth = 0;
 
   /* Find maximal depth */
   for (i = 0; i < n_acc; ++i) {
@@ -642,7 +657,7 @@ void    dump_entitycsv_to_file_prefix (FILE *F, entity *ent, char *prefix, unsig
     max_depth = (depth > max_depth) ? depth : max_depth ;
   }
 
-  L_freq = xcalloc(4 * max_depth, sizeof(L_freq[0]));
+  L_freq = xcalloc(4 * (max_depth+1), sizeof(L_freq[0]));
 
   S_freq  = L_freq + 1*max_depth;
   LA_freq = L_freq + 2*max_depth;
@@ -651,7 +666,7 @@ void    dump_entitycsv_to_file_prefix (FILE *F, entity *ent, char *prefix, unsig
   for (i = 0; i < n_acc; ++i) {
     ir_node *acc = get_entity_access(ent, i);
     int depth = get_weighted_loop_depth(acc);
-    assert(depth < max_depth);
+    assert(depth <= max_depth);
     if ((get_irn_op(acc) == op_Load) || (get_irn_op(acc) == op_Call)) {
       L_freq[depth]++;
       max_L_freq = (depth > max_L_freq) ? depth : max_L_freq;
@@ -698,35 +713,57 @@ void    dump_entitycsv_to_file_prefix (FILE *F, entity *ent, char *prefix, unsig
     fprintf(F, "\n");
   }
   free(L_freq);
+#endif
+
+  if (get_entity_allocation(ent) != allocation_static) {
+    if (is_Method_type(get_entity_type(ent))) return;
+
+    /* Output the entity name. */
+    fprintf(F, "%s%-40s ", prefix, get_entity_ld_name(ent));
+
+    if (get_trouts_state() != outs_none) {
+      if (is_Method_type(get_entity_type(ent))) {
+	//fprintf(F, "%s  Estimated #Calls:    %lf\n", prefix, get_entity_estimated_n_calls(ent));
+	//fprintf(F, "%s  Estimated #dynCalls: %lf\n", prefix, get_entity_estimated_n_calls(ent));
+      } else {
+	fprintf(F, "%6.2lf ", get_entity_estimated_n_loads(ent));
+	fprintf(F, "%6.2lf", get_entity_estimated_n_stores(ent));
+      }
+    }
+
+    fprintf(F, "\n");
+  }
 }
 
 /* A fast hack to dump a csv. */
 void dump_typecsv_to_file(FILE *F, type *tp, dump_verbosity verbosity, const char *comma) {
-  int max_freq = -1;
-  int max_disp = -1;
-  int *freq, *disp; /* Accumulated accesses to static members: dispatch table. */
-
-  if (!is_Class_type(tp)) return;
+  int i;
+  char buf[1024 + 10];
+  if (!is_Class_type(tp)) return;   // we also want array types. Stupid, these are classes in java.
 
   if (verbosity & dump_verbosity_accessStats) {
-    int i, n_all = get_type_n_allocations(tp);
-    int max_depth = 0;
 
+#if 0      /* Outputs loop depth of all occurences. */
+    int max_freq = -1;
+    int max_disp = -1;
+    int *freq, *disp; /* Accumulated accesses to static members: dispatch table. */
+    int n_all = get_type_n_allocs(tp);
+    int max_depth = 0;
     /* Find maximal depth */
     for (i = 0; i < n_all; ++i) {
-      ir_node *all = get_type_allocation(tp, i);
+      ir_node *all = get_type_alloc(tp, i);
       int depth = get_weighted_loop_depth(all);
       max_depth = (depth > max_depth) ? depth : max_depth ;
     }
 
-    freq = xcalloc(2 * max_depth, sizeof(freq[0]));
+    freq = xcalloc(2 * (max_depth+1), sizeof(freq[0]));
 
     disp = freq + max_depth;
 
     for (i = 0; i < n_all; ++i) {
-      ir_node *all = get_type_allocation(tp, i);
+      ir_node *all = get_type_alloc(tp, i);
       int depth = get_weighted_loop_depth(all);
-      assert(depth < max_depth);
+      assert(depth <= max_depth);
       freq[depth]++;
       max_freq = (depth > max_freq) ? depth : max_freq;
       assert(get_irn_op(all) == op_Alloc);
@@ -745,8 +782,10 @@ void dump_typecsv_to_file(FILE *F, type *tp, dump_verbosity verbosity, const cha
     for (i = 0; i < get_class_n_members(tp); ++i) {
       entity *mem = get_class_member(tp, i);
       if (((verbosity & dump_verbosity_methods) &&  is_Method_type(get_entity_type(mem))) ||
-	      ((verbosity & dump_verbosity_fields)  && !is_Method_type(get_entity_type(mem)))   ) {
-	      dump_entitycsv_to_file_prefix(F, mem, "    ", verbosity, &max_disp, disp, comma);
+	  ((verbosity & dump_verbosity_fields)  && !is_Method_type(get_entity_type(mem)))   ) {
+	if (!((verbosity & dump_verbosity_nostatic) && (get_entity_allocation(mem) == allocation_static))) {
+	  dump_entitycsv_to_file_prefix(F, mem, "    ", verbosity, &max_disp, disp, comma);
+	}
       }
     }
 
@@ -760,6 +799,25 @@ void dump_typecsv_to_file(FILE *F, type *tp, dump_verbosity verbosity, const cha
 
     /* free allocated space */
     free(freq);
+#endif
+
+#define DISP_TAB_SUFFIX "__disp_tab"
+    if (get_trouts_state() != outs_none) {
+      assert(strlen(get_type_name(tp)) < 1024);
+      fprintf(F, "%-44s %6.2lf  -1.00\n", get_type_name(tp), get_type_estimated_n_instances(tp));
+      sprintf(buf, "%s%s", get_type_name(tp), DISP_TAB_SUFFIX);
+      fprintf(F, "%-44s %6.2lf   0.00\n", buf, get_class_estimated_n_dyncalls(tp));
+    }
+
+    for (i = 0; i < get_class_n_members(tp); ++i) {
+      entity *mem = get_class_member(tp, i);
+      if (((verbosity & dump_verbosity_methods) &&  is_Method_type(get_entity_type(mem))) ||
+	  ((verbosity & dump_verbosity_fields)  && !is_Method_type(get_entity_type(mem)))   ) {
+	if (!((verbosity & dump_verbosity_nostatic) && (get_entity_allocation(mem) == allocation_static))) {
+	  dump_entitycsv_to_file_prefix(F, mem, "    ", verbosity, NULL, 0, 0);
+	}
+      }
+    }
   }
 }
 
@@ -787,8 +845,10 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
     for (i = 0; i < get_class_n_members(tp); ++i) {
       entity *mem = get_class_member(tp, i);
       if (((verbosity & dump_verbosity_methods) &&  is_Method_type(get_entity_type(mem))) ||
-	      ((verbosity & dump_verbosity_fields)  && !is_Method_type(get_entity_type(mem)))   ) {
-	      dump_entity_to_file_prefix(F, mem, "    ", verbosity);
+	  ((verbosity & dump_verbosity_fields)  && !is_Method_type(get_entity_type(mem)))   ) {
+	if (!((verbosity & dump_verbosity_nostatic) && (get_entity_allocation(mem) == allocation_static))) {
+	  dump_entity_to_file_prefix(F, mem, "    ", verbosity);
+	}
       }
     }
     if (verbosity & dump_verbosity_typeattrs) {
@@ -833,24 +893,25 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
   }
 
   if (verbosity & dump_verbosity_accessStats) {
-    int n_all = get_type_n_allocations(tp);
+#if 0
+    int n_all = get_type_n_allocs(tp);
     int max_depth = 0;
     int max_freq = -1;
     int *freq;
 
     /* Find maximal depth */
     for (i = 0; i < n_all; ++i) {
-      ir_node *all = get_type_allocation(tp, i);
+      ir_node *all = get_type_alloc(tp, i);
       int depth = get_weighted_loop_depth(all);
       max_depth = (depth > max_depth) ? depth : max_depth ;
     }
 
-    freq = xcalloc(max_depth, sizeof(freq[0]));
+    freq = xcalloc(max_depth+1, sizeof(freq[0]));
 
     for (i = 0; i < n_all; ++i) {
-      ir_node *all = get_type_allocation(tp, i);
+      ir_node *all = get_type_alloc(tp, i);
       int depth = get_weighted_loop_depth(all);
-      assert(depth < max_depth);
+      assert(depth <= max_depth);
       freq[depth]++;
       max_freq = (depth > max_freq) ? depth : max_freq;
       assert(get_irn_op(all) == op_Alloc);
@@ -868,6 +929,17 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
     }
 
     free(freq);
+#endif
+    if (get_trouts_state() != outs_none) {
+      fprintf(F, "  Estimated #Instances: %lf\n", get_type_estimated_n_instances(tp));
+      if (is_Class_type(tp)) {
+	fprintf(F, "  Estimated #dyn Calls: %lf\n", get_class_estimated_n_dyncalls(tp));
+	fprintf(F, "  Estimated #Upcasts:   %lf (#CastOps: %d)\n", get_class_estimated_n_upcasts(tp), get_class_n_upcasts(tp));
+	fprintf(F, "  Estimated #Downcasts: %lf (#CastOps: %d)\n", get_class_estimated_n_downcasts(tp), get_class_n_downcasts(tp));
+	assert(get_class_n_upcasts(tp) + get_class_n_downcasts(tp) == get_type_n_casts(tp));
+      }
+    }
+
   }
 
   fprintf(F, "\n\n");
@@ -894,7 +966,7 @@ void dump_types_as_text(unsigned verbosity, const char *suffix) {
   for (i = 0; i < n_types; ++i) {
     type *t = get_irp_type(i);
 
-    if (is_jack_rts_class(t)) continue;
+    //if (is_jack_rts_class(t)) continue;
 
     dump_type_to_file(F, t, verbosity);
     if (CSV) {
