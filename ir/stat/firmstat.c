@@ -34,9 +34,11 @@ static const char *opt_names[] = {
   "Write-After-Write optimization",
   "Write-After-Read optimization",
   "Read-After-Write optimization",
+  "Read-After-Read optimization",
   "Tuple optimization",
   "ID optimization",
   "Constant evaluation",
+  "Strength reduction",
   "Lowered",
 };
 
@@ -1030,6 +1032,8 @@ void stat_strength_red(ir_graph *irg, ir_node *strong, ir_node *cmp)
   {
     graph_entry_t *graph = graph_get_entry(irg, status->irg_hash);
     cnt_inc(&graph->cnt_strength_red);
+
+    removed_due_opt(strong, graph->opt_hash[STAT_OPT_STRENGTH_RED]);
   }
   STAT_LEAVE;
 }

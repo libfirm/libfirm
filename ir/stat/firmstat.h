@@ -37,17 +37,19 @@ void stat_finish(const char *name);
 #ifdef FIRM_STATISTICS
 
 typedef enum {
-  STAT_OPT_STG,		/**< straightening optimization */
-  STAT_OPT_IFSIM,	/**< if simplification */
-  STAT_OPT_ALGSIM,	/**< algebraic simplification */
-  STAT_OPT_PHI,		/**< Phi optmization */
-  STAT_OPT_WAW,		/**< Write-After-Write optimization */
-  STAT_OPT_WAR,		/**< Write-After-Read optimization */
-  STAT_OPT_RAW,		/**< Read-After-Write optimization */
-  STAT_OPT_TUPLE,	/**< Tuple optimization */
-  STAT_OPT_ID,		/**< ID optimization */
-  STAT_OPT_CONST_EVAL,	/**< constant evaluation */
-  STAT_LOWERED,		/**< lowered */
+  STAT_OPT_STG,			/**< straightening optimization */
+  STAT_OPT_IFSIM,		/**< if simplification */
+  STAT_OPT_ALGSIM,		/**< algebraic simplification */
+  STAT_OPT_PHI,			/**< Phi optmization */
+  STAT_OPT_WAW,			/**< Write-After-Write optimization */
+  STAT_OPT_WAR,			/**< Write-After-Read optimization */
+  STAT_OPT_RAW,			/**< Read-After-Write optimization */
+  STAT_OPT_RAR,			/**< Read-After-Read optimization */
+  STAT_OPT_TUPLE,		/**< Tuple optimization */
+  STAT_OPT_ID,			/**< ID optimization */
+  STAT_OPT_CONST_EVAL,		/**< constant evaluation */
+  STAT_OPT_STRENGTH_RED,	/**< strenght reduction */
+  STAT_LOWERED,			/**< lowered */
 
   STAT_OPT_MAX
 } stat_opt_kind;
