@@ -20,9 +20,15 @@
 
 #include "dbginfo.h"
 
+/**
+ * The current merge_pair_func(), access only from inside firm.
+ */
 extern void (*__dbg_info_merge_pair)(ir_node *nw, ir_node *old,
 				     dbg_action info);
 
+/**
+ * The current merge_sets_func(), access only from inside firm.
+ */
 extern void (*__dbg_info_merge_sets)(ir_node **new_nodes, int n_new_nodes,
 				     ir_node **old_nodes, int n_old_nodes,
 				     dbg_action info);

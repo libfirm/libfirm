@@ -45,24 +45,48 @@ typedef struct type type;
 #endif
 
 /**
+ * @defgroup debug    The Firm interface to debugging support.
  *
- *   An abstract data type containing information for
- *   debugging support.
- *   This datatype is not defined in the firm library, but pointers
- *   to this type can be stored in firm nodes.
+ * @{
+ */
+
+/**
+ * An abstract data type containing information for
+ * debugging support.
+ *
+ * This datatype is not defined anywere in the firm library, but pointers
+ * to this type can be stored in firm nodes.
  */
 typedef struct dbg_info dbg_info;
-/* Routines to access the field of an ir node containing the
-   debugging information. */
+
+/**
+ * Sets the debug information of a node.
+ */
 INLINE void set_irn_dbg_info(ir_node *n, dbg_info* db);
+
+/**
+ * Returns the debug information of an node.
+ */
 INLINE dbg_info *get_irn_dbg_info(ir_node *n);
-/* Routines to access the field of an entity containing the
-   debugging information. */
+
+/**
+ * Sets the debug information of an entity.
+ */
 INLINE void set_entity_dbg_info(entity *ent, dbg_info* db);
+
+/**
+ * Returns the debug information of an entity.
+ */
 INLINE dbg_info *get_entity_dbg_info(entity *ent);
-/* Routines to access the field of a type containing the
-   debugging information. */
+
+/**
+ * Sets the debug information of a type.
+ */
 INLINE void set_type_dbg_info(type *tp, dbg_info* db);
+
+/**
+ * Returns the debug information of a type.
+ */
 INLINE dbg_info *get_type_dbg_info(type *tp);
 
 /**
@@ -76,15 +100,18 @@ typedef enum {
   dbg_straightening,     /**< A Firm subgraph was replaced by a single, existing block. */
   dbg_if_simplification, /**< The control flow of an if is changed as either the
 			                        else, the then or both blocks are empty. */
-  dbg_algebraic_simplification,
-  dbg_write_after_write,
-  dbg_write_after_read,
-  dbg_max
+  dbg_algebraic_simplification, /**< A Firm subgraph was replaced because of an algebraic
+                                     simplification. */
+  dbg_write_after_write,        /**< A Firm subgraph was replaced because of a write
+                                     after write optimization. */
+  dbg_write_after_read,         /**< A Firm subgraph was replaced because of a write
+                                     after read optimization. */
+  dbg_max                       /**< Maximum value. */
 } dbg_action;
 
 
 /**
- *   converts enum values to strings
+ * Converts enum values to strings.
  */
 static const char* dbg_action_2_str(dbg_action a) {
   switch(a) {
@@ -109,26 +136,40 @@ static const char* dbg_action_2_str(dbg_action a) {
 /**
  * The type of the debug info merge function.
  *
- * @see dbg_init()
- */
-typedef void merge_pair_func(ir_node *, ir_node *, dbg_action);
-
-/**
- * The type of the debug info merge function.
+ * @param new_node    the new ir node
+ * @param old_node    the old ir node
+ * @param action      the action that triggers the merge
  *
  * @see dbg_init()
  */
-typedef void merge_sets_func(ir_node **, int, ir_node **, int, dbg_action);
+typedef void merge_pair_func(ir_node *new_node, ir_node *old_node, dbg_action action);
 
 /**
- *   Initializes the debug support.
+ * The type of the debug info merge sets function.
  *
- *   @param dbg_info_merge_pair   see function description
- *   @param dbg_info_merge_sets   see function description
+ * @param new_node_array    array of new nodes
+ * @param new_num_entries   number of entries in new_node_array
+ * @param old_node_array    array of old nodes
+ * @param old_num_entries   number of entries in old_node_array
+ * @param action            the action that triggers the merge
  *
- *   This function takes Pointers to two functions that merge the debug information when a
- *   transformation of a firm graph is performed.
- *   Firm transformations call one of these functions.
+ * @see dbg_init()
+ */
+typedef void merge_sets_func(
+    ir_node **new_node_array, int new_num_entries,
+    ir_node **old_node_array, int old_num_entries,
+    dbg_action action);
+
+/**
+ *  Initializes the debug support.
+ *
+ *  @param dbg_info_merge_pair   see function description
+ *  @param dbg_info_merge_sets   see function description
+ *
+ *  This function takes Pointers to two functions that merge the
+ *  debug information when a
+ *  transformation of a firm graph is performed.
+ *  Firm transformations call one of these functions.
  *
  *   - dbg_info_merge_pair() is called in the following situation:
  *     The optimization replaced the old node by the new one.  The new node
@@ -144,11 +185,9 @@ typedef void merge_sets_func(ir_node **, int, ir_node **, int, dbg_action);
  *
  *   Further both functions pass an enumeration indicating the action
  *   performed by the transformation, e.g. the kind of optimization performed.
- *
- *   @return No result.
- *
  */
 void dbg_init(merge_pair_func *dbg_info_merge_pair, merge_sets_func *dbg_info_merge_sets);
 
+/** @} */
 
 #endif /* _DBGINFO_H_ */
