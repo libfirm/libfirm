@@ -94,6 +94,7 @@ getNodeProcName (xmlNodePtr node)
   return (proc_str);
 }
 
+# ifdef NEEDED
 static char*
 getNodeClassName (xmlNodePtr node)
 {
@@ -101,6 +102,7 @@ getNodeClassName (xmlNodePtr node)
   assert (proc_str);
   return ( (proc_str));
 }
+# endif /* defined NEEDED */
 
 static const char*
 getNodeId (xmlNodePtr node)
@@ -155,6 +157,7 @@ static const char
 /*
   was Public Interface
 */
+# ifdef NEEDED
 static
 type_t *getTypeByIdent (const ident *id)
 {
@@ -169,7 +172,9 @@ type_t *getTypeByIdent (const ident *id)
 
   return (NULL);
 }
+# endif /* defined NEEDED */
 
+# ifdef NEEDED
 static
 type_t *getTypeById (const ident *id)
 {
@@ -184,7 +189,9 @@ type_t *getTypeById (const ident *id)
 
   return (NULL);
 }
+# endif /* defined NEEDED */
 
+# ifdef NEEDED
 static
 entity_t *getEntityByIdents (const ident *name, const ident *tp_ident)
 {
@@ -200,6 +207,7 @@ entity_t *getEntityByIdents (const ident *name, const ident *tp_ident)
 
   return (NULL);
 }
+# endif /* defined NEEDED */
 
 static
 entity_t *getEntityById (const ident *id)
@@ -216,6 +224,7 @@ entity_t *getEntityById (const ident *id)
   return (NULL);
 }
 
+# ifdef NEEDED
 static
 proc_t *getEffectByName (const ident *proc_ident)
 {
@@ -230,6 +239,7 @@ proc_t *getEffectByName (const ident *proc_ident)
 
   return (NULL);
 }
+# endif /* defined NEEDED */
 
 static
 xmlNodePtr get_any_valid_child(xmlNodePtr elem)
@@ -1570,8 +1580,8 @@ void create_abstract_proc_effect(module_t *module, proc_t *proc)
 
   /* fail */
   fprintf(stderr,
-	  "method %s not found\nNo effects generated\nCandidates are:\n",
-	  get_id_str(proc -> proc_ident));
+      "method %s not found\nNo effects generated\nCandidates are:\n",
+      get_id_str(proc -> proc_ident));
   for(i = 0; i < num; i++) {
     fent = get_class_member(class_typ, i);
     fprintf(stderr, "%s\n", get_entity_name(fent));
@@ -1649,6 +1659,9 @@ void free_abstraction(void) {
 
 /*
  * $Log$
+ * Revision 1.17  2004/11/23 14:17:31  liekweg
+ * fenced out currently unneeded static functions
+ *
  * Revision 1.16  2004/11/11 12:24:52  goetz
  * fixes
  *
