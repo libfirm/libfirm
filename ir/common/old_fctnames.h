@@ -87,7 +87,12 @@
 #define tarval_sub_bits(X, Y) get_tarval_sub_bits(X, Y)
 #define tarval_classify(X) classify_tarval(X)
 
+#define tarval_is_entity(X) 0
+#define get_tarval_entity(X) ((entity *)NULL)
+
 /* ident.h */
 #define id_to_strlen(X) get_id_strlen(X)
 #define id_to_str(X)    get_id_str(X)
+#define id_from_str(X)  new_id_from_chars(X)
+
 #endif
