@@ -351,9 +351,9 @@ static INLINE void bitset_fprint(FILE *file, const bitset_t *bs)
 
 static INLINE void bitset_debug_fprint(FILE *file, const bitset_t *bs)
 {
-	int i;
+	unsigned long i;
 
-	fprintf(file, "%d:", bs->units);
+	fprintf(file, "%lu:", bs->units);
 	for(i = 0; i < bs->units; ++i)
 		fprintf(file, " %0lx", bs->data[i]);
 }
@@ -365,8 +365,8 @@ static INLINE void bitset_debug_fprint(FILE *file, const bitset_t *bs)
 #define BINARY_OP(op) \
 static INLINE bitset_t *bitset_ ## op(bitset_t *tgt, const bitset_t *src) \
 { \
-	int i; \
-	int n = tgt->units > src->units ? src->units : tgt->units; \
+	unsigned long i; \
+	unsigned long n = tgt->units > src->units ? src->units : tgt->units; \
 	for(i = 0; i < n; i += _BITSET_BINOP_UNITS_INC) \
 		_bitset_inside_binop_ ## op(&tgt->data[i], &src->data[i]); \
 	if(n < tgt->units) \
