@@ -31,6 +31,7 @@
 #include "entity_t.h"
 #include "trouts.h"
 #include "irgwalk.h"
+#include "tv.h"
 
 #include "field_temperature.h"
 
@@ -460,26 +461,26 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
   if (verbosity & dump_verbosity_entconsts) {
     if (get_entity_variability(ent) != variability_uninitialized) {
       if (is_atomic_entity(ent)) {
-	      fprintf(F, "%s  atomic value: ", prefix);
-	      dump_node_opcode(F, get_atomic_ent_value(ent));
+        fprintf(F, "%s  atomic value: ", prefix);
+        dump_node_opcode(F, get_atomic_ent_value(ent));
       } else {
-	      fprintf(F, "%s  compound values:", prefix);
-	      for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
-	        compound_graph_path *path = get_compound_ent_value_path(ent, i);
-	        entity *ent0 = get_compound_graph_path_node(path, 0);
-	        fprintf(F, "\n%s    %3d ", prefix, get_entity_offset_bits(ent0));
-	        if (get_type_state(type) == layout_fixed)
-	          fprintf(F, "(%3d) ",   get_compound_ent_value_offset_bits(ent, i));
-	        fprintf(F, "%s", get_entity_name(ent0));
-	        for (j = 0; j < get_compound_graph_path_length(path); ++j) {
-	          entity *node = get_compound_graph_path_node(path, j);
-	          fprintf(F, ".%s", get_entity_name(node));
-	          if (is_Array_type(get_entity_owner(node)))
-	            fprintf(F, "[%d]", get_compound_graph_path_array_index(path, j));
-	        }
-	        fprintf(F, "\t = ");
-	        dump_node_opcode(F, get_compound_ent_value(ent, i));
-	      }
+        fprintf(F, "%s  compound values:", prefix);
+        for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
+          compound_graph_path *path = get_compound_ent_value_path(ent, i);
+          entity *ent0 = get_compound_graph_path_node(path, 0);
+          fprintf(F, "\n%s    %3d ", prefix, get_entity_offset_bits(ent0));
+          if (get_type_state(type) == layout_fixed)
+            fprintf(F, "(%3d) ",   get_compound_ent_value_offset_bits(ent, i));
+          fprintf(F, "%s", get_entity_name(ent));
+          for (j = 0; j < get_compound_graph_path_length(path); ++j) {
+            entity *node = get_compound_graph_path_node(path, j);
+            fprintf(F, ".%s", get_entity_name(node));
+            if (is_Array_type(get_entity_owner(node)))
+              fprintf(F, "[%d]", get_compound_graph_path_array_index(path, j));
+          }
+          fprintf(F, "\t = ");
+          dump_node_opcode(F, get_compound_ent_value(ent, i));
+        }
       }
       fprintf(F, "\n");
     }
@@ -497,11 +498,11 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
     fprintf(F, "\n%s  offset:  %d", prefix, get_entity_offset_bits(ent));
     if (is_Method_type(get_entity_type(ent))) {
       if (get_entity_irg(ent))   /* can be null */ {
-	      fprintf(F, "\n%s  irg = %ld", prefix, get_irg_graph_nr(get_entity_irg(ent)));
-	      if (get_irp_callgraph_state() == irp_callgraph_and_calltree_consistent) {
-	        fprintf(F, "\n%s    recursion depth %d", prefix, get_irg_recursion_depth(get_entity_irg(ent)));
-	        fprintf(F, "\n%s    loop depth      %d", prefix, get_irg_loop_depth(get_entity_irg(ent)));
-	      }
+        fprintf(F, "\n%s  irg = %ld", prefix, get_irg_graph_nr(get_entity_irg(ent)));
+        if (get_irp_callgraph_state() == irp_callgraph_and_calltree_consistent) {
+          fprintf(F, "\n%s    recursion depth %d", prefix, get_irg_recursion_depth(get_entity_irg(ent)));
+          fprintf(F, "\n%s    loop depth      %d", prefix, get_irg_loop_depth(get_entity_irg(ent)));
+        }
       } else {
 	      fprintf(F, "\n%s  irg = NULL", prefix);
       }
@@ -878,13 +879,57 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
     }
     break;
 
-  case tpo_pointer: {
+  case tpo_pointer:
     if (verbosity & dump_verbosity_typeattrs) {
       type *tt = get_pointer_points_to_type(tp);
       fprintf(F, "\n  points to %s (%ld)", get_type_name(tt), get_type_nr(tt));
     }
+    break;
 
-  } break;
+  case tpo_array:
+    if (verbosity & dump_verbosity_typeattrs) {
+      int i, n_dim;
+      type *elem_tp = get_array_element_type(tp);
+
+      fprintf(F, "\n  array ");
+
+      n_dim = get_array_n_dimensions(tp);
+      for (i = 0; i < n_dim; ++i) {
+        ir_node *lower, *upper;
+
+        lower = get_array_lower_bound(tp, i);
+        upper = get_array_upper_bound(tp, i);
+
+        fprintf(F, "[");
+
+        if (get_irn_op(lower) == op_Const)
+          fprintf(F, "%ld .. ", get_tarval_long(get_Const_tarval(lower)));
+        else {
+          dump_node_opcode(F, lower);
+          fprintf(F, " %ld .. ", get_irn_node_nr(lower));
+        }
+
+        if (get_irn_op(upper) == op_Const)
+          fprintf(F, "%ld]", get_tarval_long(get_Const_tarval(lower)));
+        else {
+          dump_node_opcode(F, upper);
+          fprintf(F, " %ld]", get_irn_node_nr(upper));
+        }
+      }
+      fprintf(F, " of <%s (%ld)>", get_type_name(elem_tp), get_type_nr(elem_tp));
+
+      fprintf(F, "\n  order: ");
+      for (i = 0; i < n_dim; ++i)
+        fprintf(F, "<%d>", get_array_order(tp, i));
+
+      fprintf(F, "\n");
+
+      if (verbosity & dump_verbosity_fields) {
+        dump_entity_to_file_prefix(F, get_array_element_entity(tp),
+                                   "    ", verbosity);
+      }
+    }
+    break;
 
   default:
     if (verbosity & dump_verbosity_typeattrs) {
