@@ -881,7 +881,7 @@ int tarval_print(XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
 {
   ANNOUNCE();
   tarval *tv;
-  char *str;
+  const char *str;
   int offset;
   char buf[100];
 
@@ -923,6 +923,24 @@ int tarval_print(XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
 char *tarval_bitpattern(tarval *tv)
 {
   return NULL;
+}
+
+/*
+ * access to the bitpattern
+ */
+unsigned char tarval_sub_bits(tarval *tv, unsigned byte_ofs)
+{
+  switch (get_mode_sort(tv->mode)) {
+    case int_number:
+    case character:
+      return sc_sub_bits(tv->value, tv->length, byte_ofs);
+
+    case float_number:
+      return fc_sub_bits(tv->value, get_mode_size_bits(tv->mode), byte_ofs);
+
+    default:
+      return 0;
+  }
 }
 
 /* Identifying some tarvals ??? */

@@ -31,4 +31,6 @@ void fc_calc(const void *a, const void *b, int opcode);
 char *fc_print_dec(const void *a, char *buf, int buflen);
 int fc_comp(const void *a, const void *b);
 
+unsigned char fc_sub_bits(const void *val, unsigned num_bit, unsigned byte_ofs);
+
 #endif /* _FLTCALC_H_ */

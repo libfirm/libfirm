@@ -105,6 +105,8 @@ void sc_calc(const void *val1, const void *val2, unsigned op);
 void sc_bitcalc(const void *val1, const void *val2, unsigned radius, unsigned sign, unsigned op);
 int  sc_comp(const void *val1, const void *val2);
 
-char* sc_print(const void *val1, unsigned base);
+unsigned char sc_sub_bits(const void *val, int len, unsigned byte_ofs);
+
+const char *sc_print(const void *val1, unsigned base);
 
 #endif /* _STRCALC_H_ */

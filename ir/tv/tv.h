@@ -495,6 +495,33 @@ char *tarval_bitpattern(tarval *tv);
 char *tarval_sub_bitpattern(tarval *tv, int from, int to);
 
 /**
+ * Returns the bitpattern of the bytes_ofs byte.
+ *
+ * This function succeeds even if the mode of the tarval uses lesser bits
+ * than requested, in that case the bitpattern is filled with zero bits.
+ *
+ * To query a 32bit value the following code can be used:
+ *
+ * val0 = tarval_sub_bits(tv, 0);
+ * val1 = tarval_sub_bits(tv, 1);
+ * val2 = tarval_sub_bits(tv, 2);
+ * val3 = tarval_sub_bits(tv, 3);
+ *
+ * Because this is the bit representation of the target machine, only the following
+ * operations are legal on the result:
+ *
+ * - concatenation (be aware of the endieness)
+ * - bitwise logical operations to selct/mask bits
+ *
+ * @param tv		the tarval
+ * @param byte_ofs	the byte offset
+ *
+ * @note
+ *   The result of this funcion is undefined if the mode is neither integer nor float.
+ */
+unsigned char tarval_sub_bits(tarval *tv, unsigned byte_ofs);
+
+/**
  * Identifying some tarvals ???
  *
  * @return

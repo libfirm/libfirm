@@ -2,6 +2,18 @@
  * Authors: Matthias Heil
  */
 
+/*
+ * TODO:
+ *
+ * This code uses the C-type long double to respesent floating
+ * point values. This is bad because:
+ *
+ * 1.) It depends on IEEE arithmetic on the compilation engine (hardly a problem)
+ * 2.) The existance on the type and its bits size (may be identical to double or even float)
+ * 3.) Arithmetic operations will be done with "higher order" precision, which might be wrong
+ *
+ * Replace this code ASAP.
+ */
 #include "fltcalc.h"
 #include "ieee754.h"
 #include <string.h>
@@ -151,4 +163,40 @@ char *fc_print_dec(const void *a, char *buf, int buflen)
 {
   snprintf(buf, buflen, "%1.30Lg", CAST_IN(a));
   return buf;
+}
+
+unsigned char fc_sub_bits(const void *value, unsigned num_bits, unsigned byte_ofs)
+{
+  long double val = CAST_IN(value);
+  float f;
+  double d;
+
+  unsigned char *p;
+  unsigned len;
+
+  switch (num_bits) {
+  case 32:
+    f = (float)val;
+    p = (unsigned char *)&f;
+    len = 4;
+    break;
+
+  case 64:
+    d = (double)val;
+    p = (unsigned char *)&d;
+    len = 8;
+    break;
+
+  case 80:
+    p = (unsigned char *)&val;
+    len = 10;
+    break;
+
+  default:
+    return 0;
+  }
+
+  if (byte_ofs > len)
+    return 0;
+  return p[byte_ofs];
 }

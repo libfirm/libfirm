@@ -15,32 +15,26 @@
 #include "tv.h"
 #include "xprintf.h"
 
-/****s* tv/tarval
+/**
+ * This struct represents the aforementioned tarvals.
  *
- * NAME
- *    tarval
- *   This struct represents the aforementioned tarvals.
+ * A tarval struct consists of an internal representation of the
+ * value and some additional fields further describing the value.
  *
- * DESCRIPTION
- *    A tarval struct consists of an internal representation of the
- *   value and some additional fields further describing the value.
+ * ATTRIBUTES:
+ *   - ir_mode *mode     The mode of the stored value
+ *   - void *value       The internal representation
  *
- * ATTRIBUTES
- *   ir_mode *mode     The mode of the stored value
- *   void *value       The internal representation
- *
- * SEE ALSO
+ * @sa
  *   irmode.h for predefined modes
- *
- ******/
-
+ */
 struct tarval {
-    ir_mode *mode; /* mode of the stored value */
-    const void *value; /* the value stored in an internal way... */
-    unsigned int length; /* the length of the stored value */
+    ir_mode *mode; 		/**< the mode of the stored value */
+    const void *value; 		/**< the value stored in an internal way... */
+    unsigned int length; 	/**< the length of the stored value */
 };
 
-/* xfprint output */
+/** xfprint output */
 int tarval_print (XP_PAR1, const xprintf_info *, XP_PARN);
 
 /** remove tarval representing an entity that is about to be destroyed */

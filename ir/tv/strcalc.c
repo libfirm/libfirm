@@ -1196,11 +1196,28 @@ int sc_comp(const void* value1, const void* value2)
   return (val1[counter] > val2[counter]) ? (1) : (-1);
 }
 
-char *sc_print(const void *value, unsigned base)
+unsigned char sc_sub_bits(const void *value, int len, unsigned byte_ofs)
+{
+  const char *val     = (const char *)value;
+  unsigned nibble_ofs = 2 * byte_ofs;
+  unsigned char res;
+
+  /* the current scheme uses one byte to store a nibble */
+  if (nibble_ofs >= len)
+    return 0;
+
+  res = _val(val[nibble_ofs]);
+  if (len > nibble_ofs + 1)
+    res |= _val(val[nibble_ofs + 1]) << 4;
+
+  return res;
+}
+
+const char *sc_print(const void *value, unsigned base)
 {
   int counter;
 
-  const char *val = (char*)value;
+  const char *val = (const char *)value;
   char *pos;
   static char *buf = NULL;
 
