@@ -24,8 +24,8 @@ libfirm_conf_env="${CC+CC='$CC'} ${CFLAGS+CFLAGS='$CFLAGS'} ${CPP+CPP='$CPP'} ${
 AC_SUBST(libfirm_conf_env)
 
 dnl check for additional include dirs
-AC_ARG_WITH(includedir, [  --with-includedir=dir add directory to include search path],
-    CPPFLAGS=$CPPFLAGS" -I"$withval, T_FLAG="")
+AC_ARG_WITH(includedir, [  --with-includedir=add colon seperated list of directories to include search path],
+    CPPFLAGS=$CPPFLAGS" -I"`echo $withval|sed 's;\:; -I;g'`, T_FLAG="")
 
 dnl Package options
 dnl ===============
