@@ -1662,7 +1662,6 @@ static void merge_blocks(ir_node *n, void *env) {
       b = new_node;
       new_node = equivalent_node(b);
     }
-    /* GL @@@ get_opt_normalize hinzugefuegt, 5.5.2003 */
     if (is_Bad(new_node) && get_opt_normalize()) exchange(n, new_Bad());
   }
 }
@@ -1680,7 +1679,7 @@ static void collect_nodes(ir_node *n, void *env) {
       /* Collect Phi nodes to compact ins along with block's ins. */
       set_irn_link(n, get_irn_link(b));
       set_irn_link(b, n);
-    } else if (get_irn_op(n) != op_Jmp) {  /* Check for non empty block. */
+    } else if ((get_irn_op(n) != op_Jmp) && !is_Bad(b)) {  /* Check for non empty block. */
       mark_Block_block_visited(b);
     }
   }
