@@ -874,10 +874,6 @@ set_Const_type (ir_node *node, type *tp) {
     assert (get_type_mode(tp) == get_irn_mode(node));
   }
 
-  if ((get_irn_node_nr(node) == 259216) && (tp == unknown_type))
-    assert(0);
-
-
   node->attr.con.tp = tp;
 }
 
