@@ -2150,7 +2150,7 @@ void dump_all_ir_graphs(dump_graph_func *dmp_grph) {
 
 
 void dump_loops_standalone(FILE *F, ir_loop *loop) {
-  int i = 0, loop_node_started = 0, first = 0;
+  int i = 0, loop_node_started = 0, son_number = 0, first = 0;
   loop_element le;
   ir_loop *son = NULL;
 
@@ -2175,52 +2175,53 @@ void dump_loops_standalone(FILE *F, ir_loop *loop) {
         fprintf (F, "-%d-nodes\" label:\"%d...%d\"}\n", first, first, i-1);
         loop_node_started = 0;
       }
-      else if (get_kind(son) == k_ir_node) {
+      dump_loop_son_edge(F, loop, son_number++);
+      dump_loops_standalone(F, son);
+    } else if (get_kind(son) == k_ir_node) {
         /* We are a loop node -> Collect firm nodes */
 
-        ir_node *n = le.node;
-        int bad = 0;
+      ir_node *n = le.node;
+      int bad = 0;
 
-        if (!loop_node_started) {
-          /* Start a new node which contains all firm nodes of the current loop */
-          fprintf (F, "node: { title: \"");
-          PRINT_LOOPID(loop);
-          fprintf (F, "-%d-nodes\" color: lightyellow label: \"", i);
-          loop_node_started = 1;
-          first = i;
-        }
-        else
-          fprintf(F, "\n");
-
-        bad |= dump_node_opcode(F, n);
-        bad |= dump_node_mode(F, n);
-        bad |= dump_node_typeinfo(F, n);
-        fprintf (F, " ");
-        bad |= dump_node_nodeattr(F, n);
-        fprintf (F, " %ld", get_irn_node_nr(n));
+      if (!loop_node_started) {
+	/* Start a new node which contains all firm nodes of the current loop */
+	fprintf (F, "node: { title: \"");
+	PRINT_LOOPID(loop);
+	fprintf (F, "-%d-nodes\" color: lightyellow label: \"", i);
+	loop_node_started = 1;
+	first = i;
       }
-#if CALLGRAPH_LOOP_TREE
-      else {
-        assert(get_kind(son) == k_ir_graph);
-        /* We are a loop node -> Collect firm graphs */
+      else
+	fprintf(F, "\n");
 
-        ir_graph *n = (ir_graph *)le.node;
-
-        if (!loop_node_started) {
-          /* Start a new node which contains all firm nodes of the current loop */
-          fprintf (F, "node: { title: \"");
-          PRINT_LOOPID(loop);
-          fprintf (F, "-%d-nodes\" color: lightyellow label: \"", i);
-          loop_node_started = 1;
-          first = i;
-        }
-        else
-          fprintf(F, "\n");
-
-        fprintf (F, " %s", get_irg_dump_name(n));
-      }
-#endif
+      bad |= dump_node_opcode(F, n);
+      bad |= dump_node_mode(F, n);
+      bad |= dump_node_typeinfo(F, n);
+      fprintf (F, " ");
+      bad |= dump_node_nodeattr(F, n);
+      fprintf (F, " %ld", get_irn_node_nr(n));
     }
+#if CALLGRAPH_LOOP_TREE
+    else {
+      assert(get_kind(son) == k_ir_graph);
+      /* We are a loop node -> Collect firm graphs */
+
+      ir_graph *n = (ir_graph *)le.node;
+
+      if (!loop_node_started) {
+	/* Start a new node which contains all firm nodes of the current loop */
+	fprintf (F, "node: { title: \"");
+	PRINT_LOOPID(loop);
+	fprintf (F, "-%d-nodes\" color: lightyellow label: \"", i);
+	loop_node_started = 1;
+	first = i;
+      }
+      else
+	fprintf(F, "\n");
+
+      fprintf (F, " %s", get_irg_dump_name(n));
+    }
+#endif
   }
 
   if (loop_node_started) {
