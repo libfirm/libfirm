@@ -122,6 +122,15 @@
 	  __dbg_info_merge_sets(&c, 1, ons, SIZ(ons), dbg_write_after_read); \
 	} while(0)
 
+#define DBG_OPT_RAW                                                   \
+  do {                                                          \
+	  ir_node *ons[2];                                            \
+	  ons[0] = oldn;                                              \
+	  ons[1] = c;                                                 \
+	  stat_merge_nodes(&n, 1, ons, SIZ(ons), STAT_OPT_RAW);	      \
+	  __dbg_info_merge_sets(&c, 1, ons, SIZ(ons), dbg_read_after_write); \
+	} while(0)
+
 #define DBG_OPT_TUPLE                                                 \
   do {                                                          \
 	  ir_node *ons[3];                                            \
