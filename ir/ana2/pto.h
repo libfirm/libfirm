@@ -15,13 +15,17 @@
 # ifndef _PTO_H_
 # define _PTO_H_
 
-void pto_test_mem (void);
+void pto_run (int);
+void pto_cleanup (void);
 
 # endif /* not defined _PTO_H_ */
 
 
 /*
  * $Log$
+ * Revision 1.3  2004/10/25 11:59:45  liekweg
+ * Copy Only works
+ *
  * Revision 1.2  2004/10/21 11:09:37  liekweg
  * Moved memwalk stuf into irmemwalk
  * Moved lset stuff into lset

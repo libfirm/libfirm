@@ -63,7 +63,6 @@ ir_node **find_irg_args (ir_graph *graph)
   ir_node *arg = get_irg_args (graph);
   find_irg_args_env_t *arg_env =
     (find_irg_args_env_t*) xmalloc (sizeof (find_irg_args_env_t));
-  /* int i; */
 
   arg_env->args = args;
   arg_env->arg  = arg;
@@ -87,6 +86,9 @@ ir_node **find_irg_args (ir_graph *graph)
 
 /*
   $Log$
+  Revision 1.2  2004/10/25 11:59:45  liekweg
+  Copy Only works
+
   Revision 1.1  2004/10/22 15:10:51  liekweg
   moved utils to pto_util
 
