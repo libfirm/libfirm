@@ -233,11 +233,15 @@ static INLINE unsigned long _bitset_next(const bitset_t *bs,
 		 * Mask out the bits smaller than pos in the current unit.
 		 * We are only interested in bits set higher than pos.
 		 */
-		unsigned long curr_unit = bs->data[unit_number] & ~in_unit_mask;
+		unsigned long curr_unit = bs->data[unit_number];
 
-		/* Find the next bit set in the unit. */
-		unsigned long next_in_this_unit
-			= _bitset_inside_ntz_value(set ? curr_unit : ~curr_unit);
+		/*
+		 * Find the next bit set in the unit.
+		 * Mind that this function returns 0, if the unit is -1 and
+		 * counts the bits from 1 on.
+		 */
+		unsigned long next_in_this_unit =
+			_bitset_inside_ntz_value((set ? curr_unit : ~curr_unit) & ~in_unit_mask);
 
 		/* If there is a bit set in the current unit, exit. */
 		if(next_in_this_unit < BS_UNIT_SIZE_BITS)
@@ -248,7 +252,9 @@ static INLINE unsigned long _bitset_next(const bitset_t *bs,
 			unsigned long i;
 			for(i = unit_number + 1; i < bs->units; ++i) {
 				unsigned long data = bs->data[i];
-				unsigned long first_set = _bitset_inside_ntz_value(set ? data : ~data);
+				unsigned long first_set =
+					_bitset_inside_ntz_value(set ? data : ~data);
+
 				if(first_set < BS_UNIT_SIZE_BITS)
 					return first_set + i * BS_UNIT_SIZE_BITS;
 			}
