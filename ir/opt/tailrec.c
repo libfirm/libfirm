@@ -33,6 +33,7 @@
 typedef struct _collect_t {
   ir_node *proj_X;		/**< initial exec proj */
   ir_node *block;		/**< old first block */
+  int     blk_idx;		/**< cfgpred index of the initial exec in block */
   ir_node *proj_m;		/**< linked list of memory from start proj's */
   ir_node *proj_data;		/**< linked list of all parameter access proj's */
 } collect_t;
@@ -87,7 +88,8 @@ static void collect_data(ir_node *node, void *env)
     if (node != current_ir_graph->start_block) {
       for (i = 0; i < n_pred; ++i) {
 	if (get_Block_cfgpred(node, i) == data->proj_X) {
-	  data->block = node;
+	  data->block   = node;
+	  data->blk_idx = i;
 	  break;
 	}
       }
@@ -135,6 +137,7 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
   /* collect needed data */
   data.proj_X    = NULL;
   data.block     = NULL;
+  data.blk_idx   = -1;
   data.proj_m    = NULL;
   data.proj_data = NULL;
   irg_walk_graph(irg, NULL, collect_data, &data);
@@ -173,12 +176,7 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
   jmp   = new_Jmp();
 
   /* the old first block is now the second one */
-  for (i = 0; i < get_Block_n_cfgpreds(data.block); ++i) {
-    if (get_Block_cfgpred(data.block, i) == data.proj_X) {
-      set_Block_cfgpred(data.block, i, jmp);
-      break;
-    }
-  }
+  set_Block_cfgpred(data.block, data.blk_idx, jmp);
 
   /* allocate phi's, position 0 contains the memory phi */
   NEW_ARR_A(ir_node *, phis, n_params + 1);
