@@ -28,9 +28,9 @@
 # include "entity.h"
 
 /* we need strdup */
-# ifndef _BSD_SOURCE
-#  define _BSD_SOURCE
-# endif /* ! defined _BSD_SOURCE */
+# ifndef _GNU_SOURCE
+#  define _GNU_SOURCE
+# endif /* ! defined _GNU_SOURCE */
 
 # define MY_ENCODING "ISO-8859-1"
 
@@ -210,6 +210,9 @@ void extern_cleanup (void);
 
 /*
   $Log$
+  Revision 1.3  2004/10/13 08:39:59  liekweg
+  need strdup
+
   Revision 1.2  2004/10/11 15:56:09  liekweg
   Cleanup, comments ...
   Added init func --flo
