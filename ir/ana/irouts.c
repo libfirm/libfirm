@@ -281,8 +281,11 @@ void compute_outs(ir_graph *irg) {
   current_ir_graph = rem;
 }
 
+/*
+  This computes the outedges for in interprocedural graph.
+*/
 
-void compute_ip_outs(ir_graph *irg) { /*irg_walk_func *pre, irg_walk_func *post, void *env) { */
+void compute_ip_outs(ir_graph *irg) {
   int i;
   ir_graph *rem = current_ir_graph;
   int rem_view = interprocedural_view;
@@ -322,8 +325,13 @@ void compute_ip_outs(ir_graph *irg) { /*irg_walk_func *pre, irg_walk_func *post,
     }
   }
 
+
   /* Walk all endless loops in inner procedures.
    * We recognize an inner procedure if the End node is not visited. */
+
+  /* AS: Don't know if we need this... Goetz? */
+
+#if 0
   for (i = 0; i < get_irp_n_irgs(); i++) {
     ir_node *e;
     current_ir_graph = get_irp_irg(i);
@@ -333,9 +341,11 @@ void compute_ip_outs(ir_graph *irg) { /*irg_walk_func *pre, irg_walk_func *post,
       /* int j;
          for (j = 0; j < get_End_n_keepalives(e); j++)
 	   cg_walk_2(get_End_keepalive(e, j), pre, post, env);*/
+      printf("Found one inner procedure\n");
       compute_outs(current_ir_graph);
     }
   }
+#endif
 
   interprocedural_view = rem_view;
   current_ir_graph = rem;
