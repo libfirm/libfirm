@@ -57,6 +57,7 @@ typedef enum _if_result_t {
   IF_RESULT_SIDE_EFFECT_PHI = 2,  /**< if conversion failed because of Phi node found */
   IF_RESULT_TOO_DEEP        = 3,  /**< if conversion failed because of to deep DAG's */
   IF_RESULT_BAD_CF          = 4,  /**< if conversion failed because of bad control flow */
+  IF_RESULT_DENIED          = 5,  /**< if conversion failed because of architecture deny */
   IF_RESULT_LAST
 } if_result_t;
 
