@@ -1,10 +1,14 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe      3 2002/02/28 13:33:52
 * All rights reserved.
-*
-* Authors: Martin Trapp, Christian Schaefer
-*
-* declarations of an ir node
 */
+
+/**
+ * @file irnode.h
+ *
+ * Declarations of an ir node.
+ *
+ * author Martin Trapp, Christian Schaefer
+ */
 
 /* $Id$ */
 
@@ -23,7 +27,7 @@
 
 /* The type definiton of ir_node is also in irgraph.h to resolve
    recursion between irnode.h and irgraph.h */
-/**
+/*
  *
  * NAME ir_node - a datatype representing a Firm node
  *
@@ -53,9 +57,10 @@ typedef struct ir_node ir_node;
     you can work on the graph without considering the different types
     of nodes, it's just a big graph. **/
 
-/* returns the number of predecessors without the block predecessor: */
+/** returns the number of predecessors without the block predecessor: */
 int                  get_irn_arity         (ir_node *node);
-/* Replaces the old in array by a new one that will contain the ins given in
+
+/** Replaces the old in array by a new one that will contain the ins given in
    the parameters.  Conserves the block predecessor.  It copies the array passed.
    This function is necessary to ajust in arrays of blocks, calls and phis.
    Assumes that current_ir_graph is set to the graph containing "node".
@@ -97,18 +102,21 @@ INLINE int           irn_not_visited  (ir_node *node);
 INLINE int           irn_visited      (ir_node *node);
 INLINE void          set_irn_link          (ir_node *node, void *link);
 INLINE void         *get_irn_link          (ir_node *node);
-/* Outputs a unique number for this node if libfirm is compiled for
+
+/** Outputs a unique number for this node if libfirm is compiled for
    debugging, (configure with --enable-debug) else returns 0. */
 INLINE long get_irn_node_nr(ir_node *node);
-/* Returns the ir_graph this node belongs to. Only valid for
+
+/** Returns the ir_graph this node belongs to. Only valid for
  * CallBegin, EndReg and EndExcept */
 INLINE ir_graph *get_irn_irg(ir_node *node);
 
-/* irnode constructor                                             */
-/* Create a new irnode in irg, with an op, mode, arity and        */
-/* some incoming irnodes.                                         */
-/* If arity is negative, a node with a dynamic array is created.  */
-
+/**
+ * irnode constructor.
+ * Create a new irnode in irg, with an op, mode, arity and
+ * some incoming irnodes.
+ * If arity is negative, a node with a dynamic array is created.
+ */
 INLINE ir_node *
 new_ir_node (dbg_info *db,
 	     ir_graph *irg,
@@ -118,7 +126,7 @@ new_ir_node (dbg_info *db,
 	     int arity,
 	     ir_node *in[]);
 
-/**
+/*
  *
  * NAME access functions for node fields.
  *
@@ -130,15 +138,15 @@ new_ir_node (dbg_info *db,
 INLINE ir_node  *get_nodes_Block (ir_node *node);
 INLINE void      set_nodes_Block (ir_node *node, ir_node *block);
 
-/* Projection numbers for result of Start node: use for Proj nodes! */
+/** Projection numbers for result of Start node: use for Proj nodes! */
 typedef enum {
-  pns_initial_exec,     /* Projection on an executable, the initial control
+  pns_initial_exec,     /**< Projection on an executable, the initial control
 			   flow. */
-  pns_global_store,     /* Projection on the global store */
-  pns_frame_base,       /* Projection on the frame base */
-  pns_globals,          /* Projection on the pointer to the data segment
+  pns_global_store,     /**< Projection on the global store */
+  pns_frame_base,       /**< Projection on the frame base */
+  pns_globals,          /**< Projection on the pointer to the data segment
 			   containing _all_ global entities. */
-  pns_args              /* Projection on all arguments */
+  pns_args              /**< Projection on all arguments */
 } pns_number;
 
 /* @@@ no more supported  */
@@ -201,8 +209,8 @@ ir_graph *get_EndExcept_irg  (ir_node *end);
    Default flavor is "dense"
 */
 typedef enum {
-  dense,        /* Default. Missing Proj nodes are dead control flow. */
-  fragmentary   /* Special. No control flow optimizations allowed.  Missing
+  dense,        /**< Default. Missing Proj nodes are dead control flow. */
+  fragmentary   /**< Special. No control flow optimizations allowed.  Missing
 		   Proj nodes mean default control flow, i.e., Proj(n). */
 } cond_kind;
 
@@ -226,16 +234,16 @@ INLINE void     set_Raise_exo_ptr (ir_node *node, ir_node *exoptr);
 INLINE tarval  *get_Const_tarval (ir_node *node);
 INLINE void     set_Const_tarval (ir_node *node, tarval *con);
 
-/*   This enum names the three different kinds of symbolic Constants
+/**  This enum names the three different kinds of symbolic Constants
      represented by SymConst.  The content of the attribute type_or_id
      depends on this tag.  Use the proper access routine after testing
      this flag. */
 typedef enum {
-  type_tag,          /* The SymConst is a type tag for the given type.
+  type_tag,          /**< The SymConst is a type tag for the given type.
 			Type_or_id_p is type *. */
-  size,              /* The SymConst is the size of the given type.
+  size,              /**< The SymConst is the size of the given type.
 			Type_or_id_p is type *. */
-  linkage_ptr_info   /* The SymConst is a symbolic pointer to be filled in
+  linkage_ptr_info   /**< The SymConst is a symbolic pointer to be filled in
 			by the linker. Type_or_id_p is ident *. */
 } symconst_kind;
 typedef union type_or_id * type_or_id_p;
@@ -377,24 +385,24 @@ INLINE void     set_Eor_right (ir_node *node, ir_node *right);
 INLINE ir_node *get_Not_op (ir_node *node);
 INLINE void     set_Not_op (ir_node *node, ir_node *op);
 
-/* Projection numbers of compare: use for Proj nodes! */
+/** Projection numbers of compare: use for Proj nodes! */
 typedef enum {
-  False,		/* false */
-  Eq,			/* equal */
-  Lt,			/* less */
-  Le,			/* less or equal */
-  Gt,			/* greater */
-  Ge,			/* greater or equal */
-  Lg,			/* less or greater */
-  Leg,			/* less, equal or greater = ordered */
-  Uo,			/* unordered */
-  Ue,			/* unordered or equal */
-  Ul,			/* unordered or less */
-  Ule,			/* unordered, less or equal */
-  Ug,			/* unordered or greater */
-  Uge,			/* unordered, greater or equal */
-  Ne,			/* unordered, less or greater = not equal */
-  True		        /* true */
+  False,		/**< false */
+  Eq,			/**< equal */
+  Lt,			/**< less */
+  Le,			/**< less or equal */
+  Gt,			/**< greater */
+  Ge,			/**< greater or equal */
+  Lg,			/**< less or greater */
+  Leg,			/**< less, equal or greater = ordered */
+  Uo,			/**< unordered */
+  Ue,			/**< unordered or equal */
+  Ul,			/**< unordered or less */
+  Ule,			/**< unordered, less or equal */
+  Ug,			/**< unordered or greater */
+  Uge,			/**< unordered, greater or equal */
+  Ne,			/**< unordered, less or greater = not equal */
+  True		        /**< true */
   /* not_mask = Leg*/	/* bits to flip to negate comparison * @@ hack for jni interface */
 } pnc_number;
 #define not_mask Leg
@@ -462,10 +470,13 @@ INLINE ir_node *get_Alloc_size (ir_node *node);
 INLINE void     set_Alloc_size (ir_node *node, ir_node *size);
 INLINE type    *get_Alloc_type (ir_node *node);
 INLINE void     set_Alloc_type (ir_node *node, type *tp);
+
+/** allocation place. */
 typedef enum {
-  stack_alloc,          /* Alloc allocates the object on the stack. */
-  heap_alloc            /* Alloc allocates the object on the heap. */
+  stack_alloc,          /**< Alloc allocates the object on the stack. */
+  heap_alloc            /**< Alloc allocates the object on the heap. */
 } where_alloc;
+
 INLINE where_alloc  get_Alloc_where (ir_node *node);
 INLINE void         set_Alloc_where (ir_node *node, where_alloc where);
 
@@ -497,7 +508,7 @@ INLINE ir_node  *get_Id_pred (ir_node *node);
 INLINE void      set_Id_pred (ir_node *node, ir_node *pred);
 
 
-/**
+/*
  *
  * NAME Auxiliary routines
  *
@@ -505,43 +516,44 @@ INLINE void      set_Id_pred (ir_node *node, ir_node *pred);
  *
  */
 
-/* returns operand of node if node is a Proj. */
+/** returns operand of node if node is a Proj. */
 INLINE ir_node *skip_Proj (ir_node *node);
-/* returns operand of node if node is a Id */
+/** returns operand of node if node is a Id */
 INLINE ir_node *skip_nop  (ir_node *node);
 INLINE ir_node *skip_Id  (ir_node *node);   /* Same as skip_nop. */
 /* returns corresponding operand of Tuple if node is a Proj from
    a Tuple. */
 INLINE ir_node *skip_Tuple (ir_node *node);
-/* returns true if node is a Bad node. */
+/** returns true if node is a Bad node. */
 INLINE int      is_Bad    (ir_node *node);
-/* returns true if the node is not a Block */
+/** returns true if the node is not a Block */
 INLINE int      is_no_Block (ir_node *node);
-/* returns true if the node is a Block */
+/** returns true if the node is a Block */
 INLINE int      is_Block (ir_node *node);
-/* returns true if node is a Proj node or a Filter node in
+/** returns true if node is a Proj node or a Filter node in
  * intraprocedural view */
 INLINE int      is_Proj (ir_node *node);
-/* Returns true if the operation manipulates control flow:
+/** Returns true if the operation manipulates control flow:
    Start, End, Jmp, Cond, Return, Raise, Bad, CallBegin, EndReg, EndExcept */
 int is_cfop(ir_node *node);
 
-/* Returns true if the operation manipulates interprocedural control flow:
+/** Returns true if the operation manipulates interprocedural control flow:
    CallBegin, EndReg, EndExcept */
 int is_ip_cfop(ir_node *node);
-/* Returns true if the operation can change the control flow because
+/** Returns true if the operation can change the control flow because
    of an exception: Call, Quot, DivMod, Div, Mod, Load, Store, Alloc,
    Bad. */
 ir_graph *get_ip_cfop_irg(ir_node *n);
 
 int is_fragile_op(ir_node *node);
-/* Returns the memory operand of fragile operations. */
+/** Returns the memory operand of fragile operations. */
 ir_node *get_fragile_op_mem(ir_node *node);
 
 
-/* Makros for debugging the libfirm */
 #include "ident.h"
 
+/*@{*/
+/** Makros for debugging the libfirm */
 #ifdef __GNUC__
 /*
  * GNU C has the __FUNCTION__ extension
@@ -581,6 +593,7 @@ ir_node *get_fragile_op_mem(ir_node *node);
 #define DDMI(X)      xprintf("%s(l.%i) %I: %p\n", __FILE__, __LINE__, (X), (X))
 
 #endif /* __GNUC__ */
+/*@}*/
 
 
 # endif /* _IRNODE_H_ */
