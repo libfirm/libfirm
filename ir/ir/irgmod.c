@@ -55,16 +55,12 @@ exchange (ir_node *old, ir_node *nw)
 	 * If new outs are on, we can skip the id node creation and reroute
 	 * the edges from the old node to the new directly.
 	 */
-#ifdef FIRM_EDGES_INPLACE
-	if(edges_activated(current_ir_graph)) {
+	if (edges_activated(current_ir_graph)) {
 		edges_reroute(old, nw, current_ir_graph);
 	}
+  else {
+    /* Else, do it the old-fashioned way. */
 
-	else
-#endif
-
-	/* Else, do it the old-fashioned way. */
-	{
 		ir_graph *irg = get_irn_irg (old);
 		ir_node *block;
 
