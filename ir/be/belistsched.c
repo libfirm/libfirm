@@ -19,6 +19,7 @@
 #include "iterator.h"
 #include "irdump.h"
 #include "irprintf_t.h"
+#include "debug.h"
 
 #include "besched_t.h"
 #include "beutil.h"
@@ -75,6 +76,7 @@ typedef struct _block_sched_env_t {
     pset *ready_set;
     pset *already_scheduled;
     ir_node *block;
+		firm_dbg_module_t *dbg;
 } block_sched_env_t;
 
 
@@ -129,7 +131,7 @@ static INLINE int make_ready(block_sched_env_t *env, ir_node *irn)
             return 0;
     }
 
-    ir_debugf("\tmaking ready: %n\n", irn);
+    DBG((env->dbg, LEVEL_2, "\tmaking ready: %n\n", irn));
     pset_insert_ptr(env->ready_set, irn);
 
     return 1;
@@ -197,7 +199,7 @@ static ir_node *add_to_sched(block_sched_env_t *env, ir_node *irn)
         INIT_LIST_HEAD(&info->list);
         sched_add(env->block, irn);
 
-        ir_debugf("\tadding %n\n", irn);
+        DBG((env->dbg, LEVEL_2, "\tadding %n\n", irn));
     }
 
     /* Insert the node in the set of all already scheduled nodes. */
@@ -273,12 +275,13 @@ static void list_sched_block(ir_node *block, void *env_ptr)
     INIT_LIST_HEAD(&info->list);
 
     /* Initialize the block scheduling environment */
+		be.dbg = firm_dbg_register("firm.be.sched");
     be.block = block;
     be.curr_time = 0;
     be.ready_set = new_pset(node_cmp_func, get_irn_n_outs(block));
     be.already_scheduled = new_pset(node_cmp_func, get_irn_n_outs(block));
 
-    ir_debugf("scheduling %n\n", block);
+    DBG((be.dbg, LEVEL_1, "scheduling %n\n", block));
 
     /* Then one can add all nodes are ready to the set. */
     int i;
@@ -311,7 +314,7 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 
             /* Make the node ready, if all operands live in a foreign block */
             if(ready) {
-                ir_debugf("\timmediately ready: %n\n", irn);
+                DBG((be.dbg, LEVEL_2, "\timmediately ready: %n\n", irn));
                 make_ready(&be, irn);
             }
         }
@@ -321,14 +324,14 @@ static void list_sched_block(ir_node *block, void *env_ptr)
     be.curr_time += phi_seen;
 
     while(pset_count(be.ready_set) > 0) {
-        ir_debugf("\tready set: %*n\n", pset_iterator, be.ready_set);
+        DBG((be.dbg, LEVEL_2, "\tready set: %*n\n", pset_iterator, be.ready_set));
         // pset_print(stdout, be.ready_set, irn_printer);
 
         /* select a node to be scheduled and check if it was ready */
         irn = env->select(env->select_env, block, be.curr_time,
                 be.already_scheduled, be.ready_set);
 
-        ir_debugf("\tpicked node %n\n", irn);
+        DBG((be.dbg, LEVEL_3, "\tpicked node %n\n", irn));
 
         /* Add the node to the schedule. */
         add_to_sched(&be, irn);
@@ -348,12 +351,4 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 
     del_pset(be.ready_set);
     del_pset(be.already_scheduled);
-
-    {
-        sched_info_t *inf;
-        list_for_each_entry(sched_info_t, inf, &info->list, list) {
-            ir_node *irn = get_sched_info_irn(inf);
-            ir_debugf("node: %n, pos: %d\n", irn, inf->time_step);
-        }
-    }
 }
