@@ -25,7 +25,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#include <alloca.h>
+#ifdef linux
+# include <alloca.h>
+#else
+# ifdef __APPLE__
+# include <stdlib.h>
+# endif
+#endif
 
 typedef uint32_t UINT32;
 

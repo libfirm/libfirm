@@ -25,7 +25,13 @@
 #include <string.h>         /* nice things for strings */
 #include <strings.h>        /* strings.h also includes bsd only function strcasecmp */
 #include <stdlib.h>
-#include <alloca.h>
+#ifdef linux
+# include <alloca.h>
+#else
+# ifdef __APPLE__
+# include <stdlib.h>
+# endif
+#endif
 
 #include "tv_t.h"
 #include "set.h"            /* to store tarvals in */

@@ -13,7 +13,13 @@
 #include "strcalc.h"
 
 #include <stdlib.h>
-#include <alloca.h>
+#ifdef linux
+# include <alloca.h>
+#else
+# ifdef __APPLE__
+#  include <stdlib.h>
+# endif
+#endif
 #include <assert.h>   /* assertions */
 #include <string.h>   /* memset/memcmp */
 #include <stdio.h>    /* output for error messages */
