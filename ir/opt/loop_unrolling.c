@@ -814,10 +814,11 @@ set_loop_outs(set *l_n, set *loop_outs, set *loop_endblock_outs, induct_var_info
  * Called from a post walker.
  *
  * @param n        An IR node.
- * @param env      Free environment pointer.
+ * @param env      points to a result
  */
 static void do_loop_unroll(ir_node *n, void *env)
 {
+  int *unroll_done = env;
   induct_var_info info;
   copies_t *value;
   set *loop_nodes, *loop_outs, *loop_endblock_outs;
@@ -887,7 +888,9 @@ static void do_loop_unroll(ir_node *n, void *env)
 
   if (get_firm_verbosity())
     printf("\nloop unrolling with factor %d \n", unroll_factor);
-  //DDMG(get_irn_irg(n));
+
+  /* ok, we will do unrolling */
+  *unroll_done += 1;
 
   /* The unroll factor must be less than 4. */
   assert(unroll_factor <= MAX_UNROLL);
@@ -922,10 +925,8 @@ static void do_loop_unroll(ir_node *n, void *env)
 
   /* Set the backedge of the loop head. */
   for (value = set_first(loop_nodes); value != NULL; value = set_next(loop_nodes)) {
-    if(value->irn == backedge_jmp){
-
+    if (value->irn == backedge_jmp)
       set_Block_cfgpred(loop_head, backedge_pos, value->copy[unroll_factor-2]);
-    }
   }
   set_loop_outs(loop_nodes, loop_outs, loop_endblock_outs, &info, unroll_factor);
 }
@@ -934,6 +935,7 @@ static void do_loop_unroll(ir_node *n, void *env)
 void optimize_loop_unrolling(ir_graph *irg /* unroll factor, max body size */)
 {
   ir_graph *rem;
+  int unroll_done = 0;
 
   if ( !get_opt_loop_unrolling()) return;
 
@@ -954,7 +956,16 @@ void optimize_loop_unrolling(ir_graph *irg /* unroll factor, max body size */)
   collect_phiprojs(irg);
 
   /* -- Search expressions that can be optimized -- */
-  irg_walk_graph(irg, NULL, do_loop_unroll, NULL);
+  irg_walk_graph(irg, NULL, do_loop_unroll, &unroll_done);
+
+  if (unroll_done) {
+    /* unrolling was done, all info is invalid */
+    set_irg_dom_inconsistent(irg);
+    set_irg_outs_inconsistent(irg);
+    set_irg_loopinfo_state(current_ir_graph, loopinfo_cf_inconsistent);
+    set_trouts_inconsistent(irg);
+    set_irg_callee_info_state(irg, irg_callee_info_inconsistent);
+  }
 
   current_ir_graph = rem;
 }
