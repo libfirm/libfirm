@@ -373,7 +373,7 @@ static int cond_cmp(const void *a, const void *b, size_t size)
 /**
  * @see find_conds.
  */
-static void _find_conds(ir_node *irn, ir_node *start_block,
+static void _find_conds(ir_node *irn, unsigned long visited_nr,
 		ir_node *dominator, ir_node *masked_by, int pos, int depth, set *conds)
 {
 	ir_node *block;
@@ -383,10 +383,6 @@ static void _find_conds(ir_node *irn, ir_node *start_block,
 	if(block_dominates(dominator, block)) {
 		ir_node *cond = NULL;
 		int i, n;
-
-		/* We ran into a loop, since we saw the start block twice. */
-		if(block == start_block && depth > 0)
-			return;
 
 		/* check, if we're on a ProjX */
 		if(is_Proj(irn) && get_irn_mode(irn) == mode_X) {
@@ -433,17 +429,27 @@ static void _find_conds(ir_node *irn, ir_node *start_block,
 			}
 		}
 
-		/* Search recursively from this cond. */
-		for(i = 0, n = get_irn_arity(block); i < n; ++i) {
-			ir_node *pred = get_irn_n(block, i);
+		/*
+		 * If this block has already been visited, don't recurse to its
+		 * children.
+		 */
+		if(get_irn_visited(block) < visited_nr) {
 
-			/*
-			 * If the depth is 0 (the first recursion), we set the pos to
-			 * the current viewed predecessor, else we adopt the position
-			 * as given by the caller. We also increase the depth for the
-			 * recursively called functions.
-			 */
-			_find_conds(pred, start_block, dominator, cond, depth == 0 ? i : pos, depth + 1, conds);
+			/* Mark the block visited. */
+			set_irn_visited(block, visited_nr);
+
+			/* Search recursively from this cond. */
+			for(i = 0, n = get_irn_arity(block); i < n; ++i) {
+				ir_node *pred = get_irn_n(block, i);
+
+				/*
+				 * If the depth is 0 (the first recursion), we set the pos to
+				 * the current viewed predecessor, else we adopt the position
+				 * as given by the caller. We also increase the depth for the
+				 * recursively called functions.
+				 */
+				_find_conds(pred, visited_nr, dominator, cond, depth == 0 ? i : pos, depth + 1, conds);
+			}
 		}
 	}
 }
@@ -459,7 +465,8 @@ static void _find_conds(ir_node *irn, ir_node *start_block,
  */
 static INLINE void find_conds(ir_node *irn, ir_node *dominator, set *conds)
 {
-	_find_conds(irn, get_nodes_block(irn), dominator, NULL, 0, 0, conds);
+	inc_irg_visited(current_ir_graph);
+	_find_conds(irn, get_irg_visited(current_ir_graph), dominator, NULL, 0, 0, conds);
 }
 
 
@@ -618,7 +625,11 @@ static void check_out_phi(ir_node *irn, opt_if_conv_info_t *info)
 	 */
 	mux = make_mux_on_demand(irn, idom, largest_cond);
 
+	/*
+	 * Try to optimize mux chains.
+	 */
 	mux = optimize_mux_chain(mux);
+
 	/*
 	 * Set all preds of the phi node to the mux
 	 * for the 'largest' cond.
@@ -640,7 +651,7 @@ static void annotate_cond_info_post(ir_node *irn, void *data)
 	 * phi's block up to its dominator.
 	 * The set is attached to the blocks link field.
 	 */
-	if(is_Phi(irn)) {
+	if(is_Phi(irn) && mode_is_datab(get_irn_mode(irn))) {
 		ir_node *block = get_nodes_block(irn);
 		ir_node **phi_list_head = (ir_node **) data;
 
