@@ -334,9 +334,9 @@ void set_opt_if_conversion(int value)
 void set_opt_real_function_call(int value)
 {
   if (value)
-    libFIRM_opt |= OPT_IF_CONVERSION;
+    libFIRM_opt |= OPT_REAL_FUNC_CALL;
   else
-    libFIRM_opt &= ~OPT_IF_CONVERSION;
+    libFIRM_opt &= ~OPT_REAL_FUNC_CALL;
 }
 
 /* Save the current optimization state. */
