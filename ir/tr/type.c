@@ -362,8 +362,8 @@ type *new_type_array         (ident *name, int n_dimensions,
   type *res;
   res = new_type(type_array, NULL, name);
   res->attr.aa.n_dimensions = n_dimensions;
-  res->attr.aa.lower_bound  = (int *) xmalloc (sizeof (int) * n_dimensions);
-  res->attr.aa.upper_bound  = (int *) xmalloc (sizeof (int) * n_dimensions);
+  res->attr.aa.lower_bound  = (ir_node **) xmalloc (sizeof (ir_node *) * n_dimensions);
+  res->attr.aa.upper_bound  = (ir_node **) xmalloc (sizeof (ir_node *) * n_dimensions);
   res->attr.aa.element_type = element_type;
   new_entity(res, name, element_type);
   return res;
@@ -374,25 +374,25 @@ int   get_array_n_dimensions (type *array) {
   assert(array && (array->type_op == type_array));
   return array->attr.aa.n_dimensions;
 }
-void  set_array_bounds       (type *array, int dimension, int lower_bound,
-                                                          int upper_bound) {
+void  set_array_bounds       (type *array, int dimension, ir_node * lower_bound,
+                                                          ir_node * upper_bound) {
   assert(array && (array->type_op == type_array));
   array->attr.aa.lower_bound[dimension] = lower_bound;
   array->attr.aa.upper_bound[dimension] = upper_bound;
 }
-void  set_array_lower_bound  (type *array, int dimension, int lower_bound) {
+void  set_array_lower_bound  (type *array, int dimension, ir_node * lower_bound) {
   assert(array && (array->type_op == type_array));
   array->attr.aa.lower_bound[dimension] = lower_bound;
 }
-void  set_array_upper_bound  (type *array, int dimension, int upper_bound) {
+void  set_array_upper_bound  (type *array, int dimension, ir_node * upper_bound) {
   assert(array && (array->type_op == type_array));
   array->attr.aa.upper_bound[dimension] = upper_bound;
 }
-int   get_array_lower_bound  (type *array, int dimension) {
+ir_node * get_array_lower_bound  (type *array, int dimension) {
   assert(array && (array->type_op == type_array));
   return array->attr.aa.lower_bound[dimension];
 }
-int   get_array_upper_bound  (type *array, int dimension) {
+ir_node * get_array_upper_bound  (type *array, int dimension) {
   assert(array && (array->type_op == type_array));
   return array->attr.aa.upper_bound[dimension];
 }

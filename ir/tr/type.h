@@ -42,6 +42,11 @@
 typedef struct entity entity;
 #endif
 
+#ifndef _IR_NODE_TYPEDEF_
+#define _IR_NODE_TYPEDEF_
+typedef struct ir_node ir_node;
+#endif
+
 /****s* type/type
  *
  * NAME
@@ -310,6 +315,9 @@ void   set_union_delim_nameid (type *uni, int pos, ident *id);
  *   *element_type    The type of the array elements.
  *   *element_ent     An entity for the array elements to be used for
  *                    element selection with Sel.
+ *                    @@@ Do we need several entities?  One might want
+ *                    to select a dimension and not a single element in
+ *                    case of multidim arrays.
  * SOURCE
  */
 /* create a new type array --
@@ -320,12 +328,12 @@ type *new_type_array         (ident *name, int n_dimensions,
 
 /* manipulate private fields of array type */
 int   get_array_n_dimensions (type *array);
-void  set_array_bounds       (type *array, int dimension, int lower_bound,
-                                                          int upper_bound);
-void  set_array_lower_bound  (type *array, int dimension, int lower_bound);
-void  set_array_upper_bound  (type *array, int dimension, int upper_bound);
-int   get_array_lower_bound  (type *array, int dimension);
-int   get_array_upper_bound  (type *array, int dimension);
+void  set_array_bounds       (type *array, int dimension, ir_node *lower_bound,
+                                                          ir_node *upper_bound);
+void  set_array_lower_bound  (type *array, int dimension, ir_node *lower_bound);
+void  set_array_upper_bound  (type *array, int dimension, ir_node *upper_bound);
+ir_node * get_array_lower_bound  (type *array, int dimension);
+ir_node * get_array_upper_bound  (type *array, int dimension);
 
 void  set_array_element_type (type *array, type *type);
 type *get_array_element_type (type *array);
