@@ -5,7 +5,7 @@
  * Author:
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2004 Universität Karlsruhe
+ * Copyright:   (c) 1998-2004 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 # include "irnode_t.h"
@@ -143,7 +143,8 @@ static int optimize_load(ir_node *load)
      */
     if (! info->projs[pn_Load_X_except] || get_nodes_block(load) == get_nodes_block(pred)) {
       exchange( info->projs[pn_Load_res], get_Store_value(pred) );
-      exchange( info->projs[pn_Load_M], mem );
+      if (info->projs[pn_Load_M])
+	exchange(info->projs[pn_Load_M], mem);
 
       /* no exception */
       if (info->projs[pn_Load_X_except])
@@ -156,7 +157,7 @@ static int optimize_load(ir_node *load)
     /*
      * a load immediately after a load -- a read after read.
      * We may remove the second Load, if it does not have an exception handler
-     * OR they are in the same block. In the latter case the Load cannot
+     * OR they are in the same block. In the later case the Load cannot
      * throw an exception when the previous Load was quiet.
      */
     if (! info->projs[pn_Load_X_except] || get_nodes_block(load) == get_nodes_block(pred)) {
@@ -165,14 +166,19 @@ static int optimize_load(ir_node *load)
       if (pred_info->projs[pn_Load_res]) {
 	/* we need a data proj from the previous load for this optimization */
 	exchange( info->projs[pn_Load_res], pred_info->projs[pn_Load_res] );
-	exchange( info->projs[pn_Load_M],   mem );
+	if (info->projs[pn_Load_M])
+	  exchange(info->projs[pn_Load_M], mem);
       }
       else {
 	if (info->projs[pn_Load_res]) {
 	  set_Proj_pred(info->projs[pn_Load_res], pred);
 	  set_nodes_block(info->projs[pn_Load_res], get_nodes_block(pred));
 	}
-	exchange(info->projs[pn_Load_M], mem);
+	if (info->projs[pn_Load_M]) {
+	  /* Actually, this if should not be necessary.  Construct the Loads
+	     properly!!! */
+	  exchange(info->projs[pn_Load_M], mem);
+	}
       }
 
       /* no exception */
