@@ -128,20 +128,20 @@ struct type {
  *   initalized.  The type is in state layout_undefined.
  ***
  */
-inline type *
+INLINE type *
 new_type(tp_op *type_op,
 	 ir_mode *mode,
 	 ident* name);
 void free_type_attrs       (type *tp);
 
-inline void free_class_attrs      (type *clss);
-inline void free_struct_attrs     (type *strct);
-inline void free_method_attrs     (type *method);
-inline void free_union_attrs      (type *uni);
-inline void free_array_attrs      (type *array);
-inline void free_enumeration_attrs(type *enumeration);
-inline void free_pointer_attrs    (type *pointer);
-inline void free_primitive_attrs  (type *primitive);
+INLINE void free_class_attrs      (type *clss);
+INLINE void free_struct_attrs     (type *strct);
+INLINE void free_method_attrs     (type *method);
+INLINE void free_union_attrs      (type *uni);
+INLINE void free_array_attrs      (type *array);
+INLINE void free_enumeration_attrs(type *enumeration);
+INLINE void free_pointer_attrs    (type *pointer);
+INLINE void free_primitive_attrs  (type *primitive);
 
 
 # endif /* _TYPE_T_H_ */

@@ -44,7 +44,7 @@ turn_into_tuple (ir_node *node, int arity)
 /* Insert irnode `new' in place of irnode `old'
    Since `new' may be bigger than `old' replace `old'
    by an op_Id which is smaller than everything */
-inline void
+INLINE void
 exchange (ir_node *old, ir_node *nw)
 {
   ir_node *block = old->in[0];

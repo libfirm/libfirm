@@ -66,17 +66,17 @@ static void caller_init(int arr_length, entity ** free_methods) {
 }
 
 
-static void clear_link(ir_node * node, void * env) {
+static INLINE void clear_link(ir_node * node, void * env) {
   set_irn_link(node, NULL);
 }
 
-
-static inline ir_node * tail(ir_node * node) {
+/*
+static INLINE ir_node * tail(ir_node * node) {
   ir_node * link;
   for (; (link = get_irn_link(node)); node = link) ;
   return node;
 }
-
+*/
 
 /* Call-Operationen an die "link"-Liste von "call_tail" anhängen (und
  * "call_tail" aktualisieren), Proj-Operationen in die Liste ihrer Definition

@@ -1,7 +1,7 @@
 /* Copyright (c) 2002 by Universität Karlsruhe (TH).  All Rights Reserved */
-//
-// Time-stamp: <02/03/22 17:03:05 liekweg>
-//
+/*
+** Time-stamp: <Thursday, 04.07.2002, 14:55:36 goetz@i44pc2.info.uni-karlsruhe.de>
+*/
 
 /***
    NAME
@@ -31,13 +31,13 @@ typedef enum {
   exc_invalid,					/* not yet computed */
   exc_normal,					/* normal CF */
 
-  // must push a new exc contrext at entry of block:
+  /* must push a new exc contrext at entry of block: */
   exc_region,					/* region entry */
 
-  // must pop current exc contrext at EXIT of block
+  /* must pop current exc contrext at EXIT of block */
   exc_exit,						/* region exit */
 
-  // must pop current exc contrext at entry of block
+  /* must pop current exc contrext at entry of block */
   exc_handler,					/* handler entry */
 
   exc_max						/* maximum value of enum for 'bounds checking' */

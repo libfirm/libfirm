@@ -21,12 +21,12 @@
 #include "irnode_t.h"
 
 
-inline void
+INLINE void
 dbg_info_merge_pair(ir_node *nw, ir_node *old, dbg_action info) {
   set_irn_dbg_info(nw, get_irn_dbg_info(old));
 }
 
-inline void
+INLINE void
 dbg_info_merge_sets(ir_node **new_nodes, int n_new_nodes,
 		    ir_node **old_nodes, int n_old_nodes,
 		    dbg_action info) {
@@ -52,12 +52,12 @@ void dbg_init( void (merge_pair)(ir_node *nw, ir_node *old, dbg_action info) ,
 }
 
 
-inline void
+INLINE void
 set_irn_dbg_info(ir_node *n, struct dbg_info* db) {
   n->dbi = db;
 }
 
-inline struct dbg_info *
+INLINE struct dbg_info *
 get_irn_dbg_info(ir_node *n) {
   return n->dbi;
 }

@@ -48,7 +48,7 @@
 
 unsigned long type_visited;
 
-inline type *
+INLINE type *
 new_type(tp_op *type_op, ir_mode *mode, ident* name) {
   type *res;
   int node_size ;
@@ -267,7 +267,7 @@ type   *new_type_class (ident *name) {
 
   return res;
 }
-inline void free_class_attrs(type *clss) {
+INLINE void free_class_attrs(type *clss) {
   assert(clss && (clss->type_op == type_class));
   DEL_ARR_F(clss->attr.ca.members);
   DEL_ARR_F(clss->attr.ca.subtypes);
@@ -387,11 +387,11 @@ void    remove_class_supertype(type *clss, type *supertype) {
     }
 }
 
-inline peculiarity get_class_peculiarity (type *clss) {
+INLINE peculiarity get_class_peculiarity (type *clss) {
   assert(clss && (clss->type_op == type_class));
   return clss->attr.ca.peculiarity;
 }
-inline void        set_class_peculiarity (type *clss, peculiarity pec) {
+INLINE void        set_class_peculiarity (type *clss, peculiarity pec) {
   assert(clss && (clss->type_op == type_class));
   clss->attr.ca.peculiarity = pec;
 }
@@ -423,7 +423,7 @@ type   *new_type_struct (ident *name) {
   res->attr.sa.members = NEW_ARR_F (entity *, 1);
   return res;
 }
-inline void free_struct_attrs (type *strct) {
+INLINE void free_struct_attrs (type *strct) {
   assert(strct && (strct->type_op == type_struct));
   DEL_ARR_F(strct->attr.sa.members);
 }
@@ -483,7 +483,7 @@ type *new_type_method (ident *name, int n_param, int n_res) {
   res->attr.ma.res_type   = (type **) xmalloc (sizeof (type *) * n_res);
   return res;
 }
-inline void free_method_attrs(type *method) {
+INLINE void free_method_attrs(type *method) {
   assert(method && (method->type_op == type_method));
   free(method->attr.ma.param_type);
   free(method->attr.ma.res_type);
@@ -539,7 +539,7 @@ type  *new_type_uni (ident *name) {
   res->attr.ua.members = NEW_ARR_F (entity *, 1);
   return res;
 }
-inline void free_union_attrs (type *uni) {
+INLINE void free_union_attrs (type *uni) {
   assert(uni && (uni->type_op == type_union));
   DEL_ARR_F(uni->attr.ua.members);
 }
@@ -639,7 +639,7 @@ type *new_type_array         (ident *name, int n_dimensions,
   return res;
 }
 
-inline void free_array_attrs (type *array) {
+INLINE void free_array_attrs (type *array) {
   assert(array && (array->type_op == type_array));
   free(array->attr.aa.lower_bound);
   free(array->attr.aa.upper_bound);
@@ -746,7 +746,7 @@ type   *new_type_enumeration    (ident *name, int n_enums) {
   return res;
 }
 
-inline void free_enumeration_attrs(type *enumeration) {
+INLINE void free_enumeration_attrs(type *enumeration) {
   assert(enumeration && (enumeration->type_op == type_enumeration));
   free(enumeration->attr.ea.enumer);
   free(enumeration->attr.ea.enum_nameid);
@@ -802,7 +802,7 @@ type *new_type_pointer           (ident *name, type *points_to) {
   res->state = layout_fixed;
   return res;
 }
-inline void free_pointer_attrs (type *pointer) {
+INLINE void free_pointer_attrs (type *pointer) {
   assert(pointer && (pointer->type_op == type_pointer));
 }
 /* manipulate fields of type_pointer */
@@ -835,7 +835,7 @@ type *new_type_primitive (ident *name, ir_mode *mode) {
   res->state = layout_fixed;
   return res;
 }
-inline void free_primitive_attrs (type *primitive) {
+INLINE void free_primitive_attrs (type *primitive) {
   assert(primitive && (primitive->type_op == type_primitive));
 }
 
@@ -850,12 +850,12 @@ bool  is_primitive_type  (type *primitive) {
 /*******************************************************************/
 
 
-inline int is_atomic_type(type *tp) {
+INLINE int is_atomic_type(type *tp) {
   assert(tp && tp->kind == k_type);
   return (is_primitive_type(tp) || is_pointer_type(tp) ||
 	  is_enumeration_type(tp));
 }
-inline int is_compound_type(type *tp) {
+INLINE int is_compound_type(type *tp) {
   assert(tp && tp->kind == k_type);
   return (is_class_type(tp) || is_struct_type(tp) ||
 	  is_array_type(tp) || is_union_type(tp));

@@ -30,12 +30,24 @@
 #define RETURN_RESULT_OFFSET 1  /* mem is not a result */
 #define END_KEEPALIVE_OFFSET 0
 
+/* Declarations for INLINEing */
+INLINE ir_node ** get_irn_in (ir_node *node);
+INLINE ir_mode *get_irn_mode (ir_node *node);
+INLINE ir_op *get_irn_op (ir_node *node);
+INLINE opcode get_irn_opcode (ir_node *node);
+INLINE ident *get_irn_opident (ir_node *node);
+INLINE type *get_SymConst_type (ir_node *node);
+INLINE ir_node *skip_nop (ir_node *node);
+INLINE ir_node *skip_nop (ir_node *node);
+INLINE int is_Proj (ir_node *node);
+
+
 static char *pnc_name_arr [] = {"False", "Eq", "Lt", "Le",
 				"Gt", "Ge", "Lg", "Leg", "Uo",
 				"Ue", "Ul", "Ule", "Ug", "Uge",
 				"Ne", "True" };
 
-inline char *get_pnc_string(int pnc) {
+INLINE char *get_pnc_string(int pnc) {
   return pnc_name_arr[pnc];
 }
 
@@ -77,7 +89,7 @@ init_irnode (void)
 /* create a new irnode in irg, with an op, mode, arity and        */
 /* some incoming irnodes                                          */
 /* this constructor is used in every specified irnode constructor */
-inline ir_node *
+INLINE ir_node *
 new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mode,
 	     int arity, ir_node **in)
 {
@@ -112,7 +124,7 @@ new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mo
    Assumes both have the same opcode and sufficient size. */
 void
 copy_attrs (ir_node *old, ir_node *new) {
-  assert (get_irn_opcode(old) == get_irn_opcode(new));
+  assert (get_irn_op(old) == get_irn_op(new));
   memcpy (&new->attr, &old->attr, get_op_attr_size(get_irn_op(old)));
 }
 
@@ -137,7 +149,7 @@ ir_node_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
     XPF1 ("%v", get_irn_const_attr);
     break;
   case iro_Proj:
-    if (get_irn_modecode (np) == irm_b) {
+    if (get_irn_mode (np) == mode_b) {
       XPC (" ");
       XP (pnc_name_arr[get_irn_proj_attr(np)]);
     } else if (get_irn_opcode (get_irn_in (np)[1]) == iro_Start) {
@@ -177,7 +189,7 @@ ir_node_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
 /** getting some parameters from ir_nodes **/
 
 /* returns the number of predecessors without the block predecessor. */
-inline int
+INLINE int
 get_irn_arity (ir_node *node) {
   assert(node);
   if (interprocedural_view) { /* handle Filter and Block specially */
@@ -198,7 +210,7 @@ get_irn_arity (ir_node *node) {
    The order of the predecessors in this array is not guaranteed, except that
    lists of operands as predecessors of Block or arguments of a Call are
    consecutive. */
-inline ir_node **
+INLINE ir_node **
 get_irn_in (ir_node *node) {
   assert(node);
   if (interprocedural_view) { /* handle Filter and Block specially */
@@ -213,7 +225,7 @@ get_irn_in (ir_node *node) {
   return node->in;
 }
 
-inline void
+INLINE void
 set_irn_in (ir_node *node, int arity, ir_node **in) {
   ir_node *** arr;
   assert(node);
@@ -242,7 +254,7 @@ set_irn_in (ir_node *node, int arity, ir_node **in) {
    to iterate includind the Block predecessor iterate from i = -1 to
    i < get_irn_arity.
    If it is a block, the entry -1 is NULL. */
-inline ir_node *
+INLINE ir_node *
 get_irn_n (ir_node *node, int n) {
   assert(node && -1 <= n && n < get_irn_arity(node));
   if (interprocedural_view) { /* handle Filter and Block specially */
@@ -257,7 +269,7 @@ get_irn_n (ir_node *node, int n) {
   return (node->in[n + 1] = skip_nop(node->in[n + 1]));
 }
 
-inline void
+INLINE void
 set_irn_n (ir_node *node, int n, ir_node *in) {
   assert(node && -1 <= n && n < get_irn_arity(node));
   if ((n == -1) && (get_irn_opcode(node) == iro_Filter)) {
@@ -281,14 +293,14 @@ set_irn_n (ir_node *node, int n, ir_node *in) {
   node->in[n + 1] = in;
 }
 
-inline ir_mode *
+INLINE ir_mode *
 get_irn_mode (ir_node *node)
 {
   assert (node);
   return node->mode;
 }
 
-inline modecode
+INLINE modecode
 get_irn_modecode (ir_node *node)
 {
   assert (node);
@@ -296,14 +308,14 @@ get_irn_modecode (ir_node *node)
 }
 
 
-inline ident *
+INLINE ident *
 get_irn_modeident (ir_node *node)
 {
   assert(node);
   return node->mode->name;
 }
 
-inline ir_op *
+INLINE ir_op *
 get_irn_op (ir_node *node)
 {
   assert (node);
@@ -311,74 +323,74 @@ get_irn_op (ir_node *node)
 }
 
 /* should be private to the library: */
-inline void
+INLINE void
 set_irn_op (ir_node *node, ir_op *op)
 {
   assert (node);
   node->op = op;
 }
 
-inline opcode
+INLINE opcode
 get_irn_opcode (ir_node *node)
 {
   assert (node);
   return node->op->code;
 }
 
-inline const char *
+INLINE const char *
 get_irn_opname (ir_node *node)
 {
   assert(node);
   return id_to_str(node->op->name);
 }
 
-inline ident *
+INLINE ident *
 get_irn_opident (ir_node *node)
 {
   assert(node);
   return node->op->name;
 }
 
-inline unsigned long
+INLINE unsigned long
 get_irn_visited (ir_node *node)
 {
   assert (node);
   return node->visited;
 }
 
-inline void
+INLINE void
 set_irn_visited (ir_node *node, unsigned long visited)
 {
   assert (node);
   node->visited = visited;
 }
 
-inline void
+INLINE void
 mark_irn_visited (ir_node *node) {
   assert (node);
   node->visited = current_ir_graph->visited;
 }
 
-inline int
+INLINE int
 irn_not_visited  (ir_node *node) {
   assert (node);
   return (node->visited < current_ir_graph->visited);
 }
 
-inline void
+INLINE void
 set_irn_link (ir_node *node, ir_node *link) {
   assert (node);
   node->link = link;
 }
 
-inline ir_node *
+INLINE ir_node *
 get_irn_link (ir_node *node) {
   assert (node);
   return node->link;
 }
 
 /* Outputs a unique number for this node */
-inline long
+INLINE long
 get_irn_node_nr(ir_node *node) {
   assert(node);
 #ifdef DEBUG_libfirm
@@ -388,63 +400,63 @@ get_irn_node_nr(ir_node *node) {
 #endif
 }
 
-inline tarval *
+INLINE tarval *
 get_irn_const_attr (ir_node *node)
 {
   assert (node->op == op_Const);
   return node->attr.con;
 }
 
-inline long
+INLINE long
 get_irn_proj_attr (ir_node *node)
 {
   assert (node->op == op_Proj);
   return node->attr.proj;
 }
 
-inline alloc_attr
+INLINE alloc_attr
 get_irn_alloc_attr (ir_node *node)
 {
   assert (node->op == op_Alloc);
   return node->attr.a;
 }
 
-inline type *
+INLINE type *
 get_irn_free_attr     (ir_node *node)
 {
   assert (node->op == op_Free);
   return node->attr.f = skip_tid(node->attr.f);
 }
 
-inline symconst_attr
+INLINE symconst_attr
 get_irn_symconst_attr (ir_node *node)
 {
   assert (node->op == op_SymConst);
   return node->attr.i;
 }
 
-inline type *
+INLINE type *
 get_irn_call_attr (ir_node *node)
 {
   assert (node->op == op_Call);
   return node->attr.call.cld_tp = skip_tid(node->attr.call.cld_tp);
 }
 
-inline sel_attr
+INLINE sel_attr
 get_irn_sel_attr (ir_node *node)
 {
   assert (node->op == op_Sel);
   return node->attr.s;
 }
 
-inline int
+INLINE int
 get_irn_phi_attr (ir_node *node)
 {
   assert (node->op == op_Phi);
   return node->attr.phi0_pos;
 }
 
-inline block_attr
+INLINE block_attr
 get_irn_block_attr (ir_node *node)
 {
   assert (node->op == op_Block);
@@ -460,7 +472,7 @@ get_nodes_Block (ir_node *node) {
   return get_irn_n(node, -1);
 }
 
-inline void
+INLINE void
 set_nodes_Block (ir_node *node, ir_node *block) {
   assert (!(node->op == op_Block));
   set_irn_n(node, -1, block);
@@ -470,7 +482,7 @@ set_nodes_Block (ir_node *node, ir_node *block) {
    the implementation of the graph datastructure this can be a copy of
    the internal representation of predecessors as well as the internal
    array itself. Therefore writing to this array might obstruct the ir. */
-inline ir_node **
+INLINE ir_node **
 get_Block_cfgpred_arr (ir_node *node)
 {
   assert ((node->op == op_Block));
@@ -478,72 +490,72 @@ get_Block_cfgpred_arr (ir_node *node)
 }
 
 
-inline int
+INLINE int
 get_Block_n_cfgpreds (ir_node *node) {
   assert ((node->op == op_Block));
   return (get_irn_arity(node));
 }
 
 /*
-inline void
+INLINE void
 set_Block_n_cfgpreds (ir_node *node, int n_preds) {
   assert ((node->op == op_Block));
 }
 */
 
-inline ir_node *
+INLINE ir_node *
 get_Block_cfgpred (ir_node *node, int pos) {
   assert (node->op == op_Block);
   return get_irn_n(node, pos);
 }
 
-inline void
+INLINE void
 set_Block_cfgpred (ir_node *node, int pos, ir_node *pred) {
   assert (node->op == op_Block);
   set_irn_n(node, pos, pred);
 }
 
-inline bool
+INLINE bool
 get_Block_matured (ir_node *node) {
   assert (node->op == op_Block);
   return node->attr.block.matured;
 }
 
-inline void
+INLINE void
 set_Block_matured (ir_node *node, bool matured) {
   assert (node->op == op_Block);
   node->attr.block.matured = matured;
 }
-inline unsigned long
+INLINE unsigned long
 get_Block_block_visited (ir_node *node) {
   assert (node->op == op_Block);
   return node->attr.block.block_visited;
 }
 
-inline void
+INLINE void
 set_Block_block_visited (ir_node *node, unsigned long visit) {
   assert (node->op == op_Block);
   node->attr.block.block_visited = visit;
 }
 
 /* For this current_ir_graph must be set. */
-inline void mark_Block_block_visited (ir_node *node) {
+INLINE void mark_Block_block_visited (ir_node *node) {
   assert (node->op == op_Block);
   node->attr.block.block_visited = get_irg_block_visited(current_ir_graph);
 }
 
-inline int Block_not_block_visited(ir_node *node) {
+INLINE int Block_not_block_visited(ir_node *node) {
   assert (node->op == op_Block);
   return (node->attr.block.block_visited < get_irg_block_visited(current_ir_graph));
 }
 
-inline ir_node *
+INLINE ir_node *
 get_Block_graph_arr (ir_node *node, int pos) {
   assert (node->op == op_Block);
   return node->attr.block.graph_arr[pos+1];
 }
 
-inline void
+INLINE void
 set_Block_graph_arr (ir_node *node, int pos, ir_node *value) {
   assert (node->op == op_Block);
   node->attr.block.graph_arr[pos+1] = value;
@@ -633,31 +645,31 @@ void remove_Block_cg_cfgpred_arr(ir_node * node) {
   node->attr.block.in_cg = NULL;
 }
 
-inline int
+INLINE int
 get_End_n_keepalives(ir_node *end) {
   assert (end->op == op_End);
   return (get_irn_arity(end) - END_KEEPALIVE_OFFSET);
 }
 
-inline ir_node *
+INLINE ir_node *
 get_End_keepalive(ir_node *end, int pos) {
   assert (end->op == op_End);
   return get_irn_n(end, pos + END_KEEPALIVE_OFFSET);
 }
 
-inline void
+INLINE void
 add_End_keepalive (ir_node *end, ir_node *ka) {
   assert (end->op == op_End);
   ARR_APP1 (ir_node *, end->in, ka);
 }
 
-inline void
+INLINE void
 set_End_keepalive(ir_node *end, int pos, ir_node *ka) {
   assert (end->op == op_End);
   set_irn_n(end, pos + END_KEEPALIVE_OFFSET, ka);
 }
 
-inline void
+INLINE void
 free_End (ir_node *end) {
   /* DEL_ARR_F(end->in);   GL @@@ tut nicht ! */
   end->in = NULL;   /* @@@ make sure we get an error if we use the in array afterwards ... */
@@ -694,43 +706,49 @@ I don't want to choose 3) as 2a) seems to have advantages for
 dataflow analysis and 3) does not allow to convert the representation to
 2a).
 */
-inline ir_node *
+INLINE ir_node *
 get_Cond_selector (ir_node *node) {
   assert (node->op == op_Cond);
   return get_irn_n(node, 0);
 }
 
-inline void
+INLINE void
 set_Cond_selector (ir_node *node, ir_node *selector) {
   assert (node->op == op_Cond);
   set_irn_n(node, 0, selector);
 }
 
-inline cond_kind
+INLINE cond_kind
 get_Cond_kind (ir_node *node) {
   assert (node->op == op_Cond);
   return node->attr.c.kind;
 }
 
-inline void
+INLINE void
 set_Cond_kind (ir_node *node, cond_kind kind) {
   assert (node->op == op_Cond);
   node->attr.c.kind = kind;
 }
 
-inline ir_node *
+INLINE ir_node *
 get_Return_mem (ir_node *node) {
   assert (node->op == op_Return);
   return get_irn_n(node, 0);
 }
 
-inline void
+INLINE void
 set_Return_mem (ir_node *node, ir_node *mem) {
   assert (node->op == op_Return);
   set_irn_n(node, 0, mem);
 }
 
-inline ir_node **
+INLINE int
+get_Return_n_res (ir_node *node) {
+  assert (node->op == op_Return);
+  return (get_irn_arity(node) - RETURN_RESULT_OFFSET);
+}
+
+INLINE ir_node **
 get_Return_res_arr (ir_node *node)
 {
   assert ((node->op == op_Return));
@@ -740,80 +758,74 @@ get_Return_res_arr (ir_node *node)
     return NULL;
 }
 
-inline int
-get_Return_n_res (ir_node *node) {
-  assert (node->op == op_Return);
-  return (get_irn_arity(node) - RETURN_RESULT_OFFSET);
-}
-
 /*
-inline void
+INLINE void
 set_Return_n_res (ir_node *node, int results) {
   assert (node->op == op_Return);
 }
 */
 
-inline ir_node *
+INLINE ir_node *
 get_Return_res (ir_node *node, int pos) {
   assert (node->op == op_Return);
   assert (get_Return_n_res(node) > pos);
   return get_irn_n(node, pos + RETURN_RESULT_OFFSET);
 }
 
-inline void
+INLINE void
 set_Return_res (ir_node *node, int pos, ir_node *res){
   assert (node->op == op_Return);
   set_irn_n(node, pos + RETURN_RESULT_OFFSET, res);
 }
 
-inline ir_node *
+INLINE ir_node *
 get_Raise_mem (ir_node *node) {
   assert (node->op == op_Return);
   return get_irn_n(node, 0);
 }
 
-inline void
+INLINE void
 set_Raise_mem (ir_node *node, ir_node *mem) {
   assert (node->op == op_Raise);
   set_irn_n(node, 0, mem);
 }
 
-inline ir_node *
+INLINE ir_node *
 get_Raise_exo_ptr (ir_node *node) {
   assert (node->op == op_Raise);
   return get_irn_n(node, 1);
 }
 
-inline void
+INLINE void
 set_Raise_exo_ptr (ir_node *node, ir_node *exo_ptr) {
   assert (node->op == op_Raise);
   set_irn_n(node, 1, exo_ptr);
 }
 
-inline tarval *get_Const_tarval (ir_node *node) {
+INLINE tarval *get_Const_tarval (ir_node *node) {
   assert (node->op == op_Const);
   return get_irn_const_attr(node);
 }
 
-inline void
+INLINE void
 set_Const_tarval (ir_node *node, tarval *con) {
   assert (node->op == op_Const);
   node->attr.con = con;
 }
 
-inline symconst_kind
+INLINE symconst_kind
 get_SymConst_kind (ir_node *node) {
   assert (node->op == op_SymConst);
   return node->attr.i.num;
 }
 
-inline void
+INLINE void
 set_SymConst_kind (ir_node *node, symconst_kind num) {
   assert (node->op == op_SymConst);
   node->attr.i.num = num;
 }
 
-inline type *
+INLINE type *
 get_SymConst_type (ir_node *node) {
   assert (   (node->op == op_SymConst)
           && (   get_SymConst_kind(node) == type_tag
@@ -821,7 +833,7 @@ get_SymConst_type (ir_node *node) {
   return node->attr.i.tori.typ = skip_tid(node->attr.i.tori.typ);
 }
 
-inline void
+INLINE void
 set_SymConst_type (ir_node *node, type *type) {
   assert (   (node->op == op_SymConst)
           && (   get_SymConst_kind(node) == type_tag
@@ -829,57 +841,63 @@ set_SymConst_type (ir_node *node, type *type) {
   node->attr.i.tori.typ = type;
 }
 
-inline ident *
+INLINE ident *
 get_SymConst_ptrinfo (ir_node *node) {
   assert (   (node->op == op_SymConst)
           && (get_SymConst_kind(node) == linkage_ptr_info));
   return node->attr.i.tori.ptrinfo;
 }
 
-inline void
+INLINE void
 set_SymConst_ptrinfo (ir_node *node, ident *ptrinfo) {
   assert (   (node->op == op_SymConst)
           && (get_SymConst_kind(node) == linkage_ptr_info));
   node->attr.i.tori.ptrinfo = ptrinfo;
 }
 
-inline type_or_id_p
+INLINE type_or_id_p
 get_SymConst_type_or_id (ir_node *node) {
   assert (node->op == op_SymConst);
   return &(node->attr.i.tori);
 }
 
-inline void
+INLINE void
 set_SymConst_type_or_id (ir_node *node, type_or_id_p tori) {
   assert (node->op == op_SymConst);
   memcpy (&(node->attr.i.tori), tori, sizeof(type_or_id));
 }
 
-inline ir_node *
+INLINE ir_node *
 get_Sel_mem (ir_node *node) {
   assert (node->op == op_Sel);
   return get_irn_n(node, 0);
 }
 
-inline void
+INLINE void
 set_Sel_mem (ir_node *node, ir_node *mem) {
   assert (node->op == op_Sel);
   set_irn_n(node, 0, mem);
 }
 
-inline ir_node *
+INLINE ir_node *
 get_Sel_ptr (ir_node *node) {
   assert (node->op == op_Sel);
   return get_irn_n(node, 1);
 }
 
-inline void
+INLINE void
 set_Sel_ptr (ir_node *node, ir_node *ptr) {
   assert (node->op == op_Sel);
   set_irn_n(node, 1, ptr);
 }
 
-inline ir_node **
+INLINE int
+get_Sel_n_index (ir_node *node) {
+  assert (node->op == op_Sel);
+  return (get_irn_arity(node) - SEL_INDEX_OFFSET);
+}
+
+INLINE ir_node **
 get_Sel_index_arr (ir_node *node)
 {
   assert ((node->op == op_Sel));
@@ -889,50 +907,44 @@ get_Sel_index_arr (ir_node *node)
     return NULL;
 }
 
-inline int
-get_Sel_n_index (ir_node *node) {
-  assert (node->op == op_Sel);
-  return (get_irn_arity(node) - SEL_INDEX_OFFSET);
-}
-
 /*
-inline void
+INLINE void
 set_Sel_n_index (ir_node *node, int n_index) {
   assert (node->op == op_Sel);
 }
 */
 
-inline ir_node *
+INLINE ir_node *
 get_Sel_index (ir_node *node, int pos) {
   assert (node->op == op_Sel);
   return get_irn_n(node, pos + SEL_INDEX_OFFSET);
 }
 
-inline void
+INLINE void
 set_Sel_index (ir_node *node, int pos, ir_node *index) {
   assert (node->op == op_Sel);
   set_irn_n(node, pos + SEL_INDEX_OFFSET, index);
 }
 
-inline entity *
+INLINE entity *
 get_Sel_entity (ir_node *node) {
   assert (node->op == op_Sel);
   return node->attr.s.ent;
 }
 
-inline void
+INLINE void
 set_Sel_entity (ir_node *node, entity *ent) {
   assert (node->op == op_Sel);
   node->attr.s.ent = ent;
 }
 
-inline linkage_type
+INLINE linkage_type
 get_Sel_linkage_type (ir_node *node) {
   assert (node->op == op_Sel);
   return node->attr.s.ltyp;
 }
 
-inline void
+INLINE void
 set_Sel_linkage_type (ir_node *node, linkage_type lt) {
   assert (node->op == op_Sel);
   node->attr.s.ltyp = lt;
@@ -974,73 +986,82 @@ set_InstOf_obj (ir_node *node, ir_node *obj) {
   set_irn_n (node, 1, obj);
 }
 
-inline ir_node *
+
+/* For unary and binary arithmetic operations the access to the
+   operands can be factored out.  Left is the first, right the
+   second arithmetic value  as listed in tech report 0999-33.
+   unops are: Minus, Abs, Not, Conv
+   binops are: Add, Sub, Mul, Quot, DivMod, Div, Mod, And, Or, Eor, Shl,
+   Shr, Shrs, Rotate, Cmp */
+
+
+INLINE ir_node *
 get_Call_mem (ir_node *node) {
   assert (node->op == op_Call);
   return get_irn_n(node, 0);
 }
 
-inline void
+INLINE void
 set_Call_mem (ir_node *node, ir_node *mem) {
   assert (node->op == op_Call);
   set_irn_n(node, 0, mem);
 }
 
-inline ir_node *
+INLINE ir_node *
 get_Call_ptr (ir_node *node) {
   assert (node->op == op_Call);
   return get_irn_n(node, 1);
 }
 
-inline void
+INLINE void
 set_Call_ptr (ir_node *node, ir_node *ptr) {
   assert (node->op == op_Call);
   set_irn_n(node, 1, ptr);
 }
 
-inline ir_node **
+INLINE ir_node **
 get_Call_param_arr (ir_node *node) {
   assert (node->op == op_Call);
   return (ir_node **)&get_irn_in(node)[CALL_PARAM_OFFSET + 1];
 }
 
-inline int
+INLINE int
 get_Call_n_params (ir_node *node)  {
   assert (node->op == op_Call);
   return (get_irn_arity(node) - CALL_PARAM_OFFSET);
 }
 
-inline int
+INLINE int
 get_Call_arity (ir_node *node) {
   assert (node->op == op_Call);
   return get_Call_n_params(node);
 }
 
-/* inline void
+/* INLINE void
 set_Call_arity (ir_node *node, ir_node *arity) {
   assert (node->op == op_Call);
 }
 */
 
-inline ir_node *
+INLINE ir_node *
 get_Call_param (ir_node *node, int pos) {
   assert (node->op == op_Call);
   return get_irn_n(node, pos + CALL_PARAM_OFFSET);
 }
 
-inline void
+INLINE void
 set_Call_param (ir_node *node, int pos, ir_node *param) {
   assert (node->op == op_Call);
   set_irn_n(node, pos + CALL_PARAM_OFFSET, param);
 }
 
-inline type *
+INLINE type *
 get_Call_type (ir_node *node) {
   assert (node->op == op_Call);
   return node->attr.call.cld_tp = skip_tid(node->attr.call.cld_tp);
 }
 
-inline void
+INLINE void
 set_Call_type (ir_node *node, type *type) {
   assert (node->op == op_Call);
   assert (is_method_type(type));
@@ -1070,12 +1091,467 @@ void remove_Call_callee_arr(ir_node * node) {
   node->attr.call.callee_arr = NULL;
 }
 
-/* For unary and binary arithmetic operations the access to the
-   operands can be factored out.  Left is the first, right the
-   second arithmetic value  as listed in tech report 0999-33.
-   unops are: Minus, Abs, Not, Conv
-   binops are: Add, Sub, Mul, Quot, DivMod, Div, Mod, And, Or, Eor, Shl,
-   Shr, Shrs, Rotate, Cmp */
+INLINE ir_node *
+get_Add_left (ir_node *node) {
+  assert (node->op == op_Add);
+  return get_irn_n(node, 0);
+}
+
+INLINE void
+set_Add_left (ir_node *node, ir_node *left) {
+  assert (node->op == op_Add);
+  set_irn_n(node, 0, left);
+}
+
+INLINE ir_node *
+get_Add_right (ir_node *node) {
+  assert (node->op == op_Add);
+  return get_irn_n(node, 1);
+}
+
+INLINE void
+set_Add_right (ir_node *node, ir_node *right) {
+  assert (node->op == op_Add);
+  set_irn_n(node, 1, right);
+}
+
+INLINE ir_node *
+get_Sub_left (ir_node *node) {
+  assert (node->op == op_Sub);
+  return get_irn_n(node, 0);
+}
+
+INLINE void
+set_Sub_left (ir_node *node, ir_node *left) {
+  assert (node->op == op_Sub);
+  set_irn_n(node, 0, left);
+}
+
+INLINE ir_node *
+get_Sub_right (ir_node *node) {
+  assert (node->op == op_Sub);
+  return get_irn_n(node, 1);
+}
+
+INLINE void
+set_Sub_right (ir_node *node, ir_node *right) {
+  assert (node->op == op_Sub);
+  set_irn_n(node, 1, right);
+}
+
+
+INLINE ir_node *
+get_Minus_op (ir_node *node) {
+  assert (node->op == op_Minus);
+  return get_irn_n(node, 0);
+}
+
+INLINE void
+set_Minus_op (ir_node *node, ir_node *op) {
+  assert (node->op == op_Minus);
+  set_irn_n(node, 0, op);
+}
+
+
+INLINE ir_node *
+get_Mul_left (ir_node *node) {
+  assert (node->op == op_Mul);
+  return get_irn_n(node, 0);
+}
+
+INLINE void
+set_Mul_left (ir_node *node, ir_node *left) {
+  assert (node->op == op_Mul);
+  set_irn_n(node, 0, left);
+}
+
+INLINE ir_node *
+get_Mul_right (ir_node *node) {
+  assert (node->op == op_Mul);
+  return get_irn_n(node, 1);
+}
+
+INLINE void
+set_Mul_right (ir_node *node, ir_node *right) {
+  assert (node->op == op_Mul);
+  set_irn_n(node, 1, right);
+}
+
+INLINE ir_node *
+get_Quot_left (ir_node *node) {
+  assert (node->op == op_Quot);
+  return get_irn_n(node, 1);
+}
+
+INLINE void
+set_Quot_left (ir_node *node, ir_node *left) {
+  assert (node->op == op_Quot);
+  set_irn_n(node, 1, left);
+}
+
+INLINE ir_node *
+get_Quot_right (ir_node *node) {
+  assert (node->op == op_Quot);
+  return get_irn_n(node, 2);
+}
+
+INLINE void
+set_Quot_right (ir_node *node, ir_node *right) {
+  assert (node->op == op_Quot);
+  set_irn_n(node, 2, right);
+}
+
+INLINE ir_node *
+get_Quot_mem (ir_node *node) {
+  assert (node->op == op_Quot);
+  return get_irn_n(node, 0);
+}
+
+INLINE void
+set_Quot_mem (ir_node *node, ir_node *mem) {
+  assert (node->op == op_Quot);
+  set_irn_n(node, 0, mem);
+}
+
+INLINE ir_node *
+get_DivMod_left (ir_node *node) {
+  assert (node->op == op_DivMod);
+  return get_irn_n(node, 1);
+}
+
+INLINE void
+set_DivMod_left (ir_node *node, ir_node *left) {
+  assert (node->op == op_DivMod);
+  set_irn_n(node, 1, left);
+}
+
+INLINE ir_node *
+get_DivMod_right (ir_node *node) {
+  assert (node->op == op_DivMod);
+  return get_irn_n(node, 2);
+}
+
+INLINE void
+set_DivMod_right (ir_node *node, ir_node *right) {
+  assert (node->op == op_DivMod);
+  set_irn_n(node, 2, right);
+}
+
+INLINE ir_node *
+get_DivMod_mem (ir_node *node) {
+  assert (node->op == op_DivMod);
+  return get_irn_n(node, 0);
+}
+
+INLINE void
+set_DivMod_mem (ir_node *node, ir_node *mem) {
+  assert (node->op == op_DivMod);
+  set_irn_n(node, 0, mem);
+}
+
+INLINE ir_node *
+get_Div_left (ir_node *node) {
+  assert (node->op == op_Div);
+  return get_irn_n(node, 1);
+}
+
+INLINE void
+set_Div_left (ir_node *node, ir_node *left) {
+  assert (node->op == op_Div);
+  set_irn_n(node, 1, left);
+}
+
+INLINE ir_node *
+get_Div_right (ir_node *node) {
+  assert (node->op == op_Div);
+  return get_irn_n(node, 2);
+}
+
+INLINE void
+set_Div_right (ir_node *node, ir_node *right) {
+  assert (node->op == op_Div);
+  set_irn_n(node, 2, right);
+}
+
+INLINE ir_node *
+get_Div_mem (ir_node *node) {
+  assert (node->op == op_Div);
+  return get_irn_n(node, 0);
+}
+
+INLINE void
+set_Div_mem (ir_node *node, ir_node *mem) {
+  assert (node->op == op_Div);
+  set_irn_n(node, 0, mem);
+}
+
+INLINE ir_node *
+get_Mod_left (ir_node *node) {
+  assert (node->op == op_Mod);
+  return get_irn_n(node, 1);
+}
+
+INLINE void
+set_Mod_left (ir_node *node, ir_node *left) {
+  assert (node->op == op_Mod);
+  set_irn_n(node, 1, left);
+}
+
+INLINE ir_node *
+get_Mod_right (ir_node *node) {
+  assert (node->op == op_Mod);
+  return get_irn_n(node, 2);
+}
+
+INLINE void
+set_Mod_right (ir_node *node, ir_node *right) {
+  assert (node->op == op_Mod);
+  set_irn_n(node, 2, right);
+}
+
+INLINE ir_node *
+get_Mod_mem (ir_node *node) {
+  assert (node->op == op_Mod);
+  return get_irn_n(node, 0);
+}
+
+INLINE void
+set_Mod_mem (ir_node *node, ir_node *mem) {
+  assert (node->op == op_Mod);
+  set_irn_n(node, 0, mem);
+}
+
+INLINE ir_node *
+get_Abs_op (ir_node *node) {
+  assert (node->op == op_Abs);
+  return get_irn_n(node, 0);
+}
+
+INLINE void
+set_Abs_op (ir_node *node, ir_node *op) {
+  assert (node->op == op_Abs);
+  set_irn_n(node, 0, op);
+}
+
+INLINE ir_node *
+get_And_left (ir_node *node) {
+  assert (node->op == op_And);
+  return get_irn_n(node, 0);
+}
+
+INLINE void
+set_And_left (ir_node *node, ir_node *left) {
+  assert (node->op == op_And);
+  set_irn_n(node, 0, left);
+}
+
+INLINE ir_node *
+get_And_right (ir_node *node) {
+  assert (node->op == op_And);
+  return get_irn_n(node, 1);
+}
+
+INLINE void
+set_And_right (ir_node *node, ir_node *right) {
+  assert (node->op == op_And);
+  set_irn_n(node, 1, right);
+}
+
+INLINE ir_node *
+get_Or_left (ir_node *node) {
+  assert (node->op == op_Or);
+  return get_irn_n(node, 0);
+}
+
+INLINE void
+set_Or_left (ir_node *node, ir_node *left) {
+  assert (node->op == op_Or);
+  set_irn_n(node, 0, left);
+}
+
+INLINE ir_node *
+get_Or_right (ir_node *node) {
+  assert (node->op == op_Or);
+  return get_irn_n(node, 1);
+}
+
+INLINE void
+set_Or_right (ir_node *node, ir_node *right) {
+  assert (node->op == op_Or);
+  set_irn_n(node, 1, right);
+}
+
+INLINE ir_node *
+get_Eor_left (ir_node *node) {
+  assert (node->op == op_Eor);
+  return get_irn_n(node, 0);
+}
+
+INLINE void
+set_Eor_left (ir_node *node, ir_node *left) {
+  assert (node->op == op_Eor);
+  set_irn_n(node, 0, left);
+}
+
+INLINE ir_node *
+get_Eor_right (ir_node *node) {
+  assert (node->op == op_Eor);
+  return get_irn_n(node, 1);
+}
+
+INLINE void
+set_Eor_right (ir_node *node, ir_node *right) {
+  assert (node->op == op_Eor);
+  set_irn_n(node, 1, right);
+}
+
+
+INLINE ir_node *
+get_Not_op (ir_node *node) {
+  assert (node->op == op_Not);
+  return get_irn_n(node, 0);
+}
+
+INLINE void
+set_Not_op (ir_node *node, ir_node *op) {
+  assert (node->op == op_Not);
+  set_irn_n(node, 0, op);
+}
+
+
+INLINE ir_node *
+get_Shl_left (ir_node *node) {
+  assert (node->op == op_Shl);
+  return get_irn_n(node, 0);
+}
+
+INLINE void
+set_Shl_left (ir_node *node, ir_node *left) {
+  assert (node->op == op_Shl);
+  set_irn_n(node, 0, left);
+}
+
+INLINE ir_node *
+get_Shl_right (ir_node *node) {
+  assert (node->op == op_Shl);
+  return get_irn_n(node, 1);
+}
+
+INLINE void
+set_Shl_right (ir_node *node, ir_node *right) {
+  assert (node->op == op_Shl);
+  set_irn_n(node, 1, right);
+}
+
+INLINE ir_node *
+get_Shr_left (ir_node *node) {
+  assert (node->op == op_Shr);
+  return get_irn_n(node, 0);
+}
+
+INLINE void
+set_Shr_left (ir_node *node, ir_node *left) {
+  assert (node->op == op_Shr);
+  set_irn_n(node, 0, left);
+}
+
+INLINE ir_node *
+get_Shr_right (ir_node *node) {
+  assert (node->op == op_Shr);
+  return get_irn_n(node, 1);
+}
+
+INLINE void
+set_Shr_right (ir_node *node, ir_node *right) {
+  assert (node->op == op_Shr);
+  set_irn_n(node, 1, right);
+}
+
+INLINE ir_node *
+get_Shrs_left (ir_node *node) {
+  assert (node->op == op_Shrs);
+  return get_irn_n(node, 0);
+}
+
+INLINE void
+set_Shrs_left (ir_node *node, ir_node *left) {
+  assert (node->op == op_Shrs);
+  set_irn_n(node, 0, left);
+}
+
+INLINE ir_node *
+get_Shrs_right (ir_node *node) {
+  assert (node->op == op_Shrs);
+  return get_irn_n(node, 1);
+}
+
+INLINE void
+set_Shrs_right (ir_node *node, ir_node *right) {
+  assert (node->op == op_Shrs);
+  set_irn_n(node, 1, right);
+}
+
+INLINE ir_node *
+get_Rot_left (ir_node *node) {
+  assert (node->op == op_Rot);
+  return get_irn_n(node, 0);
+}
+
+INLINE void
+set_Rot_left (ir_node *node, ir_node *left) {
+  assert (node->op == op_Rot);
+  set_irn_n(node, 0, left);
+}
+
+INLINE ir_node *
+get_Rot_right (ir_node *node) {
+  assert (node->op == op_Rot);
+  return get_irn_n(node, 1);
+}
+
+INLINE void
+set_Rot_right (ir_node *node, ir_node *right) {
+  assert (node->op == op_Rot);
+  set_irn_n(node, 1, right);
+}
+
+INLINE ir_node *
+get_Cmp_left (ir_node *node) {
+  assert (node->op == op_Cmp);
+  return get_irn_n(node, 0);
+}
+
+INLINE void
+set_Cmp_left (ir_node *node, ir_node *left) {
+  assert (node->op == op_Cmp);
+  set_irn_n(node, 0, left);
+}
+
+INLINE ir_node *
+get_Cmp_right (ir_node *node) {
+  assert (node->op == op_Cmp);
+  return get_irn_n(node, 1);
+}
+
+INLINE void
+set_Cmp_right (ir_node *node, ir_node *right) {
+  assert (node->op == op_Cmp);
+  set_irn_n(node, 1, right);
+}
+
+INLINE ir_node *
+get_Conv_op (ir_node *node) {
+  assert (node->op == op_Conv);
+  return get_irn_n(node, 0);
+}
+
+INLINE void
+set_Conv_op (ir_node *node, ir_node *op) {
+  assert (node->op == op_Conv);
+  set_irn_n(node, 0, op);
+}
+
+
 
 int
 is_unop (ir_node *node) {
@@ -1085,7 +1561,7 @@ is_unop (ir_node *node) {
            node->op == op_Conv );
 }
 
-inline ir_node *
+INLINE ir_node *
 get_unop_op (ir_node *node) {
   assert ( node->op == op_Minus ||
            node->op == op_Abs  ||
@@ -1100,7 +1576,7 @@ get_unop_op (ir_node *node) {
   }
 }
 
-inline void
+INLINE void
 set_unop_op (ir_node *node, ir_node *op) {
     assert (node->op == op_Minus ||
 	    node->op == op_Abs   ||
@@ -1135,7 +1611,7 @@ is_binop (ir_node *node) {
           node->op == op_Cmp      );
 }
 
-inline ir_node *
+INLINE ir_node *
 get_binop_left (ir_node *node) {
   assert (node->op == op_Add    ||
           node->op == op_Sub    ||
@@ -1173,7 +1649,7 @@ get_binop_left (ir_node *node) {
   };
 }
 
-inline void
+INLINE void
 set_binop_left (ir_node *node, ir_node *left) {
   assert (node->op == op_Add    ||
           node->op == op_Sub    ||
@@ -1211,7 +1687,7 @@ set_binop_left (ir_node *node, ir_node *left) {
   };
 }
 
-inline ir_node *
+INLINE ir_node *
 get_binop_right (ir_node *node) {
   assert (node->op == op_Add    ||
           node->op == op_Sub    ||
@@ -1249,7 +1725,7 @@ get_binop_right (ir_node *node) {
   };
 }
 
-inline void
+INLINE void
 set_binop_right (ir_node *node, ir_node *right) {
   assert (node->op == op_Add    ||
           node->op == op_Sub    ||
@@ -1287,698 +1763,239 @@ set_binop_right (ir_node *node, ir_node *right) {
   };
 }
 
-inline ir_node *
-get_Add_left (ir_node *node) {
-  assert (node->op == op_Add);
-  return get_irn_n(node, 0);
-}
 
-inline void
-set_Add_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_Add);
-  set_irn_n(node, 0, left);
-}
-
-inline ir_node *
-get_Add_right (ir_node *node) {
-  assert (node->op == op_Add);
-  return get_irn_n(node, 1);
-}
-
-inline void
-set_Add_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_Add);
-  set_irn_n(node, 1, right);
-}
-
-inline ir_node *
-get_Sub_left (ir_node *node) {
-  assert (node->op == op_Sub);
-  return get_irn_n(node, 0);
-}
-
-inline void
-set_Sub_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_Sub);
-  set_irn_n(node, 0, left);
-}
-
-inline ir_node *
-get_Sub_right (ir_node *node) {
-  assert (node->op == op_Sub);
-  return get_irn_n(node, 1);
-}
-
-inline void
-set_Sub_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_Sub);
-  set_irn_n(node, 1, right);
-}
-
-
-inline ir_node *
-get_Minus_op (ir_node *node) {
-  assert (node->op == op_Minus);
-  return get_irn_n(node, 0);
-}
-
-inline void
-set_Minus_op (ir_node *node, ir_node *op) {
-  assert (node->op == op_Minus);
-  set_irn_n(node, 0, op);
-}
-
-
-inline ir_node *
-get_Mul_left (ir_node *node) {
-  assert (node->op == op_Mul);
-  return get_irn_n(node, 0);
-}
-
-inline void
-set_Mul_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_Mul);
-  set_irn_n(node, 0, left);
-}
-
-inline ir_node *
-get_Mul_right (ir_node *node) {
-  assert (node->op == op_Mul);
-  return get_irn_n(node, 1);
-}
-
-inline void
-set_Mul_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_Mul);
-  set_irn_n(node, 1, right);
-}
-
-inline ir_node *
-get_Quot_left (ir_node *node) {
-  assert (node->op == op_Quot);
-  return get_irn_n(node, 1);
-}
-
-inline void
-set_Quot_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_Quot);
-  set_irn_n(node, 1, left);
-}
-
-inline ir_node *
-get_Quot_right (ir_node *node) {
-  assert (node->op == op_Quot);
-  return get_irn_n(node, 2);
-}
-
-inline void
-set_Quot_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_Quot);
-  set_irn_n(node, 2, right);
-}
-
-inline ir_node *
-get_Quot_mem (ir_node *node) {
-  assert (node->op == op_Quot);
-  return get_irn_n(node, 0);
-}
-
-inline void
-set_Quot_mem (ir_node *node, ir_node *mem) {
-  assert (node->op == op_Quot);
-  set_irn_n(node, 0, mem);
-}
-
-inline ir_node *
-get_DivMod_left (ir_node *node) {
-  assert (node->op == op_DivMod);
-  return get_irn_n(node, 1);
-}
-
-inline void
-set_DivMod_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_DivMod);
-  set_irn_n(node, 1, left);
-}
-
-inline ir_node *
-get_DivMod_right (ir_node *node) {
-  assert (node->op == op_DivMod);
-  return get_irn_n(node, 2);
-}
-
-inline void
-set_DivMod_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_DivMod);
-  set_irn_n(node, 2, right);
-}
-
-inline ir_node *
-get_DivMod_mem (ir_node *node) {
-  assert (node->op == op_DivMod);
-  return get_irn_n(node, 0);
-}
-
-inline void
-set_DivMod_mem (ir_node *node, ir_node *mem) {
-  assert (node->op == op_DivMod);
-  set_irn_n(node, 0, mem);
-}
-
-inline ir_node *
-get_Div_left (ir_node *node) {
-  assert (node->op == op_Div);
-  return get_irn_n(node, 1);
-}
-
-inline void
-set_Div_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_Div);
-  set_irn_n(node, 1, left);
-}
-
-inline ir_node *
-get_Div_right (ir_node *node) {
-  assert (node->op == op_Div);
-  return get_irn_n(node, 2);
-}
-
-inline void
-set_Div_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_Div);
-  set_irn_n(node, 2, right);
-}
-
-inline ir_node *
-get_Div_mem (ir_node *node) {
-  assert (node->op == op_Div);
-  return get_irn_n(node, 0);
-}
-
-inline void
-set_Div_mem (ir_node *node, ir_node *mem) {
-  assert (node->op == op_Div);
-  set_irn_n(node, 0, mem);
-}
-
-inline ir_node *
-get_Mod_left (ir_node *node) {
-  assert (node->op == op_Mod);
-  return get_irn_n(node, 1);
-}
-
-inline void
-set_Mod_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_Mod);
-  set_irn_n(node, 1, left);
-}
-
-inline ir_node *
-get_Mod_right (ir_node *node) {
-  assert (node->op == op_Mod);
-  return get_irn_n(node, 2);
-}
-
-inline void
-set_Mod_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_Mod);
-  set_irn_n(node, 2, right);
-}
-
-inline ir_node *
-get_Mod_mem (ir_node *node) {
-  assert (node->op == op_Mod);
-  return get_irn_n(node, 0);
-}
-
-inline void
-set_Mod_mem (ir_node *node, ir_node *mem) {
-  assert (node->op == op_Mod);
-  set_irn_n(node, 0, mem);
-}
-
-inline ir_node *
-get_Abs_op (ir_node *node) {
-  assert (node->op == op_Abs);
-  return get_irn_n(node, 0);
-}
-
-inline void
-set_Abs_op (ir_node *node, ir_node *op) {
-  assert (node->op == op_Abs);
-  set_irn_n(node, 0, op);
-}
-
-inline ir_node *
-get_And_left (ir_node *node) {
-  assert (node->op == op_And);
-  return get_irn_n(node, 0);
-}
-
-inline void
-set_And_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_And);
-  set_irn_n(node, 0, left);
-}
-
-inline ir_node *
-get_And_right (ir_node *node) {
-  assert (node->op == op_And);
-  return get_irn_n(node, 1);
-}
-
-inline void
-set_And_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_And);
-  set_irn_n(node, 1, right);
-}
-
-inline ir_node *
-get_Or_left (ir_node *node) {
-  assert (node->op == op_Or);
-  return get_irn_n(node, 0);
-}
-
-inline void
-set_Or_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_Or);
-  set_irn_n(node, 0, left);
-}
-
-inline ir_node *
-get_Or_right (ir_node *node) {
-  assert (node->op == op_Or);
-  return get_irn_n(node, 1);
-}
-
-inline void
-set_Or_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_Or);
-  set_irn_n(node, 1, right);
-}
-
-inline ir_node *
-get_Eor_left (ir_node *node) {
-  assert (node->op == op_Eor);
-  return get_irn_n(node, 0);
-}
-
-inline void
-set_Eor_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_Eor);
-  set_irn_n(node, 0, left);
-}
-
-inline ir_node *
-get_Eor_right (ir_node *node) {
-  assert (node->op == op_Eor);
-  return get_irn_n(node, 1);
-}
-
-inline void
-set_Eor_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_Eor);
-  set_irn_n(node, 1, right);
-}
-
-
-inline ir_node *
-get_Not_op (ir_node *node) {
-  assert (node->op == op_Not);
-  return get_irn_n(node, 0);
-}
-
-inline void
-set_Not_op (ir_node *node, ir_node *op) {
-  assert (node->op == op_Not);
-  set_irn_n(node, 0, op);
-}
-
-
-inline ir_node *
-get_Shl_left (ir_node *node) {
-  assert (node->op == op_Shl);
-  return get_irn_n(node, 0);
-}
-
-inline void
-set_Shl_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_Shl);
-  set_irn_n(node, 0, left);
-}
-
-inline ir_node *
-get_Shl_right (ir_node *node) {
-  assert (node->op == op_Shl);
-  return get_irn_n(node, 1);
-}
-
-inline void
-set_Shl_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_Shl);
-  set_irn_n(node, 1, right);
-}
-
-inline ir_node *
-get_Shr_left (ir_node *node) {
-  assert (node->op == op_Shr);
-  return get_irn_n(node, 0);
-}
-
-inline void
-set_Shr_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_Shr);
-  set_irn_n(node, 0, left);
-}
-
-inline ir_node *
-get_Shr_right (ir_node *node) {
-  assert (node->op == op_Shr);
-  return get_irn_n(node, 1);
-}
-
-inline void
-set_Shr_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_Shr);
-  set_irn_n(node, 1, right);
-}
-
-inline ir_node *
-get_Shrs_left (ir_node *node) {
-  assert (node->op == op_Shrs);
-  return get_irn_n(node, 0);
-}
-
-inline void
-set_Shrs_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_Shrs);
-  set_irn_n(node, 0, left);
-}
-
-inline ir_node *
-get_Shrs_right (ir_node *node) {
-  assert (node->op == op_Shrs);
-  return get_irn_n(node, 1);
-}
-
-inline void
-set_Shrs_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_Shrs);
-  set_irn_n(node, 1, right);
-}
-
-inline ir_node *
-get_Rot_left (ir_node *node) {
-  assert (node->op == op_Rot);
-  return get_irn_n(node, 0);
-}
-
-inline void
-set_Rot_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_Rot);
-  set_irn_n(node, 0, left);
-}
-
-inline ir_node *
-get_Rot_right (ir_node *node) {
-  assert (node->op == op_Rot);
-  return get_irn_n(node, 1);
-}
-
-inline void
-set_Rot_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_Rot);
-  set_irn_n(node, 1, right);
-}
-
-inline ir_node *
-get_Cmp_left (ir_node *node) {
-  assert (node->op == op_Cmp);
-  return get_irn_n(node, 0);
-}
-
-inline void
-set_Cmp_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_Cmp);
-  set_irn_n(node, 0, left);
-}
-
-inline ir_node *
-get_Cmp_right (ir_node *node) {
-  assert (node->op == op_Cmp);
-  return get_irn_n(node, 1);
-}
-
-inline void
-set_Cmp_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_Cmp);
-  set_irn_n(node, 1, right);
-}
-
-inline ir_node *
-get_Conv_op (ir_node *node) {
-  assert (node->op == op_Conv);
-  return get_irn_n(node, 0);
-}
-
-inline void
-set_Conv_op (ir_node *node, ir_node *op) {
-  assert (node->op == op_Conv);
-  set_irn_n(node, 0, op);
-}
-
-inline ir_node **
+INLINE ir_node **
 get_Phi_preds_arr (ir_node *node) {
   assert (node->op == op_Phi);
   return (ir_node **)&(get_irn_in(node)[1]);
 }
 
-inline int
+INLINE int
 get_Phi_n_preds (ir_node *node) {
   assert (node->op == op_Phi);
   return (get_irn_arity(node));
 }
 
 /*
-inline void set_Phi_n_preds (ir_node *node, int n_preds) {
+INLINE void set_Phi_n_preds (ir_node *node, int n_preds) {
   assert (node->op == op_Phi);
 }
 */
 
-inline ir_node *
+INLINE ir_node *
 get_Phi_pred (ir_node *node, int pos) {
   assert (node->op == op_Phi);
   return get_irn_n(node, pos);
 }
 
-inline void
+INLINE void
 set_Phi_pred (ir_node *node, int pos, ir_node *pred) {
   assert (node->op == op_Phi);
   set_irn_n(node, pos, pred);
 }
 
-inline ir_node *
+INLINE ir_node *
 get_Load_mem (ir_node *node) {
   assert (node->op == op_Load);
   return get_irn_n(node, 0);
 }
 
-inline void
+INLINE void
 set_Load_mem (ir_node *node, ir_node *mem) {
   assert (node->op == op_Load);
   set_irn_n(node, 0, mem);
 }
 
-inline ir_node *
+INLINE ir_node *
 get_Load_ptr (ir_node *node) {
   assert (node->op == op_Load);
   return get_irn_n(node, 1);
 }
 
-inline void
+INLINE void
 set_Load_ptr (ir_node *node, ir_node *ptr) {
   assert (node->op == op_Load);
   set_irn_n(node, 1, ptr);
 }
 
-inline
+INLINE
 ir_node *
 get_Store_mem (ir_node *node) {
   assert (node->op == op_Store);
   return get_irn_n(node, 0);
 }
 
-inline void
+INLINE void
 set_Store_mem (ir_node *node, ir_node *mem) {
   assert (node->op == op_Store);
   set_irn_n(node, 0, mem);
 }
 
-inline ir_node *
+INLINE ir_node *
 get_Store_ptr (ir_node *node) {
   assert (node->op == op_Store);
   return get_irn_n(node, 1);
 }
 
-inline void
+INLINE void
 set_Store_ptr (ir_node *node, ir_node *ptr) {
   assert (node->op == op_Store);
   set_irn_n(node, 1, ptr);
 }
 
-inline ir_node *
+INLINE ir_node *
 get_Store_value (ir_node *node) {
   assert (node->op == op_Store);
   return get_irn_n(node, 2);
 }
 
-inline void
+INLINE void
 set_Store_value (ir_node *node, ir_node *value) {
   assert (node->op == op_Store);
   set_irn_n(node, 2, value);
 }
 
-inline ir_node *
+INLINE ir_node *
 get_Alloc_mem (ir_node *node) {
   assert (node->op == op_Alloc);
   return get_irn_n(node, 0);
 }
 
-inline void
+INLINE void
 set_Alloc_mem (ir_node *node, ir_node *mem) {
   assert (node->op == op_Alloc);
   set_irn_n(node, 0, mem);
 }
 
-inline ir_node *
+INLINE ir_node *
 get_Alloc_size (ir_node *node) {
   assert (node->op == op_Alloc);
   return get_irn_n(node, 1);
 }
 
-inline void
+INLINE void
 set_Alloc_size (ir_node *node, ir_node *size) {
   assert (node->op == op_Alloc);
   set_irn_n(node, 1, size);
 }
 
-inline type  *
+INLINE type  *
 get_Alloc_type (ir_node *node) {
   assert (node->op == op_Alloc);
   return node->attr.a.type = skip_tid(node->attr.a.type);
 }
 
-inline void
+INLINE void
 set_Alloc_type (ir_node *node, type *type) {
   assert (node->op == op_Alloc);
   node->attr.a.type = type;
 }
 
-inline where_alloc
+INLINE where_alloc
 get_Alloc_where (ir_node *node) {
   assert (node->op == op_Alloc);
   return node->attr.a.where;
 }
 
-inline void
+INLINE void
 set_Alloc_where (ir_node *node, where_alloc where) {
   assert (node->op == op_Alloc);
   node->attr.a.where = where;
 }
 
 
-inline ir_node *
+INLINE ir_node *
 get_Free_mem (ir_node *node) {
   assert (node->op == op_Free);
   return get_irn_n(node, 0);
 }
 
-inline void
+INLINE void
 set_Free_mem (ir_node *node, ir_node *mem) {
   assert (node->op == op_Free);
   set_irn_n(node, 0, mem);
 }
 
-inline ir_node *
+INLINE ir_node *
 get_Free_ptr (ir_node *node) {
   assert (node->op == op_Free);
   return get_irn_n(node, 1);
 }
 
-inline void
+INLINE void
 set_Free_ptr (ir_node *node, ir_node *ptr) {
   assert (node->op == op_Free);
   set_irn_n(node, 1, ptr);
 }
 
-inline ir_node *
+INLINE ir_node *
 get_Free_size (ir_node *node) {
   assert (node->op == op_Free);
   return get_irn_n(node, 2);
 }
 
-inline void
+INLINE void
 set_Free_size (ir_node *node, ir_node *size) {
   assert (node->op == op_Free);
   set_irn_n(node, 2, size);
 }
 
-inline type  *
+INLINE type  *
 get_Free_type (ir_node *node) {
   assert (node->op == op_Free);
   return node->attr.f = skip_tid(node->attr.f);
 }
 
-inline void
+INLINE void
 set_Free_type (ir_node *node, type *type) {
   assert (node->op == op_Free);
   node->attr.f = type;
 }
 
-inline ir_node **
+INLINE ir_node **
 get_Sync_preds_arr (ir_node *node) {
   assert (node->op == op_Sync);
   return (ir_node **)&(get_irn_in(node)[1]);
 }
 
-inline int
+INLINE int
 get_Sync_n_preds (ir_node *node) {
   assert (node->op == op_Sync);
   return (get_irn_arity(node));
 }
 
 /*
-inline void
+INLINE void
 set_Sync_n_preds (ir_node *node, int n_preds) {
   assert (node->op == op_Sync);
 }
 */
 
-inline ir_node *
+INLINE ir_node *
 get_Sync_pred (ir_node *node, int pos) {
   assert (node->op == op_Sync);
   return get_irn_n(node, pos);
 }
 
-inline void
+INLINE void
 set_Sync_pred (ir_node *node, int pos, ir_node *pred) {
   assert (node->op == op_Sync);
   set_irn_n(node, pos, pred);
 }
 
-inline ir_node *
+INLINE ir_node *
 get_Proj_pred (ir_node *node) {
   assert (is_Proj(node));
   return get_irn_n(node, 0);
 }
 
-inline void
+INLINE void
 set_Proj_pred (ir_node *node, ir_node *pred) {
   assert (is_Proj(node));
   set_irn_n(node, 0, pred);
 }
 
-inline long
+INLINE long
 get_Proj_proj (ir_node *node) {
   assert (is_Proj(node));
   if (get_irn_opcode(node) == iro_Proj) {
@@ -1989,63 +2006,63 @@ get_Proj_proj (ir_node *node) {
   }
 }
 
-inline void
+INLINE void
 set_Proj_proj (ir_node *node, long proj) {
   assert (node->op == op_Proj);
   node->attr.proj = proj;
 }
 
-inline ir_node **
+INLINE ir_node **
 get_Tuple_preds_arr (ir_node *node) {
   assert (node->op == op_Tuple);
   return (ir_node **)&(get_irn_in(node)[1]);
 }
 
-inline int
+INLINE int
 get_Tuple_n_preds (ir_node *node) {
   assert (node->op == op_Tuple);
   return (get_irn_arity(node));
 }
 
 /*
-inline void
+INLINE void
 set_Tuple_n_preds (ir_node *node, int n_preds) {
   assert (node->op == op_Tuple);
 }
 */
 
-inline ir_node *
+INLINE ir_node *
 get_Tuple_pred (ir_node *node, int pos) {
   assert (node->op == op_Tuple);
   return get_irn_n(node, pos);
 }
 
-inline void
+INLINE void
 set_Tuple_pred (ir_node *node, int pos, ir_node *pred) {
   assert (node->op == op_Tuple);
   set_irn_n(node, pos, pred);
 }
 
-inline ir_node *
+INLINE ir_node *
 get_Id_pred (ir_node *node) {
   assert (node->op == op_Id);
   return get_irn_n(node, 0);
 }
 
-inline void
+INLINE void
 set_Id_pred (ir_node *node, ir_node *pred) {
   assert (node->op == op_Id);
   set_irn_n(node, 0, pred);
 }
 
 
-inline ir_node *
+INLINE ir_node *
 get_Filter_pred(ir_node *node) {
   assert(node->op == op_Filter);
   return node->in[1];
 }
 
-inline long
+INLINE long
 get_Filter_proj(ir_node *node) {
   assert(node->op == op_Filter);
   return node->attr.filter.proj;
@@ -2066,7 +2083,7 @@ void set_Filter_cg_pred(ir_node * node, int pos, ir_node * pred) {
 }
 
 
-inline ir_graph *
+INLINE ir_graph *
 get_irn_irg(ir_node *node) {
   if (get_irn_op(node) == op_CallBegin) {
     return node->attr.callbegin.irg;
@@ -2082,7 +2099,7 @@ get_irn_irg(ir_node *node) {
 /*  Auxiliary routines                                            */
 /******************************************************************/
 
-inline ir_node *
+INLINE ir_node *
 skip_Proj (ir_node *node) {
   /* don't assert node !!! */
   if (node && is_Proj(node)) {
@@ -2092,7 +2109,7 @@ skip_Proj (ir_node *node) {
   }
 }
 
-inline ir_node *
+INLINE ir_node *
 skip_Tuple (ir_node *node) {
   ir_node *pred;
 
@@ -2107,7 +2124,7 @@ skip_Tuple (ir_node *node) {
   return node;
 }
 
-inline ir_node *
+INLINE ir_node *
 skip_nop (ir_node *node) {
   /* don't assert node !!! */
 
@@ -2121,12 +2138,12 @@ skip_nop (ir_node *node) {
   }
 }
 
-inline ir_node *
+INLINE ir_node *
 skip_Id (ir_node *node) {
   return skip_nop(node);
 }
 
-inline int
+INLINE int
 is_Bad (ir_node *node) {
   assert(node);
   if ((node) && get_irn_opcode(node) == iro_Bad)
@@ -2134,13 +2151,13 @@ is_Bad (ir_node *node) {
   return 0;
 }
 
-inline int
+INLINE int
 is_no_Block (ir_node *node) {
   assert(node);
   return (get_irn_opcode(node) != iro_Block);
 }
 
-inline int
+INLINE int
 is_Proj (ir_node *node) {
   assert(node);
   return node->op == op_Proj

@@ -408,7 +408,7 @@ void set_irg_dom_inconsistent(ir_graph *irg) {
   irg->dom_state = dom_inconsistent;
 }
 
-inline void
+INLINE void
 set_irg_pinned (ir_graph *irg, op_pinned p)
 {
   irg->pinned = p;

@@ -44,17 +44,17 @@ int  get_opt_global_cse (void);
 /* If opt_unreachable_code == 1 replace nodes (except Block,
    Phi and Tuple) with a Bad predecessor by the Bad node.
    Default: opt_unreachable_code == 1. */
-inline void set_opt_unreachable_code(int value);
-inline int  get_opt_unreachable_code(void);
+void set_opt_unreachable_code(int value);
+int  get_opt_unreachable_code(void);
 
 /* Performs Straightening, if simplifications and loop simplifications. */
-inline void set_opt_control_flow(int value);
-inline int  get_opt_control_flow(void);
+void set_opt_control_flow(int value);
+int  get_opt_control_flow(void);
 
 /* If opt_reassociation == 1 reassociation is performed.
    Default: opt_reassociation == 1. */
-inline void set_opt_reassociation(int value);
-inline int  get_opt_reassociation(void);
+void set_opt_reassociation(int value);
+int  get_opt_reassociation(void);
 
 /* If opt_dead_node_elimination == 1 deallocate all dead nodes
    by copying the firm graph.

@@ -14,6 +14,8 @@
 #include <assert.h>
 #include "xprintf.h"
 
+/* bcopy is not ISO C */
+#define bcopy(X, Y, Z) memcpy((Y), (X), (Z))
 
 static int
 xoprinter (void *obst, const char *data, size_t len)

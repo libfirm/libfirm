@@ -287,8 +287,8 @@ typedef enum peculiarity {
 
 /* The peculiarity of the class.  The enumeration peculiarity is defined
    in entity.h */
-inline peculiarity get_class_peculiarity (type *clss);
-inline void        set_class_peculiarity (type *clss, peculiarity pec);
+INLINE peculiarity get_class_peculiarity (type *clss);
+INLINE void        set_class_peculiarity (type *clss, peculiarity pec);
 
 /* Set and get a class' dfn */
 void set_class_dfn (type*, int);

@@ -19,6 +19,15 @@
 #include "malloc.h"
 #include "pdeq.h"
 
+
+#ifndef INLINE
+#ifdef USE_GCC_INLINE
+#define INLINE inline
+#else
+#define INLINE
+#endif
+#endif
+
 /* # of data items in block */
 #define NDATA ((int)((PREF_MALLOC_SIZE - offsetof (pdeq, data)) / sizeof (void *)))
 
@@ -47,7 +56,7 @@ pdeq *pdeq_block_cache[TUNE_NSAVED_PDEQS+1];
 unsigned pdeqs_cached;		/* # pdeqs in pdeq_store */
 
 
-static inline void
+static INLINE void
 free_pdeq_block (pdeq *p)
 {
 #ifndef NDEBUG
@@ -63,7 +72,7 @@ free_pdeq_block (pdeq *p)
 }
 
 
-static inline pdeq *
+static INLINE pdeq *
 alloc_pdeq_block (void)
 {
   pdeq *p;

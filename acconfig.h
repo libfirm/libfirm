@@ -9,3 +9,6 @@
 
 /* Define to disable assertion checking.  */
 #undef NDEBUG
+
+/* Define to value "inline" for gcc inlineing. */
+#undef USE_GCC_INLINE

@@ -118,8 +118,6 @@ void init_tmp_dom_info(ir_node *bl, tmp_dom_info *parent,
   mark_Block_block_visited(bl);
   set_Block_pre_num(bl, *used);
 
-  //printf(" used: %d ", *used); DDMN(bl);
-
   tdi = &tdi_list[*used];
   ++(*used);
 
@@ -154,7 +152,7 @@ dom_compress (tmp_dom_info *v)
 
 /* if V is a root, return v, else return the vertex u, not being the
    root, with minimum u->semi on the path from v to its root. */
-inline static tmp_dom_info*
+INLINE static tmp_dom_info*
 dom_eval (tmp_dom_info *v)
 {
   if (!v->ancestor) return v;
@@ -163,7 +161,7 @@ dom_eval (tmp_dom_info *v)
 }
 
 /* make V W's ancestor */
-inline static void
+INLINE static void
 dom_link (tmp_dom_info *v, tmp_dom_info *w)
 {
   w->ancestor = v;
@@ -187,8 +185,6 @@ void compute_doms(ir_graph *irg) {
   n_blocks = 0;
   irg_block_walk(get_irg_end(current_ir_graph), count_and_init_blocks, NULL, &n_blocks);
 
-  //printf("n_blocks is %d\n", n_blocks);
-
   /* Memory for temporary information. */
   tdi_list = (tmp_dom_info *) calloc(n_blocks, sizeof(tmp_dom_info));
 
@@ -203,25 +199,22 @@ void compute_doms(ir_graph *irg) {
   inc_irg_block_visited(current_ir_graph);
   init_tmp_dom_info(get_irg_start_block(current_ir_graph), NULL, tdi_list, &used);
   /* If not all blocks are reachable from Start by out edges this assertion
-     fails. */
-  //assert(used == n_blocks && "Precondition for dom construction violated");
+     fails.
+     assert(used == n_blocks && "Precondition for dom construction violated"); */
   n_blocks = used;
-
-  //printf("used is %d\n", used);
 
 
   for (i = n_blocks-1; i > 0; i--) {  /* Don't iterate the root, it's done. */
     tmp_dom_info *w = &tdi_list[i];
     tmp_dom_info *v;
 
-    //printf(" cfgpreds: %d ", get_Block_n_cfgpreds(w->block)); DDMN(w->block);
-
     /* Step 2 */
     for (j = 0;  j < get_irn_arity(w->block);  j++) {
       ir_node *pred = get_nodes_Block(get_Block_cfgpred(w->block, j));
       tmp_dom_info *u;
 
-      if ((is_Bad(get_Block_cfgpred(w->block, j))) || (get_Block_pre_num (pred) == -1))
+      if ((is_Bad(get_Block_cfgpred(w->block, j))) ||
+	  (get_Block_pre_num (pred) == -1))
 	continue;	/* control-dead */
 
       u = dom_eval (&tdi_list[get_Block_pre_num(pred)]);
@@ -262,7 +255,7 @@ void compute_doms(ir_graph *irg) {
   }
 
   /* clean up */
-  // free(tdi_list);
+  /*  free(tdi_list); @@@ doew not work !!?? */
   current_ir_graph = rem;
 }
 

@@ -20,25 +20,25 @@
 /**********************************************************************/
 
 /* returns the number of successors of the node: */
-inline int get_irn_n_outs    (ir_node *node) {
+INLINE int get_irn_n_outs    (ir_node *node) {
   return (int)(node->out[0]);
 }
 
 /* Access successor n */
-inline ir_node *get_irn_out      (ir_node *node, int pos) {
+INLINE ir_node *get_irn_out      (ir_node *node, int pos) {
   assert(node);
   assert(pos >= 0 && pos < get_irn_n_outs(node));
   return node->out[pos+1];
 }
 
-inline void set_irn_out      (ir_node *node, int pos, ir_node *out) {
+INLINE void set_irn_out      (ir_node *node, int pos, ir_node *out) {
   assert(node && out);
   assert(pos >= 0 && pos < get_irn_n_outs(node));
   node->out[pos+1] = out;
 }
 
 
-inline int get_Block_n_cfg_outs (ir_node *bl) {
+INLINE int get_Block_n_cfg_outs (ir_node *bl) {
   int i, n_cfg_outs = 0;
   assert(bl && (get_irn_op(bl) == op_Block));
   for (i = 0; i < (int)bl->out[0]; i++)
@@ -48,7 +48,7 @@ inline int get_Block_n_cfg_outs (ir_node *bl) {
 }
 
 
-inline ir_node *get_Block_cfg_out  (ir_node *bl, int pos) {
+INLINE ir_node *get_Block_cfg_out  (ir_node *bl, int pos) {
   int i, out_pos = 0;
   assert(bl && (get_irn_op(bl) == op_Block));
   for (i = 0; i < (int)bl->out[0]; i++)
@@ -69,8 +69,6 @@ void irg_out_walk_2(ir_node *node,  void (pre)(ir_node*, void*),
   int i;
   ir_node *succ;
 
-  //printf("++ in walker (%d outs) ", get_irn_n_outs(node)); DDMSG2(node);
-
   assert(node);
   assert(get_irn_visited(node) < get_irg_visited(current_ir_graph));
 
@@ -86,7 +84,6 @@ void irg_out_walk_2(ir_node *node,  void (pre)(ir_node*, void*),
 
   if (post) post(node, env);
 
-  //printf("++ done walking "); DDMSG2(node);
   return;
 }
 
@@ -217,7 +214,7 @@ ir_node **set_out_edges(ir_node *n, ir_node **free) {
   return free;
 }
 
-inline void fix_start_proj(ir_graph *irg) {
+INLINE void fix_start_proj(ir_graph *irg) {
   ir_node *proj = NULL, *startbl;
   int i;
   if (get_Block_n_cfg_outs(get_irg_start_block(irg))) {

@@ -1436,7 +1436,7 @@ ir_node *get_store (void);
 void set_store (ir_node *store);
 
 /* keep this node alive even if End is not control-reachable from it */
-inline void keep_alive (ir_node *ka);
+void keep_alive (ir_node *ka);
 
 /** Useful access routines **/
 /* Returns the current block of the current graph.  To set the current

@@ -37,7 +37,7 @@
  *   this will be at considerable runtime cost.
  ***
  */
-inline void exchange_types(type *old_type, type *new_type);
+INLINE void exchange_types(type *old_type, type *new_type);
 
 /****f* tpop/skip_tid
  *
@@ -52,6 +52,6 @@ inline void exchange_types(type *old_type, type *new_type);
  *   If tp is an id type retruns the real type it stands for.
  ***
  */
-inline type *skip_tid(type *tp);
+INLINE type *skip_tid(type *tp);
 
 # endif /*_TYPEGMOD_H_ */

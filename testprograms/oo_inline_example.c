@@ -282,7 +282,7 @@ main(void)
   current_ir_graph = main_irg;
   printf("Inlining set_a ...\n");
   inline_method(set_a_call, set_a_irg);
-  printf("Inlineing c ...\n");
+  printf("INLINEing c ...\n");
   inline_method(c_call, c_irg);
 
   printf("Optimizing ...\n");

@@ -98,7 +98,7 @@ id_init (void)
 
 
 #if 1
-inline ident *id_from_str (const char *str, int len) {
+INLINE ident *id_from_str (const char *str, int len) {
   assert (len > 0);
   return  (const set_entry *) set_hinsert (id_set,
 					   (str),
@@ -106,11 +106,11 @@ inline ident *id_from_str (const char *str, int len) {
 					   ID_HASH ((str), (len)));
 }
 
-inline const char *id_to_str   (ident *id) {
+INLINE const char *id_to_str   (ident *id) {
   return ((const char *)&(id)->dptr[0]);
 }
 
-inline int id_to_strlen(ident *id) {
+INLINE int id_to_strlen(ident *id) {
   return ((id)->size);
 }
 #endif

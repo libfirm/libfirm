@@ -26,16 +26,16 @@
 /* Make types visible to allow most efficient access */
 # include "entity_t.h"
 
-/* Trivial inlineable routine for copy propagation.
-   Does follow Ids, needed to optimize inlined code. */
-static inline ir_node *
+/* Trivial INLINEable routine for copy propagation.
+   Does follow Ids, needed to optimize INLINEd code. */
+static INLINE ir_node *
 follow_Id (ir_node *n)
 {
   while (get_irn_op (n) == op_Id) n = get_Id_pred (n);
   return n;
 }
 
-static inline tarval *
+static INLINE tarval *
 value_of (ir_node *n)
 {
   if ((n != NULL) && (get_irn_op(n) == op_Const))
@@ -913,7 +913,7 @@ del_identities (pset *value_table)
 
 /* Return the canonical node computing the same value as n.
    Looks up the node in a hash table. */
-static inline ir_node *
+static INLINE ir_node *
 identify (pset *value_table, ir_node *n)
 {
   ir_node *o = NULL;
@@ -949,7 +949,7 @@ identify (pset *value_table, ir_node *n)
 /* During construction we set the pinned flag in the graph right when the
    optimizatin is performed.  The flag turning on procedure global cse could
    be changed between two allocations.  This way we are safe. */
-static inline ir_node *
+static INLINE ir_node *
 identify_cons (pset *value_table, ir_node *n) {
   ir_node *old = n;
   n = identify(value_table, n);
@@ -983,7 +983,7 @@ add_identities (pset *value_table, ir_node *node) {
 
 /* garbage in, garbage out. If a node has a dead input, i.e., the
    Bad node is input to the node, return the Bad node.  */
-static inline ir_node *
+static INLINE ir_node *
 gigo (ir_node *node)
 {
   int i;

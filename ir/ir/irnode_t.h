@@ -174,11 +174,11 @@ int ir_node_print (XP_PAR1, const xprintf_info *, XP_PARN);
 
 
 /** access attributes directly **/
-inline tarval       *get_irn_const_attr    (ir_node *node);
-inline long          get_irn_proj_attr     (ir_node *node);
-inline alloc_attr    get_irn_alloc_attr    (ir_node *node);
-inline type         *get_irn_free_attr     (ir_node *node);
-inline symconst_attr get_irn_symconst_attr (ir_node *node);
+INLINE tarval       *get_irn_const_attr    (ir_node *node);
+INLINE long          get_irn_proj_attr     (ir_node *node);
+INLINE alloc_attr    get_irn_alloc_attr    (ir_node *node);
+INLINE type         *get_irn_free_attr     (ir_node *node);
+INLINE symconst_attr get_irn_symconst_attr (ir_node *node);
 type         *get_irn_call_attr     (ir_node *node);
 sel_attr      get_irn_sel_attr      (ir_node *node);
 int           get_irn_phi_attr      (ir_node *node);

@@ -16,7 +16,128 @@
 # include "irvrfy.h"
 # include "irgwalk.h"
 
-void vrfy_Proj_proj(ir_node *p);
+INLINE static void
+vrfy_Proj_proj(ir_node *p) {
+  ir_node *pred;
+  ir_mode *mode;
+  int proj;
+
+  pred = skip_nop(get_Proj_pred(p));
+  assert(get_irn_mode(pred) == mode_T);
+  mode = get_irn_mode(p);
+  proj = get_Proj_proj(p);
+
+  switch (get_irn_opcode(pred)) {
+  case iro_Start:
+    assert (((proj == 0 && mode == mode_X) ||
+	     (proj == 1 && mode == mode_M) ||
+	     (proj == 2 && mode == mode_p) ||
+	     (proj == 3 && mode == mode_p) ||
+	     (proj == 4 && mode == mode_T))   &&
+	    "wrong Proj from Start"  );
+    break;
+  case iro_Cond:
+    assert ((proj >= 0 && mode == mode_X) &&
+	    "wrong Proj from Cond");
+    break;
+  case iro_Raise:
+    assert (((proj == 0 && mode == mode_X) ||
+	     (proj == 1 && mode == mode_M))   &&
+	    "wrong Proj from Raise" );
+    break;
+  case iro_InstOf:
+	assert (((proj >= 0 && mode == mode_X) &&
+			 "wrong Proj from InstOf"));
+	break;
+  case iro_Call:
+    assert (((proj == 0 && mode == mode_M) ||
+	     (proj == 1 && mode == mode_X) ||
+	     (proj == 2 && mode == mode_T) ||
+	     (proj == 3 && mode == mode_M))   &&
+	    "wrong Proj from Call" );
+    break;
+  case iro_Quot:
+    assert (((proj == 0 && mode == mode_M) ||
+	     (proj == 1 && mode == mode_X) ||
+	     (proj == 2 && mode_is_float(mode)))  &&
+	    "wrong Proj from Quot");
+    break;
+  case iro_DivMod:
+    assert (((proj == 0 && mode == mode_M) ||
+	     (proj == 1 && mode == mode_X) ||
+	     (proj == 2 && mode == mode_i) ||
+	     (proj == 3 && mode == mode_i))   &&
+	    "wrong Proj from DivMod" );
+    break;
+  case iro_Div:
+  case iro_Mod:
+    assert (((proj == 0 && mode == mode_M) ||
+	     (proj == 1 && mode == mode_X) ||
+	     (proj == 2 && mode == mode_i))   &&
+	     "wrong Proj from Div or Mod" );
+    break;
+  case iro_Cmp:
+    assert ((proj >= 0 && proj <= 15 && mode == mode_b) &&
+	    "wrong Proj from Cmp");
+    break;
+  case iro_Load:
+    assert (((proj == 0 && mode == mode_M) ||
+	     (proj == 1 && mode == mode_X) ||
+	     (proj == 2 && mode_is_data(mode)))  &&
+	    "wrong Proj from Load");
+    break;
+  case iro_Store:
+    assert (((proj == 0 && mode == mode_M) ||
+	     (proj == 1 && mode == mode_X))    &&
+	    "wrong Proj from Store");
+    break;
+  case iro_Alloc:
+    assert (((proj == 0 && mode == mode_M) ||
+	     (proj == 1 /* && mode == mode_X*/) ||
+	     (proj == 2 && mode == mode_p))      &&
+	    "wrong Proj from Alloc");
+    break;
+  case iro_Proj: {
+    type *mt; /* A method type */
+    pred = skip_nop(get_Proj_pred(pred));
+    assert(get_irn_mode(pred) == mode_T);
+    switch (get_irn_opcode(pred)) {
+    case iro_Start: {
+      assert (proj >= 0 && mode_is_data(mode) &&
+	      "wrong Proj from Proj from Start");
+      mt = get_entity_type(get_irg_ent(current_ir_graph));
+      assert(proj < get_method_n_params(mt) &&
+	     "More Projs for args than args in type");
+      assert(mode == get_type_mode(get_method_param_type(mt, proj)) &&
+      "Mode of Proj from Start doesn't match mode of param type.");
+    } break;
+    case iro_Call: {
+      assert (proj >= 0 && mode_is_data(mode) &&
+	      "wrong Proj from Proj from Call");
+      mt = get_Call_type(pred);
+      assert(proj < get_method_n_res(mt) &&
+	     "More Projs for results than results in type.");
+      assert(mode == get_type_mode(get_method_res_type(mt, proj)) &&
+      "Mode of Proj from Call doesn't match mode of result type.");
+    } break;
+    case iro_Tuple: ;
+      /* We don't test */
+      break;
+    default: assert(0);
+    } break;
+  }
+  case iro_Tuple:
+    /* We don't test */
+    break;
+  case iro_CallBegin:
+    break;
+  case iro_EndReg:
+    break;
+  case iro_EndExcept:
+    break;
+  default: assert(0);
+  }
+}
 
 void
 irn_vrfy (ir_node *n)
@@ -360,129 +481,6 @@ irn_vrfy (ir_node *n)
   }
 }
 
-void
-vrfy_Proj_proj(ir_node *p) {
-  ir_node *pred;
-  ir_mode *mode;
-  int proj;
-
-  pred = skip_nop(get_Proj_pred(p));
-  assert(get_irn_mode(pred) == mode_T);
-  mode = get_irn_mode(p);
-  proj = get_Proj_proj(p);
-
-  switch (get_irn_opcode(pred)) {
-  case iro_Start:
-    assert (((proj == 0 && mode == mode_X) ||
-	     (proj == 1 && mode == mode_M) ||
-	     (proj == 2 && mode == mode_p) ||
-	     (proj == 3 && mode == mode_p) ||
-	     (proj == 4 && mode == mode_T))   &&
-	    "wrong Proj from Start"  );
-    break;
-  case iro_Cond:
-    assert ((proj >= 0 && mode == mode_X) &&
-	    "wrong Proj from Cond");
-    break;
-  case iro_Raise:
-    assert (((proj == 0 && mode == mode_X) ||
-	     (proj == 1 && mode == mode_M))   &&
-	    "wrong Proj from Raise" );
-    break;
-  case iro_InstOf:
-	assert (((proj >= 0 && mode == mode_X) &&
-			 "wrong Proj from InstOf"));
-	break;
-  case iro_Call:
-    assert (((proj == 0 && mode == mode_M) ||
-	     (proj == 1 && mode == mode_X) ||
-	     (proj == 2 && mode == mode_T) ||
-	     (proj == 3 && mode == mode_M))   &&
-	    "wrong Proj from Call" );
-    break;
-  case iro_Quot:
-    assert (((proj == 0 && mode == mode_M) ||
-	     (proj == 1 && mode == mode_X) ||
-	     (proj == 2 && mode_is_float(mode)))  &&
-	    "wrong Proj from Quot");
-    break;
-  case iro_DivMod:
-    assert (((proj == 0 && mode == mode_M) ||
-	     (proj == 1 && mode == mode_X) ||
-	     (proj == 2 && mode == mode_i) ||
-	     (proj == 3 && mode == mode_i))   &&
-	    "wrong Proj from DivMod" );
-    break;
-  case iro_Div:
-  case iro_Mod:
-    assert (((proj == 0 && mode == mode_M) ||
-	     (proj == 1 && mode == mode_X) ||
-	     (proj == 2 && mode == mode_i))   &&
-	     "wrong Proj from Div or Mod" );
-    break;
-  case iro_Cmp:
-    assert ((proj >= 0 && proj <= 15 && mode == mode_b) &&
-	    "wrong Proj from Cmp");
-    break;
-  case iro_Load:
-    assert (((proj == 0 && mode == mode_M) ||
-	     (proj == 1 && mode == mode_X) ||
-	     (proj == 2 && mode_is_data(mode)))  &&
-	    "wrong Proj from Load");
-    break;
-  case iro_Store:
-    assert (((proj == 0 && mode == mode_M) ||
-	     (proj == 1 && mode == mode_X))    &&
-	    "wrong Proj from Store");
-    break;
-  case iro_Alloc:
-    assert (((proj == 0 && mode == mode_M) ||
-	     (proj == 1 /* && mode == mode_X*/) ||
-	     (proj == 2 && mode == mode_p))      &&
-	    "wrong Proj from Alloc");
-    break;
-  case iro_Proj: {
-    type *mt; /* A method type */
-    pred = skip_nop(get_Proj_pred(pred));
-    assert(get_irn_mode(pred) == mode_T);
-    switch (get_irn_opcode(pred)) {
-    case iro_Start: {
-      assert (proj >= 0 && mode_is_data(mode) &&
-	      "wrong Proj from Proj from Start");
-      mt = get_entity_type(get_irg_ent(current_ir_graph));
-      assert(proj < get_method_n_params(mt) &&
-	     "More Projs for args than args in type");
-      assert(mode == get_type_mode(get_method_param_type(mt, proj)) &&
-      "Mode of Proj from Start doesn't match mode of param type.");
-    } break;
-    case iro_Call: {
-      assert (proj >= 0 && mode_is_data(mode) &&
-	      "wrong Proj from Proj from Call");
-      mt = get_Call_type(pred);
-      assert(proj < get_method_n_res(mt) &&
-	     "More Projs for results than results in type.");
-      assert(mode == get_type_mode(get_method_res_type(mt, proj)) &&
-      "Mode of Proj from Call doesn't match mode of result type.");
-    } break;
-    case iro_Tuple: ;
-      /* We don't test */
-      break;
-    default: assert(0);
-    } break;
-  }
-  case iro_Tuple:
-    /* We don't test */
-    break;
-  case iro_CallBegin:
-    break;
-  case iro_EndReg:
-    break;
-  case iro_EndExcept:
-    break;
-  default: assert(0);
-  }
-}
-
 
 /*******************************************************************/
 /* Verify the whole graph.                                         */
@@ -493,8 +491,7 @@ vrfy_wrap (ir_node *node, void *env) {
   irn_vrfy(node);
 }
 
-void
-irg_vrfy (ir_graph *irg)
+void irg_vrfy (ir_graph *irg)
 {
   ir_graph *rem;
   rem = current_ir_graph;

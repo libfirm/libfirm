@@ -1,7 +1,7 @@
 /* Copyright (c) 2002 by Universität Karlsruhe (TH).  All Rights Reserved */
-//
-// Time-stamp: <Monday, 13.05.2002, 13:27:22 goetz@i44pc2.info.uni-karlsruhe.de>
-//
+/*
+** Time-stamp: <Friday, 05.07.2002, 11:06:38 goetz@i44pc2.info.uni-karlsruhe.de>
+*/
 
 /***
    NAME
@@ -24,14 +24,17 @@
 # ifdef DEBUG_libfirm
 # endif /* def DEBUG_libfirm */
 #  include <malloc.h>
+# include "misc.h"
 
 /* init globals: */
 static dtree_t *trees = 0;
+/*
 static dtree_t *last  = 0;
+*/
 
-// --------------------------------------------------------------------
-// Helper Functions
-// --------------------------------------------------------------------
+/* --------------------------------------------------------------------
+** Helper Functions
+** -------------------------------------------------------------------- */
 /*
   Helper function for get_n_blocks
 */
@@ -65,9 +68,6 @@ static int get_n_blocks (ir_graph *graph)
 # endif /* def DEBUG_libfirm */
 
   irg_block_walk (end_block, count_block, NULL, &n);
-  // irg_block_walk (end_block, NULL, NULL, NULL);
-
-  // return (24);
 
   fprintf (stdout, "%s: Graph(%p) has (%i) blocks\n",
 		   __FILE__ ":" __PRETTY_FUNCTION__, graph, n);
@@ -117,18 +117,18 @@ static dt_t *new_dt (ir_graph *graph)
 
   return (res);
 }
-
+/*
 static void free_dt (dt_t *dt)
 {
   free (dt->blocks);	dt->blocks = 0;
   free (dt->masks);		dt->masks  = 0;
   free (dt);
 }
+*/
 
-
-// --------------------------------------------------------------------
-// Private Functions
-// --------------------------------------------------------------------
+/* --------------------------------------------------------------------
+** Private Functions
+** -------------------------------------------------------------------- */
 
 /*
   Given a graph, find its dominator tree in the global list:
@@ -141,7 +141,6 @@ static dt_t *get_dominator_tree   (ir_graph *graph)
 
 # ifdef DEBUG_libfirm
   assert (graph && "no graph");
-  // assert (iter  && "no trees");
 # endif /* def DEBUG_libfirm */
 
   while ((0 != iter) && (graph != iter->graph))
@@ -181,7 +180,7 @@ static void add_dominator_tree (dt_t *tree)
 		   __FILE__ ":" __PRETTY_FUNCTION__, dtree, trees);
 # endif /* def VERBOSE_libfirm */
 
-  //enter in global list:
+  /* enter in global list:  */
   dtree->next = trees;
   trees = dtree;
 }
@@ -257,6 +256,7 @@ static bs_t _get_mask (dt_t *dt, int index)
 /*
   Set the bit mask for a block
 */
+#if 0
 static void _set_mask (dt_t*, int, bs_t);
 static void set_mask (dt_t *dt, ir_node *block, bs_t mask)
 {
@@ -265,11 +265,11 @@ static void set_mask (dt_t *dt, ir_node *block, bs_t mask)
 # ifdef DEBUG_libfirm
   assert (dt    && "no dt");
   assert (block && "no block");
-# endif /* def DEBUG_libfirm */
+  # endif /* def DEBUG_libfirm */
 
   _set_mask (dt, index, mask);
 }
-
+#endif
 /*
   Set the bit mask for a block index
 */
@@ -285,11 +285,11 @@ static void _set_mask (dt_t *dt, int index, bs_t mask)
 /*
   Update the list of dominators of a given block
 */
-typedef struct dt_walk_env_t // grrr
+typedef struct dt_walk_env_t
 {
-  dt_t    *dt;					// the dominator relation we're building
-  ir_node *start_block;			// need to know the start block of this graph
-  bool     changed;				// wether the relation has changed recently
+  dt_t    *dt;		/* the dominator relation we're building */
+  ir_node *start_block;	/* need to know the start block of this graph */
+  bool     changed;	/* wether the relation has changed recently */
 }
 dt_walk_env_t;
 
@@ -308,20 +308,20 @@ static void update_dominators (ir_node *block, void *env)
   bs_t old_mask   = _get_mask     (dt, block_index);
   bs_t new_mask   = ~0x00000000;
 
-  // Special handling of Start Block:
+  /* Special handling of Start Block: */
   if (block == w->start_block)
 	return;
 
-  // check preds:
+  /* check preds: */
   for (i = 0; i < n_ins; i ++)
-	{
-	  ir_node *in  = get_nodes_Block (get_irn_n (block, i)); // hope that's the block
-	  bs_t in_mask = get_mask  (dt, in);
+    {
+      ir_node *in  = get_nodes_Block (get_irn_n (block, i));
+      bs_t in_mask = get_mask  (dt, in);
 
-	  new_mask &= in_mask;
-	}
+      new_mask &= in_mask;
+    }
 
-  // and remember ourselves:
+  /* and remember ourselves: */
   new_mask |= (0x00000001 << block_index);
 
   if (new_mask != old_mask)
@@ -360,14 +360,15 @@ static ir_node *_get_idom (dt_t *dt, ir_node *block)
   if (0 != (idom = dt->idoms [block_index]))
 	return (idom);
 
-  // check all CFG preds:
-  // Question: Shouldn't it be good enough to just ask our first CFG predecessor?
+  /* check all CFG preds:
+     Question: Shouldn't it be good enough to just ask our first CFG
+     predecessor?  */
   {
 	int i         = 0;
 	int n         = get_irn_arity (block);
 	ir_node *pred = 0;
 
-	idom = block;					// prime the loop:
+	idom = block;					/* prime the loop: */
 
 	for (i = 0; i < n; i ++)
 	  {
@@ -390,15 +391,15 @@ static ir_node *_get_idom (dt_t *dt, ir_node *block)
 		   block, idom);
 # endif /* def VERBOSE_libfirm */
 
-  // remember it:
+  /*  remember it: */
   dt->idoms [block_index] = idom;
 
   return (idom);
 }
 
-// --------------------------------------------------------------------
-// Public Functions
-// --------------------------------------------------------------------
+/* --------------------------------------------------------------------
+** Public Functions
+** -------------------------------------------------------------------- */
 
 /*
   Say wether a dominates b
@@ -497,16 +498,16 @@ void build_dominator_tree (ir_graph *graph)
   fprintf (stdout, "%s: for graph(%p)\n", __FILE__ ":" __PRETTY_FUNCTION__, graph);
 # endif /* def VERBOSE_libfirm */
 
-  //if (0 != dt)
-  //free_dt (dt);
+  /*if (0 != dt)
+    free_dt (dt); */
 
   dt = new_dt (graph);
 
   w->dt          = dt;
-  w->start_block = start_block;	// grrr
-  w->changed     = TRUE;		// at least one walk
+  w->start_block = start_block;
+  w->changed     = TRUE;	/* at least one walk */
 
-  // do the walk:
+  /* do the walk: */
   {
 	int walks = 0;
 

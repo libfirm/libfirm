@@ -1,4 +1,4 @@
-// Copyright (c) 2002 by Universität Karlsruhe (TH).  All Rights Reserved
+/* Copyright (c) 2002 by Universität Karlsruhe (TH).  All Rights Reserved  */
 
 /***
    NAME
@@ -16,7 +16,7 @@
 # ifndef _ST_H_
 # define _ST_H_
 
-// Includes:
+/* Includes:  */
 # include "irgraph.h"
 # include "irnode.h"
 
@@ -27,20 +27,20 @@
 #define true TRUE
 #define false FALSE
 
-// Data Types:
+/* Data Types: */
 
-// One dominator tree
+/*   One dominator tree */
 typedef struct
 {
   int n_blocks;
-  ir_graph *graph;				// PRE
+  ir_graph *graph;	/* PRE */
   ir_node **blocks;
-  ir_node **idoms;				// idom [n] == immediate dominator of blocks [n]
+  ir_node **idoms;	/* idom [n] == immediate dominator of blocks [n] */
   bs_t *masks;
 }
 dt_t;
 
-// List entry:
+/* List entry:  */
 typedef struct dtree_t
 {
   dt_t *tree;
@@ -50,7 +50,7 @@ typedef struct dtree_t
 }
 dtree_t;
 
-// dominator environment for a node @a in graph @graph
+/* dominator environment for a node @a in graph @graph */
 typedef struct dom_env_t
 {
   dt_t     *dt;
@@ -60,11 +60,11 @@ typedef struct dom_env_t
   bs_t      mask;
 } dom_env_t;
 
-// Forwards for Globals:
+/* Forwards for Globals:  */
 extern dtree_t *trees;
 extern dtree_t *last;
 
-// Prototypes:
+/* Prototypes: */
 void     st_build_dominator_tree (ir_graph*);
 bool     dominates            (ir_graph*, ir_node*, ir_node*);
 ir_node *get_idom             (ir_graph*, ir_node*);

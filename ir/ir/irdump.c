@@ -102,7 +102,7 @@ void dump_whole_node (ir_node *n, void* env);
 
 
 
-inline void
+INLINE void
 dump_node_opcode (ir_node *n)
 {
   assert(n && n->op);
@@ -136,7 +136,7 @@ dump_node_opcode (ir_node *n)
   }
 }
 
-inline void
+INLINE void
 dump_node_mode (ir_node *n)
 {
   switch (n->op->code) {
@@ -163,7 +163,7 @@ dump_node_mode (ir_node *n)
   }
 }
 
-inline void
+INLINE void
 dump_node_nodeattr (ir_node *n)
 {
   switch (n->op->code) {
@@ -185,7 +185,7 @@ dump_node_nodeattr (ir_node *n)
   } /* end switch */
 }
 
-inline void
+INLINE void
 dump_node_vcgattr (ir_node *n)
 {
   switch (n->op->code) {
@@ -1274,7 +1274,7 @@ static void clear_link(ir_node * node, void * env) {
 }
 
 
-static inline bool is_Block(ir_node * node) {
+static INLINE bool is_Block(ir_node * node) {
   return !is_no_Block(node);
 }
 

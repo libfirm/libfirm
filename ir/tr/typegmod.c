@@ -12,7 +12,7 @@
 # include "tpop_t.h"
 # include "irmode.h"
 
-inline void exchange_types(type *old_type, type *new_type) {
+INLINE void exchange_types(type *old_type, type *new_type) {
   /* Deallocate datastructures not directly contained in the
      old type.  We must do this now as it is the latest point
      where we know the original kind of type.
@@ -36,7 +36,7 @@ inline void exchange_types(type *old_type, type *new_type) {
   old_type->mode = (ir_mode *) new_type;
 }
 
-inline type *skip_tid(type *tp) {
+INLINE type *skip_tid(type *tp) {
   while (tp->type_op == type_id)
     tp = (type *) tp->mode;
   return tp;

@@ -42,8 +42,8 @@ typedef struct ir_node ir_node;
 typedef struct dbg_info dbg_info;
 /* Routines to access the field of an ir node containing the
    debugging information. */
-inline void set_irn_dbg_info(ir_node *n, dbg_info* db);
-inline dbg_info *get_irn_dbg_info(ir_node *n);
+INLINE void set_irn_dbg_info(ir_node *n, dbg_info* db);
+INLINE dbg_info *get_irn_dbg_info(ir_node *n);
 /*****/
 
 /****s* dbginfo/dbg_action
@@ -93,7 +93,6 @@ static const char* dbg_action_2_str(dbg_action a) {
     return "dbg_algebraic_simplification"; break;
   case dbg_write_after_write: return "dbg_write_after_write"; break;
   case dbg_write_after_read: return "dbg_write_after_read"; break;
-//case dbg_: return "dbg_"; break;
   default:
     if (a <= dbg_max)
       return "string conversion not implemented";

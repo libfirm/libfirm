@@ -13,6 +13,7 @@
 # define _IDENT_H_
 
 # include "assert.h"
+# include "common.h"
 
 /****h* libfirm/ident
  *
@@ -52,7 +53,7 @@ typedef const struct set_entry ident;
  *  id_to_str, id_to_strlen
  ***
  */
-inline ident      *id_from_str (const char *str, int len);
+INLINE ident      *id_from_str (const char *str, int len);
 
 /****f* ident/id_to_str
  *
@@ -71,7 +72,7 @@ inline ident      *id_from_str (const char *str, int len);
  *  id_from_str, id_to_strlen
  ***
  */
-inline const char *id_to_str   (ident *id);
+INLINE const char *id_to_str   (ident *id);
 
 /****f* ident/id_to_strlen
  *
@@ -89,7 +90,7 @@ inline const char *id_to_str   (ident *id);
  *  id_from_str, id_to_str
  ***
  */
-inline int  id_to_strlen(ident *id);
+INLINE int  id_to_strlen(ident *id);
 
 /****f* ident/id_is_suffix
  *

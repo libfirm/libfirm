@@ -87,14 +87,14 @@ local_optimize_graph (ir_graph *irg) {
 /********************************************************************/
 
 /* Remeber the new node in the old node by using a field all nodes have. */
-inline void
+INLINE void
 set_new_node (ir_node *old, ir_node *new)
 {
   old->link = new;
 }
 
 /* Get this new node, before the old node is forgotton.*/
-inline ir_node *
+INLINE ir_node *
 get_new_node (ir_node * n)
 {
   return n->link;
@@ -106,7 +106,7 @@ get_new_node (ir_node * n)
    Remembering the arity is useful, as it saves a lot of pointer
    accesses.  This function is called for all Phi and Block nodes
    in a Block. */
-inline int
+INLINE int
 compute_new_arity(ir_node *b) {
   int i, res;
   int irg_v, block_v;
@@ -817,7 +817,7 @@ place_floats_early (ir_node *n)
    Start, Call and end at pinned nodes as Store, Call.  Place_early
    places all floating nodes reachable from its argument through floating
    nodes and adds all beginnings at pinned nodes to the worklist. */
-inline void place_early () {
+INLINE void place_early () {
   assert(worklist);
   inc_irg_visited(current_ir_graph);
 
@@ -952,7 +952,7 @@ place_floats_late (ir_node *n)
   }
 }
 
-inline void place_late() {
+INLINE void place_late() {
   assert(worklist);
   inc_irg_visited(current_ir_graph);
 
@@ -1262,8 +1262,6 @@ void optimize_cf(ir_graph *irg) {
     set_irg_outs_inconsistent(current_ir_graph);
   if (get_irg_dom_state(current_ir_graph) == dom_consistent)
     set_irg_dom_inconsistent(current_ir_graph);
-
-  //DDME(get_irg_ent(irg));
 
   /* Use block visited flag to mark non-empty blocks. */
   inc_irg_block_visited(irg);

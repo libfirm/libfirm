@@ -27,6 +27,15 @@
 # include <config.h>
 #endif
 
+#ifdef USE_GCC_INLINE
+#define INLINE inline
+#else
+#define INLINE
+#endif
+
+/* bcopy is not ISO C */
+#define bcopy(X, Y, Z) memcpy((Y), (X), (Z))
+
 #ifdef PSET
 # define SET pset
 # define PMANGLE(pre) pre##_pset
@@ -107,7 +116,7 @@ MANGLEP(stats) (SET *table)
 	  table->naccess, table->ncollision, table->nkey, table->ndups, table->max_chain_len, nfree);
 }
 
-static inline void
+static INLINE void
 stat_chain_len (SET *table, int chain_len)
 {
   table->ncollision += chain_len;
@@ -209,7 +218,7 @@ PMANGLE(del) (SET *table)
 }
 
 
-static inline int
+static INLINE int
 iter_step (SET *table)
 {
   if (++table->iter_j >= SEGMENT_SIZE) {
@@ -261,7 +270,7 @@ MANGLEP(break) (SET *table)
 }
 
 
-static inline unsigned
+static INLINE unsigned
 Hash (SET *table, unsigned h)
 {
   unsigned address;
@@ -273,7 +282,7 @@ Hash (SET *table, unsigned h)
 }
 
 
-static inline int
+static INLINE int
 loaded (SET *table)
 {
   return (  ++table->nkey

@@ -86,8 +86,8 @@ void collect_impls(entity *method, eset *set, int *size, bool *open) {
       if (!eset_contains(set, method)) {
 	eset_insert(set, method);
 	++(*size);
-	//printf("Adding existent method %d ", *size); DDME(method);
-	//printf(" with owner "); DDMT(get_entity_owner(method));
+	/* printf("Adding existent method %d ", *size); DDME(method);
+	   printf(" with owner "); DDMT(get_entity_owner(method)); */
       }
     }
   }
@@ -102,8 +102,8 @@ void collect_impls(entity *method, eset *set, int *size, bool *open) {
       if (!eset_contains(set, impl_ent)) {
 	eset_insert(set, impl_ent);
 	++(*size);
-	//	printf("Adding inherited method %d ", *size); DDME(impl_ent);
-	//printf(" with owner "); DDMT(get_entity_owner(impl_ent));
+	/* printf("Adding inherited method %d ", *size); DDME(impl_ent);
+	   printf(" with owner "); DDMT(get_entity_owner(impl_ent)); */
       }
     }
   }
@@ -128,9 +128,6 @@ static entity ** get_impl_methods(entity * method) {
 
   /** Collect all method entities that can be called here **/
   collect_impls(method, set, &size, &open);
-
-
-  //printf("Size is  %d \n\n", size);
 
   /** Gefunden Entitaeten in ein Feld kopieren, ev. Unbekannten
      Vorgaenger einfuegen. **/

@@ -242,7 +242,7 @@ get_mode_modecode (ir_mode *mode)
 }
 
 /*
-inline void
+INLINE void
 set_mode_modecode (ir_mode *mode, modecode code)
 {
   mode->code = code;
@@ -256,14 +256,14 @@ get_mode_ident (ir_mode *mode)
 }
 
 /*
-inline void
+INLINE void
 set_mode_ident (ir_mode *mode, ident *name)
 {
   mode->name = name;
 }
 */
 
-inline const char *
+INLINE const char *
 get_mode_name       (ir_mode *mode) {
   assert(mode);
   return id_to_str(mode->name);
@@ -276,7 +276,7 @@ get_mode_size (ir_mode *mode)
   return mode->size;
 }
 /*
-inline void
+INLINE void
 set_mode_size (ir_mode *mode, int size)
 {
   mode->size = size;
@@ -290,7 +290,7 @@ get_mode_ld_align (ir_mode *mode)
 }
 
 /*
-inline void
+INLINE void
 set_mode_ld_align (ir_mode *mode, int ld_align)
 {
   mode->ld_align = ld_align;
@@ -304,7 +304,7 @@ get_mode_min (ir_mode *mode)
 }
 
 /*
-inline void
+INLINE void
 set_mode_min (ir_mode *mode, tarval *min)
 {
 mode->min = min;
@@ -318,7 +318,7 @@ get_mode_max (ir_mode *mode)
 }
 
 /*
-inline void
+INLINE void
 set_mode_max (ir_mode *mode, tarval *max)
 {
   mode->max = max;
@@ -332,7 +332,7 @@ get_mode_null (ir_mode *mode)
 }
 
 /*
-inline void
+INLINE void
 set_mode_null (ir_mode *mode, tarval *null)
 {
   mode->null = null;
@@ -346,7 +346,7 @@ get_mode_fsigned (ir_mode *mode)
 }
 
 /*
-inline voida
+INLINE voida
 set_mode_fsigned (ir_mode *mode, unsigned fsigned)
 {
   mode->fsigned = fsigned;
@@ -360,7 +360,7 @@ get_mode_ffloat (ir_mode *mode)
 }
 
 /*
-inline void
+INLINE void
 set_mode_ffloat (ir_mode *mode, unsigned ffloat)
 {
   mode->ffloat = ffloat;

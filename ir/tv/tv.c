@@ -57,6 +57,10 @@ static pset *tarvals;		/* pset containing pointers to _all_ tarvals */
 /* currently building an object with tarval_start() & friends ? */
 #define BUILDING obstack_object_size (&tv_obst)
 
+/* bcopy is not ISO C */
+#define bcopy(X, Y, Z) memcpy((Y), (X), (Z))
+
+
 /* special tarvals: */
 tarval *tarval_bad;
 tarval *tarval_b_false;
@@ -140,7 +144,7 @@ tv_val_s (tarval *tv)
 
 
 /* Overflows `chil' signed integral `mode'?  */
-static inline bool
+static INLINE bool
 chil_overflow (tarval_chil chil, ir_mode *mode)
 {
   assert (is_chilCHIL(get_mode_modecode(mode)));
@@ -151,7 +155,7 @@ chil_overflow (tarval_chil chil, ir_mode *mode)
 
 
 /* Overflows `CHIL' unsigned integral `mode'?  */
-static inline bool
+static INLINE bool
 CHIL_overflow (tarval_CHIL CHIL, ir_mode *mode)
 {
   assert (is_chilCHIL(get_mode_modecode(mode)));
@@ -531,7 +535,7 @@ tarval_B_from_str (const char *s, size_t len)
 
     if (b >= 8) {		/* we've accumulated at least a byte */
       char c = x & 0xFF;	/* extract the lower 8 bits from x */
-      obstack_grow (&tv_obst, &c, 1); /* and stuff them into B */
+      obstack_grow (&tv_obst, &c, 1);  /* and stuff them into B */
       x >>= 8;			/* remove the lower 8 bits from x */
       b -= 8;			/* x now contains 8 bits fewer */
       ++n;			/* B grew a byte */
@@ -1696,7 +1700,8 @@ tarval_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
 
   case irm_c:			/* signed char */
   case irm_C:			/* unsigned char */
-    if (isprint (val->u.chil)) {
+    if ((isprint (val->u.chil)) &&
+	(val->u.chil != '\\')   && (val->u.chil != '\'')) {
       printed = XPF1R ("'%c'", val->u.chil);
     } else {
       printed = XPF1R ("0x%x", (unsigned long)val->u.chil);

@@ -1,7 +1,7 @@
 /* Copyright (c) 2002 by Universität Karlsruhe (TH).  All Rights Reserved */
-//
-// Time-stamp: <Monday, 13.05.2002, 16:00:06 goetz@i44pc2.info.uni-karlsruhe.de>
-//
+/*
+** Time-stamp: <Friday, 05.07.2002, 11:09:07 goetz@i44pc2.info.uni-karlsruhe.de>
+*/
 
 /***
    NAME
@@ -40,7 +40,7 @@ static bool has_handler (ir_graph *graph, ir_node *b, ir_node *a)
   ir_node *succ = 0;
 
   assert (0 && "Wrongly implemented");
-  // must check for _immediate_ dominance !!!
+  /* must check for _immediate_ dominance !!! */
 
   if (is_handler_entry (graph, b) && dominates (graph, a, b))
 	return (true);
@@ -63,15 +63,15 @@ static bool is_exc_jmp (ir_node *node)
 {
   ir_op *op = get_irn_op (node);
 
-  // Proj_X (Load), Proj_X (Sto), Proj_X (Div_Int),
-  // Proj_X (Raise), Proj_X (Call), Proj_X (Alloc)
+  /* Proj_X (Load), Proj_X (Sto), Proj_X (Div_Int),
+     Proj_X (Raise), Proj_X (Call), Proj_X (Alloc) */
   if (op == op_Proj)
 	{
 	  op = get_irn_op (get_Proj_pred (node));
 
 	  assert ((is_fragile_op(get_Proj_pred(node))) &&
 		  (op != op_Bad) /*&& (op != op_Unknown)*/ &&
-		  (get_irn_mode(node) == mode_X));// Check for proper Proj attr
+		  (get_irn_mode(node) == mode_X));/* Check for proper Proj attr */
 	  return (true);
 	}
   else
@@ -83,21 +83,23 @@ static bool is_exc_jmp (ir_node *node)
 /*
 Return true iff the given node represents a normal cfg jump
 */
+#if 0
 static bool is_cfg_jmp (ir_node *node)
 {
   ir_op *op = get_irn_op (node);
 
   if (op == op_Proj)
-	{
-	  op = get_irn_op (get_Proj_pred (node));
+    {
+      op = get_irn_op (get_Proj_pred (node));
 
-	  // Proj_X (Proj_Cmp (Cond))
-	  if (op_Proj == op)
-		return (true);			/* check for op == op_Cmp and op == op_Cond */
-	}
+      /* Proj_X (Proj_Cmp (Cond)) */
+      if (op_Proj == op)
+	return (true);	/* check for op == op_Cmp and op == op_Cond */
+    }
 
   return (false);
 }
+#endif
 
 /*
  Return true iff a new exception region must be left upon entry of this block.

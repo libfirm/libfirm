@@ -20,7 +20,6 @@
    operation is executed.  Else it uses the values valid at the end of the
    block with the fragile operation. */
 #define PRECISE_EXC_CONTEXT 1
-// #define PRECISE_EXC_CONTEXT 0
 
 /* There are two implementations of the Phi node construction.  The first
    is faster, but does not work for blocks with more than 2 predecessors.
@@ -33,7 +32,7 @@
    If the following flag is set, new_r_Phi_in uses an explicit stack for
    allocating and deallocating Phi nodes.  Else it uses the obstack
    as a stack! */
-#define USE_EXPLICIT_PHI_IN_STACK 1
+#define USE_EXPLICIT_PHI_IN_STACK 0
 
 /*
  * If this is defined debuging aids are created, e.g. a field in

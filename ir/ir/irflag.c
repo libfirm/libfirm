@@ -12,6 +12,9 @@
 # include <config.h>
 #endif
 
+#include "irflag.h"
+#include "common.h"
+
 
 /* 0 - don't do this optimization
    1 - lets see, if there is a better graph */
@@ -28,13 +31,13 @@ int opt_reassociation = 1;          /* Reassociate nodes */
 int opt_inline = 1;                 /* Do inlining transformation */
 
 /* set the flags with set_flagname, get the flag with get_flagname */
-inline void
+INLINE void
 set_opt_cse (int value)
 {
   opt_cse = value;
 }
 
-inline int
+INLINE int
 get_opt_cse (void)
 {
   return opt_cse;
@@ -50,79 +53,79 @@ int  get_opt_global_cse (void)
   return opt_global_cse;
 }
 
-inline void
+INLINE void
 set_opt_constant_folding (int value)
 {
   opt_constant_folding=value;
 }
 
-inline int
+INLINE int
 get_opt_constant_folding (void)
 {
   return opt_constant_folding;
 }
 
-inline void
+INLINE void
 set_opt_unreachable_code(int value)
 {
   opt_unreachable_code = value;
 }
 
-inline int
+INLINE int
 get_opt_unreachable_code(void)
 {
   return opt_unreachable_code;
 }
 
-inline void set_opt_control_flow(int value) {
+INLINE void set_opt_control_flow(int value) {
   opt_control_flow = value;
 }
 
-inline int  get_opt_control_flow(void) {
+INLINE int  get_opt_control_flow(void) {
   return opt_control_flow;
 }
 
-inline void
+INLINE void
 set_opt_reassociation(int value)
 {
   opt_reassociation = value;
 }
 
-inline int
+INLINE int
 get_opt_reassociation(void)
 {
   return opt_reassociation;
 }
 
-inline void
+INLINE void
 set_opt_dead_node_elimination (int value)
 {
   opt_dead_node_elimination = value;
 }
 
-inline int
+INLINE int
 get_opt_dead_node_elimination (void)
 {
   return opt_dead_node_elimination;
 }
 
-inline void
+INLINE void
 set_optimize (int value)
 {
   optimized = value;
 }
 
-inline int
+INLINE int
 get_optimize (void)
 {
   return optimized;
 }
 
 
-void set_opt_inline (int value) {
+INLINE void set_opt_inline (int value) {
   opt_inline = value;
 }
 
-int  get_opt_inline (void) {
+INLINE int  get_opt_inline (void) {
   return opt_inline;
 }
