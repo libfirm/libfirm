@@ -29,14 +29,17 @@ struct ir_mode {
 
   /* ----------------------------------------------------------------------- */
   /* On changing this struct you have to evaluate the mode_are_equal function!*/
-  mode_sort         sort;       /**< coarse classification of this mode:
+  mode_sort         sort;          /**< coarse classification of this mode:
                                      int, float, reference ...
                                      (see irmode.h) */
-  mode_arithmetic   arithmetic; /**< different arithmetic operations possible with a mode */
-  int               size;       /**< size of the mode in Bits. */
-  int               align;      /**< byte alignment */
-  unsigned          sign:1;     /**< signedness of this mode */
-  unsigned int      modulo_shift;
+  mode_arithmetic   arithmetic;    /**< different arithmetic operations possible with a mode */
+  int               size;          /**< size of the mode in Bits. */
+  int               align;         /**< byte alignment */
+  unsigned          sign:1;        /**< signedness of this mode */
+  unsigned int      modulo_shift;  /**< number of bits a valus of this mode will be shifted */
+  unsigned          vector_elem;   /**< if this is not equal 1, this is a vector mode with
+				        vector_elem number of elements, size contains the size
+					of all bits and must be dividable by vector_elem */
 
   /* ----------------------------------------------------------------------- */
   tarval            *min;
