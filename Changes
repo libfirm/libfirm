@@ -1,3 +1,10 @@
+  23.5.2001 Goetz
+  Added list of member entites to union.  unioned_types and delimiters
+  are superfluous now -- removed.
+  Rationale: we want to express selection of a union member as a Sel
+  node. for this we need to have entities.  The entities contain the
+  unioned type and have as name the delimiters...
+
   17.4.2001 Boris
   Changed Makefile/MakeTargets to install headers and libraries
   seperately.

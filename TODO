@@ -1,3 +1,18 @@
+  * 23.5.2001 Goetz
+    Add element_type to array constructor
+
+  * 15.3.2001 Goetz
+    mode, size in type:  Wann gibt es einen mode, wann die size?
+    Kann man den mode aendern?  Nicht bei prim, enum, pointer da
+    schon irreversibel in Programmcode umgesetzt.  Die anderen
+    haben keinen mode.  Reicht daher intern ein Feld?  Muss man
+    in get_type_mode die typen asserten, und set_mode verbieten,
+    dafuer im enum konstruktor mode mitgeben?
+
+  * 14.3.2001 Boris
+    make dist should create an archive which has the directory libfirm/
+    as top-level
+=======
   14.3.2001 Boris
   - make dist should create an archive which has the directory libfirm/
     as top-level [DONE:28.3.2001 Boris]
@@ -5,11 +20,7 @@
 
 *********** old stuff ***********
 
-
  * Problem mit endlosen Schleifen loesen.
-
- + if_while_example ergibt Segmentation Fault da Bad Vorgaenger von Endblock.
-   Optimierung des end blocks geaendert.
 
  * Automatisches generieren und set_value der Argumente-projs in
    new_ir_graph
@@ -23,12 +34,8 @@
 
  * think again about implementation of boolean expressions  (0<1) && (2<3)
 
- * Adapt tv to operate on the new modes, adapt libfirm, e.g., remove
-   strange constructors.
-
- * define Nodes for Rotate, Not, Minus, ShrA (Done.)
-   Add evaluation routines to target value, extend optimization,
-   verification to cover these nodes, extend irdump to cover them.
+ * Add evaluation routines for Rotate, Not, Minus, ShrA to target value,
+   extend optimization to cover these nodes.
 
  * do we need remainder (Rem) operator?
    different sign handling than Mod.  How much processors???
@@ -68,6 +75,11 @@ Propositions by Boris, 5.3.2001:
    + von Hochsprachtypen loesen? Signed32 statt int?
      ==> viel Arbeit, nur Namenskonvention.  Ev wenn target value modul
          ausgetauscht.
+
+ + if_while_example ergibt Segmentation Fault da Bad Vorgaenger von Endblock.
+   Optimierung des end blocks geaendert.
+
+ + define Nodes for Rotate, Not, Minus, ShrA.  Extend irdump, verification.
 
  + change impelmentation of type to use concept as in irnode.
    Three common fields: kind, ident, mode !!! fill mode with
