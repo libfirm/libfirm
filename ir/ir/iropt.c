@@ -31,6 +31,12 @@
 /* Make types visible to allow most efficient access */
 # include "entity_t.h"
 
+# ifdef DO_HEAPANALYSIS
+/* heapanal can't cope with NoMems */
+# else /* if defined DO_HEAPANALYSIS */
+#  define USE_NOMEM
+# endif /* defined DO_HEAPANALYSIS */
+
 /**
  * Trivial INLINEable routine for copy propagation.
  * Does follow Ids, needed to optimize INLINEd code.
@@ -877,12 +883,12 @@ static ir_node *equivalent_node_Conv(ir_node *n)
     if (n_mode == b_mode) {
       if (n_mode == mode_b) {
         n = b; /* Convb(Conv*(xxxb(...))) == xxxb(...) */
-	DBG_OPT_ALGSIM1(oldn, a, b, n);
+    DBG_OPT_ALGSIM1(oldn, a, b, n);
       }
       else if (mode_is_int(n_mode) || mode_is_character(n_mode)) {
         if (smaller_mode(b_mode, a_mode)){
           n = b;        /* ConvS(ConvL(xxxS(...))) == xxxS(...) */
-	  DBG_OPT_ALGSIM1(oldn, a, b, n);
+      DBG_OPT_ALGSIM1(oldn, a, b, n);
         }
       }
     }
@@ -1325,10 +1331,10 @@ static ir_node *transform_node_Cast(ir_node *n) {
 
   if (get_irn_op(pred) == op_Const && get_Const_type(pred) != tp) {
     n = new_rd_Const_type(NULL, current_ir_graph, get_nodes_block(pred), get_irn_mode(pred),
-			  get_Const_tarval(pred), tp);
+              get_Const_tarval(pred), tp);
   } else if ((get_irn_op(pred) == op_SymConst) && (get_SymConst_value_type(pred) != tp)) {
     n = new_rd_SymConst_type(NULL, current_ir_graph, get_nodes_block(pred), get_SymConst_symbol(pred),
-			     get_SymConst_kind(pred), tp);
+                 get_SymConst_kind(pred), tp);
   }
   return n;
 }
@@ -1362,13 +1368,13 @@ static ir_node *transform_node_Proj(ir_node *proj)
       if (proj_nr == pn_Div_X_except) {
         /* we found an exception handler, remove it */
         return new_Bad();
-      }
-      else {
-	/* the memory Proj can be removed */
+      } else {
+        /* the memory Proj can be removed */
         ir_node *res = get_Div_mem(n);
+# ifdef USE_NOMEM
         set_Div_mem(n, get_irg_no_mem(current_ir_graph));
-
-	if (proj_nr == pn_Div_M)
+# endif /* defined USE_NOMEM */
+        if (proj_nr == pn_Div_M)
           return res;
       }
     }
@@ -1386,13 +1392,14 @@ static ir_node *transform_node_Proj(ir_node *proj)
       if (proj_nr == pn_Mod_X_except) {
         /* we found an exception handler, remove it */
         return new_Bad();
-      }
-      else {
-	/* the memory Proj can be removed */
+      } else {
+        /* the memory Proj can be removed */
         ir_node *res = get_Mod_mem(n);
+# ifdef USE_NOMEM
         set_Mod_mem(n, get_irg_no_mem(current_ir_graph));
+# endif /* defined USE_NOMEM */
         if (proj_nr == pn_Mod_M)
-	  return res;
+          return res;
       }
     }
     break;
@@ -1411,11 +1418,13 @@ static ir_node *transform_node_Proj(ir_node *proj)
         return new_Bad();
       }
       else {
-	/* the memory Proj can be removed */
+        /* the memory Proj can be removed */
         ir_node *res = get_DivMod_mem(n);
+# ifdef USE_NOMEM
         set_DivMod_mem(n, get_irg_no_mem(current_ir_graph));
+# endif /* defined USE_NOMEM */
         if (proj_nr == pn_DivMod_M)
-	  return res;
+          return res;
       }
     }
     break;
@@ -2059,16 +2068,16 @@ optimize_node (ir_node *n)
         oldn = alloca(node_size);
 
         memcpy(oldn, n, node_size);
-	CLONE_ARR_A(ir_node *, oldn->in, n->in);
+    CLONE_ARR_A(ir_node *, oldn->in, n->in);
 
-	/* ARG, copy the in array, we need it for statistics */
-	memcpy(oldn->in, n->in, ARR_LEN(n->in) * sizeof(n->in[0]));
+    /* ARG, copy the in array, we need it for statistics */
+    memcpy(oldn->in, n->in, ARR_LEN(n->in) * sizeof(n->in[0]));
 
         /* evaluation was successful -- replace the node. */
         obstack_free (current_ir_graph->obst, n);
         n = new_Const (get_tarval_mode (tv), tv);
-	if (old_tp && get_type_mode(old_tp) == get_tarval_mode (tv))
-	  set_Const_type(n, old_tp);
+    if (old_tp && get_type_mode(old_tp) == get_tarval_mode (tv))
+      set_Const_type(n, old_tp);
                                                  DBG_OPT_CSTEVAL(oldn, n);
         return n;
       }
@@ -2159,8 +2168,8 @@ optimize_in_place_2 (ir_node *n)
         /* evaluation was successful -- replace the node. */
         n = new_Const (get_tarval_mode (tv), tv);
 
-	if (old_tp && get_type_mode(old_tp) == get_tarval_mode (tv))
-	  set_Const_type(n, old_tp);
+    if (old_tp && get_type_mode(old_tp) == get_tarval_mode (tv))
+      set_Const_type(n, old_tp);
 
         DBG_OPT_CSTEVAL(oldn, n);
         return n;
