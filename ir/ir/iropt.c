@@ -1109,8 +1109,8 @@ optimize_preds(ir_node *n) {
   } /* end switch */
 }
 
-static ir_node *transform_node_Mul(ir_node *n)
-{
+/** Do architecture dependend optimizations on Mul nodes */
+static ir_node *transform_node_Mul(ir_node *n) {
   return arch_dep_replace_mul_with_shifts(n);
 }
 
@@ -1554,7 +1554,7 @@ static ir_node * transform_node_shift(ir_node *n)
     return n;
 
   tv2 = computed_value(get_binop_right(left));
-  if (tv1 == tarval_bad)
+  if (tv2 == tarval_bad)
     return n;
 
   res = tarval_add(tv1, tv2);
