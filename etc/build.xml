@@ -2,7 +2,7 @@
 
 <project name="libfirm" default="html" basedir=".">
   <target name="cvslog">
-    <cvschangelog destfile="changelog.xml" daysinpast="1000" dir="ir">
+    <cvschangelog destfile="changelog.xml" daysinpast="100" dir="ir">
 	  <user displayname="Michael Beck" userid="beck"/>
 	  <user displayname="Goetz Lindenmaier" userid="goetz"/>
 	  <user displayname="Boris Boesler" userid="boesler"/>
