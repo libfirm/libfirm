@@ -1390,7 +1390,7 @@ set_binop_right (ir_node *node, ir_node *right) {
   assert (node->op->opar == oparity_binary);
 }
 
-int is_Phi (ir_node *n) {
+int is_Phi (const ir_node *n) {
   ir_op *op;
 
   assert(n);
@@ -1405,7 +1405,7 @@ int is_Phi (ir_node *n) {
   return 0;
 }
 
-int is_Phi0 (ir_node *n) {
+int is_Phi0 (const ir_node *n) {
   assert(n);
 
   return ((get_irn_op(n) == op_Phi) &&
@@ -1846,7 +1846,7 @@ ir_node *get_Filter_cg_pred(ir_node *node, int pos) {
 
 
 ir_graph *
-get_irn_irg(ir_node *node) {
+get_irn_irg(const ir_node *node) {
   if (get_irn_op(node) != op_Block)
     node = get_nodes_block(node);
   if (is_Bad(node))  /* sometimes bad is predecessor of nodes instead of block: in case of optimization */

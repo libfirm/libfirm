@@ -181,7 +181,7 @@ void         *get_irn_link     (const ir_node *node);
 
 /** Returns the ir_graph this node belongs to. Only valid if irg
  *  is in state op_pin_state_pinned (irg is only stored in the block. */
-ir_graph     *get_irn_irg      (ir_node *node);
+ir_graph     *get_irn_irg      (const ir_node *node);
 
 /** Outputs a unique number for this node if libFIRM is compiled for
    debugging, (configure with --enable-debug) else returns address
@@ -716,10 +716,10 @@ void     set_Cast_type (ir_node *node, type *to_tp);
 /** Returns true if n is Phi or Filter in interprocedural_view.
    Returns false if irg in phase building and the Phi has zero
    predecessors: it's a Phi0. */
-int       is_Phi (ir_node *n);
+int       is_Phi (const ir_node *n);
 /** Returns true  if irg in phase building and the Phi has zero
    predecessors: it's a Phi0. */
-int       is_Phi0 (ir_node *n);
+int       is_Phi0 (const ir_node *n);
 /* These routines also work for Filter nodes in interprocedural view. */
 ir_node **get_Phi_preds_arr (ir_node *node);
 int       get_Phi_n_preds (ir_node *node);
