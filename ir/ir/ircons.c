@@ -1676,7 +1676,7 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
          before recuring.
       */
       if (default_initialize_local_variable)
-        block->attr.block.graph_arr[pos] = default_initialize_local_variable(mode, pos);
+        block->attr.block.graph_arr[pos] = default_initialize_local_variable(mode, pos - 1);
       else
         block->attr.block.graph_arr[pos] = new_Const(mode, tarval_bad);
       /* We don't need to care about exception ops in the start block.
