@@ -32,7 +32,7 @@
 			%firm.entity;>
 
 <!-- a single effect -->
-<!ELEMENT  	effect (arg*, (load|store|alloc|call|join|unknown)*, raise?, return)>
+<!ELEMENT  	effect (arg*, (load|store|alloc|call|join|unknown)*, raise?, ret)>
 <!ATTLIST  	effect
 			procname	CDATA		#REQUIRED>
 
@@ -80,14 +80,17 @@
 <!ELEMENT	raise		(valref)>
 <!ATTLIST	raise		%firm.type;>
 
-<!-- return effect -->
-<!ELEMENT	return		(valref?)>
+<!-- ret effect -->
+<!ELEMENT	ret			(valref?)>
 
 <!--
 
  $Log$
+ Revision 1.6  2004/10/11 09:55:19  liekweg
+ Renamed 'return' to 'ret' -flo
+
  Revision 1.5  2004/10/05 16:19:04  liekweg
-  Grrr, CVS still messes up XML comments
+ Grrr, CVS still messes up XML comments
 
  Revision 1.4  2004/10/05 16:18:06  liekweg
  Grrr, CVS messes up XML comments
@@ -97,6 +100,7 @@
 
  Revision 1.2  2004/10/05 15:46:59  liekweg
  Added comment about this DTD's public location -flo
+
  Revision 1.1  2004/10/05 14:34:13  liekweg
  Added DTD for external effects description -flo
 
