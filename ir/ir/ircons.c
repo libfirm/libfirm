@@ -2079,7 +2079,7 @@ new_d_InstOf (dbg_info *db, ir_node *store, ir_node *objptr, type *ent)
 ir_node *
 new_d_SymConst (dbg_info* db, type_or_id_p value, symconst_kind kind)
 {
-  return new_rd_SymConst (db, current_ir_graph, current_ir_graph->current_block,
+  return new_rd_SymConst (db, current_ir_graph, current_ir_graph->start_block,
                          value, kind);
 }
 
