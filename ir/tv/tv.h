@@ -13,11 +13,8 @@
 typedef struct tarval tarval;
 #endif
 
-/* #include <gmp.h> Eli can't find gmp.h if it's available in a local
-   search path but not in a standard one known to gcc. */
 #include "gmp.h"
 #undef __need_size_t		/* erroneously defined by 1.3.2's gmp.h */
-/* #include "deftab.h" */
 
 /* how to represent target types on host */
 typedef float  tarval_f;

@@ -23,6 +23,8 @@
    values is cheaper than the extra obstack_alloc()/free() for
    discarded ones.  */
 
+/* Defining this causes inclusions of functions renamed with new gmp.h */
+#define _TARVAL_GMP_ 0
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -255,7 +257,11 @@ tarval_cmp (const void *p, const void *q)
     }
     return a->u.chil != b->u.chil;
   case irm_Z:
+#if _TARVAL_GMP_
     return mpz_cmp (&a->u.Z, &b->u.Z);
+#else
+    return 99; /* ?? */
+#endif
     /* strange */
   case irm_p:
     if (a->u.p.ent || b->u.p.ent)
@@ -308,7 +314,11 @@ tarval_hash (tarval *tv)
   case irm_c: case irm_h: case irm_i: case irm_l:
     h ^= tv->u.chil; break;
   case irm_Z:
+#if _TARVAL_GMP_
     h ^= mpz_get_ui (&tv->u.Z); break;
+#else
+    h ^= (unsigned int) tv; break; /* tut das? */
+#endif
   case irm_p:
     if (tv->u.p.ent) {
       /* @@@ lower bits not random, watch for collisions; perhaps
@@ -463,7 +473,11 @@ tarval_Z_from_str (const char *s, size_t len, int base)
 
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
   tv->mode = mode_Z;
+#if _TARVAL_GMP_
   if (mpz_init_set_str (&tv->u.Z, buf, base)) assert (0);
+#else
+  assert(0 && "no support for Z in tv!");
+#endif
 
   return tarval_identify (tv);
 }
@@ -622,7 +636,11 @@ tarval_from_long (ir_mode *m, long val)
   case irm_c: case irm_h: case irm_i: case irm_l:
     tv->u.chil = val; break;
   case irm_Z:
+#if _TARVAL_GMP_
     mpz_init_set_si (&tv->u.Z, val);
+#else
+    assert(0 && "no support for Z in tv!");
+#endif
     break;
     /* strange */
   case irm_p:
@@ -787,6 +805,7 @@ tarval_convert_to (tarval *src, ir_mode *m)
     break;
 
   case irm_Z:
+#if _TARVAL_GMP_
     switch (get_mode_modecode(m)) {
 
     case irm_C: case irm_H: case irm_I: case irm_L:
@@ -812,6 +831,9 @@ tarval_convert_to (tarval *src, ir_mode *m)
 
     default: goto fail;
     }
+#else
+    goto fail;
+#endif
     break;
 
   case irm_c: case irm_h: case irm_i: case irm_l:
@@ -827,7 +849,11 @@ tarval_convert_to (tarval *src, ir_mode *m)
       break;
 
     case irm_Z:
+#if _TARVAL_GMP_
       mpz_init_set_si (&tv->u.Z, src->u.chil);
+#else
+      goto fail;
+#endif
       break;
 
     case irm_b:
@@ -850,7 +876,11 @@ tarval_convert_to (tarval *src, ir_mode *m)
       break;
 
     case irm_Z:
+#if _TARVAL_GMP_
       mpz_init_set_ui (&tv->u.Z, src->u.CHIL);
+#else
+      goto fail;
+#endif
       break;
 
     case irm_b:
@@ -913,8 +943,14 @@ tarval_neg (tarval *a)
     }
     break;
   case irm_Z:
+#if _TARVAL_GMP_
     mpz_init (&tv->u.Z);
     mpz_neg (&tv->u.Z, &a->u.Z);
+#else
+    obstack_free (&tv_obst, tv);
+    tv = a;
+    printf("\nWrong negation\n\n");
+#endif
     break;
     /* strange */
   case irm_b: tv->u.b = !a->u.b; break;
@@ -958,10 +994,15 @@ tarval_comp (tarval *a, tarval *b)
 	    : a->u.chil > b->u.chil ? irpn_Gt
 	    : irpn_Lt);
   case irm_Z:
-    { int cmp = mpz_cmp (&a->u.Z, &b->u.Z);
+    {
+#if _TARVAL_GMP_
+      int cmp = mpz_cmp (&a->u.Z, &b->u.Z);
       return (  cmp == 0 ? irpn_Eq
 	      : cmp > 0 ? irpn_Gt
 	      : irpn_Lt);
+#else
+      return irpn_False;
+#endif
     }
     /* strange */
   case irm_b: return (  a->u.b == b->u.b ? irpn_Eq
@@ -1009,8 +1050,13 @@ tarval_add (tarval *a, tarval *b)
     }
     break;
   case irm_Z:
+#if _TARVAL_GMP_
     mpz_init (&tv->u.Z);
     mpz_add (&tv->u.Z, &a->u.Z, &b->u.Z);
+#else
+    obstack_free (&tv_obst, tv);
+    return NULL;
+#endif
     break;
     /* strange */
   case irm_b: tv->u.b = a->u.b | b->u.b; break;	/* u.b is in canonical form */
@@ -1052,8 +1098,13 @@ tarval_sub (tarval *a, tarval *b)
     }
     break;
   case irm_Z:
+#if _TARVAL_GMP_
     mpz_init (&tv->u.Z);
     mpz_sub (&tv->u.Z, &a->u.Z, &b->u.Z);
+#else
+    obstack_free (&tv_obst, tv);
+    return NULL;
+#endif
     break;
     /* strange */
   case irm_b: tv->u.b = a->u.b & ~b->u.b; break; /* u.b is in canonical form */
@@ -1095,8 +1146,13 @@ tarval_mul (tarval *a, tarval *b)
     }
     break;
   case irm_Z:
+#if _TARVAL_GMP_
     mpz_init (&tv->u.Z);
     mpz_mul (&tv->u.Z, &a->u.Z, &b->u.Z);
+#else
+    obstack_free (&tv_obst, tv);
+    return NULL;
+#endif
     break;
     /* strange */
   case irm_b: tv->u.b = a->u.b & b->u.b; break;	/* u.b is in canonical form */
@@ -1172,9 +1228,13 @@ tarval_div (tarval *a, tarval *b)
     tv->u.chil = a->u.chil / b->u.chil;
     break;
   case irm_Z:
+#if _TARVAL_GMP_
     if (!mpz_cmp_ui (&b->u.Z, 0)) goto fail;
     mpz_init (&tv->u.Z);
     mpz_div (&tv->u.Z, &a->u.Z, &b->u.Z);
+#else
+    goto fail;
+#endif
     break;
     /* strange */
   case irm_b: tv->u.b = a->u.b ^ b->u.b; break;	/* u.b is in canonical form */
@@ -1217,9 +1277,13 @@ tarval_mod (tarval *a, tarval *b)
     tv->u.chil = a->u.chil % b->u.chil;
     break;
   case irm_Z:
+#if _TARVAL_GMP_
     if (!mpz_cmp_ui (&b->u.Z, 0)) goto fail;
     mpz_init (&tv->u.Z);
     mpz_mod (&tv->u.Z, &a->u.Z, &b->u.Z);
+#else
+    goto fail;
+#endif
     break;
     /* strange */
   case irm_b: tv->u.b = a->u.b ^ b->u.b; break;	/* u.b is in canonical form */
@@ -1251,8 +1315,12 @@ tarval_and (tarval *a, tarval *b)
   case irm_c: case irm_h: case irm_i: case irm_l:
     tv->u.chil = a->u.chil & b->u.chil; break;
   case irm_Z:
+#if _TARVAL_GMP_
     mpz_init (&tv->u.Z);
     mpz_and (&tv->u.Z, &a->u.Z, &b->u.Z);
+#else
+    assert(0);
+#endif
     break;
     /* strange */
   case irm_b: tv->u.b = a->u.b & b->u.b; break;	/* u.b is in canonical form */
@@ -1284,8 +1352,12 @@ tarval_or (tarval *a, tarval *b)
   case irm_c: case irm_h: case irm_i: case irm_l:
     tv->u.chil = a->u.chil | b->u.chil; break;
   case irm_Z:
+#if _TARVAL_GMP_
     mpz_init (&tv->u.Z);
     mpz_ior (&tv->u.Z, &a->u.Z, &b->u.Z);
+#else
+    assert(0);
+#endif
     break;
     /* strange */
   case irm_b: tv->u.b = a->u.b | b->u.b; break;	/* u.b is in canonical form */
@@ -1321,7 +1393,8 @@ tarval_eor (tarval *a, tarval *b)
   case irm_c: case irm_h: case irm_i: case irm_l:
     tv->u.chil = a->u.chil ^ b->u.chil; break;
   case irm_Z:
-#if 0 /* gmp-1.3.2 declares but does not define mpz_xor() */
+#if 0
+    /* gmp-1.3.2 declares but does not define mpz_xor() */
     mpz_init (&tv->u.Z);
     mpz_xor (&tv->u.Z, &a->u.Z, &b->u.Z);
 #endif
@@ -1365,8 +1438,12 @@ tarval_shl (tarval *a, tarval *b)
     tv->u.chil = a->u.chil << shift;
     break;
   case irm_Z:
+#if _TARVAL_GMP_
     mpz_init (&tv->u.Z);
     mpz_mul_2exp (&tv->u.Z, &a->u.Z, shift);
+#else
+    assert(0);
+#endif
     break;
   default: assert (0);
   }
@@ -1405,8 +1482,12 @@ tarval_shr (tarval *a, tarval *b)
     tv->u.chil = a->u.chil >> shift;
     break;
   case irm_Z:
+#if _TARVAL_GMP_
     mpz_init (&tv->u.Z);
     mpz_div_2exp (&tv->u.Z, &a->u.Z, shift);
+#else
+    assert(0);
+#endif
     break;
   default: assert (0);
   }
@@ -1443,9 +1524,11 @@ tarval_classify (tarval *tv)
   case irm_c: case irm_h: case irm_i: case irm_l:
     return tv->u.chil;
   case irm_Z:
+#if _TARVAL_GMP_
     if      (mpz_cmp_si (&tv->u.Z, 0)) return 0;
     else if (mpz_cmp_si (&tv->u.Z, 1)) return 1;
     else if (mpz_cmp_si (&tv->u.Z,-1)) return -1;
+#endif
     return 2;
     /* strange */
   case irm_b:
@@ -1456,6 +1539,7 @@ tarval_classify (tarval *tv)
 }
 
 
+#if _TARVAL_GMP_
 bool
 tarval_s_fits (tarval *tv, long min, long max) {
   return ((  mpz_cmp_si (&tv->u.Z, min) >= 0)
@@ -1467,7 +1551,7 @@ tarval_u_fits (tarval *tv, unsigned long max) {
   return ((  mpz_sgn (&tv->u.Z) >= 0)
 	  && mpz_cmp_si (&tv->u.Z, max) <= 0);
 }
-
+#endif
 
 /* Convert `tv' into type `long', set `fail' if not representable.
    If `fail' gets set for an unsigned `tv', the correct result can be
@@ -1487,9 +1571,14 @@ tarval_ord (tarval *tv, int *fail)
     *fail = 0;
     return tv->u.chil;
   case irm_Z:
+#if _TARVAL_GMP_
     *fail = (   (mpz_cmp_si (&tv->u.Z, tv_val_chil(get_mode_max(mode_l))) > 0)
 	     || (mpz_cmp_si (&tv->u.Z, tv_val_chil(get_mode_max(mode_l))) < 0));
     return mpz_get_si (&tv->u.Z);
+#else
+    *fail = 1;
+    return 0;
+#endif
     /* strange */
   case irm_b:
     *fail = 0;
