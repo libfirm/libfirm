@@ -469,7 +469,7 @@ void firm_walk(firm_walk_interface *wif)
 
       /*  call block as prefix ir node */
       if ((wif->do_node) &&
-          (wif->flags & FW_DUMP_BLOCK_AS_IRN & !FW_DUMP_IRN_IN_PREFIX))
+          (wif->flags & (FW_DUMP_BLOCK_AS_IRN | FW_DUMP_IRN_IN_PREFIX)))
         wif->do_node(block, wif->env);
 
       /*  do ir nodes in prefix or postfix order? */
@@ -490,18 +490,28 @@ void firm_walk(firm_walk_interface *wif)
       }
       /*  call block as postfix ir node */
       if ((wif->do_node) &&
-          (wif->flags & (FW_DUMP_BLOCK_AS_IRN | FW_DUMP_IRN_IN_PREFIX)))
+          ((wif->flags & (FW_DUMP_BLOCK_AS_IRN | FW_DUMP_IRN_IN_PREFIX))
+	   == FW_DUMP_BLOCK_AS_IRN))
         wif->do_node(block, wif->env);
 
       /* wall over all block's ir nodes nested end =============== */
 
-      if (wif->do_block_finalize) wif->do_block_finalize(current_ir_graph, wif->env);
+      if(wif->do_block_post)
+	wif->do_block_post(block, wif->env);
+
     } /*  for each block */
 
+    if (wif->do_block_finalize)
+      wif->do_block_finalize(current_ir_graph, wif->env);
+
     /* walk over all irg's block nested end ====================== */
+    if(wif->do_graph_post)
+      wif->do_graph_post(current_ir_graph, wif->env);
 
   } /*  for each ir graph irg */
-  if (wif->do_graph_finalize) wif->do_graph_finalize(wif->env);
+
+  if(wif->do_graph_finalize)
+    wif->do_graph_finalize(wif->env);
 
   /** ### ToDo: Dump const_code_irg ?? No! Dump const code with entities, types etc. */
 

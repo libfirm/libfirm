@@ -146,8 +146,9 @@ typedef struct
    *
    *  The firm walker dump a graph with its blocks and nodes nested.
    *  Fist do_graph_init will be called (if defined). For each graph
-   *  do_graph will be call in a loop. After dumped all graphs,
-   *  do_graph_finalize will be called.
+   *  do_graph will be call in a loop.
+   *  After all blocks in a graph are dumped, do_graph_post() is called.
+   *  After dumped all graphs, do_graph_finalize will be called.
    *
    *  Within do_graph each block will be dumped. First do_block_init,
    *  for each block do_block and after all dumped blocks
@@ -159,6 +160,7 @@ typedef struct
    *  walking flag, a prefix order is also possible. */
   firm_walk_init_func *do_graph_init;
   firm_walk_graph_func *do_graph;
+  firm_walk_graph_func *do_graph_post;
   firm_walk_finalize_func *do_graph_finalize;
 
   /* @{ */
@@ -167,6 +169,7 @@ typedef struct
    *  @see do_graph */
   firm_walk_block_init_func *do_block_init;
   firm_walk_block_func *do_block;
+  firm_walk_block_func *do_block_post;
   firm_walk_block_finalize_func *do_block_finalize;
   /* @} */
 
