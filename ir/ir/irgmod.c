@@ -52,12 +52,18 @@ exchange (ir_node *old, ir_node *nw)
   ir_node *block;
   ir_graph *irg = get_irn_irg (old);
 
+  assert(old != nw);
   assert (irg);
   assert(get_irn_op(old)->opar != oparity_dynamic);
 
   stat_turn_into_id(old);
 
   block = old->in[0];
+  if (!block) {
+    if (is_Block(nw)) block = nw;
+    else (block = nw->in[0]);
+    if (!block) { DDMN(old); DDMN(nw); assert(0 && "cannot find legal block for id"); }
+  }
 
   old->op = op_Id;
   old->in = NEW_ARR_D (ir_node *, irg->obst, 2);

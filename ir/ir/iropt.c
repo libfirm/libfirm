@@ -497,7 +497,10 @@ static ir_node *equivalent_node_Block(ir_node *n)
   if ((get_Block_n_cfgpreds(n) == 1) &&
       (get_irn_op(get_Block_cfgpred(n, 0)) == op_Jmp) &&
       (get_opt_control_flow_straightening())) {
-    n = get_nodes_Block(get_Block_cfgpred(n, 0));                     DBG_OPT_STG;
+    n = get_nodes_Block(get_Block_cfgpred(n, 0));
+    if (n == oldn)
+      /* Jmp jumps into the block it is in -- deal self cycle. */
+      n = new_Bad();                                                   DBG_OPT_STG;
 
   } else if ((get_Block_n_cfgpreds(n) == 2) &&
 	     (get_opt_control_flow_weak_simplification())) {

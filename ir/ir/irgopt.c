@@ -246,9 +246,9 @@ copy_preds (ir_node *n, void *env) {
     irn_arity = get_irn_arity(n);
     for (i = 0; i < irn_arity; i++)
       if (get_irn_opcode(get_irn_n(n, i)) != iro_Bad) {
-    set_irn_n (nn, j, get_new_node(get_irn_n(n, i)));
-    /*if (is_backedge(n, i)) set_backedge(nn, j);*/
-    j++;
+	set_irn_n (nn, j, get_new_node(get_irn_n(n, i)));
+	/*if (is_backedge(n, i)) set_backedge(nn, j);*/
+	j++;
       }
     /* repair the block visited flag from above misuse. Repair it in both
        graphs so that the old one can still be used. */
@@ -259,9 +259,17 @@ copy_preds (ir_node *n, void *env) {
        We don't call optimize_in_place as it requires
        that the fields in ir_graph are set properly. */
     if ((get_opt_control_flow_straightening()) &&
-    (get_Block_n_cfgpreds(nn) == 1) &&
-    (get_irn_op(get_Block_cfgpred(nn, 0)) == op_Jmp))
-      exchange(nn, get_nodes_Block(get_Block_cfgpred(nn, 0)));
+	(get_Block_n_cfgpreds(nn) == 1) &&
+	(get_irn_op(get_Block_cfgpred(nn, 0)) == op_Jmp)) {
+      ir_node *old = get_nodes_Block(get_Block_cfgpred(nn, 0));
+      if (nn == old) {
+	/* Jmp jumps into the block it is in -- deal self cycle. */
+	assert(is_Bad(get_new_node(get_irg_bad(current_ir_graph))));
+	exchange(nn, get_new_node(get_irg_bad(current_ir_graph)));
+      } else {
+	exchange(nn, old);
+      }
+    }
   } else if (get_irn_opcode(n) == iro_Phi) {
     /* Don't copy node if corresponding predecessor in block is Bad.
        The Block itself should not be Bad. */
@@ -374,7 +382,7 @@ copy_graph_env (void) {
 
   /* fix the fields in current_ir_graph */
   old_end = get_irg_end(current_ir_graph);
-  set_irg_end (current_ir_graph, get_new_node(old_end));
+  set_irg_end        (current_ir_graph, get_new_node(old_end));
   set_irg_end_except (current_ir_graph, get_irg_end(current_ir_graph));
   set_irg_end_reg    (current_ir_graph, get_irg_end(current_ir_graph));
   free_End(old_end);
@@ -403,13 +411,6 @@ copy_graph_env (void) {
     copy_preds(get_irg_bad(current_ir_graph), NULL);
   }
   set_irg_bad(current_ir_graph, get_new_node(get_irg_bad(current_ir_graph)));
-  /* GL removed: we need unknown with mode for analyses.
-  if (get_irn_link(get_irg_unknown(current_ir_graph)) == NULL) {
-    copy_node(get_irg_unknown(current_ir_graph), NULL);
-    copy_preds(get_irg_unknown(current_ir_graph), NULL);
-  }
-  set_irg_unknown(current_ir_graph, get_new_node(get_irg_unknown(current_ir_graph)));
-  */
 }
 
 /**
@@ -420,7 +421,6 @@ copy_graph_env (void) {
  * Adds all new nodes to a new hash table for cse.  Does not
  * perform cse, so the hash table might contain common subexpressions.
  */
-/* Amroq call this emigrate() */
 void
 dead_node_elimination(ir_graph *irg) {
   ir_graph *rem;
