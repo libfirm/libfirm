@@ -6,7 +6,7 @@
 * Modified by: Boris Boesler
 * Created:     Y.X.2004
 * CVS-ID:      $Id$
-* Copyright:   (c) 1999-2004 Universität Karlsruhe
+* Copyright:   (c) 1999-2004 Universitaet Karlsruhe
 * Licence:     This file is protected by GPL -  GNU GENERAL PUBLIC LICENSE.
 -->
 
@@ -50,15 +50,15 @@
 <!-- a single effect -->
 <!ELEMENT  	effect (arg*, (load|store|alloc|call|join|unknown)*, raise?, ret)>
 <!ATTLIST  	effect
-			procname	CDATA		#REQUIRED;
+			procname	CDATA		#REQUIRED
 			%firm.owner;>
 
 <!-- procedure argument -->
 <!ELEMENT	arg			EMPTY>
 <!ATTLIST 	arg
 			%firm.id;
-			number		CDATA		#REQUIRED;
-		        %firm.type>
+			number		CDATA		#REQUIRED
+		    %firm.type;>
 
 <!-- reference another value -->
 <!ELEMENT	valref		EMPTY>
@@ -76,7 +76,7 @@
 			%firm.id;>
 
 <!-- store effect -->
-<!ELEMENT	store		(select,valref)>
+<!ELEMENT	store		((valref|select),valref)>
 
 <!-- alloc effect -->
 <!ELEMENT	alloc		EMPTY>
@@ -105,6 +105,9 @@
 <!--
 
  $Log$
+ Revision 1.9  2004/10/29 18:38:36  liekweg
+ ** Allow store ::= ((valref|select),valref)
+
  Revision 1.8  2004/10/25 13:51:32  boesler
  minor changes like owner
 
