@@ -98,7 +98,7 @@ init_op(void)
 {
   op_Block = new_ir_op (iro_Block, "Block",  pinned, 1, sizeof (block_attr));
 
-  op_Start = new_ir_op (iro_Start, "Start",  pinned, 0, 0);
+  op_Start = new_ir_op (iro_Start, "Start",  pinned, 0, sizeof (start_attr));
   op_End   = new_ir_op (iro_End,   "End",    pinned, 0, 0);
   op_Jmp   = new_ir_op (iro_Jmp,   "Jmp",    pinned, 0, 0);
   op_Cond  = new_ir_op (iro_Cond,  "Cond",   pinned, 1, sizeof(cond_attr));

@@ -185,6 +185,7 @@ ir_graph *new_const_code_irg() {
   res->bad = new_ir_node (NULL, res, res->start_block, op_Bad, mode_T, 0, NULL);
   res->unknown = new_ir_node (NULL, res, res->start_block, op_Unknown, mode_T, 0, NULL);
   res->start   = new_Start ();
+
   /* Proj results of start node */
   projX        = new_Proj (res->start, mode_X, pns_initial_exec);
   set_store (new_Proj (res->start, mode_M, pns_global_store));

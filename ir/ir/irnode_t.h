@@ -51,6 +51,11 @@ typedef struct {
 			         @todo Ev. replace by bitfield! */
 } block_attr;
 
+/** Start attributes */
+typedef struct {
+  ir_graph *irg;
+} start_attr;
+
 /** Cond attributes */
 typedef struct {
   cond_kind kind;    /**< flavor of Cond */
@@ -128,6 +133,7 @@ typedef struct {
 /** Some irnodes just have one attribute, these are stored here,
    some have more. Their name is 'irnodename_attr' */
 typedef union {
+  start_attr     start; /**< For Start */
   block_attr     block; /**< For Block: Fields needed to construct it */
   cond_attr      c;     /**< For Cond. */
   struct tarval *con;   /**< For Const: contains the value of the constant */

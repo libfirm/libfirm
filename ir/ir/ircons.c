@@ -75,6 +75,7 @@ new_rd_Start (dbg_info* db, ir_graph *irg, ir_node *block)
   ir_node *res;
 
   res = new_ir_node (db, irg, block, op_Start, mode_T, 0, NULL);
+  res->attr.start.irg = irg;
 
   irn_vrfy_irg (res, irg);
   return res;
@@ -984,6 +985,7 @@ new_d_Start (dbg_info* db)
 
   res = new_ir_node (db, current_ir_graph, current_ir_graph->current_block,
 		     op_Start, mode_T, 0, NULL);
+  res->attr.start.irg = current_ir_graph;
 
   res = optimize_node (res);
   irn_vrfy_irg (res, current_ir_graph);

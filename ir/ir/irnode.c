@@ -638,6 +638,20 @@ void remove_Block_cg_cfgpred_arr(ir_node * node) {
   node->attr.block.in_cg = NULL;
 }
 
+/* Start references the irg it is in. */
+INLINE ir_graph *
+get_Start_irg(ir_node *node) {
+  assert(node->op == op_Start);
+  return node->attr.start.irg;
+}
+
+INLINE void
+set_Start_irg(ir_node *node, ir_graph *irg) {
+  assert(node->op == op_Start);
+  assert(is_ir_graph(irg));
+  node->attr.start.irg = irg;
+}
+
 INLINE int
 get_End_n_keepalives(ir_node *end) {
   assert (end->op == op_End);
@@ -2142,6 +2156,8 @@ get_irn_irg(ir_node *node) {
   } else if (get_irn_op(node) == op_EndReg ||
 	     get_irn_op(node) == op_EndExcept) {
     return node->attr.end.irg;
+  } else if (get_irn_op(node) == op_Start) {
+    return node->attr.start.irg;
   } else {
     assert(0 && "no irg attr");
     return NULL;

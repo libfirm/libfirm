@@ -262,7 +262,42 @@ dump_node_vcgattr (ir_node *n)
 
 static INLINE void
 dump_node_info (ir_node *n) {
-  fprintf (F, " info1: \"visited: %ld\n\"", get_irn_visited(n));
+  int i;
+  fprintf (F, " info1: \"");
+  fprintf (F, "visited: %ld \n", get_irn_visited(n));
+
+  /* Source types */
+  switch(get_irn_opcode(n)) {
+  case iro_Start: {
+    type *tp = get_entity_type(get_irg_ent(get_Start_irg(n)));
+    fprintf(F, "start of method of type %s \n", get_type_name(tp));
+    for (i = 0; i < get_method_n_params(tp); ++i)
+      fprintf(F, "  param %d type: %s \n", i, get_type_name(get_method_param_type(tp, i)));
+  } break;
+  case iro_Alloc: {
+    fprintf(F, "allocating entity of type %s \n", get_type_name(get_Alloc_type(n)));
+  } break;
+  case iro_Free: {
+    fprintf(F, "freeing entity of type %s \n", get_type_name(get_Free_type(n)));
+  } break;
+  case iro_Sel: {
+    fprintf(F, "Selecting entity of type %s \n", get_type_name(get_entity_type(get_Sel_entity(n))));
+    fprintf(F, "  from entity of type %s \n", get_type_name(get_entity_owner(get_Sel_entity(n))));
+  } break;
+  case iro_Call: {
+    type *tp = get_Call_type(n);
+    fprintf(F, "calling method of type %s \n", get_type_name(tp));
+    for (i = 0; i < get_method_n_params(tp); ++i)
+      fprintf(F, "  param %d type: %s \n", i, get_type_name(get_method_param_type(tp, i)));
+    for (i = 0; i < get_method_n_ress(tp); ++i)
+      fprintf(F, "  resul %d type: %s \n", i, get_type_name(get_method_res_type(tp, i)));
+  } break;
+  default: ;
+  }
+
+
+  fprintf (F, "\"");
+
 }
 
 static bool pred_in_wrong_graph(ir_node *n, int pos, pmap *irgmap) {

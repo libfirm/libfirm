@@ -114,7 +114,7 @@ INLINE void          set_irn_in            (ir_node *node, int arity,
 INLINE ir_node      *get_irn_n             (ir_node *node, int n);
 INLINE void          set_irn_n             (ir_node *node, int n, ir_node *in);
 /** Sets the mode struct of node */
-INLINE void set_irn_mode (ir_node *node, ir_mode *mode);
+INLINE void          set_irn_mode (ir_node *node, ir_mode *mode);
 /** Gets the mode struct. */
 INLINE ir_mode      *get_irn_mode          (const ir_node *node);
 /** Gets the mode-enum modecode. */
@@ -144,11 +144,11 @@ INLINE void         *get_irn_link          (const ir_node *node);
 
 /** Outputs a unique number for this node if libfirm is compiled for
    debugging, (configure with --enable-debug) else returns 0. */
-INLINE long get_irn_node_nr(const ir_node *node);
+INLINE long          get_irn_node_nr(const ir_node *node);
 
 /** Returns the ir_graph this node belongs to. Only valid for
- * CallBegin, EndReg and EndExcept */
-INLINE ir_graph *get_irn_irg(ir_node *node);
+ * CallBegin, EndReg, EndExcept and Start */
+INLINE ir_graph     *get_irn_irg(ir_node *node);
 
 /**
  * irnode constructor.
@@ -207,15 +207,19 @@ INLINE int       Block_not_block_visited(ir_node *node);
  * predecessors are removed, the node has the same predecessors in
  * both views.
  * @@@ Maybe better:  arity is zero if no cg preds. */
-void set_Block_cg_cfgpred_arr(ir_node * node, int arity, ir_node ** in);
-void set_Block_cg_cfgpred(ir_node * node, int pos, ir_node * pred);
+void      set_Block_cg_cfgpred_arr(ir_node * node, int arity, ir_node ** in);
+void      set_Block_cg_cfgpred(ir_node * node, int pos, ir_node * pred);
 /* @@@ not supported */
-ir_node ** get_Block_cg_cfgpred_arr(ir_node * node);
+ir_node **get_Block_cg_cfgpred_arr(ir_node * node);
 /* Returns the number of interproc predecessors.  0 if none. */
-int get_Block_cg_n_cfgpreds(ir_node * node);
-ir_node * get_Block_cg_cfgpred(ir_node * node, int pos);
+int       get_Block_cg_n_cfgpreds(ir_node * node);
+ir_node  *get_Block_cg_cfgpred(ir_node * node, int pos);
 /* frees the memory. */
-void remove_Block_cg_cfgpred_arr(ir_node * node);
+void      remove_Block_cg_cfgpred_arr(ir_node * node);
+
+/* Start references the irg it is in. */
+ir_graph *get_Start_irg(ir_node *node);
+void      set_Start_irg(ir_node *node, ir_graph *irg);
 
 INLINE int  get_End_n_keepalives(ir_node *end);
 INLINE ir_node *get_End_keepalive(ir_node *end, int pos);
