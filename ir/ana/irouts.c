@@ -32,6 +32,7 @@
 #include "irgraph_t.h"     /* To access irg->outs field (which is private to this module)
 			      without public access routine */
 #include "irprog.h"
+#include "irgwalk.h"
 
 /**********************************************************************/
 /** Accessing the out datastructures                                 **/
@@ -178,6 +179,7 @@ void irg_out_block_walk(ir_node *node,
 /** Then the large array is allocated.  The second iteration chops   **/
 /** the large array into smaller parts, sets the out edges and       **/
 /** recounts the out edges.                                          **/
+/** Removes Tuple nodes!                                             **/
 /**********************************************************************/
 
 
@@ -281,77 +283,150 @@ void compute_outs(ir_graph *irg) {
   current_ir_graph = rem;
 }
 
-/*
-  This computes the outedges for in interprocedural graph.
-*/
-
-void compute_ip_outs(ir_graph *irg) {
-  int i;
-  ir_graph *rem = current_ir_graph;
-  int rem_view = interprocedural_view;
-
-  interprocedural_view = true;
-
-  inc_max_irg_visited();
-  /* Fix all irg_visited flags */
-  for (i = 0; i < get_irp_n_irgs(); i++)
-    set_irg_visited(get_irp_irg(i), get_max_irg_visited());
-
-  /* Walk starting at unreachable procedures. Only these
-   * have End blocks visible in interprocedural view. */
-  for (i = 0; i < get_irp_n_irgs(); i++) {
-    ir_node *sb;
-    current_ir_graph = get_irp_irg(i);
-
-    sb = get_irg_start_block(current_ir_graph);
-
-    if ((get_Block_n_cfgpreds(sb) > 1) ||
-	(get_nodes_block(get_Block_cfgpred(sb, 0)) != sb)) continue;
-
-    compute_outs(current_ir_graph); /*cg_walk_2(get_irg_end(current_ir_graph), pre, post, env);*/
-  }
-
-  /* Check whether we walked all procedures: there could be procedures
-     with cyclic calls but no call from the outside. */
-  for (i = 0; i < get_irp_n_irgs(); i++) {
-    ir_node *sb;
-    current_ir_graph = get_irp_irg(i);
-
-    /* Test start block: if inner procedure end and end block are not
-     * visible and therefore not marked. */
-    sb = get_irg_start_block(current_ir_graph);
-    if (get_irn_visited(sb) < get_irg_visited(current_ir_graph)) {
-      compute_outs(current_ir_graph); /*cg_walk_2(sb, pre, post, env);    */
-    }
-  }
 
 
-  /* Walk all endless loops in inner procedures.
-   * We recognize an inner procedure if the End node is not visited. */
 
-  /* AS: Don't know if we need this... Goetz? */
+/****************************************************************
+ **  This computes the outedges for in interprocedural graph.  **
+ **  There is one quirk:                                       **
+ **  The number of the outedges for each node is saved in      **
+ **  the first member of the ir_node** array. Maybe we should  **
+ **  change this to make it more portable...                   **
+ ****************************************************************/
 
-#if 0
-  for (i = 0; i < get_irp_n_irgs(); i++) {
-    ir_node *e;
-    current_ir_graph = get_irp_irg(i);
-    e = get_irg_end(current_ir_graph);
-    if (get_irn_visited(e) < get_irg_visited(current_ir_graph)) {
-      /* Don't visit the End node. */
-      /* int j;
-         for (j = 0; j < get_End_n_keepalives(e); j++)
-	   cg_walk_2(get_End_keepalive(e, j), pre, post, env);*/
-      printf("Found one inner procedure\n");
-      compute_outs(current_ir_graph);
-    }
-  }
-#endif
 
-  interprocedural_view = rem_view;
-  current_ir_graph = rem;
+/* ------------------------------------------
+   Inits the number of outedges for each node
+   before counting.
+   ------------------------------------------ */
+
+static void init_count(ir_node * node, void * env)
+{
+  node->out = (ir_node **) 1; /* 1 for the array size */
 }
 
 
+/* -----------------------------------------------
+   Adjusts the out edge count for its predecessors
+   and adds the current arity to the overall count,
+   which is saved in "env"
+   ------------------------------------------------ */
+
+static void node_arity_count(ir_node * node, void * env)
+{
+  int *anz = (int *) env, arity, i, start;
+  ir_node *succ;
+
+  arity = 1 + get_irn_arity(node)
+            + ((is_Block(node)) ? 0 : 1);
+  *anz += arity;
+
+  start = (is_Block(node)) ? 0 : -1;
+  for(i = start; i < get_irn_arity(node); i++)
+    {
+      succ = get_irn_n(node, i);
+      succ->out = (ir_node **)((int)succ->out + 1);
+    }
+}
+
+
+/* ----------------------------------------
+   Inits all nodes for setting the outedges
+   Returns the overall count of edges
+   ---------------------------------------- */
+
+int count_ip_outs(void) {
+
+  int res = 0;
+
+  cg_walk(init_count, node_arity_count, &res);
+
+  return(res);
+}
+
+int dummy_count = 0, global_count; /* Only for debugging */
+
+/* ---------------------------------------------
+   For each node: Sets the pointer to array
+   in which the outedges are written later.
+   The current array start is transported in env
+   --------------------------------------------- */
+
+static void set_array_pointer(ir_node *node, void *env) {
+
+  int n_outs;
+  ir_node ***free = (ir_node ***) env;
+
+  /* Allocate my array */
+  n_outs = (int) node -> out;  /* We wrote the count here in count_ip_outs */
+  dummy_count += n_outs;
+  assert(dummy_count <= global_count && "More outedges than initialliy counted!");
+  node -> out = *free;
+  *free = &((*free)[n_outs]);
+  /* We count the successors again, the space will be sufficient.
+     We use this counter to remember the position for the next back
+     edge. */
+  node -> out[0] = (ir_node *) 0;
+}
+
+
+/* -------------------------------------------
+   Adds an outedge from the predecessor to the
+   current node.
+   ------------------------------------------- */
+
+static void set_out_pointer(ir_node * node, void * env) {
+
+  ir_node *succ;
+  int start = (!is_Block(node)) ? -1 : 0;
+
+  for(int i = start; i < get_irn_arity(node); i++)
+    {
+      succ = get_irn_n(node, i);
+      succ->out[get_irn_n_outs(succ)+1] = node;
+      succ->out[0] = (ir_node *) (get_irn_n_outs(succ) + 1);
+    }
+}
+
+
+/* -------------------------------
+   Sets the outedges for all nodes.
+   -------------------------------- */
+
+void set_ip_outs(void)
+{
+  ir_node **outedge_array = get_irp_ip_outedges();
+  cg_walk(set_array_pointer, set_out_pointer, (void *) &outedge_array);
+}
+
+
+
+/* --------------------------------------------------------
+   Counts the outedges, allocates memory to save the
+   outedges and fills this outedge array in interprocedural
+   view!
+   -------------------------------------------------------- */
+
+void ascompute_ip_outs(void) {
+
+  int n_out_edges;
+  ir_node **out_edges;
+
+  global_count = n_out_edges = count_ip_outs();
+  out_edges = (ir_node **) malloc (n_out_edges * sizeof(ir_node *));
+  set_irp_ip_outedges(out_edges);
+  set_ip_outs();
+}
+
+void free_ip_outs(void)
+{
+  ir_node **out_edges = get_irp_ip_outedges();
+  if(out_edges != NULL)
+    {
+      free(out_edges);
+      set_irp_ip_outedges(NULL);
+    }
+}
 
 
 void free_outs(ir_graph *irg) {
