@@ -16,7 +16,7 @@ SOURCES = Makefile.in dbginfo.c dbginfo.h debinfo.c debinfo.h
 include $(topdir)/MakeRules
 
 CPPFLAGS += -I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/ir -I$(top_srcdir)/ir/tv \
-		-I$(top_srcdir)/ir/tr -I$(top_srcdir)/ir/common
+		-I$(top_srcdir)/ir/tr -I$(top_srcdir)/ir/common -I$(top_srcdir)/ir/st
 
 include $(top_srcdir)/MakeTargets
 
