@@ -28,7 +28,7 @@ void fc_get_nan(void);
 void fc_get_inf(void);
 
 void fc_calc(const void *a, const void *b, int opcode);
-char *fc_print_dec(const void *a);
+char *fc_print_dec(const void *a, char *buf, int buflen);
 int fc_comp(const void *a, const void *b);
 
 #endif /* _FLTCALC_H_ */

@@ -147,10 +147,8 @@ int fc_comp(const void *a, const void *b)
   else return (CAST_IN(a) > CAST_IN(b))?(1):(-1);
 }
 
-char *fc_print_dec(const void *a)
+char *fc_print_dec(const void *a, char *buf, int buflen)
 {
-  static char buf[100];
-
-  snprintf(buf, 100, "%1.30Lg", CAST_IN(a));
+  snprintf(buf, buflen, "%1.30Lg", CAST_IN(a));
   return buf;
 }

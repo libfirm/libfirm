@@ -864,6 +864,7 @@ int tarval_print(XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
   tarval *tv;
   char *str;
   int offset;
+  char buf[100];
 
   tv = XP_GETARG(tarval *, 0);
   switch (get_mode_sort(tv->mode))
@@ -875,7 +876,7 @@ int tarval_print(XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
       return XPF1R("0x%s", str + offset);
 
     case float_number:
-      return XPF1R("%s", fc_print_dec(tv->value));
+      return XPF1R("%s", fc_print_dec(tv->value, buf, sizeof(buf)));
 
     case reference:
       if (tv->value != NULL)
