@@ -86,22 +86,31 @@ entity *get_inherited_methods_implementation(entity *inh_meth) {
     assert(0 && "Complex constant values not supported -- address of method should be straight constant!");
   }
   if (impl_meth && (get_entity_peculiarity(impl_meth) != peculiarity_existent)) {
-    printf("this_meth: "); DDMEO(inh_meth);
-    printf("impl meth: "); DDMEO(impl_meth);
-    assert(!impl_meth || get_entity_peculiarity(impl_meth) == peculiarity_existent);
+    /*
+      printf("this_meth: "); DDMEO(inh_meth);
+      printf("impl meth: "); DDMEO(impl_meth);
+      assert(!impl_meth || get_entity_peculiarity(impl_meth) == peculiarity_existent);
+    */
+    impl_meth = NULL;
   }
   return impl_meth? impl_meth : inh_meth;
 }
 
 
-/* Collect the entity representing the implementation of this
-   entity (not the same if inherited) and all entities for overwriting
-   implementations in "set".
-   If the implementation of the method is not included in the
-   compilation unit "open" is set to true.
-   A recursive descend in the overwritten relation.
-   Cycle-free, therefore must terminate. */
-void collect_impls(entity *method, eset *set, int *size, bool *open) {
+/** Collect the entity representing the implementation of this
+ *  entity (not the same if inherited) and all entities for overwriting
+ *  implementations in "set".
+ *  If the implementation of the method is not included in the
+ *  compilation unit "open" is set to true.
+ *  A recursive descend in the overwritten relation.
+ *  Cycle-free, therefore must terminate.
+ *
+ * @param method
+ * @param set      A set of entities.
+ * @param size     Number of entities in set.
+ * @param open
+ */
+static void collect_impls(entity *method, eset *set, int *size, bool *open) {
   int i;
   if (get_entity_peculiarity(method) == peculiarity_existent) {
     if (get_entity_visibility(method) == visibility_external_allocated) {
@@ -135,24 +144,26 @@ void collect_impls(entity *method, eset *set, int *size, bool *open) {
 }
 
 
-/* Alle Methoden bestimmen, die die übergebene Methode überschreiben
- * (und implementieren). In der zurückgegebenen Reihung kommt jede
- * Methode nur einmal vor. Der Wert 'NULL' steht für unbekannte
- * (externe) Methoden. Die zurückgegebene Reihung muß vom Aufrufer
- * wieder freigegeben werden (siehe "DEL_ARR_F"). Gibt es überhaupt
- * keine Methoden, die die "method" überschreiben, so gibt die Methode
- * "NULL" zurück. */
+/** Alle Methoden bestimmen, die die übergebene Methode überschreiben
+ *  (und implementieren). In der zurückgegebenen Reihung kommt jede
+ *  Methode nur einmal vor. Der Wert 'NULL' steht für unbekannte
+ *  (externe) Methoden. Die zurückgegebene Reihung muß vom Aufrufer
+ *  wieder freigegeben werden (siehe "DEL_ARR_F"). Gibt es überhaupt
+ *  keine Methoden, die "method" überschreiben, so gibt die Methode
+ *  "NULL" zurück.
+ *
+ *  @param method
+ */
 static entity ** get_impl_methods(entity * method) {
   eset * set = eset_create();
   int size = 0;
   entity ** arr;
   bool open = false;
 
-  /** Collect all method entities that can be called here **/
+  /* Collect all method entities that can be called here */
   collect_impls(method, set, &size, &open);
 
-/**
-     Vorgaenger einfuegen. **/
+  /* Vorgaenger einfuegen. */
   if (size == 0 && !open) {
     /* keine implementierte überschriebene Methode */
     arr = NULL;
@@ -279,6 +290,7 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
            * Sel-Operation durch eine Const- bzw. SymConst-Operation
            * ersetzen. */
           set_irg_current_block(current_ir_graph, get_nodes_Block(node));
+          /* assert(get_entity_peculiarity(tarval_to_entity(get_Const_tarval(get_atomic_ent_value(arr[0])))) == peculiarity_existent); */
           new_node = copy_const_value(get_atomic_ent_value(arr[0]));         DBG_OPT_POLY;
           exchange (node, new_node);
         }
@@ -509,7 +521,7 @@ static void callee_walker(ir_node * call, void * env) {
       /* exchange(call, new_Bad());  invalid firm */
 
       ir_node *mem = get_Call_mem(call);
-      turn_into_tuple (call, pn_Call_max);
+      turn_into_tuple (call, 5 /* pn_Call_max */);
       set_Tuple_pred(call, pn_Call_M_regular       , mem);
       set_Tuple_pred(call, pn_Call_T_result        , new_Bad());
       set_Tuple_pred(call, pn_Call_P_value_res_base, new_Bad());
@@ -673,7 +685,7 @@ static void free_ana_walker(ir_node * node, eset * set) {
     for (i = get_irn_arity(node) - 1; i >= 0; --i) {
       ir_node * pred = get_irn_n(node, i);
       if (mode_is_reference(get_irn_mode(pred))) {
-	free_mark(pred, set);
+    free_mark(pred, set);
       }
     }
     break;
