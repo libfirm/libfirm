@@ -191,9 +191,10 @@ AC_FUNC_OBSTACK
 
 #AC_CHECK_HEADERS(obstack.h, ac_obstack_headers="yes", ac_obstack_headers="no")
 #if test "$ac_obstack_headers" != yes; then
-#  dnl obstack header not found.
-#  AC_MSG_ERROR("obstack header file not found")
-#fi
+if test "x$HAVE_OBSTACK" = x; then
+  dnl obstack header not found.
+  AC_MSG_ERROR("no obstack support")
+fi
 
 
 dnl check for jni header files
