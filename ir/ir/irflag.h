@@ -74,7 +74,7 @@ int  get_opt_unreachable_code(void);
  *
  * Performs Straightening, if simplifications and loop simplifications.
  * Sets all separate control flow flags (control_flow_straightening,
- * weak_simplification and strong_simplification).
+ * weak_simplification, strong_simplification and critical_edges).
  */
 void set_opt_control_flow(int value);
 
@@ -92,6 +92,11 @@ int  get_opt_control_flow_weak_simplification(void);
 void set_opt_control_flow_strong_simplification(int value);
 /** Returns strong if and loop simplification setting */
 int  get_opt_control_flow_strong_simplification(void);
+
+/** Enables/Disables removal of critical control flow edges. */
+void set_opt_critical_edges(int value);
+/** Returns whether critical edges are removed */
+int  get_opt_critical_edges(void);
 
 /** Enables/Disables reassociation.
  *

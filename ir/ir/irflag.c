@@ -28,6 +28,7 @@ int opt_unreachable_code = 1;       /* Bad node propagation */
 int opt_control_flow_straightening = 1;           /*  */
 int opt_control_flow_weak_simplification = 1;           /*  */
 int opt_control_flow_strong_simplification = 1;           /*  */
+int opt_critical_edges = 1;
 int opt_dead_node_elimination = 1;  /* Reclaim memory */
 int opt_reassociation = 1;          /* Reassociate nodes */
 int opt_inline = 1;                 /* Do inlining transformation */
@@ -83,6 +84,7 @@ INLINE void set_opt_control_flow(int value) {
   set_opt_control_flow_straightening(value);
   set_opt_control_flow_weak_simplification(value);
   set_opt_control_flow_strong_simplification(value);
+  set_opt_critical_edges(value);
 }
 
 /* Performs Straightening */
@@ -105,6 +107,13 @@ void set_opt_control_flow_strong_simplification(int value) {
 }
 int  get_opt_control_flow_strong_simplification(void) {
   return opt_control_flow_strong_simplification;
+}
+
+void set_opt_critical_edges(int value) {
+  opt_critical_edges = value;
+}
+int  get_opt_critical_edges(void) {
+  return opt_critical_edges;
 }
 
 

@@ -1454,8 +1454,17 @@ void optimize_cf(ir_graph *irg) {
 }
 
 
-/* Called by walker of remove_critical_cf_edges. */
-void walk_critical_cf_edges(ir_node *n, void *env) {
+/**
+ * Called by walker of remove_critical_cf_edges.
+ *
+ * Place an empty block to an edge between a blocks of multiple
+ * predecessors and a block of multiple sucessors.
+ *
+ * @param n IR node
+ * @param env Envirnment of walker. This field is unused and has
+ *            the value NULL.
+ */
+static void walk_critical_cf_edges(ir_node *n, void *env) {
   int arity, i;
   ir_node *pre, *block, **in, *jmp;
 
@@ -1468,29 +1477,25 @@ void walk_critical_cf_edges(ir_node *n, void *env) {
       pre = get_irn_n(n, i);
       /* Predecessor has multiple sucessors. Insert new flow edge */
       if ((NULL != pre) && (op_Proj == get_irn_op(pre))) {
-	/* set predeseccor arry for new block */
+
+	/* set predeseccor array for new block */
 	in = NEW_ARR_D (ir_node *, current_ir_graph->obst, 1);
 	/* set predecessor of new block */
 	in[0] = pre;
 	block = new_Block(1, in);
-	/* insert new jmp to new block */
+	/* insert new jmp node to new block */
 	switch_block(block);
 	jmp = new_Jmp();
 	switch_block(n);
 	/* set sucessor of new block */
 	set_irn_n(n, i, jmp);
+
       } /* predecessor has multiple sucessors */
     } /* for all predecessors */
   } /* n is a block */
 }
 
-/** Placed an empty basic block on critical control flow edges thereby
-   removing them.
-   A critical control flow edge is an edge from a block with several
-   control exits to a block with several control entries (See Muchnic
-   p. 407).
-   @param irg IR Graph
-*/
 void remove_critical_cf_edges(ir_graph *irg) {
-  irg_walk_graph(irg, NULL, walk_critical_cf_edges, NULL);
+  if (get_opt_critical_edges())
+    irg_walk_graph(irg, NULL, walk_critical_cf_edges, NULL);
 }

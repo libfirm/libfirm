@@ -114,12 +114,15 @@ void place_code(ir_graph *irg);
  */
 void optimize_cf(ir_graph *irg);
 
+
 /** Places an empty basic block on critical control flow edges thereby
    removing them.
-
    A critical control flow edge is an edge from a block with several
    control exits to a block with several control entries (See Muchnic
-   p. 407).  */
+   p. 407).
+   Is only executed if flag set_opt_critical_edges() is set.
+   @param irg IR Graph
+*/
 void remove_critical_cf_edges(ir_graph *irg);
 
 # endif /* _IRGOPT_H_ */
