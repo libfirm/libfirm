@@ -172,7 +172,7 @@ computed_value (ir_node *n)
     break;
   case iro_Not:
     if ((ta != tarval_bad)) {
-      res = tarval_neg (ta);
+      res = tarval_not (ta);
     }
     break;
   case iro_Shl:
@@ -1026,6 +1026,20 @@ gigo (ir_node *node)
   int i;
   ir_op* op = get_irn_op(node);
 
+#if 1
+  /* remove garbage blocks by looking at control flow that leaves the block
+     and replacing the control flow by Bad. */
+  if (get_irn_mode(node) == mode_X) {
+    ir_node *block = get_nodes_block(node);
+    if (get_irn_op(block) == op_Block && get_Block_matured(block)) {
+      for (i = 0; i < get_irn_arity(block); i++) {
+	if (!is_Bad(get_irn_n(block, i))) break;
+      }
+      if (i == get_irn_arity(block)) return new_Bad();
+    }
+  }
+#endif
+
   /* Blocks, Phis and Tuples may have dead inputs, e.g., if one of the
      blocks predecessors is dead. */
   if ( op != op_Block && op != op_Phi && op != op_Tuple) {
@@ -1036,13 +1050,15 @@ gigo (ir_node *node)
     }
   }
 #if 0
+  /* With this code we violate the agreement that local_optimize
+     only leaves Bads in Block, Phi and Tuple nodes. */
   /* If Block has only Bads as predecessors it's garbage. */
   /* If Phi has only Bads as predecessors it's garbage. */
-  if (op == op_Block || op == op_Phi)  {
+  if ((op == op_Block && get_Block_matured(node)) || op == op_Phi)  {
     for (i = 0; i < get_irn_arity(node); i++) {
       if (!is_Bad(get_irn_n(node, i))) break;
     }
-    if (i = get_irn_arity(node)) node = new_Bad();
+    if (i == get_irn_arity(node)) node = new_Bad();
   }
 #endif
   return node;
