@@ -1210,7 +1210,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 ac_output_file="Makefile MakeRules ir/Makefile ir/adt/Makefile ir/debug/Makefile \
 		ir/tv/Makefile ir/common/Makefile ir/ident/Makefile ir/ir/Makefile \
 		ir/ana/Makefile ir/tr/Makefile ir/st/Makefile ir/stat/Makefile \
-		ir/opt/Makefile \
+		ir/opt/Makefile  ir/external/Makefile \
 		testprograms/Makefile firmjni/Makefile firmjni/testprograms/Makefile \
 		libfirm.doxygen"
 

@@ -22,14 +22,14 @@ subdir := .
 # do we want statistics
 enable_statistics := @enable_statistics@
 
-subdirs := ir/adt ir/debug ir/tv ir/common ir/ident ir/ir ir/opt ir/tr ir/ana ir/stat # ir/st
+subdirs := ir/adt ir/debug ir/tv ir/common ir/ident ir/ir ir/opt ir/tr ir/ana ir/stat ir/external # ir/st
 
 SOURCES := Makefile.in MakeRules.in MakeTargets\
 	   aclocal.m4 config.h.in\
 	   config.guess config.sub configure.in \
 	   stamp-h.in install-sh README configure
 
-SHARED_LIB = # libfirm.so
+SHARED_LIB = libfirm.so
 
 INSTALL_LIBS = libfirm.a $(SHARED_LIB)
 
