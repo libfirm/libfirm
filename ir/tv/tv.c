@@ -939,6 +939,45 @@ int tarval_print(XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
   return 0;
 }
 
+int tarval_xprintf(printf_func print_func, void * out , tarval *tv)
+{
+  const char *str;
+  char buf[100];
+
+  switch (get_mode_sort(tv->mode))
+  {
+    case int_number:
+    case character:
+      str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_HEX);
+
+      return print_func(out,"0x%s", str);
+
+    case float_number:
+      return print_func(out,"%s", fc_print_dec(tv->value, buf, sizeof(buf)));
+
+    case reference:
+      if (tv->value != NULL)
+        if (tarval_is_entity(tv))
+          if (get_entity_peculiarity((entity *)tv->value) == existent)
+            return print_func(out,"&(%s)", id_to_str(get_entity_ld_ident((entity *)tv->value)));
+          else
+            return print_func(out,"NULL",0);
+        else
+          return print_func(out,(char*)tv->value, tv->length);
+      else
+        return print_func(out,"void",0);
+
+    case internal_boolean:
+      if (tv == tarval_b_true) return print_func(out,"true",0);
+      else return print_func(out,"false",0);
+
+    case auxiliary:
+      return print_func(out,"<BAD>",0);
+  }
+
+  return 0;
+}
+
 char *tarval_bitpattern(tarval *tv)
 {
   return NULL;

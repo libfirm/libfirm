@@ -544,4 +544,7 @@ void init_tarval_1(void);
  */
 void init_tarval_2(void);
 
+typedef int printf_func (void* , const char *, ...) ;
+int tarval_xprintf(printf_func , void * , tarval *);
+
 #endif  /* _TV_H_ */
