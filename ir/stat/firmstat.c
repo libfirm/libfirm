@@ -39,6 +39,7 @@
 typedef pset pset_node_entry_t;
 typedef pset pset_graph_entry_t;
 typedef pset pset_opt_entry_t;
+typedef pset pset_block_entry_t;
 
 /*
  * An entry for ir_nodes
@@ -55,6 +56,7 @@ typedef struct _node_entry_t {
  */
 typedef struct _graph_entry_t {
   HASH_MAP(node_entry_t)  *opcode_hash;			/**< hash map containing the opcode counter */
+  HASH_MAP(block_entry_t) *block_hash;			/**< hash map countaining the block counter */
   counter_t               cnt_walked;			/**< walker walked over the graph */
   counter_t               cnt_walked_blocks;		/**< walker walked over the graph blocks */
   counter_t               cnt_was_inlined;		/**< number of times other graph were inlined */
@@ -73,6 +75,17 @@ typedef struct _opt_entry_t {
   counter_t   count;			/**< optimization counter */
   const ir_op *op;			/**< the op for this entry */
 } opt_entry_t;
+
+/**
+ * An entry for a block in a ir-graph
+ */
+typedef struct _block_entry_t {
+  counter_t  cnt_nodes;			/**< the counter of nodes in this block */
+  counter_t  cnt_edges;			/**< the counter of edges in this block */
+  counter_t  cnt_in_edges;		/**< the counter of edges incoming from other blocks to this block */
+  counter_t  cnt_out_edges;		/**< the counter of edges outgoing from this block to other blocks */
+  long       block_nr;			/**< block nr */
+} block_entry_t;
 
 /** forward */
 typedef struct _dumper_t dumper_t;
@@ -153,12 +166,12 @@ static ir_op _op_Phi0, _op_PhiM;
 #define STAT_LEAVE		--status->recursive
 #define STAT_ENTER_SINGLE	do { if (status->recursive > 0) return; ++status->recursive; } while (0)
 
-/*
+/**
  * global status
  */
 static stat_info_t _status, *status = &_status;
 
-/*
+/**
  * compare two elements of the opcode hash
  */
 static int opcode_cmp(const void *elt, const void *key)
@@ -169,7 +182,7 @@ static int opcode_cmp(const void *elt, const void *key)
   return e1->op->code - e2->op->code;
 }
 
-/*
+/**
  * compare two elements of the graph hash
  */
 static int graph_cmp(const void *elt, const void *key)
@@ -180,7 +193,7 @@ static int graph_cmp(const void *elt, const void *key)
   return e1->irg != e2->irg;
 }
 
-/*
+/**
  * compare two elements of the optimization hash
  */
 static int opt_cmp(const void *elt, const void *key)
@@ -189,6 +202,17 @@ static int opt_cmp(const void *elt, const void *key)
   const opt_entry_t *e2 = key;
 
   return e1->op->code != e2->op->code;
+}
+
+/**
+ * compare two elements of the block hash
+ */
+static int block_cmp(const void *elt, const void *key)
+{
+  const block_entry_t *e1 = elt;
+  const block_entry_t *e2 = key;
+
+  return e1->block_nr != e2->block_nr;
 }
 
 /**
@@ -251,6 +275,7 @@ static graph_entry_t *graph_get_entry(ir_graph *irg, pset *set)
 
   /* new hash table for opcodes here  */
   elem->opcode_hash  = new_pset(opcode_cmp, 5);
+  elem->block_hash   = new_pset(block_cmp, 5);
   elem->irg          = irg;
 
   for (i = 0; i < sizeof(elem->opt_hash)/sizeof(elem->opt_hash[0]); ++i)
@@ -284,6 +309,34 @@ static opt_entry_t *opt_get_entry(const ir_op *op, pset *set)
 }
 
 /**
+ * Returns the associates block_entry_t for an block
+ */
+static block_entry_t *block_get_entry(long block_nr, pset *set)
+{
+  block_entry_t key;
+  block_entry_t *elem;
+
+  key.block_nr = block_nr;
+
+  elem = pset_find(set, &key, block_nr);
+  if (elem)
+    return elem;
+
+  elem = obstack_alloc(&status->cnts, sizeof(*elem));
+
+  /* clear new counter */
+  cnt_clr(&elem->cnt_nodes);
+  cnt_clr(&elem->cnt_edges);
+  cnt_clr(&elem->cnt_in_edges);
+  cnt_clr(&elem->cnt_out_edges);
+
+  elem->block_nr = block_nr;
+
+  return pset_insert(set, elem, block_nr);
+}
+
+
+/**
  * Returns the ir_op for an IR-node,
  * handles special cases and return pseudo op codes
  */
@@ -302,43 +355,92 @@ static ir_op *stat_get_irn_op(const ir_node *node)
   return op;
 }
 
-
 /**
- * environment for the count walker
+ * update the block counter
  */
-typedef struct _cnt_env_t {
-  pset      *set;        /**< the hash map containing the ir_ops */
-  counter_t *cnt_edges;  /**< the edges counter */
-} cnt_env_t;
+static void count_block_info(ir_node *node, graph_entry_t *graph)
+{
+  ir_op *op = get_irn_op(node);
+  ir_node *block;
+  block_entry_t *b_entry;
+  int i, arity;
+
+  /* check for block */
+  if (op == op_Block) {
+    arity = get_irn_arity(node);
+    b_entry = block_get_entry(get_irn_node_nr(node), graph->block_hash);
+
+    /* count all incoming edges */
+    for (i = 0; i < arity; ++i) {
+      ir_node *pred = get_irn_n(node, i);
+      ir_node *other_block = get_nodes_Block(pred);
+      block_entry_t *b_entry_other = block_get_entry(get_irn_node_nr(other_block), graph->block_hash);
+
+      cnt_inc(&b_entry->cnt_in_edges);	/* an edge coming from another block */
+      cnt_inc(&b_entry_other->cnt_out_edges);
+    }
+    return;
+  }
+  else if (op == op_Call) {
+    // return;
+  }
+
+  block   = get_nodes_Block(node);
+  b_entry = block_get_entry(get_irn_node_nr(block), graph->block_hash);
+
+  /* we have a new nodes */
+  cnt_inc(&b_entry->cnt_nodes);
+
+  arity = get_irn_arity(node);
+
+  for (i = 0; i < arity; ++i) {
+    ir_node *pred = get_irn_n(node, i);
+    ir_node *other_block;
+
+    if (get_irn_op(pred) == op_Block)
+      continue;
+
+    other_block = get_nodes_Block(pred);
+
+    if (other_block == block)
+      cnt_inc(&b_entry->cnt_edges);	/* a in block edge */
+    else {
+      block_entry_t *b_entry_other = block_get_entry(get_irn_node_nr(other_block), graph->block_hash);
+
+      cnt_inc(&b_entry->cnt_in_edges);	/* an edge coming from another block */
+      cnt_inc(&b_entry_other->cnt_out_edges);
+    }
+  }
+}
 
 /**
  * walker for reachable nodes count
  */
 static void count_nodes(ir_node *node, void *env)
 {
-  cnt_env_t *cenv = env;
+  graph_entry_t *graph = env;
   node_entry_t *entry;
+
   ir_op *op = stat_get_irn_op(node);
   int arity = get_irn_arity(node);
 
-  entry = opcode_get_entry(op, cenv->set);
+  entry = opcode_get_entry(op, graph->opcode_hash);
 
   cnt_inc(&entry->cnt_alive);
-  cnt_add_i(cenv->cnt_edges, arity);
+  cnt_add_i(&graph->cnt_edges, arity);
+
+  /* count block edges */
+  count_block_info(node, graph);
 }
 
 /**
- * count all alive nodes in a graph
+ * count all alive nodes and edges in a graph
  */
-static void count_nodes_in_graph(graph_entry_t * global, graph_entry_t * graph)
+static void count_nodes_in_graph(graph_entry_t *global, graph_entry_t *graph)
 {
-  cnt_env_t env;
   node_entry_t *entry;
 
-  env.set       = graph->opcode_hash;
-  env.cnt_edges = &graph->cnt_edges;
-
-  irg_walk_graph(graph->irg, count_nodes, NULL, &env);
+  irg_walk_graph(graph->irg, count_nodes, NULL, graph);
 
   /* assume we walk every graph only ONCE, we could sum here the global count */
   for (entry = pset_first(graph->opcode_hash); entry; entry = pset_next(graph->opcode_hash)) {
@@ -454,6 +556,7 @@ static void simple_dump_edges(dumper_t *dmp, counter_t *cnt)
 static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 {
   int dump_opts = 1;
+  block_entry_t *b_entry;
 
   if (entry->irg) {
     ir_graph *const_irg = get_const_code_irg();
@@ -490,6 +593,21 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
     for (i = 0; i < sizeof(entry->opt_hash)/sizeof(entry->opt_hash[0]); ++i) {
       simple_dump_opt_hash(dmp, entry->opt_hash[i], i);
     }
+  }
+
+  /* dump block info */
+  fprintf(dmp->f, "\n%12s %12s %12s %12s %12s %12s\n", "Block Nr", "Nodes", "intern", "incoming", "outgoing", "quot");
+  for (b_entry = pset_first(entry->block_hash);
+       b_entry;
+       b_entry = pset_next(entry->block_hash)) {
+    fprintf(dmp->f, "%12ld %12u %12u %12u %12u %4.8f\n",
+	b_entry->block_nr,
+	b_entry->cnt_nodes.cnt[0],
+	b_entry->cnt_edges.cnt[0],
+	b_entry->cnt_in_edges.cnt[0],
+	b_entry->cnt_out_edges.cnt[0],
+	(double)b_entry->cnt_edges.cnt[0] / (double)b_entry->cnt_nodes.cnt[0]
+    );
   }
 }
 
@@ -586,7 +704,7 @@ static void csv_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 
     fprintf(dmp->f, "%-40s, %p, %d, %d, %d, %d\n",
         name,
-        entry->irg,
+        (void *)entry->irg,
         cnt[0].cnt[0],
         cnt[1].cnt[0],
         cnt[2].cnt[0],
@@ -658,7 +776,7 @@ void stat_init(void)
   stat_register_dumper(&csv_dumper, "firmstat.csv");
 
   /* initialize the pattern hash */
-  stat_init_pattern_history(status->enable);
+  stat_init_pattern_history(status->enable & 0);
 #undef X
 }
 
