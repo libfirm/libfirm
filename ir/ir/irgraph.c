@@ -76,7 +76,7 @@ new_ir_graph (entity *ent, int n_loc)
   res->kind=k_ir_graph;
 
   /* inform statistics here, as blocks will be already build on this graph */
-  stat_new_graph(res);
+  stat_new_graph(res, ent);
 
   current_ir_graph = res;
   add_irp_irg(res);          /* remember this graph global. */
@@ -174,6 +174,9 @@ ir_graph *new_const_code_irg(void) {
   res = (ir_graph *) malloc (sizeof(*res));
   memset(res, 0, sizeof(*res));
 
+  /* inform statistics here, as blocks will be already build on this graph */
+  stat_new_graph(res, NULL);
+
   current_ir_graph = res;
   res->n_loc = 1;      /* Only the memory. */
   res->visited = 0;     /* visited flag, for the ir walker */
@@ -228,6 +231,7 @@ void  del_identities (pset *value_table);
    Does not free types, entities or modes that are used only by this
    graph, nor the entity standing for this graph. */
 void free_ir_graph (ir_graph *irg) {
+  stat_free_graph(irg);
   if (irg->ent) set_entity_irg(irg->ent, NULL);  /* not set in const code irg */
   free_End(irg->end);
   if (irg->frame_type)  free_type(irg->frame_type);
