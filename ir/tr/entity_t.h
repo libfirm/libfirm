@@ -43,6 +43,7 @@
 # include "entity.h"
 # include "typegmod.h"
 # include "mangle.h"
+# include "pseudo_irg.h"
 
 
 /** A path in a compund graph. */
@@ -284,6 +285,8 @@ static INLINE ir_graph *
 __get_entity_irg(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   assert(ent == unknown_entity || is_method_type(ent->type));
+  if (!get_visit_pseudo_irgs() && ent->irg && is_pseudo_ir_graph(ent->irg))
+    return NULL;
   return ent->irg;
 }
 

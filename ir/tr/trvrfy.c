@@ -174,6 +174,8 @@ static int check_entity(entity *ent) {
     return error_const_on_wrong_irg;
   }
 
+  int rem_vpi = get_visit_pseudo_irgs();
+  set_visit_pseudo_irgs(1);
   if ((get_entity_peculiarity(ent) == peculiarity_existent) &&
       (get_entity_visibility(ent) != visibility_external_allocated) &&
       (is_method_type(get_entity_type(ent)))                &&
@@ -181,6 +183,7 @@ static int check_entity(entity *ent) {
     assert(0 && "Method ents with pec_exist must have an irg");
     return error_existent_entity_without_irg;
   }
+  set_visit_pseudo_irgs(rem_vpi);
 
   if (get_entity_peculiarity(ent) == peculiarity_inherited) {
     entity *impl = get_SymConst_entity(get_atomic_ent_value(ent));
