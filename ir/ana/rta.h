@@ -28,13 +28,16 @@ int rta_is_alive_class(type *clazz);
 /** Returns non-zero if the given graph is alive. */
 int rta_is_alive_graph(ir_graph *graph);
 
-/** report for all graphs and types wheater they are alive */
+/** report for all graphs and types whether they are alive */
 void rta_report (void);
 
 #endif /* not defined _RTA_H_ */
 
 /*
  * $Log$
+ * Revision 1.12  2004/10/20 14:59:27  liekweg
+ * Removed ecg
+ *
  * Revision 1.11  2004/10/18 12:47:46  liekweg
  * minor fix
  *

@@ -183,27 +183,27 @@ static void rta_act (ir_node *node, void *env)
       ent = get_Sel_entity (ptr);
       *change |= add_implementing_graphs (ent);
 
-    /* CALL SYMCONST */
+      /* CALL SYMCONST */
     } else if (iro_SymConst == get_irn_opcode (ptr)) {
       if (get_SymConst_kind(ptr) == symconst_addr_ent) {
-    ent = get_SymConst_entity (ptr);
-    ir_graph *graph = get_entity_irg (ent);
-    if (graph) {
-      *change |= add_graph (graph);
-    } else {
-      /* it's an external allocated thing. */
-    }
+        ent = get_SymConst_entity (ptr);
+        ir_graph *graph = get_entity_irg (ent);
+        if (graph) {
+          *change |= add_graph (graph);
+        } else {
+          /* it's an external allocated thing. */
+        }
       } else if (get_SymConst_kind(ptr) == symconst_addr_name) {
-    /* If this SymConst refers to a method the method is external_visible
-       and therefore must be considered live anyways. */
-    if (get_SymConst_name(ptr) != new_id_from_str("iro_Catch"))
-      assert (ent && "couldn't determine entity of call to symConst");
+        /* If this SymConst refers to a method the method is external_visible
+           and therefore must be considered live anyways. */
+        if (get_SymConst_name(ptr) != new_id_from_str("iro_Catch"))
+          assert (ent && "couldn't determine entity of call to symConst");
       } else {
-    /* other symconst. */
-    assert(0 && "This SymConst can not be an address for a method call.");
+        /* other symconst. */
+        assert(0 && "This SymConst can not be an address for a method call.");
       }
 
-    /* STRANGE */
+      /* STRANGE */
     } else {
       DDMN(ptr);
       assert(0 && "Unexpected address expression: can not analyse, therefore can not do correct rta!");
@@ -533,6 +533,9 @@ void rta_report (void)
 
 /*
  * $Log$
+ * Revision 1.26  2004/10/20 14:59:27  liekweg
+ * Removed ecg
+ *
  * Revision 1.25  2004/10/18 12:47:08  liekweg
  * avoid warning
  *
