@@ -380,7 +380,7 @@ get_irn_node_nr(const ir_node *node) {
 #ifdef DEBUG_libfirm
   return node->node_nr;
 #else
-  return (long)&node;
+  return (long)node;
 #endif
 }
 
@@ -452,6 +452,28 @@ get_irn_block_attr (ir_node *node)
 {
   assert (node->op == op_Block);
   return node->attr.block;
+}
+
+load_attr
+get_irn_load_attr (ir_node *node)
+{
+  assert (node->op == op_Load);
+  return node->attr.load;
+}
+
+store_attr
+get_irn_store_attr (ir_node *node)
+{
+  assert (node->op == op_Store);
+  return node->attr.store;
+}
+
+except_attr
+get_irn_except_attr (ir_node *node)
+{
+  assert (node->op == op_Div || node->op == op_Quot ||
+          node->op == op_DivMod || node->op == op_Mod);
+  return node->attr.except;
 }
 
 /** manipulate fields of individual nodes **/
@@ -1547,6 +1569,30 @@ set_Load_ptr (ir_node *node, ir_node *ptr) {
   set_irn_n(node, 1, ptr);
 }
 
+ent_volatility
+get_Load_volatility (ir_node *node) {
+  assert (node->op == op_Load);
+  return node->attr.load.volatility;
+}
+
+void
+set_Load_volatility (ir_node *node, ent_volatility volatility) {
+  assert (node->op == op_Load);
+  node->attr.load.volatility = volatility;
+}
+
+ir_mode *
+get_Load_mode (ir_node *node) {
+  assert (node->op == op_Load);
+  return node->attr.load.load_mode;
+}
+
+void
+set_Load_mode (ir_node *node, ir_mode *mode) {
+  assert (node->op == op_Load);
+  node->attr.load.load_mode = mode;
+}
+
 
 ir_node *
 get_Store_mem (ir_node *node) {
@@ -1583,6 +1629,19 @@ set_Store_value (ir_node *node, ir_node *value) {
   assert (node->op == op_Store);
   set_irn_n(node, 2, value);
 }
+
+ent_volatility
+get_Store_volatility (ir_node *node) {
+  assert (node->op == op_Store);
+  return node->attr.store.volatility;
+}
+
+void
+set_Store_volatility (ir_node *node, ent_volatility volatility) {
+  assert (node->op == op_Store);
+  node->attr.store.volatility = volatility;
+}
+
 
 ir_node *
 get_Alloc_mem (ir_node *node) {
