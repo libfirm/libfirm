@@ -228,8 +228,7 @@ tarval *new_tarval_from_entity (entity *ent, ir_mode *mode);
  * Returns the associated entity of a tarval.  Asserts if tarval does not
  * contain an entity.
  */
-#define get_tarval_entity tarval_to_entity
-entity *tarval_to_entity(tarval *tv);
+entity *get_tarval_entity(tarval *tv);
 
 /**
  * Returns non-zero if a the given tarval represents an entity.
@@ -584,21 +583,7 @@ typedef enum _tarval_classification_t {
  */
 tarval_classification_t tarval_classify(tarval *tv);
 
-/**
- * Initialization of the tarval module.
- *
- * Call before init_mode().
- */
-void init_tarval_1(void);
 
-/**
- * Initialization of the tarval module.
- *
- * Call after init_mode().
- */
-void init_tarval_2(void);
-
-void finish_tarval(void);
 
 /**
  * Output of tarvals to a buffer.

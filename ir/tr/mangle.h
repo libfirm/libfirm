@@ -23,7 +23,6 @@
 
 # include "ident.h"
 # include "entity.h"
-# include "type.h"
 
 /** initializes the name mangling code */
 void   init_mangle (void);
@@ -37,6 +36,6 @@ ident *mangle_entity (entity *ent);
 ident *mangle_u (ident *first, ident* scnd);
 
 /** mangle: Returns a new ident that represents firstscnd. */
-ident *mangle (ident *first, ident* scnd);
+ident *mangle   (ident *first, ident* scnd);
 
 #endif /* _MANGLE_H_ */

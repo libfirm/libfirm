@@ -22,16 +22,15 @@
  *  This module supplies routines that support changing the type graph.
  */
 
-/**
- *   replaces one type by the other.
+/** Replaces one type by the other.
  *
- *   Old type is replaced by new_type.  All references to old_type
- *   now point to new_type.  The memory for the old type is destroyed,
- *   but still used.  Therefore it is not freed.
- *   All referenced to this memory will be lost after a certain while.
- *   An exception is the list of types in irp (irprog.h).
- *   In the future there might be a routine to recover the memory, but
- *   this will be at considerable runtime cost.
+ *  Old type is replaced by new_type.  All references to old_type
+ *  now point to new_type.  The memory for the old type is destroyed,
+ *  but still used.  Therefore it is not freed.
+ *  All referenced to this memory will be lost after a certain while.
+ *  An exception is the list of types in irp (irprog.h).
+ *  In the future there might be a routine to recover the memory, but
+ *  this will be at considerable runtime cost.
  *
  *  @param old_type  - The old type that shall be replaced by the new type.
  *  @param new_type  - The new type that will replace old_type.
@@ -39,14 +38,13 @@
  */
 void exchange_types(type *old_type, type *new_type);
 
-/**
- *   Skip id types until a useful type is reached.
+/** Skip id types until a useful type is reached.
  *
- *   @param tp - A type of arbitrary kind.
+ *  @param tp - A type of arbitrary kind.
  *
- *   @return
- *   tp if it is not an id type.
- *   If tp is an id type returns the real type it stands for.
+ *  @return
+ *    tp if it is not an id type.
+ *    If tp is an id type returns the real type it stands for.
  */
 type *skip_tid(type *tp);
 

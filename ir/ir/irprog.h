@@ -79,12 +79,25 @@ ir_prog *get_irp(void);
 void init_irprog(void);
 
 /** Creates a new ir_prog, returns it and sets irp with it.
-   Automatically called by init_firm() through init_irprog.  */
+ *  Automatically called by init_firm() through init_irprog. */
 ir_prog *new_ir_prog (void);
 
 /** frees all memory used by irp.  Types in type list and irgs in irg
-    list must be freed by hand before. */
+ *  list must be freed by hand before. */
 void     free_ir_prog(void);
+
+/** Sets the file name / executable name or the like. Initially NULL. */
+void   set_irp_prog_name (ident *name);
+
+/** Gets the file name / executable name or the like. Returns NULL if
+ *  not yet set.
+ */
+ident *get_irp_prog_ident(void);
+
+/** Gets the file name / executable name or the like. Returns NULL if
+ *  not yet set.
+ */
+const char *get_irp_prog_name (void);
 
 /** Gets the main routine of the compiled program. */
 ir_graph *get_irp_main_irg(void);
@@ -108,11 +121,15 @@ ir_graph *get_irp_irg(int pos);
 /** Sets the ir graph at position pos. */
 void      set_irp_irg(int pos, ir_graph *irg);
 
+
+/** Returns the "global" type of the irp. */
+type *get_glob_type(void);
+
 /** Adds type to the list of types in irp. */
 void  add_irp_type(type *typ);
 
 /** Removes type from the list of types, deallocates it and
-   shrinks the list by one. */
+    shrinks the list by one. */
 void  remove_irp_type(type *typ);
 
 /** Returns the number of all types in the irp. */
@@ -124,29 +141,20 @@ type *get_irp_type(int pos);
 /** Overwrites the type at position pos with another type. */
 void  set_irp_type(int pos, type *typ);
 
-/** Returns the "global" type of the irp. */
-type *get_glob_type(void);
-
-/** File name / executable name or the like. Initially NULL! **/
-void   set_irp_prog_name (ident *name);
-ident *get_irp_prog_ident(void);
-const char  *get_irp_prog_name (void);
-
-/**
- *   Returns an irgraph that only contains constant
- *   expressions for constant entities.
- *   Do not use any access function for this graph, do not generate code
- *   for this graph.  This graph contains only one block.  The constant
- *   expressions may not contain control flow.  See also copy_const_code()
- *   in entity.h.
+/**  Return the graph for global constants.
+ *
+ *   Returns an irgraph that only contains constant expressions for
+ *   constant entities.  Do not use any access function for this
+ *   graph, do not generate code for this graph.  This graph contains
+ *   only one block.  The constant expressions may not contain control
+ *   flow.
+ *   Walking the graph starting from any node will not reach the block
+ *   or any controlflow.
+ *   See also copy_const_code() in entity.h.
  */
 ir_graph *get_const_code_irg(void);
 
 irg_outs_state get_irp_ip_outs_state(void);
 void           set_irp_ip_outs_inconsistent(void);
-
-/* @@@ Must this be global visible? */
-void           set_irp_ip_outedges(ir_node ** ip_outedges);
-ir_node**      get_irp_ip_outedges(void);
 
 #endif /* ifndef _IRPROG_H_ */

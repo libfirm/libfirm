@@ -18,8 +18,28 @@
 
 #include "tv.h"
 
+
 /**
- * This struct represents the aforementioned tarvals.
+ * Initialization of the tarval module.
+ *
+ * Call before init_mode().
+ */
+void init_tarval_1(void);
+
+/**
+ * Initialization of the tarval module.
+ *
+ * Call after init_mode().
+ */
+void init_tarval_2(void);
+
+/**
+ * Free all memory occupied by the tarval module.
+ */
+void finish_tarval(void);
+
+/**
+ * This struct represents the afore mentioned tarvals.
  *
  * A tarval struct consists of an internal representation of the
  * value and some additional fields further describing the value.

@@ -201,7 +201,7 @@ type       *get_entity_owner (entity *ent);
    ent to owner!! */
 void        set_entity_owner (entity *ent, type *owner);
 
-/** Asserts if the type owner is neither a compound type or an array */
+/** Asserts if the type owner is either a compound type or an array */
 void assert_legal_owner_of_ent(type *owner);
 
 /** Returns the type of an entity. */
@@ -262,9 +262,9 @@ typedef enum {
   variability_uninitialized,    /**< The content of the entity is completely unknown. */
   variability_initialized,      /**< After allocation the entity is initalized with the
                              value given somewhere in the entity. */
-  variability_part_constant,    /**< For entities of compound types.  Some members of the entity
-                             are constant.  The others are uninitialized.  Those members
-                             given a value for are constant. */
+  variability_part_constant,    /**< For entities of compound types.
+				     The members of the entity are mixed constant,
+				     initialized or uninitialized. */
   variability_constant          /**< The entity is constant. */
 } ent_variability;
 

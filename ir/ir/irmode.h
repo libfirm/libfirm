@@ -198,16 +198,16 @@ int is_mode(void *thing);
 /* ********** Access methods to read mode information *********** */
 
 /** Returns the classification of the mode */
-modecode get_mode_modecode(const ir_mode *mode);
+modecode    get_mode_modecode(const ir_mode *mode);
 
 /** Returns the ident* of the mode */
-ident *get_mode_ident(const ir_mode *mode);
+ident      *get_mode_ident(const ir_mode *mode);
 
 /** Returns the null-terminated name of this mode. */
 const char *get_mode_name(const ir_mode *mode);
 
 /** Returns a coarse classification of the mode. */
-mode_sort get_mode_sort(const ir_mode *mode);
+mode_sort   get_mode_sort(const ir_mode *mode);
 
 /** Returns the size of values of the mode in bits. */
 int get_mode_size_bits(const ir_mode *mode);
@@ -231,23 +231,27 @@ int get_mode_sign(const ir_mode *mode);
 /** Returns the arithmetic of a mode */
 int get_mode_arithmetic(const ir_mode *mode);
 
-/** Attribute modulo shift specifies for modes of kind irms_int_number
+/** Get the modulo shift attribute.
+ *
+ *  Attribute modulo shift specifies for modes of kind irms_int_number
  *  whether shift applies modulo to value of bits to shift.  Zero for
  *  modes that are not integer.
  */
 unsigned int get_mode_modulo_shift(const ir_mode *mode);
 
-/** Attribute vector_elem specifies the number of vector elements of
+/** Return the number of vector elements.
+ *
+ *  Attribute vector_elem specifies the number of vector elements of
  *  a vector mode. For non-vector modes it returns 1 for data and 0
  *  for all other modes
  */
 unsigned int get_mode_vector_elems(const ir_mode *mode);
 
 /** Returns the stored intermediate information. */
-void* get_mode_link(const ir_mode *mode);
+void *get_mode_link(const ir_mode *mode);
 
 /** Stores new intermediate information. */
-void set_mode_link(ir_mode *mode, void *l);
+void  set_mode_link(ir_mode *mode, void *l);
 
 /**
  * Returns the smallest representable value of a given mode.

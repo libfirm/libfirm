@@ -1357,7 +1357,7 @@ static void dump_enum_item(type *tp, int pos)
   PRINT_ITEMID(tp, pos); fprintf(F, "\"");
   fprintf (F, DEFAULT_ENUM_ITEM_ATTRIBUTE);
   fprintf (F, "label: ");
-  fprintf (F, "\"enum item %s\" " ENUM_ITEM_NODE_ATTR, id_to_str(id));
+  fprintf (F, "\"enum item %s\" " ENUM_ITEM_NODE_ATTR, get_id_str(id));
   fprintf (F, "\n info1: \"value: %s\"}\n", buf);
 }
 

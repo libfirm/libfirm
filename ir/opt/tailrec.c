@@ -282,7 +282,7 @@ void opt_tail_rec_irg(ir_graph *irg)
     if (! tarval_is_entity(tv))
       continue;
 
-    ent = tarval_to_entity(tv);
+    ent = get_tarval_entity(tv);
     if (!ent || get_entity_irg(ent) != irg)
       continue;
 

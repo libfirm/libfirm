@@ -425,7 +425,9 @@ int tarval_is_entity(tarval *tv)
       && (tv != tarval_P_void));
 }
 
-entity *tarval_to_entity(tarval *tv)
+#undef tarval_to_entity
+entity *tarval_to_entity(tarval *tv) { return get_tarval_entity(tv); }
+entity *get_tarval_entity(tarval *tv)
 {
   ANNOUNCE();
   assert(tv);

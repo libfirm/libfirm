@@ -83,7 +83,7 @@ typedef struct ir_graph ir_graph;
 extern ir_graph *current_ir_graph;
 
 ir_graph *get_current_ir_graph(void);
-void set_current_ir_graph(ir_graph *graph);
+void      set_current_ir_graph(ir_graph *graph);
 
 /** This flag indicate the current view. The behaviour of some methods
  * (get_irn_*, set_irn_*) is influenced by this flag. */
@@ -190,13 +190,7 @@ void     set_irg_current_block (ir_graph *irg, ir_node *node);
 ir_node *get_irg_bad (ir_graph *irg);
 void     set_irg_bad (ir_graph *irg, ir_node *node);
 
-/* Use new_Unknown() instead!! */
-/* GL removed: we need unknown with mode for analyses.
-ir_node *get_irg_unknown (ir_graph *irg);
-void     set_irg_unknown (ir_graph *irg, ir_node *node);
-*/
-
-/** Returns teh number of value numbers of a graph. */
+/** Returns the number of value numbers of a graph. */
 int      get_irg_n_locs (ir_graph *irg);
 
 /** Returns the graph number. */

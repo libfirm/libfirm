@@ -667,18 +667,29 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
   case iro_Const: {
       tarval *tv = get_Const_tarval(n);
       if (tarval_is_entity(tv))
-      ASSERT_AND_RET((get_irn_irg(n) == get_const_code_irg()) ||
-                     (get_entity_peculiarity(tarval_to_entity(tv)) != peculiarity_description),
-                     "descriptions have no address", 0);
-      ASSERT_AND_RET(
-             /* Const: BB --> data */
-             (mode_is_data (mymode) ||
-              mymode == mode_b)      /* we want boolean constants for static evaluation */
-             ,"Const node", 0        /* of Cmp. */
-             );
+	  ASSERT_AND_RET(
+	                 (get_irn_irg(n) == get_const_code_irg()) ||
+	                 (get_entity_peculiarity(get_tarval_entity(tv)) != peculiarity_description),
+	                 "descriptions have no address", 0);
+	  ASSERT_AND_RET(
+			 /* Const: BB --> data */
+			 (mode_is_data (mymode) ||
+			  mymode == mode_b)      /* we want boolean constants for static evaluation */
+			 ,"Const node", 0        /* of Cmp. */
+			 );
      } break;
 
     case iro_SymConst:
+      if (get_SymConst_kind(n) == symconst_addr_ent) {
+	entity *ent = get_SymConst_entity(n);
+	if (is_method_type(get_entity_type(ent)) &&
+	    get_irn_irg(n) != get_const_code_irg()) {
+#if 0
+	  ASSERT_AND_RET((get_entity_peculiarity(ent) != peculiarity_description),
+			 "A constant must address an existing method.", 0);
+#endif
+	}
+      }
       ASSERT_AND_RET(
                      /* SymConst: BB --> int*/
                      (mode_is_int(mymode) ||

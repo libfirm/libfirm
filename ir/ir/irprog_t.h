@@ -105,6 +105,9 @@ __get_const_code_irg(void)
   return irp->const_code_irg;
 }
 
+void           set_irp_ip_outedges(ir_node ** ip_outedges);
+ir_node**      get_irp_ip_outedges(void);
+
 #define get_irp_n_irgs()       __get_irp_n_irgs()
 #define get_irp_irg(pos)       __get_irp_irg(pos)
 #define get_irp_n_types()      __get_irp_n_types()

@@ -1117,9 +1117,11 @@ new_d_Block (dbg_info* db, int arity, ir_node **in)
   res = new_rd_Block(db, current_ir_graph, arity, in);
 
   /* Create and initialize array for Phi-node construction. */
-  res->attr.block.graph_arr = NEW_ARR_D(ir_node *, current_ir_graph->obst,
-                                        current_ir_graph->n_loc);
-  memset(res->attr.block.graph_arr, 0, sizeof(ir_node *)*current_ir_graph->n_loc);
+  if (get_irg_phase_state(current_ir_graph) == phase_building) {
+    res->attr.block.graph_arr = NEW_ARR_D(ir_node *, current_ir_graph->obst,
+					  current_ir_graph->n_loc);
+    memset(res->attr.block.graph_arr, 0, sizeof(ir_node *)*current_ir_graph->n_loc);
+  }
 
   for (i = arity-1; i >= 0; i--)
     if (get_irn_op(in[i]) == op_Unknown) {

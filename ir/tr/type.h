@@ -577,7 +577,7 @@ type *get_method_param_type(type *method, int pos);
     changing the type of the corresponding entity if the representation is constructed. */
 void  set_method_param_type(type *method, int pos, type* tp);
 /** Returns an entity that represents the copied value argument.  Only necessary
-   for compounds passed by value. This information is constructed only on demand. */
+   for compounds passed by value. This information is constrnewucted only on demand. */
 entity *get_method_value_param_ent(type *method, int pos);
 /**
  * Returns a type that represents the copied value arguments.

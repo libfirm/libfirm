@@ -245,8 +245,7 @@ typedef enum {
  * @remark This is the old name convention, don't use anymore.
  */
 typedef enum {
-  pns_initial_exec,     /**< Projection on an executable, the initial control
-               flow. */
+  pns_initial_exec,     /**< Projection on an executable, the initial control flow. */
   pns_global_store,     /**< Projection on the global store */
   pns_frame_base,       /**< Projection on the frame base */
   pns_globals,          /**< Projection on the pointer to the data segment
@@ -277,7 +276,7 @@ int   is_value_arg_pointer(ir_node *n);
 
 /* @@@ no more supported  */
 ir_node **get_Block_cfgpred_arr (ir_node *node);
-int              get_Block_n_cfgpreds (ir_node *node);
+int       get_Block_n_cfgpreds (ir_node *node);
 ir_node  *get_Block_cfgpred (ir_node *node, int pos);
 void      set_Block_cfgpred (ir_node *node, int pos, ir_node *pred);
 bool      get_Block_matured (ir_node *node);
@@ -426,8 +425,6 @@ type    *get_SymConst_type (ir_node *node);
 void     set_SymConst_type (ir_node *node, type *tp);
 
 /** Only to access SymConst of kind addr_name.  Else assertion: */
-#define get_SymConst_ptrinfo get_SymConst_name
-#define set_SymConst_ptrinfo set_SymConst_name
 ident   *get_SymConst_name (ir_node *node);
 void     set_SymConst_name (ir_node *node, ident *name);
 
@@ -751,10 +748,10 @@ long      get_Filter_proj(ir_node *node);
 void      set_Filter_proj(ir_node *node, long proj);
 /* set the interprocedural predecessors, ...d_arr uses current_ir_graph.
  * @@@ Maybe better:  arity is zero if no cg preds. */
-void             set_Filter_cg_pred_arr(ir_node * node, int arity, ir_node ** in);
-void             set_Filter_cg_pred(ir_node * node, int pos, ir_node * pred);
-int              get_Filter_n_cg_preds(ir_node *node);
-ir_node *        get_Filter_cg_pred(ir_node *node, int pos);
+void     set_Filter_cg_pred_arr(ir_node * node, int arity, ir_node ** in);
+void     set_Filter_cg_pred(ir_node * node, int pos, ir_node * pred);
+int      get_Filter_n_cg_preds(ir_node *node);
+ir_node *get_Filter_cg_pred(ir_node *node, int pos);
 
 /**
  * Projection numbers for Load: use for Proj nodes!
@@ -826,7 +823,6 @@ void      set_Sync_pred (ir_node *node, int pos, ir_node *pred);
 
 ir_node  *get_Proj_pred (ir_node *node);
 void      set_Proj_pred (ir_node *node, ir_node *pred);
-/* Why long? shouldn't int be enough, and smaller? Or even byte? */
 long      get_Proj_proj (ir_node *node);
 void      set_Proj_proj (ir_node *node, long proj);
 

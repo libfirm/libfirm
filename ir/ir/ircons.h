@@ -1310,9 +1310,8 @@ ir_node *new_rd_Const  (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param value   A type, entity or a ident depending on the SymConst kind.
  * @param tp      The source type of the constant.
  */
-ir_node *
-new_rd_SymConst_type (dbg_info* db, ir_graph *irg, ir_node *block, union symconst_symbol value,
-		      symconst_kind symkind, type *tp);
+ir_node *new_rd_SymConst_type (dbg_info* db, ir_graph *irg, ir_node *block, union symconst_symbol value,
+			       symconst_kind symkind, type *tp);
 
 /** Constructor for a SymConst node.
  *
@@ -1369,7 +1368,7 @@ ir_node *new_rd_SymConst_size (dbg_info *db, ir_graph *irg, type *symbol, type *
  * @param   *ent       The entity to select.
  */
 ir_node *new_rd_Sel    (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
-                       ir_node *objptr, int n_index, ir_node *index[], entity *ent);
+			ir_node *objptr, int n_index, ir_node *index[], entity *ent);
 
 /** Constructor for a InstOf node.
  *
@@ -1382,7 +1381,8 @@ ir_node *new_rd_Sel    (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *st
  * @param   *objptr
  * @param   *ent
  */
-ir_node *new_rd_InstOf (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store, ir_node *objptr, type *ent);
+ir_node *new_rd_InstOf (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
+			ir_node *objptr, type *ent);
 
 /** Constructor for a Call node.
  *
@@ -1415,8 +1415,8 @@ ir_node *new_rd_Call   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *st
  * @param *tp     Type information of the procedure called.
  */
 ir_node *new_rd_FuncCall (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_node *callee, int arity, ir_node *in[],
-               type *tp);
+			  ir_node *callee, int arity, ir_node *in[],
+			  type *tp);
 
 /** Constructor for a Add node.
  *
@@ -1428,7 +1428,7 @@ ir_node *new_rd_FuncCall (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param   *mode  The mode of the operands and the result.
  */
 ir_node *new_rd_Add    (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_node *op1, ir_node *op2, ir_mode *mode);
+			ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Sub node.
  *
@@ -1440,7 +1440,7 @@ ir_node *new_rd_Add    (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param   *mode  The mode of the operands and the result.
  */
 ir_node *new_rd_Sub    (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_node *op1, ir_node *op2, ir_mode *mode);
+			ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Minus node.
  *
@@ -1451,7 +1451,7 @@ ir_node *new_rd_Sub    (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param   *mode  The mode of the operand and the result.
  */
 ir_node *new_rd_Minus  (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_node *op,  ir_mode *mode);
+			ir_node *op,  ir_mode *mode);
 
 /** Constructor for a Mul node.
  *
@@ -2328,9 +2328,9 @@ ir_node *new_r_Load   (ir_graph *irg, ir_node *block,
  * @param *adr   A pointer to the variable to be read in this memory.
  * @param *val   The value to write to this variable.
  */
-
 ir_node *new_r_Store  (ir_graph *irg, ir_node *block,
-               ir_node *store, ir_node *adr, ir_node *val);
+		       ir_node *store, ir_node *adr, ir_node *val);
+
 /** Constructor for a Alloc node.
  *
  * The Alloc node extends the memory by space for an entity of type alloc_type.
@@ -2343,7 +2343,6 @@ ir_node *new_r_Store  (ir_graph *irg, ir_node *block,
  * @param where       Where to allocate the variable, either heap_alloc or stack_alloc.
  *
  */
-
 ir_node *new_r_Alloc  (ir_graph *irg, ir_node *block, ir_node *store,
                ir_node *size, type *alloc_type, where_alloc where);
 
@@ -2563,12 +2562,20 @@ ir_node *new_r_FuncCall (ir_graph *irg, ir_node *block,
 /*-----------------------------------------------------------------------*/
 
 /** Sets the current block in which the following constructors place the
-  nodes they construct. */
-void switch_block (ir_node *target);
+ *  nodes they construct.
+ *
+ *  @param target  The new current block.
+ */
+void     switch_block (ir_node *target);
+
+/** Returns the current block of the current graph. */
+ir_node *get_cur_block(void);
 
 /** Constructor for a Block node.
  *
- * Adds the block to the graph in current_ir_graph.
+ * Adds the block to the graph in current_ir_graph. Constructs a Block
+ * with a fixed number of predecessors.  Does set current_block.  Can
+ * be used with automatic Phi node construction.
  *
  * @param *db    A Pointer for  debugginfomation.
  * @param arity  The number of control predecessors.
@@ -2662,7 +2669,8 @@ ir_node *new_d_Raise  (dbg_info* db, ir_node *store, ir_node *obj);
  *
  * @param *db    A pointer for debug information.
  * @param *mode  The mode of the operands and redults.
- * @param *con   Points to an entry in the constant table. This pointer is added to the attributes of  the node (self->attr.con).
+ * @param *con   Points to an entry in the constant table. This pointer is
+                 added to the attributes of the node.
  * @param *tp    The type of the constante.
  *
  */
@@ -2679,7 +2687,8 @@ ir_node *new_d_Const_type (dbg_info* db, ir_mode *mode, tarval *con, type *tp);
  *
  * @param *db    A pointer for debug information.
  * @param *mode  The mode of the operands and redults.
- * @param *con   Points to an entry in the constant table. This pointer is added to the attributes of  the node (self->attr.con).
+ * @param *con   Points to an entry in the constant table. This pointer is added
+ *               to the attributes of the node.
  *
  */
 ir_node *new_d_Const  (dbg_info* db, ir_mode *mode, tarval *con);
@@ -2722,11 +2731,15 @@ ir_node *new_d_SymConst (dbg_info* db, union symconst_symbol value, symconst_kin
 
 /** Constructor for a simpleSel node.
  *
- * Adds the node to the block in current_ir_block.
+ *  This is a shortcut for the new_d_Sel() constructor.  To be used for
+ *  Sel nodes that do not select from an array, i.e., have no index
+ *  inputs.  It adds the two parameters 0, NULL.
  *
  * @param   *db        A pointer for debug information.
- * @param   *store     The memory in which the object the entity should be selected from is allocated.
- * @param   *objptr    The object from that the Sel operation selects a single attribute out.
+ * @param   *store     The memory in which the object the entity should be
+ *                     selected from is allocated.
+ * @param   *objptr    The object from that the Sel operation selects a
+ *                     single attribute out.
  * @param   *ent       The entity to select.
  *
  */
@@ -2739,6 +2752,7 @@ ir_node *new_d_simpleSel(dbg_info* db, ir_node *store, ir_node *objptr, entity *
  * Dynamically the node may select entities that overwrite the given
  * entity.  If the selected entity is an array element entity the Sel
  * node takes the required array indicees as inputs.
+ * Adds the node to the block in current_ir_block.
  *
  * @param   *db        A pointer for debug information.
  * @param   *store     The memory in which the object the entity should be selected
@@ -3056,7 +3070,7 @@ ir_node *new_d_Load   (dbg_info* db, ir_node *store, ir_node *addr);
  */
 ir_node *new_d_Store  (dbg_info* db, ir_node *store, ir_node *addr, ir_node *val);
 
-/**Constructor for a Alloc node.
+/** Constructor for a Alloc node.
  *
  * The Alloc node extends the memory by space for an entity of type alloc_type.
  * Adds the node to the block in current_ir_block.
@@ -3071,7 +3085,7 @@ ir_node *new_d_Store  (dbg_info* db, ir_node *store, ir_node *addr, ir_node *val
 ir_node *new_d_Alloc  (dbg_info* db, ir_node *store, ir_node *size, type *alloc_type,
                      where_alloc where);
 
-/**Constructor for a Free node.
+ /** Constructor for a Free node.
  *
  * Frees the memory occupied by the entity pointed to by the pointer
  * arg.  Type indicates the type of the entity the argument points to.
@@ -3087,7 +3101,7 @@ ir_node *new_d_Alloc  (dbg_info* db, ir_node *store, ir_node *size, type *alloc_
 ir_node *new_d_Free   (dbg_info* db, ir_node *store, ir_node *ptr, ir_node *size,
              type *free_type);
 
-/**Constructor for a  Sync node.
+/** Constructor for a Sync node.
  *
  * Merges several memory values.  The node assumes that a variable
  * either occurs only in one of the memories, or it contains the same
@@ -3103,7 +3117,7 @@ ir_node *new_d_Free   (dbg_info* db, ir_node *store, ir_node *ptr, ir_node *size
 ir_node *new_d_Sync   (dbg_info* db, int arity, ir_node *in[]);
 
 
-/**Constructor for a Proj node.
+/** Constructor for a Proj node.
  *
  * Projects a single value out of a tuple.  The parameter proj gives the
  * position of the value within the tuple.
@@ -3118,7 +3132,7 @@ ir_node *new_d_Sync   (dbg_info* db, int arity, ir_node *in[]);
 ir_node *new_d_Proj   (dbg_info* db, ir_node *arg, ir_mode *mode, long proj);
 
 
-/**Constructor for a defaultProj node.
+/** Constructor for a defaultProj node.
  *
  * Represents the default control flow of a Switch-Cond node.
  * Adds the node to the block in current_ir_block.
@@ -3130,7 +3144,7 @@ ir_node *new_d_Proj   (dbg_info* db, ir_node *arg, ir_mode *mode, long proj);
  */
 ir_node *new_d_defaultProj (dbg_info* db, ir_node *arg, long max_proj);
 
-/**Constructor for a Tuple node.
+/** Constructor for a Tuple node.
  *
  * This is an auxiliary node to replace a node that returns a tuple
  * without changing the corresponding Proj nodes.
@@ -3144,7 +3158,7 @@ ir_node *new_d_defaultProj (dbg_info* db, ir_node *arg, long max_proj);
 ir_node *new_d_Tuple  (dbg_info* db, int arity, ir_node *in[]);
 
 
-/**Constructor for a Id node.
+/** Constructor for a Id node.
  *
  * This is an auxiliary node to replace a node that returns a single
  * value. Adds the node to the block in current_ir_block.
@@ -3156,7 +3170,7 @@ ir_node *new_d_Tuple  (dbg_info* db, int arity, ir_node *in[]);
  */
 ir_node *new_d_Id     (dbg_info* db, ir_node *val, ir_mode *mode);
 
-/**Costructor for a Bad node.
+/** Costructor for a Bad node.
  *
  * Returns the unique Bad node of the graph.  The same as
  * get_irg_bad().
@@ -3181,7 +3195,7 @@ ir_node *new_d_Bad    (void);
 ir_node *new_d_Confirm (dbg_info* db, ir_node *val, ir_node *bound, pn_Cmp cmp);
 
 
-/** Constructor for a Unknown node.
+/** Constructor for an Unknown node.
  *
  * Represents an arbtrary valus.  Places the node in
  * the start block.
@@ -3204,7 +3218,7 @@ ir_node *new_d_Unknown(ir_mode *m);
  */
 ir_node *new_d_CallBegin(dbg_info *db, ir_node *callee);
 
-/** Constructor for a EndReg node.
+/** Constructor for an EndReg node.
  *
  *Adds the node to the block in current_ir_block.
  *
@@ -3213,7 +3227,7 @@ ir_node *new_d_CallBegin(dbg_info *db, ir_node *callee);
  */
 ir_node *new_d_EndReg (dbg_info *db);
 
-/**Constructor for a Endexcept node.
+/** Constructor for an Endexcept node.
  *
  * Used to represent regular procedure end in interprocedual view.
  * Adds the node to the block in current_ir_block.
@@ -3223,7 +3237,7 @@ ir_node *new_d_EndReg (dbg_info *db);
  */
 ir_node *new_d_EndExcept(dbg_info *db);
 
-/**Constructor for a Breake node.
+/** Constructor for a Break node.
  *
  * Used to represent exceptional procedure end in interprocedural view.
  * Adds the node to the block in current_ir_block.
@@ -3282,14 +3296,12 @@ ir_node *new_d_FuncCall (dbg_info* db, ir_node *callee, int arity, ir_node *in[]
 /* Needed from the interfase with debug support:
 void switch_block (ir_node *target);   */
 
-/* Constructs a Block with a fixed number of predecessors.
-   Does set current_block.  Can be used with automatic Phi
-  node construction. */
-
 /** Constructor for a Block node.
  *
  * Constructor for a Block node. Adds the block to the graph in
- * current_ir_graph .
+ * current_ir_graph.  Constructs a Block with a fixed number of
+ * predecessors.  Does set current_block.  Can be used with automatic
+ * Phi node construction.
  *
  * @param arity  The number of control predecessors.
  * @param in     An array of control predecessors.  The length of
@@ -3304,14 +3316,14 @@ ir_node *new_Block(int arity, ir_node *in[]);
  */
 ir_node *new_Start  (void);
 
-/** Constructor for a End node.
+/** Constructor for an End node.
  *
  * Adds the node to the block in current_ir_block.
  *
  */
 ir_node *new_End    (void);
 
-/** Constructor for a EndReg node.
+/** Constructor for an EndReg node.
  *
  * Used to represent regular procedure end in interprocedual view.
  * Adds the node to the block in current_ir_block.
@@ -3348,7 +3360,7 @@ ir_node *new_Jmp    (void);
  */
 ir_node *new_Break  (void);
 
-/**Constructor for a Cond node.
+/** Constructor for a Cond node.
  *
  * If c is mode_b represents a conditional branch (if/else). If c is
  * mode_Is/mode_Iu (?) represents a switch.  (Allocates dense Cond
@@ -3393,7 +3405,8 @@ ir_node *new_Raise  (ir_node *store, ir_node *obj);
  * Adds the node to the block in current_ir_block.
  *
  * @param *mode  The mode of the operands and redults.
- * @param *con   Points to an entry in the constant table. This pointer is added to the attributes of  the node (self->attr.con).
+ * @param *con   Points to an entry in the constant table. This pointer is
+ *               added to the attributes of  the node.
  *
  */
 ir_node *new_Const  (ir_mode *mode, tarval *con);
@@ -3428,6 +3441,10 @@ ir_node *new_SymConst (union symconst_symbol value, symconst_kind kind);
 
 /** Constructor for a simpelSel node.
  *
+ *  This is a shortcut for the new_Sel() constructor.  To be used for
+ *  Sel nodes that do not select from an array, i.e., have no index
+ *  inputs.  It adds the two parameters 0, NULL.
+ *
  * @param   *store     The memory in which the object the entity should be selected from is allocated.
  * @param   *objptr    The object from that the Sel operation selects a single attribute out.
  * @param   *ent       The entity to select.
@@ -3442,6 +3459,7 @@ ir_node *new_simpleSel(ir_node *store, ir_node *objptr, entity *ent);
  * Dynamically the node may select entities that overwrite the given
  * entity.  If the selected entity is an array element entity the Sel
  * node takes the required array indicees as inputs.
+ * Adds the node to the block in current_ir_block.
  *
  * @param   *store     The memory in which the object the entity should be selected
  *                     from is allocated.
@@ -3455,7 +3473,7 @@ ir_node *new_simpleSel(ir_node *store, ir_node *objptr, entity *ent);
 ir_node *new_Sel    (ir_node *store, ir_node *objptr, int arity, ir_node *in[],
                      entity *ent);
 
-/** Constructor for a InstOf node.
+/** Constructor for an InstOf node.
  *
  * Adds the node to the block in current_ir_block.
  * For translating Java.  Not supported as standard firm node.
@@ -3760,9 +3778,9 @@ ir_node *new_Alloc  (ir_node *store, ir_node *size, type *alloc_type,
  *
  */
 ir_node *new_Free   (ir_node *store, ir_node *ptr, ir_node *size,
-             type *free_type);
+		     type *free_type);
 
-/**Constructor for a  Sync node.
+/** Constructor for a  Sync node.
  *
  * Merges several memory values.  The node assumes that a variable
  * either occurs only in one of the memories, or it contains the same
@@ -3776,7 +3794,7 @@ ir_node *new_Free   (ir_node *store, ir_node *ptr, ir_node *size,
  */
 ir_node *new_Sync   (int arity, ir_node *in[]);
 
-/**Constructor for a Proj node.
+/** Constructor for a Proj node.
  *
  * Projects a single value out of a tuple.  The parameter proj gives the
  * position of the value within the tuple.
@@ -3789,7 +3807,7 @@ ir_node *new_Sync   (int arity, ir_node *in[]);
  */
 ir_node *new_Proj   (ir_node *arg, ir_mode *mode, long proj);
 
-/**Costructor for a Filter node.
+/** Costructor for a Filter node.
  *
  * Constructor for a Filter node. Adds the node to the block in current_ir_block.
  * Filter is a node with two views used to construct the interprocedural view.
@@ -3807,7 +3825,7 @@ ir_node *new_Proj   (ir_node *arg, ir_mode *mode, long proj);
  */
 ir_node *new_Filter (ir_node *arg, ir_mode *mode, long proj);
 
-/**Constructor for a defaultProj node.
+/** Constructor for a defaultProj node.
  *
  * Represents the default control flow of a Switch-Cond node.
  * Adds the node to the block in current_ir_block.
@@ -3818,7 +3836,7 @@ ir_node *new_Filter (ir_node *arg, ir_mode *mode, long proj);
  */
 ir_node *new_defaultProj (ir_node *arg, long max_proj);
 
-/**Constructor for a Tuple node.
+/** Constructor for a Tuple node.
  *
  * This is an auxiliary node to replace a node that returns a tuple
  * without changing the corresponding Proj nodes.
@@ -3830,7 +3848,7 @@ ir_node *new_defaultProj (ir_node *arg, long max_proj);
  */
 ir_node *new_Tuple  (int arity, ir_node *in[]);
 
-/**Constructor for a Id node.
+/** Constructor for an Id node.
  *
  * This is an auxiliary node to replace a node that returns a single
  * value. Adds the node to the block in current_ir_block.
@@ -3841,7 +3859,7 @@ ir_node *new_Tuple  (int arity, ir_node *in[]);
  */
 ir_node *new_Id     (ir_node *val, ir_mode *mode);
 
-/**Constructor for a Bad node.
+/** Constructor for a Bad node.
  *
  * Returns the unique Bad node of the graph.  The same as
  * get_irg_bad().
@@ -3865,7 +3883,7 @@ ir_node *new_Bad    (void);
  */
 ir_node *new_Confirm (ir_node *val, ir_node *bound, pn_Cmp cmp);
 
-/** Constructor for a Unknown node.
+/** Constructor for an Unknown node.
  *
  * Represents an arbitrary value.  Places the node in
  * the start block.
@@ -3897,44 +3915,75 @@ ir_node *new_FuncCall (ir_node *callee, int arity, ir_node *in[],
 /* needed also.                                                        */
 /*---------------------------------------------------------------------*/
 
-/* --- Block construction --- */
-/* immature Block without predecessors */
+/** Create an immature block.
+ *
+ * An immature block has an unknown number of predecessors.  Predecessors
+ * can be added with add_immBlock_pred().  Once all predecessors are
+ * added the block must be matured.
+ *
+ * Adds the block to the graph in current_ir_graph. Does set
+ * current_block.  Can be used with automatic Phi node construction.
+ * This constructor can only be used if the graph is in
+ * state_building.
+ */
 ir_node *new_d_immBlock (dbg_info* db);
 ir_node *new_immBlock (void);
 
 /** Add a control flow edge to an immature block. */
 void add_in_edge (ir_node *immblock, ir_node *jmp);
 
-/** fixes the number of predecessors of a block. */
+/** Fix the number of predecessors of an immature block. */
 void mature_block (ir_node *block);
 
-/* --- Parameter administration --- */
-/* Read a value from the array with the local variables.  Use this
-   function to obtain the last definition of the value associated with
-   pos.  Pos may not exceed the value passed as n_loc to new_ir_graph. */
+
+/** Get the current value of a local variable.
+ *
+ * Use this function to obtain the last definition of the local variable
+ * associated with pos.  Pos may not exceed the value passed as n_loc
+ * to new_ir_graph.  This call automatically inserts Phi nodes.
+ *
+ * @param *db    A pointer for debug information.
+ * @param  pos   The position/id of the local variable.
+ * @param *mode  The mode of the value to get.
+ */
 ir_node *get_d_value (dbg_info* db, int pos, ir_mode *mode);
 ir_node *get_value (int pos, ir_mode *mode);
 
-/** Write a value in the array with the local variables. Use this function
-   to remember a new definition of the value associated with pos. Pos may
-   not exceed the value passed as n_loc to new_ir_graph. */
+/** Remark a new definition of a variable.
+ *
+ * Use this function to remember a new definition of the value
+ * associated with pos. Pos may not exceed the value passed as n_loc
+ * to new_ir_graph.  This call is needed to automatically inserts Phi
+ * nodes.
+ *
+ * @param  pos   The position/id of the local variable.
+ * @param *value The new value written to the local variable.
+*/
 void set_value (int pos, ir_node *value);
 
-/** Read a store.
-   Use this function to get the most recent version of the store (type M).
-   Internally it does the same as get_value. */
+/** Get the current memory state.
+ *
+ * Use this function to obtain the last definition of the memory
+ * state.  This call automatically inserts Phi nodes for the memory
+ * state value.
+ *
+ */
 ir_node *get_store (void);
 
-/** Write a store. */
+/** Remark a new definition of the memory state.
+ *
+ * Use this function to remember a new definition of the memory state.
+ * This call is needed to automatically inserts Phi nodes.
+ *
+ * @param *store The new memory state.
+*/
 void set_store (ir_node *store);
 
-/** keep this node alive even if End is not control-reachable from it */
+/** keep this node alive even if End is not control-reachable from it
+ *
+ * @param ka The node to keep alive.
+ */
 void keep_alive (ir_node *ka);
-
-/* --- Useful access routines --- */
-/** Returns the current block of the current graph.  To set the current
-   block use switch_block(). */
-ir_node *get_cur_block(void);
 
 /** Returns the frame type of the current graph */
 type *get_cur_frame_type(void);
