@@ -1,9 +1,14 @@
 
+  20.11.2001 Goetz
+  Changed SSA constuction for exception control flow.
+  If PRECISE_EXC_CONTEXT is used Phi nodes will use the values
+  valid when the execption operation was allocated.  This increases
+  the memory consuption of the construction algorithm by
+  n_loc * #fragile_ops.
 
-
-  8.11.2001 Goetz
+  19.11.2001 Goetz
   Added method to replace in array of a node in irnode.c/h
-  Added funcionality to irgmod:
+  Added functionality to irgmod:
    * collect all Phi nodes as link-list in the Blocks link field
    * collect all Proj nodes as link-list in node producing the tuple.
    * Seperate a Block into two
