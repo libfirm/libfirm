@@ -94,6 +94,9 @@
 /* Define to 1 if Firm statistics are activated */
 #define FIRM_STATISTICS
 
+/* Define to 1 if Firm hooks are activated */
+#define FIRM_ENABLE_HOOKS
+
 /* Define the right volatile token */
 /* #undef volatile */
 
