@@ -300,9 +300,16 @@ static void pto_name_dump_desc (desc_t *desc, FILE *stream)
            object == desc->kind ? "Object" : "Array",
            tp_name);
 
-  fprintf (stream, "\tdesc_%i [label=\"<HEAD>type \\[%i\\]\\lname=\\\"%s\\\"",
-           desc->id,
-           desc->id,
+  fprintf (stream, "\tdesc_%i [label=\"<HEAD>type \\[%i\\]",
+           desc->id, desc->id);
+
+  if (-1 != desc->ctx) {
+    fprintf (stream, ", ctx = %i", desc->ctx);
+  } else {
+    fprintf (stream, " (global)");
+  }
+
+  fprintf (stream, "\\lname=\\\"%s\\\"",
            tp_name);
 
   ir_node *nd = desc->node;
@@ -454,7 +461,7 @@ qset_t *get_entry (desc_t *desc, entity *ent)
 
 
 /* get a new descriptor for the given type at the given node */
-desc_t *new_name (type *tp, ir_node *node)
+desc_t *new_name (type *tp, ir_node *node, int ctx)
 {
   desc_t *desc = NULL;
 
@@ -493,13 +500,14 @@ desc_t *new_name (type *tp, ir_node *node)
     desc = (desc_t*) arr_desc;
   }
 
-  desc->id   = name_id ++;
+  desc->id    = name_id ++;
   desc->col_idx = 0;
-  desc->tp   = tp;
+  desc->tp    = tp;
   desc->visit = FALSE;
-  desc->node = node;
+  desc->ctx   = ctx;
+  desc->node  = node;
 
-  desc->prev = all_descs;
+  desc->prev  = all_descs;
   all_descs = desc;
 
   return (desc);
@@ -522,7 +530,7 @@ desc_t *new_ent_name (entity *ent)
 
   DBGPRINT (2, (stdout, "%s: new name for entity \"%s\"\n", __FUNCTION__,
                 get_entity_name (ent)));
-  DBGEXE (fflush (stdout));
+  DBGEXE (2, (fflush (stdout)));
 
   assert (((allocation_static == get_entity_allocation (ent)) ||
            (allocation_automatic == get_entity_allocation (ent))) &&
@@ -532,6 +540,7 @@ desc_t *new_ent_name (entity *ent)
     obj_glob = (obj_desc_t*) NALLOC (sizeof (obj_desc_t));
 
     obj_glob->id   = name_id ++;
+    obj_glob->ctx  = -1;
     obj_glob->col_idx = 0;
     obj_glob->visit = FALSE;
     obj_glob->kind = object;
@@ -635,6 +644,9 @@ void pto_name_cleanup ()
 
 /*
   $Log$
+  Revision 1.8  2004/12/15 13:30:30  liekweg
+  use DBGEXE correctly; print yet nicer names
+
   Revision 1.7  2004/12/15 09:18:18  liekweg
   pto_name.c
 
