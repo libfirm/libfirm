@@ -288,7 +288,7 @@ static void clear_link(ir_node * node, void * env) {
 
 
 static int node_floats(ir_node *n) {
-  return ((get_op_pinned(get_irn_op(n)) == op_pin_state_floats) &&
+  return ((get_irn_pinned(n) == op_pin_state_floats) &&
       (get_irg_pinned(current_ir_graph) == op_pin_state_floats));
 }
 
@@ -661,7 +661,7 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
   if (irg != get_const_code_irg())
     fprintf (F, "irg:     %s\n", get_ent_dump_name(get_irg_entity(irg)));
 
-  if (get_op_pinned(get_irn_op(n)) == op_pin_state_floats &&
+  if (get_irn_pinned(n) == op_pin_state_floats &&
       get_irg_pinned(get_irn_irg(n)) == op_pin_state_floats) {
     fprintf(F, "node was pinned in ");
     dump_node_opcode(F, get_nodes_block(n));
