@@ -291,4 +291,10 @@ void dump_backedge_information(bool b);
  */
 void dump_analysed_type_info(bool b);
 
+/**
+ * Write the address of a node into the vcg info.
+ * This is off per default for automatic comparisons of
+ * vcg graphs -- these will differ in the pointer values!
+ */
+void dump_pointer_values_to_info(bool b);
 # endif /* _IRDUMP_H_ */

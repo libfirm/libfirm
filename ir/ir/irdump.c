@@ -115,12 +115,53 @@ static void dump_whole_node(ir_node *n, void* env);
 static INLINE void dump_loop_info(ir_graph *irg);
 
 /*******************************************************************/
-/* Helper funcions.                                                */
+/* Helper functions.                                                */
 /*******************************************************************/
 
-static void clear_link(ir_node * node, void * env) {
-  set_irn_link(node, NULL);
+/* Use private link attr to be able to call dumper anywhere without
+   destroying link fields. */
+
+static pmap *irdump_link_map = NULL;
+
+static void init_irdump(void) {
+  /* We need a new, empty map. */
+  if (irdump_link_map) pmap_destroy(irdump_link_map);
+  irdump_link_map = pmap_create();
 }
+
+
+void *ird_get_irn_link(ir_node *n) {
+  void *res = NULL;
+  if (!irdump_link_map) return NULL;
+
+  if (pmap_contains(irdump_link_map, (void *)n))
+    res = pmap_get(irdump_link_map, (void *)n);
+  return res;
+}
+
+void ird_set_irn_link(ir_node *n, void *x) {
+  if (!irdump_link_map) init_irdump();
+  pmap_insert(irdump_link_map, (void *)n, x);
+}
+
+void *ird_get_irg_link(ir_graph *irg) {
+  void *res = NULL;
+  if (!irdump_link_map) return NULL;
+
+  if (pmap_contains(irdump_link_map, (void *)irg))
+    res = pmap_get(irdump_link_map, (void *)irg);
+  return res;
+}
+
+void ird_set_irg_link(ir_graph *irg, void *x) {
+  if (!irdump_link_map) init_irdump();
+  pmap_insert(irdump_link_map, (void *)irg, x);
+}
+
+static void clear_link(ir_node * node, void * env) {
+  ird_set_irn_link(node, NULL);
+}
+
 
 static int node_floats(ir_node *n) {
   return ((get_op_pinned(get_irn_op(n)) == floats) &&
@@ -128,6 +169,7 @@ static int node_floats(ir_node *n) {
 }
 
 static ident *get_irg_dump_name (ir_graph *irg) {
+  /* Don't use get_entity_ld_ident (ent) as it computes the mangled name! */
   entity *ent = get_irg_ent(irg);
   if (ent->ld_name) return ent->ld_name;
   return ent->name;
@@ -138,14 +180,14 @@ static void collect_node(ir_node * node, void *env) {
       || node_floats(node)
       || get_irn_op(node) == op_Bad
       || get_irn_op(node) == op_Unknown) {
-    ir_node ** arr = (ir_node **) get_irg_link(get_irn_irg(node));
+    ir_node ** arr = (ir_node **) ird_get_irg_link(get_irn_irg(node));
     if (!arr) arr = NEW_ARR_F(ir_node *, 0);
     ARR_APP1(ir_node *, arr, node);
-    set_irg_link(get_irn_irg(node), arr);    /* arr is an l-value, APP_ARR might change it! */
+    ird_set_irg_link(get_irn_irg(node), arr);    /* arr is an l-value, APP_ARR might change it! */
   } else {
     ir_node * block = get_nodes_block(node);
-    set_irn_link(node, get_irn_link(block));
-    set_irn_link(block, node);
+    ird_set_irn_link(node, ird_get_irn_link(block));
+    ird_set_irn_link(block, node);
   }
 }
 
@@ -162,12 +204,12 @@ static ir_node ** construct_block_lists(ir_graph *irg) {
   current_ir_graph = irg;
 
   for (i = 0; i < get_irp_n_irgs(); i++)
-    set_irg_link(get_irp_irg(i), NULL);
+    ird_set_irg_link(get_irp_irg(i), NULL);
 
   irg_walk_graph(current_ir_graph, clear_link, collect_node, current_ir_graph);
 
   current_ir_graph = rem;
-  return get_irg_link(irg);
+  return ird_get_irg_link(irg);
 }
 
 /*******************************************************************/
@@ -187,6 +229,7 @@ int dump_loop_information_flag = 0;
 int dump_backedge_information_flag = 1;
 int dump_const_local = 0;
 bool opt_dump_analysed_type_info = 1;
+bool opt_dump_pointer_values_to_info = 0;  /* default off: for test compares!! */
 
 INLINE bool get_opt_dump_const_local(void) {
   if (!dump_out_edge_flag && !dump_loop_information_flag)
@@ -245,7 +288,9 @@ void dump_analysed_type_info(bool b) {
   opt_dump_analysed_type_info = b;
 }
 
-
+void dump_pointer_values_to_info(bool b) {
+  opt_dump_pointer_values_to_info = b;
+}
 
 /*******************************************************************/
 /* Routines to dump information about a single ir node.            */
@@ -254,11 +299,11 @@ void dump_analysed_type_info(bool b) {
 static INLINE void
 dump_node_opcode (ir_node *n)
 {
-  int res;
 
   switch(get_irn_opcode(n)) {
 
   case iro_Const: {
+    int res;
     char buf[1024];
     res = tarval_snprintf(buf, sizeof(buf), get_Const_tarval(n));
     assert(res < sizeof(buf) && "buffer to small for tarval_snprintf");
@@ -407,12 +452,14 @@ static INLINE void
 dump_node_info (ir_node *n) {
   int i;
   fprintf (F, " info1: \"");
+  if (opt_dump_pointer_values_to_info)
+    fprintf (F, "addr: %p \n", (void *)n);
   fprintf (F, "visited: %ld \n", get_irn_visited(n));
 
   /* Source types */
   switch(get_irn_opcode(n)) {
   case iro_Start: {
-    type *tp = get_entity_type(get_irg_ent(get_Start_irg(n)));
+    type *tp = get_entity_type(get_irg_ent(get_irn_irg(n)));
     fprintf(F, "start of method of type %s \n", get_type_name(tp));
     for (i = 0; i < get_method_n_params(tp); ++i)
       fprintf(F, "  param %d type: %s \n", i, get_type_name(get_method_param_type(tp, i)));
@@ -437,7 +484,7 @@ dump_node_info (ir_node *n) {
   } break;
   case iro_Return: {
     if (!interprocedural_view) {
-      type *tp = get_entity_type(get_irg_ent(current_ir_graph));
+      type *tp = get_entity_type(get_irg_ent(get_irn_irg(n)));
       fprintf(F, "return in method of type %s \n", get_type_name(tp));
       for (i = 0; i < get_method_n_ress(tp); ++i)
 	fprintf(F, "  res %d type: %s \n", i, get_type_name(get_method_res_type(tp, i)));
@@ -451,13 +498,12 @@ dump_node_info (ir_node *n) {
   default: ;
   }
 
-  if (get_irg_typeinfo_state(current_ir_graph) == irg_typeinfo_consistent  ||
-      get_irg_typeinfo_state(current_ir_graph) == irg_typeinfo_inconsistent  )
+  if (get_irg_typeinfo_state(get_irn_irg(n)) == irg_typeinfo_consistent  ||
+      get_irg_typeinfo_state(get_irn_irg(n)) == irg_typeinfo_inconsistent  )
     if (get_irn_type(n) != none_type)
       fprintf (F, "\nAnalysed type: %s", get_type_name(get_irn_type(n)));
 
   fprintf (F, "\"");
-
 }
 
 /* Returns true if n and pred pos are in different graphs. */
@@ -734,7 +780,7 @@ dump_whole_block(ir_node *block) {
   dump_ir_data_edges(block);
 
   /* dump the nodes that go into the block */
-  for (node = get_irn_link(block); node; node = get_irn_link(node)) {
+  for (node = ird_get_irn_link(block); node; node = ird_get_irn_link(node)) {
     dump_node(node);
     dump_ir_data_edges(node);
   }
@@ -752,7 +798,7 @@ dump_block_graph (ir_graph *irg) {
   int i;
   ir_graph *rem = current_ir_graph;
   current_ir_graph = irg;
-  ir_node **arr = get_irg_link(irg);
+  ir_node **arr = ird_get_irg_link(irg);
 
   for (i = ARR_LEN(arr) - 1; i >= 0; --i) {
     ir_node * node = arr[i];
@@ -840,8 +886,39 @@ static void print_type_info(type *tp) {
   fprintf(F, "size: %dB,\n", get_type_size(tp));
 }
 
-
 static void print_typespecific_info(type *tp) {
+  switch (get_type_tpop_code(tp)) {
+  case tpo_class:
+    {
+      fprintf(F, "peculiarity: %s\n", get_peculiarity_string(get_class_peculiarity(tp)));
+    } break;
+  case tpo_struct:
+    {
+    } break;
+  case tpo_method:
+    {
+    } break;
+  case tpo_union:
+    {
+    } break;
+  case tpo_array:
+    {
+    } break;
+  case tpo_enumeration:
+    {
+    } break;
+  case tpo_pointer:
+    {
+    } break;
+  case tpo_primitive:
+    {
+    } break;
+  default: break;
+  } /* switch type */
+}
+
+
+static void print_typespecific_vcgattr(type *tp) {
   switch (get_type_tpop_code(tp)) {
   case tpo_class:
     {
@@ -883,8 +960,9 @@ static void print_type_node(type *tp)
   fprintf (F, " label: \"%s %s\"", get_type_tpop_name(tp), get_type_name(tp));
   fprintf (F, " info1: \"");
   print_type_info(tp);
-  fprintf (F, "\"");
   print_typespecific_info(tp);
+  fprintf (F, "\"");
+  print_typespecific_vcgattr(tp);
   fprintf (F, "}\n");
 }
 
@@ -927,12 +1005,7 @@ void dump_entity_node(entity *ent)
     X(volatility_is_volatile);
   }
 
-  fprintf (F, "\npeculiarity: ");
-  switch (get_entity_peculiarity(ent)) {
-    X(peculiarity_description);
-    X(peculiarity_inherited);
-    X(peculiarity_existent);
-  }
+  fprintf(F, "\npeculiarity: %s", get_peculiarity_string(get_entity_peculiarity(ent)));
   fprintf(F, "\nname:    %s\nld_name: %s",
 	  get_entity_name(ent), ent->ld_name ? get_entity_ld_name(ent) : "no yet set");
   fprintf(F, "\noffset:  %d", get_entity_offset(ent));
@@ -1230,7 +1303,6 @@ static void vcg_open (ir_graph *irg, char *suffix) {
 
   /** open file for vcg graph */
   id    = get_irg_dump_name(irg);
-  /* Don't use get_entity_ld_ident (ent) as it computes the mangled name! */
   len   = get_id_strlen (id);
   cp    = get_id_str (id);
   if (dump_file_suffix)
@@ -1329,7 +1401,7 @@ dump_ir_block_graph (ir_graph *irg)
   vcg_open (irg, suffix);
 
   for (i = 0; i < get_irp_n_irgs(); i++) {
-    ir_node **arr = get_irg_link(get_irp_irg(i));
+    ir_node **arr = ird_get_irg_link(get_irp_irg(i));
     if (arr) {
       dump_graph(get_irp_irg(i));
       DEL_ARR_F(arr);
@@ -1380,7 +1452,7 @@ dump_ir_block_graph_w_types (ir_graph *irg)
   construct_block_lists(irg);
 
   for (i = 0; i < get_irp_n_irgs(); i++) {
-    ir_node **arr = get_irg_link(get_irp_irg(i));
+    ir_node **arr = ird_get_irg_link(get_irp_irg(i));
     if (arr) {
       dump_graph(get_irp_irg(i));
       DEL_ARR_F(arr);
@@ -1445,8 +1517,14 @@ dump_cfg (ir_graph *irg)
 {
   ir_graph *rem = current_ir_graph;
   int ddif = dump_dominator_information_flag;
+  int ipv = interprocedural_view;
   current_ir_graph = irg;
   vcg_open (irg, "-cfg");
+
+  if (interprocedural_view) {
+    printf("Warning: dumping cfg not in interprocedural view!\n");
+    interprocedural_view = 0;
+  }
 
   if (get_irg_dom_state(irg) != dom_consistent)
     dump_dominator_information_flag = 0;
@@ -1456,6 +1534,7 @@ dump_cfg (ir_graph *irg)
   dump_node (get_irg_bad(irg));
 
   dump_dominator_information_flag = ddif;
+  interprocedural_view = ipv;
   vcg_close();
   current_ir_graph = rem;
 }
@@ -1471,7 +1550,7 @@ void dump_all_cg_block_graph(void) {
 
   /* collect nodes in all irgs reachable in call graph*/
   for (i = 0; i < get_irp_n_irgs(); i++)
-    set_irg_link(get_irp_irg(i), NULL);
+    ird_set_irg_link(get_irp_irg(i), NULL);
 
   cg_walk(clear_link, collect_node, NULL);
 
@@ -1479,7 +1558,7 @@ void dump_all_cg_block_graph(void) {
   for (i = 0; i < get_irp_n_irgs(); i++) {
     current_ir_graph = get_irp_irg(i);
     dump_graph(current_ir_graph);
-    DEL_ARR_F(get_irg_link(current_ir_graph));
+    DEL_ARR_F(ird_get_irg_link(current_ir_graph));
   }
 
   vcg_close();
