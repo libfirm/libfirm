@@ -1,10 +1,15 @@
 /* Copyright (C) 2002 by Universitaet Karlsruhe
 * All rights reserved.
-*
-* Authors: Goetz Lindenmaier
-*
-* irdom_t.h:  private datastructures
 */
+
+/**
+ * @file irdom_t.h
+ *
+ * dDominator information private datastructures.
+ *
+ * @author Goetz Lindenmaier
+ *
+ */
 
 /* $Id$ */
 
