@@ -21,7 +21,9 @@ X_INCLUDES  =
 SHELL       = /bin/sh
 MAKE        = /usr/bin/make
 
-MEMBERS	 = tv.m label.m
+MEMBERS	 = tv.m
+# CS-hac
+# label.m
 
 CFILES = $(MEMBERS:.m=.c)
 

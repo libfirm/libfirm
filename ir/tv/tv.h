@@ -6,7 +6,8 @@
 
 # include "irmode.h"
 # include "entity.h"
-# include "label.h"
+// CS-hac
+//# include "label.h"
 # include "xprintf.h"
 
 typedef struct tarval tarval;
@@ -50,9 +51,11 @@ struct tarval {
     tarval_B B;			/* universal bits */
     tarval_s s;			/* string */
   } u;
-  label lab;			/* value's label in the constant segment */
+  // CS-hac
+  //  label lab;			/* value's label in the constant segment */
   ir_mode *mode;
-  bool used;	       		/* labeled tv is used (default) */
+  // CS-hac
+  //  bool used;	       		/* labeled tv is used (default) */
 };
 
 extern tarval *tarval_bad;
@@ -138,8 +141,9 @@ long tarval_ord (tarval *, int *fail);
 int tarval_print (XP_PAR1, const xprintf_info *, XP_PARN);
 
 /* Labeling of tarvals */
-label tarval_label (tarval *);
-void tarval_forall_labeled (int (*) (tarval *, void *), void *);
+// CS-hac
+//label tarval_label (tarval *);
+//void tarval_forall_labeled (int (*) (tarval *, void *), void *);
 
 
 /* return a mode-specific value */

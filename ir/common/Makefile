@@ -37,7 +37,6 @@ OFILES = $(MEMBERS:%.m=../objects/%.o)
 OFILES +=  ../objects/xfprintf.o \
 	   ../objects/xgprintf.o \
 	   ../objects/xoprintf.o \
-	   ../objects/strerror.o
 
 DFILES = $(MEMBERS:.m=.d)
 

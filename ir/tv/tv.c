@@ -1622,7 +1622,8 @@ tarval_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
 
 
 /* Labeling of tarvals */
-
+// CS-hac
+/*
 label
 tarval_label (tarval *tv)
 {
@@ -1646,7 +1647,7 @@ tarval_forall_labeled (int (*f) (tarval *, void *), void *data)
     }
   }
 }
-
+*/
 
 ir_mode *
 get_tv_mode (tarval *tv)
