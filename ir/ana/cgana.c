@@ -110,8 +110,8 @@ void collect_impls(entity *method, eset *set, int *size, bool *open) {
     } else {
       assert(get_entity_irg(method) != NULL);
       if (!eset_contains(set, method)) {
-    eset_insert(set, method);
-    ++(*size);
+        eset_insert(set, method);
+        ++(*size);
       }
     }
   }
@@ -124,8 +124,8 @@ void collect_impls(entity *method, eset *set, int *size, bool *open) {
     } else {
       assert(get_entity_irg(impl_ent) != NULL);
       if (!eset_contains(set, impl_ent)) {
-    eset_insert(set, impl_ent);
-    ++(*size);
+        eset_insert(set, impl_ent);
+        ++(*size);
       }
     }
   }
@@ -196,22 +196,22 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
     if (get_SymConst_kind(node) == linkage_ptr_info) {
       pmap_entry * entry = pmap_find(ldname_map, (void *) get_SymConst_ptrinfo(node));
       if (entry != NULL) { /* Method is declared in the compiled code */
-    entity * ent = entry->value;
-    if (get_opt_normalize() && (get_entity_visibility(ent) != visibility_external_allocated)) { /* Meth. is defined */
-      ir_node *new_node;
-      assert(get_entity_irg(ent));
-      set_irg_current_block(current_ir_graph, get_nodes_Block(node));
-      new_node = new_d_Const(get_irn_dbg_info(node),
-                 mode_P_mach, new_tarval_from_entity(ent, mode_P_mach));       DBG_OPT_NORMALIZE;
-      exchange(node, new_node);
-    }
+        entity * ent = entry->value;
+        if (get_opt_normalize() && (get_entity_visibility(ent) != visibility_external_allocated)) { /* Meth. is defined */
+          ir_node *new_node;
+          assert(get_entity_irg(ent));
+          set_irg_current_block(current_ir_graph, get_nodes_Block(node));
+          new_node = new_d_Const(get_irn_dbg_info(node),
+                                 mode_P_mach, new_tarval_from_entity(ent, mode_P_mach));       DBG_OPT_NORMALIZE;
+          exchange(node, new_node);
+        }
       }
     }
   } else if (intern_get_irn_op(node) == op_Sel &&
-         is_method_type(get_entity_type(get_Sel_entity(node)))) {
+             is_method_type(get_entity_type(get_Sel_entity(node)))) {
     entity * ent = get_Sel_entity(node);
     if (get_opt_optimize() && get_opt_dyn_meth_dispatch() &&
-    (intern_get_irn_op(skip_Proj(get_Sel_ptr(node))) == op_Alloc)) {
+        (intern_get_irn_op(skip_Proj(get_Sel_ptr(node))) == op_Alloc)) {
       ir_node *new_node;
       entity *called_ent;
       /* We know which method will be called, no dispatch necessary. */
@@ -219,7 +219,7 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
       assert(get_entity_peculiarity(ent) != peculiarity_description);
       set_irg_current_block(current_ir_graph, get_nodes_Block(node));
       /* @@@ Is this correct?? Alloc could reference a subtype of the owner
-     of Sel that overwrites the method referenced in Sel. */
+         of Sel that overwrites the method referenced in Sel. */
       /* @@@ Yes, this is wrong. GL, 10.3.04 */
       new_node = copy_const_value(get_atomic_ent_value(ent));              DBG_OPT_POLY_ALLOC;
 #else
@@ -233,55 +233,55 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
     } else {
       assert(get_entity_peculiarity(ent) != peculiarity_inherited);
       if (!eset_contains(entities, ent)) {
-    /* Entity noch nicht behandelt. Alle (intern oder extern)
-     * implementierten Methoden suchen, die diese Entity
-     * überschreiben. Die Menge an entity.link speichern. */
-    set_entity_link(ent, get_impl_methods(ent));
-    eset_insert(entities, ent);
+        /* Entity noch nicht behandelt. Alle (intern oder extern)
+         * implementierten Methoden suchen, die diese Entity
+         * überschreiben. Die Menge an entity.link speichern. */
+        set_entity_link(ent, get_impl_methods(ent));
+        eset_insert(entities, ent);
       }
       if (get_entity_link(ent) == NULL) {
-    /* Die Sel-Operation kann nie einen Zeiger auf eine aufrufbare
-     * Methode zurückgeben. Damit ist sie insbesondere nicht
-     * ausführbar und nicht erreichbar. */
-    /* Gib eine Warnung aus wenn die Entitaet eine Beschreibung ist
-       fuer die es keine Implementierung gibt. */
-    if (get_entity_peculiarity(ent) == peculiarity_description) {
-      /* @@@ GL Methode um Fehler anzuzeigen aufrufen! */
-      printf("WARNING: Calling method description %s\n  in method %s\n  of class %s\n  which has "
-         "no implementation!\n", get_entity_name(ent),
-         get_entity_name(get_irg_ent(current_ir_graph)),
-         get_type_name(get_entity_owner(get_irg_ent(current_ir_graph))));
-      printf("This happens when compiling a Java Interface that's never really used, i.e., "
-         "no class implementing the interface is ever used.\n");
-    } else {
-      exchange(node, new_Bad());
-    }
+        /* Die Sel-Operation kann nie einen Zeiger auf eine aufrufbare
+         * Methode zurückgeben. Damit ist sie insbesondere nicht
+         * ausführbar und nicht erreichbar. */
+        /* Gib eine Warnung aus wenn die Entitaet eine Beschreibung ist
+           fuer die es keine Implementierung gibt. */
+        if (get_entity_peculiarity(ent) == peculiarity_description) {
+          /* @@@ GL Methode um Fehler anzuzeigen aufrufen! */
+          printf("WARNING: Calling method description %s\n  in method %s\n  of class %s\n  which has "
+                 "no implementation!\n", get_entity_name(ent),
+                 get_entity_name(get_irg_ent(current_ir_graph)),
+                 get_type_name(get_entity_owner(get_irg_ent(current_ir_graph))));
+          printf("This happens when compiling a Java Interface that's never really used, i.e., "
+                 "no class implementing the interface is ever used.\n");
+        } else {
+          exchange(node, new_Bad());
+        }
       } else {
-    entity ** arr = get_entity_link(ent);
+        entity ** arr = get_entity_link(ent);
 
 #if 0
-    int i;
-    printf("\nCall site "); DDMN(node);
-    printf("  in "); DDME(get_irg_ent(current_ir_graph));
-    printf("  can call:\n");
-    for (i = 0; i < ARR_LEN(arr); i++) {
-      printf("   - "); DDME(arr[i]);
-      printf("     with owner "); DDMT(get_entity_owner(arr[i]));
-    }
-    printf("\n");
+        int i;
+        printf("\nCall site "); DDMN(node);
+        printf("  in "); DDME(get_irg_ent(current_ir_graph));
+        printf("  can call:\n");
+        for (i = 0; i < ARR_LEN(arr); i++) {
+          printf("   - "); DDME(arr[i]);
+          printf("     with owner "); DDMT(get_entity_owner(arr[i]));
+        }
+        printf("\n");
 #endif
 
-    if (get_opt_optimize() && get_opt_dyn_meth_dispatch() &&
-        (ARR_LEN(arr) == 1 && arr[0] != NULL)) {
-      ir_node *new_node;
-      /* Die Sel-Operation kann immer nur einen Wert auf eine
-       * interne Methode zurückgeben. Wir können daher die
-       * Sel-Operation durch eine Const- bzw. SymConst-Operation
-       * ersetzen. */
-      set_irg_current_block(current_ir_graph, get_nodes_Block(node));
-      new_node = copy_const_value(get_atomic_ent_value(arr[0]));         DBG_OPT_POLY;
-      exchange (node, new_node);
-    }
+        if (get_opt_optimize() && get_opt_dyn_meth_dispatch() &&
+            (ARR_LEN(arr) == 1 && arr[0] != NULL)) {
+          ir_node *new_node;
+          /* Die Sel-Operation kann immer nur einen Wert auf eine
+           * interne Methode zurückgeben. Wir können daher die
+           * Sel-Operation durch eine Const- bzw. SymConst-Operation
+           * ersetzen. */
+          set_irg_current_block(current_ir_graph, get_nodes_Block(node));
+          new_node = copy_const_value(get_atomic_ent_value(arr[0]));         DBG_OPT_POLY;
+          exchange (node, new_node);
+        }
       }
     }
   }
@@ -445,9 +445,9 @@ static void callee_ana_node(ir_node * node, eset * methods) {
     for (i = get_Sel_n_methods(node) - 1; i >= 0; --i) {
       entity * ent = get_Sel_method(node, i);
       if (ent) {
-    eset_insert(methods, ent);
+        eset_insert(methods, ent);
       } else {
-    eset_insert(methods, MARK);
+        eset_insert(methods, MARK);
       }
     }
     break;

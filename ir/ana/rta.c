@@ -54,6 +54,9 @@ static eset *_dead_graphs    = NULL;
 
 /* now the meat */
 
+/**
+   Enter all method and field accesses and all class allocations into our tables.
+*/
 static void rta_act (ir_node *node, void *env)
 {
   opcode op = get_irn_opcode (node);
@@ -62,11 +65,14 @@ static void rta_act (ir_node *node, void *env)
     entity *ent = NULL;
 
     ir_node *ptr = get_Call_ptr (node);
-    // TODO: test:  ptr.op == Const
 
     if (iro_Sel == get_irn_opcode (ptr)) {
       ent = get_Sel_entity (ptr);
+    } else if (iro_Const == get_irn_opcode (ptr)) {
+      ent = get_tarval_entity (get_Const_tarval (ptr));
     }
+
+    assert (ent);
 
     if (ent) {
       eset_insert (_called_methods, ent);
@@ -93,10 +99,14 @@ static void rta_act (ir_node *node, void *env)
     }
   } else if (iro_Alloc == op) {
     type *type = get_Alloc_type (node);
+
     eset_insert (_live_classes, type);
   }
 }
 
+/**
+Traverse the given graph to collect method and field accesses and object allocations.
+*/
 static void rta_fill_graph (ir_graph* graph)
 {
   if (NULL != graph) {
@@ -106,6 +116,9 @@ static void rta_fill_graph (ir_graph* graph)
   }
 }
 
+/**
+Traverse all graphs to collect method and field accesses and object allocations.
+*/
 static void rta_fill_all ()
 {
   int i;
@@ -118,7 +131,11 @@ static void rta_fill_all ()
   interprocedural_view = old_ip_view;
 }
 
-static int is_call_target (entity *method)
+/**
+   Find out whether the given method could be the target of a
+   polymorphic call.
+*/
+static int is_call_target (const entity *method)
 {
   int is_target = FALSE;
   int i;
@@ -127,30 +144,33 @@ static int is_call_target (entity *method)
   /* The method could be the target of a polymorphic call if it is
      called or if it overrides a method that is called. */
 
-  if (eset_contains (_called_methods, method)) {
+  if (eset_contains (_called_methods, (entity*) method)) {
     return (TRUE);
   }
 
-  n_over = get_entity_n_overwrittenby (method);
+  /* not called?  check methods in superclass(es) */
+  n_over = get_entity_n_overwrittenby ((entity*) method);
   for (i = 0; !is_target && (i < n_over); i ++) {
-    entity *over = get_entity_overwrittenby (method, i);
+    entity *over = get_entity_overwrittenby ((entity*) method, i);
     is_target |= is_call_target (over);
   }
 
   return (is_target);
 }
 
-
-static ir_graph *get_implementing_graph (entity *method)
+/**
+   Given a method, find the firm graph that implements that method.
+*/
+static ir_graph *get_implementing_graph (const entity *method)
 {
-  ir_graph *graph = get_entity_irg (method);
+  ir_graph *graph = get_entity_irg ((entity*) method);
 
   if (NULL == graph) {
     int i;
-    int n_over = get_entity_n_overwrites (method);
+    int n_over = get_entity_n_overwrites ((entity*) method);
 
     for (i = 0; (NULL == graph) && (i < n_over); i ++) {
-      entity *over = get_entity_overwrites (method, i);
+      entity *over = get_entity_overwrites ((entity*) method, i);
       graph = get_implementing_graph (over);
     }
   }
@@ -160,28 +180,39 @@ static ir_graph *get_implementing_graph (entity *method)
   return (graph);
 }
 
+/**
+   Determine whether the give method or one of its overwriter have
+   been used in a call to the given graph.
+*/
 static int has_live_call (entity *method, ir_graph *graph)
 {
   int has_call = FALSE;
   int i, n_over;
 
+  /* stop searching if a overwriting method comes with a new graph */
   if (get_irg_ent (graph) != method) {
     return (FALSE);
   }
 
+  /* maybe we're called (possibly through polymorphy)? */
   if (is_call_target (method)) {
     return (TRUE);
   }
 
-  n_over = get_entity_n_overwrittenby (method);
+  /* maybe we're overwritten by a method that is called? */
+  n_over = get_entity_n_overwrittenby ((entity*) method);
   for (i = 0; !has_call && (i < n_over); i ++) {
-    entity *over = get_entity_overwrittenby(method, i);
+    entity *over = get_entity_overwrittenby((entity*) method, i);
     has_call |= has_live_call (over, graph);
   }
 
   return (has_call);
 }
 
+/**
+   Determine whether the given class is live *and* uses the given
+   graph at some point.
+*/
 static int has_graph (type *clazz, ir_graph *graph)
 {
   int has_the_graph = FALSE;
@@ -203,6 +234,7 @@ static int has_graph (type *clazz, ir_graph *graph)
     } /* all methods */
   } /* _live_classes.contains (clazz) */
 
+  /* our subclasses might be using that graph, no? */
   n_sub = get_class_n_subtypes (clazz);
   for (i = 0; !has_the_graph && (i < n_sub); i ++) {
     type *sub = get_class_subtype (clazz, i);
@@ -213,6 +245,10 @@ static int has_graph (type *clazz, ir_graph *graph)
   return (has_the_graph);
 }
 
+/**
+   Determine wether the given method could be used in a call to the
+   given graph on a live class.
+*/
 static int has_live_class (entity *method, ir_graph *graph)
 {
   int has_class = FALSE;
@@ -220,12 +256,16 @@ static int has_live_class (entity *method, ir_graph *graph)
   int n_over;
   type *clazz;
 
+  /* const char *name = get_entity_name (method); */
+
+  /* stop searching when an overwriting method provides a new graph */
   if (get_implementing_graph (method) != graph) {
     return (FALSE);
   }
 
   clazz = get_entity_owner (method);
-  if (has_graph (clazz, graph)) {
+
+  if (has_graph (clazz, graph)) { /* this also checks whether clazz is live*/
     return (TRUE);
   }
 
@@ -261,6 +301,10 @@ void rta_init ()
     eset_insert (_live_graphs, get_irp_main_irg ());
   }
 
+  if (get_glob_type ()) {
+    eset_insert (_live_classes, get_glob_type ());
+  }
+
   rta_fill_all ();
 }
 
@@ -274,10 +318,9 @@ void rta_cleanup ()
     ir_graph *graph = get_irp_irg(i);
 
     if (rta_check (graph)) {
-      char *name = NULL;
+      const char *name = get_entity_name (get_irg_ent (graph));;
 
       n_live_graphs ++;
-      name = get_entity_name (get_irg_ent (graph));
 
       fprintf (stdout, "LIVE  %s\n", name);
     }
@@ -348,6 +391,9 @@ int  rta_is_alive_field  (entity *field)
 
 /*
  * $Log$
+ * Revision 1.4  2004/06/12 19:35:04  liekweg
+ * Kommentare eingef"ugt --flo
+ *
  * Revision 1.3  2004/06/12 17:09:46  liekweg
  * RTA works, outedges breaks.  "Yay." --flo
  *
