@@ -1749,7 +1749,7 @@ static ir_node *transform_node_Proj(ir_node *proj)
     return proj;
 
   case iro_Cmp:
-    if (get_opt_reassociation()) {
+    if (0 && get_opt_reassociation()) {
       ir_node *left  = get_Cmp_left(n);
       ir_node *right = get_Cmp_right(n);
       ir_node *c     = NULL;
