@@ -880,73 +880,7 @@ static void reset_isbe(void) {
   }
 }
 
-static int in_same_loop(ir_graph *irg1, ir_graph *irg2) {
-  return irg1->l == irg2->l;
-}
 
-/* Returns true if loop depth of low < high and low on
-   a path from high to tree root. */
-static int in_lower_loop(ir_graph *high, ir_graph *low) {
-  ir_loop *highl = high->l;
-  ir_loop *lowl  = low->l;
-  if (get_loop_depth(lowl) < get_loop_depth(highl)) {
-    while (get_loop_outer_loop(highl) != highl) {
-      highl = get_loop_outer_loop(highl);
-      if (highl == lowl) return 1;
-    }
-  }
-  return 0;
-}
-
-
-/* compute nesting depth */
-static void cnd(ir_loop *loop) {
-  int i, n_elems = get_loop_n_elements(loop);
-
-  int same_sum = 0;
-  int max_lower_edge_max = 0;
-
-
-  /* Compute the value for this loop.  Deeper loops use this value. */
-  for (i = 0; i < n_elems; i++) {
-    loop_element le = get_loop_element(loop, i);
-    if (*le.kind == k_ir_graph) {
-      ir_graph *irg = (ir_graph *)le.node;
-      int j, n_callers = get_irg_n_callers(irg);
-      int same_edge_max = 0;
-      int loop_entry_max = 0;
-
-      for (j = 0; j < n_callers; ++j) {
-	ir_graph *caller = get_irg_caller(irg, j);
-	int caller_loop_depth = get_irg_caller_loop_depth(irg, j);
-
-
-	if (in_same_loop(irg, caller))
-	  same_edge_max = (same_edge_max < caller_loop_depth) ? caller_loop_depth
-	                                                      : same_edge_max;
-	if (in_lower_loop(irg, caller)) {
-	  int loop_entry_this = caller_loop_depth + caller->l->weighted_depth;
-	  loop_entry_max = (loop_entry_max < loop_entry_this) ? loop_entry_this
-	                                                      : loop_entry_max;
-	}
-      }
-
-      max_lower_edge_max = (max_lower_edge_max < loop_entry_max) ? max_lower_edge_max
-	                                                         : loop_entry_max;
-      same_sum += same_edge_max;
-    }
-
-    /* This loop is as expensive as the most expensive entry edge + the count of the cycle. */
-    loop->weighted_depth =  max_lower_edge_max + same_sum + 1;    /* 1 for the recursion itself */
-  }
-
-  /* Recur. */
-  for (i = 0; i < n_elems; i++) {
-    loop_element le = get_loop_element(loop, i);
-    if (*le.kind == k_ir_loop)
-      cnd(le.son);
-  }
-}
 
 
 /* ----------------------------------------------------------------------------------- */
