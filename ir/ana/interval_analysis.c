@@ -9,6 +9,7 @@
 #include "irnode.h"
 #include "irdump_t.h"
 #include "irdom.h"
+#include "irflag.h"
 
 /*------------------------------------------------------------------*/
 /* A new in array via a hashmap. */
@@ -214,6 +215,11 @@ static void construct_interval_block(ir_node *b, ir_loop *l) {
 
   for (i = 0; i < n_cfgpreds; ++i) {
     if (is_backedge(b, i)) {
+      if (b != get_loop_element(l, 0).node) {
+	if (get_firm_verbosity()) {
+	  printf("Loophead not at loop position 0. "); DDMN(b);
+	}
+      }
       /* There are no backedges in the interval decomposition. */
       add_region_in(b, NULL);
       continue;
@@ -232,6 +238,11 @@ static void construct_interval_block(ir_node *b, ir_loop *l) {
     } else {
       int found = find_inner_loop(b, l, pred, cfop);
       if (!found) {
+	if (b != get_loop_element(l, 0).node) {
+	  if (get_firm_verbosity()) {
+	    printf("Loop entry not at loop position 0. "); DDMN(b);
+	  }
+	}
 	found = find_outer_loop(l, pred_l, pred, cfop);
 	if (found) add_region_in(b, NULL);  /* placeholder */
       }
