@@ -572,17 +572,17 @@ libfirm_conf_env="${CC+CC='$CC'} ${CFLAGS+CFLAGS='$CFLAGS'} ${CPP+CPP='$CPP'} ${
 # Check whether --enable-debug or --disable-debug was given.
 if test "${enable_debug+set}" = set; then
   enableval="$enable_debug"
-  if test "$enableval"=yes; then
+  if test "$enableval" = yes; then
   cat >> confdefs.h <<\EOF
 #define DEBUG_libfirm 1
 EOF
 
-fi
 else
   cat >> confdefs.h <<\EOF
 #define NDEBUG 1
 EOF
 
+fi
 fi
 
 

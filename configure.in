@@ -29,10 +29,11 @@ dnl set debugging
 
 AC_ARG_ENABLE(debug,
 [  --enable-debug          enable assertions and additional debugging routines],
-[if test "$enableval"=yes; then
+[if test "$enableval" = yes; then
   AC_DEFINE(DEBUG_libfirm)
-fi],
-AC_DEFINE(NDEBUG))
+else
+  AC_DEFINE(NDEBUG)
+fi])
 AC_SUBST(enable_debug_libfirm)
 
 

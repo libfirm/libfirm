@@ -1,11 +1,13 @@
-/*
- * libFIRM Project
- *
- * $Id$
- */
+/* config.h.in.  Generated automatically from configure.in by autoheader.  */
 
-/* Define to enable debugging stuff.  */
+/* Define if you have the ANSI C header files.  */
+#undef STDC_HEADERS
+
+/* define to enable debugging stuff. */
 #undef DEBUG_libfirm
 
 /* Define to disable assertion checking.  */
 #undef NDEBUG
+
+/* Define if you have the <gmp.h> header file.  */
+#undef HAVE_GMP_H
