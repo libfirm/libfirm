@@ -44,6 +44,7 @@ init_tpop(void)
   type_enumeration = new_tpop (tpo_enumeration, id_from_str("enumeration",11), sizeof (enm_attr));
   type_pointer     = new_tpop (tpo_pointer    , id_from_str("pointer"    , 7), sizeof (ptr_attr));
   type_primitive   = new_tpop (tpo_primitive  , id_from_str("primitive"  , 9), /* sizeof (pri_attr) */ 0);
+  type_id          = new_tpop (tpo_id         , id_from_str("type_id"    , 7), /* sizeof (id_attr)  */ 0);
 }
 
 /* Returns the string for the tp_opcode. */

@@ -32,6 +32,7 @@
 # include <stddef.h>
 # include "type_t.h"
 # include "tpop_t.h"
+# include "typegmod_t.h"
 # include "array.h"
 
 /*******************************************************************/
@@ -43,8 +44,11 @@ unsigned long type_visited;
 inline type *
 new_type(tp_op *type_op, ir_mode *mode, ident* name) {
   type *res;
+  int node_size ;
 
-  int node_size = offsetof (type, attr) +  type_op->attr_size;
+  assert(type_op != type_id);
+
+  node_size = offsetof (type, attr) +  type_op->attr_size;
   res = (type *) xmalloc (node_size);
   add_irp_type(res);   /* Remember the new type global. */
 
@@ -206,7 +210,7 @@ int     get_class_n_subtype (type *clss) {
 }
 type   *get_class_subtype   (type *clss, int pos) {
   assert(clss && (clss->type_op == type_class));
-  return clss->attr.ca.subtypes[pos+1];
+  return clss->attr.ca.subtypes[pos+1] = skip_tid(clss->attr.ca.subtypes[pos+1]);
 }
 void    set_class_subtype   (type *clss, type *subtype, int pos) {
   assert(clss && (clss->type_op == type_class));
@@ -235,7 +239,7 @@ int     get_class_n_supertype (type *clss) {
 }
 type   *get_class_supertype   (type *clss, int pos) {
   assert(clss && (clss->type_op == type_class));
-  return clss->attr.ca.supertypes[pos+1];
+  return clss->attr.ca.supertypes[pos+1] = skip_tid(clss->attr.ca.supertypes[pos+1]);
 }
 void    set_class_supertype   (type *clss, type *supertype, int pos) {
   assert(clss && (clss->type_op == type_class));
@@ -326,7 +330,7 @@ int   get_method_n_params  (type *method) {
 }
 type *get_method_param_type(type *method, int pos) {
   assert(method && (method->type_op == type_method));
-  return method->attr.ma.param_type[pos];
+  return method->attr.ma.param_type[pos] = skip_tid(method->attr.ma.param_type[pos]);
 }
 void  set_method_param_type(type *method, int pos, type* type) {
   assert(method && (method->type_op == type_method));
@@ -339,7 +343,7 @@ int   get_method_n_res   (type *method) {
 }
 type *get_method_res_type(type *method, int pos) {
   assert(method && (method->type_op == type_method));
-  return method->attr.ma.res_type[pos];
+  return method->attr.ma.res_type[pos] = skip_tid(method->attr.ma.res_type[pos]);
 }
 void  set_method_res_type(type *method, int pos, type* type) {
   assert(method && (method->type_op == type_method));
@@ -374,7 +378,7 @@ int    get_union_n_types      (type *uni) {
 }
 type  *get_union_unioned_type (type *uni, int pos) {
   assert(uni && (uni->type_op == type_union));
-  return uni->attr.ua.unioned_type[pos];
+  return uni->attr.ua.unioned_type[pos] = skip_tid(uni->attr.ua.unioned_type[pos]);
 }
 void   set_union_unioned_type (type *uni, int pos, type *type) {
   assert(uni && (uni->type_op == type_union));
@@ -478,7 +482,7 @@ void  set_array_element_type (type *array, type *type) {
 }
 type *get_array_element_type (type *array) {
   assert(array && (array->type_op == type_array));
-  return array->attr.aa.element_type;
+  return array->attr.aa.element_type = skip_tid(array->attr.aa.element_type);
 }
 void  set_array_element_entity (type *array, entity *ent) {
   assert(array && (array->type_op == type_array));
@@ -561,7 +565,7 @@ void  set_pointer_points_to_type (type *pointer, type *type) {
 }
 type *get_pointer_points_to_type (type *pointer) {
   assert(pointer && (pointer->type_op == type_pointer));
-  return pointer->attr.pa.points_to;
+  return pointer->attr.pa.points_to = skip_tid(pointer->attr.pa.points_to);
 }
 
 /* typecheck */

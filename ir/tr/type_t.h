@@ -76,6 +76,12 @@ typedef struct {        * No private attr yet. *
 } pri_attr;
 */
 
+/*
+typedef struct {        * No private attr, must be smaller than others! *
+} id_attr;
+*/
+
+
 typedef union {
   cls_attr ca;
   stc_attr sa;
@@ -108,7 +114,7 @@ struct type {
  * SYNOPSIS
  *  type *new_type(tp_op *type_op, ir_mode *mode, ident* name);
  * INPUTS
- *   type_op - the kind of this type
+ *   type_op - the kind of this type.  May not be type_id.
  *   mode    - the mode to be used for this type, may be NULL
  *   name    - an ident for the name of this type.
  * RESULT

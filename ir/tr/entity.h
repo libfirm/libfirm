@@ -118,6 +118,7 @@ void      set_entity_ld_name  (entity *ent, char *ld_name);
 */
 
 type     *get_entity_owner (entity *ent);
+/* Sets the owner field in entity to owner. */
 void      set_entity_owner (entity *ent, type *owner);
 inline void  assert_legal_owner_of_ent(type *owner);
 

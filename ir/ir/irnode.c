@@ -13,6 +13,7 @@
 #include "irgraph_t.h"
 #include "ident_t.h"
 #include "irmode_t.h"
+#include "typegmod_t.h"
 #include "array.h"
 
 #ifdef DEBUG_libfirm
@@ -324,7 +325,7 @@ inline type *
 get_irn_free_attr     (ir_node *node)
 {
   assert (node->op == op_Free);
-  return node->attr.f;
+  return node->attr.f = skip_tid(node->attr.f);
 }
 
 inline symconst_attr
@@ -338,7 +339,7 @@ inline type *
 get_irn_call_attr (ir_node *node)
 {
   assert (node->op == op_Call);
-  return node->attr.call;
+  return node->attr.call = skip_tid(node->attr.call);
 }
 
 inline sel_attr
@@ -603,7 +604,7 @@ get_SymConst_type (ir_node *node) {
   assert (   (node->op == op_SymConst)
           && (   get_SymConst_kind(node) == type_tag
               || get_SymConst_kind(node) == size));
-  return node->attr.i.tori.typ;
+  return node->attr.i.tori.typ = skip_tid(node->attr.i.tori.typ);
 }
 
 inline void
@@ -785,7 +786,7 @@ set_Call_param (ir_node *node, int pos, ir_node *param) {
 inline type *
 get_Call_type (ir_node *node) {
   assert (node->op == op_Call);
-  return node->attr.call;
+  return node->attr.call = skip_tid(node->attr.call);
 }
 
 inline void
@@ -1590,7 +1591,7 @@ set_Alloc_size (ir_node *node, ir_node *size) {
 inline type  *
 get_Alloc_type (ir_node *node) {
   assert (node->op == op_Alloc);
-  return node->attr.a.type;
+  return node->attr.a.type = skip_tid(node->attr.a.type);
 }
 
 inline void
@@ -1651,7 +1652,7 @@ set_Free_size (ir_node *node, ir_node *size) {
 inline type  *
 get_Free_type (ir_node *node) {
   assert (node->op == op_Free);
-  return node->attr.f;
+  return node->attr.f = skip_tid(node->attr.f);
 }
 
 inline void

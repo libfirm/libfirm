@@ -13,6 +13,7 @@
 # include "irprog_t.h"
 # include "array.h"
 # include "obst.h"
+# include "typegmod.h"
 
 #define GLOBAL_TYPE_NAME "GlobalType"
 
@@ -62,7 +63,7 @@ void set_irp_main_irg(ir_graph *main_irg) {
 
 type *get_glob_type(void) {
   assert(irp);
-  return irp->glob_type;
+  return irp->glob_type = skip_tid(irp->glob_type);
 }
 
 /* Adds irg to the list of ir graphs in irp. */
@@ -107,8 +108,8 @@ int get_irp_n_types (void) {
 type *get_irp_type(int pos) {
   assert (irp && irp->types);
   /* Strangely the first element of the array is NULL.  Why??  */
-  return irp->types[pos+1];
-
+  /* Don't set the skip_id result so that no double entries are generated. */
+  return skip_id(irp->types[pos+1]);
 }
 
 void  set_irp_type(int pos, type *typ) {
@@ -116,7 +117,6 @@ void  set_irp_type(int pos, type *typ) {
   assert (pos < (ARR_LEN((irp)->types) - 1));
   /* Strangely the first element of the array is NULL.  Why??  */
   irp->types[pos+1] = typ;
-
 }
 
 #ifdef DEBUG_libfirm

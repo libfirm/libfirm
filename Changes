@@ -1,3 +1,8 @@
+  9.7.2001 Goetz
+  Added some new access routines to types.
+  List of overwritten fields for entities.
+  Removed a bug in irnode.
+
   4.7.2001 Goetz
   Added a routine to set the mangled entity name.
   Added two routines to copy entites.

@@ -118,7 +118,7 @@ void   set_entity_ld_ident (entity *, ident *ld_ident);
 
 inline type *
 get_entity_owner (entity *ent) {
-  return ent->owner;
+  return ent->owner = skip_tid(ent->owner);
 }
 
 inline void
@@ -144,7 +144,8 @@ get_entity_ld_ident (entity *ent)
   return ent->ld_name;
 }
 
-void   set_entity_ld_ident (entity *ent, ident *ld_ident) {
+inline void
+set_entity_ld_ident (entity *ent, ident *ld_ident) {
   ent->ld_name = ld_ident;
 }
 
@@ -155,7 +156,7 @@ void   set_entity_ld_name  (entity *, char *ld_name);
 
 inline type *
 get_entity_type (entity *ent) {
-  return ent->type;
+  return ent->type = skip_tid(ent->type);
 }
 
 inline void
