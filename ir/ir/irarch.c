@@ -294,12 +294,10 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn)
               int amount = abs(curr_shift) - 1;
               ir_node *aux = operand;
 
-
               assert(amount >= 0 && "What is a negative shift??");
 
               if(amount != 0) {
-                tarval *shift_amount = new_tarval_from_long(amount, mode_Iu);
-                ir_node *cnst = new_r_Const(current_ir_graph, block, mode_Iu, shift_amount);
+                ir_node *cnst = new_r_Const_long(current_ir_graph, block, mode_Iu, amount);
                 aux = new_r_Shl(current_ir_graph, block, operand, cnst, mode);
               }
 
@@ -578,12 +576,12 @@ static ir_node *replace_div_by_mulh(ir_node *div, tarval *tv)
 
     /* Do we need the shift */
     if (mag.s > 0) {
-      c = new_r_Const(current_ir_graph, block, mode_Iu, new_tarval_from_long(mag.s, mode_Iu));
+      c = new_r_Const_long(current_ir_graph, block, mode_Iu, mag.s);
       q    = new_rd_Shrs(dbg, current_ir_graph, block, q, c, mode);
     }
 
     /* final */
-    c = new_r_Const(current_ir_graph, block, mode_Iu, new_tarval_from_long(bits-1, mode_Iu));
+    c = new_r_Const_long(current_ir_graph, block, mode_Iu, bits-1);
     t = new_rd_Shr(dbg, current_ir_graph, block, q, c, mode);
 
     q = new_rd_Add(dbg, current_ir_graph, block, q, t, mode);
@@ -606,7 +604,7 @@ static ir_node *replace_div_by_mulh(ir_node *div, tarval *tv)
 
         t = new_rd_Add(dbg, current_ir_graph, block, t, q, mode);
 
-        c = new_r_Const(current_ir_graph, block, mode_Iu, new_tarval_from_long(mag.s-1, mode_Iu));
+        c = new_r_Const_long(current_ir_graph, block, mode_Iu, mag.s-1);
         q = new_rd_Shr(dbg, current_ir_graph, block, t, c, mode);
       }
       else {
@@ -615,7 +613,7 @@ static ir_node *replace_div_by_mulh(ir_node *div, tarval *tv)
       }
     }
     else if (mag.s > 0) { /* default scheme, shift needed */
-      c = new_r_Const(current_ir_graph, block, mode_Iu, new_tarval_from_long(mag.s, mode_Iu));
+      c = new_r_Const_long(current_ir_graph, block, mode_Iu, mag.s);
       q = new_rd_Shr(dbg, current_ir_graph, block, q, c, mode);
     }
   }
@@ -671,16 +669,16 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn)
         ir_node *curr = left;
 
         if (k != 1) {
-          k_node = new_r_Const(current_ir_graph, block, mode_Iu, new_tarval_from_long(k - 1, mode_Iu));
+          k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, k - 1);
           curr   = new_rd_Shrs(dbg, current_ir_graph, block, left, k_node, mode);
         }
 
-        k_node = new_r_Const(current_ir_graph, block, mode_Iu, new_tarval_from_long(bits - k, mode_Iu));
+        k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, bits - k);
         curr   = new_rd_Shr(dbg, current_ir_graph, block, curr, k_node, mode);
 
         curr   = new_rd_Add(dbg, current_ir_graph, block, left, curr, mode);
 
-        k_node = new_r_Const(current_ir_graph, block, mode_Iu, new_tarval_from_long(k, mode_Iu));
+        k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, k);
         res    = new_rd_Shrs(dbg, current_ir_graph, block, curr, k_node, mode);
 
         if (n_flag) { /* negate the result */
@@ -693,7 +691,7 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn)
       else {      /* unsigned case */
         ir_node *k_node;
 
-        k_node = new_r_Const(current_ir_graph, block, mode_Iu, new_tarval_from_long(k, mode_Iu));
+        k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, k);
         res    = new_rd_Shr(dbg, current_ir_graph, block, left, k_node, mode);
       }
     }
@@ -760,16 +758,16 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn)
         ir_node *curr = left;
 
         if (k != 1) {
-          k_node = new_r_Const(current_ir_graph, block, mode_Iu, new_tarval_from_long(k - 1, mode_Iu));
+          k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, k - 1);
           curr   = new_rd_Shrs(dbg, current_ir_graph, block, left, k_node, mode);
         }
 
-        k_node = new_r_Const(current_ir_graph, block, mode_Iu, new_tarval_from_long(bits - k, mode_Iu));
+        k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, bits - k);
         curr   = new_rd_Shr(dbg, current_ir_graph, block, curr, k_node, mode);
 
         curr   = new_rd_Add(dbg, current_ir_graph, block, left, curr, mode);
 
-        k_node = new_r_Const(current_ir_graph, block, mode, new_tarval_from_long((-1) << k, mode));
+        k_node = new_r_Const_long(current_ir_graph, block, mode, (-1) << k);
         curr   = new_rd_And(dbg, current_ir_graph, block, curr, k_node, mode);
 
         res    = new_rd_Sub(dbg, current_ir_graph, block, left, curr, mode);
@@ -777,7 +775,7 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn)
       else {      /* unsigned case */
         ir_node *k_node;
 
-        k_node = new_r_Const(current_ir_graph, block, mode, new_tarval_from_long((1 << k) - 1, mode));
+        k_node = new_r_Const_long(current_ir_graph, block, mode, (1 << k) - 1);
         res    = new_rd_And(dbg, current_ir_graph, block, left, k_node, mode);
       }
     }
@@ -851,16 +849,16 @@ void arch_dep_replace_divmod_by_const(ir_node **div, ir_node **mod, ir_node *irn
         ir_node *curr = left;
 
         if (k != 1) {
-          k_node = new_r_Const(current_ir_graph, block, mode_Iu, new_tarval_from_long(k - 1, mode_Iu));
+          k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, k - 1);
           curr   = new_rd_Shrs(dbg, current_ir_graph, block, left, k_node, mode);
         }
 
-        k_node = new_r_Const(current_ir_graph, block, mode_Iu, new_tarval_from_long(bits - k, mode_Iu));
+        k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, bits - k);
         curr   = new_rd_Shr(dbg, current_ir_graph, block, curr, k_node, mode);
 
         curr   = new_rd_Add(dbg, current_ir_graph, block, left, curr, mode);
 
-        c_k    = new_r_Const(current_ir_graph, block, mode_Iu, new_tarval_from_long(k, mode_Iu));
+        c_k    = new_r_Const_long(current_ir_graph, block, mode_Iu, k);
 
         *div   = new_rd_Shrs(dbg, current_ir_graph, block, curr, c_k, mode);
 
@@ -871,7 +869,7 @@ void arch_dep_replace_divmod_by_const(ir_node **div, ir_node **mod, ir_node *irn
           *div = new_rd_Sub(dbg, current_ir_graph, block, k_node, *div, mode);
         }
 
-        k_node = new_r_Const(current_ir_graph, block, mode, new_tarval_from_long((-1) << k, mode));
+        k_node = new_r_Const_long(current_ir_graph, block, mode, (-1) << k);
         curr   = new_rd_And(dbg, current_ir_graph, block, curr, k_node, mode);
 
         *mod   = new_rd_Sub(dbg, current_ir_graph, block, left, curr, mode);
@@ -879,10 +877,10 @@ void arch_dep_replace_divmod_by_const(ir_node **div, ir_node **mod, ir_node *irn
       else {      /* unsigned case */
         ir_node *k_node;
 
-        k_node = new_r_Const(current_ir_graph, block, mode_Iu, new_tarval_from_long(k, mode_Iu));
+        k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, k);
         *div   = new_rd_Shr(dbg, current_ir_graph, block, left, k_node, mode);
 
-        k_node = new_r_Const(current_ir_graph, block, mode, new_tarval_from_long((1 << k) - 1, mode));
+        k_node = new_r_Const_long(current_ir_graph, block, mode, (1 << k) - 1);
         *mod   = new_rd_And(dbg, current_ir_graph, block, left, k_node, mode);
       }
     }
