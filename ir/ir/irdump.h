@@ -142,6 +142,29 @@ void dump_type_graph (ir_graph *irg);
  */
 void dump_all_types (void);
 
+/****m* irdump/dump_class_hierarchy
+ *
+ * NAME
+ *    dump_class_hierarchy -- Dumps the class hierarchy with or without entities.
+ * SYNOPSIS
+ *   void dump_class_hierarchy (bool entities);
+ * FUNCTION
+ *   Dumps a node for all classes and the sub/supertype relations.  If
+ *   entities is set to true also dumps the entities of classes, but without
+ *   any additional information as the entities type.  The overwrites relation
+ *   is dumped along with the entities.
+ *   Dumps to a file class_hierarchy.vcg
+ * INPUTS
+ *   Flag whether to dump the entities.
+ * RESULT
+ *   A file containing the class hierarchy tree for the program in standard
+ *   vcg format.
+ * SEE ALSO
+ *
+ ***
+ */
+void dump_class_hierarchy (bool entities);
+
 /****m* irdump/dump_ir_graph_w_types
  *
  * NAME

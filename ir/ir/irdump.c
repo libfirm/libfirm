@@ -59,7 +59,7 @@
 #define ENT_OWN_EDGE_ATTR    "class: 4 label: \"owner\" color: black"
 #define METH_PAR_EDGE_ATTR   "class: 5 label: \"param %d\" color: green"
 #define METH_RES_EDGE_ATTR   "class: 6 label: \"res %d\" color: green"
-#define TYPE_SUPER_EDGE_ATTR "class: 7 label: \"supertype\" color: blue"
+#define TYPE_SUPER_EDGE_ATTR "class: 7 label: \"supertype\" color: red"
 #define UNION_EDGE_ATTR      "class: 8 label: \"component\" color: blue"
 #define PTR_PTS_TO_EDGE_ATTR "class: 9 label: \"points to\" color:green"
 #define ARR_ELT_TYPE_EDGE_ATTR "class: 10 label: \"arr elt tp\" color:green"
@@ -804,6 +804,41 @@ static void print_type_node(type *tp) {
   xfprintf (F, "}\n");
 }
 
+void dump_entity_node(entity *ent) {
+  xfprintf (F, "node: {title: \"%p\" ", ent);
+  xfprintf (F, DEFAULT_TYPE_ATTRIBUTE);
+  xfprintf (F, "label: ");
+  xfprintf (F, "\"ent %I\" " ENTITY_NODE_ATTR , get_entity_ident(ent));
+  switch (get_entity_allocation(ent)) {
+    case dynamic_allocated:   fprintf (F, " info1:\"dynamic allocated\n");   break;
+    case automatic_allocated: fprintf (F, " info1:\"automatic allocated\n"); break;
+    case static_allocated:    fprintf (F, " info1:\"static allocated\n");    break;
+  }
+  switch (get_entity_visibility(ent)) {
+    case local:              fprintf (F, "local\n");             break;
+    case external_visible:   fprintf (F, "external_visible\n");  break;
+    case external_allocated: fprintf (F, "external_allocate\n"); break;
+  }
+  switch (get_entity_variability(ent)) {
+    case uninitialized: fprintf (F, "uninitialized\n");break;
+    case initialized:   fprintf (F, "initialized\n");  break;
+    case part_constant: fprintf (F, "part_constant\n");break;
+    case constant:      fprintf (F, "constant\n");     break;
+  }
+  switch (get_entity_volatility(ent)) {
+    case non_volatile: fprintf (F, "non_volatile\n"); break;
+    case is_volatile:  fprintf (F, "is_volatile\n");  break;
+  }
+  switch (get_entity_peculiarity(ent)) {
+    case description: fprintf (F, "description\n"); break;
+    case inherited:   fprintf (F, "inherited\n");   break;
+    case existent:    fprintf (F, "existent\n");    break;
+  }
+  if (is_method_type(get_entity_type(ent)))
+    xfprintf (F, "\n irg = %p ", get_entity_irg(ent));
+  xfprintf(F, "\"}\n");
+}
+
 /* dumps a type or entity and it's edges. */
 static void
 dump_type_info (type_or_ent *tore, void *env) {
@@ -817,38 +852,7 @@ dump_type_info (type_or_ent *tore, void *env) {
       entity *ent = (entity *)tore;
       ir_node *value;
       /* The node */
-      xfprintf (F, "node: {title: \"%p\" ", tore);
-      xfprintf (F, DEFAULT_TYPE_ATTRIBUTE);
-      xfprintf (F, "label: ");
-      xfprintf (F, "\"ent %I\" " ENTITY_NODE_ATTR , get_entity_ident(ent));
-      switch (get_entity_allocation(ent)) {
-        case dynamic_allocated:   fprintf (F, " info1:\"dynamic allocated\n");   break;
-        case automatic_allocated: fprintf (F, " info1:\"automatic allocated\n"); break;
-        case static_allocated:    fprintf (F, " info1:\"static allocated\n");    break;
-      }
-      switch (get_entity_visibility(ent)) {
-	case local:              fprintf (F, "local\n");             break;
-	case external_visible:   fprintf (F, "external_visible\n");  break;
-	case external_allocated: fprintf (F, "external_allocate\n"); break;
-      }
-      switch (get_entity_variability(ent)) {
-	case uninitialized: fprintf (F, "uninitialized\n");break;
-	case initialized:   fprintf (F, "initialized\n");  break;
-	case part_constant: fprintf (F, "part_constant\n");break;
-	case constant:      fprintf (F, "constant\n");     break;
-      }
-      switch (get_entity_volatility(ent)) {
-	case non_volatile: fprintf (F, "non_volatile\n"); break;
-	case is_volatile:  fprintf (F, "is_volatile\n");  break;
-      }
-      switch (get_entity_peculiarity(ent)) {
-	case description: fprintf (F, "description\n"); break;
-        case inherited:   fprintf (F, "inherited\n"); break;
-	case existent:    fprintf (F, "existent\n");    break;
-      }
-      if (is_method_type(get_entity_type(ent)))
-	xfprintf (F, "\n irg = %p ", get_entity_irg(ent));
-      xfprintf(F, "\"}\n");
+      dump_entity_node(ent);
       /* The Edges */
       /* skip this to reduce graph.  Member edge of type is parallel to this edge. *
       xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
@@ -946,6 +950,51 @@ dump_type_info (type_or_ent *tore, void *env) {
 	{
 	} break;
       default: break;
+      } /* switch type */
+    }
+    break; /* case k_type */
+  default:
+    {
+      printf(" *** irdump,  %s(l.%i), faulty type.\n", __FUNCTION__, __LINE__);
+    } break;
+  } /* switch kind_or_entity */
+}
+
+/* dumps a class type node and a superclass edge.
+   If env != null dumps entities of classes and overwrites edges. */
+static void
+dump_class_hierarchy_node (type_or_ent *tore, void *env) {
+  int i = 0;  /* to shutup gcc */
+
+  /* dump this type or entity */
+  switch (get_kind(tore)) {
+  case k_entity: {
+    entity *ent = (entity *)tore;
+    if ((env) && is_class_type(get_entity_owner(ent))) {
+      /* The node */
+      dump_entity_node(ent);
+      /* The edges */
+      xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
+                TYPE_MEMBER_EDGE_ATTR "}\n", get_entity_owner(ent), ent);
+      for(i = 0; i < get_entity_n_overwrites(ent); i++)
+	xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
+		  ENT_OVERWRITES_EDGE_ATTR "}\n",
+		  ent, get_entity_overwrites(ent, i));
+    }
+  } break; /* case k_entity */
+  case k_type:
+    {
+      type *tp = (type *)tore;
+      switch (get_type_tpop_code(tp)) {
+        case tpo_class: {
+	  print_type_node(tp);
+	  /* and now the edges */
+	  for (i=0; i < get_class_n_supertypes(tp); i++)
+	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
+		      TYPE_SUPER_EDGE_ATTR "}\n",
+		      tp, get_class_supertype(tp, i));
+        } break;
+        default: break;
       } /* switch type */
     }
     break; /* case k_type */
@@ -1316,6 +1365,17 @@ dump_all_types (void)
   vcg_open_name ("All_types");
   type_walk(dump_type_info, NULL, NULL);
   inc_irg_visited(get_const_code_irg());
+  vcg_close();
+}
+
+void
+dump_class_hierarchy (bool entities)
+{
+  vcg_open_name ("class_hierarchy");
+  if (entities)
+    type_walk(dump_class_hierarchy_node, NULL, (void *)1);
+  else
+    type_walk(dump_class_hierarchy_node, NULL, NULL);
   vcg_close();
 }
 
