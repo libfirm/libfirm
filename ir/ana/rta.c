@@ -393,7 +393,7 @@ void rta_init (int verbose)
   }
 }
 
-void rta_cleanup ()
+void rta_cleanup (void)
 {
   if (_live_classes) {
     eset_destroy (_live_classes);
@@ -428,6 +428,8 @@ int  rta_is_alive_class  (type   *clazz)
 
 int  rta_is_alive_graph (ir_graph *graph)
 {
+  entity *meth;
+
   if (eset_contains (_live_graphs, graph)) {
     return (TRUE);
   }
@@ -436,7 +438,7 @@ int  rta_is_alive_graph (ir_graph *graph)
     return (FALSE);
   }
 
-  entity *meth = get_irg_ent (graph);
+  meth = get_irg_ent (graph);
 
   if (has_live_call (meth, graph) && has_live_class (meth, graph)) {
     eset_insert (_live_graphs, graph);
@@ -458,6 +460,15 @@ int  rta_is_alive_field  (entity *field)
 
 /*
  * $Log$
+ * Revision 1.7  2004/06/15 11:44:54  beck
+ * New inlining schema implemented:
+ *
+ * small functions that should be inlined in libFirm are implemented in _t.h files
+ * with a __ prefix.
+ * Preprocessor magic is used to automatically inline these functions whenever a _t.h
+ * file is included instead of a .h file.
+ * Note that this magic did not work outside libFirm without accessing _t.h files.
+ *
  * Revision 1.6  2004/06/14 13:02:03  goetz
  * bugfixesbug
  *

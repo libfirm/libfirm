@@ -85,15 +85,15 @@ const char  *get_tpop_name      (tp_op *op) {
   return get_id_str(op->name);
 }
 
-tp_opcode get_tpop_code (tp_op *op){
-  return op->code;
+tp_opcode (get_tpop_code)(tp_op *op){
+  return __get_tpop_code(op);
 }
 
-ident *get_tpop_ident(tp_op *op){
-  return op->name;
+ident *(get_tpop_ident)(tp_op *op){
+  return __get_tpop_ident(op);
 }
 
 /* returns the attribute size of the operator. */
-int get_tpop_attr_size (tp_op *op) {
-  return op->attr_size;
+int (get_tpop_attr_size)(tp_op *op) {
+  return __get_tpop_attr_size(op);
 }

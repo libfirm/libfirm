@@ -29,6 +29,7 @@
 
 # include "irnode.h"
 # include "irop_t.h"
+# include "irgraph_t.h"
 # include "irflag_t.h"
 # include "firm_common_t.h"
 # include "irdom_t.h" /* For size of struct dom_info. */
@@ -249,93 +250,13 @@ block_attr    get_irn_block_attr   (ir_node *node);
 /*  functions so they can be inlined.                                */
 /*-------------------------------------------------------------------*/
 
-
-
 /**
- * Returns the number of predecessors without the block predecessor.
+ * Checks whether a pointer points to a ir node.
  * Intern version for libFirm.
  */
 static INLINE int
-intern_get_irn_intra_arity (const ir_node *node) {
-  assert(node);
-  return ARR_LEN(node->in) - 1;
-}
-
-/**
- * Returns the number of predecessors without the block predecessor.
- * Intern version for libFirm.
- */
-static INLINE int
-intern_get_irn_inter_arity (const ir_node *node) {
-  assert(node);
-  if (get_irn_opcode(node) == iro_Filter) {
-    assert(node->attr.filter.in_cg);
-    return ARR_LEN(node->attr.filter.in_cg) - 1;
-  } else if (get_irn_opcode(node) == iro_Block && node->attr.block.in_cg) {
-    return ARR_LEN(node->attr.block.in_cg) - 1;
-  }
-  return intern_get_irn_intra_arity(node);
-}
-
-/**
- * Returns the number of predecessors without the block predecessor.
- * Intern version for libFirm.
- */
-static INLINE int
-intern_get_irn_arity (const ir_node *node) {
-  assert(node);
-  if (interprocedural_view) return intern_get_irn_inter_arity(node);
-  return intern_get_irn_intra_arity(node);
-}
-
-/**
- * Intern version for libFirm.
- */
-static INLINE ir_node *
-intern_get_irn_intra_n (ir_node *node, int n) {
-  return (node->in[n + 1] = skip_nop(node->in[n + 1]));
-}
-
-/**
- * Intern version for libFirm.
- */
-static INLINE ir_node*
-intern_get_irn_inter_n (ir_node *node, int n) {
-  /* handle Filter and Block specially */
-  if (get_irn_opcode(node) == iro_Filter) {
-    assert(node->attr.filter.in_cg);
-    return (node->attr.filter.in_cg[n + 1] = skip_nop(node->attr.filter.in_cg[n + 1]));
-  } else if (get_irn_opcode(node) == iro_Block && node->attr.block.in_cg) {
-    return (node->attr.block.in_cg[n + 1] = skip_nop(node->attr.block.in_cg[n + 1]));
-  }
-
-  return get_irn_intra_n (node, n);
-}
-
-/**
- * Access to the predecessors of a node.
- * To iterate over the operands iterate from 0 to i < intern_get_irn_arity(),
- * to iterate including the Block predecessor iterate from i = -1 to
- * i < get_irn_arity.
- * If it is a block, the entry -1 is NULL.
- * Intern version for libFirm.
- */
-static INLINE ir_node *
-intern_get_irn_n (ir_node *node, int n) {
-  assert(node); assert(-1 <= n && n < intern_get_irn_arity(node));
-  if (interprocedural_view)  return get_irn_inter_n (node, n);
-  return get_irn_intra_n (node, n);
-}
-
-/**
- * Gets the mode of a node.
- * Intern version for libFirm.
- */
-static INLINE ir_mode *
-intern_get_irn_mode (const ir_node *node)
-{
-  assert (node);
-  return node->mode;
+__is_ir_node (const void *thing) {
+  return (get_kind(thing) == k_ir_node);
 }
 
 /**
@@ -343,7 +264,7 @@ intern_get_irn_mode (const ir_node *node)
  * Intern version for libFirm.
  */
 static INLINE ir_op *
-intern_get_irn_op (const ir_node *node)
+__get_irn_op (const ir_node *node)
 {
   assert (node);
   return node->op;
@@ -354,13 +275,205 @@ intern_get_irn_op (const ir_node *node)
  * Intern version for libFirm.
  */
 static INLINE opcode
-intern_get_irn_opcode (const ir_node *node)
+__get_irn_opcode (const ir_node *node)
 {
   assert (k_ir_node == get_kind(node));
   assert (node -> op);
   return node->op->code;
 }
 
+/**
+ * Returns the number of predecessors without the block predecessor.
+ * Intern version for libFirm.
+ */
+static INLINE int
+__get_irn_intra_arity (const ir_node *node) {
+  assert(node);
+  return ARR_LEN(node->in) - 1;
+}
 
+/**
+ * Returns the number of predecessors without the block predecessor.
+ * Intern version for libFirm.
+ */
+static INLINE int
+__get_irn_inter_arity (const ir_node *node) {
+  assert(node);
+  if (__get_irn_opcode(node) == iro_Filter) {
+    assert(node->attr.filter.in_cg);
+    return ARR_LEN(node->attr.filter.in_cg) - 1;
+  } else if (__get_irn_opcode(node) == iro_Block && node->attr.block.in_cg) {
+    return ARR_LEN(node->attr.block.in_cg) - 1;
+  }
+  return __get_irn_intra_arity(node);
+}
+
+/**
+ * Returns the number of predecessors without the block predecessor.
+ * Intern version for libFirm.
+ */
+static INLINE int
+__get_irn_arity (const ir_node *node) {
+  assert(node);
+  if (interprocedural_view) return __get_irn_inter_arity(node);
+  return __get_irn_intra_arity(node);
+}
+
+/**
+ * Intern version for libFirm.
+ */
+static INLINE ir_node *
+__get_irn_intra_n (ir_node *node, int n) {
+  return (node->in[n + 1] = skip_nop(node->in[n + 1]));
+}
+
+/**
+ * Intern version for libFirm.
+ */
+static INLINE ir_node*
+__get_irn_inter_n (ir_node *node, int n) {
+  /* handle Filter and Block specially */
+  if (__get_irn_opcode(node) == iro_Filter) {
+    assert(node->attr.filter.in_cg);
+    return (node->attr.filter.in_cg[n + 1] = skip_nop(node->attr.filter.in_cg[n + 1]));
+  } else if (__get_irn_opcode(node) == iro_Block && node->attr.block.in_cg) {
+    return (node->attr.block.in_cg[n + 1] = skip_nop(node->attr.block.in_cg[n + 1]));
+  }
+
+  return __get_irn_intra_n (node, n);
+}
+
+/**
+ * Access to the predecessors of a node.
+ * To iterate over the operands iterate from 0 to i < get_irn_arity(),
+ * to iterate including the Block predecessor iterate from i = -1 to
+ * i < get_irn_arity.
+ * If it is a block, the entry -1 is NULL.
+ * Intern version for libFirm.
+ */
+static INLINE ir_node *
+__get_irn_n (ir_node *node, int n) {
+  assert(node); assert(-1 <= n && n < __get_irn_arity(node));
+  if (interprocedural_view)  return __get_irn_inter_n (node, n);
+  return __get_irn_intra_n (node, n);
+}
+
+/**
+ * Gets the mode of a node.
+ * Intern version for libFirm.
+ */
+static INLINE ir_mode *
+__get_irn_mode (const ir_node *node)
+{
+  assert (node);
+  return node->mode;
+}
+
+/**
+ * Sets the mode of a node.
+ * Intern version of libFirm.
+ */
+static INLINE void
+__set_irn_mode (ir_node *node, ir_mode *mode)
+{
+  assert (node);
+  node->mode = mode;
+}
+
+/**
+ * Gets the visited counter of a node.
+ * Intern version for libFirm.
+ */
+static INLINE unsigned long
+__get_irn_visited (const ir_node *node)
+{
+  assert (node);
+  return node->visited;
+}
+
+/**
+ * Sets the visited counter of a node.
+ * Intern version for libFirm.
+ */
+static INLINE void
+__set_irn_visited (ir_node *node, unsigned long visited)
+{
+  assert (node);
+  node->visited = visited;
+}
+
+/**
+ * Mark a node as visited in a graph.
+ * Intern version for libFirm.
+ */
+static INLINE void
+__mark_irn_visited (ir_node *node) {
+  assert (node);
+  node->visited = current_ir_graph->visited;
+}
+
+/**
+ * Returns non-zero if a node of was visited.
+ * Intern version for libFirm.
+ */
+static INLINE int
+__irn_visited(const ir_node *node) {
+  assert (node);
+  return (node->visited >= current_ir_graph->visited);
+}
+
+/**
+ * Returns non-zero if a node of was NOT visited.
+ * Intern version for libFirm.
+ */
+static INLINE int
+__irn_not_visited(const ir_node *node) {
+  assert (node);
+  return (node->visited < current_ir_graph->visited);
+}
+
+/**
+ * Sets the link of a node.
+ * Intern version of libFirm.
+ */
+static INLINE void
+__set_irn_link(ir_node *node, void *link) {
+  assert (node);
+  /* Link field is used for Phi construction and various optimizations
+     in iropt. */
+  assert(get_irg_phase_state(current_ir_graph) != phase_building);
+
+  node->link = link;
+}
+
+/**
+ * Returns the link of a node.
+ * Intern version of libFirm.
+ */
+static INLINE void *
+__get_irn_link(const ir_node *node) {
+  assert (node);
+  return node->link;
+}
+
+/* this section MUST contain all inline functions */
+#define is_ir_node(thing)          __is_ir_node(thing)
+#define get_irn_intra_arity(node)  __get_irn_intra_arity(node)
+#define get_irn_inter_arity(node)  __get_irn_inter_arity(node)
+#define get_irn_arity(node)        __get_irn_arity(node)
+#define get_irn_intra_n(node, n)   __get_irn_intra_n(node, n)
+#define get_irn_inter_n(node, n)   __get_irn_inter_n(node, n)
+#define get_irn_n(node, n)         __get_irn_n(node, n)
+#define get_irn_mode(node)         __get_irn_mode(node)
+#define set_irn_mode(node, mode)   __set_irn_mode(node, mode)
+#define get_irn_op(node)           __get_irn_op(node)
+#define get_irn_opcode(node)       __get_irn_opcode(node)
+#define get_irn_visited(node)      __get_irn_visited(node)
+#define set_irn_visited(node, v)   __set_irn_visited(node, v)
+#define mark_irn_visited(node)     __mark_irn_visited(node)
+#define irn_visited(node)          __irn_visited(node)
+#define irn_not_visited(node)      __irn_not_visited(node)
+#define set_irn_link(node, link)   __set_irn_link(node, link)
+#define get_irn_link(node)         __get_irn_link(node)
 
 # endif /* _IRNODE_T_H_ */

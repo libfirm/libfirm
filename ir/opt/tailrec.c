@@ -47,15 +47,15 @@ static void collect_data(ir_node *node, void *env)
   ir_node *pred;
   ir_op *op;
 
-  switch (intern_get_irn_opcode(node)) {
+  switch (get_irn_opcode(node)) {
   case iro_Proj:
     pred = get_Proj_pred(node);
 
-    op = intern_get_irn_op(pred);
+    op = get_irn_op(pred);
     if (op == op_Proj) {
       ir_node *start = get_Proj_pred(pred);
 
-      if (intern_get_irn_op(start) == op_Start) {
+      if (get_irn_op(start) == op_Start) {
 	if (get_Proj_proj(pred) == pn_Start_T_args) {
 	  /* found Proj(ProjT(Start)) */
 	  set_irn_link(node, data->proj_data);
@@ -259,23 +259,23 @@ void opt_tail_rec_irg(ir_graph *irg)
     ir_node **ress;
 
     /* search all returns of a block */
-    if (intern_get_irn_op(ret) != op_Return)
+    if (get_irn_op(ret) != op_Return)
       continue;
 
     /* check, if it's a Return self() */
     proj_m = get_Return_mem(ret);
 
-    if (intern_get_irn_op(proj_m) != op_Proj)
+    if (get_irn_op(proj_m) != op_Proj)
       continue;
 
     call = get_Proj_pred(proj_m);
-    if (intern_get_irn_op(call) != op_Call)
+    if (get_irn_op(call) != op_Call)
       continue;
 
     /* check if it's a recursive call */
     call_ptr = get_Call_ptr(call);
 
-    if (intern_get_irn_op(call_ptr) != op_Const)
+    if (get_irn_op(call_ptr) != op_Const)
       continue;
 
     tv = get_Const_tarval(call_ptr);
@@ -295,14 +295,14 @@ void opt_tail_rec_irg(ir_graph *irg)
       ir_node *proj_proj;
       ir_node *irn;
 
-      if (intern_get_irn_op(proj) != op_Proj) {
+      if (get_irn_op(proj) != op_Proj) {
 	/* not routed to a call */
 	break;
       }
 
       proj_proj = get_Proj_pred(proj);
 
-      if (intern_get_irn_op(proj) != op_Proj) {
+      if (get_irn_op(proj) != op_Proj) {
 	/* not routed to a call */
 	break;
       }

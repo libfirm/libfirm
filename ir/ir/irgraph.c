@@ -273,64 +273,66 @@ get_irg_graph_nr(ir_graph *irg) {
 }
 
 ir_node *
-get_irg_start_block (ir_graph *irg)
+(get_irg_start_block)(ir_graph *irg)
 {
-  return irg->start_block;
+  return __get_irg_start_block(irg);
 }
 
 void
-set_irg_start_block (ir_graph *irg, ir_node *node)
+(set_irg_start_block)(ir_graph *irg, ir_node *node)
 {
-  irg->start_block = node;
+  __set_irg_start_block(irg, node);
 }
 
 ir_node *
-get_irg_start (ir_graph *irg)
+(get_irg_start)(ir_graph *irg)
 {
-  return irg->start;
+  return __get_irg_start(irg);
 }
 
 void
-set_irg_start(ir_graph *irg, ir_node *node)
+(set_irg_start)(ir_graph *irg, ir_node *node)
 {
-  irg->start = node;
+  __set_irg_start(irg, node);
 }
 
 ir_node *
-get_irg_end_block (ir_graph *irg)
+(get_irg_end_block)(ir_graph *irg)
 {
-  return irg->end_block;
+  return __get_irg_end_block(irg);
 }
 
 void
-set_irg_end_block (ir_graph *irg, ir_node *node)
+(set_irg_end_block)(ir_graph *irg, ir_node *node)
 {
-  irg->end_block = node;
+  __set_irg_end_block(irg, node);
 }
 
 ir_node *
-get_irg_end (ir_graph *irg)
+(get_irg_end)(ir_graph *irg)
 {
-  return irg->end;
+  return __get_irg_end(irg);
 }
 
 void
-set_irg_end (ir_graph *irg, ir_node *node)
+(set_irg_end)(ir_graph *irg, ir_node *node)
 {
-  irg->end = node;
+  __set_irg_end(irg, node);
 }
 
 ir_node *
-get_irg_end_reg (ir_graph *irg) {
-  return irg->end_reg;
+(get_irg_end_reg)(ir_graph *irg) {
+  return __get_irg_end_reg(irg);
 }
+
 void     set_irg_end_reg (ir_graph *irg, ir_node *node) {
   assert(get_irn_op(node) == op_EndReg || get_irn_op(node) == op_End);
   irg->end_reg = node;
 }
 
-ir_node *get_irg_end_except (ir_graph *irg) {
-  return irg->end_except;
+ir_node *
+(get_irg_end_except)(ir_graph *irg) {
+  return __get_irg_end_except(irg);
 }
 
 void     set_irg_end_except (ir_graph *irg, ir_node *node) {
@@ -339,63 +341,63 @@ void     set_irg_end_except (ir_graph *irg, ir_node *node) {
 }
 
 ir_node *
-get_irg_cstore (ir_graph *irg)
+(get_irg_cstore)(ir_graph *irg)
 {
-  return irg->cstore;
+  return __get_irg_cstore(irg);
 }
 
 void
-set_irg_cstore (ir_graph *irg, ir_node *node)
+(set_irg_cstore)(ir_graph *irg, ir_node *node)
 {
-  irg->cstore = node;
+  __set_irg_cstore(irg, node);
 }
 
 ir_node *
-get_irg_frame (ir_graph *irg)
+(get_irg_frame)(ir_graph *irg)
 {
-  return irg->frame;
+  return __get_irg_frame(irg);
 }
 
 void
-set_irg_frame (ir_graph *irg, ir_node *node)
+(set_irg_frame)(ir_graph *irg, ir_node *node)
 {
-  irg->frame = node;
+  __set_irg_frame(irg, node);
 }
 
 ir_node *
-get_irg_globals (ir_graph *irg)
+(get_irg_globals)(ir_graph *irg)
 {
-  return irg->globals;
+  return __get_irg_globals(irg);
 }
 
 void
-set_irg_globals (ir_graph *irg, ir_node *node)
+(set_irg_globals)(ir_graph *irg, ir_node *node)
 {
-  irg->globals = node;
+  __set_irg_globals(irg, node);
 }
 
 ir_node *
-get_irg_args (ir_graph *irg)
+(get_irg_args)(ir_graph *irg)
 {
-  return irg->args;
+  return __get_irg_args(irg);
 }
 
 void
-set_irg_args (ir_graph *irg, ir_node *node)
+(set_irg_args)(ir_graph *irg, ir_node *node)
 {
-  irg->args = node;
+  __set_irg_args(irg, node);
 }
 
 ir_node *
-get_irg_bad (ir_graph *irg)
+(get_irg_bad)(ir_graph *irg)
 {
-  return irg->bad;
+  return __get_irg_bad(irg);
 }
 
 void
-set_irg_bad (ir_graph *irg, ir_node *node)
+(set_irg_bad)(ir_graph *irg, ir_node *node)
 {
-  irg->bad = node;
+  __set_irg_bad(irg, node);
 }
 
 /* GL removed: we need unknown with mode for analyses.
@@ -413,42 +415,39 @@ set_irg_unknown (ir_graph *irg, ir_node *node)
 */
 
 ir_node *
-get_irg_current_block (ir_graph *irg)
+(get_irg_current_block)(ir_graph *irg)
 {
-  return irg->current_block;
+  return __get_irg_current_block(irg);
 }
 
 void
-set_irg_current_block (ir_graph *irg, ir_node *node)
+(set_irg_current_block)(ir_graph *irg, ir_node *node)
 {
-  irg->current_block = node;
+  __set_irg_current_block(irg, node);
 }
 
 entity *
-get_irg_ent (ir_graph *irg)
+(get_irg_ent)(ir_graph *irg)
 {
-  assert(irg && irg->ent);
-  return irg->ent;
+  return __get_irg_ent(irg);
 }
 
 void
-set_irg_ent (ir_graph *irg, entity *ent)
+(set_irg_ent)(ir_graph *irg, entity *ent)
 {
-  irg->ent = ent;
+  __set_irg_ent(irg, ent);
 }
 
 type *
-get_irg_frame_type (ir_graph *irg)
+(get_irg_frame_type)(ir_graph *irg)
 {
-  assert(irg && irg->frame_type);
-  return irg->frame_type;
+  return __get_irg_frame_type(irg);
 }
 
 void
-set_irg_frame_type (ir_graph *irg, type *ftp)
+(set_irg_frame_type)(ir_graph *irg, type *ftp)
 {
-  assert(is_class_type(ftp));
-  irg->frame_type = ftp;
+  __set_irg_frame_type(irg, ftp);
 }
 
 
@@ -488,8 +487,9 @@ set_irg_n_loc (ir_graph *irg, int n_loc)
 
 
 /* Returns the obstack associated with the graph. */
-struct obstack *get_irg_obstack(ir_graph *irg) {
-  return irg->obst;
+struct obstack *
+(get_irg_obstack)(ir_graph *irg) {
+  return __get_irg_obstack(irg);
 }
 
 /*
@@ -587,23 +587,23 @@ void set_irg_inline_property(ir_graph *irg, irg_inline_property s) {
 }
 
 
-INLINE void
-set_irg_link (ir_graph *irg, void *thing) {
-  irg->link = thing;
+void
+(set_irg_link)(ir_graph *irg, void *thing) {
+  __set_irg_link(irg, thing);
 }
 
-INLINE void *
-get_irg_link (ir_graph *irg) {
-  return irg->link;
+void *
+(get_irg_link)(ir_graph *irg) {
+  return __get_irg_link(irg);
 }
 
 /* maximum visited flag content of all ir_graph visited fields. */
 static int max_irg_visited = 0;
 
 unsigned long
-get_irg_visited (ir_graph *irg)
+(get_irg_visited)(ir_graph *irg)
 {
-  return irg->visited;
+  return __get_irg_visited(irg);
 }
 
 void
@@ -651,19 +651,19 @@ inc_max_irg_visited(void)
 }
 
 unsigned long
-get_irg_block_visited (ir_graph *irg)
+(get_irg_block_visited)(ir_graph *irg)
 {
-  return irg->block_visited;
+  return __get_irg_block_visited(irg);
 }
 
 void
-set_irg_block_visited (ir_graph *irg, unsigned long visited)
+(set_irg_block_visited)(ir_graph *irg, unsigned long visited)
 {
-  irg->block_visited = visited;
+  __set_irg_block_visited(irg, visited);
 }
 
 void
-inc_irg_block_visited (ir_graph *irg)
+(inc_irg_block_visited)(ir_graph *irg)
 {
-  ++irg->block_visited;
+  __inc_irg_block_visited(irg);
 }

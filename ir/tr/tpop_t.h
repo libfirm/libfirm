@@ -83,4 +83,28 @@ void finish_tpop(void);
  */
 int get_tpop_attr_size (tp_op *op);
 
+
+/* ---------------- *
+ * inline functions *
+ * -----------------*/
+
+static INLINE tp_opcode
+__get_tpop_code(tp_op *op) {
+  return op->code;
+}
+
+static INLINE ident *
+__get_tpop_ident(tp_op *op){
+  return op->name;
+}
+
+static INLINE int
+__get_tpop_attr_size(tp_op *op) {
+  return op->attr_size;
+}
+
+#define get_tpop_code(op)      __get_tpop_code(op)
+#define get_tpop_ident(op)     __get_tpop_ident(op)
+#define get_tpop_attr_size(op) __get_tpop_attr_size(op)
+
 #endif /* _TPOP_T_H_ */

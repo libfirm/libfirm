@@ -33,7 +33,7 @@ turn_into_tuple (ir_node *node, int arity)
 {
   assert(node);
   set_irn_op(node, op_Tuple);
-  if (intern_get_irn_arity(node) == arity) {
+  if (get_irn_arity(node) == arity) {
     /* keep old array */
   } else {
     /* Allocate new array, don't free old in_array, it's on the obstack. */
@@ -75,13 +75,13 @@ clear_link (ir_node *n, void *env) {
 static void
 collect (ir_node *n, void *env) {
   ir_node *pred;
-  if (intern_get_irn_op(n) == op_Phi) {
+  if (get_irn_op(n) == op_Phi) {
     set_irn_link(n, get_irn_link(get_nodes_Block(n)));
     set_irn_link(get_nodes_Block(n), n);
   }
-  if (intern_get_irn_op(n) == op_Proj) {
+  if (get_irn_op(n) == op_Proj) {
     pred = n;
-    while (intern_get_irn_op(pred) == op_Proj)
+    while (get_irn_op(pred) == op_Proj)
       pred = get_Proj_pred(pred);
     set_irn_link(n, get_irn_link(pred));
     set_irn_link(pred, n);
@@ -117,7 +117,7 @@ static void move (ir_node *node, ir_node *from_bl, ir_node *to_bl) {
   set_nodes_Block(node, to_bl);
 
   /* move its projs */
-  if (intern_get_irn_mode(node) == mode_T) {
+  if (get_irn_mode(node) == mode_T) {
     proj = get_irn_link(node);
     while (proj) {
       if (get_nodes_Block(proj) == from_bl)
@@ -127,9 +127,9 @@ static void move (ir_node *node, ir_node *from_bl, ir_node *to_bl) {
   }
 
   /* recursion ... */
-  if (intern_get_irn_op(node) == op_Phi) return;
+  if (get_irn_op(node) == op_Phi) return;
 
-  for (i = 0; i < intern_get_irn_arity(node); i++) {
+  for (i = 0; i < get_irn_arity(node); i++) {
     pred = get_irn_n(node, i);
     if (get_nodes_Block(pred) == from_bl)
       move(pred, from_bl, to_bl);

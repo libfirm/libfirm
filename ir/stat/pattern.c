@@ -116,7 +116,7 @@ static void _encode_node(ir_node *node, CODE_BUFFER *buf, int max_depth)
   opcode code;
   int i, preds;
 
-  code = intern_get_irn_opcode(node);
+  code = get_irn_opcode(node);
   put_code(buf, code);
 
   --max_depth;
@@ -126,11 +126,11 @@ static void _encode_node(ir_node *node, CODE_BUFFER *buf, int max_depth)
     return;
   }
 
-  preds = intern_get_irn_arity(node);
+  preds = get_irn_arity(node);
   put_code(buf, preds);
 
   for (i = 0; i < preds; ++i) {
-    ir_node *n = intern_get_irn_n(node, i);
+    ir_node *n = get_irn_n(node, i);
 
     _encode_node(n, buf, max_depth);
   }

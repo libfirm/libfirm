@@ -27,7 +27,7 @@
  * very careful!
  */
 static INLINE int *mere_get_backarray(ir_node *n) {
-  switch(intern_get_irn_opcode(n)) {
+  switch (get_irn_opcode(n)) {
   case iro_Block:
     if (!get_Block_matured(n)) return NULL;
     if (interprocedural_view && n->attr.block.in_cg) {
@@ -82,7 +82,7 @@ static INLINE bool legal_backarray (ir_node *n) {
 
 
 INLINE void fix_backedges(struct obstack *obst, ir_node *n) {
-  opcode opc = intern_get_irn_opcode(n);
+  opcode opc = get_irn_opcode(n);
   int *arr = mere_get_backarray(n);
   if (ARR_LEN(arr) == ARR_LEN(get_irn_in(n))-1)
     return;
@@ -130,7 +130,7 @@ bool has_backedges (ir_node *n) {
   int i;
   int *ba = get_backarray (n);
   if (ba)
-    for (i = 0; i < intern_get_irn_arity(n); i++)
+    for (i = 0; i < get_irn_arity(n); i++)
       if (ba[i]) return true;
   return false;
 }
@@ -142,12 +142,12 @@ void clear_backedges (ir_node *n) {
   interprocedural_view = 0;
   ba = get_backarray (n);
   if (ba)
-    for (i = 0; i < intern_get_irn_arity(n); i++)
+    for (i = 0; i < get_irn_arity(n); i++)
       ba[i] = 0;
   interprocedural_view = 1;
   ba = get_backarray (n);
   if (ba)
-    for (i = 0; i < intern_get_irn_arity(n); i++)
+    for (i = 0; i < get_irn_arity(n); i++)
       ba[i] = 0;
   interprocedural_view = rem;
 }

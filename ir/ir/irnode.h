@@ -94,16 +94,17 @@ typedef struct ir_node ir_node;
 /**
  *   Checks whether a pointer points to a ir node.
  *
- *   @param thing     an arbitrary pointer
- *
- *   @return
- *       true if the thing is a ir mode, else false
+ *   @param thing   an arbitrary pointer
+ *   @return        non-zero if the thing is a ir mode, else zero
  */
-int
-is_ir_node (const void *thing);
+int is_ir_node (const void *thing);
 
-/** returns the number of predecessors without the block predecessor: */
-int                  get_irn_arity         (const ir_node *node);
+/**
+ * Returns the number of predecessors without the block predecessor.
+ *
+ * @param node   the IR-node
+ */
+int           get_irn_arity         (const ir_node *node);
 int           get_irn_intra_arity   (const ir_node *node);
 int           get_irn_inter_arity   (const ir_node *node);
 
@@ -121,14 +122,20 @@ void          set_irn_in            (ir_node *node, int arity,
    to iterate including the Block predecessor iterate from i = -1 to
    i < get_irn_arity. */
 /* Access predecessor n */
-/* get_irn_n removes Id predecessors. */
+
+/**
+ * Get the n-th predecessor of a node.
+ * This function removes Id predecessors.
+ */
 ir_node      *get_irn_n             (ir_node *node, int n);
 ir_node      *get_irn_intra_n       (ir_node *node, int n);
 ir_node      *get_irn_inter_n       (ir_node *node, int n);
+
+/** Replace the n-th predecessor of a node with a new one. */
 void          set_irn_n             (ir_node *node, int n, ir_node *in);
-/** Sets the mode struct of node */
+/* Sets the mode struct of node.  */
 void          set_irn_mode (ir_node *node, ir_mode *mode);
-/** Gets the mode struct. */
+/** Gets the mode struct of a node.  */
 ir_mode      *get_irn_mode          (const ir_node *node);
 /** Gets the mode-enum modecode. */
 modecode      get_irn_modecode      (const ir_node *node);
@@ -136,7 +143,7 @@ modecode      get_irn_modecode      (const ir_node *node);
 ident        *get_irn_modeident     (const ir_node *node);
 /** Gets the string representation of the mode .*/
 const char   *get_irn_modename      (const ir_node *node);
-/** Gets the opcode struct of the node */
+/** Gets the opcode struct of the node. */
 ir_op        *get_irn_op            (const ir_node *node);
 /** Sets the opcode struct of the node. */
 void          set_irn_op            (ir_node *node, ir_op *op);
@@ -146,15 +153,24 @@ opcode        get_irn_opcode        (const ir_node *node);
 const char   *get_irn_opname        (const ir_node *node);
 /** Get the ident for a string representation of the opcode. */
 ident        *get_irn_opident       (const ir_node *node);
+/** Gets the visited counter of a node. */
 unsigned long get_irn_visited (const ir_node *node);
+/** Sets the visited counter of a node. */
 void          set_irn_visited (ir_node *node, unsigned long visited);
 /** Sets visited to get_irg_visited(current_ir_graph). */
 void          mark_irn_visited (ir_node *node);
-/** Returns 1 if visited < get_irg_visited(current_ir_graph).  */
+/** Returns 1 if visited < get_irg_visited(current_ir_graph). */
 int           irn_not_visited  (const ir_node *node);
-/** Returns 1 if visited >= get_irg_visited(current_ir_graph).  */
+/** Returns 1 if visited >= get_irg_visited(current_ir_graph). */
 int           irn_visited      (const ir_node *node);
+
+/**
+ * Sets the link of a node.
+ * Only allowed if the graph is NOT in phase_building.
+ */
 void          set_irn_link     (ir_node *node, void *link);
+
+/** Returns the link of a node.  */
 void         *get_irn_link     (const ir_node *node);
 
 /** Returns the ir_graph this node belongs to. Only valid if irg
@@ -207,7 +223,7 @@ void      set_nodes_Block (ir_node *node, ir_node *block);
 
 /**
  * @function get_irn_block
- * @see get_nodes_block
+ * @see get_nodes_block()
  */
 
 /**

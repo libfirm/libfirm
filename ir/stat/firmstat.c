@@ -383,13 +383,13 @@ static opt_entry_t *opt_get_entry(const ir_op *op, pset *set)
  */
 static ir_op *stat_get_irn_op(const ir_node *node)
 {
-  ir_op *op = intern_get_irn_op(node);
+  ir_op *op = get_irn_op(node);
 
-  if (op->code == iro_Phi && intern_get_irn_arity(node) == 0) {
+  if (op->code == iro_Phi && get_irn_arity(node) == 0) {
     /* special case, a Phi0 node, count on extra counter */
     op = status->op_Phi0;
   }
-  else if (op->code == iro_Phi && intern_get_irn_mode(node) == mode_M) {
+  else if (op->code == iro_Phi && get_irn_mode(node) == mode_M) {
     /* special case, a Memory Phi node, count on extra counter */
     op = status->op_PhiM;
   }
@@ -413,7 +413,7 @@ static void count_nodes(ir_node *node, void *env)
   cnt_env_t *cenv = env;
   node_entry_t *entry;
   ir_op *op = stat_get_irn_op(node);
-  int arity = intern_get_irn_arity(node);
+  int arity = get_irn_arity(node);
 
   entry = opcode_get_entry(op, cenv->set);
 

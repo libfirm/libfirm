@@ -279,7 +279,7 @@ static bool is_outermost_StartBlock(ir_node *n) {
      recursion must end. */
   assert(is_Block(n));
   if ((get_Block_n_cfgpreds(n) == 1)  &&
-      (intern_get_irn_op(skip_Proj(get_Block_cfgpred(n, 0))) == op_Start) &&
+      (get_irn_op(skip_Proj(get_Block_cfgpred(n, 0))) == op_Start) &&
       (get_nodes_Block(skip_Proj(get_Block_cfgpred(n, 0))) == n)) {
     return true;
   }
@@ -300,9 +300,9 @@ is_head (ir_node *n, ir_node *root)
   assert(is_Block(n));
 
   if (!is_outermost_StartBlock(n)) {
-    arity = intern_get_irn_arity(n);
+    arity = get_irn_arity(n);
     for (i = 0; i < arity; i++) {
-      ir_node *pred = get_nodes_block(skip_Proj(intern_get_irn_n(n, i)));
+      ir_node *pred = get_nodes_block(skip_Proj(get_irn_n(n, i)));
       if (is_backedge(n, i)) continue;
       if (!irn_is_in_stack(pred)) {
 	some_outof_loop = 1;
@@ -326,9 +326,9 @@ smallest_dfn_pred (ir_node *n, int limit)
   int i, index = -2, min = -1;
 
   if (!is_outermost_StartBlock(n)) {
-    int arity = intern_get_irn_arity(n);
+    int arity = get_irn_arity(n);
     for (i = 0; i < arity; i++) {
-      ir_node *pred = get_nodes_block(skip_Proj(intern_get_irn_n(n, i)));
+      ir_node *pred = get_nodes_block(skip_Proj(get_irn_n(n, i)));
       if (is_backedge(n, i) || !irn_is_in_stack(pred)) continue;
       if (get_irn_dfn(pred) >= limit && (min == -1 || get_irn_dfn(pred) < min)) {
 	index = i;
@@ -346,9 +346,9 @@ largest_dfn_pred (ir_node *n)
   int i, index = -2, max = -1;
 
   if (!is_outermost_StartBlock(n)) {
-    int arity = intern_get_irn_arity(n);
+    int arity = get_irn_arity(n);
     for (i = 0; i < arity; i++) {
-      ir_node *pred = get_nodes_block(skip_Proj(intern_get_irn_n(n, i)));
+      ir_node *pred = get_nodes_block(skip_Proj(get_irn_n(n, i)));
       if (is_backedge (n, i) || !irn_is_in_stack(pred)) continue;
       if (get_irn_dfn(pred) > max) {
 	index = i;
@@ -390,7 +390,7 @@ find_tail (ir_node *n) {
   assert (res_index > -2);
 
   set_backedge (m, res_index);
-  return is_outermost_StartBlock(n) ? NULL : get_nodes_block(skip_Proj(intern_get_irn_n(m, res_index)));
+  return is_outermost_StartBlock(n) ? NULL : get_nodes_block(skip_Proj(get_irn_n(m, res_index)));
 }
 
 /*-----------------------------------------------------------*
@@ -418,12 +418,12 @@ static void cfscc (ir_node *n) {
      so is_backedge does not access array[-1] but correctly returns false! */
 
   if (!is_outermost_StartBlock(n)) {
-    int arity = intern_get_irn_arity(n);
+    int arity = get_irn_arity(n);
 
     for (i = 0; i < arity; i++) {
       ir_node *m;
       if (is_backedge(n, i)) continue;
-      m = get_nodes_block(skip_Proj(intern_get_irn_n(n, i)));
+      m = get_nodes_block(skip_Proj(get_irn_n(n, i)));
 
       cfscc (m);
       if (irn_is_in_stack(m)) {

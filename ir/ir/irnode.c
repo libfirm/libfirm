@@ -139,26 +139,23 @@ copy_attrs (const ir_node *old_node, ir_node *new_node) {
 /*-- getting some parameters from ir_nodes --*/
 
 int
-is_ir_node (const void *thing) {
-  if (get_kind(thing) == k_ir_node)
-    return 1;
-  else
-    return 0;
+(is_ir_node)(const void *thing) {
+  return __is_ir_node(thing);
 }
 
 int
-get_irn_intra_arity (const ir_node *node) {
-  return intern_get_irn_intra_arity(node);
+(get_irn_intra_arity)(const ir_node *node) {
+  return __get_irn_intra_arity(node);
 }
 
 int
-get_irn_inter_arity (const ir_node *node) {
-  return intern_get_irn_inter_arity(node);
+(get_irn_inter_arity)(const ir_node *node) {
+  return __get_irn_inter_arity(node);
 }
 
 int
-get_irn_arity (const ir_node *node) {
-  return intern_get_irn_arity(node);
+(get_irn_arity)(const ir_node *node) {
+  return __get_irn_arity(node);
 }
 
 /* Returns the array with ins. This array is shifted with respect to the
@@ -208,18 +205,18 @@ set_irn_in (ir_node *node, int arity, ir_node **in) {
 }
 
 ir_node *
-get_irn_intra_n (ir_node *node, int n) {
-  return intern_get_irn_intra_n (node, n);
+(get_irn_intra_n)(ir_node *node, int n) {
+  return __get_irn_intra_n (node, n);
 }
 
 ir_node *
-get_irn_inter_n (ir_node *node, int n) {
-  return intern_get_irn_inter_n (node, n);
+(get_irn_inter_n)(ir_node *node, int n) {
+  return __get_irn_inter_n (node, n);
 }
 
 ir_node *
-get_irn_n (ir_node *node, int n) {
-  return intern_get_irn_n (node, n);
+(get_irn_n)(ir_node *node, int n) {
+  return __get_irn_n (node, n);
 }
 
 void
@@ -247,16 +244,14 @@ set_irn_n (ir_node *node, int n, ir_node *in) {
 }
 
 ir_mode *
-get_irn_mode (const ir_node *node) {
-  return intern_get_irn_mode(node);
+(get_irn_mode)(const ir_node *node) {
+  return __get_irn_mode(node);
 }
 
 void
-set_irn_mode (ir_node *node, ir_mode *mode)
+(set_irn_mode)(ir_node *node, ir_mode *mode)
 {
-  assert (node);
-  node->mode=mode;
-  return;
+  __set_irn_mode(node, mode);
 }
 
 modecode
@@ -282,9 +277,9 @@ get_irn_modeident (const ir_node *node)
 }
 
 ir_op *
-get_irn_op (const ir_node *node)
+(get_irn_op)(const ir_node *node)
 {
-  return intern_get_irn_op(node);
+  return __get_irn_op(node);
 }
 
 /* should be private to the library: */
@@ -296,9 +291,9 @@ set_irn_op (ir_node *node, ir_op *op)
 }
 
 opcode
-get_irn_opcode (const ir_node *node)
+(get_irn_opcode)(const ir_node *node)
 {
-  return intern_get_irn_opcode(node);
+  return __get_irn_opcode(node);
 }
 
 const char *
@@ -316,51 +311,40 @@ get_irn_opident (const ir_node *node)
 }
 
 unsigned long
-get_irn_visited (const ir_node *node)
+(get_irn_visited)(const ir_node *node)
 {
-  assert (node);
-  return node->visited;
+  return __get_irn_visited(node);
 }
 
 void
-set_irn_visited (ir_node *node, unsigned long visited)
+(set_irn_visited)(ir_node *node, unsigned long visited)
 {
-  assert (node);
-  node->visited = visited;
+  __set_irn_visited(node, visited);
 }
 
 void
-mark_irn_visited (ir_node *node) {
-  assert (node);
-  node->visited = current_ir_graph->visited;
+(mark_irn_visited)(ir_node *node) {
+  __mark_irn_visited(node);
 }
 
 int
-irn_not_visited  (const ir_node *node) {
-  assert (node);
-  return (node->visited < current_ir_graph->visited);
+(irn_not_visited)(const ir_node *node) {
+  return __irn_not_visited(node);
 }
 
 int
-irn_visited  (const ir_node *node) {
-  assert (node);
-  return (node->visited >= current_ir_graph->visited);
+(irn_visited)(const ir_node *node) {
+  return __irn_visited(node);
 }
 
 void
-set_irn_link (ir_node *node, void *link) {
-  assert (node);
-  /* Link field is used for Phi construction and various optimizations
-     in iropt. */
-  assert(get_irg_phase_state(current_ir_graph) != phase_building);
-
-  node->link = link;
+(set_irn_link)(ir_node *node, void *link) {
+  __set_irn_link(node, link);
 }
 
 void *
-get_irn_link (const ir_node *node) {
-  assert (node);
-  return node->link;
+(get_irn_link)(const ir_node *node) {
+  return __get_irn_link(node);
 }
 
 /* Outputs a unique number for this node */
@@ -1886,7 +1870,7 @@ skip_nop (ir_node *node) {
     ir_node *rem_pred = node->in[0+1];
     ir_node *res;
 
-    assert (intern_get_irn_arity (node) > 0);
+    assert (get_irn_arity (node) > 0);
 
     node->in[0+1] = node;
     res = skip_nop(rem_pred);
@@ -1917,7 +1901,7 @@ skip_nop (ir_node *node) {
     if (pred->op != op_Id) return pred; /* shortcut */
     rem_pred = pred;
 
-    assert (intern_get_irn_arity (node) > 0);
+    assert (get_irn_arity (node) > 0);
 
     node->in[0+1] = node;
     res = skip_nop(rem_pred);

@@ -86,9 +86,10 @@ void init_type(void) {
 }
 
 unsigned long type_visited;
-void set_master_type_visited(unsigned long val) { type_visited = val; }
-unsigned long get_master_type_visited() { return type_visited; }
-void inc_master_type_visited() { type_visited++; }
+
+void (set_master_type_visited)(unsigned long val) { __set_master_type_visited(val); }
+unsigned long (get_master_type_visited)(void)     { return __get_master_type_visited(); }
+void (inc_master_type_visited)(void)              { __inc_master_type_visited(); }
 
 
 type *
@@ -162,26 +163,22 @@ void free_type_attrs(type *tp) {
 }
 
 /* set/get the link field */
-void *get_type_link(type *tp)
+void *(get_type_link)(type *tp)
 {
-  assert(tp && tp->kind == k_type);
-  return(tp -> link);
+  return __get_type_link(tp);
 }
 
-void set_type_link(type *tp, void *l)
+void (set_type_link)(type *tp, void *l)
 {
-  assert(tp && tp->kind == k_type);
-  tp -> link = l;
+  __set_type_link(tp, l);
 }
 
-tp_op*      get_type_tpop(type *tp) {
-  assert(tp && tp->kind == k_type);
-  return tp->type_op;
+tp_op *(get_type_tpop)(type *tp) {
+  return __get_type_tpop(tp);
 }
 
-ident*      get_type_tpop_nameid(type *tp) {
-  assert(tp && tp->kind == k_type);
-  return tp->type_op->name;
+ident *(get_type_tpop_nameid)(type *tp) {
+  return __get_type_tpop_nameid(tp);
 }
 
 const char* get_type_tpop_name(type *tp) {
@@ -189,14 +186,12 @@ const char* get_type_tpop_name(type *tp) {
   return get_id_str(tp->type_op->name);
 }
 
-tp_opcode    get_type_tpop_code(type *tp) {
-  assert(tp && tp->kind == k_type);
-  return tp->type_op->code;
+tp_opcode (get_type_tpop_code)(type *tp) {
+  return __get_type_tpop_code(tp);
 }
 
-ir_mode*    get_type_mode(type *tp) {
-  assert(tp && tp->kind == k_type);
-  return tp->mode;
+ir_mode *(get_type_mode)(type *tp) {
+  return __get_type_mode(tp);
 }
 
 void        set_type_mode(type *tp, ir_mode* m) {
@@ -219,25 +214,17 @@ void        set_type_mode(type *tp, ir_mode* m) {
   }
 }
 
-ident*      get_type_ident(type *tp) {
-  assert(tp && tp->kind == k_type);
-  return tp->name;
+ident *(get_type_ident)(type *tp) {
+  return __get_type_ident(tp);
 }
 
-void        set_type_ident(type *tp, ident* id) {
-  assert(tp && tp->kind == k_type);
-  tp->name = id;
+void (set_type_ident)(type *tp, ident* id) {
+  __set_type_ident(tp, id);
 }
 
 /* Outputs a unique number for this node */
-long
-get_type_nr(type *tp) {
-  assert(tp);
-#ifdef DEBUG_libfirm
-  return tp->nr;
-#else
-  return (long)tp;
-#endif
+long (get_type_nr)(type *tp) {
+  return __get_type_nr(tp);
 }
 
 const char* get_type_name(type *tp) {
@@ -245,9 +232,8 @@ const char* get_type_name(type *tp) {
   return (get_id_str(tp->name));
 }
 
-int         get_type_size(type *tp) {
-  assert(tp && tp->kind == k_type);
-  return tp->size;
+int (get_type_size)(type *tp) {
+  return __get_type_size(tp);
 }
 
 void
@@ -260,10 +246,8 @@ set_type_size(type *tp, int size) {
     tp->size = size;
 }
 
-type_state
-get_type_state(type *tp) {
-  assert(tp && tp->kind == k_type);
-  return tp->state;
+type_state (get_type_state)(type *tp) {
+  return __get_type_state(tp);
 }
 
 void
@@ -320,40 +304,31 @@ set_type_state(type *tp, type_state state) {
   tp->state = state;
 }
 
-unsigned long get_type_visited(type *tp) {
-  assert(tp && tp->kind == k_type);
-  return tp->visit;
+unsigned long (get_type_visited)(type *tp) {
+  return __get_type_visited(tp);
 }
 
-void        set_type_visited(type *tp, unsigned long num) {
-  assert(tp && tp->kind == k_type);
-  tp->visit = num;
+void (set_type_visited)(type *tp, unsigned long num) {
+  __set_type_visited(tp, num);
 }
+
 /* Sets visited field in type to type_visited. */
-void        mark_type_visited(type *tp) {
-  assert(tp && tp->kind == k_type);
-  assert(tp->visit < type_visited);
-  tp->visit = type_visited;
+void (mark_type_visited)(type *tp) {
+  __mark_type_visited(tp);
 }
+
 /* @@@ name clash with master flag
-bool          type_visited(type *tp) {
-  assert(tp && tp->kind == k_type);
-  return tp->visit >= type_visited;
-  }*/
-bool          type_not_visited(type *tp) {
-  assert(tp && tp->kind == k_type);
-  return tp->visit  < type_visited;
+int (type_visited)(type *tp) {
+  return __type_visited(tp);
+}*/
+
+int (type_not_visited)(type *tp) {
+  return __type_not_visited(tp);
 }
 
-
-int is_type            (void *thing) {
-  assert(thing);
-  if (get_kind(thing) == k_type)
-    return 1;
-  else
-    return 0;
+int (is_type)(void *thing) {
+  return __is_type(thing);
 }
-
 
 bool equal_type(type *typ1, type *typ2) {
   entity **m;
@@ -828,9 +803,8 @@ int get_class_dfn (type *clss)
 }
 
 /* typecheck */
-bool    is_class_type(type *clss) {
-  assert(clss);
-  if (clss->type_op == type_class) return 1; else return 0;
+int (is_class_type)(type *clss) {
+  return __is_class_type(clss);
 }
 
 bool is_subclass_of(type *low, type *high) {
@@ -921,9 +895,8 @@ void    remove_struct_member(type *strct, entity *member) {
 }
 
 /* typecheck */
-bool    is_struct_type(type *strct) {
-  assert(strct);
-  if (strct->type_op == type_struct) return 1; else return 0;
+int (is_struct_type)(type *strct) {
+  return __is_struct_type(strct);
 }
 
 /*******************************************************************/
@@ -1155,9 +1128,8 @@ void set_method_first_variadic_param_index(type *method, int index)
 }
 
 /* typecheck */
-bool  is_method_type     (type *method) {
-  assert(method);
-  return (method->type_op == type_method);
+int (is_method_type)(type *method) {
+  return __is_method_type(method);
 }
 
 /*-----------------------------------------------------------------*/
@@ -1251,9 +1223,8 @@ void   remove_union_member(type *uni, entity *member) {
 }
 
 /* typecheck */
-bool   is_union_type         (type *uni) {
-  assert(uni);
-  if (uni->type_op == type_union) return 1; else return 0;
+int (is_union_type)(type *uni) {
+  return __is_union_type(uni);
 }
 
 /*-----------------------------------------------------------------*/
@@ -1288,6 +1259,7 @@ type *new_type_array         (ident *name, int n_dimensions,
 
   return res;
 }
+
 type *new_d_type_array (ident *name, int n_dimensions,
 			type *element_type, dbg_info* db) {
   type *res = new_type_array (name, n_dimensions, element_type);
@@ -1298,6 +1270,7 @@ type *new_d_type_array (ident *name, int n_dimensions,
 void free_array_entities (type *array) {
   assert(array && (array->type_op == type_array));
 }
+
 void free_array_attrs (type *array) {
   assert(array && (array->type_op == type_array));
   free(array->attr.aa.lower_bound);
@@ -1404,9 +1377,8 @@ entity *get_array_element_entity (type *array) {
 }
 
 /* typecheck */
-bool   is_array_type         (type *array) {
-  assert(array);
-  if (array->type_op == type_array) return 1; else return 0;
+int (is_array_type)(type *array) {
+  return __is_array_type(array);
 }
 
 /*-----------------------------------------------------------------*/
@@ -1471,9 +1443,8 @@ const char *get_enumeration_name(type *enumeration, int pos) {
 }
 
 /* typecheck */
-bool    is_enumeration_type     (type *enumeration) {
-  assert(enumeration);
-  if (enumeration->type_op == type_enumeration) return 1; else return 0;
+int (is_enumeration_type)(type *enumeration) {
+  return __is_enumeration_type(enumeration);
 }
 
 /*-----------------------------------------------------------------*/
@@ -1513,9 +1484,8 @@ type *get_pointer_points_to_type (type *pointer) {
 }
 
 /* typecheck */
-bool  is_pointer_type            (type *pointer) {
-  assert(pointer);
-  if (pointer->type_op == type_pointer) return 1; else return 0;
+int (is_pointer_type)(type *pointer) {
+  return __is_pointer_type(pointer);
 }
 
 /* Returns the first pointer type that has as points_to tp.
@@ -1560,9 +1530,8 @@ void free_primitive_attrs (type *primitive) {
 }
 
 /* typecheck */
-bool  is_primitive_type  (type *primitive) {
-  assert(primitive && primitive->kind == k_type);
-  if (primitive->type_op == type_primitive) return 1; else return 0;
+int (is_primitive_type)(type *primitive) {
+  return __is_primitive_type(primitive);
 }
 
 /*-----------------------------------------------------------------*/
@@ -1570,10 +1539,8 @@ bool  is_primitive_type  (type *primitive) {
 /*-----------------------------------------------------------------*/
 
 
-int is_atomic_type(type *tp) {
-  assert(tp && tp->kind == k_type);
-  return (is_primitive_type(tp) || is_pointer_type(tp) ||
-	  is_enumeration_type(tp));
+int (is_atomic_type)(type *tp) {
+  return __is_atomic_type(tp);
 }
 
 /*

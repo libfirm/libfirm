@@ -16,6 +16,8 @@
 # include "config.h"
 # endif
 # include "type.h"
+# include "tpop_t.h"
+
 /**
  * @file type_t.h
  * This file contains the datatypes hidden in type.h.
@@ -167,5 +169,209 @@ INLINE void free_primitive_attrs  (type *primitive);
 
 /** initialize the type module */
 void init_type (void);
+
+
+/* ------------------- *
+ *  inline functions   *
+ * ------------------- */
+
+extern unsigned long type_visited;
+
+static INLINE void __set_master_type_visited(unsigned long val) { type_visited = val; }
+static INLINE unsigned long __get_master_type_visited(void)     { return type_visited; }
+static INLINE void __inc_master_type_visited(void)              { type_visited++; }
+
+static INLINE void *
+__get_type_link(type *tp) {
+  assert(tp && tp->kind == k_type);
+  return(tp -> link);
+}
+
+static INLINE void
+__set_type_link(type *tp, void *l) {
+  assert(tp && tp->kind == k_type);
+  tp -> link = l;
+}
+
+static INLINE tp_op*
+__get_type_tpop(type *tp) {
+  assert(tp && tp->kind == k_type);
+  return tp->type_op;
+}
+
+static INLINE ident*
+__get_type_tpop_nameid(type *tp) {
+  assert(tp && tp->kind == k_type);
+  return get_tpop_ident(tp->type_op);
+}
+
+static INLINE tp_opcode
+__get_type_tpop_code(type *tp) {
+  assert(tp && tp->kind == k_type);
+  return get_tpop_code(tp->type_op);
+}
+
+static INLINE ir_mode *
+__get_type_mode(type *tp) {
+  assert(tp && tp->kind == k_type);
+  return tp->mode;
+}
+
+static INLINE ident *
+__get_type_ident(type *tp) {
+  assert(tp && tp->kind == k_type);
+  return tp->name;
+}
+
+static INLINE void
+__set_type_ident(type *tp, ident* id) {
+  assert(tp && tp->kind == k_type);
+  tp->name = id;
+}
+
+static INLINE long
+__get_type_nr(type *tp) {
+  assert(tp);
+#ifdef DEBUG_libfirm
+  return tp->nr;
+#else
+  return (long)tp;
+#endif
+}
+
+static INLINE int
+__get_type_size(type *tp) {
+  assert(tp && tp->kind == k_type);
+  return tp->size;
+}
+
+static INLINE type_state
+__get_type_state(type *tp) {
+  assert(tp && tp->kind == k_type);
+  return tp->state;
+}
+
+static INLINE unsigned long
+__get_type_visited(type *tp) {
+  assert(tp && tp->kind == k_type);
+  return tp->visit;
+}
+
+static INLINE void
+__set_type_visited(type *tp, unsigned long num) {
+  assert(tp && tp->kind == k_type);
+  tp->visit = num;
+}
+
+static INLINE void
+__mark_type_visited(type *tp) {
+  assert(tp && tp->kind == k_type);
+  assert(tp->visit < type_visited);
+  tp->visit = type_visited;
+}
+
+static INLINE int
+__type_visited(type *tp) {
+  assert(tp && tp->kind == k_type);
+  return tp->visit >= type_visited;
+}
+
+static INLINE int
+__type_not_visited(type *tp) {
+  assert(tp && tp->kind == k_type);
+  return tp->visit  < type_visited;
+}
+
+static INLINE int
+__is_type(void *thing) {
+  return (get_kind(thing) == k_type);
+}
+
+static INLINE int
+__is_class_type(type *clss) {
+  assert(clss);
+  return (clss->type_op == type_class);
+}
+
+static INLINE int
+__is_struct_type(type *strct) {
+  assert(strct);
+  return (strct->type_op == type_struct);
+}
+
+static INLINE int
+__is_method_type(type *method) {
+  assert(method);
+  return (method->type_op == type_method);
+}
+
+static INLINE int
+__is_union_type(type *uni) {
+  assert(uni);
+  return (uni->type_op == type_union);
+}
+
+static INLINE int
+__is_array_type(type *array) {
+  assert(array);
+  return (array->type_op == type_array);
+}
+
+static INLINE int
+__is_enumeration_type(type *enumeration) {
+  assert(enumeration);
+  return (enumeration->type_op == type_enumeration);
+}
+
+static INLINE int
+__is_pointer_type(type *pointer) {
+  assert(pointer);
+  return (pointer->type_op == type_pointer);
+}
+
+/** Returns true if a type is a primitive type. */
+static INLINE int
+__is_primitive_type(type *primitive) {
+  assert(primitive && primitive->kind == k_type);
+  return (primitive->type_op == type_primitive);
+}
+
+static INLINE int
+__is_atomic_type(type *tp) {
+  assert(tp && tp->kind == k_type);
+  return (is_primitive_type(tp) || is_pointer_type(tp) ||
+	  is_enumeration_type(tp));
+}
+
+
+#define set_master_type_visited(val)      __set_master_type_visited(val)
+#define get_master_type_visited()         __get_master_type_visited()
+#define inc_master_type_visited()         __inc_master_type_visited()
+#define get_type_link(tp)                 __get_type_link(tp)
+#define set_type_link(tp, l)              __set_type_link(tp, l)
+#define get_type_tpop(tp)                 __get_type_tpop(tp)
+#define get_type_tpop_nameid(tp)          __get_type_tpop_nameid(tp)
+#define get_type_tpop_code(tp)            __get_type_tpop_code(tp)
+#define get_type_mode(tp)                 __get_type_mode(tp)
+#define get_type_ident(tp)                __get_type_ident(tp)
+#define set_type_ident(tp, id)            __set_type_ident(tp, id)
+#define get_type_nr(tp)                   __get_type_nr(tp)
+#define get_type_size(tp)                 __get_type_size(tp)
+#define get_type_state(tp)                __get_type_state(tp)
+#define get_type_visited(tp)              __get_type_visited(tp)
+#define set_type_visited(tp, num)         __set_type_visited(tp, num)
+#define mark_type_visited(tp)             __mark_type_visited(tp)
+#define type_visited(tp)                  __type_visited(tp)
+#define type_not_visited(tp)              __type_not_visited(tp)
+#define is_type(thing)                    __is_type(thing)
+#define is_class_type(clss)               __is_class_type(clss)
+#define is_struct_type(strct)             __is_struct_type(strct)
+#define is_method_type(method)            __is_method_type(method)
+#define is_union_type(uni)                __is_union_type(uni)
+#define is_array_type(array)              __is_array_type(array)
+#define is_enumeration_type(enumeration)  __is_enumeration_type(enumeration)
+#define is_pointer_type(pointer)          __is_pointer_type(pointer)
+#define is_primitive_type(primitive)      __is_primitive_type(primitive)
+#define is_atomic_type(tp)                __is_atomic_type(tp)
 
 # endif /* _TYPE_T_H_ */

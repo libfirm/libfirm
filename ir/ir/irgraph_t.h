@@ -121,4 +121,240 @@ struct obstack *get_irg_obstack(ir_graph *irg);
  */
 int node_is_in_irgs_storage(ir_graph *irg, ir_node *n);
 
+/*-------------------------------------------------------------------*/
+/* inline functions for graphs                                       */
+/*-------------------------------------------------------------------*/
+
+/** Returns the start block of a graph. */
+static INLINE ir_node *
+__get_irg_start_block(ir_graph *irg)
+{
+  return irg->start_block;
+}
+
+static INLINE void
+__set_irg_start_block(ir_graph *irg, ir_node *node)
+{
+  irg->start_block = node;
+}
+
+static INLINE ir_node *
+__get_irg_start(ir_graph *irg)
+{
+  return irg->start;
+}
+
+static INLINE void
+__set_irg_start(ir_graph *irg, ir_node *node)
+{
+  irg->start = node;
+}
+
+static INLINE ir_node *
+__get_irg_end_block(ir_graph *irg)
+{
+  return irg->end_block;
+}
+
+static INLINE void
+__set_irg_end_block(ir_graph *irg, ir_node *node)
+{
+  irg->end_block = node;
+}
+
+static INLINE ir_node *
+__get_irg_end(ir_graph *irg)
+{
+  return irg->end;
+}
+
+static INLINE void
+__set_irg_end(ir_graph *irg, ir_node *node)
+{
+  irg->end = node;
+}
+
+static INLINE ir_node *
+__get_irg_end_reg(ir_graph *irg) {
+  return irg->end_reg;
+}
+
+static INLINE ir_node *
+__get_irg_end_except (ir_graph *irg) {
+  return irg->end_except;
+}
+
+static INLINE ir_node *
+__get_irg_cstore(ir_graph *irg)
+{
+  return irg->cstore;
+}
+
+static INLINE void
+__set_irg_cstore(ir_graph *irg, ir_node *node)
+{
+  irg->cstore = node;
+}
+
+static INLINE ir_node *
+__get_irg_frame(ir_graph *irg)
+{
+  return irg->frame;
+}
+
+static INLINE void
+__set_irg_frame(ir_graph *irg, ir_node *node)
+{
+  irg->frame = node;
+}
+
+static INLINE ir_node *
+__get_irg_globals(ir_graph *irg)
+{
+  return irg->globals;
+}
+
+static INLINE void
+__set_irg_globals(ir_graph *irg, ir_node *node)
+{
+  irg->globals = node;
+}
+
+static INLINE ir_node *
+__get_irg_args(ir_graph *irg)
+{
+  return irg->args;
+}
+
+static INLINE void
+__set_irg_args(ir_graph *irg, ir_node *node)
+{
+  irg->args = node;
+}
+
+static INLINE ir_node *
+__get_irg_bad(ir_graph *irg)
+{
+  return irg->bad;
+}
+
+static INLINE void
+__set_irg_bad(ir_graph *irg, ir_node *node)
+{
+  irg->bad = node;
+}
+
+static INLINE ir_node *
+__get_irg_current_block(ir_graph *irg)
+{
+  return irg->current_block;
+}
+
+static INLINE void
+__set_irg_current_block(ir_graph *irg, ir_node *node)
+{
+  irg->current_block = node;
+}
+
+static INLINE entity *
+__get_irg_ent(ir_graph *irg)
+{
+  assert(irg && irg->ent);
+  return irg->ent;
+}
+
+static INLINE void
+__set_irg_ent(ir_graph *irg, entity *ent)
+{
+  irg->ent = ent;
+}
+
+static INLINE type *
+__get_irg_frame_type(ir_graph *irg)
+{
+  assert(irg && irg->frame_type);
+  return irg->frame_type;
+}
+
+static INLINE void
+__set_irg_frame_type(ir_graph *irg, type *ftp)
+{
+  assert(is_class_type(ftp));
+  irg->frame_type = ftp;
+}
+
+static INLINE struct obstack *
+__get_irg_obstack(ir_graph *irg) {
+  return irg->obst;
+}
+
+
+static INLINE void
+__set_irg_link(ir_graph *irg, void *thing) {
+  irg->link = thing;
+}
+
+static INLINE void *
+__get_irg_link(ir_graph *irg) {
+  return irg->link;
+}
+
+static INLINE unsigned long
+__get_irg_visited(ir_graph *irg)
+{
+  return irg->visited;
+}
+
+static INLINE unsigned long
+__get_irg_block_visited(ir_graph *irg)
+{
+  return irg->block_visited;
+}
+
+static INLINE void
+__set_irg_block_visited(ir_graph *irg, unsigned long visited)
+{
+  irg->block_visited = visited;
+}
+
+static INLINE void
+__inc_irg_block_visited(ir_graph *irg)
+{
+  ++irg->block_visited;
+}
+
+#define get_irg_start_block(irg)         __get_irg_start_block(irg)
+#define set_irg_start_block(irg, node)   __set_irg_start_block(irg, node)
+#define get_irg_start(irg)               __get_irg_start(irg)
+#define set_irg_start(irg, node)         __set_irg_start(irg, node)
+#define get_irg_end_block(irg)           __get_irg_end_block(irg)
+#define set_irg_end_block(irg, node)     __set_irg_end_block(irg, node)
+#define get_irg_end(irg)                 __get_irg_end(irg)
+#define set_irg_end(irg, node)           __set_irg_end(irg, node)
+#define get_irg_end_reg(irg)             __get_irg_end_reg(irg)
+#define get_irg_end_except(irg)          __get_irg_end_except(irg)
+#define get_irg_cstore(irg)              __get_irg_cstore(irg)
+#define set_irg_cstore(irg, node)        __set_irg_cstore(irg, node)
+#define get_irg_frame(irg)               __get_irg_frame(irg)
+#define set_irg_frame(irg, node)         __set_irg_frame(irg, node)
+#define get_irg_globals(irg)             __get_irg_globals(irg)
+#define set_irg_globals(irg, node)       __set_irg_globals(irg, node)
+#define get_irg_args(irg)                __get_irg_args(irg)
+#define set_irg_args(irg, node)          __set_irg_args(irg, node)
+#define get_irg_bad(irg)                 __get_irg_bad(irg)
+#define set_irg_bad(irg, node)           __set_irg_bad(irg, node)
+#define get_irg_current_block(irg)       __get_irg_current_block(irg)
+#define set_irg_current_block(irg, node) __set_irg_current_block(irg, node)
+#define get_irg_ent(irg)                 __get_irg_ent(irg)
+#define set_irg_ent(irg, ent)            __set_irg_ent(irg, ent)
+#define get_irg_frame_type(irg)          __get_irg_frame_type(irg)
+#define set_irg_frame_type(irg, ftp)     __set_irg_frame_type(irg, ftp)
+#define get_irg_obstack(irg)             __get_irg_obstack(irg)
+#define set_irg_link(irg, thing)         __set_irg_link(irg, thing)
+#define get_irg_link(irg)                __get_irg_link(irg)
+#define get_irg_visited(irg)             __get_irg_visited(irg)
+#define get_irg_block_visited(irg)       __get_irg_block_visited(irg)
+#define set_irg_block_visited(irg, v)    __set_irg_block_visited(irg, v)
+#define inc_irg_block_visited(irg)       __inc_irg_block_visited(irg)
+
 # endif /* _IRGRAPH_T_H_ */
