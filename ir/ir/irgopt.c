@@ -34,6 +34,7 @@
 # include "irloop.h"
 # include "irbackedge_t.h"
 # include "irflag_t.h"
+# include "firmstat.h"
 
 /* Defined in iropt.c */
 pset *new_identities (void);
@@ -594,6 +595,52 @@ copy_node_inline (ir_node *n, void *env) {
   }
 }
 
+static void find_addr(ir_node *node, void *env)
+{
+  if (get_irn_opcode(node) == iro_Proj) {
+    if (get_Proj_proj(node) == pn_Start_P_value_arg_base)
+      *(int *)env = 0;
+  }
+}
+
+/*
+ * currently, we cannot inline two cases:
+ * - call with compound arguments
+ * - graphs that take the address of a parameter
+ *
+ * check these condition here
+ */
+static int can_inline(ir_node *call, ir_graph *called_graph)
+{
+  type *call_type = get_Call_type(call);
+  int params, ress, i, res;
+
+  assert(is_method_type(call_type));
+
+  params = get_method_n_params(call_type);
+  ress   = get_method_n_ress(call_type);
+
+  /* check params */
+  for (i = 0; i < params; ++i) {
+    type *p_type = get_method_param_type(call_type, i);
+
+    if (is_compound_type(p_type))
+      return 0;
+  }
+
+  /* check res */
+  for (i = 0; i < ress; ++i) {
+    type *r_type = get_method_res_type(call_type, i);
+
+    if (is_compound_type(r_type))
+      return 0;
+  }
+
+  res = 1;
+  irg_walk_graph(called_graph, find_addr, NULL, &res);
+
+  return res;
+}
 
 void inline_method(ir_node *call, ir_graph *called_graph) {
   ir_node *pre_call;
@@ -606,9 +653,19 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   int arity, n_ret, n_exc, n_res, i, j, rem_opt, irn_arity;
   int exc_handling;
   type *called_frame;
+  irg_inline_property prop = get_irg_inline_property(called_graph);
 
-  if ( !(get_irg_inline_property(called_graph) == irg_inline_forced) && (!get_opt_optimize() || !get_opt_inline() ||
-      (get_irg_inline_property(called_graph) == irg_inline_forbidden))) return;
+  if ( (prop != irg_inline_forced) && (!get_opt_optimize() || !get_opt_inline() ||
+      (prop == irg_inline_forbidden))) return;
+
+
+  /*
+   * currently, we cannot inline two cases:
+   * - call with compound arguments
+   * - graphs that take the address of a parameter
+   */
+  if (! can_inline(call, called_graph))
+    return;
 
   /* --  Turn off optimizations, this can cause problems when allocating new nodes. -- */
   rem_opt = get_opt_optimize();
@@ -633,6 +690,9 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
     set_optimize(rem_opt);
     return;
   }
+
+  /* here we know we WILL inline, so inform the statistics */
+  stat_inline(call, called_graph);
 
   /* -- Decide how to handle exception control flow: Is there a handler
      for the Call node, or do we branch directly to End on an exception?
@@ -1128,7 +1188,6 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
 
     irg_walk(get_irg_end(current_ir_graph), NULL, collect_calls2,
          get_irg_link(current_ir_graph));
-    env = (inline_irg_env *)get_irg_link(current_ir_graph);
   }
 
   /* and now inline.
