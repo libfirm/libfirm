@@ -30,8 +30,6 @@ struct ir_loop {
 
   struct ir_loop *outer_loop;       /**< The outer loop */
   loop_element   *children;         /**< Mixed array: Contains sons and loop_nodes */
-/*  struct ir_loop **sons; */           /**< Inner loops */
-/*  struct ir_node **nodes; */          /**< Nodes in loop. */
   int depth;                        /**< Nesting depth */
   int n_sons;                       /**< Number of ir_nodes in array "children" */
   int n_nodes;                      /**< Number of loop_nodes in array "childern" */
@@ -51,10 +49,10 @@ struct ir_loop {
 
 };
 
-INLINE void
+void
 add_loop_son(ir_loop *loop, ir_loop *son);
 
-INLINE void
+void
 add_loop_node(ir_loop *loop, ir_node *n);
 
 /* The following functions are needed in ircfloop.c */

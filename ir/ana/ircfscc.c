@@ -28,7 +28,7 @@
 #include "irprog_t.h"
 #include "irdump.h"
 
-ir_graph *outermost_ir_graph;      /* The outermost graph the scc is computed
+static ir_graph *outermost_ir_graph;      /* The outermost graph the scc is computed
                       for */
 static ir_loop *current_loop;      /* Current cfloop construction is working
                       on. */
@@ -39,15 +39,10 @@ static int current_dfn = 1;        /* Counter to generate depth first numbering
                       of visited nodes.  */
 
 void link_to_reg_end (ir_node *n, void *env);
-void set_projx_link(ir_node *cb_projx, ir_node *end_projx);
-ir_node *get_projx_link(ir_node *cb_projx);
 
 /**********************************************************************/
 /* Node attributes                                                   **/
 /**********************************************************************/
-
-/* A map to get from irnodes to loop nodes. */
-static pmap *node_loop_map = NULL;
 
 /**********************************************************************/
 /* Node attributes needed for the construction.                      **/
@@ -253,7 +248,6 @@ static INLINE void
 init_scc_common (void) {
   current_dfn = 1;
   loop_node_cnt = 0;
-  if (!node_loop_map) node_loop_map = pmap_create();
   init_stack();
 }
 
@@ -652,7 +646,5 @@ void free_all_cfloop_information (void) {
   for (i = 0; i < get_irp_n_irgs(); i++) {
     free_cfloop_information(get_irp_irg(i));
   }
-  pmap_destroy(node_loop_map);
-  node_loop_map = NULL;
   interprocedural_view = rem;
 }
