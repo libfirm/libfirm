@@ -87,6 +87,9 @@ typedef enum {
   /** Optimize Loads and Stores */
   OPT_REDUNDANT_LOADSTORE                = 0x00040000,
 
+  /** Optimize Fragile OPs */
+  OPT_FRAGILE_OPS                        = 0x00080000,
+
   /** Turn off all optimizations. */
   OPT_OPTIMIZED                          = 0x40000000,
 
@@ -231,6 +234,11 @@ static INLINE int get_opt_precise_exc_context(void)
   return libFIRM_opt & OPT_PRECISE_EXC_CONTEXT;
 }
 
+/** Returns fragile ops setting. */
+static INLINE int get_opt_fragile_ops(void)
+{
+  return libFIRM_opt & OPT_FRAGILE_OPS;
+}
 
 
 #define get_opt_cse()          _get_opt_cse()
