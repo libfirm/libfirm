@@ -646,7 +646,7 @@ static int can_inline(ir_node *call, ir_graph *called_graph)
   return res;
 }
 
-void inline_method(ir_node *call, ir_graph *called_graph) {
+int inline_method(ir_node *call, ir_graph *called_graph) {
   ir_node *pre_call;
   ir_node *post_call, *post_bl;
   ir_node *in[5];
@@ -660,7 +660,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   irg_inline_property prop = get_irg_inline_property(called_graph);
 
   if ( (prop != irg_inline_forced) && (!get_opt_optimize() || !get_opt_inline() ||
-      (prop == irg_inline_forbidden))) return;
+      (prop == irg_inline_forbidden))) return 0;
 
 
   /*
@@ -669,7 +669,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
    * - graphs that take the address of a parameter
    */
   if (! can_inline(call, called_graph))
-    return;
+    return 0;
 
   /* --  Turn off optimizations, this can cause problems when allocating new nodes. -- */
   rem_opt = get_opt_optimize();
@@ -692,7 +692,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   assert(get_type_tpop(get_Call_type(call)) == type_method);
   if (called_graph == current_ir_graph) {
     set_optimize(rem_opt);
-    return;
+    return 0;
   }
 
   /* here we know we WILL inline, so inform the statistics */
@@ -997,6 +997,8 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
 
   /* --  Turn cse back on. -- */
   set_optimize(rem_opt);
+
+  return 1;
 }
 
 /********************************************************************/
@@ -1095,7 +1097,7 @@ void inline_small_irgs(ir_graph *irg, int size) {
       tv = get_Const_tarval(get_Call_ptr(env.calls[i]));
       callee = get_entity_irg(tarval_to_entity(tv));
       if (((_obstack_memory_used(callee->obst) - obstack_room(callee->obst)) < size) ||
-      (get_irg_inline_property(callee) == irg_inline_forced)) {
+        (get_irg_inline_property(callee) == irg_inline_forced)) {
         inline_method(env.calls[i], callee);
       }
     }
@@ -1169,7 +1171,7 @@ INLINE static int is_smaller(ir_graph *callee, int size) {
 }
 
 
-/**
+/*
  * Inlines small leave methods at call sites where the called address comes
  * from a Const node that references the entity representing the called
  * method.
@@ -1232,13 +1234,14 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
           callee_env = (inline_irg_env *)get_irg_link(callee);
 /*         printf(" %s: Inlineing %s.\n", get_entity_name(get_irg_entity(current_ir_graph)), */
 /*         get_entity_name(get_irg_entity(callee))); */
-          inline_method(call, callee);
-          did_inline = 1;
-          env->n_call_nodes--;
-          eset_insert_all(env->call_nodes, callee_env->call_nodes);
-          env->n_call_nodes += callee_env->n_call_nodes;
-          env->n_nodes += callee_env->n_nodes;
-          callee_env->n_callers--;
+          if (inline_method(call, callee)) {
+            did_inline = 1;
+	    env->n_call_nodes--;
+	    eset_insert_all(env->call_nodes, callee_env->call_nodes);
+	    env->n_call_nodes += callee_env->n_call_nodes;
+	    env->n_nodes += callee_env->n_nodes;
+	    callee_env->n_callers--;
+	  }
         } else {
           eset_insert(env->call_nodes, call);
         }
@@ -1274,13 +1277,14 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
         callee_env = (inline_irg_env *)get_irg_link(callee);
 /*       printf(" %s: Inlineing %s.\n", get_entity_name(get_irg_entity(current_ir_graph)), */
 /*       get_entity_name(get_irg_entity(callee))); */
-        inline_method(call, callee);
-        did_inline = 1;
-        env->n_call_nodes--;
-        eset_insert_all(env->call_nodes, callee_env->call_nodes);
-        env->n_call_nodes += callee_env->n_call_nodes;
-        env->n_nodes += callee_env->n_nodes;
-        callee_env->n_callers--;
+        if (inline_method(call, callee)) {
+	  did_inline = 1;
+	  env->n_call_nodes--;
+	  eset_insert_all(env->call_nodes, callee_env->call_nodes);
+	  env->n_call_nodes += callee_env->n_call_nodes;
+	  env->n_nodes += callee_env->n_nodes;
+	  callee_env->n_callers--;
+	}
       } else {
         eset_insert(env->call_nodes, call);
       }

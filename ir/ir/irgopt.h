@@ -73,8 +73,15 @@ void remove_bad_predecessors(ir_graph *irg);
    "pinned".
    It is recommended to call local_optimize_graph after inlining as this
    function leaves a set of obscure Tuple nodes, e.g. a Proj-Tuple-Jmp
-   combination as control flow operation. */
-void inline_method(ir_node *call, ir_graph *called_graph);
+   combination as control flow operation.
+
+   @param call          the call node that should be inlined
+   @param called_graph  the IR-graph that is called at call
+
+   @return zero if method could not be inlined (recursion for instance),
+           non-zero if all went ok
+*/
+int inline_method(ir_node *call, ir_graph *called_graph);
 
 /** Inlines all small methods at call sites where the called address comes
    from a Const node that references the entity representing the called
@@ -103,12 +110,12 @@ void inline_small_irgs(ir_graph *irg, int size);
  *  For a heuristic this inlineing uses firm node counts.  It does
  *  not count auxiliary nodes as Proj, Tuple, End, Start, Id, Sync.
  *
- *  maxsize   Do not inline any calls if a method has more than
- *            maxsize firm nodes.  It may reach this limit by
- *            inlineing.
- *  leavesize Inline leave functions if they have less than leavesize
- *            nodes.
- *  size      Inline all function smaller than size.
+ *  @param maxsize   Do not inline any calls if a method has more than
+ *                   maxsize firm nodes.  It may reach this limit by
+ *                   inlineing.
+ *  @param leavesize Inline leave functions if they have less than leavesize
+ *                   nodes.
+ *  @param size      Inline all function smaller than size.
  */
 void inline_leave_functions(int maxsize, int leavesize, int size);
 
