@@ -38,8 +38,6 @@
 #include "type_t.h"
 #include "tv_t.h"
 
-#define FIRM_EDGES_INPLACE 1
-
 
 /** ir node attributes **/
 
