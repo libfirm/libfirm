@@ -1593,35 +1593,6 @@ tarval_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
   return printed;
 }
 
-
-/* Labeling of tarvals */
-// CS-hac
-/*
-label
-tarval_label (tarval *tv)
-{
-  if (!tv->lab) {
-    tv->lab = new_label();
-    tv->used = 1;
-  }
-  return tv->lab;
-}
-
-
-void
-tarval_forall_labeled (int (*f) (tarval *, void *), void *data)
-{
-  tarval *tv;
-
-  for (tv = pset_first (tarvals);  tv;  tv = pset_next (tarvals)) {
-    if (tv->lab && f (tv, data)) {
-      pset_break (tarvals);
-      return;
-    }
-  }
-}
-*/
-
 ir_mode *
 get_tv_mode (tarval *tv)
 {
