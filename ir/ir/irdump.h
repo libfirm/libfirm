@@ -297,4 +297,13 @@ void dump_analysed_type_info(bool b);
  * vcg graphs -- these will differ in the pointer values!
  */
 void dump_pointer_values_to_info(bool b);
+
+
+/**
+ * Dump a standalone loop tree, which contains the loop nodes and the firm nodes
+ * belonging to one loop packed together in one subgraph.
+ */
+
+void dump_standalone_loop_tree(ir_graph *irg);
+
 # endif /* _IRDUMP_H_ */

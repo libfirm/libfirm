@@ -42,7 +42,7 @@
 
 # include "exc.h"
 
-/*define HEAPANAL */
+#define HEAPANAL
 #ifdef HEAPANAL
 void dump_chi_term(FILE *FL, ir_node *n);
 void dump_state(FILE *FL, ir_node *n);
@@ -1755,4 +1755,84 @@ void dump_all_ir_graphs (dump_graph_func *dmp_grph) {
   for (i=0; i < get_irp_n_irgs(); i++) {
     dmp_grph(get_irp_irg(i));
   }
+}
+
+
+/**********************************************************************************
+ * Dumps a stand alone loop graph with firm nodes which belong to one loop nodes  *
+ * packed together in one subgraph                                                *
+ **********************************************************************************/
+
+
+
+void dump_loops_standalone (ir_loop *loop) {
+  int i, loop_node_started = 0, son_number = 0, chunk_nr = 0;
+  loop_element le;
+
+  /* Start a new loop node */
+  fprintf (F, "node: {title: \"%p\" color: yellow label: \"loop %d, %d sons, %d nodes\" }\n",
+	    (void*)loop, get_loop_depth(loop), get_loop_n_sons(loop), get_loop_n_nodes(loop));
+
+  for(i = 0; i < get_loop_n_elements(loop); i++)
+    {
+      le = get_loop_element(loop, i);
+
+      ir_loop *son = le.son;
+      if (get_kind(son) == k_ir_loop)
+	{
+	  /* We are a loop son -> Recurse */
+
+	  if(loop_node_started) /* Close the "firm-nodes" node first if we started one. */
+	    {
+	      fprintf(F, "\" }");
+	      loop_node_started = 0;
+	    }
+	  dump_loops_standalone(son);
+	  dump_loop_son_edge(loop, son_number++);
+	}
+      else
+	{
+	  /* We are a loop node -> Collect firm nodes */
+
+	  ir_node *n = le.node;
+
+	  if(!loop_node_started)
+	    {
+	      /* Start a new node which contains all firm nodes of the current loop */
+
+	      fprintf (F, "edge: {sourcename: \"%p\" targetname: \"%p-%d-nodes\" color: darkgreen}\n",
+		       (void *)loop, (void *)loop, chunk_nr);
+
+	      fprintf (F, "node: { title: \"%p-%d-nodes\" color: red label: \"", loop, chunk_nr++);
+	      loop_node_started = 1;
+	    }
+
+	  dump_node_opcode(n);
+	  dump_node_mode (n);
+	  dump_node_typeinfo(n);
+	  fprintf (F, " ");
+	  dump_node_nodeattr(n);
+	  fprintf (F, " %ld\n", get_irn_node_nr(n));
+	}
+    }
+
+  if(loop_node_started)
+    {
+      fprintf(F, "\" }");
+      loop_node_started = 0;
+    }
+}
+
+void dump_standalone_loop_tree(ir_graph *irg)
+{
+  ir_graph *rem = current_ir_graph;
+  current_ir_graph = irg;
+
+  vcg_open(irg, "-standalone-looptree", "");
+
+  if (get_irg_loop(irg)) dump_loops_standalone(get_irg_loop(irg));
+
+  vcg_close();
+
+  current_ir_graph = rem;
 }

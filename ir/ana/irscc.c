@@ -209,6 +209,7 @@ static INLINE void
 pop_scc_to_loop (ir_node *n)
 {
   ir_node *m;
+  int i = 0;
 
   /*for (;;) {*/
   do
@@ -218,8 +219,12 @@ pop_scc_to_loop (ir_node *n)
     set_irn_dfn(m, loop_node_cnt);
     add_loop_node(current_loop, m);
     set_irn_loop(m, current_loop);
+    i++;
     /*    if (m==n) break;*/
     } while(m != n);
+
+  if(i > 1)
+    printf("Mehr als eine Iteration!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 }
 
 /* GL ??? my last son is my grandson???  Removes loops with no
@@ -630,12 +635,13 @@ INLINE static bool is_possible_loop_head(ir_node *n) {
 
 /* Returns true if n is a loop header, i.e., it is a Block, Phi
    or Filter node and has predecessors within the loop and out
-   of the loop. */
+   of the loop.
+   @arg root: only needed for assertion. */
 static bool
 is_head (ir_node *n, ir_node *root)
 {
   int i;
-  int some_outof_loop = 0,  some_in_loop = 0;
+  int some_outof_loop = 0, some_in_loop = 0;
 
   /* Test for legal loop header: Block, Phi, ... */
   if (!is_possible_loop_head(n))
@@ -669,8 +675,7 @@ smallest_dfn_pred (ir_node *n, int limit)
       ir_node *pred = get_irn_n(n, i);
       assert(pred);
       if (is_backedge(n, i) || !irn_is_in_stack(pred)) continue;
-      if (get_irn_dfn(pred) >= limit
-	&& (min == -1 || get_irn_dfn(pred) < min)) {
+      if (get_irn_dfn(pred) >= limit && (min == -1 || get_irn_dfn(pred) < min)) {
 	index = i;
 	min = get_irn_dfn(pred);
       }
@@ -761,6 +766,10 @@ static void scc (ir_node *n) {
 
   push(n);
 
+  /* AS: get_start_index might return -1 for Control Flow Nodes, and thus a negative
+     array index would be passed to is_backedge(). But CFG Nodes dont't have a backedge array,
+     so is_backedge does not access array[-1] but correctly returns false! */
+
   if (!is_outermost_Start(n)) {
     for (i = get_start_index(n); i < get_irn_arity(n); i++) {
       ir_node *m;
@@ -779,11 +788,13 @@ static void scc (ir_node *n) {
       }
     }
   }
+
   if (get_irn_dfn(n) == get_irn_uplink(n)) {
-    /* This condition holds for the node with the incoming backedge. */
+    /* This condition holds for the node with the incoming backedge.
+       AS: That is: For the loop head. */
     ir_node *tail = find_tail(n);
     if (tail) {
-      /* We found a new loop! */
+      /* We found a new inner loop! */
       ir_loop *l = new_loop();
 
       /* Remove the loop from the stack ... */
@@ -797,9 +808,9 @@ static void scc (ir_node *n) {
 
       assert (irn_visited(n));
       close_loop(l);
-
-      /*      current_loop = l; AS: This is done close_loop */
     } else {
+      /* AS: No inner loop was found. Pop all nodes from the stack
+	 to the current loop. */
       pop_scc_to_loop(n);
     }
   }
