@@ -76,23 +76,20 @@ ir_node **find_irg_args (ir_graph *graph)
 {
   type *tp = get_entity_type (get_irg_entity (graph));
   const int n_args = get_method_n_params (tp);
-  ir_node **args = xmalloc (sizeof(*args) * (n_args+1));
+  ir_node **args = xcalloc (n_args + 1, sizeof(args[0]));
   ir_node *arg = get_irg_args (graph);
-  find_irg_args_env_t *arg_env = xmalloc(sizeof(*arg_env));
+  find_irg_args_env_t arg_env;
 
-  arg_env->args = args;
-  arg_env->arg  = arg;
+  arg_env.args = args;
+  arg_env.arg  = arg;
 
   {
     ir_graph *save = get_current_ir_graph ();
 
     set_current_ir_graph (graph);
-    irg_walk (get_irg_end (graph), find_irg_arg, NULL, arg_env);
+    irg_walk (get_irg_end (graph), find_irg_arg, NULL, &arg_env);
     set_current_ir_graph (save);
   }
-
-  memset (arg_env, 0x00, sizeof (find_irg_args_env_t));
-  free (arg_env);
 
   args [n_args] = NULL;
 
@@ -150,6 +147,10 @@ int is_dummy_load_ptr (ir_node *ptr)
 
 /*
   $Log$
+  Revision 1.14  2004/12/23 15:47:09  beck
+  removed uneeded allocations
+  used new xcalloc
+
   Revision 1.13  2004/12/22 14:43:14  beck
   made allocations C-like
 
