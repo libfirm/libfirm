@@ -1,8 +1,14 @@
+/*
+ * (C) 2001 by Universitaet Karlsruhe
+ */
+
 /**
  *
- *   file type.h - datastructure to hold type information.
- *  (C) 2001 by Universitaet Karlsruhe
- *  Goetz Lindenmaier
+ *  @file type.h
+ *
+ *  Datastructure to hold type information.
+ *
+ *  @author Goetz Lindenmaier
  *
  *  This module supplies a datastructure to represent all types
  *  known in the compiled program.  This includes types specified
@@ -47,8 +53,8 @@ typedef struct ir_node ir_node;
 #endif
 
 /**
+ *  An abstract data type to represent types.
  *
- *   An abstract data type to represent types.
  *  This is the abstract data type with which any type known in the
  *  compiled program can be represented.  This includes types specified
  *  in the program as well as types defined by the language.  In the
@@ -63,20 +69,20 @@ typedef struct ir_node ir_node;
  *  The following describes the common attributes.  They can only be
  *  accessed by the functions given below.
  *
- *  @param The common fields are:
+ *  The common fields are:
  *
- *  @param firm_kind    A firm_kind tag containing k_type.  This is useful
+ *  - firm_kind    A firm_kind tag containing k_type.  This is useful
  *               for dynamically checking whether a node is a type node.
- *  @param type_op      A tp_op specifying the kind of the type.
- *  @param mode         The mode to be used to represent the type on a machine.
+ *  - type_op      A tp_op specifying the kind of the type.
+ *  - mode         The mode to be used to represent the type on a machine.
  *               @@@ maybe not global field??
- *  @param name         An identifier specifying the name of the type.  To be
+ *  - name         An identifier specifying the name of the type.  To be
  *               set by the frontend.
- *  @param size         The size of the type, i.e. an entity of this type will
+ *  - size         The size of the type, i.e. an entity of this type will
  *               occupy size bytes in memory.  In several cases this is
  *               determined when fixing the layout of this type (class,
  *               struct, union, array, enumeration).
- *  @param state        The state of the type.  The state represents whether the
+ *  - state        The state of the type.  The state represents whether the
  *               layout of the type is undefined or fixed (values: layout_undefined
  *               or layout_fixed).  Compound types can have an undefined
  *               layout.  The layout of the basic types primitive and pointer
@@ -85,13 +91,13 @@ typedef struct ir_node ir_node;
  *               and the size of the type must be set.
  *               A fixed layout for enumeration types means that each enumeration
  *               is associated with an implementation value.
- *  @param visit        A counter for walks of the type information.
- *  @param link         A void* to associate some additional information with the type.
+ *  - visit        A counter for walks of the type information.
+ *  - link         A void* to associate some additional information with the type.
  *
- *  @param These fields can only be accessed via access functions.
+ *  These fields can only be accessed via access functions.
  *
- *  @param Depending on the value of type_op, i.e., depending on the kind of the
- *  @param type the adt contains further attributes.  These are documented below.
+ *  Depending on the value of type_op, i.e., depending on the kind of the
+ *  type the adt contains further attributes.  These are documented below.
  * @see  class, struct, method, union, array, enumeration, pointer, primitive
  */
 #ifndef _TYPE_TYPEDEF_
@@ -101,7 +107,7 @@ typedef struct type type;
 
 # include "type_or_entity.h"
 
-/* Frees the memory used by the type.   Does not free the entities
+/** Frees the memory used by the type.   Does not free the entities
    belonging to the type, except for the array element entity.  */
 void        free_type(type *tp);
 
@@ -115,12 +121,12 @@ void        set_type_ident(type *tp, ident* id);
 const char* get_type_name(type *tp);
 
 typedef enum {
-  layout_undefined,    /* The layout of this type is not defined.
+  layout_undefined,    /**< The layout of this type is not defined.
 			  Address computation to access fields is not
 			  possible, fields must be accessed by Sel
 			  nodes.  This is the default value except for
 			  pointer, primitive and method types. */
-  layout_fixed         /* The layout is fixed, all component/member entities
+  layout_fixed         /**< The layout is fixed, all component/member entities
 			  have an offset assigned.  Size of the type is known.
 			  Arrays can be accessed by explicit address
 			  computation. Default for pointer, primitive ane method
@@ -180,11 +186,14 @@ void          inc_master_type_visited();
 int is_type            (void *thing);
 
 /**
- *
  *   Checks whether two types are structural equal.
- *   @param two pointer types
- *   @return true if the types are equal, else false.
- *   @return Types are equal if
+ *
+ *   @param st pointer type
+ *   @param lt pointer type
+ *
+ *   @return
+ *    true if the types are equal, else false.
+ *    Types are equal if
  *    - they are the same type kind
  *    - they have the same name
  *    - they have the same mode (if applicable)
@@ -210,18 +219,19 @@ int is_type            (void *thing);
  *      (i.e., the same C-struct to represent the type, type_id is skipped.
  *       This is to avoid endless recursions; with pointer types circlic
  *       type graphs are possible.)
- *
- *
  */
 bool equal_type(type *tpy1, type *typ2);
 
 /**
- *
  *   Checks whether two types are structural comparable.
- *   @param two pointer type
- *   @return true if type st is smaller than type lt, i.e. whenever
- *   @return lt is expected a st can be used.
- *   @return This is true if
+ *
+ *   @param st pointer type
+ *   @param lt pointer type
+ *
+ *   @return
+ *    true if type st is smaller than type lt, i.e. whenever
+ *    lt is expected a st can be used.
+ *    This is true if
  *    - they are the same type kind
  *    - mode(st) < mode (lt)  (if applicable)
  *    - they are class types and st is (transitive) subtype of lt,
@@ -337,17 +347,17 @@ void    set_class_supertype   (type *clss, type *supertype, int pos);
 /* Finds supertype in the list of supertypes and removes it */
 void    remove_class_supertype(type *clss, type *supertype);
 
-/* This enumeration flags the peculiarity of entities and types. */
+/** This enumeration flags the peculiarity of entities and types. */
 typedef enum peculiarity {
-  description,     /* Represents only a description.  The entity/type is never
+  description,     /**< Represents only a description.  The entity/type is never
 	  	      allocated, no code/data exists for this entity/type. */
-  inherited,       /* Describes explicitly that other entities are
+  inherited,       /**< Describes explicitly that other entities are
  		      inherited to the owner of this entity.
  		      Overwrites must refer to at least one other
  		      entity.  If this is a method entity there exists
  		      no irg for this entity, only for one of the
  		      overwritten ones. */
-  existent         /* The entity/type (can) exist. */
+  existent         /**< The entity/type (can) exist. */
 } peculiarity;
 
 /* The peculiarity of the class.  The enumeration peculiarity is defined
@@ -356,7 +366,7 @@ INLINE peculiarity get_class_peculiarity (type *clss);
 INLINE void        set_class_peculiarity (type *clss, peculiarity pec);
 
 /* Set and get a class' dfn --
-   @@@ This is an undocumented field, subject to change! */
+   @todo This is an undocumented field, subject to change! */
 void set_class_dfn (type *clss, int dfn);
 int  get_class_dfn (type *clss);
 
@@ -417,14 +427,17 @@ bool    is_struct_type(type *strct);
  *  	        Return nodes.  (See ircons.h for more information.)
  */
 
-/* Create a new method type.
-   N_param is the number of parameters, n_res the number of results.
+/** Create a new method type.
+ *
+   @param n_param   the number of parameters
+   @param n_res     the number of results
+
    The arrays for the parameter and result types are not initialized by
    the constructor. */
 type *new_type_method (ident *name, int n_param, int n_res);
 type *new_d_type_method (ident *name, int n_param, int n_res, dbg_info* db);
 
-/* manipulate private fields of method. */
+/** manipulate private fields of method. */
 int   get_method_n_params  (type *method);
 type *get_method_param_type(type *method, int pos);
 void  set_method_param_type(type *method, int pos, type* tp);
@@ -433,7 +446,7 @@ int   get_method_n_ress   (type *method);
 type *get_method_res_type(type *method, int pos);
 void  set_method_res_type(type *method, int pos, type* tp);
 
-/*
+/**
  * this enum flags the variadicity of methods (methods with a
  * variable amount of arguments (e.g. C's printf). Default is
  * non_variadic.
@@ -483,9 +496,9 @@ bool    is_union_type          (type *uni);
  *   @param *element_type    The type of the array elements.
  *   @param *element_ent     An entity for the array elements to be used for
  *                    element selection with Sel.
- *                    @@@ Do we need several entities?  One might want
- *                    to select a dimension and not a single element in
- *                    case of multidim arrays.
+ *   @todo
+ *   Do we need several entities?  One might want
+ *   to select a dimension and not a single element in case of multidim arrays.
  */
 /* create a new type array --
    Sets n_dimension to dimension and all dimension entries to NULL.
@@ -583,20 +596,16 @@ bool  is_primitive_type  (type *primitive);
 
 
 /**
- *
  *   Checks whether a type is atomic.
  *   @param tp - any type
  *   @return true if type is primitive, pointer or enumeration
- *
  */
 int is_atomic_type(type *tp);
 
 /**
- *
  *   Checks whether a type is compound.
  *   @param tp - any type
  *   @return true if the type is class, structure, union or array type.
- *
  */
 int is_compound_type(type *tp);
 
