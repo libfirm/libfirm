@@ -18,7 +18,7 @@
  * @remark there are numbers with normalized names below!
  */
 typedef enum {
-  False = 0,        /**< false */
+  False = 0,    /**< false */
   Eq,           /**< equal */
   Lt,           /**< less */
   Le,           /**< less or equal */
@@ -33,7 +33,7 @@ typedef enum {
   Ug,           /**< unordered or greater */
   Uge,          /**< unordered, greater or equal */
   Ne,           /**< unordered, less or greater = not equal */
-  True = 15         /**< true */
+  True = 15     /**< true */
   /* not_mask = Leg*/   /* bits to flip to negate comparison * @@ hack for jni interface */
 } pnc_number;   /* pnc: Projection Number Cmp */
 #define not_mask Leg
@@ -234,14 +234,15 @@ void      set_nodes_block (ir_node *node, ir_node *block);
  * Projection numbers for result of Start node: use for Proj nodes!
  */
 typedef enum {
-  pn_Start_X_initial_exec,  /**< Projection on the initial control flow. */
-  pn_Start_M,               /**< Projection on the initial memory. */
-  pn_Start_P_frame_base,    /**< Projection on the frame base pointer. */
-  pn_Start_P_globals,       /**< Projection on the pointer to the data segment
-                   containing _all_ global entities. */
-  pn_Start_T_args,          /**< Projection on all arguments. */
-  pn_Start_P_value_arg_base /**< Pointer to region of compound value arguments as defined by
-                   type of this method. */
+  pn_Start_X_initial_exec,   /**< Projection on the initial control flow. */
+  pn_Start_M,                /**< Projection on the initial memory. */
+  pn_Start_P_frame_base,     /**< Projection on the frame base pointer. */
+  pn_Start_P_globals,        /**< Projection on the pointer to the data segment
+                                  containing _all_ global entities. */
+  pn_Start_T_args,           /**< Projection on all arguments. */
+  pn_Start_P_value_arg_base, /**< Pointer to region of compound value arguments as defined by
+                                  type of this method. */
+  pn_Start_max               /**< number of projections from a Start */
 } pn_Start; /* Projection numbers for Start. */
 
 
@@ -340,7 +341,8 @@ long      get_Cond_defaultProj (ir_node *node);
  */
 typedef enum {
   pn_Cond_false,    /**< Control flow if operand is "false". */
-  pn_Cond_true      /**< Control flow if operand is "true".  */
+  pn_Cond_true,     /**< Control flow if operand is "true".  */
+  pn_Cond_max       /**< number of projections from a Cond */
 } pn_Cond;  /* Projection numbers for Cond. */
 
 ir_node  *get_Return_mem (ir_node *node);
@@ -360,7 +362,8 @@ void     set_Raise_exo_ptr (ir_node *node, ir_node *exoptr);
  */
 typedef enum {
   pn_Raise_X,    /**< Execution result. */
-  pn_Raise_M     /**< Memory result.    */
+  pn_Raise_M,    /**< Memory result.    */
+  pn_Raise_max   /**< number of projections from a Raise */
 } pn_Raise;  /* Projection numbers for Raise. */
 
 tarval  *get_Const_tarval (ir_node *node);
@@ -446,7 +449,7 @@ typedef enum {
   pn_Call_X_except  = 1,  /**< The control flow result branching to the exception handler */
   pn_Call_M_except  = 3,  /**< The memory result in case the called method terminated with
                  an exception */
-  pn_Call_max       = 5   /**< number of prejections from a Call */
+  pn_Call_max       = 5   /**< number of projections from a Call */
 } pn_Call;   /* Projection numbers for Call. */
 
 ir_node *get_Call_mem (ir_node *node);
@@ -556,7 +559,8 @@ void     set_Quot_mem (ir_node *node, ir_node *mem);
 typedef enum {
   pn_Quot_M,           /**< Memory result.    */
   pn_Quot_X_except,    /**< Execution result if exception occured. */
-  pn_Quot_res          /**< Result of computation. */
+  pn_Quot_res,         /**< Result of computation. */
+  pn_Quot_max          /**< number of projections from a Quot */
 } pn_Quot;  /* Projection numbers for Quot. */
 
 ir_node *get_DivMod_left (ir_node *node);
@@ -573,7 +577,8 @@ typedef enum {
   pn_DivMod_M,           /**< Memory result.    */
   pn_DivMod_X_except,    /**< Execution result if exception occured. */
   pn_DivMod_res_div,     /**< Result of computation a / b. */
-  pn_DivMod_res_mod      /**< Result of computation a % b. */
+  pn_DivMod_res_mod,     /**< Result of computation a % b. */
+  pn_DivMod_max          /**< number of projections from a DivMod */
 } pn_DivMod;  /* Projection numbers for DivMod. */
 
 ir_node *get_Div_left (ir_node *node);
@@ -605,7 +610,8 @@ void     set_Mod_mem (ir_node *node, ir_node *mem);
 typedef enum {
   pn_Mod_M,           /**< Memory result.    */
   pn_Mod_X_except,    /**< Execution result if exception occured. */
-  pn_Mod_res          /**< Result of computation. */
+  pn_Mod_res,         /**< Result of computation. */
+  pn_Mod_max          /**< number of projections from a Mod */
 } pn_Mod;  /* Projection numbers for Mod. */
 
 ir_node *get_Abs_op (ir_node *node);
@@ -738,36 +744,45 @@ void     set_memop_ptr (ir_node *node, ir_node *ptr);
 typedef enum {
   pn_Load_M,         /**< Memory result.    */
   pn_Load_X_except,  /**< Execution result if exception occured. */
-  pn_Load_res        /**< Result of load operation. */
+  pn_Load_res,       /**< Result of load operation. */
+  pn_Load_max        /**< number of projections from a Load */
 } pn_Load;  /* Projection numbers for Load. */
 
-ir_node *get_Load_mem (ir_node *node);
-void     set_Load_mem (ir_node *node, ir_node *mem);
-ir_node *get_Load_ptr (ir_node *node);
-void     set_Load_ptr (ir_node *node, ir_node *ptr);
+ir_node       *get_Load_mem (ir_node *node);
+void           set_Load_mem (ir_node *node, ir_node *mem);
+ir_node       *get_Load_ptr (ir_node *node);
+void           set_Load_ptr (ir_node *node, ir_node *ptr);
+ent_volatility get_Load_volatility (ir_node *node);
+void           set_Load_volatility (ir_node *node, ent_volatility volatility);
+ir_mode       *get_Load_mode (ir_node *node);
+void           set_Load_mode (ir_node *node, ir_mode *mode);
 
 /**
  * Projection numbers for Store: use for Proj nodes!
  */
 typedef enum {
   pn_Store_M,         /**< Memory result.    */
-  pn_Store_X_except   /**< Execution result if exception occured. */
+  pn_Store_X_except,  /**< Execution result if exception occured. */
+  pn_Store_max        /**< number of projections from a Store */
 } pn_Store;  /* Projection numbers for Store. */
 
-ir_node *get_Store_mem (ir_node *node);
-void     set_Store_mem (ir_node *node, ir_node *mem);
-ir_node *get_Store_ptr (ir_node *node);
-void     set_Store_ptr (ir_node *node, ir_node *ptr);
-ir_node *get_Store_value (ir_node *node);
-void     set_Store_value (ir_node *node, ir_node *value);
+ir_node       *get_Store_mem (ir_node *node);
+void           set_Store_mem (ir_node *node, ir_node *mem);
+ir_node       *get_Store_ptr (ir_node *node);
+void           set_Store_ptr (ir_node *node, ir_node *ptr);
+ir_node       *get_Store_value (ir_node *node);
+void           set_Store_value (ir_node *node, ir_node *value);
+ent_volatility get_Store_volatility (ir_node *node);
+void           set_Store_volatility (ir_node *node, ent_volatility volatility);
 
 /**
  * Projection numbers for Alloc: use for Proj nodes!
  */
 typedef enum {
-  pn_Alloc_M,    /**< Memory result. */
-  pn_Alloc_X_except,    /**< Execution result if exception occured. */
-  pn_Alloc_res   /**< Result of allocation. */
+  pn_Alloc_M,          /**< Memory result. */
+  pn_Alloc_X_except,  /**< Execution result if exception occured. */
+  pn_Alloc_res,       /**< Result of allocation. */
+  pn_Alloc_max        /**< number of projections from an Alloc */
 } pn_Alloc;  /* Projection numbers for Alloc. */
 
 ir_node *get_Alloc_mem (ir_node *node);
