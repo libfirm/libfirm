@@ -26,6 +26,8 @@ node: {title: "n48" label: "End  48" color: blue info1: "visited: 8
 graph: { title: "n51" label: "51" status:clustered color:yellow
 edge: {sourcename: "n51" targetname: "n52" label: "0" color: red}
 node: {title: "n50" label: "Return  50"  info1: "visited: 9
+return in method of type ARRAY-HEAP_EXAMPLE_main
+  res 0 type: int
 "}
 edge: {sourcename: "n50" targetname: "n64" label: "0" color: blue}
 edge: {sourcename: "n50" targetname: "n55" label: "1" }

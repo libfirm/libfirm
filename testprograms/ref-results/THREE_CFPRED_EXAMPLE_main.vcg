@@ -28,6 +28,8 @@ edge: {sourcename: "n79" targetname: "n102" label: "0" color: red}
 edge: {sourcename: "n79" targetname: "n99" label: "1" color: red}
 edge: {sourcename: "n79" targetname: "n80" label: "2" color: red}
 node: {title: "n78" label: "Return  78"  info1: "visited: 9
+return in method of type THREE_CFPRED_EXAMPLE_main
+  res 0 type: int
 "}
 edge: {sourcename: "n78" targetname: "n108" label: "0" color: blue}
 edge: {sourcename: "n78" targetname: "n105" label: "1" }

@@ -26,6 +26,9 @@ node: {title: "n45" label: "End  45" color: blue info1: "visited: 4
 graph: { title: "n48" label: "48" status:clustered color:yellow
 edge: {sourcename: "n48" targetname: "n49" label: "0" color: red}
 node: {title: "n47" label: "Return  47"  info1: "visited: 5
+return in method of type main
+  res 0 type: int
+  res 1 type: int
 "}
 edge: {sourcename: "n47" targetname: "n53" label: "0" color: blue}
 edge: {sourcename: "n47" targetname: "n52" label: "1" }

@@ -100,6 +100,8 @@ node: {title: "n98" label: "ProjM 1 98" color: yellow info1: "visited: 14
 edge: { sourcename: "n98" targetname: "n88" class: 2 priority: 2 linestyle: dotted}
 edge: {sourcename: "n98" targetname: "n90" label: "0" color: blue}
 node: {title: "n77" label: "Return  77"  info1: "visited: 14
+return in method of type main
+  res 0 type: int
 "}
 edge: { sourcename: "n77" targetname: "n78" class: 2 priority: 2 linestyle: dotted}
 edge: {sourcename: "n77" targetname: "n98" label: "0" color: blue}

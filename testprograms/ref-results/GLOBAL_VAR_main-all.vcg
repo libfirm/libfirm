@@ -24,6 +24,7 @@ node: {title: "n40" label: "Block  40" color: lightyellow info1: "visited: 11
 "}
 edge: {sourcename: "n40" targetname: "n41" label: "0" color: red}
 node: {title: "n41" label: "Return  41"  info1: "visited: 11
+return in method of type GLOBAL_VAR_main
 "}
 edge: { sourcename: "n41" targetname: "n42" class: 2 priority: 2 linestyle: dotted}
 edge: {sourcename: "n41" targetname: "n46" label: "0" color: blue}

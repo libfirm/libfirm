@@ -27,6 +27,8 @@ graph: { title: "n43" label: "43" status:clustered color:yellow
 edge: {sourcename: "n43" targetname: "n35" label: "0" color: red}
 edge: {sourcename: "n43" targetname: "n42" label: "1" color: red}
 node: {title: "n52" label: "Return  52"  info1: "visited: 9
+return in method of type IF_EXAMPLE_main
+  res 0 type: int
 "}
 edge: {sourcename: "n52" targetname: "n24" label: "0" color: blue}
 edge: {sourcename: "n52" targetname: "n45" label: "1" }

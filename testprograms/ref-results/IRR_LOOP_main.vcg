@@ -27,6 +27,7 @@ graph: { title: "n64" label: "64" status:clustered color:yellow
 edge: {sourcename: "n64" targetname: "n88" label: "0" color: red}
 edge: {sourcename: "n64" targetname: "n65" label: "1" color: red}
 node: {title: "n63" label: "Return  63"  info1: "visited: 6
+return in method of type main
 "}
 edge: {sourcename: "n63" targetname: "n89" label: "0" color: blue}
 node: {title: "n89" label: "PhiM  89" color: green info1: "visited: 6

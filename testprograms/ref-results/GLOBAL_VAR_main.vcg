@@ -26,6 +26,7 @@ node: {title: "n39" label: "End  39" color: blue info1: "visited: 7
 graph: { title: "n42" label: "42" status:clustered color:yellow
 edge: {sourcename: "n42" targetname: "n43" label: "0" color: red}
 node: {title: "n41" label: "Return  41"  info1: "visited: 8
+return in method of type GLOBAL_VAR_main
 "}
 edge: {sourcename: "n41" targetname: "n46" label: "0" color: blue}
 node: {title: "n46" label: "ProjM 0 46" color: yellow info1: "visited: 8
