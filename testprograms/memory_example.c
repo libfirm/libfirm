@@ -66,7 +66,7 @@ main(void)
 
   printf("\nCreating an IR graph: MEMORY_EXAMPLE...\n");
 
-  init_firm ();
+  init_firm (NULL);
 
   set_opt_dead_node_elimination (1);
 

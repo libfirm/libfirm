@@ -47,7 +47,7 @@ int main(int argc, char **argv)
 
 
   /* init library */
-  init_firm ();
+  init_firm (NULL);
   set_opt_constant_folding (0);  /* so that the stupid tests are not optimized. */
   set_opt_cse(1);
   set_opt_dead_node_elimination(1);

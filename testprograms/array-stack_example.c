@@ -59,7 +59,7 @@ main(void)
   ir_graph       *main_irg;
   ir_node        *array_ptr, *c3, *elt, *val, *x;
 
-  init_firm ();
+  init_firm (NULL);
 
   printf("\nCreating an IR graph: ARRAY-STACK_EXAMPLE...\n");
 

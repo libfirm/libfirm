@@ -43,7 +43,7 @@ int main(int argc, char **argv)
   printf("\nCreating an IR graph: GLOBAL_VAR ...\n");
 
   /* init library */
-  init_firm ();
+  init_firm (NULL);
 
   /* make basic type information for primitive type int.
      In Sather primitive types are represented by a class.

@@ -36,7 +36,7 @@ int main(int argc, char **argv)
   printf("\nCreating an IR graph: CALL_STR_EXAMPLE...\n");
 
   /* init library */
-  init_firm ();
+  init_firm (NULL);
 
   string_ptr = new_type_pointer (
 		 id_from_str ("ptr_to_string", 13),

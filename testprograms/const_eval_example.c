@@ -38,7 +38,7 @@ main(void)
 
   printf("\nCreating an IR graph: CONST_EVAL_EXAMPLE...\n");
 
-  init_firm ();
+  init_firm (NULL);
 
   /*** Make basic type information for primitive type int. ***/
   prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_Is);

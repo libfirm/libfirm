@@ -38,7 +38,7 @@ main(void)
 
   printf("\nCreating an IR graph: IF_EXAMPLE...\n");
 
-  init_firm ();
+  init_firm (NULL);
 
 #define CLASSNAME "IF_EXAMPLE"
 #define METHODNAME "IF_EXAMPLE_main"

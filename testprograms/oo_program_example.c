@@ -55,7 +55,7 @@ main(void)
 
   int i;
 
-  init_firm ();
+  init_firm (NULL);
 
   set_opt_constant_folding(1);
   set_opt_cse(1);

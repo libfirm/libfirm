@@ -46,7 +46,7 @@ main(void)
 
   printf("\nCreating an IR graph: IF_WHILE_EXAMPLE...\n");
 
-  init_firm ();
+  init_firm (NULL);
   turn_off_edge_labels();
 
   set_optimize(1);

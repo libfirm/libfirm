@@ -58,7 +58,7 @@ main(void)
 
   int i;
 
-  init_firm ();
+  init_firm (NULL);
 
   set_optimize(1);
   set_opt_inline (1);

@@ -44,7 +44,7 @@ int main(int argc, char **argv)
   printf("\ncreating an IR graph: IF_ELSE_EXAMPLE...\n");
 
   /* init library */
-  init_firm ();
+  init_firm (NULL);
 
   /*** Make basic type information for primitive type int. ***/
   prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_Is);

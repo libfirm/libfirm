@@ -37,7 +37,7 @@ int main(int argc, char **argv)
   printf("\nCreating an IR graph: EMPTY...\n");
 
   /* init library */
-  init_firm ();
+  init_firm (NULL);
 
   /** Build type information for the procedure. **/
 

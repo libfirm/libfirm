@@ -47,7 +47,7 @@ main(void)
 
   printf("\nCreating an IR graph: ENDLESS_LOOP_EXAMPLE...\n");
 
-  init_firm ();
+  init_firm (NULL);
 
   set_optimize(1);
   set_opt_constant_folding(1);

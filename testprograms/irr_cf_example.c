@@ -56,7 +56,7 @@ int main(int argc, char **argv)
   printf("\nCreating an IR graph: IRR_CF...\n");
 
   /* init library */
-  init_firm ();
+  init_firm (NULL);
   set_opt_constant_folding(0); /* so that stupid test are not evaluated. */
 
   /* FIRM was designed for oo languages where all methods belong to a class.

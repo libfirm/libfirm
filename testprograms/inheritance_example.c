@@ -48,7 +48,7 @@ int main(int argc, char **argv)
   printf("\nCreating type information...\n");
 
   /** init library */
-  init_firm ();
+  init_firm (NULL);
 
   /** make idents for all used identifiers in the program. */
   ii  = id_from_str("i",  strlen("i"));

@@ -69,7 +69,7 @@ main(void)
   ir_graph *main_irg;
   ir_node  *array, *array_ptr, *c3, *elt, *val, *x;
 
-  init_firm ();
+  init_firm (NULL);
 
   /* make basic type information for primitive type int.
      In Sather primitive types are represented by a class.

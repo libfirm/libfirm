@@ -59,7 +59,7 @@ int main(int argc, char **argv)
           *scndCondBlock, *Block2, *Block3, *x;
 
   /* init library */
-  init_firm ();
+  init_firm (NULL);
 
   set_optimize(1);
 
