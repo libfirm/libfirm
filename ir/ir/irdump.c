@@ -670,7 +670,7 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
       get_irg_pinned(get_irn_irg(n)) == op_pin_state_floats) {
     fprintf(F, "node was pinned in ");
     dump_node_opcode(F, get_nodes_block(n));
-    fprintf(F, " %ld\n", get_irn_node_nr(n));
+    fprintf(F, " %ld\n", get_irn_node_nr(get_nodes_block(n)));
   }
 
 #if 0
