@@ -1,7 +1,7 @@
 /* -*- c -*- */
 
 /*
- * Time-stamp: <01.11.2004 19:45:58h liekweg>
+ * Time-stamp: <08.11.2004 13:28:00h liekweg>
  * Project:     libFIRM
  * File name:   ir/ana2/qset.c
  * Purpose:     yet another set implementation
@@ -21,6 +21,18 @@
 
 # include "timing.h"
 # include "qset.h"
+
+/* local protos */
+
+/* Check whether the given list of sortables is sorted. */
+# ifdef UNSINN
+static void q_check (sortable_t*, const int);
+# endif /* defined UNSINN */
+/* Test whether the given val is among values.  Return the index of
+   val in values, or -1. */
+static int q_test (sortable_t*, const sortable_t, const int);
+/* Sort n_elems entries  in 'values' */
+static void q_sort (sortable_t*, const int);
 
 static __inline__ int sortable_compare (const void *pa, const void *pb)
 {
@@ -319,12 +331,10 @@ static void qset_resize (qset_t *qset, const int n_slots)
   qset->n_slots = new_size;
 }
 
-/* PUBLIC INTERFACE */
-
 /*
    Print a list of sortables.
 */
-void q_print (sortable_t *values, const int n_values, FILE *stream)
+static void q_print (sortable_t *values, const int n_values, FILE *stream)
 {
   int i;
 
@@ -345,10 +355,11 @@ void q_print (sortable_t *values, const int n_values, FILE *stream)
   fprintf (stream, "}\n");
 }
 
+# ifdef UNSINN
 /*
   Check whether the given list of sortables is sorted.
 */
-void q_check (sortable_t *values, const int n_values)
+static void q_check (sortable_t *values, const int n_values)
 {
   int i;
 
@@ -361,12 +372,13 @@ void q_check (sortable_t *values, const int n_values)
     assert (-1 != q_test (values, values [i], n_values));
   }
 }
+# endif /* defined UNSINN */
 
 /*
   Test whether the given val is among values.  Return the lowest index of val
   in values, or -1.
 */
-int q_test (sortable_t *values, const sortable_t val, const int n_elems)
+static int q_test (sortable_t *values, const sortable_t val, const int n_elems)
 {
   int idx = _q_test (values, val, 0, n_elems-1);
 
@@ -380,7 +392,7 @@ int q_test (sortable_t *values, const sortable_t val, const int n_elems)
 /*
   Sort entries in 'values' from index 'lo' to 'hi' (inclusive)
 */
-void q_sort (sortable_t *values, const int n_elems)
+static void q_sort (sortable_t *values, const int n_elems)
 {
   _q_sort (values, 0, n_elems-1);
 }
@@ -388,8 +400,8 @@ void q_sort (sortable_t *values, const int n_elems)
 /*
   Merge two sorted lists.  Keep duplicates (if present)
 */
-sortable_t *q_merge (sortable_t *list1, const int n1_elems,
-                     sortable_t *list2, const int n2_elems)
+static sortable_t *q_merge (sortable_t *list1, const int n1_elems,
+                            sortable_t *list2, const int n2_elems)
 {
   const int n_elems = n1_elems + n2_elems;
   sortable_t *res = alloc_list (n_elems);
@@ -416,6 +428,8 @@ sortable_t *q_merge (sortable_t *list1, const int n1_elems,
 
   return (res);
 }
+
+/* PUBLIC INTERFACE */
 
 /*
   Allocate a new qset with initial space for up to n_elems.
@@ -537,8 +551,18 @@ void qset_remove (qset_t *qset, sortable_t val)
 */
 void qset_insert (qset_t *qset, sortable_t val)
 {
-  /* TODO: sort, find */
-  /* or check for duplicates */
+  int i;
+  const int n_elems = qset->n_elems;
+
+  /* todo: sort, find */
+  assert (0 != val);
+
+  for (i = 0; i < n_elems; i ++) {
+    if (EQUAL (val, qset->values [i])) {
+      return;
+    }
+  }
+
   qset_resize (qset, qset->n_elems+1);
 
   qset->values [qset->n_elems++] = val;
@@ -633,6 +657,14 @@ void qset_print (qset_t *qset, FILE *stream)
 }
 
 /*
+   Check wether the given qset is empty
+*/
+int qset_is_empty (qset_t *qset)
+{
+  return (0 == qset->n_elems);
+}
+
+/*
   Initialise a new iteration over a qset
 */
 sortable_t *qset_start (qset_t *qset)
@@ -679,6 +711,9 @@ int qset_test_main (int argc, char **argv)
 
 /*
   $Log$
+  Revision 1.2  2004/11/08 12:32:00  liekweg
+  Moved q_* methods into private section
+
   Revision 1.1  2004/11/04 14:55:13  liekweg
   added qset
 

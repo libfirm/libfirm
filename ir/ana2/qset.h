@@ -1,7 +1,7 @@
 /* -*- c -*- */
 
 /*
- * Time-stamp: <31.10.2004 22:36:22h liekweg>
+ * Time-stamp: <08.11.2004 13:29:19h liekweg>
  * Project:     libFIRM
  * File name:   ir/ana2/qset.h
  * Purpose:     yet another set implementation
@@ -35,24 +35,6 @@ typedef struct qset_str
   int is_sorted;
   int cursor;                   /* for qset_start/qset_next */
 } qset_t;
-
-/* QSET INTERFACE */
-/* Print a list of sortables. */
-void q_print (sortable_t*, const int, FILE*);
-
-/* Check whether the given list of sortables is sorted. */
-void q_check (sortable_t*, const int);
-
-/* Test whether the given val is among values.  Return the index of
-   val in values, or -1. */
-int q_test (sortable_t*, const sortable_t, const int);
-
-/* Sort n_elems entries  in 'values' */
-void q_sort (sortable_t*, const int);
-
-/* Merge two sorted lists */
-sortable_t *q_merge (sortable_t*, const int,
-                     sortable_t*, const int);
 
 
 /* QSET INTERFACE */
@@ -93,6 +75,9 @@ int qset_size (qset_t *qset);
 /* Print the given qset to the given stream. */
 void qset_print (qset_t*, FILE*);
 
+/* Check wether the given qset is empty */
+int qset_is_empty (qset_t*);
+
 /*
    Iterate over a qset
 */
@@ -105,6 +90,9 @@ sortable_t *qset_next (qset_t*);
 
 /*
  $Log$
+ Revision 1.2  2004/11/08 12:32:00  liekweg
+ Moved q_* methods into private section
+
  Revision 1.1  2004/11/04 14:55:13  liekweg
  added qset
 
