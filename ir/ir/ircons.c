@@ -1318,8 +1318,8 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
 
 #if USE_EXPLICIT_PHI_IN_STACK
 /* Just dummies */
-static INLINE Phi_in_stack * new_Phi_in_stack() {  return NULL; }
-static INLINE void free_Phi_in_stack(Phi_in_stack *s) { }
+INLINE Phi_in_stack * new_Phi_in_stack() {  return NULL; }
+INLINE void free_Phi_in_stack(Phi_in_stack *s) { }
 #endif
 
 static INLINE ir_node *

@@ -253,7 +253,7 @@ computed_value (ir_node *n)
 
 
 /* returns 1 if the a and b are pointers to different locations. */
-bool
+static bool
 different_identity (ir_node *a, ir_node *b)
 {
   assert (get_irn_mode (a) == mode_P

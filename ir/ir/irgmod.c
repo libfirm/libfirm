@@ -59,12 +59,12 @@ exchange (ir_node *old, ir_node *nw)
 /*  Functionality for collect_phis                                     */
 /**********************************************************************/
 
-void
+static void
 clear_link (ir_node *n, void *env) {
   set_irn_link(n, NULL);
 }
 
-void
+static void
 collect (ir_node *n, void *env) {
   ir_node *pred;
   if (get_irn_op(n) == op_Phi) {
@@ -100,7 +100,7 @@ void collect_phiprojs(ir_graph *irg) {
 /* Moves node and all predecessors of node from from_bl to to_bl.
    Does not move predecessors of Phi nodes (or block nodes). */
 
-void move (ir_node *node, ir_node *from_bl, ir_node *to_bl) {
+static void move (ir_node *node, ir_node *from_bl, ir_node *to_bl) {
   int i;
   ir_node *proj, *pred;
 

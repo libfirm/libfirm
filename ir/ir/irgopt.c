@@ -39,11 +39,11 @@ void  add_identities   (pset *value_table, ir_node *node);
 /* apply optimizations of iropt to all nodes.                       */
 /********************************************************************/
 
-void init_link (ir_node *n, void *env) {
+static void init_link (ir_node *n, void *env) {
   set_irn_link(n, NULL);
 }
 
-void
+static void
 optimize_in_place_wrapper (ir_node *n, void *env) {
   int i;
   ir_node *optimized;
@@ -89,14 +89,14 @@ local_optimize_graph (ir_graph *irg) {
 /********************************************************************/
 
 /* Remeber the new node in the old node by using a field all nodes have. */
-INLINE void
+static INLINE void
 set_new_node (ir_node *old, ir_node *new)
 {
   old->link = new;
 }
 
 /* Get this new node, before the old node is forgotton.*/
-INLINE ir_node *
+static INLINE ir_node *
 get_new_node (ir_node * n)
 {
   return n->link;
@@ -108,7 +108,7 @@ get_new_node (ir_node * n)
    Remembering the arity is useful, as it saves a lot of pointer
    accesses.  This function is called for all Phi and Block nodes
    in a Block. */
-INLINE int
+static INLINE int
 compute_new_arity(ir_node *b) {
   int i, res;
   int irg_v, block_v;
@@ -308,7 +308,7 @@ copy_graph () {
    in current_ir_graph and fixes the environment.
    Then fixes the fields in current_ir_graph containing nodes of the
    graph.  */
-void
+static void
 copy_graph_env () {
   ir_node *old_end;
   /* Not all nodes remembered in current_ir_graph might be reachable
@@ -942,7 +942,7 @@ place_floats_early (ir_node *n)
    Start, Call and end at pinned nodes as Store, Call.  Place_early
    places all floating nodes reachable from its argument through floating
    nodes and adds all beginnings at pinned nodes to the worklist. */
-INLINE void place_early () {
+static INLINE void place_early () {
   assert(worklist);
   inc_irg_visited(current_ir_graph);
 
@@ -996,7 +996,7 @@ consumer_dom_dca (ir_node *dca, ir_node *consumer, ir_node *producer)
   return dca;
 }
 
-INLINE int get_irn_loop_depth(ir_node *n) {
+static INLINE int get_irn_loop_depth(ir_node *n) {
   return get_loop_depth(get_irn_loop(n));
 }
 
@@ -1096,7 +1096,7 @@ place_floats_late (ir_node *n)
   }
 }
 
-INLINE void place_late() {
+static INLINE void place_late() {
   assert(worklist);
   inc_irg_visited(current_ir_graph);
 
@@ -1190,7 +1190,7 @@ static void collect_nodes(ir_node *n, void *env) {
 }
 
 /* Returns true if pred is pred of block */
-int is_pred_of(ir_node *pred, ir_node *b) {
+static int is_pred_of(ir_node *pred, ir_node *b) {
   int i;
   for (i = 0; i < get_Block_n_cfgpreds(b); i++) {
     ir_node *b_pred = get_nodes_Block(get_Block_cfgpred(b, i));
@@ -1199,7 +1199,7 @@ int is_pred_of(ir_node *pred, ir_node *b) {
   return 0;
 }
 
-int test_whether_dispensable(ir_node *b, int pos) {
+static int test_whether_dispensable(ir_node *b, int pos) {
   int i, j, n_preds = 1;
   int dispensable = 1;
   ir_node *cfop = get_Block_cfgpred(b, pos);
@@ -1247,7 +1247,7 @@ int test_whether_dispensable(ir_node *b, int pos) {
   return n_preds;
 }
 
-void optimize_blocks(ir_node *b, void *env) {
+static void optimize_blocks(ir_node *b, void *env) {
   int i, j, k, max_preds, n_preds;
   ir_node *pred, *phi;
   ir_node **in;
@@ -1301,7 +1301,7 @@ void optimize_blocks(ir_node *b, void *env) {
 	if (get_nodes_Block(phi_pred) == pred)
 	  exchange (phi_pred, new_Bad());
 #if 0
-	/* @@@ hier brauche ich schleifeninformation!!! Wenn keine Rueckwaertskante
+	/* @@@ hier brauche ich Schleifeninformation!!! Wenn keine Rueckwaertskante
 	   dann darfs auch keine Verwendung geben. */
 	if (get_nodes_Block(phi_pred) == pred) {
 	  /* remove the Phi as it might be kept alive. Further there
@@ -1316,7 +1316,7 @@ void optimize_blocks(ir_node *b, void *env) {
     }
     /* Fix the node */
     set_irn_in(phi, n_preds, in);
-    clear_backedges (phi);
+    //clear_backedges (phi);
 
     phi = get_irn_link(phi);
   }
@@ -1341,7 +1341,7 @@ void optimize_blocks(ir_node *b, void *env) {
 		       < get_irg_block_visited(current_ir_graph)) {
 	      /* It's an empty block and not yet visited. */
 	      for (j = 0; j < get_Block_n_cfgpreds(pred); j++) {
-		/* @@@ Hier brauche ich schleifeninformation!!! Kontrllflusskante
+		/* @@@ Hier brauche ich Schleifeninformation!!! Kontrollflusskante
 		   muss Rueckwaertskante sein! (An allen vier in[n_preds] = phi
 		   Anweisungen.) Trotzdem tuts bisher!! */
 		in[n_preds] = phi;
@@ -1405,15 +1405,12 @@ void optimize_blocks(ir_node *b, void *env) {
   free(in);
 }
 
-#include "irdump.h"
-
 void optimize_cf(ir_graph *irg) {
   int i;
   ir_node **in;
   ir_node *end = get_irg_end(irg);
   ir_graph *rem = current_ir_graph;
   current_ir_graph = irg;
-
 
   /* Handle graph state */
   assert(get_irg_phase_state(irg) != phase_building);

@@ -495,7 +495,7 @@ irn_vrfy (ir_node *n)
 /* Verify the whole graph.                                         */
 /*******************************************************************/
 
-void
+static void
 vrfy_wrap (ir_node *node, void *env) {
   irn_vrfy(node);
 }

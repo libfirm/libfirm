@@ -14,7 +14,7 @@
 
 #include "irnode_t.h"
 #include "irgraph_t.h"
-#include "ident_t.h"
+#include "xp_help.h"
 #include "irmode_t.h"
 #include "typegmod_t.h"
 #include "array.h"
@@ -248,7 +248,7 @@ set_irn_in (ir_node *node, int arity, ir_node **in) {
     *arr = NEW_ARR_D(ir_node *, current_ir_graph->obst, arity + 1);
     (*arr)[0] = block;
   }
-  //fix_backedges(current_ir_graph->obst, node);
+  fix_backedges(current_ir_graph->obst, node);
   memcpy((*arr) + 1, in, sizeof(ir_node *) * arity);
 }
 
@@ -633,6 +633,14 @@ void set_Block_cg_cfgpred_arr(ir_node * node, int arity, ir_node ** in) {
     node->attr.block.in_cg = NEW_ARR_D(ir_node *, current_ir_graph->obst, arity + 1);
     node->attr.block.in_cg[0] = NULL;
     node->attr.block.cg_backedge = new_backedge_arr(current_ir_graph->obst, arity);
+    {
+      /* Fix backedge array.  fix_backedges operates depending on
+	 interprocedural_view. */
+      bool ipv = interprocedural_view;
+      interprocedural_view = true;
+      fix_backedges(current_ir_graph->obst, node);
+      interprocedural_view = ipv;
+    }
   }
   memcpy(node->attr.block.in_cg + 1, in, sizeof(ir_node *) * arity);
 }

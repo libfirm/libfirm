@@ -395,11 +395,13 @@ set_irg_n_loc (ir_graph *irg, int n_loc)
 #endif
 }
 
-irg_phase_state get_irg_phase_state (ir_graph *irg) {
+irg_phase_state
+get_irg_phase_state (ir_graph *irg) {
   return irg->phase_state;
 }
 
-void set_irg_phase_low(ir_graph *irg) {
+void
+set_irg_phase_low(ir_graph *irg) {
   irg->phase_state = phase_low;
 }
 
@@ -408,19 +410,23 @@ get_irg_pinned (ir_graph *irg) {
   return irg->pinned;
 }
 
-irg_outs_state get_irg_outs_state(ir_graph *irg) {
+irg_outs_state
+get_irg_outs_state(ir_graph *irg) {
   return irg->outs_state;
 }
 
-void set_irg_outs_inconsistent(ir_graph *irg) {
+void
+set_irg_outs_inconsistent(ir_graph *irg) {
   irg->outs_state = outs_inconsistent;
 }
 
-irg_dom_state get_irg_dom_state(ir_graph *irg) {
+irg_dom_state
+get_irg_dom_state(ir_graph *irg) {
   return irg->dom_state;
 }
 
-void set_irg_dom_inconsistent(ir_graph *irg) {
+void
+set_irg_dom_inconsistent(ir_graph *irg) {
   irg->dom_state = dom_inconsistent;
 }
 

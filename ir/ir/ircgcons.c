@@ -525,7 +525,8 @@ static void construct_call(ir_node * call) {
   /* Operationen verschieben */
   move_phis(post_block, pre_block);
   move_nodes(post_block, pre_block, call);
-  /* @@@ GL Wer setzt die Laenge des PostBlock cgfpred array auf 1? */
+  /* @@@ GL Wer setzt die Laenge des PostBlock cgfpred array auf 1?
+     GL: na, dieser Befehl... generiert neuen array. */
   set_irn_in(post_block, 1, &jmp);
 
   /* Wiederverwendete Daten initialisieren. */
