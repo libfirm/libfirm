@@ -69,9 +69,14 @@ entity *get_inherited_methods_implementation(entity *inh_meth) {
 
   if (get_irn_op(addr) == op_Const) {
     impl_meth = tarval_to_entity(get_Const_tarval(addr));
+  } else {
+    assert(0 && "Complex constant values not supported -- adress of method should be straight constant!");
   }
-
-  assert(!impl_meth || get_entity_peculiarity(impl_meth) == existent);
+  if (impl_meth && (get_entity_peculiarity(impl_meth) != existent)) {
+    printf("this_meth: "); DDMEO(inh_meth);
+    printf("impl meth: "); DDMEO(impl_meth);
+    assert(!impl_meth || get_entity_peculiarity(impl_meth) == existent);
+  }
   return impl_meth? impl_meth : inh_meth;
 }
 
