@@ -345,10 +345,11 @@ static int optimize_store(ir_node *store)
  *
  * Is only allowed if the predecessor blocks have only one successor.
  */
-static int optimize_phi(ir_node *phi)
+static int optimize_phi(ir_node *phi, void *env)
 {
+  walk_env_t *wenv = env;
   int i, n;
-  ir_node *store, *ptr, *block, *phiM, *phiD, *exc;
+  ir_node *store, *ptr, *block, *phiM, *phiD, *exc, *projM;
   ir_mode *mode;
   ir_node **inM, **inD;
   int *idx;
@@ -448,10 +449,18 @@ static int optimize_phi(ir_node *phi)
 
   /* fourth step: create the Store */
   store = new_rd_Store(db, current_ir_graph, block, phiM, ptr, phiD);
+  projM = new_rd_Proj(NULL, current_ir_graph, block, store, mode_M, pn_Store_M);
+
+  info = get_ldst_info(store, wenv);
+  info->projs[pn_Store_M] = projM;
 
   /* fifths step: repair exception flow */
   if (exc) {
     ir_node *projX = new_rd_Proj(NULL, current_ir_graph, block, store, mode_X, pn_Store_X_except);
+
+    info->projs[pn_Store_X_except] = projX;
+    info->exc_block                = exc;
+    info->exc_idx                  = idx[0];
 
     for (i = 0; i < n; ++i) {
       set_Block_cfgpred(exc, idx[i], projX);
@@ -463,7 +472,7 @@ static int optimize_phi(ir_node *phi)
   }
 
   /* sixt step: replace old Phi */
-  exchange(phi, new_rd_Proj(NULL, current_ir_graph, block, store, mode_M, pn_Store_M));
+  exchange(phi, projM);
 
   return 1;
 }
@@ -485,8 +494,8 @@ static void do_load_store_optimize(ir_node *n, void *env)
     wenv->changes |= optimize_store(n);
     break;
 
-//  case iro_Phi:
-//    wenv->changes |= optimize_phi(n);
+  case iro_Phi:
+    wenv->changes |= optimize_phi(n, env);
 
   default:
     ;
