@@ -16,6 +16,15 @@
 #include <stddef.h>
 
 #include "hashptr.h"
+#include "iterator.h"
+
+/**
+ * The default comparison function for pointers.
+ * @param x A pointer.
+ * @param y A pointer.
+ * @return 0 if @p x and @p y are equal. Some value != 0 otherwise.
+ */
+int pset_default_ptr_cmp(const void *x, const void *y);
 
 /*
  * Define some convenience macros using the predefined hash function.
@@ -24,6 +33,8 @@
 #define pset_hinsert_ptr(set,key) pset_hinsert(set, key, HASH_PTR(key))
 #define pset_remove_ptr(set,key) pset_remove(set, key, HASH_PTR(key))
 #define pset_find_ptr(set,key) pset_find(set, key, HASH_PTR(key))
+#define pset_new_ptr(slots) new_pset(pset_default_ptr_cmp, slots)
+#define pset_new_ptr_default() pset_new_ptr(64)
 
 /**
  * The abstract type of a pset (Set of pointers).
