@@ -1381,4 +1381,9 @@ void init_stat(unsigned enable_options)
 #undef X
 }
 
+#else
+
+/* Finish the statistics */
+void stat_finish(const char *name) {}
+
 #endif /* FIRM_STATISTICS */
