@@ -193,14 +193,42 @@ pop_scc_to_loop (ir_node *n)
 {
   ir_node *m;
 
-  for (;;) {
+  /*for (;;) {*/
+  do
+    {
     m = pop();
-    set_irn_dfn(m, loop_node_cnt);
     loop_node_cnt++;
+    set_irn_dfn(m, loop_node_cnt);
     add_loop_node(current_loop, m);
     set_irn_loop_tmp(m, current_loop);
-    if (m==n) break;
-  }
+    /*    if (m==n) break;*/
+    } while(m != n);
+}
+
+/* GL ??? my last son is my grandson???  Removes loops with no
+   ir_nodes in them.  Such loops have only another loop as son. (Why
+   can't they have two loops as sons? Does it never get that far? ) */
+void close_loop (ir_loop *l)
+{
+  int last = get_loop_n_elements(l) - 1;
+  loop_element lelement = get_loop_element(l, last);
+  ir_loop *last_son = lelement.son;
+
+  if (get_kind(last_son) == k_ir_loop &&
+      get_loop_n_elements(last_son) == 1)
+    {
+      lelement = get_loop_element(last_son, 0);
+      ir_loop *gson = lelement.son;
+      if(get_kind(gson) == k_ir_loop)
+	{
+	  gson -> outer_loop = l;
+          loop_element new_last_son;
+          new_last_son.son = gson;
+	  l -> children[last] = new_last_son;
+	}
+    }
+
+  current_loop = l;
 }
 
 /* Removes and unmarks all nodes up to n from the stack.
@@ -230,11 +258,6 @@ static ir_loop *new_loop (void) {
   son = (ir_loop *) obstack_alloc (outermost_ir_graph->obst, sizeof (ir_loop));
   memset (son, 0, sizeof (ir_loop));
   son->kind = k_ir_loop;
-/*  son->sons = NEW_ARR_F (ir_loop *, 0);
-  son->nodes = NEW_ARR_F (ir_node *, 0);
-  A. Schoesser: Removed, because array children was introduced,
-                which contains both, nodes AND sons.
-                This comment may be removed after beeing read by all important persons :) */
   son->children = NEW_ARR_F (loop_element, 0);
   son->n_nodes = 0;
   son->n_sons=0;
@@ -381,6 +404,7 @@ ir_loop *get_irg_loop(ir_graph *irg) {
   assert(irg);
   return irg->loop;
 }
+
 
 /**********************************************************************/
 /* Constructing and destructing the loop/backedge information.       **/
@@ -647,7 +671,9 @@ largest_dfn_pred (ir_node *n)
 /* Searches the stack for possible loop heads.  Tests these for backedges.
    If it finds a head with an unmarked backedge it marks this edge and
    returns the tail of the loop.
-   If it finds no backedge returns NULL. */
+   If it finds no backedge returns NULL.
+   ("disable_backedge" in fiasco) */
+
 static ir_node *
 find_tail (ir_node *n) {
   ir_node *m;
@@ -657,7 +683,7 @@ find_tail (ir_node *n) {
     if (!icfg && rm_cyclic_phis && remove_cyclic_phis (n)) return NULL;
   */
 
-  m = stack[tos-1];
+  m = stack[tos-1];  /* tos = top of stack */
   if (is_head (m, n)) {
     res_index = smallest_dfn_pred(m, 0);
     if ((res_index == -2) &&  /* no smallest dfn pred found. */
@@ -729,17 +755,20 @@ static void scc (ir_node *n) {
     if (tail) {
       /* We found a new loop! */
       ir_loop *l = new_loop();
+
       /* Remove the loop from the stack ... */
       pop_scc_unmark_visit (n);
       /* and recompute it in a better order; and so that it goes into
 	 the new loop. */
       rem = find_irg_on_stack(tail);
+
       scc (tail);
       current_ir_graph = rem;
 
       assert (irn_visited(n));
+      close_loop(l);
 
-      current_loop = l;
+      /*      current_loop = l; AS: This is done close_loop */
     } else {
       pop_scc_to_loop(n);
     }
