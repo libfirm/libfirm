@@ -129,27 +129,8 @@ visited: 12
 irg:     COND_EXAMPLE_main
 arity: 2
 "}
-edge: {sourcename: "n38" targetname: "n33" label: "0" class:1  priority:50}
-edge: {sourcename: "n38" targetname: "n37" label: "1" class:1  priority:50}
-node: {title: "n33" label: "ConvIs  33"  info1: "mode:    Is
-visited: 12
-irg:     COND_EXAMPLE_main
-arity: 1
-"}
-edge: {sourcename: "n33" targetname: "n32" label: "0" class:1  priority:50}
-node: {title: "n32" label: "Projb Gt 32"  info1: "mode:    b
-visited: 12
-irg:     COND_EXAMPLE_main
-arity: 1
-"color: yellow}
-edge: {sourcename: "n32" targetname: "n31" label: "0" class:1  priority:50}
-node: {title: "n31" label: "CmpT  31"  info1: "mode:    T
-visited: 12
-irg:     COND_EXAMPLE_main
-arity: 2
-"}
-edge: {sourcename: "n31" targetname: "n29" label: "0" class:1  priority:50}
-edge: {sourcename: "n31" targetname: "n30" label: "1" class:16 priority:10}
+edge: {sourcename: "n38" targetname: "n37" label: "0" class:1  priority:50}
+edge: {sourcename: "n38" targetname: "n33" label: "1" class:1  priority:50}
 node: {title: "n37" label: "ConvIs  37"  info1: "mode:    Is
 visited: 12
 irg:     COND_EXAMPLE_main
@@ -169,6 +150,25 @@ arity: 2
 "}
 edge: {sourcename: "n35" targetname: "n29" label: "0" class:1  priority:50}
 edge: {sourcename: "n35" targetname: "n34" label: "1" class:16 priority:10}
+node: {title: "n33" label: "ConvIs  33"  info1: "mode:    Is
+visited: 12
+irg:     COND_EXAMPLE_main
+arity: 1
+"}
+edge: {sourcename: "n33" targetname: "n32" label: "0" class:1  priority:50}
+node: {title: "n32" label: "Projb Gt 32"  info1: "mode:    b
+visited: 12
+irg:     COND_EXAMPLE_main
+arity: 1
+"color: yellow}
+edge: {sourcename: "n32" targetname: "n31" label: "0" class:1  priority:50}
+node: {title: "n31" label: "CmpT  31"  info1: "mode:    T
+visited: 12
+irg:     COND_EXAMPLE_main
+arity: 2
+"}
+edge: {sourcename: "n31" targetname: "n29" label: "0" class:1  priority:50}
+edge: {sourcename: "n31" targetname: "n30" label: "1" class:16 priority:10}
 node: {title: "n29" label: "ProjIs 0 29"  info1: "mode:    Is
 visited: 12
 irg:     COND_EXAMPLE_main
@@ -191,7 +191,7 @@ irg:     COND_EXAMPLE_main
 arity: 0
 Const of type type_unknown
 "color: yellow}
-node: {title: "n30" label: "0x2Is  30"  info1: "mode:    Is
+node: {title: "n34" label: "0xAIs  34"  info1: "mode:    Is
 visited: 12
 irg:     COND_EXAMPLE_main
 arity: 0
@@ -203,7 +203,7 @@ irg:     COND_EXAMPLE_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n26" targetname: "n20" label: "0" class:1  priority:50}
-node: {title: "n34" label: "0xAIs  34"  info1: "mode:    Is
+node: {title: "n30" label: "0x2Is  30"  info1: "mode:    Is
 visited: 12
 irg:     COND_EXAMPLE_main
 arity: 0

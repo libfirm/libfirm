@@ -83,14 +83,8 @@ visited: 16
 irg:     PRIMA_c
 arity: 2
 "}
-edge: {sourcename: "n100" targetname: "n93" label: "0" class:1  priority:50}
-edge: {sourcename: "n100" targetname: "n99" label: "1" class:1  priority:50}
-node: {title: "n93" label: "ProjIs 1 93"  info1: "mode:    Is
-visited: 16
-irg:     PRIMA_c
-arity: 1
-"color: yellow}
-edge: {sourcename: "n93" targetname: "n89" label: "0" class:16 priority:10}
+edge: {sourcename: "n100" targetname: "n99" label: "0" class:1  priority:50}
+edge: {sourcename: "n100" targetname: "n93" label: "1" class:1  priority:50}
 node: {title: "n99" label: "ProjIs 2 99"  info1: "mode:    Is
 visited: 16
 irg:     PRIMA_c
@@ -120,6 +114,12 @@ irg:     PRIMA_c
 arity: 1
 "color: yellow}
 edge: {sourcename: "n92" targetname: "n89" label: "0" class:16 priority:10}
+node: {title: "n93" label: "ProjIs 1 93"  info1: "mode:    Is
+visited: 16
+irg:     PRIMA_c
+arity: 1
+"color: yellow}
+edge: {sourcename: "n93" targetname: "n89" label: "0" class:16 priority:10}
 }
 
 graph: { title: "n82"  label: "Block 82" status:clustered color:yellow

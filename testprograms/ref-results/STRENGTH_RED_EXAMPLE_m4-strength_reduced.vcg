@@ -51,199 +51,186 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-graph: { title: "g237" label: "STRENGTH_RED_EXAMPLE_m4" status:clustered color:white
-graph: { title: "n227"  label: "Block 227" status:clustered color:yellow
-edge: {sourcename: "n227" targetname: "n271" label: "0" class:13 priority:60 color:red}
-node: {title: "n228" label: "End  228"  info1: "mode:    X
+graph: { title: "g245" label: "STRENGTH_RED_EXAMPLE_m4" status:clustered color:white
+graph: { title: "n235"  label: "Block 235" status:clustered color:yellow
+edge: {sourcename: "n235" targetname: "n281" label: "0" class:13 priority:60 color:red}
+node: {title: "n236" label: "End  236"  info1: "mode:    X
 visited: 25
 irg:     STRENGTH_RED_EXAMPLE_m4
 arity: 1
 "color: blue}
 }
 
-graph: { title: "n268"  label: "Block 268" status:clustered color:yellow
-edge: {sourcename: "n268" targetname: "n248" label: "0" class:13 priority:60 color:red}
-node: {title: "n271" label: "Return  271"  info1: "mode:    X
+graph: { title: "n278"  label: "Block 278" status:clustered color:yellow
+edge: {sourcename: "n278" targetname: "n256" label: "0" class:13 priority:60 color:red}
+node: {title: "n281" label: "Return  281"  info1: "mode:    X
 visited: 25
 irg:     STRENGTH_RED_EXAMPLE_m4
 arity: 2
 return in method of type STRENGTH_RED_EXAMPLE_meth_tp
   res 0 type: int
 "}
-node: {title: "n271n252" label: "0x4Is  252"  info1: "mode:    Is
+node: {title: "n281n260" label: "0x4Is  260"  info1: "mode:    Is
 visited: 25
 irg:     STRENGTH_RED_EXAMPLE_m4
 arity: 0
 Const of type type_unknown
 "color: yellow}
-edge: {sourcename: "n271" targetname: "n275" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n271" targetname: "n271n252" label: "1" class:16 priority:10}
-}
-
-graph: { title: "n242"  label: "Block 242" status:clustered color:yellow
-edge: {sourcename: "n242" targetname: "n241" label: "0" class:13 priority:60 color:red}
-backedge: {sourcename: "n242" targetname: "n262" label: "1" linestyle:dashed class:13 priority:60 color:red}
-node: {title: "n275" label: "PhiM  275"  info1: "mode:    M
-visited: 25
-irg:     STRENGTH_RED_EXAMPLE_m4
-arity: 2 backedges:
-"color: green}
-edge: {sourcename: "n275" targetname: "n235" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n275" targetname: "n261" label: "1" class:17 priority:10 color:blue}
-node: {title: "n401" label: "PhiIs  401"  info1: "mode:    Is
-visited: 25
-irg:     STRENGTH_RED_EXAMPLE_m4
-arity: 2 backedges:
-"color: green}
-node: {title: "n401n239" label: "0x0Is  239"  info1: "mode:    Is
-visited: 25
-irg:     STRENGTH_RED_EXAMPLE_m4
-arity: 0
-Const of type type_unknown
-"color: yellow}
-edge: {sourcename: "n401" targetname: "n401n239" label: "0" class:16 priority:10}
-edge: {sourcename: "n401" targetname: "n402" label: "1" class:16 priority:10}
-node: {title: "n248" label: "ProjX 0 248"  info1: "mode:    X
-visited: 25
-irg:     STRENGTH_RED_EXAMPLE_m4
-arity: 1
-"color: yellow}
-edge: {sourcename: "n248" targetname: "n247" label: "0" class:13 priority:60 color:red}
-node: {title: "n249" label: "ProjX 1 249"  info1: "mode:    X
-visited: 25
-irg:     STRENGTH_RED_EXAMPLE_m4
-arity: 1
-"color: yellow}
-edge: {sourcename: "n249" targetname: "n247" label: "0" class:13 priority:60 color:red}
-node: {title: "n247" label: "Cond  247"  info1: "mode:    T
-visited: 25
-irg:     STRENGTH_RED_EXAMPLE_m4
-arity: 1
-"}
-edge: {sourcename: "n247" targetname: "n246" label: "0" class:1  priority:50}
-node: {title: "n246" label: "Projb Gt 246"  info1: "mode:    b
-visited: 25
-irg:     STRENGTH_RED_EXAMPLE_m4
-arity: 1
-"color: yellow}
-edge: {sourcename: "n246" targetname: "n245" label: "0" class:1  priority:50}
-node: {title: "n245" label: "CmpT  245"  info1: "mode:    T
-visited: 25
-irg:     STRENGTH_RED_EXAMPLE_m4
-arity: 2
-"}
-node: {title: "n245n244" label: "0xAIs  244"  info1: "mode:    Is
-visited: 25
-irg:     STRENGTH_RED_EXAMPLE_m4
-arity: 0
-Const of type type_unknown
-"color: yellow}
-edge: {sourcename: "n245" targetname: "n245n244" label: "0" class:16 priority:10}
-edge: {sourcename: "n245" targetname: "n276" label: "1" class:1  priority:50}
-node: {title: "n276" label: "PhiIs  276"  info1: "mode:    Is
-visited: 25
-irg:     STRENGTH_RED_EXAMPLE_m4
-arity: 2 backedges:
-"color: green}
-node: {title: "n276n239" label: "0x0Is  239"  info1: "mode:    Is
-visited: 25
-irg:     STRENGTH_RED_EXAMPLE_m4
-arity: 0
-Const of type type_unknown
-"color: yellow}
-edge: {sourcename: "n276" targetname: "n276n239" label: "0" class:16 priority:10}
-edge: {sourcename: "n276" targetname: "n254" label: "1" class:16 priority:10}
-}
-
-graph: { title: "n238"  label: "Block 238" status:clustered color:yellow
-edge: {sourcename: "n238" targetname: "n232" label: "0" class:13 priority:60 color:red}
-node: {title: "n241" label: "Jmp  241"  info1: "mode:    X
-visited: 25
-irg:     STRENGTH_RED_EXAMPLE_m4
-arity: 0
-"}
+edge: {sourcename: "n281" targetname: "n285" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n281" targetname: "n281n260" label: "1" class:16 priority:10}
 }
 
 graph: { title: "n250"  label: "Block 250" status:clustered color:yellow
 edge: {sourcename: "n250" targetname: "n249" label: "0" class:13 priority:60 color:red}
-node: {title: "n261" label: "ProjM 0 261"  info1: "mode:    M
+backedge: {sourcename: "n250" targetname: "n272" label: "1" linestyle:dashed class:13 priority:60 color:red}
+node: {title: "n285" label: "PhiM  285"  info1: "mode:    M
+visited: 25
+irg:     STRENGTH_RED_EXAMPLE_m4
+arity: 2 backedges:
+"color: green}
+edge: {sourcename: "n285" targetname: "n243" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n285" targetname: "n271" label: "1" class:17 priority:10 color:blue}
+node: {title: "n256" label: "ProjX 0 256"  info1: "mode:    X
 visited: 25
 irg:     STRENGTH_RED_EXAMPLE_m4
 arity: 1
 "color: yellow}
-edge: {sourcename: "n261" targetname: "n259" label: "0" class:17 priority:10 color:blue}
-node: {title: "n259" label: "Store  259"  info1: "mode:    T
+edge: {sourcename: "n256" targetname: "n255" label: "0" class:13 priority:60 color:red}
+node: {title: "n257" label: "ProjX 1 257"  info1: "mode:    X
+visited: 25
+irg:     STRENGTH_RED_EXAMPLE_m4
+arity: 1
+"color: yellow}
+edge: {sourcename: "n257" targetname: "n255" label: "0" class:13 priority:60 color:red}
+node: {title: "n255" label: "Cond  255"  info1: "mode:    T
+visited: 25
+irg:     STRENGTH_RED_EXAMPLE_m4
+arity: 1
+"}
+edge: {sourcename: "n255" targetname: "n254" label: "0" class:1  priority:50}
+node: {title: "n254" label: "Projb Gt 254"  info1: "mode:    b
+visited: 25
+irg:     STRENGTH_RED_EXAMPLE_m4
+arity: 1
+"color: yellow}
+edge: {sourcename: "n254" targetname: "n253" label: "0" class:1  priority:50}
+node: {title: "n253" label: "CmpT  253"  info1: "mode:    T
+visited: 25
+irg:     STRENGTH_RED_EXAMPLE_m4
+arity: 2
+"}
+node: {title: "n253n252" label: "0xAIs  252"  info1: "mode:    Is
+visited: 25
+irg:     STRENGTH_RED_EXAMPLE_m4
+arity: 0
+Const of type type_unknown
+"color: yellow}
+edge: {sourcename: "n253" targetname: "n253n252" label: "0" class:16 priority:10}
+edge: {sourcename: "n253" targetname: "n286" label: "1" class:1  priority:50}
+node: {title: "n286" label: "PhiIs  286"  info1: "mode:    Is
+visited: 25
+irg:     STRENGTH_RED_EXAMPLE_m4
+arity: 2 backedges:
+"color: green}
+node: {title: "n286n247" label: "0x0Is  247"  info1: "mode:    Is
+visited: 25
+irg:     STRENGTH_RED_EXAMPLE_m4
+arity: 0
+Const of type type_unknown
+"color: yellow}
+edge: {sourcename: "n286" targetname: "n286n247" label: "0" class:16 priority:10}
+edge: {sourcename: "n286" targetname: "n262" label: "1" class:16 priority:10}
+}
+
+graph: { title: "n246"  label: "Block 246" status:clustered color:yellow
+edge: {sourcename: "n246" targetname: "n240" label: "0" class:13 priority:60 color:red}
+node: {title: "n249" label: "Jmp  249"  info1: "mode:    X
+visited: 25
+irg:     STRENGTH_RED_EXAMPLE_m4
+arity: 0
+"}
+}
+
+graph: { title: "n258"  label: "Block 258" status:clustered color:yellow
+edge: {sourcename: "n258" targetname: "n257" label: "0" class:13 priority:60 color:red}
+node: {title: "n271" label: "ProjM 0 271"  info1: "mode:    M
+visited: 25
+irg:     STRENGTH_RED_EXAMPLE_m4
+arity: 1
+"color: yellow}
+edge: {sourcename: "n271" targetname: "n269" label: "0" class:17 priority:10 color:blue}
+node: {title: "n269" label: "Store  269"  info1: "mode:    T
 visited: 25
 irg:     STRENGTH_RED_EXAMPLE_m4
 arity: 3
 volatility: volatility_non_volatile
 "}
-edge: {sourcename: "n259" targetname: "n275" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n259" targetname: "n403" label: "1" class:1  priority:50}
-edge: {sourcename: "n259" targetname: "n254" label: "2" class:1  priority:50}
-node: {title: "n403" label: "AddP  403"  info1: "mode:    P
+edge: {sourcename: "n269" targetname: "n285" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n269" targetname: "n267" label: "1" class:1  priority:50}
+edge: {sourcename: "n269" targetname: "n262" label: "2" class:1  priority:50}
+node: {title: "n267" label: "AddP  267"  info1: "mode:    P
 visited: 25
 irg:     STRENGTH_RED_EXAMPLE_m4
 arity: 2
 "}
-node: {title: "n403n240" label: "SymC &a  240"  info1: "mode:    P
+node: {title: "n267n248" label: "SymC &a  248"  info1: "mode:    P
 visited: 25
 irg:     STRENGTH_RED_EXAMPLE_m4
 arity: 0
 kind addr_ent
-entity GlobalType.a (225)
+entity GlobalType.a (233)
 
 "}
-edge: {sourcename: "n403" targetname: "n403n240" label: "0" class:16 priority:10}
-edge: {sourcename: "n403" targetname: "n402" label: "1" class:1  priority:50}
-node: {title: "n402" label: "AddIs  402"  info1: "mode:    Is
+edge: {sourcename: "n267" targetname: "n265" label: "0" class:1  priority:50}
+edge: {sourcename: "n267" targetname: "n267n248" label: "1" class:16 priority:10}
+node: {title: "n265" label: "ShlIs  265"  info1: "mode:    Is
 visited: 25
 irg:     STRENGTH_RED_EXAMPLE_m4
 arity: 2
 "}
-node: {title: "n402n252" label: "0x4Is  252"  info1: "mode:    Is
+node: {title: "n265n264" label: "0x2Iu  264"  info1: "mode:    Iu
 visited: 25
 irg:     STRENGTH_RED_EXAMPLE_m4
 arity: 0
 Const of type type_unknown
 "color: yellow}
-edge: {sourcename: "n402" targetname: "n402n252" label: "0" class:16 priority:10}
-edge: {sourcename: "n402" targetname: "n401" label: "1" class:16 priority:10}
-node: {title: "n262" label: "Jmp  262"  info1: "mode:    X
+edge: {sourcename: "n265" targetname: "n262" label: "0" class:1  priority:50}
+edge: {sourcename: "n265" targetname: "n265n264" label: "1" class:16 priority:10}
+node: {title: "n272" label: "Jmp  272"  info1: "mode:    X
 visited: 25
 irg:     STRENGTH_RED_EXAMPLE_m4
 arity: 0
 "}
-node: {title: "n254" label: "AddIs  254"  info1: "mode:    Is
+node: {title: "n262" label: "AddIs  262"  info1: "mode:    Is
 visited: 25
 irg:     STRENGTH_RED_EXAMPLE_m4
 arity: 2
 "}
-node: {title: "n254n251" label: "0x1Is  251"  info1: "mode:    Is
+node: {title: "n262n259" label: "0x1Is  259"  info1: "mode:    Is
 visited: 25
 irg:     STRENGTH_RED_EXAMPLE_m4
 arity: 0
 Const of type type_unknown
 "color: yellow}
-edge: {sourcename: "n254" targetname: "n254n251" label: "0" class:16 priority:10}
-edge: {sourcename: "n254" targetname: "n276" label: "1" class:16 priority:10}
+edge: {sourcename: "n262" targetname: "n262n259" label: "0" class:16 priority:10}
+edge: {sourcename: "n262" targetname: "n286" label: "1" class:16 priority:10}
 }
 
-graph: { title: "n229"  label: "Block 229" status:clustered color:yellow
-edge: {sourcename: "n229" targetname: "n232" label: "0" class:13 priority:60 color:red}
-node: {title: "n235" label: "ProjM 1 235"  info1: "mode:    M
+graph: { title: "n237"  label: "Block 237" status:clustered color:yellow
+edge: {sourcename: "n237" targetname: "n240" label: "0" class:13 priority:60 color:red}
+node: {title: "n243" label: "ProjM 1 243"  info1: "mode:    M
 visited: 25
 irg:     STRENGTH_RED_EXAMPLE_m4
 arity: 1
 "color: yellow}
-edge: {sourcename: "n235" targetname: "n230" label: "0" class:17 priority:10 color:blue}
-node: {title: "n232" label: "ProjX 0 232"  info1: "mode:    X
+edge: {sourcename: "n243" targetname: "n238" label: "0" class:17 priority:10 color:blue}
+node: {title: "n240" label: "ProjX 0 240"  info1: "mode:    X
 visited: 25
 irg:     STRENGTH_RED_EXAMPLE_m4
 arity: 1
 "color: yellow}
-edge: {sourcename: "n232" targetname: "n230" label: "0" class:13 priority:60 color:red}
-node: {title: "n230" label: "Start  230"  info1: "mode:    T
+edge: {sourcename: "n240" targetname: "n238" label: "0" class:13 priority:60 color:red}
+node: {title: "n238" label: "Start  238"  info1: "mode:    T
 visited: 25
 irg:     STRENGTH_RED_EXAMPLE_m4
 arity: 0

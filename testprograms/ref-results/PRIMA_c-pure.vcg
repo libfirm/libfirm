@@ -86,6 +86,13 @@ arity: 1
 "color: yellow}
 edge: {sourcename: "n89" targetname: "n83" label: "0" class:1  priority:50}
 edge: { sourcename: "n89" targetname: "n82" class:2  priority:50 linestyle:dotted}
+node: {title: "n93" label: "ProjIs 1 93"  info1: "mode:    Is
+visited: 11
+irg:     PRIMA_c
+arity: 1
+"color: yellow}
+edge: {sourcename: "n93" targetname: "n89" label: "0" class:16 priority:10}
+edge: { sourcename: "n93" targetname: "n91" class:2  priority:50 linestyle:dotted}
 node: {title: "n92" label: "ProjP 0 92"  info1: "mode:    P
 visited: 11
 irg:     PRIMA_c
@@ -126,20 +133,13 @@ arity: 1
 "color: yellow}
 edge: {sourcename: "n99" targetname: "n96" label: "0" class:1  priority:50}
 edge: { sourcename: "n99" targetname: "n91" class:2  priority:50 linestyle:dotted}
-node: {title: "n93" label: "ProjIs 1 93"  info1: "mode:    Is
-visited: 11
-irg:     PRIMA_c
-arity: 1
-"color: yellow}
-edge: {sourcename: "n93" targetname: "n89" label: "0" class:16 priority:10}
-edge: { sourcename: "n93" targetname: "n91" class:2  priority:50 linestyle:dotted}
 node: {title: "n100" label: "AddIs  100"  info1: "mode:    Is
 visited: 11
 irg:     PRIMA_c
 arity: 2
 "}
-edge: {sourcename: "n100" targetname: "n93" label: "0" class:1  priority:50}
-edge: {sourcename: "n100" targetname: "n99" label: "1" class:1  priority:50}
+edge: {sourcename: "n100" targetname: "n99" label: "0" class:1  priority:50}
+edge: {sourcename: "n100" targetname: "n93" label: "1" class:1  priority:50}
 edge: { sourcename: "n100" targetname: "n91" class:2  priority:50 linestyle:dotted}
 node: {title: "n98" label: "ProjM 0 98"  info1: "mode:    M
 visited: 11

@@ -153,51 +153,11 @@ Use xvcg to view these graphs:
 
 Creating an IR graph: IF_EXAMPLE...
 Done building the graph.  Dumping and optimizing it.
-The constant of Reducing node is: reduce_itervar(l.221) ConstIs: 47 (0x80f3a38)
-The Phi node isreduce_itervar(l.222) PhiIs: 65 (0x80f3f2c)
-Reducing node: reduce_itervar(l.223) MulIs: 50 (0x80f3b10)
-  iter var is  reduce_itervar(l.224) AddIs: 57 (0x80f3d2c)
-  in graph     reduce_itervar(l.225) graph STRENGTH_RED_EXAMPLE_m1: 33 (0x80f3220) in class GlobalType.
-The constant of Reducing node is: reduce_itervar(l.221) ConstIs: 47 (0x80f3a38)
-The Phi node isreduce_itervar(l.222) PhiIs: 89 (0x80f5bf8)
-Reducing node: reduce_itervar(l.223) MulIs: 76 (0x80f427c)
-  iter var is  reduce_itervar(l.224) SubIs: 83 (0x80f5a54)
-  in graph     reduce_itervar(l.225) graph STRENGTH_RED_EXAMPLE_m1: 33 (0x80f3220) in class GlobalType.
 Reduced 0 iteration variables in graph GlobalType.STRENGTH_RED_EXAMPLE_m1
-.The constant of Reducing node is: reduce_itervar(l.221) ConstIs: 131 (0x80f7398)
-The Phi node isreduce_itervar(l.222) PhiIs: 156 (0x80f7a28)
-Reducing node: reduce_itervar(l.223) MulIs: 133 (0x80f7424)
-  iter var is  reduce_itervar(l.224) AddIs: 141 (0x80f7688)
-  in graph     reduce_itervar(l.225) graph STRENGTH_RED_EXAMPLE_m2: 116 (0x80f6b20) in class GlobalType.
-It is possibale to exchange the Cmp with a new Cmp
-The constant of Cmp node is: reduce_itervar(l.291) ConstIs: 123 (0x80f7128)
-The Phi node is  reduce_itervar(l.292) PhiIs: 156 (0x80f7a28)
-Cmp node: reduce_itervar(l.293) CmpT: 124 (0x80f7170)
-  in graph     reduce_itervar(l.294) graph STRENGTH_RED_EXAMPLE_m2: 116 (0x80f6b20) in class GlobalType.
-Reduced 0 iteration variables in graph GlobalType.STRENGTH_RED_EXAMPLE_m2
-.The constant of Reducing node is: reduce_itervar(l.221) ConstIs: 192 (0x80f9c18)
-The Phi node isreduce_itervar(l.222) PhiIs: 216 (0x80fa260)
-Reducing node: reduce_itervar(l.223) MulIs: 194 (0x80f9ca4)
-  iter var is  reduce_itervar(l.224) SubIs: 201 (0x80f9ec0)
-  in graph     reduce_itervar(l.225) graph STRENGTH_RED_EXAMPLE_m3: 177 (0x80f93d0) in class GlobalType.
-Reduced 0 iteration variables in graph GlobalType.STRENGTH_RED_EXAMPLE_m3
-.The constant of Reducing node is: reduce_itervar(l.221) ConstIs: 252 (0x80fc4b0)
-The Phi node isreduce_itervar(l.222) PhiIs: 276 (0x80fcaf8)
-Reducing node: reduce_itervar(l.223) MulIs: 255 (0x80fc584)
-  iter var is  reduce_itervar(l.224) AddIs: 254 (0x80fc53c)
-  in graph     reduce_itervar(l.225) graph STRENGTH_RED_EXAMPLE_m4: 237 (0x80fbc38) in class GlobalType.
-Reduced 0 iteration variables in graph GlobalType.STRENGTH_RED_EXAMPLE_m4
-.The constant of Reducing node is: reduce_itervar(l.221) ConstIs: 312 (0x80fed68)
-The Phi node isreduce_itervar(l.222) PhiIs: 337 (0x80ff3f8)
-Reducing node: reduce_itervar(l.223) MulIs: 315 (0x80fee3c)
-  iter var is  reduce_itervar(l.224) SubIs: 314 (0x80fedf4)
-  in graph     reduce_itervar(l.225) graph STRENGTH_RED_EXAMPLE_m5: 297 (0x80fe520) in class GlobalType.
-It is possibale to exchange the Cmp with a new Cmp
-The constant of Cmp node is: reduce_itervar(l.291) ConstIs: 304 (0x80feaf8)
-The Phi node is  reduce_itervar(l.292) PhiIs: 337 (0x80ff3f8)
-Cmp node: reduce_itervar(l.293) CmpT: 305 (0x80feb40)
-  in graph     reduce_itervar(l.294) graph STRENGTH_RED_EXAMPLE_m5: 297 (0x80fe520) in class GlobalType.
-Reduced 0 iteration variables in graph GlobalType.STRENGTH_RED_EXAMPLE_m5
+.Reduced 0 iteration variables in graph GlobalType.STRENGTH_RED_EXAMPLE_m2
+.Reduced 0 iteration variables in graph GlobalType.STRENGTH_RED_EXAMPLE_m3
+.Reduced 0 iteration variables in graph GlobalType.STRENGTH_RED_EXAMPLE_m4
+.Reduced 0 iteration variables in graph GlobalType.STRENGTH_RED_EXAMPLE_m5
 .
 Creating an IR graph: THREE_CFPRED_EXAMPLE ...
 Optimizing ...

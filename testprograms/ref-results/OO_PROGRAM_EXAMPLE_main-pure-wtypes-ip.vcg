@@ -243,21 +243,21 @@ irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1 backedges:
 "color: lightyellow}
 edge: {sourcename: "n36" targetname: "n191" label: "0" class:13 priority:60 color:red}
-node: {title: "n167" label: "FilterIs 1 167"  info1: "mode:    Is
+node: {title: "n169" label: "FilterIs 1 169"  info1: "mode:    Is
 visited: 36
 irg:     PRIMA_c
 arity: 1 backedges:
 intra predecessor nodes:
   ProjT 89
 "color: yellow}
-node: {title: "n167n38" label: "0x5Is  38"  info1: "mode:    Is
+node: {title: "n169n38" label: "0x5Is  38"  info1: "mode:    Is
 visited: 36
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 0
 Const of type type_unknown
 "color: yellow}
-edge: {sourcename: "n167" targetname: "n167n38" label: "0" class:16 priority:10}
-edge: { sourcename: "n167" targetname: "n82" class:2  priority:50 linestyle:dotted}
+edge: {sourcename: "n169" targetname: "n169n38" label: "0" class:16 priority:10}
+edge: { sourcename: "n169" targetname: "n82" class:2  priority:50 linestyle:dotted}
 node: {title: "n33" label: "ProjM 1 33"  info1: "mode:    M
 visited: 36
 irg:     OO_PROGRAM_EXAMPLE_main
@@ -287,15 +287,15 @@ arity: 1
 "color: yellow}
 edge: {sourcename: "n44" targetname: "n41" label: "0" class:1  priority:50}
 edge: { sourcename: "n44" targetname: "n182" class:2  priority:50 linestyle:dotted}
-node: {title: "n169" label: "FilterP 0 169"  info1: "mode:    P
+node: {title: "n168" label: "FilterP 0 168"  info1: "mode:    P
 visited: 36
 irg:     PRIMA_c
 arity: 1 backedges:
 intra predecessor nodes:
   ProjT 89
 "color: yellow}
-edge: {sourcename: "n169" targetname: "n44" label: "0" class:16 priority:10}
-edge: { sourcename: "n169" targetname: "n82" class:2  priority:50 linestyle:dotted}
+edge: {sourcename: "n168" targetname: "n44" label: "0" class:16 priority:10}
+edge: { sourcename: "n168" targetname: "n82" class:2  priority:50 linestyle:dotted}
 node: {title: "n177" label: "FilterIs 1 177"  info1: "mode:    Is
 visited: 36
 irg:     PRIMA_set_a
@@ -372,15 +372,15 @@ intra predecessor nodes:
 "color: yellow}
 edge: {sourcename: "n187" targetname: "n76" label: "0" class:17 priority:10 color:blue}
 edge: { sourcename: "n187" targetname: "n188" class:2  priority:50 linestyle:dotted}
-node: {title: "n168" label: "FilterM 1 168"  info1: "mode:    M
+node: {title: "n167" label: "FilterM 1 167"  info1: "mode:    M
 visited: 36
 irg:     PRIMA_c
 arity: 1 backedges:
 intra predecessor nodes:
   StartT 83
 "color: yellow}
-edge: {sourcename: "n168" targetname: "n187" label: "0" class:17 priority:10 color:blue}
-edge: { sourcename: "n168" targetname: "n82" class:2  priority:50 linestyle:dotted}
+edge: {sourcename: "n167" targetname: "n187" label: "0" class:17 priority:10 color:blue}
+edge: { sourcename: "n167" targetname: "n82" class:2  priority:50 linestyle:dotted}
 node: {title: "n95" label: "Sel a 95"  info1: "mode:    P
 visited: 36
 irg:     PRIMA_c
@@ -388,8 +388,8 @@ arity: 2
 Selecting entity of type int
   from entity of type PRIMA
 "}
-edge: {sourcename: "n95" targetname: "n168" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n95" targetname: "n169" label: "1" class:16 priority:10}
+edge: {sourcename: "n95" targetname: "n167" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n95" targetname: "n168" label: "1" class:16 priority:10}
 edge: { sourcename: "n95" targetname: "n91" class:2  priority:50 linestyle:dotted}
 node: {title: "n96" label: "Load[Is]  96"  info1: "mode:    T
 visited: 36
@@ -397,7 +397,7 @@ irg:     PRIMA_c
 arity: 2
 volatility: volatility_non_volatile
 "}
-edge: {sourcename: "n96" targetname: "n168" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n96" targetname: "n167" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n96" targetname: "n95" label: "1" class:1  priority:50}
 edge: { sourcename: "n96" targetname: "n91" class:2  priority:50 linestyle:dotted}
 node: {title: "n99" label: "ProjIs 2 99"  info1: "mode:    Is
@@ -413,7 +413,7 @@ irg:     PRIMA_c
 arity: 2
 "}
 edge: {sourcename: "n100" targetname: "n99" label: "0" class:1  priority:50}
-edge: {sourcename: "n100" targetname: "n167" label: "1" class:16 priority:10}
+edge: {sourcename: "n100" targetname: "n169" label: "1" class:16 priority:10}
 edge: { sourcename: "n100" targetname: "n91" class:2  priority:50 linestyle:dotted}
 node: {title: "n194" label: "FilterIs 0 194"  info1: "mode:    Is
 visited: 36
