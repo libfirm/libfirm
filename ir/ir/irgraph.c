@@ -68,6 +68,8 @@ new_ir_graph (entity *ent, int n_loc)
   ir_node *projX;
 
   res = (ir_graph *) malloc (sizeof (ir_graph));
+  res->kind=k_ir_graph;
+
   current_ir_graph = res;
   add_irp_irg(res);          /* remember this graph global. */
 
@@ -522,9 +524,11 @@ inc_irg_visited (ir_graph *irg)
 unsigned long
 get_max_irg_visited(void)
 {
-  //int i;
-  //for(i = 0; i < get_irp_n_irgs(); i++)
-  //  assert(max_irg_visited >= get_irg_visited(get_irp_irg(i)));
+  /*
+  int i;
+  for(i = 0; i < get_irp_n_irgs(); i++)
+  assert(max_irg_visited >= get_irg_visited(get_irp_irg(i)));
+   */
   return max_irg_visited;
 }
 
@@ -535,9 +539,11 @@ void set_max_irg_visited(int val) {
 unsigned long
 inc_max_irg_visited(void)
 {
-  //int i;
-  //  for(i = 0; i < get_irp_n_irgs(); i++)
-  //assert(max_irg_visited >= get_irg_visited(get_irp_irg(i)));
+  /*
+  int i;
+  for(i = 0; i < get_irp_n_irgs(); i++)
+  assert(max_irg_visited >= get_irg_visited(get_irp_irg(i)));
+  */
   max_irg_visited++;
   return max_irg_visited;
 }

@@ -78,12 +78,12 @@ get_negated_pnc(int pnc) {
   return 99; /* to shut up gcc */
 }
 
-static const char *pns_name_arr [] = {
+const char *pns_name_arr [] = {
   "initial_exec", "global_store",
   "frame_base", "globals", "args"
 };
 
-static const char *symconst_name_arr [] = {
+const char *symconst_name_arr [] = {
   "type_tag", "size", "linkage_ptr_info"
 };
 

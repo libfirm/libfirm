@@ -210,7 +210,7 @@ copy_preds (ir_node *n, void *env) {
     for (i = 0; i < get_irn_arity(n); i++)
       if (get_irn_opcode(get_irn_n(n, i)) != iro_Bad) {
 	set_irn_n (nn, j, get_new_node(get_irn_n(n, i)));
-	//if (is_backedge(n, i)) set_backedge(nn, j);
+	/*if (is_backedge(n, i)) set_backedge(nn, j);*/
 	j++;
       }
     /* repair the block visited flag from above misuse. Repair it in both
@@ -234,7 +234,7 @@ copy_preds (ir_node *n, void *env) {
     for (i = 0; i < get_irn_arity(n); i++)
       if (get_irn_opcode(get_irn_n(block, i)) != iro_Bad) {
 	set_irn_n (nn, j, get_new_node(get_irn_n(n, i)));
-	//if (is_backedge(n, i)) set_backedge(nn, j);
+	/*if (is_backedge(n, i)) set_backedge(nn, j);*/
 	j++;
       }
     /* If the pre walker reached this Phi after the post walker visited the

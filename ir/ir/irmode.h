@@ -84,12 +84,12 @@ typedef enum { /* irm is short for `ir mode' */
  */
 typedef enum {
   /* Predefined sorts of modes */
-  irms_auxiliary,         /**< Only for Firm use. Not extensible. (irm_T, irm_ANY, irm_BAD) */
-  /* irms_control_flow    **< Marks all control flow modes. Not extensible. (irm_BB, irm_X) */
-  /* irms_memory          **< Marks the memory mode.  Not extensible. (irm_M) */
+  irms_auxiliary,         /**< Only for Firm use. Not extensible. (irm_T) */
+  irms_control_flow,       /**< Marks all control flow modes. Not extensible. (irm_BB, irm_X) */
+  irms_memory,             /**< Marks the memory mode.  Not extensible. (irm_M) */
   irms_internal_boolean,  /**< Internal boolean representation.
 		               Storing to memory impossible, convert first. (irm_b) */
-  /** user-extensible sorts of modes **/
+                            /** user-extensible sorts of modes **/
   irms_int_number,        /**< A mode to represent int numbers.
 		               Integer computations can be performed. */
   irms_float_number,      /**< A mode to represent float numbers.
@@ -132,6 +132,7 @@ typedef enum {
  * @param bit_size	number of bits this mode allocate
  * @param align		the byte alignment for an entity of this mode (in bits)
  * @param sign		non-zero if this is a signed mode
+ * @param arithmetic    arithmetic operations possible with a mode
  *
  * This function constructs a new mode given by the parameters.
  * If the parameters match an already defined mode, this mode is returned
@@ -147,7 +148,17 @@ typedef enum {
  * 	It is allowed to construct the default modes. So, a call
  * 	new_ir_mode("Is", irms_int_number, 32, 4, 1) will return mode_Is.
  */
-ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align, int sign);
+ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align, int sign, mode_arithmetic arithmetic);
+
+/**
+ *   Checks whether a pointer points to a mode.
+ *
+ *   @param thing     an arbitrary pointer
+ *
+ *   @return
+ *       true if the thing is a mode, else false
+ */
+int is_mode (void *thing);
 
 /* ********** Access methods to read mode information *********** */
 
@@ -175,6 +186,15 @@ int get_mode_align(const ir_mode *mode);
 
 /** Returns the signess of a mode */
 int get_mode_sign (const ir_mode *mode);
+
+/** Returns the arithmetic of a mode */
+int get_mode_arithmetic (const ir_mode *mode);
+
+/** Returns the stored intermediate information. */
+void* get_mode_link(const ir_mode *mode);
+
+/** Stores new intermediate information. */
+void set_mode_link(ir_mode *mode, void *l);
 
 /**
  * Returns the smallest representable value of a given mode.

@@ -16,7 +16,7 @@
 
 # include <stdlib.h>
 
-# include "irnode.h"
+# include "irnode_t.h"
 # include "irgraph.h" /* visited flag */
 # include "irprog.h"
 # include "irgwalk.h"
@@ -32,7 +32,7 @@ static void irg_walk_cg(ir_node * node, int visited, eset * irg_set,
   ir_graph * rem = current_ir_graph;
   ir_node * pred;
 
-  assert(node);
+  assert(node && node->kind==k_ir_node);
   if (get_irn_visited(node) >= visited) return;
 
   set_irn_visited(node, visited);
@@ -109,7 +109,7 @@ static void
 irg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
 {
   int i;
-  assert(node);
+  assert(node && node->kind==k_ir_node);
 
   if (get_irn_visited(node) < get_irg_visited(current_ir_graph)) {
     set_irn_visited(node, get_irg_visited(current_ir_graph));
@@ -129,7 +129,7 @@ irg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
 
 void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
 {
-  assert(node);
+  assert(node  && node->kind==k_ir_node);
   if (interprocedural_view) {
     eset * irg_set = eset_create();
     int visited;
@@ -337,8 +337,8 @@ void irg_block_walk_graph(ir_graph *irg, irg_walk_func *pre,
 /********************************************************************/
 
 typedef struct walk_env {
-  void *pre;
-  void *post;
+  irg_walk_func *pre;
+  irg_walk_func *post;
   void *env;
 } walk_env;
 

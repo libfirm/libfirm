@@ -23,6 +23,7 @@
 
 /** ir_graph holds all information for a procedure */
 struct ir_graph {
+  firm_kind         kind;            /**<  always set to k_ir_graph*/
   /* --  Basics of the representation -- */
   struct entity  *ent;               /**< The entity of this procedure, i.e.,
 					the type of the procedure and the

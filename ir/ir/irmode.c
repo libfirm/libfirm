@@ -17,7 +17,8 @@
 # include <stddef.h>
 # include <string.h>
 # include "tv.h"
-# include "array.h"
+# include "obst.h"
+# include "misc.h"
 
 #if 0
 static long long count = 0;
@@ -32,12 +33,7 @@ static long long count = 0;
 
 
 /** dynamic array to hold all modes */
-static ir_mode * modes;
-/* dynamic arrays to hold special modes' values */
-static tarval** modes_min;
-static tarval** modes_max;
-static tarval** modes_null;
-static tarval** modes_one;
+static struct obstack modes;
 
 /** number of defined modes */
 static int num_modes;
@@ -49,31 +45,39 @@ static int num_modes;
 /**
  * Compare modes that don't need to have their code field
  * correctly set
- */
-static int modes_are_equal(const ir_mode *m, const ir_mode *n)
+ *
+ * TODO: Add other fields
+ **/
+inline static int modes_are_equal(const ir_mode *m, const ir_mode *n)
 {
   if (m == n) return 1;
-  if ( (m->sort == n->sort) && (m->size == n->size) &&
-      (m->align == n->align) && (m->sign == n->sign) &&
-      (m->name == n->name)
-     )
-    return 1;
+  if(!bcmp( m + offsetof(ir_mode,sort) , n + offsetof(ir_mode,sort), offsetof(ir_mode,min)-offsetof(ir_mode,min))) return 1;
 
   return 0;
 }
 
 /**
- * searches the modes array for the given mode and returns
+ * searches the modes obstack for the given mode and returns
  * a pointer on an equal mode already in the array, NULL if
  * none found
  */
-static ir_mode *find_mode(ir_mode *m)
+static ir_mode *find_mode(const ir_mode *m)
 {
-  int i;
+  ir_mode *n;
+  struct _obstack_chunk	*p;
 
-  for (i = 0; i < num_modes; i++)
+  p=modes.chunk;
+  for( n=(ir_mode*) p->contents; (char *)n < modes.next_free; n+=sizeof(ir_mode) )
   {
-    if (modes_are_equal(m, &modes[i])) return &modes[i];
+    if(modes_are_equal(n,m)) return n;
+  }
+
+  for (p = p->prev; p; p = p->prev)
+  {
+    for( n=(ir_mode*) p->contents; (char *)n < p->limit; n+=sizeof(ir_mode) )
+    {
+      if(modes_are_equal(n,m)) return n;
+    }
   }
 
   return NULL;
@@ -84,10 +88,10 @@ static ir_mode *find_mode(ir_mode *m)
  */
 static void set_mode_values(ir_mode* mode)
 {
-  modes_min[get_mode_modecode(mode)] = get_tarval_min(mode);
-  modes_max[get_mode_modecode(mode)] = get_tarval_max(mode);
-  modes_null[get_mode_modecode(mode)] = get_tarval_null(mode);
-  modes_one[get_mode_modecode(mode)] = get_tarval_one(mode);
+  mode->min = get_tarval_min(mode);
+  mode->max= get_tarval_max(mode);
+  mode->null= get_tarval_null(mode);
+  mode->one= get_tarval_one(mode);
 }
 /* * *
  * globals defined in irmode.h
@@ -153,21 +157,41 @@ INLINE ir_mode *get_modeBAD(void) { ANNOUNCE(); return mode_BAD; }
  * Registers a new mode if not defined yet, else returns
  * the "equivalent" one.
  */
-static ir_mode *register_mode(ir_mode* new_mode)
+static ir_mode *register_mode(const ir_mode* new_mode)
 {
-  ir_mode *mode;
+  ir_mode *mode = NULL;
 
   ANNOUNCE();
   assert(new_mode);
 
-  /* first check if there already is a matching mode */
-  mode = find_mode(new_mode);
-  if (mode) return mode;
+
+
+  /* copy mode struct to modes array */
+  mode=(ir_mode*) obstack_copy(&modes, new_mode, sizeof(ir_mode));
+
+  mode->kind = k_ir_mode;
+  if(num_modes>=irm_max) mode->code = num_modes;
+  num_modes++;
+
+  if(mode->sort==irms_int_number || mode->sort==irms_float_number || mode->sort==irms_character) set_mode_values(mode);
+
+  return mode;
+}
+
+/*
+ * Creates a new mode.
+ */
+ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align, int sign, mode_arithmetic arithmetic )
+{
+  ir_mode mode_tmpl;
+  ir_mode *mode;
 
   /* sanity checks */
-  switch (new_mode->sort)
+  switch (sort)
   {
     case irms_auxiliary:
+    case irms_control_flow:
+    case irms_memory:
     case irms_internal_boolean:
       assert(0 && "internal modes cannot be user defined");
       return NULL;
@@ -182,44 +206,25 @@ static ir_mode *register_mode(ir_mode* new_mode)
     case irms_reference:
     case irms_character:
       break;
-
-    default:
-      assert(0 && "wrong mode sort");
-      return NULL;
   }
+  mode_tmpl.name        = new_id_from_str(name);
+  mode_tmpl.sort        = sort;
+  mode_tmpl.size        = bit_size;
+  mode_tmpl.align       = align;
+  mode_tmpl.sign        = sign ? 1 : 0;
+  mode_tmpl.arithmetic  = arithmetic;
+  mode_tmpl.tv_priv     = NULL;
 
-  /* copy mode struct to modes array */
-  ARR_EXTEND(ir_mode, modes, 1);
-  ARR_EXTEND(tarval*, modes_min, 1);
-  ARR_EXTEND(tarval*, modes_max, 1);
-  ARR_EXTEND(tarval*, modes_null, 1);
-  ARR_EXTEND(tarval*, modes_one, 1);
-  mode = &modes[num_modes];
-
-  memcpy(mode, new_mode, sizeof(ir_mode));
-  mode->code = num_modes;
-  num_modes++;
-
-  set_mode_values(mode);
-
-  return mode;
-}
-
-/*
- * Creates a new mode.
- */
-ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align, int sign)
-{
-  ir_mode mode_tmpl;
-
-  mode_tmpl.name    = new_id_from_str(name);
-  mode_tmpl.sort    = sort;
-  mode_tmpl.size    = bit_size;
-  mode_tmpl.align   = align;
-  mode_tmpl.sign    = sign ? 1 : 0;
-  mode_tmpl.tv_priv = NULL;
-
-  return register_mode(&mode_tmpl);
+  /* first check if there already is a matching mode */
+  mode = find_mode(&mode_tmpl);
+  if (mode)
+  {
+    return mode;
+  }
+  else
+  {
+    return register_mode(&mode_tmpl);
+  }
 }
 
 /* Functions for the direct access to all attributes od a ir_mode */
@@ -259,8 +264,8 @@ get_mode_size_bits(const ir_mode *mode)
 }
 
 int get_mode_size_bytes(const ir_mode *mode) {
-  ANNOUNCE();
   int size = get_mode_size_bits(mode);
+  ANNOUNCE();
   if ((size & 7) != 0) return -1;
   return size >> 3;
 }
@@ -279,6 +284,24 @@ get_mode_sign (const ir_mode *mode)
   return mode->sign;
 }
 
+int get_mode_arithmetic (const ir_mode *mode)
+{
+  ANNOUNCE();
+  return mode->arithmetic;
+}
+
+void* get_mode_link(const ir_mode *mode)
+{
+  ANNOUNCE();
+  return mode->link;
+}
+
+void set_mode_link(ir_mode *mode, void *l)
+{
+  mode->link=l;
+  return;
+}
+
 tarval *
 get_mode_min (ir_mode *mode)
 {
@@ -287,7 +310,7 @@ get_mode_min (ir_mode *mode)
   assert(get_mode_modecode(mode) < num_modes);
   assert(mode_is_data(mode));
 
-  return modes_min[get_mode_modecode(mode)];
+  return mode->min;
 }
 
 tarval *
@@ -298,7 +321,7 @@ get_mode_max (ir_mode *mode)
   assert(get_mode_modecode(mode) < num_modes);
   assert(mode_is_data(mode));
 
-  return modes_max[get_mode_modecode(mode)];
+  return mode->max;
 }
 
 tarval *
@@ -309,7 +332,7 @@ get_mode_null (ir_mode *mode)
   assert(get_mode_modecode(mode) < num_modes);
   assert(mode_is_data(mode));
 
-  return modes_null[get_mode_modecode(mode)];
+  return mode->null;
 }
 
 tarval *
@@ -320,7 +343,7 @@ get_mode_one (ir_mode *mode)
   assert(get_mode_modecode(mode) < num_modes);
   assert(mode_is_data(mode));
 
-  return modes_one[get_mode_modecode(mode)];
+  return mode->one;
 }
 
 tarval *
@@ -343,6 +366,15 @@ get_mode_NAN(ir_mode *mode)
   assert(mode_is_float(mode));
 
   return get_tarval_nan(mode);
+}
+
+int
+is_mode (void *thing) {
+  assert(thing);
+  if (get_kind(thing) == k_ir_mode)
+    return 1;
+  else
+    return 0;
 }
 
 /* Functions to check, whether a modecode is signed, float, int, num, data,
@@ -539,250 +571,218 @@ smaller_mode(const ir_mode *sm, const ir_mode *lm)
 void
 init_mode (void)
 {
+  ir_mode newmode;
   ANNOUNCE();
   /* init flexible array */
-  modes      = NEW_ARR_F(ir_mode, irm_max);
-  modes_min  = NEW_ARR_F(tarval*, irm_max);
-  modes_max  = NEW_ARR_F(tarval*, irm_max);
-  modes_null = NEW_ARR_F(tarval*, irm_max);
-  modes_one  = NEW_ARR_F(tarval*, irm_max);
 
+  obstack_init(&modes);
+
+  num_modes  =  0;
   /* initialize predefined modes */
-  /* Basic Block */
-  mode_BB = &modes[irm_BB];
-  mode_BB->name    = id_from_str("BB", 2);
-  mode_BB->code    = irm_BB;
-  mode_BB->sort    = irms_auxiliary;
-  mode_BB->size    = 0;
-  mode_BB->align   = 0;
-  mode_BB->sign    = 0;
-  mode_BB->tv_priv = NULL;
 
-  /* eXecution */
-  mode_X = &modes[irm_X];
-  mode_X->name    = id_from_str("X", 1);
-  mode_X->code    = irm_X;
-  mode_X->sort    = irms_auxiliary;
-  mode_X->size    = 0;
-  mode_X->align   = 0;
-  mode_X->sign    = 0;
-  mode_X->tv_priv = NULL;
+  /* Internal Modes */
+  newmode.arithmetic = irma_none;
+  newmode.size    = 0;
+  newmode.align   = 0;
+  newmode.sign    = 0;
+  newmode.tv_priv = NULL;
+
+  /* Control Flow Modes*/
+  newmode.sort    = irms_control_flow;
+
+  /* Basic Block */
+  newmode.name    = id_from_str("BB", 2);
+  newmode.code    = irm_BB;
+
+  mode_BB = register_mode(&newmode);
+
+/* eXecution */
+  newmode.name    = id_from_str("X", 1);
+  newmode.code    = irm_X;
+
+  mode_X = register_mode(&newmode);
+
+  /* Memory Modes */
+  newmode.sort    = irms_memory;
 
   /* Memory */
-  mode_M = &modes[irm_M];
-  mode_M->name    = id_from_str("M", 1);
-  mode_M->code    = irm_M;
-  mode_M->sort    = irms_auxiliary;
-  mode_M->size    = 0;
-  mode_M->align   = 0;
-  mode_M->sign    = 0;
-  mode_M->tv_priv = NULL;
+  newmode.name    = id_from_str("M", 1);
+  newmode.code    = irm_M;
+
+  mode_M = register_mode(&newmode);
+
+  /* Auxiliary Modes */
+  newmode.sort    = irms_auxiliary,
 
   /* Tuple */
-  mode_T = &modes[irm_T];
-  mode_T->name    = id_from_str("T", 1);
-  mode_T->code    = irm_T;
-  mode_T->sort    = irms_auxiliary,
-  mode_T->size    = 0;
-  mode_T->align   = 0;
-  mode_T->sign    = 0;
-  mode_T->tv_priv = NULL;
+  newmode.name    = id_from_str("T", 1);
+  newmode.code    = irm_T;
+
+  mode_T = register_mode(&newmode);
 
   /* ANY */
-  mode_ANY = &modes[irm_ANY];
-  mode_ANY->name    = id_from_str("ANY", 3);
-  mode_ANY->code    = irm_ANY;
-  mode_ANY->sort    = irms_auxiliary;
-  mode_ANY->sign    = 0;
-  mode_ANY->align   = 0;
-  mode_ANY->size    = 0;
-  mode_ANY->tv_priv = NULL;
+  newmode.name    = id_from_str("ANY", 3);
+  newmode.code    = irm_ANY;
+
+  mode_ANY = register_mode(&newmode);
 
   /* BAD */
-  mode_BAD = &modes[irm_BAD];
-  mode_BAD->name    = id_from_str("BAD", 3);
-  mode_BAD->code    = irm_BAD;
-  mode_BAD->sort    = irms_auxiliary;
-  mode_BAD->sign    = 0;
-  mode_BAD->align   = 0;
-  mode_BAD->size    = 0;
-  mode_BAD->tv_priv = NULL;
+  newmode.name    = id_from_str("BAD", 3);
+  newmode.code    = irm_BAD;
+
+  mode_BAD = register_mode(&newmode);
+
+  /* Internal Boolean Modes */
+  newmode.sort    = irms_internal_boolean;
 
   /* boolean */
-  mode_b = &modes[irm_b];
-  mode_b->name    = id_from_str("b", 1);
-  mode_b->code    = irm_b;
-  mode_b->sort    = irms_internal_boolean;
-  mode_b->size    = 0;
-  mode_b->align   = 0;
-  mode_b->sign    = 0;
-  mode_b->tv_priv = NULL;
+  newmode.name    = id_from_str("b", 1);
+  newmode.code    = irm_b;
+
+  mode_b = register_mode(&newmode);
+
+/* Data Modes */
+
+  /* Float Number Modes */
+  newmode.sort    = irms_float_number;
+  newmode.arithmetic = irma_ieee754;
 
   /* float */
-  mode_F = &modes[irm_F];
-  mode_F->name    = id_from_str("F", 1);
-  mode_F->code    = irm_F;
-  mode_F->sort    = irms_float_number;
-  mode_F->sign    = 1;
-  mode_F->align   = 4;
-  mode_F->size    = 32;
-  mode_F->tv_priv = NULL;
+  newmode.name    = id_from_str("F", 1);
+  newmode.code    = irm_F;
+  newmode.sign    = 1;
+  newmode.align   = 4;
+  newmode.size    = 32;
 
-  set_mode_values(mode_F);
+  mode_F = register_mode(&newmode);
 
   /* double */
-  mode_D = &modes[irm_D];
-  mode_D->name    = id_from_str("D", 1);
-  mode_D->code    = irm_D;
-  mode_D->sort    = irms_float_number;
-  mode_D->sign    = 1;
-  mode_D->align   = 4;
-  mode_D->size    = 64;
-  mode_D->tv_priv = NULL;
+  newmode.name    = id_from_str("D", 1);
+  newmode.code    = irm_D;
+  newmode.sign    = 1;
+  newmode.align   = 4;
+  newmode.size    = 64;
 
-  set_mode_values(mode_D);
+  mode_D = register_mode(&newmode);
 
   /* extended */
-  mode_E = &modes[irm_E];
-  mode_E->name    = id_from_str("E", 1);
-  mode_E->code    = irm_E;
-  mode_E->sort    = irms_float_number;
-  mode_E->sign    = 1;
-  mode_E->align   = 4;
-  mode_E->size    = 80;
-  mode_E->tv_priv = NULL;
+  newmode.name    = id_from_str("E", 1);
+  newmode.code    = irm_E;
+  newmode.sign    = 1;
+  newmode.align   = 4;
+  newmode.size    = 80;
 
-  set_mode_values(mode_E);
+  mode_E = register_mode(&newmode);
+
+  /* Integer Number Modes */
+  newmode.sort    = irms_int_number;
+  newmode.arithmetic = irma_twos_complement;
 
   /* signed byte */
-  mode_Bs = &modes[irm_Bs];
-  mode_Bs->name    = id_from_str("Bs", 2);
-  mode_Bs->code    = irm_Bs;
-  mode_Bs->sort    = irms_int_number;
-  mode_Bs->sign    = 1;
-  mode_Bs->align   = 1;
-  mode_Bs->size    = 8;
-  mode_Bs->tv_priv = NULL;
+  newmode.name    = id_from_str("Bs", 2);
+  newmode.code    = irm_Bs;
+  newmode.sign    = 1;
+  newmode.align   = 1;
+  newmode.size    = 8;
 
-  set_mode_values(mode_Bs);
+  mode_Bs = register_mode(&newmode);
 
   /* unsigned byte */
-  mode_Bu = &modes[irm_Bu];
-  mode_Bu->name    = id_from_str("Bu", 2);
-  mode_Bu->code    = irm_Bu;
-  mode_Bu->sort    = irms_int_number;
-  mode_Bu->sign    = 0;
-  mode_Bu->align   = 1;
-  mode_Bu->size    = 8;
-  mode_Bu->tv_priv = NULL;
+  newmode.name    = id_from_str("Bu", 2);
+  newmode.code    = irm_Bu;
+  newmode.arithmetic = irma_twos_complement;
+  newmode.sign    = 0;
+  newmode.align   = 1;
+  newmode.size    = 8;
 
-  set_mode_values(mode_Bu);
+  mode_Bu = register_mode(&newmode);
 
   /* signed short integer */
-  mode_Hs = &modes[irm_Hs];
-  mode_Hs->name    = id_from_str("Hs", 2);
-  mode_Hs->code    = irm_Hs;
-  mode_Hs->sort    = irms_int_number;
-  mode_Hs->sign    = 1;
-  mode_Hs->align   = 2;
-  mode_Hs->size    = 16;
-  mode_Hs->tv_priv = NULL;
+  newmode.name    = id_from_str("Hs", 2);
+  newmode.code    = irm_Hs;
+  newmode.sign    = 1;
+  newmode.align   = 2;
+  newmode.size    = 16;
 
-  set_mode_values(mode_Hs);
+  mode_Hs = register_mode(&newmode);
 
   /* unsigned short integer */
-  mode_Hu = &modes[irm_Hu];
-  mode_Hu->name    = id_from_str("Hu", 2);
-  mode_Hu->code    = irm_Hu;
-  mode_Hu->sort    = irms_int_number;
-  mode_Hu->sign    = 0;
-  mode_Hu->align   = 2;
-  mode_Hu->size    = 16;
-  mode_Hu->tv_priv = NULL;
+  newmode.name    = id_from_str("Hu", 2);
+  newmode.code    = irm_Hu;
+  newmode.sign    = 0;
+  newmode.align   = 2;
+  newmode.size    = 16;
 
-  set_mode_values(mode_Hu);
+  mode_Hu = register_mode(&newmode);
 
   /* signed integer */
-  mode_Is = &modes[irm_Is];
-  mode_Is->name    = id_from_str("Is", 2);
-  mode_Is->code    = irm_Is;
-  mode_Is->sort    = irms_int_number;
-  mode_Is->sign    = 1;
-  mode_Is->align   = 4;
-  mode_Is->size    = 32;
-  mode_Is->tv_priv = NULL;
+  newmode.name    = id_from_str("Is", 2);
+  newmode.code    = irm_Is;
+  newmode.sign    = 1;
+  newmode.align   = 4;
+  newmode.size    = 32;
 
-  set_mode_values(mode_Is);
+  mode_Is = register_mode(&newmode);
 
   /* unsigned integer */
-  mode_Iu = &modes[irm_Iu];
-  mode_Iu->name    = id_from_str("Iu", 2);
-  mode_Iu->code    = irm_Iu;
-  mode_Iu->sort    = irms_int_number;
-  mode_Iu->sign    = 0;
-  mode_Iu->align   = 4;
-  mode_Iu->size    = 32;
-  mode_Iu->tv_priv = NULL;
+  newmode.name    = id_from_str("Iu", 2);
+  newmode.code    = irm_Iu;
+  newmode.sign    = 0;
+  newmode.align   = 4;
+  newmode.size    = 32;
 
-  set_mode_values(mode_Iu);
+  mode_Iu = register_mode(&newmode);
 
   /* signed long integer */
-  mode_Ls = &modes[irm_Ls];
-  mode_Ls->name    = id_from_str("Ls", 2);
-  mode_Ls->code    = irm_Ls;
-  mode_Ls->sort    = irms_int_number;
-  mode_Ls->sign    = 1;
-  mode_Ls->align   = 4;
-  mode_Ls->size    = 64;
-  mode_Ls->tv_priv = NULL;
+  newmode.name    = id_from_str("Ls", 2);
+  newmode.code    = irm_Ls;
+  newmode.sign    = 1;
+  newmode.align   = 4;
+  newmode.size    = 64;
 
-  set_mode_values(mode_Ls);
+  mode_Ls = register_mode(&newmode);
 
   /* unsigned long integer */
-  mode_Lu = &modes[irm_Lu];
-  mode_Lu->name    = id_from_str("Lu", 2);
-  mode_Lu->code    = irm_Lu;
-  mode_Lu->sort    = irms_int_number;
-  mode_Lu->sign    = 0;
-  mode_Lu->align   = 4;
-  mode_Lu->size    = 64;
-  mode_Lu->tv_priv = NULL;
+  newmode.name    = id_from_str("Lu", 2);
+  newmode.code    = irm_Lu;
+  newmode.sign    = 0;
+  newmode.align   = 4;
+  newmode.size    = 64;
 
-  set_mode_values(mode_Lu);
+  mode_Lu = register_mode(&newmode);
+
+  /* Integer Number Modes */
+  newmode.sort    = irms_character;
+  newmode.arithmetic = irma_none;
 
   /* Character */
-  mode_C = &modes[irm_C];
-  mode_C->name    = id_from_str("C", 1);
-  mode_C->code    = irm_C;
-  mode_C->sort    = irms_character;
-  mode_C->sign    = 0;
-  mode_C->align   = 1;
-  mode_C->size    = 8;
-  mode_C->tv_priv = NULL;
+  newmode.name    = id_from_str("C", 1);
+  newmode.code    = irm_C;
+  newmode.sign    = 0;
+  newmode.align   = 1;
+  newmode.size    = 8;
 
-  set_mode_values(mode_C);
+  mode_C = register_mode(&newmode);
 
   /* Unicode character */
-  mode_U = &modes[irm_U];
-  mode_U->name    = id_from_str("U", 1);
-  mode_U->code    = irm_U;
-  mode_U->sort    = irms_character;
-  mode_U->sign    = 0;
-  mode_U->align   = 2;
-  mode_U->size    = 16;
-  mode_U->tv_priv = NULL;
+  newmode.name    = id_from_str("U", 1);
+  newmode.code    = irm_U;
+  newmode.sign    = 0;
+  newmode.align   = 2;
+  newmode.size    = 16;
 
-  set_mode_values(mode_U);
+  mode_U = register_mode(&newmode);
+
+  /* Reference Modes */
+  newmode.sort    = irms_reference;
+  newmode.arithmetic = irma_twos_complement;
 
   /* pointer */
-  mode_P = &modes[irm_P];
-  mode_P->name    = id_from_str("P", 1);
-  mode_P->code    = irm_P;
-  mode_P->sort    = irms_reference;
-  mode_P->sign    = 0;
-  mode_P->align   = 4;
-  mode_P->size    = 32;
-  mode_P->tv_priv = NULL;
+  newmode.name    = id_from_str("P", 1);
+  newmode.code    = irm_P;
+  newmode.sign    = 0;
+  newmode.align   = 4;
+  newmode.size    = 32;
 
-  num_modes = irm_max;
+  mode_P = register_mode(&newmode);
 }

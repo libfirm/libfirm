@@ -102,6 +102,8 @@ INLINE void          set_irn_in            (ir_node *node, int arity,
 /* get_irn_n removes Id predecessors. */
 INLINE ir_node      *get_irn_n             (ir_node *node, int n);
 INLINE void          set_irn_n             (ir_node *node, int n, ir_node *in);
+/** Sets the mode struct of node */
+INLINE void set_irn_mode (ir_node *node, ir_mode *mode);
 /** Gets the mode struct. */
 INLINE ir_mode      *get_irn_mode          (const ir_node *node);
 /** Gets the mode-enum modecode. */

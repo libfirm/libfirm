@@ -21,7 +21,7 @@
 # include "tv.h"
 # include "tune.h"
 # include "dbginfo_t.h"
-# include "iropt_dbg.c"
+# include "iropt_dbg.h"
 
 /* Make types visible to allow most efficient access */
 # include "entity_t.h"

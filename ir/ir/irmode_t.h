@@ -9,19 +9,27 @@
 # define _IRMODE_T_H_
 
 # include "irmode.h"
+# include "tv.h"
 
 /** This struct is supposed to completely define a mode. **/
 struct ir_mode {
-  firm_kind  kind;         /**< is set to k_ir_mode */
-  modecode   code;         /**< unambiguous identifier of a mode */
-  ident      *name;        /**< Name ident of this mode */
-  mode_sort  sort;         /**< coarse classification of this mode:
-                                int, float, reference ...
-                                (see irmode.h) */
-  int        size;         /**< size of the mode in Bits. */
-  int        align;        /**< byte alignment */
-  unsigned   sign:1;       /**< signedness of this mode */
-  const void *tv_priv;     /**< tarval module will save private data here */
+  firm_kind         kind;       /**< distinguishes this node from others */
+  modecode          code;       /**< unambiguous identifier of a mode */
+  ident             *name;      /**< Name ident of this mode */
+  mode_sort         sort;       /**< coarse classification of this mode:
+                                     int, float, reference ...
+                                     (see irmode.h) */
+  mode_arithmetic   arithmetic; /**< different arithmetic operations possible with a mode */
+  int               size;       /**< size of the mode in Bits. */
+  int               align;      /**< byte alignment */
+  unsigned          sign:1;     /**< signedness of this mode */
+
+  tarval            *min;
+  tarval            *max;
+  tarval            *null;
+  tarval            *one;
+  void              *link;      /**< To store some intermediate information */
+  const void        *tv_priv;   /**< tarval module will save private data here */
 };
 
 #endif
