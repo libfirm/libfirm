@@ -12,7 +12,7 @@ subdir := tv
 
 INSTALL_HEADERS = tv.h
 
-SOURCES = INSTALL_HEADERS
+SOURCES = $(INSTALL_HEADERS)
 
 SOURCES += Makefile.in ieee754.h tv.c tv_t.h
 

@@ -73,7 +73,7 @@ void tarval_init_2 (void);
 /* Hash function on tarvals */
 unsigned tarval_hash (tarval *);
 
-/************************* Constructors for tarvals *************************/
+/* ************************ Constructors for tarvals ************************ */
 tarval *tarval_Z_from_str (const char *, size_t, int base);
 tarval *tarval_B_from_str (const char *, size_t);
 tarval *tarval_d_from_str (const char *, size_t);
@@ -114,7 +114,7 @@ typedef enum {
   irpn_notmask = irpn_Leg
 } ir_pncmp;
 
-/********************* Arithmethic operations on tarvals *********************/
+/* ******************** Arithmethic operations on tarvals ******************** */
 /* Compare a with b and return an ir_pncmp describing the relation
    between a and b.  This is either Uo, Lt, Eq, Gt, or False if a or b
    are symbolic pointers which can not be compared at all. */

@@ -12,7 +12,7 @@ subdir := tr
 
 INSTALL_HEADERS = mangle.h type.h entity.h type_or_entity.h typewalk.h
 
-SOURCES = INSTALL_HEADERS
+SOURCES = $(INSTALL_HEADERS)
 
 SOURCES += Makefile.in \
 		entity.c entity_t.h typewalk.c mangle.c type.c
