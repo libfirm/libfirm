@@ -37,7 +37,7 @@
  *  @param new_type  - The new type that will replace old_type.
  *
  */
-INLINE void exchange_types(type *old_type, type *new_type);
+void exchange_types(type *old_type, type *new_type);
 
 /**
  *   skip id types until a useful type is reached.
@@ -48,6 +48,6 @@ INLINE void exchange_types(type *old_type, type *new_type);
  *   tp if it is not an id type.
  *   If tp is an id type returns the real type it stands for.
  */
-INLINE type *skip_tid(type *tp);
+type *skip_tid(type *tp);
 
 # endif /*_TYPEGMOD_H_ */

@@ -28,7 +28,7 @@
 /** Exchanges two nodes by conserving edges leaving old (i.e., pointers
    pointing to old).  Turns the old node into an Id. Requires that
    current_ir_graph is set properly. */
-INLINE void exchange (ir_node *old, ir_node *nw);
+void exchange (ir_node *old, ir_node *nw);
 
 /** Turns a node into a "useless" Tuple.  The Tuple node just forms a tuple
    from several inputs.  The predecessors of the tuple have to be
