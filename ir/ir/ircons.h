@@ -243,13 +243,16 @@
 
   This library supplies several interfaces to construct a FIRM graph for
   a program:
-  * A comfortable interface generating SSA automatically.  Automatically
+  * A "comfortable" interface generating SSA automatically.  Automatically
     computed predecessors of nodes need not be specified in the constructors.
+    (new_<Node> constructurs and a set of additional routines.)
   * A less comfortable interface where all predecessors except the block
     an operation belongs to need to be specified.  SSA must be constructed
-    by hand.  (new_<Node>) constructors).
+    by hand.  (new_<Node> constructors and switch_block()).  This interface
+    is called "block oriented".
   * An even less comfortable interface where the block needs to be specified
-    explicitly.  (new_r_<Node> constructors).
+    explicitly.  This is called the "raw" interface. (new_r_<Node>
+    constructors).
 
   To use the functionality of the comfortable interface correctly the Front
   End needs to follow certain protocols.  This is explained in the following.
@@ -1075,30 +1078,22 @@
 # ifndef _IRCONS_H_
 # define _IRCONS_H_
 
-# include "irgmod.h"
+# include "irgraph.h"
+# include "irnode.h"
 # include "irmode.h"
 # include "entity.h"
 # include "tv.h"
-# include "common.h"
-# include "irop.h"
-# include "irgraph.h"
 # include "type.h"
 # include "pdeq.h"
-# include "irvrfy.h"
-
 
 #if USE_EXPICIT_PHI_IN_STACK
 /* A stack needed for the automatic Phi node construction in constructor
    Phi_in. */
-typedef struct Phi_in_stack {
-  ir_node **stack;
-  int       pos;
-} Phi_in_stack;
+typedef struct Phi_in_stack Phi_in_stack;
 #endif
 
-
-/* privat interfaces */
-/* more detailed construction */
+/***************************************************************************/
+/* The raw interface                                                       */
 
 ir_node *new_r_Block  (ir_graph *irg,  int arity, ir_node **in);
 ir_node *new_r_Start  (ir_graph *irg, ir_node *block);
@@ -1117,7 +1112,8 @@ ir_node *new_r_Sel    (ir_graph *irg, ir_node *block, ir_node *store,
                        ir_node *objptr, int n_index, ir_node **index,
 		       entity *ent);
 ir_node *new_r_Call   (ir_graph *irg, ir_node *block, ir_node *store,
-		       ir_node *callee, int arity, ir_node **in, type_method *type);
+		       ir_node *callee, int arity, ir_node **in,
+		       type_method *type);
 ir_node *new_r_Add    (ir_graph *irg, ir_node *block,
 		       ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_r_Sub    (ir_graph *irg, ir_node *block,
@@ -1171,24 +1167,27 @@ ir_node *new_r_Proj   (ir_graph *irg, ir_node *block, ir_node *arg,
 		       ir_mode *mode, long proj);
 ir_node *new_r_Tuple  (ir_graph *irg, ir_node *block,
 		       int arity, ir_node **in);
-ir_node *new_r_Id  (ir_graph *irg, ir_node *block,
-		    ir_node *val, ir_mode *mode);
-ir_node *new_r_Bad (ir_node *block);
+ir_node *new_r_Id     (ir_graph *irg, ir_node *block,
+		       ir_node *val, ir_mode *mode);
+ir_node *new_r_Bad    (ir_node *block);
 
 
+/*************************************************************************/
+/* The block oriented interface                                          */
 
-/* public interfaces */
-/* normal constructors */
+/* Sets the current block in which the following constructors place the
+   nodes they construct. */
+void switch_block (ir_node *target);
 
 /* Chris: please rename the Block constructor:
    new_Block to new_immBlock
-   and add a new one so dass das dann so aussieht: */
+   and add a new one so dass das dann so aussieht:
+   passe die Beispeilprogramme an! */
 #if 0
-ir_node *new_immBlock (void);  /* immature Block without predecessors */
-ir_node *new_Block(int arity, ir_node **in);          /* mature Block */
-#endif
-
+ir_node *new_Block(int arity, ir_node **in);     /* creates mature Block */
+#else
 ir_node *new_Block  (void);
+#endif
 ir_node *new_Start  (void);
 ir_node *new_End    (void);
 ir_node *new_Jmp    (void);
@@ -1234,12 +1233,50 @@ ir_node *new_Tuple  (int arity, ir_node **in);
 ir_node *new_Id     (ir_node *val, ir_mode *mode);
 ir_node *new_Bad    (void);
 
+/***********************************************************************/
+/* The comfortable interface.                                          */
+/* Supports automatic Phi node construction.                           */
+/* All routines of the block oriented interface except new_Block are   */
+/* needed also.                                                        */
 
+/** Block construction **/
+/* immature Block without predecessors */
+ir_node *new_immBlock (void);
+
+/* Add a control flow edge to an immature block. */
+void add_in_edge (ir_node *immblock, ir_node *jmp);
+
+/* fixes the number of predecessors of a block. */
+void     mature_block (ir_node *block);
+
+/** Parameter administration **/
+/* Read a value from the array with the local variables.  Use this
+   function to obtain the last definition of the value associated with
+   pos. */
+ir_node *get_value (int pos, ir_mode *mode);
+
+/* Write a value in the array with the local variables. Use this function
+   to remember a new definition of the value associated with pos. */
+void set_value (int pos, ir_node *value);
+
+/* Read a store.
+   Use this function to get the most recent version of the store (type M).
+   Internally it does the same as get_value. */
+ir_node *get_store (void);
+
+/* Write a store. */
+void set_store (ir_node *store);
+
+
+/* This function is for internal use only.  It is visible as it is needed
+   in irgraph.c to create the stack that is needed for automatic Phi
+   construction. */
 #if USE_EXPICIT_PHI_IN_STACK
 Phi_in_stack *new_Phi_in_stack();
 #endif
 
-/* initialize ir construction */
+/**************************************************************************/
+/* initialize ir construction                                             */
 void init_cons (void);
 
 

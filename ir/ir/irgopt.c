@@ -15,6 +15,8 @@
 # include "irgraph.h"
 # include "ircons.h"
 
+/********************************************************************/
+/* apply optimizations of iropt to all nodes.                       */
 void
 optimize_in_place_wrapper (ir_node *n, void *env) {
   int i;
@@ -40,6 +42,10 @@ local_optimize_graph (ir_graph *irg) {
   current_ir_graph = rem;
 }
 
+/********************************************************************/
+/* Routines for dead node elimination / copying garbage collection  */
+/* of the obstack.                                                  */
+
 /* Remeber the new node in the old node,
    by using a field that all nodes have. */
 void *
@@ -55,8 +61,6 @@ get_new_node (ir_node * n)
 {
   return n->in[0];
 }
-
-
 
 /* Create this node on a new obstack. */
 void
@@ -323,7 +327,6 @@ copy_node (ir_node *n, void *env) {
     res = new_r_Bad (get_new_node(n));
     break;
   }
-
 }
 
 
@@ -331,6 +334,8 @@ void
 dead_node_elemination(ir_graph *irg) {
   struct obstack *graveyard_obst;
   struct obstack *rebirth_obst;
+  ir_graph *rem = current_ir_graph;
+  current_ir_graph = irg;
 
   /* A quiet place, where the old obstack can rest in peace,
      until it will be cremated. */
@@ -348,4 +353,5 @@ dead_node_elemination(ir_graph *irg) {
   /* Free memory from old unoptimized obstack */
   xfree (graveyard_obst);
 
+  current_ir_graph = rem;
 }

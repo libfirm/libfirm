@@ -8,7 +8,8 @@
 
 # include "iropt.h"
 # include "ircons.h"
-# include "irgwalk.h"
+# include "irgmod.h"
+# include "irvrfy.h"
 # include "tv.h"
 
 /* Trivial inlineable routine for copy propagation.

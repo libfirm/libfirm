@@ -1,3 +1,10 @@
+  5.7.2000 Goetz
+  Removed strange block struct and constructor from ircons.c.
+  Moved routines for automatic Phi construction from irgmod to ircons.
+  Sorted functions in ircons to reflect the different interfaces.
+  Renamed dataseg to globals to be conformant with documentation.
+  Added conservation of current_ir_graph to irgopt.c
+
   4.7.2000 Goetz
   Commented a whole bunch of stuff, e.g. in ircons.h  (Procedure to construct)
   We should change the naming of the Block constructor.

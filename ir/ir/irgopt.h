@@ -13,9 +13,10 @@
 
 # include "irgraph.h"
 
-
+/* Applies local optimizations (see iropt) to all nodes in the graph. */
 void local_optimize_graph (ir_graph *irg);
 
+/* Performs dead node elimination by copying the ir graph to a new obstack. */
 void dead_node_elemination(ir_graph *irg);
 
 # endif /* _IRGOPT_H_ */

@@ -54,8 +54,6 @@ init_irnode (void)
 {
 }
 
-/* I didn't manage to place this here as it causes cyclic inclusion
-         of header files/a cyclic dependency between ir_graph and ir_node. */
 /* irnode constructor                                             */
 /* create a new irnode in irg, with an op, mode, arity and        */
 /* some incoming irnodes                                          */

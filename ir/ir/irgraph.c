@@ -68,7 +68,7 @@ new_ir_graph (entity *ent, int params)
   projX        = new_Proj (res->start, mode_X, pns_initial_exec);
   set_store (new_Proj (res->start, mode_M, pns_global_store));
   res->frame   = new_Proj (res->start, mode_p, pns_frame_base);
-  res->dataseg = new_Proj (res->start, mode_p, pns_globals);
+  res->globals = new_Proj (res->start, mode_p, pns_globals);
   res->args    = new_Proj (res->start, mode_T, pns_args);
 
   add_in_edge(res->start_block, projX);

@@ -28,7 +28,6 @@ void init_entity (void);
 typedef struct entity {
   firm_kind kind;
   ident *name;          /* name of this entity */
-  // type_class *owner;    /* The class this entity belongs to */
   type *owner;          /* The class this entity belongs to */
   ident *ld_name;       /* Unique name of this entity, i.e., the mangled
                            name.  E.g., for a class `A' with field `a' this
@@ -39,8 +38,7 @@ typedef struct entity {
 } entity;
 
 /* create a new entity */
-entity      *new_entity (/*type_class *owner,*/ type *owner,
-                         ident *name, type *type);
+entity      *new_entity (type *owner, ident *name, type *type);
 
 /* manipulate fields of entity */
 /*
@@ -65,6 +63,6 @@ void         set_entity_ld_ident (entity *, ident *ld_ident);
 */
 
 type  *get_entity_type (entity *);
-void         set_entity_type (entity *, type *);
+void   set_entity_type (entity *, type *);
 
 # endif /* _ENTITY_H_ */
