@@ -25,7 +25,7 @@ MAKE        = /usr/bin/make
 MEMBERS	 = common.m firm.m panic.m
 
 CFILES = $(MEMBERS:.m=.c)
-CFILES +=  xfprintf.c xfprintf.c xfprintf.c strerror.c
+CFILES +=  xfprintf.c xfprintf.c xfprintf.c
 
 HFILES = $(MEMBERS:.m=.h)
 HFILES +=  tune.h xp_help.h xprintf.h misc.h

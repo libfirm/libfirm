@@ -26,7 +26,6 @@ MEMBERS	 = ident.m
 CFILES = $(MEMBERS:.m=.c)
 
 HFILES = $(MEMBERS:.m=.h)
-HFILES +=  xx_ident.h
 HFILES += array.h cookies.h debug.h host.h misc.h set.h tune.h xprintf.h \
 	  xp_help.h
 

@@ -32,6 +32,8 @@ Cambridge, MA 02139, USA.  */
    within a unit (high-order to low-order or low-order to high-order)
    is implementation-defined.  */
 
+/* Floating point definitions in ieee standard number 754
+   only used in target values (/libfirm/ir/tv/tv.c). */
 #ifndef _IEEE754_H
 #define _IEEE754_H
 
