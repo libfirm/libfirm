@@ -43,7 +43,7 @@ typedef enum { /* irm is short for `ir mode' */
   irm_BB, irm_X,                 // basic block, execution
   irm_F, irm_D, irm_E,           // float, double, extended
   irm_B, irm_Bu, irm_H, irm_Hu, irm_I, irm_Iu, irm_L, irm_Lu,
-                                 // byte, short, int, long
+                                 // byte(8), short(16), int(32), long(64)
   irm_C,                         // character
   irm_P,                         // pointer
   irm_b,                         // internal boolean

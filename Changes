@@ -1,3 +1,11 @@
+  25.4.2002 Goetz
+  Added several constructors to tv.
+  Changed xgprintf so that full precision of double tvs is printed.
+  Fixed bug in irouts.c.
+
+  22.4.2002 Goetz
+  Added debug support, renamed stuff in ir/debug.
+  Optimizations still loose debug information.
 
   19.3.2002 Goetz
   Added flag "peculiarity" to entity.h, type.h.
