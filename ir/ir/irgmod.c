@@ -145,7 +145,7 @@ void part_block(ir_node *node) {
     ir_node *in[1];
     in[0] = new_Jmp();
     set_irn_in(old_block, 1, in);
-    irn_vrfy(old_block);
+    irn_vrfy_irg(old_block, current_ir_graph);
   }
 
   /* move node and its predecessors to new_block */

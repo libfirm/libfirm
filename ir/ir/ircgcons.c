@@ -536,6 +536,12 @@ static void construct_call(ir_node * call) {
     data[i] = get_entity_link(callees[i]);
   }
 
+  /*
+   * Set flag to suppress verifying placement on proper irg:
+   * optimization can return block on other irg.
+   */
+  set_interprocedural_view(1);
+
   /* Die interprozeduralen Steuerflussvorgänger des post_block
    * bestimmen. */
   for (i = 0; i < n_callees; ++i) {
@@ -550,6 +556,8 @@ static void construct_call(ir_node * call) {
       in[i] = new_Unknown();
     }
   }
+  set_interprocedural_view(0);
+
   set_Block_cg_cfgpred_arr(post_block, n_callees, in);
 
   /* Die interprozeduralen Steuerflussvorgänger des except_block
@@ -561,6 +569,13 @@ static void construct_call(ir_node * call) {
     set_irg_current_block(current_ir_graph, pre_block);
     set_irn_n(except_block, 0, new_Proj(call, mode_X, 1));
     set_irg_current_block(current_ir_graph, post_block);
+
+    /*
+     * Set flag to suppress verifying placement on proper irg:
+     * optimization can return block on other irg.
+     */
+    set_interprocedural_view(1);
+
     for (i = 0; i < n_callees; ++i) {
       entity * callee = get_Call_callee(call, i);
       if (data[i]) { /* explicit */
@@ -576,6 +591,8 @@ static void construct_call(ir_node * call) {
     }
     set_Block_cg_cfgpred_arr(except_block, n_callees, in);
   }
+
+  set_interprocedural_view(0);
 
   /* Diesen Vorgänger in den Start-Blöcken der aufgerufenen Methoden
    * eintragen. */
