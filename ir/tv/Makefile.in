@@ -10,10 +10,11 @@ srcdir = @srcdir@
 topdir = ../..
 subdir := tv
 
+INSTALL_HEADERS = tv.h
 
-SOURCES := Makefile.in ieee754.h tv.c tv.h tv_t.h
+SOURCES = INSTALL_HEADERS
 
-INSTALL_HEADERS = $(filter %.h,$(SOURCES))
+SOURCES += Makefile.in ieee754.h tv.c tv_t.h
 
 include $(topdir)/MakeRules
 

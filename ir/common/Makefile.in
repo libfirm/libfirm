@@ -10,11 +10,12 @@ srcdir = @srcdir@
 topdir = ../..
 subdir := common
 
+INSTALL_HEADERS := bool.h common.h firm.h
 
-SOURCES := Makefile.in bool.h common.h firm.h panic.c tune.h xgprintf.c xp_help.h \
-		common.c firm.c misc.h panic.h xfprintf.c xoprintf.c xprintf.h
+SOURCES = INSTALL_HEADERS
 
-INSTALL_HEADERS = $(filter %.h,$(SOURCES))
+SOURCES += Makefile.in panic.c tune.h xgprintf.c xp_help.h common.c firm.c	\
+		misc.h panic.h xfprintf.c xoprintf.c xprintf.h
 
 include $(topdir)/MakeRules
 

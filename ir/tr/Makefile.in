@@ -10,12 +10,13 @@ srcdir = @srcdir@
 topdir = ../..
 subdir := tr
 
+INSTALL_HEADERS = mangle.h type.h entity.h type_or_entity.h typewalk.h
 
-SOURCES := Makefile.in \
-		entity.c entity_t.h mangle.h type.h typewalk.c \
-		entity.h mangle.c type.c type_or_entity.h typewalk.h
+SOURCES = INSTALL_HEADERS
 
-INSTALL_HEADERS = $(filter %.h,$(SOURCES))
+SOURCES += Makefile.in \
+		entity.c entity_t.h typewalk.c mangle.c type.c
+
 
 include $(topdir)/MakeRules
 
