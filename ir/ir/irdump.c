@@ -104,7 +104,7 @@ SeqNo get_Block_seqno(ir_node *n);
 #define PRINT_IRGID(X)  fprintf(F, "g%p",(void *)(X))
 #define PRINT_CONSTID(X,Y) fprintf(F, "\"n%pn%p\"", (void*)(X), (void*)(Y))
 #define PRINT_LOOPID(X) fprintf(F, "l%p", (void *)(X))
-#define PRINT_ITEMID(X,Y)  fprintf(F, "i%pT%d", (void *) (X), (P))
+#define PRINT_ITEMID(X,Y)  fprintf(F, "i%pT%d", (void *) (X), (Y))
 #endif
 
 static const char *get_type_name_ex(type *tp, int *bad)
