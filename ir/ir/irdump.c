@@ -43,7 +43,7 @@
 # include "eset.h"
 
 /* #undef HEAPANAL  */
-# define HEAPANAL
+# undef HEAPANAL
 #ifdef HEAPANAL
 void dump_chi_term(FILE *FL, ir_node *n);
 void dump_state(FILE *FL, ir_node *n);
