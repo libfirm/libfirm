@@ -202,8 +202,9 @@ double get_type_estimated_n_casts(type *tp) {
 
 double get_class_estimated_n_upcasts(type *clss) {
   double n_instances = 0;
+  int i, j, n_casts, n_pointertypes;
 
-  int i, n_casts = get_type_n_casts(clss);
+  n_casts = get_type_n_casts(clss);
   for (i = 0; i < n_casts; ++i) {
     ir_node *cast = get_type_cast(clss, i);
     if (get_irn_opcode(cast) != iro_Cast) continue;  /* Could be optimized away. */
@@ -212,7 +213,7 @@ double get_class_estimated_n_upcasts(type *clss) {
       n_instances += get_irn_final_cost(cast);
   }
 
-  int j, n_pointertypes = get_type_n_pointertypes_to(clss);
+  n_pointertypes = get_type_n_pointertypes_to(clss);
   for (j = 0; j < n_pointertypes; ++j) {
     n_instances += get_class_estimated_n_upcasts(get_type_pointertype_to(clss, j));
   }
@@ -222,8 +223,9 @@ double get_class_estimated_n_upcasts(type *clss) {
 
 double get_class_estimated_n_downcasts(type *clss) {
   double n_instances = 0;
+  int i, j, n_casts, n_pointertypes;
 
-  int i, n_casts = get_type_n_casts(clss);
+  n_casts = get_type_n_casts(clss);
   for (i = 0; i < n_casts; ++i) {
     ir_node *cast = get_type_cast(clss, i);
     if (get_irn_opcode(cast) != iro_Cast) continue;  /* Could be optimized away. */
@@ -232,7 +234,7 @@ double get_class_estimated_n_downcasts(type *clss) {
       n_instances += get_irn_final_cost(cast);
   }
 
-  int j, n_pointertypes = get_type_n_pointertypes_to(clss);
+  n_pointertypes = get_type_n_pointertypes_to(clss);
   for (j = 0; j < n_pointertypes; ++j) {
     n_instances += get_class_estimated_n_downcasts(get_type_pointertype_to(clss, j));
   }
@@ -329,7 +331,7 @@ double get_entity_estimated_n_dyncalls(entity *ent) {
 /* Auxiliary                                                                   */
 /* *************************************************************************** */
 
-int is_jack_rts_name(const ident *name) {
+int is_jack_rts_name(ident *name) {
   return  0;
   if (id_is_prefix(new_id_from_str("java/"), name)) return 1;
   if (id_is_prefix(new_id_from_str("["),     name)) return 1;
@@ -349,8 +351,10 @@ int is_jack_rts_class(type *t) {
 #include "entity_t.h"  // for the assertion.
 
 int is_jack_rts_entity(entity *e) {
+  ident *name;
+
   assert(e->ld_name);
-  ident *name = get_entity_ld_ident(e);
+  name = get_entity_ld_ident(e);
 
   return is_jack_rts_name(name);
 }
