@@ -42,6 +42,14 @@
 
 # include "exc.h"
 
+/*define HEAPANAL */
+#ifdef HEAPANAL
+void dump_chi_term(FILE *FL, ir_node *n);
+void dump_state(FILE *FL, ir_node *n);
+int  get_opt_dump_abstvals(void);
+typedef unsigned long SeqNo;
+SeqNo get_Block_seqno(ir_node *n);
+#endif
 
 /* Attributes of nodes */
 #define PRINT_DEFAULT_NODE_ATTR
@@ -184,7 +192,7 @@ static void print_ent_node_edge(FILE *F, entity *E, const ir_node *N, const char
 /*******************************************************************/
 
 /* A suffix to manipulate the file name. */
-char *dump_file_suffix = NULL;
+char *dump_file_suffix = "";
 
 /* file to dump to */
 static FILE *F;
@@ -668,6 +676,10 @@ dump_node (ir_node *n) {
   dump_node_info(n);
   fprintf (F, "}\n");
   dump_const_node_local(n);
+#ifdef HEAPANAL
+  dump_chi_term(F, n);
+  dump_state(F, n);
+#endif
 }
 
 /* dump the edge to the block this node belongs to */
@@ -860,12 +872,18 @@ dump_whole_block(ir_node *block) {
   fprintf(F, "\"  label: \"");
   dump_node_opcode(block);
   fprintf (F, " %ld", get_irn_node_nr(block));
-
+#ifdef HEAPANAL
+  if (get_opt_dump_abstvals())
+    fprintf (F, " seqno: %d", (int)get_Block_seqno(block));
+#endif
   fprintf(F, "\" status:clustered color:%s \n",
 	   get_Block_matured(block) ? "yellow" : "red");
 
   /* dump the blocks edges */
   dump_ir_data_edges(block);
+#ifdef HEAPANAL
+  dump_chi_term(F, block);
+#endif
 
   /* dump the nodes that go into the block */
   for (node = ird_get_irn_link(block); node; node = ird_get_irn_link(node)) {
@@ -1383,51 +1401,46 @@ dump_vcg_header(const char *name) {
   fprintf (F, "\n");		/* a separator */
 }
 
-static void vcg_open (ir_graph *irg, char *suffix) {
+static void vcg_open (ir_graph *irg, char * suffix1, char *suffix2) {
+  ident *id = get_irg_dump_name(irg);
+  int len = get_id_strlen(id);
   char *fname;  /* filename to put the vcg information in */
-  const char *cp;
-  ident *id;
-  int len;
+
+  if (!suffix1) suffix1 = "";
+  if (!suffix2) suffix2 = "";
 
   /** open file for vcg graph */
-  id    = get_irg_dump_name(irg);
-  len   = get_id_strlen (id);
-  cp    = get_id_str (id);
-  if (dump_file_suffix)
-    fname = malloc (len + 5 + strlen(suffix) + strlen(dump_file_suffix));
-  else
-    fname = malloc (len + 5 + strlen(suffix));
-  strncpy (fname, cp, len);      /* copy the filename */
+  fname = malloc (len + strlen(suffix1) + strlen(suffix2) + 5);
+  strncpy (fname, get_id_str(id), len);      /* copy the filename */
   fname[len] = '\0';
-  if (dump_file_suffix) strcat (fname, dump_file_suffix);  /* append file suffix */
-  strcat (fname, suffix);  /* append file suffix */
+  strcat (fname, suffix1);  /* append file suffix */
+  strcat (fname, suffix2);  /* append file suffix */
   strcat (fname, ".vcg");   /* append the .vcg suffix */
   F = fopen (fname, "w");   /* open file for writing */
   if (!F) {
     panic ("cannot open %s for writing (%m)", fname);  /* not reached */
   }
-  dump_vcg_header(cp);
+  free(fname);
+
+  dump_vcg_header(get_id_str(id));
 }
 
-static void vcg_open_name (const char *name) {
+static void vcg_open_name (const char *name, char *suffix) {
   char *fname;  /* filename to put the vcg information in */
-  int len;
+
+  if (!suffix) suffix = "";
 
   /** open file for vcg graph */
-  len   = strlen(name);
-  fname = malloc (len + 5);
-  if (dump_file_suffix)
-    fname = malloc (len + 5 + strlen(dump_file_suffix));
-  else
-    fname = malloc (len + 5);
+  fname = malloc (strlen(name) + 5 + strlen(suffix));
   strcpy (fname, name);    /* copy the filename */
-  if (dump_file_suffix) strcat (fname, dump_file_suffix);
+  strcat (fname, suffix);
   strcat (fname, ".vcg");  /* append the .vcg suffix */
   F = fopen (fname, "w");  /* open file for writing */
   if (!F) {
     panic ("cannot open %s for writing (%m)", fname);  /* not reached */
   }
 
+  free(fname);
   dump_vcg_header(name);
 }
 
@@ -1459,7 +1472,7 @@ dump_ir_graph (ir_graph *irg)
 
   if (interprocedural_view) suffix = "-pure-ip";
   else                      suffix = "-pure";
-  vcg_open (irg, suffix);
+  vcg_open (irg, dump_file_suffix, suffix);
 
   /* walk over the graph */
   /* dump_whole_node must be called in post visiting predecessors */
@@ -1484,7 +1497,7 @@ dump_ir_block_graph (ir_graph *irg)
 
   if (interprocedural_view) suffix = "-ip";
   else                      suffix = "";
-  vcg_open (irg, suffix);
+  vcg_open (irg, dump_file_suffix, suffix);
 
   construct_block_lists(irg);
 
@@ -1510,7 +1523,7 @@ dump_ir_graph_w_types (ir_graph *irg)
 
   if (interprocedural_view) suffix = "-pure-wtypes-ip";
   else                      suffix = "-pure-wtypes";
-  vcg_open (irg, suffix);
+  vcg_open (irg, dump_file_suffix, suffix);
 
   /* dump common ir graph */
   irg_walk(get_irg_end(irg), NULL, dump_whole_node, NULL);
@@ -1533,7 +1546,7 @@ dump_ir_block_graph_w_types (ir_graph *irg)
 
   if (interprocedural_view) suffix = "-wtypes-ip";
   else                      suffix = "-wtypes";
-  vcg_open (irg, suffix);
+  vcg_open (irg, dump_file_suffix, suffix);
 
   /* dump common blocked ir graph */
   construct_block_lists(irg);
@@ -1606,7 +1619,8 @@ dump_cfg (ir_graph *irg)
   int ddif = dump_dominator_information_flag;
   int ipv = interprocedural_view;
   current_ir_graph = irg;
-  vcg_open (irg, "-cfg");
+
+  vcg_open (irg, dump_file_suffix, "-cfg");
 
   if (interprocedural_view) {
     printf("Warning: dumping cfg not in interprocedural view!\n");
@@ -1633,7 +1647,8 @@ void dump_all_cg_block_graph(void) {
   int i;
   int rem_view = interprocedural_view;
   interprocedural_view = 1;
-  vcg_open_name ("All_graphs");
+
+  vcg_open_name ("All_graphs", dump_file_suffix);
 
   /* collect nodes in all irgs reachable in call graph*/
   for (i = 0; i < get_irp_n_irgs(); i++)
@@ -1664,7 +1679,7 @@ dump_type_graph (ir_graph *irg)
   rem = current_ir_graph;
   current_ir_graph = irg;
 
-  vcg_open (irg, "-type");
+  vcg_open (irg, dump_file_suffix, "-type");
 
   /* walk over the blocks in the graph */
   type_walk_irg(irg, dump_type_info, NULL, NULL);
@@ -1681,7 +1696,7 @@ dump_type_graph (ir_graph *irg)
 void
 dump_all_types (void)
 {
-  vcg_open_name ("All_types");
+  vcg_open_name ("All_types", dump_file_suffix);
   type_walk(dump_type_info, NULL, NULL);
   inc_irg_visited(get_const_code_irg());
   vcg_close();
@@ -1690,7 +1705,7 @@ dump_all_types (void)
 void
 dump_class_hierarchy (bool entities)
 {
-  vcg_open_name ("class_hierarchy");
+  vcg_open_name ("class_hierarchy", dump_file_suffix);
   if (entities)
     type_walk(dump_class_hierarchy_node, NULL, (void *)1);
   else
