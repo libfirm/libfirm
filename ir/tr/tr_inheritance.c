@@ -36,7 +36,7 @@ ident *default_mangle_inherited_name(entity *super, type *clss) {
   return mangle_u(get_type_ident(clss), get_entity_ident(super));
 }
 
-/* Replicates all entities in all super classes that are not overwritten
+/** Replicates all entities in all super classes that are not overwritten
    by an entity of this class. */
 static void copy_entities_from_superclass(type *clss, void *env)
 {
@@ -55,27 +55,27 @@ static void copy_entities_from_superclass(type *clss, void *env)
       /* check whether inhent is already overwritten */
       overwritten = 0;
       for (k = 0; (k < get_class_n_members(clss)) && (overwritten == 0); k++) {
-	thisent = get_class_member(clss, k);
-	for(l = 0; l < get_entity_n_overwrites(thisent); l++) {
-	  if(inhent == get_entity_overwrites(thisent, l)) {
-	    /* overwritten - do not copy */
-	    overwritten = 1;
-	    break;
-	  }
-	}
+	      thisent = get_class_member(clss, k);
+	      for(l = 0; l < get_entity_n_overwrites(thisent); l++) {
+	        if(inhent == get_entity_overwrites(thisent, l)) {
+	          /* overwritten - do not copy */
+	          overwritten = 1;
+	          break;
+	        }
+	      }
       }
       /* Inherit entity */
       if (!overwritten) {
-	thisent = copy_entity_own(inhent, clss);
-	add_entity_overwrites(thisent, inhent);
-	set_entity_peculiarity(thisent, peculiarity_inherited);
-	set_entity_ld_ident(thisent, mfunc(inhent, clss));
-	if (get_entity_variability(inhent) == variability_constant) {
-	  assert(is_atomic_entity(inhent) &&  /* @@@ */
-		 "Inheritance of constant, compound entities not implemented");
-	  set_entity_variability(thisent, variability_constant);
-	  set_atomic_ent_value(thisent, get_atomic_ent_value(inhent));
-	}
+	      thisent = copy_entity_own(inhent, clss);
+	      add_entity_overwrites(thisent, inhent);
+	      set_entity_peculiarity(thisent, peculiarity_inherited);
+	      set_entity_ld_ident(thisent, mfunc(inhent, clss));
+	      if (get_entity_variability(inhent) == variability_constant) {
+	        assert(is_atomic_entity(inhent) &&  /* @@@ */
+		       "Inheritance of constant, compound entities not implemented");
+	        set_entity_variability(thisent, variability_constant);
+	        set_atomic_ent_value(thisent, get_atomic_ent_value(inhent));
+	      }
       }
     }
   }
@@ -171,37 +171,46 @@ static tr_inh_trans_tp* get_firm_kind_entry(firm_kind *k) {
 }
 
 static pset *get_entity_map(entity *ent, dir d) {
+  tr_inh_trans_tp *found;
+
   assert(is_entity(ent));
-  tr_inh_trans_tp *found = get_firm_kind_entry((firm_kind *)ent);
-  if (d == d_up) return found->up;
-  else           return found->down;
+  found = get_firm_kind_entry((firm_kind *)ent);
+  return (d == d_up) ? found->up : found->down;
 }
 /*
 static void  add_entity_map(entity *ent, dir d, entity *new) {
+  tr_inh_trans_tp *found;
+
   assert(is_entity(ent) && is_entity(new));
   tr_inh_trans_tp *found = get_firm_kind_entry((firm_kind *)ent);
-  if (d == d_up) pset_insert_ptr(found->up,   new);
-  else           pset_insert_ptr(found->down, new);
+  if (d == d_up)
+    pset_insert_ptr(found->up,   new);
+  else
+    pset_insert_ptr(found->down, new);
 }
 */
 static pset *get_type_map(type *tp, dir d) {
+  tr_inh_trans_tp *found;
+
   assert(is_type(tp));
-  tr_inh_trans_tp *found = get_firm_kind_entry((firm_kind *)tp);
-  if (d == d_up) return found->up;
-  else           return found->down;
+  found = get_firm_kind_entry((firm_kind *)tp);
+  return (d == d_up) ? found->up : found->down;
 }
 /*
 static void  add_type_map(type *tp, dir d, type *new) {
+  tr_inh_trans_tp *found;
+
   assert(is_type(tp) && is_type(new));
-  tr_inh_trans_tp *found = get_firm_kind_entry((firm_kind *)tp);
+  found = get_firm_kind_entry((firm_kind *)tp);
   if (d == d_up) pset_insert_ptr(found->up,   new);
   else           pset_insert_ptr(found->down, new);
 }
 */
 
 
-/* Walk over all types reachable from tp in the sub/supertype
- * retlation and compute the closure for the two downwards directed
+/**
+ * Walk over all types reachable from tp in the sub/supertype
+ * relation and compute the closure for the two downwards directed
  * relations.
  *
  * The walk in the dag formed by the relation is tricky:  We must visit
@@ -340,17 +349,18 @@ void compute_inh_transitive_closure(void) {
   for (i = 0; i < n_types; ++i) {
     type *tp = get_irp_type(i);
     if (is_Class_type(tp) && type_not_visited(tp)) { /* For others there is nothing to accumulate. */
-      assert(get_type_visited(tp) < get_master_type_visited()-1);
       int j, n_subtypes = get_class_n_subtypes(tp);
       int has_unmarked_subtype = false;
+
+      assert(get_type_visited(tp) < get_master_type_visited()-1);
       for (j = 0; j < n_subtypes && !has_unmarked_subtype; ++j) {
-	type *stp = get_class_subtype(tp, j);
-	if (type_not_visited(stp)) has_unmarked_subtype = true;
+	      type *stp = get_class_subtype(tp, j);
+	      if (type_not_visited(stp)) has_unmarked_subtype = true;
       }
 
       /* This is a good starting point. */
       if (!has_unmarked_subtype)
-	compute_down_closure(tp);
+	      compute_down_closure(tp);
     }
   }
 
@@ -360,17 +370,18 @@ void compute_inh_transitive_closure(void) {
   for (i = 0; i < n_types; ++i) {
     type *tp = get_irp_type(i);
     if (is_Class_type(tp) && type_not_visited(tp)) { /* For others there is nothing to accumulate. */
-      assert(get_type_visited(tp) < get_master_type_visited()-1);
       int j, n_supertypes = get_class_n_supertypes(tp);
       int has_unmarked_supertype = false;
+
+      assert(get_type_visited(tp) < get_master_type_visited()-1);
       for (j = 0; j < n_supertypes && !has_unmarked_supertype; ++j) {
-	type *stp = get_class_supertype(tp, j);
-	if (type_not_visited(stp)) has_unmarked_supertype = true;
+	      type *stp = get_class_supertype(tp, j);
+	      if (type_not_visited(stp)) has_unmarked_supertype = true;
       }
 
       /* This is a good starting point. */
       if (!has_unmarked_supertype)
-	compute_up_closure(tp);
+	      compute_up_closure(tp);
     }
   }
 
@@ -458,8 +469,7 @@ int is_subclass_of(type *low, type *high) {
 
   if (get_irp_inh_transitive_closure_state() == inh_transitive_closure_valid) {
     pset *m = get_type_map(high, d_down);
-    if (pset_find_ptr(m, low)) return 1;
-    else                        return 0;
+    return pset_find_ptr(m, low) ? 1 : 0;
   }
 
   /* depth first search from high downwards. */
@@ -479,8 +489,7 @@ int is_overwritten_by(entity *high, entity *low) {
 
   if (get_irp_inh_transitive_closure_state() == inh_transitive_closure_valid) {
     pset *m = get_entity_map(high, d_down);
-    if (pset_find_ptr(m, low)) return 1;
-    else                       return 0;
+    return pset_find_ptr(m, low) ? 1 : 0;
   }
 
   /* depth first search from high downwards. */
@@ -495,7 +504,7 @@ int is_overwritten_by(entity *high, entity *low) {
 }
 
 
-/* Need two routines because I want to assert the result. */
+/** Need two routines because I want to assert the result. */
 static entity *resolve_ent_polymorphy2 (type *dynamic_class, entity *static_ent) {
   int i, n_overwrittenby;
   entity *res = NULL;

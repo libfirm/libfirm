@@ -45,7 +45,7 @@
  *  subclasses of high.  */
 int is_subclass_of(type *low, type *high);
 
-/** Returns true if high is (transitiv) overwritten by low.
+/** Returns true if high is (transitive) overwritten by low.
  *
  *  Returns false if high == low. */
 int is_overwritten_by(entity *high, entity *low);
@@ -84,7 +84,7 @@ typedef ident *mangle_inherited_name_func(entity *super, type *clss);
  *  function generates entities that explicitly represent this
  *  inheritance.  It generates for each entity overwriting entities in
  *  all subclasses of the owner of the entity, if the entity is not
- *  overwritten in that sublclass.
+ *  overwritten in that subclass.
  *
  *  The name of the new entity is generated with the function passed.
  *  If the function is NULL, the default_mangle_inherited_name() is
