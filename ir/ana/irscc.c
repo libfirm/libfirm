@@ -1422,3 +1422,43 @@ void find_strange_loop_nodes(ir_loop *l) {
   if (found_problem) exit(0);
 
 }
+
+
+
+
+
+
+
+/* ------------------------------------------------------------------- */
+/* Simple analyses based on the loop information                       */
+/* ------------------------------------------------------------------- */
+
+int is_loop_variant(ir_loop *l, ir_loop *b) {
+  int i, n_elems =  get_loop_n_elements (l);
+
+  if (l == b) return true;
+
+  for (i = 0; i < n_elems; ++i) {
+    loop_element e = get_loop_element(l, i);
+    if (is_ir_node (e.kind)) {
+    } else {
+      if (is_loop_variant(e.son), b) return true;
+    }
+  }
+
+  return false;
+}
+
+/* Test whether a value is loop invariant.
+ *
+ * @param n      The node to be tested.
+ * @param block  A block node.  We pass the block, not the loop as we must
+ *               start off with a block loop to find all proper uses.
+ *
+ * Returns true, if the node n is not changed in the loop block
+ * belongs to or in inner loops of this block. */
+int is_loop_invariant(ir_node *n, ir_node *block) {
+  ir_loop *l = get_irn_loop(block);
+  ir_node *b = (is_Block(n)) ? n : get_nodes_block(n);
+  return !is_loop_variant(l, get_irn_loop(b));
+}

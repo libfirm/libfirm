@@ -27,9 +27,7 @@
 # include "irgraph.h"
 # include "irnode.h"
 
-
-/* @@@ Interprocedural backedges ... ???? */
-
+/* ------------------------------------------------------------------- */
 /*
  * Backedge information.
  *
@@ -39,6 +37,7 @@
  * The backedge information can only be used if the graph is not in
  * phase phase_building.
  */
+/* ------------------------------------------------------------------- */
 
 /** Returns true if the predesessor pos is a backedge. */
 bool is_backedge (ir_node *n, int pos);
@@ -51,6 +50,7 @@ bool has_backedges (ir_node *n);
 /** Sets backedge information to zero. */
 void clear_backedges (ir_node *n);
 
+/* ------------------------------------------------------------------- */
 /**
  * The loops datastructure.
  *
@@ -67,6 +67,7 @@ void clear_backedges (ir_node *n);
  * @todo We could add a field pointing from a node to the containing loop,
  * this would cost a lot of memory, though.
  */
+/* ------------------------------------------------------------------- */
 typedef struct ir_loop ir_loop;
 
 /* Loop elements are loop nodes and ir nodes */
@@ -118,9 +119,9 @@ int get_loop_loop_nr(ir_loop *loop);
 void  set_loop_link (ir_loop *loop, void *link);
 void *get_loop_link (const ir_loop *loop);
 
-/*
- * Constructing and destructing the loop/backedge information.
- */
+/* ------------------------------------------------------------------- */
+/* Constructing and destructing the loop/backedge information.         */
+/* ------------------------------------------------------------------- */
 
 /** Constructs backedge information for irg in intraprocedural view.
  *  @returns Maximal depth of loop tree. */
@@ -144,5 +145,22 @@ int construct_ip_cf_backedges (void);
     Resets all backedges */
 void free_loop_information(ir_graph *irg);
 void free_all_loop_information (void);
+
+
+
+
+/* ------------------------------------------------------------------- */
+/* Simple analyses based on the loop information                       */
+/* ------------------------------------------------------------------- */
+
+/** Test whether a value is loop invariant.
+ *
+ * @param n      The node to be tested.
+ * @param block  A block node.
+ *
+ * Returns true, if the node n is not changed in the loop block
+ * belongs to or in inner loops of this block. */
+int is_loop_invariant(ir_node *n, ir_node *block);
+
 
 #endif /* _IRLOOP_H_ */
