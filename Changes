@@ -1,5 +1,5 @@
   31.5.2000 Chris
-  Removed some files from the archive, after dependences and usage are checked.
+  Removed some files from the archive, after dependences and usage are checked:
   - 'ir/common/strerror.c'
   was nowhere used;
   - 'ir/ident/xx_ident.h'
@@ -7,16 +7,17 @@
   - 'ir/tv/label.c' and
   - 'ir/tv/label.h'
   contained a numeric counter;
-  The files were included in 'tv.h' and implemented in the 'tarval struct'.
-  but this attribute was never used. the two functions 'tarval_label' and
-  'tarval_forall_labeled' were also never used. In the old fiasco compiler,
-  the label thing is used in the backend. Search for 'babil' to see the usage.
+  The files were included in 'tv.h' and implemented in 'tarval.c'. The two
+  functions 'tarval_label' and 'tarval_forall_labeled' were also never used.
+  In the old fiasco compiler, the label thing is used in the backend.
+  Search for 'babil' to see the usage.
+  Also removed the two attributes 'lab' and 'used' in the tarval struct.
 
   26.5.2000 Chris
   Moved the 'new_ir_node' constructor from ircons.* to irnode.* and fixed
   afterwards some recursive includes, so libfirm works again.
 
-*** Goetz has to complete this lines - several changes are not annotated
+*** Goetz has to complete this lines - several changes are not annotated yet! ***
 
   15.2.2000 Goetz
   Added access routine to attribute link of irnode in irnode.ch.
