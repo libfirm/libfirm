@@ -33,7 +33,7 @@
        irgraph: represents a procedure.  Allows access to the code of the
          procedure, the actual FIRM graph.
        irnode: A node of a FIRM graph.  Nodes are typed with an opcode and a mode
-	 and represent instructions in a program.
+     and represent instructions in a program.
        irop: The opcode of FIRM nodes.
        irmode: The mode of FIRM nodes.  Most modes correspond to machine known
          data types (int, float, pointer).
@@ -82,7 +82,7 @@ extern "C" {
 
 # include "irflag.h"     /* optimization flags */
 # include "irgopt.h"     /* optimize ir */
-# include "tailrec.h"    /* optimize tail-recursion calls */
+  /* # include "tailrec.h"*/    /* optimize tail-recursion calls */
 # include "ircgopt.h"    /* Optimizations based on interprocedural graph */
 
 # include "irdom.h"      /* Dominator analysis */
