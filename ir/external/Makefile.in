@@ -1,0 +1,36 @@
+#
+# Project:     libFIRM
+# File name:   ir/external/Makefile.in
+# Purpose:
+# Author:      Florian Liekweg
+# Modified by:
+# Created:
+# CVS-ID:      $Id$
+# Copyright:   (c) 1999-2003 Universität Karlsruhe
+# Licence:     This file is protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+#
+
+# set LIBXML2 to the installation directory of libxml2
+# temporary fix until libxml is integrated:
+LIBXML2		?= invalid
+
+top_srcdir := @top_srcdir@
+srcdir = @srcdir@
+topdir = ../..
+subdir := ir/external
+
+INSTALL_HEADERS = read.h
+
+SOURCES = $(INSTALL_HEADERS)
+
+SOURCES += 	Makefile.in \
+		read.c
+
+include $(topdir)/MakeRules
+
+CPPFLAGS += 	-I$(top_srcdir)/ir/tr \
+				-I$(LIBXML2)/include/libxml2
+
+include $(top_srcdir)/MakeTargets
+
+all: subdir.o
