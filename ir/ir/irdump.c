@@ -41,14 +41,14 @@
 #define TYPE_METH_NODE_ATTR  "color: lightyellow"
 #define TYPE_CLASS_NODE_ATTR "color: green"
 #define ENTITY_NODE_ATTR     "color: yellow"
-#define ENT_TYPE_EDGE_ATTR   "label: \"type\" color: red"
-#define ENT_OWN_EDGE_ATTR    "label: \"owner\" color: black"
-#define METH_PAR_EDGE_ATTR   "label: \"param %d\" color: green"
-#define METH_RES_EDGE_ATTR   "label: \"res %d\" color: green"
-#define TYPE_SUPER_EDGE_ATTR "label: \"supertype\" color: blue"
-#define UNION_EDGE_ATTR      "label: \"component\" color: blue"
-#define PTR_PTS_TO_EDGE_ATTR "label: \"points to\" color:green"
-#define ARR_ELT_TYPE_EDGE_ATTR "label: \"arr elt\" color:green"
+#define ENT_TYPE_EDGE_ATTR   "class: 3 label: \"type\" color: red"
+#define ENT_OWN_EDGE_ATTR    "class: 4 label: \"owner\" color: black"
+#define METH_PAR_EDGE_ATTR   "class: 5 label: \"param %d\" color: green"
+#define METH_RES_EDGE_ATTR   "class: 6 label: \"res %d\" color: green"
+#define TYPE_SUPER_EDGE_ATTR "class: 7 label: \"supertype\" color: blue"
+#define UNION_EDGE_ATTR      "class: 8 label: \"component\" color: blue"
+#define PTR_PTS_TO_EDGE_ATTR "class: 9 label: \"points to\" color:green"
+#define ARR_ELT_TYPE_EDGE_ATTR "class: 10 label: \"arr elt\" color:green"
 
 #define PRINT_NODEID(X) fprintf(F, "%p", X)
 
@@ -620,7 +620,16 @@ void vcg_open (ir_graph *irg, char *suffix) {
 	    "port_sharing: no\n"
 	    "orientation: bottom_to_top\n"
 	    "classname 1: \"Data\"\n"
-	    "classname 2: \"Block\"\n", cp, label);
+	    "classname 2: \"Block\"\n"
+	    "classname 3: \"Entity type\""
+	    "classname 4: \"Entity owner\""
+	    "classname 5: \"Method Param\""
+	    "classname 6: \"Method Res\""
+	    "classname 7: \"Super\""
+	    "classname 8: \"Union\""
+	    "classname 9: \"Points-to\""
+	    "classname 10: \"Array Element Type\""
+	    , cp, label);
 
   xfprintf (F, "\n");		/* a separator */
 }
@@ -655,7 +664,16 @@ void vcg_open_name (const char *name) {
 	    "port_sharing: no\n"
 	    "orientation: bottom_to_top\n"
 	    "classname 1: \"Data\"\n"
-	    "classname 2: \"Block\"\n", name, label);
+	    "classname 2: \"Block\"\n"
+	    "classname 3: \"Entity type\""
+	    "classname 4: \"Entity owner\""
+	    "classname 5: \"Method Param\""
+	    "classname 6: \"Method Res\""
+	    "classname 7: \"Super\""
+	    "classname 8: \"Union\""
+	    "classname 9: \"Points-to\""
+	    "classname 10: \"Array Element Type\""
+	    , name, label);
 
   xfprintf (F, "\n");		/* a separator */
 }
