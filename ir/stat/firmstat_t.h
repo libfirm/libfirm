@@ -118,17 +118,6 @@ typedef void (*dump_finish_FUNC)(dumper_t *dmp);
 
 
 /**
- * a dumper description
- */
-struct _dumper_t {
-  dump_graph_FUNC         dump_graph;		/**< handler for dumping an irg */
-  dump_init_FUNC          init;			/**< handler for init */
-  dump_finish_FUNC        finish;		/**< handler for finish */
-  FILE                    *f;			/**< the file to dump to */
-  dumper_t                *next;		/**< link to the next dumper */
-};
-
-/**
  * statistics info
  */
 typedef struct _statistic_info_t {
@@ -147,6 +136,19 @@ typedef struct _statistic_info_t {
   int                     reassoc_run;          /**< if set, reassociation is running */
   int                     enable;		/**< if set, statistic is enabled */
 } stat_info_t;
+
+/**
+ * a dumper description
+ */
+struct _dumper_t {
+  dump_graph_FUNC         dump_graph;		/**< handler for dumping an irg */
+  dump_init_FUNC          init;			/**< handler for init */
+  dump_finish_FUNC        finish;		/**< handler for finish */
+  FILE                    *f;			/**< the file to dump to */
+  stat_info_t             *status;              /**< access to the global status */
+  dumper_t                *next;		/**< link to the next dumper */
+};
+
 
 /**
  * An entry in a distribution table
