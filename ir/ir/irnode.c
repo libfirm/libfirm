@@ -248,6 +248,7 @@ set_irn_in (ir_node *node, int arity, ir_node **in) {
     *arr = NEW_ARR_D(ir_node *, current_ir_graph->obst, arity + 1);
     (*arr)[0] = block;
   }
+  //fix_backedges(current_ir_graph->obst, node);
   memcpy((*arr) + 1, in, sizeof(ir_node *) * arity);
 }
 
@@ -2187,9 +2188,9 @@ INLINE ir_node *
 skip_nop (ir_node *node) {
   /* don't assert node !!! */
 
-  if (node && (node->op == op_Id) && (node != get_Id_pred(node))) {
-    /* Don't use get_Id_pred:  We get into an endless loop for
-       self-referencing Ids. */
+  /* Don't use get_Id_pred:  We get into an endless loop for
+     self-referencing Ids. */
+  if (node && (node->op == op_Id) && (node != node->in[0+1])) {
     assert (get_irn_arity (node) > 0);
     return node->in[0+1];
   } else {

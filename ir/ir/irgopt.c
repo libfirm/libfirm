@@ -1144,10 +1144,12 @@ void place_code(ir_graph *irg) {
 /* Control flow optimization.                                       */
 /* Removes Bad control flow predecessors and empty blocks.  A block */
 /* is empty if it contains only a Jmp node.                         */
-/* */
+/* Blocks can only be removed if they are not needed for the        */
+/* semantics of Phi nodes.                                          */
 /********************************************************************/
 
-
+/* Removes Tuples from Block control flow predecessors.
+   Optimizes blocks with equivalent_node().                         */
 static void merge_blocks(ir_node *n, void *env) {
   int i;
   set_irn_link(n, NULL);
@@ -1170,6 +1172,9 @@ static void merge_blocks(ir_node *n, void *env) {
   }
 }
 
+/* Collects all Phi nodes in link list of Block.
+   Marks all blocks "block_visited" if they contain a node other
+   than Jmp. */
 static void collect_nodes(ir_node *n, void *env) {
   if (is_no_Block(n)) {
     ir_node *b = get_nodes_Block(n);
@@ -1291,13 +1296,17 @@ void optimize_blocks(ir_node *b, void *env) {
 	  }
 	  n_preds++;
 	}
+	/* The Phi_pred node is replaced now if it is a Phi.  Remove it so
+	   that it is removed from keep_alives. */
+	if (get_nodes_Block(phi_pred) == pred)
+	  exchange (phi_pred, new_Bad());
 #if 0
 	/* @@@ hier brauche ich schleifeninformation!!! Wenn keine Rueckwaertskante
 	   dann darfs auch keine Verwendung geben. */
 	if (get_nodes_Block(phi_pred) == pred) {
 	  /* remove the Phi as it might be kept alive. Further there
 	     might be other users. */
-	  exchange(phi_pred, phi);  /* geht, is aber doch semantisch falsch! */
+	  exchange(phi_pred, phi);  /* geht, ist aber doch semantisch falsch! */
 	}
 #endif
       } else {
@@ -1307,6 +1316,8 @@ void optimize_blocks(ir_node *b, void *env) {
     }
     /* Fix the node */
     set_irn_in(phi, n_preds, in);
+    clear_backedges (phi);
+
     phi = get_irn_link(phi);
   }
 
@@ -1394,6 +1405,8 @@ void optimize_blocks(ir_node *b, void *env) {
   free(in);
 }
 
+#include "irdump.h"
+
 void optimize_cf(ir_graph *irg) {
   int i;
   ir_node **in;
@@ -1420,7 +1433,6 @@ void optimize_cf(ir_graph *irg) {
      for end if useful. */
   in = NEW_ARR_F (ir_node *, 1);
   in[0] = get_nodes_Block(end);
-
   inc_irg_visited(current_ir_graph);
   for(i = 0; i < get_End_n_keepalives(end); i++) {
     ir_node *ka = get_End_keepalive(end, i);

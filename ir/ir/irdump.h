@@ -327,7 +327,7 @@ void turn_off_constant_entity_values();
  *
  ***
  */
-void dump_keepalive_edges();
+void dump_keepalive_edges(bool b);
 
 
 /****m* irdump/dump_out_edges

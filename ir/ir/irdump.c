@@ -1397,8 +1397,8 @@ void turn_off_constant_entity_values() {
   const_entities = 0;
 }
 
-void dump_keepalive_edges() {
-  dump_keepalive = 1;
+void dump_keepalive_edges(bool b) {
+  dump_keepalive = b;
 }
 
 void dump_out_edges() {
