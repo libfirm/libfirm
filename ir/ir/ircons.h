@@ -1251,11 +1251,12 @@ void mature_block (ir_node *block);
 /** Parameter administration **/
 /* Read a value from the array with the local variables.  Use this
    function to obtain the last definition of the value associated with
-   pos. */
+   pos.  Pos may not exceed the value passed as n_loc to new_ir_graph. */
 ir_node *get_value (int pos, ir_mode *mode);
 
 /* Write a value in the array with the local variables. Use this function
-   to remember a new definition of the value associated with pos. */
+   to remember a new definition of the value associated with pos. Pos may
+   not exceed the value passed as n_loc to new_ir_graph. */
 void set_value (int pos, ir_node *value);
 
 /* Read a store.

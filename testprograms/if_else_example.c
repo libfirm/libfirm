@@ -122,6 +122,7 @@ int main(int argc, char **argv)
 
   printf("Optimizing ...\n");
   //dead_node_elimination(irg);
+  local_optimize_graph(irg);
 
   /* verify the graph */
   irg_vrfy(irg);

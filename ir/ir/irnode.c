@@ -8,6 +8,7 @@
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "ident_t.h"
+#include "irmode_t.h"
 #include "array.h"
 
 #ifdef DEBUG_libfirm
@@ -219,7 +220,7 @@ get_irn_modecode (ir_node *node)
 
 
 inline ident *
-get_irn_modename (ir_node *node)
+get_irn_modeident (ir_node *node)
 {
   assert(node);
   return node->mode->name;

@@ -43,8 +43,8 @@
 #include "tune.h"
 #include "ident_t.h"
 #include "tv_t.h"
-
-# include "entity_t.h"
+#include "entity_t.h"
+#include "irmode.h"
 
 static struct obstack tv_obst;	/* obstack for all the target values */
 static pset *tarvals;		/* pset containing pointers to _all_ tarvals */
@@ -138,9 +138,10 @@ tv_val_s (tarval *tv)
 static inline bool
 chil_overflow (tarval_chil chil, ir_mode *mode)
 {
-  assert (is_chilCHIL(mode->code));
-  return (mode->min && mode->max  /* only valid after firm initialization */
-	  && (chil < tv_val_chil (mode->min) || tv_val_chil (mode->max) < chil));
+  assert (is_chilCHIL(get_mode_modecode(mode)));
+  return (get_mode_min(mode) && get_mode_max(mode)  /* only valid after firm initialization */
+	  && (chil < tv_val_chil (get_mode_min(mode))
+	      || tv_val_chil (get_mode_max(mode)) < chil));
 }
 
 
@@ -148,9 +149,9 @@ chil_overflow (tarval_chil chil, ir_mode *mode)
 static inline bool
 CHIL_overflow (tarval_CHIL CHIL, ir_mode *mode)
 {
-  assert (is_chilCHIL(mode->code));
-  return (mode->max   /* only valid after firm initialization */
-	  && tv_val_CHIL (mode->max) < CHIL);
+  assert (is_chilCHIL(get_mode_modecode(mode)));
+  return (get_mode_max(mode)   /* only valid after firm initialization */
+	  && tv_val_CHIL (get_mode_max(mode)) < CHIL);
 }
 
 
@@ -159,7 +160,7 @@ void
 _tarval_vrfy (const tarval *val)
 {
   assert (val);
-  switch (val->mode->code) {
+  switch (get_mode_modecode(val->mode)) {
     /* floating */
   case irm_f:
   case irm_d:
@@ -232,9 +233,10 @@ tarval_cmp (const void *p, const void *q)
   TARVAL_VRFY (b);
 
   if (a == b) return 0;
-  if (a->mode - b->mode) return a->mode - b->mode;
+  if ((void *)a->mode - (void *)b->mode)
+    return (void *)a->mode - (void *)b->mode;
 
-  switch (a->mode->code) {
+  switch (get_mode_modecode(a->mode)) {
     /* floating */
   case irm_f:
     return memcmp (&a->u.f, &b->u.f, sizeof (a->u.f));
@@ -281,8 +283,8 @@ tarval_hash (tarval *tv)
 {
   unsigned h;
 
-  h = tv->mode->code * 0x421u;
-  switch (tv->mode->code) {
+  h = get_mode_modecode(tv->mode) * 0x421u;
+  switch (get_mode_modecode(tv->mode)) {
   case irm_T:
     h = 0x94b527ce; break;
   case irm_f:
@@ -607,7 +609,7 @@ tarval_from_long (ir_mode *m, long val)
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
 
   tv->mode = m;
-  switch (m->code) {
+  switch (get_mode_modecode(m)) {
     /* floating */
   case irm_f:
     tv->u.f = val; break;
@@ -728,7 +730,7 @@ tarval_finish_as (ir_mode *m)
   p = (unsigned char *)tv + sizeof (tarval);
   tv->mode = m;
 
-  switch (m->code) {
+  switch (get_mode_modecode(m)) {
   case irm_C:
     tv->u.CHIL = ch;
     break;
@@ -777,7 +779,7 @@ tarval_convert_to (tarval *src, ir_mode *m)
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
   tv->mode = m;
 
-  switch (src->mode->code) {
+  switch (get_mode_modecode(src->mode)) {
 
   case irm_d:
     if (m != mode_f) goto fail;
@@ -785,7 +787,7 @@ tarval_convert_to (tarval *src, ir_mode *m)
     break;
 
   case irm_Z:
-    switch (m->code) {
+    switch (get_mode_modecode(m)) {
 
     case irm_C: case irm_H: case irm_I: case irm_L:
       if (mpz_cmp_si (&src->u.Z, 0) < 0) goto fail;
@@ -813,7 +815,7 @@ tarval_convert_to (tarval *src, ir_mode *m)
     break;
 
   case irm_c: case irm_h: case irm_i: case irm_l:
-    switch (m->code) {
+    switch (get_mode_modecode(m)) {
     case irm_c: case irm_h: case irm_i: case irm_l:
       tv->u.chil = src->u.chil;
       if (chil_overflow (tv->u.chil, m)) goto fail;
@@ -836,7 +838,7 @@ tarval_convert_to (tarval *src, ir_mode *m)
     }
 
   case irm_C: case irm_H: case irm_I: case irm_L:
-    switch (m->code) {
+    switch (get_mode_modecode(m)) {
     case irm_c: case irm_h: case irm_i: case irm_l:
       tv->u.chil = src->u.CHIL;
       if (chil_overflow (tv->u.chil, m)) goto fail;
@@ -860,7 +862,7 @@ tarval_convert_to (tarval *src, ir_mode *m)
     break;
 
   case irm_b:
-    switch (m->code) {
+    switch (get_mode_modecode(m)) {
     case irm_c: case irm_h: case irm_i: case irm_l:
       tv->u.chil = src->u.b;
       break;
@@ -893,13 +895,13 @@ tarval_neg (tarval *a)
 
   tv->mode = a->mode;
 
-  switch (a->mode->code) {
+  switch (get_mode_modecode(a->mode)) {
     /* floating */
   case irm_f: tv->u.f = -a->u.f; break;
   case irm_d: tv->u.d = -a->u.d; break;
     /* unsigned */
   case irm_C: case irm_H: case irm_I: case irm_L:
-    tv->u.CHIL = -a->u.CHIL & tv_val_CHIL (a->mode->max);
+    tv->u.CHIL = -a->u.CHIL & tv_val_CHIL (get_mode_max(a->mode));
     break;
     /* signed */
   case irm_c: case irm_h: case irm_i: case irm_l:
@@ -935,7 +937,7 @@ tarval_comp (tarval *a, tarval *b)
 
   assert (a->mode == b->mode);
 
-  switch (a->mode->code) {
+  switch (get_mode_modecode(a->mode)) {
     /* floating */
   case irm_f: return (  a->u.f == b->u.f ? irpn_Eq
 		      : a->u.f > b->u.f ? irpn_Gt
@@ -989,13 +991,13 @@ tarval_add (tarval *a, tarval *b)
 
   tv->mode = a->mode;
 
-  switch (a->mode->code) {
+  switch (get_mode_modecode(a->mode)) {
     /* floating */
   case irm_f: tv->u.f = a->u.f + b->u.f; break;	/* @@@ overflow etc */
   case irm_d: tv->u.d = a->u.d + b->u.d; break; /* @@@ dto. */
     /* unsigned */
   case irm_C: case irm_H: case irm_I: case irm_L:
-    tv->u.CHIL = (a->u.CHIL + b->u.CHIL) & tv_val_CHIL (a->mode->max);
+    tv->u.CHIL = (a->u.CHIL + b->u.CHIL) & tv_val_CHIL (get_mode_max(a->mode));
     break;
     /* signed */
   case irm_c: case irm_h: case irm_i: case irm_l:
@@ -1032,13 +1034,13 @@ tarval_sub (tarval *a, tarval *b)
 
   tv->mode = a->mode;
 
-  switch (a->mode->code) {
+  switch (get_mode_modecode(a->mode)) {
     /* floating */
   case irm_f: tv->u.f = a->u.f - b->u.f; break;	/* @@@ overflow etc */
   case irm_d: tv->u.d = a->u.d - b->u.d; break; /* @@@ dto. */
     /* unsigned */
   case irm_C: case irm_H: case irm_I: case irm_L:
-    tv->u.CHIL = (a->u.CHIL - b->u.CHIL) & tv_val_CHIL (a->mode->max);
+    tv->u.CHIL = (a->u.CHIL - b->u.CHIL) & tv_val_CHIL (get_mode_max(a->mode));
     break;
     /* signed */
   case irm_c: case irm_h: case irm_i: case irm_l:
@@ -1075,13 +1077,13 @@ tarval_mul (tarval *a, tarval *b)
 
   tv->mode = a->mode;
 
-  switch (a->mode->code) {
+  switch (get_mode_modecode(a->mode)) {
     /* floating */
   case irm_f: tv->u.f = a->u.f * b->u.f; break;	/* @@@ overflow etc */
   case irm_d: tv->u.d = a->u.d * b->u.d; break; /* @@@ dto. */
     /* unsigned */
   case irm_C: case irm_H: case irm_I: case irm_L:
-    tv->u.CHIL = (a->u.CHIL * b->u.CHIL) & tv_val_CHIL (a->mode->max);
+    tv->u.CHIL = (a->u.CHIL * b->u.CHIL) & tv_val_CHIL (get_mode_max(a->mode));
     break;
     /* signed */
   case irm_c: case irm_h: case irm_i: case irm_l:
@@ -1115,7 +1117,7 @@ tarval_quo (tarval *a, tarval *b)
   TARVAL_VRFY (a); TARVAL_VRFY (b);
   assert (a->mode == b->mode);
 
-  switch (a->mode->code) {
+  switch (get_mode_modecode(a->mode)) {
     /* floating */
   case irm_f:
     tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
@@ -1150,7 +1152,7 @@ tarval_div (tarval *a, tarval *b)
 
   tv->mode = a->mode;
 
-  switch (a->mode->code) {
+  switch (get_mode_modecode(a->mode)) {
     /* floating */
   case irm_f: tv->u.f = floor (a->u.f / b->u.f); break; /* @@@ overflow etc */
   case irm_d: tv->u.d = floor (a->u.d / b->u.d); break; /* @@@ dto. */
@@ -1162,7 +1164,7 @@ tarval_div (tarval *a, tarval *b)
     /* signed */
   case irm_c: case irm_h: case irm_i: case irm_l:
     if (   !b->u.chil
-	|| ((b->u.chil == -1) && (a->u.chil == tv_val_chil (a->mode->max) ))) {
+	|| ((b->u.chil == -1) && (a->u.chil == tv_val_chil (get_mode_max(a->mode)) ))) {
     fail:
       obstack_free (&tv_obst, tv);
       return NULL;
@@ -1196,7 +1198,7 @@ tarval_mod (tarval *a, tarval *b)
 
   tv->mode = a->mode;
 
-  switch (a->mode->code) {
+  switch (get_mode_modecode(a->mode)) {
     /* floating */
   case irm_f: tv->u.f = fmod (a->u.f, b->u.f); break; /* @@@ overflow etc */
   case irm_d: tv->u.d = fmod (a->u.d, b->u.d); break; /* @@@ dto */
@@ -1241,7 +1243,7 @@ tarval_and (tarval *a, tarval *b)
 
   tv->mode = a->mode;
 
-  switch (a->mode->code) {
+  switch (get_mode_modecode(a->mode)) {
     /* unsigned */
   case irm_C: case irm_H: case irm_I: case irm_L:
     tv->u.CHIL = a->u.CHIL & b->u.CHIL; break;
@@ -1274,7 +1276,7 @@ tarval_or (tarval *a, tarval *b)
 
   tv->mode = a->mode;
 
-  switch (a->mode->code) {
+  switch (get_mode_modecode(a->mode)) {
     /* unsigned */
   case irm_C: case irm_H: case irm_I: case irm_L:
     tv->u.CHIL = a->u.CHIL | b->u.CHIL; break;
@@ -1311,7 +1313,7 @@ tarval_eor (tarval *a, tarval *b)
 
   tv->mode = a->mode;
 
-  switch (a->mode->code) {
+  switch (get_mode_modecode(a->mode)) {
     /* unsigned */
   case irm_C: case irm_H: case irm_I: case irm_L:
     tv->u.CHIL = a->u.CHIL ^ b->u.CHIL; break;
@@ -1346,14 +1348,14 @@ tarval_shl (tarval *a, tarval *b)
   shift = tarval_ord (b, &b_is_huge);
   if (   b_is_huge
       || (shift < 0)
-      || ((shift >= mode_l->size*target_bits) && (a->mode != mode_Z))) {
+      || ((shift >= get_mode_size(mode_l)*target_bits) && (a->mode != mode_Z))) {
     return NULL;
   }
 
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
   tv->mode = a->mode;
 
-  switch (a->mode->code) {
+  switch (get_mode_modecode(a->mode)) {
     /* unsigned */
   case irm_C: case irm_H: case irm_I: case irm_L:
     tv->u.CHIL = a->u.CHIL << shift;
@@ -1386,14 +1388,14 @@ tarval_shr (tarval *a, tarval *b)
   shift = tarval_ord (b, &b_is_huge);
   if (   b_is_huge
       || (shift < 0)
-      || ((shift >= mode_l->size*target_bits) && (a->mode != mode_Z))) {
+      || ((shift >= get_mode_size(mode_l)*target_bits) && (a->mode != mode_Z))) {
     return NULL;
   }
 
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
   tv->mode = a->mode;
 
-  switch (a->mode->code) {
+  switch (get_mode_modecode(a->mode)) {
     /* unsigned */
   case irm_C: case irm_H: case irm_I: case irm_L:
     tv->u.CHIL = a->u.CHIL >> shift;
@@ -1424,19 +1426,19 @@ tarval_classify (tarval *tv)
 
   TARVAL_VRFY (tv);
 
-  switch (tv->mode->code) {
+  switch (get_mode_modecode(tv->mode)) {
     /* floating */
   case irm_f: case irm_d:
     return 2;
     /* unsigned */
   case irm_C:
-    return (long)((tv->u.CHIL+1) & tv_val_CHIL (mode_C->max)) - 1;
+    return (long)((tv->u.CHIL+1) & tv_val_CHIL (get_mode_max(mode_C))) - 1;
   case irm_H:
-    return (long)((tv->u.CHIL+1) & tv_val_CHIL (mode_H->max)) - 1;
+    return (long)((tv->u.CHIL+1) & tv_val_CHIL (get_mode_max(mode_H))) - 1;
   case irm_I:
-    return (long)((tv->u.CHIL+1) & tv_val_CHIL (mode_I->max)) - 1;
+    return (long)((tv->u.CHIL+1) & tv_val_CHIL (get_mode_max(mode_I))) - 1;
   case irm_L:
-    return (long)((tv->u.CHIL+1) & tv_val_CHIL (mode_L->max)) - 1;
+    return (long)((tv->u.CHIL+1) & tv_val_CHIL (get_mode_max(mode_L))) - 1;
     /* signed */
   case irm_c: case irm_h: case irm_i: case irm_l:
     return tv->u.chil;
@@ -1475,18 +1477,18 @@ tarval_ord (tarval *tv, int *fail)
 {
   TARVAL_VRFY (tv);
 
-  switch (tv->mode->code) {
+  switch (get_mode_modecode(tv->mode)) {
     /* unsigned */
   case irm_C: case irm_H: case irm_I: case irm_L:
-    *fail = tv->u.CHIL > tv_val_CHIL (mode_l->max);
+    *fail = tv->u.CHIL > tv_val_CHIL (get_mode_max(mode_l));
     return tv->u.CHIL;
     /* signed */
   case irm_c: case irm_h: case irm_i: case irm_l:
     *fail = 0;
     return tv->u.chil;
   case irm_Z:
-    *fail = (   (mpz_cmp_si (&tv->u.Z, tv_val_chil(mode_l->max)) > 0)
-	     || (mpz_cmp_si (&tv->u.Z, tv_val_chil(mode_l->min)) < 0));
+    *fail = (   (mpz_cmp_si (&tv->u.Z, tv_val_chil(get_mode_max(mode_l))) > 0)
+	     || (mpz_cmp_si (&tv->u.Z, tv_val_chil(get_mode_max(mode_l))) < 0));
     return mpz_get_si (&tv->u.Z);
     /* strange */
   case irm_b:
@@ -1508,7 +1510,7 @@ tarval_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
 
   TARVAL_VRFY (val);
 
-  switch (val->mode->code) {
+  switch (get_mode_modecode(val->mode)) {
 
   case irm_T:			/* none */
     printed = XPSR ("<bad>");

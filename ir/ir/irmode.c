@@ -5,7 +5,7 @@
 **
 */
 
-# include "irmode.h"
+# include "irmode_t.h"
 # include <malloc.h>
 # include <stddef.h>
 # include "tv.h"
@@ -30,7 +30,6 @@ ir_mode *mode_X;
 ir_mode *mode_M;
 ir_mode *mode_R;
 ir_mode *mode_Z;
-
 
 void
 init_mode (void)
@@ -204,10 +203,12 @@ init_mode (void)
   mode_S->fsigned = 0;
   mode_S->ffloat = 0;
 
+  /* Execution */
   mode_X->name = id_from_str ("X", 1);
   mode_X->fsigned = 0;
   mode_X->ffloat = 0;
 
+  /* Memory */
   mode_M->name = id_from_str ("M", 1);
   mode_M->fsigned = 0;
   mode_M->ffloat = 0;
@@ -219,20 +220,19 @@ init_mode (void)
   mode_Z->name = id_from_str ("Z", 1);
   mode_Z->fsigned = 1;
   mode_Z->ffloat = 0;
-
 }
 
 /* Functions for the direct access to all attributes od a ir_mode */
 
 modecode
-get_modecode_of_mode (ir_mode *mode)
+get_mode_modecode (ir_mode *mode)
 {
   return mode->code;
 }
 
 /*
 inline void
-set_modecode_of_mode (ir_mode *mode, modecode code)
+set_mode_modecode (ir_mode *mode, modecode code)
 {
   mode->code = code;
 }
@@ -246,104 +246,111 @@ get_mode_ident (ir_mode *mode)
 
 /*
 inline void
-set_ident_of_mode (ir_mode *mode, ident *name)
+set_mode_ident (ir_mode *mode, ident *name)
 {
   mode->name = name;
 }
 */
 
+inline const char *
+get_mode_name       (ir_mode *mode) {
+  assert(mode);
+  return id_to_str(mode->name);
+}
+/* void  set_mode_name       (ir_mode *mode, char *name);    */
+
 int
-get_size_of_mode (ir_mode *mode)
+get_mode_size (ir_mode *mode)
 {
   return mode->size;
 }
 /*
 inline void
-set_size_of_mode (ir_mode *mode, int size)
+set_mode_size (ir_mode *mode, int size)
 {
   mode->size = size;
 }
 */
 
 int
-get_ld_align_of_mode (ir_mode *mode)
+get_mode_ld_align (ir_mode *mode)
 {
   return mode->ld_align;
 }
 
 /*
 inline void
-set_ld_align_of_mode (ir_mode *mode, int ld_align)
+set_mode_ld_align (ir_mode *mode, int ld_align)
 {
   mode->ld_align = ld_align;
 }
 */
 
 tarval *
-get_min_of_mode (ir_mode *mode)
+get_mode_min (ir_mode *mode)
 {
   return mode->min;
 }
 
 /*
 inline void
-set_min_of_mode (ir_mode *mode, struct tarval *min)
+set_mode_min (ir_mode *mode, tarval *min)
 {
 mode->min = min;
 }
 */
 
 tarval *
-get_max_of_mode (ir_mode *mode)
+get_mode_max (ir_mode *mode)
 {
   return mode->max;
 }
 
 /*
 inline void
-set_max_of_mode (ir_mode *mode, struct tarval *max)
+set_mode_max (ir_mode *mode, tarval *max)
 {
   mode->max = max;
 }
 */
 
 tarval *
-get_null_of_mode (ir_mode *mode)
+get_mode_null (ir_mode *mode)
 {
   return mode->null;
 }
 
 /*
 inline void
-set_null_of_mode (ir_mode *mode, struct tarval *null)
+set_mode_null (ir_mode *mode, tarval *null)
 {
   mode->null = null;
 }
 */
 
 unsigned
-get_fsigned_of_mode (ir_mode *mode)
+get_mode_fsigned (ir_mode *mode)
 {
   return mode->fsigned;
 }
 
 /*
 inline voida
-set_fsigned_of_mode (ir_mode *mode, unsigned fsigned)
+set_mode_fsigned (ir_mode *mode, unsigned fsigned)
 {
   mode->fsigned = fsigned;
 }
 */
 
 unsigned
-get_ffloat_of_mode (ir_mode *mode)
+get_mode_ffloat (ir_mode *mode)
 {
   return mode->ffloat;
 }
 
 /*
 inline void
-set_ffloat_of_mode (ir_mode *mode, unsigned ffloat)
+set_mode_ffloat (ir_mode *mode, unsigned ffloat)
 {
   mode->ffloat = ffloat;
 }
@@ -391,7 +398,7 @@ mode_is_signed (ir_mode *mode)
 {
    int res;
    unsigned fsigned;
-   fsigned = get_fsigned_of_mode (mode);
+   fsigned = get_mode_fsigned (mode);
    if (fsigned == 1) {
      res = 1;
     }
@@ -406,7 +413,7 @@ mode_is_float (ir_mode *mode)
 {
    int res;
    unsigned ffloat;
-   ffloat = get_ffloat_of_mode (mode);
+   ffloat = get_mode_ffloat (mode);
    if (ffloat == 1) {
       res = 1;
     }
@@ -422,7 +429,7 @@ mode_is_int (ir_mode *mode)
 {
    int res;
    modecode code;
-   code = get_modecode_of_mode (mode);
+   code = get_mode_modecode (mode);
    if ((code >= irm_c) &&  (code <= irm_L)) {
       res = 1;
     }
@@ -451,7 +458,7 @@ mode_is_data (ir_mode *mode)
 {
   int res;
   modecode code;
-  code = get_modecode_of_mode (mode);
+  code = get_mode_modecode (mode);
   if (mode_is_num (mode) || code == irm_p) {
     res = 1;
   }
@@ -466,7 +473,7 @@ mode_is_datab (ir_mode *mode)
 {
   int res;
   modecode code;
-  code = get_modecode_of_mode (mode);
+  code = get_mode_modecode (mode);
   if (mode_is_data (mode) || code == irm_b || code == irm_B) {
     res = 1;
   }
@@ -481,7 +488,7 @@ mode_is_dataM (ir_mode *mode)
 {
   int res;
   modecode code;
-  code = get_modecode_of_mode (mode);
+  code = get_mode_modecode (mode);
   if (mode_is_data (mode) || code == irm_M) {
     res = 1;
   }

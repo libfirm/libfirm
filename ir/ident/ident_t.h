@@ -13,7 +13,6 @@
 #include <assert.h>
 #include <stddef.h>
 #include "misc.h"
-#include "debug.h"
 #include "set.h"
 #include "ident.h"
 
@@ -33,17 +32,16 @@ ident *new_id_internal (void);
 bool id_is_internal (ident *);
 void id_init (void);
 
-#ifdef NDEBUG
+/* Vormals Debugunterstuetzung, entfernt (debug.h). */
 # define ID_VRFY(id) ((void)0)
+
+#ifdef NDEBUG
 # define IDS_VRFY(id) ((void)0)
 #else
-# define ID_VRFY(id) \
-    assert (   (id) \
-	    && (   !d_ (df_vrfy_level, 1) \
-		|| (ID_FROM_STR (ID_TO_STR((id)), ID_TO_STRLEN((id))) == (id))))
 # define IDS_VRFY(id) ids_vrfy ((id))
 void ids_vrfy (ident **id);
 #endif
+
 
 #ifdef STATS
 # define id_stats() set_stats (id_set)

@@ -82,10 +82,16 @@ extern ir_op *op_Bad;
 
 
 /* Returns the string for the opcode. */
+const char *get_op_name      (ir_op *op);
 
-opcode get_op_code (ir_op *op);
-ident *get_op_name(ir_op *op);
-int get_op_attr_size (ir_op *op);
+/* Returns the enum for the opcode */
+opcode get_op_code      (ir_op *op);
 
+/* Returns the ident for the opcode name */
+ident *get_op_ident     (ir_op *op);
+
+/* Returns the attribute size of the opcode.
+   Use not encouraged, internal feature. */
+int    get_op_attr_size (ir_op *op);
 
 # endif /* _IROP_H_ */

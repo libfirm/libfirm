@@ -104,7 +104,7 @@ main(void)
   if (! (elt_type->kind == k_type_primitive)) printf(" do something else\n");
   elt_type_mode = get_primitive_mode(elt_type);
   /*   better: read bounds out of array type information */
-  size = (U_BOUND - L_BOUND + 1) * elt_type_mode->size;
+  size = (U_BOUND - L_BOUND + 1) * get_mode_size(elt_type_mode);
   /*   make constant representing the size */
   arr_size  = new_Const(mode_I, tarval_from_long (mode_I, size));
   /*   allocate and generate the Proj nodes. */

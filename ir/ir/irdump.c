@@ -60,7 +60,7 @@ dump_node_opcode (ir_node *n)
     }
   /* all others */
   } else {
-    xfprintf (F, "%I", n->op->name);
+    xfprintf (F, "%I", get_irn_opident(n));
   }
 }
 
@@ -84,7 +84,7 @@ dump_node_mode (ir_node *n)
   case iro_Shr:
   case iro_Abs:
   case iro_Cmp:
-    xfprintf (F, "%I", n->mode->name);
+    xfprintf (F, "%I", get_mode_ident(n->mode));
     break;
   default:
   }
@@ -107,7 +107,7 @@ dump_node_nodeattr (ir_node *n)
     xfprintf (F, "%s", id_to_str(get_entity_ident(get_Sel_entity(n))));
 
     /*  xdoesn't work for some reason.
-	fprintf (F, "\"%I %I\" ", n->op->name, n->attr.s.ent); */
+	fprintf (F, "\"%I %I\" ", get_irn_opident(n), n->attr.s.ent); */
     break;
   default:
   } /* end switch */
@@ -163,123 +163,123 @@ dump_ir_node (ir_node *n)
 
   switch (n->op->code) {  /* node label */
   case iro_Start:
-    xfprintf (F, "\"%I\" color: blue ", n->op->name);
+    xfprintf (F, "\"%I\" color: blue ", get_irn_opident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
      break;
   case iro_End:
-    xfprintf (F, "\"%I\" color: blue ", n->op->name);
+    xfprintf (F, "\"%I\" color: blue ", get_irn_opident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Block:
-    xfprintf (F, "\"%I\" color: lightyellow ", n->op->name);
+    xfprintf (F, "\"%I\" color: lightyellow ", get_irn_opident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Phi:
-    xfprintf (F, "\"%I%I\" color: green", n->op->name, n->mode->name);
-    if (n->mode->code == irm_M)
+    xfprintf (F, "\"%I%I\" color: green", get_irn_opident(n), get_irn_modeident(n));
+    if (get_irn_modecode(n) == irm_M)
       xfprintf (F, DEFAULT_NODE_ATTR " color: green");
     else
       xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Const:
-    xfprintf (F, "\"%v%I\" color: yellow ", n->attr.con, n->mode->name);
+    xfprintf (F, "\"%v%I\" color: yellow ", n->attr.con, get_irn_modeident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Id:
-    xfprintf (F, "\"%I%I\" ", n->op->name, n->mode->name);
+    xfprintf (F, "\"%I%I\" ", get_irn_opident(n), get_irn_modeident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Proj:
     if (n->in[1]->op->code == iro_Cmp) {
-      xfprintf (F, "\"%I%I %s\" color: yellow", n->op->name, n->mode->name,
+      xfprintf (F, "\"%I%I %s\" color: yellow", get_irn_opident(n), get_irn_modeident(n),
                 get_pnc_string(n->attr.proj));
     } else {
-      xfprintf (F, "\"%I%I %ld\"", n->op->name, n->mode->name, n->attr.proj);
+      xfprintf (F, "\"%I%I %ld\"", get_irn_opident(n), get_irn_modeident(n), n->attr.proj);
     }
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Conv:
-    xfprintf (F, "\"%I%I\"", n->op->name, n->mode->name);
+    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Tuple:
-    xfprintf (F, "\"%I%I\"", n->op->name, n->mode->name);
+    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Add:
-    xfprintf (F, "\"%I%I\"", n->op->name, n->mode->name);
+    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Sub:
-    xfprintf (F, "\"%I%I\"", n->op->name, n->mode->name);
+    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Mul:
-    xfprintf (F, "\"%I%I\"", n->op->name, n->mode->name);
+    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Quot:
-    xfprintf (F, "\"%I%I\"", n->op->name, n->mode->name);
+    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_DivMod:
-    xfprintf (F, "\"%I%I\"", n->op->name, n->mode->name);
+    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Div:
-    xfprintf (F, "\"%I%I\"", n->op->name, n->mode->name);
+    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Mod:
-    xfprintf (F, "\"%I%I\"", n->op->name, n->mode->name);
+    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_And:
-    xfprintf (F, "\"%I%I\"", n->op->name, n->mode->name);
+    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Or:
-    xfprintf (F, "\"%I%I\"", n->op->name, n->mode->name);
+    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Eor:
-    xfprintf (F, "\"%I%I\"", n->op->name, n->mode->name);
+    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Shl:
-    xfprintf (F, "\"%I%I\"", n->op->name, n->mode->name);
+    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Shr:
-    xfprintf (F, "\"%I%I\"", n->op->name, n->mode->name);
+    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Abs:
-    xfprintf (F, "\"%I%I\"", n->op->name, n->mode->name);
+    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Cmp:
-    xfprintf (F, "\"%I%I\"", n->op->name, n->mode->name);
+    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Jmp:
-    xfprintf (F, "\"%I\"", n->op->name);
+    xfprintf (F, "\"%I\"", get_irn_opident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Cond:
-    xfprintf (F, "\"%I\"", n->op->name);
+    xfprintf (F, "\"%I\"", get_irn_opident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Call:
-    xfprintf (F, "\"%I\"", n->op->name);
+    xfprintf (F, "\"%I\"", get_irn_opident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Return:
-    xfprintf (F, "\"%I\"", n->op->name);
+    xfprintf (F, "\"%I\"", get_irn_opident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Raise:
-    xfprintf (F, "\"%I%I\"", n->op->name, n->mode->name);
+    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Load:
@@ -288,15 +288,15 @@ dump_ir_node (ir_node *n)
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Alloc:
-    xfprintf (F, "\"%I\" ", n->op->name);
+    xfprintf (F, "\"%I\" ", get_irn_opident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Sel:
     assert(get_kind(get_Sel_entity(n)) == k_entity);
-    xfprintf (F, "\"%I ", n->op->name);
+    xfprintf (F, "\"%I ", get_irn_opident(n));
     xfprintf (F, "%s", id_to_str(get_entity_ident(get_Sel_entity(n))));
     /*  xdoesn't work for some reason.
-	fprintf (F, "\"%I %I\" ", n->op->name, get_entity_ident(get_Sel_entity(n))); */
+	fprintf (F, "\"%I %I\" ", get_irn_opident(n), get_entity_ident(get_Sel_entity(n))); */
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_SymConst:
@@ -318,15 +318,15 @@ dump_ir_node (ir_node *n)
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Sync:
-    xfprintf (F, "\"%I\" ", n->op->name);
+    xfprintf (F, "\"%I\" ", get_irn_opident(n));
     xfprintf (F, DEFAULT_NODE_ATTR " color: green");
     break;
   case iro_Bad:
-    xfprintf (F, "\"%I%I\" ", n->op->name, n->mode->name);
+    xfprintf (F, "\"%I%I\" ", get_irn_opident(n), get_irn_modeident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   default:
-    xfprintf (F, "\"%I%I\" ", n->op->name, n->mode->name);
+    xfprintf (F, "\"%I%I\" ", get_irn_opident(n), get_irn_modeident(n));
   }
   xfprintf (F, "}\n");		/* footer */
 }

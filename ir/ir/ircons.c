@@ -11,6 +11,7 @@
 
 # include "irgraph_t.h"
 # include "irnode_t.h"
+# include "irmode_t.h"
 # include "ircons.h"
 # include "common.h"
 # include "irvrfy.h"
@@ -619,8 +620,8 @@ new_Block (int arity, ir_node **in)
 
   /* Create and initialize array for Phi-node construction. */
   res->attr.block.graph_arr = NEW_ARR_D (ir_node *, current_ir_graph->obst,
-                                         current_ir_graph->params);
-  memset(res->attr.block.graph_arr, 0, sizeof(ir_node *)*current_ir_graph->params);
+                                         current_ir_graph->n_loc);
+  memset(res->attr.block.graph_arr, 0, sizeof(ir_node *)*current_ir_graph->n_loc);
 
   res = optimize (res);
   irn_vrfy (res);
@@ -1525,8 +1526,8 @@ ir_node *new_immBlock (void) {
 
   /* Create and initialize array for Phi-node construction. */
   res->attr.block.graph_arr = NEW_ARR_D (ir_node *, current_ir_graph->obst,
-                                         current_ir_graph->params);
-  memset(res->attr.block.graph_arr, 0, sizeof(ir_node *)*current_ir_graph->params);
+                                         current_ir_graph->n_loc);
+  memset(res->attr.block.graph_arr, 0, sizeof(ir_node *)*current_ir_graph->n_loc);
 
   /* Immature block may not be optimized! */
   irn_vrfy (res);

@@ -58,7 +58,7 @@ inline ir_mode      *get_irn_mode          (ir_node *node);
 /* Get the mode-enum modecode */
 inline modecode      get_irn_modecode      (ir_node *node);
 /* Get the ident for a string representation of the mode */
-inline ident        *get_irn_modename      (ir_node *node);
+inline ident        *get_irn_modeident     (ir_node *node);
 /* Access the opcode struct of the node */
 inline ir_op        *get_irn_op            (ir_node *node);
 inline void          set_irn_op            (ir_node *node, ir_op *op);

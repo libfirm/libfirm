@@ -14,7 +14,7 @@
 # include "irvrfy.h"
 # include "tv.h"
 # include "tune.h"
-
+# include "debinfo.h"
 
 /* Make types visible to allow most efficient access */
 # include "entity_t.h"
@@ -993,7 +993,9 @@ optimize_in_place (ir_node *n)
       tv = computed_value (n);
       if (tv != NULL) {
         /* evaluation was succesful -- replace the node. */
-	return new_Const (get_tv_mode (tv), tv);
+	n = new_Const (get_tv_mode (tv), tv);
+	deb_info_copy(n, old_n, id_from_str("const_eval", 10));
+	return n;
         /* xprintf("* optimize: computed node %I\n", n->op->name);*/
       }
     }

@@ -30,6 +30,8 @@ clean:
 	*.o *.vcg core
 
 realclean:	clean
+	rm -f \#* *.flc
+	rm -rf auto/
 
 run:
 	./empty; 		\

@@ -27,10 +27,13 @@ typedef struct ir_graph ir_graph;
    optimizations. */
 extern ir_graph *current_ir_graph;
 
-/* create a new ir graph.  Automatically sets the field irg of
-   entity to the new ir graph. */
-ir_graph *new_ir_graph (entity *ent, int params);
-
+/* Create a new ir graph to built ir for a procedure.
+   ent is the entity representing this procedure, i.e., the type of the
+   entity must be type_method.  The constructor automatically sets the
+   field irg of the entity to the new ir graph.
+   n_loc is the number of local variables in this procedure including
+   the procedure parameters. */
+ir_graph *new_ir_graph (entity *ent, int n_loc);
 
 /* access routines for all ir_graph attributes */
 ir_node *get_irg_start_block (ir_graph *irg);
@@ -67,8 +70,9 @@ void     set_irg_current_block (ir_graph *irg, ir_node *node);
 entity  *get_irg_ent (ir_graph *irg);
 void     set_irg_ent (ir_graph *irg, entity *ent);
 
-int      get_irg_params (ir_graph *irg);
-void     set_irg_params (ir_graph *irg, int params);
+/* Use not encouraged, internal of Phi construction algorithm. */
+int      get_irg_n_loc (ir_graph *irg);
+void     set_irg_n_loc (ir_graph *irg, int n_loc);
 
 /* increments visited by one */
 void     inc_irg_visited(ir_graph *irg);

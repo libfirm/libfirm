@@ -12,7 +12,7 @@
 # define _TYPE_OR_ENTITY_H_
 
 typedef union {
-  type *typ;
+  type   *typ;
   entity *ent;
 } type_or_ent;
 

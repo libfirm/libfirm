@@ -62,6 +62,7 @@ clean:
 	rm -f $(OFILES) $(DFILES)
 
 realclean:	clean
-	rm -f $(TARGET) *.flc TAGS
+	rm -f $(TARGET) *.flc TAGS \#*
+	rm -rf auto/
 
 -include $(DFILES)

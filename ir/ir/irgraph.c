@@ -31,7 +31,7 @@ Phi_in_stack *new_Phi_in_stack();
    and optimization.
 */
 ir_graph *
-new_ir_graph (entity *ent, int params)
+new_ir_graph (entity *ent, int n_loc)
 {
   ir_graph *res;
   ir_node *first_block;
@@ -43,7 +43,7 @@ new_ir_graph (entity *ent, int params)
 
   /** Internal information for graph construction either held in the graph or
   *** initialized for each graph. **/
-  res->params = params + 1;  /* number of local variables that are never
+  res->n_loc = n_loc + 1;  /* number of local variables that are never
                                 dereferenced in this graph plus one for
 				the store. This is not the number of parameters
                                 to the procedure!  */
@@ -232,15 +232,15 @@ set_irg_ent (ir_graph *irg, entity *ent)
 }
 
 int
-get_irg_params (ir_graph *irg)
+get_irg_n_loc (ir_graph *irg)
 {
-  return irg->params;
+  return irg->n_loc;
 }
 
 void
-set_irg_params (ir_graph *irg, int params)
+set_irg_n_loc (ir_graph *irg, int n_loc)
 {
-  irg->params = params;
+  irg->n_loc = n_loc;
 }
 
 unsigned long

@@ -15,7 +15,7 @@ DEPENDFLAGS = -M
 LIBPATH     =
 LIBS        =
 X_LIBS      =
-INCLUDES    = -I../adt -I../common -I../debug
+INCLUDES    = -I../adt -I../common -I../debug -I../ir
 X_INCLUDES  =
 
 AR          = ar rcs
@@ -24,7 +24,7 @@ SHELL       = /bin/sh
 MAKE        = /usr/bin/make
 
 DISTRIBMEMBERS =
-MEMBERS	 = $(DISTRIBMEMBERS) debug.m
+MEMBERS	 = $(DISTRIBMEMBERS) debug.m debinfo.m
 
 CFILES = $(MEMBERS:.m=.c)
 
@@ -61,6 +61,7 @@ clean:
 	rm -f $(OFILES) $(DFILES)
 
 realclean:	clean
-	rm -f $(TARGET) *.flc TAGS
+	rm -f $(TARGET) *.flc TAGS \#*
+	rm -rf auto/
 
 -include $(DFILES)

@@ -8,7 +8,10 @@
 # include "entity.h"
 # include "bool.h"
 
+#ifndef _TARVAL_TYPEDEF_
+#define _TARVAL_TYPEDEF_
 typedef struct tarval tarval;
+#endif
 
 /* #include <gmp.h> Eli can't find gmp.h if it's available in a local
    search path but not in a standard one known to gcc. */
@@ -17,9 +20,9 @@ typedef struct tarval tarval;
 /* #include "deftab.h" */
 
 /* how to represent target types on host */
-typedef float tarval_f;
+typedef float  tarval_f;
 typedef double tarval_d;
-typedef long tarval_chil;
+typedef long   tarval_chil;
 typedef unsigned long tarval_CHIL;
 typedef MP_INT tarval_Z;
 typedef struct {
@@ -145,7 +148,7 @@ tarval_chil tv_val_chil (tarval *tv);
 tarval_CHIL tv_val_CHIL (tarval *tv);
 tarval_Z tv_val_Z (tarval *tv);
 tarval_p tv_val_p (tarval *tv);
-bool tv_val_b (tarval *tv);
+bool     tv_val_b (tarval *tv);
 tarval_B tv_val_B (tarval *tv);
 tarval_s tv_val_s (tarval *tv);
 

@@ -15,8 +15,13 @@
 /* Identifiers */
 typedef const struct set_entry ident;
 
+/* Stores a string in the ident module and returns a handle for
+   the string. */
 inline ident      *id_from_str (char *str, int len);
+/* Returns the string represented by id.  This string is not Null
+   terminated! */
 inline const char *id_to_str   (ident *id);
+/* Returns the length of the string represented by id. */
 inline int         id_to_strlen(ident *id);
 
 # endif /* _IDENT_H_ */

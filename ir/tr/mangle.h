@@ -12,5 +12,10 @@
 
 void init_mangle (void);
 
+/* Computes a definite name for this entity by concatenating
+   the name of the owner type and the name of the entity with
+   a separating "_". f*/
 ident *mangle_entity (entity *ent);
-ident *mangle_type (type *type);
+
+/* Sorry, I'm not sure what this does... */
+ident *mangle_type   (type *type);

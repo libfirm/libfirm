@@ -23,6 +23,11 @@ of the tarval module.
 
 # define NUM_MODES 20
 
+#ifndef _TARVAL_TYPEDEF_
+#define _TARVAL_TYPEDEF_
+typedef struct tarval tarval;
+#endif
+
 typedef enum { /* irm is short for `ir mode' */
   irm_T,                        /* former irm_N */
   irm_f, irm_d,
@@ -45,17 +50,7 @@ typedef enum { /* irm is short for `ir mode' */
   irm_max */
 } modecode;
 
-typedef struct {
-  modecode code;
-  ident *name;            /* Name of this mode */
-  int    size;            /* size of the mode in Bytes. */
-  int    ld_align;        /* ld means log2 */
-  struct tarval *min;     /* largest value to be represented by this mode */
-  struct tarval *max;     /* smallest value to be represented by this mode */
-  struct tarval *null;    /* Representation of zero in this mode */
-  unsigned fsigned:1;     /* signedness of this mode */
-  unsigned ffloat:1;      /* true if this is a float */
-} ir_mode;
+typedef struct ir_mode ir_mode;
 
 extern ir_mode *mode_T; /* tuple (none) */
 extern ir_mode *mode_f; /* signed float */
@@ -81,29 +76,48 @@ extern ir_mode *mode_R; /* block */
 extern ir_mode *mode_Z; /* infinit integers */ /* oblivious */
 extern ir_mode *mode_T; /* tuple (none) */
 
-void init_mode (void);
+/* An enum for this mode */
+modecode get_mode_modecode (ir_mode *mode);
+/* void  set_mode_modecode (ir_mode *mode, modecode code);  */
 
-modecode get_modecode_of_mode (ir_mode *mode);
-/* void set_modecode_of_mode (ir_mode *mode, modecode code); */
-ident *get_ident_of_mode (ir_mode *mode);
-ident *get_mode_ident (ir_mode *mode);
+/* The ident of this mode */
+ident   *get_mode_ident    (ir_mode *mode);
+/* void  set_mode_ident    (ir_mode *mode, ident *id);    */
 
-/* void set_ident_of_mode (ir_mode *mode, ident *name); */
-int get_size_of_mode (ir_mode *mode);
-/* void set_size_of_mode (ir_mode *mode, int size); */
-int get_ld_align_of_mode (ir_mode *mode);
-/* void set_ld_align_of_mode (ir_mode *mode, int ld_align); */
-struct tarval *get_min_of_mode (ir_mode *mode);
-/* void set_min_of_mode (ir_mode *mode, struct tarval *min); */
-struct tarval *get_max_of_mode (ir_mode *mode);
-/* void set_max_of_mode (ir_mode *mode, struct tarval *max); */
-struct tarval *get_null_of_mode (ir_mode *mode);
-/* void set_null_of_mode (ir_mode *mode, struct tarval *null); */
-unsigned get_fsigned_of_mode (ir_mode *mode);
-/* void set_fsigned_of_mode (ir_mode *mode, unsigned fsigned); */
-unsigned get_ffloat_of_mode (ir_mode *mode);
-/* void set_ffloat_of_mode (ir_mode *mode, unsigned ffloat); */
+/* The name of this mode */
+const char *get_mode_name  (ir_mode *mode);
+/* void  set_mode_name     (ir_mode *mode, char *name);    */
 
+/* The size of values of the mode in bytes. */
+int      get_mode_size     (ir_mode *mode);
+/* void  set_mode_size     (ir_mode *mode, int size);       */
+
+/* The alignment of values of the mode. */
+int      get_mode_ld_align (ir_mode *mode);
+/* void  set_mode_ld_align (ir_mode *mode, int ld_align); */
+
+/* The smallest representable value */
+tarval  *get_mode_min      (ir_mode *mode);
+/* void  set_mode_min      (ir_mode *mode, tarval *min); */
+
+/* The biggest representable value */
+tarval  *get_mode_max      (ir_mode *mode);
+/* void  set_mode_max      (ir_mode *mode, tarval *max); */
+
+/* The value Zero represented in this mode */
+tarval  *get_mode_null     (ir_mode *mode);
+/* void  set_mode_null     (ir_mode *mode, tarval *null); */
+
+/* Returns 1 if mode is signed, else 0. */
+unsigned get_mode_fsigned  (ir_mode *mode);
+/* void  set_mode_fsigned  (ir_mode *mode, unsigned fsigned); */
+
+/* Returns 1 if mode is float, else 0. */
+unsigned get_mode_ffloat   (ir_mode *mode);
+/* void  set_mode_ffloat   (ir_mode *mode, unsigned ffloat); */
+
+
+/* Test for a certain class of modes. */
 int mode_is_signed (ir_mode *mode);
 int mode_is_float (ir_mode *mode);
 int mode_is_int (ir_mode *mode);

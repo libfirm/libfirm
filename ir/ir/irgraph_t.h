@@ -34,9 +34,8 @@ struct ir_graph {
 #endif
   struct ir_node *current_block;     /* block for newly gen_*()-erated
 					ir_nodes */
-  int params;                        /* number of local variable in this
-					procedure; should be n_loc or so,
-					params is ambiguous. */
+  int n_loc;                         /* number of local variable in this
+					procedure including procedure parameters. */
   pset *value_table;                 /* value table for global value numbering
 					for optimizing use in iropt.c */
   unsigned long visited;             /* this flag is an identifier for

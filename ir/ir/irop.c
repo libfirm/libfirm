@@ -127,16 +127,20 @@ init_op(void)
   op_Bad   = new_ir_op (iro_Bad,   id_from_str ("Bad", 3), 0, 0);
 }
 
-/* returns the attribute size of the operator. */
+/* Returns the string for the opcode. */
+const char  *get_op_name      (ir_op *op) {
+  return id_to_str(op->name);
+}
 
 opcode get_op_code (ir_op *op){
   return op->code;
 }
 
-ident *get_op_name(ir_op *op){
+ident *get_op_ident(ir_op *op){
   return op->name;
 }
 
+/* returns the attribute size of the operator. */
 int get_op_attr_size (ir_op *op) {
   return op->attr_size;
 }

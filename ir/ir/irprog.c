@@ -6,7 +6,7 @@
 ** irprog.c: ir representation of a program
 */
 
-# include "irprog.h"
+# include "irprog_t.h"
 # include "array.h"
 # include "obst.h"
 

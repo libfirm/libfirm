@@ -1,5 +1,16 @@
   27.2.2001 Goetz
-  Moved struct from irprog.h to irprog_t.h
+  Moved struct from irprog.h to irprog_t.h, same for irmode.h.
+  Added a module deb_info in debug.h.  Adapted makefile.  Added example
+  use in iropt.h.
+  Removed use of debug.h in ident.c. Now debug.c|h can be moved to
+  /adt/.
+  Removed inabled code for dead node elimination in irgopt.h.
+  Renamed some missnamed access routines (_of_).  Macros with old names
+  are in old_fctnames.h.
+  Edited makefiles to remove #* and *.flc.
+
+  ??.2.2001 Goetz
+  Some minor bugfixes...
 
   25.1.2001 Goetz
   After compacting of in arrays in dead_node_elimination

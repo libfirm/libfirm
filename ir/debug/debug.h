@@ -6,9 +6,9 @@
 #define _DEBUG_H_
 
 void d_init (int nflags);
-int d_ (int flag, unsigned level);
-int d_level (int flag);
-int d_set_level (int flag, unsigned level);
+int  d_ (int flag, unsigned level);
+int  d_level (int flag);
+int  d_set_level (int flag, unsigned level);
 void d_parse (const char *s);
 
 #ifdef DEBUG
