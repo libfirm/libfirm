@@ -61,7 +61,7 @@ edge: { sourcename: "n32" targetname: "n22"}
 node: {title: "n22" label: "Start Block n22" info1:"arity: 1
 " color:blue }
 edge: { sourcename: "n22" targetname: "n22"}
-node: {title: "n61" label: "Bad  61"  info1: "Bad 61
+node: {title: "n61" label: "Bad 61"  info1: "Bad 61
   mode:    T
   visited: 0
   irg:     DEAD_BLOCK_main

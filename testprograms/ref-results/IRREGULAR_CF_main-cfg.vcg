@@ -78,7 +78,7 @@ edge: { sourcename: "n42" targetname: "n31"}
 node: {title: "n50" label: "Block n50" info1:"arity: 1
 "}
 edge: { sourcename: "n50" targetname: "n42"}
-node: {title: "n67" label: "Bad  67"  info1: "Bad 67
+node: {title: "n67" label: "Bad 67"  info1: "Bad 67
   mode:    T
   visited: 0
   irg:     IRREGULAR_CF_main

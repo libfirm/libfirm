@@ -90,7 +90,7 @@ node: {title: "e18" label: "ent WHILE_EXAMPLE_main" color: yellow
 }
 edge: { sourcename: "e18" targetname: "t15"class: 3 label: "type" color: red}
 edge: { sourcename: "e18" targetname: "n17"label: "value 0"}
-node: {title: "n17" label: "SymC &main  17"  info1: "SymC &main 17
+node: {title: "n17" label: "SymC &main 17"  info1: "SymC &main 17
   mode:    P
   visited: 1
   arity:   0

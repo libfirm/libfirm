@@ -55,7 +55,7 @@ colorentry 125:  255 250  250
 graph: { title: "g49" label: "CALL_STR_EXAMPLE_main" status:clustered color:white
 graph: { title: "n38"  label: "Block 38" status:clustered color:yellow
 edge: {sourcename: "n38" targetname: "n57" label: "0" class:13 priority:60 color:red}
-node: {title: "n59" label: "End  59"  info1: "End 59
+node: {title: "n59" label: "End 59"  info1: "End 59
   mode:    X
   visited: 9
   irg:     CALL_STR_EXAMPLE_main
@@ -69,7 +69,7 @@ color: blue}
 
 graph: { title: "n50"  label: "Block 50" status:clustered color:yellow
 edge: {sourcename: "n50" targetname: "n44" label: "0" class:13 priority:60 color:red}
-node: {title: "n57" label: "Return  57"  info1: "Return 57
+node: {title: "n57" label: "Return 57"  info1: "Return 57
   mode:    X
   visited: 9
   irg:     CALL_STR_EXAMPLE_main
@@ -94,7 +94,7 @@ node: {title: "n56" label: "ProjM 0 56"  info1: "Proj 56
 "
 color: yellow}
 edge: {sourcename: "n56" targetname: "n54" label: "0" class:17 priority:10 color:blue}
-node: {title: "n54" label: "Call  54"  info1: "Call 54
+node: {title: "n54" label: "Call 54"  info1: "Call 54
   mode:    T
   visited: 9
   irg:     CALL_STR_EXAMPLE_main
@@ -129,7 +129,7 @@ node: {title: "n47" label: "ProjM 1 47"  info1: "Proj 47
 "
 color: yellow}
 edge: {sourcename: "n47" targetname: "n41" label: "0" class:17 priority:10 color:blue}
-node: {title: "n52" label: "SymC f  52"  info1: "SymC f 52
+node: {title: "n52" label: "SymC f 52"  info1: "SymC f 52
   mode:    P
   visited: 9
   irg:     CALL_STR_EXAMPLE_main
@@ -142,7 +142,7 @@ node: {title: "n52" label: "SymC f  52"  info1: "SymC f 52
   type of value: type_unknown
 "
 }
-node: {title: "n51" label: "SymC &constStr  51"  info1: "SymC &constStr 51
+node: {title: "n51" label: "SymC &constStr 51"  info1: "SymC &constStr 51
   mode:    P
   visited: 9
   irg:     CALL_STR_EXAMPLE_main
@@ -168,7 +168,7 @@ node: {title: "n44" label: "ProjX 0 44"  info1: "Proj 44
 "
 color: yellow}
 edge: {sourcename: "n44" targetname: "n41" label: "0" class:13 priority:60 color:red}
-node: {title: "n41" label: "Start  41"  info1: "Start 41
+node: {title: "n41" label: "Start 41"  info1: "Start 41
   mode:    T
   visited: 9
   irg:     CALL_STR_EXAMPLE_main

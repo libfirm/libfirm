@@ -55,7 +55,7 @@ colorentry 125:  255 250  250
 graph: { title: "g30" label: "IRR_LOOP_loop1" status:clustered color:white
 graph: { title: "n19"  label: "Block 19" status:clustered color:yellow
 edge: {sourcename: "n19" targetname: "n55" label: "0" class:13 priority:60 color:red}
-node: {title: "n20" label: "End  20"  info1: "End 20
+node: {title: "n20" label: "End 20"  info1: "End 20
   mode:    X
   visited: 6
   irg:     IRR_LOOP_loop1
@@ -73,7 +73,7 @@ color: blue}
 graph: { title: "n53"  label: "Block 53" status:clustered color:yellow
 edge: {sourcename: "n53" targetname: "n51" label: "0" class:13 priority:60 color:red}
 edge: {sourcename: "n53" targetname: "n45" label: "1" class:13 priority:60 color:red}
-node: {title: "n55" label: "Return  55"  info1: "Return 55
+node: {title: "n55" label: "Return 55"  info1: "Return 55
   mode:    X
   visited: 6
   irg:     IRR_LOOP_loop1
@@ -86,7 +86,7 @@ node: {title: "n55" label: "Return  55"  info1: "Return 55
 "
 }
 edge: {sourcename: "n55" targetname: "n62" label: "0" class:14 priority:50 color:blue}
-node: {title: "n62" label: "PhiM  62"  info1: "Phi 62
+node: {title: "n62" label: "PhiM 62"  info1: "Phi 62
   mode:    M
   visited: 6
   irg:     IRR_LOOP_loop1
@@ -106,7 +106,7 @@ edge: {sourcename: "n62" targetname: "n60" label: "1" class:17 priority:10 color
 graph: { title: "n41"  label: "Block 41" status:clustered color:yellow
 edge: {sourcename: "n41" targetname: "n40" label: "0" class:13 priority:60 color:red}
 backedge: {sourcename: "n41" targetname: "n52" label: "1" linestyle:dashed class:13 priority:60 color:red}
-node: {title: "n60" label: "PhiM  60"  info1: "Phi 60
+node: {title: "n60" label: "PhiM 60"  info1: "Phi 60
   mode:    M
   visited: 6
   irg:     IRR_LOOP_loop1
@@ -145,7 +145,7 @@ node: {title: "n46" label: "ProjX 1 46"  info1: "Proj 46
 "
 color: yellow}
 edge: {sourcename: "n46" targetname: "n44" label: "0" class:13 priority:60 color:red}
-node: {title: "n44" label: "Cond  44"  info1: "Cond 44
+node: {title: "n44" label: "Cond 44"  info1: "Cond 44
   mode:    T
   visited: 6
   irg:     IRR_LOOP_loop1
@@ -171,7 +171,7 @@ node: {title: "n43" label: "Projb Eq 43"  info1: "Proj 43
 "
 color: yellow}
 edge: {sourcename: "n43" targetname: "n42" label: "0" class:1  priority:50}
-node: {title: "n42" label: "Cmp  42"  info1: "Cmp 42
+node: {title: "n42" label: "Cmp 42"  info1: "Cmp 42
   mode:    T
   visited: 6
   irg:     IRR_LOOP_loop1
@@ -190,7 +190,7 @@ edge: {sourcename: "n42" targetname: "n34" label: "1" class:16 priority:10}
 graph: { title: "n47"  label: "Block 47" status:clustered color:yellow
 edge: {sourcename: "n47" targetname: "n39" label: "0" class:13 priority:60 color:red}
 edge: {sourcename: "n47" targetname: "n46" label: "1" class:13 priority:60 color:red}
-node: {title: "n61" label: "PhiM  61"  info1: "Phi 61
+node: {title: "n61" label: "PhiM 61"  info1: "Phi 61
   mode:    M
   visited: 6
   irg:     IRR_LOOP_loop1
@@ -229,7 +229,7 @@ node: {title: "n52" label: "ProjX 1 52"  info1: "Proj 52
 "
 color: yellow}
 edge: {sourcename: "n52" targetname: "n50" label: "0" class:13 priority:60 color:red}
-node: {title: "n50" label: "Cond  50"  info1: "Cond 50
+node: {title: "n50" label: "Cond 50"  info1: "Cond 50
   mode:    T
   visited: 6
   irg:     IRR_LOOP_loop1
@@ -255,7 +255,7 @@ node: {title: "n49" label: "Projb Eq 49"  info1: "Proj 49
 "
 color: yellow}
 edge: {sourcename: "n49" targetname: "n48" label: "0" class:1  priority:50}
-node: {title: "n48" label: "Cmp  48"  info1: "Cmp 48
+node: {title: "n48" label: "Cmp 48"  info1: "Cmp 48
   mode:    T
   visited: 6
   irg:     IRR_LOOP_loop1
@@ -297,7 +297,7 @@ node: {title: "n39" label: "ProjX 0 39"  info1: "Proj 39
 "
 color: yellow}
 edge: {sourcename: "n39" targetname: "n38" label: "0" class:13 priority:60 color:red}
-node: {title: "n38" label: "Cond  38"  info1: "Cond 38
+node: {title: "n38" label: "Cond 38"  info1: "Cond 38
   mode:    T
   visited: 6
   irg:     IRR_LOOP_loop1
@@ -323,7 +323,7 @@ node: {title: "n37" label: "Projb Eq 37"  info1: "Proj 37
 "
 color: yellow}
 edge: {sourcename: "n37" targetname: "n36" label: "0" class:1  priority:50}
-node: {title: "n36" label: "Cmp  36"  info1: "Cmp 36
+node: {title: "n36" label: "Cmp 36"  info1: "Cmp 36
   mode:    T
   visited: 6
   irg:     IRR_LOOP_loop1
@@ -353,7 +353,7 @@ node: {title: "n28" label: "ProjM 1 28"  info1: "Proj 28
 "
 color: yellow}
 edge: {sourcename: "n28" targetname: "n22" label: "0" class:17 priority:10 color:blue}
-node: {title: "n33" label: "0x1Is  33"  info1: "0x1 33
+node: {title: "n33" label: "0x1Is 33"  info1: "0x1 33
   mode:    Is
   visited: 6
   irg:     IRR_LOOP_loop1
@@ -364,7 +364,7 @@ node: {title: "n33" label: "0x1Is  33"  info1: "0x1 33
   Const of type type_unknown
 "
 color: yellow}
-node: {title: "n32" label: "0x0Is  32"  info1: "0x0 32
+node: {title: "n32" label: "0x0Is 32"  info1: "0x0 32
   mode:    Is
   visited: 6
   irg:     IRR_LOOP_loop1
@@ -375,7 +375,7 @@ node: {title: "n32" label: "0x0Is  32"  info1: "0x0 32
   Const of type type_unknown
 "
 color: yellow}
-node: {title: "n34" label: "0x2Is  34"  info1: "0x2 34
+node: {title: "n34" label: "0x2Is 34"  info1: "0x2 34
   mode:    Is
   visited: 6
   irg:     IRR_LOOP_loop1
@@ -398,7 +398,7 @@ node: {title: "n25" label: "ProjX 0 25"  info1: "Proj 25
 "
 color: yellow}
 edge: {sourcename: "n25" targetname: "n22" label: "0" class:13 priority:60 color:red}
-node: {title: "n22" label: "Start  22"  info1: "Start 22
+node: {title: "n22" label: "Start 22"  info1: "Start 22
   mode:    T
   visited: 6
   irg:     IRR_LOOP_loop1

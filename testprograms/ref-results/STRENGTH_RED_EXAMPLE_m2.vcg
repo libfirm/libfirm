@@ -55,7 +55,7 @@ colorentry 125:  255 250  250
 graph: { title: "g148" label: "STRENGTH_RED_EXAMPLE_m2" status:clustered color:white
 graph: { title: "n137"  label: "Block 137" status:clustered color:yellow
 edge: {sourcename: "n137" targetname: "n186" label: "0" class:13 priority:60 color:red}
-node: {title: "n138" label: "End  138"  info1: "End 138
+node: {title: "n138" label: "End 138"  info1: "End 138
   mode:    X
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m2
@@ -71,7 +71,7 @@ color: blue}
 
 graph: { title: "n183"  label: "Block 183" status:clustered color:yellow
 edge: {sourcename: "n183" targetname: "n159" label: "0" class:13 priority:60 color:red}
-node: {title: "n186" label: "Return  186"  info1: "Return 186
+node: {title: "n186" label: "Return 186"  info1: "Return 186
   mode:    X
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m2
@@ -86,7 +86,7 @@ node: {title: "n186" label: "Return  186"  info1: "Return 186
     res 0 type: int
 "
 }
-node: {title: "n186n165" label: "0x4Is  165"  info1: "0x4 165
+node: {title: "n186n165" label: "0x4Is 165"  info1: "0x4 165
   mode:    Is
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m2
@@ -105,7 +105,7 @@ edge: {sourcename: "n186" targetname: "n186n165" label: "1" class:16 priority:10
 graph: { title: "n153"  label: "Block 153" status:clustered color:yellow
 edge: {sourcename: "n153" targetname: "n152" label: "0" class:13 priority:60 color:red}
 backedge: {sourcename: "n153" targetname: "n177" label: "1" linestyle:dashed class:13 priority:60 color:red}
-node: {title: "n190" label: "PhiM  190"  info1: "Phi 190
+node: {title: "n190" label: "PhiM 190"  info1: "Phi 190
   mode:    M
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m2
@@ -147,7 +147,7 @@ node: {title: "n160" label: "ProjX 1 160"  info1: "Proj 160
 "
 color: yellow}
 edge: {sourcename: "n160" targetname: "n158" label: "0" class:13 priority:60 color:red}
-node: {title: "n158" label: "Cond  158"  info1: "Cond 158
+node: {title: "n158" label: "Cond 158"  info1: "Cond 158
   mode:    T
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m2
@@ -175,7 +175,7 @@ node: {title: "n157" label: "Projb Gt 157"  info1: "Proj 157
 "
 color: yellow}
 edge: {sourcename: "n157" targetname: "n156" label: "0" class:1  priority:50}
-node: {title: "n156" label: "Cmp  156"  info1: "Cmp 156
+node: {title: "n156" label: "Cmp 156"  info1: "Cmp 156
   mode:    T
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m2
@@ -188,7 +188,7 @@ node: {title: "n156" label: "Cmp  156"  info1: "Cmp 156
   in loop 562 with depth 2
 "
 }
-node: {title: "n156n155" label: "0xAIs  155"  info1: "0xA 155
+node: {title: "n156n155" label: "0xAIs 155"  info1: "0xA 155
   mode:    Is
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m2
@@ -202,7 +202,7 @@ node: {title: "n156n155" label: "0xAIs  155"  info1: "0xA 155
 color: yellow}
 edge: {sourcename: "n156" targetname: "n156n155" label: "0" class:16 priority:10}
 edge: {sourcename: "n156" targetname: "n191" label: "1" class:1  priority:50}
-node: {title: "n191" label: "PhiIs  191"  info1: "Phi 191
+node: {title: "n191" label: "PhiIs 191"  info1: "Phi 191
   mode:    Is
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m2
@@ -216,7 +216,7 @@ node: {title: "n191" label: "PhiIs  191"  info1: "Phi 191
   in loop 561 with depth 1
 "
 color: green}
-node: {title: "n191n150" label: "0x0Is  150"  info1: "0x0 150
+node: {title: "n191n150" label: "0x0Is 150"  info1: "0x0 150
   mode:    Is
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m2
@@ -234,7 +234,7 @@ backedge: {sourcename: "n191" targetname: "n176" label: "1" linestyle:dashed cla
 
 graph: { title: "n149"  label: "Block 149" status:clustered color:yellow
 edge: {sourcename: "n149" targetname: "n143" label: "0" class:13 priority:60 color:red}
-node: {title: "n152" label: "Jmp  152"  info1: "Jmp 152
+node: {title: "n152" label: "Jmp 152"  info1: "Jmp 152
   mode:    X
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m2
@@ -262,7 +262,7 @@ node: {title: "n175" label: "ProjM 0 175"  info1: "Proj 175
 "
 color: yellow}
 edge: {sourcename: "n175" targetname: "n173" label: "0" class:17 priority:10 color:blue}
-node: {title: "n173" label: "Store  173"  info1: "Store 173
+node: {title: "n173" label: "Store 173"  info1: "Store 173
   mode:    T
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m2
@@ -281,7 +281,7 @@ node: {title: "n173" label: "Store  173"  info1: "Store 173
 edge: {sourcename: "n173" targetname: "n190" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n173" targetname: "n171" label: "1" class:1  priority:50}
 edge: {sourcename: "n173" targetname: "n167" label: "2" class:1  priority:50}
-node: {title: "n171" label: "AddP  171"  info1: "Add 171
+node: {title: "n171" label: "AddP 171"  info1: "Add 171
   mode:    P
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m2
@@ -294,7 +294,7 @@ node: {title: "n171" label: "AddP  171"  info1: "Add 171
   in loop 560 with depth 0
 "
 }
-node: {title: "n171n163" label: "0xDIs  163"  info1: "0xD 163
+node: {title: "n171n163" label: "0xDIs 163"  info1: "0xD 163
   mode:    Is
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m2
@@ -308,7 +308,7 @@ node: {title: "n171n163" label: "0xDIs  163"  info1: "0xD 163
 color: yellow}
 edge: {sourcename: "n171" targetname: "n171n163" label: "0" class:16 priority:10}
 edge: {sourcename: "n171" targetname: "n170" label: "1" class:1  priority:50}
-node: {title: "n170" label: "AddP  170"  info1: "Add 170
+node: {title: "n170" label: "AddP 170"  info1: "Add 170
   mode:    P
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m2
@@ -321,7 +321,7 @@ node: {title: "n170" label: "AddP  170"  info1: "Add 170
   in loop 560 with depth 0
 "
 }
-node: {title: "n170n151" label: "SymC &a  151"  info1: "SymC &a 151
+node: {title: "n170n151" label: "SymC &a 151"  info1: "SymC &a 151
   mode:    P
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m2
@@ -338,7 +338,7 @@ node: {title: "n170n151" label: "SymC &a  151"  info1: "SymC &a 151
 }
 edge: {sourcename: "n170" targetname: "n168" label: "0" class:1  priority:50}
 edge: {sourcename: "n170" targetname: "n170n151" label: "1" class:16 priority:10}
-node: {title: "n168" label: "MulIs  168"  info1: "Mul 168
+node: {title: "n168" label: "MulIs 168"  info1: "Mul 168
   mode:    Is
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m2
@@ -351,7 +351,7 @@ node: {title: "n168" label: "MulIs  168"  info1: "Mul 168
   in loop 560 with depth 0
 "
 }
-node: {title: "n168n165" label: "0x4Is  165"  info1: "0x4 165
+node: {title: "n168n165" label: "0x4Is 165"  info1: "0x4 165
   mode:    Is
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m2
@@ -365,7 +365,7 @@ node: {title: "n168n165" label: "0x4Is  165"  info1: "0x4 165
 color: yellow}
 edge: {sourcename: "n168" targetname: "n168n165" label: "0" class:16 priority:10}
 edge: {sourcename: "n168" targetname: "n191" label: "1" class:16 priority:10}
-node: {title: "n167" label: "MulIs  167"  info1: "Mul 167
+node: {title: "n167" label: "MulIs 167"  info1: "Mul 167
   mode:    Is
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m2
@@ -378,7 +378,7 @@ node: {title: "n167" label: "MulIs  167"  info1: "Mul 167
   in loop 560 with depth 0
 "
 }
-node: {title: "n167n162" label: "0xFIs  162"  info1: "0xF 162
+node: {title: "n167n162" label: "0xFIs 162"  info1: "0xF 162
   mode:    Is
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m2
@@ -392,7 +392,7 @@ node: {title: "n167n162" label: "0xFIs  162"  info1: "0xF 162
 color: yellow}
 edge: {sourcename: "n167" targetname: "n167n162" label: "0" class:16 priority:10}
 edge: {sourcename: "n167" targetname: "n191" label: "1" class:16 priority:10}
-node: {title: "n177" label: "Jmp  177"  info1: "Jmp 177
+node: {title: "n177" label: "Jmp 177"  info1: "Jmp 177
   mode:    X
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m2
@@ -403,7 +403,7 @@ node: {title: "n177" label: "Jmp  177"  info1: "Jmp 177
   in loop 562 with depth 2
 "
 }
-node: {title: "n176" label: "AddIs  176"  info1: "Add 176
+node: {title: "n176" label: "AddIs 176"  info1: "Add 176
   mode:    Is
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m2
@@ -416,7 +416,7 @@ node: {title: "n176" label: "AddIs  176"  info1: "Add 176
   in loop 561 with depth 1
 "
 }
-node: {title: "n176n164" label: "0x1Is  164"  info1: "0x1 164
+node: {title: "n176n164" label: "0x1Is 164"  info1: "0x1 164
   mode:    Is
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m2
@@ -460,7 +460,7 @@ node: {title: "n143" label: "ProjX 0 143"  info1: "Proj 143
 "
 color: yellow}
 edge: {sourcename: "n143" targetname: "n140" label: "0" class:13 priority:60 color:red}
-node: {title: "n140" label: "Start  140"  info1: "Start 140
+node: {title: "n140" label: "Start 140"  info1: "Start 140
   mode:    T
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m2

@@ -55,7 +55,7 @@ colorentry 125:  255 250  250
 graph: { title: "g39" label: "OO_PROGRAM_EXAMPLE_main" status:clustered color:white
 graph: { title: "n28"  label: "Block 28" status:clustered color:yellow
 edge: {sourcename: "n28" targetname: "n59" label: "0" class:13 priority:60 color:red}
-node: {title: "n109" label: "End OO_PROGRAM_EXAMPLE_main  109"  info1: "End OO_PROGRAM_EXAMPLE_main 109
+node: {title: "n109" label: "End OO_PROGRAM_EXAMPLE_main 109"  info1: "End OO_PROGRAM_EXAMPLE_main 109
   mode:    X
   visited: 52
   irg:     OO_PROGRAM_EXAMPLE_main
@@ -71,7 +71,7 @@ color: blue}
 
 graph: { title: "n40"  label: "Block 40" status:clustered color:yellow
 edge: {sourcename: "n40" targetname: "n200" label: "0" class:13 priority:60 color:red}
-node: {title: "n59" label: "Return  59"  info1: "Return 59
+node: {title: "n59" label: "Return 59"  info1: "Return 59
   mode:    X
   visited: 52
   irg:     OO_PROGRAM_EXAMPLE_main
@@ -149,7 +149,7 @@ node: {title: "n201" label: "ProjX 0 201"  info1: "Proj 201
 "
 color: yellow}
 edge: {sourcename: "n201" targetname: "n199" label: "0" class:13 priority:60 color:red}
-node: {title: "n199" label: "CallBegin c  199"  info1: "CallBegin c 199
+node: {title: "n199" label: "CallBegin c 199"  info1: "CallBegin c 199
   mode:    T
   visited: 52
   irg:     OO_PROGRAM_EXAMPLE_main
@@ -163,7 +163,7 @@ node: {title: "n199" label: "CallBegin c  199"  info1: "CallBegin c 199
     0: PRIMA_c
 "
 }
-node: {title: "n199n174" label: "SymC &c  174"  info1: "SymC &c 174
+node: {title: "n199n174" label: "SymC &c 174"  info1: "SymC &c 174
   mode:    P
   visited: 52
   irg:     OO_PROGRAM_EXAMPLE_main
@@ -206,7 +206,7 @@ node: {title: "n48" label: "ProjP 2 48"  info1: "Proj 48
 "
 color: yellow}
 edge: {sourcename: "n48" targetname: "n45" label: "0" class:1  priority:50}
-node: {title: "n45" label: "Alloc  45"  info1: "Alloc 45
+node: {title: "n45" label: "Alloc 45"  info1: "Alloc 45
   mode:    T
   visited: 52
   irg:     OO_PROGRAM_EXAMPLE_main
@@ -221,7 +221,7 @@ node: {title: "n45" label: "Alloc  45"  info1: "Alloc 45
   allocating on: the heap
 "
 }
-node: {title: "n45n43" label: "SymC PRIMA size  43"  info1: "SymC PRIMA size 43
+node: {title: "n45n43" label: "SymC PRIMA size 43"  info1: "SymC PRIMA size 43
   mode:    Iu
   visited: 52
   irg:     OO_PROGRAM_EXAMPLE_main
@@ -248,7 +248,7 @@ node: {title: "n195" label: "ProjX 0 195"  info1: "Proj 195
 "
 color: yellow}
 edge: {sourcename: "n195" targetname: "n193" label: "0" class:13 priority:60 color:red}
-node: {title: "n193" label: "CallBegin set_a  193"  info1: "CallBegin set_a 193
+node: {title: "n193" label: "CallBegin set_a 193"  info1: "CallBegin set_a 193
   mode:    T
   visited: 52
   irg:     OO_PROGRAM_EXAMPLE_main
@@ -262,7 +262,7 @@ node: {title: "n193" label: "CallBegin set_a  193"  info1: "CallBegin set_a 193
     0: PRIMA_set_a
 "
 }
-node: {title: "n193n175" label: "SymC &set_a  175"  info1: "SymC &set_a 175
+node: {title: "n193n175" label: "SymC &set_a 175"  info1: "SymC &set_a 175
   mode:    P
   visited: 52
   irg:     OO_PROGRAM_EXAMPLE_main
@@ -305,7 +305,7 @@ node: {title: "n34" label: "ProjX 0 34"  info1: "Proj 34
 "
 color: yellow}
 edge: {sourcename: "n34" targetname: "n31" label: "0" class:13 priority:60 color:red}
-node: {title: "n31" label: "Start OO_PROGRAM_EXAMPLE_main  31"  info1: "Start OO_PROGRAM_EXAMPLE_main 31
+node: {title: "n31" label: "Start OO_PROGRAM_EXAMPLE_main 31"  info1: "Start OO_PROGRAM_EXAMPLE_main 31
   mode:    T
   visited: 52
   irg:     OO_PROGRAM_EXAMPLE_main
@@ -335,7 +335,7 @@ node: {title: "n194" label: "ProjX 0 194"  info1: "Proj 194
 "
 color: yellow}
 edge: {sourcename: "n194" targetname: "n189" label: "0" class:13 priority:60 color:red}
-node: {title: "n189" label: "EndReg PRIMA_set_a  189"  info1: "EndReg PRIMA_set_a 189
+node: {title: "n189" label: "EndReg PRIMA_set_a 189"  info1: "EndReg PRIMA_set_a 189
   mode:    T
   visited: 52
   irg:     PRIMA_set_a
@@ -361,7 +361,7 @@ node: {title: "n81" label: "ProjM 0 81"  info1: "Proj 81
 "
 color: yellow}
 edge: {sourcename: "n81" targetname: "n79" label: "0" class:17 priority:10 color:blue}
-node: {title: "n79" label: "Store  79"  info1: "Store 79
+node: {title: "n79" label: "Store 79"  info1: "Store 79
   mode:    T
   visited: 52
   irg:     PRIMA_set_a
@@ -390,12 +390,13 @@ node: {title: "n78" label: "Sel a 78"  info1: "Sel 78
      1:    Filter 185
   Private Attributes:
   Selecting entity of type int
-    from entity of type PRIMA
+    from entity a (17)
+    of type PRIMA
 "
 }
 edge: {sourcename: "n78" targetname: "n184" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n78" targetname: "n185" label: "1" class:16 priority:10}
-node: {title: "n187" label: "Jmp  187"  info1: "Jmp 187
+node: {title: "n187" label: "Jmp 187"  info1: "Jmp 187
   mode:    X
   visited: 52
   irg:     PRIMA_set_a
@@ -456,7 +457,7 @@ node: {title: "n186" label: "FilterIs 1 186"  info1: "Filter 186
   backedges:
 "
 color: yellow}
-node: {title: "n186n41" label: "0x2Is  41"  info1: "0x2 41
+node: {title: "n186n41" label: "0x2Is 41"  info1: "0x2 41
   mode:    Is
   visited: 52
   irg:     OO_PROGRAM_EXAMPLE_main
@@ -480,7 +481,7 @@ node: {title: "n68" label: "ProjX 0 68"  info1: "Proj 68
 "
 color: yellow}
 edge: {sourcename: "n68" targetname: "n65" label: "0" class:13 priority:60 color:red}
-node: {title: "n65" label: "Start PRIMA_set_a  65"  info1: "Start PRIMA_set_a 65
+node: {title: "n65" label: "Start PRIMA_set_a 65"  info1: "Start PRIMA_set_a 65
   mode:    T
   visited: 52
   irg:     PRIMA_set_a
@@ -512,7 +513,7 @@ node: {title: "n200" label: "ProjX 0 200"  info1: "Proj 200
 "
 color: yellow}
 edge: {sourcename: "n200" targetname: "n181" label: "0" class:13 priority:60 color:red}
-node: {title: "n181" label: "EndReg PRIMA_c  181"  info1: "EndReg PRIMA_c 181
+node: {title: "n181" label: "EndReg PRIMA_c 181"  info1: "EndReg PRIMA_c 181
   mode:    T
   visited: 52
   irg:     PRIMA_c
@@ -538,7 +539,7 @@ node: {title: "n104" label: "ProjM 0 104"  info1: "Proj 104
 "
 color: yellow}
 edge: {sourcename: "n104" targetname: "n102" label: "0" class:17 priority:10 color:blue}
-node: {title: "n106" label: "AddIs  106"  info1: "Add 106
+node: {title: "n106" label: "AddIs 106"  info1: "Add 106
   mode:    Is
   visited: 52
   irg:     PRIMA_c
@@ -564,7 +565,7 @@ node: {title: "n105" label: "ProjIs 2 105"  info1: "Proj 105
 "
 color: yellow}
 edge: {sourcename: "n105" targetname: "n102" label: "0" class:1  priority:50}
-node: {title: "n102" label: "Load[Is]  102"  info1: "Load[Is] 102
+node: {title: "n102" label: "Load[Is] 102"  info1: "Load[Is] 102
   mode:    T
   visited: 52
   irg:     PRIMA_c
@@ -592,12 +593,13 @@ node: {title: "n101" label: "Sel a 101"  info1: "Sel 101
      1:    Filter 177
   Private Attributes:
   Selecting entity of type int
-    from entity of type PRIMA
+    from entity a (17)
+    of type PRIMA
 "
 }
 edge: {sourcename: "n101" targetname: "n176" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n101" targetname: "n177" label: "1" class:16 priority:10}
-node: {title: "n179" label: "Jmp  179"  info1: "Jmp 179
+node: {title: "n179" label: "Jmp 179"  info1: "Jmp 179
   mode:    X
   visited: 52
   irg:     PRIMA_c
@@ -658,7 +660,7 @@ node: {title: "n178" label: "FilterIs 1 178"  info1: "Filter 178
   backedges:
 "
 color: yellow}
-node: {title: "n178n42" label: "0x5Is  42"  info1: "0x5 42
+node: {title: "n178n42" label: "0x5Is 42"  info1: "0x5 42
   mode:    Is
   visited: 52
   irg:     OO_PROGRAM_EXAMPLE_main
@@ -682,7 +684,7 @@ node: {title: "n91" label: "ProjX 0 91"  info1: "Proj 91
 "
 color: yellow}
 edge: {sourcename: "n91" targetname: "n88" label: "0" class:13 priority:60 color:red}
-node: {title: "n88" label: "Start PRIMA_c  88"  info1: "Start PRIMA_c 88
+node: {title: "n88" label: "Start PRIMA_c 88"  info1: "Start PRIMA_c 88
   mode:    T
   visited: 52
   irg:     PRIMA_c

@@ -52,7 +52,7 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-node: {title: "n87" label: "Block  87"  info1: "Block 87
+node: {title: "n87" label: "Block 87"  info1: "Block 87
   mode:    BB
   visited: 11
   irg:     PRIMA_c
@@ -66,7 +66,7 @@ node: {title: "n87" label: "Block  87"  info1: "Block 87
 "
 color: lightyellow}
 edge: {sourcename: "n87" targetname: "n91" label: "0" class:13 priority:60 color:red}
-node: {title: "n88" label: "Start  88"  info1: "Start 88
+node: {title: "n88" label: "Start 88"  info1: "Start 88
   mode:    T
   visited: 11
   irg:     PRIMA_c
@@ -93,7 +93,7 @@ node: {title: "n91" label: "ProjX 0 91"  info1: "Proj 91
 color: yellow}
 edge: {sourcename: "n91" targetname: "n88" label: "0" class:13 priority:60 color:red}
 edge: { sourcename: "n91" targetname: "n87" class:2  priority:50 linestyle:dotted}
-node: {title: "n97" label: "Block  97"  info1: "Block 97
+node: {title: "n97" label: "Block 97"  info1: "Block 97
   mode:    BB
   visited: 11
   irg:     PRIMA_c
@@ -170,13 +170,14 @@ node: {title: "n101" label: "Sel a 101"  info1: "Sel 101
      1:    Proj 98
   Private Attributes:
   Selecting entity of type int
-    from entity of type PRIMA
+    from entity a (17)
+    of type PRIMA
 "
 }
 edge: {sourcename: "n101" targetname: "n94" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n101" targetname: "n98" label: "1" class:1  priority:50}
 edge: { sourcename: "n101" targetname: "n97" class:2  priority:50 linestyle:dotted}
-node: {title: "n102" label: "Load[Is]  102"  info1: "Load[Is] 102
+node: {title: "n102" label: "Load[Is] 102"  info1: "Load[Is] 102
   mode:    T
   visited: 11
   irg:     PRIMA_c
@@ -207,7 +208,7 @@ node: {title: "n105" label: "ProjIs 2 105"  info1: "Proj 105
 color: yellow}
 edge: {sourcename: "n105" targetname: "n102" label: "0" class:1  priority:50}
 edge: { sourcename: "n105" targetname: "n97" class:2  priority:50 linestyle:dotted}
-node: {title: "n106" label: "AddIs  106"  info1: "Add 106
+node: {title: "n106" label: "AddIs 106"  info1: "Add 106
   mode:    Is
   visited: 11
   irg:     PRIMA_c
@@ -235,7 +236,7 @@ node: {title: "n104" label: "ProjM 0 104"  info1: "Proj 104
 color: yellow}
 edge: {sourcename: "n104" targetname: "n102" label: "0" class:17 priority:10 color:blue}
 edge: { sourcename: "n104" targetname: "n97" class:2  priority:50 linestyle:dotted}
-node: {title: "n107" label: "Return  107"  info1: "Return 107
+node: {title: "n107" label: "Return 107"  info1: "Return 107
   mode:    X
   visited: 11
   irg:     PRIMA_c
@@ -252,7 +253,7 @@ node: {title: "n107" label: "Return  107"  info1: "Return 107
 edge: {sourcename: "n107" targetname: "n104" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n107" targetname: "n106" label: "1" class:1  priority:50}
 edge: { sourcename: "n107" targetname: "n97" class:2  priority:50 linestyle:dotted}
-node: {title: "n85" label: "Block  85"  info1: "Block 85
+node: {title: "n85" label: "Block 85"  info1: "Block 85
   mode:    BB
   visited: 11
   irg:     PRIMA_c
@@ -266,7 +267,7 @@ node: {title: "n85" label: "Block  85"  info1: "Block 85
 "
 color: lightyellow}
 edge: {sourcename: "n85" targetname: "n107" label: "0" class:13 priority:60 color:red}
-node: {title: "n154" label: "End  154"  info1: "End 154
+node: {title: "n154" label: "End 154"  info1: "End 154
   mode:    X
   visited: 11
   irg:     PRIMA_c

@@ -55,7 +55,7 @@ colorentry 125:  255 250  250
 graph: { title: "g30" label: "IF_EXAMPLE_main" status:clustered color:white
 graph: { title: "n19"  label: "Block 19" status:clustered color:yellow
 edge: {sourcename: "n19" targetname: "n54" label: "0" class:13 priority:60 color:red}
-node: {title: "n20" label: "End  20"  info1: "End 20
+node: {title: "n20" label: "End 20"  info1: "End 20
   mode:    X
   visited: 8
   irg:     IF_EXAMPLE_main
@@ -70,7 +70,7 @@ color: blue}
 graph: { title: "n45"  label: "Block 45" status:clustered color:yellow
 edge: {sourcename: "n45" targetname: "n37" label: "0" class:13 priority:60 color:red}
 edge: {sourcename: "n45" targetname: "n44" label: "1" class:13 priority:60 color:red}
-node: {title: "n54" label: "Return  54"  info1: "Return 54
+node: {title: "n54" label: "Return 54"  info1: "Return 54
   mode:    X
   visited: 8
   irg:     IF_EXAMPLE_main
@@ -86,7 +86,7 @@ node: {title: "n54" label: "Return  54"  info1: "Return 54
 }
 edge: {sourcename: "n54" targetname: "n28" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n54" targetname: "n47" label: "1" class:1  priority:50}
-node: {title: "n47" label: "PhiIs  47"  info1: "Phi 47
+node: {title: "n47" label: "PhiIs 47"  info1: "Phi 47
   mode:    Is
   visited: 8
   irg:     IF_EXAMPLE_main
@@ -105,7 +105,7 @@ edge: {sourcename: "n47" targetname: "n42" label: "1" class:16 priority:10}
 
 graph: { title: "n39"  label: "Block 39" status:clustered color:yellow
 edge: {sourcename: "n39" targetname: "n38" label: "0" class:13 priority:60 color:red}
-node: {title: "n42" label: "SubIs  42"  info1: "Sub 42
+node: {title: "n42" label: "SubIs 42"  info1: "Sub 42
   mode:    Is
   visited: 8
   irg:     IF_EXAMPLE_main
@@ -119,7 +119,7 @@ node: {title: "n42" label: "SubIs  42"  info1: "Sub 42
 }
 edge: {sourcename: "n42" targetname: "n32" label: "0" class:16 priority:10}
 edge: {sourcename: "n42" targetname: "n40" label: "1" class:16 priority:10}
-node: {title: "n44" label: "Jmp  44"  info1: "Jmp 44
+node: {title: "n44" label: "Jmp 44"  info1: "Jmp 44
   mode:    X
   visited: 8
   irg:     IF_EXAMPLE_main
@@ -157,7 +157,7 @@ node: {title: "n38" label: "ProjX 1 38"  info1: "Proj 38
 "
 color: yellow}
 edge: {sourcename: "n38" targetname: "n36" label: "0" class:13 priority:60 color:red}
-node: {title: "n36" label: "Cond  36"  info1: "Cond 36
+node: {title: "n36" label: "Cond 36"  info1: "Cond 36
   mode:    T
   visited: 8
   irg:     IF_EXAMPLE_main
@@ -183,7 +183,7 @@ node: {title: "n35" label: "Projb Eq 35"  info1: "Proj 35
 "
 color: yellow}
 edge: {sourcename: "n35" targetname: "n34" label: "0" class:1  priority:50}
-node: {title: "n34" label: "Cmp  34"  info1: "Cmp 34
+node: {title: "n34" label: "Cmp 34"  info1: "Cmp 34
   mode:    T
   visited: 8
   irg:     IF_EXAMPLE_main
@@ -225,7 +225,7 @@ node: {title: "n28" label: "ProjM 1 28"  info1: "Proj 28
 "
 color: yellow}
 edge: {sourcename: "n28" targetname: "n22" label: "0" class:17 priority:10 color:blue}
-node: {title: "n40" label: "0x3Is  40"  info1: "0x3 40
+node: {title: "n40" label: "0x3Is 40"  info1: "0x3 40
   mode:    Is
   visited: 8
   irg:     IF_EXAMPLE_main
@@ -248,7 +248,7 @@ node: {title: "n29" label: "ProjT 4 29"  info1: "Proj 29
 "
 color: yellow}
 edge: {sourcename: "n29" targetname: "n22" label: "0" class:1  priority:50}
-node: {title: "n33" label: "0x2Is  33"  info1: "0x2 33
+node: {title: "n33" label: "0x2Is 33"  info1: "0x2 33
   mode:    Is
   visited: 8
   irg:     IF_EXAMPLE_main
@@ -271,7 +271,7 @@ node: {title: "n25" label: "ProjX 0 25"  info1: "Proj 25
 "
 color: yellow}
 edge: {sourcename: "n25" targetname: "n22" label: "0" class:13 priority:60 color:red}
-node: {title: "n22" label: "Start  22"  info1: "Start 22
+node: {title: "n22" label: "Start 22"  info1: "Start 22
   mode:    T
   visited: 8
   irg:     IF_EXAMPLE_main

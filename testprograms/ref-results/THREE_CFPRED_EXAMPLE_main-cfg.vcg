@@ -78,7 +78,7 @@ edge: { sourcename: "n53" targetname: "n44"}
 node: {title: "n41" label: "Block n41" info1:"arity: 1
 "}
 edge: { sourcename: "n41" targetname: "n31"}
-node: {title: "n79" label: "Bad  79"  info1: "Bad 79
+node: {title: "n79" label: "Bad 79"  info1: "Bad 79
   mode:    T
   visited: 0
   irg:     THREE_CFPRED_EXAMPLE_main

@@ -55,7 +55,7 @@ colorentry 125:  255 250  250
 graph: { title: "g30" label: "THREE_CFPRED_EXAMPLE_main" status:clustered color:white
 graph: { title: "n19"  label: "Block 19" status:clustered color:yellow
 edge: {sourcename: "n19" targetname: "n59" label: "0" class:13 priority:60 color:red}
-node: {title: "n78" label: "End  78"  info1: "End 78
+node: {title: "n78" label: "End 78"  info1: "End 78
   mode:    X
   visited: 11
   irg:     THREE_CFPRED_EXAMPLE_main
@@ -71,7 +71,7 @@ graph: { title: "n40"  label: "Block 40" status:clustered color:yellow
 edge: {sourcename: "n40" targetname: "n43" label: "0" class:13 priority:60 color:red}
 edge: {sourcename: "n40" targetname: "n54" label: "1" class:13 priority:60 color:red}
 edge: {sourcename: "n40" targetname: "n56" label: "2" class:13 priority:60 color:red}
-node: {title: "n59" label: "Return  59"  info1: "Return 59
+node: {title: "n59" label: "Return 59"  info1: "Return 59
   mode:    X
   visited: 11
   irg:     THREE_CFPRED_EXAMPLE_main
@@ -87,7 +87,7 @@ node: {title: "n59" label: "Return  59"  info1: "Return 59
 }
 edge: {sourcename: "n59" targetname: "n28" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n59" targetname: "n77" label: "1" class:1  priority:50}
-node: {title: "n77" label: "PhiIs  77"  info1: "Phi 77
+node: {title: "n77" label: "PhiIs 77"  info1: "Phi 77
   mode:    Is
   visited: 11
   irg:     THREE_CFPRED_EXAMPLE_main
@@ -108,7 +108,7 @@ edge: {sourcename: "n77" targetname: "n37" label: "2" class:16 priority:10}
 
 graph: { title: "n41"  label: "Block 41" status:clustered color:yellow
 edge: {sourcename: "n41" targetname: "n39" label: "0" class:13 priority:60 color:red}
-node: {title: "n43" label: "Jmp  43"  info1: "Jmp 43
+node: {title: "n43" label: "Jmp 43"  info1: "Jmp 43
   mode:    X
   visited: 11
   irg:     THREE_CFPRED_EXAMPLE_main
@@ -122,7 +122,7 @@ node: {title: "n43" label: "Jmp  43"  info1: "Jmp 43
 
 graph: { title: "n53"  label: "Block 53" status:clustered color:yellow
 edge: {sourcename: "n53" targetname: "n51" label: "0" class:13 priority:60 color:red}
-node: {title: "n54" label: "Jmp  54"  info1: "Jmp 54
+node: {title: "n54" label: "Jmp 54"  info1: "Jmp 54
   mode:    X
   visited: 11
   irg:     THREE_CFPRED_EXAMPLE_main
@@ -136,7 +136,7 @@ node: {title: "n54" label: "Jmp  54"  info1: "Jmp 54
 
 graph: { title: "n55"  label: "Block 55" status:clustered color:yellow
 edge: {sourcename: "n55" targetname: "n52" label: "0" class:13 priority:60 color:red}
-node: {title: "n56" label: "Jmp  56"  info1: "Jmp 56
+node: {title: "n56" label: "Jmp 56"  info1: "Jmp 56
   mode:    X
   visited: 11
   irg:     THREE_CFPRED_EXAMPLE_main
@@ -174,7 +174,7 @@ node: {title: "n52" label: "ProjX 1 52"  info1: "Proj 52
 "
 color: yellow}
 edge: {sourcename: "n52" targetname: "n50" label: "0" class:13 priority:60 color:red}
-node: {title: "n50" label: "Cond  50"  info1: "Cond 50
+node: {title: "n50" label: "Cond 50"  info1: "Cond 50
   mode:    T
   visited: 11
   irg:     THREE_CFPRED_EXAMPLE_main
@@ -200,7 +200,7 @@ node: {title: "n49" label: "Projb Eq 49"  info1: "Proj 49
 "
 color: yellow}
 edge: {sourcename: "n49" targetname: "n48" label: "0" class:1  priority:50}
-node: {title: "n48" label: "Cmp  48"  info1: "Cmp 48
+node: {title: "n48" label: "Cmp 48"  info1: "Cmp 48
   mode:    T
   visited: 11
   irg:     THREE_CFPRED_EXAMPLE_main
@@ -242,7 +242,7 @@ node: {title: "n38" label: "ProjX 0 38"  info1: "Proj 38
 "
 color: yellow}
 edge: {sourcename: "n38" targetname: "n36" label: "0" class:13 priority:60 color:red}
-node: {title: "n36" label: "Cond  36"  info1: "Cond 36
+node: {title: "n36" label: "Cond 36"  info1: "Cond 36
   mode:    T
   visited: 11
   irg:     THREE_CFPRED_EXAMPLE_main
@@ -268,7 +268,7 @@ node: {title: "n35" label: "Projb Eq 35"  info1: "Proj 35
 "
 color: yellow}
 edge: {sourcename: "n35" targetname: "n34" label: "0" class:1  priority:50}
-node: {title: "n34" label: "Cmp  34"  info1: "Cmp 34
+node: {title: "n34" label: "Cmp 34"  info1: "Cmp 34
   mode:    T
   visited: 11
   irg:     THREE_CFPRED_EXAMPLE_main
@@ -310,7 +310,7 @@ node: {title: "n28" label: "ProjM 1 28"  info1: "Proj 28
 "
 color: yellow}
 edge: {sourcename: "n28" targetname: "n22" label: "0" class:17 priority:10 color:blue}
-node: {title: "n42" label: "0x5Is  42"  info1: "0x5 42
+node: {title: "n42" label: "0x5Is 42"  info1: "0x5 42
   mode:    Is
   visited: 11
   irg:     THREE_CFPRED_EXAMPLE_main
@@ -321,7 +321,7 @@ node: {title: "n42" label: "0x5Is  42"  info1: "0x5 42
   Const of type type_unknown
 "
 color: yellow}
-node: {title: "n37" label: "0x6Is  37"  info1: "0x6 37
+node: {title: "n37" label: "0x6Is 37"  info1: "0x6 37
   mode:    Is
   visited: 11
   irg:     THREE_CFPRED_EXAMPLE_main
@@ -332,7 +332,7 @@ node: {title: "n37" label: "0x6Is  37"  info1: "0x6 37
   Const of type type_unknown
 "
 color: yellow}
-node: {title: "n45" label: "0x3Is  45"  info1: "0x3 45
+node: {title: "n45" label: "0x3Is 45"  info1: "0x3 45
   mode:    Is
   visited: 11
   irg:     THREE_CFPRED_EXAMPLE_main
@@ -343,7 +343,7 @@ node: {title: "n45" label: "0x3Is  45"  info1: "0x3 45
   Const of type type_unknown
 "
 color: yellow}
-node: {title: "n32" label: "0x1Is  32"  info1: "0x1 32
+node: {title: "n32" label: "0x1Is 32"  info1: "0x1 32
   mode:    Is
   visited: 11
   irg:     THREE_CFPRED_EXAMPLE_main
@@ -378,7 +378,7 @@ node: {title: "n25" label: "ProjX 0 25"  info1: "Proj 25
 "
 color: yellow}
 edge: {sourcename: "n25" targetname: "n22" label: "0" class:13 priority:60 color:red}
-node: {title: "n22" label: "Start  22"  info1: "Start 22
+node: {title: "n22" label: "Start 22"  info1: "Start 22
   mode:    T
   visited: 11
   irg:     THREE_CFPRED_EXAMPLE_main

@@ -55,7 +55,7 @@ colorentry 125:  255 250  250
 graph: { title: "g96" label: "PRIMA_c" status:clustered color:white
 graph: { title: "n85"  label: "Block 85" status:clustered color:yellow
 edge: {sourcename: "n85" targetname: "n107" label: "0" class:13 priority:60 color:red}
-node: {title: "n154" label: "End  154"  info1: "End 154
+node: {title: "n154" label: "End 154"  info1: "End 154
   mode:    X
   visited: 16
   irg:     PRIMA_c
@@ -69,7 +69,7 @@ color: blue}
 
 graph: { title: "n97"  label: "Block 97" status:clustered color:yellow
 edge: {sourcename: "n97" targetname: "n91" label: "0" class:13 priority:60 color:red}
-node: {title: "n107" label: "Return  107"  info1: "Return 107
+node: {title: "n107" label: "Return 107"  info1: "Return 107
   mode:    X
   visited: 16
   irg:     PRIMA_c
@@ -97,7 +97,7 @@ node: {title: "n104" label: "ProjM 0 104"  info1: "Proj 104
 "
 color: yellow}
 edge: {sourcename: "n104" targetname: "n102" label: "0" class:17 priority:10 color:blue}
-node: {title: "n106" label: "AddIs  106"  info1: "Add 106
+node: {title: "n106" label: "AddIs 106"  info1: "Add 106
   mode:    Is
   visited: 16
   irg:     PRIMA_c
@@ -123,7 +123,7 @@ node: {title: "n105" label: "ProjIs 2 105"  info1: "Proj 105
 "
 color: yellow}
 edge: {sourcename: "n105" targetname: "n102" label: "0" class:1  priority:50}
-node: {title: "n102" label: "Load[Is]  102"  info1: "Load[Is] 102
+node: {title: "n102" label: "Load[Is] 102"  info1: "Load[Is] 102
   mode:    T
   visited: 16
   irg:     PRIMA_c
@@ -151,7 +151,8 @@ node: {title: "n101" label: "Sel a 101"  info1: "Sel 101
      1:    Proj 98
   Private Attributes:
   Selecting entity of type int
-    from entity of type PRIMA
+    from entity a (17)
+    of type PRIMA
 "
 }
 edge: {sourcename: "n101" targetname: "n94" label: "0" class:17 priority:10 color:blue}
@@ -220,7 +221,7 @@ node: {title: "n91" label: "ProjX 0 91"  info1: "Proj 91
 "
 color: yellow}
 edge: {sourcename: "n91" targetname: "n88" label: "0" class:13 priority:60 color:red}
-node: {title: "n88" label: "Start  88"  info1: "Start 88
+node: {title: "n88" label: "Start 88"  info1: "Start 88
   mode:    T
   visited: 16
   irg:     PRIMA_c
@@ -281,7 +282,7 @@ node: {title: "e20" label: "ent PRIMA_set_a" color: yellow
 }
 edge: { sourcename: "e20" targetname: "t18"class: 3 label: "type" color: red}
 edge: { sourcename: "e20" targetname: "n19"label: "value 0"}
-node: {title: "n19" label: "SymC &set_a  19"  info1: "SymC &set_a 19
+node: {title: "n19" label: "SymC &set_a 19"  info1: "SymC &set_a 19
   mode:    P
   visited: 6
   arity:   0
@@ -332,7 +333,7 @@ node: {title: "e23" label: "ent PRIMA_c" color: yellow
 }
 edge: { sourcename: "e23" targetname: "t21"class: 3 label: "type" color: red}
 edge: { sourcename: "e23" targetname: "n22"label: "value 0"}
-node: {title: "n22" label: "SymC &c  22"  info1: "SymC &c 22
+node: {title: "n22" label: "SymC &c 22"  info1: "SymC &c 22
   mode:    P
   visited: 6
   arity:   0

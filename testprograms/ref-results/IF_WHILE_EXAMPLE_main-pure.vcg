@@ -52,7 +52,7 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-node: {title: "n23" label: "Start  23"  info1: "Start 23
+node: {title: "n23" label: "Start 23"  info1: "Start 23
   mode:    T
   visited: 17
   irg:     IF_WHILE_EXAMPLE_main
@@ -77,7 +77,7 @@ node: {title: "n26" label: "ProjX 0 26"  info1: "Proj 26
 color: yellow}
 edge: {sourcename: "n26" targetname: "n23" label: "0" class:13 priority:60 color:red}
 edge: { sourcename: "n26" targetname: "n22" class:2  priority:50 linestyle:dotted}
-node: {title: "n22" label: "Block  22"  info1: "Block 22
+node: {title: "n22" label: "Block 22"  info1: "Block 22
   mode:    BB
   visited: 17
   irg:     IF_WHILE_EXAMPLE_main
@@ -91,7 +91,7 @@ node: {title: "n22" label: "Block  22"  info1: "Block 22
 "
 color: lightyellow}
 edge: {sourcename: "n22" targetname: "n26" label: "0" class:13 priority:60 color:red}
-node: {title: "n39" label: "0x0Iu  39"  info1: "0x0 39
+node: {title: "n39" label: "0x0Iu 39"  info1: "0x0 39
   mode:    Iu
   visited: 17
   irg:     IF_WHILE_EXAMPLE_main
@@ -103,7 +103,7 @@ node: {title: "n39" label: "0x0Iu  39"  info1: "0x0 39
 "
 color: yellow}
 edge: { sourcename: "n39" targetname: "n22" class:2  priority:50 linestyle:dotted}
-node: {title: "n41" label: "Cmp  41"  info1: "Cmp 41
+node: {title: "n41" label: "Cmp 41"  info1: "Cmp 41
   mode:    T
   visited: 17
   irg:     IF_WHILE_EXAMPLE_main
@@ -131,7 +131,7 @@ node: {title: "n42" label: "Projb Eq 42"  info1: "Proj 42
 color: yellow}
 edge: {sourcename: "n42" targetname: "n41" label: "0" class:1  priority:50}
 edge: { sourcename: "n42" targetname: "n38" class:2  priority:50 linestyle:dotted}
-node: {title: "n43" label: "Cond  43"  info1: "Cond 43
+node: {title: "n43" label: "Cond 43"  info1: "Cond 43
   mode:    T
   visited: 17
   irg:     IF_WHILE_EXAMPLE_main
@@ -159,7 +159,7 @@ node: {title: "n45" label: "ProjX 1 45"  info1: "Proj 45
 color: yellow}
 edge: {sourcename: "n45" targetname: "n43" label: "0" class:13 priority:60 color:red}
 edge: { sourcename: "n45" targetname: "n38" class:2  priority:50 linestyle:dotted}
-node: {title: "n46" label: "Block  46"  info1: "Block 46
+node: {title: "n46" label: "Block 46"  info1: "Block 46
   mode:    BB
   visited: 17
   irg:     IF_WHILE_EXAMPLE_main
@@ -173,7 +173,7 @@ node: {title: "n46" label: "Block  46"  info1: "Block 46
 "
 color: lightyellow}
 edge: {sourcename: "n46" targetname: "n45" label: "0" class:13 priority:60 color:red}
-node: {title: "n47" label: "Jmp  47"  info1: "Jmp 47
+node: {title: "n47" label: "Jmp 47"  info1: "Jmp 47
   mode:    X
   visited: 17
   irg:     IF_WHILE_EXAMPLE_main
@@ -184,7 +184,7 @@ node: {title: "n47" label: "Jmp  47"  info1: "Jmp 47
 "
 }
 edge: { sourcename: "n47" targetname: "n46" class:2  priority:50 linestyle:dotted}
-node: {title: "n32" label: "Block  32"  info1: "Block 32
+node: {title: "n32" label: "Block 32"  info1: "Block 32
   mode:    BB
   visited: 17
   irg:     IF_WHILE_EXAMPLE_main
@@ -198,7 +198,7 @@ node: {title: "n32" label: "Block  32"  info1: "Block 32
 "
 color: lightyellow}
 edge: {sourcename: "n32" targetname: "n26" label: "0" class:13 priority:60 color:red}
-node: {title: "n35" label: "Jmp  35"  info1: "Jmp 35
+node: {title: "n35" label: "Jmp 35"  info1: "Jmp 35
   mode:    X
   visited: 17
   irg:     IF_WHILE_EXAMPLE_main
@@ -209,7 +209,7 @@ node: {title: "n35" label: "Jmp  35"  info1: "Jmp 35
 "
 }
 edge: { sourcename: "n35" targetname: "n32" class:2  priority:50 linestyle:dotted}
-node: {title: "n38" label: "Block  38"  info1: "Block 38
+node: {title: "n38" label: "Block 38"  info1: "Block 38
   mode:    BB
   visited: 17
   irg:     IF_WHILE_EXAMPLE_main
@@ -238,7 +238,7 @@ node: {title: "n44" label: "ProjX 0 44"  info1: "Proj 44
 color: yellow}
 edge: {sourcename: "n44" targetname: "n43" label: "0" class:13 priority:60 color:red}
 edge: { sourcename: "n44" targetname: "n38" class:2  priority:50 linestyle:dotted}
-node: {title: "n60" label: "Block  60"  info1: "Block 60
+node: {title: "n60" label: "Block 60"  info1: "Block 60
   mode:    BB
   visited: 17
   irg:     IF_WHILE_EXAMPLE_main
@@ -252,7 +252,7 @@ node: {title: "n60" label: "Block  60"  info1: "Block 60
 "
 color: lightyellow}
 edge: {sourcename: "n60" targetname: "n44" label: "0" class:13 priority:60 color:red}
-node: {title: "n33" label: "0x0Iu  33"  info1: "0x0 33
+node: {title: "n33" label: "0x0Iu 33"  info1: "0x0 33
   mode:    Iu
   visited: 17
   irg:     IF_WHILE_EXAMPLE_main
@@ -264,7 +264,7 @@ node: {title: "n33" label: "0x0Iu  33"  info1: "0x0 33
 "
 color: yellow}
 edge: { sourcename: "n33" targetname: "n22" class:2  priority:50 linestyle:dotted}
-node: {title: "n58" label: "PhiIu  58"  info1: "Phi 58
+node: {title: "n58" label: "PhiIu 58"  info1: "Phi 58
   mode:    Iu
   visited: 17
   irg:     IF_WHILE_EXAMPLE_main
@@ -280,7 +280,7 @@ color: green}
 edge: {sourcename: "n58" targetname: "n33" label: "0" class:16 priority:10}
 edge: {sourcename: "n58" targetname: "n53" label: "1" class:1  priority:50}
 edge: { sourcename: "n58" targetname: "n38" class:2  priority:50 linestyle:dotted}
-node: {title: "n34" label: "0x1Iu  34"  info1: "0x1 34
+node: {title: "n34" label: "0x1Iu 34"  info1: "0x1 34
   mode:    Iu
   visited: 17
   irg:     IF_WHILE_EXAMPLE_main
@@ -292,7 +292,7 @@ node: {title: "n34" label: "0x1Iu  34"  info1: "0x1 34
 "
 color: yellow}
 edge: { sourcename: "n34" targetname: "n22" class:2  priority:50 linestyle:dotted}
-node: {title: "n53" label: "PhiIu  53"  info1: "Phi 53
+node: {title: "n53" label: "PhiIu 53"  info1: "Phi 53
   mode:    Iu
   visited: 17
   irg:     IF_WHILE_EXAMPLE_main
@@ -308,7 +308,7 @@ color: green}
 edge: {sourcename: "n53" targetname: "n34" label: "0" class:16 priority:10}
 edge: {sourcename: "n53" targetname: "n58" label: "1" class:1  priority:50}
 edge: { sourcename: "n53" targetname: "n38" class:2  priority:50 linestyle:dotted}
-node: {title: "n65" label: "SubIu  65"  info1: "Sub 65
+node: {title: "n65" label: "SubIu 65"  info1: "Sub 65
   mode:    Iu
   visited: 17
   irg:     IF_WHILE_EXAMPLE_main
@@ -336,7 +336,7 @@ node: {title: "n29" label: "ProjM 1 29"  info1: "Proj 29
 color: yellow}
 edge: {sourcename: "n29" targetname: "n23" label: "0" class:17 priority:10 color:blue}
 edge: { sourcename: "n29" targetname: "n22" class:2  priority:50 linestyle:dotted}
-node: {title: "n76" label: "Return  76"  info1: "Return 76
+node: {title: "n76" label: "Return 76"  info1: "Return 76
   mode:    X
   visited: 17
   irg:     IF_WHILE_EXAMPLE_main
@@ -353,7 +353,7 @@ node: {title: "n76" label: "Return  76"  info1: "Return 76
 edge: {sourcename: "n76" targetname: "n29" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n76" targetname: "n65" label: "1" class:1  priority:50}
 edge: { sourcename: "n76" targetname: "n60" class:2  priority:50 linestyle:dotted}
-node: {title: "n20" label: "Block  20"  info1: "Block 20
+node: {title: "n20" label: "Block 20"  info1: "Block 20
   mode:    BB
   visited: 17
   irg:     IF_WHILE_EXAMPLE_main
@@ -367,7 +367,7 @@ node: {title: "n20" label: "Block  20"  info1: "Block 20
 "
 color: lightyellow}
 edge: {sourcename: "n20" targetname: "n76" label: "0" class:13 priority:60 color:red}
-node: {title: "n77" label: "End  77"  info1: "End 77
+node: {title: "n77" label: "End 77"  info1: "End 77
   mode:    X
   visited: 17
   irg:     IF_WHILE_EXAMPLE_main

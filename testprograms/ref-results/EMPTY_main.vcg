@@ -55,7 +55,7 @@ colorentry 125:  255 250  250
 graph: { title: "g29" label: "EMPTY_main" status:clustered color:white
 graph: { title: "n18"  label: "Block 18" status:clustered color:yellow
 edge: {sourcename: "n18" targetname: "n32" label: "0" class:13 priority:60 color:red}
-node: {title: "n19" label: "End  19"  info1: "End 19
+node: {title: "n19" label: "End 19"  info1: "End 19
   mode:    X
   visited: 4
   irg:     EMPTY_main
@@ -69,7 +69,7 @@ color: blue}
 
 graph: { title: "n30"  label: "Block 30" status:clustered color:yellow
 edge: {sourcename: "n30" targetname: "n24" label: "0" class:13 priority:60 color:red}
-node: {title: "n32" label: "Return  32"  info1: "Return 32
+node: {title: "n32" label: "Return 32"  info1: "Return 32
   mode:    X
   visited: 4
   irg:     EMPTY_main
@@ -110,7 +110,7 @@ node: {title: "n24" label: "ProjX 0 24"  info1: "Proj 24
 "
 color: yellow}
 edge: {sourcename: "n24" targetname: "n21" label: "0" class:13 priority:60 color:red}
-node: {title: "n21" label: "Start  21"  info1: "Start 21
+node: {title: "n21" label: "Start 21"  info1: "Start 21
   mode:    T
   visited: 4
   irg:     EMPTY_main

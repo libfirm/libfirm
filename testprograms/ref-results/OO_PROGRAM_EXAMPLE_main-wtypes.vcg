@@ -55,7 +55,7 @@ colorentry 125:  255 250  250
 graph: { title: "g39" label: "OO_PROGRAM_EXAMPLE_main" status:clustered color:white
 graph: { title: "n28"  label: "Block 28" status:clustered color:yellow
 edge: {sourcename: "n28" targetname: "n59" label: "0" class:13 priority:60 color:red}
-node: {title: "n109" label: "End  109"  info1: "End 109
+node: {title: "n109" label: "End 109"  info1: "End 109
   mode:    X
   visited: 23
   irg:     OO_PROGRAM_EXAMPLE_main
@@ -69,7 +69,7 @@ color: blue}
 
 graph: { title: "n40"  label: "Block 40" status:clustered color:yellow
 edge: {sourcename: "n40" targetname: "n34" label: "0" class:13 priority:60 color:red}
-node: {title: "n59" label: "Return  59"  info1: "Return 59
+node: {title: "n59" label: "Return 59"  info1: "Return 59
   mode:    X
   visited: 23
   irg:     OO_PROGRAM_EXAMPLE_main
@@ -121,7 +121,7 @@ node: {title: "n57" label: "ProjT 2 57"  info1: "Proj 57
 "
 color: yellow}
 edge: {sourcename: "n57" targetname: "n54" label: "0" class:1  priority:50}
-node: {title: "n54" label: "Call  54"  info1: "Call 54
+node: {title: "n54" label: "Call 54"  info1: "Call 54
   mode:    T
   visited: 23
   irg:     OO_PROGRAM_EXAMPLE_main
@@ -140,7 +140,7 @@ node: {title: "n54" label: "Call  54"  info1: "Call 54
     resul 0 type: int
 "
 }
-node: {title: "n54n42" label: "0x5Is  42"  info1: "0x5 42
+node: {title: "n54n42" label: "0x5Is 42"  info1: "0x5 42
   mode:    Is
   visited: 23
   irg:     OO_PROGRAM_EXAMPLE_main
@@ -166,7 +166,8 @@ node: {title: "n53" label: "Sel PRIMA_c 53"  info1: "Sel 53
      1:    Proj 48
   Private Attributes:
   Selecting entity of type c
-    from entity of type PRIMA
+    from entity c (23)
+    of type PRIMA
 "
 }
 edge: {sourcename: "n53" targetname: "n52" label: "0" class:14 priority:50 color:blue}
@@ -183,7 +184,7 @@ node: {title: "n52" label: "ProjM 0 52"  info1: "Proj 52
 "
 color: yellow}
 edge: {sourcename: "n52" targetname: "n50" label: "0" class:17 priority:10 color:blue}
-node: {title: "n50" label: "Call  50"  info1: "Call 50
+node: {title: "n50" label: "Call 50"  info1: "Call 50
   mode:    T
   visited: 23
   irg:     OO_PROGRAM_EXAMPLE_main
@@ -201,7 +202,7 @@ node: {title: "n50" label: "Call  50"  info1: "Call 50
     param 1 type: int
 "
 }
-node: {title: "n50n41" label: "0x2Is  41"  info1: "0x2 41
+node: {title: "n50n41" label: "0x2Is 41"  info1: "0x2 41
   mode:    Is
   visited: 23
   irg:     OO_PROGRAM_EXAMPLE_main
@@ -227,7 +228,8 @@ node: {title: "n49" label: "Sel PRIMA_set_a 49"  info1: "Sel 49
      1:    Proj 48
   Private Attributes:
   Selecting entity of type set_a
-    from entity of type PRIMA
+    from entity set_a (20)
+    of type PRIMA
 "
 }
 edge: {sourcename: "n49" targetname: "n47" label: "0" class:14 priority:50 color:blue}
@@ -256,7 +258,7 @@ node: {title: "n48" label: "ProjP 2 48"  info1: "Proj 48
 "
 color: yellow}
 edge: {sourcename: "n48" targetname: "n45" label: "0" class:1  priority:50}
-node: {title: "n45" label: "Alloc  45"  info1: "Alloc 45
+node: {title: "n45" label: "Alloc 45"  info1: "Alloc 45
   mode:    T
   visited: 23
   irg:     OO_PROGRAM_EXAMPLE_main
@@ -271,7 +273,7 @@ node: {title: "n45" label: "Alloc  45"  info1: "Alloc 45
   allocating on: the heap
 "
 }
-node: {title: "n45n43" label: "SymC PRIMA size  43"  info1: "SymC PRIMA size 43
+node: {title: "n45n43" label: "SymC PRIMA size 43"  info1: "SymC PRIMA size 43
   mode:    Iu
   visited: 23
   irg:     OO_PROGRAM_EXAMPLE_main
@@ -314,7 +316,7 @@ node: {title: "n34" label: "ProjX 0 34"  info1: "Proj 34
 "
 color: yellow}
 edge: {sourcename: "n34" targetname: "n31" label: "0" class:13 priority:60 color:red}
-node: {title: "n31" label: "Start  31"  info1: "Start 31
+node: {title: "n31" label: "Start 31"  info1: "Start 31
   mode:    T
   visited: 23
   irg:     OO_PROGRAM_EXAMPLE_main
@@ -392,7 +394,7 @@ node: {title: "e20" label: "ent PRIMA_set_a" color: yellow
 }
 edge: { sourcename: "e20" targetname: "t18"class: 3 label: "type" color: red}
 edge: { sourcename: "e20" targetname: "n19"label: "value 0"}
-node: {title: "n19" label: "SymC &set_a  19"  info1: "SymC &set_a 19
+node: {title: "n19" label: "SymC &set_a 19"  info1: "SymC &set_a 19
   mode:    P
   visited: 4
   arity:   0
@@ -434,7 +436,7 @@ node: {title: "e23" label: "ent PRIMA_c" color: yellow
 }
 edge: { sourcename: "e23" targetname: "t21"class: 3 label: "type" color: red}
 edge: { sourcename: "e23" targetname: "n22"label: "value 0"}
-node: {title: "n22" label: "SymC &c  22"  info1: "SymC &c 22
+node: {title: "n22" label: "SymC &c 22"  info1: "SymC &c 22
   mode:    P
   visited: 4
   arity:   0
@@ -467,7 +469,7 @@ node: {title: "e26" label: "ent OO_PROGRAM_EXAMPLE_main" color: yellow
 }
 edge: { sourcename: "e26" targetname: "t24"class: 3 label: "type" color: red}
 edge: { sourcename: "e26" targetname: "n25"label: "value 0"}
-node: {title: "n25" label: "SymC &OO_PROGRAM_EXAMPLE_main  25"  info1: "SymC &OO_PROGRAM_EXAMPLE_main 25
+node: {title: "n25" label: "SymC &OO_PROGRAM_EXAMPLE_main 25"  info1: "SymC &OO_PROGRAM_EXAMPLE_main 25
   mode:    P
   visited: 4
   arity:   0

@@ -73,7 +73,7 @@ edge: { sourcename: "n31" targetname: "n21"}
 node: {title: "n21" label: "Start Block n21" info1:"arity: 1
 " color:blue }
 edge: { sourcename: "n21" targetname: "n21"}
-node: {title: "n23" label: "Bad  23"  info1: "Bad 23
+node: {title: "n23" label: "Bad 23"  info1: "Bad 23
   mode:    T
   visited: 0
   irg:     IRR_LOOP_loop1

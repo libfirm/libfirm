@@ -54,22 +54,22 @@ colorentry 125:  255 250  250
 
 node: {title: "l130" label: "loop 0, 1 sons, 5 nodes"  info1: " loop nr: 130
  The loop was analyzed 0 times."}
-node: { title: "l130-0-nodes" color: lightyellow label: "Block  68
-Block  78
-Block  90" }
+node: { title: "l130-0-nodes" color: lightyellow label: "Block 68
+Block 78
+Block 90" }
 edge: {sourcename: "l130" targetname: "l130-0-nodes" label:"0...2"}
 edge: {sourcename: "l130" targetname: "l131" color: darkgreen label: "3"}
 node: {title: "l131" label: "loop 1, 1 sons, 1 nodes"  info1: " loop nr: 131
  The loop was analyzed 0 times."}
-node: { title: "l131-0-nodes" color: lightyellow label: "Block  108	 loop head!" }
+node: { title: "l131-0-nodes" color: lightyellow label: "Block 108	 loop head!" }
 edge: {sourcename: "l131" targetname: "l131-0-nodes" label:"0...0"}
 edge: {sourcename: "l131" targetname: "l132" color: darkgreen label: "1"}
 node: {title: "l132" label: "loop 2, 0 sons, 2 nodes"  info1: " loop nr: 132
  The loop was analyzed 0 times."}
-node: { title: "l132-0-nodes" color: lightyellow label: "Block  96	 loop head!
-Block  102" }
+node: { title: "l132-0-nodes" color: lightyellow label: "Block 96	 loop head!
+Block 102" }
 edge: {sourcename: "l132" targetname: "l132-0-nodes" label:"0...1"}
-node: { title: "l130-4-nodes" color: lightyellow label: "Block  114
-Block  66" }
+node: { title: "l130-4-nodes" color: lightyellow label: "Block 114
+Block 66" }
 edge: {sourcename: "l130" targetname: "l130-4-nodes" label:"4...5"}
 }

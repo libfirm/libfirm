@@ -55,7 +55,7 @@ colorentry 125:  255 250  250
 graph: { title: "g31" label: "MEMORY_EXAMPLE_main" status:clustered color:white
 graph: { title: "n20"  label: "Block 20" status:clustered color:yellow
 edge: {sourcename: "n20" targetname: "n77" label: "0" class:13 priority:60 color:red}
-node: {title: "n79" label: "End  79"  info1: "End 79
+node: {title: "n79" label: "End 79"  info1: "End 79
   mode:    X
   visited: 18
   irg:     MEMORY_EXAMPLE_main
@@ -70,7 +70,7 @@ color: blue}
 
 graph: { title: "n71"  label: "Block 71" status:clustered color:yellow
 edge: {sourcename: "n71" targetname: "n69" label: "0" class:13 priority:60 color:red}
-node: {title: "n77" label: "Return  77"  info1: "Return 77
+node: {title: "n77" label: "Return 77"  info1: "Return 77
   mode:    X
   visited: 18
   irg:     MEMORY_EXAMPLE_main
@@ -110,7 +110,7 @@ node: {title: "n75" label: "ProjIu 2 75"  info1: "Proj 75
 "
 color: yellow}
 edge: {sourcename: "n75" targetname: "n73" label: "0" class:1  priority:50}
-node: {title: "n73" label: "Load[Iu]  73"  info1: "Load[Iu] 73
+node: {title: "n73" label: "Load[Iu] 73"  info1: "Load[Iu] 73
   mode:    T
   visited: 18
   irg:     MEMORY_EXAMPLE_main
@@ -156,7 +156,7 @@ node: {title: "n68" label: "ProjX 0 68"  info1: "Proj 68
 "
 color: yellow}
 edge: {sourcename: "n68" targetname: "n67" label: "0" class:13 priority:60 color:red}
-node: {title: "n67" label: "Cond  67"  info1: "Cond 67
+node: {title: "n67" label: "Cond 67"  info1: "Cond 67
   mode:    T
   visited: 18
   irg:     MEMORY_EXAMPLE_main
@@ -182,7 +182,7 @@ node: {title: "n66" label: "Projb Gt 66"  info1: "Proj 66
 "
 color: yellow}
 edge: {sourcename: "n66" targetname: "n65" label: "0" class:1  priority:50}
-node: {title: "n65" label: "Cmp  65"  info1: "Cmp 65
+node: {title: "n65" label: "Cmp 65"  info1: "Cmp 65
   mode:    T
   visited: 18
   irg:     MEMORY_EXAMPLE_main
@@ -208,7 +208,7 @@ node: {title: "n53" label: "ProjIu 2 53"  info1: "Proj 53
 "
 color: yellow}
 edge: {sourcename: "n53" targetname: "n50" label: "0" class:1  priority:50}
-node: {title: "n50" label: "Load[Iu]  50"  info1: "Load[Iu] 50
+node: {title: "n50" label: "Load[Iu] 50"  info1: "Load[Iu] 50
   mode:    T
   visited: 18
   irg:     MEMORY_EXAMPLE_main
@@ -225,7 +225,7 @@ node: {title: "n50" label: "Load[Iu]  50"  info1: "Load[Iu] 50
 }
 edge: {sourcename: "n50" targetname: "n70" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n50" targetname: "n35" label: "1" class:16 priority:10}
-node: {title: "n70" label: "PhiM  70"  info1: "Phi 70
+node: {title: "n70" label: "PhiM 70"  info1: "Phi 70
   mode:    M
   visited: 18
   irg:     MEMORY_EXAMPLE_main
@@ -252,7 +252,7 @@ node: {title: "n63" label: "ProjM 0 63"  info1: "Proj 63
 "
 color: yellow}
 edge: {sourcename: "n63" targetname: "n61" label: "0" class:17 priority:10 color:blue}
-node: {title: "n61" label: "Store  61"  info1: "Store 61
+node: {title: "n61" label: "Store 61"  info1: "Store 61
   mode:    T
   visited: 18
   irg:     MEMORY_EXAMPLE_main
@@ -282,7 +282,7 @@ node: {title: "n60" label: "ProjM 0 60"  info1: "Proj 60
 "
 color: yellow}
 edge: {sourcename: "n60" targetname: "n58" label: "0" class:17 priority:10 color:blue}
-node: {title: "n58" label: "Store  58"  info1: "Store 58
+node: {title: "n58" label: "Store 58"  info1: "Store 58
   mode:    T
   visited: 18
   irg:     MEMORY_EXAMPLE_main
@@ -324,7 +324,7 @@ node: {title: "n57" label: "ProjIu 2 57"  info1: "Proj 57
 "
 color: yellow}
 edge: {sourcename: "n57" targetname: "n54" label: "0" class:1  priority:50}
-node: {title: "n54" label: "Load[Iu]  54"  info1: "Load[Iu] 54
+node: {title: "n54" label: "Load[Iu] 54"  info1: "Load[Iu] 54
   mode:    T
   visited: 18
   irg:     MEMORY_EXAMPLE_main
@@ -357,7 +357,7 @@ edge: {sourcename: "n52" targetname: "n50" label: "0" class:17 priority:10 color
 
 graph: { title: "n32"  label: "Block 32" status:clustered color:yellow
 edge: {sourcename: "n32" targetname: "n26" label: "0" class:13 priority:60 color:red}
-node: {title: "n46" label: "Jmp  46"  info1: "Jmp 46
+node: {title: "n46" label: "Jmp 46"  info1: "Jmp 46
   mode:    X
   visited: 18
   irg:     MEMORY_EXAMPLE_main
@@ -379,7 +379,7 @@ node: {title: "n45" label: "ProjM 0 45"  info1: "Proj 45
 "
 color: yellow}
 edge: {sourcename: "n45" targetname: "n43" label: "0" class:17 priority:10 color:blue}
-node: {title: "n43" label: "Store  43"  info1: "Store 43
+node: {title: "n43" label: "Store 43"  info1: "Store 43
   mode:    T
   visited: 18
   irg:     MEMORY_EXAMPLE_main
@@ -409,7 +409,7 @@ node: {title: "n41" label: "ProjM 0 41"  info1: "Proj 41
 "
 color: yellow}
 edge: {sourcename: "n41" targetname: "n39" label: "0" class:17 priority:10 color:blue}
-node: {title: "n39" label: "Store  39"  info1: "Store 39
+node: {title: "n39" label: "Store 39"  info1: "Store 39
   mode:    T
   visited: 18
   irg:     MEMORY_EXAMPLE_main
@@ -438,7 +438,8 @@ node: {title: "n37" label: "Sel VAR_B 37"  info1: "Sel 37
      1:    Proj 28
   Private Attributes:
   Selecting entity of type int
-    from entity of type GlobalType
+    from entity VAR_B (36)
+    of type GlobalType
 "
 }
 edge: {sourcename: "n37" targetname: "n29" label: "0" class:17 priority:10 color:blue}
@@ -454,7 +455,8 @@ node: {title: "n35" label: "Sel VAR_A 35"  info1: "Sel 35
      1:    Proj 28
   Private Attributes:
   Selecting entity of type int
-    from entity of type GlobalType
+    from entity VAR_A (33)
+    of type GlobalType
 "
 }
 edge: {sourcename: "n35" targetname: "n29" label: "0" class:17 priority:10 color:blue}
@@ -463,7 +465,7 @@ edge: {sourcename: "n35" targetname: "n28" label: "1" class:16 priority:10}
 
 graph: { title: "n22"  label: "Block 22" status:clustered color:yellow
 edge: {sourcename: "n22" targetname: "n26" label: "0" class:13 priority:60 color:red}
-node: {title: "n38" label: "0x0Iu  38"  info1: "0x0 38
+node: {title: "n38" label: "0x0Iu 38"  info1: "0x0 38
   mode:    Iu
   visited: 18
   irg:     MEMORY_EXAMPLE_main
@@ -474,7 +476,7 @@ node: {title: "n38" label: "0x0Iu  38"  info1: "0x0 38
   Const of type type_unknown
 "
 color: yellow}
-node: {title: "n42" label: "0x1Iu  42"  info1: "0x1 42
+node: {title: "n42" label: "0x1Iu 42"  info1: "0x1 42
   mode:    Iu
   visited: 18
   irg:     MEMORY_EXAMPLE_main
@@ -521,7 +523,7 @@ node: {title: "n26" label: "ProjX 0 26"  info1: "Proj 26
 "
 color: yellow}
 edge: {sourcename: "n26" targetname: "n23" label: "0" class:13 priority:60 color:red}
-node: {title: "n23" label: "Start  23"  info1: "Start 23
+node: {title: "n23" label: "Start 23"  info1: "Start 23
   mode:    T
   visited: 18
   irg:     MEMORY_EXAMPLE_main

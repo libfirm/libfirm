@@ -56,7 +56,7 @@ graph: { title: "g39" label: "OO_INLINE_EXAMPLE_main" status:clustered color:whi
 graph: { title: "n180"  label: "Block 180" status:clustered color:yellow
 edge: {sourcename: "n180" targetname: "n141" label: "0" class:13 priority:60 color:red}
 edge: {sourcename: "n180" targetname: "n181" label: "1" class:13 priority:60 color:red}
-node: {title: "n179" label: "PhiM  179"  info1: "Phi 179
+node: {title: "n179" label: "PhiM 179"  info1: "Phi 179
   mode:    M
   visited: 25
   irg:     OO_INLINE_EXAMPLE_main
@@ -71,7 +71,7 @@ node: {title: "n179" label: "PhiM  179"  info1: "Phi 179
 color: green}
 edge: {sourcename: "n179" targetname: "n151" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n179" targetname: "n185" label: "1" class:17 priority:10 color:blue}
-node: {title: "n185" label: "Store  185"  info1: "Store 185
+node: {title: "n185" label: "Store 185"  info1: "Store 185
   mode:    T
   visited: 25
   irg:     OO_INLINE_EXAMPLE_main
@@ -100,12 +100,13 @@ node: {title: "n189" label: "Sel a 189"  info1: "Sel 189
      1:    Proj 48
   Private Attributes:
   Selecting entity of type int
-    from entity of type PRIMA_INLINE
+    from entity a (17)
+    of type PRIMA_INLINE
 "
 }
 edge: {sourcename: "n189" targetname: "n179" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n189" targetname: "n48" label: "1" class:16 priority:10}
-node: {title: "n186" label: "PhiIs  186"  info1: "Phi 186
+node: {title: "n186" label: "PhiIs 186"  info1: "Phi 186
   mode:    Is
   visited: 25
   irg:     OO_INLINE_EXAMPLE_main
@@ -120,7 +121,7 @@ node: {title: "n186" label: "PhiIs  186"  info1: "Phi 186
 color: green}
 edge: {sourcename: "n186" targetname: "n42" label: "0" class:16 priority:10}
 edge: {sourcename: "n186" targetname: "n187" label: "1" class:1  priority:50}
-node: {title: "n187" label: "PhiIs  187"  info1: "Phi 187
+node: {title: "n187" label: "PhiIs 187"  info1: "Phi 187
   mode:    Is
   visited: 25
   irg:     OO_INLINE_EXAMPLE_main
@@ -135,7 +136,7 @@ node: {title: "n187" label: "PhiIs  187"  info1: "Phi 187
 color: green}
 edge: {sourcename: "n187" targetname: "n188" label: "0" class:16 priority:10}
 edge: {sourcename: "n187" targetname: "n186" label: "1" class:1  priority:50}
-node: {title: "n181" label: "Jmp  181"  info1: "Jmp 181
+node: {title: "n181" label: "Jmp 181"  info1: "Jmp 181
   mode:    X
   visited: 25
   irg:     OO_INLINE_EXAMPLE_main
@@ -161,7 +162,7 @@ node: {title: "n151" label: "ProjM 0 151"  info1: "Proj 151
 "
 color: yellow}
 edge: {sourcename: "n151" targetname: "n152" label: "0" class:17 priority:10 color:blue}
-node: {title: "n152" label: "Store  152"  info1: "Store 152
+node: {title: "n152" label: "Store 152"  info1: "Store 152
   mode:    T
   visited: 25
   irg:     OO_INLINE_EXAMPLE_main
@@ -190,7 +191,8 @@ node: {title: "n155" label: "Sel a 155"  info1: "Sel 155
      1:    Proj 48
   Private Attributes:
   Selecting entity of type int
-    from entity of type PRIMA_INLINE
+    from entity a (17)
+    of type PRIMA_INLINE
 "
 }
 edge: {sourcename: "n155" targetname: "n47" label: "0" class:14 priority:50 color:blue}
@@ -219,7 +221,7 @@ node: {title: "n48" label: "ProjP 2 48"  info1: "Proj 48
 "
 color: yellow}
 edge: {sourcename: "n48" targetname: "n45" label: "0" class:1  priority:50}
-node: {title: "n45" label: "Alloc  45"  info1: "Alloc 45
+node: {title: "n45" label: "Alloc 45"  info1: "Alloc 45
   mode:    T
   visited: 25
   irg:     OO_INLINE_EXAMPLE_main
@@ -236,7 +238,7 @@ node: {title: "n45" label: "Alloc  45"  info1: "Alloc 45
 }
 edge: {sourcename: "n45" targetname: "n37" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n45" targetname: "n43" label: "1" class:16 priority:10}
-node: {title: "n188" label: "0x0Is  188"  info1: "0x0 188
+node: {title: "n188" label: "0x0Is 188"  info1: "0x0 188
   mode:    Is
   visited: 25
   irg:     OO_INLINE_EXAMPLE_main
@@ -247,7 +249,7 @@ node: {title: "n188" label: "0x0Is  188"  info1: "0x0 188
   Const of type type_unknown
 "
 color: yellow}
-node: {title: "n141" label: "Jmp  141"  info1: "Jmp 141
+node: {title: "n141" label: "Jmp 141"  info1: "Jmp 141
   mode:    X
   visited: 25
   irg:     OO_INLINE_EXAMPLE_main
@@ -261,7 +263,7 @@ node: {title: "n141" label: "Jmp  141"  info1: "Jmp 141
 
 graph: { title: "n30"  label: "Block 30" status:clustered color:yellow
 edge: {sourcename: "n30" targetname: "n34" label: "0" class:13 priority:60 color:red}
-node: {title: "n41" label: "0x2Is  41"  info1: "0x2 41
+node: {title: "n41" label: "0x2Is 41"  info1: "0x2 41
   mode:    Is
   visited: 25
   irg:     OO_INLINE_EXAMPLE_main
@@ -284,7 +286,7 @@ node: {title: "n37" label: "ProjM 1 37"  info1: "Proj 37
 "
 color: yellow}
 edge: {sourcename: "n37" targetname: "n31" label: "0" class:17 priority:10 color:blue}
-node: {title: "n43" label: "SymC PRIMA_INLINE size  43"  info1: "SymC PRIMA_INLINE size 43
+node: {title: "n43" label: "SymC PRIMA_INLINE size 43"  info1: "SymC PRIMA_INLINE size 43
   mode:    Iu
   visited: 25
   irg:     OO_INLINE_EXAMPLE_main
@@ -297,7 +299,7 @@ node: {title: "n43" label: "SymC PRIMA_INLINE size  43"  info1: "SymC PRIMA_INLI
   type of value: type_unknown
 "
 }
-node: {title: "n42" label: "0x5Is  42"  info1: "0x5 42
+node: {title: "n42" label: "0x5Is 42"  info1: "0x5 42
   mode:    Is
   visited: 25
   irg:     OO_INLINE_EXAMPLE_main
@@ -320,7 +322,7 @@ node: {title: "n34" label: "ProjX 0 34"  info1: "Proj 34
 "
 color: yellow}
 edge: {sourcename: "n34" targetname: "n31" label: "0" class:13 priority:60 color:red}
-node: {title: "n31" label: "Start  31"  info1: "Start 31
+node: {title: "n31" label: "Start 31"  info1: "Start 31
   mode:    T
   visited: 25
   irg:     OO_INLINE_EXAMPLE_main
@@ -334,7 +336,7 @@ color: blue}
 }
 
 graph: { title: "n28"  label: "Block 28" status:clustered color:yellow
-node: {title: "n195" label: "End  195"  info1: "End 195
+node: {title: "n195" label: "End 195"  info1: "End 195
   mode:    X
   visited: 25
   irg:     OO_INLINE_EXAMPLE_main
