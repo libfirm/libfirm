@@ -1,7 +1,7 @@
 /* -*- c -*- */
 
 /*
- * Time-stamp: <08.11.2004 13:28:00h liekweg>
+ * Time-stamp: <09.11.2004 11:42:19h liekweg>
  * Project:     libFIRM
  * File name:   ir/ana2/qset.c
  * Purpose:     yet another set implementation
@@ -344,7 +344,7 @@ static void q_print (sortable_t *values, const int n_values, FILE *stream)
     if (0 == values [i]) {
       fprintf (stream, "_");
     } else {
-      fprintf (stream, "%d", (int) values [i]);
+      fprintf (stream, "0x08%x", (int) values [i]);
     }
 
     if (i + 1 != n_values) {
@@ -711,6 +711,9 @@ int qset_test_main (int argc, char **argv)
 
 /*
   $Log$
+  Revision 1.3  2004/11/09 16:45:36  liekweg
+  print pointers
+
   Revision 1.2  2004/11/08 12:32:00  liekweg
   Moved q_* methods into private section
 
