@@ -72,6 +72,11 @@ static void irg_walk_mem_node (ir_node *node,
     set_irn_visited (node, walk_env->visited);
   }
 
+  if (op_NoMem == get_irn_op (node)) {
+    /* We don't want to see it it if it's not memory */
+    return;
+  }
+
   if (iro_Proj == op) {
     /* We don't want to see proj nodes at all --- skip over them */
     in = get_Proj_pred (node);
@@ -256,6 +261,9 @@ void irg_walk_mem (ir_graph *graph,
 
 /*
   $Log$
+  Revision 1.5  2004/11/19 10:35:20  liekweg
+  also test for NoMem
+
   Revision 1.4  2004/11/18 16:35:11  liekweg
   Do not touch Proj nodes at all
 
