@@ -61,7 +61,6 @@ static void pto_init_graph_wrapper (graph_info_t *ginfo, void *__unused)
 /* Initialise the module (not in pto_init.c because it's the entry to pto) */
 void pto_init (int lvl)
 {
-  HERE ("start");
   set_dbg_lvl (lvl);
 
   ecg_init (1);
@@ -86,18 +85,17 @@ void pto_init (int lvl)
 
   /* initialise for the CTX-sensitive ecg-traversal */
   set_curr_ctx (get_main_ctx ());
-  HERE ("end");
 }
 
 void pto_run ()
 {
-  HERE ("start");
-
   ir_graph *graph = get_irp_main_irg ();
+
+  pto_reset_graph_pto (graph, 0);
   fake_main_args (graph);
 
-  DBGPRINT (0, (stdout, "START PTO\n"));
-  DBGPRINT (0, (stdout, "START GRAPH (0x%08x) of \"%s.%s\"\n",
+  DBGPRINT (1, (stdout, "START PTO\n"));
+  DBGPRINT (1, (stdout, "START GRAPH (0x%08x) of \"%s.%s\"\n",
                 (int) graph,
                 get_type_name (get_entity_owner (get_irg_entity (graph))),
                 get_entity_name (get_irg_entity (graph))));
@@ -105,13 +103,11 @@ void pto_run ()
   /* do we need some kind of environment here? */
   pto_graph (graph, 0);
 
-  DBGPRINT (0, (stdout, "END   PTO\n"));
-  HERE ("end");
+  DBGPRINT (1, (stdout, "END   PTO\n"));
 }
 
 void pto_cleanup ()
 {
-  HERE ("start");
   /* todo: clean up our own mess */
   spaces -= 511;                /* hope that all changes to spaces are
                                    properly nested */
@@ -125,12 +121,14 @@ void pto_cleanup ()
 
   /* clean up ecg infos */
   ecg_cleanup ();
-  HERE ("end");
 }
 
 
 /*
   $Log$
+  Revision 1.10  2004/11/30 14:46:41  liekweg
+  Correctly reset main graph; remove dbugging stuff
+
   Revision 1.9  2004/11/26 16:01:56  liekweg
   debugging annotations
 
