@@ -30,10 +30,10 @@
 void
 init_firm (default_initialize_local_variable_func_t *func)
 {
-  /* enhanced statistics */
-  stat_init();
   /* initialize all ident stuff */
   id_init (1024);
+  /* enhanced statistics, need idents */
+  stat_init();
   /* create the type kinds. */
   init_tpop ();
   /* create an obstack and put all tarvals in a pdeq */
