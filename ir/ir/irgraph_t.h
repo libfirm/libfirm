@@ -25,6 +25,7 @@
 # include "pset.h"
 # include "irgraph.h"
 # include "firm_common_t.h"
+# include "irtypeinfo.h"
 
 #define FRAME_TP_SUFFIX "frame_tp"
 
@@ -58,6 +59,7 @@ struct ir_graph {
   op_pinned pinned;                  /**< Flag for status of nodes */
   irg_outs_state outs_state;         /**< Out edges. */
   irg_dom_state dom_state;           /**< Dominator information */
+  irg_typeinfo_state typeinfo_state; /**< Validity of type inforamtion */
 
   /* -- Fields for construction -- */
 #if USE_EXPLICIT_PHI_IN_STACK

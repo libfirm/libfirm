@@ -1108,6 +1108,8 @@ ir_node *new_rd_Return (dbg_info *db, ir_graph *irg, ir_node *block,
 		       ir_node *store, int arity, ir_node *in[]);
 ir_node *new_rd_Raise  (dbg_info *db, ir_graph *irg, ir_node *block,
 		       ir_node *store, ir_node *obj);
+ir_node *new_rd_Const_type (dbg_info* db, ir_graph *irg, ir_node *block,
+			    ir_mode *mode, tarval *con, type *tp);
 ir_node *new_rd_Const  (dbg_info *db, ir_graph *irg, ir_node *block,
 		       ir_mode *mode, tarval *con);
 ir_node *new_rd_SymConst (dbg_info *db, ir_graph *irg, ir_node *block,
@@ -1300,6 +1302,7 @@ ir_node *new_d_Jmp    (dbg_info* db);
 ir_node *new_d_Cond   (dbg_info* db, ir_node *c);
 ir_node *new_d_Return (dbg_info* db, ir_node *store, int arity, ir_node *in[]);
 ir_node *new_d_Raise  (dbg_info* db, ir_node *store, ir_node *obj);
+ir_node *new_d_Const_type (dbg_info* db, ir_mode *mode, tarval *con, type *tp);
 ir_node *new_d_Const  (dbg_info* db, ir_mode *mode, tarval *con);
 ir_node *new_d_SymConst (dbg_info* db, type_or_id_p value, symconst_kind kind);
 ir_node *new_d_simpleSel(dbg_info* db, ir_node *store, ir_node *objptr, entity *ent);

@@ -93,8 +93,8 @@ typedef enum { /* irm is short for `ir mode' */
 typedef enum {
   /* Predefined sorts of modes */
   irms_auxiliary,         /**< Only for Firm use. Not extensible. (irm_T) */
-  irms_control_flow,       /**< Marks all control flow modes. Not extensible. (irm_BB, irm_X) */
-  irms_memory,             /**< Marks the memory mode.  Not extensible. (irm_M) */
+  irms_control_flow,      /**< Marks all control flow modes. Not extensible. (irm_BB, irm_X) */
+  irms_memory,            /**< Marks the memory mode.  Not extensible. (irm_M) */
   irms_internal_boolean,  /**< Internal boolean representation.
 		               Storing to memory impossible, convert first. (irm_b) */
                             /** user-extensible sorts of modes **/

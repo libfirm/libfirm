@@ -73,10 +73,13 @@ node: {title: "n76" label: "Start  76" color: blue info1: "visited: 10
 start of method of type main
 "}
 node: {title: "n80" label: "0x1Is  80" color: yellow info1: "visited: 10
+Const of type type_unknown
 "}
 node: {title: "n81" label: "0x0Is  81" color: yellow info1: "visited: 10
+Const of type type_unknown
 "}
 node: {title: "n88" label: "0x2Is  88" color: yellow info1: "visited: 10
+Const of type type_unknown
 "}
 node: {title: "n92" label: "ProjM 1 92" color: yellow info1: "visited: 10
 "}

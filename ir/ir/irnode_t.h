@@ -68,13 +68,19 @@ typedef struct {
 typedef struct {
   cond_kind kind;    /**< flavor of Cond */
   long default_proj; /**< for optimization: biggest Proj number, i.e. the one
-			used for default. */
+   	 	 	  used for default. */
 } cond_attr;
+
+/** Const attributes */
+typedef struct {
+  tarval *tv;        /**< the target value */
+  type   *tp;        /**< the source type, for analyses. default: type_unknown. */
+} const_attr;
 
 /** SymConst attributes
     This union contains the symbolic information represented by the node */
 typedef union type_or_id {
-  type *typ;
+  type  *typ;
   ident *ptrinfo;
 } type_or_id;
 
@@ -144,7 +150,7 @@ typedef union {
   start_attr     start; /**< For Start */
   block_attr     block; /**< For Block: Fields needed to construct it */
   cond_attr      c;     /**< For Cond. */
-  struct tarval *con;   /**< For Const: contains the value of the constant */
+  const_attr     con;   /**< For Const: contains the value of the constant and a type */
   symconst_attr  i;     /**< For SymConst. */
   sel_attr       s;     /**< For Sel. */
   call_attr      call;  /**< For Call: pointer to the type of the method to call */
@@ -209,7 +215,7 @@ ir_node     **get_irn_in            (const ir_node *node);
 
 /*@{*/
 /** access attributes directly */
-INLINE tarval       *get_irn_const_attr    (ir_node *node);
+INLINE const_attr    get_irn_const_attr    (ir_node *node);
 INLINE long          get_irn_proj_attr     (ir_node *node);
 INLINE alloc_attr    get_irn_alloc_attr    (ir_node *node);
 INLINE type         *get_irn_free_attr     (ir_node *node);

@@ -119,6 +119,7 @@ int dump_out_edge_flag = 0;
 int dump_dominator_information_flag = 0;
 int dump_loop_information_flag = 0;
 int dump_const_local = 0;
+bool opt_dump_analysed_type_info = 1;
 
 INLINE bool get_opt_dump_const_local(void) {
   if (!dump_out_edge_flag && !dump_loop_information_flag)
@@ -200,6 +201,18 @@ dump_node_mode (ir_node *n)
     break;
   default:
     ;
+  }
+}
+
+static void dump_node_typeinfo(ir_node *n) {
+  if (!opt_dump_analysed_type_info) return;
+  if (get_irg_typeinfo_state(current_ir_graph) == irg_typeinfo_consistent  ||
+      get_irg_typeinfo_state(current_ir_graph) == irg_typeinfo_inconsistent  ) {
+    type *tp = get_irn_type(n);
+    if (tp != none_type)
+      fprintf (F, " [%s]", get_type_name(tp));
+    else
+      fprintf (F, " []");
   }
 }
 
@@ -295,9 +308,18 @@ dump_node_info (ir_node *n) {
     for (i = 0; i < get_method_n_ress(tp); ++i)
       fprintf(F, "  resul %d type: %s \n", i, get_type_name(get_method_res_type(tp, i)));
   } break;
+  case iro_Const: {
+    type *tp = get_Const_type(n);
+    assert(tp != none_type);
+    fprintf(F, "Const of type %s \n", get_type_name(get_Const_type(n)));
+  } break;
   default: ;
   }
 
+  if (get_irg_typeinfo_state(current_ir_graph) == irg_typeinfo_consistent  ||
+      get_irg_typeinfo_state(current_ir_graph) == irg_typeinfo_inconsistent  )
+    if (get_irn_type(n) != none_type)
+      fprintf (F, "\nAnalysed type: %s", get_type_name(get_irn_type(n)));
 
   fprintf (F, "\"");
 
@@ -349,6 +371,7 @@ static void dump_const_node_local(ir_node *n, pmap *irgmap) {
       fprintf(F, " label: \"");
       dump_node_opcode(con);
       dump_node_mode (con);
+      dump_node_typeinfo(con);
       fprintf (F, " ");
       dump_node_nodeattr(con);
 #ifdef DEBUG_libfirm
@@ -371,6 +394,7 @@ dump_node (ir_node *n, pmap * map) {
 
   dump_node_opcode(n);
   dump_node_mode (n);
+  dump_node_typeinfo(n);
   fprintf (F, " ");
   dump_node_nodeattr(n);
 #ifdef DEBUG_libfirm
@@ -1593,4 +1617,12 @@ void dump_cg_graph(ir_graph * irg) {
   pmap_destroy(map2);
 
   vcg_close();
+}
+
+/* Dump the information of type field specified in ana/irtypeinfo.h.
+ * If the flag is set, the type name is output in [] in the node label,
+ * else it is output as info.
+ */
+void dump_analysed_type_info(bool b) {
+  opt_dump_analysed_type_info = b;
 }

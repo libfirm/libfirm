@@ -1,3 +1,8 @@
+  * 29.8.03 Goetz
+    Cast: irsimpletype: implement type analyses for one node.  Test the
+    effort of that analyses.  Add optimization to iropt that removes
+    Cast nodes.
+
   * 22.8.2003 Goetz
     Firm const nodes should have a type.
     In jack all nodes are typed now, except the Const nodes. Only const from

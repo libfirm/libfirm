@@ -52,6 +52,7 @@ edge: {sourcename: "n47" targetname: "n51" label: "0" color: blue}
 edge: {sourcename: "n47" targetname: "n49" label: "1" }
 edge: {sourcename: "n47" targetname: "n48" label: "2" }
 node: {title: "n48" label: "0x2Is  48" color: yellow info1: "visited: 11
+Const of type type_unknown
 "}
 edge: { sourcename: "n48" targetname: "n44" class: 2 priority: 2 linestyle: dotted}
 node: {title: "n49" label: "Sel i 49"  info1: "visited: 11
@@ -103,6 +104,7 @@ irg = g29"
 edge: { sourcename: "e15" targetname: "t13"class: 3 label: "type" color: red}
 edge: { sourcename: "e15" targetname: "n14"label: "value 0"}
 node: {title: "n14" label: "&(GlobalType_GLOBAL_VAR_main)P  14" color: yellow info1: "visited: 1
+Const of type type_unknown
 "}
 node: {title: "t13" label: "method GLOBAL_VAR_main" info1: "state: layout_fixed,
 mode: P,

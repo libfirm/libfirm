@@ -93,15 +93,19 @@ start of method of type main
   param 0 type: int
 "}
 node: {title: "n72" label: "0x0Is  72" color: yellow info1: "visited: 12
+Const of type type_unknown
 "}
 node: {title: "n77" label: "0xAIs  77" color: yellow info1: "visited: 12
+Const of type type_unknown
 "}
 node: {title: "n79" label: "ProjT 4 79" color: yellow info1: "visited: 12
 "}
 edge: {sourcename: "n79" targetname: "n68" label: "0" }
 node: {title: "n83" label: "0x2Is  83" color: yellow info1: "visited: 12
+Const of type type_unknown
 "}
 node: {title: "n88" label: "0x1Is  88" color: yellow info1: "visited: 12
+Const of type type_unknown
 "}
 node: {title: "n89" label: "ProjM 1 89" color: yellow info1: "visited: 12
 "}

@@ -38,8 +38,10 @@ edge: { sourcename: "t17" targetname: "e18"class: 10 label: "arr ent" color: gre
 edge: { sourcename: "n19" targetname: "t17"label: "upper 0"}
 edge: { sourcename: "n20" targetname: "t17"label: "lower 0"}
 node: {title: "n19" label: "0x9Iu  19" color: yellow info1: "visited: 1
+Const of type type_unknown
 "}
 node: {title: "n20" label: "0x0Iu  20" color: yellow info1: "visited: 1
+Const of type type_unknown
 "}
 node: {title: "t12" label: "primitive int" info1: "state: layout_fixed,
 mode: Is,
@@ -78,6 +80,7 @@ irg = g33"
 edge: { sourcename: "e16" targetname: "t14"class: 3 label: "type" color: red}
 edge: { sourcename: "e16" targetname: "n15"label: "value 0"}
 node: {title: "n15" label: "&(ARRAY-STACK_EXAMPLE_main)P  15" color: yellow info1: "visited: 1
+Const of type type_unknown
 "}
 node: {title: "t13" label: "class ARRAY-STACK_EXAMPLE" info1: "state: layout_undefined
 size: -1B,

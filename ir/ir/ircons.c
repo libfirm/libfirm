@@ -121,12 +121,14 @@ new_rd_Phi (dbg_info* db, ir_graph *irg, ir_node *block, int arity, ir_node **in
 }
 
 INLINE ir_node *
-new_rd_Const (dbg_info* db, ir_graph *irg, ir_node *block, ir_mode *mode, tarval *con)
+new_rd_Const_type (dbg_info* db, ir_graph *irg, ir_node *block, ir_mode *mode, tarval *con, type *tp)
 {
   ir_node *res;
   res = new_ir_node (db, irg, block, op_Const, mode, 0, NULL);
-  res->attr.con = con;
+  res->attr.con.tv = con;
+  set_Const_type(res, tp);  /* Call method because of complex assertion. */
   res = optimize_node (res);
+  assert(get_Const_type(res) == tp);
   irn_vrfy_irg (res, irg);
 
 #if 0
@@ -134,6 +136,15 @@ new_rd_Const (dbg_info* db, ir_graph *irg, ir_node *block, ir_mode *mode, tarval
 # endif
 
   return res;
+}
+
+INLINE ir_node *
+new_rd_Const (dbg_info* db, ir_graph *irg, ir_node *block, ir_mode *mode, tarval *con)
+{
+  type *tp = unknown_type;
+  if (tarval_is_entity(con))
+    tp = find_pointer_type_to_type(get_entity_type(get_tarval_entity(con)));
+  return new_rd_Const_type (db, irg, block, mode, con, tp);
 }
 
 INLINE ir_node *
@@ -1775,6 +1786,14 @@ new_d_Const (dbg_info* db, ir_mode *mode, tarval *con)
   return new_rd_Const (db, current_ir_graph, current_ir_graph->start_block,
 		      mode, con);
 }
+
+ir_node *
+new_d_Const_type (dbg_info* db, ir_mode *mode, tarval *con, type *tp)
+{
+  return new_rd_Const_type (db, current_ir_graph, current_ir_graph->start_block,
+			    mode, con, tp);
+}
+
 
 ir_node *
 new_d_Id (dbg_info* db, ir_node *val, ir_mode *mode)

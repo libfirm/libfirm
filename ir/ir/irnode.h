@@ -284,6 +284,11 @@ INLINE void     set_Raise_exo_ptr (ir_node *node, ir_node *exoptr);
 
 INLINE tarval  *get_Const_tarval (ir_node *node);
 INLINE void     set_Const_tarval (ir_node *node, tarval *con);
+/* The source language type.  Must be an atomic type.  Mode of type must
+   be mode of node. For tarvals from entities type must be pointer to
+   entity type. */
+INLINE type    *get_Const_type   (ir_node *node);
+INLINE void     set_Const_type   (ir_node *node, type *tp);
 
 /**  This enum names the three different kinds of symbolic Constants
      represented by SymConst.  The content of the attribute type_or_id
@@ -627,6 +632,8 @@ ir_node *get_fragile_op_mem(ir_node *node);
 #define DDMT(X)  printf("%s(l.%i) %s %s: %ld (%p)\n",        __MYFUNC__, __LINE__, get_type_tpop_name(X), get_type_name(X), get_type_nr(X), (void *)(X))
 /** Output information about an entity */
 #define DDME(X)  printf("%s(l.%i) %s: %ld (%p)\n",           __MYFUNC__, __LINE__, get_entity_name(X), get_entity_nr(X), (void *)(X))
+/** Output information about an entity and its type */
+#define DDMET(X) printf("%s(l.%i) %s (typ: %s): %ld (%p)\n", __MYFUNC__, __LINE__, get_entity_name(X), get_type_name(get_entity_type(X)), get_entity_nr(X), (void *)(X))
 /** Output information about an entity and its owner */
 #define DDMEO(X) printf("%s(l.%i) %s (own: %s): %ld (%p)\n", __MYFUNC__, __LINE__, get_entity_name(X), get_type_name(get_entity_owner(X)), get_entity_nr(X), (void *)(X))
 /** Output information about a graph */

@@ -291,4 +291,11 @@ void dump_loop_information(void);
  */
 void dont_dump_loop_information(void);
 
+/**
+ *  Dump the information of type field specified in ana/irtypeinfo.h.
+ *  If the flag is set, the type name is output in [] in the node label,
+ *  else it is output as info.
+ */
+void dump_analysed_type_info(bool b);
+
 # endif /* _IRDUMP_H_ */

@@ -109,7 +109,7 @@ init_op(void)
   op_Return= new_ir_op (iro_Return,"Return", pinned, 1, 0);
   op_Raise = new_ir_op (iro_Raise, "Raise",  pinned, 1, 0);
 
-  op_Const = new_ir_op (iro_Const, "Const",  floats, 0, sizeof (struct tarval *));
+  op_Const = new_ir_op (iro_Const, "Const",  floats, 0, sizeof (const_attr));
   op_SymConst = new_ir_op (iro_SymConst, "SymConst",
 			                     floats, 0, sizeof (symconst_attr));
 

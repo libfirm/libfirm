@@ -77,6 +77,7 @@ node: {title: "n76" label: "CmpT  76"  info1: "visited: 18
 edge: {sourcename: "n76" targetname: "n78" label: "0" }
 edge: {sourcename: "n76" targetname: "n77" label: "1" }
 node: {title: "n77" label: "0x2Is  77" color: yellow info1: "visited: 18
+Const of type type_unknown
 "}
 node: {title: "n78" label: "ProjIs 0 78" color: yellow info1: "visited: 18
 "}
@@ -92,12 +93,14 @@ node: {title: "n84" label: "SubIs  84"  info1: "visited: 18
 edge: {sourcename: "n84" targetname: "n78" label: "0" }
 edge: {sourcename: "n84" targetname: "n85" label: "1" }
 node: {title: "n85" label: "0x3Is  85" color: yellow info1: "visited: 18
+Const of type type_unknown
 "}
 node: {title: "n86" label: "AddIs  86"  info1: "visited: 18
 "}
 edge: {sourcename: "n86" targetname: "n84" label: "0" }
 edge: {sourcename: "n86" targetname: "n87" label: "1" }
 node: {title: "n87" label: "0x5Is  87" color: yellow info1: "visited: 18
+Const of type type_unknown
 "}
 node: {title: "n88" label: "ProjM 1 88" color: yellow info1: "visited: 18
 "}

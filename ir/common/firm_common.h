@@ -32,6 +32,7 @@
 /** a list of firm kinds
  @@@ not all datatypes are tagged yet. */
 typedef enum {
+  k_BAD = 0,    /**< an invalid firm node */
   k_entity,     /**< an entity */
   k_type,       /**< a type */
   k_ir_graph,   /**< an ir graph */

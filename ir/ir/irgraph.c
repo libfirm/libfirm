@@ -109,6 +109,7 @@ new_ir_graph (entity *ent, int n_loc)
   res->pinned = pinned;
   res->outs_state = no_outs;
   res->dom_state = no_dom;
+  res->typeinfo_state = irg_typeinfo_none;
 
   /** Type information for the procedure of the graph **/
   res->ent = ent;
@@ -211,6 +212,7 @@ ir_graph *new_const_code_irg() {
    graph, nor the entity standing for this graph. */
 void free_ir_graph (ir_graph *irg) {
   set_entity_irg(irg->ent, NULL);
+  irg->kind = k_BAD;
   free(irg->obst);
 #if USE_EXPLICIT_PHI_IN_STACK
   free_Phi_in_stack(irg->Phi_in_stack);

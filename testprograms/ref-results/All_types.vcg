@@ -56,6 +56,7 @@ irg = g71"
 edge: { sourcename: "e18" targetname: "t16"class: 3 label: "type" color: red}
 edge: { sourcename: "e18" targetname: "n17"label: "value 0"}
 node: {title: "n17" label: "&(PRIMA_set_a)P  17" color: yellow info1: "visited: 4
+Const of type type_unknown
 "}
 node: {title: "t16" label: "method set_a" info1: "state: layout_fixed,
 mode: P,
@@ -84,6 +85,7 @@ irg = g94"
 edge: { sourcename: "e21" targetname: "t19"class: 3 label: "type" color: red}
 edge: { sourcename: "e21" targetname: "n20"label: "value 0"}
 node: {title: "n20" label: "&(PRIMA_c)P  20" color: yellow info1: "visited: 4
+Const of type type_unknown
 "}
 node: {title: "t19" label: "method c" info1: "state: layout_fixed,
 mode: P,
@@ -117,5 +119,6 @@ irg = g37"
 edge: { sourcename: "e24" targetname: "t22"class: 3 label: "type" color: red}
 edge: { sourcename: "e24" targetname: "n23"label: "value 0"}
 node: {title: "n23" label: "&(GlobalType_OO_INLINE_EXAMPLE_main)P  23" color: yellow info1: "visited: 4
+Const of type type_unknown
 "}
 }

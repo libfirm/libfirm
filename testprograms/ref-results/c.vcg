@@ -75,6 +75,7 @@ start of method of type c
   param 1 type: int
 "}
 node: {title: "n256" label: "0x0Is  256" color: yellow info1: "visited: 24
+Const of type type_unknown
 "}
 node: {title: "n258" label: "ProjT 4 258" color: yellow info1: "visited: 24
 "}

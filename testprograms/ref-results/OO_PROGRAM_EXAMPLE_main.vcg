@@ -94,6 +94,7 @@ node: {title: "n113" label: "Start  113" color: blue info1: "visited: 17
 start of method of type OO_PROGRAM_EXAMPLE_main
 "}
 node: {title: "n117" label: "0x5Is  117" color: yellow info1: "visited: 17
+Const of type type_unknown
 "}
 node: {title: "n120" label: "SymC PRIMA size  120"  info1: "visited: 17
 "}
@@ -101,6 +102,7 @@ node: {title: "n121" label: "ProjM 1 121" color: yellow info1: "visited: 17
 "}
 edge: {sourcename: "n121" targetname: "n113" label: "0" color: blue}
 node: {title: "n125" label: "0x2Is  125" color: yellow info1: "visited: 17
+Const of type type_unknown
 "}
 }
 

@@ -101,6 +101,7 @@ void        free_type(type *tp) {
   if (is_array_type(tp))
     free_entity(get_array_element_entity(tp));
   /* And now the type itself... */
+  tp->kind = k_BAD;
   free(tp);
 }
 

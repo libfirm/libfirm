@@ -41,6 +41,7 @@ node: {title: "n51" label: "Start  51" color: blue info1: "visited: 6
 start of method of type main
 "}
 node: {title: "n52" label: "0xCIs  52" color: yellow info1: "visited: 6
+Const of type type_unknown
 "}
 node: {title: "n53" label: "ProjM 1 53" color: yellow info1: "visited: 6
 "}

@@ -655,7 +655,7 @@ transform_node (ir_node *n)
   case iro_Mod: {
     ta = computed_value(n);
     if (ta != tarval_bad) {
-      /* Turn Div into a tuple (mem, bad, value) */
+      /* Turn Mod into a tuple (mem, bad, value) */
       ir_node *mem = get_Mod_mem(n);
       turn_into_tuple(n, 3);
       set_Tuple_pred(n, 0, mem);
@@ -882,7 +882,8 @@ vt_cmp (const void *elt, const void *key)
 
   switch (get_irn_opcode(a)) {
   case iro_Const:
-    return get_irn_const_attr (a) != get_irn_const_attr (b);
+    return (get_Const_tarval(a) != get_Const_tarval(b))
+      || (get_Const_type(a) != get_Const_type(b));
   case iro_Proj:
     return get_irn_proj_attr (a) != get_irn_proj_attr (b);
   case iro_Filter:

@@ -49,6 +49,7 @@ node: {title: "n61" label: "Start  61" color: blue info1: "visited: 8
 start of method of type CALL_STR_EXAMPLE_main
 "}
 node: {title: "n64" label: "&(GlobalType_constStr)P  64" color: yellow info1: "visited: 8
+Const of type ptr_to_string
 "}
 node: {title: "n65" label: "SymC f  65"  info1: "visited: 8
 "}

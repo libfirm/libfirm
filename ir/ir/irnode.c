@@ -388,7 +388,7 @@ get_irn_node_nr(const ir_node *node) {
 #endif
 }
 
-INLINE tarval *
+INLINE const_attr
 get_irn_const_attr (ir_node *node)
 {
   assert (node->op == op_Const);
@@ -683,6 +683,7 @@ set_End_keepalive(ir_node *end, int pos, ir_node *ka) {
 INLINE void
 free_End (ir_node *end) {
   assert (end->op == op_End);
+  end->kind = k_BAD;
   /* DEL_ARR_F(end->in);   GL @@@ tut nicht ! */
   end->in = NULL;   /* @@@ make sure we get an error if we use the
 		       in array afterwards ... */
@@ -827,14 +828,40 @@ set_Raise_exo_ptr (ir_node *node, ir_node *exo_ptr) {
 
 INLINE tarval *get_Const_tarval (ir_node *node) {
   assert (node->op == op_Const);
-  return get_irn_const_attr(node);
+  return node->attr.con.tv;
 }
 
 INLINE void
 set_Const_tarval (ir_node *node, tarval *con) {
   assert (node->op == op_Const);
-  node->attr.con = con;
+  node->attr.con.tv = con;
 }
+
+
+/* The source language type.  Must be an atomic type.  Mode of type must
+   be mode of node. For tarvals from entities type must be pointer to
+   entity type. */
+INLINE type *
+get_Const_type (ir_node *node) {
+  assert (node->op == op_Const);
+  return node->attr.con.tp;
+}
+
+INLINE void
+set_Const_type (ir_node *node, type *tp) {
+  assert (node->op == op_Const);
+  if (tp != unknown_type) {
+    assert (is_atomic_type(tp));
+    assert (get_type_mode(tp) == get_irn_mode(node));
+    assert (!tarval_is_entity(get_Const_tarval(node)) ||
+	    (is_pointer_type(tp) &&
+	     (get_pointer_points_to_type(tp) ==
+	      get_entity_type(get_tarval_entity(get_Const_tarval(node))))));
+  }
+
+  node->attr.con.tp = tp;
+}
+
 
 INLINE symconst_kind
 get_SymConst_kind (const ir_node *node) {

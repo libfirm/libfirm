@@ -76,6 +76,7 @@ start of method of type main_tp
   param 0 type: int
 "}
 node: {title: "n91" label: "0x1Is  91" color: yellow info1: "visited: 22
+Const of type type_unknown
 "}
 node: {title: "n93" label: "ProjT 4 93" color: yellow info1: "visited: 22
 "}

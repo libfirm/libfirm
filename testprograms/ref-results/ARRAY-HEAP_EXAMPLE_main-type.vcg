@@ -38,8 +38,10 @@ edge: { sourcename: "t16" targetname: "e17"class: 10 label: "arr ent" color: gre
 edge: { sourcename: "n18" targetname: "t16"label: "upper 0"}
 edge: { sourcename: "n19" targetname: "t16"label: "lower 0"}
 node: {title: "n18" label: "0x9Iu  18" color: yellow info1: "visited: 1
+Const of type type_unknown
 "}
 node: {title: "n19" label: "0x0Iu  19" color: yellow info1: "visited: 1
+Const of type type_unknown
 "}
 node: {title: "t12" label: "primitive int" info1: "state: layout_fixed,
 mode: Is,
@@ -61,6 +63,7 @@ irg = g32"
 edge: { sourcename: "e15" targetname: "t13"class: 3 label: "type" color: red}
 edge: { sourcename: "e15" targetname: "n14"label: "value 0"}
 node: {title: "n14" label: "&(GlobalType_ARRAY-HEAP_EXAMPLE_main)P  14" color: yellow info1: "visited: 1
+Const of type type_unknown
 "}
 node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1B,

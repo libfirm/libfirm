@@ -110,10 +110,10 @@ loop_element get_loop_element (ir_loop *loop, int pos);
 void construct_backedges(ir_graph *irg);
 
 /** Constructs backedges for all irgs in interprocedural view.  All
-   loops in the graph will be marked as such, not only realizeable
-   loops and recursions in the program.  E.g., if the same funcion is
-   called twice, there is a loop between the first funcion return and
-   the second call.  */
+    loops in the graph will be marked as such, not only realizeable
+    loops and recursions in the program.  E.g., if the same funcion is
+    called twice, there is a loop between the first funcion return and
+    the second call.  */
 void construct_ip_backedges(void);
 
 #endif /* _IRLOOP_H_ */

@@ -108,6 +108,7 @@ edge: {sourcename: "n87" targetname: "n80" label: "0" color: red}
 graph: { title: "n74" label: "74" status:clustered color:yellow
 edge: {sourcename: "n74" targetname: "n75" label: "0" color: red}
 node: {title: "n73" label: "0x2Is  73" color: yellow info1: "visited: 10
+Const of type type_unknown
 "}
 node: {title: "n75" label: "ProjX 0 75" color: yellow info1: "visited: 10
 "}
@@ -116,8 +117,10 @@ node: {title: "n76" label: "Start  76" color: blue info1: "visited: 10
 start of method of type main
 "}
 node: {title: "n77" label: "0x0Is  77" color: yellow info1: "visited: 10
+Const of type type_unknown
 "}
 node: {title: "n83" label: "0x1Is  83" color: yellow info1: "visited: 10
+Const of type type_unknown
 "}
 node: {title: "n92" label: "ProjM 1 92" color: yellow info1: "visited: 10
 "}

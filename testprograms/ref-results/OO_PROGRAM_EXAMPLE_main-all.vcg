@@ -94,6 +94,7 @@ node: {title: "n113" label: "Start  113" color: blue info1: "visited: 21
 start of method of type OO_PROGRAM_EXAMPLE_main
 "}
 node: {title: "n117" label: "0x5Is  117" color: yellow info1: "visited: 21
+Const of type type_unknown
 "}
 node: {title: "n120" label: "SymC PRIMA size  120"  info1: "visited: 21
 "}
@@ -101,6 +102,7 @@ node: {title: "n121" label: "ProjM 1 121" color: yellow info1: "visited: 21
 "}
 edge: {sourcename: "n121" targetname: "n113" label: "0" color: blue}
 node: {title: "n125" label: "0x2Is  125" color: yellow info1: "visited: 21
+Const of type type_unknown
 "}
 }
 
@@ -157,6 +159,7 @@ irg = g71"
 edge: { sourcename: "e18" targetname: "t16"class: 3 label: "type" color: red}
 edge: { sourcename: "e18" targetname: "n17"label: "value 0"}
 node: {title: "n17" label: "&(PRIMA_set_a)P  17" color: yellow info1: "visited: 1
+Const of type type_unknown
 "}
 node: {title: "t16" label: "method set_a" info1: "state: layout_fixed,
 mode: P,
@@ -180,6 +183,7 @@ irg = g94"
 edge: { sourcename: "e21" targetname: "t19"class: 3 label: "type" color: red}
 edge: { sourcename: "e21" targetname: "n20"label: "value 0"}
 node: {title: "n20" label: "&(PRIMA_c)P  20" color: yellow info1: "visited: 1
+Const of type type_unknown
 "}
 node: {title: "e24" label: "ent OO_PROGRAM_EXAMPLE_main" color: yellow
  info1: "
@@ -197,6 +201,7 @@ irg = g37"
 edge: { sourcename: "e24" targetname: "t22"class: 3 label: "type" color: red}
 edge: { sourcename: "e24" targetname: "n23"label: "value 0"}
 node: {title: "n23" label: "&(GlobalType_OO_PROGRAM_EXAMPLE_main)P  23" color: yellow info1: "visited: 1
+Const of type type_unknown
 "}
 node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1B,
