@@ -40,90 +40,9 @@
 #include "bitset.h"
 #include "bitfiddle.h"
 #include "irhooks.h"
+#include "return.h"
 
-#define MAX_DEPTH 				20
-
-/*
- * Mux optimization routines.
- */
-
-#if 0
-static ir_node *local_optimize_mux(ir_node *mux)
-{
-	int i, n;
-	ir_node *res = mux;
-  ir_node *sel = get_Mux_sel(mux);
-	ir_node *cmp = skip_Proj(sel);
-
-	/* Optimize the children  */
-	for(i = 1, n = get_irn_arity(mux); i < n; ++i) {
-		ir_node *operand = get_irn_n(mux, i);
-		if(get_irn_op(operand) == op_Mux)
-			optimize_mux(operand);
-	}
-
-	/* If we have no cmp above the mux, get out. */
-	if(is_Proj(sel) && get_irn_mode(sel) == mode_b && get_irn_opcode(cmp) == iro_Cmp) {
-
-		pn_Cmp cc = get_Proj_proj(sel);
-		ir_mode *mode = get_irn_mode(mux);
-		ir_node *block = get_nodes_block(n);
-		ir_node *cmp_left = get_Cmp_left(cmp);
-		ir_node *cmp_right = get_Cmp_right(cmp);
-		ir_node *mux_true = get_Mux_true(mux);
-		ir_node *mux_false = get_Mux_false(mux);
-
-		/*
-		 * Check for comparisons with signed integers.
-		 */
-		if(mode_is_int(mode) 					/* We need an integral mode */
-				&& mode_is_signed(mode)   /* which is signed */
-				&& cc == Lt) {						/* and have to compare for < */
-
-			/*
-			 * Mux(x:T < 0, -1, 0) -> Shrs(x, sizeof_bits(T) - 1)
-			 * Conditions:
-			 * T must be signed.
-			 */
-			if(classify_Const(cmp_right) == CNST_NULL
-				&& classify_Const(mux_true) == CNST_ALL_ONE
-				&& classify_Const(mux_false) == CNST_NULL) {
-
-				ir_mode *u_mode = find_unsigned_mode(mode);
-
-				res = new_r_Shrs(current_ir_graph, block, cmp_left,
-						new_r_Const_long(current_ir_graph, block, u_mode,
-							get_mode_size_bits(mode) - 1),
-						mode);
-			}
-
-			/*
-			 * Mux(0 < x:T, 1, 0) -> Shr(-x, sizeof_bits(T) - 1)
-			 * Conditions:
-			 * T must be signed.
-			 */
-			else if(classify_Const(cmp_left) == CNST_NULL
-				&& classify_Const(mux_true) == CNST_ONE
-				&& classify_Const(mux_false) == CNST_NULL) {
-
-				ir_mode *u_mode = find_unsigned_mode(mode);
-
-				res = new_r_Shr(current_ir_graph, block,
-
-						/* -x goes to 0 - x in Firm (cmp_left is 0, see the if) */
-						new_r_Sub(current_ir_graph, block, cmp_left, cmp_right, mode),
-
-						/* This is sizeof_bits(T) - 1 */
-						new_r_Const_long(current_ir_graph, block, u_mode,
-							get_mode_size_bits(mode) - 1),
-						mode);
-			}
-		}
-	}
-
-	return res;
-}
-#endif
+#define MAX_DEPTH 				4
 
 /**
  * check, if a node is const and return its tarval or
@@ -1001,6 +920,9 @@ void opt_if_conv(ir_graph *irg, opt_if_conv_info_t *params)
 #if 0
 	firm_dbg_set_mask(dbg, LEVEL_1);
 #endif
+
+	/* if-conversion works better with normalized returns */
+	normalize_one_return(irg);
 
 	/* Ensure, that the dominators are computed. */
 	compute_doms(irg);
