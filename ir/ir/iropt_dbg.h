@@ -158,3 +158,12 @@
 	  stat_merge_nodes(&n, 1, ons, SIZ(ons), STAT_OPT_ID);	      \
 	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_opt_auxnode);      \
 	} while(0)
+
+#define DBG_OPT_CSE(oldn, n)                                          \
+  do {                                                                \
+	  ir_node *ons[2];                                            \
+	  ons[0] = oldn;                                              \
+	  ons[1] = n;                                                 \
+	  stat_merge_nodes(&n, 1, ons, SIZ(ons), STAT_OPT_CSE);	      \
+	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_opt_cse);   \
+	} while(0)
