@@ -625,15 +625,15 @@ new_rd_Sync (dbg_info* db, ir_graph *irg, ir_node *block, int arity, ir_node **i
 }
 
 INLINE ir_node *
-new_rd_Bad ()
+new_rd_Bad (ir_graph *irg)
 {
-  return current_ir_graph->bad;
+  return irg->bad;
 }
 
 INLINE ir_node *
-new_rd_Unknown ()
+new_rd_Unknown (ir_graph *irg)
 {
-  return current_ir_graph->unknown;
+  return irg->unknown;
 }
 
 INLINE ir_node *
@@ -865,11 +865,11 @@ INLINE ir_node *new_r_Id     (ir_graph *irg, ir_node *block,
 		       ir_node *val, ir_mode *mode) {
   return new_rd_Id(NULL, irg, block, val, mode);
 }
-INLINE ir_node *new_r_Bad    () {
-  return new_rd_Bad();
+INLINE ir_node *new_r_Bad    (ir_graph *irg) {
+  return new_rd_Bad(irg);
 }
-INLINE ir_node *new_r_Unknown () {
-  return new_rd_Unknown();
+INLINE ir_node *new_r_Unknown (ir_graph *irg) {
+  return new_rd_Unknown(irg);
 }
 INLINE ir_node *new_r_CallBegin (ir_graph *irg, ir_node *block, ir_node *callee) {
   return new_rd_CallBegin(NULL, irg, block, callee);
