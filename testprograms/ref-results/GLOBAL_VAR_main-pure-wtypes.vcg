@@ -8,6 +8,7 @@ classname 1:  "intrablock Data"
 classname 16: "interblock Data"
 classname 2:  "Block"
 classname 13: "Control Flow"
+classname 18: "Exception Control Flow for Interval Analysis"
 classname 14: "intrablock Memory"
 classname 17: "interblock Memory"
 classname 15: "Dominators"
@@ -51,103 +52,103 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-node: {title: "n19" label: "Block  19"  info1: "mode:    BB
+node: {title: "n22" label: "Block  22"  info1: "mode:    BB
 visited: 11
 irg:     GLOBAL_VAR_main
 arity: 1 backedges:
 "color: lightyellow}
-edge: {sourcename: "n19" targetname: "n22" label: "0" class:13 priority:60 color:red}
-node: {title: "n20" label: "Start  20"  info1: "mode:    T
+edge: {sourcename: "n22" targetname: "n26" label: "0" class:13 priority:60 color:red}
+node: {title: "n23" label: "Start  23"  info1: "mode:    T
 visited: 11
 irg:     GLOBAL_VAR_main
 arity: 0
 start of method of type GLOBAL_VAR_main
 "color: blue}
-edge: { sourcename: "n20" targetname: "n19" class:2  priority:50 linestyle:dotted}
-node: {title: "n22" label: "ProjX 0 22"  info1: "mode:    X
+edge: { sourcename: "n23" targetname: "n22" class:2  priority:50 linestyle:dotted}
+node: {title: "n26" label: "ProjX 0 26"  info1: "mode:    X
 visited: 11
 irg:     GLOBAL_VAR_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n22" targetname: "n20" label: "0" class:13 priority:60 color:red}
-edge: { sourcename: "n22" targetname: "n19" class:2  priority:50 linestyle:dotted}
-node: {title: "n28" label: "Block  28"  info1: "mode:    BB
+edge: {sourcename: "n26" targetname: "n23" label: "0" class:13 priority:60 color:red}
+edge: { sourcename: "n26" targetname: "n22" class:2  priority:50 linestyle:dotted}
+node: {title: "n32" label: "Block  32"  info1: "mode:    BB
 visited: 11
 irg:     GLOBAL_VAR_main
 arity: 1 backedges:
 "color: lightyellow}
-edge: {sourcename: "n28" targetname: "n22" label: "0" class:13 priority:60 color:red}
-node: {title: "n31" label: "0x2Is  31"  info1: "mode:    Is
+edge: {sourcename: "n32" targetname: "n26" label: "0" class:13 priority:60 color:red}
+node: {title: "n35" label: "0x2Is  35"  info1: "mode:    Is
 visited: 11
 irg:     GLOBAL_VAR_main
 arity: 0
 Const of type type_unknown
 "color: yellow}
-edge: { sourcename: "n31" targetname: "n19" class:2  priority:50 linestyle:dotted}
-node: {title: "n24" label: "ProjP 3 24"  info1: "mode:    P
+edge: { sourcename: "n35" targetname: "n22" class:2  priority:50 linestyle:dotted}
+node: {title: "n28" label: "ProjP 3 28"  info1: "mode:    P
 visited: 11
 irg:     GLOBAL_VAR_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n24" targetname: "n20" label: "0" class:1  priority:50}
-edge: { sourcename: "n24" targetname: "n19" class:2  priority:50 linestyle:dotted}
-node: {title: "n25" label: "ProjM 1 25"  info1: "mode:    M
+edge: {sourcename: "n28" targetname: "n23" label: "0" class:1  priority:50}
+edge: { sourcename: "n28" targetname: "n22" class:2  priority:50 linestyle:dotted}
+node: {title: "n29" label: "ProjM 1 29"  info1: "mode:    M
 visited: 11
 irg:     GLOBAL_VAR_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n25" targetname: "n20" label: "0" class:17 priority:10 color:blue}
-edge: { sourcename: "n25" targetname: "n19" class:2  priority:50 linestyle:dotted}
-node: {title: "n30" label: "Sel i 30"  info1: "mode:    P
+edge: {sourcename: "n29" targetname: "n23" label: "0" class:17 priority:10 color:blue}
+edge: { sourcename: "n29" targetname: "n22" class:2  priority:50 linestyle:dotted}
+node: {title: "n34" label: "Sel i 34"  info1: "mode:    P
 visited: 11
 irg:     GLOBAL_VAR_main
 arity: 2
 Selecting entity of type int
   from entity of type GlobalType
 "}
-edge: {sourcename: "n30" targetname: "n25" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n30" targetname: "n24" label: "1" class:16 priority:10}
-edge: { sourcename: "n30" targetname: "n28" class:2  priority:50 linestyle:dotted}
-node: {title: "n32" label: "Store  32"  info1: "mode:    T
+edge: {sourcename: "n34" targetname: "n29" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n34" targetname: "n28" label: "1" class:16 priority:10}
+edge: { sourcename: "n34" targetname: "n32" class:2  priority:50 linestyle:dotted}
+node: {title: "n36" label: "Store  36"  info1: "mode:    T
 visited: 11
 irg:     GLOBAL_VAR_main
 arity: 3
 volatility: volatility_non_volatile
 "}
-edge: {sourcename: "n32" targetname: "n25" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n32" targetname: "n30" label: "1" class:1  priority:50}
-edge: {sourcename: "n32" targetname: "n31" label: "2" class:16 priority:10}
-edge: { sourcename: "n32" targetname: "n28" class:2  priority:50 linestyle:dotted}
-node: {title: "n34" label: "ProjM 0 34"  info1: "mode:    M
+edge: {sourcename: "n36" targetname: "n29" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n36" targetname: "n34" label: "1" class:1  priority:50}
+edge: {sourcename: "n36" targetname: "n35" label: "2" class:16 priority:10}
+edge: { sourcename: "n36" targetname: "n32" class:2  priority:50 linestyle:dotted}
+node: {title: "n38" label: "ProjM 0 38"  info1: "mode:    M
 visited: 11
 irg:     GLOBAL_VAR_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n34" targetname: "n32" label: "0" class:17 priority:10 color:blue}
-edge: { sourcename: "n34" targetname: "n28" class:2  priority:50 linestyle:dotted}
-node: {title: "n35" label: "Return  35"  info1: "mode:    X
+edge: {sourcename: "n38" targetname: "n36" label: "0" class:17 priority:10 color:blue}
+edge: { sourcename: "n38" targetname: "n32" class:2  priority:50 linestyle:dotted}
+node: {title: "n39" label: "Return  39"  info1: "mode:    X
 visited: 11
 irg:     GLOBAL_VAR_main
 arity: 1
 return in method of type GLOBAL_VAR_main
 "}
-edge: {sourcename: "n35" targetname: "n34" label: "0" class:14 priority:50 color:blue}
-edge: { sourcename: "n35" targetname: "n28" class:2  priority:50 linestyle:dotted}
-node: {title: "n17" label: "Block  17"  info1: "mode:    BB
+edge: {sourcename: "n39" targetname: "n38" label: "0" class:14 priority:50 color:blue}
+edge: { sourcename: "n39" targetname: "n32" class:2  priority:50 linestyle:dotted}
+node: {title: "n20" label: "Block  20"  info1: "mode:    BB
 visited: 11
 irg:     GLOBAL_VAR_main
 arity: 1 backedges:
 "color: lightyellow}
-edge: {sourcename: "n17" targetname: "n35" label: "0" class:13 priority:60 color:red}
-node: {title: "n37" label: "End  37"  info1: "mode:    X
+edge: {sourcename: "n20" targetname: "n39" label: "0" class:13 priority:60 color:red}
+node: {title: "n41" label: "End  41"  info1: "mode:    X
 visited: 11
 irg:     GLOBAL_VAR_main
 arity: 0
 "color: blue}
-edge: { sourcename: "n37" targetname: "n17" class:2  priority:50 linestyle:dotted}
-node: {title: "e15" label: "ent i" color: yellow
- info1: "entity i (15)
-  type:  int (11)
+edge: { sourcename: "n41" targetname: "n20" class:2  priority:50 linestyle:dotted}
+node: {title: "e18" label: "ent i" color: yellow
+ info1: "entity i (18)
+  type:  int (14)
   owner: GlobalType (0)
   Does not overwrite other entities.
   Is not overwritten by other entities.
@@ -161,16 +162,16 @@ node: {title: "e15" label: "ent i" color: yellow
 
 "
 }
-edge: { sourcename: "e15" targetname: "t11"class: 3 label: "type" color: red}
+edge: { sourcename: "e18" targetname: "t14"class: 3 label: "type" color: red}
 node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1b,
 peculiarity: peculiarity_existent
 " color: green}
-edge: { sourcename: "t0" targetname: "e14"class: 12 label: "member" color:blue}
-edge: { sourcename: "t0" targetname: "e15"class: 12 label: "member" color:blue}
-node: {title: "e14" label: "ent GLOBAL_VAR_main" color: yellow
- info1: "entity GLOBAL_VAR_main (14)
-  type:  GLOBAL_VAR_main (12)
+edge: { sourcename: "t0" targetname: "e17"class: 12 label: "member" color:blue}
+edge: { sourcename: "t0" targetname: "e18"class: 12 label: "member" color:blue}
+node: {title: "e17" label: "ent GLOBAL_VAR_main" color: yellow
+ info1: "entity GLOBAL_VAR_main (17)
+  type:  GLOBAL_VAR_main (15)
   owner: GlobalType (0)
   Does not overwrite other entities.
   Is not overwritten by other entities.
@@ -182,34 +183,34 @@ node: {title: "e14" label: "ent GLOBAL_VAR_main" color: yellow
   peculiarity: peculiarity_existent
   ld_name: no yet set
   offset:  -1
-  irg = 27
+  irg = 31
 
 "
 }
-edge: { sourcename: "e14" targetname: "t12"class: 3 label: "type" color: red}
-edge: { sourcename: "e14" targetname: "n13"label: "value 0"}
-node: {title: "n13" label: "SymC &GLOBAL_VAR_main  13"  info1: "mode:    P
+edge: { sourcename: "e17" targetname: "t15"class: 3 label: "type" color: red}
+edge: { sourcename: "e17" targetname: "n16"label: "value 0"}
+node: {title: "n16" label: "SymC &GLOBAL_VAR_main  16"  info1: "mode:    P
 visited: 1
 arity: 0
 kind addr_ent
-entity GlobalType.GLOBAL_VAR_main (14)
+entity GlobalType.GLOBAL_VAR_main (17)
 
 SymConst of type type_unknown
 "}
-node: {title: "t12" label: "method GLOBAL_VAR_main" info1: "state: layout_fixed,
+node: {title: "t15" label: "method GLOBAL_VAR_main" info1: "state: layout_fixed,
 mode: P,
 size: 32b,
 variadicity: variadicity_non_variadic
 params: 0
 results: 0
 "}
-node: {title: "t11" label: "primitive int" info1: "state: layout_fixed,
+node: {title: "t14" label: "primitive int" info1: "state: layout_fixed,
 mode: Is,
 size: 32b,
 "}
-node: {title: "t16" label: "class GLOBAL_VAR_mainframe_tp" info1: "state: layout_undefined
+node: {title: "t19" label: "class GLOBAL_VAR_mainframe_tp" info1: "state: layout_undefined
 size: -1b,
 peculiarity: peculiarity_existent
 " color: green}
-edge: { sourcename: "n30" targetname: "e15"class:2 priority:2 linestyle:dotted}
+edge: { sourcename: "n34" targetname: "e18"class:2 priority:2 linestyle:dotted}
 }

@@ -8,6 +8,7 @@ classname 1:  "intrablock Data"
 classname 16: "interblock Data"
 classname 2:  "Block"
 classname 13: "Control Flow"
+classname 18: "Exception Control Flow for Interval Analysis"
 classname 14: "intrablock Memory"
 classname 17: "interblock Memory"
 classname 15: "Dominators"
@@ -51,74 +52,74 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-graph: { title: "g45" label: "CALL_STR_EXAMPLE_main" status:clustered color:white
-graph: { title: "n35"  label: "Block 35" status:clustered color:yellow
-edge: {sourcename: "n35" targetname: "n53" label: "0" class:13 priority:60 color:red}
-node: {title: "n55" label: "End  55"  info1: "mode:    X
+graph: { title: "g49" label: "CALL_STR_EXAMPLE_main" status:clustered color:white
+graph: { title: "n38"  label: "Block 38" status:clustered color:yellow
+edge: {sourcename: "n38" targetname: "n57" label: "0" class:13 priority:60 color:red}
+node: {title: "n59" label: "End  59"  info1: "mode:    X
 visited: 9
 irg:     CALL_STR_EXAMPLE_main
 arity: 0
 "color: blue}
 }
 
-graph: { title: "n46"  label: "Block 46" status:clustered color:yellow
-edge: {sourcename: "n46" targetname: "n40" label: "0" class:13 priority:60 color:red}
-node: {title: "n53" label: "Return  53"  info1: "mode:    X
+graph: { title: "n50"  label: "Block 50" status:clustered color:yellow
+edge: {sourcename: "n50" targetname: "n44" label: "0" class:13 priority:60 color:red}
+node: {title: "n57" label: "Return  57"  info1: "mode:    X
 visited: 9
 irg:     CALL_STR_EXAMPLE_main
 arity: 1
 return in method of type CALL_STR_EXAMPLE_main
 "}
-edge: {sourcename: "n53" targetname: "n52" label: "0" class:14 priority:50 color:blue}
-node: {title: "n52" label: "ProjM 0 52"  info1: "mode:    M
+edge: {sourcename: "n57" targetname: "n56" label: "0" class:14 priority:50 color:blue}
+node: {title: "n56" label: "ProjM 0 56"  info1: "mode:    M
 visited: 9
 irg:     CALL_STR_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n52" targetname: "n50" label: "0" class:17 priority:10 color:blue}
-node: {title: "n50" label: "Call  50"  info1: "mode:    T
+edge: {sourcename: "n56" targetname: "n54" label: "0" class:17 priority:10 color:blue}
+node: {title: "n54" label: "Call  54"  info1: "mode:    T
 visited: 9
 irg:     CALL_STR_EXAMPLE_main
 arity: 3
 calling method of type f
   param 0 type: ptr_to_string
 "}
-edge: {sourcename: "n50" targetname: "n43" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n50" targetname: "n48" label: "1" class:16 priority:10}
-edge: {sourcename: "n50" targetname: "n47" label: "2" class:16 priority:10}
+edge: {sourcename: "n54" targetname: "n47" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n54" targetname: "n52" label: "1" class:16 priority:10}
+edge: {sourcename: "n54" targetname: "n51" label: "2" class:16 priority:10}
 }
 
-graph: { title: "n37"  label: "Block 37" status:clustered color:yellow
-edge: {sourcename: "n37" targetname: "n40" label: "0" class:13 priority:60 color:red}
-node: {title: "n43" label: "ProjM 1 43"  info1: "mode:    M
+graph: { title: "n40"  label: "Block 40" status:clustered color:yellow
+edge: {sourcename: "n40" targetname: "n44" label: "0" class:13 priority:60 color:red}
+node: {title: "n47" label: "ProjM 1 47"  info1: "mode:    M
 visited: 9
 irg:     CALL_STR_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n43" targetname: "n38" label: "0" class:17 priority:10 color:blue}
-node: {title: "n48" label: "SymC f  48"  info1: "mode:    P
+edge: {sourcename: "n47" targetname: "n41" label: "0" class:17 priority:10 color:blue}
+node: {title: "n52" label: "SymC f  52"  info1: "mode:    P
 visited: 9
 irg:     CALL_STR_EXAMPLE_main
 arity: 0
 kind addr_name
 SymConst of type type_unknown
 "}
-node: {title: "n47" label: "SymC &constStr  47"  info1: "mode:    P
+node: {title: "n51" label: "SymC &constStr  51"  info1: "mode:    P
 visited: 9
 irg:     CALL_STR_EXAMPLE_main
 arity: 0
 kind addr_ent
-entity GlobalType.constStr (17)
+entity GlobalType.constStr (20)
 
 SymConst of type type_unknown
 "}
-node: {title: "n40" label: "ProjX 0 40"  info1: "mode:    X
+node: {title: "n44" label: "ProjX 0 44"  info1: "mode:    X
 visited: 9
 irg:     CALL_STR_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n40" targetname: "n38" label: "0" class:13 priority:60 color:red}
-node: {title: "n38" label: "Start  38"  info1: "mode:    T
+edge: {sourcename: "n44" targetname: "n41" label: "0" class:13 priority:60 color:red}
+node: {title: "n41" label: "Start  41"  info1: "mode:    T
 visited: 9
 irg:     CALL_STR_EXAMPLE_main
 arity: 0

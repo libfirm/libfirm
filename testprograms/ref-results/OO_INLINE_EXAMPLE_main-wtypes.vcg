@@ -8,6 +8,7 @@ classname 1:  "intrablock Data"
 classname 16: "interblock Data"
 classname 2:  "Block"
 classname 13: "Control Flow"
+classname 18: "Exception Control Flow for Interval Analysis"
 classname 14: "intrablock Memory"
 classname 17: "interblock Memory"
 classname 15: "Dominators"
@@ -51,149 +52,149 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-graph: { title: "g35" label: "OO_INLINE_EXAMPLE_main" status:clustered color:white
-graph: { title: "n174"  label: "Block 174" status:clustered color:yellow
-edge: {sourcename: "n174" targetname: "n135" label: "0" class:13 priority:60 color:red}
-edge: {sourcename: "n174" targetname: "n175" label: "1" class:13 priority:60 color:red}
-node: {title: "n173" label: "PhiM  173"  info1: "mode:    M
+graph: { title: "g39" label: "OO_INLINE_EXAMPLE_main" status:clustered color:white
+graph: { title: "n180"  label: "Block 180" status:clustered color:yellow
+edge: {sourcename: "n180" targetname: "n141" label: "0" class:13 priority:60 color:red}
+edge: {sourcename: "n180" targetname: "n181" label: "1" class:13 priority:60 color:red}
+node: {title: "n179" label: "PhiM  179"  info1: "mode:    M
 visited: 26
 irg:     OO_INLINE_EXAMPLE_main
 arity: 2 backedges:
 "color: green}
-edge: {sourcename: "n173" targetname: "n145" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n173" targetname: "n179" label: "1" class:17 priority:10 color:blue}
-node: {title: "n179" label: "Store  179"  info1: "mode:    T
+edge: {sourcename: "n179" targetname: "n151" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n179" targetname: "n185" label: "1" class:17 priority:10 color:blue}
+node: {title: "n185" label: "Store  185"  info1: "mode:    T
 visited: 26
 irg:     OO_INLINE_EXAMPLE_main
 arity: 3
 volatility: volatility_non_volatile
 "}
-edge: {sourcename: "n179" targetname: "n173" label: "0" class:14 priority:50 color:blue}
-edge: {sourcename: "n179" targetname: "n183" label: "1" class:1  priority:50}
-edge: {sourcename: "n179" targetname: "n180" label: "2" class:1  priority:50}
-node: {title: "n183" label: "Sel a 183"  info1: "mode:    P
+edge: {sourcename: "n185" targetname: "n179" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n185" targetname: "n189" label: "1" class:1  priority:50}
+edge: {sourcename: "n185" targetname: "n186" label: "2" class:1  priority:50}
+node: {title: "n189" label: "Sel a 189"  info1: "mode:    P
 visited: 26
 irg:     OO_INLINE_EXAMPLE_main
 arity: 2
 Selecting entity of type int
   from entity of type PRIMA_INLINE
 "}
-edge: {sourcename: "n183" targetname: "n173" label: "0" class:14 priority:50 color:blue}
-edge: {sourcename: "n183" targetname: "n44" label: "1" class:16 priority:10}
-node: {title: "n180" label: "PhiIs  180"  info1: "mode:    Is
+edge: {sourcename: "n189" targetname: "n179" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n189" targetname: "n48" label: "1" class:16 priority:10}
+node: {title: "n186" label: "PhiIs  186"  info1: "mode:    Is
 visited: 26
 irg:     OO_INLINE_EXAMPLE_main
 arity: 2 backedges:
 "color: green}
-edge: {sourcename: "n180" targetname: "n38" label: "0" class:16 priority:10}
-edge: {sourcename: "n180" targetname: "n181" label: "1" class:1  priority:50}
-node: {title: "n181" label: "PhiIs  181"  info1: "mode:    Is
+edge: {sourcename: "n186" targetname: "n42" label: "0" class:16 priority:10}
+edge: {sourcename: "n186" targetname: "n187" label: "1" class:1  priority:50}
+node: {title: "n187" label: "PhiIs  187"  info1: "mode:    Is
 visited: 26
 irg:     OO_INLINE_EXAMPLE_main
 arity: 2 backedges:
 "color: green}
-edge: {sourcename: "n181" targetname: "n182" label: "0" class:16 priority:10}
-edge: {sourcename: "n181" targetname: "n180" label: "1" class:1  priority:50}
-node: {title: "n175" label: "Jmp  175"  info1: "mode:    X
+edge: {sourcename: "n187" targetname: "n188" label: "0" class:16 priority:10}
+edge: {sourcename: "n187" targetname: "n186" label: "1" class:1  priority:50}
+node: {title: "n181" label: "Jmp  181"  info1: "mode:    X
 visited: 26
 irg:     OO_INLINE_EXAMPLE_main
 arity: 0
 "}
 }
 
-graph: { title: "n138"  label: "Block 138" status:clustered color:yellow
-edge: {sourcename: "n138" targetname: "n30" label: "0" class:13 priority:60 color:red}
-node: {title: "n145" label: "ProjM 0 145"  info1: "mode:    M
+graph: { title: "n144"  label: "Block 144" status:clustered color:yellow
+edge: {sourcename: "n144" targetname: "n34" label: "0" class:13 priority:60 color:red}
+node: {title: "n151" label: "ProjM 0 151"  info1: "mode:    M
 visited: 26
 irg:     OO_INLINE_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n145" targetname: "n146" label: "0" class:17 priority:10 color:blue}
-node: {title: "n146" label: "Store  146"  info1: "mode:    T
+edge: {sourcename: "n151" targetname: "n152" label: "0" class:17 priority:10 color:blue}
+node: {title: "n152" label: "Store  152"  info1: "mode:    T
 visited: 26
 irg:     OO_INLINE_EXAMPLE_main
 arity: 3
 volatility: volatility_non_volatile
 "}
-edge: {sourcename: "n146" targetname: "n43" label: "0" class:14 priority:50 color:blue}
-edge: {sourcename: "n146" targetname: "n149" label: "1" class:1  priority:50}
-edge: {sourcename: "n146" targetname: "n37" label: "2" class:16 priority:10}
-node: {title: "n149" label: "Sel a 149"  info1: "mode:    P
+edge: {sourcename: "n152" targetname: "n47" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n152" targetname: "n155" label: "1" class:1  priority:50}
+edge: {sourcename: "n152" targetname: "n41" label: "2" class:16 priority:10}
+node: {title: "n155" label: "Sel a 155"  info1: "mode:    P
 visited: 26
 irg:     OO_INLINE_EXAMPLE_main
 arity: 2
 Selecting entity of type int
   from entity of type PRIMA_INLINE
 "}
-edge: {sourcename: "n149" targetname: "n43" label: "0" class:14 priority:50 color:blue}
-edge: {sourcename: "n149" targetname: "n44" label: "1" class:1  priority:50}
-node: {title: "n43" label: "ProjM 0 43"  info1: "mode:    M
+edge: {sourcename: "n155" targetname: "n47" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n155" targetname: "n48" label: "1" class:1  priority:50}
+node: {title: "n47" label: "ProjM 0 47"  info1: "mode:    M
 visited: 26
 irg:     OO_INLINE_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n43" targetname: "n41" label: "0" class:17 priority:10 color:blue}
-node: {title: "n44" label: "ProjP 2 44"  info1: "mode:    P
+edge: {sourcename: "n47" targetname: "n45" label: "0" class:17 priority:10 color:blue}
+node: {title: "n48" label: "ProjP 2 48"  info1: "mode:    P
 visited: 26
 irg:     OO_INLINE_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n44" targetname: "n41" label: "0" class:1  priority:50}
-node: {title: "n41" label: "Alloc  41"  info1: "mode:    T
+edge: {sourcename: "n48" targetname: "n45" label: "0" class:1  priority:50}
+node: {title: "n45" label: "Alloc  45"  info1: "mode:    T
 visited: 26
 irg:     OO_INLINE_EXAMPLE_main
 arity: 2
 allocating entity of type PRIMA_INLINE
 "}
-edge: {sourcename: "n41" targetname: "n33" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n41" targetname: "n39" label: "1" class:16 priority:10}
-node: {title: "n182" label: "0x0Is  182"  info1: "mode:    Is
+edge: {sourcename: "n45" targetname: "n37" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n45" targetname: "n43" label: "1" class:16 priority:10}
+node: {title: "n188" label: "0x0Is  188"  info1: "mode:    Is
 visited: 26
 irg:     OO_INLINE_EXAMPLE_main
 arity: 0
 Const of type type_unknown
 "color: yellow}
-node: {title: "n135" label: "Jmp  135"  info1: "mode:    X
+node: {title: "n141" label: "Jmp  141"  info1: "mode:    X
 visited: 26
 irg:     OO_INLINE_EXAMPLE_main
 arity: 0
 "}
 }
 
-graph: { title: "n27"  label: "Block 27" status:clustered color:yellow
-edge: {sourcename: "n27" targetname: "n30" label: "0" class:13 priority:60 color:red}
-node: {title: "n37" label: "0x2Is  37"  info1: "mode:    Is
+graph: { title: "n30"  label: "Block 30" status:clustered color:yellow
+edge: {sourcename: "n30" targetname: "n34" label: "0" class:13 priority:60 color:red}
+node: {title: "n41" label: "0x2Is  41"  info1: "mode:    Is
 visited: 26
 irg:     OO_INLINE_EXAMPLE_main
 arity: 0
 Const of type type_unknown
 "color: yellow}
-node: {title: "n33" label: "ProjM 1 33"  info1: "mode:    M
+node: {title: "n37" label: "ProjM 1 37"  info1: "mode:    M
 visited: 26
 irg:     OO_INLINE_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n33" targetname: "n28" label: "0" class:17 priority:10 color:blue}
-node: {title: "n39" label: "SymC PRIMA_INLINE size  39"  info1: "mode:    Iu
+edge: {sourcename: "n37" targetname: "n31" label: "0" class:17 priority:10 color:blue}
+node: {title: "n43" label: "SymC PRIMA_INLINE size  43"  info1: "mode:    Iu
 visited: 26
 irg:     OO_INLINE_EXAMPLE_main
 arity: 0
 kind size
 SymConst of type type_unknown
 "}
-node: {title: "n38" label: "0x5Is  38"  info1: "mode:    Is
+node: {title: "n42" label: "0x5Is  42"  info1: "mode:    Is
 visited: 26
 irg:     OO_INLINE_EXAMPLE_main
 arity: 0
 Const of type type_unknown
 "color: yellow}
-node: {title: "n30" label: "ProjX 0 30"  info1: "mode:    X
+node: {title: "n34" label: "ProjX 0 34"  info1: "mode:    X
 visited: 26
 irg:     OO_INLINE_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n30" targetname: "n28" label: "0" class:13 priority:60 color:red}
-node: {title: "n28" label: "Start  28"  info1: "mode:    T
+edge: {sourcename: "n34" targetname: "n31" label: "0" class:13 priority:60 color:red}
+node: {title: "n31" label: "Start  31"  info1: "mode:    T
 visited: 26
 irg:     OO_INLINE_EXAMPLE_main
 arity: 0
@@ -201,8 +202,8 @@ start of method of type OO_INLINE_EXAMPLE_main
 "color: blue}
 }
 
-graph: { title: "n25"  label: "Block 25" status:clustered color:yellow
-node: {title: "n189" label: "End  189"  info1: "mode:    X
+graph: { title: "n28"  label: "Block 28" status:clustered color:yellow
+node: {title: "n195" label: "End  195"  info1: "mode:    X
 visited: 26
 irg:     OO_INLINE_EXAMPLE_main
 arity: 2
@@ -211,10 +212,10 @@ arity: 2
 
 }
 
-node: {title: "e14" label: "ent a" color: yellow
- info1: "entity a (14)
-  type:  int (11)
-  owner: PRIMA_INLINE (12)
+node: {title: "e17" label: "ent a" color: yellow
+ info1: "entity a (17)
+  type:  int (14)
+  owner: PRIMA_INLINE (15)
   Does not overwrite other entities.
   Is not overwritten by other entities.
   allocation:  allocation_automatic
@@ -227,18 +228,18 @@ node: {title: "e14" label: "ent a" color: yellow
 
 "
 }
-edge: { sourcename: "e14" targetname: "t11"class: 3 label: "type" color: red}
-node: {title: "t12" label: "class PRIMA_INLINE" info1: "state: layout_undefined
+edge: { sourcename: "e17" targetname: "t14"class: 3 label: "type" color: red}
+node: {title: "t15" label: "class PRIMA_INLINE" info1: "state: layout_undefined
 size: -1b,
 peculiarity: peculiarity_existent
 " color: green}
-edge: { sourcename: "t12" targetname: "e14"class: 12 label: "member" color:blue}
-edge: { sourcename: "t12" targetname: "e17"class: 12 label: "member" color:blue}
-edge: { sourcename: "t12" targetname: "e20"class: 12 label: "member" color:blue}
-node: {title: "e17" label: "ent PRIMA_INLINE_set_a" color: yellow
- info1: "entity set_a (17)
-  type:  set_a (15)
-  owner: PRIMA_INLINE (12)
+edge: { sourcename: "t15" targetname: "e17"class: 12 label: "member" color:blue}
+edge: { sourcename: "t15" targetname: "e20"class: 12 label: "member" color:blue}
+edge: { sourcename: "t15" targetname: "e23"class: 12 label: "member" color:blue}
+node: {title: "e20" label: "ent PRIMA_INLINE_set_a" color: yellow
+ info1: "entity set_a (20)
+  type:  set_a (18)
+  owner: PRIMA_INLINE (15)
   Does not overwrite other entities.
   Is not overwritten by other entities.
   allocation:  allocation_static
@@ -249,42 +250,42 @@ node: {title: "e17" label: "ent PRIMA_INLINE_set_a" color: yellow
   peculiarity: peculiarity_existent
   ld_name: PRIMA_INLINE_set_a
   offset:  -1
-  irg = 68
+  irg = 73
 
 "
 }
-edge: { sourcename: "e17" targetname: "t15"class: 3 label: "type" color: red}
-edge: { sourcename: "e17" targetname: "n16"label: "value 0"}
-node: {title: "n16" label: "SymC &set_a  16"  info1: "mode:    P
+edge: { sourcename: "e20" targetname: "t18"class: 3 label: "type" color: red}
+edge: { sourcename: "e20" targetname: "n19"label: "value 0"}
+node: {title: "n19" label: "SymC &set_a  19"  info1: "mode:    P
 visited: 1
 arity: 0
 kind addr_ent
-entity PRIMA_INLINE.set_a (17)
+entity PRIMA_INLINE.set_a (20)
 
 SymConst of type type_unknown
 "}
-node: {title: "t15" label: "method set_a" info1: "state: layout_fixed,
+node: {title: "t18" label: "method set_a" info1: "state: layout_fixed,
 mode: P,
 size: 32b,
 variadicity: variadicity_non_variadic
 params: 2
 results: 0
 "}
-edge: { sourcename: "t15" targetname: "t13"class: 5 label: "param 0" color: green}
-edge: { sourcename: "t15" targetname: "t11"class: 5 label: "param 1" color: green}
-node: {title: "t13" label: "pointer class_prima_ptr" info1: "state: layout_fixed,
+edge: { sourcename: "t18" targetname: "t16"class: 5 label: "param 0" color: green}
+edge: { sourcename: "t18" targetname: "t14"class: 5 label: "param 1" color: green}
+node: {title: "t16" label: "pointer class_prima_ptr" info1: "state: layout_fixed,
 mode: P,
 size: 32b,
 "}
-edge: { sourcename: "t13" targetname: "t12"class: 9 label: "points to" color:green}
-node: {title: "t11" label: "primitive int" info1: "state: layout_fixed,
+edge: { sourcename: "t16" targetname: "t15"class: 9 label: "points to" color:green}
+node: {title: "t14" label: "primitive int" info1: "state: layout_fixed,
 mode: Is,
 size: 32b,
 "}
-node: {title: "e20" label: "ent PRIMA_INLINE_c" color: yellow
- info1: "entity c (20)
-  type:  c (18)
-  owner: PRIMA_INLINE (12)
+node: {title: "e23" label: "ent PRIMA_INLINE_c" color: yellow
+ info1: "entity c (23)
+  type:  c (21)
+  owner: PRIMA_INLINE (15)
   Does not overwrite other entities.
   Is not overwritten by other entities.
   allocation:  allocation_static
@@ -295,33 +296,33 @@ node: {title: "e20" label: "ent PRIMA_INLINE_c" color: yellow
   peculiarity: peculiarity_existent
   ld_name: PRIMA_INLINE_c
   offset:  -1
-  irg = 90
+  irg = 96
 
 "
 }
-edge: { sourcename: "e20" targetname: "t18"class: 3 label: "type" color: red}
-edge: { sourcename: "e20" targetname: "n19"label: "value 0"}
-node: {title: "n19" label: "SymC &c  19"  info1: "mode:    P
+edge: { sourcename: "e23" targetname: "t21"class: 3 label: "type" color: red}
+edge: { sourcename: "e23" targetname: "n22"label: "value 0"}
+node: {title: "n22" label: "SymC &c  22"  info1: "mode:    P
 visited: 1
 arity: 0
 kind addr_ent
-entity PRIMA_INLINE.c (20)
+entity PRIMA_INLINE.c (23)
 
 SymConst of type type_unknown
 "}
-node: {title: "t18" label: "method c" info1: "state: layout_fixed,
+node: {title: "t21" label: "method c" info1: "state: layout_fixed,
 mode: P,
 size: 32b,
 variadicity: variadicity_non_variadic
 params: 2
 results: 1
 "}
-edge: { sourcename: "t18" targetname: "t13"class: 5 label: "param 0" color: green}
-edge: { sourcename: "t18" targetname: "t11"class: 5 label: "param 1" color: green}
-edge: { sourcename: "t18" targetname: "t11"class: 6 label: "res 0" color: green}
-node: {title: "e23" label: "ent OO_INLINE_EXAMPLE_main" color: yellow
- info1: "entity OO_INLINE_EXAMPLE_main (23)
-  type:  OO_INLINE_EXAMPLE_main (21)
+edge: { sourcename: "t21" targetname: "t16"class: 5 label: "param 0" color: green}
+edge: { sourcename: "t21" targetname: "t14"class: 5 label: "param 1" color: green}
+edge: { sourcename: "t21" targetname: "t14"class: 6 label: "res 0" color: green}
+node: {title: "e26" label: "ent OO_INLINE_EXAMPLE_main" color: yellow
+ info1: "entity OO_INLINE_EXAMPLE_main (26)
+  type:  OO_INLINE_EXAMPLE_main (24)
   owner: GlobalType (0)
   Does not overwrite other entities.
   Is not overwritten by other entities.
@@ -333,17 +334,17 @@ node: {title: "e23" label: "ent OO_INLINE_EXAMPLE_main" color: yellow
   peculiarity: peculiarity_existent
   ld_name: no yet set
   offset:  -1
-  irg = 35
+  irg = 39
 
 "
 }
-edge: { sourcename: "e23" targetname: "t21"class: 3 label: "type" color: red}
-edge: { sourcename: "e23" targetname: "n22"label: "value 0"}
-node: {title: "n22" label: "SymC &OO_INLINE_EXAMPLE_main  22"  info1: "mode:    P
+edge: { sourcename: "e26" targetname: "t24"class: 3 label: "type" color: red}
+edge: { sourcename: "e26" targetname: "n25"label: "value 0"}
+node: {title: "n25" label: "SymC &OO_INLINE_EXAMPLE_main  25"  info1: "mode:    P
 visited: 1
 arity: 0
 kind addr_ent
-entity GlobalType.OO_INLINE_EXAMPLE_main (23)
+entity GlobalType.OO_INLINE_EXAMPLE_main (26)
 
 SymConst of type type_unknown
 "}
@@ -351,21 +352,21 @@ node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1b,
 peculiarity: peculiarity_existent
 " color: green}
-edge: { sourcename: "t0" targetname: "e23"class: 12 label: "member" color:blue}
-node: {title: "t21" label: "method OO_INLINE_EXAMPLE_main" info1: "state: layout_fixed,
+edge: { sourcename: "t0" targetname: "e26"class: 12 label: "member" color:blue}
+node: {title: "t24" label: "method OO_INLINE_EXAMPLE_main" info1: "state: layout_fixed,
 mode: P,
 size: 32b,
 variadicity: variadicity_non_variadic
 params: 0
 results: 1
 "}
-edge: { sourcename: "t21" targetname: "t11"class: 6 label: "res 0" color: green}
-node: {title: "t24" label: "class OO_INLINE_EXAMPLE_mainframe_tp" info1: "state: layout_undefined
+edge: { sourcename: "t24" targetname: "t14"class: 6 label: "res 0" color: green}
+node: {title: "t27" label: "class OO_INLINE_EXAMPLE_mainframe_tp" info1: "state: layout_undefined
 size: -1b,
 peculiarity: peculiarity_existent
 " color: green}
-edge: { sourcename: "n183" targetname: "e14"class:2 priority:2 linestyle:dotted}
-edge: { sourcename: "n41" targetname: "t12"class:2 priority:2 linestyle:dotted}
-edge: { sourcename: "n39" targetname: "t12"class:2 priority:2 linestyle:dotted}
-edge: { sourcename: "n149" targetname: "e14"class:2 priority:2 linestyle:dotted}
+edge: { sourcename: "n189" targetname: "e17"class:2 priority:2 linestyle:dotted}
+edge: { sourcename: "n45" targetname: "t15"class:2 priority:2 linestyle:dotted}
+edge: { sourcename: "n43" targetname: "t15"class:2 priority:2 linestyle:dotted}
+edge: { sourcename: "n155" targetname: "e17"class:2 priority:2 linestyle:dotted}
 }

@@ -8,6 +8,7 @@ classname 1:  "intrablock Data"
 classname 16: "interblock Data"
 classname 2:  "Block"
 classname 13: "Control Flow"
+classname 18: "Exception Control Flow for Interval Analysis"
 classname 14: "intrablock Memory"
 classname 17: "interblock Memory"
 classname 15: "Dominators"
@@ -51,159 +52,159 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-graph: { title: "g26" label: "IRREGULAR_CF_main" status:clustered color:white
-graph: { title: "n16"  label: "Block 16" status:clustered color:yellow
-edge: {sourcename: "n16" targetname: "n50" label: "0" class:13 priority:60 color:red}
-node: {title: "n62" label: "End  62"  info1: "mode:    X
+graph: { title: "g30" label: "IRREGULAR_CF_main" status:clustered color:white
+graph: { title: "n19"  label: "Block 19" status:clustered color:yellow
+edge: {sourcename: "n19" targetname: "n54" label: "0" class:13 priority:60 color:red}
+node: {title: "n66" label: "End  66"  info1: "mode:    X
 visited: 8
 irg:     IRREGULAR_CF_main
 arity: 0
 "color: blue}
 }
 
-graph: { title: "n48"  label: "Block 48" status:clustered color:yellow
-edge: {sourcename: "n48" targetname: "n47" label: "0" class:13 priority:60 color:red}
-edge: {sourcename: "n48" targetname: "n45" label: "1" class:13 priority:60 color:red}
-node: {title: "n50" label: "Return  50"  info1: "mode:    X
+graph: { title: "n52"  label: "Block 52" status:clustered color:yellow
+edge: {sourcename: "n52" targetname: "n51" label: "0" class:13 priority:60 color:red}
+edge: {sourcename: "n52" targetname: "n49" label: "1" class:13 priority:60 color:red}
+node: {title: "n54" label: "Return  54"  info1: "mode:    X
 visited: 8
 irg:     IRREGULAR_CF_main
 arity: 1
 return in method of type main
 "}
-edge: {sourcename: "n50" targetname: "n24" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n54" targetname: "n28" label: "0" class:17 priority:10 color:blue}
 }
 
-graph: { title: "n46"  label: "Block 46" status:clustered color:yellow
-edge: {sourcename: "n46" targetname: "n42" label: "0" class:13 priority:60 color:red}
-node: {title: "n47" label: "Jmp  47"  info1: "mode:    X
+graph: { title: "n50"  label: "Block 50" status:clustered color:yellow
+edge: {sourcename: "n50" targetname: "n46" label: "0" class:13 priority:60 color:red}
+node: {title: "n51" label: "Jmp  51"  info1: "mode:    X
 visited: 8
 irg:     IRREGULAR_CF_main
 arity: 0
 "}
 }
 
-graph: { title: "n44"  label: "Block 44" status:clustered color:yellow
-edge: {sourcename: "n44" targetname: "n43" label: "0" class:13 priority:60 color:red}
-edge: {sourcename: "n44" targetname: "n37" label: "1" class:13 priority:60 color:red}
-node: {title: "n45" label: "Jmp  45"  info1: "mode:    X
+graph: { title: "n48"  label: "Block 48" status:clustered color:yellow
+edge: {sourcename: "n48" targetname: "n47" label: "0" class:13 priority:60 color:red}
+edge: {sourcename: "n48" targetname: "n41" label: "1" class:13 priority:60 color:red}
+node: {title: "n49" label: "Jmp  49"  info1: "mode:    X
 visited: 8
 irg:     IRREGULAR_CF_main
 arity: 0
 "}
 }
 
-graph: { title: "n38"  label: "Block 38" status:clustered color:yellow
-edge: {sourcename: "n38" targetname: "n34" label: "0" class:13 priority:60 color:red}
-node: {title: "n42" label: "ProjX 0 42"  info1: "mode:    X
+graph: { title: "n42"  label: "Block 42" status:clustered color:yellow
+edge: {sourcename: "n42" targetname: "n38" label: "0" class:13 priority:60 color:red}
+node: {title: "n46" label: "ProjX 0 46"  info1: "mode:    X
 visited: 8
 irg:     IRREGULAR_CF_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n42" targetname: "n41" label: "0" class:13 priority:60 color:red}
-node: {title: "n43" label: "ProjX 1 43"  info1: "mode:    X
+edge: {sourcename: "n46" targetname: "n45" label: "0" class:13 priority:60 color:red}
+node: {title: "n47" label: "ProjX 1 47"  info1: "mode:    X
 visited: 8
 irg:     IRREGULAR_CF_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n43" targetname: "n41" label: "0" class:13 priority:60 color:red}
-node: {title: "n41" label: "Cond  41"  info1: "mode:    T
+edge: {sourcename: "n47" targetname: "n45" label: "0" class:13 priority:60 color:red}
+node: {title: "n45" label: "Cond  45"  info1: "mode:    T
 visited: 8
 irg:     IRREGULAR_CF_main
 arity: 1
 "}
-edge: {sourcename: "n41" targetname: "n40" label: "0" class:1  priority:50}
-node: {title: "n40" label: "Projb Eq 40"  info1: "mode:    b
+edge: {sourcename: "n45" targetname: "n44" label: "0" class:1  priority:50}
+node: {title: "n44" label: "Projb Eq 44"  info1: "mode:    b
 visited: 8
 irg:     IRREGULAR_CF_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n40" targetname: "n39" label: "0" class:1  priority:50}
-node: {title: "n39" label: "Cmp  39"  info1: "mode:    T
+edge: {sourcename: "n44" targetname: "n43" label: "0" class:1  priority:50}
+node: {title: "n43" label: "Cmp  43"  info1: "mode:    T
 visited: 8
 irg:     IRREGULAR_CF_main
 arity: 2
 "}
-edge: {sourcename: "n39" targetname: "n28" label: "0" class:16 priority:10}
-edge: {sourcename: "n39" targetname: "n30" label: "1" class:16 priority:10}
+edge: {sourcename: "n43" targetname: "n32" label: "0" class:16 priority:10}
+edge: {sourcename: "n43" targetname: "n34" label: "1" class:16 priority:10}
 }
 
-graph: { title: "n36"  label: "Block 36" status:clustered color:yellow
-edge: {sourcename: "n36" targetname: "n35" label: "0" class:13 priority:60 color:red}
-node: {title: "n37" label: "Jmp  37"  info1: "mode:    X
+graph: { title: "n40"  label: "Block 40" status:clustered color:yellow
+edge: {sourcename: "n40" targetname: "n39" label: "0" class:13 priority:60 color:red}
+node: {title: "n41" label: "Jmp  41"  info1: "mode:    X
 visited: 8
 irg:     IRREGULAR_CF_main
 arity: 0
 "}
 }
 
-graph: { title: "n27"  label: "Block 27" status:clustered color:yellow
-edge: {sourcename: "n27" targetname: "n21" label: "0" class:13 priority:60 color:red}
-node: {title: "n34" label: "ProjX 0 34"  info1: "mode:    X
+graph: { title: "n31"  label: "Block 31" status:clustered color:yellow
+edge: {sourcename: "n31" targetname: "n25" label: "0" class:13 priority:60 color:red}
+node: {title: "n38" label: "ProjX 0 38"  info1: "mode:    X
 visited: 8
 irg:     IRREGULAR_CF_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n34" targetname: "n33" label: "0" class:13 priority:60 color:red}
-node: {title: "n35" label: "ProjX 1 35"  info1: "mode:    X
+edge: {sourcename: "n38" targetname: "n37" label: "0" class:13 priority:60 color:red}
+node: {title: "n39" label: "ProjX 1 39"  info1: "mode:    X
 visited: 8
 irg:     IRREGULAR_CF_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n35" targetname: "n33" label: "0" class:13 priority:60 color:red}
-node: {title: "n33" label: "Cond  33"  info1: "mode:    T
+edge: {sourcename: "n39" targetname: "n37" label: "0" class:13 priority:60 color:red}
+node: {title: "n37" label: "Cond  37"  info1: "mode:    T
 visited: 8
 irg:     IRREGULAR_CF_main
 arity: 1
 "}
-edge: {sourcename: "n33" targetname: "n32" label: "0" class:1  priority:50}
-node: {title: "n32" label: "Projb Eq 32"  info1: "mode:    b
+edge: {sourcename: "n37" targetname: "n36" label: "0" class:1  priority:50}
+node: {title: "n36" label: "Projb Eq 36"  info1: "mode:    b
 visited: 8
 irg:     IRREGULAR_CF_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n32" targetname: "n31" label: "0" class:1  priority:50}
-node: {title: "n31" label: "Cmp  31"  info1: "mode:    T
+edge: {sourcename: "n36" targetname: "n35" label: "0" class:1  priority:50}
+node: {title: "n35" label: "Cmp  35"  info1: "mode:    T
 visited: 8
 irg:     IRREGULAR_CF_main
 arity: 2
 "}
-edge: {sourcename: "n31" targetname: "n28" label: "0" class:16 priority:10}
-edge: {sourcename: "n31" targetname: "n29" label: "1" class:16 priority:10}
+edge: {sourcename: "n35" targetname: "n32" label: "0" class:16 priority:10}
+edge: {sourcename: "n35" targetname: "n33" label: "1" class:16 priority:10}
 }
 
-graph: { title: "n18"  label: "Block 18" status:clustered color:yellow
-edge: {sourcename: "n18" targetname: "n21" label: "0" class:13 priority:60 color:red}
-node: {title: "n24" label: "ProjM 1 24"  info1: "mode:    M
+graph: { title: "n21"  label: "Block 21" status:clustered color:yellow
+edge: {sourcename: "n21" targetname: "n25" label: "0" class:13 priority:60 color:red}
+node: {title: "n28" label: "ProjM 1 28"  info1: "mode:    M
 visited: 8
 irg:     IRREGULAR_CF_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n24" targetname: "n19" label: "0" class:17 priority:10 color:blue}
-node: {title: "n30" label: "0x2Is  30"  info1: "mode:    Is
+edge: {sourcename: "n28" targetname: "n22" label: "0" class:17 priority:10 color:blue}
+node: {title: "n34" label: "0x2Is  34"  info1: "mode:    Is
 visited: 8
 irg:     IRREGULAR_CF_main
 arity: 0
 Const of type type_unknown
 "color: yellow}
-node: {title: "n28" label: "0x0Is  28"  info1: "mode:    Is
+node: {title: "n32" label: "0x0Is  32"  info1: "mode:    Is
 visited: 8
 irg:     IRREGULAR_CF_main
 arity: 0
 Const of type type_unknown
 "color: yellow}
-node: {title: "n29" label: "0x1Is  29"  info1: "mode:    Is
+node: {title: "n33" label: "0x1Is  33"  info1: "mode:    Is
 visited: 8
 irg:     IRREGULAR_CF_main
 arity: 0
 Const of type type_unknown
 "color: yellow}
-node: {title: "n21" label: "ProjX 0 21"  info1: "mode:    X
+node: {title: "n25" label: "ProjX 0 25"  info1: "mode:    X
 visited: 8
 irg:     IRREGULAR_CF_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n21" targetname: "n19" label: "0" class:13 priority:60 color:red}
-node: {title: "n19" label: "Start  19"  info1: "mode:    T
+edge: {sourcename: "n25" targetname: "n22" label: "0" class:13 priority:60 color:red}
+node: {title: "n22" label: "Start  22"  info1: "mode:    T
 visited: 8
 irg:     IRREGULAR_CF_main
 arity: 0

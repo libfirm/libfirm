@@ -8,6 +8,7 @@ classname 1:  "intrablock Data"
 classname 16: "interblock Data"
 classname 2:  "Block"
 classname 13: "Control Flow"
+classname 18: "Exception Control Flow for Interval Analysis"
 classname 14: "intrablock Memory"
 classname 17: "interblock Memory"
 classname 15: "Dominators"
@@ -51,10 +52,10 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-node: {title: "e18" label: "ent a_elem_ent" color: yellow
- info1: "entity a_elem_ent (18)
-  type:  int (11)
-  owner: a (15)
+node: {title: "e21" label: "ent a_elem_ent" color: yellow
+ info1: "entity a_elem_ent (21)
+  type:  int (14)
+  owner: a (18)
   allocation:  allocation_automatic
   visibility:  visibility_local
   variability: variability_uninitialized
@@ -65,31 +66,31 @@ node: {title: "e18" label: "ent a_elem_ent" color: yellow
 
 "
 }
-edge: { sourcename: "e18" targetname: "t11"class: 3 label: "type" color: red}
-node: {title: "t15" label: "array a" info1: "state: layout_undefined
+edge: { sourcename: "e21" targetname: "t14"class: 3 label: "type" color: red}
+node: {title: "t18" label: "array a" info1: "state: layout_undefined
 size: -1b,
 "}
-edge: { sourcename: "t15" targetname: "t11"class: 10 label: "arr elt tp" color:green}
-edge: { sourcename: "t15" targetname: "e18"class: 10 label: "arr ent" color: green}
-edge: { sourcename: "n19" targetname: "t15"label: "upper 0"}
-edge: { sourcename: "n20" targetname: "t15"label: "lower 0"}
-node: {title: "n19" label: "0x9Iu  19"  info1: "mode:    Iu
+edge: { sourcename: "t18" targetname: "t14"class: 10 label: "arr elt tp" color:green}
+edge: { sourcename: "t18" targetname: "e21"class: 10 label: "arr ent" color: green}
+edge: { sourcename: "n22" targetname: "t18"label: "upper 0"}
+edge: { sourcename: "n23" targetname: "t18"label: "lower 0"}
+node: {title: "n22" label: "0x9Iu  22"  info1: "mode:    Iu
 visited: 1
 arity: 0
 Const of type type_unknown
 "color: yellow}
-node: {title: "n20" label: "0x0Iu  20"  info1: "mode:    Iu
+node: {title: "n23" label: "0x0Iu  23"  info1: "mode:    Iu
 visited: 1
 arity: 0
 Const of type type_unknown
 "color: yellow}
-node: {title: "t11" label: "primitive int" info1: "state: layout_fixed,
+node: {title: "t14" label: "primitive int" info1: "state: layout_fixed,
 mode: Is,
 size: 32b,
 "}
-node: {title: "e14" label: "ent ARRAY-HEAP_EXAMPLE_main" color: yellow
- info1: "entity ARRAY-HEAP_EXAMPLE_main (14)
-  type:  ARRAY-HEAP_EXAMPLE_main (12)
+node: {title: "e17" label: "ent ARRAY-HEAP_EXAMPLE_main" color: yellow
+ info1: "entity ARRAY-HEAP_EXAMPLE_main (17)
+  type:  ARRAY-HEAP_EXAMPLE_main (15)
   owner: GlobalType (0)
   Does not overwrite other entities.
   Is not overwritten by other entities.
@@ -101,17 +102,17 @@ node: {title: "e14" label: "ent ARRAY-HEAP_EXAMPLE_main" color: yellow
   peculiarity: peculiarity_existent
   ld_name: no yet set
   offset:  -1
-  irg = 32
+  irg = 36
 
 "
 }
-edge: { sourcename: "e14" targetname: "t12"class: 3 label: "type" color: red}
-edge: { sourcename: "e14" targetname: "n13"label: "value 0"}
-node: {title: "n13" label: "SymC &ARRAY-HEAP_EXAMPLE_main  13"  info1: "mode:    P
+edge: { sourcename: "e17" targetname: "t15"class: 3 label: "type" color: red}
+edge: { sourcename: "e17" targetname: "n16"label: "value 0"}
+node: {title: "n16" label: "SymC &ARRAY-HEAP_EXAMPLE_main  16"  info1: "mode:    P
 visited: 1
 arity: 0
 kind addr_ent
-entity GlobalType.ARRAY-HEAP_EXAMPLE_main (14)
+entity GlobalType.ARRAY-HEAP_EXAMPLE_main (17)
 
 SymConst of type type_unknown
 "}
@@ -119,16 +120,16 @@ node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1b,
 peculiarity: peculiarity_existent
 " color: green}
-edge: { sourcename: "t0" targetname: "e14"class: 12 label: "member" color:blue}
-node: {title: "t12" label: "method ARRAY-HEAP_EXAMPLE_main" info1: "state: layout_fixed,
+edge: { sourcename: "t0" targetname: "e17"class: 12 label: "member" color:blue}
+node: {title: "t15" label: "method ARRAY-HEAP_EXAMPLE_main" info1: "state: layout_fixed,
 mode: P,
 size: 32b,
 variadicity: variadicity_non_variadic
 params: 0
 results: 1
 "}
-edge: { sourcename: "t12" targetname: "t11"class: 6 label: "res 0" color: green}
-node: {title: "t21" label: "class ARRAY-HEAP_EXAMPLE_mainframe_tp" info1: "state: layout_undefined
+edge: { sourcename: "t15" targetname: "t14"class: 6 label: "res 0" color: green}
+node: {title: "t24" label: "class ARRAY-HEAP_EXAMPLE_mainframe_tp" info1: "state: layout_undefined
 size: -1b,
 peculiarity: peculiarity_existent
 " color: green}

@@ -8,6 +8,7 @@ classname 1:  "intrablock Data"
 classname 16: "interblock Data"
 classname 2:  "Block"
 classname 13: "Control Flow"
+classname 18: "Exception Control Flow for Interval Analysis"
 classname 14: "intrablock Memory"
 classname 17: "interblock Memory"
 classname 15: "Dominators"
@@ -51,50 +52,50 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-graph: { title: "g27" label: "DEAD_BLOCK_main" status:clustered color:white
-graph: { title: "n17"  label: "Block 17" status:clustered color:yellow
-edge: {sourcename: "n17" targetname: "n47" label: "0" class:13 priority:60 color:red}
-node: {title: "n56" label: "End  56"  info1: "mode:    X
+graph: { title: "g31" label: "DEAD_BLOCK_main" status:clustered color:white
+graph: { title: "n20"  label: "Block 20" status:clustered color:yellow
+edge: {sourcename: "n20" targetname: "n51" label: "0" class:13 priority:60 color:red}
+node: {title: "n60" label: "End  60"  info1: "mode:    X
 visited: 12
 irg:     DEAD_BLOCK_main
 arity: 0
 "color: blue}
 }
 
-graph: { title: "n28"  label: "Block 28" status:clustered color:yellow
-edge: {sourcename: "n28" targetname: "n22" label: "0" class:13 priority:60 color:red}
-node: {title: "n47" label: "Return  47"  info1: "mode:    X
+graph: { title: "n32"  label: "Block 32" status:clustered color:yellow
+edge: {sourcename: "n32" targetname: "n26" label: "0" class:13 priority:60 color:red}
+node: {title: "n51" label: "Return  51"  info1: "mode:    X
 visited: 12
 irg:     DEAD_BLOCK_main
 arity: 2
 return in method of type main
   res 0 type: int
 "}
-edge: {sourcename: "n47" targetname: "n25" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n47" targetname: "n30" label: "1" class:16 priority:10}
+edge: {sourcename: "n51" targetname: "n29" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n51" targetname: "n34" label: "1" class:16 priority:10}
 }
 
-graph: { title: "n19"  label: "Block 19" status:clustered color:yellow
-edge: {sourcename: "n19" targetname: "n22" label: "0" class:13 priority:60 color:red}
-node: {title: "n25" label: "ProjM 1 25"  info1: "mode:    M
+graph: { title: "n22"  label: "Block 22" status:clustered color:yellow
+edge: {sourcename: "n22" targetname: "n26" label: "0" class:13 priority:60 color:red}
+node: {title: "n29" label: "ProjM 1 29"  info1: "mode:    M
 visited: 12
 irg:     DEAD_BLOCK_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n25" targetname: "n20" label: "0" class:17 priority:10 color:blue}
-node: {title: "n30" label: "0x2Is  30"  info1: "mode:    Is
+edge: {sourcename: "n29" targetname: "n23" label: "0" class:17 priority:10 color:blue}
+node: {title: "n34" label: "0x2Is  34"  info1: "mode:    Is
 visited: 12
 irg:     DEAD_BLOCK_main
 arity: 0
 Const of type type_unknown
 "color: yellow}
-node: {title: "n22" label: "ProjX 0 22"  info1: "mode:    X
+node: {title: "n26" label: "ProjX 0 26"  info1: "mode:    X
 visited: 12
 irg:     DEAD_BLOCK_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n22" targetname: "n20" label: "0" class:13 priority:60 color:red}
-node: {title: "n20" label: "Start  20"  info1: "mode:    T
+edge: {sourcename: "n26" targetname: "n23" label: "0" class:13 priority:60 color:red}
+node: {title: "n23" label: "Start  23"  info1: "mode:    T
 visited: 12
 irg:     DEAD_BLOCK_main
 arity: 0

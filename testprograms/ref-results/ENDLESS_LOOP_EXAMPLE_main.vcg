@@ -8,6 +8,7 @@ classname 1:  "intrablock Data"
 classname 16: "interblock Data"
 classname 2:  "Block"
 classname 13: "Control Flow"
+classname 18: "Exception Control Flow for Interval Analysis"
 classname 14: "intrablock Memory"
 classname 17: "interblock Memory"
 classname 15: "Dominators"
@@ -51,110 +52,110 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-graph: { title: "g27" label: "ENDLESS_LOOP_EXAMPLE_main" status:clustered color:white
-graph: { title: "n32"  label: "Block 32" status:clustered color:yellow
-edge: {sourcename: "n32" targetname: "n31" label: "0" class:13 priority:60 color:red}
-edge: {sourcename: "n32" targetname: "n43" label: "1" class:13 priority:60 color:red}
-node: {title: "n62" label: "PhiM  62"  info1: "mode:    M
+graph: { title: "g31" label: "ENDLESS_LOOP_EXAMPLE_main" status:clustered color:white
+graph: { title: "n36"  label: "Block 36" status:clustered color:yellow
+edge: {sourcename: "n36" targetname: "n35" label: "0" class:13 priority:60 color:red}
+edge: {sourcename: "n36" targetname: "n47" label: "1" class:13 priority:60 color:red}
+node: {title: "n66" label: "PhiM  66"  info1: "mode:    M
 visited: 22
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 2 backedges:
 "color: green}
-edge: {sourcename: "n62" targetname: "n25" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n62" targetname: "n51" label: "1" class:17 priority:10 color:blue}
-node: {title: "n51" label: "ProjM 0 51"  info1: "mode:    M
+edge: {sourcename: "n66" targetname: "n29" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n66" targetname: "n55" label: "1" class:17 priority:10 color:blue}
+node: {title: "n55" label: "ProjM 0 55"  info1: "mode:    M
 visited: 22
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n51" targetname: "n49" label: "0" class:17 priority:10 color:blue}
-node: {title: "n49" label: "Store  49"  info1: "mode:    T
+edge: {sourcename: "n55" targetname: "n53" label: "0" class:17 priority:10 color:blue}
+node: {title: "n53" label: "Store  53"  info1: "mode:    T
 visited: 22
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 3
 volatility: volatility_non_volatile
 "}
-edge: {sourcename: "n49" targetname: "n62" label: "0" class:14 priority:50 color:blue}
-edge: {sourcename: "n49" targetname: "n48" label: "1" class:1  priority:50}
-edge: {sourcename: "n49" targetname: "n58" label: "2" class:1  priority:50}
-node: {title: "n48" label: "Sel VAR_A 48"  info1: "mode:    P
+edge: {sourcename: "n53" targetname: "n66" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n53" targetname: "n52" label: "1" class:1  priority:50}
+edge: {sourcename: "n53" targetname: "n62" label: "2" class:1  priority:50}
+node: {title: "n52" label: "Sel VAR_A 52"  info1: "mode:    P
 visited: 22
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 2
 Selecting entity of type int
   from entity of type GlobalType
 "}
-edge: {sourcename: "n48" targetname: "n62" label: "0" class:14 priority:50 color:blue}
-edge: {sourcename: "n48" targetname: "n24" label: "1" class:16 priority:10}
-node: {title: "n58" label: "PhiIs  58"  info1: "mode:    Is
+edge: {sourcename: "n52" targetname: "n66" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n52" targetname: "n28" label: "1" class:16 priority:10}
+node: {title: "n62" label: "PhiIs  62"  info1: "mode:    Is
 visited: 22
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 2 backedges:
 "color: green}
-edge: {sourcename: "n58" targetname: "n29" label: "0" class:16 priority:10}
-edge: {sourcename: "n58" targetname: "n59" label: "1" class:1  priority:50}
-node: {title: "n59" label: "PhiIs  59"  info1: "mode:    Is
+edge: {sourcename: "n62" targetname: "n33" label: "0" class:16 priority:10}
+edge: {sourcename: "n62" targetname: "n63" label: "1" class:1  priority:50}
+node: {title: "n63" label: "PhiIs  63"  info1: "mode:    Is
 visited: 22
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 2 backedges:
 "color: green}
-edge: {sourcename: "n59" targetname: "n30" label: "0" class:16 priority:10}
-edge: {sourcename: "n59" targetname: "n58" label: "1" class:1  priority:50}
-node: {title: "n43" label: "Jmp  43"  info1: "mode:    X
+edge: {sourcename: "n63" targetname: "n34" label: "0" class:16 priority:10}
+edge: {sourcename: "n63" targetname: "n62" label: "1" class:1  priority:50}
+node: {title: "n47" label: "Jmp  47"  info1: "mode:    X
 visited: 22
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 0
 "}
 }
 
-graph: { title: "n28"  label: "Block 28" status:clustered color:yellow
-edge: {sourcename: "n28" targetname: "n22" label: "0" class:13 priority:60 color:red}
-node: {title: "n29" label: "ProjIs 0 29"  info1: "mode:    Is
+graph: { title: "n32"  label: "Block 32" status:clustered color:yellow
+edge: {sourcename: "n32" targetname: "n26" label: "0" class:13 priority:60 color:red}
+node: {title: "n33" label: "ProjIs 0 33"  info1: "mode:    Is
 visited: 22
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n29" targetname: "n26" label: "0" class:16 priority:10}
-node: {title: "n31" label: "Jmp  31"  info1: "mode:    X
+edge: {sourcename: "n33" targetname: "n30" label: "0" class:16 priority:10}
+node: {title: "n35" label: "Jmp  35"  info1: "mode:    X
 visited: 22
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 0
 "}
 }
 
-graph: { title: "n19"  label: "Block 19" status:clustered color:yellow
-edge: {sourcename: "n19" targetname: "n22" label: "0" class:13 priority:60 color:red}
-node: {title: "n25" label: "ProjM 1 25"  info1: "mode:    M
+graph: { title: "n22"  label: "Block 22" status:clustered color:yellow
+edge: {sourcename: "n22" targetname: "n26" label: "0" class:13 priority:60 color:red}
+node: {title: "n29" label: "ProjM 1 29"  info1: "mode:    M
 visited: 22
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n25" targetname: "n20" label: "0" class:17 priority:10 color:blue}
-node: {title: "n24" label: "ProjP 3 24"  info1: "mode:    P
+edge: {sourcename: "n29" targetname: "n23" label: "0" class:17 priority:10 color:blue}
+node: {title: "n28" label: "ProjP 3 28"  info1: "mode:    P
 visited: 22
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n24" targetname: "n20" label: "0" class:1  priority:50}
-node: {title: "n26" label: "ProjT 4 26"  info1: "mode:    T
+edge: {sourcename: "n28" targetname: "n23" label: "0" class:1  priority:50}
+node: {title: "n30" label: "ProjT 4 30"  info1: "mode:    T
 visited: 22
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n26" targetname: "n20" label: "0" class:1  priority:50}
-node: {title: "n30" label: "0x1Is  30"  info1: "mode:    Is
+edge: {sourcename: "n30" targetname: "n23" label: "0" class:1  priority:50}
+node: {title: "n34" label: "0x1Is  34"  info1: "mode:    Is
 visited: 22
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 0
 Const of type type_unknown
 "color: yellow}
-node: {title: "n22" label: "ProjX 0 22"  info1: "mode:    X
+node: {title: "n26" label: "ProjX 0 26"  info1: "mode:    X
 visited: 22
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n22" targetname: "n20" label: "0" class:13 priority:60 color:red}
-node: {title: "n20" label: "Start  20"  info1: "mode:    T
+edge: {sourcename: "n26" targetname: "n23" label: "0" class:13 priority:60 color:red}
+node: {title: "n23" label: "Start  23"  info1: "mode:    T
 visited: 22
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 0
@@ -163,14 +164,14 @@ start of method of type main_tp
 "color: blue}
 }
 
-graph: { title: "n17"  label: "Block 17" status:clustered color:yellow
-node: {title: "n73" label: "End  73"  info1: "mode:    X
+graph: { title: "n20"  label: "Block 20" status:clustered color:yellow
+node: {title: "n77" label: "End  77"  info1: "mode:    X
 visited: 22
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 2
 "color: blue}
-edge: {sourcename: "n73" targetname: "n32" label: "0" class:13 priority:60 color:red}
-edge: {sourcename: "n73" targetname: "n62" label: "1" }
+edge: {sourcename: "n77" targetname: "n36" label: "0" class:13 priority:60 color:red}
+edge: {sourcename: "n77" targetname: "n66" label: "1" }
 }
 
 }

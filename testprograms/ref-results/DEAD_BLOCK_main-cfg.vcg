@@ -8,6 +8,7 @@ classname 1:  "intrablock Data"
 classname 16: "interblock Data"
 classname 2:  "Block"
 classname 13: "Control Flow"
+classname 18: "Exception Control Flow for Interval Analysis"
 classname 14: "intrablock Memory"
 classname 17: "interblock Memory"
 classname 15: "Dominators"
@@ -51,16 +52,16 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-node: {title: "n17" label: "End Block n17" info1:"arity: 1
+node: {title: "n20" label: "End Block n20" info1:"arity: 1
 " color:blue }
-edge: { sourcename: "n17" targetname: "n28"}
-node: {title: "n28" label: "Block n28" info1:"arity: 1
+edge: { sourcename: "n20" targetname: "n32"}
+node: {title: "n32" label: "Block n32" info1:"arity: 1
 "}
-edge: { sourcename: "n28" targetname: "n19"}
-node: {title: "n19" label: "Start Block n19" info1:"arity: 1
+edge: { sourcename: "n32" targetname: "n22"}
+node: {title: "n22" label: "Start Block n22" info1:"arity: 1
 " color:blue }
-edge: { sourcename: "n19" targetname: "n19"}
-node: {title: "n57" label: "Bad  57"  info1: "mode:    T
+edge: { sourcename: "n22" targetname: "n22"}
+node: {title: "n61" label: "Bad  61"  info1: "mode:    T
 visited: 0
 irg:     DEAD_BLOCK_main
 arity: 0

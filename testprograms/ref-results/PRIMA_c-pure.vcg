@@ -8,6 +8,7 @@ classname 1:  "intrablock Data"
 classname 16: "interblock Data"
 classname 2:  "Block"
 classname 13: "Control Flow"
+classname 18: "Exception Control Flow for Interval Analysis"
 classname 14: "intrablock Memory"
 classname 17: "interblock Memory"
 classname 15: "Dominators"
@@ -51,13 +52,13 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-node: {title: "n82" label: "Block  82"  info1: "mode:    BB
+node: {title: "n87" label: "Block  87"  info1: "mode:    BB
 visited: 11
 irg:     PRIMA_c
 arity: 1 backedges:
 "color: lightyellow}
-edge: {sourcename: "n82" targetname: "n85" label: "0" class:13 priority:60 color:red}
-node: {title: "n83" label: "Start  83"  info1: "mode:    T
+edge: {sourcename: "n87" targetname: "n91" label: "0" class:13 priority:60 color:red}
+node: {title: "n88" label: "Start  88"  info1: "mode:    T
 visited: 11
 irg:     PRIMA_c
 arity: 0
@@ -65,109 +66,109 @@ start of method of type c
   param 0 type: class_prima_ptr
   param 1 type: int
 "color: blue}
-edge: { sourcename: "n83" targetname: "n82" class:2  priority:50 linestyle:dotted}
-node: {title: "n85" label: "ProjX 0 85"  info1: "mode:    X
+edge: { sourcename: "n88" targetname: "n87" class:2  priority:50 linestyle:dotted}
+node: {title: "n91" label: "ProjX 0 91"  info1: "mode:    X
 visited: 11
 irg:     PRIMA_c
 arity: 1
 "color: yellow}
-edge: {sourcename: "n85" targetname: "n83" label: "0" class:13 priority:60 color:red}
-edge: { sourcename: "n85" targetname: "n82" class:2  priority:50 linestyle:dotted}
-node: {title: "n91" label: "Block  91"  info1: "mode:    BB
+edge: {sourcename: "n91" targetname: "n88" label: "0" class:13 priority:60 color:red}
+edge: { sourcename: "n91" targetname: "n87" class:2  priority:50 linestyle:dotted}
+node: {title: "n97" label: "Block  97"  info1: "mode:    BB
 visited: 11
 irg:     PRIMA_c
 arity: 1 backedges:
 "color: lightyellow}
-edge: {sourcename: "n91" targetname: "n85" label: "0" class:13 priority:60 color:red}
-node: {title: "n89" label: "ProjT 4 89"  info1: "mode:    T
+edge: {sourcename: "n97" targetname: "n91" label: "0" class:13 priority:60 color:red}
+node: {title: "n95" label: "ProjT 4 95"  info1: "mode:    T
 visited: 11
 irg:     PRIMA_c
 arity: 1
 "color: yellow}
-edge: {sourcename: "n89" targetname: "n83" label: "0" class:1  priority:50}
-edge: { sourcename: "n89" targetname: "n82" class:2  priority:50 linestyle:dotted}
-node: {title: "n93" label: "ProjIs 1 93"  info1: "mode:    Is
+edge: {sourcename: "n95" targetname: "n88" label: "0" class:1  priority:50}
+edge: { sourcename: "n95" targetname: "n87" class:2  priority:50 linestyle:dotted}
+node: {title: "n99" label: "ProjIs 1 99"  info1: "mode:    Is
 visited: 11
 irg:     PRIMA_c
 arity: 1
 "color: yellow}
-edge: {sourcename: "n93" targetname: "n89" label: "0" class:16 priority:10}
-edge: { sourcename: "n93" targetname: "n91" class:2  priority:50 linestyle:dotted}
-node: {title: "n92" label: "ProjP 0 92"  info1: "mode:    P
+edge: {sourcename: "n99" targetname: "n95" label: "0" class:16 priority:10}
+edge: { sourcename: "n99" targetname: "n97" class:2  priority:50 linestyle:dotted}
+node: {title: "n98" label: "ProjP 0 98"  info1: "mode:    P
 visited: 11
 irg:     PRIMA_c
 arity: 1
 "color: yellow}
-edge: {sourcename: "n92" targetname: "n89" label: "0" class:16 priority:10}
-edge: { sourcename: "n92" targetname: "n91" class:2  priority:50 linestyle:dotted}
-node: {title: "n88" label: "ProjM 1 88"  info1: "mode:    M
+edge: {sourcename: "n98" targetname: "n95" label: "0" class:16 priority:10}
+edge: { sourcename: "n98" targetname: "n97" class:2  priority:50 linestyle:dotted}
+node: {title: "n94" label: "ProjM 1 94"  info1: "mode:    M
 visited: 11
 irg:     PRIMA_c
 arity: 1
 "color: yellow}
-edge: {sourcename: "n88" targetname: "n83" label: "0" class:17 priority:10 color:blue}
-edge: { sourcename: "n88" targetname: "n82" class:2  priority:50 linestyle:dotted}
-node: {title: "n95" label: "Sel a 95"  info1: "mode:    P
+edge: {sourcename: "n94" targetname: "n88" label: "0" class:17 priority:10 color:blue}
+edge: { sourcename: "n94" targetname: "n87" class:2  priority:50 linestyle:dotted}
+node: {title: "n101" label: "Sel a 101"  info1: "mode:    P
 visited: 11
 irg:     PRIMA_c
 arity: 2
 Selecting entity of type int
   from entity of type PRIMA
 "}
-edge: {sourcename: "n95" targetname: "n88" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n95" targetname: "n92" label: "1" class:1  priority:50}
-edge: { sourcename: "n95" targetname: "n91" class:2  priority:50 linestyle:dotted}
-node: {title: "n96" label: "Load[Is]  96"  info1: "mode:    T
+edge: {sourcename: "n101" targetname: "n94" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n101" targetname: "n98" label: "1" class:1  priority:50}
+edge: { sourcename: "n101" targetname: "n97" class:2  priority:50 linestyle:dotted}
+node: {title: "n102" label: "Load[Is]  102"  info1: "mode:    T
 visited: 11
 irg:     PRIMA_c
 arity: 2
 volatility: volatility_non_volatile
 "}
-edge: {sourcename: "n96" targetname: "n88" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n96" targetname: "n95" label: "1" class:1  priority:50}
-edge: { sourcename: "n96" targetname: "n91" class:2  priority:50 linestyle:dotted}
-node: {title: "n99" label: "ProjIs 2 99"  info1: "mode:    Is
+edge: {sourcename: "n102" targetname: "n94" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n102" targetname: "n101" label: "1" class:1  priority:50}
+edge: { sourcename: "n102" targetname: "n97" class:2  priority:50 linestyle:dotted}
+node: {title: "n105" label: "ProjIs 2 105"  info1: "mode:    Is
 visited: 11
 irg:     PRIMA_c
 arity: 1
 "color: yellow}
-edge: {sourcename: "n99" targetname: "n96" label: "0" class:1  priority:50}
-edge: { sourcename: "n99" targetname: "n91" class:2  priority:50 linestyle:dotted}
-node: {title: "n100" label: "AddIs  100"  info1: "mode:    Is
+edge: {sourcename: "n105" targetname: "n102" label: "0" class:1  priority:50}
+edge: { sourcename: "n105" targetname: "n97" class:2  priority:50 linestyle:dotted}
+node: {title: "n106" label: "AddIs  106"  info1: "mode:    Is
 visited: 11
 irg:     PRIMA_c
 arity: 2
 "}
-edge: {sourcename: "n100" targetname: "n99" label: "0" class:1  priority:50}
-edge: {sourcename: "n100" targetname: "n93" label: "1" class:1  priority:50}
-edge: { sourcename: "n100" targetname: "n91" class:2  priority:50 linestyle:dotted}
-node: {title: "n98" label: "ProjM 0 98"  info1: "mode:    M
+edge: {sourcename: "n106" targetname: "n105" label: "0" class:1  priority:50}
+edge: {sourcename: "n106" targetname: "n99" label: "1" class:1  priority:50}
+edge: { sourcename: "n106" targetname: "n97" class:2  priority:50 linestyle:dotted}
+node: {title: "n104" label: "ProjM 0 104"  info1: "mode:    M
 visited: 11
 irg:     PRIMA_c
 arity: 1
 "color: yellow}
-edge: {sourcename: "n98" targetname: "n96" label: "0" class:17 priority:10 color:blue}
-edge: { sourcename: "n98" targetname: "n91" class:2  priority:50 linestyle:dotted}
-node: {title: "n101" label: "Return  101"  info1: "mode:    X
+edge: {sourcename: "n104" targetname: "n102" label: "0" class:17 priority:10 color:blue}
+edge: { sourcename: "n104" targetname: "n97" class:2  priority:50 linestyle:dotted}
+node: {title: "n107" label: "Return  107"  info1: "mode:    X
 visited: 11
 irg:     PRIMA_c
 arity: 2
 return in method of type c
   res 0 type: int
 "}
-edge: {sourcename: "n101" targetname: "n98" label: "0" class:14 priority:50 color:blue}
-edge: {sourcename: "n101" targetname: "n100" label: "1" class:1  priority:50}
-edge: { sourcename: "n101" targetname: "n91" class:2  priority:50 linestyle:dotted}
-node: {title: "n80" label: "Block  80"  info1: "mode:    BB
+edge: {sourcename: "n107" targetname: "n104" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n107" targetname: "n106" label: "1" class:1  priority:50}
+edge: { sourcename: "n107" targetname: "n97" class:2  priority:50 linestyle:dotted}
+node: {title: "n85" label: "Block  85"  info1: "mode:    BB
 visited: 11
 irg:     PRIMA_c
 arity: 1 backedges:
 "color: lightyellow}
-edge: {sourcename: "n80" targetname: "n101" label: "0" class:13 priority:60 color:red}
-node: {title: "n146" label: "End  146"  info1: "mode:    X
+edge: {sourcename: "n85" targetname: "n107" label: "0" class:13 priority:60 color:red}
+node: {title: "n154" label: "End  154"  info1: "mode:    X
 visited: 11
 irg:     PRIMA_c
 arity: 0
 "color: blue}
-edge: { sourcename: "n146" targetname: "n80" class:2  priority:50 linestyle:dotted}
+edge: { sourcename: "n154" targetname: "n85" class:2  priority:50 linestyle:dotted}
 }

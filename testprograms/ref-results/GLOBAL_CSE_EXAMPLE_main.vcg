@@ -8,6 +8,7 @@ classname 1:  "intrablock Data"
 classname 16: "interblock Data"
 classname 2:  "Block"
 classname 13: "Control Flow"
+classname 18: "Exception Control Flow for Interval Analysis"
 classname 14: "intrablock Memory"
 classname 17: "interblock Memory"
 classname 15: "Dominators"
@@ -51,162 +52,162 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-graph: { title: "g26" label: "GLOBAL_CSE_EXAMPLE_main" status:clustered color:white
-graph: { title: "n16"  label: "Block 16" status:clustered color:yellow
-edge: {sourcename: "n16" targetname: "n60" label: "0" class:13 priority:60 color:red}
-node: {title: "n61" label: "End  61"  info1: "mode:    X
+graph: { title: "g30" label: "GLOBAL_CSE_EXAMPLE_main" status:clustered color:white
+graph: { title: "n19"  label: "Block 19" status:clustered color:yellow
+edge: {sourcename: "n19" targetname: "n64" label: "0" class:13 priority:60 color:red}
+node: {title: "n65" label: "End  65"  info1: "mode:    X
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
 arity: 0
 "color: blue}
 }
 
-node: {title: "n24" label: "ProjM 1 24"  info1: "mode:    M
+node: {title: "n28" label: "ProjM 1 28"  info1: "mode:    M
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
-node was pinned in Block 18
+node was pinned in Block 21
 arity: 1
 "color: yellow}
-edge: {sourcename: "n24" targetname: "n19" label: "0" class:17 priority:10 color:blue}
-node: {title: "n46" label: "AddIs  46"  info1: "mode:    Is
+edge: {sourcename: "n28" targetname: "n22" label: "0" class:17 priority:10 color:blue}
+node: {title: "n50" label: "AddIs  50"  info1: "mode:    Is
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
-node was pinned in Block 41
+node was pinned in Block 45
 arity: 2
 "}
-edge: {sourcename: "n46" targetname: "n38" label: "0" class:16 priority:10}
-edge: {sourcename: "n46" targetname: "n45" label: "1" class:16 priority:10}
-node: {title: "n45" label: "0x5Is  45"  info1: "mode:    Is
+edge: {sourcename: "n50" targetname: "n42" label: "0" class:16 priority:10}
+edge: {sourcename: "n50" targetname: "n49" label: "1" class:16 priority:10}
+node: {title: "n49" label: "0x5Is  49"  info1: "mode:    Is
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
-node was pinned in Block 18
+node was pinned in Block 21
 arity: 0
 Const of type type_unknown
 "color: yellow}
-node: {title: "n38" label: "SubIs  38"  info1: "mode:    Is
+node: {title: "n42" label: "SubIs  42"  info1: "mode:    Is
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
-node was pinned in Block 35
+node was pinned in Block 39
 arity: 2
 "}
-edge: {sourcename: "n38" targetname: "n28" label: "0" class:16 priority:10}
-edge: {sourcename: "n38" targetname: "n36" label: "1" class:16 priority:10}
-node: {title: "n36" label: "0x3Is  36"  info1: "mode:    Is
+edge: {sourcename: "n42" targetname: "n32" label: "0" class:16 priority:10}
+edge: {sourcename: "n42" targetname: "n40" label: "1" class:16 priority:10}
+node: {title: "n40" label: "0x3Is  40"  info1: "mode:    Is
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
-node was pinned in Block 18
+node was pinned in Block 21
 arity: 0
 Const of type type_unknown
 "color: yellow}
-graph: { title: "n49"  label: "Block 49" status:clustered color:yellow
-edge: {sourcename: "n49" targetname: "n48" label: "0" class:13 priority:60 color:red}
-edge: {sourcename: "n49" targetname: "n40" label: "1" class:13 priority:60 color:red}
-node: {title: "n60" label: "Return  60"  info1: "mode:    X
+graph: { title: "n53"  label: "Block 53" status:clustered color:yellow
+edge: {sourcename: "n53" targetname: "n52" label: "0" class:13 priority:60 color:red}
+edge: {sourcename: "n53" targetname: "n44" label: "1" class:13 priority:60 color:red}
+node: {title: "n64" label: "Return  64"  info1: "mode:    X
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
 arity: 2
 return in method of type GLOBAL_CSE_EXAMPLE_main
   res 0 type: int
 "}
-edge: {sourcename: "n60" targetname: "n24" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n60" targetname: "n51" label: "1" class:1  priority:50}
-node: {title: "n51" label: "PhiIs  51"  info1: "mode:    Is
+edge: {sourcename: "n64" targetname: "n28" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n64" targetname: "n55" label: "1" class:1  priority:50}
+node: {title: "n55" label: "PhiIs  55"  info1: "mode:    Is
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
 arity: 2 backedges:
 "color: green}
-edge: {sourcename: "n51" targetname: "n46" label: "0" class:16 priority:10}
-edge: {sourcename: "n51" targetname: "n38" label: "1" class:16 priority:10}
+edge: {sourcename: "n55" targetname: "n50" label: "0" class:16 priority:10}
+edge: {sourcename: "n55" targetname: "n42" label: "1" class:16 priority:10}
 }
 
-graph: { title: "n41"  label: "Block 41" status:clustered color:yellow
-edge: {sourcename: "n41" targetname: "n33" label: "0" class:13 priority:60 color:red}
-node: {title: "n48" label: "Jmp  48"  info1: "mode:    X
+graph: { title: "n45"  label: "Block 45" status:clustered color:yellow
+edge: {sourcename: "n45" targetname: "n37" label: "0" class:13 priority:60 color:red}
+node: {title: "n52" label: "Jmp  52"  info1: "mode:    X
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
 arity: 0
 "}
 }
 
-node: {title: "n33" label: "ProjX 0 33"  info1: "mode:    X
+node: {title: "n37" label: "ProjX 0 37"  info1: "mode:    X
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
-node was pinned in Block 27
+node was pinned in Block 31
 arity: 1
 "color: yellow}
-edge: {sourcename: "n33" targetname: "n32" label: "0" class:13 priority:60 color:red}
-graph: { title: "n35"  label: "Block 35" status:clustered color:yellow
-edge: {sourcename: "n35" targetname: "n34" label: "0" class:13 priority:60 color:red}
-node: {title: "n40" label: "Jmp  40"  info1: "mode:    X
+edge: {sourcename: "n37" targetname: "n36" label: "0" class:13 priority:60 color:red}
+graph: { title: "n39"  label: "Block 39" status:clustered color:yellow
+edge: {sourcename: "n39" targetname: "n38" label: "0" class:13 priority:60 color:red}
+node: {title: "n44" label: "Jmp  44"  info1: "mode:    X
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
 arity: 0
 "}
 }
 
-node: {title: "n34" label: "ProjX 1 34"  info1: "mode:    X
+node: {title: "n38" label: "ProjX 1 38"  info1: "mode:    X
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
-node was pinned in Block 27
+node was pinned in Block 31
 arity: 1
 "color: yellow}
-edge: {sourcename: "n34" targetname: "n32" label: "0" class:13 priority:60 color:red}
-node: {title: "n31" label: "Projb Eq 31"  info1: "mode:    b
+edge: {sourcename: "n38" targetname: "n36" label: "0" class:13 priority:60 color:red}
+node: {title: "n35" label: "Projb Eq 35"  info1: "mode:    b
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
-node was pinned in Block 27
+node was pinned in Block 31
 arity: 1
 "color: yellow}
-edge: {sourcename: "n31" targetname: "n30" label: "0" class:1  priority:50}
-node: {title: "n30" label: "Cmp  30"  info1: "mode:    T
+edge: {sourcename: "n35" targetname: "n34" label: "0" class:1  priority:50}
+node: {title: "n34" label: "Cmp  34"  info1: "mode:    T
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
-node was pinned in Block 27
+node was pinned in Block 31
 arity: 2
 "}
-edge: {sourcename: "n30" targetname: "n28" label: "0" class:1  priority:50}
-edge: {sourcename: "n30" targetname: "n29" label: "1" class:16 priority:10}
-node: {title: "n28" label: "ProjIs 0 28"  info1: "mode:    Is
+edge: {sourcename: "n34" targetname: "n32" label: "0" class:1  priority:50}
+edge: {sourcename: "n34" targetname: "n33" label: "1" class:16 priority:10}
+node: {title: "n32" label: "ProjIs 0 32"  info1: "mode:    Is
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
-node was pinned in Block 27
+node was pinned in Block 31
 arity: 1
 "color: yellow}
-edge: {sourcename: "n28" targetname: "n25" label: "0" class:16 priority:10}
-node: {title: "n25" label: "ProjT 4 25"  info1: "mode:    T
+edge: {sourcename: "n32" targetname: "n29" label: "0" class:16 priority:10}
+node: {title: "n29" label: "ProjT 4 29"  info1: "mode:    T
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
-node was pinned in Block 18
+node was pinned in Block 21
 arity: 1
 "color: yellow}
-edge: {sourcename: "n25" targetname: "n19" label: "0" class:1  priority:50}
-node: {title: "n29" label: "0x2Is  29"  info1: "mode:    Is
+edge: {sourcename: "n29" targetname: "n22" label: "0" class:1  priority:50}
+node: {title: "n33" label: "0x2Is  33"  info1: "mode:    Is
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
-node was pinned in Block 18
+node was pinned in Block 21
 arity: 0
 Const of type type_unknown
 "color: yellow}
-graph: { title: "n27"  label: "Block 27" status:clustered color:yellow
-edge: {sourcename: "n27" targetname: "n21" label: "0" class:13 priority:60 color:red}
-node: {title: "n32" label: "Cond  32"  info1: "mode:    T
+graph: { title: "n31"  label: "Block 31" status:clustered color:yellow
+edge: {sourcename: "n31" targetname: "n25" label: "0" class:13 priority:60 color:red}
+node: {title: "n36" label: "Cond  36"  info1: "mode:    T
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
 arity: 1
 "}
-edge: {sourcename: "n32" targetname: "n31" label: "0" class:1  priority:50}
+edge: {sourcename: "n36" targetname: "n35" label: "0" class:1  priority:50}
 }
 
-node: {title: "n21" label: "ProjX 0 21"  info1: "mode:    X
+node: {title: "n25" label: "ProjX 0 25"  info1: "mode:    X
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
-node was pinned in Block 18
+node was pinned in Block 21
 arity: 1
 "color: yellow}
-edge: {sourcename: "n21" targetname: "n19" label: "0" class:13 priority:60 color:red}
-graph: { title: "n18"  label: "Block 18" status:clustered color:yellow
-edge: {sourcename: "n18" targetname: "n21" label: "0" class:13 priority:60 color:red}
-node: {title: "n19" label: "Start  19"  info1: "mode:    T
+edge: {sourcename: "n25" targetname: "n22" label: "0" class:13 priority:60 color:red}
+graph: { title: "n21"  label: "Block 21" status:clustered color:yellow
+edge: {sourcename: "n21" targetname: "n25" label: "0" class:13 priority:60 color:red}
+node: {title: "n22" label: "Start  22"  info1: "mode:    T
 visited: 15
 irg:     GLOBAL_CSE_EXAMPLE_main
 arity: 0

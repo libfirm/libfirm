@@ -8,6 +8,7 @@ classname 1:  "intrablock Data"
 classname 16: "interblock Data"
 classname 2:  "Block"
 classname 13: "Control Flow"
+classname 18: "Exception Control Flow for Interval Analysis"
 classname 14: "intrablock Memory"
 classname 17: "interblock Memory"
 classname 15: "Dominators"
@@ -51,84 +52,84 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-graph: { title: "g68" label: "PRIMA_set_a" status:clustered color:white
-graph: { title: "n58"  label: "Block 58" status:clustered color:yellow
-edge: {sourcename: "n58" targetname: "n77" label: "0" class:13 priority:60 color:red}
-node: {title: "n129" label: "End  129"  info1: "mode:    X
+graph: { title: "g73" label: "PRIMA_set_a" status:clustered color:white
+graph: { title: "n62"  label: "Block 62" status:clustered color:yellow
+edge: {sourcename: "n62" targetname: "n82" label: "0" class:13 priority:60 color:red}
+node: {title: "n136" label: "End  136"  info1: "mode:    X
 visited: 16
 irg:     PRIMA_set_a
 arity: 0
 "color: blue}
 }
 
-graph: { title: "n69"  label: "Block 69" status:clustered color:yellow
-edge: {sourcename: "n69" targetname: "n63" label: "0" class:13 priority:60 color:red}
-node: {title: "n77" label: "Return  77"  info1: "mode:    X
+graph: { title: "n74"  label: "Block 74" status:clustered color:yellow
+edge: {sourcename: "n74" targetname: "n68" label: "0" class:13 priority:60 color:red}
+node: {title: "n82" label: "Return  82"  info1: "mode:    X
 visited: 16
 irg:     PRIMA_set_a
 arity: 1
 return in method of type set_a
 "}
-edge: {sourcename: "n77" targetname: "n76" label: "0" class:14 priority:50 color:blue}
-node: {title: "n76" label: "ProjM 0 76"  info1: "mode:    M
+edge: {sourcename: "n82" targetname: "n81" label: "0" class:14 priority:50 color:blue}
+node: {title: "n81" label: "ProjM 0 81"  info1: "mode:    M
 visited: 16
 irg:     PRIMA_set_a
 arity: 1
 "color: yellow}
-edge: {sourcename: "n76" targetname: "n74" label: "0" class:17 priority:10 color:blue}
-node: {title: "n74" label: "Store  74"  info1: "mode:    T
+edge: {sourcename: "n81" targetname: "n79" label: "0" class:17 priority:10 color:blue}
+node: {title: "n79" label: "Store  79"  info1: "mode:    T
 visited: 16
 irg:     PRIMA_set_a
 arity: 3
 volatility: volatility_non_volatile
 "}
-edge: {sourcename: "n74" targetname: "n66" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n74" targetname: "n73" label: "1" class:1  priority:50}
-edge: {sourcename: "n74" targetname: "n71" label: "2" class:1  priority:50}
-node: {title: "n73" label: "Sel a 73"  info1: "mode:    P
+edge: {sourcename: "n79" targetname: "n71" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n79" targetname: "n78" label: "1" class:1  priority:50}
+edge: {sourcename: "n79" targetname: "n76" label: "2" class:1  priority:50}
+node: {title: "n78" label: "Sel a 78"  info1: "mode:    P
 visited: 16
 irg:     PRIMA_set_a
 arity: 2
 Selecting entity of type int
   from entity of type PRIMA
 "}
-edge: {sourcename: "n73" targetname: "n66" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n73" targetname: "n70" label: "1" class:1  priority:50}
-node: {title: "n70" label: "ProjP 0 70"  info1: "mode:    P
+edge: {sourcename: "n78" targetname: "n71" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n78" targetname: "n75" label: "1" class:1  priority:50}
+node: {title: "n75" label: "ProjP 0 75"  info1: "mode:    P
 visited: 16
 irg:     PRIMA_set_a
 arity: 1
 "color: yellow}
-edge: {sourcename: "n70" targetname: "n67" label: "0" class:16 priority:10}
-node: {title: "n71" label: "ProjIs 1 71"  info1: "mode:    Is
+edge: {sourcename: "n75" targetname: "n72" label: "0" class:16 priority:10}
+node: {title: "n76" label: "ProjIs 1 76"  info1: "mode:    Is
 visited: 16
 irg:     PRIMA_set_a
 arity: 1
 "color: yellow}
-edge: {sourcename: "n71" targetname: "n67" label: "0" class:16 priority:10}
+edge: {sourcename: "n76" targetname: "n72" label: "0" class:16 priority:10}
 }
 
-graph: { title: "n60"  label: "Block 60" status:clustered color:yellow
-edge: {sourcename: "n60" targetname: "n63" label: "0" class:13 priority:60 color:red}
-node: {title: "n66" label: "ProjM 1 66"  info1: "mode:    M
+graph: { title: "n64"  label: "Block 64" status:clustered color:yellow
+edge: {sourcename: "n64" targetname: "n68" label: "0" class:13 priority:60 color:red}
+node: {title: "n71" label: "ProjM 1 71"  info1: "mode:    M
 visited: 16
 irg:     PRIMA_set_a
 arity: 1
 "color: yellow}
-edge: {sourcename: "n66" targetname: "n61" label: "0" class:17 priority:10 color:blue}
-node: {title: "n67" label: "ProjT 4 67"  info1: "mode:    T
+edge: {sourcename: "n71" targetname: "n65" label: "0" class:17 priority:10 color:blue}
+node: {title: "n72" label: "ProjT 4 72"  info1: "mode:    T
 visited: 16
 irg:     PRIMA_set_a
 arity: 1
 "color: yellow}
-edge: {sourcename: "n67" targetname: "n61" label: "0" class:1  priority:50}
-node: {title: "n63" label: "ProjX 0 63"  info1: "mode:    X
+edge: {sourcename: "n72" targetname: "n65" label: "0" class:1  priority:50}
+node: {title: "n68" label: "ProjX 0 68"  info1: "mode:    X
 visited: 16
 irg:     PRIMA_set_a
 arity: 1
 "color: yellow}
-edge: {sourcename: "n63" targetname: "n61" label: "0" class:13 priority:60 color:red}
-node: {title: "n61" label: "Start  61"  info1: "mode:    T
+edge: {sourcename: "n68" targetname: "n65" label: "0" class:13 priority:60 color:red}
+node: {title: "n65" label: "Start  65"  info1: "mode:    T
 visited: 16
 irg:     PRIMA_set_a
 arity: 0
@@ -140,10 +141,10 @@ start of method of type set_a
 
 }
 
-node: {title: "e14" label: "ent a" color: yellow
- info1: "entity a (14)
-  type:  int (11)
-  owner: PRIMA (12)
+node: {title: "e17" label: "ent a" color: yellow
+ info1: "entity a (17)
+  type:  int (14)
+  owner: PRIMA (15)
   Does not overwrite other entities.
   Is not overwritten by other entities.
   allocation:  allocation_automatic
@@ -156,18 +157,18 @@ node: {title: "e14" label: "ent a" color: yellow
 
 "
 }
-edge: { sourcename: "e14" targetname: "t11"class: 3 label: "type" color: red}
-node: {title: "t12" label: "class PRIMA" info1: "state: layout_undefined
+edge: { sourcename: "e17" targetname: "t14"class: 3 label: "type" color: red}
+node: {title: "t15" label: "class PRIMA" info1: "state: layout_undefined
 size: -1b,
 peculiarity: peculiarity_existent
 " color: green}
-edge: { sourcename: "t12" targetname: "e14"class: 12 label: "member" color:blue}
-edge: { sourcename: "t12" targetname: "e17"class: 12 label: "member" color:blue}
-edge: { sourcename: "t12" targetname: "e20"class: 12 label: "member" color:blue}
-node: {title: "e17" label: "ent PRIMA_set_a" color: yellow
- info1: "entity set_a (17)
-  type:  set_a (15)
-  owner: PRIMA (12)
+edge: { sourcename: "t15" targetname: "e17"class: 12 label: "member" color:blue}
+edge: { sourcename: "t15" targetname: "e20"class: 12 label: "member" color:blue}
+edge: { sourcename: "t15" targetname: "e23"class: 12 label: "member" color:blue}
+node: {title: "e20" label: "ent PRIMA_set_a" color: yellow
+ info1: "entity set_a (20)
+  type:  set_a (18)
+  owner: PRIMA (15)
   Does not overwrite other entities.
   Is not overwritten by other entities.
   allocation:  allocation_static
@@ -178,42 +179,42 @@ node: {title: "e17" label: "ent PRIMA_set_a" color: yellow
   peculiarity: peculiarity_existent
   ld_name: PRIMA_set_a
   offset:  -1
-  irg = 68
+  irg = 73
 
 "
 }
-edge: { sourcename: "e17" targetname: "t15"class: 3 label: "type" color: red}
-edge: { sourcename: "e17" targetname: "n16"label: "value 0"}
-node: {title: "n16" label: "SymC &set_a  16"  info1: "mode:    P
+edge: { sourcename: "e20" targetname: "t18"class: 3 label: "type" color: red}
+edge: { sourcename: "e20" targetname: "n19"label: "value 0"}
+node: {title: "n19" label: "SymC &set_a  19"  info1: "mode:    P
 visited: 5
 arity: 0
 kind addr_ent
-entity PRIMA.set_a (17)
+entity PRIMA.set_a (20)
 
 SymConst of type type_unknown
 "}
-node: {title: "t15" label: "method set_a" info1: "state: layout_fixed,
+node: {title: "t18" label: "method set_a" info1: "state: layout_fixed,
 mode: P,
 size: 32b,
 variadicity: variadicity_non_variadic
 params: 2
 results: 0
 "}
-edge: { sourcename: "t15" targetname: "t13"class: 5 label: "param 0" color: green}
-edge: { sourcename: "t15" targetname: "t11"class: 5 label: "param 1" color: green}
-node: {title: "t13" label: "pointer class_prima_ptr" info1: "state: layout_fixed,
+edge: { sourcename: "t18" targetname: "t16"class: 5 label: "param 0" color: green}
+edge: { sourcename: "t18" targetname: "t14"class: 5 label: "param 1" color: green}
+node: {title: "t16" label: "pointer class_prima_ptr" info1: "state: layout_fixed,
 mode: P,
 size: 32b,
 "}
-edge: { sourcename: "t13" targetname: "t12"class: 9 label: "points to" color:green}
-node: {title: "t11" label: "primitive int" info1: "state: layout_fixed,
+edge: { sourcename: "t16" targetname: "t15"class: 9 label: "points to" color:green}
+node: {title: "t14" label: "primitive int" info1: "state: layout_fixed,
 mode: Is,
 size: 32b,
 "}
-node: {title: "e20" label: "ent PRIMA_c" color: yellow
- info1: "entity c (20)
-  type:  c (18)
-  owner: PRIMA (12)
+node: {title: "e23" label: "ent PRIMA_c" color: yellow
+ info1: "entity c (23)
+  type:  c (21)
+  owner: PRIMA (15)
   Does not overwrite other entities.
   Is not overwritten by other entities.
   allocation:  allocation_static
@@ -224,33 +225,33 @@ node: {title: "e20" label: "ent PRIMA_c" color: yellow
   peculiarity: peculiarity_existent
   ld_name: PRIMA_c
   offset:  -1
-  irg = 90
+  irg = 96
 
 "
 }
-edge: { sourcename: "e20" targetname: "t18"class: 3 label: "type" color: red}
-edge: { sourcename: "e20" targetname: "n19"label: "value 0"}
-node: {title: "n19" label: "SymC &c  19"  info1: "mode:    P
+edge: { sourcename: "e23" targetname: "t21"class: 3 label: "type" color: red}
+edge: { sourcename: "e23" targetname: "n22"label: "value 0"}
+node: {title: "n22" label: "SymC &c  22"  info1: "mode:    P
 visited: 5
 arity: 0
 kind addr_ent
-entity PRIMA.c (20)
+entity PRIMA.c (23)
 
 SymConst of type type_unknown
 "}
-node: {title: "t18" label: "method c" info1: "state: layout_fixed,
+node: {title: "t21" label: "method c" info1: "state: layout_fixed,
 mode: P,
 size: 32b,
 variadicity: variadicity_non_variadic
 params: 2
 results: 1
 "}
-edge: { sourcename: "t18" targetname: "t13"class: 5 label: "param 0" color: green}
-edge: { sourcename: "t18" targetname: "t11"class: 5 label: "param 1" color: green}
-edge: { sourcename: "t18" targetname: "t11"class: 6 label: "res 0" color: green}
-node: {title: "t57" label: "class set_aframe_tp" info1: "state: layout_undefined
+edge: { sourcename: "t21" targetname: "t16"class: 5 label: "param 0" color: green}
+edge: { sourcename: "t21" targetname: "t14"class: 5 label: "param 1" color: green}
+edge: { sourcename: "t21" targetname: "t14"class: 6 label: "res 0" color: green}
+node: {title: "t61" label: "class set_aframe_tp" info1: "state: layout_undefined
 size: -1b,
 peculiarity: peculiarity_existent
 " color: green}
-edge: { sourcename: "n73" targetname: "e14"class:2 priority:2 linestyle:dotted}
+edge: { sourcename: "n78" targetname: "e17"class:2 priority:2 linestyle:dotted}
 }

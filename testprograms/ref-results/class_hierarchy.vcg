@@ -8,6 +8,7 @@ classname 1:  "intrablock Data"
 classname 16: "interblock Data"
 classname 2:  "Block"
 classname 13: "Control Flow"
+classname 18: "Exception Control Flow for Interval Analysis"
 classname 14: "intrablock Memory"
 classname 17: "interblock Memory"
 classname 15: "Dominators"
@@ -51,14 +52,14 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-node: {title: "t12" label: "class PRIMA" info1: "state: layout_undefined
+node: {title: "t15" label: "class PRIMA" info1: "state: layout_undefined
 size: -1b,
 peculiarity: peculiarity_existent
 " color: green}
-node: {title: "e17" label: "ent PRIMA_set_a" color: yellow
- info1: "entity set_a (17)
-  type:  set_a (15)
-  owner: PRIMA (12)
+node: {title: "e20" label: "ent PRIMA_set_a" color: yellow
+ info1: "entity set_a (20)
+  type:  set_a (18)
+  owner: PRIMA (15)
   Does not overwrite other entities.
   Is not overwritten by other entities.
   allocation:  allocation_static
@@ -69,15 +70,15 @@ node: {title: "e17" label: "ent PRIMA_set_a" color: yellow
   peculiarity: peculiarity_existent
   ld_name: PRIMA_set_a
   offset:  -1
-  irg = 68
+  irg = 73
 
 "
 }
-edge: { sourcename: "t12" targetname: "e17"class: 12 label: "member" color:blue}
-node: {title: "e20" label: "ent PRIMA_c" color: yellow
- info1: "entity c (20)
-  type:  c (18)
-  owner: PRIMA (12)
+edge: { sourcename: "t15" targetname: "e20"class: 12 label: "member" color:blue}
+node: {title: "e23" label: "ent PRIMA_c" color: yellow
+ info1: "entity c (23)
+  type:  c (21)
+  owner: PRIMA (15)
   Does not overwrite other entities.
   Is not overwritten by other entities.
   allocation:  allocation_static
@@ -88,9 +89,9 @@ node: {title: "e20" label: "ent PRIMA_c" color: yellow
   peculiarity: peculiarity_existent
   ld_name: PRIMA_c
   offset:  -1
-  irg = 90
+  irg = 96
 
 "
 }
-edge: { sourcename: "t12" targetname: "e20"class: 12 label: "member" color:blue}
+edge: { sourcename: "t15" targetname: "e23"class: 12 label: "member" color:blue}
 }

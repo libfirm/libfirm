@@ -8,6 +8,7 @@ classname 1:  "intrablock Data"
 classname 16: "interblock Data"
 classname 2:  "Block"
 classname 13: "Control Flow"
+classname 18: "Exception Control Flow for Interval Analysis"
 classname 14: "intrablock Memory"
 classname 17: "interblock Memory"
 classname 15: "Dominators"
@@ -51,10 +52,10 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-node: {title: "e19" label: "ent a_tp_elem_ent" color: yellow
- info1: "entity a_tp_elem_ent (19)
-  type:  int (11)
-  owner: a_tp (16)
+node: {title: "e22" label: "ent a_tp_elem_ent" color: yellow
+ info1: "entity a_tp_elem_ent (22)
+  type:  int (14)
+  owner: a_tp (19)
   allocation:  allocation_automatic
   visibility:  visibility_local
   variability: variability_uninitialized
@@ -65,32 +66,32 @@ node: {title: "e19" label: "ent a_tp_elem_ent" color: yellow
 
 "
 }
-edge: { sourcename: "e19" targetname: "t11"class: 3 label: "type" color: red}
-node: {title: "t16" label: "array a_tp" info1: "state: layout_undefined
+edge: { sourcename: "e22" targetname: "t14"class: 3 label: "type" color: red}
+node: {title: "t19" label: "array a_tp" info1: "state: layout_undefined
 size: -1b,
 "}
-edge: { sourcename: "t16" targetname: "t11"class: 10 label: "arr elt tp" color:green}
-edge: { sourcename: "t16" targetname: "e19"class: 10 label: "arr ent" color: green}
-edge: { sourcename: "n20" targetname: "t16"label: "upper 0"}
-edge: { sourcename: "n21" targetname: "t16"label: "lower 0"}
-node: {title: "n20" label: "0x9Iu  20"  info1: "mode:    Iu
+edge: { sourcename: "t19" targetname: "t14"class: 10 label: "arr elt tp" color:green}
+edge: { sourcename: "t19" targetname: "e22"class: 10 label: "arr ent" color: green}
+edge: { sourcename: "n23" targetname: "t19"label: "upper 0"}
+edge: { sourcename: "n24" targetname: "t19"label: "lower 0"}
+node: {title: "n23" label: "0x9Iu  23"  info1: "mode:    Iu
 visited: 1
 arity: 0
 Const of type type_unknown
 "color: yellow}
-node: {title: "n21" label: "0x0Iu  21"  info1: "mode:    Iu
+node: {title: "n24" label: "0x0Iu  24"  info1: "mode:    Iu
 visited: 1
 arity: 0
 Const of type type_unknown
 "color: yellow}
-node: {title: "t11" label: "primitive int" info1: "state: layout_fixed,
+node: {title: "t14" label: "primitive int" info1: "state: layout_fixed,
 mode: Is,
 size: 32b,
 "}
-node: {title: "e35" label: "ent a" color: yellow
- info1: "entity a (35)
-  type:  a_tp (16)
-  owner: mainframe_tp (22)
+node: {title: "e39" label: "ent a" color: yellow
+ info1: "entity a (39)
+  type:  a_tp (19)
+  owner: mainframe_tp (25)
   Does not overwrite other entities.
   Is not overwritten by other entities.
   allocation:  allocation_automatic
@@ -103,16 +104,16 @@ node: {title: "e35" label: "ent a" color: yellow
 
 "
 }
-edge: { sourcename: "e35" targetname: "t16"class: 3 label: "type" color: red}
-node: {title: "t22" label: "class mainframe_tp" info1: "state: layout_undefined
+edge: { sourcename: "e39" targetname: "t19"class: 3 label: "type" color: red}
+node: {title: "t25" label: "class mainframe_tp" info1: "state: layout_undefined
 size: -1b,
 peculiarity: peculiarity_existent
 " color: green}
-edge: { sourcename: "t22" targetname: "e35"class: 12 label: "member" color:blue}
-node: {title: "e15" label: "ent ARRAY-STACK_EXAMPLE_main" color: yellow
- info1: "entity main (15)
-  type:  main_tp (13)
-  owner: ARRAY-STACK_EXAMPLE (12)
+edge: { sourcename: "t25" targetname: "e39"class: 12 label: "member" color:blue}
+node: {title: "e18" label: "ent ARRAY-STACK_EXAMPLE_main" color: yellow
+ info1: "entity main (18)
+  type:  main_tp (16)
+  owner: ARRAY-STACK_EXAMPLE (15)
   Does not overwrite other entities.
   Is not overwritten by other entities.
   allocation:  allocation_static
@@ -123,31 +124,31 @@ node: {title: "e15" label: "ent ARRAY-STACK_EXAMPLE_main" color: yellow
   peculiarity: peculiarity_existent
   ld_name: ARRAY-STACK_EXAMPLE_main
   offset:  -1
-  irg = 33
+  irg = 37
 
 "
 }
-edge: { sourcename: "e15" targetname: "t13"class: 3 label: "type" color: red}
-edge: { sourcename: "e15" targetname: "n14"label: "value 0"}
-node: {title: "n14" label: "SymC &main  14"  info1: "mode:    P
+edge: { sourcename: "e18" targetname: "t16"class: 3 label: "type" color: red}
+edge: { sourcename: "e18" targetname: "n17"label: "value 0"}
+node: {title: "n17" label: "SymC &main  17"  info1: "mode:    P
 visited: 1
 arity: 0
 kind addr_ent
-entity ARRAY-STACK_EXAMPLE.main (15)
+entity ARRAY-STACK_EXAMPLE.main (18)
 
 SymConst of type type_unknown
 "}
-node: {title: "t12" label: "class ARRAY-STACK_EXAMPLE" info1: "state: layout_undefined
+node: {title: "t15" label: "class ARRAY-STACK_EXAMPLE" info1: "state: layout_undefined
 size: -1b,
 peculiarity: peculiarity_existent
 " color: green}
-edge: { sourcename: "t12" targetname: "e15"class: 12 label: "member" color:blue}
-node: {title: "t13" label: "method main_tp" info1: "state: layout_fixed,
+edge: { sourcename: "t15" targetname: "e18"class: 12 label: "member" color:blue}
+node: {title: "t16" label: "method main_tp" info1: "state: layout_fixed,
 mode: P,
 size: 32b,
 variadicity: variadicity_non_variadic
 params: 0
 results: 1
 "}
-edge: { sourcename: "t13" targetname: "t11"class: 6 label: "res 0" color: green}
+edge: { sourcename: "t16" targetname: "t14"class: 6 label: "res 0" color: green}
 }

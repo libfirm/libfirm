@@ -8,6 +8,7 @@ classname 1:  "intrablock Data"
 classname 16: "interblock Data"
 classname 2:  "Block"
 classname 13: "Control Flow"
+classname 18: "Exception Control Flow for Interval Analysis"
 classname 14: "intrablock Memory"
 classname 17: "interblock Memory"
 classname 15: "Dominators"
@@ -51,28 +52,28 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-node: {title: "t11" label: "primitive int" info1: "state: layout_fixed,
+node: {title: "t14" label: "primitive int" info1: "state: layout_fixed,
 mode: Is,
 size: 32b,
 "}
-node: {title: "t12" label: "method main_tp" info1: "state: layout_fixed,
+node: {title: "t15" label: "method main_tp" info1: "state: layout_fixed,
 mode: P,
 size: 32b,
 variadicity: variadicity_non_variadic
 params: 1
 results: 1
 "}
-edge: { sourcename: "t12" targetname: "t11"class: 5 label: "param 0" color: green}
-edge: { sourcename: "t12" targetname: "t11"class: 6 label: "res 0" color: green}
-node: {title: "t13" label: "class WHILE_EXAMPLE" info1: "state: layout_undefined
+edge: { sourcename: "t15" targetname: "t14"class: 5 label: "param 0" color: green}
+edge: { sourcename: "t15" targetname: "t14"class: 6 label: "res 0" color: green}
+node: {title: "t16" label: "class WHILE_EXAMPLE" info1: "state: layout_undefined
 size: -1b,
 peculiarity: peculiarity_existent
 " color: green}
-edge: { sourcename: "t13" targetname: "e15"class: 12 label: "member" color:blue}
-node: {title: "e15" label: "ent WHILE_EXAMPLE_main" color: yellow
- info1: "entity main (15)
-  type:  main_tp (12)
-  owner: WHILE_EXAMPLE (13)
+edge: { sourcename: "t16" targetname: "e18"class: 12 label: "member" color:blue}
+node: {title: "e18" label: "ent WHILE_EXAMPLE_main" color: yellow
+ info1: "entity main (18)
+  type:  main_tp (15)
+  owner: WHILE_EXAMPLE (16)
   Does not overwrite other entities.
   Is not overwritten by other entities.
   allocation:  allocation_static
@@ -83,17 +84,17 @@ node: {title: "e15" label: "ent WHILE_EXAMPLE_main" color: yellow
   peculiarity: peculiarity_existent
   ld_name: WHILE_EXAMPLE_main
   offset:  -1
-  irg = 27
+  irg = 31
 
 "
 }
-edge: { sourcename: "e15" targetname: "t12"class: 3 label: "type" color: red}
-edge: { sourcename: "e15" targetname: "n14"label: "value 0"}
-node: {title: "n14" label: "SymC &main  14"  info1: "mode:    P
+edge: { sourcename: "e18" targetname: "t15"class: 3 label: "type" color: red}
+edge: { sourcename: "e18" targetname: "n17"label: "value 0"}
+node: {title: "n17" label: "SymC &main  17"  info1: "mode:    P
 visited: 1
 arity: 0
 kind addr_ent
-entity WHILE_EXAMPLE.main (15)
+entity WHILE_EXAMPLE.main (18)
 
 SymConst of type type_unknown
 "}
