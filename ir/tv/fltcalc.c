@@ -19,48 +19,41 @@
 #include <alloca.h>
 
 typedef uint32_t UINT32;
-#ifdef WORD_LITTLE_ENDIAN
-#undef WORD_LITTLE_ENDIAN
-#endif
-#ifdef WORD_BIG_ENDIAN
-#undef WORD_BIG_ENDIAN
-#endif
-#define WORD_LITTLE_ENDIAN
 
 #ifdef HAVE_LONG_DOUBLE
-#ifdef WORD_LITTLE_ENDIAN
+#ifdef WORDS_BIGENDIAN
 typedef union {
   struct {
-    UINT32 low;
-    UINT32 mid;
     UINT32 high;
+    UINT32 mid;
+    UINT32 low;
   } val;
   volatile long double d;
 } value_t;
 #else
 typedef union {
   struct {
-    UINT32 high;
-    UINT32 mid;
     UINT32 low;
+    UINT32 mid;
+    UINT32 high;
   } val;
   volatile long double d;
 } value_t;
 #endif
 #else
-#ifdef WORD_LITTLE_ENDIAN
+#ifdef WORDS_BIGENDIAN
 typedef union {
   struct {
-    UINT32 low;
     UINT32 high;
+    UINT32 low;
   } val;
   volatile double d;
 } value_t;
 #else
 typedef union {
   struct {
-    UINT32 high;
     UINT32 low;
+    UINT32 high;
   } val;
   volatile double d;
 } value_t;
@@ -159,7 +152,7 @@ static void _fail_char(const char *str, unsigned int len, int pos)
 }
 #endif
 
-/* pack ieee-like */
+/* pack machine-like */
 static char* _pack(const char *int_float, char *packed)
 {
   char *shift_val;
@@ -240,7 +233,7 @@ char* _normalize(const char *in_val, char *out_val, int sticky)
     hsb = -1;
   }
 
-  /* shift the first 1 ito the left of the radix point (i.e. hsb == -1) */
+  /* shift the first 1 into the left of the radix point (i.e. hsb == -1) */
   if (hsb < -1)
   {
     /* shift right */
@@ -428,7 +421,6 @@ static char* _add(const char* a, const char* b, char* result)
 
   /* determine if this is an addition or subtraction */
   sign = _sign(a) ^ _sign(b);
-  DEBUGPRINTF(("sign a: %d, sign b: %d -> %s\n", _sign(a), _sign(b), sign?"sub":"add"));
 
   /* produce nan on inf - inf */
   if (sign && (_desc(a).class == INF) && (_desc(b).class == INF))
@@ -802,19 +794,19 @@ char* _calc(const char *a, const char *b, int opcode, char *result)
 
   if (result == NULL) result = calc_buffer;
 
-  TRACEPRINTF(("%s ", fc_print(a, buffer, 100, FC_HEX)));
+  TRACEPRINTF(("%s ", fc_print(a, buffer, 100, FC_PACKED)));
   switch (opcode)
   {
     case FC_add:
       /* make the value with the bigger exponent the first one */
-      TRACEPRINTF(("+ %s ", fc_print(b, buffer, 100, FC_HEX)));
+      TRACEPRINTF(("+ %s ", fc_print(b, buffer, 100, FC_PACKED)));
       if (sc_comp(_exp(a), _exp(b)) == -1)
         _add(b, a, result);
       else
         _add(a, b, result);
       break;
     case FC_sub:
-      TRACEPRINTF(("- %s ", fc_print(b, buffer, 100, FC_HEX)));
+      TRACEPRINTF(("- %s ", fc_print(b, buffer, 100, FC_PACKED)));
       temp = alloca(CALC_BUFFER_SIZE);
       memcpy(temp, b, CALC_BUFFER_SIZE);
       _sign(temp) = !_sign(b);
@@ -824,11 +816,11 @@ char* _calc(const char *a, const char *b, int opcode, char *result)
         _add(a, temp, result);
       break;
     case FC_mul:
-      TRACEPRINTF(("* %s ", fc_print(b, buffer, 100, FC_HEX)));
+      TRACEPRINTF(("* %s ", fc_print(b, buffer, 100, FC_PACKED)));
       _mul(a, b, result);
       break;
     case FC_div:
-      TRACEPRINTF(("/ %s ", fc_print(b, buffer, 100, FC_HEX)));
+      TRACEPRINTF(("/ %s ", fc_print(b, buffer, 100, FC_PACKED)));
       _div(a, b, result);
       break;
     case FC_neg:
@@ -843,7 +835,7 @@ char* _calc(const char *a, const char *b, int opcode, char *result)
       break;
   }
 
-  TRACEPRINTF(("= %s\n", fc_print(result, buffer, 100, FC_HEX)));
+  TRACEPRINTF(("= %s\n", fc_print(result, buffer, 100, FC_PACKED)));
   return result;
 }
 
@@ -1058,20 +1050,19 @@ done:
 char* fc_val_from_float(LLDBL l, char exp_size, char mant_size, char* result)
 {
   char *temp;
-  int bias_res = ((1<<exp_size)/2-1);
-  int bias_val;
-  char mant_val;
+  int bias_res, bias_val, mant_val;
   value_t srcval;
 
   srcval.d = l;
+  bias_res = ((1<<exp_size)/2-1);
 
 #ifdef HAVE_LONG_DOUBLE
   mant_val = 64;
   bias_val = 0x3fff;
-  UINT32 sign = (srcval.val.high & 0x80000000) != 0;
-  UINT32 exponent = (srcval.val.high & 0x7FFF0000) >> 16;
-  UINT32 mantissa1 = srcval.val.mid;
-  UINT32 mantissa0 = srcval.val.low;
+  UINT32 sign = (srcval.val.high & 0x00008000) != 0;
+  UINT32 exponent = (srcval.val.high & 0x00007FFF) ;
+  UINT32 mantissa0 = srcval.val.mid;
+  UINT32 mantissa1 = srcval.val.low;
 #else /* no long double */
   mant_val = 52;
   bias_val = 0x3ff;
@@ -1082,10 +1073,10 @@ char* fc_val_from_float(LLDBL l, char exp_size, char mant_size, char* result)
 #endif
 
 #ifdef HAVE_LONG_DOUBLE
-  TRACEPRINTF(("val_from_float(%.8X%.8X%.8X)\n", ((int*)&l)[2], ((int*)&l)[1], ((int*)&l)[0]));
+  TRACEPRINTF(("val_from_float(%.8X%.8X%.8X)\n", ((int*)&l)[2], ((int*)&l)[1], ((int*)&l)[0]));//srcval.val.high, srcval.val.mid, srcval.val.low));
   DEBUGPRINTF(("(%d-%.4X-%.8X%.8X)\n", sign, exponent, mantissa0, mantissa1));
 #else
-  TRACEPRINTF(("val_from_float(%.8X%.8X)\n", ((int*)&l)[1], ((int*)&l)[0]));
+  TRACEPRINTF(("val_from_float(%.8X%.8X)\n", srcval.val.high, srcval.val.low));
   DEBUGPRINTF(("(%d-%.3X-%.5X%.8X)\n", sign, exponent, mantissa0, mantissa1));
 #endif
 
@@ -1111,10 +1102,18 @@ char* fc_val_from_float(LLDBL l, char exp_size, char mant_size, char* result)
     return result;
   }
 
-  /* extract exponent */
+  /* build exponent, because input and output exponent and mantissa sizes may differ
+   * this looks more complicated than it is: unbiased input exponent + output bias,
+   * minus the mantissa difference which is added again later when the output float
+   * becomes normalized */
+#ifdef HAVE_EXPLICIT_ONE
+  sc_val_from_long((exponent-bias_val+bias_res)-(mant_val-mant_size-1), _exp(result));
+#else
   sc_val_from_long((exponent-bias_val+bias_res)-(mant_val-mant_size), _exp(result));
+#endif
 
-  /* extract mantissa */
+  /* build mantissa representation */
+#ifndef HAVE_EXPLICIT_ONE
   if (exponent != 0)
   {
     /* insert the hidden bit */
@@ -1123,6 +1122,7 @@ char* fc_val_from_float(LLDBL l, char exp_size, char mant_size, char* result)
     _shift_left(temp, sc_get_buffer(), NULL);
   }
   else
+#endif
   {
     sc_val_from_ulong(0, NULL);
   }
@@ -1151,7 +1151,7 @@ char* fc_val_from_float(LLDBL l, char exp_size, char mant_size, char* result)
 
   _normalize(result, result, 0);
 
-  TRACEPRINTF(("val_from_float results in %s\n", fc_print(result, temp, CALC_BUFFER_SIZE, FC_HEX)));
+  TRACEPRINTF(("val_from_float results in %s\n", fc_print(result, temp, CALC_BUFFER_SIZE, FC_PACKED)));
 
   return result;
 }
@@ -1160,7 +1160,6 @@ LLDBL fc_val_to_float(const void *val)
 {
   const char *value;
   char *temp = NULL;
-  char *pack = NULL;
 
   int byte_offset;
 
@@ -1172,42 +1171,47 @@ LLDBL fc_val_to_float(const void *val)
   value_t buildval;
 
 #ifdef HAVE_LONG_DOUBLE
-  char result_mantissa = 64;
   char result_exponent = 15;
+  char result_mantissa = 64;
 #else
-  char result_mantissa = 52;
   char result_exponent = 11;
+  char result_mantissa = 52;
 #endif
 
   temp = alloca(CALC_BUFFER_SIZE);
-  pack = alloca(VALUE_SIZE);
+#ifdef HAVE_EXPLICIT_ONE
+  value = fc_cast(val, result_exponent, result_mantissa-1, temp);
+#else
   value = fc_cast(val, result_exponent, result_mantissa, temp);
+#endif
 
   sign = _sign(value);
-  /* long double exponent is 15bit, so the use of sc_val_to_long should not
+
+  /* @@@ long double exponent is 15bit, so the use of sc_val_to_long should not
    * lead to wrong results */
   exponent = sc_val_to_long(_exp(value)) ;
 
-  _pack(value, pack);
+  sc_val_from_ulong(2, NULL);
+  _shift_right(_mant(value), sc_get_buffer(), _mant(value));
 
   mantissa0 = 0;
   mantissa1 = 0;
 
   for (byte_offset = 0; byte_offset < 4; byte_offset++)
-    mantissa1 |= sc_sub_bits(pack, result_mantissa, byte_offset) << (byte_offset<<3);
+    mantissa1 |= sc_sub_bits(_mant(value), result_mantissa, byte_offset) << (byte_offset<<3);
 
   for (; (byte_offset<<3) < result_mantissa; byte_offset++)
-    mantissa0 |= sc_sub_bits(pack, result_mantissa, byte_offset) << ((byte_offset-4)<<3);
+    mantissa0 |= sc_sub_bits(_mant(value), result_mantissa, byte_offset) << ((byte_offset-4)<<3);
 
 #ifndef HAVE_LONG_DOUBLE
-  mantissa0 &= 0x000FFFFF;
+  mantissa0 &= 0x000FFFFF;  /* get rid of garbage */
 #endif
 
 #ifdef HAVE_LONG_DOUBLE
-  buildval.val.high = sign << 31;
-  buildval.val.high |= exponent << 16;
-  buildval.val.mid = mantissa1;
-  buildval.val.low = mantissa0;
+  buildval.val.high = sign << 15;
+  buildval.val.high |= exponent;
+  buildval.val.mid = mantissa0;
+  buildval.val.low = mantissa1;
 #else /* no long double */
   buildval.val.high = sign << 31;
   buildval.val.high |= exponent << 20;
@@ -1216,7 +1220,6 @@ LLDBL fc_val_to_float(const void *val)
 #endif
 
   TRACEPRINTF(("val_to_float: %d-%x-%x%x\n", sign, exponent, mantissa0, mantissa1));
-  //printf("val_to_float: %d-%x-%x%x\n", sign, exponent, mantissa0, mantissa1);
   return buildval.d;
 }
 
@@ -1227,7 +1230,7 @@ char* fc_cast(const void *val, char exp_size, char mant_size, char *result)
   int exp_offset, val_bias, res_bias;
 
   if (result == NULL) result = calc_buffer;
-  temp = alloca(CALC_BUFFER_SIZE);
+  temp = alloca(VALUE_SIZE);
 
   if (_desc(value).exponent_size == exp_size && _desc(value).mantissa_size == mant_size)
   {
@@ -1247,15 +1250,24 @@ char* fc_cast(const void *val, char exp_size, char mant_size, char *result)
    * offset and add it */
   val_bias = (1<<_desc(value).exponent_size)/2-1;
   res_bias = (1<<exp_size)/2-1;
-  exp_offset = (res_bias - val_bias) - (_desc(value).mantissa_size - mant_size);
 
+  exp_offset = (res_bias - val_bias) - (_desc(value).mantissa_size - mant_size);
   sc_val_from_long(exp_offset, temp);
   sc_add(_exp(value), temp, _exp(result));
 
-  if (value != result) memcpy(_mant(result), _mant(value), VALUE_SIZE);
-  else memmove(_mant(result), _mant(value), VALUE_SIZE);
+  /* _normalize expects normalized radix point */
+  if (_desc(val).class == SUBNORMAL) {
+    sc_val_from_ulong(1, NULL);
+    _shift_left(_mant(val), sc_get_buffer(), _mant(result));
+  } else if (value != result) {
+    memcpy(_mant(result), _mant(value), VALUE_SIZE);
+  } else {
+    memmove(_mant(result), _mant(value), VALUE_SIZE);
+  }
 
-  return _normalize(result, result, 0);
+  _normalize(result, result, 0);
+  TRACEPRINTF(("Cast results in %s\n", fc_print(result, temp, VALUE_SIZE, FC_PACKED)));
+  return result;
 }
 
 char* fc_get_max(unsigned int exponent_size, unsigned int mantissa_size, char* result)
@@ -1439,8 +1451,31 @@ char *fc_print(const void *a, char *buf, int buflen, unsigned base)
 #endif
       }
       break;
+
     case FC_HEX:
-      snprintf(buf, buflen, "%s", sc_print(_pack(val, mul_1), 0, SC_HEX));
+      switch (_desc(val).class) {
+        case INF:
+          if (buflen >= 8+_sign(val)) sprintf(buf, "%sINFINITY", _sign(val)?"-":"");
+          else snprintf(buf, buflen, "%sINF", _sign(val)?"-":NULL);
+          break;
+        case NAN:
+          snprintf(buf, buflen, "NAN");
+          break;
+        case ZERO:
+          snprintf(buf, buflen, "0.0");
+          break;
+        default:
+#ifdef HAVE_LONG_DOUBLE
+          snprintf(buf, buflen, "%LA", fc_val_to_float(val));
+#else
+          snprintf(buf, buflen, "%A", fc_val_to_float(val));
+#endif
+      }
+      break;
+
+    case FC_PACKED:
+    default:
+      snprintf(buf, buflen, "%s", sc_print(_pack(val, mul_1), VALUE_SIZE*4, SC_HEX));
       break;
   }
   return buf;
@@ -1496,6 +1531,16 @@ void init_fltcalc(int precision)
 
     calc_buffer = malloc(CALC_BUFFER_SIZE);
     DEBUGPRINTF(("init fltcalc:\n\tVALUE_SIZE = %d\n\tSIGN_POS = %d\n\tEXPONENT_POS = %d\n\tMANTISSA_POS = %d\n\tDESCRIPTOR_POS = %d\n\tCALC_BUFFER_SIZE = %d\n\tcalc_buffer = %p\n\n", VALUE_SIZE, SIGN_POS, EXPONENT_POS, MANTISSA_POS, DESCRIPTOR_POS, CALC_BUFFER_SIZE, calc_buffer));
+#ifdef HAVE_LONG_DOUBLE
+    DEBUGPRINTF(("\tUsing long double (1-15-64) interface\n"));
+#else
+    DEBUGPRINTF(("\tUsing double (1-11-52) interface\n"));
+#endif
+#ifdef WORDS_BIGENDIAN
+    DEBUGPRINTF(("\tWord order is big endian\n\n"));
+#else
+    DEBUGPRINTF(("\tWord order is little endian\n\n"));
+#endif
   }
 }
 

@@ -1,7 +1,11 @@
 #ifndef _FLTCALC_H_
 #define _FLTCALC_H_
 
+#include <config.h>
+
 #ifdef HAVE_LONG_DOUBLE
+/* XXX Set this via autoconf */
+#define HAVE_EXPLICIT_ONE
 typedef long double LLDBL;
 #else
 typedef double LLDBL;
@@ -21,6 +25,7 @@ enum {
   FC_DEC,
   FC_HEX,
   FC_BIN,
+  FC_PACKED,
 };
 
 /* rounding modes */

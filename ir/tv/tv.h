@@ -48,6 +48,7 @@ Discussion of new interface, proposals by Prof. Waite:
 # include "entity.h"
 # include "irnode.h"    /* for pnc_number enum */
 
+
 /****h* libfirm/tv
  *
  * NAME
@@ -195,11 +196,11 @@ int tarval_is_long(tarval *tv);
 /**
  * Constructor function for new tarvals.
  *
- * @param d     The long double representing the value
+ * @param d     The (long) double representing the value
  * @param mode  The mode requested for the result tarval
  *
  * This function creates a new tarval representing the value represented
- * by a long double. If a tarval representing this value already exists,
+ * by a (long) double. If a tarval representing this value already exists,
  * this tarval is returned instead of a new one. So tarvals are directly
  * comparable since their representation is unique.
  * Only modes of sort float_number can be constructed this way.
@@ -211,7 +212,7 @@ int tarval_is_long(tarval *tv);
  *   value/mode pair.
  *
  * @note
- *   If the long double is not representable in the given mode an assertion
+ *   If the (long) double is not representable in the given mode an assertion
  *   is thrown. This will happen for any mode not of sort float_number.
  *
  * @sa
@@ -480,7 +481,8 @@ typedef enum {
   TVO_DECIMAL,			/**< use decimal representation */
   TVO_OCTAL,			/**< use octal representation */
   TVO_BINARY,			/**< use binary representation */
-  TVO_FLOAT			/**< use floating point representation */
+  TVO_FLOAT,			/**< use floating point representation (i.e 1.342e-2)*/
+  TVO_HEXFLOAT,                 /**< use hexadecimal floating point representation (i.e 0x1.ea32p-12)*/
 } tv_output_mode;
 
 /**

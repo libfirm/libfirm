@@ -22,6 +22,12 @@ CPPFLAGS += -I$(top_srcdir)/ir/common -I$(top_srcdir)/ir/tr -I$(top_srcdir)/ir/a
 	    -I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/ir -I$(top_srcdir)/ir/debug \
 	    -I$(top_srcdir)/ir/st -I$(top_srcdir)/ir/ana \
 
+tv.o: tv.h tv.c fltcalc.h fltcalc.c strcalc.h strcalc.c
+
+fltcalc.o: fltcalc.h fltcalc.c strcalc.h strcalc.c
+
+strcalc.o: strcalc.h strcalc.c
+
 include $(top_srcdir)/MakeTargets
 
 all: subdir.o

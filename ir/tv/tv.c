@@ -17,10 +17,6 @@
 /* This implementation assumes:
  *  - target has IEEE-754 floating-point arithmetic.  */
 
-#ifdef HAVE_CONFIG_H
-# include <config.h>
-#endif
-
 #include <assert.h>         /* assertions */
 #include <stdlib.h>         /* atoi() */
 #include <string.h>         /* nice things for strings */
@@ -1247,7 +1243,19 @@ int tarval_snprintf(char *buf, size_t len, tarval *tv)
       return snprintf(buf, len, "%s%s%s", prefix, str, suffix);
 
     case irms_float_number:
-      return snprintf(buf, len, "%s%s%s", prefix, fc_print(tv->value, tv_buf, sizeof(tv_buf), FC_DEC), suffix);
+      switch (mode_info->mode_output) {
+        case TVO_HEX:
+          return snprintf(buf, len, "%s%s%s", prefix, fc_print(tv->value, tv_buf, sizeof(tv_buf), FC_PACKED), suffix);
+
+        case TVO_HEXFLOAT:
+          return snprintf(buf, len, "%s%s%s", prefix, fc_print(tv->value, tv_buf, sizeof(tv_buf), FC_HEX), suffix);
+
+        case TVO_FLOAT:
+        case TVO_NATIVE:
+        default:
+          return snprintf(buf, len, "%s%s%s", prefix, fc_print(tv->value, tv_buf, sizeof(tv_buf), FC_DEC), suffix);
+      }
+      break;
 
     case irms_reference:
       if (tv==tarval_P_void) return snprintf(buf, len, "NULL");
