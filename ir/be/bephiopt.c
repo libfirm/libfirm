@@ -2,6 +2,9 @@
  * @author Daniel Grund
  * @date 04.01.2005
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -43,8 +46,9 @@ static void phi_node_walker(ir_node *node, void *env) {
 
 
 static void node_collector(ir_node *node, void *env) {
+	struct obstack *obst = env;
 	if (!is_Block(node) && is_allocatable_irn(node))
-		obstack_ptr_grow(env, node);
+		obstack_ptr_grow(obst, node);
 }
 
 
