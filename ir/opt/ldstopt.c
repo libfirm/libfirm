@@ -308,20 +308,21 @@ static long get_Sel_array_index_long(ir_node *n, int dim) {
 }
 
 static compound_graph_path *rec_get_accessed_path(ir_node *ptr, int depth) {
-  compound_graph_path *res;
+  compound_graph_path *res = NULL;
+  entity              *root, *field;
+  int                 path_len, pos;
+
   if (get_irn_op(ptr) == op_SymConst) {
     assert(get_SymConst_kind(ptr) == symconst_addr_ent);
-    entity *root = get_SymConst_entity(ptr);
-    if (depth == 0)
-      res = NULL;
-    else
-      res = new_compound_graph_path(get_entity_type(root), depth);
-  } else {
+    root = get_SymConst_entity(ptr);
+    res = depth == 0 ? NULL : new_compound_graph_path(get_entity_type(root), depth);
+  }
+  else {
     assert(get_irn_op(ptr) == op_Sel);
     res = rec_get_accessed_path(get_Sel_ptr(ptr), depth+1);
-    entity *field = get_Sel_entity(ptr);
-    int path_len = get_compound_graph_path_length(res);
-    int pos = path_len - depth -1;
+    field = get_Sel_entity(ptr);
+    path_len = get_compound_graph_path_length(res);
+    pos = path_len - depth - 1;
     set_compound_graph_path_node(res, pos, field);
     if (is_Array_type(get_entity_owner(field))) {
       assert(get_Sel_n_indexs(ptr) == 1 && "multi dim arrays not implemented");
@@ -346,7 +347,7 @@ static int optimize_load(ir_node *load)
 {
   ldst_info_t *info = get_irn_link(load);
   ir_mode *load_mode = get_Load_mode(load);
-  ir_node *pred, *mem, *ptr;
+  ir_node *pred, *mem, *ptr, *new_node;
   entity *ent;
   int res = 0;
 
@@ -408,7 +409,7 @@ static int optimize_load(ir_node *load)
 
   /* Load from a constant polymorphic field, where we can resolve
      polymorphy. */
-  ir_node *new_node = transform_node_Load(load);
+  new_node = transform_node_Load(load);
   if (new_node != load) {
     if (info->projs[pn_Load_M]) {
       exchange(info->projs[pn_Load_M], mem);
@@ -438,10 +439,11 @@ static int optimize_load(ir_node *load)
       }
 
       if (variability_constant == get_entity_variability(ent)
-	  && is_atomic_entity(ent)) {   /* Might not be atomic after
-					 lowering of Sels.  In this
-					 case we could also load, but
-					 it's more complicated. */
+	        && is_atomic_entity(ent)) {
+        /* Might not be atomic after
+           lowering of Sels.  In this
+           case we could also load, but
+           it's more complicated. */
         /* more simpler case: we load the content of a constant value:
          * replace it by the constant itself
          */
@@ -463,43 +465,44 @@ static int optimize_load(ir_node *load)
         }
       }
       else if (variability_constant == get_entity_variability(ent)) {
+        compound_graph_path *path;
+
         printf(">>>>>>>>>>>>> Found access to constant entity %s in function %s\n", get_entity_name(ent),
-	       get_entity_name(get_irg_entity(current_ir_graph)));
-	printf("  load: "); DDMN(load);
-	printf("  ptr:  "); DDMN(ptr);
+        get_entity_name(get_irg_entity(current_ir_graph)));
+        printf("  load: "); DDMN(load);
+        printf("  ptr:  "); DDMN(ptr);
 
-	compound_graph_path *path = get_accessed_path(ptr);
-	if (path) {
-	  assert(is_proper_compound_graph_path(path, get_compound_graph_path_length(path)-1));
-	  ir_node *c = get_compound_ent_value_by_path(ent, path);
+        path = get_accessed_path(ptr);
+        if (path) {
+          ir_node *c;
 
-	  printf("  cons: "); DDMN(c);
+          assert(is_proper_compound_graph_path(path, get_compound_graph_path_length(path)-1));
+          c = get_compound_ent_value_by_path(ent, path);
 
-	  if (info->projs[pn_Load_M])
-	    exchange(info->projs[pn_Load_M], mem);
-	  if (info->projs[pn_Load_res])
-	    exchange(info->projs[pn_Load_res], copy_const_value(c));
+          printf("  cons: "); DDMN(c);
 
-	  {
-	    int j;
-	    for (j = 0; j < get_compound_graph_path_length(path); ++j) {
-	      entity *node = get_compound_graph_path_node(path, j);
-	      fprintf(stdout, ".%s", get_entity_name(node));
-	      if (is_Array_type(get_entity_owner(node)))
-		fprintf(stdout, "[%d]", get_compound_graph_path_array_index(path, j));
-	    }
-	    printf("\n");
-	  }
-	} else {
-	  printf("cannot optimize.\n");
-	}
+          if (info->projs[pn_Load_M])
+            exchange(info->projs[pn_Load_M], mem);
+          if (info->projs[pn_Load_res])
+            exchange(info->projs[pn_Load_res], copy_const_value(c));
+
+          {
+            int j;
+            for (j = 0; j < get_compound_graph_path_length(path); ++j) {
+              entity *node = get_compound_graph_path_node(path, j);
+              fprintf(stdout, ".%s", get_entity_name(node));
+              if (is_Array_type(get_entity_owner(node)))
+                      fprintf(stdout, "[%d]", get_compound_graph_path_array_index(path, j));
+            }
+            printf("\n");
+          }
+        } else
+          printf("cannot optimize.\n");
       }
 
       /* we changed the irg, but try further */
       res = 1;
     }
-
-
   }
 
   /* Check, if the address of this load is used more than once.
