@@ -1,6 +1,6 @@
 /*
  * Project:     libFIRM
- * File name:   ir/ir/firmstat.h
+ * File name:   ir/stat/firmstat.h
  * Purpose:     Statistics for Firm.
  * Author:      Michael Beck
  * Created:
@@ -8,10 +8,15 @@
  * Copyright:   (c) 2004 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
+#ifndef _FIRMSTAT_H_
+#define _FIRMSTAT_H_
 
-
-# ifndef _FIRMSTAT_H_
-# define _FIRMSTAT_H_
+/**
+ * @file firmstat.h
+ */
+#include "irop.h"
+#include "irnode.h"
+#include "irgraph.h"
 
 #ifdef FIRM_STATISTICS
 
