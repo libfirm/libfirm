@@ -20,8 +20,6 @@
 * @todo eventually add reverse conrtol flow graph. (If needed.)
 */
 
-/* $Id$ */
-
 # ifndef _IROUTS_H_
 # define _IROUTS_H_
 

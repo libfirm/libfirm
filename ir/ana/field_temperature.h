@@ -38,16 +38,6 @@ int     get_Sel_n_accessed_entities(ir_node *sel);
 entity *get_Sel_accessed_entity    (ir_node *sel, int pos);
 
 
-/** Number of Load/Store nodes that possibly access this entity. */
-int get_entity_n_accesses(entity *ent);
-/** Load/Store node that possibly access this entity. */
-ir_node *get_entity_access(entity *ent, int pos);
-
-/** Number of Alloc nodes that create an instance of this type */
-int get_type_n_allocations(type *tp);
-/** Alloc node that create an instance of this type */
-ir_node *get_type_allocation(type *tp, int pos);
-
 
 /** Get the weighted interprocedural loop depth of the node.
     The depth is estimated by a heuristic. */

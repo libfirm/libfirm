@@ -31,79 +31,6 @@ static void add_unrecognized_access(ir_node *n) {
   ARR_APP1(ir_node *, unrecognized_access, n);
 }
 
-/* *************************************************************************** */
-/*   Access routines for entities                                              */
-/* *************************************************************************** */
-
-int get_entity_n_accesses(entity *ent) {
-  assert(ent && is_entity(ent));
-
-  if (!ent->accesses) { ent->accesses = NEW_ARR_F(ir_node *, 0); }
-
-  return ARR_LEN(ent->accesses);
-}
-
-ir_node *get_entity_access(entity *ent, int pos) {
-  assert(0 <= pos && pos < get_entity_n_accesses(ent));
-
-  return ent->accesses[pos];
-}
-
-void add_entity_access(entity *ent, ir_node *n) {
-  assert(ent && is_entity(ent));
-  assert(n && is_ir_node(n));
-
-  if (!ent->accesses) ent->accesses = NEW_ARR_F(ir_node *, 0);
-
-  ARR_APP1(ir_node *, ent->accesses, n);
-}
-
-void set_entity_access(entity *ent, int pos, ir_node *n) {
-  assert(0 <= pos && pos < get_entity_n_accesses(ent));
-  assert(n && is_ir_node(n));
-
-  ent->accesses[pos] = n;
-}
-
-
-/* *************************************************************************** */
-/*   Access routines for types                                                 */
-/* *************************************************************************** */
-
-/** Number of Alloc nodes that create an instance of this type */
-int get_type_n_allocations(type *tp) {
-  assert(tp && is_type(tp));
-
-  if (!tp->allocations) { tp->allocations = NEW_ARR_F(ir_node *, 0); }
-
-  return ARR_LEN(tp->allocations);
-}
-
-/** Alloc node that create an instance of this type */
-ir_node *get_type_allocation(type *tp, int pos) {
-  assert(0 <= pos && pos < get_type_n_allocations(tp));
-
-  return tp->allocations[pos];
-}
-
-void add_type_allocation(type *tp, ir_node *n) {
-  assert(tp && is_type(tp));
-  assert(n && is_ir_node(n));
-
-  if (!tp->allocations) tp->allocations = NEW_ARR_F(ir_node *, 0);
-
-  ARR_APP1(ir_node *, tp->allocations, n);
-}
-
-void set_type_allocation(type *tp, int pos, ir_node *n) {
-  assert(0 <= pos && pos < get_type_n_allocations(tp));
-  assert(n && is_ir_node(n));
-
-  tp->allocations[pos] = n;
-}
-
-
-
 
 /* *************************************************************************** */
 /*   Access routines for irnodes                                               */
@@ -195,13 +122,13 @@ int get_weighted_loop_depth(ir_node *n) {
 /* The analyses                                                                */
 /* *************************************************************************** */
 
-void init_field_temperature(void) {
+static void init_field_temperature(void) {
   assert(!unrecognized_access);
   unrecognized_access = NEW_ARR_F(ir_node *, 0);
 }
 
 
-void chain_accesses(ir_node *n, void *env) {
+static void chain_accesses(ir_node *n, void *env) {
   int i, n_ents;
   ir_node *addr;
 
