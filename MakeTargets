@@ -70,5 +70,8 @@ $(LIBDIR):	$(LIBDIR)
 $(INCLUDEDIR):	$(INCLUDEDIR)
 	mkdir -p $@
 
+$(AUTODOCDIR):
+	mkdir $@
+
 # include dependencies
 -include .depend

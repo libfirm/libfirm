@@ -53,6 +53,7 @@ testprograms:	libfirm.a
 
 
 # generate program documentation
+.PHONY: autodoc
 autodoc: autodoc_xref $(AUTODOCDIR) $(GLOBALXREFFILE) autodoc_html $(INDEXFILE)
 
 $(GLOBALXREFFILE): $(addsuffix /$(LOCALXREFSFILE), $(subdirs)) .xrefs
