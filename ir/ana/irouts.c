@@ -52,7 +52,8 @@ inline ir_node *get_Block_cfg_out  (ir_node *bl, int pos) {
   int i, out_pos = 0;
   assert(bl && (get_irn_op(bl) == op_Block));
   for (i = 0; i < (int)bl->out[0]; i++)
-    if (get_irn_mode(bl->out[i+1]) == mode_X)
+    if ((get_irn_mode(bl->out[i+1]) == mode_X)  &&
+	(get_irn_op(bl->out[i+1]) != op_End))
       if (out_pos == pos) {
 	ir_node *cfop = bl->out[i+1];
 	return cfop->out[0+1];
