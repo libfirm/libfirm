@@ -36,10 +36,12 @@
 # include <config.h>
 #endif
 
+#ifndef INLINE
 #ifdef USE_GCC_INLINE
 #define INLINE inline
 #else
 #define INLINE
+#endif
 #endif
 
 /* bcopy is not ISO C *
