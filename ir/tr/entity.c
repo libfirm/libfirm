@@ -602,14 +602,14 @@ get_compound_ent_value_member(entity *ent, int pos) {
   path = get_compound_ent_value_path(ent, pos);
   assert(path->len == 1);
 
-  return get_compound_graph_path_node(path, 0);
+  return get_compound_graph_path_node(path, get_compound_graph_path_length(path)-1);
 }
 
 INLINE void
 set_compound_ent_value(entity *ent, ir_node *val, entity *member, int pos) {
   compound_graph_path *path;
   assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
-  path = new_compound_graph_path(get_entity_owner(ent), 1);
+  path = get_compound_ent_value_path(ent, pos);
   set_compound_graph_path_node(path, 0, member);
   set_compound_ent_value_w_path(ent, val, path, pos);
 }

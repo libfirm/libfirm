@@ -357,8 +357,11 @@ void     remove_compound_ent_value(entity *ent, entity *value_ent);
    direct, atomic member of the constant entities type. In this case the
    corresponding entity can be accessed directly.  The following functions
    allow direct access. */
+/* generates a Path with length 1 */
 void     add_compound_ent_value(entity *ent, ir_node *val, entity *member);
+/* Returns the last member in the path */
 entity  *get_compound_ent_value_member(entity *ent, int pos);
+/* Sets the path at pos 0 */
 void     set_compound_ent_value(entity *ent, ir_node *val, entity *member, int pos);
 
 
