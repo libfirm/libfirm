@@ -2,7 +2,7 @@
 ** All rights reserved.
 **
 ** Authors: Martin Trapp, Christian Schaefer, Goetz Lindenmaier
-**
+**  a change.
 */
 
 #ifdef HAVE_CONFIG_H
