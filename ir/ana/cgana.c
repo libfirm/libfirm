@@ -713,9 +713,6 @@ void cgana(int *length, entity ***free_methods) {
   entity ** free_meths;
   int i;
 
-  rta_init    ();
-  rta_cleanup ();
-
   sel_methods_init();
   free_meths = get_free_methods();
   callee_ana();
