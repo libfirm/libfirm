@@ -299,7 +299,7 @@ static void optimize_blocks(ir_node *b, void *env) {
   for (i = 0, k = get_Block_n_cfgpreds(b); i < k; ++i) {
     max_preds += test_whether_dispensable(b, i);
   }
-  in = (ir_node **) xmalloc(max_preds * sizeof(ir_node *));
+  in = xmalloc(max_preds * sizeof(*in));
 
 /*-
   printf(" working on "); DDMN(b);
