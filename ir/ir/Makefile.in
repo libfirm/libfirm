@@ -29,10 +29,10 @@ SOURCES += 	Makefile.in \
 		irmode_t.h irop_t.h irprog_t.h ircgcons.c ircgopt.c irreflect.c irarch.c \
 		pseudo_irg.c irhooks.c iredges.c
 
-ifeq ($(with_libcore),no)
-SOURCES +=	irprintf.c
-else
+ifeq ($(enable_libcore),yes)
 SOURCES +=	irargs.c
+else
+SOURCES +=	irprintf.c
 endif
 
 include $(topdir)/MakeRules

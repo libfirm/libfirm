@@ -25,6 +25,8 @@ enable_statistics := @enable_statistics@
 enable_external_effects := @enable_external_effects@
 # do we want to test the firm internal backend stuff?
 enable_backend := @enable_backend@
+# do we want to use the libcore for debug and ADT support
+enable_libcore := @enable_libcore@
 
 # suck in values for the linking procedure:
 LDFLAGS			= @LDFLAGS@
