@@ -24,6 +24,7 @@
 #include "irbackedge_t.h"
 #include "irdump.h"
 #include "irflag.h"
+#include "irop_t.h"
 
 #ifdef DEBUG_libfirm
 #include "irprog_t.h"
@@ -249,11 +250,6 @@ get_irn_inter_n (ir_node *node, int n) {
    If it is a block, the entry -1 is NULL. */
 INLINE ir_node *
 get_irn_n (ir_node *node, int n) {
-  /* debug @@@ */
-  if (-1 > n || get_irn_arity(node) <= n) {
-    printf("pos: %d, arity: %d ", n, get_irn_arity(node));
-    DDMN(node);
-    } /**/
   assert(node); assert(-1 <= n && n < get_irn_arity(node));
   if (interprocedural_view)  return get_irn_inter_n (node, n);
   return get_irn_intra_n (node, n);
@@ -1696,11 +1692,7 @@ set_Cast_type (ir_node *node, type *to_tp) {
 
 INLINE int
 is_unop (ir_node *node) {
-  return ( node->op == op_Minus ||
-           node->op == op_Abs  ||
-	   node->op == op_Not  ||
-           node->op == op_Conv ||
-           node->op == op_Cast );
+  return (node->op->opar == oparity_unary);
 }
 
 INLINE ir_node *
@@ -1732,7 +1724,9 @@ set_unop_op (ir_node *node, ir_node *op) {
 
 int
 is_binop (ir_node *node) {
-  return (node->op == op_Add    ||
+  return (node->op->opar == oparity_binary);
+  /*  return (node->op == op_Add    ||
+          node->op == op_Cmp    ||
           node->op == op_Sub    ||
           node->op == op_Mul    ||
           node->op == op_Quot   ||
@@ -1745,27 +1739,13 @@ is_binop (ir_node *node) {
           node->op == op_Shl    ||
           node->op == op_Shr    ||
           node->op == op_Shrs   ||
-	  node->op == op_Rot    ||
-          node->op == op_Cmp      );
+	  node->op == op_Rot      );
+  */
 }
 
 INLINE ir_node *
 get_binop_left (ir_node *node) {
-  assert (node->op == op_Add    ||
-          node->op == op_Sub    ||
-          node->op == op_Mul    ||
-          node->op == op_Quot   ||
-          node->op == op_DivMod ||
-          node->op == op_Div    ||
-          node->op == op_Mod    ||
-          node->op == op_And    ||
-          node->op == op_Or     ||
-          node->op == op_Eor    ||
-          node->op == op_Shl    ||
-          node->op == op_Shr    ||
-          node->op == op_Shrs   ||
-	  node->op == op_Rot    ||
-          node->op == op_Cmp      );
+  assert (node->op->opar == oparity_binary);
 
     switch (get_irn_opcode (node)) {
       case iro_Add   :     return get_Add_left(node);  break;
@@ -1789,21 +1769,7 @@ get_binop_left (ir_node *node) {
 
 INLINE void
 set_binop_left (ir_node *node, ir_node *left) {
-  assert (node->op == op_Add    ||
-          node->op == op_Sub    ||
-          node->op == op_Mul    ||
-          node->op == op_Quot   ||
-          node->op == op_DivMod ||
-          node->op == op_Div    ||
-          node->op == op_Mod    ||
-          node->op == op_And    ||
-          node->op == op_Or     ||
-          node->op == op_Eor    ||
-          node->op == op_Shl    ||
-          node->op == op_Shr    ||
-	  node->op == op_Shrs   ||
-	  node->op == op_Rot    ||
-          node->op == op_Cmp      );
+  assert (node->op->opar == oparity_binary);
 
     switch (get_irn_opcode (node)) {
       case iro_Add   :     set_Add_left(node, left);  break;
@@ -1827,21 +1793,7 @@ set_binop_left (ir_node *node, ir_node *left) {
 
 INLINE ir_node *
 get_binop_right (ir_node *node) {
-  assert (node->op == op_Add    ||
-          node->op == op_Sub    ||
-          node->op == op_Mul    ||
-          node->op == op_Quot   ||
-          node->op == op_DivMod ||
-          node->op == op_Div    ||
-          node->op == op_Mod    ||
-          node->op == op_And    ||
-          node->op == op_Or     ||
-          node->op == op_Eor    ||
-          node->op == op_Shl    ||
-          node->op == op_Shr    ||
-          node->op == op_Shrs   ||
-          node->op == op_Rot    ||
-          node->op == op_Cmp      );
+  assert (node->op->opar == oparity_binary);
 
     switch (get_irn_opcode (node)) {
       case iro_Add   :     return get_Add_right(node);  break;
@@ -1865,21 +1817,7 @@ get_binop_right (ir_node *node) {
 
 INLINE void
 set_binop_right (ir_node *node, ir_node *right) {
-  assert (node->op == op_Add    ||
-          node->op == op_Sub    ||
-          node->op == op_Mul    ||
-          node->op == op_Quot   ||
-          node->op == op_DivMod ||
-          node->op == op_Div    ||
-          node->op == op_Mod    ||
-          node->op == op_And    ||
-          node->op == op_Or     ||
-          node->op == op_Eor    ||
-          node->op == op_Shl    ||
-          node->op == op_Shr    ||
-          node->op == op_Shrs   ||
-          node->op == op_Rot    ||
-          node->op == op_Cmp      );
+  assert (node->op->opar == oparity_binary);
 
     switch (get_irn_opcode (node)) {
       case iro_Add   :     set_Add_right(node, right);  break;
@@ -2317,6 +2255,7 @@ skip_Tuple (ir_node *node) {
   return node;
 }
 
+#if 0
 /* This should compact Id-cycles to self-cycles. It has the same (or less?) complexity
    than any other approach, as Id chains are resolved and all point to the real node, or
    all id's are self loops. */
@@ -2344,6 +2283,40 @@ skip_nop (ir_node *node) {
     return node;
   }
 }
+#else
+/* This should compact Id-cycles to self-cycles. It has the same (or less?) complexity
+   than any other approach, as Id chains are resolved and all point to the real node, or
+   all id's are self loops. */
+extern int opt_normalize;
+INLINE ir_node *
+skip_nop (ir_node *node) {
+  ir_node *pred;
+  /* don't assert node !!! */
+
+  if (!opt_normalize) return node;
+
+  /* Don't use get_Id_pred:  We get into an endless loop for
+     self-referencing Ids. */
+  if (node && (node->op == op_Id) && (node != (pred = node->in[0+1]))) {
+    if (pred->op != op_Id) return pred; /* shortcut */
+    ir_node *rem_pred = pred;
+    ir_node *res;
+
+    assert (get_irn_arity (node) > 0);
+
+    node->in[0+1] = node;
+    res = skip_nop(rem_pred);
+    if (res->op == op_Id) /* self-loop */ return node;
+
+    node->in[0+1] = res;
+    return res;
+  } else {
+    return node;
+  }
+}
+#endif
+
+
 
 INLINE ir_node *
 skip_Id (ir_node *node) {

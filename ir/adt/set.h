@@ -111,7 +111,7 @@ void *set_insert (set *set, const void *key, size_t size, unsigned hash);
  * @return a pointer to the set_entry of the inserted element
  *
  * @note
- *    It is not possible to insert on element more than once. If an element
+ *    It is not possible to insert an element more than once. If an element
  *    that should be inserted is already in the set, this functions does
  *    nothing but returning its set_entry.
  */

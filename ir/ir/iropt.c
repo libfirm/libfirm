@@ -898,7 +898,7 @@ static int
 vt_cmp (const void *elt, const void *key)
 {
   ir_node *a, *b;
-  int i;
+  int i, irn_arity_a;
 
   a = (void *)elt;
   b = (void *)key;
@@ -909,7 +909,8 @@ vt_cmp (const void *elt, const void *key)
       (get_irn_mode(a) != get_irn_mode(b))) return 1;
 
   /* compare if a's in and b's in are equal */
-  if (get_irn_arity (a) != get_irn_arity(b))
+  irn_arity_a = get_irn_arity (a);
+  if (irn_arity_a != get_irn_arity(b))
     return 1;
 
   /* for block-local cse and pinned nodes: */
@@ -919,7 +920,7 @@ vt_cmp (const void *elt, const void *key)
   }
 
   /* compare a->in[0..ins] with b->in[0..ins] */
-  for (i = 0; i < get_irn_arity(a); i++)
+  for (i = 0; i < irn_arity_a; i++)
     if (get_irn_n(a, i) != get_irn_n(b, i))
       return 1;
 
@@ -961,13 +962,13 @@ static unsigned
 ir_node_hash (ir_node *node)
 {
   unsigned h;
-  int i;
+  int i, irn_arity;
 
   /* hash table value = 9*(9*(9*(9*(9*arity+in[0])+in[1])+ ...)+mode)+code */
-  h = get_irn_arity(node);
+  h = irn_arity = get_irn_arity(node);
 
   /* consider all in nodes... except the block. */
-  for (i = 0;  i < get_irn_arity(node);  i++) {
+  for (i = 0;  i < irn_arity;  i++) {
     h = 9*h + (unsigned long)get_irn_n(node, i);
   }
 
@@ -1066,27 +1067,29 @@ add_identities (pset *value_table, ir_node *node) {
 static INLINE ir_node *
 gigo (ir_node *node)
 {
-  int i;
+  int i, irn_arity;
   ir_op* op = get_irn_op(node);
 
-#if 1
+
   /* remove garbage blocks by looking at control flow that leaves the block
      and replacing the control flow by Bad. */
   if (get_irn_mode(node) == mode_X) {
     ir_node *block = get_nodes_block(node);
+    if (op == op_End) return node;     /* Don't optimize End, may have Bads. */
     if (get_irn_op(block) == op_Block && get_Block_matured(block)) {
-      for (i = 0; i < get_irn_arity(block); i++) {
+      irn_arity = get_irn_arity(block);
+      for (i = 0; i < irn_arity; i++) {
 	if (!is_Bad(get_irn_n(block, i))) break;
       }
-      if (i == get_irn_arity(block)) return new_Bad();
+      if (i == irn_arity) return new_Bad();
     }
   }
-#endif
 
   /* Blocks, Phis and Tuples may have dead inputs, e.g., if one of the
      blocks predecessors is dead. */
   if ( op != op_Block && op != op_Phi && op != op_Tuple) {
-    for (i = -1; i < get_irn_arity(node); i++) {
+    irn_arity = get_irn_arity(node);
+    for (i = -1; i < irn_arity; i++) {
       if (is_Bad(get_irn_n(node, i))) {
         return new_Bad();
       }
@@ -1098,10 +1101,11 @@ gigo (ir_node *node)
   /* If Block has only Bads as predecessors it's garbage. */
   /* If Phi has only Bads as predecessors it's garbage. */
   if ((op == op_Block && get_Block_matured(node)) || op == op_Phi)  {
-    for (i = 0; i < get_irn_arity(node); i++) {
+    irn_arity = get_irn_arity(node);
+    for (i = 0; i < irn_arity; i++) {
       if (!is_Bad(get_irn_n(node, i))) break;
     }
-    if (i == get_irn_arity(node)) node = new_Bad();
+    if (i == irn_arity) node = new_Bad();
   }
 #endif
   return node;

@@ -48,6 +48,7 @@ turn_into_tuple (ir_node *node, int arity)
 INLINE void
 exchange (ir_node *old, ir_node *nw)
 {
+  assert(get_irn_op(old)->opar != oparity_dynamic);
   ir_node *block = old->in[0];
 
   old->op = op_Id;

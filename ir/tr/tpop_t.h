@@ -49,6 +49,11 @@ struct tp_op {
 tp_op *new_tpop (tp_opcode code, ident *name, size_t attr_size);
 
 /**
+ * Free a tpop datastructure.
+ */
+void free_tpop(tp_op* tpop);
+
+/**
  *   Initialize the tpop module.
  *
  *   Must be called during the initizlization of the library. Allocates
@@ -58,6 +63,13 @@ tp_op *new_tpop (tp_opcode code, ident *name, size_t attr_size);
  *   enumeration, pointer and primitive and sets the according values.
  */
 void init_tpop (void);
+
+/**
+ *  Finalize the topo module.
+ *
+ *  Frees all type opcodes.
+ */
+void finish_tpop(void);
 
 /**
  *   Returns the size of the attribute to this kind

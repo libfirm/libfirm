@@ -209,11 +209,13 @@ void compute_doms(ir_graph *irg) {
 
 
   for (i = n_blocks-1; i > 0; i--) {  /* Don't iterate the root, it's done. */
+    int irn_arity;
     tmp_dom_info *w = &tdi_list[i];
     tmp_dom_info *v;
 
     /* Step 2 */
-    for (j = 0;  j < get_irn_arity(w->block);  j++) {
+    irn_arity = get_irn_arity(w->block);
+    for (j = 0;  j < irn_arity;  j++) {
       ir_node *pred = get_nodes_Block(get_Block_cfgpred(w->block, j));
       tmp_dom_info *u;
 

@@ -24,7 +24,7 @@
 # include <stdlib.h>
 
 # include "irnode_t.h"
-# include "irgraph.h" /* visited flag */
+# include "irgraph_t.h" /* visited flag */
 # include "irprog.h"
 # include "irgwalk.h"
 # include "typewalk.h"
@@ -117,7 +117,7 @@ irg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
 {
   int i;
   assert(node && node->kind==k_ir_node);
-
+#if 0 /* safe */
   if (get_irn_visited(node) < get_irg_visited(current_ir_graph)) {
     set_irn_visited(node, get_irg_visited(current_ir_graph));
 
@@ -130,7 +130,20 @@ irg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
 
     if (post) post(node, env);
   }
-  return;
+#else /* faster */
+  if (node->visited < current_ir_graph->visited) {
+    set_irn_visited(node, current_ir_graph->visited);
+
+    if (pre) pre(node, env);
+
+    if (node->op != op_Block)
+      irg_walk_2(get_irn_n(node, -1), pre, post, env);
+    for (i = get_irn_arity(node) - 1; i >= 0; --i)
+      irg_walk_2(get_irn_n(node, i), pre, post, env);
+
+    if (post) post(node, env);
+  }
+#endif
 }
 
 
@@ -352,12 +365,14 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void
   assert(get_irn_opcode(block)  == iro_Block);
   irg_block_walk_2(block, pre, post, env);
   /* keepalive: the endless loops ... */
-  if (get_irn_op(node) == op_End)
-    for (i = 0; i < get_irn_arity(node); i++) {
+  if (get_irn_op(node) == op_End) {
+    int arity = get_irn_arity(node);
+    for (i = 0; i < arity; i++) {
       pred = get_irn_n(node, i);
       if (get_irn_op(pred) == op_Block)
 	irg_block_walk_2(pred, pre, post, env);
     }
+  }
 
   return;
 }

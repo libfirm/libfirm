@@ -72,5 +72,6 @@ void free_firm (void) {
   finish_tarval();
   finish_op();
   finish_mode();
+  finish_tpop();
   id_finish();
 }

@@ -46,13 +46,18 @@ static void init_link (ir_node *n, void *env) {
   set_irn_link(n, NULL);
 }
 
+#if 0   /* Old version. Avoids Ids.
+	   This is not necessary:  we do a postwalk, and get_irn_n
+	   removes ids anyways.  So it's much cheaper to call the
+	   optimization less often and use the exchange() algorithm. */
 static void
 optimize_in_place_wrapper (ir_node *n, void *env) {
-  int i;
+  int i, irn_arity;
   ir_node *optimized, *old;
 
-  for (i = 0; i < get_irn_arity(n); i++) {
-    /* get?irn_n skips Id nodes, so comparison old != optimized does not
+  irn_arity = get_irn_arity(n);
+  for (i = 0; i < irn_arity; i++) {
+    /* get_irn_n skips Id nodes, so comparison old != optimized does not
        show all optimizations. Therefore always set new predecessor. */
     old = get_irn_n(n, i);
     optimized = optimize_in_place_2(old);
@@ -64,6 +69,15 @@ optimize_in_place_wrapper (ir_node *n, void *env) {
     if (optimized != n) exchange (n, optimized);
   }
 }
+#else
+static void
+optimize_in_place_wrapper (ir_node *n, void *env) {
+  ir_node *optimized = optimize_in_place_2(n);
+  if (optimized != n) exchange (n, optimized);
+}
+#endif
+
+
 
 void
 local_optimize_graph (ir_graph *irg) {
@@ -116,7 +130,7 @@ get_new_node (ir_node * n)
    in a Block. */
 static INLINE int
 compute_new_arity(ir_node *b) {
-  int i, res;
+  int i, res, irn_arity;
   int irg_v, block_v;
 
   irg_v = get_irg_block_visited(current_ir_graph);
@@ -127,8 +141,8 @@ compute_new_arity(ir_node *b) {
     return block_v - irg_v;
   } else {
     /* compute the number of good predecessors */
-    res = get_irn_arity(b);
-    for (i = 0; i < get_irn_arity(b); i++)
+    res = irn_arity = get_irn_arity(b);
+    for (i = 0; i < irn_arity; i++)
       if (get_irn_opcode(get_irn_n(b, i)) == iro_Bad) res--;
     /* save it in the flag. */
     set_Block_block_visited(b, irg_v + res);
@@ -204,7 +218,7 @@ copy_node (ir_node *n, void *env) {
 static void
 copy_preds (ir_node *n, void *env) {
   ir_node *nn, *block;
-  int i, j;
+  int i, j, irn_arity;
 
   nn = get_new_node(n);
 
@@ -215,7 +229,8 @@ copy_preds (ir_node *n, void *env) {
   if (get_irn_opcode(n) == iro_Block) {
     /* Don't copy Bad nodes. */
     j = 0;
-    for (i = 0; i < get_irn_arity(n); i++)
+    irn_arity = get_irn_arity(n);
+    for (i = 0; i < irn_arity; i++)
       if (get_irn_opcode(get_irn_n(n, i)) != iro_Bad) {
 	set_irn_n (nn, j, get_new_node(get_irn_n(n, i)));
 	/*if (is_backedge(n, i)) set_backedge(nn, j);*/
@@ -239,7 +254,8 @@ copy_preds (ir_node *n, void *env) {
     block = get_nodes_Block(n);
     set_irn_n (nn, -1, get_new_node(block));
     j = 0;
-    for (i = 0; i < get_irn_arity(n); i++)
+    irn_arity = get_irn_arity(n);
+    for (i = 0; i < irn_arity; i++)
       if (get_irn_opcode(get_irn_n(block, i)) != iro_Bad) {
 	set_irn_n (nn, j, get_new_node(get_irn_n(n, i)));
 	/*if (is_backedge(n, i)) set_backedge(nn, j);*/
@@ -253,7 +269,8 @@ copy_preds (ir_node *n, void *env) {
     if (get_irn_arity(n) == 1)
       exchange(n, get_irn_n(n, 0));
   } else {
-    for (i = -1; i < get_irn_arity(n); i++)
+    irn_arity = get_irn_arity(n);
+    for (i = -1; i < irn_arity; i++)
       set_irn_n (nn, i, get_new_node(get_irn_n(n, i)));
   }
   /* Now the new node is complete.  We can add it to the hash table for cse.
@@ -267,7 +284,7 @@ static void
 copy_graph (void) {
   ir_node *oe, *ne; /* old end, new end */
   ir_node *ka;      /* keep alive */
-  int i;
+  int i, irn_arity;
 
   oe = get_irg_end(current_ir_graph);
   /* copy the end node by hand, allocate dynamic in array! */
@@ -290,7 +307,8 @@ copy_graph (void) {
   /** ... and now the keep alives. **/
   /* First pick the not marked block nodes and walk them.  We must pick these
      first as else we will oversee blocks reachable from Phis. */
-  for (i = 0; i < get_irn_arity(oe); i++) {
+  irn_arity = get_irn_arity(oe);
+  for (i = 0; i < irn_arity; i++) {
     ka = get_irn_n(oe, i);
     if ((get_irn_op(ka) == op_Block) &&
 	(get_irn_visited(ka) < get_irg_visited(current_ir_graph))) {
@@ -302,7 +320,8 @@ copy_graph (void) {
   }
 
   /* Now pick the Phis.  Here we will keep all! */
-  for (i = 0; i < get_irn_arity(oe); i++) {
+  irn_arity = get_irn_arity(oe);
+  for (i = 0; i < irn_arity; i++) {
     ka = get_irn_n(oe, i);
     if ((get_irn_op(ka) == op_Phi)) {
       if (get_irn_visited(ka) < get_irg_visited(current_ir_graph)) {
@@ -552,7 +571,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   ir_node **cf_pred;
   ir_node *ret, *phi;
   ir_node *cf_op = NULL, *bl;
-  int arity, n_ret, n_exc, n_res, i, j, rem_opt;
+  int arity, n_ret, n_exc, n_res, i, j, rem_opt, irn_arity;
   type *called_frame;
 
   if (!get_optimize() || !get_opt_inline()) return;
@@ -673,7 +692,8 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   set_irg_current_block(current_ir_graph, post_bl); /* just to make sure */
 
   /* -- archive keepalives -- */
-  for (i = 0; i < get_irn_arity(end); i++)
+  irn_arity = get_irn_arity(end);
+  for (i = 0; i < irn_arity; i++)
     add_End_keepalive(get_irg_end(current_ir_graph), get_irn_n(end, i));
 
   /* The new end node will die.  We need not free as the in array is on the obstack:
@@ -909,7 +929,7 @@ static pdeq *worklist;		/* worklist of ir_node*s */
 static void
 place_floats_early (ir_node *n)
 {
-  int i, start;
+  int i, start, irn_arity;
 
   /* we must not run into an infinite loop */
   assert (irn_not_visited(n));
@@ -932,7 +952,8 @@ place_floats_early (ir_node *n)
     }
 
     /* find the block for this node. */
-    for (i = 0; i < get_irn_arity(n); i++) {
+    irn_arity = get_irn_arity(n);
+    for (i = 0; i < irn_arity; i++) {
       ir_node *dep = get_irn_n(n, i);
       ir_node *dep_block;
       if ((irn_not_visited(dep)) &&
@@ -960,7 +981,8 @@ place_floats_early (ir_node *n)
 
   /* Add predecessors of non floating nodes on worklist. */
   start = (get_irn_op(n) == op_Block) ? 0 : -1;
-  for (i = start; i < get_irn_arity(n); i++) {
+  irn_arity = get_irn_arity(n);
+  for (i = start; i < irn_arity; i++) {
     ir_node *pred = get_irn_n(n, i);
     if (irn_not_visited(pred)) {
       pdeq_putr (worklist, pred);
@@ -1001,9 +1023,10 @@ consumer_dom_dca (ir_node *dca, ir_node *consumer, ir_node *producer)
   if (get_irn_op(consumer) == op_Phi) {
     /* our comsumer is a Phi-node, the effective use is in all those
        blocks through which the Phi-node reaches producer */
-    int i;
+    int i, irn_arity;
     ir_node *phi_block = get_nodes_Block(consumer);
-    for (i = 0;  i < get_irn_arity(consumer); i++) {
+    irn_arity = get_irn_arity(consumer);
+    for (i = 0;  i < irn_arity; i++) {
       if (get_irn_n(consumer, i) == producer) {
 	block = get_nodes_Block(get_Block_cfgpred(phi_block, i));
       }

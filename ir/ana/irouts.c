@@ -183,15 +183,16 @@ void irg_out_block_walk(ir_node *node,
 
 /* Returns the amount of out edges for not yet visited successors. */
 static int count_outs(ir_node *n) {
-  int start, i, res;
+  int start, i, res, irn_arity;
   ir_node *succ;
 
   set_irn_visited(n, get_irg_visited(current_ir_graph));
   n->out = (ir_node **) 1;     /* Space for array size. */
 
   if ((get_irn_op(n) == op_Block)) start = 0; else start = -1;
-  res = get_irn_arity(n) - start +1;  /* --1 or --0; 1 for array size. */
-  for (i = start; i < get_irn_arity(n); i++) {
+  irn_arity = get_irn_arity(n);
+  res = irn_arity - start +1;  /* --1 or --0; 1 for array size. */
+  for (i = start; i < irn_arity; i++) {
     /* Optimize Tuples.  They annoy if walking the cfg. */
     succ = skip_Tuple(get_irn_n(n, i));
     set_irn_n(n, i, succ);
@@ -205,7 +206,7 @@ static int count_outs(ir_node *n) {
 }
 
 static ir_node **set_out_edges(ir_node *n, ir_node **free) {
-  int n_outs, start, i;
+  int n_outs, start, i, irn_arity;
   ir_node *succ;
 
   set_irn_visited(n, get_irg_visited(current_ir_graph));
@@ -220,7 +221,8 @@ static ir_node **set_out_edges(ir_node *n, ir_node **free) {
   n->out[0] = (ir_node *)0;
 
   if (get_irn_op(n) == op_Block) start = 0; else start = -1;
-  for (i = start; i < get_irn_arity(n); i++) {
+  irn_arity = get_irn_arity(n);
+  for (i = start; i < irn_arity; i++) {
     succ = get_irn_n(n, i);
     /* Recursion */
     if (get_irn_visited(succ) < get_irg_visited(current_ir_graph))
@@ -327,9 +329,9 @@ void compute_ip_outs(ir_graph *irg) { /*irg_walk_func *pre, irg_walk_func *post,
     current_ir_graph = get_irp_irg(i);
     e = get_irg_end(current_ir_graph);
     if (get_irn_visited(e) < get_irg_visited(current_ir_graph)) {
-      int j;
       /* Don't visit the End node. */
-      /*   for (j = 0; j < get_End_n_keepalives(e); j++)
+      /* int j;
+         for (j = 0; j < get_End_n_keepalives(e); j++)
 	   cg_walk_2(get_End_keepalive(e, j), pre, post, env);*/
       compute_outs(current_ir_graph);
     }
