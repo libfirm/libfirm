@@ -22,7 +22,7 @@ SOURCES = $(INSTALL_HEADERS)
 SOURCES += 	Makefile.in besched.h belistsched.h belistsched.c \
 	beutil.h bemain.c besched.c bemain.c belive.c belive.h benumb.h \
 	benumb_t.h benumb.c bechordal.c bera.c beutil.c phistat.c \
-	bephiopt.c bephicoal.c bera.h
+	bephiopt.c bephicoal.c bera.h bechordalspill.c
 
 include $(topdir)/MakeRules
 
