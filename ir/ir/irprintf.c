@@ -39,6 +39,7 @@
 #include "irprintf.h"
 #include "pset.h"
 #include "iterator.h"
+#include "bitset.h"
 
 
 /**
@@ -322,7 +323,31 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 					{
 						char fmt_str[16];
 						snprintf(fmt_str, sizeof(fmt_str), "%%%s%c", len_str, ch);
-						vsnprintf(buf, sizeof(buf), fmt_str, args);
+
+						switch(len) {
+							case len_char:
+							case len_short:
+							case len_int:
+								{
+									int arg = va_arg(args, int);
+									snprintf(buf, sizeof(buf), fmt_str, arg);
+								}
+								break;
+
+							case len_long:
+								{
+									long arg = va_arg(args, long);
+									snprintf(buf, sizeof(buf), fmt_str, arg);
+								}
+								break;
+
+							case len_long_long:
+								{
+									long long arg = va_arg(args, long long);
+									snprintf(buf, sizeof(buf), fmt_str, arg);
+								}
+								break;
+						}
 					}
 					break;
 
@@ -362,9 +387,27 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 					str = get_mode_name(va_arg(args, ir_mode *));
 					break;
 
-				case 'b':
+				case 'B':
 					snprintf(buf, sizeof(buf), "%ld",
 							get_irn_node_nr(get_nodes_block(va_arg(args, ir_node *))));
+					break;
+
+				case 'b':
+					{
+						const bitset_t *bs = va_arg(args, const bitset_t *);
+						const char *prefix = "";
+						unsigned long i;
+
+						DUMP_CH('[');
+						for(i = bitset_next_set(bs, 0); i != -1; i = bitset_next_set(bs, i + 1)) {
+							snprintf(buf, sizeof(buf), "%ld", i);
+							DUMP_STR(prefix);
+							DUMP_STR(buf);
+							prefix = ", ";
+						}
+						DUMP_CH(']');
+						buf[0] = '\0';
+					}
 					break;
 
 				case '*':

@@ -52,10 +52,11 @@ typedef void (ir_printf_cb_t)(const appender_t *app, void *object, size_t limit,
  * - @%e An entity name.
  * - @%E An entity ld_name.
  * - @%n A full description of a node.
- * - @%o The opcode name of an ir node.
+ * - @%O The opcode name of an ir node.
  * - @%m The mode name of an ir mode.
  * - @%N The node number of an ir node.
- * - @%b The block node number of the nodes block.
+ * - @%B The block node number of the nodes block.
+ * - @%b A bitset.
  * - @%t A tarval.
  *
  * Each of these can be prepended by a '+' which means, that the given
