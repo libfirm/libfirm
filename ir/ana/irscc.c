@@ -102,12 +102,14 @@ set_irn_loop_tmp (ir_node *n, ir_loop* loop) {
   ((scc_info *)get_irn_link(n))->loop = loop;
 }
 
+#if 0
 /* Uses temporary information to get the loop */
 static INLINE ir_loop *
 get_irn_loop_tmp (ir_node *n) {
   assert(get_irn_link(n));
   return ((scc_info *)get_irn_link(n))->loop;
 }
+#endif
 
 static ir_loop *find_nodes_loop (ir_node *n, ir_loop *l) {
   int i;
@@ -151,11 +153,13 @@ static INLINE void init_stack() {
   tos = 0;
 }
 
+#if 0
 static INLINE void free_stack() {
   DEL_ARR_F(stack);
   stack = NULL;
   tos = 0;
 }
+#endif
 
 static INLINE void
 push (ir_node *n)
@@ -237,6 +241,7 @@ static ir_loop *new_loop (void) {
   return father;
 }
 
+#if 0
 /* Finishes the datastructures, copies the arrays to the obstack
    of current_ir_graph. */
 static void mature_loop (ir_loop *loop) {
@@ -247,6 +252,7 @@ static void mature_loop (ir_loop *loop) {
   DEL_ARR_F(loop->sons);
   loop->sons = new_sons;
 }
+#endif
 
 /* Returns outer loop, itself if outermost. */
 ir_loop *get_loop_outer_loop (ir_loop *loop) {
@@ -473,6 +479,7 @@ find_irg_on_stack (ir_node *n) {
   return old_current;
 }
 
+#if 0
 static void test(ir_node *pred, ir_node *root, ir_node *this) {
   int i;
   if (get_irn_uplink(pred) >= get_irn_uplink(root)) return;
@@ -489,6 +496,7 @@ static void test(ir_node *pred, ir_node *root, ir_node *this) {
     printf(" uplink: %d, pos: %d ", get_irn_uplink(n), i); DDMN(n);
   }
 }
+#endif
 
 /* Returns true if n is a loop header, i.e., it is a Block, Phi
    or Filter node and has predecessors within the loop and out
