@@ -143,4 +143,33 @@ static INLINE double cnt_to_dbl(const counter_t *a)
   return res;
 }
 
+/**
+ * check, if a counter is equal to an unsigned
+ */
+static INLINE int cnt_eq(const counter_t *a, unsigned value)
+{
+  int i;
+
+  for (i = 1; i < STAT_CNT_NUM; ++i)
+    if (a->cnt[i])
+      return 0;
+
+  return a->cnt[0] == value;
+}
+
+/**
+ * check, if a counter as greater than an unsigned
+ */
+static INLINE int cnt_gt(const counter_t *a, unsigned value)
+{
+  int i;
+
+  for (i = 1; i < STAT_CNT_NUM; ++i)
+    if (a->cnt[i])
+      return 1;
+
+  return a->cnt[0] > value;
+}
+
+
 #endif /* _COUNTER_H_ */
