@@ -1113,7 +1113,6 @@ get_r_frag_value_internal (ir_node *block, ir_node *cfOp, int pos, ir_mode *mode
   ir_node **rem;
   ir_node **frag_arr;
 
-  DDMSG2(cfOp);
   assert(is_fragile_op(cfOp));
 
   frag_arr = get_frag_arr(cfOp);

@@ -486,7 +486,14 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
     for (i = 0; i < arity; i++) {
       ir_node *ret;
       ret = skip_Proj(get_irn_n(end_bl, i));
-      if (is_fragile_op(ret) || (get_irn_op(ret) == op_Raise)) {
+      if (get_irn_op(ret) == op_Call) {
+	cf_pred[n_exc] = new_r_Proj(current_ir_graph, get_nodes_Block(ret), ret, mode_M, 3);
+	n_exc++;
+      } else if (is_fragile_op(ret)) {
+	/* We rely that all cfops have the memory output at the same position. */
+	cf_pred[n_exc] = new_r_Proj(current_ir_graph, get_nodes_Block(ret), ret, mode_M, 0);
+	n_exc++;
+      } else if (get_irn_op(ret) == op_Raise) {
 	cf_pred[n_exc] = new_r_Proj(current_ir_graph, get_nodes_Block(ret), ret, mode_M, 1);
 	n_exc++;
       }
