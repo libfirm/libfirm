@@ -271,7 +271,7 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
   if (opcode != iro_Phi && opcode != iro_Block)
     for (i = 0; i < get_irn_arity(n); i++) {
       opcode1 = get_irn_opcode(get_irn_n(n, i));
-      if (opcode1 == iro_Bad || opcode1 == iro_Unknown)
+      if (opcode1 == iro_Bad /*|| opcode1 == iro_Unknown*/)  /* GL: for analyses mode must be correct. */
         return 1;
     }
 

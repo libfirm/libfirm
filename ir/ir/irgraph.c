@@ -128,7 +128,7 @@ new_ir_graph (entity *ent, int n_loc)
   res->start_block = new_immBlock ();
   res->start   = new_Start ();
   res->bad     = new_ir_node (NULL, res, res->start_block, op_Bad, mode_T, 0, NULL);
-  res->unknown = new_ir_node (NULL, res, res->start_block, op_Unknown, mode_T, 0, NULL);
+  //res->unknown = new_ir_node (NULL, res, res->start_block, op_Unknown, mode_T, 0, NULL);
 
   /* Proj results of start node */
   projX        = new_Proj (res->start, mode_X, pns_initial_exec);
@@ -188,7 +188,7 @@ ir_graph *new_const_code_irg(void) {
   res->end       = new_End ();
   mature_block(get_cur_block());
   res->bad = new_ir_node (NULL, res, res->start_block, op_Bad, mode_T, 0, NULL);
-  res->unknown = new_ir_node (NULL, res, res->start_block, op_Unknown, mode_T, 0, NULL);
+  //res->unknown = new_ir_node (NULL, res, res->start_block, op_Unknown, mode_T, 0, NULL);
   res->start   = new_Start ();
 
   /* Proj results of start node */
@@ -358,6 +358,7 @@ set_irg_bad (ir_graph *irg, ir_node *node)
   irg->bad = node;
 }
 
+/* GL removed: we need unknown with mode for analyses.
 ir_node *
 get_irg_unknown (ir_graph *irg)
 {
@@ -369,6 +370,7 @@ set_irg_unknown (ir_graph *irg, ir_node *node)
 {
   irg->unknown = node;
 }
+*/
 
 ir_node *
 get_irg_current_block (ir_graph *irg)

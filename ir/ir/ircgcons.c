@@ -173,11 +173,11 @@ static void prepare_irg_end_except(ir_graph * irg, irg_data_t * data);
  * cause cycles we don't want to see, as Unknwon is in the Start Block
  * or the procedure. Use unknown of outermost irg where the start
  * block has no predecessors. */
-static INLINE ir_node *get_cg_Unknown(void) {
+static INLINE ir_node *get_cg_Unknown(ir_mode *m) {
   assert((get_Block_n_cfgpreds(get_irg_start_block(get_irp_main_irg())) == 1) &&
 	 (get_nodes_block(get_Block_cfgpred(get_irg_start_block(get_irp_main_irg()), 0)) ==
 	  get_irg_start_block(get_irp_main_irg())));
-  return get_irg_unknown(get_irp_main_irg());
+  return new_r_Unknown(get_irp_main_irg(), m);
 }
 
 
@@ -230,10 +230,10 @@ static void prepare_irg(ir_graph * irg, irg_data_t * data) {
 
   /* Unbekannten Aufrufer sofort eintragen. */
   if (data->open) {
-    set_Block_cg_cfgpred(start_block, 0, get_cg_Unknown());
+    set_Block_cg_cfgpred(start_block, 0, get_cg_Unknown(mode_X));
     for (proj = get_irn_link(get_irg_start(irg)); proj; proj = get_irn_link(proj)) {
       if (get_irn_op(proj) == op_Filter) {
-	set_Filter_cg_pred(proj, 0, get_cg_Unknown());
+	set_Filter_cg_pred(proj, 0, get_cg_Unknown(get_irn_mode(proj)));
       }
     }
     data->count = 1;
@@ -440,13 +440,13 @@ static void construct_start(entity * caller, entity * callee,
 	/* "frame_base" wird nur durch Unknown dargestellt. Man kann ihn aber
 	 * auch explizit darstellen, wenn sich daraus Vorteile für die
 	 * Datenflussanalyse ergeben. */
-	set_Filter_cg_pred(filter, data->count, get_cg_Unknown());
+	set_Filter_cg_pred(filter, data->count, get_cg_Unknown(get_irn_mode(filter)));
 	break;
       case pns_globals:
 	/* "globals" wird nur durch Unknown dargestellt. Man kann ihn aber auch
 	 * explizit darstellen, wenn sich daraus Vorteile für die
 	 * Datenflussanalyse ergeben. */
-	set_Filter_cg_pred(filter, data->count, get_cg_Unknown());
+	set_Filter_cg_pred(filter, data->count, get_cg_Unknown(get_irn_mode(filter)));
 	break;
       default:
 	/* not reached */
@@ -473,7 +473,7 @@ static void fill_mem(int length, irg_data_t * data[], ir_node * in[]) {
 	in[i] = new_Bad();
       }
     } else { /* unknown */
-      in[i] = get_cg_Unknown();
+      in[i] = get_cg_Unknown(mode_M);
     }
   }
 }
@@ -491,7 +491,7 @@ static void fill_except_mem(int length, irg_data_t * data[], ir_node * in[]) {
 	in[i] = new_Bad();
       }
     } else { /* unknown */
-      in[i] = get_cg_Unknown();
+      in[i] = get_cg_Unknown(mode_M);
     }
   }
 }
@@ -499,7 +499,7 @@ static void fill_except_mem(int length, irg_data_t * data[], ir_node * in[]) {
 
 /* Abhängigkeiten für ein Ergebnis über alle aufgerufenen Methoden
  * bestimmen. */
-static void fill_result(int pos, int length, irg_data_t * data[], ir_node * in[]) {
+static void fill_result(int pos, int length, irg_data_t * data[], ir_node * in[], ir_mode *m) {
   int i;
   for (i = 0; i < length; ++i) {
     if (data[i]) { /* explicit */
@@ -509,7 +509,7 @@ static void fill_result(int pos, int length, irg_data_t * data[], ir_node * in[]
 	in[i] = new_Bad();
       }
     } else { /* unknown */
-      in[i] = get_cg_Unknown();
+      in[i] = get_cg_Unknown(m);
     }
   }
 }
@@ -612,7 +612,7 @@ static void construct_call(ir_node * call) {
 	in[i] = new_Bad();
       }
     } else { /* unknown */
-      in[i] = get_cg_Unknown();
+      in[i] = get_cg_Unknown(mode_X);
     }
   }
   set_interprocedural_view(0);
@@ -662,7 +662,7 @@ static void construct_call(ir_node * call) {
 	  in[i] = new_Bad();
 	}
       } else { /* unknown */
-	in[i] = get_cg_Unknown();
+	in[i] = get_cg_Unknown(mode_X);
       }
     }
 
@@ -744,7 +744,7 @@ static void construct_call(ir_node * call) {
 	set_irn_link(filter, get_irn_link(post_block));
 	set_irn_link(post_block, filter);
       }
-      fill_result(get_Proj_proj(filter), n_callees, data, in);
+      fill_result(get_Proj_proj(filter), n_callees, data, in, get_irn_mode(filter));
       set_Filter_cg_pred_arr(filter, n_callees, in);
     }
   }

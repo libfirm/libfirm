@@ -359,11 +359,13 @@ copy_graph_env (void) {
     copy_preds(get_irg_bad(current_ir_graph), NULL);
   }
   set_irg_bad(current_ir_graph, get_new_node(get_irg_bad(current_ir_graph)));
+  /* GL removed: we need unknown with mode for analyses.
   if (get_irn_link(get_irg_unknown(current_ir_graph)) == NULL) {
     copy_node(get_irg_unknown(current_ir_graph), NULL);
     copy_preds(get_irg_unknown(current_ir_graph), NULL);
   }
   set_irg_unknown(current_ir_graph, get_new_node(get_irg_unknown(current_ir_graph)));
+  */
 }
 
 /* Copies all reachable nodes to a new obstack.  Removes bad inputs

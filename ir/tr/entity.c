@@ -441,7 +441,6 @@ set_atomic_ent_value(entity *ent, ir_node *val) {
 /* Returns true if the the node is representable as code on
  *  const_code_irg. */
 int is_irn_const_expression(ir_node *n) {
-  ir_node *pred;
   ir_mode *m;
 
   m = get_irn_mode(n);
@@ -482,7 +481,7 @@ ir_node *copy_const_value(ir_node *n) {
   case iro_Conv:
     nn = new_Conv(copy_const_value(get_Conv_op(n)), m); break;
   case iro_Unknown:
-    nn = new_Unknown(); break;
+    nn = new_Unknown(m); break;
   default:
     DDMN(n);
     assert(0 && "opdope invalid or not implemented");

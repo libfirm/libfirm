@@ -221,7 +221,7 @@ typedef enum {
   allocation_dynamic,   /**< The entity is allocated during runtime, explicitly
 			     by an Alloc node. */
   allocation_static     /**< The entity is allocated statically.  We can use a
-                             SymConst(?) as address of the entity. */
+                             Const as address of the entity. */
 } ent_allocation;
 
 /** Returns the allocation type of an entity. */
@@ -230,7 +230,7 @@ ent_allocation get_entity_allocation (entity *ent);
 /** Sets the allocation type of an entity. */
 void           set_entity_allocation (entity *ent, ent_allocation al);
 
-/** Return the name of the visibility */
+/** Return the name of the allocation type. */
 const char *get_allocation_name(ent_allocation vis);
 
 /**

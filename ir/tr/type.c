@@ -1127,8 +1127,8 @@ INLINE type *new_type_array         (ident *name, int n_dimensions,
 
   current_ir_graph = get_const_code_irg();
   for (i = 0; i < n_dimensions; i++) {
-    res->attr.aa.lower_bound[i]  = new_Unknown();
-    res->attr.aa.upper_bound[i]  = new_Unknown();
+    res->attr.aa.lower_bound[i]  = new_Unknown(mode_Iu);
+    res->attr.aa.upper_bound[i]  = new_Unknown(mode_Iu);
     res->attr.aa.order[i] = i;
   }
   current_ir_graph = rem;

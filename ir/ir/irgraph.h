@@ -167,8 +167,10 @@ ir_node *get_irg_bad (ir_graph *irg);
 void     set_irg_bad (ir_graph *irg, ir_node *node);
 
 /* Use new_Unknown() instead!! */
+/* GL removed: we need unknown with mode for analyses.
 ir_node *get_irg_unknown (ir_graph *irg);
 void     set_irg_unknown (ir_graph *irg, ir_node *node);
+*/
 
 int      get_irg_n_locs (ir_graph *irg);
 

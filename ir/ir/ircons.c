@@ -732,9 +732,9 @@ new_rd_Confirm (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *val, ir_no
 }
 
 INLINE ir_node *
-new_rd_Unknown (ir_graph *irg)
+new_rd_Unknown (ir_graph *irg, ir_mode *m)
 {
-  return irg->unknown;
+  return new_ir_node (NULL, irg, irg->start_block, op_Unknown, m, 0, NULL);
 }
 
 INLINE ir_node *
@@ -977,8 +977,8 @@ INLINE ir_node *new_r_Bad    (ir_graph *irg) {
 INLINE ir_node *new_r_Confirm (ir_graph *irg, ir_node *block, ir_node *val, ir_node *bound, pn_Cmp cmp) {
   return new_rd_Confirm (NULL, irg, block, val, bound, cmp);
 }
-INLINE ir_node *new_r_Unknown (ir_graph *irg) {
-  return new_rd_Unknown(irg);
+INLINE ir_node *new_r_Unknown (ir_graph *irg, ir_mode *m) {
+  return new_rd_Unknown(irg, m);
 }
 INLINE ir_node *new_r_CallBegin (ir_graph *irg, ir_node *block, ir_node *callee) {
   return new_rd_CallBegin(NULL, irg, block, callee);
@@ -2166,9 +2166,9 @@ new_d_Confirm (dbg_info *db, ir_node *val, ir_node *bound, pn_Cmp cmp)
 }
 
 ir_node *
-new_d_Unknown (void)
+new_d_Unknown (ir_mode *m)
 {
-  return current_ir_graph->unknown;
+  return new_rd_Unknown(current_ir_graph, m);
 }
 
 ir_node *
@@ -2490,8 +2490,8 @@ ir_node *new_Bad    (void) {
 ir_node *new_Confirm (ir_node *val, ir_node *bound, pn_Cmp cmp) {
   return new_d_Confirm (NULL, val, bound, cmp);
 }
-ir_node *new_Unknown(void) {
-  return new_d_Unknown();
+ir_node *new_Unknown(ir_mode *m) {
+  return new_d_Unknown(m);
 }
 ir_node *new_CallBegin (ir_node *callee) {
   return new_d_CallBegin(NULL, callee);

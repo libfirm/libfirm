@@ -86,7 +86,7 @@ void      set_irp_main_irg(ir_graph *main_irg);
 void      add_irp_irg(ir_graph *irg);
 
 /** Removes irg from the list of irgs, deallocates it and
-   shrinks the list by one. */
+    shrinks the list by one. */
 void      remove_irp_irg(ir_graph *irg);
 
 /** Returns the number of ir graphs in the irp. */
