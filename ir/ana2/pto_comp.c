@@ -38,6 +38,8 @@
 
 # include "ecg.h"
 
+# include "gnu_ext.h"
+
 /* Local Defines: */
 
 /* Local Data Types: */
@@ -78,7 +80,8 @@ static int add_graph_args (ir_graph *graph, ir_node *call, pto_env_t *env)
 
   n_args = get_Call_n_params (call);
 
-  DBGPRINT (1, (stdout, "add_graph_args(/*todo*/): args of %s[%li] -> 0x%08x\n",
+  DBGPRINT (1, (stdout, "%s: args of %s[%li] -> 0x%08x\n",
+                __FUNCTION__,
                 OPNAME (call), OPNUM (call), (int) graph));
 
   for (i = 0; i < n_args; i ++) {
@@ -93,7 +96,8 @@ static int add_graph_args (ir_graph *graph, ir_node *call, pto_env_t *env)
 
         change |= qset_insert_all (frm_pto->values, arg_pto->values);
 
-        DBGPRINT (2, (stdout, "add_graph_args(/*todo*/): arg [%i]: -> %s[%li] (%i) -> %s[%li] (%i)\n",
+        DBGPRINT (2, (stdout, "%s: arg [%i]: -> %s[%li] (%i) -> %s[%li] (%i)\n",
+                      __FUNCTION__,
                       i,
                       OPNAME (call_arg), OPNUM (call_arg),
                       arg_pto->values->id,
@@ -125,7 +129,8 @@ static void set_graph_args (ir_graph *graph, ir_node *call, pto_env_t *env)
         assert (pto);
         set_node_pto (args [i], pto);
 
-        DBGPRINT (1, (stdout, "set_graph_args(/*todo*/): arg [%i]: %s[%li] -> %s[%li] (%i)\n",
+        DBGPRINT (1, (stdout, "%s: arg [%i]: %s[%li] -> %s[%li] (%i)\n",
+                      __FUNCTION__,
                       i,
                       OPNAME (call_arg), OPNUM (call_arg),
                       OPNAME (args [i]), OPNUM (args [i]),
@@ -162,14 +167,14 @@ static int set_graph_result (ir_graph *graph, ir_node *call)
 
   assert (call_pto);
 
-    DBGPRINT (0, (stdout, "set_graph_result(/*todo*/): before change args\n"));
+    DBGPRINT (0, (stdout, "%s: before change args\n", __FUNCTION__));
     DBGEXE (0, pto_print_pto (end_block));
     DBGEXE (0, pto_print_pto (call));
 
   change = qset_insert_all (call_pto->values, ret_pto->values);
 
   if (change) {
-    DBGPRINT (0, (stdout, "set_graph_result(/*todo*/): after change args\n"));
+    DBGPRINT (0, (stdout, "%s: after change args\n", __FUNCTION__));
     DBGEXE (0, pto_print_pto (end_block));
     DBGEXE (0, pto_print_pto (call));
     /* assert (0); */
@@ -306,7 +311,7 @@ static pto_t *get_pto_ret (ir_node *ret, pto_env_t *env)
 
   assert (pto);
 
-  DBGPRINT (9, (stdout, "get_pto_ret(/*todo*/): "));
+  DBGPRINT (9, (stdout, "%s: ", __FUNCTION__));
   DBGEXE (9, pto_print_pto (ret));
 
   return (pto);
@@ -318,7 +323,8 @@ static pto_t *get_pto (ir_node *node, pto_env_t *env)
 {
   const opcode op = get_irn_opcode (node);
 
-  DBGPRINT (2, (stdout, "get_pto (%s[%li])\n",
+  DBGPRINT (2, (stdout, "%s (%s[%li])\n",
+                __FUNCTION__,
                 OPNAME (node), OPNUM (node)));
 
   switch (op) {
@@ -340,7 +346,8 @@ static pto_t *get_pto (ir_node *node, pto_env_t *env)
   }
   default:
     /* stopgap measure */
-    fprintf (stderr, "get_pto(/*todo*/): not handled: node[%li].op = %s\n",
+    fprintf (stderr, "%s: not handled: node[%li].op = %s\n",
+             __FUNCTION__,
              get_irn_node_nr (node),
              get_op_name (get_irn_op (node)));
     assert (0 && "something not handled");
@@ -356,7 +363,8 @@ static void pto_load (ir_node *load, pto_env_t *pto_env)
   entity *ent;
 
   /* perform load */
-  DBGPRINT (2, (stdout, "pto_load(/*todo*/) (%s[%li]): pto = 0x%08x\n",
+  DBGPRINT (2, (stdout, "%s (%s[%li]): pto = 0x%08x\n",
+                __FUNCTION__,
                 OPNAME (load), OPNUM (load), (int) get_node_pto (load)));
 
   ptr = get_Load_ptr (load);
@@ -372,7 +380,8 @@ static void pto_load (ir_node *load, pto_env_t *pto_env)
 
     assert (ptr_pto);
 
-    DBGPRINT (1, (stdout, "pto_load(/*todo*/) (%s[%li]): ptr = 0x%08x\n",
+    DBGPRINT (1, (stdout, "%s (%s[%li]): ptr = 0x%08x\n",
+                  __FUNCTION__,
                   OPNAME (ptr), OPNUM (ptr), (int) ptr_pto));
 
     pto_env->change |= mod_load (load, ent, ptr_pto);
@@ -386,7 +395,8 @@ static void pto_store (ir_node *store, pto_env_t *pto_env)
   pto_t *ptr_pto, *val_pto;
 
   /* perform store */
-  DBGPRINT (2, (stdout, "pto_store(/*todo*/) (%s[%li]) (no pto)\n",
+  DBGPRINT (2, (stdout, "%s (%s[%li]) (no pto)\n",
+                __FUNCTION__,
                 OPNAME (store), OPNUM (store)));
 
   ptr = get_Store_ptr (store);
@@ -404,9 +414,11 @@ static void pto_store (ir_node *store, pto_env_t *pto_env)
   assert (ptr_pto);
   assert (val_pto);
 
-  DBGPRINT (2, (stdout, "pto_store(/*todo*/) (%s[%li]): ptr_pto = 0x%08x\n",
+  DBGPRINT (2, (stdout, "%s (%s[%li]): ptr_pto = 0x%08x\n",
+                __FUNCTION__,
                 OPNAME (ptr), OPNUM (ptr), (int) ptr_pto));
-  DBGPRINT (2, (stdout, "pto_store(/*todo*/) (%s[%li]): val_pto = 0x%08x\n",
+  DBGPRINT (2, (stdout, "%s (%s[%li]): val_pto = 0x%08x\n",
+                __FUNCTION__,
                 OPNAME (val), OPNUM (val), (int) val_pto));
 
   pto_env->change |= mod_store (store, ent, ptr_pto, val_pto);
@@ -417,21 +429,21 @@ static void pto_method (ir_node *call, pto_env_t *pto_env)
   int i;
   callEd_info_t *callEd_info;
 
-  DBGPRINT (2, (stdout, "pto_method(/*todo*/):%i (%s[%li]): pto = 0x%08x\n",
-                __LINE__, OPNAME (call), OPNUM (call),
+  DBGPRINT (2, (stdout, "%s:%i (%s[%li]): pto = 0x%08x\n",
+                __FUNCTION__, __LINE__, OPNAME (call), OPNUM (call),
                 (int) get_node_pto (call)));
 
   callEd_info = ecg_get_callEd_info (call);
 
   if (NULL == callEd_info) {
-    DBGPRINT (2, (stdout, "pto_method(/*todo*/):%i (%s[%li]), no graph\n",
-                  __LINE__, OPNAME (call), OPNUM (call)));
+    DBGPRINT (2, (stdout, "%s:%i (%s[%li]), no graph\n",
+                  __FUNCTION__, __LINE__, OPNAME (call), OPNUM (call)));
   }
 
   i = 0;
   while (NULL != callEd_info) {
-    DBGPRINT (2, (stdout, "pto_method(/*todo*/):%i (%s[%li]), graph %i\n",
-                  __LINE__, OPNAME (call), OPNUM (call), i ++));
+    DBGPRINT (2, (stdout, "%s:%i (%s[%li]), graph %i\n",
+                  __FUNCTION__, __LINE__, OPNAME (call), OPNUM (call), i ++));
 
     pto_call (callEd_info->callEd, call, pto_env);
 
@@ -444,8 +456,8 @@ static void pto_node_node(ir_node *node, pto_env_t *pto_env)
 {
   opcode op = get_irn_opcode (node);
 
-  DBGPRINT (1, (stdout, "pto_node_node(/*todo*/) (%s[%li])\n",
-                OPNAME (node), OPNUM (node)));
+  DBGPRINT (1, (stdout, "%s (%s[%li])\n",
+                __FUNCTION__, OPNAME (node), OPNUM (node)));
 
   switch (op) {
   case (iro_Start): /* nothing */ break;
@@ -744,6 +756,9 @@ pto_t *get_alloc_pto (ir_node *alloc)
 
 /*
   $Log$
+  Revision 1.15  2005/01/14 14:14:26  liekweg
+  fix gnu extension, fix fprintf's
+
   Revision 1.14  2005/01/14 13:37:26  liekweg
   fix allocation (size); don't cast malloc
 
