@@ -1,3 +1,13 @@
+  * 7.11.2001 Goetz
+    Model Stack frame of a method as class type as for Global type?
+    (Class so that methods defined within methods can be represented?)
+    So far local entities are added to GlobalType.
+
+  * 7.11.2001 Goetz
+    Implement checking whether layout is fixed when setting corresponding
+    flag.  See firmtut, 3.1.4.
+    Maybe write a checker for the type information.
+
   * 19.6.2001 Goetz
     What happens if undefined values are allowed?  See ircons.c,
     grep for get_irg_start_block.
