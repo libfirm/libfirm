@@ -55,7 +55,7 @@ peculiarity: peculiarity_existent
 name:    set_a
 ld_name: PRIMA_set_a
 offset:  -1
-irg = g65"
+irg = g68"
 }
 edge: { sourcename: "e17" targetname: "t15"class: 3 label: "type" color: red}
 edge: { sourcename: "e17" targetname: "n16"label: "value 0"}
@@ -92,7 +92,7 @@ peculiarity: peculiarity_existent
 name:    c
 ld_name: PRIMA_c
 offset:  -1
-irg = g86"
+irg = g90"
 }
 edge: { sourcename: "e20" targetname: "t18"class: 3 label: "type" color: red}
 edge: { sourcename: "e20" targetname: "n19"label: "value 0"}
@@ -110,7 +110,7 @@ results: 1
 edge: { sourcename: "t18" targetname: "t13"class: 5 label: "param 0" color: green}
 edge: { sourcename: "t18" targetname: "t11"class: 5 label: "param 1" color: green}
 edge: { sourcename: "t18" targetname: "t11"class: 6 label: "res 0" color: green}
-node: {title: "t54" label: "class set_aframe_tp" info1: "state: layout_undefined
+node: {title: "t57" label: "class set_aframe_tp" info1: "state: layout_undefined
 size: -1B,
 peculiarity: peculiarity_existent
 " color: green}

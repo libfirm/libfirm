@@ -27,7 +27,7 @@ infoname 2: "Verification errors"
 graph: { title: "g27" label: "CONST_EVAL_EXAMPLE_main" status:clustered color:white
 graph: { title: "n45"  label: "Block 45" status:clustered color:yellow
 edge: {sourcename: "n45" targetname: "n46" label: "0" class:13 priority:60 color:red}
-node: {title: "n43" label: "End  43"  info1: "visited: 6
+node: {title: "n43" label: "End  43"  info1: "visited: 7
 irg:     CONST_EVAL_EXAMPLE_main
 arity: 0
 "color: blue}
@@ -35,7 +35,7 @@ arity: 0
 
 graph: { title: "n47"  label: "Block 47" status:clustered color:yellow
 edge: {sourcename: "n47" targetname: "n48" label: "0" class:13 priority:60 color:red}
-node: {title: "n46" label: "Return  46"  info1: "visited: 6
+node: {title: "n46" label: "Return  46"  info1: "visited: 7
 irg:     CONST_EVAL_EXAMPLE_main
 arity: 3
 return in method of type main
@@ -49,22 +49,22 @@ edge: {sourcename: "n46" targetname: "n51" label: "2" class:16 priority:10}
 
 graph: { title: "n49"  label: "Block 49" status:clustered color:yellow
 edge: {sourcename: "n49" targetname: "n48" label: "0" class:13 priority:60 color:red}
-node: {title: "n52" label: "ProjM 1 52"  info1: "visited: 6
+node: {title: "n52" label: "ProjM 1 52"  info1: "visited: 7
 irg:     CONST_EVAL_EXAMPLE_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n52" targetname: "n50" label: "0" class:17 priority:10 color:blue}
-node: {title: "n51" label: "0xCIs  51"  info1: "visited: 6
+node: {title: "n51" label: "0xCIs  51"  info1: "visited: 7
 irg:     CONST_EVAL_EXAMPLE_main
 arity: 0
 Const of type type_unknown
 " info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
-node: {title: "n48" label: "ProjX 0 48"  info1: "visited: 6
+node: {title: "n48" label: "ProjX 0 48"  info1: "visited: 7
 irg:     CONST_EVAL_EXAMPLE_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n48" targetname: "n50" label: "0" class:13 priority:60 color:red}
-node: {title: "n50" label: "Start  50"  info1: "visited: 6
+node: {title: "n50" label: "Start  50"  info1: "visited: 7
 irg:     CONST_EVAL_EXAMPLE_main
 arity: 0
 start of method of type main
