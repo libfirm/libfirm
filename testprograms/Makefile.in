@@ -25,7 +25,7 @@ SOURCES := Makefile.in \
 GENFILES = %.vcg results.txt
 
 bin_EXAMPLES = $(CFILES:.c=)
-run_bin_EXAMPLES = $(patsubst %.c,./%;,$(CFILES))
+run_bin_EXAMPLES = $(patsubst %.c,../%;,$(CFILES))
 
 include $(topdir)/MakeRules
 
@@ -47,13 +47,11 @@ $(bin_EXAMPLES): $(topdir)/libfirm.a
 run:
 	$(run_bin_EXAMPLES)
 
-test:   realclean all
-	($(run_bin_EXAMPLES))>run-result.txt
-	($(DIFF) run-result.txt $(REF_DIR)/run-result.txt) || (echo Libfirm test failed; exit 1)
-	for g in $(REF_DIR)/*.vcg; do\
-		($(DIFF) -s `basename $$g` $$g)||   (echo Libfirm test failed; exit 1) \
-	done;
-	@echo Libfirm test successful
+test:   all
+	ls >.ignore
+	rm -rf results;mkdir results;cd results;($(run_bin_EXAMPLES)) >run-result.txt
+	@($(DIFF) --exclude=CVS results $(REF_DIR) && \
+	echo Libfirm test successful ) || echo Libfirm test failed ;
 
 reference: realclean all
 	$(RM) $(REF_DIR)/*.vcg
