@@ -1013,7 +1013,7 @@ tarval *tarval_add(tarval *a, tarval *b)
   assert(b);
   assert((a->mode == b->mode) || (get_mode_sort(a->mode) == irms_character && mode_is_int(b->mode)));
 
-  if (get_mode_vector_elems(a->mode) > 1 || get_mode_vector_elems(b->mode)) {
+  if (get_mode_vector_elems(a->mode) > 1 || get_mode_vector_elems(b->mode) > 1) {
     /* vector arithmetic not implemented yet */
     return tarval_bad;
   }
@@ -1048,7 +1048,7 @@ tarval *tarval_sub(tarval *a, tarval *b)
   assert(b);
   assert((a->mode == b->mode) || (get_mode_sort(a->mode) == irms_character && mode_is_int(b->mode)));
 
-  if (get_mode_vector_elems(a->mode) > 1 || get_mode_vector_elems(b->mode)) {
+  if (get_mode_vector_elems(a->mode) > 1 || get_mode_vector_elems(b->mode) > 1) {
     /* vector arithmetic not implemented yet */
     return tarval_bad;
   }
