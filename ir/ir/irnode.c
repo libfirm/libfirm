@@ -136,6 +136,7 @@ void
 copy_attrs (const ir_node *old_node, ir_node *new_node) {
   assert(get_irn_op(old_node) == get_irn_op(new_node));
   memcpy(&new_node->attr, &old_node->attr, get_op_attr_size(get_irn_op(old_node)));
+  if (get_irn_op(new_node) == op_Call) remove_Call_callee_arr(new_node);
 }
 
 /*-- getting some parameters from ir_nodes --*/
@@ -389,6 +390,12 @@ struct section *firm_get_irn_section(ir_node *n) {
 void firm_set_irn_section(ir_node *n, struct section *s) {
   n->sec = s;
 }
+#else
+/* Dummies needed for firmjni. */
+struct abstval *get_irn_abst_value(ir_node *n) { return NULL; }
+void set_irn_abst_value(ir_node *n, struct abstval *os) {}
+struct section *firm_get_irn_section(ir_node *n) { return NULL; }
+void firm_set_irn_section(ir_node *n, struct section *s) {}
 #endif /* DO_HEAPANALYSIS */
 
 
