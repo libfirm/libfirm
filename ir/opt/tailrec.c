@@ -16,6 +16,7 @@
 #include <assert.h>
 #include "tailrec.h"
 #include "array.h"
+#include "irprog.h"
 #include "irgwalk.h"
 #include "irgmod.h"
 #include "irop.h"
@@ -226,10 +227,10 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
   set_optimize(rem);
 }
 
-/**
+/*
  * convert simple tail-calls into loops
  */
-void optimize_tail_rec_irg(ir_graph *irg)
+void opt_tail_rec_irg(ir_graph *irg)
 {
   ir_node *end_block = irg->end_block;
   int n_preds;
@@ -326,17 +327,19 @@ void optimize_tail_rec_irg(ir_graph *irg)
   do_opt_tail_rec(irg, rets, n_tail_calls);
 }
 
-/**
+/*
  * optimize tail recursion away
  */
-void optimize_tail_recursion(void)
+void opt_tail_recursion(void)
 {
+  int i;
+
   if (! get_opt_tail_recursion() || ! get_opt_optimize())
     return;
 
   for (i = 0; i < get_irp_n_irgs(); i++) {
     current_ir_graph = get_irp_irg(i);
 
-    optimize_tail_rec_irg(current_ir_graph);
+    opt_tail_rec_irg(current_ir_graph);
   }
 }
