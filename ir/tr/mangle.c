@@ -86,7 +86,7 @@ ident *mangle_u (ident *first, ident* scnd) {
 
 
 void
-init_mangle (void)
+firm_init_mangle (void)
 {
   obstack_init(&mangle_obst);
 }

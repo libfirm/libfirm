@@ -25,7 +25,7 @@
 # include "entity.h"
 
 /** initializes the name mangling code */
-void   init_mangle (void);
+void   firm_init_mangle (void);
 
 /** Computes a definite name for this entity by concatenating
    the name of the owner type and the name of the entity with
