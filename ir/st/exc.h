@@ -16,10 +16,10 @@
      $Id$
 ***/
 
+# include "irnode.h"
+
 # ifndef _EXC_H_
 # define _EXC_H_
-
-# include "irnode.h"
 
 # include "st.h"
 # include "irop.h"
@@ -34,9 +34,11 @@ typedef enum {
   // must push a new exc contrext at entry of block:
   exc_region,					/* region entry */
 
+  // must pop current exc contrext at exit of block
+  exc_exit,						/* region exit */
+
   // must pop current exc contrext at entry of block
   exc_handler,					/* handler entry */
-  exc_cont,						/* cont block */
 
   exc_max						/* maximum value of enum for 'bounds checking' */
 } exc_t;

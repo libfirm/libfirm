@@ -19,10 +19,11 @@
 # include "exc.h"
 
 static char* exc_strings [] = {
-  "Invalid",
-  "Normal",
-  "Region Entry",
-  "Handler Entry",
+  "Invalid",					/* invalid */
+  "Normal",						/* normal */
+  "Entry",						/* entry to region */
+  "Exit",						/* exit of region */
+  "Handler",					/* entry to handler */
   "Cont"
 };
 
@@ -193,44 +194,6 @@ bool is_handler_block (ir_graph *graph, ir_node *block)
 	}
 
   return (exc_handler == get_Block_exc (block));
-}
-
-/*
- Return true iff a new exception region must be left upon exit of the
- non-exception blocks among the CFG predecessors of this block.
-
- If this block has CFG predecessors that are partly handler blocks and
- partly normal blocks, then we must return true.
-*/
-bool is_cont_entry    (ir_graph *graph, ir_node *block)
-{
-  assert (0 && "Not implemented");
-
-  if (exc_invalid == get_Block_exc (block))
-	{
-	  bool has_exc = false;		/* wether we have exception cfg predecessors */
-	  bool has_cfg = false;		/* wether we have normal cfg predecessors */
-
-	  int i = 0;
-	  int n = get_irn_arity (block);
-
-	  ir_node *pred = 0;
-
-	  for (i = 0; (i < n) && (!has_exc && !has_cfg); i ++)
-		{
-		  pred = get_irn_n (block, i);
-
-		  if (is_exc_jmp (pred))
-			has_exc = true;
-		  else if (is_cfg_jmp (pred))
-			has_cfg = true;
-		}
-
-	  if (has_cfg && has_exc)
-		set_Block_exc (block, exc_cont);
-	}
-
-  return (exc_cont == get_Block_exc (block));
 }
 
 /*
