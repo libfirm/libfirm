@@ -253,7 +253,7 @@ node: {title: "n23" label: "0x9Iu  23"  info1: "0x9 23
   visited: 2
   arity:   0
   pred nodes:
-    -1:    Block 1
+    -1:    Block 3
   Private Attributes:
   Const of type type_unknown
 "
@@ -263,7 +263,7 @@ node: {title: "n24" label: "0x0Iu  24"  info1: "0x0 24
   visited: 2
   arity:   0
   pred nodes:
-    -1:    Block 1
+    -1:    Block 3
   Private Attributes:
   Const of type type_unknown
 "
@@ -319,7 +319,7 @@ node: {title: "n17" label: "SymC &main  17"  info1: "SymC &main 17
   visited: 2
   arity:   0
   pred nodes:
-    -1:    Block 1
+    -1:    Block 3
   Private Attributes:
   kind:   addr_ent
   entity: entity ARRAY-STACK_EXAMPLE.main (18)

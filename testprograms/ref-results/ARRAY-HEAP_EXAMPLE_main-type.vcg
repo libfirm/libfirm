@@ -79,7 +79,7 @@ node: {title: "n22" label: "0x9Iu  22"  info1: "0x9 22
   visited: 1
   arity:   0
   pred nodes:
-    -1:    Block 1
+    -1:    Block 3
   Private Attributes:
   Const of type type_unknown
 "
@@ -89,7 +89,7 @@ node: {title: "n23" label: "0x0Iu  23"  info1: "0x0 23
   visited: 1
   arity:   0
   pred nodes:
-    -1:    Block 1
+    -1:    Block 3
   Private Attributes:
   Const of type type_unknown
 "
@@ -123,7 +123,7 @@ node: {title: "n16" label: "SymC &ARRAY-HEAP_EXAMPLE_main  16"  info1: "SymC &AR
   visited: 1
   arity:   0
   pred nodes:
-    -1:    Block 1
+    -1:    Block 3
   Private Attributes:
   kind:   addr_ent
   entity: entity GlobalType.ARRAY-HEAP_EXAMPLE_main (17)

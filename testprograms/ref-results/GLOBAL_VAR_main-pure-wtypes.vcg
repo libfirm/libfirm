@@ -276,7 +276,7 @@ node: {title: "n16" label: "SymC &GLOBAL_VAR_main  16"  info1: "SymC &GLOBAL_VAR
   visited: 1
   arity:   0
   pred nodes:
-    -1:    Block 1
+    -1:    Block 3
   Private Attributes:
   kind:   addr_ent
   entity: entity GlobalType.GLOBAL_VAR_main (17)

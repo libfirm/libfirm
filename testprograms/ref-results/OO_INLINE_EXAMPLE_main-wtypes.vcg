@@ -399,7 +399,7 @@ node: {title: "n19" label: "SymC &set_a  19"  info1: "SymC &set_a 19
   visited: 1
   arity:   0
   pred nodes:
-    -1:    Block 1
+    -1:    Block 3
   Private Attributes:
   kind:   addr_ent
   entity: entity PRIMA_INLINE.set_a (20)
@@ -450,7 +450,7 @@ node: {title: "n22" label: "SymC &c  22"  info1: "SymC &c 22
   visited: 1
   arity:   0
   pred nodes:
-    -1:    Block 1
+    -1:    Block 3
   Private Attributes:
   kind:   addr_ent
   entity: entity PRIMA_INLINE.c (23)
@@ -493,7 +493,7 @@ node: {title: "n25" label: "SymC &OO_INLINE_EXAMPLE_main  25"  info1: "SymC &OO_
   visited: 1
   arity:   0
   pred nodes:
-    -1:    Block 1
+    -1:    Block 3
   Private Attributes:
   kind:   addr_ent
   entity: entity GlobalType.OO_INLINE_EXAMPLE_main (26)
