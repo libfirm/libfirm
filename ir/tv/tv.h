@@ -161,7 +161,7 @@ tarval *new_tarval_from_long(long l, ir_mode *mode);
 long get_tarval_long(tarval *tv);
 
 /**
- * This validates if tarval_to_long() will return a satisfying
+ * This validates if get_tarval_long() will return a satisfying
  * result. I.e. if tv is an int_number and between min, max
  * of long int (signed!)
  */
