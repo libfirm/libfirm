@@ -231,6 +231,7 @@ INLINE alloc_attr    get_irn_alloc_attr    (ir_node *node);
 INLINE type         *get_irn_free_attr     (ir_node *node);
 INLINE symconst_attr get_irn_symconst_attr (ir_node *node);
 type         *get_irn_call_attr     (ir_node *node);
+type         *get_irn_funccall_attr (ir_node *node);
 sel_attr      get_irn_sel_attr      (ir_node *node);
 int           get_irn_phi_attr      (ir_node *node);
 block_attr    get_irn_block_attr   (ir_node *node);
