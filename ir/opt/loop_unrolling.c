@@ -105,11 +105,10 @@ set_new_node (ir_node *old, ir_node *new)
  * @param n    The node to be copied
  * @param env  if non-NULL, the node number attribute will be copied to the new node
  */
-
 static void
 copy_node (ir_node *n, void *env)
 {
-  ir_node *nn, *block;
+  ir_node *nn;
   int new_arity;
   ir_op *op = get_irn_op(n);
   int copy_node_nr = false;
@@ -127,7 +126,7 @@ copy_node (ir_node *n, void *env)
 
   nn = new_ir_node(get_irn_dbg_info(n),
            current_ir_graph,
-           block,
+           NULL,            /* no block yet, will be set later */
            op,
            get_irn_mode(n),
            new_arity,
@@ -523,33 +522,28 @@ copy_loop_body(set *l_n, induct_var_info *info, int unroll_factor)
   }
 }
 /**
- * is_exception_possible
- *
- * If a Proj node from the loop have as predecessor a Call, Div or Load node, then is a
- * exception possible.
+ * Returns non-zero if a Proj node from the loop has a predecessor that
+ * can throw an exception.
  *
  * @param node  A Proj node from the loop.
+ *
+ * @return non-zero if the predecessor of the Proj node can throw an exception
  */
-static int
-is_exception_possible(ir_node *node)
+static int is_exception_possible(ir_node *node)
 {
-  int possible = 1;
   ir_node *pred = get_Proj_pred(node);
+  ir_op *op = get_irn_op(pred);
 
-  switch(get_irn_opcode(pred)){
-  case  iro_Call:
-    break;
-  case iro_Div:
-    break;
-  case iro_Load:
-    break;
-  default:
-    possible = 0;
-  }
+  /* only fragile ops can throw an exception */
+  if (! is_fragile_op(op))
+    return 0;
 
-  return possible;
+  /*
+   * fragile ops that are known NOT to throw
+   * an exception if their pin_state is op_pin_state_floats
+   */
+  return get_irn_pinned(pred) != op_pin_state_floats;
 }
-
 
 /**
  * If a node from the loop is predecessor of the end block, then the end block must get all copies
