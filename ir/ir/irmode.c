@@ -523,7 +523,6 @@ get_mode_NAN(ir_mode *mode)
 
 int
 is_mode (void *thing) {
-  assert(thing);
   if (get_kind(thing) == k_ir_mode)
     return 1;
   else
