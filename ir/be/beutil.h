@@ -37,7 +37,20 @@ static INLINE int is_data_node(const ir_node *irn)
 	return 0;
 }
 
+/**
+ * Make each constant local to its use.
+ * This duplicates all constants in order to simulate a realistic
+ * register pressure.
+ * @param irg The graph.
+ */
+void localize_consts(ir_graph *irg);
 
+/**
+ * Dump a vcg graph containing the controlflow graph, the schedule and
+ * allocated registers.
+ * @param irg The irg. Note that scheduling, register allocation must
+ * have been performed.
+ */
 void dump_allocated_irg(ir_graph *irg);
 
 #endif

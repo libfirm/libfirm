@@ -22,6 +22,8 @@
 #include "belistsched.h"
 #include "belive_t.h"
 #include "beutil.h"
+#include "bephicongr_t.h"
+#include "bechordal.h"
 #include "bechordal.h"
 #include "bephiopt.h"
 #include "phistat.h"
@@ -95,7 +97,8 @@ void be_init(void)
 	be_liveness_init();
 	be_numbering_init();
 	be_ra_init();
-	be_phi_opt_init();
+	be_ra_chordal_init();
+	be_phi_congr_class_init();
 }
 
 extern void be_ra_chordal(ir_graph *irg);
@@ -107,14 +110,14 @@ static void be_main_loop(void)
 	for(i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 
+		localize_consts(irg);
 		be_numbering(irg);
 		list_sched(irg, trivial_selector, NULL);
 		be_liveness(irg);
 		be_ra_chordal(irg);
 		be_phi_opt(irg);
 
-
-		//dump_allocated_irg(irg);
+		// dump_allocated_irg(irg);
 
 #ifndef DO_STATISTICS
 		be_ra_chordal_done(irg);

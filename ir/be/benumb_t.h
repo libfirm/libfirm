@@ -71,7 +71,7 @@ static INLINE int __get_graph_node_count(const ir_graph *irg)
 static INLINE ir_node *__get_irn_for_graph_nr(const ir_graph *irg, int nr)
 {
 	ir_node **map = get_irg_numbering_const(irg)->reverse_map;
-	assert(nr >= 0 && nr < __get_graph_node_count(irg) && map[nr] != NULL);
+	assert(nr >= 0 && nr <= __get_graph_node_count(irg) && map[nr] != NULL);
 	return map[nr];
 }
 
