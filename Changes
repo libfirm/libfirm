@@ -1,3 +1,8 @@
+  6.7.2000 Chris
+  Renamed ir_vrfy to irn_vrfy and vrfy_graphg to irg_vrfy.
+  Solved some copy'n'paste problems. Deleted most debug-code!
+  Added comments to several files.
+
   6.7.2000 Goetz
   Fixed bug in _r_ constructors for all four Div operations.
   Fixed bug in turn_into_tuple: didn't remember the block.
@@ -6,20 +11,14 @@
   5.7.2000 Goetz
   Fixed some testprograms to new semantics of firm.
   Added testprogram global_var_example.
-
-  5.7.2000 Goetz
   Fixed a bug in irop:  Size of Sel node was (entity *) instead of
   sel_attr.  Therefor array_heap_example aborted.
   Also found a missing break in typewalk, case iro_Alloc.
-
-  5.7.2000 Goetz
   Added a construct that unifies all things constructed by the lib
   and needed to represent a program:  irprog.ch
   This contains a list of all types as well as a list of all ir graphs.
   I added calls to initialization and constructors so that this is constructed
   automatically.  I changed firm.c, type.c, irgraph.c and ev. more.
-
-  5.7.2000 Goetz
   Removed strange block struct and constructor from ircons.c.
   Moved routines for automatic Phi construction from irgmod to ircons.
   Sorted functions in ircons to reflect the different interfaces.
@@ -30,11 +29,7 @@
   4.7.2000 Goetz
   Commented a whole bunch of stuff, e.g. in ircons.h  (Procedure to construct)
   We should change the naming of the Block constructor.
-
-  4.7.2000 Goetz
   Removed acces routines to attr. "closed" of Block.
-
-  4.7.2000 Goetz
   Removed second implementation of new_ir_node from ircons and some comments
   concerned with the now resolved cyclic dependency.
   Fixed some bugs in irgopt so that the compilation goes through.
