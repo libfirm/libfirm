@@ -14,6 +14,7 @@
 
 #include "irprog.h"
 #include "irgraph.h"
+#include "irdump.h"
 
 #include "be_t.h"
 #include "bera_t.h"
@@ -27,6 +28,9 @@
 #include "bechordal.h"
 #include "bephiopt.h"
 #include "phistat.h"
+
+#undef DUMP_ALLOCATED
+#undef DUMP_LOCALIZED
 
 #define N_PHASES 256
 
@@ -97,7 +101,7 @@ void be_init(void)
 	be_numbering_init();
 	be_ra_init();
 	be_ra_chordal_init();
-	be_phi_congr_class_init();
+	be_phi_opt_init();
 }
 
 extern void be_ra_chordal(ir_graph *irg);
@@ -110,13 +114,19 @@ static void be_main_loop(void)
 		ir_graph *irg = get_irp_irg(i);
 
 		localize_consts(irg);
+#ifdef DUMP_LOCALIZED
+		dump_consts_local(0);
+		dump_ir_block_graph(irg, "-local-const");
+#endif
 		be_numbering(irg);
 		list_sched(irg, trivial_selector, NULL);
 		be_liveness(irg);
 		be_ra_chordal(irg);
-		//be_phi_opt(irg);
 
-		//dump_allocated_irg(irg);
+#ifdef DUMP_ALLOCATED
+		dump_allocated_irg(irg);
+#endif
+		be_phi_opt(irg);
 
 		be_ra_chordal_done(irg);
 		be_numbering_done(irg);
