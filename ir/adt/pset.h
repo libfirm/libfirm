@@ -100,7 +100,7 @@ int pset_count (pset *pset);
  * @param hash  the hash value of key
  *
  * @return
- *    the pointer of the found element in the pset of NULL if it was not found
+ *    the pointer of the found element in the pset or NULL if it was not found
  */
 void *pset_find (pset *pset, const void *key, unsigned hash);
 
