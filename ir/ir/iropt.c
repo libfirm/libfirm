@@ -593,7 +593,7 @@ static ir_node *equivalent_node_Block(ir_node *n)
      ir_node *predblock = get_nodes_block(get_Block_cfgpred(n, 0));
      if (predblock == oldn) {
        /* Jmp jumps into the block it is in -- deal self cycle. */
-       n = new_Bad();
+       n = set_Block_dead(n);
        DBG_OPT_DEAD(oldn, n);
      } else if (get_opt_control_flow_straightening()) {
        n = predblock;
@@ -605,7 +605,7 @@ static ir_node *equivalent_node_Block(ir_node *n)
      ir_node *predblock = get_nodes_block(get_Block_cfgpred(n, 0));
      if (predblock == oldn) {
        /* Jmp jumps into the block it is in -- deal self cycle. */
-       n = new_Bad();
+       n = set_Block_dead(n);
        DBG_OPT_DEAD(oldn, n);
      }
    }
@@ -629,15 +629,27 @@ static ir_node *equivalent_node_Block(ir_node *n)
   } else if (get_opt_unreachable_code() &&
              (n != current_ir_graph->start_block) &&
              (n != current_ir_graph->end_block)     ) {
-    int i;
+    int i, n_cfg = get_Block_n_cfgpreds(n);
+
     /* If all inputs are dead, this block is dead too, except if it is
        the start or end block.  This is a step of unreachable code
        elimination */
-    for (i = 0; i < get_Block_n_cfgpreds(n); i++) {
-      if (!is_Bad(get_Block_cfgpred(n, i))) break;
+    for (i = 0; i < n_cfg; i++) {
+      ir_node *pred = get_Block_cfgpred(n, i);
+      ir_node *pred_blk;
+
+      if (is_Bad(pred)) continue;
+      pred_blk = get_nodes_block(pred);
+
+      if (is_Block_dead(pred_blk)) continue;
+
+      if (pred_blk != n) {
+        /* really found a living input */
+        break;
+      }
     }
-    if (i == get_Block_n_cfgpreds(n))
-      n = new_Bad();
+    if (i == n_cfg)
+      n = set_Block_dead(n);
   }
 
   return n;
@@ -651,7 +663,7 @@ static ir_node *equivalent_node_Jmp(ir_node *n)
 {
   /* GL: Why not same for op_Raise?? */
   /* unreachable code elimination */
-  if (is_Bad(get_nodes_block(n)))
+  if (is_Block_dead(get_nodes_block(n)))
     n = new_Bad();
 
   return n;
@@ -930,7 +942,7 @@ static ir_node *equivalent_node_Phi(ir_node *n)
   block = get_nodes_block(n);
   /* @@@ fliegt 'raus, sollte aber doch immer wahr sein!!!
      assert(get_irn_arity(block) == n_preds && "phi in wrong block!"); */
-  if ((is_Bad(block)) ||                         /* Control dead */
+  if ((is_Block_dead(block)) ||                  /* Control dead */
       (block == current_ir_graph->start_block))  /* There should be no Phi nodes */
     return new_Bad();                            /* in the Start Block. */
 
@@ -1021,7 +1033,7 @@ static ir_node *equivalent_node_Proj(ir_node *n)
       n = new_Bad();
     }
   } else if (get_irn_mode(n) == mode_X &&
-             is_Bad(get_nodes_block(n))) {
+             is_Block_dead(get_nodes_block(n))) {
     /* Remove dead control flow -- early gigo. */
     n = new_Bad();
   }
@@ -2068,6 +2080,7 @@ gigo (ir_node *node)
   if (get_irn_mode(node) == mode_X) {
     ir_node *block = get_nodes_block(node);
     if (op == op_End) return node;     /* Don't optimize End, may have Bads. */
+
     if (get_irn_op(block) == op_Block && get_Block_matured(block)) {
       irn_arity = get_irn_arity(block);
       for (i = 0; i < irn_arity; i++) {
@@ -2081,7 +2094,11 @@ gigo (ir_node *node)
      blocks predecessors is dead. */
   if ( op != op_Block && op != op_Phi && op != op_Tuple) {
     irn_arity = get_irn_arity(node);
-    for (i = -1; i < irn_arity; i++) {
+
+    if (is_Block_dead(get_nodes_block(node)))
+      return new_Bad();
+
+    for (i = 0; i < irn_arity; i++) {
       if (is_Bad(get_irn_n(node, i))) {
         return new_Bad();
       }
