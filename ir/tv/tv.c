@@ -166,7 +166,6 @@ static int overflows(tarval *tv)
 {
   switch (get_mode_sort(tv->mode))
   {
-    case irms_character:
     case irms_int_number:
       if (sc_comp(tv->value, get_mode_max(tv->mode)->value) == 1) return 1;
       if (sc_comp(tv->value, get_mode_min(tv->mode)->value) == -1) return 1;
