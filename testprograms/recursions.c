@@ -175,7 +175,7 @@ main(void)
   cgana(&arr_len, &free_methods, 0);
   compute_callgraph();
   find_callgraph_recursions();
-  dump_callgraph("");
+  //dump_callgraph("");  /* Order of edges depends on set.c, which is not deterministic. */
   cg_construct(arr_len, free_methods);
 
   printf("Use xvcg to view these graphs:\n");
