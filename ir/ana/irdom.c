@@ -27,25 +27,43 @@
 #include "irnode_t.h"
 #include "ircons_t.h"
 
+#define get_dom_info(bl) (&(bl)->attr.block.dom)
+
+
 /*--------------------------------------------------------------------*/
 /** Accessing the dominator data structures                          **/
 /*--------------------------------------------------------------------*/
 
-ir_node *get_Block_idom(ir_node *bl) {
-  assert(get_irn_op(bl) == op_Block);
+ir_node *get_Block_idom(const ir_node *bl) {
+  assert(is_Block(bl));
   if (get_Block_dom_depth(bl) == -1) {
     /* This block is not reachable from Start */
     return new_Bad();
   }
-  return bl->attr.block.dom.idom;
+  return get_dom_info(bl)->idom;
 }
 
 void set_Block_idom(ir_node *bl, ir_node *n) {
+	dom_info *bli = get_dom_info(bl);
+
   assert(get_irn_op(bl) == op_Block);
-  bl->attr.block.dom.idom = n;
+
+	/* Set the immediate dominator of bl to n */
+	bli->idom = n;
+
+	/*
+	 * If we don't set the root of the dominator tree
+	 * Append bl to the dominates queue of n.
+	 */
+	if(n != NULL) {
+		dom_info *ni = get_dom_info(n);
+
+		bli->next = ni->first;
+		ni->first = bl;
+	}
 }
 
-int get_Block_pre_num(ir_node *bl) {
+int get_Block_pre_num(const ir_node *bl) {
   assert(get_irn_op(bl) == op_Block);
   return bl->attr.block.dom.pre_num;
 }
@@ -55,7 +73,7 @@ void set_Block_pre_num(ir_node *bl, int num) {
   bl->attr.block.dom.pre_num = num;
 }
 
-int get_Block_dom_depth(ir_node *bl) {
+int get_Block_dom_depth(const ir_node *bl) {
   assert(get_irn_op(bl) == op_Block);
   return bl->attr.block.dom.dom_depth;
 }
@@ -65,7 +83,94 @@ void set_Block_dom_depth(ir_node *bl, int depth) {
   bl->attr.block.dom.dom_depth = depth;
 }
 
+unsigned get_Block_dom_tree_pre_num(const ir_node *bl)
+{
+	assert(is_Block(bl));
+	return get_dom_info(bl)->tree_pre_num;
+}
 
+unsigned get_Block_dom_max_subtree_pre_num(const ir_node *bl)
+{
+	assert(is_Block(bl));
+	return get_dom_info(bl)->max_subtree_pre_num;
+}
+
+int block_dominates(const ir_node *a, const ir_node *b)
+{
+	const dom_info *ai, *bi;
+
+	assert(is_Block(a) && is_Block(b));
+	ai = get_dom_info(a);
+	bi = get_dom_info(b);
+	return bi->tree_pre_num - ai->tree_pre_num
+		<= ai->max_subtree_pre_num - ai->tree_pre_num;
+}
+
+ir_node *get_Block_dominated_first(const ir_node *bl)
+{
+	assert(is_Block(bl));
+	return get_dom_info(bl)->first;
+}
+
+ir_node *get_Block_dominated_next(const ir_node *bl)
+{
+	assert(is_Block(bl));
+	return get_dom_info(bl)->next;
+}
+
+void dom_tree_walk(ir_node *n, irg_walk_func *pre,
+		irg_walk_func *post, void *env)
+{
+	ir_node *p;
+
+  assert(get_irn_irg(n)->dom_state == dom_consistent
+			&& "The dominators of the irg must be consistent");
+
+	for(p = get_dom_info(p)->first; p; p = get_dom_info(p)->next) {
+		if(pre)
+			pre(p, env);
+
+		dom_tree_walk(p, pre, post, env);
+
+		if(post)
+			post(p, env);
+	}
+}
+
+void dom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
+		irg_walk_func *post, void *env)
+{
+	/* The root of the dominator tree should be the start node. */
+	ir_node *root = get_irg_start_block(irg);
+
+  assert(irg->dom_state == dom_consistent
+			&& "The dominators of the irg must be consistent");
+	assert(root && "The start block of the graph is NULL?");
+	assert(get_dom_info(root)->idom == NULL
+			&& "The start node in the graph must be the root of the dominator tree");
+	dom_tree_walk(root, pre, post, env);
+}
+
+static void assign_tree_pre_order(ir_node *bl, void *data)
+{
+	unsigned *num = data;
+	dom_info *bi = get_dom_info(bl);
+	bi->tree_pre_num = (*num)++;
+}
+
+static void assign_tree_pre_order_max(ir_node *bl, void *data)
+{
+	dom_info *bi = get_dom_info(bl);
+	ir_node *p;
+	unsigned max = 0;
+
+	for(p = bi->first; p; p = get_dom_info(p)->next) {
+		unsigned max_p = get_dom_info(p)->max_subtree_pre_num;
+		max = max > max_p ? max : max_p;
+	}
+
+	bi->max_subtree_pre_num = max;
+}
 
 /*--------------------------------------------------------------------*/
 /*  Building and Removing the dominator datastructure                 */
@@ -259,6 +364,13 @@ void compute_doms(ir_graph *irg) {
   /* clean up */
   /*  free(tdi_list); @@@ does not work !!?? */
   current_ir_graph = rem;
+
+	/* Do a walk over the tree and assign the tree pre orders. */
+	{
+		unsigned tree_pre_order = 0;
+		dom_tree_walk_irg(irg, assign_tree_pre_order,
+				assign_tree_pre_order_max, &tree_pre_order);
+	}
 }
 
 void free_dom_and_peace(ir_graph *irg) {
