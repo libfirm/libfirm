@@ -25,11 +25,17 @@
  * @see  tpop.h
  */
 
+/** possible flags for a type opcode */
+enum tp_op_flags_t {
+  TP_OP_FLAG_COMPOUND = 1   /**< is a compound type */
+};
+
 /** The type opcode */
 struct tp_op {
-  tp_opcode code;
-  ident *name;
-  size_t attr_size;
+  tp_opcode code;       /**< the tpop code */
+  ident *name;          /**< the name of the type opcode */
+  size_t attr_size;     /**< the attribute size for a type of this opcode */
+  unsigned flags;       /**< flags for this opcode */
 };
 
 /**
@@ -41,12 +47,12 @@ struct tp_op {
  *
  *   @param code        the enum for this type opcode.
  *   @param name        an ident for the name of the type opcode.
+ *   @param flags       additional flags
  *   @param attr_size   the size of the attributes necessary for a type with
  *                      this opcode
  *   @return A new type opcode.
- *
  */
-tp_op *new_tpop (tp_opcode code, ident *name, size_t attr_size);
+tp_op *new_tpop (tp_opcode code, ident *name, unsigned flags, size_t attr_size);
 
 /**
  * Free a tpop datastructure.
@@ -56,7 +62,7 @@ void free_tpop(tp_op* tpop);
 /**
  *   Initialize the tpop module.
  *
- *   Must be called during the initizlization of the library. Allocates
+ *   Must be called during the initialization of the library. Allocates
  *   opcodes and sets the globals that are external visible as specified
  *   in tpop.h.
  *   Allocates opcodes for classes, struct, method, union, array,
@@ -65,7 +71,7 @@ void free_tpop(tp_op* tpop);
 void init_tpop (void);
 
 /**
- *  Finalize the topo module.
+ *  Finalize the tpop module.
  *
  *  Frees all type opcodes.
  */
@@ -81,7 +87,7 @@ void finish_tpop(void);
  *   @return The size of the attribute of types with this opcode.
  *
  */
-int get_tpop_attr_size (tp_op *op);
+int get_tpop_attr_size (const tp_op *op);
 
 
 /* ---------------- *
@@ -89,17 +95,17 @@ int get_tpop_attr_size (tp_op *op);
  * -----------------*/
 
 static INLINE tp_opcode
-__get_tpop_code(tp_op *op) {
+__get_tpop_code(const tp_op *op) {
   return op->code;
 }
 
 static INLINE ident *
-__get_tpop_ident(tp_op *op){
+__get_tpop_ident(const tp_op *op){
   return op->name;
 }
 
 static INLINE int
-__get_tpop_attr_size(tp_op *op) {
+__get_tpop_attr_size(const tp_op *op) {
   return op->attr_size;
 }
 

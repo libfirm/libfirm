@@ -64,7 +64,7 @@ typedef struct tp_op tp_op;
  *   @param op  The type opcode to get the string from.
  *   @return a string.  (@todo Null terminated???)
  */
-const char *get_tpop_name (tp_op *op);
+const char *get_tpop_name (const tp_op *op);
 
 /**
  *   Returns an enum for the type opcode.
@@ -72,7 +72,7 @@ const char *get_tpop_name (tp_op *op);
  *   @param op   The type opcode to get the enum from.
  *   @return the enum.
  */
-tp_opcode get_tpop_code (tp_op *op);
+tp_opcode get_tpop_code (const tp_op *op);
 
 /**
  *   Returns the ident for the type opcode.
@@ -80,7 +80,7 @@ tp_opcode get_tpop_code (tp_op *op);
  *   @param op   The type opcode to get the ident from.
  *   @return The ident.
  */
-ident *get_tpop_ident (tp_op *op);
+ident *get_tpop_ident (const tp_op *op);
 
 /**
  *   This type opcode marks that the corresponding type is a class type.
@@ -141,7 +141,7 @@ tp_op *get_tpop_array(void);
  *   This type opcode marks that the corresponding type is an enumeration type.
  *
  *   Consequently it contains a list of idents for the enumeration identifiers
- *   and a list of tarbet values that are the constants used to implement
+ *   and a list of target values that are the constants used to implement
  *   the enumerators.
  *   This struct is dynamically allocated but constant for the lifetime
  *   of the library.
