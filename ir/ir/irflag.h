@@ -202,6 +202,13 @@ void set_opt_dyn_meth_dispatch (int value);
 void set_opt_tail_recursion(int value);
 void set_opt_tail_recursion_verbose(int value);
 
+/** Enable/Disable floating of fragile ops.
+ *
+ * This flags enables/disables the floating of fragile operations.
+ * If this flag is on, fragile operations which are known to NOT raise
+ * an exception can be place to other basic blocks.
+ * Otherwise they remain in the block they were created.
+ */
 void set_opt_fragile_ops(int value);
 
 
