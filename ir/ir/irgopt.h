@@ -59,7 +59,6 @@ void remove_bad_predecessors(ir_graph *irg);
    combination as control flow operation. */
 void inline_method(ir_node *call, ir_graph *called_graph);
 
-
 /* Inlines all small methods at call sites where the called address comes
    from a Const node that references the entity representing the called
    method.
@@ -99,6 +98,5 @@ void place_code(ir_graph *irg);
 /* Bad predecessors form blocks and unnecessary predecessors of End.*/
 /********************************************************************/
 void optimize_cf(ir_graph *irg);
-
 
 # endif /* _IRGOPT_H_ */

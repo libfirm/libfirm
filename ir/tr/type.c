@@ -48,6 +48,9 @@
 /*******************************************************************/
 
 unsigned long type_visited;
+INLINE void set_master_type_visited(unsigned long val) { type_visited = val; }
+INLINE unsigned long get_master_type_visited() { return type_visited; }
+INLINE void inc_master_type_visited() { type_visited++; }
 
 void        free_type(type *tp) {
   /* Remove from list of all types */

@@ -32,16 +32,6 @@
  ******
  */
 
-#if 0
-/* The following routines use a global variable that is not external.
-   Therefore removed from interface. */
-/* dump a simple node */
-void dump_ir_node (ir_node *node);
-/* dump the edge to the block this node belongs to */
-void dump_ir_block_edge(ir_node *n);
-/* dump edges to our inputs */
-void dump_ir_data_edges(ir_node *n);
-#endif
 /* @@@ GL: A hack */
 extern char *dump_file_suffix;
 

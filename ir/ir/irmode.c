@@ -38,6 +38,27 @@ ir_mode *mode_M;
 ir_mode *mode_R;
 ir_mode *mode_Z;
 
+INLINE ir_mode *get_mode_T() { return mode_T; }
+INLINE ir_mode *get_mode_f() { return mode_f; }
+INLINE ir_mode *get_mode_d() { return mode_d; }
+INLINE ir_mode *get_mode_c() { return mode_c; }
+INLINE ir_mode *get_mode_C() { return mode_C; }
+INLINE ir_mode *get_mode_h() { return mode_h; }
+INLINE ir_mode *get_mode_H() { return mode_H; }
+INLINE ir_mode *get_mode_i() { return mode_i; }
+INLINE ir_mode *get_mode_I() { return mode_I; }
+INLINE ir_mode *get_mode_l() { return mode_l; }
+INLINE ir_mode *get_mode_L() { return mode_L; }
+INLINE ir_mode *get_mode_B() { return mode_B; }
+INLINE ir_mode *get_mode_p() { return mode_b; }
+INLINE ir_mode *get_mode_b() { return mode_p; }
+INLINE ir_mode *get_mode_s() { return mode_s; }
+INLINE ir_mode *get_mode_S() { return mode_S; }
+INLINE ir_mode *get_mode_X() { return mode_X; }
+INLINE ir_mode *get_mode_M() { return mode_M; }
+INLINE ir_mode *get_mode_R() { return mode_R; }
+INLINE ir_mode *get_mode_Z() { return mode_Z; }
+
 void
 init_mode (void)
 {

@@ -15,15 +15,15 @@
 # include "tpop_t.h"
 # include "type_t.h"
 
-tp_op *type_class;
-tp_op *type_struct;
-tp_op *type_method;
-tp_op *type_union;
-tp_op *type_array;
-tp_op *type_enumeration;
-tp_op *type_pointer;
-tp_op *type_primitive;
-tp_op *type_id;
+tp_op *type_class;         tp_op *get_type_class      () { return type_class;       }
+tp_op *type_struct;        tp_op *get_type_struct     () { return type_struct;      }
+tp_op *type_method;        tp_op *get_type_method     () { return type_method;      }
+tp_op *type_union;         tp_op *get_type_union      () { return type_union;       }
+tp_op *type_array;         tp_op *get_type_array      () { return type_array;       }
+tp_op *type_enumeration;   tp_op *get_type_enumeration() { return type_enumeration; }
+tp_op *type_pointer;       tp_op *get_type_pointer    () { return type_pointer;     }
+tp_op *type_primitive;     tp_op *get_type_primitive  () { return type_primitive;   }
+tp_op *type_id;            tp_op *get_type_id         () { return type_id;          }
 
 tp_op *
 new_tpop (tp_opcode code, ident *name, size_t attr_size)

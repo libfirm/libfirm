@@ -115,6 +115,7 @@ ident *get_tpop_ident (tp_op *op);
  * SOURCE
  */
 extern tp_op *type_class;
+tp_op *get_type_class();
 /******/
 
 /****d* tpop/type_struct
@@ -131,6 +132,7 @@ extern tp_op *type_class;
  * SOURCE
  */
 extern tp_op *type_struct;
+tp_op *get_type_struct();
 /******/
 
 /****d* tpop/type_method
@@ -146,6 +148,7 @@ extern tp_op *type_struct;
  * SOURCE
  */
 extern tp_op *type_method;
+tp_op *get_type_method();
 /******/
 
 /****d* tpop/type_union
@@ -161,6 +164,7 @@ extern tp_op *type_method;
  * SOURCE
  */
 extern tp_op *type_union;
+tp_op *get_type_union();
 /******/
 
 /****d* tpop/type_array
@@ -177,6 +181,7 @@ extern tp_op *type_union;
  * SOURCE
  */
 extern tp_op *type_array;
+tp_op *get_type_array();
 /******/
 
 /****d* tpop/type_enumeration
@@ -194,6 +199,7 @@ extern tp_op *type_array;
  * SOURCE
  */
 extern tp_op *type_enumeration;
+tp_op *get_type_enumeration();
 /******/
 
 /****d* tpop/type_pointer
@@ -209,6 +215,7 @@ extern tp_op *type_enumeration;
  * SOURCE
  */
 extern tp_op *type_pointer;
+tp_op *get_type_pointer();
 /******/
 
 /****d* tpop/type_primitive
@@ -225,6 +232,7 @@ extern tp_op *type_pointer;
  * SOURCE
  */
 extern tp_op *type_primitive;
+tp_op *get_type_primitive();
 /******/
 
 /****d* tpop/type_id
@@ -249,6 +257,7 @@ extern tp_op *type_primitive;
  * SOURCE
  */
 extern tp_op *type_id;
+tp_op *get_type_id();
 /******/
 
 # endif /*_TYPEOP_H_ */

@@ -16,7 +16,7 @@ INSTALL_HEADERS = irprog.h irgraph.h irnode.h irmode.h irop.h ircons.h	\
 
 SOURCES = $(INSTALL_HEADERS)
 
-SOURCES += Makefile.in \
+SOURCES += 	Makefile.in \
 		ircons.c irgmod.c irgraph_t.h irnode.c iropt.c irvrfy.c	\
 		irgwalk.c irdump.c irgopt.c irnode_t.h iropt_t.h	\
 		irmode.c irop.c irprog.c irflag.c irgraph.c irmode_t.h	\
@@ -25,8 +25,8 @@ SOURCES += Makefile.in \
 
 include $(topdir)/MakeRules
 
-CPPFLAGS += -I$(top_srcdir)/ir/adt -I$(top_srcdir)/ir/ir -I$(top_srcdir)/ir/common  \
-		-I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/tr -I$(top_srcdir)/ir/tv \
+CPPFLAGS += 	-I$(top_srcdir)/ir/adt   -I$(top_srcdir)/ir/ir  -I$(top_srcdir)/ir/common  \
+		-I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/tr  -I$(top_srcdir)/ir/tv \
 		-I$(top_srcdir)/ir/debug -I$(top_srcdir)/ir/ana -I$(top_srcdir)/ir/st
 
 include $(top_srcdir)/MakeTargets

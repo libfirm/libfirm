@@ -92,16 +92,17 @@ struct tarval {
   ir_mode *mode;
 };
 
-extern tarval *tarval_bad;
+extern tarval *tarval_bad;                  tarval *get_tarval_bad();
 /* We should have a tarval_undefined */
-extern tarval *tarval_b_false;
-extern tarval *tarval_b_true;
-extern tarval *tarval_d_NaN;
-extern tarval *tarval_d_Inf;
-extern tarval *tarval_p_void;
-extern tarval *tarval_mode_null[];
-extern tarval *tarval_mode_min[];
-extern tarval *tarval_mode_max[];
+extern tarval *tarval_b_false;              tarval *get_tarval_b_false  ();
+extern tarval *tarval_b_true;               tarval *get_tarval_b_true   ();
+extern tarval *tarval_d_NaN;                tarval *get_tarval_d_NaN    ();
+extern tarval *tarval_d_Inf;                tarval *get_tarval_d_Inf    ();
+extern tarval *tarval_p_void;               tarval *get_tarval_p_void   ();
+extern tarval *tarval_mode_null[];          tarval *get_tarval_mode_null(ir_mode *mode);
+/* @@@ These are not initialized!! Don't use. */
+extern tarval *tarval_mode_min[];           tarval *get_tarval_mode_min (ir_mode *mode);
+extern tarval *tarval_mode_max[];           tarval *get_tarval_mode_max (ir_mode *mode);
 
 void tarval_init_1 (void);
 void tarval_init_2 (void);

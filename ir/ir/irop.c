@@ -17,61 +17,61 @@
 # include "irnode_t.h"
 # include "misc.h"
 
-ir_op *op_Block;
+ir_op *op_Block;           ir_op *get_op_Block     () { return op_Block;     }
 
-ir_op *op_Start;
-ir_op *op_End;
-ir_op *op_Jmp;
-ir_op *op_Cond;
-ir_op *op_Return;
-ir_op *op_Raise;
+ir_op *op_Start;	   ir_op *get_op_Start     () { return op_Start;     }
+ir_op *op_End;		   ir_op *get_op_End       () { return op_End;       }
+ir_op *op_Jmp;		   ir_op *get_op_Jmp       () { return op_Jmp;       }
+ir_op *op_Cond;		   ir_op *get_op_Cond      () { return op_Cond;      }
+ir_op *op_Return;	   ir_op *get_op_Return    () { return op_Return;    }
+ir_op *op_Raise;	   ir_op *get_op_Raise     () { return op_Raise;     }
 
-ir_op *op_Sel;
-ir_op *op_InstOf;
+ir_op *op_Sel;		   ir_op *get_op_Sel       () { return op_Sel;       }
+ir_op *op_InstOf;	   ir_op *get_op_InstOf    () { return op_InstOf;    }
 
-ir_op *op_Const;
-ir_op *op_SymConst;
+ir_op *op_Const;	   ir_op *get_op_Const     () { return op_Const;     }
+ir_op *op_SymConst;	   ir_op *get_op_SymConst  () { return op_SymConst;  }
 
-ir_op *op_Call;
-ir_op *op_Add;
-ir_op *op_Sub;
-ir_op *op_Minus;
-ir_op *op_Mul;
-ir_op *op_Quot;
-ir_op *op_DivMod;
-ir_op *op_Div;
-ir_op *op_Mod;
-ir_op *op_Abs;
-ir_op *op_And;
-ir_op *op_Or;
-ir_op *op_Eor;
-ir_op *op_Not;
-ir_op *op_Cmp;
-ir_op *op_Shl;
-ir_op *op_Shr;
-ir_op *op_Shrs;
-ir_op *op_Rot;
-ir_op *op_Conv;
+ir_op *op_Call;		   ir_op *get_op_Call      () { return op_Call;      }
+ir_op *op_Add;		   ir_op *get_op_Add       () { return op_Add;       }
+ir_op *op_Sub;		   ir_op *get_op_Sub       () { return op_Sub;       }
+ir_op *op_Minus;	   ir_op *get_op_Minus     () { return op_Minus;     }
+ir_op *op_Mul;		   ir_op *get_op_Mul       () { return op_Mul;       }
+ir_op *op_Quot;		   ir_op *get_op_Quot      () { return op_Quot;      }
+ir_op *op_DivMod;	   ir_op *get_op_DivMod    () { return op_DivMod;    }
+ir_op *op_Div;		   ir_op *get_op_Div       () { return op_Div;       }
+ir_op *op_Mod;		   ir_op *get_op_Mod       () { return op_Mod;       }
+ir_op *op_Abs;		   ir_op *get_op_Abs       () { return op_Abs;       }
+ir_op *op_And;		   ir_op *get_op_And       () { return op_And;       }
+ir_op *op_Or;		   ir_op *get_op_Or        () { return op_Or;        }
+ir_op *op_Eor;		   ir_op *get_op_Eor       () { return op_Eor;       }
+ir_op *op_Not;		   ir_op *get_op_Not       () { return op_Not;       }
+ir_op *op_Cmp;		   ir_op *get_op_Cmp       () { return op_Cmp;       }
+ir_op *op_Shl;		   ir_op *get_op_Shl       () { return op_Shl;       }
+ir_op *op_Shr;		   ir_op *get_op_Shr       () { return op_Shr;       }
+ir_op *op_Shrs;		   ir_op *get_op_Shrs      () { return op_Shrs;      }
+ir_op *op_Rot;		   ir_op *get_op_Rot       () { return op_Rot;       }
+ir_op *op_Conv;		   ir_op *get_op_Conv      () { return op_Conv;      }
 
-ir_op *op_Phi;
+ir_op *op_Phi;		   ir_op *get_op_Phi       () { return op_Phi;       }
 
-ir_op *op_Load;
-ir_op *op_Store;
-ir_op *op_Alloc;
-ir_op *op_Free;
-ir_op *op_Sync;
+ir_op *op_Load;		   ir_op *get_op_Load      () { return op_Load;      }
+ir_op *op_Store;	   ir_op *get_op_Store     () { return op_Store;     }
+ir_op *op_Alloc;	   ir_op *get_op_Alloc     () { return op_Alloc;     }
+ir_op *op_Free;		   ir_op *get_op_Free      () { return op_Free;      }
+ir_op *op_Sync;		   ir_op *get_op_Sync      () { return op_Sync;      }
 
-ir_op *op_Tuple;
-ir_op *op_Proj;
-ir_op *op_Id;
-ir_op *op_Bad;
+ir_op *op_Tuple;	   ir_op *get_op_Tuple     () { return op_Tuple;     }
+ir_op *op_Proj;		   ir_op *get_op_Proj      () { return op_Proj;      }
+ir_op *op_Id;		   ir_op *get_op_Id        () { return op_Id;        }
+ir_op *op_Bad;		   ir_op *get_op_Bad       () { return op_Bad;       }
 
-ir_op *op_Unknown;
-ir_op *op_Filter;
-ir_op *op_Break;
-ir_op *op_CallBegin;
-ir_op *op_EndReg;
-ir_op *op_EndExcept;
+ir_op *op_Unknown;	   ir_op *get_op_Unknown   () { return op_Unknown;   }
+ir_op *op_Filter;	   ir_op *get_op_Filter    () { return op_Filter;    }
+ir_op *op_Break;	   ir_op *get_op_Break     () { return op_Break;     }
+ir_op *op_CallBegin;	   ir_op *get_op_CallBegin () { return op_CallBegin; }
+ir_op *op_EndReg;	   ir_op *get_op_EndReg    () { return op_EndReg;    }
+ir_op *op_EndExcept;	   ir_op *get_op_EndExcept () { return op_EndExcept; }
 
 
 ir_op *

@@ -69,6 +69,21 @@ tarval *tarval_d_NaN;
 tarval *tarval_d_Inf;
 tarval *tarval_p_void;
 tarval *tarval_mode_null[irm_max];
+tarval *tarval_mode_min[irm_max];
+tarval *tarval_mode_max[irm_max];
+
+tarval *get_tarval_bad      ()              { return tarval_bad;     }
+tarval *get_tarval_b_false  ()              { return tarval_b_false; }
+tarval *get_tarval_b_true   ()              { return tarval_b_true;  }
+tarval *get_tarval_d_NaN    ()              { return tarval_d_NaN;   }
+tarval *get_tarval_d_Inf    ()              { return tarval_d_Inf;   }
+tarval *get_tarval_p_void   ()              { return tarval_p_void;  }
+tarval *get_tarval_mode_null(ir_mode *mode)
+  { return tarval_mode_null[get_mode_modecode(mode)]; }
+tarval *get_tarval_mode_min (ir_mode *mode)
+  { return tarval_mode_min[get_mode_modecode(mode)];  }
+tarval *get_tarval_mode_max (ir_mode *mode)
+  { return tarval_mode_max[get_mode_modecode(mode)];  }
 
 # if 0
 /* @@@ depends on order of ir_mode */

@@ -23,8 +23,21 @@
 # include "mangle.h"
 
 ir_graph *current_ir_graph;
+INLINE ir_graph *get_current_ir_graph() {
+  return current_ir_graph;
+}
+INLINE void set_current_ir_graph(ir_graph *graph) {
+  current_ir_graph = graph;
+}
+
 
 bool interprocedural_view = false;
+INLINE bool get_interprocedural_view() {
+  return interprocedural_view;
+}
+INLINE void set_interprocedural_view(bool state) {
+  interprocedural_view = state;
+}
 
 #if USE_EXPLICIT_PHI_IN_STACK
 /* really defined in ircons.c */

@@ -177,6 +177,9 @@ void        set_type_link(type *tp, void *l);
  * SOURCE
  */
 extern unsigned long type_visited;
+void set_master_type_visited(unsigned long val);
+unsigned long get_master_type_visited();
+void inc_master_type_visited();
 /*****/
 
 /****f* type/is_type

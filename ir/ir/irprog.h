@@ -55,6 +55,7 @@ typedef struct ir_prog ir_prog;
 
 /* A variable from where everything in the ir can be accessed. */
 extern ir_prog *irp;
+ir_prog *get_irp();
 
 /* initializes ir_prog. Calls the constructor for an ir_prog. */
 void init_irprog(void);
