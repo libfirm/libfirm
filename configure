@@ -3424,16 +3424,16 @@ fi
 
 done
 
-if test "$ac_alloca_headers" != yes; then
-  if test "$ac_cv_header_stdc" == no; then
-    { { echo "$as_me:$LINENO: error: \"alloca.h and stdlib.h not found\"" >&5
-echo "$as_me: error: \"alloca.h and stdlib.h not found\"" >&2;}
-   { (exit 1); exit 1; }; }
-  else
+if test "$ac_alloca_headers" = "yes"; then
     cat >>confdefs.h <<\_ACEOF
 #define HAVE_ALLOCA_H 1
 _ACEOF
 
+else
+  if test "$ac_cv_header_stdc" = "no"; then
+    { { echo "$as_me:$LINENO: error: \"alloca.h and stdlib.h not found\"" >&5
+echo "$as_me: error: \"alloca.h and stdlib.h not found\"" >&2;}
+   { (exit 1); exit 1; }; }
   fi
 fi
 
