@@ -593,6 +593,7 @@ ir_node *get_fragile_op_mem(ir_node *node);
 #define DDME(X)      xprintf("%s(l.%i) %I: %p\n", __FILE__, __LINE__, get_entity_ident(X), (X))
 #define DDMG(X)      xprintf("%s(l.%i) %I: %p\n", __FILE__, __LINE__, get_irg_ent(get_entity_ident(X)), (X))
 #define DDMI(X)      xprintf("%s(l.%i) %I: %p\n", __FILE__, __LINE__, (X), (X))
+#define DDMM(X)      xprintf("%s(l.%i) %I: %p\n", __FILE__, __LINE__, get_mode_ident(X), (X))
 
 #endif /* __GNUC__ */
 /*@}*/  /* Macros for debug.. */

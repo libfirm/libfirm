@@ -111,6 +111,8 @@ vrfy_Proj_proj(ir_node *p) {
       mt = get_entity_type(get_irg_ent(current_ir_graph));
       assert(proj < get_method_n_params(mt) &&
 	     "More Projs for args than args in type");
+      if ((mode == mode_P) && is_compound_type(get_method_param_type(mt, proj)))
+	/* value argument */ break;
       assert(mode == get_type_mode(get_method_param_type(mt, proj)) &&
       "Mode of Proj from Start doesn't match mode of param type.");
     } break;
@@ -120,6 +122,8 @@ vrfy_Proj_proj(ir_node *p) {
       mt = get_Call_type(pred);
       assert(proj < get_method_n_ress(mt) &&
 	     "More Projs for results than results in type.");
+      if ((mode == mode_P) && is_compound_type(get_method_res_type(mt, proj)))
+	/* value result */ break;
       assert(mode == get_type_mode(get_method_res_type(mt, proj)) &&
       "Mode of Proj from Call doesn't match mode of result type.");
     } break;
@@ -291,7 +295,7 @@ irn_vrfy (ir_node *n)
     assert (
 	    /* common Add: BB x num x num --> num */
 	    ((mymode == op1mode && mymode == op2mode
-	      && mode_is_num(mymode))
+	      && (mode_is_num(mymode) || mymode == mode_P))
 	     ||  /* Pointer Add: BB x P x Is --> P */
 	     (op1mode == mode_P && op2mode == mode_Is && mymode == mode_P)
 	     ||  /* Pointer Add: BB x Is x P --> P */
