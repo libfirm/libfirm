@@ -392,14 +392,17 @@ static void block_alloc(ir_node *block, void *env_ptr)
 			ra_node_info_t *ri = get_ra_node_info(irn);
 			int col = NO_COLOR;
 
+			DBG((dbg, LEVEL_4, "colors in use: %b\n", colors));
+
 			/*
 			 * Try to assign live out values colors which are not used by live
 			 * in values.
 			 */
 			if(is_live_out(block, irn)) {
 				bitset_copy(tmp_colors, colors);
-				bitset_andnot(tmp_colors, in_colors);
+				bitset_or(tmp_colors, in_colors);
 				col = bitset_next_clear(tmp_colors, 0);
+				DBG((dbg, LEVEL_5, "next clear in only outs %b: %d\n", tmp_colors, col));
 			}
 
 			/* If a color is not yet assigned, do it now. */
