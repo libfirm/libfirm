@@ -52,7 +52,7 @@ int main(int argc, char **argv)
   init_firm (NULL);
 
   /*** Make basic type information for primitive type int. ***/
-  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_Is);
+  prim_t_int = new_type_primitive(new_id_from_str ("int"), mode_Is);
 
   /* FIRM was designed for oo languages where all methods belong to a class.
    * For imperative languages like C we view a file as a large class containing
@@ -89,13 +89,13 @@ int main(int argc, char **argv)
 
   block = get_cur_block();
   catch_block = new_immBlock();
-  switch_block(block);
+  set_cur_block(block);
 
   /* d = a / 0 */
   d = new_Div(get_store(), get_value(0, mode_Is), zero);
   set_store(new_Proj(d, mode_M, pn_Div_M));
   x = new_Proj(d, mode_X, pn_Div_X_except);
-  add_in_edge(catch_block, x);
+  add_immBlock_pred(catch_block, x);
   d = new_Proj(d, mode_Is, pn_Div_res);
   set_value(3, d);  /* this (3) is variable d */
 
@@ -107,25 +107,25 @@ int main(int argc, char **argv)
   d = new_Div(get_store(), get_value(1, mode_Is), zero);
   set_store(new_Proj(d, mode_M, pn_Div_M));
   x = new_Proj(d, mode_X, pn_Div_X_except);
-  add_in_edge(catch_block, x);
+  add_immBlock_pred(catch_block, x);
   d = new_Proj(d, mode_Is, pn_Div_res);
   set_value(3, d);  /* this (3) is variable d */
 
   /* return d */
   d = get_value(3, mode_Is);
   x = new_Return (get_store(), 1, &d);
-  mature_block(get_cur_block());
-  add_in_edge(get_irg_end_block(current_ir_graph), x);
+  mature_immBlock(get_cur_block());
+  add_immBlock_pred(get_irg_end_block(current_ir_graph), x);
 
   /* return c */
-  switch_block(catch_block);
+  set_cur_block(catch_block);
   c = get_value(2, mode_Is);
   x = new_Return (get_store(), 1, &c);
-  mature_block(get_cur_block());
-  add_in_edge(get_irg_end_block(current_ir_graph), x);
+  mature_immBlock(get_cur_block());
+  add_immBlock_pred(get_irg_end_block(current_ir_graph), x);
 
   /* Now we can mature the end block as all it's predecessors are known. */
-  mature_block (get_irg_end_block(irg));
+  mature_immBlock (get_irg_end_block(irg));
 
   finalize_cons (irg);
 
@@ -133,8 +133,8 @@ int main(int argc, char **argv)
   irg_vrfy(irg);
 
   printf("Done building the graph.  Dumping it.\n");
-  dump_ir_block_graph (irg);
-  dump_ir_graph (irg);
+  dump_ir_block_graph (irg, "");
+  dump_ir_graph (irg, "");
   printf("use xvcg to view this graph:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
 
