@@ -1,3 +1,6 @@
+  * 28.6.04 MMB
+    Div/Mod optimization for constants produces a result that will be optimized
+    again and again :-( Add a flag or a clever encoding so thios does not happen
 
   + Goetz 10.6.04
     Error in removing dead code:
