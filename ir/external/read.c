@@ -720,7 +720,7 @@ void extern_cleanup ()
 }
 
 
-void test_getEffectByName ()
+void test_getEffectByName (void)
 {
   /* test getEffectByName */
   char *names [] = {
@@ -757,6 +757,9 @@ void test_getEffectByName ()
 
 /*
  * $Log$
+ * Revision 1.5  2004/10/18 12:48:20  liekweg
+ * avoid warning
+ *
  * Revision 1.4  2004/10/14 11:31:53  liekweg
  * ...
  *

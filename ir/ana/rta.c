@@ -7,7 +7,7 @@
  * Author:      Florian
  * Modified by:
  * Created:     09.06.2002
- * CVS-ID:      $$
+ * CVS-ID:      $Id$
  * Copyright:   (c) 1999-2004 Universität Karlsruhe
  * Licence:     This file is protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
@@ -43,8 +43,10 @@
 #include "irvrfy.h"
 #include "trvrfy.h"
 
-# define TRUE 1
-# define FALSE 0
+# ifndef TRUE
+#  define TRUE 1
+#  define FALSE 0
+# endif /* not defined TRUE */
 
 /* flags */
 static int verbose     = 0;
@@ -78,7 +80,7 @@ static ir_graph *get_implementing_graph (entity *method)
 
   /* GL   this is not valid in our remove irg algorithm ... which we removed by now ...  */
   assert(get_entity_peculiarity(method) == peculiarity_description
-	 || graph == get_entity_irg(get_SymConst_entity(get_atomic_ent_value(method))));
+     || graph == get_entity_irg(get_SymConst_entity(get_atomic_ent_value(method))));
 
   /* we *must* always return a graph != NULL, *except* when we're used
      inside remove_irg or force_description */
@@ -184,21 +186,21 @@ static void rta_act (ir_node *node, void *env)
     /* CALL SYMCONST */
     } else if (iro_SymConst == get_irn_opcode (ptr)) {
       if (get_SymConst_kind(ptr) == symconst_addr_ent) {
-	ent = get_SymConst_entity (ptr);
-	ir_graph *graph = get_entity_irg (ent);
-	if (graph) {
-	  *change |= add_graph (graph);
-	} else {
-	  /* it's an external allocated thing. */
-	}
+    ent = get_SymConst_entity (ptr);
+    ir_graph *graph = get_entity_irg (ent);
+    if (graph) {
+      *change |= add_graph (graph);
+    } else {
+      /* it's an external allocated thing. */
+    }
       } else if (get_SymConst_kind(ptr) == symconst_addr_name) {
-	/* If this SymConst refers to a method the method is external_visible
-	   and therefore must be considered live anyways. */
-	if (get_SymConst_name(ptr) != new_id_from_str("iro_Catch"))
-	  assert (ent && "couldn't determine entity of call to symConst");
+    /* If this SymConst refers to a method the method is external_visible
+       and therefore must be considered live anyways. */
+    if (get_SymConst_name(ptr) != new_id_from_str("iro_Catch"))
+      assert (ent && "couldn't determine entity of call to symConst");
       } else {
-	/* other symconst. */
-	assert(0 && "This SymConst can not be an address for a method call.");
+    /* other symconst. */
+    assert(0 && "This SymConst can not be an address for a method call.");
       }
 
     /* STRANGE */
@@ -423,12 +425,12 @@ static void make_entity_to_description(type_or_ent *tore, void *env) {
     entity *ent = (entity *)tore;
 
     if ((is_method_type(get_entity_type(ent)))                        &&
-	(get_entity_peculiarity(ent) != peculiarity_description)      &&
-	(get_entity_visibility(ent)  != visibility_external_allocated)   ) {
+    (get_entity_peculiarity(ent) != peculiarity_description)      &&
+    (get_entity_visibility(ent)  != visibility_external_allocated)   ) {
       ir_graph *irg = get_entity_irg(get_SymConst_entity(get_atomic_ent_value(ent)));
       if (!eset_contains (_live_graphs, irg)) {
-	set_entity_peculiarity(ent, peculiarity_description);
-	set_entity_irg(ent, NULL);
+    set_entity_peculiarity(ent, peculiarity_description);
+    set_entity_irg(ent, NULL);
       }
     }
   }
@@ -531,6 +533,9 @@ void rta_report (void)
 
 /*
  * $Log$
+ * Revision 1.25  2004/10/18 12:47:08  liekweg
+ * avoid warning
+ *
  * Revision 1.24  2004/09/24 13:59:04  beck
  * fixed doxygen comments, removed initialization for description entities
  *

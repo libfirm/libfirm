@@ -715,9 +715,9 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
       int i, n_cfgpreds = get_Block_cg_n_cfgpreds(sbl);
       fprintf(F, "graph has %d interprocedural predecessors:\n", n_cfgpreds);
       for (i = 0; i < n_cfgpreds; ++i) {
-	ir_node *cfgpred = get_Block_cg_cfgpred(sbl, i);
-	fprintf(F, "  %d: Call %ld in graph %s\n", i, get_irn_node_nr(cfgpred),
-		get_irg_dump_name(get_irn_irg(cfgpred)));
+    ir_node *cfgpred = get_Block_cg_cfgpred(sbl, i);
+    fprintf(F, "  %d: Call %ld in graph %s\n", i, get_irn_node_nr(cfgpred),
+        get_irg_dump_name(get_irn_irg(cfgpred)));
       }
     }
   } break;
@@ -749,11 +749,11 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
     if (Call_has_callees(n)) {
       fprintf(F, "possible callees: \n");
       for (i = 0; i < get_Call_n_callees(n); i++) {
-	if (!get_Call_callee(n, i)) {
-	  fprintf(F, "  %d external method\n", i);
-	} else {
-	  fprintf(F, "  %d: %s\n", i, get_ent_dump_name(get_Call_callee(n, i)));
-	}
+    if (!get_Call_callee(n, i)) {
+      fprintf(F, "  %d external method\n", i);
+    } else {
+      fprintf(F, "  %d: %s\n", i, get_ent_dump_name(get_Call_callee(n, i)));
+    }
       }
     }
   } break;
@@ -1762,7 +1762,7 @@ dump_vcg_header(FILE *F, const char *name, const char *orientation) {
        "colorentry 123:  255 220  220\n"
        "colorentry 124:  255 240  240\n"
        "colorentry 125:  255 250  250\n"
-	   );
+       );
 
   fprintf (F, "\n");        /* a separator */
 }
@@ -2037,10 +2037,10 @@ dump_block_to_cfg(ir_node *block, void *env) {
     for (fl = i = 0; i < get_Block_n_cfgpreds(block); ++i) {
       ir_node *pred = get_Block_cfgpred(block, i);
       if (is_Bad(pred)) {
-	if (! fl)
-	  fprintf(F, "Bad pred at pos: ");
-	fprintf(F, "%d ", i);
-	fl = 1;
+    if (! fl)
+      fprintf(F, "Bad pred at pos: ");
+    fprintf(F, "%d ", i);
+    fl = 1;
       }
     }
     if (fl)
@@ -2049,7 +2049,7 @@ dump_block_to_cfg(ir_node *block, void *env) {
     fprintf (F, "\"");  /* closing quote of info */
 
     if ((block == get_irg_start_block(get_irn_irg(block))) ||
-	(block == get_irg_end_block(get_irn_irg(block)))     )
+    (block == get_irg_end_block(get_irn_irg(block)))     )
       fprintf(F, " color:blue ");
     else if (fl)
       fprintf(F, " color:yellow ");
@@ -2145,8 +2145,8 @@ static int get_entity_color(entity *ent) {
   int max_loop_depth    = irp->max_callgraph_loop_depth;
   int max_overall_depth = weight_overall(max_rec_depth, max_loop_depth);
 
-  int my_rec_color     = compute_color(rec_depth, max_rec_depth);
-  int my_loop_color    = compute_color(loop_depth, max_loop_depth);
+  /* int my_rec_color     = compute_color(rec_depth, max_rec_depth); */
+  /* int my_loop_color    = compute_color(loop_depth, max_loop_depth); */
   int my_overall_color = compute_color(overall_depth, max_overall_depth);;
 
   return my_overall_color;
@@ -2329,15 +2329,15 @@ void dump_loops_standalone(FILE *F, ir_loop *loop) {
       int bad = 0;
 
       if (!loop_node_started) {
-	/* Start a new node which contains all firm nodes of the current loop */
-	fprintf (F, "node: { title: \"");
-	PRINT_LOOPID(loop);
-	fprintf (F, "-%d-nodes\" color: lightyellow label: \"", i);
-	loop_node_started = 1;
-	first = i;
+    /* Start a new node which contains all firm nodes of the current loop */
+    fprintf (F, "node: { title: \"");
+    PRINT_LOOPID(loop);
+    fprintf (F, "-%d-nodes\" color: lightyellow label: \"", i);
+    loop_node_started = 1;
+    first = i;
       }
       else
-	fprintf(F, "\n");
+    fprintf(F, "\n");
 
       bad |= dump_node_opcode(F, n);
       bad |= dump_node_mode(F, n);
@@ -2351,15 +2351,15 @@ void dump_loops_standalone(FILE *F, ir_loop *loop) {
       /* We are a loop node -> Collect firm graphs */
       ir_graph *n = (ir_graph *)le.node;
       if (!loop_node_started) {
-	/* Start a new node which contains all firm nodes of the current loop */
-	fprintf (F, "node: { title: \"");
-	PRINT_LOOPID(loop);
-	fprintf (F, "-%d-nodes\" color: lightyellow label: \"", i);
-	loop_node_started = 1;
-	first = i;
+    /* Start a new node which contains all firm nodes of the current loop */
+    fprintf (F, "node: { title: \"");
+    PRINT_LOOPID(loop);
+    fprintf (F, "-%d-nodes\" color: lightyellow label: \"", i);
+    loop_node_started = 1;
+    first = i;
       }
       else
-	fprintf(F, "\n");
+    fprintf(F, "\n");
       fprintf (F, " %s", get_irg_dump_name(n));
       /* fprintf (F, " %s (depth %d)", get_irg_dump_name(n), n->callgraph_weighted_loop_depth); */
     }
