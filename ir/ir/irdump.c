@@ -90,7 +90,7 @@
 #define PRINT_TYPEID(X) fprintf(F, "\"t%p\"", (void *) X)
 #define PRINT_ENTID(X)  fprintf(F, "e%p", (void*) X)
 #define PRINT_IRGID(X)  fprintf(F, "g%p",(void*) X)
-#define PRINT_CONSTID(X,Y) fprintf(F, "\"%p%p\"", (void*) X, (void*) Y)
+#define PRINT_CONSTID(X,Y) fprintf(F, "\"n%pn%p\"", (void*) X, (void*) Y)
 #endif
 
 #define PRINT_TYPE_TYPE_EDGE(S,T,...){fprintf (F, "edge: { sourcename: "); PRINT_TYPEID(S); fprintf (F, " targetname: "); PRINT_TYPEID(T); fprintf (F, ##__VA_ARGS__); fprintf(F,"}\n"); }
@@ -242,7 +242,6 @@ dump_node_nodeattr (ir_node *n)
     fprintf (F, "%ld", get_Filter_proj(n));
     break;
   case iro_Sel: {
-    assert(get_kind(get_Sel_entity(n)) == k_entity);
     fprintf (F, "%s", get_entity_name(get_Sel_entity(n)));
     } break;
   case iro_Cast: {
@@ -344,13 +343,13 @@ dump_node_info (ir_node *n) {
 }
 
 static bool pred_in_wrong_graph(ir_node *n, int pos, pmap *irgmap) {
-  ir_node *block = (is_Block(n)) ? n : get_nodes_Block(n);
+  ir_node *block = (is_Block(n)) ? n : get_nodes_block(n);
 
   if (irgmap &&
       ((get_irn_op(n) == op_Filter) || (get_irn_op(n) == op_Block))) {
     ir_node *pred = skip_Proj(get_Block_cfgpred(block, pos));
     if (is_ip_cfop(pred)) {
-      ir_graph *irg = get_ip_cfop_irg(pred);
+      ir_graph *irg = get_irn_irg(pred);
       if (pmap_find(irgmap, irg) == NULL) return true;
     }
   }
@@ -435,7 +434,7 @@ dump_ir_block_edge(ir_node *n)  {
     fprintf (F, "edge: { sourcename: \"");
     PRINT_NODEID(n);
     fprintf (F, "\" targetname: \"");
-    PRINT_NODEID(get_nodes_Block(n));
+    PRINT_NODEID(get_nodes_block(n));
     fprintf (F, "\" "	BLOCK_EDGE_ATTR "}\n");
   }
 }
@@ -662,7 +661,7 @@ static void dump_const_expression(ir_node *value) {
   int rem_dump_const_local = dump_const_local;
   dump_const_local = 0;
   current_ir_graph = get_const_code_irg();
-  irg_walk(value, dump_ir_blocks_nodes, NULL, get_nodes_Block(value));
+  irg_walk(value, dump_ir_blocks_nodes, NULL, get_nodes_block(value));
   /* Decrease visited flag so that we walk with the same flag for the next
      expresssion.  This guarantees that we don't dump the same node twice,
      as for const expressions cse is performed to save memory. */
@@ -1128,7 +1127,7 @@ static void
 dump_ir_blocks_nodes (ir_node *n, void *env) {
   ir_node *block = (ir_node *)env;
 
-  if (is_no_Block(n) && get_nodes_Block(n) == block && !node_floats(n)) {
+  if (is_no_Block(n) && get_nodes_block(n) == block && !node_floats(n)) {
     dump_node(n, NULL);
     dump_ir_data_edges(n, NULL);
   }
@@ -1140,7 +1139,7 @@ static void
 dump_ir_block (ir_node *block, void *env) {
   ir_graph *irg = (ir_graph *)env;
 
-  if (get_irn_opcode(block) == iro_Block) {
+  if (is_Block(block)) {
 
     /* This is a block. So dump the vcg information to make a block. */
     fprintf(F, "graph: { title: \"");
@@ -1171,7 +1170,7 @@ dump_ir_block (ir_node *block, void *env) {
 
 static void
 dump_blockless_nodes (ir_node *n, void *env) {
-  if (is_no_Block(n) && get_irn_op(get_nodes_Block(n)) == op_Bad) {
+  if (is_no_Block(n) && get_irn_op(get_nodes_block(n)) == op_Bad) {
     dump_node(n, NULL);
     dump_ir_data_edges(n, NULL);
     dump_ir_block_edge(n);
@@ -1227,19 +1226,11 @@ dump_block_to_cfg (ir_node *block, void *env) {
   int i;
   ir_node *pred;
 
-  if (get_irn_opcode(block) == iro_Block) {
+  if (is_Block(block)) {
     /* This is a block. Dump a node for the block. */
     fprintf (F, "node: {title: \""); PRINT_NODEID(block);
     fprintf (F, "\" label: \"%s ", get_op_name(get_irn_op(block)));
-#ifdef DEBUG_libfirm
-    fprintf (F, "%ld", get_irn_node_nr(block));
-#else
-    fprintf (F, "%p", (void*) block);
-#endif
-
-    //    if (exc_normal != get_Block_exc (block))
-    //  fprintf (F, " (%s)", exc_to_string (get_Block_exc (block)));
-
+    PRINT_NODEID(block);
     fprintf (F, "\" ");
     if (dump_dominator_information_flag)
       fprintf(F, "info1:dom depth %d", get_Block_dom_depth(block));
@@ -1247,7 +1238,7 @@ dump_block_to_cfg (ir_node *block, void *env) {
     /* Dump the edges */
     for ( i = 0; i < get_Block_n_cfgpreds(block); i++)
       if (get_irn_op(skip_Proj(get_Block_cfgpred(block, i))) != op_Bad) {
-	pred = get_nodes_Block(skip_Proj(get_Block_cfgpred(block, i)));
+	pred = get_nodes_block(skip_Proj(get_Block_cfgpred(block, i)));
 	fprintf (F, "edge: { sourcename: \"");
 	PRINT_NODEID(block);
 	fprintf (F, "\" targetname: \"");
@@ -1472,7 +1463,7 @@ static void collect_blocks_floats_cg(ir_node * node, pmap * map) {
       pmap_insert(map, current_ir_graph, arr);
     }
   } else {
-    ir_node * block = get_nodes_Block(node);
+    ir_node * block = get_nodes_block(node);
     set_irn_link(node, get_irn_link(block));
     set_irn_link(block, node);
   }
@@ -1565,7 +1556,7 @@ static void collect_node(ir_node * node, void *env) {
     ARR_APP1(ir_node *, arr, node);
     set_irg_link(current_ir_graph, arr);    /* arr is an l-value, APP_ARR might change it! */
   } else {
-    ir_node * block = get_nodes_Block(node);
+    ir_node * block = get_nodes_block(node);
     set_irn_link(node, get_irn_link(block));
     set_irn_link(block, node);
   }
@@ -1573,7 +1564,7 @@ static void collect_node(ir_node * node, void *env) {
 
 /* Links all nodes that have the block field set in the link field of
    the block.  Adds all blocks and nodes not associated with a block
-   in a array in irg->link. */
+   in an array in irg->link. */
 static void collect_nodes(void) {
   int i;
   for (i = 0; i < get_irp_n_irgs(); i++)
