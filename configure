@@ -834,6 +834,7 @@ Optional Features:
   --disable-libiberty     disable own libiberty parts
   --disable-hooks         disable Firm hooks
   --enable-statistics     enable Firm statistics
+  --enable-libcore        enable libcore debugging
   --disable-external-effects  disable descriptions of external effects in XML
 
 Optional Packages:
@@ -1388,6 +1389,18 @@ if test "${enable_statistics+set}" = set; then
   if test "$enableval"=yes; then
   cat >>confdefs.h <<\_ACEOF
 #define FIRM_STATISTICS 1
+_ACEOF
+
+fi
+fi;
+
+
+# Check whether --enable-libcore or --disable-libcore was given.
+if test "${enable_libcore+set}" = set; then
+  enableval="$enable_libcore"
+  if test "$enableval"=yes; then
+  cat >>confdefs.h <<\_ACEOF
+#define WITH_LIBCORE 1
 _ACEOF
 
 fi
@@ -5146,6 +5159,7 @@ s,@enable_heapanalysis@,$enable_heapanalysis,;t t
 s,@enable_backend@,$enable_backend,;t t
 s,@disable_libiberty@,$disable_libiberty,;t t
 s,@enable_statistics@,$enable_statistics,;t t
+s,@enable_libcore@,$enable_libcore,;t t
 s,@enable_external_effects@,$enable_external_effects,;t t
 s,@CC@,$CC,;t t
 s,@CFLAGS@,$CFLAGS,;t t
