@@ -1535,7 +1535,7 @@ get_Alloc_size (ir_node *node) {
 }
 
 inline void
-set_Allco_size (ir_node *node, ir_node *size) {
+set_Alloc_size (ir_node *node, ir_node *size) {
   assert (node->op == op_Alloc);
   set_irn_n(node, 1, size);
 }

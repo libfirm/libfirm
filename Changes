@@ -1,3 +1,7 @@
+  25.1.2001 Goetz
+  After compacting of in arrays in dead_node_elimination
+  merge blocks and remove Phis with one pred.
+
   24.1.2001 Goetz
   Freeing of obstack in dead_node_elimination commented in.
   Compacting in arrays of Block and Phi nodes in dead_node_

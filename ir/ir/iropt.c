@@ -872,11 +872,20 @@ gigo (ir_node *node)
   if ( op != op_Block && op != op_Phi && op != op_Tuple) {
     for (i = -1; i < get_irn_arity(node); i++) {
       if (is_Bad(get_irn_n(node, i))) {
-        node = new_Bad();
-        break;
+        return new_Bad();
       }
     }
   }
+#if 0
+  /* If Block has only Bads as predecessors it's garbage. */
+  /* If Phi has only Bads as predecessors it's garbage. */
+  if (op == op_Block || op == op_Phi)  {
+    for (i = 0; i < get_irn_arity(node); i++) {
+      if (!is_Bad(get_irn_n(node, i))) break;
+    }
+    if (i = get_irn_arity(node)) node = new_Bad();
+  }
+#endif
   return node;
 }
 

@@ -121,12 +121,13 @@ int main(int argc, char **argv)
   mature_block (get_irg_end_block(irg));
 
   printf("Optimizing ...\n");
-  dead_node_elimination(irg);
+  //dead_node_elimination(irg);
 
   /* verify the graph */
   irg_vrfy(irg);
 
   printf("Done building the graph.  Dumping it.\n");
+  //dump_ir_graph (irg);
   dump_ir_block_graph (irg);
   printf("use xvcg to view this graph:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");

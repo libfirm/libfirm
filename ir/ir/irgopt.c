@@ -15,6 +15,7 @@
 # include "irgwalk.h"
 # include "ircons.h"
 # include "misc.h"
+# include "irgmod.h"
 
 /********************************************************************/
 /* apply optimizations of iropt to all nodes.                       */
@@ -66,9 +67,9 @@ get_new_node (ir_node * n)
 
 /* We use the block_visited flag to mark that we have computed the
    number of useful predecessors for this block.
-   Further we encode the new arity in this flag.  Remembering the arity is useful,
-   as it saves a lot of pointer accesses.  This function is called for all
-   Phi and Block nodes in a Block. */
+   Further we encode the new arity in this flag.  Remembering the arity is
+   useful, as it saves a lot of pointer accesses.  This function is called
+   for all Phi and Block nodes in a Block. */
 inline int
 compute_new_arity(ir_node *b) {
   int i, res;
@@ -126,7 +127,7 @@ copy_node (ir_node *n, void *env) {
    Spare the Bad predecessors of Phi and Block nodes. */
 inline void
 copy_preds (ir_node *n, void *env) {
-  ir_node *nn, *block;
+  ir_node *nn, *block, *on;
   int i, j;
 
   nn = get_new_node(n);
@@ -141,6 +142,10 @@ copy_preds (ir_node *n, void *env) {
       }
     /* repair the block visited flag from above misuse */
     set_Block_block_visited(nn, 0);
+    /* Local optimization could not merge two subsequent blocks if
+       in array contained Bads.  Now it's possible.  *
+    on = optimize_in_place(nn);
+    if (nn != on) exchange(nn, on);*/
   } else if (get_irn_opcode(n) == iro_Phi) {
     /* Don't copy node if corresponding predecessor in block is Bad.
        The Block itself should not be Bad. */
@@ -152,6 +157,10 @@ copy_preds (ir_node *n, void *env) {
 	set_irn_n (nn, j, get_new_node(get_irn_n(n, i)));
 	j++;
       }
+    /* Compacting the Phi's ins might generate Phis with only one
+       predecessor. *
+    if (get_irn_arity(n) == 1)
+    exchange(n, get_irn_n(n, 0)); */
   } else {
     for (i = -1; i < get_irn_arity(n); i++)
       set_irn_n (nn, i, get_new_node(get_irn_n(n, i)));
