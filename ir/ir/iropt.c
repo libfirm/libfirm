@@ -13,6 +13,8 @@
 # include "irgmod.h"
 # include "irvrfy.h"
 # include "tv.h"
+# include "tune.h"
+
 
 /* Make types visible to allow most efficient access */
 # include "entity_t.h"

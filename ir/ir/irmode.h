@@ -25,7 +25,7 @@ of the tarval module.
 
 typedef enum { /* irm is short for `ir mode' */
   irm_T,                        /* former irm_N */
-  irm_f, irm_d, /* irm_e, */
+  irm_f, irm_d,
   irm_c, irm_C, irm_h, irm_H, irm_i, irm_I, irm_l, irm_L,
   irm_B, irm_b,
   irm_p,
