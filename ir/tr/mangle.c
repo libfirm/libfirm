@@ -21,8 +21,10 @@
 # include "type_t.h"
 # include "tpop_t.h"
 
+/** a obstack used for temporary space */
 static struct obstack mangle_obst;
 
+/** returned a mangled type name, currently no mangling */
 static INLINE ident *
 mangle_type (type *tp)
 {
@@ -38,7 +40,7 @@ mangle_entity (entity *ent)
   int len;
   ident *res;
 
-  type_id = mangle_type ((type *) ent->owner);
+  type_id = mangle_type(ent->owner);
   obstack_grow(&mangle_obst, get_id_str(type_id), get_id_strlen(type_id));
   obstack_1grow(&mangle_obst,'_');
   obstack_grow(&mangle_obst,get_id_str(ent->name),get_id_strlen(ent->name));
@@ -50,7 +52,7 @@ mangle_entity (entity *ent)
 }
 
 
-/* Returns a new ident that represents firstscnd. */
+/* Returns a new ident that represents 'firstscnd'. */
 ident *mangle (ident *first, ident* scnd) {
   char *cp;
   int len;
