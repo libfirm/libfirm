@@ -16,7 +16,7 @@
 ***    int b = 1;         // pos 1
 ***    int h;             // pos 2
 ***
-***    while (0 == 2) loop {   // 0 == 0 will abort libfirm!!
+***    while (0 == 2) loop {
 ***      h = a;
 ***      a = b;
 ***      b = h;
@@ -72,7 +72,7 @@ main(void)
   r = new_immBlock ();
   add_in_edge (r, x);
   x = new_Cond (new_Proj(new_Cmp(new_Const (mode_I, tarval_from_long (mode_i, 0)),
-				 new_Const (mode_I, tarval_from_long (mode_i, 2))),
+				 new_Const (mode_I, tarval_from_long (mode_i, 0))),
                          mode_b, Eq));
   f = new_Proj (x, mode_X, 0);
   t = new_Proj (x, mode_X, 1);
@@ -83,9 +83,9 @@ main(void)
   x = new_Jmp ();
   add_in_edge (r, x);
 
-  /* the code in the loop body,
+  /* The code in the loop body,
      as we are dealing with local variables only the dataflow edges
-     are manipulated */
+     are manipulated. */
   set_value (2, get_value (0, mode_I));
   set_value (0, get_value (1, mode_I));
   set_value (1, get_value (2, mode_I));

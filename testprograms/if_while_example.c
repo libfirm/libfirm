@@ -20,7 +20,7 @@
 ***    if (0 == 0)
 ***      { a = 2; }
 ***
-***    while (0 == 0) loop {   // 0 == 0 aborts libfirm: Bad pred of Endblock
+***    while (0 == 0) loop {
 ***      h = a;
 ***      a = b;
 ***      b = h;

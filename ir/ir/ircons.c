@@ -1227,6 +1227,7 @@ mature_block (ir_node *block)
     /* turn the dynamic in-array into a static one. */
     ins = ARR_LEN (block->in)-1;
     NEW_ARR_A (ir_node *, nin, ins);
+    /*  @@@ something is strange here... why isn't the array copied? */
 
     /* Traverse a chain of Phi nodes attached to this block and mature
        these, too. **/

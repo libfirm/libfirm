@@ -270,10 +270,12 @@ equivalent_node (ir_node *n)
 	  && get_irn_op(get_Block_cfgpred(n, 0)) == op_Jmp) {
 	n = get_nodes_Block(get_Block_cfgpred(n, 0));
 
-      } else if (n != current_ir_graph->start_block) {
+      } else if ((n != current_ir_graph->start_block) &&
+		 (n != current_ir_graph->end_block)     ) {
 	int i;
 	/* If all inputs are dead, this block is dead too, except if it is
-           the start block.  This is a step of unreachable code elimination */
+           the start or end block.  This is a step of unreachable code
+	   elimination */
 	for (i = 0; i < get_Block_n_cfgpreds(n); i++) {
 	  if (!is_Bad(get_Block_cfgpred(n, i))) break;
 	}

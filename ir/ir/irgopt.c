@@ -158,8 +158,10 @@ copy_preds (ir_node *n, void *env) {
     /* repair the block visited flag from above misuse */
     set_Block_block_visited(nn, 0);
     /* Local optimization could not merge two subsequent blocks if
-       in array contained Bads.  Now it's possible.  */
-    on = optimize_in_place(nn);
+       in array contained Bads.  Now it's possible, but don't do it for
+       the end block!  */
+    if (n != current_ir_graph->end_block) on = optimize_in_place(nn);
+    else on = nn;
     if (nn != on) exchange(nn, on);
   } else if (get_irn_opcode(n) == iro_Phi) {
     /* Don't copy node if corresponding predecessor in block is Bad.
