@@ -1,9 +1,11 @@
 /* Copyright (C) 2002 by Universitaet Karlsruhe
 * All rights reserved.
+*/
+
+/**
+* @file irloop_t.h
 *
-* Authors: Goetz Lindenmaier
-*
-*  irloops_t.h:
+* @author Goetz Lindenmaier
 */
 
 /* $Id$ */
@@ -14,13 +16,14 @@
 #ifndef _IRLOOP_T_H_
 #define _IRLOOP_T_H_
 
+/** The loops datastructure. */
 struct ir_loop {
-  firm_kind kind;		    /* A type tag, set to k_ir_loop. */
+  firm_kind kind;		    /**< A type tag, set to k_ir_loop. */
 
-  struct ir_loop *outer_loop;       /* The outer loop */
-  struct ir_loop **sons;            /* Inner loops */
-  struct ir_node **nodes;           /* Nodes in loop. */
-  int depth;                        /* Nesting depth */
+  struct ir_loop *outer_loop;       /**< The outer loop */
+  struct ir_loop **sons;            /**< Inner loops */
+  struct ir_node **nodes;           /**< Nodes in loop. */
+  int depth;                        /**< Nesting depth */
   /*
   struct state_entry *mem_phis;
   struct state_entry *states;

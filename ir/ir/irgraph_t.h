@@ -1,9 +1,13 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
 * All rights reserved.
+*/
+
+/**
+* @file irgraph_t.h
 *
-* Authors: Martin Trapp, Christian Schaefer
+* ir graph construction.
 *
-* irgraph.h: ir graph construction
+* @author Martin Trapp, Christian Schaefer
 */
 
 /* $Id$ */
@@ -17,60 +21,60 @@
 
 #define FRAME_TP_SUFFIX "frame_tp"
 
-/* ir_graph holds all information for a procedure */
+/** ir_graph holds all information for a procedure */
 struct ir_graph {
-  /** Basics of the representation **/
-  struct entity  *ent;               /* The entity of this procedure, i.e.,
+  /* --  Basics of the representation -- */
+  struct entity  *ent;               /**< The entity of this procedure, i.e.,
 					the type of the procedure and the
 					class it belongs to. */
-  struct type    *frame_type;        /* A class type representing the stack frame.
+  struct type    *frame_type;        /**< A class type representing the stack frame.
 					Can include "inner" methods. */
-  struct ir_node *start_block;       /* block the start node will belong to */
-  struct ir_node *start;	     /* start node of this ir_graph */
-  struct ir_node *end_block;         /* block the end node will belong to */
-  struct ir_node *end;		     /* end node of this ir_graph */
-  struct ir_node *cstore;	     /* constant store -- no more needed!! */
-  struct ir_node *frame;             /* method's frame */
-  struct ir_node *globals;           /* pointer to the data segment containing all
+  struct ir_node *start_block;       /**< block the start node will belong to */
+  struct ir_node *start;	     /**< start node of this ir_graph */
+  struct ir_node *end_block;         /**< block the end node will belong to */
+  struct ir_node *end;		     /**< end node of this ir_graph */
+  struct ir_node *cstore;	     /**< constant store -- no more needed!! */
+  struct ir_node *frame;             /**< method's frame */
+  struct ir_node *globals;           /**< pointer to the data segment containing all
 				        globals as well as global procedures. */
-  struct ir_node *args;              /* methods arguments */
-  struct ir_node *bad;		     /* bad node of this ir_graph, the one and
+  struct ir_node *args;              /**< methods arguments */
+  struct ir_node *bad;		     /**< bad node of this ir_graph, the one and
                                         only in this graph */
-  struct ir_node *unknown;           /* unknown node of this ir_graph */
-  struct obstack *obst;		     /* obstack where all of the ir_nodes live */
-  struct ir_node *current_block;     /* block for newly gen_*()-erated
+  struct ir_node *unknown;           /**< unknown node of this ir_graph */
+  struct obstack *obst;		     /**< obstack where all of the ir_nodes live */
+  struct ir_node *current_block;     /**< block for newly gen_*()-erated
 					ir_nodes */
 
-  /** Fields indicating different states of irgraph **/
-  irg_phase_state phase_state;       /* compiler phase */
-  op_pinned pinned;                  /* Flag for status of nodes */
-  irg_outs_state outs_state;         /* Out edges. */
-  irg_dom_state dom_state;           /* Dominator information */
+  /* -- Fields indicating different states of irgraph -- */
+  irg_phase_state phase_state;       /**< compiler phase */
+  op_pinned pinned;                  /**< Flag for status of nodes */
+  irg_outs_state outs_state;         /**< Out edges. */
+  irg_dom_state dom_state;           /**< Dominator information */
 
-  /** Fields for construction **/
+  /* -- Fields for construction -- */
 #if USE_EXPLICIT_PHI_IN_STACK
-  struct Phi_in_stack *Phi_in_stack; /* needed for automatic Phi construction */
+  struct Phi_in_stack *Phi_in_stack; /**< needed for automatic Phi construction */
 #endif
-  int n_loc;                         /* number of local variable in this
+  int n_loc;                         /**< number of local variable in this
 					procedure including procedure parameters. */
 
-  /** Fields for optimizations / analysis information **/
-  pset *value_table;                 /* hash table for global value numbering (cse)
+  /* -- Fields for optimizations / analysis information -- */
+  pset *value_table;                 /**< hash table for global value numbering (cse)
 					for optimizing use in iropt.c */
-  struct ir_node **outs;             /* Space for the out arrays. */
-  struct ir_loop *loop;              /* The outermost loop */
-  void *link;                        /* A void* field to link any information to
+  struct ir_node **outs;             /**< Space for the out arrays. */
+  struct ir_loop *loop;              /**< The outermost loop */
+  void *link;                        /**< A void* field to link any information to
 					the node. */
 
-  /** Fields for Walking the graph **/
-  unsigned long visited;             /* this flag is an identifier for
+  /* -- Fields for Walking the graph -- */
+  unsigned long visited;             /**< this flag is an identifier for
 					ir walk. it will be incremented
 					every time someone walks through
 					the graph */
-  unsigned long block_visited;       /* same as visited, for a complete block */
+  unsigned long block_visited;       /**< same as visited, for a complete block */
 };
 
-/* Make a rudimentary ir graph for the constant code.
+/** Make a rudimentary ir graph for the constant code.
    Must look like a correct irg, spare everything else. */
 ir_graph *new_const_code_irg();
 
