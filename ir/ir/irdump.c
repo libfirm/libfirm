@@ -109,6 +109,14 @@ SeqNo get_Block_seqno(ir_node *n);
 #define PRINT_ITEMID(X,Y)  fprintf(F, "i%pT%d", (void *) (X), (Y))
 #endif
 
+static const char *get_mode_name_ex(ir_mode *mode, int *bad)
+{
+  if (is_mode(mode))
+    return get_mode_name(mode);
+  *bad |= 1;
+  return "<ERROR>";
+}
+
 static const char *get_type_name_ex(type *tp, int *bad)
 {
   if (is_type(tp))
@@ -489,9 +497,11 @@ dump_node_opcode(FILE *F, ir_node *n)
   return bad;
 }
 
-static INLINE void
+static INLINE int
 dump_node_mode (ir_node *n)
 {
+  int bad = 0;
+
   switch (get_irn_opcode(n)) {
   case iro_Phi:
   case iro_Const:
@@ -511,11 +521,12 @@ dump_node_mode (ir_node *n)
   case iro_Abs:
   case iro_Cmp:
   case iro_Confirm:
-    fprintf (F, "%s", get_mode_name(get_irn_mode(n)));
+    fprintf (F, "%s", get_mode_name_ex(get_irn_mode(n), &bad));
     break;
   default:
     ;
   }
+  return bad;
 }
 
 static int dump_node_typeinfo(ir_node *n) {
@@ -774,7 +785,7 @@ static void dump_const_node_local(ir_node *n) {
       fprintf(F, "node: {title: "); PRINT_CONSTID(n, con);
       fprintf(F, " label: \"");
       bad |= dump_node_opcode(F, con);
-      dump_node_mode (con);
+      bad |= dump_node_mode (con);
       bad |= dump_node_typeinfo(con);
       fprintf (F, " ");
       bad |= dump_node_nodeattr(con);
@@ -806,7 +817,7 @@ static void dump_node(ir_node *n)
 
   bad = ! irn_vrfy_irg_dump(n, current_ir_graph, &p);
   bad |= dump_node_opcode(F, n);
-  dump_node_mode (n);
+  bad |= dump_node_mode (n);
   bad |= dump_node_typeinfo(n);
   fprintf(F, " ");
   bad |= dump_node_nodeattr(n);
@@ -1175,15 +1186,19 @@ static void dump_node2type_edges (ir_node *n, void *env)
 }
 
 
-static void print_type_info(type *tp) {
+static int print_type_info(type *tp) {
+  int bad = 0;
+
   if (get_type_state(tp) == layout_undefined) {
     fprintf(F, "state: layout_undefined\n");
   } else {
     fprintf(F, "state: layout_fixed,\n");
   }
   if (get_type_mode(tp))
-    fprintf(F, "mode: %s,\n", get_mode_name(get_type_mode(tp)));
-  fprintf(F, "size: %dB,\n", get_type_size(tp));
+    fprintf(F, "mode: %s,\n", get_mode_name_ex(get_type_mode(tp), &bad));
+  fprintf(F, "size: %db,\n", get_type_size_bits(tp));
+
+  return bad;
 }
 
 static void print_typespecific_info(type *tp) {
@@ -1264,7 +1279,7 @@ static int print_type_node(type *tp)
   PRINT_TYPEID(tp);
   fprintf (F, " label: \"%s %s\"", get_type_tpop_name(tp), get_type_name_ex(tp, &bad));
   fprintf (F, " info1: \"");
-  print_type_info(tp);
+  bad |= print_type_info(tp);
   print_typespecific_info(tp);
   fprintf (F, "\"");
   print_typespecific_vcgattr(tp);
@@ -1312,10 +1327,10 @@ void dump_entity_node(entity *ent)
     X(volatility_is_volatile);
   }
 
-  fprintf(F, "\npeculiarity: %s", get_peculiarity_string(get_entity_peculiarity(ent)));
-  fprintf(F, "\nname:    %s\nld_name: %s",
+  fprintf(F, "\npeculiarity:  %s", get_peculiarity_string(get_entity_peculiarity(ent)));
+  fprintf(F, "\nname:         %s\nld_name:      %s",
       get_entity_name(ent), ent->ld_name ? get_entity_ld_name(ent) : "no yet set");
-  fprintf(F, "\noffset:  %d", get_entity_offset(ent));
+  fprintf(F, "\noffset(bits): %d", get_entity_offset_bits(ent));
   if (is_method_type(get_entity_type(ent))) {
     if (get_entity_irg(ent))   /* can be null */
       { fprintf (F, "\nirg = "); PRINT_IRGID(get_entity_irg(ent)); }
@@ -2081,6 +2096,7 @@ void dump_loops_standalone (ir_loop *loop) {
         /* We are a loop node -> Collect firm nodes */
 
         ir_node *n = le.node;
+	int bad = 0;
 
         if (!loop_node_started) {
           /* Start a new node which contains all firm nodes of the current loop */
@@ -2093,11 +2109,11 @@ void dump_loops_standalone (ir_loop *loop) {
         else
           fprintf(F, "\n");
 
-        dump_node_opcode(F, n);
-        dump_node_mode (n);
-        dump_node_typeinfo(n);
+        bad |= dump_node_opcode(F, n);
+        bad |= dump_node_mode (n);
+        bad |= dump_node_typeinfo(n);
         fprintf (F, " ");
-        dump_node_nodeattr(n);
+        bad |= dump_node_nodeattr(n);
         fprintf (F, " %ld", get_irn_node_nr(n));
       }
     }
