@@ -1004,14 +1004,17 @@ void inline_small_irgs(ir_graph *irg, int size) {
   current_ir_graph = rem;
 }
 
+/**
+ * Environment for inlining irgs.
+ */
 typedef struct {
-  int n_nodes;       /* Nodes in graph except Id, Tuple, Proj, Start, End */
-  int n_nodes_orig;  /* for statistics */
-  eset *call_nodes;  /* All call nodes in this graph */
+  int n_nodes;       /**< Nodes in graph except Id, Tuple, Proj, Start, End */
+  int n_nodes_orig;  /**< for statistics */
+  eset *call_nodes;  /**< All call nodes in this graph */
   int n_call_nodes;
-  int n_call_nodes_orig; /* for statistics */
-  int n_callers;   /* Number of known graphs that call this graphs. */
-  int n_callers_orig; /* for statistics */
+  int n_call_nodes_orig; /**< for statistics */
+  int n_callers;   /**< Number of known graphs that call this graphs. */
+  int n_callers_orig; /**< for statistics */
 } inline_irg_env;
 
 static inline_irg_env *new_inline_irg_env(void) {
@@ -1080,11 +1083,11 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
 
   if (!(get_optimize() && get_opt_inline())) return;
 
-  /* extend all irgs by a temporary datastructure for inlineing. */
+  /* extend all irgs by a temporary data structure for inlineing. */
   for (i = 0; i < n_irgs; ++i)
     set_irg_link(get_irp_irg(i), new_inline_irg_env());
 
-  /* Precompute information in temporary datastructure. */
+  /* Precompute information in temporary data structure. */
   for (i = 0; i < n_irgs; ++i) {
     current_ir_graph = get_irp_irg(i);
     assert(get_irg_phase_state(current_ir_graph) != phase_building);
@@ -1200,16 +1203,14 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
 }
 
 /********************************************************************/
-/*  Code Placement.  Pinns all floating nodes to a block where they */
+/*  Code Placement.  Pins all floating nodes to a block where they */
 /*  will be executed only if needed.                                */
 /********************************************************************/
-
-static pdeq *worklist;		/* worklist of ir_node*s */
 
 /* Find the earliest correct block for N.  --- Place N into the
    same Block as its dominance-deepest Input.  */
 static void
-place_floats_early (ir_node *n)
+place_floats_early(ir_node *n, pdeq *worklist)
 {
   int i, start, irn_arity;
 
@@ -1240,7 +1241,7 @@ place_floats_early (ir_node *n)
       ir_node *dep_block;
       if ((irn_not_visited(dep)) &&
 	  (get_op_pinned(get_irn_op(dep)) == floats)) {
-	place_floats_early (dep);
+	place_floats_early(dep, worklist);
       }
       /* Because all loops contain at least one pinned node, now all
          our inputs are either pinned or place_early has already
@@ -1276,17 +1277,17 @@ place_floats_early (ir_node *n)
    Start, Call and end at pinned nodes as Store, Call.  Place_early
    places all floating nodes reachable from its argument through floating
    nodes and adds all beginnings at pinned nodes to the worklist. */
-static INLINE void place_early (void) {
+static INLINE void place_early(pdeq* worklist) {
   assert(worklist);
   inc_irg_visited(current_ir_graph);
 
   /* this inits the worklist */
-  place_floats_early (get_irg_end(current_ir_graph));
+  place_floats_early(get_irg_end(current_ir_graph), worklist);
 
   /* Work the content of the worklist. */
   while (!pdeq_empty (worklist)) {
     ir_node *n = pdeq_getl (worklist);
-    if (irn_not_visited(n)) place_floats_early (n);
+    if (irn_not_visited(n)) place_floats_early(n, worklist);
   }
 
   set_irg_outs_inconsistent(current_ir_graph);
@@ -1303,7 +1304,7 @@ consumer_dom_dca (ir_node *dca, ir_node *consumer, ir_node *producer)
   /* Compute the latest block into which we can place a node so that it is
      before consumer. */
   if (get_irn_op(consumer) == op_Phi) {
-    /* our comsumer is a Phi-node, the effective use is in all those
+    /* our consumer is a Phi-node, the effective use is in all those
        blocks through which the Phi-node reaches producer */
     int i, irn_arity;
     ir_node *phi_block = get_nodes_Block(consumer);
@@ -1371,10 +1372,10 @@ move_out_of_loops (ir_node *n, ir_node *early)
    `optimal' Block between the latest and earliest legal block.
    The `optimal' block is the dominance-deepest block of those
    with the least loop-nesting-depth.  This places N out of as many
-   loops as possible and then makes it as controldependant as
+   loops as possible and then makes it as control dependant as
    possible. */
 static void
-place_floats_late (ir_node *n)
+place_floats_late(ir_node *n, pdeq *worklist)
 {
   int i;
   ir_node *early;
@@ -1385,13 +1386,13 @@ place_floats_late (ir_node *n)
   if ((get_irn_op(n) != op_Block) &&
       (!is_cfop(n)) &&
       (get_irn_mode(n) != mode_X)) {
-    /* Remember the early palacement of this block to move it
+    /* Remember the early placement of this block to move it
        out of loop no further than the early placement. */
     early = get_nodes_Block(n);
     /* Assure that our users are all placed, except the Phi-nodes.
-       --- Each dataflow cycle contains at least one Phi-node.  We
+       --- Each data flow cycle contains at least one Phi-node.  We
        have to break the `user has to be placed before the
-       producer' dependance cycle and the Phi-nodes are the
+       producer' dependence cycle and the Phi-nodes are the
        place to do so, because we need to base our placement on the
        final region of our users, which is OK with Phi-nodes, as they
        are pinned, and they never have to be placed after a
@@ -1399,7 +1400,7 @@ place_floats_late (ir_node *n)
     for (i = 0; i < get_irn_n_outs(n); i++) {
       ir_node *succ = get_irn_out(n, i);
       if (irn_not_visited(succ) && (get_irn_op(succ) != op_Phi))
-	place_floats_late (succ);
+	place_floats_late(succ, worklist);
     }
 
     /* We have to determine the final block of this node... except for
@@ -1431,21 +1432,23 @@ place_floats_late (ir_node *n)
   }
 }
 
-static INLINE void place_late(void) {
+static INLINE void place_late(pdeq* worklist) {
   assert(worklist);
   inc_irg_visited(current_ir_graph);
 
   /* This fills the worklist initially. */
-  place_floats_late(get_irg_start_block(current_ir_graph));
+  place_floats_late(get_irg_start_block(current_ir_graph), worklist);
   /* And now empty the worklist again... */
   while (!pdeq_empty (worklist)) {
     ir_node *n = pdeq_getl (worklist);
-    if (irn_not_visited(n)) place_floats_late(n);
+    if (irn_not_visited(n)) place_floats_late(n, worklist);
   }
 }
 
 void place_code(ir_graph *irg) {
+  pdeq* worklist;
   ir_graph *rem = current_ir_graph;
+
   current_ir_graph = irg;
 
   if (!(get_optimize() && get_opt_global_cse())) return;
@@ -1459,17 +1462,17 @@ void place_code(ir_graph *irg) {
 
   /* Place all floating nodes as early as possible. This guarantees
      a legal code placement. */
-  worklist = new_pdeq ();
-  place_early();
+  worklist = new_pdeq();
+  place_early(worklist);
 
   /* place_early invalidates the outs, place_late needs them. */
   compute_outs(irg);
   /* Now move the nodes down in the dominator tree. This reduces the
      unnecessary executions of the node. */
-  place_late();
+  place_late(worklist);
 
   set_irg_outs_inconsistent(current_ir_graph);
-  del_pdeq (worklist);
+  del_pdeq(worklist);
   current_ir_graph = rem;
 }
 
@@ -1493,27 +1496,27 @@ static void merge_blocks(ir_node *n, void *env) {
   if (get_irn_op(n) == op_Block) {
     /* Remove Tuples */
     for (i = 0; i < get_Block_n_cfgpreds(n); i++)
-      /* GL @@@ : is this possible? if (get_opt_normalize()) -- added, all tests go throug.
+      /* GL @@@ : is this possible? if (get_opt_normalize()) -- added, all tests go through.
 	 A different order of optimizations might cause problems. */
       if (get_opt_normalize())
 	set_Block_cfgpred(n, i, skip_Tuple(get_Block_cfgpred(n, i)));
   } else if (get_optimize() && (get_irn_mode(n) == mode_X)) {
     /* We will soon visit a block.  Optimize it before visiting! */
     ir_node *b = get_nodes_Block(n);
-    ir_node *new = equivalent_node(b);
-    while (irn_not_visited(b) && (!is_Bad(new)) && (new != b)) {
+    ir_node *new_node = equivalent_node(b);
+    while (irn_not_visited(b) && (!is_Bad(new_node)) && (new_node != b)) {
       /* We would have to run gigo if new is bad, so we
 	 promote it directly below. */
-      assert(((b == new) ||
+      assert(((b == new_node) ||
 	      get_opt_control_flow_straightening() ||
 	      get_opt_control_flow_weak_simplification()) &&
 	     ("strange flag setting"));
-      exchange (b, new);
-      b = new;
-      new = equivalent_node(b);
+      exchange (b, new_node);
+      b = new_node;
+      new_node = equivalent_node(b);
     }
     /* GL @@@ get_opt_normalize hinzugefuegt, 5.5.2003 */
-    if (is_Bad(new) && get_opt_normalize()) exchange (n, new_Bad());
+    if (is_Bad(new_node) && get_opt_normalize()) exchange(n, new_Bad());
   }
 }
 
@@ -1800,10 +1803,10 @@ void optimize_cf(ir_graph *irg) {
  * Called by walker of remove_critical_cf_edges.
  *
  * Place an empty block to an edge between a blocks of multiple
- * predecessors and a block of multiple sucessors.
+ * predecessors and a block of multiple successors.
  *
  * @param n IR node
- * @param env Envirnment of walker. This field is unused and has
+ * @param env Environment of walker. This field is unused and has
  *            the value NULL.
  */
 static void walk_critical_cf_edges(ir_node *n, void *env) {
@@ -1820,7 +1823,7 @@ static void walk_critical_cf_edges(ir_node *n, void *env) {
 
     for (i=0; i<arity; i++) {
       pre = get_irn_n(n, i);
-      /* Predecessor has multiple sucessors. Insert new flow edge */
+      /* Predecessor has multiple successors. Insert new flow edge */
       if ((NULL != pre) &&
 	  (op_Proj == get_irn_op(pre)) &&
 	  op_Raise != get_irn_op(skip_Proj(pre))) {
@@ -1834,10 +1837,10 @@ static void walk_critical_cf_edges(ir_node *n, void *env) {
 	switch_block(block);
 	jmp = new_Jmp();
 	switch_block(n);
-	/* set sucessor of new block */
+	/* set successor of new block */
 	set_irn_n(n, i, jmp);
 
-      } /* predecessor has multiple sucessors */
+      } /* predecessor has multiple successors */
     } /* for all predecessors */
   } /* n is a block */
 }
