@@ -28,7 +28,7 @@
 #include "belive_t.h"
 
 #undef DUMP_INTERVALS
-#define DUMP_PRESSURE
+#undef DUMP_PRESSURE
 
 #define TEST_COLORS 2048
 
