@@ -20,8 +20,9 @@ AC_PREREQ(2.50)
 dnl if other files should be generated just add them to ac_output_files
 ac_output_file="Makefile MakeRules ir/Makefile ir/adt/Makefile ir/debug/Makefile \
 		ir/tv/Makefile ir/common/Makefile ir/ident/Makefile ir/ir/Makefile \
-		ir/ana/Makefile ir/tr/Makefile ir/st/Makefile testprograms/Makefile \
-		firmjni/Makefile firmjni/testprograms/Makefile libfirm.doxygen"
+		ir/ana/Makefile ir/tr/Makefile ir/st/Makefile ir/stat/Makefile \
+		testprograms/Makefile firmjni/Makefile firmjni/testprograms/Makefile \
+		libfirm.doxygen"
 
 dnl generate the config header file
 AC_CONFIG_HEADER(config.h)
@@ -94,13 +95,21 @@ AC_SUBST(enable_firm_jni)
 dnl disable linking of libiberty parts (xmalloc, xprintf, obstack, ...)
 dnl ----------------------
 AC_ARG_ENABLE(libiberty,
-[  --disable-libiberty        disable own libiberty parts],
+[  --disable-libiberty     disable own libiberty parts],
 [if test "$enableval"=yes; then
   disable_libiberty_=yes
 fi],
 [disable_libiberty=no])
 AC_SUBST(disable_libiberty)
 
+dnl enable Firm statistics
+dnl -------------
+AC_ARG_ENABLE(statistics,
+[  --enable-statistics     enable Firm statistics],
+[if test "$enableval"=yes; then
+  AC_DEFINE(FIRM_STATISTICS)
+fi])
+AC_SUBST(enable_statistics)
 
 dnl Checks for programs.
 dnl ====================

@@ -829,7 +829,8 @@ Optional Features:
   --enable-profile        enable profiling
   --enable-autodoc        enable auto documentation
   --enable-firmjni        check for tools necesarry to construct a java native interface for Firm
-  --disable-libiberty        disable own libiberty parts
+  --disable-libiberty     disable own libiberty parts
+  --enable-statistics     enable Firm statistics
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -1207,8 +1208,9 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 ac_output_file="Makefile MakeRules ir/Makefile ir/adt/Makefile ir/debug/Makefile \
 		ir/tv/Makefile ir/common/Makefile ir/ident/Makefile ir/ir/Makefile \
-		ir/ana/Makefile ir/tr/Makefile ir/st/Makefile testprograms/Makefile \
-		firmjni/Makefile firmjni/testprograms/Makefile libfirm.doxygen"
+		ir/ana/Makefile ir/tr/Makefile ir/st/Makefile ir/stat/Makefile \
+		testprograms/Makefile firmjni/Makefile firmjni/testprograms/Makefile \
+		libfirm.doxygen"
 
 ac_config_headers="$ac_config_headers config.h"
 
@@ -1310,6 +1312,17 @@ else
   disable_libiberty=no
 fi;
 
+
+# Check whether --enable-statistics or --disable-statistics was given.
+if test "${enable_statistics+set}" = set; then
+  enableval="$enable_statistics"
+  if test "$enableval"=yes; then
+  cat >>confdefs.h <<\_ACEOF
+#define FIRM_STATISTICS 1
+_ACEOF
+
+fi
+fi;
 
 
 
@@ -4544,6 +4557,7 @@ s,@enable_profile_libfirm@,$enable_profile_libfirm,;t t
 s,@enable_auto_documentation@,$enable_auto_documentation,;t t
 s,@enable_firm_jni@,$enable_firm_jni,;t t
 s,@disable_libiberty@,$disable_libiberty,;t t
+s,@enable_statistics@,$enable_statistics,;t t
 s,@CC@,$CC,;t t
 s,@CFLAGS@,$CFLAGS,;t t
 s,@LDFLAGS@,$LDFLAGS,;t t

@@ -20,7 +20,7 @@ topdir := .
 # subdirectory under topdir
 subdir := .
 
-subdirs := ir/adt ir/debug ir/tv ir/common ir/ident ir/ir ir/tr ir/ana ir/st
+subdirs := ir/adt ir/debug ir/tv ir/common ir/ident ir/ir ir/tr ir/ana ir/st ir/stat
 
 SOURCES := Makefile.in MakeRules.in MakeTargets\
 	   aclocal.m4 config.h.in\
