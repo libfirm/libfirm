@@ -11,9 +11,8 @@
  */
 
 /**
- *
- *   file type.c - implementation of the datastructure to hold
- *   type information.
+ *  file type.c - implementation of the datastructure to hold
+ *  type information.
  *  (C) 2004 by Universitaet Karlsruhe
  *  Goetz Lindenmaier
  *
@@ -51,9 +50,7 @@ int compare_names (const void *tp1, const void *tp2) {
 	   t1->name    !=  t2->name      )  );
 }
 
-
 /* stuff for comparing two types. */
-//int compare_strict (type *tp1, type *tp2) {
 int compare_strict (const void *tp1, const void *tp2) {
   type *t1 = (type *) tp1;
   type *t2 = (type *) tp2;
@@ -121,8 +118,5 @@ type *mature_type_free_entities(type *tp) {
 }
 
 void init_type_identify(void) {
-  //type_table = new_pset ((int (const void *, const void *))compare_types_func, 8);
-
   type_table = new_pset (compare_types_func, 8);
-  //type_table = new_pset (compare_names, 8);
 }

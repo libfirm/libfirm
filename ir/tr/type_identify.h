@@ -30,19 +30,18 @@ typedef struct type type;
  *   @param tp1  The first type to compare.
  *   @param tp2  The second type to compare.
  */
-//typedef int (*compare_types_func_tp) (type *tp1, type *tp2);
 typedef int (*compare_types_func_tp) (const void *tp1, const void *tp2);
 
 /** Compares two types by their name.
  *
  * Compares the opcode and the name of the types. If these are
- * equal returns true, else false.
+ * equal returns 0, else non-zero.
  */
 int compare_names (const void *tp1, const void *tp2);
 
 /** Compares two types strict.
  *
- * returns true if tp1 == tp2
+ * returns 0 if tp1 == tp2, else non-zero
  */
 int compare_strict (const void *tp1, const void *tp2);
 
@@ -134,5 +133,10 @@ type *       mature_type_free(type *tp);
  * @param tp     The type to mature.
  */
 type *       mature_type_free_entities(type *tp);
+
+/**
+ * initialise the type identifier module.
+ */
+void init_type_identify(void);
 
 # endif /* _TYPE_IDENTIFY_H_ */
