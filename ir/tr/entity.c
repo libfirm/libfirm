@@ -553,13 +553,13 @@ remove_compound_ent_value(entity *ent, entity *value_ent) {
   assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
   for (i = 1; i < (ARR_LEN (ent->val_paths)); i++) {
     compound_graph_path *path = ent->val_paths[i];
-    if (path->nodes[path->len] == value_ent) {
+    if (path->nodes[path->len-1] == value_ent) {
       for(; i < (ARR_LEN (ent->val_paths))-1; i++) {
 	ent->val_paths[i] = ent->val_paths[i+1];
 	ent->values[i]   = ent->values[i+1];
       }
       ARR_SETLEN(entity*,  ent->val_paths, ARR_LEN(ent->val_paths) - 1);
-      ARR_SETLEN(ir_node*, ent->values,   ARR_LEN(ent->values) - 1);
+      ARR_SETLEN(ir_node*, ent->values,    ARR_LEN(ent->values)    - 1);
       break;
     }
   }
