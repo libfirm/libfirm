@@ -9,6 +9,9 @@
 
 #include <stddef.h>
 
+/**
+ * @file host.h
+ */
 
 /** A size handled efficiently by malloc(), at least 1K.  */
 #define PREF_MALLOC_SIZE 2048

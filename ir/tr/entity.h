@@ -2,10 +2,15 @@
 *  Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
 *  All rights reserved.
 *
-*  Authors: Martin Trapp, Christian Schaefer,
-*           Goetz Lindenmaier
+*/
+
+/**
+*  @file entity.h
 *
-*  entity.h:  entities represent all program known objects.
+*  Entities represent all program known objects.
+*
+*  @author Martin Trapp, Christian Schaefer,
+*  @author Goetz Lindenmaier
 *
 *  An entity is the representation of program known objects in Firm.
 *  The primary concept of entities is to represent members of complex

@@ -1,10 +1,16 @@
 /*
 *  Copyright (C) 2001 by Universitaet Karlsruhe
 *  All rights reserved.
+*/
+
+/**
+* @file  dbginfo.h
 *
-*  Authors: Goetz Lindenmaier
+*  This is the Firm interface to debugging support.
 *
-*  dbginfo: This is the Firm interface to debugging support.  Firm requires
+*  @author Goetz Lindenmaier
+*
+*  Firm requires
 *  a debugging module fulfilling this interface, else no debugging information
 *  is passed to the backend.
 *  The interface requires a datatype representing the debugging information.
