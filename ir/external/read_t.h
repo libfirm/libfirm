@@ -14,27 +14,9 @@
 #ifndef _READ_T_H_
 #define _READ_T_H_
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
-
-#include <libxml/xmlmemory.h>
-#include <libxml/parser.h>
-#include <libxml/encoding.h>
-
 #include "type.h"
 #include "entity.h"
 #include "ident.h"
-
-# define MY_ENCODING "ISO-8859-1"
-
-# define CHECK(ptr,msg)     assert (ptr && msg)
-
-# define NODE_NAME(n, m) (0 == xmlStrcmp (n->name, (const xmlChar*) #m))
-# define CHECK_NAME(n, m) assert (0 == xmlStrcmp (n->name, (const xmlChar*) #m))
-
-# define NEW(T)     (T*) malloc (sizeof (T))
-
 
 /* first, the xml structures */
 
@@ -183,6 +165,10 @@ typedef struct mod_str
 
 /*
   $Log$
+  Revision 1.2  2004/12/10 15:14:16  beck
+  Removed unused header files
+  move xml macros to read.c, freeing the header from libxml depency
+
   Revision 1.1  2004/10/25 13:52:24  boesler
   seperated read.h (public interface) and read_t.h (types)
 
