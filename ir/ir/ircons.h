@@ -77,14 +77,14 @@
  *                       edges. Therefore FIRM has to represent them in the stack
  *                       frame.
  *
- *      *globals	     This models a pointer to a space in the memory where
- *  		     _all_ global things are held.  Select from this pointer
- *  		     with a Sel node the pointer to a global variable /
- *  		     procedure / compiler known function... .
+ *      *globals         This models a pointer to a space in the memory where
+ *               _all_ global things are held.  Select from this pointer
+ *               with a Sel node the pointer to a global variable /
+ *               procedure / compiler known function... .
  *
- *      *args	     The ir_node that produces the arguments of the method as
- *  		     it's result.  This is a Proj node on the fourth output of
- *  		     the start node.  This output is tagged as pns_args.
+ *      *args        The ir_node that produces the arguments of the method as
+ *               it's result.  This is a Proj node on the fourth output of
+ *               the start node.  This output is tagged as pns_args.
  *
  *      *bad             The bad node is an auxiliary node. It is needed only once,
  *                       so there is this globally reachable node.
@@ -99,14 +99,14 @@
  *                       Only needed for ir construction.
  *
  *      params/n_loc     An int giving the number of local variables in this
- *  		     procedure.  This is neede for ir construction. Name will
- *  		     be changed.
+ *               procedure.  This is neede for ir construction. Name will
+ *               be changed.
  *
  *      *value_table     This hash table (pset) is used for global value numbering
- *  		     for optimizing use in iropt.c.
+ *               for optimizing use in iropt.c.
  *
  *      *Phi_in_stack;   a stack needed for automatic Phi construction, needed only
- *  		     during ir construction.
+ *               during ir construction.
  *
  *      visited          A int used as flag to traverse the ir_graph.
  *
@@ -173,7 +173,7 @@
  *      *mode            The ir_mode of the operation represented by this firm
  *                       node.  The mode of the operation is the mode of it's
  *                       result.  A Firm mode is a datatype as known to the target,
- *  		     not a type of the source language.
+ *               not a type of the source language.
  *
  *      visit            A flag for traversing the ir.
  *
@@ -184,11 +184,11 @@
  *                       first Phi node, this node points to the second Phi node
  *                       in the Block and so fourth.  Used in mature_block
  *                       to find all Phi nodes to be matured.  It's also used to
- *  		     annotate a node with a better, optimized version of it.
+ *               annotate a node with a better, optimized version of it.
  *
  *      attr             An attr struct containing the attributes of the nodes. The
  *                       attributes depend on the opcode of the node.  The number
- *  		     of these attributes is given in op.
+ *               of these attributes is given in op.
  *
  *    The struct ir_op
  *    ----------------
@@ -326,11 +326,46 @@
  *    ir_node *new_Raise    (ir_node *store, ir_node *obj);
  *    ir_node *new_Const    (ir_mode *mode, tarval *con);
  *    ir_node *new_SymConst (type_or_id *value, symconst_kind kind);
+<<<<<<< ircons.h
+ *    ir_node *new_simpleSel (ir_node *store, ir_node *objptr, entity *ent);
+ *    ir_node *new_Sel    (ir_node *store, ir_node *objptr, int arity,
+ *                         ir_node **in, entity *ent);
+ *    ir_node *new_InstOf (ir_node *store, ir_node obj, type *ent);
+ *    ir_node *new_Call   (ir_node *store, ir_node *callee, int arity,
+ *                 ir_node **in, type_method *type);
+ *    ir_node *new_Add    (ir_node *op1, ir_node *op2, ir_mode *mode);
+ *    ir_node *new_Sub    (ir_node *op1, ir_node *op2, ir_mode *mode);
+ *    ir_node *new_Minus  (ir_node *op,  ir_mode *mode);
+ *    ir_node *new_Mul    (ir_node *op1, ir_node *op2, ir_mode *mode);
+ *    ir_node *new_Quot   (ir_node *memop, ir_node *op1, ir_node *op2);
+ *    ir_node *new_DivMod (ir_node *memop, ir_node *op1, ir_node *op2);
+ *    ir_node *new_Div    (ir_node *memop, ir_node *op1, ir_node *op2);
+ *    ir_node *new_Mod    (ir_node *memop, ir_node *op1, ir_node *op2);
+ *    ir_node *new_Abs    (ir_node *op,                ir_mode *mode);
+ *    ir_node *new_And    (ir_node *op1, ir_node *op2, ir_mode *mode);
+ *    ir_node *new_Or     (ir_node *op1, ir_node *op2, ir_mode *mode);
+ *    ir_node *new_Eor    (ir_node *op1, ir_node *op2, ir_mode *mode);
+ *    ir_node *new_Not    (ir_node *op,                ir_mode *mode);
+ *    ir_node *new_Shl    (ir_node *op,  ir_node *k,   ir_mode *mode);
+ *    ir_node *new_Shr    (ir_node *op,  ir_node *k,   ir_mode *mode);
+ *    ir_node *new_Shrs   (ir_node *op,  ir_node *k,   ir_mode *mode);
+ *    ir_node *new_Rot    (ir_node *op,  ir_node *k,   ir_mode *mode);
+ *    ir_node *new_Cmp    (ir_node *op1, ir_node *op2);
+ *    ir_node *new_Conv   (ir_node *op, ir_mode *mode);
+ *    ir_node *new_Cast   (ir_node *op, type *to_tp);
+ *    ir_node *new_Load   (ir_node *store, ir_node *addr);
+ *    ir_node *new_Store  (ir_node *store, ir_node *addr, ir_node *val);
+ *    ir_node *new_Alloc  (ir_node *store, ir_node *size, type *alloc_type,
+ *                         where_alloc where);
+ *    ir_node *new_Free   (ir_node *store, ir_node *ptr, ir_node *size,
+ *               type *free_type);
+ *    ir_node *new_Proj   (ir_node *arg, ir_mode *mode, long proj);
+=======
  *    ir_node *new_simpleSel(ir_node *store, ir_node *objptr, entity *ent);
  *    ir_node *new_Sel      (ir_node *store, ir_node *objptr, int arity,
  *                           ir_node **in, entity *ent);
  *    ir_node *new_Call     (ir_node *store, ir_node *callee, int arity,
- *  		             ir_node **in, type_method *type);
+ *                       ir_node **in, type_method *type);
  *    ir_node *new_Add      (ir_node *op1, ir_node *op2, ir_mode *mode);
  *    ir_node *new_Sub      (ir_node *op1, ir_node *op2, ir_mode *mode);
  *    ir_node *new_Minus    (ir_node *op,  ir_mode *mode);
@@ -356,10 +391,10 @@
  *    ir_node *new_Alloc    (ir_node *store, ir_node *size, type *alloc_type,
  *                           where_alloc where);
  *    ir_node *new_Free     (ir_node *store, ir_node *ptr, ir_node *size,
- *    		             type *free_type);
+ *                       type *free_type);
  *    ir_node *new_Proj     (ir_node *arg, ir_mode *mode, long proj);
  *    ir_node *new_FuncCall (ir_node *store, ir_node *callee, int arity,
- *  		             ir_node **in, type_method *type);
+ *                       ir_node **in, type_method *type);
  *
  *    void add_in_edge (ir_node *block, ir_node *jmp);
  *    void mature_block (ir_node *block);
@@ -456,8 +491,8 @@
  *                      This attribute contains all local values valid in this
  *                      block. This is needed to build the Phi nodes and removed
  *                      if the graph is complete.  This field is used by the
- *  		    internal construction algorithm and should not be accessed
- *  		    from outside.
+ *              internal construction algorithm and should not be accessed
+ *              from outside.
  *
  *
  *    ir_node *new_Block (int arity, ir_node **in)
@@ -495,7 +530,7 @@
  *      * pns_global_store
  *                       mode M, the global store
  *      * pns_frame_base mode P, a pointer to the base of the procedures
- *   		             stack frame.
+ *                       stack frame.
  *      * pns_globals    mode P, a pointer to the part of the memory containing
  *                               _all_ global things.
  *      * pns_args       mode T, a tuple containing all arguments of the procedure.
@@ -622,7 +657,7 @@
  *      attr.i.num       The symconst_kind, i.e. one of
  *                        - type_tag
  *                        - size
- *  		      - linkage_ptr_info
+ *                - linkage_ptr_info
  *        If the attr.i.num is type_tag or size, the node contains an attribute
  *      attr.i.*type,    a pointer to a type_class.  The mode of the node is mode_Is.
  *        if it is linkage_ptr_info it contains
@@ -848,20 +883,20 @@
  *      number (pnc_number) to use in Proj nodes to extract the proper result.
  *        False     false
  *        Eq        equal
- *        Lt	less
- *        Le	less or equal
- *        Gt	greater
- *        Ge	greater of equal
- *        Lg	less or greater
- *        Leg	less, equal or greater = ordered
- *        Uo	unordered
- *        Ue	unordered or equal
- *        Ul	unordered or less
- *        Ule	unordered, less or equal
- *        Ug	unordered or greater
- *        Uge	unordered, greater or equal
- *        Ne	unordered, less or greater = not equal
- *        True	true
+ *        Lt    less
+ *        Le    less or equal
+ *        Gt    greater
+ *        Ge    greater of equal
+ *        Lg    less or greater
+ *        Leg   less, equal or greater = ordered
+ *        Uo    unordered
+ *        Ue    unordered or equal
+ *        Ul    unordered or less
+ *        Ule   unordered, less or equal
+ *        Ug    unordered or greater
+ *        Uge   unordered, greater or equal
+ *        Ne    unordered, less or greater = not equal
+ *        True  true
  *
  *
  *
@@ -938,7 +973,7 @@
  *      **    *size        The number of bytes to allocate. Old. **
  *      *size        We decided that the size easily can be derived from the type.
  *                   This field is for allocating arrays, i.e., it gives the multiple
- *  		 of the size of alloc_type to allocate memory for.
+ *           of the size of alloc_type to allocate memory for.
  *      *alloc_type  The type of the allocated variable.
  *      where        Where to allocate the variable, either heap_alloc or stack_alloc.
  *
@@ -1127,93 +1162,94 @@ ir_node *new_rd_End    (dbg_info *db, ir_graph *irg, ir_node *block);
 ir_node *new_rd_Jmp    (dbg_info *db, ir_graph *irg, ir_node *block);
 ir_node *new_rd_Cond   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *c);
 ir_node *new_rd_Return (dbg_info *db, ir_graph *irg, ir_node *block,
-		       ir_node *store, int arity, ir_node *in[]);
+               ir_node *store, int arity, ir_node *in[]);
 ir_node *new_rd_Raise  (dbg_info *db, ir_graph *irg, ir_node *block,
-		       ir_node *store, ir_node *obj);
+               ir_node *store, ir_node *obj);
 ir_node *new_rd_Const_type (dbg_info* db, ir_graph *irg, ir_node *block,
-			    ir_mode *mode, tarval *con, type *tp);
+                ir_mode *mode, tarval *con, type *tp);
 ir_node *new_rd_Const  (dbg_info *db, ir_graph *irg, ir_node *block,
-		       ir_mode *mode, tarval *con);
+               ir_mode *mode, tarval *con);
 ir_node *new_rd_SymConst (dbg_info *db, ir_graph *irg, ir_node *block,
                        type_or_id_p value, symconst_kind symkind);
 ir_node *new_rd_Sel    (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
                        ir_node *objptr, int n_index, ir_node *index[],
-		       entity *ent);
+               entity *ent);
+ir_node *new_rd_InstOf (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store, ir_node *objptr, type *ent);
 ir_node *new_rd_Call   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
-		       ir_node *callee, int arity, ir_node *in[],
-		       type *tp);
+               ir_node *callee, int arity, ir_node *in[],
+               type *tp);
 ir_node *new_rd_Add    (dbg_info *db, ir_graph *irg, ir_node *block,
-		       ir_node *op1, ir_node *op2, ir_mode *mode);
+               ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_rd_Sub    (dbg_info *db, ir_graph *irg, ir_node *block,
-		       ir_node *op1, ir_node *op2, ir_mode *mode);
+               ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_rd_Minus  (dbg_info *db, ir_graph *irg, ir_node *block,
-		       ir_node *op,  ir_mode *mode);
+               ir_node *op,  ir_mode *mode);
 ir_node *new_rd_Mul    (dbg_info *db, ir_graph *irg, ir_node *block,
-		       ir_node *op1, ir_node *op2, ir_mode *mode);
+               ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_rd_Quot   (dbg_info *db, ir_graph *irg, ir_node *block,
-		       ir_node *memop, ir_node *op1, ir_node *op2);
+               ir_node *memop, ir_node *op1, ir_node *op2);
 ir_node *new_rd_DivMod (dbg_info *db, ir_graph *irg, ir_node *block,
-		       ir_node *memop, ir_node *op1, ir_node *op2);
+               ir_node *memop, ir_node *op1, ir_node *op2);
 ir_node *new_rd_Div    (dbg_info *db, ir_graph *irg, ir_node *block,
-		       ir_node *memop, ir_node *op1, ir_node *op2);
+               ir_node *memop, ir_node *op1, ir_node *op2);
 ir_node *new_rd_Mod    (dbg_info *db, ir_graph *irg, ir_node *block,
-		       ir_node *memop, ir_node *op1, ir_node *op2);
+               ir_node *memop, ir_node *op1, ir_node *op2);
 ir_node *new_rd_Abs    (dbg_info *db, ir_graph *irg, ir_node *block,
                        ir_node *op, ir_mode *mode);
 ir_node *new_rd_And    (dbg_info *db, ir_graph *irg, ir_node *block,
-		       ir_node *op1, ir_node *op2, ir_mode *mode);
+               ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_rd_Or     (dbg_info *db, ir_graph *irg, ir_node *block,
-		       ir_node *op1, ir_node *op2, ir_mode *mode);
+               ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_rd_Eor    (dbg_info *db, ir_graph *irg, ir_node *block,
-		       ir_node *op1, ir_node *op2, ir_mode *mode);
+               ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_rd_Not    (dbg_info *db, ir_graph *irg, ir_node *block,
-		       ir_node *op, ir_mode *mode);
+               ir_node *op, ir_mode *mode);
 ir_node *new_rd_Cmp    (dbg_info *db, ir_graph *irg, ir_node *block,
-		       ir_node *op1, ir_node *op2);
+               ir_node *op1, ir_node *op2);
 ir_node *new_rd_Shl    (dbg_info *db, ir_graph *irg, ir_node *block,
-		       ir_node *op, ir_node *k, ir_mode *mode);
+               ir_node *op, ir_node *k, ir_mode *mode);
 ir_node *new_rd_Shr    (dbg_info *db, ir_graph *irg, ir_node *block,
-		       ir_node *op, ir_node *k, ir_mode *mode);
+               ir_node *op, ir_node *k, ir_mode *mode);
 ir_node *new_rd_Shrs   (dbg_info *db, ir_graph *irg, ir_node *block,
-		       ir_node *op, ir_node *k, ir_mode *mode);
+               ir_node *op, ir_node *k, ir_mode *mode);
 ir_node *new_rd_Rot    (dbg_info *db, ir_graph *irg, ir_node *block,
-		       ir_node *op, ir_node *k, ir_mode *mode);
+               ir_node *op, ir_node *k, ir_mode *mode);
 ir_node *new_rd_Conv   (dbg_info *db, ir_graph *irg, ir_node *block,
-		       ir_node *op, ir_mode *mode);
+               ir_node *op, ir_mode *mode);
 ir_node *new_rd_Cast   (dbg_info* db, ir_graph *irg, ir_node *block,
-		       ir_node *op, type *to_tp);
+               ir_node *op, type *to_tp);
 ir_node *new_rd_Phi    (dbg_info *db, ir_graph *irg, ir_node *block, int arity,
-		       ir_node *in[], ir_mode *mode);
+               ir_node *in[], ir_mode *mode);
 ir_node *new_rd_Load   (dbg_info *db, ir_graph *irg, ir_node *block,
-		       ir_node *store, ir_node *adr);
+               ir_node *store, ir_node *adr);
 ir_node *new_rd_Store  (dbg_info *db, ir_graph *irg, ir_node *block,
-		       ir_node *store, ir_node *adr, ir_node *val);
+               ir_node *store, ir_node *adr, ir_node *val);
 ir_node *new_rd_Alloc  (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
-		       ir_node *size, type *alloc_type, where_alloc where);
+               ir_node *size, type *alloc_type, where_alloc where);
 ir_node *new_rd_Free   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
-		       ir_node *ptr, ir_node *size, type *free_type);
+               ir_node *ptr, ir_node *size, type *free_type);
 ir_node *new_rd_Sync   (dbg_info *db, ir_graph *irg, ir_node *block, int arity, ir_node *in[]);
 ir_node *new_rd_Proj   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg,
-		       ir_mode *mode, long proj);
+               ir_mode *mode, long proj);
 ir_node *new_rd_defaultProj (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg,
-			    long max_proj);
+                long max_proj);
 ir_node *new_rd_Tuple  (dbg_info *db, ir_graph *irg, ir_node *block,
-		       int arity, ir_node *in[]);
+               int arity, ir_node *in[]);
 ir_node *new_rd_Id     (dbg_info *db, ir_graph *irg, ir_node *block,
-		       ir_node *val, ir_mode *mode);
+               ir_node *val, ir_mode *mode);
 ir_node *new_rd_Bad    (ir_graph *irg);
 ir_node *new_rd_Confirm (dbg_info *db, ir_graph *irg, ir_node *block,
-			 ir_node *val, ir_node *bound, pn_Cmp cmp);
+             ir_node *val, ir_node *bound, pn_Cmp cmp);
 ir_node *new_rd_Unknown(ir_graph *irg, ir_mode *m);
 ir_node *new_rd_CallBegin(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *callee);
 ir_node *new_rd_EndReg (dbg_info *db, ir_graph *irg, ir_node *block);
 ir_node *new_rd_EndExcept(dbg_info *db, ir_graph *irg, ir_node *block);
 ir_node *new_rd_Break  (dbg_info *db, ir_graph *irg, ir_node *block);
 ir_node *new_rd_Filter (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg,
-		       ir_mode *mode, long proj);
+               ir_mode *mode, long proj);
 ir_node *new_rd_FuncCall (dbg_info *db, ir_graph *irg, ir_node *block,
-		       ir_node *callee, int arity, ir_node *in[],
-		       type *tp);
+               ir_node *callee, int arity, ir_node *in[],
+               type *tp);
 
 /*-------------------------------------------------------------------------*/
 /* The raw interface without debug support                                 */
@@ -1228,91 +1264,92 @@ ir_node *new_r_End    (ir_graph *irg, ir_node *block);
 ir_node *new_r_Jmp    (ir_graph *irg, ir_node *block);
 ir_node *new_r_Cond   (ir_graph *irg, ir_node *block, ir_node *c);
 ir_node *new_r_Return (ir_graph *irg, ir_node *block,
-		       ir_node *store, int arity, ir_node *in[]);
+               ir_node *store, int arity, ir_node *in[]);
 ir_node *new_r_Raise  (ir_graph *irg, ir_node *block,
-		       ir_node *store, ir_node *obj);
+               ir_node *store, ir_node *obj);
 ir_node *new_r_Const  (ir_graph *irg, ir_node *block,
-		       ir_mode *mode, tarval *con);
+               ir_mode *mode, tarval *con);
 ir_node *new_r_SymConst (ir_graph *irg, ir_node *block,
                        type_or_id_p value, symconst_kind symkind);
 ir_node *new_r_Sel    (ir_graph *irg, ir_node *block, ir_node *store,
                        ir_node *objptr, int n_index, ir_node *index[],
-		       entity *ent);
+               entity *ent);
+ir_node *new_r_InstOf (ir_graph *irg, ir_node *block, ir_node *x, ir_node *y, type *z);
 ir_node *new_r_Call   (ir_graph *irg, ir_node *block, ir_node *store,
-		       ir_node *callee, int arity, ir_node *in[],
-		       type *tp);
+               ir_node *callee, int arity, ir_node *in[],
+               type *tp);
 ir_node *new_r_Add    (ir_graph *irg, ir_node *block,
-		       ir_node *op1, ir_node *op2, ir_mode *mode);
+               ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_r_Sub    (ir_graph *irg, ir_node *block,
-		       ir_node *op1, ir_node *op2, ir_mode *mode);
+               ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_r_Minus  (ir_graph *irg, ir_node *block,
-		       ir_node *op,  ir_mode *mode);
+               ir_node *op,  ir_mode *mode);
 ir_node *new_r_Mul    (ir_graph *irg, ir_node *block,
-		       ir_node *op1, ir_node *op2, ir_mode *mode);
+               ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_r_Quot   (ir_graph *irg, ir_node *block,
-		       ir_node *memop, ir_node *op1, ir_node *op2);
+               ir_node *memop, ir_node *op1, ir_node *op2);
 ir_node *new_r_DivMod (ir_graph *irg, ir_node *block,
-		       ir_node *memop, ir_node *op1, ir_node *op2);
+               ir_node *memop, ir_node *op1, ir_node *op2);
 ir_node *new_r_Div    (ir_graph *irg, ir_node *block,
-		       ir_node *memop, ir_node *op1, ir_node *op2);
+               ir_node *memop, ir_node *op1, ir_node *op2);
 ir_node *new_r_Mod    (ir_graph *irg, ir_node *block,
-		       ir_node *memop, ir_node *op1, ir_node *op2);
+               ir_node *memop, ir_node *op1, ir_node *op2);
 ir_node *new_r_Abs    (ir_graph *irg, ir_node *block,
                        ir_node *op, ir_mode *mode);
 ir_node *new_r_And    (ir_graph *irg, ir_node *block,
-		       ir_node *op1, ir_node *op2, ir_mode *mode);
+               ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_r_Or     (ir_graph *irg, ir_node *block,
-		       ir_node *op1, ir_node *op2, ir_mode *mode);
+               ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_r_Eor    (ir_graph *irg, ir_node *block,
-		       ir_node *op1, ir_node *op2, ir_mode *mode);
+               ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_r_Not    (ir_graph *irg, ir_node *block,
-		       ir_node *op, ir_mode *mode);
+               ir_node *op, ir_mode *mode);
 ir_node *new_r_Cmp    (ir_graph *irg, ir_node *block,
-		       ir_node *op1, ir_node *op2);
+               ir_node *op1, ir_node *op2);
 ir_node *new_r_Shl    (ir_graph *irg, ir_node *block,
-		       ir_node *op, ir_node *k, ir_mode *mode);
+               ir_node *op, ir_node *k, ir_mode *mode);
 ir_node *new_r_Shr    (ir_graph *irg, ir_node *block,
-		       ir_node *op, ir_node *k, ir_mode *mode);
+               ir_node *op, ir_node *k, ir_mode *mode);
 ir_node *new_r_Shrs   (ir_graph *irg, ir_node *block,
-		       ir_node *op, ir_node *k, ir_mode *mode);
+               ir_node *op, ir_node *k, ir_mode *mode);
 ir_node *new_r_Rot    (ir_graph *irg, ir_node *block,
-		       ir_node *op, ir_node *k, ir_mode *mode);
+               ir_node *op, ir_node *k, ir_mode *mode);
 ir_node *new_r_Conv   (ir_graph *irg, ir_node *block,
-		       ir_node *op, ir_mode *mode);
+               ir_node *op, ir_mode *mode);
 ir_node *new_r_Cast   (ir_graph *irg, ir_node *block,
-		       ir_node *op, type *to_tp);
+               ir_node *op, type *to_tp);
 ir_node *new_r_Phi    (ir_graph *irg, ir_node *block, int arity,
-		       ir_node *in[], ir_mode *mode);
+               ir_node *in[], ir_mode *mode);
 ir_node *new_r_Load   (ir_graph *irg, ir_node *block,
-		       ir_node *store, ir_node *adr);
+               ir_node *store, ir_node *adr);
 ir_node *new_r_Store  (ir_graph *irg, ir_node *block,
-		       ir_node *store, ir_node *adr, ir_node *val);
+               ir_node *store, ir_node *adr, ir_node *val);
 ir_node *new_r_Alloc  (ir_graph *irg, ir_node *block, ir_node *store,
-		       ir_node *size, type *alloc_type, where_alloc where);
+               ir_node *size, type *alloc_type, where_alloc where);
 ir_node *new_r_Free   (ir_graph *irg, ir_node *block, ir_node *store,
-		       ir_node *ptr, ir_node *size, type *free_type);
+               ir_node *ptr, ir_node *size, type *free_type);
 ir_node *new_r_Sync   (ir_graph *irg, ir_node *block, int arity, ir_node *in[]);
 ir_node *new_r_Proj   (ir_graph *irg, ir_node *block, ir_node *arg,
-		       ir_mode *mode, long proj);
+               ir_mode *mode, long proj);
 ir_node *new_r_defaultProj (ir_graph *irg, ir_node *block, ir_node *arg,
-			    long max_proj);
+                long max_proj);
 ir_node *new_r_Tuple  (ir_graph *irg, ir_node *block,
-		       int arity, ir_node *in[]);
+               int arity, ir_node *in[]);
 ir_node *new_r_Id     (ir_graph *irg, ir_node *block,
-		       ir_node *val, ir_mode *mode);
+               ir_node *val, ir_mode *mode);
 ir_node *new_r_Bad    (ir_graph *irg);
 ir_node *new_r_Confirm (ir_graph *irg, ir_node *block,
-			ir_node *val, ir_node *bound, pn_Cmp cmp);
+            ir_node *val, ir_node *bound, pn_Cmp cmp);
 ir_node *new_r_Unknown(ir_graph *irg, ir_mode *m);
 ir_node *new_r_CallBegin(ir_graph *irg, ir_node *block, ir_node *callee);
 ir_node *new_r_EndReg (ir_graph *irg, ir_node *block);
 ir_node *new_r_EndExcept(ir_graph *irg, ir_node *block);
 ir_node *new_r_Break  (ir_graph *irg, ir_node *block);
 ir_node *new_r_Filter (ir_graph *irg, ir_node *block, ir_node *arg,
-		       ir_mode *mode, long proj);
+               ir_mode *mode, long proj);
 ir_node *new_r_FuncCall (ir_graph *irg, ir_node *block,
-		       ir_node *callee, int arity, ir_node *in[],
-		       type *tp);
+               ir_node *callee, int arity, ir_node *in[],
+               type *tp);
 
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface                                          */
@@ -1340,8 +1377,9 @@ ir_node *new_d_SymConst (dbg_info* db, type_or_id_p value, symconst_kind kind);
 ir_node *new_d_simpleSel(dbg_info* db, ir_node *store, ir_node *objptr, entity *ent);
 ir_node *new_d_Sel    (dbg_info* db, ir_node *store, ir_node *objptr, int arity, ir_node *in[],
                      entity *ent);
+ir_node *new_d_InstOf (dbg_info* db, ir_node *store, ir_node *objptr, type *ent);
 ir_node *new_d_Call   (dbg_info* db, ir_node *store, ir_node *callee, int arity, ir_node *in[],
-		     type *tp);
+             type *tp);
 ir_node *new_d_Add    (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_d_Sub    (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_d_Minus  (dbg_info* db, ir_node *op,  ir_mode *mode);
@@ -1368,7 +1406,7 @@ ir_node *new_d_Store  (dbg_info* db, ir_node *store, ir_node *addr, ir_node *val
 ir_node *new_d_Alloc  (dbg_info* db, ir_node *store, ir_node *size, type *alloc_type,
                      where_alloc where);
 ir_node *new_d_Free   (dbg_info* db, ir_node *store, ir_node *ptr, ir_node *size,
-		     type *free_type);
+             type *free_type);
 ir_node *new_d_Sync   (dbg_info* db, int arity, ir_node *in[]);
 ir_node *new_d_Proj   (dbg_info* db, ir_node *arg, ir_mode *mode, long proj);
 ir_node *new_d_defaultProj (dbg_info* db, ir_node *arg, long max_proj);
@@ -1383,7 +1421,7 @@ ir_node *new_d_EndExcept(dbg_info *db);
 ir_node *new_d_Break (dbg_info *db);
 ir_node *new_d_Filter (dbg_info *db, ir_node *arg, ir_mode *mode, long proj);
 ir_node *new_d_FuncCall (dbg_info* db, ir_node *callee, int arity, ir_node *in[],
-		     type *tp);
+             type *tp);
 
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface without debug support                    */
@@ -1410,8 +1448,9 @@ ir_node *new_SymConst (type_or_id_p value, symconst_kind kind);
 ir_node *new_simpleSel(ir_node *store, ir_node *objptr, entity *ent);
 ir_node *new_Sel    (ir_node *store, ir_node *objptr, int arity, ir_node *in[],
                      entity *ent);
+ir_node *new_InstOf (ir_node *store, ir_node *obj,  type *ent);
 ir_node *new_Call   (ir_node *store, ir_node *callee, int arity, ir_node *in[],
-		     type *tp);
+             type *tp);
 ir_node *new_CallBegin(ir_node *callee);
 ir_node *new_Add    (ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_Sub    (ir_node *op1, ir_node *op2, ir_mode *mode);
@@ -1439,7 +1478,7 @@ ir_node *new_Store  (ir_node *store, ir_node *addr, ir_node *val);
 ir_node *new_Alloc  (ir_node *store, ir_node *size, type *alloc_type,
                      where_alloc where);
 ir_node *new_Free   (ir_node *store, ir_node *ptr, ir_node *size,
-		     type *free_type);
+             type *free_type);
 ir_node *new_Sync   (int arity, ir_node *in[]);
 ir_node *new_Proj   (ir_node *arg, ir_mode *mode, long proj);
 ir_node *new_Filter (ir_node *arg, ir_mode *mode, long proj);
@@ -1450,7 +1489,7 @@ ir_node *new_Bad    (void);
 ir_node *new_Confirm (ir_node *val, ir_node *bound, pn_Cmp cmp);
 ir_node *new_Unknown(ir_mode *m);
 ir_node *new_FuncCall (ir_node *callee, int arity, ir_node *in[],
-		     type *tp);
+             type *tp);
 
 /*---------------------------------------------------------------------*/
 /* The comfortable interface.                                          */

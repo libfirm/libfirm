@@ -30,7 +30,7 @@
 #include "irouts.h"
 #include "irnode_t.h"
 #include "irgraph_t.h"     /* To access irg->outs field (which is private to this module)
-			      without public access routine */
+                  without public access routine */
 #include "irprog.h"
 #include "irgwalk.h"
 
@@ -62,7 +62,7 @@ INLINE int get_Block_n_cfg_outs (ir_node *bl) {
   assert(bl && (get_irn_op(bl) == op_Block));
   for (i = 0; i < (int)bl->out[0]; i++)
     if ((get_irn_mode(bl->out[i+1]) == mode_X) &&
-	(get_irn_op(bl->out[i+1]) != op_End)) n_cfg_outs++;
+    (get_irn_op(bl->out[i+1]) != op_End)) n_cfg_outs++;
   return n_cfg_outs;
 }
 
@@ -72,19 +72,19 @@ INLINE ir_node *get_Block_cfg_out  (ir_node *bl, int pos) {
   assert(bl && (get_irn_op(bl) == op_Block));
   for (i = 0; i < (int)bl->out[0]; i++)
     if ((get_irn_mode(bl->out[i+1]) == mode_X)  &&
-	(get_irn_op(bl->out[i+1]) != op_End)) {
+    (get_irn_op(bl->out[i+1]) != op_End)) {
       if (out_pos == pos) {
-	ir_node *cfop = bl->out[i+1];
-	return cfop->out[0+1];
+    ir_node *cfop = bl->out[i+1];
+    return cfop->out[0+1];
       } else {
-	out_pos++;
+    out_pos++;
       }
     }
   return NULL;
 }
 
 void irg_out_walk_2(ir_node *node,  irg_walk_func *pre,
-		    irg_walk_func *post, void *env) {
+            irg_walk_func *post, void *env) {
   int i;
   ir_node *succ;
 
@@ -107,8 +107,8 @@ void irg_out_walk_2(ir_node *node,  irg_walk_func *pre,
 }
 
 void irg_out_walk(ir_node *node,
-			irg_walk_func *pre, irg_walk_func *post,
-			void *env) {
+            irg_walk_func *pre, irg_walk_func *post,
+            void *env) {
   assert(node);
   if (get_irg_outs_state(current_ir_graph) != no_outs) {
     inc_irg_visited (current_ir_graph);
@@ -118,8 +118,8 @@ void irg_out_walk(ir_node *node,
 }
 
 void irg_out_block_walk2(ir_node *bl,
-			irg_walk_func *pre, irg_walk_func *post,
-			void *env) {
+            irg_walk_func *pre, irg_walk_func *post,
+            void *env) {
   int i;
 
   assert(get_irn_opcode(bl) == iro_Block);
@@ -147,8 +147,8 @@ void irg_out_block_walk2(ir_node *bl,
 /* Walks only over Block nodes in the graph.  Has it's own visited
    flag, so that it can be interleaved with the other walker.         */
 void irg_out_block_walk(ir_node *node,
-			irg_walk_func *pre, irg_walk_func *post,
-			void *env) {
+            irg_walk_func *pre, irg_walk_func *post,
+            void *env) {
 
   assert((get_irn_op(node) == op_Block) || (get_irn_mode(node) == mode_X));
 
@@ -243,7 +243,7 @@ static INLINE void fix_start_proj(ir_graph *irg) {
     startbl = get_irg_start_block(irg);
     for (i = 0; i < get_irn_n_outs(startbl); i++)
       if (get_irn_mode(get_irn_out(startbl, i)) == mode_X)
-	proj = get_irn_out(startbl, i);
+    proj = get_irn_out(startbl, i);
     if (get_irn_out(proj, 0) == startbl) {
       assert(get_irn_n_outs(proj) == 2);
       set_irn_out(proj, 0, get_irn_out(proj, 1));
@@ -376,11 +376,11 @@ static void set_array_pointer(ir_node *node, void *env) {
    ------------------------------------------- */
 
 static void set_out_pointer(ir_node * node, void * env) {
-
+  int i;
   ir_node *succ;
   int start = (!is_Block(node)) ? -1 : 0;
 
-  for(int i = start; i < get_irn_arity(node); i++)
+  for(i = start; i < get_irn_arity(node); i++)
     {
       succ = get_irn_n(node, i);
       succ->out[get_irn_n_outs(succ)+1] = node;
