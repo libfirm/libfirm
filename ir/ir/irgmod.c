@@ -102,9 +102,10 @@ void collect_phiprojs(ir_graph *irg) {
 /*  Functionality for part_block                                      */
 /*--------------------------------------------------------------------*/
 
-/* Moves node and all predecessors of node from from_bl to to_bl.
-   Does not move predecessors of Phi nodes (or block nodes). */
-
+/**
+ * Moves node and all predecessors of node from from_bl to to_bl.
+ * Does not move predecessors of Phi nodes (or block nodes).
+ */
 static void move (ir_node *node, ir_node *from_bl, ir_node *to_bl) {
   int i;
   ir_node *proj, *pred;

@@ -18,6 +18,7 @@
 
 # include "irop_t.h"
 # include "irnode_t.h"
+# include "firmstat.h"
 
 # include "xmalloc.h"
 
@@ -97,10 +98,12 @@ new_ir_op(opcode code, const char *name, op_pinned p, unsigned flags, op_arity o
   res->op_index  = op_index;
 
   firm_set_default_operations(res);
+  stat_new_ir_op(res);
   return res;
 }
 
 void free_ir_op(ir_op *code) {
+  stat_free_ir_op(code);
   free(code);
 }
 
