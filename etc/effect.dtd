@@ -16,16 +16,16 @@
 <!-- allow nodes/entity accesses to reference other nodes/an entity -->
 <!ENTITY	% firm.id		"id ID #REQUIRED">
 
-<!-- allow a node to specify a type -->
+<!-- allow a node to specify a type --> <!-- rename to firm.typeref -->
 <!ENTITY	% firm.type		"type CDATA #REQUIRED">
 
 <!-- allow a node to specify a field -->
 <!ENTITY	% firm.entity		"entity CDATA #REQUIRED">
 
-<!-- allow a node to specify a typeid -->
+<!-- allow a node to specify a typeid --> <!-- wird das jemals gebraucht? -->
 <!ENTITY	% typeid		"typeid CDATA #REQUIRED">
 
-<!-- allow a node to specify an owner -->
+<!-- allow an eneity to specify an owner -->
 <!ENTITY	% firm.owner		"owner CDATA #REQUIRED">
 
 <!-- the root element -->
@@ -33,7 +33,7 @@
 <!ATTLIST  	effects
 			module		CDATA		#IMPLIED>
 
-<!-- an entity reference -->
+<!-- a type reference -->
 <!ELEMENT	type	EMPTY>
 <!ATTLIST	type
 			%firm.id;
@@ -50,7 +50,7 @@
 <!-- a single effect -->
 <!ELEMENT  	effect (arg*, (load|store|alloc|call|join|unknown)*, raise?, ret)>
 <!ATTLIST  	effect
-			procname	CDATA		#REQUIRED
+			procname	CDATA		#REQUIRED <!-- warum keine firm.entity? -->
 			%firm.owner;>
 
 <!-- procedure argument -->
@@ -65,7 +65,7 @@
 <!ATTLIST	valref
 			refid		IDREF		#REQUIRED>
 
-<!-- load effect -->
+<!-- select element for use with store, load and call -->
 <!-- for static entities, use a 'select' without a child element -->
 <!ELEMENT	select		(valref?)>
 <!ATTLIST	select		%firm.entity;>
@@ -105,6 +105,9 @@
 <!--
 
  $Log$
+ Revision 1.12  2004/11/24 14:53:10  liekweg
+ Annotated after writing Tech Report
+
  Revision 1.11  2004/11/02 14:30:56  liekweg
  Re-allow multi-input join
 
