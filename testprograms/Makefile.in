@@ -10,7 +10,7 @@ srcdir = @srcdir@
 topdir = ..
 subdir := testprograms
 
-DIFF ?= diff
+DIFF ?= diff -c0
 REF_DIR = $(srcdir)/ref-results
 
 SOURCES := Makefile.in \
