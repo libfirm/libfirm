@@ -11,7 +11,7 @@
 #ifndef _COUNTER_H_
 #define _COUNTER_H_
 
-#include <stdlib.h>
+#include <string.h>
 
 /*
  * 32 bit should be enough for now
