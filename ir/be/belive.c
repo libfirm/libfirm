@@ -3,6 +3,9 @@
  * @author Sebastian Hack
  * @date 6.12.2004
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "impl.h"
 #include "irouts.h"
