@@ -27,9 +27,16 @@
 /* Identifiers */
 
 /**
+ * Initialises the ident handling.
+ *
+ * Must be called before any id_*() function can be called.
+ */
+void id_init(void);
+
+/**
  *  The abstract data type ident.
  *
- *  An ident repraesents an unique string. The == operator
+ *  An ident represents an unique string. The == operator
  *  is sufficient to compare two idents.
  */
 typedef const struct set_entry ident;
@@ -52,8 +59,8 @@ INLINE ident      *id_from_str (const char *str, int len);
 /**
  * Returns a string represented by an ident.
  *
- * Returns the string represented by id. This string is not
- * NULL terminated! The string may not be changed.
+ * Returns the string represented by id. This string is
+ * NULL terminated. The string may not be changed.
  *
  * @param id - the ident
  *
