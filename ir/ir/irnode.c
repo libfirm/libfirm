@@ -113,6 +113,7 @@ new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mo
   ir_node *res;
   int node_size = offsetof (ir_node, attr) +  op->attr_size;
 
+  assert(irg && op && mode);
   res = (ir_node *) obstack_alloc (irg->obst, node_size);
 
   res->kind = k_ir_node;
