@@ -826,7 +826,7 @@ bool  is_method_type     (type *method) {
 /*******************************************************************/
 
 /* create a new type uni */
-INLINE type  *new_type_uni (ident *name) {
+INLINE type  *new_type_union (ident *name) {
   type *res;
   res = new_type(type_union, NULL, name);
   /*res->attr.ua.unioned_type = (type **)  xmalloc (sizeof (type *)  * n_types);
@@ -834,7 +834,7 @@ INLINE type  *new_type_uni (ident *name) {
   res->attr.ua.members = NEW_ARR_F (entity *, 1);
   return res;
 }
-type  *new_d_type_uni (ident *name, dbg_info* db) {
+type  *new_d_type_union (ident *name, dbg_info* db) {
   type *res = new_type_uni (name);
   set_type_dbg_info(res, db);
   return res;
