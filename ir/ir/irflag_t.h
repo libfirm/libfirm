@@ -222,7 +222,7 @@ static INLINE int get_opt_inline(void)
   return libFIRM_opt & OPT_INLINE;
 }
 
-static INLINE int get_opt_dyn_meth_dispatch(void)
+static INLINE int _get_opt_dyn_meth_dispatch(void)
 {
   return libFIRM_opt & OPT_DYN_METH_DISPATCH;
 }
@@ -263,7 +263,8 @@ static INLINE int get_opt_if_conversion(void)
 }
 
 
-#define get_opt_cse()          _get_opt_cse()
-#define get_firm_verbosity()   _get_firm_verbosity()
+#define get_opt_cse()                 _get_opt_cse()
+#define get_firm_verbosity()          _get_firm_verbosity()
+#define get_opt_dyn_meth_dispatch()   _get_opt_dyn_meth_dispatch()
 
 #endif /* _IRFLAG_T_H_ */

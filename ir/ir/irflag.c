@@ -269,6 +269,10 @@ void set_opt_dyn_meth_dispatch (int value)
     libFIRM_opt &= ~OPT_DYN_METH_DISPATCH;
 }
 
+int (get_opt_dyn_meth_dispatch)(void) {
+  return _get_opt_dyn_meth_dispatch();
+}
+
 /* Enable/Disable normalizations of the firm representation. */
 void set_opt_normalize(int value)
 {

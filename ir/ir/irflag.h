@@ -193,6 +193,7 @@ void set_opt_inline (int value);
  * the address of a function.
  */
 void set_opt_dyn_meth_dispatch (int value);
+int  get_opt_dyn_meth_dispatch (void);
 
 /** Enable/Disable optimization of tail-recursion calls.
  *
