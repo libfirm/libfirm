@@ -581,7 +581,9 @@ void init_tarval_1(void);
  */
 void init_tarval_2(void);
 
-typedef int printf_func (void* , const char *, ...);
-int tarval_xprintf(printf_func *print_func, void *out, tarval *tv);
+/**
+ * Output of tarvals.
+ */
+int tarval_snprintf(char *buf, size_t buflen, tarval *tv);
 
 #endif  /* _TV_H_ */

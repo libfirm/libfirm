@@ -182,18 +182,19 @@ static int overflows(tarval *tv)
   return 0;
 }
 
-/****************************************************************************
+/*
  *   public variables declared in tv.h
- ****************************************************************************/
+ */
 tarval *tarval_bad;
 tarval *tarval_undefined;
 tarval *tarval_b_false;
 tarval *tarval_b_true;
 tarval *tarval_P_void;
 
-/****************************************************************************
+/*
  *   public functions declared in tv.h
- ****************************************************************************/
+ */
+
 /*
  * Constructors =============================================================
  */
@@ -250,6 +251,9 @@ char *tarval_to_str(tarval *tv)
 }
 #endif
 
+/*
+ * helper function, creta a tarval from long
+ */
 tarval *new_tarval_from_long(long l, ir_mode *mode)
 {
   ANNOUNCE();
@@ -278,6 +282,7 @@ tarval *new_tarval_from_long(long l, ir_mode *mode)
   return NULL;
 }
 
+/* returns non-zero if can be converted to long */
 int tarval_is_long(tarval *tv)
 {
   ANNOUNCE();
@@ -302,6 +307,7 @@ tarval *new_tarval_from_double(long double d, ir_mode *mode)
   return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 }
 
+/* returns non-zero if can be converted to double */
 int tarval_is_double(tarval *tv)
 {
   ANNOUNCE();
@@ -1035,40 +1041,89 @@ int tarval_print(XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
   return 0;
 }
 
-int tarval_xprintf(printf_func print_func, void * out , tarval *tv)
+/*
+ * Output of tarvals
+ */
+int tarval_snprintf(char *buf, size_t len, tarval *tv)
 {
+  static const tarval_mode_info default_info = { TVO_NATIVE, NULL, NULL };
+
   const char *str;
-  char buf[100];
+  char tv_buf[100];
+  const tarval_mode_info *mode_info;
+  const char *prefix, *suffix;
+
+  ANNOUNCE();
+
+  mode_info = tv->mode->tv_priv;
+  if (! mode_info)
+    mode_info = &default_info;
+  prefix = mode_info->mode_prefix ? mode_info->mode_prefix : "";
+  suffix = mode_info->mode_suffix ? mode_info->mode_suffix : "";
 
   switch (get_mode_sort(tv->mode))
   {
     case irms_int_number:
     case irms_character:
-      str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_HEX);
+      switch (mode_info->mode_output) {
 
-      return print_func(out,"0x%s", str);
+      case TVO_DECIMAL:
+        str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_DEC);
+	break;
+
+      case TVO_OCTAL:
+        str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_OCT);
+	break;
+
+      case TVO_HEX:
+      case TVO_NATIVE:
+      default:
+        str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_HEX);
+	break;
+      }
+      return snprintf(buf, len, "%s%s%s", prefix, str, suffix);
 
     case irms_float_number:
-      return print_func(out,"%s", fc_print_dec(tv->value, buf, sizeof(buf)));
+      return snprintf(buf, len, "%s%s%s", prefix, fc_print_dec(tv->value, tv_buf, sizeof(tv_buf)), suffix);
 
     case irms_reference:
       if (tv->value != NULL)
         if (tarval_is_entity(tv))
           if (get_entity_peculiarity((entity *)tv->value) == existent)
-            return print_func(out,"&(%s)", id_to_str(get_entity_ld_ident((entity *)tv->value)));
+            return snprintf(buf, len, "&(%I)", get_entity_ld_ident((entity *)tv->value));
           else
-            return print_func(out,"NULL",0);
-        else
-          return print_func(out,(char*)tv->value, tv->length);
+            return snprintf(buf, len, "NULL");
+        else {
+	  if (size > tv->length) {
+	    memcpy(buf, tv->value, tv->length);
+	    buf[tv->length] = '\0';
+	  }
+	  else {
+	    /* truncated */
+	    mempy(buf, tv->value, size-1);
+	    buf[size-1] = '\0';
+	  }
+          return tv->length;
+	}
       else
-        return print_func(out,"void",0);
+        return snprintf(buf, len, "void");
 
     case irms_internal_boolean:
-      if (tv == tarval_b_true) return print_func(out,"true",0);
-      else return print_func(out,"false",0);
+      switch (mode_info->mode_output) {
+
+      case TVO_DECIMAL:
+      case TVO_OCTAL:
+      case TVO_HEX:
+      case TVO_BINARY:
+        return snprintf(buf, len, "%s%c%s", prefix, (tv == tarval_b_true) ? '1' : '0', suffix);
+
+      case TVO_NATIVE:
+      default:
+        return snprintf(buf, len, "%s%s%s", prefix, (tv == tarval_b_true) ? "true" : "false", suffix);
+      }
 
     case irms_auxiliary:
-      return print_func(out,"<BAD>",0);
+      return snprintf(buf, len, "<BAD>");
   }
 
   return 0;
