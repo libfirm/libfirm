@@ -331,7 +331,7 @@ copy_node (ir_node *n, void *env) {
   printf(" "); DDMSG2(res);
 }
 
-
+/* Amroq call this emigrate() */
 void
 dead_node_elimination(ir_graph *irg) {
   struct obstack *graveyard_obst=NULL;

@@ -29,8 +29,12 @@ typedef struct {
   ident *name;
   /** needs list with it's entities -- does it really??
       Entities can be added during their creation.
-  int n_members;
-  entity **member; **/
+  int n_members;   Use array stuff, get length from array.  saves this explicit field.
+  entities **member; **/
+  /** to represent inheritance
+  type_class **subtypes;    * direct subtypes *
+  type_class **supertypes;  * direct supertypes *
+  **/
   unsigned long visit;     /* visited counter for walks of the type information */
 } type_class;
 
@@ -44,6 +48,15 @@ ident *get_class_ident (type_class *clss);
 /*
 void   set_class_name  (type_class *clss, char *name);
 void   set_class_ident (type_class *clss, ident* ident);
+*/
+
+/*  get_class_entity_arr
+    get_class_n_entities
+    get_class_entity(class, pos)
+    set_class_entity(class, pos, entity)
+    get_class_sub_arr
+    ...
+    get_class_super_arr
 */
 
 /*******************************************************************/
@@ -90,22 +103,17 @@ typedef struct {
                           optimizations that change the parameters of
                           methods? */
   int n_res;           /* number of results */
-  type **res_type;
-  /** needs pointer to it's ir_graph ??
-  ir_graph *graph; **/
-  unsigned long visit;     /* visited counter for walks of the type information */
+  type **res_type;     /* array with result types */
+  unsigned long visit; /* visited counter for walks of the type information */
 } type_method;
 
 /* create a new type_method */
 type_method *new_type_method (ident *name, int arity, int n_res);
 
 /* manipulate fields of type_method */
-
 char  *get_method_name  (type_method *method);
 ident *get_method_ident (type_method *method);
-/* GL 9.2.2000: who commened these in?
-   I think it's not safe to have these methods.
-   Please add changes to Changes file.
+/*
 void   set_method_name  (type_method *method, char *name);
 void   set_method_ident (type_method *method, ident* ident); */
 
@@ -119,10 +127,6 @@ inline void  set_method_n_res (type_method *method, int n_res);
 inline type *get_method_res_type(type_method *method, int pos);
 inline void  set_method_res_type(type_method *method, int pos, type* type);
 
-/*
-ir_graph *get_method_graph(type_method *method);
-void *get_method_graph(type_method *method, ir_graph* graph);
-*/
 
 /*******************************************************************/
 /** TYPE_UNION                                                    **/

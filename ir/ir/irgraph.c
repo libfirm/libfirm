@@ -55,14 +55,15 @@ new_ir_graph (entity *ent, int params)
 
   /** Type inforamtion for the procedure of the graph **/
   res->ent = ent;
+  ent->irg = res;
 
   /** Nodes needed in every graph **/
   res->end_block = new_Block ();
   res->end       = new_End ();
 
   res->start_block = new_Block ();
-  res->start     = new_Start ();
-  res->bad       = new_ir_node (res, res->start_block, op_Bad, mode_T, 0, NULL);
+  res->start   = new_Start ();
+  res->bad     = new_ir_node (res, res->start_block, op_Bad, mode_T, 0, NULL);
 
   /* Proj results of start node */
   projX        = new_Proj (res->start, mode_X, pns_initial_exec);

@@ -17,9 +17,8 @@
 /** general                                                       **/
 /*******************************************************************/
 
-/* initalize entity */
+/* initalize entity module */
 void init_entity (void);
-
 
 /*******************************************************************/
 /** ENTITY                                                        **/
@@ -28,41 +27,46 @@ void init_entity (void);
 typedef struct entity {
   firm_kind kind;
   ident *name;          /* name of this entity */
-  type *owner;          /* The class this entity belongs to */
   ident *ld_name;       /* Unique name of this entity, i.e., the mangled
                            name.  E.g., for a class `A' with field `a' this
                            is the ident for `A_a'. */
   type *type;           /* The type of this entity, e.g., a method type, a
                            basic type of the language or a class itself */
+  type *owner;          /* The class this entity belongs to */
+  /* for methods */
+  ir_graph *irg;        /* If (type == method_type) this is the corresponding irg.
+			   The ir_graph constructor automatically sets this field.
+		 	   @@@ Does this go here, or should it be in type_mehtod,
+			   or should Call have an attribute ent?? */
+  /* Do we need to remember the initializer of fields? */
   unsigned long visit;  /* visited counter for walks of the type information */
 } entity;
 
 /* create a new entity */
-entity      *new_entity (type *owner, ident *name, type *type);
+entity   *new_entity (type *owner, ident *name, type *type);
 
 /* manipulate fields of entity */
+char     *get_entity_name     (entity *);
+ident    *get_entity_ident    (entity *);
+
 /*
-  char        *get_entity_name     (entity *);  */
-ident       *get_entity_ident    (entity *);
-/*
-void         set_entity_ld_name  (entity *, char *ld_name);
-void         set_entity_ld_ident (entity *, ident *ld_ident);
+char     *get_entity_ld_name  (entity *);
+char     *get_entity_ld_ident (entity *);
+void      set_entity_ld_name  (entity *, char *ld_name);
+void      set_entity_ld_ident (entity *, ident *ld_ident);
 */
 
-// type_class *get_entity_owner (entity *);
-type  *get_entity_owner (entity *);
-// void  set_entity_owner (entity *, union type *);
-void   set_entity_owner (entity *, type *);
+type     *get_entity_owner (entity *);
+void      set_entity_owner (entity *, type *);
 inline void  assert_legal_owner_of_ent(type *);
 
-ident *get_entity_ld_name  (entity *); /** resolve name conflict!! standard: ident **/
-/*
-char        *get_entity_ld_ident (entity *);
-void         set_entity_ld_name  (entity *, char *ld_name);
-void         set_entity_ld_ident (entity *, ident *ld_ident);
-*/
+type     *get_entity_type (entity *);
+void      set_entity_type (entity *, type *);
 
-type  *get_entity_type (entity *);
-void   set_entity_type (entity *, type *);
+/* The entity knows the corresponding irg if the entity is a method.
+   This allows to get from a Call to the called irg. *
+ir_graph *get_entity_irg(entity *ent);
+void      set_entity_irg(entity *ent, ir_graph *irg);
+*/
 
 # endif /* _ENTITY_H_ */

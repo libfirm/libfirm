@@ -65,7 +65,8 @@ typedef struct {
    optimizations. */
 extern ir_graph *current_ir_graph;
 
-/* create a new ir graph */
+/* create a new ir graph.  Automatically sets the field irg of
+   entity to the new ir graph. */
 ir_graph *new_ir_graph (entity *ent, int params);
 
 

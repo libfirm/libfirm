@@ -12,7 +12,7 @@
 **   - A global type that can be thought of as a god-class containing all
 **     global variables and procedures.  This is not the base class of
 **     all classes in a class hierarchy (as, e.g., "object" in java).
-**   - An obstack containing global things, e.g., the above mentioned lists.
+**   - (An obstack containing global things, e.g., the above mentioned lists.)
 */
 
 # ifndef _IRPROG_H_
@@ -43,20 +43,24 @@ ir_prog *irp;
 void init_irprog(void);
 
 /* Creates a new ir_prog, returns it and sets irp with it.
-   Automatically called by init_firm through init_prog. */
+   Automatically called by init_firm through init_irprog. */
 ir_prog *new_ir_prog (void);
 
+/* Adds irg to the list of ir graphs in irp. */
+void      add_irp_irg(ir_graph *irg);
+/*   get_irp_n_irgs()  * GL Chris: immer globale irp benutzen! *
+     get_irp_irg(int pos)
+     set_irp_irg()     und das gleiche fuer type */
+
+/* Adds type to the list of types in irp. */
+void      add_irp_type(type *typ);
 
 /** Functions to access the fields of ir_prog **/
 type_class *get_glob_type(void);
 
-/* Adds irg to the list of ir graphs in irp. */
-void      add_irp_irg(ir_graph *irg);
-/* Adds type to the list of types in irp. */
-void      add_irp_type(type *typ);
-
-
+#ifdef DEBUG_libfirm
 /* Returns a new, unique number to number nodes or the like. */
 int get_irp_new_node_nr();
+#endif
 
 #endif /* ifndef _IRPROG_H_ */
