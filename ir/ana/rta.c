@@ -166,9 +166,23 @@ static void rta_act (ir_node *node, void *env)
         /* it's an externally allocated thing. */
       }
     } else if (iro_SymConst == get_irn_opcode (ptr)) { /* CALL SYMCONST */
+      if (get_SymConst_kind(ptr) == symconst_addr_ent) {
+	ent = get_SymConst_entity (ptr);
+	ir_graph *graph = get_entity_irg (ent);
+	/* don't use get_implementing_graph on a Const! */
+	if (graph) {
+	  *change = add_graph (graph);
+	} else {
+	  /* it's an externally allocated thing. */
+	}
+      } else if (get_SymConst_kind(ptr) == symconst_addr_name) {
       /* If this SymConst refers to a method the method is external_visible
          and therefore must be considered live anyways. */
       /* assert (ent && "couldn't determine entity of call to symConst"); */
+      } else {
+	/* other symconst. */
+      }
+
     }
   } else if (iro_Alloc == op) { /* ALLOC */
     type *type = get_Alloc_type (node);
@@ -298,8 +312,7 @@ static void force_description (entity *ent, entity *addr)
 
     if (peculiarity_inherited == get_entity_peculiarity (over)) {
       /* We rely on the fact that cse is performed on the const_code_irg. */
-      entity *my_addr =
-        tarval_to_entity(get_Const_tarval(get_atomic_ent_value(over)));
+      entity *my_addr = get_SymConst_entity(get_atomic_ent_value(over));
 
       if (addr == my_addr) {
         force_description (over, addr);
@@ -307,9 +320,9 @@ static void force_description (entity *ent, entity *addr)
     } else if (peculiarity_existent == get_entity_peculiarity (over)) {
       /* check whether 'over' forces 'inheritance' of *our* graph: */
       ir_node *f_addr = get_atomic_ent_value (over);
-      entity *impl_ent = tarval_to_entity (get_Const_tarval (f_addr));
+      entity *impl_ent = get_SymConst_entity (f_addr);
 
-      assert ((get_irn_op(f_addr) == op_Const) && "can't do complex addrs");
+      assert ((get_irn_op(f_addr) == op_SymConst) && "can't do complex addrs");
       if (impl_ent == addr) {
         assert (0 && "gibt's denn sowas");
         force_description (over, addr);
@@ -531,6 +544,9 @@ void rta_report (void)
 
 /*
  * $Log$
+ * Revision 1.19  2004/07/06 12:30:37  beyhan
+ * new SymConst semantics
+ *
  * Revision 1.18  2004/06/27 21:17:41  liekweg
  * Added comment
  *

@@ -391,31 +391,60 @@ void     set_Const_type   (ir_node *node, type *tp);
      represented by SymConst.  The content of the attribute type_or_id
      depends on this tag.  Use the proper access routine after testing
      this flag. */
+
+#define type_tag         symconst_type_tag
+//#define size             symconst_size   geht nicht, benennt auf size in type.c um!
+#define linkage_ptr_info symconst_addr_name
 typedef enum {
-  type_tag,          /**< The SymConst is a type tag for the given type.
-			Type_or_id_p is type *. */
-  size,              /**< The SymConst is the size of the given type.
-			Type_or_id_p is type *. */
-  linkage_ptr_info   /**< The SymConst is a symbolic pointer to be filled in
-			by the linker. Type_or_id_p is ident *.  If the name
-			refers to an entity also compiled, this entity must be external_visible,
-			so that it is not removed by some optimization.  An optimization must
-			not analyse linkage_ptr_info SymConsts. */
+  symconst_type_tag,    /**< The SymConst is a type tag for the given type.
+			   Type_or_id_p is type *. */
+  symconst_size,        /**< The SymConst is the size of the given type.
+			   Type_or_id_p is type *. */
+  symconst_addr_name,   /**< The SymConst is a symbolic pointer to be filled in
+			   by the linker.  The pointer is represented by a string.
+			   Type_or_id_p is ident *. */
+  symconst_addr_ent     /**< The SymConst is a symbolic pointer to be filled in
+			   by the linker.  The pointer is represented by an entity.
+			   Type_or_id_p is entity *. */
 } symconst_kind;
 
-typedef union type_or_id * type_or_id_p;
+/** SymConst attributes
+    This union contains the symbolic information represented by the node  */
+union symconst_symbol {
+  type   *type_p;           //old typ
+  ident  *ident_p;         // old ptrinfo
+  entity *entity_p;        // entity_p
+};
+typedef union symconst_symbol symconst_symbol;
+
+/** Access the kind of the SymConst. */
 symconst_kind get_SymConst_kind (const ir_node *node);
 void          set_SymConst_kind (ir_node *node, symconst_kind num);
-/* Only to access SymConst of kind type_tag or size.  Else assertion: */
+
+/** Only to access SymConst of kind type_tag or size.  Else assertion: */
 type    *get_SymConst_type (ir_node *node);
 void     set_SymConst_type (ir_node *node, type *tp);
-/* Only to access SymConst of kind linkage_ptr_info.  Else assertion: */
+
+/** Only to access SymConst of kind addr_name.  Else assertion: */
+/* old:
 ident   *get_SymConst_ptrinfo (ir_node *node);
 void     set_SymConst_ptrinfo (ir_node *node, ident *ptrinfo);
-/* Sets both: type and ptrinfo.  Needed to treat the node independent of
-   its semantics.  Does a memcpy for the memory tori points to. */
-type_or_id_p get_SymConst_type_or_id (ir_node *node);
-void set_SymConst_type_or_id (ir_node *node, type_or_id_p tori);
+*/
+#define get_SymConst_ptrinfo get_SymConst_name
+#define set_SymConst_ptrinfo set_SymConst_name
+ident   *get_SymConst_name (ir_node *node);
+void     set_SymConst_name (ir_node *node, ident *name);
+
+/** Only to access SymConst of kind addr_ent.  Else assertion: */
+entity  *get_SymConst_entity (ir_node *node);
+void     set_SymConst_entity (ir_node *node, entity *ent);
+
+/** Sets both: type and ptrinfo.  Needed to treat the node independent of
+   its semantics.  Does a memcpy for the memory sym points to. */
+#define get_SymConst_type_or_id get_SymConst_symbol
+#define set_SymConst_type_or_id set_SymConst_symbol
+symconst_symbol get_SymConst_symbol (ir_node *node);
+void            set_SymConst_symbol (ir_node *node, symconst_symbol sym);
 
 ir_node *get_Sel_mem (ir_node *node);
 void     set_Sel_mem (ir_node *node, ir_node *mem);

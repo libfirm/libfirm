@@ -60,7 +60,7 @@ static tarval *computed_value_Const(ir_node *n)
 
 static tarval *computed_value_SymConst(ir_node *n)
 {
-  if ((get_SymConst_kind(n) == size) &&
+  if ((get_SymConst_kind(n) ==symconst_size) &&
       (get_type_state(get_SymConst_type(n))) == layout_fixed)
     return new_tarval_from_long(get_type_size_bytes(get_SymConst_type(n)), mode_Is);
   return tarval_bad;
@@ -1376,7 +1376,7 @@ static int node_cmp_attr_Free(ir_node *a, ir_node *b)
 static int node_cmp_attr_SymConst(ir_node *a, ir_node *b)
 {
     return (get_irn_symconst_attr(a).num != get_irn_symconst_attr(b).num)
-      || (get_irn_symconst_attr(a).tori.typ != get_irn_symconst_attr(b).tori.typ);
+      || (get_irn_symconst_attr(a).sym.type_p != get_irn_symconst_attr(b).sym.type_p);
 }
 
 static int node_cmp_attr_Call(ir_node *a, ir_node *b)

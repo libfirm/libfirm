@@ -404,7 +404,9 @@ long double tarval_to_double(tarval *tv)
 }
 
 /* The tarval represents the address of the entity.  As the address must
-   be constant the entity must have as owner the global type. */
+   be constant the entity must have as owner the global type.
+ * We no more support this function: Use the new SymConst instead.
+ */
 tarval *new_tarval_from_entity (entity *ent, ir_mode *mode)
 {
   ANNOUNCE();
@@ -413,6 +415,8 @@ tarval *new_tarval_from_entity (entity *ent, ir_mode *mode)
 
   return get_tarval((void *)ent, 0, mode);
 }
+
+
 int tarval_is_entity(tarval *tv)
 {
   ANNOUNCE();
@@ -1470,32 +1474,32 @@ int tarval_snprintf(char *buf, size_t len, tarval *tv)
       break;
 
     case irms_reference:
-      if (tv==tarval_P_void) return snprintf(buf, len, "NULL");
+      if (tv == tarval_P_void) return snprintf(buf, len, "NULL");
       if (tv->value != NULL)
-        if (tarval_is_entity(tv)) {
-          if (get_entity_peculiarity((entity *)tv->value) != peculiarity_description)
-            return snprintf(buf, len, "%s%s%s", prefix, get_entity_ld_name((entity *)tv->value), suffix);
-          else {
-        if (mode_info->mode_output == TVO_NATIVE)
-              return snprintf(buf, len, "NULL");
-        else
-              return snprintf(buf, len, "0");
-      }
-    }
-        else {
-      if (size > tv->length) {
-        memcpy(buf, tv->value, tv->length);
-        buf[tv->length] = '\0';
-      }
-      else {
-        /* truncated */
-        memcpy(buf, tv->value, size-1);
-        buf[size-1] = '\0';
-      }
-          return tv->length;
-    }
+	if (tarval_is_entity(tv)) {
+	  if (get_entity_peculiarity((entity *)tv->value) != peculiarity_description)
+	    return snprintf(buf, len, "%s%s%s", prefix, get_entity_ld_name((entity *)tv->value), suffix);
+	  else {
+	    if (mode_info->mode_output == TVO_NATIVE)
+	      return snprintf(buf, len, "NULL");
+	    else
+	      return snprintf(buf, len, "0");
+	  }
+	}
+	else {
+	  if (len > tv->length) {
+	    memcpy(buf, tv->value, tv->length);
+	    buf[tv->length] = '\0';
+	  }
+	  else {
+	    /* truncated */
+	    memcpy(buf, tv->value, len-1);
+	    buf[len-1] = '\0';
+	  }
+	  return tv->length;
+	}
       else
-        return snprintf(buf, len, "void");
+	return snprintf(buf, len, "void");
 
     case irms_internal_boolean:
       switch (mode_info->mode_output) {

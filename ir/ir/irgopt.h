@@ -23,7 +23,9 @@
 
 # include "irgraph.h"
 
-/** Applies local optimizations (see iropt.h) to all nodes in the graph. */
+/** Applies local optimizations (see iropt.h) to all nodes in the graph.
+ *
+ * @param irg  The graph to be optimized. */
 void local_optimize_graph (ir_graph *irg);
 
 /** Performs dead node elimination by copying the ir graph to a new obstack.
@@ -43,14 +45,19 @@ void local_optimize_graph (ir_graph *irg);
  *  Callee information must be freed (irg_callee_info_none).
  *
  *  Attention: the numbers assigned to nodes if the library is compiled for
- *  development/debugging are not conserved by copying. */
+ *  development/debugging are not conserved by copying.
+ *
+ * @param irg  The graph to be optimized. */
 void dead_node_elimination(ir_graph *irg);
 
-/** Removes Bad Bad predecesors from Blocks and the corresponding
-    inputs to Phi nodes as in dead_node_elimination but without
-    copying the graph.
-
-    @todo not implemented! / buggy?  */
+/**  Cleans the control flow from Bad predecesors.
+ *
+ * Removes Bad predecesors from Blocks and the corresponding
+ * inputs to Phi nodes as in dead_node_elimination but without
+ * copying the graph.
+ *
+ * @param irg  The graph to be optimized.
+ */
 void remove_bad_predecessors(ir_graph *irg);
 
 /** Inlines a method at the given call site.

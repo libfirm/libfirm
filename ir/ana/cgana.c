@@ -85,6 +85,9 @@ static entity *get_inherited_methods_implementation(entity *inh_meth) {
 
   if (get_irn_op(addr) == op_Const) {
     impl_meth = tarval_to_entity(get_Const_tarval(addr));
+  } else if ((get_irn_op(addr) == op_SymConst) &&
+	     (get_SymConst_kind(addr) == symconst_addr_ent)) {
+    impl_meth = get_SymConst_entity(addr);
   } else {
     assert(0 && "Complex constant values not supported -- address of method should be straight constant!");
   }
@@ -222,19 +225,20 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
   if (get_irn_op(node) == op_SymConst) {
     /* Wenn möglich SymConst-Operation durch Const-Operation
      * ersetzen. */
-    if (get_SymConst_kind(node) == linkage_ptr_info) {
-      pmap_entry *entry = pmap_find(ldname_map, (void *) get_SymConst_ptrinfo(node));
+    if (get_SymConst_kind(node) == symconst_addr_name) {
+      pmap_entry * entry = pmap_find(ldname_map, (void *) get_SymConst_name(node));
       if (entry != NULL) { /* Method is declared in the compiled code */
-        entity *ent = entry->value;
-        if (get_opt_normalize() && (get_entity_visibility(ent) != visibility_external_allocated)) {
-	  /* Meth. is defined */
-          ir_node *new_node;
-          assert(get_entity_irg(ent));
-          set_irg_current_block(current_ir_graph, get_nodes_Block(node));
-          new_node = new_d_Const(get_irn_dbg_info(node),
-                                 mode_P_mach, new_tarval_from_entity(ent, mode_P_mach));       DBG_OPT_NORMALIZE;
-          exchange(node, new_node);
-        }
+	entity * ent = entry->value;
+	if (get_opt_normalize() && (get_entity_visibility(ent) != visibility_external_allocated)) { /* Meth. is defined */
+	  ir_node *new_node;
+	  symconst_symbol sym;
+	  assert(get_entity_irg(ent));
+	  sym.entity_p = ent;
+	  set_irg_current_block(current_ir_graph, get_nodes_Block(node));
+	  new_node = new_d_SymConst(get_irn_dbg_info(node), sym, symconst_addr_ent);       DBG_OPT_NORMALIZE;
+	  DDMN(new_node);
+	  exchange(node, new_node);
+	}
       }
     }
   } else if (get_irn_op(node) == op_Sel &&
@@ -454,8 +458,20 @@ static void callee_ana_node(ir_node * node, eset * methods) {
 
   switch (get_irn_opcode(node)) {
   case iro_SymConst:
-    /* externe Methode (wegen fix_symconst!) */
-    eset_insert(methods, MARK); /* free method -> unknown */
+    if (get_SymConst_kind(node) == symconst_addr_ent) {
+      entity * ent = get_SymConst_entity(node);
+      assert(ent && is_method_type(get_entity_type(ent)));
+      if (get_entity_visibility(ent) != visibility_external_allocated) {
+	assert(get_entity_irg(ent));
+	eset_insert(methods, ent);
+      } else {
+	eset_insert(methods, MARK); /* free method -> unknown */
+      }
+    } else {
+      assert(get_SymConst_kind(node) == symconst_addr_name);
+      /* externe Methode (wegen fix_symconst!) */
+      eset_insert(methods, MARK); /* free method -> unknown */
+    }
     break;
 
   case iro_Const: {
@@ -641,7 +657,15 @@ static void free_mark(ir_node * node, eset * set) {
     break;
   }
   case iro_SymConst:
-    /* nothing: SymConst points to extern method */
+    if (get_SymConst_kind(node) == symconst_addr_ent) {
+      entity * ent = get_SymConst_entity(node);
+      if (is_method_type(get_entity_type(ent))) {
+        eset_insert(set, ent);
+      }
+    } else {
+      assert(get_SymConst_kind(node) == symconst_addr_name);
+      /* nothing: SymConst points to extern method */
+    }
     break;
   case iro_Const: {
     tarval * val = get_Const_tarval(node);
@@ -696,7 +720,7 @@ static void free_ana_walker(ir_node * node, eset * set) {
     for (i = get_Call_arity(node) - 1; i >= 0; --i) {
       ir_node * pred = get_Call_param(node, i);
       if (mode_is_reference(get_irn_mode(pred))) {
-    free_mark(pred, set);
+	free_mark(pred, set);
       }
     }
     break;

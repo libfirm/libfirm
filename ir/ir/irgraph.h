@@ -75,9 +75,10 @@ typedef struct ir_graph ir_graph;
  *             did actually change something).  Code placement is necessary.
  */
 
-/** Global variable holding the current IR-graph.
- * This global variable is used by the ir construction
- * interface in ircons and by the optimizations.
+/** Global variable holding the current ir graph.
+ *
+ *  This global variable is used by the ir construction
+ *  interface in ircons and by the optimizations.
  */
 extern ir_graph *current_ir_graph;
 

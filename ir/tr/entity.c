@@ -82,10 +82,12 @@ new_entity (type *owner, ident *name, type *type)
   res->visibility = visibility_local;
   res->offset = -1;
   if (is_method_type(type)) {
+    symconst_symbol sym;
+    sym.entity_p = res;
     res->variability = variability_constant;
     rem = current_ir_graph;
     current_ir_graph = get_const_code_irg();
-    res->value = new_Const(mode_P_mach, new_tarval_from_entity(res, mode_P_mach));
+    res->value = new_SymConst(sym, symconst_addr_ent);
     current_ir_graph = rem;
   } else {
     res->variability = variability_uninitialized;
@@ -488,7 +490,9 @@ ir_node *copy_const_value(ir_node *n) {
   case iro_Const:
     nn = new_Const(m, get_Const_tarval(n)); break;
   case iro_SymConst:
-    nn = new_SymConst(get_SymConst_type_or_id(n), get_SymConst_kind(n)); break;
+
+    nn = new_SymConst(get_SymConst_type_or_id(n), get_SymConst_kind(n));
+    break;
   case iro_Add:
     nn = new_Add(copy_const_value(get_Add_left(n)),
          copy_const_value(get_Add_right(n)), m); break;

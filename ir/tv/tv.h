@@ -217,6 +217,7 @@ int tarval_is_double(tarval *tv);
  * Construct a tarval that represents the address of the entity.
  *
  * The address must be constant, the entity must have as owner the global type.
+ * We no more support this function: Use the new SymConst instead.
  */
 tarval *new_tarval_from_entity (entity *ent, ir_mode *mode);
 

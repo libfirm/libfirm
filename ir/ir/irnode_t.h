@@ -39,6 +39,10 @@
 
 # include "exc.h"
 
+#include "set.h"
+#include "entity_t.h"
+#include "type_t.h"
+
 /** ir node attributes **/
 
 /** Block attributes */
@@ -85,15 +89,8 @@ typedef struct {
   type   *tp;        /**< the source type, for analyses. default: type_unknown. */
 } const_attr;
 
-/** SymConst attributes
-    This union contains the symbolic information represented by the node */
-typedef union type_or_id {
-  type  *typ;
-  ident *ptrinfo;
-} type_or_id;
-
 typedef struct {
-  type_or_id tori;
+  symconst_symbol sym;  // old tori
   symconst_kind num;
 } symconst_attr;
 
@@ -170,7 +167,7 @@ typedef union {
   callbegin_attr callbegin; /**< For CallBegin */
   alloc_attr     a;     /**< For Alloc. */
   io_attr        io;    /**< For InstOf */
-  type           *f;    /**< For Free. */
+  type          *f;     /**< For Free. */
   cast_attr      cast;  /**< For Cast. */
   int            phi0_pos;  /**< For Phi. Used to remember the value defined by
                    this Phi node.  Needed when the Phi is completed

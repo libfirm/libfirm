@@ -679,26 +679,31 @@ new_rd_InstOf (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
 }
 
 INLINE ir_node *
-new_rd_SymConst (dbg_info* db, ir_graph *irg, ir_node *block, type_or_id_p value,
-                symconst_kind symkind)
+new_rd_SymConst (dbg_info* db, ir_graph *irg, ir_node *block, symconst_symbol value,
+		 symconst_kind symkind)
 {
   ir_node *res;
   ir_mode *mode;
-  if (symkind == linkage_ptr_info)
+  if ((symkind == symconst_addr_name) || (symkind == symconst_addr_ent))
     mode = mode_P_mach;
   else
     mode = mode_Iu;
   res = new_ir_node (db, irg, block, op_SymConst, mode, 0, NULL);
 
   res->attr.i.num = symkind;
-  if (symkind == linkage_ptr_info) {
-    res->attr.i.tori.ptrinfo = (ident *)value;
+  res->attr.i.sym = value;
+  /*
+  if (symkind == symconst_addr_name) {
+    res->attr.i.sym.ident_p = (ident *)value;
+  } else if (symkind == symconst_addr_ent) {
+    res->attr.i.sym.entity = (entity *)value;
   } else {
-    assert (   (   (symkind == type_tag)
-            || (symkind == size))
+    assert (   (   (symkind ==symconst_type_tag)
+            || (symkind == symconst_size))
             && (is_type(value)));
-    res->attr.i.tori.typ = (type *)value;
+    res->attr.i.sym.typ = (type *)value;
   }
+  */
   res = optimize_node (res);
   irn_vrfy_irg (res, irg);
   return res;
@@ -867,7 +872,7 @@ INLINE ir_node *new_r_Const  (ir_graph *irg, ir_node *block,
   return new_rd_Const(NULL, irg, block, mode, con);
 }
 INLINE ir_node *new_r_SymConst (ir_graph *irg, ir_node *block,
-                       type_or_id_p value, symconst_kind symkind) {
+                       symconst_symbol value, symconst_kind symkind) {
   return new_rd_SymConst(NULL, irg, block, value, symkind);
 }
 INLINE ir_node *new_r_Sel    (ir_graph *irg, ir_node *block, ir_node *store,
@@ -2238,7 +2243,7 @@ new_d_InstOf (dbg_info *db, ir_node *store, ir_node *objptr, type *ent)
 }
 
 ir_node *
-new_d_SymConst (dbg_info* db, type_or_id_p value, symconst_kind kind)
+new_d_SymConst (dbg_info* db, symconst_symbol value, symconst_kind kind)
 {
   return new_rd_SymConst (db, current_ir_graph, current_ir_graph->start_block,
                          value, kind);
@@ -2485,7 +2490,7 @@ ir_node *new_Raise  (ir_node *store, ir_node *obj) {
 ir_node *new_Const  (ir_mode *mode, tarval *con) {
   return new_d_Const(NULL, mode, con);
 }
-ir_node *new_SymConst (type_or_id_p value, symconst_kind kind) {
+ir_node *new_SymConst (symconst_symbol value, symconst_kind kind) {
   return new_d_SymConst(NULL, value, kind);
 }
 ir_node *new_simpleSel(ir_node *store, ir_node *objptr, entity *ent) {

@@ -452,14 +452,18 @@ dump_node_opcode(FILE *F, ir_node *n)
   } break;
 
   case iro_SymConst: {
-    if (get_SymConst_kind(n) == linkage_ptr_info) {
+    if (get_SymConst_kind(n) == symconst_addr_name) {
       /* don't use get_SymConst_ptr_info as it mangles the name. */
-      fprintf (F, "SymC %s", get_id_str(get_SymConst_ptrinfo(n)));
+      fprintf (F, "SymC %s", get_id_str(get_SymConst_name(n)));
+    } else if (get_SymConst_kind(n) == symconst_addr_ent) {
+      assert(get_SymConst_entity(n));
+      assert(is_entity(get_SymConst_entity(n)));
+      fprintf (F, "SymC &%s", get_entity_name(get_SymConst_entity(n)));
     } else {
       assert(get_kind(get_SymConst_type(n)) == k_type);
       assert(get_type_ident(get_SymConst_type(n)));
       fprintf (F, "SymC %s ", get_type_name_ex(get_SymConst_type(n), &bad));
-      if (get_SymConst_kind(n) == type_tag)
+      if (get_SymConst_kind(n) == symconst_type_tag)
         fprintf (F, "tag");
       else
         fprintf (F, "size");
@@ -626,6 +630,7 @@ static INLINE int dump_node_info(ir_node *n)
   fprintf (F, " info1: \"");
   if (opt_dump_pointer_values_to_info)
     fprintf (F, "addr:    %p \n", (void *)n);
+  fprintf (F, "mode:    %s\n", get_mode_name(get_irn_mode(n)));
   fprintf (F, "visited: %ld \n", get_irn_visited(n));
   irg = get_irn_irg(n);
   if (irg != get_const_code_irg())
@@ -1159,8 +1164,8 @@ static void dump_node2type_edges (ir_node *n, void *env)
     /* @@@ some consts have an entity */
     break;
   case iro_SymConst:
-    if (   (get_SymConst_kind(n) == type_tag)
-       || (get_SymConst_kind(n) == size))
+    if (   (get_SymConst_kind(n) ==symconst_type_tag)
+       || (get_SymConst_kind(n) ==symconst_size))
       {
     print_node_type_edge(F,n,get_SymConst_type(n),NODE2TYPE_EDGE_ATTR);
       }

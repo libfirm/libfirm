@@ -165,8 +165,8 @@ static void start_type_walk(ir_node *node, void *env) {
 
   switch (get_irn_opcode(node)) {  /* node label */
   case iro_SymConst:
-    if (   (get_SymConst_kind(node) == type_tag)
-	   || (get_SymConst_kind(node) == size))
+    if (   (get_SymConst_kind(node) ==symconst_type_tag)
+	   || (get_SymConst_kind(node) ==symconst_size))
       type_walk_2((type_or_ent *)get_SymConst_type(node), pre, post, envi);
     break;
   case iro_Sel:

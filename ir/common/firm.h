@@ -107,9 +107,15 @@ extern "C" {
 /**
  * Initialize the firm library.
  *
- * @param func    This function is called, whenever a local variable is used before definition
+ * Initializes the firm library.  Allocates default data structures.
+ * Initializes configurable behaviour of the library.
  *
- * The parameter func may be NULL. In that case, the old FIRM behavior is conserved.
+ * @param func    This function is called, whenever a local variable is
+ * used before definition.  The function should either insert a default value,
+ * or raise a compiler error.
+ *
+ * The parameter func may be NULL. In that case, the original FIRM behavior
+ * is conserved.
  *
  * @see default_initialize_local_variable_func_t
  */

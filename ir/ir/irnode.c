@@ -80,7 +80,7 @@ const char *pns_name_arr [] = {
 };
 
 const char *symconst_name_arr [] = {
-  "type_tag", "size", "linkage_ptr_info"
+  "type_tag", "size", "addr_name", "addr_ent"
 };
 
 void
@@ -893,43 +893,59 @@ set_SymConst_kind (ir_node *node, symconst_kind num) {
 type *
 get_SymConst_type (ir_node *node) {
   assert (   (node->op == op_SymConst)
-          && (   get_SymConst_kind(node) == type_tag
-              || get_SymConst_kind(node) == size));
-  return node->attr.i.tori.typ = skip_tid(node->attr.i.tori.typ);
+          && (   get_SymConst_kind(node) == symconst_type_tag
+              || get_SymConst_kind(node) == symconst_size));
+  return node->attr.i.sym.type_p = skip_tid(node->attr.i.sym.type_p);
 }
 
 void
 set_SymConst_type (ir_node *node, type *tp) {
   assert (   (node->op == op_SymConst)
-          && (   get_SymConst_kind(node) == type_tag
-              || get_SymConst_kind(node) == size));
-  node->attr.i.tori.typ = tp;
+          && (   get_SymConst_kind(node) == symconst_type_tag
+              || get_SymConst_kind(node) == symconst_size));
+  node->attr.i.sym.type_p = tp;
 }
 
 ident *
-get_SymConst_ptrinfo (ir_node *node) {
+get_SymConst_name (ir_node *node) {
   assert (   (node->op == op_SymConst)
-          && (get_SymConst_kind(node) == linkage_ptr_info));
-  return node->attr.i.tori.ptrinfo;
+          && (get_SymConst_kind(node) == symconst_addr_name));
+  return node->attr.i.sym.ident_p;
 }
 
 void
-set_SymConst_ptrinfo (ir_node *node, ident *ptrinfo) {
+set_SymConst_name (ir_node *node, ident *name) {
   assert (   (node->op == op_SymConst)
-          && (get_SymConst_kind(node) == linkage_ptr_info));
-  node->attr.i.tori.ptrinfo = ptrinfo;
+          && (get_SymConst_kind(node) == symconst_addr_name));
+  node->attr.i.sym.ident_p = name;
 }
 
-type_or_id_p
+
+/* Only to access SymConst of kind symconst_addr_ent.  Else assertion: */
+entity   *get_SymConst_entity (ir_node *node) {
+  assert (   (node->op == op_SymConst)
+          && (get_SymConst_kind(node) == symconst_addr_ent));
+  return node->attr.i.sym.entity_p;
+}
+
+void     set_SymConst_entity (ir_node *node, entity *ent) {
+  assert (   (node->op == op_SymConst)
+          && (get_SymConst_kind(node) == symconst_addr_ent));
+  node->attr.i.sym.entity_p  = ent;
+}
+
+
+symconst_symbol
 get_SymConst_type_or_id (ir_node *node) {
   assert (node->op == op_SymConst);
-  return &(node->attr.i.tori);
+  return node->attr.i.sym;
 }
 
 void
-set_SymConst_type_or_id (ir_node *node, type_or_id_p tori) {
+set_SymConst_type_or_id (ir_node *node, symconst_symbol sym) {
   assert (node->op == op_SymConst);
-  memcpy (&(node->attr.i.tori), tori, sizeof(type_or_id));
+  //memcpy (&(node->attr.i.sym), sym, sizeof(type_or_id));
+  node->attr.i.sym = sym;
 }
 
 ir_node *
