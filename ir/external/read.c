@@ -27,6 +27,12 @@
 # include <string.h>
 #endif
 
+#include <assert.h>
+
+#include <libxml/xmlmemory.h>
+#include <libxml/parser.h>
+#include <libxml/encoding.h>
+
 #include "read_t.h"
 #include "read.h"
 #include "irprog.h"
@@ -38,6 +44,17 @@
 #include "irvrfy.h"
 #include "type.h"
 #include "tv.h"
+#include "xmalloc.h"
+
+# define MY_ENCODING "ISO-8859-1"
+
+# define CHECK(ptr,msg)     assert (ptr && msg)
+
+# define NODE_NAME(n, m) (0 == xmlStrcmp (n->name, (const xmlChar*) #m))
+# define CHECK_NAME(n, m) assert (0 == xmlStrcmp (n->name, (const xmlChar*) #m))
+
+# define NEW(T)     (T*)xmalloc(sizeof (T))
+
 
 #define VERBOSE_PRINTING 0
 
@@ -59,7 +76,7 @@ static module_t *current_module = NULL;
 
 #if VERBOSE_PRINTING
 /* this is only used inside a VERBOSE_PRINT() call */
-static char *effect_string[] = {
+static const char *effect_string[] = {
   "arg",
   "valref",
   "select",
@@ -479,7 +496,7 @@ parseCall (xmlDocPtr doc, xmlNodePtr callelm)
   free (sel);
 
   if (0 != n_args) {
-    const ident **args = (const ident**) malloc(n_args * sizeof(const ident*));
+    const ident **args = (const ident**) xmalloc(n_args * sizeof(const ident*));
     int i = 0;
 
     while (NULL != arg) {
@@ -519,7 +536,7 @@ parseJoin (xmlDocPtr doc, xmlNodePtr joinelm)
     child = child->next;
   }
 
-  ins = (const ident **) malloc (n_ins * sizeof (const ident *) );
+  ins = (const ident **) xmalloc (n_ins * sizeof (const ident *) );
   i = 0;
   child = get_valid_child(joinelm);
 
@@ -614,7 +631,7 @@ parseType (xmlDocPtr doc, xmlNodePtr typeelm)
   VERBOSE_PRINT ((stdout, "type node \t0x%08x (%s)\n", (int) typeelm, tp_id));
   VERBOSE_PRINT ((stdout, "type = \"%s\"\n", getNodeTypeStr (typeelm)));
 
-  type = (type_t*) malloc (sizeof (type_t));
+  type = (type_t*) xmalloc (sizeof (type_t));
   type -> type_ident = new_id_from_str(getNodeTypeStr (typeelm));
   type -> id         = new_id_from_str(tp_id);
 
@@ -668,7 +685,7 @@ parseEffect (xmlDocPtr doc, xmlNodePtr effelm)
   curr_effs = NEW (proc_t);
   curr_effs -> proc_ident = new_id_from_str(procname);
   curr_effs -> ownerid = new_id_from_str(ownerid);
-  curr_effs->effs = (eff_t**) malloc (n_effs * sizeof (eff_t*));
+  curr_effs->effs = (eff_t**) xmalloc (n_effs * sizeof (eff_t*));
 
   cur = effelm -> xmlChildrenNode;
   while (NULL != cur) {
@@ -1289,7 +1306,7 @@ static void create_abstract_join (ir_graph *irg, proc_t *proc, eff_t *eff)
 
   c_block   = new_immBlock ();  /* for the Phi after the branch(es) */
 
-  ins = (ir_node**) malloc (n_ins * sizeof (ir_node*));
+  ins = (ir_node**) xmalloc (n_ins * sizeof (ir_node*));
   for (i = 0; i < n_ins; i ++) {
     ir_node *projX   = NULL;
     ir_node *s_block = NULL;
@@ -1660,6 +1677,9 @@ void free_abstraction(void) {
 
 /*
  * $Log$
+ * Revision 1.19  2004/12/10 15:14:34  beck
+ * used xmalloc instead of malloc
+ *
  * Revision 1.18  2004/12/02 16:21:42  beck
  * fixed config.h include
  *
