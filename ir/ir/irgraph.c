@@ -211,6 +211,8 @@ new_r_ir_graph (entity *ent, int n_loc)
   first_block = new_immBlock();
   add_immBlock_pred (first_block, projX);
 
+  res->method_execution_frequency = -1;
+
   return res;
 }
 

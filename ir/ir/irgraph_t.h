@@ -102,8 +102,10 @@ struct ir_graph {
   unsigned char *caller_isbe;        /**< For callgraph analysis: set if backedge. */
   ir_graph **callees;                /**< For callgraph analysis. */
   unsigned char *callee_isbe;        /**< For callgraph analysis: set if backedge. */
-  int        callgraph_loop_depth;
-  int        callgraph_recursion_depth;
+  int        callgraph_loop_depth;         /**< For callgraph analysis */
+  int        callgraph_recursion_depth;    /**< For callgraph analysis */
+  double     method_execution_frequency;   /**< For callgraph analysis */
+
   ir_loop   *l;
 
   /* -- Fields for Walking the graph -- */
