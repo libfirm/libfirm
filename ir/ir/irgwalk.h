@@ -105,8 +105,7 @@ void all_irg_walk(irg_walk_func *pre, irg_walk_func *post, void *env);
  */
 void cg_walk(irg_walk_func *pre, irg_walk_func *post, void *env);
 
-/**
- * Walks only over Block nodes in the graph.
+/** Walks only over Block nodes in the graph.
  *
  * @param node - the start node
  * @param pre  - walker function, executed before the predecessor of a node are visited

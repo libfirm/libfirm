@@ -221,9 +221,7 @@ new_ir_node (dbg_info *db,
 /** This works for all except Block.  To express the difference to
  * access routines that work for all nodes we use infix "nodes" and do not
  * name this function get_irn_block. */
-#define get_nodes_block get_nodes_Block
 ir_node  *get_nodes_block (ir_node *node);
-#define set_nodes_block set_nodes_Block
 void      set_nodes_block (ir_node *node, ir_node *block);
 
 /**
@@ -470,16 +468,29 @@ void     set_Call_type (ir_node *node, type *tp);
 /** Gets the arity of a call. Identical to get_Call_n_params(). */
 int      get_Call_arity (ir_node *node);
 
-/* Set, get and remove the callee-analysis.
-   The array is only accessible if information is valid.
-   It contains NULL for called methods that are not within
-   the compilation unit. */
+/** Set, get and remove the callee information for a Call node.
+ *
+ *  The callee information lists all method entities that can be called
+ *  from this node.  If the address expression can not be analyzed fully,
+ *  e.g., as there are external methods that could be called, the array
+ *  contains a single NULL entry.
+ *
+ *  The array is only accessible if callee information is valid.  See flag
+ *  in graph.
+ *
+ *  The memory allocated for the array is managed automatically, i.e., it must
+ *  not be freed if the Call node is removed from the graph.
+ *
+ *  @param node A Call node.
+ */
 int     Call_has_callees      (ir_node *node);
-int     get_Call_n_callees    (ir_node * node);
-entity *get_Call_callee       (ir_node * node, int pos);
-/* assumes current_ir_graph set properly! */
-void    set_Call_callee_arr   (ir_node * node, int n, entity ** arr);
-void    remove_Call_callee_arr(ir_node * node);
+int     get_Call_n_callees    (ir_node *node);
+entity *get_Call_callee       (ir_node *node, int pos);
+/** Set the full callee array.
+ *
+ *  The passed array is copied. Assumes current_ir_graph set properly! */
+void    set_Call_callee_arr   (ir_node *node, const int n, entity **arr);
+void    remove_Call_callee_arr(ir_node *node);
 
 ir_node  *get_CallBegin_ptr  (ir_node *node);
 void      set_CallBegin_ptr  (ir_node *node, ir_node *ptr);
@@ -502,10 +513,21 @@ void     set_FuncCall_type (ir_node *node, type *tp);
 /** Gets the arity of a func call. Identical to get_FuncCall_n_params(). */
 int      get_FuncCall_arity (ir_node *node);
 
-/* Set, get and remove the callee-analysis.
-   The array is only accessible if information is valid.
-   It contains NULL for called methods that are not within
-   the compilation unit. */
+/** Set, get and remove the callee information for a Call node.
+ *
+ *  The callee information lists all method entities that can be called
+ *  from this node.  If the address expression can not be analyzed fully,
+ *  e.g., as there are external methods that could be called, the array
+ *  contains a single NULL entry.
+ *
+ *  The array is only accessible if callee information is valid.  See flag
+ *  in graph.
+ *
+ *  The memory allocated for the array is managed automatically, i.e., it must
+ *  not be freed if the Call node is removed from the graph.
+ *
+ *  @param node A FuncCall node.
+ */
 int     FuncCall_has_callees      (ir_node *node);
 int     get_FuncCall_n_callees    (ir_node * node);
 entity *get_FuncCall_callee       (ir_node * node, int pos);

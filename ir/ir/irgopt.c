@@ -55,9 +55,9 @@ static void init_link (ir_node *n, void *env) {
 }
 
 #if 0   /* Old version. Avoids Ids.
-       This is not necessary:  we do a postwalk, and get_irn_n
-       removes ids anyways.  So it's much cheaper to call the
-       optimization less often and use the exchange() algorithm. */
+	   This is not necessary:  we do a postwalk, and get_irn_n
+	   removes ids anyways.  So it's much cheaper to call the
+	   optimization less often and use the exchange() algorithm. */
 static void
 optimize_in_place_wrapper (ir_node *n, void *env) {
   int i, irn_arity;

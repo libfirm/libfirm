@@ -1158,22 +1158,22 @@ set_Call_type (ir_node *node, type *tp) {
 }
 
 int Call_has_callees(ir_node *node) {
-
+  assert(node && node->op == op_Call);
   return ((get_irg_callee_info_state(get_irn_irg(node)) != irg_callee_info_none) &&
 	  (node->attr.call.callee_arr != NULL));
 }
 
 int get_Call_n_callees(ir_node * node) {
-  assert(node->op == op_Call && node->attr.call.callee_arr);
+  assert(node && node->op == op_Call && node->attr.call.callee_arr);
   return ARR_LEN(node->attr.call.callee_arr);
 }
 
 entity * get_Call_callee(ir_node * node, int pos) {
-  assert(node->op == op_Call && node->attr.call.callee_arr);
+  assert(pos >= 0 && pos < get_Call_n_callees(node));
   return node->attr.call.callee_arr[pos];
 }
 
-void set_Call_callee_arr(ir_node * node, int n, entity ** arr) {
+void set_Call_callee_arr(ir_node * node, const int n, entity ** arr) {
   assert(node->op == op_Call);
   if (node->attr.call.callee_arr == NULL || get_Call_n_callees(node) != n) {
     node->attr.call.callee_arr = NEW_ARR_D(entity *, current_ir_graph->obst, n);
