@@ -9,7 +9,7 @@
 *
 *  Entities represent all program known objects.
 *
-*  @author Martin Trapp, Christian Schaefer,
+*  @author Martin Trapp, Christian Schaefer
 *  @author Goetz Lindenmaier
 *
 *  An entity is the representation of program known objects in Firm.
@@ -31,21 +31,21 @@
 *
 *  In detail the datastructure entity has the following fields:
 *
-*  ident *name     Name of this entity as specified in the source code.
-*                  Only unequivocal in conjuction with scope.
-*  ident *ld_name  Unique name of this entity, i.e., the mangled
-*                  name.  E.g., for a class `A' with field `a' this
-*                  is the ident for `A_a'.
-*  type *type      The type of this entity, e.g., a method type, a
-*                  basic type of the language or a class itself.
-*  type *owner;    The class this entity belongs to.  In case of local
-* 	    variables the method they are defined in.
-*  int offset;     Offset in byte for this entity.  Fixed when layout
-* 	    of owner is determined.
-*  ir_graph *irg;  If (type == method_type) this is the corresponding irg.
-* 	    The ir_graph constructor automatically sets this field.
-*                  If (type != method_type) access of this field will cause
-*                  an assertion.
+*  - ident *name:    Name of this entity as specified in the source code.
+*                    Only unequivocal in conjuction with scope.
+*  - ident *ld_name: Unique name of this entity, i.e., the mangled
+*                    name.  E.g., for a class `A' with field `a' this
+*                    is the ident for `A_a'.
+*  - type *type:     The type of this entity, e.g., a method type, a
+*                    basic type of the language or a class itself.
+*  - type *owner:    The class this entity belongs to.  In case of local
+* 	             variables the method they are defined in.
+*  - int offset:     Offset in byte for this entity.  Fixed when layout
+* 	             of owner is determined.
+*  - ir_graph *irg:  If (type == method_type) this is the corresponding irg.
+* 	             The ir_graph constructor automatically sets this field.
+*                    If (type != method_type) access of this field will cause
+*                    an assertion.
 */
 
 /* $Id$ */
@@ -57,16 +57,16 @@
 # include "type.h"
 # include "dbginfo.h"
 
-/*******************************************************************/
-/** general                                                       **/
-/*******************************************************************/
+/*-----------------------------------------------------------------*/
+/* general                                                         */
+/*-----------------------------------------------------------------*/
 
-/** initalize entity module */
+/** Initalize entity module. */
 void init_entity (void);
 
-/*******************************************************************/
-/** ENTITY                                                        **/
-/*******************************************************************/
+/*-----------------------------------------------------------------*/
+/* ENTITY                                                          */
+/*-----------------------------------------------------------------*/
 
 /* to resolve recursion between entity.h and irgraph.h */
 #ifndef _IR_GRAPH_TYPEDEF_
@@ -120,31 +120,58 @@ typedef struct ir_graph ir_graph;
 typedef struct entity entity;
 #endif
 
-
-/** Creates a new entity.
-   Automatically inserts the entity as a member of owner.
-   Entity is automatic_allocated and uninitialize except if the type
-   is type_method, then it is static_allocated and constant.  The constant
-   value is a pointer to the method.
-   Visibility is local, offset -1, and it is not volatile. */
+/**
+ * Creates a new entity.
+ *
+ * Automatically inserts the entity as a member of owner.
+ * Entity is automatic_allocated and uninitialize except if the type
+ * is type_method, then it is static_allocated and constant.  The constant
+ * value is a pointer to the method.
+ * Visibility is local, offset -1, and it is not volatile.
+ */
 entity     *new_entity (type *owner, ident *name, type *tp);
+
+/**
+ * Creates a new entity.
+ *
+ * Automatically inserts the entity as a member of owner.
+ * Entity is automatic_allocated and uninitialize except if the type
+ * is type_method, then it is static_allocated and constant.  The constant
+ * value is a pointer to the method.
+ * Visibility is local, offset -1, and it is not volatile.
+ */
 entity     *new_d_entity (type *owner, ident *name, type *tp, dbg_info *db);
-/** Copies the entity if the new_owner is different from the
-   owner of the old entity.  Else returns the old entity.
-   Automatically inserts the new entity as a member of owner.
-   Resets the overwrites/overwritten_by fields. */
+
+/**
+ * Copies the entity if the new_owner is different from the
+ * owner of the old entity,  else returns the old entity.
+ *
+ * Automatically inserts the new entity as a member of owner.
+ * Resets the overwrites/overwritten_by fields.
+ */
 entity     *copy_entity_own (entity *old, type *new_owner);
-/** Copies the entity if the new_name is different from the
-   name of the old entity.  Else returns the old entity.
-   Automatically inserts the new entity as a member of owner.
-   The mangled name ld_name is set to NULL. */
+
+/**
+ * Copies the entity if the new_name is different from the
+ * name of the old entity, else returns the old entity.
+ *
+ * Automatically inserts the new entity as a member of owner.
+ * The mangled name ld_name is set to NULL.
+ */
 entity     *copy_entity_name (entity *old, ident *new_name);
-/** Frees the entity.  The owner will still contain the pointer to this
-   entity, as well as all other references! */
+
+/**
+ * Frees the entity.
+ *
+ * The owner will still contain the pointer to this
+ * entity, as well as all other references!
+ */
 void        free_entity (entity *ent);
 
-/** manipulate fields of entity **/
+/** Returns the name of an entity. */
 const char *get_entity_name     (entity *ent);
+
+/** Returns the ident of an entity. */
 ident      *get_entity_ident    (entity *ent);
 
 /** Returns the mangled name of the entity.
@@ -171,9 +198,13 @@ void        set_entity_owner (entity *ent, type *owner);
 /** Asserts if the type owner is neither a compound type or an array */
 INLINE void assert_legal_owner_of_ent(type *owner);
 
+/** Returns the type of an entity. */
 type     *get_entity_type (entity *ent);
+
+/** Sets the type of an entity. */
 void      set_entity_type (entity *ent, type *tp);
 
+/** The allocation type. */
 typedef enum {
   automatic_allocated, /**< The entity is allocated during runtime, implicitly
 		  	  as component of a compound type.   This is the default. */
@@ -187,11 +218,16 @@ typedef enum {
                           SymConst(?) as address of the entity. */
 } ent_allocation;
 
+/** Returns the allocation type of an entity. */
 ent_allocation get_entity_allocation (entity *ent);
+
+/** Sets the allocation type of an entity. */
 void           set_entity_allocation (entity *ent, ent_allocation al);
 
-/* This enumeration flags the visibility of entities.  This is necessary
-   for partial compilation. */
+/**
+ * This enumeration flags the visibility of entities.  This is necessary
+ * for partial compilation.
+ */
 typedef enum {
   local,              /**< The entity is only visible locally.  This is the default. */
   external_visible,   /**< The entity is visible to other external program parts, but
@@ -203,7 +239,10 @@ typedef enum {
 			 method. */
 } ent_visibility;
 
+/** Returns the visibility of an entity. */
 ent_visibility get_entity_visibility (entity *ent);
+
+/** Sets the visibility of an entity. */
 void           set_entity_visibility (entity *ent, ent_visibility vis);
 
 /** This enumeration flags the variability of entities. */
@@ -217,7 +256,10 @@ typedef enum {
   constant          /**< The entity is constant. */
 } ent_variability;
 
+/** Returns the variability of an entity. */
 ent_variability get_entity_variability (entity *ent);
+
+/** Sets the variability of an entity. */
 void            set_entity_variability (entity *ent, ent_variability var);
 
 /** This enumeration flags the volatility of entities. */
@@ -226,18 +268,25 @@ typedef enum {
   is_volatile      /**< The entity is volatile */
 } ent_volatility;
 
+/** Returns the volatility of an entity. */
 ent_volatility get_entity_volatility (entity *ent);
+
+/** Sets the volatility of an entity. */
 void           set_entity_volatility (entity *ent, ent_volatility vol);
 
-/* Only set if layout = fixed. */
+/** Returns the offset of an entity (in a compound). Only set if layout = fixed. */
 int       get_entity_offset (entity *ent);
+
+/** Sets the offset of an entity (in a compound). */
 void      set_entity_offset (entity *ent, int offset);
 
-/* A link to store intermediate information */
+/** Returns the stored intermediate information. */
 void*   get_entity_link(entity *ent);
+
+/** Stores new intermediate information. */
 void    set_entity_link(entity *ent, void *l);
 
-/** Fields of method entities **/
+/* -- Fields of method entities -- */
 /* The entity knows the corresponding irg if the entity is a method.
    This allows to get from a Call to the called irg.
    Only entities of peculiarity "existent" can have a corresponding irg,
@@ -249,7 +298,7 @@ void      set_entity_irg(entity *ent, ir_graph *irg);
 peculiarity get_entity_peculiarity (entity *ent);
 void        set_entity_peculiarity (entity *ent, peculiarity pec);
 
-/** Representation of constant values of entites **/
+/* -- Representation of constant values of entites -- */
 /* Set current_ir_graph to get_const_code_irg() to generate a constant
    expression. */
 /* Copies a firm subgraph that complies to the restrictions for
@@ -268,6 +317,7 @@ ir_node *get_compound_ent_value(entity *ent, int pos);
 entity  *get_compound_ent_value_member(entity *ent, int pos);
 void     set_compound_ent_value(entity *ent, ir_node *val, entity *member, int pos);
 void     remove_compound_ent_value(entity *ent, entity *value_ent);
+
 /** Inits the entity ent witch must be of a one dimensional
    array type with the values given in the values array.
    The array must have a lower and an upper bound.  Keeps the
@@ -329,7 +379,10 @@ bool equal_entity(entity *ent1, entity *ent2);
    debugging, (configure with --enable-debug) else returns 0. */
 INLINE long get_entity_nr(entity *ent);
 
+/** Returns the entitys visited count. */
 unsigned long get_entity_visited(entity *ent);
+
+/** Sets the entitys visited count. */
 void        set_entity_visited(entity *ent, unsigned long num);
 
 /** Sets visited field in entity to entity_visited. */
@@ -340,8 +393,6 @@ bool        entity_visited(entity *ent);
 
 /** Returns true if this entity was not visited. */
 bool        entity_not_visited(entity *ent);
-
-
 
 
 # endif /* _ENTITY_H_ */
