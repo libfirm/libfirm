@@ -279,6 +279,20 @@ set_entity_allocation (entity *ent, ent_allocation al) {
   ent->allocation = al;
 }
 
+/* return the name of the visibility */
+const char *get_allocation_name(ent_allocation all)
+{
+#define X(a)	case a: return #a
+  switch (all) {
+    X(automatic_allocated);
+    X(parameter_allocated);
+    X(dynamic_allocated);
+    X(static_allocated);
+    default: return "BAD VALUE";
+  }
+#undef X
+}
+
 
 INLINE ent_visibility
 get_entity_visibility (entity *ent) {
@@ -293,6 +307,19 @@ set_entity_visibility (entity *ent, ent_visibility vis) {
   /* @@@ Test that the owner type is not local, but how??
          && get_class_visibility(get_entity_owner(ent)) != local));*/
   ent->visibility = vis;
+}
+
+/* return the name of the visibility */
+const char *get_visibility_name(ent_visibility vis)
+{
+#define X(a)	case a: return #a
+  switch (vis) {
+    X(local);
+    X(external_visible);
+    X(external_allocated);
+    default: return "BAD VALUE";
+  }
+#undef X
 }
 
 INLINE ent_variability

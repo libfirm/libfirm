@@ -224,6 +224,9 @@ ent_allocation get_entity_allocation (entity *ent);
 /** Sets the allocation type of an entity. */
 void           set_entity_allocation (entity *ent, ent_allocation al);
 
+/** Return the name of the visibility */
+const char *get_allocation_name(ent_allocation vis);
+
 /**
  * This enumeration flags the visibility of entities.  This is necessary
  * for partial compilation.
@@ -244,6 +247,9 @@ ent_visibility get_entity_visibility (entity *ent);
 
 /** Sets the visibility of an entity. */
 void           set_entity_visibility (entity *ent, ent_visibility vis);
+
+/** Return the name of the visibility */
+const char *get_visibility_name(ent_visibility vis);
 
 /** This enumeration flags the variability of entities. */
 typedef enum {
