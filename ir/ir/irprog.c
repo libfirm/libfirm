@@ -18,6 +18,7 @@
 
 # include "irprog_t.h"
 # include "irgraph_t.h"
+# include "pseudo_irg.h"
 # include "array.h"
 # include "obst.h"
 # include "typegmod.h"
@@ -61,7 +62,8 @@ ir_prog *new_ir_prog (void) {
   memset(res, 0, sizeof(res));
   irp = res;
   /* res->obst      = (struct obstack *) xmalloc (sizeof (struct obstack)); */
-  res->graphs = NEW_ARR_F (ir_graph *, 0);
+  res->graphs        = NEW_ARR_F (ir_graph *, 0);
+  res->pseudo_graphs = NEW_ARR_F (ir_graph *, 0);
   res->types  = NEW_ARR_F (type *, 0);
   res->name   = new_id_from_str(INITAL_PROG_NAME);
 
@@ -148,6 +150,23 @@ void set_irp_irg(int pos, ir_graph *irg) {
   assert (pos < (ARR_LEN((irp)->graphs)));
   irp->graphs[pos] = irg;
 }
+
+/* Gets the number of graphs _and_ pseudo graphs. */
+int       get_irp_n_allirgs(void) {
+  /* We can not call get_irp_n_irgs, as we end up in a recursion ... */
+  return ARR_LEN((irp)->graphs) + get_irp_n_pseudo_irgs();
+}
+
+/* Returns the ir graph at position pos of all graphs (including
+ pseudo graphs).  Visits first graphs, then pseudo graphs. */
+ir_graph *get_irp_allirg(int pos) {
+  int n_irgs = get_irp_n_irgs();
+  if (pos < n_irgs)
+    return (irp)->graphs[pos];
+  else
+    return get_irp_pseudo_irg(pos-n_irgs);
+}
+
 
 /* Adds type to the list of types in irp. */
 void add_irp_type(type *typ) {

@@ -701,6 +701,7 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
   } break;
   case iro_CallBegin: {
     ir_node *call = get_CallBegin_call(n);
+    fprintf(F, "Call: %ld\n", get_irn_node_nr(call));
     if (Call_has_callees(call)) {
       fprintf(F, "possible callees: \n");
       for (i = 0; i < get_Call_n_callees(call); i++) {

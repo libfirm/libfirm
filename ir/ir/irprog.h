@@ -120,6 +120,13 @@ ir_graph *get_irp_irg(int pos);
 /** Sets the ir graph at position pos. */
 void      set_irp_irg(int pos, ir_graph *irg);
 
+/** Gets the number of graphs _and_ pseudo graphs. */
+int       get_irp_n_allirgs(void);
+
+/** Returns the ir graph at position pos of all graphs (including
+ pseudo graphs).  Visits first graphs, then pseudo graphs. */
+ir_graph *get_irp_allirg(int pos);
+
 
 /** Returns the "global" type of the irp. */
 type *get_glob_type(void);

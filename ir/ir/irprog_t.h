@@ -23,6 +23,7 @@
 
 #include "irprog.h"
 #include "irgraph.h"
+#include "pseudo_irg.h"
 #include "ircgcons.h"
 #include "firm_common_t.h"
 #include "typegmod.h"
@@ -38,6 +39,7 @@ struct ir_prog {
   ir_graph  *main_irg;            /**< entry point to the compiled program
 				       @@@ or a list, in case we compile a library or the like? */
   ir_graph **graphs;              /**< all graphs in the ir */
+  ir_graph **pseudo_graphs;       /**< all pseudo graphs in the ir. See pseudo_irg.c */
   ir_graph  *const_code_irg;      /**< This ir graph gives the proper environment
 				       to allocate nodes the represent values
 				       of constant entities. It is not meant as
@@ -80,12 +82,14 @@ __get_glob_type(void) {
 static INLINE int
 __get_irp_n_irgs(void) {
   assert (irp && irp->graphs);
+  if (get_visit_pseudo_irgs()) return get_irp_n_allirgs();
   return (ARR_LEN((irp)->graphs));
 }
 
 static INLINE ir_graph *
 __get_irp_irg(int pos){
   assert (irp && irp->graphs);
+  if (get_visit_pseudo_irgs()) return get_irp_allirg(pos);
   return irp->graphs[pos];
 }
 

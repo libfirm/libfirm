@@ -27,6 +27,7 @@
 #include "firm_common_t.h"
 #include "irtypeinfo.h"
 #include "irprog.h"
+#include "pseudo_irg.h"
 
 #include "irloop.h"
 
@@ -120,6 +121,9 @@ struct ir_graph {
  * Initializes the graph construction module
  */
 void init_irgraph(void);
+
+/* Internal constructor that does not add to irp_irgs or the like. */
+ir_graph *new_r_ir_graph (entity *ent, int n_loc);
 
 /** Make a rudimentary ir graph for the constant code.
    Must look like a correct irg, spare everything else. */

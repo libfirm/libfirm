@@ -91,7 +91,7 @@ void      set_current_ir_graph(ir_graph *graph);
 int get_interprocedural_view(void);
 void set_interprocedural_view(int state);
 
-/** Create a new ir graph to built ir for a procedure.
+/** Create a new ir graph to build ir for a procedure.
  *
  *  ent is the entity representing this procedure, i.e., the type of the
  *  entity must be of a method type.  The constructor automatically sets the
@@ -99,7 +99,9 @@ void set_interprocedural_view(int state);
  *  n_loc is the number of local variables in this procedure including
  *  the procedure parameters.
  *  The constructor adds the new irgraph to the list in ir_prog.
- *  The state of the ir graph is:  phase_building, op_pin_state_pinned, outs_none. */
+ *  The state of the ir graph is:  phase_building, op_pin_state_pinned, outs_none.
+ *
+ *  @see new_pseudo_ir_graph() */
 ir_graph *new_ir_graph (entity *ent, int n_loc);
 
 /** Frees the passed irgraph.
@@ -360,8 +362,5 @@ unsigned long inc_max_irg_visited (void);
 void          inc_irg_block_visited (ir_graph *irg);
 unsigned long get_irg_block_visited (const ir_graph *irg);
 void          set_irg_block_visited (ir_graph *irg, unsigned long i);
-
-/* is irg a pseudo graph for analysis? */
-int      is_pseudo_ir_graph(ir_graph *irg);
 
 # endif /* _IRGRAPH_H_ */

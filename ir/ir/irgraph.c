@@ -79,7 +79,7 @@ void free_Phi_in_stack(Phi_in_stack *s);
    and optimization.
 */
 ir_graph *
-new_ir_graph (entity *ent, int n_loc)
+new_r_ir_graph (entity *ent, int n_loc)
 {
   ir_graph *res;
   ir_node *first_block;
@@ -93,7 +93,6 @@ new_ir_graph (entity *ent, int n_loc)
   stat_new_graph(res, ent);
 
   current_ir_graph = res;
-  add_irp_irg(res);          /* remember this graph global. */
 
   /*-- initialized for each graph. --*/
   if (get_opt_precise_exc_context()) {
@@ -180,6 +179,14 @@ new_ir_graph (entity *ent, int n_loc)
   return res;
 }
 
+
+ir_graph *
+new_ir_graph (entity *ent, int n_loc)
+{
+  ir_graph *res = new_r_ir_graph (ent, n_loc);
+  add_irp_irg(res);          /* remember this graph global. */
+  return res;
+}
 
 /* Make a rudimentary ir graph for the constant code.
    Must look like a correct irg, spare everything else. */
@@ -676,21 +683,4 @@ void
 void
 (inc_irg_block_visited)(ir_graph *irg) {
   __inc_irg_block_visited(irg);
-}
-
-/* is irg a pseudo graph for analysis? */
-int is_pseudo_ir_graph(ir_graph *irg)
-{
-  int res = false;
-  entity *ent;
-
-  assert(irg && "nothing here");
-  assert(is_ir_graph(irg) && "no ir_graph given");
-
-  ent = get_irg_entity(irg);
-  if(visibility_external_allocated == get_entity_visibility(ent)
-     && peculiarity_existent == get_entity_peculiarity(ent)) {
-    res = true;
-  }
-  return(res);
 }
