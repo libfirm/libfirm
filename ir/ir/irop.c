@@ -24,7 +24,7 @@
 
 # include "xmalloc.h"
 
-ir_op *op_Block;           ir_op *get_op_Block     (void) { return op_Block;     }
+ir_op *op_Block;       ir_op *get_op_Block     (void) { return op_Block;     }
 
 ir_op *op_Start;       ir_op *get_op_Start     (void) { return op_Start;     }
 ir_op *op_End;         ir_op *get_op_End       (void) { return op_End;       }
@@ -59,7 +59,7 @@ ir_op *op_Shr;         ir_op *get_op_Shr       (void) { return op_Shr;       }
 ir_op *op_Shrs;        ir_op *get_op_Shrs      (void) { return op_Shrs;      }
 ir_op *op_Rot;         ir_op *get_op_Rot       (void) { return op_Rot;       }
 ir_op *op_Conv;        ir_op *get_op_Conv      (void) { return op_Conv;      }
-ir_op *op_Cast;            ir_op *get_op_Cast      (void) { return op_Cast;      }
+ir_op *op_Cast;        ir_op *get_op_Cast      (void) { return op_Cast;      }
 
 ir_op *op_Phi;         ir_op *get_op_Phi       (void) { return op_Phi;       }
 
@@ -78,9 +78,9 @@ ir_op *op_Confirm;     ir_op *get_op_Confirm   (void) { return op_Confirm;   }
 ir_op *op_Unknown;     ir_op *get_op_Unknown   (void) { return op_Unknown;   }
 ir_op *op_Filter;      ir_op *get_op_Filter    (void) { return op_Filter;    }
 ir_op *op_Break;       ir_op *get_op_Break     (void) { return op_Break;     }
-ir_op *op_CallBegin;       ir_op *get_op_CallBegin (void) { return op_CallBegin; }
+ir_op *op_CallBegin;   ir_op *get_op_CallBegin (void) { return op_CallBegin; }
 ir_op *op_EndReg;      ir_op *get_op_EndReg    (void) { return op_EndReg;    }
-ir_op *op_EndExcept;       ir_op *get_op_EndExcept (void) { return op_EndExcept; }
+ir_op *op_EndExcept;   ir_op *get_op_EndExcept (void) { return op_EndExcept; }
 
 ir_op *op_FuncCall;    ir_op *get_op_FuncCall  (void) { return op_FuncCall; }
 
