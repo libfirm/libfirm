@@ -355,7 +355,8 @@ void *
 
 op_pin_state
 (get_irn_pinned)(const ir_node *node) {
-  return __get_irn_pinned(node);
+  /* return __get_irn_pinned(node); */
+  return (__get_op_pinned (get_irn_op (node)));
 }
 
 
