@@ -1,5 +1,4 @@
 /**
- *
  * @file type.h
  *
  * Project:     libFIRM                                                   <br>
@@ -30,7 +29,7 @@ typedef struct type type;
  *   @param tp1  The first type to compare.
  *   @param tp2  The second type to compare.
  */
-typedef int (*compare_types_func_tp) (const void *tp1, const void *tp2);
+typedef int (compare_types_func_t)(const void *tp1, const void *tp2);
 
 /** Compares two types by their name.
  *
@@ -45,41 +44,19 @@ int compare_names (const void *tp1, const void *tp2);
  */
 int compare_strict (const void *tp1, const void *tp2);
 
-/** A variable that holds a compare function for types.
- *
- *  The compare function is used to identify equal types.  The
- *  variable is initialized with the function compare_strict().
- *
- *  The variable must be set before calling init_firm()! Later changes
- *  have no effect.
- */
-extern compare_types_func_tp compare_types_func;
-
-
 /* ------------------------------------------------------------------------ */
 
 /**  Type for a function that computes a hash value for a type.
  *
  *   @param tp The type to compute a hash for.
  */
-typedef int (*hash_types_func_tp)(type *tp);
+typedef int (hash_types_func_t)(type *tp);
 
 /** Computes a hash value by the type name.
  *
  * Uses the name of the type and the type opcode to compute the hash.
  */
 int hash_name (type *tp);
-
-/** A variable that holds a hash function for a type.
- *
- *  The hash function is used to identify equal types.  The
- *  variable is initialized with the function hash_name().
- *
- *  The variable must be set before calling init_firm()! Later changes
- *  have no effect.
- */
-extern hash_types_func_tp hash_types_func;
-
 
 /* ------------------------------------------------------------------------ */
 
@@ -135,8 +112,13 @@ type *       mature_type_free(type *tp);
 type *       mature_type_free_entities(type *tp);
 
 /**
- * initialise the type identifier module.
+ * Initialise the type identifier module.
+ *
+ * @param cmp   The function that should be used to compare two types.
+ *              If NULL, compare_strict() will be used.
+ * @param hash  The function that should be used to calculate a hash
+ *              value of a type. If NULL, hash_name() will be used.
  */
-void init_type_identify(void);
+void init_type_identify(compare_types_func_t *cmp, hash_types_func_t *hash);
 
 # endif /* _TYPE_IDENTIFY_H_ */

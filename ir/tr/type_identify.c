@@ -40,6 +40,9 @@
 /* The hash set for types. */
 static pset *type_table = NULL;
 
+/* hash and compare types */
+static hash_types_func_t    *hash_types_func;
+static compare_types_func_t *compare_types_func;
 
 int compare_names (const void *tp1, const void *tp2) {
   type *t1 = (type *) tp1;
@@ -57,17 +60,12 @@ int compare_strict (const void *tp1, const void *tp2) {
   return t1 != t2;
 }
 
-compare_types_func_tp compare_types_func = compare_strict;
-
 /* stuff to compute a hash value for a type. */
 int hash_name (type *tp) {
   unsigned h = (unsigned)tp->type_op;
   h = 9*h + (unsigned)tp->name;
   return h;
 }
-
-hash_types_func_tp hash_types_func = hash_name;
-
 
 /* The function that hashes a type. */
 type *mature_type(type *tp) {
@@ -117,6 +115,10 @@ type *mature_type_free_entities(type *tp) {
   return o;
 }
 
-void init_type_identify(void) {
+/* initialize this module */
+void init_type_identify(compare_types_func_t *cmp, hash_types_func_t *hash) {
+  compare_types_func = cmp  ? cmp  : compare_strict;
+  hash_types_func    = hash ? hash : hash_name;
+
   type_table = new_pset (compare_types_func, 8);
 }
