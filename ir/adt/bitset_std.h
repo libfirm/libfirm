@@ -63,8 +63,8 @@
  * @param unit A pointer to the unit.
  * @return The Number of leading zeroes.
  */
-#define _bitset_inside_ntz(unit_ptr) _std_bitset_inside_ntz(unit_ptr)
-static INLINE int _std_bitset_ntz(unsigned long *unit_ptr)
+#define _bitset_inside_ntz(unit_ptr) _bitset_std_inside_ntz(unit_ptr)
+static INLINE int _bitset_std_inside_ntz(unsigned long *unit_ptr)
 {
 	unsigned long data = *unit_ptr;
 	return 32 - nlz(~data & (data - 1));
@@ -85,7 +85,7 @@ static INLINE int _std_bitset_ntz(unsigned long *unit_ptr)
  * @return 1, if the bit is set, 0 otherise.
  */
 #define _bitset_inside_is_set(unit_ptr,bit) \
-(((*unit_ptr) & (1 << (bit))) != NULL)
+	(((*unit_ptr) & (1 << (bit))) != 0)
 
 /**
  * count the number of bits set in a unit.

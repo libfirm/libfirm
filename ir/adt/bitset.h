@@ -18,7 +18,8 @@
 
 #include "bitset_std.h"
 
-#if defined(__GNUC__) && defined(__i386__)
+/* #if defined(__GNUC__) && defined(__i386__) */
+#if 0
 #include "bitset_ia32.h"
 #endif
 
@@ -119,7 +120,7 @@ static INLINE unsigned long *_bitset_get_unit(const bitset_t *bs, unsigned long 
 static INLINE void bitset_set(bitset_t *bs, unsigned long bit)
 {
 	unsigned long *unit = _bitset_get_unit(bs, bit);
-	_bitset_inside_set(*unit, bit & BS_UNIT_MASK);
+	_bitset_inside_set(unit, bit & BS_UNIT_MASK);
 }
 
 /**
@@ -328,7 +329,7 @@ static INLINE int bitset_contains(const bitset_t *lhs, const bitset_t *rhs)
  * @param file The stream.
  * @param bs The bitset.
  */
-static INLINE void bitset_fprint(FILE *file, bitset_t *bs)
+static INLINE void bitset_fprint(FILE *file, const bitset_t *bs)
 {
 	const char *prefix = "";
 	int i;
@@ -362,6 +363,5 @@ BINARY_OP(and)
 BINARY_OP(andnot)
 BINARY_OP(or)
 BINARY_OP(xor)
-
 
 #endif
