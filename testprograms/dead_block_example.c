@@ -80,6 +80,7 @@ int main(int argc, char **argv)
   /* two make a condition  */
   c1 = new_Const (mode_i, tarval_from_long (mode_i, 1));
   c2 = new_Const (mode_i, tarval_from_long (mode_i, 2));
+  set_value(0, c2);
 
   cond = new_Cond(new_Proj(new_Cmp(c1, c2), mode_b, Eq));
   f = new_Proj(cond, mode_X, 0);
@@ -100,7 +101,6 @@ int main(int argc, char **argv)
   Block2 = new_Block();
   add_in_edge(Block2, f);
   mature_block(Block2);
-  set_value(0, c2);
   jmp = new_Jmp();
   add_in_edge(endBlock, jmp);
 
@@ -110,10 +110,12 @@ int main(int argc, char **argv)
   jmp = new_Jmp();
   add_in_edge(endBlock, jmp);
 
+  /* finish end block */
   switch_block(endBlock);
   {
     ir_node *in[1];
     in[0] = get_value(0, mode_i);
+    get_store();
     x = new_Return (get_store(), 1, in);
   }
   mature_block (irg->current_block);
@@ -125,12 +127,12 @@ int main(int argc, char **argv)
   irg_vrfy(irg);
 
   printf("\nDone building the graph.\n");
-  local_optimize_graph (irg);
-  printf("\nDone local optimization.\n");
-  set_opt_constant_folding (1);
+  set_opt_constant_folding (0);
   set_optimize(0);
-  set_opt_cse(1);
+  set_opt_cse(0);
+  local_optimize_graph (irg);
   dead_node_elimination (irg);
+  printf("\nDone local optimization.\n");
   printf("Dumping the graph and a control flow graph.\n");
 
   dump_ir_block_graph (irg);

@@ -50,8 +50,9 @@ new_ir_graph (entity *ent, int params)
 #endif
   res->obst      = (struct obstack *) xmalloc (sizeof (struct obstack));
   obstack_init (res->obst);
-  res->value_table = new_identities (); /* value table for global value numbering
-				      for optimizing use in iropt.c */
+  res->value_table = new_identities (); /* value table for global value
+					   numbering for optimizing use in
+					   iropt.c */
 
   /** Type inforamtion for the procedure of the graph **/
   res->ent = ent;

@@ -109,16 +109,18 @@ int main(int argc, char **argv)
    * so we can mature it. */
   mature_block (irg->current_block);
 
-  /* This adds the in edge of the end block which originates at the return statement.
-   * The return node passes controlflow to the end block.  */
+  /* This adds the in edge of the end block which originates at the
+     return statement. The return node passes controlflow to the end block.*/
   add_in_edge (irg->end_block, x);
   /* Now we can mature the end block as all it's predecessors are known. */
   mature_block (irg->end_block);
 
+
+  printf("\nDone building the graph.  Dumping it.\n");
+
   /* verify the graph */
   irg_vrfy(irg);
 
-  printf("\nDone building the graph.  Dumping it.\n");
   dump_ir_block_graph (irg);
 
   printf("use xvcg to view this graph:\n");

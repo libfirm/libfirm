@@ -265,7 +265,8 @@ irn_vrfy (ir_node *n)
            /* Phi: BB x dataM^n --> dataM */
     /* for some reason "<=" aborts. Is there a problem with get_store? */
     for (i=1; i < get_irn_arity(n); i++) {
-      assert ( get_irn_mode(in[i]) == mymode );
+      if (!is_Bad(in[i]))
+	assert ( get_irn_mode(in[i]) == mymode );
     };
     assert ( mode_is_dataM(mymode) );
     break;

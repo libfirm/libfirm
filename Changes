@@ -1,3 +1,10 @@
+  2.8.2000 Goetz
+  Implemented simpler Phi construction algorithm that constructs
+  correct code for three_cfpred_example in ircons.  This algorithm
+  generates more Id nodes than the original algorithm and therefore
+  is less effective.
+  Also made some changes to optimizations of Not.
+
   31.7.2000 Chris
   Fixed a bug, caused by the recursive use in type.h and entity.h.
   Deleted the _TYPE_TYPEDEF_ and inserted the _ENTITY_TYPEDEF_ instead.

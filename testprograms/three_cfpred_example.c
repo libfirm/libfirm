@@ -72,7 +72,7 @@ int main(int argc, char **argv)
 
   owner = get_glob_type();
   proc_main = new_type_method(id_from_str(METHODNAME, strlen(METHODNAME)),
-                              NRARGS, NRES);
+			      NRARGS, NRES);
   /** @@@ setting of arg/res types misses **/
   ent = new_entity ((type *)owner,
                     id_from_str (METHODNAME, strlen(METHODNAME)),

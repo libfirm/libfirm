@@ -1692,7 +1692,8 @@ skip_Proj (ir_node *node) {
 inline ir_node *
 skip_nop (ir_node *node) {
   /* don't assert node !!! */
-  if (node && (node->op == op_Id)) {
+
+  if (node && (node->op == op_Id) && (node != get_Id_pred(node))) {
     return get_Id_pred(node);
   } else {
     return node;

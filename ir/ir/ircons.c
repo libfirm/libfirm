@@ -32,7 +32,8 @@ struct Phi_in_stack {
 /*********************************************** */
 /** privat interfaces, for professional use only */
 
-/* Constructs a Block with a fixed number of predecessors.*/
+/* Constructs a Block with a fixed number of predecessors.
+   Does not set current_block. */
 
 inline ir_node *
 new_r_Block (ir_graph *irg,  int arity, ir_node **in)
@@ -67,20 +68,6 @@ new_r_End (ir_graph *irg, ir_node *block)
   return res;
 }
 
-/* Creates a Phi node with 0 predecessors */
-inline ir_node *
-new_r_Phi0 (ir_graph *irg, ir_node *block, ir_mode *mode)
-{
-  ir_node *res;
-
-  res = new_ir_node (irg, block, op_Phi, mode, 0, NULL);
-
-  /* GL I'm not sure whether we should optimize this guy. *
-     res = optimize (res); ??? */
-  irn_vrfy (res);
-  return res;
-}
-
 /* Creates a Phi node with all predecessors.  Calling this constructor
    is only allowed if the corresponding block is mature.  */
 ir_node *
@@ -95,145 +82,6 @@ new_r_Phi (ir_graph *irg, ir_node *block, int arity, ir_node **in, ir_mode *mode
 
   res = optimize (res);
   irn_vrfy (res);
-  return res;
-}
-
-/* This is a stack used for allocating and deallocating nodes in
-   new_r_Phi_in.  The original implementation used the obstack
-   to model this stack, now it is explicit.  This reduces side effects.
-*/
-#if USE_EXPICIT_PHI_IN_STACK
-Phi_in_stack *
-new_Phi_in_stack() {
-  Phi_in_stack *res;
-
-  res = (Phi_in_stack *) malloc ( sizeof (Phi_in_stack));
-
-  res->stack = NEW_ARR_F (ir_node *, 1);
-  res->pos = 0;
-
-  return res;
-}
-
-void free_to_Phi_in_stack(ir_node *phi) {
-  assert(get_irn_opcode(phi) == iro_Phi);
-
-  if (ARR_LEN(current_ir_graph->Phi_in_stack->stack) ==
-      current_ir_graph->Phi_in_stack->pos)
-    ARR_APP1 (ir_node *, current_ir_graph->Phi_in_stack->stack, phi);
-  else
-    current_ir_graph->Phi_in_stack->stack[current_ir_graph->Phi_in_stack->pos] = phi;
-
-  (current_ir_graph->Phi_in_stack->pos)++;
-}
-
-ir_node *
-alloc_or_pop_from_Phi_in_stack(ir_graph *irg, ir_node *block, ir_mode *mode,
-	     int arity, ir_node **in) {
-  ir_node *res;
-  ir_node **stack = current_ir_graph->Phi_in_stack->stack;
-  int pos = current_ir_graph->Phi_in_stack->pos;
-
-
-  if (pos == 0) {
-    /* We need to allocate a new node */
-    res = new_ir_node (irg, block, op_Phi, mode, arity, in);
-  } else {
-    /* reuse the old node and initialize it again. */
-    res = stack[pos-1];
-
-    assert (res->kind == k_ir_node);
-    assert (res->op == op_Phi);
-    res->mode = mode;
-    res->visited = 0;
-    res->link = NULL;
-    assert (arity >= 0);
-    /* ???!!! How to free the old in array??  */
-    res->in = NEW_ARR_D (ir_node *, irg->obst, (arity+1));
-    res->in[0] = block;
-    memcpy (&res->in[1], in, sizeof (ir_node *) * arity);
-
-    (current_ir_graph->Phi_in_stack->pos)--;
-  }
-  return res;
-}
-#endif
-
-
-/* Creates a Phi node with a given, fixed array **in of predecessors.
-   If the Phi node is unnecessary, as the same value reaches the block
-   through all control flow paths, it is eliminated and the value
-   returned directly.  This constructor is only intended for use in
-   the automatic Phi node generation triggered by get_value or mature.
-   The implementation is quite tricky and depends on the fact, that
-   the nodes are allocated on a stack:
-   The in array contains predecessors and NULLs.  The NULLs appear,
-   if get_r_value_internal, that computed the predecessors, reached
-   the same block on two paths.  In this case the same value reaches
-   this block on both paths, there is no definition in between.  We need
-   not allocate a Phi where these path's merge, but we have to communicate
-   this fact to the caller.  This happens by returning a pointer to the
-   node the caller _will_ allocate.  (Yes, we predict the address. We can
-   do so because the nodes are allocated on the obstack.)  The caller then
-   finds a pointer to itself and, when this routine is called again,
-   eliminates itself.
-   */
-inline ir_node *
-new_r_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
-	      ir_node **in, int ins)
-{
-  int i;
-  ir_node *res, *known;
-
-  /* allocate a new node on the obstack.
-     This can return a node to which some of the pointers in the in-array
-     already point.
-     Attention: the constructor copies the in array, i.e., the later changes
-     to the array in this routine do not affect the constructed node!  If
-     the in array contains NULLs, there will be missing predecessors in the
-     returned node.
-     Is this a possible internal state of the Phi node generation? */
-#if USE_EXPICIT_PHI_IN_STACK
-  res = known = alloc_or_pop_from_Phi_in_stack(irg, block, mode, ins, in);
-#else
-  res = known = new_ir_node (irg, block, op_Phi, mode, ins, in);
-#endif
-  /* The in-array can contain NULLs.  These were returned by
-     get_r_value_internal if it reached the same block/definition on a
-     second path.
-     The NULLs are replaced by the node itself to simplify the test in the
-     next loop. */
-  for (i=0;  i < ins;  ++i)
-    if (in[i] == NULL) in[i] = res;
-
-  /* This loop checks whether the Phi has more than one predecessor.
-     If so, it is a real Phi node and we break the loop.  Else the
-     Phi node merges the same definition on several paths and therefore
-     is not needed. */
-  for (i=0;  i < ins;  ++i)
-  {
-    if (in[i]==res || in[i]==known) continue;
-
-    if (known==res)
-      known = in[i];
-    else
-      break;
-  }
-
-  /* i==ins: there is at most one predecessor, we don't need a phi node. */
-  if (i==ins) {
-#if USE_EXPICIT_PHI_IN_STACK
-    free_to_Phi_in_stack(res);
-#else
-    obstack_free (current_ir_graph->obst, res);
-#endif
-    res = known;
-  } else {
-    res = optimize (res);
-    irn_vrfy (res);
-  }
-
-  /* return the pointer to the Phi node.  This node might be deallocated! */
   return res;
 }
 
@@ -773,6 +621,182 @@ new_Block (void)
   return res;
 }
 
+/*************************************************************************/
+/* Methods necessary for automatic Phi node creation                     */
+/*
+  ir_node *phi_merge            (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
+  ir_node *get_r_value_internal (ir_node *block, int pos, ir_mode *mode);
+  ir_node *new_r_Phi0           (ir_graph *irg, ir_node *block, ir_mode *mode)
+  ir_node *new_r_Phi_in         (ir_graph *irg, ir_node *block, ir_mode *mode,  ir_node **in, int ins)
+
+  Call Graph:   ( A ---> B == A "calls" B)
+
+       get_value         mature_block
+          |                   |
+          |                   |
+          |                   |
+          |          ---> phi_merge
+          |         /       /   \
+          |        /       /     \
+         \|/      /      |/_      \
+       get_r_value_internal        |
+                |                  |
+	        |                  |
+	       \|/                \|/
+  	    new_r_Phi0          new_r_Phi_in
+
+*****************************************************************************/
+
+/* Creates a Phi node with 0 predecessors */
+inline ir_node *
+new_r_Phi0 (ir_graph *irg, ir_node *block, ir_mode *mode)
+{
+  ir_node *res;
+  res = new_ir_node (irg, block, op_Phi, mode, 0, NULL);
+  irn_vrfy (res);
+  return res;
+}
+
+#if 0
+
+/* This is a stack used for allocating and deallocating nodes in
+   new_r_Phi_in.  The original implementation used the obstack
+   to model this stack, now it is explicit.  This reduces side effects.
+*/
+#if USE_EXPICIT_PHI_IN_STACK
+Phi_in_stack *
+new_Phi_in_stack() {
+  Phi_in_stack *res;
+
+  res = (Phi_in_stack *) malloc ( sizeof (Phi_in_stack));
+
+  res->stack = NEW_ARR_F (ir_node *, 1);
+  res->pos = 0;
+
+  return res;
+}
+
+void free_to_Phi_in_stack(ir_node *phi) {
+  assert(get_irn_opcode(phi) == iro_Phi);
+
+  if (ARR_LEN(current_ir_graph->Phi_in_stack->stack) ==
+      current_ir_graph->Phi_in_stack->pos)
+    ARR_APP1 (ir_node *, current_ir_graph->Phi_in_stack->stack, phi);
+  else
+    current_ir_graph->Phi_in_stack->stack[current_ir_graph->Phi_in_stack->pos] = phi;
+
+  (current_ir_graph->Phi_in_stack->pos)++;
+}
+
+ir_node *
+alloc_or_pop_from_Phi_in_stack(ir_graph *irg, ir_node *block, ir_mode *mode,
+	     int arity, ir_node **in) {
+  ir_node *res;
+  ir_node **stack = current_ir_graph->Phi_in_stack->stack;
+  int pos = current_ir_graph->Phi_in_stack->pos;
+
+
+  if (pos == 0) {
+    /* We need to allocate a new node */
+    res = new_ir_node (irg, block, op_Phi, mode, arity, in);
+  } else {
+    /* reuse the old node and initialize it again. */
+    res = stack[pos-1];
+
+    assert (res->kind == k_ir_node);
+    assert (res->op == op_Phi);
+    res->mode = mode;
+    res->visited = 0;
+    res->link = NULL;
+    assert (arity >= 0);
+    /* ???!!! How to free the old in array??  */
+    res->in = NEW_ARR_D (ir_node *, irg->obst, (arity+1));
+    res->in[0] = block;
+    memcpy (&res->in[1], in, sizeof (ir_node *) * arity);
+
+    (current_ir_graph->Phi_in_stack->pos)--;
+  }
+  return res;
+}
+#endif /* USE_EXPICIT_PHI_IN_STACK */
+
+/* Creates a Phi node with a given, fixed array **in of predecessors.
+   If the Phi node is unnecessary, as the same value reaches the block
+   through all control flow paths, it is eliminated and the value
+   returned directly.  This constructor is only intended for use in
+   the automatic Phi node generation triggered by get_value or mature.
+   The implementation is quite tricky and depends on the fact, that
+   the nodes are allocated on a stack:
+   The in array contains predecessors and NULLs.  The NULLs appear,
+   if get_r_value_internal, that computed the predecessors, reached
+   the same block on two paths.  In this case the same value reaches
+   this block on both paths, there is no definition in between.  We need
+   not allocate a Phi where these path's merge, but we have to communicate
+   this fact to the caller.  This happens by returning a pointer to the
+   node the caller _will_ allocate.  (Yes, we predict the address. We can
+   do so because the nodes are allocated on the obstack.)  The caller then
+   finds a pointer to itself and, when this routine is called again,
+   eliminates itself.
+   */
+inline ir_node *
+new_r_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
+	      ir_node **in, int ins)
+{
+  int i;
+  ir_node *res, *known;
+
+  /* allocate a new node on the obstack.
+     This can return a node to which some of the pointers in the in-array
+     already point.
+     Attention: the constructor copies the in array, i.e., the later changes
+     to the array in this routine do not affect the constructed node!  If
+     the in array contains NULLs, there will be missing predecessors in the
+     returned node.
+     Is this a possible internal state of the Phi node generation? */
+#if USE_EXPICIT_PHI_IN_STACK
+  res = known = alloc_or_pop_from_Phi_in_stack(irg, block, mode, ins, in);
+#else
+  res = known = new_ir_node (irg, block, op_Phi, mode, ins, in);
+#endif
+  /* The in-array can contain NULLs.  These were returned by
+     get_r_value_internal if it reached the same block/definition on a
+     second path.
+     The NULLs are replaced by the node itself to simplify the test in the
+     next loop. */
+  for (i=0;  i < ins;  ++i)
+    if (in[i] == NULL) in[i] = res;
+
+  /* This loop checks whether the Phi has more than one predecessor.
+     If so, it is a real Phi node and we break the loop.  Else the
+     Phi node merges the same definition on several paths and therefore
+     is not needed. */
+  for (i=0;  i < ins;  ++i)
+  {
+    if (in[i]==res || in[i]==known) continue;
+
+    if (known==res)
+      known = in[i];
+    else
+      break;
+  }
+
+  /* i==ins: there is at most one predecessor, we don't need a phi node. */
+  if (i==ins) {
+#if USE_EXPICIT_PHI_IN_STACK
+    free_to_Phi_in_stack(res);
+#else
+    obstack_free (current_ir_graph->obst, res);
+#endif
+    res = known;
+  } else {
+    res = optimize (res);
+    irn_vrfy (res);
+  }
+
+  /* return the pointer to the Phi node.  This node might be deallocated! */
+  return res;
+}
+
 inline ir_node *
 get_r_value_internal (ir_node *block, int pos, ir_mode *mode);
 
@@ -803,12 +827,12 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
      returns the only operand instead of a new Phi node.  If the value
      passes two different control flow edges without being defined, and
      this is the second path treated, a pointer to the node that will be
-     allocated for the first path (recurstion) is returned.  We already
+     allocated for the first path (recursion) is returned.  We already
      know the address of this node, as it is the next node to be allocated
      and will be placed on top of the obstack. (The obstack is a _stack_!) */
   res = new_r_Phi_in (current_ir_graph, block, mode, nin, ins);
 
-  /* Now we now the value "pos" and can enter it in the array with
+  /* Now we now the value for "pos" and can enter it in the array with
      all known local variables.  Attention: this might be a pointer to
      a node, that later will be allocated!!! See new_r_Phi_in.
      If this is called in mature, after some set_value in the same block,
@@ -822,8 +846,8 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
   if (!block->attr.block.graph_arr[pos]) {
     block->attr.block.graph_arr[pos] = res;
   } else {
-    //  printf(" value already computed by %s\n",
-    //  id_to_str(block->attr.block.graph_arr[pos]->op->name));
+    /*  printf(" value already computed by %s\n",
+        id_to_str(block->attr.block.graph_arr[pos]->op->name));  */
   }
 
   return res;
@@ -843,7 +867,7 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
         create a proper Phi node, therefore a Phi0, i.e., a Phi without
         predecessors is returned.  This node is added to the linked list (field
         "link") of the containing block to be completed when this block is
-        matured. (Comlpletion will add a new Phi and turn the Phi0 into a Id
+        matured. (Comlpletion will add a new Phi and turn the Phi0 into an Id
         node.)
 
      2. The value is already known in this block, graph_arr[pos] is set and we
@@ -853,15 +877,20 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
      3. The block is mature and we visit it the first time.  A Phi node needs
         to be created (phi_merge).  If the Phi is not needed, as all it's
         operands are the same value reaching the block through different
-        paths, it's optimizes away and the value itself is returned.
+        paths, it's optimized away and the value itself is returned.
 
      4. The block is mature, and we visit it the second time.  Now two
         subcases are possible:
-        * The value was computed completely the last time we were here.
-          This is the case if there is no loop.  We can return the proper value.
+        * The value was computed completely the last time we were here. This
+          is the case if there is no loop.  We can return the proper value.
         * The recursion that visited this node and set the flag did not
           return yet.  We are computing a value in a loop and need to
           break the recursion without knowing the result yet.
+	  @@@ strange case.  Straight forward we would create a Phi before
+	  starting the computation of it's predecessors.  In this case we will find
+	  a Phi here in any case.  The problem is that this implementation only
+	  creates a Phi after computing the predecessors, so that it is hard to
+	  compute self references of this Phi.  @@@
         There is no simple check for the second subcase.  Therefore we check
         for a second visit and treat all such cases as the second subcase.
         Anyways, the basic situation is the same:  we reached a block
@@ -870,7 +899,9 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
         We return this information "Two paths, no Phi needed" by a very tricky
         implementation that relies on the fact that an obstack is a stack and
         will return a node with the same address on different allocations.
-        Look also at phi_merge and get_r_phi_in to understand this.
+        Look also at phi_merge and new_r_phi_in to understand this.
+	@@@ Unfortunately this does not work, see testprogram three_cfpred_example.
+
   */
 
   /* case 4 -- already visited. */
@@ -914,7 +945,8 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
   /* If we get here, the frontend missed a use-before-definition error */
   if (!res) {
     /* Error Message */
-    printf("Error: no value set\n");
+    printf("Error: no value set.  Use of undefined variable.  Initializing
+            to zero.\n");
     assert (mode->code >= irm_f && mode->code <= irm_p);
     res = new_r_Const (current_ir_graph, block, mode,
 		       tarval_mode_null[mode->code]);
@@ -925,6 +957,228 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
 
   return res;
 }
+
+#else /* if 0 */
+
+/** This is the simple algorithm.  If first generates a Phi0, then
+    it starts the recursion.  This causes an Id at the entry of
+    every block that has no definition of the value! **/
+
+/* Just a dummy */
+Phi_in_stack * new_Phi_in_stack() {  return NULL; }
+
+inline ir_node *
+new_r_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
+	      ir_node **in, int ins)
+{
+  int i;
+  ir_node *res, *known;
+
+  /* Allocate a new node on the obstack.  The allocation copies the in
+     array. */
+  res = new_ir_node (irg, block, op_Phi, mode, ins, in);
+
+  /* @@@GL The in-array should not contain NULLS with this algorithm.
+     Remove this test if it never is true. Just to make sure the algorithm runs. */
+  for (i=0;  i < ins;  ++i)
+    if (in[i] == NULL) assert(0);
+
+  /* This loop checks whether the Phi has more than one predecessor.
+     If so, it is a real Phi node and we break the loop.  Else the
+     Phi node merges the same definition on several paths and therefore
+     is not needed. Don't consider Bad nodes! */
+  known = res;
+  for (i=0;  i < ins;  ++i)
+  {
+    if (in[i]==res || in[i]==known || is_Bad(in[i])) continue;
+
+    if (known==res)
+      known = in[i];
+    else
+      break;
+  }
+
+  /* i==ins: there is at most one predecessor, we don't need a phi node. */
+  if (i==ins) {
+    if (res != known) {
+      obstack_free (current_ir_graph->obst, res);
+      res = known;
+    } else {
+      /* A undefined value, e.g., in unreachable code. */
+      res = new_Bad();
+    }
+  } else {
+    res = optimize (res);
+    irn_vrfy (res);
+  }
+
+  return res;
+}
+
+inline ir_node *
+get_r_value_internal (ir_node *block, int pos, ir_mode *mode);
+
+/** This function allocates a dummy Phi node to break recursions,
+    computes the predecessors for the real phi node, and then
+    allocates and returns this node.  The routine called to allocate the
+    node might optimize it away and return a real value.
+    This function is called with an in-array of proper size. **/
+static inline ir_node *
+phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
+{
+  ir_node *prevBlock, *res, *phi0;
+  int i;
+
+
+  /* If this block has no value at pos create a Phi0 and remember it
+     in graph_arr to break recursions. */
+  phi0 = NULL;
+  if (!block->attr.block.graph_arr[pos]) {
+    /* Even if all variables are defined before use, it can happen that
+       we get to the start block, if a cond has been replaced by a tuple
+       (bad, jmp).  As the start has a self referencing control flow edge,
+       we get a self referencing Id, which is hard to optimize away.  We avoid
+       this by defining the value as a Bad node. *
+    if (block == get_irg_start_block(current_ir_graph)) {
+      block->attr.block.graph_arr[pos] = new_Bad();
+      return new_Bad();
+      } else */ {
+      phi0 = new_r_Phi0(current_ir_graph, block, mode);
+      block->attr.block.graph_arr[pos] = phi0;
+    }
+  }
+
+  /* This loop goes to all predecessor blocks of the block the Phi node is in
+     and there finds the operands of the Phi node by calling
+     get_r_value_internal.  */
+  for (i = 1;  i <= ins;  ++i) {
+    assert (block->in[i]);
+    if (is_Bad(block->in[i])) {
+      /* In case a Cond has been optimized we would get right to the start block
+	 with an invalid definition. */
+      nin[i-1] = new_Bad();
+      continue;
+    }
+    prevBlock = block->in[i]->in[0]; /* go past control flow op to prev block */
+    assert (prevBlock);
+    if (!is_Bad(prevBlock)) {
+      nin[i-1] = get_r_value_internal (prevBlock, pos, mode);
+    } else {
+      nin[i-1] = new_Bad();
+    }
+  }
+
+  /* After collecting all predecessors into the array nin a new Phi node
+     with these predecessors is created.  This constructor contains an
+     optimization: If all predecessors of the Phi node are identical it
+     returns the only operand instead of a new Phi node.  */
+  res = new_r_Phi_in (current_ir_graph, block, mode, nin, ins);
+
+  /* In case we allocated a Phi0 node at the beginning of this procedure,
+     we need to exchange this Phi0 with the real Phi. */
+  if (phi0) {
+    exchange(phi0, res);
+    block->attr.block.graph_arr[pos] = res;
+  }
+
+  return res;
+}
+
+/* This function returns the last definition of a variable.  In case
+   this variable was last defined in a previous block, Phi nodes are
+   inserted.  If the part of the firm graph containing the definition
+   is not yet constructed, a dummy Phi node is returned. */
+inline ir_node *
+get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
+{
+  ir_node *res;
+  /* There are 4 cases to treat.
+
+     1. The block is not mature and we visit it the first time.  We can not
+        create a proper Phi node, therefore a Phi0, i.e., a Phi without
+        predecessors is returned.  This node is added to the linked list (field
+        "link") of the containing block to be completed when this block is
+        matured. (Comlpletion will add a new Phi and turn the Phi0 into an Id
+        node.)
+
+     2. The value is already known in this block, graph_arr[pos] is set and we
+        visit the block the first time.  We can return the value without
+        creating any new nodes.
+
+     3. The block is mature and we visit it the first time.  A Phi node needs
+        to be created (phi_merge).  If the Phi is not needed, as all it's
+        operands are the same value reaching the block through different
+        paths, it's optimized away and the value itself is returned.
+
+     4. The block is mature, and we visit it the second time.  Now two
+        subcases are possible:
+        * The value was computed completely the last time we were here. This
+          is the case if there is no loop.  We can return the proper value.
+        * The recursion that visited this node and set the flag did not
+          return yet.  We are computing a value in a loop and need to
+          break the recursion.  This case only happens if we visited
+	  the same block with phi_merge before, which inserted a Phi0.
+	  So we return the Phi0.
+  */
+
+  /* case 4 -- already visited. */
+  if (get_irn_visited(block) == get_irg_visited(current_ir_graph)) {
+    assert(block->attr.block.graph_arr[pos]);
+    return block->attr.block.graph_arr[pos];
+  }
+
+  /* visited the first time */
+  set_irn_visited(block, get_irg_visited(current_ir_graph));
+
+  /* Get the local valid value */
+  res = block->attr.block.graph_arr[pos];
+
+  /* case 2 -- If the value is actually computed, return it. */
+  if (res) { return res;};
+
+  if (block->attr.block.matured) { /* case 3 */
+
+    /* The Phi has the same amount of ins as the corresponding block. */
+    int ins = get_irn_arity(block);
+    ir_node **nin;
+    NEW_ARR_A (ir_node *, nin, ins);
+
+    /* Phi merge collects the predecessors and then creates a node. */
+    res = phi_merge (block, pos, mode, nin, ins);
+
+  } else {  /* case 1 */
+    /* The block is not mature, we don't know how many in's are needed.  A Phi
+       with zero predecessors is created.  Such a Phi node is called Phi0
+       node.  The Phi0 is then added to the list of Phi0 nodes in this block
+       to be matured by mature_block later.
+       The Phi0 has to remember the pos of it's internal value.  If the real
+       Phi is computed, pos is used to update the array with the local
+       values. */
+    res = new_r_Phi0 (current_ir_graph, block, mode);
+    res->attr.phi0_pos = pos;
+    res->link = block->link;
+    block->link = res;
+  }
+
+  /* If we get here, the frontend missed a use-before-definition error */
+  if (!res) {
+    /* Error Message */
+    printf("Error: no value set.  Use of undefined variable.  Initializing
+            to zero.\n");
+    assert (mode->code >= irm_f && mode->code <= irm_p);
+    res = new_r_Const (current_ir_graph, block, mode,
+		       tarval_mode_null[mode->code]);
+  }
+
+  /* The local valid value is available now. */
+  block->attr.block.graph_arr[pos] = res;
+
+  return res;
+}
+
+#endif /* if 0 */
+
+/****************************************************************************/
 
 /** Finalize a Block node, when all control flows are known.  */
 /** Acceptable parameters are only Block nodes.               */
@@ -954,10 +1208,15 @@ mature_block (ir_node *block)
 
     block->attr.block.matured = 1;
 
+    /* Now, as the block is a finished firm node, we can optimize it.
+       Since other nodes have been allocated since the block was created
+       we can not free the node on the obstack.  Therefore we have to call
+       optimize_in_place.
+       Unfortunately the optimization does not change a lot, as all allocated
+       nodes refer to the unoptimized node. */
     block = optimize_in_place(block);
     irn_vrfy(block);
   }
-
 }
 
 ir_node *

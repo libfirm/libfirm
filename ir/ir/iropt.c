@@ -24,7 +24,6 @@ follow_Id (ir_node *n)
   return n;
 }
 
-
 static inline tarval *
 value_of (ir_node *n)
 {
@@ -34,9 +33,8 @@ value_of (ir_node *n)
     return NULL;
 }
 
-
 /* if n can be computed, return the value, else NULL. Performs
-   constant Folding. GL: Only if n is arithmetic operator? */
+   constant folding. GL: Only if n is arithmetic operator? */
 tarval *
 computed_value (ir_node *n)
 {
@@ -98,7 +96,7 @@ computed_value (ir_node *n)
   case iro_Abs:
     if (ta)
       res = /*tarval_abs (ta);*/ res;
-    /* allowded or problems with max/min ?? */
+    /* allowed or problems with max/min ?? */
     break;
   case iro_And:
     if (ta && tb) {
@@ -247,14 +245,12 @@ equivalent_node (ir_node *n)
     a = get_unop_op(n);
   }
 
-
   /* skip unnecessary nodes. */
   switch (get_irn_opcode (n)) {
   case iro_Block:
     {
-      /* The Block constructor does not call optimize, therefore
-         dead blocks are not removed without an extra optimizing
-         pass through the graph. */
+      /* The Block constructor does not call optimize, but mature_block
+	 calls the optimization. */
       assert(get_Block_matured(n));
 
       /* a single entry Region following a single exit Region can be merged */
@@ -263,12 +259,11 @@ equivalent_node (ir_node *n)
       if (get_Block_n_cfgpreds(n) == 1
 	  && get_irn_op(get_Block_cfgpred(n, 0)) == op_Jmp) {
 	n = get_nodes_Block(get_Block_cfgpred(n, 0));
+
       } else if (n != current_ir_graph->start_block) {
 	int i;
-
 	/* If all inputs are dead, this block is dead too, except if it is
            the start block.  This is a step of unreachable code elimination */
-
 	for (i = 0; i < get_Block_n_cfgpreds(n); i++) {
 	  if (!is_Bad(get_Block_cfgpred(n, i))) break;
 	}
@@ -278,18 +273,13 @@ equivalent_node (ir_node *n)
     }
     break;
 
-  case iro_Jmp:  /* GL: ??? Why not same for op_Raise?? */
+  case iro_Jmp:  /* GL: Why not same for op_Raise?? */
     /* unreachable code elimination */
     if (is_Bad(get_nodes_Block(n)))  n = new_Bad();
     break;
-  /* GL: Why isn't there a case that checks whether input ot Cond is
-     constant true or false?  For unreachable code elimination
-     is this done in Proj? It's not here as it generates a new node,
-     a Jmp. It is in transform_node. *
-  case iro_Cond:
-    break;
-  */
-    /* remove stuff as x+0, x*1 x&true ... constant expression evaluation */
+  /* We do not evaluate Cond here as we replace it by a new node, a Jmp.
+     See cases for iro_Cond and iro_Proj in transform_node. */
+  /** remove stuff as x+0, x*1 x&true ... constant expression evaluation **/
   case iro_Or:  if (a == b) {n = a; break;}
   case iro_Add:
   case iro_Eor:
@@ -418,20 +408,19 @@ equivalent_node (ir_node *n)
 	}
       }
 #endif
-
       /* Find first non-self-referencing input */
       for (i = 0;  i < n_preds;  ++i) {
         first_val = follow_Id(get_Phi_pred(n, i));
         /* skip Id's */
         set_Phi_pred(n, i, first_val);
 	if (   (first_val != n)                            /* not self pointer */
-            && (get_irn_op(first_val) != op_Bad)      /* value not dead */
+	       && (get_irn_op(first_val) != op_Bad)           /* value not dead */
             && !(is_Bad (get_Block_cfgpred(block, i))) ) { /* not dead control flow */
 	  break;                         /* then found first value. */
 	}
       }
 
-      /* A totally Bad or self-referencing Phi */
+      /* A totally Bad or self-referencing Phi (we didn't break the above loop) */
       if (i > n_preds) { n = new_Bad();  break; }
 
       scnd_val = NULL;
@@ -455,8 +444,9 @@ equivalent_node (ir_node *n)
 	n = a;
       } else {
       /* skip the remaining Ids. */
-	while (++i < n_preds)
+	while (++i < n_preds) {
 	  set_Phi_pred(n, i, follow_Id(get_Phi_pred(n, i)));
+	}
       }
     }
     break;
@@ -510,7 +500,7 @@ equivalent_node (ir_node *n)
 	if ( get_Proj_proj(n) <= get_Tuple_n_preds(a) ) {
 	  n = get_Tuple_pred(a, get_Proj_proj(n));
 	} else {
-          assert(0); /* This should not happen?! (GL added this assert) */
+          assert(0); /* This should not happen! (GL added this assert) */
 	  n = new_Bad();
 	}
       } else if (get_irn_mode(n) == mode_X &&
@@ -601,7 +591,6 @@ transform_node (ir_node *n)
     /* Replace the Cond by a Jmp if it branches on a constant
        condition. */
     ir_node *jmp;
-
     a = get_Cond_selector(n);
     ta = value_of(a);
 
@@ -623,14 +612,19 @@ transform_node (ir_node *n)
          I generate the Jmp here, and remember it in link.  Link is used
          when optimizing Proj. */
       set_irn_link(n, new_r_Jmp(current_ir_graph, get_nodes_Block(n)));
-    } else if (   ((get_irn_op(get_Cond_selector(n)) == op_Eor)
-                   /* || (get_irn_op(get_Cond_selector(a)) == op_Not)*/)
+    } else if (   (get_irn_op(get_Cond_selector(n)) == op_Eor)
                && (get_irn_mode(get_Cond_selector(n)) == mode_b)
                && (tarval_classify(computed_value(get_Eor_right(a))) == 1)) {
       /* The Eor is a negate.  Generate a new Cond without the negate,
          simulate the negate by exchanging the results. */
       set_irn_link(n, new_r_Cond(current_ir_graph, get_nodes_Block(n),
 				 get_Eor_left(a)));
+    } else if (   (get_irn_op(get_Cond_selector(n)) == op_Not)
+               && (get_irn_mode(get_Cond_selector(n)) == mode_b)) {
+      /* A Not before the Cond.  Generate a new Cond without the Not,
+         simulate the Not by exchanging the results. */
+      set_irn_link(n, new_r_Cond(current_ir_graph, get_nodes_Block(n),
+				 get_Not_op(a)));
     }
   }
   break;
@@ -643,8 +637,8 @@ transform_node (ir_node *n)
         && get_irn_op(get_irn_link(a)) == op_Cond) {
     /* Use the better Cond if the Proj projs from a Cond which get's
        its result from an Eor/Not. */
-      assert (   ((get_irn_op(get_Cond_selector(a)) == op_Eor)
-                  /* || (get_irn_op(get_Cond_selector(a)) == op_Not)*/)
+      assert (   (   (get_irn_op(get_Cond_selector(a)) == op_Eor)
+		     || (get_irn_op(get_Cond_selector(a)) == op_Not))
               && (get_irn_mode(get_Cond_selector(a)) == mode_b)
 	      && (get_irn_op(get_irn_link(a)) == op_Cond)
               && (get_Cond_selector(get_irn_link(a)) ==
@@ -909,10 +903,10 @@ optimize (ir_node *n)
         /* evaluation was succesful -- replace the node. */
 	obstack_free (current_ir_graph->obst, n);
 	return new_Const (get_tv_mode (tv), tv);
-        /* xprintf("* optimize: computed node %I\n", n->op->name); */
       }
     }
   }
+
   /* remove unnecessary nodes */
   if (get_opt_constant_folding() || get_irn_op(n) == op_Phi)
     n = equivalent_node (n);
@@ -922,10 +916,8 @@ optimize (ir_node *n)
   /* The block input is used to distinguish different subexpressions. Right
      now all nodes are pinned to blocks, i.e., the cse only finds common
      subexpressions within a block. */
-
   if (get_opt_cse())
     n = identify (current_ir_graph->value_table, n);
-
   /* identify found a cse, so deallocate the old node. */
   if (n != old_n) {
     obstack_free (current_ir_graph->obst, old_n);
@@ -944,8 +936,6 @@ optimize (ir_node *n)
 
   /* Now we have a legal, useful node. Enter it in hash table for cse */
   if (get_opt_cse()) {
-    /* aborts ??! set/pset can not handle several hash tables??!
-       No, suddenly it works. */
     n = identify_remember (current_ir_graph->value_table, n);
   }
 
@@ -988,8 +978,10 @@ optimize_in_place (ir_node *n)
       }
     }
   }
+
   /* remove unnecessary nodes */
-  if (get_opt_constant_folding() || get_irn_op(n) == op_Phi)
+  if (get_opt_constant_folding())
+    //  if (get_opt_constant_folding() || get_irn_op(n) == op_Phi)
     n = equivalent_node (n);
 
   /** common subexpression elimination **/
@@ -997,7 +989,6 @@ optimize_in_place (ir_node *n)
   /* The block input is used to distinguish different subexpressions.  Right
      now all nodes are pinned to blocks, i.e., the cse only finds common
      subexpressions within a block. */
-
   if (get_opt_cse())
     n = identify (current_ir_graph->value_table, n);
 

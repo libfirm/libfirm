@@ -107,6 +107,7 @@ copy_node (ir_node *n, void *env) {
     res = new_r_Jmp (current_ir_graph, get_new_node(get_nodes_Block(n)));
     break;
   case iro_Cond:
+    DDMSG;
     res = new_r_Cond (current_ir_graph, get_new_node(get_nodes_Block(n)),
 		      get_new_node(get_Cond_selector(n)));
     break;
