@@ -3,6 +3,9 @@
  * @author Sebastian Hack
  * @date 22.11.2004
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "pset.h"
 #include "impl.h"
