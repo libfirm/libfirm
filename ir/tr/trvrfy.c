@@ -187,10 +187,15 @@ static int check_entity(entity *ent) {
   }
   set_visit_pseudo_irgs(rem_vpi);
 
+  /* Originally, this test assumed, that only method entities have
+     pec_inh.  As I changed this, I have to test for method type before
+     doing the test. */
   if (get_entity_peculiarity(ent) == peculiarity_inherited) {
-    entity *impl = get_SymConst_entity(get_atomic_ent_value(ent));
-    assert(get_entity_peculiarity(impl) == peculiarity_existent &&
-           "inherited entities must have constant pointing to existent entity.");
+    if (is_Method_type(get_entity_type(ent))) {
+      entity *impl = get_SymConst_entity(get_atomic_ent_value(ent));
+      assert(get_entity_peculiarity(impl) == peculiarity_existent &&
+	     "inherited method entities must have constant pointing to existent entity.");
+    }
   }
 
   return no_error;
