@@ -1725,7 +1725,7 @@ FILE *vcg_open (ir_graph *irg, const char * suffix1, const char *suffix2) {
 
   /* strncpy (fname, nm, len); */     /* copy the filename */
   j = 0;
-  for (i = 0; i < len; ++i) {  /* replase '/' in the name: escape by @. */
+  for (i = 0; i < len; ++i) {  /* replace '/' in the name: escape by @. */
     if (nm[i] == '/') {
       fname[j] = '@'; j++; fname[j] = '1'; j++;
     } else if (nm[i] == '@') {
@@ -1738,7 +1738,11 @@ FILE *vcg_open (ir_graph *irg, const char * suffix1, const char *suffix2) {
   strcat (fname, suffix1);  /* append file suffix */
   strcat (fname, suffix2);  /* append file suffix */
   strcat (fname, ".vcg");   /* append the .vcg suffix */
-  F = fopen (fname, "w");   /* open file for writing */
+
+  /* vcg really expect only a <CR> at end of line, so
+   * the "b"inary mode is what you mean (and even needed for Win32)
+   */
+  F = fopen (fname, "wb");  /* open file for writing */
   if (!F) {
     panic("cannot open %s for writing (%m)", fname);  /* not reached */
   }
@@ -1764,7 +1768,7 @@ FILE *vcg_open_name (const char *name, const char *suffix) {
   fname = malloc (len * 2 + 5 + strlen(suffix));
   /* strcpy (fname, name);*/    /* copy the filename */
   j = 0;
-  for (i = 0; i < len; ++i) {  /* replase '/' in the name: escape by @. */
+  for (i = 0; i < len; ++i) {  /* replace '/' in the name: escape by @. */
     if (name[i] == '/') {
       fname[j] = '@'; j++; fname[j] = '1'; j++;
     } else if (name[i] == '@') {
@@ -1776,7 +1780,11 @@ FILE *vcg_open_name (const char *name, const char *suffix) {
   fname[j] = '\0';
   strcat (fname, suffix);
   strcat (fname, ".vcg");  /* append the .vcg suffix */
-  F = fopen (fname, "w");  /* open file for writing */
+
+  /* vcg really expect only a <CR> at end of line, so
+   * the "b"inary mode is what you mean (and even needed for Win32)
+   */
+  F = fopen (fname, "wb");  /* open file for writing */
   if (!F) {
     panic ("cannot open %s for writing (%m)", fname);  /* not reached */
   }
@@ -1807,7 +1815,7 @@ void vcg_close (FILE *F) {
 /************************************************************************/
 
 /************************************************************************/
-/* Dump ir graphs, differnt formats and additional information.         */
+/* Dump ir graphs, different formats and additional information.        */
 /************************************************************************/
 
 /** Routine to dump a graph, blocks as conventional nodes.  */
@@ -2209,7 +2217,7 @@ dump_type_graph (ir_graph *irg, const char *suffix)
   /* walk over the blocks in the graph */
   type_walk_irg(irg, dump_type_info, NULL, f);
   /* The walker for the const code can be called several times for the
-     same (sub) experssion.  So that no nodes are dumped several times
+     same (sub) expression.  So that no nodes are dumped several times
      we decrease the visited flag of the corresponding graph after each
      walk.  So now increase it finally. */
   inc_irg_visited(get_const_code_irg());
