@@ -1347,7 +1347,7 @@ tarval *tarval_shr(tarval *a, tarval *b)
   else
     temp_val = (char*)b->value;
 
-  sc_shr(a->value, b->value, get_mode_size_bits(a->mode), mode_is_signed(a->mode), NULL);
+  sc_shr(a->value, temp_val, get_mode_size_bits(a->mode), mode_is_signed(a->mode), NULL);
   return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 }
 
@@ -1377,7 +1377,7 @@ tarval *tarval_shrs(tarval *a, tarval *b)
   else
     temp_val = (char*)b->value;
 
-  sc_shrs(a->value, b->value, get_mode_size_bits(a->mode), mode_is_signed(a->mode), NULL);
+  sc_shrs(a->value, temp_val, get_mode_size_bits(a->mode), mode_is_signed(a->mode), NULL);
   return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 }
 
@@ -1407,7 +1407,7 @@ tarval *tarval_rot(tarval *a, tarval *b)
   else
     temp_val = (char*)b->value;
 
-  sc_rot(a->value, b->value, get_mode_size_bits(a->mode), mode_is_signed(a->mode), NULL);
+  sc_rot(a->value, temp_val, get_mode_size_bits(a->mode), mode_is_signed(a->mode), NULL);
   return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 }
 
