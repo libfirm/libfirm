@@ -132,11 +132,11 @@ static int is_subtype (type *otype, type *stype)
 */
 static void _collect_subtypes (type *otype, lset_t *set)
 {
+  int i, n_sub;
+
   lset_insert (set, otype);
 
-  int n_sub = get_class_n_subtypes (otype);
-  int i;
-
+  n_sub = get_class_n_subtypes (otype);
   for (i = 0; i < n_sub; i ++) {
     type *sub = get_class_subtype (otype, i);
 
@@ -158,6 +158,8 @@ static lset_t *subtype_closure (type *otype)
 */
 static void _collect_owner_types (entity *method, ir_graph *graph, lset_t *tps)
 {
+  int i, n_over;
+
   /* search DOWNwards in clazz hierarchy */
 
   if ((peculiarity_description == get_entity_peculiarity (method)) ||
@@ -175,9 +177,7 @@ static void _collect_owner_types (entity *method, ir_graph *graph, lset_t *tps)
     }
   }
 
-  int n_over = get_entity_n_overwrittenby (method);
-  int i;
-
+  n_over = get_entity_n_overwrittenby (method);
   for (i = 0; i < n_over; i ++) {
     entity *ometh = get_entity_overwrittenby (method, i);
 
@@ -378,6 +378,7 @@ static const char *ta_name (typalise_t *ta)
 static int uses_graph (type *clazz, entity *meth, ir_graph *graph)
 {
   type *g_clazz = get_entity_owner (meth);
+  int i, n_over, use = FALSE;
 
   if (g_clazz == clazz) {
     return (TRUE);
@@ -392,10 +393,7 @@ static int uses_graph (type *clazz, entity *meth, ir_graph *graph)
   }
 
   /* else inherited or description */
-  int use = FALSE;
-  int i;
-  int n_over = get_entity_n_overwrittenby (meth); /* DOWN-wards */
-
+  n_over = get_entity_n_overwrittenby (meth); /* DOWN-wards */
   for (i = 0; (i < n_over) && (!use); i ++) {
     entity *over = get_entity_overwrittenby (meth, i);
 
@@ -445,6 +443,7 @@ static int ta_supports (typalise_t *ta, ir_graph *graph)
   }
 
   assert (0 && "invalid ta");
+  return FALSE;
 }
 
 
@@ -707,6 +706,9 @@ typalise_t *typalise (ir_node *node)
 
 /*
   $Log$
+  Revision 1.4  2004/12/21 15:50:18  beck
+  removed C99 constructs
+
   Revision 1.3  2004/12/02 16:17:51  beck
   fixed config.h include
 
