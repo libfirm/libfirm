@@ -20,7 +20,6 @@
 # include "irgraph_t.h"
 # include "pset.h"
 # include "irprog.h"
-# include "firmstat.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,6 +31,8 @@
 #include <obstack.h>
 
 #ifdef FIRM_STATISTICS
+
+#include "firmstat.h"
 
 /*
  * 64 bit should be enough for now
@@ -494,6 +495,10 @@ void stat_finish(void)
 }
 
 #else
+
+/* need this for prototypes */
+#define FIRM_STATISTICS
+#include "firmstat.h"
 
 void stat_init(void) {}
 
