@@ -12,7 +12,7 @@
 
 
 #ifdef HAVE_CONFIG_H
-# include <config.h>
+# include "config.h"
 #endif
 
 #include <assert.h>
@@ -22,10 +22,14 @@
 #  include <string.h>
 # endif
 
-#include "cookies.h"
+#include "fourcc.h"
 #include "pdeq.h"
 #include "xmalloc.h"
+#include "align.h"
 
+/* Pointer Double Ended Queue */
+#define PDEQ_MAGIC1	FOURCC('P','D','E','1')
+#define PDEQ_MAGIC2	FOURCC('P','D','E','2')
 
 /** Size of pdeq block cache. */
 #define TUNE_NSAVED_PDEQS 16
@@ -38,7 +42,7 @@
 #ifdef NDEBUG
 # define VRFY(dq) ((void)0)
 #else
-# define VRFY(dq) assert((dq) && ((dq)->cookie == PDEQ_COOKIE1))
+# define VRFY(dq) assert((dq) && ((dq)->magic == PDEQ_MAGIC1))
 #endif
 
 /**
@@ -47,7 +51,7 @@
  */
 struct pdeq {
 #ifndef NDEBUG
-  unsigned cookie;		/**< debug cookie */
+  unsigned magic;		/**< debug magic */
 #endif
   pdeq *l_end, *r_end;		/**< left and right ends of the deque */
   pdeq *l, *r;			/**< left and right neighbour */
@@ -76,7 +80,7 @@ unsigned pdeqs_cached;
 static INLINE void free_pdeq_block (pdeq *p)
 {
 #ifndef NDEBUG
-  p->cookie = 0xbadf00d1;
+  p->magic = 0xbadf00d1;
 #endif
   if (pdeqs_cached < TUNE_NSAVED_PDEQS) {
     pdeq_block_cache[pdeqs_cached++] = p;
@@ -114,11 +118,11 @@ void _pdeq_vrfy(pdeq *dq)
 
 
   assert (   dq
-	  && (dq->cookie == PDEQ_COOKIE1)
+	  && (dq->magic == PDEQ_MAGIC1)
 	  && (dq->l_end && dq->r_end));
   q = dq->l_end;
   while (q) {
-    assert (   ((q == dq) || (q->cookie == PDEQ_COOKIE2))
+    assert (   ((q == dq) || (q->magic == PDEQ_MAGIC2))
 	    && ((q == dq->l_end) ^ (q->l != NULL))
 	    && ((q == dq->r_end) ^ (q->r != NULL))
 	    && (!q->l || (q == q->l->r))
@@ -138,7 +142,7 @@ pdeq *new_pdeq(void)
   dq = alloc_pdeq_block();
 
 #ifndef NDEBUG
-  dq->cookie = PDEQ_COOKIE1;
+  dq->magic = PDEQ_MAGIC1;
 #endif
   dq->l_end = dq->r_end = dq;
   dq->l = dq->r = NULL;
@@ -217,7 +221,7 @@ pdeq * pdeq_putr(pdeq *dq, const void *x)
       /* allocate and init new block */
       ndq = alloc_pdeq_block();
 #ifndef NDEBUG
-      ndq->cookie = PDEQ_COOKIE2;
+      ndq->magic = PDEQ_MAGIC2;
 #endif
       ndq->l_end = ndq->r_end = NULL;
     }
@@ -255,7 +259,7 @@ pdeq *pdeq_putl(pdeq *dq, const void *x)
       /* allocate and init new block */
       ndq = alloc_pdeq_block();
 #ifndef NDEBUG
-      ndq->cookie = PDEQ_COOKIE2;
+      ndq->magic = PDEQ_MAGIC2;
 #endif
       ndq->l_end = ndq->r_end = NULL;
     }
