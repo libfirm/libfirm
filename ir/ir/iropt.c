@@ -1194,7 +1194,8 @@ optimize_preds(ir_node *n) {
 
 /**
  * Transform AddP(P, ConvIs(Iu)), AddP(P, ConvIu(Is)) and
- * SubP(P, ConvIs(Iu)), SubP(P, ConvIu(Is)) if possible.
+ * SubP(P, ConvIs(Iu)), SubP(P, ConvIu(Is)).
+ * If possible, remove the Conv's.
  */
 static ir_node *transform_node_AddSub(ir_node *n)
 {
@@ -1254,7 +1255,37 @@ static ir_node *transform_node_AddSub(ir_node *n)
   return n;
 }
 
-#define transform_node_Add      transform_node_AddSub
+/**
+ * Do the AddSub optimization, then Transform Add(a,a) into Mul(a, 2)
+ * if the mode is integer or float.
+ * Reassociation might fold this further.
+ */
+static ir_node *transform_node_Add(ir_node *n)
+{
+  ir_mode *mode;
+  ir_node *oldn = n;
+
+  n = transform_node_AddSub(n);
+
+  mode = get_irn_mode(n);
+  if (mode_is_num(mode)) {
+    ir_node *a = get_Add_left(n);
+
+    if (a == get_Add_right(n)) {
+      ir_node *block = get_nodes_block(n);
+
+      n = new_rd_Mul(
+            get_irn_dbg_info(n),
+            current_ir_graph,
+            block,
+            a,
+            new_r_Const_long(current_ir_graph, block, mode, 2),
+            mode);
+      DBG_OPT_ALGSIM0(oldn, n);
+    }
+  }
+  return n;
+}
 
 /**
  * Do the AddSub optimization, then Transform Sub(0,a) into Minus(a).
