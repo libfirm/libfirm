@@ -226,8 +226,8 @@ inline ir_node  *get_Block_cfgpred (ir_node *node, int pos);
 inline void      set_Block_cfgpred (ir_node *node, int pos, ir_node *pred);
 inline bool      get_Block_matured (ir_node *node);
 inline void      set_Block_matured (ir_node *node, bool matured);
-inline unsigned long get_Block_block_visit (ir_node *node);
-inline void      set_Block_block_visit (ir_node *node, unsigned long visit);
+inline unsigned long get_Block_block_visited (ir_node *node);
+inline void      set_Block_block_visited (ir_node *node, unsigned long visit);
 inline ir_node  *get_Block_graph_arr (ir_node *node, int pos);
 inline void      set_Block_graph_arr (ir_node *node, int pos, ir_node *value);
 
