@@ -22,5 +22,5 @@ node: {title:"n68" label: "Block n68" }
 edge: { sourcename: "n68" targetname: "n63" }
 node: {title:"n63" label: "Block n63" }
 edge: { sourcename: "n63" targetname: "n63" }
-node: {title: "n85" label: "BadT" }
+node: {title: "n85" label: "Bad  85" }
 }
