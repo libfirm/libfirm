@@ -47,6 +47,42 @@ static long ta_id = 0;
 */
 static typalise_t *typalise_proj (ir_node*);
 
+/* DEBUGGING only */
+static void cough_and_die (ir_node *node)
+{
+  ir_graph *graph = get_irn_irg (node);
+
+  fprintf (stdout, "%s: %s[%li]\n",
+           __FUNCTION__,
+           get_op_name (get_irn_op (node)),
+           get_irn_node_nr (node));
+  dump_ir_block_graph (graph, "-typealise");
+  assert (0);
+}
+
+/*
+  Exception b/d
+*/
+static type *java_lang_Throwable_tp = NULL;
+
+static type *get_java_lang_Throwable ()
+{
+  assert (NULL != java_lang_Throwable_tp);
+
+  return (java_lang_Throwable_tp);
+}
+
+static void find_java_lang_Throwable (type *tp, void *_unused)
+{
+  const char *name = get_type_name (tp);
+
+  if (0 == strcmp (name, "java/lang/Throwable")) {
+    assert (NULL == java_lang_Throwable_tp);
+
+    java_lang_Throwable_tp = tp;
+  }
+}
+
 
 /*
   Ctors, Dtors for typalise_t-s
@@ -230,6 +266,15 @@ static typalise_t *ta_join (typalise_t *one, typalise_t *two)
 {
   typalise_t *res = NULL;
 
+  /* now, one==NULL or two==NULL cannot happen legitimately (if we hit a NULL pointer constant)
+  if (NULL == one) {
+    return (two);
+  }
+
+  if (NULL == two) {
+    return (one);
+  }
+  */
   switch (one->kind) {
   case (type_invalid): { /* shut up, gcc */ }
   case (type_exact): {
@@ -451,8 +496,106 @@ static int ta_supports (typalise_t *ta, ir_graph *graph)
 /* =========== WHAT ELSE ? =========== */
 
 /*
-  Helper to typalise (ir_node*)
+  Helpers to typalise (ir_node*)
 */
+/**
+   Find an approximation to the given load node's value's types
+*/
+static typalise_t *typalise_call (ir_node *call)
+{
+  entity *ent = NULL;
+  type *tp = NULL;
+  typalise_t *res = NULL;
+  ir_node *call_ptr = get_Call_ptr (call);
+
+  if (iro_Sel == get_irn_opcode (call_ptr)) {
+    ent = get_Sel_entity (call_ptr);
+  } else if (iro_SymConst == get_irn_opcode (call_ptr)) {
+    if (get_SymConst_kind (call_ptr) == symconst_addr_ent) {
+      ent = get_SymConst_entity (call_ptr);
+    } else if (get_SymConst_kind (call_ptr) == symconst_addr_name) {
+      ident *id = get_SymConst_name (call_ptr);
+      const char *name = get_id_str (id);
+      if (0 == strcmp (name, "iro_Catch")) {
+        res = ta_type (java_lang_Throwable_tp);
+
+        return (res);
+      }
+
+      fprintf (stdout, "%s: cannot handle Call[%li] (symconst_addr_name=\"%s\")\n",
+               __FUNCTION__, get_irn_node_nr (call),
+               get_op_name (get_irn_op (call_ptr)),
+               name);
+      cough_and_die (call_ptr);
+    } else if (get_SymConst_kind (call_ptr) == symconst_type_tag) {
+      fprintf (stdout, "%s: cannot handle Call[%li] (symconst_type_tag)\n",
+               __FUNCTION__, get_irn_node_nr (call),
+               get_op_name (get_irn_op (call_ptr)));
+      cough_and_die (call_ptr);
+    } else {
+      fprintf (stdout, "%s: cannot handle Call[%li] (%i)\n",
+               __FUNCTION__, get_irn_node_nr (call),
+               get_SymConst_kind (call_ptr));
+      cough_and_die (call_ptr);
+    }
+  }
+
+  tp = get_entity_type (ent);
+  assert (is_Method_type (tp));
+
+  tp = get_method_res_type (tp, 0);
+
+  while (is_Pointer_type (tp)) {
+    tp = get_pointer_points_to_type (tp);
+  }
+
+  res = ta_type (tp);
+
+  return (res);
+}
+
+
+/**
+   Find an approximation to the given load node's value's types
+*/
+static typalise_t *typalise_load (ir_node *load)
+{
+  entity *ent = NULL;
+  type *tp = NULL;
+  typalise_t *res = NULL;
+  ir_node *load_ptr = get_Load_ptr (load);
+
+  if (iro_Sel == get_irn_opcode (load_ptr)) {
+    ent = get_Sel_entity (load_ptr);
+  } else if (iro_SymConst == get_irn_opcode (load_ptr)) {
+    if (get_SymConst_kind (load_ptr) == symconst_addr_ent) {
+      ent = get_SymConst_entity (load_ptr);
+    } else if (get_SymConst_kind (load_ptr) == symconst_type_tag) {
+      tp = get_SymConst_type (load_ptr);
+    } else {
+      fprintf (stdout, "%s: cannot handle load (%s)\n",
+               __FUNCTION__, get_op_name (get_irn_op (load_ptr)));
+
+      cough_and_die (load_ptr);
+    }
+  } else {
+    fprintf (stdout, "%s: cannot handle load (%s)\n",
+             __FUNCTION__, get_op_name (get_irn_op (load_ptr)));
+      cough_and_die (load_ptr);
+  }
+
+  tp = get_entity_type (ent);
+
+  while (is_Pointer_type (tp)) {
+    tp = get_pointer_points_to_type (tp);
+  }
+
+  res = ta_type (tp);
+
+  return (res);
+}
+
+
 /**
     Find an approximation to the given proj node's value's types
 */
@@ -466,43 +609,32 @@ static typalise_t *typalise_proj (ir_node *proj)
 
     proj_in = get_Proj_pred (proj_in);
     if (iro_Start == get_irn_opcode (proj_in)) {
+      /* aha, proj arg */
       ir_graph *graph = get_irn_irg (proj);
       entity   *meth  = get_irg_entity (graph);
 
       long n = get_Proj_proj (proj);
-
-      if (1 == n) {
-        /* yay proj this */
-        type     *tp    = get_entity_owner (meth);
-
-        /* res = ta_exact (tp); */
-        res = ta_type (tp);     /* TODO */
-      } else {
-        /* ugh proj arg */
-        type *tp = get_method_param_type (get_entity_type (meth), n);
-        if (is_Pointer_type (tp)) {
-          tp = get_pointer_points_to_type (tp);
-        }
-
-        res = ta_type (tp);
+      type *tp = get_method_param_type (get_entity_type (meth), n);
+      if (is_Pointer_type (tp)) {
+        tp = get_pointer_points_to_type (tp);
       }
+
+      res = ta_type (tp);
+
     } else if (iro_Call == get_irn_opcode (proj_in)) {
       /* call result ... 'whatever' */
-      /* hey, this is redundant (or the check for iro_Call further down) */
-      ir_node *call_ptr = get_Call_ptr (proj_in);
-
-      res = typalise (call_ptr);
+      res = typalise_call (proj_in);
     } else {
       fprintf (stdout, "\n Proj (Proj (%s)) not handled\n",
                get_op_name (get_irn_op (proj_in)));
-      assert (0);
+      cough_and_die (proj_in);
     }
   } else {
     opcode op = get_irn_opcode (proj_in);
     if ((iro_Load != op) && (iro_Alloc != op) && (iro_Call != op)) {
       fprintf (stdout, "\n Proj (%s) not handled\n",
                get_op_name (get_irn_op (proj_in)));
-      assert (0);
+      cough_and_die (proj_in);
     }
     res = typalise (proj_in);      /* everything else */
     /* Proj (Load), Proj (New), Proj (Call) */
@@ -585,9 +717,7 @@ typalise_t *typalise (ir_node *node)
   } break;
 
   case (iro_Load): {
-    ir_node *load_ptr = get_Load_ptr (node);
-
-    res = typalise (load_ptr);
+    res = typalise_load (node);
   } break;
 
   case (iro_Sel): {
@@ -597,6 +727,8 @@ typalise_t *typalise (ir_node *node)
     type *tp = get_entity_type (ent);
 
     if (is_Method_type (tp)) {
+      /* obsoleted by typalise_call */
+      assert (0);
       tp = get_entity_type (ent);
       tp = get_method_res_type (tp, 0);
 
@@ -626,11 +758,14 @@ typalise_t *typalise (ir_node *node)
     int i;
     ir_node *phi_in = NULL;
     typalise_t *ta = NULL;
-    /* assert (0 && "Do we ever get here?"); */ /* apparently, we do. */
 
     for (i = 0; i < n_ins; i ++) {
       phi_in = get_irn_n (node, i);
-      ta = (NULL == ta) ? typalise (phi_in) : ta_join (ta, typalise (phi_in));
+      typalise_t *ta_in = typalise (phi_in);
+
+      if (NULL != ta_in) {
+        ta = (NULL == ta) ? ta_in : ta_join (ta, ta_in);
+      }
     }
 
     res = ta;
@@ -664,7 +799,7 @@ typalise_t *typalise (ir_node *node)
       res = NULL;
     }
 
-    fprintf (stdout, "]\n");
+    /* fprintf (stdout, "]\n"); */
 
   } break;
 
@@ -675,39 +810,71 @@ typalise_t *typalise (ir_node *node)
       res = ta_type (tp);
     } else if (get_SymConst_kind (node) == symconst_addr_ent) {
       entity *ent = get_SymConst_entity (node);
-      type *tp = get_entity_type (ent);
-      tp = get_pointer_points_to_type (tp);
+      type *tp = get_entity_owner (ent);
+
+      while (is_Pointer_type (tp)) {
+        tp = get_pointer_points_to_type (tp);
+      }
+
       assert (is_Class_type (tp));
 
       res = ta_type (tp);       /* can't use ta_exact */
-    } else {
-      fprintf (stdout, "%s (%s:%i): can't handle SymConst %s?\n",
+    } else if (get_SymConst_kind (node) == symconst_addr_name) {
+      /* oh, this is not a real call but a placeholder (exception stuff) */
+      fprintf (stdout, "%s (%s:%i): can't handle pseudo-call %s\n",
                __FUNCTION__, __FILE__, __LINE__,
                get_op_name (get_irn_op (node)));
+
+      res = NULL;
+    } else {
+      fprintf (stdout, "%s (%s:%i): can't handle SymConst %s\n",
+               __FUNCTION__, __FILE__, __LINE__,
+               get_op_name (get_irn_op (node)));
+
       res = NULL;
     }
   } break;
+  case (iro_Const): {
+    /* presumably a NULL constant */
+    /* this also means we cannot handle calls against a NULL pointer. */
+    res = NULL;
+  } break;
 
-  /* template:
-     case (iro_Cast): {}
-     break;
-  */
+    /* template:
+       case (iro_Cast): {}
+       break;
+    */
 
   default: {
     fprintf (stdout, "what's with %s?\n", get_op_name (get_irn_op (node)));
-    assert (0);
+    cough_and_die (node);
   } break;
   }
 
   return (res);
 }
 
+/*
+  Initialise the Typalise module
+*/
+void typalise_init ()
+{
+  if (NULL == java_lang_Throwable_tp) {
+    class_walk_super2sub (find_java_lang_Throwable, NULL, NULL);
+
+    /* make sure we have found it */
+    get_java_lang_Throwable ();
+  }
+}
 
 
 
 
 /*
   $Log$
+  Revision 1.9  2005/03/22 13:56:09  liekweg
+  "small" fix for exception b/d
+
   Revision 1.8  2005/01/14 14:13:24  liekweg
   fix gnu extension
 

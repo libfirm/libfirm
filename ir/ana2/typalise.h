@@ -56,11 +56,19 @@ lset_t *filter_for_ta (lset_t*, typalise_t*);
 */
 typalise_t *typalise (ir_node*);
 
+/*
+  Initialise the Typalise module
+*/
+void typalise_init (void);
+
 # endif /* not defined _TYPALISE_H_ */
 
 
 /*
   $Log$
+  Revision 1.3  2005/03/22 13:56:09  liekweg
+  "small" fix for exception b/d
+
   Revision 1.2  2004/10/21 11:11:21  liekweg
   whitespace fix
 
