@@ -51,7 +51,7 @@ CPPFLAGS += 	-I$(top_srcdir)/ir/ir  -I$(top_srcdir)/ir/common  	\
 	        -I$(top_srcdir)/ir/tv -I$(top_srcdir)/ir/debug 		\
 	        -I$(top_srcdir)/ir/ana -I$(top_srcdir)/ir/opt		\
 		-I$(top_srcdir)/ir/st -I$(top_srcdir)/ir/stat           \
-		-I$(topdir)/ir/config -I$(top_srcdir)/arch              \
+		-I$(top_srcdir)/ir/arch -I$(topdir)/ir/config           \
 		-I$(topdir)
 
 LDFLAGS += -L$(libdir)
