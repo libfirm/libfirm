@@ -18,6 +18,7 @@
 # include "lset.h"
 
 # include "type.h"
+# include "irnode.h"
 
 /*
   Data Types and Structures
@@ -32,8 +33,7 @@ typedef enum typalise_kind_enum {
 typedef struct typalise
 {
   typalise_kind kind;
-  union
-  {
+  union {
     type *type;                 /* for kind == kind_exact and kind == kind_type */
     lset_t *types;              /* for kind == kind_types */
   } res;
@@ -61,6 +61,9 @@ typalise_t *typalise (ir_node*);
 
 /*
   $Log$
+  Revision 1.2  2004/10/21 11:11:21  liekweg
+  whitespace fix
+
   Revision 1.1  2004/10/21 11:09:37  liekweg
   Moved memwalk stuf into irmemwalk
   Moved lset stuff into lset
