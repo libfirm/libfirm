@@ -140,7 +140,7 @@ INLINE ir_mode *get_modeBB() { ANNOUNCE(); return mode_BB; }
 
 /* ** Constructor ** */
 ir_mode *
-mode_register(ir_mode* new_mode)
+register_mode(ir_mode* new_mode)
 {
   ir_mode *mode;
 

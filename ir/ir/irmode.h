@@ -99,7 +99,7 @@ typedef enum {
 		        Floating point computations can be performed. */
   reference,         /* A mode to represent entities.
 		        Restricted int computations can be performed */
-  character,         /* A mode to represent characters/symbols
+  character          /* A mode to represent characters/symbols
 		        ?? Are computations allowed? as int?? */
 } mode_sort;
 
@@ -181,11 +181,11 @@ tarval *get_mode_one(ir_mode *mode);
 
 /* This is only valid for float_numbers, other modes
  * will result in tarval_bad */
-tarval *get_mode_infinit(ir_mode *mode);
+tarval *get_mode_infinite(ir_mode *mode);
 
 /* This is only valid for float_numbers, other modes
  * will result in tarval_bad */
-tarval *get_mode_nan(ir_mode *mode);
+tarval *get_mode_NAN(ir_mode *mode);
 
 
 /** Auxiliary modes necessary for the Firm representation **/
