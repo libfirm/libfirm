@@ -88,6 +88,24 @@ static void show_proj_failure(ir_node *n)
 }
 
 /**
+ * Prints a failure message for a proj
+ */
+static void show_proj_failure_ent(ir_node *n, entity *ent)
+{
+  ir_node *op  = get_Proj_pred(n);
+  int proj     = get_Proj_proj(n);
+  ir_mode *m   = get_type_mode(get_entity_type(ent));
+
+  fprintf(stderr, "\nFIRM: irn_vrfy_irg() of node %ld %s%s %d(%s%s) entity %s(type %s mode %s)failed\n" ,
+      get_irn_node_nr(n),
+      get_irn_opname(n), get_irn_modename(n), proj,
+      get_irn_opname(op), get_irn_modename(op),
+      get_entity_name(ent), get_type_name(get_entity_type(ent)),
+      m ? get_mode_name(m) : "<no mode>");
+}
+
+
+/**
  * Show a node and a graph
  */
 static void show_node_on_graph(ir_graph *irg, ir_node *n)
@@ -278,8 +296,8 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
 	if (ent) {
 	  ASSERT_AND_RET_DBG(
 	    (mode == get_type_mode(get_entity_type(ent))),
-	    "wrong data Proj from Load", 0,
-	    show_proj_failure(p);
+	    "wrong data Proj from Load, entity type_mode failed", 0,
+	    show_proj_failure_ent(p, ent);
 	  );
 	}
 	else {
