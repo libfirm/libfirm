@@ -130,14 +130,17 @@ void free_entity_attrs(entity *ent) {
   if (get_type_tpop(get_entity_owner(ent)) == type_class) {
     DEL_ARR_F(ent->overwrites);    ent->overwrites = NULL;
     DEL_ARR_F(ent->overwrittenby); ent->overwrittenby = NULL;
+  } else {
+    assert(ent->overwrites == NULL);
+    assert(ent->overwrittenby == NULL);
   }
   /* if (ent->values) DEL_ARR_F(ent->values); *//* @@@ warum nich? */
   if (ent->val_paths) {
     if (is_compound_entity(ent))
       for (i = 0; i < get_compound_ent_n_values(ent); i++)
-    if (ent->val_paths[i]) ;
-      /* free_compound_graph_path(ent->val_paths[i]) ;  * @@@ warum nich? */
-      /* Geht nich: wird mehrfach verwendet!!! ==> mehrfach frei gegeben. */
+	if (ent->val_paths[i]) ;
+    /* free_compound_graph_path(ent->val_paths[i]) ;  * @@@ warum nich? */
+    /* Geht nich: wird mehrfach verwendet!!! ==> mehrfach frei gegeben. */
     /* DEL_ARR_F(ent->val_paths); */
   }
   ent->val_paths = NULL;
@@ -943,6 +946,25 @@ void dump_entity (entity *ent) {
   printf("entity %s (%ld)\n", get_entity_name(ent), get_entity_nr(ent));
   printf("  type:  %s (%ld)\n", get_type_name(type),  get_type_nr(type));
   printf("  owner: %s (%ld)\n", get_type_name(owner), get_type_nr(owner));
+
+  if (get_entity_n_overwrites(ent) > 0) {
+    printf ("  overwrites:\n");
+    for (i = 0; i < get_entity_n_overwrites(ent); ++i) {
+      entity *ov = get_entity_overwrites(ent, i);
+      printf("    %d: %s of class %s\n", i, get_entity_name(ov), get_type_name(get_entity_owner(ov)));
+    }
+  } else {
+    printf("  Does not overwrite other entities. \n");
+  }
+  if (get_entity_n_overwrittenby(ent) > 0) {
+    printf ("  overwritten by:\n");
+    for (i = 0; i < get_entity_n_overwrittenby(ent); ++i) {
+      entity *ov = get_entity_overwrittenby(ent, i);
+      printf("    %d: %s of class %s\n", i, get_entity_name(ov), get_type_name(get_entity_owner(ov)));
+    }
+  } else {
+    printf("  Is not overwriten by other entities. \n");
+  }
 
   printf ("  allocation:  ");
   switch (get_entity_allocation(ent)) {
