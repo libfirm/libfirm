@@ -129,25 +129,32 @@ void set_not_backedge (ir_node *n, int pos) {
 bool has_backedges (ir_node *n) {
   int i;
   int *ba = get_backarray (n);
-  if (ba)
-    for (i = 0; i < get_irn_arity(n); i++)
+  if (ba) {
+    int arity = get_irn_arity(n);
+    for (i = 0; i < arity; i++)
       if (ba[i]) return true;
+  }
   return false;
 }
 
 /** Sets all backedge information to zero. */
 void clear_backedges (ir_node *n) {
-  int i, rem = interprocedural_view;
+  int i, arity;
+  int rem = interprocedural_view;
   int *ba;
   interprocedural_view = 0;
   ba = get_backarray (n);
-  if (ba)
-    for (i = 0; i < get_irn_arity(n); i++)
+  if (ba) {
+    arity = get_irn_arity(n);
+    for (i = 0; i < arity; i++)
       ba[i] = 0;
+  }
   interprocedural_view = 1;
   ba = get_backarray (n);
-  if (ba)
-    for (i = 0; i < get_irn_arity(n); i++)
+  if (ba) {
+    arity = get_irn_arity(n);
+    for (i = 0; i < arity; i++)
       ba[i] = 0;
+  }
   interprocedural_view = rem;
 }

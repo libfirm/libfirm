@@ -354,15 +354,16 @@ static void init_count(ir_node * node, void * env)
 
 static void node_arity_count(ir_node * node, void * env)
 {
-  int *anz = (int *) env, arity, i, start;
+  int *anz = (int *) env, arity, n_outs, i, start;
   ir_node *succ;
 
-  arity = 1 + get_irn_arity(node)
-            + ((is_Block(node)) ? 0 : 1);
-  *anz += arity;
-
+  arity = get_irn_arity(node);
   start = (is_Block(node)) ? 0 : -1;
-  for(i = start; i < get_irn_arity(node); i++) {
+
+  n_outs = 1 + arity + (-start);  // ((is_Block(node)) ? 0 : 1);   // Why + 1??
+  *anz += n_outs;
+
+  for(i = start; i < arity; i++) {
     succ = get_irn_n(node, i);
     succ->out = (ir_node **)((int)succ->out + 1);
   }
@@ -415,11 +416,11 @@ static void set_array_pointer(ir_node *node, void *env) {
    ------------------------------------------- */
 
 static void set_out_pointer(ir_node * node, void * env) {
-  int i;
+  int i, arity = get_irn_arity(node);
   ir_node *succ;
   int start = (!is_Block(node)) ? -1 : 0;
 
-  for(i = start; i < get_irn_arity(node); i++) {
+  for(i = start; i < arity; i++) {
     succ = get_irn_n(node, i);
     succ->out[get_irn_n_outs(succ)+1] = node;
     succ->out[0] = (ir_node *) (get_irn_n_outs(succ) + 1);

@@ -20,12 +20,14 @@
 #include <string.h>
 
 #include "irloop_t.h"
-#include "irnode_t.h"
+
+#include "irprog_t.h"
 #include "irgraph_t.h"
+#include "irnode_t.h"
+#include "irgwalk.h"
 #include "array.h"
 #include "pmap.h"
-#include "irgwalk.h"
-#include "irprog_t.h"
+
 #include "irdump.h"
 
 ir_graph *outermost_ir_graph;      /* The outermost graph the scc is computed
@@ -843,7 +845,8 @@ find_tail (ir_node *n) {
     /* It's a completely bad loop: without Phi/Block nodes that can
        be a head. I.e., the code is "dying".  We break the loop by
        setting Bad nodes. */
-    for (i = -1; i < get_irn_arity(n); ++i) {
+    int arity = get_irn_arity(n);
+    for (i = -1; i < arity; ++i) {
       set_irn_n(n, i, get_irg_bad(get_irn_irg(n)));
     }
     return NULL;
@@ -883,7 +886,8 @@ int search_endproj_in_stack(ir_node *start_block)
 	  printf("FOUND PROJ!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 	  ir_node *end_projx = stack[i];
 
-	  for(j = 0; j < get_irn_arity(start_block); j++)
+	  int arity = get_irn_arity(start_block);
+	  for(j = 0; j < arity; j++)
 	    {
 	      ir_node *begin_projx = get_Block_cfgpred(get_irg_start_block(get_irn_irg(end_projx)), get_Proj_proj(end_projx));
 	      DDMN(begin_projx);
