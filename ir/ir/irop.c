@@ -93,7 +93,9 @@ new_ir_op(opcode code, const char *name, op_pin_state p, unsigned flags, op_arit
 {
   ir_op *res;
 
-  res = (ir_op *) xmalloc (sizeof (ir_op));
+  res = (ir_op *)xmalloc(sizeof(*res));
+  memset(res, 0, sizeof(*res));
+
   res->code      = code;
   res->name      = new_id_from_chars(name, strlen(name));
   res->op_pin_state_pinned = p;
