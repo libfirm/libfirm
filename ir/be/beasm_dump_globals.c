@@ -4,6 +4,15 @@
  * @date 19.01.2005
  */
 
+#include <ctype.h>
+#include <string.h>
+#include <stdlib.h>
+
+#include "irprog_t.h"
+#include "type.h"
+#include "xmalloc.h"
+
+
 #include "beasm_dump_globals.h"
 
 
@@ -299,7 +308,7 @@ static void asm_dump_global ( assembler_t *assembler, entity *ent)
 	         */
 
         	type_size = get_type_size_bytes(ty);
-        	vals      = calloc(type_size, sizeof(*vals));
+        	vals      = xcalloc(type_size, sizeof(*vals));
 
         	/* collect the values and store them at the offsets */
 		for(i = 0; i < get_compound_ent_n_values(ent); ++i) {
@@ -314,7 +323,7 @@ static void asm_dump_global ( assembler_t *assembler, entity *ent)
 
 		    /* get the access path to the costant value */
 		    graph_length = get_compound_graph_path_length(path);
-		    ai = calloc(graph_length, sizeof(struct arr_info));
+		    ai = xcalloc(graph_length, sizeof(struct arr_info));
 
 		    /* We wanna know how many arrays are on the path to the entity. We also have to know how
 		     * many elements each array holds to calculate the offset for the entity. */

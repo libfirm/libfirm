@@ -7,9 +7,7 @@
 #ifndef _BEASM_TYPES_H
 #define _BEASM_TYPES_H
 
-#include <stdlib.h>
-#include <string.h>
-#include "libfirm/firm.h"
+#include "tv.h"
 
 
 /**

@@ -3,10 +3,9 @@
 
 #include "beasm_dump_globals.h"
 
-//#include <libfirm/adt/obst.h>
+#include "obst.h"
 
-#include <obstack.h>
-#include <xmalloc.h>
+
 
 #define obstack_chunk_alloc xmalloc
 #define obstack_chunk_free free

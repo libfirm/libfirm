@@ -1,4 +1,8 @@
 
+#include <stdlib.h>
+#include <string.h>
+
+#include "obst.h"
 #include "beasm_asm_gnu.h"
 
 static struct obstack *get_obstack_for_segment ( gnuasm_privdata_t *privdata, asm_segment_t segment ) {
