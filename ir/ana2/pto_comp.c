@@ -53,7 +53,7 @@ typedef struct pto_env_str {
 char *spaces = NULL;
 
 /* Local Prototypes: */
-static pto_t *get_pto (ir_node*);
+static pto_t *get_pto (ir_node*, pto_env_t*);
 static void pto_call (ir_graph*, ir_node*, pto_env_t*);
 static void pto_raise (ir_node*, pto_env_t*);
 static void pto_load (ir_node*, pto_env_t*);
@@ -65,7 +65,7 @@ static void pto_end_block (ir_node*, pto_env_t*);
    Local Implementation:
    =================================================== */
 /* Transfer the actual arguments to the formal arguments */
-static void set_graph_args (ir_graph *graph, ir_node *call)
+static void set_graph_args (ir_graph *graph, ir_node *call, pto_env_t *env)
 {
   assert (iro_Call == get_irn_opcode (call));
 
@@ -78,7 +78,7 @@ static void set_graph_args (ir_graph *graph, ir_node *call)
     if (NULL != args [i]) {
       if (mode_P == get_type_mode (get_method_param_type (meth, i))) {
         ir_node *call_arg = get_Call_param (call, i);
-        pto_t *pto = get_pto (call_arg);
+        pto_t *pto = get_pto (call_arg, env);
         assert (pto);
         set_node_pto (args [i], pto);
 
@@ -124,13 +124,13 @@ static int set_graph_result (ir_graph *graph, ir_node *call)
 }
 
 /* Propagation of PTO values */
-static pto_t *get_pto_proj (ir_node *proj)
+static pto_t *get_pto_proj (ir_node *proj, pto_env_t *env)
 {
   ir_node *proj_in = get_Proj_pred (proj);
   const long proj_proj = get_Proj_proj (proj);
   const opcode in_op = get_irn_opcode (proj_in);
   pto_t *in_pto = NULL;
-  pto_t *proj_pto = get_node_pto (proj);
+  pto_t *proj_pto = NULL; /* get_node_pto (proj); */
 
   ir_node *proj_in_in = NULL;
 
@@ -150,6 +150,7 @@ static pto_t *get_pto_proj (ir_node *proj)
     switch (in_in_op) {
     case (iro_Start):           /* ProjArg (ProjT (Start)) */
       /* then the pto value must have been set to the node */
+      proj_pto = get_node_pto (proj);
       assert (proj_pto);
 
       return (proj_pto);
@@ -157,7 +158,7 @@ static pto_t *get_pto_proj (ir_node *proj)
       if (NULL != proj_pto) {
         return (proj_pto);
       } else {
-        in_pto = get_pto (proj_in);
+        in_pto = get_pto (proj_in, env);
         set_node_pto (proj, in_pto);
 
         assert (in_pto);
@@ -177,7 +178,7 @@ static pto_t *get_pto_proj (ir_node *proj)
     if (NULL != proj_pto) {
       return (proj_pto);
     } else {
-      in_pto = get_pto (proj_in);
+      in_pto = get_pto (proj_in, env);
       assert (in_pto);
 
       set_node_pto (proj, in_pto);
@@ -193,11 +194,12 @@ static pto_t *get_pto_proj (ir_node *proj)
 
 }
 
-static pto_t *get_pto_phi (ir_node *phi)
+static pto_t *get_pto_phi (ir_node *phi, pto_env_t *env)
 {
   assert (mode_P == get_irn_mode (phi));
 
   pto_t *pto = get_node_pto (phi);
+  int change = FALSE;
 
   assert (pto);                 /* must be initialised */
 
@@ -206,38 +208,40 @@ static pto_t *get_pto_phi (ir_node *phi)
 
   for (i = 0; i < n_ins; i ++) {
     ir_node *in = get_irn_n (phi, i);
-    pto_t *in_pto = get_pto (in);
+    pto_t *in_pto = get_pto (in, env);
 
     assert (in_pto);
 
-    qset_insert_all (pto->values, in_pto->values);
+    change |= qset_insert_all (pto->values, in_pto->values);
   }
+
+  env->change |= change;
 
   return (pto);
 }
 
-static pto_t *get_pto_sel (ir_node *sel)
+static pto_t *get_pto_sel (ir_node *sel, pto_env_t *env)
 {
-  pto_t *pto = get_node_pto (sel);
+  pto_t *pto = NULL; /* get_node_pto (sel); */
 
   if (NULL == pto) {
     ir_node *in = get_Sel_ptr (sel);
 
-    pto = get_pto (in);
+    pto = get_pto (in, env);
     set_node_pto (sel, pto);
   }
 
   return (pto);
 }
 
-static pto_t *get_pto_ret (ir_node *ret)
+static pto_t *get_pto_ret (ir_node *ret, pto_env_t *env)
 {
-  pto_t *pto = get_node_pto (ret);
+  pto_t *pto = NULL; /* get_node_pto (ret); */
 
   if (NULL == pto) {
     ir_node *in = get_Return_res (ret, 0);
 
-    pto = get_pto (in);
+    pto = get_pto (in, env);
     set_node_pto (ret, pto);
   }
 
@@ -248,17 +252,20 @@ static pto_t *get_pto_ret (ir_node *ret)
 
 
 /* Dispatch to propagate PTO values */
-static pto_t *get_pto (ir_node *node)
+static pto_t *get_pto (ir_node *node, pto_env_t *env)
 {
   const opcode op = get_irn_opcode (node);
 
+  DBGPRINT (2, (stdout, "%s (%s[%li])\n", __FUNCTION__,
+                OPNAME (node), OPNUM (node)));
+
   switch (op) {
-  case (iro_Cast):   return (get_pto (get_Cast_op (node)));
-  case (iro_Proj):   return (get_pto_proj (node));
-  case (iro_Phi):    return (get_pto_phi (node));
-  case (iro_Sel):    return (get_pto_sel (node));
+  case (iro_Cast):   return (get_pto (get_Cast_op (node), env));
+  case (iro_Proj):   return (get_pto_proj  (node, env));
+  case (iro_Phi):    return (get_pto_phi   (node, env));
+  case (iro_Sel):    return (get_pto_sel   (node, env));
   case (iro_Alloc):  return (get_alloc_pto (node));
-  case (iro_Return): return (get_pto_ret (node));
+  case (iro_Return): return (get_pto_ret   (node, env));
 
   case (iro_Call):              /* FALLTHROUGH */
   case (iro_Load):              /* FALLTHROUGH */
@@ -291,7 +298,7 @@ static void pto_load (ir_node *load, pto_env_t *pto_env)
   }
 
   entity *ent = get_ptr_ent (ptr);
-  pto_t *ptr_pto = get_pto (ptr);
+  pto_t *ptr_pto = get_pto (ptr, pto_env);
 
   assert (ptr_pto);
 
@@ -316,16 +323,16 @@ static void pto_store (ir_node *store, pto_env_t *pto_env)
 
   entity *ent = get_ptr_ent (ptr);
 
-  pto_t *ptr_pto = get_pto (ptr);
-  pto_t *val_pto = get_pto (val);
+  pto_t *ptr_pto = get_pto (ptr, pto_env);
+  pto_t *val_pto = get_pto (val, pto_env);
 
   assert (ptr_pto);
   assert (val_pto);
 
-  DBGPRINT (1, (stdout, "%s (%s[%li]): ptr_pto = %p\n", __FUNCTION__,
-                OPNAME (store), OPNUM (store), (void*) ptr_pto));
-  DBGPRINT (1, (stdout, "%s (%s[%li]): val_pto = %p\n", __FUNCTION__,
-                OPNAME (store), OPNUM (store), (void*) val_pto));
+  DBGPRINT (2, (stdout, "%s (%s[%li]): ptr_pto = %p\n", __FUNCTION__,
+                OPNAME (ptr), OPNUM (ptr), (void*) ptr_pto));
+  DBGPRINT (2, (stdout, "%s (%s[%li]): val_pto = %p\n", __FUNCTION__,
+                OPNAME (val), OPNUM (val), (void*) val_pto));
 
   pto_env->change |= mod_store (store, ent, ptr_pto, val_pto);
 }
@@ -470,7 +477,7 @@ static void pto_call (ir_graph *graph, ir_node *call, pto_env_t *pto_env)
     pto_reset_graph_pto (graph, ctx_idx);
 
     /* Compute Arguments */
-    set_graph_args (graph, call);
+    set_graph_args (graph, call, pto_env);
 
     /* Visit/Iterate Graph */
     pto_graph (graph, ctx_idx);
@@ -534,7 +541,7 @@ static void pto_end_block (ir_node *end_block, pto_env_t *pto_env)
     ir_node *in = get_irn_n (end_block, i);
 
     if (iro_Return == get_irn_opcode (in)) {
-      pto_t *in_pto = get_pto (in);
+      pto_t *in_pto = get_pto (in, pto_env);
 
       pto_env->change |= qset_insert_all (end_pto->values, in_pto->values);
     }
@@ -619,6 +626,9 @@ pto_t *get_alloc_pto (ir_node *alloc)
 
 /*
   $Log$
+  Revision 1.7  2004/12/06 12:55:06  liekweg
+  actually iterate
+
   Revision 1.6  2004/12/02 16:17:51  beck
   fixed config.h include
 

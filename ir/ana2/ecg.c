@@ -735,7 +735,8 @@ static int ecg_ecg_graph (FILE *dot, ir_graph *graph)
     ir_node *call = cinfo->call;
     callEd_info_t *ced = cinfo->callEds;
     const int call_no = _calls ++;
-    const char *call_color = (NULL == ced->prev) ? "lightblue" : "blue3";
+    const char *call_color = (NULL == ced) ? "blue" :
+      (NULL == ced->prev) ? "lightblue" : "blue3";
 
     fprintf (dot, "\t/* Call %li */\n", get_irn_node_nr (call));
     fprintf (dot, "\tcall_%i [label=\"call\\[%li\\]\", color=\"%s\", shape=\"ellipse\"];\n",
@@ -1123,6 +1124,9 @@ void ecg_ecg ()
 
 /*
   $Log$
+  Revision 1.10  2004/12/06 12:55:06  liekweg
+  actually iterate
+
   Revision 1.9  2004/12/02 16:17:50  beck
   fixed config.h include
 

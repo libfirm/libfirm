@@ -146,11 +146,12 @@ int is_dummy_load_ptr (ir_node *ptr)
   }
 }
 
-
-
 
 /*
   $Log$
+  Revision 1.10  2004/12/06 12:55:06  liekweg
+  actually iterate
+
   Revision 1.9  2004/12/02 16:17:51  beck
   fixed config.h include
 
