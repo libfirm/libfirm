@@ -23,6 +23,7 @@
 # include "array.h"
 # include "ircons.h"
 # include "irhooks.h"
+# include "iredges_t.h"
 
 /* Turns a node into a "useless" Tuple.  The Tuple just forms a tuple
    from several inputs.
@@ -39,6 +40,7 @@ turn_into_tuple (ir_node *node, int arity)
     /* Allocate new array, don't free old in_array, it's on the obstack. */
     ir_node *block = get_nodes_block(node);
     node->in = NEW_ARR_D (ir_node *, current_ir_graph->obst, arity+1);
+		edges_invalidate(node, current_ir_graph);
     set_nodes_block(node, block);
   }
 }
@@ -49,26 +51,45 @@ turn_into_tuple (ir_node *node, int arity)
 void
 exchange (ir_node *old, ir_node *nw)
 {
-  ir_node *block;
-  ir_graph *irg = get_irn_irg (old);
+	/*
+	 * If new outs are on, we can skip the id node creation and reroute
+	 * the edges from the old node to the new directly.
+	 */
+#ifdef FIRM_EDGES_INPLACE
+	if(edges_activated(current_ir_graph)) {
+		edges_reroute(old, nw, current_ir_graph);
+	}
 
-  assert(old != nw);
-  assert (irg);
-  assert(get_irn_op(old)->opar != oparity_dynamic);
+	else
+#endif
 
-  hook_turn_into_id(old);
+	/* Else, do it the old-fashioned way. */
+	{
+		ir_graph *irg = get_irn_irg (old);
+		ir_node *block;
 
-  block = old->in[0];
-  if (!block) {
-    if (is_Block(nw)) block = nw;
-    else (block = nw->in[0]);
-    if (!block) { DDMN(old); DDMN(nw); assert(0 && "cannot find legal block for id"); }
-  }
+		assert(old != nw);
+		assert (irg);
+		assert(get_irn_op(old)->opar != oparity_dynamic);
 
-  old->op = op_Id;
-  old->in = NEW_ARR_D (ir_node *, irg->obst, 2);
-  old->in[0] = block;
-  old->in[1] = nw;
+		hook_turn_into_id(old);
+
+		block = old->in[0];
+		if (!block) {
+			block = is_Block(nw) ? nw : get_nodes_block(nw);
+
+			if (!block) {
+				DDMN(old);
+				DDMN(nw);
+				assert(0 && "cannot find legal block for id");
+			}
+		}
+
+		old->op = op_Id;
+		old->in = NEW_ARR_D (ir_node *, irg->obst, 2);
+		old->in[0] = block;
+		old->in[1] = nw;
+	}
 }
 
 /*--------------------------------------------------------------------*/
