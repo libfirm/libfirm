@@ -133,6 +133,9 @@ entity     *copy_entity_own (entity *old, type *new_owner);
    Automatically inserts the new entity as a member of owner.
    The mangled name ld_name is set to NULL. */
 entity     *copy_entity_name (entity *old, ident *new_name);
+/* Frees the entity.  The owner will still contain the pointer to this
+   entity, as well as all other references! */
+void        free_entity (entity *ent);
 
 /** manipulate fields of entity **/
 const char *get_entity_name     (entity *ent);

@@ -48,10 +48,16 @@
 
 unsigned long type_visited;
 
-void
-free_type(type *tp) {
-  /* @@@ not implemented */
+void        free_type(type *tp) {
+  /* Remove from list of all types */
   remove_irp_type(tp);
+  /* Free the attributes of the type. */
+  free_type_attrs(tp);
+  /* Free entities automatically allocated with the type */
+  if (is_array_type(tp))
+    free_entity(get_array_element_entity(tp));
+  /* And now the type itself... */
+  free(tp);
 }
 
 INLINE type *

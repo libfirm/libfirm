@@ -136,6 +136,11 @@ copy_entity_name (entity *old, ident *new_name) {
   return new;
 }
 
+void
+free_entity (entity *ent) {
+  /* @@@ */
+}
+
 INLINE const char *
 get_entity_name (entity *ent) {
   assert (ent);
