@@ -183,8 +183,6 @@ or lowering phases.
 # include "common.h"
 # include "ident.h"
 # include "irmode.h"
-/*CS*/
-//# include "entity.h"
 
 #ifndef _ENTITY_TYPEDEF_
 #define _ENTITY_TYPEDEF_
@@ -310,6 +308,7 @@ ident       *get_method_ident (type_method *method);
 void   set_method_name  (type_method *method, char *name);
 void   set_method_ident (type_method *method, ident* ident); */
 
+inline int   get_method_n_params (type_method *method);
 inline int   get_method_arity (type_method *method);
 /*inline void  set_method_arity (type_method *method, int arity);*/
 inline type *get_method_param_type(type_method *method, int pos);

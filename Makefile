@@ -32,7 +32,7 @@ clean:
 
 realclean:
 	for i in $(SUBDIRS); do  $(MAKE) -C $$i realclean; done
-	rm -f libfirm.a core include/*.h
+	rm -f libfirm.a core include/*.h TAGS
 
 TAGFILES = $(shell find . -name '*.c' -o -name '*.h')
 

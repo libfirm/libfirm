@@ -6,6 +6,9 @@
 ** traverse an ir graph
 ** - execute the pre function before recursion
 ** - execute the post function after recursion
+**
+** Uses current_ir_graph (from irgraph.h)!!! Set it to the proper
+** graph before starting the walker.
 */
 
 

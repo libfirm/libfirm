@@ -34,6 +34,7 @@ HFILES +=  common.h debug.h gmp.h host.h ident.h irgraph.h  \
            obst.h pset.h set.h tv.h xprintf.h xp_help.h entity_t.h
 
 DISTRIB = $(DISTRIBMEMBERS:.m=.h)
+DISTRIB += type_or_entity.h
 
 OFILES = $(MEMBERS:%.m=../objects/%.o)
 

@@ -14,7 +14,7 @@
 # include "entity.h"
 # include <stdlib.h>
 # include "array.h"
-# include "irop.h"
+# include "irop_t.h"
 # include "tv.h"
 # include "type_or_entity.h"
 # include "irgwalk.h"

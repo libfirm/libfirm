@@ -5,7 +5,7 @@
 **
 */
 
-# include "irop.h"
+# include "irop_t.h"
 # include "irnode_t.h"
 # include "misc.h"
 

@@ -258,6 +258,12 @@ void   set_method_name  (type_method *method, char *name);
 void   set_method_ident (type_method *method, ident* ident);
 */
 
+
+inline int
+get_method_n_params (type_method *method) {
+  return method->arity;
+}
+
 inline int
 get_method_arity (type_method *method) {
   return method->arity;

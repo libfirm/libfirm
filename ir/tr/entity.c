@@ -57,17 +57,11 @@ new_entity (type *owner, ident *name, type *type)
   return res;
 }
 
-#if 0
-inline char *
+inline const char *
 get_entity_name (entity *ent) {
   assert (ent);
   return id_to_str(get_entity_ident(ent));
-  /* GL:
-     entity.c:52: warning: return discards `const' from pointer target type
-     -- ned so guud
-  */
 }
-#endif
 
 ident *
 get_entity_ident    (entity *ent) {

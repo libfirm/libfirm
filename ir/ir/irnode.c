@@ -116,7 +116,7 @@ ir_node_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
     return printed;
   }
 
-  XPF1 ("%I", get_irn_opname(np));
+  XPF1 ("%I", get_irn_opident(np));
 
   switch (get_irn_opcode (np)) {	/* node label */
   case iro_Const:
@@ -247,8 +247,15 @@ get_irn_opcode (ir_node *node)
   return node->op->code;
 }
 
-inline ident *
+inline const char *
 get_irn_opname (ir_node *node)
+{
+  assert(node);
+  return id_to_str(node->op->name);
+}
+
+inline ident *
+get_irn_opident (ir_node *node)
 {
   assert(node);
   return node->op->name;
@@ -691,9 +698,14 @@ get_Call_param_arr (ir_node *node) {
 }
 
 inline int
-get_Call_arity (ir_node *node) {
+get_Call_n_params (ir_node *node)  {
   assert (node->op == op_Call);
   return (get_irn_arity(node) - CALL_PARAM_OFFSET);
+}
+
+inline int
+get_Call_arity (ir_node *node) {
+  return get_Call_n_params(node);
 }
 
 /* inline void

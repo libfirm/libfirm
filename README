@@ -1,0 +1,19 @@
+
+This is a library implementing the intermediate representation
+FIRM developed at IPD Goos, Uni Karlsruhe.
+
+Call make lib to construct the library.  This creates a file
+libfirm.a and extracts all necessary header files to ./include.
+
+To test the library goto ./testprograms and make and run the
+test examples placed there:
+
+make lib
+cd testprograms
+make
+make run
+
+For more documentation see /include/firm.h.
+To generate FIRM code from a compiler frontend read the documentation
+in ./include/ircons.h.
+About Firm you can learn in UKA tech-report 1999-??.

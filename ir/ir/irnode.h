@@ -65,7 +65,8 @@ inline void          set_irn_op            (ir_node *node, ir_op *op);
 /* Get the opcode-enum of the node */
 inline opcode        get_irn_opcode        (ir_node *node);
 /* Get the ident for a string representation of the opcode */
-inline ident        *get_irn_opname        (ir_node *node);
+inline const char   *get_irn_opname        (ir_node *node);
+inline ident        *get_irn_opident       (ir_node *node);
 inline void          set_irn_visited (ir_node *node, unsigned long visited);
 inline unsigned long get_irn_visited (ir_node *node);
 inline void          set_irn_link          (ir_node *node, ir_node *link);
@@ -168,6 +169,7 @@ inline void     set_Call_mem (ir_node *node, ir_node *mem);
 inline ir_node *get_Call_ptr (ir_node *node);
 inline void     set_Call_ptr (ir_node *node, ir_node *ptr);
 inline ir_node **get_Call_param_arr (ir_node *node);
+inline int      get_Call_n_params (ir_node *node);
 inline int      get_Call_arity (ir_node *node);
 /* inline void     set_Call_arity (ir_node *node, ir_node *arity); */
 inline ir_node *get_Call_param (ir_node *node, int pos);
@@ -396,9 +398,9 @@ int is_fragile_op(ir_node *node);
 
 #define DDMSG        printf("%s(l.%i)\n", __FUNCTION__, __LINE__)
 #define DDMSG1(X)    printf("%s(l.%i) %s\n", __FUNCTION__, __LINE__,         \
-                            id_to_str(get_irn_opname(X)))
+                            id_to_str(get_irn_opident(X)))
 #define DDMSG2(X)    printf("%s(l.%i) %s: %ld\n", __FUNCTION__, __LINE__,     \
-                     id_to_str(get_irn_opname(X)), get_irn_node_nr(X))
+                     id_to_str(get_irn_opident(X)), get_irn_node_nr(X))
 #define DDMSG3(X)    printf("%s(l.%i) %s: %p\n", __FUNCTION__, __LINE__,     \
                      print_firm_kind(X), (X))
 

@@ -30,12 +30,7 @@ typedef enum {
   iro_Proj, iro_Tuple, iro_Id, iro_Bad
 } opcode;
 
-typedef struct {
-  opcode code;
-  ident *name;
-  size_t attr_size;
-  int labeled;
-} ir_op;
+typedef struct ir_op ir_op;
 
 extern ir_op *op_Block;
 
@@ -85,14 +80,13 @@ extern ir_op *op_Proj;
 extern ir_op *op_Id;
 extern ir_op *op_Bad;
 
-/* create a new ir operation */
-ir_op * new_ir_op (opcode code, ident *name, size_t attr_size, int labeled);
-
-/* initialize the irop module */
-void init_op (void);
 
 /* returns the attribute size of the operator. */
 int get_op_attr_size (ir_op *op);
+
+/* Returns the string for the opcode. */
+const char* get_op_name (ir_op *op);
+
 
 
 # endif /* _IROP_H_ */

@@ -11,6 +11,7 @@
 
 # include "irnode.h"
 # include "xprintf.h"
+# include "irop_t.h"
 
 /** ir node attributes **/
 /* Block attributes */
