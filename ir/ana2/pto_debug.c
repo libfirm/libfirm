@@ -22,6 +22,7 @@
 
 # include "pto_debug.h"
 # include "pto_comp.h"
+# include "gnu_ext.h"
 # include "qset.h"
 
 /* # include "xmalloc.h" */
@@ -50,6 +51,8 @@ int get_dbg_lvl ()
 
 void set_dbg_lvl (int lvl)
 {
+  /* fprintf (stdout, "%s:%s (): dbg_lvl: %i -> %i\n", */
+/*            __FILE__, __FUNCTION__, dbg_lvl, lvl); */
   dbg_lvl = lvl;
 }
 
@@ -69,6 +72,9 @@ void pto_print_pto (ir_node *node)
 
 /*
   $Log$
+  Revision 1.5  2005/02/25 16:47:51  liekweg
+  fix GNU stuff
+
   Revision 1.4  2004/12/20 17:34:35  liekweg
   fix recursion handling
 
