@@ -140,8 +140,9 @@ INLINE void free_entity_attrs(entity *ent) {
   if (ent->val_paths) {
     if (is_compound_entity(ent))
       for (i = 0; i < get_compound_ent_n_values(ent); i++)
-	if (ent->val_paths[i])
-	   free_compound_graph_path(ent->val_paths[i]) ;  /* @@@ warum nich? */
+	if (ent->val_paths[i]) ;
+	  /* free_compound_graph_path(ent->val_paths[i]) ;  * @@@ warum nich? */
+	  /* Geht nich: wird mehrfach verwendet!!! ==> mehrfach frei gegeben. */
     //DEL_ARR_F(ent->val_paths);
   }
   ent->val_paths = NULL;
