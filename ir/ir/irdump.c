@@ -1964,9 +1964,9 @@ dump_ir_block_graph_w_types (ir_graph *irg, const char *suffix)
   vcg_close(f);
 }
 
-/***********************************************************************/
+/*---------------------------------------------------------------------*/
 /* The following routines dump a control flow graph.                   */
-/***********************************************************************/
+/*---------------------------------------------------------------------*/
 
 static void
 dump_block_to_cfg(ir_node *block, void *env) {
@@ -1977,21 +1977,34 @@ dump_block_to_cfg(ir_node *block, void *env) {
   if (is_Block(block)) {
     /* This is a block. Dump a node for the block. */
     fprintf (F, "node: {title: \""); PRINT_NODEID(block);
-    fprintf (F, "\" label: \"%s ", get_op_name(get_irn_op(block)));
+    fprintf (F, "\" label: \"");
+    if (block == get_irg_start_block(get_irn_irg(block)))
+      fprintf(F, "Start ");
+    if (block == get_irg_end_block(get_irn_irg(block)))
+      fprintf(F, "End ");
+
+    fprintf (F, "%s ", get_op_name(get_irn_op(block)));
     PRINT_NODEID(block);
     fprintf (F, "\" ");
+    fprintf(F, "info1:\"");
     if (dump_dominator_information_flag)
-      fprintf(F, "info1:\"dom depth %d\"", get_Block_dom_depth(block));
+      fprintf(F, "info1:\"dom depth %d\n", get_Block_dom_depth(block));
+    fprintf (F, "\"");  /* closing quote of info */
+
+    if ((block == get_irg_start_block(get_irn_irg(block))) ||
+	(block == get_irg_end_block(get_irn_irg(block)))     )
+      fprintf(F, " color:blue ");
+
     fprintf (F, "}\n");
     /* Dump the edges */
     for ( i = 0; i < get_Block_n_cfgpreds(block); i++)
       if (get_irn_op(skip_Proj(get_Block_cfgpred(block, i))) != op_Bad) {
-    pred = get_nodes_block(skip_Proj(get_Block_cfgpred(block, i)));
-    fprintf (F, "edge: { sourcename: \"");
-    PRINT_NODEID(block);
-    fprintf (F, "\" targetname: \"");
-    PRINT_NODEID(pred);
-    fprintf (F, "\"}\n");
+        pred = get_nodes_block(skip_Proj(get_Block_cfgpred(block, i)));
+        fprintf (F, "edge: { sourcename: \"");
+        PRINT_NODEID(block);
+        fprintf (F, "\" targetname: \"");
+        PRINT_NODEID(pred);
+        fprintf (F, "\"}\n");
       }
 
     /* Dump dominator edge */
