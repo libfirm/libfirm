@@ -17,15 +17,13 @@
 # define _ST_H_
 
 /* Includes:  */
-# include "irgraph.h"
-# include "irnode.h"
+#include "irgraph.h"
+#include "irnode.h"
 
-# include "bs.h"
+#include "bs.h"
 
-#  include "bool.h"
+#include "bool.h"
 
-#define true TRUE
-#define false FALSE
 
 /* Data Types: */
 
