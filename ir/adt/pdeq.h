@@ -15,6 +15,7 @@
 #define _PDEQ_H_
 
 #include <string.h>
+
 #include "misc.h"
 
 typedef struct pdeq pdeq;

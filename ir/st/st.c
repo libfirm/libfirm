@@ -23,15 +23,12 @@
 #include "config.h"
 #endif
 
+# include <stdio.h>
+# include <stdlib.h>
+
 # include "st.h"
-
 # include "irgwalk.h"
-
-#  include <stdio.h>
-# ifdef DEBUG_libfirm
-# endif /* def DEBUG_libfirm */
-#  include <stdlib.h>
-# include "misc.h"
+# include "xmalloc.h"
 
 /* init globals: */
 /*static*/ dtree_t *trees = 0;

@@ -18,8 +18,9 @@
 #include <assert.h>
 #include <stddef.h>
 #include <obstack.h>
+
 #include "cookies.h"
-#include "misc.h"
+#include "xmalloc.h"
 
 
 /* Flexible create / delete */

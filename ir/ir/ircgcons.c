@@ -13,6 +13,7 @@
 
 
 #include <string.h>
+#include <stdbool.h>
 #include "ircgcons.h"
 
 #include "array.h"
@@ -21,7 +22,6 @@
 #include "irgmod.h"
 #include "irgwalk.h"
 #include "irflag.h"
-#include "misc.h"
 
 
 /* Datenstruktur für jede Methode */

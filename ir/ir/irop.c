@@ -18,7 +18,8 @@
 
 # include "irop_t.h"
 # include "irnode_t.h"
-# include "misc.h"
+
+# include "xmalloc.h"
 
 ir_op *op_Block;           ir_op *get_op_Block     () { return op_Block;     }
 

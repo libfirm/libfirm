@@ -19,7 +19,8 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "misc.h"
+
+#include "xmalloc.h"
 #include "panic.h"
 
 

@@ -15,7 +15,9 @@
 #endif
 
 #include <stdlib.h>
+
 #include "array.h"
+#include "xmalloc.h"
 
 /* Undefine the macros to get the functions instead, cf tmalloc.c.  */
 #undef xmalloc
@@ -23,6 +25,12 @@
 #undef xstrdup
 #undef xfree
 
+#ifndef MAX
+# define MAX(a,b) ((a) > (b) ? (a) : (b))
+#endif
+#ifndef MIN
+# define MIN(a,b) ((a) > (b) ? (b) : (a))
+#endif
 
 _arr_descr arr_mt_descr
 #ifndef NDEBUG

@@ -16,6 +16,7 @@
 #endif
 
 # include <assert.h>
+# include <stdbool.h>
 
 # include "irprog.h"
 # include "irgopt.h"
@@ -24,7 +25,6 @@
 # include "iropt_t.h"
 # include "irgwalk.h"
 # include "ircons.h"
-# include "misc.h"
 # include "irgmod.h"
 # include "array.h"
 # include "pset.h"

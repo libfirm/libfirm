@@ -15,14 +15,15 @@
 # include <config.h>
 #endif
 
-# include "irmode_t.h"
-# include "ident.h"
 # include <stdlib.h>
 # include <stddef.h>
 # include <string.h>
+# include <stdbool.h>
+
+# include "irmode_t.h"
+# include "ident.h"
 # include "tv.h"
 # include "obst.h"
-# include "misc.h"
 
 #if 0
 static long long count = 0;

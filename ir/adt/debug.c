@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "debug.h"
-#include "misc.h"
+#include "xmalloc.h"
 
 
 int

@@ -18,7 +18,6 @@
 
 # include "mangle.h"
 # include "obst.h"
-# include "misc.h"
 
 /* Make types visible to allow most efficient access */
 # include "entity_t.h"

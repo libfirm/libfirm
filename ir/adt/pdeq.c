@@ -18,6 +18,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 # ifdef HAVE_STRING_H
 #  include <string.h>
 # endif
@@ -25,6 +26,7 @@
 #include "cookies.h"
 #include "debug.h"
 #include "pdeq.h"
+#include "xmalloc.h"
 
 
 /** Size of pdeq block cache */

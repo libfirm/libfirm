@@ -15,7 +15,7 @@
 # include <config.h>
 #endif
 
-# include "misc.h"
+# include "xmalloc.h"
 # include "tpop_t.h"
 # include "type_t.h"
 
