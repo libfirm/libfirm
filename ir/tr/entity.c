@@ -491,7 +491,7 @@ ir_node *copy_const_value(ir_node *n) {
     nn = new_Const(m, get_Const_tarval(n)); break;
   case iro_SymConst:
 
-    nn = new_SymConst(get_SymConst_type_or_id(n), get_SymConst_kind(n));
+    nn = new_SymConst(get_SymConst_symbol(n), get_SymConst_kind(n));
     break;
   case iro_Add:
     nn = new_Add(copy_const_value(get_Add_left(n)),

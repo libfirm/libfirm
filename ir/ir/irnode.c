@@ -935,14 +935,14 @@ void     set_SymConst_entity (ir_node *node, entity *ent) {
 }
 
 
-symconst_symbol
-get_SymConst_type_or_id (ir_node *node) {
+union symconst_symbol
+get_SymConst_symbol (ir_node *node) {
   assert (node->op == op_SymConst);
   return node->attr.i.sym;
 }
 
 void
-set_SymConst_type_or_id (ir_node *node, symconst_symbol sym) {
+set_SymConst_symbol (ir_node *node, union symconst_symbol sym) {
   assert (node->op == op_SymConst);
   //memcpy (&(node->attr.i.sym), sym, sizeof(type_or_id));
   node->attr.i.sym = sym;
