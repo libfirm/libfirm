@@ -1625,7 +1625,7 @@ int is_compound_type(type *tp) {
 }
 
 
-#if 1 || DEBUG_libfirm
+#ifdef DEBUG_libfirm
 int dump_node_opcode(FILE *F, ir_node *n); /* from irdump.c */
 
 void dump_type (type *tp) {
