@@ -29,8 +29,7 @@
 #include "bephiopt.h"
 #include "phistat.h"
 
-#define DUMP_ALLOCATED
-#define DUMP_LOCALIZED
+#define DUMP_LOCAL 1
 
 #define N_PHASES 256
 
@@ -114,20 +113,17 @@ static void be_main_loop(void)
 		ir_graph *irg = get_irp_irg(i);
 
 		localize_consts(irg);
-#ifdef DUMP_LOCALIZED
-		dump_consts_local(0);
-		dump_ir_block_graph(irg, "-local-const");
-#endif
+		if (DUMP_LOCAL) {
+			dump_consts_local(0);
+			dump_ir_block_graph(irg, "-local");
+		}
+
 		be_numbering(irg);
 		list_sched(irg, trivial_selector, NULL);
 		be_liveness(irg);
 		be_ra_chordal(irg);
-
-#ifdef DUMP_ALLOCATED
-		dump_allocated_irg(irg);
-#endif
-		be_phi_opt(irg);
-		//??be_phi_destruction(irg);
+		//be_phi_opt(irg);
+		//be_phi_destruction(irg);
 
 		be_ra_chordal_done(irg);
 		be_numbering_done(irg);
