@@ -660,6 +660,17 @@ entity *get_class_member   (type *clss, int pos) {
   assert(pos >= 0 && pos < get_class_n_members(clss));
   return clss->attr.ca.members[pos+1];
 }
+entity *get_class_member_by_name(type *clss, ident *name) {
+  int i, n_mem;
+  assert(clss && (clss->type_op == type_class));
+  n_mem = get_class_n_members(clss);
+  for (i = 0; i < n_mem; ++i) {
+    entity *mem = get_class_member(clss, i);
+    if (get_entity_ident(mem) == name) return mem;
+  }
+  return NULL;
+}
+
 void    set_class_member   (type *clss, entity *member, int pos) {
   assert(clss && (clss->type_op == type_class));
   assert(pos >= 0 && pos < get_class_n_members(clss));

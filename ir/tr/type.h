@@ -349,6 +349,10 @@ entity *get_class_member   (type *clss, int pos);
 /** Returns index of mem in clss, -1 if not contained. */
 int     get_class_member_index(type *clss, entity *mem);
 
+/** Finds the member with name 'name'. If several members with the same
+    name returns one of them.  Returns NULL if no member found. */
+entity *get_class_member_by_name(type *clss, ident *name);
+
 /** Overwrites the member at position pos, 0 <= pos < n_member with
    the passed entity. */
 void    set_class_member   (type *clss, entity *member, int pos);
