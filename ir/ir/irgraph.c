@@ -47,10 +47,10 @@ static int forbid_new_data = 0;
 static size_t additional_graph_data_size = 0;
 
 ir_graph *current_ir_graph;
-INLINE ir_graph *get_current_ir_graph(void) {
+ir_graph *get_current_ir_graph(void) {
   return current_ir_graph;
 }
-INLINE void set_current_ir_graph(ir_graph *graph) {
+void set_current_ir_graph(ir_graph *graph) {
   current_ir_graph = graph;
 }
 
@@ -330,7 +330,7 @@ int
 
 /* Outputs a unique number for this node */
 
-INLINE long
+long
 get_irg_graph_nr(ir_graph *irg) {
   assert(irg);
 #ifdef DEBUG_libfirm

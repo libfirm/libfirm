@@ -38,11 +38,6 @@
    This reduces the depth of the loop tree. */
 #define NO_LOOPS_WITHOUT_HEAD 1
 
-
-INLINE void add_loop_son(ir_loop *loop, ir_loop *son);
-
-INLINE void add_loop_node(ir_loop *loop, ir_node *n);
-
 static ir_graph *outermost_ir_graph;      /* The outermost graph the scc is computed
 					     for */
 static ir_loop *current_loop;      /* Current loop construction is working
@@ -113,7 +108,7 @@ set_irn_uplink (ir_node *n, int uplink) {
   scc->uplink = uplink;
 }
 
-INLINE int
+int
 get_irn_uplink (ir_node *n) {
   scc_info *scc = get_irn_link(n);
   assert(scc);
@@ -127,7 +122,7 @@ set_irn_dfn (ir_node *n, int dfn) {
   scc->dfn = dfn;
 }
 
-INLINE int
+int
 get_irn_dfn (ir_node *n) {
   scc_info *scc = get_irn_link(n);
   assert(scc);
@@ -135,13 +130,13 @@ get_irn_dfn (ir_node *n) {
 }
 
 
-INLINE void
+void
 set_irn_loop (ir_node *n, ir_loop *loop) {
   n->loop = loop;
 }
 
 /* Uses temporary information to get the loop */
-INLINE ir_loop *
+ir_loop *
 get_irn_loop (ir_node *n) {
   return n->loop;
 }
@@ -393,7 +388,7 @@ ir_loop *get_loop_son (ir_loop *loop, int pos) {
 /* Use EXCLUSIVELY this function to add sons, otherwise the loop->n_sons
    is invalid! */
 
-INLINE void
+void
 add_loop_son(ir_loop *loop, ir_loop *son) {
   loop_element lson;
   lson.son = son;
@@ -434,7 +429,7 @@ ir_node *get_loop_node (ir_loop *loop, int pos) {
 /* Use EXCLUSIVELY this function to add nodes, otherwise the loop->n_nodes
    is invalid! */
 
-INLINE void
+void
 add_loop_node(ir_loop *loop, ir_node *n) {
   loop_element ln;
   ln.node = n;
@@ -636,7 +631,7 @@ static void test(ir_node *pred, ir_node *root, ir_node *this) {
 #endif
 
 /* Test for legal loop header: Block, Phi, ... */
-INLINE static bool is_possible_loop_head(ir_node *n) {
+static INLINE bool is_possible_loop_head(ir_node *n) {
   ir_op *op = get_irn_op(n);
   return ((op == op_Block) ||
 	  (op == op_Phi) ||
@@ -911,7 +906,7 @@ ir_node *get_projx_link(ir_node *cb_projx)
 
 #endif
 
-INLINE static int
+static INLINE int
 is_outermost_loop(ir_loop *l) {
   return l == get_loop_outer_loop(l);
 }
