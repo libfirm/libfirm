@@ -1,3 +1,7 @@
+  * 19.6.2001 Goetz
+    What happens if undefined values are allowed?  See ircons.c,
+    grep for get_irg_start_block.
+
   * 23.5.2001 Goetz
     Does the array type contain a field with the array entity?
     This entity should be constructed automatically with the array type.

@@ -1,3 +1,9 @@
+  19.6.2001 Goetz
+  Changed array bounds in type.h to ir_node*.  This allows to
+  construct array bounds that are complex constant expressions
+  simpler.  Further dynamic array bounds can be displayed.
+  Comment in ircons.c extended: undefined values in start_block.
+
   7.6.2001 Goetz
   ifdef'ed all uses of gmp in tv.c away.  Optimizations for
   mode_Z no more supported, as well as constants of that mode.
