@@ -85,8 +85,8 @@
 #else
 #define PRINT_NODEID(X) fprintf(F, "\"n%p\"", (void*) X)
 #define PRINT_TYPEID(X) fprintf(F, "\"t%p\"", (void *) X)
-#define PRINT_ENTID(X) fprintf(F, "\"e%p\"", (void*) X)
-#define PRINT_IRGID(X) fprintf(F,"g%p",void(*)X)
+#define PRINT_ENTID(X)  fprintf(F, "\"e%p\"", (void*) X)
+#define PRINT_IRGID(X)  fprintf(F, "g%p",(void*) X)
 #define PRINT_CONSTID(X,Y) fprintf(F, "\"%p%p\"", (void*) X, (void*) Y)
 #endif
 
@@ -665,7 +665,9 @@ void dump_entity_node(entity *ent) {
     case inherited:   fprintf (F, "inherited");   break;
     case existent:    fprintf (F, "existent");    break;
   }
-  fprintf(F, "\nname:    %s\nld_name: %s", id_to_str(get_entity_ident(ent)), id_to_str(get_entity_ld_ident(ent)));
+  fprintf(F, "\nname:    %s\nld_name: %s",
+	  id_to_str(get_entity_ident(ent)),
+	  id_to_str(get_entity_ld_ident(ent)));
   fprintf(F, "\noffset:  %d", get_entity_offset(ent));
   if (is_method_type(get_entity_type(ent))) {
     if (get_entity_irg(ent))   /* can be null */
