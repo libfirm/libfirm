@@ -6,7 +6,7 @@
 * Modified by: Boris Boesler
 * Created:     Y.X.2004
 * CVS-ID:      $Id$
-* Copyright:   (c) 1999-2004 Universitaet Karlsruhe
+* Copyright:   (c) 1999-2004 Universität Karlsruhe
 * Licence:     This file is protected by GPL -  GNU GENERAL PUBLIC LICENSE.
 -->
 
@@ -92,7 +92,7 @@
 <!ATTLIST	unknown		%firm.id;>
 
 <!-- join two or more values -->
-<!ELEMENT	join		(valref,valref+)>
+<!ELEMENT	join		(valref,valref)>
 <!ATTLIST	join		%firm.id;>
 
 <!-- raise an exception -->
@@ -105,6 +105,9 @@
 <!--
 
  $Log$
+ Revision 1.10  2004/10/29 18:52:32  liekweg
+ Allow only two values for join
+
  Revision 1.9  2004/10/29 18:38:36  liekweg
  ** Allow store ::= ((valref|select),valref)
 
