@@ -93,6 +93,8 @@ node: {title: "n14" label: "SymC &main  14"  info1: "mode:    P
 visited: 1
 arity: 0
 kind addr_ent
+entity WHILE_EXAMPLE.main (15)
+
 "}
 node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1b,

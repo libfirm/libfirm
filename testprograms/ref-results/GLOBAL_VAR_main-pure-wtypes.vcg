@@ -192,6 +192,8 @@ node: {title: "n13" label: "SymC &GLOBAL_VAR_main  13"  info1: "mode:    P
 visited: 1
 arity: 0
 kind addr_ent
+entity GlobalType.GLOBAL_VAR_main (14)
+
 "}
 node: {title: "t12" label: "method GLOBAL_VAR_main" info1: "state: layout_fixed,
 mode: P,

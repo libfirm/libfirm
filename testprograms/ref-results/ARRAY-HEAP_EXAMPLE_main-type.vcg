@@ -111,6 +111,8 @@ node: {title: "n13" label: "SymC &ARRAY-HEAP_EXAMPLE_main  13"  info1: "mode:   
 visited: 1
 arity: 0
 kind addr_ent
+entity GlobalType.ARRAY-HEAP_EXAMPLE_main (14)
+
 "}
 node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1b,

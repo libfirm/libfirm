@@ -216,6 +216,8 @@ node: {title: "n16" label: "SymC &set_a  16"  info1: "mode:    P
 visited: 3
 arity: 0
 kind addr_ent
+entity PRIMA_INLINE.set_a (17)
+
 "}
 node: {title: "t15" label: "method set_a" info1: "state: layout_fixed,
 mode: P,
@@ -259,6 +261,8 @@ node: {title: "n19" label: "SymC &c  19"  info1: "mode:    P
 visited: 3
 arity: 0
 kind addr_ent
+entity PRIMA_INLINE.c (20)
+
 "}
 node: {title: "t18" label: "method c" info1: "state: layout_fixed,
 mode: P,

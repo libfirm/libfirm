@@ -116,6 +116,8 @@ visited: 44
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 0
 kind addr_ent
+entity PRIMA.c (20)
+
 "}
 edge: {sourcename: "n190" targetname: "n190n165" label: "0" class:16 priority:10}
 }
@@ -166,6 +168,8 @@ visited: 44
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 0
 kind addr_ent
+entity PRIMA.set_a (17)
+
 "}
 edge: {sourcename: "n184" targetname: "n184n166" label: "0" class:16 priority:10}
 }
@@ -452,6 +456,8 @@ node: {title: "n16" label: "SymC &set_a  16"  info1: "mode:    P
 visited: 47
 arity: 0
 kind addr_ent
+entity PRIMA.set_a (17)
+
 "}
 node: {title: "t15" label: "method set_a" info1: "state: layout_fixed,
 mode: P,
@@ -495,6 +501,8 @@ node: {title: "n19" label: "SymC &c  19"  info1: "mode:    P
 visited: 48
 arity: 0
 kind addr_ent
+entity PRIMA.c (20)
+
 "}
 node: {title: "t18" label: "method c" info1: "state: layout_fixed,
 mode: P,
@@ -530,6 +538,8 @@ node: {title: "n22" label: "SymC &OO_PROGRAM_EXAMPLE_main  22"  info1: "mode:   
 visited: 49
 arity: 0
 kind addr_ent
+entity GlobalType.OO_PROGRAM_EXAMPLE_main (23)
+
 "}
 node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1b,

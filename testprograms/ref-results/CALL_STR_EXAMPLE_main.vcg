@@ -107,6 +107,8 @@ visited: 9
 irg:     CALL_STR_EXAMPLE_main
 arity: 0
 kind addr_ent
+entity GlobalType.constStr (17)
+
 "}
 node: {title: "n40" label: "ProjX 0 40"  info1: "mode:    X
 visited: 9
