@@ -15,7 +15,7 @@ srcdir = @srcdir@
 topdir = ../..
 subdir := ir/ana2
 
-INSTALL_HEADERS = ecg.h irmemwalk.h lset.h typalise.h pto.h pto_comp.h pto_debug.h \
+INSTALL_HEADERS = ecg.h irmemwalk.h lset.h typalise.h pto.h pto_comp.h \
 	pto_ctx.h pto_debug.h pto_init.h pto_name.h pto_util.h qset.h
 
 SOURCES = $(INSTALL_HEADERS)
