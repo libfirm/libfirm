@@ -1,7 +1,9 @@
-/* config.h.in.  Generated automatically from configure.in by autoheader.  */
-
-/* Define if you have the ANSI C header files.  */
-#undef STDC_HEADERS
+/* config.h.in.  Generated from configure.in by autoheader.  */
+/*
+ * libFIRM Project
+ *
+ * $Id$
+ */
 
 /* define to enable debugging stuff. */
 #undef DEBUG_libfirm
@@ -12,14 +14,64 @@
 /* Define to value "inline" for gcc inlineing. */
 #undef USE_GCC_INLINE
 
-/* Define if you have the <gmp.h> header file.  */
-#undef HAVE_GMP_H
+/* Define to 1 if you have the <inttypes.h> header file. */
+#undef HAVE_INTTYPES_H
 
-/* Define if you have the <jni.h> header file.  */
+/* Define to 1 if you have the <jni.h> header file. */
 #undef HAVE_JNI_H
 
-/* Define if you have the <math.h> header file.  */
+/* Define to 1 if long double works and has more range or precision than
+   double. */
+#undef HAVE_LONG_DOUBLE
+
+/* Define to 1 if you have the <math.h> header file. */
 #undef HAVE_MATH_H
 
-/* Define if you have the <obstack.h> header file.  */
+/* Define to 1 if you have the <memory.h> header file. */
+#undef HAVE_MEMORY_H
+
+/* Define to 1 if you have the <obstack.h> header file. */
 #undef HAVE_OBSTACK_H
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#undef HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#undef HAVE_STDLIB_H
+
+/* Define to 1 if you have the <strings.h> header file. */
+#undef HAVE_STRINGS_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#undef HAVE_STRING_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#undef HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#undef HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#undef HAVE_UNISTD_H
+
+/* Define to the address where bug reports for this package should be sent. */
+#undef PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#undef PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#undef PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#undef PACKAGE_TARNAME
+
+/* Define to the version of this package. */
+#undef PACKAGE_VERSION
+
+/* Define to 1 if you have the ANSI C header files. */
+#undef STDC_HEADERS
+
+/* Define to 1 if your processor stores words with the most significant byte
+   first (like Motorola and SPARC, unlike Intel and VAX). */
+#undef WORDS_BIGENDIAN
