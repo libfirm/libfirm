@@ -313,6 +313,14 @@ void set_opt_fragile_ops(int value)
     libFIRM_opt &= ~OPT_FRAGILE_OPS;
 }
 
+void set_opt_if_conversion(int value)
+{
+  if (value)
+    libFIRM_opt |= OPT_IF_CONVERSION;
+  else
+    libFIRM_opt &= ~OPT_IF_CONVERSION;
+}
+
 /* Save the current optimization state. */
 void save_optimization_state(optimization_state_t *state)
 {

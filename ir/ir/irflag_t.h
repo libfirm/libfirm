@@ -92,6 +92,9 @@ typedef enum {
   /** Optimize Fragile OPs */
   OPT_FRAGILE_OPS                        = 0x00080000,
 
+	/** If conversion. */
+	OPT_IF_CONVERSION                      = 0x00100000,
+
   /** Turn off all optimizations. */
   OPT_OPTIMIZED                          = 0x40000000,
 
@@ -251,6 +254,12 @@ static INLINE int get_opt_precise_exc_context(void)
 static INLINE int get_opt_fragile_ops(void)
 {
   return libFIRM_opt & OPT_FRAGILE_OPS;
+}
+
+/** Returns if conversion setting. */
+static INLINE int get_opt_if_conversion(void)
+{
+  return libFIRM_opt & OPT_IF_CONVERSION;
 }
 
 
