@@ -2571,6 +2571,12 @@ void     switch_block (ir_node *target);
 /** Returns the current block of the current graph. */
 ir_node *get_cur_block(void);
 
+/** Returns the fixed nodes  of the current graph. */
+#define get_cur_end_block()   get_irg_end_block(current_ir_graph)
+#define get_cur_end()         get_irg_end(current_ir_graph)
+#define get_cur_start_block() get_irg_start_block(current_ir_graph)
+#define get_cur_start()       get_irg_start(current_ir_graph)
+
 /** Constructor for a Block node.
  *
  * Adds the block to the graph in current_ir_graph. Constructs a Block
