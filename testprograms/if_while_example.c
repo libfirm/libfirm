@@ -1,4 +1,4 @@
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
+/* (C) 1998 - 2000 by Universitaet Karlsruhe
 ** All rights reserved.
 **
 ** Authors: Christian Schaefer, Goetz Lindenmaier
@@ -118,7 +118,7 @@ main(void)
 
   printf("Optimizing ...\n");
 
-  local_optimize_graph(irg),
+  local_optimize_graph(irg);
   dead_node_elimination(irg);
 
   /* verify the graph */

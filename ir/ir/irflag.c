@@ -13,12 +13,12 @@
 
 /* 0 - don't do this optimization
    1 - lets see, if there is a better graph */
-int opt_cse = 1;                    /* Hash the nodes */
-int opt_constant_folding = 1;       /* Evaluate operations */
-int opt_unreachable_code = 1;       /* Bad node propagation */
-int opt_dead_node_elimination = 1;  /* Reclaim memory */
-int optimized = 1;
-int opt_inline = 1;
+int opt_cse = 0;                    /* Hash the nodes */
+int opt_constant_folding = 0;       /* Evaluate operations */
+int opt_unreachable_code = 0;       /* Bad node propagation */
+int opt_dead_node_elimination = 0;  /* Reclaim memory */
+int optimized = 0;
+int opt_inline = 0;
 
 /* set the flags with set_flagname, get the flag with get_flagname */
 

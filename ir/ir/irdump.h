@@ -30,7 +30,7 @@
  */
 
 #if 0
-/* The following routines use a flobal variable that is not external.
+/* The following routines use a global variable that is not external.
    Therefore removed from interface. */
 /* dump a simple node */
 void dump_ir_node (ir_node *node);
@@ -112,8 +112,8 @@ void dump_cfg (ir_graph *irg);
  * SYNOPSIS
  *   void dump_type_graph (ir_graph *irg);
  * FUNCTION
- *  Dumps all all the type information needed for Calls, Sels, ... in this graph.
- *  Dumps the graph to a file.  The file name is constructed from the
+ *  Dumps all the type information needed for Calls, Sels, ... in this graph.
+ *  Dumps this graph to a file.  The file name is constructed from the
  *  name of the entity describing the procedure (irg->entity) and the
  *  ending -type.vcg.  Eventually overwrites existing files.
  * INPUTS
@@ -154,7 +154,8 @@ void dump_all_types (void);
  * SYNOPSIS
  *   void dump_ir_graph_w_types (ir_graph *irg);
  * FUNCTION
- *  Dumps a firm graph and  all the type information needed for Calls, Sels, ... in this graph.
+ *  Dumps a firm graph and  all the type information needed for Calls,
+ *  Sels, ... in this graph.
  *  Dumps the graph to a file.  The file name is constructed from the
  *  name of the entity describing the procedure (irg->entity) and the
  *  ending -all.vcg.  Eventually overwrites existing files.
@@ -166,7 +167,29 @@ void dump_all_types (void);
  *  turn_of_edge_labels
  ***
  */
+
 void dump_ir_graph_w_types (ir_graph *irg);
+ /****m* irdump/dump_ir_block_graph_w_types
+ *
+ * NAME
+ *   dump_ir_block_graph_w_types
+ * SYNOPSIS
+ *   void dump_ir_block_graph_w_types (ir_graph *irg);
+ * FUNCTION
+ *  Dumps a firm graph and  all the type information needed for Calls,
+ *  Sels, ... in this graph.  The graph is in blocked format.
+ *  Dumps the graph to a file.  The file name is constructed from the
+ *  name of the entity describing the procedure (irg->entity) and the
+ *  ending -all.vcg.  Eventually overwrites existing files.
+ * INPUTS
+ *   irg: The firm graph to be dumped with its type information.
+ * RESULT
+ *   A file containing the firm graph and the type information of the firm graph in vcg format.
+ * SEE ALSO
+ *  turn_of_edge_labels
+ ***
+ */
+void dump_ir_block_graph_w_types (ir_graph *irg);
 
 /****m* irdump/dump_all_ir_graphs
  *

@@ -12,12 +12,10 @@
 /**
 ***  This file constructs the ir for the following pseudo-program:
 ***
-***  Doesn't work for some reason!!!!
-***
 ***  int main(int a) {
 ***    int b = 2;
 ***    if ( a == b )
-***      { a := a - 2; }
+***      { a := a - 3; }
 ***
 ***    return a;
 ***  }
@@ -43,29 +41,42 @@ main(void)
 #define NRARGS 1
 #define NRES 1
 
+  /** Type information for the procedure **/
+
   owner = get_glob_type();
+  /* Type information for the procedure */
   proc_main = new_type_method(id_from_str(METHODNAME, strlen(METHODNAME)),
 			      NRARGS, NRES);
+  /* The entity for the procedure */
   ent = new_entity (owner,
                     id_from_str (METHODNAME, strlen(METHODNAME)),
                     proc_main);
-
-#define RES_NAME "int"
-  typ = new_type_primitive(id_from_str(RES_NAME, strlen(RES_NAME)), mode_i);
+  /* The type int.  This type is necessary to model the result and parameters
+     the procedure. */
+#define PRIM_NAME "int"
+  typ = new_type_primitive(id_from_str(PRIM_NAME, strlen(PRIM_NAME)), mode_i);
+  /* The parameter and result types of the procedure. */
   set_method_param_type(proc_main, 0, typ);
   set_method_res_type(proc_main, 0, typ);
 
-  /* Generates start and end blocks and nodes and a first, initial block */
-  irg = new_ir_graph (ent, 2);
+  /** The code of the procedure **/
 
-  /* The value position used for a: */
+  /* Generates start and end blocks and nodes, and a first, initial block */
+#define NRLOCS 2
+  irg = new_ir_graph (ent, NRLOCS);
+
+  /* The value position used for: */
   a_pos = 0;
   b_pos = 1;
 
-  /* Generate the constant */
+  /* Get the procedure parameter and assign it to the parameter variable
+     a. */
   set_value (a_pos, new_Proj (get_irg_args(irg), mode_i, 0));
-  /*set_value (a_pos, new_Const (mode_i, tarval_from_long (mode_i, 0)));*/
+  /* Generate the constant and assign it to b. The assignment is resovled to a
+     dataflow edge. */
   set_value (b_pos, new_Const (mode_i, tarval_from_long (mode_i, 2)));
+  /* We know all predecessors of the block and all set_values and set_stores are
+     preformed.   We can mature the block.  */
   mature_block (get_irg_current_block(irg));
 
   /* Generate a conditional branch */
@@ -78,7 +89,7 @@ main(void)
   r = new_immBlock ();
   add_in_edge (r, t);
   a = new_Sub(get_value(a_pos, mode_i),
-              new_Const (mode_i, tarval_from_long (mode_i, 2)),
+              new_Const (mode_i, tarval_from_long (mode_i, 3)),
   	      mode_i);
   set_value (a_pos, a);
 
@@ -90,6 +101,7 @@ main(void)
   add_in_edge (r, f);
   add_in_edge (r, x);
   mature_block (r);
+  /* The Return statement */
   {
      ir_node *in[1], *store ;
      in[0] = get_value (a_pos, mode_i);
@@ -101,11 +113,6 @@ main(void)
   /* finalize the end block generated in new_ir_graph() */
   add_in_edge (get_irg_end_block(irg), x);
   mature_block (get_irg_end_block(irg));
-
-
-  printf("Optimizing ...\n");
-  local_optimize_graph(irg);
-  dead_node_elimination(irg);
 
   /* verify the graph */
   irg_vrfy(irg);
