@@ -1448,7 +1448,7 @@ int is_Phi0 (ir_node *n) {
 
   return ((get_irn_op(n) == op_Phi) &&
 	  (get_irn_arity(n) == 0) &&
-	  (get_irg_phase_state(get_irn_irg(n)) !=  phase_building));
+	  (get_irg_phase_state(get_irn_irg(n)) ==  phase_building));
 }
 
 ir_node **
@@ -1459,7 +1459,7 @@ get_Phi_preds_arr (ir_node *node) {
 
 int
 get_Phi_n_preds (ir_node *node) {
-  assert (is_Phi(node));
+  assert (is_Phi(node) || is_Phi0(node));
   return (get_irn_arity(node));
 }
 
@@ -1471,13 +1471,13 @@ void set_Phi_n_preds (ir_node *node, int n_preds) {
 
 ir_node *
 get_Phi_pred (ir_node *node, int pos) {
-  assert (is_Phi(node));
+  assert (is_Phi(node) || is_Phi0(node));
   return get_irn_n(node, pos);
 }
 
 void
 set_Phi_pred (ir_node *node, int pos, ir_node *pred) {
-  assert (is_Phi(node));
+  assert (is_Phi(node) || is_Phi0(node));
   set_irn_n(node, pos, pred);
 }
 
