@@ -272,6 +272,7 @@ typedef enum {
   dump_verbosity_entconsts         = 0x00000020,   /**< dump entity constants */
 
   dump_verbosity_accessStats       = 0x00000100,   /**< dump entity access statistics */
+  dump_verbosity_csv               = 0x00000200,   /**< dump access statistics as comma separated list */
 
   dump_verbosity_noClassTypes      = 0x00001000,   /**< dump no class       types */
   dump_verbosity_noStructTypes     = 0x00002000,   /**< dump no struct      types */
@@ -291,7 +292,8 @@ typedef enum {
   dump_verbosity_onlyPrimitiveTypes = 0x000BF000,  /**< dump only primitive types */
   dump_verbosity_onlyEnumerationTypes=0x0007F000,  /**< dump only enumeration types */
 
-  dump_verbosity_max                = 0x48888887   /**< turn on all verbosity. */
+  dump_verbosity_max                = 0x4FF00FFE   /**< turn on all verbosity.
+						        @@@ Because of a bug in gcc 3.2 we can not set the first two bits. */
 } dump_verbosity;
 
 
@@ -322,7 +324,8 @@ void    dump_type (type *tp);
  *  the global type nor frame types or the like.
  *
  *  The file name is the program name (get_irp_name()), or 'TextTypes'
- *  if the program name is not set appended by <suffix>-types.txt.
+ *  if the program name is not set, appended by <suffix>-types.txt.
+ *  For verbosity see the documentation of the verbosity flags above.
  */
 void dump_types_as_text(unsigned verbosity, const char *suffix);
 

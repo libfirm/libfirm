@@ -564,7 +564,7 @@ static int dump_node_typeinfo(FILE *F, ir_node *n) {
   if (opt_dump_analysed_type_info) {
     if (get_irg_typeinfo_state(current_ir_graph) == irg_typeinfo_consistent  ||
         get_irg_typeinfo_state(current_ir_graph) == irg_typeinfo_inconsistent) {
-      type *tp = get_irn_type(n);
+      type *tp = get_irn_typeinfo_type(n);
       if (tp != none_type)
         fprintf(F, " [%s]", get_type_name_ex(tp, &bad));
       else
@@ -801,6 +801,7 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
       fprintf(F, "kind size\n");
       break;
     }
+    fprintf(F, "SymConst of type %s \n", get_type_name_ex(get_SymConst_value_type(n), &bad));
   } break;
   case iro_Filter: {
     int i;
@@ -831,8 +832,8 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
 
   if (get_irg_typeinfo_state(get_irn_irg(n)) == irg_typeinfo_consistent  ||
       get_irg_typeinfo_state(get_irn_irg(n)) == irg_typeinfo_inconsistent  )
-    if (get_irn_type(n) != none_type)
-      fprintf (F, "\nAnalysed type: %s", get_type_name_ex(get_irn_type(n), &bad));
+    if (get_irn_typeinfo_type(n) != none_type)
+      fprintf (F, "\nAnalysed type: %s", get_type_name_ex(get_irn_typeinfo_type(n), &bad));
 
   fprintf (F, "\"");
 
@@ -2348,6 +2349,7 @@ void dump_loops_standalone(FILE *F, ir_loop *loop) {
       bad |= dump_node_nodeattr(F, n);
       fprintf (F, " %ld", get_irn_node_nr(n));
       if (is_Block(n)) fprintf (F, "\t ->%d", (int)get_irn_link(n));
+      if (has_backedges(n)) fprintf(F, "\t loop head!");
     } else { /* for callgraph loop tree */
       assert(get_kind(son) == k_ir_graph);
       /* We are a loop node -> Collect firm graphs */

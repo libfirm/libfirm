@@ -24,9 +24,58 @@
 
 #include "field_temperature.h"
 
+#define MY_SIZE 32     /* Size of an array that actually should be computed. */
+
 int dump_node_opcode(FILE *F, ir_node *n); /* from irdump.c */
 
 
+
+int addr_is_alloc(ir_node *acc) {
+  ir_node *addr = NULL;
+  opcode addr_op;
+  if (is_memop(acc)) {
+    addr = get_memop_ptr(acc);
+  } else {
+    assert(get_irn_op(acc) == op_Call);
+    addr = get_Call_ptr(acc);
+  }
+
+  addr_op = get_irn_opcode(addr);
+
+  while (addr_op != iro_Alloc) {
+
+    switch (addr_op) {
+    case iro_Sel:
+      addr = get_Sel_ptr(addr);
+      break;
+    case iro_Cast:
+      addr = get_Cast_op(addr);
+      break;
+    case iro_Proj:
+      addr = get_Proj_pred(addr);
+      break;
+    case iro_SymConst:
+    case iro_Const:
+      return 0;
+      break;
+    case iro_Phi:
+    case iro_Load:
+    case iro_Call:
+    case iro_Start:
+      return 0;
+      break;
+
+    default:
+      DDMN(addr);
+      assert(0 && "unexpected address node");
+    }
+    addr_op = get_irn_opcode(addr);
+  }
+
+  /* In addition, the alloc must be in the same loop. */
+
+  return 1;
+}
 
 #define X(a)    case a: fprintf(F, #a); break
 void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned verbosity) {
@@ -34,7 +83,6 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
   assert(ent && ent->kind == k_entity);
   type *owner = get_entity_owner(ent);
   type *type  = get_entity_type(ent);
-
   if (verbosity & dump_verbosity_onlynames) {
     fprintf(F, "%sentity %s.%s (%ld)\n", prefix, get_type_name(get_entity_owner(ent)),
 	    get_entity_name(ent), get_entity_nr(ent));
@@ -65,7 +113,7 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
 		  get_type_name(get_entity_owner(ov)));
 	}
       } else {
-	fprintf(F, "%s  Is not overwriten by other entities. \n", prefix);
+	fprintf(F, "%s  Is not overwritten by other entities. \n", prefix);
       }
     }
 
@@ -98,12 +146,9 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
     if (is_method_type(get_entity_type(ent))) fprintf(F, "(...)");
 
     if (verbosity & dump_verbosity_accessStats) {
-      if (get_entity_allocation(ent) == allocation_static) {
-	fprintf(F, " (stat)");
-      } else {
-	if (get_entity_peculiarity(ent) == peculiarity_description) fprintf(F, " (desc)");
-	if (get_entity_peculiarity(ent) == peculiarity_inherited)   fprintf(F, " (inh)");
-      }
+      if (get_entity_allocation(ent) == allocation_static) fprintf(F, " (stat)");
+      if (get_entity_peculiarity(ent) == peculiarity_description) fprintf(F, " (desc)");
+      if (get_entity_peculiarity(ent) == peculiarity_inherited)   fprintf(F, " (inh)");
     }
     fprintf(F, "\n");
   }
@@ -136,7 +181,6 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
     }
   }
 
-
   if (verbosity & dump_verbosity_entattrs) {
     fprintf(F, "%s  volatility:  ", prefix);
     switch (get_entity_volatility(ent)) {
@@ -163,23 +207,93 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
 
   if (verbosity & dump_verbosity_accessStats) {
     int n_acc = get_entity_n_accesses(ent);
-    fprintf(F, "%s  Access Stats", prefix);
-    char comma = ':';
+    int L_freq[MY_SIZE];
+    int max_L_freq = -1;
+    int S_freq[MY_SIZE];
+    int max_S_freq = -1;
+    int LA_freq[MY_SIZE];
+    int max_LA_freq = -1;
+    int SA_freq[MY_SIZE];
+    int max_SA_freq = -1;
+    for (i = 0; i < MY_SIZE; ++i) {
+      L_freq[i] = 0;
+      LA_freq[i] = 0;
+      S_freq[i] = 0;
+      SA_freq[i] = 0;
+    }
+
     for (i = 0; i < n_acc; ++i) {
       ir_node *acc = get_entity_access(ent, i);
-      if (get_irn_op(acc) == op_Load) {
-	fprintf(F, "%c L", comma);
+      int depth = get_weighted_loop_depth(acc);
+      assert(depth < MY_SIZE);
+      if ((get_irn_op(acc) == op_Load) || (get_irn_op(acc) == op_Call)) {
+	L_freq[depth]++;
+	max_L_freq = (depth > max_L_freq) ? depth : max_L_freq;
+	if (addr_is_alloc(acc)) {
+	  LA_freq[depth]++;
+	  max_LA_freq = (depth > max_LA_freq) ? depth : max_LA_freq;
+	}
       } else if (get_irn_op(acc) == op_Store) {
-	fprintf(F, "%c S", comma);
+	S_freq[depth]++;
+	max_S_freq = (depth > max_S_freq) ? depth : max_S_freq;
+	if (addr_is_alloc(acc)) {
+	  SA_freq[depth]++;
+	  max_SA_freq = (depth > max_SA_freq) ? depth : max_SA_freq;
+	}
       } else {
 	assert(0);
       }
-      fprintf(F, " %d", get_weighted_loop_depth(acc));
-      comma = ',';
     }
-    fprintf(F, "\n");
-  }
 
+    if (max_L_freq >= 0) {
+      fprintf(F, "%s  Load  Stats", prefix);
+      char comma = ':';
+      for (i = 0; i <= max_L_freq; ++i) {
+	if (L_freq[i])
+	  fprintf(F, "%c %d x  L%d", comma, L_freq[i], i);
+	else
+	  fprintf(F, "         ");
+	comma = ',';
+      }
+      fprintf(F, "\n");
+    }
+    if (max_LA_freq >= 0) {
+      //fprintf(F, "%s  LoadA Stats", prefix);
+      char comma = ':';
+      for (i = 0; i <= max_LA_freq; ++i) {
+	//if (LA_freq[i])
+	  //fprintf(F, "%c %d x LA%d", comma, LA_freq[i], i);
+	  //else
+	  //fprintf(F, "         ");
+	comma = ',';
+      }
+      fprintf(F, "\n");
+    }
+    if (max_S_freq >= 0) {
+      fprintf(F, "%s  Store Stats", prefix);
+      char comma = ':';
+      for (i = 0; i <= max_S_freq; ++i) {
+	if (S_freq[i])
+	  fprintf(F, "%c %d x  S%d", comma, S_freq[i], i);
+	else
+	  fprintf(F, "         ");
+	comma = ',';
+      }
+      fprintf(F, "\n");
+    }
+    if (max_SA_freq >= 0) {
+      //fprintf(F, "%s  StoreAStats", prefix);
+      char comma = ':';
+      for (i = 0; i <= max_SA_freq; ++i) {
+	//if (SA_freq[i])
+	  //fprintf(F, "%c %d x SA%d", comma, SA_freq[i], i);
+	//else
+	  //fprintf(F, "         ");
+	comma = ',';
+      }
+      fprintf(F, "\n");
+    }
+  }
 
 }
 #undef X
@@ -191,6 +305,127 @@ void    dump_entity_to_file (FILE *F, entity *ent, unsigned verbosity) {
 
 void dump_entity (entity *ent) {
   dump_entity_to_file(stdout, ent, dump_verbosity_max);
+}
+
+void    dump_entitycsv_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned verbosity,
+				       int *max_disp, int disp[], const char *comma) {
+  int i;
+  int n_acc = get_entity_n_accesses(ent);
+  int L_freq[MY_SIZE];
+  int max_L_freq = -1;
+  int S_freq[MY_SIZE];
+  int max_S_freq = -1;
+  int LA_freq[MY_SIZE];
+  int max_LA_freq = -1;
+  int SA_freq[MY_SIZE];
+  int max_SA_freq = -1;
+  for (i = 0; i < MY_SIZE; ++i) {
+    L_freq[i] = 0;
+    LA_freq[i] = 0;
+    S_freq[i] = 0;
+    SA_freq[i] = 0;
+  }
+
+  for (i = 0; i < n_acc; ++i) {
+    ir_node *acc = get_entity_access(ent, i);
+    int depth = get_weighted_loop_depth(acc);
+    assert(depth < MY_SIZE);
+    if ((get_irn_op(acc) == op_Load) || (get_irn_op(acc) == op_Call)) {
+      L_freq[depth]++;
+      max_L_freq = (depth > max_L_freq) ? depth : max_L_freq;
+      if (addr_is_alloc(acc)) {
+	LA_freq[depth]++;
+	max_LA_freq = (depth > max_LA_freq) ? depth : max_LA_freq;
+      }
+      if (get_entity_allocation(ent) == allocation_static) {
+	disp[depth]++;
+	*max_disp = (depth > *max_disp) ? depth : *max_disp;
+      }
+    } else if (get_irn_op(acc) == op_Store) {
+      S_freq[depth]++;
+      max_S_freq = (depth > max_S_freq) ? depth : max_S_freq;
+      if (addr_is_alloc(acc)) {
+	SA_freq[depth]++;
+	max_SA_freq = (depth > max_SA_freq) ? depth : max_SA_freq;
+      }
+      if (get_entity_allocation(ent) == allocation_static) {
+	assert(0);
+      }
+    } else {
+      assert(0);
+    }
+  }
+
+  if (get_entity_allocation(ent) == allocation_static) return;
+
+  fprintf(F, "%s_%s", get_type_name(get_entity_owner(ent)), get_entity_name(ent));
+
+  if (max_L_freq >= 0) {
+    fprintf(F, "%s Load", comma);
+    for (i = 0; i <= max_L_freq; ++i) {
+      fprintf(F, "%s %d", comma, L_freq[i]);
+    }
+  }
+  if (max_S_freq >= 0) {
+    if (max_L_freq >= 0)    fprintf(F, "\n%s_%s", get_type_name(get_entity_owner(ent)), get_entity_name(ent));
+    fprintf(F, "%s Store", comma);
+    for (i = 0; i <= max_S_freq; ++i) {
+      fprintf(F, "%s %d", comma, S_freq[i]);
+    }
+  }
+  fprintf(F, "\n");
+}
+
+/* A fast hack to dump a csv. */
+void dump_typecsv_to_file(FILE *F, type *tp, dump_verbosity verbosity, const char *comma) {
+  if (!is_class_type(tp)) return;
+
+  if (verbosity & dump_verbosity_accessStats) {
+    int i, n_all = get_type_n_allocations(tp);
+    int freq[MY_SIZE];
+    int max_freq = -1;
+    int disp[MY_SIZE];   /* Accumulated accesses to static members: dispatch table. */
+    int max_disp = -1;
+    for (i = 0; i < MY_SIZE; ++i) {
+      freq[i] = 0;
+      disp[i] = 0;
+    }
+
+    for (i = 0; i < n_all; ++i) {
+      ir_node *all = get_type_allocation(tp, i);
+      int depth = get_weighted_loop_depth(all);
+      assert(depth < MY_SIZE);
+      freq[depth]++;
+      max_freq = (depth > max_freq) ? depth : max_freq;
+      assert(get_irn_op(all) == op_Alloc);
+    }
+
+    fprintf(F, "%s ", get_type_name(tp));
+    fprintf(F, "%s Alloc ", comma);
+
+    if (max_freq >= 0) {
+      for (i = 0; i <= max_freq; ++i) {
+	fprintf(F, "%s %d", comma, freq[i]);
+      }
+    }
+    fprintf(F, "\n");
+
+    for (i = 0; i < get_class_n_members(tp); ++i) {
+      entity *mem = get_class_member(tp, i);
+      if (((verbosity & dump_verbosity_methods) &&  is_method_type(get_entity_type(mem))) ||
+	  ((verbosity & dump_verbosity_fields)  && !is_method_type(get_entity_type(mem)))   ) {
+	dump_entitycsv_to_file_prefix(F, mem, "    ", verbosity, &max_disp, disp, comma);
+      }
+    }
+
+    if (max_disp >= 0) {
+      fprintf(F, "%s__disp_tab%s Load", get_type_name(tp), comma);
+      for (i = 0; i <= max_disp; ++i) {
+	fprintf(F, "%s %d", comma, disp[i]);
+      }
+      fprintf(F, "\n");
+    }
+  }
 }
 
 void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
@@ -264,15 +499,28 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
 
   if (verbosity & dump_verbosity_accessStats) {
     int n_all = get_type_n_allocations(tp);
-    fprintf(F, "  Access Stats");
-    char comma = ':';
+    int freq[MY_SIZE];
+    int max_freq = -1;
+    for (i = 0; i < MY_SIZE; ++i) freq[i] = 0;
+
     for (i = 0; i < n_all; ++i) {
       ir_node *all = get_type_allocation(tp, i);
-      fprintf(F, "%c A", comma);
-      fprintf(F, " %d", get_weighted_loop_depth(all));
-      comma = ',';
+      int depth = get_weighted_loop_depth(all);
+      assert(depth < MY_SIZE);
+      freq[depth]++;
+      max_freq = (depth > max_freq) ? depth : max_freq;
+      assert(get_irn_op(all) == op_Alloc);
     }
-    fprintf(F, "\n");
+
+    if (max_freq >= 0) {
+      fprintf(F, "  Alloc Stats");
+      char comma = ':';
+      for (i = 0; i <= max_freq; ++i) {
+	fprintf(F, "%c %d x A%d", comma, freq[i], i);
+	comma = ',';
+      }
+      fprintf(F, "\n");
+    }
   }
 
   fprintf(F, "\n\n");
@@ -282,9 +530,16 @@ void dump_type(type *tp) {
   dump_type_to_file (stdout, tp, dump_verbosity_max);
 }
 
+/* Just opens a file, mangling a file name.
+ *
+ * The name consists of the following parts:
+ *
+ * @arg basename  The basis of the name telling about the content.
+ * @arg
+ *
+ */
 
-
-static FILE *text_open (const char *basename, const char * suffix1, const char *suffix2) {
+static FILE *text_open (const char *basename, const char * suffix1, const char *suffix2, const char *suffix3) {
   FILE *F;
   int len = strlen(basename), i, j;
   char *fname;  /* filename to put the vcg information in */
@@ -292,6 +547,7 @@ static FILE *text_open (const char *basename, const char * suffix1, const char *
   if (!basename) assert(basename);
   if (!suffix1) suffix1 = "";
   if (!suffix2) suffix2 = "";
+  if (!suffix3) suffix3 = ".txt";
 
   /* open file for vcg graph */
   fname = malloc (strlen(basename)*2 + strlen(suffix1) + strlen(suffix2) + 5); /* *2: space for excapes. */
@@ -309,7 +565,7 @@ static FILE *text_open (const char *basename, const char * suffix1, const char *
   fname[j] = '\0';
   strcat (fname, suffix1);  /* append file suffix */
   strcat (fname, suffix2);  /* append file suffix */
-  strcat (fname, ".txt");   /* append the .txt suffix */
+  strcat (fname, suffix3);  /* append the .txt suffix */
 
   F = fopen (fname, "w");   /* open file for writing */
   if (!F) {
@@ -322,15 +578,16 @@ static FILE *text_open (const char *basename, const char * suffix1, const char *
 
 void dump_types_as_text(unsigned verbosity, const char *suffix) {
   const char *basename;
-  FILE *F;
+  FILE *F, *CSV;
   int i, n_types = get_irp_n_types();
 
-  if (get_irp_prog_ident() == new_id_from_str("no_name_set")) {
-    basename = "TextTypes";
-  } else {
-    basename = get_irp_prog_name();
+  basename = irp_prog_name_is_set() ? get_irp_prog_name() : "TextTypes";
+  F = text_open (basename, suffix, "-types", ".txt");
+
+  if (verbosity & dump_verbosity_csv) {
+    CSV = text_open (basename, suffix, "-types", ".csv");
+    //fprintf(CSV, "Class, Field, Operation, L0, L1, L2, L3\n");
   }
-  F = text_open (basename, suffix, "-types");
 
   for (i = 0; i < n_types; ++i) {
     type *t = get_irp_type(i);
@@ -338,7 +595,11 @@ void dump_types_as_text(unsigned verbosity, const char *suffix) {
     if (is_jack_rts_class(t)) continue;
 
     dump_type_to_file(F, t, verbosity);
+    if (verbosity & dump_verbosity_csv) {
+      dump_typecsv_to_file(CSV, t, verbosity, "");
+    }
   }
 
   fclose (F);
+  if (verbosity & dump_verbosity_csv) fclose (CSV);
 }
