@@ -36,8 +36,8 @@ typedef struct type_walk_env {
 
 
 static void type_walk_2(type_or_ent *tore,
-	       void (pre)(type_or_ent*, void*),
-	       void (post)(type_or_ent*, void*),
+	       void (*pre)(type_or_ent*, void*),
+	       void (*post)(type_or_ent*, void*),
 	       void *env)
 {
   int i;
@@ -208,8 +208,8 @@ void type_walk_irg (ir_graph *irg,
 }
 
 static void type_walk_s2s_2(type_or_ent *tore,
-			    void (pre)(type_or_ent*, void*),
-			    void (post)(type_or_ent*, void*),
+			    void (*pre)(type_or_ent*, void*),
+			    void (*post)(type_or_ent*, void*),
 			    void *env)
 {
   int i;
@@ -283,9 +283,11 @@ static void type_walk_s2s_2(type_or_ent *tore,
   return;
 }
 
-void type_walk_super2sub(void (pre)(type_or_ent*, void*),
-			 void (post)(type_or_ent*, void*),
-			 void *env) {
+void type_walk_super2sub(
+		  void (*pre)(type_or_ent*, void*),
+		  void (*post)(type_or_ent*, void*),
+		  void *env)
+{
   int i;
   type *tp;
   ++type_visited;
@@ -300,8 +302,8 @@ void type_walk_super2sub(void (pre)(type_or_ent*, void*),
 
 static void
 type_walk_super_2(type_or_ent *tore,
-		  void (pre)(type_or_ent*, void*),
-		  void (post)(type_or_ent*, void*),
+		  void (*pre)(type_or_ent*, void*),
+		  void (*post)(type_or_ent*, void*),
 		  void *env)
 {
   int i;
@@ -371,9 +373,10 @@ type_walk_super_2(type_or_ent *tore,
   return;
 }
 
-void type_walk_super(void (pre)(type_or_ent*, void*),
-		     void (post)(type_or_ent*, void*),
-		     void *env) {
+void type_walk_super(
+		  void (*pre)(type_or_ent*, void*),
+		  void (*post)(type_or_ent*, void*),
+		  void *env) {
   int i;
   type *tp;
   ++type_visited;
@@ -389,8 +392,8 @@ void type_walk_super(void (pre)(type_or_ent*, void*),
 
 static void
 class_walk_s2s_2(type *tp,
-		 void (pre)(type*, void*),
-		 void (post)(type*, void*),
+		 void (*pre)(type*, void*),
+		 void (*post)(type*, void*),
 		 void *env)
 {
   int i;
@@ -423,9 +426,11 @@ class_walk_s2s_2(type *tp,
 }
 
 #if 0
-void class_walk_super2sub(void (pre)(type*, void*),
-			  void (post)(type*, void*),
-			  void *env) {
+void class_walk_super2sub(
+		  void (*pre)(type*, void*),
+		  void (*post)(type*, void*),
+		  void *env)
+{
   int i;
   type *tp;
 
@@ -442,9 +447,11 @@ void class_walk_super2sub(void (pre)(type*, void*),
   }
 }
 #endif
-void class_walk_super2sub(void (pre)(type*, void*),
-			  void (post)(type*, void*),
-			  void *env) {
+void class_walk_super2sub(
+		  void (*pre)(type*, void*),
+		  void (post)(type*, void*),
+		  void *env)
+{
   int i;
   type *tp;
 
@@ -463,9 +470,11 @@ void class_walk_super2sub(void (pre)(type*, void*),
 
 
 /* Walks over all entities in the type */
-void walk_types_entities(type *tp,
-			 void (doit)(entity*, void*),
-			 void *env) {
+void walk_types_entities(
+		  type *tp,
+		  void (*doit)(entity*, void*),
+		  void *env)
+{
   int i;
   switch(get_type_tpop_code(tp)) {
   case tpo_class: {
