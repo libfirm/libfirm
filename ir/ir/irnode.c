@@ -353,6 +353,11 @@ void *
   return __get_irn_link(node);
 }
 
+op_pin_state
+(get_irn_pinned)(const ir_node *node) {
+  return __get_irn_pinned(node);
+}
+
 
 #ifdef DO_HEAPANALYSIS
 /* Access the abstract interpretation information of a node.
