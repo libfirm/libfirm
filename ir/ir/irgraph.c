@@ -160,6 +160,7 @@ ir_graph *new_const_code_irg() {
 #endif
   res->obst      = (struct obstack *) xmalloc (sizeof (struct obstack));
   obstack_init (res->obst);
+  res->phase_state = phase_building;
   res->pinned = pinned;
   res->value_table = new_identities (); /* value table for global value
 					   numbering for optimizing use in
