@@ -106,10 +106,10 @@ Type_or_entity.h: Type_or_entity.class
 
 
 Dbginfo.java:
-	cp $(top_srcdir)/aux/Dbginfo.java $(top_srcdir)/aux/Dbginfo.c .
+	cp aux/Dbginfo.java aux/Dbginfo.c .
 
 Heapanal.java:
-	cp $(top_srcdir)/aux/Heapanal.java $(top_srcdir)/aux/Heapanal.c .
+	cp aux/Heapanal.java aux/Heapanal.c .
 
 %.h:	%.class
 	javah -classpath $(topdir) -o $@ $(PACKAGENAME).$(<:.class=)
