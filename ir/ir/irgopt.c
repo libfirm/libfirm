@@ -343,7 +343,7 @@ copy_preds (ir_node *n, void *env) {
  */
 static void
 copy_graph (int copy_node_nr) {
-  ir_node *oe, *ne, *ob, *nb; /* old end, new end, old bad, new bad */
+  ir_node *oe, *ne, *ob, *nb, *om, *nm; /* old end, new end, old bad, new bad, old NoMem, new NoMem */
   ir_node *ka;      /* keep alive */
   int i, irn_arity;
 
@@ -360,6 +360,7 @@ copy_graph (int copy_node_nr) {
   copy_attrs(oe, ne);
   set_new_node(oe, ne);
 
+  /* copy the Bad node */
   ob = get_irg_bad(current_ir_graph);
   nb =  new_ir_node(get_irn_dbg_info(ob),
            current_ir_graph,
@@ -369,6 +370,17 @@ copy_graph (int copy_node_nr) {
            0,
            NULL);
   set_new_node(ob, nb);
+
+  /* copy the NoMem node */
+  om = get_irg_no_mem(current_ir_graph);
+  nm =  new_ir_node(get_irn_dbg_info(om),
+           current_ir_graph,
+           NULL,
+           op_NoMem,
+           mode_M,
+           0,
+           NULL);
+  set_new_node(om, nm);
 
   /* copy the live nodes */
   irg_walk(get_nodes_block(oe), copy_node, copy_preds, (void *)copy_node_nr);
@@ -404,8 +416,9 @@ copy_graph (int copy_node_nr) {
     }
   }
 
-  /* start block somtimes only reached after keep alives */
+  /* start block sometimes only reached after keep alives */
   set_nodes_block(nb, get_new_node(get_nodes_block(ob)));
+  set_nodes_block(nm, get_new_node(get_nodes_block(om)));
 }
 
 /**
@@ -426,6 +439,7 @@ copy_graph_env (int copy_node_nr) {
   set_irn_link(get_irg_globals    (current_ir_graph), NULL);
   set_irn_link(get_irg_args       (current_ir_graph), NULL);
   set_irn_link(get_irg_initial_mem(current_ir_graph), NULL);
+  set_irn_link(get_irg_no_mem     (current_ir_graph), NULL);
 
   /* we use the block walk flag for removing Bads from Blocks ins. */
   inc_irg_block_visited(current_ir_graph);
@@ -470,6 +484,12 @@ copy_graph_env (int copy_node_nr) {
     copy_preds(get_irg_bad(current_ir_graph), NULL);
   }
   set_irg_bad(current_ir_graph, get_new_node(get_irg_bad(current_ir_graph)));
+
+  if (get_irn_link(get_irg_no_mem(current_ir_graph)) == NULL) {
+    copy_node(get_irg_no_mem(current_ir_graph), (void *)copy_node_nr);
+    copy_preds(get_irg_no_mem(current_ir_graph), NULL);
+  }
+  set_irg_no_mem(current_ir_graph, get_new_node(get_irg_no_mem(current_ir_graph)));
 }
 
 /**

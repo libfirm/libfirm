@@ -151,10 +151,12 @@ new_ir_graph (entity *ent, int n_loc)
   res->start_block = new_immBlock();
   res->start   = new_Start();
   res->bad     = new_ir_node(NULL, res, res->start_block, op_Bad, mode_T, 0, NULL);
+  res->no_mem  = new_ir_node(NULL, res, res->start_block, op_NoMem, mode_M, 0, NULL);
 
   /* Proj results of start node */
   projX            = new_Proj (res->start, mode_X, pn_Start_X_initial_exec);
-  res->frame       = new_Proj (res->start, mode_P_mach, pn_Start_P_frame_base);   res->globals     = new_Proj (res->start, mode_P_mach, pn_Start_P_globals);
+  res->frame       = new_Proj (res->start, mode_P_mach, pn_Start_P_frame_base);
+  res->globals     = new_Proj (res->start, mode_P_mach, pn_Start_P_globals);
   res->initial_mem = new_Proj (res->start, mode_M, pn_Start_M);
   res->args        = new_Proj (res->start, mode_T, pn_Start_T_args);
 #ifdef DEBUG_libfirm
@@ -214,7 +216,8 @@ ir_graph *new_const_code_irg(void) {
   res->end_reg    = res->end;
   res->end_except = res->end;
   mature_immBlock(get_cur_block());  /* mature the end block */
-  res->bad = new_ir_node (NULL, res, res->start_block, op_Bad, mode_T, 0, NULL);
+  res->bad     = new_ir_node (NULL, res, res->start_block, op_Bad, mode_T, 0, NULL);
+  res->no_mem  = new_ir_node (NULL, res, res->start_block, op_NoMem, mode_M, 0, NULL);
   res->start   = new_Start ();
   res->initial_mem = new_Proj (res->start, mode_M, pn_Start_M);
 
@@ -231,6 +234,7 @@ ir_graph *new_const_code_irg(void) {
   set_Block_block_visited(res->start_block, -1);
   set_irn_visited(res->start_block, -1);
   set_irn_visited(res->bad, -1);
+  set_irn_visited(res->no_mem, -1);
 
   res->phase_state = phase_high;
   return res;
@@ -411,19 +415,15 @@ void
   __set_irg_bad(irg, node);
 }
 
-/* GL removed: we need unknown with mode for analyses.
 ir_node *
-get_irg_unknown (ir_graph *irg)
-{
-  return irg->unknown;
+(get_irg_no_mem)(const ir_graph *irg) {
+  return __get_irg_no_mem(irg);
 }
 
 void
-set_irg_unknown (ir_graph *irg, ir_node *node)
-{
-  irg->unknown = node;
+(set_irg_no_mem)(ir_graph *irg, ir_node *node) {
+  __set_irg_no_mem(irg, node);
 }
-*/
 
 ir_node *
 (get_irg_current_block)(const ir_graph *irg) {

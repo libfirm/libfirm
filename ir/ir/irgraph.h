@@ -190,6 +190,10 @@ void     set_irg_current_block (ir_graph *irg, ir_node *node);
 ir_node *get_irg_bad (const ir_graph *irg);
 void     set_irg_bad (ir_graph *irg, ir_node *node);
 
+/** Returns the NoMem node.  Use new_NoMem() instead!! */
+ir_node *get_irg_no_mem (const ir_graph *irg);
+void     set_irg_no_mem (ir_graph *irg, ir_node *node);
+
 /** Returns the number of value numbers of a graph. */
 int      get_irg_n_locs (ir_graph *irg);
 

@@ -367,7 +367,7 @@ void set_irn_pinned(ir_node *node, op_pin_state state) {
   if (get_irn_op(node) == op_Tuple)
     return;
 
-  assert(node && get_op_pinned(get_irn_op(node)) == op_pin_state_exc_pinned);
+  assert(node && get_op_pinned(get_irn_op(node)) >= op_pin_state_exc_pinned);
   assert(state == op_pin_state_pinned || state == op_pin_state_floats);
 
   node->attr.except.pin_state = state;
@@ -445,13 +445,6 @@ get_irn_call_attr (ir_node *node)
   return node->attr.call.cld_tp = skip_tid(node->attr.call.cld_tp);
 }
 
-type *
-get_irn_funccall_attr (ir_node *node)
-{
-  assert (node->op == op_FuncCall);
-  return node->attr.call.cld_tp = skip_tid(node->attr.call.cld_tp);
-}
-
 sel_attr
 get_irn_sel_attr (ir_node *node)
 {
@@ -491,7 +484,7 @@ except_attr
 get_irn_except_attr (ir_node *node)
 {
   assert (node->op == op_Div || node->op == op_Quot ||
-          node->op == op_DivMod || node->op == op_Mod);
+          node->op == op_DivMod || node->op == op_Mod || node->op == op_Call || node->op == op_Alloc);
   return node->attr.except;
 }
 
@@ -1184,95 +1177,6 @@ ir_node * get_CallBegin_call (ir_node *node) {
 void  set_CallBegin_call (ir_node *node, ir_node *call) {
   assert(node->op == op_CallBegin);
   node->attr.callbegin.call = call;
-}
-
-ir_node *
-get_FuncCall_ptr (ir_node *node) {
-  assert (node->op == op_FuncCall);
-  return get_irn_n(node, 0);
-}
-
-void
-set_FuncCall_ptr (ir_node *node, ir_node *ptr) {
-  assert (node->op == op_FuncCall);
-  set_irn_n(node, 0, ptr);
-}
-
-ir_node **
-get_FuncCall_param_arr (ir_node *node) {
-  assert (node->op == op_FuncCall);
-  return (ir_node **)&get_irn_in(node)[FUNCCALL_PARAM_OFFSET];
-}
-
-int
-get_FuncCall_n_params (ir_node *node)  {
-  assert (node->op == op_FuncCall);
-  return (get_irn_arity(node) - FUNCCALL_PARAM_OFFSET);
-}
-
-int
-get_FuncCall_arity (ir_node *node) {
-  assert (node->op == op_FuncCall);
-  return get_FuncCall_n_params(node);
-}
-
-/* void
-set_FuncCall_arity (ir_node *node, ir_node *arity) {
-  assert (node->op == op_FuncCall);
-}
-*/
-
-ir_node *
-get_FuncCall_param (ir_node *node, int pos) {
-  assert (node->op == op_FuncCall);
-  return get_irn_n(node, pos + FUNCCALL_PARAM_OFFSET);
-}
-
-void
-set_FuncCall_param (ir_node *node, int pos, ir_node *param) {
-  assert (node->op == op_FuncCall);
-  set_irn_n(node, pos + FUNCCALL_PARAM_OFFSET, param);
-}
-
-type *
-get_FuncCall_type (ir_node *node) {
-  assert (node->op == op_FuncCall);
-  return node->attr.call.cld_tp = skip_tid(node->attr.call.cld_tp);
-}
-
-void
-set_FuncCall_type (ir_node *node, type *tp) {
-  assert (node->op == op_FuncCall);
-  assert (is_method_type(tp));
-  node->attr.call.cld_tp = tp;
-}
-
-int FuncCall_has_callees(ir_node *node) {
-  return ((get_irg_callee_info_state(get_irn_irg(node)) != irg_callee_info_none) &&
-      (node->attr.call.callee_arr != NULL));
-}
-
-int get_FuncCall_n_callees(ir_node * node) {
-  assert(node->op == op_FuncCall && node->attr.call.callee_arr);
-  return ARR_LEN(node->attr.call.callee_arr);
-}
-
-entity * get_FuncCall_callee(ir_node * node, int pos) {
-  assert(node->op == op_FuncCall && node->attr.call.callee_arr);
-  return node->attr.call.callee_arr[pos];
-}
-
-void set_FuncCall_callee_arr(ir_node * node, int n, entity ** arr) {
-  assert(node->op == op_FuncCall);
-  if (node->attr.call.callee_arr == NULL || get_Call_n_callees(node) != n) {
-    node->attr.call.callee_arr = NEW_ARR_D(entity *, current_ir_graph->obst, n);
-  }
-  memcpy(node->attr.call.callee_arr, arr, n * sizeof(entity *));
-}
-
-void remove_FuncCall_callee_arr(ir_node * node) {
-  assert(node->op == op_FuncCall);
-  node->attr.call.callee_arr = NULL;
 }
 
 

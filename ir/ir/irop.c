@@ -85,7 +85,7 @@ ir_op *op_CallBegin;   ir_op *get_op_CallBegin (void) { return op_CallBegin; }
 ir_op *op_EndReg;      ir_op *get_op_EndReg    (void) { return op_EndReg;    }
 ir_op *op_EndExcept;   ir_op *get_op_EndExcept (void) { return op_EndExcept; }
 
-ir_op *op_FuncCall;    ir_op *get_op_FuncCall  (void) { return op_FuncCall; }
+ir_op *op_NoMem;       ir_op *get_op_NoMem     (void) { return op_NoMem; }
 
 
 ir_op *
@@ -139,7 +139,7 @@ init_op(void)
   op_Sel       = new_ir_op(iro_Sel,       "Sel",       op_pin_state_floats, L,       oparity_any,      -1, sizeof(sel_attr));
   op_InstOf    = new_ir_op(iro_InstOf,    "InstOf",    op_pin_state_floats, L,       oparity_any,      -1, sizeof(sel_attr));
 
-  op_Call      = new_ir_op(iro_Call,      "Call",      op_pin_state_pinned, L|F,     oparity_variable, -1, sizeof(call_attr));
+  op_Call      = new_ir_op(iro_Call,      "Call",      op_pin_state_mem_pinned, L|F, oparity_variable, -1, sizeof(call_attr));
   op_Add       = new_ir_op(iro_Add,       "Add",       op_pin_state_floats, C,       oparity_binary,    0, 0);
   op_Minus     = new_ir_op(iro_Minus,     "Minus",     op_pin_state_floats, 0,       oparity_unary,     0, 0);
   op_Sub       = new_ir_op(iro_Sub,       "Sub",       op_pin_state_floats, L,       oparity_binary,    0, 0);
@@ -182,7 +182,7 @@ init_op(void)
   op_EndReg    = new_ir_op(iro_EndReg,    "EndReg",    op_pin_state_pinned, X|I,     oparity_any,      -1, sizeof(end_attr));
   op_EndExcept = new_ir_op(iro_EndExcept, "EndExcept", op_pin_state_pinned, X|I,     oparity_any,      -1, sizeof(end_attr));
 
-  op_FuncCall  = new_ir_op(iro_FuncCall,  "FuncCall",  op_pin_state_floats, L,       oparity_any,      -1, sizeof(call_attr));
+  op_NoMem     = new_ir_op(iro_NoMem,     "NoMem",     op_pin_state_pinned, 0,       oparity_zero,     -1, 0);
 
 #undef Y
 #undef F
@@ -253,7 +253,7 @@ void finish_op(void) {
   free_ir_op (op_EndReg   ); op_EndReg    = NULL;
   free_ir_op (op_EndExcept); op_EndExcept = NULL;
 
-  free_ir_op (op_FuncCall ); op_FuncCall  = NULL;
+  free_ir_op (op_NoMem    ); op_NoMem     = NULL;
 }
 
 /* Returns the string for the opcode. */

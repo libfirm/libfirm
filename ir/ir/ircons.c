@@ -853,27 +853,10 @@ new_rd_Filter (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg, ir_mod
 
 }
 
-ir_node *
-new_rd_FuncCall (dbg_info* db, ir_graph *irg, ir_node *block,
-        ir_node *callee, int arity, ir_node **in, type *tp)
+INLINE ir_node *
+new_rd_NoMem (ir_graph *irg)
 {
-  ir_node **r_in;
-  ir_node *res;
-  int r_arity;
-
-  r_arity = arity+1;
-  NEW_ARR_A(ir_node *, r_in, r_arity);
-  r_in[0] = callee;
-  memcpy(&r_in[1], in, sizeof (ir_node *) * arity);
-
-  res = new_ir_node(db, irg, block, op_FuncCall, mode_T, r_arity, r_in);
-
-  assert(is_method_type(tp));
-  set_FuncCall_type(res, tp);
-  res->attr.call.callee_arr = NULL;
-  res = optimize_node(res);
-  IRN_VRFY_IRG(res, irg);
-  return res;
+  return irg->no_mem;
 }
 
 
@@ -1065,10 +1048,8 @@ INLINE ir_node *new_r_Filter (ir_graph *irg, ir_node *block, ir_node *arg,
                ir_mode *mode, long proj) {
   return new_rd_Filter(NULL, irg, block, arg, mode, proj);
 }
-INLINE ir_node *new_r_FuncCall (ir_graph *irg, ir_node *block,
-                  ir_node *callee, int arity, ir_node **in,
-                  type *tp) {
-  return new_rd_FuncCall(NULL, irg, block, callee, arity, in, tp);
+INLINE ir_node *new_r_NoMem  (ir_graph *irg) {
+  return new_rd_NoMem(irg);
 }
 
 
@@ -2373,14 +2354,9 @@ new_d_Filter (dbg_info *db, ir_node *arg, ir_mode *mode, long proj)
 }
 
 ir_node *
-new_d_FuncCall (dbg_info* db, ir_node *callee, int arity, ir_node **in,
-      type *tp)
+(new_d_NoMem)(void)
 {
-  ir_node *res;
-  res = new_rd_FuncCall (db, current_ir_graph, current_ir_graph->current_block,
-             callee, arity, in, tp);
-
-  return res;
+  return __new_d_NoMem();
 }
 
 /* ********************************************************************* */
@@ -2688,6 +2664,6 @@ ir_node *new_Break  (void) {
 ir_node *new_Filter (ir_node *arg, ir_mode *mode, long proj) {
   return new_d_Filter(NULL, arg, mode, proj);
 }
-ir_node *new_FuncCall (ir_node *callee, int arity, ir_node **in, type *tp) {
-  return new_d_FuncCall(NULL, callee, arity, in, tp);
+ir_node *new_NoMem  (void) {
+  return new_d_NoMem();
 }

@@ -1336,7 +1336,7 @@ static ir_node *transform_node_Cast(ir_node *n) {
  * Transform a Div/Mod/DivMod with a non-zero constant. Must be
  * done here instead of equivalent node because it creates new
  * nodes.
- * Removes the exceptions and routes the memory to the initial mem.
+ * Removes the exceptions and routes the memory to the NoMem node.
  *
  * Further, it optimizes jump tables by removing all impossible cases.
  */
@@ -1365,7 +1365,7 @@ static ir_node *transform_node_Proj(ir_node *proj)
       else {
 	/* the memory Proj can be removed */
         ir_node *res = get_Div_mem(n);
-        set_Div_mem(n, get_irg_initial_mem(current_ir_graph));
+        set_Div_mem(n, get_irg_no_mem(current_ir_graph));
 
 	if (proj_nr == pn_Div_M)
           return res;
@@ -1389,7 +1389,7 @@ static ir_node *transform_node_Proj(ir_node *proj)
       else {
 	/* the memory Proj can be removed */
         ir_node *res = get_Mod_mem(n);
-        set_Mod_mem(n, get_irg_initial_mem(current_ir_graph));
+        set_Mod_mem(n, get_irg_no_mem(current_ir_graph));
         if (proj_nr == pn_Mod_M)
 	  return res;
       }
@@ -1412,7 +1412,7 @@ static ir_node *transform_node_Proj(ir_node *proj)
       else {
 	/* the memory Proj can be removed */
         ir_node *res = get_DivMod_mem(n);
-        set_DivMod_mem(n, get_irg_initial_mem(current_ir_graph));
+        set_DivMod_mem(n, get_irg_no_mem(current_ir_graph));
         if (proj_nr == pn_DivMod_M)
 	  return res;
       }
@@ -1714,12 +1714,6 @@ static int node_cmp_attr_Call(ir_node *a, ir_node *b)
     return (get_irn_call_attr(a) != get_irn_call_attr(b));
 }
 
-/** Compares the attributes of two FuncCall nodes. */
-static int node_cmp_attr_FuncCall(ir_node *a, ir_node *b)
-{
-    return (get_irn_funccall_attr(a) != get_irn_funccall_attr(b));
-}
-
 /** Compares the attributes of two Sel nodes. */
 static int node_cmp_attr_Sel(ir_node *a, ir_node *b)
 {
@@ -1779,7 +1773,6 @@ static ir_op *firm_set_default_node_cmp_attr(ir_op *op)
   CASE(Free);
   CASE(SymConst);
   CASE(Call);
-  CASE(FuncCall);
   CASE(Sel);
   CASE(Phi);
   CASE(Cast);

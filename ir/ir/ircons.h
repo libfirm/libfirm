@@ -359,8 +359,7 @@
  *    ir_node *new_Free   (ir_node *store, ir_node *ptr, ir_node *size,
  *               type *free_type);
  *    ir_node *new_Proj   (ir_node *arg, ir_mode *mode, long proj);
- *    ir_node *new_FuncCall (ir_node *store, ir_node *callee, int arity,
- *                       ir_node **in, type_method *type);
+ *    ir_node *new_NoMem  (void);
  *
  *    void add_immBlock_pred (ir_node *block, ir_node *jmp);
  *    void mature_immBlock (ir_node *block);
@@ -706,26 +705,6 @@
  *    Attributes:
  *      attr.call        Contains the type information for the procedure.
  *
- *    ir_node *new_FuncCall (ir_node *callee, int arity, ir_node **in, type_method *type)
- *    -----------------------------------------------------------------------------------
- *
- *    Creates a procedure call to a function WITHOUT memory side effects.
- *   nodes of this kind are floating in contrast to Call nodes.
- *    Further, a procedure call with FuncCall cannot raise an exception!
- *
- *    Parameters
- *      *callee          A pointer to the called procedure.
- *      arity            The number of procedure parameters.
- *      **in             An array with the pointers to the parameters.
- *                       The constructor copies this array.
- *      *type            Type information of the procedure called.
- *
- *    Inputs:
- *      The callee and the parameters.
- *    Output:
- *      A tuple containing the procedure results.
- *    Attributes:
- *      attr.call        Contains the type information for the procedure.
  *
  *    ir_node *new_Add (ir_node *op1, ir_node *op2, ir_mode *mode)
  *    ------------------------------------------------------------
@@ -996,6 +975,13 @@
  *
  *    Returns the unique Bad node current_ir_graph->bad.
  *    This node is used to express results of dead code elimination.
+ *
+ *    ir_node *new_NoMem (void)
+ *    -----------------------------------------------------------------------------------
+ *
+ *    Returns the unique NoMem node current_ir_graph->no_mem.
+ *    This node is used as input for operations that need a Memory, but do not
+ *    change it like Div by const != 0, analyzed calls etc.
  *
  *    ir_node *new_Proj (ir_node *arg, ir_mode *mode, long proj)
  *    ----------------------------------------------------------
@@ -1362,24 +1348,6 @@ ir_node *new_rd_InstOf (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *st
  */
 ir_node *new_rd_Call   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
 			ir_node *callee, int arity, ir_node *in[], type *tp);
-
-/** Constructor for a FuncCall node.
- *
- *  FuncCall is a function Call that has no side effects.  Therefore there
- *  is not memory operand or result.
- *
- * @param *db     A pointer for debug information.
- * @param *irg    The ir graph the node belong to.
- * @param *block  The block the node belong to.
- * @param *callee A pointer to the called procedure.
- * @param arity   The number of procedure parameters.
- * @param *in[]   An array with the pointers to the parameters. The constructor
- *                copies this array.
- * @param *tp     Type information of the procedure called.
- */
-ir_node *new_rd_FuncCall (dbg_info *db, ir_graph *irg, ir_node *block,
-			  ir_node *callee, int arity, ir_node *in[],
-			  type *tp);
 
 /** Constructor for a Add node.
  *
@@ -1846,6 +1814,14 @@ ir_node *new_rd_EndExcept(dbg_info *db, ir_graph *irg, ir_node *block);
 ir_node *new_rd_Filter (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg,
 			ir_mode *mode, long proj);
 
+/** Constructor for a NoMem node.
+ *
+ * Returns the unique NoMem node of the graph.  The same as
+ * get_irg_no_mem().
+ *
+ * @param *irg    The ir graph the node belongs to.
+ */
+ir_node *new_rd_NoMem  (ir_graph *irg);
 
 /*-------------------------------------------------------------------------*/
 /* The raw interface without debug support                                 */
@@ -2470,22 +2446,14 @@ ir_node *new_r_Break  (ir_graph *irg, ir_node *block);
 ir_node *new_r_Filter (ir_graph *irg, ir_node *block, ir_node *arg,
                ir_mode *mode, long proj);
 
-/** Constructor for a FuncCall node.
+/** Constructor for a NoMem node.
  *
- *  FuncCall is a function Call that has no side effects.  Therefore there
- *  is not memory operand or result.
+ * Returns the unique NoMem node of the graph.  The same as
+ * get_irg_no_mem().
  *
- * @param *irg    The ir graph the node belong to.
- * @param *block  The block the node belong to.
- * @param *callee A pointer to the called procedure.
- * @param arity   The number of procedure parameters.
- * @param *in[]   An array with the pointers to the parameters.
- *                The constructor copies this array.
- * @param *type   Type information of the procedure called.
+ * @param *irg    The ir graph the node belongs to.
  */
-ir_node *new_r_FuncCall (ir_graph *irg, ir_node *block,
-			 ir_node *callee, int arity, ir_node *in[],
-			 type *tp);
+ir_node *new_r_NoMem  (ir_graph *irg);
 
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface                                          */
@@ -3162,20 +3130,12 @@ ir_node *new_d_Break (dbg_info *db);
 ir_node *new_d_Filter (dbg_info *db, ir_node *arg, ir_mode *mode, long proj);
 
 
-/** Constructor for a FuncCall node.
+/** Constructor for a NoMem node.
  *
- *  FuncCall is a function Call that has no side effects.  Therefore there
- *  is not memory operand or result. Adds the node to the block in current_ir_block.
- *
- * @param *db     A pointer for debug information.
- * @param *callee A pointer to the called procedure.
- * @param arity   The number of procedure parameters.
- * @param **in    An array with the pointers to the parameters.
- *                The constructor copies this array.
- * @param *tp     Type information of the procedure called.
+ * Returns the unique NoMem node of the graph.  The same as
+ * get_irg_no_mem().
  */
-ir_node *new_d_FuncCall (dbg_info* db, ir_node *callee, int arity, ir_node *in[],
-			 type *tp);
+ir_node *new_d_NoMem  (void);
 
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface without debug support                    */
@@ -3712,7 +3672,6 @@ ir_node *new_Id     (ir_node *val, ir_mode *mode);
  * Returns the unique Bad node of the graph.  The same as
  * get_irg_bad().
  */
-
 ir_node *new_Bad    (void);
 
 /** Constructor for a Confirm node.
@@ -3738,19 +3697,12 @@ ir_node *new_Confirm (ir_node *val, ir_node *bound, pn_Cmp cmp);
  */
 ir_node *new_Unknown(ir_mode *m);
 
-/** Constructor for a FuncCall node.
+/** Constructor for a NoMem node.
  *
- *  FuncCall is a function Call that has no side effects.  Therefore there
- *  is not memory operand or result.Adds the node to the block in current_ir_block.
- *
- * @param *callee A pointer to the called procedure.
- * @param arity   The number of procedure parameters.
- * @param **in    An array with the pointers to the parameters.
- *                The constructor copies this array.
- * @param *tp     Type information of the procedure called.
+ * Returns the unique NoMem node of the graph.  The same as
+ * get_irg_no_mem().
  */
-ir_node *new_FuncCall (ir_node *callee, int arity, ir_node *in[],
-		       type *tp);
+ir_node *new_NoMem  (void);
 
 /*---------------------------------------------------------------------*/
 /* The comfortable interface.                                          */

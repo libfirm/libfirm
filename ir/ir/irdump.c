@@ -250,7 +250,8 @@ static void collect_node(ir_node * node, void *env) {
   if (is_Block(node)
       || node_floats(node)
       || get_irn_op(node) == op_Bad
-      || get_irn_op(node) == op_Unknown) {
+      || get_irn_op(node) == op_Unknown
+      || get_irn_op(node) == op_NoMem) {
     ir_node ** arr = (ir_node **) ird_get_irg_link(get_irn_irg(node));
     if (!arr) arr = NEW_ARR_F(ir_node *, 0);
     ARR_APP1(ir_node *, arr, node);
@@ -265,7 +266,7 @@ static void collect_node(ir_node * node, void *env) {
 /** Construct lists to walk ir block-wise.
  *
  * Collects all blocks, nodes not op_pin_state_pinned,
- * Bad and Unknown into a flexible array in link field of
+ * Bad, NoMem and Unknown into a flexible array in link field of
  * irg they belong to.  Sets the irg link field to NULL in all
  * graphs not visited.
  * Free the list with DEL_ARR_F.  */
@@ -487,6 +488,7 @@ dump_node_mode(FILE *F, ir_node *n)
     case iro_Free:
     case iro_Sync:
     case iro_Jmp:
+    case iro_NoMem:
       break;
     default: {
       ir_mode *mode = get_irn_mode(n);
@@ -774,11 +776,13 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
   return bad;
 }
 
-
+/**
+ * checks wheater a node is "constant-like", ie can be treated "block-less"
+ */
 static INLINE
 bool is_constlike_node(ir_node *n) {
   ir_op *op = get_irn_op(n);
-  return (op == op_Const || op == op_Bad || op == op_SymConst || op == op_Unknown);
+  return (op == op_Const || op == op_Bad || op == op_NoMem || op == op_SymConst || op == op_Unknown);
 }
 
 
@@ -1177,7 +1181,7 @@ static void dump_graph(FILE *F, ir_graph *irg) {
 /* Basic type and entity nodes and edges.                          */
 /*******************************************************************/
 
-/* dumps the edges between nodes and their type or entity attributes. */
+/** dumps the edges between nodes and their type or entity attributes. */
 static void dump_node2type_edges(ir_node *n, void *env)
 {
   FILE *F = env;

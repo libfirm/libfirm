@@ -75,6 +75,8 @@ void set_opt_constant_folding (int value);
  *  - Remove Store that overwrites a just stored value (WAW).
  *  - Remove Store if it stores a value just loaded (WAR with the same value).
  *  - Remove Load that loads a value just saved (RAW with the same value).
+ *  - remove Load that loads a value already loaded (RAR)
+ *  - replace Load of constant values with constants (RC)
  */
 void set_opt_redundant_LoadStore(int value);
 

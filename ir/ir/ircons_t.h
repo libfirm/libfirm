@@ -30,6 +30,13 @@ __new_d_Bad(void) {
   return current_ir_graph->bad;
 }
 
+static INLINE ir_node *
+__new_d_NoMem(void) {
+  return current_ir_graph->no_mem;
+}
+
+
 #define new_d_Bad()               __new_d_Bad()
+#define new_d_NoMem()             __new_d_NoMem()
 
 #endif /* _IRCONS_T_H_ */

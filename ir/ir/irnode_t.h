@@ -477,7 +477,7 @@ __get_irn_link(const ir_node *node) {
 static INLINE op_pin_state
 __get_irn_pinned(const ir_node *node) {
   op_pin_state state = __get_op_pinned(__get_irn_op(node));
-  if (state == op_pin_state_exc_pinned)
+  if (state >= op_pin_state_exc_pinned)
     return get_opt_fragile_ops() ? node->attr.except.pin_state : op_pin_state_pinned;
   return state;
 }

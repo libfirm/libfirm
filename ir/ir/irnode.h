@@ -515,44 +515,6 @@ void      set_CallBegin_ptr  (ir_node *node, ir_node *ptr);
 ir_node  *get_CallBegin_call (ir_node *node);
 void      set_CallBegin_call (ir_node *node, ir_node *call);
 
-ir_node *get_FuncCall_ptr (ir_node *node);
-void     set_FuncCall_ptr (ir_node *node, ir_node *ptr);
-ir_node **get_FuncCall_param_arr (ir_node *node);
-/** Gets the number of parameters of a func call. */
-int      get_FuncCall_n_params (ir_node *node);
-/** Gets the func call parameter at position pos. */
-ir_node *get_FuncCall_param (ir_node *node, int pos);
-/** Sets the func call parameter at position pos. */
-void     set_FuncCall_param (ir_node *node, int pos, ir_node *param);
-/** Gets the type of a func call. */
-type    *get_FuncCall_type (ir_node *node);
-/** Sets the type of a func call. */
-void     set_FuncCall_type (ir_node *node, type *tp);
-/** Gets the arity of a func call. Identical to get_FuncCall_n_params(). */
-int      get_FuncCall_arity (ir_node *node);
-
-/** Set, get and remove the callee information for a Call node.
- *
- *  The callee information lists all method entities that can be called
- *  from this node.  If the address expression can not be analyzed fully,
- *  e.g., as there are external methods that could be called, the array
- *  contains a single NULL entry.
- *
- *  The array is only accessible if callee information is valid.  See flag
- *  in graph.
- *
- *  The memory allocated for the array is managed automatically, i.e., it must
- *  not be freed if the Call node is removed from the graph.
- *
- *  @param node A FuncCall node.
- */
-int     FuncCall_has_callees      (ir_node *node);
-int     get_FuncCall_n_callees    (ir_node * node);
-entity *get_FuncCall_callee       (ir_node * node, int pos);
-/* assumes current_ir_graph set properly! */
-void    set_FuncCall_callee_arr   (ir_node * node, int n, entity ** arr);
-void    remove_FuncCall_callee_arr(ir_node * node);
-
 /* For unary and binary arithmetic operations the access to the
    operands can be factored out.  Left is the first, right the
    second arithmetic value  as listed in tech report 1999-44.

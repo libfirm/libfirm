@@ -59,6 +59,8 @@ struct ir_graph {
   struct ir_node *args;          /**< methods arguments */
   struct ir_node *bad;           /**< bad node of this ir_graph, the one and
 				    only in this graph */
+  struct ir_node *no_mem;        /**< NoMem node of this ir_graph, the one and
+				    only in this graph */
   /* GL removed: we need unknown with mode for analyses. */
   /*   struct ir_node *unknown;*/           /**< unknown node of this ir_graph */
   struct obstack *obst;          /**< obstack where all of the ir_nodes live */
@@ -271,6 +273,15 @@ __set_irg_bad(ir_graph *irg, ir_node *node) {
 }
 
 static INLINE ir_node *
+__get_irg_no_mem(const ir_graph *irg) {
+  return irg->no_mem;
+}
+
+static INLINE void
+__set_irg_no_mem(ir_graph *irg, ir_node *node) {
+  irg->no_mem = node;
+}
+static INLINE ir_node *
 __get_irg_current_block(const ir_graph *irg) {
   return irg->current_block;
 }
@@ -440,6 +451,8 @@ __inc_irg_block_visited(ir_graph *irg) {
 #define set_irg_args(irg, node)            __set_irg_args(irg, node)
 #define get_irg_bad(irg)                   __get_irg_bad(irg)
 #define set_irg_bad(irg, node)             __set_irg_bad(irg, node)
+#define get_irg_no_mem(irg)                __get_irg_no_mem(irg)
+#define set_irg_no_mem(irg, node)          __set_irg_no_mem(irg, node)
 #define get_irg_current_block(irg)         __get_irg_current_block(irg)
 #define set_irg_current_block(irg, node)   __set_irg_current_block(irg, node)
 #define get_irg_entity(irg)                __get_irg_entity(irg)
