@@ -12,7 +12,8 @@ all: empty const_eval_example 					\
      if_example if_else_example if_while_example cond_example	\
      call_str_example memory_example array-stack_example	\
      array-heap_example oo_program_example irr_cf_example	\
-     irr_loop_example dead_block_example global_var_example
+     irr_loop_example dead_block_example global_var_example	\
+     three_cfpred_example
 
 clean:
 	rm -f 					\
@@ -23,7 +24,7 @@ clean:
 	array-stack_example array-heap_example	\
 	oo_program_example irr_cf_example	\
 	irr_loop_example dead_block_example	\
-	global_var_example			\
+	global_var_example three_cfpred_example	\
 	*.o *.vcg core
 
 realclean:	clean
@@ -43,7 +44,8 @@ run:
 	irr_cf_example;		\
 	irr_loop_example;	\
 	dead_block_example;	\
-	global_var_example;
+	global_var_example;	\
+	three_cfpred_example
 
 empty: empty.o
 	gcc -o empty empty.o $(LIBDIRS) $(LIBS)
@@ -89,3 +91,6 @@ dead_block_example: dead_block_example.o
 
 global_var_example: global_var_example.o
 	gcc -o global_var_example global_var_example.o $(LIBDIRS) $(LIBS)
+
+three_cfpred_example: three_cfpred_example.o
+	gcc -o three_cfpred_example three_cfpred_example.o $(LIBDIRS) $(LIBS)

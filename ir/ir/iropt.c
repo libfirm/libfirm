@@ -891,7 +891,7 @@ optimize (ir_node *n)
   tarval *tv;
   ir_node *old_n = n;
 
-  if (!get_optimize()) return NULL;
+  if ((!get_optimize()) && (get_irn_op(n) != op_Phi)) return n;
 
   /* if not optimize return n */
   if (n == NULL) {

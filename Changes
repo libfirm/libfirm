@@ -1,6 +1,18 @@
+
+  20.7.2000 Goetz
+  Fixed bug in optimize(). Returned Null instead n if
+  get_optimize() == false.
+
   19.7.2000 Christian
   Added some access routines in type.[hc]. Solved a recursive definition
   of type_class struct, entity struct and type union.
+
+  18.7.2000 Goetz
+  Separated entity header into pure functional header and header
+  with data types.
+
+  Goetz
+  ... a bunch small changes not documented
 
   12.7.2000 Goetz
   Changed output of oo_prog_example: now uses the internal list

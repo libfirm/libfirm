@@ -198,8 +198,9 @@ new_r_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
 #else
   res = known = new_ir_node (irg, block, op_Phi, mode, ins, in);
 #endif
-  /* The in-array can contain NULLs.  These were returned by get_r_value_internal
-     if it reached the same block/definition on a second path.
+  /* The in-array can contain NULLs.  These were returned by
+     get_r_value_internal if it reached the same block/definition on a
+     second path.
      The NULLs are replaced by the node itself to simplify the test in the
      next loop. */
   for (i=0;  i < ins;  ++i)
@@ -743,6 +744,7 @@ new_End (void)
 
   res = optimize (res);
   irn_vrfy (res);
+
   return res;
 }
 
@@ -886,7 +888,7 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
   if (block->attr.block.matured) { /* case 3 */
 
     /* The Phi has the same amount of ins as the corresponding block. */
-    int ins = get_irn_arity(block); // ARR_LEN (block->in)-1;
+    int ins = get_irn_arity(block);
     ir_node **nin;
     NEW_ARR_A (ir_node *, nin, ins);
 

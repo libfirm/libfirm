@@ -36,13 +36,12 @@ int main(int argc, char **argv)
   /* init library */
   init_firm ();
 
-  set_opt_dead_node_elimination (0);
+  /* Don't optimize anything */
+  set_optimize(0);
 
   /* FIRM was designed for oo languages where all methods belong to a class.
    * For imperative languages like C we view a file as a large class containing
    * all functions as methods in this file.
-   * (Therefore we define a class "empty" according to the file name
-   *  with a method main as an entity.)
    * This class now is automatically generated.
    */
 #define METHODNAME "main"
