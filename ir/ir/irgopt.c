@@ -780,6 +780,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
   if (get_irg_outs_state(current_ir_graph) == outs_consistent)
     set_irg_outs_inconsistent(current_ir_graph);
   set_irg_loopinfo_inconsistent(current_ir_graph);
+  set_irg_callee_info_state(current_ir_graph, irg_callee_info_inconsistent);
 
   /* -- Check preconditions -- */
   assert(get_irn_op(call) == op_Call);
