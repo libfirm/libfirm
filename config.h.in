@@ -11,7 +11,7 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
-/* define to enable debugging stuff. */
+/* define to 1 to enable debugging stuff. */
 #undef DEBUG_libfirm
 
 /* Define to disable assertion checking.  */
