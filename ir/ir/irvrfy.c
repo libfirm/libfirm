@@ -16,6 +16,9 @@
 # include "irvrfy.h"
 # include "irgwalk.h"
 
+/* @@@ replace use of array "in" by access functions. */
+ir_node **get_irn_in (ir_node *node);
+
 INLINE static void
 vrfy_Proj_proj(ir_node *p) {
   ir_node *pred;
@@ -115,7 +118,7 @@ vrfy_Proj_proj(ir_node *p) {
       assert (proj >= 0 && mode_is_data(mode) &&
 	      "wrong Proj from Proj from Call");
       mt = get_Call_type(pred);
-      assert(proj < get_method_n_res(mt) &&
+      assert(proj < get_method_n_ress(mt) &&
 	     "More Projs for results than results in type.");
       assert(mode == get_type_mode(get_method_res_type(mt, proj)) &&
       "Mode of Proj from Call doesn't match mode of result type.");
@@ -177,6 +180,12 @@ irn_vrfy (ir_node *n)
 	    mymode == mode_X && "Jmp node"
 	   );
     break;
+  case iro_Break:
+    assert (
+	    /* Jmp: BB --> X */
+	    mymode == mode_X && "Jmp node"
+	   );
+    break;
   case iro_Cond:
     op1mode = get_irn_mode(in[1]);
     assert (
@@ -198,9 +207,9 @@ irn_vrfy (ir_node *n)
     assert ( mymode == mode_X );   /* result X */
     /* Compare returned results with result types of method type */
     mt = get_entity_type(get_irg_ent(current_ir_graph));
-    assert(get_Return_n_res(n) == get_method_n_res(mt) &&
+    assert(get_Return_n_ress(n) == get_method_n_ress(mt) &&
 	     "Number of results for Return doesn't match number of results in type.");
-    for (i = 0; i < get_Return_n_res(n); i++)
+    for (i = 0; i < get_Return_n_ress(n); i++)
       assert((get_irn_mode(get_Return_res(n, i))
 	      == get_type_mode(get_method_res_type(mt, i))) &&
 	     "Mode of result for Return doesn't match mode of result type.");
@@ -423,7 +432,7 @@ irn_vrfy (ir_node *n)
     /* Phi: BB x dataM^n --> dataM */
     /* for some reason "<=" aborts. Is there a problem with get_store? */
     for (i=1; i < get_irn_arity(n); i++) {
-      if (!is_Bad(in[i]))
+      if (!is_Bad(in[i]) && (get_irn_op(in[i]) != op_Unknown))
 	assert ( get_irn_mode(in[i]) == mymode  && "Phi node");
     };
     assert ( mode_is_dataM(mymode)  && "Phi node");

@@ -13,9 +13,13 @@
 #define __OLD_FCTNAMES_H__
 
 /* irgraph */
-#define get_irg_params     get_irg_n_loc
+#define get_irg_params     get_irg_n_locs
+#define get_irg_n_loc      get_irg_n_locs
 #define set_irg_params     set_irg_n_loc
 
+/* irnode.h */
+#define get_Return_n_res   get_Return_n_ress
+#define get_Sel_n_index    get_Sel_n_indexs
 
 /* irmode.h */
 #define get_ident_of_mode     get_mode_ident
@@ -30,5 +34,9 @@
 /* type.h */
 #define get_type_nameid(_t_)     get_type_ident(_t_)
 #define set_type_nameid(_t_,_i_) set_type_ident(_t_,_i_)
+#define get_class_n_member    get_class_n_members
+#define get_class_n_subtype   get_class_n_subtypes
+#define get_class_n_supertype get_class_n_supertypes
+#define get_struct_n_member   get_struct_n_members
 
 #endif

@@ -482,7 +482,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   /*** Replicate local entities of the called_graph ***/
   /* copy the entities. */
   called_frame = get_irg_frame_type(called_graph);
-  for (i = 0; i < get_class_n_member(called_frame); i++) {
+  for (i = 0; i < get_class_n_members(called_frame); i++) {
     entity *new_ent, *old_ent;
     old_ent = get_class_member(called_frame, i);
     new_ent = copy_entity_own(old_ent, get_cur_frame_type());
@@ -521,7 +521,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   end_bl = get_new_node(get_irg_end_block(called_graph));
   end = get_new_node(get_irg_end(called_graph));
   arity = get_irn_arity(end_bl);    /* arity = n_exc + n_ret  */
-  n_res = get_method_n_res(get_Call_type(call));
+  n_res = get_method_n_ress(get_Call_type(call));
 
   res_pred = (ir_node **) malloc (n_res * sizeof (ir_node *));
   cf_pred = (ir_node **) malloc (arity * sizeof (ir_node *));

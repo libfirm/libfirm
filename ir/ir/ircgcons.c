@@ -252,7 +252,7 @@ static void prepare_irg_end(ir_graph * irg, irg_data_t * data) {
     }
   }
   if (n_ret > 0) {
-    int n_res = get_method_n_res(get_entity_type(get_irg_ent(irg)));
+    int n_res = get_method_n_ress(get_entity_type(get_irg_ent(irg)));
     ir_node ** in = NEW_ARR_F(ir_node *, n_ret);
     /* block */
     for (i = n_ret - 1; i >= 0; --i) {

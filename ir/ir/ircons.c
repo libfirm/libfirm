@@ -555,7 +555,6 @@ new_rd_Sel (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *store, ir_node
   memcpy (&r_in[2], in, sizeof (ir_node *) * arity);
   res = new_ir_node (db, irg, block, op_Sel, mode_p, r_arity, r_in);
 
-  res->attr.s.ltyp = static_linkage;
   res->attr.s.ent = ent;
 
   res = optimize (res);

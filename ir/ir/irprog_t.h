@@ -27,6 +27,8 @@ struct ir_prog {
 #endif
 };
 
+void remove_irp_type_from_list (type *typ);
+
 #ifdef DEBUG_libfirm
 /* Returns a new, unique number to number nodes or the like. */
 int get_irp_new_node_nr();

@@ -48,6 +48,10 @@
 
 unsigned long type_visited;
 
+void        free_type(type *tp) {
+  /* @@@ not implemented */
+}
+
 INLINE type *
 new_type(tp_op *type_op, ir_mode *mode, ident* name) {
   type *res;
@@ -190,7 +194,7 @@ set_type_state(type *tp, type_state state) {
       {
 	assert(get_type_size(tp) > -1);
 	if (tp != get_glob_type())
-	  for (i = 0; i < get_class_n_member(tp); i++) {
+	  for (i = 0; i < get_class_n_members(tp); i++) {
 	    assert(get_entity_offset(get_class_member(tp, i)) > -1);
 	    assert(is_method_type(get_entity_type(get_class_member(tp, i))) ||
 		   (get_entity_allocation(get_class_member(tp, i)) == automatic_allocated));
@@ -200,7 +204,7 @@ set_type_state(type *tp, type_state state) {
     case tpo_struct:
       {
 	/* assert(get_type_size(tp) > -1);    @@@ lowerfirm geht nicht durch */
-	for (i = 0; i < get_struct_n_member(tp); i++) {
+	for (i = 0; i < get_struct_n_members(tp); i++) {
 	  assert(get_entity_offset(get_struct_member(tp, i)) > -1);
 	  assert((get_entity_allocation(get_struct_member(tp, i)) == automatic_allocated));
 	}
@@ -273,23 +277,24 @@ INLINE void free_class_attrs(type *clss) {
   DEL_ARR_F(clss->attr.ca.subtypes);
   DEL_ARR_F(clss->attr.ca.supertypes);
 }
+
 /* manipulate private fields of class type  */
 void    add_class_member   (type *clss, entity *member) {
   assert(clss && (clss->type_op == type_class));
   ARR_APP1 (entity *, clss->attr.ca.members, member);
 }
-int     get_class_n_member (type *clss) {
+int     get_class_n_members (type *clss) {
   assert(clss && (clss->type_op == type_class));
   return (ARR_LEN (clss->attr.ca.members))-1;
 }
 entity *get_class_member   (type *clss, int pos) {
   assert(clss && (clss->type_op == type_class));
-  assert(pos >= 0 && pos < get_class_n_member(clss));
+  assert(pos >= 0 && pos < get_class_n_members(clss));
   return clss->attr.ca.members[pos+1];
 }
 void    set_class_member   (type *clss, entity *member, int pos) {
   assert(clss && (clss->type_op == type_class));
-  assert(pos >= 0 && pos < get_class_n_member(clss));
+  assert(pos >= 0 && pos < get_class_n_members(clss));
   clss->attr.ca.members[pos+1] = member;
 }
 void    set_class_members  (type *clss, entity **members, int arity) {
@@ -318,24 +323,24 @@ void    add_class_subtype   (type *clss, type *subtype) {
   int i;
   assert(clss && (clss->type_op == type_class));
   ARR_APP1 (type *, clss->attr.ca.subtypes, subtype);
-  for (i = 0; i < get_class_n_supertype(subtype); i++)
+  for (i = 0; i < get_class_n_supertypes(subtype); i++)
     if (get_class_supertype(subtype, i) == clss)
       /* Class already registered */
       return;
   ARR_APP1 (type *, subtype->attr.ca.supertypes, clss);
 }
-int     get_class_n_subtype (type *clss) {
+int     get_class_n_subtypes (type *clss) {
   assert(clss && (clss->type_op == type_class));
   return (ARR_LEN (clss->attr.ca.subtypes))-1;
 }
 type   *get_class_subtype   (type *clss, int pos) {
   assert(clss && (clss->type_op == type_class));
-  assert(pos >= 0 && pos < get_class_n_subtype(clss));
+  assert(pos >= 0 && pos < get_class_n_subtypes(clss));
   return clss->attr.ca.subtypes[pos+1] = skip_tid(clss->attr.ca.subtypes[pos+1]);
 }
 void    set_class_subtype   (type *clss, type *subtype, int pos) {
   assert(clss && (clss->type_op == type_class));
-  assert(pos >= 0 && pos < get_class_n_subtype(clss));
+  assert(pos >= 0 && pos < get_class_n_subtypes(clss));
   clss->attr.ca.subtypes[pos+1] = subtype;
 }
 void    remove_class_subtype(type *clss, type *subtype) {
@@ -355,24 +360,24 @@ void    add_class_supertype   (type *clss, type *supertype) {
   assert(clss && (clss->type_op == type_class));
   assert(supertype && (supertype -> type_op == type_class));
   ARR_APP1 (type *, clss->attr.ca.supertypes, supertype);
-  for (i = 0; i < get_class_n_subtype(supertype); i++)
+  for (i = 0; i < get_class_n_subtypes(supertype); i++)
     if (get_class_subtype(supertype, i) == clss)
       /* Class already registered */
       return;
   ARR_APP1 (type *, supertype->attr.ca.subtypes, clss);
 }
-int     get_class_n_supertype (type *clss) {
+int     get_class_n_supertypes (type *clss) {
   assert(clss && (clss->type_op == type_class));
   return (ARR_LEN (clss->attr.ca.supertypes))-1;
 }
 type   *get_class_supertype   (type *clss, int pos) {
   assert(clss && (clss->type_op == type_class));
-  assert(pos >= 0 && pos < get_class_n_supertype(clss));
+  assert(pos >= 0 && pos < get_class_n_supertypes(clss));
   return clss->attr.ca.supertypes[pos+1] = skip_tid(clss->attr.ca.supertypes[pos+1]);
 }
 void    set_class_supertype   (type *clss, type *supertype, int pos) {
   assert(clss && (clss->type_op == type_class));
-  assert(pos >= 0 && pos < get_class_n_supertype(clss));
+  assert(pos >= 0 && pos < get_class_n_supertypes(clss));
   clss->attr.ca.supertypes[pos+1] = supertype;
 }
 void    remove_class_supertype(type *clss, type *supertype) {
@@ -393,6 +398,7 @@ INLINE peculiarity get_class_peculiarity (type *clss) {
 }
 INLINE void        set_class_peculiarity (type *clss, peculiarity pec) {
   assert(clss && (clss->type_op == type_class));
+  assert(pec != inherited);  /* There is no inheritance of types in libFirm. */
   clss->attr.ca.peculiarity = pec;
 }
 
@@ -427,25 +433,26 @@ INLINE void free_struct_attrs (type *strct) {
   assert(strct && (strct->type_op == type_struct));
   DEL_ARR_F(strct->attr.sa.members);
 }
+
 /* manipulate private fields of struct */
+int     get_struct_n_members (type *strct) {
+  assert(strct && (strct->type_op == type_struct));
+  return (ARR_LEN (strct->attr.sa.members))-1;
+}
 void    add_struct_member   (type *strct, entity *member) {
   assert(strct && (strct->type_op == type_struct));
   assert(get_type_tpop(get_entity_type(member)) != type_method);
     /*    @@@ lowerfirm geht nicht durch */
   ARR_APP1 (entity *, strct->attr.sa.members, member);
 }
-int     get_struct_n_member (type *strct) {
-  assert(strct && (strct->type_op == type_struct));
-  return (ARR_LEN (strct->attr.sa.members))-1;
-}
 entity *get_struct_member   (type *strct, int pos) {
   assert(strct && (strct->type_op == type_struct));
-  assert(pos >= 0 && pos < get_struct_n_member(strct));
+  assert(pos >= 0 && pos < get_struct_n_members(strct));
   return strct->attr.sa.members[pos+1];
 }
 void    set_struct_member   (type *strct, int pos, entity *member) {
   assert(strct && (strct->type_op == type_struct));
-  assert(pos >= 0 && pos < get_struct_n_member(strct));
+  assert(pos >= 0 && pos < get_struct_n_members(strct));
   assert(get_entity_type(member)->type_op != type_method);/* @@@ lowerfirm !!*/
   strct->attr.sa.members[pos+1] = member;
 }
@@ -460,6 +467,7 @@ void    remove_struct_member(type *strct, entity *member) {
       break;
     }
 }
+
 /* typecheck */
 bool    is_struct_type(type *strct) {
   assert(strct);
@@ -504,18 +512,18 @@ void  set_method_param_type(type *method, int pos, type* type) {
   method->attr.ma.param_type[pos] = type;
 }
 
-int   get_method_n_res   (type *method) {
+int   get_method_n_ress   (type *method) {
   assert(method && (method->type_op == type_method));
   return method->attr.ma.n_res;
 }
 type *get_method_res_type(type *method, int pos) {
   assert(method && (method->type_op == type_method));
-  assert(pos >= 0 && pos < get_method_n_res(method));
+  assert(pos >= 0 && pos < get_method_n_ress(method));
   return method->attr.ma.res_type[pos] = skip_tid(method->attr.ma.res_type[pos]);
 }
 void  set_method_res_type(type *method, int pos, type* type) {
   assert(method && (method->type_op == type_method));
-  assert(pos >= 0 && pos < get_method_n_res(method));
+  assert(pos >= 0 && pos < get_method_n_ress(method));
   method->attr.ma.res_type[pos] = type;
 }
 
@@ -618,11 +626,10 @@ bool   is_union_type         (type *uni) {
 
 /* create a new type array -- set dimension sizes independently */
 type *new_type_array         (ident *name, int n_dimensions,
-							  type *element_type) {
+			      type *element_type) {
   type *res;
   int i;
-  assert((element_type->type_op != type_method));
-  assert(get_type_tpop(element_type) != type_method);
+  assert(!is_method_type(element_type));
   res = new_type(type_array, NULL, name);
   res->attr.aa.n_dimensions = n_dimensions;
   res->attr.aa.lower_bound  = (ir_node **) xmalloc (sizeof (ir_node *) * n_dimensions);
@@ -650,41 +657,47 @@ int   get_array_n_dimensions (type *array) {
   assert(array && (array->type_op == type_array));
   return array->attr.aa.n_dimensions;
 }
-void  set_array_bounds_int (type *array, int dimension, int lower_bound,
-			    int upper_bound) {
-  ir_graph *rem;
-  assert(array && (array->type_op == type_array));
-  rem = current_ir_graph;
-  current_ir_graph = get_const_code_irg();
-  array->attr.aa.lower_bound[dimension] =
-    new_Const(mode_I, tarval_from_long (mode_I, lower_bound));
-  array->attr.aa.upper_bound[dimension] =
-    new_Const(mode_I, tarval_from_long (mode_I, upper_bound));
-  current_ir_graph = rem;
-}
 
-void  set_array_bounds (type *array, int dimension, ir_node * lower_bound,
-			ir_node * upper_bound) {
+INLINE void
+set_array_bounds (type *array, int dimension, ir_node * lower_bound,
+		  ir_node * upper_bound) {
   assert(array && (array->type_op == type_array));
   array->attr.aa.lower_bound[dimension] = lower_bound;
   array->attr.aa.upper_bound[dimension] = upper_bound;
+}
+void
+set_array_bounds_int (type *array, int dimension, int lower_bound,
+		      int upper_bound) {
+  ir_graph *rem = current_ir_graph;
+  current_ir_graph = get_const_code_irg();
+  set_array_bounds (array, dimension,
+		    new_Const(mode_I, tarval_from_long (mode_I, lower_bound)),
+		    new_Const(mode_I, tarval_from_long (mode_I, upper_bound)));
+  current_ir_graph = rem;
+}
+INLINE void
+set_array_lower_bound  (type *array, int dimension, ir_node * lower_bound) {
+  assert(array && (array->type_op == type_array));
+  array->attr.aa.lower_bound[dimension] = lower_bound;
 }
 void  set_array_lower_bound_int (type *array, int dimension, int lower_bound) {
-  ir_graph *rem;
-  assert(array && (array->type_op == type_array));
-  rem = current_ir_graph;
+  ir_graph *rem = current_ir_graph;
   current_ir_graph = get_const_code_irg();
-  array->attr.aa.lower_bound[dimension] =
-    new_Const(mode_I, tarval_from_long (mode_I, lower_bound));
+  set_array_lower_bound  (array, dimension,
+			  new_Const(mode_I, tarval_from_long (mode_I, lower_bound)));
   current_ir_graph = rem;
 }
-void  set_array_lower_bound  (type *array, int dimension, ir_node * lower_bound) {
-  assert(array && (array->type_op == type_array));
-  array->attr.aa.lower_bound[dimension] = lower_bound;
-}
-void  set_array_upper_bound  (type *array, int dimension, ir_node * upper_bound) {
+INLINE void
+set_array_upper_bound  (type *array, int dimension, ir_node * upper_bound) {
   assert(array && (array->type_op == type_array));
   array->attr.aa.upper_bound[dimension] = upper_bound;
+}
+void  set_array_upper_bound_int (type *array, int dimension, int upper_bound) {
+  ir_graph *rem = current_ir_graph;
+  current_ir_graph = get_const_code_irg();
+  set_array_upper_bound  (array, dimension,
+			  new_Const(mode_I, tarval_from_long (mode_I, upper_bound)));
+  current_ir_graph = rem;
 }
 ir_node * get_array_lower_bound  (type *array, int dimension) {
   assert(array && (array->type_op == type_array));
@@ -694,6 +707,7 @@ ir_node * get_array_upper_bound  (type *array, int dimension) {
   assert(array && (array->type_op == type_array));
   return array->attr.aa.upper_bound[dimension];
 }
+
 void set_array_order (type *array, int dimension, int order) {
   assert(array && (array->type_op == type_array));
   array->attr.aa.order[dimension] = order;
@@ -702,14 +716,17 @@ int  get_array_order (type *array, int dimension) {
   assert(array && (array->type_op == type_array));
   return array->attr.aa.order[dimension];
 }
+
 void  set_array_element_type (type *array, type *type) {
   assert(array && (array->type_op == type_array));
+  assert(!is_method_type(type));
   array->attr.aa.element_type = type;
 }
 type *get_array_element_type (type *array) {
   assert(array && (array->type_op == type_array));
   return array->attr.aa.element_type = skip_tid(array->attr.aa.element_type);
 }
+
 void  set_array_element_entity (type *array, entity *ent) {
   assert(array && (array->type_op == type_array));
   assert((get_entity_type(ent)->type_op != type_method));

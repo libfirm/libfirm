@@ -48,7 +48,7 @@ static entity * get_implementation(type * class, entity * method) {
       return e;
     }
   }
-  for (i = get_class_n_supertype(class) - 1; i >= 0; --i) {
+  for (i = get_class_n_supertypes(class) - 1; i >= 0; --i) {
     entity * e = get_implementation(get_class_supertype(class, i), method);
     if (e) {
       return e;

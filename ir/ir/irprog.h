@@ -78,6 +78,9 @@ void      set_irp_irg(int pos, ir_graph *irg);
 
 /* Adds type to the list of types in irp. */
 void  add_irp_type(type *typ);
+/* Removes type from the list of types, deallocates it and
+   shrinks the list by one. */
+void  remove_irp_type(type *typ);
 int   get_irp_n_types();
 type *get_irp_type(int pos);
 void  set_irp_type(int pos, type *typ);
@@ -96,7 +99,9 @@ type *get_glob_type(void);
  *   ir_graph *get_const_code_irg();
  * NOTE
  *   Do not use any access function for this graph, do not generate code
- *   for this graph.
+ *   for this graph.  This graph contains only one block.  The constant
+ *   expressions may not contain control flow.  See also copy_const_code
+ *   in entity.h.
  */
 ir_graph *get_const_code_irg();
 

@@ -15,8 +15,8 @@
 #include "entity.h"
 
 
-/* Aufbau der interprozeduralen Darstellung. Das Analyseergebnis muss
- * in den Call-Operationen gespeichert sein. */
+/* Aufbau der interprozeduralen Darstellung.  In den Call-Operationen
+ * mussen alle potentialen callees gespeichert sein. */
 void cg_construct(int arr_len, entity ** free_methods_arr);
 
 

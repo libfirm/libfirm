@@ -94,7 +94,15 @@ ir_graph *new_ir_graph (entity *ent, int n_loc);
    graph, nor the entity standing for this graph. */
 void free_ir_graph (ir_graph *irg);
 
-/* access routines for all ir_graph attributes */
+/** access routines for all ir_graph attributes **/
+entity  *get_irg_ent (ir_graph *irg);
+void     set_irg_ent (ir_graph *irg, entity *ent);
+
+type    *get_irg_frame_type (ir_graph *irg);
+void     set_irg_frame_type (ir_graph *irg, type *ftp);
+/* To test for a frame type */
+int      is_frame_type(type *ftp);
+
 ir_node *get_irg_start_block (ir_graph *irg);
 void     set_irg_start_block (ir_graph *irg, ir_node *node);
 
@@ -107,6 +115,7 @@ void     set_irg_end_block (ir_graph *irg, ir_node *node);
 ir_node *get_irg_end (ir_graph *irg);
 void     set_irg_end (ir_graph *irg, ir_node *node);
 
+/* @@@ oblivious, no more supported. */
 ir_node *get_irg_cstore (ir_graph *irg);
 void     set_irg_cstore (ir_graph *irg, ir_node *node);
 
@@ -119,6 +128,9 @@ void     set_irg_globals (ir_graph *irg, ir_node *node);
 ir_node *get_irg_args (ir_graph *irg);
 void     set_irg_args (ir_graph *irg, ir_node *node);
 
+ir_node *get_irg_current_block (ir_graph *irg);
+void     set_irg_current_block (ir_graph *irg, ir_node *node);
+
 /* Use new_Bad() instead!! */
 ir_node *get_irg_bad (ir_graph *irg);
 void     set_irg_bad (ir_graph *irg, ir_node *node);
@@ -127,29 +139,15 @@ void     set_irg_bad (ir_graph *irg, ir_node *node);
 ir_node *get_irg_unknown (ir_graph *irg);
 void     set_irg_unknown (ir_graph *irg, ir_node *node);
 
-ir_node *get_irg_current_block (ir_graph *irg);
-void     set_irg_current_block (ir_graph *irg, ir_node *node);
-
-entity  *get_irg_ent (ir_graph *irg);
-void     set_irg_ent (ir_graph *irg, entity *ent);
-
-type    *get_irg_frame_type (ir_graph *irg);
-void     set_irg_frame_type (ir_graph *irg, type *ftp);
-/* To test for a frame type */
-int      is_frame_type(type *ftp);
-
-/* Use not encouraged, internal of Phi construction algorithm. */
-int      get_irg_n_loc (ir_graph *irg);
-void     set_irg_n_loc (ir_graph *irg, int n_loc);
-
+int      get_irg_n_locs (ir_graph *irg);
 
 /********************************************************************************/
 /* States of an ir_graph.                                                       */
 /********************************************************************************/
 
-/* An ir_graph can have different states.  These states represent the analysis
+/** An ir_graph can have different states.  These states represent the analysis
    information associated with the graph.  Optimizations invalidate these
-   states.  */
+   states.  **/
 
 /* state: phase values: phase_building, phase_high, phase_low.
    The irg is in phase_building during construction of the irgraph.  It is in
@@ -167,7 +165,7 @@ irg_phase_state get_irg_phase_state (ir_graph *irg);
 void set_irg_phase_low(ir_graph *irg);
 
 /* state: pinned
-   The graph is "pinned" if all nodes are accosiated with a basic block.
+   The graph is "pinned" if all nodes are associated with a basic block.
    It is in state "floats" if nodes are in arbitrary blocks.  In state
    "floats" the block predecessor is set in all nodes, but this can be an
    invalid block, i.e., the block is not a dominator of all the uses of

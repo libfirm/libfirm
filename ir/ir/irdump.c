@@ -763,18 +763,18 @@ dump_type_info (type_or_ent *tore, void *env) {
       switch (get_type_tpop_code(tp)) {
       case tpo_class:
 	{
-	  for (i=0; i < get_class_n_supertype(tp); i++)
+	  for (i=0; i < get_class_n_supertypes(tp); i++)
 	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
 		      TYPE_SUPER_EDGE_ATTR "}\n",
 		      tp, get_class_supertype(tp, i));
-	  for (i=0; i < get_class_n_member(tp); i++)
+	  for (i=0; i < get_class_n_members(tp); i++)
 	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
 		      TYPE_MEMBER_EDGE_ATTR "}\n",
 		      tp, get_class_member(tp, i));
 	} break;
       case tpo_struct:
 	{
-	  for (i=0; i < get_struct_n_member(tp); i++)
+	  for (i=0; i < get_struct_n_members(tp); i++)
 	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
 		      TYPE_MEMBER_EDGE_ATTR "}\n",
 		      tp, get_struct_member(tp, i));
@@ -785,7 +785,7 @@ dump_type_info (type_or_ent *tore, void *env) {
 	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
 		      METH_PAR_EDGE_ATTR "}\n",
 		      tp, get_method_param_type(tp, i), i);
-	  for (i = 0; i < get_method_n_res(tp); i++)
+	  for (i = 0; i < get_method_n_ress(tp); i++)
 	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
 		      METH_RES_EDGE_ATTR "}\n",
 		      tp, get_method_res_type(tp, i), i);

@@ -108,49 +108,54 @@ typedef struct type type;
 
 # include "type_or_entity.h"
 
-void*       get_type_link(type *tp);
-void        set_type_link(type *tp, void *l);
+/* Frees the memory used by the type.   Does not free the entities
+   belonging to the type, except for the array element entity.  */
+void        free_type(type *tp);
+
 tp_op*      get_type_tpop(type *tp);
 ident*      get_type_tpop_nameid(type *tp);
 const char* get_type_tpop_name(type *tp);
 tp_opcode   get_type_tpop_code(type *tp);
+
+ident*      get_type_ident(type *tp);
+void        set_type_ident(type *tp, ident* id);
+const char* get_type_name(type *tp);
+
+typedef enum {
+  layout_undefined,    /* The layout of this type is not defined.
+			  Address computation to access fields is not
+			  possible, fields must be accessed by Sel
+			  nodes.  This is the default value except for
+			  pointer, primitive and method types. */
+  layout_fixed         /* The layout is fixed, all component/member entities
+			  have an offset assigned.  Size of the type is known.
+			  Arrays can be accessed by explicit address
+			  computation. Default for pointer, primitive ane method
+			  types.  */
+} type_state;
+type_state  get_type_state(type *tp);
+/* For primitives, pointer and method types the layout is always fixed.
+   This call is legal but has no effect. */
+void        set_type_state(type *tp, type_state state);
 
 /* Returns NULL for all non atomic types. */
 ir_mode*    get_type_mode(type *tp);
 /* Only has an effect on primitive and enumeration types */
 void        set_type_mode(type *tp, ir_mode* m);
 
-ident*      get_type_ident(type *tp);
-void        set_type_ident(type *tp, ident* id);
-const char* get_type_name(type *tp);
-
 int         get_type_size(type *tp);
-/* For primitives, enumerations, pointer and method types the size
+/* For primitive, enumeration, pointer and method types the size
    is always fixed. This call is legal but has no effect. */
 void        set_type_size(type *tp, int size);
 
-typedef enum {
-  layout_undefined,    /* The layout of this type is not defined.
-			  Address computation to access fields is not
-			  possible, fields must be accessed by Sel nodes.
-			  This is the default value except for pointer and
-			  primitive types. */
-  layout_fixed         /* The layout is fixed, all component/member entities
-			  have an offset assigned.  Size of the type is known.
-			  Arrays can be accessed by explicit address
-			  computation. Default for pointer and primitive types.
-		       */
-} type_state;
-
-type_state  get_type_state(type *tp);
-/* For primitives, pointer and method types the layout is always fixed.
-   This call is legal but has no effect. */
-void        set_type_state(type *tp, type_state state);
 
 unsigned long get_type_visited(type *tp);
 void        set_type_visited(type *tp, unsigned long num);
 /* Sets visited field in type to type_visited. */
 void        mark_type_visited(type *tp);
+
+void*       get_type_link(type *tp);
+void        set_type_link(type *tp, void *l);
 /*****/
 
 /****v* type/visited
@@ -224,7 +229,7 @@ type   *new_type_class (ident *name);
 /* Adds the entity as member of the class.  */
 void    add_class_member   (type *clss, entity *member);
 /* Returns the number of members of this class. */
-int     get_class_n_member (type *clss);
+int     get_class_n_members (type *clss);
 /* Returns the member at position pos, 0 <= pos < n_member */
 entity *get_class_member   (type *clss, int pos);
 /* Overwrites the member at position pos, 0 <= pos < n_member with
@@ -245,7 +250,7 @@ void    remove_class_member(type *clss, entity *member);
    adds also clss as supertype to subtype.  */
 void    add_class_subtype   (type *clss, type *subtype);
 /* Returns the number of subtypes */
-int     get_class_n_subtype (type *clss);
+int     get_class_n_subtypes (type *clss);
 /* Gets the subtype at position pos, 0 <= pos < n_subtype. */
 type   *get_class_subtype   (type *clss, int pos);
 /* Sets the subtype at positioin pos, 0 <= pos < n_subtype.  Does not
@@ -262,7 +267,7 @@ void    remove_class_subtype(type *clss, type *subtype);
    adds also clss as subtype to supertype.  */
 void    add_class_supertype   (type *clss, type *supertype);
 /* Returns the number of supertypes */
-int     get_class_n_supertype (type *clss);
+int     get_class_n_supertypes (type *clss);
 /* Gets the supertype at position pos,  0 <= pos < n_supertype. */
 type   *get_class_supertype   (type *clss, int pos);
 /* Sets the supertype at postition pos, 0 <= pos < n_subtype.  Does not
@@ -290,7 +295,8 @@ typedef enum peculiarity {
 INLINE peculiarity get_class_peculiarity (type *clss);
 INLINE void        set_class_peculiarity (type *clss, peculiarity pec);
 
-/* Set and get a class' dfn */
+/* Set and get a class' dfn --
+   @@@ This is an undocumented field, subject to change! */
 void set_class_dfn (type*, int);
 int  get_class_dfn (type*);
 
@@ -320,7 +326,7 @@ type   *new_type_struct (ident *name);
 
 /* manipulate private fields of struct */
 void    add_struct_member   (type *strct, entity *member);
-int     get_struct_n_member (type *strct);
+int     get_struct_n_members (type *strct);
 entity *get_struct_member   (type *strct, int pos);
 void    set_struct_member   (type *strct, int pos, entity *member);
 /* Finds member in the list of memberss and overwrites it with NULL
@@ -370,7 +376,10 @@ int   get_method_n_params  (type *method);
 type *get_method_param_type(type *method, int pos);
 void  set_method_param_type(type *method, int pos, type* type);
 
-int   get_method_n_res   (type *method);
+/* @@@ fuer emitter.h von cggg */
+#define get_method_n_res(X) get_method_n_ress(X)
+
+int   get_method_n_ress   (type *method);
 type *get_method_res_type(type *method, int pos);
 void  set_method_res_type(type *method, int pos, type* type);
 
@@ -439,10 +448,10 @@ void   set_union_delim_nameid (type *uni, int pos, ident *id);
 /* create a new type array --
    Sets n_dimension to dimension and all dimension entries to NULL.
    Initializes order to the order of the dimensions.
-   Entity for array elements is built automatically.
+   The entity for array elements is built automatically.
    Set dimension sizes after call to constructor with set_* routines. */
 type *new_type_array         (ident *name, int n_dimensions,
-							  type *element_type);
+			      type *element_type);
 
 /* manipulate private fields of array type */
 int   get_array_n_dimensions (type *array);
@@ -454,6 +463,7 @@ void  set_array_bounds       (type *array, int dimension, ir_node *lower_bound,
 void  set_array_lower_bound  (type *array, int dimension, ir_node *lower_bound);
 void  set_array_lower_bound_int (type *array, int dimension, int lower_bound);
 void  set_array_upper_bound  (type *array, int dimension, ir_node *upper_bound);
+void  set_array_upper_bound_int (type *array, int dimension, int lower_bound);
 ir_node * get_array_lower_bound  (type *array, int dimension);
 ir_node * get_array_upper_bound  (type *array, int dimension);
 

@@ -80,17 +80,17 @@ void type_walk_2(type_or_ent *tore,
       switch (get_type_tpop_code(tp)) {
       case tpo_class:
 	{
-	  for (i=0; i<get_class_n_supertype(tp); i++)
+	  for (i=0; i<get_class_n_supertypes(tp); i++)
 	    type_walk_2((type_or_ent *)get_class_supertype(tp, i), pre, post, env);
-	  for (i=0; i<get_class_n_member(tp); i++)
+	  for (i=0; i<get_class_n_members(tp); i++)
 	    type_walk_2((type_or_ent *)get_class_member(tp, i), pre, post, env);
-	  for (i=0; i<get_class_n_subtype(tp); i++)
+	  for (i=0; i<get_class_n_subtypes(tp); i++)
 	    type_walk_2((type_or_ent *)get_class_subtype(tp, i), pre, post, env);
 	}
 	break;
       case tpo_struct:
 	{
-	  for (i=0; i<get_struct_n_member(tp); i++)
+	  for (i=0; i<get_struct_n_members(tp); i++)
 	    type_walk_2((type_or_ent *)get_struct_member(tp, i), pre, post, env);
 	}
 	break;
@@ -98,7 +98,7 @@ void type_walk_2(type_or_ent *tore,
 	{
 	  for (i = 0; i < get_method_n_params(tp); i++)
 	    type_walk_2((type_or_ent *)get_method_param_type(tp, i), pre, post, env);
-	  for (i = 0; i < get_method_n_res(tp); i++)
+	  for (i = 0; i < get_method_n_ress(tp); i++)
 	    type_walk_2((type_or_ent *)get_method_res_type(tp, i), pre, post, env);
 	}
 	break;
@@ -238,7 +238,7 @@ void type_walk_s2s_2(type_or_ent *tore,
       switch (get_type_tpop_code(tp)) {
       case tpo_class:
 	{
-	  for (i = 0; i < get_class_n_supertype(tp); i++) {
+	  for (i = 0; i < get_class_n_supertypes(tp); i++) {
 	    type_walk_s2s_2((type_or_ent *)get_class_supertype(tp, i), pre,
 			    post, env);
 	  }
@@ -247,7 +247,7 @@ void type_walk_s2s_2(type_or_ent *tore,
 	    pre(tore, env);
 	  tp = skip_tid((type*)tore);
 
-	  for (i = 0; i < get_class_n_subtype(tp); i++) {
+	  for (i = 0; i < get_class_n_subtypes(tp); i++) {
 	    type_walk_s2s_2((type_or_ent *)get_class_subtype(tp, i), pre,
 			    post, env);
 	  }
@@ -335,7 +335,7 @@ void type_walk_super_2(type_or_ent *tore,
 	    pre(tore, env);
 	  tp = skip_tid((type*)tore);
 
-	  for (i = 0; i < get_class_n_supertype(tp); i++) {
+	  for (i = 0; i < get_class_n_supertypes(tp); i++) {
 	    type_walk_super_2((type_or_ent *)get_class_supertype(tp, i), pre,
 			      post, env);
 	  }
@@ -398,7 +398,7 @@ void class_walk_s2s_2(type *tp,
 
   assert(is_class_type(tp));
   /* Assure all supertypes are visited before */
-  for (i=0; i < get_class_n_supertype(tp); i++) {
+  for (i=0; i < get_class_n_supertypes(tp); i++) {
     if (get_type_visited(get_class_supertype(tp, i)) < type_visited)
       return;
   }
@@ -410,7 +410,7 @@ void class_walk_s2s_2(type *tp,
     pre(tp, env);
 
   tp = skip_tid((type*)tp);
-  for (i=0; i<get_class_n_subtype(tp); i++) {
+  for (i=0; i<get_class_n_subtypes(tp); i++) {
     class_walk_s2s_2(get_class_subtype(tp, i), pre, post, env);
   }
   /* execute post method */
@@ -420,7 +420,7 @@ void class_walk_s2s_2(type *tp,
   return;
 }
 
-
+#if 0
 void class_walk_super2sub(void (pre)(type*, void*),
 			  void (post)(type*, void*),
 			  void *env) {
@@ -431,10 +431,29 @@ void class_walk_super2sub(void (pre)(type*, void*),
   for (i = 0; i < get_irp_n_types(); i++) {
     tp = get_irp_type(i);
     if (is_class_type(tp) &&
-	(get_class_n_supertype(tp) == 0) &&
+	(get_class_n_supertypes(tp) == 0) &&
 	(tp->visit < type_visited) &&
 	(!is_frame_type(tp)) &&
 	(tp != get_glob_type())) {
+      class_walk_s2s_2(tp, pre, post, env);
+    }
+  }
+}
+#endif
+void class_walk_super2sub(void (pre)(type*, void*),
+			  void (post)(type*, void*),
+			  void *env) {
+  int i;
+  type *tp;
+
+  ++type_visited;
+  for (i = 0; i < get_irp_n_types(); i++) {
+    tp = get_irp_type(i);
+    if (is_class_type(tp) &&
+	(get_class_n_supertypes(tp) == 0) &&
+	(tp->visit < type_visited))  {
+      assert(!is_frame_type(tp));
+      assert(tp != get_glob_type());
       class_walk_s2s_2(tp, pre, post, env);
     }
   }

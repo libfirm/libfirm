@@ -823,14 +823,6 @@ vt_cmp (const void *elt, const void *key)
       (get_irn_mode(a) != get_irn_mode(b))) return 1;
 
   /* compare if a's in and b's in are equal */
-  /* GL: we optimize only nodes with in arrays of fixed sizes.
-  if (get_irn_arity (a) != -2) {
-    ins = get_irn_arity (a);
-    if (ins != get_irn_arity (b)) return 1;
-    ain = get_irn_in (a);
-    bin = get_irn_in (b);
-  }
-  */
   if (get_irn_arity (a) != get_irn_arity(b))
     return 1;
 
@@ -867,8 +859,7 @@ vt_cmp (const void *elt, const void *key)
       || (get_irn_sel_attr(a).ent->name != get_irn_sel_attr(b).ent->name)
       || (get_irn_sel_attr(a).ent->owner != get_irn_sel_attr(b).ent->owner)
       || (get_irn_sel_attr(a).ent->ld_name != get_irn_sel_attr(b).ent->ld_name)
-      || (get_irn_sel_attr(a).ent->type != get_irn_sel_attr(b).ent->type)
-      || (get_irn_sel_attr(a).ltyp != get_irn_sel_attr(b).ltyp);
+      || (get_irn_sel_attr(a).ent->type != get_irn_sel_attr(b).ent->type);
   case iro_Phi:
     return get_irn_phi_attr (a) != get_irn_phi_attr (b);
   default: ;

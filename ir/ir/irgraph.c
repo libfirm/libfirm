@@ -16,7 +16,7 @@
 
 # include "ircons.h"
 # include "irgraph_t.h"
-# include "irprog.h"
+# include "irprog_t.h"
 # include "iropt_t.h"
 # include "array.h"
 # include "irgmod.h"
@@ -45,6 +45,7 @@ void free_Phi_in_stack(Phi_in_stack *s);
 ir_graph *
 new_ir_graph (entity *ent, int n_loc)
 {
+  int i;
   ir_graph *res;
   ir_node *first_block;
   ir_node *projX;
@@ -87,14 +88,16 @@ new_ir_graph (entity *ent, int n_loc)
   res->outs_state = no_outs;
   res->dom_state = no_dom;
 
-  /** Type inforamtion for the procedure of the graph **/
+  /** Type information for the procedure of the graph **/
   res->ent = ent;
   set_entity_irg(ent, res);
 
   /** A type that represents the stack frame.  A class type so that it can
       contain "inner" methods as in Pascal. **/
   res->frame_type = new_type_class(mangle(get_entity_ident(ent),
-       id_from_str(FRAME_TP_SUFFIX, strlen(FRAME_TP_SUFFIX))));
+	  id_from_str(FRAME_TP_SUFFIX, strlen(FRAME_TP_SUFFIX))));
+  /* Remove type from type list.  Must be treated differently than other types. */
+  remove_irp_type_from_list(res->frame_type);
 
   /** Nodes needed in every graph **/
   res->end_block = new_immBlock ();
@@ -360,7 +363,7 @@ is_frame_type(type *ftp) {
 }
 
 int
-get_irg_n_loc (ir_graph *irg)
+get_irg_n_locs (ir_graph *irg)
 {
 #if PRECISE_EXC_CONTEXT
   return irg->n_loc - 1 - 1;

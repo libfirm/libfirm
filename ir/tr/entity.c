@@ -256,11 +256,13 @@ set_entity_variability (entity *ent, ent_variability var){
 
 INLINE ent_volatility
 get_entity_volatility (entity *ent) {
+  assert (ent);
   return ent->volatility;
 }
 
 INLINE void
 set_entity_volatility (entity *ent, ent_volatility vol) {
+  assert (ent);
   ent->volatility = vol;
 }
 
@@ -273,6 +275,7 @@ get_entity_peculiarity (entity *ent) {
 INLINE void
 set_entity_peculiarity (entity *ent, peculiarity pec) {
   assert (ent);
+  /* @@@ why peculiarity only for methods? */
   assert (is_method_type(ent->type));
   ent->peculiarity = pec;
 }
@@ -311,13 +314,6 @@ ir_node *copy_const_value(ir_node *n) {
   return nn;
 }
 
-/* Copies the value represented by the entity to current_block
-   in current_ir_graph. */
-ir_node *copy_atomic_ent_value(entity *ent) {
-  assert(ent && is_atomic_entity(ent) && (ent->variability != uninitialized));
-  return copy_const_value(ent->value);
-}
-
 /* A value of a compound entity is a pair of value and the corresponding member of
    the compound. */
 INLINE void
@@ -329,7 +325,7 @@ add_compound_ent_value(entity *ent, ir_node *val, entity *member) {
 
 /* Copies the firm subgraph referenced by val to const_code_irg and adds
    the node as constant initialization to ent.
-   The subgraph may not contain control flow operations. */
+   The subgraph may not contain control flow operations.
 INLINE void
 copy_and_add_compound_ent_value(entity *ent, ir_node *val, entity *member) {
   ir_graph *rem = current_ir_graph;
@@ -340,7 +336,7 @@ copy_and_add_compound_ent_value(entity *ent, ir_node *val, entity *member) {
   val = copy_const_value(val);
   add_compound_ent_value(ent, val, member);
   current_ir_graph = rem;
-}
+  }*/
 
 INLINE int
 get_compound_ent_n_values(entity *ent) {
@@ -354,12 +350,12 @@ get_compound_ent_value(entity *ent, int pos) {
   return ent->values[pos+1];
 }
 
-/* Copies the value i of the entity to current_block in current_ir_graph. */
+/* Copies the value i of the entity to current_block in current_ir_graph.
 ir_node *
 copy_compound_ent_value(entity *ent, int pos) {
   assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
   return copy_const_value(ent->values[pos+1]);
-}
+  }*/
 
 INLINE entity   *
 get_compound_ent_value_member(entity *ent, int pos) {

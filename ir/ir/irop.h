@@ -93,14 +93,13 @@ extern ir_op *op_EndReg;
 extern ir_op *op_EndExcept;
 
 
+/* Returns the ident for the opcode name */
+ident *get_op_ident     (ir_op *op);
 /* Returns the string for the opcode. */
-const char *get_op_name      (ir_op *op);
+const char *get_op_name (ir_op *op);
 
 /* Returns the enum for the opcode */
 opcode get_op_code      (ir_op *op);
-
-/* Returns the ident for the opcode name */
-ident *get_op_ident     (ir_op *op);
 
 typedef enum {
   floats = 0,    /* Nodes of this opcode can be placed in any basic block. */
@@ -112,12 +111,11 @@ op_pinned get_op_pinned (ir_op *op);
    for Block, Phi and control flow nodes. */
 void      set_op_pinned(ir_op *op, op_pinned pinned);
 
-/* Returns the attribute size of nodes of this opcode.
-   Use not encouraged, internal feature. */
-int    get_op_attr_size (ir_op *op);
-
 /* Returns true if op is one of Start, End, Jmp, Cond, Return, Raise or Bad. */
 int is_cfopcode(ir_op *op);
 
+/* Returns the attribute size of nodes of this opcode.
+   @@@ Use not encouraged, internal feature. */
+int    get_op_attr_size (ir_op *op);
 
 # endif /* _IROP_H_ */

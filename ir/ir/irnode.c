@@ -378,12 +378,12 @@ irn_not_visited  (ir_node *node) {
 }
 
 INLINE void
-set_irn_link (ir_node *node, ir_node *link) {
+set_irn_link (ir_node *node, void *link) {
   assert (node);
   node->link = link;
 }
 
-INLINE ir_node *
+INLINE void *
 get_irn_link (ir_node *node) {
   assert (node);
   return node->link;
@@ -495,13 +495,6 @@ get_Block_n_cfgpreds (ir_node *node) {
   assert ((node->op == op_Block));
   return (get_irn_arity(node));
 }
-
-/*
-INLINE void
-set_Block_n_cfgpreds (ir_node *node, int n_preds) {
-  assert ((node->op == op_Block));
-}
-*/
 
 INLINE ir_node *
 get_Block_cfgpred (ir_node *node, int pos) {
@@ -671,8 +664,20 @@ set_End_keepalive(ir_node *end, int pos, ir_node *ka) {
 
 INLINE void
 free_End (ir_node *end) {
+  assert (end->op == op_End);
   /* DEL_ARR_F(end->in);   GL @@@ tut nicht ! */
-  end->in = NULL;   /* @@@ make sure we get an error if we use the in array afterwards ... */
+  end->in = NULL;   /* @@@ make sure we get an error if we use the
+		       in array afterwards ... */
+}
+
+ir_graph *get_EndReg_irg (ir_node *end) {
+  assert (end->op == op_EndReg);
+  return end->attr.end.irg;
+}
+
+ir_graph *get_EndExcept_irg  (ir_node *end) {
+  assert (end->op == op_EndReg);
+  return end->attr.end.irg;
 }
 
 /*
@@ -743,7 +748,7 @@ set_Return_mem (ir_node *node, ir_node *mem) {
 }
 
 INLINE int
-get_Return_n_res (ir_node *node) {
+get_Return_n_ress (ir_node *node) {
   assert (node->op == op_Return);
   return (get_irn_arity(node) - RETURN_RESULT_OFFSET);
 }
@@ -752,7 +757,7 @@ INLINE ir_node **
 get_Return_res_arr (ir_node *node)
 {
   assert ((node->op == op_Return));
-  if (get_Return_n_res(node) > 0)
+  if (get_Return_n_ress(node) > 0)
     return (ir_node **)&(get_irn_in(node)[1 + RETURN_RESULT_OFFSET]);
   else
     return NULL;
@@ -768,7 +773,7 @@ set_Return_n_res (ir_node *node, int results) {
 INLINE ir_node *
 get_Return_res (ir_node *node, int pos) {
   assert (node->op == op_Return);
-  assert (get_Return_n_res(node) > pos);
+  assert (get_Return_n_ress(node) > pos);
   return get_irn_n(node, pos + RETURN_RESULT_OFFSET);
 }
 
@@ -892,7 +897,7 @@ set_Sel_ptr (ir_node *node, ir_node *ptr) {
 }
 
 INLINE int
-get_Sel_n_index (ir_node *node) {
+get_Sel_n_indexs (ir_node *node) {
   assert (node->op == op_Sel);
   return (get_irn_arity(node) - SEL_INDEX_OFFSET);
 }
@@ -901,18 +906,11 @@ INLINE ir_node **
 get_Sel_index_arr (ir_node *node)
 {
   assert ((node->op == op_Sel));
-  if (get_Sel_n_index(node) > 0)
+  if (get_Sel_n_indexs(node) > 0)
     return (ir_node **)& get_irn_in(node)[SEL_INDEX_OFFSET + 1];
   else
     return NULL;
 }
-
-/*
-INLINE void
-set_Sel_n_index (ir_node *node, int n_index) {
-  assert (node->op == op_Sel);
-}
-*/
 
 INLINE ir_node *
 get_Sel_index (ir_node *node, int pos) {
@@ -936,18 +934,6 @@ INLINE void
 set_Sel_entity (ir_node *node, entity *ent) {
   assert (node->op == op_Sel);
   node->attr.s.ent = ent;
-}
-
-INLINE linkage_type
-get_Sel_linkage_type (ir_node *node) {
-  assert (node->op == op_Sel);
-  return node->attr.s.ltyp;
-}
-
-INLINE void
-set_Sel_linkage_type (ir_node *node, linkage_type lt) {
-  assert (node->op == op_Sel);
-  node->attr.s.ltyp = lt;
 }
 
 type *
@@ -1089,6 +1075,27 @@ void set_Call_callee_arr(ir_node * node, int n, entity ** arr) {
 void remove_Call_callee_arr(ir_node * node) {
   assert(node->op == op_Call);
   node->attr.call.callee_arr = NULL;
+}
+
+ir_node * get_CallBegin_ptr (ir_node *node) {
+  assert(node->op == op_CallBegin);
+  return get_irn_n(node, 0);
+}
+void set_CallBegin_ptr (ir_node *node, ir_node *ptr) {
+  assert(node->op == op_CallBegin);
+  set_irn_n(node, 0, ptr);
+}
+ir_graph * get_CallBegin_irg (ir_node *node) {
+  assert(node->op == op_CallBegin);
+  return node->attr.callbegin.irg;
+}
+ir_node * get_CallBegin_call (ir_node *node) {
+  assert(node->op == op_CallBegin);
+  return node->attr.callbegin.call;
+}
+void  set_CallBegin_call (ir_node *node, ir_node *call) {
+  assert(node->op == op_CallBegin);
+  node->attr.callbegin.call = call;
 }
 
 INLINE ir_node *
@@ -2057,15 +2064,24 @@ set_Id_pred (ir_node *node, ir_node *pred) {
 
 
 INLINE ir_node *
-get_Filter_pred(ir_node *node) {
+get_Filter_pred (ir_node *node) {
   assert(node->op == op_Filter);
   return node->in[1];
 }
-
+INLINE void
+set_Filter_pred (ir_node *node, ir_node *pred) {
+  assert(node->op == op_Filter);
+  node->in[1] = pred;
+}
 INLINE long
 get_Filter_proj(ir_node *node) {
   assert(node->op == op_Filter);
   return node->attr.filter.proj;
+}
+INLINE void
+set_Filter_proj (ir_node *node, long proj) {
+  assert(node->op == op_Filter);
+  node->attr.filter.proj = proj;
 }
 
 void set_Filter_cg_pred_arr(ir_node * node, int arity, ir_node ** in) {

@@ -42,8 +42,10 @@ ir_prog *new_ir_prog (void) {
   res->types  = NEW_ARR_F (type *, 1);
   res->glob_type = new_type_class(id_from_str (GLOBAL_TYPE_NAME,
 					       strlen(GLOBAL_TYPE_NAME)));
-  /* @@@ Das ist hier das 2. mal!!  */
-  add_irp_type(res->glob_type);
+  /* Remove type from type list.  Must be treated differently than other types. */
+  remove_irp_type_from_list(res->glob_type);
+  /* @@@ Das ist hier das 2. mal!!
+     add_irp_type(res->glob_type);  */
 
   res->const_code_irg = new_const_code_irg();
 
@@ -80,8 +82,7 @@ void add_irp_irg(ir_graph *irg) {
   ARR_APP1 (ir_graph *, irp->graphs, irg);
 }
 
-/* Removes irg from the list or irgs, shrinks the list by one.
-   @@@ does not work properly. */
+/* Removes irg from the list or irgs, shrinks the list by one. */
 void remove_irp_irg(ir_graph *irg){
   int i;
   assert(irg);
@@ -121,6 +122,25 @@ void add_irp_type(type *typ) {
   assert (typ != NULL);
   assert(irp);
   ARR_APP1 (type *, irp->types, typ);
+}
+
+INLINE void remove_irp_type_from_list (type *typ) {
+  int i;
+  assert(typ);
+  for (i = 1; i < (ARR_LEN (irp->types)); i++) {
+    if (irp->types[i] == typ) {
+      for(; i < (ARR_LEN (irp->types)) - 1; i++) {
+	irp->types[i] = irp->types[i+1];
+      }
+      ARR_SETLEN(type*, irp->types, (ARR_LEN(irp->types)) - 1);
+      break;
+    }
+  }
+}
+
+void remove_irp_type(type *typ) {
+  remove_irp_type_from_list (typ);
+  free_type(typ);
 }
 
 int get_irp_n_types (void) {

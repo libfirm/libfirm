@@ -137,17 +137,13 @@ entity     *copy_entity_name (entity *old, ident *new_name);
 /** manipulate fields of entity **/
 const char *get_entity_name     (entity *ent);
 ident      *get_entity_ident    (entity *ent);
+
 /* returns the mangled name of the entity.  If the mangled name is
    set it returns the existing name.  Else it generates a name
    with mangle_entity() and remembers this new name internally. */
 ident      *get_entity_ld_ident (entity *ent);
 void        set_entity_ld_ident (entity *ent, ident *ld_ident);
 const char *get_entity_ld_name (entity *end);
-
-/*
-char       *get_entity_ld_name  (entity *ent);
-void        set_entity_ld_name  (entity *ent, char *ld_name);
-*/
 
 type       *get_entity_owner (entity *ent);
 /* Sets the owner field in entity to owner. */
@@ -208,10 +204,29 @@ typedef enum {
 ent_volatility get_entity_volatility (entity *ent);
 void           set_entity_volatility (entity *ent, ent_volatility vol);
 
+/* Only set if layout = fixed. */
+int       get_entity_offset (entity *ent);
+void      set_entity_offset (entity *ent, int offset);
+
+/* A link to store intermediate information */
+void*   get_entity_link(entity *ent);
+void    set_entity_link(entity *ent, void *l);
+
+/** Fields of method entities **/
+/* The entity knows the corresponding irg if the entity is a method.
+   This allows to get from a Call to the called irg.
+   Only entities of peculiarity "existent" can have a corresponding irg,
+   else the field is fixed to NULL.  (Get returns NULL, set asserts.) */
+ir_graph *get_entity_irg(entity *ent);
+void      set_entity_irg(entity *ent, ir_graph *irg);
+
 /* For the definition of enumeration peculiarity see type.h */
 peculiarity get_entity_peculiarity (entity *ent);
 void        set_entity_peculiarity (entity *ent, peculiarity pec);
 
+/** Representation of constant values of entites **/
+/* Set current_ir_graph to get_const_code_irg() to generate a constant
+   expression. */
 /* Copies a firm subgraph that complies to the restrictions for
    constant expressions to current_block in current_ir_graph. */
 ir_node *copy_const_value(ir_node *n);
@@ -219,15 +234,10 @@ ir_node *copy_const_value(ir_node *n);
 /* Set has no effect for entities of type method. */
 ir_node *get_atomic_ent_value(entity *ent);
 void     set_atomic_ent_value(entity *ent, ir_node *val);
-/* Copies the value represented by the entity to current_block
-   in current_ir_graph. @@@ oblivious, use copy_const_vallue */
-ir_node *copy_atomic_ent_value(entity *ent);
 
-/* A value of a compound entity is a pair of value and the corresponding
+/* A value of a compound entity is a pair of a value and the corresponding
    member of the compound. */
 void     add_compound_ent_value(entity *ent, ir_node *val, entity *member);
-/* oblivious, use copy_const_value @@@ */
-void     copy_and_add_compound_ent_value(entity *ent, ir_node *val, entity *member);
 int      get_compound_ent_n_values(entity *ent);
 ir_node *get_compound_ent_value(entity *ent, int pos);
 entity  *get_compound_ent_value_member(entity *ent, int pos);
@@ -239,13 +249,8 @@ void     set_compound_ent_value(entity *ent, ir_node *val, entity *member, int p
    fits into the given array size.  Does not test whether the
    values have the proper mode for the array. */
 void set_array_entity_values(entity *ent, tarval **values, int num_vals);
-/* Copies the value pos of the entity to current_block in current_ir_graph. */
-ir_node *copy_compound_ent_value(entity *ent, int pos);
 
-/* Only set if layout = fixed. */
-int       get_entity_offset (entity *ent);
-void      set_entity_offset (entity *ent, int offset);
-
+/** Fields of entities with a class type as owner **/
 /* Overwrites is a field that specifies that an access to the overwritten
    entity in the supertype must use this entity.  It's a list as with
    multiple inheritance several enitites can be overwritten.  This field
@@ -259,22 +264,11 @@ void    add_entity_overwrites   (entity *ent, entity *overwritten);
 int     get_entity_n_overwrites (entity *ent);
 entity *get_entity_overwrites   (entity *ent, int pos);
 void    set_entity_overwrites   (entity *ent, int pos, entity *overwritten);
+
 void    add_entity_overwrittenby   (entity *ent, entity *overwrites);
 int     get_entity_n_overwrittenby (entity *ent);
 entity *get_entity_overwrittenby   (entity *ent, int pos);
 void    set_entity_overwrittenby   (entity *ent, int pos, entity *overwrites);
-
-/* A link to store intermediate information */
-void*   get_entity_link(entity *ent);
-void    set_entity_link(entity *ent, void *l);
-
-/* The entity knows the corresponding irg if the entity is a method.
-   This allows to get from a Call to the called irg.
-   Only entities of peculiarity "existent" can have a corresponding irg,
-   else the field is fixed to NULL.  (Get returns NULL, set asserts.) */
-ir_graph *get_entity_irg(entity *ent);
-void      set_entity_irg(entity *ent, ir_graph *irg);
-
 
 /* Returns true if the type of the entity is a primitive, pointer
    enumeration or method type. */

@@ -57,8 +57,6 @@ typedef struct ir_node ir_node;
 
 /* returns the number of predecessors without the block predecessor: */
 int                  get_irn_arity         (ir_node *node);
-/* returns the array with the ins: */
-INLINE ir_node     **get_irn_in            (ir_node *node);
 /* Replaces the old in array by a new one that will contain the ins given in
    the parameters.  Conserves the block predecessor.  It copies the array passed.
    This function is necessary to ajust in arrays of blocks, calls and phis.
@@ -95,13 +93,16 @@ INLINE void          set_irn_visited (ir_node *node, unsigned long visited);
 INLINE unsigned long get_irn_visited (ir_node *node);
 /* Sets visited to get_irg_visited(current_ir_graph) */
 INLINE void          mark_irn_visited (ir_node *node);
-/* Returns 1 of visited < get_irg_visited(current_ir_graph).  */
+/* Returns 1 if visited < get_irg_visited(current_ir_graph).  */
 INLINE int           irn_not_visited  (ir_node *node);
-INLINE void          set_irn_link          (ir_node *node, ir_node *link);
-INLINE ir_node      *get_irn_link          (ir_node *node);
+INLINE void          set_irn_link          (ir_node *node, void *link);
+INLINE void         *get_irn_link          (ir_node *node);
 /* Outputs a unique number for this node if libfirm is compiled for
-   debugging, else returns 0. */
+   debugging, (configure with --enable-debug) else returns 0. */
 INLINE long get_irn_node_nr(ir_node *node);
+/* Returns the ir_graph this node belongs to. Only valid for
+ * CallBegin, EndReg and EndExcept */
+INLINE ir_graph *get_irn_irg(ir_node *node);
 /*****/
 
 /* irnode constructor                                             */
@@ -142,9 +143,9 @@ typedef enum {
   pns_args              /* Projection on all arguments */
 } pns_number;
 
+/* @@@ no more supported  */
 INLINE ir_node **get_Block_cfgpred_arr (ir_node *node);
 int              get_Block_n_cfgpreds (ir_node *node);
-/* INLINE void    set_Block_n_cfgpreds (ir_node *node, int n_preds); */
 INLINE ir_node  *get_Block_cfgpred (ir_node *node, int pos);
 INLINE void      set_Block_cfgpred (ir_node *node, int pos, ir_node *pred);
 INLINE bool      get_Block_matured (ir_node *node);
@@ -154,17 +155,15 @@ INLINE void      set_Block_block_visited (ir_node *node, unsigned long visit);
 /* For this current_ir_graph must be set. */
 INLINE void      mark_Block_block_visited(ir_node *node);
 INLINE int       Block_not_block_visited(ir_node *node);
-INLINE ir_node  *get_Block_graph_arr (ir_node *node, int pos);
-INLINE void      set_Block_graph_arr (ir_node *node, int pos, ir_node *value);
 
-/* exc handling */
+/* exc handling @@@ ajacs specific -- not supported */
 void     set_Block_exc     (ir_node*, exc_t);
 exc_t    get_Block_exc     (ir_node*);
 
 void     set_Node_exc      (ir_node*, exc_t);
 exc_t    get_Node_exc      (ir_node*);
 
-/* handler handling */
+/* handler handling  @@@ ajacs specific -- not supported  */
 void     set_Block_handler (ir_node*, ir_node*);
 ir_node* get_Block_handler (ir_node*);
 
@@ -175,6 +174,7 @@ ir_node* get_Node_handler  (ir_node*);
  * both views. */
 void set_Block_cg_cfgpred_arr(ir_node * node, int arity, ir_node ** in);
 void set_Block_cg_cfgpred(ir_node * node, int pos, ir_node * pred);
+/* @@@ not supported */
 ir_node ** get_Block_cg_cfgpred_arr(ir_node * node);
 int get_Block_cg_n_cfgpreds(ir_node * node);
 void remove_Block_cg_cfgpred_arr(ir_node * node);
@@ -187,6 +187,10 @@ INLINE void set_End_keepalive(ir_node *end, int pos, ir_node *ka);
    is not recovered by dead_node_elimination if a End node is dead.
    free_End frees these data structures. */
 INLINE void free_End (ir_node *end);
+
+ir_graph *get_EndReg_irg (ir_node *end);
+
+ir_graph *get_EndExcept_irg  (ir_node *end);
 
 /* We distinguish three kinds of Cond nodes.  These can be distinguished
    by the mode of the selector operand and an internal flag of type cond_kind.
@@ -222,8 +226,7 @@ INLINE void      set_Cond_kind (ir_node *node, cond_kind kind);
 INLINE ir_node  *get_Return_mem (ir_node *node);
 INLINE void      set_Return_mem (ir_node *node, ir_node *mem);
 INLINE ir_node **get_Return_res_arr (ir_node *node);
-INLINE int       get_Return_n_res (ir_node *node);
-/*INLINE void     set_Return_n_res (ir_node *node, int results); */
+INLINE int       get_Return_n_ress (ir_node *node);
 INLINE ir_node  *get_Return_res (ir_node *node, int pos);
 INLINE void      set_Return_res (ir_node *node, int pos, ir_node *res);
 
@@ -266,21 +269,13 @@ INLINE void     set_Sel_mem (ir_node *node, ir_node *mem);
 INLINE ir_node *get_Sel_ptr (ir_node *node);  /* ptr to the object to select from */
 INLINE void     set_Sel_ptr (ir_node *node, ir_node *ptr);
 INLINE ir_node **get_Sel_index_arr (ir_node *node);
-INLINE int      get_Sel_n_index (ir_node *node);
-/*INLINE void     set_Sel_n_index (ir_node *node, int n_index); */
+INLINE int      get_Sel_n_indexs (ir_node *node);
 INLINE ir_node *get_Sel_index (ir_node *node, int pos);
 INLINE void     set_Sel_index (ir_node *node, int pos, ir_node *index);
 INLINE entity  *get_Sel_entity (ir_node *node); /* entity to select */
 INLINE void     set_Sel_entity (ir_node *node, entity *ent);
-typedef enum {
-  static_linkage,       /* entity is used internal and not visible out of this
-			   file/class. */
-  external_linkage,     /* */
-  no_linkage
-} linkage_type;
-INLINE linkage_type get_Sel_linkage_type (ir_node *node);
-INLINE void     set_Sel_linkage_type (ir_node *node, linkage_type lt);
 
+/* @@@ ajacs specific node -- not supported */
 type           *get_InstOf_ent   (ir_node*);
 void            set_InstOf_ent   (ir_node*, type*);
 ir_node        *get_InstOf_obj   (ir_node*);
@@ -294,18 +289,21 @@ INLINE ir_node *get_Call_ptr (ir_node *node);
 INLINE void     set_Call_ptr (ir_node *node, ir_node *ptr);
 INLINE ir_node **get_Call_param_arr (ir_node *node);
 INLINE int      get_Call_n_params (ir_node *node);
-INLINE int      get_Call_arity (ir_node *node);
-/* INLINE void     set_Call_arity (ir_node *node, ir_node *arity); */
 INLINE ir_node *get_Call_param (ir_node *node, int pos);
 INLINE void     set_Call_param (ir_node *node, int pos, ir_node *param);
 INLINE type    *get_Call_type (ir_node *node);
 INLINE void     set_Call_type (ir_node *node, type *type);
-
 /* Set, get and remove the callee-analysis. */
 int get_Call_n_callees(ir_node * node);
 entity * get_Call_callee(ir_node * node, int pos);
 void set_Call_callee_arr(ir_node * node, int n, entity ** arr);
 void remove_Call_callee_arr(ir_node * node);
+
+ir_node * get_CallBegin_ptr (ir_node *node);
+void set_CallBegin_ptr (ir_node *node, ir_node *ptr);
+ir_graph *get_CallBegin_irg (ir_node *node);
+ir_node *get_CallBegin_call (ir_node *node);
+void set_CallBegin_call (ir_node *node, ir_node *call);
 
 /* For unary and binary arithmetic operations the access to the
    operands can be factored out.  Left is the first, right the
@@ -441,9 +439,16 @@ INLINE void     set_Conv_op (ir_node *node, ir_node *op);
 
 INLINE ir_node **get_Phi_preds_arr (ir_node *node);
 INLINE int       get_Phi_n_preds (ir_node *node);
-/* INLINE void     set_Phi_n_preds (ir_node *node, int n_preds); */
 INLINE ir_node  *get_Phi_pred (ir_node *node, int pos);
 INLINE void      set_Phi_pred (ir_node *node, int pos, ir_node *pred);
+
+INLINE ir_node  *get_Filter_pred(ir_node *node);
+INLINE void      set_Filter_pred(ir_node *node, ir_node *pred);
+INLINE long      get_Filter_proj(ir_node *node);
+INLINE void      set_Filter_proj(ir_node *node, long proj);
+/* set the interprocedural predecessors */
+void             set_Filter_cg_pred_arr(ir_node * node, int arity, ir_node ** in);
+void             set_Filter_cg_pred(ir_node * node, int pos, ir_node * pred);
 
 INLINE ir_node *get_Load_mem (ir_node *node);
 INLINE void     set_Load_mem (ir_node *node, ir_node *mem);
@@ -481,7 +486,6 @@ INLINE void     set_Free_type (ir_node *node, type *type);
 
 INLINE ir_node **get_Sync_preds_arr (ir_node *node);
 INLINE int       get_Sync_n_preds (ir_node *node);
-/* INLINE void     set_Sync_n_preds (ir_node *node, int n_preds); */
 INLINE ir_node  *get_Sync_pred (ir_node *node, int pos);
 INLINE void      set_Sync_pred (ir_node *node, int pos, ir_node *pred);
 
@@ -492,22 +496,11 @@ INLINE void      set_Proj_proj (ir_node *node, long proj);
 
 INLINE ir_node **get_Tuple_preds_arr (ir_node *node);
 INLINE int       get_Tuple_n_preds (ir_node *node);
-/* INLINE void     set_Tuple_n_preds (ir_node *node, int n_preds); */
 INLINE ir_node  *get_Tuple_pred (ir_node *node, int pos);
 INLINE void      set_Tuple_pred (ir_node *node, int pos, ir_node *pred);
 
 INLINE ir_node  *get_Id_pred (ir_node *node);
 INLINE void      set_Id_pred (ir_node *node, ir_node *pred);
-
-INLINE ir_node  *get_Filter_pred(ir_node *node);
-INLINE long      get_Filter_proj(ir_node *node);
-/* set the interprocedural predecessors */
-void             set_Filter_cg_pred_arr(ir_node * node, int arity, ir_node ** in);
-void             set_Filter_cg_pred(ir_node * node, int pos, ir_node * pred);
-
-/* Returns the ir_graph this node belongs to. Only valid for
- * CallBegin, EndReg and EndExcept */
-INLINE ir_graph *get_irn_irg(ir_node *node);
 
 /*****/
 

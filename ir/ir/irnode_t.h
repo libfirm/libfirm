@@ -61,7 +61,6 @@ typedef struct {
 /* Sel attributes */
 typedef struct {
   entity *ent;          /* entity to select */
-  linkage_type ltyp;    /* linkage type of the entity */
 } sel_attr;
 
 typedef struct {
@@ -116,6 +115,7 @@ typedef union {
   symconst_attr  i;     /* For SymConst. */
   sel_attr       s;     /* For Sel. */
   call_attr      call;  /* For Call: pointer to the type of the method to call */
+  callbegin_attr callbegin; /* For CallBegin */
   alloc_attr     a;     /* For Alloc. */
   io_attr		 io;	/* For InstOf */
   type          *f;     /* For Free. */
@@ -125,10 +125,9 @@ typedef union {
 			       predecessors. If this attribute is set, the Phi
 			       node takes the role of the obsolete Phi0 node,
 			       therefore the name. */
-  long           proj;  /* For Proj: contains the result position to project */
+  long           proj;   /* For Proj: contains the result position to project */
   filter_attr    filter;    /* For Filter */
   end_attr       end;       /* For EndReg, EndExcept */
-  callbegin_attr callbegin; /* For CallBegin */
 #if PRECISE_EXC_CONTEXT
   struct ir_node **frag_arr; /* For Phi node construction in case of exceptions
 			       for nodes Store, Load, Div, Mod, Quot, DivMod. */
@@ -146,7 +145,7 @@ struct ir_node {
   ir_mode *mode;           /* Mode of this node. */
   unsigned long visited;   /* visited counter for walks of the graph */
   struct ir_node **in;     /* array with predecessors / operands */
-  struct ir_node *link;    /* for linking nodes somehow to a list, e.g.
+  void *link;              /* to attach additional information to the node, e.g.
                               used while construction to link Phi0 nodes and
 			      during optimization to link to nodes that
 			      shall replace a node. */
@@ -172,6 +171,9 @@ copy_attrs (ir_node *old, ir_node *new);
 /* @@@@ brauchen wir dienoch? dann fliegt ev. das xprint raus?*/
 int ir_node_print (XP_PAR1, const xprintf_info *, XP_PARN);
 
+/* Returns the array with the ins.  The content of the array may not be
+   changed.  */
+ir_node     **get_irn_in            (ir_node *node);
 
 /** access attributes directly **/
 INLINE tarval       *get_irn_const_attr    (ir_node *node);

@@ -1346,7 +1346,10 @@ void switch_block (ir_node *target);   */
 ir_node *new_Block(int arity, ir_node **in);
 ir_node *new_Start  (void);
 ir_node *new_End    (void);
+ir_node *new_EndReg (void);
+ir_node *new_EndExcept(void);
 ir_node *new_Jmp    (void);
+ir_node *new_Break  (void);
 ir_node *new_Cond   (ir_node *c);
 ir_node *new_Return (ir_node *store, int arity, ir_node **in);
 ir_node *new_Raise  (ir_node *store, ir_node *obj);
@@ -1358,6 +1361,7 @@ ir_node *new_Sel    (ir_node *store, ir_node *objptr, int arity, ir_node **in,
 ir_node *new_InstOf (ir_node *store, ir_node *objptr, type *ent);
 ir_node *new_Call   (ir_node *store, ir_node *callee, int arity, ir_node **in,
 		     type *type);
+ir_node *new_CallBegin(ir_node *callee);
 ir_node *new_Add    (ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_Sub    (ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_Minus  (ir_node *op,  ir_mode *mode);
@@ -1386,16 +1390,12 @@ ir_node *new_Free   (ir_node *store, ir_node *ptr, ir_node *size,
 		     type *free_type);
 ir_node *new_Sync   (int arity, ir_node **in);
 ir_node *new_Proj   (ir_node *arg, ir_mode *mode, long proj);
+ir_node *new_Filter (ir_node *arg, ir_mode *mode, long proj);
 ir_node *new_defaultProj (ir_node *arg, long max_proj);
 ir_node *new_Tuple  (int arity, ir_node **in);
 ir_node *new_Id     (ir_node *val, ir_mode *mode);
 ir_node *new_Bad    (void);
 ir_node *new_Unknown(void);
-ir_node *new_CallBegin(ir_node *callee);
-ir_node *new_EndReg (void);
-ir_node *new_EndExcept(void);
-ir_node *new_Break (void);
-ir_node *new_Filter (ir_node *arg, ir_mode *mode, long proj);
 
 /***********************************************************************/
 /* The comfortable interface.                                          */
