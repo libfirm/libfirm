@@ -36,7 +36,7 @@ static INLINE void cnt_inc(counter_t *cnt)
 }
 
 /**
- * decreace a counter
+ * decrease a counter
  */
 static INLINE void cnt_dec(counter_t *cnt)
 {
