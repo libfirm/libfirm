@@ -465,7 +465,7 @@ void dump_backedge_information(bool b) {
  * If the flag is set, the type name is output in [] in the node label,
  * else it is output as info.
  */
-void dump_analysed_type_info(bool b) {
+void set_opt_dump_analysed_type_info(bool b) {
   opt_dump_analysed_type_info = b;
 }
 
@@ -608,13 +608,13 @@ static int dump_node_typeinfo(FILE *F, ir_node *n) {
   int bad = 0;
 
   if (opt_dump_analysed_type_info) {
-    if (get_irg_typeinfo_state(current_ir_graph) == irg_typeinfo_consistent  ||
-        get_irg_typeinfo_state(current_ir_graph) == irg_typeinfo_inconsistent) {
+    if (get_irg_typeinfo_state(current_ir_graph) == ir_typeinfo_consistent  ||
+        get_irg_typeinfo_state(current_ir_graph) == ir_typeinfo_inconsistent) {
       type *tp = get_irn_typeinfo_type(n);
       if (tp != firm_none_type)
-        fprintf(F, " [%s]", get_type_name_ex(tp, &bad));
+        fprintf(F, "[%s] ", get_type_name_ex(tp, &bad));
       else
-        fprintf(F, " []");
+        fprintf(F, "[] ");
     }
   }
   return bad;
@@ -631,27 +631,27 @@ dump_node_nodeattr(FILE *F, ir_node *n)
   switch (get_irn_opcode(n)) {
   case iro_Start:
     if (false && get_interprocedural_view()) {
-      fprintf (F, "%s", get_ent_dump_name(get_irg_entity(current_ir_graph)));
+      fprintf (F, "%s ", get_ent_dump_name(get_irg_entity(current_ir_graph)));
     }
     break;
   case iro_Proj:
     if (get_irn_opcode(get_Proj_pred(n)) == iro_Cmp) {
-      fprintf (F, "%s", get_pnc_string(get_Proj_proj(n)));
+      fprintf (F, "%s ", get_pnc_string(get_Proj_proj(n)));
     } else {
-      fprintf (F, "%ld", get_Proj_proj(n));
+      fprintf (F, "%ld ", get_Proj_proj(n));
     }
     break;
   case iro_Filter:
-    fprintf (F, "%ld", get_Filter_proj(n));
+    fprintf (F, "%ld ", get_Filter_proj(n));
     break;
   case iro_Sel:
-    fprintf (F, "%s", get_ent_dump_name(get_Sel_entity(n)));
+    fprintf (F, "%s ", get_ent_dump_name(get_Sel_entity(n)));
     break;
   case iro_Cast:
-    fprintf (F, "(%s)", get_type_name_ex(get_Cast_type(n), &bad));
+    fprintf (F, "(%s) ", get_type_name_ex(get_Cast_type(n), &bad));
     break;
   case iro_Confirm:
-    fprintf (F, "%s", get_pnc_string(get_Confirm_cmp(n)));
+    fprintf (F, "%s ", get_pnc_string(get_Confirm_cmp(n)));
     break;
 
   default:
@@ -661,8 +661,24 @@ dump_node_nodeattr(FILE *F, ir_node *n)
   return bad;
 }
 
+
+/** Dumps a node label without the enclosing ". */
+static int dump_node_label(FILE *F, ir_node *n) {
+  int bad = 0;
+
+  bad |= dump_node_opcode(F, n);
+  bad |= dump_node_mode(F, n);
+  fprintf (F, " ");
+  bad |= dump_node_typeinfo(F, n);
+  bad |= dump_node_nodeattr(F, n);
+  fprintf(F, "%ld", get_irn_node_nr(n));
+
+  return bad;
+}
+
+
 /**
- * dumps the attributes of a node n into the file F.
+ * Dumps the attributes of a node n into the file F.
  * Currently this is only the color of a node.
  */
 static void dump_node_vcgattr(FILE *F, ir_node *node, ir_node *local, int bad)
@@ -758,12 +774,7 @@ static void dump_const_node_local(FILE *F, ir_node *n) {
          n and const. */
       fprintf(F, "node: {title: "); PRINT_CONSTID(n, con);
       fprintf(F, " label: \"");
-      bad |= dump_node_opcode(F, con);
-      bad |= dump_node_mode(F, con);
-      bad |= dump_node_typeinfo(F, con);
-      fprintf (F, " ");
-      bad |= dump_node_nodeattr(F, con);
-      fprintf(F, " %ld", get_irn_node_nr(con));
+      bad |= dump_node_label(F, con);
       fprintf(F, "\" ");
       bad |= dump_node_info(F, con);
       dump_node_vcgattr(F, n, con, bad);
@@ -786,12 +797,7 @@ static void dump_const_block_local(FILE *F, ir_node *n) {
        n and blk. */
     fprintf(F, "node: {title: \""); PRINT_CONSTBLKID(n, blk);
     fprintf(F, "\" label: \"");
-    bad |= dump_node_opcode(F, blk);
-    bad |= dump_node_mode(F, blk);
-    bad |= dump_node_typeinfo(F, blk);
-    fprintf (F, " ");
-    bad |= dump_node_nodeattr(F, blk);
-    fprintf(F, " %ld", get_irn_node_nr(blk));
+    bad |= dump_node_label(F, blk);
     fprintf(F, "\" ");
     bad |= dump_node_info(F, blk);
     dump_node_vcgattr(F, n, blk, bad);
@@ -830,12 +836,8 @@ static void dump_node(FILE *F, ir_node *n)
   fprintf(F, "node: {title: \""); PRINT_NODEID(n); fprintf(F, "\" label: \"");
 
   bad = ! irn_vrfy_irg_dump(n, current_ir_graph, &p);
-  bad |= dump_node_opcode(F, n);
-  bad |= dump_node_mode(F, n);
-  bad |= dump_node_typeinfo(F, n);
-  fprintf(F, " ");
-  bad |= dump_node_nodeattr(F, n);
-  fprintf(F, " %ld", get_irn_node_nr(n));
+  bad |= dump_node_label(F, n);
+  dump_node_ana_info(F, n);
   fprintf(F, "\" ");
   bad |= dump_node_info(F, n);
   print_node_error(F, p);
@@ -1099,8 +1101,7 @@ dump_whole_block(FILE *F, ir_node *block) {
   fprintf(F, "graph: { title: \"");
   PRINT_NODEID(block);
   fprintf(F, "\"  label: \"");
-  dump_node_opcode(F, block);
-  fprintf (F, " %ld", get_irn_node_nr(block));
+  dump_node_label(F, block);
 #if DO_HEAPANALYSIS
   if (get_opt_dump_abstvals())
     fprintf (F, " seqno: %d", (int)get_Block_seqno(block));
@@ -2322,12 +2323,7 @@ void dump_loops_standalone(FILE *F, ir_loop *loop) {
       else
         fprintf(F, "\n");
 
-      bad |= dump_node_opcode(F, n);
-      bad |= dump_node_mode(F, n);
-      bad |= dump_node_typeinfo(F, n);
-      fprintf (F, " ");
-      bad |= dump_node_nodeattr(F, n);
-      fprintf (F, " %ld", get_irn_node_nr(n));
+      bad |= dump_node_label(F, n);
       /* Causes indeterministic output: if (is_Block(n)) fprintf (F, "\t ->%d", (int)get_irn_link(n)); */
       if (has_backedges(n)) fprintf(F, "\t loop head!");
     } else { /* for callgraph loop tree */
