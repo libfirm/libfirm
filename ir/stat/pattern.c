@@ -3,6 +3,7 @@
  */
 #include <assert.h>
 #include <stdlib.h>
+#include <limits.h>
 
 #include "ident.h"
 #include "irnode_t.h"
@@ -313,14 +314,17 @@ static int addr_cmp(const void *p1, const void *p2, size_t size) {
   return e1->addr != e2->addr;
 }
 
-/*
+/**
  * encodes an IR-node, recursive worker
+ *
+ * @return reached depth
  */
-static void _encode_node(ir_node *node, int max_depth, codec_env_t *env)
+static int _encode_node(ir_node *node, int max_depth, codec_env_t *env)
 {
   addr_entry_t entry, *r_entry;
   set_entry *s_entry;
   int i, preds;
+  int res, depth;
 
   opcode code = get_irn_opcode(node);
 
@@ -336,7 +340,7 @@ static void _encode_node(ir_node *node, int max_depth, codec_env_t *env)
     put_tag(env->buf, VLC_TAG_REF);
     put_code(env->buf, r_entry->id);
 
-    return;
+    return max_depth;
   }
   else {
     /* a new entry, proceed */
@@ -373,25 +377,36 @@ static void _encode_node(ir_node *node, int max_depth, codec_env_t *env)
 
   if (max_depth <= 0) {
     put_code(env->buf, 0);
-    return;
+    return max_depth;
   }
 
   preds = get_irn_arity(node);
   put_code(env->buf, preds);
 
+  res = INT_MAX;
   for (i = 0; i < preds; ++i) {
     ir_node *n = get_irn_n(node, i);
 
-    _encode_node(n, max_depth, env);
+    depth = _encode_node(n, max_depth, env);
+    if (depth < res)
+      res = depth;
   }
+  return res;
 }
 
 /**
- * encode an IR-node
+ * encode an IR-node (and its children)
+ *
+ * @param @node      The root node of the graph
+ * @param buf        The code buffer to store the bitstring in
+ * @param max_depth  The maximum depth for descending
+ *
+ * @return The depth of the encoded graph (without cycles)
  */
-static void encode_node(ir_node *node, CODE_BUFFER *buf, int max_depth)
+static int encode_node(ir_node *node, CODE_BUFFER *buf, int max_depth)
 {
   codec_env_t env;
+  int         res;
 
   env.buf     = buf;
   env.curr_id = 1;	/* 0 is used for special purpose */
@@ -409,10 +424,12 @@ static void encode_node(ir_node *node, CODE_BUFFER *buf, int max_depth)
     put_code(buf, env.options);
   }
 
-  _encode_node(node, max_depth, &env);
+  res = _encode_node(node, max_depth, &env);
 
   if (env.options & OPT_ENC_GRAPH)
     del_set(env.id_set);
+
+  return max_depth - res;
 }
 
 /**
@@ -424,15 +441,22 @@ static void _decode_node(unsigned parent, int position, codec_env_t *env)
   unsigned op_code;
   unsigned mode_code = 0;
   long iconst;
-  int have_iconst = 0;
+  void *attr = NULL;
 
   code = next_tag(env->buf);
   if (code == VLC_TAG_REF) { /* it's a REF */
     code = get_code(env->buf);
 
     /* dump the edge */
-    if (parent)
-      pattern_dump_edge(env->dmp, code, parent, position);
+    if (parent) {
+      int edge_mode = 0;
+      /*
+       * the mode of a Firm edge can be either computed from its target or
+       * from its source and position. We must take the second approach because
+       * we dont know the target here, it's a ref.
+       */
+      pattern_dump_edge(env->dmp, code, parent, position, edge_mode);
+    }
 
     /* dump the node ref */
     pattern_dump_ref(env->dmp, code);
@@ -450,18 +474,27 @@ static void _decode_node(unsigned parent, int position, codec_env_t *env)
     }
   }
 
+  /* check, if a ICONST attribute is given */
   if (next_tag(env->buf) == VLC_TAG_ICONST) {
-    iconst      = get_code(env->buf);
-    have_iconst = 1;
+    iconst = get_code(env->buf);
+    attr   = &iconst;
   }
 
   /* dump the edge */
-  if (parent)
-      pattern_dump_edge(env->dmp, env->curr_id, parent, position);
+  if (parent) {
+    int edge_mode = 0;
+
+    /*
+     * the mode of a Firm edge can be either computed from its target or
+     * from its source and position. We take the second approach because
+     * we need it anyway for ref's.
+     */
+    pattern_dump_edge(env->dmp, env->curr_id, parent, position, edge_mode);
+  }
 
   /* dump the node */
   parent = env->curr_id;
-  pattern_dump_node(env->dmp, parent, op_code, mode_code, have_iconst ? &iconst : NULL);
+  pattern_dump_node(env->dmp, parent, op_code, mode_code, attr);
 
   /* ok, we have a new ID */
   ++env->curr_id;
@@ -551,14 +584,18 @@ static void calc_nodes_pattern(ir_node *node, void *ctx)
   pattern_env_t   *env = ctx;
   CODE_BUFFER     buf;
   pattern_entry_t *entry;
+  int             depth;
 
   init_buf(&buf, buffer, sizeof(buffer));
-  encode_node(node, &buf, env->max_depth);
+  depth = encode_node(node, &buf, env->max_depth);
 
-  entry = pattern_get_entry(&buf, status->pattern_hash);
+  /* ignore single node pattern (i.e. constants) */
+  if (depth > 1) {
+    entry = pattern_get_entry(&buf, status->pattern_hash);
 
-  /* increase count */
-  cnt_inc(&entry->count);
+    /* increase count */
+    cnt_inc(&entry->count);
+  }
 }
 
 /**
