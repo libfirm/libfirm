@@ -190,21 +190,48 @@ int is_type            (void *thing);
 /* create a new class type */
 type   *new_type_class (ident *name);
 
-/* manipulate private fields of class type  */
+/** manipulate private fields of class type  **/
+/* Adds the entity as member of the class.  */
 void    add_class_member   (type *clss, entity *member);
+/* Returns the number of members of this class. */
 int     get_class_n_member (type *clss);
+/* Returns the member at position pos, 0 <= pos < n_member */
 entity *get_class_member   (type *clss, int pos);
+/* Overwrites the member at position pos, 0 <= pos < n_member with
+   the passed entity. */
 void    set_class_member   (type *clss, entity *member, int pos);
+/* Finds member in the list of members and overwrites it with NULL */
+void    remove_class_member(type *clss, entity *member);
 
+
+/* Adds subtype as subtype to clss and also
+   clss as supertype to subtype */
 void    add_class_subtype   (type *clss, type *subtype);
+/* Returns the number of subtypes */
 int     get_class_n_subtype (type *clss);
+/* Gets the subtype at position pos, 0 <= pos < n_subtype. */
 type   *get_class_subtype   (type *clss, int pos);
+/* Sets the subtype at positioin pos, 0 <= pos < n_subtype.  Does not
+   set the corresponding supertype relation for subtype: this might
+   be a different position! */
 void    set_class_subtype   (type *clss, type *subtype, int pos);
+/* Finds subtype in the list of subtypes and overwrites it with NULL */
+void    remove_class_subtype(type *clss, type *subtype);
 
+
+/* Adds supertype as supertype to class and also
+   class as subtype to supertype. */
 void    add_class_supertype   (type *clss, type *supertype);
+/* Returns the number of supertypes */
 int     get_class_n_supertype (type *clss);
+/* Gets the supertype at position pos,  0 <= pos < n_supertype. */
 type   *get_class_supertype   (type *clss, int pos);
+/* Sets the supertype at postition pos, 0 <= pos < n_subtype.  Does not
+   set the corresponding subtype relation for supertype: this might
+   be a different position! */
 void    set_class_supertype   (type *clss, type *supertype, int pos);
+/* Finds supertype in the list of supertypes and overwrites it with NULL */
+void    remove_class_supertype(type *clss, type *supertype);
 
 /* typecheck */
 bool    is_class_type(type *clss);
@@ -235,6 +262,8 @@ void    add_struct_member   (type *strct, entity *member);
 int     get_struct_n_member (type *strct);
 entity *get_struct_member   (type *strct, int pos);
 void    set_struct_member   (type *strct, int pos, entity *member);
+/* Finds member in the list of memberss and overwrites it with NULL */
+void    remove_struct_member (type *strct, entity *member);
 
 /* typecheck */
 bool    is_struct_type(type *strct);
@@ -307,6 +336,7 @@ int     get_union_n_members      (type *uni);
 void    add_union_member (type *uni, entity *member);
 entity *get_union_member (type *uni, int pos);
 void    set_union_member (type *uni, int pos, entity *member);
+void    remove_union_member (type *uni, entity *member);
 
 /* typecheck */
 bool    is_union_type          (type *uni);

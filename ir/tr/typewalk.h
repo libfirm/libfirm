@@ -19,12 +19,15 @@
 # include "type_or_entity.h"
 
 
-/** dumps all type information reachable from global roots **/
+/** Walks over all type information reachable from global roots.
+    Touches every type and entity in unspecified order.  If new
+    types/entities are created during the traversal these will
+    be visited, too. **/
 void type_walk(void (pre)(type_or_ent*, void*),
 	       void (post)(type_or_ent*, void*),
 	       void *env);
 
-/** dumps all type information reachable from irg **/
+/** walks over all type information reachable from irg **/
 void type_walk_irg(ir_graph *irg,
 		   void (pre)(type_or_ent*, void*),
 		   void (post)(type_or_ent*, void*),

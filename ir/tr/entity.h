@@ -66,6 +66,24 @@ void init_entity (void);
 typedef struct ir_graph ir_graph;
 #endif
 
+/****s* entity/entity
+ *
+ * NAME
+ *   entity - An abstract data type to represent program entites.
+ * NOTE
+ *
+ *   ... not documented ...
+ *
+ * ATTRIBUTES
+ *
+ *
+ *  These fields can only be accessed via access functions.
+ *
+ * SEE ALSO
+ *   type
+ * SOURCE
+ */
+
 #ifndef _ENTITY_TYPEDEF_
 #define _ENTITY_TYPEDEF_
 /* to resolve recursion between entity.h and type.h */
@@ -84,7 +102,8 @@ entity     *copy_entity_own (entity *old, type *new_owner);
    Automatically inserts the new entity as a member of owner.
    The mangled name ld_name is set to NULL. */
 entity     *copy_entity_name (entity *old, ident *new_name);
-/* manipulate fields of entity */
+
+/** manipulate fields of entity **/
 const char *get_entity_name     (entity *ent);
 ident      *get_entity_ident    (entity *ent);
 /* returns the mangled name of the entity.  If the mangled name is
@@ -134,10 +153,23 @@ void           set_entity_visibility (entity *ent, ent_visibility vis);
 int       get_entity_offset (entity *ent);
 void      set_entity_offset (entity *ent, int offset);
 
+/* Overwrites is a field that specifies that an access to the overwritten
+   entity in the supertype must use this entity.  It's a list as with
+   multiple inheritance several enitites can be overwritten.  This field
+   is mostly useful for method entities. */
+void    add_entity_overwrites   (entity *ent, entity *overwritten);
+int     get_entity_n_overwrites (entity *ent);
+entity *get_entity_overwrites   (entity *ent, int pos);
+void    set_entity_overwrites   (entity *ent, int pos, entity *overwritten);
+/* Do we need a second relation "overwritten"? */
+
 /* The entity knows the corresponding irg if the entity is a method.
    This allows to get from a Call to the called irg. */
 ir_graph *get_entity_irg(entity *ent);
 void      set_entity_irg(entity *ent, ir_graph *irg);
 
+
+
+/*****/
 
 # endif /* _ENTITY_H_ */
