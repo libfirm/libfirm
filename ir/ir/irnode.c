@@ -223,8 +223,8 @@ ir_node *
 
 void
 set_irn_n (ir_node *node, int n, ir_node *in) {
-  assert(node && -1 <= n && n < get_irn_arity(node));
-	assert(in && in->kind == k_ir_node);
+  assert(node && node->kind == k_ir_node && -1 <= n && n < get_irn_arity(node));
+  assert(in && in->kind == k_ir_node);
   if ((n == -1) && (get_irn_opcode(node) == iro_Filter)) {
     /* Change block pred in both views! */
     node->in[n + 1] = in;
@@ -1136,7 +1136,9 @@ set_Call_type (ir_node *node, type *tp) {
 }
 
 int Call_has_callees(ir_node *node) {
-  return (node->attr.call.callee_arr != NULL);
+
+  return ((get_irg_callee_info_state(get_irn_irg(node)) != irg_callee_info_none) &&
+	  (node->attr.call.callee_arr != NULL));
 }
 
 int get_Call_n_callees(ir_node * node) {
@@ -1241,7 +1243,8 @@ set_FuncCall_type (ir_node *node, type *tp) {
 }
 
 int FuncCall_has_callees(ir_node *node) {
-  return (node->attr.call.callee_arr != NULL);
+  return ((get_irg_callee_info_state(get_irn_irg(node)) != irg_callee_info_none) &&
+	  (node->attr.call.callee_arr != NULL));
 }
 
 int get_FuncCall_n_callees(ir_node * node) {
