@@ -44,7 +44,7 @@ typedef enum {
 # include "irmode.h"
 # include "type.h"
 # include "dbginfo.h"
-# include "exc.h"
+//# include "exc.h"
 
 /**
  * @file irnode.h
