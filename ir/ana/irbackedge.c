@@ -105,7 +105,7 @@ INLINE void fix_backedges(struct obstack *obst, ir_node *n) {
   }*/
 }
 
-/** Returns true if the predesessor pos is a backedge. */
+/** Returns true if the predecessor pos is a backedge. */
 bool is_backedge (ir_node *n, int pos) {
   int *ba = get_backarray (n);
   if (ba) return ba[pos];
