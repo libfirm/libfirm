@@ -36,7 +36,8 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
   type *type  = get_entity_type(ent);
 
   if (verbosity & dump_verbosity_onlynames) {
-    fprintf(F, "%sentity %s (%ld)\n", prefix, get_entity_name(ent), get_entity_nr(ent));
+    fprintf(F, "%sentity %s.%s (%ld)\n", prefix, get_type_name(get_entity_owner(ent)),
+	    get_entity_name(ent), get_entity_nr(ent));
     return;
   }
 
@@ -260,6 +261,20 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
       fprintf(F, ": details not implemented\n");
     }
   }
+
+  if (verbosity & dump_verbosity_accessStats) {
+    int n_all = get_type_n_allocations(tp);
+    fprintf(F, "  Access Stats");
+    char comma = ':';
+    for (i = 0; i < n_all; ++i) {
+      ir_node *all = get_type_allocation(tp, i);
+      fprintf(F, "%c A", comma);
+      fprintf(F, " %d", get_weighted_loop_depth(all));
+      comma = ',';
+    }
+    fprintf(F, "\n");
+  }
+
   fprintf(F, "\n\n");
 }
 

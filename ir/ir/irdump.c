@@ -292,7 +292,7 @@ static int node_floats(ir_node *n) {
       (get_irg_pinned(current_ir_graph) == op_pin_state_floats));
 }
 
-static const char *get_ent_dump_name(entity *ent) {
+const char *get_ent_dump_name(entity *ent) {
   if (! ent)
     return "<NULL entity>";
   /* Don't use get_entity_ld_ident (ent) as it computes the mangled name! */
@@ -300,7 +300,7 @@ static const char *get_ent_dump_name(entity *ent) {
   return get_id_str(ent->name);
 }
 
-static const char *get_irg_dump_name(ir_graph *irg) {
+const char *get_irg_dump_name(ir_graph *irg) {
   /* Don't use get_entity_ld_ident (ent) as it computes the mangled name! */
   entity *ent = get_irg_entity(irg);
   return get_ent_dump_name(ent);
@@ -715,6 +715,16 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
     fprintf(F, "start of method of type %s \n", get_type_name_ex(tp, &bad));
     for (i = 0; i < get_method_n_params(tp); ++i)
       fprintf(F, "  param %d type: %s \n", i, get_type_name_ex(get_method_param_type(tp, i), &bad));
+    if ((get_irp_ip_view_state() == ip_view_valid) && !interprocedural_view) {
+      ir_node *sbl = get_nodes_block(n);
+      int i, n_cfgpreds = get_Block_cg_n_cfgpreds(sbl);
+      fprintf(F, "graph has %d interprocedural predecessors:\n", n_cfgpreds);
+      for (i = 0; i < n_cfgpreds; ++i) {
+	ir_node *cfgpred = get_Block_cg_cfgpred(sbl, i);
+	fprintf(F, "  %d: Call %ld in graph %s\n", i, get_irn_node_nr(cfgpred),
+		get_irg_dump_name(get_irn_irg(cfgpred)));
+      }
+    }
   } break;
   case iro_Alloc: {
     fprintf(F, "allocating entity of type %s \n", get_type_name_ex(get_Alloc_type(n), &bad));
@@ -741,7 +751,7 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
       fprintf(F, "  param %d type: %s \n", i, get_type_name_ex(get_method_param_type(tp, i), &bad));
     for (i = 0; i < get_method_n_ress(tp); ++i)
       fprintf(F, "  resul %d type: %s \n", i, get_type_name_ex(get_method_res_type(tp, i), &bad));
-    if (0 && Call_has_callees(n)) {
+    if (Call_has_callees(n)) {
       fprintf(F, "possible callees: \n");
       for (i = 0; i < get_Call_n_callees(n); i++) {
 	if (!get_Call_callee(n, i)) {
@@ -785,6 +795,7 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
       break;
     case symconst_addr_ent:
       fprintf(F, "kind addr_ent\n");
+      dump_entity_to_file(F, get_SymConst_entity(n), dump_verbosity_onlynames);
       break;
     case symconst_type_tag:
       fprintf(F, "kind type_tag\n");
@@ -1907,7 +1918,9 @@ dump_ir_block_graph (ir_graph *irg, const char *suffix)
   int i;
   char *suffix1;
 
-  if(strncmp(get_entity_name(get_irg_entity(irg)),dump_file_filter,strlen(dump_file_filter))!=0) return;
+  if (strncmp(get_entity_name(get_irg_entity(irg)), dump_file_filter, strlen(dump_file_filter)) != 0)
+    return;
+
   if (interprocedural_view) suffix1 = "-ip";
   else                      suffix1 = "";
   f = vcg_open(irg, suffix, suffix1);
@@ -2274,15 +2287,15 @@ dump_class_hierarchy (bool entities, const char *suffix)
 /***********************************************************************/
 
 void dump_all_ir_graphs(dump_graph_func *dmp_grph, const char *suffix) {
-  int i;
-  for (i=0; i < get_irp_n_irgs(); i++) {
+  int i, n_irgs = get_irp_n_irgs();
+  for (i = 0; i < n_irgs; ++i) {
     dmp_grph(get_irp_irg(i), suffix);
   }
 }
 
 
 /**********************************************************************************
- * Dumps a stand alone loop graph with firm nodes which belong to one loop nodes  *
+ * Dumps a stand alone loop graph with firm nodes which belong to one loop node   *
  * packed together in one subgraph/box                                            *
  **********************************************************************************/
 
@@ -2315,7 +2328,7 @@ void dump_loops_standalone(FILE *F, ir_loop *loop) {
       dump_loop_son_edge(F, loop, son_number++);
       dump_loops_standalone(F, son);
     } else if (get_kind(son) == k_ir_node) {
-        /* We are a loop node -> Collect firm nodes */
+      /* We are a loop node -> Collect firm nodes */
 
       ir_node *n = le.node;
       int bad = 0;

@@ -1941,7 +1941,7 @@ ir_node *new_r_Raise  (ir_graph *irg, ir_node *block,
  * @param *con   Points to an entry in the constant table.
  */
 ir_node *new_r_Const  (ir_graph *irg, ir_node *block,
-               ir_mode *mode, tarval *con);
+		       ir_mode *mode, tarval *con);
 
 /** Constructor for a SymConst node.
  *
