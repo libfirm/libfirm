@@ -159,6 +159,7 @@ tarval *tarval_mul (tarval *, tarval *);
 tarval *tarval_quo (tarval *, tarval *);
 tarval *tarval_div (tarval *, tarval *);
 tarval *tarval_mod (tarval *, tarval *);
+tarval *tarval_abs (tarval *);
 tarval *tarval_and (tarval *, tarval *);
 tarval *tarval_or  (tarval *, tarval *);
 tarval *tarval_eor (tarval *, tarval *);

@@ -914,6 +914,7 @@ tarval_convert_to (tarval *src, ir_mode *m)
 }
 
 
+/* GL Why are there no ArmRoq comments, why is this not used? */
 tarval *
 tarval_neg (tarval *a)
 {
@@ -1114,7 +1115,6 @@ tarval_sub (tarval *a, tarval *b)
   return tarval_identify (tv);
 }
 
-
 /* Return `a*b' if computable, else NULL.  Modes must be equal.  */
 tarval *
 tarval_mul (tarval *a, tarval *b)
@@ -1293,6 +1293,39 @@ tarval_mod (tarval *a, tarval *b)
   return tarval_identify (tv);
 }
 
+/* Return |a| if computable, else Null. */
+/*  is -max == min?? */
+tarval *
+tarval_abs (tarval *a) {
+  TARVAL_VRFY (a);
+  if (tv_is_negative(a)) return tarval_neg(a);
+  return a;
+}
+
+int
+tv_is_negative(tarval *a) {
+  TARVAL_VRFY (a);
+  switch (get_mode_modecode(a->mode)) {
+    /* floating */
+  case irm_f: return (a->u.f<0); break;
+  case irm_d: return (a->u.d<0); break;
+    /* unsigned */
+  case irm_C: case irm_H: case irm_I: case irm_L:
+    return 0;
+    break;
+    /* signed */
+  case irm_c: case irm_h: case irm_i: case irm_l:
+    return (a->u.chil < 0);
+    break;
+  case irm_Z:
+    break;
+  case irm_b: break;
+  default: assert(0);
+  }
+
+  return 0;
+}
+
 
 /* Return `a&b'.  Modes must be equal.  */
 tarval *
@@ -1452,7 +1485,9 @@ tarval_shl (tarval *a, tarval *b)
 }
 
 
-/* Return `a>>b' if computable, else NULL.  */
+/* Return `a>>b' if computable, else NULL.
+   The interpretation of >> (sign extended or not) is implementaion
+   dependent, i.e. this is neither shr nor shrs!! */
 tarval *
 tarval_shr (tarval *a, tarval *b)
 {
