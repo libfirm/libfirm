@@ -384,7 +384,7 @@ get_irn_node_nr(const ir_node *node) {
 #ifdef DEBUG_libfirm
   return node->node_nr;
 #else
-  return 0;
+  return (long)&node;
 #endif
 }
 

@@ -63,7 +63,7 @@
 #define TYPE_CLASS_NODE_ATTR "color: green"
 #define TYPE_DESCRIPTION_NODE_ATTR "color: lightgreen"
 #define ENTITY_NODE_ATTR     "color: yellow"
-#define ENT_TYPE_EDGE_ATTR   "class: 3 label: \"type\" color: red"
+#define ENT_TYPE_EDGE_ATTR   "class: 3 label \"type\" color: red"
 #define ENT_OWN_EDGE_ATTR    "class: 4 label: \"owner\" color: black"
 #define METH_PAR_EDGE_ATTR   "class: 5 label: \"param %d\" color: green"
 #define METH_RES_EDGE_ATTR   "class: 6 label: \"res %d\" color: green"
@@ -352,10 +352,12 @@ static bool pred_in_wrong_graph(ir_node *n, int pos, pmap *irgmap) {
 static INLINE
 bool is_constlike_node(ir_node *n) {
   ir_op *op = get_irn_op(n);
-  return (op == op_Const || op == op_Bad || op == op_SymConst);
+  return (op == op_Const || op == op_Bad || op == op_SymConst || op == op_Unknown);
 }
 
 
+/* outputs the predecessors of n, that are constants, local.  I.e.,
+   generates a copy of the constant for each node called with. */
 static void dump_const_node_local(ir_node *n, pmap *irgmap) {
   int i;
   if (!get_opt_dump_const_local()) return;
@@ -517,7 +519,7 @@ static void print_edge_vcgattr(ir_node *from, int to) {
 
 /* dump edges to our inputs */
 static void
-dump_ir_data_edges(ir_node *n)  {
+dump_ir_data_edges(ir_node *n, pmap *irgmap)  {
   int i, visited = get_irn_visited(n);
 
   if ((get_irn_op(n) == op_End) && (!dump_keepalive))
@@ -534,9 +536,10 @@ dump_ir_data_edges(ir_node *n)  {
       fprintf (F, "edge: {sourcename: \"");
     PRINT_NODEID(n);
     fprintf (F, "\" targetname: ");
-    if ((get_opt_dump_const_local()) && is_constlike_node(pred))
+    if ((get_opt_dump_const_local()) && is_constlike_node(pred) &&
+	!pred_in_wrong_graph(n, i, irgmap))
     {
-      PRINT_CONSTID(n,pred);
+      PRINT_CONSTID(n, pred);
     }
     else
       {fprintf(F, "\""); PRINT_NODEID(pred); fprintf(F, "\"");
@@ -1074,7 +1077,7 @@ static void
 dump_whole_node (ir_node *n, void* env) {
   dump_node(n, NULL);
   if (!node_floats(n)) dump_ir_block_edge(n);
-  dump_ir_data_edges(n);
+  dump_ir_data_edges(n, NULL);
 }
 
 void
@@ -1110,7 +1113,7 @@ dump_ir_blocks_nodes (ir_node *n, void *env) {
 
   if (is_no_Block(n) && get_nodes_Block(n) == block && !node_floats(n)) {
     dump_node(n, NULL);
-    dump_ir_data_edges(n);
+    dump_ir_data_edges(n, NULL);
   }
   if (get_irn_op(n) == op_Bad)
     Bad_dumped = 1;
@@ -1137,7 +1140,7 @@ dump_ir_block (ir_node *block, void *env) {
     fprintf(F, "\" status:clustered color:%s \n",
 	     get_Block_matured (block) ? "yellow" : "red");
     /* dump the blocks edges */
-    dump_ir_data_edges(block);
+    dump_ir_data_edges(block, NULL);
 
     /* dump the nodes that go into the block */
     irg_walk(get_irg_end(irg), dump_ir_blocks_nodes, NULL, block);
@@ -1153,14 +1156,14 @@ static void
 dump_blockless_nodes (ir_node *n, void *env) {
   if (is_no_Block(n) && get_irn_op(get_nodes_Block(n)) == op_Bad) {
     dump_node(n, NULL);
-    dump_ir_data_edges(n);
+    dump_ir_data_edges(n, NULL);
     dump_ir_block_edge(n);
     if (get_irn_op(n) == op_Bad) Bad_dumped = 1;
     return;
   }
   if (node_floats(n)) {
     dump_node(n, NULL);
-    dump_ir_data_edges(n);
+    dump_ir_data_edges(n, NULL);
     if (get_irn_op(n) == op_Bad) Bad_dumped = 1;
   }
 }
@@ -1426,6 +1429,7 @@ static void clear_link(ir_node * node, void * env) {
   set_irn_link(node, NULL);
 }
 
+
 static void collect_blocks_floats_cg(ir_node * node, pmap * map) {
   assert(node); assert(map);
   if (is_Block(node)
@@ -1458,15 +1462,13 @@ static void dump_cg_ir_block(ir_node * block, void * env) {
   ir_node *node;
   pmap *irgmap = (pmap *)env;
   assert(is_Block(block));
+
   fprintf(F, "graph: { title: \"");
   PRINT_NODEID(block);
   fprintf(F, "\"  label: \"");
-  fprintf (F, "%s ", get_op_name(get_irn_op(block)));
-#ifdef DEBUG_libfirm
-  fprintf (F, "%ld", get_irn_node_nr(block));
-#else
-  fprintf (F, "%p", (void*) block);
-#endif
+  dump_node_opcode(block);
+  fprintf (F, " %ld", get_irn_node_nr(block));
+
   if (exc_normal != get_Block_exc(block)) {
     fprintf (F, " (%s)", exc_to_string (get_Block_exc(block)));
   }
@@ -1475,34 +1477,36 @@ static void dump_cg_ir_block(ir_node * block, void * env) {
 	   get_Block_matured(block) ? "yellow" : "red");
 
   /* dump the blocks edges */
-  dump_ir_data_edges(block);
+  dump_ir_data_edges(block, irgmap);
 
   /* dump the nodes that go into the block */
   for (node = get_irn_link(block); node; node = get_irn_link(node)) {
     dump_node(node, irgmap);
-    dump_ir_data_edges(node);
+    dump_ir_data_edges(node, irgmap);
   }
 
   /* Close the vcg information for the block */
-  fprintf(F, "}\n\n");
+  fprintf(F, "}\n");
+  dump_const_node_local(block, irgmap);
+  fprintf(F, "\n");
 }
 
 static void d_cg_block_graph(ir_graph *irg, ir_node **arr, pmap *irgmap) {
   int i;
 
-  fprintf(F, "graph: { title: %p label: %s status:clustered color:white \n",
+  fprintf(F, "graph: { title: \"%p\" label: \"%s\" status:clustered color:white \n",
 	   (void*) irg, get_entity_name(get_irg_ent(irg)));
 
   for (i = ARR_LEN(arr) - 1; i >= 0; --i) {
     ir_node * node = arr[i];
     if (is_Block(node)) {
-      /* Dumps the block and all the nodes in the block , which are to
+      /* Dumps the block and all the nodes in the block, which are to
 	 be found in Block->link. */
       dump_cg_ir_block(node, irgmap);
     } else {
       /* Nodes that are not in a Block. */
       dump_node(node, NULL);
-      dump_ir_data_edges(node);
+      dump_ir_data_edges(node, NULL);
     }
   }
   /* Close the vcg information for the irg */
@@ -1604,12 +1608,12 @@ void dump_cg_graph(ir_graph * irg) {
     for (i = ARR_LEN(arr) - 1; i >= 0; --i) {
       ir_node * node = arr[i];
       dump_node(node, map2);
-      dump_ir_data_edges(node);
+      dump_ir_data_edges(node, NULL);
       if (is_Block(node)) {
 	for (node = get_irn_link(node); node; node = get_irn_link(node)) {
 	  dump_node(node, map2);
 	  dump_ir_block_edge(node);
-	  dump_ir_data_edges(node);
+	  dump_ir_data_edges(node, NULL);
 	}
       }
     }

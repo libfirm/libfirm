@@ -529,6 +529,8 @@ copy_node_inline (ir_node *n, void *env) {
   }
 }
 
+#include "irdump.h"
+
 void inline_method(ir_node *call, ir_graph *called_graph) {
   ir_node *pre_call;
   ir_node *post_call, *post_bl;
@@ -775,8 +777,10 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
       cf_op = get_Block_cfgpred(end_bl, i);
       if (get_irn_op(cf_op) == op_Proj) {
 	cf_op = get_Proj_pred(cf_op);
-	if (get_irn_op(cf_op) == op_Tuple) {
-	  cf_op = get_Tuple_pred(cf_op, 1);
+	if ((get_irn_op(cf_op) == op_Tuple) && (cf_op == call)) {
+	    // There are unoptimized tuples from inlineing before when no exc
+	  assert(get_Proj_proj(get_Block_cfgpred(end_bl, i)) == pn_Call_X_except);
+	  cf_op = get_Tuple_pred(cf_op, pn_Call_X_except);
 	  assert(get_irn_op(cf_op) == op_Jmp);
 	  break;
 	}
@@ -1182,7 +1186,9 @@ static void merge_blocks(ir_node *n, void *env) {
     while (irn_not_visited(b) && (!is_Bad(new)) && (new != b)) {
       /* We would have to run gigo if new is bad, so we
 	 promote it directly below. */
-      assert(((b == new) || get_opt_control_flow_straightening() || get_opt_control_flow_weak_simplification()) &&
+      assert(((b == new) ||
+	      get_opt_control_flow_straightening() ||
+	      get_opt_control_flow_weak_simplification()) &&
 	     ("strange flag setting"));
       exchange (b, new);
       b = new;
@@ -1491,10 +1497,14 @@ static void walk_critical_cf_edges(ir_node *n, void *env) {
       (get_irn_arity(n) > 1)) {
     arity = get_irn_arity(n);
 
+    if (n == get_irg_end_block(current_ir_graph))
+      return;  // No use to add a block here.
+
     for (i=0; i<arity; i++) {
       pre = get_irn_n(n, i);
       /* Predecessor has multiple sucessors. Insert new flow edge */
-      if ((NULL != pre) && (op_Proj == get_irn_op(pre)) &&
+      if ((NULL != pre) &&
+	  (op_Proj == get_irn_op(pre)) &&
 	  op_Raise != get_irn_op(skip_Proj(pre))) {
 
 	/* set predecessor array for new block */

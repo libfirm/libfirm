@@ -150,7 +150,8 @@ INLINE void          set_irn_link          (ir_node *node, void *link);
 INLINE void         *get_irn_link          (const ir_node *node);
 
 /** Outputs a unique number for this node if libfirm is compiled for
-   debugging, (configure with --enable-debug) else returns 0. */
+   debugging, (configure with --enable-debug) else returns address
+   of node cast to long. */
 INLINE long          get_irn_node_nr(const ir_node *node);
 
 /** Returns the ir_graph this node belongs to. Only valid for

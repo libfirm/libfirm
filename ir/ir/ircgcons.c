@@ -498,6 +498,32 @@ static ir_node * get_except(ir_node * call) {
   return NULL;
 }
 
+/* Returns true if control flow operation exc is predecessor of end
+   block in irg.  Works also for Return nodes, not only exceptions. */
+static bool exc_branches_to_end(ir_graph *irg, ir_node *exc) {
+  int i;
+  ir_node *end = get_irg_end_block(irg);
+  for (i = get_Block_n_cfgpreds(end) -1; i >= 0; --i)
+    if (get_Block_cfgpred(end, i) == exc) return true;
+  return false;
+}
+
+/* Returns true if only caller of irg is "Unknown". */
+static bool is_outermost_graph(ir_graph *irg) {
+  irg_data_t * data = get_entity_link(get_irg_ent(irg));
+  if (data->count) {
+    return false;
+  } else if (data->open) {
+    /* Die Methode wird nur von "der" unbekannten Aufrufstelle
+     * aufgerufen. Darstellung wird für diese Methode nicht
+     * geändert. */
+  } else {
+    /* Methode kann nicht aufgerufen werden. Die Darstellung wird
+     * für diese Methode nicht geändert. Das kann nicht vorkommen,
+     * wenn zuvor "gc_irgs()" aufgerufen wurde. */
+  }
+  return true;
+}
 
 /* Grundblock der Call-Operation aufteilen. CallBegin- und Filter-Operationen
  * einfügen. Die Steuer- und Datenflussabhängigkeiten von den aufgerufenen
@@ -568,12 +594,31 @@ static void construct_call(ir_node * call) {
   /* Die interprozeduralen Steuerflussvorgänger des except_block
    * bestimmen. */
   if ((proj = get_except(call)) != NULL) {
-    except_block = create_Block(1, &proj);
-    set_nodes_Block(proj, except_block);
-    exchange(proj, new_Break());
-    set_irg_current_block(current_ir_graph, pre_block);
-    set_irn_n(except_block, 0, new_Proj(call, mode_X, 1));
-    set_irg_current_block(current_ir_graph, post_block);
+    int preds = 0;
+    bool exc_to_end = false;
+#if 1
+    if (exc_branches_to_end(current_ir_graph, proj)) {
+      /* The Call aborts the procedure if it returns with an exception.
+	 If this is an outermost procedure, the normal handling of exceptions
+	 will generate a Break that goes to the end block.  This is illegal
+	 Frim. So directly branch to the end block with all exceptions. */
+      exc_to_end = true;
+      if (is_outermost_graph(current_ir_graph)) {
+	except_block = get_irg_end_block(current_ir_graph);
+      } else {
+	irg_data_t * data = get_entity_link(get_irg_ent(current_ir_graph));
+	except_block = get_nodes_block(data->except);
+      }
+    } else
+#endif
+      {
+      except_block = create_Block(1, &proj);
+      set_nodes_Block(proj, except_block);
+      exchange(proj, new_Break());
+      set_irg_current_block(current_ir_graph, pre_block);
+      set_irn_n(except_block, 0, new_Proj(call, mode_X, 1));
+      set_irg_current_block(current_ir_graph, post_block);
+    }
 
     /*
      * Set flag to suppress verifying placement on proper irg:
@@ -594,9 +639,24 @@ static void construct_call(ir_node * call) {
 	in[i] = new_Unknown();
       }
     }
-    set_Block_cg_cfgpred_arr(except_block, n_callees, in);
-  }
 
+    preds = n_callees;
+    if (exc_to_end) {
+      /* append all existing preds of the end block to new in array.
+       * Normal access routine guarantees that with first visit we
+       * get the normal preds, and from then on the _cg_ preds.
+       * (interporcedural view is set!)
+       * Do not add the exc pred of end we are replacing! */
+      for (i = get_Block_n_cfgpreds(except_block)-1; i >= 0; --i) {
+	ir_node *pred = get_Block_cfgpred(except_block, i);
+	if (pred != proj) {
+	  ARR_APP1(ir_node *, in, pred);
+	  preds++;
+	}
+      }
+    }
+    set_Block_cg_cfgpred_arr(except_block, preds, in);
+  }
   set_interprocedural_view(0);
 
   /* Diesen Vorgänger in den Start-Blöcken der aufgerufenen Methoden
