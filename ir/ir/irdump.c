@@ -54,6 +54,7 @@
 /* file to dump to */
 static FILE *F;
 
+int edge_label = 1;
 
 /*******************************************************************/
 /* routines to dump information about a single node                */
@@ -574,6 +575,7 @@ void vcg_open (ir_graph *irg, char *suffix) {
   const char *cp;
   ident *id;
   int len;
+  char label[4];
 
   /** open file for vcg graph */
   id    = get_entity_ld_name (get_irg_ent(irg));
@@ -598,16 +600,22 @@ void vcg_open (ir_graph *irg, char *suffix) {
     panic ("cannot open %s for writing (%m)", fname);  /* not reached */
   }
 
+  if (edge_label) {
+    strcpy(label, "yes");
+  } else {
+    strcpy (label, "no");
+  }
+
   /* print header */
   xfprintf (F,
 	    "graph: { title: \"ir graph of %s\"\n"
-	    "display_edge_labels: yes\n"
+	    "display_edge_labels: %s\n"
 	    "layoutalgorithm: mindepth\n"
 	    "manhattan_edges: yes\n"
 	    "port_sharing: no\n"
 	    "orientation: bottom_to_top\n"
 	    "classname 1: \"Data\"\n"
-	    "classname 2: \"Block\"\n", cp);
+	    "classname 2: \"Block\"\n", cp, label);
 
   xfprintf (F, "\n");		/* a separator */
 }
@@ -615,6 +623,7 @@ void vcg_open (ir_graph *irg, char *suffix) {
 void vcg_open_name (const char *name) {
   char *fname;  /* filename to put the vcg information in */
   int len;
+  char label[4];
 
   /** open file for vcg graph */
   len   = strlen(name);
@@ -626,16 +635,22 @@ void vcg_open_name (const char *name) {
     panic ("cannot open %s for writing (%m)", fname);  /* not reached */
   }
 
+  if (edge_label) {
+    strcpy(label, "yes");
+  } else {
+    strcpy (label, "no");
+  }
+
   /* print header */
   xfprintf (F,
 	    "graph: { title: \"ir graph of %s\"\n"
-	    "display_edge_labels: yes\n"
+	    "display_edge_labels: %s\n"
 	    "layoutalgorithm: mindepth\n"
 	    "manhattan_edges: yes\n"
 	    "port_sharing: no\n"
 	    "orientation: bottom_to_top\n"
 	    "classname 1: \"Data\"\n"
-	    "classname 2: \"Block\"\n", name);
+	    "classname 2: \"Block\"\n", name, label);
 
   xfprintf (F, "\n");		/* a separator */
 }
@@ -839,4 +854,11 @@ void dump_all_ir_graphs (void dump_graph(ir_graph*)) {
   for (i=0; i < get_irp_n_irgs(); i++) {
     dump_graph(get_irp_irg(i));
   }
+}
+
+
+/* To turn off display of edge labels.  Edge labels offen cause xvcg to
+   abort with a segmentation fault. */
+void turn_of_edge_labels() {
+  edge_label = 0;
 }

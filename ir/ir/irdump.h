@@ -45,4 +45,9 @@ void dump_ir_graph_w_types (ir_graph *irg);
  * dump_ir_graph_w_types                                            */
 void dump_all_ir_graphs (void dump_graph(ir_graph*));
 
+/* To turn off display of edge labels.  Edge labels offen cause xvcg to
+   abort with a segmentation fault. */
+void turn_of_edge_labels();
+
+
 # endif /* _IRDUMP_H_ */
