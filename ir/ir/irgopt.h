@@ -23,6 +23,11 @@
 
 # include "irgraph.h"
 
+/** Applies local optimizations (see iropt.h) to all nodes reachable from node n.
+ *
+ * @param n The node to be optimized. */
+void local_optimize_node(ir_node *n);
+
 /** Applies local optimizations (see iropt.h) to all nodes in the graph.
  *
  * @param irg  The graph to be optimized. */

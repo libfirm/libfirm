@@ -86,14 +86,9 @@ optimize_in_place_wrapper (ir_node *n, void *env) {
 #endif
 
 
-
-void
-local_optimize_graph (ir_graph *irg) {
-  ir_graph *rem = current_ir_graph;
-  current_ir_graph = irg;
-
+static INLINE void do_local_optimize(ir_node *n) {
   /* Handle graph state */
-  assert(get_irg_phase_state(irg) != phase_building);
+  assert(get_irg_phase_state(current_ir_graph) != phase_building);
   if (get_opt_global_cse())
     set_irg_pinned(current_ir_graph, floats);
   if (get_irg_outs_state(current_ir_graph) == outs_consistent)
@@ -104,14 +99,33 @@ local_optimize_graph (ir_graph *irg) {
 
 
   /* Clean the value_table in irg for the cse. */
-  del_identities(irg->value_table);
-  irg->value_table = new_identities();
+  del_identities(current_ir_graph->value_table);
+  current_ir_graph->value_table = new_identities();
 
   /* walk over the graph */
-  irg_walk(irg->end, init_link, optimize_in_place_wrapper, NULL);
+  irg_walk(n, init_link, optimize_in_place_wrapper, NULL);
+}
+
+void local_optimize_node(ir_node *n) {
+  ir_graph *rem = current_ir_graph;
+  current_ir_graph = get_irn_irg(n);
+
+  do_local_optimize(n);
+
+  current_ir_graph = rem;
+
+}
+
+void
+local_optimize_graph (ir_graph *irg) {
+  ir_graph *rem = current_ir_graph;
+  current_ir_graph = irg;
+
+  do_local_optimize(irg->end);
 
   current_ir_graph = rem;
 }
+
 
 /*------------------------------------------------------------------*/
 /* Routines for dead node elimination / copying garbage collection  */
@@ -647,7 +661,6 @@ static int can_inline(ir_node *call, ir_graph *called_graph)
 {
   type *call_type = get_Call_type(call);
   int params, ress, i, res;
-
   assert(is_method_type(call_type));
 
   params = get_method_n_params(call_type);
@@ -2049,11 +2062,11 @@ void optimize_cf(ir_graph *irg) {
     ir_node *ka = get_End_keepalive(end, i);
     if (irn_not_visited(ka)) {
       if ((get_irn_op(ka) == op_Block) && Block_not_block_visited(ka)) {
-        set_irg_block_visited(current_ir_graph,  /* Don't walk all the way to Start. */
-         get_irg_block_visited(current_ir_graph)-1);
-        irg_block_walk(ka, optimize_blocks, NULL, NULL);
-        mark_irn_visited(ka);
-        ARR_APP1 (ir_node *, in, ka);
+	set_irg_block_visited(current_ir_graph,  /* Don't walk all the way to Start. */
+			      get_irg_block_visited(current_ir_graph)-1);
+	irg_block_walk(ka, optimize_blocks, NULL, NULL);
+	mark_irn_visited(ka);
+	ARR_APP1 (ir_node *, in, ka);
       } else if (get_irn_op(ka) == op_Phi) {
         mark_irn_visited(ka);
         ARR_APP1 (ir_node *, in, ka);
