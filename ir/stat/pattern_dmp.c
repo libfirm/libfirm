@@ -20,13 +20,13 @@
 #include "irmode.h"
 #include "pattern_dmp.h"
 
+FILE *f;
+
 /**
  * starts a new VCG graph
  */
 static void vcg_dump_start(pattern_dumper_t *self)
 {
-  FILE *f;
-
   f = fopen("firmpattern.vcg", "w");
 
   fprintf(f,
@@ -48,6 +48,26 @@ static void vcg_dump_end(pattern_dumper_t *self)
   fclose(f);
 }
 
+/*
+ * starts a new pattern
+ */
+static void vcg_dump_new_pattern(pattern_dumper_t *self, counter_t *cnt)
+{
+  fprintf(f,
+    "  graph: { title: \"pattern cnt %u\"\n", cnt->cnt[0]
+  );
+
+}
+
+/**
+ * Finishes current pattern
+ */
+static void vcg_dump_finish_pattern(pattern_dumper_t *self)
+{
+  fprintf(f, "  }\n");
+}
+
+
 static void vcg_dump_node(pattern_dumper_t *self, unsigned id,
     unsigned op_code, unsigned mode_code)
 {
@@ -60,19 +80,38 @@ static void vcg_dump_node(pattern_dumper_t *self, unsigned id,
 
 static void vcg_dump_edge(pattern_dumper_t *self, unsigned id, unsigned parent, unsigned position)
 {
-  fprintf(f, "    edge: { sourcename: \"n%u\" targetname: \"n78\"}\n", parent, id);
+  fprintf(f, "    edge: { sourcename: \"n%u\" targetname: \"n%u\"}\n", parent, id);
 }
 
 /**
  * The VCG dumper.
  */
 pattern_dumper_t vcg_dump = {
+  vcg_dump_new_pattern,
+  vcg_dump_finish_pattern,
   vcg_dump_node,
   NULL,
   vcg_dump_edge,
   NULL,
   NULL,
 };
+
+/**
+ * starts a new pattern
+ */
+static void stdout_dump_new_pattern(pattern_dumper_t *self, counter_t *cnt)
+{
+  printf("%8u ", cnt->cnt[0]);
+}
+
+
+/*
+ * Finishes current pattern
+ */
+static void stdout_dump_finish_pattern(pattern_dumper_t *self)
+{
+  printf("\n");
+}
 
 /**
  * Dumps a node
@@ -128,6 +167,8 @@ static void stdout_finish_children(pattern_dumper_t *self, unsigned id)
  * The stdout dumper.
  */
 pattern_dumper_t stdout_dump = {
+  stdout_dump_new_pattern,
+  stdout_dump_finish_pattern,
   stdout_dump_node,
   stdout_dump_ref,
   stdout_dump_edge,
@@ -136,6 +177,26 @@ pattern_dumper_t stdout_dump = {
 };
 
 /* ------------------------------------ API ------------------------------------- */
+
+/*
+ * starts a new pattern
+ */
+void pattern_dump_new_pattern(pattern_dumper_t *self, counter_t *cnt)
+{
+  if (self->dump_new_pattern)
+    self->dump_new_pattern(self, cnt);
+}
+
+
+/*
+ * Finishes current pattern
+ */
+void pattern_dump_finish_pattern(pattern_dumper_t *self)
+{
+  if (self->dump_finish_pattern)
+    self->dump_finish_pattern(self);
+}
+
 
 /*
  * Dumps a node
