@@ -1,6 +1,7 @@
   14.3.2001 Boris
-  make dist should create an archive which has the directory libfirm/
-  as top-level
+  - make dist should create an archive which has the directory libfirm/
+    as top-level
+  - Datei 'Copyright' oder 'Copying' mit entsprechendem Copyrightverweis
 
 *********** old stuff ***********
 

@@ -84,8 +84,16 @@ $(LIBDIR):	$(LIBDIR)
 $(INCLUDEDIR):	$(INCLUDEDIR)
 	mkdir -p $@
 
+# generated the directory where all the generated documentation is
 $(AUTODOCDIR):
 	mkdir $@
+
+# print some help
+.PHONY:	help
+help:
+	@echo "possible targets are:"
+	@echo "[$(targets)]"
+	@echo "but not all of them should be used or make sense"
 
 # include dependencies
 -include .depend

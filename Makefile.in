@@ -26,7 +26,7 @@ subdirs := ir ir/adt ir/debug ir/tv ir/common ir/ident ir/ir ir/tr
 SOURCES := Makefile.in MakeRules.in MakeTargets\
 	   aclocal.m4 config.h.in\
 	   config.guess config.sub configure.in \
-	   stamp-h.in install-sh
+	   stamp-h.in install-sh README
 
 INSTALL_LIBS = libfirm.a
 
@@ -49,6 +49,9 @@ DISTFILES = $(addprefix ../, $(ARCHIVEDISTFILES))
 # config.status config.h.in $(srcdir)/stamp-h.in
 
 include $(topdir)/MakeRules
+
+DISTFILES += $(addprefix $(srcdir)/, configure)
+ARCHIVEDISTFILES += $(addprefix $(subdir)/, configure)
 
 XOFILES += $(addsuffix /subdir.o, $(subdirs))
 
