@@ -153,6 +153,28 @@ typedef struct {
   type *totype;
 } cast_attr;
 
+/** Load attributes */
+typedef struct {
+  ir_mode *load_mode;           /**< the mode of this Load operation */
+  ent_volatility volatility;	/**< the volatility of a Load/Store operation */
+#if PRECISE_EXC_CONTEXT
+  struct ir_node **frag_arr;    /**< For Phi node construction in case of exception */
+#endif
+} load_attr;
+
+/** Store attributes */
+typedef struct {
+  ent_volatility volatility;	/**< the volatility of a Store operation */
+#if PRECISE_EXC_CONTEXT
+  struct ir_node **frag_arr;    /**< For Phi node construction in case of exception */
+#endif
+} store_attr;
+
+/** Exception attributes */
+typedef struct {
+  struct ir_node **frag_arr;    /**< For Phi node construction in case of exception */
+} except_attr;
+
 typedef pn_Cmp confirm_attr; /** Attribute to hold compare operation */
 
 /** Some irnodes just have one attribute, these are stored here,
@@ -170,6 +192,8 @@ typedef union {
   io_attr        io;    /**< For InstOf */
   type          *f;     /**< For Free. */
   cast_attr      cast;  /**< For Cast. */
+  load_attr      load;  /**< For Load. */
+  store_attr     store;  /**< For Store. */
   int            phi0_pos;  /**< For Phi. Used to remember the value defined by
                    this Phi node.  Needed when the Phi is completed
                    to call get_r_internal_value to find the
@@ -184,8 +208,7 @@ typedef union {
   filter_attr    filter;    /**< For Filter */
   end_attr       end;       /**< For EndReg, EndExcept */
 #if PRECISE_EXC_CONTEXT
-  struct ir_node **frag_arr; /**< For Phi node construction in case of exceptions
-                for nodes Store, Load, Div, Mod, Quot, DivMod. */
+  except_attr    except; /**< For Phi node construction in case of exceptions */
 #endif
 } attr;
 
@@ -240,11 +263,14 @@ INLINE long          get_irn_proj_attr     (ir_node *node);
 INLINE alloc_attr    get_irn_alloc_attr    (ir_node *node);
 INLINE type         *get_irn_free_attr     (ir_node *node);
 INLINE symconst_attr get_irn_symconst_attr (ir_node *node);
-type         *get_irn_call_attr     (ir_node *node);
-type         *get_irn_funccall_attr (ir_node *node);
-sel_attr      get_irn_sel_attr      (ir_node *node);
-int           get_irn_phi_attr      (ir_node *node);
-block_attr    get_irn_block_attr   (ir_node *node);
+type                *get_irn_call_attr     (ir_node *node);
+type                *get_irn_funccall_attr (ir_node *node);
+sel_attr             get_irn_sel_attr      (ir_node *node);
+int                  get_irn_phi_attr      (ir_node *node);
+block_attr           get_irn_block_attr    (ir_node *node);
+load_attr            get_irn_load_attr     (ir_node *node);
+store_attr           get_irn_store_attr    (ir_node *node);
+except_attr          get_irn_except_attr   (ir_node *node);
 /** @} */
 
 /*-------------------------------------------------------------------*/
