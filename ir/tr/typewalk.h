@@ -57,9 +57,9 @@ void type_walk(type_walk_func *pre, type_walk_func *post, void *env);
  *  type walk at the irgs entity, the irgs frame type and all types and
  *  entities that are attributes to firm nodes. */
 void type_walk_irg(ir_graph *irg,
-		   type_walk_func *pre,
-		   type_walk_func *post,
-		   void *env);
+           type_walk_func *pre,
+           type_walk_func *post,
+           void *env);
 
 /**
     Touches every class in specified order:
@@ -73,8 +73,8 @@ void type_walk_irg(ir_graph *irg,
     @deprecated will be removed?
 */
 void type_walk_super2sub(type_walk_func *pre,
-			 type_walk_func *post,
-			 void *env);
+             type_walk_func *post,
+             void *env);
 
 /** Walker for class types in inheritance order.
  *
@@ -89,8 +89,8 @@ void type_walk_super2sub(type_walk_func *pre,
  *
  * The arguments pre, post, env may be NULL. */
 void type_walk_super(type_walk_func *pre,
-		     type_walk_func *post,
-		     void *env);
+             type_walk_func *post,
+             void *env);
 
 /** Same as type_walk_super2sub, but visits only class types.
    Executes pre for a class if all superclasses have been visited.
@@ -101,8 +101,8 @@ void type_walk_super(type_walk_func *pre,
    @bug ?? something is wrong with this.
 */
 void class_walk_super2sub(class_walk_func *pre,
-			  class_walk_func *post,
-			  void *env);
+                          class_walk_func *post,
+                          void *env);
 
 /**
  * the entity walk function.  A function type for entity walkers.
@@ -120,7 +120,7 @@ typedef void entity_walk_func(entity *ent, void *env);
  * @param env   environment, will be passed to the walker function
  */
 void walk_types_entities(type *tp,
-			 entity_walk_func *doit,
-			 void *env);
+             entity_walk_func *doit,
+             void *env);
 
 #endif /* _TYPEWALK_H_ */
