@@ -1350,8 +1350,10 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
     walkset = env->call_nodes;
     env->call_nodes = eset_create();
     for (call = eset_first(walkset); call; call = eset_next(walkset)) {
+      ir_graph *callee;
+
       if (get_irn_op(call) == op_Tuple) continue;   /* We already inlined. */
-      ir_graph *callee = get_call_called_irg(call);
+      callee = get_call_called_irg(call);
 
       if (callee &&
           ((is_smaller(callee, size) && (env->n_nodes < maxsize)) ||    /* small function */
