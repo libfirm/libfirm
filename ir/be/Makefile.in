@@ -20,7 +20,8 @@ INSTALL_HEADERS = be.h
 SOURCES = $(INSTALL_HEADERS)
 
 SOURCES += 	Makefile.in besched.h belistsched.h belistsched.c \
-	beutil.h bemain.c besched.c bemain.c belive.c belive.h
+	beutil.h bemain.c besched.c bemain.c belive.c belive.h \
+	bephicongr.c bephicongr_t.h phistat.c phistat.h
 
 
 include $(topdir)/MakeRules
