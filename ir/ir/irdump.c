@@ -960,7 +960,18 @@ print_edge_vcgattr(ir_node *from, int to) {
     break;
   case iro_Bad:     break;
   case iro_Unknown: break;
-  case iro_Id:      break;
+  case iro_Id:
+    switch (get_irn_modecode(from)) {
+    case irm_M:
+      fprintf (F, INTRA_MEM_EDGE_ATTR);
+      break;
+    case irm_X:
+      fprintf (F, CF_EDGE_ATTR);
+      break;
+    default:
+      print_data_edge_vcgattr(F, from, to);
+      break;
+    } break;
   default:
     ;
   }
