@@ -131,10 +131,13 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
 	entity *ent = NULL;
 	if (get_irn_op(ptr) == op_Sel) {
 	  ent = get_Sel_entity(ptr);
-	} else if ((get_irn_op(ptr) == op_Const) &&
+	} /*
+        We may not test this, after lowering and optimization the Const can
+        have an unexpected type.
+    else if ((get_irn_op(ptr) == op_Const) &&
 		   tarval_is_entity(get_Const_tarval(ptr))) {
 	  ent = get_tarval_entity(get_Const_tarval(ptr));
-	}
+	} */
 	if (ent)
 	  ASSERT_AND_RET((mode == get_type_mode(get_entity_type(ent))),
 			 "wrong data Proj from Load", 0);
