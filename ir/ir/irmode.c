@@ -31,7 +31,7 @@ static long long count = 0;
  * * */
 
 
-/* dynamic array to hold all modes */
+/** dynamic array to hold all modes */
 static ir_mode * modes;
 /* dynamic arrays to hold special modes' values */
 static tarval** modes_min;
@@ -39,7 +39,7 @@ static tarval** modes_max;
 static tarval** modes_null;
 static tarval** modes_one;
 
-/* number of defined modes */
+/** number of defined modes */
 static int num_modes;
 
 /* * *

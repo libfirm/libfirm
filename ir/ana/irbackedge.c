@@ -13,14 +13,18 @@
 #include "array.h"
 #include "irbackedge_t.h"
 
-/**********************************************************************/
-/** Backedge information.                                            **/
-/**********************************************************************/
+/*--------------------------------------------------------------------*/
+/* Backedge information. *                                            */
+/*--------------------------------------------------------------------*/
 
 
-/* Returns backarray if the node can have backedges.  Else returns
-   NULL. Does not assert whether the backarray is correct -- use
-   very careful! */
+/**
+ * Returns backarray if the node can have backedges, else returns
+ * NULL.
+ *
+ * Does not assert whether the backarray is correct -- use
+ * very careful!
+ */
 static INLINE int *mere_get_backarray(ir_node *n) {
   switch(get_irn_opcode(n)) {
   case iro_Block:
@@ -48,8 +52,10 @@ static INLINE int *mere_get_backarray(ir_node *n) {
   return NULL;
 }
 
-/* Returns backarray if the node can have backedges.  Else returns
-   NULL. */
+/**
+ * Returns backarray if the node can have backedges, else returns
+ * NULL.
+ */
 static INLINE int *get_backarray(ir_node *n) {
   int *ba = mere_get_backarray(n);
 
@@ -62,8 +68,10 @@ static INLINE int *get_backarray(ir_node *n) {
   return ba;
 }
 
-/* returns true if node has no backarray, or
-                if size of backarray == size of in array. */
+/**
+ * Returns true if node has no backarray, or
+ *              if size of backarray == size of in array.
+ */
 static INLINE bool legal_backarray (ir_node *n) {
   int *ba = mere_get_backarray(n);
   if (ba && (ARR_LEN(ba) != ARR_LEN(get_irn_in(n))-1))  /* Use get_irn_in -- sensitive to view! */
@@ -95,28 +103,28 @@ INLINE void fix_backedges(struct obstack *obst, ir_node *n) {
   //}
 }
 
-/* Returns true if the predesessor pos is a backedge. */
+/** Returns true if the predesessor pos is a backedge. */
 bool is_backedge (ir_node *n, int pos) {
   int *ba = get_backarray (n);
   if (ba) return ba[pos];
   return false;
 }
 
-/* Remarks that edge pos is a backedge. */
+/** Remarks that edge pos is a backedge. */
 void set_backedge (ir_node *n, int pos) {
   int *ba = get_backarray (n);
   assert(ba && "can only set backedges at Phi, Filter, Block nodes.");
   ba[pos] = 1;
 }
 
-/* Remarks that edge pos is a backedge. */
+/** Remarks that edge pos is a backedge. */
 void set_not_backedge (ir_node *n, int pos) {
   int *ba = get_backarray (n);
   assert(ba && "can only set backedges at Phi, Filter, Block nodes.");
   ba[pos] = 0;
 }
 
-/* Returns true if n has backedges. */
+/** Returns true if n has backedges. */
 bool has_backedges (ir_node *n) {
   int i;
   int *ba = get_backarray (n);
@@ -126,7 +134,7 @@ bool has_backedges (ir_node *n) {
   return false;
 }
 
-/* Sets all backedge information to zero. */
+/** Sets all backedge information to zero. */
 void clear_backedges (ir_node *n) {
   int i, rem = interprocedural_view;
   int *ba;
