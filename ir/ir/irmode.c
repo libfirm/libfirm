@@ -195,7 +195,7 @@ register_mode(ir_mode* new_mode)
 #  undef get_mode_ident
 #  undef get_mode_name
 #  undef get_mode_sort
-#  undef get_mode_size
+#  undef get_mode_size_bits
 #  undef get_mode_align
 #endif
 modecode
@@ -251,7 +251,7 @@ get_mode_align (ir_mode *mode)
 #  define get_mode_ident(mode) (mode)->name
 #  define get_mode_name(mode) id_to_str((mode)->name)
 #  define get_mode_sort(mode) (mode)->sort
-#  define get_mode_size(mode) (mode)->size
+#  define get_mode_size_bits(mode) (mode)->size
 #  define get_mode_align(mode) (mode)->align
 #endif
 int
@@ -460,15 +460,15 @@ smaller_mode(ir_mode *sm, ir_mode *lm)
            */
           if (mode_is_signed(sm))
           {
-            if ( mode_is_signed(lm) && (get_mode_size(lm) > get_mode_size(sm)) )
+            if ( mode_is_signed(lm) && (get_mode_size_bits(lm) > get_mode_size_bits(sm)) )
               return 1;
           }
           else if (mode_is_signed(lm))
           {
-            if (get_mode_size(lm) > get_mode_size(sm) + 1)
+            if (get_mode_size_bits(lm) > get_mode_size_bits(sm) + 1)
               return 1;
           }
-          else if (get_mode_size(lm) > get_mode_size(sm))
+          else if (get_mode_size_bits(lm) > get_mode_size_bits(sm))
           {
             return 1;
           }
@@ -487,7 +487,7 @@ smaller_mode(ir_mode *sm, ir_mode *lm)
       /* XXX currently only the three standard 32,64,80 bit floats
        * are supported which can safely be converted */
       if ( (get_mode_sort(lm) == float_number)
-           && (get_mode_size(lm) > get_mode_size(sm)) )
+           && (get_mode_size_bits(lm) > get_mode_size_bits(sm)) )
          return 1;
       break;
 

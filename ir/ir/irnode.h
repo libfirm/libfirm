@@ -585,6 +585,8 @@ ir_node *get_fragile_op_mem(ir_node *node);
 #define DDMI(X)  printf("%s(l.%i) %s: %p\n",                 __MYFUNC__, __LINE__, id_to_str(X), (X))
 /** Output information about a mode */
 #define DDMM(X)  printf("%s(l.%i) %s: %p\n",                 __MYFUNC__, __LINE__, get_mode_name(X), (X))
+/** Output information about a loope */
+#define DDML(X)  printf("%s(l.%i) loop with depth %d: %p\n", __MYFUNC__, __LINE__, get_loop_depth(X), (X))
 
 /*@}*/ /* end of ir_node group definition */
 

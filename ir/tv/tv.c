@@ -397,12 +397,12 @@ tarval *get_tarval_max(ir_mode *mode)
       return tarval_b_true;
 
     case float_number:
-      fc_get_max(get_mode_size(mode));
+      fc_get_max(get_mode_size_bits(mode));
       return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 
     case int_number:
     case character:
-      sc_max_from_bits(get_mode_size(mode), mode_is_signed(mode));
+      sc_max_from_bits(get_mode_size_bits(mode), mode_is_signed(mode));
       return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
   }
   return tarval_bad;
@@ -424,12 +424,12 @@ tarval *get_tarval_min(ir_mode *mode)
       return tarval_b_false;
 
     case float_number:
-      fc_get_min(get_mode_size(mode));
+      fc_get_min(get_mode_size_bits(mode));
       return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 
     case int_number:
     case character:
-      sc_min_from_bits(get_mode_size(mode), mode_is_signed(mode));
+      sc_min_from_bits(get_mode_size_bits(mode), mode_is_signed(mode));
       return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
   }
   return tarval_bad;
@@ -823,7 +823,7 @@ tarval *tarval_shl(tarval *a, tarval *b)   /* bitwise left shift */
   assert(b);
   assert(mode_is_int(a->mode) && mode_is_int(b->mode));
 
-  sc_shl(a->value, b->value, get_mode_size(a->mode), mode_is_signed(a->mode));
+  sc_shl(a->value, b->value, get_mode_size_bits(a->mode), mode_is_signed(a->mode));
   return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 }
 tarval *tarval_shr(tarval *a, tarval *b)   /* bitwise unsigned right shift */
@@ -833,7 +833,7 @@ tarval *tarval_shr(tarval *a, tarval *b)   /* bitwise unsigned right shift */
   assert(b);
   assert(mode_is_int(a->mode) && mode_is_int(b->mode));
 
-  sc_shr(a->value, b->value, get_mode_size(a->mode), mode_is_signed(a->mode));
+  sc_shr(a->value, b->value, get_mode_size_bits(a->mode), mode_is_signed(a->mode));
   return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 }
 tarval *tarval_shrs(tarval *a, tarval *b)  /* bitwise signed right shift */
@@ -843,7 +843,7 @@ tarval *tarval_shrs(tarval *a, tarval *b)  /* bitwise signed right shift */
   assert(b);
   assert(mode_is_int(a->mode) && mode_is_int(b->mode));
 
-  sc_shrs(a->value, b->value, get_mode_size(a->mode), mode_is_signed(a->mode));
+  sc_shrs(a->value, b->value, get_mode_size_bits(a->mode), mode_is_signed(a->mode));
   return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 }
 tarval *tarval_rot(tarval *a, tarval *b)   /* bitwise rotation */
@@ -853,7 +853,7 @@ tarval *tarval_rot(tarval *a, tarval *b)   /* bitwise rotation */
   assert(b);
   assert(mode_is_int(a->mode) && mode_is_int(b->mode));
 
-  sc_rot(a->value, b->value, get_mode_size(a->mode), mode_is_signed(a->mode));
+  sc_rot(a->value, b->value, get_mode_size_bits(a->mode), mode_is_signed(a->mode));
   return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 }
 
@@ -870,7 +870,7 @@ int tarval_print(XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
   {
     case int_number:
     case character:
-      offset = 16 - (get_mode_size(tv->mode)/4);
+      offset = 16 - (get_mode_size_bits(tv->mode)/4);
       str = sc_print_hex(tv->value);
       return XPF1R("0x%s", str + offset);
 

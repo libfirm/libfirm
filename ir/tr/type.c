@@ -156,7 +156,8 @@ void        set_type_mode(type *tp, ir_mode* m) {
 
   if ((tp->type_op == type_primitive) || (tp->type_op == type_enumeration)) {
     /* For pointer, primitive and enumeration size depends on the mode. */
-    tp->size = get_mode_size(m)/8;
+    assert((get_mode_size_bytes(m) != -1) && "unorthodox modes not implemented");
+    tp->size = get_mode_size_bytes(m);
     tp->mode = m;
   }
 }
@@ -811,7 +812,8 @@ INLINE type *new_type_method (ident *name, int n_param, int n_res) {
   type *res;
   res = new_type(type_method, mode_P, name);
   res->state = layout_fixed;
-  res->size = get_mode_size(mode_P)/8;
+  assert((get_mode_size_bytes(mode_P) != -1) && "unorthodox modes not implemented");
+  res->size = get_mode_size_bytes(mode_P);
   res->attr.ma.n_params   = n_param;
   res->attr.ma.param_type = (type **) xmalloc (sizeof (type *) * n_param);
   res->attr.ma.n_res      = n_res;
@@ -1177,7 +1179,8 @@ INLINE type *new_type_pointer           (ident *name, type *points_to) {
   type *res;
   res = new_type(type_pointer, mode_P, name);
   res->attr.pa.points_to = points_to;
-  res->size = get_mode_size(res->mode)/8;
+  assert((get_mode_size_bytes(res->mode) != -1) && "unorthodox modes not implemented");
+  res->size = get_mode_size_bytes(res->mode);
   res->state = layout_fixed;
   return res;
 }
@@ -1215,7 +1218,8 @@ INLINE type *new_type_primitive (ident *name, ir_mode *mode) {
   type *res;
   /* @@@ assert( mode_is_data(mode) && (!mode == mode_P)); */
   res = new_type(type_primitive, mode, name);
-  res->size = get_mode_size(mode)/8;
+  assert((get_mode_size_bytes(mode) != -1) && "unorthodox modes not implemented");
+  res->size = get_mode_size_bytes(mode);
   res->state = layout_fixed;
   return res;
 }

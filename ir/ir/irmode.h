@@ -133,7 +133,7 @@ ir_mode *register_mode(ir_mode* new_mode);
 #  define get_mode_ident(mode) (mode)->name
 #  define get_mode_name(mode) id_to_str((mode)->name)
 #  define get_mode_sort(mode) (mode)->sort
-#  define get_mode_size(mode) (mode)->size
+#  define get_mode_size_bits(mode) (mode)->size
 #  define get_mode_align(mode) (mode)->align
 #else
 /* The classification of the mode */

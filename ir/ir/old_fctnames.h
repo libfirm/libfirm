@@ -30,6 +30,7 @@
 #define get_null_of_mode      get_mode_null
 #define get_fsigned_of_mode   get_mode_fsigned
 #define get_ffloat_of_mode    get_mode_ffloat
+#define get_mode_size(X)      { assert(get_mode_size_bytes(X) != -1); get_mode_size_bytes(X); }
 
 /* type.h */
 #define get_type_nameid(_t_)     get_type_ident(_t_)
@@ -41,6 +42,7 @@
 
 #define get_method_n_res(X) get_method_n_ress(X)
 
+/* tarval.h */
 #define tarval_from_long(X, Y) new_tarval_from_long(Y, X)
 #define tarval_P_from_entity(X) new_tarval_from_entity(X, mode_P)
 #define get_tarval_entity(X) tarval_to_entity(X)
