@@ -1,0 +1,26 @@
+
+
+Call
+  sh build_firm_jni
+to generate a Java native interface for firm.
+
+This script still contains various IPD specific settings,
+e.g. oaths to the header files needed for JNI.  This will be changed
+at some point.
+
+Generating the JNI requires various syntactic properties of the
+header files that restrict legal C.
+
+Do not use methods that generate a non null terminated String
+from Idents (as idToStr).  This will probably cause a segmentation
+fault.
+
+Some methods generated might not work yet.  Please report this to
+goetz@ipd.info.uni-karlsruhe.de
+
+For now _all_ enumerators are generated into _all_ classes.
+This results from deficiencies in the crecoder and will be removed
+at some place.
+Use only the enumerators defined in the corresponding c headers.
+E.g., irm_X is defined in irmode.h, so use Irmode.irm_X, but not
+Type.irm_X or any other definition in the java files.

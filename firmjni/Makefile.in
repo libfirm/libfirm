@@ -1,0 +1,47 @@
+
+# $Id$
+
+top_srcdir := @top_srcdir@
+srcdir = @srcdir@
+topdir = ..
+subdir = firmjni
+
+libdir = @libdir@      # where to find libfirm.a and where to put libfirmjni.so
+
+LIBNAME = libfirmjni.so
+
+.PHONY: default all clean realclean depend
+
+MEMBERS = Firm.m Firm.m Firm_common.m Dbginfo.m Ident.m Tv.m     	\
+	Type.m Entity.m Type_or_entity.m Tpop.m Mangle.m 		\
+	Irprog.m Irgraph.m Irnode.m Irmode.m Irop.m Ircons.m Ircgcons.m \
+	Irflag.m Irvrfy.m Irdump.m Iropt.m Irgopt.m Ircgopt.m		\
+	Irouts.m Irdom.m Irloop.m Cgana.m        			\
+	Irgwalk.m Irgmod.m Typewalk.m Typegmod.m
+
+OFILES  = $(MEMBERS:.m=.o)
+HFILES  = $(MEMBERS:.m=.h)
+
+all: 	jni
+
+%.class: %.java
+	javac $<
+
+%.h:	%.class
+	javah $(<:.class=)
+
+%.o:	%.c %.h
+	gcc $(CPPFLAGS) -c $< -o $@
+
+jni:    $(HFILES) $(OFILES) $(libdir)libfirm.a
+	gcc  -shared -fPIC -o $(LIBNAME) *.o -L$(libdir) -lfirm
+
+install:
+	cp libfirmjni.so $(libdir)
+#	cp *.java @javadir@
+
+clean:
+	rm -rf sources *.c *.h *.o
+
+realclean: clean
+	rm -f *~ libfirmjni.so *.vcg *.java *.class
