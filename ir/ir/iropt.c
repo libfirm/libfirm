@@ -868,6 +868,8 @@ identify (pset *value_table, ir_node *n)
 {
   ir_node *o = NULL;
 
+
+
   if (!value_table) return n;
 
   switch (get_irn_opcode (n)) {
