@@ -275,7 +275,7 @@ void free_ir_graph (ir_graph *irg) {
    void set_irg_{attr name} (ir_graph *irg, {attr type} {attr}); */
 
 int
-(is_ir_graph)(void *thing) {
+(is_ir_graph)(const void *thing) {
   return __is_ir_graph(thing);
 }
 
@@ -292,7 +292,7 @@ get_irg_graph_nr(ir_graph *irg) {
 }
 
 ir_node *
-(get_irg_start_block)(ir_graph *irg) {
+(get_irg_start_block)(const ir_graph *irg) {
   return __get_irg_start_block(irg);
 }
 
@@ -302,7 +302,7 @@ void
 }
 
 ir_node *
-(get_irg_start)(ir_graph *irg) {
+(get_irg_start)(const ir_graph *irg) {
   return __get_irg_start(irg);
 }
 
@@ -312,7 +312,7 @@ void
 }
 
 ir_node *
-(get_irg_end_block)(ir_graph *irg) {
+(get_irg_end_block)(const ir_graph *irg) {
   return __get_irg_end_block(irg);
 }
 
@@ -322,7 +322,7 @@ void
 }
 
 ir_node *
-(get_irg_end)(ir_graph *irg) {
+(get_irg_end)(const ir_graph *irg) {
   return __get_irg_end(irg);
 }
 
@@ -332,7 +332,7 @@ void
 }
 
 ir_node *
-(get_irg_end_reg)(ir_graph *irg) {
+(get_irg_end_reg)(const ir_graph *irg) {
   return __get_irg_end_reg(irg);
 }
 
@@ -342,7 +342,7 @@ void     set_irg_end_reg (ir_graph *irg, ir_node *node) {
 }
 
 ir_node *
-(get_irg_end_except)(ir_graph *irg) {
+(get_irg_end_except)(const ir_graph *irg) {
   return __get_irg_end_except(irg);
 }
 
@@ -352,7 +352,7 @@ void     set_irg_end_except (ir_graph *irg, ir_node *node) {
 }
 
 ir_node *
-(get_irg_cstore)(ir_graph *irg) {
+(get_irg_cstore)(const ir_graph *irg) {
   return __get_irg_cstore(irg);
 }
 
@@ -362,7 +362,7 @@ void
 }
 
 ir_node *
-(get_irg_frame)(ir_graph *irg) {
+(get_irg_frame)(const ir_graph *irg) {
   return __get_irg_frame(irg);
 }
 
@@ -372,7 +372,7 @@ void
 }
 
 ir_node *
-(get_irg_globals)(ir_graph *irg) {
+(get_irg_globals)(const ir_graph *irg) {
   return __get_irg_globals(irg);
 }
 
@@ -382,8 +382,7 @@ void
 }
 
 ir_node *
-(get_irg_initial_mem)(ir_graph *irg)
-{
+(get_irg_initial_mem)(const ir_graph *irg) {
   return __get_irg_initial_mem(irg);
 }
 
@@ -393,7 +392,7 @@ void
 }
 
 ir_node *
-(get_irg_args)(ir_graph *irg) {
+(get_irg_args)(const ir_graph *irg) {
   return __get_irg_args(irg);
 }
 
@@ -403,7 +402,7 @@ void
 }
 
 ir_node *
-(get_irg_bad)(ir_graph *irg) {
+(get_irg_bad)(const ir_graph *irg) {
   return __get_irg_bad(irg);
 }
 
@@ -427,7 +426,7 @@ set_irg_unknown (ir_graph *irg, ir_node *node)
 */
 
 ir_node *
-(get_irg_current_block)(ir_graph *irg) {
+(get_irg_current_block)(const ir_graph *irg) {
   return __get_irg_current_block(irg);
 }
 
@@ -437,17 +436,17 @@ void
 }
 
 entity *
-(get_irg_entity)(ir_graph *irg) {
-  return __get_irg_ent(irg);
+(get_irg_entity)(const ir_graph *irg) {
+  return __get_irg_entity(irg);
 }
 
 void
 (set_irg_entity)(ir_graph *irg, entity *ent) {
-  __set_irg_ent(irg, ent);
+  __set_irg_entity(irg, ent);
 }
 
 type *
-(get_irg_frame_type)(ir_graph *irg) {
+(get_irg_frame_type)(const ir_graph *irg) {
   return __get_irg_frame_type(irg);
 }
 
@@ -459,11 +458,11 @@ void
 
 /* To test for a frame type */
 int
-is_frame_type(type *ftp) {
+is_frame_type(const type *ftp) {
   int i;
   if (is_class_type(ftp)) {
     for (i = 0; i < get_irp_n_irgs(); i++) {
-      type *frame_tp = get_irg_frame_type(get_irp_irg(i));
+      const type *frame_tp = get_irg_frame_type(get_irp_irg(i));
       if (ftp == frame_tp) return true;
     }
   }
@@ -492,7 +491,7 @@ set_irg_n_loc (ir_graph *irg, int n_loc)
 
 /* Returns the obstack associated with the graph. */
 struct obstack *
-(get_irg_obstack)(ir_graph *irg) {
+(get_irg_obstack)(const ir_graph *irg) {
   return __get_irg_obstack(irg);
 }
 
@@ -518,7 +517,7 @@ int node_is_in_irgs_storage(ir_graph *irg, ir_node *n)
 }
 
 irg_phase_state
-(get_irg_phase_state)(ir_graph *irg) {
+(get_irg_phase_state)(const ir_graph *irg) {
   return __get_irg_phase_state(irg);
 }
 
@@ -528,12 +527,12 @@ void
 }
 
 op_pin_state
-(get_irg_pinned)(ir_graph *irg) {
+(get_irg_pinned)(const ir_graph *irg) {
   return __get_irg_pinned(irg);
 }
 
 irg_outs_state
-(get_irg_outs_state)(ir_graph *irg) {
+(get_irg_outs_state)(const ir_graph *irg) {
   return __get_irg_outs_state(irg);
 }
 
@@ -543,7 +542,7 @@ void
 }
 
 irg_dom_state
-(get_irg_dom_state)(ir_graph *irg) {
+(get_irg_dom_state)(const ir_graph *irg) {
   return __get_irg_dom_state(irg);
 }
 
@@ -553,7 +552,7 @@ void
 }
 
 irg_loopinfo_state
-(get_irg_loopinfo_state)(ir_graph *irg) {
+(get_irg_loopinfo_state)(const ir_graph *irg) {
   return __get_irg_loopinfo_state(irg);
 }
 
@@ -583,7 +582,7 @@ void
 }
 
 irg_callee_info_state
-(get_irg_callee_info_state)(ir_graph *irg) {
+(get_irg_callee_info_state)(const ir_graph *irg) {
   return __get_irg_callee_info_state(irg);
 }
 
@@ -593,7 +592,7 @@ void
 }
 
 irg_inline_property
-(get_irg_inline_property)(ir_graph *irg) {
+(get_irg_inline_property)(const ir_graph *irg) {
   return __get_irg_inline_property(irg);
 }
 
@@ -608,7 +607,7 @@ void
 }
 
 void *
-(get_irg_link)(ir_graph *irg) {
+(get_irg_link)(const ir_graph *irg) {
   return __get_irg_link(irg);
 }
 
@@ -616,7 +615,7 @@ void *
 static int max_irg_visited = 0;
 
 unsigned long
-(get_irg_visited)(ir_graph *irg) {
+(get_irg_visited)(const ir_graph *irg) {
   return __get_irg_visited(irg);
 }
 
@@ -665,7 +664,7 @@ inc_max_irg_visited(void)
 }
 
 unsigned long
-(get_irg_block_visited)(ir_graph *irg) {
+(get_irg_block_visited)(const ir_graph *irg) {
   return __get_irg_block_visited(irg);
 }
 

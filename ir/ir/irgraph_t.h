@@ -32,6 +32,7 @@
 
 #include "obst.h"
 #include "pset.h"
+#include "type_t.h"
 
 #define FRAME_TP_SUFFIX "frame_tp"
 
@@ -113,6 +114,9 @@ struct ir_graph {
 #endif
 };
 
+/**
+ * Initializes the graph construction module
+ */
 void init_irgraph(void);
 
 /** Make a rudimentary ir graph for the constant code.
@@ -122,14 +126,14 @@ ir_graph *new_const_code_irg(void);
 /**
  * Set the op_pin_state_pinned state of a graph.
  *
- * @irg     the IR graph
- * @p       new pin state
+ * @param irg     the IR graph
+ * @param p       new pin state
  */
 INLINE void
 set_irg_pinned (ir_graph *irg, op_pin_state p);
 
 /** Returns the obstack associated with the graph. */
-struct obstack *get_irg_obstack(ir_graph *irg);
+struct obstack *get_irg_obstack(const ir_graph *irg);
 
 /**
  * Returns true if the node n is allocated on the storage of graph irg.
@@ -151,188 +155,162 @@ __get_interprocedural_view(void) {
 }
 
 static INLINE int
-__is_ir_graph(void *thing) {
+__is_ir_graph(const void *thing) {
   return (get_kind(thing) == k_ir_graph);
 }
 
 /** Returns the start block of a graph. */
 static INLINE ir_node *
-__get_irg_start_block(ir_graph *irg)
-{
+__get_irg_start_block(const ir_graph *irg) {
   return irg->start_block;
 }
 
 static INLINE void
-__set_irg_start_block(ir_graph *irg, ir_node *node)
-{
+__set_irg_start_block(ir_graph *irg, ir_node *node) {
   irg->start_block = node;
 }
 
 static INLINE ir_node *
-__get_irg_start(ir_graph *irg)
-{
+__get_irg_start(const ir_graph *irg) {
   return irg->start;
 }
 
 static INLINE void
-__set_irg_start(ir_graph *irg, ir_node *node)
-{
+__set_irg_start(ir_graph *irg, ir_node *node) {
   irg->start = node;
 }
 
 static INLINE ir_node *
-__get_irg_end_block(ir_graph *irg)
-{
+__get_irg_end_block(const ir_graph *irg) {
   return irg->end_block;
 }
 
 static INLINE void
-__set_irg_end_block(ir_graph *irg, ir_node *node)
-{
+__set_irg_end_block(ir_graph *irg, ir_node *node) {
   irg->end_block = node;
 }
 
 static INLINE ir_node *
-__get_irg_end(ir_graph *irg)
-{
+__get_irg_end(const ir_graph *irg) {
   return irg->end;
 }
 
 static INLINE void
-__set_irg_end(ir_graph *irg, ir_node *node)
-{
+__set_irg_end(ir_graph *irg, ir_node *node) {
   irg->end = node;
 }
 
 static INLINE ir_node *
-__get_irg_end_reg(ir_graph *irg) {
+__get_irg_end_reg(const ir_graph *irg) {
   return irg->end_reg;
 }
 
 static INLINE ir_node *
-__get_irg_end_except (ir_graph *irg) {
+__get_irg_end_except (const ir_graph *irg) {
   return irg->end_except;
 }
 
 static INLINE ir_node *
-__get_irg_cstore(ir_graph *irg)
-{
+__get_irg_cstore(const ir_graph *irg) {
   return irg->cstore;
 }
 
 static INLINE void
-__set_irg_cstore(ir_graph *irg, ir_node *node)
-{
+__set_irg_cstore(ir_graph *irg, ir_node *node) {
   irg->cstore = node;
 }
 
 static INLINE ir_node *
-__get_irg_frame(ir_graph *irg)
-{
+__get_irg_frame(const ir_graph *irg) {
   return irg->frame;
 }
 
 static INLINE void
-__set_irg_frame(ir_graph *irg, ir_node *node)
-{
+__set_irg_frame(ir_graph *irg, ir_node *node) {
   irg->frame = node;
 }
 
 static INLINE ir_node *
-__get_irg_globals(ir_graph *irg)
-{
+__get_irg_globals(const ir_graph *irg) {
   return irg->globals;
 }
 
 static INLINE void
-__set_irg_globals(ir_graph *irg, ir_node *node)
-{
+__set_irg_globals(ir_graph *irg, ir_node *node) {
   irg->globals = node;
 }
 
 static INLINE ir_node *
-__get_irg_initial_mem(ir_graph *irg)
-{
+__get_irg_initial_mem(const ir_graph *irg) {
   return irg->initial_mem;
 }
 
 static INLINE void
-__set_irg_initial_mem(ir_graph *irg, ir_node *node)
-{
+__set_irg_initial_mem(ir_graph *irg, ir_node *node) {
   irg->initial_mem = node;
 }
 
 static INLINE ir_node *
-__get_irg_args(ir_graph *irg)
-{
+__get_irg_args(const ir_graph *irg) {
   return irg->args;
 }
 
 static INLINE void
-__set_irg_args(ir_graph *irg, ir_node *node)
-{
+__set_irg_args(ir_graph *irg, ir_node *node) {
   irg->args = node;
 }
 
 static INLINE ir_node *
-__get_irg_bad(ir_graph *irg)
-{
+__get_irg_bad(const ir_graph *irg) {
   return irg->bad;
 }
 
 static INLINE void
-__set_irg_bad(ir_graph *irg, ir_node *node)
-{
+__set_irg_bad(ir_graph *irg, ir_node *node) {
   irg->bad = node;
 }
 
 static INLINE ir_node *
-__get_irg_current_block(ir_graph *irg)
-{
+__get_irg_current_block(const ir_graph *irg) {
   return irg->current_block;
 }
 
 static INLINE void
-__set_irg_current_block(ir_graph *irg, ir_node *node)
-{
+__set_irg_current_block(ir_graph *irg, ir_node *node) {
   irg->current_block = node;
 }
 
 static INLINE entity *
-__get_irg_ent(ir_graph *irg)
-{
+__get_irg_entity(const ir_graph *irg) {
   assert(irg && irg->ent);
   return irg->ent;
 }
 
 static INLINE void
-__set_irg_ent(ir_graph *irg, entity *ent)
-{
+__set_irg_entity(ir_graph *irg, entity *ent) {
   irg->ent = ent;
 }
 
 static INLINE type *
-__get_irg_frame_type(ir_graph *irg)
-{
+__get_irg_frame_type(const ir_graph *irg) {
   assert(irg && irg->frame_type);
   return irg->frame_type;
 }
 
 static INLINE void
-__set_irg_frame_type(ir_graph *irg, type *ftp)
-{
+__set_irg_frame_type(ir_graph *irg, type *ftp) {
   assert(is_class_type(ftp));
   irg->frame_type = ftp;
 }
 
 static INLINE struct obstack *
-__get_irg_obstack(ir_graph *irg) {
+__get_irg_obstack(const ir_graph *irg) {
   return irg->obst;
 }
 
 
 static INLINE irg_phase_state
-__get_irg_phase_state(ir_graph *irg) {
+__get_irg_phase_state(const ir_graph *irg) {
   return irg->phase_state;
 }
 
@@ -342,12 +320,12 @@ __set_irg_phase_low(ir_graph *irg) {
 }
 
 static INLINE op_pin_state
-__get_irg_pinned(ir_graph *irg) {
+__get_irg_pinned(const ir_graph *irg) {
   return irg->op_pin_state_pinned;
 }
 
 static INLINE irg_outs_state
-__get_irg_outs_state(ir_graph *irg) {
+__get_irg_outs_state(const ir_graph *irg) {
   return irg->outs_state;
 }
 
@@ -357,7 +335,7 @@ __set_irg_outs_inconsistent(ir_graph *irg) {
 }
 
 static INLINE irg_dom_state
-__get_irg_dom_state(ir_graph *irg) {
+__get_irg_dom_state(const ir_graph *irg) {
   return irg->dom_state;
 }
 
@@ -367,7 +345,7 @@ __set_irg_dom_inconsistent(ir_graph *irg) {
 }
 
 static INLINE irg_loopinfo_state
-__get_irg_loopinfo_state(ir_graph *irg) {
+__get_irg_loopinfo_state(const ir_graph *irg) {
   return irg->loopinfo_state;
 }
 
@@ -382,7 +360,7 @@ __set_irg_pinned(ir_graph *irg, op_pin_state p) {
 }
 
 static INLINE irg_callee_info_state
-__get_irg_callee_info_state(ir_graph *irg) {
+__get_irg_callee_info_state(const ir_graph *irg) {
   return irg->callee_info_state;
 }
 
@@ -399,7 +377,7 @@ __set_irg_callee_info_state(ir_graph *irg, irg_callee_info_state s) {
 }
 
 static INLINE irg_inline_property
-__get_irg_inline_property(ir_graph *irg) {
+__get_irg_inline_property(const ir_graph *irg) {
   return irg->inline_property;
 }
 
@@ -414,31 +392,27 @@ __set_irg_link(ir_graph *irg, void *thing) {
 }
 
 static INLINE void *
-__get_irg_link(ir_graph *irg) {
+__get_irg_link(const ir_graph *irg) {
   return irg->link;
 }
 
 static INLINE unsigned long
-__get_irg_visited(ir_graph *irg)
-{
+__get_irg_visited(const ir_graph *irg) {
   return irg->visited;
 }
 
 static INLINE unsigned long
-__get_irg_block_visited(ir_graph *irg)
-{
+__get_irg_block_visited(const ir_graph *irg) {
   return irg->block_visited;
 }
 
 static INLINE void
-__set_irg_block_visited(ir_graph *irg, unsigned long visited)
-{
+__set_irg_block_visited(ir_graph *irg, unsigned long visited) {
   irg->block_visited = visited;
 }
 
 static INLINE void
-__inc_irg_block_visited(ir_graph *irg)
-{
+__inc_irg_block_visited(ir_graph *irg) {
   ++irg->block_visited;
 }
 
@@ -468,8 +442,8 @@ __inc_irg_block_visited(ir_graph *irg)
 #define set_irg_bad(irg, node)             __set_irg_bad(irg, node)
 #define get_irg_current_block(irg)         __get_irg_current_block(irg)
 #define set_irg_current_block(irg, node)   __set_irg_current_block(irg, node)
-#define get_irg_entity(irg)                   __get_irg_ent(irg)
-#define set_irg_entity(irg, ent)              __set_irg_ent(irg, ent)
+#define get_irg_entity(irg)                __get_irg_entity(irg)
+#define set_irg_entity(irg, ent)           __set_irg_entity(irg, ent)
 #define get_irg_frame_type(irg)            __get_irg_frame_type(irg)
 #define set_irg_frame_type(irg, ftp)       __set_irg_frame_type(irg, ftp)
 #define get_irg_obstack(irg)               __get_irg_obstack(irg)

@@ -122,72 +122,72 @@ void free_ir_graph (ir_graph *irg);
  *   @return
  *       true if the thing is a ir graph, else false
  */
-int      is_ir_graph(void *thing);
+int      is_ir_graph(const void *thing);
 
 /* #define get_irg_entity get_irg_ent */
 /* #define set_irg_entity set_irg_ent */
-entity  *get_irg_entity (ir_graph *irg);
+entity  *get_irg_entity (const ir_graph *irg);
 void     set_irg_entity (ir_graph *irg, entity *ent);
 
-type    *get_irg_frame_type (ir_graph *irg);
+type    *get_irg_frame_type (const ir_graph *irg);
 void     set_irg_frame_type (ir_graph *irg, type *ftp);
 /* To test for a frame type. O(#irgs) if ftp is class type.  */
-int      is_frame_type (type *ftp);
+int      is_frame_type (const type *ftp);
 
-ir_node *get_irg_start_block (ir_graph *irg);
+ir_node *get_irg_start_block (const ir_graph *irg);
 void     set_irg_start_block (ir_graph *irg, ir_node *node);
 
-ir_node *get_irg_start (ir_graph *irg);
+ir_node *get_irg_start (const ir_graph *irg);
 void     set_irg_start (ir_graph *irg, ir_node *node);
 
-ir_node *get_irg_end_block (ir_graph *irg);
+ir_node *get_irg_end_block (const ir_graph *irg);
 void     set_irg_end_block (ir_graph *irg, ir_node *node);
 
-ir_node *get_irg_end (ir_graph *irg);
+ir_node *get_irg_end (const ir_graph *irg);
 void     set_irg_end (ir_graph *irg, ir_node *node);
 
 /* The fields end_reg and end_except contain the end nodes of the
    interprocedural view.  If the view is not constructed they contain
    the nomal end node. */
-ir_node *get_irg_end_reg (ir_graph *irg);
+ir_node *get_irg_end_reg (const ir_graph *irg);
 void     set_irg_end_reg (ir_graph *irg, ir_node *node);
 
-ir_node *get_irg_end_except (ir_graph *irg);
+ir_node *get_irg_end_except (const ir_graph *irg);
 void     set_irg_end_except (ir_graph *irg, ir_node *node);
 
 
 /* @@@ oblivious, no more supported. */
-ir_node *get_irg_cstore (ir_graph *irg);
+ir_node *get_irg_cstore (const ir_graph *irg);
 void     set_irg_cstore (ir_graph *irg, ir_node *node);
 /* end oblivious */
 
 /** Returns the node that represents the frame pointer. */
-ir_node *get_irg_frame (ir_graph *irg);
+ir_node *get_irg_frame (const ir_graph *irg);
 /** Sets the node that represents the frame pointer. */
 void     set_irg_frame (ir_graph *irg, ir_node *node);
 
 /** Returns the node that represents the global pointer. */
-ir_node *get_irg_globals (ir_graph *irg);
+ir_node *get_irg_globals (const ir_graph *irg);
 /** Sets the node that represents the global pointer. */
 void     set_irg_globals (ir_graph *irg, ir_node *node);
 
 /** Returns the node that represents the initial memory. */
-ir_node *get_irg_initial_mem (ir_graph *irg);
+ir_node *get_irg_initial_mem (const ir_graph *irg);
 /** Sets the node that represents the initial memory. */
 void     set_irg_initial_mem (ir_graph *irg, ir_node *node);
 
 /** Returns the node that represents the argument pointer. */
-ir_node *get_irg_args (ir_graph *irg);
+ir_node *get_irg_args (const ir_graph *irg);
 /** Sets the node that represents the argument pointer. */
 void     set_irg_args (ir_graph *irg, ir_node *node);
 
 /** Returns the current block of a graph. */
-ir_node *get_irg_current_block (ir_graph *irg);
+ir_node *get_irg_current_block (const ir_graph *irg);
 /** Sets the current block of a graph. */
 void     set_irg_current_block (ir_graph *irg, ir_node *node);
 
-/* Use new_Bad() instead!! */
-ir_node *get_irg_bad (ir_graph *irg);
+/** Returns the Bad node.  Use new_Bad() instead!! */
+ir_node *get_irg_bad (const ir_graph *irg);
 void     set_irg_bad (ir_graph *irg, ir_node *node);
 
 /** Returns the number of value numbers of a graph. */
@@ -226,7 +226,7 @@ typedef enum {
   phase_low
 } irg_phase_state;
 
-irg_phase_state get_irg_phase_state (ir_graph *irg);
+irg_phase_state get_irg_phase_state (const ir_graph *irg);
 void set_irg_phase_low(ir_graph *irg);
 
 /** state: op_pin_state_pinned
@@ -236,7 +236,7 @@ void set_irg_phase_low(ir_graph *irg);
    invalid block, i.e., the block is not a dominator of all the uses of
    the node.
    The enum op_pin_state is defined in irop.h. */
-op_pin_state get_irg_pinned (ir_graph *irg);
+op_pin_state get_irg_pinned (const ir_graph *irg);
 
 /** state: outs_state
    Outs are the back edges or def-use edges.
@@ -250,7 +250,7 @@ typedef enum {
   outs_consistent,
   outs_inconsistent
 } irg_outs_state;
-irg_outs_state get_irg_outs_state(ir_graph *irg);
+irg_outs_state get_irg_outs_state(const ir_graph *irg);
 void set_irg_outs_inconsistent(ir_graph *irg);
 
 /** state: dom_state
@@ -263,11 +263,11 @@ void set_irg_outs_inconsistent(ir_graph *irg);
    but the graph has been changed since. Using the access routines is possible,
    obtained information may be incorrect. */
 typedef enum {
-  dom_none,
-  dom_consistent,
-  dom_inconsistent
+  dom_none,             /**< doms are not computed, no memory is allocated */
+  dom_consistent,       /**< dominator information is computed and correct */
+  dom_inconsistent      /**<  dominator information is computed but the graph has been changed since */
 } irg_dom_state;
-irg_dom_state get_irg_dom_state(ir_graph *irg);
+irg_dom_state get_irg_dom_state(const ir_graph *irg);
 void set_irg_dom_inconsistent(ir_graph *irg);
 
 /** state: loopinfo_state
@@ -304,15 +304,15 @@ typedef enum {
   loopinfo_cf_ip_inconsistent = loopinfo_constructed | loopinfo_cf | loopinfo_inter
 } irg_loopinfo_state;
 
-irg_loopinfo_state get_irg_loopinfo_state(ir_graph *irg);
+irg_loopinfo_state get_irg_loopinfo_state(const ir_graph *irg);
 void set_irg_loopinfo_state(ir_graph *irg, irg_loopinfo_state s);
-/* Sets the loopinformation state to the appropriate inconsistent state.
+/** Sets the loopinformation state to the appropriate inconsistent state.
    If state is 'none' does not change. */
 void set_irg_loopinfo_inconsistent(ir_graph *irg);
 
 /** state: callee_information_state
  *  Call nodes contain a list of possible callees.  This list must be
- *  computed by an anlysis.
+ *  computed by an analysis.
  *
  *  It's strange that this state is administered on irg basis, as the
  *  information must be computed for the whole program, or not?
@@ -322,7 +322,7 @@ typedef enum {
   irg_callee_info_consistent,
   irg_callee_info_inconsistent
 } irg_callee_info_state;
-irg_callee_info_state get_irg_callee_info_state(ir_graph *irg);
+irg_callee_info_state get_irg_callee_info_state(const ir_graph *irg);
 void                  set_irg_callee_info_state(ir_graph *irg, irg_callee_info_state s);
 
 /** property:
@@ -334,16 +334,19 @@ typedef enum {
   irg_inline_recomended,  /**< The graph should be inlined. */
   irg_inline_forced       /**< The graph must be inlined. */
 } irg_inline_property;
-irg_inline_property get_irg_inline_property(ir_graph *irg);
+
+/** Returns the inline property of a graph. */
+irg_inline_property get_irg_inline_property(const ir_graph *irg);
+/** Sets the inline property of a graph. */
 void set_irg_inline_property(ir_graph *irg, irg_inline_property s);
 
 /** A void * field to link arbritary information to the node. */
 void  set_irg_link (ir_graph *irg, void *thing);
-void *get_irg_link (ir_graph *irg);
+void *get_irg_link (const ir_graph *irg);
 
 /* increments visited by one */
 void          inc_irg_visited (ir_graph *irg);
-unsigned long get_irg_visited (ir_graph *irg);
+unsigned long get_irg_visited (const ir_graph *irg);
 void          set_irg_visited (ir_graph *irg, unsigned long i);
 unsigned long get_max_irg_visited (void);
 void          set_max_irg_visited (int val);
@@ -351,7 +354,7 @@ unsigned long inc_max_irg_visited (void);
 
 /* increments block_visited by one */
 void          inc_irg_block_visited (ir_graph *irg);
-unsigned long get_irg_block_visited (ir_graph *irg);
+unsigned long get_irg_block_visited (const ir_graph *irg);
 void          set_irg_block_visited (ir_graph *irg, unsigned long i);
 
 /* is irg a pseudo graph for analysis? */
