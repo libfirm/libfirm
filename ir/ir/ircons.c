@@ -217,6 +217,8 @@ new_rd_Cast (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *op, type *to_
 {
   ir_node *res;
 
+  assert(is_atomic_type(to_tp));
+
   res = new_ir_node(db, irg, block, op_Cast, get_irn_mode(op), 1, &op);
   res->attr.cast.totype = to_tp;
   res = optimize_node(res);
@@ -697,8 +699,7 @@ new_rd_InstOf (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
 
 INLINE ir_node *
 new_rd_SymConst_type (dbg_info* db, ir_graph *irg, ir_node *block, symconst_symbol value,
-		      symconst_kind symkind, type *tp)
-{
+		      symconst_kind symkind, type *tp) {
   ir_node *res;
   ir_mode *mode;
 
@@ -706,6 +707,7 @@ new_rd_SymConst_type (dbg_info* db, ir_graph *irg, ir_node *block, symconst_symb
     mode = mode_P_mach;
   else
     mode = mode_Iu;
+
   res = new_ir_node(db, irg, block, op_SymConst, mode, 0, NULL);
 
   res->attr.i.num = symkind;
@@ -2547,6 +2549,11 @@ ir_node *new_Raise  (ir_node *store, ir_node *obj) {
 ir_node *new_Const  (ir_mode *mode, tarval *con) {
   return new_d_Const(NULL, mode, con);
 }
+
+ir_node *new_Const_type(tarval *con, type *tp) {
+  return new_d_Const_type(NULL, get_type_mode(tp), con, tp);
+}
+
 ir_node *new_SymConst (symconst_symbol value, symconst_kind kind) {
   return new_d_SymConst(NULL, value, kind);
 }

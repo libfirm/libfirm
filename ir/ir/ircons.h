@@ -3288,6 +3288,11 @@ ir_node *new_Raise  (ir_node *store, ir_node *obj);
  */
 ir_node *new_Const  (ir_mode *mode, tarval *con);
 
+/** Constructor for a Const node.
+ *
+ * Derives mode from passed type. */
+ir_node *new_Const_type(tarval *con, type *tp);
+
 /** Constructor for a SymConst node.
  *
  * Adds the node to the block in current_ir_block.
