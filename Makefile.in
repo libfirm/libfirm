@@ -27,7 +27,7 @@ SOURCES := Makefile.in MakeRules.in MakeTargets\
 	   config.guess config.sub configure.in \
 	   stamp-h.in install-sh README configure
 
-INSTALL_LIBS = libfirm.a libfirm.so
+INSTALL_LIBS = libfirm.a
 
 GENFILES := stamp-h config.log config.cache
 # config.status config.h.in $(srcdir)/stamp-h.in

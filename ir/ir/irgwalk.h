@@ -1,6 +1,15 @@
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-* All rights reserved.
-*/
+/*
+ * Project:     libFIRM
+ * File name:   ir/ir/irgwalk.h
+ * Purpose:
+ * Author:      Boris Boesler
+ * Modified by: Goetz Lindenmaier
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1999-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
+
 
 /**
  * @file irgwalk.h
@@ -17,7 +26,6 @@
  * graph before starting the walker.
  */
 
-/* $Id$ */
 
 # ifndef _IRGWALK_H_
 # define _IRGWALK_H_

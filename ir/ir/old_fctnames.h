@@ -1,13 +1,15 @@
+/*
+ * Project:     libFIRM
+ * File name:   ir/ir/old_fctnames.h
+ * Purpose:     Some makros supporting old function names.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
-/* Copyright (C) 2001 by Universitaet Karlsruhe
-* All rights reserved.
-*
-* Authors: Goetz Lindenmaier
-*
-* Some makros supporting old function names.
-*/
-
-/* $Id$ */
 
 #ifndef __OLD_FCTNAMES_H__
 #define __OLD_FCTNAMES_H__
@@ -46,5 +48,9 @@
 #define tarval_from_long(X, Y) new_tarval_from_long(Y, X)
 #define tarval_P_from_entity(X) new_tarval_from_entity(X, mode_P_mach)
 #define get_tarval_entity(X) tarval_to_entity(X)
+
+/* ident.h */  // @@@ Attention: still in ident.h
+//#define id_to_str    get_id_str
+//#define id_to_strlen get_id_strlen
 
 #endif

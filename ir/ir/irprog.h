@@ -1,6 +1,14 @@
-/* Copyright (C) 2000 by Universitaet Karlsruhe
-* All rights reserved.
-*/
+/*
+ * Project:     libFIRM
+ * File name:   ir/ir/irprog.h
+ * Purpose:     Entry point to the representation of a whole program.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:     2000
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2000-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 /**
 * @file irprog.h
@@ -18,8 +26,6 @@
 *     all classes in a class hierarchy (as, e.g., "object" in java).
 *   - (An obstack containing global things, e.g., the above mentioned lists.)
 */
-
-/* $Id$ */
 
 # ifndef _IRPROG_H_
 # define _IRPROG_H_

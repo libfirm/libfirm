@@ -79,7 +79,6 @@ INLINE ident *id_from_str (const char *str, int len);
  * @see new_get_id_str(), id_from_str(), get_id_strlen()
  */
 INLINE const char *get_id_str  (ident *id);
-//INLINE const char *get_id_str  (ident *id);    /* No more supported */
 #define id_to_str  get_id_str
 
 /**

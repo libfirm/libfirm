@@ -1,12 +1,14 @@
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-* All rights reserved.
-*
-* Authors: Christian Schaefer, Goetz Lindenmaier
-*
-* iropt --- optimizations intertwined with IR construction.
-*/
-
-/* $Id$ */
+/*
+ * Project:     libFIRM
+ * File name:   ir/ir/iropt.c
+ * Purpose:     iropt --- optimizations intertwined with IR construction.
+ * Author:      Christian Schaefer
+ * Modified by: Goetz Lindenmaier
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>

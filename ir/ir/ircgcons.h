@@ -1,11 +1,15 @@
-/* -------------------------------------------------------------------
- * $Id$
- * -------------------------------------------------------------------
- * Auf- und Abbau der interprozeduralen Darstellung (Explizite
- * interprozedurale Abhaengigkeiten).
- *
- * Erstellt: Hubert Schmid, 09.06.2002
- * ---------------------------------------------------------------- */
+/*
+ * Project:     libFIRM
+ * File name:   ir/ir/ircgcons.h
+ * Purpose:     Construction and removal of interprocedural representation
+ *              (explicit interprocedural dependencies).
+ * Author:      Hubert Schmid
+ * Modified by:
+ * Created:     09.06.2002
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2002-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 
 #ifndef _CONSTRUCT_H_

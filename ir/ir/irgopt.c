@@ -1,12 +1,15 @@
-/* Coyright (C) 1998 - 2002 by Universitaet Karlsruhe
-* All rights reserved.
-*
-* Author: Christian Schaefer, Goetz Lindenmaier, Sebastian Felis
-*
-* Optimizations for a whole ir graph, i.e., a procedure.
-*/
+/*
+ * Project:     libFIRM
+ * File name:   ir/ir/irgopt.c
+ * Purpose:     Optimizations for a whole ir graph, i.e., a procedure.
+ * Author:      Christian Schaefer, Goetz Lindenmaier
+ * Modified by: Sebastian Felis
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
-/* $Id$ */
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>

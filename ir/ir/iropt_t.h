@@ -1,6 +1,14 @@
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-* All rights reserved.
-*/
+/*
+ * Project:     libFIRM
+ * File name:   ir/ir/iropt_t.h
+ * Purpose:     iropt --- optimizations intertwined with IR construction -- private header.
+ * Author:      Martin Trapp, Christian Schaefer
+ * Modified by: Goetz Lindenmaier
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 /**
 * @file iropt_t.h
@@ -9,8 +17,6 @@
 *
 * @author Martin Trapp, Christian Schaefer
 */
-
-/* $Id$ */
 
 # ifndef _IROPT_T_H_
 # define _IROPT_T_H_

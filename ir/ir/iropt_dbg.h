@@ -1,3 +1,14 @@
+/*
+ * Project:     libFIRM
+ * File name:   ir/ir/iropt_dbg.h
+ * Purpose:     Debug makros used in iropt.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2001-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 
 /* This file contains makros that generate the calls to

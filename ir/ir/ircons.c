@@ -1,15 +1,16 @@
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-* All rights reserved.
-*
-* Authors: Martin Trapp, Christian Schaefer
-*
-* ircons.c: basic and more detailed irnode constructors
-*           store, block and parameter administration.
-* Adapted to extended FIRM nodes (exceptions...) and commented
-*   by Goetz Lindenmaier
-*/
+/*
+ * Project:     libFIRM
+ * File name:   ir/ir/ircons.c
+ * Purpose:     Various irnode constructors.  Automatic construction
+ *              of SSA representation.
+ * Author:      Martin Trapp, Christian Schaefer
+ * Modified by: Goetz Lindenmaier, Boris Boesler
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
-/* $Id$ */
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>

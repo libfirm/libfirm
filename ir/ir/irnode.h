@@ -1,8 +1,14 @@
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe      3 2002/02/28 13:33:52
- * All rights reserved.
+/*
+ * Project:     libFIRM
+ * File name:   ir/ir/irnode.h
+ * Purpose:     Representation of an intermediate operation.
+ * Author:      Martin Trapp, Christian Schaefer
+ * Modified by: Goetz Lindenmaier
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
-
-/* $Id$ */
 
 # ifndef _IRNODE_H_
 # define _IRNODE_H_

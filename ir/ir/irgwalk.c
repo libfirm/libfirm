@@ -1,14 +1,21 @@
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-* All rights reserved.
-*
-* Author: Boris Boesler
-*
+/*
+ * Project:     libFIRM
+ * File name:   ir/ir/irgwalk.c
+ * Purpose:
+ * Author:      Boris Boesler
+ * Modified by: Goetz Lindenmaier
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1999-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
+
+/**
 * traverse an ir graph
 * - execute the pre function before recursion
 * - execute the post function after recursion
 */
 
-/* $Id$ */
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>

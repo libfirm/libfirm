@@ -1,12 +1,15 @@
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-* All rights reserved.
-*
-* Authors: Martin Trapp, Christian Schaefer
-*
-* irdump.h: dumping of an intermediate representation graph
-*/
+/*
+ * Project:     libFIRM
+ * File name:   ir/ir/irdump.c
+ * Purpose:     Write vcg representation of firm to file.
+ * Author:      Martin Trapp, Christian Schaefer
+ * Modified by: Goetz Lindenmaier, Hubert Schmidt
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
-/* $Id$ */
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>

@@ -1,6 +1,15 @@
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-* All rights reserved.
-*/
+/*
+ * Project:     libFIRM
+ * File name:   ir/ir/irdump.h
+ * Purpose:     Write vcg representation of firm to file.
+ * Author:      Martin Trapp, Christian Schaefer
+ * Modified by: Goetz Lindenmaier, Hubert Schmidt
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
+
 
 /**
  * @file irdump.h
@@ -20,7 +29,6 @@
  * file dumped to.
  */
 
-/* $Id$ */
 
 # ifndef _IRDUMP_H_
 # define _IRDUMP_H_
@@ -31,7 +39,7 @@
 /**
  * The value of this string will be added to the file name before .vcg
  *
- * @todo  GL: A hack
+ * @todo  GL: A hack -- add parameter to dumper function.
  */
 extern char *dump_file_suffix;
 

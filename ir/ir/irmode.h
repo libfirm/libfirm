@@ -1,7 +1,14 @@
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
- * All rights reserved.
+/*
+ * Project:     libFIRM
+ * File name:   ir/ir/irmode.h
+ * Purpose:     Data modes of operations.
+ * Author:      Martin Trapp, Christian Schaefer
+ * Modified by: Goetz Lindenmaier, Mathias Heil
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
-/* $Id$ */
 
 /**
  * @file irmode.h
@@ -18,6 +25,7 @@
  *    UKA tech report 1999-44 for more information about modes.
  *
  */
+
 #ifndef _IRMODE_H_
 #define _IRMODE_H_
 

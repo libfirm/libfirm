@@ -1,6 +1,14 @@
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-* All rights reserved.
-*/
+/*
+ * Project:     libFIRM
+ * File name:   ir/ir/irvrfy.h
+ * Purpose:     Check irnodes for correctness.
+ * Author:      Christian Schaefer
+ * Modified by: Goetz Lindenmaier. Till Riedel
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 /**
 * @file irvrfy.h
@@ -9,8 +17,6 @@
 *
 * @author Christian Schaefer
 */
-
-/* $Id$ */
 
 # ifndef _IRVRFY_H_
 # define _IRVRFY_H_

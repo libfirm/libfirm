@@ -1,11 +1,14 @@
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-* All rights reserved.
-*
-* Authors: Christian Schaefer
-*
-*/
-
-/* $Id$ */
+/*
+ * Project:     libFIRM
+ * File name:   ir/ir/irop.c
+ * Purpose:     Representation of opcode of intermediate operation.
+ * Author:      Christian Schaefer
+ * Modified by: Goetz Lindenmaier
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>

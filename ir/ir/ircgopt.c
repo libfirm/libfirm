@@ -1,12 +1,20 @@
-/* -------------------------------------------------------------------
- * $Id$
- * -------------------------------------------------------------------
+/*
+ * Project:     libFIRM
+ * File name:   ir/ir/ircgopt.c
+ * Purpose:     Removal of unreachable methods.
+ * Author:      Hubert Schmid
+ * Modified by:
+ * Created:     09.06.2002
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2002-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
+
+/**
  * Entfernen von nicht erreichbaren (aufrufbaren) Methoden. Die Menge
  * der nicht erreichbaren Methoden wird aus der Abschätzung der
  * Aufrufrelation bestimmt.
- *
- * Erstellt: Hubert Schmid, 09.06.2002
- * ---------------------------------------------------------------- */
+ */
 
 
 #include "ircgopt.h"

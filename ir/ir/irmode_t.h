@@ -1,5 +1,15 @@
+/*
+ * Project:     libFIRM
+ * File name:   ir/ir/irmode_t.h
+ * Purpose:     Data modes of operations -- private header.
+ * Author:      Martin Trapp, Christian Schaefer
+ * Modified by: Goetz Lindenmaier, Mathias Heil
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
-/* $Id$ */
 
 /**
  * @file irmode_t.h

@@ -1,16 +1,22 @@
-/* Copyright (C) 1998 - 2001 by Universitaet Karlsruhe
-* All rights reserved.
-*/
+/*
+ * Project:     libFIRM
+ * File name:   ir/ir/irgopt.h
+ * Purpose:     Optimizations for a whole ir graph, i.e., a procedure.
+ * Author:      Christian Schaefer, Goetz Lindenmaier
+ * Modified by: Sebastian Felis
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 /**
-* @file irgopt.h
-*
-* Optimizations for a whole ir graph, i.e., a procedure.
-*
-* @author Christian Schaefer, Goetz Lindenmaier
-*/
-
-/* $Id$ */
+ * @file irgopt.h
+ *
+ * Optimizations for a whole ir graph, i.e., a procedure.
+ *
+ * @author Christian Schaefer, Goetz Lindenmaier
+ */
 
 # ifndef _IRGOPT_H_
 # define _IRGOPT_H_

@@ -1,6 +1,14 @@
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-* All rights reserved.
-*/
+/*
+ * Project:     libFIRM
+ * File name:   ir/ir/irflag.h
+ * Purpose:     Flags to control optimizations.
+ * Author:      Christian Schaefer, Goetz Lindenmaier
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1999-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 /**
  * @file irflag.h
@@ -9,8 +17,6 @@
  *
  * @author Christian Schaefer
  */
-
-/* $Id$ */
 
 #ifndef _IRFLAG_H_
 #define _IRFLAG_H_

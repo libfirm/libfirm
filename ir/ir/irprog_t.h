@@ -1,5 +1,14 @@
-
-/* $Id$ */
+/*
+ * Project:     libFIRM
+ * File name:   ir/ir/irprog_t.h
+ * Purpose:     Entry point to the representation of a whole program 0-- private header.
+ * Author:      Goetz Lindenmaier
+ * Modified by:
+ * Created:     2000
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2000-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 /**
  * @file irprog_t.h

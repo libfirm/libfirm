@@ -1,13 +1,14 @@
-
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-* All rights reserved.
-*
-* Authors: Martin Trapp, Christian Schaefer
-*
-* irgmod: ir graph modification
-*/
-
-/* $Id$ */
+/*
+ * Project:     libFIRM
+ * File name:   ir/ir/irgmod.h
+ * Purpose:     Support for ir graph modification.
+ * Author:      Martin Trapp, Christian Schaefer
+ * Modified by: Goetz Lindenmaier
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>

@@ -1,8 +1,15 @@
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-* All rights reserved.
-*/
-
-/* $Id$ */
+/*
+ * Project:     libFIRM
+ * File name:   ir/ir/ircons.h
+ * Purpose:     Various irnode constructors.  Automatic construction
+ *              of SSA representation.
+ * Author:      Martin Trapp, Christian Schaefer
+ * Modified by: Goetz Lindenmaier, Boris Boesler
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 /**
  @todo
@@ -18,6 +25,8 @@
 
 /**
  *  @file ircons.h
+ *
+ *  documentation no more supported since 2001
  *
  *  ir node construction.
  *
