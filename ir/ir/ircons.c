@@ -1479,7 +1479,7 @@ new_rd_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
      Phi node merges the same definition on several paths and therefore
      is not needed. Don't consider Bad nodes! */
   known = res;
-  //DDMN(res);  // GL
+  //DDMNB(res);  // GL
   //if (phi0) DDMN(phi0); else printf(" phi0 == NULL\n");
 
   for (i=0;  i < ins;  ++i)
@@ -1511,7 +1511,14 @@ new_rd_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
     //printf("  removing Phi node\n"); // GL
     if (res != known) {
       obstack_free (current_ir_graph->obst, res);
-      res = known;
+      if (is_Phi(known)) {
+	/* If pred is a phi node we want to optmize it: If loops are matured in a bad
+	   order, an enclosing Phi know may get superfluous. */
+	res = optimize_in_place_2(known);
+	if (res != known) { /* printf("found better pred "); DDMN(res); GL */ exchange(known, res); }
+      } else {
+	res = known;
+      }
     } else {
       /* A undefined value, e.g., in unreachable code. */
       res = new_Bad();
