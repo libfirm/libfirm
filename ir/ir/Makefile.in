@@ -29,7 +29,7 @@ SOURCES += 	Makefile.in \
 		irgwalk.c irgwalk_blk.c irdump.c irdumptxt.c irgopt.c irgopt_t.h irnode_t.h 	\
 		irmode.c irop.c irprog.c irflag.c irflag_t.h irgraph.c irprintf_t.h \
 		irmode_t.h irop_t.h irprog_t.h ircgcons.c ircgopt.c irreflect.c irarch.c \
-		pseudo_irg.c irhooks.c iredges.c irprintf.c
+		pseudo_irg.c irhooks.c iredges.c irprintf.c irvrfy_t.h
 
 ifeq ($(enable_libcore),yes)
 SOURCES +=	irargs.c
