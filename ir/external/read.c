@@ -1465,7 +1465,7 @@ static void create_abstract_firm(module_t *module, proc_t *proc, entity *fent)
   VERBOSE_PRINT((stdout, "verify graph\n"));
   irg_vrfy(irg);
   VERBOSE_PRINT((stdout, "finalize construction\n"));
-  finalize_cons (irg);
+  irg_finalize_cons (irg);
 }
 
 /********************************************************************/
@@ -1677,6 +1677,9 @@ void free_abstraction(void) {
 
 /*
  * $Log$
+ * Revision 1.21  2005/03/10 10:05:38  goetz
+ * chanmged method name
+ *
  * Revision 1.20  2005/01/05 14:28:35  beck
  * renames all is_x*_type() functions to is_X*_type() to prevent name clash with EDG frontend
  *
