@@ -3,6 +3,9 @@
  * @author Sebastian Hack
  * @date 25.11.2004
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <stdarg.h>
 
@@ -19,6 +22,8 @@
 #include "belistsched.h"
 #include "belive_t.h"
 #include "bephicongr_t.h"
+#include "beutil.h"
+#include "bechordal.h"
 #include "phistat.h"
 
 #define N_PHASES 256
