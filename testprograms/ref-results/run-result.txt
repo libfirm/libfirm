@@ -113,12 +113,17 @@ Use xvcg to view these graphs:
 /ben/goetz/bin/xvcg GRAPHNAME
 
 
-Creating an IR graph: IRR_LOOP...
+Creating testprogram: IRR_LOOP...
 Optimizing ...
 Dumping the graph and a control flow graph.
 Use xvcg to view these graphs:
 /ben/goetz/bin/xvcg GRAPHNAME
 
+Dumping the graph and a control flow graph.
+Use xvcg to view these graphs:
+/ben/goetz/bin/xvcg GRAPHNAME
+
+Loop entry not at loop position 0. construct_interval_block(l.239) BlockBB: 47 (0x811b910)
 
 Creating an IR graph: MEMORY_EXAMPLE...
 Optimizing ...
@@ -153,69 +158,6 @@ Use xvcg to view these graphs:
 
 Creating an IR graph: IF_EXAMPLE...
 Done building the graph.  Dumping and optimizing it.
-The new Phi node is : reduce(l.321) PhiIs: 92 (0x80fa9cc)
-reducing operation is : reduce(l.322) MulIs: 64 (0x80f7cec)
-in graph : reduce(l.323) graph STRENGTH_RED_EXAMPLE_m1: 45 (0x80f7320) in class GlobalType.
-
-Reducing operation is : reduce(l.428) AddP: 65 (0x80f7d34)
-in graph : reduce(l.429) graph STRENGTH_RED_EXAMPLE_m1: 45 (0x80f7320) in class GlobalType.
-The new Phi node is : reduce(l.321) PhiIs: 92 (0x80fa9cc)
-reducing operation is : reduce(l.322) MulIs: 66 (0x80f7d7c)
-in graph : reduce(l.323) graph STRENGTH_RED_EXAMPLE_m1: 45 (0x80f7320) in class GlobalType.
-
-Reducing operation is : reduce(l.428) AddP: 67 (0x80f7dc4)
-in graph : reduce(l.429) graph STRENGTH_RED_EXAMPLE_m1: 45 (0x80f7320) in class GlobalType.
-The new Phi node is : reduce(l.321) PhiIs: 119 (0x80fb078)
-reducing operation is : reduce(l.322) MulIs: 106 (0x80fad34)
-in graph : reduce(l.323) graph STRENGTH_RED_EXAMPLE_m1: 45 (0x80f7320) in class GlobalType.
-
-Reducing operation is : reduce(l.428) AddP: 107 (0x80fad7c)
-in graph : reduce(l.429) graph STRENGTH_RED_EXAMPLE_m1: 45 (0x80f7320) in class GlobalType.
-
- 3 made new_phis und  reduced 6 iteration variables in
- graph GlobalType.STRENGTH_RED_EXAMPLE_m1.
-The new Phi node is : reduce(l.321) PhiIs: 191 (0x80fcc5c)
-reducing operation is : reduce(l.322) MulIs: 168 (0x80fc654)
-in graph : reduce(l.323) graph STRENGTH_RED_EXAMPLE_m2: 148 (0x80fbc30) in class GlobalType.
-The new Phi node is : reduce(l.321) PhiIs: 191 (0x80fcc5c)
-reducing operation is : reduce(l.322) MulIs: 167 (0x80fc60c)
-in graph : reduce(l.323) graph STRENGTH_RED_EXAMPLE_m2: 148 (0x80fbc30) in class GlobalType.
-
- 2 made new_phis und  reduced 3 iteration variables in
- graph GlobalType.STRENGTH_RED_EXAMPLE_m2.
-The new Phi node is : reduce(l.321) PhiIs: 257 (0x81004fc)
-reducing operation is : reduce(l.322) MulIs: 231 (0x80ffe1c)
-in graph : reduce(l.323) graph STRENGTH_RED_EXAMPLE_m3: 213 (0x80ff488) in class GlobalType.
-
- 1 made new_phis und  reduced 2 iteration variables in
- graph GlobalType.STRENGTH_RED_EXAMPLE_m3.
-The new Phi node is : reduce(l.321) PhiIs: 324 (0x81053e8)
-reducing operation is : reduce(l.322) MulIs: 616 (0x810587c)
-in graph : reduce(l.323) graph STRENGTH_RED_EXAMPLE_m4: 279 (0x8102d88) in class GlobalType.
-The new Phi node is : reduce(l.321) PhiIs: 324 (0x81053e8)
-reducing operation is : reduce(l.322) MulIs: 610 (0x810572c)
-in graph : reduce(l.323) graph STRENGTH_RED_EXAMPLE_m4: 279 (0x8102d88) in class GlobalType.
-
- 2 made new_phis und  reduced 4 iteration variables in
- graph GlobalType.STRENGTH_RED_EXAMPLE_m4.
-
-Reducing operation is : reduce(l.392) MulIs: 644 (0x8109160)
-in graph : reduce(l.393) graph STRENGTH_RED_EXAMPLE_m5: 346 (0x81065e8) in class GlobalType.
-
- 0 made new_phis und  reduced 2 iteration variables in
- graph GlobalType.STRENGTH_RED_EXAMPLE_m5.
-
-Reducing operation is : reduce(l.392) MulIs: 669 (0x810c8a0)
-in graph : reduce(l.393) graph STRENGTH_RED_EXAMPLE_m6: 412 (0x8109e58) in class GlobalType.
-
- 0 made new_phis und  reduced 2 iteration variables in
- graph GlobalType.STRENGTH_RED_EXAMPLE_m6.
-The new Phi node is : reduce(l.321) PhiIs: 522 (0x810e794)
-reducing operation is : reduce(l.322) MulIs: 697 (0x811013c)
-in graph : reduce(l.323) graph STRENGTH_RED_EXAMPLE_m7: 478 (0x810d720) in class GlobalType.
-
- 1 made new_phis und  reduced 2 iteration variables in
- graph GlobalType.STRENGTH_RED_EXAMPLE_m7.
 
 Creating an IR graph: THREE_CFPRED_EXAMPLE ...
 Optimizing ...
