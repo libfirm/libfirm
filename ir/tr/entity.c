@@ -475,15 +475,16 @@ is_compound_graph_path(void *thing) {
 /* checks whether nodes 0..pos are correct (all lie on a path.) */
 /* @@@ not implemented */
 INLINE int is_proper_compound_graph_path(compound_graph_path *gr, int pos) {
+  int i;
   entity *node;
   type *owner = gr->tp;
   for (i = 0; i <= pos; i++) {
     node = get_compound_graph_path_node(gr, i);
     if (get_entity_owner(node) != owner) return false;
-    type = get_entity_type(node);
+    owner = get_entity_type(node);
   }
   if (pos == get_compound_graph_path_length(gr) -1)
-    if (!is_atomic_type(type)) return false;
+    if (!is_atomic_type(owner)) return false;
   return true;
 }
 
