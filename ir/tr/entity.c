@@ -20,7 +20,7 @@
 # include "typegmod_t.h"
 # include "array.h"
 /* All this is needed to build the constant node for methods: */
-# include "irprog.h"
+# include "irprog_t.h"
 # include "ircons.h"
 
 /*******************************************************************/
@@ -94,6 +94,10 @@ new_entity (type *owner, ident *name, type *type)
 
   res->irg = NULL;
 
+#ifdef DEBUG_libfirm
+  res->nr = get_irp_new_node_nr();
+#endif
+
   res->visit = 0;
 
   /* Remember entity in it's owner. */
@@ -165,6 +169,17 @@ void
 free_entity (entity *ent) {
   free_entity_attrs(ent);
   free(ent);
+}
+
+/* Outputs a unique number for this node */
+INLINE long
+get_entity_nr(entity *ent) {
+  assert(ent);
+#ifdef DEBUG_libfirm
+  return ent->nr;
+#else
+  return 0;
+#endif
 }
 
 INLINE const char *

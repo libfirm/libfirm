@@ -6,9 +6,10 @@
 
 # ifndef _TYPE_T_H_
 # define _TYPE_T_H_
-
+# ifdef HAVE_CONFIG_H
+# include "config.h"
+# endif
 # include "type.h"
-
 /**
  * @file type_t.h
  * This file contains the datatypes hidden in type.h.
@@ -115,6 +116,11 @@ struct type {
   unsigned long visit;     /**< visited counter for walks of the type information */
   void *link;              /**< holds temporary data - like in irnode_t.h */
   struct dbg_info* dbi;    /**< A pointer to information for debug support. */
+
+#ifdef DEBUG_libfirm
+  int nr;             /**< a unique node number for each node to make output
+			      readable. */
+#endif
   tp_attr attr;            /* type kind specific fields. This must be the last
 			      entry in this struct!  Varying size! */
 };

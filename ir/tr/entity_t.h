@@ -80,7 +80,12 @@ struct entity {
   ir_graph *irg;        /**< If (type == method_type) this is the corresponding irg.
 			   The ir_graph constructor automatically sets this field.
 			   Yes, it must be here. */
+#ifdef DEBUG_libfirm
+  int nr;             /**< a unique node number for each node to make output
+			      readable. */
+#endif
 };
 
+INLINE long get_entity_nr(entity *ent);
 
 # endif /* _ENTITY_T_H_ */

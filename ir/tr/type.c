@@ -24,6 +24,10 @@
  */
 
 /* $Id$ */
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 
 # include <stdlib.h>
 # include <stddef.h>
@@ -40,6 +44,11 @@
 /*******************************************************************/
 /** TYPE                                                          **/
 /*******************************************************************/
+
+#ifdef DEBUG_libfirm
+/** Returns a new, unique number to number nodes or the like. */
+int get_irp_new_node_nr(void);
+#endif
 
 unsigned long type_visited;
 INLINE void set_master_type_visited(unsigned long val) { type_visited = val; }
@@ -78,6 +87,9 @@ new_type(tp_op *type_op, ir_mode *mode, ident* name) {
   res->size = -1;
   res->visit = 0;
   res -> link = NULL;
+#ifdef DEBUG_libfirm
+  res->nr = get_irp_new_node_nr();
+#endif
 
   return res;
 }
@@ -157,6 +169,17 @@ ident*      get_type_ident(type *tp) {
 void        set_type_ident(type *tp, ident* id) {
   assert(tp && tp->kind == k_type);
   tp->name = id;
+}
+
+/* Outputs a unique number for this node */
+INLINE long
+get_type_nr(type *tp) {
+  assert(tp);
+#ifdef DEBUG_libfirm
+  return tp->nr;
+#else
+  return 0;
+#endif
 }
 
 const char* get_type_name(type *tp) {
@@ -794,6 +817,7 @@ INLINE type *new_type_method (ident *name, int n_param, int n_res) {
   res->attr.ma.n_res      = n_res;
   res->attr.ma.res_type   = (type **) xmalloc (sizeof (type *) * n_res);
   res->attr.ma.variadicity = non_variadic;
+
   return res;
 }
 type *new_d_type_method (ident *name, int n_param, int n_res, dbg_info* db) {
@@ -969,6 +993,7 @@ INLINE type *new_type_array         (ident *name, int n_dimensions,
   }
   res->attr.aa.element_type = element_type;
   new_entity(res, mangle_u(name, id_from_str("elem_ent", 8)), element_type);
+
   return res;
 }
 type *new_d_type_array (ident *name, int n_dimensions,
