@@ -26,7 +26,9 @@
  ********/
 static long double value;
 
-#define CAST_IN(val) (*((long double *)((val))))
+#define CAST_IN(val) ({ long double xxx = *(long double *)(val); printf("CAST to %Lg\n", xxx); xxx; })
+
+//#define CAST_IN(val) (*((long double *)((val))))
 #define CAST_OUT(val) ((void *)&(val))
 
 #define CLEAR_BUFFER() memset((char*)&value, 0, sizeof(long double))
@@ -49,6 +51,9 @@ const int fc_get_buffer_length(void)
 
 void fc_val_from_str(const char *str, unsigned int len)
 {
+  extern long double strtold(const char *str, char **end);
+
+  printf("-> %s\n", str);
   CLEAR_BUFFER();
   value = strtold(str, NULL);
 }
@@ -150,6 +155,8 @@ void fc_calc(const void *a, const void *b, int opcode)
       break;
     case FC_NEG:
       value = -CAST_IN(a);
+      printf("-> NEG %Lg\n", value);
+      break;
   }
 }
 

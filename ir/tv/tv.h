@@ -510,8 +510,8 @@ char *tarval_sub_bitpattern(tarval *tv, int from, int to);
  * Because this is the bit representation of the target machine, only the following
  * operations are legal on the result:
  *
- * - concatenation (be aware of the endieness)
- * - bitwise logical operations to selct/mask bits
+ * - concatenation (endian dependance MUST be handled by the CALLER)
+ * - bitwise logical operations to select/mask bits
  *
  * @param tv		the tarval
  * @param byte_ofs	the byte offset

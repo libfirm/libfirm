@@ -507,20 +507,30 @@ tarval *get_tarval_nan(ir_mode *mode)
 {
   ANNOUNCE();
   assert(mode);
-  assert(get_mode_sort(mode) == float_number);
 
-  fc_get_nan();
-  return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
+  if (get_mode_sort(mode) == float_number) {
+    fc_get_nan();
+    return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
+  }
+  else {
+    assert(0 && "tarval is not floating point");
+    return tarval_bad;
+  }
 }
 
 tarval *get_tarval_inf(ir_mode *mode)
 {
   ANNOUNCE();
   assert(mode);
-  assert(get_mode_sort(mode) == float_number);
 
-  fc_get_inf();
-  return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
+  if (get_mode_sort(mode) == float_number) {
+    fc_get_inf();
+    return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
+  }
+  else {
+    assert(0 && "tarval is not floating point");
+    return tarval_bad;
+  }
 }
 
 /*
@@ -545,6 +555,7 @@ int tarval_is_negative(tarval *a)
 
     default:
       assert(0 && "not implemented");
+      return 0;
   }
 }
 
@@ -652,6 +663,7 @@ tarval *tarval_neg(tarval *a)              /* negation */
   assert(mode_is_num(a->mode)); /* negation only for numerical values */
   assert(mode_is_signed(a->mode)); /* negation is difficult without negative numbers, isn't it */
 
+printf("NEG\n");
   switch (get_mode_sort(a->mode))
   {
     case int_number:
@@ -659,6 +671,7 @@ tarval *tarval_neg(tarval *a)              /* negation */
       return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 
     case float_number:
+printf("FP NEG\n");
       fc_neg(a->value);
       return get_tarval(fc_get_buffer(), fc_get_buffer_length(), a->mode);
 
