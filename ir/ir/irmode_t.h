@@ -16,6 +16,9 @@ struct ir_mode {
   firm_kind         kind;       /**< distinguishes this node from others */
   modecode          code;       /**< unambiguous identifier of a mode */
   ident             *name;      /**< Name ident of this mode */
+
+  /* ----------------------------------------------------------------------- */
+  /* On changing this struct you have to valuate the mode_are_equal function!*/
   mode_sort         sort;       /**< coarse classification of this mode:
                                      int, float, reference ...
                                      (see irmode.h) */
@@ -24,6 +27,7 @@ struct ir_mode {
   int               align;      /**< byte alignment */
   unsigned          sign:1;     /**< signedness of this mode */
 
+  /* ----------------------------------------------------------------------- */
   tarval            *min;
   tarval            *max;
   tarval            *null;
@@ -32,4 +36,4 @@ struct ir_mode {
   const void        *tv_priv;   /**< tarval module will save private data here */
 };
 
-#endif
+#endif /* _IRMODE_T_H_ */
