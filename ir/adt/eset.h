@@ -33,7 +33,7 @@ void eset_destroy(eset *s);
 /** Inserts an address into the set. */
 void eset_insert(eset *s, void *p);
 
-/** Checks, wheater an address is element of a set. */
+/** Checks, whether an address is element of a set. */
 int eset_contains(eset *s, void *p);
 
 /**
