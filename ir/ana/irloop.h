@@ -40,6 +40,8 @@
 /* ------------------------------------------------------------------- */
 
 /** Returns true if the predesessor pos is a backedge. */
+int  is_inter_backedge(ir_node *n, int pos);
+int  is_intra_backedge(ir_node *n, int pos);
 bool is_backedge (ir_node *n, int pos);
 /** Remarks that edge pos is a backedge. */
 void set_backedge (ir_node *n, int pos);

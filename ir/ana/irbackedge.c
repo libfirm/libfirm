@@ -105,6 +105,25 @@ INLINE void fix_backedges(struct obstack *obst, ir_node *n) {
   }*/
 }
 
+int is_inter_backedge(ir_node *n, int pos) {
+  int res;
+  int rem = get_interprocedural_view();
+  set_interprocedural_view(0);
+  res = is_backedge(n, pos);
+  set_interprocedural_view(rem);
+  return res;
+}
+
+int is_intra_backedge(ir_node *n, int pos) {
+  int res;
+  int rem = get_interprocedural_view();
+  set_interprocedural_view(1);
+  res = is_backedge(n, pos);
+  set_interprocedural_view(rem);
+  return res;
+}
+
+
 /** Returns true if the predecessor pos is a backedge. */
 bool is_backedge (ir_node *n, int pos) {
   int *ba = get_backarray (n);
