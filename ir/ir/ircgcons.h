@@ -24,10 +24,10 @@
  */
 typedef enum {
   ip_view_no,       /**< The interprocedural view is not constructed.  There are no
-		         view specific nodes (EndReg, Filter....) in any graph.  */
+                         view specific nodes (EndReg, Filter....) in any graph.  */
   ip_view_valid,    /**< The interprocedural view is valid.  */
   ip_view_invalid   /**< The interprocedural view is invalid.  Specific nodes are
-		         all still in the representation, but the graph is no more complete. */
+                         all still in the representation, but the graph is no more complete. */
 } ip_view_state;
 
 /** Return the current state of the interprocedural view. */
@@ -37,8 +37,8 @@ void set_irp_ip_view_invalid(void);
 
 /** Construction of the interprocedural view.
  *
- * Construction of the interprocedural view.  A prior analyses must have set
- * all possible callees in the corresponding fiels of Call nodes.  Sets
+ * Construction of the interprocedural view.  A prior analysis must have set
+ * all possible callees in the corresponding fields of Call nodes.  Sets
  * ip_view_valid in irp.
  *
  * @arg free_methods_arr: An array of all free methods, i.e., methods that
