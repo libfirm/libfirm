@@ -144,19 +144,19 @@ static type *find_type_for_node(ir_node *n) {
   /* has no type */
   case iro_Return: {
     /* Check returned type. */
+    /*
     int i;
     type *meth_type = get_entity_type(get_irg_ent(current_ir_graph));
     for (i = 0; i < get_method_n_ress(meth_type); i++) {
       type *res_type = get_method_res_type(meth_type, i);
       type *ana_res_type = get_irn_type(get_Return_res(n, i));
-      /*(
       if (ana_res_type == unknown_type) continue;
       if (res_type != ana_res_type && "return value has wrong type") {
 	DDMN(n);
 	assert(res_type == ana_res_type && "return value has wrong type");
       }
-      */
     }
+    */
   }
   case iro_Block:
   case iro_Start:
