@@ -1,3 +1,17 @@
+  * 8.9.03 Boris
+    Wenn man in Arrays.java in der Methode ArrObject.f() die
+    ersten zwei prints auskommentiert und pass_array_test die
+    for-Schleife durch ein i = 0, while(true).. ersetzt, stürzt der
+    Compiler in get_Block_idom ab; der übergebene Zeiger ist ein
+    NULL-Zeiger.
+
+  * 15.9.03 Goetz
+    Wir haben ev. einen Fehler in scc gefunden:  Matthias hat eine
+    Enlosrekursion a() { b(); }, b() { a(); } in Java implementiert.
+    Darauf ist in is_head die Assertion
+	assert(get_irn_uplink(pred) >= get_irn_uplink(root));
+    geflogen.
+
   * 29.8.03 Goetz
     Cast: irsimpletype: implement type analyses for one node.  Test the
     effort of that analyses.  Add optimization to iropt that removes

@@ -466,7 +466,7 @@ typedef enum {
 
 /**
  * This structure contains helper information to format the output
- * of a tarval of an mode.
+ * of a tarval of a mode.
  */
 typedef struct tarval_mode_info {
     tv_output_mode mode_output;	        /**< if != TVO_NATIVE select a special mode */
