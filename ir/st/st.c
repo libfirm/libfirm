@@ -1,6 +1,6 @@
 /* Copyright (c) 2002 by Universität Karlsruhe (TH).  All Rights Reserved */
 //
-// Time-stamp: <02/03/04 16:57:32 liekweg>
+// Time-stamp: <Monday, 13.05.2002, 13:27:22 goetz@i44pc2.info.uni-karlsruhe.de>
 //
 
 /***
@@ -434,6 +434,7 @@ dom_env_t *get_dom_env (ir_graph *graph, ir_node *a)
   env->dt      = get_dominator_tree (graph);
   env->a       = a;
   env->index_a = get_index (env->dt, a);
+  return env;
 }
 
 /*
