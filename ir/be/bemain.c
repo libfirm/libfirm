@@ -121,7 +121,7 @@ static void be_main_loop(void)
 		dump_ir_block_graph(irg, "-local-const");
 #endif
 		be_numbering(irg);
-		list_sched(irg, trivial_selector, NULL);
+		list_sched(irg, trivial_selector);
 		be_liveness(irg);
 		be_ra_chordal(irg);
 

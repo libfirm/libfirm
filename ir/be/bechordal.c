@@ -31,18 +31,11 @@
 #include "belive_t.h"
 #include "bechordal_t.h"
 
-
-
 #undef DUMP_INTERVALS
 #undef DUMP_PRESSURE
 #define DUMP_IFG
 
 #define BUILD_GRAPH
-
-#ifdef USE_OLD_PHI_INTERFERENCE
-#undef BUILD_GRAPH
-#define BUILD_GRAPH
-#endif
 
 #ifdef DEBUG_libfirm
 #include "fourcc.h"
@@ -160,6 +153,114 @@ static void draw_interval_graphs(ir_node *block,
 	}
 }
 
+#if 0
+typedef struct _tree_layout_info_t {
+	ir_node *block;
+	int is_child;
+	int child_slot;
+	unsigned x;
+	unsigned y;
+	int steps;
+} tree_layout_info_t;
+
+typedef struct _tree_layout_params_t {
+	int interval_dist;
+	int x_block_dist;
+	int y_block_dist;
+	int step_len;
+} tree_layout_params_t;
+
+static const tree_layout_params_t tree_layout_params = {
+	10, 20, 20, 5
+};
+
+static void dump_tree_collect(ir_node *block, void *env)
+{
+	ir_block *curr;
+	struct list_head *border_head;
+
+	int pre_num = get_Block_dom_tree_pre_num(block);
+	tree_layout_info_t *info = env;
+	tree_layout_info_t *i = &info[pre_num];
+
+	i->block = block;
+	i->child_slot = -1;
+	i->steps = list_empty(border_head) ? 0 : list_entry(border_head->prev, border_t, list)->step;
+	i->is_child = 1;
+
+	dominates_for_each(block, curr)
+		i->is_child = 0;
+}
+
+static void dump_tree_assign_x(ir_node *block, void *env)
+{
+	unsigned min_x = -1, max_x = 0;
+	int n_childs = 0;
+	ir_block *curr;
+
+	int pre_num = get_Block_dom_tree_pre_num(block);
+	tree_layout_info_t *info = env;
+	tree_layout_info_t *i = &info[pre_num];
+
+	if(i->is_child)
+		return;
+
+	dominates_for_each(block, curr) {
+		tree_layout_info_t *ci = &info[get_Block_dom_tree_pre_num(curr)];
+		max_x = MAX(max_x, ci->x);
+		min_x = MIN(min_x, ci->x);
+		n_childs++;
+	}
+
+	i->x = (max_x - mix_x) / n_childs;
+}
+
+static void dump_tree_assign_y(ir_node *block, void *env)
+{
+	unsigned min_x = -1, max_x = 0;
+	int n_childs = 0;
+	ir_block *curr;
+
+	int pre_num = get_Block_dom_tree_pre_num(block);
+	tree_layout_info_t *info = env;
+	tree_layout_info_t *i = &info[pre_num];
+	ir_block *idom = get_Block_idom(block);
+
+	i->y = 0;
+	if(idom) {
+		tree_layout_info_t *idom_info = &info[get_Block_dom_tree_pre_num(idom)];
+		i->y = idom_info->y + idom_info->steps * params->step_len + params->y_dist;
+	}
+}
+
+static void draw_block(ir_block *bl, void *env)
+{
+}
+
+static void dump_interval_tree(ir_graph *irg, const tree_layout_params_t *params)
+{
+	int i, slot;
+	int n_blocks = get_Block_dom_max_subtree_pre_num(get_irg_start_block(irg));
+	tree_layout_info_t *info = malloc(sizeof(info[0]) * n_blocks);
+
+	/* Fill the info array. */
+	dom_tree_walk_irg(irg, NULL, dump_tree_collect, info);
+
+	/* Assign the child slots. */
+	for(i = 0, slot = 0; i < n_blocks; ++i) {
+		tree_layout_info_t *i = &info[i];
+		if(i->is_child) {
+			i->child_slot = slot++;
+			i->x = i->child_slot * params->max_color * params->interval_dist + params->block_dist;
+		}
+	}
+
+	dom_tree_walk_irg(irg, NULL, dump_tree_assign_xy, info);
+
+	free(info);
+}
+#endif
+
 #ifdef BUILD_GRAPH
 
 typedef struct _if_edge_t {
@@ -204,21 +305,126 @@ static INLINE int are_connected(const env_t *env, int src, int tgt)
 	return set_find(env->graph, &edge, sizeof(edge), IF_EDGE_HASH(&edge)) != NULL;
 }
 
-static void dump_ifg(set *edges, const char *filename)
+static void dump_ifg(ir_graph *irg, set *edges, const char *filename)
 {
+	static const char *colors[] = {
+		"coral",
+		"azure",
+		"bisque",
+		"aliceblue",
+		"blanchedalmond",
+		"deeppink",
+		"cornsilk",
+		"blueviolet",
+		"floralwhite",
+		"hotpink",
+		"gainsboro",
+		"indianred",
+		"cornflowerblue",
+		"ghostwhite",
+		"lightpink",
+		"palegoldenrod",
+		"darkslateblue",
+		"honeydew",
+		"ivory",
+		"lavender",
+		"mediumvioletred",
+		"indigo",
+		"lavenderblush",
+		"lemonchiffon",
+		"linen",
+		"pink",
+		"mintcream",
+		"red",
+		"mediumblue",
+		"mistyrose",
+		"mediumslateblue",
+		"moccasin",
+		"tomato",
+		"forestgreen",
+		"midnightblue",
+		"navajowhite",
+		"navy",
+		"oldlace",
+		"greenyellow",
+		"navyblue",
+		"papayawhip",
+		"lawngreen",
+		"powderblue",
+		"peachpuff",
+		"seashell",
+		"snow",
+		"thistle",
+		"wheat",
+		"darkkhaki",
+		"mintcream",
+		"khaki",
+		"Magentas",
+		"whitesmoke",
+		"peru",
+		"palegreen",
+		"blueviolet",
+		"rosybrown",
+		"saddlebrown",
+		"springgreen",
+		"darkviolet",
+		"darkslategray",
+		"dimgray",
+		"sienna",
+		"gray",
+		"tan",
+		"gray",
+		"mediumvioletred",
+		"lightgray",
+		"Oranges",
+		"cyan",
+		"lightslategray",
+		"darkorange",
+		"slategray",
+		"orangered",
+		"mediumturquoise",
+		"violet",
+		"paleturquoise"
+	};
+
+	static const int n_colors = sizeof(colors) / sizeof(colors[0]);
+
 	FILE *f;
 
 	if((f = fopen(filename, "wt")) != NULL) {
+		long pos;
+		int n_edges = 0;
 		if_edge_t *edge;
+		bitset_t *bs = bitset_malloc(get_graph_node_count(irg));
 
-		fprintf(f, "graph G {\n");
+		ir_fprintf(f, "graph \"%F\" {\n", irg);
+		fprintf(f, "\tnode [shape=box,style=filled]\n");
 
 		for(edge = set_first(edges); edge; edge = set_next(edges)) {
-			fprintf(f, "i\tn%d -- n%d\n", edge->src, edge->tgt);
+			bitset_set(bs, edge->src);
+			bitset_set(bs, edge->tgt);
+			n_edges++;
+		}
+
+		fprintf(f, "\tx [label=\"nodes: %d, edges: %d\"]\n", bitset_popcnt(bs), n_edges);
+
+		bitset_foreach(bs, pos) {
+			int nr = (int) pos;
+			ir_node *irn = get_irn_for_graph_nr(irg, nr);
+			int color = get_irn_color(irn);
+
+			ir_fprintf(f, "\tn%d [label=\"%n\",color=\"%s\"]\n", nr, irn,
+					color >= 0 && color < n_colors ? colors[color] : "black");
+		}
+
+		for(edge = set_first(edges); edge; edge = set_next(edges)) {
+			fprintf(f, "\tn%d -- n%d [len=5]\n", edge->src, edge->tgt);
 		}
 
 		fprintf(f, "}\n");
 		fclose(f);
+
+		bitset_free(bs);
 	}
 
 }
@@ -597,7 +803,7 @@ void be_ra_chordal(ir_graph *irg)
 		char buf[128];
 
 		ir_snprintf(buf, sizeof(buf), "ifg_%s.dot", get_entity_name(get_irg_entity(irg)));
-		dump_ifg(env->graph, buf);
+		dump_ifg(irg, env->graph, buf);
 	}
 #endif
 

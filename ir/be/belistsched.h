@@ -7,30 +7,74 @@
 #ifndef _FIRM_LIST_SCHED
 #define _FIRM_LIST_SCHED
 
+#include "irgraph.h"
+#include "irnode.h"
+
 #include "pset.h"
 #include "pmap.h"
 #include "list.h"
 
 /**
- * The selection function.
- * It picks one node out of the ready list to be scheduled next.
- * The function does not have to delete the node from the ready set.
- *
- * @param env Some private information as passed to list_schedule().
- * @param block The block which is currentliy scheduled.
- * @param curr_time The current time step which the picked node
- * will be assigned to.
- * @param already_scheduled A set containing all nodes already
- * scheduled.
- * @param ready_list A set containing all ready nodes. Pick one of these
- * nodes.
- * @return The chosen node.
+ * A selector interface which is used by the list schedule framework.
+ * You can implement your own list scheduler by implementing these
+ * functions.
  */
-typedef ir_node *(list_sched_selector_t)(void *env, ir_node *block,
-		int curr_time, pset *already_scheduled, pset *ready_list);
+typedef struct _list_sched_selector_t {
+	/**
+	 * Called before a graph is being scheduled.
+	 * @param irg The graph.
+	 * @return The environment pointer that is passed to all other
+	 * functions in this struct.
+	 */
+	void *(*init_graph)(ir_graph *irg);
 
-ir_node *trivial_selector(void *env, ir_node *block, int curr_time,
-		pset *already_scheduled, pset *ready_list);
+	/**
+	 * Called before scheduling starts on a block.
+	 * @param env The environment.
+	 * @param block The block which is to be scheduled.
+	 * @return A per-block pointer that is additionally passed to select.
+	 */
+	void *(*init_block)(void *env, ir_node *block);
+
+	/**
+	 * The selection function.
+	 * It picks one node out of the ready list to be scheduled next.
+	 * The function does not have to delete the node from the ready set.
+	 *
+	 * @param env Some private information as returned by init_graph().
+	 * @return block_env Some provate information as returned by init_block().
+	 * @param sched_head The schedule so far.
+	 * @param curr_time The current time step which the picked node
+	 * will be assigned to.
+	 * @param ready_list A set containing all ready nodes. Pick one of these
+	 * nodes.
+	 * @return The chosen node.
+	 */
+	ir_node *(*select)(void *env, void *block_env,
+			const struct list_head *sched_head,
+			int curr_time, pset *ready_set);
+
+	/**
+	 * Called after a block has been scheduled.
+	 * @param env The environment.
+	 * @param block_env The per block environemtn as returned by init_block().
+	 * @param block The block that has been finished.
+	 */
+	void (*finish_block)(void *env, void *block_env, ir_node *block);
+
+	/**
+	 * Called after a whole graph has been scheduled.
+	 * @param env The environment.
+	 * @param irg The graph.
+	 */
+	void (*finish_graph)(void *env, ir_graph *irg);
+} list_sched_selector_t;
+
+
+/**
+ * A trivial selector, that just selects the first ready node.
+ */
+extern const list_sched_selector_t *trivial_selector;
 
 /**
  * List schedule a graph.
@@ -41,9 +85,8 @@ ir_node *trivial_selector(void *env, ir_node *block, int curr_time,
  * @param sched_obst An obstack to allocate the lists on.
  * @param map Maps each block to a list head giving the schedule.
  * @param select_func A selection function.
- * @param env Some private data to give to the select function.
  */
-void list_sched(ir_graph *irg, list_sched_selector_t *select_func, void *env);
+void list_sched(ir_graph *irg, const list_sched_selector_t *select_func);
 
 
 

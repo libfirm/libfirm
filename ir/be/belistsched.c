@@ -33,27 +33,37 @@
  */
 typedef struct _sched_env_t {
     const ir_graph *irg;                        /**< The graph to schedule. */
-    list_sched_selector_t *select;  /**< The node selector. */
-    void *select_env;                               /**< A pointer to give to the selector. */
+    const list_sched_selector_t *selector;		  /**< The node selector. */
+    void *selector_env;                         /**< A pointer to give to the selector. */
 } sched_env_t;
 
-ir_node *trivial_selector(void *env, ir_node *block, int curr_time,
-        pset *already_scheduled, pset *ready_list)
+static ir_node *trivial_select(void *env, void *block_env, const struct list_head *sched_head,
+		int curr_time, pset *ready_set)
 {
-    ir_node *res = pset_first(ready_list);
-    pset_break(ready_list);
+    ir_node *res = pset_first(ready_set);
+    pset_break(ready_set);
     return res;
 }
 
+static const list_sched_selector_t trivial_selector_struct = {
+	NULL,
+	NULL,
+	trivial_select,
+	NULL,
+	NULL
+};
+
+const list_sched_selector_t *trivial_selector = &trivial_selector_struct;
+
 static void list_sched_block(ir_node *block, void *env_ptr);
 
-void list_sched(ir_graph *irg, list_sched_selector_t *selector, void *select_env)
+void list_sched(ir_graph *irg, const list_sched_selector_t *selector)
 {
     sched_env_t env;
 
     memset(&env, 0, sizeof(env));
-    env.select = selector;
-    env.select_env = select_env;
+    env.selector = selector;
+    env.selector_env = selector->init_graph ? selector->init_graph(irg) : NULL;
     env.irg = irg;
 
     /* Normalize proj nodes. */
@@ -68,6 +78,9 @@ void list_sched(ir_graph *irg, list_sched_selector_t *selector, void *select_env
 
     /* Schedule each single block. */
     irg_block_walk_graph(irg, list_sched_block, NULL, &env);
+
+		if(selector->finish_graph)
+			selector->finish_graph(env.selector_env, irg);
 }
 
 
@@ -267,94 +280,100 @@ static void add_tuple_projs(block_sched_env_t *env, ir_node *irn)
  */
 static void list_sched_block(ir_node *block, void *env_ptr)
 {
-    sched_env_t *env = env_ptr;
-    block_sched_env_t be;
+	void *block_env = NULL;
+	sched_env_t *env = env_ptr;
+	block_sched_env_t be;
+	const list_sched_selector_t *selector = env->selector;
 
-    ir_node *irn;
-    int i, n, j, m;
-    int phi_seen = 0;
-    sched_info_t *info = get_irn_sched_info(block);
+	ir_node *irn;
+	int i, n, j, m;
+	int phi_seen = 0;
+	sched_info_t *info = get_irn_sched_info(block);
 
-    /* Initialize the block's list head that will hold the schedule. */
-    INIT_LIST_HEAD(&info->list);
+	/* Initialize the block's list head that will hold the schedule. */
+	INIT_LIST_HEAD(&info->list);
 
-    /* Initialize the block scheduling environment */
-		be.dbg = firm_dbg_register("firm.be.sched");
-    be.block = block;
-    be.curr_time = 0;
-    be.ready_set = new_pset(node_cmp_func, get_irn_n_outs(block));
-    be.already_scheduled = new_pset(node_cmp_func, get_irn_n_outs(block));
+	/* Initialize the block scheduling environment */
+	be.dbg = firm_dbg_register("firm.be.sched");
+	be.block = block;
+	be.curr_time = 0;
+	be.ready_set = new_pset(node_cmp_func, get_irn_n_outs(block));
+	be.already_scheduled = new_pset(node_cmp_func, get_irn_n_outs(block));
 
-    DBG((be.dbg, LEVEL_1, "scheduling %n\n", block));
+	if(selector->init_block)
+		block_env = selector->init_block(env->selector_env, block);
 
-    /* Then one can add all nodes are ready to the set. */
-    for(i = 0, n = get_irn_n_outs(block); i < n; ++i) {
-        ir_node *irn = get_irn_out(block, i);
+	DBG((be.dbg, LEVEL_1, "scheduling %n\n", block));
 
-				/* Skip the end node because of keepalive edges. */
-				if(get_irn_opcode(irn) == iro_End)
-					continue;
+	/* Then one can add all nodes are ready to the set. */
+	for(i = 0, n = get_irn_n_outs(block); i < n; ++i) {
+		ir_node *irn = get_irn_out(block, i);
 
-        /* Phi functions are scheduled immediately, since they only transfer
-         * data flow from the predecessors to this block. */
-        if(is_Phi(irn)) {
-            add_to_sched(&be, irn);
-            make_users_ready(&be, irn);
-            phi_seen = 1;
-        }
+		/* Skip the end node because of keepalive edges. */
+		if(get_irn_opcode(irn) == iro_End)
+			continue;
 
-        /* Other nodes must have all operands in other blocks to be made
-         * ready */
-        else {
-            bool ready = true;
+		/* Phi functions are scheduled immediately, since they only transfer
+		 * data flow from the predecessors to this block. */
+		if(is_Phi(irn)) {
+			add_to_sched(&be, irn);
+			make_users_ready(&be, irn);
+			phi_seen = 1;
+		}
 
-            /* Check, if the operands of a node are not local to this block */
-            for(j = 0, m = get_irn_arity(irn); j < m; ++j) {
-                ir_node *operand = get_irn_n(irn, j);
+		/* Other nodes must have all operands in other blocks to be made
+		 * ready */
+		else {
+			bool ready = true;
 
-                if(get_nodes_block(operand) == block) {
-                    ready = false;
-                    break;
-                }
-            }
+			/* Check, if the operands of a node are not local to this block */
+			for(j = 0, m = get_irn_arity(irn); j < m; ++j) {
+				ir_node *operand = get_irn_n(irn, j);
 
-            /* Make the node ready, if all operands live in a foreign block */
-            if(ready) {
-                DBG((be.dbg, LEVEL_2, "\timmediately ready: %n\n", irn));
-                make_ready(&be, irn);
-            }
-        }
-    }
+				if(get_nodes_block(operand) == block) {
+					ready = false;
+					break;
+				}
+			}
 
-    /* Increase the time, if some phi functions have been scheduled */
-    be.curr_time += phi_seen;
+			/* Make the node ready, if all operands live in a foreign block */
+			if(ready) {
+				DBG((be.dbg, LEVEL_2, "\timmediately ready: %n\n", irn));
+				make_ready(&be, irn);
+			}
+		}
+	}
 
-    while(pset_count(be.ready_set) > 0) {
-        DBG((be.dbg, LEVEL_2, "\tready set: %*n\n", pset_iterator, be.ready_set));
-        // pset_print(stdout, be.ready_set, irn_printer);
+	/* Increase the time, if some phi functions have been scheduled */
+	be.curr_time += phi_seen;
 
-        /* select a node to be scheduled and check if it was ready */
-        irn = env->select(env->select_env, block, be.curr_time,
-                be.already_scheduled, be.ready_set);
+	while(pset_count(be.ready_set) > 0) {
+		DBG((be.dbg, LEVEL_2, "\tready set: %*n\n", pset_iterator, be.ready_set));
 
-        DBG((be.dbg, LEVEL_3, "\tpicked node %n\n", irn));
+		/* select a node to be scheduled and check if it was ready */
+		irn = selector->select(env->selector_env, block_env, &info->list, be.curr_time, be.ready_set);
 
-        /* Add the node to the schedule. */
-        add_to_sched(&be, irn);
+		DBG((be.dbg, LEVEL_3, "\tpicked node %n\n", irn));
 
-        if(get_irn_mode(irn) == mode_T)
-            add_tuple_projs(&be, irn);
-        else
-            make_users_ready(&be, irn);
+		/* Add the node to the schedule. */
+		add_to_sched(&be, irn);
 
-        /* Increase the time step. */
-        be.curr_time += 1;
+		if(get_irn_mode(irn) == mode_T)
+			add_tuple_projs(&be, irn);
+		else
+			make_users_ready(&be, irn);
 
-        /* remove the scheduled node from the ready list. */
-        if(pset_find_ptr(be.ready_set, irn))
-            pset_remove_ptr(be.ready_set, irn);
-    }
+		/* Increase the time step. */
+		be.curr_time += 1;
 
-    del_pset(be.ready_set);
-    del_pset(be.already_scheduled);
+		/* remove the scheduled node from the ready list. */
+		if(pset_find_ptr(be.ready_set, irn))
+			pset_remove_ptr(be.ready_set, irn);
+	}
+
+	if(selector->finish_block)
+		selector->finish_block(env->selector_env, block_env, block);
+
+	del_pset(be.ready_set);
+	del_pset(be.already_scheduled);
 }
