@@ -1,0 +1,73 @@
+/* -*- c -*- */
+
+/*
+   Project:     libFIRM
+   File name:   ir/ana/pto_comp.h
+   Purpose:     Main Implementation of PTO
+   Author:      Florian
+   Modified by:
+   Created:     Sat Nov 13 19:35:27 CET 2004
+   CVS-ID:      $Id$
+   Copyright:   (c) 1999-2004 Universität Karlsruhe
+   Licence:     This file is protected by the GPL -  GNU GENERAL PUBLIC LICENSE.
+*/
+
+
+# ifndef _PTO_COMP_
+# define _PTO_COMP_
+
+# include "irnode.h"
+
+/* ===================================================
+   Global Defines:
+   =================================================== */
+
+/* ===================================================
+ Global Data Types:
+ =================================================== */
+typedef struct pto_str {
+  int dummy;
+} pto_t;
+
+typedef struct alloc_pto_str {
+  int dummy;
+  pto_t **ptos;                 /* all names */
+  pto_t *curr_pto;              /* name for current ctx */
+} alloc_pto_t;
+
+/* ===================================================
+   Global Prototypes:
+   =================================================== */
+/* Set the PTO value for the given node */
+void set_node_pto (ir_node*, pto_t*);
+/*Get the PTO value for the given non-alloc node */
+pto_t *get_node_pto (ir_node*);
+
+/* Set the PTO value for the given alloc node */
+void set_alloc_pto (ir_node*, alloc_pto_t*);
+
+/*Get the current PTO value for the given alloc node */
+pto_t *get_alloc_pto (ir_node*);
+
+
+/* Perform PTO on all visible graphs. */
+void pto_init (void);
+void pto_run (int);
+void pto_cleanup (void);
+
+/* ===================================================
+   Global Variables:
+   =================================================== */
+
+
+# endif /* not defined _PTO_COMP_ */
+
+
+
+/*
+  $Log$
+  Revision 1.1  2004/11/18 16:37:34  liekweg
+  rewritten
+
+
+*/
