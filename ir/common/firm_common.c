@@ -18,7 +18,7 @@
 
 /* returns the kind of the thing */
 firm_kind
-get_kind (void *firm_thing) {
+get_kind (const void *firm_thing) {
   assert (firm_thing);
   return *(firm_kind *)firm_thing;
 }

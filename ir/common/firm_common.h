@@ -36,7 +36,7 @@ typedef enum {
  *
  * @param firm_thing  pointer repraesenting a firm object
  */
-firm_kind get_kind(void *firm_thing);
+firm_kind get_kind(const void *firm_thing);
 
 /** Returns the kind of a thing as a string. */
 const char* print_firm_kind(void *firm_thing);
