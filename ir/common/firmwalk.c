@@ -17,10 +17,10 @@ static struct obstack fw_obst;
 
 /** This map stores all types of firm */
 static pmap *mode_map = NULL;
-/** This list stores all types of firm */
-static type **type_list = NULL;
-/** This list stores all entities of firm */
-static entity **entity_list = NULL;
+/** This map stores all types of firm */
+static pmap *type_map = NULL;
+/** This map stores all entities of firm */
+static pmap *entity_map = NULL;
 
 /** Internal data structure of firm walker to collect
  *  some information of firm ir. The collected data will be stored
@@ -91,7 +91,9 @@ fw_data *fw_get_data(void *thing)
   return data;
 }
 
-/** Free all collected data in ir graphs and nodes. */
+/** Free all collected data in ir graphs and nodes.
+ *  An ir graph or an ir block node has a list as a
+ *  dynamic array, which will be deleted here.  */
 static
 void fw_free_data(void *thing)
 {
@@ -193,11 +195,12 @@ void fw_clear_link(ir_node * node, void * env)
   set_irn_link(node, NULL);
 }
 
-/** Fill maps of type and entity
+/** Fill maps of type and entity.
  *  This function will be called by the firm walk initializer
  *  to collect all types and entities of program's firm ir.
  *  All types will be colleced in the hash table type_map
- *  and all entity are stored in entity_map.
+ *  and all entity are stored in entity_map. The mode of an
+ *  type will be collected as well.
  *
  *  @param tore Type or entity
  *  @param env Environment pointer (currently unused)
@@ -214,14 +217,16 @@ void fw_collect_tore(type_or_ent *tore, void *env)
     ent = (entity *)tore;
     // append entity to list
     set_entity_link(ent, NULL);
-    ARR_APP1(entity *, entity_list, ent);
+    if (!pmap_contains(entity_map, ent))
+      pmap_insert(entity_map, ent, env);
     break;
   case k_type:
     tp = (type *)tore;
     mode = get_type_mode(tp);
     // append type to list
     set_type_link(tp, NULL);
-    ARR_APP1(type *, type_list, tp);
+    if (!pmap_contains(type_map, tp))
+      pmap_insert(type_map, tp, env);
 
     /* insert only modes (non atomic types, i.e. class, array or struct
        have no mode. The link field will be cleared in the walk_do_mode()
@@ -235,15 +240,23 @@ void fw_collect_tore(type_or_ent *tore, void *env)
 
 /** Collect all data from nodes. Block appends itself to
  *  the corresponding ir graph and other nodes appends itself
- *  to block list.
+ *  to block list. Collects also the modes of each node to get
+ *  non-type modes.
  *
  *  @param irn IR node pointer.
-f *  @param env Environment pointer (currently unused)
+ *  @param env Environment pointer (currently unused)
  */
 static
 void fw_collect_irn(ir_node *irn, void *env)
 {
   fw_data *data;
+  ir_mode* mode = get_irn_mode(irn);
+
+  /* The link field will be cleared in the walk_do_mode()
+    callback function. */
+  if ((NULL != mode) && (!pmap_contains(mode_map, mode)))
+    pmap_insert(mode_map, mode, env);
+
   /* block nodes. */
   if (is_Block(irn))
   {
@@ -292,17 +305,17 @@ void firm_walk_init(firm_walk_flags flags)
   }
   mode_map = pmap_create();
 
-  if (type_list)
+  if (type_map)
   {
-    DEL_ARR_F(type_list);
+    pmap_destroy(type_map);
   }
-  type_list = NEW_ARR_F(type *, 0);
+  type_map = pmap_create();
 
-  if (entity_list)
+  if (entity_map)
   {
-    DEL_ARR_F(entity_list);
+    pmap_destroy(entity_map);
   }
-  entity_list = NEW_ARR_F(entity *, 0);
+  entity_map = pmap_create();
 
   /* insert internal modes to mode hash. The link field will be cleared
      in the walk_do_mode() callback function.
@@ -340,10 +353,10 @@ void firm_walk_finalize(void)
   /* free all used maps and lists */
   pmap_destroy(mode_map);
   mode_map = NULL;
-  DEL_ARR_F(type_list);
-  type_list = NULL;
-  DEL_ARR_F(entity_list);
-  entity_list = NULL;
+  pmap_destroy(type_map);
+  type_map = NULL;
+  pmap_destroy(entity_map);
+  entity_map = NULL;
 
   // free all collected data from ir graphs and nodes
   for (i = 0; i < get_irp_n_irgs(); i++)
@@ -393,9 +406,8 @@ void firm_walk(firm_walk_interface *wif)
   if (wif->do_type_init) wif->do_type_init(wif->env);
   if (wif->do_type)
   {
-    int type_i, type_list_len = ARR_LEN(type_list);
-    for (type_i = 0; type_i < type_list_len; type_i++)
-      wif->do_type(type_list[type_i], wif->env);
+    for (entry = pmap_first(type_map); entry; entry = pmap_next(type_map))
+      wif->do_type((type *)entry->key, wif->env);
   }
   if (wif->do_type_finalize) wif->do_type_finalize(wif->env);
 
@@ -403,9 +415,8 @@ void firm_walk(firm_walk_interface *wif)
   if (wif->do_entity_init) wif->do_entity_init(wif->env);
   if (wif->do_entity)
   {
-    int entity_i, entity_list_len = ARR_LEN(entity_list);
-    for (entity_i = 0; entity_i < entity_list_len; entity_i++)
-      wif->do_entity(entity_list[entity_i], wif->env);
+    for (entry = pmap_first(entity_map); entry; entry = pmap_next(entity_map))
+      wif->do_entity((entity *)entry->key, wif->env);
   }
   if (wif->do_entity_finalize) wif->do_entity_finalize(wif->env);
 
