@@ -555,10 +555,12 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
      get_Call_type(call)));
   */
   assert(get_type_tpop(get_Call_type(call)) == type_method);
-  if (called_graph == current_ir_graph) return;
+  if (called_graph == current_ir_graph) {
+    set_optimize(rem_opt);
+    return;
+  }
 
-
-/* --
+  /* --
       the procedure and later replaces the Start node of the called graph.
       Post_call is the old Call node and collects the results of the called
       graph. Both will end up being a tuple.  -- */
@@ -573,7 +575,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   pre_call = new_Tuple(5, in);
   post_call = call;
 
-/* --
+  /* --
       The new block gets the ins of the old block, pre_call and all its
       predecessors and all Phi nodes. -- */
   part_block(pre_call);
@@ -1148,7 +1150,8 @@ void place_code(ir_graph *irg) {
 /********************************************************************/
 
 /* Removes Tuples from Block control flow predecessors.
-   Optimizes blocks with equivalent_node().                         */
+   Optimizes blocks with equivalent_node().
+   Replaces n by Bad if n is unreachable control flow. */
 static void merge_blocks(ir_node *n, void *env) {
   int i;
   set_irn_link(n, NULL);
@@ -1156,22 +1159,25 @@ static void merge_blocks(ir_node *n, void *env) {
   if (get_irn_op(n) == op_Block) {
     /* Remove Tuples */
     for (i = 0; i < get_Block_n_cfgpreds(n); i++)
-      set_Block_cfgpred(n, i, skip_Tuple(get_Block_cfgpred(n, i)));
-  } else if (get_irn_mode(n) == mode_X) {
+      /* GL @@@ : is this possible? if (get_opt_normalize()) -- added, all tests go throug.
+	 A different order of optimizations might cause problems. */
+      if (get_opt_normalize())
+	set_Block_cfgpred(n, i, skip_Tuple(get_Block_cfgpred(n, i)));
+  } else if (get_optimize() && (get_irn_mode(n) == mode_X)) {
     /* We will soon visit a block.  Optimize it before visiting! */
     ir_node *b = get_nodes_Block(n);
     ir_node *new = equivalent_node(b);
     while (irn_not_visited(b) && (!is_Bad(new)) && (new != b)) {
-      /* We would have to run gigo if new is bad. */
-      if (!get_optimize() || (!get_opt_control_flow_straightening()
-			      && !get_opt_control_flow_weak_simplification()))
-	/* how could something be optimized if flags are not set? */
-	assert(0 && "strange ?? !!");
+      /* We would have to run gigo if new is bad, so we
+	 promote it directly below. */
+      assert(((b == new) || get_opt_control_flow_straightening() || get_opt_control_flow_weak_simplification()) &&
+	     ("strange flag setting"));
       exchange (b, new);
       b = new;
       new = equivalent_node(b);
     }
-    if (is_Bad(new)) exchange (n, new_Bad());
+    /* GL @@@ get_opt_normalize hinzugefuegt, 5.5.2003 */
+    if (is_Bad(new) && get_opt_normalize()) exchange (n, new_Bad());
   }
 }
 
