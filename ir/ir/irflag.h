@@ -49,7 +49,7 @@ int  get_opt_unreachable_code(void);
 
 /* Performs Straightening, if simplifications and loop simplifications.
    Sets all separate control flow flags (control_flow_straightening,
-   weak_simplification and strong_simplificatio). */
+   weak_simplification and strong_simplification). */
 void set_opt_control_flow(int value);
 
 /* Performs Straightening */
