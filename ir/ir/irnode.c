@@ -494,13 +494,13 @@ set_Cond_selector (ir_node *node, ir_node *selector) {
 inline cond_kind
 get_Cond_kind (ir_node *node) {
   assert (node->op == op_Cond);
-  return node->attr.c;
+  return node->attr.c.kind;
 }
 
 inline void
 set_Cond_kind (ir_node *node, cond_kind kind) {
   assert (node->op == op_Cond);
-  node->attr.c = kind;
+  node->attr.c.kind = kind;
 }
 
 inline ir_node *
