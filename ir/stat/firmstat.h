@@ -54,8 +54,8 @@ typedef enum {
   STAT_OPT_TUPLE,		/**< Tuple optimization */
   STAT_OPT_ID,			/**< ID optimization */
   STAT_OPT_CSE,                 /**< common subexpression elimination */
-  STAT_OPT_STRENGTH_RED,	/**< strenght reduction */
-  STAT_OPT_ARCH_DEP,		/**< architecture dependant optimization */
+  STAT_OPT_STRENGTH_RED,	/**< strength reduction */
+  STAT_OPT_ARCH_DEP,		/**< architecture dependent optimization */
   STAT_OPT_REASSOC,             /**< reassociation */
   STAT_OPT_POLY_CALL,           /**< polymorphic call optimization */
   STAT_LOWERED,			/**< lowered */
