@@ -39,47 +39,84 @@ typedef struct ir_graph ir_graph;
 #endif
 
 /**
+ * @page ir_graph	The struct ir_graph
  *
- * NAME  Datastructure that holds central information about a procedure
+ *      This struct contains all information about a procedure.
+ *      It's allocated directly to memory.
  *
- *    ir_graph *new_ir_graph (entity *ent, int params);
- *    -------------------------------------------------
+ *      The fields of ir_graph:
  *
- *    This constructor generates the basic infrastructure needed to
- *    represent a procedure in FIRM.
+ *      *ent             The entity describing this procedure.
  *
- *    The parameters of new_ir_graph are:
+ *      The beginning and end of a graph:
  *
- *      *ent             A pointer to an entity representing the procedure.
+ *      *start_block     This ir_node is the block that contains the unique
+ *                       start node of the procedure.  With it it contains
+ *                       the Proj's on starts results.
+ *                       Further all Const nodes are placed in the start block.
+ *      *start           This ir_node is the unique start node of the procedure.
  *
- *      params           An integer giving the number of local variables in the
- *                       procedure.
+ *      *end_block       This ir_node is the block that contains the unique
+ *                       end node of the procedure.  This block contains no
+ *                       further nodes.
+ *      *end             This ir_node is the unique end node of the procedure.
  *
- *    It allocates an ir_graph and sets current_ir_graph to point to this
- *    graph.  Further it allocates the following nodes needed for every
- *    procedure:
+ *      The following nodes are Projs from the start node, held in ir_graph for
+ *      simple access:
  *
- *    * The start block containing a start node and Proj nodes for it's
- *      five results (X, M, P, P, T).
- *    * The end block containing an end node. This block is not matured
- *      after executing new_ir_graph as predecessors need to be added to it.
- *      (Maturing a block means fixing it's number of predecessors.)
- *    * The current block, which is empty and also not matured.
+ *      *frame           The ir_node producing the pointer to the stack frame of
+ *                       the procedure as output.  This is the Proj node on the
+ *                       third output of the start node.  This output of the start
+ *                      node is tagged as pns_frame_base.  In FIRM most lokal
+ *                       variables are modeled as data flow edges.  Static
+ *                       allocated arrays can not be represented as dataflow
+ *                       edges. Therefore FIRM has to represent them in the stack
+ *                       frame.
  *
- *    Further it enters the global store into the datastructure of the start
- *    block that contanis all valid values in this block (set_store()).  This
- *    datastructure is used to build the Phi nodes and removed after
- *    completion of the graph.  There is no path from end to start in the
- *    graph after calling ir_graph.
- *    op_pin_state_pinned    set to "op_pin_state_pinned" if no global cse was performed on the graph.
- *             set to "op_pin_state_floats" if global cse was performed (and during construction:
- *             did actually change something).  Code placement is necessary.
+ *      *globals         This models a pointer to a space in the memory where
+ *               _all_ global things are held.  Select from this pointer
+ *               with a Sel node the pointer to a global variable /
+ *               procedure / compiler known function... .
+ *
+ *      *args        The ir_node that produces the arguments of the method as
+ *               it's result.  This is a Proj node on the fourth output of
+ *               the start node.  This output is tagged as pn_Start_T_args.
+ *
+ *      *bad             The Bad node is an auxiliary node. It is needed only once,
+ *                       so there is this globally reachable node.
+ *
+ *      *no_mem          The NoMem node is an auxiliary node. It is needed only once,
+ *                       so there is this globally reachable node.
+ *
+ *      Datastructures that are private to a graph:
+ *
+ *      *obst            An obstack that contains all nodes.
+ *
+ *      *current_block   A pointer to the current block.  Any node created with
+ *                       one of the node constructors (new_<opcode>) are assigned
+ *                       to this block.  It can be set with set_cur_block(block).
+ *                       Only needed for ir construction.
+ *
+ *      params/n_loc     An int giving the number of local variables in this
+ *               procedure.  This is neede for ir construction. Name will
+ *               be changed.
+ *
+ *      *value_table     This hash table (pset) is used for global value numbering
+ *               for optimizing use in iropt.c.
+ *
+ *      *Phi_in_stack;   a stack needed for automatic Phi construction, needed only
+ *               during ir construction.
+ *
+ *      visited          A int used as flag to traverse the ir_graph.
+ *
+ *      block_visited    A int used as a flag to traverse block nodes in the graph.
  */
 
 /** Global variable holding the current ir graph.
  *
  *  This global variable is used by the ir construction
  *  interface in ircons and by the optimizations.
+ *  Further it is set by all walker functions.
  */
 extern ir_graph *current_ir_graph;
 
@@ -91,17 +128,44 @@ void      set_current_ir_graph(ir_graph *graph);
 int get_interprocedural_view(void);
 void set_interprocedural_view(int state);
 
-/** Create a new ir graph to build ir for a procedure.
+/**
+ * Create a new ir graph to build ir for a procedure.
  *
- *  ent is the entity representing this procedure, i.e., the type of the
- *  entity must be of a method type.  The constructor automatically sets the
- *  field irg of the entity as well as current_ir_graph to the new ir graph.
- *  n_loc is the number of local variables in this procedure including
- *  the procedure parameters.
- *  The constructor adds the new irgraph to the list in ir_prog.
- *  The state of the ir graph is:  phase_building, op_pin_state_pinned, outs_none.
+ * @param ent    A pointer to an entity representing the procedure,
+ *               i.e., the type of the entity must be of a method type.
  *
- *  @see new_pseudo_ir_graph() */
+ * @param n_loc  The number of local variables in this procedure including
+ *               the procedure parameters.
+ *
+ * This constructor generates the basic infrastructure needed to
+ * represent a procedure in FIRM.
+ *
+ * It allocates an ir_graph and sets the field irg of the entity ent
+ * as well as current_ir_graph to point to this graph.
+ * Further it allocates the following nodes needed for every
+ * procedure:
+ *
+ * - The start block containing a start node and Proj nodes for it's
+ *   five results (X, M, P, P, T).
+ * - The end block containing an end node. This block is not matured
+ *   after executing new_ir_graph as predecessors need to be added to it.
+ *   (Maturing a block means fixing it's number of predecessors.)
+ * - The current block, which is empty and also not matured.
+ *
+ * Further it enters the global store into the datastructure of the start
+ * block that contanis all valid values in this block (set_store()).  This
+ * datastructure is used to build the Phi nodes and removed after
+ * completion of the graph.  There is no path from end to start in the
+ * graph after calling ir_graph.
+ *
+ * The op_pin_state of the graph is set to "op_pin_state_pinned"
+ * if no global cse was performed on the graph.
+ * It is set to "op_pin_state_floats" if global cse was performed
+ * (and during construction: did actually change something).
+ * Code placement is necessary.
+ *
+ * @see new_pseudo_ir_graph()
+ */
 ir_graph *new_ir_graph (entity *ent, int n_loc);
 
 /** Frees the passed irgraph.

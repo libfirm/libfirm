@@ -40,77 +40,6 @@
  *
  *    For extensive documentation of FIRM see UKA Techreport 1999-14.
  *
- *    =========
- *
- *    The struct ir_graph
- *    -------------------
- *
- *      This struct contains all information about a procedure.
- *      It's allocated directly to memory.
- *
- *      The fields of ir_graph:
- *
- *      *ent             The entity describing this procedure.
- *
- *      The beginning and end of a graph:
- *
- *      *start_block     This ir_node is the block that contains the unique
- *                       start node of the procedure.  With it it contains
- *                       the Proj's on starts results.
- *                       Further all Const nodes are placed in the start block.
- *      *start           This ir_node is the unique start node of the procedure.
- *
- *      *end_block       This ir_node is the block that contains the unique
- *                       end node of the procedure.  This block contains no
- *                       further nodes.
- *      *end             This ir_node is the unique end node of the procedure.
- *
- *      The following nodes are Projs from the start node, held in ir_graph for
- *      simple access:
- *
- *      *frame           The ir_node producing the pointer to the stack frame of
- *                       the procedure as output.  This is the Proj node on the
- *                       third output of the start node.  This output of the start
- *                      node is tagged as pns_frame_base.  In FIRM most lokal
- *                       variables are modeled as data flow edges.  Static
- *                       allocated arrays can not be represented as dataflow
- *                       edges. Therefore FIRM has to represent them in the stack
- *                       frame.
- *
- *      *globals         This models a pointer to a space in the memory where
- *               _all_ global things are held.  Select from this pointer
- *               with a Sel node the pointer to a global variable /
- *               procedure / compiler known function... .
- *
- *      *args        The ir_node that produces the arguments of the method as
- *               it's result.  This is a Proj node on the fourth output of
- *               the start node.  This output is tagged as pn_Start_T_args.
- *
- *      *bad             The bad node is an auxiliary node. It is needed only once,
- *                       so there is this globally reachable node.
- *
- *      Datastructures that are private to a graph:
- *
- *      *obst            An obstack that contains all nodes.
- *
- *      *current_block   A pointer to the current block.  Any node created with
- *                       one of the node constructors (new_<opcode>) are assigned
- *                       to this block.  It can be set with set_cur_block(block).
- *                       Only needed for ir construction.
- *
- *      params/n_loc     An int giving the number of local variables in this
- *               procedure.  This is neede for ir construction. Name will
- *               be changed.
- *
- *      *value_table     This hash table (pset) is used for global value numbering
- *               for optimizing use in iropt.c.
- *
- *      *Phi_in_stack;   a stack needed for automatic Phi construction, needed only
- *               during ir construction.
- *
- *      visited          A int used as flag to traverse the ir_graph.
- *
- *      block_visited    A int used as a flag to traverse block nodes in the graph.
  *
  *    Three kinds of nodes
  *    --------------------
@@ -222,15 +151,15 @@
  *
  *    This library supplies several interfaces to construct a FIRM graph for
  *    a program:
- *    * A "comfortable" interface generating SSA automatically.  Automatically
+ *    - A "comfortable" interface generating SSA automatically.  Automatically
  *      computed predecessors of nodes need not be specified in the constructors.
  *      (new_<Node> constructurs and a set of additional routines.)
- *    * A less comfortable interface where all predecessors except the block
+ *    - A less comfortable interface where all predecessors except the block
  *      an operation belongs to need to be specified.  SSA must be constructed
  *      by hand.  (new_<Node> constructors and set_cur_block()).  This interface
  *      is called "block oriented".  It automatically calles the local optimizations
  *      for each new node.
- *    * An even less comfortable interface where the block needs to be specified
+ *    - An even less comfortable interface where the block needs to be specified
  *      explicitly.  This is called the "raw" interface. (new_r_<Node>
  *      constructors).  These nodes are not optimized.
  *
@@ -586,8 +515,8 @@
  *      attr.con   A tarval* pointer to the proper entry in the constant
  *                 table.
  *
- *    ir_node *new_SymConst (type *tp, symconst_addr_ent kind)
- *    ------------------------------------------------------------
+ *    ir_node *new_SymConst (union symconst_symbol value, symconst_addr_ent kind)
+ *    ---------------------------------------------------------------------------
  *
  *    There are three kinds of symbolic constants:
  *     symconst_type_tag  The symbolic constant represents a type tag.
@@ -596,9 +525,9 @@
  *                variable.
  *    To represent a pointer to an entity that is represented by an entity
  *    datastructure don't use
- *      new_SymConst((type_or_id*)get_entity_ld_ident(ent), linkage_ptr_info);.
+ *      new_SymConst((type_or_id*)get_entity_ld_ident(ent), symconst_addr_name);.
  *    Use a real const instead:
- *      new_Const(mode_P_mach, tarval_p_from_entity(ent));
+ *      new_SymConst(mode_P_mach, tarval_p_from_entity(ent));
  *    This makes the Constant independent of name changes of the entity due to
  *    mangling.
  *
