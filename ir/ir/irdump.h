@@ -167,6 +167,21 @@ void dump_all_ir_graphs (dump_graph_func *dump_graph, const char *suffix);
  */
 void dump_cfg (ir_graph *irg, const char *suffix);
 
+/**  Dump a node and its predecessors forming a subgraph to a vcg file.
+ *
+ *   @param root   The node serving as root for the subgraph.
+ *   @param depth  Dump nodes on paths starting at root with length depth.
+ *   @param suffix A suffix for the file name.
+ *
+ *   Dumps the graph to a file.  The file name is constructed from the
+ *   name of the entity describing the procedure the passed node is
+ *   in, suffix and the ending -subg_<nr>.vcg.  nr is a unique number
+ *   for each graph dumped. Eventually overwrites existing files.
+ *
+ *   @return
+ *      A file containing the subgraph in vcg format.
+ */
+void dump_subgraph (ir_node *root, int depth, const char *suffix);
 
 /* **************************************************************************** */
 /*                              CALLGRAPH DUMPERS                               */
@@ -278,7 +293,7 @@ int dump_irnode_to_file (FILE *f, ir_node *n);
 
 /** Write the irnode and all its attributes to stdout.
  *  */
-void    dump_irnode (ir_node *n);
+void dump_irnode (ir_node *n);
 
 /** Write the graph and all its attributes to the file passed.
  *  Does not write the nodes.

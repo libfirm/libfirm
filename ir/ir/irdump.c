@@ -46,10 +46,11 @@
 #include "array.h"
 #include "pmap.h"
 #include "eset.h"
+#include "pset.h"
 
 #if DO_HEAPANALYSIS
-void dump_chi_term(FILE *FL, ir_node *n);
-void dump_state(FILE *FL, ir_node *n);
+void dump_irn_chi_term(FILE *FL, ir_node *n);
+void dump_irn_state(FILE *FL, ir_node *n);
 int  get_opt_dump_abstvals(void);
 typedef unsigned long SeqNo;
 SeqNo get_Block_seqno(ir_node *n);
@@ -842,8 +843,8 @@ static void dump_node(FILE *F, ir_node *n)
   fprintf(F, "}\n");
   dump_const_node_local(F, n);
 #if DO_HEAPANALYSIS
-  dump_chi_term(F, n);
-  dump_state(F, n);
+  dump_irn_chi_term(F, n);
+  dump_irn_state(F, n);
 #endif
 }
 
@@ -1120,7 +1121,7 @@ dump_whole_block(FILE *F, ir_node *block) {
   fprintf(F, "}\n");
   dump_const_node_local(F, block);
 #if DO_HEAPANALYSIS
-  dump_chi_term(F, block);
+  dump_irn_chi_term(F, block);
 #endif
   fprintf(F, "\n");
 }
@@ -1752,7 +1753,7 @@ FILE *vcg_open (ir_graph *irg, const char * suffix1, const char *suffix2) {
  * @param irg     The graph to be dumped
  * @param suffix  filename suffix
  */
-static FILE *vcg_open_name (const char *name, const char *suffix) {
+FILE *vcg_open_name (const char *name, const char *suffix) {
   FILE *F;
   char *fname;  /* filename to put the vcg information in */
   int i, j, len = strlen(name);
@@ -1818,7 +1819,9 @@ dump_ir_graph (ir_graph *irg, const char *suffix )
   char *suffix1;
   rem = current_ir_graph;
 
-  if (strncmp(get_entity_name(get_irg_entity(irg)), dump_file_filter, strlen(dump_file_filter)) != 0) return;
+  if (strncmp(get_entity_name(get_irg_entity(irg)),
+	      dump_file_filter, strlen(dump_file_filter)) != 0) return;
+
   current_ir_graph = irg;
   if (get_interprocedural_view()) suffix1 = "-pure-ip";
   else                            suffix1 = "-pure";
@@ -2045,6 +2048,38 @@ dump_cfg (ir_graph *irg, const char *suffix)
   vcg_close(f);
   current_ir_graph = rem;
 }
+
+
+static void descend_and_dump(FILE *F, ir_node *n, int depth, pset *mark_set) {
+  if (pset_find_ptr(mark_set, n)) return;
+
+  pset_insert_ptr(mark_set, n);
+
+  if (depth > 0) {
+    dump_whole_node(n, F);
+    int start = is_Block(n) ? 0 : -1;
+    for (int i = start; i < get_irn_arity(n); ++i)
+      descend_and_dump(F, get_irn_n(n, i), depth-1, mark_set);
+  } else {
+    dump_node(F, n);
+    /* Don't dump edges to nodes further out.  These might be edges to
+       nodes we already dumped, if there is a shorter path to these. */
+  }
+}
+
+static int subgraph_counter = 0;
+void dump_subgraph (ir_node *root, int depth, const char *suffix) {
+  FILE *F;
+  char buf[32];
+  pset *mark_set = pset_new_ptr(1);
+  sprintf(buf, "-subg_%03d", subgraph_counter++);
+  F = vcg_open(get_irn_irg(root), suffix, buf);
+  dump_vcg_header(F, get_irg_dump_name(get_irn_irg(root)), NULL);
+  descend_and_dump(F, root, depth, mark_set);
+  vcg_close(F);
+  del_pset(mark_set);
+}
+
 
 static int weight_overall(int rec, int loop) {
   return 2*rec + loop;

@@ -125,7 +125,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 
   if ((get_irp_ip_view_state() != ip_view_no)
       && (get_irn_opcode(n) == iro_Filter || get_irn_opcode(n) == iro_Block)) {
-    fprintf(F, "  inter arity: %d", get_irn_inter_arity(n));
+    fprintf(F, "  inter arity: %d\n", get_irn_inter_arity(n));
     fprintf(F, "  inter pred nodes: \n");
     for ( i = 0; i < get_irn_inter_arity(n); ++i) {
       fprintf(F, "     %d: %s ", i, is_intra_backedge(n, i) ? "be" : "  ");
@@ -150,20 +150,20 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
     fprintf(F, "\n");
   }
 
-  /* Loop node   Someone else please tell me what's wrong ...
+  /* Loop node.   Someone else please tell me what's wrong ... */
   if (get_irn_loop(n)) {
     ir_loop *loop = get_irn_loop(n);
     assert(loop);
-    fprintf(F, " in loop %d with depth %d\n",
+    fprintf(F, "  in loop %d with depth %d\n",
         get_loop_loop_nr(loop), get_loop_depth(loop));
   }
-  */
+
 
   /* Source types */
   switch (get_irn_opcode(n)) {
   case iro_Block: {
-    fprintf(F, "  block visited: %ld", get_Block_block_visited(n));
-    fprintf(F, "  dominator info: not implemented\n");
+    fprintf(F, "  block visited: %ld\n", get_Block_block_visited(n));
+    fprintf(F, "  dominator info: output not implemented\n");
     /* not dumped: graph_arr */
     /* not dumped: mature    */
   }  break;
