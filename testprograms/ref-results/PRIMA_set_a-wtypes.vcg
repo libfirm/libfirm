@@ -87,6 +87,7 @@ offset:  -1"
 edge: { sourcename: "e15" targetname: "t12"class: 3 label: "type" color: red}
 node: {title: "t13" label: "class PRIMA" info1: "state: layout_undefined
 size: -1B,
+peculiarity: peculiarity_existent
 " color: green}
 edge: { sourcename: "t13" targetname: "e15"class: 12 label: "member" color:blue}
 edge: { sourcename: "t13" targetname: "e18"class: 12 label: "member" color:blue}
@@ -151,6 +152,7 @@ edge: { sourcename: "t19" targetname: "t12"class: 5 label: "param 1" color: gree
 edge: { sourcename: "t19" targetname: "t12"class: 6 label: "res 0" color: green}
 node: {title: "t59" label: "class set_aframe_tp" info1: "state: layout_undefined
 size: -1B,
+peculiarity: peculiarity_existent
 " color: green}
 edge: { sourcename: "n145" targetname: "e15"class: 2 priority: 2 linestyle: dotted}
 }

@@ -62,6 +62,7 @@ offset:  -1"
 edge: { sourcename: "e35" targetname: "t17"class: 3 label: "type" color: red}
 node: {title: "t21" label: "class mainframe_tp" info1: "state: layout_undefined
 size: -1B,
+peculiarity: peculiarity_existent
 " color: green}
 edge: { sourcename: "t21" targetname: "e35"class: 12 label: "member" color:blue}
 node: {title: "e16" label: "ent main" color: yellow
@@ -84,6 +85,7 @@ Const of type type_unknown
 "}
 node: {title: "t13" label: "class ARRAY-STACK_EXAMPLE" info1: "state: layout_undefined
 size: -1B,
+peculiarity: peculiarity_existent
 " color: green}
 edge: { sourcename: "t13" targetname: "e16"class: 12 label: "member" color:blue}
 node: {title: "t14" label: "method main" info1: "state: layout_fixed,

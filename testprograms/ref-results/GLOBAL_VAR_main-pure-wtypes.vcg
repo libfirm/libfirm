@@ -86,6 +86,7 @@ offset:  -1"
 edge: { sourcename: "e16" targetname: "t12"class: 3 label: "type" color: red}
 node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1B,
+peculiarity: peculiarity_existent
 " color: green}
 edge: { sourcename: "t0" targetname: "e15"class: 12 label: "member" color:blue}
 edge: { sourcename: "t0" targetname: "e16"class: 12 label: "member" color:blue}
@@ -117,6 +118,7 @@ size: 4B,
 "}
 node: {title: "t17" label: "class GLOBAL_VAR_mainframe_tp" info1: "state: layout_undefined
 size: -1B,
+peculiarity: peculiarity_existent
 " color: green}
 edge: { sourcename: "n49" targetname: "e16"class: 2 priority: 2 linestyle: dotted}
 }

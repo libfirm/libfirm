@@ -19,6 +19,7 @@ classname 12: "Member"
 
 node: {title: "t13" label: "class PRIMA" info1: "state: layout_undefined
 size: -1B,
+peculiarity: peculiarity_existent
 " color: green}
 node: {title: "e15" label: "ent a" color: yellow
  info1: "

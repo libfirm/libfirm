@@ -29,6 +29,7 @@ edge: { sourcename: "t13" targetname: "t12"class: 5 label: "param 0" color: gree
 edge: { sourcename: "t13" targetname: "t12"class: 6 label: "res 0" color: green}
 node: {title: "t14" label: "class WHILE_EXAMPLE" info1: "state: layout_undefined
 size: -1B,
+peculiarity: peculiarity_existent
 " color: green}
 edge: { sourcename: "t14" targetname: "e16"class: 12 label: "member" color:blue}
 node: {title: "e16" label: "ent main" color: yellow
@@ -51,5 +52,6 @@ Const of type type_unknown
 "}
 node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1B,
+peculiarity: peculiarity_existent
 " color: green}
 }

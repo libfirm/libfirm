@@ -67,6 +67,7 @@ Const of type type_unknown
 "}
 node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1B,
+peculiarity: peculiarity_existent
 " color: green}
 edge: { sourcename: "t0" targetname: "e15"class: 12 label: "member" color:blue}
 node: {title: "t13" label: "method ARRAY-HEAP_EXAMPLE_main" info1: "state: layout_fixed,
@@ -76,5 +77,6 @@ size: 4B,
 edge: { sourcename: "t13" targetname: "t12"class: 6 label: "res 0" color: green}
 node: {title: "t20" label: "class ARRAY-HEAP_EXAMPLE_mainframe_tp" info1: "state: layout_undefined
 size: -1B,
+peculiarity: peculiarity_existent
 " color: green}
 }
