@@ -96,6 +96,7 @@
    of firm.h as not all enums are needed in the impelmentation
    files. */
 # include "irdump.h"
+# include "irvrfy.h"
 
 /**
  * Initialize the firm library.
