@@ -228,6 +228,16 @@ static void show_phi_failure(ir_node *phi, ir_node *pred, int pos)
 }
 
 /**
+ * Show Phi inputs
+ */
+static void show_phi_inputs(ir_node *phi, ir_node *block)
+{
+  fprintf(stderr, "\nFIRM: irn_vrfy_irg() Phi node %ld has %d inputs, its Block %ld has %d\n",
+    get_irn_node_nr(phi),   get_irn_arity(phi),
+    get_irn_node_nr(block), get_irn_arity(block));
+}
+
+/**
  * verify the Proj number
  */
 static int
@@ -551,12 +561,12 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
 
   opcode = get_irn_opcode(n);
 
-  /* We don't want to test nodes whose predecessors are Bad or Unknown,
+  /* We don't want to test nodes whose predecessors are Bad,
      as we would have to special case that for each operation. */
   if (opcode != iro_Phi && opcode != iro_Block)
     for (i = 0; i < get_irn_arity(n); i++) {
       opcode1 = get_irn_opcode(get_irn_n(n, i));
-      if (opcode1 == iro_Bad /*|| opcode1 == iro_Unknown*/)  /* GL: for analyses mode must be correct. */
+      if (opcode1 == iro_Bad)
         return 1;
     }
 
@@ -993,6 +1003,18 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       break;
 
     case iro_Phi:
+    {
+      ir_node *block = get_nodes_block(n);
+
+      if (! is_Bad(block) && get_irg_phase_state(get_irn_irg(n)) != phase_building) {
+        /* a Phi node MUST have the same number of inputs as its block */
+        ASSERT_AND_RET_DBG(
+	  get_irn_arity(n) == get_irn_arity(block),
+	  "wrong number of inputs in Phi node", 0,
+	  show_phi_inputs(n, block);
+	);
+      }
+
       /* Phi: BB x dataM^n --> dataM */
       for (i = 1; i < get_irn_arity(n); i++) {
         if (!is_Bad(in[i]) && (get_irn_op(in[i]) != op_Unknown))
@@ -1004,7 +1026,7 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       };
       ASSERT_AND_RET( mode_is_dataM(mymode), "Phi node", 0 );
       break;
-
+    }
     case iro_Load:
       op1mode = get_irn_mode(in[1]);
       op2mode = get_irn_mode(in[2]);
