@@ -270,9 +270,9 @@ static entity *find_constant_entity(ir_node *ptr)
           if (tlower == tarval_bad || tupper == tarval_bad)
             return NULL;
 
-          if (tarval_cmp(tv, tlower) & Lt)
+          if (tarval_cmp(tv, tlower) & pn_Cmp_Lt)
             return NULL;
-          if (tarval_cmp(tupper, tv) & Lt)
+          if (tarval_cmp(tupper, tv) & pn_Cmp_Lt)
             return NULL;
 
           /* ok, bounds check finished */
