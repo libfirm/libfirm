@@ -889,6 +889,13 @@ static ir_node *equivalent_node_Conv(ir_node *n)
   return n;
 }
 
+static ir_node *equivalent_node_Cast(ir_node *n) {
+  ir_node *pred = get_Cast_op(n);
+  if (get_irn_type(pred) == get_Cast_type(n))
+    n = pred;
+  return n;
+}
+
 static ir_node *equivalent_node_Phi(ir_node *n)
 {
   /* Several optimizations:
@@ -1065,6 +1072,7 @@ static ir_op *firm_set_default_equivalent_node(ir_op *op)
   CASE(DivMod);
   CASE(And);
   CASE(Conv);
+  CASE(Cast);
   CASE(Phi);
   CASE(Proj);
   CASE(Id);
@@ -1307,9 +1315,22 @@ static ir_node *transform_node_Not(ir_node *n)
   return n;
 }
 
+static ir_node *transform_node_Cast(ir_node *n) {
+  ir_node *pred = get_Cast_op(n);
+  type *tp = get_irn_type(pred);
+  if (get_irn_op(pred) == op_Const && get_Const_type(pred) != tp) {
+    n = new_rd_Const_type(NULL, current_ir_graph, get_nodes_block(pred), get_irn_mode(pred),
+			  get_Const_tarval(pred), tp);
+  } else if ((get_irn_op(pred) == op_SymConst) && (get_SymConst_value_type(pred) != tp)) {
+    n = new_rd_SymConst_type(NULL, current_ir_graph, get_nodes_block(pred), get_SymConst_symbol(pred),
+			     get_SymConst_kind(pred), tp);
+  }
+  return n;
+}
+
 /**
  * Transform a Div/Mod/DivMod with a non-zero constant. Must be
- * done here instead of equivalent node because in creates new
+ * done here instead of equivalent node because it creates new
  * nodes.
  * Removes the exceptions and routes the memory to the initial mem.
  *
@@ -1620,6 +1641,7 @@ static ir_op *firm_set_default_transform_node(ir_op *op)
   CASE(Cond);
   CASE(Eor);
   CASE(Not);
+  CASE(Cast);
   CASE(Proj);
   CASE(Or);
   case iro_Shr:
@@ -1678,7 +1700,8 @@ static int node_cmp_attr_Free(ir_node *a, ir_node *b)
 static int node_cmp_attr_SymConst(ir_node *a, ir_node *b)
 {
     return (get_irn_symconst_attr(a).num != get_irn_symconst_attr(b).num)
-      || (get_irn_symconst_attr(a).sym.type_p != get_irn_symconst_attr(b).sym.type_p);
+      || (get_irn_symconst_attr(a).sym.type_p != get_irn_symconst_attr(b).sym.type_p)
+      || (get_irn_symconst_attr(a).tp != get_irn_symconst_attr(b).tp);
 }
 
 /** Compares the attributes of two Call nodes. */
@@ -2013,7 +2036,14 @@ optimize_node (ir_node *n)
   ir_node *oldn = n;
   opcode iro = get_irn_opcode(n);
 
-  /* Always optimize Phi nodes: part of the construction. */
+  type *old_tp = get_irn_type(n);
+  {
+    int i, arity = get_irn_arity(n);
+    for (i = 0; i < arity && !old_tp; ++i)
+      old_tp = get_irn_type(get_irn_n(n, i));
+  }
+
+  /* Allways optimize Phi nodes: part of the construction. */
   if ((!get_opt_optimize()) && (iro != iro_Phi)) return n;
 
   /* constant expression evaluation / constant folding */
@@ -2039,8 +2069,9 @@ optimize_node (ir_node *n)
         /* evaluation was successful -- replace the node. */
         obstack_free (current_ir_graph->obst, n);
         n = new_Const (get_tarval_mode (tv), tv);
-
-        DBG_OPT_ALGSIM0(oldn, n);
+	if (old_tp && get_type_mode(old_tp) == get_tarval_mode (tv))
+	  set_Const_type(n, old_tp);
+                                                 DBG_OPT_ALGSIM0(oldn, n);
         return n;
       }
     }
@@ -2104,6 +2135,13 @@ optimize_in_place_2 (ir_node *n)
   ir_node *oldn = n;
   opcode iro = get_irn_opcode(n);
 
+  type *old_tp = get_irn_type(n);
+  {
+    int i, arity = get_irn_arity(n);
+    for (i = 0; i < arity && !old_tp; ++i)
+      old_tp = get_irn_type(get_irn_n(n, i));
+  }
+
   if (!get_opt_optimize() && (get_irn_op(n) != op_Phi)) return n;
 
   /* if not optimize return n */
@@ -2112,7 +2150,6 @@ optimize_in_place_2 (ir_node *n)
     /* Here this is possible.  Why? */
     return n;
   }
-
 
   /* constant expression evaluation / constant folding */
   if (get_opt_constant_folding()) {
@@ -2123,8 +2160,9 @@ optimize_in_place_2 (ir_node *n)
       if ((get_irn_mode(n) != mode_T) && (tv != tarval_bad)) {
         /* evaluation was successful -- replace the node. */
         n = new_Const (get_tarval_mode (tv), tv);
-
-        DBG_OPT_ALGSIM0(oldn, n);
+	if (old_tp && get_type_mode(old_tp) == get_tarval_mode (tv))
+	  set_Const_type(n, old_tp);
+                                                            DBG_OPT_ALGSIM0(oldn, n);
         return n;
       }
     }
