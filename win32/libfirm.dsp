@@ -473,6 +473,26 @@ SOURCE=..\ir\be\be_t.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\be\beasm_asm_gnu.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beasm_asm_gnu.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beasm_dump_globals.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beasm_dump_globals.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beasm_types.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\be\bechordal.c
 # End Source File
 # Begin Source File
@@ -562,10 +582,6 @@ SOURCE=..\ir\be\besched_t.h
 # Begin Source File
 
 SOURCE=..\ir\be\beutil.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\be\domtree.h
 # End Source File
 # Begin Source File
 
