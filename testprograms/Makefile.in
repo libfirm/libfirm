@@ -19,31 +19,32 @@ subdir := testprograms
 DIFF ?= diff -c0
 REF_DIR = $(srcdir)/ref-results
 
-SOURCES := Makefile.in         	\
-	array-heap_example.c   	\
-	array-stack_example.c  	\
-	call_str_example.c     	\
-	cond_example.c         	\
-	const_ent_example.c   	\
-	const_eval_example.c  	\
-	dead_block_example.c  	\
-	empty.c               	\
-	endless_loop.c        	\
-	float_example.c     	\
-	global_cse.c           	\
-	global_var_example.c   	\
-	identify_types.c	\
-	if_else_example.c      	\
-	if_example.c           	\
-	if_while_example.c     	\
-	inheritance_example.c  	\
-	irr_cf_example.c     	\
-	irr_loop_example.c   	\
-	memory_example.c     	\
-	oo_inline_example.c  	\
-	oo_program_example.c 	\
-	recursions.c		\
-	three_cfpred_example.c 	\
+SOURCES := Makefile.in          	\
+	array-heap_example.c    	\
+	array-stack_example.c   	\
+	call_str_example.c      	\
+	cond_example.c          	\
+	const_ent_example.c     	\
+	const_eval_example.c    	\
+	dead_block_example.c    	\
+	empty.c                 	\
+	endless_loop.c          	\
+	float_example.c         	\
+	global_cse.c            	\
+	global_var_example.c    	\
+	identify_types.c        	\
+	if_else_example.c       	\
+	if_example.c            	\
+	if_while_example.c      	\
+	inheritance_example.c   	\
+	irr_cf_example.c        	\
+	irr_loop_example.c      	\
+	memory_example.c        	\
+	oo_inline_example.c     	\
+	oo_program_example.c 	        \
+	recursions.c		        \
+	strength_red_example.c          \
+	three_cfpred_example.c  	\
 	while_example.c
 
 GENFILES = %.vcg results.txt

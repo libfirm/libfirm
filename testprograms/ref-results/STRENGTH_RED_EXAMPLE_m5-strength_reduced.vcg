@@ -1,0 +1,237 @@
+graph: { title: "ir graph of STRENGTH_RED_EXAMPLE_m5"
+display_edge_labels: no
+layoutalgorithm: mindepth
+manhattan_edges: yes
+port_sharing: no
+orientation: bottom_to_top
+classname 1:  "intrablock Data"
+classname 16: "interblock Data"
+classname 2:  "Block"
+classname 13: "Control Flow"
+classname 14: "intrablock Memory"
+classname 17: "interblock Memory"
+classname 15: "Dominators"
+classname 3:  "Entity type"
+classname 4:  "Entity owner"
+classname 5:  "Method Param"
+classname 6:  "Method Res"
+classname 7:  "Super"
+classname 8:  "Union"
+classname 9:  "Points-to"
+classname 10: "Array Element Type"
+classname 11: "Overwrites"
+classname 12: "Member"
+infoname 1: "Attribute"
+infoname 2: "Verification errors"
+colorentry 100:    0   0    0
+colorentry 101:   20   0    0
+colorentry 102:   40   0    0
+colorentry 103:   60   0    0
+colorentry 104:   80   0    0
+colorentry 105:  100   0    0
+colorentry 106:  120   0    0
+colorentry 107:  140   0    0
+colorentry 108:  150   0    0
+colorentry 109:  180   0    0
+colorentry 110:  200   0    0
+colorentry 111:  220   0    0
+colorentry 112:  240   0    0
+colorentry 113:  255   0    0
+colorentry 113:  255  20   20
+colorentry 114:  255  40   40
+colorentry 115:  255  60   60
+colorentry 116:  255  80   80
+colorentry 117:  255 100  100
+colorentry 118:  255 120  120
+colorentry 119:  255 140  140
+colorentry 120:  255 150  150
+colorentry 121:  255 180  180
+colorentry 122:  255 200  200
+colorentry 123:  255 220  220
+colorentry 124:  255 240  240
+colorentry 125:  255 250  250
+
+graph: { title: "g297" label: "STRENGTH_RED_EXAMPLE_m5" status:clustered color:white
+graph: { title: "n287"  label: "Block 287" status:clustered color:yellow
+edge: {sourcename: "n287" targetname: "n332" label: "0" class:13 priority:60 color:red}
+node: {title: "n288" label: "End  288"  info1: "mode:    X
+visited: 24
+irg:     STRENGTH_RED_EXAMPLE_m5
+arity: 1
+"color: blue}
+}
+
+graph: { title: "n329"  label: "Block 329" status:clustered color:yellow
+edge: {sourcename: "n329" targetname: "n308" label: "0" class:13 priority:60 color:red}
+node: {title: "n332" label: "Return  332"  info1: "mode:    X
+visited: 24
+irg:     STRENGTH_RED_EXAMPLE_m5
+arity: 2
+return in method of type STRENGTH_RED_EXAMPLE_meth_tp
+  res 0 type: int
+"}
+node: {title: "n332n312" label: "0x4Is  312"  info1: "mode:    Is
+visited: 24
+irg:     STRENGTH_RED_EXAMPLE_m5
+arity: 0
+Const of type type_unknown
+"color: yellow}
+edge: {sourcename: "n332" targetname: "n336" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n332" targetname: "n332n312" label: "1" class:16 priority:10}
+}
+
+graph: { title: "n302"  label: "Block 302" status:clustered color:yellow
+edge: {sourcename: "n302" targetname: "n301" label: "0" class:13 priority:60 color:red}
+backedge: {sourcename: "n302" targetname: "n323" label: "1" linestyle:dashed class:13 priority:60 color:red}
+node: {title: "n336" label: "PhiM  336"  info1: "mode:    M
+visited: 24
+irg:     STRENGTH_RED_EXAMPLE_m5
+arity: 2 backedges:
+"color: green}
+edge: {sourcename: "n336" targetname: "n295" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n336" targetname: "n322" label: "1" class:17 priority:10 color:blue}
+node: {title: "n308" label: "ProjX 0 308"  info1: "mode:    X
+visited: 24
+irg:     STRENGTH_RED_EXAMPLE_m5
+arity: 1
+"color: yellow}
+edge: {sourcename: "n308" targetname: "n307" label: "0" class:13 priority:60 color:red}
+node: {title: "n309" label: "ProjX 1 309"  info1: "mode:    X
+visited: 24
+irg:     STRENGTH_RED_EXAMPLE_m5
+arity: 1
+"color: yellow}
+edge: {sourcename: "n309" targetname: "n307" label: "0" class:13 priority:60 color:red}
+node: {title: "n307" label: "Cond  307"  info1: "mode:    T
+visited: 24
+irg:     STRENGTH_RED_EXAMPLE_m5
+arity: 1
+"}
+edge: {sourcename: "n307" targetname: "n306" label: "0" class:1  priority:50}
+node: {title: "n306" label: "Projb Lt 306"  info1: "mode:    b
+visited: 24
+irg:     STRENGTH_RED_EXAMPLE_m5
+arity: 1
+"color: yellow}
+edge: {sourcename: "n306" targetname: "n420" label: "0" class:1  priority:50}
+node: {title: "n420" label: "CmpT  420"  info1: "mode:    T
+visited: 24
+irg:     STRENGTH_RED_EXAMPLE_m5
+arity: 2
+"}
+node: {title: "n420n304" label: "0x0Is  304"  info1: "mode:    Is
+visited: 24
+irg:     STRENGTH_RED_EXAMPLE_m5
+arity: 0
+Const of type type_unknown
+"color: yellow}
+edge: {sourcename: "n420" targetname: "n415" label: "0" class:1  priority:50}
+edge: {sourcename: "n420" targetname: "n420n304" label: "1" class:16 priority:10}
+node: {title: "n415" label: "PhiIs  415"  info1: "mode:    Is
+visited: 24
+irg:     STRENGTH_RED_EXAMPLE_m5
+arity: 2 backedges:
+"color: green}
+node: {title: "n415n413" label: "0x28Is  413"  info1: "mode:    Is
+visited: 24
+irg:     STRENGTH_RED_EXAMPLE_m5
+arity: 0
+Const of type type_unknown
+"color: yellow}
+edge: {sourcename: "n415" targetname: "n415n413" label: "0" class:16 priority:10}
+edge: {sourcename: "n415" targetname: "n416" label: "1" class:16 priority:10}
+}
+
+graph: { title: "n298"  label: "Block 298" status:clustered color:yellow
+edge: {sourcename: "n298" targetname: "n292" label: "0" class:13 priority:60 color:red}
+node: {title: "n301" label: "Jmp  301"  info1: "mode:    X
+visited: 24
+irg:     STRENGTH_RED_EXAMPLE_m5
+arity: 0
+"}
+}
+
+graph: { title: "n310"  label: "Block 310" status:clustered color:yellow
+edge: {sourcename: "n310" targetname: "n309" label: "0" class:13 priority:60 color:red}
+node: {title: "n322" label: "ProjM 0 322"  info1: "mode:    M
+visited: 24
+irg:     STRENGTH_RED_EXAMPLE_m5
+arity: 1
+"color: yellow}
+edge: {sourcename: "n322" targetname: "n320" label: "0" class:17 priority:10 color:blue}
+node: {title: "n320" label: "Store  320"  info1: "mode:    T
+visited: 24
+irg:     STRENGTH_RED_EXAMPLE_m5
+arity: 3
+volatility: volatility_non_volatile
+"}
+node: {title: "n320n318" label: "0x13Is  318"  info1: "mode:    Is
+visited: 24
+irg:     STRENGTH_RED_EXAMPLE_m5
+arity: 0
+Const of type type_unknown
+"color: yellow}
+edge: {sourcename: "n320" targetname: "n336" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n320" targetname: "n417" label: "1" class:1  priority:50}
+edge: {sourcename: "n320" targetname: "n320n318" label: "2" class:16 priority:10}
+node: {title: "n417" label: "AddP  417"  info1: "mode:    P
+visited: 24
+irg:     STRENGTH_RED_EXAMPLE_m5
+arity: 2
+"}
+node: {title: "n417n300" label: "SymC &a  300"  info1: "mode:    P
+visited: 24
+irg:     STRENGTH_RED_EXAMPLE_m5
+arity: 0
+kind addr_ent
+entity GlobalType.a (285)
+
+"}
+edge: {sourcename: "n417" targetname: "n417n300" label: "0" class:16 priority:10}
+edge: {sourcename: "n417" targetname: "n416" label: "1" class:1  priority:50}
+node: {title: "n323" label: "Jmp  323"  info1: "mode:    X
+visited: 24
+irg:     STRENGTH_RED_EXAMPLE_m5
+arity: 0
+"}
+node: {title: "n416" label: "SubIs  416"  info1: "mode:    Is
+visited: 24
+irg:     STRENGTH_RED_EXAMPLE_m5
+arity: 2
+"}
+node: {title: "n416n312" label: "0x4Is  312"  info1: "mode:    Is
+visited: 24
+irg:     STRENGTH_RED_EXAMPLE_m5
+arity: 0
+Const of type type_unknown
+"color: yellow}
+edge: {sourcename: "n416" targetname: "n415" label: "0" class:16 priority:10}
+edge: {sourcename: "n416" targetname: "n416n312" label: "1" class:16 priority:10}
+}
+
+graph: { title: "n289"  label: "Block 289" status:clustered color:yellow
+edge: {sourcename: "n289" targetname: "n292" label: "0" class:13 priority:60 color:red}
+node: {title: "n295" label: "ProjM 1 295"  info1: "mode:    M
+visited: 24
+irg:     STRENGTH_RED_EXAMPLE_m5
+arity: 1
+"color: yellow}
+edge: {sourcename: "n295" targetname: "n290" label: "0" class:17 priority:10 color:blue}
+node: {title: "n292" label: "ProjX 0 292"  info1: "mode:    X
+visited: 24
+irg:     STRENGTH_RED_EXAMPLE_m5
+arity: 1
+"color: yellow}
+edge: {sourcename: "n292" targetname: "n290" label: "0" class:13 priority:60 color:red}
+node: {title: "n290" label: "Start  290"  info1: "mode:    T
+visited: 24
+irg:     STRENGTH_RED_EXAMPLE_m5
+arity: 0
+start of method of type STRENGTH_RED_EXAMPLE_meth_tp
+  param 0 type: int
+"color: blue}
+}
+
+}
+
+}
