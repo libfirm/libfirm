@@ -41,7 +41,7 @@
 # include "pmap.h"
 # include "eset.h"
 
-#undef HEAPANAL
+#define HEAPANAL
 #ifdef HEAPANAL
 void dump_chi_term(FILE *FL, ir_node *n);
 void dump_state(FILE *FL, ir_node *n);
@@ -56,10 +56,10 @@ SeqNo get_Block_seqno(ir_node *n);
 #define DEFAULT_TYPE_ATTRIBUTE " "
 
 /* Attributes of edges between Firm nodes */
-#define BLOCK_EDGE_ATTR     "class: 2 priority: 2 linestyle: dotted"
-#define CF_EDGE_ATTR        "color: red"
-#define MEM_EDGE_ATTR       "color: blue"
-#define DOMINATOR_EDGE_ATTR "color: red"
+#define BLOCK_EDGE_ATTR     "class:2 priority: 2 linestyle: dotted"
+#define CF_EDGE_ATTR        "class:13 color: red"
+#define MEM_EDGE_ATTR       "class:14 color: blue"
+#define DOMINATOR_EDGE_ATTR "class:15 color: red"
 
 #define BACK_EDGE_ATTR "linestyle: dashed "
 
@@ -1470,6 +1470,9 @@ dump_vcg_header(const char *name, const char *orientation) {
 	   "orientation: %s\n"
 	   "classname 1: \"Data\"\n"
 	   "classname 2: \"Block\"\n"
+	   "classname 13:\"Control Flow\"\n"
+	   "classname 14:\"Memory\"\n"
+	   "classname 15:\"Dominators\"\n"
 	   "classname 3: \"Entity type\"\n"
 	   "classname 4: \"Entity owner\"\n"
 	   "classname 5: \"Method Param\"\n"
