@@ -2059,7 +2059,7 @@ optimize_node (ir_node *n)
       if ((get_irn_mode(n) != mode_T) && (tv != tarval_bad)) {
         /*
          * we MUST copy the node here temporary, because it's still needed
-         * for DBG_OPT_ALGSIM0
+         * for DBG_OPT_CSTEVAL
          */
         int node_size = offsetof(ir_node, attr) +  n->op->attr_size;
         oldn = alloca(node_size);
@@ -2075,7 +2075,7 @@ optimize_node (ir_node *n)
         n = new_Const (get_tarval_mode (tv), tv);
 	if (old_tp && get_type_mode(old_tp) == get_tarval_mode (tv))
 	  set_Const_type(n, old_tp);
-                                                 DBG_OPT_ALGSIM0(oldn, n);
+                                                 DBG_OPT_CSTEVAL(oldn, n);
         return n;
       }
     }
@@ -2168,7 +2168,7 @@ optimize_in_place_2 (ir_node *n)
 	if (old_tp && get_type_mode(old_tp) == get_tarval_mode (tv))
 	  set_Const_type(n, old_tp);
 
-        DBG_OPT_ALGSIM0(oldn, n);
+        DBG_OPT_CSTEVAL(oldn, n);
         return n;
       }
     }
