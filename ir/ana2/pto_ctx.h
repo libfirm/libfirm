@@ -39,6 +39,9 @@ ctx_info_t *get_curr_ctx (void);
 /* Set the current ctx to the given ctx.  Return the old value */
 ctx_info_t *set_curr_ctx (ctx_info_t*);
 
+/* Set all alloc names to the right ptos */
+void pto_ctx_allocs (graph_info_t*, int);
+
 /* ===================================================
    Global Variables:
    =================================================== */
@@ -50,6 +53,9 @@ ctx_info_t *set_curr_ctx (ctx_info_t*);
 
 /*
   $Log$
+  Revision 1.2  2004/11/20 21:21:35  liekweg
+  Add pto_ctx_allocs
+
   Revision 1.1  2004/11/18 16:37:34  liekweg
   rewritten
 

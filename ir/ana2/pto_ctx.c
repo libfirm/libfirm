@@ -21,11 +21,12 @@
 */
 
 # include "pto_ctx.h"
+# include "pto_debug.h"
+# include "pto_comp.h"
+# include "ecg.h"
 
 # include "irnode.h"
 # include "xmalloc.h"
-
-# include "pto_debug.h"
 
 /* Local Defines: */
 
@@ -81,11 +82,12 @@ ctx_info_t *set_curr_ctx (ctx_info_t *ctx)
   return (old_ctx);
 }
 
-
-
 
 /*
   $Log$
+  Revision 1.2  2004/11/20 21:21:35  liekweg
+  Add pto_ctx_allocs
+
   Revision 1.1  2004/11/18 16:37:34  liekweg
   rewritten
 
