@@ -1083,15 +1083,21 @@ static ir_node *equivalent_node_Id(ir_node *n)
  */
 static ir_node *equivalent_node_Mux(ir_node *n)
 {
-  ir_node *sel = get_Mux_sel(n);
+  ir_node *oldn = n, *sel = get_Mux_sel(n);
   tarval *ts = value_of(sel);
 
-  if (ts == get_tarval_b_true())
-    return get_Mux_true(n);
-  else if (ts == get_tarval_b_false())
-    return get_Mux_false(n);
-	else if(get_Mux_false(n) == get_Mux_true(n))
-		return get_Mux_true(n);
+  if (ts == get_tarval_b_true()) {
+    n = get_Mux_true(n);
+    DBG_OPT_ALGSIM0(oldn, n);
+  }
+  else if (ts == get_tarval_b_false()) {
+    n = get_Mux_false(n);
+    DBG_OPT_ALGSIM0(oldn, n);
+  }
+  else if(get_Mux_false(n) == get_Mux_true(n)) {
+		n = get_Mux_true(n);
+    DBG_OPT_ALGSIM0(oldn, n);
+  }
 
   return n;
 }
@@ -1256,6 +1262,7 @@ static ir_node *transform_node_AddSub(ir_node *n)
 static ir_node *transform_node_Sub(ir_node *n)
 {
   ir_mode *mode;
+  ir_node *oldn = n;
 
   n = transform_node_AddSub(n);
 
@@ -1268,6 +1275,7 @@ static ir_node *transform_node_Sub(ir_node *n)
             get_nodes_block(n),
             get_Sub_right(n),
             mode);
+      DBG_OPT_ALGSIM0(oldn, n);
     }
   }
 
@@ -1286,8 +1294,11 @@ static ir_node *transform_node_Div(ir_node *n)
 
   /* BEWARE: it is NOT possible to optimize a/a to 1, as this may cause a exception */
 
-  if (tv != tarval_bad)
+  if (tv != tarval_bad) {
     value = new_Const(get_tarval_mode(tv), tv);
+
+    DBG_OPT_CSTEVAL(n, value);
+  }
   else /* Try architecture dependand optimization */
     value = arch_dep_replace_div_by_const(n);
 
@@ -1310,8 +1321,11 @@ static ir_node *transform_node_Mod(ir_node *n)
 
   /* BEWARE: it is NOT possible to optimize a%a to 0, as this may cause a exception */
 
-  if (tv != tarval_bad)
+  if (tv != tarval_bad) {
     value = new_Const(get_tarval_mode(tv), tv);
+
+    DBG_OPT_CSTEVAL(n, value);
+  }
   else /* Try architecture dependand optimization */
     value = arch_dep_replace_mod_by_const(n);
 
@@ -1346,7 +1360,10 @@ static ir_node *transform_node_DivMod(ir_node *n)
     if (tb == get_mode_one(get_tarval_mode(tb))) {
       b = new_Const (mode, get_mode_null(mode));
       evaluated = 1;
-    } else if (ta != tarval_bad) {
+
+      DBG_OPT_CSTEVAL(n, b);
+    }
+    else if (ta != tarval_bad) {
       tarval *resa, *resb;
       resa = tarval_div (ta, tb);
       if (resa == tarval_bad) return n; /* Causes exception!!! Model by replacing through
@@ -1356,6 +1373,9 @@ static ir_node *transform_node_DivMod(ir_node *n)
       a = new_Const (mode, resa);
       b = new_Const (mode, resb);
       evaluated = 1;
+
+      DBG_OPT_CSTEVAL(n, a);
+      DBG_OPT_CSTEVAL(n, b);
     }
     else { /* Try architecture dependand optimization */
       arch_dep_replace_divmod_by_const(&a, &b, n);
@@ -1437,6 +1457,7 @@ static ir_node *transform_node_Cond(ir_node *n)
  */
 static ir_node *transform_node_Eor(ir_node *n)
 {
+  ir_node *oldn = n;
   ir_node *a = get_Eor_left(n);
   ir_node *b = get_Eor_right(n);
 
@@ -1444,15 +1465,21 @@ static ir_node *transform_node_Eor(ir_node *n)
       && (get_irn_op(a) == op_Proj)
       && (get_irn_mode(a) == mode_b)
       && (classify_tarval (value_of(b)) == TV_CLASSIFY_ONE)
-      && (get_irn_op(get_Proj_pred(a)) == op_Cmp))
+      && (get_irn_op(get_Proj_pred(a)) == op_Cmp)) {
     /* The Eor negates a Cmp. The Cmp has the negated result anyways! */
     n = new_r_Proj(current_ir_graph, get_nodes_block(n), get_Proj_pred(a),
                    mode_b, get_negated_pnc(get_Proj_proj(a)));
+
+    DBG_OPT_ALGSIM0(oldn, n);
+  }
   else if ((get_irn_mode(n) == mode_b)
-           && (classify_tarval (value_of(b)) == TV_CLASSIFY_ONE))
+        && (classify_tarval (value_of(b)) == TV_CLASSIFY_ONE)) {
     /* The Eor is a Not. Replace it by a Not. */
     /*   ????!!!Extend to bitfield 1111111. */
     n = new_r_Not(current_ir_graph, get_nodes_block(n), a, mode_b);
+
+    DBG_OPT_ALGSIM0(oldn, n);
+  }
 
   return n;
 }
@@ -1462,15 +1489,18 @@ static ir_node *transform_node_Eor(ir_node *n)
  */
 static ir_node *transform_node_Not(ir_node *n)
 {
+  ir_node *oldn = n;
   ir_node *a = get_Not_op(n);
 
   if (   (get_irn_mode(n) == mode_b)
       && (get_irn_op(a) == op_Proj)
       && (get_irn_mode(a) == mode_b)
-      && (get_irn_op(get_Proj_pred(a)) == op_Cmp))
+      && (get_irn_op(get_Proj_pred(a)) == op_Cmp)) {
     /* We negate a Cmp. The Cmp has the negated result anyways! */
     n = new_r_Proj(current_ir_graph, get_nodes_block(n), get_Proj_pred(a),
                    mode_b, get_negated_pnc(get_Proj_proj(a)));
+    DBG_OPT_ALGSIM0(oldn, n);
+  }
 
   return n;
 }
@@ -1479,15 +1509,18 @@ static ir_node *transform_node_Not(ir_node *n)
  * Transform a Cast of a Const into a new Const
  */
 static ir_node *transform_node_Cast(ir_node *n) {
+  ir_node *oldn = n;
   ir_node *pred = get_Cast_op(n);
   type *tp = get_irn_type(pred);
 
   if (get_irn_op(pred) == op_Const && get_Const_type(pred) != tp) {
     n = new_rd_Const_type(NULL, current_ir_graph, get_nodes_block(pred), get_irn_mode(pred),
               get_Const_tarval(pred), tp);
+    DBG_OPT_CSTEVAL(oldn, n);
   } else if ((get_irn_op(pred) == op_SymConst) && (get_SymConst_value_type(pred) != tp)) {
     n = new_rd_SymConst_type(NULL, current_ir_graph, get_nodes_block(pred), get_SymConst_symbol(pred),
                  get_SymConst_kind(pred), tp);
+    DBG_OPT_CSTEVAL(oldn, n);
   }
   return n;
 }
@@ -1719,7 +1752,7 @@ static ir_node *transform_node_Or_Rot(ir_node *or)
 {
   ir_mode *mode = get_irn_mode(or);
   ir_node *shl, *shr, *block;
-  ir_node *irn, *x, *c1, *c2, *v, *sub;
+  ir_node *irn, *x, *c1, *c2, *v, *sub, *n;
   tarval *tv1, *tv2;
 
   if (! mode_is_int(mode))
@@ -1763,7 +1796,10 @@ static ir_node *transform_node_Or_Rot(ir_node *or)
     /* yet, condition met */
     block = get_nodes_block(or);
 
-    return new_r_Rot(current_ir_graph, block, x, c1, mode);
+    n = new_r_Rot(current_ir_graph, block, x, c1, mode);
+
+    DBG_OPT_ALGSIM1(or, shl, shr, n);
+    return n;
   }
   else if (get_irn_op(c1) == op_Sub) {
     v   = c2;
@@ -1787,7 +1823,10 @@ static ir_node *transform_node_Or_Rot(ir_node *or)
     block = get_nodes_block(or);
 
     /* a Rot right is not supported, so use a rot left */
-    return new_r_Rot(current_ir_graph, block, x, sub, mode);
+    n =  new_r_Rot(current_ir_graph, block, x, sub, mode);
+
+    DBG_OPT_ALGSIM0(or, n);
+    return n;
   }
   else if (get_irn_op(c2) == op_Sub) {
     v   = c1;
@@ -1808,7 +1847,10 @@ static ir_node *transform_node_Or_Rot(ir_node *or)
     block = get_nodes_block(or);
 
     /* a Rot Left */
-    return new_r_Rot(current_ir_graph, block, x, v, mode);
+    n = new_r_Rot(current_ir_graph, block, x, v, mode);
+
+    DBG_OPT_ALGSIM0(or, n);
+    return n;
   }
 
   return or;
@@ -1833,7 +1875,7 @@ static ir_node *transform_node(ir_node *n);
  */
 static ir_node * transform_node_shift(ir_node *n)
 {
-  ir_node *left;
+  ir_node *left, *right;
   tarval *tv1, *tv2, *res;
   ir_mode *mode;
   int modulo_shf, flag;
@@ -1844,7 +1886,8 @@ static ir_node * transform_node_shift(ir_node *n)
   if (get_irn_op(left) != get_irn_op(n))
     return n;
 
-  tv1 = value_of(get_binop_right(n));
+  right = get_binop_right(n);
+  tv1 = value_of(right);
   if (tv1 == tarval_bad)
     return n;
 
@@ -1877,6 +1920,8 @@ static ir_node * transform_node_shift(ir_node *n)
     in[1] = new_r_Const(current_ir_graph, block, get_tarval_mode(res), res);
 
     irn = new_ir_node(NULL, current_ir_graph, block, get_irn_op(n), mode, 2, in);
+
+    DBG_OPT_ALGSIM0(n, irn);
 
     return transform_node(irn);
   }
