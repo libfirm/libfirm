@@ -41,13 +41,14 @@ typedef struct {
 
 /** method attributes */
 typedef struct {
-  int n_params;        /**< number of parameters */
-  type **param_type;   /**< code generation needs this information. */
-  type *value_params;  /**< A type whose entities represent copied value arguments. */
-  int n_res;           /**< number of results */
-  type **res_type;     /**< array with result types */
-  type *value_ress;    /**< A type whose entities represent copied value results. */
-  variadicity variadicity; /**< variadicity of the method */
+  int n_params;              /**< number of parameters */
+  type **param_type;         /**< code generation needs this information. */
+  type *value_params;        /**< A type whose entities represent copied value arguments. */
+  int n_res;                 /**< number of results */
+  type **res_type;           /**< array with result types */
+  type *value_ress;          /**< A type whose entities represent copied value results. */
+  variadicity variadicity;   /**< variadicity of the method. */
+  int first_variadic_param;  /**< index of the first variadic param or -1 if non-variadic .*/
 } mtd_attr;
 
 /** union attributs */
@@ -95,15 +96,15 @@ typedef struct {        * No private attr, must be smaller than others! *
 } id_attr;
 */
 
-/** general type attributs */
+/** General type attributs. */
 typedef union {
-  cls_attr ca;
-  stc_attr sa;
-  mtd_attr ma;
-  uni_attr ua;
-  arr_attr aa;
-  enm_attr ea;
-  ptr_attr pa;
+  cls_attr ca;  	/**< attributes of a class type */
+  stc_attr sa;		/**< attributes of a struct type */
+  mtd_attr ma;		/**< attributes of a method type */
+  uni_attr ua;		/**< attributes of an union type */
+  arr_attr aa;		/**< attributes of an array type */
+  enm_attr ea;		/**< attributes of an enumeration type */
+  ptr_attr pa;		/**< attributes of a pointer type */
 } tp_attr;
 
 /** the structure of a type */
@@ -162,8 +163,6 @@ INLINE void free_array_attrs      (type *array);
 INLINE void free_enumeration_attrs(type *enumeration);
 INLINE void free_pointer_attrs    (type *pointer);
 INLINE void free_primitive_attrs  (type *primitive);
-
-
 
 
 /** initialize the type module */

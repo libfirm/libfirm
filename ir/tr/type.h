@@ -462,10 +462,22 @@ type   *new_type_struct (ident *name);
 /** Creates a new type struct with debug information. */
 type   *new_d_type_struct (ident *name, dbg_info* db);
 
-/* manipulate private fields of struct */
+/* --- manipulate private fields of struct --- */
+
+/** Adds the entity as member of the struct.  */
 void    add_struct_member   (type *strct, entity *member);
+
+/** Returns the number of members of this struct. */
 int     get_struct_n_members (type *strct);
+
+/** Returns the member at position pos, 0 <= pos < n_member */
 entity *get_struct_member   (type *strct, int pos);
+
+/** Returns index of member in strct, -1 if not contained. */
+int     get_struct_member_index(type *strct, entity *member);
+
+/** Overwrites the member at position pos, 0 <= pos < n_member with
+   the passed entity. */
 void    set_struct_member   (type *strct, int pos, entity *member);
 
 /** Finds member in the list of members and removes it. */
@@ -547,9 +559,13 @@ type *get_method_param_type(type *method, int pos);
     Also changes the type in the pass-by-value representation by just
     changing the type of the corresponding entity if the representation is constructed. */
 void  set_method_param_type(type *method, int pos, type* tp);
-/* Returns an entity that represents the copied value argument.  Only necessary
+/** Returns an entity that represents the copied value argument.  Only necessary
    for compounds passed by value. This information is constructed only on demand. */
 entity *get_method_value_param_ent(type *method, int pos);
+/**
+ * Returns a type that represents the copied value arguments.
+ */
+type *get_method_value_param_type(type *method);
 
 int   get_method_n_ress   (type *method);
 type *get_method_res_type(type *method, int pos);
@@ -557,10 +573,11 @@ type *get_method_res_type(type *method, int pos);
     Also changes the type in the pass-by-value representation by just
     changing the type of the corresponding entity if the representation is constructed. */
 void  set_method_res_type(type *method, int pos, type* tp);
-/* Returns an entity that represents the copied value result.  Only necessary
+/** Returns an entity that represents the copied value result.  Only necessary
    for compounds passed by value. This information is constructed only on demand. */
 entity *get_method_value_res_ent(type *method, int pos);
-/*
+/**
+ * Returns a type that represents the copied value results.
  */
 type *get_method_value_res_type(type *method);
 
@@ -582,6 +599,22 @@ variadicity get_method_variadicity(type *method);
 
 /** Sets the variadicity of a method. */
 void set_method_variadicity(type *method, variadicity vari);
+
+/**
+ * Returns the first variadic parameter index of a type.
+ * If this index was NOT set, the index of the last parameter
+ * of the method type plus one is returned for variadic functions.
+ * Non-variadic function types always return -1 here.
+ */
+int get_method_first_variadic_param_index(type *method);
+
+/**
+ * Sets the first variadic parameter index. This allows to specify
+ * a complete call type (containing the type of all parameters)
+ * but still have the knowledge, which parameter must be passed as
+ * variadic one.
+ */
+void set_method_first_variadic_param_index(type *method, int index);
 
 /** Returns true if a type is a method type. */
 bool  is_method_type     (type *method);
@@ -742,8 +775,7 @@ bool    is_enumeration_type     (type *enumeration);
  */
 
 /** Creates a new type pointer with mode mode_p. */
-#define new_type_pointer(N, P) new_type_pointer_mode(N, P, mode_P)
-/* type *new_type_pointer           (ident *name, type *points_to); */
+#define new_type_pointer(N, P) new_type_pointer_mode(N, P, mode_P_mach)
 
 /** Creates a new type pointer with given pointer mode. */
 type *new_type_pointer_mode      (ident *name, type *points_to, ir_mode *ptr_mode);

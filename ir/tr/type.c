@@ -432,10 +432,23 @@ bool equal_type(type *typ1, type *typ2) {
     }
   } break;
   case tpo_method:      {
+    int n_param1, n_param2;
+
     if (get_method_variadicity(typ1) != get_method_variadicity(typ2)) return false;
-    if (get_method_n_params(typ1) != get_method_n_params(typ2)) return false;
-    if (get_method_n_ress(typ1) != get_method_n_ress(typ2)) return false;
-    for (i = 0; i < get_method_n_params(typ1); i++) {
+    if (get_method_n_ress(typ1)      != get_method_n_ress(typ2)) return false;
+
+    if (get_method_variadicity(typ1) == variadicity_non_variadic) {
+      n_param1 = get_method_n_params(typ1);
+      n_param2 = get_method_n_params(typ2);
+    }
+    else {
+      n_param1 = get_method_first_variadic_param_index(typ1);
+      n_param2 = get_method_first_variadic_param_index(typ2);
+    }
+
+    if (n_param1 != n_param2) return false;
+
+    for (i = 0; i < n_param1; i++) {
       if (!equal_type(get_method_param_type(typ1, i), get_method_param_type(typ2, i)))
 	return false;
     }
@@ -524,6 +537,7 @@ bool smaller_type (type *st, type *lt) {
     }
   } break;
   case tpo_method:      {
+    /** FIXME: is this still true? */
     if (get_method_variadicity(st) != get_method_variadicity(lt)) return false;
     if (get_method_n_params(st) != get_method_n_params(lt)) return false;
     if (get_method_n_ress(st) != get_method_n_ress(lt)) return false;
@@ -600,9 +614,9 @@ bool smaller_type (type *st, type *lt) {
   return true;
 }
 
-/*******************************************************************/
-/** TYPE_CLASS                                                    **/
-/*******************************************************************/
+/*-----------------------------------------------------------------*/
+/* TYPE_CLASS                                                      */
+/*-----------------------------------------------------------------*/
 
 /* create a new class type */
 type   *new_type_class (ident *name) {
@@ -643,10 +657,12 @@ void    add_class_member   (type *clss, entity *member) {
   assert(clss && (clss->type_op == type_class));
   ARR_APP1 (entity *, clss->attr.ca.members, member);
 }
+
 int     get_class_n_members (type *clss) {
   assert(clss && (clss->type_op == type_class));
   return (ARR_LEN (clss->attr.ca.members))-1;
 }
+
 int     get_class_member_index(type *clss, entity *mem) {
   int i;
   assert(clss && (clss->type_op == type_class));
@@ -655,11 +671,13 @@ int     get_class_member_index(type *clss, entity *mem) {
       return i;
   return -1;
 }
+
 entity *get_class_member   (type *clss, int pos) {
   assert(clss && (clss->type_op == type_class));
   assert(pos >= 0 && pos < get_class_n_members(clss));
   return clss->attr.ca.members[pos+1];
 }
+
 entity *get_class_member_by_name(type *clss, ident *name) {
   int i, n_mem;
   assert(clss && (clss->type_op == type_class));
@@ -829,9 +847,9 @@ bool is_subclass_of(type *low, type *high) {
   return false;
 }
 
-/*******************************************************************/
-/** TYPE_STRUCT                                                   **/
-/*******************************************************************/
+/*----------------------------------------------------------------**/
+/* TYPE_STRUCT                                                     */
+/*----------------------------------------------------------------**/
 
 /* create a new type struct */
 type   *new_type_struct (ident *name) {
@@ -861,17 +879,29 @@ int     get_struct_n_members (type *strct) {
   assert(strct && (strct->type_op == type_struct));
   return (ARR_LEN (strct->attr.sa.members))-1;
 }
+
 void    add_struct_member   (type *strct, entity *member) {
   assert(strct && (strct->type_op == type_struct));
   assert(get_type_tpop(get_entity_type(member)) != type_method);
     /*    @@@ lowerfirm geht nicht durch */
   ARR_APP1 (entity *, strct->attr.sa.members, member);
 }
+
 entity *get_struct_member   (type *strct, int pos) {
   assert(strct && (strct->type_op == type_struct));
   assert(pos >= 0 && pos < get_struct_n_members(strct));
   return strct->attr.sa.members[pos+1];
 }
+
+int     get_struct_member_index(type *strct, entity *mem) {
+  int i;
+  assert(strct && (strct->type_op == type_struct));
+  for (i = 0; i < get_struct_n_members(strct); i++)
+    if (get_struct_member(strct, i) == mem)
+      return i;
+  return -1;
+}
+
 void    set_struct_member   (type *strct, int pos, entity *member) {
   assert(strct && (strct->type_op == type_struct));
   assert(pos >= 0 && pos < get_struct_n_members(strct));
@@ -900,7 +930,15 @@ bool    is_struct_type(type *strct) {
 /** TYPE_METHOD                                                   **/
 /*******************************************************************/
 
-/* Lazy construction of value argument / result representation. */
+/**
+ * Lazy construction of value argument / result representation.
+ * Constructs a struct type and its member.  The types of the members
+ * are passed in the argument list.
+ *
+ * @param name    name of the type constructed
+ * @param len     number of fields
+ * @param tps     array of field types with length len
+ */
 static INLINE type *
 build_value_type(ident *name, int len, type **tps) {
   int i;
@@ -919,17 +957,19 @@ build_value_type(ident *name, int len, type **tps) {
    N_param is the number of parameters, n_res the number of results.  */
 type *new_type_method (ident *name, int n_param, int n_res) {
   type *res;
-  res = new_type(type_method, mode_P_mach, name);
-  res->state = layout_fixed;
+
   assert((get_mode_size_bytes(mode_P_mach) != -1) && "unorthodox modes not implemented");
-  res->size = get_mode_size_bytes(mode_P_mach);
-  res->attr.ma.n_params     = n_param;
-  res->attr.ma.param_type   = (type **) xmalloc (sizeof (type *) * n_param);
-  res->attr.ma.value_params = NULL;
-  res->attr.ma.n_res        = n_res;
-  res->attr.ma.res_type     = (type **) xmalloc (sizeof (type *) * n_res);
-  res->attr.ma.value_ress   = NULL;
-  res->attr.ma.variadicity  = variadicity_non_variadic;
+  res = new_type(type_method, mode_P_mach, name);
+  res->state                        = layout_fixed;
+  res->size                         = get_mode_size_bytes(mode_P_mach);
+  res->attr.ma.n_params             = n_param;
+  res->attr.ma.param_type           = (type **) xmalloc (sizeof (type *) * n_param);
+  res->attr.ma.value_params         = NULL;
+  res->attr.ma.n_res                = n_res;
+  res->attr.ma.res_type             = (type **) xmalloc (sizeof (type *) * n_res);
+  res->attr.ma.value_ress           = NULL;
+  res->attr.ma.variadicity          = variadicity_non_variadic;
+  res->attr.ma.first_variadic_param = -1;
 
   return res;
 }
@@ -943,6 +983,7 @@ type *new_d_type_method (ident *name, int n_param, int n_res, dbg_info* db) {
 void free_method_entities(type *method) {
   assert(method && (method->type_op == type_method));
 }
+
 /* Attention: also frees entities in value parameter subtypes! */
 void free_method_attrs(type *method) {
   assert(method && (method->type_op == type_method));
@@ -963,6 +1004,7 @@ int   get_method_n_params  (type *method) {
   assert(method && (method->type_op == type_method));
   return method->attr.ma.n_params;
 }
+
 type *get_method_param_type(type *method, int pos) {
   type *res;
   assert(method && (method->type_op == type_method));
@@ -971,6 +1013,7 @@ type *get_method_param_type(type *method, int pos) {
   assert(res != NULL && "empty method param type");
   return method->attr.ma.param_type[pos] = skip_tid(res);
 }
+
 void  set_method_param_type(type *method, int pos, type* tp) {
   assert(method && (method->type_op == type_method));
   assert(pos >= 0 && pos < get_method_n_params(method));
@@ -981,6 +1024,7 @@ void  set_method_param_type(type *method, int pos, type* tp) {
     set_entity_type(get_struct_member(method->attr.ma.value_params, pos), tp);
   }
 }
+
 /* Returns an entity that represents the copied value argument.  Only necessary
    for compounds passed by value. */
 entity *get_method_value_param_ent(type *method, int pos) {
@@ -996,16 +1040,20 @@ entity *get_method_value_param_ent(type *method, int pos) {
   return get_struct_member(method->attr.ma.value_params, pos);
 }
 
-type *get_method_value_res_type(type *method) {
+/*
+ * Returns a type that represents the copied value arguments.
+ */
+type *get_method_value_param_type(type *method)
+{
   assert(method && (method->type_op == type_method));
   return method->attr.ma.value_params;
 }
-
 
 int   get_method_n_ress   (type *method) {
   assert(method && (method->type_op == type_method));
   return method->attr.ma.n_res;
 }
+
 type *get_method_res_type(type *method, int pos) {
   type *res;
   assert(method && (method->type_op == type_method));
@@ -1014,6 +1062,7 @@ type *get_method_res_type(type *method, int pos) {
   assert(res != NULL && "empty method return type");
   return method->attr.ma.res_type[pos] = skip_tid(res);
 }
+
 void  set_method_res_type(type *method, int pos, type* tp) {
   assert(method && (method->type_op == type_method));
   assert(pos >= 0 && pos < get_method_n_ress(method));
@@ -1025,6 +1074,7 @@ void  set_method_res_type(type *method, int pos, type* tp) {
     set_entity_type(get_struct_member(method->attr.ma.value_ress, pos), tp);
   }
 }
+
 /* Returns an entity that represents the copied value result.  Only necessary
    for compounds passed by value. */
 entity *get_method_value_res_ent(type *method, int pos) {
@@ -1037,6 +1087,14 @@ entity *get_method_value_res_ent(type *method, int pos) {
   assert((get_entity_type(get_struct_member(method->attr.ma.value_ress, pos)) != method->attr.ma.value_ress)
 	 && "result type not yet set");
   return get_struct_member(method->attr.ma.value_ress, pos);
+}
+
+/*
+ * Returns a type that represents the copied value results.
+ */
+type *get_method_value_res_type(type *method) {
+  assert(method && (method->type_op == type_method));
+  return method->attr.ma.value_ress;
 }
 
 /* Returns the null-terminated name of this variadicity. */
@@ -1064,15 +1122,47 @@ void set_method_variadicity(type *method, variadicity vari)
   method->attr.ma.variadicity = vari;
 }
 
+/*
+ * Returns the first variadic parameter index of a type.
+ * If this index was NOT set, the index of the last parameter
+ * of the method type plus one is returned for variadic functions.
+ * Non-variadic function types always return -1 here.
+ */
+int get_method_first_variadic_param_index(type *method)
+{
+  assert(method && (method->type_op == type_method));
+
+  if (method->attr.ma.variadicity == variadicity_non_variadic)
+    return -1;
+
+  if (method->attr.ma.first_variadic_param == -1)
+    return get_method_n_params(method);
+  return method->attr.ma.first_variadic_param;
+}
+
+/*
+ * Sets the first variadic parameter index. This allows to specify
+ * a complete call type (containing the type of all parameters)
+ * but still have the knowledge, which parameter must be passed as
+ * variadic one.
+ */
+void set_method_first_variadic_param_index(type *method, int index)
+{
+  assert(method && (method->type_op == type_method));
+  assert(index >= 0 && index <= get_method_n_params(method));
+
+  method->attr.ma.first_variadic_param = index;
+}
+
 /* typecheck */
 bool  is_method_type     (type *method) {
   assert(method);
-  if (method->type_op == type_method) return 1; else return 0;
+  return (method->type_op == type_method);
 }
 
-/*******************************************************************/
-/** TYPE_UNION                                                    **/
-/*******************************************************************/
+/*-----------------------------------------------------------------*/
+/* TYPE_UNION                                                      */
+/*-----------------------------------------------------------------*/
 
 /* create a new type uni */
 type  *new_type_union (ident *name) {
@@ -1166,9 +1256,9 @@ bool   is_union_type         (type *uni) {
   if (uni->type_op == type_union) return 1; else return 0;
 }
 
-/*******************************************************************/
-/** TYPE_ARRAY                                                    **/
-/*******************************************************************/
+/*-----------------------------------------------------------------*/
+/* TYPE_ARRAY                                                      */
+/*-----------------------------------------------------------------*/
 
 
 /* create a new type array -- set dimension sizes independently */
@@ -1319,9 +1409,9 @@ bool   is_array_type         (type *array) {
   if (array->type_op == type_array) return 1; else return 0;
 }
 
-/*******************************************************************/
-/** TYPE_ENUMERATION                                              **/
-/*******************************************************************/
+/*-----------------------------------------------------------------*/
+/* TYPE_ENUMERATION                                                */
+/*-----------------------------------------------------------------*/
 
 /* create a new type enumeration -- set the enumerators independently */
 type   *new_type_enumeration    (ident *name, int n_enums) {
@@ -1386,9 +1476,9 @@ bool    is_enumeration_type     (type *enumeration) {
   if (enumeration->type_op == type_enumeration) return 1; else return 0;
 }
 
-/*******************************************************************/
-/** TYPE_POINTER                                                  **/
-/*******************************************************************/
+/*-----------------------------------------------------------------*/
+/* TYPE_POINTER                                                    */
+/*-----------------------------------------------------------------*/
 
 /* Create a new type pointer */
 type *new_type_pointer_mode (ident *name, type *points_to, ir_mode *ptr_mode) {
@@ -1443,9 +1533,9 @@ type *find_pointer_type_to_type (type *tp) {
 
 
 
-/*******************************************************************/
-/** TYPE_PRIMITIVE                                                **/
-/*******************************************************************/
+/*-----------------------------------------------------------------*/
+/* TYPE_PRIMITIVE                                                  */
+/*-----------------------------------------------------------------*/
 
 /* create a new type primitive */
 type *new_type_primitive (ident *name, ir_mode *mode) {
@@ -1475,9 +1565,9 @@ bool  is_primitive_type  (type *primitive) {
   if (primitive->type_op == type_primitive) return 1; else return 0;
 }
 
-/*******************************************************************/
-/** common functionality                                          **/
-/*******************************************************************/
+/*-----------------------------------------------------------------*/
+/* common functionality                                            */
+/*-----------------------------------------------------------------*/
 
 
 int is_atomic_type(type *tp) {
@@ -1533,9 +1623,6 @@ int is_compound_type(type *tp) {
   return (is_class_type(tp) || is_struct_type(tp) ||
 	  is_array_type(tp) || is_union_type(tp));
 }
-
-
-
 
 
 #if 1 || DEBUG_libfirm
