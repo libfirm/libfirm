@@ -3,7 +3,7 @@
 /*
  * Project:     libFIRM
  * File name:   ir/ana/rta.c
- * Purpose:     Intraprozedural analyses to improve the call graph estimate.
+ * Purpose:     Interprocedural analysis to improve the call graph estimate.
  * Author:      Florian
  * Modified by:
  * Created:     09.06.2002
@@ -209,19 +209,16 @@ static int rta_fill_incremental (void)
   /* init_tables has added main_irg to _live_graphs */
 
   /* Need to take care of graphs that are externally
-     visible. Pretend that they are called: */
+     visible or sticky. Pretend that they are called: */
 
-  if (! whole_world) {
-    for (i = 0; i < get_irp_n_irgs(); i++) {
-      ir_graph *graph = get_irp_irg (i);
+  for (i = 0; i < get_irp_n_irgs(); i++) {
+    ir_graph *graph = get_irp_irg (i);
+    entity *ent = get_irg_entity (graph);
 
-      entity *ent = get_irg_entity (graph);
-      if (visibility_external_visible == get_entity_visibility (ent)) {
-
-        eset_insert (_live_graphs, graph);
-
-        /* eset_insert (_live_classes, get_entity_owner (ent)); */
-      }
+    if (((!whole_world) &&
+         (visibility_external_visible == get_entity_visibility (ent))) ||
+        (stickyness_sticky == get_entity_stickyness (ent))) {
+      eset_insert (_live_graphs, graph);
     }
   }
 
@@ -330,13 +327,21 @@ static void force_description (entity *ent, entity *addr)
 static void remove_irg (ir_graph *graph)
 {
   entity *ent = get_irg_entity (graph);
+  peculiarity pec = get_entity_peculiarity (ent);
 
-/*   DDMEO (get_irg_ent(graph)); */
+  /*   DDMEO (get_irg_ent(graph)); */
 
   /* delete the ir_graph data */
+  set_entity_peculiarity (ent, peculiarity_description);
   remove_irp_irg (graph);
-  /* remove reference to the graph */
-  set_entity_irg (ent, NULL);
+  /* remove_irp_irg also removes the entities' reference to the graph */
+  /*
+    if (NULL != get_entity_irg (ent)) {
+    set_entity_irg (ent, NULL);
+    }
+  */
+  set_entity_peculiarity (ent, pec);
+
   /* find the implementation (graph) from *some* superclass: */
   graph = get_implementing_graph (ent);
 
@@ -373,12 +378,11 @@ static void init_tables (void)
 }
 
 /* Initialise the RTA data structures, and perform RTA.
-   @param   do_verbose Iff != 0, print statistics as we go along
+   @param   do_verbose If == 1, print statistics, if > 1, chatter about every detail
    @param   do_whole_world Iff != 0, assume whole-world
 */
 void rta_init (int do_verbose, int do_whole_world)
 {
-  int n_live_graphs = 0;
   int n_runs = 0;
 
 # ifdef DEBUG_libfirm
@@ -396,9 +400,9 @@ void rta_init (int do_verbose, int do_whole_world)
 
   n_runs = rta_fill_incremental ();
 
-  n_live_graphs = stats ();
-
   if (verbose) {
+    int n_live_graphs = stats ();
+
     if (whole_world) {
       printf ("RTA: whole-world assumption\n");
     }
@@ -415,12 +419,15 @@ void rta_init (int do_verbose, int do_whole_world)
 # endif /* defined DEBUG_libfirm */
 }
 
-/* Delete all graphs that we have found to be dead from the program */
+/* Delete all graphs that we have found to be dead from the program
+   If verbose == 1, print statistics, if > 1, chatter about every detail
+*/
 void rta_delete_dead_graphs (void)
 {
   int i;
   int n_graphs = get_irp_n_irgs ();
   ir_graph *graph = NULL;
+  int n_dead_graphs = 0;
 
   if (!get_optimize() || !get_opt_dead_method_elimination()) return;
 
@@ -438,6 +445,7 @@ void rta_delete_dead_graphs (void)
               (visibility_external_visible != get_entity_visibility (ent)));
 # endif /* defined DEBUG_libfirm */
 
+      n_dead_graphs ++;
       eset_insert (dead_graphs, graph);
     }
   }
@@ -447,12 +455,16 @@ void rta_delete_dead_graphs (void)
        graph;
        graph = (ir_graph*) eset_next (dead_graphs)) {
 
-    if (verbose || get_opt_dead_method_elimination_verbose ()) {
+    if ((verbose > 1) || get_opt_dead_method_elimination_verbose ()) {
       fprintf(stdout, "RTA: removing graph of ");
       DDMEO(get_irg_ent (graph));
     }
 
     remove_irg (graph);
+  }
+
+  if (verbose) {
+    printf ("RTA: n_dead_graphs = %i\n", n_dead_graphs);
   }
 }
 
@@ -517,6 +529,9 @@ void rta_report (void)
 
 /*
  * $Log$
+ * Revision 1.17  2004/06/25 13:45:13  liekweg
+ * observe stickyness; minor refactoring
+ *
  * Revision 1.16  2004/06/24 06:42:14  goetz
  * test of firm flags
  *
