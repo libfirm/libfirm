@@ -9,6 +9,10 @@
 ** - execute the post function after recursion
 */
 
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
 #include "irgwalk.h"
@@ -78,7 +82,7 @@ void type_walk_2(type_or_ent *tore,
       {
 	int i;
 	((type_class *)tore)->visit = type_visited;
-	//CS
+	/* CS */
 	for (i=0; i<get_class_n_member((type_class *)tore); i++)
 	  {
 	    type_walk_2((type_or_ent *)get_class_member((type_class *)tore, i),
@@ -101,7 +105,7 @@ void type_walk_2(type_or_ent *tore,
 	int i;
 
 	((type_strct *)tore)->visit = type_visited;
-	//CS
+	/* CS */
 	for (i=0; i<get_strct_n_member((type_strct *)tore); i++)
 	  {
 	    type_walk_2((type_or_ent *)get_strct_member((type_strct *)tore, i),

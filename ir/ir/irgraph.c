@@ -6,6 +6,10 @@
 **
 */
 
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 # include "ircons.h"
 # include "irgraph_t.h"
 # include "irprog.h"
@@ -80,10 +84,11 @@ new_ir_graph (entity *ent, int n_loc)
   res->args    = new_Proj (res->start, mode_T, pns_args);
 
   add_in_edge(res->start_block, projX);
-  // The code generation needs it. leave it in now.
-  // Use of this edge is matter of discussion, unresolved. Also possible:
-  // add_in_edge(res->start_block, res->start_block), but invalid typed.
-
+  /*
+   * The code generation needs it. leave it in now.
+   * Use of this edge is matter of discussion, unresolved. Also possible:
+   * add_in_edge(res->start_block, res->start_block), but invalid typed.
+   */
   mature_block (res->current_block);
 
   /** Make a block to start with **/

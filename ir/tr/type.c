@@ -8,6 +8,10 @@
 ** type.c: datastructures to hold type information.
 */
 
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 # include "type.h"
 # include "irprog.h"  /* So that constructors can add the type to global
 			 data structure. */
@@ -26,7 +30,7 @@ init (void)
 /*******************************************************************/
 
 type_class *
-new_type_class (ident *name)//, int members)
+new_type_class (ident *name) /*, int members) */
 {
   type_class *res;
 
@@ -165,7 +169,7 @@ set_class_size (type_class *clss, int size) {
 /*******************************************************************/
 
 type_strct *
-new_type_strct (ident *name)//, int members)
+new_type_strct (ident *name) /*, int members) */
 {
   type_strct *res;
 
@@ -244,7 +248,7 @@ new_type_method (ident *name, int arity, int n_res)
   add_irp_type((type *) res);   /* Remember the new type global. */
   res->kind = k_type_method;
 
-  res->name = name;   // do I need the name, or is the name in entity sufficient?
+  res->name = name;   /* do I need the name, or is the name in entity sufficient? */
   res->arity = arity;
   res->param_type = (type **) xmalloc (sizeof (type *) * arity);
   res->n_res  = n_res;
@@ -339,7 +343,7 @@ new_type_union (ident *name, int n_types)
   res = (type_union *) xmalloc (sizeof (type_union));
   add_irp_type((type *) res);   /* Remember the new type global. */
   res->kind = k_type_union;
-  res->name = name;   // do I need a name?
+  res->name = name;   /* do I need a name? */
   res->n_types = n_types;
   /*
   res->unioned_type = (int *) xmalloc (sizeof (int) * n_types);

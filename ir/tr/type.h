@@ -191,11 +191,11 @@ typedef struct entity entity;
 #endif
 
 /* for recursive type definiton */
-//#ifndef _TYPE_TYPEDEF_
-//#define _TYPE_TYPEDEF_
+/*#ifndef _TYPE_TYPEDEF_ */
+/*#define _TYPE_TYPEDEF_ */
 /* to resolve recursion between entity.h and irgraph.h */
 typedef union type type;
-//#endif
+/*#endif */
 
 
 /* visited flag to traverse the type information */

@@ -5,6 +5,10 @@
 **
 */
 
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 # include "irmode_t.h"
 # include <malloc.h>
 # include <stddef.h>

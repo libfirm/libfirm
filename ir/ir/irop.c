@@ -5,6 +5,10 @@
 **
 */
 
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 # include "irop_t.h"
 # include "irnode_t.h"
 # include "misc.h"

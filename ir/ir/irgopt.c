@@ -6,6 +6,10 @@
 ** Optimizations for a whole ir graph, i.e., a procedure.
 */
 
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 # include <assert.h>
 
 # include "irgopt.h"

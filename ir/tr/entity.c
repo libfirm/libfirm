@@ -5,7 +5,12 @@
 **
 */
 
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 # include <stdlib.h>
+# include <stddef.h>
 # include "entity_t.h"
 # include "entity.h"
 # include "mangle.h"

@@ -6,6 +6,10 @@
 x**
 */
 
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 # include "irgraph_t.h"
 # include "irvrfy.h"
 # include "irgwalk.h"
@@ -52,8 +56,8 @@ irn_vrfy (ir_node *n)
     break;
   case iro_Return:
     op1mode = get_irn_mode(in[1]);
-      /* Return: BB x M x data1 x ... x datan --> X */
-    //printf("mode: %s, code %s\n", ID_TO_STR(n->mode->name), ID_TO_STR(n->op->name));
+    /* Return: BB x M x data1 x ... x datan --> X */
+    /* printf("mode: %s, code %s\n", ID_TO_STR(n->mode->name), ID_TO_STR(n->op->name));*/
     assert ( op1mode == mode_M );  /* operand M */
     for (i=2; i < get_irn_arity(n); i++) {
       assert ( mode_is_data(get_irn_mode(in[i])) );  /* operand datai */

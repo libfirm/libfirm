@@ -8,6 +8,10 @@
 ** - execute the post function after recursion
 */
 
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 # include "irnode.h"
 # include "irgraph.h" /* visited flag */
 

@@ -6,6 +6,10 @@
 ** iropt --- optimizations intertwined with IR construction.
 */
 
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 # include "irnode_t.h"
 # include "irgraph_t.h"
 # include "iropt_t.h"
@@ -1002,7 +1006,7 @@ optimize_in_place (ir_node *n)
   }
 
   /* remove unnecessary nodes */
-  //if (get_opt_constant_folding())
+  /*if (get_opt_constant_folding()) */
   if (get_opt_constant_folding() || get_irn_op(n) == op_Phi)
     n = equivalent_node (n);
 

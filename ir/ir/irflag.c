@@ -6,6 +6,10 @@
 ** irflag --- optimization flags
 */
 
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 
 /* 0 - don't do this optimization
    1 - lets see, if there is a better graph */

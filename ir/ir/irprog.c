@@ -6,6 +6,10 @@
 ** irprog.c: ir representation of a program
 */
 
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 # include "irprog_t.h"
 # include "array.h"
 # include "obst.h"
