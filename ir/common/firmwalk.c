@@ -401,8 +401,8 @@ void firm_walk(firm_walk_interface *wif)
   int irg_i, block_i, block_list_len, irn_i, irn_list_len;
   pmap_entry *entry;
   fw_data *data;
-  ir_graph *irg;
   ir_node *block, **block_list, **irn_list;
+  ir_graph *saved_irg = current_ir_graph;
 
   assert(wif && "firm_walk() in firmwalk.c: No walking interface defined!");
 
@@ -442,18 +442,18 @@ void firm_walk(firm_walk_interface *wif)
 
   for (irg_i = 0; irg_i < get_irp_n_irgs(); irg_i++)
   {
-    irg = get_irp_irg(irg_i);
+    current_ir_graph = get_irp_irg(irg_i);
 
     /* walk over all ir graph */
-    if (wif->do_graph) wif->do_graph(irg, wif->env);
+    if (wif->do_graph) wif->do_graph(current_ir_graph, wif->env);
 
     /* walk over all irg's block nested ========================== */
-    data = fw_get_data(irg);
+    data = fw_get_data(current_ir_graph);
     block_list = FW_GET_DATA_LIST(data);
     block_list_len = ARR_LEN(block_list);
     for (block_i = 0; block_i < block_list_len; block_i++)
     {
-      if (wif->do_block_init) wif->do_block_init(irg, wif->env);
+      if (wif->do_block_init) wif->do_block_init(current_ir_graph, wif->env);
 
       block = (ir_node *)block_list[block_i];
       if (wif->do_block) wif->do_block(block, wif->env);
@@ -491,7 +491,7 @@ void firm_walk(firm_walk_interface *wif)
 
       /* wall over all block's ir nodes nested end =============== */
 
-      if (wif->do_block_finalize) wif->do_block_finalize(irg, wif->env);
+      if (wif->do_block_finalize) wif->do_block_finalize(current_ir_graph, wif->env);
     } // for each block
 
     /* walk over all irg's block nested end ====================== */
@@ -499,5 +499,8 @@ void firm_walk(firm_walk_interface *wif)
   } // for each ir graph irg
   if (wif->do_graph_finalize) wif->do_graph_finalize(wif->env);
 
-  /** ### ToDo: Dump const_code_irg ?? */
+  /** ### ToDo: Dump const_code_irg ?? No! Dump const code with entities, types etc. */
+
+  /* restore the state of current_ir_graph */
+  current_ir_graph = saved_irg;
 }
