@@ -44,12 +44,6 @@
 typedef void irg_walk_func(ir_node *node, void *env);
 #endif
 
-/** Allocates some necessary datastructures. */
-void init_ip_walk(void);
-
-/** Frees some necessary datastructures. */
-void finish_ip_walk(void);
-
 /**
  * Walks over the ir graph.
  *
