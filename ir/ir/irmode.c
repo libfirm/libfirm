@@ -253,6 +253,7 @@ ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align, 
   mode_tmpl.align       = align;
   mode_tmpl.sign        = sign ? 1 : 0;
   mode_tmpl.arithmetic  = arithmetic;
+  mode_tmpl.link        = NULL;
   mode_tmpl.tv_priv     = NULL;
 
   /* first check if there already is a matching mode */
@@ -634,6 +635,7 @@ init_mode (void)
   newmode.size    = 0;
   newmode.align   = 0;
   newmode.sign    = 0;
+  newmode.link    = NULL;
   newmode.tv_priv = NULL;
 
   /* Control Flow Modes*/
