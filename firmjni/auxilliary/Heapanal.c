@@ -92,9 +92,9 @@ void Java_firmjni_Heapanal_analHeap__ (JNIEnv *env, jclass clazz)
       construct_backedges(get_irp_irg(i));
 
       if (1) {
-        dump_loop_information();
+        dump_loop_information(1);
         dump_ir_block_graph(get_irp_irg(i), "-1.2-intra-loop");
-        dont_dump_loop_information();
+        dump_loop_information(0);
         dump_loop_tree(get_irp_irg(i), "-1.2-intra");
       }
     }
@@ -117,9 +117,9 @@ void Java_firmjni_Heapanal_analHeap__ (JNIEnv *env, jclass clazz)
     /* Test construction of interprocedural loop information */
     /*  construct_ip_backedges(); */
 
-    dump_loop_information();
+    dump_loop_information(1);
     dump_all_cg_block_graph("-1.2-inter-loop");
-    dont_dump_loop_information();
+    dump_loop_information(0);
     dump_loop_tree(get_irp_main_irg(), "-1.2-inter");
 
 
@@ -154,6 +154,9 @@ void Java_firmjni_Heapanal_analHeap__ (JNIEnv *env, jclass clazz)
 
 /*
  * $Log$
+ * Revision 1.6  2005/03/01 16:22:39  goetz
+ * changed irdump flag
+ *
  * Revision 1.5  2004/11/15 12:38:16  goetz
  * we need more and more libs at linking ...
  * changed node numbers (unknown_entity)
