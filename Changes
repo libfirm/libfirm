@@ -1,3 +1,20 @@
+  30.11.2001 Goetz
+  Extendend "comfortable" construction interface by some methods
+  serving as simple shortcuts.
+
+  30.11.2001 Goetz
+  Added a class type to irgs.  This class type is to be used as owner
+  for local entities of the procedure. This are all entities allocated
+  for each execution of the procedure.
+  The class type is allocated automatically by new_ir_graph().  Access
+  routines to get this type are in irgraph.h.
+  We chose a class type as this allows to represent "inner" procedures
+  as, e.g., in Pascal.
+  Adapted array-stack-example.
+
+  29.11.2001 Goetz
+  irdump outputs nodeids instead of pointers for labels of nodes.
+  With a preprocessor flag in common.h this can be turned off.
 
   28.11.2001 Boris
   Added an Id tag to every .c and .h file
