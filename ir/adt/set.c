@@ -198,7 +198,7 @@ SET *
     table->dir[i] = (Segment *)obstack_alloc (&table->obst,
 					      sizeof (Segment) * SEGMENT_SIZE);
 
-    memset (table->dir[i], 0, sizeof (Segment) * SEGMENT_SIZE);
+    memset(table->dir[i], 0, sizeof (Segment) * SEGMENT_SIZE);
     table->nseg++;
   }
 
@@ -221,6 +221,12 @@ PMANGLE(del) (SET *table)
 #endif
   obstack_free (&table->obst, NULL);
   xfree (table);
+}
+
+int
+MANGLEP(count) (SET *table)
+{
+  return table->nkey;
 }
 
 /*
@@ -263,7 +269,8 @@ MANGLEP(first) (SET *table)
 void *
 MANGLEP(next) (SET *table)
 {
-  assert (table->iter_tail);
+  if (!table->iter_tail)
+    return NULL;
 
   /* follow collision chain */
   table->iter_tail = table->iter_tail->chain;
@@ -281,7 +288,6 @@ MANGLEP(next) (SET *table)
 void
 MANGLEP(break) (SET *table)
 {
-  assert (table->iter_tail);
   table->iter_tail = NULL;
 }
 
@@ -490,9 +496,24 @@ pset_remove (SET *table, const void *key, unsigned hash)
   stat_chain_len (table, chain_len);
 
   q = *p;
+
+  if (q == table->iter_tail) {
+    /* removing current element */
+    table->iter_tail = q->chain;
+    if (!table->iter_tail) {
+      /* go to next segment */
+      do {
+	if (!iter_step (table))
+	  break;
+      } while (!table->dir[table->iter_i][table->iter_j]);
+      table->iter_tail = table->dir[table->iter_i][table->iter_j];
+    }
+  }
+
   *p = (*p)->chain;
   q->chain = table->free_list;
   table->free_list = q;
+  --table->nkey;
 
   return q->entry.dptr;
 }

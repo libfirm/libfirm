@@ -60,15 +60,24 @@ typedef int (*set_cmp_fun) (const void *elt, const void *key, size_t size);
  * Creates a new set.
  *
  * @param func    the compare function of this set
- * @param slots   number of slots
+ * @param slots   number of initial slots
  *
  * @returns
  *    created set
  */
 set *new_set (set_cmp_fun func, int slots);
 
-/** Deletes a set and all elements of it. */
+/**
+ * Deletes a set and all elements of it.
+ */
 void del_set (set *set);
+
+/**
+ * Returns the number of elements in a set.
+ *
+ * @param set   the set
+ */
+int set_count (set *set);
 
 /**
  * Searches an element in a set.
@@ -134,13 +143,32 @@ set_entry *set_hinsert (set *set, const void *key, size_t size, unsigned hash);
  */
 set_entry *set_hinsert0 (set *set, const void *key, size_t size, unsigned hash);
 
-/** Returns the first element of a set. */
+/**
+ * Returns the first element of a set.
+ *
+ * @param set  the set to iterate
+ *
+ * @return a pointer to the element or NULL if the set is empty
+ */
 void *set_first (set *set);
 
-/** Returns the next element of a set. */
+/**
+ * Returns the next element of a set.
+ *
+ * @param set  the set to iterate
+ *
+ * @return a pointer to the next element or NULL if the
+ *         iteration is finished
+ */
 void *set_next (set *set);
 
-/** Breaks the iteration of a set. Must be called before the next set_first() call */
+/**
+ * Breaks the iteration of a set. Must be called before
+ * the next pset_first() call if the iteration was NOT
+ * finished.
+ *
+ * @param pset  the pset
+ */
 void set_break (set *set);
 
 /* implementation specific */
@@ -157,7 +185,12 @@ void set_break (set *set);
 #define SET_VRFY(set) (void)0
 
 #ifdef STATS
-void set_stats (set *);
+/**
+ * Prints statistics on a set to stdout.
+ *
+ * @param set  the set
+ */
+void set_stats (set *set);
 #else
 # define set_stats(s) ((void)0)
 #endif

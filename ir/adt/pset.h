@@ -46,7 +46,7 @@ typedef int (*pset_cmp_fun) (const void *elt, const void *key);
  * Creates a new pset.
  *
  * @param func    the compare function of this pset
- * @param slots   number of slots
+ * @param slots   number of initial slots
  *
  * @returns
  *    created pset
@@ -60,6 +60,13 @@ pset *new_pset (pset_cmp_fun func, int slots);
  *    This does NOT delete the elements of this pset, just it's pointers!
  */
 void del_pset (pset *pset);
+
+/**
+ * Returns the number of elements in a pset.
+ *
+ * @param pset   the pset
+ */
+int pset_count (pset *pset);
 
 /**
  * Searches an element pointer in a pset.
@@ -117,17 +124,38 @@ pset_entry *pset_hinsert (pset *pset, const void *key, unsigned hash);
  *    the pointer to the removed element
  *
  * @remark
- *    The current implementation did not allow to remove non-existing elements
+ *    The current implementation did not allow to remove non-existing elements.
+ *    Further, it is allowed to remove elements during an iteration
+ *    including the current one.
  */
 void *pset_remove (pset *pset, const void *key, unsigned hash);
 
-/** returns the first element of a pset */
+/**
+ * Returns the first element of a pset.
+ *
+ * @param pset  the pset to iterate
+ *
+ * @return a pointer to the element or NULL if the set is empty
+ */
 void *pset_first (pset *pset);
 
-/** returns the next element of a pset */
+/**
+ * Returns the next element of a pset.
+ *
+ * @param pset  the pset to iterate
+ *
+ * @return a pointer to the next element or NULL if the
+ *         iteration is finished
+ */
 void *pset_next (pset *pset);
 
-/** Breaks the iteration of a set. Must be called before the next pset_first() call */
+/**
+ * Breaks the iteration of a set. Must be called before
+ * the next pset_first() call if the iteration was NOT
+ * finished.
+ *
+ * @param pset  the pset
+ */
 void pset_break (pset *pset);
 
 #define new_pset(cmp, slots) (PSET_TRACE (new_pset) ((cmp), (slots)))
@@ -139,12 +167,21 @@ void pset_break (pset *pset);
   ((pset_entry *)_pset_search ((pset), (key), (hash), _pset_hinsert))
 
 #ifdef STATS
-void pset_stats (pset *);
+/**
+ * Prints statistics on a set to stdout.
+ *
+ * @param pset  the pset
+ */
+void pset_stats (pset *pset);
 #else
 # define pset_stats(s) ((void)0)
 #endif
 
 #ifdef DEBUG
+/**
+ * Describe a set by printing all elements
+ * to stdout.
+ */
 void pset_describe (pset *);
 #endif
 
