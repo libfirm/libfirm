@@ -2527,8 +2527,8 @@ echo "${ECHO_T}no" >&6
 fi
 
   if test "$DOT" != "dot"; then
-    { { echo "$as_me:$LINENO: error: need dot for doxygen documentation (for class graphs)" >&5
-echo "$as_me: error: need dot for doxygen documentation (for class graphs)" >&2;}
+    { { echo "$as_me:$LINENO: error: need dot for doxygen documentation (for class graphs) (IPD: module add Graphviz)" >&5
+echo "$as_me: error: need dot for doxygen documentation (for class graphs) (IPD: module add Graphviz)" >&2;}
    { (exit 1); exit 1; }; }
   fi
 fi
