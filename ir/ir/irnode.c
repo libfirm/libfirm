@@ -369,15 +369,15 @@ set_Block_matured (ir_node *node, bool matured) {
   node->attr.block.matured = matured;
 }
 inline unsigned long
-get_Block_block_visit (ir_node *node) {
+get_Block_block_visited (ir_node *node) {
   assert (node->op == op_Block);
-  return node->attr.block.block_visit;
+  return node->attr.block.block_visited;
 }
 
 inline void
-set_Block_block_visit (ir_node *node, unsigned long visit) {
+set_Block_block_visited (ir_node *node, unsigned long visit) {
   assert (node->op == op_Block);
-  node->attr.block.block_visit = visit;
+  node->attr.block.block_visited = visit;
 }
 
 inline ir_node *

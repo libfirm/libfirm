@@ -56,8 +56,8 @@ void irg_block_walk_2(ir_node *node, void (pre)(ir_node*, void*),
 
   assert(get_irn_opcode(node) == iro_Block);
 
-  if(get_Block_block_visit(node) < get_irg_block_visited(current_ir_graph)) {
-    set_Block_block_visit(node, get_irg_block_visited(current_ir_graph));
+  if(get_Block_block_visited(node) < get_irg_block_visited(current_ir_graph)) {
+    set_Block_block_visited(node, get_irg_block_visited(current_ir_graph));
 
     if(pre)
       pre(node, env);

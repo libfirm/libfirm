@@ -1,5 +1,3 @@
-
-
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
 ** All rights reserved.
 **
@@ -61,7 +59,7 @@ enum {
 /** ir node attributes **/
 /* Block attributes */
 typedef struct {
-  unsigned long block_visit;  /* for the walker that walks over all blocks. */
+  unsigned long block_visited;  /* for the walker that walks over all blocks. */
   /* Attributes private to construction: */
   bool matured;               /* if set, all in-nodes of the block are fixed */
   struct ir_node **graph_arr; /* array to store all parameters */

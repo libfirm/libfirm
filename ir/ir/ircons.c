@@ -753,7 +753,7 @@ new_Block (void)
   res = new_ir_node (current_ir_graph, NULL, op_Block, mode_R, -1, NULL);
   current_ir_graph->current_block = res;
   res->attr.block.matured = 0;
-  set_Block_block_visit(res, 0);
+  set_Block_block_visited(res, 0);
 
   /* forget this optimization. use this only if mature !!!!
   res = optimize (res); */
