@@ -692,10 +692,11 @@ static ir_node *equivalent_node_left_zero(ir_node *n)
 static ir_node *equivalent_node_symmetric_unop(ir_node *n)
 {
   ir_node *oldn = n;
+  ir_node *pred = get_unop_op(n);
 
   /* optimize symmetric unop */
-  if (get_irn_op(get_unop_op(n)) == get_irn_op(n)) {
-    n = get_unop_op(get_unop_op(n));                                    DBG_OPT_ALGSIM2;
+  if (get_irn_op(pred) == get_irn_op(n)) {
+    n = get_unop_op(pred);                                             DBG_OPT_ALGSIM2;
   }
   return n;
 }
