@@ -238,16 +238,19 @@ void type_walk_s2s_2(type_or_ent *tore,
       switch (get_type_tpop_code(tp)) {
       case tpo_class:
 	{
-	  for (i=0; i<get_class_n_supertype(tp); i++)
-	    type_walk_s2s_2((type_or_ent *)get_class_supertype(tp, i), pre, post, env);
-
+	  for (i = 0; i < get_class_n_supertype(tp); i++) {
+	    type_walk_s2s_2((type_or_ent *)get_class_supertype(tp, i), pre,
+			    post, env);
+	  }
 	  /* execute pre method */
 	  if(pre)
 	    pre(tore, env);
 	  tp = skip_tid((type*)tore);
 
-	  for (i=0; i<get_class_n_subtype(tp); i++)
-	    type_walk_s2s_2((type_or_ent *)get_class_subtype(tp, i), pre, post, env);
+	  for (i = 0; i < get_class_n_subtype(tp); i++) {
+	    type_walk_s2s_2((type_or_ent *)get_class_subtype(tp, i), pre,
+			    post, env);
+	  }
 
 	  /* execute post method */
 	  if(post)
@@ -289,6 +292,94 @@ void type_walk_super2sub(void (pre)(type_or_ent*, void*),
   for (i = 0; i < get_irp_n_types(); i++) {
     tp = get_irp_type(i);
     type_walk_s2s_2((type_or_ent *)tp, pre, post, env);
+  }
+}
+
+/*****************************************************************************/
+
+static
+void type_walk_super_2(type_or_ent *tore,
+		       void (pre)(type_or_ent*, void*),
+		       void (post)(type_or_ent*, void*),
+		       void *env)
+{
+  int i;
+
+  /* marked? */
+  switch (get_kind(tore)) {
+  case k_entity:
+    if (((entity *)tore)->visit >= type_visited) return;
+    break;
+  case k_type:
+    if(type_id == get_type_tpop((type*)tore)) {
+      type_walk_super_2((type_or_ent *)skip_tid((type *)tore), pre, post, env);
+      return;
+    }
+    if (((type *)tore)->visit >= type_visited) return;
+    break;
+  default:
+    break;
+  }
+
+  /* iterate */
+  switch (get_kind(tore)) {
+  case k_type:
+    {
+      type *tp = (type *)tore;
+      mark_type_visited(tp);
+      switch (get_type_tpop_code(tp)) {
+      case tpo_class:
+	{
+	  /* execute pre method */
+	  if(pre)
+	    pre(tore, env);
+	  tp = skip_tid((type*)tore);
+
+	  for (i = 0; i < get_class_n_supertype(tp); i++) {
+	    type_walk_super_2((type_or_ent *)get_class_supertype(tp, i), pre,
+			      post, env);
+	  }
+
+	  /* execute post method */
+	  if(post)
+	    post(tore, env);
+	}
+	break;
+      case tpo_struct:
+      case tpo_method:
+      case tpo_union:
+      case tpo_array:
+      case tpo_enumeration:
+      case tpo_pointer:
+      case tpo_primitive:
+      case tpo_id:
+	/* dont care */
+	break;
+      default:
+	printf(" *** Faulty type! \n");
+	break;
+      }
+    } break; /* end case k_type */
+  case k_entity:
+    /* dont care */
+    break;
+  default:
+    printf(" *** Faulty type or entity! \n");
+    break;
+  }
+  return;
+}
+
+void type_walk_super(void (pre)(type_or_ent*, void*),
+		     void (post)(type_or_ent*, void*),
+		     void *env) {
+  int i;
+  type *tp;
+  ++type_visited;
+  type_walk_super_2((type_or_ent *)get_glob_type(), pre, post, env);
+  for (i = 0; i < get_irp_n_types(); i++) {
+    tp = get_irp_type(i);
+    type_walk_super_2((type_or_ent *)tp, pre, post, env);
   }
 }
 

@@ -42,9 +42,20 @@ void type_walk_irg(ir_graph *irg,
     - third the sub classes.  If new classes are created
     during the traversal these will be visited, too. **/
 /** @@@ should be named class-walk **/
+/*  @@@ will be removed? */
 void type_walk_super2sub(void (pre)(type_or_ent*, void*),
 			 void (post)(type_or_ent*, void*),
 			 void *env);
+
+/** Walks over all type information reachable from global roots.
+    Touches every class in specified order:
+    - first the super class
+    - second the class itself
+    If new classes are created during the traversal these
+    will be visited, too. **/
+void type_walk_super(void (pre)(type_or_ent*, void*),
+		     void (post)(type_or_ent*, void*),
+		     void *env);
 
 /* Same as type_walk_super2sub, but visits only class types.
    Executes pre for a class if all superclasses have been visited.

@@ -110,7 +110,7 @@ copy_entity_own (entity *old, type *new_owner) {
   memcpy (new, old, sizeof (entity));
   new->owner = new_owner;
   new->overwrites = DUP_ARR_F(entity *, old->overwrites);
-  new->overwrittenby = DUP_ARR_F(entity *, old->overwrites);
+  new->overwrittenby = DUP_ARR_F(entity *, old->overwrittenby);
 
   insert_entity_in_owner (new);
 
@@ -127,7 +127,7 @@ copy_entity_name (entity *old, ident *new_name) {
   new->name = new_name;
   new->ld_name = NULL;
   new->overwrites = DUP_ARR_F(entity *, old->overwrites);
-  new->overwrittenby = DUP_ARR_F(entity *, old->overwrites);
+  new->overwrittenby = DUP_ARR_F(entity *, old->overwrittenby);
 
   insert_entity_in_owner (new);
 
