@@ -53,11 +53,16 @@ static const char *pnc_name_arr [] = {
   "Ne", "True"
 };
 
+/**
+ * returns the pnc name from an pnc constant
+ */
 INLINE const char *get_pnc_string(int pnc) {
   return pnc_name_arr[pnc];
 }
 
-
+/**
+ * Calculates the negated pnc condition.
+ */
 int
 get_negated_pnc(int pnc) {
   switch (pnc) {
@@ -144,7 +149,6 @@ copy_attrs (const ir_node *old_node, ir_node *new_node) {
 
 int
 is_ir_node (const void *thing) {
-  assert(thing);
   if (get_kind(thing) == k_ir_node)
     return 1;
   else
@@ -335,7 +339,6 @@ set_irn_op (ir_node *node, ir_op *op)
 INLINE opcode
 get_irn_opcode (const ir_node *node)
 {
-  assert (node);
   assert (k_ir_node == get_kind(node));
   assert (node -> op);
   return node->op->code;
