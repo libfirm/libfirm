@@ -36,6 +36,8 @@
 # ifndef _TYPE_H_
 # define _TYPE_H_
 
+#include <stdbool.h>
+
 # include "tpop.h"
 # include "firm_common.h"
 # include "ident.h"
