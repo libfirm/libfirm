@@ -96,22 +96,30 @@ void optimize_funccalls(void)
 
     /* visit every Return */
     for (j = 0, k = get_Block_n_cfgpreds(endbl); j < k; ++j) {
-      ir_node *ret = get_Block_cfgpred(endbl, j);
+      ir_node *node = get_Block_cfgpred(endbl, j);
+      ir_op   *op   = get_irn_op(node);
       ir_node *mem;
 
       /* Bad nodes usually do NOT produce anything, so it's ok */
-      if (is_Bad(ret))
+      if (op == op_Bad)
         continue;
 
-      mem = get_Return_mem(ret);
+      if (op == op_Return) {
+        mem = get_Return_mem(node);
 
-      /* Bad nodes usually do NOT produce anything, so it's ok */
-      if (is_Bad(mem))
-        continue;
+        /* Bad nodes usually do NOT produce anything, so it's ok */
+        if (is_Bad(mem))
+          continue;
 
-      change = mem != get_irg_initial_mem(irg);
-      if (change)
+        change = mem != get_irg_initial_mem(irg);
+        if (change)
+          break;
+      }
+      else if (op == op_Raise) {
+        /* exception found */
+        change = 1;
         break;
+      }
     }
 
     if (! change) {
