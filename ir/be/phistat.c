@@ -14,44 +14,41 @@
 
 #define SUMMARY_FILE_NAME "all.phi"
 
-/*
- * 0  to 10 arg-count of phi funct
- * 11 to 20 phi-congr-class size
- * 11 # of const args
- * 12 # of args defined in cf-pred block
- * 13 # of args defines elsewhere
- * 14 size of phi congruence class
- */
-
 #define ARG_CNT_MAX 10
 #define PHI_CLS_MAX 10
 
-#define I_ARG_CNT_S 0
+#define I_PHI_CNT   0
+#define I_BLK_CNT   (I_PHI_CNT+1)
+#define I_SPACE3    (I_BLK_CNT+1)
+#define I_ARG_CNT_S (I_SPACE3+1)
 #define I_ARG_CNT_E (I_ARG_CNT_S+ARG_CNT_MAX)
-#define I_PHI_CLS_S (I_ARG_CNT_E+1)
+#define I_SPACE1    (I_ARG_CNT_E+1)
+#define I_PHI_CLS_S (I_SPACE1+1)
 #define I_PHI_CLS_E (I_PHI_CLS_S+PHI_CLS_MAX)
-#define I_CONST (I_PHI_CLS_E+1)
-#define I_PRED (I_CONST+1)
-#define I_GLOB (I_PRED+1)
-#define ASIZE (I_GLOB+1)
+#define I_SPACE2    (I_PHI_CLS_E+1)
+#define I_INTERFP	(I_SPACE2+1)         /* number of interfering pairs */
+#define I_INTERFV	(I_INTERFP+1)        /* number of interfering values */
+#define I_PHICLSCNT (I_INTERFV+1)        /* number of phi classes */
+#define I_INTERFPHI	(I_PHICLSCNT+1)      /* number of phi classes which have interfering vals */
+#define I_CONST     (I_INTERFPHI+1)
+#define I_PRED      (I_CONST+1)
+#define I_GLOB      (I_PRED+1)
 
+#define ASIZE (I_GLOB+1)
 static int curr_vals[ASIZE];
 
-static void phi_stat_post_walker(ir_node *node, void *env) {
- 	int size;
-	if (!(is_Phi(node) && mode_is_datab(get_irn_mode(node)))) return;
-
-	size = get_phi_class_size(node);
-	if (size > PHI_CLS_MAX)
-		curr_vals[I_PHI_CLS_E]++;
-	else
-		curr_vals[I_PHI_CLS_S + size]++;
-}
 
 static void phi_stat_walker(ir_node *node, void *env) {
- 	int count, i;
+ 	int count, i, size;
+
+	/* count all block nodes */
+ 	if (is_Block(node))
+ 		curr_vals[I_BLK_CNT]++;
 
 	if (!(is_Phi(node) && mode_is_datab(get_irn_mode(node)))) return;
+
+	/* count all phi nodes */
+	curr_vals[I_PHI_CNT]++;
 
 	/* argument count */
 	count = get_irn_arity(node);
@@ -80,13 +77,31 @@ static void phi_stat_walker(ir_node *node, void *env) {
 		curr_vals[I_GLOB]++;
 	}
 
-	/* phi congruence class */
-	det_phi_congr_class(node);
+
+	size = get_phi_class_size(node);
+	/* phi class count */
+	if (size > 0)
+		curr_vals[I_PHICLSCNT]++;
+
+	/* phi class size */
+	if (size > PHI_CLS_MAX)
+		curr_vals[I_PHI_CLS_E]++;
+	else
+		curr_vals[I_PHI_CLS_S + size]++;
+
+	/* count of interfering pairs / values */
+	curr_vals[I_INTERFP] += get_irn_phi_info(node)->interf_pairs;
+	curr_vals[I_INTERFV] += get_irn_phi_info(node)->interf_vals;
+	if (get_irn_phi_info(node)->interf_vals > 0)
+		curr_vals[I_INTERFPHI]++;
 }
 
 
+/**
+ * Dump values and some annotations for current irp
+ */
 static void dump_files(void) {
-	int i, sum1, sum2, next;
+	int i, sum1, sum2, sum3, next;
 	FILE *out;
 	char buf[200];
 
@@ -94,25 +109,41 @@ static void dump_files(void) {
 	sum2 = 0;
 	for (i = I_ARG_CNT_S; i<=I_ARG_CNT_E; i++)
 		sum2 += curr_vals[i];
+	sum3 = 0;
+	for (i = I_PHI_CLS_S; i<=I_PHI_CLS_E; i++)
+		sum3 += curr_vals[i];
 
 	next = sprintf(buf, get_irp_prog_name());
-	sprintf(buf+next, ".phi.argcount");
-
+	sprintf(buf+next, ".phi.stat");
 	out = fopen(buf, "wt");
+
+	fprintf(out, "Phis %i\n", curr_vals[I_PHI_CNT]);
+	fprintf(out, "Blks %i\n", curr_vals[I_BLK_CNT]);
+
+	fprintf(out, "\nArgument counts\n");
 	for (i = I_ARG_CNT_S; i<=I_ARG_CNT_E; i++)
-		fprintf(out, "%2i %2.2f\n", i, (double) curr_vals[i] / sum2);
-	fclose(out);
+		fprintf(out, "%2i %2.4f\n", i-I_ARG_CNT_S, (double) curr_vals[i] / sum2);
 
-	sprintf(buf+next, ".phi.defloc");
-	out = fopen(buf, "wt");
-	fopen(buf, "wt");
+	fprintf(out, "\nPhi class sizes\n");
+	for (i = I_PHI_CLS_S; i<=I_PHI_CLS_E; i++)
+		fprintf(out, "%2i %2.4f\n", i-I_PHI_CLS_S, (double) curr_vals[i] / sum3);
+
+	fprintf(out, "\n");
+	fprintf(out, "Interf Pairs %d\n", curr_vals[I_INTERFP]);
+	fprintf(out, "Interf Values %d\n", curr_vals[I_INTERFV]);
+	fprintf(out, "PhiCls Count %d\n", curr_vals[I_PHICLSCNT]);
+	fprintf(out, "Interf PhisCl %d\n", curr_vals[I_INTERFPHI]);
 	fprintf(out, "Const %2.2f\n", (double) curr_vals[I_CONST] / sum1);
 	fprintf(out, "Pred %2.2f\n", (double) curr_vals[I_PRED] / sum1);
 	fprintf(out, "Glob %2.2f\n", (double) curr_vals[I_GLOB] / sum1);
+
 	fclose(out);
 }
 
 
+/**
+ * Updates the summary file with cumulated values
+ */
 static void update_all_file(void) {
     int i;
 	FILE *all;
@@ -138,11 +169,14 @@ static void update_all_file(void) {
 
 void do_phi_statistics(void) {
 	int i, n;
+	curr_vals[I_SPACE1] = -1;
+	curr_vals[I_SPACE2] = -1;
+	curr_vals[I_SPACE3] = -1;
 
 	for (i = 0, n = get_irp_n_irgs(); i < n; i++) {
 		ir_graph *irg = get_irp_irg(i);
 		irg_walk_graph(irg, phi_stat_walker, NULL, NULL);
-		irg_walk_graph(irg, phi_stat_post_walker, NULL, NULL);
+		curr_vals[I_BLK_CNT] -= 2;
 	}
 
 	dump_files();

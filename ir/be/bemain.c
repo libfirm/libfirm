@@ -105,6 +105,8 @@ static void be_main_loop(void)
 		list_sched(irg, trivial_selector, NULL);
 		be_liveness(irg);
 		be_ra_chordal(irg);
+		be_phi_congr_classes(irg);
+
 
 		dump_allocated_irg(irg);
 
@@ -117,6 +119,5 @@ static void be_main_loop(void)
 void be_main(int argc, const char *argv[])
 {
 	be_main_loop();
-	/* next line only for statistics */
-	/* do_phi_statistics(); */
+	do_phi_statistics();
 }
