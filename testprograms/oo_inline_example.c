@@ -99,12 +99,12 @@ main(void)
      owner is the global type. */
   owner = get_glob_type();
   /* Main has zero parameters and one result. */
-  proc_main = new_type_method(id_from_str("main", 4), 0, 1);
+  proc_main = new_type_method(id_from_str("OO_INLINE_EXAMPLE_main", 22), 0, 1);
   /* The result type is int. */
   set_method_res_type(proc_main, 0, prim_t_int);
 
   /* The entity for main. */
-  proc_main_e = new_entity (owner, id_from_str ("main", 4), proc_main);
+  proc_main_e = new_entity (owner, id_from_str ("OO_INLINE_EXAMPLE_main", 22), proc_main);
 
   /** Build code for procedure main. **/
   /* We need one local variable (for "o"). */

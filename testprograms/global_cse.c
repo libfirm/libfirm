@@ -52,7 +52,7 @@ main(void)
   set_opt_dead_node_elimination (1);
 
 #define CLASSNAME "GLOBAL_CSE_EXAMPLE"
-#define METHODNAME "main"
+#define METHODNAME "GLOBAL_CSE_EXAMPLE_main"
 #define NRARGS 1
 #define NRES 1
 

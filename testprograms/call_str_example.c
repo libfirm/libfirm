@@ -48,7 +48,7 @@ int main(int argc, char **argv)
    * automatically generated.
    * We use the same name for the method type as for the method entity.
    */
-#define METHODNAME "main"
+#define METHODNAME "CALL_STR_EXAMPLE_main"
 #define NRARGS 0
 #define NRES 0
   owner = get_glob_type();
@@ -66,7 +66,7 @@ int main(int argc, char **argv)
   set_method_param_type(proc_called, 0, string_ptr);
 
   /* Make the entity for main needed for a correct  ir_graph.  */
-#define ENTITYNAME "main"
+#define ENTITYNAME "CALL_STR_EXAMPLE_main"
   ent = new_entity (owner, id_from_str (ENTITYNAME, strlen(ENTITYNAME)),
                     proc_main);
 

@@ -78,6 +78,7 @@ main(void)
   method = new_type_method (id_from_str("main", 4), 0, 1);
   set_method_res_type(method, 0, prim_t_int);
   ent = new_entity (owner, id_from_str ("main", 4), method);
+  get_entity_ld_name(ent); /* To enforce name mangling for vcg graph name */
 
   /* Generates start and end blocks and nodes and a first, initial block */
   irg = new_ir_graph (ent, 4);

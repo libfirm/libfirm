@@ -54,6 +54,7 @@ int main(int argc, char **argv)
   set_method_param_type(method, 0, prim_t_int);
   set_method_res_type(method, 0, prim_t_int);
   ent = new_entity (owner, id_from_str (ENTITYNAME, strlen(ENTITYNAME)), method);
+  get_entity_ld_name(ent);
 
 
   /* Generates the basic graph for the method represented by entity ent, that

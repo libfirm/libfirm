@@ -82,9 +82,9 @@ main(void)
 
   /* first build procedure main */
   owner = get_glob_type();
-  proc_main = new_type_method(id_from_str("main", 4), 0, 1);
+  proc_main = new_type_method(id_from_str("ARRAY-HEAP_EXAMPLE_main", 23), 0, 1);
   set_method_res_type(proc_main, 0, (type *)prim_t_int);
-  proc_main_e = new_entity ((type*)owner, id_from_str ("main", 4), (type *)proc_main);
+  proc_main_e = new_entity ((type*)owner, id_from_str ("ARRAY-HEAP_EXAMPLE_main", 23), (type *)proc_main);
   main_irg = new_ir_graph (proc_main_e, 4);
 
   /* make type information for the array and set the bounds */

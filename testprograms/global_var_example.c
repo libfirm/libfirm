@@ -57,7 +57,7 @@ int main(int argc, char **argv)
    * a large class containing all functions as methods in this file.
    * This class is automatically generated and can be obtained by get_glob_type().
    */
-#define METHODNAME "main"
+#define METHODNAME "GLOBAL_VAR_main"
 #define NRARGS 0
 #define NRES 0
 

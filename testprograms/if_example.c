@@ -41,7 +41,7 @@ main(void)
   init_firm ();
 
 #define CLASSNAME "IF_EXAMPLE"
-#define METHODNAME "main"
+#define METHODNAME "IF_EXAMPLE_main"
 #define NRARGS 1
 #define NRES 1
 

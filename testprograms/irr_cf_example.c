@@ -76,7 +76,7 @@ int main(int argc, char **argv)
   ent = new_entity ((type *)owner,
                     id_from_str (METHODNAME, strlen(METHODNAME)),
                     (type *)proc_main);
-
+  get_entity_ld_name(ent);
 #define NUM_OF_LOCAL_VARS 0
 
   irg = new_ir_graph (ent, NUM_OF_LOCAL_VARS);

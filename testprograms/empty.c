@@ -46,7 +46,7 @@ int main(int argc, char **argv)
    */
   owner = get_glob_type();
 
-#define METHODNAME "main"
+#define METHODNAME "EMPTY_main"
 #define NRARGS 0
 #define NRES 0
   /* The type of the method */

@@ -55,10 +55,10 @@ int main(int argc, char **argv)
    * Therefore we define a class "IF_ELSE_EXAMPLE" with a method main as an
    * entity.
    */
-#define ENTITYNAME "main"
+#define ENTITYNAME "IF_ELSE_EXAMPLE_main"
 
   owner = get_glob_type();
-  method = new_type_method (id_from_str("main", 4), 0, 2);
+  method = new_type_method (id_from_str(ENTITYNAME, strlen(ENTITYNAME)), 0, 2);
   set_method_res_type(method, 0, prim_t_int);
   set_method_res_type(method, 1, prim_t_int);
 

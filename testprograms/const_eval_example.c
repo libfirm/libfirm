@@ -53,6 +53,7 @@ main(void)
   set_method_res_type(method, 0, prim_t_int);
   set_method_res_type(method, 1, prim_t_int);
   ent = new_entity (owner, id_from_str ("main", 4), method);
+  get_entity_ld_name(ent);
 
   irg = new_ir_graph (ent, 4);
 

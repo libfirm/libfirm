@@ -71,7 +71,7 @@ int main(int argc, char **argv)
    * all functions as methods in this file.
    * This class now is automatically generated.
    */
-#define METHODNAME "main"
+#define METHODNAME "THREE_CFPRED_EXAMPLE_main"
 #define NRARGS 1
 #define NRES 1
   printf("\nCreating an IR graph: ...\n");

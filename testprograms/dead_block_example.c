@@ -79,7 +79,7 @@ int main(int argc, char **argv)
   ent = new_entity (owner,
                     id_from_str (METHODNAME, strlen(METHODNAME)),
                     proc_main);
-
+  get_entity_ld_name(ent); /* To enforce name mangling for vcg graph name */
 #define NUM_OF_LOCAL_VARS 1
 
   irg = new_ir_graph (ent, NUM_OF_LOCAL_VARS);
