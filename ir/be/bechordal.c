@@ -17,6 +17,7 @@
 #include "irgraph.h"
 #include "irdump.h"
 #include "irdom.h"
+#include "debug.h"
 #include "xmalloc.h"
 
 #include "beutil.h"
@@ -26,7 +27,12 @@
 #include "besched_t.h"
 #include "belive_t.h"
 
+#undef DUMP_INTERVALS
+#define DUMP_PRESSURE
+
 #define TEST_COLORS 2048
+
+static firm_dbg_module_t *dbg;
 
 /** An interval border. */
 typedef struct _border_t {
@@ -56,6 +62,7 @@ typedef struct _env_t {
 	bitset_t *live;   		/**< A live bitset to use in every block. */
 	bitset_t *processed;	/**< A set marking processed blocks. */
 	bitset_t *colors;			/**< The color mask. */
+	int colors_n;					/**< The number of colors. */
 } env_t;
 
 typedef struct _be_chordal_dump_params_t {
@@ -82,7 +89,7 @@ static void draw_interval_graphs(ir_node *block,
 	FILE *f;
 	char buf[1024];
 
-	ir_snprintf(buf, sizeof(buf), "%s_bl%N.eps",
+	ir_snprintf(buf, sizeof(buf), "intv_%s_bl%N.eps",
 			get_entity_name(get_irg_entity(irg)), block);
 
 	if((f = fopen(buf, "wt")) != NULL) {
@@ -194,6 +201,7 @@ static void block_alloc(ir_node *block, void *env_ptr)
 	void *obstack_level = obstack_base(obst);
 	bitset_t *live = env->live;
 	bitset_t *colors = env->colors;
+	bitset_t *used_colors = bitset_malloc(env->colors_n);
 	ir_graph *irg = get_irn_irg(block);
 
 	int i, n;
@@ -233,6 +241,7 @@ static void block_alloc(ir_node *block, void *env_ptr)
 	 * They are neccessary to build up real intervals.
 	 */
 	for(irn = pset_first(live_out); irn; irn = pset_next(live_out)) {
+		DBG((dbg, LEVEL_3, "Making live: %n/%d\n", irn, get_irn_graph_nr(irn)));
 		bitset_set(live, get_irn_graph_nr(irn));
 		if(!is_Phi(irn) && is_allocatable_irn(irn))
 			border_add(env, &head, irn, step, 0);
@@ -245,28 +254,28 @@ static void block_alloc(ir_node *block, void *env_ptr)
 	 * relevant for the interval borders.
 	 */
 	sched_foreach_reverse(block, irn) {
-		ir_debugf("insn: %n\n", irn);
-		ir_debugf("live: %b\n", live);
+		DBG((dbg, LEVEL_1, "insn: %n\n", irn));
+		DBG((dbg, LEVEL_2, "live: %b\n", live));
 
-		get_irn_ra_info(irn)->color = NO_COLOR;
+		set_irn_color(irn, NO_COLOR);
 
 		/*
 		 * If the node defines a datab value, i.e. something, registers must
 		 * be allocated for, add a new def border to the border list.
 		 */
 		if(is_allocatable_irn(irn)) {
-			unsigned long elm;
 			int nr = get_irn_graph_nr(irn);
 
 			bitset_clear(live, nr);
 			border_add(env, &head, irn, step, 1);
 
 			if(is_phi_operand(irn)) {
+				unsigned long elm;
 				bitset_foreach(live, elm) {
 					int live_nr = (int) elm;
 					ir_node *live_irn = get_irn_for_graph_nr(irg, live_nr);
 					if(is_phi_operand(live_irn)) {
-						ir_debugf("\t\tinterfering phi operands: %n, %n\n", irn, live_irn);
+						DBG((dbg, LEVEL_3, "\t\tinterfering phi operands: %n, %n\n", irn, live_irn));
 						add_if(env, nr, live_nr);
 					}
 				}
@@ -283,7 +292,7 @@ static void block_alloc(ir_node *block, void *env_ptr)
 				if(is_allocatable_irn(op)) {
 					int nr = get_irn_graph_nr(op);
 
-					ir_debugf("\t\tpos: %d, use: %n\n", i, op);
+					DBG((dbg, LEVEL_4, "\t\tpos: %d, use: %n\n", i, op));
 
 					if(!bitset_is_set(live, nr)) {
 						border_add(env, &head, op, step, 0);
@@ -310,6 +319,7 @@ static void block_alloc(ir_node *block, void *env_ptr)
 			/* Mark the color of the live in value as used. */
 			assert(is_color(col) && "Node must have been assigned a color.");
 			bitset_set(colors, col);
+			bitset_set(used_colors, col);
 
 			/* Mark the value live in. */
 			bitset_set(live, get_irn_graph_nr(irn));
@@ -319,9 +329,9 @@ static void block_alloc(ir_node *block, void *env_ptr)
 		}
 	}
 
-	ir_debugf("usedef chain for block %n\n", block);
+	DBG((dbg, LEVEL_4, "usedef chain for block %n\n", block));
 	list_for_each_entry(border_t, b, &head, list) {
-		ir_debugf("\t%s %n %d\n", b->is_def ? "def" : "use", b->irn, get_irn_graph_nr(b->irn));
+		DBG((dbg, LEVEL_4, "\t%s %n %d\n", b->is_def ? "def" : "use", b->irn, get_irn_graph_nr(b->irn)));
 	}
 
 	/*
@@ -338,24 +348,25 @@ static void block_alloc(ir_node *block, void *env_ptr)
 		 * color.
 		 */
 		if(b->is_def && !is_live_in(block, irn)) {
-			ra_info_t *ri = get_irn_ra_info(irn);
+			ra_node_info_t *ri = get_ra_node_info(irn);
 			int col = bitset_next_clear(colors, 0);
 
 			assert(!is_color(get_irn_color(irn)) && "Color must not have assigned");
 			assert(!bitset_is_set(live, nr) && "Value def must not have been encountered");
 
 			bitset_set(colors, col);
+			bitset_set(used_colors, col);
 			bitset_set(live, nr);
 
 			ri->color = col;
 			ri->pressure = bitset_popcnt(colors);
 
-			ir_debugf("\tassigning color %d to %n\n", col, irn);
+			DBG((dbg, LEVEL_1, "\tassigning color %d to %n\n", col, irn));
 		}
 
 		/* Clear the color upon a use. */
 		else if(!b->is_def) {
-			int col = get_irn_ra_info(irn)->color;
+			int col = get_irn_color(irn);
 
 			assert(bitset_is_set(live, nr) && "Cannot have a non live use");
 			assert(is_color(col) && "A color must have been assigned");
@@ -365,7 +376,35 @@ static void block_alloc(ir_node *block, void *env_ptr)
 		}
 	}
 
+#ifdef DUMP_INTERVALS
 	draw_interval_graphs(block, &head, &dump_params);
+#endif
+
+#ifdef DUMP_PRESSURE
+	{
+		char buf[128];
+		FILE *f;
+
+		ir_snprintf(buf, sizeof(buf), "pres_%s_bl_%N.txt",
+				get_entity_name(get_irg_entity(irg)), block);
+
+		if((f = fopen(buf, "wt")) != NULL) {
+			sched_foreach_reverse(block, irn) {
+				if(is_allocatable_irn(irn))
+					ir_fprintf(f, "\"%n\" %d %d\n", irn, sched_get_time_step(irn),
+							get_ra_node_info(irn)->pressure);
+
+			}
+			fclose(f);
+		}
+	}
+#endif
+
+	/*
+	 * Allocate the used colors array in the blocks ra info structure and
+	 * fill it.
+	 */
+	get_ra_block_info(block)->used_colors = used_colors;
 
 	/* Mark this block has processed. */
 	bitset_set(env->processed, block_nr);
@@ -374,6 +413,11 @@ static void block_alloc(ir_node *block, void *env_ptr)
 	obstack_free(obst, obstack_level);
 }
 
+void be_ra_chordal_init(void)
+{
+	dbg = firm_dbg_register(DBG_BERA);
+	/* firm_dbg_set_mask(dbg, -1); */
+}
 
 void be_ra_chordal(ir_graph *irg)
 {
@@ -388,6 +432,7 @@ void be_ra_chordal(ir_graph *irg)
 	env->live = bitset_obstack_alloc(&env->obst, node_count);
 	env->processed = bitset_obstack_alloc(&env->obst, get_graph_block_count(irg));
 	env->colors = bitset_obstack_alloc(&env->obst, TEST_COLORS);
+	env->colors_n = TEST_COLORS;
 
 	irg_block_walk_graph(irg, block_alloc, NULL, env);
 	obstack_free(&env->obst, NULL);
