@@ -258,9 +258,12 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
 
     case iro_Cond:
       ASSERT_AND_RET_DBG(
-        (proj >= 0 && mode == mode_X),
-    "wrong Proj from Cond", 0,
-    show_proj_failure(p);
+	(
+          (proj >= 0 && mode == mode_X && get_irn_mode(get_Cond_selector(pred)) == mode_b) ||	/* compare */
+	  (mode == mode_X && mode_is_int(get_irn_mode(get_Cond_selector(pred))))		/* switch */
+	),
+        "wrong Proj from Cond", 0,
+        show_proj_failure(p);
       );
       break;
 
