@@ -64,7 +64,7 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "Debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "../../obstack" /I "../win32" /I "../ir/adt" /I "../ir/ana" /I "../ir/common" /I "../ir/debug" /I "../ir/ident" /I "../ir/ir" /I "../ir/opt" /I "../ir/st" /I "../ir/stat" /I "../ir/tr" /I "../ir/tv" /D "_DEBUG" /D "WIN32" /D "_MBCS" /D "_LIB" /D "HAVE_CONFIG_H" /YX /FD /GZ /c
+# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "../../obstack" /I "../win32" /I "../ir/adt" /I "../ir/ana" /I "../ir/common" /I "../ir/debug" /I "../ir/ident" /I "../ir/ir" /I "../ir/opt" /I "../ir/st" /I "../ir/stat" /I "../ir/tr" /I "../ir/tv" /D "_DEBUG" /D "WIN32" /D "_MBCS" /D "_LIB" /D "HAVE_CONFIG_H" /YX /FD /D /GZ /c
 # ADD BASE RSC /l 0x407 /d "_DEBUG"
 # ADD RSC /l 0x407 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -116,6 +116,18 @@ SOURCE=..\ir\adt\array.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\adt\bitfiddle.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\adt\bitset.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\adt\bitset_std.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\adt\eset.c
 # End Source File
 # Begin Source File
@@ -129,6 +141,10 @@ SOURCE=..\ir\adt\fourcc.h
 # Begin Source File
 
 SOURCE=..\ir\adt\hashptr.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\adt\impl.h
 # End Source File
 # Begin Source File
 
@@ -293,6 +309,18 @@ SOURCE=..\ir\ana\irtypeinfo.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\ana\phiclass.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana\phiclass.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana\phiclass_t.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\ana\rta.c
 # End Source File
 # Begin Source File
@@ -318,6 +346,10 @@ SOURCE=..\ir\ana2\ecg.c
 # Begin Source File
 
 SOURCE=..\ir\ana2\ecg.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana2\gnu_ext.h
 # End Source File
 # Begin Source File
 
@@ -437,6 +469,22 @@ SOURCE=..\ir\be\be.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\be\be_t.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bechordal.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bechordal.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bechordal_t.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\be\belistsched.c
 # End Source File
 # Begin Source File
@@ -461,11 +509,43 @@ SOURCE=..\ir\be\bemain.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\ir\be\bephicongr.c
+SOURCE=..\ir\be\benumb.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\ir\be\bephicongr_t.h
+SOURCE=..\ir\be\benumb.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\benumb_t.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bephicoal.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bephicoal_t.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bephiopt.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bephiopt.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bera.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bera.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bera_t.h
 # End Source File
 # Begin Source File
 
@@ -485,6 +565,10 @@ SOURCE=..\ir\be\beutil.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\be\domtree.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\be\phistat.c
 # End Source File
 # Begin Source File
@@ -495,6 +579,14 @@ SOURCE=..\ir\be\phistat.h
 # Begin Group "common"
 
 # PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\ir\common\debug.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\common\debug.h
+# End Source File
 # Begin Source File
 
 SOURCE=..\ir\common\firm.c
@@ -626,6 +718,10 @@ SOURCE=..\ir\ir\ircons.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\ir\ircons_t.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\ir\irdump.c
 # End Source File
 # Begin Source File
@@ -634,7 +730,23 @@ SOURCE=..\ir\ir\irdump.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\ir\irdump_t.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\ir\irdumptxt.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ir\iredges.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ir\iredges.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ir\iredges_t.h
 # End Source File
 # Begin Source File
 
@@ -778,6 +890,10 @@ SOURCE=..\ir\ir\irreflect.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\ir\irreflect.def
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\ir\irreflect.h
 # End Source File
 # Begin Source File
@@ -791,6 +907,10 @@ SOURCE=..\ir\ir\irvrfy.c
 # Begin Source File
 
 SOURCE=..\ir\ir\irvrfy.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ir\pnc.h
 # End Source File
 # Begin Source File
 
