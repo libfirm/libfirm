@@ -36,6 +36,7 @@ dnl check for additional include dirs
 AC_ARG_WITH(includedir, [  --with-includedir=add colon seperated list of directories to include search path],
     CPPFLAGS=$CPPFLAGS" -I"`echo $withval|sed 's;\:; -I;g'`, T_FLAG="")
 
+dnl check for additional library dirs
 AC_ARG_WITH(libdir, [  --with-libdir=add colon seperated list of directories to linker search path],
     LDFLAGS=$LDFLAGS" -L"`echo $withval|sed 's;\:; -L;g'`, T_FLAG="")
 
