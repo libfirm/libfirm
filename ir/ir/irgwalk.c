@@ -526,7 +526,7 @@ void walk_const_code(irg_walk_func *pre, irg_walk_func *post, void *env) {
   /* Walk constant array bounds. */
   for (i = 0; i < get_irp_n_types(); i++) {
     type *tp = get_irp_type(i);
-    if (is_array_type(tp)) {
+    if (is_Array_type(tp)) {
       for (j = 0; j < get_array_n_dimensions(tp); j++) {
         ir_node *n = get_array_lower_bound(tp, j);
         if (n) irg_walk(n, pre, post, env);

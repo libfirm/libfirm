@@ -711,7 +711,7 @@ static int can_inline(ir_node *call, ir_graph *called_graph)
 {
   type *call_type = get_Call_type(call);
   int params, ress, i, res;
-  assert(is_method_type(call_type));
+  assert(is_Method_type(call_type));
 
   params = get_method_n_params(call_type);
   ress   = get_method_n_ress(call_type);

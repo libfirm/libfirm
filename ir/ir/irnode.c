@@ -898,7 +898,7 @@ void
 set_Const_type (ir_node *node, type *tp) {
   assert (node->op == op_Const);
   if (tp != firm_unknown_type) {
-    assert (is_atomic_type(tp));
+    assert (is_Atomic_type(tp));
     assert (get_type_mode(tp) == get_irn_mode(node));
   }
   node->attr.con.tp = tp;
@@ -1165,7 +1165,7 @@ get_Call_type (ir_node *node) {
 void
 set_Call_type (ir_node *node, type *tp) {
   assert (node->op == op_Call);
-  assert ((get_unknown_type() == tp) || is_method_type(tp));
+  assert ((get_unknown_type() == tp) || is_Method_type(tp));
   node->attr.call.cld_tp = tp;
 }
 

@@ -1372,7 +1372,7 @@ dump_type_info(type_or_ent *tore, void *env) {
       fprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
                 ENT_OWN_EDGE_ATTR "}\n", ent, get_entity_owner(ent));*/
       print_ent_type_edge(F,ent, get_entity_type(ent), ENT_TYPE_EDGE_ATTR);
-      if(is_class_type(get_entity_owner(ent))) {
+      if (is_Class_type(get_entity_owner(ent))) {
         for(i = 0; i < get_entity_n_overwrites(ent); i++)
           print_ent_ent_edge(F,ent, get_entity_overwrites(ent, i), 0, ENT_OVERWRITES_EDGE_ATTR);
       }
@@ -1492,8 +1492,8 @@ dump_class_hierarchy_node (type_or_ent *tore, void *ctx) {
   case k_entity: {
     entity *ent = (entity *)tore;
     if (get_entity_owner(ent) == get_glob_type()) break;
-    if (!is_method_type(get_entity_type(ent))) break;  /* GL */
-    if (env->dump_ent && is_class_type(get_entity_owner(ent))) {
+    if (!is_Method_type(get_entity_type(ent))) break;  /* GL */
+    if (env->dump_ent && is_Class_type(get_entity_owner(ent))) {
       /* The node */
       dump_entity_node(F, ent, 0);
       /* The edges */

@@ -46,14 +46,14 @@ static void make_entity_to_description(type_or_ent *tore, void *env) {
   if (get_kind(tore) == k_entity) {
     entity *ent = (entity *)tore;
 
-    if ((is_method_type(get_entity_type(ent)))                        &&
-	(get_entity_peculiarity(ent) != peculiarity_description)      &&
-	(get_entity_visibility(ent)  != visibility_external_allocated)   ) {
+    if ((is_Method_type(get_entity_type(ent)))                        &&
+	      (get_entity_peculiarity(ent) != peculiarity_description)      &&
+	      (get_entity_visibility(ent)  != visibility_external_allocated)   ) {
       entity *impl = get_SymConst_entity(get_atomic_ent_value(ent));
       if (get_entity_link(impl) != env) {
-	set_entity_peculiarity(ent, peculiarity_description);
-	//set_atomic_ent_value(ent, new_r_Const(get_const_code_irg(), get_irg_start_block(get_const_code_irg()),
-	//				      mode_P, get_tarval_null(mode_P)));
+	      set_entity_peculiarity(ent, peculiarity_description);
+	      //set_atomic_ent_value(ent, new_r_Const(get_const_code_irg(), get_irg_start_block(get_const_code_irg()),
+	      //				      mode_P, get_tarval_null(mode_P)));
       }
     }
   }

@@ -638,22 +638,22 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
         "Number of results for Return doesn't match number of results in type.", 0,
       show_return_nres(irg, n, mt););
       for (i = 0; i < get_Return_n_ress(n); i++) {
-    type *res_type = get_method_res_type(mt, i);
+        type *res_type = get_method_res_type(mt, i);
 
-        if (is_atomic_type(res_type)) {
-      ASSERT_AND_RET_DBG(
-        get_irn_mode(get_Return_res(n, i)) == get_type_mode(res_type),
-        "Mode of result for Return doesn't match mode of result type.", 0,
-        show_return_modes(irg, n, mt, i);
-      );
-    }
-    else {
-      ASSERT_AND_RET_DBG(
-        mode_is_reference(get_irn_mode(get_Return_res(n, i))),
-        "Mode of result for Return doesn't match mode of result type.", 0,
-        show_return_modes(irg, n, mt, i);
-      );
-    }
+        if (is_Atomic_type(res_type)) {
+          ASSERT_AND_RET_DBG(
+            get_irn_mode(get_Return_res(n, i)) == get_type_mode(res_type),
+            "Mode of result for Return doesn't match mode of result type.", 0,
+            show_return_modes(irg, n, mt, i);
+          );
+        }
+        else {
+          ASSERT_AND_RET_DBG(
+            mode_is_reference(get_irn_mode(get_Return_res(n, i))),
+            "Mode of result for Return doesn't match mode of result type.", 0,
+            show_return_modes(irg, n, mt, i);
+          );
+        }
       }
       break;
 
@@ -678,7 +678,7 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
     case iro_SymConst:
       if (get_SymConst_kind(n) == symconst_addr_ent) {
         entity *ent = get_SymConst_entity(n);
-        if (is_method_type(get_entity_type(ent)) &&
+        if (is_Method_type(get_entity_type(ent)) &&
             get_irn_irg(n) != get_const_code_irg()) {
 #if 1
           ASSERT_AND_RET((get_entity_peculiarity(ent) != peculiarity_description),
@@ -752,7 +752,7 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       for (i = 0; i < get_method_n_params(mt); i++) {
         type *t = get_method_param_type(mt, i);
 
-        if (is_atomic_type(t)) {
+        if (is_Atomic_type(t)) {
           ASSERT_AND_RET_DBG(
                              get_irn_mode(get_Call_param(n, i)) == get_type_mode(t),
                              "Mode of arg for Call doesn't match mode of arg type.", 0,
