@@ -244,8 +244,8 @@ tarval_cmp (const void *p, const void *q)
   TARVAL_VRFY (b);
 
   if (a == b) return 0;
-  if ((void *)a->mode - (void *)b->mode)
-    return (void *)a->mode - (void *)b->mode;
+  if ((char *)a->mode - (char *)b->mode)
+    return (char *)a->mode - (char *)b->mode;
 
   switch (get_mode_modecode(a->mode)) {
     /* floating */
