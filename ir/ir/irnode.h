@@ -421,7 +421,7 @@ inline void     set_Free_mem (ir_node *node, ir_node *mem);
 inline ir_node *get_Free_ptr (ir_node *node);
 inline void     set_Free_ptr (ir_node *node, ir_node *ptr);
 inline ir_node *get_Free_size (ir_node *node);
-inline void     set_Alloc_size (ir_node *node, ir_node *size);
+inline void     set_Free_size (ir_node *node, ir_node *size);
 inline type    *get_Free_type (ir_node *node);
 inline void     set_Free_type (ir_node *node, type *type);
 

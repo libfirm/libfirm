@@ -975,14 +975,14 @@ ir_node *new_r_Minus  (ir_graph *irg, ir_node *block,
 		       ir_node *op,  ir_mode *mode);
 ir_node *new_r_Mul    (ir_graph *irg, ir_node *block,
 		       ir_node *op1, ir_node *op2, ir_mode *mode);
-ir_node *new_r_Quot   (ir_graph *irg, ir_node *block, ir_node *memop,
-		       ir_node *op1, ir_node *op2);
+ir_node *new_r_Quot   (ir_graph *irg, ir_node *block,
+		       ir_node *memop, ir_node *op1, ir_node *op2);
 ir_node *new_r_DivMod (ir_graph *irg, ir_node *block,
 		       ir_node *memop, ir_node *op1, ir_node *op2);
-ir_node *new_r_Div    (ir_graph *irg, ir_node *block, ir_node *memop,
-		       ir_node *op1, ir_node *op2);
-ir_node *new_r_Mod    (ir_graph *irg, ir_node *block, ir_node *memop,
-		       ir_node *op1, ir_node *op2);
+ir_node *new_r_Div    (ir_graph *irg, ir_node *block,
+		       ir_node *memop, ir_node *op1, ir_node *op2);
+ir_node *new_r_Mod    (ir_graph *irg, ir_node *block,
+		       ir_node *memop, ir_node *op1, ir_node *op2);
 ir_node *new_r_Abs    (ir_graph *irg, ir_node *block,
                        ir_node *op, ir_mode *mode);
 ir_node *new_r_And    (ir_graph *irg, ir_node *block,
