@@ -273,7 +273,10 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
     case iro_Block:
       for (i = 0; i < get_Block_n_cfgpreds(n); ++i) {
 	ir_node *pred =  get_Block_cfgpred(n, i);
-	ASSERT_AND_RET((is_Bad(pred) || get_irn_op(pred) == op_Unknown || (get_irn_mode(pred) == mode_X)), "Block node", 0);
+	ASSERT_AND_RET((is_Bad(pred)                     ||
+			(get_irn_op(pred) == op_Unknown) ||
+			(get_irn_mode(pred) == mode_X)     ),
+		       "Block node", 0);
       }
       // End block may only have Return, Raise or fragile ops as preds.
       if (n == get_irg_end_block(irg))
@@ -287,6 +290,11 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
 			  is_fragile_op(pred)               ),
 			 "End Block node", 0);
 	}
+      // irg attr must == graph we are in.
+      if (! interprocedural_view) {
+	ASSERT_AND_RET(((get_irn_irg(n) && get_irn_irg(n) == irg)), "", 0);
+      }
+
       break;
 
     case iro_Start:
