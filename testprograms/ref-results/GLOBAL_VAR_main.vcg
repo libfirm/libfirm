@@ -17,7 +17,7 @@ classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
 
-graph: { title: "0x80ae208" label: "GLOBAL_VAR_main" status:clustered color:white
+graph: { title: "g29" label: "GLOBAL_VAR_main" status:clustered color:white
 graph: { title: "n40"  label: "Block 40" status:clustered color:yellow
 edge: {sourcename: "n40" targetname: "n41" label: "0" color: red}
 node: {title: "n39" label: "End  39" color: blue info1: "visited: 7

@@ -247,9 +247,28 @@ main(void)
   /* Touch ld names to distinguish names from oo_inline names. */
   get_entity_ld_ident(proc_set_a_e);
   get_entity_ld_ident(proc_c_e);
+
+
+  dump_all_ir_graphs(dump_ir_graph);
   dump_all_ir_graphs(dump_ir_block_graph);
+  dump_all_ir_graphs(dump_ir_graph_w_types);
   dump_all_ir_graphs(dump_ir_block_graph_w_types);
+  dump_all_ir_graphs(dump_type_graph);
   dump_all_types();
+  dump_class_hierarchy (true);
+
+
+  entity **free_methods;
+  int arr_len;
+  cgana(&arr_len, &free_methods);
+  cg_construct(arr_len, free_methods);
+
+  interprocedural_view = 1;
+  dump_ir_graph(main_irg);
+  dump_ir_block_graph(main_irg);
+  dump_ir_graph_w_types(main_irg);
+  dump_ir_block_graph_w_types(main_irg);
+  dump_all_cg_block_graph();
 
   printf("Use xvcg to view these graphs:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");

@@ -17,7 +17,7 @@ classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
 
-graph: { title: "0x80ae340" label: "main" status:clustered color:white
+graph: { title: "g28" label: "main" status:clustered color:white
 graph: { title: "n62"  label: "Block 62" status:clustered color:yellow
 edge: {sourcename: "n62" targetname: "n63" label: "0" color: red}
 node: {title: "n61" label: "End  61" color: blue info1: "visited: 5

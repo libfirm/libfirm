@@ -17,7 +17,7 @@ classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
 
-graph: { title: "0x80af6e8" label: "CALL_STR_EXAMPLE_main" status:clustered color:white
+graph: { title: "g45" label: "CALL_STR_EXAMPLE_main" status:clustered color:white
 graph: { title: "n56"  label: "Block 56" status:clustered color:yellow
 edge: {sourcename: "n56" targetname: "n57" label: "0" color: red}
 node: {title: "n55" label: "End  55" color: blue info1: "visited: 6

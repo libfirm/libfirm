@@ -17,7 +17,7 @@ classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
 
-graph: { title: "0x80aea48" label: "OO_PROGRAM_EXAMPLE_main" status:clustered color:white
+graph: { title: "g37" label: "OO_PROGRAM_EXAMPLE_main" status:clustered color:white
 graph: { title: "n108"  label: "Block 108" status:clustered color:yellow
 edge: {sourcename: "n108" targetname: "n109" label: "0" color: red}
 node: {title: "n107" label: "End  107" color: blue info1: "visited: 46
@@ -101,7 +101,7 @@ start of method of type OO_PROGRAM_EXAMPLE_main
 
 }
 
-graph: { title: "0x80b1028" label: "set_a" status:clustered color:white
+graph: { title: "g71" label: "set_a" status:clustered color:white
 graph: { title: "n186"  label: "Block 186" status:clustered color:yellow
 edge: {sourcename: "n186" targetname: "n185" label: "0" color: red}
 node: {title: "n192" label: "ProjX 0 192" color: yellow info1: "visited: 46
@@ -154,7 +154,7 @@ start of method of type set_a
 
 }
 
-graph: { title: "0x80b3640" label: "c" status:clustered color:white
+graph: { title: "g94" label: "c" status:clustered color:white
 graph: { title: "n178"  label: "Block 178" status:clustered color:yellow
 edge: {sourcename: "n178" targetname: "n177" label: "0" color: red}
 node: {title: "n198" label: "ProjX 0 198" color: yellow info1: "visited: 46

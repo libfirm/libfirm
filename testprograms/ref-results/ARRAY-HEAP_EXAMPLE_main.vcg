@@ -17,7 +17,7 @@ classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
 
-graph: { title: "0x80ae350" label: "ARRAY-HEAP_EXAMPLE_main" status:clustered color:white
+graph: { title: "g32" label: "ARRAY-HEAP_EXAMPLE_main" status:clustered color:white
 graph: { title: "n49"  label: "Block 49" status:clustered color:yellow
 edge: {sourcename: "n49" targetname: "n50" label: "0" color: red}
 node: {title: "n48" label: "End  48" color: blue info1: "visited: 8
