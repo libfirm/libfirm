@@ -50,6 +50,7 @@
 #define PTR_PTS_TO_EDGE_ATTR "class: 9 label: \"points to\" color:green"
 #define ARR_ELT_TYPE_EDGE_ATTR "class: 10 label: \"arr elt\" color:green"
 #define ENT_OVERWRITES_EDGE_ATTR "class: 11 label: \"overwrites\" color:red"
+#define TYPE_MEMBER_EDGE_ATTR "class: 12 label: \"member\" color:blue"
 
 #define PRINT_NODEID(X) fprintf(F, "%p", X)
 
@@ -517,10 +518,18 @@ dump_type_info (type_or_ent *tore, void *env) {
 	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
 		      TYPE_SUPER_EDGE_ATTR "}\n",
 		      type, get_class_supertype(type, i));
+	  for (i=0; i < get_class_n_member(type); i++)
+	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
+		      TYPE_MEMBER_EDGE_ATTR "}\n",
+		      type, get_class_member(type, i));
 	} break;
       case tpo_struct:
 	{
 	  xfprintf (F, "\"}\n");
+	  for (i=0; i < get_struct_n_member(type); i++)
+	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
+		      TYPE_MEMBER_EDGE_ATTR "}\n",
+		      type, get_struct_member(type, i));
 	} break;
       case tpo_method:
 	{
@@ -565,8 +574,8 @@ dump_type_info (type_or_ent *tore, void *env) {
 	} break;
       default: break;
       } /* switch type */
-
-    } break; /* case k_type */
+    }
+    break; /* case k_type */
   default:
     {
       xfprintf (F, "\" faulty type \"}\n");
@@ -633,6 +642,8 @@ void vcg_open (ir_graph *irg, char *suffix) {
 	    "classname 8: \"Union\""
 	    "classname 9: \"Points-to\""
 	    "classname 10: \"Array Element Type\""
+	    "classname 11: \"Overwrites\""
+	    "classname 12: \"Member\""
 	    , cp, label);
 
   xfprintf (F, "\n");		/* a separator */
