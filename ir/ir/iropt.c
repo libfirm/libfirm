@@ -386,15 +386,15 @@ equivalent_node (ir_node *n)
   case iro_Minus: /* --x == x */  /* ??? Is this possible or can --x raise an
 					 out of bounds exception if min =! max? */
     if (get_irn_op(get_unop_op(n)) == get_irn_op(n)) {
-      n = get_unop_op(get_unop_op(n));                                    DBG_OPT_ALGSIM2
+      n = get_unop_op(get_unop_op(n));                                    DBG_OPT_ALGSIM2;
     }
     break;
   case iro_Mul:
     /* Mul is commutative and has again an other neutral element. */
     if (tarval_classify (computed_value (a)) == 1) {
-      n = b;                                                              DBG_OPT_ALGSIM1
+      n = b;                                                              DBG_OPT_ALGSIM1;
     } else if (tarval_classify (computed_value (b)) == 1) {
-      n = a;                                                              DBG_OPT_ALGSIM1
+      n = a;                                                              DBG_OPT_ALGSIM1;
     }
     break;
   case iro_Div:
