@@ -34,7 +34,7 @@ ld_name: no yet set
 offset:  -1"
 }
 edge: { sourcename: "t13" targetname: "e15"class: 12 label: "member" color:blue}
-node: {title: "e18" label: "ent set_a" color: yellow
+node: {title: "e18" label: "ent PRIMA_set_a" color: yellow
  info1: "
 id: e18
 allocation:  allocation_static
@@ -42,13 +42,13 @@ visibility:  visibility_local
 variability: variability_constant
 volatility:  volatility_non_volatile
 peculiarity: peculiarity_existent
-name:    set_a
+name:    PRIMA_set_a
 ld_name: PRIMA_set_a
 offset:  -1
 irg = g71"
 }
 edge: { sourcename: "t13" targetname: "e18"class: 12 label: "member" color:blue}
-node: {title: "e21" label: "ent c" color: yellow
+node: {title: "e21" label: "ent PRIMA_c" color: yellow
  info1: "
 id: e21
 allocation:  allocation_static
@@ -56,7 +56,7 @@ visibility:  visibility_local
 variability: variability_constant
 volatility:  volatility_non_volatile
 peculiarity: peculiarity_existent
-name:    c
+name:    PRIMA_c
 ld_name: PRIMA_c
 offset:  -1
 irg = g94"

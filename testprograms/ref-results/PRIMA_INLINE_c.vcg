@@ -17,78 +17,78 @@ classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
 
-graph: { title: "g94" label: "c" status:clustered color:white
+graph: { title: "g94" label: "PRIMA_INLINE_c" status:clustered color:white
 graph: { title: "n248"  label: "Block 248" status:clustered color:yellow
 edge: {sourcename: "n248" targetname: "n250" label: "0" color: red}
 edge: {sourcename: "n248" targetname: "n249" label: "1" color: red}
 node: {title: "n252" label: "PhiM  252" color: green info1: "visited: 21
-irg:     c
+irg:     PRIMA_INLINE_c
 "}
 edge: {sourcename: "n252" targetname: "n261" label: "0" color: blue}
 edge: {sourcename: "n252" targetname: "n253" label: "1" color: blue}
 node: {title: "n253" label: "Store  253"  info1: "visited: 21
-irg:     c
+irg:     PRIMA_INLINE_c
 "}
 edge: {sourcename: "n253" targetname: "n252" label: "0" color: blue}
 edge: {sourcename: "n253" targetname: "n259" label: "1" }
 edge: {sourcename: "n253" targetname: "n254" label: "2" }
 node: {title: "n259" label: "Sel a 259"  info1: "visited: 21
-irg:     c
+irg:     PRIMA_INLINE_c
 Selecting entity of type int
   from entity of type PRIMA_INLINE
 "}
 edge: {sourcename: "n259" targetname: "n252" label: "0" color: blue}
 edge: {sourcename: "n259" targetname: "n260" label: "1" }
 node: {title: "n254" label: "PhiIs  254" color: green info1: "visited: 21
-irg:     c
+irg:     PRIMA_INLINE_c
 "}
 edge: {sourcename: "n254" targetname: "n257" label: "0" }
 edge: {sourcename: "n254" targetname: "n255" label: "1" }
 node: {title: "n255" label: "PhiIs  255" color: green info1: "visited: 21
-irg:     c
+irg:     PRIMA_INLINE_c
 "}
 edge: {sourcename: "n255" targetname: "n256" label: "0" }
 edge: {sourcename: "n255" targetname: "n254" label: "1" }
 node: {title: "n249" label: "Jmp  249"  info1: "visited: 21
-irg:     c
+irg:     PRIMA_INLINE_c
 "}
 }
 
 graph: { title: "n251"  label: "Block 251" status:clustered color:yellow
 edge: {sourcename: "n251" targetname: "n246" label: "0" color: red}
 node: {title: "n260" label: "ProjP 0 260" color: yellow info1: "visited: 21
-irg:     c
+irg:     PRIMA_INLINE_c
 "}
 edge: {sourcename: "n260" targetname: "n258" label: "0" }
 node: {title: "n257" label: "ProjIs 1 257" color: yellow info1: "visited: 21
-irg:     c
+irg:     PRIMA_INLINE_c
 "}
 edge: {sourcename: "n257" targetname: "n258" label: "0" }
 node: {title: "n250" label: "Jmp  250"  info1: "visited: 21
-irg:     c
+irg:     PRIMA_INLINE_c
 "}
 }
 
 graph: { title: "n245"  label: "Block 245" status:clustered color:yellow
 edge: {sourcename: "n245" targetname: "n246" label: "0" color: red}
 node: {title: "n261" label: "ProjM 1 261" color: yellow info1: "visited: 21
-irg:     c
+irg:     PRIMA_INLINE_c
 "}
 edge: {sourcename: "n261" targetname: "n247" label: "0" color: blue}
 node: {title: "n258" label: "ProjT 4 258" color: yellow info1: "visited: 21
-irg:     c
+irg:     PRIMA_INLINE_c
 "}
 edge: {sourcename: "n258" targetname: "n247" label: "0" }
 node: {title: "n256" label: "0x0Is  256" color: yellow info1: "visited: 21
-irg:     c
+irg:     PRIMA_INLINE_c
 Const of type type_unknown
 "}
 node: {title: "n246" label: "ProjX 0 246" color: yellow info1: "visited: 21
-irg:     c
+irg:     PRIMA_INLINE_c
 "}
 edge: {sourcename: "n246" targetname: "n247" label: "0" color: red}
 node: {title: "n247" label: "Start  247" color: blue info1: "visited: 21
-irg:     c
+irg:     PRIMA_INLINE_c
 start of method of type c
   param 0 type: class_prima_ptr
   param 1 type: int
@@ -97,7 +97,7 @@ start of method of type c
 
 graph: { title: "n243"  label: "Block 243" status:clustered color:yellow
 node: {title: "n242" label: "End  242" color: blue info1: "visited: 21
-irg:     c
+irg:     PRIMA_INLINE_c
 "}
 }
 

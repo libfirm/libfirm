@@ -17,38 +17,38 @@ classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
 
-graph: { title: "g33" label: "main" status:clustered color:white
+graph: { title: "g33" label: "ARRAY-STACK_EXAMPLE_main" status:clustered color:white
 graph: { title: "n47"  label: "Block 47" status:clustered color:yellow
 edge: {sourcename: "n47" targetname: "n48" label: "0" color: red}
 node: {title: "n46" label: "End  46" color: blue info1: "visited: 10
-irg:     main
+irg:     ARRAY-STACK_EXAMPLE_main
 "}
 }
 
 graph: { title: "n49"  label: "Block 49" status:clustered color:yellow
 edge: {sourcename: "n49" targetname: "n50" label: "0" color: red}
 node: {title: "n48" label: "Return  48"  info1: "visited: 10
-irg:     main
+irg:     ARRAY-STACK_EXAMPLE_main
 return in method of type main
   res 0 type: int
 "}
 edge: {sourcename: "n48" targetname: "n60" label: "0" color: blue}
 edge: {sourcename: "n48" targetname: "n53" label: "1" }
 node: {title: "n60" label: "ProjM 0 60" color: yellow info1: "visited: 10
-irg:     main
+irg:     ARRAY-STACK_EXAMPLE_main
 "}
 edge: {sourcename: "n60" targetname: "n54" label: "0" color: blue}
 node: {title: "n53" label: "ProjIs 2 53" color: yellow info1: "visited: 10
-irg:     main
+irg:     ARRAY-STACK_EXAMPLE_main
 "}
 edge: {sourcename: "n53" targetname: "n54" label: "0" }
 node: {title: "n54" label: "Load  54"  info1: "visited: 10
-irg:     main
+irg:     ARRAY-STACK_EXAMPLE_main
 "}
 edge: {sourcename: "n54" targetname: "n59" label: "0" color: blue}
 edge: {sourcename: "n54" targetname: "n55" label: "1" }
 node: {title: "n55" label: "Sel a_tp_elem_ent 55"  info1: "visited: 10
-irg:     main
+irg:     ARRAY-STACK_EXAMPLE_main
 Selecting entity of type int
   from entity of type a_tp
 "}
@@ -56,7 +56,7 @@ edge: {sourcename: "n55" targetname: "n59" label: "0" color: blue}
 edge: {sourcename: "n55" targetname: "n57" label: "1" }
 edge: {sourcename: "n55" targetname: "n56" label: "2" }
 node: {title: "n57" label: "Sel a 57"  info1: "visited: 10
-irg:     main
+irg:     ARRAY-STACK_EXAMPLE_main
 Selecting entity of type a_tp
   from entity of type mainframe_tp
 "}
@@ -67,23 +67,23 @@ edge: {sourcename: "n57" targetname: "n58" label: "1" }
 graph: { title: "n51"  label: "Block 51" status:clustered color:yellow
 edge: {sourcename: "n51" targetname: "n50" label: "0" color: red}
 node: {title: "n59" label: "ProjM 1 59" color: yellow info1: "visited: 10
-irg:     main
+irg:     ARRAY-STACK_EXAMPLE_main
 "}
 edge: {sourcename: "n59" targetname: "n52" label: "0" color: blue}
 node: {title: "n58" label: "ProjP 2 58" color: yellow info1: "visited: 10
-irg:     main
+irg:     ARRAY-STACK_EXAMPLE_main
 "}
 edge: {sourcename: "n58" targetname: "n52" label: "0" }
 node: {title: "n56" label: "0x3Iu  56" color: yellow info1: "visited: 10
-irg:     main
+irg:     ARRAY-STACK_EXAMPLE_main
 Const of type type_unknown
 "}
 node: {title: "n50" label: "ProjX 0 50" color: yellow info1: "visited: 10
-irg:     main
+irg:     ARRAY-STACK_EXAMPLE_main
 "}
 edge: {sourcename: "n50" targetname: "n52" label: "0" color: red}
 node: {title: "n52" label: "Start  52" color: blue info1: "visited: 10
-irg:     main
+irg:     ARRAY-STACK_EXAMPLE_main
 start of method of type main
 "}
 }
@@ -138,7 +138,7 @@ size: -1B,
 peculiarity: peculiarity_existent
 " color: green}
 edge: { sourcename: "t21" targetname: "e35"class: 12 label: "member" color:blue}
-node: {title: "e16" label: "ent main" color: yellow
+node: {title: "e16" label: "ent ARRAY-STACK_EXAMPLE_main" color: yellow
  info1: "
 id: e16
 allocation:  allocation_static
@@ -146,7 +146,7 @@ visibility:  visibility_local
 variability: variability_constant
 volatility:  volatility_non_volatile
 peculiarity: peculiarity_existent
-name:    main
+name:    ARRAY-STACK_EXAMPLE_main
 ld_name: ARRAY-STACK_EXAMPLE_main
 offset:  -1
 irg = g33"

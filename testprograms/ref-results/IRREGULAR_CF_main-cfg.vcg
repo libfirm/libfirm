@@ -36,6 +36,6 @@ edge: { sourcename: "n83" targetname: "n73"}
 node: {title: "n90" label: "Block n90" }
 edge: { sourcename: "n90" targetname: "n83"}
 node: {title: "n96" label: "Bad  96"  info1: "visited: 0
-irg:     main
+irg:     IRREGULAR_CF_main
 "}
 }

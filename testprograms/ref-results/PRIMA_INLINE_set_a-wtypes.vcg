@@ -17,44 +17,44 @@ classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
 
-graph: { title: "g71" label: "set_a" status:clustered color:white
+graph: { title: "g71" label: "PRIMA_INLINE_set_a" status:clustered color:white
 graph: { title: "n225"  label: "Block 225" status:clustered color:yellow
 edge: {sourcename: "n225" targetname: "n226" label: "0" color: red}
 node: {title: "n224" label: "End  224" color: blue info1: "visited: 17
-irg:     set_a
+irg:     PRIMA_INLINE_set_a
 "}
 }
 
 graph: { title: "n227"  label: "Block 227" status:clustered color:yellow
 edge: {sourcename: "n227" targetname: "n228" label: "0" color: red}
 node: {title: "n226" label: "Return  226"  info1: "visited: 17
-irg:     set_a
+irg:     PRIMA_INLINE_set_a
 return in method of type set_a
 "}
 edge: {sourcename: "n226" targetname: "n231" label: "0" color: blue}
 node: {title: "n231" label: "ProjM 0 231" color: yellow info1: "visited: 17
-irg:     set_a
+irg:     PRIMA_INLINE_set_a
 "}
 edge: {sourcename: "n231" targetname: "n232" label: "0" color: blue}
 node: {title: "n232" label: "Store  232"  info1: "visited: 17
-irg:     set_a
+irg:     PRIMA_INLINE_set_a
 "}
 edge: {sourcename: "n232" targetname: "n237" label: "0" color: blue}
 edge: {sourcename: "n232" targetname: "n235" label: "1" }
 edge: {sourcename: "n232" targetname: "n233" label: "2" }
 node: {title: "n235" label: "Sel a 235"  info1: "visited: 17
-irg:     set_a
+irg:     PRIMA_INLINE_set_a
 Selecting entity of type int
   from entity of type PRIMA_INLINE
 "}
 edge: {sourcename: "n235" targetname: "n237" label: "0" color: blue}
 edge: {sourcename: "n235" targetname: "n236" label: "1" }
 node: {title: "n236" label: "ProjP 0 236" color: yellow info1: "visited: 17
-irg:     set_a
+irg:     PRIMA_INLINE_set_a
 "}
 edge: {sourcename: "n236" targetname: "n234" label: "0" }
 node: {title: "n233" label: "ProjIs 1 233" color: yellow info1: "visited: 17
-irg:     set_a
+irg:     PRIMA_INLINE_set_a
 "}
 edge: {sourcename: "n233" targetname: "n234" label: "0" }
 }
@@ -62,19 +62,19 @@ edge: {sourcename: "n233" targetname: "n234" label: "0" }
 graph: { title: "n229"  label: "Block 229" status:clustered color:yellow
 edge: {sourcename: "n229" targetname: "n228" label: "0" color: red}
 node: {title: "n237" label: "ProjM 1 237" color: yellow info1: "visited: 17
-irg:     set_a
+irg:     PRIMA_INLINE_set_a
 "}
 edge: {sourcename: "n237" targetname: "n230" label: "0" color: blue}
 node: {title: "n234" label: "ProjT 4 234" color: yellow info1: "visited: 17
-irg:     set_a
+irg:     PRIMA_INLINE_set_a
 "}
 edge: {sourcename: "n234" targetname: "n230" label: "0" }
 node: {title: "n228" label: "ProjX 0 228" color: yellow info1: "visited: 17
-irg:     set_a
+irg:     PRIMA_INLINE_set_a
 "}
 edge: {sourcename: "n228" targetname: "n230" label: "0" color: red}
 node: {title: "n230" label: "Start  230" color: blue info1: "visited: 17
-irg:     set_a
+irg:     PRIMA_INLINE_set_a
 start of method of type set_a
   param 0 type: class_prima_ptr
   param 1 type: int
@@ -103,7 +103,7 @@ peculiarity: peculiarity_existent
 edge: { sourcename: "t13" targetname: "e15"class: 12 label: "member" color:blue}
 edge: { sourcename: "t13" targetname: "e18"class: 12 label: "member" color:blue}
 edge: { sourcename: "t13" targetname: "e21"class: 12 label: "member" color:blue}
-node: {title: "e18" label: "ent set_a" color: yellow
+node: {title: "e18" label: "ent PRIMA_INLINE_set_a" color: yellow
  info1: "
 id: e18
 allocation:  allocation_static
@@ -111,7 +111,7 @@ visibility:  visibility_local
 variability: variability_constant
 volatility:  volatility_non_volatile
 peculiarity: peculiarity_existent
-name:    set_a
+name:    PRIMA_INLINE_set_a
 ld_name: PRIMA_INLINE_set_a
 offset:  -1
 irg = g71"
@@ -136,7 +136,7 @@ node: {title: "t12" label: "primitive int" info1: "state: layout_fixed,
 mode: Is,
 size: 4B,
 "}
-node: {title: "e21" label: "ent c" color: yellow
+node: {title: "e21" label: "ent PRIMA_INLINE_c" color: yellow
  info1: "
 id: e21
 allocation:  allocation_static
@@ -144,7 +144,7 @@ visibility:  visibility_local
 variability: variability_constant
 volatility:  volatility_non_volatile
 peculiarity: peculiarity_existent
-name:    c
+name:    PRIMA_INLINE_c
 ld_name: PRIMA_INLINE_c
 offset:  -1
 irg = g94"

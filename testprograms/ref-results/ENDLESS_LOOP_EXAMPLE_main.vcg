@@ -17,82 +17,82 @@ classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
 
-graph: { title: "g29" label: "main" status:clustered color:white
+graph: { title: "g29" label: "ENDLESS_LOOP_EXAMPLE_main" status:clustered color:white
 graph: { title: "n80"  label: "Block 80" status:clustered color:yellow
 edge: {sourcename: "n80" targetname: "n84" label: "0" color: red}
 edge: {sourcename: "n80" targetname: "n81" label: "1" color: red}
 node: {title: "n86" label: "PhiM  86" color: green info1: "visited: 19
-irg:     main
+irg:     ENDLESS_LOOP_EXAMPLE_main
 "}
 edge: {sourcename: "n86" targetname: "n96" label: "0" color: blue}
 edge: {sourcename: "n86" targetname: "n87" label: "1" color: blue}
 node: {title: "n87" label: "ProjM 0 87" color: yellow info1: "visited: 19
-irg:     main
+irg:     ENDLESS_LOOP_EXAMPLE_main
 "}
 edge: {sourcename: "n87" targetname: "n88" label: "0" color: blue}
 node: {title: "n88" label: "Store  88"  info1: "visited: 19
-irg:     main
+irg:     ENDLESS_LOOP_EXAMPLE_main
 "}
 edge: {sourcename: "n88" targetname: "n86" label: "0" color: blue}
 edge: {sourcename: "n88" targetname: "n94" label: "1" }
 edge: {sourcename: "n88" targetname: "n89" label: "2" }
 node: {title: "n94" label: "Sel VAR_A 94"  info1: "visited: 19
-irg:     main
+irg:     ENDLESS_LOOP_EXAMPLE_main
 Selecting entity of type int
   from entity of type GlobalType
 "}
 edge: {sourcename: "n94" targetname: "n86" label: "0" color: blue}
 edge: {sourcename: "n94" targetname: "n95" label: "1" }
 node: {title: "n89" label: "PhiIs  89" color: green info1: "visited: 19
-irg:     main
+irg:     ENDLESS_LOOP_EXAMPLE_main
 "}
 edge: {sourcename: "n89" targetname: "n92" label: "0" }
 edge: {sourcename: "n89" targetname: "n90" label: "1" }
 node: {title: "n90" label: "PhiIs  90" color: green info1: "visited: 19
-irg:     main
+irg:     ENDLESS_LOOP_EXAMPLE_main
 "}
 edge: {sourcename: "n90" targetname: "n91" label: "0" }
 edge: {sourcename: "n90" targetname: "n89" label: "1" }
 node: {title: "n81" label: "Jmp  81"  info1: "visited: 19
-irg:     main
+irg:     ENDLESS_LOOP_EXAMPLE_main
 "}
 }
 
 graph: { title: "n85"  label: "Block 85" status:clustered color:yellow
 edge: {sourcename: "n85" targetname: "n78" label: "0" color: red}
 node: {title: "n92" label: "ProjIs 0 92" color: yellow info1: "visited: 19
-irg:     main
+irg:     ENDLESS_LOOP_EXAMPLE_main
 "}
 edge: {sourcename: "n92" targetname: "n93" label: "0" }
 node: {title: "n84" label: "Jmp  84"  info1: "visited: 19
-irg:     main
+irg:     ENDLESS_LOOP_EXAMPLE_main
 "}
 }
 
 graph: { title: "n77"  label: "Block 77" status:clustered color:yellow
 edge: {sourcename: "n77" targetname: "n78" label: "0" color: red}
 node: {title: "n96" label: "ProjM 1 96" color: yellow info1: "visited: 19
-irg:     main
+irg:     ENDLESS_LOOP_EXAMPLE_main
 "}
 edge: {sourcename: "n96" targetname: "n79" label: "0" color: blue}
 node: {title: "n95" label: "ProjP 3 95" color: yellow info1: "visited: 19
-irg:     main
+irg:     ENDLESS_LOOP_EXAMPLE_main
 "}
 edge: {sourcename: "n95" targetname: "n79" label: "0" }
 node: {title: "n93" label: "ProjT 4 93" color: yellow info1: "visited: 19
-irg:     main
+irg:     ENDLESS_LOOP_EXAMPLE_main
 "}
 edge: {sourcename: "n93" targetname: "n79" label: "0" }
 node: {title: "n91" label: "0x1Is  91" color: yellow info1: "visited: 19
-irg:     main
+irg:     ENDLESS_LOOP_EXAMPLE_main
 Const of type type_unknown
 "}
 node: {title: "n78" label: "ProjX 0 78" color: yellow info1: "visited: 19
-irg:     main
+irg:     ENDLESS_LOOP_EXAMPLE_main
 "}
 edge: {sourcename: "n78" targetname: "n79" label: "0" color: red}
 node: {title: "n79" label: "Start  79" color: blue info1: "visited: 19
-irg:     main
+irg:     ENDLESS_LOOP_EXAMPLE_main
 start of method of type main_tp
   param 0 type: int
 "}
@@ -100,7 +100,7 @@ start of method of type main_tp
 
 graph: { title: "n75"  label: "Block 75" status:clustered color:yellow
 node: {title: "n74" label: "End  74" color: blue info1: "visited: 19
-irg:     main
+irg:     ENDLESS_LOOP_EXAMPLE_main
 "}
 edge: {sourcename: "n74" targetname: "n80" label: "0" color: red}
 edge: {sourcename: "n74" targetname: "n86" label: "1" }

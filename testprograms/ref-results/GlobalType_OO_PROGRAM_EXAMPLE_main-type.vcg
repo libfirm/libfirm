@@ -53,7 +53,7 @@ node: {title: "t12" label: "primitive int" info1: "state: layout_fixed,
 mode: Is,
 size: 4B,
 "}
-node: {title: "e18" label: "ent set_a" color: yellow
+node: {title: "e18" label: "ent PRIMA_set_a" color: yellow
  info1: "
 id: e18
 allocation:  allocation_static
@@ -61,7 +61,7 @@ visibility:  visibility_local
 variability: variability_constant
 volatility:  volatility_non_volatile
 peculiarity: peculiarity_existent
-name:    set_a
+name:    PRIMA_set_a
 ld_name: PRIMA_set_a
 offset:  -1
 irg = g71"
@@ -77,7 +77,7 @@ size: 4B,
 "}
 edge: { sourcename: "t16" targetname: "t14"class: 5 label: "param 0" color: green}
 edge: { sourcename: "t16" targetname: "t12"class: 5 label: "param 1" color: green}
-node: {title: "e21" label: "ent c" color: yellow
+node: {title: "e21" label: "ent PRIMA_c" color: yellow
  info1: "
 id: e21
 allocation:  allocation_static
@@ -85,7 +85,7 @@ visibility:  visibility_local
 variability: variability_constant
 volatility:  volatility_non_volatile
 peculiarity: peculiarity_existent
-name:    c
+name:    PRIMA_c
 ld_name: PRIMA_c
 offset:  -1
 irg = g94"
@@ -95,7 +95,7 @@ edge: { sourcename: "e21" targetname: "n20"label: "value 0"}
 node: {title: "n20" label: "&(PRIMA_c)P  20" color: yellow info1: "visited: 7
 Const of type type_unknown
 "}
-node: {title: "e24" label: "ent OO_PROGRAM_EXAMPLE_main" color: yellow
+node: {title: "e24" label: "ent GlobalType_OO_PROGRAM_EXAMPLE_main" color: yellow
  info1: "
 id: e24
 allocation:  allocation_static
@@ -103,7 +103,7 @@ visibility:  visibility_local
 variability: variability_constant
 volatility:  volatility_non_volatile
 peculiarity: peculiarity_existent
-name:    OO_PROGRAM_EXAMPLE_main
+name:    GlobalType_OO_PROGRAM_EXAMPLE_main
 ld_name: GlobalType_OO_PROGRAM_EXAMPLE_main
 offset:  -1
 irg = g37"

@@ -18,42 +18,42 @@ classname 11: "Overwrites"
 classname 12: "Member"
 
 node: {title: "n157" label: "Block  157" color: lightyellow info1: "visited: 10
-irg:     c
+irg:     PRIMA_c
 "}
 edge: {sourcename: "n157" targetname: "n156" label: "0" color: red}
 node: {title: "n158" label: "Start  158" color: blue info1: "visited: 10
-irg:     c
+irg:     PRIMA_c
 start of method of type c
   param 0 type: class_prima_ptr
   param 1 type: int
 "}
 edge: { sourcename: "n158" targetname: "n157" class: 2 priority: 2 linestyle: dotted}
 node: {title: "n156" label: "ProjX 0 156" color: yellow info1: "visited: 10
-irg:     c
+irg:     PRIMA_c
 "}
 edge: {sourcename: "n156" targetname: "n158" label: "0" color: red}
 edge: { sourcename: "n156" targetname: "n157" class: 2 priority: 2 linestyle: dotted}
 node: {title: "n155" label: "Block  155" color: lightyellow info1: "visited: 10
-irg:     c
+irg:     PRIMA_c
 "}
 edge: {sourcename: "n155" targetname: "n156" label: "0" color: red}
 node: {title: "n164" label: "ProjT 4 164" color: yellow info1: "visited: 10
-irg:     c
+irg:     PRIMA_c
 "}
 edge: {sourcename: "n164" targetname: "n158" label: "0" }
 edge: { sourcename: "n164" targetname: "n157" class: 2 priority: 2 linestyle: dotted}
 node: {title: "n163" label: "ProjP 0 163" color: yellow info1: "visited: 10
-irg:     c
+irg:     PRIMA_c
 "}
 edge: {sourcename: "n163" targetname: "n164" label: "0" }
 edge: { sourcename: "n163" targetname: "n155" class: 2 priority: 2 linestyle: dotted}
 node: {title: "n165" label: "ProjM 1 165" color: yellow info1: "visited: 10
-irg:     c
+irg:     PRIMA_c
 "}
 edge: {sourcename: "n165" targetname: "n158" label: "0" color: blue}
 edge: { sourcename: "n165" targetname: "n157" class: 2 priority: 2 linestyle: dotted}
 node: {title: "n162" label: "Sel a 162"  info1: "visited: 10
-irg:     c
+irg:     PRIMA_c
 Selecting entity of type int
   from entity of type PRIMA
 "}
@@ -61,34 +61,34 @@ edge: {sourcename: "n162" targetname: "n165" label: "0" color: blue}
 edge: {sourcename: "n162" targetname: "n163" label: "1" }
 edge: { sourcename: "n162" targetname: "n155" class: 2 priority: 2 linestyle: dotted}
 node: {title: "n161" label: "Load  161"  info1: "visited: 10
-irg:     c
+irg:     PRIMA_c
 "}
 edge: {sourcename: "n161" targetname: "n165" label: "0" color: blue}
 edge: {sourcename: "n161" targetname: "n162" label: "1" }
 edge: { sourcename: "n161" targetname: "n155" class: 2 priority: 2 linestyle: dotted}
 node: {title: "n160" label: "ProjIs 2 160" color: yellow info1: "visited: 10
-irg:     c
+irg:     PRIMA_c
 "}
 edge: {sourcename: "n160" targetname: "n161" label: "0" }
 edge: { sourcename: "n160" targetname: "n155" class: 2 priority: 2 linestyle: dotted}
 node: {title: "n166" label: "ProjIs 1 166" color: yellow info1: "visited: 10
-irg:     c
+irg:     PRIMA_c
 "}
 edge: {sourcename: "n166" targetname: "n164" label: "0" }
 edge: { sourcename: "n166" targetname: "n155" class: 2 priority: 2 linestyle: dotted}
 node: {title: "n159" label: "AddIs  159"  info1: "visited: 10
-irg:     c
+irg:     PRIMA_c
 "}
 edge: {sourcename: "n159" targetname: "n166" label: "0" }
 edge: {sourcename: "n159" targetname: "n160" label: "1" }
 edge: { sourcename: "n159" targetname: "n155" class: 2 priority: 2 linestyle: dotted}
 node: {title: "n167" label: "ProjM 0 167" color: yellow info1: "visited: 10
-irg:     c
+irg:     PRIMA_c
 "}
 edge: {sourcename: "n167" targetname: "n161" label: "0" color: blue}
 edge: { sourcename: "n167" targetname: "n155" class: 2 priority: 2 linestyle: dotted}
 node: {title: "n154" label: "Return  154"  info1: "visited: 10
-irg:     c
+irg:     PRIMA_c
 return in method of type c
   res 0 type: int
 "}
@@ -96,11 +96,11 @@ edge: {sourcename: "n154" targetname: "n167" label: "0" color: blue}
 edge: {sourcename: "n154" targetname: "n159" label: "1" }
 edge: { sourcename: "n154" targetname: "n155" class: 2 priority: 2 linestyle: dotted}
 node: {title: "n153" label: "Block  153" color: lightyellow info1: "visited: 10
-irg:     c
+irg:     PRIMA_c
 "}
 edge: {sourcename: "n153" targetname: "n154" label: "0" color: red}
 node: {title: "n152" label: "End  152" color: blue info1: "visited: 10
-irg:     c
+irg:     PRIMA_c
 "}
 edge: { sourcename: "n152" targetname: "n153" class: 2 priority: 2 linestyle: dotted}
 node: {title: "e15" label: "ent a" color: yellow
@@ -123,7 +123,7 @@ peculiarity: peculiarity_existent
 edge: { sourcename: "t13" targetname: "e15"class: 12 label: "member" color:blue}
 edge: { sourcename: "t13" targetname: "e18"class: 12 label: "member" color:blue}
 edge: { sourcename: "t13" targetname: "e21"class: 12 label: "member" color:blue}
-node: {title: "e18" label: "ent set_a" color: yellow
+node: {title: "e18" label: "ent PRIMA_set_a" color: yellow
  info1: "
 id: e18
 allocation:  allocation_static
@@ -131,7 +131,7 @@ visibility:  visibility_local
 variability: variability_constant
 volatility:  volatility_non_volatile
 peculiarity: peculiarity_existent
-name:    set_a
+name:    PRIMA_set_a
 ld_name: PRIMA_set_a
 offset:  -1
 irg = g71"
@@ -156,7 +156,7 @@ node: {title: "t12" label: "primitive int" info1: "state: layout_fixed,
 mode: Is,
 size: 4B,
 "}
-node: {title: "e21" label: "ent c" color: yellow
+node: {title: "e21" label: "ent PRIMA_c" color: yellow
  info1: "
 id: e21
 allocation:  allocation_static
@@ -164,7 +164,7 @@ visibility:  visibility_local
 variability: variability_constant
 volatility:  volatility_non_volatile
 peculiarity: peculiarity_existent
-name:    c
+name:    PRIMA_c
 ld_name: PRIMA_c
 offset:  -1
 irg = g94"

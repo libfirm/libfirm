@@ -61,7 +61,7 @@ edge: {sourcename: "n116" targetname: "n123" label: "0" color: blue}
 edge: {sourcename: "n116" targetname: "n122" label: "1" }
 edge: {sourcename: "n116" targetname: "n118" label: "2" }
 edge: {sourcename: "n116" targetname: "n116n117" label: "3" }
-node: {title: "n122" label: "Sel c 122"  info1: "visited: 16
+node: {title: "n122" label: "Sel PRIMA_c 122"  info1: "visited: 16
 irg:     OO_PROGRAM_EXAMPLE_main
 Selecting entity of type c
   from entity of type PRIMA
@@ -86,7 +86,7 @@ edge: {sourcename: "n124" targetname: "n127" label: "0" color: blue}
 edge: {sourcename: "n124" targetname: "n126" label: "1" }
 edge: {sourcename: "n124" targetname: "n118" label: "2" }
 edge: {sourcename: "n124" targetname: "n124n125" label: "3" }
-node: {title: "n126" label: "Sel set_a 126"  info1: "visited: 16
+node: {title: "n126" label: "Sel PRIMA_set_a 126"  info1: "visited: 16
 irg:     OO_PROGRAM_EXAMPLE_main
 Selecting entity of type set_a
   from entity of type PRIMA
