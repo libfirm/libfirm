@@ -198,6 +198,8 @@ bool    is_class_type(type *clss);
  *  	     type_pointer, type_primitive.
  *           This is a dynamic list that can be grown with an "add_" function,
  *           but not shrinked.
+ *           This is a dynamic list that can be grown with an "add_" function,
+ *           but not shrinked.
  * SOURCE
  */
 /* create a new type struct */
@@ -268,10 +270,11 @@ bool  is_method_type     (type *method);
  * ATTRIBUTES
  *   n_types        Number of unioned types.
  *   members        Entities for unioned types.  Fixed length array.
+ *                  This is a dynamic list that can be grown with an "add_" function,
+ *                  but not shrinked.
  * SOURCE
  */
-/* create a new type union
-   The array with the entities is not initalized by the constructor. */
+/* create a new type union  */
 type   *new_type_union (ident *name);
 
 /* manipulate private fields of struct */
