@@ -23,14 +23,17 @@
 #endif
 #endif
 
-/** a list of firm kinds */
+/** a list of firm kinds
+ @@@ not all datatypes are tagged yet. */
 typedef enum {
   k_entity,     /**< an entity */
   k_type,       /**< a type */
+  k_ir_graph,   /**< an ir graph */
   k_ir_node,    /**< an ir node */
+  k_ir_mode,    /**< an ir mode */
+  k_ir_op,      /**< an ir opcode */
+  k_tarval,     /**< a tarval */
   k_ir_loop,    /**< a loop */
-  k_ir_mode,    /**< a ir mode */
-  k_tarval      /**< a tarval */
 } firm_kind;
 
 /**
