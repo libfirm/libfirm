@@ -286,8 +286,13 @@ static tarval *computed_value_Eor(ir_node *n)
   ir_node *a = get_Eor_left(n);
   ir_node *b = get_Eor_right(n);
 
-  tarval *ta = value_of(a);
-  tarval *tb = value_of(b);
+  tarval *ta, *tb;
+
+  if (a == b)
+    return get_tarval_null(get_irn_mode(n));
+
+  ta = value_of(a);
+  tb = value_of(b);
 
   if ((ta != tarval_bad) && (tb != tarval_bad)) {
     return tarval_eor (ta, tb);
@@ -652,26 +657,6 @@ static ir_node *equivalent_node_Cond(ir_node *n)
 }
 
 /**
- * Use algebraic simplification a v a = a.
- */
-static ir_node *equivalent_node_Or(ir_node *n)
-{
-  ir_node *oldn = n;
-
-  ir_node *a = get_Or_left(n);
-  ir_node *b = get_Or_right(n);
-
-  /* remove a v a */
-  if (a == b) {
-    n = a;
-
-    DBG_OPT_ALGSIM1(oldn, a, b, n);
-  }
-
-  return n;
-}
-
-/**
  * optimize operations that are commutative and have neutral 0,
  * so a op 0 = 0 op a = a.
  */
@@ -818,6 +803,29 @@ static ir_node *equivalent_node_DivMod(ir_node *n)
     set_Tuple_pred(n, pn_DivMod_res_div,  a);
     set_Tuple_pred(n, pn_DivMod_res_mod,  new_Const(mode, get_mode_null(mode)));
   }
+  return n;
+}
+
+/**
+ * Use algebraic simplification a | a = a | 0 = 0 | a = a.
+ */
+static ir_node *equivalent_node_Or(ir_node *n)
+{
+  ir_node *oldn = n;
+
+  ir_node *a = get_Or_left(n);
+  ir_node *b = get_Or_right(n);
+
+  if (a == b) {
+    n = a;    /* Or has it's own neutral element */
+  } else if (classify_tarval(value_of(a)) == TV_CLASSIFY_NULL) {
+    n = b;
+    DBG_OPT_ALGSIM1(oldn, a, b, n);
+  } else if (classify_tarval(value_of(b)) == TV_CLASSIFY_NULL) {
+    n = a;
+    DBG_OPT_ALGSIM1(oldn, a, b, n);
+  }
+
   return n;
 }
 
@@ -1307,9 +1315,13 @@ static ir_node *transform_node_Not(ir_node *n)
   return n;
 }
 
+/**
+ * Transform a Cast of a Const into a new Const
+ */
 static ir_node *transform_node_Cast(ir_node *n) {
   ir_node *pred = get_Cast_op(n);
   type *tp = get_irn_type(pred);
+
   if (get_irn_op(pred) == op_Const && get_Const_type(pred) != tp) {
     n = new_rd_Const_type(NULL, current_ir_graph, get_nodes_block(pred), get_irn_mode(pred),
 			  get_Const_tarval(pred), tp);
