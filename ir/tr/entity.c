@@ -761,13 +761,13 @@ int  get_compound_ent_value_offset_bits(entity *ent, int pos) {
     type *node_tp = get_entity_type(node);
     type *owner_tp = get_entity_owner(node);
     if (is_array_type(owner_tp)) {
-      int size  = get_mode_size_bits (get_type_mode(node_tp));
-      int align = get_mode_align_bits(get_type_mode(node_tp));
+      int size  = get_type_size_bits(node_tp);
+      int align = get_type_alignment_bits(node_tp);
       if (size < align)
-    size = align;
+        size = align;
       else {
-    assert(size % align == 0);
-    /* ansonsten aufrunden */
+        assert(size % align == 0);
+        /* ansonsten aufrunden */
       }
       offset += size * get_compound_graph_path_array_index(path, i);
     } else {
