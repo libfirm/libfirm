@@ -19,6 +19,8 @@ classname 9: "Points-to"
 classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
+infoname 1: "Attribute"
+infoname 2: "Verification errors"
 
 node: {title: "e18" label: "ent a_elem_ent" color: yellow
  info1: "
@@ -40,14 +42,14 @@ edge: { sourcename: "t15" targetname: "t11"class: 10 label: "arr elt tp" color:g
 edge: { sourcename: "t15" targetname: "e18"class: 10 label: "arr ent" color: green}
 edge: { sourcename: "n19" targetname: "t15"label: "upper 0"}
 edge: { sourcename: "n20" targetname: "t15"label: "lower 0"}
-node: {title: "n19" label: "0x9Iu  19" color: yellow info1: "visited: 1
+node: {title: "n19" label: "0x9Iu  19"  info1: "visited: 1
 arity: 0
 Const of type type_unknown
-"}
-node: {title: "n20" label: "0x0Iu  20" color: yellow info1: "visited: 1
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
+node: {title: "n20" label: "0x0Iu  20"  info1: "visited: 1
 arity: 0
 Const of type type_unknown
-"}
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
 node: {title: "t11" label: "primitive int" info1: "state: layout_fixed,
 mode: Is,
 size: 4B,
@@ -67,10 +69,10 @@ irg = g32"
 }
 edge: { sourcename: "e14" targetname: "t12"class: 3 label: "type" color: red}
 edge: { sourcename: "e14" targetname: "n13"label: "value 0"}
-node: {title: "n13" label: "&(GlobalType_ARRAY-HEAP_EXAMPLE_main)P  13" color: yellow info1: "visited: 1
+node: {title: "n13" label: "&(GlobalType_ARRAY-HEAP_EXAMPLE_main)P  13"  info1: "visited: 1
 arity: 0
 Const of type type_unknown
-"}
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
 node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1B,
 peculiarity: peculiarity_existent
@@ -79,6 +81,9 @@ edge: { sourcename: "t0" targetname: "e14"class: 12 label: "member" color:blue}
 node: {title: "t12" label: "method ARRAY-HEAP_EXAMPLE_main" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
+variadicity: variadicity_non_variadic
+params: 0
+results: 1
 "}
 edge: { sourcename: "t12" targetname: "t11"class: 6 label: "res 0" color: green}
 node: {title: "t21" label: "class ARRAY-HEAP_EXAMPLE_mainframe_tp" info1: "state: layout_undefined

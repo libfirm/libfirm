@@ -19,53 +19,55 @@ classname 9: "Points-to"
 classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
+infoname 1: "Attribute"
+infoname 2: "Verification errors"
 
-node: {title: "n134" label: "Block  134" color: lightyellow info1: "visited: 10
+node: {title: "n134" label: "Block  134"  info1: "visited: 10
 irg:     PRIMA_set_a
 arity: 1 backedges:
-"}
+" info2: "((get_irn_irg(n) && get_irn_irg(n) == irg)) && Block node has wrong irg attribute"color: lightyellow}
 edge: {sourcename: "n134" targetname: "n133" label: "0" class:13 color:red}
-node: {title: "n135" label: "Start  135" color: blue info1: "visited: 10
+node: {title: "n135" label: "Start  135"  info1: "visited: 10
 irg:     PRIMA_set_a
 arity: 0
 start of method of type set_a
   param 0 type: class_prima_ptr
   param 1 type: int
-"}
+" info2: "mymode == mode_T && Start node"color: blue}
 edge: { sourcename: "n135" targetname: "n134" class:2 priority:2 linestyle:dotted}
-node: {title: "n133" label: "ProjX 0 133" color: yellow info1: "visited: 10
+node: {title: "n133" label: "ProjX 0 133"  info1: "visited: 10
 irg:     PRIMA_set_a
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n133" targetname: "n135" label: "0" class:13 color:red}
 edge: { sourcename: "n133" targetname: "n134" class:2 priority:2 linestyle:dotted}
-node: {title: "n132" label: "Block  132" color: lightyellow info1: "visited: 10
+node: {title: "n132" label: "Block  132"  info1: "visited: 10
 irg:     PRIMA_set_a
 arity: 1 backedges:
-"}
+" info2: "((get_irn_irg(n) && get_irn_irg(n) == irg)) && Block node has wrong irg attribute"color: lightyellow}
 edge: {sourcename: "n132" targetname: "n133" label: "0" class:13 color:red}
-node: {title: "n139" label: "ProjT 4 139" color: yellow info1: "visited: 10
+node: {title: "n139" label: "ProjT 4 139"  info1: "visited: 10
 irg:     PRIMA_set_a
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n139" targetname: "n135" label: "0" }
 edge: { sourcename: "n139" targetname: "n134" class:2 priority:2 linestyle:dotted}
-node: {title: "n138" label: "ProjIs 1 138" color: yellow info1: "visited: 10
+node: {title: "n138" label: "ProjIs 1 138"  info1: "visited: 10
 irg:     PRIMA_set_a
 arity: 1
-"}
+" info2: "(mode == get_type_mode(get_method_param_type(mt, proj))) && Mode of Proj from Start doesn't match mode of param type."color: yellow}
 edge: {sourcename: "n138" targetname: "n139" label: "0" }
 edge: { sourcename: "n138" targetname: "n132" class:2 priority:2 linestyle:dotted}
-node: {title: "n141" label: "ProjP 0 141" color: yellow info1: "visited: 10
+node: {title: "n141" label: "ProjP 0 141"  info1: "visited: 10
 irg:     PRIMA_set_a
 arity: 1
-"}
+" info2: "(mode == get_type_mode(get_method_param_type(mt, proj))) && Mode of Proj from Start doesn't match mode of param type."color: yellow}
 edge: {sourcename: "n141" targetname: "n139" label: "0" }
 edge: { sourcename: "n141" targetname: "n132" class:2 priority:2 linestyle:dotted}
-node: {title: "n142" label: "ProjM 1 142" color: yellow info1: "visited: 10
+node: {title: "n142" label: "ProjM 1 142"  info1: "visited: 10
 irg:     PRIMA_set_a
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n142" targetname: "n135" label: "0" class:14 color:blue}
 edge: { sourcename: "n142" targetname: "n134" class:2 priority:2 linestyle:dotted}
 node: {title: "n140" label: "Sel a 140"  info1: "visited: 10
@@ -80,33 +82,33 @@ edge: { sourcename: "n140" targetname: "n132" class:2 priority:2 linestyle:dotte
 node: {title: "n137" label: "Store  137"  info1: "visited: 10
 irg:     PRIMA_set_a
 arity: 3
-"}
+" info2: "mymode == mode_T && Store node"}
 edge: {sourcename: "n137" targetname: "n142" label: "0" class:14 color:blue}
 edge: {sourcename: "n137" targetname: "n140" label: "1" }
 edge: {sourcename: "n137" targetname: "n138" label: "2" }
 edge: { sourcename: "n137" targetname: "n132" class:2 priority:2 linestyle:dotted}
-node: {title: "n136" label: "ProjM 0 136" color: yellow info1: "visited: 10
+node: {title: "n136" label: "ProjM 0 136"  info1: "visited: 10
 irg:     PRIMA_set_a
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n136" targetname: "n137" label: "0" class:14 color:blue}
 edge: { sourcename: "n136" targetname: "n132" class:2 priority:2 linestyle:dotted}
 node: {title: "n131" label: "Return  131"  info1: "visited: 10
 irg:     PRIMA_set_a
 arity: 1
 return in method of type set_a
-"}
+" info2: "mymode == mode_X && Result X"}
 edge: {sourcename: "n131" targetname: "n136" label: "0" class:14 color:blue}
 edge: { sourcename: "n131" targetname: "n132" class:2 priority:2 linestyle:dotted}
-node: {title: "n130" label: "Block  130" color: lightyellow info1: "visited: 10
+node: {title: "n130" label: "Block  130"  info1: "visited: 10
 irg:     PRIMA_set_a
 arity: 1 backedges:
-"}
+" info2: "((get_irn_irg(n) && get_irn_irg(n) == irg)) && Block node has wrong irg attribute"color: lightyellow}
 edge: {sourcename: "n130" targetname: "n131" label: "0" class:13 color:red}
-node: {title: "n129" label: "End  129" color: blue info1: "visited: 10
+node: {title: "n129" label: "End  129"  info1: "visited: 10
 irg:     PRIMA_set_a
 arity: 0
-"}
+"color: blue}
 edge: { sourcename: "n129" targetname: "n130" class:2 priority:2 linestyle:dotted}
 node: {title: "e14" label: "ent a" color: yellow
  info1: "
@@ -143,13 +145,16 @@ irg = g68"
 }
 edge: { sourcename: "e17" targetname: "t15"class: 3 label: "type" color: red}
 edge: { sourcename: "e17" targetname: "n16"label: "value 0"}
-node: {title: "n16" label: "&(PRIMA_set_a)P  16" color: yellow info1: "visited: 2
+node: {title: "n16" label: "&(PRIMA_set_a)P  16"  info1: "visited: 2
 arity: 0
 Const of type type_unknown
-"}
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
 node: {title: "t15" label: "method set_a" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
+variadicity: variadicity_non_variadic
+params: 2
+results: 0
 "}
 edge: { sourcename: "t15" targetname: "t13"class: 5 label: "param 0" color: green}
 edge: { sourcename: "t15" targetname: "t11"class: 5 label: "param 1" color: green}
@@ -177,13 +182,16 @@ irg = g90"
 }
 edge: { sourcename: "e20" targetname: "t18"class: 3 label: "type" color: red}
 edge: { sourcename: "e20" targetname: "n19"label: "value 0"}
-node: {title: "n19" label: "&(PRIMA_c)P  19" color: yellow info1: "visited: 2
+node: {title: "n19" label: "&(PRIMA_c)P  19"  info1: "visited: 2
 arity: 0
 Const of type type_unknown
-"}
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
 node: {title: "t18" label: "method c" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
+variadicity: variadicity_non_variadic
+params: 2
+results: 1
 "}
 edge: { sourcename: "t18" targetname: "t13"class: 5 label: "param 0" color: green}
 edge: { sourcename: "t18" targetname: "t11"class: 5 label: "param 1" color: green}

@@ -19,14 +19,16 @@ classname 9: "Points-to"
 classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
+infoname 1: "Attribute"
+infoname 2: "Verification errors"
 
 graph: { title: "g26" label: "IF_EXAMPLE_main" status:clustered color:white
 graph: { title: "n16"  label: "Block 16" status:clustered color:yellow
 edge: {sourcename: "n16" targetname: "n50" label: "0" class:13 color:red}
-node: {title: "n17" label: "End  17" color: blue info1: "visited: 8
+node: {title: "n17" label: "End  17"  info1: "visited: 8
 irg:     IF_EXAMPLE_main
 arity: 0
-"}
+"color: blue}
 }
 
 graph: { title: "n41"  label: "Block 41" status:clustered color:yellow
@@ -37,13 +39,13 @@ irg:     IF_EXAMPLE_main
 arity: 2
 return in method of type IF_EXAMPLE_main
   res 0 type: int
-"}
+" info2: "mymode == mode_X && Result X"}
 edge: {sourcename: "n50" targetname: "n22" label: "0" class:14 color:blue}
 edge: {sourcename: "n50" targetname: "n43" label: "1" }
-node: {title: "n43" label: "PhiIs  43" color: green info1: "visited: 8
+node: {title: "n43" label: "PhiIs  43"  info1: "visited: 8
 irg:     IF_EXAMPLE_main
 arity: 2 backedges:
-"}
+" info2: "mode_is_dataM(mymode) && Phi node"color: green}
 edge: {sourcename: "n43" targetname: "n28" label: "0" }
 edge: {sourcename: "n43" targetname: "n38" label: "1" }
 }
@@ -59,30 +61,30 @@ edge: {sourcename: "n38" targetname: "n36" label: "1" }
 node: {title: "n40" label: "Jmp  40"  info1: "visited: 8
 irg:     IF_EXAMPLE_main
 arity: 0
-"}
+" info2: "mymode == mode_X && Jmp node"}
 }
 
 graph: { title: "n27"  label: "Block 27" status:clustered color:yellow
 edge: {sourcename: "n27" targetname: "n21" label: "0" class:13 color:red}
-node: {title: "n33" label: "ProjX 0 33" color: yellow info1: "visited: 8
+node: {title: "n33" label: "ProjX 0 33"  info1: "visited: 8
 irg:     IF_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n33" targetname: "n32" label: "0" class:13 color:red}
-node: {title: "n34" label: "ProjX 1 34" color: yellow info1: "visited: 8
+node: {title: "n34" label: "ProjX 1 34"  info1: "visited: 8
 irg:     IF_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n34" targetname: "n32" label: "0" class:13 color:red}
 node: {title: "n32" label: "Cond  32"  info1: "visited: 8
 irg:     IF_EXAMPLE_main
 arity: 1
-"}
+" info2: "mymode == mode_T && Cond mode is not a tuple"}
 edge: {sourcename: "n32" targetname: "n31" label: "0" }
-node: {title: "n31" label: "Projb Eq 31" color: yellow info1: "visited: 8
+node: {title: "n31" label: "Projb Eq 31"  info1: "visited: 8
 irg:     IF_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n31" targetname: "n30" label: "0" }
 node: {title: "n30" label: "CmpT  30"  info1: "visited: 8
 irg:     IF_EXAMPLE_main
@@ -90,46 +92,46 @@ arity: 2
 "}
 edge: {sourcename: "n30" targetname: "n28" label: "0" }
 edge: {sourcename: "n30" targetname: "n29" label: "1" }
-node: {title: "n28" label: "ProjIs 0 28" color: yellow info1: "visited: 8
+node: {title: "n28" label: "ProjIs 0 28"  info1: "visited: 8
 irg:     IF_EXAMPLE_main
 arity: 1
-"}
+" info2: "(mode == get_type_mode(get_method_param_type(mt, proj))) && Mode of Proj from Start doesn't match mode of param type."color: yellow}
 edge: {sourcename: "n28" targetname: "n25" label: "0" }
 }
 
 graph: { title: "n18"  label: "Block 18" status:clustered color:yellow
 edge: {sourcename: "n18" targetname: "n21" label: "0" class:13 color:red}
-node: {title: "n22" label: "ProjM 1 22" color: yellow info1: "visited: 8
+node: {title: "n22" label: "ProjM 1 22"  info1: "visited: 8
 irg:     IF_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n22" targetname: "n19" label: "0" class:14 color:blue}
-node: {title: "n36" label: "0x3Is  36" color: yellow info1: "visited: 8
+node: {title: "n36" label: "0x3Is  36"  info1: "visited: 8
 irg:     IF_EXAMPLE_main
 arity: 0
 Const of type type_unknown
-"}
-node: {title: "n25" label: "ProjT 4 25" color: yellow info1: "visited: 8
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
+node: {title: "n25" label: "ProjT 4 25"  info1: "visited: 8
 irg:     IF_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n25" targetname: "n19" label: "0" }
-node: {title: "n29" label: "0x2Is  29" color: yellow info1: "visited: 8
+node: {title: "n29" label: "0x2Is  29"  info1: "visited: 8
 irg:     IF_EXAMPLE_main
 arity: 0
 Const of type type_unknown
-"}
-node: {title: "n21" label: "ProjX 0 21" color: yellow info1: "visited: 8
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
+node: {title: "n21" label: "ProjX 0 21"  info1: "visited: 8
 irg:     IF_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n21" targetname: "n19" label: "0" class:13 color:red}
-node: {title: "n19" label: "Start  19" color: blue info1: "visited: 8
+node: {title: "n19" label: "Start  19"  info1: "visited: 8
 irg:     IF_EXAMPLE_main
 arity: 0
 start of method of type IF_EXAMPLE_main
   param 0 type: int
-"}
+" info2: "mymode == mode_T && Start node"color: blue}
 }
 
 }

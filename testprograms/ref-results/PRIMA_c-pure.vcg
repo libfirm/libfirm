@@ -19,47 +19,49 @@ classname 9: "Points-to"
 classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
+infoname 1: "Attribute"
+infoname 2: "Verification errors"
 
-node: {title: "n151" label: "Block  151" color: lightyellow info1: "visited: 8
+node: {title: "n151" label: "Block  151"  info1: "visited: 8
 irg:     PRIMA_c
 arity: 1 backedges:
-"}
+" info2: "((get_irn_irg(n) && get_irn_irg(n) == irg)) && Block node has wrong irg attribute"color: lightyellow}
 edge: {sourcename: "n151" targetname: "n150" label: "0" class:13 color:red}
-node: {title: "n152" label: "Start  152" color: blue info1: "visited: 8
+node: {title: "n152" label: "Start  152"  info1: "visited: 8
 irg:     PRIMA_c
 arity: 0
 start of method of type c
   param 0 type: class_prima_ptr
   param 1 type: int
-"}
+" info2: "mymode == mode_T && Start node"color: blue}
 edge: { sourcename: "n152" targetname: "n151" class:2 priority:2 linestyle:dotted}
-node: {title: "n150" label: "ProjX 0 150" color: yellow info1: "visited: 8
+node: {title: "n150" label: "ProjX 0 150"  info1: "visited: 8
 irg:     PRIMA_c
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n150" targetname: "n152" label: "0" class:13 color:red}
 edge: { sourcename: "n150" targetname: "n151" class:2 priority:2 linestyle:dotted}
-node: {title: "n149" label: "Block  149" color: lightyellow info1: "visited: 8
+node: {title: "n149" label: "Block  149"  info1: "visited: 8
 irg:     PRIMA_c
 arity: 1 backedges:
-"}
+" info2: "((get_irn_irg(n) && get_irn_irg(n) == irg)) && Block node has wrong irg attribute"color: lightyellow}
 edge: {sourcename: "n149" targetname: "n150" label: "0" class:13 color:red}
-node: {title: "n158" label: "ProjT 4 158" color: yellow info1: "visited: 8
+node: {title: "n158" label: "ProjT 4 158"  info1: "visited: 8
 irg:     PRIMA_c
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n158" targetname: "n152" label: "0" }
 edge: { sourcename: "n158" targetname: "n151" class:2 priority:2 linestyle:dotted}
-node: {title: "n157" label: "ProjP 0 157" color: yellow info1: "visited: 8
+node: {title: "n157" label: "ProjP 0 157"  info1: "visited: 8
 irg:     PRIMA_c
 arity: 1
-"}
+" info2: "(mode == get_type_mode(get_method_param_type(mt, proj))) && Mode of Proj from Start doesn't match mode of param type."color: yellow}
 edge: {sourcename: "n157" targetname: "n158" label: "0" }
 edge: { sourcename: "n157" targetname: "n149" class:2 priority:2 linestyle:dotted}
-node: {title: "n159" label: "ProjM 1 159" color: yellow info1: "visited: 8
+node: {title: "n159" label: "ProjM 1 159"  info1: "visited: 8
 irg:     PRIMA_c
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n159" targetname: "n152" label: "0" class:14 color:blue}
 edge: { sourcename: "n159" targetname: "n151" class:2 priority:2 linestyle:dotted}
 node: {title: "n156" label: "Sel a 156"  info1: "visited: 8
@@ -74,20 +76,20 @@ edge: { sourcename: "n156" targetname: "n149" class:2 priority:2 linestyle:dotte
 node: {title: "n155" label: "Load  155"  info1: "visited: 8
 irg:     PRIMA_c
 arity: 2
-"}
+" info2: "mymode == mode_T && Load node"}
 edge: {sourcename: "n155" targetname: "n159" label: "0" class:14 color:blue}
 edge: {sourcename: "n155" targetname: "n156" label: "1" }
 edge: { sourcename: "n155" targetname: "n149" class:2 priority:2 linestyle:dotted}
-node: {title: "n154" label: "ProjIs 2 154" color: yellow info1: "visited: 8
+node: {title: "n154" label: "ProjIs 2 154"  info1: "visited: 8
 irg:     PRIMA_c
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n154" targetname: "n155" label: "0" }
 edge: { sourcename: "n154" targetname: "n149" class:2 priority:2 linestyle:dotted}
-node: {title: "n160" label: "ProjIs 1 160" color: yellow info1: "visited: 8
+node: {title: "n160" label: "ProjIs 1 160"  info1: "visited: 8
 irg:     PRIMA_c
 arity: 1
-"}
+" info2: "(mode == get_type_mode(get_method_param_type(mt, proj))) && Mode of Proj from Start doesn't match mode of param type."color: yellow}
 edge: {sourcename: "n160" targetname: "n158" label: "0" }
 edge: { sourcename: "n160" targetname: "n149" class:2 priority:2 linestyle:dotted}
 node: {title: "n153" label: "AddIs  153"  info1: "visited: 8
@@ -97,10 +99,10 @@ arity: 2
 edge: {sourcename: "n153" targetname: "n160" label: "0" }
 edge: {sourcename: "n153" targetname: "n154" label: "1" }
 edge: { sourcename: "n153" targetname: "n149" class:2 priority:2 linestyle:dotted}
-node: {title: "n161" label: "ProjM 0 161" color: yellow info1: "visited: 8
+node: {title: "n161" label: "ProjM 0 161"  info1: "visited: 8
 irg:     PRIMA_c
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n161" targetname: "n155" label: "0" class:14 color:blue}
 edge: { sourcename: "n161" targetname: "n149" class:2 priority:2 linestyle:dotted}
 node: {title: "n148" label: "Return  148"  info1: "visited: 8
@@ -108,18 +110,18 @@ irg:     PRIMA_c
 arity: 2
 return in method of type c
   res 0 type: int
-"}
+" info2: "mymode == mode_X && Result X"}
 edge: {sourcename: "n148" targetname: "n161" label: "0" class:14 color:blue}
 edge: {sourcename: "n148" targetname: "n153" label: "1" }
 edge: { sourcename: "n148" targetname: "n149" class:2 priority:2 linestyle:dotted}
-node: {title: "n147" label: "Block  147" color: lightyellow info1: "visited: 8
+node: {title: "n147" label: "Block  147"  info1: "visited: 8
 irg:     PRIMA_c
 arity: 1 backedges:
-"}
+" info2: "((get_irn_irg(n) && get_irn_irg(n) == irg)) && Block node has wrong irg attribute"color: lightyellow}
 edge: {sourcename: "n147" targetname: "n148" label: "0" class:13 color:red}
-node: {title: "n146" label: "End  146" color: blue info1: "visited: 8
+node: {title: "n146" label: "End  146"  info1: "visited: 8
 irg:     PRIMA_c
 arity: 0
-"}
+"color: blue}
 edge: { sourcename: "n146" targetname: "n147" class:2 priority:2 linestyle:dotted}
 }

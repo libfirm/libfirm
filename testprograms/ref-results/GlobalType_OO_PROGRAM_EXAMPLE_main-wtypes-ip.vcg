@@ -19,14 +19,16 @@ classname 9: "Points-to"
 classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
+infoname 1: "Attribute"
+infoname 2: "Verification errors"
 
 graph: { title: "g35" label: "GlobalType_OO_PROGRAM_EXAMPLE_main" status:clustered color:white
 graph: { title: "n104"  label: "Block 104" status:clustered color:yellow
 edge: {sourcename: "n104" targetname: "n105" label: "0" class:13 color:red}
-node: {title: "n103" label: "End  103" color: blue info1: "visited: 41
+node: {title: "n103" label: "End  103"  info1: "visited: 41
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
 arity: 0
-"}
+"color: blue}
 }
 
 graph: { title: "n106"  label: "Block 106" status:clustered color:yellow
@@ -34,38 +36,38 @@ edge: {sourcename: "n106" targetname: "n191" label: "0" class:13 color:red}
 node: {title: "n105" label: "Return  105"  info1: "visited: 41
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
 arity: 2
-"}
+" info2: "mymode == mode_X && Result X"}
 edge: {sourcename: "n105" targetname: "n193" label: "0" class:14 color:blue}
 edge: {sourcename: "n105" targetname: "n194" label: "1" }
-node: {title: "n193" label: "FilterM 0 193" color: yellow info1: "visited: 41
+node: {title: "n193" label: "FilterM 0 193"  info1: "visited: 41
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
 arity: 1 backedges:
 intra predecessor nodes:
   CallT 112
-"}
+"color: yellow}
 edge: {sourcename: "n193" targetname: "n161" label: "0" class:14 color:blue}
-node: {title: "n194" label: "FilterIs 0 194" color: yellow info1: "visited: 41
+node: {title: "n194" label: "FilterIs 0 194"  info1: "visited: 41
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
 arity: 1 backedges:
 intra predecessor nodes:
   ProjT 111
-"}
+"color: yellow}
 edge: {sourcename: "n194" targetname: "n153" label: "0" }
 }
 
 graph: { title: "n188"  label: "Block 188" status:clustered color:yellow
 edge: {sourcename: "n188" targetname: "n185" label: "0" class:13 color:red}
-node: {title: "n187" label: "FilterM 0 187" color: yellow info1: "visited: 41
+node: {title: "n187" label: "FilterM 0 187"  info1: "visited: 41
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
 arity: 1 backedges:
 intra predecessor nodes:
   CallT 120
-"}
+"color: yellow}
 edge: {sourcename: "n187" targetname: "n136" label: "0" class:14 color:blue}
-node: {title: "n192" label: "ProjX 0 192" color: yellow info1: "visited: 41
+node: {title: "n192" label: "ProjX 0 192"  info1: "visited: 41
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n192" targetname: "n190" label: "0" class:13 color:red}
 node: {title: "n190" label: "CallBegin  190"  info1: "visited: 41
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
@@ -73,25 +75,25 @@ arity: 1
 possible callees:
   0: PRIMA_c
 "}
-node: {title: "n190n165" label: "&(PRIMA_c)P  165" color: yellow info1: "visited: 41
+node: {title: "n190n165" label: "&(PRIMA_c)P  165"  info1: "visited: 41
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
 arity: 0
 Const of type type_unknown
-"}
+"color: yellow}
 edge: {sourcename: "n190" targetname: "n190n165" label: "0" }
 }
 
 graph: { title: "n182"  label: "Block 182" status:clustered color:yellow
 edge: {sourcename: "n182" targetname: "n107" label: "0" class:13 color:red}
-node: {title: "n123" label: "ProjM 0 123" color: yellow info1: "visited: 41
+node: {title: "n123" label: "ProjM 0 123"  info1: "visited: 41
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n123" targetname: "n115" label: "0" class:14 color:blue}
-node: {title: "n114" label: "ProjP 2 114" color: yellow info1: "visited: 41
+node: {title: "n114" label: "ProjP 2 114"  info1: "visited: 41
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n114" targetname: "n115" label: "0" }
 node: {title: "n115" label: "Alloc  115"  info1: "visited: 41
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
@@ -104,10 +106,10 @@ arity: 0
 "}
 edge: {sourcename: "n115" targetname: "n117" label: "0" class:14 color:blue}
 edge: {sourcename: "n115" targetname: "n115n116" label: "1" }
-node: {title: "n186" label: "ProjX 0 186" color: yellow info1: "visited: 41
+node: {title: "n186" label: "ProjX 0 186"  info1: "visited: 41
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n186" targetname: "n184" label: "0" class:13 color:red}
 node: {title: "n184" label: "CallBegin  184"  info1: "visited: 41
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
@@ -115,31 +117,31 @@ arity: 1
 possible callees:
   0: PRIMA_set_a
 "}
-node: {title: "n184n166" label: "&(PRIMA_set_a)P  166" color: yellow info1: "visited: 41
+node: {title: "n184n166" label: "&(PRIMA_set_a)P  166"  info1: "visited: 41
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
 arity: 0
 Const of type type_unknown
-"}
+"color: yellow}
 edge: {sourcename: "n184" targetname: "n184n166" label: "0" }
 }
 
 graph: { title: "n108"  label: "Block 108" status:clustered color:yellow
 edge: {sourcename: "n108" targetname: "n107" label: "0" class:13 color:red}
-node: {title: "n117" label: "ProjM 1 117" color: yellow info1: "visited: 41
+node: {title: "n117" label: "ProjM 1 117"  info1: "visited: 41
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n117" targetname: "n109" label: "0" class:14 color:blue}
-node: {title: "n107" label: "ProjX 0 107" color: yellow info1: "visited: 41
+node: {title: "n107" label: "ProjX 0 107"  info1: "visited: 41
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n107" targetname: "n109" label: "0" class:13 color:red}
-node: {title: "n109" label: "Start GlobalType_OO_PROGRAM_EXAMPLE_main  109" color: blue info1: "visited: 41
+node: {title: "n109" label: "Start GlobalType_OO_PROGRAM_EXAMPLE_main  109"  info1: "visited: 41
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
 arity: 0
 start of method of type OO_PROGRAM_EXAMPLE_main
-"}
+" info2: "mymode == mode_T && Start node"color: blue}
 }
 
 }
@@ -147,28 +149,28 @@ start of method of type OO_PROGRAM_EXAMPLE_main
 graph: { title: "g68" label: "PRIMA_set_a" status:clustered color:white
 graph: { title: "n179"  label: "Block 179" status:clustered color:yellow
 edge: {sourcename: "n179" targetname: "n178" label: "0" class:13 color:red}
-node: {title: "n185" label: "ProjX 0 185" color: yellow info1: "visited: 41
+node: {title: "n185" label: "ProjX 0 185"  info1: "visited: 41
 irg:     PRIMA_set_a
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n185" targetname: "n180" label: "0" class:13 color:red}
-node: {title: "n180" label: "EndReg  180" color: blue info1: "visited: 41
+node: {title: "n180" label: "EndReg  180"  info1: "visited: 41
 irg:     PRIMA_set_a
 arity: 0
-"}
+"color: blue}
 }
 
 graph: { title: "n132"  label: "Block 132" status:clustered color:yellow
 edge: {sourcename: "n132" targetname: "n133" label: "0" class:13 color:red}
-node: {title: "n136" label: "ProjM 0 136" color: yellow info1: "visited: 41
+node: {title: "n136" label: "ProjM 0 136"  info1: "visited: 41
 irg:     PRIMA_set_a
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n136" targetname: "n137" label: "0" class:14 color:blue}
 node: {title: "n137" label: "Store  137"  info1: "visited: 41
 irg:     PRIMA_set_a
 arity: 3
-"}
+" info2: "mymode == mode_T && Store node"}
 edge: {sourcename: "n137" targetname: "n175" label: "0" class:14 color:blue}
 edge: {sourcename: "n137" targetname: "n140" label: "1" }
 edge: {sourcename: "n137" targetname: "n177" label: "2" }
@@ -183,49 +185,49 @@ edge: {sourcename: "n140" targetname: "n176" label: "1" }
 node: {title: "n178" label: "Jmp  178"  info1: "visited: 41
 irg:     PRIMA_set_a
 arity: 0
-"}
+" info2: "mymode == mode_X && Jmp node"}
 }
 
 graph: { title: "n134"  label: "Block 134" status:clustered color:yellow
 edge: {sourcename: "n134" targetname: "n186" label: "0" class:13 color:red}
-node: {title: "n175" label: "FilterM 1 175" color: yellow info1: "visited: 41
+node: {title: "n175" label: "FilterM 1 175"  info1: "visited: 41
 irg:     PRIMA_set_a
 arity: 1 backedges:
 intra predecessor nodes:
   StartT 135
-"}
+"color: yellow}
 edge: {sourcename: "n175" targetname: "n123" label: "0" class:14 color:blue}
-node: {title: "n176" label: "FilterP 0 176" color: yellow info1: "visited: 41
+node: {title: "n176" label: "FilterP 0 176"  info1: "visited: 41
 irg:     PRIMA_set_a
 arity: 1 backedges:
 intra predecessor nodes:
   ProjT 139
-"}
+"color: yellow}
 edge: {sourcename: "n176" targetname: "n114" label: "0" }
-node: {title: "n177" label: "FilterIs 1 177" color: yellow info1: "visited: 41
+node: {title: "n177" label: "FilterIs 1 177"  info1: "visited: 41
 irg:     PRIMA_set_a
 arity: 1 backedges:
 intra predecessor nodes:
   ProjT 139
-"}
-node: {title: "n177n121" label: "0x2Is  121" color: yellow info1: "visited: 41
+"color: yellow}
+node: {title: "n177n121" label: "0x2Is  121"  info1: "visited: 41
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
 arity: 0
 Const of type type_unknown
-"}
+"color: yellow}
 edge: {sourcename: "n177" targetname: "n177n121" label: "0" }
-node: {title: "n133" label: "ProjX 0 133" color: yellow info1: "visited: 41
+node: {title: "n133" label: "ProjX 0 133"  info1: "visited: 41
 irg:     PRIMA_set_a
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n133" targetname: "n135" label: "0" class:13 color:red}
-node: {title: "n135" label: "Start PRIMA_set_a  135" color: blue info1: "visited: 41
+node: {title: "n135" label: "Start PRIMA_set_a  135"  info1: "visited: 41
 irg:     PRIMA_set_a
 arity: 0
 start of method of type set_a
   param 0 type: class_prima_ptr
   param 1 type: int
-"}
+" info2: "mymode == mode_T && Start node"color: blue}
 }
 
 }
@@ -233,23 +235,23 @@ start of method of type set_a
 graph: { title: "g90" label: "PRIMA_c" status:clustered color:white
 graph: { title: "n171"  label: "Block 171" status:clustered color:yellow
 edge: {sourcename: "n171" targetname: "n170" label: "0" class:13 color:red}
-node: {title: "n191" label: "ProjX 0 191" color: yellow info1: "visited: 41
+node: {title: "n191" label: "ProjX 0 191"  info1: "visited: 41
 irg:     PRIMA_c
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n191" targetname: "n172" label: "0" class:13 color:red}
-node: {title: "n172" label: "EndReg  172" color: blue info1: "visited: 41
+node: {title: "n172" label: "EndReg  172"  info1: "visited: 41
 irg:     PRIMA_c
 arity: 0
-"}
+"color: blue}
 }
 
 graph: { title: "n149"  label: "Block 149" status:clustered color:yellow
 edge: {sourcename: "n149" targetname: "n150" label: "0" class:13 color:red}
-node: {title: "n161" label: "ProjM 0 161" color: yellow info1: "visited: 41
+node: {title: "n161" label: "ProjM 0 161"  info1: "visited: 41
 irg:     PRIMA_c
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n161" targetname: "n155" label: "0" class:14 color:blue}
 node: {title: "n153" label: "AddIs  153"  info1: "visited: 41
 irg:     PRIMA_c
@@ -257,15 +259,15 @@ arity: 2
 "}
 edge: {sourcename: "n153" targetname: "n154" label: "0" }
 edge: {sourcename: "n153" targetname: "n167" label: "1" }
-node: {title: "n154" label: "ProjIs 2 154" color: yellow info1: "visited: 41
+node: {title: "n154" label: "ProjIs 2 154"  info1: "visited: 41
 irg:     PRIMA_c
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n154" targetname: "n155" label: "0" }
 node: {title: "n155" label: "Load  155"  info1: "visited: 41
 irg:     PRIMA_c
 arity: 2
-"}
+" info2: "mymode == mode_T && Load node"}
 edge: {sourcename: "n155" targetname: "n168" label: "0" class:14 color:blue}
 edge: {sourcename: "n155" targetname: "n156" label: "1" }
 node: {title: "n156" label: "Sel a 156"  info1: "visited: 41
@@ -279,49 +281,49 @@ edge: {sourcename: "n156" targetname: "n169" label: "1" }
 node: {title: "n170" label: "Jmp  170"  info1: "visited: 41
 irg:     PRIMA_c
 arity: 0
-"}
+" info2: "mymode == mode_X && Jmp node"}
 }
 
 graph: { title: "n151"  label: "Block 151" status:clustered color:yellow
 edge: {sourcename: "n151" targetname: "n192" label: "0" class:13 color:red}
-node: {title: "n168" label: "FilterM 1 168" color: yellow info1: "visited: 41
+node: {title: "n168" label: "FilterM 1 168"  info1: "visited: 41
 irg:     PRIMA_c
 arity: 1 backedges:
 intra predecessor nodes:
   StartT 152
-"}
+"color: yellow}
 edge: {sourcename: "n168" targetname: "n187" label: "0" class:14 color:blue}
-node: {title: "n169" label: "FilterP 0 169" color: yellow info1: "visited: 41
+node: {title: "n169" label: "FilterP 0 169"  info1: "visited: 41
 irg:     PRIMA_c
 arity: 1 backedges:
 intra predecessor nodes:
   ProjT 158
-"}
+"color: yellow}
 edge: {sourcename: "n169" targetname: "n114" label: "0" }
-node: {title: "n167" label: "FilterIs 1 167" color: yellow info1: "visited: 41
+node: {title: "n167" label: "FilterIs 1 167"  info1: "visited: 41
 irg:     PRIMA_c
 arity: 1 backedges:
 intra predecessor nodes:
   ProjT 158
-"}
-node: {title: "n167n113" label: "0x5Is  113" color: yellow info1: "visited: 41
+"color: yellow}
+node: {title: "n167n113" label: "0x5Is  113"  info1: "visited: 41
 irg:     GlobalType_OO_PROGRAM_EXAMPLE_main
 arity: 0
 Const of type type_unknown
-"}
+"color: yellow}
 edge: {sourcename: "n167" targetname: "n167n113" label: "0" }
-node: {title: "n150" label: "ProjX 0 150" color: yellow info1: "visited: 41
+node: {title: "n150" label: "ProjX 0 150"  info1: "visited: 41
 irg:     PRIMA_c
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n150" targetname: "n152" label: "0" class:13 color:red}
-node: {title: "n152" label: "Start PRIMA_c  152" color: blue info1: "visited: 41
+node: {title: "n152" label: "Start PRIMA_c  152"  info1: "visited: 41
 irg:     PRIMA_c
 arity: 0
 start of method of type c
   param 0 type: class_prima_ptr
   param 1 type: int
-"}
+" info2: "mymode == mode_T && Start node"color: blue}
 }
 
 }
@@ -361,13 +363,16 @@ irg = g68"
 }
 edge: { sourcename: "e17" targetname: "t15"class: 3 label: "type" color: red}
 edge: { sourcename: "e17" targetname: "n16"label: "value 0"}
-node: {title: "n16" label: "&(PRIMA_set_a)P  16" color: yellow info1: "visited: 44
+node: {title: "n16" label: "&(PRIMA_set_a)P  16"  info1: "visited: 44
 arity: 0
 Const of type type_unknown
-"}
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
 node: {title: "t15" label: "method set_a" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
+variadicity: variadicity_non_variadic
+params: 2
+results: 0
 "}
 edge: { sourcename: "t15" targetname: "t13"class: 5 label: "param 0" color: green}
 edge: { sourcename: "t15" targetname: "t11"class: 5 label: "param 1" color: green}
@@ -395,13 +400,16 @@ irg = g90"
 }
 edge: { sourcename: "e20" targetname: "t18"class: 3 label: "type" color: red}
 edge: { sourcename: "e20" targetname: "n19"label: "value 0"}
-node: {title: "n19" label: "&(PRIMA_c)P  19" color: yellow info1: "visited: 45
+node: {title: "n19" label: "&(PRIMA_c)P  19"  info1: "visited: 45
 arity: 0
 Const of type type_unknown
-"}
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
 node: {title: "t18" label: "method c" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
+variadicity: variadicity_non_variadic
+params: 2
+results: 1
 "}
 edge: { sourcename: "t18" targetname: "t13"class: 5 label: "param 0" color: green}
 edge: { sourcename: "t18" targetname: "t11"class: 5 label: "param 1" color: green}
@@ -421,10 +429,10 @@ irg = g35"
 }
 edge: { sourcename: "e23" targetname: "t21"class: 3 label: "type" color: red}
 edge: { sourcename: "e23" targetname: "n22"label: "value 0"}
-node: {title: "n22" label: "&(GlobalType_OO_PROGRAM_EXAMPLE_main)P  22" color: yellow info1: "visited: 46
+node: {title: "n22" label: "&(GlobalType_OO_PROGRAM_EXAMPLE_main)P  22"  info1: "visited: 46
 arity: 0
 Const of type type_unknown
-"}
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
 node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1B,
 peculiarity: peculiarity_existent
@@ -433,6 +441,9 @@ edge: { sourcename: "t0" targetname: "e23"class: 12 label: "member" color:blue}
 node: {title: "t21" label: "method OO_PROGRAM_EXAMPLE_main" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
+variadicity: variadicity_non_variadic
+params: 0
+results: 1
 "}
 edge: { sourcename: "t21" targetname: "t11"class: 6 label: "res 0" color: green}
 node: {title: "t24" label: "class OO_PROGRAM_EXAMPLE_mainframe_tp" info1: "state: layout_undefined

@@ -19,14 +19,16 @@ classname 9: "Points-to"
 classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
+infoname 1: "Attribute"
+infoname 2: "Verification errors"
 
 graph: { title: "g27" label: "DEAD_BLOCK_main" status:clustered color:white
 graph: { title: "n57"  label: "Block 57" status:clustered color:yellow
 edge: {sourcename: "n57" targetname: "n58" label: "0" class:13 color:red}
-node: {title: "n56" label: "End  56" color: blue info1: "visited: 9
+node: {title: "n56" label: "End  56"  info1: "visited: 9
 irg:     DEAD_BLOCK_main
 arity: 0
-"}
+"color: blue}
 }
 
 graph: { title: "n65"  label: "Block 65" status:clustered color:yellow
@@ -36,33 +38,33 @@ irg:     DEAD_BLOCK_main
 arity: 2
 return in method of type main
   res 0 type: int
-"}
+" info2: "mymode == mode_X && Result X"}
 edge: {sourcename: "n58" targetname: "n67" label: "0" class:14 color:blue}
 edge: {sourcename: "n58" targetname: "n66" label: "1" }
 }
 
 graph: { title: "n61"  label: "Block 61" status:clustered color:yellow
 edge: {sourcename: "n61" targetname: "n62" label: "0" class:13 color:red}
-node: {title: "n67" label: "ProjM 1 67" color: yellow info1: "visited: 9
+node: {title: "n67" label: "ProjM 1 67"  info1: "visited: 9
 irg:     DEAD_BLOCK_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n67" targetname: "n63" label: "0" class:14 color:blue}
-node: {title: "n66" label: "0x2Is  66" color: yellow info1: "visited: 9
+node: {title: "n66" label: "0x2Is  66"  info1: "visited: 9
 irg:     DEAD_BLOCK_main
 arity: 0
 Const of type type_unknown
-"}
-node: {title: "n62" label: "ProjX 0 62" color: yellow info1: "visited: 9
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
+node: {title: "n62" label: "ProjX 0 62"  info1: "visited: 9
 irg:     DEAD_BLOCK_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n62" targetname: "n63" label: "0" class:13 color:red}
-node: {title: "n63" label: "Start  63" color: blue info1: "visited: 9
+node: {title: "n63" label: "Start  63"  info1: "visited: 9
 irg:     DEAD_BLOCK_main
 arity: 0
 start of method of type main
-"}
+" info2: "mymode == mode_T && Start node"color: blue}
 }
 
 }

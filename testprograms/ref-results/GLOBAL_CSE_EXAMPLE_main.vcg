@@ -19,20 +19,22 @@ classname 9: "Points-to"
 classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
+infoname 1: "Attribute"
+infoname 2: "Verification errors"
 
 graph: { title: "g26" label: "GLOBAL_CSE_EXAMPLE_main" status:clustered color:white
 graph: { title: "n62"  label: "Block 62" status:clustered color:yellow
 edge: {sourcename: "n62" targetname: "n63" label: "0" class:13 color:red}
-node: {title: "n61" label: "End  61" color: blue info1: "visited: 12
+node: {title: "n61" label: "End  61"  info1: "visited: 12
 irg:     GLOBAL_CSE_EXAMPLE_main
 arity: 0
-"}
+"color: blue}
 }
 
-node: {title: "n86" label: "ProjM 1 86" color: yellow info1: "visited: 12
+node: {title: "n86" label: "ProjM 1 86"  info1: "visited: 12
 irg:     GLOBAL_CSE_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n86" targetname: "n71" label: "0" class:14 color:blue}
 node: {title: "n84" label: "AddIs  84"  info1: "visited: 12
 irg:     GLOBAL_CSE_EXAMPLE_main
@@ -40,22 +42,22 @@ arity: 2
 "}
 edge: {sourcename: "n84" targetname: "n82" label: "0" }
 edge: {sourcename: "n84" targetname: "n85" label: "1" }
-node: {title: "n85" label: "0x5Is  85" color: yellow info1: "visited: 12
+node: {title: "n85" label: "0x5Is  85"  info1: "visited: 12
 irg:     GLOBAL_CSE_EXAMPLE_main
 arity: 0
 Const of type type_unknown
-"}
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
 node: {title: "n82" label: "SubIs  82"  info1: "visited: 12
 irg:     GLOBAL_CSE_EXAMPLE_main
 arity: 2
 "}
 edge: {sourcename: "n82" targetname: "n76" label: "0" }
 edge: {sourcename: "n82" targetname: "n83" label: "1" }
-node: {title: "n83" label: "0x3Is  83" color: yellow info1: "visited: 12
+node: {title: "n83" label: "0x3Is  83"  info1: "visited: 12
 irg:     GLOBAL_CSE_EXAMPLE_main
 arity: 0
 Const of type type_unknown
-"}
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
 graph: { title: "n64"  label: "Block 64" status:clustered color:yellow
 edge: {sourcename: "n64" targetname: "n78" label: "0" class:13 color:red}
 edge: {sourcename: "n64" targetname: "n65" label: "1" class:13 color:red}
@@ -64,13 +66,13 @@ irg:     GLOBAL_CSE_EXAMPLE_main
 arity: 2
 return in method of type GLOBAL_CSE_EXAMPLE_main
   res 0 type: int
-"}
+" info2: "mymode == mode_X && Result X"}
 edge: {sourcename: "n63" targetname: "n86" label: "0" class:14 color:blue}
 edge: {sourcename: "n63" targetname: "n81" label: "1" }
-node: {title: "n81" label: "PhiIs  81" color: green info1: "visited: 12
+node: {title: "n81" label: "PhiIs  81"  info1: "visited: 12
 irg:     GLOBAL_CSE_EXAMPLE_main
 arity: 2 backedges:
-"}
+" info2: "mode_is_dataM(mymode) && Phi node"color: green}
 edge: {sourcename: "n81" targetname: "n84" label: "0" }
 edge: {sourcename: "n81" targetname: "n82" label: "1" }
 }
@@ -80,31 +82,31 @@ edge: {sourcename: "n79" targetname: "n80" label: "0" class:13 color:red}
 node: {title: "n78" label: "Jmp  78"  info1: "visited: 12
 irg:     GLOBAL_CSE_EXAMPLE_main
 arity: 0
-"}
+" info2: "mymode == mode_X && Jmp node"}
 }
 
-node: {title: "n80" label: "ProjX 0 80" color: yellow info1: "visited: 12
+node: {title: "n80" label: "ProjX 0 80"  info1: "visited: 12
 irg:     GLOBAL_CSE_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n80" targetname: "n72" label: "0" class:13 color:red}
 graph: { title: "n66"  label: "Block 66" status:clustered color:yellow
 edge: {sourcename: "n66" targetname: "n67" label: "0" class:13 color:red}
 node: {title: "n65" label: "Jmp  65"  info1: "visited: 12
 irg:     GLOBAL_CSE_EXAMPLE_main
 arity: 0
-"}
+" info2: "mymode == mode_X && Jmp node"}
 }
 
-node: {title: "n67" label: "ProjX 1 67" color: yellow info1: "visited: 12
+node: {title: "n67" label: "ProjX 1 67"  info1: "visited: 12
 irg:     GLOBAL_CSE_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n67" targetname: "n72" label: "0" class:13 color:red}
-node: {title: "n73" label: "Projb Eq 73" color: yellow info1: "visited: 12
+node: {title: "n73" label: "Projb Eq 73"  info1: "visited: 12
 irg:     GLOBAL_CSE_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n73" targetname: "n74" label: "0" }
 node: {title: "n74" label: "CmpT  74"  info1: "visited: 12
 irg:     GLOBAL_CSE_EXAMPLE_main
@@ -112,43 +114,43 @@ arity: 2
 "}
 edge: {sourcename: "n74" targetname: "n76" label: "0" }
 edge: {sourcename: "n74" targetname: "n75" label: "1" }
-node: {title: "n76" label: "ProjIs 0 76" color: yellow info1: "visited: 12
+node: {title: "n76" label: "ProjIs 0 76"  info1: "visited: 12
 irg:     GLOBAL_CSE_EXAMPLE_main
 arity: 1
-"}
+" info2: "(mode == get_type_mode(get_method_param_type(mt, proj))) && Mode of Proj from Start doesn't match mode of param type."color: yellow}
 edge: {sourcename: "n76" targetname: "n77" label: "0" }
-node: {title: "n77" label: "ProjT 4 77" color: yellow info1: "visited: 12
+node: {title: "n77" label: "ProjT 4 77"  info1: "visited: 12
 irg:     GLOBAL_CSE_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n77" targetname: "n71" label: "0" }
-node: {title: "n75" label: "0x2Is  75" color: yellow info1: "visited: 12
+node: {title: "n75" label: "0x2Is  75"  info1: "visited: 12
 irg:     GLOBAL_CSE_EXAMPLE_main
 arity: 0
 Const of type type_unknown
-"}
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
 graph: { title: "n68"  label: "Block 68" status:clustered color:yellow
 edge: {sourcename: "n68" targetname: "n69" label: "0" class:13 color:red}
 node: {title: "n72" label: "Cond  72"  info1: "visited: 12
 irg:     GLOBAL_CSE_EXAMPLE_main
 arity: 1
-"}
+" info2: "mymode == mode_T && Cond mode is not a tuple"}
 edge: {sourcename: "n72" targetname: "n73" label: "0" }
 }
 
-node: {title: "n69" label: "ProjX 0 69" color: yellow info1: "visited: 12
+node: {title: "n69" label: "ProjX 0 69"  info1: "visited: 12
 irg:     GLOBAL_CSE_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n69" targetname: "n71" label: "0" class:13 color:red}
 graph: { title: "n70"  label: "Block 70" status:clustered color:yellow
 edge: {sourcename: "n70" targetname: "n69" label: "0" class:13 color:red}
-node: {title: "n71" label: "Start  71" color: blue info1: "visited: 12
+node: {title: "n71" label: "Start  71"  info1: "visited: 12
 irg:     GLOBAL_CSE_EXAMPLE_main
 arity: 0
 start of method of type GLOBAL_CSE_EXAMPLE_main
   param 0 type: int
-"}
+" info2: "mymode == mode_T && Start node"color: blue}
 }
 
 }

@@ -19,6 +19,8 @@ classname 9: "Points-to"
 classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
+infoname 1: "Attribute"
+infoname 2: "Verification errors"
 
 node: {title: "n75" label: "Block n75" }
 edge: { sourcename: "n75" targetname: "n77"}

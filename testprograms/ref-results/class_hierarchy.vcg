@@ -19,6 +19,8 @@ classname 9: "Points-to"
 classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
+infoname 1: "Attribute"
+infoname 2: "Verification errors"
 
 node: {title: "t12" label: "class PRIMA" info1: "state: layout_undefined
 size: -1B,

@@ -19,14 +19,16 @@ classname 9: "Points-to"
 classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
+infoname 1: "Attribute"
+infoname 2: "Verification errors"
 
 graph: { title: "g90" label: "PRIMA_c" status:clustered color:white
 graph: { title: "n147"  label: "Block 147" status:clustered color:yellow
 edge: {sourcename: "n147" targetname: "n148" label: "0" class:13 color:red}
-node: {title: "n146" label: "End  146" color: blue info1: "visited: 13
+node: {title: "n146" label: "End  146"  info1: "visited: 13
 irg:     PRIMA_c
 arity: 0
-"}
+"color: blue}
 }
 
 graph: { title: "n149"  label: "Block 149" status:clustered color:yellow
@@ -36,13 +38,13 @@ irg:     PRIMA_c
 arity: 2
 return in method of type c
   res 0 type: int
-"}
+" info2: "mymode == mode_X && Result X"}
 edge: {sourcename: "n148" targetname: "n161" label: "0" class:14 color:blue}
 edge: {sourcename: "n148" targetname: "n153" label: "1" }
-node: {title: "n161" label: "ProjM 0 161" color: yellow info1: "visited: 13
+node: {title: "n161" label: "ProjM 0 161"  info1: "visited: 13
 irg:     PRIMA_c
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n161" targetname: "n155" label: "0" class:14 color:blue}
 node: {title: "n153" label: "AddIs  153"  info1: "visited: 13
 irg:     PRIMA_c
@@ -50,20 +52,20 @@ arity: 2
 "}
 edge: {sourcename: "n153" targetname: "n160" label: "0" }
 edge: {sourcename: "n153" targetname: "n154" label: "1" }
-node: {title: "n160" label: "ProjIs 1 160" color: yellow info1: "visited: 13
+node: {title: "n160" label: "ProjIs 1 160"  info1: "visited: 13
 irg:     PRIMA_c
 arity: 1
-"}
+" info2: "(mode == get_type_mode(get_method_param_type(mt, proj))) && Mode of Proj from Start doesn't match mode of param type."color: yellow}
 edge: {sourcename: "n160" targetname: "n158" label: "0" }
-node: {title: "n154" label: "ProjIs 2 154" color: yellow info1: "visited: 13
+node: {title: "n154" label: "ProjIs 2 154"  info1: "visited: 13
 irg:     PRIMA_c
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n154" targetname: "n155" label: "0" }
 node: {title: "n155" label: "Load  155"  info1: "visited: 13
 irg:     PRIMA_c
 arity: 2
-"}
+" info2: "mymode == mode_T && Load node"}
 edge: {sourcename: "n155" targetname: "n159" label: "0" class:14 color:blue}
 edge: {sourcename: "n155" targetname: "n156" label: "1" }
 node: {title: "n156" label: "Sel a 156"  info1: "visited: 13
@@ -74,37 +76,37 @@ Selecting entity of type int
 "}
 edge: {sourcename: "n156" targetname: "n159" label: "0" class:14 color:blue}
 edge: {sourcename: "n156" targetname: "n157" label: "1" }
-node: {title: "n157" label: "ProjP 0 157" color: yellow info1: "visited: 13
+node: {title: "n157" label: "ProjP 0 157"  info1: "visited: 13
 irg:     PRIMA_c
 arity: 1
-"}
+" info2: "(mode == get_type_mode(get_method_param_type(mt, proj))) && Mode of Proj from Start doesn't match mode of param type."color: yellow}
 edge: {sourcename: "n157" targetname: "n158" label: "0" }
 }
 
 graph: { title: "n151"  label: "Block 151" status:clustered color:yellow
 edge: {sourcename: "n151" targetname: "n150" label: "0" class:13 color:red}
-node: {title: "n159" label: "ProjM 1 159" color: yellow info1: "visited: 13
+node: {title: "n159" label: "ProjM 1 159"  info1: "visited: 13
 irg:     PRIMA_c
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n159" targetname: "n152" label: "0" class:14 color:blue}
-node: {title: "n158" label: "ProjT 4 158" color: yellow info1: "visited: 13
+node: {title: "n158" label: "ProjT 4 158"  info1: "visited: 13
 irg:     PRIMA_c
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n158" targetname: "n152" label: "0" }
-node: {title: "n150" label: "ProjX 0 150" color: yellow info1: "visited: 13
+node: {title: "n150" label: "ProjX 0 150"  info1: "visited: 13
 irg:     PRIMA_c
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n150" targetname: "n152" label: "0" class:13 color:red}
-node: {title: "n152" label: "Start  152" color: blue info1: "visited: 13
+node: {title: "n152" label: "Start  152"  info1: "visited: 13
 irg:     PRIMA_c
 arity: 0
 start of method of type c
   param 0 type: class_prima_ptr
   param 1 type: int
-"}
+" info2: "mymode == mode_T && Start node"color: blue}
 }
 
 }
@@ -144,13 +146,16 @@ irg = g68"
 }
 edge: { sourcename: "e17" targetname: "t15"class: 3 label: "type" color: red}
 edge: { sourcename: "e17" targetname: "n16"label: "value 0"}
-node: {title: "n16" label: "&(PRIMA_set_a)P  16" color: yellow info1: "visited: 6
+node: {title: "n16" label: "&(PRIMA_set_a)P  16"  info1: "visited: 6
 arity: 0
 Const of type type_unknown
-"}
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
 node: {title: "t15" label: "method set_a" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
+variadicity: variadicity_non_variadic
+params: 2
+results: 0
 "}
 edge: { sourcename: "t15" targetname: "t13"class: 5 label: "param 0" color: green}
 edge: { sourcename: "t15" targetname: "t11"class: 5 label: "param 1" color: green}
@@ -178,13 +183,16 @@ irg = g90"
 }
 edge: { sourcename: "e20" targetname: "t18"class: 3 label: "type" color: red}
 edge: { sourcename: "e20" targetname: "n19"label: "value 0"}
-node: {title: "n19" label: "&(PRIMA_c)P  19" color: yellow info1: "visited: 6
+node: {title: "n19" label: "&(PRIMA_c)P  19"  info1: "visited: 6
 arity: 0
 Const of type type_unknown
-"}
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
 node: {title: "t18" label: "method c" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
+variadicity: variadicity_non_variadic
+params: 2
+results: 1
 "}
 edge: { sourcename: "t18" targetname: "t13"class: 5 label: "param 0" color: green}
 edge: { sourcename: "t18" targetname: "t11"class: 5 label: "param 1" color: green}

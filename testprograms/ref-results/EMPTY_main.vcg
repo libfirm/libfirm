@@ -19,14 +19,16 @@ classname 9: "Points-to"
 classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
+infoname 1: "Attribute"
+infoname 2: "Verification errors"
 
 graph: { title: "g25" label: "EMPTY_main" status:clustered color:white
 graph: { title: "n15"  label: "Block 15" status:clustered color:yellow
 edge: {sourcename: "n15" targetname: "n28" label: "0" class:13 color:red}
-node: {title: "n16" label: "End  16" color: blue info1: "visited: 4
+node: {title: "n16" label: "End  16"  info1: "visited: 4
 irg:     EMPTY_main
 arity: 0
-"}
+"color: blue}
 }
 
 graph: { title: "n26"  label: "Block 26" status:clustered color:yellow
@@ -35,27 +37,27 @@ node: {title: "n28" label: "Return  28"  info1: "visited: 4
 irg:     EMPTY_main
 arity: 1
 return in method of type EMPTY_main
-"}
+" info2: "mymode == mode_X && Result X"}
 edge: {sourcename: "n28" targetname: "n21" label: "0" class:14 color:blue}
 }
 
 graph: { title: "n17"  label: "Block 17" status:clustered color:yellow
 edge: {sourcename: "n17" targetname: "n20" label: "0" class:13 color:red}
-node: {title: "n21" label: "ProjM 1 21" color: yellow info1: "visited: 4
+node: {title: "n21" label: "ProjM 1 21"  info1: "visited: 4
 irg:     EMPTY_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n21" targetname: "n18" label: "0" class:14 color:blue}
-node: {title: "n20" label: "ProjX 0 20" color: yellow info1: "visited: 4
+node: {title: "n20" label: "ProjX 0 20"  info1: "visited: 4
 irg:     EMPTY_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n20" targetname: "n18" label: "0" class:13 color:red}
-node: {title: "n18" label: "Start  18" color: blue info1: "visited: 4
+node: {title: "n18" label: "Start  18"  info1: "visited: 4
 irg:     EMPTY_main
 arity: 0
 start of method of type EMPTY_main
-"}
+" info2: "mymode == mode_T && Start node"color: blue}
 }
 
 }

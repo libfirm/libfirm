@@ -19,14 +19,16 @@ classname 9: "Points-to"
 classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
+infoname 1: "Attribute"
+infoname 2: "Verification errors"
 
 graph: { title: "g27" label: "GLOBAL_VAR_main" status:clustered color:white
 graph: { title: "n38"  label: "Block 38" status:clustered color:yellow
 edge: {sourcename: "n38" targetname: "n39" label: "0" class:13 color:red}
-node: {title: "n37" label: "End  37" color: blue info1: "visited: 7
+node: {title: "n37" label: "End  37"  info1: "visited: 7
 irg:     GLOBAL_VAR_main
 arity: 0
-"}
+"color: blue}
 }
 
 graph: { title: "n40"  label: "Block 40" status:clustered color:yellow
@@ -35,17 +37,17 @@ node: {title: "n39" label: "Return  39"  info1: "visited: 7
 irg:     GLOBAL_VAR_main
 arity: 1
 return in method of type GLOBAL_VAR_main
-"}
+" info2: "mymode == mode_X && Result X"}
 edge: {sourcename: "n39" targetname: "n44" label: "0" class:14 color:blue}
-node: {title: "n44" label: "ProjM 0 44" color: yellow info1: "visited: 7
+node: {title: "n44" label: "ProjM 0 44"  info1: "visited: 7
 irg:     GLOBAL_VAR_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n44" targetname: "n45" label: "0" class:14 color:blue}
 node: {title: "n45" label: "Store  45"  info1: "visited: 7
 irg:     GLOBAL_VAR_main
 arity: 3
-"}
+" info2: "mymode == mode_T && Store node"}
 edge: {sourcename: "n45" targetname: "n49" label: "0" class:14 color:blue}
 edge: {sourcename: "n45" targetname: "n47" label: "1" }
 edge: {sourcename: "n45" targetname: "n46" label: "2" }
@@ -61,31 +63,31 @@ edge: {sourcename: "n47" targetname: "n48" label: "1" }
 
 graph: { title: "n42"  label: "Block 42" status:clustered color:yellow
 edge: {sourcename: "n42" targetname: "n41" label: "0" class:13 color:red}
-node: {title: "n49" label: "ProjM 1 49" color: yellow info1: "visited: 7
+node: {title: "n49" label: "ProjM 1 49"  info1: "visited: 7
 irg:     GLOBAL_VAR_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n49" targetname: "n43" label: "0" class:14 color:blue}
-node: {title: "n48" label: "ProjP 3 48" color: yellow info1: "visited: 7
+node: {title: "n48" label: "ProjP 3 48"  info1: "visited: 7
 irg:     GLOBAL_VAR_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n48" targetname: "n43" label: "0" }
-node: {title: "n46" label: "0x2Is  46" color: yellow info1: "visited: 7
+node: {title: "n46" label: "0x2Is  46"  info1: "visited: 7
 irg:     GLOBAL_VAR_main
 arity: 0
 Const of type type_unknown
-"}
-node: {title: "n41" label: "ProjX 0 41" color: yellow info1: "visited: 7
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
+node: {title: "n41" label: "ProjX 0 41"  info1: "visited: 7
 irg:     GLOBAL_VAR_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n41" targetname: "n43" label: "0" class:13 color:red}
-node: {title: "n43" label: "Start  43" color: blue info1: "visited: 7
+node: {title: "n43" label: "Start  43"  info1: "visited: 7
 irg:     GLOBAL_VAR_main
 arity: 0
 start of method of type GLOBAL_VAR_main
-"}
+" info2: "mymode == mode_T && Start node"color: blue}
 }
 
 }

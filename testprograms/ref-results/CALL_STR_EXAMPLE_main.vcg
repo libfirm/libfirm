@@ -19,14 +19,16 @@ classname 9: "Points-to"
 classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
+infoname 1: "Attribute"
+infoname 2: "Verification errors"
 
 graph: { title: "g45" label: "CALL_STR_EXAMPLE_main" status:clustered color:white
 graph: { title: "n56"  label: "Block 56" status:clustered color:yellow
 edge: {sourcename: "n56" targetname: "n57" label: "0" class:13 color:red}
-node: {title: "n55" label: "End  55" color: blue info1: "visited: 6
+node: {title: "n55" label: "End  55"  info1: "visited: 6
 irg:     CALL_STR_EXAMPLE_main
 arity: 0
-"}
+"color: blue}
 }
 
 graph: { title: "n58"  label: "Block 58" status:clustered color:yellow
@@ -35,19 +37,19 @@ node: {title: "n57" label: "Return  57"  info1: "visited: 6
 irg:     CALL_STR_EXAMPLE_main
 arity: 1
 return in method of type CALL_STR_EXAMPLE_main
-"}
+" info2: "mymode == mode_X && Result X"}
 edge: {sourcename: "n57" targetname: "n62" label: "0" class:14 color:blue}
-node: {title: "n62" label: "ProjM 0 62" color: yellow info1: "visited: 6
+node: {title: "n62" label: "ProjM 0 62"  info1: "visited: 6
 irg:     CALL_STR_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n62" targetname: "n63" label: "0" class:14 color:blue}
 node: {title: "n63" label: "Call  63"  info1: "visited: 6
 irg:     CALL_STR_EXAMPLE_main
 arity: 3
 calling method of type f
   param 0 type: ptr_to_string
-"}
+" info2: "get_Call_n_params(n) == get_method_n_params(mt) && Number of args for Call doesn't match number of args in non variadic type."}
 edge: {sourcename: "n63" targetname: "n66" label: "0" class:14 color:blue}
 edge: {sourcename: "n63" targetname: "n65" label: "1" }
 edge: {sourcename: "n63" targetname: "n64" label: "2" }
@@ -55,30 +57,30 @@ edge: {sourcename: "n63" targetname: "n64" label: "2" }
 
 graph: { title: "n60"  label: "Block 60" status:clustered color:yellow
 edge: {sourcename: "n60" targetname: "n59" label: "0" class:13 color:red}
-node: {title: "n66" label: "ProjM 1 66" color: yellow info1: "visited: 6
+node: {title: "n66" label: "ProjM 1 66"  info1: "visited: 6
 irg:     CALL_STR_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n66" targetname: "n61" label: "0" class:14 color:blue}
 node: {title: "n65" label: "SymC f  65"  info1: "visited: 6
 irg:     CALL_STR_EXAMPLE_main
 arity: 0
-"}
-node: {title: "n64" label: "&(GlobalType_constStr)P  64" color: yellow info1: "visited: 6
+" info2: "(mode_is_int(mymode) || mode_is_reference(mymode)) && SymConst node"}
+node: {title: "n64" label: "&(GlobalType_constStr)P  64"  info1: "visited: 6
 irg:     CALL_STR_EXAMPLE_main
 arity: 0
 Const of type ptr_to_string
-"}
-node: {title: "n59" label: "ProjX 0 59" color: yellow info1: "visited: 6
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
+node: {title: "n59" label: "ProjX 0 59"  info1: "visited: 6
 irg:     CALL_STR_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n59" targetname: "n61" label: "0" class:13 color:red}
-node: {title: "n61" label: "Start  61" color: blue info1: "visited: 6
+node: {title: "n61" label: "Start  61"  info1: "visited: 6
 irg:     CALL_STR_EXAMPLE_main
 arity: 0
 start of method of type CALL_STR_EXAMPLE_main
-"}
+" info2: "mymode == mode_T && Start node"color: blue}
 }
 
 }

@@ -19,6 +19,8 @@ classname 9: "Points-to"
 classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
+infoname 1: "Attribute"
+infoname 2: "Verification errors"
 
 node: {title: "t11" label: "primitive int" info1: "state: layout_fixed,
 mode: Is,
@@ -27,6 +29,9 @@ size: 4B,
 node: {title: "t12" label: "method main_tp" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
+variadicity: variadicity_non_variadic
+params: 1
+results: 1
 "}
 edge: { sourcename: "t12" targetname: "t11"class: 5 label: "param 0" color: green}
 edge: { sourcename: "t12" targetname: "t11"class: 6 label: "res 0" color: green}
@@ -50,10 +55,10 @@ irg = g27"
 }
 edge: { sourcename: "e15" targetname: "t12"class: 3 label: "type" color: red}
 edge: { sourcename: "e15" targetname: "n14"label: "value 0"}
-node: {title: "n14" label: "&(WHILE_EXAMPLE_main)P  14" color: yellow info1: "visited: 1
+node: {title: "n14" label: "&(WHILE_EXAMPLE_main)P  14"  info1: "visited: 1
 arity: 0
 Const of type type_unknown
-"}
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
 node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1B,
 peculiarity: peculiarity_existent

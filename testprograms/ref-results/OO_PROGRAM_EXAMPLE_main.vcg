@@ -19,14 +19,16 @@ classname 9: "Points-to"
 classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
+infoname 1: "Attribute"
+infoname 2: "Verification errors"
 
 graph: { title: "g35" label: "OO_PROGRAM_EXAMPLE_main" status:clustered color:white
 graph: { title: "n104"  label: "Block 104" status:clustered color:yellow
 edge: {sourcename: "n104" targetname: "n105" label: "0" class:13 color:red}
-node: {title: "n103" label: "End  103" color: blue info1: "visited: 16
+node: {title: "n103" label: "End  103"  info1: "visited: 16
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 0
-"}
+"color: blue}
 }
 
 graph: { title: "n106"  label: "Block 106" status:clustered color:yellow
@@ -36,23 +38,23 @@ irg:     OO_PROGRAM_EXAMPLE_main
 arity: 2
 return in method of type OO_PROGRAM_EXAMPLE_main
   res 0 type: int
-"}
+" info2: "mymode == mode_X && Result X"}
 edge: {sourcename: "n105" targetname: "n124" label: "0" class:14 color:blue}
 edge: {sourcename: "n105" targetname: "n110" label: "1" }
-node: {title: "n124" label: "ProjM 0 124" color: yellow info1: "visited: 16
+node: {title: "n124" label: "ProjM 0 124"  info1: "visited: 16
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n124" targetname: "n112" label: "0" class:14 color:blue}
-node: {title: "n110" label: "ProjIs 0 110" color: yellow info1: "visited: 16
+node: {title: "n110" label: "ProjIs 0 110"  info1: "visited: 16
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1
-"}
+" info2: "(mode == get_type_mode(get_method_res_type(mt, proj))) && Mode of Proj from Call doesn't match mode of result type."color: yellow}
 edge: {sourcename: "n110" targetname: "n111" label: "0" }
-node: {title: "n111" label: "ProjT 2 111" color: yellow info1: "visited: 16
+node: {title: "n111" label: "ProjT 2 111"  info1: "visited: 16
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n111" targetname: "n112" label: "0" }
 node: {title: "n112" label: "Call  112"  info1: "visited: 16
 irg:     OO_PROGRAM_EXAMPLE_main
@@ -61,12 +63,12 @@ calling method of type c
   param 0 type: class_prima_ptr
   param 1 type: int
   resul 0 type: int
-"}
-node: {title: "n112n113" label: "0x5Is  113" color: yellow info1: "visited: 16
+" info2: "get_Call_n_params(n) == get_method_n_params(mt) && Number of args for Call doesn't match number of args in non variadic type."}
+node: {title: "n112n113" label: "0x5Is  113"  info1: "visited: 16
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 0
 Const of type type_unknown
-"}
+"color: yellow}
 edge: {sourcename: "n112" targetname: "n119" label: "0" class:14 color:blue}
 edge: {sourcename: "n112" targetname: "n118" label: "1" }
 edge: {sourcename: "n112" targetname: "n114" label: "2" }
@@ -79,10 +81,10 @@ Selecting entity of type c
 "}
 edge: {sourcename: "n118" targetname: "n119" label: "0" class:14 color:blue}
 edge: {sourcename: "n118" targetname: "n114" label: "1" }
-node: {title: "n119" label: "ProjM 0 119" color: yellow info1: "visited: 16
+node: {title: "n119" label: "ProjM 0 119"  info1: "visited: 16
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n119" targetname: "n120" label: "0" class:14 color:blue}
 node: {title: "n120" label: "Call  120"  info1: "visited: 16
 irg:     OO_PROGRAM_EXAMPLE_main
@@ -90,12 +92,12 @@ arity: 4
 calling method of type set_a
   param 0 type: class_prima_ptr
   param 1 type: int
-"}
-node: {title: "n120n121" label: "0x2Is  121" color: yellow info1: "visited: 16
+" info2: "get_Call_n_params(n) == get_method_n_params(mt) && Number of args for Call doesn't match number of args in non variadic type."}
+node: {title: "n120n121" label: "0x2Is  121"  info1: "visited: 16
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 0
 Const of type type_unknown
-"}
+"color: yellow}
 edge: {sourcename: "n120" targetname: "n123" label: "0" class:14 color:blue}
 edge: {sourcename: "n120" targetname: "n122" label: "1" }
 edge: {sourcename: "n120" targetname: "n114" label: "2" }
@@ -108,15 +110,15 @@ Selecting entity of type set_a
 "}
 edge: {sourcename: "n122" targetname: "n123" label: "0" class:14 color:blue}
 edge: {sourcename: "n122" targetname: "n114" label: "1" }
-node: {title: "n123" label: "ProjM 0 123" color: yellow info1: "visited: 16
+node: {title: "n123" label: "ProjM 0 123"  info1: "visited: 16
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n123" targetname: "n115" label: "0" class:14 color:blue}
-node: {title: "n114" label: "ProjP 2 114" color: yellow info1: "visited: 16
+node: {title: "n114" label: "ProjP 2 114"  info1: "visited: 16
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n114" targetname: "n115" label: "0" }
 node: {title: "n115" label: "Alloc  115"  info1: "visited: 16
 irg:     OO_PROGRAM_EXAMPLE_main
@@ -133,21 +135,21 @@ edge: {sourcename: "n115" targetname: "n115n116" label: "1" }
 
 graph: { title: "n108"  label: "Block 108" status:clustered color:yellow
 edge: {sourcename: "n108" targetname: "n107" label: "0" class:13 color:red}
-node: {title: "n117" label: "ProjM 1 117" color: yellow info1: "visited: 16
+node: {title: "n117" label: "ProjM 1 117"  info1: "visited: 16
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n117" targetname: "n109" label: "0" class:14 color:blue}
-node: {title: "n107" label: "ProjX 0 107" color: yellow info1: "visited: 16
+node: {title: "n107" label: "ProjX 0 107"  info1: "visited: 16
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n107" targetname: "n109" label: "0" class:13 color:red}
-node: {title: "n109" label: "Start  109" color: blue info1: "visited: 16
+node: {title: "n109" label: "Start  109"  info1: "visited: 16
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 0
 start of method of type OO_PROGRAM_EXAMPLE_main
-"}
+" info2: "mymode == mode_T && Start node"color: blue}
 }
 
 }

@@ -19,10 +19,15 @@ classname 9: "Points-to"
 classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
+infoname 1: "Attribute"
+infoname 2: "Verification errors"
 
 node: {title: "t18" label: "method c" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
+variadicity: variadicity_non_variadic
+params: 2
+results: 1
 "}
 edge: { sourcename: "t18" targetname: "t13"class: 5 label: "param 0" color: green}
 edge: { sourcename: "t18" targetname: "t11"class: 5 label: "param 1" color: green}
@@ -71,13 +76,16 @@ irg = g68"
 }
 edge: { sourcename: "e17" targetname: "t15"class: 3 label: "type" color: red}
 edge: { sourcename: "e17" targetname: "n16"label: "value 0"}
-node: {title: "n16" label: "&(PRIMA_set_a)P  16" color: yellow info1: "visited: 7
+node: {title: "n16" label: "&(PRIMA_set_a)P  16"  info1: "visited: 7
 arity: 0
 Const of type type_unknown
-"}
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
 node: {title: "t15" label: "method set_a" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
+variadicity: variadicity_non_variadic
+params: 2
+results: 0
 "}
 edge: { sourcename: "t15" targetname: "t13"class: 5 label: "param 0" color: green}
 edge: { sourcename: "t15" targetname: "t11"class: 5 label: "param 1" color: green}
@@ -96,10 +104,10 @@ irg = g90"
 }
 edge: { sourcename: "e20" targetname: "t18"class: 3 label: "type" color: red}
 edge: { sourcename: "e20" targetname: "n19"label: "value 0"}
-node: {title: "n19" label: "&(PRIMA_c)P  19" color: yellow info1: "visited: 7
+node: {title: "n19" label: "&(PRIMA_c)P  19"  info1: "visited: 7
 arity: 0
 Const of type type_unknown
-"}
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
 node: {title: "e23" label: "ent GlobalType_OO_PROGRAM_EXAMPLE_main" color: yellow
  info1: "
 id: e23
@@ -115,10 +123,10 @@ irg = g35"
 }
 edge: { sourcename: "e23" targetname: "t21"class: 3 label: "type" color: red}
 edge: { sourcename: "e23" targetname: "n22"label: "value 0"}
-node: {title: "n22" label: "&(GlobalType_OO_PROGRAM_EXAMPLE_main)P  22" color: yellow info1: "visited: 7
+node: {title: "n22" label: "&(GlobalType_OO_PROGRAM_EXAMPLE_main)P  22"  info1: "visited: 7
 arity: 0
 Const of type type_unknown
-"}
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
 node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1B,
 peculiarity: peculiarity_existent
@@ -127,6 +135,9 @@ edge: { sourcename: "t0" targetname: "e23"class: 12 label: "member" color:blue}
 node: {title: "t21" label: "method OO_PROGRAM_EXAMPLE_main" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
+variadicity: variadicity_non_variadic
+params: 0
+results: 1
 "}
 edge: { sourcename: "t21" targetname: "t11"class: 6 label: "res 0" color: green}
 node: {title: "t24" label: "class OO_PROGRAM_EXAMPLE_mainframe_tp" info1: "state: layout_undefined

@@ -19,6 +19,8 @@ classname 9: "Points-to"
 classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
+infoname 1: "Attribute"
+infoname 2: "Verification errors"
 
 node: {title: "e14" label: "ent a" color: yellow
  info1: "
@@ -55,13 +57,16 @@ irg = g68"
 }
 edge: { sourcename: "e17" targetname: "t15"class: 3 label: "type" color: red}
 edge: { sourcename: "e17" targetname: "n16"label: "value 0"}
-node: {title: "n16" label: "&(PRIMA_set_a)P  16" color: yellow info1: "visited: 9
+node: {title: "n16" label: "&(PRIMA_set_a)P  16"  info1: "visited: 9
 arity: 0
 Const of type type_unknown
-"}
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
 node: {title: "t15" label: "method set_a" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
+variadicity: variadicity_non_variadic
+params: 2
+results: 0
 "}
 edge: { sourcename: "t15" targetname: "t13"class: 5 label: "param 0" color: green}
 edge: { sourcename: "t15" targetname: "t11"class: 5 label: "param 1" color: green}
@@ -89,13 +94,16 @@ irg = g90"
 }
 edge: { sourcename: "e20" targetname: "t18"class: 3 label: "type" color: red}
 edge: { sourcename: "e20" targetname: "n19"label: "value 0"}
-node: {title: "n19" label: "&(PRIMA_c)P  19" color: yellow info1: "visited: 9
+node: {title: "n19" label: "&(PRIMA_c)P  19"  info1: "visited: 9
 arity: 0
 Const of type type_unknown
-"}
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
 node: {title: "t18" label: "method c" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
+variadicity: variadicity_non_variadic
+params: 2
+results: 1
 "}
 edge: { sourcename: "t18" targetname: "t13"class: 5 label: "param 0" color: green}
 edge: { sourcename: "t18" targetname: "t11"class: 5 label: "param 1" color: green}

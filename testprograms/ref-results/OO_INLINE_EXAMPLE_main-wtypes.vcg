@@ -19,21 +19,23 @@ classname 9: "Points-to"
 classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
+infoname 1: "Attribute"
+infoname 2: "Verification errors"
 
 graph: { title: "g35" label: "OO_INLINE_EXAMPLE_main" status:clustered color:white
 graph: { title: "n196"  label: "Block 196" status:clustered color:yellow
 edge: {sourcename: "n196" targetname: "n198" label: "0" class:13 color:red}
 edge: {sourcename: "n196" targetname: "n197" label: "1" class:13 color:red}
-node: {title: "n200" label: "PhiM  200" color: green info1: "visited: 22
+node: {title: "n200" label: "PhiM  200"  info1: "visited: 22
 irg:     OO_INLINE_EXAMPLE_main
 arity: 2 backedges:
-"}
+" info2: "mode_is_dataM(mymode) && Phi node"color: green}
 edge: {sourcename: "n200" targetname: "n211" label: "0" class:14 color:blue}
 edge: {sourcename: "n200" targetname: "n201" label: "1" class:14 color:blue}
 node: {title: "n201" label: "Store  201"  info1: "visited: 22
 irg:     OO_INLINE_EXAMPLE_main
 arity: 3
-"}
+" info2: "mymode == mode_T && Store node"}
 edge: {sourcename: "n201" targetname: "n200" label: "0" class:14 color:blue}
 edge: {sourcename: "n201" targetname: "n206" label: "1" }
 edge: {sourcename: "n201" targetname: "n202" label: "2" }
@@ -45,35 +47,35 @@ Selecting entity of type int
 "}
 edge: {sourcename: "n206" targetname: "n200" label: "0" class:14 color:blue}
 edge: {sourcename: "n206" targetname: "n207" label: "1" }
-node: {title: "n202" label: "PhiIs  202" color: green info1: "visited: 22
+node: {title: "n202" label: "PhiIs  202"  info1: "visited: 22
 irg:     OO_INLINE_EXAMPLE_main
 arity: 2 backedges:
-"}
+" info2: "mode_is_dataM(mymode) && Phi node"color: green}
 edge: {sourcename: "n202" targetname: "n205" label: "0" }
 edge: {sourcename: "n202" targetname: "n203" label: "1" }
-node: {title: "n203" label: "PhiIs  203" color: green info1: "visited: 22
+node: {title: "n203" label: "PhiIs  203"  info1: "visited: 22
 irg:     OO_INLINE_EXAMPLE_main
 arity: 2 backedges:
-"}
+" info2: "mode_is_dataM(mymode) && Phi node"color: green}
 edge: {sourcename: "n203" targetname: "n204" label: "0" }
 edge: {sourcename: "n203" targetname: "n202" label: "1" }
 node: {title: "n197" label: "Jmp  197"  info1: "visited: 22
 irg:     OO_INLINE_EXAMPLE_main
 arity: 0
-"}
+" info2: "mymode == mode_X && Jmp node"}
 }
 
 graph: { title: "n199"  label: "Block 199" status:clustered color:yellow
 edge: {sourcename: "n199" targetname: "n194" label: "0" class:13 color:red}
-node: {title: "n211" label: "ProjM 0 211" color: yellow info1: "visited: 22
+node: {title: "n211" label: "ProjM 0 211"  info1: "visited: 22
 irg:     OO_INLINE_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n211" targetname: "n212" label: "0" class:14 color:blue}
 node: {title: "n212" label: "Store  212"  info1: "visited: 22
 irg:     OO_INLINE_EXAMPLE_main
 arity: 3
-"}
+" info2: "mymode == mode_T && Store node"}
 edge: {sourcename: "n212" targetname: "n215" label: "0" class:14 color:blue}
 edge: {sourcename: "n212" targetname: "n214" label: "1" }
 edge: {sourcename: "n212" targetname: "n213" label: "2" }
@@ -85,15 +87,15 @@ Selecting entity of type int
 "}
 edge: {sourcename: "n214" targetname: "n215" label: "0" class:14 color:blue}
 edge: {sourcename: "n214" targetname: "n207" label: "1" }
-node: {title: "n215" label: "ProjM 0 215" color: yellow info1: "visited: 22
+node: {title: "n215" label: "ProjM 0 215"  info1: "visited: 22
 irg:     OO_INLINE_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n215" targetname: "n208" label: "0" class:14 color:blue}
-node: {title: "n207" label: "ProjP 2 207" color: yellow info1: "visited: 22
+node: {title: "n207" label: "ProjP 2 207"  info1: "visited: 22
 irg:     OO_INLINE_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n207" targetname: "n208" label: "0" }
 node: {title: "n208" label: "Alloc  208"  info1: "visited: 22
 irg:     OO_INLINE_EXAMPLE_main
@@ -102,55 +104,55 @@ allocating entity of type PRIMA_INLINE
 "}
 edge: {sourcename: "n208" targetname: "n210" label: "0" class:14 color:blue}
 edge: {sourcename: "n208" targetname: "n209" label: "1" }
-node: {title: "n204" label: "0x0Is  204" color: yellow info1: "visited: 22
+node: {title: "n204" label: "0x0Is  204"  info1: "visited: 22
 irg:     OO_INLINE_EXAMPLE_main
 arity: 0
 Const of type type_unknown
-"}
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
 node: {title: "n198" label: "Jmp  198"  info1: "visited: 22
 irg:     OO_INLINE_EXAMPLE_main
 arity: 0
-"}
+" info2: "mymode == mode_X && Jmp node"}
 }
 
 graph: { title: "n193"  label: "Block 193" status:clustered color:yellow
 edge: {sourcename: "n193" targetname: "n194" label: "0" class:13 color:red}
-node: {title: "n213" label: "0x2Is  213" color: yellow info1: "visited: 22
+node: {title: "n213" label: "0x2Is  213"  info1: "visited: 22
 irg:     OO_INLINE_EXAMPLE_main
 arity: 0
 Const of type type_unknown
-"}
-node: {title: "n210" label: "ProjM 1 210" color: yellow info1: "visited: 22
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
+node: {title: "n210" label: "ProjM 1 210"  info1: "visited: 22
 irg:     OO_INLINE_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n210" targetname: "n195" label: "0" class:14 color:blue}
 node: {title: "n209" label: "SymC PRIMA_INLINE size  209"  info1: "visited: 22
 irg:     OO_INLINE_EXAMPLE_main
 arity: 0
-"}
-node: {title: "n205" label: "0x5Is  205" color: yellow info1: "visited: 22
+" info2: "(mode_is_int(mymode) || mode_is_reference(mymode)) && SymConst node"}
+node: {title: "n205" label: "0x5Is  205"  info1: "visited: 22
 irg:     OO_INLINE_EXAMPLE_main
 arity: 0
 Const of type type_unknown
-"}
-node: {title: "n194" label: "ProjX 0 194" color: yellow info1: "visited: 22
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
+node: {title: "n194" label: "ProjX 0 194"  info1: "visited: 22
 irg:     OO_INLINE_EXAMPLE_main
 arity: 1
-"}
+"color: yellow}
 edge: {sourcename: "n194" targetname: "n195" label: "0" class:13 color:red}
-node: {title: "n195" label: "Start  195" color: blue info1: "visited: 22
+node: {title: "n195" label: "Start  195"  info1: "visited: 22
 irg:     OO_INLINE_EXAMPLE_main
 arity: 0
 start of method of type OO_INLINE_EXAMPLE_main
-"}
+" info2: "mymode == mode_T && Start node"color: blue}
 }
 
 graph: { title: "n191"  label: "Block 191" status:clustered color:yellow
-node: {title: "n190" label: "End  190" color: blue info1: "visited: 22
+node: {title: "n190" label: "End  190"  info1: "visited: 22
 irg:     OO_INLINE_EXAMPLE_main
 arity: 2
-"}
+"color: blue}
 }
 
 }
@@ -190,13 +192,16 @@ irg = g68"
 }
 edge: { sourcename: "e17" targetname: "t15"class: 3 label: "type" color: red}
 edge: { sourcename: "e17" targetname: "n16"label: "value 0"}
-node: {title: "n16" label: "&(PRIMA_INLINE_set_a)P  16" color: yellow info1: "visited: 1
+node: {title: "n16" label: "&(PRIMA_INLINE_set_a)P  16"  info1: "visited: 1
 arity: 0
 Const of type type_unknown
-"}
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
 node: {title: "t15" label: "method set_a" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
+variadicity: variadicity_non_variadic
+params: 2
+results: 0
 "}
 edge: { sourcename: "t15" targetname: "t13"class: 5 label: "param 0" color: green}
 edge: { sourcename: "t15" targetname: "t11"class: 5 label: "param 1" color: green}
@@ -224,13 +229,16 @@ irg = g90"
 }
 edge: { sourcename: "e20" targetname: "t18"class: 3 label: "type" color: red}
 edge: { sourcename: "e20" targetname: "n19"label: "value 0"}
-node: {title: "n19" label: "&(PRIMA_INLINE_c)P  19" color: yellow info1: "visited: 1
+node: {title: "n19" label: "&(PRIMA_INLINE_c)P  19"  info1: "visited: 1
 arity: 0
 Const of type type_unknown
-"}
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
 node: {title: "t18" label: "method c" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
+variadicity: variadicity_non_variadic
+params: 2
+results: 1
 "}
 edge: { sourcename: "t18" targetname: "t13"class: 5 label: "param 0" color: green}
 edge: { sourcename: "t18" targetname: "t11"class: 5 label: "param 1" color: green}
@@ -250,10 +258,10 @@ irg = g35"
 }
 edge: { sourcename: "e23" targetname: "t21"class: 3 label: "type" color: red}
 edge: { sourcename: "e23" targetname: "n22"label: "value 0"}
-node: {title: "n22" label: "&(GlobalType_OO_INLINE_EXAMPLE_main)P  22" color: yellow info1: "visited: 1
+node: {title: "n22" label: "&(GlobalType_OO_INLINE_EXAMPLE_main)P  22"  info1: "visited: 1
 arity: 0
 Const of type type_unknown
-"}
+" info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
 node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1B,
 peculiarity: peculiarity_existent
@@ -262,6 +270,9 @@ edge: { sourcename: "t0" targetname: "e23"class: 12 label: "member" color:blue}
 node: {title: "t21" label: "method OO_INLINE_EXAMPLE_main" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
+variadicity: variadicity_non_variadic
+params: 0
+results: 1
 "}
 edge: { sourcename: "t21" targetname: "t11"class: 6 label: "res 0" color: green}
 node: {title: "t24" label: "class OO_INLINE_EXAMPLE_mainframe_tp" info1: "state: layout_undefined
