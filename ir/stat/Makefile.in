@@ -20,11 +20,8 @@ INSTALL_HEADERS =
 SOURCES = $(INSTALL_HEADERS)
 
 SOURCES += 	Makefile.in \
-		firmstat.h
-
-ifeq ($(enable_statistics),yes)
-SOURCES += firmstat.c
-endif
+		firmstat.h \
+		firmstat.c
 
 include $(topdir)/MakeRules
 
