@@ -71,7 +71,7 @@ local_tags:	$(TAGFILES)
 	etags -C $^
 
 # installation
-install:	$(INCLUDEDIR) install_headers $(LIBDIR) install_libs
+install:	$(INCLUDEDIR) $(INCLUDEDIR)/adt install_headers $(LIBDIR) install_libs
 	@echo ================================================
 	@echo Don\'t forget to add $(LIBDIR) to LD_LIBRARY_PATH
 	@echo Don\'t forget to add /usr/public/libxml2/lib to LD_LIBRARY_PATH
@@ -81,6 +81,9 @@ install_headers:	subdir_install_headers local_install_headers
 local_install_headers:
 ifneq ($(strip $(INSTALL_HEADERS)),)
 	$(INSTALL)  -m u+rw,a+r $(addprefix $(srcdir)/,$(INSTALL_HEADERS)) $(INCLUDEDIR)
+endif
+ifneq ($(strip $(INSTALL_HEADERS_ADT)),)
+	$(INSTALL)  -m u+rw,a+r $(addprefix $(srcdir)/,$(INSTALL_HEADERS_ADT)) $(INCLUDEDIR)/adt
 endif
 
 install_libs:		subdir_install_libs local_install_libs
@@ -96,6 +99,9 @@ $(LIBDIR):
 	mkdir -p $@
 
 $(INCLUDEDIR):
+	mkdir -p $@
+
+$(INCLUDEDIR)/adt:
 	mkdir -p $@
 
 # generated the directory where all the generated documentation is
