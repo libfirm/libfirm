@@ -35,10 +35,12 @@ static ir_graph *outermost_ir_graph;      /* The outermost graph the scc is comp
 static ir_loop *current_loop;      /* Current cfloop construction is working
                       on. */
 static int loop_node_cnt = 0;      /* Counts the number of allocated cfloop nodes.
-                      Each cfloop node gets a unique number.
-                      What for? ev. remove. @@@ */
+				      Each cfloop node gets a unique number.
+				      What for? ev. remove. @@@ */
 static int current_dfn = 1;        /* Counter to generate depth first numbering
-                      of visited nodes.  */
+				      of visited nodes.  */
+
+static int max_loop_depth = 0;
 
 void link_to_reg_end (ir_node *n, void *env);
 
@@ -219,6 +221,7 @@ static ir_loop *new_loop (void) {
     son->outer_loop = father;
     add_loop_son(father, son);
     son->depth = father->depth+1;
+    if (son->depth > max_loop_depth) max_loop_depth = son->depth;
   } else {  /* The root loop */
     son->outer_loop = son;
     son->depth = 0;
@@ -569,7 +572,7 @@ static void cfscc (ir_node *n) {
 }
 
 /* Constructs backedge information for irg. */
-void construct_cf_backedges(ir_graph *irg) {
+int construct_cf_backedges(ir_graph *irg) {
   ir_graph *rem = current_ir_graph;
   ir_loop *head_rem;
   ir_node *end = get_irg_end(irg);
@@ -577,6 +580,7 @@ void construct_cf_backedges(ir_graph *irg) {
 
   assert(!interprocedural_view &&
      "use construct_ip_backedges");
+  max_loop_depth = 0;
 
   current_ir_graph = irg;
   outermost_ir_graph = irg;
@@ -601,16 +605,17 @@ void construct_cf_backedges(ir_graph *irg) {
   assert(get_irg_loop(current_ir_graph)->kind == k_ir_loop);
 
   current_ir_graph = rem;
+  return max_loop_depth;
 }
 
 
-void construct_ip_cf_backedges (void) {
+int construct_ip_cf_backedges (void) {
   ir_graph *rem = current_ir_graph;
   int rem_ipv = interprocedural_view;
   int i;
 
   assert(get_irp_ip_view_state() == ip_view_valid);
-
+  max_loop_depth = 0;
   outermost_ir_graph = get_irp_main_irg();
 
   init_ip_scc();
@@ -673,6 +678,7 @@ void construct_ip_cf_backedges (void) {
 
   current_ir_graph = rem;
   interprocedural_view = rem_ipv;
+  return max_loop_depth;
 }
 
 

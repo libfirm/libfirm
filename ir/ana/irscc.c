@@ -40,14 +40,16 @@ INLINE void add_loop_son(ir_loop *loop, ir_loop *son);
 INLINE void add_loop_node(ir_loop *loop, ir_node *n);
 
 static ir_graph *outermost_ir_graph;      /* The outermost graph the scc is computed
-                      for */
+					     for */
 static ir_loop *current_loop;      /* Current loop construction is working
-                      on. */
+				      on. */
 static int loop_node_cnt = 0;      /* Counts the number of allocated loop nodes.
-                      Each loop node gets a unique number.
-                      What for? ev. remove. @@@ */
+				      Each loop node gets a unique number.
+				      What for? ev. remove. @@@ */
 static int current_dfn = 1;        /* Counter to generate depth first numbering
-                      of visited nodes.  */
+				      of visited nodes.  */
+
+static int max_loop_depth = 0;
 
 void link_to_reg_end (ir_node *n, void *env);
 void set_projx_link(ir_node *cb_projx, ir_node *end_projx);
@@ -311,6 +313,7 @@ ir_loop *new_loop (void) {
     son->outer_loop = father;
     add_loop_son(father, son);
     son->depth = father->depth+1;
+    if (son->depth > max_loop_depth) max_loop_depth = son->depth;
   } else {  /* The root loop */
     son->outer_loop = son;
     son->depth = 0;
@@ -1130,13 +1133,14 @@ static void my_scc (ir_node *n) {
 
 /* Constructs backedge information for irg. In interprocedural view constructs
    backedges for all methods called by irg, too. */
-void construct_backedges(ir_graph *irg) {
+int construct_backedges(ir_graph *irg) {
   ir_graph *rem = current_ir_graph;
   ir_loop *head_rem;
 
   assert(!interprocedural_view &&
      "not implemented, use construct_ip_backedges");
 
+  max_loop_depth = 0;
   current_ir_graph   = irg;
   outermost_ir_graph = irg;
 
@@ -1164,55 +1168,17 @@ void construct_backedges(ir_graph *irg) {
   }
   */
   current_ir_graph = rem;
+
+  return max_loop_depth;
 }
 
 
-#if 0
-void construct_ip_backedges (void) {
-  ir_graph *rem = current_ir_graph;
-  int rem_ipv = interprocedural_view;
-  int i, j;
-
-  outermost_ir_graph = get_irp_main_irg();
-
-  init_ip_scc();
-
-  current_loop = NULL;
-  new_loop();  /* sets current_loop */
-  interprocedural_view = 1;
-
-  inc_max_irg_visited();
-  for (i = 0; i < get_irp_n_irgs(); i++)
-    set_irg_visited(get_irp_irg(i), get_max_irg_visited());
-
-  for (i = 0; i < get_irp_n_irgs(); i++) {
-    ir_node *sb;
-    current_ir_graph = get_irp_irg(i);
-    /* Find real entry points */
-    sb = get_irg_start_block(current_ir_graph);
-    if ((get_Block_n_cfgpreds(sb) > 1) ||
-    (get_nodes_block(get_Block_cfgpred(sb, 0)) != sb)) continue;
-    /* Compute scc for this graph */
-    outermost_ir_graph = current_ir_graph;
-    set_irg_visited(outermost_ir_graph, get_max_irg_visited());
-    scc(get_irg_end(current_ir_graph));
-    for (j = 0; j < get_End_n_keepalives(get_irg_end(outermost_ir_graph)); j++)
-      scc(get_End_keepalive(get_irg_end(outermost_ir_graph), j));
-  }
-
-  set_irg_loop(outermost_ir_graph, current_loop);
-  set_irg_loopinfo_state(current_ir_graph, loopinfo_ip_consistent);
-  assert(get_irg_loop(outermost_ir_graph)->kind == k_ir_loop);
-
-  current_ir_graph = rem;
-  interprocedural_view = rem_ipv;
-}
-#else
-void construct_ip_backedges (void) {
+int construct_ip_backedges (void) {
   ir_graph *rem = current_ir_graph;
   int rem_ipv = interprocedural_view;
   int i;
 
+  max_loop_depth = 0;
   assert(get_irp_ip_view_state() == ip_view_valid);
 
   outermost_ir_graph = get_irp_main_irg();
@@ -1274,8 +1240,9 @@ void construct_ip_backedges (void) {
 
   current_ir_graph = rem;
   interprocedural_view = rem_ipv;
+  return max_loop_depth;
 }
-#endif
+
 void my_construct_ip_backedges (void) {
   ir_graph *rem = current_ir_graph;
   int rem_ipv = interprocedural_view;

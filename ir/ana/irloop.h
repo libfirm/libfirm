@@ -118,20 +118,23 @@ void *get_loop_link (const ir_loop *loop);
  * Constructing and destructing the loop/backedge information.
  */
 
-/** Constructs backedge information for irg in intraprocedural view. */
+/** Constructs backedge information for irg in intraprocedural view.
+ *  @returns Maximal depth of loop tree. */
 /* @@@ Well, maybe construct_loop_information or analyze_loops ? */
-void construct_backedges(ir_graph *irg);
+int construct_backedges(ir_graph *irg);
 
 /** Constructs backedges for all irgs in interprocedural view.  All
     loops in the graph will be marked as such, not only realizeable
     loops and recursions in the program.  E.g., if the same funcion is
     called twice, there is a loop between the first function return and
-    the second call.  */
-void construct_ip_backedges(void);
+    the second call.
+ *  @returns Maximal depth of loop tree. */
+int construct_ip_backedges(void);
 
-/* Construct loop tree only for control flow. */
-void construct_cf_backedges(ir_graph *irg);
-void construct_ip_cf_backedges (void);
+/* Construct loop tree only for control flow.
+ * @returns Maximal depth of loop tree. */
+int construct_cf_backedges(ir_graph *irg);
+int construct_ip_cf_backedges (void);
 
 /** Removes all loop information.
     Resets all backedges */
