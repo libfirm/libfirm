@@ -20,7 +20,7 @@ INSTALL_HEADERS = modeconv.h archop.h
 SOURCES = $(INSTALL_HEADERS)
 
 SOURCES += 	Makefile.in \
-		modeconv.c archop.c
+		archop.c # modeconv.c
 
 include $(topdir)/MakeRules
 
