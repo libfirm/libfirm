@@ -35,6 +35,7 @@
 # include "irouts.h"
 # include "irdom.h"
 # include "irloop.h"
+# include "irvrfy.h"
 
 # include "panic.h"
 # include "array.h"
@@ -106,6 +107,13 @@ SeqNo get_Block_seqno(ir_node *n);
 #define PRINT_ITEMID(X,Y)  fprintf(F, "i%pT%d", (void *) (X), (P))
 #endif
 
+static const char *get_type_name_ex(type *tp, int *bad)
+{
+  if (is_type(tp))
+    return get_type_name(tp);
+  *bad |= 1;
+  return "<ERROR>";
+}
 
 static void print_type_type_edge(FILE *F, type *S, type *T, const char *fmt, ...)
 {
@@ -273,13 +281,15 @@ static int node_floats(ir_node *n) {
 	  (get_irg_pinned(current_ir_graph) == floats));
 }
 
-static const char *get_ent_dump_name (entity *ent) {
+static const char *get_ent_dump_name(entity *ent) {
+  if (! ent)
+    return "<NULL entity>";
   /* Don't use get_entity_ld_ident (ent) as it computes the mangled name! */
   if (ent->ld_name) return get_id_str(ent->ld_name);
   return get_id_str(ent->name);
 }
 
-static const char *get_irg_dump_name (ir_graph *irg) {
+static const char *get_irg_dump_name(ir_graph *irg) {
   /* Don't use get_entity_ld_ident (ent) as it computes the mangled name! */
   entity *ent = get_irg_ent(irg);
   return get_ent_dump_name(ent);
@@ -408,9 +418,10 @@ void dump_pointer_values_to_info(bool b) {
 /* Routines to dump information about a single ir node.            */
 /*******************************************************************/
 
-static INLINE void
-dump_node_opcode (ir_node *n)
+static INLINE int
+dump_node_opcode(ir_node *n)
 {
+  int bad = 0;
 
   switch(get_irn_opcode(n)) {
 
@@ -429,7 +440,7 @@ dump_node_opcode (ir_node *n)
     } else {
       assert(get_kind(get_SymConst_type(n)) == k_type);
       assert(get_type_ident(get_SymConst_type(n)));
-      fprintf (F, "SymC %s ", get_type_name(get_SymConst_type(n)));
+      fprintf (F, "SymC %s ", get_type_name_ex(get_SymConst_type(n), &bad));
       if (get_SymConst_kind(n) == type_tag)
         fprintf (F, "tag");
       else
@@ -454,6 +465,7 @@ dump_node_opcode (ir_node *n)
   }
 
   }  /* end switch */
+  return bad;
 }
 
 static INLINE void
@@ -485,21 +497,27 @@ dump_node_mode (ir_node *n)
   }
 }
 
-static void dump_node_typeinfo(ir_node *n) {
-  if (!opt_dump_analysed_type_info) return;
-  if (get_irg_typeinfo_state(current_ir_graph) == irg_typeinfo_consistent  ||
-      get_irg_typeinfo_state(current_ir_graph) == irg_typeinfo_inconsistent  ) {
-    type *tp = get_irn_type(n);
-    if (tp != none_type)
-      fprintf (F, " [%s]", get_type_name(tp));
-    else
-      fprintf (F, " []");
+static int dump_node_typeinfo(ir_node *n) {
+  int bad = 0;
+
+  if (opt_dump_analysed_type_info) {
+    if (get_irg_typeinfo_state(current_ir_graph) == irg_typeinfo_consistent  ||
+	get_irg_typeinfo_state(current_ir_graph) == irg_typeinfo_inconsistent  ) {
+      type *tp = get_irn_type(n);
+      if (tp != none_type)
+	fprintf(F, " [%s]", get_type_name_ex(tp, &bad));
+      else
+	fprintf(F, " []");
+    }
   }
+  return bad;
 }
 
-static INLINE void
+static INLINE int
 dump_node_nodeattr (ir_node *n)
 {
+  int bad = 0;
+
   switch (get_irn_opcode(n)) {
   case iro_Start:
     if (false && interprocedural_view) {
@@ -520,7 +538,7 @@ dump_node_nodeattr (ir_node *n)
     fprintf (F, "%s", get_ent_dump_name(get_Sel_entity(n)));
     } break;
   case iro_Cast: {
-    fprintf (F, "(%s)", get_type_name(get_Cast_type(n)));
+    fprintf (F, "(%s)", get_type_name_ex(get_Cast_type(n), &bad));
     } break;
   case iro_Confirm: {
     fprintf (F, "%s", get_pnc_string(get_Confirm_cmp(n)));
@@ -529,11 +547,16 @@ dump_node_nodeattr (ir_node *n)
   default:
     ;
   } /* end switch */
+
+  return bad;
 }
 
-static INLINE void
-dump_node_vcgattr (ir_node *n)
+static INLINE void dump_node_vcgattr(ir_node *n, int bad)
 {
+  if (bad) {
+    fprintf(F, "color: red");
+    return;
+  }
   switch (get_irn_opcode(n)) {
   case iro_Start:
   case iro_EndReg:
@@ -562,11 +585,12 @@ dump_node_vcgattr (ir_node *n)
   if (overrule_nodecolor) fprintf(F, " color: %s", overrule_nodecolor);
 }
 
-static INLINE void
-dump_node_info (ir_node *n) {
-  int i;
+static INLINE int dump_node_info(ir_node *n)
+{
+  int i, bad = 0;
   char comma;
   ir_graph *irg;
+
   fprintf (F, " info1: \"");
   if (opt_dump_pointer_values_to_info)
     fprintf (F, "addr:    %p \n", (void *)n);
@@ -586,32 +610,39 @@ dump_node_info (ir_node *n) {
   }
   fprintf(F, "\n");
 
-
   /* Source types */
   switch (get_irn_opcode(n)) {
   case iro_Start: {
     type *tp = get_entity_type(get_irg_ent(get_irn_irg(n)));
-    fprintf(F, "start of method of type %s \n", get_type_name(tp));
+    fprintf(F, "start of method of type %s \n", get_type_name_ex(tp, &bad));
     for (i = 0; i < get_method_n_params(tp); ++i)
-      fprintf(F, "  param %d type: %s \n", i, get_type_name(get_method_param_type(tp, i)));
+      fprintf(F, "  param %d type: %s \n", i, get_type_name_ex(get_method_param_type(tp, i), &bad));
   } break;
   case iro_Alloc: {
-    fprintf(F, "allocating entity of type %s \n", get_type_name(get_Alloc_type(n)));
+    fprintf(F, "allocating entity of type %s \n", get_type_name_ex(get_Alloc_type(n), &bad));
   } break;
   case iro_Free: {
-    fprintf(F, "freeing entity of type %s \n", get_type_name(get_Free_type(n)));
+    fprintf(F, "freeing entity of type %s \n", get_type_name_ex(get_Free_type(n), &bad));
   } break;
   case iro_Sel: {
-    fprintf(F, "Selecting entity of type %s \n", get_type_name(get_entity_type(get_Sel_entity(n))));
-    fprintf(F, "  from entity of type %s \n", get_type_name(get_entity_owner(get_Sel_entity(n))));
+    entity *ent = get_Sel_entity(n);
+
+    if (ent) {
+      fprintf(F, "Selecting entity of type %s\n", get_type_name_ex(get_entity_type(ent), &bad));
+      fprintf(F, "  from entity of type %s\n", get_type_name_ex(get_entity_owner(ent), &bad));
+    }
+    else {
+      fprintf(F, "<NULL entity>\n");
+      bad = 1;
+    }
   } break;
   case iro_Call: {
     type *tp = get_Call_type(n);
-    fprintf(F, "calling method of type %s \n", get_type_name(tp));
+    fprintf(F, "calling method of type %s \n", get_type_name_ex(tp, &bad));
     for (i = 0; i < get_method_n_params(tp); ++i)
-      fprintf(F, "  param %d type: %s \n", i, get_type_name(get_method_param_type(tp, i)));
+      fprintf(F, "  param %d type: %s \n", i, get_type_name_ex(get_method_param_type(tp, i), &bad));
     for (i = 0; i < get_method_n_ress(tp); ++i)
-      fprintf(F, "  resul %d type: %s \n", i, get_type_name(get_method_res_type(tp, i)));
+      fprintf(F, "  resul %d type: %s \n", i, get_type_name_ex(get_method_res_type(tp, i), &bad));
     if (Call_has_callees(n)) {
       fprintf(F, "possible callees: \n");
       for (i = 0; i < get_Call_n_callees(n); i++) {
@@ -639,15 +670,15 @@ dump_node_info (ir_node *n) {
   case iro_Return: {
     if (!interprocedural_view) {
       type *tp = get_entity_type(get_irg_ent(get_irn_irg(n)));
-      fprintf(F, "return in method of type %s \n", get_type_name(tp));
+      fprintf(F, "return in method of type %s \n", get_type_name_ex(tp, &bad));
       for (i = 0; i < get_method_n_ress(tp); ++i)
-	fprintf(F, "  res %d type: %s \n", i, get_type_name(get_method_res_type(tp, i)));
+	fprintf(F, "  res %d type: %s \n", i, get_type_name_ex(get_method_res_type(tp, i), &bad));
     }
     } break;
   case iro_Const: {
     type *tp = get_Const_type(n);
     assert(tp != none_type);
-    fprintf(F, "Const of type %s \n", get_type_name(get_Const_type(n)));
+    fprintf(F, "Const of type %s \n", get_type_name_ex(get_Const_type(n), &bad));
   } break;
   case iro_Filter: {
     int i;
@@ -669,13 +700,14 @@ dump_node_info (ir_node *n) {
   default: ;
   }
 
-
   if (get_irg_typeinfo_state(get_irn_irg(n)) == irg_typeinfo_consistent  ||
       get_irg_typeinfo_state(get_irn_irg(n)) == irg_typeinfo_inconsistent  )
     if (get_irn_type(n) != none_type)
-      fprintf (F, "\nAnalysed type: %s", get_type_name(get_irn_type(n)));
+      fprintf (F, "\nAnalysed type: %s", get_type_name_ex(get_irn_type(n), &bad));
 
   fprintf (F, "\"");
+
+  return bad;
 }
 
 
@@ -704,41 +736,56 @@ static void dump_const_node_local(ir_node *n) {
   for (i = 0; i < get_irn_arity(n); i++) {
     ir_node *con = get_irn_n(n, i);
     if (is_constlike_node(con) && irn_not_visited(con)) {
+      int bad = 0;
+
       mark_irn_visited(con);
       /* Generate a new name for the node by appending the names of
 	 n and const. */
-      fprintf (F, "node: {title: "); PRINT_CONSTID(n, con);
+      fprintf(F, "node: {title: "); PRINT_CONSTID(n, con);
       fprintf(F, " label: \"");
-      dump_node_opcode(con);
+      bad |= dump_node_opcode(con);
       dump_node_mode (con);
-      dump_node_typeinfo(con);
+      bad |= dump_node_typeinfo(con);
       fprintf (F, " ");
-      dump_node_nodeattr(con);
-      fprintf (F, " %ld", get_irn_node_nr(con));
-      fprintf (F, "\" ");
-      dump_node_vcgattr(con);
-      dump_node_info(con);
-      fprintf (F, "}\n");
+      bad |= dump_node_nodeattr(con);
+      fprintf(F, " %ld", get_irn_node_nr(con));
+      fprintf(F, "\" ");
+      bad |= dump_node_info(con);
+      dump_node_vcgattr(con, bad);
+      fprintf(F, "}\n");
     }
   }
 }
 
-static void
-dump_node (ir_node *n) {
+static void print_node_error(const char *p)
+{
+  if (! p)
+    return;
+
+  fprintf (F, " info2: \"%s\"", p);
+}
+
+static void dump_node(ir_node *n)
+{
+  int bad = 0;
+  const char *p;
+
   if (get_opt_dump_const_local() && is_constlike_node(n)) return;
   /* dump this node */
-  fprintf (F, "node: {title: \""); PRINT_NODEID(n); fprintf(F, "\" label: \"");
+  fprintf(F, "node: {title: \""); PRINT_NODEID(n); fprintf(F, "\" label: \"");
 
-  dump_node_opcode(n);
+  bad = ! irn_vrfy_irg_dump(n, current_ir_graph, &p);
+  bad |= dump_node_opcode(n);
   dump_node_mode (n);
-  dump_node_typeinfo(n);
-  fprintf (F, " ");
-  dump_node_nodeattr(n);
-  fprintf (F, " %ld", get_irn_node_nr(n));
-  fprintf (F, "\" ");
-  dump_node_vcgattr(n);
-  dump_node_info(n);
-  fprintf (F, "}\n");
+  bad |= dump_node_typeinfo(n);
+  fprintf(F, " ");
+  bad |= dump_node_nodeattr(n);
+  fprintf(F, " %ld", get_irn_node_nr(n));
+  fprintf(F, "\" ");
+  bad |= dump_node_info(n);
+  print_node_error(p);
+  dump_node_vcgattr(n, bad);
+  fprintf(F, "}\n");
   dump_const_node_local(n);
 #ifdef HEAPANAL
   dump_chi_term(F, n);
@@ -964,7 +1011,7 @@ dump_whole_block(ir_node *block) {
 /** dumps a graph block-wise. Expects all blockless nodes in arr in irgs link.
  *  The outermost nodes: blocks and nodes not pinned, Bad, Unknown. */
 static void
-dump_block_graph (ir_graph *irg) {
+dump_block_graph(ir_graph *irg) {
   int i;
   ir_graph *rem = current_ir_graph;
   ir_node **arr = ird_get_irg_link(irg);
@@ -1123,17 +1170,21 @@ static void print_typespecific_vcgattr(type *tp) {
   } /* switch type */
 }
 
-static void print_type_node(type *tp)
+static int print_type_node(type *tp)
 {
+  int bad = 0;
+
   fprintf (F, "node: {title: ");
   PRINT_TYPEID(tp);
-  fprintf (F, " label: \"%s %s\"", get_type_tpop_name(tp), get_type_name(tp));
+  fprintf (F, " label: \"%s %s\"", get_type_tpop_name(tp), get_type_name_ex(tp, &bad));
   fprintf (F, " info1: \"");
   print_type_info(tp);
   print_typespecific_info(tp);
   fprintf (F, "\"");
   print_typespecific_vcgattr(tp);
   fprintf (F, "}\n");
+
+  return bad;
 }
 
 #define X(a)	case a: fprintf(F, #a); break
@@ -1517,7 +1568,9 @@ dump_vcg_header(const char *name, const char *orientation) {
 	   "classname 9: \"Points-to\"\n"
 	   "classname 10: \"Array Element Type\"\n"
 	   "classname 11: \"Overwrites\"\n"
-	   "classname 12: \"Member\"\n",
+	   "classname 12: \"Member\"\n"
+           "infoname 1: \"Attribute\"\n"
+	   "infoname 2: \"Verification errors\"\n",
 	   name, label, orientation);
 
   fprintf (F, "\n");		/* a separator */
