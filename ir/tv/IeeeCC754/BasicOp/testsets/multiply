@@ -1,0 +1,1319 @@
+!! This file contains precision and range independent test vectors for
+!! the operation multiply (*). The first character in each
+!! test vector refers to the origin of the test vector
+!!
+!! 2:  Jerome Coonen Version <2>
+!! 3:  Jerome Coonen Version <3>
+!!      @Phdthesis{
+!!              author = {Coonen, J.T.},
+!!              title  = {Contributions to a proposed standard for binary
+!!                 floating-point arithmetic},
+!!              school = {University of California, Berkeley},
+!!              year   = {1984}}
+!!
+!! H:  precision independent encoding of UCB/<H>ough test vector
+!!      @Unpublished{
+!!             author = {David G. Hough and others},
+!!             title  = {{UCBTEST}, a suite of programs for testing certain
+!!                difficult cases of {IEEE} 754 floating-point arithmetic},
+!!             year   = {1988},
+!!             note   = {Restricted public domain software from
+!!                http://netlib.bell-labs.com/netlib/fp/index.html}}
+!!
+!! A:  Verdonk-Cuyt-Verschaeren (University of <A>ntwerp)
+!!      @Article{
+!!             author  = {Verdonk, B. and Cuyt, A. and Verschaeren, D.},
+!!             title   = {A precision- and range-independent tool for testing
+!!                       floating-point arithmetic {I}: basic operations,
+!!                       square root and remainder},
+!!             journal = {ACM TOMS},
+!!             volume  = {27},
+!!             number  = {1},
+!!             pages   = {92-118},
+!!             year    = {2001}}
+!!             note  = {Under revision}}
+!!
+!! This file is part of the tool IeeeCC754 or IEEE 754 Compliance Checker.
+!! It is a precision and range independent tool to test whether
+!! an implementation of floating-point arithmetic (in hardware or
+!! software) is compliant with the principles of the IEEE 754-854
+!! floating-point standards. You can find out more about the testing
+!! tool IeeeCC754 and the syntax and semantics of the test vectors
+!! at
+!!            http://win-www.uia.ac.be/u/cant/ieeecc754.html
+!!
+!! Last updated:
+!!		$Date$
+!!
+!! Contact:
+!!	Brigitte.Verdonk@ua.ac.be
+!!      Department of Mathematics and Computer Science
+!!      University of Antwerp (UIA)
+!!      Universiteitsplein 1
+!!      B2610 Antwerp, BELGIUM
+!!!! First some easy tests for consistency.
+! Check out sign manipulation.
+2*       ALL   1   1   OK   1
+2*       ALL   -1   -1   OK       1
+2*       ALL   -1   1   OK       -1
+2*       ALL   1   2   OK   2
+2*       ALL   -1   -2   OK       2
+2*       ALL   -1   2   OK       -2
+A*       ALL   1   -2   OK       -2
+2*       ALL   2   3   	OK   	6
+2*       ALL   -2   -3   OK       6
+2*       ALL   -2   3   OK       -6
+A*       ALL   2   -3   OK       -6
+2*       ALL   3   3   OK   9
+2*       ALL   -3   -3   OK       9
+2*       ALL   -3   3   OK       -9
+! 1.0 * various.
+2*	ALL	0i1	1	OK	0i1
+!! 3ff00000 000000000 00000000 00000001 00000000 00000001
+A*	ALL	-0i1	-1	OK	0i1
+A*	ALL	-0i1	1	OK	-0i1
+A*	ALL	-1	0i1	OK	-0i1
+A*	ALL	0i2	1	OK	0i2
+A*	ALL	-0i2	-1	OK	0i2
+2*	ALL	-0i2	1	OK	-0i2
+A*	ALL	-1	0i2	OK	-0i2
+!! 3ff00000 000000000 80000000 00000002 80000000 00000002
+A*	ALL	0i4	1	OK	0i4
+2*	ALL	-0i4	-1	OK	0i4
+!! bff00000 00000000 80000000 00000004 00000000 00000004
+A*	ALL	-0i4	1	OK	-0i4
+A*	ALL	-1	0i4	OK	-0i4
+A*	ALL	Tp1d2	1	OK	Tp1d2
+A*	ALL	-Tp1d2	-1	OK	Tp1d2
+2*	ALL	-Tp1d2	1	OK	-Tp1d2
+A*	ALL	-1	Tp1d2	OK	-Tp1d2
+!! 3ff00000 000000000 801fffff fffffffe 801fffff fffffffe
+2*       ALL   1   -0i9   OK   -0i9
+2*       ALL   -1   0i9   OK   -0i9
+A*       ALL   -1   -0i9   OK   0i9
+A*       ALL   0i9	1   OK   0i9
+A*       ALL   1   -Td1   OK   -Td1
+A*       ALL   -1   Td1   OK   -Td1
+!! bff0000000 00000000 800fffff ffffffff 000fffff ffffffff
+H*       ALL   -1   -Td1   OK   Td1
+A*       ALL   Td1	1   OK   Td1
+A*       ALL   1   -Ti1   OK   -Ti1
+A*       ALL   -1   Ti1   OK   -Ti1
+!! !! bff0000000 00000000 801000001 00100000 00000000
+H*       ALL   -1   -Ti1   OK   Ti1
+A*       ALL   Ti1	1   OK   Ti1
+
+2*       ALL   1   Tp1i3   OK   Tp1i3
+2*       ALL   -1   Ti9   OK   -Ti9
+2*       ALL   1   Td3   OK       Td3
+
+! Exact cases huge and 2.
+2*       ALL   2   Hm1d1   OK   Hd1
+A*       ALL   -2   -Hm1d1   OK   Hd1
+2*       ALL   Hm1d1   -2   OK   -Hd1
+2*       ALL   -Hm1d1   2   OK   -Hd1
+A*       ALL   2   Hm2i3   OK   Hm1i3
+A*       ALL   -2   -Hm2i3   OK   Hm1i3
+2*       ALL   2   -Hm2i3   OK   -Hm1i3
+A*       ALL   -2   Hm2i3   OK   -Hm1i3
+A*       ALL   2   Hm2i1   OK   Hm1i1
+A*       ALL   -2   -Hm2i1   OK   Hm1i1
+2*       ALL   -2   Hm2i1   OK   -Hm1i1
+A*       ALL   2   -Hm2i1   OK   -Hm1i1
+2*       ALL   2   Hm2  OK       Hm1
+2*       ALL   Hm2       -2       OK   -Hm1
+A*       ALL   2   	Hm2d1   OK   Hm1d1
+A*       ALL   -2   	-Hm2d1   OK   Hm1d1
+2*       ALL   -2   Hm2d1   OK   -Hm1d1
+A*       ALL   2   -Hm2d1   OK   -Hm1d1
+A*       ALL   2	Hm2d3	OK   Hm1d3
+A*       ALL   -2	-Hm2d3	OK   Hm1d3
+2*       ALL   2       -Hm2d3   OK   -Hm1d3
+A*       ALL   -2       Hm2d3   OK   -Hm1d3
+! Exact cases tiny and 2.
+2*       ALL   2   T   OK   Tp1
+A*       ALL   -2   -T   OK   Tp1
+2*       ALL   T   -2   OK       -Tp1
+A*       ALL   -T   2   OK       -Tp1
+2*       ALL   2   Ti1   OK       Tp1i1
+A*       ALL   -2   -Ti1   OK       Tp1i1
+2*       ALL   -2   Ti1   OK   -Tp1i1
+A*       ALL   2   -Ti1   OK   -Tp1i1
+A*       ALL   2   Ti3   OK   Tp1i3
+A*       ALL   -2   -Ti3   OK   +Tp1i3
+A*       ALL   -Ti3	-2   OK   Tp1i3
+2*       ALL   2   -Ti3   OK   -Tp1i3
+2*       ALL   -2   Ti3   OK   -Tp1i3
+A*       ALL   2   Ti5   OK   Tp1i5
+A*       ALL   -2   -Ti5   OK   Tp1i5
+2*       ALL   2   -Ti5   OK   -Tp1i5
+A*       ALL   -2   Ti5   OK   -Tp1i5
+A*       ALL   2   Ti9   OK   Tp1i9
+A*       ALL   -2   -Ti9   OK   Tp1i9
+2*       ALL   -2   Ti9   OK   -Tp1i9
+A*       ALL   2   -Ti9   OK   -Tp1i9
+! Exact cases huge and 4.
+2*       ALL   4   Hm2d1   OK   Hd1
+2*       ALL   -4   Hm2d1   OK   -Hd1
+2*       ALL   4   -Hm2d1   OK   -Hd1
+2*       ALL   -4   -Hm2d1       OK       Hd1
+2*       ALL   Hm2d3   4   OK   Hd3
+2*       ALL   Hm2d3   -4   OK   -Hd3
+2*       ALL   -Hm2d3   4   OK   -Hd3
+2*       ALL   -Hm2d3   -4       OK       Hd3
+!! random exponents
+!! 36a00000 00000000 41800000 00000000 38300000 00000000
+H*	ALL	1m9	1p8	OK	1m1
+A*	ALL	-1m9	-1p8	OK	1m1
+A*	ALL	-1m9	1p8	OK	-1m1
+A*	ALL	-1p8	1m9	OK	-1m1
+A*	ALL	1m3	1m6	OK	1m9
+A*	ALL	-1m3	-1m6	OK	1m9
+A*	ALL	-1m3	1m6	OK	-1m9
+A*	ALL	-1m6	1m3	OK	-1m9
+A*	ALL	8	8p6	OK	8p9
+A*	ALL	-8	-8p6	OK	8p9
+A*	ALL	-8	8p6	OK	-8p9
+A*	ALL	-8p6	8	OK	-8p9
+
+!! Special representations
+!! zero versus zero
+2*       ALL   0   0   OK   0
+2*       ALL   -0   0   OK       -0
+2*       ALL   -0   -0   OK       0
+!! zero versus denormal
+2*       ALL   0i1       0       OK       0
+A*       ALL   -0i1       -0       OK       0
+A*       ALL   -0i1       0       OK       -0
+A*       ALL   -0       0i1       OK       -0
+A*       ALL   0   	0i2	OK	0
+A*       ALL   -0   	-0i2	OK	0
+2*       ALL   0  	 -0i2   OK   -0
+A*       ALL   -0  	 0i2   OK   -0
+A*       ALL   0i3       0       OK   0
+A*       ALL   -0i3       -0       OK   0
+2*       ALL   -0i3       0       OK   -0
+A*       ALL   0i3       -0       OK   -0
+A*       ALL   0	0i4	OK	0
+2*       ALL   -0   -0i4   OK   0
+A*       ALL   0i4	-0   OK   -0
+A*       ALL   -0i4	0   OK   -0
+2*       ALL   0   Td1   OK       0
+A*       ALL   -0   -Td1   OK       0
+2*       ALL   -Td1       0       OK   -0
+!! zero versus normal
+2*       ALL   0   1   OK   0
+A*       ALL   -0   -1   OK   0
+A*       ALL   -0   1   OK   -0
+A*       ALL   -1   0   OK   -0
+2*       ALL   -2   0   OK       -0
+A*       ALL   0   3   OK       0
+A*       ALL   -0   -3   OK       0
+2*       ALL   0   -3   OK       -0
+A*       ALL   -0   3   OK       -0
+A*       ALL   4	0   OK       0
+2*       ALL   -4   -0   OK       0
+A*       ALL   -4	0   OK       -0
+A*       ALL   -0	4   OK       -0
+2*       ALL   5   0   OK   0
+A*       ALL   -5   -0   OK       0
+A*       ALL   -5	0   OK       -0
+A*       ALL   -0	5   OK       -0
+A*       ALL   6   0   OK   0
+A*       ALL   -6   -0   OK       0
+A*       ALL   -6	0   OK       -0
+2*       ALL   -0   6   OK       -0
+A*       ALL   7   0   OK   0
+A*       ALL   -7   -0   OK       0
+A*       ALL   -7	0   OK       -0
+A*       ALL   -0   7   OK       -0
+A*       ALL   8   0   OK   0
+A*       ALL   -8   -0   OK       0
+A*       ALL   -8	0   OK       -0
+A*       ALL   -0   8   OK       -0
+! 0 * huge -> 0.
+2*       ALL   Hm1       0       OK       0
+A*       ALL   -Hm1       -0       OK       0
+A*       ALL   -Hm1       0       OK       -0
+A*       ALL   -0	Hm1      OK       -0
+A*       ALL   Hm2       0       OK       0
+A*       ALL   -Hm2       -0       OK       0
+2*       ALL   -Hm2       0       OK   -0
+A*       ALL   -0	Hm2      OK       -0
+A*       ALL   Hm1d1       0       OK       0
+2*       ALL   -Hm1d1   -0       OK       0
+A*       ALL   -Hm1d1       0       OK   -0
+A*       ALL   -0	Hm1d1      OK       -0
+A*       ALL   Hm2d1       0       OK       0
+A*       ALL   -Hm2d1   -0       OK       0
+2*       ALL   -Hm2d1   0   OK   -0
+A*       ALL   -0	Hm2d1      OK       -0
+A*       ALL   0	Hd1	OK	0
+2*       ALL   -Hd1              -0              OK              0
+A*       ALL   -Hd1   0   OK   -0
+2*       ALL   -0   Hd1  OK              -0
+! 0 * tiny -> 0.
+A*       ALL   0	T	OK	0
+A*       ALL   -T              -0	OK	0
+A*       ALL   -T   0   OK   -0
+A*       ALL   -0   T  OK              -0
+A*       ALL   0	Tp1	OK	0
+A*       ALL   -Tp1              -0	OK	0
+2*       ALL   -Tp1       0       OK   -0
+A*       ALL   Tp1       -0       OK       -0
+2*       ALL   0   Tp1d1   OK   0
+2*       ALL   -Tp1d1   -0       OK       0
+A*       ALL   -Tp1d1       0       OK   -0
+A*       ALL   Tp1d1       -0       OK       -0
+A*       ALL   0   Ti1   OK   0
+A*       ALL   -Ti1   -0       OK       0
+2*       ALL   -Ti1       0       OK   -0
+A*       ALL   Ti1       -0       OK       -0
+!! zero versus infinity
+2*       ALL   H   0   i   Q
+2*       ALL   -0   -H   i       Q
+2*       ALL   -0   H   i   -Q
+A*       ALL   0   -H   i   -Q
+!! zero versus NaN
+2*          ALL     Q       0       OK      Q
+2*          ALL     Q       -0      OK      Q
+!2*          ALL     S       0       i       Q
+!2*          ALL     S       -0      i       Q
+!2*          ALL     0       S       i       Q
+!2*          ALL     -0      S       i       Q
+!! infinity versus infinity
+2*       ALL   H   H   OK   H
+2*       ALL   -H   H   OK       -H
+2*       ALL   -H   -H   OK       H
+!! infinity versus denormal
+2*       ALL   0i1       H       OK       H
+A*       ALL   -0i1       -H       OK       H
+A*       ALL   -0i1       H       OK       -H
+A*       ALL   -H	0i1       OK       -H
+A*       ALL   0i2       H       OK       H
+A*       ALL   -0i2       -H       OK       H
+A*       ALL   -0i2       H       OK   -H
+A*       ALL   -H	0i2       OK       -H
+A*       ALL   0i3       H       OK       H
+A*       ALL   -0i3       -H       OK       H
+2*       ALL   -0i3       H       OK   -H
+A*       ALL   -H	0i3       OK       -H
+A*       ALL   0i4       H       OK       H
+A*       ALL   -0i4       -H       OK       H
+A*       ALL   -0i4       H       OK   -H
+A*       ALL   -H	0i4       OK       -H
+A*       ALL   Td1       H       OK       H
+2*       ALL   -Td1       -H   OK   H
+2*       ALL   -Td1       H       OK   -H
+A*       ALL   -H	Td1       OK       -H
+!! infinity versus normal
+! Inf * small_integer -> Inf.
+2*       ALL   H   1   OK   H
+2*       ALL   -2   H   OK       -H
+2*       ALL   H   -3   OK       -H
+2*       ALL   -4   -H   OK       H
+2*       ALL   5   H   OK   H
+2*       ALL   -H   6   OK       -H
+2*       ALL   7   -H   OK       -H
+2*       ALL   -H   -8   OK       H
+! Inf * huge -> Inf.
+2*       ALL   Hm1       H       OK       H
+2*       ALL   -Hm2       H       OK   -H
+2*       ALL   H   -Hm1   OK   -H
+2*       ALL   -H   -Hm2   OK   H
+2*       ALL   H   Hm1d1   OK   H
+2*       ALL   -Hm2d1   H   OK   -H
+2*       ALL   H   -Hd1   OK   -H
+2*       ALL   -Hd1       -H   OK   H
+! Inf * tiny -> Inf.
+2*       ALL   T   H   OK   H
+2*       ALL   -Tp1       H       OK   -H
+2*       ALL   -H   -T   OK       H
+2*       ALL   H   Tp1d1   OK   H
+2*       ALL   -Ti1       H       OK   -H
+2*       ALL   -Tp1d1   -H       OK       H
+!! infinity versus NaN
+2*          ALL     Q       H      OK      Q
+2*          ALL     Q       -H     OK      Q
+!2*          ALL     S       H      i       Q
+!2*          ALL     S       -H     i       Q
+!2*          ALL     H      S       i       Q
+!2*          ALL     -H     S       i       Q
+!! NaN versus NaN
+2*          ALL     Q       Q       OK      Q
+!2*          ALL     Q       S       i       Q
+!2*          ALL     S       Q       i       Q
+!2*          ALL     S       S       i       Q
+!! NaN versus denormal
+2*          ALL     Td1  Q               OK              Q
+2*          ALL     -Td1 Q               OK              Q
+2*          ALL     Q       0i1   OK      Q
+2*          ALL     Q       -0i1  OK      Q
+!2*          ALL     Td1  S               i               Q
+!2*          ALL     -Td1 S               i               Q
+!2*          ALL     S       Td1  i               Q
+!2*          ALL     S       -Td1 i               Q
+!2*          ALL     S       0i1   i               Q
+!2*          ALL     S       -0i1  i               Q
+!2*          ALL     0i1   S               i               Q
+!2*          ALL     -0i1  S               i               Q
+!! NaN versus normal
+2*          ALL     Q       1       OK      Q
+2*          ALL     Q       -1      OK      Q
+2*          ALL     Q       Hd1     OK       Q
+2*          ALL     Q       -Hd1    OK      Q
+!2*          ALL     S       1       i       Q
+!2*          ALL     S       -1      i       Q
+!2*          ALL     1       S       i       Q
+!2*          ALL     -1      S       i       Q
+!2*          ALL     S       Hd1  i               Q
+!2*          ALL     S       -Hd1 i               Q
+!2*          ALL     Hd1		S	i	Q
+!2*          ALL     -Hd1	S	i	Q
+
+!! exceptions
+!! invalid, see special representations
+!! inexact, overflow
+!! exp. Z >= U
+2*       =>       Hm1   2   xo   H
+2*       0<       Hm1   2i1       xo   Hd1
+2*       0<       Hm1   6i1       xo   Hd1
+2*       0<       Hm1   6   xo   Hd1
+2*       =>       Hm1   Hm1       xo   H
+2*       =>       Hm1i9   Hd6   xo       H
+2*       0<       Hm1   Hm2i6   xo       Hd1
+2*       =>       Hm1   Hd2       xo   H
+2*       =>       -5d2   -Hm1   xo       H
+2*       0<       -5d2   -Hm1   xo       Hd1
+2*       =>       -9i1   -Hm1   xo       H
+2*       0<       -7   -Hm1       xo   Hd1
+2*       =>       -3   -Hm1       xo   H
+2*       =>       -Hm1i5   -Hm1i1   xo   H
+2*       =>       -Hd1   -Hd1   xo       H
+2*       0<       -Hm2d7   -Hd1   xo   Hd1
+2*       =>       -Hd3   -Hm1i1   xo   H
+2*       =>       -Hd3   -3i1   xo       H
+2*       0<       -Hd3   -3i1   xo       Hd1
+2*       =<       -3d2   Hm1   xo   -H
+2*       =<       -7d7   Hm1   xo   -H
+2*       =<       -9   Hm1       xo       -H
+2*       0>       -5   Hm1       xo       -Hd1
+2*       =<       -Hd3   Hm1   xo   -H
+2*       =<       -Hm2d7   Hm1   xo       -H
+2*       =<       -Hm1d9   Hm2i1   xo   -H
+2*       0>       -Hm2   Hm1   xo   -Hd1
+2*       0>       Hm1   -4i5   xo   -Hd1
+2*       0>       Hm1   -8i3   xo   -Hd1
+2*       0>       Hm1   -2       xo       -Hd1
+2*       =<       Hm1   -Hm2i4   xo       -H
+2*       =<       Hm1   -Hm2   xo   -H
+2*       =<       Hm1   -Hm1   xo   -H
+2*       0>       Hm1i9   -Hm2i2   xo   -Hd1
+2*       =<       Hm1i9   -6i2   xo       -H
+2*       0>       Hm1i9   -6i2   xo       -Hd1
+!! exp. Z = U - 1 + carry
+A*       =>       1i1   Hd1       xo   H
+A*       0<       1i1   Hd1       xo   Hd1
+A*       =>       -1i1   -Hd1       xo   H
+A*       0<       -1i1   -Hd1       xo   Hd1
+2*       =>       1i2   Hd2       xo   H
+2*       0<       1i2   Hd2       xo   Hd1
+A*       =>       -1i2   -Hd2       xo   H
+A*       0<       -1i2   -Hd2       xo   Hd1
+A*       =>       1i4   Hd4       xo   H
+A*       0<       1i4   Hd4       xo   Hd1
+A*       =>       -1i4   -Hd4       xo   H
+A*       0<       -1i4   -Hd4       xo   Hd1
+A*       =>       1i8   Hd8       xo   H
+A*       0<       1i8   Hd8       xo   Hd1
+A*       =>       -1i8   -Hd8       xo   H
+A*       0<       -1i8   -Hd8       xo   Hd1
+A*       =<       -1i1   Hd1       xo   -H
+A*       0>      -1i1   Hd1       xo   -Hd1
+A*       =<       -Hd1	1i1       xo   -H
+A*       0>       -Hd1	1i1       xo   -Hd1
+A*       =<       -1i2   Hd2       xo   -H
+A*       0>       -1i2   Hd2       xo   -Hd1
+A*       =<       -Hd2	1i2       xo   -H
+A*       0>       -Hd2	1i2       xo   -Hd1
+A*       =<       -1i4   Hd4       xo   -H
+A*       0>       -1i4   Hd4       xo   -Hd1
+A*       =<       -Hd4	1i4       xo   -H
+A*       0>       -Hd4	1i4       xo   -Hd1
+A*       =<       -1i8   Hd8       xo   -H
+A*       0>       -1i8   Hd8       xo   -Hd1
+A*       =<       -Hd8	1i8       xo   -H
+A*       0>       -Hd8	1i8       xo   -Hd1
+2*       =<       Hm1d3   -2i8   xo       -H
+2*       0>       Hm1d3   -2i8   xo       -Hd1
+!! Result = Max. normal, round bit = 0, sticky bit = 01
+!! even precisions
+A*	e =0<	1i(h+1)1d1	Hd(h)1i2	x	Hd1
+A*	e >	1i(h+1)1d1	Hd(h)1i2	xo	H
+A*	e =0>	1i(h+1)1d1	-Hd(h)1i2	x	-Hd1
+A*	e <	1i(h+1)1d1	-Hd(h)1i2	xo	-H
+A*	e =0>	Hd(h)1i2	-1i(h+1)1d1	x	-Hd1
+A*	e <	Hd(h)1i2	-1i(h+1)1d1	xo	-H
+!! odd precisions
+A*	o =0<	1i(h)1	Hd(h)2i1		x	Hd1
+A*	o >	1i(h)1	Hd(h)2i1		xo	H
+A*	o =0>	1i(h)1	-Hd(h)2i1		x	-Hd1
+A*	o <	1i(h)1	-Hd(h)2i1		xo	-H
+!! Result = Max. normal, round bit = 0, sticky bit = 1
+!! even precisions
+A*	e =0<	1i(h)1	Hd(h)2i3	x	Hd1
+A*	e >	1i(h)1	Hd(h)2i3	xo	H
+A*	e =0>	1i(h)1	-Hd(h)2i3	x	-Hd1
+A*	e <	1i(h)1	-Hd(h)2i3	xo	-H
+!! odd precisions
+A*	o =0<	1i(h)1d1	Hd(h)2i3	x	Hd1
+A*	o >	1i(h)1d1	Hd(h)2i3	xo	H
+A*	o =0>	1i(h)1d1	-Hd(h)2i3	x	-Hd1
+A*	o <	1i(h)1d1	-Hd(h)2i3	xo	-H
+!! Result = Max. normal, round bit = 1, sticky bit = 0 => round to even
+!! even precisions
+!! This combination is only possible for precision-dependent cases
+!! odd precisions
+A*	o 0<	1i(h+1)1	Hd(h+1)2		x	Hd1
+A*	o =>	1i(h+1)1	Hd(h+1)2		xo	H
+A*	o 0>	1i(h+1)1	-Hd(h+1)2		x	-Hd1
+A*	o =<	1i(h+1)1	-Hd(h+1)2		xo	-H
+!! Result = Max. normal, round bit = 1, sticky bit = 10
+A*	=>	2d4	Hm1i2	xo	H
+A*	0<	2d4	Hm1i2	x	Hd1
+A*	=>	-2d4	-Hm1i2	xo	H
+A*	0<	-2d4	-Hm1i2	x	Hd1
+A*	=<	-2d4	Hm1i2	xo	-H
+A*	0>	-2d4	Hm1i2	x	-Hd1
+A*	=<	-Hm1i2	2d4	xo	-H
+A*	0>	-Hm1i2	2d4	x	-Hd1
+!! Result = Max. normal, round bit = 1, sticky bit = 01
+!! even precisions
+A*	e 0<	1i(h+5)5	Hd(h+1)1i(h+4)3		x	Hd1
+A*	e =>	1i(h+5)5	Hd(h+1)1i(h+4)3		xo	H
+A*	e 0>	1i(h+5)5	-Hd(h+1)1i(h+4)3	x	-Hd1
+A*	e =<	1i(h+5)5	-Hd(h+1)1i(h+4)3	xo	-H
+!! odd precisions
+A*	o 0<	1i(h+1)1d1	Hd(h)1i2	x	Hd1
+A*	o =>	1i(h+1)1d1	Hd(h)1i2	xo	H
+A*	o 0>	1i(h+1)1d1	-Hd(h)1i2	x	-Hd1
+A*	o =<	1i(h+1)1d1	-Hd(h)1i2	xo	-H
+!! Result = Max. normal, round bit = 1, sticky bit = 1
+A*	=>	2d2	Hm1i1	xo	H
+A*	0<	2d2	Hm1i1	x	Hd1
+A*	=>	-2d2	-Hm1i1	xo	H
+A*	0<	-2d2	-Hm1i1	x	Hd1
+A*	=<	-2d2	Hm1i1	xo	-H
+A*	0>	-2d2	Hm1i1	x	-Hd1
+A*	=<	-Hm1i1	2d2	xo	-H
+A*	0>	-Hm1i1	2d2	x	-Hd1
+!! inexact, underflow
+!! X + Y <= -B-t-1 => exp. Z <= -B-t
+!! Z = 0.0...0, round bit = 0
+2*       =0<   T   T	xu   0
+A*       >   T   T	xu   0i1
+2*       =0<   -T   -T	xu       0
+A*       >   -T   -T   xu       0i1
+2*       =0>   -T   T   xu       -0
+A*       <   -T   T   xu       -0i1
+2*       >        T       Tp1   xu   0i1
+A*       =0<      T       Tp1   xu   0
+A*       >        -T       -Tp1   xu   0i1
+A*       =0<      -T       -Tp1   xu   0
+2*       <       -T       Tp1   xu       -0i1
+A*       =0>      -T       Tp1   xu   -0
+A*       <        T       -Tp1   xu   -0i1
+A*       =0>      T       -Tp1   xu   -0
+A*       =0<      Tp1    Tp1   xu   0
+A*       >        Tp1    Tp1   xu   0i1
+A*       =0<     -Tp1   -Tp1   xu   0
+2*       >       -Tp1   -Tp1   xu   0i1
+A*       =0>      -Tp1    Tp1   xu   -0
+A*       <        -Tp1    Tp1   xu   -0i1
+A*       =0<      1mtm2     T		xu   0
+A*       >         1mtm2    T		xu   0i1
+A*       =0<      -1mtm2    -T		xu   0
+A*       >        -1mtm2    -T		xu   0i1
+A*       =0>      -1mtm2    T		xu   -0
+A*       <        -1mtm2    T		xu   -0i1
+A*       =0>      1mtm2    -T		xu   -0
+A*       <        1mtm2    -T		xu   -0i1
+2*       =0>   -Td9       Tp1i3   	xu   -0
+2*       =0>   Td9       -Tp1i3   xu   -0
+2*       <       -Td9   Tp1i3	xu       -0i1
+2*       <       Td9   -Tp1i3   xu       -0i1
+A*       =0<   Td9       Tp1i3   xu	0
+A*       =0<   -Td9       -Tp1i3   xu   0
+A*       >       Td9   Tp1i3	xu      0i1
+A*       >       -Td9   -Tp1i3   xu     0i1
+2*       =0<   Td1       Td2   xu   0
+2*       =0<   -Td1       -Td2   xu       0
+2*       >       Td1   Td2       xu       0i1
+2*       >       -Td1   -Td2   xu   0i1
+A*       =0>   -Td1       Td2   xu	-0
+A*       =0>   Td1       -Td2   xu	-0
+A*       <       -Td1   Td2     xu	-0i1
+A*       <       Td1   -Td2	xu	-0i1
+!! denormal
+A*       =0<      0i1		1m3	xu   0
+A*       >        0i1		1m3	xu   0i1
+A*       =0<      -0i1		-1m3	xu   0
+A*       >        -0i1		-1m3	xu   0i1
+A*       =0>      -0i1		1m3	xu   -0
+A*       <        -0i1		1m3	xu   -0i1
+A*       =0>      0i1		-1m3	xu   -0
+A*       <        0i1		-1m3	xu   -0i1
+2*       >       0i1   0i1   xu	0i1
+2*       =0<     0i1   0i1   xu	0
+2*       <       0i1  -0i1   xu	-0i1
+2*       =0>    -0i1   0i1   xu	-0
+A*       >       -0i1   -0i1   xu	0i1
+A*       =0<     -0i1   -0i1   xu	0
+!! X + Y = -B-t-1, exp. Z = -B-t, due to carry,
+!! round bit = 0, sticky bits = 1
+A*          =0<		1mtm1d1   Ti1	xu          0
+A*          >		1mtm1d1   Ti1	xu          0i1
+A*          =0<		-1mtm1d1   -Ti1	xu          0
+A*          >		-1mtm1d1   -Ti1	xu          0i1
+A*          =0>		-1mtm1d1   Ti1	xu          -0
+A*          <		-1mtm1d1   Ti1	xu          -0i1
+A*          =0>		1mtm1d1   -Ti1	xu          -0
+A*          <		1mtm1d1   -Ti1	xu          -0i1
+!! X + Y = -B-t, exp. Z = -B-t, no carry
+!! round bit = 0, sticky bits = 1
+A*          =0<		1mtd1	T	xu          0
+A*          >		1mtd1	T	xu          0i1
+A*          =0<		-1mtd1	-T	xu          0
+A*          >		-1mtd1	-T	xu          0i1
+A*          =0>		-1mtd1	T	xu          -0
+A*          <		-1mtd1	T	xu          -0i1
+A*          =0>		1mtd1	-T	xu          -0
+A*          <		1mtd1	-T	xu          -0i1
+!! denormal
+A*	=0<	0i1	1m2	xu	0
+A*	>	0i1	1m2	xu	0i1
+A*	=0<	-0i1	-1m2	xu	0
+A*	>	-0i1	-1m2	xu	0i1
+A*	=0>	-0i1	1m2	xu	-0
+A*	<	-0i1	1m2	xu	-0i1
+A*	=0>	-1m2	0i1	xu	-0
+A*	<	-1m2	0i1	xu	-0i1
+!! X + Y = -B-t+2, exp. Z = -B-t+2, no carry
+!! round bit = 0, sticky bits = 1
+A*	=0<	0i1	3m1d1	xu	0i1
+A*	>	0i1	3m1d1	xu	0i2
+A*	=0<	-0i1	-3m1d1	xu	0i1
+A*	>	-0i1	-3m1d1	xu	0i2
+A*	=0>	-0i1	3m1d1	xu	-0i1
+A*	<	-0i1	3m1d1	xu	-0i2
+A*	=0>	-3m1d1	0i1	xu	-0i1
+A*	<	-3m1d1	0i1	xu	-0i2
+!! 3ff7ffff ffffffff 80000000 00000001 80000000 00000001
+!! X + Y = -B-t+3, exp. Z = -B-t+3, no carry
+!! round bit = 0, sticky bits = 1
+A*	=0<	0i1	7m1d1	xu	0i3
+A*	>	0i1	7m1d1	xu	0i4
+A*	=0<	-0i1	-7m1d1	xu	0i3
+A*	>	-0i1	-7m1d1	xu	0i4
+A*	=0>	-0i1	7m1d1	xu	-0i3
+A*	<	-0i1	7m1d1	xu	-0i4
+A*	=0>	-7m1d1	0i1	xu	-0i3
+A*	<	-7m1d1	0i1	xu	-0i4
+!! 400bffff ffffffff 80000000 00000001 800000 00000003
+!! X + Y = -B-t, exp. Z = -B-t-1, due to carry
+!! Z = 0.0...0, round bit = 1, sticky bits = 0
+!! This combination is not possible
+!! X + Y = -B-t+1, exp. Z = -B-t+1, no carry
+!! Z = 0.0...0, round bit = 1, sticky bits = 0
+!! even result
+A*          =0<     1mt	T	xu	0
+A*          >       1mt	T	xu	0i1
+A*          =0<     -1mt	-T	xu	0
+A*          >       -1mt	-T	xu	0i1
+A*          =0>     -1mt	T	xu	-0
+A*          <       -1mt	T	xu	-0i1
+A*          =0>     1mt	-T	xu	-0
+A*          <       1mt	-T	xu	-0i1
+!! denormal
+2*          >       0i1		1m1   xu          0i1
+2*          =0<     0i1		1m1   xu          0
+A*          >       -0i1	-1m1   xu          0i1
+A*          =0<     -0i1	-1m1   xu          0
+2*          <       1m1		-0i1	xu          -0i1
+2*          =0>     1m1		-0i1	xu          -0
+!! bfe00000 00000001 000000000 00000001 80000000 00000001
+H*          <       -1m1	0i1	xu          -0i1
+H*          =0>     -1m1	0i1	xu          -0
+!! X + Y = -B-t+2, exp. Z = -B-t+2, no carry
+!! Z = 0.0...01, round bit = 1, sticky bits = 0
+!! odd result
+A*          0<       	0i1	3m1	xu          0i1
+A*          =>		0i1	3m1	xu          0i2
+A*          0<       -0i1	-3m1	xu          0i1
+A*          =>     -0i1	-3m1	xu          0i2
+!! bff80000 00000000 80000000 00000001 00000000 00000002
+A*          0>       3m1		-0i1	xu          -0i1
+A*          =<     3m1		-0i1	xu          -0i2
+A*          0>       -3m1	0i1	xu          -0i1
+A*          =<     -3m1	0i1	xu          -0i2
+!! X + Y = -B-t+3, exp. Z = -B-t+3, no carry
+!! Z = 0.0...01x, round bit = 1, sticky bits = 0
+!! even result
+A*          =0<       	0i1	5m1	xu          0i2
+A*          >		0i1	5m1	xu          0i3
+A*          =0<       -0i1	-5m1	xu          0i2
+A*          >     -0i1	-5m1	xu          0i3
+A*          =0>       5m1		-0i1	xu          -0i2
+A*          <     5m1		-0i1	xu          -0i3
+A*          =0>       -5m1	0i1	xu          -0i2
+A*          <     -5m1	0i1	xu          -0i3
+!! odd result
+A*          0<		0i1	7m1	xu          0i3
+A*          =>		0i1	7m1	xu          0i4
+A*          0<       -0i1	-7m1	xu          0i3
+A*          =>     -0i1		-7m1	xu          0i4
+!! c00c0000 00000000 800000000 00000001 000000000 00000004
+A*          0>       7m1	-0i1	xu          -0i3
+A*          =<     7m1		-0i1	xu          -0i4
+A*          0>       -7m1	0i1	xu          -0i3
+A*          =<     -7m1		0i1	xu          -0i4
+!! X + Y = -B-t+1, exp. Z = -B-t+1, no carry
+!! Z = 0.0...0, round bit = 1, sticky bit = 1
+A*	0<	5mtm2		T		xu	0
+A*	=>	5mtm2		T		xu	0i1
+A*	0<	-5mtm2	-T		xu	0
+A*	=>	-5mtm2	-T		xu	0i1
+A*	0>	-5mtm2	T		xu	-0
+A*	=<	-5mtm2	T		xu	-0i1
+A*	0>	-T		5mtm2		xu	-0
+A*	=<	-T		5mtm2		xu	-0i1
+!! denormal
+A*	0<	0i1	1m1i1	xu	0
+A*	=>	0i1	1m1i1	xu	0i1
+A*	0<	-0i1	-1m1i1	xu	0
+A*	=>	-0i1	-1m1i1	xu	0i1
+A*	0>	-0i1	1m1i1	xu	-0
+A*	=<	-0i1	1m1i1	xu	-0i1
+A*	0>	-1m1i1	0i1	xu	-0
+A*	=<	-1m1i1	0i1	xu	-0i1
+!! X + Y = -B-t+2, exp. Z = -B-t+2, no carry
+!! Z = 0.0..010, round bit = 1, sticky bit = 1
+A*	0<	5m1i1		0i1		xu	0i2
+A*	=>	5m1i1		0i1		xu	0i3
+A*	0<	-5m1i1		-0i1		xu	0i2
+A*	=>	-5m1i1		-0i1		xu	0i3
+!! c0040000 00000001 00000000 00000001 80000000 00000003
+H*	0>	-5m1i1		0i1		xu	-0i2
+H*	=<	-5m1i1		0i1		xu	-0i3
+A*	0>	-0i1		5m1i1		xu	-0i2
+A*	=<	-0i1		5m1i1		xu	-0i3
+!! X + Y = -B-t, exp. Z = -B-t+1, due to carry
+!! Z = 0.0...0, round bit = 1, sticky bits = 1
+A*	0<	1mtm1i1		Tp1d1		xu	0
+A*	=>	1mtm1i1		Tp1d1		xu	0i1
+A*	0<	-1mtm1i1	-Tp1d1		xu	0
+A*	=>	-1mtm1i1	-Tp1d1		xu	0i1
+A*	0>	-1mtm1i1	Tp1d1		xu	-0
+A*	=<	-1mtm1i1	Tp1d1		xu	-0i1
+A*	0>	-Tp1d1		1mtm1i1		xu	-0
+A*	=<	-Tp1d1		1mtm1i1		xu	-0i1
+!! X + Y = -B-t+1, exp. Z = -B-t+1, no carry
+!! Z = 0.0...0, round bit = 1, sticky bits = 10
+A*	0<	3mtm1		T		xu	0
+A*	=>	3mtm1		T		xu	0i1
+A*	0<	-3mtm1	-T		xu	0
+A*	=>	-3mtm1	-T		xu	0i1
+A*	0>	-3mtm1	T		xu	-0
+A*	=<	-3mtm1	T		xu	-0i1
+A*	0>	-T		3mtm1		xu	-0
+A*	=<	-T		3mtm1		xu	-0i1
+!! denormal
+A*	0<	0i1	3m2	xu	0
+A*	=>	0i1	3m2	xu	0i1
+A*	0<	-0i1	-3m2	xu	0
+A*	=>	-0i1	-3m2	xu	0i1
+A*	0>	-0i1	3m2	xu	-0
+A*	=<	-0i1	3m2	xu	-0i1
+A*	0>	-3m2	0i1	xu	-0
+A*	=<	-3m2	0i1	xu	-0i1
+!! X + Y = -B-t, exp. Z = -B-t+1, due to carry
+!! Z = 0.0...0, round bit = 1, sticky bits = 0
+!! This combination is not possible
+!! X + Y = -B-t+1, exp. Z = -B-t+1, no carry
+!! Z = 0.0...0, round bit = 1, sticky bits = 1
+A*	0<	7mtm2		T		xu	0
+A*	=>	7mtm2		T		xu	0i1
+A*	0<	-7mtm2		-T		xu	0
+A*	=>	-7mtm2		-T		xu	0i1
+A*	0>	-7mtm2		T		xu	-0
+A*	=<	-7mtm2		T		xu	-0i1
+A*	0>	-T		7mtm2		xu	-0
+A*	=<	-T		7mtm2		xu	-0i1
+!! denormal
+A*	0<	0i1	3m2i1	xu	0
+A*	=>	0i1	3m2i1	xu	0i1
+A*	0<	-0i1	-3m2i1	xu	0
+A*	=>	-0i1	-3m2i1	xu	0i1
+A*	0>	-0i1	3m2i1	xu	-0
+A*	=<	-0i1	3m2i1	xu	-0i1
+A*	0>	-3m2i1	0i1	xu	-0
+A*	=<	-3m2i1	0i1	xu	-0i1
+2*	0<      0i1		1d1		xu	0
+2*      =>      0i1		1d1		xu      0i1
+A*	0<      -0i1		-1d1		xu	0
+A*      =>      -0i1		-1d1		xu      0i1
+2*      0>	-0i1		1d1		xu	-0
+A*      =<	-0i1		1d1		xu	-0i1
+2*      =<	0i1		-1d1		xu	-0i1
+A*      0>	0i1		-1d1		xu	-0
+!! X + Y = -B-t, exp. Z = -B-t+1, due to carry
+!! Z = 0.0...0, round bit = 1, sticky bits = 1
+A*	0<	1mtd1		Tp1d1		xu	0
+A*	=>	1mtd1		Tp1d1		xu	0i1
+A*	0<	-1mtd1		-Tp1d1		xu	0
+A*	=>	-1mtd1		-Tp1d1		xu	0i1
+A*	0>	-1mtd1		Tp1d1		xu	-0
+A*	=<	-1mtd1		Tp1d1		xu	-0i1
+A*	0>	-Tp1d1		1mtd1		xu	-0
+A*	=<	-Tp1d1		1mtd1		xu	-0i1
+!! exp. Z = -B + denormalization loss => inexactness
+!! denormal
+2*	0<	Td4		1i1		xu	Td4
+A*	=>	Td4		1i1		xv	Td3
+A*	0<	-Td4		-1i1		xu	Td4
+A*	=>	-Td4		-1i1		xv	Td3
+A*	0>	-Td4		1i1		xu	-Td4
+A*	=<	-Td4		1i1		xv	-Td3
+A*	0>	-1i1		Td4		xu	-Td4
+A*	=<	-1i1		Td4		xv	-Td3
+!! exp. Z = -B + denormalization loss after carry => inexactness
+A*	=>	3m2		Ti1		xv	0i(2)3i1
+A*	0<	3m2		Ti1		xu	0i(2)3
+A*	=>	-3m2		-Ti1		xv	0i(2)3i1
+A*	0<	-3m2		-Ti1		xu	0i(2)3
+A*	=<	-3m2		Ti1		xv	-0i(2)3i1
+A*	0>	-3m2		Ti1		xu	-0i(2)3
+A*	=<	-Ti1		3m2		xv	-0i(2)3i1
+A*	0>	-Ti1		3m2		xu	-0i(2)3
+!! exp. Z = -B + inexactness, no denormalization loss for =
+A*	0<	Td2		1i1		xu	Td2
+2*	=>	Td2		1i1		xv	Td1
+A*	0<	-Td2		-1i1		xu	Td2
+A*	=>	-Td2		-1i1		xv	Td1
+A*	0>	-Td2		1i1		xu	-Td2
+A*	=<	-Td2		1i1		xv	-Td1
+A*	0>	-1i1		Td2		xu	-Td2
+A*	=<	-1i1		Td2		xv	-Td1
+A*	0<	Td8		1i1		xu	Td8
+2*	=>	Td8		1i1		xv	Td7
+A*	0<	-Td8		-1i1		xu	Td8
+A*	=>	-Td8		-1i1		xv	Td7
+A*	0>	-Td8		1i1		xu	-Td8
+A*	=<	-Td8		1i1		xv	-Td7
+A*	0>	-1i1		Td8		xu	-Td8
+A*	=<	-1i1		Td8		xv	-Td7
+A*	0<	Td9		1i1		xu	Td9
+A*	=>	Td9		1i1		xv	Td8
+A*	0<	-Td9		-1i1		xu	Td9
+A*	=>	-Td9		-1i1		xv	Td8
+A*	0>	-Td9		1i1		xu	-Td9
+2*	=<	-Td9		1i1		xv	-Td8
+A*	0>	-1i1		Td9		xu	-Td9
+A*	=<	-1i1		Td9		xv	-Td8
+A*	0<	Ti1		1d6		xu	Td3
+2*	=>	Ti1		1d6		xv	Td2
+A*	0<	-Ti1		-1d6		xu	Td3
+A*	=>	-Ti1		-1d6		xv	Td2
+A*	0>	-Ti1		1d6		xu	-Td3
+A*	=<	-Ti1		1d6		xv	-Td2
+A*	0>	-1d6		Ti1		xu	-Td3
+A*	=<	-1d6		Ti1		xv	-Td2
+A*	=0<	Td2		1d4		xv	Td4
+2*	>	Td2		1d4		xu	Td3
+A*	=0<	-Td2		-1d4		xv	Td4
+A*	>	-Td2		-1d4		xu	Td3
+A*	=0>	-Td2		1d4		xv	-Td4
+A*	<	-Td2		1d4		xu	-Td3
+A*	=0>	-1d4		Td2		xv	-Td4
+A*	<	-1d4		Td2		xu	-Td3
+!! exp. Z = -B after carry + inexactness, no denormalization loss for =
+A*	=0<	1m1d1		Ti3		xv	0i(1)1i1
+A*	>	1m1d1		Ti3		xu	0i(1)1i2
+A*	=0<	-1m1d1		-Ti3		xv	0i(1)1i1
+A*	>	-1m1d1		-Ti3		xu	0i(1)1i2
+A*	=0>	-1m1d1		Ti3		xv	-0i(1)1i1
+A*	<	-1m1d1		Ti3		xu	-0i(1)1i2
+A*	=0>	-Ti3		1m1d1		xv	-0i(1)1i1
+A*	<	-Ti3		1m1d1		xu	-0i(1)1i2
+!! exp. Z = -B + tininess before rounding, not after rounding
+!! round bit = 1
+2*	0<	Td1	1i1	xu	Td1
+2*	=>	Td1	1i1	xw	T
+A*	0<	-Td1	-1i1	xu	Td1
+A*	=>	-Td1	-1i1	xw	T
+!! 800fffff ffffffff 3ff00000 00000001 80100000 00000000
+H*	0>	-Td1	1i1	xu	-Td1
+2*	=<	-Td1	1i1	xw	-T
+A*	0>	-1i1	Td1	xu	-Td1
+A*	=<	-1i1	Td1	xw	-T
+A*	0<	1i8	Td8	xu	Td1
+2*	=>	1i8	Td8	xw	T
+!! 000fffff fffffff8 3ff00000 00000008 00100000 00000000
+A*	0<	-Td8	-1i8	xu	Td1
+A*	=>	-Td8	-1i8	xw	T
+A*	0>	-Td8	1i8	xu	-Td1
+A*	=<	-Td8	1i8	xw	-T
+A*	0>	-1i8	Td8	xu	-Td1
+A*	=<	-1i8	Td8	xw	-T
+!! 000fffff fffffff8 bff00000 00000008 80100000 00000000
+2*	0<	Ti1	1d2	xu	Td1
+!! 00100000 00000001 3fefffff fffffffe 00100000 0000000
+H*	=>	Ti1	1d2	xw	T
+A*	0<	-Ti1	-1d2	xu	Td1
+A*	=>	-Ti1	-1d2	xw	T
+A*	0>	-Ti1	1d2	xu	-Td1
+A*	=<	-Ti1	1d2	xw	-T
+A*	0>	-1d2	Ti1	xu	-Td1
+A*	=<	-1d2	Ti1	xw	-T
+A*	0<	Ti2	1d4	xu	Td1
+!! subsitute for 20000000 02000000 1fffffff fc000000 00100000 00000000
+H*	=>	Ti2	1d4	xw	T
+A*	0<	-Ti2	-1d4	xu	Td1
+A*	=>	-Ti2	-1d4	xw	T
+A*	0>	-Ti2	1d4	xu	-Td1
+A*	=<	-Ti2	1d4	xw	-T
+A*	0>	-1d4	Ti2	xu	-Td1
+A*	=<	-1d4	Ti2	xw	-T
+!! round bit = 0
+A*	0<	1m1i2	Tp1d5	xv	Td1
+A*      =       1m1i2   Tp1d5   xu      Td1
+A*	>	1m1i2	Tp1d5	xu	T
+A*	0<	-1m1i2	-Tp1d5	xv	Td1
+A*      =       -1m1i2  -Tp1d5  xu      Td1
+A*	>	-1m1i2	-Tp1d5	xu	T
+A*	0>	-1m1i2	Tp1d5	xv	-Td1
+A*      =       -1m1i2  Tp1d5   xu      -Td1
+A*	<	-1m1i2	Tp1d5	xu	-T
+A*	0>	-Tp1d5	1m1i2	xv	-Td1
+A*      =       -Tp1d5  1m1i2   xu      -Td1
+A*	<	-Tp1d5	1m1i2	xu	-T
+!! tininess before and after rounding,
+!! as though the exponent range were unbounded
+2*	0<	Tp1d1		1m1		xu      Td1
+2*      =>	Tp1d1		1m1		xu	T
+A*      =>	-Tp1d1		-1m1		xu      T
+2*      0<	-Tp1d1		-1m1		xu      Td1
+2*	0>	-Tp1d1		1m1		xu      -Td1
+A*      =<	-Tp1d1		1m1		xu	-T
+A*	0>	-1m1		Tp1d1		xu      -Td1
+A*      =<	-1m1		Tp1d1		xu	-T
+! Exact and below denormalization threshold -- no underflow.
+2*	ALL     T	1d2	OK	Td1
+A*	ALL     -T	-1d2	OK	Td1
+A*	ALL     -T	1d2	OK	-Td1
+A*      ALL     -1d2	T	OK	-Td1
+2*      ALL     Tp1d2	1m1	OK	Td1
+A*      ALL     -Tp1d2	-1m1	OK	Td1
+A*      ALL     -Tp1d2	1m1	OK	-Td1
+A*      ALL     -1m1	Tp1d2	OK	-Td1
+A*      ALL     Tp1d4	1m1	OK	Td2
+2*      ALL     -Tp1d4	-1m1	OK	Td2
+2*      ALL     -Tp1d4	1m1	OK	-Td2
+A*      ALL     -1m1	Tp1d4	OK	-Td2
+2*      ALL     Tp1d8	1m1	OK	Td4
+A*      ALL     -Tp1d8	-1m1	OK	Td4
+A*      ALL     -Tp1d8	1m1	OK	-Td4
+A*      ALL     -1m1	Tp1d8	OK	-Td4
+2*	ALL	0i8	1m3	OK	0i1
+A*	ALL	-0i8	-1m3	OK	0i1
+2*	ALL	-0i8	1m3	OK	-0i1
+A*	ALL	-1m3	0i8	OK	-0i1
+2*	ALL	0i6	1m1	OK	0i3
+A*	ALL	-0i6	-1m1	OK	0i3
+A*	ALL	-0i6	1m1	OK	-0i3
+A*	ALL	-1m1	0i6	OK	-0i3
+!! inexact, see rounding below
+
+!! exact rounding
+!! round bit = 0, sticky bit = 1 => inexact, round down
+!! carry
+2*	0<=	3d1	1d1	x	3d2
+2*	>	3d1	1d1	x	3d1
+A*	0<=	-3d1	-1d1	x	3d2
+A*	>	-3d1	-1d1	x	3d1
+2*	0>=	-3d1	1d1	x	-3d2
+2*	<	-3d1	1d1	x	-3d1
+A*	0>=	-1d1	3d1	x	-3d2
+A*	<	-1d1	3d1	x	-3d1
+2*          0<=     5d1   1d1   x           5d2
+2*          >            5d1   1d1       x               5d1
+2*          0<=     -5d1  -1d1   x               5d2
+2*          >       -5d1  -1d1   x               5d1
+A*          0>=     -5d1   1d1   x           -5d2
+A*          <       -5d1   1d1       x               -5d1
+A*          0>=     5d1  -1d1   x               -5d2
+A*          <       5d1  -1d1   x               -5d1
+2*          =0<     7d1   1d1   x           7d2
+2*          >       7d1   1d1   x           7d1
+A*          =0<     -7d1   -1d1   x           7d2
+A*          >       -7d1   -1d1   x           7d1
+A*          =0>     -7d1   1d1   x           -7d2
+A*          <       -7d1   1d1   x           -7d1
+A*          =0>     -1d1   7d1   x           -7d2
+A*          <       -1d1   7d1   x           -7d1
+A*          =0<     Tp1d1	1d1		x           Tp1d2
+A*          >       Tp1d1	1d1		x           Tp1d1
+A*          =0<     -Tp1d1   	-1d1		x           Tp1d2
+A*          >       -Tp1d1   	-1d1		x           Tp1d1
+A*          =0>     -Tp1d1   	1d1   		x           -Tp1d2
+A*          <       -Tp1d1   	1d1   		x           -Tp1d1
+A*          =0>     -1d1   	Tp1d1   	x           -Tp1d2
+A*          <       -1d1   	Tp1d1   	x           -Tp1d1
+A*          =0<     Hm2d7	4d1		x           Hd8
+A*          >       Hm2d7	4d1		x           Hd7
+2*          =0<     -Hm2d7   	-4d1		x           Hd8
+2*          >       -Hm2d7   	-4d1		x           Hd7
+A*          =0>     -Hm2d7   	4d1   		x           -Hd8
+A*          <       -Hm2d7   	4d1   		x           -Hd7
+A*          =0>     -4d1   	Hm2d7   	x           -Hd8
+A*          <       -4d1   	Hm2d7   	x           -Hd7
+!! no carry
+2*	0<=	1i1	1i1	x	1i2
+2*	>	1i1	1i1	x	1i3
+2*	0<=	-1i1	-1i1	x	1i2
+2*	>	-1i1	-1i1	x	1i3
+2*	0>=	-1i1	1i1	x	-1i2
+2*	<	-1i1	1i1	x	-1i3
+2*       =0<   1i2       1i1   x   1i3
+2*       >       1i2   1i1       x       1i4
+2*       =0<   -1i2       -1i1   x       1i3
+2*       >       -1i1   -1i2   x   1i4
+2*       =0>   -1i2       1i1   x   -1i3
+2*       <       -1i2   1i1       x       -1i4
+A*       =0>   1i2       -1i1   x   -1i3
+A*       <       1i2   -1i1       x       -1i4
+2*       =0<   -1d1       -Hd1   x       Hd2
+2*       >       -1d1   -Hd1   x   Hd1
+!! denormal
+A*	=0<	0i(1)1i1	2i1	x		Ti3
+A*	>	0i(1)1i1	2i1	x		Ti4
+A*	=0<	-0i(1)1i1	-2i1	x		Ti3
+A*	>	-0i(1)1i1	-2i1	x		Ti4
+A*	=0>	-0i(1)1i1	2i1	x		-Ti3
+A*	<	-0i(1)1i1	2i1	x		-Ti4
+A*	=0>	-2i1	0i(1)1i1   x		-Ti3
+A*	<	-2i1	0i(1)1i1	x		-Ti4
+!! round bit = 0, sticky bit = 10 => inexact, round down
+!! carry
+A*	=0<	3d1	3	x	8i(3)1d1
+A*	>	3d1	3	x	8i(3)1
+A*	=0<	-3d1	-3	x	8i(3)1d1
+A*	>	-3d1	-3	x	8i(3)1
+A*	=0>	-3d1	3	x	-8i(3)1d1
+A*	<	-3d1	3	x	-8i(3)1
+A*	=0>	-3	3d1	x	-8i(3)1d1
+A*	<	-3	3d1	x	-8i(3)1
+!! no carry
+A*	=0<	5	Hm3i1	x	5pB0m2i1
+A*	>	5	Hm3i1	x	5pB0m2i2
+A*	=0<	-5	-Hm3i1	x	5pB0m2i1
+A*	>	-5	-Hm3i1	x	5pB0m2i2
+A*	=0>	-5	Hm3i1	x	-5pB0m2i1
+A*	<	-5	Hm3i1	x	-5pB0m2i2
+A*	=0>	-Hm3i1	5	x	-5pB0m2i1
+A*	<	-Hm3i1	5	x	-5pB0m2i2
+A*	=0<	5mB0		2i1		x	5mB0p1i1
+A*	>	5mB0		2i1		x	5mB0p1i2
+A*	=0<	-5mB0	-2i1		x	5mB0p1i1
+A*	>	-5mB0	-2i1		x	5mB0p1i2
+A*	=0>	-5mB0	2i1		x	-5mB0p1i1
+A*	<	-5mB0	2i1		x	-5mB0p1i2
+A*	=0>	-2i1		5mB0		x	-5mB0p1i1
+A*	<	-2i1		5mB0		x	-5mB0p1i2
+!! round bit = 0, sticky bit = 1 => inexact, round down
+!! no carry
+2*	=0<	5i1	1i1	x	5i2
+2*	>	5i1	1i1	x	5i3
+2*	=0<	-5i1	-1i1	x	5i2
+2*	>	-5i1	-1i1	x	5i3
+A*	=0>	-5i1	1i1	x	-5i2
+A*	<	-5i1	1i1	x	-5i3
+A*	=0>	-1i1	5i1	x	-5i2
+A*	<	-1i1	5i1	x	-5i3
+!! carry
+A*	=0<	7d1	1d2	x	7d3
+A*	>	7d1	1d2	x	7d2
+A*	=0<	-7d1	-1d2	x	7d3
+A*	>	-7d1	-1d2	x	7d2
+A*	=0>	-7d1	1d2	x	-7d3
+A*	<	-7d1	1d2	x	-7d2
+A*	=0>	-1d2	7d1	x	-7d3
+A*	<	-1d2	7d1	x	-7d2
+A*	=0<	1d1	1d2	x	1d3
+A*	>	1d1	1d2	x	1d2
+A*	=0<	-1d1	-1d2	x	1d3
+A*	>	-1d1	-1d2	x	1d2
+A*	=0>	-1d1	1d2	x	-1d3
+A*	<	-1d1	1d2	x	-1d2
+A*	=0>	1d1	-1d2	x	-1d3
+A*	<	1d1	-1d2	x	-1d2
+A*	=0<	Hm1d1	1i1	x	Hm1
+A*	>	Hm1d1	1i1	x	Hm1i1
+A*	=0<	-Hm1d1	-1i1	x	Hm1
+A*	>	-Hm1d1	-1i1	x	Hm1i1
+2*	=0>	-Hm1d1	1i1	x	-Hm1
+2*	<	-Hm1d1	1i1	x	-Hm1i1
+A*	=0>	-1i1	Hm1d1	x	-Hm1
+A*	<	-1i1	Hm1d1	x	-Hm1i1
+A*	=0<	Hm2d1	2i1	x	Hm1
+A*	>	Hm2d1	2i1	x	Hm1i1
+A*	=0<	-Hm2d1	-2i1	x	Hm1
+A*	>	-Hm2d1	-2i1	x	Hm1i1
+2*	=0>	-Hm2d1	2i1	x	-Hm1
+2*	<	-Hm2d1	2i1	x	-Hm1i1
+A*	=0>	-2i1	Hm2d1	x	-Hm1
+A*	<	-2i1	Hm2d1	x	-Hm1i1
+A*	=0<	5mB0i1	2i1		x	5mB0p1i2
+A*	>	5mB0i1	2i1		x	5mB0p1i3
+A*	=0<	-5mB0i1	-2i1		x	5mB0p1i2
+A*	>	-5mB0i1	-2i1		x	5mB0p1i3
+A*	=0>	-5mB0i1	2i1		x	-5mB0p1i2
+A*	<	-5mB0i1	2i1		x	-5mB0p1i3
+A*	=0>	-2i1		5mB0i1	x	-5mB0p1i2
+A*	<	-2i1		5mB0i1	x	-5mB0p1i3
+!! round bit = 1, sticky bit = 0
+!! half-way cases, round to even
+!! odd result
+!! carry
+A*	=>	3i4	7	x	21i4
+A*	0<	3i4	7	x	21i3
+A*	=>	-3i4	-7	x	21i4
+A*	0<	-3i4	-7	x	21i3
+A*	=<	-3i4	7	x	-21i4
+A*	0>	-3i4	7	x	-21i3
+A*	=<	-7	3i4	x	-21i4
+A*	0>	-7	3i4	x	-21i3
+!! no carry
+A*	=>	3	1i1	x	3i2
+A*	0<	3	1i1	x	3i1
+A*	=>	-3	-1i1	x	3i2
+A*	0<	-3	-1i1	x	3i1
+A*	=<	-3	1i1	x	-3i2
+A*	0>	-3	1i1	x	-3i1
+A*	=<	-1i1	3	x	-3i2
+A*	0>	-1i1	3	x	-3i1
+!! denormal
+A*	=>	1m1		Ti3		xu	0i(1)1i2
+A*	0<	1m1		Ti3		xu	0i(1)1i1
+A*	=>	-1m1		-Ti3		xu	0i(1)1i2
+A*	0<	-1m1		-Ti3		xu	0i(1)1i1
+A*	=<	-1m1		Ti3		xu	-0i(1)1i2
+A*	0>	-1m1		Ti3		xu	-0i(1)1i1
+A*	=<	-Ti3		1m1		xu	-0i(1)1i2
+A*	0>	-Ti3		1m1		xu	-0i(1)1i1
+!! even result
+!! carry
+A*	=0<	3i4i8	7	x	21i8i2
+A*	>	3i4i8	7	x	21i8i3
+A*	=0<	-3i4i8	-7	x	21i8i2
+A*	>	-3i4i8	-7	x	21i8i3
+A*	=0>	-3i4i8	7	x	-21i8i2
+A*	<	-3i4i8	7	x	-21i8i3
+A*	=0>	-7	3i4i8	x	-21i8i2
+A*	<	-7	3i4i8	x	-21i8i3
+!! no carry
+A*	=0<	3	1i3	x	3i4
+A*	>	3	1i3	x	3i5
+A*	=0<	-3	-1i3	x	3i4
+A*	>	-3	-1i3	x	3i5
+A*	=0>	-3	1i3	x	-3i4
+A*	<	-3	1i3	x	-3i5
+A*	=0>	-1i3	3	x	-3i4
+A*	<	-1i3	3	x	-3i5
+!! denormal
+A*	>	1m1		Ti1		xu	0i(1)1i1
+A*	=0<	1m1		Ti1		xu	0i(1)1
+A*	>	-1m1		-Ti1		xu	0i(1)1i1
+A*	=0<	-1m1		-Ti1		xu	0i(1)1
+A*	<	-1m1		Ti1		xu	-0i(1)1i1
+A*	=0>	-1m1		Ti1		xu	-0i(1)1
+A*	<	-Ti1		1m1		xu	-0i(1)1i1
+A*	=0>	-Ti1		1m1		xu	-0i(1)1
+!! round bit = 1, sticky bit = 10 => inexact, round up
+!! carry
+A*	=>	1i(2)1	2d2	x	2i(2)1d1
+A*	0<	1i(2)1	2d2	x	2i(2)1d2
+A*	=>	-1i(2)1	-2d2	x	2i(2)1d1
+A*	0<	-1i(2)1	-2d2	x	2i(2)1d2
+A*	=<	-1i(2)1	2d2	x	-2i(2)1d1
+A*	0>	-1i(2)1	2d2	x	-2i(2)1d2
+A*	=<	-2d2	1i(2)1	x	-2i(2)1d1
+A*	0>	-2d2	1i(2)1	x	-2i(2)1d2
+!! no carry
+A*	=>	7	1i1	x	7i2
+A*	0<	7	1i1	x	7i1
+A*	=>	-7	-1i1	x	7i2
+A*	0<	-7	-1i1	x	7i1
+A*	=<	-7	1i1	x	-7i2
+A*	0>	-7	1i1	x	-7i1
+A*	=<	-1i1	7	x	-7i2
+A*	0>	-1i1	7	x	-7i1
+A*	=>	7mB0		4i1		x	7mB0p2i2
+A*	0<	7mB0		4i1		x	7mB0p2i1
+A*	=>	-7mB0		-4i1		x	7mB0p2i2
+A*	0<	-7mB0		-4i1		x	7mB0p2i1
+A*	=<	-7mB0		4i1		x	-7mB0p2i2
+A*	0>	-7mB0		4i1		x	-7mB0p2i1
+A*	=<	-4i1		7mB0		x	-7mB0p2i2
+A*	0>	-4i1		7mB0		x	-7mB0p2i1
+!! round bit = 1, sticky bit = 1 => inexact, round up
+!! no carry
+2*	=>	3i1	1i1	x	3i3
+2*	0<	3i1	1i1	x	3i2
+A*	=>	-3i1	-1i1	x	3i3
+A*	0<	-3i1	-1i1	x	3i2
+2*	=<	-3i1	1i1	x	-3i3
+2*	0>	-3i1	1i1	x	-3i2
+A*	=<	-1i1	3i1	x	-3i3
+A*	0>	-1i1	3i1	x	-3i2
+A*	=>	3i1	1i3	x	3i6
+A*	0<	3i1	1i3	x	3i5
+A*	=>	-3i1	-1i3	x	3i6
+A*	0<	-3i1	-1i3	x	3i5
+A*	=<	-3i1	1i3	x	-3i6
+A*	0>	-3i1	1i3	x	-3i5
+A*	=<	-1i3	3i1	x	-3i6
+A*	0>	-1i3	3i1	x	-3i5
+!! carry
+2*	=>	3d1	1d2	x	3d2
+2*	0<	3d1	1d2	x	3d3
+A*	=>	-3d1	-1d2	x	3d2
+A*	0<	-3d1	-1d2	x	3d3
+A*	=<	-3d1	1d2	x	-3d2
+A*	0>	-3d1	1d2	x	-3d3
+A*	=<	-1d2	3d1	x	-3d2
+A*	0>	-1d2	3d1	x	-3d3
+2*	=>	7d1	1d4	x	7d4
+2*	0<	7d1	1d4	x	7d5
+A*	=>	-7d1	-1d4	x	7d4
+A*	0<	-7d1	-1d4	x	7d5
+A*	=<	-7d1	1d4	x	-7d4
+A*	0>	-7d1	1d4	x	-7d5
+A*	=<	-1d4	7d1	x	-7d4
+A*	0>	-1d4	7d1	x	-7d5
+A*	=>	3mB0i1		4i1		x	3mB0p2i3
+A*	0<	3mB0i1		4i1		x	3mB0p2i2
+A*	=>	-3mB0i1		-4i1		x	3mB0p2i3
+A*	0<	-3mB0i1		-4i1		x	3mB0p2i2
+A*	=<	-3mB0i1		4i1		x	-3mB0p2i3
+A*	0>	-3mB0i1		4i1		x	-3mB0p2i2
+A*	=<	-4i1		3mB0i1		x	-3mB0p2i3
+A*	0>	-4i1		3mB0i1		x	-3mB0p2i2
+!! round bit = 1, sticky bit = 1 => inexact, round up
+!! no carry
+2*	=>	7i1	1i1	x	7i3
+2*	0<	7i1	1i1	x	7i2
+A*	=>	-7i1	-1i1	x	7i3
+A*	0<	-7i1	-1i1	x	7i2
+2*	=<	-7i1	1i1	x	-7i3
+2*	0>	-7i1	1i1	x	-7i2
+A*	=<	-1i1	7i1	x	-7i3
+A*	0>	-1i1	7i1	x	-7i2
+!! 3fefffff fffffffe 3ff00000 00000001 3fefffff ffffffff
+H*	=>	1d2	1i1	x	1
+A*	0<	1d2	1i1	x	1d1
+A*	=>	-1d2	-1i1	x	1
+A*	0<	-1d2	-1i1	x	1d1
+A*	=<	-1d2	1i1	x	-1
+A*	0>	-1d2	1i1	x	-1d1
+A*	=<	-1i1	1d2	x	-1
+A*	0>	-1i1	1d2	x	-1d1
+!! carry
+2*	=>	3d1	1d3	x	3d3
+2*	0<	3d1	1d3	x	3d4
+A*	=>	-3d1	-1d3	x	3d3
+A*	0<	-3d1	-1d3	x	3d4
+A*	=<	-3d1	1d3	x	-3d3
+A*	0>	-3d1	1d3	x	-3d4
+A*	=<	-1d3	3d1	x	-3d3
+A*	0>	-1d3	3d1	x	-3d4
+A*	=>	7mB0i1		4i1		x	7mB0p2i3
+A*	0<	7mB0i1		4i1		x	7mB0p2i2
+A*	=>	-7mB0i1		-4i1		x	7mB0p2i3
+A*	0<	-7mB0i1		-4i1		x	7mB0p2i2
+A*	=<	-7mB0i1		4i1		x	-7mB0p2i3
+A*	0>	-7mB0i1		4i1		x	-7mB0p2i2
+A*	=<	-4i1		7mB0i1		x	-7mB0p2i3
+A*	0>	-4i1		7mB0i1		x	-7mB0p2i2
+
+! Just below denormalization threshold.
+2*       ALL   Td1       2       OK	   Tp1d2
+!! 40000000000 00000000 000fffff ffffffff 001fffff ffffffe
+A*       ALL   -Td1      -2       OK       Tp1d2
+2*       ALL   -Td1       2       OK       -Tp1d2
+A*       ALL   -2	Td1      OK        -Tp1d2
+2*       ALL   -2	Td3	OK	-Tp1d6
+2*       ALL   -Td3      -2	OK	Tp1d6
+2*       ALL   2   	-Td3   OK       -Tp1d6
+A*       ALL   Td3      2	OK	Tp1d6
+!! c0000000 00000000 800fffff fffffffd 001fffff fffffffa
+2*       ALL   Td4       2       OK        Tp1d8
+!! 40000000000 00000000 000fffff fffffffc 001fffff ffffff8
+A*       ALL   -Td4       -2       OK        Tp1d8
+2*       ALL   Td4       -2       OK        -Tp1d8
+A*       ALL   2	-Td4       OK       -Tp1d8
+
+! Normalizing tinies.
+!! * 2
+2*       ALL   0i1       2        OK       0i2
+!! 4000000000 00000000 00000000 00000001 00000000 00000002
+A*       ALL   -0i1      -2       OK       0i2
+A*       ALL   0i1       -2        OK      -0i2
+A*       ALL	2	-0i1       OK      -0i2
+A*       ALL   0i2       2        OK       0i4
+A*       ALL   -0i2      -2       OK       0i4
+A*       ALL   0i2       -2        OK      -0i4
+A*       ALL	2	-0i2       OK      -0i4
+A*       ALL   0i3       2        OK       0i6
+A*       ALL   -0i3      -2       OK       0i6
+A*       ALL   0i3       -2        OK      -0i6
+A*       ALL	2	-0i3       OK      -0i6
+!! * 3
+A*       ALL   3	0i1	OK       0i3
+A*       ALL   -3	-0i1	OK       0i3
+A*       ALL   3	-0i1	OK       -0i3
+A*       ALL   0i1	-3	OK       -0i3
+2*       ALL   3	0i2	OK       0i6
+A*       ALL   -3	-0i2	OK       0i6
+A*       ALL   3	-0i2	OK       -0i6
+A*       ALL   0i2	-3	OK       -0i6
+A*       ALL   3	0i3	OK       0i9
+A*       ALL   -3	-0i3	OK       0i9
+A*       ALL   3	-0i3	OK       -0i9
+A*       ALL   0i3	-3	OK       -0i9
+!! * 4
+A*       ALL   4	0i1	OK       0i4
+A*       ALL   4   	-0i1	OK       -0i4
+A*       ALL   -4	-0i1	OK       0i4
+A*       ALL   -4   	0i1	OK       -0i4
+2*       ALL   4	0i2	OK       0i8
+A*       ALL   4   	-0i2	OK       -0i8
+A*       ALL   -4	-0i2	OK       0i8
+A*       ALL   -4   	0i2	OK       -0i8
+!! * 5
+A*       ALL   -0i1       -5	OK   0i5
+!! 40040000 00000000 00000000 00000001 00000000 00000002
+H*       ALL   5	0i1	OK   0i5
+2*       ALL   -0i1       5	OK   -0i5
+!! 40140000 00000000 80000000 00000001 80000000 00000005
+A*       ALL   0i1       -5	OK   -0i5
+!! * medium
+!! 00000000 00000001 43500000 00000000 00300000 00000000
+H*       ALL   0i1       2pt	OK   Tp2
+H*       ALL   -0i1      -2pt	OK   Tp2
+H*       ALL   -0i1       2pt	OK   -Tp2
+H*       ALL   -2pt	 0i1	OK   -Tp2
+A*       ALL   0i1       1ptm1	OK   T
+A*       ALL   -0i1      -1ptm1	OK   T
+A*       ALL   -0i1       1ptm1	OK   -T
+A*       ALL   -1ptm1	 0i1	OK   -T

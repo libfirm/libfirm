@@ -1,0 +1,1107 @@
+!! This file contains precision and range independent test vectors for
+!! the operation divide (/). The first character in each
+!! test vector refers to the origin of the test vector
+!!
+!! 2:  Jerome Coonen Version <2>
+!! 3:  Jerome Coonen Version <3>
+!!      @Phdthesis{
+!!              author = {Coonen, J.T.},
+!!              title  = {Contributions to a proposed standard for binary
+!!                 floating-point arithmetic},
+!!              school = {University of California, Berkeley},
+!!              year   = {1984}}
+!!
+!! H:  precision independent encoding of UCB/<H>ough test vector
+!!      @Unpublished{
+!!             author = {David G. Hough and others},
+!!             title  = {{UCBTEST}, a suite of programs for testing certain
+!!                difficult cases of {IEEE} 754 floating-point arithmetic},
+!!             year   = {1988},
+!!             note   = {Restricted public domain software from
+!!                http://netlib.bell-labs.com/netlib/fp/index.html}}
+!!
+!! A:  Verdonk-Cuyt-Verschaeren (University of <A>ntwerp)
+!!      @Article{
+!!             author  = {Verdonk, B. and Cuyt, A. and Verschaeren, D.},
+!!             title   = {A precision- and range-independent tool for testing
+!!                       floating-point arithmetic {I}: basic operations,
+!!                       square root and remainder},
+!!             journal = {ACM TOMS},
+!!             volume  = {27},
+!!             number  = {1},
+!!             pages   = {92-118},
+!!             year    = {2001}}
+!!             note  = {Under revision}}
+!!
+!! This file is part of the tool IeeeCC754 or IEEE 754 Compliance Checker.
+!! It is a precision and range independent tool to test whether
+!! an implementation of floating-point arithmetic (in hardware or
+!! software) is compliant with the principles of the IEEE 754-854
+!! floating-point standards. You can find out more about the testing
+!! tool IeeeCC754 and the syntax and semantics of the test vectors
+!! at
+!!            http://win-www.uia.ac.be/u/cant/ieeecc754.html
+!!
+!! Last updated:
+!!		$Date$
+!!
+!! Contact:
+!!	Brigitte.Verdonk@ua.ac.be
+!!      Department of Mathematics and Computer Science
+!!      University of Antwerp (UIA)
+!!      Universiteitsplein 1
+!!      B2610 Antwerp, BELGIUM
+!!
+!! Medium size numbers
+2/         ALL     1p15    1p5      OK    1p10
+A/         ALL     -1p15    -1p5    OK    1p10
+2/         ALL     1p15    -1p5     OK    -1p10
+2/         ALL     -1p15   1p5      OK    -1p10
+2/         ALL     1p120   1p20     OK    1p100
+A/         ALL     -1p120   -1p20   OK    1p100
+2/         ALL     -1p120  1p20     OK    -1p100
+2/         ALL     1p120   -1p20    OK    -1p100
+2/         ALL     1p63    1p23     OK    1p40
+A/         ALL     -1p63    -1p23   OK    1p40
+A/         ALL     -1p63    1p23    OK    -1p40
+A/         ALL     1p63    -1p23    OK    -1p40
+2/         ALL     1p47    1p13     OK      1p34
+A/         ALL     -1p47    -1p13   OK    1p34
+A/         ALL     -1p47    1p13    OK    -1p34
+A/         ALL     1p47    -1p13    OK    -1p34
+!! divisions by 10
+A/	ALL	40	10	OK	4
+A/	ALL	-40	-10	OK	4
+A/	ALL	-40	10	OK	-4
+A/	ALL	40	-10	OK	-4
+2/         ALL     32760   10       OK    3276
+2/         ALL     10000   10       OK    1000
+2/         ALL     10000   100      OK    100
+2/         ALL     10000   1000     OK    10
+
+!! / 1
+2/       ALL   1   1    OK   1
+2/       ALL   -1  -1   OK   1
+A/       ALL   1   -1   OK   -1
+2/       ALL   -1   1   OK   -1
+2/       ALL   2   1    OK   2
+2/       ALL   -2   -1  OK   2
+2/       ALL   -2   1   OK   -2
+2/       ALL   2   -1   OK   -2
+2/       ALL   Td1  1   OK   Td1
+2/       ALL   Td1  -1  OK   -Td1
+A/       ALL   0i1   1    OK   0i1
+A/       ALL   -0i1   -1  OK   0i1
+A/       ALL   -0i1   1   OK   -0i1
+A/       ALL   0i1   -1   OK   -0i1
+!! / 2
+2/       ALL   Hm1       2       OK       Hm2
+2/       ALL   Hm1       -2       OK   -Hm2
+2/       ALL   -Hm1d1   2   OK   -Hm2d1
+2/       ALL   Hm1d3   -2   OK   -Hm2d3
+2/       ALL   Hd1       -2       OK   -Hm1d1
+2/       ALL   8   2   OK   4
+A/       ALL   -8   -2   OK   4
+2/       ALL   -8   2   OK   -4
+A/       ALL   8   -2   OK   -4
+2/       ALL   Tp1       -2       OK   -T
+2/       ALL   Tp1i3   -2   OK   -Ti3
+2/       ALL   Tp1i1   -2   OK   -Ti1
+2/       ALL     Tp1d2  2      OK       Td1
+A/       ALL   0i(1)1   2   OK	0i(2)1
+A/       ALL   -0i(1)1   -2   OK   0i(2)1
+A/       ALL   -0i(1)1   2   OK   -0i(2)1
+A/       ALL   0i(1)1   -2   OK   -0i(2)1
+A/       ALL   0i2   2    OK   0i1
+A/       ALL   -0i2   -2   OK   0i1
+A/       ALL   -0i2   2   OK   -0i1
+A/       ALL   0i2   -2   OK   -0i1
+2/       ALL   Hd1       Hm1d1   OK       2
+2/       ALL   -Hm1i1   Hm2i1   OK       -2
+2/       ALL   Hm1i3   -Hm2i3   OK       -2
+2/       ALL   Tp1       T       OK       2
+2/       ALL   -Tp1i1   Ti1       OK   -2
+2/       ALL   Tp1i1   Ti1       OK       2
+2/       ALL   Tp1i3   -Ti3       OK   -2
+2/       ALL   -Tp1i5   Ti5       OK   -2
+A/       ALL   0i(1)1   0i(2)1   OK	2
+A/       ALL   -0i(1)1   -0i(2)1   OK	2
+A/       ALL   -0i(1)1   0i(2)1   OK	-2
+A/       ALL   0i(1)1   -0i(2)1   OK	-2
+A/       ALL   0i2	0i1	OK	2
+A/       ALL   -0i2	-0i1	OK	2
+A/       ALL   0i2	-0i1	OK	-2
+A/       ALL   -0i2	0i1	OK	-2
+!! * 2
+A/	ALL	3	1m1	OK	6
+A/	ALL	-3	-1m1	OK	6
+A/	ALL	-3	1m1	OK	-6
+A/	ALL	3	-1m1	OK	-6
+2/          ALL     Td1   1m1   OK        Tp1d2
+A/          ALL     -Td1   -1m1 OK        Tp1d2
+A/          ALL     -Td1   1m1  OK        -Tp1d2
+A/          ALL     Td1   -1m1  OK        -Tp1d2
+2/          ALL     0i1   1m1   OK        0i2
+A/          ALL     -0i1   -1m1 OK        0i2
+2/          ALL     -0i1   1m1  OK        -0i2
+A/          ALL     0i1   -1m1  OK        -0i2
+A/	ALL	3	6	OK 	1m1
+A/	ALL	-3	-6	OK 	1m1
+A/	ALL	-3	6	OK 	-1m1
+A/	ALL	3	-6	OK 	-1m1
+A/          ALL     Td1   Tp1d2		OK	1m1
+A/          ALL     -Td1  -Tp1d2	OK	1m1
+A/          ALL     -Td1  Tp1d2		OK	-1m1
+A/          ALL     Td1   -Tp1d2	OK	-1m1
+2/          ALL     0i1   0i2	OK	1m1
+A/          ALL     -0i1  0i2	OK	-1m1
+A/          ALL     -0i1  -0i2	OK	1m1
+A/          ALL     0i1   -0i2	OK	-1m1
+!! * 2^k
+A/	ALL	3	1m9	OK	3p9
+A/	ALL	-3	-1m9	OK	3p9
+A/	ALL	-3	1m9	OK	-3p9
+A/	ALL	3	-1m9	OK	-3p9
+2/          ALL     Td1   1m9   OK         Tp9d2
+A/          ALL     -Td1   -1m9   OK       Tp9d2
+A/          ALL     -Td1   1m9   OK         -Tp9d2
+A/          ALL     Td1   -1m9   OK         -Tp9d2
+2/          ALL     0i1   1m3   OK               0i8
+A/          ALL     -0i1   -1m3   OK         0i8
+A/          ALL     -0i1   1m3   OK         -0i8
+A/          ALL     0i1   -1m3   OK         -0i8
+A/	ALL	3	3p9	OK	1m9
+A/	ALL	-3	3p9	OK	-1m9
+A/	ALL	-3	-3p9	OK	1m9
+A/	ALL	3	-3p9	OK	-1m9
+A/          ALL     Td1   Tp9d2		OK	1m9
+A/          ALL     -Td1  Tp9d2		OK	-1m9
+A/          ALL     -Td1  -Tp9d2	OK	1m9
+A/          ALL     Td1   -Tp9d2	OK	-1m9
+A/          ALL     0i1   0i8	OK	1m3
+A/          ALL     -0i1  0i8	OK	-1m3
+A/          ALL     -0i1  -0i8	OK	1m3
+A/          ALL     0i1   -0i8	OK	-1m3
+!! / 3
+2/       ALL   9   3     OK    3
+2/       ALL   -9  -3    OK    3
+A/       ALL   -9   3    OK   -3
+A/       ALL   9   -3    OK   -3
+A/       ALL   6   3   OK       2
+2/       ALL   -6   -3   OK       2
+A/       ALL   6   -3   OK       -2
+A/       ALL   -6   3   OK       -2
+!! /4
+2/       ALL   Hd3       4       OK       Hm2d3
+2/       ALL   Hd3       -4       OK   -Hm2d3
+2/       ALL   -Hd3       4       OK   -Hm2d3
+2/       ALL   -Hd3       -4   OK   Hm2d3
+A/       ALL   0i(1)1   4   OK	0i(3)1
+A/       ALL   -0i(1)1   -4   OK   0i(3)1
+A/       ALL   -0i(1)1   4   OK   -0i(3)1
+A/       ALL   0i(1)1   -4   OK   -0i(3)1
+A/       ALL   0i4   4   OK     0i1
+A/       ALL   -0i4   -4   OK   0i1
+A/       ALL   -0i4   4   OK   -0i1
+A/       ALL   0i4   -4   OK   -0i1
+2/       ALL   Hd1       Hm2d1   OK       4
+2/       ALL   -Hd1       Hm2d1   OK   -4
+2/       ALL   Hd1       -Hm2d1   OK   -4
+2/       ALL   -Hd1       -Hm2d1   OK   4
+A/       ALL   0i(1)1   0i(3)1   OK	4
+A/       ALL   -0i(1)1   -0i(3)1   OK	4
+A/       ALL   -0i(1)1   0i(3)1   OK	-4
+A/       ALL   0i(1)1   -0i(3)1   OK	-4
+A/       ALL   0i4	0i1	OK	4
+A/       ALL   -0i4	-0i1	OK	4
+A/       ALL   0i4	-0i1	OK	-4
+A/       ALL   -0i4	0i1	OK	-4
+
+!! equal operands
+2/       ALL   5   5    OK   1
+A/       ALL   -5   -5  OK   1
+A/       ALL   5   -5   OK   -1
+A/       ALL  -5   5   OK   -1
+A/       ALL   3   3   OK       1
+A/       ALL   -3   -3   OK       1
+A/       ALL   -3   3   OK       -1
+2/       ALL   3   -3   OK       -1
+A/       ALL   7   7   OK       1
+A/       ALL   -7   -7   OK       1
+A/       ALL   7   -7   OK       -1
+2/       ALL   -7   7   OK       -1
+A/       ALL   0i1   0i1    OK   1
+A/       ALL   -0i1   -0i1  OK   1
+A/       ALL   0i1   -0i1   OK   -1
+A/       ALL  -0i1   0i1   OK   -1
+2/       ALL     0i9   9    OK       0i1
+2/       ALL     0i9  -9    OK      -0i1
+
+!! special representations
+!! zero versus zero
+2/       ALL   0   0   i   Q
+2/       ALL   -0   0   i   -Q
+2/       ALL   0   -0   i   -Q
+2/       ALL   -0   -0   i       Q
+!! zero versus denormal
+! 0 / denormalized -> 0.
+2/       ALL   0   0i1   OK       0
+2/       ALL   -0   0i3   OK   -0
+2/       ALL   0   -0i2   OK   -0
+2/       ALL   -0   -0i4   OK   0
+2/       ALL   0   Td1   OK       0
+2/       ALL   -0   Td1   OK   -0
+2/       ALL   0   -Td1   OK   -0
+2/       ALL   -0   -Td1   OK   0
+! Denormalized * 0 -> Inf, DivBy0
+2/       ALL   0i1       0       z       H
+2/       ALL   -0i3       0       z       -H
+2/       ALL   0i2       -0       z       -H
+2/       ALL   -0i4       -0   z   H
+2/       ALL   Td1       0       z       H
+2/       ALL   -Td1       0       z       -H
+2/       ALL   Td1       -0       z       -H
+2/       ALL   -Td1       -0   z   H
+!! zero versus normal
+! 0 / small_integer -> 0.
+2/       ALL   0   1   OK   0
+2/       ALL   -0   2   OK       -0
+2/       ALL   0   -3   OK       -0
+2/       ALL   -0   -4   OK       0
+2/       ALL   0   5   OK   0
+2/       ALL   -0   6   OK       -0
+2/       ALL   0   -7   OK       -0
+2/       ALL   -0   -8   OK       0
+! Small_int / 0 -> Inf with DivBy0.
+2/       ALL   1   0   z   H
+2/       ALL   -2   0   z   -H
+2/       ALL   3   -0   z   -H
+2/       ALL   -4   -0   z       H
+2/       ALL   5   0   z   H
+2/       ALL   -6   0   z   -H
+2/       ALL   7   -0   z   -H
+2/       ALL   -8   -0   z       H
+! 0 / huge -> 0.
+2/       ALL   0   Hm1   OK       0
+2/       ALL   -0   Hm2   OK   -0
+2/       ALL   0   -Hm1   OK   -0
+2/       ALL   -0   -Hm2   OK   0
+2/       ALL   0   Hm1d1   OK   0
+2/       ALL   -0   Hm2d1   OK   -0
+2/       ALL   0   -Hm2d1   OK   -0
+2/       ALL   -0   -Hm1d1       OK       0
+! Huge / 0 -> Inf with DivBy0.
+2/       ALL   Hm1       0       z       H
+2/       ALL   -Hm2       0       z       -H
+2/       ALL   Hm1       -0       z       -H
+2/       ALL   -Hm2       -0   z   H
+2/       ALL   Hm1d1   0   z   H
+2/       ALL   -Hm2d1   0   z   -H
+2/       ALL   Hm2d1   -0   z   -H
+2/       ALL   -Hm1d1   -0       z       H
+! 0 / tiny -> 0.
+2/       ALL   0   T   OK   0
+2/       ALL   -0   Tp1   OK   -0
+2/       ALL   0   -Tp1   OK   -0
+2/       ALL   -0   -T   OK       0
+2/       ALL   0   Tp1d1   OK   0
+2/       ALL   -0   Ti1   OK   -0
+2/       ALL   0   -Ti1   OK   -0
+2/       ALL   -0   -Tp1d1       OK       0
+! Tiny / 0 -> Inf with DivBy0.
+2/       ALL   T   0   z   H
+2/       ALL   -Tp1       0       z       -H
+2/       ALL   Tp1       -0       z       -H
+2/       ALL   -T   -0   z       H
+2/       ALL   Tp1d1   0   z   H
+2/       ALL   -Ti1       0       z       -H
+2/       ALL   Ti1       -0       z       -H
+2/       ALL   -Tp1d1   -0       z       H
+!! zero versus infinity
+! Inf / 0 --> Inf with no problem.
+2/       ALL   H   0   OK   H
+2/       ALL   -H   0   OK       -H
+2/       ALL   H   -0   OK       -H
+2/       ALL   -H   -0   OK       H
+! 0 / Inf --> 0 with no problem.
+2/       ALL   0   H   	OK   	0
+2/       ALL   -0   H   OK       -0
+2/       ALL   0   -H   OK       -0
+2/       ALL   -0   -H   OK       0
+!! zero versus NaN
+2/          ALL     Q       0       OK      Q
+2/          ALL     Q       -0      OK      Q
+2/          ALL     0       Q       OK      Q
+2/          ALL     -0      Q       OK      Q
+!2/          ALL     S       0       i       Q
+!2/          ALL     S       -0      i       Q
+!2/          ALL     0       S       i       Q
+!2/          ALL     -0      S       i       Q
+!! infinity versus infinity
+2/       ALL   H   H   i   Q
+2/       ALL   -H   H   i   -Q
+2/       ALL   H   -H   i   -Q
+2/       ALL   -H   -H   i       Q
+!! infinity versus denormal
+! Inf / denormalized -> Inf.
+2/       ALL   H   0i1   OK       H
+2/       ALL   -H   0i3   OK   -H
+2/       ALL   H   -0i2   OK   -H
+2/       ALL   -H   -0i4   OK   H
+2/       ALL   H   Td1   OK       H
+2/       ALL   -H   Td1   OK   -H
+2/       ALL   H   -Td1   OK   -H
+2/       ALL   -H   -Td1   OK   H
+! Denorm / Inf -> 0.
+2/       ALL   0i1       H       OK       0
+2/       ALL   -0i3       H       OK   -0
+2/       ALL   0i2       -H       OK   -0
+2/       ALL   -0i4       -H   OK   0
+2/       ALL   Td1       H       OK       0
+2/       ALL   -Td1       H       OK   -0
+2/       ALL   Td1       -H       OK   -0
+2/       ALL   -Td1       -H   OK   0
+!! infinity versus normal
+! Inf / small_integer -> Inf.
+2/       ALL   H   1   OK   H
+2/       ALL   -H   2   OK       -H
+2/       ALL   H   -3   OK       -H
+2/       ALL   -H   -4   OK       H
+2/       ALL   H   5   OK   H
+2/       ALL   -H   6   OK       -H
+2/       ALL   H   -7   OK       -H
+2/       ALL   -H   -8   OK       H
+! Small_int / Inf -> 0.
+2/       ALL   1   H   OK   0
+2/       ALL   -2   H   OK       -0
+2/       ALL   3   -H   OK       -0
+2/       ALL   -4   -H   OK       0
+2/       ALL   5   H   OK   0
+2/       ALL   -6   H   OK       -0
+2/       ALL   7   -H   OK       -0
+2/       ALL   -8   -H   OK       0
+! Huge / Inf -> 0.
+2/       ALL   Hm1       H       OK       0
+2/       ALL   -Hm2       H       OK   -0
+2/       ALL   Hm1       -H       OK   -0
+2/       ALL   -Hm2       -H   OK   0
+2/       ALL   Hm1d1   H   OK   0
+2/       ALL   -Hm2d1   H   OK   -0
+2/       ALL   Hd1       -H       OK   -0
+2/       ALL   -Hd1       -H   OK   0
+! Inf / huge -> Inf.
+2/       ALL   H   Hm1   OK       H
+2/       ALL   -H   Hm2   OK   -H
+2/       ALL   H   -Hm1   OK   -H
+2/       ALL   -H   -Hm2   OK   H
+2/       ALL   H   Hm1d1   OK   H
+2/       ALL   H   -Hm2d1   OK   -H
+2/       ALL   H   -Hd1   OK   -H
+2/       ALL   -H   -Hd1   OK   H
+! Inf / tiny -> Inf.
+2/       ALL   H   T   OK   H
+2/       ALL   -H   Tp1   OK   -H
+2/       ALL   H   -Tp1   OK   -H
+2/       ALL   -H   -T   OK       H
+2/       ALL   H   Tp1d1   OK   H
+2/       ALL   -H   Ti1   OK   -H
+2/       ALL   H   -Ti1   OK   -H
+2/       ALL   -H   -Tp1d1       OK       H
+! Tiny / Inf -> 0.
+2/       ALL   T   H   OK   0
+2/       ALL   -Tp1       H       OK   -0
+2/       ALL   Tp1       -H       OK   -0
+2/       ALL   -T   -H   OK       0
+2/       ALL   Tp1d1   H   OK   0
+2/       ALL   -Ti1       H       OK   -0
+2/       ALL   Ti1       -H       OK   -0
+2/       ALL   -Tp1d1   -H       OK       0
+!! infinity versus NaN
+2/          ALL     Q       H      OK      Q
+2/          ALL     Q       -H     OK      Q
+2/          ALL     H      Q       OK      Q
+2/          ALL     -H     Q       OK      Q
+!2/          ALL     S       H      i       Q
+!2/          ALL     S       -H     i       Q
+!2/          ALL     H      S       i       Q
+!2/          ALL     -H     S       i       Q
+!! NaN versus NaN
+2/          ALL     Q       Q       OK      Q
+!2/          ALL     Q       S       i       Q
+!2/          ALL     S       Q       i       Q
+!2/          ALL     S       S       i       Q
+!! NaN versus denormal
+2/          ALL     Td1  Q               OK              Q
+2/          ALL     -Td1 Q               OK              Q
+2/          ALL     Q       Td1  OK              Q
+2/          ALL     Q       -Td1 OK              Q
+2/          ALL     Q       0i1   OK      Q
+2/          ALL     Q       -0i1  OK      Q
+2/          ALL     0i1   Q               OK      Q
+2/          ALL     -0i1  Q               OK      Q
+!2/          ALL     Td1  S               i               Q
+!2/          ALL     -Td1 S               i               Q
+!2/          ALL     S       Td1  i               Q
+!2/          ALL     S       -Td1 i               Q
+!2/          ALL     S       0i1   i               Q
+!2/          ALL     S       -0i1  i               Q
+!2/          ALL     0i1   S               i               Q
+!2/          ALL     -0i1  S               i               Q
+!! NaN versus normal
+2/          ALL     Q       1       OK      Q
+2/          ALL     Q       -1      OK      Q
+2/          ALL     1       Q       OK      Q
+2/          ALL     -1      Q       OK      Q
+2/          ALL     Q       Hd1  OK              Q
+2/          ALL     Q       -Hd1 OK              Q
+2/          ALL     Hd1  Q               OK              Q
+2/          ALL     -Hd1 Q               OK              Q
+!2/          ALL     S       1       i       Q
+!2/          ALL     S       -1      i       Q
+!2/          ALL     1       S       i       Q
+!2/          ALL     -1      S       i       Q
+!2/          ALL     S       Hd1  i               Q
+!2/          ALL     S       -Hd1 i               Q
+!2/          ALL     Hd1  S               i               Q
+!2/          ALL     -Hd1 S               i               Q
+
+!! exceptions
+!! invalid and divide by zero, see special representations
+!! inexact, overflow
+!! exp. Z >= U
+2/          =>      Hm1          1m1   	xo          H
+2/          0<      Hm1          1m1   	xo          Hd1
+2/          =>      -Hm1         -1m1  	xo          H
+2/          0<      -Hm1         -1m1	xo          Hd1
+2/          =<      Hm1          -1m1  	xo          -H
+2/          =<      -Hm1         1m1   	xo          -H
+2/          0>      Hm1          -1m1  	xo          -Hd1
+2/          0>      -Hm1         1m1   	xo          -Hd1
+2/          =>      Hm9          Tp9   	xo      H
+2/          0<      Hm9          Tp9    xo      Hd1
+2/          =>      Hd1  	0i1   	xo          H
+2/          0<      Hd1  	0i1   	xo          Hd1
+2/          =>      Hm1          Td1  	xo          H
+2/          0<      Hm1          Td1  	xo          Hd1
+2/          =>      Hd1  	1d1   	xo          H
+2/          0<      Hd1  	1d1   	xo          Hd1
+!! Result = Max. normal, round or sticky bit <> 0
+!! This combination is not possible
+!! inexact, underflow
+!! X - Y <= -B-t
+!! Z = 0.0...0, round bit = 0
+A/	=0<	T	2pt	xu	0
+A/	>	T	2pt	xu	0i1
+A/	=0<	-T	-2pt	xu	0
+A/	>	-T	-2pt	xu	0i1
+A/	=0>	T	-2pt	xu	-0
+A/	<	T	-2pt	xu	-0i1
+A/	=0>	-T	2pt	xu	-0
+A/	<	-T	2pt	xu	-0i1
+!! denormal
+A/	=0<	0i1	4	xu	0
+A/	>	0i1	4	xu	0i1
+A/	=0<	-0i1	-4	xu	0
+A/	>	-0i1	-4	xu	0i1
+A/	=0>	0i1	-4	xu	-0
+A/	<	0i1	-4	xu	-0i1
+A/	=0>	-0i1	4	xu	-0
+A/	<	-0i1	4	xu	-0i1
+! Tiny / huge -> underflow.
+2/          =<0     0i1   Hd1  xu          0
+2/          >       0i1   Hd1  xu          0i1
+2/          =<0     -0i1  -Hd1  xu          0
+2/          >       -0i1  -Hd1  xu          0i1
+2/          =0>     0i1   -Hd1 xu          -0
+2/          <       0i1   -Hd1 xu          -0i1
+2/          =0>     -0i1   Hd1 xu          -0
+2/          <       -0i1   Hd1 xu          -0i1
+!! X - Y = -B-t+1, round bit = 1, sticky bit = 1
+A/	0<	Tp1d1	1pt	xu	0
+A/	=>	Tp1d1	1pt	xu	0i1
+A/	0<	-Tp1d1	-1pt	xu	0
+A/	=>	-Tp1d1	-1pt	xu	0i1
+A/	0>	-Tp1d1	1pt	xu	-0
+A/	=<	-Tp1d1	1pt	xu	-0i1
+A/	0>	Tp1d1	-1pt	xu	-0
+A/	=<	Tp1d1	-1pt	xu	-0i1
+!! denormal
+A/	0<	Td1	1ptm1	xu	0
+A/	=>	Td1	1ptm1	xu	0i1
+A/	0<	-Td1	-1ptm1	xu	0
+A/	=>	-Td1	-1ptm1	xu	0i1
+A/	0>	-Td1	1ptm1	xu	-0
+A/	=<	-Td1	1ptm1	xu	-0i1
+A/	0>	Td1	-1ptm1	xu	-0
+A/	=<	Td1	-1ptm1	xu	-0i1
+!! X - Y = -B-t+1, round bit = 1, sticky bits = 0
+A/	0<	3mB	1pt	xu	0
+A/	=>	3mB	1pt	xu	0i1
+A/	0<	-3mB	-1pt	xu	0
+A/	=>	-3mB	-1pt	xu	0i1
+A/	0>	-3mB	1pt	xu	-0
+A/	=<	-3mB	1pt	xu	-0i1
+A/	0>	3mB	-1pt	xu	-0
+A/	=<	3mB	-1pt	xu	-0i1
+!! denormal
+A/	0<	0i3	4	xu	0
+A/	=>	0i3	4	xu	0i1
+A/	0<	-0i3	-4	xu	0
+A/	=>	-0i3	-4	xu	0i1
+A/	0>	-0i3	4	xu	-0
+A/	=<	-0i3	4	xu	-0i1
+A/	0>	0i3	-4	xu	-0
+A/	=<	0i3	-4	xu	-0i1
+!! X - Y = -B-t+1, round bit = 1, sticky bits = 1
+A/	0<	5mBm1	1pt	xu	0
+A/	=>	5mBm1	1pt	xu	0i1
+A/	0<	-5mBm1	-1pt	xu	0
+A/	=>	-5mBm1	-1pt	xu	0i1
+A/	0>	-5mBm1	1pt	xu	-0
+A/	=<	-5mBm1	1pt	xu	-0i1
+A/	0>	5mBm1	-1pt	xu	-0
+A/	=<	5mBm1	-1pt	xu	-0i1
+!! denormal
+A/	0<	0i5	8	xu	0
+A/	=>	0i5	8	xu	0i1
+A/	0<	-0i5	-8	xu	0
+A/	=>	-0i5	-8	xu	0i1
+A/	0>	-0i5	8	xu	-0
+A/	=<	-0i5	8	xu	-0i1
+A/	0>	0i5	-8	xu	-0
+A/	=<	0i5	-8	xu	-0i1
+!! X - Y = -B-t+1, round bit = 1, sticky bit = 0, round to even
+A/	=0<	T	1pt	xu	0
+A/	>	T	1pt	xu	0i1
+A/	=0<	-T	-1pt	xu	0
+A/	>	-T	-1pt	xu	0i1
+A/	=0>	-T	1pt	xu	-0
+A/	<	-T	1pt	xu	-0i1
+A/	=0>	T	-1pt	xu	-0
+A/	<	T	-1pt	xu	-0i1
+!! denormal
+2/	=0<	0i1	2	xu	0
+2/	>	0i1	2	xu	0i1
+2/	=0<	-0i1	-2	xu	0
+2/	>	-0i1	-2	xu	0i1
+2/	=0>	-0i1	2	xu	-0
+2/	<	-0i1	2	xu	-0i1
+2/	=0>	0i1	-2	xu	-0
+2/	<	0i1	-2	xu	-0i1
+!! X - Y = -B-t+2, round bit = 1, sticky bit = 0, round to even
+A/	0<	Tp1i(1)1	1pt	xu	0i1
+A/	=>	Tp1i(1)1	1pt	xu	0i2
+A/	0<	-Tp1i(1)1	-1pt	xu	0i1
+A/	=>	-Tp1i(1)1	-1pt	xu	0i2
+A/	0>	-Tp1i(1)1	1pt	xu	-0i1
+A/	=<	-Tp1i(1)1	1pt	xu	-0i2
+A/	0>	Tp1i(1)1	-1pt	xu	-0i1
+A/	=<	Tp1i(1)1	-1pt	xu	-0i2
+!! denormal
+A/	0<	0i3	2	xu	0i1
+A/	=>	0i3	2	xu	0i2
+A/	0<	-0i3	-2	xu	0i1
+A/	=>	-0i3	-2	xu	0i2
+A/	0>	-0i3	2	xu	-0i1
+A/	=<	-0i3	2	xu	-0i2
+A/	0>	0i3	-2	xu	-0i1
+A/	=<	0i3	-2	xu	-0i2
+!! exp. Z = -B + denormalization loss => inexactness
+A/	=0<	Tp1d3	2	xu	Td2
+A/	>	Tp1d3	2	xu	Td1
+A/	=0<	-Tp1d3	-2	xu	Td2
+A/	>	-Tp1d3	-2	xu	Td1
+A/	=0>	-Tp1d3	2	xu	-Td2
+A/	<	-Tp1d3	2	xu	-Td1
+A/	=0>	Tp1d3	-2	xu	-Td2
+A/	<	Tp1d3	-2	xu	-Td1
+A/      0<=     Ti(3)7i3       1p2i(1)1    xu  0i(4)5
+A/      >       Ti(3)7i3       1p2i(1)1    xu  0i(4)5i1
+A/      0<      Ti(3)7i3       1pti(1)1    xu  0
+A/      >=      Ti(3)7i3       1pti(1)1    xu  0i1
+!! denormal
+A/	0<	Td1	2	xu	0i(1)1d1
+A/	=>	Td1	2	xu	0i(1)1
+A/	0<	-Td1	-2	xu	0i(1)1d1
+A/	=>	-Td1	-2	xu	0i(1)1
+A/	0>	-Td1	2	xu	-0i(1)1d1
+A/	=<	-Td1	2	xu	-0i(1)1
+A/	0>	Td1	-2	xu	-0i(1)1d1
+A/	=<	Td1	-2	xu	-0i(1)1
+!! exp. Z = -B + inexactness, no denormalization loss
+2/	=0<	T	1i1	xv	Td1
+2/	>	T	1i1	xu	T
+A/	=0<	-T	-1i1	xv	Td1
+A/	>	-T	-1i1	xu	T
+2/	=0>	-T	1i1	xv	-Td1
+2/	<	-T	1i1	xu	-T
+A/	=0>	T	-1i1	xv	-Td1
+A/	<	T	-1i1	xu	-T
+2/          <=0     Ti1     1i2     xv      Td1
+2/          >       Ti1     1i2     xu      T
+2/          <=0     Ti2     1i6     xv      Td4
+!! denormal
+2/	=0<	Td1	1i1	xv	Td2
+A/	>	Td1	1i1	xu	Td1
+A/	=0<	-Td1	-1i1	xv	Td2
+A/	>	-Td1	-1i1	xu	Td1
+A/	=0>	-Td1	1i1	xv	-Td2
+A/	<	-Td1	1i1	xu	-Td1
+A/	=0>	Td1	-1i1	xv	-Td2
+A/	<	Td1	-1i1	xu	-Td1
+2/          >=      Td2     1d2     xv      Td1
+2/          >=      Td9     1d2     xv      Td8
+2/          <=      -Td8    1d2     xv      -Td7
+2/          <=0     Td1     1i2     xv      Td3
+2/          >       Td1     1i2     xu      Td2
+!! exp. Z = -B + tininess after rounding
+A/          >       Ti(1)1d1     3m1     xu      T
+A/          =       Ti(1)1d1     3m1     xu      Td1
+A/          0<      Ti(1)1d1     3m1     xv      Td1
+A/          <       -Ti(1)1d1    3m1     xu      -T
+A/          =       -Ti(1)1d1    3m1     xu      -Td1
+A/          0>      -Ti(1)1d1    3m1     xv      -Td1
+A/          =>       1d1         Hm2     xu      T
+A/          <0       1d1         Hm2     xu      Td1
+A/          =<       -1d1        Hm2     xu      -T
+A/          >0       -1d1        Hm2     xu      -Td1
+!! tininess before and after rounding
+!! as though the exponent range were unbounded
+2/	0<	Tp1d1	2	xu	Td1
+2/	=>	Tp1d1	2	xu	T
+A/	0<	-Tp1d1	-2	xu	Td1
+A/	=>	-Tp1d1	-2	xu	T
+A/	0>	-Tp1d1	2	xu	-Td1
+A/	=<	-Tp1d1	2	xu	-T
+2/	0>	Tp1d1	-2	xu	-Td1
+A/	=<	Tp1d1	-2	xu	-T
+!! inexact, see rounding properties below
+
+!! exact rounding
+!! round bit = 0, sticky bit = 1 => inexact, round down
+! Tricky divides based on power series expansions
+! 1 / (1 + Nulp+) --> 1 - (2Nulp-) + tiny.
+2/       =0<     1       1i1   x   1d2
+2/       >       1       1i1   x   1d1
+2/       =0<     -1      -1i1   x   1d2
+2/       >       -1      -1i1   x   1d1
+2/       =0>     -1       1i1   x   -1d2
+2/       <       -1       1i1   x   -1d1
+2/       =0>     1      -1i1   x   -1d2
+2/       <       1      -1i1   x   -1d1
+2/       =0<     1       1i2   x   1d4
+2/       >       1       1i2   x   1d3
+2/       =       1       1i3   x   1d6
+2/       0       1       1i3   x   1d6
+2/       <       1       1i3   x   1d6
+2/       >       1       1i3   x   1d5
+2/       =       1       1i4   x   1d8
+2/       0       1       1i4   x   1d8
+2/       <       1       1i4   x   1d8
+2/       >       1       1i4   x   1d7
+! 1 / (1 - Nu-) --> 1 + (Q/2 u+) + tiny.
+2/       =       1       1d2   x   1i1
+2/       0       1       1d2   x   1i1
+2/       <       1       1d2   x   1i1
+2/       >       1       1d2   x   1i2
+2/       =       1       1d4   x   1i2
+2/       0       1       1d4   x   1i2
+2/       <       1       1d4   x   1i2
+2/       >       1       1d4   x   1i3
+2/       =       1       1d8   x   1i4
+2/       0       1       1d8   x   1i4
+2/       <       1       1d8   x   1i4
+2/       >       1       1d8   x   1i5
+! (1 + Mulp+) / (1 + Qulp+) -->
+! Case M < Q: (1 + 2Mulp-) * (1 - 2Qulp- + (2Qulp-)^2 - tiny) -->
+! 1 - 2(Q-M)ulp- + 4(QQ-MQ)(ulp-)^2 + tiny -->
+! 1 - 2(Q-M)ulp- + tiny.
+! M + Q = 3.
+2/       =       1i1   1i2       x       1d2
+2/       0       1i1   1i2       x       1d2
+2/       <       1i1   1i2       x       1d2
+2/       >       1i1   1i2       x       1d1
+! M + Q = 4.
+2/       =       1i1   1i3       x       1d4
+2/       0       1i1   1i3       x       1d4
+2/       <       1i1   1i3       x       1d4
+2/       >       1i1   1i3       x       1d3
+! M + Q = 5.
+2/       =       1i2   1i3       x       1d2
+2/       0       1i2   1i3       x       1d2
+2/       <       1i2   1i3       x       1d2
+2/       >       1i2   1i3       x       1d1
+! M + Q = 11.
+2/       =       1i4   1i7       x       1d6
+2/       0       1i4   1i7       x       1d6
+2/       <       1i4   1i7       x       1d6
+2/       >       1i4   1i7       x       1d5
+! M + Q = 14.
+2/       =       1i6   1i8       x       1d4
+2/       0       1i6   1i8       x       1d4
+2/       <       1i6   1i8       x       1d4
+2/       >       1i6   1i8       x       1d3
+! (1 - Mulp-) / (1 - Qulp-) -->
+! Case M < Q: (1 - (M/2)ulp+) * (1 + (Q/2)ulp+ + ((Q/2)ulp+)^2 + tiny) -->
+! 1 + ((Q-M)/2)ulp+ + (QQ-MQ)/4(ulp+)^2 + tiny -->
+! 1 + (Q-M)/2ulp+ + tiny.
+! M + Q = 4.
+2/       =       1d1   1d3       x       1i1
+2/       0       1d1   1d3       x       1i1
+2/       <       1d1   1d3       x       1i1
+2/       >       1d1   1d3       x       1i2
+! M + Q = 6.
+2/       =       1d2   1d4       x       1i1
+2/       0       1d2   1d4       x       1i1
+2/       <       1d2   1d4       x       1i1
+2/       >       1d2   1d4       x       1i2
+! M + Q = 8.
+2/       =       1d1   1d7       x       1i3
+2/       0       1d1   1d7       x       1i3
+2/       <       1d1   1d7       x       1i3
+2/       >       1d1   1d7       x       1i4
+! M + Q = 10.
+2/       =       1d3   1d7       x       1i2
+2/       0       1d3   1d7       x       1i2
+2/       <       1d3   1d7       x       1i2
+2/       >       1d3   1d7       x       1i3
+! M + Q = 12.
+2/       =       1d5   1d7       x       1i1
+2/       0       1d5   1d7       x       1i1
+2/       <       1d5   1d7       x       1i1
+2/       >       1d5   1d7       x       1i2
+! (1 + Mulp+) / (1 - Qulp-) -->
+! (1 + Mulp+) * (1 + (Q/2)ulp+ + ((Q/2)ulp+)^2 + tiny) -->
+! 1 + (M + Q/2)ulp+ + tiny.
+! M + Q = 3.
+2/       =       1i1   1d2       x       1i2
+2/       0       1i1   1d2       x       1i2
+2/       <       1i1   1d2       x       1i2
+2/       >       1i1   1d2       x       1i3
+! M + Q = 4.
+2/       =       1i2   1d2       x       1i3
+2/       0       1i2   1d2       x       1i3
+2/       <       1i2   1d2       x       1i3
+2/       >       1i2   1d2       x       1i4
+! M + Q = 5.
+2/       =       1i3   1d2       x       1i4
+2/       0       1i3   1d2       x       1i4
+2/       <       1i3   1d2       x       1i4
+2/       >       1i3   1d2       x       1i5
+! M + Q = 6.
+2/       =       1i2   1d4       x       1i4
+2/       0       1i2   1d4       x       1i4
+2/       <       1i2   1d4       x       1i4
+2/       >       1i2   1d4       x       1i5
+2/       =       1i4   1d2       x       1i5
+2/       0       1i4   1d2       x       1i5
+2/       <       1i4   1d2       x       1i5
+2/       >       1i4   1d2       x       1i6
+! (1 - Mulp-) / (1 + Qulp+) -->
+! (1 - Mulp-) * (1 - 2Qulp- + (2Qulp-)^2 - tiny) -->
+! 1 - (M + 2Q)ulp- + tiny.
+! M + Q = 2.
+2/       =       1d1   1i1       x       1d3
+2/       0       1d1   1i1       x       1d3
+2/       <       1d1   1i1       x       1d3
+2/       >       1d1   1i1       x       1d2
+! M + Q = 3.
+2/       =       1d2   1i1       x       1d4
+2/       0       1d2   1i1       x       1d4
+2/       <       1d2   1i1       x       1d4
+2/       >       1d2   1i1       x       1d3
+2/       =       1d1   1i2       x       1d5
+2/       0       1d1   1i2       x       1d5
+2/       <       1d1   1i2       x       1d5
+2/       >       1d1   1i2       x       1d4
+! M + Q = 4.
+2/       =       1d3   1i1       x       1d5
+2/       0       1d3   1i1       x       1d5
+2/       <       1d3   1i1       x       1d5
+2/       >       1d3   1i1       x       1d4
+2/       =       1d1   1i3       x       1d7
+2/       0       1d1   1i3       x       1d7
+2/       <       1d1   1i3       x       1d7
+2/       >       1d1   1i3       x       1d6
+2/       =       1d2   1i2       x       1d6
+2/       0       1d2   1i2       x       1d6
+2/       <       1d2   1i2       x       1d6
+2/       >       1d2   1i2       x       1d5
+! M + Q = 5.
+2/       =       1d4   1i1       x       1d6
+2/       0       1d4   1i1       x       1d6
+2/       <       1d4   1i1       x       1d6
+2/       >       1d4   1i1       x       1d5
+2/       =       1d1   1i4       x       1d9
+2/       0       1d1   1i4       x       1d9
+2/       <       1d1   1i4       x       1d9
+2/       >       1d1   1i4       x       1d8
+2/       =       1d3   1i2       x       1d7
+2/       0       1d3   1i2       x       1d7
+2/       <       1d3   1i2       x       1d7
+2/       >       1d3   1i2       x       1d6
+2/       =       1d2   1i3       x       1d8
+2/       0       1d2   1i3       x       1d8
+2/       <       1d2   1i3       x       1d8
+2/       >       1d2   1i3       x       1d7
+! A few tricky cases.
+A/	=0<	-1d4	-1i1	x	1d6
+A/	>	-1d4	-1i1	x	1d5
+A/	=0>	-1d4	1i1	x	-1d6
+A/	<	-1d4	1i1	x	-1d5
+A/	=0>	1d4	-1i1	x	-1d6
+A/	<	1d4	-1i1	x	-1d5
+!! 3ff7ffff ffffffff 3feffff fffffffe 3ff80000 00000000
+H/	0<	3m1d1	1d2	x	3m1
+H/	=>	3m1d1	1d2	x	3m1i1
+A/	0<	-3m1d1	-1d2	x	3m1
+A/	=>	-3m1d1	-1d2	x	3m1i1
+A/	0>	-3m1d1	1d2	x	-3m1
+A/	=<	-3m1d1	1d2	x	-3m1i1
+A/	0>	3m1d1	-1d2	x	-3m1
+A/	=<	3m1d1	-1d2	x	-3m1i1
+!! denormal
+A/	=0<	0i(1)1	Ti1	x	1m1d2
+A/	>	0i(1)1	Ti1	x	1m1d1
+A/	=0<	-0i(1)1	-Ti1	x	1m1d2
+A/	>	-0i(1)1	-Ti1	x	1m1d1
+A/	=0>	-0i(1)1	Ti1	x	-1m1d2
+A/	<	-0i(1)1	Ti1	x	-1m1d1
+A/	=0>	0i(1)1	-Ti1	x	-1m1d2
+A/	<	0i(1)1	-Ti1	x	-1m1d1
+!! round bit = 0, sticky bit = 10 => inexact, round down
+!! This combination is not possible
+!! round bit = 0, sticky bit = 1 => inexact, round down
+A/	=0<	3i2	1i1	x	3
+A/	>	3i2	1i1	x	3i1
+A/	=0<	-3i2	-1i1	x	3
+A/	>	-3i2	-1i1	x	3i1
+A/	=0>	3i2	-1i1	x	-3
+A/	<	3i2	-1i1	x	-3i1
+A/	=0>	-3i2	1i1	x	-3
+A/	<	-3i2	1i1	x	-3i1
+!! denormal
+A/	=0<	0i(2)3i1	Ti1	x	3m2
+A/	>	0i(2)3i1	Ti1	x	3m2i1
+A/	=0<	-0i(2)3i1	-Ti1	x	3m2
+A/	>	-0i(2)3i1	-Ti1	x	3m2i1
+A/	=0>	0i(2)3i1	-Ti1	x	-3m2
+A/	<	0i(2)3i1	-Ti1	x	-3m2i1
+A/	=0>	-0i(2)3i1	Ti1	x	-3m2
+A/	<	-0i(2)3i1	Ti1	x	-3m2i1
+!! round bit = 1, sticky bit = 0 => inexact, round up
+!! This combination is not possible
+!! round bit = 1, sticky bit = 1 => inexact, round up
+! 1 / (1 - Qu-) --> 1 + (Q/2 u+) + tiny.
+2/       =       1       1d3   x   1i2
+2/       0       1       1d3   x   1i1
+2/       <       1       1d3   x   1i1
+2/       >       1       1d3   x   1i2
+2/       =       1       1d5   x   1i3
+2/       0       1       1d5   x   1i2
+2/       <       1       1d5   x   1i2
+2/       >       1       1d5   x   1i3
+2/       =       1       1d9   x   1i5
+2/       0       1       1d9   x   1i4
+2/       <       1       1d9   x   1i4
+2/       >       1       1d9   x   1i5
+! 1 / (1 - Qu-) --> 1 + (Q/2 u+) + tiny.
+2/       =>       1       1d1   x   1i1
+2/       0<       1       1d1   x   1
+2/       =>       -1      -1d1   x   1i1
+2/       0<       -1      -1d1   x   1
+2/       =<       -1      1d1   x   -1i1
+2/       0>       -1      1d1   x   -1
+2/       =<       1      -1d1   x   -1i1
+2/       0>       1      -1d1   x   -1
+! (1 - Mulp-) / (1 - Qulp-) -->
+! Case M < Q: (1 - (M/2)ulp+) * (1 + (Q/2)ulp+ + ((Q/2)ulp+)^2 + tiny) -->
+! 1 + ((Q-M)/2)ulp+ + (QQ-MQ)/4(ulp+)^2 + tiny -->
+! 1 + (Q-M)/2ulp+ + tiny.
+! M + Q = 3.
+2/       =       1d1   1d2       x       1i1
+2/       0       1d1   1d2       x       1
+2/       <       1d1   1d2       x       1
+2/       >       1d1   1d2       x       1i1
+! M + Q = 5.
+2/       =       1d2   1d3       x       1i1
+2/       0       1d2   1d3       x       1
+2/       <       1d2   1d3       x       1
+2/       >       1d2   1d3       x       1i1
+2/       =       1d1   1d4       x       1i2
+2/       0       1d1   1d4       x       1i1
+2/       <       1d1   1d4       x       1i1
+2/       >       1d1   1d4       x       1i2
+! M + Q = 7.
+2/       =       1d3   1d4       x       1i1
+2/       0       1d3   1d4       x       1
+2/       <       1d3   1d4       x       1
+2/       >       1d3   1d4       x       1i1
+! M + Q = 9.
+2/       =       1d2   1d7       x       1i3
+2/       0       1d2   1d7       x       1i2
+2/       <       1d2   1d7       x       1i2
+2/       >       1d2   1d7       x       1i3
+! M + Q = 11.
+2/       =       1d4   1d7       x       1i2
+2/       0       1d4   1d7       x       1i1
+2/       <       1d4   1d7       x       1i1
+2/       >       1d4   1d7       x       1i2
+! M + Q = 13.
+2/       =       1d6   1d7       x       1i1
+2/       0       1d6   1d7       x       1
+2/       <       1d6   1d7       x       1
+2/       >       1d6   1d7       x       1i1
+! (1 + Mulp+) / (1 - Qulp-) -->
+! (1 + Mulp+) * (1 + (Q/2)ulp+ + ((Q/2)ulp+)^2 + tiny) -->
+! 1 + (M + Q/2)ulp+ + tiny.
+! M + Q = 2.
+2/       =       1i1   1d1       x       1i2
+2/       0       1i1   1d1       x       1i1
+2/       <       1i1   1d1       x       1i1
+2/       >       1i1   1d1       x       1i2
+! M + Q = 3.
+2/       =       1i2   1d1       x       1i3
+2/       0       1i2   1d1       x       1i2
+2/       <       1i2   1d1       x       1i2
+2/       >       1i2   1d1       x       1i3
+! M + Q = 4.
+2/       =       1i1   1d3       x       1i3
+2/       0       1i1   1d3       x       1i2
+2/       <       1i1   1d3       x       1i2
+2/       >       1i1   1d3       x       1i3
+2/       =       1i3   1d1       x       1i4
+2/       0       1i3   1d1       x       1i3
+2/       <       1i3   1d1       x       1i3
+2/       >       1i3   1d1       x       1i4
+! M + Q = 5.
+2/       =       1i2   1d3       x       1i4
+2/       0       1i2   1d3       x       1i3
+2/       <       1i2   1d3       x       1i3
+2/       >       1i2   1d3       x       1i4
+! M + Q = 6.
+2/       =       1i3   1d3       x       1i5
+2/       0       1i3   1d3       x       1i4
+2/       <       1i3   1d3       x       1i4
+2/       >       1i3   1d3       x       1i5
+2/       =       1i1   1d5       x       1i4
+2/       0       1i1   1d5       x       1i3
+2/       <       1i1   1d5       x       1i3
+2/       >       1i1   1d5       x       1i4
+2/       =       1i5   1d1       x       1i6
+2/       0       1i5   1d1       x       1i5
+2/       <       1i5   1d1       x       1i5
+2/       >       1i5   1d1       x       1i6
+!! denormal
+A/	=>	0i(1)1	Tp1d1	x	1m2i1
+A/	0<	0i(1)1	Tp1d1	x	1m2
+A/	=>	-0i(1)1	-Tp1d1	x	1m2i1
+A/	0<	-0i(1)1	-Tp1d1	x	1m2
+A/	=<	-0i(1)1	Tp1d1	x	-1m2i1
+A/	0>	-0i(1)1	Tp1d1	x	-1m2
+A/	=<	0i(1)1	-Tp1d1	x	-1m2i1
+A/	0>	0i(1)1	-Tp1d1	x	-1m2
+!! 3ff80000 00000001 3ff00000 00000001 3ff7ffff ffffffff
+H/	=>	3m1i1	1i1	x	3m1
+H/	0<	3m1i1	1i1	x	3m1d1
+A/	=>	-3m1i1	-1i1	x	3m1
+A/	0<	-3m1i1	-1i1	x	3m1d1
+A/	=<	-3m1i1	1i1	x	-3m1
+A/	0>	-3m1i1	1i1	x	-3m1d1
+A/	=<	3m1i1	-1i1	x	-3m1
+A/	0>	3m1i1	-1i1	x	-3m1d1
+!! round bit = 1, sticky bit = 1 => inexact, round up
+! (1 + Mu+) / (1 + Qu+) -->
+! Case M > Q: (1 + Mu+) * (1 - Qu+ + (Qu+)^2 - tiny) -->
+! 1 + (M-Q)u+ - (MQ-QQ)(u+)^2 + tiny -->
+! 1 + (M-Q)u+ - tiny.
+! M + Q = 3.
+2/       =>       1i2   1i1       x       1i1
+2/       0<       1i2   1i1       x       1
+2/       =>       -1i2   -1i1      x       1i1
+2/       0<       -1i2   -1i1      x       1
+2/       =<       -1i2   1i1       x       -1i1
+2/       0>       -1i2   1i1       x       -1
+2/       =<       1i2   -1i1       x       -1i1
+2/       0>       1i2   -1i1       x       -1
+! M + Q = 4.
+2/       =       1i3   1i1       x       1i2
+2/       0       1i3   1i1       x       1i1
+2/       <       1i3   1i1       x       1i1
+2/       >       1i3   1i1       x       1i2
+! M + Q = 5.
+2/       =       1i4   1i1       x       1i3
+2/       0       1i4   1i1       x       1i2
+2/       <       1i4   1i1       x       1i2
+2/       >       1i4   1i1       x       1i3
+! M + Q = 9.
+2/       =       1i7   1i2       x       1i5
+2/       0       1i7   1i2       x       1i4
+2/       <       1i7   1i2       x       1i4
+2/       >       1i7   1i2       x       1i5
+! Q = 17.
+2/       =       1i9   1i8       x       1i1
+2/       0       1i9   1i8       x       1
+2/       <       1i9   1i8       x       1
+2/       >       1i9   1i8       x       1i1
+! (1 - Mulp-) / (1 - Qulp-) -->
+! Case M > Q: (1 - Mulp-) * (1 + Qulp- + (Qulp-)^2 + tiny) -->
+! 1 - (M-Q)ulp- - (MQ-QQ)(ulp-)^2 + tiny -->
+! 1 - (M-Q)ulp- - tiny.
+! M + Q = 3.
+2/       =       1d2   1d1       x       1d1
+2/       0       1d2   1d1       x       1d2
+2/       <       1d2   1d1       x       1d2
+2/       >       1d2   1d1       x       1d1
+! M + Q = 4.
+2/       =       1d3   1d1       x       1d2
+2/       0       1d3   1d1       x       1d3
+2/       <       1d3   1d1       x       1d3
+2/       >       1d3   1d1       x       1d2
+! M + Q = 5.
+2/       =       1d3   1d2       x       1d1
+2/       0       1d3   1d2       x       1d2
+2/       <       1d3   1d2       x       1d2
+2/       >       1d3   1d2       x       1d1
+2/       =       1d4   1d1       x       1d3
+2/       0       1d4   1d1       x       1d4
+2/       <       1d4   1d1       x       1d4
+2/       >       1d4   1d1       x       1d3
+! M + Q = 6.
+2/       =       1d4   1d2       x       1d2
+2/       0       1d4   1d2       x       1d3
+2/       <       1d4   1d2       x       1d3
+2/       >       1d4   1d2       x       1d2
+! M + Q = 7.
+2/       =       1d4   1d3       x       1d1
+2/       0       1d4   1d3       x       1d2
+2/       <       1d4   1d3       x       1d2
+2/       >       1d4   1d3       x       1d1
+! M + Q = 11.
+2/       =       1d8   1d3       x       1d5
+2/       0       1d8   1d3       x       1d6
+2/       <       1d8   1d3       x       1d6
+2/       >       1d8   1d3       x       1d5
+2/       =       1d9   1d2       x       1d7
+2/       0       1d9   1d2       x       1d8
+2/       <       1d9   1d2       x       1d8
+2/       >       1d9   1d2       x       1d7
+! M + Q = 12.
+2/       =       1d8   1d4       x       1d4
+2/       0       1d8   1d4       x       1d5
+2/       <       1d8   1d4       x       1d5
+2/       >       1d8   1d4       x       1d4
+! M + Q = 14.
+2/       =       1d9   1d5       x       1d4
+2/       0       1d9   1d5       x       1d5
+2/       <       1d9   1d5       x       1d5
+2/       >       1d9   1d5       x       1d4
+!! denormal
+A/	=>	Td2	Tp1d1	x	1m1d3
+A/	0<	Td2	Tp1d1	x	1m1d4
+A/	=>	-Td2	-Tp1d1	x	1m1d3
+A/	0<	-Td2	-Tp1d1	x	1m1d4
+A/	=<	-Td2	Tp1d1	x	-1m1d3
+A/	0>	-Td2	Tp1d1	x	-1m1d4
+A/	=<	Td2	-Tp1d1	x	-1m1d3
+A/	0>	Td2	-Tp1d1	x	-1m1d4
