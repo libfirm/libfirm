@@ -91,7 +91,7 @@ int main(int argc, char **argv)
   and = new_And(cmpGt, cmpLt, mode_Is);
   /* compare result and 0 because we have no cast from integer to bool */
   and = new_Cmp(and, new_Const (mode_Is, new_tarval_from_long (0, mode_Is)));
-  and = new_Proj(and, mode_b, pn_Cmp_Ne);
+  and = new_Proj(and, mode_b, pn_Cmp_Lg);
 
   /* the conditional branch */
   x = new_Cond (and);
