@@ -3,7 +3,7 @@
 /*
    Project:     libFIRM
    File name:   ir/ana/pto.h
-   Purpose:     Import all includes needed for PTO
+   Purpose:     Import all includes needed for PTO/Entry to PTO
    Author:      Florian
    Modified by:
    Created:     Sat Nov 13 19:35:27 CET 2004
@@ -21,6 +21,7 @@
 /* ===================================================
    Global Defines:
    =================================================== */
+# define N_INITIAL_OJBS     10
 
 /* ===================================================
  Global Data Types:
@@ -29,6 +30,10 @@
 /* ===================================================
    Global Prototypes:
    =================================================== */
+/* Perform PTO on all visible graphs. */
+void pto_init (int);
+void pto_run (void);
+void pto_cleanup (void);
 
 /* ===================================================
    Global Variables:
@@ -41,6 +46,9 @@
 
 /*
   $Log$
+  Revision 1.6  2004/11/24 14:53:55  liekweg
+  Bugfixes
+
   Revision 1.5  2004/11/18 16:37:07  liekweg
   rewrite
 

@@ -1,7 +1,7 @@
 /* -*- c -*- */
 
 /*
- * Time-stamp: <11.11.2004 16:42:22h liekweg>
+ * Time-stamp: <23.11.2004 13:23:46h liekweg>
  * Project:     libFIRM
  * File name:   ir/ana2/qset.h
  * Purpose:     yet another set implementation
@@ -27,8 +27,11 @@
 /* typedef unsigned int sortable_t; */
 typedef void* sortable_t;
 
+struct obstack;                 /* forward decl */
+
 typedef struct qset_str
 {
+  struct obstack *obst;
   sortable_t *values;
   int n_slots;
   int n_elems;
@@ -40,8 +43,10 @@ typedef struct qset_str
 
 /* QSET INTERFACE */
 
-/* Allocate a new qset with initial space for up to n_elems. */
-qset_t *qset_new (const int);
+/* Allocate a new qset with initial space for up to n_elems.
+   If a non-NULL obstack is given, it is used for all allocations of this qset
+   and must be initialised and deleted by the user of the qset. */
+qset_t *qset_new (const int, struct obstack*);
 
 /* Sort the entries of the given qset. */
 void qset_sort (qset_t*);
@@ -91,6 +96,9 @@ sortable_t *qset_next (qset_t*);
 
 /*
  $Log$
+ Revision 1.4  2004/11/24 14:53:56  liekweg
+ Bugfixes
+
  Revision 1.3  2004/11/18 16:35:46  liekweg
  Added unique ids for debugging
 

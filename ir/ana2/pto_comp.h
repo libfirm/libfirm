@@ -16,7 +16,9 @@
 # ifndef _PTO_COMP_
 # define _PTO_COMP_
 
+# include "pto.h"
 # include "irnode.h"
+# include "qset.h"
 
 /* ===================================================
    Global Defines:
@@ -26,7 +28,7 @@
  Global Data Types:
  =================================================== */
 typedef struct pto_str {
-  int dummy;
+  qset_t *values;
 } pto_t;
 
 typedef struct alloc_pto_str {
@@ -38,6 +40,9 @@ typedef struct alloc_pto_str {
 /* ===================================================
    Global Prototypes:
    =================================================== */
+/* Main loop: Initialise the graph for the given ctx_idx and iterate over it */
+void pto_graph (ir_graph*, int);
+
 /* Set the PTO value for the given node */
 void set_node_pto (ir_node*, pto_t*);
 /*Get the PTO value for the given non-alloc node */
@@ -50,11 +55,6 @@ void set_alloc_pto (ir_node*, alloc_pto_t*);
 pto_t *get_alloc_pto (ir_node*);
 
 
-/* Perform PTO on all visible graphs. */
-void pto_init (void);
-void pto_run (int);
-void pto_cleanup (void);
-
 /* ===================================================
    Global Variables:
    =================================================== */
@@ -66,6 +66,9 @@ void pto_cleanup (void);
 
 /*
   $Log$
+  Revision 1.2  2004/11/24 14:53:55  liekweg
+  Bugfixes
+
   Revision 1.1  2004/11/18 16:37:34  liekweg
   rewritten
 

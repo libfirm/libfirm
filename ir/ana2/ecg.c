@@ -573,7 +573,11 @@ void ecg_iterate_graphs (graph_hnd_t *hnd, void *env)
   graph_info_t *ginfo = graph_infos_list;
 
   while (NULL != ginfo) {
-    hnd (ginfo, env);
+    /* do not visit graphs that have 0 == ginfo->n_ctxs, since they
+       are not called */
+    if (0 != ginfo->n_ctxs) {
+      hnd (ginfo, env);
+    }
 
     ginfo = ginfo->prev;
   }
@@ -1109,6 +1113,9 @@ void ecg_ecg ()
 
 /*
   $Log$
+  Revision 1.6  2004/11/24 14:53:55  liekweg
+  Bugfixes
+
   Revision 1.5  2004/11/20 21:20:29  liekweg
   Added iterator functions
 

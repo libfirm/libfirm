@@ -26,7 +26,7 @@
 # include "ecg.h"
 
 # include "irnode.h"
-# include "xmalloc.h"
+/* # include "xmalloc.h" */
 
 /* Local Defines: */
 
@@ -85,6 +85,9 @@ ctx_info_t *set_curr_ctx (ctx_info_t *ctx)
 
 /*
   $Log$
+  Revision 1.3  2004/11/24 14:53:55  liekweg
+  Bugfixes
+
   Revision 1.2  2004/11/20 21:21:35  liekweg
   Add pto_ctx_allocs
 

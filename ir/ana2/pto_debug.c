@@ -23,7 +23,7 @@
 # include "pto_debug.h"
 
 # include "irnode.h"
-# include "xmalloc.h"
+/* # include "xmalloc.h" */
 
 /* Local Defines: */
 
@@ -56,6 +56,9 @@ void set_dbg_lvl (int lvl)
 
 /*
   $Log$
+  Revision 1.2  2004/11/24 14:53:56  liekweg
+  Bugfixes
+
   Revision 1.1  2004/11/18 16:37:34  liekweg
   rewritten
 

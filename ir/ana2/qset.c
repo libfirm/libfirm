@@ -1,7 +1,7 @@
 /* -*- c -*- */
 
 /*
- * Time-stamp: <11.11.2004 16:42:15h liekweg>
+ * Time-stamp: <23.11.2004 13:26:21h liekweg>
  * Project:     libFIRM
  * File name:   ir/ana2/qset.c
  * Purpose:     yet another set implementation
@@ -18,6 +18,7 @@
 # include <assert.h>
 # include <string.h>
 # include <sys/time.h>
+# include <obstack.h>
 
 # include "timing.h"
 # include "qset.h"
@@ -53,11 +54,23 @@ static __inline__ int sortable_compare (const void *pa, const void *pb)
 }
 
 /*
+   Wrapper for mixed allocation
+*/
+static void *mix_malloc (struct obstack *obst, size_t size)
+{
+  if (NULL != obst) {
+    return (obstack_alloc (obst, size));
+  } else {
+    return (malloc (size));
+  }
+}
+
+/*
   Allocate a list of sortables of the given length.
 */
-static sortable_t *alloc_list (const int len)
+static sortable_t *alloc_list (const int len, struct obstack *obst)
 {
-  sortable_t *values = (sortable_t*) malloc (len * sizeof (sortable_t));
+  sortable_t *values = (sortable_t*) mix_malloc (obst, len * sizeof (sortable_t));
 
   memset (values, 0x00, len * sizeof (sortable_t));
 
@@ -68,10 +81,10 @@ static sortable_t *alloc_list (const int len)
 /*
   Create a list of sortables of the given length.
 */
-static sortable_t *gen_list (const int len)
+static sortable_t *gen_list (const int len, struct obstack *obst)
 {
   int i;
-  sortable_t *values = alloc_list (len);
+  sortable_t *values = alloc_list (len, obst);
 
   for (i = 0; i < len; i ++) {
     values [i] = rand () >> 16;
@@ -189,7 +202,7 @@ static void test_qsort (const int n_runs, const int max_elems, const int incr)
     int qtotal = 0;
 
     for (i = 0; i < n_runs; i ++) {
-      sortable_t *list = gen_list (n_elems);
+      sortable_t *list = gen_list (n_elems, NULL);
 
       timing_t *timing = start_timing ();
       q_sort (list, n_elems);
@@ -201,7 +214,7 @@ static void test_qsort (const int n_runs, const int max_elems, const int incr)
     }
 
     for (i = 0; i < n_runs; i ++) {
-      sortable_t *list = gen_list (n_elems);
+      sortable_t *list = gen_list (n_elems, NULL);
 
       timing_t *timing = start_timing ();
       qsort (list, n_elems, sizeof (sortable_t), sortable_compare);
@@ -229,11 +242,11 @@ static void test_qset (const int n_entries)
   int i;
   int n1, n2, n;
 
-  qset_t *q1 = qset_new (n_entries);
-  qset_t *q2 = qset_new (n_entries);
+  qset_t *q1 = qset_new (n_entries, NULL);
+  qset_t *q2 = qset_new (n_entries, NULL);
   qset_t *q = NULL;
 
-  sortable_t *values = gen_list (n_entries);
+  sortable_t *values = gen_list (n_entries, NULL);
 
   for (i = 0; i < n_entries; i ++) {
     qset_insert (q1, values [i]);
@@ -327,7 +340,7 @@ static void qset_resize (qset_t *qset, const int n_slots)
     new_size *= 2;
   }
 
-  values = alloc_list (new_size);
+  values = alloc_list (new_size, qset->obst);
 
   memcpy (values, qset->values, qset->n_elems * sizeof (sortable_t));
   memset (qset->values, 0x00, qset->n_elems * sizeof (sortable_t)); /* debug only */
@@ -407,10 +420,11 @@ static void q_sort (sortable_t *values, const int n_elems)
   Merge two sorted lists.  Keep duplicates (if present)
 */
 static sortable_t *q_merge (sortable_t *list1, const int n1_elems,
-                            sortable_t *list2, const int n2_elems)
+                            sortable_t *list2, const int n2_elems,
+                            struct obstack *obst)
 {
   const int n_elems = n1_elems + n2_elems;
-  sortable_t *res = alloc_list (n_elems);
+  sortable_t *res = alloc_list (n_elems, obst);
 
   int i1 = 0;
   int i2 = 0;
@@ -439,12 +453,15 @@ static sortable_t *q_merge (sortable_t *list1, const int n1_elems,
 
 /*
   Allocate a new qset with initial space for up to n_elems.
+  If a non-NULL obstack is given, it is used for all allocations of this qset
+  and must be initialised and deleted by the user of the qset.
 */
-qset_t *qset_new (const int n_elems)
+qset_t *qset_new (const int n_elems, struct obstack *obst)
 {
-  qset_t *qset = (qset_t*) malloc (sizeof (qset_t));
+  qset_t *qset = (qset_t*) mix_malloc (obst, sizeof (qset_t));
 
-  qset->values = alloc_list (n_elems);
+  qset->obst = obst;
+  qset->values = alloc_list (n_elems, obst);
   memset (qset->values, 0x00, n_elems * sizeof (sortable_t));
 
   qset->n_slots = n_elems;
@@ -492,7 +509,8 @@ void qset_sort (qset_t *qset)
 */
 void qset_compact (qset_t *qset)
 {
-  sortable_t *values = (sortable_t*) malloc (qset->n_elems * sizeof (sortable_t));
+  sortable_t *values = (sortable_t*) mix_malloc (qset->obst,
+                                                 qset->n_elems * sizeof (sortable_t));
   memcpy (values, qset->values, qset->n_elems * sizeof (sortable_t));
 
   memset (qset->values, 0x00, qset->n_elems * sizeof (sortable_t));
@@ -508,11 +526,16 @@ void qset_compact (qset_t *qset)
 void qset_delete (qset_t *qset)
 {
   memset (qset->values, 0x00, qset->n_elems * sizeof (sortable_t));
-  free (qset->values);
+
+  if (NULL == qset->obst) {
+    free (qset->values);
+  }
 
   memset (qset, 0x00, sizeof (qset_t));
 
-  free (qset);
+  if (NULL == qset->obst) {
+    free (qset);
+  }
 }
 
 /*
@@ -588,7 +611,8 @@ void qset_insert_all (qset_t *qset1, qset_t *qset2)
   qset_sort (qset2);
 
   qset1->values = q_merge (qset1->values, qset1->n_elems,
-                           qset2->values, qset2->n_elems);
+                           qset2->values, qset2->n_elems,
+                           qset1->obst);
 
   qset1->n_elems = qset1->n_elems + qset2->n_elems;
   qset1->n_slots = qset1->n_elems;
@@ -628,10 +652,10 @@ int qset_compare (qset_t *qset1, qset_t *qset2)
 */
 qset_t *qset_union (qset_t *qset1, qset_t *qset2)
 {
-  qset_t *qset = (qset_t*) malloc (sizeof (qset_t));
+  qset_t *qset = (qset_t*) mix_malloc (qset1->obst, sizeof (qset_t));
   const int n_elems = qset1->n_elems + qset2->n_elems;
 
-  qset->values = alloc_list (n_elems);
+  qset->values = alloc_list (n_elems, qset1->obst);
 
   memcpy (qset->values, qset1->values,
           qset1->n_elems * sizeof (sortable_t));
@@ -639,6 +663,7 @@ qset_t *qset_union (qset_t *qset1, qset_t *qset2)
   memcpy (qset->values+qset1->n_elems,
           qset2->values, qset2->n_elems * sizeof (sortable_t));
 
+  qset->obst = qset1->obst;
   qset->n_elems = n_elems;
   qset->n_slots = qset->n_elems;
 
@@ -724,6 +749,9 @@ int qset_test_main (int argc, char **argv)
 
 /*
   $Log$
+  Revision 1.5  2004/11/24 14:53:56  liekweg
+  Bugfixes
+
   Revision 1.4  2004/11/18 16:35:45  liekweg
   Added unique ids for debugging
 

@@ -23,7 +23,7 @@
 # define DBGEXE(lvl, cmd) if (get_dbg_lvl () > lvl) {cmd;}
 # define OPNAME(node) get_op_name (get_irn_op (node))
 # define OPNUM(node) get_irn_node_nr (node)
-# define HERE(msg)  fprintf (stdout, "%s:%i: %s\n", __FUNCTION__, __LINE__, msg)
+# define HERE(msg)  fprintf (stdout, "%s:%i %s\n", __FUNCTION__, __LINE__, msg)
 # define HERE2(msg1, msg2)  fprintf (stdout, "%s:%i: %s %s\n", __FUNCTION__, __LINE__, msg1, msg2)
 # define HERE3(msg1, msg2, msg3)  fprintf (stdout, "%s:%i: %s %s %s\n", __FUNCTION__, __LINE__, msg1, msg2, msg3)
 
@@ -47,6 +47,9 @@ void set_dbg_lvl (int);
 
 /*
   $Log$
+  Revision 1.2  2004/11/24 14:53:56  liekweg
+  Bugfixes
+
   Revision 1.1  2004/11/18 16:37:34  liekweg
   rewritten
 

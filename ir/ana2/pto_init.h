@@ -30,6 +30,15 @@
 /* ===================================================
    Global Prototypes:
    =================================================== */
+/* "Fake" the arguments to the main method */
+void fake_main_args (ir_graph*);
+
+/* Initialise the Init module */
+void pto_init_init (void);
+
+/* Cleanup the Init module */
+void pto_init_cleanup (void);
+
 /* Initialise the Names of the Types/Entities */
 void pto_init_type_names (void);
 
@@ -50,6 +59,9 @@ void pto_reset_graph_pto (ir_graph*, int);
 
 /*
   $Log$
+  Revision 1.4  2004/11/24 14:53:56  liekweg
+  Bugfixes
+
   Revision 1.3  2004/11/20 21:21:56  liekweg
   Finalise initialisation
 

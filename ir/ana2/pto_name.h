@@ -1,32 +1,86 @@
 /* -*- c -*- */
 
 /*
-   Project:     libFIRM
-   File name:   ir/ana/pto_name.h
-   Purpose:     ...
-   Author:      Florian
-   Modified by:
-   Created:     Sat Nov 13 19:35:27 CET 2004
-   CVS-ID:      $Id$
-   Copyright:   (c) 1999-2004 Universität Karlsruhe
-   Licence:     This file is protected by the GPL -  GNU GENERAL PUBLIC LICENSE.
+  Project:     libFIRM
+  File name:   ir/ana/pto_name.h
+  Purpose:     Names for abstract objects
+  Author:      Florian
+  Modified by:
+  Created:     Sat Nov 13 19:35:27 CET 2004
+  CVS-ID:      $Id$
+  Copyright:   (c) 1999-2004 Universität Karlsruhe
+  Licence:     This file is protected by the GPL -  GNU GENERAL PUBLIC LICENSE.
 */
 
 
 # ifndef _PTO_NAME_
 # define _PTO_NAME_
 
+# include "pto_comp.h"          /* for pto_t */
+# include "irnode.h"
+# include "type.h"
+# include "qset.h"
+
 /* ===================================================
    Global Defines:
    =================================================== */
 
 /* ===================================================
- Global Data Types:
- =================================================== */
+   Global Data Types:
+   =================================================== */
+typedef enum desc_kind_enum {
+  none,
+  object,
+  array
+} desc_kind_t;
+
+/* abstract super class for all descriptors */
+typedef struct desc_str
+{
+  desc_kind_t kind;
+  type *tp;
+  ir_node *node;                /* allocation node */
+  struct desc_str *prev;        /* linked list */
+} desc_t;
+
+/* object descriptor */
+typedef struct obj_desc_str
+{
+  desc_kind_t kind;
+  type *tp;
+  ir_node *node;                /* allocation node */
+  struct desc_str *prev;        /* linked list */
+
+  int n_fields;
+  entity **fields;
+  qset_t **values;
+} obj_desc_t;
+
+/* array descriptor */
+typedef struct arr_desc_str
+{
+  desc_kind_t kind;
+  type *tp;
+  ir_node *node;                /* allocation node */
+  struct desc_str *prev;        /* linked list */
+
+  qset_t *value;
+} arr_desc_t;
 
 /* ===================================================
    Global Prototypes:
    =================================================== */
+/* get a new descriptor for the given type at the given node */
+desc_t *new_name (type*, ir_node*);
+
+/* get a new descriptor for the given (presumably static) entity */
+desc_t *new_ent_name (entity*);
+
+/* Initialise the name module */
+void pto_name_init (void);
+
+/* Cleanup the name module */
+void pto_name_cleanup (void);
 
 /* ===================================================
    Global Variables:
@@ -39,6 +93,9 @@
 
 /*
   $Log$
+  Revision 1.2  2004/11/24 14:53:56  liekweg
+  Bugfixes
+
   Revision 1.1  2004/11/18 16:37:34  liekweg
   rewritten
 

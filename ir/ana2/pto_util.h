@@ -30,7 +30,12 @@
 /* ===================================================
    Global Prototypes:
    =================================================== */
+/* Get the entity of a ptr */
 entity *get_ptr_ent (ir_node*);
+
+/* Find the arguments of a graph. For a method that has n args, the
+  result array has 'n+1' entries, the last of which is written NULL. */
+ir_node **find_irg_args (ir_graph*);
 
 /* ===================================================
    Global Variables:
@@ -43,6 +48,9 @@ entity *get_ptr_ent (ir_node*);
 
 /*
   $Log$
+  Revision 1.5  2004/11/24 14:53:56  liekweg
+  Bugfixes
+
   Revision 1.4  2004/11/18 16:37:07  liekweg
   rewrite
 

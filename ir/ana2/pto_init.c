@@ -20,15 +20,23 @@
  pto_init: Initialisation Functions
 */
 
+# include <obstack.h>
+# include <string.h>
+
+# include "pto.h"
 # include "pto_init.h"
 # include "pto_debug.h"
 # include "pto_comp.h"
+# include "pto_name.h"
+# include "pto_util.h"
 
 # include "typewalk.h"
 # include "irgwalk.h"
 # include "xmalloc.h"
 
 /* Local Defines: */
+# define obstack_chunk_alloc xmalloc
+# define obstack_chunk_free  free
 
 /* Local Data Types: */
 typedef struct init_env_str
@@ -42,6 +50,9 @@ typedef struct reset_env_str
 } reset_env_t;
 
 /* Local Variables: */
+extern struct obstack *qset_obst; /* from pto_name */
+
+static struct obstack *pto_obst = NULL; /* all pto_t's go onto this one */
 
 /* Local Prototypes: */
 
@@ -51,28 +62,45 @@ typedef struct reset_env_str
 /* Allocate a new pto */
 static pto_t *new_pto (ir_node *node)
 {
-  /* dummy implementation for fake_pto */
-  pto_t *pto = xmalloc (sizeof (pto_t));
+  pto_t *pto = obstack_alloc (pto_obst, sizeof (pto_t));
+  pto->values = qset_new (N_INITIAL_OJBS, qset_obst);
 
   return (pto);
 }
 
 /* Allocate a new alloc_pto */
-static alloc_pto_t *new_alloc_pto (ir_node *node, int n_ctxs)
+static alloc_pto_t *new_alloc_pto (ir_node *alloc, int n_ctxs)
 {
-  int i;
-  /* dummy implementation for testing */
-  alloc_pto_t *alloc_pto = xmalloc (sizeof (alloc_pto_t));
+  assert (iro_Alloc == get_irn_opcode (alloc));
 
-  alloc_pto->ptos = (pto_t**) xmalloc (n_ctxs * sizeof (pto_t*));
+  int i;
+  alloc_pto_t *alloc_pto = obstack_alloc (pto_obst, sizeof (alloc_pto_t));
+  type *tp = get_Alloc_type (alloc);
+
+  alloc_pto->ptos = (pto_t**) obstack_alloc (pto_obst, n_ctxs * sizeof (pto_t*));
 
   for (i = 0; i < n_ctxs; i ++) {
-    alloc_pto->ptos [i] = new_pto (node);
+    desc_t *desc = new_name (tp, alloc);
+    alloc_pto->ptos [i] = new_pto (alloc);
+    qset_insert (alloc_pto->ptos [i]->values, desc);
   }
 
   return (alloc_pto);
 }
 
+/* Allocate a new pto for a symconst */
+static pto_t* new_symconst_pto (ir_node *symconst)
+{
+  assert (iro_SymConst == get_irn_opcode (symconst));
+
+  pto_t *pto = new_pto (symconst);
+  entity *ent = get_SymConst_entity (symconst);
+  desc_t *desc = new_ent_name (ent);
+
+  qset_insert (pto->values, desc);
+
+  return (pto);
+}
 
 /* Helper to pto_init --- clear the link fields of class types */
 static void clear_type_link (type_or_ent *thing, void *__unused)
@@ -121,13 +149,13 @@ static void reset_node_pto (ir_node *node, void *env)
   case (iro_Const):
   case (iro_Call):
   case (iro_Phi): {
-    /* todo: allocate 'empty' pto values */
+    /* allocate 'empty' pto values */
     pto_t *pto = new_pto (node);
     set_node_pto (node, pto);
     } break;
 
   case (iro_Alloc): {
-    /* todo: set alloc to 'right' current pto */
+    /* set alloc to 'right' current pto */
     alloc_pto_t *alloc_pto = (alloc_pto_t*) get_irn_link (node);
     alloc_pto->curr_pto = alloc_pto->ptos [ctx_idx];
     } break;
@@ -139,7 +167,7 @@ static void reset_node_pto (ir_node *node, void *env)
 }
 
 /* Temporary fix until we get 'real' ptos: Allocate some dummy for pto */
-static void init_alloc_pto (ir_node *node, void *env)
+static void init_pto (ir_node *node, void *env)
 {
   init_env_t *init_env = (init_env_t*) env;
   int n_ctxs = init_env->n_ctxs;
@@ -147,20 +175,43 @@ static void init_alloc_pto (ir_node *node, void *env)
   const opcode op = get_irn_opcode (node);
 
   switch (op) {
-  case (iro_Load):
-  case (iro_SymConst):
-  case (iro_Const):
-  case (iro_Call):
-  case (iro_Phi): {
-    /* nothing (handled by init_node_pto) */
-    } break;
+  case (iro_SymConst): {
+    const symconst_kind kind = get_SymConst_kind (node);
 
+    if ((kind == symconst_addr_name) || (kind == symconst_addr_ent)) {
+      entity *ent = get_SymConst_entity (node);
+
+      if (is_pointer_type (get_entity_type (ent))) {
+        DBGPRINT (0, (stdout, "%s: new name \"%s\" for symconst \"%s[%li]\"\n",
+                      __FUNCTION__,
+                      get_entity_name (ent),
+                      OPNAME (node),
+                      OPNUM (node)));
+
+        pto_t *symconst_pto = new_symconst_pto (node);
+        set_node_pto (node, symconst_pto);
+      }
+    }
+  } break;
   case (iro_Alloc): {
-    /* todo: alloc 'right' ptos */
+    type *tp = get_Alloc_type (node); /* debugging only */
     alloc_pto_t *alloc_pto = new_alloc_pto (node, n_ctxs);
     set_alloc_pto (node, alloc_pto);
 
-    } break;
+    DBGPRINT (0, (stdout, "%s: %i names \"%s\" for alloc \"%s[%li]\"\n",
+                  __FUNCTION__,
+                  n_ctxs,
+                  get_type_name (tp),
+                  OPNAME (node),
+                  OPNUM (node)));
+  } break;
+
+  case (iro_Load):
+  case (iro_Call):
+  case (iro_Phi):
+  case (iro_Const):
+    /* nothing --- handled by reset_node_pto on each pass */
+    break;
   default: {
     /* nothing */
   } break;
@@ -179,7 +230,10 @@ static void pto_init_graph_allocs (ir_graph *graph)
 
   HERE ("start");
 
-  irg_walk_graph (graph, init_alloc_pto, NULL, init_env);
+  irg_walk_graph (graph, init_pto, NULL, init_env);
+
+  memset (init_env, 0x00, sizeof (init_env_t));
+  free (init_env);
 
   HERE ("end");
 }
@@ -187,6 +241,67 @@ static void pto_init_graph_allocs (ir_graph *graph)
 /* ===================================================
    Exported Implementation:
    =================================================== */
+/* "Fake" the arguments to the main method */
+void fake_main_args (ir_graph *graph)
+{
+  HERE ("start");
+
+  entity *ent = get_irg_entity (graph);
+  type *mtp = get_entity_type (ent);
+  ir_node **args = find_irg_args (graph);
+  type *ctp = get_method_param_type (mtp, 1); /* ctp == char[]*[]* */
+
+  /* 'main' has signature 'void(int, char[]*[]*)' */
+  assert (NULL == args [2]);
+
+  assert (is_pointer_type (ctp));
+
+  ctp = get_pointer_points_to_type (ctp); /* ctp == char[]*[] */
+
+  assert (is_array_type (ctp));
+
+  desc_t *arg_desc = new_name (ctp, args [1]);
+  pto_t *arg_pto = new_pto (args [1]);
+  /* todo: simulate 'store' to arg1[] ?!? */
+  qset_insert (arg_pto->values, arg_desc);
+
+  set_node_pto (args [1], arg_pto);
+
+# ifdef TEST_MAIN_TYPE
+  ctp = get_array_element_type (ctp); /* ctp == char[]* */
+
+  assert (is_pointer_type (ctp));
+
+  ctp = get_pointer_points_to_type (ctp); /* ctp == char[] */
+
+  assert (is_array_type (ctp));
+
+  ctp = get_array_element_type (ctp); /* ctp == char */
+
+  assert (is_primitive_type (ctp));
+# endif /* defined  TEST_MAIN_TYPE */
+
+  HERE ("end");
+}
+
+/* Initialise the Init module */
+void pto_init_init ()
+{
+  pto_obst = (struct obstack*) xmalloc (sizeof (struct obstack));
+
+  obstack_init (pto_obst);
+}
+
+/* Cleanup the Init module */
+void pto_init_cleanup ()
+{
+  obstack_free (pto_obst, NULL);
+  memset (pto_obst, 0x00, sizeof (struct obstack));
+  free (pto_obst);
+  pto_obst = NULL;
+}
+
+
 /* Initialise the Names of the Types/Entities */
 void pto_init_type_names ()
 {
@@ -227,12 +342,17 @@ void pto_reset_graph_pto (ir_graph *graph, int ctx_idx)
 
   irg_walk_graph (graph, reset_node_pto, NULL, reset_env);
 
+  memset (reset_env, 0x00, sizeof (reset_env_t));
+  free (reset_env);
   HERE ("end");
 }
 
 
 /*
   $Log$
+  Revision 1.5  2004/11/24 14:53:56  liekweg
+  Bugfixes
+
   Revision 1.4  2004/11/20 21:21:56  liekweg
   Finalise initialisation
 
