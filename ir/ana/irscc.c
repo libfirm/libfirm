@@ -401,7 +401,7 @@ ir_node *get_loop_node (ir_loop *loop, int pos) {
 static INLINE void
 add_loop_node(ir_loop *loop, ir_node *n) {
   loop_element ln;
-  ln.node=n;
+  ln.node = n;
   assert(loop && loop->kind == k_ir_loop);
   assert(get_kind(n) == k_ir_node);
   ARR_APP1 (loop_element, loop->children, ln);
