@@ -21,7 +21,8 @@ int get_irp_n_pseudo_irgs(void);
 ir_graph *get_irp_pseudo_irg(int pos);
 
 
-/** If set, get_irp_n_irgs and get_irp_irg behave as if all
-    pseudo graphs are in the irg list. */
+/** If set, get_irp_n_irgs and get_irp_irg behave as if all pseudo
+    graphs are in the irg list. If not set, get_entity_irg returns
+    NULL if the entity refers to a pseudo irg. */
 void set_visit_pseudo_irgs(int x);
 int  get_visit_pseudo_irgs(void);

@@ -1383,7 +1383,7 @@ static void create_abstract_firm(module_t *module, proc_t *proc, entity *fent)
   irg = new_pseudo_ir_graph(fent, 0);
   set_irg_inline_property(irg, irg_inline_forbidden);
 
-  /* If the spec says so: */
+  /* @@@ If the spec says so: */
   set_entity_visibility(fent, visibility_local);
 
   VERBOSE_PRINT((stdout, "create effects for %s\n",
@@ -1649,6 +1649,9 @@ void free_abstraction(void) {
 
 /*
  * $Log$
+ * Revision 1.16  2004/11/11 12:24:52  goetz
+ * fixes
+ *
  * Revision 1.15  2004/11/11 09:28:32  goetz
  * treat pseudo irgs special
  * parse 'local' from xml files

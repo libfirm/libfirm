@@ -9,15 +9,18 @@
 
 /** Returns the number of pseudo graphs in the program. */
 int get_irp_n_pseudo_irgs(void) {
+  assert (irp && irp->pseudo_graphs);
   return ARR_LEN(irp->pseudo_graphs);
 }
 
 /** Returns the number of pseudo graphs in the program. */
 ir_graph *get_irp_pseudo_irg(int pos) {
+  assert(0 <= pos && pos <= get_irp_n_pseudo_irgs());
   return irp->pseudo_graphs[pos];
 }
 
 void add_irp_pseudo_irg(ir_graph *irg) {
+  assert (irp && irp->pseudo_graphs);
   ARR_APP1(ir_graph *, irp->pseudo_graphs, irg);
 }
 
@@ -30,7 +33,7 @@ void add_irp_pseudo_irg(ir_graph *irg) {
 ir_graph *
 new_pseudo_ir_graph(entity *ent, int n_loc) {
   ir_graph *res = new_r_ir_graph (ent, n_loc);
-  add_irp_irg(res);          /* remember this graph global. */
+  add_irp_pseudo_irg(res);          /* remember this graph global. */
   return res;
 }
 
