@@ -85,19 +85,20 @@ main(void)
   proc_main = new_type_method(id_from_str("ARRAY-HEAP_EXAMPLE_main", 23), 0, 1);
   set_method_res_type(proc_main, 0, (type *)prim_t_int);
   proc_main_e = new_entity ((type*)owner, id_from_str ("ARRAY-HEAP_EXAMPLE_main", 23), (type *)proc_main);
-  main_irg = new_ir_graph (proc_main_e, 4);
 
   /* make type information for the array and set the bounds */
 # define N_DIMS 1
 # define L_BOUND 0
 # define U_BOUND 9
+  current_ir_graph = get_const_code_irg();
   array_type = new_type_array(id_from_str("a", 1), N_DIMS, prim_t_int);
-  set_array_bounds(array_type, 1,
+  set_array_bounds(array_type, 0,
 		   new_Const(mode_Iu, new_tarval_from_long (L_BOUND, mode_Iu)),
 		   new_Const(mode_Iu, new_tarval_from_long (U_BOUND, mode_Iu)));
   /* As the array is accessed by Sel nodes, we need information about
      the entity the node selects.  Entities of an array are it's elements
      which are, in this case, integers. */
+  main_irg = new_ir_graph (proc_main_e, 4);
   array_ent = get_array_element_entity(array_type);
 
   /* Allocate the array. All program known variables that
@@ -155,6 +156,7 @@ main(void)
   printf("Dumping the graph and a type graph.\n");
   dump_ir_block_graph (main_irg);
   dump_type_graph(main_irg);
+  dump_all_types();
   printf("use xvcg to view these graphs:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
 

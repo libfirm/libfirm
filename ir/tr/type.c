@@ -1097,6 +1097,7 @@ set_array_bounds (type *array, int dimension, ir_node * lower_bound,
   assert(array && (array->type_op == type_array));
   assert(lower_bound && "lower_bound node may not be NULL.");
   assert(upper_bound && "upper_bound node may not be NULL.");
+  assert(dimension < array->attr.aa.n_dimensions && dimension >= 0);
   array->attr.aa.lower_bound[dimension] = lower_bound;
   array->attr.aa.upper_bound[dimension] = upper_bound;
 }

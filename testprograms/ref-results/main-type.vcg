@@ -17,9 +17,9 @@ classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
 
-node: {title: "e30" label: "ent a_tp_elem_ent" color: yellow
+node: {title: "e16" label: "ent a_tp_elem_ent" color: yellow
  info1: "
-id: e30
+id: e16
 allocation:  automatic allocated
 visibility:  local
 variability: uninitialized
@@ -29,12 +29,18 @@ name:    a_tp_elem_ent
 ld_name: a_tp_a_tp_elem_ent
 offset:  -1"
 }
-edge: { sourcename: "e30" targetname: "t10"class: 3 label: "type" color: red}
-node: {title: "t29" label: "array a_tp" info1: "state: layout_undefined
+edge: { sourcename: "e16" targetname: "t10"class: 3 label: "type" color: red}
+node: {title: "t15" label: "array a_tp" info1: "state: layout_undefined
 size: -1B,
 "}
-edge: { sourcename: "t29" targetname: "t10"class: 10 label: "arr elt tp" color:green}
-edge: { sourcename: "t29" targetname: "e30"class: 10 label: "arr ent" color: green}
+edge: { sourcename: "t15" targetname: "t10"class: 10 label: "arr elt tp" color:green}
+edge: { sourcename: "t15" targetname: "e16"class: 10 label: "arr ent" color: green}
+edge: { sourcename: "n17" targetname: "t15"label: "upper 0"}
+edge: { sourcename: "n18" targetname: "t15"label: "lower 0"}
+node: {title: "n17" label: "0x9Iu  17" color: yellow info1: "visited: 1
+"}
+node: {title: "n18" label: "0x0Iu  18" color: yellow info1: "visited: 1
+"}
 node: {title: "t10" label: "primitive int" info1: "state: layout_fixed,
 mode: Is,
 size: 4B,
@@ -51,11 +57,11 @@ name:    a
 ld_name: mainframe_tp_a
 offset:  -1"
 }
-edge: { sourcename: "e33" targetname: "t29"class: 3 label: "type" color: red}
-node: {title: "t15" label: "class mainframe_tp" info1: "state: layout_undefined
+edge: { sourcename: "e33" targetname: "t15"class: 3 label: "type" color: red}
+node: {title: "t19" label: "class mainframe_tp" info1: "state: layout_undefined
 size: -1B,
 " color: green}
-edge: { sourcename: "t15" targetname: "e33"class: 12 label: "member" color:blue}
+edge: { sourcename: "t19" targetname: "e33"class: 12 label: "member" color:blue}
 node: {title: "e14" label: "ent main" color: yellow
  info1: "
 id: e14
@@ -67,7 +73,7 @@ peculiarity: existent
 name:    main
 ld_name: ARRAY-STACK_EXAMPLE_main
 offset:  -1
-irg = g27"
+irg = g31"
 }
 edge: { sourcename: "e14" targetname: "t12"class: 3 label: "type" color: red}
 edge: { sourcename: "e14" targetname: "n13"label: "value 0"}

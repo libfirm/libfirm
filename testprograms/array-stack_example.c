@@ -76,16 +76,18 @@ main(void)
   set_method_res_type(proc_main, 0, prim_t_int);
   proc_main_e = new_entity (owner, id_from_str ("main", 4), proc_main);
 
-  main_irg = new_ir_graph (proc_main_e, 4);
-
   /* make type information for the array and set the bounds */
 # define N_DIMS 1
 # define L_BOUND 0
 # define U_BOUND 9
   array_type = new_type_array(id_from_str("a_tp", 4), N_DIMS, prim_t_int);
-  set_array_bounds(array_type, 1,
+  current_ir_graph = get_const_code_irg();
+  set_array_bounds(array_type, 0,
 		   new_Const(mode_Iu, new_tarval_from_long (L_BOUND, mode_Iu)),
 		   new_Const(mode_Iu, new_tarval_from_long (U_BOUND, mode_Iu)));
+
+  main_irg = new_ir_graph (proc_main_e, 4);
+
   /* The array is an entity of the method, placed on the mehtod's own memory,
      the stack frame. */
   array_ent = new_entity(get_cur_frame_type(), id_from_str("a", 1), array_type);
@@ -140,6 +142,7 @@ main(void)
   dump_ir_block_graph (main_irg);
   dump_type_graph(main_irg);
   dump_ir_block_graph_w_types(main_irg);
+  dump_all_types();
   printf("Use xvcg to view these graphs:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
 

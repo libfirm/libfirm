@@ -1,3 +1,10 @@
+IeeeCC754 tests the correct implementation of the ieee floating
+point constant evaluation.
+
+Call make; make test to run the test.
+
+Or do the test by hand:
+
 How to call the driver program IeeeCC754
 ========================================
 

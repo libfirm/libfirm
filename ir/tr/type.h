@@ -648,7 +648,7 @@ void  set_array_lower_bound  (type *array, int dimension, ir_node *lower_bound);
 void  set_array_lower_bound_int (type *array, int dimension, int lower_bound);
 void  set_array_upper_bound  (type *array, int dimension, ir_node *upper_bound);
 void  set_array_upper_bound_int (type *array, int dimension, int lower_bound);
-/* returns true is lower bound != Unknown */
+/* returns true if lower bound != Unknown */
 int       has_array_lower_bound  (type *array, int dimension);
 ir_node * get_array_lower_bound  (type *array, int dimension);
 int       has_array_upper_bound  (type *array, int dimension);

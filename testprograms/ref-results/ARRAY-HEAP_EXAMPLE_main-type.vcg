@@ -17,9 +17,9 @@ classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
 
-node: {title: "e29" label: "ent a_elem_ent" color: yellow
+node: {title: "e15" label: "ent a_elem_ent" color: yellow
  info1: "
-id: e29
+id: e15
 allocation:  automatic allocated
 visibility:  local
 variability: uninitialized
@@ -29,12 +29,18 @@ name:    a_elem_ent
 ld_name: a_a_elem_ent
 offset:  -1"
 }
-edge: { sourcename: "e29" targetname: "t10"class: 3 label: "type" color: red}
-node: {title: "t28" label: "array a" info1: "state: layout_undefined
+edge: { sourcename: "e15" targetname: "t10"class: 3 label: "type" color: red}
+node: {title: "t14" label: "array a" info1: "state: layout_undefined
 size: -1B,
 "}
-edge: { sourcename: "t28" targetname: "t10"class: 10 label: "arr elt tp" color:green}
-edge: { sourcename: "t28" targetname: "e29"class: 10 label: "arr ent" color: green}
+edge: { sourcename: "t14" targetname: "t10"class: 10 label: "arr elt tp" color:green}
+edge: { sourcename: "t14" targetname: "e15"class: 10 label: "arr ent" color: green}
+edge: { sourcename: "n16" targetname: "t14"label: "upper 0"}
+edge: { sourcename: "n17" targetname: "t14"label: "lower 0"}
+node: {title: "n16" label: "0x9Iu  16" color: yellow info1: "visited: 1
+"}
+node: {title: "n17" label: "0x0Iu  17" color: yellow info1: "visited: 1
+"}
 node: {title: "t10" label: "primitive int" info1: "state: layout_fixed,
 mode: Is,
 size: 4B,
@@ -50,7 +56,7 @@ peculiarity: existent
 name:    ARRAY-HEAP_EXAMPLE_main
 ld_name: GlobalType_ARRAY-HEAP_EXAMPLE_main
 offset:  -1
-irg = g26"
+irg = g30"
 }
 edge: { sourcename: "e13" targetname: "t11"class: 3 label: "type" color: red}
 edge: { sourcename: "e13" targetname: "n12"label: "value 0"}
@@ -65,7 +71,7 @@ mode: P,
 size: 4B,
 "}
 edge: { sourcename: "t11" targetname: "t10"class: 6 label: "res 0" color: green}
-node: {title: "t14" label: "class ARRAY-HEAP_EXAMPLE_mainframe_tp" info1: "state: layout_undefined
+node: {title: "t18" label: "class ARRAY-HEAP_EXAMPLE_mainframe_tp" info1: "state: layout_undefined
 size: -1B,
 " color: green}
 }

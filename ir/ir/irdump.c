@@ -561,7 +561,6 @@ static void dump_node2type_edges (ir_node *n, void *env)
 }
 
 
-/* @@@@ Does not work as someone kills the visited flag. */
 static void dump_const_expression(ir_node *value) {
   ir_graph *rem = current_ir_graph;
   int rem_dump_const_local = dump_const_local;
@@ -781,6 +780,15 @@ dump_type_info (type_or_ent *tore, void *env) {
 	{
 		  PRINT_TYPE_TYPE_EDGE(tp,get_array_element_type(tp),ARR_ELT_TYPE_EDGE_ATTR);
 		  PRINT_TYPE_ENT_EDGE(tp,get_array_element_entity(tp),ARR_ENT_EDGE_ATTR);
+		  for (i = 0; i < get_array_n_dimensions(tp); i++) {
+		    ir_node *upper = get_array_upper_bound(tp, i);
+		    ir_node *lower = get_array_lower_bound(tp, i);
+		    PRINT_NODE_TYPE_EDGE(upper, tp, "label: \"upper %d\"", get_array_order(tp, i));
+		    PRINT_NODE_TYPE_EDGE(lower, tp, "label: \"lower %d\"", get_array_order(tp, i));
+		    dump_const_expression(upper);
+		    dump_const_expression(lower);
+		  }
+
 	} break;
       case tpo_enumeration:
 	{
