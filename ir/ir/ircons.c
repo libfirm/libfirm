@@ -411,9 +411,8 @@ new_rd_Cmp (dbg_info* db, ir_graph *irg, ir_node *block,
 INLINE ir_node *
 new_rd_Jmp (dbg_info* db, ir_graph *irg, ir_node *block)
 {
-  ir_node *in[0] = {};
   ir_node *res;
-  res = new_ir_node (db, irg, block, op_Jmp, mode_X, 0, in);
+  res = new_ir_node (db, irg, block, op_Jmp, mode_X, 0, NULL);
   res = optimize (res);
   irn_vrfy (res);
   return res;
@@ -591,14 +590,13 @@ INLINE ir_node *
 new_rd_SymConst (dbg_info* db, ir_graph *irg, ir_node *block, type_or_id_p value,
                 symconst_kind symkind)
 {
-  ir_node *in[0] = {};
   ir_node *res;
   ir_mode *mode;
   if (symkind == linkage_ptr_info)
     mode = mode_P;
   else
     mode = mode_Iu;
-  res = new_ir_node (db, irg, block, op_SymConst, mode, 0, in);
+  res = new_ir_node (db, irg, block, op_SymConst, mode, 0, NULL);
 
   res->attr.i.num = symkind;
   if (symkind == linkage_ptr_info) {
@@ -678,9 +676,8 @@ new_rd_EndExcept (dbg_info *db, ir_graph *irg, ir_node *block)
 INLINE ir_node *
 new_rd_Break (dbg_info *db, ir_graph *irg, ir_node *block)
 {
-  ir_node *in[0] = {};
   ir_node *res;
-  res = new_ir_node (db, irg, block, op_Break, mode_X, 0, in);
+  res = new_ir_node (db, irg, block, op_Break, mode_X, 0, NULL);
   res = optimize (res);
   irn_vrfy (res);
   return res;
@@ -1621,8 +1618,7 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
   /* If we get here, the frontend missed a use-before-definition error */
   if (!res) {
     /* Error Message */
-    printf("Error: no value set.  Use of undefined variable.  Initializing
-            to zero.\n");
+    printf("Error: no value set.  Use of undefined variable.  Initializing to zero.\n");
     assert (mode->code >= irm_F && mode->code <= irm_P);
     res = new_rd_Const (NULL, current_ir_graph, block, mode,
 		       tarval_mode_null[mode->code]);
