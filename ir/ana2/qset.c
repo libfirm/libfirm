@@ -12,14 +12,16 @@
  * Copyright:   (c) 1999-2004 Universität Karlsruhe
  * Licence:     This file is protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
 # include <stdio.h>
 # include <stdlib.h>
 # include <assert.h>
 # include <string.h>
-# include <sys/time.h>
-# include <obstack.h>
 
+# include "obst.h"
 # include "timing.h"
 # include "qset.h"
 
@@ -41,7 +43,7 @@ static int q_test (sortable_t*, const sortable_t, const int);
 static void q_sort (sortable_t*, const int);
 
 /* Compare funktion, meant to be qsort(3)-compatible */
-static __inline__ int sortable_compare (const void *pa, const void *pb)
+static INLINE int sortable_compare (const void *pa, const void *pb)
 {
   const int a = * (unsigned int*) pa;
   const int b = * (unsigned int*) pb;
@@ -676,9 +678,11 @@ int qset_is_empty (qset_t *qset)
 */
 sortable_t *qset_start (qset_t *qset)
 {
+  sortable_t *start;
+
   qset->cursor = 0;
 
-  sortable_t *start = qset_next (qset);
+  start = qset_next (qset);
 
   return (start);    /* works for empty sets, too */
 }
@@ -726,6 +730,11 @@ int qset_test_main (int argc, char **argv)
 
 /*
   $Log$
+  Revision 1.10  2004/12/21 15:37:31  beck
+  added config.h include
+  removed unused sys/times.h
+  removed C99 constructs
+
   Revision 1.9  2004/12/20 17:34:35  liekweg
   fix recursion handling
 
