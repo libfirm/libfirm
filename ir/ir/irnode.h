@@ -64,7 +64,7 @@ int                  get_irn_arity         (ir_node *node);
    "in" must contain all predecessors except the block that are required for
    the nodes opcode. */
 INLINE void          set_irn_in            (ir_node *node, int arity,
-					    ir_node **in);
+					    ir_node *in[]);
 /* to iterate through the predecessors without touching the array. No
    order of predecessors guaranteed.
    To iterate over the operands iterate from 0 to i < get_irn_arity(),
@@ -119,7 +119,7 @@ new_ir_node (dbg_info *db,
 	     ir_op *op,
 	     ir_mode *mode,
 	     int arity,
-	     ir_node **in);
+	     ir_node *in[]);
 
 /****s* irnode/other
  *

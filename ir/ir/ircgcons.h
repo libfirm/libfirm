@@ -17,7 +17,7 @@
 
 /* Aufbau der interprozeduralen Darstellung.  In den Call-Operationen
  * mussen alle potentialen callees gespeichert sein. */
-void cg_construct(int arr_len, entity ** free_methods_arr);
+void cg_construct(int arr_len, entity *free_methods_arr[]);
 
 
 /* Abbau der interprozeduralen (Sichten-) Darstellung, in eine

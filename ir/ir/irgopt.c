@@ -410,6 +410,10 @@ dead_node_elimination(ir_graph *irg) {
   current_ir_graph = rem;
 }
 
+void remove_bad_predecessors(ir_graph *irg) {
+  printf("remove_bad_predecessors not implemented!!!\n");
+}
+
 /**********************************************************************/
 /*  Funcionality for inlining                                         */
 /**********************************************************************/

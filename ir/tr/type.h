@@ -327,7 +327,7 @@ void    set_class_member   (type *clss, entity *member, int pos);
    list passed. This function is necessary to reduce the number of members.
    members is an array of entities, num the size of this array.  Sets all
    owners of the members passed to clss. */
-void    set_class_members  (type *clss, entity **members, int arity);
+void    set_class_members  (type *clss, entity *members[], int arity);
 /* Finds member in the list of members and removes it.
    Shrinks the member list, so iterate from the end!!!
    Does not deallocate the entity.  */

@@ -1090,13 +1090,13 @@
 /* Constructs a Block with a fixed number of predecessors.
    Does not set current_block.  Can not be used with automatic
    Phi node construction. */
-ir_node *new_rd_Block  (dbg_info *db, ir_graph *irg,  int arity, ir_node **in);
+ir_node *new_rd_Block  (dbg_info *db, ir_graph *irg,  int arity, ir_node *in[]);
 ir_node *new_rd_Start  (dbg_info *db, ir_graph *irg, ir_node *block);
 ir_node *new_rd_End    (dbg_info *db, ir_graph *irg, ir_node *block);
 ir_node *new_rd_Jmp    (dbg_info *db, ir_graph *irg, ir_node *block);
 ir_node *new_rd_Cond   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *c);
 ir_node *new_rd_Return (dbg_info *db, ir_graph *irg, ir_node *block,
-		       ir_node *store, int arity, ir_node **in);
+		       ir_node *store, int arity, ir_node *in[]);
 ir_node *new_rd_Raise  (dbg_info *db, ir_graph *irg, ir_node *block,
 		       ir_node *store, ir_node *obj);
 ir_node *new_rd_Const  (dbg_info *db, ir_graph *irg, ir_node *block,
@@ -1104,10 +1104,10 @@ ir_node *new_rd_Const  (dbg_info *db, ir_graph *irg, ir_node *block,
 ir_node *new_rd_SymConst (dbg_info *db, ir_graph *irg, ir_node *block,
                        type_or_id_p value, symconst_kind symkind);
 ir_node *new_rd_Sel    (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
-                       ir_node *objptr, int n_index, ir_node **index,
+                       ir_node *objptr, int n_index, ir_node *index[],
 		       entity *ent);
 ir_node *new_rd_Call   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
-		       ir_node *callee, int arity, ir_node **in,
+		       ir_node *callee, int arity, ir_node *in[],
 		       type *tp);
 ir_node *new_rd_Add    (dbg_info *db, ir_graph *irg, ir_node *block,
 		       ir_node *op1, ir_node *op2, ir_mode *mode);
@@ -1148,7 +1148,7 @@ ir_node *new_rd_Rot    (dbg_info *db, ir_graph *irg, ir_node *block,
 ir_node *new_rd_Conv   (dbg_info *db, ir_graph *irg, ir_node *block,
 		       ir_node *op, ir_mode *mode);
 ir_node *new_rd_Phi    (dbg_info *db, ir_graph *irg, ir_node *block, int arity,
-		       ir_node **in, ir_mode *mode);
+		       ir_node *in[], ir_mode *mode);
 ir_node *new_rd_Load   (dbg_info *db, ir_graph *irg, ir_node *block,
 		       ir_node *store, ir_node *adr);
 ir_node *new_rd_Store  (dbg_info *db, ir_graph *irg, ir_node *block,
@@ -1157,13 +1157,13 @@ ir_node *new_rd_Alloc  (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *st
 		       ir_node *size, type *alloc_type, where_alloc where);
 ir_node *new_rd_Free   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
 		       ir_node *ptr, ir_node *size, type *free_type);
-ir_node *new_rd_Sync   (dbg_info *db, ir_graph *irg, ir_node *block, int arity, ir_node **in);
+ir_node *new_rd_Sync   (dbg_info *db, ir_graph *irg, ir_node *block, int arity, ir_node *in[]);
 ir_node *new_rd_Proj   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg,
 		       ir_mode *mode, long proj);
 ir_node *new_rd_defaultProj (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg,
 			    long max_proj);
 ir_node *new_rd_Tuple  (dbg_info *db, ir_graph *irg, ir_node *block,
-		       int arity, ir_node **in);
+		       int arity, ir_node *in[]);
 ir_node *new_rd_Id     (dbg_info *db, ir_graph *irg, ir_node *block,
 		       ir_node *val, ir_mode *mode);
 ir_node *new_rd_Bad    ();
@@ -1182,13 +1182,13 @@ ir_node *new_rd_Filter (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *ar
 /* Constructs a Block with a fixed number of predecessors.
    Does not set current_block.  Can not be used with automatic
    Phi node costruction. */
-ir_node *new_r_Block  (ir_graph *irg,  int arity, ir_node **in);
+ir_node *new_r_Block  (ir_graph *irg,  int arity, ir_node *in[]);
 ir_node *new_r_Start  (ir_graph *irg, ir_node *block);
 ir_node *new_r_End    (ir_graph *irg, ir_node *block);
 ir_node *new_r_Jmp    (ir_graph *irg, ir_node *block);
 ir_node *new_r_Cond   (ir_graph *irg, ir_node *block, ir_node *c);
 ir_node *new_r_Return (ir_graph *irg, ir_node *block,
-		       ir_node *store, int arity, ir_node **in);
+		       ir_node *store, int arity, ir_node *in[]);
 ir_node *new_r_Raise  (ir_graph *irg, ir_node *block,
 		       ir_node *store, ir_node *obj);
 ir_node *new_r_Const  (ir_graph *irg, ir_node *block,
@@ -1196,10 +1196,10 @@ ir_node *new_r_Const  (ir_graph *irg, ir_node *block,
 ir_node *new_r_SymConst (ir_graph *irg, ir_node *block,
                        type_or_id_p value, symconst_kind symkind);
 ir_node *new_r_Sel    (ir_graph *irg, ir_node *block, ir_node *store,
-                       ir_node *objptr, int n_index, ir_node **index,
+                       ir_node *objptr, int n_index, ir_node *index[],
 		       entity *ent);
 ir_node *new_r_Call   (ir_graph *irg, ir_node *block, ir_node *store,
-		       ir_node *callee, int arity, ir_node **in,
+		       ir_node *callee, int arity, ir_node *in[],
 		       type *tp);
 ir_node *new_r_Add    (ir_graph *irg, ir_node *block,
 		       ir_node *op1, ir_node *op2, ir_mode *mode);
@@ -1240,7 +1240,7 @@ ir_node *new_r_Rot    (ir_graph *irg, ir_node *block,
 ir_node *new_r_Conv   (ir_graph *irg, ir_node *block,
 		       ir_node *op, ir_mode *mode);
 ir_node *new_r_Phi    (ir_graph *irg, ir_node *block, int arity,
-		       ir_node **in, ir_mode *mode);
+		       ir_node *in[], ir_mode *mode);
 ir_node *new_r_Load   (ir_graph *irg, ir_node *block,
 		       ir_node *store, ir_node *adr);
 ir_node *new_r_Store  (ir_graph *irg, ir_node *block,
@@ -1249,13 +1249,13 @@ ir_node *new_r_Alloc  (ir_graph *irg, ir_node *block, ir_node *store,
 		       ir_node *size, type *alloc_type, where_alloc where);
 ir_node *new_r_Free   (ir_graph *irg, ir_node *block, ir_node *store,
 		       ir_node *ptr, ir_node *size, type *free_type);
-ir_node *new_r_Sync   (ir_graph *irg, ir_node *block, int arity, ir_node **in);
+ir_node *new_r_Sync   (ir_graph *irg, ir_node *block, int arity, ir_node *in[]);
 ir_node *new_r_Proj   (ir_graph *irg, ir_node *block, ir_node *arg,
 		       ir_mode *mode, long proj);
 ir_node *new_r_defaultProj (ir_graph *irg, ir_node *block, ir_node *arg,
 			    long max_proj);
 ir_node *new_r_Tuple  (ir_graph *irg, ir_node *block,
-		       int arity, ir_node **in);
+		       int arity, ir_node *in[]);
 ir_node *new_r_Id     (ir_graph *irg, ir_node *block,
 		       ir_node *val, ir_mode *mode);
 ir_node *new_r_Bad    ();
@@ -1280,19 +1280,19 @@ void switch_block (ir_node *target);
    node construction. */
 
 
-ir_node *new_d_Block(dbg_info* db, int arity, ir_node **in);
+ir_node *new_d_Block(dbg_info* db, int arity, ir_node *in[]);
 ir_node *new_d_Start  (dbg_info* db);
 ir_node *new_d_End    (dbg_info* db);
 ir_node *new_d_Jmp    (dbg_info* db);
 ir_node *new_d_Cond   (dbg_info* db, ir_node *c);
-ir_node *new_d_Return (dbg_info* db, ir_node *store, int arity, ir_node **in);
+ir_node *new_d_Return (dbg_info* db, ir_node *store, int arity, ir_node *in[]);
 ir_node *new_d_Raise  (dbg_info* db, ir_node *store, ir_node *obj);
 ir_node *new_d_Const  (dbg_info* db, ir_mode *mode, tarval *con);
 ir_node *new_d_SymConst (dbg_info* db, type_or_id_p value, symconst_kind kind);
 ir_node *new_d_simpleSel(dbg_info* db, ir_node *store, ir_node *objptr, entity *ent);
-ir_node *new_d_Sel    (dbg_info* db, ir_node *store, ir_node *objptr, int arity, ir_node **in,
+ir_node *new_d_Sel    (dbg_info* db, ir_node *store, ir_node *objptr, int arity, ir_node *in[],
                      entity *ent);
-ir_node *new_d_Call   (dbg_info* db, ir_node *store, ir_node *callee, int arity, ir_node **in,
+ir_node *new_d_Call   (dbg_info* db, ir_node *store, ir_node *callee, int arity, ir_node *in[],
 		     type *tp);
 ir_node *new_d_Add    (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_d_Sub    (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
@@ -1313,17 +1313,17 @@ ir_node *new_d_Shrs   (dbg_info* db, ir_node *op,  ir_node *k,   ir_mode *mode);
 ir_node *new_d_Rot    (dbg_info* db, ir_node *op,  ir_node *k,   ir_mode *mode);
 ir_node *new_d_Cmp    (dbg_info* db, ir_node *op1, ir_node *op2);
 ir_node *new_d_Conv   (dbg_info* db, ir_node *op, ir_mode *mode);
-ir_node *new_d_Phi    (dbg_info* db, int arity, ir_node **in, ir_mode *mode);
+ir_node *new_d_Phi    (dbg_info* db, int arity, ir_node *in[], ir_mode *mode);
 ir_node *new_d_Load   (dbg_info* db, ir_node *store, ir_node *addr);
 ir_node *new_d_Store  (dbg_info* db, ir_node *store, ir_node *addr, ir_node *val);
 ir_node *new_d_Alloc  (dbg_info* db, ir_node *store, ir_node *size, type *alloc_type,
                      where_alloc where);
 ir_node *new_d_Free   (dbg_info* db, ir_node *store, ir_node *ptr, ir_node *size,
 		     type *free_type);
-ir_node *new_d_Sync   (dbg_info* db, int arity, ir_node **in);
+ir_node *new_d_Sync   (dbg_info* db, int arity, ir_node *in[]);
 ir_node *new_d_Proj   (dbg_info* db, ir_node *arg, ir_mode *mode, long proj);
 ir_node *new_d_defaultProj (dbg_info* db, ir_node *arg, long max_proj);
-ir_node *new_d_Tuple  (dbg_info* db, int arity, ir_node **in);
+ir_node *new_d_Tuple  (dbg_info* db, int arity, ir_node *in[]);
 ir_node *new_d_Id     (dbg_info* db, ir_node *val, ir_mode *mode);
 ir_node *new_d_Bad    (void);
 ir_node *new_d_Unknown(void);
@@ -1343,7 +1343,7 @@ void switch_block (ir_node *target);   */
 /* Constructs a Block with a fixed number of predecessors.
    Does set current_block.  Can be used with automatic Phi
    node construction. */
-ir_node *new_Block(int arity, ir_node **in);
+ir_node *new_Block(int arity, ir_node *in[]);
 ir_node *new_Start  (void);
 ir_node *new_End    (void);
 ir_node *new_EndReg (void);
@@ -1351,15 +1351,15 @@ ir_node *new_EndExcept(void);
 ir_node *new_Jmp    (void);
 ir_node *new_Break  (void);
 ir_node *new_Cond   (ir_node *c);
-ir_node *new_Return (ir_node *store, int arity, ir_node **in);
+ir_node *new_Return (ir_node *store, int arity, ir_node *in[]);
 ir_node *new_Raise  (ir_node *store, ir_node *obj);
 ir_node *new_Const  (ir_mode *mode, tarval *con);
 ir_node *new_SymConst (type_or_id_p value, symconst_kind kind);
 ir_node *new_simpleSel(ir_node *store, ir_node *objptr, entity *ent);
-ir_node *new_Sel    (ir_node *store, ir_node *objptr, int arity, ir_node **in,
+ir_node *new_Sel    (ir_node *store, ir_node *objptr, int arity, ir_node *in[],
                      entity *ent);
 ir_node *new_InstOf (ir_node *store, ir_node *objptr, type *ent);
-ir_node *new_Call   (ir_node *store, ir_node *callee, int arity, ir_node **in,
+ir_node *new_Call   (ir_node *store, ir_node *callee, int arity, ir_node *in[],
 		     type *tp);
 ir_node *new_CallBegin(ir_node *callee);
 ir_node *new_Add    (ir_node *op1, ir_node *op2, ir_mode *mode);
@@ -1381,18 +1381,18 @@ ir_node *new_Shrs   (ir_node *op,  ir_node *k,   ir_mode *mode);
 ir_node *new_Rot    (ir_node *op,  ir_node *k,   ir_mode *mode);
 ir_node *new_Cmp    (ir_node *op1, ir_node *op2);
 ir_node *new_Conv   (ir_node *op, ir_mode *mode);
-ir_node *new_Phi    (int arity, ir_node **in, ir_mode *mode);
+ir_node *new_Phi    (int arity, ir_node *in[], ir_mode *mode);
 ir_node *new_Load   (ir_node *store, ir_node *addr);
 ir_node *new_Store  (ir_node *store, ir_node *addr, ir_node *val);
 ir_node *new_Alloc  (ir_node *store, ir_node *size, type *alloc_type,
                      where_alloc where);
 ir_node *new_Free   (ir_node *store, ir_node *ptr, ir_node *size,
 		     type *free_type);
-ir_node *new_Sync   (int arity, ir_node **in);
+ir_node *new_Sync   (int arity, ir_node *in[]);
 ir_node *new_Proj   (ir_node *arg, ir_mode *mode, long proj);
 ir_node *new_Filter (ir_node *arg, ir_mode *mode, long proj);
 ir_node *new_defaultProj (ir_node *arg, long max_proj);
-ir_node *new_Tuple  (int arity, ir_node **in);
+ir_node *new_Tuple  (int arity, ir_node *in[]);
 ir_node *new_Id     (ir_node *val, ir_mode *mode);
 ir_node *new_Bad    (void);
 ir_node *new_Unknown(void);

@@ -42,6 +42,7 @@
  *   - Replace (Sel-method(Alloc)) by Const method,
  *   - Replaces unreachable Sel nodes by Bad  (@@@ was genau meint unreachable?)
  *   - Replaces Sel-method by Const if the Method is never overwritten */
+/* @@@ I assume this can not be called via JNI :-( */
 void cgana(int *len, entity ***free_methods);
 
 /* Performs only the optimizations done by cgana. */

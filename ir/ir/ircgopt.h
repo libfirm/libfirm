@@ -21,7 +21,7 @@
  * Abschätzung der Aufrufrelation muss entsprechend an den
  * Call-Operationen gespeichert sein. Die "entity->link"s werden dabei
  * überschrieben. */
-void gc_irgs(int n_keep, entity ** keep_arr);
+void gc_irgs(int n_keep, entity *keep_arr[]);
 
 
 #endif /* _GC_IRGS_H_ */
