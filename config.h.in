@@ -15,6 +15,9 @@
 /* Define if you have the <gmp.h> header file.  */
 #undef HAVE_GMP_H
 
+/* Define if you have the <jni.h> header file.  */
+#undef HAVE_JNI_H
+
 /* Define if you have the <math.h> header file.  */
 #undef HAVE_MATH_H
 

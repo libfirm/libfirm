@@ -5,6 +5,8 @@ import firmjni.*;
 **
 ** Author: Goetz Lindenmaier
 **
+** $id$
+**
 ** This is an example of how to use the JNI interface of Firm.
 **
 */
@@ -22,7 +24,6 @@ import firmjni.*;
 **/
 class Empty {
     public static void main (String[] args) {
-	Firm firm = new Firm();
 
 	System.out.println("\nCreating an IR graph: EMPTY...");
 
@@ -31,18 +32,17 @@ class Empty {
 
 	/** Build type information for the procedure. **/
 
-	/* FIRM was designed for oo languages where all methods beint to a class.
+	/* FIRM was designed for oo languages where all methods belong to a class.
 	 * For imperative languages like C we view a file as a large class containing
 	 * all functions in this file as methods.
-	 * This clas is generated automatically.
-	 */
+	 * This class is generated automatically.	 */
 	int owner = Irprog.getGlobType();
 
 	/* The type of the method */
 	int name = Ident.idFromStr("main", 4);
 	int proc_main = Type.newTypeMethod(name, 0, 0);
-	/* An entity representing the method.  Owner of the entity is the global class
-	   type mentioned above. */
+	/* An entity representing the method.  Owner of the entity is the global
+	   class type mentioned above. */
 	int ent = Entity.newEntity (owner, name, proc_main);
 
 	/** Build code for the procedure. **/

@@ -4,10 +4,6 @@ Call
   sh build_firm_jni
 to generate a Java native interface for firm.
 
-This script still contains various IPD specific settings,
-e.g. oaths to the header files needed for JNI.  This will be changed
-at some point.
-
 Generating the JNI requires various syntactic properties of the
 header files that restrict legal C.
 
@@ -16,7 +12,8 @@ from Idents (as idToStr).  This will probably cause a segmentation
 fault.
 
 Some methods generated might not work yet.  Please report this to
-goetz@ipd.info.uni-karlsruhe.de
+goetz@ipd.info.uni-karlsruhe.de. Do not use methods with function
+pointers as arguments.
 
 For now _all_ enumerators are generated into _all_ classes.
 This results from deficiencies in the crecoder and will be removed

@@ -5,27 +5,35 @@
 # $Id$
 #
 
-top_srcdir := @top_srcdir@
+top_srcdir = @top_srcdir@
 srcdir = @srcdir@
 topdir = ..
-subdir := testprograms
+subdir = testprograms
 
 
 SOURCES := Makefile.in \
 	Empty.java
 
-CLASSPATH += $srcdir
+MYCLASSPATH = $(CLASSPATH):../..
+
 LD_LIBRARY_PATH += $srcdir/firmjni
 
 
-%.class: %.java
-	javac -d $CLASSPATH $<
+%.class: $(top_srcdir)/firmjni/testprograms/%.java
+	javac -d . $<
+
+all: 	empty
+
+# bad hack ;-(
+empty:
+	javac -classpath $(MYCLASSPATH) -d . @top_srcdir@/firmjni/testprograms/Empty.java
 
 
+run:	empty
+	java -cp $(MYCLASSPATH) Empty
 
+clean:
+	-rm *.class
 
-
-all:	%.class
-
-run:	%.class
-	java $(<:.class=)
+realclean:	clean
+	-rm *.vcg

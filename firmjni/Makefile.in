@@ -6,9 +6,16 @@ srcdir = @srcdir@
 topdir = ..
 subdir = firmjni
 
-libdir = @libdir@      # where to find libfirm.a and where to put libfirmjni.so
-
+# The library implementing the JNI methods.  This name is also
+# known to the generator for the JNI interface and used in the
+# static initializer.
 LIBNAME = libfirmjni.so
+
+# where to put libfirmjni.so
+libdir = @libdir@
+# where to put the directory firmjni containing the generated
+# .java and .class files
+#javadir = @javadir@         @@@ how to specify a dir in configure.in?
 
 .PHONY: default all clean realclean depend
 
@@ -17,12 +24,28 @@ MEMBERS = Firm.m Firm.m Firm_common.m Dbginfo.m Ident.m Tv.m     	\
 	Irprog.m Irgraph.m Irnode.m Irmode.m Irop.m Ircons.m Ircgcons.m \
 	Irflag.m Irvrfy.m Irdump.m Iropt.m Irgopt.m Ircgopt.m		\
 	Irouts.m Irdom.m Irloop.m Cgana.m        			\
-	Irgwalk.m Irgmod.m Typewalk.m Typegmod.m
+	Irgmod.m Typegmod.m
+# How to pass function pointers? Or how to obtain them?
+#      Irgwalk.m Typewalk.m
 
 OFILES  = $(MEMBERS:.m=.o)
 HFILES  = $(MEMBERS:.m=.h)
+CLASSFILES = $(MEMBERS:.m=.class)
 
-all: 	jni
+CPPFLAGS = 	-I$(top_srcdir)/ir/ir  -I$(top_srcdir)/ir/common  	\
+		-I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/tr  	\
+	        -I$(top_srcdir)/ir/tv -I$(top_srcdir)/ir/debug 		\
+	        -I$(top_srcdir)/ir/ana -I$(top_srcdir)/ir/st @CPPFLAGS@
+
+LDFLAGS += $(topdir)
+
+all: 	classfiles jni
+
+# call the generator to make the implementation files
+#impl:
+#	-sh build_firm_jni
+
+classfiles: $(CLASSFILES)
 
 %.class: %.java
 	javac $<
@@ -33,12 +56,14 @@ all: 	jni
 %.o:	%.c %.h
 	gcc $(CPPFLAGS) -c $< -o $@
 
-jni:    $(HFILES) $(OFILES) $(libdir)libfirm.a
-	gcc  -shared -fPIC -o $(LIBNAME) *.o -L$(libdir) -lfirm
+jni:    $(HFILES) $(OFILES)  # ../libfirm.a
+	gcc -shared -fPIC -o $(LIBNAME) *.o -lfirm -L..
 
 install:
 	cp libfirmjni.so $(libdir)
+#	mkdir $(javadir)
 #	cp *.java @javadir@
+#	cp *.class @javadir@
 
 clean:
 	rm -rf sources *.c *.h *.o
