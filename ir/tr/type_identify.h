@@ -56,7 +56,7 @@ typedef int (hash_types_func_t)(type *tp);
  *
  * Uses the name of the type and the type opcode to compute the hash.
  */
-int hash_name (type *tp);
+int firm_hash_name (type *tp);
 
 /* ------------------------------------------------------------------------ */
 
@@ -127,7 +127,7 @@ typedef struct _type_identify_if_t {
  * @param ti_if    The interface functions for this module.
  *
  * If the parameter ti_if is NULL, the default functions compare_strict() and
- * hash_name() will be used.
+ * firm_hash_name() will be used.
  */
 void init_type_identify(type_identify_if_t *ti_if);
 
