@@ -83,12 +83,16 @@ main(void)
   /* Generates start and end blocks and nodes and a first, initial block */
   irg = new_ir_graph (ent, 4);
 
-  /* generate two constant pointers to string constants */
-  /* this simulates two global variables, a and b point to these variables */
-  a = new_Const (mode_P, new_tarval_from_str ("VAR_A", 6, mode_P)); /* length 6 because of NULL terminator */
-  b = new_Const (mode_P, new_tarval_from_str ("VAR_B", 6, mode_P));
-
-  /* set VAR_A and VAR_B to constant values */
+  /* create two global variables, a and b point to these variables */
+  a = new_simpleSel(
+              get_store(),
+              get_irg_globals(irg),
+              new_entity(get_glob_type(),id_from_str("VAR_A",6),prim_t_int));
+  b = new_simpleSel(
+              get_store(),
+              get_irg_globals(irg),
+              new_entity(get_glob_type(),id_from_str("VAR_B",6),prim_t_int));
+   /* set VAR_A and VAR_B to constant values */
   set_store (new_Proj (new_Store (get_store (), a,
 		     	          new_Const (mode_Iu, new_tarval_from_long (0, mode_Is))),
                        mode_M, 0));

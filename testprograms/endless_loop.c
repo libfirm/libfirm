@@ -104,8 +104,11 @@ main(void)
 
   /* set VAR_A to constant value */
   set_store (new_Proj (new_Store (get_store (),
-				  new_Const (mode_P, new_tarval_from_str ("VAR_A", 6, mode_P)), /* length 6 because of NULL */
-		     	          get_value(1, mode_Is)),
+                                  new_simpleSel(
+                                    get_store(),
+                                    get_irg_globals(irg),
+                                    new_entity(get_glob_type(),id_from_str("VAR_A",6),prim_t_int)),
+                                  get_value(1, mode_Is)),
                        mode_M, 0));
 
   mature_block (b);
