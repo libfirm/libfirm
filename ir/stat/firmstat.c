@@ -696,7 +696,7 @@ void stat_merge_nodes(
 
 void stat_lower(ir_node *node) {}
 
-void stat_inline(const ir_node *call, const ir_graph *irg) {}
+void stat_inline(ir_node *call, ir_graph *irg) {}
 
 void stat_dead_node_elim_start(ir_graph *irg) {}
 
