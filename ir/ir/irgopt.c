@@ -578,17 +578,25 @@ static void relink_bad_block_predecessors(ir_node *n, void *env) {
 
     /* arity changing: set new predecessors without bad nodes */
     if (new_irn_arity < old_irn_arity) {
-      /* get new predecessor array without Block predecessor */
+      /* Get new predecessor array. We do not resize the array, as we must
+	 keep the old one to update Phis. */
       new_in = NEW_ARR_D (ir_node *, current_ir_graph->obst, (new_irn_arity+1));
 
       /* set new predeseccors in array */
       new_in[0] = NULL;
       new_irn_n = 1;
-      for (i = 1; i < old_irn_arity; i++) {
-    irn = get_irn_n(n, i);
-    if (!is_Bad(irn)) new_in[new_irn_n++] = irn;
+      for (i = 0; i < old_irn_arity; i++) {
+	irn = get_irn_n(n, i);
+	if (!is_Bad(irn)) {
+	  new_in[new_irn_n] = irn;
+	  is_backedge(n, i) ? set_backedge(n, new_irn_n-1) : set_not_backedge(n, new_irn_n-1);
+	  new_irn_n++;
+	}
       }
+      //ARR_SETLEN(int, n->attr.block.backedge, new_irn_arity);
+      ARR_SHRINKLEN(n->attr.block.backedge, new_irn_arity);
       n->in = new_in;
+
     } /* ir node has bad predecessors */
 
   } /* Block is not relinked */
@@ -623,18 +631,23 @@ static void relink_bad_predecessors(ir_node *n, void *env) {
     /* Relink Phi predeseccors if count of predeseccors changed */
     if (old_irn_arity != ARR_LEN(get_irn_in(block))) {
       /* set new predeseccors in array
-     n->in[0] remains the same block */
+	 n->in[0] remains the same block */
       new_irn_arity = 1;
       for(i = 1; i < old_irn_arity; i++)
-    if (!is_Bad((ir_node *)old_in[i])) n->in[new_irn_arity++] = n->in[i];
+	if (!is_Bad((ir_node *)old_in[i])) {
+	  n->in[new_irn_arity] = n->in[i];
+	  is_backedge(n, i) ? set_backedge(n, new_irn_arity) : set_not_backedge(n, new_irn_arity);
+	  new_irn_arity++;
+	}
 
       ARR_SETLEN(ir_node *, n->in, new_irn_arity);
+      ARR_SETLEN(int, n->attr.phi_backedge, new_irn_arity);
     }
 
   } /* n is a Phi node */
 }
 
-/**
+/*
  * Removes Bad Bad predecesors from Blocks and the corresponding
  * inputs to Phi nodes as in dead_node_elimination but without
  * copying the graph.

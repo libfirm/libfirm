@@ -67,6 +67,8 @@ void dead_node_elimination(ir_graph *irg);
  * inputs to Phi nodes as in dead_node_elimination but without
  * copying the graph.
  *
+ * Conserves loop information.
+ *
  * @param irg  The graph to be optimized.
  */
 void remove_bad_predecessors(ir_graph *irg);
