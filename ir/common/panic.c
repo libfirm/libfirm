@@ -23,7 +23,7 @@ panic (const char *fmt, ...)
 
   fputs ("(panic) ", stderr);
   va_start (ap, fmt);
-  xvfprintf (stderr, fmt, ap);
+  vfprintf (stderr, fmt, ap);
   va_end (ap);
   putc ('\n', stderr);
   exit (1);

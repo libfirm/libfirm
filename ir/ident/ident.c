@@ -91,12 +91,12 @@ int id_contains_char(ident *id, char c)
 
 int print_id (ident *id)
 {
-  return xprintf("%I", id);
+  return printf("%s", id_to_str(id));
 }
 
 int fprint_id (FILE *F, ident *id)
 {
-  return xfprintf(F, "%I", id);
+  return fprintf(F, "%s", id_to_str(id));
 }
 
 int

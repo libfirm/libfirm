@@ -26,7 +26,7 @@
 # include "irgwalk.h"
 # include "typewalk.h"
 # include "irprog.h"
-# include "tv.h"
+# include "tv_t.h"
 # include "type_or_entity.h"
 # include "irouts.h"
 # include "irdom.h"
@@ -40,6 +40,7 @@
 
 
 /* Attributes of nodes */
+#define PRINT_DEFAULT_NODE_ATTR
 #define DEFAULT_NODE_ATTR ""
 #define DEFAULT_TYPE_ATTRIBUTE ""
 
@@ -139,17 +140,17 @@ dump_node_opcode (ir_node *n)
 
   /* Const */
   if (n->op->code == iro_Const) {
-    xfprintf (F, "%v", n->attr.con);
+    tarval_xprintf ((printf_func*) fprintf,F,n->attr.con);
 
   /* SymConst */
   } else if (n->op->code == iro_SymConst) {
     if (get_SymConst_kind(n) == linkage_ptr_info) {
       /* don't use get_SymConst_ptr_info as it mangles the name. */
-      xfprintf (F, "SymC %I", n->attr.i.tori.ptrinfo);
+      fprintf (F, "SymC %s", id_to_str(n->attr.i.tori.ptrinfo));
     } else {
       assert(get_kind(get_SymConst_type(n)) == k_type);
       assert(get_type_ident(get_SymConst_type(n)));
-      xfprintf (F, "SymC %I ", get_type_ident(get_SymConst_type(n)));
+      fprintf (F, "SymC %s ", id_to_str(get_type_ident(get_SymConst_type(n))));
       if (get_SymConst_kind(n) == type_tag)
         fprintf (F, "tag");
       else
@@ -162,7 +163,7 @@ dump_node_opcode (ir_node *n)
 
   /* all others */
   } else {
-    xfprintf (F, "%I", get_irn_opident(n));
+    fprintf (F, "%s", id_to_str(get_irn_opident(n)));
   }
 }
 
@@ -187,7 +188,7 @@ dump_node_mode (ir_node *n)
   case iro_Shr:
   case iro_Abs:
   case iro_Cmp:
-    xfprintf (F, "%I", get_mode_ident(n->mode));
+    fprintf (F, "%s", id_to_str(get_mode_ident(n->mode)));
     break;
   default:
     ;
@@ -200,22 +201,22 @@ dump_node_nodeattr (ir_node *n)
   switch (n->op->code) {
   case iro_Start:
     if (false && interprocedural_view) {
-      xfprintf (F, "%I", get_entity_ident(get_irg_ent(current_ir_graph)));
+      fprintf (F, "%s", id_to_str(get_entity_ident(get_irg_ent(current_ir_graph))));
     }
     break;
   case iro_Proj:
     if (n->in[1]->op->code == iro_Cmp) {
       fprintf (F, "%s", get_pnc_string(n->attr.proj));
     } else {
-      xfprintf (F, "%ld", n->attr.proj);
+      fprintf (F, "%ld", n->attr.proj);
     }
     break;
   case iro_Filter:
-    xfprintf (F, "%ld", n->attr.filter.proj);
+    fprintf (F, "%ld", n->attr.filter.proj);
     break;
   case iro_Sel: {
     assert(get_kind(get_Sel_entity(n)) == k_entity);
-    xfprintf (F, "%I", get_entity_ident(get_Sel_entity(n)));
+    fprintf (F, "%s", id_to_str(get_entity_ident(get_Sel_entity(n))));
     } break;
   default:
     ;
@@ -247,7 +248,7 @@ dump_node_vcgattr (ir_node *n)
     fprintf (F, "color: yellow");
     break;
   default:
-    xfprintf (F, DEFAULT_NODE_ATTR);
+    PRINT_DEFAULT_NODE_ATTR;
   }
 }
 
@@ -300,7 +301,7 @@ static void dump_const_node_local(ir_node *n, pmap *irgmap) {
       fprintf (F, " ");
       dump_node_nodeattr(con);
 #ifdef DEBUG_libfirm
-      xfprintf (F, " %ld", get_irn_node_nr(con));
+      fprintf (F, " %ld", get_irn_node_nr(con));
 #endif
       fprintf (F, "\" ");
       dump_node_vcgattr(con);
@@ -321,7 +322,7 @@ dump_node (ir_node *n, pmap * map) {
   fprintf (F, " ");
   dump_node_nodeattr(n);
 #ifdef DEBUG_libfirm
-  xfprintf (F, " %ld", get_irn_node_nr(n));
+  fprintf (F, " %ld", get_irn_node_nr(n));
 #endif
   fprintf (F, "\" ");
   dump_node_vcgattr(n);
@@ -337,155 +338,116 @@ dump_ir_node (ir_node *n)
 
   switch (n->op->code) {  /* node label */
   case iro_Start:
-    xfprintf (F, "\"%I\" color: blue ", get_irn_opident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
+    fprintf (F, "\"%s\" color: blue ", id_to_str(get_irn_opident(n)));
+    PRINT_DEFAULT_NODE_ATTR;
      break;
   case iro_EndReg:
     /* fall through */
   case iro_EndExcept:
     /* fall through */
   case iro_End:
-    xfprintf (F, "\"%I\" color: blue ", get_irn_opident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
+    fprintf (F, "\"%s\" color: blue ", id_to_str(get_irn_opident(n)));
+    PRINT_DEFAULT_NODE_ATTR;
     break;
   case iro_Block:
-    xfprintf (F, "\"%I\" color: lightyellow ", get_irn_opident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
+    fprintf (F, "\"%s\" color: lightyellow ", id_to_str(get_irn_opident(n)));
+    PRINT_DEFAULT_NODE_ATTR;
     break;
   case iro_Phi:
-    xfprintf (F, "\"%I%I\" color: green", get_irn_opident(n), get_irn_modeident(n));
+    fprintf (F, "\"%s%s\" color: green", id_to_str(get_irn_opident(n)), id_to_str(get_irn_modeident(n)));
     if (get_irn_modecode(n) == irm_M)
-      xfprintf (F, DEFAULT_NODE_ATTR " color: green");
+      fprintf (F, DEFAULT_NODE_ATTR " color: green");
     else
-      xfprintf (F, DEFAULT_NODE_ATTR);
+      PRINT_DEFAULT_NODE_ATTR;
     break;
   case iro_Const:
-    xfprintf (F, "\"%v%I\" color: yellow ", n->attr.con, get_irn_modeident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
-    break;
-  case iro_Id:
-    xfprintf (F, "\"%I%I\" ", get_irn_opident(n), get_irn_modeident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
+    fprintf (F, "\"");
+    tarval_xprintf((printf_func*) fprintf,F,n->attr.con);
+    fprintf (F, "%s\" color: yellow ",id_to_str(get_irn_modeident(n)));
+    PRINT_DEFAULT_NODE_ATTR;
     break;
   case iro_Proj:
     if (n->in[1]->op->code == iro_Cmp) {
-      xfprintf (F, "\"%I%I %s\" color: yellow", get_irn_opident(n), get_irn_modeident(n),
+      fprintf (F, "\"%s%s %s\" color: yellow", id_to_str(get_irn_opident(n)), id_to_str(get_irn_modeident(n)),
                 get_pnc_string(n->attr.proj));
     } else {
-      xfprintf (F, "\"%I%I %ld\"", get_irn_opident(n), get_irn_modeident(n), n->attr.proj);
+      fprintf (F, "\"%s%s %ld\"", id_to_str(get_irn_opident(n)), id_to_str(get_irn_modeident(n)), n->attr.proj);
     }
-    xfprintf (F, DEFAULT_NODE_ATTR);
+    PRINT_DEFAULT_NODE_ATTR;
     break;
   case iro_Filter:
-    xfprintf (F, "\"%I%I %ld\"", get_irn_opident(n), get_irn_modeident(n), n->attr.filter.proj);
-    xfprintf (F, DEFAULT_NODE_ATTR);
+    fprintf (F, "\"%s%s %ld\"", id_to_str(get_irn_opident(n)), id_to_str(get_irn_modeident(n)), n->attr.filter.proj);
+    PRINT_DEFAULT_NODE_ATTR;
     break;
+#if 0
+  case iro_Id:
+    /* fall through */
   case iro_Conv:
-    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
-    break;
+    /* fall through */
   case iro_Tuple:
-    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
-    break;
+    /* fall through */
   case iro_Add:
-    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
-    break;
+    /* fall through */
   case iro_Sub:
-    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
-    break;
+    /* fall through */
   case iro_Mul:
-    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
-    break;
+    /* fall through */
   case iro_Quot:
-    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
-    break;
+    /* fall through */
   case iro_DivMod:
-    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
-    break;
+    /* fall through */
   case iro_Div:
-    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
-    break;
+    /* fall through */
   case iro_Mod:
-    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
-    break;
+    /* fall through */
   case iro_And:
-    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
-    break;
+    /* fall through */
   case iro_Or:
-    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
-    break;
+    /* fall through */
   case iro_Eor:
-    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
-    break;
+    /* fall through */
   case iro_Shl:
-    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
-    break;
+    /* fall through */
   case iro_Shr:
-    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
-    break;
+    /* fall through */
   case iro_Abs:
-    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
-    break;
+    /* fall through */
   case iro_Cmp:
-    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
-    break;
-  case iro_Jmp:
-    xfprintf (F, "\"%I\"", get_irn_opident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
-    break;
-  case iro_Break:
-    xfprintf (F, "\"%I\"", get_irn_opident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
-    break;
-  case iro_Cond:
-    xfprintf (F, "\"%I\"", get_irn_opident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
-    break;
-  case iro_Call:
-    xfprintf (F, "\"%I\"", get_irn_opident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
-    break;
-  case iro_CallBegin:
-    xfprintf (F, "\"%I\"", get_irn_opident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
-    break;
-  case iro_Return:
-    xfprintf (F, "\"%I\"", get_irn_opident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
-    break;
+    /* fall through */
   case iro_Raise:
-    xfprintf (F, "\"%I%I\"", get_irn_opident(n), get_irn_modeident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
-    break;
+    /* fall through */
+  case iro_Unknown:
+    /* fall through */
+  case iro_Bad:
+    /* fall through */
   case iro_Load:
+    /* fall through */
   case iro_Store:
-    xfprintf (F, "\"%R\"", n);
-    xfprintf (F, DEFAULT_NODE_ATTR);
+    fprintf (F, "\"%s%s\"", id_to_str(get_irn_opident(n)), id_to_str(get_irn_modeident(n)));
+    PRINT_DEFAULT_NODE_ATTR;
     break;
+#endif
+  case iro_Jmp:
+    /* fall through */
+  case iro_Break:
+    /* fall through */
+  case iro_Cond:
+    /* fall through */
+  case iro_Call:
+    /* fall through */
+  case iro_CallBegin:
+    /* fall through */
+  case iro_Return:
+    /* fall through */
   case iro_Alloc:
-    xfprintf (F, "\"%I\" ", get_irn_opident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
+    fprintf (F, "\"%s\"", id_to_str(get_irn_opident(n)));
+    PRINT_DEFAULT_NODE_ATTR;
     break;
   case iro_Sel:
     assert(get_kind(get_Sel_entity(n)) == k_entity);
-    xfprintf (F, "\"%I ", get_irn_opident(n));
-    xfprintf (F, "%I", get_entity_ident(get_Sel_entity(n)));
-    xfprintf (F, DEFAULT_NODE_ATTR);
+    fprintf (F, "\"%s ", id_to_str(get_irn_opident(n)));
+    fprintf (F, "%s", id_to_str(get_entity_ident(get_Sel_entity(n))));
+    PRINT_DEFAULT_NODE_ATTR;
     break;
   case iro_SymConst:
     assert(get_kind(get_SymConst_type(n)) == k_type);
@@ -502,22 +464,14 @@ dump_ir_node (ir_node *n)
       assert(0);
       break;
     }
-    xfprintf (F, DEFAULT_NODE_ATTR);
+    PRINT_DEFAULT_NODE_ATTR;
     break;
   case iro_Sync:
-    xfprintf (F, "\"%I\" ", get_irn_opident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR " color: green");
-    break;
-  case iro_Bad:
-    xfprintf (F, "\"%I%I\" ", get_irn_opident(n), get_irn_modeident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
-    break;
-  case iro_Unknown:
-    xfprintf (F, "\"%I%I\" ", get_irn_opident(n), get_irn_modeident(n));
-    xfprintf (F, DEFAULT_NODE_ATTR);
+    fprintf (F, "\"%s\" ", id_to_str(get_irn_opident(n)));
+    fprintf (F, DEFAULT_NODE_ATTR " color: green");
     break;
   default:
-    xfprintf (F, "\"%I%I\" ", get_irn_opident(n), get_irn_modeident(n));
+    fprintf (F, "\"%s%s\" ", id_to_str(get_irn_opident(n)), id_to_str(get_irn_modeident(n)));
   }
   fprintf (F, "}\n");		/* footer */
 }
@@ -532,26 +486,26 @@ dump_ir_block_edge(ir_node *n)  {
     PRINT_NODEID(n);
     fprintf (F, "\" targetname: \"");
     PRINT_NODEID(get_nodes_Block(n));
-    xfprintf (F, "\" "	BLOCK_EDGE_ATTR "}\n");
+    fprintf (F, "\" "	BLOCK_EDGE_ATTR "}\n");
   }
 }
 
 static void print_edge_vcgattr(ir_node *from, int to) {
   assert(from);
 
-  if (is_backedge(from, to)) xfprintf (F, BACK_EDGE_ATTR);
+  if (is_backedge(from, to)) fprintf (F, BACK_EDGE_ATTR);
 
   switch (get_irn_opcode(from)) {
   case iro_Block:
-    xfprintf (F, CF_EDGE_ATTR);
+    fprintf (F, CF_EDGE_ATTR);
     break;
   case iro_Start:   break;
   case iro_End:
     if (to >= 0) {
       if (get_irn_mode(get_End_keepalive(from, to)) == mode_BB)
-	xfprintf (F, CF_EDGE_ATTR);
+	fprintf (F, CF_EDGE_ATTR);
       if (get_irn_mode(get_End_keepalive(from, to)) == mode_X)
-	xfprintf (F, MEM_EDGE_ATTR);
+	fprintf (F, MEM_EDGE_ATTR);
     }
     break;
   case iro_EndReg: break;
@@ -561,13 +515,13 @@ static void print_edge_vcgattr(ir_node *from, int to) {
   case iro_Cond:    break;
   case iro_Return:
   case iro_Raise:
-    if (to == 0) xfprintf (F, MEM_EDGE_ATTR);
+    if (to == 0) fprintf (F, MEM_EDGE_ATTR);
     break;
   case iro_Const:   break;
   case iro_SymConst:break;
   case iro_Sel:
   case iro_Call:
-    if (to == 0) xfprintf (F, MEM_EDGE_ATTR);
+    if (to == 0) fprintf (F, MEM_EDGE_ATTR);
     break;
   case iro_CallBegin: break;
   case iro_Add:     break;
@@ -578,7 +532,7 @@ static void print_edge_vcgattr(ir_node *from, int to) {
   case iro_DivMod:
   case iro_Div:
   case iro_Mod:
-    if (to == 0) xfprintf (F, MEM_EDGE_ATTR);
+    if (to == 0) fprintf (F, MEM_EDGE_ATTR);
     break;
   case iro_Abs:    break;
   case iro_And:    break;
@@ -591,26 +545,26 @@ static void print_edge_vcgattr(ir_node *from, int to) {
   case iro_Cmp:    break;
   case iro_Conv:   break;
   case iro_Phi:
-    if (get_irn_modecode(from) == irm_M) xfprintf (F, MEM_EDGE_ATTR);
+    if (get_irn_modecode(from) == irm_M) fprintf (F, MEM_EDGE_ATTR);
     break;
   case iro_Load:
   case iro_Store:
   case iro_Alloc:
   case iro_Free:
-    if (to == 0) xfprintf (F, MEM_EDGE_ATTR);
+    if (to == 0) fprintf (F, MEM_EDGE_ATTR);
     break;
   case iro_Sync:
-    xfprintf (F, MEM_EDGE_ATTR);
+    fprintf (F, MEM_EDGE_ATTR);
     break;
   case iro_Tuple:  break;
   case iro_Proj:
   case iro_Filter:
     switch (get_irn_modecode(from)) {
     case irm_X:
-      xfprintf (F, CF_EDGE_ATTR);
+      fprintf (F, CF_EDGE_ATTR);
       break;
     case irm_M:
-      xfprintf (F, MEM_EDGE_ATTR);
+      fprintf (F, MEM_EDGE_ATTR);
       break;
     default: break;
     }
@@ -761,7 +715,7 @@ static void print_type_info(type *tp) {
     fprintf(F, "state: layout_fixed,\n");
   }
   if (get_type_mode(tp))
-    xfprintf(F, "mode: %I,\n", get_mode_ident(get_type_mode(tp)));
+    fprintf(F, "mode: %s,\n", id_to_str(get_mode_ident(get_type_mode(tp))));
   fprintf(F, "size: %dB,\n", get_type_size(tp));
 }
 
@@ -771,13 +725,13 @@ static void print_typespecific_info(type *tp) {
   case tpo_class:
     {
       if(existent == get_class_peculiarity(tp))
-	xfprintf (F, " " TYPE_CLASS_NODE_ATTR);
+	fprintf (F, " " TYPE_CLASS_NODE_ATTR);
       else
-	xfprintf (F, " " TYPE_DESCRIPTION_NODE_ATTR);
+	fprintf (F, " " TYPE_DESCRIPTION_NODE_ATTR);
     } break;
   case tpo_struct:
     {
-      xfprintf (F, " " TYPE_METH_NODE_ATTR);
+      fprintf (F, " " TYPE_METH_NODE_ATTR);
     } break;
   case tpo_method:
     {
@@ -802,22 +756,22 @@ static void print_typespecific_info(type *tp) {
 }
 
 static void print_type_node(type *tp) {
-  xfprintf (F, "node: {title: \"");
+  fprintf (F, "node: {title: \"");
   PRINT_TYPEID(tp);
-  xfprintf (F, "\" label: \"%I %I\"", get_type_tpop_nameid(tp), get_type_ident(tp));
-  xfprintf (F, "info1: \"");
+  fprintf (F, "\" label: \"%s %s\"", id_to_str(get_type_tpop_nameid(tp)), id_to_str(get_type_ident(tp)));
+  fprintf (F, "info1: \"");
   print_type_info(tp);
-  xfprintf (F, "\"");
+  fprintf (F, "\"");
   print_typespecific_info(tp);
-  xfprintf (F, "}\n");
+  fprintf (F, "}\n");
 }
 
 void dump_entity_node(entity *ent) {
-  xfprintf (F, "node: {title: \"");
+  fprintf (F, "node: {title: \"");
   PRINT_ENTID(ent);
-  xfprintf (F, "\"" DEFAULT_TYPE_ATTRIBUTE);
-  xfprintf (F, "label: ");
-  xfprintf (F, "\"ent %I\" " ENTITY_NODE_ATTR , get_entity_ident(ent));
+  fprintf (F, "\"" DEFAULT_TYPE_ATTRIBUTE);
+  fprintf (F, "label: ");
+  fprintf (F, "\"ent %s\" " ENTITY_NODE_ATTR , id_to_str(get_entity_ident(ent)));
   fprintf (F, "\n info1:\"\nallocation:  ");
   switch (get_entity_allocation(ent)) {
     case dynamic_allocated:   fprintf (F, "dynamic allocated");   break;
@@ -849,7 +803,7 @@ void dump_entity_node(entity *ent) {
     case inherited:   fprintf (F, "inherited");   break;
     case existent:    fprintf (F, "existent");    break;
   }
-  xfprintf(F, "\nname:    %I\nld_name: %I", get_entity_ident(ent), get_entity_ld_ident(ent));
+  fprintf(F, "\nname:    %s\nld_name: %s", id_to_str(get_entity_ident(ent)), id_to_str(get_entity_ld_ident(ent)));
   fprintf(F, "\noffset:  %d", get_entity_offset(ent));
   if (is_method_type(get_entity_type(ent))) {
     if (get_entity_irg(ent))   /* can be null */
@@ -1215,7 +1169,7 @@ dump_ir_block (ir_node *block, void *env) {
 #ifdef DEBUG_libfirm
     fprintf (F, "%ld", get_irn_node_nr(block));
 #else
-    xfprintf (F, "%I", block->op->name);
+    fprintf (F, "%s", id_to_str(block->op->name));
 #endif
     if (exc_normal != get_Block_exc (block))
       fprintf (F, " (%s)", exc_to_string (get_Block_exc (block)));
@@ -1296,7 +1250,7 @@ dump_block_to_cfg (ir_node *block, void *env) {
   if (get_irn_opcode(block) == iro_Block) {
     /* This is a block. Dump a node for the block. */
     fprintf (F, "node: {title:\""); PRINT_NODEID(block);
-    xfprintf (F, "\" label: \"%I ", block->op->name); PRINT_NODEID(block);
+    fprintf (F, "\" label: \"%s ", id_to_str(block->op->name)); PRINT_NODEID(block);
 
 	if (exc_normal != get_Block_exc (block))
 	  fprintf (F, " (%s)", exc_to_string (get_Block_exc (block)));
@@ -1534,7 +1488,7 @@ static void dump_cg_ir_block(ir_node * block, void * env) {
 #ifdef DEBUG_libfirm
   fprintf (F, "%ld", get_irn_node_nr(block));
 #else
-  xfprintf (F, "%I", block->op->name);
+  fprintf (F, "%s", id_to_str(block->op->name));
 #endif
   if (exc_normal != get_Block_exc(block)) {
     fprintf (F, " (%s)", exc_to_string (get_Block_exc(block)));
@@ -1559,8 +1513,8 @@ static void dump_cg_ir_block(ir_node * block, void * env) {
 static void d_cg_block_graph(ir_graph *irg, ir_node **arr, pmap *irgmap) {
   int i;
 
-  xfprintf(F, "graph: { title: \"%p\" label: \"%I\" status:clustered color:white \n",
-	   irg, get_entity_ident(get_irg_ent(irg)));
+  fprintf(F, "graph: { title: \"%p\" label: \"%s\" status:clustered color:white \n",
+	   irg, id_to_str(get_entity_ident(get_irg_ent(irg))));
 
   for (i = ARR_LEN(arr) - 1; i >= 0; --i) {
     ir_node * node = arr[i];
@@ -1667,8 +1621,8 @@ void dump_cg_graph(ir_graph * irg) {
     int i;
     ident * irg_ident = get_entity_ident(get_irg_ent(entry->key));
 
-    xfprintf(F, "graph: { title: \"%I\" label: \"%I\" status:clustered color:white \n",
-	     irg_ident, irg_ident);
+    fprintf(F, "graph: { title: \"%s\" label: \"%s\" status:clustered color:white \n",
+	     id_to_str(irg_ident), id_to_str(irg_ident));
 
     for (i = ARR_LEN(arr) - 1; i >= 0; --i) {
       ir_node * node = arr[i];
