@@ -25,12 +25,17 @@
 
 /** Applies local optimizations (see iropt.h) to all nodes reachable from node n.
  *
- * @param n The node to be optimized. */
+ * @param n The node to be optimized.
+ */
 void local_optimize_node(ir_node *n);
 
 /** Applies local optimizations (see iropt.h) to all nodes in the graph.
  *
- * @param irg  The graph to be optimized. */
+ * @param irg  The graph to be optimized.
+ *
+ * After appliying local_optimize_graph() to a IR-graph, Bad nodes
+ * only occure as predecessor of Block and Phi nodes.
+ */
 void local_optimize_graph (ir_graph *irg);
 
 /** Performs dead node elimination by copying the ir graph to a new obstack.
@@ -52,7 +57,8 @@ void local_optimize_graph (ir_graph *irg);
  *  Attention: the numbers assigned to nodes if the library is compiled for
  *  development/debugging are not conserved by copying.
  *
- * @param irg  The graph to be optimized. */
+ * @param irg  The graph to be optimized.
+ */
 void dead_node_elimination(ir_graph *irg);
 
 /**  Cleans the control flow from Bad predecesors.
@@ -88,7 +94,7 @@ void remove_bad_predecessors(ir_graph *irg);
  *  current and called graph.
  *  Assumes that both, the called and the calling graph are in state
  *  "op_pin_state_pinned".
- *  It is recommended to call local_optimize_graph after inlining as this
+ *  It is recommended to call local_optimize_graph() after inlining as this
  *  function leaves a set of obscure Tuple nodes, e.g. a Proj-Tuple-Jmp
  *  combination as control flow operation.
  *
@@ -97,12 +103,13 @@ void remove_bad_predecessors(ir_graph *irg);
  *
  *  @return zero if method could not be inlined (recursion for instance),
  *          non-zero if all went ok
-**/
+ */
 int inline_method(ir_node *call, ir_graph *called_graph);
 
 /** Inlines all small methods at call sites where the called address comes
- *  from a Const node that references the entity representing the called
+ *  from a SymConst node that references the entity representing the called
  *  method.
+ *
  *  The size argument is a rough measure for the code size of the method:
  *  Methods where the obstack containing the firm graph is smaller than
  *  size are inlined.  Further only a limited number of calls are inlined.
@@ -110,13 +117,14 @@ int inline_method(ir_node *call, ir_graph *called_graph);
  *  inlined.
  *  Inlining is only performed if flags `optimize' and `inlineing' are set.
  *  The graph may not be in state phase_building.
- *  It is recommended to call local_optimize_graph after inlining as this
+ *  It is recommended to call local_optimize_graph() after inlining as this
  *  function leaves a set of obscure Tuple nodes, e.g. a Proj-Tuple-Jmp
- *  combination as control flow operation.  */
+ *  combination as control flow operation.
+ */
 void inline_small_irgs(ir_graph *irg, int size);
 
 
-/** Inlineing with a different heuristic than inline_small_irgs.
+/** Inlineing with a different heuristic than inline_small_irgs().
  *
  *  Inlines leave functions.  If inlinening creates new leave
  *  function inlines these, too. (If g calls f, and f calls leave h,
@@ -136,46 +144,35 @@ void inline_small_irgs(ir_graph *irg, int size);
  */
 void inline_leave_functions(int maxsize, int leavesize, int size);
 
-/** Code Placement.  Pinns all floating nodes to a block where they
-   will be executed only if needed.   Depends on the flag opt_global_cse.
-   Graph may not be in phase_building.  Does not schedule control dead
-   code.  Uses dominator information which it computes if the irg is not
-   in state dom_consistent.  Destroys the out information as it moves nodes
-   to other blocks.  Optimizes Tuples in Control edges.
-   @todo This is not tested!
-
-   Call remove_critical_cf_edges() before place_code().  This normalizes
-   the control flow graph so that for all operations a basic block exists
-   where they can be optimally placed.
-
-   @todo A more powerful code placement would move operations past Phi nodes
-   out of loops.  */
+/** Code Placement.
+ *
+ * Pinns all floating nodes to a block where they
+ * will be executed only if needed.   Depends on the flag opt_global_cse.
+ * Graph may not be in phase_building.  Does not schedule control dead
+ * code.  Uses dominator information which it computes if the irg is not
+ * in state dom_consistent.  Destroys the out information as it moves nodes
+ * to other blocks.  Optimizes Tuples in Control edges.
+ * @todo This is not tested!
+ *
+ * Call remove_critical_cf_edges() before place_code().  This normalizes
+ * the control flow graph so that for all operations a basic block exists
+ * where they can be optimally placed.
+ *
+ * @todo A more powerful code placement would move operations past Phi nodes
+ * out of loops.
+ */
 void place_code(ir_graph *irg);
 
-/** Control flow optimization.
- * Removes empty blocks doing if simplifications and loop simplifications.
- * A block is empty if it contains only a Jmp node and Phi nodes.
- * Merges single entry single exit blocks with their predecessor
- * and propagates dead control flow by calling equivalent_node.
- * Independent of compiler flag it removes Tuples from cf edges,
- * Bad predecessors form blocks and unnecessary predecessors of End.
- *
- * @bug So far destroys backedge information.
- * @bug Chokes on Id nodes if called in a certain order with other
- *      optimizations.  Call local_optimize_graph before to remove
- *      Ids.
- */
-void optimize_cf(ir_graph *irg);
-
-
 /** Places an empty basic block on critical control flow edges thereby
-   removing them.
-   A critical control flow edge is an edge from a block with several
-   control exits to a block with several control entries (See Muchnic
-   p. 407).
-   Is only executed if flag set_opt_critical_edges() is set.
-   @param irg IR Graph
-*/
+ * removing them.
+ *
+ * A critical control flow edge is an edge from a block with several
+ * control exits to a block with several control entries (See Muchnic
+ * p. 407).
+ * Is only executed if flag set_opt_critical_edges() is set.
+ *
+ * @param irg IR Graph
+ */
 void remove_critical_cf_edges(ir_graph *irg);
 
 # endif /* _IRGOPT_H_ */
