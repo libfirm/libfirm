@@ -835,7 +835,7 @@ INLINE type  *new_type_union (ident *name) {
   return res;
 }
 type  *new_d_type_union (ident *name, dbg_info* db) {
-  type *res = new_type_uni (name);
+  type *res = new_type_union (name);
   set_type_dbg_info(res, db);
   return res;
 }
