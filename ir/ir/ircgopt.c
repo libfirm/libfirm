@@ -89,7 +89,7 @@ void gc_irgs(int n_keep, entity ** keep_arr) {
         get_irg_loopinfo_state(irg) == loopinfo_ip_inconsistent) {
       free_loop_information(irg);
     }
-    if (get_entity_link(ent) != MARK) {
+    if ((get_entity_visibility(ent) == visibility_local) && (get_entity_link(ent) != MARK)) {
       remove_irp_irg(irg);
       set_entity_peculiarity(ent, peculiarity_description);
       if (get_opt_dead_method_elimination_verbose()) {
