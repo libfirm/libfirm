@@ -1347,7 +1347,7 @@ static void dump_cg_ir_block(ir_node * block, void * env) {
 #ifdef DEBUG_libfirm
   fprintf (F, "%ld", get_irn_node_nr(block));
 #else
-  fprintf (F, "%s", get_op_name(get_irn_op(block));
+  fprintf (F, "%s", get_op_name(get_irn_op(block)));
 #endif
   if (exc_normal != get_Block_exc(block)) {
     fprintf (F, " (%s)", exc_to_string (get_Block_exc(block)));
