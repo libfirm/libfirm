@@ -229,7 +229,7 @@ static type *find_type_for_node(ir_node *n) {
       VERBOSE_UNKNOWN_TYPE(("Phi %ld with two different types: %s, %s: unknown type.\n", get_irn_node_nr(n),
 			    get_type_name(tp1), get_type_name(tp2)));
     }
-    tp = firm_unknown_type;
+    tp = firm_unknown_type;   /* Test for supertypes? */
   } break;
   case iro_Load: {
     ir_node *a = get_Load_ptr(n);
@@ -257,21 +257,21 @@ static type *find_type_for_node(ir_node *n) {
   /* catch special cases with fallthrough to binop/unop cases in default. */
   case iro_Sub: {
     if (mode_is_int(get_irn_mode(n))       &&
-	      mode_is_reference(get_irn_mode(a)) &&
-	      mode_is_reference(get_irn_mode(b))   ) {
+	mode_is_reference(get_irn_mode(a)) &&
+	mode_is_reference(get_irn_mode(b))   ) {
       VERBOSE_UNKNOWN_TYPE(("Sub %ld ptr - ptr = int: unknown type\n", get_irn_node_nr(n)));
       tp =  firm_unknown_type; break;
     }
   } /* fall through to Add. */
   case iro_Add: {
     if (mode_is_reference(get_irn_mode(n)) &&
-	      mode_is_reference(get_irn_mode(a)) &&
-	      mode_is_int(get_irn_mode(b))         ) {
+	mode_is_reference(get_irn_mode(a)) &&
+	mode_is_int(get_irn_mode(b))         ) {
       tp = tp1; break;
     }
     if (mode_is_reference(get_irn_mode(n)) &&
-    mode_is_int(get_irn_mode(a))       &&
-    mode_is_reference(get_irn_mode(b))    ) {
+	mode_is_int(get_irn_mode(a))       &&
+	mode_is_reference(get_irn_mode(b))    ) {
       tp = tp2; break;
     }
     goto default_code;
@@ -282,6 +282,16 @@ static type *find_type_for_node(ir_node *n) {
       tp = firm_unknown_type; break;
     }
     goto default_code;
+  } break;
+  case iro_Mux: {
+    a = get_Mux_true(n);
+    b = get_Mux_false(n);
+    tp1 = compute_irn_type(a);
+    tp2 = compute_irn_type(b);
+    if (tp1 == tp2)
+      tp = tp1;
+    else
+      tp = firm_unknown_type;
   } break;
 
   default:
