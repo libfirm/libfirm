@@ -76,11 +76,11 @@
 #define SEGMENT_SIZE		(1 << SEGMENT_SIZE_SHIFT)
 #define DIRECTORY_SIZE_SHIFT	8
 #define DIRECTORY_SIZE		(1 << DIRECTORY_SIZE_SHIFT)
-#define MAX_LOAD_FACTOR	4
+#define MAX_LOAD_FACTOR		4
 
 
 typedef struct element {
-  struct element *chain;
+  struct element *chain;	/* for chaining Elements */
   MANGLEP (entry) entry;
 } Element, *Segment;
 
@@ -95,9 +95,9 @@ struct SET {
   int iter_i, iter_j;
   Element *iter_tail;		/* non-NULL while iterating over elts */
 #ifdef PSET
-  Element *free_list;
+  Element *free_list;		/* list of free Elements */
 #endif
-  struct obstack obst;
+  struct obstack obst;		/* obstack for allocation all data */
 #ifdef STATS
   int naccess, ncollision, ndups;
   int max_chain_len;
@@ -223,7 +223,10 @@ PMANGLE(del) (SET *table)
   xfree (table);
 }
 
-
+/*
+ * do one iteration step, return 1
+ * if still data in the set, 0 else
+ */
 static INLINE int
 iter_step (SET *table)
 {
@@ -237,7 +240,9 @@ iter_step (SET *table)
   return 1;
 }
 
-
+/*
+ * finds the first entry in the table
+ */
 void *
 MANGLEP(first) (SET *table)
 {
@@ -252,13 +257,18 @@ MANGLEP(first) (SET *table)
   return table->iter_tail->entry.dptr;
 }
 
-
+/*
+ * returns next entry in the table
+ */
 void *
 MANGLEP(next) (SET *table)
 {
   assert (table->iter_tail);
+
+  /* follow collision chain */
   table->iter_tail = table->iter_tail->chain;
   if (!table->iter_tail) {
+    /* go to next segment */
     do {
       if (!iter_step (table)) return NULL;
     } while (!table->dir[table->iter_i][table->iter_j]);
@@ -275,19 +285,24 @@ MANGLEP(break) (SET *table)
   table->iter_tail = NULL;
 }
 
-
+/*
+ * limit the hash value
+ */
 static INLINE unsigned
 Hash (SET *table, unsigned h)
 {
   unsigned address;
 
-  address = h & (table->maxp - 1);
+  address = h & (table->maxp - 1);          /* h % table->maxp */
   if (address < (unsigned)table->p)
     address = h & ((table->maxp << 1) - 1); /* h % (2*table->maxp) */
   return address;
 }
 
-
+/*
+ * returns non-zero if the number of elements in
+ * the set is greater then number of segments * MAX_LOAD_FACTOR
+ */
 static INLINE int
 loaded (SET *table)
 {
@@ -295,7 +310,14 @@ loaded (SET *table)
 	  > (table->nseg << SEGMENT_SIZE_SHIFT) * MAX_LOAD_FACTOR);
 }
 
-
+/*
+ * expand the hash-table: the algorithm is split, so on every
+ * insert, only ONE segment is rehashed!
+ *
+ * table->p contains the current segment to split
+ * after all segments were split, table->p is set to zero and
+ * table->maxp is duplicated.
+ */
 static void
 expand_table (SET *table)
 {
@@ -310,18 +332,19 @@ expand_table (SET *table)
 
   if (table->maxp + table->p < (DIRECTORY_SIZE << SEGMENT_SIZE_SHIFT)) {
     /* Locate the bucket to be split */
-    OldSegmentDir = table->p >> SEGMENT_SIZE_SHIFT;
-    OldSegment = table->dir[OldSegmentDir];
+    OldSegmentDir   = table->p >> SEGMENT_SIZE_SHIFT;
+    OldSegment      = table->dir[OldSegmentDir];
     OldSegmentIndex = table->p & (SEGMENT_SIZE-1);
 
     /* Expand address space; if necessary create a new segment */
-    NewAddress = table->maxp + table->p;
-    NewSegmentDir = NewAddress >> SEGMENT_SIZE_SHIFT;
+    NewAddress      = table->maxp + table->p;
+    NewSegmentDir   = NewAddress >> SEGMENT_SIZE_SHIFT;
     NewSegmentIndex = NewAddress & (SEGMENT_SIZE-1);
     if (NewSegmentIndex == 0) {
       table->dir[NewSegmentDir] =
 	(Segment *)obstack_alloc (&table->obst,
 				  sizeof(Segment) * SEGMENT_SIZE);
+      memset(table->dir[NewSegmentDir], 0, sizeof(Segment) * SEGMENT_SIZE);
     }
     NewSegment = table->dir[NewSegmentDir];
 
@@ -342,9 +365,9 @@ expand_table (SET *table)
       if (Hash (table, Current->entry.hash) == NewAddress) {
 	/* move to new chain */
 	*LastOfNew = Current;
-	*Previous = Current->chain;
-	LastOfNew = &Current->chain;
-	Current = Current->chain;
+	*Previous  = Current->chain;
+	LastOfNew  = &Current->chain;
+	Current    = Current->chain;
 	*LastOfNew = NULL;
       } else {
 	/* leave on old chain */
@@ -382,7 +405,7 @@ MANGLE(_,_search) (SET *table,
 
   /* Find collision chain */
   h = Hash (table, hash);
-  SegmentIndex = h & (SEGMENT_SIZE-1);
+  SegmentIndex   = h & (SEGMENT_SIZE-1);
   CurrentSegment = table->dir[h >> SEGMENT_SIZE_SHIFT];
   assert (CurrentSegment != NULL);
   q = CurrentSegment[SegmentIndex];
