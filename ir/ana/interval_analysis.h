@@ -11,20 +11,20 @@
  */
 
 /**
-* @file interval_analysis.h
-*
-*  Decompost control flow graph into acylic, hierarchic intervals.
-*
-*  @author Goetz Lindenmaier
-*
-*  The analysis is based on the control flow looptree.  An intervall are basically
-*  all nodes in a single ir_loop entry, i.e., basic blocks and inner loop nodes.
-*  The analysis computes a new set of edges that link all nodes of a loop to an
-*  acyclic graph.
-*
-*
-*
-*/
+ * @file interval_analysis.h
+ *
+ *  Decompost control flow graph into acylic, hierarchic intervals.
+ *
+ *  @author Goetz Lindenmaier
+ *
+ *  The analysis is based on the control flow looptree.  An intervall are basically
+ *  all nodes in a single ir_loop entry, i.e., basic blocks and inner loop nodes.
+ *  The analysis computes a new set of edges that link all nodes of a loop to an
+ *  acyclic graph.
+ *
+ *
+ *
+ */
 
 #ifndef _INTERVAL_ANALYSIS_H_
 #define _INTERVAL_ANALYSIS_H_
@@ -46,7 +46,7 @@ void  add_region_in   (void *region, void *in);
  *
  *  This number is useful for evaluation of execution frequencies.
  */
-int   get_region_n_outs(void *region);
+int get_region_n_outs(void *region);
 int get_region_n_exc_outs(void *region);
 
 /** The control flow operation corresponding to the loop-region in at
@@ -55,15 +55,15 @@ int get_region_n_exc_outs(void *region);
 void *get_loop_cfop(void *region, int pos);
 
 
-
-
 /** The algorithm to construct the interval graph.
+ *
+ *  Constructs the cf loop tree and leaves a valid version of it.
  *
  *  @todo: @@@ add flag that states correctness of interval analysis information
  *  to irg.
  **/
-
 void construct_intervals(ir_graph *irg);
+
 
 /** frees interval information of all graphs. */
 void free_intervals(void);

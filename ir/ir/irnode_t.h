@@ -136,16 +136,10 @@ typedef struct {
 /** EndReg/EndExcept attributes */
 typedef struct {
   char dummy;
-  /*   ir_graph * irg; */           /**< ir_graph this node belongs to (for */
-  /*                               * navigating in interprocedural graphs)  */
-  /*                       @@@ now in block */
 } end_attr;
 
 /** CallBegin attributes */
 typedef struct {
-  /*   ir_graph * irg; */           /**< ir_graph this node belongs to (for */
-  /*                   * navigating in interprocedural graphs) */
-  /*                            @@@ now in block */
   ir_node * call;            /**< associated Call-operation */
 } callbegin_attr;
 
@@ -193,8 +187,8 @@ typedef union {
                    node takes the role of the obsolete Phi0 node,
                    therefore the name. */
   int *phi_backedge;    /**< For Phi after construction.
-               Field n set to true if pred n is backedge.
-               @todo Ev. replace by bitfield! */
+			   Field n set to true if pred n is backedge.
+			   @todo Ev. replace by bitfield! */
   long           proj;  /**< For Proj: contains the result position to project */
   confirm_attr   confirm_cmp;   /**< For Confirm: compare operation */
   filter_attr    filter;    /**< For Filter */
@@ -472,7 +466,7 @@ __set_irn_link(ir_node *node, void *link) {
  */
 static INLINE void *
 __get_irn_link(const ir_node *node) {
-  assert (node);
+  assert (node && is_ir_node(node));
   return node->link;
 }
 
@@ -482,6 +476,7 @@ __get_irn_link(const ir_node *node) {
  */
 static INLINE op_pin_state
 __get_irn_pinned(const ir_node *node) {
+  assert(node && is_ir_node(node));
   op_pin_state state = __get_op_pinned(__get_irn_op(node));
   if (state >= op_pin_state_exc_pinned)
     return get_opt_fragile_ops() ? node->attr.except.pin_state : op_pin_state_pinned;
@@ -490,11 +485,13 @@ __get_irn_pinned(const ir_node *node) {
 
 static INLINE int
 __is_unop(const ir_node *node) {
+  assert(node && is_ir_node(node));
   return (node->op->opar == oparity_unary);
 }
 
 static INLINE int
 __is_binop(const ir_node *node) {
+  assert(node && is_ir_node(node));
   return (node->op->opar == oparity_binary);
 }
 
@@ -506,13 +503,13 @@ __is_Bad(const ir_node *node) {
 
 static INLINE int
 __is_no_Block(const ir_node *node) {
-  assert(node);
+  assert(node && is_ir_node(node));
   return (__get_irn_op(node) != op_Block);
 }
 
 static INLINE int
 __is_Block(const ir_node *node) {
-  assert(node);
+  assert(node && is_ir_node(node));
   return (__get_irn_op(node) == op_Block);
 }
 

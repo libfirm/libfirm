@@ -120,8 +120,8 @@ int           get_irn_inter_arity   (const ir_node *node);
    Assumes that current_ir_graph is set to the graph containing "node".
    "in" must contain all predecessors except the block that are required for
    the nodes opcode. */
-void          set_irn_in            (ir_node *node, int arity,
-                        ir_node *in[]);
+void          set_irn_in            (ir_node *node, int arity, ir_node *in[]);
+
 /* to iterate through the predecessors without touching the array. No
    order of predecessors guaranteed.
    To iterate over the operands iterate from 0 to i < get_irn_arity(),
@@ -893,7 +893,7 @@ int is_cfop(const ir_node *node);
 int is_ip_cfop(const ir_node *node);
 /** Returns true if the operation can change the control flow because
     of an exception: Call, Quot, DivMod, Div, Mod, Load, Store, Alloc,
-    Bad. */
+    Bad. Raise is not fragile, but a unconditional jump. */
 int is_fragile_op(const ir_node *node);
 /** Returns the memory operand of fragile operations. */
 ir_node *get_fragile_op_mem(ir_node *node);

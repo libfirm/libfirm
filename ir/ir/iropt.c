@@ -2115,6 +2115,7 @@ gigo (ir_node *node)
      and replacing the control flow by Bad. */
   if (get_irn_mode(node) == mode_X) {
     ir_node *block = get_nodes_block(node);
+    if (!get_Block_matured(block)) return node;  /* Don't optimize nodes in immature blocks. */
     if (op == op_End) return node;     /* Don't optimize End, may have Bads. */
 
     if (get_irn_op(block) == op_Block && get_Block_matured(block)) {

@@ -207,9 +207,10 @@ static INLINE void new_backedge_info(ir_node *n) {
  *
  * @param n    The node to be copied
  * @param env  if non-NULL, the node number attribute will be copied to the new node
+ *
+ * Note: Also used for loop unrolling.
  */
-static void
-copy_node (ir_node *n, void *env) {
+void copy_node (ir_node *n, void *env) {
   ir_node *nn, *block;
   int new_arity;
   opcode op = get_irn_opcode(n);

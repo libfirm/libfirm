@@ -306,7 +306,6 @@ void construct_intervals(ir_graph *irg) {
 
   construct_cf_backedges(current_ir_graph);
 
-
   l = get_irg_loop(current_ir_graph);
 
   construct_interval_edges(l);

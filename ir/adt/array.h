@@ -134,7 +134,7 @@
 
 /**
  * Create an automatic array which will be deleted at return from function.
- * Beware, the data will be allocated un the functions stack!
+ * Beware, the data will be allocated on the function stack!
  *
  * @param type     The element type of the new array.
  * @param var      A lvalue of type (type *) which will hold the new array.

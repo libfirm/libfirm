@@ -16,7 +16,7 @@
 /**
  * "eset" is a set of addresses. The addresses are used for element
  * compare and hash calculation.
- * The value "NULL" could not be stored, as it is used as internal sentinel.
+ * The value "NULL" can not be stored, as it is used as internal sentinel.
  */
 typedef struct eset eset;
 
@@ -24,7 +24,7 @@ typedef struct eset eset;
 eset *eset_create(void);
 
 /**
- * Creates a copy of the given set. Did NOT work if NULL is contained in source. */
+ * Creates a copy of the given set. Does NOT work if NULL is contained in source. */
 eset *eset_copy(eset *source);
 
 /** Deletes a set. */

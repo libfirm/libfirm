@@ -15,13 +15,13 @@ srcdir = @srcdir@
 topdir = ../..
 subdir := ir/common
 
-INSTALL_HEADERS := firm_common.h firm.h firmwalk.h statistics.h old_fctnames.h debug.h
+INSTALL_HEADERS := firm_common.h firm.h firmwalk.h statistics.h debug.h
 
 SOURCES = $(INSTALL_HEADERS)
 
 SOURCES += Makefile.in 						\
 	panic.c firm_common.c firm.c firmwalk.c 		\
-	panic.h firm_common_t.h	statistics.c debug.c
+	panic.h firm_common_t.h	statistics.c debug.c old_fctnames.h
 
 include $(topdir)/MakeRules
 

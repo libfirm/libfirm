@@ -14,8 +14,8 @@
 
 #include "firm_config.h"
 
-#define _FIRM_FNV_OFFSET_BASIS 2166136261
-#define _FIRM_FNV_FNV_PRIME 16777619
+#define _FIRM_FNV_OFFSET_BASIS 2166136261U
+#define _FIRM_FNV_FNV_PRIME 16777619U
 
 static INLINE unsigned firm_fnv_hash(const unsigned char *data, unsigned bytes)
 {

@@ -47,6 +47,7 @@ void turn_into_tuple (ir_node *node, int arity);
   * Further it collects all Proj nodes in a list of the node producing
   * the tuple. In case of nested tuples the Projs are collected in the
   * node producing the outermost Tuple.
+  * All other link fields are cleared afterwards.
   */
 void collect_phiprojs(ir_graph *irg);
 
