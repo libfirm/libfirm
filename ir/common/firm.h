@@ -82,6 +82,7 @@ extern "C" {
 
 # include "irflag.h"     /* optimization flags */
 # include "irgopt.h"     /* optimize ir */
+# include "tailrec.h"    /* optimize tail-recursion calls */
 # include "ircgopt.h"    /* Optimizations based on interprocedural graph */
 
 # include "irdom.h"      /* Dominator analysis */
