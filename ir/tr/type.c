@@ -252,8 +252,13 @@ void (set_type_ident)(type *tp, ident* id) {
 }
 
 /* Outputs a unique number for this node */
-long (get_type_nr)(const type *tp) {
-  return __get_type_nr(tp);
+long get_type_nr(const type *tp) {
+  assert(tp);
+#ifdef DEBUG_libfirm
+  return tp->nr;
+#else
+  return (long)tp;
+#endif
 }
 
 const char* get_type_name(const type *tp) {

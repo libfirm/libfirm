@@ -236,16 +236,6 @@ __set_type_ident(type *tp, ident* id) {
   tp->name = id;
 }
 
-static INLINE long
-__get_type_nr(const type *tp) {
-  assert(tp);
-#ifdef DEBUG_libfirm
-  return tp->nr;
-#else
-  return (long)tp;
-#endif
-}
-
 static INLINE int
 __get_type_size_bits(const type *tp) {
   assert(tp && tp->kind == k_type);
@@ -387,7 +377,6 @@ __is_atomic_type(const type *tp) {
 #define get_type_mode(tp)                 __get_type_mode(tp)
 #define get_type_ident(tp)                __get_type_ident(tp)
 #define set_type_ident(tp, id)            __set_type_ident(tp, id)
-#define get_type_nr(tp)                   __get_type_nr(tp)
 #define get_type_size(tp)                 __get_type_size(tp)
 #define get_type_state(tp)                __get_type_state(tp)
 #define get_type_visited(tp)              __get_type_visited(tp)
