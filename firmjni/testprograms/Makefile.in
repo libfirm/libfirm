@@ -13,7 +13,7 @@ subdir = testprograms
 SOURCEPATH = @top_srcdir@/firmjni/testprograms/
 
 SOURCES := Makefile.in \
-	Empty.java
+	Empty.java IfElseExample.java
 
 MYCLASSPATH = $(CLASSPATH):../..
 
@@ -23,15 +23,18 @@ LD_LIBRARY_PATH += $srcdir/firmjni
 %.class: $(top_srcdir)/firmjni/testprograms/%.java
 	javac -d . $<
 
-all: 	empty
+all: 	empty ifelseexample
 
 # bad hack ;-(
 empty:
 	javac -classpath $(MYCLASSPATH) -d . $(SOURCEPATH)Empty.java
 
+ifelseexample:
+	javac -classpath $(MYCLASSPATH) -d . $(SOURCEPATH)IfElseExample.java
 
-run:	empty
+run:	empty ifelseexample
 	java -cp $(MYCLASSPATH) -Djava.library.path=$(topdir) Empty
+	java -cp $(MYCLASSPATH) -Djava.library.path=$(topdir) IfElseExample
 
 clean:
 	-rm *.class

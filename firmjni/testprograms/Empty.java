@@ -39,7 +39,7 @@ class Empty {
 	int owner = Irprog.getGlobType();
 
 	/* The type of the method */
-	int name = Ident.idFromStr("main", 4);
+	int name = Ident.idFromStr("EMPTY_main", 10);
 	int proc_main = Type.newTypeMethod(name, 0, 0);
 	/* An entity representing the method.  Owner of the entity is the global
 	   class type mentioned above. */
