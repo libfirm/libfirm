@@ -105,13 +105,15 @@ xvgprintf (xgprintf_func *out, void *arg, const char *fmt, va_list args)
     width = 0;
     if (*fmt == '*') {
       ++fmt, width = va_arg(args, int);
-      if (width < 0) left = 1, width = -width;
-    } else while (isdigit(*fmt)) width = 10*width + *fmt++ - '0';
+      if (width < 0) {left = 1; width = -width;}
+    } else
+	  while (isdigit(*fmt))
+		width = 10*width + *fmt++ - '0';
 
     /* get the prec */
     if (*fmt == '.') {
       ++fmt;
-      if (*fmt == '*') ++fmt, prec = va_arg(args, int);
+      if (*fmt == '*') {++fmt; prec = va_arg(args, int);}
       else { prec = 0; while (isdigit(*fmt)) prec = 10*prec + *fmt++ - '0'; }
       if (prec < 0) prec = 0;
     } else prec = -1;		/* -1 == unspecified */
@@ -245,6 +247,7 @@ xvgprintf (xgprintf_func *out, void *arg, const char *fmt, va_list args)
 		{
 		  static const char conv_TABLE[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 		  static const char conv_table[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+
 		  const char *conv = fc=='X' ? conv_TABLE : conv_table;
 		  str = buf+BUFSIZE;	/* str = _itoa(buf+BUFSIZE,num,base,fc=='X') */
 		  if (!num) *--str = '0';
