@@ -105,7 +105,7 @@ struct SET {
 
 #ifdef STATS
 
-void
+static void
 MANGLEP(stats) (SET *table)
 {
   int nfree = 0;
@@ -140,7 +140,7 @@ stat_chain_len (SET *table, int chain_len)
 const char *MANGLEP(tag);
 
 
-void
+static void
 MANGLEP(describe) (SET *table)
 {
   int i, j, collide;
@@ -208,7 +208,7 @@ SET *
 }
 
 
-void
+static void
 PMANGLE(del) (SET *table)
 {
 #ifdef DEBUG
@@ -233,7 +233,7 @@ iter_step (SET *table)
 }
 
 
-void *
+static void *
 MANGLEP(first) (SET *table)
 {
   assert (!table->iter_tail);
@@ -248,7 +248,7 @@ MANGLEP(first) (SET *table)
 }
 
 
-void *
+static void *
 MANGLEP(next) (SET *table)
 {
   assert (table->iter_tail);
@@ -263,7 +263,7 @@ MANGLEP(next) (SET *table)
   return table->iter_tail->entry.dptr;
 }
 
-void
+static void
 MANGLEP(break) (SET *table)
 {
   assert (table->iter_tail);
