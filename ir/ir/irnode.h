@@ -902,6 +902,10 @@ int is_fragile_op(ir_node *node);
 /** Returns the memory operand of fragile operations. */
 ir_node *get_fragile_op_mem(ir_node *node);
 
+/** Returns true if the operation is a forking control flow
+ *  operation: Cond. */
+int is_forking_op(ir_node *node);
+
 /*-----------------------------------------------------------------*/
 /** Debug aides                                                   **/
 /*-----------------------------------------------------------------*/

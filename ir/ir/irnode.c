@@ -2070,6 +2070,12 @@ ir_node *get_fragile_op_mem(ir_node *node) {
   }
 }
 
+/* Returns true if the operation is a forking control flow operation. */
+int
+is_forking_op(ir_node *node) {
+  return is_op_forking(get_irn_op(node));
+}
+
 #ifdef DEBUG_libfirm
 void dump_irn (ir_node *n) {
   int i, arity = get_irn_arity(n);
