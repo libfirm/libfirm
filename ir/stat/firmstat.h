@@ -64,7 +64,12 @@ void stat_turn_into_id(const ir_node *node);
 /**
  * A new graph was created
  */
-void stat_new_graph(const ir_graph *irg);
+void stat_new_graph(const ir_graph *irg, entity *ent);
+
+/**
+ * A graph was deleted
+ */
+void stat_free_graph(const ir_graph *irg);
 
 /**
  * A walk over a graph is initiated
@@ -97,7 +102,8 @@ void stat_lower(ir_node *node);
 #define stat_free_ir_op(op)
 #define stat_new_node(node)
 #define stat_turn_into_id(node)
-#define stat_new_graph(irg)
+#define stat_new_graph(irg, ent)
+#define stat_free_graph(irg)
 #define stat_irg_walk(irg, pre, post)
 #define stat_irg_block_walk(irg, node, pre, post)
 #define stat_merge_nodes(new_node_array, new_num_entries, old_node_array, old_num_entries, opt)

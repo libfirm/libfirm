@@ -31,6 +31,8 @@
 #define obstack_chunk_free	free
 #include <obstack.h>
 
+#ifdef FIRM_STATISTICS
+
 /*
  * 64 bit should be enough for now
  */
@@ -56,8 +58,10 @@ typedef struct _graph_entry_t {
   pset           *opcode_hash;			/**< hash map containing the opcode counter */
   counter_t      walked;			/**< walker walked over the graph */
   counter_t      walked_blocks;			/**< walker walked over the graph blocks */
-  const ir_graph *irg;				/**< the graph of this object */
   pset           *opt_hash[STAT_OPT_MAX];	/**< hash maps containing opcode counter for optimizations */
+  const ir_graph *irg;				/**< the graph of this object */
+  entity         *ent;				/**< the entity of this graph if one exists */
+  int            deleted;			/**< set if this irg was deleted */
 } graph_entry_t;
 
 /**
@@ -240,18 +244,6 @@ static opt_entry_t *opt_get_entry(const ir_op *op, pset *set)
 
 /* ---------------------------------------------------------------------- */
 
-/* A new IR op is registered. */
-void stat_new_ir_op(const ir_op *op)
-{
-  /* execute for side effect :-) */
-  opcode_get_entry(op, status->opcode_hash);
-}
-
-/* An IR op is freed. */
-void stat_free_ir_op(const ir_op *op)
-{
-}
-
 /* initialize the statistics module. */
 void stat_init(void)
 {
@@ -263,6 +255,18 @@ void stat_init(void)
 
   status->f           = fopen("firmstat.txt", "w");
   status->op_Phi0     = NULL;
+}
+
+/* A new IR op is registered. */
+void stat_new_ir_op(const ir_op *op)
+{
+  /* execute for side effect :-) */
+  opcode_get_entry(op, status->opcode_hash);
+}
+
+/* An IR op is freed. */
+void stat_free_ir_op(const ir_op *op)
+{
 }
 
 /* A new node is created. */
@@ -322,10 +326,23 @@ void stat_turn_into_id(const ir_node *node)
 }
 
 /* A new graph was created */
-void stat_new_graph(const ir_graph *irg)
+void stat_new_graph(const ir_graph *irg, entity *ent)
 {
   /* execute for side effect :-) */
-  graph_get_entry(irg, status->irg_hash);
+  graph_entry_t * graph = graph_get_entry(irg, status->irg_hash);
+
+  graph->ent     = ent;
+  graph->deleted = 0;
+}
+
+/*
+ * A graph was deleted
+ */
+void stat_free_graph(const ir_graph *irg)
+{
+  graph_entry_t * graph = graph_get_entry(irg, status->irg_hash);
+
+  graph->deleted = 1;
 }
 
 /*
@@ -450,7 +467,7 @@ void stat_finish(void)
   dump_opcode_hash(status->opcode_hash);
 
   for (entry = pset_first(status->irg_hash); entry; entry = pset_next(status->irg_hash)) {
-    entity *ent = entry->irg->ent;
+    entity *ent = entry->ent;
 
     if (entry->irg == const_irg) {
       fprintf(status->f, "\nConst code Irg %p", entry->irg);
@@ -462,7 +479,9 @@ void stat_finish(void)
 	fprintf(status->f, "\nIrg %p", entry->irg);
     }
 
-    fprintf(status->f, " walked %d over blocks %d:\n", entry->walked.cnt[0], entry->walked_blocks.cnt[0]);
+    fprintf(status->f, " %swalked %d over blocks %d:\n",
+	entry->deleted ? "DELETED " : "",
+	entry->walked.cnt[0], entry->walked_blocks.cnt[0]);
 
     dump_opcode_hash(entry->opcode_hash);
 
@@ -473,3 +492,34 @@ void stat_finish(void)
 
   fclose(status->f);
 }
+
+#else
+
+void stat_init(void) {}
+
+void stat_finish(void) {}
+
+void stat_new_ir_op(const ir_op *op) {}
+
+void stat_free_ir_op(const ir_op *op) {}
+
+void stat_new_node(const ir_node *node) {}
+
+void stat_turn_into_id(const ir_node *node) {}
+
+void stat_new_graph(const ir_graph *irg, entity *ent) {}
+
+void stat_free_graph(const ir_graph *irg) {}
+
+void stat_irg_walk(const ir_graph *irg, void *pre, void *post) {}
+
+void stat_irg_block_walk(const ir_graph *irg, const ir_node *node, void *pre, void *post) {}
+
+void stat_merge_nodes(
+    ir_node **new_node_array, int new_num_entries,
+    ir_node **old_node_array, int old_num_entries,
+    stat_opt_kind opt) {}
+
+void stat_lower(ir_node *node) {}
+
+#endif
