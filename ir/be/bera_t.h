@@ -8,22 +8,34 @@
 #define _BERA_H
 
 #include "firm_config.h"
+#include "bitset.h"
+
+#define DBG_BERA "firm.be.ra"
+
+typedef struct _ra_node_info_t {
+	int pressure;							/**< Register pressure at this node. */
+	int color;								/**< The color assigned to this node. */
+} ra_node_info_t;
+
+typedef struct _ra_block_info_t {
+	bitset_t *used_colors;		/**< A bitmask containing all colors used in the block. */
+} ra_block_info_t;
 
 /**
  * Register allocation data for a node.
  */
 typedef struct _ra_info_t {
-	int pressure;							/**< Register pressure at this node. */
-	int color;								/**< The color assigned to this node. */
-	int sim_live_phi_n;				/**< The number of simulatenously live phi operand.
-															This is only used if the ir node occurs as an
-															operand to a phi function. */
-	int *sim_live_phi;				/**< The array of simultaneously live nodes. Same restrictions
-															like @c sim_live_phi hold here. */
+	union {
+		ra_node_info_t node;
+		ra_block_info_t block;
+	} v;
 } ra_info_t;
 
-#define get_irn_ra_info(irn) get_irn_data(irn, ra_info_t, ra_irn_data_offset)
+#define get_ra_irn_info(irn) get_irn_data(irn, ra_info_t, ra_irn_data_offset)
 #define get_ra_info_irn(inf) get_irn_data_base(inf, ra_irn_data_offset)
+
+#define get_ra_node_info(the_node) 		(&get_ra_irn_info(the_node)->v.node)
+#define get_ra_block_info(the_block) 	(&get_ra_irn_info(the_block)->v.block)
 
 extern size_t ra_irn_data_offset;
 
@@ -52,16 +64,19 @@ void be_ra_init(void);
 
 static INLINE int __get_irn_color(const ir_node *irn)
 {
-	return get_irn_ra_info(irn)->color;
+	assert(!is_Block(irn) && "No block allowed here");
+	return get_ra_node_info(irn)->color;
 }
 
 static INLINE void __set_irn_color(const ir_node *irn, int color)
 {
-	get_irn_ra_info(irn)->color = color;
+	assert(!is_Block(irn) && "No block allowed here");
+	get_ra_node_info(irn)->color = color;
 }
 
 static INLINE int __is_allocatable_irn(const ir_node *irn)
 {
+	assert(!is_Block(irn) && "No block allowed here");
 	return mode_is_datab(get_irn_mode(irn));
 }
 
