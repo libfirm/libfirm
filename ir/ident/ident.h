@@ -22,7 +22,6 @@
  *   ident -- identifiers in the firm library
  * NOTES
  *  Identifiers are used in the firm library. This is the interface to it.
- *  @@@ we need comparison of the prefis of two idents! (strncmp);
  ******
  */
 
