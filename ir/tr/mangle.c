@@ -12,10 +12,7 @@
 #endif
 
 # include "mangle.h"
-# include <obstack.h>
 # include "obst.h"
-# include <stdlib.h>
-# include <stdio.h>
 # include "misc.h"
 
 /* Make types visible to allow most efficient access */
@@ -34,7 +31,9 @@ mangle_entity (entity *ent)
   ident *res;
 
   type_id = mangle_type ((type *) ent->owner);
-  obstack_printf (&mangle_obst, "%s_%s", id_to_str(type_id), id_to_str(ent->name));
+  obstack_grow(&mangle_obst, id_to_str(type_id), id_to_strlen(type_id));
+  obstack_1grow(&mangle_obst,'_');
+  obstack_grow(&mangle_obst,id_to_str(ent->name),id_to_strlen(ent->name));
   len = obstack_object_size (&mangle_obst);
   cp = obstack_finish (&mangle_obst);
   res = id_from_str(cp, len);
@@ -45,19 +44,8 @@ mangle_entity (entity *ent)
 ident *
 mangle_type (type *tp)
 {
-  char *cp;
-  int len;
-  ident *res;
-
   assert (tp->kind == k_type);
-  /* assert (tp->type_op->code == tpo_class); */
-
-  obstack_printf (&mangle_obst, "%s", id_to_str(tp->name));
-  len = obstack_object_size (&mangle_obst);
-  cp = obstack_finish (&mangle_obst);
-  res = id_from_str (cp, len);
-  obstack_free (&mangle_obst, cp);
-  return res;
+  return tp->name;
 }
 
 /* Returns a new ident that represents firstscnd. */
@@ -66,7 +54,8 @@ ident *mangle (ident *first, ident* scnd) {
   int len;
   ident *res;
 
-  obstack_printf (&mangle_obst, "%s%s",  id_to_str(first), id_to_str(scnd));
+  obstack_grow(&mangle_obst, id_to_str(first), id_to_strlen(first));
+  obstack_grow(&mangle_obst, id_to_str(scnd), id_to_strlen(scnd));
   len = obstack_object_size (&mangle_obst);
   cp = obstack_finish (&mangle_obst);
   res = id_from_str (cp, len);
@@ -80,7 +69,9 @@ ident *mangle_u (ident *first, ident* scnd) {
   int len;
   ident *res;
 
-  obstack_printf (&mangle_obst, "%s_%s",  id_to_str(first), id_to_str(scnd));
+  obstack_grow(&mangle_obst, id_to_str(first), id_to_strlen(first));
+  obstack_1grow(&mangle_obst,'_');
+  obstack_grow(&mangle_obst,id_to_str(scnd),id_to_strlen(scnd));
   len = obstack_object_size (&mangle_obst);
   cp = obstack_finish (&mangle_obst);
   res = id_from_str (cp, len);
@@ -92,5 +83,5 @@ ident *mangle_u (ident *first, ident* scnd) {
 void
 init_mangle (void)
 {
-  obstack_init (&mangle_obst);
+  obstack_init(&mangle_obst);
 }
