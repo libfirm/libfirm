@@ -172,6 +172,7 @@ static type *find_type_for_node(ir_node *n) {
   case iro_Sync:
   case iro_Tuple:
   case iro_Bad:
+  case iro_NoMem:
   case iro_Break:
   case iro_CallBegin:
   case iro_EndReg:
@@ -224,8 +225,10 @@ static type *find_type_for_node(ir_node *n) {
 
     if (tp1 == tp2) { tp = tp1; break; }
 
-    VERBOSE_UNKNOWN_TYPE(("Phi %ld with two different types: %s, %s: unknown type.\n", get_irn_node_nr(n),
-              get_type_name(tp1), get_type_name(tp2)));
+    if (get_firm_verbosity() > 1) {
+      VERBOSE_UNKNOWN_TYPE(("Phi %ld with two different types: %s, %s: unknown type.\n", get_irn_node_nr(n),
+			    get_type_name(tp1), get_type_name(tp2)));
+    }
     tp = firm_unknown_type;
   } break;
   case iro_Load: {
@@ -299,8 +302,10 @@ static type *find_type_for_node(ir_node *n) {
 	      tp = phi_cycle_type;
 	      break;
       }
-      VERBOSE_UNKNOWN_TYPE(("Binop %ld with two different types: %s, %s: unknown type \n", get_irn_node_nr(n),
-			    get_type_name(tp1), get_type_name(tp2)));
+      if (get_firm_verbosity() > 1) {
+	VERBOSE_UNKNOWN_TYPE(("Binop %ld with two different types: %s, %s: unknown type \n", get_irn_node_nr(n),
+			      get_type_name(tp1), get_type_name(tp2)));
+      }
       tp = firm_unknown_type;
       break;
     }
@@ -340,7 +345,7 @@ static void compute_type(ir_node *n, void *env) {
 }
 
 static void analyse_irg (ir_graph *irg) {
-  set_irg_typeinfo_state(irg, irg_typeinfo_consistent);
+  set_irg_typeinfo_state(irg, ir_typeinfo_consistent);
   irg_walk_graph(irg, NULL, compute_type, NULL);
 }
 
@@ -358,6 +363,7 @@ void simple_analyse_types(void) {
     current_ir_graph = get_irp_irg(i);
     analyse_irg(current_ir_graph);
   }
+  set_irp_typeinfo_state(ir_typeinfo_consistent);
 }
 
 void free_simple_type_information(void) {
@@ -367,4 +373,5 @@ void free_simple_type_information(void) {
     free_type(phi_cycle_type);
     phi_cycle_type = NULL;
   }
+  set_irp_typeinfo_state(ir_typeinfo_none);
 }

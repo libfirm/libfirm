@@ -54,24 +54,42 @@ void free_irtypeinfo(void);
 
 /* ------------ Irgraph state handling. ------------------------------- */
 
-typedef enum {
-  irg_typeinfo_none,         /**< No typeinfo computed, calls to set/get_irn_type
-  				  are invalid. */
-  irg_typeinfo_consistent,   /**< Type info valid, calls to set/get_irn_type return
-				  the proper type. */
-  irg_typeinfo_inconsistent  /**< Type info can be accessed, but it can be invalid
-				  because of other transformations. */
-} irg_typeinfo_state;
+/*
+#define irg_typeinfo_none         ir_typeinfo_none
+#define irg_typeinfo_consistent   ir_typeinfo_consistent
+#define irg_typeinfo_inconsistent ir_typeinfo_inconsistent
+#define irg_typeinfo_state        ir_typeinfo_state
+*/
 
-void               set_irg_typeinfo_state(ir_graph *irg, irg_typeinfo_state s);
-irg_typeinfo_state get_irg_typeinfo_state(ir_graph *irg);
+typedef enum {
+  ir_typeinfo_none,         /**< No typeinfo computed, calls to set/get_irn_type
+  				  are invalid. */
+  ir_typeinfo_consistent,   /**< Type info valid, calls to set/get_irn_type return
+				  the proper type. */
+  ir_typeinfo_inconsistent  /**< Type info can be accessed, but it can be invalid
+				  because of other transformations. */
+} ir_typeinfo_state;
+
+void              set_irg_typeinfo_state(ir_graph *irg, ir_typeinfo_state s);
+ir_typeinfo_state get_irg_typeinfo_state(ir_graph *irg);
+
+/** Returns accumulated type information state information.
+ *
+ * Returns ir_typeinfo_consistent if the type information of all irgs is
+ * consistent.  Returns ir_typeinfo_inconsistent if at least one irg has inconsistent
+ * or no type information.  Returns ir_typeinfo_none if no irg contains type information.
+ */
+ir_typeinfo_state get_irp_typeinfo_state(void);
+void              set_irp_typeinfo_state(ir_typeinfo_state s);
+/** If typeinfo is consistent, sets it to inconsistent. */
+void              set_irp_typeinfo_inconsistent(void);
 
 /* ------------ Irnode type information. ------------------------------ */
 
 /** Accessing the type information.
  *
  * These routines only work properly if the ir_graph is in state
- * irg_typeinfo_consistent or irg_typeinfo_inconsistent.  They
+ * ir_typeinfo_consistent or ir_typeinfo_inconsistent.  They
  * assume current_ir_graph set properly.
  */
 type *get_irn_typeinfo_type(ir_node *n);

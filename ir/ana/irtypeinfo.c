@@ -70,7 +70,7 @@ void init_irtypeinfo(void) {
   type_node_map = pmap_create();
 
   for (i = 0; i < get_irp_n_irgs(); ++i)
-    set_irg_typeinfo_state(get_irp_irg(i), irg_typeinfo_none);
+    set_irg_typeinfo_state(get_irp_irg(i), ir_typeinfo_none);
 }
 
 void free_irtypeinfo(void) {
@@ -89,32 +89,56 @@ void free_irtypeinfo(void) {
     assert(0 && "call init_type_info before freeing");
 
   for (i = 0; i < get_irp_n_irgs(); ++i)
-    set_irg_typeinfo_state(get_irp_irg(i), irg_typeinfo_none);
+    set_irg_typeinfo_state(get_irp_irg(i), ir_typeinfo_none);
 }
 
 
 /* ------------ Irgraph state handling. ------------------------------- */
 
-void set_irg_typeinfo_state(ir_graph *irg, irg_typeinfo_state s) {
+void set_irg_typeinfo_state(ir_graph *irg, ir_typeinfo_state s) {
   assert(is_ir_graph(irg));
   irg->typeinfo_state = s;
+  if ((irg->typeinfo_state == ir_typeinfo_consistent) &&
+      (irp->typeinfo_state == ir_typeinfo_consistent) &&
+      (s                   != ir_typeinfo_consistent)   )
+    irp->typeinfo_state = ir_typeinfo_inconsistent;
 }
 
-irg_typeinfo_state get_irg_typeinfo_state(ir_graph *irg) {
+ir_typeinfo_state get_irg_typeinfo_state(ir_graph *irg) {
   assert(is_ir_graph(irg));
   return irg->typeinfo_state;
 }
 
+
+/* Returns accumulated type information state information.
+ *
+ * Returns ir_typeinfo_consistent if the type information of all irgs is
+ * consistent.  Returns ir_typeinfo_inconsistent if at least one irg has inconsistent
+ * or no type information.  Returns ir_typeinfo_none if no irg contains type information.
+ */
+ir_typeinfo_state get_irp_typeinfo_state(void) {
+  return irp->typeinfo_state;
+}
+void set_irp_typeinfo_state(ir_typeinfo_state s) {
+  irp->typeinfo_state = s;
+}
+/* If typeinfo is consistent, sets it to inconsistent. */
+void set_irp_typeinfo_inconsistent(void) {
+  if (irp->typeinfo_state == ir_typeinfo_consistent)
+    irp->typeinfo_state = ir_typeinfo_inconsistent;
+}
+
+
 /* ------------ Irnode type information. ------------------------------ */
 
 /* These routines only work properly if the ir_graph is in state
- * irg_typeinfo_consistent or irg_typeinfo_inconsistent.  They
+ * ir_typeinfo_consistent or ir_typeinfo_inconsistent.  They
  * assume current_ir_graph set properly.
  */
 type *get_irn_typeinfo_type(ir_node *n) {
   type *res = initial_type;
-  assert(get_irg_typeinfo_state(current_ir_graph) == irg_typeinfo_consistent  ||
-	 get_irg_typeinfo_state(current_ir_graph) == irg_typeinfo_inconsistent  );
+  assert(get_irg_typeinfo_state(current_ir_graph) == ir_typeinfo_consistent  ||
+	 get_irg_typeinfo_state(current_ir_graph) == ir_typeinfo_inconsistent  );
 
   if (pmap_contains(type_node_map, (void *)n))
     res = (type *) pmap_get(type_node_map, (void *)n);
@@ -123,8 +147,8 @@ type *get_irn_typeinfo_type(ir_node *n) {
 }
 
 void set_irn_typeinfo_type(ir_node *n, type *tp) {
-  assert(get_irg_typeinfo_state(current_ir_graph) == irg_typeinfo_consistent  ||
-  	 get_irg_typeinfo_state(current_ir_graph) == irg_typeinfo_inconsistent  );
+  assert(get_irg_typeinfo_state(current_ir_graph) == ir_typeinfo_consistent  ||
+  	 get_irg_typeinfo_state(current_ir_graph) == ir_typeinfo_inconsistent  );
 
   pmap_insert(type_node_map, (void *)n, (void *)tp);
 }
