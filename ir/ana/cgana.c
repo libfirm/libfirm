@@ -626,7 +626,9 @@ static entity ** get_free_methods(void) {
   }
   /* Hauptprogramm ist auch frei, auch wenn es nicht "external
    * visible" ist. */
-  eset_insert(set, get_irg_ent(get_irp_main_irg()));
+  if(get_irp_main_irg()) {
+    eset_insert(set, get_irg_ent(get_irp_main_irg()));
+  }
   for (ent = eset_first(set); ent; ent = eset_next(set)) {
     ARR_APP1(entity *, arr, ent);
   }
