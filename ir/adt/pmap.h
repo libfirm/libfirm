@@ -52,5 +52,6 @@ void * pmap_get(pmap *, void * key);
 pmap_entry * pmap_first(pmap *);
 pmap_entry * pmap_next(pmap *);
 
+void pmap_break(pmap *map);
 
 #endif /* _PMAP_H_ */

@@ -81,3 +81,8 @@ pmap_entry *pmap_first(pmap *map) {
 pmap_entry *pmap_next(pmap *map) {
   return (pmap_entry *) set_next((set *)map);
 }
+
+
+void pmap_break(pmap *map) {
+  set_break((set *)map);
+}
