@@ -1128,7 +1128,7 @@ void analyse_loop_nesting_depth(void) {
 
   /* establish preconditions. */
   if (get_irp_callee_info_state() != irg_callee_info_consistent) {
-    cgana(&arr_len, &free_methods, 0);
+    cgana(&arr_len, &free_methods);
   }
 
   if (irp_callgraph_consistent != get_irp_callgraph_state()) {
