@@ -169,6 +169,12 @@ static int check_entity(entity *ent) {
     return error_existent_entity_without_irg;
   }
 
+  if (get_entity_peculiarity(ent) == peculiarity_inherited) {
+    entity *impl = get_SymConst_entity(get_atomic_ent_value(ent));
+    assert(get_entity_peculiarity(impl) == peculiarity_existent &&
+	   "inherited entities must have constant pointing to existent entity.");
+  }
+
   return 0;
 }
 
