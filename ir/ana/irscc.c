@@ -1423,27 +1423,21 @@ void find_strange_loop_nodes(ir_loop *l) {
 
 }
 
-
-
-
-
-
-
 /* ------------------------------------------------------------------- */
 /* Simple analyses based on the loop information                       */
 /* ------------------------------------------------------------------- */
 
 int is_loop_variant(ir_loop *l, ir_loop *b) {
-  int i, n_elems =  get_loop_n_elements (l);
+  int i, n_elems;
 
   if (l == b) return true;
 
+  n_elems = get_loop_n_elements(l);
   for (i = 0; i < n_elems; ++i) {
     loop_element e = get_loop_element(l, i);
-    if (is_ir_node (e.kind)) {
-    } else {
-      if (is_loop_variant(e.son), b) return true;
-    }
+    if (is_ir_loop(e.kind))
+      if (is_loop_variant(e.son, b))
+        return true;
   }
 
   return false;
