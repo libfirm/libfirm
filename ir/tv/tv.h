@@ -276,6 +276,13 @@ int tarval_is_negative(tarval *a);
  */
 int tarval_is_null(tarval *a);
 
+/**
+ * Returns 1 if tv is the "one"
+ *
+ * @param a	the tarval
+ */
+int tarval_is_one(tarval *a);
+
 /** The 'bad' tarval. */
 extern tarval *tarval_bad;
 /** Returns the 'bad tarval. */

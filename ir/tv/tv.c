@@ -720,6 +720,16 @@ int tarval_is_null(tarval *a)
 }
 
 /*
+ * test if one, 1 means 'yes'
+ */
+int tarval_is_one(tarval *a)
+{
+  ir_mode *m = get_tarval_mode(a);
+
+  return a == get_tarval_one(m);
+}
+
+/*
  * comparison
  */
 pnc_number tarval_cmp(tarval *a, tarval *b)
