@@ -30,8 +30,9 @@ static void count_nodes(ir_node *n, void *env) {
 void print_graph_counts(int verbosity) {
   int i, counter, total = 0;
   int view = interprocedural_view;
-  interprocedural_view = 0;
   ir_graph *old = current_ir_graph;
+
+  interprocedural_view = 0;
 
   for (i = 0; i < get_irp_n_irgs(); i++) {
     counter = 0;
@@ -58,13 +59,13 @@ void print_type_counts(int verbosity) {
     if (is_union_type(tp)) counter = get_union_n_members(tp);
     if (counter > -1) {
       if (verbosity == 1)
-	printf(" +%3d entities in %s type %s.\n", counter, get_type_tpop_name(tp), get_type_name(tp));
+    printf(" +%3d entities in %s type %s.\n", counter, get_type_tpop_name(tp), get_type_name(tp));
       total += counter;
     }
   }
   printf(" +++ There are %d types with total %d entities.\n", get_irp_n_types(), total);
   printf(" +++ Global type has %d entities\n",
-	 get_class_n_members(get_glob_type()));
+     get_class_n_members(get_glob_type()));
 
 }
 
