@@ -191,7 +191,7 @@ static int check_entity(entity *ent) {
            "inherited entities must have constant pointing to existent entity.");
   }
 
-  return 0;
+  return no_error;
 }
 
 /*
