@@ -150,7 +150,7 @@ static pto_t *new_const_pto (ir_node *cnst)
 
 
 /* Helper to pto_init --- clear the link fields of class types */
-static void clear_type_link (type_or_ent *thing, void *__unused)
+static void clear_type_link (type_or_ent *thing, void *_unused)
 {
   if (is_type (thing)) {
     type *tp = (type*) thing;
@@ -172,7 +172,7 @@ static void clear_type_link (type_or_ent *thing, void *__unused)
 }
 
 /* Helper to pto_init_graph --- clear the links of the given node */
-static void clear_node_link (ir_node *node, void *__unused)
+static void clear_node_link (ir_node *node, void *_unused)
 {
   set_irn_link (node, NULL);
 }
@@ -431,6 +431,9 @@ void pto_reset_graph_pto (ir_graph *graph, int ctx_idx)
 
 /*
   $Log$
+  Revision 1.12  2004/12/20 17:41:14  liekweg
+  __unused -> _unused
+
   Revision 1.11  2004/12/20 17:34:35  liekweg
   fix recursion handling
 

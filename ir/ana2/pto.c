@@ -50,7 +50,7 @@ extern char *spaces;
    =================================================== */
 
 /* Helper to pto_init */
-static void pto_init_graph_wrapper (graph_info_t *ginfo, void *__unused)
+static void pto_init_graph_wrapper (graph_info_t *ginfo, void *_unused)
 {
   ir_graph *graph = ginfo->graph;
 
@@ -136,6 +136,9 @@ void pto_cleanup ()
 
 /*
   $Log$
+  Revision 1.14  2004/12/20 17:41:14  liekweg
+  __unused -> _unused
+
   Revision 1.13  2004/12/20 17:34:34  liekweg
   fix recursion handling
 
