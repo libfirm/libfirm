@@ -87,63 +87,56 @@ static INLINE scc_info* new_scc_info(void) {
 
 static INLINE void
 mark_irn_in_stack (ir_node *n) {
-  assert(get_irn_link(n));
-  /*  to slow */
-  /* ((scc_info *)get_irn_link(n))->in_stack = true; */
-  ((scc_info *)n->link)->in_stack = true;
+  scc_info *scc = get_irn_link(n);
+  assert(scc);
+  scc->in_stack = true;
 }
 
 static INLINE void
 mark_irn_not_in_stack (ir_node *n) {
-  assert(get_irn_link(n));
-  /*  to slow */
-  /* ((scc_info *)get_irn_link(n))->in_stack = false; */
-  ((scc_info *)n->link)->in_stack = false;
+  scc_info *scc = get_irn_link(n);
+  assert(scc);
+  scc->in_stack = false;
 }
 
 static INLINE bool
 irn_is_in_stack (ir_node *n) {
-  assert(get_irn_link(n));
-  /*  to slow */
-  /* return ((scc_info *)get_irn_link(n))->in_stack; */
-  return ((scc_info *)n->link)->in_stack;
+  scc_info *scc = get_irn_link(n);
+  assert(scc);
+  return scc->in_stack;
 }
 
 static INLINE void
 set_irn_uplink (ir_node *n, int uplink) {
-  assert(get_irn_link(n));
-  /*  to slow */
-  /* ((scc_info *)get_irn_link(n))->uplink = uplink; */
-  ((scc_info *)n->link)->uplink = uplink;
+  scc_info *scc = get_irn_link(n);
+  assert(scc);
+  scc->uplink = uplink;
 }
 
 INLINE int
 get_irn_uplink (ir_node *n) {
-  assert(get_irn_link(n));
-  /*  from fast to slow */
-  /* return ((scc_info *)get_irn_link(n))->uplink; */
-  return ((scc_info *)n->link)->uplink;
+  scc_info *scc = get_irn_link(n);
+  assert(scc);
+  return scc->uplink;
 }
 
 static INLINE void
 set_irn_dfn (ir_node *n, int dfn) {
-  assert(get_irn_link(n));
-  /*  to slow */
-  /* ((scc_info *)get_irn_link(n))->dfn = dfn; */
-  ((scc_info *)n->link)->dfn = dfn;
+  scc_info *scc = get_irn_link(n);
+  assert(scc);
+  scc->dfn = dfn;
 }
 
 INLINE int
 get_irn_dfn (ir_node *n) {
-  assert(get_irn_link(n));
-  /*  to slow */
-  /* return ((scc_info *)get_irn_link(n))->dfn; */
-  return ((scc_info *)n->link)->dfn;
+  scc_info *scc = get_irn_link(n);
+  assert(scc);
+  return scc->dfn;
 }
 
 
 INLINE void
-set_irn_loop (ir_node *n, ir_loop* loop) {
+set_irn_loop (ir_node *n, ir_loop *loop) {
   n->loop = loop;
 }
 
@@ -189,6 +182,9 @@ ir_loop * get_irn_loop(ir_node *n) {
 static ir_node **stack = NULL;
 static int tos = 0;                /* top of stack */
 
+/**
+ * initializes the stack
+ */
 static INLINE void init_stack(void) {
   if (stack) {
     ARR_RESIZE (ir_node *, stack, 1000);
@@ -206,6 +202,11 @@ static INLINE void free_stack(void) {
 }
 #endif
 
+/**
+ * push a node onto the stack
+ *
+ * @param n  The node to push
+ */
 static INLINE void
 push (ir_node *n)
 {
@@ -219,6 +220,11 @@ push (ir_node *n)
   mark_irn_in_stack(n);
 }
 
+/**
+ * pop a node from the stack
+ *
+ * @return  The topmost node
+ */
 static INLINE ir_node *
 pop (void)
 {
@@ -227,8 +233,10 @@ pop (void)
   return n;
 }
 
-/* The nodes up to n belong to the current loop.
-   Removes them from the stack and adds them to the current loop. */
+/**
+ * The nodes up to n belong to the current loop.
+ * Removes them from the stack and adds them to the current loop.
+ */
 static INLINE void
 pop_scc_to_loop (ir_node *n)
 {
@@ -245,6 +253,7 @@ pop_scc_to_loop (ir_node *n)
     add_loop_node(current_loop, m);
     set_irn_loop(m, current_loop);
     i++;
+
     /*    if (m==n) break;*/
   } while(m != n);
 
@@ -264,21 +273,20 @@ static void close_loop (ir_loop *l)
   ir_loop *last_son = lelement.son;
 
   if (get_kind(last_son) == k_ir_loop &&
-      get_loop_n_elements(last_son) == 1)
-    {
-      ir_loop *gson;
+      get_loop_n_elements(last_son) == 1) {
+    ir_loop *gson;
 
-      lelement = get_loop_element(last_son, 0);
-      gson = lelement.son;
-      if(get_kind(gson) == k_ir_loop)
-    {
-          loop_element new_last_son;
+    lelement = get_loop_element(last_son, 0);
+    gson = lelement.son;
 
-      gson -> outer_loop = l;
-          new_last_son.son = gson;
-      l -> children[last] = new_last_son;
+    if (get_kind(gson) == k_ir_loop) {
+      loop_element new_last_son;
+
+      gson->outer_loop = l;
+      new_last_son.son = gson;
+      l->children[last] = new_last_son;
     }
-    }
+  }
 
   current_loop = l;
 }
@@ -1407,9 +1415,6 @@ static int test_loop_node(ir_loop *l) {
     found_problem = 1;
     dump_loop(l, "-ha");
   }
-
-  if (get_loop_loop_nr(l) == 11819)
-    dump_loop(l, "-ha-debug");
 
   return found_problem;
 }
