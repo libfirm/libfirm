@@ -1,5 +1,5 @@
 
-  * Goetz 10.6.04
+  + Goetz 10.6.04
     Error in removing dead code:
     In an if condition is a loop.  We optimized the if condition to Jmp/Bad,
     the loop now is unreachable.  It should be removed by gigo or the like.
@@ -8,7 +8,7 @@
     a pass walking and marking starting at the Start node to remove this loop.
     Currently scc causes an segmetation fault for this situation.
 
-  * Goetz 10.6.04
+  + Goetz 10.6.04
     Error in irscc:  If we have an unreachable loop, or a loop
     resulting from an exiting endless recursion, irscc finds
     no tail ==> issues an assertion.
