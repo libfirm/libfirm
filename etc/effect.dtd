@@ -1,0 +1,82 @@
+<!-- effect.dtd - DTD to model effects of external procedures inside firm. -->
+<!-- $Id$ -->
+<!-- content model for all nodes -->
+<!-- allow nodes/entity accesses to reference other nodes/an entity -->
+<!ENTITY	% firm.id			"id ID #REQUIRED">
+
+<!-- allow a node to specify a type -->
+<!ENTITY	% firm.type		"type CDATA #REQUIRED">
+
+<!-- allow a node to specify a field -->
+<!ENTITY	% firm.entity		"entity CDATA #REQUIRED">
+
+<!-- the root element -->
+<!ELEMENT	effects (type*, entity*, effect*)>
+<!ATTLIST  	effects
+			module		CDATA		#IMPLIED>
+
+<!-- an entity reference -->
+<!ELEMENT	type	EMPTY>
+<!ATTLIST	type
+			%firm.id;
+			%firm.type;>
+
+<!-- an entity reference -->
+<!ELEMENT	entity	EMPTY>
+<!ATTLIST	entity
+			%firm.id;
+			%firm.type;
+			%firm.entity;>
+
+<!-- a single effect -->
+<!ELEMENT  	effect (arg*, (load|store|alloc|call|join|unknown)*, return)>
+<!ATTLIST  	effect
+			procname	CDATA		#REQUIRED>
+
+<!-- procedure argument -->
+<!ELEMENT	arg			EMPTY>
+<!ATTLIST 	arg
+			%firm.id;
+			number		CDATA		#REQUIRED>
+
+<!-- reference another value -->
+<!ELEMENT	valref		EMPTY>
+<!ATTLIST	valref
+			refid		IDREF		#REQUIRED>
+
+<!-- load effect -->
+<!-- for static entities, use a 'select' without a child element -->
+<!ELEMENT	select		(valref?)>
+<!ATTLIST	select		%firm.entity;>
+
+<!-- load effect -->
+<!ELEMENT	load		(select)>
+<!ATTLIST 	load
+			%firm.id;>
+
+<!-- store effect -->
+<!ELEMENT	store		(select,valref)>
+
+<!-- alloc effect -->
+<!ELEMENT	alloc		EMPTY>
+<!ATTLIST	alloc		%firm.id;%firm.type;>
+
+<!-- call effect -->
+<!ELEMENT	call		(select,(valref)*)>
+<!ATTLIST	call		%firm.id;>
+
+<!-- unknown value -->
+<!ELEMENT	unknown		EMPTY>
+<!ATTLIST	unknown		%firm.id;>
+
+<!-- join two or more values -->
+<!ELEMENT	join		(valref,valref+)>
+<!ATTLIST	join		%firm.id;>
+
+<!-- return effect -->
+<!ELEMENT	return		(valref?)>
+
+<!-- $Log$
+<!-- Revision 1.1  2004/10/05 14:34:13  liekweg
+<!-- Added DTD for external effects description --flo
+<!-- -->
