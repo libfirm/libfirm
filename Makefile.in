@@ -44,7 +44,7 @@ libfirm.a: subdir_all $(XOFILES) $(OFILES)
 
 testprograms:	libfirm.a
 	$(MAKE) -C testprograms
-	$(MAKE) -C firmjni
+	$(MAKE) -C firmjni  test
 
 
 # gernerate program documentation
