@@ -30,6 +30,7 @@
 #include "irtypeinfo.h"
 
 #include "callgraph.h"
+#include "field_temperature.h"
 
 #include "array.h"
 
@@ -50,6 +51,7 @@ struct ir_prog {
   type     **types;               /**< all types in the ir */
 
   /* -- states of and access to generated information -- */
+  irg_phase_state phase_state;    /**< State of construction. */
 
   ip_view_state ip_view;          /**< State of interprocedural view. */
 
@@ -68,6 +70,7 @@ struct ir_prog {
   int max_callgraph_loop_depth;        /**< needed in callgraph. */
   int max_callgraph_recursion_depth;   /**< needed in callgraph. */
   int max_method_execution_frequency;  /**< needed in callgraph. */
+  irp_temperature_state temperature_state; /**< accumulated temperatures computed? */
 
 #ifdef DEBUG_libfirm
   long max_node_nr;                /**< to generate unique numbers for nodes. */

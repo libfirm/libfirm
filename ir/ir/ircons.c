@@ -25,6 +25,7 @@
 #include <string.h>
 #endif
 
+# include "irprog_t.h"
 # include "irgraph_t.h"
 # include "irnode_t.h"
 # include "irmode_t.h"
@@ -2559,9 +2560,20 @@ init_cons(uninitialized_local_variable_func_t *func)
 
 /* call for each graph */
 void
-finalize_cons (ir_graph *irg) {
+irg_finalize_cons (ir_graph *irg) {
   irg->phase_state = phase_high;
 }
+
+void
+irp_finalize_cons (void) {
+  int i, n_irgs = get_irp_n_irgs();
+  for (i = 0; i < n_irgs; i++) {
+    irg_finalize_cons(get_irp_irg(i));
+  }
+  irp->phase_state = phase_high;\
+}
+
+
 
 
 ir_node *new_Block(int arity, ir_node **in) {

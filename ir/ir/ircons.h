@@ -3813,7 +3813,13 @@ type *get_cur_frame_type(void);
 /* --- initialize and finalize ir construction --- */
 
 /** Puts the graph into state "phase_high" */
-void finalize_cons (ir_graph *irg);
+void irg_finalize_cons (ir_graph *irg);
+
+/** Puts the program and all graphs into state phase_high.
+ *
+ * This also remarks, the construction of types is finished,
+ * e.g., that no more subtypes will be added.  */
+void irp_finalize_cons(void);
 
 /* --- Initialization --- */
 

@@ -163,6 +163,18 @@ void  set_irp_type(int pos, type *typ);
  */
 ir_graph *get_const_code_irg(void);
 
+
+/** The phase state for the program.
+ *
+ *  The phase state of the whole program is
+ *   building:  if at least one graph is state_building
+ *              or one type is incomplete.
+ *   high:      all graphs are in state high or low, all types are constructed.
+ *   low:       all graphs are in state low, all types are in state layout fixed.
+ */
+irg_phase_state get_irp_phase_state(void);
+void            set_irp_phase_state(irg_phase_state s);
+
 irg_outs_state get_irp_ip_outs_state(void);
 void           set_irp_ip_outs_inconsistent(void);
 

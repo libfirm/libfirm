@@ -244,6 +244,13 @@ ir_graph *(get_const_code_irg)(void)
   return __get_const_code_irg();
 }
 
+irg_phase_state get_irp_phase_state(void) {
+  return irp->phase_state;
+}
+void           set_irp_phase_state(irg_phase_state s) {
+  irp->phase_state = s;
+}
+
 irg_outs_state get_irp_ip_outs_state() {
   return irp->outs_state;
 }
