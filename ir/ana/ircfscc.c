@@ -685,8 +685,9 @@ int construct_ip_cf_backedges (void) {
 
 
 static void reset_backedges(ir_node *n) {
-  assert(is_Block(n));
   int rem = get_interprocedural_view();
+
+  assert(is_Block(n));
   set_interprocedural_view(true);
   clear_backedges(n);
   set_interprocedural_view(false);
