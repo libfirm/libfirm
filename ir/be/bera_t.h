@@ -88,6 +88,11 @@ static INLINE int _is_allocatable_irn(const ir_node *irn)
 #define set_irn_color(irn,col)						_set_irn_color(irn, col)
 #define is_allocatable_irn(irn)						_is_allocatable_irn(irn)
 
+static INLINE struct list_head *_get_block_border_head(ir_node *block)
+{
+	return &get_ra_block_info(block)->border_head;
+}
+
 /**
  * Check, if two phi operands interfere.
  * @param a A node which is operand to a phi function.
