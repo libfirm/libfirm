@@ -372,6 +372,9 @@ void rta_init (int do_verbose)
 {
   int n_runs = 0;
 
+  int rem_vpi = get_visit_pseudo_irgs();
+  set_visit_pseudo_irgs(1);
+
 # ifdef DEBUG_libfirm
   int i;
   for (i = 0; i < get_irp_n_irgs(); i++) {
@@ -400,6 +403,8 @@ void rta_init (int do_verbose)
   }
   tr_vrfy ();
 # endif /* defined DEBUG_libfirm */
+
+  set_visit_pseudo_irgs(rem_vpi);
 }
 
 /**
@@ -434,6 +439,9 @@ void rta_delete_dead_graphs (void)
   ir_graph *graph = NULL;
   int n_dead_graphs = 0;
 
+  int rem_vpi = get_visit_pseudo_irgs();
+  set_visit_pseudo_irgs(1);
+
   if (!get_optimize() || !get_opt_dead_method_elimination()) return;
 
   ir_graph *dead_graphs[get_irp_n_irgs()];
@@ -462,6 +470,8 @@ void rta_delete_dead_graphs (void)
   if (verbose) {
     printf ("RTA: n_dead_graphs = %i\n", n_dead_graphs);
   }
+
+  set_visit_pseudo_irgs(rem_vpi);
 }
 
 /* Clean up the RTA data structures.  Call this after calling rta_init */
@@ -521,6 +531,9 @@ void rta_report (void)
 
 /*
  * $Log$
+ * Revision 1.29  2004/11/11 13:28:08  goetz
+ * made pseudo irg aware
+ *
  * Revision 1.28  2004/11/03 14:47:18  beck
  * removed gloval intraprocedural_view variable and replaced by get_*() set_*() functions
  *
