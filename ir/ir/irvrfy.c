@@ -64,6 +64,16 @@ ir_node **get_irn_in(ir_node *node);
 static node_verification_t opt_do_node_verification = NODE_VERIFICATION_ON;
 static const char *bad_msg;
 
+/**
+ * little helper for NULL modes
+ */
+static const char *get_mode_name_ex(ir_mode *mode)
+{
+  if (! mode)
+    return "<no mode>";
+  return get_mode_name(mode);
+}
+
 void do_node_verification(node_verification_t mode)
 {
   opt_do_node_verification = mode;
@@ -138,7 +148,7 @@ static void show_proj_failure_ent(ir_node *n, entity *ent)
       get_irn_opname(n), get_irn_modename(n), proj,
       get_irn_opname(op), get_irn_modename(op),
       get_entity_name(ent), get_type_name(get_entity_type(ent)),
-      m ? get_mode_name(m) : "<no mode>");
+      get_mode_name_ex(m));
 }
 
 /**
@@ -167,12 +177,12 @@ static void show_call_param(ir_node *n, type *mt)
 
   fprintf(stderr, "\nFIRM: irn_vrfy_irg() Call type-check failed: %s(", get_type_name(mt));
   for (i = 0; i < get_method_n_params(mt); ++i) {
-    fprintf(stderr, "%s ", get_mode_name(get_type_mode(get_method_param_type(mt, i))));
+    fprintf(stderr, "%s ", get_mode_name_ex(get_type_mode(get_method_param_type(mt, i))));
   }
   fprintf(stderr, ") != CALL(");
 
   for (i = 0; i < get_Call_n_params(n); ++i) {
-    fprintf(stderr, "%s ", get_mode_name(get_irn_mode(get_Call_param(n, i))));
+    fprintf(stderr, "%s ", get_mode_name_ex(get_irn_mode(get_Call_param(n, i))));
   }
   fprintf(stderr, ")\n");
 
@@ -187,8 +197,8 @@ static void show_return_modes(ir_graph *irg, ir_node *n, type *mt, int i)
 
   fprintf(stderr, "\nFIRM: irn_vrfy_irg() Return node %ld in entity \"%s\" mode %s different from type mode %s\n",
     get_irn_node_nr(n), get_entity_name(ent),
-    get_mode_name(get_irn_mode(get_Return_res(n, i))),
-    get_mode_name(get_type_mode(get_method_res_type(mt, i)))
+    get_mode_name_ex(get_irn_mode(get_Return_res(n, i))),
+    get_mode_name_ex(get_type_mode(get_method_res_type(mt, i)))
   );
 }
 
@@ -210,8 +220,8 @@ static void show_return_nres(ir_graph *irg, ir_node *n, type *mt)
 static void show_phi_failure(ir_node *phi, ir_node *pred, int pos)
 {
   fprintf(stderr, "\nFIRM: irn_vrfy_irg() Phi node %ld has mode %s different from predeccessor node %ld mode %s\n",
-    get_irn_node_nr(phi), get_mode_name(get_irn_mode(phi)),
-    get_irn_node_nr(pred), get_mode_name(get_irn_mode(pred)));
+    get_irn_node_nr(phi), get_mode_name_ex(get_irn_mode(phi)),
+    get_irn_node_nr(pred), get_mode_name_ex(get_irn_mode(pred)));
 }
 
 INLINE static int
@@ -229,13 +239,14 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
     case iro_Start:
       ASSERT_AND_RET_DBG(
           (
-       (proj == pns_initial_exec   && mode == mode_X) ||
+           (proj == pns_initial_exec   && mode == mode_X) ||
            (proj == pns_global_store   && mode == mode_M) ||
            (proj == pns_frame_base     && mode_is_reference(mode)) ||
            (proj == pns_globals        && mode_is_reference(mode)) ||
            (proj == pns_args           && mode == mode_T) ||
-       (proj == pns_value_arg_base && mode_is_reference(mode))
-      ),
+           (proj == pns_value_arg_base && mode_is_reference(mode)) ||
+           (proj == pns_value_arg_base && mode == mode_T)	/* FIXME: only one of those */
+          ),
           "wrong Proj from Start", 0,
       show_proj_failure(p);
       );
@@ -399,20 +410,23 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
     case iro_Proj:
       {
         type *mt; /* A method type */
+	long nr = get_Proj_proj(pred);
+
         pred = skip_nop(get_Proj_pred(pred));
         ASSERT_AND_RET((get_irn_mode(pred) == mode_T), "Proj from something not a tuple", 0);
         switch (get_irn_opcode(pred))
         {
           case iro_Start:
-            {
+            mt = get_entity_type(get_irg_ent(irg));
+
+	    if (nr == pns_args) {
               ASSERT_AND_RET(
                   (proj >= 0 && mode_is_data(mode)),
                   "wrong Proj from Proj from Start", 0);
-              mt = get_entity_type(get_irg_ent(irg));
               ASSERT_AND_RET(
                 (proj < get_method_n_params(mt)),
                 "More Projs for args than args in type", 0
-          );
+              );
               if ((mode_is_reference(mode)) && is_compound_type(get_method_param_type(mt, proj)))
                 /* value argument */ break;
 
@@ -420,6 +434,16 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
                   (mode == get_type_mode(get_method_param_type(mt, proj))),
                   "Mode of Proj from Start doesn't match mode of param type.", 0);
             }
+	    else if (nr == pns_value_arg_base) {
+	      ASSERT_AND_RET(
+                  (proj >= 0 && mode_is_reference(mode)),
+                  "wrong Proj from Proj from Start", 0
+              );
+              ASSERT_AND_RET(
+                (proj < get_method_n_params(mt)),
+                "More Projs for args than args in type", 0
+              );
+	    }
             break;
 
           case iro_Call:
@@ -598,7 +622,7 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       /* Return: BB x M x data1 x ... x datan --> X */
       /* printf("mode: %s, code %s\n", ID_TO_STR(n->mode->name), ID_TO_STR(n->op->name));*/
       ASSERT_AND_RET( op1mode == mode_M, "Return node", 0 );  /* operand M */
-      for (i=2; i < get_irn_arity(n); i++) {
+      for (i = 2; i < get_irn_arity(n); i++) {
         ASSERT_AND_RET( mode_is_data(get_irn_mode(in[i])), "Return node", 0 );  /* operand datai */
       };
       ASSERT_AND_RET( mymode == mode_X, "Result X", 0 );   /* result X */
@@ -606,12 +630,25 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       mt = get_entity_type(get_irg_ent(irg));
       ASSERT_AND_RET_DBG( get_Return_n_ress(n) == get_method_n_ress(mt),
         "Number of results for Return doesn't match number of results in type.", 0,
-    show_return_nres(irg, n, mt););
-      for (i = 0; i < get_Return_n_ress(n); i++)
-        ASSERT_AND_RET_DBG(
-          get_irn_mode(get_Return_res(n, i)) == get_type_mode(get_method_res_type(mt, i)),
-          "Mode of result for Return doesn't match mode of result type.", 0,
-       show_return_modes(irg, n, mt, i););
+      show_return_nres(irg, n, mt););
+      for (i = 0; i < get_Return_n_ress(n); i++) {
+	type *res_type = get_method_res_type(mt, i);
+
+        if (is_atomic_type(res_type)) {
+	  ASSERT_AND_RET_DBG(
+	    get_irn_mode(get_Return_res(n, i)) == get_type_mode(res_type),
+	    "Mode of result for Return doesn't match mode of result type.", 0,
+	    show_return_modes(irg, n, mt, i);
+	  );
+	}
+	else {
+	  ASSERT_AND_RET_DBG(
+	    mode_is_reference(get_irn_mode(get_Return_res(n, i))),
+	    "Mode of result for Return doesn't match mode of result type.", 0,
+	    show_return_modes(irg, n, mt, i);
+	  );
+	}
+      }
       break;
 
     case iro_Raise:
@@ -693,11 +730,23 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       }
 
       for (i = 0; i < get_method_n_params(mt); i++) {
-        ASSERT_AND_RET_DBG(
-            get_irn_mode(get_Call_param(n, i)) == get_type_mode(get_method_param_type(mt, i)),
-            "Mode of arg for Call doesn't match mode of arg type.", 0,
-        show_call_param(n, mt);
-        );
+	type *t = get_method_param_type(mt, i);
+
+	if (is_atomic_type(t)) {
+	  ASSERT_AND_RET_DBG(
+	      get_irn_mode(get_Call_param(n, i)) == get_type_mode(t),
+	      "Mode of arg for Call doesn't match mode of arg type.", 0,
+	  show_call_param(n, mt);
+	  );
+	}
+	else {
+	  /* call with a compound type, mode must be reference */
+	  ASSERT_AND_RET_DBG(
+	      mode_is_reference(get_irn_mode(get_Call_param(n, i))),
+	      "Mode of arg for Call doesn't match mode of arg type.", 0,
+	  show_call_param(n, mt);
+	  );
+	}
       }
       break;
 
