@@ -173,6 +173,7 @@ static node_entry_t *opcode_get_entry(const ir_op *op, hmap_node_entry_t *hmap)
     return elem;
 
   elem = obstack_alloc(&status->cnts, sizeof(*elem));
+  memset(elem, 0, sizeof(*elem));
 
   /* clear counter */
   opcode_clear_entry(elem);
@@ -207,6 +208,7 @@ static void graph_clear_entry(graph_entry_t *elem, int all)
     cnt_clr(&elem->cnt_was_inlined);
     cnt_clr(&elem->cnt_got_inlined);
     cnt_clr(&elem->cnt_strength_red);
+    cnt_clr(&elem->cnt_real_func_call);
   }
   cnt_clr(&elem->cnt_edges);
   cnt_clr(&elem->cnt_all_calls);
@@ -234,6 +236,7 @@ static graph_entry_t *graph_get_entry(ir_graph *irg, hmap_graph_entry_t *hmap)
 
   /* allocate a new one */
   elem = obstack_alloc(&status->cnts, sizeof(*elem));
+  memset(elem, 0, sizeof(*elem));
 
   /* clear counter */
   graph_clear_entry(elem, 1);
@@ -276,6 +279,7 @@ static opt_entry_t *opt_get_entry(const ir_op *op, hmap_opt_entry_t *hmap)
     return elem;
 
   elem = obstack_alloc(&status->cnts, sizeof(*elem));
+  memset(elem, 0, sizeof(*elem));
 
   /* clear new counter */
   opt_clear_entry(elem);
@@ -314,6 +318,7 @@ static block_entry_t *block_get_entry(long block_nr, hmap_block_entry_t *hmap)
     return elem;
 
   elem = obstack_alloc(&status->cnts, sizeof(*elem));
+  memset(elem, 0, sizeof(*elem));
 
   /* clear new counter */
   block_clear_entry(elem);
@@ -1210,6 +1215,9 @@ static void stat_tail_rec(void *ctx, ir_graph *irg)
 
   STAT_ENTER;
   {
+    graph_entry_t *graph = graph_get_entry(irg, status->irg_hash);
+
+    graph->num_tail_recursion++;
   }
   STAT_LEAVE;
 }
@@ -1274,6 +1282,23 @@ static void stat_if_conversion(void *context, ir_graph *irg, ir_node *phi,
     graph_entry_t *graph = graph_get_entry(irg, status->irg_hash);
 
     cnt_inc(&graph->cnt_if_conv[reason]);
+  }
+  STAT_LEAVE;
+}
+
+/**
+ * real function call was optimized
+ */
+static void stat_func_call(void *context, ir_graph *irg, ir_node *call)
+{
+  if (! status->stat_options)
+    return;
+
+  STAT_ENTER;
+  {
+    graph_entry_t *graph = graph_get_entry(irg, status->irg_hash);
+
+    cnt_inc(&graph->cnt_real_func_call);
   }
   STAT_LEAVE;
 }
@@ -1463,6 +1488,7 @@ void init_stat(unsigned enable_options)
   HOOK(hook_dead_node_elim_start,             stat_dead_node_elim_start);
   HOOK(hook_dead_node_elim_stop,              stat_dead_node_elim_stop);
   HOOK(hook_if_conversion,                    stat_if_conversion);
+  HOOK(hook_func_call,                        stat_func_call);
   HOOK(hook_arch_dep_replace_mul_with_shifts, stat_arch_dep_replace_mul_with_shifts);
   HOOK(hook_arch_dep_replace_div_by_const,    stat_arch_dep_replace_div_by_const);
   HOOK(hook_arch_dep_replace_mod_by_const,    stat_arch_dep_replace_mod_by_const);
