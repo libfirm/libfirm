@@ -2,6 +2,9 @@
   Changed parameter of Methods in type.h and type.c from
   class to clss.  Class is a C++ keyword.
 
+  10.12.2000 Goetz
+  Changed some testprograms to accomodate Uebprakt.
+
   7.9.2000 Goetz
   Finished implementation of dump_all_types.
   Added new testprogram inheritance_example.
