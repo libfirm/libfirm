@@ -130,10 +130,10 @@ dump_node_opcode (ir_node *n)
       assert(get_kind(get_SymConst_type(n)) == k_type);
       assert(get_type_ident(get_SymConst_type(n)));
       xfprintf (F, "SymC %I ", get_type_ident(get_SymConst_type(n)));
-      if (get_SymConst_kind == type_tag)
-	xfprintf (F, "tag");
+      if (get_SymConst_kind(n) == type_tag)
+        xfprintf (F, "tag");
       else
-	xfprintf (F, "size");
+        xfprintf (F, "size");
     }
 
   /* Filter */
@@ -170,6 +170,7 @@ dump_node_mode (ir_node *n)
     xfprintf (F, "%I", get_mode_ident(n->mode));
     break;
   default:
+    ;
   }
 }
 
@@ -202,6 +203,7 @@ dump_node_nodeattr (ir_node *n)
     xfprintf (F, "%I", get_entity_ident(get_Sel_entity(n)));
     } break;
   default:
+    ;
   } /* end switch */
 }
 
@@ -602,6 +604,7 @@ static void print_edge_vcgattr(ir_node *from, int to) {
   case iro_Unknown: break;
   case iro_Id:     break;
   default:
+    ;
   }
 }
 
@@ -955,7 +958,7 @@ dump_type_info (type_or_ent *tore, void *env) {
     break; /* case k_type */
   default:
     {
-      printf(" *** irdump,  %s(l.%i), faulty type.\n", __FUNCTION__, __LINE__);
+      printf(" *** irdump,  dump_type_info(l.%i), faulty type.\n", __LINE__);
     } break;
   } /* switch kind_or_entity */
 }
@@ -1000,7 +1003,7 @@ dump_class_hierarchy_node (type_or_ent *tore, void *env) {
     break; /* case k_type */
   default:
     {
-      printf(" *** irdump,  %s(l.%i), faulty type.\n", __FUNCTION__, __LINE__);
+      printf(" *** irdump,  dump_class_hierarchy_node(l.%i), faulty type.\n", __LINE__);
     } break;
   } /* switch kind_or_entity */
 }
@@ -1434,7 +1437,7 @@ dump_ir_block_graph_w_types (ir_graph *irg)
 /*  dump_type_graph                                                    */
 /*  dump_ir_graph_w_types                                              */
 /***********************************************************************/
-void dump_all_ir_graphs (void dump_graph(ir_graph*)) {
+void dump_all_ir_graphs (dump_graph_func *dump_graph) {
   int i;
   for (i=0; i < get_irp_n_irgs(); i++) {
     dump_graph(get_irp_irg(i));
