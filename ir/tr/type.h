@@ -308,10 +308,15 @@ void   set_union_delim_nameid (type *uni, int pos, ident *id);
  *   *lower_bound     Lower bounds of dimensions.  Usually all 0.
  *   *upper_bound     Upper bounds or dimensions.
  *   *element_type    The type of the array elements.
+ *   *element_ent     An entity for the array elements to be used for
+ *                    element selection with Sel.
  * SOURCE
  */
-/* create a new type array -- set dimension sizes independently */
-type *new_type_array         (ident *name, int n_dimensions);
+/* create a new type array --
+   Set dimension sizes after call to constructor with set_* routines.
+   Entity for array elements is built automatically. */
+type *new_type_array         (ident *name, int n_dimensions,
+			      type *element_type);
 
 /* manipulate private fields of array type */
 int   get_array_n_dimensions (type *array);
@@ -324,6 +329,9 @@ int   get_array_upper_bound  (type *array, int dimension);
 
 void  set_array_element_type (type *array, type *type);
 type *get_array_element_type (type *array);
+
+void  set_array_element_entity (type *array, entity *ent);
+entity *get_array_element_entity (type *array);
 
 /* typecheck */
 bool   is_array_type         (type *array);

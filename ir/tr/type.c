@@ -357,12 +357,15 @@ bool   is_union_type         (type *uni) {
 
 
 /* create a new type array -- set dimension sizes independently */
-type *new_type_array         (ident *name, int n_dimensions) {
+type *new_type_array         (ident *name, int n_dimensions,
+			      type *element_type) {
   type *res;
   res = new_type(type_array, NULL, name);
   res->attr.aa.n_dimensions = n_dimensions;
   res->attr.aa.lower_bound  = (int *) xmalloc (sizeof (int) * n_dimensions);
   res->attr.aa.upper_bound  = (int *) xmalloc (sizeof (int) * n_dimensions);
+  res->attr.aa.element_type = element_type;
+  new_entity(res, name, element_type);
   return res;
 }
 
@@ -401,6 +404,15 @@ type *get_array_element_type (type *array) {
   assert(array && (array->type_op == type_array));
   return array->attr.aa.element_type;
 }
+void  set_array_element_entity (type *array, entity *ent) {
+  assert(array && (array->type_op == type_array));
+  array->attr.aa.element_ent = ent;
+}
+entity *get_array_element_entity (type *array) {
+  assert(array && (array->type_op == type_array));
+  return array->attr.aa.element_ent;
+}
+
 /* typecheck */
 bool   is_array_type         (type *array) {
   assert(array);

@@ -55,6 +55,8 @@ typedef struct {
   int  *lower_bound;   /* Lower bounds of dimensions.  Usually all 0. */
   int  *upper_bound;   /* Upper bounds or dimensions. */
   type *element_type;  /* The type of the array elements. */
+  entity *element_ent; /* Entity for the array elements, to be used for
+			  element selection with Sel. */
 } arr_attr;
 
 typedef struct {

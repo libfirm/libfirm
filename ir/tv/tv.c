@@ -1500,7 +1500,6 @@ tarval_ord (tarval *tv, int *fail)
   }
 }
 
-
 
 int
 tarval_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
@@ -1597,6 +1596,7 @@ tarval_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
 
   return printed;
 }
+
 
 ir_mode *
 get_tv_mode (tarval *tv)

@@ -53,6 +53,9 @@ new_entity (type *owner, ident *name, type *type)
   case tpo_union: {
     add_union_member (owner, res);
   } break;
+  case tpo_array: {
+    set_array_element_entity(owner, res);
+  } break;
   default: assert(0);
   }
 
@@ -91,7 +94,9 @@ inline void   /* should this go into type.c? */
 assert_legal_owner_of_ent(type *owner) {
   assert (get_type_tpop_code(owner) == tpo_class ||
           get_type_tpop_code(owner) == tpo_union ||
-          get_type_tpop_code(owner) == tpo_struct);
+          get_type_tpop_code(owner) == tpo_struct ||
+	  get_type_tpop_code(owner) == tpo_array);   /* Yes, array has an entity
+							-- to select fields! */
 }
 
 inline ident *
