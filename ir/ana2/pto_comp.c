@@ -197,14 +197,15 @@ static void pto_method (ir_node *call, pto_env_t *pto_env)
 }
 
 
+/* Continue PTO for one of the graphs called at a Call */
 static void pto_call (ir_graph *graph, ir_node *call, pto_env_t *pto_env)
 {
   /* perform call */
   DBGPRINT (0, (stdout, "%s:%i (%s[%li])\n",
                 __FUNCTION__, __LINE__, OPNAME (call), OPNUM (call)));
 
+  /* only for debugging stuff: */
   entity *ent = get_irg_entity (graph);
-
   const char *ent_name = (char*) get_entity_name (ent);
   const char *own_name = (char*) get_type_name (get_entity_owner (ent));
 
@@ -213,7 +214,6 @@ static void pto_call (ir_graph *graph, ir_node *call, pto_env_t *pto_env)
 
     /* Save CTX */
     int ctx_idx = find_ctx_idx (call, ginfo, get_curr_ctx ());
-    /* ctx_info_t *call_ctx = find_ctx (call, ginfo, get_curr_ctx ()); */
     ctx_info_t *call_ctx = get_ctx (ginfo, ctx_idx);
     ctx_info_t *old_ctx = set_curr_ctx (call_ctx);
     DBGPRINT (1, (stdout, "%s>CTX: ", -- spaces));
@@ -221,11 +221,11 @@ static void pto_call (ir_graph *graph, ir_node *call, pto_env_t *pto_env)
 
     /* Todo: Compute Arguments */
 
-    /* Visit Graph */
-    pto_graph (graph);
+    /* Initialise Alloc Names and Node values */
+    pto_reset_graph_pto (graph, ctx_idx);
 
-    /* Initialise Alloc Names */
-    pto_init_allocs (ginfo, ctx_idx);
+    /* Visit/Iterate Graph */
+    pto_graph (graph);
 
     /* Restore CTX */
     set_curr_ctx (old_ctx);
@@ -355,8 +355,6 @@ static void pto_graph (ir_graph *graph)
   pto_env_t *pto_env = xmalloc (sizeof (pto_env_t));
   HERE ("start");
 
-  pto_init_graph (graph);
-
   /* todo (here): iterate, obey 'changed' attribute */
   pto_graph_pass (graph, pto_env);
 
@@ -372,6 +370,14 @@ static void fake_main_args (ir_graph *graph)
   /* todo: fake the arguments to the main method */
 
   HERE ("end");
+}
+
+/* Helper to pto_init */
+static void pto_init_graph_wrapper (graph_info_t *ginfo, void *__unused)
+{
+  ir_graph *graph = ginfo->graph;
+
+  pto_init_graph (graph);
 }
 
 
@@ -412,7 +418,7 @@ pto_t *get_alloc_pto (ir_node *alloc)
   return (alloc_pto -> curr_pto);
 }
 
-/* Initialise the module (should be moved to pto_init) */
+/* Initialise the module (not in pto_init.c because it's the entry to pto) */
 void pto_init ()
 {
   HERE ("start");
@@ -420,6 +426,11 @@ void pto_init ()
 
   /* todo: initialise globals etc */
   pto_init_type_names ();
+
+  /* todo: allocate ctx-sens names for allocs and set ... etc etc */
+  pto_init_type_names ();
+
+  ecg_iterate_graphs (pto_init_graph_wrapper, NULL);
 
   spaces = (char*) xmalloc (512 * sizeof (char));
   memset (spaces, ' ', 512);
@@ -458,8 +469,10 @@ void pto_cleanup ()
 {
   HERE ("start");
   /* todo: clean up our own mess */
-  /* memset (spaces, 0x00, 512); */
-  /* free (spaces); */
+  spaces -= 511;                /* hope that all changes to spaces are
+                                   properly nested */
+  memset (spaces, 0x00, 512);
+  free (spaces);
 
   /* clean up ecg infos */
   ecg_cleanup ();
@@ -469,6 +482,9 @@ void pto_cleanup ()
 
 /*
   $Log$
+  Revision 1.2  2004/11/20 21:21:56  liekweg
+  Finalise initialisation
+
   Revision 1.1  2004/11/18 16:37:34  liekweg
   rewritten
 

@@ -36,8 +36,8 @@ void pto_init_type_names (void);
 /* Initialise the given graph */
 void pto_init_graph (ir_graph*);
 
-/* Set all alloc names to the right ptos */
-void pto_init_allocs (graph_info_t*, int);
+/* Reset the given graph for a new pass run */
+void pto_reset_graph_pto (ir_graph*, int);
 
 /* ===================================================
    Global Variables:
@@ -50,6 +50,9 @@ void pto_init_allocs (graph_info_t*, int);
 
 /*
   $Log$
+  Revision 1.3  2004/11/20 21:21:56  liekweg
+  Finalise initialisation
+
   Revision 1.2  2004/11/18 16:37:07  liekweg
   rewrite
 

@@ -36,6 +36,11 @@ typedef struct init_env_str
   int n_ctxs;
 } init_env_t;
 
+typedef struct reset_env_str
+{
+  int ctx_idx;
+} reset_env_t;
+
 /* Local Variables: */
 
 /* Local Prototypes: */
@@ -56,7 +61,7 @@ static pto_t *new_pto (ir_node *node)
 static alloc_pto_t *new_alloc_pto (ir_node *node, int n_ctxs)
 {
   int i;
-  /* dummy implementation for fake_pto */
+  /* dummy implementation for testing */
   alloc_pto_t *alloc_pto = xmalloc (sizeof (alloc_pto_t));
 
   alloc_pto->ptos = (pto_t**) xmalloc (n_ctxs * sizeof (pto_t*));
@@ -103,8 +108,38 @@ static void clear_graph_links (ir_graph *graph)
   irg_walk_graph (graph, clear_node_link, NULL, NULL);
 }
 
+/* Reset ALL the pto values for a new pass */
+static void reset_node_pto (ir_node *node, void *env)
+{
+  reset_env_t *reset_env = (reset_env_t*) env;
+  int ctx_idx = reset_env->ctx_idx;
+  const opcode op = get_irn_opcode (node);
+
+  switch (op) {
+  case (iro_Load):
+  case (iro_SymConst):
+  case (iro_Const):
+  case (iro_Call):
+  case (iro_Phi): {
+    /* todo: allocate 'empty' pto values */
+    pto_t *pto = new_pto (node);
+    set_node_pto (node, pto);
+    } break;
+
+  case (iro_Alloc): {
+    /* todo: set alloc to 'right' current pto */
+    alloc_pto_t *alloc_pto = (alloc_pto_t*) get_irn_link (node);
+    alloc_pto->curr_pto = alloc_pto->ptos [ctx_idx];
+    } break;
+
+  default: {
+    /* nothing */
+  } break;
+  }
+}
+
 /* Temporary fix until we get 'real' ptos: Allocate some dummy for pto */
-static void fake_pto (ir_node *node, void *env)
+static void init_alloc_pto (ir_node *node, void *env)
 {
   init_env_t *init_env = (init_env_t*) env;
   int n_ctxs = init_env->n_ctxs;
@@ -117,18 +152,36 @@ static void fake_pto (ir_node *node, void *env)
   case (iro_Const):
   case (iro_Call):
   case (iro_Phi): {
-    pto_t *pto = new_pto (node);
-    set_node_pto (node, pto);
+    /* nothing (handled by init_node_pto) */
     } break;
 
   case (iro_Alloc): {
+    /* todo: alloc 'right' ptos */
     alloc_pto_t *alloc_pto = new_alloc_pto (node, n_ctxs);
     set_alloc_pto (node, alloc_pto);
 
     } break;
-  default:
-    HERE ("no pto");
+  default: {
+    /* nothing */
+  } break;
   }
+}
+
+
+/* Initialise the given graph for a new pass run */
+static void pto_init_graph_allocs (ir_graph *graph)
+{
+  graph_info_t *ginfo = ecg_get_info (graph);
+  int n_ctxs = ginfo->n_ctxs;
+
+  init_env_t *init_env = xmalloc (sizeof (init_env_t));
+  init_env->n_ctxs = n_ctxs;
+
+  HERE ("start");
+
+  irg_walk_graph (graph, init_alloc_pto, NULL, init_env);
+
+  HERE ("end");
 }
 
 /* ===================================================
@@ -139,54 +192,40 @@ void pto_init_type_names ()
 {
   HERE ("start");
   type_walk (clear_type_link, NULL, NULL);
+  HERE ("end");
 }
 
 /* Initialise the given graph for a new pass run */
 void pto_init_graph (ir_graph *graph)
 {
   graph_info_t *ginfo = ecg_get_info (graph);
-  int n_ctxs = ginfo->n_ctxs;
+  const int n_ctxs = ginfo->n_ctxs;
 
-  init_env_t *init_env = xmalloc (sizeof (init_env_t));
-  init_env->n_ctxs = n_ctxs;
-
-  HERE ("start");
-
-  clear_graph_links (graph);
-
+  /* only for debugging stuff: */
   entity *ent = get_irg_entity (graph);
-
   const char *ent_name = (char*) get_entity_name (ent);
   const char *own_name = (char*) get_type_name (get_entity_owner (ent));
 
   DBGPRINT (0, (stdout, "%s: init \"%s.%s\" for %i ctxs\n", __FUNCTION__,
                 own_name, ent_name, n_ctxs));
 
-  irg_walk_graph (graph, fake_pto, NULL, init_env);
+  HERE ("start");
+
+  clear_graph_links     (graph);
+  pto_init_graph_allocs (graph);
 
   HERE ("end");
 }
 
-/* Set all alloc names to the right ptos for a new pass run */
-void pto_init_allocs (graph_info_t *ginfo, int ctx_idx)
+/* Reset the given graph for a new pass run */
+void pto_reset_graph_pto (ir_graph *graph, int ctx_idx)
 {
-  assert (NULL != ginfo);
-
-  alloc_info_t *ainfo = ginfo->allocs;
-
   HERE ("start");
 
-  while (NULL != ainfo) {
-    ir_node *alloc = ainfo->alloc;
-    alloc_pto_t *alloc_pto = (alloc_pto_t*) get_irn_link (alloc);
+  reset_env_t *reset_env = (reset_env_t*) xmalloc (sizeof (reset_env_t));
+  reset_env->ctx_idx = ctx_idx;
 
-    alloc_pto->curr_pto = alloc_pto->ptos [ctx_idx];
-
-    DBGPRINT (0, (stdout, "%s:%i (%s[%li]): ctx_idx = %i\n",
-                  __FUNCTION__, __LINE__, OPNAME (alloc), OPNUM (alloc), ctx_idx));
-
-    ainfo = ainfo->prev;
-  }
+  irg_walk_graph (graph, reset_node_pto, NULL, reset_env);
 
   HERE ("end");
 }
@@ -194,6 +233,9 @@ void pto_init_allocs (graph_info_t *ginfo, int ctx_idx)
 
 /*
   $Log$
+  Revision 1.4  2004/11/20 21:21:56  liekweg
+  Finalise initialisation
+
   Revision 1.3  2004/11/18 16:37:07  liekweg
   rewrite
 
