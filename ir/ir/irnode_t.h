@@ -17,6 +17,8 @@
 # include "common_t.h"
 # include "irdom_t.h" /* For size of struct dom_info. */
 
+# include "exc.h"
+
 /** ir node attributes **/
 
 /* Block attributes */
@@ -29,6 +31,7 @@ typedef struct {
 				 @@@ Eventually overlay with graph_arr as only valid
 				 in different phases.  Eventually inline the whole
 				 datastructure. */
+  exc_t exc;					/* role of this block for exception handling */
 } block_attr;
 
 /* Cond attributes */

@@ -494,6 +494,16 @@ set_Block_graph_arr (ir_node *node, int pos, ir_node *value) {
   node->attr.block.graph_arr[pos+1] = value;
 }
 
+void set_Block_exc (ir_node *block, exc_t exc)
+{
+  block->attr.block.exc = exc;
+}
+
+exc_t get_Block_exc (ir_node *block)
+{
+  return (block->attr.block.exc);
+}
+
 inline int
 get_End_n_keepalives(ir_node *end) {
   assert (end->op == op_End);
