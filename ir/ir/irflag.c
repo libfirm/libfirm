@@ -44,6 +44,7 @@ optimization_state_t libFIRM_opt =
   ENABLE(OPT_TAIL_RECURSION)                     |
   ENABLE(OPT_PRECISE_EXC_CONTEXT)                |
   DISABLE(OPT_FRAGILE_OPS)                       |
+  ENABLE(OPT_IF_CONVERSION)                      |
   0;
 
 optimization_state_t libFIRM_verb =
@@ -67,7 +68,8 @@ optimization_state_t libFIRM_verb =
   DISABLE(OPT_NORMALIZE)                          |
   DISABLE(OPT_TAIL_RECURSION)                     |
   DISABLE(OPT_PRECISE_EXC_CONTEXT)                |
-  DISABLE(OPT_FRAGILE_OPS)                       |
+  DISABLE(OPT_FRAGILE_OPS)                        |
+  DISABLE(OPT_IF_CONVERSION)                      |
   0;
 
 /** The Firm verbosity level */
