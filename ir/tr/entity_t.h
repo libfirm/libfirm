@@ -45,8 +45,10 @@ struct entity {
                            is the ident for `A_a'. */
   type *type;           /* The type of this entity, e.g., a method type, a
                            basic type of the language or a class itself */
-  type *owner;          /* The class this entity belongs to.  In case of local variables
-			   the method they are defined in. */
+  type *owner;          /* The class this entity belongs to.  In case of local
+			   variables the method they are defined in. */
+  int  offset;          /* Offset in byte for this entity.  Fixed when layout
+			   of owner is determined.  */
   /* for methods */
   ir_graph *irg;        /* If (type == method_type) this is the corresponding irg.
 			   The ir_graph constructor automatically sets this field.

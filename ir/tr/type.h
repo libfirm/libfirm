@@ -217,6 +217,10 @@ struct type_class {
   type_class **supertypes; /* direct supertypes */
   unsigned long visit;     /* visited counter for walks of
 			      the type information */
+  int size;                /* Size of an entity of this type.  This is determined
+			      when fixing the layout of this class.  Size must be
+			      given in bytes. */
+
 };
 
 
@@ -247,6 +251,10 @@ void        add_class_supertype (type_class *clss, type_class *supertype);
 int         get_class_n_supertype (type_class *clss);
 type_class *get_class_supertype (type_class *clss, int pos);
 void        set_class_supertype (type_class *clss, type_class *supertype, int pos);
+
+int         get_class_size (type_class *clss);
+void        set_class_size (type_class *clss, int size);
+
 
 /*******************************************************************/
 /** TYPE_STRCT                                                   **/

@@ -147,6 +147,19 @@ get_class_n_supertype (type_class *clss)
   return (ARR_LEN (clss->supertypes))-1;
 }
 
+int
+get_class_size (type_class *clss) {
+  assert(clss);
+  return clss->size;
+}
+
+void
+set_class_size (type_class *clss, int size) {
+  assert(clss);
+  clss->size = size;
+}
+
+
 /*******************************************************************/
 /** TYPE_STRCT                                                   **/
 /*******************************************************************/

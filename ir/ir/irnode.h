@@ -130,19 +130,25 @@ inline void     set_Const_tarval (ir_node *node, tarval *con);
      this flag. */
 typedef enum {
   type_tag,          /* The SymConst is a type tag for the given type.
-			Type_or_id_p is type * */
+			Type_or_id_p is type *. */
   size,              /* The SymConst is the size of the given type.
-			Type_or_id_p is type * */
+			Type_or_id_p is type *. */
   linkage_ptr_info   /* The SymConst is a symbolic pointer to be filled in
-			by the linker. Type_or_id_p is ident * */
+			by the linker. Type_or_id_p is ident *. */
 } symconst_kind;
 typedef union type_or_id * type_or_id_p;
 inline symconst_kind get_SymConst_kind (ir_node *node);
 inline void          set_SymConst_kind (ir_node *node, symconst_kind num);
+/* Only to access SymConst of kind type_tag or size.  Else assertion: */
 inline type    *get_SymConst_type (ir_node *node);
 inline void     set_SymConst_type (ir_node *node, type *type);
+/* Only to access SymConst of kind linkage_ptr_info.  Else assertion: */
 inline ident   *get_SymConst_ptrinfo (ir_node *node);
 inline void     set_SymConst_ptrinfo (ir_node *node, ident *ptrinfo);
+/* Sets both: type and ptrinfo.  Needed to treat the node independent of
+   its semantics: */
+inline type_or_id_p get_SymConst_type_or_id (ir_node *node);
+inline void set_SymConst_type_or_id (ir_node *node, type_or_id_p tori);
 
 inline ir_node *get_Sel_mem (ir_node *node);
 inline void     set_Sel_mem (ir_node *node, ir_node *mem);

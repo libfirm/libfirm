@@ -1,6 +1,6 @@
 # Hey, emacs, this is a -*- makefile -*-
 #
-# Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
+# Copyright (C) 1998 - 2001 by Universitaet Karlsruhe
 # All rights reserved.
 # Author: Goetz Lindenmaier
 #
@@ -10,22 +10,33 @@
 
 SUBDIRS = ir testprograms
 
-MAKE    = /usr/bin/make -k
-SHELL   = /bin/sh
+ifeq (,($MAKE))
+MAKE = /usr/bin/make -k
+endif
+
+#MAKE = ${MAKE:-/usr/bin/make} #  Vorschlag Uwe
+#MAKE = /usr/bin/make -k
+#SHELL   = /bin/sh
 
 .PHONY: default all clean realclean install depend ir testprograms
 
-
+# Makes the intermediate representation and bundles it into a
+# library
 ir:
 	$(MAKE) -C ir
+# Makes the library, i.e., compiles and bundles the intermediate
+# representation and extracts the necessary headers into directory
+# include.
+lib:	ir
+	$(MAKE) -C ir lib
 
-all:	TAGS ir testprograms
-
+# Makes the testprograms.
 testprograms:
 	$(MAKE) -C testprograms
 
-lib:	ir
-	$(MAKE) -C ir lib
+# Makes everything
+all:	TAGS ir lib testprograms
+
 
 clean:
 	for i in $(SUBDIRS); do  $(MAKE) -C $$i clean; done

@@ -27,6 +27,8 @@
 #define DEFAULT_TYPE_ATTRIBUTE ""
 #define TYPE_EDGE_ATTR ""
 
+#define PRINT_NODEID(X) fprintf(F, "%p", X)
+
 /* file to dump to */
 static FILE *F;
 
@@ -139,7 +141,8 @@ void
 dump_node (ir_node *n) {
 
   /* dump this node */
-  xfprintf (F, "node: {title: \"%p\" label: \"", n);
+  xfprintf (F, "node: {title: \""); PRINT_NODEID(n); fprintf(F, "\" label: \"");
+
   dump_node_opcode(n);
   dump_node_mode (n);
   xfprintf (F, " ");
@@ -156,7 +159,7 @@ void
 dump_ir_node (ir_node *n)
 {
   /* dump this node */
-  xfprintf (F, "node: {title: \"%p\" label: ", n);
+  fprintf (F, "node: {title: \""); PRINT_NODEID(n); fprintf(F, "\" label: ");
 
   switch (n->op->code) {  /* node label */
   case iro_Start:
@@ -605,7 +608,7 @@ dump_ir_block (ir_node *block, void *env) {
   if (get_irn_opcode(block) == iro_Block) {
 
     /* This is a block. So dump the vcg information to make a block. */
-    xfprintf(F, "graph: { title: \"%p\"  label: \"", block);
+    xfprintf(F, "graph: { title: \""); PRINT_NODEID(block); fprintf(F, "\"  label: \"");
 #ifdef DEBUG_libfirm
     xfprintf (F, "%ld", get_irn_node_nr(block));
 #else

@@ -116,6 +116,16 @@ set_entity_type (entity *ent, type *type) {
   ent->type = type;
 }
 
+inline int
+get_entity_offset (entity *ent) {
+  return ent->offset;
+}
+
+inline void
+set_entity_offset (entity *ent, int offset) {
+  ent->offset = offset;
+}
+
 inline ir_graph *
 get_entity_irg(entity *ent) {
   assert (ent);

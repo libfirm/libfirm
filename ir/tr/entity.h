@@ -24,6 +24,23 @@
 **  of procedures defined in the scope of an other procedure is the
 **  enclosing procedure.
 **
+**  In detail the datastructure entity has the following fields:
+**
+**  ident *name     Name of this entity as specified in the source code.
+**                  Only unequivocal in conjuction with scope.
+**  ident *ld_name  Unique name of this entity, i.e., the mangled
+**                  name.  E.g., for a class `A' with field `a' this
+**                  is the ident for `A_a'.
+**  type *type      The type of this entity, e.g., a method type, a
+**                  basic type of the language or a class itself.
+**  type *owner;    The class this entity belongs to.  In case of local
+**		    variables the method they are defined in.
+**  int offset;     Offset in byte for this entity.  Fixed when layout
+**		    of owner is determined.
+**  ir_graph *irg;  If (type == method_type) this is the corresponding irg.
+**		    The ir_graph constructor automatically sets this field.
+**                  If (type !- method_type) access of this field will cause
+**                  an assertion.
 */
 
 # ifndef _ENTITY_H_
@@ -79,6 +96,9 @@ inline void  assert_legal_owner_of_ent(type *owner);
 
 type     *get_entity_type (entity *ent);
 void      set_entity_type (entity *ent, type *type);
+
+int       get_entity_offset (entity *ent);
+void      set_entity_offset (entity *ent, int offset);
 
 /* The entity knows the corresponding irg if the entity is a method.
    This allows to get from a Call to the called irg. */

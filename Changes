@@ -1,3 +1,14 @@
+
+  15.01.2001 Goetz
+  added set/get_SymConst_type_or_id.
+  added field offset to entity.
+
+  12.01.2001 Goetz
+  Some changes to make the lib better portable
+
+  29.12.2000 Goetz
+  Initialize max_node_nr in irprog.
+
   27.12.2000 Goetz
   Now outputs warning if faulty type in irdump, dump_type_info.
   Explicit string termination in irdump, vcg_open.

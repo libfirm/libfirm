@@ -573,8 +573,6 @@ get_SymConst_ptrinfo (ir_node *node) {
   assert (   (node->op == op_SymConst)
           && (get_SymConst_kind(node) == linkage_ptr_info));
   return node->attr.i.tori.ptrinfo;
-
-
 }
 
 inline void
@@ -582,6 +580,18 @@ set_SymConst_ptrinfo (ir_node *node, ident *ptrinfo) {
   assert (   (node->op == op_SymConst)
           && (get_SymConst_kind(node) == linkage_ptr_info));
   node->attr.i.tori.ptrinfo = ptrinfo;
+}
+
+inline type_or_id_p
+get_SymConst_type_or_id (ir_node *node) {
+  assert (node->op == op_SymConst);
+  return &(node->attr.i.tori);
+}
+
+inline void
+set_SymConst_type_or_id (ir_node *node, type_or_id_p tori) {
+  assert (node->op == op_SymConst);
+  memcpy (&(node->attr.i.tori), tori, sizeof(type_or_id));
 }
 
 inline ir_node *

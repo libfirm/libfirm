@@ -10,10 +10,10 @@
 # ifndef _BOOL_H_
 # define _BOOL_H_
 
-# ifndef __CPLUSPLUS
+# ifndef __cplusplus
 
 typedef unsigned char bool;
 
-# endif
+# endif /* __cplusplus */
 
 # endif /* _BOOL_H_ */
