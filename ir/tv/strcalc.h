@@ -66,7 +66,8 @@ enum {
  * The output mode for ntger values.
  */
 enum base_t {
-  SC_HEX,	/**< hexadecimal output */
+  SC_hex,	/**< hexadecimal output with small letters */
+  SC_HEX,	/**< hexadecimal output with BIG letters */
   SC_DEC,	/**< decimal output */
   SC_OCT,	/**< octal output */
   SC_BIN,	/**< binary output */

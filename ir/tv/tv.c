@@ -48,6 +48,7 @@
 #include "tune.h"           /* some constants */
 #include "entity_t.h"       /* needed to store pointers to entities */
 #include "irmode.h"         /* defines modes etc */
+#include "irmode_t.h"
 #include "irnode.h"         /* defines boolean return values */
 #include "xprintf.h"
 #include "xp_help.h"
@@ -546,7 +547,9 @@ tarval *get_tarval_inf(ir_mode *mode)
  * Arithmethic operations on tarvals ========================================
  */
 
-/* test if negative number, 1 means 'yes' */
+/*
+ * test if negative number, 1 means 'yes'
+ */
 int tarval_is_negative(tarval *a)
 {
   ANNOUNCE();
@@ -568,7 +571,9 @@ int tarval_is_negative(tarval *a)
   }
 }
 
-/* comparison */
+/*
+ * comparison
+ */
 pnc_number tarval_cmp(tarval *a, tarval *b)
 {
   ANNOUNCE();
@@ -602,6 +607,9 @@ pnc_number tarval_cmp(tarval *a, tarval *b)
   return False;
 }
 
+/*
+ * convert to other mode
+ */
 tarval *tarval_convert_to(tarval *src, ir_mode *m)
 {
   ANNOUNCE();
@@ -665,7 +673,10 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m)
   return tarval_bad;
 }
 
-tarval *tarval_neg(tarval *a)              /* negation */
+/*
+ * negation
+ */
+tarval *tarval_neg(tarval *a)
 {
   ANNOUNCE();
   assert(a);
@@ -687,7 +698,10 @@ tarval *tarval_neg(tarval *a)              /* negation */
   }
 }
 
-tarval *tarval_add(tarval *a, tarval *b)   /* addition */
+/*
+ * addition
+ */
+tarval *tarval_add(tarval *a, tarval *b)
 {
   ANNOUNCE();
   assert(a);
@@ -713,7 +727,10 @@ tarval *tarval_add(tarval *a, tarval *b)   /* addition */
   }
 }
 
-tarval *tarval_sub(tarval *a, tarval *b)   /* subtraction */
+/*
+ * subtraction
+ */
+tarval *tarval_sub(tarval *a, tarval *b)
 {
   ANNOUNCE();
   assert(a);
@@ -739,7 +756,10 @@ tarval *tarval_sub(tarval *a, tarval *b)   /* subtraction */
   }
 }
 
-tarval *tarval_mul(tarval *a, tarval *b)   /* multiplication */
+/*
+ * multiplication
+ */
+tarval *tarval_mul(tarval *a, tarval *b)
 {
   ANNOUNCE();
   assert(a);
@@ -764,7 +784,10 @@ tarval *tarval_mul(tarval *a, tarval *b)   /* multiplication */
   }
 }
 
-tarval *tarval_quo(tarval *a, tarval *b)   /* floating point division */
+/*
+ * floating point division
+ */
+tarval *tarval_quo(tarval *a, tarval *b)
 {
   ANNOUNCE();
   assert(a);
@@ -776,7 +799,10 @@ tarval *tarval_quo(tarval *a, tarval *b)   /* floating point division */
   return get_tarval(fc_get_buffer(), fc_get_buffer_length(), a->mode);
 }
 
-tarval *tarval_div(tarval *a, tarval *b)   /* integer division */
+/*
+ * integer division
+ */
+tarval *tarval_div(tarval *a, tarval *b)
 {
   ANNOUNCE();
   assert(a);
@@ -788,7 +814,10 @@ tarval *tarval_div(tarval *a, tarval *b)   /* integer division */
   return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 }
 
-tarval *tarval_mod(tarval *a, tarval *b)   /* remainder */
+/*
+ * remainder
+ */
+tarval *tarval_mod(tarval *a, tarval *b)
 {
   ANNOUNCE();
   assert(a);
@@ -800,7 +829,10 @@ tarval *tarval_mod(tarval *a, tarval *b)   /* remainder */
   return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 }
 
-tarval *tarval_abs(tarval *a)              /* absolute value */
+/*
+ * absolute value
+ */
+tarval *tarval_abs(tarval *a)
 {
   ANNOUNCE();
   assert(a);
@@ -825,7 +857,10 @@ tarval *tarval_abs(tarval *a)              /* absolute value */
   return tarval_bad;
 }
 
-tarval *tarval_and(tarval *a, tarval *b)   /* bitwise and */
+/*
+ * bitwise and
+ */
+tarval *tarval_and(tarval *a, tarval *b)
 {
   ANNOUNCE();
   assert(a);
@@ -835,7 +870,11 @@ tarval *tarval_and(tarval *a, tarval *b)   /* bitwise and */
   sc_and(a->value, b->value);
   return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 }
-tarval *tarval_or (tarval *a, tarval *b)   /* bitwise or */
+
+/*
+ * bitwise or
+ */
+tarval *tarval_or (tarval *a, tarval *b)
 {
   ANNOUNCE();
   assert(a);
@@ -845,7 +884,11 @@ tarval *tarval_or (tarval *a, tarval *b)   /* bitwise or */
   sc_or(a->value, b->value);
   return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 }
-tarval *tarval_eor(tarval *a, tarval *b)   /* bitwise exclusive or (xor) */
+
+/*
+ * bitwise exclusive or (xor)
+ */
+tarval *tarval_eor(tarval *a, tarval *b)
 {
   ANNOUNCE();
   assert(a);
@@ -856,7 +899,10 @@ tarval *tarval_eor(tarval *a, tarval *b)   /* bitwise exclusive or (xor) */
   return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 }
 
-tarval *tarval_shl(tarval *a, tarval *b)   /* bitwise left shift */
+/*
+ * bitwise left shift
+ */
+tarval *tarval_shl(tarval *a, tarval *b)
 {
   ANNOUNCE();
   assert(a);
@@ -866,7 +912,11 @@ tarval *tarval_shl(tarval *a, tarval *b)   /* bitwise left shift */
   sc_shl(a->value, b->value, get_mode_size_bits(a->mode), mode_is_signed(a->mode));
   return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 }
-tarval *tarval_shr(tarval *a, tarval *b)   /* bitwise unsigned right shift */
+
+/*
+ * bitwise unsigned right shift
+ */
+tarval *tarval_shr(tarval *a, tarval *b)
 {
   ANNOUNCE();
   assert(a);
@@ -876,7 +926,11 @@ tarval *tarval_shr(tarval *a, tarval *b)   /* bitwise unsigned right shift */
   sc_shr(a->value, b->value, get_mode_size_bits(a->mode), mode_is_signed(a->mode));
   return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 }
-tarval *tarval_shrs(tarval *a, tarval *b)  /* bitwise signed right shift */
+
+/*
+ * bitwise signed right shift
+ */
+tarval *tarval_shrs(tarval *a, tarval *b)
 {
   ANNOUNCE();
   assert(a);
@@ -886,7 +940,11 @@ tarval *tarval_shrs(tarval *a, tarval *b)  /* bitwise signed right shift */
   sc_shrs(a->value, b->value, get_mode_size_bits(a->mode), mode_is_signed(a->mode));
   return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 }
-tarval *tarval_rot(tarval *a, tarval *b)   /* bitwise rotation */
+
+/*
+ * bitwise rotation
+ */
+tarval *tarval_rot(tarval *a, tarval *b)
 {
   ANNOUNCE();
   assert(a);
@@ -897,24 +955,52 @@ tarval *tarval_rot(tarval *a, tarval *b)   /* bitwise rotation */
   return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 }
 
-/** *********** Output of tarvals *********** **/
+/*
+ * Output of tarvals
+ */
 int tarval_print(XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
 {
-  ANNOUNCE();
+  static const tarval_mode_info default_info = { TVO_NATIVE, NULL, NULL };
+
   tarval *tv;
   const char *str;
   char buf[100];
+  const tarval_mode_info *mode_info;
+  const char *prefix, *suffix;
+
+  ANNOUNCE();
 
   tv = XP_GETARG(tarval *, 0);
+  mode_info = tv->mode->tv_priv;
+  if (! mode_info)
+    mode_info = &default_info;
+  prefix = mode_info->mode_prefix ? mode_info->mode_prefix : "";
+  suffix = mode_info->mode_suffix ? mode_info->mode_suffix : "";
+
   switch (get_mode_sort(tv->mode))
   {
     case int_number:
     case character:
-      str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_HEX);
-      return XPF1R("0x%s", str);
+      switch (mode_info->mode_output) {
+
+      case TVO_DECIMAL:
+        str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_DEC);
+	break;
+
+      case TVO_OCTAL:
+        str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_OCT);
+	break;
+
+      case TVO_HEX:
+      case TVO_NATIVE:
+      default:
+        str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_HEX);
+	break;
+      }
+      return XPF3R("%s%s%s", prefix, str, suffix);
 
     case float_number:
-      return XPF1R("%s", fc_print_dec(tv->value, buf, sizeof(buf)));
+      return XPF3R("%s%s%s", prefix, fc_print_dec(tv->value, buf, sizeof(buf)), suffix);
 
     case reference:
       if (tv->value != NULL)
@@ -929,8 +1015,18 @@ int tarval_print(XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
         return XPSR("void");
 
     case internal_boolean:
-      if (tv == tarval_b_true) return XPSR("true");
-      else return XPSR("false");
+      switch (mode_info->mode_output) {
+
+      case TVO_DECIMAL:
+      case TVO_OCTAL:
+      case TVO_HEX:
+      case TVO_BINARY:
+        return XPF3R("%s%c%s", prefix, (tv == tarval_b_true) ? '1' : '0', suffix);
+
+      case TVO_NATIVE:
+      default:
+        return XPF3R("%s%s%s", prefix, (tv == tarval_b_true) ? "true" : "false", suffix);
+      }
 
     case auxiliary:
       return XPSR("<BAD>");
@@ -1001,6 +1097,21 @@ unsigned char tarval_sub_bits(tarval *tv, unsigned byte_ofs)
   }
 }
 
+/*
+ * Specify the output options of one mode.
+ *
+ * This functions stores the modinfo, so DO NOT DESTROY it.
+ *
+ * Returns zero on success.
+ */
+int tarval_set_mode_output_option(ir_mode *mode, const tarval_mode_info *modeinfo)
+{
+  assert(mode);
+
+  mode->tv_priv = modeinfo;
+  return 0;
+}
+
 /* Identifying some tarvals ??? */
 /* Implemented in old tv.c as such:
  *   return 0 for additive neutral,
@@ -1022,7 +1133,9 @@ long tarval_classify(tarval *tv)
   return 2;
 }
 
-/* Initialization of the tarval module: called before init_mode() */
+/*
+ * Initialization of the tarval module: called before init_mode()
+ */
 void init_tarval_1(void)
 {
   ANNOUNCE();
@@ -1035,7 +1148,18 @@ void init_tarval_1(void)
   /* init_fltcalc(0); not yet*/
 }
 
-/* Initialization of the tarval module: called after init_mode() */
+/**
+ * default mode_info for output as HEX
+ */
+static const tarval_mode_info hex_output = {
+  TVO_HEX,
+  "0x",
+  NULL,
+};
+
+/*
+ * Initialization of the tarval module: called after init_mode()
+ */
 void init_tarval_2(void)
 {
   ANNOUNCE();
@@ -1054,6 +1178,23 @@ void init_tarval_2(void)
 
   tarval_P_void = (tarval*)malloc(sizeof(tarval));
   tarval_P_void->mode = mode_P;
+
+  /*
+   * assign output modes that are compatible with the
+   * old implementation: Hex output
+   */
+  tarval_set_mode_output_option(mode_U,  &hex_output);
+  tarval_set_mode_output_option(mode_C,  &hex_output);
+  tarval_set_mode_output_option(mode_Bs, &hex_output);
+  tarval_set_mode_output_option(mode_Bu, &hex_output);
+  tarval_set_mode_output_option(mode_Hs, &hex_output);
+  tarval_set_mode_output_option(mode_Hu, &hex_output);
+  tarval_set_mode_output_option(mode_Hs, &hex_output);
+  tarval_set_mode_output_option(mode_Hu, &hex_output);
+  tarval_set_mode_output_option(mode_Is, &hex_output);
+  tarval_set_mode_output_option(mode_Iu, &hex_output);
+  tarval_set_mode_output_option(mode_Ls, &hex_output);
+  tarval_set_mode_output_option(mode_Lu, &hex_output);
 }
 
 /****************************************************************************

@@ -440,6 +440,17 @@ static int _sign(const char *val)
   return (val[CALC_BUFFER_SIZE-1] <= SC_7) ? (1) : (-1);
 }
 
+/*
+ * returns non-zero if bit at position pos is set
+ */
+static int _bit(const char *val, int pos)
+{
+  int bit    = pos & 3;
+  int nibble = pos >> 2;
+
+  return _bitisset(val[nibble], bit);
+}
+
 static void _inc(char *val, char *buffer)
 {
   int counter = 0;
@@ -1232,6 +1243,9 @@ unsigned char sc_sub_bits(const void *value, int len, unsigned byte_ofs)
  */
 const char *sc_print(const void *value, unsigned bits, enum base_t base)
 {
+  static const char big_digits[]   = "0123456789ABCDEF";
+  static const char small_digits[] = "0123456789abcdef";
+
   char base_val[CALC_BUFFER_SIZE];
   char div1_res[CALC_BUFFER_SIZE];
   char div2_res[CALC_BUFFER_SIZE];
@@ -1243,6 +1257,7 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base)
   const char *p;
   char *m, *n, *t;
   char *pos;
+  const char *digits = small_digits;
 
   pos = output_buffer + BIT_PATTERN_SIZE;
   *pos = '\0';
@@ -1255,13 +1270,15 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base)
   switch (base) {
 
   case SC_HEX:
+    digits = big_digits;
+  case SC_hex:
     for (counter = 0; counter < nibbles; ++counter)
-      *(--pos) = "0123456789abcdef"[_val(val[counter])];
+      *(--pos) = digits[_val(val[counter])];
 
     /* last nibble must be masked */
     if (bits & 3) {
       x = and_table[_val(val[++counter])][bits & 3];
-      *(--pos) = "0123456789abcdef"[_val(x)];
+      *(--pos) = digits[_val(x)];
     }
 
     /* now kill zeros */
@@ -1303,27 +1320,27 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base)
     memset(base_val, SC_0, CALC_BUFFER_SIZE);
     base_val[0] = base == SC_DEC ? SC_A : SC_8;
 
-    m    = val;
+    p    = val;
     sign = 0;
     if (base == SC_DEC) {
       /* check for negative values */
-      if (_sign(val) == -1) {
+      if (_bit(val, bits - 1)) {
 	_negate(val, div2_res);
 	sign = 1;
-	m = div2_res;
+	p = div2_res;
       }
     }
 
     /* transfer data into oscilating buffers */
     memset(div1_res, SC_0, CALC_BUFFER_SIZE);
     for (counter = 0; counter < nibbles; ++counter)
-      div1_res[counter] = m[counter];
+      div1_res[counter] = p[counter];
 
      /* last nibble must be masked */
     if (bits & 3) {
       ++counter;
 
-      div1_res[counter] = and_table[_val(m[counter])][bits & 3];
+      div1_res[counter] = and_table[_val(p[counter])][bits & 3];
     }
 
     m = div1_res;
@@ -1333,7 +1350,7 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base)
       t = m;
       m = n;
       n = t;
-      *(--pos) = "0123456789abcdef"[_val(rem_res[0])];
+      *(--pos) = digits[_val(rem_res[0])];
 
       x = 0;
       for (i = 0; i < sizeof(div1_res); ++i)

@@ -280,6 +280,7 @@ int tarval_is_entity(tarval *tv);
  */
 
 /** Returns the mode of the tarval. */
+ir_mode *get_tarval_mode (tarval *tv);
 
 /* Testing properties of the represented values */
 
@@ -457,6 +458,47 @@ tarval *tarval_shrs(tarval *a, tarval *b);
 tarval *tarval_rot(tarval *a, tarval *b);
 
 /* *********** Output of tarvals *********** */
+
+/**
+ * The output mode for tarval values.
+ *
+ * Some modes allow more that one representation, for instance integers
+ * can be represented hex or decimal. Of course it would be enough to have
+ * one and let every backend convert it into the 'right' one.
+ * However, we can do this in the tarval much simplier...
+ */
+enum tv_output_mode {
+  TVO_NATIVE,			/**< the default output mode, depends on the mode */
+  TVO_HEX,			/**< use hex representation, always possible */
+  TVO_DECIMAL,			/**< use decimal representation */
+  TVO_OCTAL,			/**< use octal representation */
+  TVO_BINARY,			/**< use binary representation */
+  TVO_FLOAT,			/**< use floating point representation */
+};
+
+/**
+ * This structure contains helper information to format the output
+ * of a tarval of an mode.
+ */
+typedef struct tarval_mode_info {
+    enum tv_output_mode mode_output;	/**< if != TVO_NATIVE select a special mode */
+    const char *mode_prefix;		/**< if set, this prefix will be print
+					     before a value of this mode */
+    const char *mode_suffix;		/**< if set, this suffixx will be print
+					     before a value of this mode */
+} tarval_mode_info;
+
+/**
+ * Specify the output options of one mode.
+ *
+ * This functions stores the modinfo, so DO NOT DESTROY it.
+ *
+ * @param mode		a ir_mode that should be associated
+ * @param modeinfo	the output format info
+ *
+ * Returns zero on success.
+ */
+int tarval_set_mode_output_option(ir_mode *mode, const tarval_mode_info *modeinfo);
 
 /**
  * Returns Bit representation of a tarval value, as string of '0' and '1'
