@@ -25,6 +25,7 @@ typedef struct {
   entity **members;    /* fields and methods of this class */
   type   **subtypes;   /* direct subtypes */
   type   **supertypes; /* direct supertypes */
+  peculiarity peculiarity;
 } cls_attr;
 
 typedef struct {

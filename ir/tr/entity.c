@@ -257,6 +257,20 @@ set_entity_volatility (entity *ent, ent_volatility vol) {
   ent->volatility = vol;
 }
 
+inline peculiarity
+get_entity_peculiarity (entity *ent) {
+  assert (ent);
+  assert (is_method_type(ent->type));
+  return ent->peculiarity;
+}
+
+inline void
+set_entity_peculiarity (entity *ent, peculiarity pec) {
+  assert (ent);
+  assert (is_method_type(ent->type));
+  ent->peculiarity = pec;
+}
+
 /* Set has no effect for entities of type method. */
 inline ir_node *
 get_atomic_ent_value(entity *ent) {

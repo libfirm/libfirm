@@ -384,6 +384,16 @@ void    remove_class_supertype(type *clss, type *supertype) {
       break;
     }
 }
+
+inline peculiarity get_class_peculiarity (type *clss) {
+  assert(clss && (clss->type_op == type_class));
+  return clss->attr.ca.peculiarity;
+}
+inline void        set_class_peculiarity (type *clss, peculiarity pec) {
+  assert(clss && (clss->type_op == type_class));
+  clss->attr.ca.peculiarity = pec;
+}
+
 /* typecheck */
 bool    is_class_type(type *clss) {
   assert(clss);

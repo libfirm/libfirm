@@ -62,13 +62,14 @@ struct entity {
   int  offset;          /* Offset in byte for this entity.  Fixed when layout
 			   of owner is determined.  */
   void *link;           /* To store some intermediate information */
+  unsigned long visit;  /* visited counter for walks of the type information */
   /* for methods */
   ir_graph *irg;        /* If (type == method_type) this is the corresponding irg.
 			   The ir_graph constructor automatically sets this field.
 		 	   @@@ Does this go here, or should it be in type_method,
 			   or should Call have an attribute ent??
 			   Yes, it must be here. */
-  unsigned long visit;  /* visited counter for walks of the type information */
+  peculiarity peculiarity;
 };
 
 

@@ -79,21 +79,26 @@ typedef struct ir_graph ir_graph;
  *   type       The type of this entity.
  *   name       The string that represents this entity in the source program.
  *   allocation A flag saying whether the entity is dynamically or statically
- *              allocated (values: dynamic_allocated,  static_allocated).
- *              @@@ Does this make sense???
+ *              allocated (values: dynamic_allocated,  static_allocated,
+ *              automatic_allocated).
  *   visibility A flag indicating the visibility of this entity (values: local,
  *              external_visible,  external_allocated)
  *   variability A flag indicating the variability of this entity (values:
  *              uninitialized, initalized, part_constant, constant)
  *   offset     The offset of the entity within the compound object.  Only set
- *              if IR in the state "@@@"  Wie nennen wir den??
+ *              if the owner in the state "layout_fixed".
  *   overwrites A list of entities overwritten by this entity.  This list is only
  *              existent if the owner of this entity is a class.  The members in
  *              this list must be entities of super classes.
- *   link       A void* to associate some additional inforamtion with the entity.
+ *   link       A void* to associate some additional information with the entity.
  *   irg        If the entity is a method this is the ir graph that represents the
  *              code of the method.
- *
+ *   peculiarity The peculiarity of the entity.  If the entity is a method this
+ *              indicates whether the entity represents
+ *              a real method or whether it only exists to describe an interface.
+ *              In that case there nowhere exists code for this entity and this entity
+ *              is never dynamically used in the code.
+ *              Values: description, existent.  Default: existent.
  *
  *  These fields can only be accessed via access functions.
  *
@@ -197,6 +202,10 @@ typedef enum {
 
 ent_volatility get_entity_volatility (entity *ent);
 void           set_entity_volatility (entity *ent, ent_volatility vol);
+
+/* For the definition of enumeration peculiarity see type.h */
+peculiarity get_entity_peculiarity (entity *ent);
+void        set_entity_peculiarity (entity *ent, peculiarity pec);
 
 /* Set has no effect for entities of type method. */
 ir_node *get_atomic_ent_value(entity *ent);

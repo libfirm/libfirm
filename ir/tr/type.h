@@ -205,6 +205,12 @@ int is_type            (void *thing);
  *
  *  These are dynamic lists that can be grown with an "add_" function,
  *  but not shrinked.
+ *
+ *  peculiarity The peculiarity of this class.  If the class is of peculiarity
+ *             "description" it only is a description of requirememts to a class,
+ *             as, e.g., a Java interface.  The class will never be allocated.
+ *             Values: description, existent.  Default: existent.
+ *
  * SOURCE
  */
 /* create a new class type */
@@ -262,6 +268,18 @@ void    set_class_supertype   (type *clss, type *supertype, int pos);
 /* Finds supertype in the list of supertypes and overwrites it with NULL
  @@@ Doesn't work properly. */
 void    remove_class_supertype(type *clss, type *supertype);
+
+/* This enumeration flags the peculiarity of entities and types. */
+typedef enum {
+  description,     /* Represents only a description.  The entity/type is never
+	  	      allocated, no code/data exists for this entity/type. */
+  existent         /* The entity/type (can) exist. */
+} peculiarity;
+
+/* The peculiarity of the class.  The enumeration peculiarity is defined
+   in entity.h */
+inline peculiarity get_class_peculiarity (type *clss);
+inline void        set_class_peculiarity (type *clss, peculiarity pec);
 
 /* typecheck */
 bool    is_class_type(type *clss);
