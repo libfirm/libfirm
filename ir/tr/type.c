@@ -377,25 +377,25 @@ set_type_state(type *tp, type_state state) {
       } break;
     case tpo_struct:
       {
-    assert(get_type_size_bits(tp) > -1);
-    for (i = 0; i < get_struct_n_members(tp); i++) {
-      assert(get_entity_offset_bits(get_struct_member(tp, i)) > -1);
-      assert((get_entity_allocation(get_struct_member(tp, i)) == allocation_automatic));
-    }
+        assert(get_type_size_bits(tp) > -1);
+        for (i = 0; i < get_struct_n_members(tp); i++) {
+          assert(get_entity_offset_bits(get_struct_member(tp, i)) > -1);
+          assert((get_entity_allocation(get_struct_member(tp, i)) == allocation_automatic));
+        }
       } break;
     case tpo_union:
       { /* ?? */
       } break;
     case tpo_array:
       { /* ??
-     Check order?
-     Assure that only innermost dimension is dynamic? */
+         Check order?
+         Assure that only innermost dimension is dynamic? */
       } break;
     case tpo_enumeration:
       {
-    assert(get_type_mode != NULL);
-    for (i = 0; i < get_enumeration_n_enums(tp); i++)
-      assert(get_enumeration_enum(tp, i) != NULL);
+        assert(get_type_mode != NULL);
+        for (i = 0; i < get_enumeration_n_enums(tp); i++)
+          assert(get_enumeration_enum(tp, i) != NULL);
       } break;
     default: break;
     } /* switch (tp) */
@@ -458,15 +458,15 @@ bool equal_type(type *typ1, type *typ2) {
     for (i = 0; i < get_class_n_members(typ1); i++) {
       entity *e1 = get_class_member(typ1, i);
       for (j = 0; j < get_class_n_members(typ2); j++) {
-    entity *e2 = get_class_member(typ2, j);
-    if (get_entity_name(e1) == get_entity_name(e2))
-      m[i] = e2;
+        entity *e2 = get_class_member(typ2, j);
+        if (get_entity_name(e1) == get_entity_name(e2))
+          m[i] = e2;
       }
     }
     for (i = 0; i < get_class_n_members(typ1); i++) {
       if (!m[i]  ||  /* Found no counterpart */
-      !equal_entity(get_class_member(typ1, i), m[i]))
-    return false;
+          !equal_entity(get_class_member(typ1, i), m[i]))
+        return false;
     }
     /** Compare the supertypes **/
     t = alloca(sizeof(entity *) * get_class_n_supertypes(typ1));
@@ -475,15 +475,15 @@ bool equal_type(type *typ1, type *typ2) {
     for (i = 0; i < get_class_n_supertypes(typ1); i++) {
       type *t1 = get_class_supertype(typ1, i);
       for (j = 0; j < get_class_n_supertypes(typ2); j++) {
-    type *t2 = get_class_supertype(typ2, j);
-    if (get_type_ident(t2) == get_type_ident(t1))
-      t[i] = t2;
+        type *t2 = get_class_supertype(typ2, j);
+        if (get_type_ident(t2) == get_type_ident(t1))
+          t[i] = t2;
       }
     }
     for (i = 0; i < get_class_n_supertypes(typ1); i++) {
       if (!t[i]  ||  /* Found no counterpart */
-      get_class_supertype(typ1, i) != t[i])
-    return false;
+          get_class_supertype(typ1, i) != t[i])
+        return false;
     }
   } break;
   case tpo_struct:      {
@@ -494,15 +494,15 @@ bool equal_type(type *typ1, type *typ2) {
     for (i = 0; i < get_struct_n_members(typ1); i++) {
       entity *e1 = get_struct_member(typ1, i);
       for (j = 0; j < get_struct_n_members(typ2); j++) {
-    entity *e2 = get_struct_member(typ2, j);
-    if (get_entity_name(e1) == get_entity_name(e2))
-      m[i] = e2;
+        entity *e2 = get_struct_member(typ2, j);
+        if (get_entity_name(e1) == get_entity_name(e2))
+          m[i] = e2;
       }
     }
     for (i = 0; i < get_struct_n_members(typ1); i++) {
       if (!m[i]  ||  /* Found no counterpart */
-      !equal_entity(get_struct_member(typ1, i), m[i]))
-    return false;
+          !equal_entity(get_struct_member(typ1, i), m[i]))
+        return false;
     }
   } break;
   case tpo_method:      {
@@ -528,7 +528,7 @@ bool equal_type(type *typ1, type *typ2) {
     }
     for (i = 0; i < get_method_n_ress(typ1); i++) {
       if (!equal_type(get_method_res_type(typ1, i), get_method_res_type(typ2, i)))
-    return false;
+        return false;
     }
   } break;
   case tpo_union:       {
@@ -539,15 +539,15 @@ bool equal_type(type *typ1, type *typ2) {
     for (i = 0; i < get_union_n_members(typ1); i++) {
       entity *e1 = get_union_member(typ1, i);
       for (j = 0; j < get_union_n_members(typ2); j++) {
-    entity *e2 = get_union_member(typ2, j);
-    if (get_entity_name(e1) == get_entity_name(e2))
-      m[i] = e2;
+        entity *e2 = get_union_member(typ2, j);
+        if (get_entity_name(e1) == get_entity_name(e2))
+          m[i] = e2;
       }
     }
     for (i = 0; i < get_union_n_members(typ1); i++) {
       if (!m[i]  ||  /* Found no counterpart */
-      !equal_entity(get_union_member(typ1, i), m[i]))
-    return false;
+          !equal_entity(get_union_member(typ1, i), m[i]))
+        return false;
     }
   } break;
   case tpo_array:       {
@@ -557,10 +557,10 @@ bool equal_type(type *typ1, type *typ2) {
       return false;
     for(i = 0; i < get_array_n_dimensions(typ1); i++) {
       if (get_array_lower_bound(typ1, i) != get_array_lower_bound(typ2, i) ||
-      get_array_upper_bound(typ1, i) != get_array_upper_bound(typ2, i))
-    return false;
+          get_array_upper_bound(typ1, i) != get_array_upper_bound(typ2, i))
+        return false;
       if (get_array_order(typ1, i) != get_array_order(typ2, i))
-    assert(0 && "type compare with different dimension orders not implemented");
+        assert(0 && "type compare with different dimension orders not implemented");
     }
   } break;
   case tpo_enumeration: {
@@ -605,9 +605,9 @@ bool smaller_type (type *st, type *lt) {
     }
     for (i = 0; i < get_struct_n_members(st); i++) {
       if (!m[i]  ||  /* Found no counterpart */
-      !smaller_type(get_entity_type(get_struct_member(st, i)),
-            get_entity_type(m[i])))
-    return false;
+          !smaller_type(get_entity_type(get_struct_member(st, i)),
+                get_entity_type(m[i])))
+        return false;
     }
   } break;
   case tpo_method:      {
@@ -617,11 +617,11 @@ bool smaller_type (type *st, type *lt) {
     if (get_method_n_ress(st) != get_method_n_ress(lt)) return false;
     for (i = 0; i < get_method_n_params(st); i++) {
       if (!smaller_type(get_method_param_type(st, i), get_method_param_type(lt, i)))
-    return false;
+        return false;
     }
     for (i = 0; i < get_method_n_ress(st); i++) {
       if (!smaller_type(get_method_res_type(st, i), get_method_res_type(lt, i)))
-    return false;
+        return false;
     }
   } break;
   case tpo_union:       {
@@ -632,16 +632,16 @@ bool smaller_type (type *st, type *lt) {
     for (i = 0; i < get_union_n_members(st); i++) {
       entity *se = get_union_member(st, i);
       for (j = 0; j < get_union_n_members(lt); j++) {
-    entity *le = get_union_member(lt, j);
-    if (get_entity_name(le) == get_entity_name(se))
-      m[i] = le;
-      }
+        entity *le = get_union_member(lt, j);
+        if (get_entity_name(le) == get_entity_name(se))
+          m[i] = le;
+          }
     }
     for (i = 0; i < get_union_n_members(st); i++) {
       if (!m[i]  ||  /* Found no counterpart */
-      !smaller_type(get_entity_type(get_union_member(st, i)),
-            get_entity_type(m[i])))
-    return false;
+          !smaller_type(get_entity_type(get_union_member(st, i)),
+                get_entity_type(m[i])))
+        return false;
     }
   } break;
   case tpo_array:       {
@@ -652,23 +652,23 @@ bool smaller_type (type *st, type *lt) {
     let = get_array_element_type(lt);
     if (set != let) {
       /* If the elt types are different, set must be convertible
-     to let, and they must have the same size so that address
-     computations work out.  To have a size the layout must
-     be fixed. */
+         to let, and they must have the same size so that address
+         computations work out.  To have a size the layout must
+         be fixed. */
       if ((get_type_state(set) != layout_fixed) ||
-      (get_type_state(let) != layout_fixed))
-    return false;
+          (get_type_state(let) != layout_fixed))
+        return false;
       if (!smaller_type(set, let) ||
-      get_type_size_bits(set) != get_type_size_bits(let))
-    return false;
+          get_type_size_bits(set) != get_type_size_bits(let))
+        return false;
     }
     for(i = 0; i < get_array_n_dimensions(st); i++) {
       if (get_array_lower_bound(lt, i))
-    if(get_array_lower_bound(st, i) != get_array_lower_bound(lt, i))
-      return false;
+        if(get_array_lower_bound(st, i) != get_array_lower_bound(lt, i))
+          return false;
       if (get_array_upper_bound(lt, i))
-    if(get_array_upper_bound(st, i) != get_array_upper_bound(lt, i))
-      return false;
+        if(get_array_upper_bound(st, i) != get_array_upper_bound(lt, i))
+          return false;
     }
   } break;
   case tpo_enumeration: {
@@ -1700,6 +1700,5 @@ entity *get_compound_member(const type *tp, int pos)
 
 int is_compound_type(const type *tp) {
   assert(tp && tp->kind == k_type);
-  return (is_class_type(tp) || is_struct_type(tp) ||
-      is_array_type(tp) || is_union_type(tp));
+  return tp->type_op->flags & TP_OP_FLAG_COMPOUND;
 }
