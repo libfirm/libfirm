@@ -94,6 +94,11 @@ void stat_merge_nodes(
  */
 void stat_lower(ir_node *node);
 
+/**
+ * A graph was inlined
+ */
+void stat_inline(const ir_node *call, const ir_graph *irg);
+
 #else
 
 #define stat_init()
@@ -108,6 +113,7 @@ void stat_lower(ir_node *node);
 #define stat_irg_block_walk(irg, node, pre, post)
 #define stat_merge_nodes(new_node_array, new_num_entries, old_node_array, old_num_entries, opt)
 #define stat_lower(node)
+#define stat_inline(call, irg)
 
 #endif
 

@@ -35,9 +35,9 @@
 #include "firmstat.h"
 
 /*
- * 64 bit should be enough for now
+ * 32 bit should be enough for now
  */
-#define STAT_CNT_NUM 2
+#define STAT_CNT_NUM 1
 
 typedef struct _counter_t {
   unsigned cnt[STAT_CNT_NUM];
@@ -59,6 +59,8 @@ typedef struct _graph_entry_t {
   pset           *opcode_hash;			/**< hash map containing the opcode counter */
   counter_t      walked;			/**< walker walked over the graph */
   counter_t      walked_blocks;			/**< walker walked over the graph blocks */
+  counter_t      was_inlined;			/**< number of times other graph were inlined */
+  counter_t      got_inlined;			/**< number of times this graph was inlined */
   pset           *opt_hash[STAT_OPT_MAX];	/**< hash maps containing opcode counter for optimizations */
   const ir_graph *irg;				/**< the graph of this object */
   entity         *ent;				/**< the entity of this graph if one exists */
@@ -208,6 +210,8 @@ static graph_entry_t *graph_get_entry(const ir_graph *irg, pset *set)
 
   cnt_clr(&elem->walked);
   cnt_clr(&elem->walked_blocks);
+  cnt_clr(&elem->got_inlined);
+  cnt_clr(&elem->was_inlined);
 
   /* new hash table for opcodes here  */
   elem->opcode_hash  = new_pset(opcode_cmp, 5);
@@ -411,6 +415,19 @@ void stat_lower(ir_node *node)
   removed_due_opt(node, graph->opt_hash[STAT_LOWERED]);
 }
 
+/*
+ * A graph was inlined
+ */
+void stat_inline(ir_node *call, const ir_graph *called_irg)
+{
+  ir_graph *irg = get_irn_irg(call);
+  graph_entry_t *i_graph = graph_get_entry(called_irg, status->irg_hash);
+  graph_entry_t *graph   = graph_get_entry(irg, status->irg_hash);
+
+  cnt_inc(&graph->got_inlined);
+  cnt_inc(&i_graph->was_inlined);
+}
+
 /**
  * dumps a opcode hash
  */
@@ -480,9 +497,12 @@ void stat_finish(void)
 	fprintf(status->f, "\nIrg %p", entry->irg);
     }
 
-    fprintf(status->f, " %swalked %d over blocks %d:\n",
+    fprintf(status->f, " %swalked %d over blocks %d was inlined %d got inlined %d:\n",
 	entry->deleted ? "DELETED " : "",
-	entry->walked.cnt[0], entry->walked_blocks.cnt[0]);
+	entry->walked.cnt[0], entry->walked_blocks.cnt[0],
+	entry->was_inlined.cnt[0],
+	entry->got_inlined.cnt[0]
+	);
 
     dump_opcode_hash(entry->opcode_hash);
 
@@ -526,5 +546,7 @@ void stat_merge_nodes(
     stat_opt_kind opt) {}
 
 void stat_lower(ir_node *node) {}
+
+void stat_inline(const ir_node *call, const ir_graph *irg) {}
 
 #endif
