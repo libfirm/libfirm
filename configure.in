@@ -52,15 +52,15 @@ else
 fi])
 AC_SUBST(enable_debug_libfirm)
 
+dnl disable inlining
+dnl ----------------
 AC_ARG_ENABLE(inlining,
 [  --disable-inlining      disable inline C-extension],
-[enable_inlining=yes],
 [if test "$enableval" = yes; then
   AC_DEFINE(USE_INLINING)
-fi]
+fi],
+AC_DEFINE(USE_INLINING)
 )
-AC_SUBST(enable_inlining)
-
 
 dnl set profiling
 dnl -------------

@@ -1257,18 +1257,19 @@ fi;
 # Check whether --enable-inlining or --disable-inlining was given.
 if test "${enable_inlining+set}" = set; then
   enableval="$enable_inlining"
-  enable_inlining=yes
-else
   if test "$enableval" = yes; then
   cat >>confdefs.h <<\_ACEOF
 #define USE_INLINING 1
 _ACEOF
 
 fi
+else
+  cat >>confdefs.h <<\_ACEOF
+#define USE_INLINING 1
+_ACEOF
+
 
 fi;
-
-
 
 # Check whether --enable-profile or --disable-profile was given.
 if test "${enable_profile+set}" = set; then
@@ -4857,7 +4858,6 @@ s,@ECHO_T@,$ECHO_T,;t t
 s,@LIBS@,$LIBS,;t t
 s,@libfirm_conf_env@,$libfirm_conf_env,;t t
 s,@enable_debug_libfirm@,$enable_debug_libfirm,;t t
-s,@enable_inlining@,$enable_inlining,;t t
 s,@enable_profile_libfirm@,$enable_profile_libfirm,;t t
 s,@enable_auto_documentation@,$enable_auto_documentation,;t t
 s,@enable_firm_jni@,$enable_firm_jni,;t t

@@ -17,7 +17,7 @@
 /* Define to disable assertion checking.  */
 #undef NDEBUG
 
-/* Remove to disable inlining */
+/* undef to disable inlining */
 #undef USE_INLINING
 
 /* Define to 1 if you have the <alloca.h> header file. */
