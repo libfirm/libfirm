@@ -271,7 +271,6 @@ static int has_live_upcall (entity *method)
      called or if it overrides a method that is called. */
 
   if (eset_contains (_called_methods, (entity*) method)) {
-    /* fprintf (stdout, "RTA: found call to "); DDMEO (meth); */
     return (TRUE);
   }
 
@@ -279,7 +278,6 @@ static int has_live_upcall (entity *method)
   n_over = get_entity_n_overwrites ((entity*) method);
   for (i = 0; !is_target && (i < n_over); i ++) {
     entity *over = get_entity_overwrites ((entity*) method, i);
-    /* fprintf (stdout, "RTA: check in superclass "); DDMEO (over); */
     is_target |= has_live_upcall (over);
   }
 
@@ -352,7 +350,6 @@ static int has_live_superclass (entity *method, ir_graph *graph)
   n_over = get_entity_n_overwrites ((entity*) method);
   for (i = 0; !has_super && (i < n_over); i ++) {
     entity *over = get_entity_overwrites ((entity*) method, i);
-    /* fprintf (stdout, "RTA: check in superclass "); DDMEO (over); */
     has_super |= has_live_superclass (over, graph);
   }
 
@@ -654,22 +651,6 @@ int  rta_is_alive_graph (ir_graph *graph)
   has_call  = has_live_call (meth, graph);
   has_class = has_live_class (meth, graph);
 
-  fprintf (stdout, "RTA: checking  "); DDMEO (meth);
-
-  if (has_call) {
-    fprintf (stdout, "RTA: has_call  "); DDMEO (meth);
-  }
-
-  if (has_class) {
-    fprintf (stdout, "RTA: has_class "); DDMEO (meth);
-  }
-
-  if (has_call && has_class) {
-    fprintf (stdout, "RTA: is_called "); DDMEO (meth);
-  } else {
-    fprintf (stdout, "RTA: UNCALLED  "); DDMEO (meth);
-  }
-
   if (has_call && has_class) {
     eset_insert (_live_graphs, graph);
 
@@ -710,6 +691,9 @@ void rta_report (FILE *stream)
 
 /*
  * $Log$
+ * Revision 1.13  2004/06/17 16:34:33  liekweg
+ * removed DD*s
+ *
  * Revision 1.12  2004/06/17 16:33:33  liekweg
  * minor bug fix
  *
