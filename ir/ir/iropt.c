@@ -2538,6 +2538,7 @@ ir_op *firm_set_default_operations(ir_op *op)
   op = firm_set_default_equivalent_node(op);
   op = firm_set_default_transform_node(op);
   op = firm_set_default_node_cmp_attr(op);
+  op = firm_set_default_get_type(op);
 
   return op;
 }
