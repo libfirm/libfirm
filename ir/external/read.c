@@ -24,7 +24,8 @@
 # include <stdlib.h>
 #endif
 
-# include "read.h"
+#include "read_t.h"
+#include "read.h"
 #include "irprog.h"
 #include "irgraph.h"
 #include "ircons.h"
@@ -224,6 +225,28 @@ proc_t *getEffectByName (const ident *proc_ident)
   return (NULL);
 }
 
+static
+xmlNodePtr get_any_valid_child(xmlNodePtr elem)
+{
+  xmlNodePtr child;
+
+  assert(elem && "no element");
+  child = elem -> xmlChildrenNode;
+  while(child && (NODE_NAME (child, comment))) {
+    child = child -> next;
+  }
+  return(child);
+}
+
+static
+xmlNodePtr get_valid_child(xmlNodePtr elem)
+{
+  xmlNodePtr child;
+
+  child = get_any_valid_child(elem);
+  assert(child && "lost child in deep black forest");
+  return(child);
+}
 
 /*
  * parse XML structure and construct an additional structure
@@ -322,14 +345,20 @@ static eff_t
   VERBOSE_PRINT ((stdout, "load node \t0x%08x\n", (int) loadelm));
   id = new_id_from_str(getNodeId (loadelm));
 
-  child = loadelm->xmlChildrenNode;
-  sel = parseSelect (doc, child);
+  child = get_valid_child(loadelm);
+  if(NODE_NAME (child, select)) {
+    sel = parseSelect (doc, child);
+    load-> effect.load.ent = sel-> effect.select.ent;
+    VERBOSE_PRINT ((stdout, "load entity \t%s\n",
+		    get_id_str(load -> effect.load.ent -> ent_ident)));
+  }
+  else {
+    sel = parseValref (doc, child);
+    load-> effect.load.ent = NULL;
+  }
 
   load-> id = id;
   load-> effect.load.ptrrefid = sel-> id;
-  load-> effect.load.ent = sel-> effect.select.ent;
-  VERBOSE_PRINT ((stdout, "load entity \t%s\n",
-		  get_id_str(load -> effect.load.ent -> ent_ident)));
 
   free (sel);
 
@@ -348,12 +377,19 @@ static eff_t
   CHECK_NAME (storeelm, store);
   VERBOSE_PRINT ((stdout, "store node \t0x%08x\n", (int) storeelm));
 
-  child = storeelm->xmlChildrenNode;
-  sel = parseSelect (doc, child);
+  child = get_valid_child(storeelm);
+  if(NODE_NAME (child, select)) {
+    sel = parseSelect (doc, child);
+    store-> effect.store.ent = sel-> effect.select.ent;
+  }
+  else {
+    sel = parseValref (doc, child);
+    store-> effect.store.ent = NULL;
+  }
+
   child = child->next;
   valref = parseValref (doc, child);
 
-  store-> effect.store.ent = sel-> effect.select.ent;
   store-> effect.store.ptrrefid = sel-> id;
   store-> effect.store.valrefid = valref-> id;
 
@@ -400,8 +436,16 @@ static eff_t
   id = new_id_from_str(getNodeId (callelm));
   VERBOSE_PRINT ((stdout, "call->id = \"%s\"\n", get_id_str(id)));
 
-  child = callelm->xmlChildrenNode;
-  sel = parseSelect (doc, child);
+  child = get_valid_child(callelm);
+  if(NODE_NAME (child, select)) {
+    sel = parseSelect (doc, child);
+    call-> effect.call.ent = sel-> effect.select.ent;
+  }
+  else {
+    sel = parseValref (doc, child);
+    call-> effect.call.ent = NULL;
+  }
+
   arg = child = child->next;
   n_args = 0;
 
@@ -412,7 +456,6 @@ static eff_t
 
   call-> id = id;
   call-> effect.call.valrefid = sel-> id;
-  call-> effect.call.ent = sel-> effect.select.ent;
   call-> effect.call.n_args = n_args;
   call-> effect.call.args = NULL;
 
@@ -451,7 +494,7 @@ static eff_t
   id = new_id_from_str(getNodeId (joinelm));
   VERBOSE_PRINT ((stdout, "join->id = \"%s\"\n", get_id_str(id)));
 
-  child = joinelm->xmlChildrenNode;
+  child = get_valid_child(joinelm);
   n_ins = 0;
 
   while (NULL != child) {
@@ -461,7 +504,7 @@ static eff_t
 
   ins = (const ident **) malloc (n_ins * sizeof (const ident *) );
   i = 0;
-  child = joinelm->xmlChildrenNode;
+  child = get_valid_child(joinelm);
 
   while (NULL != child) {
     eff_t *valref = parseValref (doc, child);
@@ -502,7 +545,7 @@ static eff_t
   CHECK_NAME (retelm, ret);
   VERBOSE_PRINT ((stdout, "ret node \t0x%08x\n", (int) retelm));
 
-  child = retelm->xmlChildrenNode;
+  child = get_any_valid_child(retelm);
 
   if (child) {
     eff_t *valref = parseValref (doc, child);
@@ -528,7 +571,7 @@ static eff_t
   VERBOSE_PRINT ((stdout, "raise node \t0x%08x\n", (int) raiseelm));
   tp_id = getNodeTypeId (raiseelm);
   VERBOSE_PRINT ((stdout, "raise->type = \"%s\"\n", tp_id));
-  child = raiseelm->xmlChildrenNode;
+  child = get_valid_child(raiseelm);
 
   assert (NULL != child);
 
@@ -591,7 +634,7 @@ parseEffect (xmlDocPtr doc, xmlNodePtr effelm)
 {
   xmlNodePtr cur;
   const char *procname = getNodeProcName (effelm);
-  const char *typeid = getNodeTypeStr (effelm);
+  const char *ownerid = getNodeOwnerStr (effelm);
   proc_t *curr_effs = NULL;
   int i = 0;
   int n_effs = 0;
@@ -607,7 +650,7 @@ parseEffect (xmlDocPtr doc, xmlNodePtr effelm)
 
   curr_effs = NEW (proc_t);
   curr_effs -> proc_ident = new_id_from_str(procname);
-  curr_effs -> typeid = new_id_from_str(typeid);
+  curr_effs -> ownerid = new_id_from_str(ownerid);
   curr_effs->effs = (eff_t**) malloc (n_effs * sizeof (eff_t*));
 
   cur = effelm -> xmlChildrenNode;
@@ -1008,8 +1051,14 @@ static void create_abstract_load(ir_graph *irg, proc_t *proc, eff_t *eff)
   VERBOSE_PRINT((stdout, "create load in %s\n",
 		 get_id_str(proc -> proc_ident)));
 
-  ent = eff -> effect.load.ent -> f_ent;
-  VERBOSE_PRINT((stdout, "load from %s\n", get_entity_name(ent)));
+  if(eff -> effect.load.ent) {
+    ent = eff -> effect.load.ent -> f_ent;
+    VERBOSE_PRINT((stdout, "load from %s\n", get_entity_name(ent)));
+  }
+  else {
+    VERBOSE_PRINT((stdout, "store to memory\n"));
+    ent = NULL;
+  }
 
   addr = find_valueid_in_proc_effects(eff -> effect.load.ptrrefid, proc);
   assert(addr && "no address for load");
@@ -1018,8 +1067,14 @@ static void create_abstract_load(ir_graph *irg, proc_t *proc, eff_t *eff)
     set_irn_mode(addr -> firmnode, mode_P);
   }
 
-  sel = new_simpleSel(get_store(), addr -> firmnode, ent);
-  mode = get_type_mode(get_entity_type(ent));
+  if(ent) {
+    sel = new_simpleSel(get_store(), addr -> firmnode, ent);
+    mode = get_type_mode(get_entity_type(ent));
+  }
+  else {
+    sel = addr -> firmnode;
+    mode = mode_ANY;
+  }
   load = new_Load(get_store(), sel, mode);
   set_store(new_Proj(load, mode_M, 0));
   eff -> firmnode = new_Proj(load, mode, 2);
@@ -1037,8 +1092,14 @@ static void create_abstract_store(ir_graph *irg, proc_t *proc, eff_t *eff)
   VERBOSE_PRINT((stdout, "create store in %s\n",
 		 get_id_str(proc -> proc_ident)));
 
-  ent = eff -> effect.store.ent -> f_ent;
-  VERBOSE_PRINT((stdout, "store to %s\n", get_entity_name(ent)));
+  if(eff -> effect.store.ent) {
+    ent = eff -> effect.store.ent -> f_ent;
+    VERBOSE_PRINT((stdout, "store to entity %s\n", get_entity_name(ent)));
+  }
+  else {
+    VERBOSE_PRINT((stdout, "store to memory\n"));
+    ent = NULL;
+  }
 
   addr = find_valueid_in_proc_effects(eff -> effect.store.ptrrefid, proc);
   assert(addr && "no address for store");
@@ -1054,7 +1115,12 @@ static void create_abstract_store(ir_graph *irg, proc_t *proc, eff_t *eff)
     set_irn_mode(val -> firmnode, get_type_mode(get_entity_type(ent)));
   }
 
-  sel = new_simpleSel(get_store(), addr -> firmnode, ent);
+  if(ent) {
+    sel = new_simpleSel(get_store(), addr -> firmnode, ent);
+  }
+  else {
+    sel = addr -> firmnode;
+  }
   store = new_Store(get_store(), sel, val -> firmnode);
   set_store(new_Proj(store, mode_M, 0));
   eff -> firmnode = store;
@@ -1107,12 +1173,19 @@ static void create_abstract_call(ir_graph *irg, proc_t *proc, eff_t *eff)
   ir_node **irns;
   int i, num;
   type *mtype;
+  int mik; /* is method somehow known? */
 
   VERBOSE_PRINT((stdout, "create call in %s\n",
 		 get_id_str(proc -> proc_ident)));
 
-  ent = eff -> effect.call.ent -> f_ent;
-  VERBOSE_PRINT((stdout, "call %s\n", get_entity_name(ent)));
+  if(eff -> effect.call.ent) {
+    ent = eff -> effect.call.ent -> f_ent;
+    VERBOSE_PRINT((stdout, "call %s\n", get_entity_name(ent)));
+  }
+  else {
+    ent = NULL;
+    VERBOSE_PRINT((stdout, "call something in memory\n"));
+  }
 
   addr = find_valueid_in_proc_effects(eff -> effect.call.valrefid, proc);
   assert(addr && "no address for load");
@@ -1121,26 +1194,44 @@ static void create_abstract_call(ir_graph *irg, proc_t *proc, eff_t *eff)
     set_irn_mode(addr -> firmnode, mode_P);
   }
 
-  /* the address */
-  sel = new_simpleSel(get_store(), addr -> firmnode, ent);
-  /* mthod type */
-  mtype = get_entity_type(ent);
+  if(ent) {
+    /* the address */
+    sel = new_simpleSel(get_store(), addr -> firmnode, ent);
+    /* mthod type */
+    mtype = get_entity_type(ent);
+    mik = true;
+  }
+  else {
+    /* the address */
+    sel = addr -> firmnode;
+    /* mthod type */
+    mtype = get_unknown_type();
+    mik = false;
+  }
+
   /* the args */
   num = eff -> effect.call.n_args;
   VERBOSE_PRINT((stdout, "number of args given: %d\n", num));
-  VERBOSE_PRINT((stdout, "number of args expected: %d\n",
-		 get_method_n_params(mtype)));
+  if(mik) {
+    VERBOSE_PRINT((stdout, "number of args expected: %d\n",
+		   get_method_n_params(mtype)));
+  }
   irns = alloca(num * sizeof(ir_node*));
   for(i = 0; i < num; i++) {
     irns[i] = find_valueid_in_proc_effects(eff -> effect.call.args[i], proc)
       -> firmnode;
     if(iro_Unknown == get_irn_opcode(irns[i])) {
-      set_irn_mode(irns[i], get_type_mode(get_method_param_type(mtype, i)));
+      if(mik) {
+	set_irn_mode(irns[i], get_type_mode(get_method_param_type(mtype, i)));
+      }
+      else {
+	set_irn_mode(irns[i], mode_ANY);
+      }
     }
   }
-  call = new_Call(get_store(), sel, num, irns, get_entity_type(ent));
+  call = new_Call(get_store(), sel, num, irns, mtype);
   set_store(new_Proj(call, mode_M, 0));
-  if(0 != get_method_n_ress(mtype)) {
+  if(mik && (0 != get_method_n_ress(mtype))) {
     eff -> firmnode = new_Proj(call,
 			       get_type_mode(get_method_res_type(mtype, 0)),
 			       0);
@@ -1293,8 +1384,8 @@ void create_abstract_proc_effect(module_t *module, proc_t *proc)
   entity *fent;
 
   /* find the class of a procedure */
-  VERBOSE_PRINT((stdout, "do find typeid %s\n", get_id_str(proc -> typeid)));
-  type = find_type_in_module(module, proc -> typeid);
+  VERBOSE_PRINT((stdout, "do find owner id %s\n", get_id_str(proc -> ownerid)));
+  type = find_type_in_module(module, proc -> ownerid);
   assert(type && "class not found in module");
 
   class_typ = get_glob_type();
@@ -1392,6 +1483,11 @@ void create_abstraction(const char *filename)
 
   /* free data structures */
   free_data();
+
+  types = NULL;
+  entities = NULL;
+  procs = NULL;
+  modules = NULL;
 }
 
 /********************************************************************/
@@ -1399,6 +1495,9 @@ void create_abstraction(const char *filename)
 
 /*
  * $Log$
+ * Revision 1.10  2004/10/25 13:52:24  boesler
+ * seperated read.h (public interface) and read_t.h (types)
+ *
  * Revision 1.9  2004/10/22 13:51:35  boesler
  * prohibit inlining of pseudo ir_graphs
  *
