@@ -292,6 +292,12 @@ void dump_loop_information(void);
 void dont_dump_loop_information(void);
 
 /**
+ * If set and backedge info is computed, backedges are dumped dashed
+ * and as vcg 'backedge' construct.  Default: set.
+ */
+void dump_backedge_information(bool b);
+
+/**
  *  Dump the information of type field specified in ana/irtypeinfo.h.
  *  If the flag is set, the type name is output in [] in the node label,
  *  else it is output as info.

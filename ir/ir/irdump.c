@@ -118,6 +118,7 @@ int dump_keepalive = 0;
 int dump_out_edge_flag = 0;
 int dump_dominator_information_flag = 0;
 int dump_loop_information_flag = 0;
+int dump_backedge_information_flag = 1;
 int dump_const_local = 0;
 bool opt_dump_analysed_type_info = 1;
 
@@ -442,7 +443,8 @@ dump_ir_block_edge(ir_node *n)  {
 static void print_edge_vcgattr(ir_node *from, int to) {
   assert(from);
 
-  if (is_backedge(from, to)) fprintf (F, BACK_EDGE_ATTR);
+  if (dump_backedge_information_flag && is_backedge(from, to))
+    fprintf (F, BACK_EDGE_ATTR);
 
   switch (get_irn_opcode(from)) {
   case iro_Block:
@@ -539,7 +541,7 @@ dump_ir_data_edges(ir_node *n, pmap *irgmap)  {
     assert(pred);
     if ((interprocedural_view && get_irn_visited(pred) < visited))
       continue; /* pred not dumped */
-    if (is_backedge(n, i))
+    if (dump_backedge_information_flag && is_backedge(n, i))
       fprintf (F, "backedge: {sourcename: \"");
     else
       fprintf (F, "edge: {sourcename: \"");
@@ -1149,8 +1151,8 @@ dump_ir_block (ir_node *block, void *env) {
 #else
     fprintf (F, "%s", get_op_name(get_irn_op(block)));
 #endif
-    if (exc_normal != get_Block_exc (block))
-      fprintf (F, " (%s)", exc_to_string (get_Block_exc (block)));
+    //    if (exc_normal != get_Block_exc (block))
+    //  fprintf (F, " (%s)", exc_to_string (get_Block_exc (block)));
 
     fprintf(F, "\" status:clustered color:%s \n",
 	     get_Block_matured (block) ? "yellow" : "red");
@@ -1235,8 +1237,8 @@ dump_block_to_cfg (ir_node *block, void *env) {
     fprintf (F, "%p", (void*) block);
 #endif
 
-    if (exc_normal != get_Block_exc (block))
-      fprintf (F, " (%s)", exc_to_string (get_Block_exc (block)));
+    //    if (exc_normal != get_Block_exc (block))
+    //  fprintf (F, " (%s)", exc_to_string (get_Block_exc (block)));
 
     fprintf (F, "\" ");
     if (dump_dominator_information_flag)
@@ -1440,6 +1442,10 @@ void dont_dump_loop_information(void) {
   dump_loop_information_flag = 0;
 }
 
+void dump_backedge_information(bool b) {
+  dump_backedge_information_flag = b;
+}
+
 static void clear_link(ir_node * node, void * env) {
   set_irn_link(node, NULL);
 }
@@ -1484,9 +1490,8 @@ static void dump_cg_ir_block(ir_node * block, void * env) {
   dump_node_opcode(block);
   fprintf (F, " %ld", get_irn_node_nr(block));
 
-  if (exc_normal != get_Block_exc(block)) {
-    fprintf (F, " (%s)", exc_to_string (get_Block_exc(block)));
-  }
+  //  if (exc_normal != get_Block_exc(block)) {
+  //  fprintf (F, " (%s)", exc_to_string (get_Block_exc(block)));  }
 
   fprintf(F, "\" status:clustered color:%s \n",
 	   get_Block_matured(block) ? "yellow" : "red");
