@@ -11,10 +11,6 @@
  * CVS-ID:      $Id$
  * Copyright:   (c) 2003 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- *
- *
- *
- *
  */
 
 
@@ -29,9 +25,7 @@
 # include "irdump.h"
 
 
-
-
-/* The information needed for a induction variable*/
+/* The information needed for an induction variable */
 struct induct_var_info {
   ir_op   *operation_code;
   ir_node *increment, *init, *op;
@@ -181,10 +175,9 @@ void reduce_itervar(ir_node *itervar_phi, void *env) {
   ir_node *strong = NULL, *cmp = NULL, *c, *cmp_const;
   int phi_pred, strong_in_Phi = 0, cmp_in_phi = 0, out_loop_res = 1;
 
-  // This "if" finds the node for reduce.
+  // This "if" finds the node to reduce.
 
-
-    // This "if" finds the Phi predecessors for the node that must be reduced.
+  // This "if" finds the Phi predecessors for the node that must be reduced.
   if ((get_irn_op(itervar_phi) == op_Phi)    &&
       is_induction_variable(itervar_phi) != NULL ) {
     phi_pred = get_irn_n_outs(itervar_phi);
@@ -211,18 +204,16 @@ void reduce_itervar(ir_node *itervar_phi, void *env) {
       c = get_Mul_right(strong);
 
 
-
     if (get_Block_dom_depth(get_nodes_block(c))  >=
 	get_Block_dom_depth(get_nodes_block(itervar_phi))) return;
 
-    // if (get_opt_strength_red_verbosity() == 2) {
-#if 1
-    printf("The constant of Reducing node is: "); DDMN(c);
-    printf("The Phi node is"); DDMN(itervar_phi);
-    printf("Reducing node: "); DDMN(strong);
-    printf("  iter var is  "); DDMN(ivi.op);
-    printf("  in graph     "); DDMG(current_ir_graph);
-#endif
+    if (get_opt_strength_red_verbose() && get_firm_verbosity() > 1) {
+      printf("The constant of Reducing node is: "); DDMN(c);
+      printf("The Phi node is"); DDMN(itervar_phi);
+      printf("Reducing node: "); DDMN(strong);
+      printf("  iter var is  "); DDMN(ivi.op);
+      printf("  in graph     "); DDMG(current_ir_graph);
+    }
 
     ir_node *inc , *init , *new_phi, *in[2], *new_op = NULL, *block_init, *block_inc;
 
@@ -271,13 +262,13 @@ void reduce_itervar(ir_node *itervar_phi, void *env) {
 
     if (get_irn_loop(get_nodes_block(cmp)) != l_itervar_phi) return;
 
-#if 1
-    printf("It is possibale to exchange the Cmp with a new Cmp   \n");
-    printf("The constant of Cmp node is: "); DDMN(cmp_const);
-    printf("The Phi node is"); DDMN(itervar_phi);
-    printf("Cmp node: "); DDMN(cmp);
-    printf("  in graph     "); DDMG(current_ir_graph);
-#endif
+    if (get_opt_strength_red_verbose() && get_firm_verbosity() > 1) {
+      printf("It is possibale to exchange the Cmp with a new Cmp   \n");
+      printf("The constant of Cmp node is: "); DDMN(cmp_const);
+      printf("The Phi node is"); DDMN(itervar_phi);
+      printf("Cmp node: "); DDMN(cmp);
+      printf("  in graph     "); DDMG(current_ir_graph);
+    }
 
     ir_node *new_cmp_const, *new_cmp, *cmp_const_block = get_nodes_block(cmp_const);
 
@@ -302,6 +293,8 @@ void reduce_strength(ir_graph *irg) {
 
   if (!get_optimize() || !get_opt_strength_red()) return;
 
+  n_reduced_expressions = 0;
+
   /* -- Precompute some information -- */
   /* Call algorithm that computes the backedges */
   construct_cf_backedges(irg);
@@ -312,6 +305,10 @@ void reduce_strength(ir_graph *irg) {
   /* -- Search expressions that can be optimized -- */
   irg_walk_graph(irg, NULL, reduce_itervar, NULL);
 
-  current_ir_graph = rem;
+  if (get_opt_strength_red_verbose())
+    printf("Reduced %d iteration variables in graph %s.%s\n.", n_reduced_expressions,
+	   get_type_name(get_entity_owner(get_irg_entity(irg))),
+	   get_entity_name(get_irg_entity(irg)));
 
+  current_ir_graph = rem;
 }
