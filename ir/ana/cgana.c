@@ -86,8 +86,6 @@ void collect_impls(entity *method, eset *set, int *size, bool *open) {
       if (!eset_contains(set, method)) {
 	eset_insert(set, method);
 	++(*size);
-	/* printf("Adding existent method %d ", *size); DDME(method);
-	   printf(" with owner "); DDMT(get_entity_owner(method)); */
       }
     }
   }
@@ -102,8 +100,6 @@ void collect_impls(entity *method, eset *set, int *size, bool *open) {
       if (!eset_contains(set, impl_ent)) {
 	eset_insert(set, impl_ent);
 	++(*size);
-	/* printf("Adding inherited method %d ", *size); DDME(impl_ent);
-	   printf(" with owner "); DDMT(get_entity_owner(impl_ent)); */
       }
     }
   }
