@@ -524,7 +524,7 @@ static void assign(ir_node *block, void *env_ptr)
 	}
 
 #ifdef DUMP_INTERVALS
-	draw_interval_graphs(block, &head, &dump_params);
+	draw_interval_graphs(block, head, &dump_params);
 #endif
 
 #ifdef DUMP_PRESSURE
