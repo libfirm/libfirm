@@ -55,6 +55,8 @@ init_firm (default_initialize_local_variable_func_t *func)
   init_irprog ();
   /* Constructs some idents needed. */
   init_type();
+  /* allocate a hash table. */
+  init_type_identify();
 }
 
 
