@@ -470,7 +470,7 @@ void dump_interval_loop(FILE *F, ir_loop *l) {
 void dump_interval_graph(ir_graph *irg, const char *suffix) {
   FILE *f;
 
-  if (strncmp(get_entity_name(get_irg_entity(irg)), dump_file_filter, strlen(dump_file_filter)) != 0)
+  if (!is_filtered_dump_name(get_entity_ident(get_irg_entity(irg))))
     return;
 
   f = vcg_open(irg, suffix, "-intervals");
