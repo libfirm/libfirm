@@ -31,10 +31,20 @@ ARFLAGS := rc
 
 RANLIB := @RANLIB@
 
+AUTODOC := @ROBODOC@
+AUTODOCDIR := $(topdir)/auto_doc
+INDEXFILE := $(AUTODOCDIR)/index.html
+GLOBALXREFFILE := $(AUTODOCDIR)/libfirm.html.xrefs
+LOCALXREFSFILE := .xrefs
+
 DISTFILES = $(SOURCES)
 CFILES = $(filter %.c,$(SOURCES) $(GENFILES))
 HFILES = $(filter %.h,$(SOURCES) $(GENFILES))
 OFILES = $(CFILES:.c=.o)
+XREFFILES = $(addsuffix .xref, $(filter %.c, $(SOURCES)) $(filter %.h, $(SOURCES)))
+HTMLFILES = $(addprefix $(AUTODOCDIR)/, $(XREFFILES:.xref=.html))
+
+GENFILES += $(LOCALXREFSFILE) $(XREFFILES)
 
 TAGFILES = $(CFILES) $(HFILES)
 
@@ -54,6 +64,23 @@ COMPILE.s = $(CC) -S $(DEFS) $(CPPFLAGS) $(CDEBUG) $(CFLAGS) $(XCFLAGS)
 
 %.c: %.dot
 	$(DT) $(DTFLAGS) <$^ >$@ || $(fail)
+
+%.xref: %
+	$(AUTODOC) $< $(@:.xref=.html) INTERNAL HTML GENXREF $@
+
+$(AUTODOCDIR)/%.html: % $(GLOBALXREFFILE)
+	$(AUTODOC) $< $@ HTML INTERNAL XREF $(GLOBALXREFFILE)
+
+$(AUTODOCDIR):
+	mkdir $@
+
+$(LOCALXREFSFILE): $(XREFFILES)
+ifeq ($(strip $(XREFSFILE)),)
+	$(RM) $@
+	touch $@
+else
+	ls *.xref > $@
+endif
 
 
 define fail
@@ -75,4 +102,4 @@ test -z "$$fail"
 endef
 endif
 
-targets = all clean depend echodist echogen echosrc realclean tags install
+targets = all clean depend echodist echogen echosrc realclean tags install autodoc autodoc_xref autodoc_html

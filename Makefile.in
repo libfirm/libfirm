@@ -30,7 +30,7 @@ SOURCES := Makefile.in MakeRules.in MakeTargets\
 
 INSTALL_LIBS = libfirm.a
 
-GENFILES := config.h stamp-h config.log config.cache
+GENFILES := stamp-h config.log config.cache
 
 # config.status config.h.in $(srcdir)/stamp-h.in
 
@@ -50,6 +50,18 @@ libfirm.a: subdir_all $(XOFILES) $(OFILES)
 
 testprograms:	libfirm.a
 	$(MAKE) -C testprograms
+
+
+# generate program documentation
+autodoc: autodoc_xref $(AUTODOCDIR) $(GLOBALXREFFILE) autodoc_html $(INDEXFILE)
+
+$(GLOBALXREFFILE): $(addsuffix /$(LOCALXREFSFILE), $(subdirs)) .xrefs
+#	cat $^ > $@
+	$(RM) $@
+	find $(PWD) -name "*.xref" -print > $@
+
+$(INDEXFILE): $(GLOBALXREFFILE)
+	$(AUTODOC) $(GLOBALXREFFILE) $@ INDEX HTML
 
 
 #${srcdir}/configure: configure.in aclocal.m4

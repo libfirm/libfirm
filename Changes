@@ -1,3 +1,8 @@
+  12.3.2001 Boris
+  added auto documentation in Makefiles, configure, etc
+  example in ir/ir/ircons.c - much must be added
+  creation of documentation by 'make autodoc' in architecture directory
+
   5.3.2001 Boris
   added lots of #ifdef HAVE_CONFIG_G #include "config.h" #endif
   replaced some C++ style comments (//) by standard C comments /**/
