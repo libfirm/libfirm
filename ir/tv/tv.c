@@ -374,7 +374,6 @@ tarval_init_2 (void)
 
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
   tv->mode = mode_T;
-  tv->lab = 0;
   tarval_bad = tarval_identify (tv);
 
   tarval_b_false = tarval_from_long (mode_b, 0);
@@ -383,7 +382,6 @@ tarval_init_2 (void)
   /* IsInf <-> exponent == 0x7ff && ! (bits | fraction_low) */
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
   tv->mode = mode_d;
-  tv->lab = 0;
   x.ieee.negative = 0;
   x.ieee.exponent = 0x7ff;
   x.ieee.mantissa0 = 0;
@@ -394,7 +392,6 @@ tarval_init_2 (void)
   /* IsNaN <-> exponent==0x7ff  && (qnan_bit | bits | fraction_low) */
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
   tv->mode = mode_d;
-  tv->lab = 0;
   x.ieee_nan.negative = 0;
   x.ieee_nan.exponent = 0x7ff;
   x.ieee_nan.quiet_nan = 1;	/* @@@ quiet or signalling? */
@@ -406,7 +403,6 @@ tarval_init_2 (void)
 
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
   tv->mode = mode_p;
-  tv->lab = 0;
   tv->u.p.xname = NULL;
   tv->u.p.ent = NULL;
   tv->u.p.tv = NULL;
@@ -462,7 +458,6 @@ tarval_Z_from_str (const char *s, size_t len, int base)
 
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
   tv->mode = mode_Z;
-  tv->lab = 0;
   if (mpz_init_set_str (&tv->u.Z, buf, base)) assert (0);
 
   return tarval_identify (tv);
@@ -484,7 +479,6 @@ tarval_B_from_str (const char *s, size_t len)
 
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
   tv->mode = mode_B;
-  tv->lab = 0;
 
   assert (s[0] == '0');
   switch (s[1]) {
@@ -555,7 +549,6 @@ tarval_d_from_str (const char *s, size_t len)
 
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
   tv->mode = mode_d;
-  tv->lab = 0;
   tv->u.d = strtod (buf, &eptr);
   assert (eptr == buf+strlen(buf));
 
@@ -573,7 +566,6 @@ tarval_s_from_str (const char *s, size_t len)
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
 
   tv->mode = mode_s;
-  tv->lab = 0;
   tv->u.s.n = len;
   tv->u.s.p = obstack_copy (&tv_obst, s, len);
 
@@ -590,7 +582,6 @@ tarval_S_from_str (const char *s, size_t len)
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
 
   tv->mode = mode_S;
-  tv->lab = 0;
   tv->u.s.n = len;
   tv->u.s.p = obstack_copy (&tv_obst, s, len);
 
@@ -613,7 +604,6 @@ tarval_from_long (ir_mode *m, long val)
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
 
   tv->mode = m;
-  tv->lab = 0;
   switch (m->code) {
     /* floating */
   case irm_f:
@@ -655,7 +645,6 @@ tarval_p_from_str (const char *xname)
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
 
   tv->mode = mode_p;
-  tv->lab = 0;
   tv->u.p.xname = obstack_copy0 (&tv_obst, xname, strlen (xname));
   tv->u.p.ent = NULL;
   tv->u.p.tv = NULL;
@@ -673,7 +662,6 @@ tarval_p_from_entity (entity *ent)
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
 
   tv->mode = mode_p;
-  tv->lab = 0;
   tv->u.p.xname = NULL;
   tv->u.p.ent = ent;
   tv->u.p.tv = NULL;
@@ -736,7 +724,6 @@ tarval_finish_as (ir_mode *m)
   tv = obstack_finish (&tv_obst);
   p = (unsigned char *)tv + sizeof (tarval);
   tv->mode = m;
-  tv->lab = 0;
 
   switch (m->code) {
   case irm_C:
@@ -786,7 +773,6 @@ tarval_convert_to (tarval *src, ir_mode *m)
 
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
   tv->mode = m;
-  tv->lab = 0;
 
   switch (src->mode->code) {
 
@@ -903,7 +889,6 @@ tarval_neg (tarval *a)
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
 
   tv->mode = a->mode;
-  tv->lab = 0;
 
   switch (a->mode->code) {
     /* floating */
@@ -1000,7 +985,6 @@ tarval_add (tarval *a, tarval *b)
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
 
   tv->mode = a->mode;
-  tv->lab = 0;
 
   switch (a->mode->code) {
     /* floating */
@@ -1044,7 +1028,6 @@ tarval_sub (tarval *a, tarval *b)
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
 
   tv->mode = a->mode;
-  tv->lab = 0;
 
   switch (a->mode->code) {
     /* floating */
@@ -1088,7 +1071,6 @@ tarval_mul (tarval *a, tarval *b)
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
 
   tv->mode = a->mode;
-  tv->lab = 0;
 
   switch (a->mode->code) {
     /* floating */
@@ -1135,13 +1117,11 @@ tarval_quo (tarval *a, tarval *b)
   case irm_f:
     tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
     tv->mode = mode_f;
-    tv->lab = 0;
     tv->u.f = a->u.f / b->u.f;	/* @@@ overflow etc */
     break;
   case irm_d:
     tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
     tv->mode = mode_d;
-    tv->lab = 0;
     tv->u.d = a->u.d / b->u.d;	/* @@@ overflow etc */
     break;
   default:
@@ -1166,7 +1146,6 @@ tarval_div (tarval *a, tarval *b)
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
 
   tv->mode = a->mode;
-  tv->lab = 0;
 
   switch (a->mode->code) {
     /* floating */
@@ -1213,7 +1192,6 @@ tarval_mod (tarval *a, tarval *b)
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
 
   tv->mode = a->mode;
-  tv->lab = 0;
 
   switch (a->mode->code) {
     /* floating */
@@ -1259,7 +1237,6 @@ tarval_and (tarval *a, tarval *b)
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
 
   tv->mode = a->mode;
-  tv->lab = 0;
 
   switch (a->mode->code) {
     /* unsigned */
@@ -1293,7 +1270,6 @@ tarval_or (tarval *a, tarval *b)
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
 
   tv->mode = a->mode;
-  tv->lab = 0;
 
   switch (a->mode->code) {
     /* unsigned */
@@ -1331,7 +1307,6 @@ tarval_eor (tarval *a, tarval *b)
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
 
   tv->mode = a->mode;
-  tv->lab = 0;
 
   switch (a->mode->code) {
     /* unsigned */
@@ -1374,7 +1349,6 @@ tarval_shl (tarval *a, tarval *b)
 
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
   tv->mode = a->mode;
-  tv->lab = 0;
 
   switch (a->mode->code) {
     /* unsigned */
@@ -1415,7 +1389,6 @@ tarval_shr (tarval *a, tarval *b)
 
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
   tv->mode = a->mode;
-  tv->lab = 0;
 
   switch (a->mode->code) {
     /* unsigned */
