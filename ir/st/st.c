@@ -98,7 +98,6 @@ static dtree_t *new_dtree (dt_t *tree, ir_graph *graph)
 */
 static dt_t *new_dt (ir_graph *graph)
 {
-  int i;
   int n_blocks = get_n_blocks (graph);
 
   dt_t *res = (dt_t*) malloc (sizeof (dt_t));
