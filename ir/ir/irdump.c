@@ -777,8 +777,10 @@ dump_block_graph (ir_graph *irg) {
  */
 static void dump_graph(ir_graph *irg) {
 
-  fprintf(F, "graph: { title: \"%p\" label: \"%s\" status:clustered color:white \n",
-	   (void*) irg, get_entity_name(get_irg_ent(irg)));
+  fprintf(F, "graph: { title: \"");
+  PRINT_IRGID(irg);
+  fprintf(F, "\" label: \"%s\" status:clustered color:white \n",
+	  get_entity_name(get_irg_ent(irg)));
 
   dump_block_graph (irg);
 
