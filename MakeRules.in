@@ -17,9 +17,9 @@ exec_prefix?=@exec_prefix@
 includedir?=@includedir@
 libdir?=@libdir@
 INSTALL = @INSTALL@
-INCLUDEDIR ?= ${includedir}/${PACKAGE_NAME}
-LIBDIR ?= ${exec_prefix}/${libdir}
 PACKAGE_NAME = @PACKAGE_NAME@
+INCLUDEDIR ?= ${includedir}/${PACKAGE_NAME}
+LIBDIR ?= ${libdir}
 
 DEFS = @DEFS@
 
