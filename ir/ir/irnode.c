@@ -460,6 +460,13 @@ get_irn_call_attr (ir_node *node)
   return node->attr.call.cld_tp = skip_tid(node->attr.call.cld_tp);
 }
 
+INLINE type *
+get_irn_funccall_attr (ir_node *node)
+{
+  assert (node->op == op_FuncCall);
+  return node->attr.call.cld_tp = skip_tid(node->attr.call.cld_tp);
+}
+
 INLINE sel_attr
 get_irn_sel_attr (ir_node *node)
 {
