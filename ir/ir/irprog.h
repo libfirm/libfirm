@@ -117,6 +117,10 @@ void  set_irp_type(int pos, type *typ);
 /** Returns the "global" type of the irp. */
 type *get_glob_type(void);
 
+/** File name / executable name or the like. Initially NULL! **/
+void   set_irp_prog_name (ident *name);
+ident *get_irp_prog_ident(void);
+const char  *get_irp_prog_name (void);
 
 /**
  *   Returns an irgraph that only contains constant

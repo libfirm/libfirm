@@ -57,6 +57,7 @@ ir_prog *new_ir_prog (void) {
   /* res->obst      = (struct obstack *) xmalloc (sizeof (struct obstack)); */
   res->graphs = NEW_ARR_F (ir_graph *, 1);
   res->types  = NEW_ARR_F (type *, 1);
+  res->name   = NULL;
 
 #ifdef DEBUG_libfirm
   res->max_node_nr = 0;
@@ -174,7 +175,19 @@ int get_irp_new_node_nr() {
 }
 #endif
 
-ir_graph *get_const_code_irg()
+/** File name / executable name or the like **/
+void   set_irp_prog_name(ident *name) {
+  irp->name = name;
+}
+ident *get_irp_prog_ident(void) {
+  return irp->name;
+}
+const char  *get_irp_prog_name(void) {
+  return get_id_str(irp->name);
+}
+
+
+ir_graph *get_const_code_irg(void)
 {
   return irp->const_code_irg;
 }
