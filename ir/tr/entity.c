@@ -90,6 +90,9 @@ static INLINE void insert_entity_in_owner (entity *ent) {
   }
 }
 
+/**
+ * creates a new entity
+ */
 static INLINE entity *
 new_rd_entity (dbg_info *db, type *owner, ident *name, type *type)
 {
@@ -143,7 +146,6 @@ new_rd_entity (dbg_info *db, type *owner, ident *name, type *type)
 
 #ifdef DEBUG_libfirm
   res->nr = get_irp_new_node_nr();
-  res->c_name = (char *)get_id_str (name);
 #endif /* DEBUG_libfirm */
 
   res->visit = 0;
@@ -233,7 +235,6 @@ copy_entity_name (entity *old, ident *new_name) {
   }
 #ifdef DEBUG_libfirm
   newe->nr = get_irp_new_node_nr();
-  newe->c_name = (char *)get_id_str (newe->name);
 #endif
 
   insert_entity_in_owner (newe);
@@ -502,7 +503,7 @@ set_atomic_ent_value(entity *ent, ir_node *val) {
 int is_irn_const_expression(ir_node *n) {
   ir_mode *m;
 
-  /* we are in dange iff an exception will arise. TODO: be more precisely,
+  /* we are in danger iff an exception will arise. TODO: be more precisely,
    * for instance Div. will NOT rise if divisor != 0
    */
   if (is_binop(n) && !is_fragile_op(n))
@@ -579,14 +580,18 @@ ir_node *copy_const_value(ir_node *n) {
 compound_graph_path *
 new_compound_graph_path(type *tp, int length) {
   compound_graph_path *res;
+
   assert(is_type(tp) && is_compound_type(tp));
   assert(length > 0);
 
-  res = calloc (1, sizeof(*res) + (length-1) * sizeof(res->nodes[0]));
-  res->kind          = k_ir_compound_graph_path;
-  res->tp            = tp;
-  res->len           = length;
-  res ->arr_indicees = calloc(length, sizeof(*res ->arr_indicees));
+  res = xmalloc(sizeof(*res) + (length-1) * sizeof(res->nodes[0]));
+  memset(res, 0, sizeof(*res) + (length-1) * sizeof(res->nodes[0]));
+  res->kind         = k_ir_compound_graph_path;
+  res->tp           = tp;
+  res->len          = length;
+  res->arr_indicees = xmalloc(length * sizeof(*res ->arr_indicees));
+  memset(res->arr_indicees, 0, length * sizeof(res ->arr_indicees[0]));
+
   return res;
 }
 
@@ -697,8 +702,8 @@ remove_compound_ent_value(entity *ent, entity *value_ent) {
     compound_graph_path *path = ent->val_paths[i];
     if (path->nodes[path->len-1] == value_ent) {
       for(; i < (ARR_LEN (ent->val_paths))-1; i++) {
-    ent->val_paths[i] = ent->val_paths[i+1];
-    ent->values[i]   = ent->values[i+1];
+        ent->val_paths[i] = ent->val_paths[i+1];
+        ent->values[i]   = ent->values[i+1];
       }
       ARR_SETLEN(entity*,  ent->val_paths, ARR_LEN(ent->val_paths) - 1);
       ARR_SETLEN(ir_node*, ent->values,    ARR_LEN(ent->values)    - 1);
@@ -781,7 +786,7 @@ set_array_entity_values(entity *ent, tarval **values, int num_vals) {
 
   assert(is_array_type(arrtp));
   assert(get_array_n_dimensions(arrtp) == 1);
-  /* One bound is sufficient, the nunmber of constant fields makes the
+  /* One bound is sufficient, the number of constant fields makes the
      size. */
   assert(get_array_lower_bound (arrtp, 0) || get_array_upper_bound (arrtp, 0));
   assert(get_entity_variability(ent) != variability_uninitialized);
@@ -873,7 +878,7 @@ static int get_next_index(entity *elem_ent) {
   return next;
 }
 
-/* Compute the array indicees in compound graph paths of initialized entities.
+/* Compute the array indices in compound graph paths of initialized entities.
  *
  *  All arrays must have fixed lower and upper bounds.  One array can
  *  have an open bound.  If there are several open bounds, we do
@@ -882,7 +887,7 @@ static int get_next_index(entity *elem_ent) {
  *  array bounds must be representable as ints.
  *
  *  (If the bounds are not representable as ints we have to represent
- *  the indicees as firm nodes.  But the still we must be able to
+ *  the indices as firm nodes.  But the still we must be able to
  *  evaluate the index against the upper bound.)
  */
 void compute_compound_ent_array_indicees(entity *ent) {
@@ -943,9 +948,10 @@ void compute_compound_ent_array_indicees(entity *ent) {
 
 }
 
-/* FIXME MMB: the memcpy is very strange */
+/** @fixme MMB: the memcpy is very strange */
 static int *resize (int *buf, int new_size) {
-  int *new_buf = (int *)calloc(new_size, sizeof(*new_buf));
+  int *new_buf = xmalloc(new_size * sizeof(new_buf[0]));
+  memset(new_buf, 0, new_size * sizeof(new_buf[0]));
   memcpy(new_buf, buf, new_size>1);
   free(buf);
   return new_buf;
@@ -984,7 +990,9 @@ void sort_compound_ent_values(entity *ent) {
 
   /* estimated upper bound for size. Better: use flexible array ... */
   size = ((tp_size > (n_vals * 32)) ? tp_size : (n_vals * 32)) * 4;
-  permutation = calloc(size, sizeof(*permutation));
+  permutation = xmalloc(size * sizeof(permutation[0]));
+  memset(permutation, 0, size * sizeof(permutation[0]));
+
   for (i = 0; i < n_vals; ++i) {
     int pos = get_compound_ent_value_offset_bits(ent, i);
     while (pos >= size) {
@@ -1190,7 +1198,7 @@ int is_compound_entity(entity *ent) {
 }
 
 /**
- * @todo not implemnted!!! */
+ * @todo not implemented!!! */
 bool equal_entity(entity *ent1, entity *ent2) {
   fprintf(stderr, " calling unimplemented equal entity!!! \n");
   return true;
@@ -1223,7 +1231,7 @@ bool entity_not_visited(entity *ent) {
 }
 
 /* Need two routines because I want to assert the result. */
-static entity *resolve_ent_polymorphy2 (type *dynamic_class, entity* static_ent) {
+static entity *resolve_ent_polymorphy2 (type *dynamic_class, entity *static_ent) {
   int i, n_overwrittenby;
   entity *res = NULL;
 
@@ -1232,7 +1240,8 @@ static entity *resolve_ent_polymorphy2 (type *dynamic_class, entity* static_ent)
   n_overwrittenby = get_entity_n_overwrittenby(static_ent);
   for (i = 0; i < n_overwrittenby; ++i) {
     res = resolve_ent_polymorphy2(dynamic_class, get_entity_overwrittenby(static_ent, i));
-    if (res) break;
+    if (res)
+      break;
   }
 
   return res;
@@ -1243,7 +1252,7 @@ static entity *resolve_ent_polymorphy2 (type *dynamic_class, entity* static_ent)
  * Returns the dynamically referenced entity if the static entity and the
  * dynamic type are given.
  * Search downwards in overwritten tree. */
-entity *resolve_ent_polymorphy(type *dynamic_class, entity* static_ent) {
+entity *resolve_ent_polymorphy(type *dynamic_class, entity *static_ent) {
   entity *res;
   assert(static_ent && static_ent->kind == k_entity);
 
