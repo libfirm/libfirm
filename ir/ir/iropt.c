@@ -1311,22 +1311,25 @@ static ir_node *transform_node_Proj(ir_node *proj)
 
 /**
  * Transform a Store before a Store to the same address...
+ * Both nodes must be in the same block.
  *
  * @todo Check for volatile! Moreover, what if the first store
  *       has a exception handler while the other has not?
  */
 static ir_node *transform_node_Store(ir_node *store)
 {
-  ir_node *n   = skip_Proj(get_Store_mem(store));
-  ir_node *ptr = get_Store_ptr(store);
+  ir_node *pred = skip_Proj(get_Store_mem(store));
+  ir_node *ptr  = get_Store_ptr(store);
 
-  if (get_irn_op(n) == op_Store && get_Store_ptr(n) == ptr) {
+  if (get_irn_op(pred) == op_Store &&
+      get_Store_ptr(pred) == ptr   &&
+      get_nodes_block(pred) == get_nodes_block(store)) {
     /* the Store n is useless, as it is overwritten by the store store */
-    ir_node *mem = get_Store_mem(n);
+    ir_node *mem = get_Store_mem(pred);
 
-    turn_into_tuple(n, 2);
-    set_Tuple_pred(n, pn_Store_M,        mem);
-    set_Tuple_pred(n, pn_Store_X_except, new_Bad());
+    turn_into_tuple(pred, 2);
+    set_Tuple_pred(pred, pn_Store_M,        mem);
+    set_Tuple_pred(pred, pn_Store_X_except, new_Bad());
   }
   return store;
 }
