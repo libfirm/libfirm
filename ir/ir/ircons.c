@@ -170,7 +170,7 @@ new_rd_Const (dbg_info* db, ir_graph *irg, ir_node *block, ir_mode *mode, tarval
 ir_node *
 new_rd_Const_long (dbg_info* db, ir_graph *irg, ir_node *block, ir_mode *mode, long value)
 {
-	return new_rd_Const(db, irg, block, mode, new_tarval_from_long(value, mode));
+    return new_rd_Const(db, irg, block, mode, new_tarval_from_long(value, mode));
 }
 
 ir_node *
@@ -284,7 +284,7 @@ new_rd_Sub (dbg_info* db, ir_graph *irg, ir_node *block,
 
 ir_node *
 new_rd_Minus (dbg_info* db, ir_graph *irg, ir_node *block,
-         ir_node *op, ir_mode *mode)
+              ir_node *op, ir_mode *mode)
 {
   ir_node *res;
 
@@ -715,7 +715,7 @@ new_rd_InstOf (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
 
 ir_node *
 new_rd_SymConst_type (dbg_info* db, ir_graph *irg, ir_node *block, symconst_symbol value,
-		      symconst_kind symkind, type *tp) {
+              symconst_kind symkind, type *tp) {
   ir_node *res;
   ir_mode *mode;
 
@@ -737,7 +737,7 @@ new_rd_SymConst_type (dbg_info* db, ir_graph *irg, ir_node *block, symconst_symb
 
 ir_node *
 new_rd_SymConst (dbg_info* db, ir_graph *irg, ir_node *block, symconst_symbol value,
-		 symconst_kind symkind)
+         symconst_kind symkind)
 {
   ir_node *res = new_rd_SymConst_type(db, irg, block, value, symkind, firm_unknown_type);
   return res;
@@ -1150,7 +1150,7 @@ new_d_Block (dbg_info* db, int arity, ir_node **in)
   /* Create and initialize array for Phi-node construction. */
   if (get_irg_phase_state(current_ir_graph) == phase_building) {
     res->attr.block.graph_arr = NEW_ARR_D(ir_node *, current_ir_graph->obst,
-					  current_ir_graph->n_loc);
+                      current_ir_graph->n_loc);
     memset(res->attr.block.graph_arr, 0, sizeof(ir_node *)*current_ir_graph->n_loc);
   }
 
@@ -1533,7 +1533,7 @@ void free_Phi_in_stack(Phi_in_stack *s) { }
 
 static INLINE ir_node *
 new_rd_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
-	       ir_node **in, int ins, ir_node *phi0)
+           ir_node **in, int ins, ir_node *phi0)
 {
   int i;
   ir_node *res, *known;
@@ -1577,6 +1577,7 @@ new_rd_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
         res = optimize_in_place_2(known);
         if (res != known)
           exchange(known, res);
+
       }
       else
         res = known;
@@ -1627,11 +1628,11 @@ static INLINE ir_node ** new_frag_arr (ir_node *n)
     arr[0] = new_Proj(n, mode_M, pn_Call_M_except);
   else {
     assert((pn_Quot_M == pn_DivMod_M) &&
-	   (pn_Quot_M == pn_Div_M)    &&
-	   (pn_Quot_M == pn_Mod_M)    &&
-	   (pn_Quot_M == pn_Load_M)   &&
-	   (pn_Quot_M == pn_Store_M)  &&
-	   (pn_Quot_M == pn_Alloc_M)    );
+       (pn_Quot_M == pn_Div_M)    &&
+       (pn_Quot_M == pn_Mod_M)    &&
+       (pn_Quot_M == pn_Load_M)   &&
+       (pn_Quot_M == pn_Store_M)  &&
+       (pn_Quot_M == pn_Alloc_M)    );
     arr[0] = new_Proj(n, mode_M, pn_Alloc_M);
   }
   set_optimize(opt);
@@ -1758,17 +1759,17 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
       else
         block->attr.block.graph_arr[pos] = new_Const(mode, tarval_bad);
       /* We don't need to care about exception ops in the start block.
-	 There are none by definition. */
+     There are none by definition. */
       return block->attr.block.graph_arr[pos];
     } else {
       phi0 = new_rd_Phi0(current_ir_graph, block, mode);
       block->attr.block.graph_arr[pos] = phi0;
 #if PRECISE_EXC_CONTEXT
       if (get_opt_precise_exc_context()) {
-	/* Set graph_arr for fragile ops.  Also here we should break recursion.
-	   We could choose a cyclic path through an cfop.  But the recursion would
-	   break at some point. */
-	set_frag_value(block->attr.block.graph_arr, pos, phi0);
+    /* Set graph_arr for fragile ops.  Also here we should break recursion.
+       We could choose a cyclic path through an cfop.  But the recursion would
+       break at some point. */
+    set_frag_value(block->attr.block.graph_arr, pos, phi0);
       }
 #endif
     }
@@ -1791,9 +1792,9 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
     if (!is_Bad(prevBlock)) {
 #if PRECISE_EXC_CONTEXT
       if (get_opt_precise_exc_context() &&
-	  is_fragile_op(prevCfOp) && (get_irn_op (prevCfOp) != op_Bad)) {
-	assert(get_r_frag_value_internal (prevBlock, prevCfOp, pos, mode));
-	nin[i-1] = get_r_frag_value_internal (prevBlock, prevCfOp, pos, mode);
+      is_fragile_op(prevCfOp) && (get_irn_op (prevCfOp) != op_Bad)) {
+    assert(get_r_frag_value_internal (prevBlock, prevCfOp, pos, mode));
+    nin[i-1] = get_r_frag_value_internal (prevBlock, prevCfOp, pos, mode);
       } else
 #endif
       nin[i-1] = get_r_value_internal (prevBlock, pos, mode);
@@ -1810,8 +1811,8 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
   if (!phi0) {
     phi0_all = block->attr.block.graph_arr[pos];
     if (!((get_irn_op(phi0_all) == op_Phi) &&
-	  (get_irn_arity(phi0_all) == 0)   &&
-	  (get_nodes_block(phi0_all) == block)))
+      (get_irn_arity(phi0_all) == 0)   &&
+      (get_nodes_block(phi0_all) == block)))
       phi0_all = NULL;
   } else {
     phi0_all = phi0;
@@ -1919,7 +1920,7 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
     printf("Error: no value set.  Use of undefined variable.  Initializing to zero.\n");
     assert (mode->code >= irm_F && mode->code <= irm_P);
     res = new_rd_Const (NULL, current_ir_graph, block, mode,
-			get_mode_null(mode));
+            get_mode_null(mode));
   }
 
   /* The local valid value is available now. */
@@ -1996,7 +1997,7 @@ new_d_Const_long(dbg_info* db, ir_mode *mode, long value)
   return new_rd_Const_long(db, current_ir_graph, current_ir_graph->start_block, mode, value);
 }
 
-	ir_node *
+    ir_node *
 new_d_Const_type (dbg_info* db, ir_mode *mode, tarval *con, type *tp)
 {
   return new_rd_Const_type(db, current_ir_graph, current_ir_graph->start_block,
@@ -2084,8 +2085,8 @@ new_d_Mul (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode)
 static void allocate_frag_arr(ir_node *res, ir_op *op, ir_node ***frag_store) {
   if (get_opt_precise_exc_context()) {
     if ((current_ir_graph->phase_state == phase_building) &&
-	(get_irn_op(res) == op) && /* Could be optimized away. */
-	!*frag_store)    /* Could be a cse where the arr is already set. */ {
+    (get_irn_op(res) == op) && /* Could be optimized away. */
+    !*frag_store)    /* Could be a cse where the arr is already set. */ {
       *frag_store = new_frag_arr(res);
     }
   }
@@ -2590,7 +2591,7 @@ ir_node *new_Const  (ir_mode *mode, tarval *con) {
 
 ir_node *new_Const_long(ir_mode *mode, long value)
 {
-	return new_d_Const_long(NULL, mode, value);
+    return new_d_Const_long(NULL, mode, value);
 }
 
 ir_node *new_Const_type(tarval *con, type *tp) {
