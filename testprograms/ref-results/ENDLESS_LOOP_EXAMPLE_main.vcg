@@ -164,13 +164,13 @@ start of method of type main_tp
 }
 
 graph: { title: "n17"  label: "Block 17" status:clustered color:yellow
-node: {title: "n72" label: "End  72"  info1: "mode:    X
+node: {title: "n73" label: "End  73"  info1: "mode:    X
 visited: 22
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 2
 "color: blue}
-edge: {sourcename: "n72" targetname: "n32" label: "0" class:13 priority:60 color:red}
-edge: {sourcename: "n72" targetname: "n62" label: "1" }
+edge: {sourcename: "n73" targetname: "n32" label: "0" class:13 priority:60 color:red}
+edge: {sourcename: "n73" targetname: "n62" label: "1" }
 }
 
 }
