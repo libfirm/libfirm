@@ -11,7 +11,7 @@
 #
 
 # set LIBXML2 to the installation directory of libxml2
-# temporary fix until libxml is integrated:
+# temporary fix until libxml2 is integrated:
 LIBXML2		?= /usr/public/libxml2
 
 top_srcdir := @top_srcdir@
