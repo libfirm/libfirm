@@ -164,13 +164,13 @@ static int overflows(tarval *tv)
 {
   switch (get_mode_sort(tv->mode))
   {
-    case character:
-    case int_number:
+    case irms_character:
+    case irms_int_number:
       if (sc_comp(tv->value, get_mode_max(tv->mode)->value) == 1) return 1;
       if (sc_comp(tv->value, get_mode_min(tv->mode)->value) == -1) return 1;
       break;
 
-    case float_number:
+    case irms_float_number:
       if (fc_comp(tv->value, get_mode_max(tv->mode)->value) == 1) return 1;
       if (fc_comp(tv->value, get_mode_min(tv->mode)->value) == -1) return 1;
       break;
@@ -206,27 +206,27 @@ tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 
   switch (get_mode_sort(mode))
   {
-    case auxiliary:
+    case irms_auxiliary:
       assert(0);
       break;
 
-    case internal_boolean:
+    case irms_internal_boolean:
       /* match tTrRuUeE/fFaAlLsSeE */
       if (strcasecmp(str, "true")) return tarval_b_true;
       else if (strcasecmp(str, "false")) return tarval_b_true;
       else
 	return atoi(str) ? tarval_b_true : tarval_b_false;
 
-    case float_number:
+    case irms_float_number:
       fc_val_from_str(str, len);
       return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 
-    case int_number:
-    case character:
+    case irms_int_number:
+    case irms_character:
       sc_val_from_str(str, len);
       return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
 
-    case reference:
+    case irms_reference:
       return get_tarval(str, len, mode);
   }
 
@@ -253,23 +253,23 @@ char *tarval_to_str(tarval *tv)
 tarval *new_tarval_from_long(long l, ir_mode *mode)
 {
   ANNOUNCE();
-  assert(mode && !(get_mode_sort(mode) == auxiliary));
+  assert(mode && !(get_mode_sort(mode) == irms_auxiliary));
 
   switch(get_mode_sort(mode))
   {
-    case internal_boolean:
+    case irms_internal_boolean:
       /* XXX C-Semantics ! */
       return l ? tarval_b_true : tarval_b_false ;
 
-    case int_number:
-    case character:
+    case irms_int_number:
+    case irms_character:
       sc_val_from_long(l);
       return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
 
-    case float_number:
+    case irms_float_number:
       return new_tarval_from_double((long double)l, mode);
 
-    case reference:
+    case irms_reference:
       return l ? tarval_bad : get_tarval(NULL, 0, mode);  /* null pointer or tarval_bad */
 
     default:
@@ -281,14 +281,14 @@ tarval *new_tarval_from_long(long l, ir_mode *mode)
 int tarval_is_long(tarval *tv)
 {
   ANNOUNCE();
-  return ((get_mode_sort(tv->mode) == int_number) || (get_mode_sort(tv->mode) == character));
+  return ((get_mode_sort(tv->mode) == irms_int_number) || (get_mode_sort(tv->mode) == irms_character));
 }
 
 /* this might overflow the machine's long, so use only with small values */
 long tarval_to_long(tarval* tv)
 {
   ANNOUNCE();
-  assert(tv && get_mode_sort(tv->mode) == int_number);
+  assert(tv && get_mode_sort(tv->mode) == irms_int_number);
 
   return sc_val_to_long(tv->value); /* might overflow */
 }
@@ -296,7 +296,7 @@ long tarval_to_long(tarval* tv)
 tarval *new_tarval_from_double(long double d, ir_mode *mode)
 {
   ANNOUNCE();
-  assert(mode && (get_mode_sort(mode) == float_number));
+  assert(mode && (get_mode_sort(mode) == irms_float_number));
 
   fc_val_from_float(d);
   return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
@@ -307,7 +307,7 @@ int tarval_is_double(tarval *tv)
   ANNOUNCE();
   assert(tv);
 
-  return (get_mode_sort(tv->mode) == float_number);
+  return (get_mode_sort(tv->mode) == irms_float_number);
 }
 
 long double tarval_to_double(tarval *tv)
@@ -324,7 +324,7 @@ tarval *new_tarval_from_entity (entity *ent, ir_mode *mode)
 {
   ANNOUNCE();
   assert(ent);
-  assert(mode && (get_mode_sort(mode) == reference));
+  assert(mode && (get_mode_sort(mode) == irms_reference));
 
   return get_tarval((void *)ent, 0, mode);
 }
@@ -333,7 +333,7 @@ int tarval_is_entity(tarval *tv)
   ANNOUNCE();
   assert(tv);
   /* tv->value == NULL means dereferencing a null pointer */
-  return ((get_mode_sort(tv->mode) == reference) && (tv->value != NULL) && (tv->length == 0));
+  return ((get_mode_sort(tv->mode) == irms_reference) && (tv->value != NULL) && (tv->length == 0));
 }
 
 entity *tarval_to_entity(tarval *tv)
@@ -417,20 +417,20 @@ tarval *get_tarval_max(ir_mode *mode)
 
   switch(get_mode_sort(mode))
   {
-    case reference:
-    case auxiliary:
+    case irms_reference:
+    case irms_auxiliary:
       assert(0);
       break;
 
-    case internal_boolean:
+    case irms_internal_boolean:
       return tarval_b_true;
 
-    case float_number:
+    case irms_float_number:
       fc_get_max(get_mode_size_bits(mode));
       return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 
-    case int_number:
-    case character:
+    case irms_int_number:
+    case irms_character:
       sc_max_from_bits(get_mode_size_bits(mode), mode_is_signed(mode));
       return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
   }
@@ -444,20 +444,20 @@ tarval *get_tarval_min(ir_mode *mode)
 
   switch(get_mode_sort(mode))
   {
-    case reference:
-    case auxiliary:
+    case irms_reference:
+    case irms_auxiliary:
       assert(0);
       break;
 
-    case internal_boolean:
+    case irms_internal_boolean:
       return tarval_b_false;
 
-    case float_number:
+    case irms_float_number:
       fc_get_min(get_mode_size_bits(mode));
       return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 
-    case int_number:
-    case character:
+    case irms_int_number:
+    case irms_character:
       sc_min_from_bits(get_mode_size_bits(mode), mode_is_signed(mode));
       return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
   }
@@ -471,19 +471,19 @@ tarval *get_tarval_null(ir_mode *mode)
 
   switch(get_mode_sort(mode))
   {
-    case auxiliary:
-    case internal_boolean:
+    case irms_auxiliary:
+    case irms_internal_boolean:
       assert(0);
       break;
 
-    case float_number:
+    case irms_float_number:
       return new_tarval_from_double(0.0, mode);
 
-    case int_number:
-    case character:
+    case irms_int_number:
+    case irms_character:
       return new_tarval_from_long(0l,  mode);
 
-    case reference:
+    case irms_reference:
       return tarval_P_void;
   }
   return tarval_bad;
@@ -496,17 +496,17 @@ tarval *get_tarval_one(ir_mode *mode)
 
   switch(get_mode_sort(mode))
   {
-    case auxiliary:
-    case internal_boolean:
-    case reference:
+    case irms_auxiliary:
+    case irms_internal_boolean:
+    case irms_reference:
       assert(0);
       break;
 
-    case float_number:
+    case irms_float_number:
       return new_tarval_from_double(1.0, mode);
 
-    case int_number:
-    case character:
+    case irms_int_number:
+    case irms_character:
       return new_tarval_from_long(1l, mode);
       break;
   }
@@ -518,7 +518,7 @@ tarval *get_tarval_nan(ir_mode *mode)
   ANNOUNCE();
   assert(mode);
 
-  if (get_mode_sort(mode) == float_number) {
+  if (get_mode_sort(mode) == irms_float_number) {
     fc_get_nan();
     return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
   }
@@ -533,7 +533,7 @@ tarval *get_tarval_inf(ir_mode *mode)
   ANNOUNCE();
   assert(mode);
 
-  if (get_mode_sort(mode) == float_number) {
+  if (get_mode_sort(mode) == irms_float_number) {
     fc_get_inf();
     return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
   }
@@ -557,12 +557,12 @@ int tarval_is_negative(tarval *a)
 
   switch (get_mode_sort(a->mode))
   {
-    case int_number:
+    case irms_int_number:
       if (!mode_is_signed(a->mode)) return 0;
       else
 	return sc_comp(a->value, get_mode_null(a->mode)->value) == -1 ? 1 : 0;
 
-    case float_number:
+    case irms_float_number:
       return fc_comp(a->value, get_mode_null(a->mode)->value) == -1 ? 1 : 0;
 
     default:
@@ -588,20 +588,20 @@ pnc_number tarval_cmp(tarval *a, tarval *b)
   /* Here the two tarvals are unequal and of the same mode */
   switch (get_mode_sort(a->mode))
   {
-    case auxiliary:
+    case irms_auxiliary:
       return False;
 
-    case float_number:
+    case irms_float_number:
       return (fc_comp(a->value, b->value)==1)?(Gt):(Lt);
 
-    case int_number:
-    case character:
+    case irms_int_number:
+    case irms_character:
       return (sc_comp(a->value, b->value)==1)?(Gt):(Lt);
 
-    case internal_boolean:
+    case irms_internal_boolean:
       return (a == tarval_b_true)?(Gt):(Lt);
 
-    case reference:
+    case irms_reference:
       return Uo;
   }
   return False;
@@ -622,17 +622,17 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m)
 
   switch (get_mode_sort(src->mode))
   {
-    case auxiliary:
+    case irms_auxiliary:
       break;
 
-    case float_number:
+    case irms_float_number:
       break;
 
-    case int_number:
+    case irms_int_number:
       switch (get_mode_sort(m))
       {
-        case int_number:
-        case character:
+        case irms_int_number:
+        case irms_character:
           tv.mode = m;
           tv.length = src->length;
           tv.value = src->value;
@@ -642,7 +642,7 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m)
           }
           return INSERT_TARVAL(&tv);
 
-        case internal_boolean:
+        case irms_internal_boolean:
           /* XXX C semantics */
           if (src == get_mode_null(src->mode)) return tarval_b_false;
           else return tarval_b_true;
@@ -652,10 +652,10 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m)
       }
       break;
 
-    case internal_boolean:
+    case irms_internal_boolean:
       switch (get_mode_sort(m))
       {
-        case int_number:
+        case irms_int_number:
           if (src == tarval_b_true) return get_mode_one(m);
           else return get_mode_null(m);
 
@@ -664,9 +664,9 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m)
       }
       break;
 
-    case character:
+    case irms_character:
       break;
-    case reference:
+    case irms_reference:
       break;
   }
 
@@ -685,11 +685,11 @@ tarval *tarval_neg(tarval *a)
 
   switch (get_mode_sort(a->mode))
   {
-    case int_number:
+    case irms_int_number:
       sc_neg(a->value);
       return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 
-    case float_number:
+    case irms_float_number:
       fc_neg(a->value);
       return get_tarval(fc_get_buffer(), fc_get_buffer_length(), a->mode);
 
@@ -706,18 +706,18 @@ tarval *tarval_add(tarval *a, tarval *b)
   ANNOUNCE();
   assert(a);
   assert(b);
-  assert((a->mode == b->mode) || (get_mode_sort(a->mode) == character && mode_is_int(b->mode)));
+  assert((a->mode == b->mode) || (get_mode_sort(a->mode) == irms_character && mode_is_int(b->mode)));
 
   switch (get_mode_sort(a->mode))
   {
-    case character:
-    case int_number:
+    case irms_character:
+    case irms_int_number:
       /* modes of a,b are equal, so result has mode of a as this might be the character */
       sc_add(a->value, b->value);
       /* FIXME: Check for overflow */
       return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 
-    case float_number:
+    case irms_float_number:
       /* FIXME: Overflow/Underflow/transition to inf when mode < 80bit */
       fc_add(a->value, b->value);
       return get_tarval(fc_get_buffer(), fc_get_buffer_length(), a->mode);
@@ -735,18 +735,18 @@ tarval *tarval_sub(tarval *a, tarval *b)
   ANNOUNCE();
   assert(a);
   assert(b);
-  assert((a->mode == b->mode) || (get_mode_sort(a->mode) == character && mode_is_int(b->mode)));
+  assert((a->mode == b->mode) || (get_mode_sort(a->mode) == irms_character && mode_is_int(b->mode)));
 
   switch (get_mode_sort(a->mode))
   {
-    case character:
-    case int_number:
+    case irms_character:
+    case irms_int_number:
       /* modes of a,b are equal, so result has mode of a as this might be the character */
       sc_sub(a->value, b->value);
       /* FIXME: check for overflow */
       return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 
-    case float_number:
+    case irms_float_number:
       /* FIXME: Overflow/Underflow/transition to inf when mode < 80bit */
       fc_add(a->value, b->value);
       return get_tarval(fc_get_buffer(), fc_get_buffer_length(), a->mode);
@@ -768,13 +768,13 @@ tarval *tarval_mul(tarval *a, tarval *b)
 
   switch (get_mode_sort(a->mode))
   {
-    case int_number:
+    case irms_int_number:
       /* modes of a,b are equal */
       sc_mul(a->value, b->value);
       /* FIXME: check for overflow */
       return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 
-    case float_number:
+    case irms_float_number:
       /* FIXME: Overflow/Underflow/transition to inf when mode < 80bit */
       fc_add(a->value, b->value);
       return get_tarval(fc_get_buffer(), fc_get_buffer_length(), a->mode);
@@ -840,7 +840,7 @@ tarval *tarval_abs(tarval *a)
 
   switch (get_mode_sort(a->mode))
   {
-    case int_number:
+    case irms_int_number:
       if (sc_comp(a->value, get_mode_null(a->mode)->value) == -1)
       {
         sc_neg(a->value);
@@ -848,7 +848,7 @@ tarval *tarval_abs(tarval *a)
       }
       return a;
 
-    case float_number:
+    case irms_float_number:
       break;
 
     default:
@@ -979,8 +979,8 @@ int tarval_print(XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
 
   switch (get_mode_sort(tv->mode))
   {
-    case int_number:
-    case character:
+    case irms_int_number:
+    case irms_character:
       switch (mode_info->mode_output) {
 
       case TVO_DECIMAL:
@@ -999,10 +999,10 @@ int tarval_print(XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
       }
       return XPF3R("%s%s%s", prefix, str, suffix);
 
-    case float_number:
+    case irms_float_number:
       return XPF3R("%s%s%s", prefix, fc_print_dec(tv->value, buf, sizeof(buf)), suffix);
 
-    case reference:
+    case irms_reference:
       if (tv->value != NULL)
         if (tarval_is_entity(tv))
           if (get_entity_peculiarity((entity *)tv->value) == existent)
@@ -1014,7 +1014,7 @@ int tarval_print(XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
       else
         return XPSR("void");
 
-    case internal_boolean:
+    case irms_internal_boolean:
       switch (mode_info->mode_output) {
 
       case TVO_DECIMAL:
@@ -1028,7 +1028,7 @@ int tarval_print(XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
         return XPF3R("%s%s%s", prefix, (tv == tarval_b_true) ? "true" : "false", suffix);
       }
 
-    case auxiliary:
+    case irms_auxiliary:
       return XPSR("<BAD>");
   }
 
@@ -1042,16 +1042,16 @@ int tarval_xprintf(printf_func print_func, void * out , tarval *tv)
 
   switch (get_mode_sort(tv->mode))
   {
-    case int_number:
-    case character:
+    case irms_int_number:
+    case irms_character:
       str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_HEX);
 
       return print_func(out,"0x%s", str);
 
-    case float_number:
+    case irms_float_number:
       return print_func(out,"%s", fc_print_dec(tv->value, buf, sizeof(buf)));
 
-    case reference:
+    case irms_reference:
       if (tv->value != NULL)
         if (tarval_is_entity(tv))
           if (get_entity_peculiarity((entity *)tv->value) == existent)
@@ -1063,11 +1063,11 @@ int tarval_xprintf(printf_func print_func, void * out , tarval *tv)
       else
         return print_func(out,"void",0);
 
-    case internal_boolean:
+    case irms_internal_boolean:
       if (tv == tarval_b_true) return print_func(out,"true",0);
       else return print_func(out,"false",0);
 
-    case auxiliary:
+    case irms_auxiliary:
       return print_func(out,"<BAD>",0);
   }
 
@@ -1085,11 +1085,11 @@ char *tarval_bitpattern(tarval *tv)
 unsigned char tarval_sub_bits(tarval *tv, unsigned byte_ofs)
 {
   switch (get_mode_sort(tv->mode)) {
-    case int_number:
-    case character:
+    case irms_int_number:
+    case irms_character:
       return sc_sub_bits(tv->value, tv->length, byte_ofs);
 
-    case float_number:
+    case irms_float_number:
       return fc_sub_bits(tv->value, get_mode_size_bits(tv->mode), byte_ofs);
 
     default:
@@ -1127,7 +1127,7 @@ long tarval_classify(tarval *tv)
 
   if (tv == get_mode_null(tv->mode)) return 0;
   else if (tv == get_mode_one(tv->mode)) return 1;
-  else if ((get_mode_sort(tv->mode) == int_number)
+  else if ((get_mode_sort(tv->mode) == irms_int_number)
            && (tv == new_tarval_from_long(-1, tv->mode))) return -1;
 
   return 2;
