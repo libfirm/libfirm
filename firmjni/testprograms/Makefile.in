@@ -24,10 +24,13 @@ SOURCES := Makefile.in \
 
 MYCLASSPATH = $(CLASSPATH):../..
 
-LD_LIBRARY_PATH += $srcdir/firmjni
+XML2_LIBRARY_PATH = /usr/public/libxml2-2.6.14/lib
 
-run_bin_EXAMPLES = java -cp $(MYCLASSPATH) -Djava.library.path=$(topdir) Empty; \
-	java -cp $(MYCLASSPATH) -Djava.library.path=$(topdir) IfElseExample
+LD_LIBRARY_PATH += $srcdir/firmjni
+LD_LIBRARY_PATH += $XML2_LIBRARY_PATH
+
+run_bin_EXAMPLES = java -cp $(MYCLASSPATH) -Djava.library.path=$(topdir):$(XML2_LIBRARY_PATH) Empty; \
+	           java -cp $(MYCLASSPATH) -Djava.library.path=$(topdir):$(XML2_LIBRARY_PATH) IfElseExample
 
 %.class: $(top_srcdir)/firmjni/testprograms/%.java
 	javac -d . $<

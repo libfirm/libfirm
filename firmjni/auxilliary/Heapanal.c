@@ -108,7 +108,7 @@ void Java_firmjni_Heapanal_analHeap__ (JNIEnv *env, jclass clazz)
     /* Analysis that builds the call graph and finds the free methods,
        i.e. methods that are dereferenced.
        Optimizes polymorphic calls.*/
-    cgana(&arr_len, &free_methods, 0);
+    cgana(&arr_len, &free_methods);
     /* Remove methods that are never called. */
     /*  gc_irgs(arr_len, free_methods); */
     /* Build the interprocedural dataflow representation */
@@ -154,6 +154,10 @@ void Java_firmjni_Heapanal_analHeap__ (JNIEnv *env, jclass clazz)
 
 /*
  * $Log$
+ * Revision 1.5  2004/11/15 12:38:16  goetz
+ * we need more and more libs at linking ...
+ * changed node numbers (unknown_entity)
+ *
  * Revision 1.4  2004/08/14 10:09:52  goetz
  * adapted to new semantics
  *

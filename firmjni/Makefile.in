@@ -49,7 +49,7 @@ CPPFLAGS += 	-I$(top_srcdir)/ir/ir  -I$(top_srcdir)/ir/common  	\
 	        -I$(top_srcdir)/ir/ana -I$(top_srcdir)/ir/opt		\
 		-I$(top_srcdir)/ir/st -I$(top_srcdir)/ir/stat
 
-LDFLAGS += -I$(topdir)
+LDFLAGS += -I$(topdir) -L$(libdir) -lfirmlower -labor
 
 FIRM_HEADERS=$(notdir $(FIRM_PATH_HEADERS))
 MEMBERS=$(subst .h,.m,$(shell echo $(FIRM_HEADERS)|$(SHELL_TOUPPER)))
@@ -134,10 +134,10 @@ else
 HEAPANALLIB =
 endif
 
-
+# We need firmlower and abor for heap analysis stuff, wich is called from aux/Heapanal.java
+# BY the way, what is sw/lib/  can this be removed???
 jni:    $(HFILES) $(OFILES)  # ../libfirm.a
-	gcc -shared -fPIC -o $(LIBNAME) *.o -lfirm -L.. $(HEAPANALLIB) $(LDFLAGS) -liberty -L../../sw/lib
-
+	gcc -shared -fPIC -o $(LIBNAME) *.o -lfirm -lxml2 -L.. $(HEAPANALLIB) $(LDFLAGS) -liberty -L../../sw/lib
 install:
 	cp libfirmjni.so $(libdir)
 #	mkdir $(javadir)
