@@ -120,8 +120,8 @@ static void collect_impls(entity *method, eset *set, int *size, bool *open) {
   int i;
 
   if (get_entity_peculiarity(method) == peculiarity_existent) {
-    if (get_entity_visibility(method) == visibility_external_allocated) {
-      assert(get_entity_irg(method) == NULL);
+    if ((get_entity_visibility(method) == visibility_external_allocated)
+	&& (NULL == get_entity_irg(method))) {
       *open = true;
     } else {
       assert(get_entity_irg(method) != NULL);
