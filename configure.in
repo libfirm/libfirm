@@ -296,3 +296,6 @@ dnl ===============
 
 
 AC_OUTPUT($ac_output_file,[ touch stamp-h ])
+
+dnl snip the lower prt of config.h and put it to ir/common/firm_config.h
+gawk -f filter.awk < config.h | sed -f filter.sed > ir/common/firm_config.h
