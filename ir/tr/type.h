@@ -886,7 +886,7 @@ int  is_primitive_type  (const type *primitive);
  *    size:  0
  */
 /* A variable that contains the only none type. */
-extern type *none_type;
+extern type *firm_none_type;
 /* Returns the none type */
 type *get_none_type(void);
 
@@ -908,7 +908,7 @@ type *get_none_type(void);
  *    size:  0
  */
 /* A variable that contains the only unknown type. */
-extern type *unknown_type;
+extern type *firm_unknown_type;
 /* Returns the unknown type */
 type *get_unknown_type(void);
 
@@ -925,7 +925,7 @@ int is_atomic_type(const type *tp);
 /**
  * Gets the number of elements in a firm compound type.
  *
- * This is just a comforability function, because structs and
+ * This is just a comfortability function, because structs and
  * classes can often be treated be the same code, but they have
  * different access functions to their members.
  *
