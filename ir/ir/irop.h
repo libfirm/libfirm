@@ -1,7 +1,13 @@
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-** All rights reserved.
+/*
+**  Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
+**  All rights reserved.
 **
-** Authors: Christian Schaefer
+**  Authors: Christian Schaefer
+**
+**  irop.h  operators of firm nodes
+**
+**  This module specifies the opcodes possible for ir nodes.  Their
+**  definition is close to the operations specified in UKA Tech-Report 1999-44
 **
 */
 
@@ -9,7 +15,6 @@
 # define _IROP_H_
 
 # include "ident.h"
-# include "type.h"
 
 typedef enum {
   iro_Block,
@@ -82,6 +87,8 @@ extern ir_op *op_Bad;
 
 /* create a new ir operation */
 ir_op * new_ir_op (opcode code, ident *name, size_t attr_size, int labeled);
+
+/* initialize the irop module */
 void init_op (void);
 
 # endif /* _IROP_H_ */

@@ -27,7 +27,7 @@ main(void)
 {
   ir_graph *irg;
   type_class *owner;
-  type_method *method;
+  type_method *method;    /* the type of this method */
   entity *ent;
   ir_node *a, *b, *c, *d, *x;
 

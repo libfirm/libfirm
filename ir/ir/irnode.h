@@ -286,9 +286,9 @@ inline void     set_SymConst_ptrinfo (ir_node *node, ident *ptrinfo);
 inline ir_node *get_Sel_mem (ir_node *node);
 inline void     set_Sel_mem (ir_node *node, ir_node *mem);
 inline ir_node *get_Sel_ptr (ir_node *node);  /* ptr to the object to select from */
-inline void      set_Sel_ptr (ir_node *node, ir_node *ptr);
+inline void     set_Sel_ptr (ir_node *node, ir_node *ptr);
 inline ir_node **get_Sel_index_arr (ir_node *node);
-inline int       get_Sel_n_index (ir_node *node);
+inline int      get_Sel_n_index (ir_node *node);
 /*inline void     set_Sel_n_index (ir_node *node, int n_index); */
 inline ir_node *get_Sel_index (ir_node *node, int pos);
 inline void     set_Sel_index (ir_node *node, int pos, ir_node *index);
@@ -304,10 +304,10 @@ inline void     set_Call_ptr (ir_node *node, ir_node *ptr);
 inline ir_node **get_Call_param_arr (ir_node *node);
 inline int      get_Call_arity (ir_node *node);
 /* inline void     set_Call_arity (ir_node *node, ir_node *arity); */
-inline ir_node  *get_Call_param (ir_node *node, int pos);
-inline void      set_Call_param (ir_node *node, int pos, ir_node *param);
+inline ir_node *get_Call_param (ir_node *node, int pos);
+inline void     set_Call_param (ir_node *node, int pos, ir_node *param);
 inline type_method *get_Call_type (ir_node *node);
-inline void      set_Call_type (ir_node *node, type_method *type);
+inline void     set_Call_type (ir_node *node, type_method *type);
 
 /* For unary and binary arithmetic operations the access to the
    operands can be factored out.  Left is the first, right the

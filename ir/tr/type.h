@@ -4,7 +4,177 @@
 ** Authors: Martin Trapp, Christian Schaefer &
 **          Goetz Lindenmaier
 **
-** type.h: datastructures to hold type information.
+
+@@@@@@@  Improve documentation: distinguish fields that are
+set by the frontend and contain knowledge specified by the source
+program from fields containing information derived by analysis/optimization
+or lowering phases.
+
+
+**  type.h: datastructures to hold type information.
+**
+**  This module supplies datastructures to represent all types
+**  known in the compiled program.  This includes types specified
+**  in the program as well as types defined by the language.  In the
+**  view of the intermediate representation there is no difference
+**  between these types.
+**  Types are different from the modes defined in irmode:  Types are
+**  on the level of the programming language, modes at the level of
+**  the target processor.
+**
+**
+**  General datastructure
+**  =====================
+**
+**  Firm distinguishes several different type constructs.  These are
+**  implemented as structs.  A union of the individual structs constructs
+**  the firm node "type".
+**
+**  All type constructs have the following fields:
+**
+**  kind         A firm_kind tag containing k_type_class.  This is useful
+**               for dynamically checking the sort of a type.  Automatically
+**               generated.
+**
+**  name         An identifier specifying the type name.  Set by the frontend.
+**
+**  visit        A counter for walks of the type information.
+**
+**
+**  General functionality
+**  =====================
+**
+**  is_type(t)   Returns true if t is a type node, else false.
+**
+**
+**  type_class
+**  ==========
+**
+**  Type_class represents class types.  A list of fields and
+**  methods is associated with a class.  Further a class can
+**  inherit from and bequest to other classes.
+**
+**  fields:
+**  -------
+**
+**  **member     All entities belonging to this class.  This are methodes
+**               which have type_method or fields that can have any of the
+**               following types: k_type_class, k_type_strct, k_type_union,
+**               k_type_array, k_type_enumeration, k_type_pointer, k_type_primitive.
+**
+**  **subtypes   A list of direct subclasses.
+**
+**  **supertypes A list of direct superclasses.
+**
+**
+**  type_strct
+**  ==========
+**
+**  Type_strct represents aggregate types that consist of a list
+**  of fields.
+**
+**  fields:
+**  -------
+**
+**  **member     All entities belonging to this class.  This are the fields
+**               that can have any of the following types:  k_type_class,
+**               k_type_strct, k_type_union, k_type_array, k_type_enumeration,
+**  	         k_type_pointer, k_type_primitive.
+**
+**  type_method
+**  ===========
+**
+**  Type_method represents method, function and procedure types.
+**
+**  fields:
+**  -------
+**
+**  arity        Number of parameters to the procedure. @@@ better n_params
+**               A procedure in FIRM has only call by value parameters.
+**
+**  **param_type A list with the types of parameters.  This list is ordered.
+**               The nth type in this list corresponds to the nth element
+**               in the parameter tuple that is a result of the start node.
+**  	         (See ircons.h for more information.)
+**
+**  n_res        The number of results of the method.  In general, procedures
+**               have zero results, functions one.
+**
+**  **res_type   A list with the types of parameters.  This list is ordered.
+**  	         The nth type in this list corresponds to the nth input to
+**  	         Return nodes.  (See ircons.h for more information.)
+**
+**
+**  type_union
+**  ==========
+**
+**  Type_union represents union types.
+**
+**  fields:
+**  -------
+**
+**  **unioned_type   A list of unioned types.
+**
+**
+**  type_array
+**  ==========
+**
+**  Type_array represents rectangular multi dimensional arrays.
+**
+**  fields:
+**  -------
+**
+**  n_dimensions     Number of array dimensions.
+**
+**  *lower_bound     Lower bounds of dimensions.  Mostly all 0.
+**
+**  *upper_bound     Upper bounds or dimensions.
+**
+**  *element_type    The type of the array elements.
+**
+**
+**  type_enumeration
+**  ================
+**
+**  Enumeration types.  These need not necessarily be represented explicitly
+**  by Firm types, as the frontend can lower them to integer constants as
+**  well.  For debugging purposes or similar tasks this information is useful.
+**
+**  fields:
+**  -------
+**
+**  **enum           The target values representing the constants used to
+**                   represent individual enumerations.
+**
+**  **enum_name      Idents containing the source program name of the enumeration
+**  		     constants
+**
+**  type_pointer
+**  ============
+**
+**  Pointer types.
+**
+**  fields:
+**  -------
+**
+**  *mode            The mode used to implement a pointer.  @@@ So far this field
+**                   is constant and set to mode_P.  Maybe we will move this
+**    		     to a global constant (irprog), or are there processors
+**  		     that require a set of different pointer modes?
+**
+**  *points_to       The type of the entity this pointer points to.
+**
+**  type_primitive
+**  ==============
+**
+**  Primitive types are types that represent indivisible data values that
+**  map directly to modes.
+**
+**  fields:
+**  -------
+**
+**  mode             The mode to be used for this type.
+**
 */
 
 # ifndef _TYPE_H_
@@ -29,7 +199,6 @@ typedef struct {
   ident *name;
   /** needs list with it's entities -- does it really??
       Entities can be added during their creation.
-  int n_members;   Use array stuff, get length from array.  saves this explicit field.
   entities **member; **/
   /** to represent inheritance
   type_class **subtypes;    * direct subtypes *
@@ -92,10 +261,8 @@ void   set_strct_ident (type_strct *strct, ident* ident);
 
 typedef struct {
   firm_kind kind;
-  ident *name;         /* do I need the name,
-			  or is the name in entity sufficient?
-			  No, there is no name for the type.  Types have
-			  only names if typedef's give them one.  */
+  ident *name;         /* Name of the method type.  Usually method
+			  types are not explicitly named (but the entity). */
   int arity;           /* number of parameters, better n_params */
   type **param_type;   /* code generation needs this information.
                           Should it be generated by the frontend,
@@ -165,11 +332,9 @@ void   set_union_unioned_type (type_union *union, int pos, type *type);
 typedef struct {
   firm_kind kind;
   ident *name;
-  int n_dimensions;   /* Extend Sel to select from multidimensional arrays.  This  */
-  int *lower_bound;   /* will allow to generate explicit array index computations  */
-  int *upper_bound;   /* by replacing a single FIRM node.  As long as this is not
-                         done create arrays with arrays as elements.  */
-                      /* Should I use tarval? */
+  int n_dimensions;
+  int *lower_bound;
+  int *upper_bound;
   type *element_type;
   unsigned long visit;     /* visited counter for walks of the type information */
 } type_array;
@@ -206,9 +371,12 @@ type *get_array_element_type (type_array *array);
 typedef struct {
   firm_kind kind;
   ident *name;
-  /* int n_enums;
-  ir_node **enum    * Contains all constant nodes that represent a member
-                     of the enum -- enumerators. */
+  /*
+  tarval **enum     * Contains all constant nodes that represent a member
+                      of the enum -- enumerators. */
+  /*
+  ident **enum_name * Contains the names of the enum fields as specified by
+                      the source program */
   /* is ir_node the propper array member? */
   unsigned long visit;     /* visited counter for walks of the type information */
 } type_enumeration;
@@ -269,7 +437,7 @@ type *get_pointer_points_to_type (type_pointer *pointer);
 typedef struct {
   firm_kind kind;
   ident *name;
-  ir_mode *mode;       /* The mode to be used for this type */
+  ir_mode *mode;           /* The mode to be used for this type */
   unsigned long visit;     /* visited counter for walks of the type information */
 } type_primitive;
 
