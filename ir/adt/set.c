@@ -59,7 +59,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "misc.h"
 #include "xmalloc.h"
 #ifdef PSET
 # include "pset.h"
