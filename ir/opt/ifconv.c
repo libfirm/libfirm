@@ -5,10 +5,22 @@
  * @date 4.2.2005
  * $Id$
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
+#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
+#endif
+#ifdef HAVE_STRING_H
 #include <string.h>
+#endif
+#ifdef HAVE_ALLOCA_H
 #include <alloca.h>
+#endif
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
 
 #include "irgraph_t.h"
 #include "irnode_t.h"
