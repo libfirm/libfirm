@@ -49,16 +49,14 @@ void ecg_ecg (void);
 #endif /* defined _EGC_H_ */
 
 
-/* Local Variables: */
-/* mode: c */
-/* c-basic-offset: 2 */
-/* End: */
-
-/*$Log$
- *Revision 1.2  2004/10/12 11:02:03  liekweg
- *wtf?
- *
-/*Revision 1.1  2004/09/29 12:03:39  liekweg
-/*Added ecg mod
 /*
+$Log$
+Revision 1.3  2004/10/14 11:31:29  liekweg
+SHUTUP_GCC
+
+Revision 1.2  2004/10/12 11:02:03  liekweg
+wtf?
+
+Revision 1.1  2004/09/29 12:03:39  liekweg
+Added ecg mod
  */

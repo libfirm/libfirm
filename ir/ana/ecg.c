@@ -36,6 +36,8 @@
 
 # include "ecg.h"
 
+#include <string.h>             /* need memset */
+
 /*
   data structures
 */
@@ -77,7 +79,7 @@ typedef struct typalise
 /*
    le flag
 */
-static int verbose     = 0;
+/* static int verbose     = 0; */
 static int do_typalise = 0;
 
 /*
@@ -107,7 +109,7 @@ static long ta_id = 0;
 
 
 /* create a new lset */
-static lset_t *lset_create ()
+static lset_t *lset_create (void)
 {
   lset_t *lset = xmalloc (sizeof (lset_t));
 
@@ -182,6 +184,7 @@ static void lset_append (lset_t *tgt, lset_t *src)
 
 /* remove the entry for the given data element from the lset. return
    TRUE iff it was on the list in the first place, FALSE else */
+# ifdef SHUT_UP_GCC
 static int lset_remove (lset_t *lset, void *data)
 {
   lset_entry_t *entry = lset->first;
@@ -211,7 +214,7 @@ static int lset_remove (lset_t *lset, void *data)
 
   return (FALSE);
 }
-
+# endif /* def SHUT_UP_GCC */
 /* prepare the given lset for an iteration. return the first element. */
 static void *lset_first (lset_t *lset)
 {
@@ -458,8 +461,10 @@ static typalise_t *ta_join (typalise_t *one, typalise_t *two)
   typalise_t *res = NULL;
 
   switch (one->kind) {
+  case (type_invalid): { /* shut up, gcc */ }
   case (type_exact): {
     switch (two->kind) {
+    case (type_invalid): { /* shut up, gcc */ }
     case (type_exact): {
       if (one->res.type == two->res.type) {
         res = one;
@@ -497,6 +502,7 @@ static typalise_t *ta_join (typalise_t *one, typalise_t *two)
   } break;
   case (type_types): {
     switch (two->kind) {
+    case (type_invalid): { /* shut up, gcc */ }
     case (type_exact): {
       res = ta_join (two, one);
     } break;
@@ -518,6 +524,7 @@ static typalise_t *ta_join (typalise_t *one, typalise_t *two)
   } break;
   case (type_type): {
     switch (two->kind) {
+    case (type_invalid): { /* shut up, gcc */ }
     case (type_exact): {
       res = ta_join (two, one);
     } break;
@@ -556,14 +563,16 @@ static typalise_t *ta_join (typalise_t *one, typalise_t *two)
 }
 
 
+# ifdef SHUT_UP_GCC
 static const char *ta_name (typalise_t *ta)
 {
-/* # define BUF_SIZE 1024 */
+  /* # define BUF_SIZE 1024 */
   static char buf [BUF_SIZE];
 
   int len = sprintf (buf, "[%d] ", ta->id);
 
   switch (ta->kind) {
+  case (type_invalid): { /* shut up, gcc */ }
   case (type_exact): {
     len += sprintf (buf+len, "only ");
     strncat (buf, get_type_name (ta->res.type), BUF_SIZE);
@@ -588,8 +597,9 @@ static const char *ta_name (typalise_t *ta)
   }
 
   return (buf);
-/* # undef BUF_SIZE */
+  /* # undef BUF_SIZE */
 }
+# endif /* SHUT_UP_GCC */
 
 /**
    Check whether the given typalise_t includes the given type.
@@ -597,6 +607,7 @@ static const char *ta_name (typalise_t *ta)
 static int ta_supports (typalise_t *ta, ir_graph *graph)
 {
   switch (ta->kind) {
+  case (type_invalid): { /* shut up, gcc */ }
   case (type_exact): {
     int res = FALSE;
     lset_t *tps = get_owner_types (graph);
@@ -934,8 +945,6 @@ static callEd_info_t *append_callEd_info (callEd_info_t *ced, ir_graph *callEd)
 */
 static void append_calls (graph_info_t *info, ir_node *call, lset_t *callEds)
 {
-  int n_callEds = 0;
-
   call_info_t *cinfo = (call_info_t*) xmalloc (sizeof (call_info_t));
 
   /* setup */
@@ -1064,7 +1073,7 @@ static lset_t *get_implementing_graphs (entity *method, ir_node *select)
     return (set);
   }
 
-  void *tmp = lset_first (set);
+  /* void *tmp = lset_first (set); */
   int n_graphs = lset_n_entries (set);
 
   /* typalise select_in */
@@ -1073,7 +1082,7 @@ static lset_t *get_implementing_graphs (entity *method, ir_node *select)
     typalise_t *ta = typalise (select_in);
     assert (ta && "typalise failed (go figure)");
 
-    const char *res = ta_name (ta);
+    /* const char *res = ta_name (ta); */
 
     /* fprintf (stdout, "typalyse res = %s\n", res); */
 
@@ -1174,8 +1183,8 @@ static void ecg_fill_graph_calls (ir_graph *graph)
   graph_info->calls = NULL;
   graph_info->ecg_seen = 0;
 
-  entity *method  = get_irg_entity (graph);
-  type   *clazz   = get_entity_owner (method);
+  /* entity *method  = get_irg_entity (graph); */
+  /* type   *clazz   = get_entity_owner (method); */
 
   irg_walk_graph (graph, ecg_calls_act, NULL, graph_info);
 
@@ -1185,7 +1194,7 @@ static void ecg_fill_graph_calls (ir_graph *graph)
 /**
    For each graph, collect called graphs, and enter them into calls.
 */
-static void ecg_fill_calls ()
+static void ecg_fill_calls (void)
 {
   int i;
 
@@ -1229,9 +1238,11 @@ static int ecg_ecg_graph (FILE *dot, ir_graph *graph)
   graph_info_t *ginfo = (graph_info_t*) pmap_get (graph_infos, graph);
 
   if (0 != ginfo->ecg_seen) {
-    fprintf (dot, "\t/* recursive call to \"%s\" (%d) */\n", name, ginfo->ecg_seen);
+    fprintf (dot, "\t/* recursive call to \"%s\" (%d) */\n",
+             name, (int) ginfo->ecg_seen);
 # if 0
-    fprintf (dot, "\t/* recursive call to \"%s\" (0x%08x) */\n", name, graph);
+    fprintf (dot, "\t/* recursive call to \"%s\" (0x%08x) */\n",
+             name, (int) graph);
 # endif /* 0 */
     return (ginfo->ecg_seen);
   }
@@ -1264,9 +1275,9 @@ static int ecg_ecg_graph (FILE *dot, ir_graph *graph)
     callEd_info_t *ced = cinfo->callEds;
     const int call_no = _calls ++;
 
-    fprintf (dot, "\t/* Call 0x%08x */\n", call);
+    fprintf (dot, "\t/* Call 0x%08x */\n", (int) call);
     fprintf (dot, "\tcall_%i [label=\"call\\l0x%08x\"];\n",
-             call_no, call);
+             call_no, (int) call);
     fprintf (dot, "\tgraph_%i -> call_%i [color=\"black\"];\n", graph_no, call_no);
 
     while (NULL != ced) {
@@ -1309,10 +1320,10 @@ static int ecg_ecg_graph (FILE *dot, ir_graph *graph)
     /* if (0 == ginfo->allocs_seen) { */
     _allocs ++;
       fprintf (dot, "\talloc_0x%08x_%i [label=\"%s\", color=\"%s\"]\n",
-               alloc, graph_no, name, color);
+               (int) alloc, graph_no, name, color);
     /* } */
 
-    fprintf (dot, "\tgraph_%i -> alloc_0x%08x_%i\n", graph_no, alloc, graph_no);
+    fprintf (dot, "\tgraph_%i -> alloc_0x%08x_%i\n", graph_no, (int) alloc, graph_no);
 
     ainfo = ainfo->prev;
   }
@@ -1376,7 +1387,7 @@ static void ecg_ecg_count (ir_graph *graph)
 
     fprintf (stdout, "%sCall \"0x%08x\"\n",
              spaces + BUF_SIZE - _depth,
-             cinfo->call);
+             (int) cinfo->call);
 
     while (NULL != ced) {
       ir_graph *callEd_graph = ced->callEd;
@@ -1493,10 +1504,10 @@ void ecg_report ()
        (get_irg_entity (graph)) == stickyness_sticky) ?
       "red3" : "lightyellow";
 
-    fprintf (dot, "\t/* graph_0x%08x (\"%s\") */\n", graph, name);
+    fprintf (dot, "\t/* graph_0x%08x (\"%s\") */\n", (int) graph, name);
     fprintf (dot,
              "\tgraph_0x%08x [label=\"%s\\l%s\", color=\"%s\"];\n",
-             graph, oname, name, color);
+             (int) graph, oname, name, color);
     fprintf (dot, "\n");
 
     call_info_t *cinfo = info->calls;
@@ -1510,13 +1521,16 @@ void ecg_report ()
       ir_node *call = cinfo->call;
       int i;
 
-      fprintf (dot, "\t/* call_0x%08x */\n", call);
-      fprintf (dot, "\tcall_0x%08x [label=\"call\\l0x%08x\"];\n", call, call);
-      fprintf (dot, "\tgraph_0x%08x -> call_0x%08x;\n", graph, call);
+      fprintf (dot, "\t/* call_0x%08x */\n", (int) call);
+      fprintf (dot, "\tcall_0x%08x [label=\"call\\l0x%08x\"];\n",
+               (int) call, (int) call);
+      fprintf (dot, "\tgraph_0x%08x -> call_0x%08x;\n",
+               (int) graph, (int) call);
 
       callEd_info_t *ced = cinfo->callEds;
       while (NULL != ced) {
-        fprintf (dot, "\tcall_0x%08x -> graph_0x%08x;\n", call, ced->callEd);
+        fprintf (dot, "\tcall_0x%08x -> graph_0x%08x;\n",
+                 (int) call, (int) ced->callEd);
         ced = ced->prev;
       }
       fprintf (dot, "\n");
@@ -1539,8 +1553,9 @@ void ecg_report ()
       const char *color = "red1";
 
       fprintf (dot, "\talloc_0x%08x [label=\"%s\", color=\"%s\"]\n",
-               alloc, name, color);
-      fprintf (dot, "\tgraph_0x%08x -> alloc_0x%08x\n", graph, alloc);
+               (int) alloc, name, color);
+      fprintf (dot, "\tgraph_0x%08x -> alloc_0x%08x\n",
+               (int) graph, (int) alloc);
 
       ainfo = ainfo->prev;
     }
@@ -1597,9 +1612,9 @@ void ecg_ecg ()
   ecg_ecg_graph (dot, main_graph);
 
   fprintf (dot, "\t/* Grand Total: */\n");
-  fprintf (dot, "\t/* calls:  %i */\n", _calls);
-  fprintf (dot, "\t/* graphs: %i */\n", _graphs);
-  fprintf (dot, "\t/* allocs: %i */\n", _allocs);
+  fprintf (dot, "\t/* calls:  %i */\n", (int) _calls);
+  fprintf (dot, "\t/* graphs: %i */\n", (int) _graphs);
+  fprintf (dot, "\t/* allocs: %i */\n", (int) _allocs);
   fprintf (dot, "\t/* (sales tax not included) */\n");
 
   fprintf (dot, "}\n");
@@ -1611,6 +1626,9 @@ void ecg_ecg ()
 
 /*
   $Log$
+  Revision 1.5  2004/10/14 11:31:28  liekweg
+  SHUTUP_GCC
+
   Revision 1.4  2004/10/12 11:02:01  liekweg
   wtf?
 
