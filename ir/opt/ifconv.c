@@ -530,7 +530,7 @@ typedef struct _cond_info_t {
 /**
  * @see find_conds.
  */
-static void _find_conds(ir_node *irn, long visited_nr,
+static void _find_conds(ir_node *irn, unsigned long visited_nr,
 		ir_node *dominator, cond_t *masked_by, int pos, int depth, cond_info_t *ci)
 {
 	ir_node *block;
@@ -652,7 +652,7 @@ static void _find_conds(ir_node *irn, long visited_nr,
 static INLINE void find_conds(ir_node *irn, cond_info_t *ci)
 {
 	int i, n;
-	long visited_nr;
+	unsigned long visited_nr;
 	ir_node *block = get_nodes_block(irn);
 	ir_node *dom = get_Block_idom(block);
 
@@ -767,9 +767,9 @@ static ir_node *make_mux_on_demand(ir_node *phi, ir_node *dom, cond_t *cond,
     }
 	}
   else {
-    if(operands[0] != SUCCESS)
+    if(operands[0])
       hook_if_conversion(current_ir_graph, phi, set[0], NULL, IF_RESULT_BAD_CF);
-    if(operands[1] != SUCCESS)
+    if(operands[1])
       hook_if_conversion(current_ir_graph, phi, set[1], NULL, IF_RESULT_BAD_CF);
   }
 
