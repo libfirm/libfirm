@@ -7,71 +7,84 @@ orientation: bottom_to_top
 classname 1: "Data"
 classname 2: "Block"
 classname 3: "Entity type"classname 4: "Entity owner"classname 5: "Method Param"classname 6: "Method Res"classname 7: "Super"classname 8: "Union"classname 9: "Points-to"classname 10: "Array Element Type"classname 11: "Overwrites"classname 12: "Member"
-node: {title: "22" label: "End  22" color: blue}
-edge: { sourcename: "22" targetname: "23" class: 2 priority: 2 linestyle: dotted}
-node: {title: "23" label: "Block  23" color: lightyellow}
-edge: {sourcename: "23" targetname: "24" label: "0" color: red}
-node: {title: "24" label: "Return  24" }
-edge: { sourcename: "24" targetname: "25" class: 2 priority: 2 linestyle: dotted}
-edge: {sourcename: "24" targetname: "29" label: "0" color: blue}
-node: {title: "25" label: "Block  25" color: lightyellow}
-edge: {sourcename: "25" targetname: "26" label: "0" color: red}
-node: {title: "26" label: "ProjX 0 26" color: yellow}
-edge: { sourcename: "26" targetname: "27" class: 2 priority: 2 linestyle: dotted}
-edge: {sourcename: "26" targetname: "28" label: "0" color: red}
-node: {title: "27" label: "Block  27" color: lightyellow}
-edge: {sourcename: "27" targetname: "26" label: "0" color: red}
-node: {title: "28" label: "Start  28" color: blue}
-edge: { sourcename: "28" targetname: "27" class: 2 priority: 2 linestyle: dotted}
-node: {title: "29" label: "ProjM 0 29" color: yellow}
-edge: { sourcename: "29" targetname: "25" class: 2 priority: 2 linestyle: dotted}
-edge: {sourcename: "29" targetname: "30" label: "0" color: blue}
-node: {title: "30" label: "Store  30" }
-edge: { sourcename: "30" targetname: "25" class: 2 priority: 2 linestyle: dotted}
-edge: {sourcename: "30" targetname: "34" label: "0" color: blue}
-edge: {sourcename: "30" targetname: "32" label: "1" }
-edge: {sourcename: "30" targetname: "31" label: "2" }
-node: {title: "31" label: "2I  31" color: yellow}
-edge: { sourcename: "31" targetname: "27" class: 2 priority: 2 linestyle: dotted}
-node: {title: "32" label: "Sel i 32" }
-edge: { sourcename: "32" targetname: "25" class: 2 priority: 2 linestyle: dotted}
-edge: {sourcename: "32" targetname: "34" label: "0" color: blue}
-edge: {sourcename: "32" targetname: "33" label: "1" }
-node: {title: "33" label: "ProjP 3 33" color: yellow}
-edge: { sourcename: "33" targetname: "27" class: 2 priority: 2 linestyle: dotted}
-edge: {sourcename: "33" targetname: "28" label: "0" }
-node: {title: "34" label: "ProjM 1 34" color: yellow}
-edge: { sourcename: "34" targetname: "27" class: 2 priority: 2 linestyle: dotted}
-edge: {sourcename: "34" targetname: "28" label: "0" color: blue}
-node: {title: "0x809f7f8" label: "ent i" color: yellow info1:"automatic allocated
-local
-uninitialized
-non_volatile
-existent
-"}
-edge: { sourcename: "0x809f7f8" targetname: "0x809f6c0" class: 3 label: "type" color: red}
-node: {title: "0x809d0e0" label: "class GlobalType"info1: "state: layout_undefined
+node: {title: "n28" label: "End  28" color: blue}
+edge: { sourcename: "n28" targetname: "n29" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n29" label: "Block  29" color: lightyellow}
+edge: {sourcename: "n29" targetname: "n30" label: "0" color: red}
+node: {title: "n30" label: "Return  30" }
+edge: { sourcename: "n30" targetname: "n31" class: 2 priority: 2 linestyle: dotted}
+edge: {sourcename: "n30" targetname: "n35" label: "0" color: blue}
+node: {title: "n31" label: "Block  31" color: lightyellow}
+edge: {sourcename: "n31" targetname: "n32" label: "0" color: red}
+node: {title: "n32" label: "ProjX 0 32" color: yellow}
+edge: { sourcename: "n32" targetname: "n33" class: 2 priority: 2 linestyle: dotted}
+edge: {sourcename: "n32" targetname: "n34" label: "0" color: red}
+node: {title: "n33" label: "Block  33" color: lightyellow}
+edge: {sourcename: "n33" targetname: "n32" label: "0" color: red}
+node: {title: "n34" label: "Start  34" color: blue}
+edge: { sourcename: "n34" targetname: "n33" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n35" label: "ProjM 0 35" color: yellow}
+edge: { sourcename: "n35" targetname: "n31" class: 2 priority: 2 linestyle: dotted}
+edge: {sourcename: "n35" targetname: "n36" label: "0" color: blue}
+node: {title: "n36" label: "Store  36" }
+edge: { sourcename: "n36" targetname: "n31" class: 2 priority: 2 linestyle: dotted}
+edge: {sourcename: "n36" targetname: "n40" label: "0" color: blue}
+edge: {sourcename: "n36" targetname: "n38" label: "1" }
+edge: {sourcename: "n36" targetname: "n37" label: "2" }
+node: {title: "n37" label: "2I  37" color: yellow}
+edge: { sourcename: "n37" targetname: "n33" class: 2 priority: 2 linestyle: dotted}
+node: {title: "n38" label: "Sel i 38" }
+edge: { sourcename: "n38" targetname: "n31" class: 2 priority: 2 linestyle: dotted}
+edge: {sourcename: "n38" targetname: "n40" label: "0" color: blue}
+edge: {sourcename: "n38" targetname: "n39" label: "1" }
+node: {title: "n39" label: "ProjP 3 39" color: yellow}
+edge: { sourcename: "n39" targetname: "n33" class: 2 priority: 2 linestyle: dotted}
+edge: {sourcename: "n39" targetname: "n34" label: "0" }
+node: {title: "n40" label: "ProjM 1 40" color: yellow}
+edge: { sourcename: "n40" targetname: "n33" class: 2 priority: 2 linestyle: dotted}
+edge: {sourcename: "n40" targetname: "n34" label: "0" color: blue}
+node: {title: "e5"label: "ent i" color: yellow
+ info1:"
+allocation:  automatic allocated
+visibility:  local
+variability: uninitialized
+volatility:  non_volatile
+peculiarity: existent
+name:    i
+ld_name: GlobalType_i
+offset:  -1"
+}
+edge: { sourcename:"e5" targetname: "t1" class: 3 label: "type" color: red}
+node: {title: "t0" label: "class GlobalType"info1: "state: layout_undefined
 size: -1B,
 " color: green}
-edge: { sourcename: "0x809d0e0" targetname: "0x809f750" class: 12 label: "member" color:blue}
-edge: { sourcename: "0x809d0e0" targetname: "0x809f7f8" class: 12 label: "member" color:blue}
-node: {title: "0x809f750" label: "ent GLOBAL_VAR_main" color: yellow info1:"static allocated
-local
-constant
-non_volatile
-existent
-
- irg = 0x809f890 "}
-edge: { sourcename: "0x809f750" targetname: "0x809f6e8" class: 3 label: "type" color: red}
-edge: { sourcename: "0x809f750" targetname: "1" label: "value "}
-node: {title: "1" label: "&(GlobalType_GLOBAL_VAR_main)P  1" color: yellow}
-node: {title: "0x809f6e8" label: "method GLOBAL_VAR_main"info1: "state: layout_fixed,
+edge: { sourcename:"t0" targetname: "e4" class: 12 label: "member" color:blue}
+edge: { sourcename:"t0" targetname: "e5" class: 12 label: "member" color:blue}
+node: {title: "e4"label: "ent GLOBAL_VAR_main" color: yellow
+ info1:"
+allocation:  static allocated
+visibility:  local
+variability: constant
+volatility:  non_volatile
+peculiarity: existent
+name:    GLOBAL_VAR_main
+ld_name: GlobalType_GLOBAL_VAR_main
+offset:  -1
+irg = g18"
+}
+edge: { sourcename:"e4" targetname: "t2" class: 3 label: "type" color: red}
+edge: { sourcename: "e4" targetname: "n3" label: "value  0 "}
+node: {title: "n3" label: "&(GlobalType_GLOBAL_VAR_main)P  3" color: yellow}
+node: {title: "t2" label: "method GLOBAL_VAR_main"info1: "state: layout_fixed,
 mode: P,
 size: 4B,
 "}
-node: {title: "0x809f6c0" label: "primitive int"info1: "state: layout_fixed,
+node: {title: "t1" label: "primitive int"info1: "state: layout_fixed,
 mode: I,
 size: 4B,
 "}
-edge: { sourcename: "32" targetname: "0x809f7f8" class: 2 priority: 2 linestyle: dotted}
+node: {title: "t6" label: "class GLOBAL_VAR_mainframe_tp"info1: "state: layout_undefined
+size: -1B,
+" color: green}
+edge: { sourcename: "n38" targetname: "0x809f1f0" class: 2 priority: 2 linestyle: dotted}
 }

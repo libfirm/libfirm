@@ -7,140 +7,163 @@ orientation: bottom_to_top
 classname 1: "Data"
 classname 2: "Block"
 classname 3: "Entity type"classname 4: "Entity owner"classname 5: "Method Param"classname 6: "Method Res"classname 7: "Super"classname 8: "Union"classname 9: "Points-to"classname 10: "Array Element Type"classname 11: "Overwrites"classname 12: "Member"
-graph: { title: "81"  label: "81" status:clustered color:yellow
-edge: {sourcename: "81" targetname: "82" label: "0" color: red}
-node: {title: "80" label: "End  80" color: blue}
+graph: { title: "n97"  label: "97" status:clustered color:yellow
+edge: {sourcename: "n97" targetname: "n98" label: "0" color: red}
+node: {title: "n96" label: "End  96" color: blue}
 }
 
-graph: { title: "83"  label: "83" status:clustered color:yellow
-edge: {sourcename: "83" targetname: "84" label: "0" color: red}
-node: {title: "82" label: "Return  82" }
-edge: {sourcename: "82" targetname: "101" label: "0" color: blue}
-edge: {sourcename: "82" targetname: "87" label: "1" }
-node: {title: "87" label: "ProjI 0 87" color: yellow}
-edge: {sourcename: "87" targetname: "88" label: "0" }
-node: {title: "88" label: "ProjT 2 88" color: yellow}
-edge: {sourcename: "88" targetname: "89" label: "0" }
-node: {title: "89" label: "Call  89" }
-edge: {sourcename: "89" targetname: "96" label: "0" color: blue}
-edge: {sourcename: "89" targetname: "95" label: "1" }
-edge: {sourcename: "89" targetname: "91" label: "2" }
-edge: {sourcename: "89" targetname: "90" label: "3" }
-node: {title: "91" label: "ProjP 2 91" color: yellow}
-edge: {sourcename: "91" targetname: "92" label: "0" }
-node: {title: "92" label: "Alloc  92" }
-edge: {sourcename: "92" targetname: "94" label: "0" color: blue}
-edge: {sourcename: "92" targetname: "93" label: "1" }
-node: {title: "93" label: "SymC PRIMA size  93" }
-node: {title: "95" label: "Sel c 95" }
-edge: {sourcename: "95" targetname: "96" label: "0" color: blue}
-edge: {sourcename: "95" targetname: "91" label: "1" }
-node: {title: "96" label: "ProjM 0 96" color: yellow}
-edge: {sourcename: "96" targetname: "97" label: "0" color: blue}
-node: {title: "97" label: "Call  97" }
-edge: {sourcename: "97" targetname: "100" label: "0" color: blue}
-edge: {sourcename: "97" targetname: "99" label: "1" }
-edge: {sourcename: "97" targetname: "91" label: "2" }
-edge: {sourcename: "97" targetname: "98" label: "3" }
-node: {title: "99" label: "Sel set_a 99" }
-edge: {sourcename: "99" targetname: "100" label: "0" color: blue}
-edge: {sourcename: "99" targetname: "91" label: "1" }
-node: {title: "100" label: "ProjM 0 100" color: yellow}
-edge: {sourcename: "100" targetname: "92" label: "0" color: blue}
-node: {title: "101" label: "ProjM 0 101" color: yellow}
-edge: {sourcename: "101" targetname: "89" label: "0" color: blue}
+graph: { title: "n99"  label: "99" status:clustered color:yellow
+edge: {sourcename: "n99" targetname: "n100" label: "0" color: red}
+node: {title: "n98" label: "Return  98" }
+edge: {sourcename: "n98" targetname: "n117" label: "0" color: blue}
+edge: {sourcename: "n98" targetname: "n103" label: "1" }
+node: {title: "n103" label: "ProjI 0 103" color: yellow}
+edge: {sourcename: "n103" targetname: "n104" label: "0" }
+node: {title: "n104" label: "ProjT 2 104" color: yellow}
+edge: {sourcename: "n104" targetname: "n105" label: "0" }
+node: {title: "n105" label: "Call  105" }
+edge: {sourcename: "n105" targetname: "n112" label: "0" color: blue}
+edge: {sourcename: "n105" targetname: "n111" label: "1" }
+edge: {sourcename: "n105" targetname: "n107" label: "2" }
+edge: {sourcename: "n105" targetname: "n106" label: "3" }
+node: {title: "n107" label: "ProjP 2 107" color: yellow}
+edge: {sourcename: "n107" targetname: "n108" label: "0" }
+node: {title: "n108" label: "Alloc  108" }
+edge: {sourcename: "n108" targetname: "n110" label: "0" color: blue}
+edge: {sourcename: "n108" targetname: "n109" label: "1" }
+node: {title: "n109" label: "SymC PRIMA size  109" }
+node: {title: "n111" label: "Sel c 111" }
+edge: {sourcename: "n111" targetname: "n112" label: "0" color: blue}
+edge: {sourcename: "n111" targetname: "n107" label: "1" }
+node: {title: "n112" label: "ProjM 0 112" color: yellow}
+edge: {sourcename: "n112" targetname: "n113" label: "0" color: blue}
+node: {title: "n113" label: "Call  113" }
+edge: {sourcename: "n113" targetname: "n116" label: "0" color: blue}
+edge: {sourcename: "n113" targetname: "n115" label: "1" }
+edge: {sourcename: "n113" targetname: "n107" label: "2" }
+edge: {sourcename: "n113" targetname: "n114" label: "3" }
+node: {title: "n115" label: "Sel set_a 115" }
+edge: {sourcename: "n115" targetname: "n116" label: "0" color: blue}
+edge: {sourcename: "n115" targetname: "n107" label: "1" }
+node: {title: "n116" label: "ProjM 0 116" color: yellow}
+edge: {sourcename: "n116" targetname: "n108" label: "0" color: blue}
+node: {title: "n117" label: "ProjM 0 117" color: yellow}
+edge: {sourcename: "n117" targetname: "n105" label: "0" color: blue}
 }
 
-graph: { title: "85"  label: "85" status:clustered color:yellow
-edge: {sourcename: "85" targetname: "84" label: "0" color: red}
-node: {title: "84" label: "ProjX 0 84" color: yellow}
-edge: {sourcename: "84" targetname: "86" label: "0" color: red}
-node: {title: "86" label: "Start  86" color: blue}
-node: {title: "90" label: "5I  90" color: yellow}
-node: {title: "94" label: "ProjM 1 94" color: yellow}
-edge: {sourcename: "94" targetname: "86" label: "0" color: blue}
-node: {title: "98" label: "2I  98" color: yellow}
+graph: { title: "n101"  label: "101" status:clustered color:yellow
+edge: {sourcename: "n101" targetname: "n100" label: "0" color: red}
+node: {title: "n100" label: "ProjX 0 100" color: yellow}
+edge: {sourcename: "n100" targetname: "n102" label: "0" color: red}
+node: {title: "n102" label: "Start  102" color: blue}
+node: {title: "n106" label: "5I  106" color: yellow}
+node: {title: "n110" label: "ProjM 1 110" color: yellow}
+edge: {sourcename: "n110" targetname: "n102" label: "0" color: blue}
+node: {title: "n114" label: "2I  114" color: yellow}
 }
 
-node: {title: "105" label: "Bad  105" }
-node: {title: "0x809fe70" label: "method c"info1: "state: layout_fixed,
+node: {title: "n121" label: "Bad  121" }
+node: {title: "t8" label: "method c"info1: "state: layout_fixed,
 mode: P,
 size: 4B,
 "}
-edge: { sourcename: "0x809fe70" targetname: "0x809fc88" class: 5 label: "param 0" color: green}
-edge: { sourcename: "0x809fe70" targetname: "0x809fbe0" class: 5 label: "param 1" color: green}
-edge: { sourcename: "0x809fe70" targetname: "0x809fbe0" class: 6 label: "res 0" color: green}
-node: {title: "0x809fc88" label: "pointer class_prima_ptr"info1: "state: layout_fixed,
+edge: { sourcename:"t8" targetname: "t3" class: 5 label: "param 0" color: green}
+edge: { sourcename:"t8" targetname: "t1" class: 5 label: "param 1" color: green}
+edge: { sourcename:"t8" targetname: "t1" class: 6 label: "res 0" color: green}
+node: {title: "t3" label: "pointer class_prima_ptr"info1: "state: layout_fixed,
 mode: P,
 size: 4B,
 "}
-edge: { sourcename: "0x809fc88" targetname: "0x809fc08" class: 9 label: "points to" color:green}
-node: {title: "0x809fc08" label: "class PRIMA"info1: "state: layout_undefined
+edge: { sourcename:"t3" targetname: "t2" class: 9 label: "points to" color:green}
+node: {title: "t2" label: "class PRIMA"info1: "state: layout_undefined
 size: -1B,
 " color: green}
-edge: { sourcename: "0x809fc08" targetname: "0x809fcb8" class: 12 label: "member" color:blue}
-edge: { sourcename: "0x809fc08" targetname: "0x809fdd8" class: 12 label: "member" color:blue}
-edge: { sourcename: "0x809fc08" targetname: "0x809feb0" class: 12 label: "member" color:blue}
-node: {title: "0x809fcb8" label: "ent a" color: yellow info1:"automatic allocated
-local
-uninitialized
-non_volatile
-existent
-"}
-edge: { sourcename: "0x809fcb8" targetname: "0x809fbe0" class: 3 label: "type" color: red}
-node: {title: "0x809fbe0" label: "primitive int"info1: "state: layout_fixed,
+edge: { sourcename:"t2" targetname: "e4" class: 12 label: "member" color:blue}
+edge: { sourcename:"t2" targetname: "e7" class: 12 label: "member" color:blue}
+edge: { sourcename:"t2" targetname: "e10" class: 12 label: "member" color:blue}
+node: {title: "e4"label: "ent a" color: yellow
+ info1:"
+allocation:  automatic allocated
+visibility:  local
+variability: uninitialized
+volatility:  non_volatile
+peculiarity: existent
+name:    a
+ld_name: PRIMA_a
+offset:  -1"
+}
+edge: { sourcename:"e4" targetname: "t1" class: 3 label: "type" color: red}
+node: {title: "t1" label: "primitive int"info1: "state: layout_fixed,
 mode: I,
 size: 4B,
 "}
-node: {title: "0x809fdd8" label: "ent set_a" color: yellow info1:"static allocated
-local
-constant
-non_volatile
-existent
-
- irg = 0x80a2620 "}
-edge: { sourcename: "0x809fdd8" targetname: "0x809fd60" class: 3 label: "type" color: red}
-edge: { sourcename: "0x809fdd8" targetname: "1" label: "value "}
-node: {title: "1" label: "&(PRIMA_set_a)P  1" color: yellow}
-node: {title: "0x809fd60" label: "method set_a"info1: "state: layout_fixed,
+node: {title: "e7"label: "ent set_a" color: yellow
+ info1:"
+allocation:  static allocated
+visibility:  local
+variability: constant
+volatility:  non_volatile
+peculiarity: existent
+name:    set_a
+ld_name: PRIMA_set_a
+offset:  -1
+irg = g60"
+}
+edge: { sourcename:"e7" targetname: "t5" class: 3 label: "type" color: red}
+edge: { sourcename: "e7" targetname: "n6" label: "value  0 "}
+node: {title: "n6" label: "&(PRIMA_set_a)P  6" color: yellow}
+node: {title: "t5" label: "method set_a"info1: "state: layout_fixed,
 mode: P,
 size: 4B,
 "}
-edge: { sourcename: "0x809fd60" targetname: "0x809fc88" class: 5 label: "param 0" color: green}
-edge: { sourcename: "0x809fd60" targetname: "0x809fbe0" class: 5 label: "param 1" color: green}
-node: {title: "0x809feb0" label: "ent c" color: yellow info1:"static allocated
-local
-constant
-non_volatile
-existent
-
- irg = 0x80a4be8 "}
-edge: { sourcename: "0x809feb0" targetname: "0x809fe70" class: 3 label: "type" color: red}
-edge: { sourcename: "0x809feb0" targetname: "2" label: "value "}
-node: {title: "2" label: "&(PRIMA_c)P  2" color: yellow}
-node: {title: "0x809ff98" label: "ent OO_PROGRAM_EXAMPLE_main" color: yellow info1:"static allocated
-local
-constant
-non_volatile
-existent
-
- irg = 0x80a0040 "}
-edge: { sourcename: "0x809ff98" targetname: "0x809ff38" class: 3 label: "type" color: red}
-edge: { sourcename: "0x809ff98" targetname: "3" label: "value "}
-node: {title: "3" label: "&(GlobalType_OO_PROGRAM_EXAMPLE_main)P  3" color: yellow}
-node: {title: "0x809d600" label: "class GlobalType"info1: "state: layout_undefined
+edge: { sourcename:"t5" targetname: "t3" class: 5 label: "param 0" color: green}
+edge: { sourcename:"t5" targetname: "t1" class: 5 label: "param 1" color: green}
+node: {title: "e10"label: "ent c" color: yellow
+ info1:"
+allocation:  static allocated
+visibility:  local
+variability: constant
+volatility:  non_volatile
+peculiarity: existent
+name:    c
+ld_name: PRIMA_c
+offset:  -1
+irg = g83"
+}
+edge: { sourcename:"e10" targetname: "t8" class: 3 label: "type" color: red}
+edge: { sourcename: "e10" targetname: "n9" label: "value  0 "}
+node: {title: "n9" label: "&(PRIMA_c)P  9" color: yellow}
+node: {title: "e13"label: "ent OO_PROGRAM_EXAMPLE_main" color: yellow
+ info1:"
+allocation:  static allocated
+visibility:  local
+variability: constant
+volatility:  non_volatile
+peculiarity: existent
+name:    OO_PROGRAM_EXAMPLE_main
+ld_name: GlobalType_OO_PROGRAM_EXAMPLE_main
+offset:  -1
+irg = g26"
+}
+edge: { sourcename:"e13" targetname: "t11" class: 3 label: "type" color: red}
+edge: { sourcename: "e13" targetname: "n12" label: "value  0 "}
+node: {title: "n12" label: "&(GlobalType_OO_PROGRAM_EXAMPLE_main)P  12" color: yellow}
+node: {title: "t0" label: "class GlobalType"info1: "state: layout_undefined
 size: -1B,
 " color: green}
-edge: { sourcename: "0x809d600" targetname: "0x809ff98" class: 12 label: "member" color:blue}
-node: {title: "0x809ff38" label: "method OO_PROGRAM_EXAMPLE_main"info1: "state: layout_fixed,
+edge: { sourcename:"t0" targetname: "e13" class: 12 label: "member" color:blue}
+node: {title: "t11" label: "method OO_PROGRAM_EXAMPLE_main"info1: "state: layout_fixed,
 mode: P,
 size: 4B,
 "}
-edge: { sourcename: "0x809ff38" targetname: "0x809fbe0" class: 6 label: "res 0" color: green}
-edge: { sourcename: "89" targetname: "0x809fe70" class: 2 priority: 2 linestyle: dotted}
-edge: { sourcename: "92" targetname: "0x809fc08" class: 2 priority: 2 linestyle: dotted}
-edge: { sourcename: "93" targetname: "0x809fc08" class: 2 priority: 2 linestyle: dotted}
-edge: { sourcename: "95" targetname: "0x809feb0" class: 2 priority: 2 linestyle: dotted}
-edge: { sourcename: "97" targetname: "0x809fd60" class: 2 priority: 2 linestyle: dotted}
-edge: { sourcename: "99" targetname: "0x809fdd8" class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename:"t11" targetname: "t1" class: 6 label: "res 0" color: green}
+node: {title: "t14" label: "class OO_PROGRAM_EXAMPLE_mainframe_tp"info1: "state: layout_undefined
+size: -1B,
+" color: green}
+edge: { sourcename: "n105" targetname: "0x80a04f0" class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename: "n108" targetname: "0x80a0298" class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename: "n109" targetname: "0x80a0298" class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename: "n111" targetname: "0x80a0550" class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename: "n113" targetname: "0x80a03e8" class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename: "n115" targetname: "0x80a0480" class: 2 priority: 2 linestyle: dotted}
 }
