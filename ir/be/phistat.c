@@ -16,7 +16,7 @@
 #include "irprog.h"
 #include "irmode_t.h"
 
-#include "bechordal.h"
+#include "bera.h"
 #include "phistat.h"
 
 #define MAX_ARITY 10
@@ -153,7 +153,7 @@ static void phi_class_stat(pset *pc) {
 		doit = 1;
 		for (o = i+1; o < size; ++o) {
 			curr_vals[I_PAIRS]++;
-			if (phi_ops_interfere(members[i], members[o])) {
+			if (values_interfere(members[i], members[o])) {
 				sth_interfered = 1;
 				curr_vals[I_PAIRSI]++;
 				if (doit) {
