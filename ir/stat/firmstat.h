@@ -27,6 +27,7 @@ enum firmstat_options_t {
   FIRMSTAT_COUNT_STRONG_OP = 0x00000004,    /**< if set, count Mul/Div/Mod/DivMod by constant */
   FIRMSTAT_COUNT_DAG       = 0x00000008,    /**< if set, count DAG statistics */
   FIRMSTAT_COUNT_DELETED   = 0x00000010,    /**< if set, count deleted graphs */
+  FIRMSTAT_COUNT_SELS      = 0x00000020,    /**< if set, count Sel(Sel(..)) differently */
   FIRMSTAT_CSV_OUTPUT      = 0x10000000     /**< CSV output of some mini-statistic */
 };
 

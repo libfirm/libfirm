@@ -62,6 +62,12 @@ static ir_op _op_DivModC;
 /** The memory Proj node. */
 static ir_op _op_ProjM;
 
+/** A Sel of a Sel */
+static ir_op _op_SelSel;
+
+/** A Sel of a Sel of a Sel */
+static ir_op _op_SelSelSel;
+
 /* ---------------------------------------------------------------------------------- */
 
 /** Marks the begin of a statistic (hook) function. */
@@ -368,6 +374,15 @@ static ir_op *stat_get_irn_op(ir_node *node)
   else if (op == op_DivMod && get_irn_op(get_DivMod_right(node)) == op_Const) {
     /* special case, a division/modulo by a const, count on extra counter */
     op = status->op_DivModC ? status->op_DivModC : op;
+  }
+  else if (op == op_Sel && get_irn_op(get_Sel_ptr(node)) == op_Sel) {
+    /* special case, a Sel of a Sel, count on extra counter */
+    op = status->op_SelSel ? status->op_SelSel : op;
+
+    if (get_irn_op(get_Sel_ptr(get_Sel_ptr(node))) == op_Sel) {
+      /* special case, a Sel of a Sel of a Sel, count on extra counter */
+      op = status->op_SelSelSel ? status->op_SelSelSel : op;
+    }
   }
 
   return op;
@@ -1550,6 +1565,21 @@ void init_stat(unsigned enable_options)
     status->op_DivC    = NULL;
     status->op_ModC    = NULL;
     status->op_DivModC = NULL;
+  }
+
+  if (enable_options & FIRMSTAT_COUNT_SELS) {
+    _op_SelSel.code    = get_next_ir_opcode();
+    _op_SelSel.name    = new_id_from_chars(X("Sel(Sel)"));
+
+    _op_SelSelSel.code = get_next_ir_opcode();
+    _op_SelSelSel.name = new_id_from_chars(X("Sel(Sel(Sel))"));
+
+    status->op_SelSel    = &_op_SelSel;
+    status->op_SelSelSel = &_op_SelSelSel;
+  }
+  else {
+    status->op_SelSel    = NULL;
+    status->op_SelSelSel = NULL;
   }
 
   /* register the dumper */
