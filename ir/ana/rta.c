@@ -14,7 +14,7 @@
 
 
 #ifdef HAVE_CONFIG_H
-# include <config.h>
+# include "config.h"
 #endif
 
 #include "rta.h"
@@ -531,6 +531,10 @@ void rta_report (void)
 
 /*
  * $Log$
+ * Revision 1.30  2004/12/02 16:16:11  beck
+ * fixed config.h include
+ * used xmalloc instead of malloc
+ *
  * Revision 1.29  2004/11/11 13:28:08  goetz
  * made pseudo irg aware
  *

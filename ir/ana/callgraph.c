@@ -9,8 +9,16 @@
  * Copyright:   (c) 2004 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
-
+#ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
+
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif
+
+#include <stdlib.h>
+
 #include "callgraph.h"
 
 #include "irloop_t.h"

@@ -18,13 +18,17 @@
  *
  */
 #ifdef HAVE_CONFIG_H
-# include <config.h>
+# include "config.h"
 #endif
 
-#include <stdlib.h>
+#ifdef HAVE_STRING_H
+# include <string.h>
+#endif
+
 #include "cgana.h"
 #include "rta.h"
 
+#include "xmalloc.h"
 #include "irnode_t.h"
 #include "irmode_t.h"
 #include "irprog_t.h"
@@ -832,7 +836,7 @@ void cgana(int *length, entity ***free_methods) {
 
   /* Convert the flexible array to an array that can be handled
      by standard C. */
-  p = (entity **)malloc(sizeof(*p) * ARR_LEN(free_meths));
+  p = (entity **)xmalloc(sizeof(*p) * ARR_LEN(free_meths));
   memcpy(p, free_meths, ARR_LEN(free_meths) * sizeof(*p));
 
   *length       = ARR_LEN(free_meths);

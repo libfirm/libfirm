@@ -19,17 +19,20 @@
   * Authors:  Goetz Lindenmaier
   */
 
-/* $Id$ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif /* defined HAVE_CONFIG_H */
+#endif
 
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif
+
+#include "xmalloc.h"
 #include "irouts.h"
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "irprog_t.h"
 #include "irgwalk.h"
-#include "string.h"
 
 #ifdef DEBUG_libfirm
 /* Note:  ir_node.out_valid and ir_graph.n_outs are only present when DEBUG_libfirm is defined */
@@ -467,7 +470,7 @@ void compute_ip_outs(void) {
   }
 
   global_count = n_out_edges = count_ip_outs();
-  out_edges = (ir_node **) malloc (n_out_edges * sizeof(ir_node *));
+  out_edges = (ir_node **) xmalloc (n_out_edges * sizeof(ir_node *));
   set_irp_ip_outedges(out_edges);
   set_ip_outs();
 }
