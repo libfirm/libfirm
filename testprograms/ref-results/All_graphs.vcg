@@ -1,0 +1,216 @@
+graph: { title: "ir graph of All_graphs"
+display_edge_labels: yes
+layoutalgorithm: mindepth
+manhattan_edges: yes
+port_sharing: no
+orientation: bottom_to_top
+classname 1: "Data"
+classname 2: "Block"
+classname 3: "Entity type"
+classname 4: "Entity owner"
+classname 5: "Method Param"
+classname 6: "Method Res"
+classname 7: "Super"
+classname 8: "Union"
+classname 9: "Points-to"
+classname 10: "Array Element Type"
+classname 11: "Overwrites"
+classname 12: "Member"
+
+graph: { title: "0x80aea48" label: "OO_PROGRAM_EXAMPLE_main" status:clustered color:white
+graph: { title: "n108"  label: "Block 108" status:clustered color:yellow
+edge: {sourcename: "n108" targetname: "n109" label: "0" color: red}
+node: {title: "n107" label: "End  107" color: blue info1: "visited: 46
+"}
+}
+
+graph: { title: "n110"  label: "Block 110" status:clustered color:yellow
+edge: {sourcename: "n110" targetname: "n198" label: "0" color: red}
+node: {title: "n109" label: "Return  109"  info1: "visited: 46
+"}
+edge: {sourcename: "n109" targetname: "n200" label: "0" color: blue}
+edge: {sourcename: "n109" targetname: "n201" label: "1" }
+node: {title: "n200" label: "FilterM 0 200" color: yellow info1: "visited: 46
+"}
+edge: {sourcename: "n200" targetname: "n167" label: "0" color: blue}
+node: {title: "n201" label: "FilterIs 0 201" color: yellow info1: "visited: 46
+"}
+edge: {sourcename: "n201" targetname: "n159" label: "0" }
+}
+
+graph: { title: "n195"  label: "Block 195" status:clustered color:yellow
+edge: {sourcename: "n195" targetname: "n192" label: "0" color: red}
+node: {title: "n194" label: "FilterM 0 194" color: yellow info1: "visited: 46
+"}
+edge: {sourcename: "n194" targetname: "n141" label: "0" color: blue}
+node: {title: "n199" label: "ProjX 0 199" color: yellow info1: "visited: 46
+"}
+edge: {sourcename: "n199" targetname: "n197" label: "0" color: red}
+node: {title: "n197" label: "CallBegin  197"  info1: "visited: 46
+"}
+edge: {sourcename: "n197" targetname: "n172" label: "0" }
+}
+
+graph: { title: "n189"  label: "Block 189" status:clustered color:yellow
+edge: {sourcename: "n189" targetname: "n111" label: "0" color: red}
+node: {title: "n127" label: "ProjM 0 127" color: yellow info1: "visited: 46
+"}
+edge: {sourcename: "n127" targetname: "n119" label: "0" color: blue}
+node: {title: "n118" label: "ProjP 2 118" color: yellow info1: "visited: 46
+"}
+edge: {sourcename: "n118" targetname: "n119" label: "0" }
+node: {title: "n119" label: "Alloc  119"  info1: "visited: 46
+allocating entity of type PRIMA
+"}
+edge: {sourcename: "n119" targetname: "n121" label: "0" color: blue}
+edge: {sourcename: "n119" targetname: "n120" label: "1" }
+node: {title: "n193" label: "ProjX 0 193" color: yellow info1: "visited: 46
+"}
+edge: {sourcename: "n193" targetname: "n191" label: "0" color: red}
+node: {title: "n191" label: "CallBegin  191"  info1: "visited: 46
+"}
+edge: {sourcename: "n191" targetname: "n173" label: "0" }
+}
+
+graph: { title: "n112"  label: "Block 112" status:clustered color:yellow
+edge: {sourcename: "n112" targetname: "n111" label: "0" color: red}
+node: {title: "n125" label: "0x2Is  125" color: yellow info1: "visited: 46
+Const of type type_unknown
+"}
+node: {title: "n121" label: "ProjM 1 121" color: yellow info1: "visited: 46
+"}
+edge: {sourcename: "n121" targetname: "n113" label: "0" color: blue}
+node: {title: "n120" label: "SymC PRIMA size  120"  info1: "visited: 46
+"}
+node: {title: "n117" label: "0x5Is  117" color: yellow info1: "visited: 46
+Const of type type_unknown
+"}
+node: {title: "n172" label: "&(PRIMA_c)P  172" color: yellow info1: "visited: 46
+Const of type type_unknown
+"}
+node: {title: "n173" label: "&(PRIMA_set_a)P  173" color: yellow info1: "visited: 46
+Const of type type_unknown
+"}
+node: {title: "n111" label: "ProjX 0 111" color: yellow info1: "visited: 46
+"}
+edge: {sourcename: "n111" targetname: "n113" label: "0" color: red}
+node: {title: "n113" label: "Start OO_PROGRAM_EXAMPLE_main  113" color: blue info1: "visited: 46
+start of method of type OO_PROGRAM_EXAMPLE_main
+"}
+}
+
+}
+
+graph: { title: "0x80b1028" label: "set_a" status:clustered color:white
+graph: { title: "n186"  label: "Block 186" status:clustered color:yellow
+edge: {sourcename: "n186" targetname: "n185" label: "0" color: red}
+node: {title: "n192" label: "ProjX 0 192" color: yellow info1: "visited: 46
+"}
+edge: {sourcename: "n192" targetname: "n187" label: "0" color: red}
+node: {title: "n187" label: "EndReg  187" color: blue info1: "visited: 46
+"}
+}
+
+graph: { title: "n137"  label: "Block 137" status:clustered color:yellow
+edge: {sourcename: "n137" targetname: "n138" label: "0" color: red}
+node: {title: "n141" label: "ProjM 0 141" color: yellow info1: "visited: 46
+"}
+edge: {sourcename: "n141" targetname: "n142" label: "0" color: blue}
+node: {title: "n142" label: "Store  142"  info1: "visited: 46
+"}
+edge: {sourcename: "n142" targetname: "n182" label: "0" color: blue}
+edge: {sourcename: "n142" targetname: "n145" label: "1" }
+edge: {sourcename: "n142" targetname: "n184" label: "2" }
+node: {title: "n145" label: "Sel a 145"  info1: "visited: 46
+Selecting entity of type int
+  from entity of type PRIMA
+"}
+edge: {sourcename: "n145" targetname: "n182" label: "0" color: blue}
+edge: {sourcename: "n145" targetname: "n183" label: "1" }
+node: {title: "n185" label: "Jmp  185"  info1: "visited: 46
+"}
+}
+
+graph: { title: "n139"  label: "Block 139" status:clustered color:yellow
+edge: {sourcename: "n139" targetname: "n193" label: "0" color: red}
+node: {title: "n182" label: "FilterM 1 182" color: yellow info1: "visited: 46
+"}
+edge: {sourcename: "n182" targetname: "n127" label: "0" color: blue}
+node: {title: "n183" label: "FilterP 0 183" color: yellow info1: "visited: 46
+"}
+edge: {sourcename: "n183" targetname: "n118" label: "0" }
+node: {title: "n184" label: "FilterIs 1 184" color: yellow info1: "visited: 46
+"}
+edge: {sourcename: "n184" targetname: "n125" label: "0" }
+node: {title: "n138" label: "ProjX 0 138" color: yellow info1: "visited: 46
+"}
+edge: {sourcename: "n138" targetname: "n140" label: "0" color: red}
+node: {title: "n140" label: "Start set_a  140" color: blue info1: "visited: 46
+start of method of type set_a
+  param 0 type: class_prima_ptr
+  param 1 type: int
+"}
+}
+
+}
+
+graph: { title: "0x80b3640" label: "c" status:clustered color:white
+graph: { title: "n178"  label: "Block 178" status:clustered color:yellow
+edge: {sourcename: "n178" targetname: "n177" label: "0" color: red}
+node: {title: "n198" label: "ProjX 0 198" color: yellow info1: "visited: 46
+"}
+edge: {sourcename: "n198" targetname: "n179" label: "0" color: red}
+node: {title: "n179" label: "EndReg  179" color: blue info1: "visited: 46
+"}
+}
+
+graph: { title: "n155"  label: "Block 155" status:clustered color:yellow
+edge: {sourcename: "n155" targetname: "n156" label: "0" color: red}
+node: {title: "n167" label: "ProjM 0 167" color: yellow info1: "visited: 46
+"}
+edge: {sourcename: "n167" targetname: "n161" label: "0" color: blue}
+node: {title: "n159" label: "AddIs  159"  info1: "visited: 46
+"}
+edge: {sourcename: "n159" targetname: "n160" label: "0" }
+edge: {sourcename: "n159" targetname: "n174" label: "1" }
+node: {title: "n160" label: "ProjIs 2 160" color: yellow info1: "visited: 46
+"}
+edge: {sourcename: "n160" targetname: "n161" label: "0" }
+node: {title: "n161" label: "Load  161"  info1: "visited: 46
+"}
+edge: {sourcename: "n161" targetname: "n175" label: "0" color: blue}
+edge: {sourcename: "n161" targetname: "n162" label: "1" }
+node: {title: "n162" label: "Sel a 162"  info1: "visited: 46
+Selecting entity of type int
+  from entity of type PRIMA
+"}
+edge: {sourcename: "n162" targetname: "n175" label: "0" color: blue}
+edge: {sourcename: "n162" targetname: "n176" label: "1" }
+node: {title: "n177" label: "Jmp  177"  info1: "visited: 46
+"}
+}
+
+graph: { title: "n157"  label: "Block 157" status:clustered color:yellow
+edge: {sourcename: "n157" targetname: "n199" label: "0" color: red}
+node: {title: "n175" label: "FilterM 1 175" color: yellow info1: "visited: 46
+"}
+edge: {sourcename: "n175" targetname: "n194" label: "0" color: blue}
+node: {title: "n176" label: "FilterP 0 176" color: yellow info1: "visited: 46
+"}
+edge: {sourcename: "n176" targetname: "n118" label: "0" }
+node: {title: "n174" label: "FilterIs 1 174" color: yellow info1: "visited: 46
+"}
+edge: {sourcename: "n174" targetname: "n117" label: "0" }
+node: {title: "n156" label: "ProjX 0 156" color: yellow info1: "visited: 46
+"}
+edge: {sourcename: "n156" targetname: "n158" label: "0" color: red}
+node: {title: "n158" label: "Start c  158" color: blue info1: "visited: 46
+start of method of type c
+  param 0 type: class_prima_ptr
+  param 1 type: int
+"}
+}
+
+}
+
+}
