@@ -26,16 +26,6 @@
  */
 int pset_default_ptr_cmp(const void *x, const void *y);
 
-/*
- * Define some convenience macros using the predefined hash function.
- */
-#define pset_insert_ptr(set,key) pset_insert(set, key, HASH_PTR(key))
-#define pset_hinsert_ptr(set,key) pset_hinsert(set, key, HASH_PTR(key))
-#define pset_remove_ptr(set,key) pset_remove(set, key, HASH_PTR(key))
-#define pset_find_ptr(set,key) pset_find(set, key, HASH_PTR(key))
-#define pset_new_ptr(slots) new_pset(pset_default_ptr_cmp, slots)
-#define pset_new_ptr_default() pset_new_ptr(64)
-
 /**
  * The abstract type of a pset (Set of pointers).
  *
@@ -45,6 +35,18 @@ int pset_default_ptr_cmp(const void *x, const void *y);
  * @see set
  */
 typedef struct pset pset;
+
+/*
+ * Define some convenience macros using the predefined hash function.
+ */
+#define pset_insert_ptr(set,key) pset_insert(set, key, HASH_PTR(key))
+#define pset_hinsert_ptr(set,key) pset_hinsert(set, key, HASH_PTR(key))
+#define pset_remove_ptr(set,key) pset_remove(set, key, HASH_PTR(key))
+#define pset_find_ptr(set,key) pset_find(set, key, HASH_PTR(key))
+#define pset_new_ptr(slots) new_pset(pset_default_ptr_cmp, slots)
+#define pset_new_ptr_default() pset_new_ptr(64)
+void    pset_insert_pset_ptr(pset *target, pset *src); /* Insertss all elements of src in target. */
+
 
 /** The entry of a pset, representing an element pointer in the set and it's meta-information */
 typedef struct {
@@ -114,7 +116,7 @@ void *pset_find (pset *pset, const void *key, unsigned hash);
  * @return a pointer to the inserted element
  *
  * @note
- *    It is not possible to insert on element more than once. If a element
+ *    It is not possible to insert an element more than once. If an element
  *    that should be inserted is already in the set, this functions does
  *    nothing but returning its already existing set_entry.
 
@@ -131,7 +133,7 @@ void *pset_insert (pset *pset, const void *key, unsigned hash);
  * @return a pointer to the pset_entry of the inserted element
  *
  * @note
- *    It is not possible to insert on element more than once. If a element
+ *    It is not possible to insert an element more than once. If an element
  *    that should be inserted is already in the pset, this functions does
  *    nothing but returning its pset_entry.
  */

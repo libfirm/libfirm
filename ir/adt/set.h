@@ -104,7 +104,7 @@ void *set_find (set *set, const void *key, size_t size, unsigned hash);
  * @return a pointer to the inserted element
  *
  * @note
- *    It is not possible to insert on element more than once. If an element
+ *    It is not possible to insert one element more than once. If an element
  *    that should be inserted is already in the set, this functions does
  *    nothing but returning its pointer.
  */
