@@ -16,11 +16,6 @@ topdir := .
 # subdirectory under topdir
 subdir := .
 
-prefix := @prefix@
-exec_prefix := @exec_prefix@
-bindir = $(exec_prefix)/bin
-datadir = $(prefix)/lib
-
 subdirs := ir ir/adt ir/debug ir/tv ir/common ir/ident ir/ir ir/tr ir/ana ir/st
 
 SOURCES := Makefile.in MakeRules.in MakeTargets\

@@ -7,15 +7,16 @@
 
 VPATH = $(srcdir)
 
-LIBFIRM_VERSION = 0.3.0
+LIBFIRM_VERSION = @PACKAGE_VERSION@
 
 CC = @CC@
 CFLAGS := @CFLAGS@
 CPPFLAGS := -I. -I$(topdir) -I$(srcdir) -I$(top_srcdir) @CPPFLAGS@
 
 INSTALL = @INSTALL@
-INCLUDEDIR = @includedir@
-LIBDIR = @libdir@
+INCLUDEDIR = @prefix@/@includedir@
+LIBDIR = @prefix@/@libdir@
+PACKAGE_NAME = @PACKAGE_NAME@
 
 DEFS = @DEFS@
 

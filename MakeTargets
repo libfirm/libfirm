@@ -15,7 +15,7 @@ ifeq ($(strip $(OFILES)),)
 	>$@
 else
 	rm -f $@
-	$(LD) $(LDFLAGS) -r -o $@ $^
+	$(LD) $(LDFLAGS)  -r -o $@ $^
 endif
 
 clean: subdir_clean local_clean
@@ -74,25 +74,25 @@ local_tags:	$(TAGFILES)
 	etags -C $^
 
 # installation
-install:	$(INCLUDEDIR) install_headers $(LIBDIR) install_libs
+install:	$(INCLUDEDIR)/$(PACKAGE_NAME) install_headers $(LIBDIR) install_libs
 
 install_headers:	subdir_install_headers local_install_headers
 local_install_headers:
 ifneq ($(strip $(INSTALL_HEADERS)),)
-	$(INSTALL) -m u+rw,a+r $(addprefix $(srcdir)/,$(INSTALL_HEADERS)) $(INCLUDEDIR)
+	$(INSTALL) -C -m u+rw,a+r $(addprefix $(srcdir)/,$(INSTALL_HEADERS)) $(INCLUDEDIR)/$(PACKAGE_NAME)
 endif
 
 install_libs:		subdir_install_libs local_install_libs
 local_install_libs:
 ifneq ($(strip $(INSTALL_LIBS)),)
-	$(INSTALL) -m u+rw,a+r $(addprefix $(topdir)/,$(INSTALL_LIBS)) $(LIBDIR)
+	$(INSTALL) -C -m u+rw,a+r $(addprefix $(topdir)/,$(INSTALL_LIBS)) $(LIBDIR)
 endif
 
 
 $(LIBDIR):	$(LIBDIR)
 	mkdir -p $@
 
-$(INCLUDEDIR):	$(INCLUDEDIR)
+$(INCLUDEDIR)/$(PACKAGE_NAME):	$(INCLUDEDIR)/$(PACKAGE_NAME)
 	mkdir -p $@
 
 # generated the directory where all the generated documentation is
