@@ -81,7 +81,23 @@ int main(int argc, char **argv)
 
   returnBlock = get_irg_current_block(irg);
 
-#if 1
+  /* Make some real stupid stuff: a data loop (without Phi). */
+  {
+   ir_node *a, *b, *c, *in[2];
+   add_in_edge(get_cur_block(), new_Bad());
+   a = new_Const (mode_Is, new_tarval_from_long (1, mode_Is));
+   b = new_Const (mode_Is, new_tarval_from_long (2, mode_Is));
+   c = new_Add(a, b, mode_Is);
+   b = new_Sub(c, b, mode_Is);
+   in[0] = b;
+   in[1] = new_Bad();
+   a = new_Phi(2, in, mode_Is);
+   set_Add_left(c, a);
+   add_End_keepalive(get_irg_end(irg), a);
+   set_nodes_block(c, new_Bad());
+   set_nodes_block(a, new_Bad());
+  }
+
   /* Make the unreachable loop */
   loopBlock1 = new_immBlock();
   loopBlock2 = new_immBlock();
@@ -98,9 +114,7 @@ int main(int argc, char **argv)
   add_in_edge(loopBlock2, t);
   add_in_edge(returnBlock, f);
   mature_block(loopBlock2);
-#endif
 
-#if 0
   /* Make the unreachable, endless loop */
   loopBlock1 = new_immBlock();
   loopBlock2 = new_immBlock();
@@ -113,7 +127,6 @@ int main(int argc, char **argv)
   add_in_edge(loopBlock2, x);
   add_End_keepalive(get_irg_end(irg), x);
   mature_block(loopBlock2);
-#endif
 
   /* Make the return block */
   switch_block(returnBlock);
@@ -125,8 +138,8 @@ int main(int argc, char **argv)
 
   finalize_cons (irg);
 
-  printf("Optimizing ...\n");
-  dead_node_elimination(irg);
+  //printf("Optimizing ...\n");
+  //dead_node_elimination(irg);
 
   /* verify the graph */
   irg_vrfy(irg);
@@ -134,7 +147,8 @@ int main(int argc, char **argv)
   printf("Dumping the graph and a control flow graph.\n");
   turn_off_edge_labels();
   dump_keepalive_edges(1);
-  dump_consts_local(1);
+  dump_consts_local(0);
+  dump_ir_graph (irg);
   dump_ir_block_graph (irg);
   dump_cfg (irg);
 
@@ -151,6 +165,18 @@ int main(int argc, char **argv)
   dump_loop_information();
   dump_backedge_information(1);
 
+  dump_ir_graph (irg);
+  dump_ir_block_graph (irg);
+  dump_cfg (irg);
+  dump_loop_tree(irg, dump_file_suffix);
+
+  printf("Optimizing.\n");
+  optimize_cf(current_ir_graph);
+  local_optimize_graph(current_ir_graph);
+
+  printf("Dumping the optimized graph.\n");
+  dump_file_suffix = "-opt";
+  dump_ir_graph (irg);
   dump_ir_block_graph (irg);
   dump_cfg (irg);
   dump_loop_tree(irg, dump_file_suffix);
