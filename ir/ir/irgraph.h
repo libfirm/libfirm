@@ -24,7 +24,6 @@
 
 # ifndef _IRGRAPH_H_
 # define _IRGRAPH_H_
-# include "tv.h"
 # include "entity.h"
 
 /* to resolve recursion between irnode.h and irgraph.h */
