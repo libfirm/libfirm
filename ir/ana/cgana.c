@@ -11,7 +11,7 @@
  */
 
 /**
- * Intraprozedurale Analyse zur Abschätzung der Aufrulrelation. Es
+ * Intraprozedurale Analyse zur Abschätzung der Aufrufrelation. Es
  * wird eine Menge von freien Methoden und anschließend die an den
  * Call-Operationen aufrufbaren Methoden bestimmt.
  *
@@ -22,6 +22,7 @@
 
 #include <stdlib.h>
 #include "cgana.h"
+#include "rta.h"
 
 
 #include "eset.h"
@@ -50,7 +51,7 @@ static eset * entities = NULL;
 
 /* Bestimmt die eindeutige Methode, die die Methode für den
  * übergebenene (dynamischen) Typ überschreibt. */
-static entity * get_implementation(type * class, entity * method) {
+entity * get_implementation(type * class, entity * method) {
   int i;
   if (get_entity_peculiarity(method) != peculiarity_description &&
       get_entity_owner(method) == class) {
@@ -68,7 +69,7 @@ static entity * get_implementation(type * class, entity * method) {
       return e;
     }
   }
-  assert(0 && "implemenation not found");
+  assert(0 && "implementation not found");
   return NULL;
 }
 
@@ -82,7 +83,7 @@ entity *get_inherited_methods_implementation(entity *inh_meth) {
   if (intern_get_irn_op(addr) == op_Const) {
     impl_meth = tarval_to_entity(get_Const_tarval(addr));
   } else {
-    assert(0 && "Complex constant values not supported -- adress of method should be straight constant!");
+    assert(0 && "Complex constant values not supported -- address of method should be straight constant!");
   }
   if (impl_meth && (get_entity_peculiarity(impl_meth) != peculiarity_existent)) {
     printf("this_meth: "); DDMEO(inh_meth);
@@ -109,8 +110,8 @@ void collect_impls(entity *method, eset *set, int *size, bool *open) {
     } else {
       assert(get_entity_irg(method) != NULL);
       if (!eset_contains(set, method)) {
-	eset_insert(set, method);
-	++(*size);
+    eset_insert(set, method);
+    ++(*size);
       }
     }
   }
@@ -123,8 +124,8 @@ void collect_impls(entity *method, eset *set, int *size, bool *open) {
     } else {
       assert(get_entity_irg(impl_ent) != NULL);
       if (!eset_contains(set, impl_ent)) {
-	eset_insert(set, impl_ent);
-	++(*size);
+    eset_insert(set, impl_ent);
+    ++(*size);
       }
     }
   }
@@ -176,16 +177,16 @@ static entity ** get_impl_methods(entity * method) {
 #define SIZ(x)    sizeof(x)/sizeof((x)[0])
 
 #define DBG_OPT_NORMALIZE                                                      \
-	  __dbg_info_merge_pair(new_node, node, dbg_const_eval)
+      __dbg_info_merge_pair(new_node, node, dbg_const_eval)
 #define DBG_OPT_POLY_ALLOC                                                     \
   do {                                                                         \
-	ir_node *ons[2];                                                       \
-	ons[0] = node;                                                         \
-	ons[1] = skip_Proj(get_Sel_ptr(node));                                 \
-	__dbg_info_merge_sets(&new_node, 1, ons, SIZ(ons), dbg_rem_poly_call); \
+    ir_node *ons[2];                                                       \
+    ons[0] = node;                                                         \
+    ons[1] = skip_Proj(get_Sel_ptr(node));                                 \
+    __dbg_info_merge_sets(&new_node, 1, ons, SIZ(ons), dbg_rem_poly_call); \
      } while(0)
 #define DBG_OPT_POLY                                                           \
-	  __dbg_info_merge_pair(new_node, node, dbg_rem_poly_call)
+      __dbg_info_merge_pair(new_node, node, dbg_rem_poly_call)
 
 
 static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
@@ -195,22 +196,22 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
     if (get_SymConst_kind(node) == linkage_ptr_info) {
       pmap_entry * entry = pmap_find(ldname_map, (void *) get_SymConst_ptrinfo(node));
       if (entry != NULL) { /* Method is declared in the compiled code */
-	entity * ent = entry->value;
-	if (get_opt_normalize() && (get_entity_visibility(ent) != visibility_external_allocated)) { /* Meth. is defined */
-	  ir_node *new_node;
-	  assert(get_entity_irg(ent));
-	  set_irg_current_block(current_ir_graph, get_nodes_Block(node));
-	  new_node = new_d_Const(get_irn_dbg_info(node),
-				 mode_P_mach, new_tarval_from_entity(ent, mode_P_mach));       DBG_OPT_NORMALIZE;
-	  exchange(node, new_node);
-	}
+    entity * ent = entry->value;
+    if (get_opt_normalize() && (get_entity_visibility(ent) != visibility_external_allocated)) { /* Meth. is defined */
+      ir_node *new_node;
+      assert(get_entity_irg(ent));
+      set_irg_current_block(current_ir_graph, get_nodes_Block(node));
+      new_node = new_d_Const(get_irn_dbg_info(node),
+                 mode_P_mach, new_tarval_from_entity(ent, mode_P_mach));       DBG_OPT_NORMALIZE;
+      exchange(node, new_node);
+    }
       }
     }
   } else if (intern_get_irn_op(node) == op_Sel &&
-	     is_method_type(get_entity_type(get_Sel_entity(node)))) {
+         is_method_type(get_entity_type(get_Sel_entity(node)))) {
     entity * ent = get_Sel_entity(node);
     if (get_opt_optimize() && get_opt_dyn_meth_dispatch() &&
-	(intern_get_irn_op(skip_Proj(get_Sel_ptr(node))) == op_Alloc)) {
+    (intern_get_irn_op(skip_Proj(get_Sel_ptr(node))) == op_Alloc)) {
       ir_node *new_node;
       entity *called_ent;
       /* We know which method will be called, no dispatch necessary. */
@@ -218,7 +219,7 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
       assert(get_entity_peculiarity(ent) != peculiarity_description);
       set_irg_current_block(current_ir_graph, get_nodes_Block(node));
       /* @@@ Is this correct?? Alloc could reference a subtype of the owner
-	 of Sel that overwrites the method referenced in Sel. */
+     of Sel that overwrites the method referenced in Sel. */
       /* @@@ Yes, this is wrong. GL, 10.3.04 */
       new_node = copy_const_value(get_atomic_ent_value(ent));              DBG_OPT_POLY_ALLOC;
 #else
@@ -232,55 +233,55 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
     } else {
       assert(get_entity_peculiarity(ent) != peculiarity_inherited);
       if (!eset_contains(entities, ent)) {
-	/* Entity noch nicht behandelt. Alle (intern oder extern)
-	 * implementierten Methoden suchen, die diese Entity
-	 * überschreiben. Die Menge an entity.link speichern. */
-	set_entity_link(ent, get_impl_methods(ent));
-	eset_insert(entities, ent);
+    /* Entity noch nicht behandelt. Alle (intern oder extern)
+     * implementierten Methoden suchen, die diese Entity
+     * überschreiben. Die Menge an entity.link speichern. */
+    set_entity_link(ent, get_impl_methods(ent));
+    eset_insert(entities, ent);
       }
       if (get_entity_link(ent) == NULL) {
-	/* Die Sel-Operation kann nie einen Zeiger auf eine aufrufbare
-	 * Methode zurückgeben. Damit ist sie insbesondere nicht
-	 * ausführbar und nicht erreichbar. */
-	/* Gib eine Warnung aus wenn die Entitaet eine Beschreibung ist
-	   fuer die es keine Implementierung gibt. */
-	if (get_entity_peculiarity(ent) == peculiarity_description) {
-	  /* @@@ GL Methode um Fehler anzuzeigen aufrufen! */
-	  printf("WARNING: Calling method description %s\n  in method %s\n  of class %s\n  which has "
-		 "no implementation!\n", get_entity_name(ent),
-		 get_entity_name(get_irg_ent(current_ir_graph)),
-		 get_type_name(get_entity_owner(get_irg_ent(current_ir_graph))));
-	  printf("This happens when compiling a Java Interface that's never really used, i.e., "
-		 "no class implementing the interface is ever used.\n");
-	} else {
-	  exchange(node, new_Bad());
-	}
+    /* Die Sel-Operation kann nie einen Zeiger auf eine aufrufbare
+     * Methode zurückgeben. Damit ist sie insbesondere nicht
+     * ausführbar und nicht erreichbar. */
+    /* Gib eine Warnung aus wenn die Entitaet eine Beschreibung ist
+       fuer die es keine Implementierung gibt. */
+    if (get_entity_peculiarity(ent) == peculiarity_description) {
+      /* @@@ GL Methode um Fehler anzuzeigen aufrufen! */
+      printf("WARNING: Calling method description %s\n  in method %s\n  of class %s\n  which has "
+         "no implementation!\n", get_entity_name(ent),
+         get_entity_name(get_irg_ent(current_ir_graph)),
+         get_type_name(get_entity_owner(get_irg_ent(current_ir_graph))));
+      printf("This happens when compiling a Java Interface that's never really used, i.e., "
+         "no class implementing the interface is ever used.\n");
+    } else {
+      exchange(node, new_Bad());
+    }
       } else {
-	entity ** arr = get_entity_link(ent);
+    entity ** arr = get_entity_link(ent);
 
 #if 0
-	int i;
-	printf("\nCall site "); DDMN(node);
-	printf("  in "); DDME(get_irg_ent(current_ir_graph));
-	printf("  can call:\n");
-	for (i = 0; i < ARR_LEN(arr); i++) {
-	  printf("   - "); DDME(arr[i]);
-	  printf("     with owner "); DDMT(get_entity_owner(arr[i]));
-	}
-	printf("\n");
+    int i;
+    printf("\nCall site "); DDMN(node);
+    printf("  in "); DDME(get_irg_ent(current_ir_graph));
+    printf("  can call:\n");
+    for (i = 0; i < ARR_LEN(arr); i++) {
+      printf("   - "); DDME(arr[i]);
+      printf("     with owner "); DDMT(get_entity_owner(arr[i]));
+    }
+    printf("\n");
 #endif
 
-	if (get_opt_optimize() && get_opt_dyn_meth_dispatch() &&
-	    (ARR_LEN(arr) == 1 && arr[0] != NULL)) {
-	  ir_node *new_node;
-	  /* Die Sel-Operation kann immer nur einen Wert auf eine
-	   * interne Methode zurückgeben. Wir können daher die
-	   * Sel-Operation durch eine Const- bzw. SymConst-Operation
-	   * ersetzen. */
-	  set_irg_current_block(current_ir_graph, get_nodes_Block(node));
-	  new_node = copy_const_value(get_atomic_ent_value(arr[0]));	     DBG_OPT_POLY;
-	  exchange (node, new_node);
-	}
+    if (get_opt_optimize() && get_opt_dyn_meth_dispatch() &&
+        (ARR_LEN(arr) == 1 && arr[0] != NULL)) {
+      ir_node *new_node;
+      /* Die Sel-Operation kann immer nur einen Wert auf eine
+       * interne Methode zurückgeben. Wir können daher die
+       * Sel-Operation durch eine Const- bzw. SymConst-Operation
+       * ersetzen. */
+      set_irg_current_block(current_ir_graph, get_nodes_Block(node));
+      new_node = copy_const_value(get_atomic_ent_value(arr[0]));         DBG_OPT_POLY;
+      exchange (node, new_node);
+    }
       }
     }
   }
@@ -384,9 +385,9 @@ static void callee_ana_proj(ir_node * node, long n, eset * methods) {
     ir_node * pred = get_Proj_pred(node);
     if (get_irn_link(pred) != MARK) {
       if (intern_get_irn_op(pred) == op_Tuple) {
-	callee_ana_proj(get_Tuple_pred(pred, get_Proj_proj(node)), n, methods);
+    callee_ana_proj(get_Tuple_pred(pred, get_Proj_proj(node)), n, methods);
       } else {
-	eset_insert(methods, MARK); /* free method -> unknown */
+    eset_insert(methods, MARK); /* free method -> unknown */
       }
     }
     break;
@@ -444,9 +445,9 @@ static void callee_ana_node(ir_node * node, eset * methods) {
     for (i = get_Sel_n_methods(node) - 1; i >= 0; --i) {
       entity * ent = get_Sel_method(node, i);
       if (ent) {
-	eset_insert(methods, ent);
+    eset_insert(methods, ent);
       } else {
-	eset_insert(methods, MARK);
+    eset_insert(methods, MARK);
       }
     }
     break;
@@ -496,7 +497,7 @@ static void callee_walker(ir_node * call, void * env) {
     }
     for (ent = eset_first(methods); ent; ent = eset_next(methods)) {
       if (ent != MARK) {
-	ARR_APP1(entity *, arr, ent);
+    ARR_APP1(entity *, arr, ent);
       }
     }
     if (ARR_LEN(arr) == 0) {
@@ -591,7 +592,7 @@ static void free_mark(ir_node * node, eset * set) {
     entity * ent = get_Sel_entity(node);
     if (is_method_type(get_entity_type(ent))) {
       for (i = get_Sel_n_methods(node) - 1; i >= 0; --i) {
-	eset_insert(set, get_Sel_method(node, i));
+    eset_insert(set, get_Sel_method(node, i));
       }
     }
     break;
@@ -652,7 +653,7 @@ static void free_ana_walker(ir_node * node, eset * set) {
     for (i = get_Call_arity(node) - 1; i >= 0; --i) {
       ir_node * pred = get_Call_param(node, i);
       if (mode_is_reference(intern_get_irn_mode(pred))) {
-	free_mark(pred, set);
+    free_mark(pred, set);
       }
     }
     break;
@@ -663,7 +664,7 @@ static void free_ana_walker(ir_node * node, eset * set) {
     for (i = intern_get_irn_arity(node) - 1; i >= 0; --i) {
       ir_node * pred = get_irn_n(node, i);
       if (mode_is_reference(intern_get_irn_mode(pred))) {
-	free_mark(pred, set);
+    free_mark(pred, set);
       }
     }
     break;
@@ -711,6 +712,9 @@ static entity ** get_free_methods(void) {
 void cgana(int *length, entity ***free_methods) {
   entity ** free_meths;
   int i;
+
+  rta_init    ();
+  rta_cleanup ();
 
   sel_methods_init();
   free_meths = get_free_methods();
