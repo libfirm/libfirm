@@ -12,7 +12,7 @@
 #include <assert.h>   /* assertions */
 #include <string.h>   /* memset/memcmp */
 #include <stdio.h>    /* output for error messages */
-#include <values.h>   /* definition of MIN_LONG, used in sc_get_val_from_long */
+#include <limits.h>   /* definition of LONG_MIN, used in sc_get_val_from_long */
 
 /*
  * local definitions and macros

@@ -42,7 +42,7 @@
 #include <stdlib.h>         /* atoi() */
 #include <string.h>         /* nice things for strings */
 
-#include <malloc.h>
+#include <stdlib.h>
 #include "tv_t.h"
 #include "set.h"            /* to store tarvals in */
 #include "tune.h"           /* some constants */
