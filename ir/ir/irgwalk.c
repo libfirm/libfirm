@@ -424,11 +424,6 @@ void walk_const_code(irg_walk_func *pre, irg_walk_func *post, void *env) {
 /** }                                                              **/
 /********************************************************************/
 
-/* Allocates some necessary datastructures. */
-void init_ip_walk ();
-/* Frees some necessary datastructures. */
-void finish_ip_walk();
-
 /* Call for i in {0|-1 ... get_irn_arity(n)}.
    If n is a conventional node returns the same node as get_irn_n(n, i).
    If the predecessors of n are in the callee of the procedure n belongs
@@ -515,13 +510,13 @@ ir_node * pop_callsite(ir_graph *callee) {
 
 /* Initialization routines ******************************************/
 
-void init_ip_walk () {
+void init_ip_walk (void) {
   int i;
   for (i = 0; i < get_irp_n_irgs(); i++)
     new_callsite_stack(get_irp_irg(i));
 }
 
-void finish_ip_walk() {
+void finish_ip_walk(void) {
   int i;
   for (i = 0; i < get_irp_n_irgs(); i++)
     free_callsite_stack(get_irp_irg(i));
