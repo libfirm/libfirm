@@ -459,7 +459,7 @@ void arch_dep_replace_divmod_with_shifts(ir_node **div, ir_node **mod, ir_node *
   /* If the architecture dependent optimizations were not initialized
      or this optimization was not enabled. */
   if (params == NULL ||
-     (opts & (arch_dep_div_to_shift|arch_dep_mod_to_shift) != (arch_dep_div_to_shift|arch_dep_mod_to_shift)))
+      ((opts & (arch_dep_div_to_shift|arch_dep_mod_to_shift)) != (arch_dep_div_to_shift|arch_dep_mod_to_shift)))
     return;
 
   if (get_irn_opcode(irn) == iro_DivMod) {
