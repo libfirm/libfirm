@@ -248,7 +248,7 @@ static entity *find_constant_entity(ir_node *ptr)
       entity *ent = get_Sel_entity(ptr);
       type *tp    = get_entity_owner(ent);
 
-      if (is_array_type(tp)) {
+      if (is_Array_type(tp)) {
         /* check bounds */
         int i, n;
 

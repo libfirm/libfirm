@@ -1484,7 +1484,7 @@ static void assign_firm_entity(module_t *module, entity_t *xmlent)
   typ = find_type_in_module(module, xmlent -> owner);
   assert(typ && "class not found in module");
   type = typ -> f_tp;
-  assert(is_class_type(type));
+  assert(is_Class_type(type));
 
   num = get_class_n_members(type);
   ent = NULL;
@@ -1558,11 +1558,11 @@ void create_abstract_proc_effect(module_t *module, proc_t *proc)
     for(i = 0; i < num; i++) {
       class_typ = get_irp_type(i);
       VERBOSE_PRINT((stdout, "test type %s\n", get_type_name(class_typ)));
-      if(is_class_type(class_typ)
-     && (type -> type_ident == get_type_ident(class_typ))) {
-    /* found class type */
-    VERBOSE_PRINT((stdout, "found type %s\n", get_type_name(class_typ)));
-    break;
+      if (is_Class_type(class_typ)
+         && (type -> type_ident == get_type_ident(class_typ))) {
+        /* found class type */
+        VERBOSE_PRINT((stdout, "found type %s\n", get_type_name(class_typ)));
+        break;
       }
       class_typ = NULL;
     }
@@ -1571,7 +1571,7 @@ void create_abstract_proc_effect(module_t *module, proc_t *proc)
     VERBOSE_PRINT((stdout, "found global type %s\n", get_type_name(class_typ)));
   }
   assert(class_typ && "type not found");
-  assert(is_class_type(class_typ) && "is not a class type");
+  assert(is_Class_type(class_typ) && "is not a class type");
   type -> f_tp = class_typ;
 
   /* find entity for procedure in class */
@@ -1677,6 +1677,9 @@ void free_abstraction(void) {
 
 /*
  * $Log$
+ * Revision 1.20  2005/01/05 14:28:35  beck
+ * renames all is_x*_type() functions to is_X*_type() to prevent name clash with EDG frontend
+ *
  * Revision 1.19  2004/12/10 15:14:34  beck
  * used xmalloc instead of malloc
  *

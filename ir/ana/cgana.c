@@ -291,7 +291,7 @@ static void sel_methods_walker(ir_node * node, void *env) {
     }
   }
   else if (get_irn_op(node) == op_Sel &&
-	   is_method_type(get_entity_type(get_Sel_entity(node)))) {
+	   is_Method_type(get_entity_type(get_Sel_entity(node)))) {
     entity * ent = get_Sel_entity(node);
 
     /* Sel from Alloc: replace by constant */
@@ -419,7 +419,7 @@ static entity ** get_Sel_arr(ir_node * sel) {
 
   assert(sel && get_irn_op(sel) == op_Sel);
   ent = get_Sel_entity(sel);
-  assert(is_method_type(get_entity_type(ent))); /* what else? */
+  assert(is_Method_type(get_entity_type(ent))); /* what else? */
   arr = get_entity_link(ent);
   if (arr) {
     return arr;
@@ -513,7 +513,7 @@ static void callee_ana_node(ir_node * node, eset * methods) {
   case iro_SymConst:
     if (get_SymConst_kind(node) == symconst_addr_ent) {
       entity * ent = get_SymConst_entity(node);
-      assert(ent && is_method_type(get_entity_type(ent)));
+      assert(ent && is_Method_type(get_entity_type(ent)));
       eset_insert(methods, ent);
     } else {
       assert(get_SymConst_kind(node) == symconst_addr_name);
@@ -700,9 +700,9 @@ static void free_mark(ir_node * node, eset * set) {
   switch (get_irn_opcode(node)) {
   case iro_Sel: {
     entity * ent = get_Sel_entity(node);
-    if (is_method_type(get_entity_type(ent))) {
+    if (is_Method_type(get_entity_type(ent))) {
       for (i = get_Sel_n_methods(node) - 1; i >= 0; --i) {
-    eset_insert(set, get_Sel_method(node, i));
+        eset_insert(set, get_Sel_method(node, i));
       }
     }
     break;
@@ -710,7 +710,7 @@ static void free_mark(ir_node * node, eset * set) {
   case iro_SymConst:
     if (get_SymConst_kind(node) == symconst_addr_ent) {
       entity * ent = get_SymConst_entity(node);
-      if (is_method_type(get_entity_type(ent))) {
+      if (is_Method_type(get_entity_type(ent))) {
         eset_insert(set, ent);
       }
     } else {

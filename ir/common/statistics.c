@@ -58,9 +58,9 @@ void print_type_counts(int verbosity) {
   for (i = 0; i < get_irp_n_types(); i++) {
     type *tp = get_irp_type(i);
     counter = -1;
-    if (is_class_type(tp)) counter = get_class_n_members(tp);
-    if (is_struct_type(tp)) counter = get_struct_n_members(tp);
-    if (is_union_type(tp)) counter = get_union_n_members(tp);
+    if (is_Class_type(tp)) counter = get_class_n_members(tp);
+    if (is_Struct_type(tp)) counter = get_struct_n_members(tp);
+    if (is_Union_type(tp)) counter = get_union_n_members(tp);
     if (counter > -1) {
       if (verbosity == 1)
     printf(" +%3d entities in %s type %s.\n", counter, get_type_tpop_name(tp), get_type_name(tp));

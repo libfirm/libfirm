@@ -361,7 +361,7 @@ static void init_tables (void)
   /* Find static allocated classes */
   for (i = 0; i < n_globs; ++i) {
     type *member_type = get_entity_type(get_class_member(get_glob_type(), i));
-    if (is_class_type(member_type))
+    if (is_Class_type(member_type))
       eset_insert(_live_classes, member_type);
   }
 }
@@ -418,7 +418,7 @@ static void make_entity_to_description(type_or_ent *tore, void *env) {
   if (get_kind(tore) == k_entity) {
     entity *ent = (entity *)tore;
 
-    if ((is_method_type(get_entity_type(ent)))                        &&
+    if ((is_Method_type(get_entity_type(ent)))                        &&
         (get_entity_peculiarity(ent) != peculiarity_description)      &&
         (get_entity_visibility(ent)  != visibility_external_allocated)   ) {
       ir_graph *irg = get_entity_irg(get_SymConst_entity(get_atomic_ent_value(ent)));
@@ -519,7 +519,7 @@ void rta_report (void)
 
   for (i = 0; i < get_irp_n_types(); ++i) {
     type *tp = get_irp_type(i);
-    if (is_class_type(tp) && rta_is_alive_class(tp)) {
+    if (is_Class_type(tp) && rta_is_alive_class(tp)) {
       fprintf(stdout, "RTA: considered allocated: "); DDMT(tp);
     }
   }
@@ -535,6 +535,9 @@ void rta_report (void)
 
 /*
  * $Log$
+ * Revision 1.32  2005/01/05 14:24:52  beck
+ * renames all is_x*_type() functions to is_X*_type() to prevent name clash with EDG frontend
+ *
  * Revision 1.31  2004/12/21 13:45:14  beck
  * removed C99 constructs
  *

@@ -131,7 +131,7 @@ extern "C" {
 
 /* Makros that define the old function names we decided to rename.
    Use for compatibility with old implementations. */
-//#include "old_fctnames.h"
+/*#include "old_fctnames.h"*/
 
 /**
  * libFirm initialization parameters.
