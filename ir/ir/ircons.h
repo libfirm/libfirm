@@ -990,15 +990,15 @@
  *
  *    There are two special routines for the global store:
  *
- *    inline void set_store (ir_node *store)
- *    --------------------------------------
+ *    void set_store (ir_node *store)
+ *    -------------------------------
  *
  *    Adds the store to the array of known values at a reserved
  *    position.
  *    Requires current_block to be set correctly.
  *
- *    inline ir_node *get_store (void)
- *    --------------------------------
+ *    ir_node *get_store (void)
+ *    -------------------------
  *
  *    Returns the node defining the actual store.
  *    Requires current_block to be set correctly.
