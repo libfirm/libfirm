@@ -62,7 +62,7 @@ static tarval *computed_value_SymConst(ir_node *n)
 {
   if ((get_SymConst_kind(n) == size) &&
       (get_type_state(get_SymConst_type(n))) == layout_fixed)
-    return new_tarval_from_long (get_type_size(get_SymConst_type(n)), mode_Is);
+    return new_tarval_from_long(get_type_size_bytes(get_SymConst_type(n)), mode_Is);
   return tarval_bad;
 }
 
