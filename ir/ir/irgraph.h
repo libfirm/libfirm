@@ -1,10 +1,14 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
 * All rights reserved.
-*
-* Authors: Martin Trapp, Christian Schaefer
-*
-* irgraph.h: ir graph construction
 */
+
+/**
+ * @file irgraph.h
+ *
+ * ir graph construction.
+ *
+ * @author Martin Trapp, Christian Schaefer
+ */
 
 /* $Id$ */
 
@@ -71,13 +75,13 @@ extern ir_graph *current_ir_graph;
 ir_graph *get_current_ir_graph();
 void set_current_ir_graph(ir_graph *graph);
 
-/* This flag indicate the current view. The behaviour of some methods
+/** This flag indicate the current view. The behaviour of some methods
  * (get_irn_*, set_irn_*) is influenced by this flag. */
 extern bool interprocedural_view;
 bool get_interprocedural_view();
 void set_interprocedural_view(bool state);
 
-/* Create a new ir graph to built ir for a procedure.
+/** Create a new ir graph to built ir for a procedure.
    ent is the entity representing this procedure, i.e., the type of the
    entity must be of a method type.  The constructor automatically sets the
    field irg of the entity as well as current_ir_graph to the new ir graph.
@@ -86,7 +90,7 @@ void set_interprocedural_view(bool state);
    The state of the ir graph is:  phase_building, pinned, no_outs. */
 ir_graph *new_ir_graph (entity *ent, int n_loc);
 
-/* Frees the passed irgraph.
+/** Frees the passed irgraph.
    Deallocates all nodes in this graph and the ir_graph structure.
    Sets the field irgraph in the corresponding entity to NULL.
    Does not remove the irgraph from the list in irprog (requires
@@ -95,7 +99,7 @@ ir_graph *new_ir_graph (entity *ent, int n_loc);
    graph, nor the entity standing for this graph. */
 void free_ir_graph (ir_graph *irg);
 
-/** access routines for all ir_graph attributes **/
+/* --- access routines for all ir_graph attributes --- */
 entity  *get_irg_ent (ir_graph *irg);
 void     set_irg_ent (ir_graph *irg, entity *ent);
 
@@ -147,11 +151,11 @@ int      get_irg_n_locs (ir_graph *irg);
 /* States of an ir_graph.                                                       */
 /********************************************************************************/
 
-/**
+/*
    information associated with the graph.  Optimizations invalidate these
-   states.  **/
+   states.  */
 
-/* state: phase values: phase_building, phase_high, phase_low.
+/** state: phase values: phase_building, phase_high, phase_low.
    The irg is in phase_building during construction of the irgraph.  It is in
    phase_high after construction.  All nodes are allowed.  To get the irgraph
    into phase_low all Sel nodes must be removed and replaced by explicit
@@ -176,7 +180,7 @@ void set_irg_phase_low(ir_graph *irg);
    The enum op_pinned is defined in irop.h. */
 op_pinned get_irg_pinned (ir_graph *irg);
 
-/* state: outs_state
+/** state: outs_state
    Outs are the back edges or def-use edges.
    Values:  no_outs, outs_consistent, outs_inconsistent
    no_outs: outs are not computed, no memory is allocated.
@@ -191,7 +195,7 @@ typedef enum {
 irg_outs_state get_irg_outs_state(ir_graph *irg);
 void set_irg_outs_inconsistent(ir_graph *irg);
 
-/* state: dom_state
+/** state: dom_state
    Signals the state of the dominator infomation.
    Values:  no_dom, dom_consistent, dom_inconsistent
    no_dom: doms are not computed, no memory is allocated.  The access routines
