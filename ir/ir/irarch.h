@@ -27,7 +27,7 @@ typedef struct {
   /* Div/Mod optimization */
   int allow_mulhs   : 1;        /**< Use the Mulhs operation for division by constant */
   int allow_mulhu   : 1;        /**< Use the Mulhu operation for division by constant */
-  unsigned max_bits_for_mulh;   /**< Maximum number of bits the Mulh operation can take.
+  int max_bits_for_mulh;        /**< Maximum number of bits the Mulh operation can take.
                                      Modes with higher amount of bits will use Mulh */
 } arch_dep_params_t;
 
