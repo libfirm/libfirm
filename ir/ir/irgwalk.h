@@ -1,15 +1,21 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
 * All rights reserved.
-*
-* Author: Boris Boesler
-*
-* traverse an ir graph
-* - execute the pre function before recursion
-* - execute the post function after recursion
-*
-* Uses current_ir_graph (from irgraph.h)!!! Set it to the proper
-* graph before starting the walker.
 */
+
+/**
+ * @file irgwalk.h
+ *
+ * Traverse an ir graph.
+ *
+ * @author Boris Boesler
+ *
+ * Traverse an ir graph:
+ * - execute the pre function before recursion
+ * - execute the post function after recursion
+ *
+ * Uses current_ir_graph (from irgraph.h)!!! Set it to the proper
+ * graph before starting the walker.
+ */
 
 /* $Id$ */
 
