@@ -18,11 +18,35 @@
 #ifndef _STRCALC_H_
 #define _STRCALC_H_
 
+#ifdef STRCALC_DEBUG_ALL             /* switch on all debug options */
+#  ifndef STRCALC_DEBUG
+#    define STRCALC_DEBUG            /* switch on debug output */
+#  endif
+#  ifndef STRCALC_DEBUG_PRINTCOMP    /* print arguments and result of each computation */
+#    define STRCALC_DEBUG_PRINTCOMP
+#  endif
+#  ifndef STRCALC_DEBUG_FULLPRINT
+#    define STRCALC_DEBUG_FULLPRINT  /* print full length of values (e.g. 128 bit instead of 64 bit using default init) */
+#  endif
+#  ifndef STRCALC_DEBUG_GROUPPRINT
+#    define STRCALC_DEBUG_GROUPPRINT /* print spaces after each 8 bits */
+#  endif
+#endif
+
+#ifdef STRCALC_DEBUG
+  /* shortcut output for debugging */
+#  define sc_print_hex(a) sc_print((a), 0, SC_HEX)
+#  define sc_print_dec(a) sc_print((a), 0, SC_DEC)
+#  define sc_print_oct(a) sc_print((a), 0, SC_OCT)
+#  define sc_print_bin(a) sc_print((a), 0, SC_BIN)
+#endif
+
+/*
+ * constants, typedefs, enums
+ */
+
 #define DEFAULT_PRECISION_IN_BYTES 8
 
-/*****************************************************************************
- * typedefs, enums and structs
- *****************************************************************************/
 enum {
   SC_0 = 0,
   SC_1,
@@ -109,6 +133,9 @@ int  sc_comp(const void *val1, const void *val2);
 
 int sc_get_highest_set_bit(const void *value);
 int sc_get_lowest_set_bit(const void *value);
+int sc_is_zero(const void *value);
+int sc_is_negative(const void *value);
+int sc_had_carry(void);
 unsigned char sc_sub_bits(const void *value, int len, unsigned byte_ofs);
 
 /**

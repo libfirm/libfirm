@@ -6,13 +6,13 @@
  * NOTES
  ******/
 
-#include <assert.h>   /* assertions */
-#include <string.h>   /* memset/memcmp */
-
 #include "strcalc.h"
 
-#include <stdio.h>    /* output for error messages */
 #include <stdlib.h>
+#include <assert.h>   /* assertions */
+#include <string.h>   /* memset/memcmp */
+#include <stdio.h>    /* output for error messages */
+#include <values.h>   /* definition of MIN_LONG, used in sc_get_val_from_long */
 
 /*
  * local definitions and macros
@@ -24,16 +24,17 @@
 
 #define fail_char(a, b, c, d) _fail_char((a), (b), (c), (d), __FILE__,  __LINE__)
 
+#ifdef STRCALC_DEBUG_COMPUTATION
+#  define DEBUGPRINTF_COMPUTATION(x) printf x
+#else
+#  define DEBUGPRINTF_COMPUTATION(x) ((void)0)
+#endif
 #ifdef STRCALC_DEBUG
-  /* shortcut output for debugging only, gices always full precisition */
-#  define sc_print_hex(a) sc_print((a), 0, SC_HEX)
-#  define sc_print_dec(a) sc_print((a), 0, SC_DEC)
-#  define sc_print_oct(a) sc_print((a), 0, SC_OCT)
-#  define sc_print_bin(a) sc_print((a), 0, SC_BIN)
 #  define DEBUGPRINTF(x) printf x
 #else
 #  define DEBUGPRINTF(x) ((void)0)
 #endif
+
 
 /*
  * private variables
@@ -41,9 +42,13 @@
 
 static char *calc_buffer = NULL;    /* buffer holding all results */
 static char *output_buffer = NULL;  /* buffer for output */
-static int BIT_PATTERN_SIZE;
-static int CALC_BUFFER_SIZE;
-static int MAX_VALUE_SIZE;
+static int BIT_PATTERN_SIZE;        /* maximum number of bits */
+static int CALC_BUFFER_SIZE;        /* size of internally stored values */
+static int MAX_VALUE_SIZE;          /* maximum size of values */
+
+static int carry_flag;              /* some computation set carry_flag: */
+                                    /* rightshift if bits were lost due to shifting */
+                                    /* division if there was a remainder */
 
 static const char max_digit[4] = { SC_0, SC_1, SC_3, SC_7 };
 static const char min_digit[4] = { SC_F, SC_E, SC_C, SC_8 };
@@ -94,7 +99,7 @@ static const char and_table[16][16] = {
                               SC_8, SC_8, SC_8, SC_8, SC_C, SC_C, SC_C, SC_C },
 
                             { SC_0, SC_1, SC_0, SC_1, SC_4, SC_5, SC_4, SC_5,
-                              SC_8, SC_9, SC_8, SC_9, SC_D, SC_E, SC_D, SC_E },
+                              SC_8, SC_9, SC_8, SC_9, SC_C, SC_D, SC_C, SC_D },
 
                             { SC_0, SC_0, SC_2, SC_2, SC_4, SC_4, SC_6, SC_6,
                               SC_8, SC_8, SC_A, SC_A, SC_C, SC_C, SC_E, SC_E },
@@ -469,8 +474,8 @@ static void _inc(char *val, char *buffer)
       return;
     }
   }
-  /* here a carry could be lost, this is intended because this will only
-   * happen when a value changes sign. */
+  /* here a carry could be lost, this is intended because this should
+   * happen only when a value changes sign. */
 }
 
 static void _negate(const char *val, char *buffer)
@@ -493,7 +498,6 @@ static void _add(const char *val1, const char *val2, char *buffer)
     buffer[counter] = add2[0];
     carry = add_table[_val(add1[1])][_val(add2[1])][0];
   }
-  /* loose last carry, which will occur only when changing sign */
 }
 
 static void _mul(const char *val1, const char *val2, char *buffer)
@@ -559,6 +563,7 @@ static void _mul(const char *val1, const char *val2, char *buffer)
       /* A carry may hang over */
       /* c_outer is always smaller than MAX_VALUE_SIZE! */
       temp_buffer[MAX_VALUE_SIZE + c_outer] = carry;
+      carry = SC_0;
     }
   }
 
@@ -627,7 +632,7 @@ static void _divmod(const char *dividend, const char *divisor, char *quot, char 
     minus_divisor = neg_val2;
   }
 
-  /* if divisor >= dividend quotision is easy
+  /* if divisor >= dividend division is easy
    * (remember these are absolute values) */
   switch (sc_comp(dividend, divisor))
   {
@@ -639,11 +644,11 @@ static void _divmod(const char *dividend, const char *divisor, char *quot, char 
       memcpy(rem, dividend, CALC_BUFFER_SIZE);
       return;
 
-    default: /* unluckily quotision is necessary :( */
+    default: /* unluckily division is necessary :( */
       break;
   }
 
-  for (c_dividend = MAX_VALUE_SIZE - 1; c_dividend >= 0; c_dividend--)
+  for (c_dividend = CALC_BUFFER_SIZE - 1; c_dividend >= 0; c_dividend--)
   {
     _push(dividend[c_dividend], rem);
     _push(SC_0, quot);
@@ -664,6 +669,8 @@ static void _divmod(const char *dividend, const char *divisor, char *quot, char 
       _add(rem, divisor, rem);
     }
   }
+
+  carry_flag = !sc_is_zero(rem);
 
   if (sign)
   {
@@ -767,16 +774,26 @@ static void _shr(const char *val1, char *buffer, long offset, int radius, unsign
   shift = offset % 4;
   offset = offset / 4;
 
+  /* check if any bits are lost, and set carry_flag is so */
+  for (counter = 0; counter < offset; counter++)
+  {
+    if (val1[counter] != carry_flag)
+    {
+      carry_flag = 1;
+      break;
+    }
+  }
+  if ((carry_flag == 0) && (_val(val1[counter]) & shift != 0))
+    carry_flag = 1;
+
+  /* shift digits to the right with offset, carry and all */
   counter = 0;
   if (radius/4 - offset > 0) {
     buffer[counter] = shrs_table[_val(val1[offset])][shift][0];
     counter = 1;
   }
-
-  /* shift digits to the right with offset, carry and all */
   for (; counter < radius/4 - offset; counter++)
   {
-
     shrs = shrs_table[_val(val1[counter + offset])][shift];
     buffer[counter] = shrs[0];
     buffer[counter-1] = or_table[_val(buffer[counter-1])][_val(shrs[1])];
@@ -784,7 +801,7 @@ static void _shr(const char *val1, char *buffer, long offset, int radius, unsign
 
   /* the last digit is special in regard of signed/unsigned shift */
   bitoffset = radius%4;
-  msd = val1[radius/4];  /* most significant digit */
+  msd = (radius/4<CALC_BUFFER_SIZE)?(val1[radius/4]):(sign);  /* most significant digit */
 
   /* remove sign bits if mode was signed and this is an unsigned shift */
   if (!signed_shift && is_signed) {
@@ -799,6 +816,7 @@ static void _shr(const char *val1, char *buffer, long offset, int radius, unsign
   } else {
     buffer[counter] = shrs[0];
   }
+
   if (counter > 0) buffer[counter - 1] = or_table[_val(buffer[counter-1])][_val(shrs[1])];
 
   /* fill with SC_F or SC_0 depending on sign */
@@ -832,6 +850,7 @@ static void _rot(const char *val1, char *buffer, long offset, int radius, unsign
   _shl(val1, temp1, offset, radius, is_signed);
   _shr(val1, temp2, radius - offset, radius, is_signed, 0);
   _bitor(temp1, temp2, buffer);
+  carry_flag = 0; /* set by shr, but due to rot this is false */
 }
 
 /*****************************************************************************
@@ -918,7 +937,7 @@ void sc_val_from_str(const char *str, unsigned int len)
     base[1] = SC_0; base[0] = SC_A;
   }
 
-  /* begin string evaluation, from left to right */
+  /* BEGIN string evaluation, from left to right */
   while (len > 0)
   {
     switch (*str)
@@ -995,13 +1014,19 @@ void sc_val_from_str(const char *str, unsigned int len)
 void sc_val_from_long(long value)
 {
   char *pos;
-  int sign;
+  char sign, is_minlong;
 
   pos = calc_buffer;
   sign = (value < 0);
+  is_minlong = value == LONG_MIN;
 
-  /* FIXME MININT won't work */
-  if (sign) value = -value;
+  /* use absolute value, special treatment of MIN_LONG */
+  if (sign) {
+    if (is_minlong)
+      value = -(value+1);
+    else
+      value = -value;
+  }
 
   CLEAR_CALC_BUFFER();
 
@@ -1011,7 +1036,11 @@ void sc_val_from_long(long value)
     value /= 16;
   }
 
-  if (sign) _negate(calc_buffer, calc_buffer);
+
+  if (sign) {
+    if (is_minlong) _inc(calc_buffer, calc_buffer);
+    _negate(calc_buffer, calc_buffer);
+  }
 }
 
 long sc_val_to_long(const void *val)
@@ -1071,56 +1100,57 @@ void sc_calc(const void* value1, const void* value2, unsigned op)
   const char *val1 = (const char *)value1;
   const char *val2 = (const char *)value2;
   CLEAR_CALC_BUFFER();
+  carry_flag = 0;
 
-  DEBUGPRINTF(("%s ", sc_print(value1, SC_HEX)));
+  DEBUGPRINTF_COMPUTATION(("%s ", sc_print_hex(value1)));
 
   switch (op)
   {
     case SC_NEG:
       _negate(val1, calc_buffer);
-      DEBUGPRINTF(("negated: %s\n", sc_print_hex(calc_buffer)));
+      DEBUGPRINTF_COMPUTATION(("negated: %s\n", sc_print_hex(calc_buffer)));
       return;
     case SC_OR:
-      DEBUGPRINTF(("| "));
+      DEBUGPRINTF_COMPUTATION(("| "));
       _bitor(val1, val2, calc_buffer);
       break;
     case SC_AND:
-      DEBUGPRINTF(("& "));
+      DEBUGPRINTF_COMPUTATION(("& "));
       _bitand(val1, val2, calc_buffer);
       break;
     case SC_XOR:
-      DEBUGPRINTF(("^ "));
+      DEBUGPRINTF_COMPUTATION(("^ "));
       _bitxor(val1, val2, calc_buffer);
       break;
     case SC_NOT:
       _bitnot(val1, calc_buffer);
-      DEBUGPRINTF(("bit-negated: %s\n", sc_print_hex(calc_buffer)));
+      DEBUGPRINTF_COMPUTATION(("bit-negated: %s\n", sc_print_hex(calc_buffer)));
       return;
     case SC_ADD:
-      DEBUGPRINTF(("+ "));
+      DEBUGPRINTF_COMPUTATION(("+ "));
       _add(val1, val2, calc_buffer);
       break;
     case SC_SUB:
-      DEBUGPRINTF(("- "));
+      DEBUGPRINTF_COMPUTATION(("- "));
       _sub(val1, val2, calc_buffer);
       break;
     case SC_MUL:
-      DEBUGPRINTF(("* "));
+      DEBUGPRINTF_COMPUTATION(("* "));
       _mul(val1, val2, calc_buffer);
       break;
     case SC_DIV:
-      DEBUGPRINTF(("/ "));
+      DEBUGPRINTF_COMPUTATION(("/ "));
       _divmod(val1, val2, calc_buffer, unused_res);
       break;
     case SC_MOD:
-      DEBUGPRINTF(("%% "));
+      DEBUGPRINTF_COMPUTATION(("%% "));
       _divmod(val1, val2, unused_res, calc_buffer);
       break;
     default:
       assert(0);
   }
-  DEBUGPRINTF(("%s -> ", sc_print_hex(value2)));
-  DEBUGPRINTF(("%s\n", sc_print_hex(calc_buffer)));
+  DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
+  DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
 }
 
 void sc_bitcalc(const void* value1, const void* value2, int radius, int sign, unsigned op)
@@ -1129,31 +1159,32 @@ void sc_bitcalc(const void* value1, const void* value2, int radius, int sign, un
   const char *val2 = (const char *)value2;
   long offset;
 
+  carry_flag = 0;
   offset = sc_val_to_long(val2);
 
-  DEBUGPRINTF(("%s ", sc_print_hex(value1)));
+  DEBUGPRINTF_COMPUTATION(("%s ", sc_print_hex(value1)));
   switch (op)
   {
     case SC_SHL:
-      DEBUGPRINTF(("<< %d ", offset));
+      DEBUGPRINTF_COMPUTATION(("<< %d ", offset));
       _shl(val1, calc_buffer, offset, radius, sign);
       break;
     case SC_SHR:
-      DEBUGPRINTF((">> %d ", offset));
+      DEBUGPRINTF_COMPUTATION((">> %d ", offset));
       _shr(val1, calc_buffer, offset, radius, sign, 0);
       break;
     case SC_SHRS:
-      DEBUGPRINTF((">>> %d ", offset));
+      DEBUGPRINTF_COMPUTATION((">>> %d ", offset));
       _shr(val1, calc_buffer, offset, radius, sign, 1);
       break;
     case SC_ROT:
-      DEBUGPRINTF(("<<>> %d ", offset));
+      DEBUGPRINTF_COMPUTATION(("<<>> %d ", offset));
       _rot(val1, calc_buffer, offset, radius, sign);
       break;
     default:
       assert(0);
   }
-  DEBUGPRINTF(("-> %s\n", sc_print_hex(calc_buffer)));
+  DEBUGPRINTF_COMPUTATION(("-> %s\n", sc_print_hex(calc_buffer)));
 }
 
 int sc_comp(const void* value1, const void* value2)
@@ -1221,6 +1252,27 @@ int sc_get_lowest_set_bit(const void *value)
   return low;
 }
 
+int sc_is_zero(const void *value)
+{
+  const char* val = (const char *)value;
+  int counter;
+
+  for (counter = 0; counter < CALC_BUFFER_SIZE; counter++) {
+    if (val[counter] != SC_0) return 0;
+  }
+  return 1;
+}
+
+int sc_is_negative(const void *value)
+{
+  return _sign(value) == -1;
+}
+
+int sc_had_carry(void)
+{
+  return carry_flag;
+}
+
 unsigned char sc_sub_bits(const void *value, int len, unsigned byte_ofs)
 {
   const char *val     = (const char *)value;
@@ -1263,17 +1315,25 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base)
   *pos = '\0';
 
   /* special case */
-  if (bits == 0)
+  if (bits == 0) {
     bits = BIT_PATTERN_SIZE;
-
+#ifdef STRCALC_DEBUG_FULLPRINT
+    bits <<= 1;
+#endif
+  }
   nibbles = bits >> 2;
   switch (base) {
 
   case SC_HEX:
     digits = big_digits;
   case SC_hex:
-    for (counter = 0; counter < nibbles; ++counter)
+    for (counter = 0; counter < nibbles; ++counter) {
       *(--pos) = digits[_val(val[counter])];
+#ifdef STRCALC_DEBUG_GROUPPRINT
+      if ((counter+1)%8 == 0)
+        *(--pos) = ' ';
+#endif
+    }
 
     /* last nibble must be masked */
     if (bits & 3) {
@@ -1282,9 +1342,13 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base)
     }
 
     /* now kill zeros */
-    for (; counter > 1; --counter, ++pos)
+    for (; counter > 1; --counter, ++pos) {
+#ifdef STRCALC_DEBUG_GROUPPRINT
+      if (pos[0] == ' ') ++pos;
+#endif
       if (pos[0] != '0')
 	break;
+    }
     break;
 
   case SC_BIN:
