@@ -1635,14 +1635,14 @@ void dump_type (type *tp) {
 
   switch (get_type_tpop_code(tp)) {
 
-  case tpo_class: {
+  case tpo_class:
     printf("\n  members: ");
     for (i = 0; i < get_class_n_members(tp); ++i) {
       entity *mem = get_class_member(tp, i);
       printf("\n    (%2d) %s:\t %s",
 	     get_entity_offset(mem), get_type_name(get_entity_type(mem)), get_entity_name(mem));
     }
-    printf("\n  suptertypes: ");
+    printf("\n  supertypes: ");
     for (i = 0; i < get_class_n_supertypes(tp); ++i) {
       type *stp = get_class_supertype(tp, i);
       printf("\n    %s", get_type_name(stp));
@@ -1654,10 +1654,26 @@ void dump_type (type *tp) {
     }
 
     printf("\n  peculiarity: %s", get_peculiarity_string(get_class_peculiarity(tp)));
+    break;
 
+  case tpo_union:
+  case tpo_struct:
+    printf("\n  members: ");
+    for (i = 0; i < get_compound_n_members(tp); ++i) {
+      entity *mem = get_compound_member(tp, i);
+      printf("\n    (%2d) %s:\t %s",
+	     get_entity_offset(mem), get_type_name(get_entity_type(mem)), get_entity_name(mem));
+    }
+    break;
+
+  case tpo_pointer: {
+    type *tt = get_pointer_points_to_type(tp);
+
+    printf("\n  points to %s (%ld)", get_type_name(tt), get_type_nr(tt));
   } break;
+
   default:
-    printf("not implemented\n");
+    printf(": details not implemented\n");
   }
   printf("\n\n");
 }
