@@ -291,7 +291,8 @@ set_atomic_ent_value(entity *ent, ir_node *val) {
   ent->value = val;
 }
 
-ir_node *copy_value(ir_node *n) {
+
+ir_node *copy_const_value(ir_node *n) {
   ir_node *nn;
   ir_mode *m;
 
@@ -302,7 +303,7 @@ ir_node *copy_value(ir_node *n) {
   case iro_SymConst:
     nn = new_SymConst(get_SymConst_type_or_id(n), get_SymConst_kind(n)); break;
   case iro_Add:
-    nn = new_Add(copy_value(get_Add_left(n)), copy_value(get_Add_right(n)), m); break;
+    nn = new_Add(copy_const_value(get_Add_left(n)), copy_const_value(get_Add_right(n)), m); break;
   default:
     assert(0 && "opdope invalid or not implemented"); break;
   }
@@ -313,7 +314,7 @@ ir_node *copy_value(ir_node *n) {
    in current_ir_graph. */
 ir_node *copy_atomic_ent_value(entity *ent) {
   assert(ent && is_atomic_entity(ent) && (ent->variability != uninitialized));
-  return copy_value(ent->value);
+  return copy_const_value(ent->value);
 }
 
 /* A value of a compound entity is a pair of value and the corresponding member of
@@ -323,6 +324,21 @@ add_compound_ent_value(entity *ent, ir_node *val, entity *member) {
   assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
   ARR_APP1 (ir_node *, ent->values, val);
   ARR_APP1 (entity *, ent->val_ents, member);
+}
+
+/* Copies the firm subgraph referenced by val to const_code_irg and adds
+   the node as constant initialization to ent.
+   The subgraph may not contain control flow operations. */
+inline void
+copy_and_add_compound_ent_value(entity *ent, ir_node *val, entity *member) {
+  ir_graph *rem = current_ir_graph;
+
+  assert(get_entity_variability(ent) != uninitialized);
+  current_ir_graph = get_const_code_irg();
+
+  val = copy_const_value(val);
+  add_compound_ent_value(ent, val, member);
+  current_ir_graph = rem;
 }
 
 inline int
@@ -340,7 +356,7 @@ get_compound_ent_value(entity *ent, int pos) {
 /* Copies the value i of the entity to current_block in current_ir_graph. */
 ir_node *copy_compound_ent_value(entity *ent, int pos) {
   assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
-  return copy_value(ent->values[pos+1]);
+  return copy_const_value(ent->values[pos+1]);
 }
 
 inline entity   *

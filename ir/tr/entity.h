@@ -210,16 +210,22 @@ void           set_entity_volatility (entity *ent, ent_volatility vol);
 peculiarity get_entity_peculiarity (entity *ent);
 void        set_entity_peculiarity (entity *ent, peculiarity pec);
 
+/* Copies a firm subgraph that complies to the restrictions for
+   constant expressions to current_block in current_ir_graph. */
+ir_node *copy_const_value(ir_node *n);
+
 /* Set has no effect for entities of type method. */
 ir_node *get_atomic_ent_value(entity *ent);
 void     set_atomic_ent_value(entity *ent, ir_node *val);
 /* Copies the value represented by the entity to current_block
-   in current_ir_graph. */
+   in current_ir_graph. @@@ oblivious, use copy_const_vallue */
 ir_node *copy_atomic_ent_value(entity *ent);
 
 /* A value of a compound entity is a pair of value and the corresponding
    member of the compound. */
 void     add_compound_ent_value(entity *ent, ir_node *val, entity *member);
+/* oblivious, use copy_const_value @@@ */
+void     copy_and_add_compound_ent_value(entity *ent, ir_node *val, entity *member);
 int      get_compound_ent_n_values(entity *ent);
 ir_node *get_compound_ent_value(entity *ent, int pos);
 entity  *get_compound_ent_value_member(entity *ent, int pos);
