@@ -34,15 +34,16 @@
  * just be make some things clear :-), the
  * poor man "generics"
  */
-#define HASH_MAP(type) pset_##type
+#define HASH_MAP(type) hmap_##type
 
-typedef pset pset_node_entry_t;
-typedef pset pset_graph_entry_t;
-typedef pset pset_opt_entry_t;
-typedef pset pset_block_entry_t;
+typedef pset hmap_node_entry_t;
+typedef pset hmap_graph_entry_t;
+typedef pset hmap_opt_entry_t;
+typedef pset hmap_block_entry_t;
+typedef pset hmap_ir_op;
 
 /*
- * An entry for ir_nodes
+ * An entry for ir_nodes, used in ir_graph statistics.
  */
 typedef struct _node_entry_t {
   counter_t   cnt_alive;		/**< amount of nodes in this entry */
@@ -131,6 +132,7 @@ struct _dumper_t {
 typedef struct _statistic_info_t {
   struct obstack          cnts;			/**< obstack containing the counters */
   HASH_MAP(graph_entry_t) *irg_hash;		/**< hash map containing the counter for irgs */
+  HASH_MAP(ir_op)         *ir_op_hash;		/**< hash map containing all ir_ops (accessible by op_codes) */
   int                     recursive;		/**< flag for detecting recursive hook calls */
   int                     in_dead_node_elim;	/**< set, if dead node elimination runs */
   ir_op                   *op_Phi0;		/**< needed pseudo op */
@@ -217,6 +219,17 @@ static int block_cmp(const void *elt, const void *key)
 }
 
 /**
+ * compare two elements of the ir_op hash
+ */
+static int opcode_cmp_2(const void *elt, const void *key)
+{
+  const ir_op *e1 = elt;
+  const ir_op *e2 = key;
+
+  return e1->code != e2->code;
+}
+
+/**
  * Returns the associates node_entry_t for an ir_op
  */
 static node_entry_t *opcode_get_entry(const ir_op *op, pset *set)
@@ -240,6 +253,17 @@ static node_entry_t *opcode_get_entry(const ir_op *op, pset *set)
   elem->op = op;
 
   return pset_insert(set, elem, op->code);
+}
+
+/**
+ * Returns the associates ir_op for an opcode
+ */
+static ir_op *opcode_find_entry(opcode code, pset *set)
+{
+  ir_op key;
+
+  key.code = code;
+  return pset_find(set, &key, code);
 }
 
 /**
@@ -745,6 +769,14 @@ static dumper_t csv_dumper = {
 
 /* ---------------------------------------------------------------------- */
 
+/*
+ * helper: get an ir_op from an opcode
+ */
+ir_op *stat_get_op_from_opcode(opcode code)
+{
+  return opcode_find_entry(code, status->ir_op_hash);
+}
+
 /* initialize the statistics module. */
 void stat_init(void)
 {
@@ -769,6 +801,7 @@ void stat_init(void)
 
   /* create the hash-tables */
   status->irg_hash   = new_pset(graph_cmp, 8);
+  status->ir_op_hash = new_pset(opcode_cmp_2, 1);
 
   status->op_Phi0    = &_op_Phi0;
   status->op_PhiM    = &_op_PhiM;
@@ -777,7 +810,7 @@ void stat_init(void)
   stat_register_dumper(&csv_dumper, "firmstat.csv");
 
   /* initialize the pattern hash */
-  stat_init_pattern_history(status->enable & 0);
+  stat_init_pattern_history(status->enable);
 #undef X
 }
 
@@ -793,6 +826,8 @@ void stat_new_ir_op(const ir_op *op)
 
     /* execute for side effect :-) */
     opcode_get_entry(op, graph->opcode_hash);
+
+    pset_insert(status->ir_op_hash, op, op->code);
   }
   STAT_LEAVE;
 }
@@ -919,6 +954,15 @@ void stat_irg_walk(ir_graph *irg, void *pre, void *post)
     cnt_inc(&graph->cnt_walked);
   }
   STAT_LEAVE;
+}
+
+/*
+ * A walk over a graph in block-wise order is initiated. Do not count walks from statistic code.
+ */
+void stat_irg_walk_blkwise(ir_graph *irg, void *pre, void *post)
+{
+  /* for now, do NOT differentiate between blockwise and normal */
+  stat_irg_walk(irg, pre, post);
 }
 
 /*

@@ -4,25 +4,6 @@
 #include "counter.h"
 
 typedef struct _pattern_dumper_t pattern_dumper_t;
-typedef void (*DUMP_NEW_PATTERN_FUNC)(pattern_dumper_t *self, counter_t *cnt);
-typedef void (*DUMP_FINISH_PATTERN_FUNC)(pattern_dumper_t *self);
-typedef void (*DUMP_NODE_FUNC)(pattern_dumper_t *self, unsigned id, unsigned op_code, unsigned mode_code);
-typedef void (*DUMP_REF_FUNC)(pattern_dumper_t *self, unsigned id);
-typedef void (*DUMP_EDGE_FUNC)(pattern_dumper_t *self, unsigned id, unsigned parent, unsigned position);
-typedef void (*DUMP_START_CHILDREN_FUNC)(pattern_dumper_t *self, unsigned id);
-typedef void (*DUMP_FINISH_CHILDREN_FUNC)(pattern_dumper_t *self, unsigned id);
-
-struct _pattern_dumper_t {
-  DUMP_NEW_PATTERN_FUNC      dump_new_pattern;
-  DUMP_FINISH_PATTERN_FUNC   dump_finish_pattern;
-  DUMP_NODE_FUNC             dump_node;
-  DUMP_REF_FUNC              dump_ref;
-  DUMP_EDGE_FUNC             dump_edge;
-  DUMP_START_CHILDREN_FUNC   dump_start_children;
-  DUMP_FINISH_CHILDREN_FUNC  dump_finish_children;
-};
-
-extern pattern_dumper_t vcg_dump, stdout_dump;
 
 /**
  * starts a new pattern
@@ -37,7 +18,7 @@ void pattern_dump_finish_pattern(pattern_dumper_t *self);
 /**
  * Dumps a node
  */
-void pattern_dump_node(pattern_dumper_t *self, unsigned id, unsigned op_code, unsigned mode_code);
+void pattern_dump_node(pattern_dumper_t *self, unsigned id, unsigned op_code, unsigned mode_code, void *attr);
 
 /**
  * Dump a ref
@@ -55,8 +36,26 @@ void pattern_dump_edge(pattern_dumper_t *self, unsigned id, unsigned parent, uns
 void pattern_start_children(pattern_dumper_t *self, unsigned id);
 
 /**
- * finishes childred  dumper
+ * finishes childred dumper
  */
 void pattern_finish_children(pattern_dumper_t *self, unsigned id);
+
+/**
+ * finishes dumper, destroyes the dumper object
+ */
+void pattern_end(pattern_dumper_t *self);
+
+/**
+ * pattern dumper factory for text dumper
+ */
+pattern_dumper_t *new_text_dumper(void);
+
+/**
+ * pattern dumper factory for vcg dumper
+ *
+ * @param vcg_name    name of the VCG file
+ * @param max_pattern maximum number of pattern to be dumped
+ */
+pattern_dumper_t *new_vcg_dumper(const char *vcg_name, unsigned max_pattern);
 
 #endif /* _PATTERN_DMP_H_ */

@@ -45,6 +45,7 @@ enum vlc_code_t {
   VLC_32BIT      = 0xF0,	/**< 40 bit code, carrying 32 bits payload */
 
   VLC_TAG_FIRST  = 0xF1, 	/**< first possible tag value */
+  VLC_TAG_ICONST = 0xFB,	/**< encodes an integer constant */
   VLC_TAG_EMPTY  = 0xFC,	/**< encodes an empty entity */
   VLC_TAG_OPTION = 0xFD, 	/**< options exists */
   VLC_TAG_REF    = 0xFE,	/**< special tag, next code is an ID */
@@ -64,8 +65,9 @@ typedef struct _pattern_entry_t {
  * current options
  */
 enum options_t {
-  OPT_WITH_MODE = 0x00000001,	/**< use modes */
-  OPT_ENC_GRAPH = 0x00000002,	/**< encode graphs, not terms */
+  OPT_WITH_MODE   = 0x00000001,	/**< use modes */
+  OPT_ENC_GRAPH   = 0x00000002,	/**< encode graphs, not terms */
+  OPT_WITH_ICONST = 0x00000004, /**< encode integer constants */
 };
 
 
@@ -320,11 +322,7 @@ static void _encode_node(ir_node *node, int max_depth, codec_env_t *env)
   set_entry *s_entry;
   int i, preds;
 
-#if 0
   opcode code = get_irn_opcode(node);
-#else
-  ir_op *code = get_irn_op(node);
-#endif
 
   /* insert the node into our ID map */
   entry.addr = node;
@@ -347,6 +345,7 @@ static void _encode_node(ir_node *node, int max_depth, codec_env_t *env)
 
   put_code(env->buf, (unsigned)code);
 
+  /* do we need the mode ? */
   if (env->options & OPT_WITH_MODE) {
     ir_mode *mode = get_irn_mode(node);
 
@@ -354,6 +353,20 @@ static void _encode_node(ir_node *node, int max_depth, codec_env_t *env)
       put_code(env->buf, (unsigned)mode);
     else
       put_tag(env->buf, VLC_TAG_EMPTY);
+  }
+
+  /* do we need integer constants */
+  if (env->options & OPT_WITH_ICONST) {
+    if (code == iro_Const) {
+      tarval *tv = get_Const_tarval(node);
+
+      if (tarval_is_long(tv)) {
+	long v = tarval_to_long(tv);
+
+	put_tag(env->buf, VLC_TAG_ICONST);
+	put_code(env->buf, v);
+      }
+    }
   }
 
   --max_depth;
@@ -410,6 +423,8 @@ static void _decode_node(unsigned parent, int position, codec_env_t *env)
   unsigned code;
   unsigned op_code;
   unsigned mode_code = 0;
+  long iconst;
+  int have_iconst = 0;
 
   code = next_tag(env->buf);
   if (code == VLC_TAG_REF) { /* it's a REF */
@@ -435,13 +450,18 @@ static void _decode_node(unsigned parent, int position, codec_env_t *env)
     }
   }
 
+  if (next_tag(env->buf) == VLC_TAG_ICONST) {
+    iconst      = get_code(env->buf);
+    have_iconst = 1;
+  }
+
   /* dump the edge */
   if (parent)
       pattern_dump_edge(env->dmp, env->curr_id, parent, position);
 
   /* dump the node */
   parent = env->curr_id;
-  pattern_dump_node(env->dmp, parent, op_code, mode_code);
+  pattern_dump_node(env->dmp, parent, op_code, mode_code, have_iconst ? &iconst : NULL);
 
   /* ok, we have a new ID */
   ++env->curr_id;
@@ -465,7 +485,7 @@ static void _decode_node(unsigned parent, int position, codec_env_t *env)
 /**
  * decode an IR-node
  */
-static void decode_node(BYTE *b, unsigned len)
+static void decode_node(BYTE *b, unsigned len, pattern_dumper_t *dump)
 {
   codec_env_t env;
   CODE_BUFFER buf;
@@ -475,7 +495,7 @@ static void decode_node(BYTE *b, unsigned len)
 
   env.buf     = &buf;
   env.curr_id = 1;	/* 0 is used for special purpose */
-  env.dmp     = &stdout_dump;
+  env.dmp     = dump;
 
   /* decode options */
   code = next_tag(&buf);
@@ -542,17 +562,22 @@ static void calc_nodes_pattern(ir_node *node, void *ctx)
 }
 
 /**
+ * output the collected pattern
  */
 static void pattern_output(void)
 {
-  pattern_entry_t *entry;
-  pattern_entry_t **pattern_arr;
+  pattern_entry_t  *entry;
+  pattern_entry_t  **pattern_arr;
+  pattern_dumper_t *dump;
   int i, count = pset_count(status->pattern_hash);
 
   printf("\n%d pattern detected\n", count);
 
   if (count <= 0)
     return;
+
+  /* creates a dumper */
+  dump = new_vcg_dumper("pattern.vcg", 100);
 
   pattern_arr = xmalloc(sizeof(*pattern_arr) * count);
   for (i = 0, entry = pset_first(status->pattern_hash);
@@ -571,10 +596,14 @@ static void pattern_output(void)
     if (entry->count.cnt[0] < status->bound)
       continue;
 
-    printf("%8d\t", entry->count.cnt[0]);
-    decode_node(entry->buf, entry->len);
-    printf("\n");
+    /* dump a pattern */
+    pattern_dump_new_pattern(dump, &entry->count);
+    decode_node(entry->buf, entry->len, dump);
+    pattern_dump_finish_pattern(dump);
   }
+
+  /* destroy it */
+  pattern_end(dump);
 }
 
 /*
@@ -591,7 +620,7 @@ void stat_calc_pattern_history(ir_graph *irg)
   if (irg == get_const_code_irg())
     return;
 
-  env.max_depth = 4;
+  env.max_depth = 5;
   irg_walk_graph(irg, calc_nodes_pattern, NULL, &env);
 }
 
@@ -604,8 +633,8 @@ void stat_init_pattern_history(int enable)
   if (! enable)
     return;
 
-  status->bound   = 3;
-  status->options = OPT_WITH_MODE | OPT_ENC_GRAPH;
+  status->bound   = 10;
+  status->options = OPT_WITH_MODE | OPT_ENC_GRAPH | OPT_WITH_ICONST;
 
   obstack_init(&status->obst);
 

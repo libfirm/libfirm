@@ -18,6 +18,12 @@
 #include "irnode.h"
 #include "irgraph.h"
 
+/**
+ * Finish the statistics.
+ * Never called from libFirm should be called from user.
+ */
+void stat_finish(void);
+
 #ifdef FIRM_STATISTICS
 
 typedef enum {
@@ -40,11 +46,6 @@ typedef enum {
  * initialize the statistics module.
  */
 void stat_init(void);
-
-/**
- * Finish the statistics.
- */
-void stat_finish(void);
 
 /**
  * A new IR op is registered.
@@ -80,6 +81,11 @@ void stat_free_graph(ir_graph *irg);
  * A walk over a graph is initiated
  */
 void stat_irg_walk(ir_graph *irg, void *pre, void *post);
+
+/**
+ * A walk over a graph in block-wise order is initiated
+ */
+void stat_irg_walk_blkwise(ir_graph *irg, void *pre, void *post);
 
 /**
  * A walk over the graph's blocks is initiated
@@ -119,10 +125,18 @@ void stat_dead_node_elim_start(ir_graph *irg);
  */
 void stat_dead_node_elim_stop(ir_graph *irg);
 
+/**
+ * helper: get an ir_op from an opcode
+ *
+ * @param code  the opcode
+ *
+ * @return  The associated ir_op or NULL if the opcode could not be found.
+ */
+ir_op *stat_get_op_from_opcode(opcode code);
+
 #else
 
 #define stat_init()
-#define stat_finish()
 #define stat_new_ir_op(op)
 #define stat_free_ir_op(op)
 #define stat_new_node(node)
@@ -130,6 +144,7 @@ void stat_dead_node_elim_stop(ir_graph *irg);
 #define stat_new_graph(irg, ent)
 #define stat_free_graph(irg)
 #define stat_irg_walk(irg, pre, post)
+#define stat_irg_walk_blkwise(irg, pre, post)
 #define stat_irg_block_walk(irg, node, pre, post)
 #define stat_merge_nodes(new_node_array, new_num_entries, old_node_array, old_num_entries, opt)
 #define stat_lower(node)

@@ -14,22 +14,58 @@
 #endif
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "ident.h"
 #include "irop_t.h"
 #include "irmode.h"
+#include "firmstat.h"
 #include "pattern_dmp.h"
 
-FILE *f;
+/* dumper operations */
+typedef void (*DUMP_NEW_PATTERN_FUNC)(pattern_dumper_t *self, counter_t *cnt);
+typedef void (*DUMP_FINISH_PATTERN_FUNC)(pattern_dumper_t *self);
+typedef void (*DUMP_NODE_FUNC)(pattern_dumper_t *self, unsigned id, unsigned op_code, unsigned mode_code, void *attr);
+typedef void (*DUMP_REF_FUNC)(pattern_dumper_t *self, unsigned id);
+typedef void (*DUMP_EDGE_FUNC)(pattern_dumper_t *self, unsigned id, unsigned parent, unsigned position);
+typedef void (*DUMP_START_CHILDREN_FUNC)(pattern_dumper_t *self, unsigned id);
+typedef void (*DUMP_FINISH_CHILDREN_FUNC)(pattern_dumper_t *self, unsigned id);
+typedef void (*DUMP_START_FUNC)(pattern_dumper_t *self);
+typedef void (*DUMP_END_FUNC)(pattern_dumper_t *self);
+
+/**
+ * the pattern dumper
+ */
+struct _pattern_dumper_t {
+  DUMP_NEW_PATTERN_FUNC      dump_new_pattern;
+  DUMP_FINISH_PATTERN_FUNC   dump_finish_pattern;
+  DUMP_NODE_FUNC             dump_node;
+  DUMP_REF_FUNC              dump_ref;
+  DUMP_EDGE_FUNC             dump_edge;
+  DUMP_START_CHILDREN_FUNC   dump_start_children;
+  DUMP_FINISH_CHILDREN_FUNC  dump_finish_children;
+  DUMP_START_FUNC            dump_start;
+  DUMP_END_FUNC              dump_end;
+  void                       *data;
+};
+
+/**
+ * VCG private data
+ */
+typedef struct _vcg_private_t {
+  FILE     *f;			/**< file to dump to */
+  unsigned pattern_id;		/**< ID of the pattern */
+  unsigned max_pattern;		/**< maximum number of pattern to be dumped */
+} vcg_private_t;
 
 /**
  * starts a new VCG graph
  */
 static void vcg_dump_start(pattern_dumper_t *self)
 {
-  f = fopen("firmpattern.vcg", "w");
+  vcg_private_t *priv = self->data;
 
-  fprintf(f,
+  fprintf(priv->f,
     "graph: { title: \"Most found pattern\"\n"
     "  display_edge_labels: no\n"
     "  layoutalgorithm: mindepth\n"
@@ -44,8 +80,10 @@ static void vcg_dump_start(pattern_dumper_t *self)
  */
 static void vcg_dump_end(pattern_dumper_t *self)
 {
-  fprintf(f, "}\n");
-  fclose(f);
+  vcg_private_t *priv = self->data;
+
+  fprintf(priv->f, "}\n");
+  fclose(priv->f);
 }
 
 /*
@@ -53,10 +91,21 @@ static void vcg_dump_end(pattern_dumper_t *self)
  */
 static void vcg_dump_new_pattern(pattern_dumper_t *self, counter_t *cnt)
 {
-  fprintf(f,
-    "  graph: { title: \"pattern cnt %u\"\n", cnt->cnt[0]
-  );
+  vcg_private_t *priv = self->data;
+  static unsigned nr = 0;
 
+  if (priv->pattern_id > priv->max_pattern)
+    return;
+
+  fprintf(priv->f,
+    "  graph: { title: \"g%u\" label: \"pattern %u\" status:clustered color:yellow\n",
+    priv->pattern_id, priv->pattern_id );
+
+  /** add a pseudo node */
+  fprintf(priv->f,
+    "     node: {title: \"c%u\" label: \"cnt: %u\" color:red }\n",
+    ++nr, cnt->cnt[0]
+  );
 }
 
 /**
@@ -64,29 +113,64 @@ static void vcg_dump_new_pattern(pattern_dumper_t *self, counter_t *cnt)
  */
 static void vcg_dump_finish_pattern(pattern_dumper_t *self)
 {
-  fprintf(f, "  }\n");
+  vcg_private_t *priv = self->data;
+
+  if (priv->pattern_id > priv->max_pattern)
+    return;
+
+  fprintf(priv->f, "  }\n");
+
+  if (priv->pattern_id > 0)
+    fprintf(priv->f, "  edge: { sourcename: \"g%u\" targetname: \"g%u\"}\n",
+      priv->pattern_id,
+      priv->pattern_id - 1);
+
+  ++priv->pattern_id;
 }
 
-
+/**
+ * Dumps a node
+ */
 static void vcg_dump_node(pattern_dumper_t *self, unsigned id,
-    unsigned op_code, unsigned mode_code)
+    unsigned op_code, unsigned mode_code, void *attr)
 {
-  ir_op *op     = (ir_op *)op_code;
-  ir_mode *mode = (ir_mode *)mode_code;
+  vcg_private_t *priv = self->data;
+  ir_op *op           = stat_get_op_from_opcode(op_code);
+  ir_mode *mode       = (ir_mode *)mode_code;
+  long l              = attr ? *(long *)attr : 0;
 
-  fprintf(f, "    node: {title: \"n%u\" label: \"%s%s n%u\" }\n",
-    id, get_id_str(op->name), mode ? get_mode_name(mode) : "", id);
+  if (priv->pattern_id > priv->max_pattern)
+    return;
+
+  if (attr) {
+    fprintf(priv->f, "    node: {title: \"n%u_%u\" label: \"%s%s %ld n%u\" }\n",
+      priv->pattern_id, id, get_id_str(op->name), mode ? get_mode_name(mode) : "", l, id);
+  }
+  else {
+    fprintf(priv->f, "    node: {title: \"n%u_%u\" label: \"%s%s n%u\" }\n",
+      priv->pattern_id, id, get_id_str(op->name), mode ? get_mode_name(mode) : "", id);
+  }
 }
 
+/**
+ * Dumps an edge.
+ */
 static void vcg_dump_edge(pattern_dumper_t *self, unsigned id, unsigned parent, unsigned position)
 {
-  fprintf(f, "    edge: { sourcename: \"n%u\" targetname: \"n%u\"}\n", parent, id);
+  vcg_private_t *priv = self->data;
+
+  if (priv->pattern_id > priv->max_pattern)
+    return;
+
+  fprintf(priv->f, "    edge: { sourcename: \"n%u_%u\" targetname: \"n%u_%u\"}\n",
+      priv->pattern_id, parent,
+      priv->pattern_id, id);
 }
 
 /**
  * The VCG dumper.
  */
-pattern_dumper_t vcg_dump = {
+static pattern_dumper_t vcg_dump = {
   vcg_dump_new_pattern,
   vcg_dump_finish_pattern,
   vcg_dump_node,
@@ -94,6 +178,9 @@ pattern_dumper_t vcg_dump = {
   vcg_dump_edge,
   NULL,
   NULL,
+  vcg_dump_start,
+  vcg_dump_end,
+  NULL
 };
 
 /**
@@ -101,33 +188,38 @@ pattern_dumper_t vcg_dump = {
  */
 static void stdout_dump_new_pattern(pattern_dumper_t *self, counter_t *cnt)
 {
-  printf("%8u ", cnt->cnt[0]);
+  FILE *f = self->data;
+
+  fprintf(f, "%8u ", cnt->cnt[0]);
 }
 
 
-/*
+/**
  * Finishes current pattern
  */
 static void stdout_dump_finish_pattern(pattern_dumper_t *self)
 {
-  printf("\n");
+  FILE *f = self->data;
+
+  fprintf(f, "\n");
 }
 
 /**
  * Dumps a node
  */
-static void stdout_dump_node(pattern_dumper_t *self, unsigned id, unsigned op_code, unsigned mode_code)
+static void stdout_dump_node(pattern_dumper_t *self, unsigned id, unsigned op_code, unsigned mode_code, void *attr)
 {
-  ir_op *op     = (ir_op *)op_code;
+  FILE *f       = self->data;
+  ir_op *op     = stat_get_op_from_opcode(op_code);
   ir_mode *mode = (ir_mode *)mode_code;
 
   /* if (env->options & OPT_ENC_GRAPH) */
-    printf("%u:", id);
+    fprintf(f, "%u:", id);
 
-  printf("%s", get_id_str(op->name));
+  fprintf(f, "%s", get_id_str(op->name));
 
   if (mode)
-    printf("%s", get_mode_name(mode));
+    fprintf(f, "%s", get_mode_name(mode));
 }
 
 /**
@@ -135,7 +227,9 @@ static void stdout_dump_node(pattern_dumper_t *self, unsigned id, unsigned op_co
  */
 static void stdout_dump_ref(pattern_dumper_t *self, unsigned id)
 {
-  printf("REF:%u", id);
+  FILE *f = self->data;
+
+  fprintf(f, "REF:%u", id);
 }
 
 /**
@@ -143,8 +237,10 @@ static void stdout_dump_ref(pattern_dumper_t *self, unsigned id)
  */
 static void stdout_dump_edge(pattern_dumper_t *self, unsigned id, unsigned parent, unsigned position)
 {
+  FILE *f = self->data;
+
   if (position > 0)
-    printf(", ");
+    fprintf(f, ", ");
 }
 
 /**
@@ -152,7 +248,9 @@ static void stdout_dump_edge(pattern_dumper_t *self, unsigned id, unsigned paren
  */
 static void stdout_start_children(pattern_dumper_t *self, unsigned id)
 {
-  printf("(");
+  FILE *f = self->data;
+
+  fprintf(f, "(");
 }
 
 /**
@@ -160,13 +258,15 @@ static void stdout_start_children(pattern_dumper_t *self, unsigned id)
  */
 static void stdout_finish_children(pattern_dumper_t *self, unsigned id)
 {
-  printf(")");
+  FILE *f = self->data;
+
+  fprintf(f, ")");
 }
 
 /**
  * The stdout dumper.
  */
-pattern_dumper_t stdout_dump = {
+static const pattern_dumper_t stdout_dump = {
   stdout_dump_new_pattern,
   stdout_dump_finish_pattern,
   stdout_dump_node,
@@ -174,6 +274,9 @@ pattern_dumper_t stdout_dump = {
   stdout_dump_edge,
   stdout_start_children,
   stdout_finish_children,
+  NULL,
+  NULL,
+  NULL
 };
 
 /* ------------------------------------ API ------------------------------------- */
@@ -201,10 +304,10 @@ void pattern_dump_finish_pattern(pattern_dumper_t *self)
 /*
  * Dumps a node
  */
-void pattern_dump_node(pattern_dumper_t *self, unsigned id, unsigned op_code, unsigned mode_code)
+void pattern_dump_node(pattern_dumper_t *self, unsigned id, unsigned op_code, unsigned mode_code, void *attr)
 {
   if (self->dump_node)
-    self->dump_node(self, id, op_code, mode_code);
+    self->dump_node(self, id, op_code, mode_code, attr);
 }
 
 /*
@@ -241,4 +344,61 @@ void pattern_finish_children(pattern_dumper_t *self, unsigned id)
 {
   if (self->dump_finish_children)
     self->dump_finish_children(self, id);
+}
+
+/*
+ * finishes the dumper
+ */
+void pattern_end(pattern_dumper_t *self)
+{
+  if (self->dump_end)
+    self->dump_end(self);
+
+  free(self);
+}
+
+/**
+ * pattern dumper factory for text dumper
+ */
+pattern_dumper_t *new_text_dumper(void)
+{
+  pattern_dumper_t *res = malloc(sizeof(*res));
+
+  if (res) {
+    memcpy(res, &stdout_dump, sizeof(*res));
+    res->data = stdout;
+
+    if (res->dump_start)
+      res->dump_start(res);
+  }
+  return res;
+}
+
+/**
+ * pattern dumper factory for vcg dumper
+ */
+pattern_dumper_t *new_vcg_dumper(const char *vcg_name, unsigned max_pattern)
+{
+  pattern_dumper_t *res = malloc(sizeof(*res) + sizeof(vcg_private_t));
+  vcg_private_t *priv;
+
+  if (res) {
+    FILE *f;
+
+    memcpy(res, &vcg_dump, sizeof(*res));
+
+    priv = (vcg_private_t *)(res + 1);
+    memset(priv, 0, sizeof(*priv));
+
+    f = fopen(vcg_name, "w");
+    priv->f           = f;
+    priv->pattern_id  = 0;
+    priv->max_pattern = max_pattern ? max_pattern : (unsigned)-1;
+    res->data         = priv;
+
+    if (res->dump_start)
+      res->dump_start(res);
+  }
+
+  return res;
 }
