@@ -57,15 +57,15 @@ SeqNo get_Block_seqno(ir_node *n);
 #define DEFAULT_ENUM_ITEM_ATTRIBUTE " "
 
 /* Attributes of edges between Firm nodes */
-#define BLOCK_EDGE_ATTR     "class:2 priority: 2 linestyle: dotted"
-#define CF_EDGE_ATTR        "class:13 color: red"
-#define MEM_EDGE_ATTR       "class:14 color: blue"
-#define DOMINATOR_EDGE_ATTR "class:15 color: red"
+#define BLOCK_EDGE_ATTR     "class:2 priority:2 linestyle:dotted"
+#define CF_EDGE_ATTR        "class:13 color:red"
+#define MEM_EDGE_ATTR       "class:14 color:blue"
+#define DOMINATOR_EDGE_ATTR "class:15 color:red"
 
-#define BACK_EDGE_ATTR "linestyle: dashed "
+#define BACK_EDGE_ATTR "linestyle:dashed "
 
 /* Attributes of edges between Firm nodes and type/entity nodes */
-#define NODE2TYPE_EDGE_ATTR "class: 2 priority: 2 linestyle: dotted"
+#define NODE2TYPE_EDGE_ATTR "class:2 priority:2 linestyle:dotted"
 
 /* Attributes of edges in type/entity graphs. */
 #define TYPE_METH_NODE_ATTR  "color: lightyellow"
@@ -94,7 +94,7 @@ SeqNo get_Block_seqno(ir_node *n);
 #define PRINT_IRGID(X)  fprintf(F, "g%ld", get_irg_graph_nr(X))
 #define PRINT_CONSTID(X,Y) fprintf(F, "\"n%ldn%ld\"", get_irn_node_nr(X),get_irn_node_nr(Y))
 #define PRINT_LOOPID(X) fprintf(F, "l%d", get_loop_loop_nr(X))
-#define PRINT_ITEMID(X,Y)  fprintf(F, "i%ldT%ld", get_type_nr(X), (Y))
+#define PRINT_ITEMID(X,Y)  fprintf(F, "i%ldT%d", get_type_nr(X), (Y))
 
 #else
 #define PRINT_NODEID(X) fprintf(F, "n%p", (void *)(X))
@@ -198,7 +198,7 @@ static void print_enum_item_edge(FILE *F, type *E, int item, const char *fmt, ..
 
   va_start(ap, fmt);
   fprintf(F, "edge: { sourcename: "); PRINT_TYPEID(E);
-  fprintf(F, " targetname: \""); PRINT_ITEMID(E,item); fprintf(F, "\" ");
+  fprintf(F, " targetname: \""); PRINT_ITEMID(E, item); fprintf(F, "\" ");
   vfprintf(F, fmt, ap);
   fprintf(F,"}\n");
   va_end(ap);

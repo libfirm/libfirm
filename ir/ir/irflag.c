@@ -26,6 +26,7 @@ optimization_state_t libFIRM_opt =
   ENABLE(OPT_OPTIMIZED)                          |
   ENABLE(OPT_CSE)                                |
   DISABLE(OPT_GLOBAL_CSE)                        |
+  ENABLE(OPT_CONSTANT_FOLDING)                   |
   ENABLE(OPT_UNREACHABLE_CODE)                   |
   ENABLE(OPT_CONTROL_FLOW_STRAIGHTENING)         |
   ENABLE(OPT_CONTROL_FLOW_WEAK_SIMPLIFICATION)   |

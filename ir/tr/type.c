@@ -1315,7 +1315,6 @@ bool   is_array_type         (type *array) {
 /* create a new type enumeration -- set the enumerators independently */
 INLINE type   *new_type_enumeration    (ident *name, int n_enums) {
   type *res;
-  int i;
   res = new_type(type_enumeration, NULL, name);
   res->attr.ea.n_enums     = n_enums;
   res->attr.ea.enumer      = (tarval **)xmalloc(sizeof(res->attr.ea.enumer[0]) * n_enums);
