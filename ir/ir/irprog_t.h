@@ -38,6 +38,7 @@ struct ir_prog {
 				     to allocate nodes the represent values
 				     of constant entities. It is not meant as
 				     a procedure.  */
+  ident     *name;
   /*struct obstack *obst;	   * @@@ Should we place all types and
                                      entities on an obstack, too? */
 
