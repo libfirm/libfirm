@@ -146,7 +146,7 @@ main(void)
 
   /* output the vcg file */
   printf("Done building the graph.  Dumping it with out-edges.\n");
-  dump_out_edges();
+  dump_out_edges(1);
   dump_ir_graph (irg, 0);
   printf("Use xvcg to view this graph:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
