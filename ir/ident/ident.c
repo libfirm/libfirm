@@ -11,20 +11,49 @@
 #include <assert.h>
 #include <ctype.h>
 #include <string.h>
+#include <stddef.h>
+
+#include "ident_t.h"
 #include "array.h"
 #include "tune.h"
-#include "ident_t.h"
-#include "xprintf.h"
+#include "misc.h"
+#include "set.h"
+
+/* Caution: strings _not_ zero-terminated! */
+#define ID_FROM_STR(str, len) \
+  (assert ((len) > 0), \
+   (const set_entry *)set_hinsert (id_set, (str), (len), ID_HASH ((str), (len))))
+#define ID_TO_STR(id) ((const char *)&(id)->dptr[0])
+#define ID_TO_STRLEN(id) ((id)->size)
+#define ID_TO_HASH(id) ((long)(id) + (id)->hash)
+
+/* Vormals Debugunterstuetzung, entfernt (debug.h). */
+# define ID_VRFY(id) ((void)0)
+
+#ifdef NDEBUG
+# define IDS_VRFY(id) ((void)0)
+#else
+# define IDS_VRFY(id) ids_vrfy ((id))
+static void ids_vrfy (ident **id);
+#endif
+
+#ifdef STATS
+# define id_stats() set_stats (id_set)
+#else
+# define id_stats() ((void)0)
+#endif
+
+extern set *id_set;
 
 #define XX_USER(name) ident *id_##name;
 #define XX_INTERNAL(name, str) XX_USER(name)
 #undef XX_USER
 #undef XX_INTERNAL
 
-set *id_set;
+static set *id_set;
 
-
-ident *
+#if 0 /* nowhere used */
+static ident *
 new_id_derived (const char *pfx, ident *id)
 {
   int pfx_len = strlen (pfx);
@@ -37,7 +66,7 @@ new_id_derived (const char *pfx, ident *id)
 }
 
 
-ident *
+static ident *
 new_id_internal (void)
 {
   static char str[] = "_0000000";
@@ -55,17 +84,17 @@ new_id_internal (void)
 }
 
 
-bool
+static bool
 id_is_internal (ident *id)
 {
   assert (ID_TO_STRLEN (id));
   return !!ispunct (ID_TO_STR(id)[0]);
 }
-
+#endif
 
 #ifndef NDEBUG
 
-void
+static void
 ids_vrfy (ident **id)
 {
   int i;
@@ -97,7 +126,6 @@ id_init (void)
 }
 
 
-#if 1
 INLINE ident *id_from_str (const char *str, int len) {
   assert (len > 0);
   return  (const set_entry *) set_hinsert (id_set,
@@ -113,7 +141,6 @@ INLINE const char *id_to_str   (ident *id) {
 INLINE int id_to_strlen(ident *id) {
   return ((id)->size);
 }
-#endif
 
 int id_is_prefix (ident *prefix, ident *id) {
   if (id_to_strlen(prefix) > id_to_strlen(id)) return 0;
