@@ -4,6 +4,9 @@
  * @date 20.10.2004
  * @author Sebastian Hack
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -267,7 +270,7 @@ static void list_sched_block(ir_node *block, void *env_ptr)
     block_sched_env_t be;
 
     ir_node *irn;
-    int j, m;
+    int i, n, j, m;
     int phi_seen = 0;
     sched_info_t *info = get_irn_sched_info(block);
 
@@ -284,8 +287,6 @@ static void list_sched_block(ir_node *block, void *env_ptr)
     DBG((be.dbg, LEVEL_1, "scheduling %n\n", block));
 
     /* Then one can add all nodes are ready to the set. */
-    int i;
-    int n;
     for(i = 0, n = get_irn_n_outs(block); i < n; ++i) {
         ir_node *irn = get_irn_out(block, i);
 
