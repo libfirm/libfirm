@@ -32,7 +32,7 @@ typedef enum {
   Ne,			/**< unordered, less or greater = not equal */
   True = 15	        /**< true */
   /* not_mask = Leg*/	/* bits to flip to negate comparison * @@ hack for jni interface */
-} pnc_number;
+} pnc_number;   /* pnc: Projection Number Cmp */
 #define not_mask Leg
 
 # include "tv.h"
@@ -194,7 +194,7 @@ typedef enum {
   pns_args,             /**< Projection on all arguments */
   pns_value_arg_base    /**< Pointer to region of compound value arguments as defined by
   			     type of this method. */
-} pns_number;
+} pns_number; /* pns: Projection Number Start */
 
 /* @@@ no more supported  */
 INLINE ir_node **get_Block_cfgpred_arr (ir_node *node);
@@ -329,6 +329,17 @@ ir_node        *get_InstOf_obj   (ir_node *node);
 void            set_InstOf_obj   (ir_node *node, ir_node *obj);
 ir_node        *get_InstOf_store (ir_node *node);
 void            set_InstOf_store (ir_node *node, ir_node *obj);
+
+/** Projection numbers for result of Call node: use for Proj nodes! */
+typedef enum {
+  pncl_memory = 0,        /**< The memory result. */
+  pncl_exc_target = 1,    /**< The control flow result branching to the exception handler */
+  pncl_result_tuple = 2,  /**< The tuple containing all (0, 1, 2, ...) results */
+  pncl_exc_memory = 3,    /**< The memory result in case the called method terminated with
+			      an exception */
+  pncl_value_res_base = 4 /**< A pointer to the memory region containing copied results
+			      passed by value (for compound result types). */
+} pncl_number;   /* pncl: Projection Number CaLl */
 
 INLINE ir_node *get_Call_mem (ir_node *node);
 INLINE void     set_Call_mem (ir_node *node, ir_node *mem);
@@ -538,6 +549,7 @@ INLINE void      set_Sync_pred (ir_node *node, int pos, ir_node *pred);
 
 INLINE ir_node  *get_Proj_pred (ir_node *node);
 INLINE void      set_Proj_pred (ir_node *node, ir_node *pred);
+/* Why long? shouldn't int be enough, and smaller? Or even byte? */
 INLINE long      get_Proj_proj (ir_node *node);
 INLINE void      set_Proj_proj (ir_node *node, long proj);
 
