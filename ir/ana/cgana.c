@@ -22,6 +22,8 @@
 #include "xprintf.h"
 #include "irnode.h"
 
+#include "dbginfo_t.h"
+
 /* Eindeutige Adresse zur Markierung von besuchten Knoten und zur
  * Darstellung der unbekannten Methode. */
 static void * MARK = &MARK;
@@ -152,6 +154,22 @@ static entity ** get_impl_methods(entity * method) {
 }
 
 
+/* debug makros used in sel_methods_walker */
+#define SIZ(x)    sizeof(x)/sizeof((x)[0])
+
+#define DBG_OPT_NORMALIZE                                     \
+	  __dbg_info_merge_pair(new_node, node, dbg_const_eval)
+#define DBG_OPT_POLY_ALLOC                                               \
+  do {                                                       \
+	ir_node *ons[2];                                         \
+	ons[0] = node;                                           \
+	ons[1] = skip_Proj(get_Sel_ptr(node));                     \
+	__dbg_info_merge_sets(&new_node, 1, ons, SIZ(ons), dbg_rem_poly_call); \
+     } while(0)
+#define DBG_OPT_POLY \
+	  __dbg_info_merge_pair(new_node, node, dbg_rem_poly_call)
+
+
 static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
   if (get_irn_op(node) == op_SymConst) {
     /* Wenn möglich SymConst-Operation durch Const-Operation
@@ -161,10 +179,12 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
       if (entry != NULL) { /* Method is declared in the compiled code */
 	entity * ent = entry->value;
 	if (get_entity_visibility(ent) != external_allocated) { /* Meth. is defined */
+	  ir_node *new_node;
 	  assert(get_entity_irg(ent));
 	  set_irg_current_block(current_ir_graph, get_nodes_Block(node));
-	  exchange(node, new_d_Const(get_irn_dbg_info(node),
-				     mode_P, tarval_P_from_entity(ent)));
+	  new_node = new_d_Const(get_irn_dbg_info(node),
+				 mode_P, tarval_P_from_entity(ent));       DBG_OPT_NORMALIZE;
+	  exchange(node, new_node);
 	}
       }
     }
@@ -172,10 +192,12 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
 	     is_method_type(get_entity_type(get_Sel_entity(node)))) {
     entity * ent = get_Sel_entity(node);
     if (get_irn_op(skip_Proj(get_Sel_ptr(node))) == op_Alloc) {
+      ir_node *new_node;
       /* We know which method will be called, no dispatch necessary. */
       assert(get_entity_peculiarity(ent) != description);
       set_irg_current_block(current_ir_graph, get_nodes_Block(node));
-      exchange (node, copy_const_value(get_atomic_ent_value(ent)));
+      new_node = copy_const_value(get_atomic_ent_value(ent));              DBG_OPT_POLY_ALLOC;
+      exchange (node, new_node);
     } else {
       assert(get_entity_peculiarity(ent) != inherited);
       if (!eset_contains(entities, ent)) {
@@ -215,12 +237,14 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
 #endif
 
 	if (ARR_LEN(arr) == 1 && arr[0] != NULL) {
+	  ir_node *new_node;
 	  /* Die Sel-Operation kann immer nur einen Wert auf eine
 	   * interne Methode zurückgeben. Wir können daher die
 	   * Sel-Operation durch eine Const- bzw. SymConst-Operation
 	   * ersetzen. */
 	  set_irg_current_block(current_ir_graph, get_nodes_Block(node));
-	  exchange (node, copy_const_value(get_atomic_ent_value(arr[0])));
+	  new_node = copy_const_value(get_atomic_ent_value(arr[0]));	     DBG_OPT_POLY;
+	  exchange (node, new_node);
 	}
       }
     }
