@@ -433,10 +433,10 @@ static void _find_conds(ir_node *irn, unsigned long visited_nr,
 		 * If this block has already been visited, don't recurse to its
 		 * children.
 		 */
-		if(get_irn_visited(block) < visited_nr) {
+		if(get_Block_block_visited(block) < visited_nr) {
 
 			/* Mark the block visited. */
-			set_irn_visited(block, visited_nr);
+			set_Block_block_visited(block, visited_nr);
 
 			/* Search recursively from this cond. */
 			for(i = 0, n = get_irn_arity(block); i < n; ++i) {
@@ -465,8 +465,8 @@ static void _find_conds(ir_node *irn, unsigned long visited_nr,
  */
 static INLINE void find_conds(ir_node *irn, ir_node *dominator, set *conds)
 {
-	inc_irg_visited(current_ir_graph);
-	_find_conds(irn, get_irg_visited(current_ir_graph), dominator, NULL, 0, 0, conds);
+	inc_irg_block_visited(current_ir_graph);
+	_find_conds(irn, get_irg_block_visited(current_ir_graph), dominator, NULL, 0, 0, conds);
 }
 
 
