@@ -1,3 +1,7 @@
+  17.4.2001 Boris
+  Changed Makefile/MakeTargets to install headers and libraries
+  seperately.
+
   28.3.2001 Boris
   Changed Makefile and Configure scripts to produce a proper tar file
   for distribution (libfirm-VERSION.tar)
