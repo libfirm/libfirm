@@ -283,7 +283,7 @@ __set_entity_link(entity *ent, void *l) {
 static INLINE ir_graph *
 __get_entity_irg(const entity *ent) {
   assert(ent && ent->kind == k_entity);
-  assert(is_method_type(ent->type));
+  assert(ent == unknown_entity || is_method_type(ent->type));
   return ent->irg;
 }
 

@@ -540,11 +540,29 @@ entity *resolve_ent_polymorphy(type *dynamic_class, entity* static_ent);
  *  exactly one entity unknown. This entity has as owner and as type the unknown type. It is
  *  allocated when initializing the entity module.
  *
+ *  The entity can take the role of any entity, also methods.  It returns default
+ *  values in these cases.
+ *
  *  The following values are set:
- *    mode:  mode_ANY
- *    name:  "type_unknown"
- *    state: layout_fixed
- *    size:  0
+ *    name          = "unknown_entity"
+ *    ld_name       = "unknown_entity"
+ *    owner         = unknown_type
+ *    type          = unknown_type
+ *    visibility    = visibility_external_allocated
+ *    offset        = -1
+ *    variability   = variability_uninitialized
+ *    value         = NULL
+ *    values        = NULL
+ *    val_paths     = NULL
+ *    peculiarity   = peculiarity_existent
+ *    volatility    = volatility_non_volatile
+ *    stickyness    = stickyness_unsticky
+ *    ld_name       = NULL
+ *    overwrites    = NULL
+ *    overwrittenby = NULL
+ *    irg           = NULL
+ *    link          = NULL
+ *
  */
 /* A variable that contains the only unknown entity. */
 extern entity *unknown_entity;
