@@ -10,11 +10,11 @@
 #include <stddef.h>
 
 
-/* A size handled efficiently by malloc(), at least 1K.  */
+/** A size handled efficiently by malloc(), at least 1K.  */
 #define PREF_MALLOC_SIZE 2048
 
 
-/* GNU C's __attribute__ */
+/** A wrapper around GNU C's __attribute__ */
 
 /* According to the documentation, the attributes we are interested in
    work with 2.5, but we encountered trouble before 2.7.  */
@@ -28,21 +28,21 @@
 
 /* Alignment */
 
-/* A type that has most constrained alignment.  */
+/** A type that has most constrained alignment.  */
 typedef union {
   long double d;
   void *p;
   long l;
 } aligned_type ATTRIBUTE ((aligned));
 
-/* Inquiring about the alignment.  */
+/** Inquiring about the alignment of a type.  */
 #ifdef __GNUC__
 # define ALIGNOF(type) __alignof__ (type)
 #else
 # define ALIGNOF(type) offsetof (struct { char c; type d; }, d)
 #endif
 
-/* Maximal alignment required for any type.  */
+/** Maximal alignment required for any type.  */
 #define MAX_ALIGN ALIGNOF (aligned_type)
 
 #endif

@@ -13,11 +13,11 @@
 
 #include "irdom.h"
 
-/* For dominator information */
+/** For dominator information */
 typedef struct dom_info {
-  struct ir_node *idom;	/* immediate CFG dominator */
-  int pre_num;		/* pre-order graph-walk number */
-  int dom_depth;	/* depth in dominator-tree */
+  struct ir_node *idom;	/**< immediate CFG dominator */
+  int pre_num;		      /**< pre-order graph-walk number */
+  int dom_depth;	      /**< depth in dominator-tree */
 } dom_info;
 
 #endif /* _IRDOM_T_H_ */
