@@ -138,10 +138,10 @@ init_op(void)
   op_Minus     = new_ir_op(iro_Minus,     "Minus",     op_pin_state_floats, 0,   oparity_unary,     0, 0);
   op_Sub       = new_ir_op(iro_Sub,       "Sub",       op_pin_state_floats, L,   oparity_binary,    0, 0);
   op_Mul       = new_ir_op(iro_Mul,       "Mul",       op_pin_state_floats, C,   oparity_binary,    0, 0);
-  op_Quot      = new_ir_op(iro_Quot,      "Quot",      op_pin_state_pinned, L|F, oparity_binary,    1, sizeof(struct irnode **));
-  op_DivMod    = new_ir_op(iro_DivMod,    "DivMod",    op_pin_state_pinned, L|F, oparity_binary,    1, sizeof(struct irnode **));
-  op_Div       = new_ir_op(iro_Div,       "Div",       op_pin_state_pinned, L|F, oparity_binary,    1, sizeof(struct irnode **));
-  op_Mod       = new_ir_op(iro_Mod,       "Mod",       op_pin_state_pinned, L|F, oparity_binary,    1, sizeof(struct irnode **));
+  op_Quot      = new_ir_op(iro_Quot,      "Quot",      op_pin_state_pinned, L|F, oparity_binary,    1, sizeof(except_attr));
+  op_DivMod    = new_ir_op(iro_DivMod,    "DivMod",    op_pin_state_pinned, L|F, oparity_binary,    1, sizeof(except_attr));
+  op_Div       = new_ir_op(iro_Div,       "Div",       op_pin_state_pinned, L|F, oparity_binary,    1, sizeof(except_attr));
+  op_Mod       = new_ir_op(iro_Mod,       "Mod",       op_pin_state_pinned, L|F, oparity_binary,    1, sizeof(except_attr));
   op_Abs       = new_ir_op(iro_Abs,       "Abs",       op_pin_state_floats, 0,   oparity_unary,     0, 0);
   op_And       = new_ir_op(iro_And,       "And",       op_pin_state_floats, C,   oparity_binary,    0, 0);
   op_Or        = new_ir_op(iro_Or,        "Or",        op_pin_state_floats, C,   oparity_binary,    0, 0);
@@ -157,8 +157,8 @@ init_op(void)
 
   op_Phi       = new_ir_op(iro_Phi,       "Phi",       op_pin_state_pinned, L,   oparity_variable, -1, sizeof(int));
 
-  op_Load      = new_ir_op(iro_Load,      "Load",      op_pin_state_pinned, L|F, oparity_any,      -1, sizeof(struct irnode **));
-  op_Store     = new_ir_op(iro_Store,     "Store",     op_pin_state_pinned, L|F, oparity_any,      -1, sizeof(struct irnode **));
+  op_Load      = new_ir_op(iro_Load,      "Load",      op_pin_state_pinned, L|F, oparity_any,      -1, sizeof(load_attr));
+  op_Store     = new_ir_op(iro_Store,     "Store",     op_pin_state_pinned, L|F, oparity_any,      -1, sizeof(store_attr));
   op_Alloc     = new_ir_op(iro_Alloc,     "Alloc",     op_pin_state_pinned, L|F, oparity_any,      -1, sizeof(alloc_attr));
   op_Free      = new_ir_op(iro_Free,      "Free",      op_pin_state_pinned, L,   oparity_any,      -1, sizeof(type *));
   op_Sync      = new_ir_op(iro_Sync,      "Sync",      op_pin_state_pinned, 0,   oparity_any,      -1, 0);
