@@ -1,7 +1,7 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
 * All rights reserved.
 *
-* Authors: Martin Trapp, Christian Schaefer
+* Authors: Martin Trapp,   Christian Schaefer
 *
 */
 
@@ -221,14 +221,14 @@ init_mode (void)
   mode_C->null = tarval_from_long (mode_C, 0);
 
   /* unicode character */
-  mode_C->name = id_from_str ("U", 1);
-  mode_C->fsigned = 0;
-  mode_C->ffloat = 0;
-  mode_C->ld_align = 1;
-  mode_C->size = 2;
-  mode_C->min = tarval_from_long (mode_Ls, 0xffff8000);
-  mode_C->max = tarval_from_long (mode_Ls, 0x00007fff);
-  mode_C->null = tarval_from_long (mode_U, 0);
+  mode_U->name = id_from_str ("U", 1);
+  mode_U->fsigned = 0;
+  mode_U->ffloat = 0;
+  mode_U->ld_align = 1;
+  mode_U->size = 2;
+  mode_U->min = tarval_from_long (mode_Ls, 0xffff8000);
+  mode_U->max = tarval_from_long (mode_Ls, 0x00007fff);
+  mode_U->null = tarval_from_long (mode_U, 0);
 
   /* boolean */
   mode_b->name = id_from_str ("b", 1);
