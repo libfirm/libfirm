@@ -431,7 +431,7 @@ mode_is_dataM (ir_mode *mode)
 #  define mode_is_dataM(mode) (((mode)->sort == float_number) || ((mode)->sort == int_number) || ((mode)->sort == character) || ((mode)->sort == reference) || ((mode)->code == irm_M))
 #endif
 /* Returns true if sm can be converted to lm without loss. */
-bool
+int
 smaller_mode(ir_mode *sm, ir_mode *lm)
 {
   ANNOUNCE();

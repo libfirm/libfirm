@@ -23,7 +23,6 @@
 # define _IRMODE_H_
 
 #include "ident.h"
-#include <stdbool.h>
 
 #ifndef _TARVAL_TYPEDEF_
 #define _TARVAL_TYPEDEF_
@@ -288,7 +287,7 @@ int mode_is_dataM (ir_mode *mode);
 #endif
 /** Returns true if sm can be converted to lm without loss
    according to firm definiton */
-bool smaller_mode(ir_mode *sm, ir_mode *lm);
+int smaller_mode(ir_mode *sm, ir_mode *lm);
 
 /** mode module initialization, call once before use of any other function **/
 void init_mode (void);
