@@ -24,212 +24,212 @@ classname 12: "Member"
 infoname 1: "Attribute"
 infoname 2: "Verification errors"
 
-node: {title: "n88" label: "Start  88"  info1: "mode:    T
+node: {title: "n89" label: "Start  89"  info1: "mode:    T
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 0
 start of method of type main
 "color: blue}
-edge: { sourcename: "n88" targetname: "n86" class:2  priority:50 linestyle:dotted}
-node: {title: "n87" label: "ProjX 0 87"  info1: "mode:    X
+edge: { sourcename: "n89" targetname: "n87" class:2  priority:50 linestyle:dotted}
+node: {title: "n88" label: "ProjX 0 88"  info1: "mode:    X
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n87" targetname: "n88" label: "0" class:13 priority:60 color:red}
-edge: { sourcename: "n87" targetname: "n86" class:2  priority:50 linestyle:dotted}
-node: {title: "n86" label: "Block  86"  info1: "mode:    BB
+edge: {sourcename: "n88" targetname: "n89" label: "0" class:13 priority:60 color:red}
+edge: { sourcename: "n88" targetname: "n87" class:2  priority:50 linestyle:dotted}
+node: {title: "n87" label: "Block  87"  info1: "mode:    BB
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 1 backedges:
 "color: lightyellow}
-edge: {sourcename: "n86" targetname: "n87" label: "0" class:13 priority:60 color:red}
-node: {title: "n85" label: "0x0Iu  85"  info1: "mode:    Iu
+edge: {sourcename: "n87" targetname: "n88" label: "0" class:13 priority:60 color:red}
+node: {title: "n86" label: "0x0Iu  86"  info1: "mode:    Iu
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 0
 Const of type type_unknown
 "color: yellow}
-edge: { sourcename: "n85" targetname: "n86" class:2  priority:50 linestyle:dotted}
-node: {title: "n84" label: "CmpT  84"  info1: "mode:    T
+edge: { sourcename: "n86" targetname: "n87" class:2  priority:50 linestyle:dotted}
+node: {title: "n85" label: "CmpT  85"  info1: "mode:    T
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 2
 "}
-edge: {sourcename: "n84" targetname: "n85" label: "0" class:16 priority:10}
-edge: {sourcename: "n84" targetname: "n85" label: "1" class:16 priority:10}
-edge: { sourcename: "n84" targetname: "n78" class:2  priority:50 linestyle:dotted}
-node: {title: "n83" label: "Projb Eq 83"  info1: "mode:    b
+edge: {sourcename: "n85" targetname: "n86" label: "0" class:16 priority:10}
+edge: {sourcename: "n85" targetname: "n86" label: "1" class:16 priority:10}
+edge: { sourcename: "n85" targetname: "n79" class:2  priority:50 linestyle:dotted}
+node: {title: "n84" label: "Projb Eq 84"  info1: "mode:    b
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 1
 "color: yellow}
+edge: {sourcename: "n84" targetname: "n85" label: "0" class:1  priority:50}
+edge: { sourcename: "n84" targetname: "n79" class:2  priority:50 linestyle:dotted}
+node: {title: "n83" label: "Cond  83"  info1: "mode:    T
+visited: 17
+irg:     IF_WHILE_EXAMPLE_main
+arity: 1
+"}
 edge: {sourcename: "n83" targetname: "n84" label: "0" class:1  priority:50}
-edge: { sourcename: "n83" targetname: "n78" class:2  priority:50 linestyle:dotted}
-node: {title: "n82" label: "Cond  82"  info1: "mode:    T
-visited: 17
-irg:     IF_WHILE_EXAMPLE_main
-arity: 1
-"}
-edge: {sourcename: "n82" targetname: "n83" label: "0" class:1  priority:50}
-edge: { sourcename: "n82" targetname: "n78" class:2  priority:50 linestyle:dotted}
-node: {title: "n81" label: "ProjX 1 81"  info1: "mode:    X
+edge: { sourcename: "n83" targetname: "n79" class:2  priority:50 linestyle:dotted}
+node: {title: "n82" label: "ProjX 1 82"  info1: "mode:    X
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 1
 "color: yellow}
+edge: {sourcename: "n82" targetname: "n83" label: "0" class:13 priority:60 color:red}
+edge: { sourcename: "n82" targetname: "n79" class:2  priority:50 linestyle:dotted}
+node: {title: "n81" label: "Block  81"  info1: "mode:    BB
+visited: 17
+irg:     IF_WHILE_EXAMPLE_main
+arity: 1 backedges:
+"color: lightyellow}
 edge: {sourcename: "n81" targetname: "n82" label: "0" class:13 priority:60 color:red}
-edge: { sourcename: "n81" targetname: "n78" class:2  priority:50 linestyle:dotted}
-node: {title: "n80" label: "Block  80"  info1: "mode:    BB
-visited: 17
-irg:     IF_WHILE_EXAMPLE_main
-arity: 1 backedges:
-"color: lightyellow}
-edge: {sourcename: "n80" targetname: "n81" label: "0" class:13 priority:60 color:red}
-node: {title: "n79" label: "Jmp  79"  info1: "mode:    X
+node: {title: "n80" label: "Jmp  80"  info1: "mode:    X
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 0
 "}
-edge: { sourcename: "n79" targetname: "n80" class:2  priority:50 linestyle:dotted}
-node: {title: "n90" label: "Block  90"  info1: "mode:    BB
+edge: { sourcename: "n80" targetname: "n81" class:2  priority:50 linestyle:dotted}
+node: {title: "n91" label: "Block  91"  info1: "mode:    BB
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 1 backedges:
 "color: lightyellow}
-edge: {sourcename: "n90" targetname: "n87" label: "0" class:13 priority:60 color:red}
-node: {title: "n89" label: "Jmp  89"  info1: "mode:    X
+edge: {sourcename: "n91" targetname: "n88" label: "0" class:13 priority:60 color:red}
+node: {title: "n90" label: "Jmp  90"  info1: "mode:    X
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 0
 "}
-edge: { sourcename: "n89" targetname: "n90" class:2  priority:50 linestyle:dotted}
-node: {title: "n78" label: "Block  78"  info1: "mode:    BB
+edge: { sourcename: "n90" targetname: "n91" class:2  priority:50 linestyle:dotted}
+node: {title: "n79" label: "Block  79"  info1: "mode:    BB
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 2 backedges:
 "color: lightyellow}
-edge: {sourcename: "n78" targetname: "n89" label: "0" class:13 priority:60 color:red}
-edge: {sourcename: "n78" targetname: "n79" label: "1" class:13 priority:60 color:red}
-node: {title: "n77" label: "ProjX 0 77"  info1: "mode:    X
+edge: {sourcename: "n79" targetname: "n90" label: "0" class:13 priority:60 color:red}
+edge: {sourcename: "n79" targetname: "n80" label: "1" class:13 priority:60 color:red}
+node: {title: "n78" label: "ProjX 0 78"  info1: "mode:    X
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n77" targetname: "n82" label: "0" class:13 priority:60 color:red}
-edge: { sourcename: "n77" targetname: "n78" class:2  priority:50 linestyle:dotted}
-node: {title: "n76" label: "Block  76"  info1: "mode:    BB
+edge: {sourcename: "n78" targetname: "n83" label: "0" class:13 priority:60 color:red}
+edge: { sourcename: "n78" targetname: "n79" class:2  priority:50 linestyle:dotted}
+node: {title: "n77" label: "Block  77"  info1: "mode:    BB
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 1 backedges:
 "color: lightyellow}
-edge: {sourcename: "n76" targetname: "n77" label: "0" class:13 priority:60 color:red}
-node: {title: "n94" label: "0x0Iu  94"  info1: "mode:    Iu
+edge: {sourcename: "n77" targetname: "n78" label: "0" class:13 priority:60 color:red}
+node: {title: "n95" label: "0x0Iu  95"  info1: "mode:    Iu
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 0
 Const of type type_unknown
 "color: yellow}
-edge: { sourcename: "n94" targetname: "n86" class:2  priority:50 linestyle:dotted}
+edge: { sourcename: "n95" targetname: "n87" class:2  priority:50 linestyle:dotted}
+node: {title: "n94" label: "PhiIu  94"  info1: "mode:    Iu
+visited: 17
+irg:     IF_WHILE_EXAMPLE_main
+arity: 2 backedges:
+"color: green}
+edge: {sourcename: "n94" targetname: "n95" label: "0" class:16 priority:10}
+edge: {sourcename: "n94" targetname: "n93" label: "1" class:1  priority:50}
+edge: { sourcename: "n94" targetname: "n79" class:2  priority:50 linestyle:dotted}
+node: {title: "n96" label: "0x1Iu  96"  info1: "mode:    Iu
+visited: 17
+irg:     IF_WHILE_EXAMPLE_main
+arity: 0
+Const of type type_unknown
+"color: yellow}
+edge: { sourcename: "n96" targetname: "n87" class:2  priority:50 linestyle:dotted}
 node: {title: "n93" label: "PhiIu  93"  info1: "mode:    Iu
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 2 backedges:
 "color: green}
-edge: {sourcename: "n93" targetname: "n94" label: "0" class:16 priority:10}
-edge: {sourcename: "n93" targetname: "n92" label: "1" class:1  priority:50}
-edge: { sourcename: "n93" targetname: "n78" class:2  priority:50 linestyle:dotted}
-node: {title: "n95" label: "0x1Iu  95"  info1: "mode:    Iu
-visited: 17
-irg:     IF_WHILE_EXAMPLE_main
-arity: 0
-Const of type type_unknown
-"color: yellow}
-edge: { sourcename: "n95" targetname: "n86" class:2  priority:50 linestyle:dotted}
-node: {title: "n92" label: "PhiIu  92"  info1: "mode:    Iu
-visited: 17
-irg:     IF_WHILE_EXAMPLE_main
-arity: 2 backedges:
-"color: green}
-edge: {sourcename: "n92" targetname: "n95" label: "0" class:16 priority:10}
-edge: {sourcename: "n92" targetname: "n93" label: "1" class:1  priority:50}
-edge: { sourcename: "n92" targetname: "n78" class:2  priority:50 linestyle:dotted}
-node: {title: "n91" label: "SubIu  91"  info1: "mode:    Iu
+edge: {sourcename: "n93" targetname: "n96" label: "0" class:16 priority:10}
+edge: {sourcename: "n93" targetname: "n94" label: "1" class:1  priority:50}
+edge: { sourcename: "n93" targetname: "n79" class:2  priority:50 linestyle:dotted}
+node: {title: "n92" label: "SubIu  92"  info1: "mode:    Iu
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 2
 "}
-edge: {sourcename: "n91" targetname: "n93" label: "0" class:16 priority:10}
-edge: {sourcename: "n91" targetname: "n92" label: "1" class:16 priority:10}
-edge: { sourcename: "n91" targetname: "n76" class:2  priority:50 linestyle:dotted}
-node: {title: "n96" label: "ProjM 1 96"  info1: "mode:    M
+edge: {sourcename: "n92" targetname: "n94" label: "0" class:16 priority:10}
+edge: {sourcename: "n92" targetname: "n93" label: "1" class:16 priority:10}
+edge: { sourcename: "n92" targetname: "n77" class:2  priority:50 linestyle:dotted}
+node: {title: "n97" label: "ProjM 1 97"  info1: "mode:    M
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n96" targetname: "n88" label: "0" class:17 priority:10 color:blue}
-edge: { sourcename: "n96" targetname: "n86" class:2  priority:50 linestyle:dotted}
-node: {title: "n75" label: "Return  75"  info1: "mode:    X
+edge: {sourcename: "n97" targetname: "n89" label: "0" class:17 priority:10 color:blue}
+edge: { sourcename: "n97" targetname: "n87" class:2  priority:50 linestyle:dotted}
+node: {title: "n76" label: "Return  76"  info1: "mode:    X
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 2
 return in method of type main
   res 0 type: int
 "}
-edge: {sourcename: "n75" targetname: "n96" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n75" targetname: "n91" label: "1" class:1  priority:50}
-edge: { sourcename: "n75" targetname: "n76" class:2  priority:50 linestyle:dotted}
-node: {title: "n74" label: "Block  74"  info1: "mode:    BB
+edge: {sourcename: "n76" targetname: "n97" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n76" targetname: "n92" label: "1" class:1  priority:50}
+edge: { sourcename: "n76" targetname: "n77" class:2  priority:50 linestyle:dotted}
+node: {title: "n75" label: "Block  75"  info1: "mode:    BB
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 1 backedges:
 "color: lightyellow}
-edge: {sourcename: "n74" targetname: "n75" label: "0" class:13 priority:60 color:red}
-node: {title: "n72" label: "End  72"  info1: "mode:    X
+edge: {sourcename: "n75" targetname: "n76" label: "0" class:13 priority:60 color:red}
+node: {title: "n73" label: "End  73"  info1: "mode:    X
 visited: 17
 irg:     IF_WHILE_EXAMPLE_main
 arity: 0
 "color: blue}
-edge: { sourcename: "n72" targetname: "n74" class:2  priority:50 linestyle:dotted}
+edge: { sourcename: "n73" targetname: "n75" class:2  priority:50 linestyle:dotted}
+edge: {sourcename: "n89" targetname: "n88" color: red linestyle: dashed}
+edge: {sourcename: "n89" targetname: "n97" color: red linestyle: dashed}
+edge: {sourcename: "n88" targetname: "n91" color: red linestyle: dashed}
 edge: {sourcename: "n88" targetname: "n87" color: red linestyle: dashed}
-edge: {sourcename: "n88" targetname: "n96" color: red linestyle: dashed}
-edge: {sourcename: "n87" targetname: "n90" color: red linestyle: dashed}
-edge: {sourcename: "n87" targetname: "n86" color: red linestyle: dashed}
-edge: {sourcename: "n90" targetname: "n89" color: red linestyle: dashed}
-edge: {sourcename: "n89" targetname: "n78" color: red linestyle: dashed}
-edge: {sourcename: "n78" targetname: "n81" color: red linestyle: dashed}
-edge: {sourcename: "n78" targetname: "n82" color: red linestyle: dashed}
-edge: {sourcename: "n78" targetname: "n83" color: red linestyle: dashed}
-edge: {sourcename: "n78" targetname: "n84" color: red linestyle: dashed}
-edge: {sourcename: "n78" targetname: "n77" color: red linestyle: dashed}
-edge: {sourcename: "n78" targetname: "n93" color: red linestyle: dashed}
-edge: {sourcename: "n78" targetname: "n92" color: red linestyle: dashed}
+edge: {sourcename: "n91" targetname: "n90" color: red linestyle: dashed}
+edge: {sourcename: "n90" targetname: "n79" color: red linestyle: dashed}
+edge: {sourcename: "n79" targetname: "n82" color: red linestyle: dashed}
+edge: {sourcename: "n79" targetname: "n83" color: red linestyle: dashed}
+edge: {sourcename: "n79" targetname: "n84" color: red linestyle: dashed}
+edge: {sourcename: "n79" targetname: "n85" color: red linestyle: dashed}
+edge: {sourcename: "n79" targetname: "n78" color: red linestyle: dashed}
+edge: {sourcename: "n79" targetname: "n94" color: red linestyle: dashed}
+edge: {sourcename: "n79" targetname: "n93" color: red linestyle: dashed}
+edge: {sourcename: "n82" targetname: "n81" color: red linestyle: dashed}
 edge: {sourcename: "n81" targetname: "n80" color: red linestyle: dashed}
 edge: {sourcename: "n80" targetname: "n79" color: red linestyle: dashed}
-edge: {sourcename: "n79" targetname: "n78" color: red linestyle: dashed}
-edge: {sourcename: "n82" targetname: "n81" color: red linestyle: dashed}
-edge: {sourcename: "n82" targetname: "n77" color: red linestyle: dashed}
-edge: {sourcename: "n77" targetname: "n76" color: red linestyle: dashed}
-edge: {sourcename: "n76" targetname: "n75" color: red linestyle: dashed}
-edge: {sourcename: "n76" targetname: "n91" color: red linestyle: dashed}
-edge: {sourcename: "n75" targetname: "n74" color: red linestyle: dashed}
-edge: {sourcename: "n74" targetname: "n72" color: red linestyle: dashed}
-edge: {sourcename: "n91" targetname: "n75" color: red linestyle: dashed}
 edge: {sourcename: "n83" targetname: "n82" color: red linestyle: dashed}
+edge: {sourcename: "n83" targetname: "n78" color: red linestyle: dashed}
+edge: {sourcename: "n78" targetname: "n77" color: red linestyle: dashed}
+edge: {sourcename: "n77" targetname: "n76" color: red linestyle: dashed}
+edge: {sourcename: "n77" targetname: "n92" color: red linestyle: dashed}
+edge: {sourcename: "n76" targetname: "n75" color: red linestyle: dashed}
+edge: {sourcename: "n75" targetname: "n73" color: red linestyle: dashed}
+edge: {sourcename: "n92" targetname: "n76" color: red linestyle: dashed}
 edge: {sourcename: "n84" targetname: "n83" color: red linestyle: dashed}
-edge: {sourcename: "n93" targetname: "n92" color: red linestyle: dashed}
-edge: {sourcename: "n93" targetname: "n91" color: red linestyle: dashed}
-edge: {sourcename: "n92" targetname: "n93" color: red linestyle: dashed}
-edge: {sourcename: "n92" targetname: "n91" color: red linestyle: dashed}
-edge: {sourcename: "n86" targetname: "n87" color: red linestyle: dashed}
-edge: {sourcename: "n86" targetname: "n88" color: red linestyle: dashed}
-edge: {sourcename: "n86" targetname: "n85" color: red linestyle: dashed}
-edge: {sourcename: "n86" targetname: "n96" color: red linestyle: dashed}
-edge: {sourcename: "n86" targetname: "n94" color: red linestyle: dashed}
-edge: {sourcename: "n86" targetname: "n95" color: red linestyle: dashed}
 edge: {sourcename: "n85" targetname: "n84" color: red linestyle: dashed}
-edge: {sourcename: "n85" targetname: "n84" color: red linestyle: dashed}
-edge: {sourcename: "n96" targetname: "n75" color: red linestyle: dashed}
 edge: {sourcename: "n94" targetname: "n93" color: red linestyle: dashed}
-edge: {sourcename: "n95" targetname: "n92" color: red linestyle: dashed}
+edge: {sourcename: "n94" targetname: "n92" color: red linestyle: dashed}
+edge: {sourcename: "n93" targetname: "n94" color: red linestyle: dashed}
+edge: {sourcename: "n93" targetname: "n92" color: red linestyle: dashed}
+edge: {sourcename: "n87" targetname: "n88" color: red linestyle: dashed}
+edge: {sourcename: "n87" targetname: "n89" color: red linestyle: dashed}
+edge: {sourcename: "n87" targetname: "n86" color: red linestyle: dashed}
+edge: {sourcename: "n87" targetname: "n97" color: red linestyle: dashed}
+edge: {sourcename: "n87" targetname: "n95" color: red linestyle: dashed}
+edge: {sourcename: "n87" targetname: "n96" color: red linestyle: dashed}
+edge: {sourcename: "n86" targetname: "n85" color: red linestyle: dashed}
+edge: {sourcename: "n86" targetname: "n85" color: red linestyle: dashed}
+edge: {sourcename: "n97" targetname: "n76" color: red linestyle: dashed}
+edge: {sourcename: "n95" targetname: "n94" color: red linestyle: dashed}
+edge: {sourcename: "n96" targetname: "n93" color: red linestyle: dashed}
 }
