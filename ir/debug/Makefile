@@ -3,7 +3,7 @@
 # All rights reserved.
 # Author: Goetz Lindenmaier
 #
-# Makefile for debug -- debugging of compiler or compiled program??
+# Makefile for debug -- debugging of compiler and compiled program.
 
 
 CXX         = gcc
@@ -15,7 +15,7 @@ DEPENDFLAGS = -M
 LIBPATH     =
 LIBS        =
 X_LIBS      =
-INCLUDES    = -I../adt -I../common -I../debug -I../ir
+INCLUDES    = -I../debug -I../ir -I../ident
 X_INCLUDES  =
 
 AR          = ar rcs
@@ -24,7 +24,7 @@ SHELL       = /bin/sh
 MAKE        = /usr/bin/make
 
 DISTRIBMEMBERS =
-MEMBERS	 = $(DISTRIBMEMBERS) debug.m debinfo.m
+MEMBERS	 = $(DISTRIBMEMBERS) debinfo.m
 
 CFILES = $(MEMBERS:.m=.c)
 

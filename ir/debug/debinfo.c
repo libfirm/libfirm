@@ -13,9 +13,10 @@
 
 #include "debinfo.h"
 
-
-void deb_info_copy(ir_node *new, ir_node *old, ident *info) {
+inline void
+deb_info_copy(ir_node *new, ir_node *old, ident *info) {
 }
 
-void deb_info_merge(ir_node **new_nodes, ir_node **old_nodes, ident *info) {
+inline void
+deb_info_merge(ir_node **new_nodes, ir_node **old_nodes, ident *info) {
 }
