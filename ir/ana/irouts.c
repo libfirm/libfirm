@@ -33,6 +33,7 @@
                   without public access routine */
 #include "irprog_t.h"
 #include "irgwalk.h"
+#include "string.h"
 
 /**********************************************************************/
 /** Accessing the out datastructures                                 **/
@@ -465,7 +466,7 @@ void free_ip_outs(void)
 
 void free_outs(ir_graph *irg) {
 
-/*   current_ir_graph->outs_state = no_outs; */
+  /*   current_ir_graph->outs_state = no_outs; */
   irg->outs_state = no_outs;
 
   if (irg->outs) {
@@ -475,5 +476,5 @@ void free_outs(ir_graph *irg) {
     irg->n_outs = 0;
   }
 
-  irg_walk (get_irg_end_block (irg), reset_outs, NULL, NULL);
+  //irg_walk_graph (irg, reset_outs, NULL, NULL);
 }

@@ -54,7 +54,7 @@ static eset *_dead_graphs    = NULL;
 
 /* now the meat */
 
-static void init_tables ()
+static void init_tables (void)
 {
   _live_classes   = eset_create ();
   _live_fields    = eset_create ();
@@ -70,7 +70,6 @@ static void init_tables ()
   if (get_glob_type ()) {
     eset_insert (_live_classes, get_glob_type ());
   }
-
 }
 
 /**
@@ -129,8 +128,9 @@ Traverse the given graph to collect method and field accesses and object allocat
 static void rta_fill_graph (ir_graph* graph)
 {
   if (NULL != graph) {
-    if (NULL != get_irg_end_block (graph)) {
-      irg_walk (get_irg_end_block (graph), rta_act, NULL, NULL);
+    if (NULL != get_irg_end (graph)) {
+      current_ir_graph = graph;
+      irg_walk (get_irg_end (graph), rta_act, NULL, NULL);
     }
   }
 }
@@ -348,7 +348,7 @@ static int has_live_class (entity *method, ir_graph *graph)
   return (has_class);
 }
 
-static int stats ()
+static int stats (void)
 {
   int i;
   int n_live_graphs = 0;
@@ -458,6 +458,9 @@ int  rta_is_alive_field  (entity *field)
 
 /*
  * $Log$
+ * Revision 1.6  2004/06/14 13:02:03  goetz
+ * bugfixesbug
+ *
  * Revision 1.5  2004/06/13 15:03:45  liekweg
  * RTA auf Iterative RTA aufgebohrt --flo
  *
