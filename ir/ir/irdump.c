@@ -1174,7 +1174,8 @@ dump_block_graph(FILE *F, ir_graph *irg) {
     }
   }
 
-  if (dump_loop_information_flag) dump_loop_nodes_into_graph(F, irg);
+  if (dump_loop_information_flag && (get_irg_loopinfo_state(irg) & loopinfo_valid))
+    dump_loop_nodes_into_graph(F, irg);
 
   current_ir_graph = rem;
 }
@@ -1980,7 +1981,7 @@ dump_block_to_cfg(ir_node *block, void *env) {
     PRINT_NODEID(block);
     fprintf (F, "\" ");
     if (dump_dominator_information_flag)
-      fprintf(F, "info1:dom depth %d", get_Block_dom_depth(block));
+      fprintf(F, "info1:\"dom depth %d\"", get_Block_dom_depth(block));
     fprintf (F, "}\n");
     /* Dump the edges */
     for ( i = 0; i < get_Block_n_cfgpreds(block); i++)

@@ -285,13 +285,13 @@ typedef enum {
   dump_verbosity_onlyClassTypes     = 0x000FE000,  /**< dump only class     types */
   dump_verbosity_onlyStructTypes    = 0x000FD000,  /**< dump only struct    types */
   dump_verbosity_onlyUnionTypes     = 0x000FB000,  /**< dump only union     types */
-  dump_verbosity_onlyArrayTypes     = 0x000F8000,  /**< dump only array     types */
+  dump_verbosity_onlyArrayTypes     = 0x000F7000,  /**< dump only array     types */
   dump_verbosity_onlyPointerTypes   = 0x000EF000,  /**< dump only pointer   types */
   dump_verbosity_onlyMethodTypes    = 0x000DF000,  /**< dump only method    types */
   dump_verbosity_onlyPrimitiveTypes = 0x000BF000,  /**< dump only primitive types */
-  dump_verbosity_onlyEnumerationTypes=0x0008F000,  /**< dump only enumeration types */
+  dump_verbosity_onlyEnumerationTypes=0x0007F000,  /**< dump only enumeration types */
 
-  dump_verbosity_max               = 0x48888887    /**< turn on all verbosity. */
+  dump_verbosity_max                = 0x48888887   /**< turn on all verbosity. */
 } dump_verbosity;
 
 
