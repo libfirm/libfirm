@@ -74,7 +74,12 @@ irg_typeinfo_state get_irg_typeinfo_state(ir_graph *irg);
  * irg_typeinfo_consistent or irg_typeinfo_inconsistent.  They
  * assume current_ir_graph set properly.
  */
+type *get_irn_typeinfo_type(ir_node *n);
+void  set_irn_typeinfo_type(ir_node *n, type *tp);
+
+/** Return the type associated with the value produced by n
+ *  if the node remarks this type as it is the case for
+ *  Cast, Const, SymConst and some Proj nodes. */
 type *get_irn_type(ir_node *n);
-void  set_irn_type(ir_node *n, type *tp);
 
 #endif /* _IRTYPEINFO_H_ */
