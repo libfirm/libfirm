@@ -136,7 +136,7 @@ copy_attrs (const ir_node *old_node, ir_node *new_node) {
   memcpy(&new_node->attr, &old_node->attr, get_op_attr_size(get_irn_op(old_node)));
 }
 
-/** getting some parameters from ir_nodes **/
+/*-- getting some parameters from ir_nodes --*/
 
 int
 is_ir_node (const void *thing) {
