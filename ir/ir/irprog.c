@@ -140,7 +140,6 @@ INLINE void remove_irp_type_from_list (type *typ) {
 
 void remove_irp_type(type *typ) {
   remove_irp_type_from_list (typ);
-  free_type(typ);
 }
 
 int get_irp_n_types (void) {

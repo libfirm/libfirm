@@ -39,4 +39,6 @@
 #define get_class_n_supertype get_class_n_supertypes
 #define get_struct_n_member   get_struct_n_members
 
+#define get_method_n_res(X) get_method_n_ress(X)
+
 #endif
