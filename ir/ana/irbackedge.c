@@ -82,7 +82,7 @@ static INLINE bool legal_backarray (ir_node *n) {
 }
 
 
-INLINE void fix_backedges(struct obstack *obst, ir_node *n) {
+void fix_backedges(struct obstack *obst, ir_node *n) {
   opcode opc = get_irn_opcode(n);
   int *arr = mere_get_backarray(n);
   if (ARR_LEN(arr) == ARR_LEN(get_irn_in(n))-1)
