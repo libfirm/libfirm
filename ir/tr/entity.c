@@ -125,12 +125,6 @@ new_d_entity (type *owner, ident *name, type *type, dbg_info *db) {
   return res;
 }
 
-void    free_compound_graph_path (compound_graph_path *gr);
-int     is_compound_graph_path(void *thing);
-int     get_compound_graph_path_length(compound_graph_path *gr);
-entity *get_compound_graph_path_node(compound_graph_path *gr, int pos);
-int     get_compound_ent_n_values(entity *ent);
-
 static void free_entity_attrs(entity *ent) {
   int i;
   if (get_type_tpop(get_entity_owner(ent)) == type_class) {
@@ -532,11 +526,11 @@ new_compound_graph_path(type *tp, int length) {
   assert(is_type(tp) && is_compound_type(tp));
   assert(length > 0);
 
-  res = (compound_graph_path *) malloc (sizeof(compound_graph_path) + (length-1) * sizeof(entity *));
-  res->kind = k_ir_compound_graph_path;
-  res->tp = tp;
-  res->len = length;
-  memset(res->nodes, 0, sizeof(entity *) * length);
+  res = (compound_graph_path *) calloc (1, sizeof(compound_graph_path) + (length-1) * sizeof(entity *));
+  res->kind          = k_ir_compound_graph_path;
+  res->tp            = tp;
+  res->len           = length;
+  res ->arr_indicees = (int *) calloc(length, sizeof(int));
   return res;
 }
 
@@ -544,6 +538,7 @@ void
 free_compound_graph_path (compound_graph_path *gr) {
   assert(gr && is_compound_graph_path(gr));
   gr->kind = k_BAD;
+  free(gr ->arr_indicees);
   free(gr);
 }
 
@@ -588,6 +583,20 @@ set_compound_graph_path_node(compound_graph_path *gr, int pos, entity *node) {
   assert(is_entity(node));
   gr->nodes[pos] = node;
   assert(is_proper_compound_graph_path(gr, pos));
+}
+
+int
+get_compound_graph_path_array_index(compound_graph_path *gr, int pos) {
+  assert(gr && is_compound_graph_path(gr));
+  assert(pos >= 0 && pos < gr->len);
+  return gr->arr_indicees[pos];
+}
+
+void
+set_compound_graph_path_array_index(compound_graph_path *gr, int pos, int index) {
+  assert(gr && is_compound_graph_path(gr));
+  assert(pos >= 0 && pos < gr->len);
+  gr->arr_indicees[pos] = index;
 }
 
 /* A value of a compound entity is a pair of value and the corresponding path to a member of
@@ -645,9 +654,19 @@ remove_compound_ent_value(entity *ent, entity *value_ent) {
 void
 add_compound_ent_value(entity *ent, ir_node *val, entity *member) {
   compound_graph_path *path;
+  type *owner_tp = get_entity_owner(ent);
   assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
-  path = new_compound_graph_path(get_entity_owner(ent), 1);
+  path = new_compound_graph_path(owner_tp, 1);
   path->nodes[0] = member;
+  if (is_array_type(owner_tp)) {
+    assert(get_array_n_dimensions(owner_tp) == 1 && has_array_lower_bound(owner_tp, 0));
+    int max = get_array_lower_bound_int(owner_tp, 0) -1;
+    for (int i = 0; i < get_compound_ent_n_values(ent); ++i) {
+      int index = get_compound_graph_path_array_index(get_compound_ent_value_path(ent, i), 0);
+      if (index > max) max = index;
+    }
+    path->arr_indicees[0] = max + 1;
+  }
   add_compound_ent_value_w_path(ent, val, path);
 }
 
@@ -709,8 +728,111 @@ set_array_entity_values(entity *ent, tarval **values, int num_vals) {
   for (i = 0; i < num_vals; i++) {
     val = new_Const(get_tarval_mode (values[i]), values[i]);
     add_compound_ent_value(ent, val, get_array_element_entity(arrtp));
+    set_compound_graph_path_array_index(get_compound_ent_value_path(ent, i), 0, i);
   }
   current_ir_graph = rem;
+}
+
+int  get_compound_ent_value_offset_bits(entity *ent, int pos) {
+  assert(get_type_state(get_entity_type(ent)) == layout_fixed);
+
+  compound_graph_path *path = get_compound_ent_value_path(ent, pos);
+  int i, path_len = get_compound_graph_path_length(path);
+  int offset = 0;
+
+  for (i = 0; i < path_len; ++i) {
+    entity *node = get_compound_graph_path_node(path, i);
+    type *node_tp = get_entity_type(node);
+    type *owner_tp = get_entity_owner(node);
+    if (is_array_type(owner_tp)) {
+      int size  = get_mode_size_bits (get_type_mode(node_tp));
+      int align = get_mode_align_bits(get_type_mode(node_tp));
+      if (size <= align)
+	size = align;
+      else {
+	assert(size % align == 0);
+	/* ansonsten aufrunden */
+      }
+      offset += size * get_compound_graph_path_array_index(path, i);
+    } else {
+      offset += get_entity_offset_bits(node);
+    }
+  }
+  return offset;
+}
+
+int  get_compound_ent_value_offset_bytes(entity *ent, int pos) {
+  int offset = get_compound_ent_value_offset_bits(ent, pos);
+  assert(offset % 8 == 0);
+  return offset >> 3;
+}
+
+static int *resize (int *buf, int new_size) {
+  int *new_buf = (int *)calloc(new_size, 4);
+  memcpy(new_buf, buf, new_size>1);
+  free(buf);
+  return new_buf;
+}
+
+/* We sort the elements by placing them at their bit offset in an
+   array where each entry represents one bit called permutation.  In
+   fact, we do not place the values themselves, as we would have to
+   copy two things, the value and the path.  We only remember the
+   position in the old order. Each value should have a distinct
+   position in the permutation.
+
+   A second iteration now permutes the actual elements into two
+   new arrays. */
+void sort_compound_ent_values(entity *ent) {
+  assert(get_type_state(get_entity_type(ent)) == layout_fixed);
+
+  type *tp = get_entity_type(ent);
+  int i, n_vals = get_compound_ent_n_values(ent);
+  int tp_size = get_type_size_bits(tp);
+  int size;
+  int *permutation;
+
+  if (!is_compound_type(tp)                           ||
+      (ent->variability == variability_uninitialized) ||
+      (get_type_state(tp) != layout_fixed)            ||
+      (n_vals == 0)                                     ) return;
+
+  /* estimated upper bound for size. Better: use flexible array ... */
+  size = ((tp_size > (n_vals * 32)) ? tp_size : (n_vals * 32)) * 4;
+  permutation = (int *)calloc(size, 4);
+  for (i = 0; i < n_vals; ++i) {
+    int pos = get_compound_ent_value_offset_bits(ent, i);
+    while (pos >= size) {
+      size = size + size;
+      permutation = resize(permutation, size);
+    }
+    assert(pos < size);
+    assert(permutation[pos] == 0 && "two values with the same offset");
+    permutation[pos] = i + 1;         /* We initialized with 0, so we can not distinguish entry 0.
+					 So inc all entries by one. */
+    //fprintf(stderr, "i: %d, pos: %d \n", i, pos);
+  }
+
+  int next = 0;
+  ir_node **my_values = NEW_ARR_F(ir_node *, n_vals);
+  compound_graph_path **my_paths  = NEW_ARR_F(compound_graph_path *, n_vals);
+  for (i = 0; i < size; ++i) {
+    int pos = permutation[i];
+    if (pos) {
+      //fprintf(stderr, "pos: %d i: %d  next %d \n", i, pos, next);
+      assert(next < n_vals);
+      pos--;   /* We increased the pos by one */
+      my_values[next] = get_compound_ent_value     (ent, pos);
+      my_paths [next] = get_compound_ent_value_path(ent, pos);
+      next++;
+    }
+  }
+  free(permutation);
+
+  DEL_ARR_F(ent->values);
+  ent->values = my_values;
+  DEL_ARR_F(ent->val_paths);
+  ent->val_paths = my_paths;
 }
 
 int
@@ -882,7 +1004,7 @@ int is_compound_entity(entity *ent) {
 /**
  * @todo not implemnted!!! */
 bool equal_entity(entity *ent1, entity *ent2) {
-  printf(" calling unimplemented equal entity!!! \n");
+  fprintf(stderr, " calling unimplemented equal entity!!! \n");
   return true;
 }
 
@@ -939,9 +1061,9 @@ entity *resolve_ent_polymorphy(type *dynamic_class, entity* static_ent) {
 
   res = resolve_ent_polymorphy2(dynamic_class, static_ent);
   if (!res) {
-    printf(" Could not find entity "); DDME(static_ent);
-    printf("  in "); DDMT(dynamic_class);
-    printf("\n");
+    fprintf(stderr, " Could not find entity "); DDME(static_ent);
+    fprintf(stderr, "  in "); DDMT(dynamic_class);
+    fprintf(stderr, "\n");
     dump_entity(static_ent);
     dump_type(get_entity_owner(static_ent));
     dump_type(dynamic_class);
@@ -960,36 +1082,36 @@ entity *resolve_ent_polymorphy(type *dynamic_class, entity* static_ent) {
 #if 1 || DEBUG_libfirm
 int dump_node_opcode(FILE *F, ir_node *n); /* from irdump.c */
 
-#define X(a)    case a: printf(#a); break
+#define X(a)    case a: fprintf(stderr, #a); break
 void dump_entity (entity *ent) {
   int i, j;
   type *owner = get_entity_owner(ent);
   type *type  = get_entity_type(ent);
   assert(ent && ent->kind == k_entity);
-  printf("entity %s (%ld)\n", get_entity_name(ent), get_entity_nr(ent));
-  printf("  type:  %s (%ld)\n", get_type_name(type),  get_type_nr(type));
-  printf("  owner: %s (%ld)\n", get_type_name(owner), get_type_nr(owner));
+  fprintf(stderr, "entity %s (%ld)\n", get_entity_name(ent), get_entity_nr(ent));
+  fprintf(stderr, "  type:  %s (%ld)\n", get_type_name(type),  get_type_nr(type));
+  fprintf(stderr, "  owner: %s (%ld)\n", get_type_name(owner), get_type_nr(owner));
 
   if (get_entity_n_overwrites(ent) > 0) {
-    printf ("  overwrites:\n");
+    fprintf(stderr, "  overwrites:\n");
     for (i = 0; i < get_entity_n_overwrites(ent); ++i) {
       entity *ov = get_entity_overwrites(ent, i);
-      printf("    %d: %s of class %s\n", i, get_entity_name(ov), get_type_name(get_entity_owner(ov)));
+      fprintf(stderr, "    %d: %s of class %s\n", i, get_entity_name(ov), get_type_name(get_entity_owner(ov)));
     }
   } else {
-    printf("  Does not overwrite other entities. \n");
+    fprintf(stderr, "  Does not overwrite other entities. \n");
   }
   if (get_entity_n_overwrittenby(ent) > 0) {
-    printf ("  overwritten by:\n");
+    fprintf(stderr, "  overwritten by:\n");
     for (i = 0; i < get_entity_n_overwrittenby(ent); ++i) {
       entity *ov = get_entity_overwrittenby(ent, i);
-      printf("    %d: %s of class %s\n", i, get_entity_name(ov), get_type_name(get_entity_owner(ov)));
+      fprintf(stderr, "    %d: %s of class %s\n", i, get_entity_name(ov), get_type_name(get_entity_owner(ov)));
     }
   } else {
-    printf("  Is not overwriten by other entities. \n");
+    fprintf(stderr, "  Is not overwriten by other entities. \n");
   }
 
-  printf ("  allocation:  ");
+  fprintf(stderr, "  allocation:  ");
   switch (get_entity_allocation(ent)) {
     X(allocation_dynamic);
     X(allocation_automatic);
@@ -997,14 +1119,14 @@ void dump_entity (entity *ent) {
     X(allocation_parameter);
   }
 
-  printf ("\n  visibility:  ");
+  fprintf(stderr, "\n  visibility:  ");
   switch (get_entity_visibility(ent)) {
     X(visibility_local);
     X(visibility_external_visible);
     X(visibility_external_allocated);
   }
 
-  printf ("\n  variability: ");
+  fprintf(stderr, "\n  variability: ");
   switch (get_entity_variability(ent)) {
     X(variability_uninitialized);
     X(variability_initialized);
@@ -1014,38 +1136,45 @@ void dump_entity (entity *ent) {
 
   if (get_entity_variability(ent) != variability_uninitialized) {
     if (is_atomic_entity(ent)) {
-      printf("\n  atomic value: ");
+      fprintf(stderr, "\n  atomic value: ");
       dump_node_opcode(stdout, get_atomic_ent_value(ent));
     } else {
-      printf("\n  compound values:");
+      fprintf(stderr, "\n  compound values:");
       for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
-    compound_graph_path *path = get_compound_ent_value_path(ent, i);
-    entity *ent0 = get_compound_graph_path_node(path, 0);
-    printf("\n    %3d %s", get_entity_offset_bits(ent0), get_entity_name(ent0));
-    for (j = 1; j < get_compound_graph_path_length(path); ++j)
-      printf(".%s", get_entity_name(get_compound_graph_path_node(path, j)));
-    printf("\t = ");
-    dump_node_opcode(stdout, get_compound_ent_value(ent, i));
+	compound_graph_path *path = get_compound_ent_value_path(ent, i);
+	entity *ent0 = get_compound_graph_path_node(path, 0);
+	fprintf(stderr, "\n    %3d ", get_entity_offset_bits(ent0));
+	if (get_type_state(type) == layout_fixed)
+	  fprintf(stderr, "(%3d) ",   get_compound_ent_value_offset_bits(ent, i));
+	fprintf(stderr, "%s", get_entity_name(ent0));
+	for (j = 0; j < get_compound_graph_path_length(path); ++j) {
+	  entity *node = get_compound_graph_path_node(path, j);
+	  fprintf(stderr, ".%s", get_entity_name(node));
+	  if (is_array_type(get_entity_owner(node)))
+	    fprintf(stderr, "[%d]", get_compound_graph_path_array_index(path, j));
+	}
+	fprintf(stderr, "\t = ");
+	dump_node_opcode(stdout, get_compound_ent_value(ent, i));
       }
     }
   }
 
-  printf ("\n  volatility:  ");
+  fprintf(stderr, "\n  volatility:  ");
   switch (get_entity_volatility(ent)) {
     X(volatility_non_volatile);
     X(volatility_is_volatile);
   }
 
-  printf("\n  peculiarity: %s", get_peculiarity_string(get_entity_peculiarity(ent)));
-  printf("\n  ld_name: %s", ent->ld_name ? get_entity_ld_name(ent) : "no yet set");
-  printf("\n  offset:  %d", get_entity_offset_bits(ent));
+  fprintf(stderr, "\n  peculiarity: %s", get_peculiarity_string(get_entity_peculiarity(ent)));
+  fprintf(stderr, "\n  ld_name: %s", ent->ld_name ? get_entity_ld_name(ent) : "no yet set");
+  fprintf(stderr, "\n  offset:  %d", get_entity_offset_bits(ent));
   if (is_method_type(get_entity_type(ent))) {
     if (get_entity_irg(ent))   /* can be null */
-      { printf ("\n  irg = %ld", get_irg_graph_nr(get_entity_irg(ent))); }
+      { printf("\n  irg = %ld", get_irg_graph_nr(get_entity_irg(ent))); }
     else
-      { printf ("\n  irg = NULL"); }
+      { printf("\n  irg = NULL"); }
   }
-  printf("\n\n");
+  fprintf(stderr, "\n\n");
 }
 #undef X
 #else  /* DEBUG_libfirm */

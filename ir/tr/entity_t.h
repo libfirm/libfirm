@@ -45,9 +45,12 @@
 /** A path in a compund graph. */
 struct compound_graph_path {
   firm_kind kind;       /**< dynamic type tag for compound graph path. */
-  type *tp;
-  int len;
-  entity *nodes[1];
+  type *tp;             /**< The type this path belongs to. */
+  int len;              /**< length of the path */
+  int *arr_indicees;    /**< List of array indicees.  To compute position of
+			     array elements */
+  entity *nodes[1];     /**< List of entities of length len to express the
+			     access path. */
 };
 
 /** the type of an entity */

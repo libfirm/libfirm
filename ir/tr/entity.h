@@ -370,11 +370,17 @@ void    free_compound_graph_path (compound_graph_path *gr);
 int     get_compound_graph_path_length(compound_graph_path *gr);
 entity *get_compound_graph_path_node(compound_graph_path *gr, int pos);
 void    set_compound_graph_path_node(compound_graph_path *gr, int pos, entity *node);
+int     get_compound_graph_path_array_index(compound_graph_path *gr, int pos);
+void    set_compound_graph_path_array_index(compound_graph_path *gr, int pos, int index);
 
 /* A value of a compound entity is a pair of a value and the description of the
    corresponding access path to the member of the compound.  */
 void     add_compound_ent_value_w_path(entity *ent, ir_node *val, compound_graph_path *path);
 void     set_compound_ent_value_w_path(entity *ent, ir_node *val, compound_graph_path *path, int pos);
+/** Returns the number of constant values needed to initialize the entity.
+ *
+ *  Asserts if the entity has variability_uninitialized.
+ * */
 int      get_compound_ent_n_values(entity *ent);
 ir_node *get_compound_ent_value(entity *ent, int pos);
 compound_graph_path *get_compound_ent_value_path(entity *ent, int pos);
@@ -394,8 +400,6 @@ entity  *get_compound_ent_value_member(entity *ent, int pos);
 /* Sets the path at pos 0 */
 void     set_compound_ent_value(entity *ent, ir_node *val, entity *member, int pos);
 
-
-
 /** Inits the entity ent witch must be of a one dimensional
    array type with the values given in the values array.
    The array must have a lower and an upper bound.  Keeps the
@@ -403,6 +407,36 @@ void     set_compound_ent_value(entity *ent, ir_node *val, entity *member, int p
    fits into the given array size.  Does not test whether the
    values have the proper mode for the array. */
 void set_array_entity_values(entity *ent, tarval **values, int num_vals);
+
+/** Return the overall offset of value at position pos in bits.
+ *
+ * This requires that the layout of all concerned types is fixed.
+ *
+ * @param ent Any entity of compound type with at least pos initialization values.
+ * @param pos The position of the value for which the offset is requested.
+ */
+int  get_compound_ent_value_offset_bits(entity *ent, int pos);
+
+/** Return the overall offset of value at position pos in bytes.
+ *
+ * This requires that the layout of all concerned types is fixed.
+ * Asserts if bit offset is not byte aligned.
+ *
+ * @param ent Any entity of compound type with at least pos initialization values.
+ * @param pos The position of the value for which the offset is requested.
+ */
+int  get_compound_ent_value_offset_bytes(entity *ent, int pos);
+
+/** Sort the values of the compound entity by their overall offset.
+ *
+ * This requires that the layout of all concerned types is fixed.
+ * If the entity has no initialization information the method just
+ * returns.  This is needed to dump the entity in a backend.
+ *
+ * @param ent Any entity.
+ */
+void sort_compound_ent_values(entity *ent);
+
 
 /* --- Fields of entities with a class type as owner --- */
 /* Overwrites is a field that specifies that an access to the overwritten
