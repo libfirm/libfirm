@@ -752,10 +752,10 @@ ir_node       *get_Load_mem (ir_node *node);
 void           set_Load_mem (ir_node *node, ir_node *mem);
 ir_node       *get_Load_ptr (ir_node *node);
 void           set_Load_ptr (ir_node *node, ir_node *ptr);
-ent_volatility get_Load_volatility (ir_node *node);
-void           set_Load_volatility (ir_node *node, ent_volatility volatility);
 ir_mode       *get_Load_mode (ir_node *node);
 void           set_Load_mode (ir_node *node, ir_mode *mode);
+ent_volatility get_Load_volatility (ir_node *node);
+void           set_Load_volatility (ir_node *node, ent_volatility volatility);
 
 /**
  * Projection numbers for Store: use for Proj nodes!
