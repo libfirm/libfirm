@@ -109,7 +109,7 @@ get_irn_dfn (ir_node *n) {
 
 /* Uses temporary information to set the loop */
 static INLINE void
-set_irn_loop_tmp (ir_node *n, ir_loop* loop) {
+set_irn_loop (ir_node *n, ir_loop* loop) {
   //assert(get_irn_link(n));
   //((scc_info *)get_irn_link(n))->loop = loop;
   assert(node_loop_map && "not initialized!");
@@ -217,7 +217,7 @@ pop_scc_to_loop (ir_node *n)
     loop_node_cnt++;
     set_irn_dfn(m, loop_node_cnt);
     add_loop_node(current_loop, m);
-    set_irn_loop_tmp(m, current_loop);
+    set_irn_loop(m, current_loop);
     /*    if (m==n) break;*/
     } while(m != n);
 }
@@ -457,15 +457,21 @@ init_node (ir_node *n, void *env) {
       init_node(cb, NULL);
       init_node(get_nodes_Block(cb), NULL);
     }
+  }
 #endif
 }
 
 static INLINE void
-init_scc (ir_graph *irg) {
+init_scc_common (void) {
   current_dfn = 1;
   loop_node_cnt = 0;
   if (!node_loop_map) node_loop_map = pmap_create();
   init_stack();
+}
+
+static INLINE void
+init_scc (ir_graph *irg) {
+  init_scc_common();
   irg_walk_graph (irg, init_node, NULL, NULL);
   /*
   irg_walk (irg, link_to_reg_end, NULL, NULL);
@@ -474,9 +480,7 @@ init_scc (ir_graph *irg) {
 
 static INLINE void
 init_ip_scc (void) {
-  current_dfn = 1;
-  loop_node_cnt = 0;
-  init_stack();
+  init_scc_common();
   cg_walk (init_node, NULL, NULL);
 }
 
@@ -745,7 +749,7 @@ static void scc (ir_node *n) {
   /* Initialize the node */
   set_irn_dfn(n, current_dfn);      /* Depth first number for this node */
   set_irn_uplink(n, current_dfn);   /* ... is default uplink. */
-  set_irn_loop_tmp(n, NULL);
+  set_irn_loop(n, NULL);
   current_dfn ++;
 
   /* What's this good for?
