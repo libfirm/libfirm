@@ -27,13 +27,12 @@
 //#include ".h"
 
 
-
 /* ----------------------------------------------------------------------- */
 /* Resolve implicit inheritance.                                           */
 /* ----------------------------------------------------------------------- */
 
 ident *default_mangle_inherited_name(entity *super, type *clss) {
-  return mangle_u(get_type_ident(clss), get_entity_ident(super));
+  return mangle_u(new_id_from_str("inh"), mangle_u(get_type_ident(clss), get_entity_ident(super)));
 }
 
 /** Replicates all entities in all super classes that are not overwritten
@@ -237,8 +236,7 @@ static void compute_down_closure(type *tp) {
   n_subtypes = get_class_n_subtypes(tp);
   for (i = 0; i < n_subtypes; ++i) {
     type *stp = get_class_subtype(tp, i);
-    if (type_not_visited(stp)) {
-      assert(get_type_visited(tp) < master_visited-1);
+    if (get_type_visited(stp) < master_visited-1) {
       compute_down_closure(stp);
     }
   }
@@ -273,7 +271,7 @@ static void compute_down_closure(type *tp) {
   n_supertypes = get_class_n_supertypes(tp);
   for (i = 0; i < n_supertypes; ++i) {
     type *stp = get_class_supertype(tp, i);
-    if (get_type_visited(tp) < master_visited-1) {
+    if (get_type_visited(stp) < master_visited-1) {
       compute_down_closure(stp);
     }
   }
@@ -292,8 +290,7 @@ static void compute_up_closure(type *tp) {
   n_supertypes = get_class_n_supertypes(tp);
   for (i = 0; i < n_supertypes; ++i) {
     type *stp = get_class_supertype(tp, i);
-    if (type_not_visited(stp)) {
-      assert(get_type_visited(tp) < get_master_type_visited()-1);
+    if (get_type_visited(stp) < get_master_type_visited()-1) {
       compute_up_closure(stp);
     }
   }
@@ -328,7 +325,7 @@ static void compute_up_closure(type *tp) {
   n_subtypes = get_class_n_subtypes(tp);
   for (i = 0; i < n_subtypes; ++i) {
     type *stp = get_class_subtype(tp, i);
-    if (get_type_visited(tp) < master_visited-1) {
+    if (get_type_visited(stp) < master_visited-1) {
       compute_up_closure(stp);
     }
   }
@@ -354,13 +351,13 @@ void compute_inh_transitive_closure(void) {
 
       assert(get_type_visited(tp) < get_master_type_visited()-1);
       for (j = 0; j < n_subtypes && !has_unmarked_subtype; ++j) {
-	      type *stp = get_class_subtype(tp, j);
-	      if (type_not_visited(stp)) has_unmarked_subtype = true;
+	type *stp = get_class_subtype(tp, j);
+	if (type_not_visited(stp)) has_unmarked_subtype = true;
       }
 
       /* This is a good starting point. */
       if (!has_unmarked_subtype)
-	      compute_down_closure(tp);
+	compute_down_closure(tp);
     }
   }
 
