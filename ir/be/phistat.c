@@ -59,6 +59,7 @@ static void phi_stat_walker(ir_node *node, void *env) {
 
 	/* type of argument */
 	for (i = 0; i < count; i++) {
+        ir_node *block_of_arg, *block_ith_pred;
 		ir_node *arg = get_irn_n(node, i);
 
 		if (iro_Const == get_irn_opcode(arg)) {
@@ -66,8 +67,8 @@ static void phi_stat_walker(ir_node *node, void *env) {
 			continue;
 		}
 
-		ir_node *block_of_arg = get_nodes_block(arg);
-		ir_node *block_ith_pred = get_nodes_block(get_irn_n(get_nodes_block(node), i));
+		block_of_arg = get_nodes_block(arg);
+		block_ith_pred = get_nodes_block(get_irn_n(get_nodes_block(node), i));
 
 		if (block_of_arg == block_ith_pred) {
 			curr_vals[I_PRED]++;
