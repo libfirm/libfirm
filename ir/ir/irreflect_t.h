@@ -7,9 +7,9 @@
  * $Id$
  */
 
-#ifndef __REFLECT_T_H
-#define __REFLECT_T_H
+#ifndef _FIRM_REFLECT_T_H
+#define _FIRM_REFLECT_T_H
 
-void init_rflct(void);
+void firm_init_rflct(void);
 
-#endif
+#endif /* _FIRM_REFLECT_T_H */

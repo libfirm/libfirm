@@ -7,8 +7,8 @@
  * $Id$
  */
 
-#ifndef __REFLECT_H
-#define __REFLECT_H
+#ifndef _FIRM_REFLECT_H
+#define _FIRM_REFLECT_H
 
 #include <limits.h>
 #include <stdbool.h>
@@ -212,4 +212,4 @@ int rflct_signature_set_arg(rflct_sig_t *sig, bool is_use, int num,
 int rflct_signature_get_index(const rflct_sig_t *sig, bool is_use, int num);
 
 
-#endif
+#endif /* _FIRM_REFLECT_H */

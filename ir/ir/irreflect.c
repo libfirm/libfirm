@@ -473,6 +473,6 @@ int rflct_signature_set_arg(rflct_sig_t *sig, bool is_use, int num,
 }
 
 
-void init_rflct(void) {
+void firm_init_rflct(void) {
 	init_ops();
 }
