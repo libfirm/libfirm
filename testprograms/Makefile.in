@@ -42,6 +42,7 @@ SOURCES := Makefile.in         	\
 	memory_example.c     	\
 	oo_inline_example.c  	\
 	oo_program_example.c 	\
+	recursions.c		\
 	three_cfpred_example.c 	\
 	while_example.c
 

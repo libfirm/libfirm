@@ -153,6 +153,10 @@ Dumping graphs of all procedures and a type graph.
 Use xvcg to view these graphs:
 /ben/goetz/bin/xvcg GRAPHNAME
 
+Dumping Callgraph.
+Use xvcg to view these graphs:
+/ben/goetz/bin/xvcg GRAPHNAME
+
 
 Creating an IR graph: THREE_CFPRED_EXAMPLE ...
 Optimizing ...
