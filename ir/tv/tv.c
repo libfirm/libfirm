@@ -1479,7 +1479,22 @@ int tarval_printf(tarval *tv) {
 
 char *get_tarval_bitpattern(tarval *tv)
 {
-  return NULL;
+  int i, j, pos = 0;
+  int n = get_mode_size_bits(tv->mode);
+  int bytes = n / 8 + ((n & 7) != 0);
+  char *res = malloc((n + 1) * sizeof(char));
+  unsigned char byte;
+
+  for(i = 0; i < bytes; i++) {
+    byte = get_tarval_sub_bits(tv, i);
+    for(j = 1; j < 256; j <<= 1)
+      if(pos < n)
+	res[pos++] = j & byte ? '1' : '0';
+  }
+
+  res[n] = '\0';
+
+  return res;
 }
 
 /*
