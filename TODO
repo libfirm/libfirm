@@ -1,3 +1,12 @@
+
+  * Error in removing dead code:
+    In an if condition is a loop.  We optimized the if condition to Jmp/Bad,
+    the loop now is unreachable.  It should be removed by gigo or the like.
+    It remains in the representation as all blocks in the loop have a
+    valid predecessor, i.e., walking from End we find a true loop.  We need
+    a pass walking and marking starting at the Start node to remove this loop.
+    Currently scc causes an segmetation fault for this situation.
+
   * print routines for all enums!
 
     Add flag whether mode is associative, float modes are not!!
