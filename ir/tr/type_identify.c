@@ -22,7 +22,7 @@
 # include <config.h>
 #endif
 
-#include "type_identify.h"
+#include "type_identify_t.h"
 
 #include <stdlib.h>
 #include <stddef.h>
