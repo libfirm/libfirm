@@ -96,15 +96,15 @@ init_op(void)
 
   op_Sel = new_ir_op (iro_Sel, id_from_str ("Sel", 3), sizeof (sel_attr), 1);
 
-  op_Call = new_ir_op (iro_Call, id_from_str ("Call", 4), sizeof (type *), 1);
+  op_Call = new_ir_op (iro_Call, id_from_str ("Call", 4), sizeof (call_attr), 1);
   op_Add = new_ir_op (iro_Add, id_from_str ("Add", 3), 0, 0);
   op_Minus = new_ir_op (iro_Minus, id_from_str ("Minus", 5), 0, 0);
   op_Sub = new_ir_op (iro_Sub, id_from_str ("Sub", 3), 0, 1);
   op_Mul = new_ir_op (iro_Mul, id_from_str ("Mul", 3), 0, 0);
-  op_Quot = new_ir_op (iro_Quot, id_from_str ("Quot", 4), 0, 1);
-  op_DivMod = new_ir_op (iro_DivMod, id_from_str ("DivMod", 6), 0, 1);
-  op_Div = new_ir_op (iro_Div, id_from_str ("Div", 3), 0, 1);
-  op_Mod = new_ir_op (iro_Mod, id_from_str ("Mod", 3), 0, 1);
+  op_Quot =   new_ir_op (iro_Quot,   id_from_str ("Quot", 4),   sizeof(struct irnode **), 1);
+  op_DivMod = new_ir_op (iro_DivMod, id_from_str ("DivMod", 6), sizeof(struct irnode **), 1);
+  op_Div =    new_ir_op (iro_Div,    id_from_str ("Div", 3),    sizeof(struct irnode **), 1);
+  op_Mod =    new_ir_op (iro_Mod,    id_from_str ("Mod", 3),    sizeof(struct irnode **), 1);
   op_Abs = new_ir_op (iro_Abs, id_from_str ("Abs", 3), 0, 0);
   op_And = new_ir_op (iro_And, id_from_str ("And", 3), 0, 0);
   op_Or  = new_ir_op (iro_Or,  id_from_str ("Or", 2), 0, 0);
@@ -119,8 +119,8 @@ init_op(void)
 
   op_Phi   = new_ir_op (iro_Phi,   id_from_str ("Phi", 3),   sizeof (int), 1);
 
-  op_Load  = new_ir_op (iro_Load,  id_from_str ("Load", 4),  0, 1);
-  op_Store = new_ir_op (iro_Store, id_from_str ("Store", 5), 0, 1);
+  op_Load  = new_ir_op (iro_Load,  id_from_str ("Load", 4),  sizeof(struct irnode **), 1);
+  op_Store = new_ir_op (iro_Store, id_from_str ("Store", 5), sizeof(struct irnode **), 1);
   op_Alloc = new_ir_op (iro_Alloc, id_from_str ("Alloc", 5), sizeof (alloc_attr), 1);
   op_Free  = new_ir_op (iro_Free,  id_from_str ("Free", 4),  sizeof (type *),     1);
   op_Sync  = new_ir_op (iro_Sync,  id_from_str ("Sync", 4),  0, 0);

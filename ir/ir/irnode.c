@@ -350,7 +350,7 @@ inline type *
 get_irn_call_attr (ir_node *node)
 {
   assert (node->op == op_Call);
-  return node->attr.call = skip_tid(node->attr.call);
+  return node->attr.call.cld_tp = skip_tid(node->attr.call.cld_tp);
 }
 
 inline sel_attr
@@ -797,14 +797,14 @@ set_Call_param (ir_node *node, int pos, ir_node *param) {
 inline type *
 get_Call_type (ir_node *node) {
   assert (node->op == op_Call);
-  return node->attr.call = skip_tid(node->attr.call);
+  return node->attr.call.cld_tp = skip_tid(node->attr.call.cld_tp);
 }
 
 inline void
 set_Call_type (ir_node *node, type *type) {
   assert (node->op == op_Call);
   assert (is_method_type(type));
-  node->attr.call = type;
+  node->attr.call.cld_tp = type;
 }
 
 /* For unary and binary arithmetic operations the access to the

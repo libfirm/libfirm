@@ -47,10 +47,20 @@ typedef struct {
   linkage_type ltyp;    /* linkage type of the entity */
 } sel_attr;
 
+typedef struct {
+  type *cld_tp;         /* type of called procedure */
+#if PRECISE_EXC_CONTEXT
+  struct ir_node **frag_arr; /* For Phi node construction in case of exceptions */
+#endif
+} call_attr;
+
 /* Alloc attributes */
 typedef struct {
   type *type;           /* Type of the allocated object.  */
   where_alloc where;    /* stack, heap or other managed part of memory */
+#if PRECISE_EXC_CONTEXT
+  struct ir_node **frag_arr; /* For Phi node construction in case of exceptions */
+#endif
 } alloc_attr;
 
 /* Some irnodes just have one attribute, these are stored here,
@@ -61,7 +71,7 @@ typedef union {
   struct tarval *con;   /* For Const: contains the value of the constant */
   symconst_attr  i;     /* For SymConst. */
   sel_attr       s;     /* For Sel. */
-  type          *call;  /* For Call: pointer to the type of the method to call */
+  call_attr      call;  /* For Call: pointer to the type of the method to call */
   long           proj;  /* For Proj: contains the result position to project */
   alloc_attr     a;     /* For Alloc. */
   type          *f;     /* For Free. */
@@ -71,6 +81,11 @@ typedef union {
 			       predecessors. If this attribute is set, the Phi
 			       node takes the role of the obsolete Phi0 node,
 			       therefore the name. */
+#if PRECISE_EXC_CONTEXT
+  struct ir_node **frag_arr; /* For Phi node construction in case of exceptions
+			       for nodes Store, Load, Div, Mod, Quot, DivMod. */
+#endif
+
 } attr;
 
 

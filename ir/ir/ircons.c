@@ -920,7 +920,7 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
         create a proper Phi node, therefore a Phi0, i.e., a Phi without
         predecessors is returned.  This node is added to the linked list (field
         "link") of the containing block to be completed when this block is
-        matured. (Comlpletion will add a new Phi and turn the Phi0 into an Id
+        matured. (Completion will add a new Phi and turn the Phi0 into an Id
         node.)
 
      2. The value is already known in this block, graph_arr[pos] is set and we
@@ -1070,6 +1070,78 @@ new_r_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
 inline ir_node *
 get_r_value_internal (ir_node *block, int pos, ir_mode *mode);
 
+#if PRECISE_EXC_CONTEXT
+static inline ir_node *
+phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins);
+
+inline ir_node **
+new_frag_arr (ir_node *n) {
+  ir_node **arr;
+  arr = NEW_ARR_D (ir_node *, current_ir_graph->obst, current_ir_graph->n_loc);
+  memcpy(arr, current_ir_graph->current_block->attr.block.graph_arr,
+	 sizeof(ir_node *)*current_ir_graph->n_loc);
+  /* Here we rely on the fact that all frag ops have Memory as first result! */
+  if (get_irn_op(n) == op_Call)
+    arr[0] = new_Proj(n, mode_M, 3);
+  else
+    arr[0] = new_Proj(n, mode_M, 0);
+  current_ir_graph->current_block->attr.block.graph_arr[current_ir_graph->n_loc-1] = n;
+  return arr;
+}
+
+inline ir_node **
+get_frag_arr (ir_node *n) {
+  if (get_irn_op(n) == op_Call) {
+    return n->attr.call.frag_arr;
+  } else if (get_irn_op(n) == op_Alloc) {
+    return n->attr.a.frag_arr;
+  } else {
+    return n->attr.frag_arr;
+  }
+}
+
+inline ir_node *
+set_frag_value(ir_node **frag_arr, int pos, ir_node *val) {
+  if (!frag_arr[pos]) frag_arr[pos] = val;
+  if (frag_arr[current_ir_graph->n_loc - 1])
+    set_frag_value (get_frag_arr(frag_arr[current_ir_graph->n_loc - 1]), pos, val);
+}
+
+inline ir_node *
+get_r_frag_value_internal (ir_node *block, ir_node *cfOp, int pos, ir_mode *mode) {
+  ir_node *res;
+  ir_node **rem;
+  ir_node **frag_arr;
+
+  DDMSG2(cfOp);
+  assert(is_fragile_op(cfOp));
+
+  frag_arr = get_frag_arr(cfOp);
+  res = frag_arr[pos];
+  if (!res) {
+    if (block->attr.block.graph_arr[pos]) {
+      /* There was a set_value after the cfOp and no get_value before that
+	 set_value.  We must build a Phi node now. */
+      if (block->attr.block.matured) {
+	int ins = get_irn_arity(block);
+	ir_node **nin;
+	NEW_ARR_A (ir_node *, nin, ins);
+	phi_merge(block, pos, mode, nin, ins);
+      } else {
+	res = new_r_Phi0 (current_ir_graph, block, mode);
+	res->attr.phi0_pos = pos;
+	res->link = block->link;
+	block->link = res;
+      }
+      set_frag_value(frag_arr, pos, res);
+    } else {
+      res = get_r_value_internal(block, pos, mode);
+    }
+  }
+  return res;
+}
+#endif
+
 /** This function allocates a dummy Phi node to break recursions,
     computes the predecessors for the real phi node, and then
     allocates and returns this node.  The routine called to allocate the
@@ -1078,18 +1150,19 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode);
 static inline ir_node *
 phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
 {
-  ir_node *prevBlock, *res, *phi0;
+  ir_node *prevBlock, *prevCfOp, *res, *phi0;
   int i;
 
 
   /* If this block has no value at pos create a Phi0 and remember it
-     in graph_arr to break recursions. */
+     in graph_arr to break recursions.
+     Else we may not set graph_arr as there a later value is remembered. */
   phi0 = NULL;
   if (!block->attr.block.graph_arr[pos]) {
     /* This is commented out as collapsing to Bads is no good idea.
        Either we need an assert here, or we need to call a routine
        that deals with this case as appropriate for the given language.
-       Right now a self referencing Id is created which will crash irg_vryfy().
+       Right now a self referencing Id is created which will crash irg_vrfy().
 
        Even if all variables are defined before use, it can happen that
        we get to the start block, if a cond has been replaced by a tuple
@@ -1101,10 +1174,16 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
 
     if (block == get_irg_start_block(current_ir_graph)) {
       block->attr.block.graph_arr[pos] = new_Const(mode, tarval_bad);
+      /* We don't need to care about exception ops in the start block.
+	 There are none by definition. */
       return block->attr.block.graph_arr[pos];
-      } else  {
+    } else  {
       phi0 = new_r_Phi0(current_ir_graph, block, mode);
       block->attr.block.graph_arr[pos] = phi0;
+#if PRECISE_EXC_CONTEXT
+      /* Set graph_arr for fragile ops.  Also here we should break recursion. */
+      set_frag_value(block->attr.block.graph_arr, pos, phi0);
+#endif
     }
   }
 
@@ -1112,8 +1191,9 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
      is in and there finds the operands of the Phi node by calling
      get_r_value_internal.  */
   for (i = 1;  i <= ins;  ++i) {
-    assert (block->in[i]);
-    if (is_Bad(block->in[i])) {
+    prevCfOp = skip_Proj(block->in[i]);
+    assert (prevCfOp);
+    if (is_Bad(prevCfOp)) {
       /* In case a Cond has been optimized we would get right to the start block
 	 with an invalid definition. */
       nin[i-1] = new_Bad();
@@ -1122,7 +1202,12 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
     prevBlock = block->in[i]->in[0]; /* go past control flow op to prev block */
     assert (prevBlock);
     if (!is_Bad(prevBlock)) {
-      nin[i-1] = get_r_value_internal (prevBlock, pos, mode);
+#if PRECISE_EXC_CONTEXT
+      if (is_fragile_op(prevCfOp))
+	nin[i-1] = get_r_frag_value_internal (prevBlock, prevCfOp, pos, mode);
+      else
+#endif
+	nin[i-1] = get_r_value_internal (prevBlock, pos, mode);
     } else {
       nin[i-1] = new_Bad();
     }
@@ -1139,6 +1224,8 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
   if (phi0) {
     exchange(phi0, res);
     block->attr.block.graph_arr[pos] = res;
+    /* Don't set_frag_value as it does not overwrite.  Doesn't matter, is
+       only an optimization. */
   }
 
   return res;
@@ -1367,29 +1454,53 @@ new_Mul (ir_node *op1, ir_node *op2, ir_mode *mode)
 ir_node *
 new_Quot (ir_node *memop, ir_node *op1, ir_node *op2)
 {
-  return new_r_Quot (current_ir_graph, current_ir_graph->current_block,
+  ir_node *res;
+  res = new_r_Quot (current_ir_graph, current_ir_graph->current_block,
 		     memop, op1, op2);
+#if PRECISE_EXC_CONTEXT
+  res->attr.frag_arr = new_frag_arr(res);
+#endif
+
+  return res;
 }
 
 ir_node *
 new_DivMod (ir_node *memop, ir_node *op1, ir_node *op2)
 {
-  return new_r_DivMod (current_ir_graph, current_ir_graph->current_block,
+  ir_node *res;
+  res = new_r_DivMod (current_ir_graph, current_ir_graph->current_block,
 		       memop, op1, op2);
+#if PRECISE_EXC_CONTEXT
+  res->attr.frag_arr = new_frag_arr(res);
+#endif
+
+  return res;
 }
 
 ir_node *
 new_Div (ir_node *memop, ir_node *op1, ir_node *op2)
 {
-  return new_r_Div (current_ir_graph, current_ir_graph->current_block,
+  ir_node *res;
+  res = new_r_Div (current_ir_graph, current_ir_graph->current_block,
 		    memop, op1, op2);
+#if PRECISE_EXC_CONTEXT
+  res->attr.frag_arr = new_frag_arr(res);
+#endif
+
+  return res;
 }
 
 ir_node *
 new_Mod (ir_node *memop, ir_node *op1, ir_node *op2)
 {
-  return new_r_Mod (current_ir_graph, current_ir_graph->current_block,
+  ir_node *res;
+  res = new_r_Mod (current_ir_graph, current_ir_graph->current_block,
 		    memop, op1, op2);
+#if PRECISE_EXC_CONTEXT
+  res->attr.frag_arr = new_frag_arr(res);
+#endif
+
+  return res;
 }
 
 ir_node *
@@ -1478,8 +1589,14 @@ ir_node *
 new_Call (ir_node *store, ir_node *callee, int arity, ir_node **in,
 	  type *type)
 {
-  return new_r_Call (current_ir_graph, current_ir_graph->current_block,
+  ir_node *res;
+  res = new_r_Call (current_ir_graph, current_ir_graph->current_block,
 		     store, callee, arity, in, type);
+#if PRECISE_EXC_CONTEXT
+  res->attr.call.frag_arr = new_frag_arr(res);
+#endif
+
+  return res;
 }
 
 ir_node *
@@ -1499,23 +1616,41 @@ new_Raise (ir_node *store, ir_node *obj)
 ir_node *
 new_Load (ir_node *store, ir_node *addr)
 {
-  return new_r_Load (current_ir_graph, current_ir_graph->current_block,
+  ir_node *res;
+  res = new_r_Load (current_ir_graph, current_ir_graph->current_block,
 		     store, addr);
+#if PRECISE_EXC_CONTEXT
+  res->attr.frag_arr = new_frag_arr(res);
+#endif
+
+  return res;
 }
 
 ir_node *
 new_Store (ir_node *store, ir_node *addr, ir_node *val)
 {
-  return new_r_Store (current_ir_graph, current_ir_graph->current_block,
+  ir_node *res;
+  res = new_r_Store (current_ir_graph, current_ir_graph->current_block,
 		      store, addr, val);
+#if PRECISE_EXC_CONTEXT
+  res->attr.frag_arr = new_frag_arr(res);
+#endif
+
+  return res;
 }
 
 ir_node *
 new_Alloc (ir_node *store, ir_node *size, type *alloc_type,
            where_alloc where)
 {
-  return new_r_Alloc (current_ir_graph, current_ir_graph->current_block,
+  ir_node *res;
+  res = new_r_Alloc (current_ir_graph, current_ir_graph->current_block,
 		      store, size, alloc_type, where);
+#if PRECISE_EXC_CONTEXT
+  res->attr.a.frag_arr = new_frag_arr(res);
+#endif
+
+  return res;
 }
 
 ir_node *

@@ -48,10 +48,19 @@ new_ir_graph (entity *ent, int n_loc)
 
   /** Internal information for graph construction either held in the graph or
   *** initialized for each graph. **/
+#if PRECISE_EXC_CONTEXT
+  res->n_loc = n_loc + 1 + 1; /* number of local variables that are never
+                                 dereferenced in this graph plus one for
+	    		         the store plus one for links to fragile
+				 operations.  n_loc is not the number of
+				 parameters to the procedure!  */
+#else
   res->n_loc = n_loc + 1;  /* number of local variables that are never
                               dereferenced in this graph plus one for
 	    		      the store. This is not the number of parameters
                               to the procedure!  */
+#endif
+
   res->visited = 0;     /* visited flag, for the ir walker */
   res->block_visited=0; /* visited flag, for the 'block'-walker */
 
