@@ -1877,6 +1877,20 @@ ir_node *new_r_Raise  (ir_graph *irg, ir_node *block,
 ir_node *new_r_Const  (ir_graph *irg, ir_node *block,
 		       ir_mode *mode, tarval *con);
 
+/** Constructor for a Const node.
+ *
+ * Constructor for a Const node. The constant represents a target
+ * value.  Sets the type information to type_unknown.  (No more
+ * supported: If tv is entity derives a somehow useful type.)
+ *
+ * @param *irg   The ir graph the node  belongs to.
+ * @param *block The ir block the node belongs to.
+ * @param *mode  The mode of the operands and the results.
+ * @param value  A value from which the tarval is made.
+ */
+ir_node *new_r_Const_long(ir_graph *irg, ir_node *block,
+		       ir_mode *mode, long value);
+
 /** Constructor for a SymConst node.
  *
  *  This is the constructor for a symbolic constant.
@@ -3233,6 +3247,19 @@ ir_node *new_Raise  (ir_node *store, ir_node *obj);
  *               added to the attributes of  the node.
  */
 ir_node *new_Const  (ir_mode *mode, tarval *con);
+
+/**
+ * Make a const from a long.
+ * This is just convenience for the usual
+ * <code>
+ * new_Const(mode, tarval_from_long(mode, ...))
+ * </code>
+ * pain.
+ * @param mode The mode for the const.
+ * @param value The value of the constant.
+ * @return A new const node.
+ */
+ir_node *new_Const_long(ir_mode *mode, long value);
 
 /** Constructor for a Const node.
  *

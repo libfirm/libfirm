@@ -37,6 +37,7 @@
 # include "array.h"
 # include "irbackedge_t.h"
 # include "irflag_t.h"
+# include "iredges_t.h"
 
 #if USE_EXPLICIT_PHI_IN_STACK
 /* A stack needed for the automatic Phi node construction in constructor
@@ -164,6 +165,12 @@ ir_node *
 new_rd_Const (dbg_info* db, ir_graph *irg, ir_node *block, ir_mode *mode, tarval *con)
 {
   return new_rd_Const_type (db, irg, block, mode, con, firm_unknown_type);
+}
+
+ir_node *
+new_rd_Const_long (dbg_info* db, ir_graph *irg, ir_node *block, ir_mode *mode, long value)
+{
+	return new_rd_Const(db, irg, block, mode, new_tarval_from_long(value, mode));
 }
 
 ir_node *
@@ -913,6 +920,13 @@ ir_node *new_r_Const  (ir_graph *irg, ir_node *block,
                ir_mode *mode, tarval *con) {
   return new_rd_Const(NULL, irg, block, mode, con);
 }
+
+ir_node *new_r_Const_long(ir_graph *irg, ir_node *block,
+               ir_mode *mode, long value) {
+  return new_rd_Const_long(NULL, irg, block, mode, value);
+}
+
+
 ir_node *new_r_SymConst (ir_graph *irg, ir_node *block,
                        symconst_symbol value, symconst_kind symkind) {
   return new_rd_SymConst(NULL, irg, block, value, symkind);
@@ -1331,6 +1345,7 @@ new_rd_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode, ir_node **in, int i
 #if USE_EXPLICIT_PHI_IN_STACK
     free_to_Phi_in_stack(res);
 #else
+		edges_node_deleted(res, current_ir_graph);
     obstack_free (current_ir_graph->obst, res);
 #endif
     res = known;
@@ -1554,6 +1569,7 @@ new_rd_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
   /* i==ins: there is at most one predecessor, we don't need a phi node. */
   if (i == ins) {
     if (res != known) {
+			edges_node_deleted(res, current_ir_graph);
       obstack_free (current_ir_graph->obst, res);
       if (is_Phi(known)) {
 	/* If pred is a phi node we want to optmize it: If loops are matured in a bad
@@ -1974,6 +1990,12 @@ new_d_Const (dbg_info* db, ir_mode *mode, tarval *con)
 }
 
 ir_node *
+new_d_Const_long(dbg_info* db, ir_mode *mode, long value)
+{
+  return new_rd_Const_long(db, current_ir_graph, current_ir_graph->start_block, mode, value);
+}
+
+	ir_node *
 new_d_Const_type (dbg_info* db, ir_mode *mode, tarval *con, type *tp)
 {
   return new_rd_Const_type(db, current_ir_graph, current_ir_graph->start_block,
@@ -2563,6 +2585,11 @@ ir_node *new_Raise  (ir_node *store, ir_node *obj) {
 }
 ir_node *new_Const  (ir_mode *mode, tarval *con) {
   return new_d_Const(NULL, mode, con);
+}
+
+ir_node *new_Const_long(ir_mode *mode, long value)
+{
+	return new_d_Const_long(NULL, mode, value);
 }
 
 ir_node *new_Const_type(tarval *con, type *tp) {
