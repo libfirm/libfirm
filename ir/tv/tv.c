@@ -6,7 +6,6 @@
 /****i* tv/implementation
  *
  * AUTHORS
- *    Christian von Roques
  *    Matthias Heil
  *
  * NOTES

@@ -1,10 +1,9 @@
-/* Declarations for Target Values.
-   Copyright (C) 1995, 1996 Christian von Roques */
+/* Declarations for Target Values. */
 
 /**
 * @file tv_t.h
 *
-* @author Christian von Roques
+* @author Mathias Heil
 */
 
 /* $Id$ */
