@@ -45,6 +45,8 @@ node: {title: "n253" label: "PhiIs  253" color: green info1: "visited: 27
 edge: {sourcename: "n253" targetname: "n254" label: "0" }
 edge: {sourcename: "n253" targetname: "n252" label: "1" }
 node: {title: "n257" label: "Sel a 257"  info1: "visited: 27
+Selecting entity of type int
+  from entity of type PRIMA
 "}
 edge: {sourcename: "n257" targetname: "n250" label: "0" color: blue}
 edge: {sourcename: "n257" targetname: "n258" label: "1" }
@@ -68,6 +70,9 @@ node: {title: "n244" label: "ProjX 0 244" color: yellow info1: "visited: 29
 "}
 edge: {sourcename: "n244" targetname: "n245" label: "0" color: red}
 node: {title: "n245" label: "Start  245" color: blue info1: "visited: 29
+start of method of type c
+  param 0 type: class_prima_ptr
+  param 1 type: int
 "}
 node: {title: "n254" label: "0x0Is  254" color: yellow info1: "visited: 29
 "}

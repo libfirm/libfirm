@@ -38,6 +38,7 @@ node: {title: "n42" label: "Block  42" color: lightyellow info1: "visited: 11
 "}
 edge: {sourcename: "n42" targetname: "n41" label: "0" color: red}
 node: {title: "n43" label: "Start  43" color: blue info1: "visited: 11
+start of method of type GLOBAL_VAR_main
 "}
 edge: { sourcename: "n43" targetname: "n42" class: 2 priority: 2 linestyle: dotted}
 node: {title: "n44" label: "ProjM 0 44" color: yellow info1: "visited: 11
@@ -54,6 +55,8 @@ node: {title: "n46" label: "0x2Is  46" color: yellow info1: "visited: 11
 "}
 edge: { sourcename: "n46" targetname: "n42" class: 2 priority: 2 linestyle: dotted}
 node: {title: "n47" label: "Sel i 47"  info1: "visited: 11
+Selecting entity of type int
+  from entity of type GlobalType
 "}
 edge: { sourcename: "n47" targetname: "n40" class: 2 priority: 2 linestyle: dotted}
 edge: {sourcename: "n47" targetname: "n49" label: "0" color: blue}

@@ -37,6 +37,7 @@ node: {title: "n70" label: "ProjX 0 70" color: yellow info1: "visited: 11
 "}
 edge: {sourcename: "n70" targetname: "n71" label: "0" color: red}
 node: {title: "n71" label: "Start  71" color: blue info1: "visited: 11
+start of method of type main
 "}
 node: {title: "n74" label: "0x2Is  74" color: yellow info1: "visited: 11
 "}

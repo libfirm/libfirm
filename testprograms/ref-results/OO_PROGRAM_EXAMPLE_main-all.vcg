@@ -36,6 +36,10 @@ node: {title: "n113" label: "ProjT 2 113" color: yellow info1: "visited: 20
 "}
 edge: {sourcename: "n113" targetname: "n114" label: "0" }
 node: {title: "n114" label: "Call  114"  info1: "visited: 20
+calling method of type c
+  param 0 type: class_prima_ptr
+  param 1 type: int
+  resul 0 type: int
 "}
 edge: {sourcename: "n114" targetname: "n121" label: "0" color: blue}
 edge: {sourcename: "n114" targetname: "n120" label: "1" }
@@ -45,10 +49,13 @@ node: {title: "n116" label: "ProjP 2 116" color: yellow info1: "visited: 20
 "}
 edge: {sourcename: "n116" targetname: "n117" label: "0" }
 node: {title: "n117" label: "Alloc  117"  info1: "visited: 20
+allocating entity of type PRIMA
 "}
 edge: {sourcename: "n117" targetname: "n119" label: "0" color: blue}
 edge: {sourcename: "n117" targetname: "n118" label: "1" }
 node: {title: "n120" label: "Sel c 120"  info1: "visited: 20
+Selecting entity of type c
+  from entity of type PRIMA
 "}
 edge: {sourcename: "n120" targetname: "n121" label: "0" color: blue}
 edge: {sourcename: "n120" targetname: "n116" label: "1" }
@@ -56,12 +63,17 @@ node: {title: "n121" label: "ProjM 0 121" color: yellow info1: "visited: 20
 "}
 edge: {sourcename: "n121" targetname: "n122" label: "0" color: blue}
 node: {title: "n122" label: "Call  122"  info1: "visited: 20
+calling method of type set_a
+  param 0 type: class_prima_ptr
+  param 1 type: int
 "}
 edge: {sourcename: "n122" targetname: "n125" label: "0" color: blue}
 edge: {sourcename: "n122" targetname: "n124" label: "1" }
 edge: {sourcename: "n122" targetname: "n116" label: "2" }
 edge: {sourcename: "n122" targetname: "n123" label: "3" }
 node: {title: "n124" label: "Sel set_a 124"  info1: "visited: 20
+Selecting entity of type set_a
+  from entity of type PRIMA
 "}
 edge: {sourcename: "n124" targetname: "n125" label: "0" color: blue}
 edge: {sourcename: "n124" targetname: "n116" label: "1" }
@@ -79,6 +91,7 @@ node: {title: "n109" label: "ProjX 0 109" color: yellow info1: "visited: 21
 "}
 edge: {sourcename: "n109" targetname: "n111" label: "0" color: red}
 node: {title: "n111" label: "Start  111" color: blue info1: "visited: 21
+start of method of type OO_PROGRAM_EXAMPLE_main
 "}
 node: {title: "n115" label: "0x5Is  115" color: yellow info1: "visited: 21
 "}

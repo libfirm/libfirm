@@ -52,6 +52,8 @@ edge: {sourcename: "n72" targetname: "n73" label: "0" }
 graph: { title: "n70" label: "70" status:clustered color:yellow
 edge: {sourcename: "n70" targetname: "n69" label: "0" color: red}
 node: {title: "n71" label: "Start  71" color: blue info1: "visited: 16
+start of method of type GLOBAL_CSE_EXAMPLE_main
+  param 0 type: int
 "}
 }
 

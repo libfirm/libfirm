@@ -89,6 +89,8 @@ node: {title: "n64" label: "ProjX 0 64" color: yellow info1: "visited: 12
 "}
 edge: {sourcename: "n64" targetname: "n66" label: "0" color: red}
 node: {title: "n66" label: "Start  66" color: blue info1: "visited: 12
+start of method of type main
+  param 0 type: int
 "}
 node: {title: "n70" label: "0x0Is  70" color: yellow info1: "visited: 12
 "}

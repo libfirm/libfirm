@@ -45,6 +45,8 @@ node: {title: "n205" label: "PhiIs  205" color: green info1: "visited: 27
 edge: {sourcename: "n205" targetname: "n206" label: "0" }
 edge: {sourcename: "n205" targetname: "n204" label: "1" }
 node: {title: "n208" label: "Sel a 208"  info1: "visited: 27
+Selecting entity of type int
+  from entity of type PRIMA
 "}
 edge: {sourcename: "n208" targetname: "n202" label: "0" color: blue}
 edge: {sourcename: "n208" targetname: "n209" label: "1" }
@@ -60,6 +62,7 @@ node: {title: "n209" label: "ProjP 2 209" color: yellow info1: "visited: 28
 "}
 edge: {sourcename: "n209" targetname: "n210" label: "0" }
 node: {title: "n210" label: "Alloc  210"  info1: "visited: 28
+allocating entity of type PRIMA
 "}
 edge: {sourcename: "n210" targetname: "n212" label: "0" color: blue}
 edge: {sourcename: "n210" targetname: "n211" label: "1" }
@@ -72,6 +75,8 @@ edge: {sourcename: "n214" targetname: "n217" label: "0" color: blue}
 edge: {sourcename: "n214" targetname: "n216" label: "1" }
 edge: {sourcename: "n214" targetname: "n215" label: "2" }
 node: {title: "n216" label: "Sel a 216"  info1: "visited: 28
+Selecting entity of type int
+  from entity of type PRIMA
 "}
 edge: {sourcename: "n216" targetname: "n217" label: "0" color: blue}
 edge: {sourcename: "n216" targetname: "n209" label: "1" }
@@ -86,6 +91,7 @@ node: {title: "n196" label: "ProjX 0 196" color: yellow info1: "visited: 29
 "}
 edge: {sourcename: "n196" targetname: "n197" label: "0" color: red}
 node: {title: "n197" label: "Start  197" color: blue info1: "visited: 29
+start of method of type OO_INLINE_EXAMPLE_main
 "}
 node: {title: "n207" label: "0x5Is  207" color: yellow info1: "visited: 29
 "}

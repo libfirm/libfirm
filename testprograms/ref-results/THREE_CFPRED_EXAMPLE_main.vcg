@@ -93,6 +93,8 @@ node: {title: "n84" label: "ProjX 0 84" color: yellow info1: "visited: 13
 "}
 edge: {sourcename: "n84" targetname: "n86" label: "0" color: red}
 node: {title: "n86" label: "Start  86" color: blue info1: "visited: 13
+start of method of type THREE_CFPRED_EXAMPLE_main
+  param 0 type: int
 "}
 node: {title: "n91" label: "ProjT 4 91" color: yellow info1: "visited: 13
 "}

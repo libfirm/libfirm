@@ -40,6 +40,8 @@ node: {title: "n231" label: "ProjIs 1 231" color: yellow info1: "visited: 17
 "}
 edge: {sourcename: "n231" targetname: "n232" label: "0" }
 node: {title: "n233" label: "Sel a 233"  info1: "visited: 17
+Selecting entity of type int
+  from entity of type PRIMA
 "}
 edge: {sourcename: "n233" targetname: "n235" label: "0" color: blue}
 edge: {sourcename: "n233" targetname: "n234" label: "1" }
@@ -54,6 +56,9 @@ node: {title: "n226" label: "ProjX 0 226" color: yellow info1: "visited: 18
 "}
 edge: {sourcename: "n226" targetname: "n228" label: "0" color: red}
 node: {title: "n228" label: "Start  228" color: blue info1: "visited: 18
+start of method of type set_a
+  param 0 type: class_prima_ptr
+  param 1 type: int
 "}
 node: {title: "n232" label: "ProjT 4 232" color: yellow info1: "visited: 18
 "}

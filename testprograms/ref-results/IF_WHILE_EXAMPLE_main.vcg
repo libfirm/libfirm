@@ -18,6 +18,7 @@ classname 11: "Overwrites"
 classname 12: "Member"
 
 node: {title: "n88" label: "Start  88" color: blue info1: "visited: 14
+start of method of type main
 "}
 edge: { sourcename: "n88" targetname: "n86" class: 2 priority: 2 linestyle: dotted}
 node: {title: "n87" label: "ProjX 0 87" color: yellow info1: "visited: 14
