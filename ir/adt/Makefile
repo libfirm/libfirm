@@ -20,7 +20,7 @@ X_INCLUDES  =
 SHELL       = /bin/sh
 MAKE        = /usr/bin/make
 
-MEMBERS	 = array.m pdeq.m set.m
+MEMBERS	 = array.m pdeq.m set.m debug.m
 
 CFILES = $(MEMBERS:.m=.c)
 CFIMES +=  xmalloc.c
