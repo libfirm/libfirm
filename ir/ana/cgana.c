@@ -369,9 +369,10 @@ static void sel_methods_init(void) {
 
   assert(entities == NULL);
   entities = eset_create();
-  for (i = get_irp_n_allirgs() - 1; i >= 0; --i) {
-    entity * ent = get_irg_entity(get_irp_allirg(i));
-    /* Nur extern sichtbare Methode können überhaupt mit SymConst
+  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+    ir_graph *irg = get_irp_irg(i);
+    entity * ent = get_irg_entity(irg);
+    /* Nur extern sichtbare Methoden können überhaupt mit SymConst
      * aufgerufen werden. */
     if (get_entity_visibility(ent) != visibility_local) {
       pmap_insert(ldname_map, (void *) get_entity_ld_ident(ent), ent);
@@ -623,9 +624,9 @@ static void remove_Tuples(ir_node * proj, void * env) {
 static void callee_ana(void) {
   int i;
   /* Alle Graphen analysieren. */
-  for (i = get_irp_n_allirgs() - 1; i >= 0; --i) {
-    irg_walk_graph(get_irp_allirg(i), callee_walker, remove_Tuples, NULL);
-    set_irg_callee_info_state(get_irp_allirg(i), irg_callee_info_consistent);
+  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+    irg_walk_graph(get_irp_irg(i), callee_walker, remove_Tuples, NULL);
+    set_irg_callee_info_state(get_irp_irg(i), irg_callee_info_consistent);
   }
   set_irp_callee_info_state(irg_callee_info_consistent);
 }
@@ -785,8 +786,8 @@ static entity ** get_free_methods(void)
   entity ** arr = NEW_ARR_F(entity *, 0);
   entity * ent;
 
-  for (i = get_irp_n_allirgs() - 1; i >= 0; --i) {
-    ir_graph * irg = get_irp_allirg(i);
+  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+    ir_graph * irg = get_irp_irg(i);
     entity * ent = get_irg_entity(irg);
     /* insert "external visible" methods. */
     if (get_entity_visibility(ent) != visibility_local) {
@@ -798,8 +799,8 @@ static entity ** get_free_methods(void)
   }
 
   /* insert sticky methods, too */
-  for (i = get_irp_n_allirgs() - 1; i >= 0; --i) {
-    ir_graph * irg = get_irp_allirg(i);
+  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+    ir_graph * irg = get_irp_irg(i);
     entity * ent = get_irg_entity(irg);
     /* insert "external visible" methods. */
     if (get_entity_stickyness (ent) == stickyness_sticky) {
