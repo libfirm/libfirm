@@ -28,10 +28,15 @@ int main(int argc, char **argv)
   printf("\nCreating type information for IDENTIFY_TYPES ...\n");
 
 
-  compare_types_func = compare_names;
+
 
   /** init library */
-  init_firm (NULL);
+  firm_parameter_t params;
+  memset (&params, 0, sizeof(params));
+  params.size = sizeof(params);
+  params.compare_types_func = compare_names;
+  init_firm(&params);
+
 
   i1 = new_id_from_str("type1");
   i2 = new_id_from_str("type2");
