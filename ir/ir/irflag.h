@@ -85,6 +85,9 @@ void set_opt_redundant_LoadStore(int value);
  */
 void set_opt_cse (int value);
 
+/** Returns constant folding optimization setting. */
+int get_opt_cse(void);
+
 /** Enables/Disables global constant subexpression elimination.
  *
  * If opt_global_cse == 1 and opt_cse == 1 perform intra procedure

@@ -80,6 +80,10 @@ void set_opt_cse (int value)
     libFIRM_opt &= ~OPT_CSE;
 }
 
+int (get_opt_cse)(void) {
+  return _get_opt_cse();
+}
+
 void set_opt_global_cse(int value)
 {
   if (value)
