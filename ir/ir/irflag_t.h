@@ -111,6 +111,14 @@ static INLINE int get_opt_strength_red(void)
   return libFIRM_opt & OPT_STRENGTH_RED;
 }
 
+/** Returns verbosity for strength reduction.
+ * 1: output number of reduced expressions for each run
+ * 2: output each reduced expression . */
+static INLINE int get_opt_strength_red_verbosity(void)
+{
+  return 0;  // @@@ not yet implemented.
+}
+
 /** Returns global constant subexpression elimination setting. */
 static INLINE int get_opt_constant_folding(void)
 {
