@@ -1,3 +1,5 @@
+  19.10.2001 Boris
+  renamed get_type_nameid to get_type_ident
 
   10.9.2001 Goetz
   Bugfix: dead node elimination did not replace the hash table
