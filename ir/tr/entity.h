@@ -326,14 +326,42 @@ ir_node *copy_const_value(ir_node *n);
 ir_node *get_atomic_ent_value(entity *ent);
 void     set_atomic_ent_value(entity *ent, ir_node *val);
 
-/* A value of a compound entity is a pair of a value and the corresponding
-   member of the compound. */
-void     add_compound_ent_value(entity *ent, ir_node *val, entity *member);
+/* The following type describes a path to a leave in the compound graph.
+   Node 0 in the path must be an entity of type tp given in the constructor.  If
+   the type of this element is compound, the path node 1 is an element of the type
+   of node 0 an so forth, until an entity of atomic type is reached. */
+#ifndef _COMPOUND_GRAPH_PATH_TYPEDEF_
+#define _COMPOUND_GRAPH_PATH_TYPEDEF_
+typedef struct compound_graph_path compound_graph_path;
+#endif /* _COMPOUND_GRAPH_PATH_TYPEDEF_ */
+compound_graph_path *new_compound_graph_path(type *tp, int length);
+int     is_compound_graph_path(void *thing);
+void    free_compound_graph_path (compound_graph_path *gr);
+int     get_compound_graph_path_length(compound_graph_path *gr);
+entity *get_compound_graph_path_node(compound_graph_path *gr, int pos);
+void    set_compound_graph_path_node(compound_graph_path *gr, int pos, entity *node);
+
+/* A value of a compound entity is a pair of a value and the description of the
+   corresponding access path to the member of the compound.  */
+void     add_compound_ent_value_w_path(entity *ent, ir_node *val, compound_graph_path *path);
+void     set_compound_ent_value_w_path(entity *ent, ir_node *val, compound_graph_path *path, int pos);
 int      get_compound_ent_n_values(entity *ent);
 ir_node *get_compound_ent_value(entity *ent, int pos);
+compound_graph_path *get_compound_ent_value_path(entity *ent, int pos);
+/* Removes all constant entries where the path ends at value_ent. Does not
+   free the memory of the paths.  (The same path might be used for several
+   constant entities. */
+void     remove_compound_ent_value(entity *ent, entity *value_ent);
+
+/* Some languages support only trivial access paths, i.e., the member is a
+   direct, atomic member of the constant entities type. In this case the
+   corresponding entity can be accessed directly.  The following functions
+   allow direct access. */
+void     add_compound_ent_value(entity *ent, ir_node *val, entity *member);
 entity  *get_compound_ent_value_member(entity *ent, int pos);
 void     set_compound_ent_value(entity *ent, ir_node *val, entity *member, int pos);
-void     remove_compound_ent_value(entity *ent, entity *value_ent);
+
+
 
 /** Inits the entity ent witch must be of a one dimensional
    array type with the values given in the values array.

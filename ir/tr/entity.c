@@ -335,13 +335,13 @@ set_entity_variability (entity *ent, ent_variability var){
       (ent->variability == uninitialized) && (var != uninitialized)) {
     /* Allocate datastructures for constant values */
     ent->values = NEW_ARR_F(ir_node *, 1);
-    ent->val_ents = NEW_ARR_F(entity *, 1);
+    ent->val_paths = NEW_ARR_F(compound_graph_path *, 1);
   }
   if ((is_compound_type(ent->type)) &&
       (var == uninitialized) && (ent->variability != uninitialized)) {
     /* Free datastructures for constant values */
     DEL_ARR_F(ent->values);
-    DEL_ARR_F(ent->val_ents);
+    DEL_ARR_F(ent->val_paths);
   }
   ent->variability = var;
 }
@@ -447,13 +447,126 @@ ir_node *copy_const_value(ir_node *n) {
   return nn;
 }
 
-/* A value of a compound entity is a pair of value and the corresponding member of
+compound_graph_path *
+new_compound_graph_path(type *tp, int length) {
+  compound_graph_path *res;
+  assert(is_type(tp) && is_compound_type(tp));
+  assert(length > 0);
+
+  res = (compound_graph_path *) malloc (sizeof(compound_graph_path) + (length-1) * sizeof(entity *));
+  res->kind = k_ir_compound_graph_path;
+  res->tp = tp;
+  res->len = length;
+  memset(res->nodes, 0, sizeof(entity *) * length);
+  return res;
+}
+
+INLINE void
+free_compound_graph_path (compound_graph_path *gr) {
+  assert(gr && is_compound_graph_path(gr));
+  free(gr);
+}
+
+INLINE int
+is_compound_graph_path(void *thing) {
+  return (get_kind(thing) == k_ir_compound_graph_path);
+}
+
+/* checks whether nodes 0..pos are correct (all lie on a path.) */
+/* @@@ not implemented */
+INLINE int is_proper_compound_graph_path(compound_graph_path *gr, int pos) {
+  entity *node;
+  type *owner = gr->tp;
+  for (i = 0; i <= pos; i++) {
+    node = get_compound_graph_path_node(gr, i);
+    if (get_entity_owner(node) != owner) return false;
+    type = get_entity_type(node);
+  }
+  if (pos == get_compound_graph_path_length(gr) -1)
+    if (!is_atomic_type(type)) return false;
+  return true;
+}
+
+INLINE int
+get_compound_graph_path_length(compound_graph_path *gr) {
+  assert(gr && is_compound_graph_path(gr));
+  return gr->len;
+}
+
+INLINE entity *
+get_compound_graph_path_node(compound_graph_path *gr, int pos) {
+  assert(gr && is_compound_graph_path(gr));
+  assert(pos >= 0 && pos < gr->len);
+  return gr->nodes[pos];
+}
+
+INLINE void
+set_compound_graph_path_node(compound_graph_path *gr, int pos, entity *node) {
+  assert(gr && is_compound_graph_path(gr));
+  assert(pos >= 0 && pos < gr->len);
+  assert(is_entity(node));
+  gr->nodes[pos] = node;
+  assert(is_proper_compound_graph_path(gr, pos));
+}
+
+/* A value of a compound entity is a pair of value and the corresponding path to a member of
    the compound. */
+INLINE void
+add_compound_ent_value_w_path(entity *ent, ir_node *val, compound_graph_path *path) {
+  assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
+  ARR_APP1 (ir_node *, ent->values, val);
+  ARR_APP1 (compound_graph_path *, ent->val_paths, path);
+}
+
+INLINE void
+set_compound_ent_value_w_path(entity *ent, ir_node *val, compound_graph_path *path, int pos) {
+  assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
+  ent->values[pos+1] = val;
+  ent->val_paths[pos+1] = path;
+}
+
+INLINE int
+get_compound_ent_n_values(entity *ent) {
+  assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
+  return (ARR_LEN (ent->values))-1;
+}
+
+INLINE ir_node  *
+get_compound_ent_value(entity *ent, int pos) {
+  assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
+  return ent->values[pos+1];
+}
+
+INLINE compound_graph_path *
+get_compound_ent_value_path(entity *ent, int pos) {
+  assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
+  return ent->val_paths[pos+1];
+}
+
+void
+remove_compound_ent_value(entity *ent, entity *value_ent) {
+  int i;
+  assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
+  for (i = 1; i < (ARR_LEN (ent->val_paths)); i++) {
+    compound_graph_path *path = ent->val_paths[i];
+    if (path->nodes[path->len] == value_ent) {
+      for(; i < (ARR_LEN (ent->val_paths))-1; i++) {
+	ent->val_paths[i] = ent->val_paths[i+1];
+	ent->values[i]   = ent->values[i+1];
+      }
+      ARR_SETLEN(entity*,  ent->val_paths, ARR_LEN(ent->val_paths) - 1);
+      ARR_SETLEN(ir_node*, ent->values,   ARR_LEN(ent->values) - 1);
+      break;
+    }
+  }
+}
+
 INLINE void
 add_compound_ent_value(entity *ent, ir_node *val, entity *member) {
   assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
-  ARR_APP1 (ir_node *, ent->values, val);
-  ARR_APP1 (entity *, ent->val_ents, member);
+  compound_graph_path *path = new_compound_graph_path(get_entity_owner(ent), 1);
+  path->nodes[0] = member;
+  add_compound_ent_value_w_path(ent, val, path);
 }
 
 /* Copies the firm subgraph referenced by val to const_code_irg and adds
@@ -471,18 +584,6 @@ copy_and_add_compound_ent_value(entity *ent, ir_node *val, entity *member) {
   current_ir_graph = rem;
   }*/
 
-INLINE int
-get_compound_ent_n_values(entity *ent) {
-  assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
-  return (ARR_LEN (ent->values))-1;
-}
-
-INLINE ir_node  *
-get_compound_ent_value(entity *ent, int pos) {
-  assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
-  return ent->values[pos+1];
-}
-
 /* Copies the value i of the entity to current_block in current_ir_graph.
 ir_node *
 copy_compound_ent_value(entity *ent, int pos) {
@@ -492,32 +593,21 @@ copy_compound_ent_value(entity *ent, int pos) {
 
 INLINE entity   *
 get_compound_ent_value_member(entity *ent, int pos) {
+  compound_graph_path *path;
   assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
-  return ent->val_ents[pos+1];
+  path = get_compound_ent_value_path(ent, pos);
+  assert(path->len == 1);
+
+  return get_compound_graph_path_node(path, 0);
 }
 
 INLINE void
 set_compound_ent_value(entity *ent, ir_node *val, entity *member, int pos) {
+  compound_graph_path *path;
   assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
-  ent->values[pos+1] = val;
-  ent->val_ents[pos+1] = member;
-}
-
-void
-remove_compound_ent_value(entity *ent, entity *value_ent) {
-  int i;
-  assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
-  for (i = 1; i < (ARR_LEN (ent->val_ents)); i++) {
-    if (ent->val_ents[i] == value_ent) {
-      for(; i < (ARR_LEN (ent->val_ents))-1; i++) {
-	ent->val_ents[i] = ent->val_ents[i+1];
-	ent->values[i]   = ent->values[i+1];
-      }
-      ARR_SETLEN(entity*,  ent->val_ents, ARR_LEN(ent->val_ents) - 1);
-      ARR_SETLEN(ir_node*, ent->values,   ARR_LEN(ent->values) - 1);
-      break;
-    }
-  }
+  path = new_compound_graph_path(get_entity_owner(ent), 1);
+  set_compound_graph_path_node(path, 0, member);
+  set_compound_ent_value_w_path(ent, val, path, pos);
 }
 
 void

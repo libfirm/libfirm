@@ -35,6 +35,14 @@
 
 # include "entity.h"
 
+/** A path in a compund graph. */
+struct compound_graph_path {
+  firm_kind kind;       /**< dynamic type tag for compound graph path. */
+  type *tp;
+  int len;
+  entity *nodes[1];
+};
+
 /** the type of an entity */
 struct entity {
   firm_kind kind;       /**< dynamic type tag for entity. */
@@ -68,7 +76,7 @@ struct entity {
   ir_node **values;     /**< constant values of compound entities. Only available if
                           variablility not uninitialized.  Must be set for variability constant
                            */
-  entity **val_ents;    /**< entities corresponding to constant values. Only available if
+  compound_graph_path **val_paths;    /**< paths corresponding to constant values. Only available if
                           variablility not uninitialized.  Must be set for variability constant */
 
   /* ------------- fields for entities owned by a class type ---------------*/
