@@ -85,6 +85,12 @@ void callgraph_walk(callgraph_walk_func *pre, callgraph_walk_func *post, void *e
 void find_callgraph_recursions(void);
 
 
+/** Computes the loop nesting information.
+ *
+ * Computes callee info and the callgraph if
+ * this information is not available.
+ */
+void analyse_loop_nesting_depth(void);
 
 
 #endif /* _CALLGRAPH_H_ */

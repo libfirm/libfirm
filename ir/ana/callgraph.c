@@ -18,6 +18,8 @@
 #include "irgraph_t.h"
 #include "irnode_t.h"
 
+#include "cgana.h"
+
 #include "array.h"
 #include "pmap.h"
 
@@ -520,7 +522,6 @@ init_scc (void) {
     set_irg_link(get_irp_irg(i), new_scc_info());
     get_irp_irg(i)->callgraph_recursion_depth = 0;
     get_irp_irg(i)->callgraph_loop_depth = 0;
-    get_irp_irg(i)->callgraph_weighted_loop_depth = 0;
   }
 }
 
@@ -891,12 +892,27 @@ static void reset_isbe(void) {
 
 void compute_loop_depth (ir_graph *irg, void *env) {
   int current_nesting = *(int *) env;
+  int old_nesting = irg->callgraph_loop_depth;
+  int old_visited = get_cg_irg_visited(irg);
   int i, n_callees;
 
+  //return ;
+
   if (cg_irg_visited(irg)) return;
+
   mark_cg_irg_visited(irg);
 
-  if (current_nesting == 0 || irg->callgraph_loop_depth < current_nesting) {
+  //printf(" old: %d new %d master %d", old_visited, get_cg_irg_visited(irg), master_cg_visited); DDMG(irg);
+
+
+  if (old_nesting < current_nesting)
+    irg->callgraph_loop_depth = current_nesting;
+
+  if (current_nesting > irp->max_callgraph_loop_depth)
+    irp->max_callgraph_loop_depth = current_nesting;
+
+  if ((old_visited +1 < get_cg_irg_visited(irg)) ||   /* not yet visited */
+      (old_nesting < current_nesting)) {        /* propagate larger nesting */
     /* Don't walk the graph, but a tree that is an unfolded graph. */
     n_callees = get_irg_n_callees(irg);
     for (i = 0; i < n_callees; i++) {
@@ -906,9 +922,6 @@ void compute_loop_depth (ir_graph *irg, void *env) {
       *(int *)env -= get_irg_callee_loop_depth(irg, i);
     }
   }
-
-  if (irg->callgraph_loop_depth < current_nesting)
-    irg->callgraph_loop_depth = current_nesting;
 
   set_cg_irg_visited(irg, master_cg_visited-1);
 }
@@ -956,13 +969,14 @@ static int in_stack(ana_entry2 *e, ir_loop *g) {
 void compute_rec_depth (ir_graph *irg, void *env) {
   ana_entry2 *e = (ana_entry2 *)env;
   ir_loop *l = irg->l;
-  int depth;
+  int depth, old_depth = irg->callgraph_recursion_depth;
   int i, n_callees;
   int pushed = 0;
 
   if (cg_irg_visited(irg)) return;
   mark_cg_irg_visited(irg);
 
+  /* -- compute and set the new nesting value -- */
   if ((l != irp->outermost_cg_loop) && !in_stack(e, l)) {
     push2(e, l);
     e->recursion_nesting++;
@@ -970,7 +984,14 @@ void compute_rec_depth (ir_graph *irg, void *env) {
   }
   depth = e->recursion_nesting;
 
-  if (depth == 0 || irg->callgraph_recursion_depth < depth) {
+  if (old_depth < depth)
+    irg->callgraph_recursion_depth = depth;
+
+  if (depth > irp->max_callgraph_recursion_depth)
+    irp->max_callgraph_recursion_depth = depth;
+
+  /* -- spread the nesting value -- */
+  if (depth == 0 || old_depth < depth) {
     /* Don't walk the graph, but a tree that is an unfolded graph. */
     n_callees = get_irg_n_callees(irg);
     for (i = 0; i < n_callees; i++) {
@@ -979,9 +1000,7 @@ void compute_rec_depth (ir_graph *irg, void *env) {
     }
   }
 
-  if (irg->callgraph_recursion_depth < depth)
-    irg->callgraph_recursion_depth = depth;
-
+  /* -- clean up -- */
   if (pushed) {
     pop2(e);
     e->recursion_nesting--;
@@ -1032,38 +1051,52 @@ void find_callgraph_recursions(void) {
     }
   }
 
-  /* -- Schleifentiefe berechnen -- */
+  /* -- compute the loop depth  -- */
   int current_nesting = 0;
+  irp->max_callgraph_loop_depth = 0;
   master_cg_visited += 2;
+  //printf (" ** starting at      "); DDMG(get_irp_main_irg());
   compute_loop_depth(get_irp_main_irg(), &current_nesting);
   for (i = 0; i < n_irgs; i++) {
     ir_graph *irg = get_irp_irg(i);
-    if (!cg_irg_visited(irg) && get_irg_n_callers(irg) == 0)
+    if ((get_cg_irg_visited(irg) < master_cg_visited-1) &&
+	get_irg_n_callers(irg) == 0) {
       compute_loop_depth(irg, &current_nesting);
+      //printf (" ** starting at      "); DDMG(irg);
+    }
   }
   for (i = 0; i < n_irgs; i++) {
     ir_graph *irg = get_irp_irg(i);
-    if (get_cg_irg_visited(irg) < master_cg_visited-1)
+    if (get_cg_irg_visited(irg) < master_cg_visited-1) {
       compute_loop_depth(irg, &current_nesting);
+      //printf (" ** starting at      "); DDMG(irg);
+    }
   }
 
-  /* -- Rekursionstiefe berechnen -- */
+  /* -- compute the recursion depth -- */
   ana_entry2 e;
   e.loop_stack = NEW_ARR_F(ir_loop *, 0);
   e.tos = 0;
   e.recursion_nesting = 0;
+  irp->max_callgraph_recursion_depth = 0;
 
   master_cg_visited += 2;
   compute_rec_depth(get_irp_main_irg(), &e);
+  //printf (" ++ starting at "); DDMG(get_irp_main_irg());
   for (i = 0; i < n_irgs; i++) {
     ir_graph *irg = get_irp_irg(i);
-    if (!cg_irg_visited(irg) && get_irg_n_callers(irg) == 0)
+    if ((get_cg_irg_visited(irg) < master_cg_visited-1) &&
+	get_irg_n_callers(irg) == 0) {
       compute_rec_depth(irg, &e);
+      //printf (" ++ starting at "); DDMG(irg);
+    }
   }
   for (i = 0; i < n_irgs; i++) {
     ir_graph *irg = get_irp_irg(i);
-    if (get_cg_irg_visited(irg) < master_cg_visited-1)
+    if (get_cg_irg_visited(irg) < master_cg_visited-1) {
       compute_rec_depth(irg, &e);
+      //printf (" ++ starting at "); DDMG(irg);
+    }
   }
 
   DEL_ARR_F(e.loop_stack);
@@ -1087,4 +1120,20 @@ int       get_irg_loop_depth(ir_graph *irg) {
 int       get_irg_recursion_depth(ir_graph *irg) {
   assert(irp->callgraph_state == irp_callgraph_and_calltree_consistent);
   return irg->callgraph_recursion_depth;
+}
+
+void analyse_loop_nesting_depth(void) {
+  entity **free_methods = NULL;
+  int arr_len;
+
+  /* establish preconditions. */
+  if (get_irp_callee_info_state() != irg_callee_info_consistent) {
+    cgana(&arr_len, &free_methods, 0);
+  }
+
+  if (irp_callgraph_consistent != get_irp_callgraph_state()) {
+    compute_callgraph();
+  }
+
+  find_callgraph_recursions();
 }
