@@ -14,7 +14,7 @@ INSTALL_HEADERS = tv.h
 
 SOURCES = $(INSTALL_HEADERS)
 
-SOURCES += Makefile.in ieee754.h tv.c tv_t.h
+SOURCES += Makefile.in tv.c tv_t.h strcalc.c strcalc.h fltcalc.c fltcalc.h ieee754.h
 
 include $(topdir)/MakeRules
 

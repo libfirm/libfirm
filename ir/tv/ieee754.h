@@ -1,47 +1,68 @@
-/* IEEE754 fp format.
-   Copyright (C) 1995, 1996 Christian von Roques */
+/* Copyright (C) 1992, 1995, 1996, 1999 Free Software Foundation, Inc.
+   This file is part of the GNU C Library.
 
-/* $Id$ */
+   The GNU C Library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
 
-/* This file was derived from the GNU C Library's ieee754.h which
-   carried the following copyright notice:
+   The GNU C Library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
 
-Copyright (C) 1992 Free Software Foundation, Inc.
+   You should have received a copy of the GNU Lesser General Public
+   License along with the GNU C Library; if not, write to the Free
+   Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+   02111-1307 USA.  */
 
-The GNU C Library is free software; you can redistribute it and/or
-modify it under the terms of the GNU Library General Public License as
-published by the Free Software Foundation; either version 2 of the
-License, or (at your option) any later version.
-
-The GNU C Library is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Library General Public License for more details.
-
-You should have received a copy of the GNU Library General Public
-License along with the GNU C Library; see the file COPYING.LIB.  If
-not, write to the Free Software Foundation, Inc., 675 Mass Ave,
-Cambridge, MA 02139, USA.  */
-
-/* @@@ This is completely non-portable!  ISO/IEC DIS 9899, section
-   3.5.2.1: An implementation may allocate any addressable storage
-   unit large enough to hold a bit-field.  If enough space remains, a
-   bit-field that immediately follows another bit-field in a structure
-   shall be packed into adjacent bits of the same unit.  If
-   insufficient space remains, whether a bit-field that does not fit
-   is put into the next unit or overlaps adjacent units is
-   implementation-defined.  The order of allocation of bit-fields
-   within a unit (high-order to low-order or low-order to high-order)
-   is implementation-defined.  */
-
-/* Floating point definitions in ieee standard number 754
-   only used in target values (/libfirm/ir/tv/tv.c). */
 #ifndef _IEEE754_H
-#define _IEEE754_H
 
-#ifdef HAVE_CONFIG_H
-# include <config.h>
-#endif
+#define _IEEE754_H 1
+#include <features.h>
+
+#include <endian.h>
+
+__BEGIN_DECLS
+
+union ieee754_float
+  {
+    float f;
+
+    /* This is the IEEE 754 single-precision format.  */
+    struct
+      {
+#if	__BYTE_ORDER == __BIG_ENDIAN
+	unsigned int negative:1;
+	unsigned int exponent:8;
+	unsigned int mantissa:23;
+#endif				/* Big endian.  */
+#if	__BYTE_ORDER == __LITTLE_ENDIAN
+	unsigned int mantissa:23;
+	unsigned int exponent:8;
+	unsigned int negative:1;
+#endif				/* Little endian.  */
+      } ieee;
+
+    /* This format makes it easier to see if a NaN is a signalling NaN.  */
+    struct
+      {
+#if	__BYTE_ORDER == __BIG_ENDIAN
+	unsigned int negative:1;
+	unsigned int exponent:8;
+	unsigned int quiet_nan:1;
+	unsigned int mantissa:22;
+#endif				/* Big endian.  */
+#if	__BYTE_ORDER == __LITTLE_ENDIAN
+	unsigned int mantissa:22;
+	unsigned int quiet_nan:1;
+	unsigned int exponent:8;
+	unsigned int negative:1;
+#endif				/* Little endian.  */
+      } ieee_nan;
+  };
+
+#define IEEE754_FLOAT_BIAS	0x7f /* Added to exponent.  */
 
 
 union ieee754_double
@@ -51,75 +72,128 @@ union ieee754_double
     /* This is the IEEE 754 double-precision format.  */
     struct
       {
-#ifdef WORDS_BIGENDIAN
+#if	__BYTE_ORDER == __BIG_ENDIAN
 	unsigned int negative:1;
 	unsigned int exponent:11;
+	/* Together these comprise the mantissa.  */
 	unsigned int mantissa0:20;
 	unsigned int mantissa1:32;
-#else
+#endif				/* Big endian.  */
+#if	__BYTE_ORDER == __LITTLE_ENDIAN
+# if	__FLOAT_WORD_ORDER == BIG_ENDIAN
+	unsigned int mantissa0:20;
+	unsigned int exponent:11;
+	unsigned int negative:1;
+	unsigned int mantissa1:32;
+# else
+	/* Together these comprise the mantissa.  */
 	unsigned int mantissa1:32;
 	unsigned int mantissa0:20;
 	unsigned int exponent:11;
 	unsigned int negative:1;
-#endif
+# endif
+#endif				/* Little endian.  */
       } ieee;
+
+    /* This format makes it easier to see if a NaN is a signalling NaN.  */
     struct
       {
-#ifdef WORDS_BIGENDIAN
+#if	__BYTE_ORDER == __BIG_ENDIAN
 	unsigned int negative:1;
 	unsigned int exponent:11;
 	unsigned int quiet_nan:1;
+	/* Together these comprise the mantissa.  */
 	unsigned int mantissa0:19;
 	unsigned int mantissa1:32;
 #else
+# if	__FLOAT_WORD_ORDER == BIG_ENDIAN
+	unsigned int mantissa0:19;
+	unsigned int quiet_nan:1;
+	unsigned int exponent:11;
+	unsigned int negative:1;
+	unsigned int mantissa1:32;
+# else
+	/* Together these comprise the mantissa.  */
 	unsigned int mantissa1:32;
 	unsigned int mantissa0:19;
 	unsigned int quiet_nan:1;
 	unsigned int exponent:11;
 	unsigned int negative:1;
+# endif
 #endif
       } ieee_nan;
   };
 
-/* bias added to exponent of ieee754_double */
-#define _IEEE754_DOUBLE_BIAS 0x3ff
+#define IEEE754_DOUBLE_BIAS	0x3ff /* Added to exponent.  */
 
 
-union ieee754_float
+union ieee854_long_double
   {
-    float f;
+    long double d;
 
-    /* This is the ieee754 single-precision format.  */
+    /* This is the IEEE 854 double-extended-precision format.  */
     struct
       {
-#ifdef WORDS_BIGENDIAN
+#if	__BYTE_ORDER == __BIG_ENDIAN
 	unsigned int negative:1;
-	unsigned int exponent:8;
-	unsigned int mantissa:23;
-#else
-	unsigned int mantissa:23;
-	unsigned int exponent:8;
+	unsigned int exponent:15;
+	unsigned int empty:16;
+	unsigned int mantissa0:32;
+	unsigned int mantissa1:32;
+#endif
+#if	__BYTE_ORDER == __LITTLE_ENDIAN
+# if	__FLOAT_WORD_ORDER == BIG_ENDIAN
+	unsigned int exponent:15;
 	unsigned int negative:1;
+	unsigned int empty:16;
+	unsigned int mantissa0:32;
+	unsigned int mantissa1:32;
+# else
+	unsigned int mantissa1:32;
+	unsigned int mantissa0:32;
+	unsigned int exponent:15;
+	unsigned int negative:1;
+	unsigned int empty:16;
+# endif
 #endif
       } ieee;
-    /* This is for extracting information about NaNs.  */
+
+    /* This is for NaNs in the IEEE 854 double-extended-precision format.  */
     struct
       {
-#ifdef WORDS_BIGENDIAN
+#if	__BYTE_ORDER == __BIG_ENDIAN
 	unsigned int negative:1;
-	unsigned int exponent:8;
+	unsigned int exponent:15;
+	unsigned int empty:16;
+	unsigned int one:1;
 	unsigned int quiet_nan:1;
-	unsigned int mantissa:22;
-#else
-	unsigned int mantissa:22;
-	unsigned int quiet_nan:1;
-	unsigned int exponent:8;
+	unsigned int mantissa0:30;
+	unsigned int mantissa1:32;
+#endif
+#if	__BYTE_ORDER == __LITTLE_ENDIAN
+# if	__FLOAT_WORD_ORDER == BIG_ENDIAN
+	unsigned int exponent:15;
 	unsigned int negative:1;
+	unsigned int empty:16;
+	unsigned int mantissa0:30;
+	unsigned int quiet_nan:1;
+	unsigned int one:1;
+	unsigned int mantissa1:32;
+# else
+	unsigned int mantissa1:32;
+	unsigned int mantissa0:30;
+	unsigned int quiet_nan:1;
+	unsigned int one:1;
+	unsigned int exponent:15;
+	unsigned int negative:1;
+	unsigned int empty:16;
+# endif
 #endif
       } ieee_nan;
   };
 
-/* bias added to exponent of ieee_float */
-#define _IEEE754_FLOAT_BIAS 0x7f
+#define IEEE854_LONG_DOUBLE_BIAS 0x3fff
 
-#endif	/* _IEEE754_H */
+__END_DECLS
+
+#endif /* ieee754.h */

@@ -3,1443 +3,965 @@
 
 /* $Id$ */
 
+/****i* tv/implementation
+ *
+ * AUTHORS
+ *    Christian von Roques
+ *    Matthias Heil
+ *
+ * NOTES
+ *    Internal storage for tarvals, 1st draft:
+ *   Integers as well as pointers are stored in a hex formatted string holding
+ *   16 characters. Booleans are not stored as there are only two of them.
+ *
+ *    Floats are just reinterpreted as byte strings, because I am not sure if
+ *   there is loss if I convert float to long double and back and furthermore
+ *   the implementation of a fully ieee compatible floating point emulation
+ *   is not sensible for now
+ *    With this information it is easy to decide the kind of stored value:
+ *   Integers have size 16, floats 4, doubles 8, long doubles 12.
+ ******/
+
 /* This implementation assumes:
-   * target characters/strings can be represented as type `char'/`char *',
-   * host's type `long'/`unsigned long' can hold values of mode `l'/`L',
-   * both host and target have two's complement integral arithmetic,
-     host's C operators `/' and `%' match target's div and mod.
-     target_max_<mode> == (1<<k)-1 for some k>0
-     target_min_<mode> == -target_max_<mode>-1
-     target_max_<Mode> == target_max_<mode>-target_min_<mode>
    * both host and target have IEEE-754 floating-point arithmetic.  */
 
 /* !!! float and double divides MUST NOT SIGNAL !!! */
 /* @@@ query the floating-point expception status flags */
 
-/* @@@ ToDo: tarval_convert_to is not fully implemented! */
 /* @@@ Problem: All Values are stored twice, once as Univ_*s and a 2nd
    time in their real target mode. :-( */
-/* @@@ Perhaps use a set instead of a pset: new tarvals allocated on
-   stack, copied into set by tarval_identify() if really new.  If
-   tarval_identify() discards often enough, the extra copy for kept
-   values is cheaper than the extra obstack_alloc()/free() for
-   discarded ones.  */
+
+#define MAX_INT_LENGTH 8
+#define CHAR_BUFFER_SIZE ((MAX_INT_LENGTH) * 2)
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
 
-# include "xprintf.h"
-#include <assert.h>
-#include <limits.h>
-#include <errno.h>
-#include <math.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
+#include <assert.h>         /* assertions */
+#include <string.h>         /* nice things for strings */
 
-#include "pset.h"
-#define TOBSTACK_ID "tv"
-#include "obst.h"
-#include "ieee754.h"
-#include "tune.h"
-#include "xp_help.h"
+#include <malloc.h>
 #include "tv_t.h"
-#include "entity_t.h"
-#include "ident_t.h"
-#include "irmode.h"
-#include "irnode.h"
+#include "set.h"            /* to store tarvals in */
+#include "tune.h"           /* some constants */
+#include "entity_t.h"       /* needed to store pointers to entities */
+#include "irmode.h"         /* defines modes etc */
+#include "irnode.h"         /* defines boolean return values */
+#include "xprintf.h"
+#include "xp_help.h"
+#include "host.h"
+#include "strcalc.h"
+#include "fltcalc.h"
 
-static struct obstack tv_obst;	/* obstack for all the target values */
-static pset *tarvals;		/* pset containing pointers to _all_ tarvals */
-
-/* currently building an object with tarval_start() & friends ? */
-#define BUILDING obstack_object_size (&tv_obst)
-
-/* bcopy is not ISO C */
-#define bcopy(X, Y, Z) memcpy((Y), (X), (Z))
-
-
-/* special tarvals: */
-tarval *tarval_bad;
-tarval *tarval_b_false;
-tarval *tarval_b_true;
-tarval *tarval_D_NaN;
-tarval *tarval_D_Inf;
-tarval *tarval_P_void;
-tarval *tarval_mode_null[irm_max];
-tarval *tarval_mode_min[irm_max];
-tarval *tarval_mode_max[irm_max];
-
-tarval *get_tarval_bad      ()              { return tarval_bad;     }
-tarval *get_tarval_b_false  ()              { return tarval_b_false; }
-tarval *get_tarval_b_true   ()              { return tarval_b_true;  }
-tarval *get_tarval_D_NaN    ()              { return tarval_D_NaN;   }
-tarval *get_tarval_D_Inf    ()              { return tarval_D_Inf;   }
-tarval *get_tarval_P_void   ()              { return tarval_P_void;  }
-tarval *get_tarval_mode_null(ir_mode *mode)
-  { return tarval_mode_null[get_mode_modecode(mode)]; }
-tarval *get_tarval_mode_min (ir_mode *mode)
-  { return tarval_mode_min[get_mode_modecode(mode)];  }
-tarval *get_tarval_mode_max (ir_mode *mode)
-  { return tarval_mode_max[get_mode_modecode(mode)];  }
-
-# if 0
-/* @@@ depends on order of ir_mode */
-static tarval_sInt min_sInt[8] = {
-  TARGET_SIMIN (c), 0,
-  TARGET_SIMIN (h), 0,
-  TARGET_SIMIN (i), 0,
-  TARGET_SIMIN (l), 0
-};
-static tarval_sInt max_sInt[8] = {
-  TARGET_SIMAX (c), TARGET_UIMAX (C),
-  TARGET_SIMAX (h), TARGET_UIMAX (H),
-  TARGET_SIMAX (i), TARGET_UIMAX (I),
-  TARGET_SIMAX (l), TARGET_UIMAX (L)
-};
-# endif
-
-/* Used to be in irmode.h, replaced now. */
-# define is_Int(m) ((m) <= irm_Lu && (m) >= irm_Bs) /* old */
-
-/* return a mode-specific value */
-
-tarval_F
-tv_val_F (tarval *tv)
-{
-  return tv->u.F;
-}
-
-tarval_D
-tv_val_D (tarval *tv)
-{
-  return tv->u.D;
-}
-
-tarval_E
-tv_val_E (tarval *tv)
-{
-  return tv->u.E;
-}
-
-tarval_sInt
-tv_val_sInt (tarval *tv)
-{
-  return tv->u.sInt;
-}
-
-tarval_uInt
-tv_val_uInt (tarval *tv)
-{
-  return tv->u.uInt;
-}
-
-tarval_P
-tv_val_P (tarval *tv)
-{
-  return tv->u.P;
-}
-
-bool
-tv_val_b (tarval *tv)
-{
-  return tv->u.b;
-}
-
-
-/* Overflows `sInt' signed integral `mode'?  */
-static INLINE bool
-sInt_overflow (tarval_sInt sInt, ir_mode *mode)
-{
-  assert (is_Int(get_mode_modecode(mode)));
-  return (get_mode_min(mode) && get_mode_max(mode)  /* only valid after firm initialization */
-	  && (sInt < tv_val_sInt (get_mode_min(mode))
-	      || tv_val_sInt (get_mode_max(mode)) < sInt));
-}
-
-
-/* Overflows `uInt' unsigned integral `mode'?  */
-static INLINE bool
-uInt_overflow (tarval_uInt uInt, ir_mode *mode)
-{
-  assert (is_Int(get_mode_modecode(mode)));
-  return (get_mode_max(mode)   /* only valid after firm initialization */
-	  && tv_val_uInt (get_mode_max(mode)) < uInt);
-}
-
-
+/****************************************************************************
+ *   local definitions and macros
+ ****************************************************************************/
 #ifndef NDEBUG
-void
-_tarval_vrfy (const tarval *val)
-{
-  assert (val);
-  switch (get_mode_modecode(val->mode)) {
-    /* floating */
-  case irm_F:
-  case irm_D:
-  case irm_E:
-    break;
-    /* integral */
-  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu: {
-    //    printf("Tarval is %lu\n", val->u.uInt);
-    assert (!uInt_overflow (val->u.uInt, val->mode));
-    } break;
-  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
-    assert (!sInt_overflow (val->u.sInt, val->mode)); break;
-  case irm_C:
-  case irm_U:
-    break;
-  case irm_P:
-    if (val->u.P.ent) {
-      assert (val->u.P.ent->kind == k_entity);
-    }
-    assert (   val->u.P.xname || val->u.P.ent
-	    || !tarval_P_void || (val == tarval_P_void));
-    break;
-  case irm_b:
-    assert ((unsigned)val->u.b <= 1); break;
-  default:
-    assert (val->mode == mode_T);
-    break;
-  }
-}
+#  define TARVAL_VERIFY(a) tarval_verify((a))
+#else
+#  define TARVAL_VERIFY(a) ((void)0)
 #endif
 
+#define INSERT_TARVAL(tv) ((tarval*)set_insert(tarvals, (tv), sizeof(tarval), hash_tv((tv))))
+#define FIND_TARVAL(tv) ((tarval*)set_find(tarvals, (tv), sizeof(tarval), hash_tv((tv))))
 
-#ifdef STATS
+#define INSERT_VALUE(val, size) (set_insert(values, (val), size, hash_val((val), size)))
+#define FIND_VALUE(val, size) (set_find(values, (val), size, hash_val((val), size)))
 
-static void
-tarval_stats (void)
-{
-  pset_stats (tarvals);
-}
-
+#define fail_verify(a) _fail_verify((a), __FILE__, __LINE__)
+#if 0
+static long long count = 0;
+#  define ANNOUNCE() printf(__FILE__": call no. %lld (%s)\n", count++, __FUNCTION__);
+#else
+#  define ANNOUNCE() ((void)0)
 #endif
+/****************************************************************************
+ *   private variables
+ ****************************************************************************/
+static struct set *tarvals;   /* container for tarval structs */
+static struct set *values;    /* container for values */
 
-
-/* Return the canonical tarval * for tv.
-   May destroy everything allocated on tv_obst after tv!  */
-static tarval *
-tarval_identify (tarval *tv)
+/****************************************************************************
+ *   private functions
+ ****************************************************************************/
+#ifndef NDEBUG
+static int hash_val(const void *value, unsigned int length);
+static int hash_tv(tarval *tv);
+static void _fail_verify(tarval *tv, const char* file, int line)
 {
-  tarval *o;
+  /* print a memory image of the tarval and throw an assertion */
+  if (tv)
+    printf("%s:%d: Invalid tarval:\n  mode: %s\n value: [%p]\n", file, line, get_mode_name(tv->mode), tv->value);
+  else
+    printf("%s:%d: Invalid tarval (null)", file, line);
+  assert(0);
+}
 
-  o = pset_insert (tarvals, tv, tarval_hash (tv));
+static void tarval_verify(tarval *tv)
+{
+  assert(tv);
+  assert(tv->mode);
+  assert(tv->value);
 
-  if (o != tv) {
-    obstack_free (&tv_obst, (void *)tv);
+  if ((tv == tarval_bad) || (tv == tarval_undefined)) return;
+  if ((tv == tarval_b_true) || (tv == tarval_b_false)) return;
+
+  if (!FIND_TARVAL(tv)) fail_verify(tv);
+  if (tv->length > 0 && !FIND_VALUE(tv->value, tv->length)) fail_verify(tv);
+
+  return;
+}
+#endif /* NDEBUG */
+
+static int hash_tv(tarval *tv)
+{
+  return ((unsigned int)tv->value ^ (unsigned int)tv->mode) + tv->length;
+}
+
+static int hash_val(const void *value, unsigned int length)
+{
+  unsigned int i;
+  unsigned int hash = 0;
+
+  /* scramble the byte - array */
+  for (i = 0; i < length; i++)
+  {
+    hash += (hash << 5) ^ (hash >> 27) ^ ((char*)value)[i];
+    hash += (hash << 11) ^ (hash >> 17);
   }
 
-  TARVAL_VRFY (o);
-  return o;
+  return hash;
 }
 
-
-/* Return 0 iff a equals b.  Bitwise identical NaNs compare equal.  */
-static int
-tarval_cmp (const void *p, const void *q)
+/* finds tarval with value/mode or creates new tarval*/
+static tarval *get_tarval(const void *value, int length, ir_mode *mode)
 {
-  const tarval *a = p;
-  const tarval *b = q;
+  tarval tv;
 
-  TARVAL_VRFY (a);
-  TARVAL_VRFY (b);
+  tv.mode = mode;
+  tv.length = length;
+  if (length > 0)
+    /* if there already is such a value, it is returned, else value
+     * is copied into the set */
+    tv.value = INSERT_VALUE(value, length);
+  else
+    tv.value = value;
 
-  if (a == b) return 0;
-  if ((char *)a->mode - (char *)b->mode)
-    return (char *)a->mode - (char *)b->mode;
-
-  switch (get_mode_modecode(a->mode)) {
-    /* floating */
-  case irm_F:
-    return memcmp (&a->u.F, &b->u.F, sizeof (a->u.F));
-  case irm_D:
-    return memcmp (&a->u.D, &b->u.D, sizeof (a->u.D));
-  case irm_E:
-    return memcmp (&a->u.E, &b->u.E, sizeof (a->u.E));
-    /* unsigned */
-  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
-    if (sizeof (int) == sizeof (tarval_uInt)) {
-      return a->u.uInt - b->u.uInt;
-    }
-    return a->u.uInt != b->u.uInt;
-    /* signed */
-  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
-    if (sizeof (int) == sizeof (tarval_sInt)) {
-      return a->u.sInt - b->u.sInt;
-    }
-    return a->u.sInt != b->u.sInt;
-  case irm_C:
-    return a->u.C - b->u.C;
-  case irm_U:
-    return a->u.U - b->u.U;
-  case irm_P:
-    if (a->u.P.ent || b->u.P.ent)
-      return (char *)a->u.P.ent - (char *)b->u.P.ent;
-    if (a->u.P.xname && b->u.P.xname)
-      return strcmp (a->u.P.xname, b->u.P.xname);
-    return a->u.P.xname - b->u.P.xname;
-  case irm_b:
-    return a->u.b - b->u.b;
-  default: assert (0);
-  }
+  /* if there is such a tarval, it is returned, else tv is copied
+   * into the set */
+  return (tarval *)INSERT_TARVAL(&tv);
 }
 
-
-unsigned
-tarval_hash (tarval *tv)
+static int overflows(tarval *tv)
 {
-  unsigned h;
-
-  h = get_mode_modecode(tv->mode) * 0x421u;
-  switch (get_mode_modecode(tv->mode)) {
-  case irm_T:
-    h = 0x94b527ce; break;
-  case irm_F:
-    /* quick & dirty */
-    { union { float f; unsigned u; } u;
-      assert (sizeof (float) <= sizeof (unsigned));
-      u.u = 0; u.f = tv->u.F;
-      h ^= u.u;
-      break;
-    }
-  case irm_D:
-    /* quick & dirty */
-    { union { double d; unsigned u[2]; } u;
-      assert (sizeof (double) <= 2*sizeof (unsigned));
-      u.u[0] = u.u[1] = 0; u.d = tv->u.D;
-      h ^= u.u[0] ^ u.u[1];
-      break;
-    }
-  case irm_E:
-    { union { long double e; unsigned u[3]; } u;
-      assert (sizeof (long double) <= 3*sizeof (unsigned));
-      u.u[0] = u.u[1] = u.u[2] = 0; u.e = tv->u.E;
-      h ^= u.u[0] ^ u.u[1] ^ u.u[2];
-      break;
-    }
-  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
-    h ^= tv->u.uInt; break;
-  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
-    h ^= tv->u.sInt; break;
-  case irm_C:
-    h ^= tv->u.C; break;
-  case irm_U:
-    h ^= tv->u.U; break;
-  case irm_P:
-    if (tv->u.P.ent) {
-      /* @@@ lower bits not random, watch for collisions; perhaps
-	 replace by tv->u.p.ent - (entity *)0 */
-      h ^= ((char *)tv->u.P.ent - (char *)0) / 64;
-    } else if (tv->u.P.xname) {
-      /* Of course, strlen() in a hash function is a mistake, but this
-         case should be really rare.  */
-      h ^= ID_HASH (tv->u.P.xname, strlen (tv->u.P.xname));
-    } else {			/* void */
-      h^= 0x2b592b88;
-    }
-    break;
-  case irm_b:
-    h ^= tv->u.b; break;
-  default:
-    assert(0);
-  }
-  return h;
-}
-
-
-/*** ***************** Initialization ************************************* ***/
-
-void
-tarval_init_1 (void)
-{
-  obstack_init (&tv_obst);
-  obstack_alignment_mask (&tv_obst) = ALIGNOF (tarval) - 1;
-  assert (IS_POW2 (ALIGNOF (tarval)));
-
-  /* initialize the target value table */
-  tarvals = new_pset (tarval_cmp, TUNE_NCONSTANTS);
-}
-
-void
-tarval_init_2 (void)
-{
-  tarval *tv;
-  union ieee754_double x;
-
-  /* assumed by tarval_hash(): */
-  assert (sizeof (float) * CHAR_BIT == 32);
-  assert (sizeof (double) * CHAR_BIT == 64);
-
-# if 0
-  /* assumed by tarval_sInt & friends: */
-  assert (   (irm_C == irm_c+1) && (irm_h == irm_C+1)
-	  && (irm_H == irm_h+1) && (irm_i == irm_H+1)
-	  && (irm_I == irm_i+1) && (irm_l == irm_I+1)
-	  && (irm_L == irm_l+1));
-
-  /* assumed everywhere: */
-  for (i = 0;  i <= irm_L-irm_c;  i += 2) {
-    assert (   IS_POW2 (max_sInt[i+1]+1)
-	    && (min_sInt[i] == -max_sInt[i]-1)
-	    && ((tarval_uInt)max_sInt[i+1] == (tarval_uInt)max_sInt[i]-min_sInt[i]));
-  }
-# endif
-
-
-  tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-  tv->mode = mode_T;
-  tarval_bad = tarval_identify (tv);
-
-  tarval_b_false = tarval_from_long (mode_b, 0);
-  tarval_b_true = tarval_from_long (mode_b, 1);
-
-  /* IsInf <-> exponent == 0x7ff && ! (bits | fraction_low) */
-  tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-  tv->mode = mode_D;
-  x.ieee.negative = 0;
-  x.ieee.exponent = 0x7ff;
-  x.ieee.mantissa0 = 0;
-  x.ieee.mantissa1 = 0;
-  tv->u.D = x.d;
-  tarval_D_Inf = tarval_identify (tv);
-
-  /* IsNaN <-> exponent==0x7ff  && (qnan_bit | bits | fraction_low) */
-  tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-  tv->mode = mode_D;
-  x.ieee_nan.negative = 0;
-  x.ieee_nan.exponent = 0x7ff;
-  x.ieee_nan.quiet_nan = 1;	/* @@@ quiet or signalling? */
-  x.ieee_nan.mantissa0 = 42;
-  x.ieee_nan.mantissa1 = 0;
-  assert(x.d != x.d /* x.d is NaN */);
-  tv->u.D = x.d;
-  tarval_D_NaN = tarval_identify (tv);
-
-  tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-  tv->mode = mode_P;
-  tv->u.P.xname = NULL;
-  tv->u.P.ent = NULL;
-  tv->u.P.tv = NULL;
-  tarval_P_void = tarval_identify (tv);
-
-  tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-
-
-  tarval_mode_null [irm_F] = tarval_from_long (mode_F, 0);
-  tarval_mode_null [irm_D] = tarval_from_long (mode_D, 0);
-  tarval_mode_null [irm_E] = tarval_from_long (mode_E, 0);
-  tarval_mode_null [irm_Bs] = tarval_from_long (mode_Bs, 0);
-  tarval_mode_null [irm_Bu] = tarval_from_long (mode_Bu, 0);
-  tarval_mode_null [irm_Hs] = tarval_from_long (mode_Hs, 0);
-  tarval_mode_null [irm_Hu] = tarval_from_long (mode_Hu, 0);
-  tarval_mode_null [irm_Is] = tarval_from_long (mode_Is, 0);
-  tarval_mode_null [irm_Iu] = tarval_from_long (mode_Iu, 0);
-  tarval_mode_null [irm_Ls] = tarval_from_long (mode_Ls, 0);
-  tarval_mode_null [irm_Lu] = tarval_from_long (mode_Lu, 0);
-  tarval_mode_null [irm_C] = tarval_from_long (mode_C, 0);
-  tarval_mode_null [irm_U] = tarval_from_long (mode_U, 0);
-  tarval_mode_null [irm_b] = tarval_b_false;
-  tarval_mode_null [irm_P] = tarval_P_void;
-}
-
-
-/*** ********************** Constructors for tarvals ********************** ***/
-
-/* copy from src to dst len chars omitting '_'. */
-static char *
-stripcpy (char *dst, const char *src, size_t len)
-{
-  char *d = dst;
-
-  while (len--) {
-    if (*src == '_') src++;
-    else *d++ = *src++;
-  }
-  *d = 0;			/* make it 0-terminated. */
-
-  return dst;
-}
-
-tarval *
-tarval_F_from_str (const char *s, size_t len)
-{
-  tarval *tv;
-  char *buf;
-  char *eptr;
-
-  assert (!BUILDING);
-
-  buf = alloca (len+1);
-  stripcpy (buf, s, len);
-
-  tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-  tv->mode = mode_F;
-  tv->u.F = (float)strtod (buf, &eptr);
-  assert (eptr == buf+strlen(buf));
-
-  return tarval_identify (tv);
-}
-
-
-tarval *
-tarval_D_from_str (const char *s, size_t len)
-{
-  tarval *tv;
-  char *buf;
-  char *eptr;
-
-  assert (!BUILDING);
-
-  buf = alloca (len+1);
-  stripcpy (buf, s, len);
-
-  tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-  tv->mode = mode_D;
-  tv->u.D = strtod (buf, &eptr);
-  assert (eptr == buf+strlen(buf));
-
-  return tarval_identify (tv);
-}
-
-tarval *
-tarval_int_from_str (const char *s, size_t len, int base, ir_mode *m)
-{
-  long val;
-  char *eptr;
-  char *buf;
-
-  assert (mode_is_int(m));
-  assert (!BUILDING);
-
-  buf = alloca (len+1);
-  stripcpy (buf, s, len);
-
-  errno = 0;
-  val = strtol(buf, &eptr, base);    /* strtoll */
-  assert (eptr == buf+strlen(buf));
-  if ((errno == ERANGE)               &&
-      ((m == mode_Ls) || (m == mode_Lu))  ) {
-    printf("WARNING: Constant %s not representable. Continuing with %ld.\n",
-	   s, val);
-  }
-
-  return tarval_from_long(m, val);
-}
-
-/* Create a tarval with mode `m' and value `val' casted to the type that
-   represents such tarvals on host.  The resulting value must be legal
-   for mode `m'.  */
-tarval *
-tarval_from_long (ir_mode *m, long val)
-{
-  tarval *tv;
-
-  assert (!BUILDING);
-
-  if (m == mode_T) return tarval_bad;
-
-  tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-
-  tv->mode = m;
-  switch (get_mode_modecode(m)) {
-    /* floating */
-  case irm_F:
-    tv->u.F = val; break;
-  case irm_D:
-    tv->u.D = val; break;
-  case irm_E:
-    /* @@@ not yet implemented */
-    break;
-    /* unsigned */
-  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
-    tv->u.uInt = val; break;
-    /* signed */
-  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
-    tv->u.sInt = val; break;
-  case irm_P:
-    assert(!val);
-    obstack_free (&tv_obst, tv);
-    return tarval_P_void;
-  case irm_C:
-    tv->u.C = val; break;
-  case irm_U:
-    tv->u.U = val; break;
-  case irm_b:
-    tv->u.b = !!val;		/* u.b must be 0 or 1 */
-    break;
-  default:
-    assert(0);
-  }
-
-  return tarval_identify (tv);
-}
-
-
-tarval *
-tarval_P_from_str (const char *xname)
-{
-  tarval *tv;
-
-  assert (!BUILDING);
-
-  tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-
-  tv->mode = mode_P;
-  tv->u.P.xname = obstack_copy0 (&tv_obst, xname, strlen (xname));
-  tv->u.P.ent = NULL;
-  tv->u.P.tv = NULL;
-  return tarval_identify (tv);
-}
-
-
-tarval *
-tarval_P_from_entity (entity *ent)
-{
-  tarval *tv;
-
-  assert (!BUILDING);
-  //assert(ent && "no entity given");
-
-  tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-
-  tv->mode = mode_P;
-  tv->u.P.xname = NULL;
-  tv->u.P.ent = ent;
-  tv->u.P.tv = NULL;
-  return tarval_identify (tv);
-}
-
-
-/* Routines for building a tarval step by step follow.
-   Legal calling sequences:
-     tarval_start()
-     No constructors except tarval_append() and tarval_append1 ()
-     tarval_finish_as() or tarval_cancel() */
-
-/* Begin building a tarval.  */
-void
-tarval_start (void)
-{
-  assert (!BUILDING);
-  obstack_blank (&tv_obst, sizeof (tarval));
-}
-
-
-/* Append `n' chars from `p' to the tarval currently under construction.  */
-void
-tarval_append (const char *p, size_t n)
-{
-  assert (BUILDING);
-  obstack_grow (&tv_obst, p, n);
-}
-
-
-/* Append `ch' to the tarval currently under construction.  */
-void
-tarval_append1 (char ch)
-{
-  assert (BUILDING);
-  obstack_1grow (&tv_obst, ch);
-}
-
-
-/* Finish the tarval currently under construction and give id mode `m'.
-   `m' must be irm_Bu,
-   Return NULL if the value does not make sense for this mode, this
-   can only happen in mode C.  */
-tarval *
-tarval_finish_as (ir_mode *m)
-{
-  int size = obstack_object_size (&tv_obst) - sizeof (tarval);
-  tarval *tv;
-  unsigned char *p;
-  char ch = 0;			/* initialized to shut up gcc */
-
-  assert (BUILDING && (size >= 0));
-  if (m == mode_Bu) {
-    if (size != 1) return tarval_cancel();
-    p = (unsigned char *)obstack_base (&tv_obst) + sizeof (tarval);
-    ch = *p;
-    obstack_blank (&tv_obst, -size);
-  }
-  tv = obstack_finish (&tv_obst);
-  p = (unsigned char *)tv + sizeof (tarval);
-  tv->mode = m;
-
-  switch (get_mode_modecode(m)) {
-  case irm_Bu:
-    tv->u.uInt = ch;
-    break;
-  case irm_P:
-    tv->u.P.tv = NULL;
-    break;
-  default:
-    assert (0);
-  }
-
-  return tarval_identify (tv);
-}
-
-
-/* Cancel tarval building and return tarval_bad.  */
-tarval *
-tarval_cancel (void)
-{
-  assert (BUILDING);
-  obstack_free (&tv_obst, obstack_finish (&tv_obst));
-  return tarval_bad;
-}
-
-
-/*** ****************** Arithmethic operations on tarvals ***************** ***/
-
-/* Return `src' converted to mode `m' if representable, else NULL.
-   @@@ lots of conversions missing */
-tarval *
-tarval_convert_to (tarval *src, ir_mode *m)
-{
-  tarval *tv;
-
-  if (m == src->mode) return src;
-
-  tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-  tv->mode = m;
-
-  switch (get_mode_modecode(src->mode)) {
-
-  case irm_D:
-    if (m != mode_F) goto fail;
-    tv->u.F = src->u.D;
-    break;
-
-  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
-    switch (get_mode_modecode(m)) {
-    case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
-      tv->u.sInt = src->u.sInt;
-      if (sInt_overflow (tv->u.sInt, m)) goto fail;
+  switch (get_mode_sort(tv->mode))
+  {
+    case character:
+    case int_number:
+      if (sc_comp(tv->value, get_mode_max(tv->mode)->value) == 1) return 1;
+      if (sc_comp(tv->value, get_mode_min(tv->mode)->value) == -1) return 1;
       break;
 
-    case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
-      tv->u.uInt = src->u.sInt;
-      if (uInt_overflow (tv->u.uInt, m)) goto fail;
+    case float_number:
+      if (fc_comp(tv->value, get_mode_max(tv->mode)->value) == 1) return 1;
+      if (fc_comp(tv->value, get_mode_min(tv->mode)->value) == -1) return 1;
       break;
 
-    case irm_b:
-      tv->u.b = !!src->u.sInt;
+    default:
       break;
-
-    default: goto fail;
-    }
-
-  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
-    switch (get_mode_modecode(m)) {
-    case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
-      tv->u.sInt = src->u.uInt;
-      if (sInt_overflow (tv->u.sInt, m)) goto fail;
-      break;
-
-    case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
-      tv->u.uInt = src->u.uInt;
-      if (uInt_overflow (tv->u.uInt, m)) goto fail;
-      break;
-
-    case irm_b:
-      tv->u.b = !!src->u.uInt;
-      break;
-
-    default: goto fail;
-    }
-    break;
-
-  case irm_b:
-    switch (get_mode_modecode(m)) {
-    case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
-      tv->u.sInt = src->u.b;
-      break;
-
-    case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
-      tv->u.uInt = src->u.b;
-
-    default: goto fail;
-    }
-    break;
-
-  default:
-  fail:
-    obstack_free (&tv_obst, tv);
-    return NULL;
-  }
-
-  return tarval_identify (tv);
-}
-
-
-/* GL Why are there no ArmRoq comments, why is this not used? */
-tarval *
-tarval_neg (tarval *a)
-{
-  tarval *tv;
-
-  TARVAL_VRFY (a);
-
-  tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-
-  tv->mode = a->mode;
-
-  switch (get_mode_modecode(a->mode)) {
-    /* floating */
-  case irm_F: tv->u.F = -a->u.F; break;
-  case irm_D: tv->u.D = -a->u.D; break;
-    /* unsigned */
-  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
-    tv->u.uInt = -a->u.uInt & tv_val_uInt (get_mode_max(a->mode));
-    break;
-    /* signed */
-  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
-    tv->u.sInt = -a->u.sInt;
-    if (   sInt_overflow (tv->u.sInt, a->mode)
-	|| ((tv->u.sInt >= 0) == (a->u.sInt >= 0))) {
-      obstack_free (&tv_obst, tv);
-      return NULL;
-    }
-    break;
-  case irm_b: tv->u.b = !a->u.b; break;
-  default: assert(0);
-  }
-
-  return tarval_identify (tv);
-}
-
-
-/* Compare `a' with `b'.
-   Return one of irpn_Lt, irpn_Eq, irpn_Gt, irpn_Uo, or irpn_False if
-   result is unknown.  */
-ir_pncmp
-tarval_comp (tarval *a, tarval *b)
-{
-
-  TARVAL_VRFY (a);
-  TARVAL_VRFY (b);
-
-  assert (a->mode == b->mode);
-
-  switch (get_mode_modecode(a->mode)) {
-    /* floating */
-  case irm_F: return (  a->u.F == b->u.F ? irpn_Eq
-		      : a->u.F > b->u.F ? irpn_Gt
-		      : a->u.F < b->u.F ? irpn_Lt
-		      : irpn_Uo);
-  case irm_D: return (  a->u.D == b->u.D ? irpn_Eq
-		      : a->u.D > b->u.D ? irpn_Gt
-		      : a->u.D < b->u.D ? irpn_Lt
-		      : irpn_Uo);
-  case irm_E: return (  a->u.E == b-> u.E ? irpn_Eq
-              : a->u.E > b->u.E ? irpn_Gt
-              : a->u.E < b->u.E ? irpn_Lt
-              : irpn_Uo);
-    /* unsigned */
-  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
-    return (  a->u.uInt == b->u.uInt ? irpn_Eq
-	    : a->u.uInt > b->u.uInt ? irpn_Gt
-	    : irpn_Lt);
-    /* signed */
-  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
-    return (  a->u.sInt == b->u.sInt ? irpn_Eq
-	    : a->u.sInt > b->u.sInt ? irpn_Gt
-	    : irpn_Lt);
-  case irm_b: return (  a->u.b == b->u.b ? irpn_Eq
-		      : a->u.b > b->u.b ? irpn_Gt
-		      : irpn_Lt);
-  /* The following assumes that pointers are unsigned, which is valid
-     for all sane CPUs (transputers are insane). */
-  case irm_P: return (  a == b ? irpn_Eq
-		      : a == tarval_P_void ? irpn_Lt
-		      : b == tarval_P_void ? irpn_Gt
-		      : irpn_False); /* unknown */
-  default: assert (0);
-  }
-}
-
-
-/* Return `a+b' if computable, else NULL.  Modes must be equal.  */
-tarval *
-tarval_add (tarval *a, tarval *b)
-{
-  tarval *tv;
-
-  TARVAL_VRFY (a); TARVAL_VRFY (b);
-  assert (a->mode == b->mode);
-
-  tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-
-  tv->mode = a->mode;
-
-  switch (get_mode_modecode(a->mode)) {
-    /* floating */
-  case irm_F: tv->u.F = a->u.F + b->u.F; break;	/* @@@ overflow etc */
-  case irm_D: tv->u.D = a->u.D + b->u.D; break; /* @@@ dto. */
-  case irm_E: tv->u.E = a->u.E + b->u.E; break; /* @@@ dto. */
-    /* unsigned */
-  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
-    tv->u.uInt = (a->u.uInt + b->u.uInt) & tv_val_uInt (get_mode_max(a->mode));
-    break;
-    /* signed */
-  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
-    tv->u.sInt = a->u.sInt + b->u.sInt;
-    if (   sInt_overflow (tv->u.sInt, a->mode)
-	|| ((tv->u.sInt > a->u.sInt) ^ (b->u.sInt > 0))) {
-      obstack_free (&tv_obst, tv);
-      return NULL;
-    }
-    break;
-  case irm_b: tv->u.b = a->u.b | b->u.b; break;	/* u.b is in canonical form */
-  default: assert(0);
-  }
-
-  return tarval_identify (tv);
-}
-
-
-/* Return `a-b' if computable, else NULL.  Modes must be equal.  */
-tarval *
-tarval_sub (tarval *a, tarval *b)
-{
-  tarval *tv;
-
-  TARVAL_VRFY (a); TARVAL_VRFY (b);
-  assert (a->mode == b->mode);
-
-  tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-
-  tv->mode = a->mode;
-
-  switch (get_mode_modecode(a->mode)) {
-    /* floating */
-  case irm_F: tv->u.F = a->u.F - b->u.F; break;	/* @@@ overflow etc */
-  case irm_D: tv->u.D = a->u.D - b->u.D; break; /* @@@ dto. */
-  case irm_E: tv->u.E = a->u.E - b->u.E; break; /* @@@ dto. */
-    /* unsigned */
-  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
-    tv->u.uInt = (a->u.uInt - b->u.uInt) & tv_val_uInt (get_mode_max(a->mode));
-    break;
-    /* signed */
-  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
-    tv->u.sInt = a->u.sInt - b->u.sInt;
-    if (   sInt_overflow (tv->u.sInt, a->mode)
-	|| ((tv->u.sInt > a->u.sInt) ^ (b->u.sInt < 0))) {
-      obstack_free (&tv_obst, tv);
-      return NULL;
-    }
-    break;
-  case irm_b: tv->u.b = a->u.b & ~b->u.b; break; /* u.b is in canonical form */
-  default: assert(0);
-  }
-
-  return tarval_identify (tv);
-}
-
-/* Return `a*b' if computable, else NULL.  Modes must be equal.  */
-tarval *
-tarval_mul (tarval *a, tarval *b)
-{
-  tarval *tv;
-
-  TARVAL_VRFY (a); TARVAL_VRFY (b);
-  assert (a->mode == b->mode);
-
-  tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-
-  tv->mode = a->mode;
-
-  switch (get_mode_modecode(a->mode)) {
-    /* floating */
-  case irm_F: tv->u.F = a->u.F * b->u.F; break;	/* @@@ overflow etc */
-  case irm_D: tv->u.D = a->u.D * b->u.D; break; /* @@@ dto. */
-  case irm_E: tv->u.E = a->u.E * b->u.E; break; /* @@@ dto. */
-    /* unsigned */
-  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
-    tv->u.uInt = (a->u.uInt * b->u.uInt) & tv_val_uInt (get_mode_max(a->mode));
-    break;
-    /* signed */
-  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
-    tv->u.sInt = a->u.sInt * b->u.sInt;
-    if (   sInt_overflow (tv->u.sInt, a->mode)
-	|| (b->u.sInt && (tv->u.sInt / b->u.sInt != a->u.sInt))) {
-      obstack_free (&tv_obst, tv);
-      return NULL;
-    }
-    break;
-  case irm_b: tv->u.b = a->u.b & b->u.b; break;	/* u.b is in canonical form */
-  default: assert(0);
-  }
-
-  return tarval_identify (tv);
-}
-
-
-/* Return floating-point `a/b' if computable, else NULL.
-   Modes must be equal, non-floating-point operands are converted to irm_D.  */
-tarval *
-tarval_quo (tarval *a, tarval *b)
-{
-  tarval *tv;
-
-  TARVAL_VRFY (a); TARVAL_VRFY (b);
-  assert (a->mode == b->mode);
-
-  switch (get_mode_modecode(a->mode)) {
-    /* floating */
-  case irm_F:
-    tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-    tv->mode = mode_F;
-    tv->u.F = a->u.F / b->u.F;	/* @@@ overflow etc */
-    break;
-  case irm_D:
-    tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-    tv->mode = mode_D;
-    tv->u.D = a->u.D / b->u.D;	/* @@@ overflow etc */
-    break;
-  default:
-    a = tarval_convert_to (a, mode_D);
-    b = tarval_convert_to (b, mode_D);
-    return a && b ? tarval_quo (a, b) : NULL;
-  }
-
-  return tarval_identify (tv);
-}
-
-
-/* Return `a/b' if computable, else NULL.  Modes must be equal.  */
-tarval *
-tarval_div (tarval *a, tarval *b)
-{
-  tarval *tv;
-
-  TARVAL_VRFY (a); TARVAL_VRFY (b);
-  assert (a->mode == b->mode);
-
-  tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-
-  tv->mode = a->mode;
-
-  switch (get_mode_modecode(a->mode)) {
-    /* floating */
-  case irm_F: tv->u.F = floor (a->u.F / b->u.F); break; /* @@@ overflow etc */
-  case irm_D: tv->u.D = floor (a->u.D / b->u.D); break; /* @@@ dto. */
-  case irm_E: tv->u.E = floor (a->u.E / b->u.E); break; /* @@@ dto. */
-    /* unsigned */
-  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
-    if (!b->u.uInt) goto fail;
-    tv->u.uInt = a->u.uInt / b->u.uInt;
-    break;
-    /* signed */
-  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
-    if (   !b->u.sInt
-	|| ((b->u.sInt == -1) && (a->u.sInt == tv_val_sInt (get_mode_max(a->mode)) ))) {
-    fail:
-      obstack_free (&tv_obst, tv);
-      return NULL;
-    }
-    tv->u.sInt = a->u.sInt / b->u.sInt;
-    break;
-  case irm_b: tv->u.b = a->u.b ^ b->u.b; break;	/* u.b is in canonical form */
-  default: assert(0);
-  }
-
-  return tarval_identify (tv);
-}
-
-
-/* Return `a%b' if computable, else NULL.  Modes must be equal.  */
-tarval *
-tarval_mod (tarval *a, tarval *b)
-{
-  tarval *tv;
-
-  TARVAL_VRFY (a); TARVAL_VRFY (b);
-  assert (a->mode == b->mode);
-
-  tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-
-  tv->mode = a->mode;
-
-  switch (get_mode_modecode(a->mode)) {
-    /* floating */
-  case irm_F: tv->u.F = fmod (a->u.F, b->u.F); break; /* @@@ overflow etc */
-  case irm_D: tv->u.D = fmod (a->u.D, b->u.D); break; /* @@@ dto */
-  case irm_E: tv->u.E = fmod (a->u.E, b->u.E); break; /* @@@ dto. */
-    /* unsigned */
-  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
-    if (!b->u.uInt) goto fail;
-    tv->u.uInt = a->u.uInt % b->u.uInt;
-    break;
-    /* signed */
-  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
-    if (!b->u.sInt) {
-    fail:
-      obstack_free (&tv_obst, tv);
-      return NULL;
-    }
-    tv->u.sInt = a->u.sInt % b->u.sInt;
-    break;
-  case irm_b: tv->u.b = a->u.b ^ b->u.b; break;	/* u.b is in canonical form */
-  default: assert(0);
-  }
-
-  return tarval_identify (tv);
-}
-
-/* Return |a| if computable, else Null. */
-/*  is -max == min?? */
-tarval *
-tarval_abs (tarval *a) {
-  TARVAL_VRFY (a);
-  if (tv_is_negative(a)) return tarval_neg(a);
-  return a;
-}
-
-int
-tv_is_negative(tarval *a) {
-  TARVAL_VRFY (a);
-  switch (get_mode_modecode(a->mode)) {
-    /* floating */
-  case irm_F: return (a->u.F<0);
-  case irm_D: return (a->u.D<0);
-  case irm_E: return (a->u.E<0);
-    /* unsigned */
-  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
-    return 0;
-    break;
-    /* signed */
-  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
-    return (a->u.sInt < 0);
-    break;
-  case irm_b: break;
-  default: assert(0);
   }
 
   return 0;
 }
 
+/****************************************************************************
+ *   public variables declared in tv.h
+ ****************************************************************************/
+tarval *tarval_bad;
+tarval *tarval_undefined;
+tarval *tarval_b_false;
+tarval *tarval_b_true;
+tarval *tarval_P_void;
 
-/* Return `a&b'.  Modes must be equal.  */
-tarval *
-tarval_and (tarval *a, tarval *b)
+/****************************************************************************
+ *   public functions declared in tv.h
+ ****************************************************************************/
+/*
+ * Constructors =============================================================
+ */
+tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 {
-  tarval *tv;
+  ANNOUNCE();
+  assert(str);
+  assert(len);
+  assert(mode);
 
-  TARVAL_VRFY (a); TARVAL_VRFY (b);
-  assert (a->mode == b->mode);
+  switch (get_mode_sort(mode))
+  {
+    case auxiliary:
+      assert(0);
+      break;
 
-  tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
+    case internal_boolean:
+      /* match tTrRuUeE/fFaAlLsSeE */
+      if (strcmp(str, "true")) return tarval_b_true;
+        else return tarval_b_false;
 
-  tv->mode = a->mode;
+    case float_number:
+      fc_val_from_str(str, len);
+      return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 
-  switch (get_mode_modecode(a->mode)) {
-    /* unsigned */
-  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
-    tv->u.uInt = a->u.uInt & b->u.uInt; break;
-    /* signed */
-  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
-    tv->u.sInt = a->u.sInt & b->u.sInt; break;
-  case irm_b: tv->u.b = a->u.b & b->u.b; break;	/* u.b is in canonical form */
-  default: assert(0);
+    case int_number:
+    case character:
+      sc_val_from_str(str, len);
+      return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
+
+    case reference:
+      return get_tarval(str, len, mode);
   }
 
-  return tarval_identify (tv);
+  assert(0);  /* can't be reached, can it? */
 }
 
-
-/* Return `a|b'.  Modes must be equal.  */
-tarval *
-tarval_or (tarval *a, tarval *b)
+#if 0
+int tarval_is_str(tarval *tv)
 {
-  tarval *tv;
+  ANNOUNCE();
+  assert(tv);
 
-  TARVAL_VRFY (a); TARVAL_VRFY (b);
-  assert (a->mode == b->mode);
-
-  tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-
-  tv->mode = a->mode;
-
-  switch (get_mode_modecode(a->mode)) {
-    /* unsigned */
-  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
-    tv->u.uInt = a->u.uInt | b->u.uInt; break;
-    /* signed */
-  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
-    tv->u.sInt = a->u.sInt | b->u.sInt; break;
-  case irm_b: tv->u.b = a->u.b | b->u.b; break;	/* u.b is in canonical form */
-  default: assert(0);
-  }
-
-  return tarval_identify (tv);
+  return ((get_mode_sort(tv->mode) == reference) && (tv->value != NULL) && (tv->length > 0));
 }
-
-
-/* Return `a^b'.  Modes must be equal.  */
-tarval *
-tarval_eor (tarval *a, tarval *b)
+char *tarval_to_str(tarval *tv)
 {
-  tarval *tv;
-
-  TARVAL_VRFY (a); TARVAL_VRFY (b);
-  assert (a->mode == b->mode);
-
-  tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-
-  tv->mode = a->mode;
-
-  switch (get_mode_modecode(a->mode)) {
-    /* unsigned */
-  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
-    tv->u.uInt = a->u.uInt ^ b->u.uInt; break;
-    /* signed */
-  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
-    tv->u.sInt = a->u.sInt ^ b->u.sInt; break;
-  case irm_b: tv->u.b = a->u.b ^ b->u.b; break;	/* u.b is in canonical form */
-  default: assert(0);
-  }
-
-  return tarval_identify (tv);
+  ANNOUNCE();
+  assert(tarval_is_str(tv));
+  return (char *)tv->value;
 }
+#endif
 
-
-/* Return `a<<b' if computable, else NULL.  */
-tarval *
-tarval_shl (tarval *a, tarval *b)
+tarval *new_tarval_from_long(long l, ir_mode *mode)
 {
-  int b_is_huge;
-  long shift;
-  tarval *tv;
+  ANNOUNCE();
+  assert(mode && !(get_mode_sort(mode) == auxiliary));
 
-  TARVAL_VRFY (a); TARVAL_VRFY (b);
+  switch(get_mode_sort(mode))
+  {
+    case internal_boolean:
+      /* XXX C-Semantics ! */
+      return (l)?(tarval_b_true):(tarval_b_false);
 
-  shift = tarval_ord (b, &b_is_huge);
-  if (   b_is_huge
-      || (shift < 0)
-      || ((shift >= get_mode_size(mode_Ls)*target_bits))) {
-    return NULL;
-  }
+    case int_number:
+    case character:
+      sc_val_from_long(l);
+      return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
 
-  tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-  tv->mode = a->mode;
+    case float_number:
+      return new_tarval_from_double((long double)l, mode);
 
-  switch (get_mode_modecode(a->mode)) {
-    /* unsigned */
-  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
-    tv->u.uInt = a->u.uInt << shift;
-    break;
-    /* signed */
-  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
-    tv->u.sInt = a->u.sInt << shift;
-    break;
-  default: assert (0);
-  }
+    case reference:
+      return (l)?(tarval_bad):(get_tarval(NULL, 0, mode));  /* null pointer or tarval_bad */
 
-  return tarval_identify (tv);
-}
-
-
-/* Return `a>>b' if computable, else NULL.
-   The interpretation of >> (sign extended or not) is implementaion
-   dependent, i.e. this is neither shr nor shrs!! */
-tarval *
-tarval_shr (tarval *a, tarval *b)
-{
-  int b_is_huge;
-  long shift;
-  tarval *tv;
-
-  TARVAL_VRFY (a); TARVAL_VRFY (b);
-
-  shift = tarval_ord (b, &b_is_huge);
-  if (   b_is_huge
-      || (shift < 0)
-      || ((shift >= get_mode_size(mode_Ls)*target_bits))) {
-    return NULL;
-  }
-
-  tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
-  tv->mode = a->mode;
-
-  switch (get_mode_modecode(a->mode)) {
-    /* unsigned */
-  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
-    tv->u.uInt = a->u.uInt >> shift;
-    break;
-    /* signed */
-  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
-    tv->u.sInt = a->u.sInt >> shift;
-    break;
-  default: assert (0);
-  }
-
-  return tarval_identify (tv);
-}
-
-
-/* Classify `tv', which may be NULL.
-   Return 0 if `tv' is the additive neutral element, 1 if `tv' is the
-   multiplicative neutral element, and -1 if `tv' is the neutral
-   element of bitwise and.  */
-long
-tarval_classify (tarval *tv)
-{
-  if (!tv) return 2;
-
-  TARVAL_VRFY (tv);
-
-  switch (get_mode_modecode(tv->mode)) {
-    /* floating */
-  case irm_F: case irm_D: case irm_E:
-    return 2;
-    /* unsigned */
-  case irm_Bu:
-    return (long)((tv->u.uInt+1) & tv_val_uInt (get_mode_max(mode_Bu))) - 1;
-  case irm_Hu:
-    return (long)((tv->u.uInt+1) & tv_val_uInt (get_mode_max(mode_Hu))) - 1;
-  case irm_Iu:
-    return (long)((tv->u.uInt+1) & tv_val_uInt (get_mode_max(mode_Iu))) - 1;
-  case irm_Lu:
-    return (long)((tv->u.uInt+1) & tv_val_uInt (get_mode_max(mode_Lu))) - 1;
-    /* signed */
-  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
-    return tv->u.sInt;
-  case irm_b:
-    return tv->u.b;
-  default:
-    return 2;
+    default:
+      assert(0);
   }
 }
-
-/* Convert `tv' into type `long', set `fail' if not representable.
-   If `fail' gets set for an unsigned `tv', the correct result can be
-   obtained by casting the result to `unsigned long'.  */
-long
-tarval_ord (tarval *tv, int *fail)
+int tarval_is_long(tarval *tv)
 {
-  TARVAL_VRFY (tv);
+  ANNOUNCE();
+  return ((get_mode_sort(tv->mode) == int_number) || (get_mode_sort(tv->mode) == character));
+}
+/* this might overflow the machine's long, so use only with
+ * small values */
+long tarval_to_long(tarval* tv)
+{
+  ANNOUNCE();
+  assert(tv && get_mode_sort(tv->mode) == int_number);
 
-  switch (get_mode_modecode(tv->mode)) {
-    /* unsigned */
-  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu:
-    *fail = tv->u.uInt > tv_val_uInt (get_mode_max(mode_Ls));
-    return tv->u.uInt;
-    /* signed */
-  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls:
-    *fail = 0;
-    return tv->u.sInt;
-  case irm_b:
-    *fail = 0;
-    return tv->u.b;
-  default: ;
-    *fail = 1;
-    return 0;
-  }
+  return sc_val_to_long(tv->value); /* might overflow */
 }
 
-int
-tarval_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
+tarval *new_tarval_from_double(long double d, ir_mode *mode)
 {
-  tarval *val = XP_GETARG (tarval *, 0);
-  int printed;
-  char buf[40];
+  ANNOUNCE();
+  assert(mode && (get_mode_sort(mode) == float_number));
 
-  TARVAL_VRFY (val);
+  fc_val_from_float(d);
+  return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
+}
+int tarval_is_double(tarval *tv)
+{
+  ANNOUNCE();
+  assert(tv);
 
-  switch (get_mode_modecode(val->mode)) {
+  return (get_mode_sort(tv->mode) == float_number);
+}
+long double tarval_to_double(tarval *tv)
+{
+  ANNOUNCE();
+  assert(tarval_is_double(tv));
 
-  case irm_T:			/* none */
-    printed = XPSR ("<bad>");
-    break;
-
-  case irm_F:			/* float */
-    sprintf (buf, "%1.9e", (float)(val->u.F));
-    printed = XPF1R ("%s", buf);
-    break;
-  case irm_D:			/* double */
-    printed = XPF1R ("%1.30g", (double)(val->u.D));
-    break;
-
-  case irm_C:           /* character */
-    if ((isprint (val->u.C)) &&
-	(val->u.C != '\\')   && (val->u.C != '\'')) {
-      printed = XPF1R ("'%c'", val->u.C);
-    } else {
-      printed = XPF1R ("0x%x", (unsigned long)val->u.C);
-    }
-    break;
-  case irm_U:           /* unicode character */
-      printed = XPF1R ("0x%x", (unsigned long)val->u.U);
-    break;
-
-  case irm_Bs: case irm_Hs: case irm_Is: case irm_Ls: /* signed num */
-    printed = XPF1R ("%ld", (long)val->u.sInt);
-    break;
-  case irm_Bu: case irm_Hu: case irm_Iu: case irm_Lu: /* unsigned num */
-    printed = XPF1R ("%lu", (unsigned long)val->u.uInt);
-    break;
-
-  case irm_P:			/* pointer */
-    if (val->u.P.xname) {
-      printed = XPR (val->u.P.xname);
-    } else if (val->u.P.ent) {
-      if (get_entity_peculiarity(val->u.P.ent) == existent)
-	printed = XPF1R ("&(%I)", get_entity_ld_ident(val->u.P.ent));
-      else
-	printed = XPSR ("(NULL)");
-    } else {
-      assert (val == tarval_P_void);
-      printed = XPSR ("(NULL)");
-    }
-    break;
-
-  case irm_b:			/* boolean */
-    if (val->u.b) printed = XPSR ("true");
-    else	  printed = XPSR ("false");
-    break;
-
-  case irm_M:			/* memory */
-  case irm_BB:			/* region */
-  default:
-    assert (0);
-  }
-
-  return printed;
+  return fc_val_to_float(tv->value);
 }
 
-
-ir_mode *
-get_tv_mode (tarval *tv)
+/* The tarval represents the address of the entity.  As the address must
+   be constant the entity must have as owner the global type. */
+tarval *new_tarval_from_entity (entity *ent, ir_mode *mode)
 {
+  ANNOUNCE();
+  assert(ent);
+  assert(mode && (get_mode_sort(mode) == reference));
+
+  return get_tarval((void *)ent, 0, mode);
+}
+int tarval_is_entity(tarval *tv)
+{
+  ANNOUNCE();
+  assert(tv);
+  /* tv->value == NULL means dereferencing a null pointer */
+  return ((get_mode_sort(tv->mode) == reference) && (tv->value != NULL) && (tv->length == 0));
+}
+entity *tarval_to_entity(tarval *tv)
+{
+  ANNOUNCE();
+  assert(tarval_is_entity(tv));
+
+  return (entity *)tv->value;
+}
+
+/*
+ * Access routines for tarval fields ========================================
+ */
+#ifdef TARVAL_ACCESS_DEFINES
+#  undef get_tarval_mode
+#endif
+ir_mode *get_tarval_mode (tarval *tv)       /* get the mode of the tarval */
+{
+  ANNOUNCE();
+  assert(tv);
   return tv->mode;
 }
+#ifdef TARVAL_ACCESS_DEFINES
+#  define get_tarval_mode(tv) (tv)->mode
+#endif
 
-/* Returns the entity if the tv is a pointer to an entity, else
-   returns NULL; */
-entity *get_tv_entity(tarval *tv) {
-  entity *ent = NULL;
+/*
+ * Special value query functions ============================================
+ *
+ * These functions calculate and return a tarval representing the requested
+ * value.
+ * The functions get_mode_{Max,Min,...} return tarvals retrieved from these
+ * functions, but these are stored on initialization of the irmode module and
+ * therefore the irmode functions should be prefered to the functions below.
+ */
 
-  if (tv->mode == mode_P) {
-    if (tv->u.P.xname) {
-      assert(0);
-      /* not an entity */
-    } else if (tv->u.P.ent) {
-      ent = tv->u.P.ent;
-    } else {
-      /* not an entity */
-    }
-  }
-  return ent;
+tarval *get_tarval_bad(void)
+{
+  ANNOUNCE();
+  return tarval_bad;
+}
+tarval *get_tarval_undefined(void)
+{
+  ANNOUNCE();
+  return tarval_undefined;
+}
+tarval *get_tarval_b_false(void)
+{
+  ANNOUNCE();
+  return tarval_b_false;
+}
+tarval *get_tarval_b_true(void)
+{
+  ANNOUNCE();
+  return tarval_b_true;
+}
+tarval *get_tarval_P_void(void)
+{
+  ANNOUNCE();
+  return tarval_P_void;
 }
 
+tarval *get_tarval_max(ir_mode *mode)
+{
+  ANNOUNCE();
+  assert(mode);
+
+  switch(get_mode_sort(mode))
+  {
+    case reference:
+    case auxiliary:
+      assert(0);
+      break;
+
+    case internal_boolean:
+      return tarval_b_true;
+
+    case float_number:
+      fc_get_max(get_mode_size(mode));
+      return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
+
+    case int_number:
+    case character:
+      sc_max_from_bits(get_mode_size(mode), mode_is_signed(mode));
+      return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
+  }
+  return tarval_bad;
+}
+
+tarval *get_tarval_min(ir_mode *mode)
+{
+  ANNOUNCE();
+  assert(mode);
+
+  switch(get_mode_sort(mode))
+  {
+    case reference:
+    case auxiliary:
+      assert(0);
+      break;
+
+    case internal_boolean:
+      return tarval_b_false;
+
+    case float_number:
+      fc_get_min(get_mode_size(mode));
+      return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
+
+    case int_number:
+    case character:
+      sc_min_from_bits(get_mode_size(mode), mode_is_signed(mode));
+      return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
+  }
+  return tarval_bad;
+}
+
+tarval *get_tarval_null(ir_mode *mode)
+{
+  ANNOUNCE();
+  assert(mode);
+
+  switch(get_mode_sort(mode))
+  {
+    case auxiliary:
+    case internal_boolean:
+      assert(0);
+      break;
+
+    case float_number:
+      return new_tarval_from_double(0.0, mode);
+
+    case int_number:
+    case character:
+      return new_tarval_from_long(0l,  mode);
+
+    case reference:
+      return tarval_P_void;
+  }
+  return tarval_bad;
+}
+
+tarval *get_tarval_one(ir_mode *mode)
+{
+  ANNOUNCE();
+  assert(mode);
+
+  switch(get_mode_sort(mode))
+  {
+    case auxiliary:
+    case internal_boolean:
+    case reference:
+      assert(0);
+      break;
+
+    case float_number:
+      return new_tarval_from_double(1.0, mode);
+
+    case int_number:
+    case character:
+      return new_tarval_from_long(1l, mode);
+      break;
+  }
+  return tarval_bad;
+}
+
+tarval *get_tarval_nan(ir_mode *mode)
+{
+  ANNOUNCE();
+  assert(mode);
+  assert(get_mode_sort(mode) == float_number);
+
+  fc_get_nan();
+  return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
+}
+
+tarval *get_tarval_inf(ir_mode *mode)
+{
+  ANNOUNCE();
+  assert(mode);
+  assert(get_mode_sort(mode) == float_number);
+
+  fc_get_inf();
+  return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
+}
+
+/*
+ * Arithmethic operations on tarvals ========================================
+ */
+
+/* test if negative number, 1 means 'yes' */
+int tarval_is_negative(tarval *a)
+{
+  ANNOUNCE();
+  assert(a);
+
+  switch (get_mode_sort(a->mode))
+  {
+    case int_number:
+      if (!mode_is_signed(a->mode)) return 0;
+      else return sc_comp(a->value, get_mode_null(a->mode)->value);
+
+    case float_number:
+      return fc_comp(a->value, get_mode_null(a->mode)->value);
+
+    default:
+      assert(0 && "not implemented");
+  }
+}
+
+/* comparison */
+pnc_number tarval_cmp(tarval *a, tarval *b)
+{
+  ANNOUNCE();
+  assert(a);
+  assert(b);
+
+  if (a == tarval_bad || b == tarval_bad) assert(0 && "Comparison with tarval_bad");
+  if (a == tarval_undefined || b == tarval_undefined) return False;
+  if (a == b) return Eq;
+  if (get_tarval_mode(a) != get_tarval_mode(b)) return Uo;
+
+  /* Here the two tarvals are unequal and of the same mode */
+  switch (get_mode_sort(a->mode))
+  {
+    case auxiliary:
+      return False;
+
+    case float_number:
+      return (fc_comp(a->value, b->value)==1)?(Gt):(Lt);
+
+    case int_number:
+    case character:
+      return (sc_comp(a->value, b->value)==1)?(Gt):(Lt);
+
+    case internal_boolean:
+      return (a == tarval_b_true)?(Gt):(Lt);
+
+    case reference:
+      return Uo;
+  }
+  return False;
+}
+
+tarval *tarval_convert_to(tarval *src, ir_mode *m)
+{
+  ANNOUNCE();
+  tarval tv;
+
+  assert(src);
+  assert(m);
+
+  if (src->mode == m) return src;
+
+  switch (get_mode_sort(src->mode))
+  {
+    case auxiliary:
+      break;
+
+    case float_number:
+      break;
+
+    case int_number:
+      switch (get_mode_sort(m))
+      {
+        case int_number:
+        case character:
+          tv.mode = m;
+          tv.length = src->length;
+          tv.value = src->value;
+          if (overflows(&tv))
+          {
+            return tarval_bad;
+          }
+          return INSERT_TARVAL(&tv);
+
+        case internal_boolean:
+          /* XXX C semantics */
+          if (src == get_mode_null(src->mode)) return tarval_b_false;
+          else return tarval_b_true;
+
+        default:
+          break;
+      }
+      break;
+
+    case internal_boolean:
+      switch (get_mode_sort(m))
+      {
+        case int_number:
+          if (src == tarval_b_true) return get_mode_one(m);
+          else return get_mode_null(m);
+
+        default:
+          break;
+      }
+      break;
+
+    case character:
+      break;
+    case reference:
+      break;
+  }
+
+  return tarval_bad;
+}
+
+tarval *tarval_neg(tarval *a)              /* negation */
+{
+  ANNOUNCE();
+  assert(a);
+  assert(mode_is_num(a->mode)); /* negation only for numerical values */
+  assert(mode_is_signed(a->mode)); /* negation is difficult without negative numbers, isn't it */
+
+  switch (get_mode_sort(a->mode))
+  {
+    case int_number:
+      sc_neg(a->value);
+      return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
+
+    case float_number:
+      fc_neg(a->value);
+      return get_tarval(fc_get_buffer(), fc_get_buffer_length(), a->mode);
+
+    default:
+      return tarval_bad;
+  }
+}
+
+tarval *tarval_add(tarval *a, tarval *b)   /* addition */
+{
+  ANNOUNCE();
+  assert(a);
+  assert(b);
+  assert((a->mode == b->mode) || (get_mode_sort(a->mode) == character && mode_is_int(b->mode)));
+
+  switch (get_mode_sort(a->mode))
+  {
+    case character:
+    case int_number:
+      /* modes of a,b are equal, so result has mode of a as this might be the character */
+      sc_add(a->value, b->value);
+      /* FIXME: Check for overflow */
+      return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
+
+    case float_number:
+      /* FIXME: Overflow/Underflow/transition to inf when mode < 80bit */
+      fc_add(a->value, b->value);
+      return get_tarval(fc_get_buffer(), fc_get_buffer_length(), a->mode);
+
+    default:
+      return tarval_bad;
+  }
+}
+
+tarval *tarval_sub(tarval *a, tarval *b)   /* subtraction */
+{
+  ANNOUNCE();
+  assert(a);
+  assert(b);
+  assert((a->mode == b->mode) || (get_mode_sort(a->mode) == character && mode_is_int(b->mode)));
+
+  switch (get_mode_sort(a->mode))
+  {
+    case character:
+    case int_number:
+      /* modes of a,b are equal, so result has mode of a as this might be the character */
+      sc_sub(a->value, b->value);
+      /* FIXME: check for overflow */
+      return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
+
+    case float_number:
+      /* FIXME: Overflow/Underflow/transition to inf when mode < 80bit */
+      fc_add(a->value, b->value);
+      return get_tarval(fc_get_buffer(), fc_get_buffer_length(), a->mode);
+
+    default:
+      return tarval_bad;
+  }
+}
+
+tarval *tarval_mul(tarval *a, tarval *b)   /* multiplication */
+{
+  ANNOUNCE();
+  assert(a);
+  assert(b);
+  assert((a->mode == b->mode) && mode_is_num(a->mode));
+
+  switch (get_mode_sort(a->mode))
+  {
+    case int_number:
+      /* modes of a,b are equal */
+      sc_mul(a->value, b->value);
+      /* FIXME: check for overflow */
+      return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
+
+    case float_number:
+      /* FIXME: Overflow/Underflow/transition to inf when mode < 80bit */
+      fc_add(a->value, b->value);
+      return get_tarval(fc_get_buffer(), fc_get_buffer_length(), a->mode);
+
+    default:
+      return tarval_bad;
+  }
+}
+
+tarval *tarval_quo(tarval *a, tarval *b)   /* floating point division */
+{
+  ANNOUNCE();
+  assert(a);
+  assert(b);
+  assert((a->mode == b->mode) && mode_is_float(a->mode));
+
+  /* FIXME: Overflow/Underflow/transition to inf when mode < 80bit */
+  fc_div(a->value, b->value);
+  return get_tarval(fc_get_buffer(), fc_get_buffer_length(), a->mode);
+}
+
+tarval *tarval_div(tarval *a, tarval *b)   /* integer division */
+{
+  ANNOUNCE();
+  assert(a);
+  assert(b);
+  assert((a->mode == b->mode) && mode_is_int(a->mode));
+
+  /* modes of a,b are equal */
+  sc_div(a->value, b->value);
+  return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
+}
+
+tarval *tarval_mod(tarval *a, tarval *b)   /* remainder */
+{
+  ANNOUNCE();
+  assert(a);
+  assert(b);
+  assert((a->mode == b->mode) && mode_is_int(a->mode));
+
+  /* modes of a,b are equal */
+  sc_mod(a->value, b->value);
+  return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
+}
+
+tarval *tarval_abs(tarval *a)              /* absolute value */
+{
+  ANNOUNCE();
+  assert(a);
+  assert(mode_is_num(a->mode));
+
+  switch (get_mode_sort(a->mode))
+  {
+    case int_number:
+      if (sc_comp(a->value, get_mode_null(a->mode)->value) == -1)
+      {
+        sc_neg(a->value);
+        return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
+      }
+      return a;
+
+    case float_number:
+      break;
+
+    default:
+      return tarval_bad;
+  }
+  return tarval_bad;
+}
+
+tarval *tarval_and(tarval *a, tarval *b)   /* bitwise and */
+{
+  ANNOUNCE();
+  assert(a);
+  assert(b);
+  assert((a->mode == b->mode) && mode_is_int(a->mode));
+
+  sc_and(a->value, b->value);
+  return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
+}
+tarval *tarval_or (tarval *a, tarval *b)   /* bitwise or */
+{
+  ANNOUNCE();
+  assert(a);
+  assert(b);
+  assert((a->mode == b->mode) && mode_is_int(a->mode));
+
+  sc_or(a->value, b->value);
+  return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
+}
+tarval *tarval_eor(tarval *a, tarval *b)   /* bitwise exclusive or (xor) */
+{
+  ANNOUNCE();
+  assert(a);
+  assert(b);
+  assert((a->mode == b->mode) && mode_is_int(a->mode));
+
+  sc_or(a->value, b->value);
+  return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
+}
+
+tarval *tarval_shl(tarval *a, tarval *b)   /* bitwise left shift */
+{
+  ANNOUNCE();
+  assert(a);
+  assert(b);
+  assert(mode_is_int(a->mode) && mode_is_int(b->mode));
+
+  sc_shl(a->value, b->value, get_mode_size(a->mode), mode_is_signed(a->mode));
+  return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
+}
+tarval *tarval_shr(tarval *a, tarval *b)   /* bitwise unsigned right shift */
+{
+  ANNOUNCE();
+  assert(a);
+  assert(b);
+  assert(mode_is_int(a->mode) && mode_is_int(b->mode));
+
+  sc_shr(a->value, b->value, get_mode_size(a->mode), mode_is_signed(a->mode));
+  return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
+}
+tarval *tarval_shrs(tarval *a, tarval *b)  /* bitwise signed right shift */
+{
+  ANNOUNCE();
+  assert(a);
+  assert(b);
+  assert(mode_is_int(a->mode) && mode_is_int(b->mode));
+
+  sc_shrs(a->value, b->value, get_mode_size(a->mode), mode_is_signed(a->mode));
+  return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
+}
+tarval *tarval_rot(tarval *a, tarval *b)   /* bitwise rotation */
+{
+  ANNOUNCE();
+  assert(a);
+  assert(b);
+  assert(mode_is_int(a->mode) && mode_is_int(b->mode));
+
+  sc_rot(a->value, b->value, get_mode_size(a->mode), mode_is_signed(a->mode));
+  return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
+}
+
+/** *********** Output of tarvals *********** **/
+int tarval_print(XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
+{
+  ANNOUNCE();
+  tarval *tv;
+  char *str;
+  int offset;
+
+  tv = XP_GETARG(tarval *, 0);
+  switch (get_mode_sort(tv->mode))
+  {
+    case int_number:
+    case character:
+      offset = 16 - (get_mode_size(tv->mode)/4);
+      str = sc_print_hex(tv->value);
+      return XPF1R("0x%s", str + offset);
+
+    case float_number:
+      return XPF1R("%s", fc_print_dec(tv->value));
+
+    case reference:
+      if (tv->value != NULL)
+        if (tarval_is_entity(tv))
+          if (get_entity_peculiarity((entity *)tv->value) == existent)
+            return XPF1R("&(%I)", get_entity_ld_ident((entity *)tv->value));
+          else
+            return XPSR("NULL");
+        else
+          return XPMR((char*)tv->value, tv->length);
+      else
+        return XPSR("void");
+
+    case internal_boolean:
+      if (tv == tarval_b_true) return XPSR("true");
+      else return XPSR("false");
+
+    case auxiliary:
+      return XPSR("<BAD>");
+  }
+
+  return 0;
+}
+
+char *tarval_bitpattern(tarval *tv)
+{
+  return NULL;
+}
+
+/* Identifying some tarvals ??? */
+/* Implemented in old tv.c as such:
+ *   return 0 for additive neutral,
+ *   1 for multiplicative neutral,
+ *   -1 for bitwise-and neutral
+ *   2 else
+ *
+ * Implemented for completeness */
+long tarval_classify(tarval *tv)
+{
+  ANNOUNCE();
+  if (!tv || tv == tarval_bad) return 2;
+
+  if (tv == get_mode_null(tv->mode)) return 0;
+  else if (tv == get_mode_one(tv->mode)) return 1;
+  else if ((get_mode_sort(tv->mode) == int_number)
+           && (tv == new_tarval_from_long(-1, tv->mode))) return -1;
+
+  return 2;
+}
+
+/** Initialization of the tarval module **/
+void init_tarval_1(void)
+{
+  ANNOUNCE();
+  /* initialize the sets holding the tarvals with a comparison function and
+   * an initial size, which is the expected number of constants */
+  tarvals = new_set(memcmp, TUNE_NCONSTANTS);
+  values = new_set(memcmp, TUNE_NCONSTANTS);
+}
+
+void init_tarval_2(void)
+{
+  ANNOUNCE();
+
+  tarval_bad = (tarval*)malloc(sizeof(tarval));
+  tarval_bad->mode = NULL;
+
+  tarval_undefined = (tarval*)malloc(sizeof(tarval));
+  tarval_undefined->mode = NULL;
+
+  tarval_b_true = (tarval*)malloc(sizeof(tarval));
+  tarval_b_true->mode = mode_b;
+
+  tarval_b_false = (tarval*)malloc(sizeof(tarval));
+  tarval_b_false->mode = mode_b;
+
+  tarval_P_void = (tarval*)malloc(sizeof(tarval));
+  tarval_P_void->mode = mode_P;
+}
+
+/****************************************************************************
+ *   end of tv.c
+ ****************************************************************************/
 
 void
-free_tv_entity(entity *ent) {
+free_tarval_entity(entity *ent) {
   /* There can be a tarval referencing this entity.  Even if the
      tarval is not used by the code any more, it can still reference
      the entity as tarvals live forever (They live on an obstack.).
@@ -1448,13 +970,6 @@ free_tv_entity(entity *ent) {
      it contains a proper entity and we will crash if the entity is
      freed.  We cannot remove tarvals from the obstack but we can
      remove the entry in the hash table. */
-  tarval *found = NULL;
-  tarval *tv = (tarval *)pset_first(tarvals);
-  while (tv) {
-    entity *tv_ent = get_tv_entity(tv);
-    if ((tv_ent) && (tv_ent == ent)) found = tv;
-    tv = pset_next(tarvals);
-  }
-  if (found)
-    pset_remove(tarvals, found, tarval_hash(found));
+  /* this will be re-implemented later */
+  ANNOUNCE();
 }
