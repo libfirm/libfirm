@@ -1,3 +1,7 @@
+  19.7.2000 Christian
+  Added some access routines in type.[hc]. Solved a recursive definition
+  of type_class struct, entity struct and type union.
+
   12.7.2000 Goetz
   Changed output of oo_prog_example: now uses the internal list
   of all irgs.  Had to implement some of the access routines for
