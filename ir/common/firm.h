@@ -62,8 +62,6 @@
 *
 */
 
-/* $Id$ */
-
 # ifndef _FIRM_H_
 # define _FIRM_H_
 
