@@ -224,6 +224,7 @@ ir_node *
 void
 set_irn_n (ir_node *node, int n, ir_node *in) {
   assert(node && -1 <= n && n < get_irn_arity(node));
+	assert(in && in->kind == k_ir_node);
   if ((n == -1) && (get_irn_opcode(node) == iro_Filter)) {
     /* Change block pred in both views! */
     node->in[n + 1] = in;

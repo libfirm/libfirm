@@ -361,7 +361,6 @@ copy_graph (void) {
   irg_walk(get_nodes_block(oe), copy_node, copy_preds, NULL);
   /* copy_preds for the end node ... */
   set_nodes_block(ne, get_new_node(get_nodes_block(oe)));
-  set_nodes_block(nb, get_new_node(get_nodes_block(ob)));
 
   /*- ... and now the keep alives. -*/
   /* First pick the not marked block nodes and walk them.  We must pick these
@@ -391,6 +390,9 @@ copy_graph (void) {
       add_End_keepalive(ne, get_new_node(ka));
     }
   }
+
+	/* start block somtimes only reached after keep alives */
+  set_nodes_block(nb, get_new_node(get_nodes_block(ob)));
 }
 
 /**
