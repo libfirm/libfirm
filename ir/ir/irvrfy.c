@@ -168,6 +168,16 @@ static void show_return_nres(ir_graph *irg, ir_node *n, type *mt)
     get_Return_n_ress(n), get_method_n_ress(mt));
 }
 
+/**
+ * Show Phi input
+ */
+static void show_phi_failure(ir_node *phi, ir_node *pred, int pos)
+{
+  fprintf(stderr, "\nFIRM: irn_vrfy_irg() Phi node %ld has mode %s different from predeccessor node %ld mode %s\n",
+    get_irn_node_nr(phi), get_mode_name(get_irn_mode(phi)),
+    get_irn_node_nr(pred), get_mode_name(get_irn_mode(pred)));
+}
+
 INLINE static int
 vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
   ir_node *pred;
@@ -439,7 +449,7 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
     );
   }
 
-  opcode = get_irn_opcode (n);
+  opcode = get_irn_opcode(n);
 
   /* We don't want to test nodes whose predecessors are Bad or Unknown,
      as we would have to special case that for each operation. */
@@ -450,8 +460,8 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
         return 1;
     }
 
-  mymode = get_irn_mode (n);
-  in = get_irn_in (n);
+  mymode = get_irn_mode(n);
+  in = get_irn_in(n);
 
   switch (opcode)
   {
@@ -847,10 +857,13 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
 
     case iro_Phi:
       /* Phi: BB x dataM^n --> dataM */
-      /* for some reason "<=" aborts. int there a problem with get_store? */
-      for (i=1; i < get_irn_arity(n); i++) {
+      for (i = 1; i < get_irn_arity(n); i++) {
         if (!is_Bad(in[i]) && (get_irn_op(in[i]) != op_Unknown))
-          ASSERT_AND_RET( get_irn_mode(in[i]) == mymode, "Phi node", 0);
+          ASSERT_AND_RET_DBG(
+	      get_irn_mode(in[i]) == mymode,
+	      "Phi node", 0,
+	      show_phi_failure(n, in[i], i);
+	  );
       };
       ASSERT_AND_RET( mode_is_dataM(mymode), "Phi node", 0 );
       break;
