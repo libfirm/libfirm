@@ -1,46 +1,46 @@
 /*
-**  Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-**  All rights reserved.
-**
-**  Authors: Martin Trapp, Christian Schaefer,
-**           Goetz Lindenmaier
-**
-**  entity.h:  entities represent all program known objects.
-**
-**  An entity is the representation of program known objects in Firm.
-**  The primary concept of entities is to represent members of complex
-**  types, i.e., fields and methods of classes.  As not all programming
-**  language model all variables and methods as members of some class,
-**  the concept of entities is extended to cover also local and global
-**  variables, and arbitrary procedures.
-**
-**  An entity always specifies the type of the object it represents and
-**  the type of the object it is a part of, the owner of the entity.
-**  Originally this is the type of the class of which the entity is a
-**  member.
-**  The owner of local variables is the procedure they are defined in.
-**  The owner of global variables and procedures visible in the whole
-**  program is a universally defined class type "GlobalType".  The owner
-**  of procedures defined in the scope of an other procedure is the
-**  enclosing procedure.
-**
-**  In detail the datastructure entity has the following fields:
-**
-**  ident *name     Name of this entity as specified in the source code.
-**                  Only unequivocal in conjuction with scope.
-**  ident *ld_name  Unique name of this entity, i.e., the mangled
-**                  name.  E.g., for a class `A' with field `a' this
-**                  is the ident for `A_a'.
-**  type *type      The type of this entity, e.g., a method type, a
-**                  basic type of the language or a class itself.
-**  type *owner;    The class this entity belongs to.  In case of local
-**		    variables the method they are defined in.
-**  int offset;     Offset in byte for this entity.  Fixed when layout
-**		    of owner is determined.
-**  ir_graph *irg;  If (type == method_type) this is the corresponding irg.
-**		    The ir_graph constructor automatically sets this field.
-**                  If (type != method_type) access of this field will cause
-**                  an assertion.
+*  Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
+*  All rights reserved.
+*
+*  Authors: Martin Trapp, Christian Schaefer,
+*           Goetz Lindenmaier
+*
+*  entity.h:  entities represent all program known objects.
+*
+*  An entity is the representation of program known objects in Firm.
+*  The primary concept of entities is to represent members of complex
+*  types, i.e., fields and methods of classes.  As not all programming
+*  language model all variables and methods as members of some class,
+*  the concept of entities is extended to cover also local and global
+*  variables, and arbitrary procedures.
+*
+*  An entity always specifies the type of the object it represents and
+*  the type of the object it is a part of, the owner of the entity.
+*  Originally this is the type of the class of which the entity is a
+*  member.
+*  The owner of local variables is the procedure they are defined in.
+*  The owner of global variables and procedures visible in the whole
+*  program is a universally defined class type "GlobalType".  The owner
+*  of procedures defined in the scope of an other procedure is the
+*  enclosing procedure.
+*
+*  In detail the datastructure entity has the following fields:
+*
+*  ident *name     Name of this entity as specified in the source code.
+*                  Only unequivocal in conjuction with scope.
+*  ident *ld_name  Unique name of this entity, i.e., the mangled
+*                  name.  E.g., for a class `A' with field `a' this
+*                  is the ident for `A_a'.
+*  type *type      The type of this entity, e.g., a method type, a
+*                  basic type of the language or a class itself.
+*  type *owner;    The class this entity belongs to.  In case of local
+* 	    variables the method they are defined in.
+*  int offset;     Offset in byte for this entity.  Fixed when layout
+* 	    of owner is determined.
+*  ir_graph *irg;  If (type == method_type) this is the corresponding irg.
+* 	    The ir_graph constructor automatically sets this field.
+*                  If (type != method_type) access of this field will cause
+*                  an assertion.
 */
 
 /* $Id$ */
@@ -69,48 +69,43 @@ void init_entity (void);
 typedef struct ir_graph ir_graph;
 #endif
 
-/****s* entity/entity
+/**
  *
- * NAME
- *   entity - An abstract data type to represent program entites.
- * NOTE
+ *   An abstract data type to represent program entites.
  *
- * ATTRIBUTES
- *   owner      A compound type this entity is a part of.
- *   type       The type of this entity.
- *   name       The string that represents this entity in the source program.
- *   allocation A flag saying whether the entity is dynamically or statically
+ *   @param owner      A compound type this entity is a part of.
+ *   @param type       The type of this entity.
+ *   @param name       The string that represents this entity in the source program.
+ *   @param allocation A flag saying whether the entity is dynamically or statically
  *              allocated (values: dynamic_allocated,  static_allocated,
  *              automatic_allocated).
- *   visibility A flag indicating the visibility of this entity (values: local,
+ *   @param visibility A flag indicating the visibility of this entity (values: local,
  *              external_visible,  external_allocated)
- *   variability A flag indicating the variability of this entity (values:
+ *   @param variability A flag indicating the variability of this entity (values:
  *              uninitialized, initalized, part_constant, constant)
- *   volatility @@@
- *   offset     The offset of the entity within the compound object.  Only set
+ *   @param volatility @@@
+ *   @param offset     The offset of the entity within the compound object.  Only set
  *              if the owner in the state "layout_fixed".
- *   overwrites A list of entities overwritten by this entity.  This list is only
+ *   @param overwrites A list of entities overwritten by this entity.  This list is only
  *              existent if the owner of this entity is a class.  The members in
  *              this list must be entities of super classes.
- *   overwrittenby A list of entities that overwrite this entity.  This list is only
+ *   @param overwrittenby A list of entities that overwrite this entity.  This list is only
  *              existent if the owner of this entity is a class.  The members in
  *              this list must be entities of sub classes.
- *   link       A void* to associate some additional information with the entity.
- *   irg        If the entity is a method this is the ir graph that represents the
+ *   @param link       A void* to associate some additional information with the entity.
+ *   @param irg        If the entity is a method this is the ir graph that represents the
  *              code of the method.
- *   peculiarity The peculiarity of the entity.  If the entity is a method this
+ *   @param peculiarity The peculiarity of the entity.  If the entity is a method this
  *              indicates whether the entity represents
  *              a real method or whether it only exists to describe an interface.
  *              In that case there nowhere exists code for this entity and this entity
  *              is never dynamically used in the code.
  *              Values: description, existent.  Default: existent.
- *   visited   visited flag.  Master flag is type_visited.
+ *   @param visited   visited flag.  Master flag is type_visited.
  *
- *  These fields can only be accessed via access functions.
+ *  @param These fields can only be accessed via access functions.
  *
- * SEE ALSO
- *   type
- * SOURCE
+ * @see  type
  */
 
 /* to resolve recursion between entity.h and type.h */
@@ -304,6 +299,5 @@ void        set_entity_visited(entity *ent, unsigned long num);
 void        mark_entity_visited(entity *ent);
 
 
-/*****/
 
 # endif /* _ENTITY_H_ */

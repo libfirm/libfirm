@@ -1,14 +1,14 @@
 /* Copyright (c) 2002 by Universität Karlsruhe (TH).  All Rights Reserved */
 /*
-** Time-stamp: <Thursday, 31.10.2002, 16:03:00 goetz@i44pc2.info.uni-karlsruhe.de>
+* Time-stamp: <Thursday, 31.10.2002, 16:03:00 goetz@i44pc2.info.uni-karlsruhe.de>
 */
 
-/***
+/**
    NAME
      st.h
    PURPOSE
      provide some auxilliary structures for firm graphs.
-   NOTES
+   S
      not quite complete
    HISTORY
      liekweg - Feb 26, 2002: Created.
@@ -33,8 +33,8 @@ static dtree_t *last  = 0;
 */
 
 /* --------------------------------------------------------------------
-** Helper Functions
-** -------------------------------------------------------------------- */
+* Helper Functions
+* -------------------------------------------------------------------- */
 /*
   Helper function for get_n_blocks
 */
@@ -127,8 +127,8 @@ static void free_dt (dt_t *dt)
 */
 
 /* --------------------------------------------------------------------
-** Private Functions
-** -------------------------------------------------------------------- */
+* Private Functions
+* -------------------------------------------------------------------- */
 
 /*
   Given a graph, find its dominator tree in the global list:
@@ -398,8 +398,8 @@ static ir_node *_get_idom (dt_t *dt, ir_node *block)
 }
 
 /* --------------------------------------------------------------------
-** Public Functions
-** -------------------------------------------------------------------- */
+* Public Functions
+* -------------------------------------------------------------------- */
 
 /*
   Say wether a dominates b

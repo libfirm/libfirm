@@ -6,19 +6,13 @@
 
 # include "type.h"
 
-/****h* libfirm/type_t.h
+/**
  *
- * NAME
  *   file type_t.h
- * COPYRIGHT
  *   (C) 2001 by Universitaet Karlsruhe
- * AUTHORS
  *   Goetz Lindenmaier
- * NOTES
  *   This file contains the datatypes hidden in type.h.
- * SEE ALSO
- *   type.h tpop_t.h tpop.h
- *****
+ * @see  type.h tpop_t.h tpop.h
  */
 
 typedef struct {
@@ -114,20 +108,15 @@ struct type {
 			      entry in this struct!  Varying size! */
 };
 
-/****f* type_t.h/new_type
+/**
  *
- * NAME
- *   new_type - creates a new type representation
- * SYNOPSIS
- *  type *new_type(tp_op *type_op, ir_mode *mode, ident* name);
- * INPUTS
- *   type_op - the kind of this type.  May not be type_id.
- *   mode    - the mode to be used for this type, may be NULL
- *   name    - an ident for the name of this type.
- * RESULT
- *   a new type of the given type.  The remaining private attributes are not
- *   initalized.  The type is in state layout_undefined.
- ***
+ *   creates a new type representation
+ *   @param type_op - the kind of this type.  May not be type_id.
+ *   @param mode    - the mode to be used for this type, may be NULL
+ *   @param name    - an ident for the name of this type.
+ *   @return a new type of the given type.  The remaining private attributes are not
+ *   @return initalized.  The type is in state layout_undefined.
+ *
  */
 INLINE type *
 new_type(tp_op *type_op,

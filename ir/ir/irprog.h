@@ -1,18 +1,18 @@
 /* Copyright (C) 2000 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Goetz Lindenmaier
-**
-** irprog.h: ir representation of a program
-**
-** This file defines a construct that keeps all information about a
-** program:
-**   - A list of all procedures.
-**   - A list of all types.
-**   - A global type that can be thought of as a god-class containing all
-**     global variables and procedures.  This is not the base class of
-**     all classes in a class hierarchy (as, e.g., "object" in java).
-**   - (An obstack containing global things, e.g., the above mentioned lists.)
+* All rights reserved.
+*
+* Authors: Goetz Lindenmaier
+*
+* irprog.h: ir representation of a program
+*
+* This file defines a construct that keeps all information about a
+* program:
+*   - A list of all procedures.
+*   - A list of all types.
+*   - A global type that can be thought of as a god-class containing all
+*     global variables and procedures.  This is not the base class of
+*     all classes in a class hierarchy (as, e.g., "object" in java).
+*   - (An obstack containing global things, e.g., the above mentioned lists.)
 */
 
 /* $Id$ */
@@ -23,22 +23,20 @@
 # include "irnode.h"
 # include "type.h"
 
-/***** irprog/irprog
+/**
  *
  * NAME  Datastructure that holds central information about a program
  *
- * NOTE  Preliminary documentation ;-)
+ *   Preliminary documentation ;-)
  *
- * SOURCE
  */
 
-/***s* irprog/irprog
+/**
  *
  * NAME  Datastructure that holds central information about a program
  *
- * NOTE  Preliminary documentation ;-)
+ *   Preliminary documentation ;-)
  *
- * FIELDS
  *  main_irg  The ir graph that is the entry point to the program.
  *            (Anything not reachable from here may be optimized away.
  *            If we want to translate libraries or the like correctly
@@ -49,7 +47,6 @@
  *            using exchange_types()).
  *  glob_type The unique global type that is owner of all global entities.
  *
- * SOURCE
  */
 typedef struct ir_prog ir_prog;
 
@@ -89,16 +86,11 @@ void  set_irp_type(int pos, type *typ);
 /** Functions to access the fields of ir_prog **/
 type *get_glob_type(void);
 
-/*****/
 
-/***p* irprog/get_const_code_irg
+/**
  *
- * NAME
- *   get_const_code_irg - Returns an irgraph that only contains constant
+ *   Returns an irgraph that only contains constant
  *   expressions for constant entities.
- * SYNOPSIS
- *   ir_graph *get_const_code_irg();
- * NOTE
  *   Do not use any access function for this graph, do not generate code
  *   for this graph.  This graph contains only one block.  The constant
  *   expressions may not contain control flow.  See also copy_const_code

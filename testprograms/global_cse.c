@@ -1,9 +1,9 @@
 /* Copyright (C) 2002 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Christian Schaefer, Goetz Lindenmaier
-**
-** testprogram.
+* All rights reserved.
+*
+* Authors: Christian Schaefer, Goetz Lindenmaier
+*
+* testprogram.
 */
 
 /* $Id$ */
@@ -16,18 +16,18 @@
 # include "firm.h"
 
 /**
-***  This file constructs the ir for the following pseudo-program:
-***
-***  int main(int a) {
-***    int b = 2;
-***    if ( a == b ) {
-***       a := a - 3;
-***    } else {
-***       a := a - 3;
-***       a := a + 5;
-***    }
-***    return a;
-***  }
+*  This file constructs the ir for the following pseudo-program:
+*
+*  int main(int a) {
+*    int b = 2;
+*    if ( a == b ) {
+*       a := a - 3;
+*    } else {
+*       a := a - 3;
+*       a := a + 5;
+*    }
+*    return a;
+*  }
 **/
 
 int

@@ -1,14 +1,10 @@
-/****h* libfirm/type.c
+/**
  *
- * NAME
  *   file type.c - implementation of the datastructure to hold
  *   type information.
- * COPYRIGHT
  *  (C) 2001 by Universitaet Karlsruhe
- * AUTHORS
  *  Martin Trapp, Christian Schaefer, Goetz Lindenmaier
  *
- * NOTES
  *  This module supplies a datastructure to represent all types
  *  known in the compiled program.  This includes types specified
  *  in the program as well as types defined by the language.  In the
@@ -24,9 +20,7 @@
  *  on the level of the programming language, modes at the level of
  *  the target processor.
  *
- * SEE ALSO
- *   type_t.h type tpop
- *****
+ * @see  type_t.h type tpop
  */
 
 /* $Id$ */
@@ -819,7 +813,6 @@ bool  is_method_type     (type *method) {
   assert(method);
   if (method->type_op == type_method) return 1; else return 0;
 }
-/*****/
 
 /*******************************************************************/
 /** TYPE_UNION                                                    **/

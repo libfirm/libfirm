@@ -1,10 +1,10 @@
 
 /* Copyright (C) 2001 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Goetz Lindenmaier
-**
-** Some makros supporting old function names.
+* All rights reserved.
+*
+* Authors: Goetz Lindenmaier
+*
+* Some makros supporting old function names.
 */
 
 /* $Id$ */

@@ -1,14 +1,14 @@
 /* Copyright (c) 2002 by Universität Karlsruhe (TH).  All Rights Reserved */
 /*
-** Time-stamp: <Monday, 04.11.2002, 17:28:27 goetz@i44pc2.info.uni-karlsruhe.de>
+* Time-stamp: <Monday, 04.11.2002, 17:28:27 goetz@i44pc2.info.uni-karlsruhe.de>
 */
 
-/***
+/**
    NAME
      exc
    PURPOSE
      Helper functions for exceptions
-   NOTES
+   S
      not quite complete
    HISTORY
      liekweg - Mar 4, 2002: Created.

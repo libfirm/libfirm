@@ -1,17 +1,17 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Martin Trapp, Christian Schaefer,
-**          Goetz Lindenmaier
-**
-** ircons.h ir node construction
+* All rights reserved.
+*
+* Authors: Martin Trapp, Christian Schaefer,
+*          Goetz Lindenmaier
+*
+* ircons.h ir node construction
 */
 
 /* $Id$ */
 
-/** !!!
-*** Ideas for imrovement:
-***
+/**
+* Ideas for imrovement:
+*
  Handle construction of exceptions more comfortable:
  Add new constructors that pass the exception region (or better the
  Phi for the memories, the ex. region can be found from there) as parameter,
@@ -22,12 +22,10 @@
  it is always unambiguous.
 **/
 
-/****h* libfirm/ircons
+/**
  *
- * NAME
  *   file ircons.h
  *
- * NOTES
  *    This file documents all datatypes and constructors needed to
  *    build a FIRM representation of a pocedure.  The constructors are
  *    also implemented in this file.
@@ -36,7 +34,6 @@
  *
  *    For extensive documentation of FIRM see UKA Techreport 1999-14.
  *
- *    DATATYPES
  *    =========
  *
  *    The struct ir_graph
@@ -386,7 +383,6 @@
  *     - the outputs of the Firm node
  *     - attributes to the node
  *
- *    BASIC BLOCKS
  *    ------------
  *
  *    ir_node *new_immBlock (void)
@@ -561,7 +557,6 @@
  *      else it points to the end_block.
  *
  *
- *    CONSTANTS
  *    ---------
  *
  *    ir_node *new_Const (ir_mode *mode, tarval *con)
@@ -621,7 +616,6 @@
  *      attr.i.*ptrinfo,  an ident holding information for the linker.  The mode
  *        of the node is mode_P.
  *
- *    THE SELECT NODE
  *    ---------------
  *
  *    ir_node *new_simpleSel (ir_node *store, ir_node *frame, entity *sel)
@@ -837,7 +831,6 @@
  *
  *
  *
- *    THE PHI NODE
  *    ------------
  *
  *    In general, Phi nodes are automaitcally inserted.  In some cases, if
@@ -1067,7 +1060,6 @@
  *    flow from Start to End.  Adds the node to the list in the end
  *    node.
  *
- *****
  */
 
 

@@ -1,9 +1,9 @@
 /* Copyright (C) 2000 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Goetz Lindenmaier
-**
-** irprog.c: ir representation of a program
+* All rights reserved.
+*
+* Authors: Goetz Lindenmaier
+*
+* irprog.c: ir representation of a program
 */
 
 /* $Id$ */

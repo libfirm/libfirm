@@ -1,9 +1,9 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Martin Trapp, Christian Schaefer
-**
-** Declarations for optimizations intertwined with IR construction.
+* All rights reserved.
+*
+* Authors: Martin Trapp, Christian Schaefer
+*
+* Declarations for optimizations intertwined with IR construction.
 */
 
 /* $Id$ */

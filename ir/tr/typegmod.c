@@ -1,8 +1,8 @@
 /* Copyright (C) 2001 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Goetz Lindenmaier
-**
+* All rights reserved.
+*
+* Authors: Goetz Lindenmaier
+*
 */
 
 /* $Id$ */

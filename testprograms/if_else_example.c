@@ -1,9 +1,9 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Christian Schaefer, Goetz Lindenmaier
-**
-** testprogram.
+* All rights reserved.
+*
+* Authors: Christian Schaefer, Goetz Lindenmaier
+*
+* testprogram.
 */
 
 # include <stdio.h>
@@ -18,18 +18,18 @@
  */
 
 /**
-***  This file constructs the ir for the following pseudo-program:
-***
-***  main() {
-***    int a = 0;
-***    int b = 1;
-***
-***    if (a > 2)
-***      { a = b; }
-***    else
-***      { b = 2; }
-***
-***    return a, b;
+*  This file constructs the ir for the following pseudo-program:
+*
+*  main() {
+*    int a = 0;
+*    int b = 1;
+*
+*    if (a > 2)
+*      { a = b; }
+*    else
+*      { b = 2; }
+*
+*    return a, b;
 **/
 
 int main(int argc, char **argv)

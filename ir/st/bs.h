@@ -1,11 +1,11 @@
 /* Copyright (c) 2002 by Universität Karlsruhe (TH).  All Rights Reserved */
 
-/***
+/**
    NAME
      bs
    PURPOSE
      provide bs_t
-   NOTES
+   S
      not quite complete
    HISTORY
      liekweg - Feb 27, 2002: Created.

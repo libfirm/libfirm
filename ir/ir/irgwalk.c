@@ -1,11 +1,11 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Author: Boris Boesler
-**
-** traverse an ir graph
-** - execute the pre function before recursion
-** - execute the post function after recursion
+* All rights reserved.
+*
+* Author: Boris Boesler
+*
+* traverse an ir graph
+* - execute the pre function before recursion
+* - execute the post function after recursion
 */
 
 /* $Id$ */

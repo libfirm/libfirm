@@ -1,15 +1,15 @@
 /*
-**  Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-**  All rights reserved.
-**
-**  Authors: Christian Schaefer
-**
-**  irop.h  operators of firm nodes
-**
-**  This module specifies the opcodes possible for ir nodes.  Their
-**  definition is close to the operations specified in UKA Tech-Report
-**  1999-14
-**
+*  Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
+*  All rights reserved.
+*
+*  Authors: Christian Schaefer
+*
+*  irop.h  operators of firm nodes
+*
+*  This module specifies the opcodes possible for ir nodes.  Their
+*  definition is close to the operations specified in UKA Tech-Report
+*  1999-14
+*
 */
 
 /* $Id$ */

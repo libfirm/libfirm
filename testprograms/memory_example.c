@@ -1,9 +1,9 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Christian Schaefer, Goetz Lindenmaier
-**
-** testprogram.
+* All rights reserved.
+*
+* Authors: Christian Schaefer, Goetz Lindenmaier
+*
+* testprogram.
 */
 
 
@@ -14,44 +14,44 @@
 # include "irdump.h"
 # include "firm.h"
 
-/**  This example demonstrates the use of memory edges.
-***  This file constructs the ir for the following pseudo-program:
-***
-***  int VAR_A
-***  int VAR_B
-***
-***  main() {
-***
-***    VAR_A = 0
-***    VAR_B = 1
-***
-***    repeat {
-***      h = VAR_A;
-***      VAR_A = VAR_B;
-***      VAR_B = h;
-***    } until (0 == h)
-***
-***    return (VAR_A)
-***  }
-***
-***
-***  A better example would be the following program:
-***  (name e.g.: memory-imp_example.c as it models imperative concepts.)
-***
-***  In this program a local variable is dereferenced.  It has
-***  to be modeled as an entity of the stack so that a pointer to it is available.
-***  It is also an example where an analysis could find out that the
-***  pointer is never actually used.
-***
-***  main () {
-***    int a;
-***    int *p;
-***
-***    a = 2;
-***    p = &a;
-***    return (*p);
-***  }
-***
+/**
+*  This file constructs the ir for the following pseudo-program:
+*
+*  int VAR_A
+*  int VAR_B
+*
+*  main() {
+*
+*    VAR_A = 0
+*    VAR_B = 1
+*
+*    repeat {
+*      h = VAR_A;
+*      VAR_A = VAR_B;
+*      VAR_B = h;
+*    } until (0 == h)
+*
+*    return (VAR_A)
+*  }
+*
+*
+*  A better example would be the following program:
+*  (name e.g.: memory-imp_example.c as it models imperative concepts.)
+*
+*  In this program a local variable is dereferenced.  It has
+*  to be modeled as an entity of the stack so that a pointer to it is available.
+*  It is also an example where an analysis could find out that the
+*  pointer is never actually used.
+*
+*  main () {
+*    int a;
+*    int *p;
+*
+*    a = 2;
+*    p = &a;
+*    return (*p);
+*  }
+*
 **/
 
 int

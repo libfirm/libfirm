@@ -1,8 +1,8 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Christian Schaefer
-**
+* All rights reserved.
+*
+* Authors: Christian Schaefer
+*
 irmode.h Modes for ir operators.
 
 This module specifies the modes that type the firm nodes.  See

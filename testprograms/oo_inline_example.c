@@ -1,9 +1,9 @@
 /* Copyright (C)2002 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Goetz Lindenmaier
-**
-** testprogram.
+* All rights reserved.
+*
+* Authors: Goetz Lindenmaier
+*
+* testprogram.
 */
 
 /* $ID$ */
@@ -16,28 +16,28 @@
 # include "irdump.h"
 # include "firm.h"
 
-/**  This file constructs the IR for the following program:
-***  @@@ this is no more correct ...
-***  class PRIMA {
-***    a: int;
-***
-***    int c(d: int) {
-***      return (d + self.a);
-***    }
-***
-***    void set_a(e:int) {
-***      self.a = e;
-***    }
-***
-***  }
-***
-***  int main() {
-***    o: PRIMA;
-***    o = new PRIMA;
-***    o.set_a(2);
-***    return o.c(5);
-***  };
-***
+/**
+*  @@@ this is no more correct ...
+*  class PRIMA {
+*    a: int;
+*
+*    int c(d: int) {
+*      return (d + self.a);
+*    }
+*
+*    void set_a(e:int) {
+*      self.a = e;
+*    }
+*
+*  }
+*
+*  int main() {
+*    o: PRIMA;
+*    o = new PRIMA;
+*    o.set_a(2);
+*    return o.c(5);
+*  };
+*
 **/
 
 int

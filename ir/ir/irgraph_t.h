@@ -1,9 +1,9 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Martin Trapp, Christian Schaefer
-**
-** irgraph.h: ir graph construction
+* All rights reserved.
+*
+* Authors: Martin Trapp, Christian Schaefer
+*
+* irgraph.h: ir graph construction
 */
 
 /* $Id$ */

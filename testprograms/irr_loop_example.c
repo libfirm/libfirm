@@ -1,9 +1,9 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Christian Schaefer, Goetz Lindenmaier
-**
-** testprogram.
+* All rights reserved.
+*
+* Authors: Christian Schaefer, Goetz Lindenmaier
+*
+* testprogram.
 */
 
 # include <stdio.h>
@@ -18,22 +18,22 @@
  */
 
 /**
-***  This file constructs a control flow of following shape:
-***
-***
-***         firstBlock
-***          /      \
-***         /        \
-***       |/_        _\|
-***            ---->
-*** LoopBlock1       LoopBlock2
-***            <----
-***        \              /
-*** 	    \            /
-*** 	    _\|        |/_
-***           nextBlock
-***
-***
+*  This file constructs a control flow of following shape:
+*
+*
+*         firstBlock
+*          /      \
+*         /        \
+*       |/_        _\|
+*            ---->
+* LoopBlock1       LoopBlock2
+*            <----
+*        \              /
+* 	    \            /
+* 	    _\|        |/_
+*           nextBlock
+*
+*
 **/
 
 int main(int argc, char **argv)

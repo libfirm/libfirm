@@ -1,9 +1,9 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Martin Trapp, Christian Schaefer
-**
-** irdump.h: dumping of an intermediate representation graph
+* All rights reserved.
+*
+* Authors: Martin Trapp, Christian Schaefer
+*
+* irdump.h: dumping of an intermediate representation graph
 */
 
 /* $Id$ */

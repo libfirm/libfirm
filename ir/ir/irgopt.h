@@ -1,9 +1,9 @@
 /* Copyright (C) 1998 - 2001 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Author: Christian Schaefer, Goetz Lindenmaier
-**
-** Optimizations for a whole ir graph, i.e., a procedure.
+* All rights reserved.
+*
+* Author: Christian Schaefer, Goetz Lindenmaier
+*
+* Optimizations for a whole ir graph, i.e., a procedure.
 */
 
 /* $Id$ */

@@ -1,9 +1,9 @@
  /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Goetz Lindenmaier
-**
-** testprogram.
+* All rights reserved.
+*
+* Authors: Goetz Lindenmaier
+*
+* testprogram.
 */
 
 # include <string.h>
@@ -13,24 +13,24 @@
 # include "irdump.h"
 # include "firm.h"
 
-/**  This example describes representation of stack allocated variables of
-***  imperative programs.
-***  It constructs the IR for the following program:
-***
-***
-***  main(): int
-***    int a[10];
-***
-***    return (a[3]);
-***  end;
-***
-***  The array is placed on the stack, i.e., a pointer to the array
-***  is obtained by selecting the entity "a" from the stack.  The variables
-***  on the stack are considered to be entities of the method, as locals
-***  of a method are only visible within the method.  (An alternative to
-***  make the method owner of the stack variables is to give the ownership
-***  to the class representing the C-file.  This would extend the visibility
-***  of the locals, though.)
+/**
+*  imperative programs.
+*  It constructs the IR for the following program:
+*
+*
+*  main(): int
+*    int a[10];
+*
+*    return (a[3]);
+*  end;
+*
+*  The array is placed on the stack, i.e., a pointer to the array
+*  is obtained by selecting the entity "a" from the stack.  The variables
+*  on the stack are considered to be entities of the method, as locals
+*  of a method are only visible within the method.  (An alternative to
+*  make the method owner of the stack variables is to give the ownership
+*  to the class representing the C-file.  This would extend the visibility
+*  of the locals, though.)
 **/
 
 

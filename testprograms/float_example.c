@@ -1,8 +1,8 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Christian Schaefer, Goetz Lindenmaier
-**
+* All rights reserved.
+*
+* Authors: Christian Schaefer, Goetz Lindenmaier
+*
 */
 
 # include <stdio.h>
@@ -13,15 +13,15 @@
 # include "firm.h"
 
 /**
-***  An Firm program to test float values.
-***
-***  This file constructs the ir for the following pseudo-program:
-***
-***  main() {
-***    ...
-***  }
-***
-***
+*  An Firm program to test float values.
+*
+*  This file constructs the ir for the following pseudo-program:
+*
+*  main() {
+*    ...
+*  }
+*
+*
 **/
 
 int main(int argc, char **argv)

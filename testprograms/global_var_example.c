@@ -1,10 +1,10 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Goetz Lindenmaier
-**
-** testprogram.
-**
+* All rights reserved.
+*
+* Authors: Goetz Lindenmaier
+*
+* testprogram.
+*
 */
 
 # include <stdio.h>
@@ -19,15 +19,15 @@
  */
 
 /**
-***  This program shows how to build ir for global variables.
-***  It constructs the ir for the following pseudo-program:
-***
-***  int i;
-***
-***  main() {
-***    i = 2;
-***    return;
-***  }
+*  This program shows how to build ir for global variables.
+*  It constructs the ir for the following pseudo-program:
+*
+*  int i;
+*
+*  main() {
+*    i = 2;
+*    return;
+*  }
 **/
 
 int main(int argc, char **argv)

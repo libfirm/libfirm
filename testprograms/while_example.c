@@ -1,9 +1,9 @@
 /* Copyright (C) 2001 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Goetz Lindenmaier
-**
-** testprogram.
+* All rights reserved.
+*
+* Authors: Goetz Lindenmaier
+*
+* testprogram.
 */
 
 # include <stdio.h>
@@ -14,20 +14,20 @@
 # include "firm.h"
 
 /**
-***  This file constructs the ir for the following pseudo-program:
-***
-***  main(int a) {        // pos 0
-***    int b = 1;         // pos 1
-***    int h;             // pos 2
-***
-***    while (0 == 2) loop {
-***      h = a;
-***      a = b;
-***      b = h;
-***    }
-***
-***    return a-b;
-***  }
+*  This file constructs the ir for the following pseudo-program:
+*
+*  main(int a) {        // pos 0
+*    int b = 1;         // pos 1
+*    int h;             // pos 2
+*
+*    while (0 == 2) loop {
+*      h = a;
+*      a = b;
+*      b = h;
+*    }
+*
+*    return a-b;
+*  }
 **/
 
 int

@@ -1,9 +1,9 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Christian Schaefer, Goetz Lindenmaier
-**
-** testprogram.
+* All rights reserved.
+*
+* Authors: Christian Schaefer, Goetz Lindenmaier
+*
+* testprogram.
 */
 
 # include <string.h>
@@ -14,13 +14,13 @@
 # include "firm.h"
 
 /**
-***  This file constructs the ir for the following pseudo-program:
-***
-***  void f(char *);
-***
-***  main() {
-***    f("Hello world !");
-***  }
+*  This file constructs the ir for the following pseudo-program:
+*
+*  void f(char *);
+*
+*  main() {
+*    f("Hello world !");
+*  }
 **/
 
 int main(int argc, char **argv)

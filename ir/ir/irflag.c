@@ -1,9 +1,9 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Christian Schaefer
-**
-** irflag --- optimization flags
+* All rights reserved.
+*
+* Authors: Christian Schaefer
+*
+* irflag --- optimization flags
 */
 
 /* $Id$ */

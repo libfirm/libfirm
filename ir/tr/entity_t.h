@@ -1,29 +1,29 @@
 /*10 2002/03/19 13:08:33
-**  Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-**  All rights reserved.
-**
-**  Authors: Martin Trapp, Christian Schaefer,
-**           Goetz Lindenmaier
-**
-**  entity.h:  entities represent all program known objects.
-**
-**  An entity is the representation of program known objects in Firm.
-**  The primary concept of entities is to represent members of complex
-**  types, i.e., fields and methods of classes.  As not all programming
-**  language model all variables and methods as members of some class,
-**  the concept of entities is extended to cover also local and global
-**  variables, and arbitrary procedures.
-**
-**  An entity always specifies the type of the object it represents and
-**  the type of the object it is a part of, the owner of the entity.
-**  Originally this is the type of the class of which the entity is a
-**  member.
-**  The owner of local variables is the procedure they are defined in.
-**  The owner of global variables and procedures visible in the whole
-**  program is a universally defined class type "GlobalType".  The owner
-**  of procedures defined in the scope of an other procedure is the
-**  enclosing procedure.
-**
+*  Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
+*  All rights reserved.
+*
+*  Authors: Martin Trapp, Christian Schaefer,
+*           Goetz Lindenmaier
+*
+*  entity.h:  entities represent all program known objects.
+*
+*  An entity is the representation of program known objects in Firm.
+*  The primary concept of entities is to represent members of complex
+*  types, i.e., fields and methods of classes.  As not all programming
+*  language model all variables and methods as members of some class,
+*  the concept of entities is extended to cover also local and global
+*  variables, and arbitrary procedures.
+*
+*  An entity always specifies the type of the object it represents and
+*  the type of the object it is a part of, the owner of the entity.
+*  Originally this is the type of the class of which the entity is a
+*  member.
+*  The owner of local variables is the procedure they are defined in.
+*  The owner of global variables and procedures visible in the whole
+*  program is a universally defined class type "GlobalType".  The owner
+*  of procedures defined in the scope of an other procedure is the
+*  enclosing procedure.
+*
 */
 
 /* $Id$ */

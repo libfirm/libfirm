@@ -1,12 +1,12 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Martin Trapp, Christian Schaefer
-**
-** ircons.c: basic and more detailed irnode constructors
-**           store, block and parameter administration.
-** Adapted to extended FIRM nodes (exceptions...) and commented
-**   by Goetz Lindenmaier
+* All rights reserved.
+*
+* Authors: Martin Trapp, Christian Schaefer
+*
+* ircons.c: basic and more detailed irnode constructors
+*           store, block and parameter administration.
+* Adapted to extended FIRM nodes (exceptions...) and commented
+*   by Goetz Lindenmaier
 */
 
 /* $Id$ */
@@ -583,7 +583,7 @@ new_rd_InstOf (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
   res->attr.io.ent = ent;
 
   /* res = optimize (res);
-  ** irn_vrfy (res); */
+  * irn_vrfy (res); */
   return (res);
 }
 
@@ -896,19 +896,13 @@ INLINE ir_node *new_r_Filter (ir_graph *irg, ir_node *block, ir_node *arg,
 /** public interfaces  */
 /** construction tools */
 
-/****f* ircons/new_Start
+/**
  *
- * NAME
- *   new_Start -- create a new Start node in the current block
+ *   - create a new Start node in the current block
  *
- * SYNOPSIS
- *   s = new_Start(void);
- *   ir_node* new_Start(void);
+ *   @return s - pointer to the created Start node
  *
- * RESULT
- *   s - pointer to the created Start node
  *
- ****
  */
 ir_node *
 new_d_Start (dbg_info* db)
@@ -1151,7 +1145,7 @@ new_rd_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
 static ir_node *
 get_r_value_internal (ir_node *block, int pos, ir_mode *mode);
 
-/** This function computes the predecessors for a real Phi node, and then
+/**
     allocates and returns this node.  The routine called to allocate the
     node might optimize it away and return a real value, or even a pointer
     to a deallocated Phi node on top of the obstack!
@@ -1312,7 +1306,7 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
 
 #else /* if 0 */
 
-/** This is the simple algorithm.  If first generates a Phi0, then
+/**
     it starts the recursion.  This causes an Id at the entry of
     every block that has no definition of the value! **/
 
@@ -1455,7 +1449,7 @@ get_r_frag_value_internal (ir_node *block, ir_node *cfOp, int pos, ir_mode *mode
 }
 #endif
 
-/** This function allocates a dummy Phi node to break recursions,
+/**
     computes the predecessors for the real phi node, and then
     allocates and returns this node.  The routine called to allocate the
     node might optimize it away and return a real value.

@@ -1,9 +1,9 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Martin Trapp, Christian Schaefer
-**
-** irgraph.h: ir graph construction
+* All rights reserved.
+*
+* Authors: Martin Trapp, Christian Schaefer
+*
+* irgraph.h: ir graph construction
 */
 
 /* $Id$ */
@@ -26,12 +26,11 @@ typedef struct ir_node ir_node;
 typedef struct ir_graph ir_graph;
 #endif
 
-/***** irgraph/irgraph
+/**
  *
  * NAME  Datastructure that holds central information about a procedure
  *
- * NOTE
- **    ir_graph *new_ir_graph (entity *ent, int params);
+ *    ir_graph *new_ir_graph (entity *ent, int params);
  *    -------------------------------------------------
  *
  *    This constructor generates the basic infrastructure needed to
@@ -60,11 +59,9 @@ typedef struct ir_graph ir_graph;
  *    datastructure is used to build the Phi nodes and removed after
  *    completion of the graph.  There is no path from end to start in the
  *    graph after calling ir_graph.
- * FIELDS
  *   pinned    set to "pinned" if no global cse was performed on the graph.
  *             set to "floats" if global cse was performed (and during construction:
  *             did actually change something).  Code placement is necessary.
- * SOURCE
  */
 
 /* Global variable holding the current_ir_graph.  This global variable
@@ -150,7 +147,7 @@ int      get_irg_n_locs (ir_graph *irg);
 /* States of an ir_graph.                                                       */
 /********************************************************************************/
 
-/** An ir_graph can have different states.  These states represent the analysis
+/**
    information associated with the graph.  Optimizations invalidate these
    states.  **/
 
@@ -239,6 +236,5 @@ unsigned long inc_max_irg_visited(void);
 void     inc_irg_block_visited(ir_graph *irg);
 unsigned long get_irg_block_visited (ir_graph *irg);
 void     set_irg_block_visited(ir_graph *irg, unsigned long i);
-/*****/
 
 # endif /* _IRGRAPH_H_ */

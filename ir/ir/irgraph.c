@@ -1,9 +1,9 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Martin Trapp, Christian Schaefer
-**
-**
+* All rights reserved.
+*
+* Authors: Martin Trapp, Christian Schaefer
+*
+*
 */
 
 /* $Id$ */
@@ -67,8 +67,8 @@ new_ir_graph (entity *ent, int n_loc)
   current_ir_graph = res;
   add_irp_irg(res);          /* remember this graph global. */
 
-  /** Internal information for graph construction either held in the graph or
-  *** initialized for each graph. **/
+/**
+  * initialized for each graph. **/
 #if PRECISE_EXC_CONTEXT
   res->n_loc = n_loc + 1 + 1; /* number of local variables that are never
                                  dereferenced in this graph plus one for
@@ -105,7 +105,7 @@ new_ir_graph (entity *ent, int n_loc)
   res->ent = ent;
   set_entity_irg(ent, res);
 
-  /** A type that represents the stack frame.  A class type so that it can
+/**
       contain "inner" methods as in Pascal. **/
   res->frame_type = new_type_class(mangle(get_entity_ident(ent),
 	  id_from_str(FRAME_TP_SUFFIX, strlen(FRAME_TP_SUFFIX))));

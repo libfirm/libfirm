@@ -1,9 +1,9 @@
 /* (C) 2002 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Goetz Lindenmaier
-**
-** testprogram.
+* All rights reserved.
+*
+* Authors: Goetz Lindenmaier
+*
+* testprogram.
 */
 
 /* $ID$ */
@@ -16,23 +16,23 @@
 # include "firm.h"
 
 /**
-***  This file constructs the ir for the following pseudo-program:
-***
-***  VAR_A is some extern variable.
-***
-***  main(int a) {        // pos 0
-***    int b = 1;         // pos 1
-***    int h;             // pos 2
-***
-***    while (0 == 0) loop {
-***      h = a;
-***      a = b;
-***      b = h;
-***      VAR_A = b;
-***    }
-***
-***    return a-b;
-***  }
+*  This file constructs the ir for the following pseudo-program:
+*
+*  VAR_A is some extern variable.
+*
+*  main(int a) {        // pos 0
+*    int b = 1;         // pos 1
+*    int h;             // pos 2
+*
+*    while (0 == 0) loop {
+*      h = a;
+*      a = b;
+*      b = h;
+*      VAR_A = b;
+*    }
+*
+*    return a-b;
+*  }
 **/
 
 int

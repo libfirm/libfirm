@@ -1,13 +1,13 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
 
-** All rights reserved.
-**
-** Author: Goetz Lindenmaier
-**
-** traverse the type information.  The walker walks the whole ir graph
-** to find the distinct type trees in the type graph forest.
-** - execute the pre function before recursion
-** - execute the post function after recursion
+* All rights reserved.
+*
+* Author: Goetz Lindenmaier
+*
+* traverse the type information.  The walker walks the whole ir graph
+* to find the distinct type trees in the type graph forest.
+* - execute the pre function before recursion
+* - execute the post function after recursion
 */
 
 /* $Id$ */
@@ -23,7 +23,7 @@
 
 typedef void (type_walk_func)(type_or_ent *, void *);
 
-/** Walks over all type information reachable from global roots.
+/**
     Touches every type and entity in unspecified order.  If new
     types/entities are created during the traversal these will
     be visited, too. **/
@@ -37,7 +37,7 @@ void type_walk_irg(ir_graph *irg,
 		   type_walk_func *post,
 		   void *env);
 
-/** Walks over all type information reachable from global roots.
+/**
     Touches every class in specified order:
     - first the super class
     - second the class itself
@@ -49,7 +49,7 @@ void type_walk_super2sub(type_walk_func *pre,
 			 type_walk_func *post,
 			 void *env);
 
-/** Walks over all type information reachable from global roots.
+/**
     Touches every class in specified order:
     - first the super class
     - second the class itself

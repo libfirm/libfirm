@@ -1,9 +1,9 @@
  /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Goetz Lindenmaier
-**
-** testprogram.
+* All rights reserved.
+*
+* Authors: Goetz Lindenmaier
+*
+* testprogram.
 */
 
 # include <string.h>
@@ -13,33 +13,33 @@
 # include "irdump.h"
 # include "firm.h"
 
-/**  This example describes a possible representation of heap allocated
-***  variables of imperative programs.
-***  It constructs the IR for the following program:
-***
-***
-***  main(): int
-***    int *a[10];
-***
-***    a = malloc(sizeof(a[10]));
-***    return (a[3]);
-***  end;
-***
-***  The array is placed on the heap.  The pointer to the array that
-***  is a local variable is represented as a dataflow edge.
-***  There are two ways to model allocation to the heap in programs with
-***  explicit memory allocation:
-***  1. Model the calls to malloc and free as simple procedure (of compiler
-***     known procedures returning a pointer.  This is the simpler way of
-***     generating FIRM, but restricts the information that can be deduced
-***     for the call.
-***  2. Insert an Alloc node.  A later pass can lower this to the compiler
-***     known function.  This makes the allocation explicit in FIRM, supporting
-***     optimization.
-***     A problem is modeling free.  There is no free node in FIRM.  Is this
-***     a necessary extension?
-***  This example shows the second alternative, where the size of the array
-***  is explicitly computed.
+/**
+*  variables of imperative programs.
+*  It constructs the IR for the following program:
+*
+*
+*  main(): int
+*    int *a[10];
+*
+*    a = malloc(sizeof(a[10]));
+*    return (a[3]);
+*  end;
+*
+*  The array is placed on the heap.  The pointer to the array that
+*  is a local variable is represented as a dataflow edge.
+*  There are two ways to model allocation to the heap in programs with
+*  explicit memory allocation:
+*  1. Model the calls to malloc and free as simple procedure (of compiler
+*     known procedures returning a pointer.  This is the simpler way of
+*     generating FIRM, but restricts the information that can be deduced
+*     for the call.
+*  2. Insert an Alloc node.  A later pass can lower this to the compiler
+*     known function.  This makes the allocation explicit in FIRM, supporting
+*     optimization.
+*     A problem is modeling free.  There is no free node in FIRM.  Is this
+*     a necessary extension?
+*  This example shows the second alternative, where the size of the array
+*  is explicitly computed.
 **/
 
 #define OPTIMIZE_NODE 0

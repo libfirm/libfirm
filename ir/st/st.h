@@ -1,11 +1,11 @@
 /* Copyright (c) 2002 by Universität Karlsruhe (TH).  All Rights Reserved  */
 
-/***
+/**
    NAME
      st.h
    PURPOSE
      provide some auxilliary structures for firm graphs.
-   NOTES
+   S
      not quite complete
    HISTORY
      liekweg - Feb 26, 2002: Created.

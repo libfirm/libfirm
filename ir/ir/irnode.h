@@ -1,9 +1,9 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe      3 2002/02/28 13:33:52
-** All rights reserved.
-**
-** Authors: Martin Trapp, Christian Schaefer
-**
-** declarations of an ir node
+* All rights reserved.
+*
+* Authors: Martin Trapp, Christian Schaefer
+*
+* declarations of an ir node
 */
 
 /* $Id$ */
@@ -23,35 +23,33 @@
 
 /* The type definiton of ir_node is also in irgraph.h to resolve
    recursion between irnode.h and irgraph.h */
-/****s* irnode/irnode
+/**
  *
  * NAME ir_node - a datatype representing a Firm node
  *
- * NOTE Not properly documented ;-)
+ *  Not properly documented ;-)
  *
- * ATTRIBUTES
- *  The common fields are:
+ *  @param The common fields are:
  *
- *  firm_kind    A firm_kind tag containing k_type.  This is useful
+ *  @param firm_kind    A firm_kind tag containing k_type.  This is useful
  *               for dynamically checking whether a node is a ir_node.
- *  arity        The number of predecessors in the Firm graph.
- *  in           A list with the predecessors in the Firm graph.  There are
+ *  @param arity        The number of predecessors in the Firm graph.
+ *  @param in           A list with the predecessors in the Firm graph.  There are
  *               routines to access individual elements and to obtain the
  *               array.  The method returning the array should not be used.
- *  mode         The mode of the node.  There are routines to get the mode but
+ *  @param mode         The mode of the node.  There are routines to get the mode but
  *               also to access the mode's fields directly.
- *  opcode       The opcode of the node.  There are routines to get the opcode but
+ *  @param opcode       The opcode of the node.  There are routines to get the opcode but
  *               also to access the opcode's fields directly.
- *  node_nr      A unique number for the node.  Available only if debugging is
+ *  @param node_nr      A unique number for the node.  Available only if debugging is
  *               turned on.
- * SOURCE
  */
 #ifndef _IR_NODE_TYPEDEF_
 #define _IR_NODE_TYPEDEF_
 typedef struct ir_node ir_node;
 #endif
 
-/** Manipulate the fields of ir_node.  With these access routines
+/**
     you can work on the graph without considering the different types
     of nodes, it's just a big graph. **/
 
@@ -105,7 +103,6 @@ INLINE long get_irn_node_nr(ir_node *node);
 /* Returns the ir_graph this node belongs to. Only valid for
  * CallBegin, EndReg and EndExcept */
 INLINE ir_graph *get_irn_irg(ir_node *node);
-/*****/
 
 /* irnode constructor                                             */
 /* Create a new irnode in irg, with an op, mode, arity and        */
@@ -121,13 +118,12 @@ new_ir_node (dbg_info *db,
 	     int arity,
 	     ir_node *in[]);
 
-/****s* irnode/other
+/**
  *
  * NAME access functions for node fields.
  *
- * NOTE Not properly documented ;-)
+ *  Not properly documented ;-)
  *
- * SOURCE
  */
 
 /* this works for all except Block */
@@ -500,15 +496,13 @@ INLINE void      set_Tuple_pred (ir_node *node, int pos, ir_node *pred);
 INLINE ir_node  *get_Id_pred (ir_node *node);
 INLINE void      set_Id_pred (ir_node *node, ir_node *pred);
 
-/*****/
 
-/****s* irnode/other2
+/**
  *
  * NAME Auxiliary routines
  *
- * NOTE Not properly documented ;-)
+ *  Not properly documented ;-)
  *
- * SOURCE
  */
 
 /* returns operand of node if node is a Proj. */
@@ -544,7 +538,6 @@ int is_fragile_op(ir_node *node);
 /* Returns the memory operand of fragile operations. */
 ir_node *get_fragile_op_mem(ir_node *node);
 
-/*****/
 
 /* Makros for debugging the libfirm */
 #include "ident.h"

@@ -1,9 +1,9 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Christian Schaefer, Goetz Lindenmaier
-**
-** testprogram.
+* All rights reserved.
+*
+* Authors: Christian Schaefer, Goetz Lindenmaier
+*
+* testprogram.
 */
 
 #include <stdio.h>
@@ -14,13 +14,13 @@
 # include "firm.h"
 
 /**
-***  This file constructs the ir for the following pseudo-program:
-***
-***  main(int a) {
-***    if ((a > 2) && (a < 10))
-***      { a = 1; }
-***
-***    return a;
+*  This file constructs the ir for the following pseudo-program:
+*
+*  main(int a) {
+*    if ((a > 2) && (a < 10))
+*      { a = 1; }
+*
+*    return a;
 **/
 
 int main(int argc, char **argv)

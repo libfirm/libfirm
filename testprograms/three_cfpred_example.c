@@ -1,9 +1,9 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Christian Schaefer, Goetz Lindenmaier
-**
-** testprogram.
+* All rights reserved.
+*
+* Authors: Christian Schaefer, Goetz Lindenmaier
+*
+* testprogram.
 */
 
 # include <stdio.h>
@@ -18,34 +18,34 @@
  */
 
 /**
-***  This file constructs a control flow of following shape:
-***
-***
-***       firstCondBlock
-***          /     \
-***         /       \
-***       |/_       _\|
-***     Block1    scnCondBlock
-***        |       |        |
-*** 	   |       |        |
-*** 	   |      \ /      \ /
-***        |     Block2   Block3
-***         \      |       /
-***	     \     |      /
-***	     _\|  \ /   |/_
-***            nextBlock
-***
-***
-***   This is a program as, e.g.,
-***
-***   if () then
-***     { Jmp label1; } // happens anyways
-***   else
-***     { Jmp label1; } // happens anyways
-*** label1:
-***   return();
-***   Jmp label1;
-***
+*  This file constructs a control flow of following shape:
+*
+*
+*       firstCondBlock
+*          /     \
+*         /       \
+*       |/_       _\|
+*     Block1    scnCondBlock
+*        |       |        |
+* 	   |       |        |
+* 	   |      \ /      \ /
+*        |     Block2   Block3
+*         \      |       /
+*      \     |      /
+*      _\|  \ /   |/_
+*            nextBlock
+*
+*
+*   This is a program as, e.g.,
+*
+*   if () then
+*     { Jmp label1; } // happens anyways
+*   else
+*     { Jmp label1; } // happens anyways
+* label1:
+*   return();
+*   Jmp label1;
+*
 **/
 
 int main(int argc, char **argv)

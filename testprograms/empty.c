@@ -1,8 +1,8 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Christian Schaefer, Goetz Lindenmaier
-**
+* All rights reserved.
+*
+* Authors: Christian Schaefer, Goetz Lindenmaier
+*
 */
 
 # include <stdio.h>
@@ -13,15 +13,15 @@
 # include "firm.h"
 
 /**
-***  An empty Firm program.
-***
-***  This file constructs the ir for the following pseudo-program:
-***
-***  main() {
-***    return;
-***  }
-***
-***
+*  An empty Firm program.
+*
+*  This file constructs the ir for the following pseudo-program:
+*
+*  main() {
+*    return;
+*  }
+*
+*
 **/
 
 int main(int argc, char **argv)

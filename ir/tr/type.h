@@ -1,13 +1,9 @@
-/****h* libfirm/type6 2002/03/19 13:08:33
+/**
  *
- * NAME
  *   file type.h - datastructure to hold type information.
- * COPYRIGHT
  *  (C) 2001 by Universitaet Karlsruhe
- * AUTHORS
  *  Goetz Lindenmaier
  *
- * NOTES
  *  This module supplies a datastructure to represent all types
  *  known in the compiled program.  This includes types specified
  *  in the program as well as types defined by the language.  In the
@@ -23,9 +19,7 @@
  *  on the level of the programming language, modes at the level of
  *  the target processor.
  *
- * SEE ALSO
- *   tpop.h
- *****
+ * @see  tpop.h
  */
 
 /* $Id$ */
@@ -52,11 +46,9 @@ typedef struct entity entity;
 typedef struct ir_node ir_node;
 #endif
 
-/****s* type/type
+/**
  *
- * NAME
- *   type - An abstract data type to represent types.
- * NOTE
+ *   An abstract data type to represent types.
  *  This is the abstract data type with which any type known in the
  *  compiled program can be represented.  This includes types specified
  *  in the program as well as types defined by the language.  In the
@@ -71,21 +63,20 @@ typedef struct ir_node ir_node;
  *  The following describes the common attributes.  They can only be
  *  accessed by the functions given below.
  *
- * ATTRIBUTES
- *  The common fields are:
+ *  @param The common fields are:
  *
- *  firm_kind    A firm_kind tag containing k_type.  This is useful
+ *  @param firm_kind    A firm_kind tag containing k_type.  This is useful
  *               for dynamically checking whether a node is a type node.
- *  type_op      A tp_op specifying the kind of the type.
- *  mode         The mode to be used to represent the type on a machine.
+ *  @param type_op      A tp_op specifying the kind of the type.
+ *  @param mode         The mode to be used to represent the type on a machine.
  *               @@@ maybe not global field??
- *  name         An identifier specifying the name of the type.  To be
+ *  @param name         An identifier specifying the name of the type.  To be
  *               set by the frontend.
- *  size         The size of the type, i.e. an entity of this type will
+ *  @param size         The size of the type, i.e. an entity of this type will
  *               occupy size bytes in memory.  In several cases this is
  *               determined when fixing the layout of this type (class,
  *               struct, union, array, enumeration).
- *  state        The state of the type.  The state represents whether the
+ *  @param state        The state of the type.  The state represents whether the
  *               layout of the type is undefined or fixed (values: layout_undefined
  *               or layout_fixed).  Compound types can have an undefined
  *               layout.  The layout of the basic types primitive and pointer
@@ -94,16 +85,14 @@ typedef struct ir_node ir_node;
  *               and the size of the type must be set.
  *               A fixed layout for enumeration types means that each enumeration
  *               is associated with an implementation value.
- *  visit        A counter for walks of the type information.
- *  link         A void* to associate some additional information with the type.
+ *  @param visit        A counter for walks of the type information.
+ *  @param link         A void* to associate some additional information with the type.
  *
- *  These fields can only be accessed via access functions.
+ *  @param These fields can only be accessed via access functions.
  *
- *  Depending on the value of type_op, i.e., depending on the kind of the
- *  type the adt contains further attributes.  These are documented below.
- * SEE ALSO
- *   class, struct, method, union, array, enumeration, pointer, primitive
- * SOURCE
+ *  @param Depending on the value of type_op, i.e., depending on the kind of the
+ *  @param type the adt contains further attributes.  These are documented below.
+ * @see  class, struct, method, union, array, enumeration, pointer, primitive
  */
 #ifndef _TYPE_TYPEDEF_
 #define _TYPE_TYPEDEF_
@@ -160,53 +149,37 @@ void          mark_type_visited(type *tp);
 
 void*         get_type_link(type *tp);
 void          set_type_link(type *tp, void *l);
-/*****/
 
-/****v* type/visited
+/**
  *
- * NAME
- *   type_visited -  visited flag to traverse the type information
- * PURPOSE
+ *   visited flag to traverse the type information
  *   Increase this flag by one before traversing the type information.
  *   Mark type nodes as visited by set_type_visited(type, type_visited).
  *   Check whether node was already visited by comparing get_type_visited(type)
  *   and type_visited.
  *   Or use the function to walk all types.
- * SEE ALSO
- *   typewalk
- * SOURCE
+ * @see  typewalk
  */
 extern unsigned long type_visited;
 void          set_master_type_visited(unsigned long val);
 unsigned long get_master_type_visited();
 void          inc_master_type_visited();
-/*****/
 
-/****f* type/is_type
+/**
  *
- * NAME
- *   is_type - Checks whether a pointer points to a type.
- * SYNOPSIS
- *   bool is_type            (void *thing);
- * INPUTS
- *   thing - a pointer
- * RESULT
- *   true if the thing is a type, else false
- ***
+ *   Checks whether a pointer points to a type.
+ *   @param thing - a pointer
+ *   @return true if the thing is a type, else false
+ *
  */
 int is_type            (void *thing);
 
-/****f* type/equal_types
+/**
  *
- * NAME
- *   equal_type - Checks whether two types are structural equal.
- * SYNOPSIS
- *   bool equal_types   (type *typ1, type *typ2);
- * INPUTS
- *   two pointer types
- * RESULT
- *   true if the types are equal, else false.
- *   Types are equal if
+ *   Checks whether two types are structural equal.
+ *   @param two pointer types
+ *   @return true if the types are equal, else false.
+ *   @return Types are equal if
  *    - they are the same type kind
  *    - they have the same name
  *    - they have the same mode (if applicable)
@@ -233,22 +206,17 @@ int is_type            (void *thing);
  *       This is to avoid endless recursions; with pointer types circlic
  *       type graphs are possible.)
  *
- ***
+ *
  */
 bool equal_type(type *tpy1, type *typ2);
 
-/****f* type/smaller_type
+/**
  *
- * NAME
- *   smaller_type - Checks whether two types are structural comparable.
- * SYNOPSIS
- *   bool smaller_type   (type *st, type *lt);
- * INPUTS
- *   two pointer type
- * RESULT
- *   true if type st is smaller than type lt, i.e. whenever
- *   lt is expected a st can be used.
- *   This is true if
+ *   Checks whether two types are structural comparable.
+ *   @param two pointer type
+ *   @return true if type st is smaller than type lt, i.e. whenever
+ *   @return lt is expected a st can be used.
+ *   @return This is true if
  *    - they are the same type kind
  *    - mode(st) < mode (lt)  (if applicable)
  *    - they are class types and st is (transitive) subtype of lt,
@@ -260,45 +228,42 @@ bool equal_type(type *tpy1, type *typ2);
  *      - the parameter types of st are smaller than those of lt,
  *      - the result types of st are smaller than those of lt
  *    - they are union types and have the members of st have exactly one
- *      counterpart in lt and the type is smaller
+ *      @return counterpart in lt and the type is smaller
  *    - they are array types and have
  *      - the same number of dimensions
  *      - all bounds of lt are bound of st
  *      - the same dimension order
  *      - the same element type
- *      or
+ *      @return or
  *      - the element type of st is smaller than that of lt
  *      - the element types have the same size and fixed layout.
  *    - they are enumeration types and have the same enumerator names
  *    - they are pointer types and have the points_to type of st is
- *      smaller than the points_to type of lt.
- ***
+ *      @return smaller than the points_to type of lt.
+ *
  */
 bool smaller_type (type *st, type *lt);
 
-/****** type/class
- * NAME
+/**
  *  Representation of a class type.
- * NOTE
  *  If the type opcode is set to type_class the type represents class
  *  types.  A list of fields and methods is associated with a class.
  *  Further a class can inherit from and bequest to other classes.
  *  @@@ value class???
- * ATTRIBUTES
- *  The following attributes are private to this type kind.
- *  member     All entities belonging to this class.  This are methode entities
+ *  @param The following attributes are private to this type kind.
+ *  @param member     All entities belonging to this class.  This are methode entities
  *             which have type_method or fields that can have any of the
  *             following type kinds: type_class, type_struct, type_union,
  *             type_array, type_enumeration, type_pointer, type_primitive.
  *
- *  subtypes   A list of direct subclasses.
+ *  @param subtypes   A list of direct subclasses.
  *
- *  supertypes A list of direct superclasses.
+ *  @param supertypes A list of direct superclasses.
  *
- *  These are dynamic lists that can be grown with an "add_" function,
- *  but not shrinked.
+ *  @param These are dynamic lists that can be grown with an "add_" function,
+ *  @param but not shrinked.
  *
- *  peculiarity The peculiarity of this class.  If the class is of peculiarity
+ *  @param peculiarity The peculiarity of this class.  If the class is of peculiarity
  *             "description" it only is a description of requirememts to a class,
  *             as, e.g., a Java interface.  The class will never be allocated.
  *             Peculiatity inherited is only possible for entities.  An entity
@@ -307,7 +272,6 @@ bool smaller_type (type *st, type *lt);
  *             no value for irg.
  *             Values: description, existent, inherited.  Default: existent.
  *
- * SOURCE
  */
 /* create a new class type */
 type   *new_type_class (ident *name);
@@ -392,16 +356,12 @@ int  get_class_dfn (type *clss);
 bool is_class_type(type *clss);
 /* Returns true if low is subclass of high. */
 bool is_subclass_of(type *low, type *high);
-/*****/
 
-/****** type/struct
- * NAME
+/**
  *  Representation of a struct type.
- * NOTE
  *  Type_strct represents aggregate types that consist of a list
  *  of fields.
- * ATTRIBUTES
- *  member   All entities belonging to this class.  This are the fields
+ *  @param member   All entities belonging to this class.  This are the fields
  *           that can have any of the following types:  type_class,
  *           type_struct, type_union, type_array, type_enumeration,
  *  	     type_pointer, type_primitive.
@@ -409,7 +369,6 @@ bool is_subclass_of(type *low, type *high);
  *           but not shrinked.
  *           This is a dynamic list that can be grown with an "add_" function,
  *           but not shrinked.
- * SOURCE
  */
 /* create a new type struct */
 type   *new_type_struct (ident *name);
@@ -425,34 +384,29 @@ void    remove_struct_member (type *strct, entity *member);
 
 /* typecheck */
 bool    is_struct_type(type *strct);
-/*****/
 
-/****** type/method
- * NAME
+/**
  *  Representation of a method type.
- * NOTE
  *  A method type represents a method, function or procedure type.
  *  It contains a list of the parameter and result types, as these
  *  are part of the type description.  These lists should not
  *  be changed by a optimization, as a change creates a new method
  *  type.  Therefore optimizations should allocated new method types.
  *  The set_ routines are only for construction by a frontend.
- * ATTRIBUTES
- *  n_params    Number of parameters to the procedure.
+ *  @param n_params    Number of parameters to the procedure.
  *              A procedure in FIRM has only call by value parameters.
  *
- *  param_type  A list with the types of parameters.  This list is ordered.
+ *  @param param_type  A list with the types of parameters.  This list is ordered.
  *              The nth type in this list corresponds to the nth element
  *              in the parameter tuple that is a result of the start node.
  *  	        (See ircons.h for more information.)
  *
- *  n_res       The number of results of the method.  In general, procedures
+ *  @param n_res       The number of results of the method.  In general, procedures
  *              have zero results, functions one.
  *
- *  res_type    A list with the types of parameters.  This list is ordered.
+ *  @param res_type    A list with the types of parameters.  This list is ordered.
  *              The nth type in this list corresponds to the nth input to
  *  	        Return nodes.  (See ircons.h for more information.)
- * SOURCE
  */
 
 /* Create a new method type.
@@ -473,19 +427,14 @@ void  set_method_res_type(type *method, int pos, type* tp);
 
 /* typecheck */
 bool  is_method_type     (type *method);
-/*****/
 
-/****** type/union
- * NAME
+/**
  *   Representation of a union type.
- * NOTE
  *   The union type represents union types.
- * ATTRIBUTES
- *   n_types        Number of unioned types.
- *   members        Entities for unioned types.  Fixed length array.
+ *   @param n_types        Number of unioned types.
+ *   @param members        Entities for unioned types.  Fixed length array.
  *                  This is a dynamic list that can be grown with an "add_" function,
  *                  but not shrinked.
- * SOURCE
  */
 /* create a new type union  */
 type   *new_type_union (ident *name);
@@ -501,26 +450,21 @@ void    remove_union_member (type *uni, entity *member);
 
 /* typecheck */
 bool    is_union_type          (type *uni);
-/*****/
 
-/****** type/array
- * NAME
+/**
  *   Representation of an array type.
- * NOTE
  *   The array type represents rectangular multi dimensional arrays.
  *   The constants representing the bounds must be allocated to
  *   get_const_code_irg() by setting current_ir_graph accordingly.
- * ATTRIBUTES
- *   n_dimensions     Number of array dimensions.
- *   *lower_bound     Lower bounds of dimensions.  Usually all 0.
- *   *upper_bound     Upper bounds or dimensions.
- *   *element_type    The type of the array elements.
- *   *element_ent     An entity for the array elements to be used for
+ *   @param n_dimensions     Number of array dimensions.
+ *   @param *lower_bound     Lower bounds of dimensions.  Usually all 0.
+ *   @param *upper_bound     Upper bounds or dimensions.
+ *   @param *element_type    The type of the array elements.
+ *   @param *element_ent     An entity for the array elements to be used for
  *                    element selection with Sel.
  *                    @@@ Do we need several entities?  One might want
  *                    to select a dimension and not a single element in
  *                    case of multidim arrays.
- * SOURCE
  */
 /* create a new type array --
    Sets n_dimension to dimension and all dimension entries to NULL.
@@ -557,22 +501,17 @@ entity *get_array_element_entity (type *array);
 
 /* typecheck */
 bool   is_array_type         (type *array);
-/*****/
 
-/****** type/enumeration
- * NAME
+/**
  *  Representation of an enumeration type.
- * NOTE
  *  Enumeration types need not necessarily be represented explicitly
  *  by Firm types, as the frontend can lower them to integer constants as
  *  well.  For debugging purposes or similar tasks this information is useful.
- * ATTRIBUTES
- *   *enum           The target values representing the constants used to
+ *   @param *enum           The target values representing the constants used to
  *                   represent individual enumerations.
- *   *enum_nameid    Idents containing the source program name of the enumeration
+ *   @param *enum_nameid    Idents containing the source program name of the enumeration
  *  		     constants
  *
-*****
 */
 /* create a new type enumeration -- set the enumerators independently */
 type   *new_type_enumeration    (ident *name, int n_enums);
@@ -590,16 +529,11 @@ const char *get_enumeration_name(type *enumeration, int pos);
 
 /* typecheck */
 bool    is_enumeration_type     (type *enumeration);
-/*****/
 
-/****** type/pointer
- * NAME
+/**
  *   Representation of a pointer type.
- * NOTE
  *   Pointer types.
- * ATTRIBUTES
- *   points_to       The type of the entity this pointer points to.
- * SOURCE
+ *   @param points_to       The type of the entity this pointer points to.
  */
 /* Create a new type pointer */
 type *new_type_pointer           (ident *name, type *points_to);
@@ -611,16 +545,12 @@ type *get_pointer_points_to_type (type *pointer);
 
 /* typecheck */
 bool  is_pointer_type            (type *pointer);
-/*****/
 
-/****** type/primitive
- * NAME
+/**
  *   Representation of a primitive type.
- * NOTE
  *   Primitive types are types that represent indivisible data values that
  *   map directly to modes.  They don't have a private attribute.  The
  *   important information they carry is held in the common mode field.
- * SOURCE
 */
 /* create a new type primitive */
 type *new_type_primitive (ident *name, ir_mode *mode);
@@ -628,35 +558,24 @@ type *new_d_type_primitive (ident *name, ir_mode *mode, dbg_info* db);
 
 /* typecheck */
 bool  is_primitive_type  (type *primitive);
-/*****/
 
 
 
-/****f* type/is_atomic_type
+/**
  *
- * NAME
- *   is_atomic_type - Checks whether a type is atomic.
- * SYNOPSIS
- *   int is_atomic_type(type *tp);
- * INPUTS
- *   tp - any type
- * RESULT
- *   true if type is primitive, pointer or enumeration
- ***
+ *   Checks whether a type is atomic.
+ *   @param tp - any type
+ *   @return true if type is primitive, pointer or enumeration
+ *
  */
 int is_atomic_type(type *tp);
 
-/****f* type/is_compound_type
+/**
  *
- * NAME
- *   is_compound_type - Checks whether a type is compound.
- * SYNOPSIS
- *   int is_compound_type(type *tp)
- * INPUTS
- *   tp - any type
- * RESULT
- *   true if the type is class, structure, union or array type.
- ***
+ *   Checks whether a type is compound.
+ *   @param tp - any type
+ *   @return true if the type is class, structure, union or array type.
+ *
  */
 int is_compound_type(type *tp);
 

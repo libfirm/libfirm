@@ -1,9 +1,9 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Christian Schaefer, Goetz Lindenmaier
-**
-** testprogram.
+* All rights reserved.
+*
+* Authors: Christian Schaefer, Goetz Lindenmaier
+*
+* testprogram.
 */
 
 # include <stdio.h>
@@ -18,31 +18,31 @@
  */
 
 /**
-***  This file constructs a control flow of following shape:
-***
-*** StartBlock
-***     |
-***    \|/
-***   Block --->  Block
-***     |           |
-***    \|/         \|/
-***   Block --->  Block
-***     |           |
-***    \|/         \|/
-***   Block --->  Block
-***                 |
-***                \|/
-***              EndBlock
-***
-***   This is a program as, e.g.,
-***
-***   switch (expr){
-***     case 1:
-***     case 2:
-***       break;
-***     default:
-***   }
-***   return
+*  This file constructs a control flow of following shape:
+*
+* StartBlock
+*     |
+*    \|/
+*   Block --->  Block
+*     |           |
+*    \|/         \|/
+*   Block --->  Block
+*     |           |
+*    \|/         \|/
+*   Block --->  Block
+*                 |
+*                \|/
+*              EndBlock
+*
+*   This is a program as, e.g.,
+*
+*   switch (expr){
+*     case 1:
+*     case 2:
+*       break;
+*     default:
+*   }
+*   return
 **/
 
 int main(int argc, char **argv)

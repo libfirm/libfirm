@@ -1,9 +1,9 @@
 /* Copyright (C) 2000 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Author: Goetz Lindenmaier
-**
-** testprogram.
+* All rights reserved.
+*
+* Author: Goetz Lindenmaier
+*
+* testprogram.
 */
 
 # include <stdio.h>
@@ -14,27 +14,27 @@
 # include "firm.h"
 
 /**
-***  This file constructs type information for the following pseudo-program.
-***  The procedure code is not constructed.
-***
-***  interface I {
-***    void m1 (void);
-***  }
-***
-***  class C implements I {
-***    void m1 (void) {return};
-***    void m2 (int)  {return 0};
-***  }
-***
-***  class D {
-***    int b;
-***  }
-***
-***  class E extends C, D {
-***    void m2 (int) {return 1};
-***    int a;
-***  }
-***
+*  This file constructs type information for the following pseudo-program.
+*  The procedure code is not constructed.
+*
+*  interface I {
+*    void m1 (void);
+*  }
+*
+*  class C implements I {
+*    void m1 (void) {return};
+*    void m2 (int)  {return 0};
+*  }
+*
+*  class D {
+*    int b;
+*  }
+*
+*  class E extends C, D {
+*    void m2 (int) {return 1};
+*    int a;
+*  }
+*
 **/
 
 int main(int argc, char **argv)

@@ -1,9 +1,9 @@
 /* Coyright (C) 1998 - 2002 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Author: Christian Schaefer, Goetz Lindenmaier, Sebastian Felis
-**
-** Optimizations for a whole ir graph, i.e., a procedure.
+* All rights reserved.
+*
+* Author: Christian Schaefer, Goetz Lindenmaier, Sebastian Felis
+*
+* Optimizations for a whole ir graph, i.e., a procedure.
 */
 
 /* $Id$ */
@@ -558,7 +558,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   if (called_graph == current_ir_graph) return;
 
 
-  /** Part the Call node into two nodes.  Pre_call collects the parameters of
+/**
       the procedure and later replaces the Start node of the called graph.
       Post_call is the old Call node and collects the results of the called
       graph. Both will end up being a tuple.  **/
@@ -573,7 +573,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   pre_call = new_Tuple(5, in);
   post_call = call;
 
-  /** Part the block of the Call node into two blocks.
+/**
       The new block gets the ins of the old block, pre_call and all its
       predecessors and all Phi nodes. **/
   part_block(pre_call);
@@ -656,7 +656,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   /* The new end node will die, but the in array is not on the obstack ... */
   free_End(end);
 
-  /** Collect control flow from Return blocks to post_calls block. Replace
+/**
       Return nodes by Jump nodes. **/
   n_ret = 0;
   for (i = 0; i < arity; i++) {
@@ -669,7 +669,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   }
   set_irn_in(post_bl, n_ret, cf_pred);
 
-  /** Collect results from Return nodes to post_call. Post_call is
+/**
       turned into a tuple. **/
   turn_into_tuple(post_call, 4);
   /* First the Memory-Phi */
@@ -753,7 +753,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   free(res_pred);
   free(cf_pred);
 
-  /*** Correct the control flow to the end node.
+/**
        If the exception control flow from the Call directly branched to the
        end block we now have the following control flow predecessor pattern:
        ProjX -> Tuple -> Jmp.
@@ -1264,7 +1264,7 @@ static void optimize_blocks(ir_node *b, void *env) {
   }
   in = (ir_node **) malloc(max_preds * sizeof(ir_node *));
 
-  /** Debug output **
+/**
   printf(" working on "); DDMN(b);
   for (i = 0; i < get_Block_n_cfgpreds(b); i++) {
     pred = get_nodes_Block(get_Block_cfgpred(b, i));
@@ -1275,7 +1275,7 @@ static void optimize_blocks(ir_node *b, void *env) {
       printf("  removing pred %i ", i); DDMN(pred);
     } else { printf("  Nothing to do for "); DDMN(pred); }
   }
-  ** end Debug output **/
+  * end Debug output **/
 
   /** Fix the Phi nodes **/
   phi = get_irn_link(b);
@@ -1323,7 +1323,7 @@ static void optimize_blocks(ir_node *b, void *env) {
     phi = get_irn_link(phi);
   }
 
-  /** Move Phi nodes from removed blocks to this one.
+/**
       This happens only if merge between loop backedge and single loop entry. **/
   for (k = 0; k < get_Block_n_cfgpreds(b); k++) {
     pred = get_nodes_Block(get_Block_cfgpred(b, k));
