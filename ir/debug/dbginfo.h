@@ -27,6 +27,16 @@
 typedef struct ir_node ir_node;
 #endif
 
+#ifndef _ENTITY_TYPEDEF_
+#define _ENTITY_TYPEDEF_
+/* to resolve recursion between entity.h and type.h */
+typedef struct entity entity;
+#endif
+
+#ifndef _TYPE_TYPEDEF_
+#define _TYPE_TYPEDEF_
+typedef struct type type;
+#endif
 
 /****s* dbginfo/dbg_info
  *
@@ -44,6 +54,14 @@ typedef struct dbg_info dbg_info;
    debugging information. */
 INLINE void set_irn_dbg_info(ir_node *n, dbg_info* db);
 INLINE dbg_info *get_irn_dbg_info(ir_node *n);
+/* Routines to access the field of an entity containing the
+   debugging information. */
+INLINE void set_entity_dbg_info(entity *ent, dbg_info* db);
+INLINE dbg_info *get_entity_dbg_info(entity *ent);
+/* Routines to access the field of a type containing the
+   debugging information. */
+INLINE void set_type_dbg_info(type *tp, dbg_info* db);
+INLINE dbg_info *get_type_dbg_info(type *tp);
 /*****/
 
 /****s* dbginfo/dbg_action

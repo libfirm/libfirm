@@ -19,6 +19,8 @@
 
 #include "dbginfo_t.h"
 #include "irnode_t.h"
+#include "type_t.h"
+#include "entity_t.h"
 
 
 INLINE void
@@ -60,4 +62,22 @@ set_irn_dbg_info(ir_node *n, struct dbg_info* db) {
 INLINE struct dbg_info *
 get_irn_dbg_info(ir_node *n) {
   return n->dbi;
+}
+
+
+/* Routines to access the field of an entity containing the
+   debugging information. */
+INLINE void set_entity_dbg_info(entity *ent, dbg_info* db) {
+  ent->dbi = db;
+}
+INLINE dbg_info *get_entity_dbg_info(entity *ent) {
+  return ent->dbi;
+}
+/* Routines to access the field of a type containing the
+   debugging information. */
+INLINE void set_type_dbg_info(type *tp, dbg_info* db) {
+  tp->dbi = db;
+}
+INLINE dbg_info *get_type_dbg_info(type *tp) {
+  return tp->dbi;
 }
