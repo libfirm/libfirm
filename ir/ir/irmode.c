@@ -586,7 +586,7 @@ init_mode (void)
   mode_F->code    = irm_F;
   mode_F->sort    = irms_float_number;
   mode_F->sign    = 1;
-  mode_F->align   = 32;
+  mode_F->align   = 4;
   mode_F->size    = 32;
   mode_F->tv_priv = NULL;
 
@@ -598,7 +598,7 @@ init_mode (void)
   mode_D->code    = irm_D;
   mode_D->sort    = irms_float_number;
   mode_D->sign    = 1;
-  mode_D->align   = 32;
+  mode_D->align   = 4;
   mode_D->size    = 64;
   mode_D->tv_priv = NULL;
 
@@ -610,7 +610,7 @@ init_mode (void)
   mode_E->code    = irm_E;
   mode_E->sort    = irms_float_number;
   mode_E->sign    = 1;
-  mode_E->align   = 32;
+  mode_E->align   = 4;
   mode_E->size    = 80;
   mode_E->tv_priv = NULL;
 
@@ -622,7 +622,7 @@ init_mode (void)
   mode_Bs->code    = irm_Bs;
   mode_Bs->sort    = irms_int_number;
   mode_Bs->sign    = 1;
-  mode_Bs->align   = 8;
+  mode_Bs->align   = 1;
   mode_Bs->size    = 8;
   mode_Bs->tv_priv = NULL;
 
@@ -634,7 +634,7 @@ init_mode (void)
   mode_Bu->code    = irm_Bu;
   mode_Bu->sort    = irms_int_number;
   mode_Bu->sign    = 0;
-  mode_Bu->align   = 8;
+  mode_Bu->align   = 1;
   mode_Bu->size    = 8;
   mode_Bu->tv_priv = NULL;
 
@@ -646,7 +646,7 @@ init_mode (void)
   mode_Hs->code    = irm_Hs;
   mode_Hs->sort    = irms_int_number;
   mode_Hs->sign    = 1;
-  mode_Hs->align   = 16;
+  mode_Hs->align   = 2;
   mode_Hs->size    = 16;
   mode_Hs->tv_priv = NULL;
 
@@ -658,7 +658,7 @@ init_mode (void)
   mode_Hu->code    = irm_Hu;
   mode_Hu->sort    = irms_int_number;
   mode_Hu->sign    = 0;
-  mode_Hu->align   = 16;
+  mode_Hu->align   = 2;
   mode_Hu->size    = 16;
   mode_Hu->tv_priv = NULL;
 
@@ -670,7 +670,7 @@ init_mode (void)
   mode_Is->code    = irm_Is;
   mode_Is->sort    = irms_int_number;
   mode_Is->sign    = 1;
-  mode_Is->align   = 32;
+  mode_Is->align   = 4;
   mode_Is->size    = 32;
   mode_Is->tv_priv = NULL;
 
@@ -682,7 +682,7 @@ init_mode (void)
   mode_Iu->code    = irm_Iu;
   mode_Iu->sort    = irms_int_number;
   mode_Iu->sign    = 0;
-  mode_Iu->align   = 32;
+  mode_Iu->align   = 4;
   mode_Iu->size    = 32;
   mode_Iu->tv_priv = NULL;
 
@@ -694,7 +694,7 @@ init_mode (void)
   mode_Ls->code    = irm_Ls;
   mode_Ls->sort    = irms_int_number;
   mode_Ls->sign    = 1;
-  mode_Ls->align   = 32;
+  mode_Ls->align   = 4;
   mode_Ls->size    = 64;
   mode_Ls->tv_priv = NULL;
 
@@ -706,7 +706,7 @@ init_mode (void)
   mode_Lu->code    = irm_Lu;
   mode_Lu->sort    = irms_int_number;
   mode_Lu->sign    = 0;
-  mode_Lu->align   = 32;
+  mode_Lu->align   = 4;
   mode_Lu->size    = 64;
   mode_Lu->tv_priv = NULL;
 
@@ -718,7 +718,7 @@ init_mode (void)
   mode_C->code    = irm_C;
   mode_C->sort    = irms_character;
   mode_C->sign    = 0;
-  mode_C->align   = 8;
+  mode_C->align   = 1;
   mode_C->size    = 8;
   mode_C->tv_priv = NULL;
 
@@ -730,7 +730,7 @@ init_mode (void)
   mode_U->code    = irm_U;
   mode_U->sort    = irms_character;
   mode_U->sign    = 0;
-  mode_U->align   = 16;
+  mode_U->align   = 2;
   mode_U->size    = 16;
   mode_U->tv_priv = NULL;
 
@@ -742,7 +742,7 @@ init_mode (void)
   mode_P->code    = irm_P;
   mode_P->sort    = irms_reference;
   mode_P->sign    = 0;
-  mode_P->align   = 32;
+  mode_P->align   = 4;
   mode_P->size    = 32;
   mode_P->tv_priv = NULL;
 
