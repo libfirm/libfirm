@@ -163,7 +163,7 @@ void  set_irp_type(int pos, type *typ) {
 }
 
 #ifdef DEBUG_libfirm
-int get_irp_new_node_nr() {
+static int get_irp_new_node_nr() {
   assert(irp);
   irp->max_node_nr = irp->max_node_nr + 1;
   return irp->max_node_nr - 1;

@@ -202,7 +202,7 @@ _tarval_vrfy (const tarval *val)
 
 #ifdef STATS
 
-void
+static void
 tarval_stats (void)
 {
   pset_stats (tarvals);
