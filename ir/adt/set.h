@@ -35,8 +35,8 @@ typedef struct set set;
 typedef struct set_entry {
   unsigned hash;    /**< the hash value of the element */
   size_t size;      /**< the size of the element */
-  int dptr[1];			/**< the element itself, data copied in must not need more
-				   alignment than this */
+  int dptr[1];	    /**< the element itself, data copied in must not need more
+		          alignment than this */
 } set_entry;
 
 /**
@@ -50,9 +50,9 @@ typedef struct set_entry {
  *    0 if the elements are identically, non-zero else
  *
  * @note
- *    Although it is possible to define different meanings for equality of two
- *    elements of a sets, they can be only equal if there sizes are
- *    equal. This is checked before the compare function is called.
+ *    Although it is possible to define different meanings of equality
+ *    of two elements of a set, they can be only equal if their sizes are
+ *    are equal. This is checked before the compare function is called.
  */
 typedef int (*set_cmp_fun) (const void *elt, const void *key, size_t size);
 
