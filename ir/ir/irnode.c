@@ -2019,7 +2019,7 @@ ir_node *get_fragile_op_mem(ir_node *node) {
 }
 
 #ifdef DEBUG_libfirm
-void dump_node (ir_node *n) {
+void dump_irn (ir_node *n) {
   int i;
   printf("%s%s: %ld (%p)\n", get_irn_opname(n), get_mode_name(get_irn_mode(n)), get_irn_node_nr(n), (void *)n);
   if (!is_Block(n)) {
@@ -2036,5 +2036,5 @@ void dump_node (ir_node *n) {
 }
 
 #else  /* DEBUG_libfirm */
-void dump_node (ir_node *n) {}
+void dump_irn (ir_node *n) {}
 #endif /* DEBUG_libfirm */
