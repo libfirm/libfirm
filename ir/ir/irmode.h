@@ -140,7 +140,7 @@ typedef enum {
  * @param name		the name of the mode to be created
  * @param sort		the mode_sort of the mode to be created
  * @param bit_size	number of bits this mode allocate
- * @param align		the byte alignment for an entity of this mode (in bits)
+ * @param bit_align	the alignment for an entity of this mode in bits
  * @param sign		non-zero if this is a signed mode
  * @param arithmetic    arithmetic operations possible with a mode
  * @param modulo_shift  Is ignored for modes other than integer.
@@ -159,7 +159,7 @@ typedef enum {
  * 	It is allowed to construct the default modes. So, a call
  * 	new_ir_mode("Is", irms_int_number, 32, 4, 1, irma_twos_complement, 32) will return mode_Is.
  */
-ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align, int sign, mode_arithmetic arithmetic, unsigned int modulo_shift);
+ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int bit_align, int sign, mode_arithmetic arithmetic, unsigned int modulo_shift);
 
 /**
  * Creates a new vector mode.
@@ -168,7 +168,7 @@ ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align, 
  * @param sort		the mode_sort of the mode to be created
  * @param bit_size	number of bits for one element of this mode
  * @param num_of_elem   number of elements in this vector mode
- * @param align		the byte alignment for an entity of this mode (in bits)
+ * @param bit_align	the alignment for an entity of this mode in bits
  * @param sign		non-zero if this is a signed mode
  * @param arithmetic    arithmetic operations possible with a mode
  * @param modulo_shift  Is ignored for modes other than integer.
@@ -182,7 +182,7 @@ ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align, 
  * @return
  * 	The new mode or NULL on error.
  */
-ir_mode *new_ir_vector_mode(const char *name, mode_sort sort, int bit_size, unsigned num_of_elem, int align, int sign,
+ir_mode *new_ir_vector_mode(const char *name, mode_sort sort, int bit_size, unsigned num_of_elem, int bit_align, int sign,
 		     mode_arithmetic arithmetic, unsigned int modulo_shift );
 
 /**
@@ -193,7 +193,7 @@ ir_mode *new_ir_vector_mode(const char *name, mode_sort sort, int bit_size, unsi
  *   @return
  *       true if the thing is a mode, else false
  */
-int is_mode (void *thing);
+int is_mode(void *thing);
 
 /* ********** Access methods to read mode information *********** */
 
@@ -212,20 +212,24 @@ mode_sort get_mode_sort(const ir_mode *mode);
 /** Returns the size of values of the mode in bits. */
 int get_mode_size_bits(const ir_mode *mode);
 
-/** Returns the size of values of the mode in bytes.  If the size is not
-    dividable by 8 returns -1. */
+/** Returns the size of values of the mode in bytes.
+ *  If the size is not dividable by 8 returns -1. */
 int get_mode_size_bytes(const ir_mode *mode);
 
-/** Returns the alignment of values of the mode in bytes. */
-int get_mode_align(const ir_mode *mode);
+/** Returns the alignment of values of the mode in bits. */
+int get_mode_align_bits(const ir_mode *mode);
+
+/** Returns the alignment of values of the mode in bytes.
+ *  If the alignment is not dividable by 8 returns -1. */
+int get_mode_align_bytes(const ir_mode *mode);
 
 /** Returns the signess of a mode.
  *
  * Returns the signess of a mode: 1 if mode is signed. */
-int get_mode_sign (const ir_mode *mode);
+int get_mode_sign(const ir_mode *mode);
 
 /** Returns the arithmetic of a mode */
-int get_mode_arithmetic (const ir_mode *mode);
+int get_mode_arithmetic(const ir_mode *mode);
 
 /** Attribute modulo shift specifies for modes of kind irms_int_number
  *  whether shift applies modulo to value of bits to shift.  Zero for
@@ -418,7 +422,7 @@ int mode_is_int_vector (const ir_mode *mode);
 int smaller_mode(const ir_mode *sm, const ir_mode *lm);
 
 /** mode module initialization, call once before use of any other function **/
-void init_mode (void);
+void init_mode(void);
 
 /** mode module finalization. frees all memory.  */
 void finish_mode(void);

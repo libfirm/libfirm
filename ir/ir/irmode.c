@@ -235,8 +235,9 @@ void (set_modeP_mach)(ir_mode *p) {
 }
 
 /**
- * Registers a new mode if not defined yet, else returns
- * the "equivalent" one.
+ * Registers a new mode.
+ *
+ * @param new_mode  The new mode template.
  */
 static ir_mode *register_mode(const ir_mode* new_mode)
 {
@@ -249,7 +250,7 @@ static ir_mode *register_mode(const ir_mode* new_mode)
   mode = (ir_mode*)obstack_copy(&modes, new_mode, sizeof(ir_mode));
 
   mode->kind = k_ir_mode;
-  if(num_modes>=irm_max) mode->code = num_modes;
+  if (num_modes >= irm_max) mode->code = num_modes;
   num_modes++;
 
   set_mode_values(mode);
@@ -260,7 +261,7 @@ static ir_mode *register_mode(const ir_mode* new_mode)
 /*
  * Creates a new mode.
  */
-ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align, int sign,
+ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int bit_align, int sign,
 		     mode_arithmetic arithmetic, unsigned int modulo_shift )
 {
   ir_mode mode_tmpl;
@@ -269,7 +270,7 @@ ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align, 
   mode_tmpl.name         = new_id_from_str(name);
   mode_tmpl.sort         = sort;
   mode_tmpl.size         = bit_size;
-  mode_tmpl.align        = align;
+  mode_tmpl.align        = bit_align;
   mode_tmpl.sign         = sign ? 1 : 0;
   mode_tmpl.modulo_shift = (mode_tmpl.sort == irms_int_number) ? modulo_shift : 0;
   mode_tmpl.vector_elem  = 1;
@@ -305,7 +306,7 @@ ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align, 
 /*
  * Creates a new vector mode.
  */
-ir_mode *new_ir_vector_mode(const char *name, mode_sort sort, int bit_size, unsigned num_of_elem, int align, int sign,
+ir_mode *new_ir_vector_mode(const char *name, mode_sort sort, int bit_size, unsigned num_of_elem, int bit_align, int sign,
 		     mode_arithmetic arithmetic, unsigned int modulo_shift )
 {
   ir_mode mode_tmpl;
@@ -314,7 +315,7 @@ ir_mode *new_ir_vector_mode(const char *name, mode_sort sort, int bit_size, unsi
   mode_tmpl.name         = new_id_from_str(name);
   mode_tmpl.sort         = sort;
   mode_tmpl.size         = bit_size * num_of_elem;
-  mode_tmpl.align        = align;
+  mode_tmpl.align        = bit_align;
   mode_tmpl.sign         = sign ? 1 : 0;
   mode_tmpl.modulo_shift = (mode_tmpl.sort == irms_int_number) ? modulo_shift : 0;
   mode_tmpl.vector_elem  = num_of_elem;
@@ -399,10 +400,17 @@ int
 }
 
 int
-(get_mode_align)(const ir_mode *mode)
+(get_mode_align_bits)(const ir_mode *mode)
 {
   ANNOUNCE();
-  return __get_mode_align(mode);
+  return __get_mode_align_bits(mode);
+}
+
+int
+(get_mode_align_bytes)(const ir_mode *mode)
+{
+  ANNOUNCE();
+  return __get_mode_align_bytes(mode);
 }
 
 int
@@ -670,7 +678,7 @@ smaller_mode(const ir_mode *sm, const ir_mode *lm)
   return 0;
 }
 
-/* ** initialization ** */
+/* initialization, build the default modes */
 void
 init_mode (void)
 {
@@ -751,14 +759,14 @@ init_mode (void)
   newmode.vector_elem = 1;
 
   /* Float Number Modes */
-  newmode.sort    = irms_float_number;
+  newmode.sort       = irms_float_number;
   newmode.arithmetic = irma_ieee754;
 
   /* float */
   newmode.name    = id_from_str("F", 1);
   newmode.code    = irm_F;
   newmode.sign    = 1;
-  newmode.align   = 4;
+  newmode.align   = 32;
   newmode.size    = 32;
 
   mode_F = register_mode(&newmode);
@@ -767,7 +775,7 @@ init_mode (void)
   newmode.name    = id_from_str("D", 1);
   newmode.code    = irm_D;
   newmode.sign    = 1;
-  newmode.align   = 4;
+  newmode.align   = 64;
   newmode.size    = 64;
 
   mode_D = register_mode(&newmode);
@@ -776,116 +784,116 @@ init_mode (void)
   newmode.name    = id_from_str("E", 1);
   newmode.code    = irm_E;
   newmode.sign    = 1;
-  newmode.align   = 4;
+  newmode.align   = 128;
   newmode.size    = 80;
 
   mode_E = register_mode(&newmode);
 
   /* Integer Number Modes */
-  newmode.sort    = irms_int_number;
-  newmode.arithmetic = irma_twos_complement;
+  newmode.sort         = irms_int_number;
+  newmode.arithmetic   = irma_twos_complement;
 
   /* signed byte */
-  newmode.name    = id_from_str("Bs", 2);
-  newmode.code    = irm_Bs;
-  newmode.sign    = 1;
-  newmode.align   = 1;
-  newmode.size    = 8;
+  newmode.name         = id_from_str("Bs", 2);
+  newmode.code         = irm_Bs;
+  newmode.sign         = 1;
+  newmode.align        = 8;
+  newmode.size         = 8;
   newmode.modulo_shift = 32;
 
   mode_Bs = register_mode(&newmode);
 
   /* unsigned byte */
-  newmode.name    = id_from_str("Bu", 2);
-  newmode.code    = irm_Bu;
-  newmode.arithmetic = irma_twos_complement;
-  newmode.sign    = 0;
-  newmode.align   = 1;
-  newmode.size    = 8;
+  newmode.name         = id_from_str("Bu", 2);
+  newmode.code         = irm_Bu;
+  newmode.arithmetic   = irma_twos_complement;
+  newmode.sign         = 0;
+  newmode.align        = 8;
+  newmode.size         = 8;
   newmode.modulo_shift = 32;
 
   mode_Bu = register_mode(&newmode);
 
   /* signed short integer */
-  newmode.name    = id_from_str("Hs", 2);
-  newmode.code    = irm_Hs;
-  newmode.sign    = 1;
-  newmode.align   = 2;
-  newmode.size    = 16;
+  newmode.name         = id_from_str("Hs", 2);
+  newmode.code         = irm_Hs;
+  newmode.sign         = 1;
+  newmode.align        = 16;
+  newmode.size         = 16;
   newmode.modulo_shift = 32;
 
   mode_Hs = register_mode(&newmode);
 
   /* unsigned short integer */
-  newmode.name    = id_from_str("Hu", 2);
-  newmode.code    = irm_Hu;
-  newmode.sign    = 0;
-  newmode.align   = 2;
-  newmode.size    = 16;
+  newmode.name         = id_from_str("Hu", 2);
+  newmode.code         = irm_Hu;
+  newmode.sign         = 0;
+  newmode.align        = 16;
+  newmode.size         = 16;
   newmode.modulo_shift = 32;
 
   mode_Hu = register_mode(&newmode);
 
   /* signed integer */
-  newmode.name    = id_from_str("Is", 2);
-  newmode.code    = irm_Is;
-  newmode.sign    = 1;
-  newmode.align   = 4;
-  newmode.size    = 32;
+  newmode.name         = id_from_str("Is", 2);
+  newmode.code         = irm_Is;
+  newmode.sign         = 1;
+  newmode.align        = 32;
+  newmode.size         = 32;
   newmode.modulo_shift = 32;
 
   mode_Is = register_mode(&newmode);
 
   /* unsigned integer */
-  newmode.name    = id_from_str("Iu", 2);
-  newmode.code    = irm_Iu;
-  newmode.sign    = 0;
-  newmode.align   = 4;
-  newmode.size    = 32;
+  newmode.name         = id_from_str("Iu", 2);
+  newmode.code         = irm_Iu;
+  newmode.sign         = 0;
+  newmode.align        = 32;
+  newmode.size         = 32;
   newmode.modulo_shift = 32;
 
   mode_Iu = register_mode(&newmode);
 
   /* signed long integer */
-  newmode.name    = id_from_str("Ls", 2);
-  newmode.code    = irm_Ls;
-  newmode.sign    = 1;
-  newmode.align   = 4;
-  newmode.size    = 64;
+  newmode.name         = id_from_str("Ls", 2);
+  newmode.code         = irm_Ls;
+  newmode.sign         = 1;
+  newmode.align        = 32;
+  newmode.size         = 64;
   newmode.modulo_shift = 64;
 
   mode_Ls = register_mode(&newmode);
 
   /* unsigned long integer */
-  newmode.name    = id_from_str("Lu", 2);
-  newmode.code    = irm_Lu;
-  newmode.sign    = 0;
-  newmode.align   = 4;
-  newmode.size    = 64;
+  newmode.name         = id_from_str("Lu", 2);
+  newmode.code         = irm_Lu;
+  newmode.sign         = 0;
+  newmode.align        = 32;
+  newmode.size         = 64;
   newmode.modulo_shift = 64;
 
   mode_Lu = register_mode(&newmode);
 
   /* Character Modes */
-  newmode.sort    = irms_character;
-  newmode.arithmetic = irma_none;
+  newmode.sort         = irms_character;
+  newmode.arithmetic   = irma_none;
 
   /* Character */
-  newmode.name    = id_from_str("C", 1);
-  newmode.code    = irm_C;
-  newmode.sign    = 0;
-  newmode.align   = 1;
-  newmode.size    = 8;
+  newmode.name         = id_from_str("C", 1);
+  newmode.code         = irm_C;
+  newmode.sign         = 0;
+  newmode.align        = 8;
+  newmode.size         = 8;
   newmode.modulo_shift = 32;
 
   mode_C = register_mode(&newmode);
 
   /* Unicode character */
-  newmode.name    = id_from_str("U", 1);
-  newmode.code    = irm_U;
-  newmode.sign    = 0;
-  newmode.align   = 2;
-  newmode.size    = 16;
+  newmode.name         = id_from_str("U", 1);
+  newmode.code         = irm_U;
+  newmode.sign         = 0;
+  newmode.align        = 16;
+  newmode.size         = 16;
   newmode.modulo_shift = 32;
 
   mode_U = register_mode(&newmode);
@@ -895,11 +903,11 @@ init_mode (void)
   newmode.arithmetic = irma_twos_complement;
 
   /* pointer */
-  newmode.name    = id_from_str("P", 1);
-  newmode.code    = irm_P;
-  newmode.sign    = 0;
-  newmode.align   = 4;
-  newmode.size    = 32;
+  newmode.name         = id_from_str("P", 1);
+  newmode.code         = irm_P;
+  newmode.sign         = 0;
+  newmode.align        = 32;
+  newmode.size         = 32;
   newmode.modulo_shift = 0;
 
   mode_P = register_mode(&newmode);

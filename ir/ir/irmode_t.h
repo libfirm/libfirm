@@ -34,7 +34,7 @@ struct ir_mode {
                                      (see irmode.h) */
   mode_arithmetic   arithmetic;    /**< different arithmetic operations possible with a mode */
   int               size;          /**< size of the mode in Bits. */
-  int               align;         /**< byte alignment */
+  int               align;         /**< mode alignment in Bits. */
   unsigned          sign:1;        /**< signedness of this mode */
   unsigned int      modulo_shift;  /**< number of bits a valus of this mode will be shifted */
   unsigned          vector_elem;   /**< if this is not equal 1, this is a vector mode with
@@ -84,7 +84,14 @@ __get_mode_size_bytes(const ir_mode *mode) {
 }
 
 static INLINE int
-__get_mode_align(const ir_mode *mode) { return mode->align; }
+__get_mode_align_bits(const ir_mode *mode) { return mode->align; }
+
+static INLINE int
+__get_mode_align_bytes(const ir_mode *mode) {
+  int align = __get_mode_align_bits(mode);
+  if ((align & 7) != 0) return -1;
+  return align >> 3;
+}
 
 static INLINE int
 __get_mode_sign(const ir_mode *mode) { return mode->sign; }
