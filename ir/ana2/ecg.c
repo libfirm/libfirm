@@ -7,9 +7,9 @@
  * Author:      Florian
  * Modified by:
  * Created:     14.09.2004
- * CVS-ID:      $$
+ * CVS-ID:      $Id$
  * Copyright:   (c) 1999-2004 Universität Karlsruhe
- * Licence:     This file is protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * Licence:     This file is protected by the GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -50,11 +50,18 @@ static int do_typalise = 0;
    globals
 */
 
+/* Ids for the ctxs */
+static int ctx_id = 0;
+ctx_info_t *main_ctx = NULL;
+
 /* mapping from method graphs (callR) to method graphs (lset_ts of callEds) */
 /* static pmap *calls; */
 static pmap *graph_infos;
 
-/** Counters for ecg_ecg and friends */
+/* linked list of all graph_infos: */
+static graph_info_t *graph_infos_list = NULL;
+
+/* Counters for ecg_ecg and friends */
 static long _graphs = 0;
 static long _calls  = 0;
 static long _allocs = 0;
@@ -64,6 +71,9 @@ static int _max_depth = 0;
 
 static int _max_callEds = 0;
 static entity* _max_callEds_callR = NULL;
+
+/* Protos */
+void set_main_ctx (ctx_info_t*);
 
 /* ====================
   Alloc stuff
@@ -339,9 +349,12 @@ static void ecg_fill_graph_calls (ir_graph *graph)
   graph_info->graph = graph;
   graph_info->calls = NULL;
   graph_info->ecg_seen = 0;
+  graph_info->ctxs = NULL;
+  graph_info->n_ctxs = 0;
 
-  /* entity *method  = get_irg_entity (graph); */
-  /* type   *clazz   = get_entity_owner (method); */
+  /* link up into global list */
+  graph_info->prev = graph_infos_list;
+  graph_infos_list = graph_info;
 
   irg_walk_graph (graph, ecg_calls_act, NULL, graph_info);
 
@@ -362,6 +375,189 @@ static void ecg_fill_calls (void)
   }
 }
 
+/**
+   Allocate a new ctx for the given graph and the given enclosing ctx.
+*/
+static ctx_info_t *new_ctx (ir_graph *graph, ir_node *call, ctx_info_t *enc)
+{
+  ctx_info_t *res = xmalloc (sizeof (ctx_info_t));
+
+  res->graph = graph;
+  res->call = call;
+  res->enc = enc;
+  res->id = ctx_id ++;
+
+  return (res);
+}
+
+
+/**
+   Fill in the ctxs parts of the graph_infos
+*/
+static void ecg_fill_ctxs_count (ir_graph *graph)
+{
+  graph_info_t *ginfo = ecg_get_info (graph);
+
+  /* count how many ctxs we have per graph */
+  if (0 == ginfo->ecg_seen) {
+
+    ginfo->ecg_seen = 1;
+    call_info_t *cinfo = ginfo->calls;
+
+    while (NULL != cinfo) {
+      callEd_info_t *ced = cinfo->callEds;
+
+      while (NULL != ced) {
+        ir_graph *callEd_graph = ced->callEd;
+
+        /* first step: we have a new ctx */
+        graph_info_t *callEd_info = ecg_get_info (callEd_graph);
+        callEd_info->n_ctxs ++;
+
+        /* Calling graph -> callEd_graph */
+        ecg_fill_ctxs_count (callEd_graph);
+
+        ced = ced->prev;
+      } /* end forall callEds (call) */
+
+      cinfo = cinfo->prev;
+    } /* end forall (calls(graph)) */
+
+    ginfo->ecg_seen = 0;
+  }
+}
+
+static void ecg_fill_ctxs_alloc (void)
+{
+  /* allocate the memory needed for the ctxts: */
+  graph_info_t *ginfo = graph_infos_list;
+
+  while (NULL != ginfo) {
+    ginfo->ctxs = (ctx_info_t **) xmalloc (ginfo->n_ctxs * sizeof (ctx_info_t*));
+
+    /*
+    fprintf (stdout, "graph of \"%s\": n_ctxs = %i\n",
+             get_entity_name (get_irg_entity (ginfo->graph)), ginfo->n_ctxs);
+    */
+    ginfo->n_ctxs = 0;
+
+    ginfo = ginfo->prev;
+  }
+}
+
+/**
+   Fill in the ctxs parts of the graph_infos
+*/
+static void ecg_fill_ctxs_write (ir_graph *graph, ctx_info_t *enc_ctx)
+{
+  graph_info_t *ginfo = ecg_get_info (graph);
+
+  /* enter a new ctx for all callEds along the call edges of this graph */
+  if (0 == ginfo->ecg_seen) {
+    ginfo->ecg_seen = 1;
+    call_info_t *cinfo = ginfo->calls;
+
+    while (NULL != cinfo) {
+      callEd_info_t *ced = cinfo->callEds;
+
+      while (NULL != ced) {
+      ctx_info_t *ctx = new_ctx (graph, cinfo->call, enc_ctx);
+
+        ir_graph *callEd_graph = ced->callEd;
+
+        /* write the ctx of this call into the callEd graph */
+        graph_info_t *callEd_info = ecg_get_info (callEd_graph);
+
+        callEd_info->ctxs [callEd_info->n_ctxs] = ctx;
+        callEd_info->n_ctxs ++;
+
+        /* Calling graph -> callEd_graph */
+        ecg_fill_ctxs_write (callEd_graph, ctx);
+
+        ced = ced->prev;
+      } /* end forall callEds (call) */
+
+      cinfo = cinfo->prev;
+    } /* end forall (calls(graph)) */
+
+    ginfo->ecg_seen = 0;
+  }
+}
+
+/**
+   Fill in the ctxs parts of the graph_infos
+*/
+static void ecg_fill_ctxs (void)
+{
+  ecg_fill_ctxs_count (get_irp_main_irg ());
+  ecg_fill_ctxs_alloc ();
+
+  ctx_info_t *main_ctx = new_ctx (get_irp_main_irg (), NULL, NULL);
+  ir_graph *main_irg = get_irp_main_irg ();
+
+  set_main_ctx (main_ctx);
+
+  /* Grrr, have to add this ctx manually to main.ginfo ... */
+  graph_info_t *ginfo = ecg_get_info (main_irg);
+  ginfo->n_ctxs = 1;
+  ginfo->ctxs = (ctx_info_t **) xmalloc (1 * sizeof (ctx_info_t*));
+  ginfo->ctxs [0] = main_ctx;
+
+  ecg_fill_ctxs_write (main_irg, main_ctx);
+}
+
+/* ====================
+   CTX stuff
+  ==================== */
+/*
+  Nicely print a ctx_info_t to the given output stream
+*/
+void ecg_print_ctx (ctx_info_t *ctx, FILE *stream)
+{
+  entity *ent = get_irg_ent (ctx->graph);
+  ir_node *call = ctx->call;
+  const char *ent_name = (char*) get_entity_name (ent);
+  const char *own_name = (char*) get_type_name (get_entity_owner (ent));
+
+  fprintf (stream, "CTX[%i](%s.%s->%s[%li])",
+           ctx->id, own_name, ent_name,
+           get_op_name (get_irn_op (call)),
+           get_irn_node_nr (call));
+
+  if (NULL != ctx->enc) {
+    fprintf (stream, "->%i", ctx->enc->id);
+  }
+
+  fprintf (stream, "\n");
+}
+
+/*
+  Get a ctx of the given graph info
+*/
+ctx_info_t *get_ctx (graph_info_t *ginfo, int ctx_idx)
+{
+  assert (ginfo->n_ctxs > ctx_idx);
+
+  return (ginfo->ctxs [ctx_idx]);
+}
+
+/*
+   Get the pseudo-ctx of 'main'
+*/
+ctx_info_t *get_main_ctx ()
+{
+  return (main_ctx);
+}
+
+/*
+  Set the pseudo-ctx of 'main'
+*/
+void set_main_ctx (ctx_info_t *ctx)
+{
+  main_ctx = ctx;
+}
+
+
 /* ====================
   ECG stuff
   ==================== */
@@ -378,6 +574,36 @@ graph_info_t *ecg_get_info (ir_graph *graph)
   return (ginfo);
 }
 
+/*
+  Get the Alloc Infos for the given graph
+*/
+alloc_info_t *ecg_get_alloc_info (ir_graph *graph)
+{
+  graph_info_t *ginfo = ecg_get_info (graph);
+
+  return (ginfo->allocs);
+}
+
+/*
+  Get the Call Info for the given call
+*/
+callEd_info_t *ecg_get_callEd_info (ir_node *call)
+{
+  ir_graph *graph = get_irn_irg (call);
+  graph_info_t *ginfo = ecg_get_info (graph);
+
+  call_info_t *call_info = ginfo->calls;
+
+  while (NULL != call_info) {
+    if (call == call_info->call) {
+      return (call_info->callEds);
+    }
+
+    call_info = call_info->prev;
+  }
+
+  return (NULL);
+}
 
 
 /**
@@ -392,7 +618,8 @@ static int ecg_ecg_graph (FILE *dot, ir_graph *graph)
      (get_irg_entity (graph)) == stickyness_sticky) ?
     "red" : "lightyellow";
 
-  graph_info_t *ginfo = (graph_info_t*) pmap_get (graph_infos, graph);
+  /* graph_info_t *ginfo = (graph_info_t*) pmap_get (graph_infos, graph); */
+  graph_info_t *ginfo = ecg_get_info (graph);
 
   if (0 != ginfo->ecg_seen) {
     fprintf (dot, "\t/* recursive call to \"%s\" (%d) */\n",
@@ -412,10 +639,11 @@ static int ecg_ecg_graph (FILE *dot, ir_graph *graph)
   fprintf (dot, "\t/* Graph of \"%s.%s\" */\n",
            get_type_name (get_entity_owner (get_irg_entity (graph))),
            name);
-  fprintf (dot, "\tgraph_%i [label=\"%s\\l%s\", color=\"%s\"];\n",
+  fprintf (dot, "\tgraph_%i [label=\"<HEAD>%s\\l%s\\l|<CTX>n_ctx = %i\\l\", color=\"%s\"];\n",
            graph_no,
            get_type_name (get_entity_owner (get_irg_entity (graph))),
            name,
+           ginfo->n_ctxs,
            color);
   fprintf (dot, "\n");
 
@@ -431,10 +659,11 @@ static int ecg_ecg_graph (FILE *dot, ir_graph *graph)
     ir_node *call = cinfo->call;
     callEd_info_t *ced = cinfo->callEds;
     const int call_no = _calls ++;
+    const char *call_color = (NULL == ced->prev) ? "lightblue" : "blue3";
 
-    fprintf (dot, "\t/* Call 0x%08x */\n", (int) call);
-    fprintf (dot, "\tcall_%i [label=\"call\\l0x%08x\"];\n",
-             call_no, (int) call);
+    fprintf (dot, "\t/* Call %li */\n", get_irn_node_nr (call));
+    fprintf (dot, "\tcall_%i [label=\"call\\[%li\\]\", color=\"%s\", shape=\"ellipse\"];\n",
+             call_no, get_irn_node_nr (call), call_color);
     fprintf (dot, "\tgraph_%i -> call_%i [color=\"black\"];\n", graph_no, call_no);
 
     while (NULL != ced) {
@@ -450,7 +679,7 @@ static int ecg_ecg_graph (FILE *dot, ir_graph *graph)
                callEd_name);
       /* Check for recursive calls */
       /* if (callEd_no > graph_no) */ { /* do recursive calls (for now) */
-        fprintf (dot, "\tcall_%i -> graph_%i [color=\"%s\", dir=\"%s\"];\n",
+        fprintf (dot, "\tcall_%i -> graph_%i:HEAD [color=\"%s\", dir=\"%s\"];\n",
                  call_no, callEd_no, callEd_color, direction);
       }
 
@@ -462,7 +691,7 @@ static int ecg_ecg_graph (FILE *dot, ir_graph *graph)
   } /* done all calls (graph) */
 
   /* now the allocs */
-  alloc_info_t *ainfo = ginfo->allocs;
+  alloc_info_t *ainfo = ecg_get_alloc_info (graph);
   if (ainfo) {
     fprintf (dot, "\t/* now the allocs */\n");
   } else {
@@ -474,19 +703,57 @@ static int ecg_ecg_graph (FILE *dot, ir_graph *graph)
     const char *name = get_type_name (ainfo->tp);
     const char *color = "red1";
 
-    /* if (0 == ginfo->allocs_seen) { */
     _allocs ++;
-      fprintf (dot, "\talloc_0x%08x_%i [label=\"%s\", color=\"%s\"]\n",
-               (int) alloc, graph_no, name, color);
-    /* } */
+    fprintf (dot, "\talloc_0x%08x_%i [label=\"%s\", color=\"%s\"];\n",
+             (int) alloc, graph_no, name, color);
 
-    fprintf (dot, "\tgraph_%i -> alloc_0x%08x_%i\n", graph_no, (int) alloc, graph_no);
+    fprintf (dot, "\tgraph_%i -> alloc_0x%08x_%i;\n",
+             graph_no, (int) alloc, graph_no);
 
     ainfo = ainfo->prev;
   }
 
   if (0 == ginfo->allocs_seen) {
     ginfo->allocs_seen = 1;
+  }
+
+  /* write table of ctxs */
+  {
+    fprintf (dot, "\tctx_%i [label=\"<HEAD>", graph_no);
+
+    int i;
+    const int max_ctxs = 20;
+    const int n_ctxs = (ginfo->n_ctxs > max_ctxs) ? max_ctxs : ginfo->n_ctxs;
+
+    if (NULL != ginfo->ctxs) {
+      for (i = 0; i < n_ctxs; i ++) {
+        ctx_info_t *ctx_info = ginfo->ctxs [i];
+
+        if (NULL != ctx_info->enc) {
+          fprintf (dot, "ctx_info \\[%i\\] = ctx\\[%i\\-\\>%i\\]\\l",
+                   i,
+                   ctx_info->id,
+                   ctx_info->enc->id);
+        } else {
+          fprintf (dot, "ctx_info \\[%i\\] = ctx\\[%i\\]\\l",
+                   i, ctx_info->id);
+        }
+
+        if (i+1 != n_ctxs) {
+          fprintf (dot, "|");
+        }
+      }
+    }
+
+    if (0 < ginfo->n_ctxs - max_ctxs) {
+      fprintf (dot, "(%i more)\\l", ginfo->n_ctxs - max_ctxs);
+    }
+
+    fprintf (dot, "\", color=\"green3\"];\n");
+
+    fprintf (dot,
+             "\tgraph_%i:CTX -> ctx_%i:HEAD [label=\"ctx\", dir=\"none\", style=\"dotted\"];\n",
+             graph_no, graph_no);
   }
 
   fprintf (dot, "\t/* done with graph of \"%s\" */\n\n", name);
@@ -579,6 +846,9 @@ void ecg_init (int typalise)
   graph_infos = pmap_create ();
 
   ecg_fill_calls ();
+  ecg_fill_ctxs ();
+
+  ecg_ecg ();
 }
 
 /**
@@ -595,7 +865,6 @@ void ecg_cleanup ()
     call_info_t *cinfo = info->calls;
 
     while (NULL != cinfo) {
-      free (cinfo->callEds);
       cinfo->call = NULL;
 
       callEd_info_t *ced = cinfo->callEds;
@@ -608,7 +877,6 @@ void ecg_cleanup ()
         ced = nced;
       }
 
-      /* Todo: delete callEds */
       cinfo->callEds = NULL;
 
       free (cinfo);
@@ -622,9 +890,8 @@ void ecg_cleanup ()
 
   pmap_destroy (graph_infos);
 
-  /* BEGIN mild paranoia mode */
+  /*  paranoia mode */
   graph_infos = NULL;
-  /* END mild paranoia mode */
 }
 
 /**
@@ -678,8 +945,8 @@ void ecg_report ()
       ir_node *call = cinfo->call;
 
       fprintf (dot, "\t/* call_0x%08x */\n", (int) call);
-      fprintf (dot, "\tcall_0x%08x [label=\"call\\l0x%08x\"];\n",
-               (int) call, (int) call);
+      fprintf (dot, "\tcall_0x%08x [label=\"call\\[%li\\]\\l0x%08x\"];\n",
+               (int) call, get_irn_node_nr (call), (int) call);
       fprintf (dot, "\tgraph_0x%08x -> call_0x%08x;\n",
                (int) graph, (int) call);
 
@@ -708,9 +975,9 @@ void ecg_report ()
       const char *name = get_type_name (ainfo->tp);
       const char *color = "green3";
 
-      fprintf (dot, "\talloc_0x%08x [label=\"%s\", color=\"%s\"]\n",
+      fprintf (dot, "\talloc_0x%08x [label=\"%s\", color=\"%s\"];\n",
                (int) alloc, name, color);
-      fprintf (dot, "\tgraph_0x%08x -> alloc_0x%08x\n",
+      fprintf (dot, "\tgraph_0x%08x -> alloc_0x%08x;\n",
                (int) graph, (int) alloc);
 
       ainfo = ainfo->prev;
@@ -724,8 +991,6 @@ void ecg_report ()
     get_entity_name (_max_callEds_callR));
   */
   fclose (dot);
-
-  ecg_ecg ();
 }
 
 /**
@@ -782,6 +1047,9 @@ void ecg_ecg ()
 
 /*
   $Log$
+  Revision 1.4  2004/11/18 16:36:37  liekweg
+  Added unique ids for debugging, added access functions
+
   Revision 1.3  2004/11/04 14:54:44  liekweg
   Nicer Colors
 

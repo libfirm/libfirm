@@ -3,9 +3,21 @@
 #ifndef _EGC_H_
 #define _EGC_H_
 
+# include "irgraph.h"
+# include "irnode.h"
+
 /*
   data
 */
+
+typedef struct ctx_info
+{
+  ir_graph *graph;              /* The graph of the callR who created this ctx */
+  /* (which is redundant, since it's always == get_irn_graph (call)  */
+  ir_node *call;                /* The call through which this graph was called */
+  struct ctx_info *enc;         /* The ctx in which our callR was called */
+  int id;
+} ctx_info_t;
 
 typedef struct alloc_info
 {
@@ -14,7 +26,6 @@ typedef struct alloc_info
   type *tp;
   struct alloc_info *prev;
 } alloc_info_t;
-
 
 typedef struct callEd_info
 {
@@ -34,14 +45,24 @@ typedef struct graph_info
   ir_graph *graph;
   call_info_t *calls;
   alloc_info_t *allocs;
+  ctx_info_t **ctxs;
+  int n_ctxs;
   int ecg_seen;
   int allocs_seen;
+  struct graph_info *prev;
 } graph_info_t;
 
 /* protos */
+void ecg_print_ctx (ctx_info_t*, FILE *stream);
+
+ctx_info_t *get_ctx (graph_info_t*, int);
+ctx_info_t *get_main_ctx (void);
+
 void ecg_init (int);
 graph_info_t *ecg_get_info (ir_graph*);
 alloc_info_t *ecg_get_alloc_info (ir_graph*);
+callEd_info_t *ecg_get_callEd_info (ir_node*);
+
 void ecg_cleanup (void);
 void ecg_report (void);
 void ecg_ecg (void);
@@ -51,6 +72,9 @@ void ecg_ecg (void);
 
 /*
 $Log$
+Revision 1.2  2004/11/18 16:36:37  liekweg
+Added unique ids for debugging, added access functions
+
 Revision 1.1  2004/10/20 14:59:42  liekweg
 Added ana2, added ecg and pto
 
