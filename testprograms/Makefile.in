@@ -34,7 +34,7 @@ CPPFLAGS += -I$(top_srcdir)/ir/adt -I$(top_srcdir)/ir/common -I$(top_srcdir)/ir/
 		-I$(top_srcdir)/ir/tv -I$(top_srcdir)/ir/st  -I$(top_srcdir)/ir/ana
 
 LDFLAGS += -L$(topdir)
-LDLIBS += -lfirm -lgmp -liberty
+LDLIBS += -lfirm -liberty
 
 GENFILES := $(bin_EXAMPLES) *.vcg
 
