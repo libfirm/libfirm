@@ -1100,7 +1100,7 @@ int tarval_snprintf(char *buf, size_t len, tarval *tv)
 	  }
 	  else {
 	    /* truncated */
-	    mempy(buf, tv->value, size-1);
+	    memcpy(buf, tv->value, size-1);
 	    buf[size-1] = '\0';
 	  }
           return tv->length;
