@@ -344,7 +344,7 @@ int get_mode_arithmetic (const ir_mode *mode)
  *  whether shift applies modulo to value of bits to shift.  Asserts
  *  if mode is not irms_int_number.
  */
-unsinged int get_mode_modulo_shift(const ir_mode *mode) {
+unsigned int get_mode_modulo_shift(const ir_mode *mode) {
   return mode->modulo_shift;
 }
 

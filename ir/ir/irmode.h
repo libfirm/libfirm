@@ -159,8 +159,7 @@ typedef enum {
  * 	It is allowed to construct the default modes. So, a call
  * 	new_ir_mode("Is", irms_int_number, 32, 4, 1, 32) will return mode_Is.
  */
-ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align,
-		     int sign, mode_arithmetic arithmetic, unsigned int modulo_shift);
+ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align, int sign, mode_arithmetic arithmetic, unsigned int modulo_shift);
 
 /**
  *   Checks whether a pointer points to a mode.
@@ -206,7 +205,7 @@ int get_mode_arithmetic (const ir_mode *mode);
  *  whether shift applies modulo to value of bits to shift.  Zero for
  *  modes that are not integer.
  */
-unsinged int get_mode_modulo_shift(const ir_mode *mode);
+unsigned int get_mode_modulo_shift(const ir_mode *mode);
 
 
 /** Returns the stored intermediate information. */

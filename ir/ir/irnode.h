@@ -14,6 +14,7 @@
 # define _IRNODE_H_
 
 /** Projection numbers of compare: use for Proj nodes! */
+/* @@@ there are numbers with normalized names below! */
 typedef enum {
   False = 0,		/**< false */
   Eq,			/**< equal */
@@ -187,6 +188,7 @@ INLINE ir_node  *get_nodes_Block (ir_node *node);
 INLINE void      set_nodes_Block (ir_node *node, ir_node *block);
 
 /** Projection numbers for result of Start node: use for Proj nodes! */
+/* @@@ old name convention! */
 typedef enum {
   pns_initial_exec,     /**< Projection on an executable, the initial control
 			   flow. */
@@ -198,6 +200,17 @@ typedef enum {
   pns_value_arg_base    /**< Pointer to region of compound value arguments as defined by
   			     type of this method. */
 } pns_number; /* pns: Projection Number Start */
+typedef enum {
+  pn_Start_X_initial_exec,  /**< Projection on the initial control flow. */
+  pn_Start_M,               /**< Projection on the initial memory. */
+  pn_Start_P_frame_base,    /**< Projection on the frame base pointer. */
+  pn_Start_P_globals,       /**< Projection on the pointer to the data segment
+			       containing _all_ global entities. */
+  pn_Start_T_args,          /**< Projection on all arguments. */
+  pn_Start_P_value_arg_base /**< Pointer to region of compound value arguments as defined by
+			       type of this method. */
+} pn_Start; /* Projection numbers for Start. */
+
 
 /* @@@ no more supported  */
 INLINE ir_node **get_Block_cfgpred_arr (ir_node *node);
@@ -273,6 +286,11 @@ INLINE void      set_Cond_selector (ir_node *node, ir_node *selector);
 INLINE cond_kind get_Cond_kind (ir_node *node);
 INLINE void      set_Cond_kind (ir_node *node, cond_kind kind);
 
+typedef enum {
+  pn_Cond_false,    /**< Control flow if operand is "false". */
+  pn_Cond_true      /**< Control flow if operand is "true".  */
+} pn_Cond;  /* Projection numbers for Cond. */
+
 INLINE ir_node  *get_Return_mem (ir_node *node);
 INLINE void      set_Return_mem (ir_node *node, ir_node *mem);
 INLINE ir_node **get_Return_res_arr (ir_node *node);
@@ -284,6 +302,11 @@ INLINE ir_node *get_Raise_mem (ir_node *node);
 INLINE void     set_Raise_mem (ir_node *node, ir_node *mem);
 INLINE ir_node *get_Raise_exo_ptr (ir_node *node);  /* PoinTeR to EXception Object */
 INLINE void     set_Raise_exo_ptr (ir_node *node, ir_node *exoptr);
+
+typedef enum {
+  pn_Raise_X,    /**< Execution result. */
+  pn_Raise_M     /**< Memory result.    */
+} pn_Raise;  /* Projection numbers for Raise. */
 
 INLINE tarval  *get_Const_tarval (ir_node *node);
 INLINE void     set_Const_tarval (ir_node *node, tarval *con);
@@ -330,15 +353,8 @@ INLINE void     set_Sel_index (ir_node *node, int pos, ir_node *index);
 INLINE entity  *get_Sel_entity (ir_node *node); /* entity to select */
 INLINE void     set_Sel_entity (ir_node *node, entity *ent);
 
-/* @@@ ajacs specific node -- not supported */
-type           *get_InstOf_ent   (ir_node *node);
-void            set_InstOf_ent   (ir_node *node, type *ent);
-ir_node        *get_InstOf_obj   (ir_node *node);
-void            set_InstOf_obj   (ir_node *node, ir_node *obj);
-ir_node        *get_InstOf_store (ir_node *node);
-void            set_InstOf_store (ir_node *node, ir_node *obj);
-
 /** Projection numbers for result of Call node: use for Proj nodes! */
+/* @@@ old name convention! */
 typedef enum {
   pncl_memory = 0,        /**< The memory result. */
   pncl_exc_target = 1,    /**< The control flow result branching to the exception handler */
@@ -348,6 +364,16 @@ typedef enum {
   pncl_value_res_base = 4 /**< A pointer to the memory region containing copied results
 			      passed by value (for compound result types). */
 } pncl_number;   /* pncl: Projection Number CaLl */
+
+typedef enum {
+  pn_Call_M_regular = 0,  /**< The memory result. */
+  pn_Call_T_result  = 2,  /**< The tuple containing all (0, 1, 2, ...) results */
+  pn_Call_P_value_res_base = 4,/**< A pointer to the memory region containing copied results
+			     passed by value (for compound result types). */
+  pn_Call_X_except  = 1,  /**< The control flow result branching to the exception handler */
+  pn_Call_M_except  = 3   /**< The memory result in case the called method terminated with
+			     an exception */
+} pn_Call;   /* Projection numbers for Call. */
 
 INLINE ir_node *get_Call_mem (ir_node *node);
 INLINE void     set_Call_mem (ir_node *node, ir_node *mem);
@@ -368,16 +394,16 @@ INLINE void     set_Call_type (ir_node *node, type *tp);
 INLINE int      get_Call_arity (ir_node *node);
 
 /* Set, get and remove the callee-analysis. */
-int get_Call_n_callees(ir_node * node);
-entity * get_Call_callee(ir_node * node, int pos);
-void set_Call_callee_arr(ir_node * node, int n, entity ** arr);
-void remove_Call_callee_arr(ir_node * node);
+int     get_Call_n_callees    (ir_node * node);
+entity *get_Call_callee       (ir_node * node, int pos);
+void    set_Call_callee_arr   (ir_node * node, int n, entity ** arr);
+void    remove_Call_callee_arr(ir_node * node);
 
-ir_node * get_CallBegin_ptr (ir_node *node);
-void set_CallBegin_ptr (ir_node *node, ir_node *ptr);
-ir_graph *get_CallBegin_irg (ir_node *node);
-ir_node *get_CallBegin_call (ir_node *node);
-void set_CallBegin_call (ir_node *node, ir_node *call);
+ir_node  *get_CallBegin_ptr  (ir_node *node);
+void      set_CallBegin_ptr  (ir_node *node, ir_node *ptr);
+ir_graph *get_CallBegin_irg  (ir_node *node);
+ir_node  *get_CallBegin_call (ir_node *node);
+void      set_CallBegin_call (ir_node *node, ir_node *call);
 
 /* For unary and binary arithmetic operations the access to the
    operands can be factored out.  Left is the first, right the
@@ -419,12 +445,25 @@ INLINE void     set_Quot_right (ir_node *node, ir_node *right);
 INLINE ir_node *get_Quot_mem (ir_node *node);
 INLINE void     set_Quot_mem (ir_node *node, ir_node *mem);
 
+typedef enum {
+  pn_Quot_X_except,    /**< Execution result if exception occured. */
+  pn_Quot_M,           /**< Memory result.    */
+  pn_Quot_res          /**< Result of computation. */
+} pn_Quot;  /* Projection numbers for Quot. */
+
 INLINE ir_node *get_DivMod_left (ir_node *node);
 INLINE void     set_DivMod_left (ir_node *node, ir_node *left);
 INLINE ir_node *get_DivMod_right (ir_node *node);
 INLINE void     set_DivMod_right (ir_node *node, ir_node *right);
 INLINE ir_node *get_DivMod_mem (ir_node *node);
 INLINE void     set_DivMod_mem (ir_node *node, ir_node *mem);
+
+typedef enum {
+  pn_DivMod_X_except,    /**< Execution result if exception occured. */
+  pn_DivMod_M,           /**< Memory result.    */
+  pn_DivMod_res_div,     /**< Result of computation a / b. */
+  pn_DivMod_res_mod      /**< Result of computation a % b. */
+} pn_DivMod;  /* Projection numbers for DivMod. */
 
 INLINE ir_node *get_Div_left (ir_node *node);
 INLINE void     set_Div_left (ir_node *node, ir_node *left);
@@ -433,12 +472,24 @@ INLINE void     set_Div_right (ir_node *node, ir_node *right);
 INLINE ir_node *get_Div_mem (ir_node *node);
 INLINE void     set_Div_mem (ir_node *node, ir_node *mem);
 
+typedef enum {
+  pn_Div_X_except,    /**< Execution result if exception occured. */
+  pn_Div_M,           /**< Memory result.    */
+  pn_Div_res          /**< Result of computation. */
+} pn_Div;  /* Projection numbers for Div. */
+
 INLINE ir_node *get_Mod_left (ir_node *node);
 INLINE void     set_Mod_left (ir_node *node, ir_node *left);
 INLINE ir_node *get_Mod_right (ir_node *node);
 INLINE void     set_Mod_right (ir_node *node, ir_node *right);
 INLINE ir_node *get_Mod_mem (ir_node *node);
 INLINE void     set_Mod_mem (ir_node *node, ir_node *mem);
+
+typedef enum {
+  pn_Mod_X_except,    /**< Execution result if exception occured. */
+  pn_Mod_M,           /**< Memory result.    */
+  pn_Mod_res          /**< Result of computation. */
+} pn_Mod;  /* Projection numbers for Mod. */
 
 INLINE ir_node *get_Abs_op (ir_node *node);
 INLINE void     set_Abs_op (ir_node *node, ir_node *op);
@@ -461,9 +512,33 @@ INLINE void     set_Eor_right (ir_node *node, ir_node *right);
 INLINE ir_node *get_Not_op (ir_node *node);
 INLINE void     set_Not_op (ir_node *node, ir_node *op);
 
-INLINE const char *get_pnc_string(int pnc);
+/* Projection numbers for Cmp are defined several times.
+   The bit patterns are used for variouse tests, so don't change.
+   The "unordered" values are possible results of comparing
+   floating point numbers. */
+typedef enum {
+  pn_Cmp_False = 0,   /**< false */
+  pn_Cmp_Eq,	      /**< equal */
+  pn_Cmp_Lt,	      /**< less */
+  pn_Cmp_Le,	      /**< less or equal */
+  pn_Cmp_Gt,	      /**< greater */
+  pn_Cmp_Ge,	      /**< greater or equal */
+  pn_Cmp_Lg,	      /**< less or greater */
+  pn_Cmp_Leg = 7,     /**< less, equal or greater = ordered */
+  pn_Cmp_Uo,	      /**< unordered */
+  pn_Cmp_Ue,	      /**< unordered or equal */
+  pn_Cmp_Ul,	      /**< unordered or less */
+  pn_Cmp_Ule,	      /**< unordered, less or equal */
+  pn_Cmp_Ug,	      /**< unordered or greater */
+  pn_Cmp_Uge,	      /**< unordered, greater or equal */
+  pn_Cmp_Ne,	      /**< unordered, less or greater = not equal */
+  pn_Cmp_True = 15    /**< true */
+  /* not_mask = Leg*/	/* bits to flip to negate comparison * @@ hack for jni interface */
+} pn_Cmp;   /* Projection numbers for Cmp */
+//#define not_mask pn_Cmp_Leg
 
-INLINE int   get_negated_pnc(int pnc);
+INLINE const char *get_pnc_string(int pnc);
+INLINE int         get_negated_pnc(int pnc);
 INLINE ir_node *get_Cmp_left (ir_node *node);
 INLINE void     set_Cmp_left (ir_node *node, ir_node *left);
 INLINE ir_node *get_Cmp_right (ir_node *node);
@@ -519,10 +594,21 @@ void             set_Filter_cg_pred(ir_node * node, int pos, ir_node * pred);
 int              get_Filter_n_cg_preds(ir_node *node);
 ir_node *        get_Filter_cg_pred(ir_node *node, int pos);
 
+typedef enum {
+  pn_Load_X_except,  /**< Execution result if exception occured. */
+  pn_Load_M,         /**< Memory result.    */
+  pn_Load_res        /**< Result of load operation. */
+} pn_Load;  /* Projection numbers for Load. */
+
 INLINE ir_node *get_Load_mem (ir_node *node);
 INLINE void     set_Load_mem (ir_node *node, ir_node *mem);
 INLINE ir_node *get_Load_ptr (ir_node *node);
 INLINE void     set_Load_ptr (ir_node *node, ir_node *ptr);
+
+typedef enum {
+  pn_Store_X_except,  /**< Execution result if exception occured. */
+  pn_Store_M          /**< Memory result.    */
+} pn_Store;  /* Projection numbers for Store. */
 
 INLINE ir_node *get_Store_mem (ir_node *node);
 INLINE void     set_Store_mem (ir_node *node, ir_node *mem);
@@ -530,6 +616,12 @@ INLINE ir_node *get_Store_ptr (ir_node *node);
 INLINE void     set_Store_ptr (ir_node *node, ir_node *ptr);
 INLINE ir_node *get_Store_value (ir_node *node);
 INLINE void     set_Store_value (ir_node *node, ir_node *value);
+
+typedef enum {
+  pn_Alloc_X,    /**< Execution result if exception occured. */
+  pn_Alloc_M,    /**< Memory result. */
+  pn_Alloc_res   /**< Result of allocation. */
+} pn_Alloc;  /* Projection numbers for Alloc. */
 
 INLINE ir_node *get_Alloc_mem (ir_node *node);
 INLINE void     set_Alloc_mem (ir_node *node, ir_node *mem);

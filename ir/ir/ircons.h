@@ -329,7 +329,6 @@
  *    ir_node *new_simpleSel (ir_node *store, ir_node *objptr, entity *ent);
  *    ir_node *new_Sel    (ir_node *store, ir_node *objptr, int arity,
  *                         ir_node **in, entity *ent);
- *    ir_node *new_InstOf (ir_node *store, ir_node *objptr, type *ent);
  *    ir_node *new_Call   (ir_node *store, ir_node *callee, int arity,
  *  		       ir_node **in, type_method *type);
  *    ir_node *new_Add    (ir_node *op1, ir_node *op2, ir_mode *mode);
@@ -1375,7 +1374,6 @@ ir_node *new_SymConst (type_or_id_p value, symconst_kind kind);
 ir_node *new_simpleSel(ir_node *store, ir_node *objptr, entity *ent);
 ir_node *new_Sel    (ir_node *store, ir_node *objptr, int arity, ir_node *in[],
                      entity *ent);
-ir_node *new_InstOf (ir_node *store, ir_node *objptr, type *ent);
 ir_node *new_Call   (ir_node *store, ir_node *callee, int arity, ir_node *in[],
 		     type *tp);
 ir_node *new_CallBegin(ir_node *callee);
