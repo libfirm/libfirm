@@ -1,6 +1,6 @@
 /* Copyright (c) 2002 by Universität Karlsruhe (TH).  All Rights Reserved */
 //
-// Time-stamp: <02/03/04 17:24:07 liekweg>
+// Time-stamp: <Monday, 13.05.2002, 15:51:30 goetz@i44pc2.info.uni-karlsruhe.de>
 //
 
 /***
@@ -69,11 +69,10 @@ static bool is_exc_jmp (ir_node *node)
 	{
 	  op = get_irn_op (get_Proj_pred (node));
 
-	  // ToDo: Check for proper Proj attr?!?
-	  if ((op == op_Load) || (op == op_Store)  ||
-		  (op == op_Div ) || (op == op_Raise)  ||
-		  (op == op_Call) || (op == op_Alloc))
-		return (true);
+	  assert ((is_fragile_op(get_Proj_pred))       &&
+		  (op != op_Bad) && (op != op_Unknown) &&
+		  (get_irn_mode(node) == mode_X));// Check for proper Proj attr
+	  return (true);
 	}
   else
 	{
