@@ -442,7 +442,7 @@ static void ecg_fill_ctxs_alloc (void)
   graph_info_t *ginfo = graph_infos_list;
 
   while (NULL != ginfo) {
-    ginfo->ctxs = xmalloc(ginfo->n_ctxs * sizeof(*ginfo->ctxs));
+    ginfo->ctxs = xcalloc(ginfo->n_ctxs, sizeof(ginfo->ctxs[0]));
 
     /*
       fprintf (stdout, "graph of \"%s\": n_ctxs = %i\n",
@@ -514,7 +514,7 @@ static void ecg_fill_ctxs (void)
   /* Grrr, have to add this ctx manually to main.ginfo ... */
   ginfo = ecg_get_info (main_irg);
   ginfo->n_ctxs = 1;
-  ginfo->ctxs = xmalloc(1 * sizeof(*ginfo->ctxs));
+  ginfo->ctxs = xcalloc(1, sizeof(ginfo->ctxs[0]));
   ginfo->ctxs [0] = main_ctx;
 
   ecg_fill_ctxs_write (main_irg, main_ctx);
@@ -1175,6 +1175,9 @@ void ecg_ecg (void)
 
 /*
   $Log$
+  Revision 1.15  2004/12/23 15:40:03  beck
+  used new xcalloc
+
   Revision 1.14  2004/12/22 14:43:14  beck
   made allocations C-like
 
