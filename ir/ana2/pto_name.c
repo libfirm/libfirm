@@ -33,6 +33,7 @@
 # include "xmalloc.h"
 
 # include "pto_debug.h"
+# include "gnu_ext.h"
 
 /* Local Defines: */
 # define obstack_chunk_alloc xmalloc
@@ -242,12 +243,14 @@ static entity **collect_fields (type *clazz)
   void *tmp;
 
   if (NULL != get_type_link (clazz)) {
-    DBGPRINT (3, (stdout, "collect_fields(): reusing field list for \"%s\"\n",
+    DBGPRINT (3, (stdout, "%s: reusing field list for \"%s\"\n",
+                  __FUNCTION__,
                   get_type_name (clazz)));
 
     return ((entity **) get_type_link (clazz));
   } else {
-    DBGPRINT (2, (stdout, "collect_fields(): new field list for \"%s\"\n",
+    DBGPRINT (2, (stdout, "%s: new field list for \"%s\"\n",
+                  __FUNCTION__,
                   get_type_name (clazz)));
   }
 
@@ -260,10 +263,10 @@ static entity **collect_fields (type *clazz)
 
   n_fields = obstack_object_size (&obst) / sizeof (void*);
 
-  fields = NALLOC(n_fields * sizeof(*fields));
+  fields = NALLOC (n_fields * sizeof (entity*));
   tmp = obstack_finish(&obst);
 
-  memcpy (fields, tmp, n_fields * sizeof(*fields));
+  memcpy (fields, tmp, n_fields * sizeof (entity*));
 
   obstack_free (&obst, NULL);
 
@@ -472,12 +475,13 @@ desc_t *new_name (type *tp, ir_node *node, int ctx)
 
   assert ((is_Class_type (tp) || is_Array_type (tp)) && "unsuitable type");
 
-  DBGPRINT (2, (stdout, "new_name(): new name for type \"%s\"\n",
+  DBGPRINT (2, (stdout, "%s: new name for type \"%s\"\n",
+                __FUNCTION__,
                 get_type_name (tp)));
   fflush (stdout);
 
   if (is_Class_type (tp)) {
-    obj_desc_t *obj_desc = NALLOC(sizeof(*obj_desc));
+    obj_desc_t *obj_desc = NALLOC (sizeof (obj_desc_t));
     int i;
     int n_fields;
 
@@ -489,7 +493,7 @@ desc_t *new_name (type *tp, ir_node *node, int ctx)
     }
 
     obj_desc->n_fields = n_fields;
-    obj_desc->values = (qset_t**) NALLOC (n_fields * sizeof (qset_t));
+    obj_desc->values = (qset_t**) NALLOC (n_fields * sizeof (qset_t*));
 
     for (i = 0; i < n_fields; i ++) {
       obj_desc->values [i] = qset_new (N_INITIAL_OJBS, qset_obst);
@@ -533,7 +537,8 @@ desc_t *new_ent_name (entity *ent)
   tp = get_pointer_points_to_type (tp);
   assert (is_Class_type (tp));
 
-  DBGPRINT (2, (stdout, "new_ent_name(): new name for entity \"%s\"\n",
+  DBGPRINT (2, (stdout, "%s: new name for entity \"%s\"\n",
+                __FUNCTION__,
                 get_entity_name (ent)));
   DBGEXE (2, (fflush (stdout)));
 
@@ -598,8 +603,8 @@ void pto_dump_names (const char *name)
 
   errno = 0;
   if  (NULL == stream) {
-    fprintf (stderr, "pto_dump_names(): unable to open %s (%s)\n",
-             name, strerror (errno));
+    fprintf (stderr, "%s: unable to open %s (%s)\n",
+             __FUNCTION__, name, strerror (errno));
     return;
   }
 
@@ -618,12 +623,12 @@ void pto_dump_names (const char *name)
 /* Initialise the name module */
 void pto_name_init (void)
 {
-  DBGPRINT (3, (stdout, "(%s:%i) pto_name_init()\n", __FILE__, __LINE__));
+  DBGPRINT (3, (stdout, "%s\n", __FUNCTION__));
   assert (NULL == name_obst);
   assert (NULL == qset_obst);
 
-  name_obst = xmalloc (sizeof(*name_obst));
-  qset_obst = xmalloc (sizeof(*qset_obst));
+  name_obst = xmalloc (sizeof (struct obstack));
+  qset_obst = xmalloc (sizeof (struct obstack));
 
   obstack_init (name_obst);
   obstack_init (qset_obst);
@@ -632,7 +637,7 @@ void pto_name_init (void)
 /* Cleanup the name module */
 void pto_name_cleanup (void)
 {
-  DBGPRINT (3, (stdout, "(%s:%i) pto_name_cleanup()\n", __FILE__, __LINE__));
+  DBGPRINT (3, (stdout, "%s\n", __FUNCTION__));
   obstack_free (name_obst, NULL);
   obstack_free (qset_obst, NULL);
 
@@ -649,6 +654,9 @@ void pto_name_cleanup (void)
 
 /*
   $Log$
+  Revision 1.12  2005/01/14 14:13:56  liekweg
+  fix gnu extension, fix fprintf's, fix allocs
+
   Revision 1.11  2005/01/05 14:25:54  beck
   renames all is_x*_type() functions to is_X*_type() to prevent name clash with EDG fronten
 
