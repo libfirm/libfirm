@@ -37,7 +37,8 @@ static eset * entities = NULL;
  * übergebenene (dynamischen) Typ überschreibt. */
 static entity * get_implementation(type * class, entity * method) {
   int i;
-  if (get_entity_peculiarity(method) != description && get_entity_owner(method) == class) {
+  if (get_entity_peculiarity(method) != description &&
+      get_entity_owner(method) == class) {
     return method;
   }
   for (i = get_entity_n_overwrittenby(method) - 1; i >= 0; --i) {
@@ -55,6 +56,54 @@ static entity * get_implementation(type * class, entity * method) {
   assert(0 && "implemenation not found");
 }
 
+/* Returns the entity that contains the implementation of the inherited
+   entity if available, else returns the entity passed. */
+entity *get_inherited_methods_implementation(entity *inh_meth) {
+  entity *impl_meth = NULL;
+  ir_node *addr = get_atomic_ent_value(inh_meth);
+  assert(addr && "constant entity without value");
+
+  if (get_irn_op(addr) == op_Const) {
+    impl_meth = get_tv_entity(get_Const_tarval(addr));
+  }
+
+  assert(!impl_meth || get_entity_peculiarity(impl_meth) == existent);
+  return impl_meth? impl_meth : inh_meth;
+}
+
+/* A recursive descend in the overwritten relation.
+   Cycle-free, therefore must terminate. */
+void collect_impls(entity *method, eset *set, int *size, bool *open) {
+  int i;
+  if (get_entity_peculiarity(method) == existent) {
+    if (get_entity_visibility(method) == external_allocated) {
+      assert(get_entity_irg(method) == NULL);
+      *open = true;
+    } else {
+      assert(get_entity_irg(method) != NULL);
+      eset_insert(set, method);
+      ++(*size);
+    }
+  }
+  if (get_entity_peculiarity(method) == inherited) {
+    entity *impl_ent = get_inherited_methods_implementation(method);
+    assert(impl_ent && "no implementation for inherited entity");
+    if (get_entity_visibility(impl_ent) == external_allocated) {
+      assert(get_entity_irg(impl_ent) == NULL);
+      *open = true;
+    } else {
+      assert(get_entity_irg(impl_ent) != NULL);
+      if (!eset_contains(set, impl_ent)) {
+	eset_insert(set, impl_ent);
+	++(*size);
+      }
+    }
+  }
+  /** recursive descend **/
+  for (i = get_entity_n_overwrittenby(method) - 1; i >= 0; --i)
+    collect_impls(get_entity_overwrittenby(method, i) ,set, size, open);
+}
+
 
 /* Alle Methoden bestimmen, die die übergebene Methode überschreiben
  * (und implementieren). In der zurückgegebenen Reihung kommt jede
@@ -69,43 +118,26 @@ static entity ** get_impl_methods(entity * method) {
   int i;
   entity ** arr;
   bool open = false;
-  if (get_entity_peculiarity(method) == existent) {
-    if (get_entity_visibility(method) == external_allocated) {
-      assert(get_entity_irg(method) == NULL);
-      open = true;
-    } else {
-      assert(get_entity_irg(method) != NULL);
-      eset_insert(set, method);
-      ++size;
-    }
-  }
-  for (i = get_entity_n_overwrittenby(method) - 1; i >= 0; --i) {
-    entity * ent = get_entity_overwrittenby(method, i);
-    if (get_entity_peculiarity(ent) == existent) {
-      if (get_entity_visibility(ent) == external_allocated) {
-	assert(get_entity_irg(ent) == NULL);
-	open = true;
-      } else {
-	assert(get_entity_irg(ent) != NULL);
-	if (!eset_contains(set, ent)) {
-	  eset_insert(set, ent);
-	  ++size;
-	}
-      }
-    }
-  }
+
+  /** Collect all method entities that can be called here **/
+  collect_impls(method, set, &size, &open);
+
+  /** Gefunden Entitaeten in ein Feld kopieren, ev. Unbekannten
+     Vorgaenger einfuegen. **/
   if (size == 0 && !open) {
     /* keine implementierte überschriebene Methode */
     arr = NULL;
   } else if (open) {
     entity * ent;
     arr = NEW_ARR_F(entity *, size + 1);
-    arr[0] = NULL;
-    for (ent = eset_first(set); size > 0; ent = eset_next(set), --size) arr[size] = ent;
+    arr[0] = NULL;  /* Represents open method */
+    for (ent = eset_first(set); size > 0; ent = eset_next(set), --size)
+      arr[size] = ent;
   } else {
     entity * ent;
     arr = NEW_ARR_F(entity *, size);
-    for (size -= 1, ent = eset_first(set); size >= 0; ent = eset_next(set), --size) arr[size] = ent;
+    for (size -= 1, ent = eset_first(set); size >= 0; ent = eset_next(set), --size)
+      arr[size] = ent;
   }
   eset_destroy(set);
   return arr;
@@ -118,25 +150,26 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
      * ersetzen. */
     if (get_SymConst_kind(node) == linkage_ptr_info) {
       pmap_entry * entry = pmap_find(ldname_map, (void *) get_SymConst_ptrinfo(node));
-      if (entry != NULL) {
+      if (entry != NULL) { /* Method is declared in the compiled code */
 	entity * ent = entry->value;
-	if (get_entity_visibility(ent) != external_allocated) {
+	if (get_entity_visibility(ent) != external_allocated) { /* Meth. is defined */
 	  assert(get_entity_irg(ent));
 	  set_irg_current_block(current_ir_graph, get_nodes_Block(node));
-	  exchange(node, new_Const(mode_p, tarval_p_from_entity(ent)));
+	  exchange(node, new_d_Const(get_irn_dbg_info(node),
+				     mode_p, tarval_p_from_entity(ent)));
 	}
       }
     }
-  } else if (get_irn_op(node) == op_Sel && is_method_type(get_entity_type(get_Sel_entity(node)))) {
+  } else if (get_irn_op(node) == op_Sel &&
+	     is_method_type(get_entity_type(get_Sel_entity(node)))) {
     entity * ent = get_Sel_entity(node);
     if (get_irn_op(skip_Proj(get_Sel_ptr(node))) == op_Alloc) {
-      ent = get_implementation(get_Alloc_type(skip_Proj(get_Sel_ptr(node))), ent);
-      if (get_entity_visibility(ent) == external_allocated) {
-	exchange(node, new_SymConst((type_or_id_p) get_entity_ld_ident(ent), linkage_ptr_info));
-      } else {
-	exchange(node, new_Const(mode_p, tarval_p_from_entity(ent)));
-      }
+      /* We know which method will be called, no dispatch necessary. */
+      assert(get_entity_peculiarity(ent) != description);
+      set_irg_current_block(current_ir_graph, get_nodes_Block(node));
+      exchange (node, copy_const_value(get_atomic_ent_value(ent)));
     } else {
+      assert(get_entity_peculiarity(ent) != inherited);
       if (!eset_contains(entities, ent)) {
 	/* Entity noch nicht behandelt. Alle (intern oder extern)
 	 * implementierten Methoden suchen, die diese Entity
@@ -160,17 +193,26 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
 	}
       } else {
 	entity ** arr = get_entity_link(ent);
+
+#if 0
+	int i;
+	printf("\nCall site "); DDMN(node);
+	printf("  in "); DDME(get_irg_ent(current_ir_graph));
+	printf("  can call:\n");
+	for (i = 0; i < ARR_LEN(arr); i++) {
+	  printf("   - "); DDME(arr[i]);
+	  printf("     with owner "); DDMT(get_entity_owner(arr[i]));
+	}
+	printf("\n");
+#endif
+
 	if (ARR_LEN(arr) == 1 && arr[0] != NULL) {
 	  /* Die Sel-Operation kann immer nur einen Wert auf eine
 	   * interne Methode zurückgeben. Wir können daher die
 	   * Sel-Operation durch eine Const- bzw. SymConst-Operation
 	   * ersetzen. */
-	  if (get_entity_visibility(arr[0]) == external_allocated) {
-	    exchange(node, new_SymConst((type_or_id_p) get_entity_ld_ident(arr[0]),
-					linkage_ptr_info));
-	  } else {
-	    exchange(node, new_Const(mode_p, tarval_p_from_entity(arr[0])));
-	  }
+	  set_irg_current_block(current_ir_graph, get_nodes_Block(node));
+	  exchange (node, copy_const_value(get_atomic_ent_value(arr[0])));
 	}
       }
     }
@@ -179,7 +221,7 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
 
 
 /* Datenstruktur initialisieren. Zusätzlich werden alle
- * SymConst-Operationen, die auf interne Methode verweisen, durch
+ * SymConst-Operationen, die auf interne Methoden verweisen, durch
  * Const-Operationen ersetzt. */
 static void sel_methods_init(void) {
   int i;
@@ -198,6 +240,7 @@ static void sel_methods_init(void) {
   pmap_destroy(ldname_map);
 }
 
+/*****************************************************************************/
 
 /* Datenstruktur freigeben. */
 static void sel_methods_dispose(void) {
@@ -302,7 +345,7 @@ static void callee_ana_proj(ir_node * node, long n, eset * methods) {
 static void callee_ana_node(ir_node * node, eset * methods) {
   int i;
 
-  assert(get_irn_mode(node) == mode_p);
+  assert((get_irn_mode(node) == mode_p) || is_Bad(node));
   /* rekursion verhindern */
   if (get_irn_link(node) == MARK) {
     /* already visited */
