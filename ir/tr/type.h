@@ -744,15 +744,32 @@ type *new_d_type_array         (ident *name, int n_dimensions,
 /** Returns the number of array dimensions of this type. */
 int   get_array_n_dimensions (const type *array);
 
-/** Allocates Const nodes of mode_I for the array dimensions */
+/**
+ * Allocates Const nodes of mode_I for one array dimension.
+ * Upper bound in Firm is the element next to the last, ie [lower,upper[
+ */
 void  set_array_bounds_int   (type *array, int dimension, int lower_bound,
                                                           int upper_bound);
+/**
+ * Sets the bounds for one array dimension.
+ * Upper bound in Firm is the element next to the last, ie [lower,upper[
+ */
 void  set_array_bounds       (type *array, int dimension, ir_node *lower_bound,
                                                           ir_node *upper_bound);
+/** Sets the lower bound for one array dimension, ie [lower,upper[ */
 void  set_array_lower_bound  (type *array, int dimension, ir_node *lower_bound);
+
+/** Allocates Const nodes of mode_I for the lower bound of an array
+    dimension, ie [lower,upper[ */
 void  set_array_lower_bound_int (type *array, int dimension, int lower_bound);
+
+/** Sets the upper bound for one array dimension, ie [lower,upper[ */
 void  set_array_upper_bound  (type *array, int dimension, ir_node *upper_bound);
-void  set_array_upper_bound_int (type *array, int dimension, int lower_bound);
+
+/** Allocates Const nodes of mode_I for the upper bound of an array
+    dimension, ie [lower,upper[ */
+void  set_array_upper_bound_int (type *array, int dimension, int upper_bound);
+
 /** returns true if lower bound != Unknown */
 int       has_array_lower_bound     (const type *array, int dimension);
 ir_node * get_array_lower_bound     (const type *array, int dimension);
