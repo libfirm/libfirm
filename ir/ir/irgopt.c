@@ -1296,19 +1296,18 @@ static void optimize_blocks(ir_node *b, void *env) {
 	  }
 	  n_preds++;
 	}
-	/* The Phi_pred node is replaced now if it is a Phi.  Remove it so
-	   that it is removed from keep_alives. */
-	if (get_nodes_Block(phi_pred) == pred)
-	  exchange (phi_pred, new_Bad());
-#if 0
-	/* @@@ hier brauche ich Schleifeninformation!!! Wenn keine Rueckwaertskante
-	   dann darfs auch keine Verwendung geben. */
+	/* The Phi_pred node is replaced now if it is a Phi.
+	   In Schleifen kann offenbar der entfernte Phi Knoten legal verwendet werden.
+	   Daher muss der Phiknoten durch den neuen ersetzt werden.
+	   Weiter muss der alte Phiknoten entfernt werden (durch ersetzen oder
+	   durch einen Bad) damit er aus den keep_alive verschwinden kann.
+	   Man sollte also, falls keine Schleife vorliegt, exchange mit new_Bad
+	   aufrufen.  */
 	if (get_nodes_Block(phi_pred) == pred) {
 	  /* remove the Phi as it might be kept alive. Further there
 	     might be other users. */
-	  exchange(phi_pred, phi);  /* geht, ist aber doch semantisch falsch! */
+	  exchange(phi_pred, phi);  /* geht, ist aber doch semantisch falsch! Warum?? */
 	}
-#endif
       } else {
 	in[n_preds] = get_Phi_pred(phi, i);
 	n_preds ++;
@@ -1316,7 +1315,6 @@ static void optimize_blocks(ir_node *b, void *env) {
     }
     /* Fix the node */
     set_irn_in(phi, n_preds, in);
-    //clear_backedges (phi);
 
     phi = get_irn_link(phi);
   }

@@ -96,6 +96,7 @@ void place_code(ir_graph *irg);
 /* and propagates dead control flow by calling equivalent_node.     */
 /* Independent of compiler flag it removes Tuples from cf edges,    */
 /* Bad predecessors form blocks and unnecessary predecessors of End.*/
+/* @@@ So far destroys backedge information.                        */
 /********************************************************************/
 void optimize_cf(ir_graph *irg);
 
