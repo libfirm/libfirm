@@ -100,7 +100,7 @@ static void ir_common_vprintf(const appender_t *app, void *subject,
 					tarval_snprintf(buf, sizeof(buf), va_arg(args, tarval *));
 					break;
 
-				case 'N':
+				case 'n':
 					{
 						ir_node *irn = va_arg(args, ir_node *);
 						snprintf(buf, sizeof(buf), "%s%s:%ld",
@@ -112,7 +112,7 @@ static void ir_common_vprintf(const appender_t *app, void *subject,
 					DUMP_STR(get_irn_opname(va_arg(args, ir_node *)));
 					break;
 
-				case 'n':
+				case 'N':
 					snprintf(buf, sizeof(buf), "%ld", get_irn_node_nr(va_arg(args, ir_node *)));
 					break;
 
