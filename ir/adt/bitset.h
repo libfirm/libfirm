@@ -221,31 +221,37 @@ static INLINE unsigned long _bitset_next(const bitset_t *bs,
 		unsigned long pos, int set)
 {
 	unsigned long unit_number = pos / BS_UNIT_SIZE_BITS;
-	unsigned long bit_in_unit = pos & BS_UNIT_MASK;
-	unsigned long in_unit_mask = (1 << bit_in_unit) - 1;
 
-	/*
-	 * Mask out the bits smaller than pos in the current unit.
-	 * We are only interested in bits set higher than pos.
-	 */
-	unsigned long curr_unit = bs->data[unit_number] & ~in_unit_mask;
+	if(unit_number >= bs->units)
+		return -1;
 
-	/* Find the next bit set in the unit. */
-	unsigned long next_in_this_unit
-		= _bitset_inside_ntz_value(set ? curr_unit : ~curr_unit);
+	{
+		unsigned long bit_in_unit = pos & BS_UNIT_MASK;
+		unsigned long in_unit_mask = (1 << bit_in_unit) - 1;
 
-	/* If there is a bit set in the current unit, exit. */
-	if(next_in_this_unit < BS_UNIT_SIZE_BITS)
-		return next_in_this_unit + unit_number * BS_UNIT_SIZE_BITS;
+		/*
+		 * Mask out the bits smaller than pos in the current unit.
+		 * We are only interested in bits set higher than pos.
+		 */
+		unsigned long curr_unit = bs->data[unit_number] & ~in_unit_mask;
 
-	/* Else search for set bits in the next units. */
-	else {
-		unsigned long i;
-		for(i = unit_number + 1; i < bs->units; ++i) {
-			unsigned long data = bs->data[i];
-			unsigned long first_set = _bitset_inside_ntz_value(set ? data : ~data);
-			if(first_set < BS_UNIT_SIZE_BITS)
-				return first_set + i * BS_UNIT_SIZE_BITS;
+		/* Find the next bit set in the unit. */
+		unsigned long next_in_this_unit
+			= _bitset_inside_ntz_value(set ? curr_unit : ~curr_unit);
+
+		/* If there is a bit set in the current unit, exit. */
+		if(next_in_this_unit < BS_UNIT_SIZE_BITS)
+			return next_in_this_unit + unit_number * BS_UNIT_SIZE_BITS;
+
+		/* Else search for set bits in the next units. */
+		else {
+			unsigned long i;
+			for(i = unit_number + 1; i < bs->units; ++i) {
+				unsigned long data = bs->data[i];
+				unsigned long first_set = _bitset_inside_ntz_value(set ? data : ~data);
+				if(first_set < BS_UNIT_SIZE_BITS)
+					return first_set + i * BS_UNIT_SIZE_BITS;
+			}
 		}
 	}
 
@@ -341,6 +347,15 @@ static INLINE void bitset_fprint(FILE *file, const bitset_t *bs)
 		prefix = ",";
 	}
 	putc(']', file);
+}
+
+static INLINE void bitset_debug_fprint(FILE *file, const bitset_t *bs)
+{
+	int i;
+
+	fprintf(file, "%d:", bs->units);
+	for(i = 0; i < bs->units; ++i)
+		fprintf(file, " %0lx", bs->data[i]);
 }
 
 /*
