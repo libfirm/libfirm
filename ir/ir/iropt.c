@@ -1300,6 +1300,29 @@ static ir_node *transform_node_Proj(ir_node *proj)
       set_Tuple_pred(n, pn_DivMod_res_mod, proj_mod);
     }
     break;
+
+  case iro_Cond:
+    if (get_opt_unreachable_code()) {
+      b = get_Cond_selector(n);
+      tb = computed_value(b);
+
+      if (tb != tarval_bad && mode_is_int(get_tarval_mode(tb))) {
+	/* we have a constant switch */
+	long num = get_Proj_proj(proj);
+
+	if (num != get_Cond_defaultProj(n)) { /* we cannot optimize default Proj's yet */
+	  if (get_tarval_long(tb) == num) {
+	    /* Do NOT create a jump here, or we will have 2 control flow ops
+	     * in a block. This case is optimized away in optimize_cf(). */
+	    return proj;
+	  }
+	  else
+	    return new_Bad();
+	}
+      }
+    }
+    return proj;
+
   default:
     /* do nothing */
     return proj;
