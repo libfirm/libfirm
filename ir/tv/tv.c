@@ -48,6 +48,7 @@
 #include "entity_t.h"
 #include "ident_t.h"
 #include "irmode.h"
+#include "irnode.h"
 
 static struct obstack tv_obst;	/* obstack for all the target values */
 static pset *tarvals;		/* pset containing pointers to _all_ tarvals */
@@ -190,8 +191,9 @@ _tarval_vrfy (const tarval *val)
   case irm_U:
     break;
   case irm_P:
-    if (val->u.P.ent)
+    if (val->u.P.ent) {
       assert (val->u.P.ent->kind == k_entity);
+    }
     assert (   val->u.P.xname || val->u.P.ent
 	    || !tarval_P_void || (val == tarval_P_void));
     break;
@@ -199,6 +201,7 @@ _tarval_vrfy (const tarval *val)
     assert ((unsigned)val->u.b <= 1); break;
   default:
     assert (val->mode == mode_T);
+    break;
   }
 }
 #endif
@@ -597,6 +600,7 @@ tarval_P_from_entity (entity *ent)
   tarval *tv;
 
   assert (!BUILDING);
+  //assert(ent && "no entity given");
 
   tv = (tarval *)obstack_alloc (&tv_obst, sizeof (tarval));
 
@@ -1458,6 +1462,7 @@ free_tv_entity(entity *ent) {
       //}
   }
   // pset_break(tarvals);
-  if (found)
+  if (found) {
     pset_remove(tarvals, found, tarval_hash(found));
+  }
 }
