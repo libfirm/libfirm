@@ -79,7 +79,7 @@ void del_set (set *set);
  * @param hash  the hash value of key
  *
  * @return
- *    the address of the found element in the set of NULL if it was not found
+ *    The address of the found element in the set or NULL if it was not found.
  */
 void *set_find (set *set, const void *key, size_t size, unsigned hash);
 
@@ -87,14 +87,14 @@ void *set_find (set *set, const void *key, size_t size, unsigned hash);
  * Inserts an element into a set.
  *
  * @param set   the set to insert in
- * @param key   a pointer to the element to be inserted
+ * @param key   a pointer to the element to be inserted.  Element is copied!
  * @param size  the size of the element that should be inserted
  * @param hash  the hash-value of the element
  *
  * @return a pointer to the inserted element
  *
  * @note
- *    It is not possible to insert on element more than once. If a element
+ *    It is not possible to insert on element more than once. If an element
  *    that should be inserted is already in the set, this functions does
  *    nothing but returning its pointer.
  */
@@ -104,14 +104,14 @@ void *set_insert (set *set, const void *key, size_t size, unsigned hash);
  * Inserts an element into a set and returns its set_entry.
  *
  * @param set   the set to insert in
- * @param key   a pointer to the element to be inserted
+ * @param key   a pointer to the element to be inserted. Element is copied!
  * @param size  the size of the element that should be inserted
  * @param hash  the hash-value of the element
  *
  * @return a pointer to the set_entry of the inserted element
  *
  * @note
- *    It is not possible to insert on element more than once. If a element
+ *    It is not possible to insert on element more than once. If an element
  *    that should be inserted is already in the set, this functions does
  *    nothing but returning its set_entry.
  */
@@ -121,14 +121,14 @@ set_entry *set_hinsert (set *set, const void *key, size_t size, unsigned hash);
  * Inserts an element into a set, zero-terminate it and returns its set_entry.
  *
  * @param set   the set to insert in
- * @param key   a pointer to the element to be inserted
+ * @param key   a pointer to the element to be inserted.  Element is copied!
  * @param size  the size of the element that should be inserted
  * @param hash  the hash-value of the element
  *
  * @return a pointer to the set_entry of the inserted element
  *
  * @note
- *    It is not possible to insert on element more than once. If a element
+ *    It is not possible to insert on element more than once. If an element
  *    that should be inserted is already in the set, this functions does
  *    nothing but returning its set_entry.
  */
