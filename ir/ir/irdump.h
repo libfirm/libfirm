@@ -216,6 +216,19 @@ void dump_all_types (void);
  */
 void dump_class_hierarchy (bool entities);
 
+
+/**
+ * Dump a standalone loop tree, which contains the loop nodes and the firm nodes
+ * belonging to one loop packed together in one subgraph.  Dumps to file
+ * <name of irg><suffix>-looptree.vcg
+ * Turns on edge labels by default.
+ *
+ * @arg irg     Dump the loop tree for this graph.
+ * @arg suffix  Suffix to filename.
+ */
+void dump_loop_tree(ir_graph *irg, char *suffix);
+
+
 /**
  *   Sets the vcg flag "display_edge_labels" to no.
  *
@@ -298,12 +311,5 @@ void dump_analysed_type_info(bool b);
  */
 void dump_pointer_values_to_info(bool b);
 
-
-/**
- * Dump a standalone loop tree, which contains the loop nodes and the firm nodes
- * belonging to one loop packed together in one subgraph.
- */
-
-void dump_standalone_loop_tree(ir_graph *irg);
 
 # endif /* _IRDUMP_H_ */
