@@ -40,6 +40,7 @@
 # include "irprog.h"
 # include "mangle.h"
 # include "tv.h"
+# include "ircons.h"
 
 /*******************************************************************/
 /** TYPE                                                          **/
@@ -532,8 +533,8 @@ int   get_array_n_dimensions (type *array) {
   assert(array && (array->type_op == type_array));
   return array->attr.aa.n_dimensions;
 }
-void  set_array_bounds_int   (type *array, int dimension, int lower_bound,
-			      int upper_bound) {
+void  set_array_bounds_int (type *array, int dimension, int lower_bound,
+			    int upper_bound) {
   ir_graph *rem;
   assert(array && (array->type_op == type_array));
   rem = current_ir_graph;
@@ -545,8 +546,8 @@ void  set_array_bounds_int   (type *array, int dimension, int lower_bound,
   current_ir_graph = rem;
 }
 
-void  set_array_bounds       (type *array, int dimension, ir_node * lower_bound,
-                                                          ir_node * upper_bound) {
+void  set_array_bounds (type *array, int dimension, ir_node * lower_bound,
+			ir_node * upper_bound) {
   assert(array && (array->type_op == type_array));
   array->attr.aa.lower_bound[dimension] = lower_bound;
   array->attr.aa.upper_bound[dimension] = upper_bound;

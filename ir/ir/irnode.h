@@ -58,7 +58,7 @@ int                  get_irn_arity         (ir_node *node);
 /* returns the array with the ins: */
 inline ir_node     **get_irn_in            (ir_node *node);
 /* Replaces the old in array by a new one that will contain the ins given in
-   the parameters.  It copies the array passed.
+   the parameters.  Conserves the block predecessor.  It copies the array passed.
    This function is necessary to ajust in arrays of blocks, calls and phis.
    Assumes the current_ir_graph is set to the graph containing "node".
    "in" must contain all predecessors except the block that are required for

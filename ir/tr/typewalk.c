@@ -22,6 +22,7 @@
 #include "irnode.h"
 #include "irprog.h"
 #include "type_or_entity.h"
+#include "typegmod.h"
 
 /* Make types visible to allow most efficient access */
 #include "entity_t.h"

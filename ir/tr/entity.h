@@ -222,7 +222,7 @@ ir_graph *get_entity_irg(entity *ent);
 void      set_entity_irg(entity *ent, ir_graph *irg);
 
 
-/* Returns true if the type of the entity is a primitive, pointern
+/* Returns true if the type of the entity is a primitive, pointer
    enumeration or method type. */
 int is_atomic_entity(entity *ent);
 /* Returns true if the type of the entity is a class, structure,

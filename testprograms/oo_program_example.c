@@ -115,7 +115,7 @@ main(void)
   obj_size = new_SymConst((type_or_id_p)class_prima, size);
   obj_o    = new_Alloc(get_store(), obj_size, class_prima, heap_alloc);
   set_store(new_Proj(obj_o, mode_M, 0));  /* make the changed memory visible */
-  obj_o    = new_Proj(obj_o, mode_p, 1);  /* remember the pointer to the object */
+  obj_o    = new_Proj(obj_o, mode_p, 2);  /* remember the pointer to the object */
   set_value(o_pos, obj_o);
 
   /* Get the pointer to the procedure from the object.  */

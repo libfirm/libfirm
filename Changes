@@ -1,3 +1,7 @@
+  20.12.2001 Goetz
+  Some access routines for visited flags in entity.h, irnode.h,
+  bug in oo_program_example.
+
   17.12.2001 Boris
   Removed all obsolete Makefiles
 

@@ -35,12 +35,13 @@ void type_walk_irg(ir_graph *irg,
 		   void (post)(type_or_ent*, void*),
 		   void *env);
 
-/** Walks over all type information reachable from global roots.
-    Touches every type and entity in specified order:
-    - first the super types
-    - second the type itself
-    - third the sub types.  If new types/entities are created
+/** Walks over all classes information reachable from global roots.
+    Touches every class in specified order:
+    - first the super class
+    - second the class itself
+    - third the sub classes.  If new classes are created
     during the traversal these will be visited, too. **/
+/** @@@ shoulc be named class-walk **/
 void type_walk_super2sub(void (pre)(type_or_ent*, void*),
 			 void (post)(type_or_ent*, void*),
 			 void *env);
