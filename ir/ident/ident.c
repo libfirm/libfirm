@@ -134,3 +134,11 @@ int id_is_suffix (ident *suffix, ident *id) {
     return 1;
   return 0;
 }
+
+int print_id (ident *id) {
+  xprintf("%I", id);
+}
+
+int fprint_id (FILE *F, ident *id) {
+  xfprintf(F, "%I", id);
+}

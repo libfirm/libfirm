@@ -12,6 +12,7 @@
 # ifndef _IDENT_H_
 # define _IDENT_H_
 
+# include <stdio.h>
 # include "assert.h"
 # include "common.h"
 
@@ -127,6 +128,40 @@ int id_is_prefix (ident *prefix, ident *id);
  */
 /*  */
 int id_is_suffix (ident *suffix, ident *id);
+
+/****f* ident/print_id
+ *
+ * NAME
+ *
+ * SYNOPSIS
+ *  int print_id (ident *id);
+ * FUNCTION
+ *  Prints the ident to stdout.
+ * INPUTS
+ *  The ident to print.
+ * SEE ALSO
+ *  id_from_str, id_to_str, id_is_prefix, fprint_id
+ ***
+ */
+/*  */
+int print_id (ident *id);
+
+/****f* ident/fprint_id
+ *
+ * NAME
+ *
+ * SYNOPSIS
+ *  int fprint_id (FILE *f, ident *id);
+ * FUNCTION
+ *  Prints the ident to the file passed.
+ * INPUTS
+ *  The ident to print and the file.
+ * SEE ALSO
+ *  id_from_str, id_to_str, id_is_prefix, print_id
+ ***
+ */
+/*  */
+int fprint_id (FILE *F, ident *id);
 
 
 # endif /* _IDENT_H_ */
