@@ -9,13 +9,13 @@
  * Created:     09.06.2002
  * CVS-ID:      $$
  * Copyright:   (c) 1999-2004 Universität Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * Licence:     This file is protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
 /**
  * Intraprozedurale Analyse zur Abschätzung der Aufrufrelation. Es
- * die Menge der instantiierten Klassen bestimmt, und daraus existierende Methoden
- * bestimmt.
+ * die Menge der instantiierten Klassen bestimmt, und daraus eine Abschätzung
+ * der aufgerufenen Methoden bestimmt.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -370,6 +370,8 @@ static void init_tables (void)
     eset_insert (_live_graphs, get_irp_main_irg ());
   }
 
+  /* Adding the GlobalType is pointless, since its methods are always
+     called via a constant */
   /*
   if (get_glob_type ()) {
     eset_insert (_live_classes, get_glob_type ());
@@ -529,6 +531,9 @@ void rta_report (void)
 
 /*
  * $Log$
+ * Revision 1.18  2004/06/27 21:17:41  liekweg
+ * Added comment
+ *
  * Revision 1.17  2004/06/25 13:45:13  liekweg
  * observe stickyness; minor refactoring
  *
