@@ -35,10 +35,10 @@ dbg_info_merge_sets(ir_node **new_nodes, int n_new_nodes,
 }
 
 
-static void (*__dbg_info_merge_pair)(ir_node *nw, ir_node *old, dbg_action info)
+void (*__dbg_info_merge_pair)(ir_node *nw, ir_node *old, dbg_action info)
      = &dbg_info_merge_pair;
 
-static void (*__dbg_info_merge_sets)(ir_node **new_nodes, int n_new_nodes,
+void (*__dbg_info_merge_sets)(ir_node **new_nodes, int n_new_nodes,
 			      ir_node **old_nodes, int n_old_nodes,
 			      dbg_action info)
      = &dbg_info_merge_sets;

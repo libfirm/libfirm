@@ -35,7 +35,7 @@ typedef struct type_walk_env {
 } type_walk_env;
 
 
-void type_walk_2(type_or_ent *tore,
+static void type_walk_2(type_or_ent *tore,
 	       void (pre)(type_or_ent*, void*),
 	       void (post)(type_or_ent*, void*),
 	       void *env)
@@ -142,7 +142,7 @@ void type_walk_2(type_or_ent *tore,
   return;
 }
 
-void start_type_walk(ir_node *node, void *env) {
+static void start_type_walk(ir_node *node, void *env) {
   void *pre  = ((type_walk_env *)env)->pre;
   void *post = ((type_walk_env *)env)->post;
   void *envi = ((type_walk_env *)env)->env;
@@ -207,10 +207,10 @@ void type_walk_irg (ir_graph *irg,
   return;
 }
 
-void type_walk_s2s_2(type_or_ent *tore,
-		     void (pre)(type_or_ent*, void*),
-		     void (post)(type_or_ent*, void*),
-		     void *env)
+static void type_walk_s2s_2(type_or_ent *tore,
+			    void (pre)(type_or_ent*, void*),
+			    void (post)(type_or_ent*, void*),
+			    void *env)
 {
   int i;
 
@@ -298,11 +298,11 @@ void type_walk_super2sub(void (pre)(type_or_ent*, void*),
 
 /*****************************************************************************/
 
-static
-void type_walk_super_2(type_or_ent *tore,
-		       void (pre)(type_or_ent*, void*),
-		       void (post)(type_or_ent*, void*),
-		       void *env)
+static void
+type_walk_super_2(type_or_ent *tore,
+		  void (pre)(type_or_ent*, void*),
+		  void (post)(type_or_ent*, void*),
+		  void *env)
 {
   int i;
 
@@ -387,10 +387,11 @@ void type_walk_super(void (pre)(type_or_ent*, void*),
 /*****************************************************************************/
 
 
-void class_walk_s2s_2(type *tp,
-		     void (pre)(type*, void*),
-		     void (post)(type*, void*),
-		     void *env)
+static void
+class_walk_s2s_2(type *tp,
+		 void (pre)(type*, void*),
+		 void (post)(type*, void*),
+		 void *env)
 {
   int i;
 

@@ -547,7 +547,9 @@ int is_compound_entity(entity *ent) {
 	  is_array_type(t) || is_union_type(t));
 }
 
+/* @@@ not implemnted!!! */
 bool equal_entity(entity *ent1, entity *ent2) {
+  printf(" calling unimplemented equal entity!!! \n");
   return true;
 }
 

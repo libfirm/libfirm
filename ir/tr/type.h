@@ -154,12 +154,12 @@ void        set_type_size(type *tp, int size);
 
 
 unsigned long get_type_visited(type *tp);
-void        set_type_visited(type *tp, unsigned long num);
+void          set_type_visited(type *tp, unsigned long num);
 /* Sets visited field in type to type_visited. */
-void        mark_type_visited(type *tp);
+void          mark_type_visited(type *tp);
 
-void*       get_type_link(type *tp);
-void        set_type_link(type *tp, void *l);
+void*         get_type_link(type *tp);
+void          set_type_link(type *tp, void *l);
 /*****/
 
 /****v* type/visited
@@ -177,9 +177,9 @@ void        set_type_link(type *tp, void *l);
  * SOURCE
  */
 extern unsigned long type_visited;
-void set_master_type_visited(unsigned long val);
+void          set_master_type_visited(unsigned long val);
 unsigned long get_master_type_visited();
-void inc_master_type_visited();
+void          inc_master_type_visited();
 /*****/
 
 /****f* type/is_type

@@ -43,9 +43,10 @@
 #include "obst.h"
 #include "ieee754.h"
 #include "tune.h"
-#include "ident_t.h"
+#include "xp_help.h"
 #include "tv_t.h"
 #include "entity_t.h"
+#include "ident_t.h"
 #include "irmode.h"
 
 static struct obstack tv_obst;	/* obstack for all the target values */
