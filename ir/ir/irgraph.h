@@ -267,6 +267,8 @@ typedef enum {
 } irg_loopinfo_state;
 irg_loopinfo_state get_irg_loopinfo_state(ir_graph *irg);
 void set_irg_loopinfo_state(ir_graph *irg, irg_loopinfo_state s);
+/* Sets the loopinformation state to the appropriate inconsistent state.
+   If state is 'none' does not change. */
 void set_irg_loopinfo_inconsistent(ir_graph *irg);
 
 

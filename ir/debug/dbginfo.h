@@ -111,6 +111,7 @@ typedef enum {
   dbg_write_after_read,         /**< A Firm subgraph was replaced because of a write
                                      after read optimization. */
   dbg_rem_poly_call,            /**< Remove polymorphic call. */
+  dbg_dead_code,                /**< Removing unreachable code, I.e. blocks that are never executed. */
   dbg_max                       /**< Maximum value. */
 
 } dbg_action;

@@ -1242,6 +1242,8 @@ static void reset_backedges(ir_node *n) {
   }
 }
 
+
+/*
 static void loop_reset_backedges(ir_loop *l) {
   int i;
   reset_backedges(get_loop_node(l, 0));
@@ -1251,12 +1253,23 @@ static void loop_reset_backedges(ir_loop *l) {
     loop_reset_backedges(get_loop_son(l, i));
   }
 }
+*/
+
+static void loop_reset_node(ir_node *n, void *env) {
+  set_irn_loop(n, NULL);
+  reset_backedges(n);
+}
+
 
 /** Removes all loop information.
     Resets all backedges */
 void free_loop_information(ir_graph *irg) {
-  if (get_irg_loop(irg))
-    loop_reset_backedges(get_irg_loop(irg));
+  /* We can not use this recursion, as the loop might contain
+     illegal nodes by now.  Why else would we throw away the
+     representation?
+  if (get_irg_loop(irg)) loop_reset_backedges(get_irg_loop(irg));
+  */
+  irg_walk_graph(irg, loop_reset_node, NULL, NULL);
   set_irg_loop(irg, NULL);
   set_irg_loopinfo_state(current_ir_graph, loopinfo_none);
   /* We cannot free the loop nodes, they are on the obstack. */

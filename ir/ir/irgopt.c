@@ -95,6 +95,8 @@ local_optimize_graph (ir_graph *irg) {
     set_irg_outs_inconsistent(current_ir_graph);
   if (get_irg_dom_state(current_ir_graph) == dom_consistent)
     set_irg_dom_inconsistent(current_ir_graph);
+  set_irg_loopinfo_inconsistent(current_ir_graph);
+
 
   /* Clean the value_table in irg for the cse. */
   del_identities(irg->value_table);
@@ -1573,7 +1575,7 @@ void place_code(ir_graph *irg) {
   if (get_irg_dom_state(irg) != dom_consistent)
     compute_doms(irg);
 
-  if (get_irg_loopinfo_state(irg) != loopinfo_consistent) {
+  if (1 || get_irg_loopinfo_state(irg) != loopinfo_consistent) {
     free_loop_information(irg);
     construct_backedges(irg);
   }

@@ -16,6 +16,20 @@
 
 #define SIZ(x)    sizeof(x)/sizeof((x)[0])
 
+
+/**
+ * Merge the debug info due to dead code elimination
+ */
+#define DBG_OPT_DEAD                                                \
+  do {                                                       \
+	  ir_node *ons[2];                                         \
+	  ons[0] = oldn;                                           \
+	  ons[1] = get_Block_cfgpred(oldn, 0);                     \
+	  stat_merge_nodes(&n, 1, ons, SIZ(ons), STAT_OPT_STG);	   \
+	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_dead_code); \
+	} while(0)
+
+
 /**
  * Merge the debug info due to a straightening optimization
  */
