@@ -115,7 +115,11 @@ typedef enum {
 /**
  * Converts enum values to strings.
  */
-inline static const char* dbg_action_2_str(dbg_action a) {
+#ifdef __GNUC__
+INLINE static const char* dbg_action_2_str(dbg_action) __attribute__ ((unused));
+#endif
+
+INLINE static const char* dbg_action_2_str(dbg_action a) {
   switch(a) {
   case dbg_error: return "dbg_error"; break;
   case dbg_opt_ssa: return "dbg_opt_ssa"; break;

@@ -16,7 +16,6 @@
 # include "ident_t.h"
 # include "firm.h"
 # include "mangle.h"
-//# include "xp_help.h"
 # include "tv_t.h"
 /* init functions are not public */
 # include "tpop_t.h"
