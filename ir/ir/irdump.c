@@ -54,6 +54,7 @@ SeqNo get_Block_seqno(ir_node *n);
 #define PRINT_DEFAULT_NODE_ATTR
 #define DEFAULT_NODE_ATTR " "
 #define DEFAULT_TYPE_ATTRIBUTE " "
+#define DEFAULT_ENUM_ITEM_ATTRIBUTE " "
 
 /* Attributes of edges between Firm nodes */
 #define BLOCK_EDGE_ATTR     "class:2 priority: 2 linestyle: dotted"
@@ -84,7 +85,7 @@ SeqNo get_Block_seqno(ir_node *n);
 #define ENT_VALUE_EDGE_ATTR "label: \"value %d\""
 #define ENT_CORR_EDGE_ATTR "label: \"value %d corresponds to \" "
 #define TYPE_MEMBER_EDGE_ATTR "class: 12 label: \"member\" color:blue"
-
+#define ENUM_ITEM_NODE_ATTR  "color: green"
 
 #if DEBUG_libfirm && NODEID_AS_LABEL
 #define PRINT_NODEID(X) fprintf(F, "n%ld", get_irn_node_nr(X))
@@ -93,15 +94,18 @@ SeqNo get_Block_seqno(ir_node *n);
 #define PRINT_IRGID(X)  fprintf(F, "g%ld", get_irg_graph_nr(X))
 #define PRINT_CONSTID(X,Y) fprintf(F, "\"n%ldn%ld\"", get_irn_node_nr(X),get_irn_node_nr(Y))
 #define PRINT_LOOPID(X) fprintf(F, "l%d", get_loop_loop_nr(X))
+#define PRINT_ITEMID(X,Y)  fprintf(F, "i%ldT%ld", get_type_nr(X), (Y))
 
 #else
-#define PRINT_NODEID(X) fprintf(F, "n%p", (void*) X)
-#define PRINT_TYPEID(X) fprintf(F, "\"t%p\"", (void *) X)
-#define PRINT_ENTID(X)  fprintf(F, "e%p", (void*) X)
-#define PRINT_IRGID(X)  fprintf(F, "g%p",(void*) X)
-#define PRINT_CONSTID(X,Y) fprintf(F, "\"n%pn%p\"", (void*) X, (void*) Y)
-#define PRINT_LOOPID(X) fprintf(F, "l%p", (void *)X)
+#define PRINT_NODEID(X) fprintf(F, "n%p", (void *)(X))
+#define PRINT_TYPEID(X) fprintf(F, "\"t%p\"", (void *)(X))
+#define PRINT_ENTID(X)  fprintf(F, "e%p", (void *)(X))
+#define PRINT_IRGID(X)  fprintf(F, "g%p",(void *)(X))
+#define PRINT_CONSTID(X,Y) fprintf(F, "\"n%pn%p\"", (void*)(X), (void*)(Y))
+#define PRINT_LOOPID(X) fprintf(F, "l%p", (void *)(X))
+#define PRINT_ITEMID(X,Y)  fprintf(F, "i%pT%d", (void *) (X), (P))
 #endif
+
 
 static void print_type_type_edge(FILE *F, type *S, type *T, const char *fmt, ...)
 {
@@ -183,6 +187,18 @@ static void print_ent_node_edge(FILE *F, entity *E, const ir_node *N, const char
   va_start(ap, fmt);
   fprintf(F, "edge: { sourcename: \""); PRINT_ENTID(E);
   fprintf(F, "\" targetname: \""); PRINT_NODEID(N); fprintf(F, "\"");
+  vfprintf(F, fmt, ap);
+  fprintf(F,"}\n");
+  va_end(ap);
+}
+
+static void print_enum_item_edge(FILE *F, type *E, int item, const char *fmt, ...)
+{
+  va_list ap;
+
+  va_start(ap, fmt);
+  fprintf(F, "edge: { sourcename: "); PRINT_TYPEID(E);
+  fprintf(F, " targetname: \""); PRINT_ITEMID(E,item); fprintf(F, "\" ");
   vfprintf(F, fmt, ap);
   fprintf(F,"}\n");
   va_end(ap);
@@ -1173,6 +1189,21 @@ void dump_entity_node(entity *ent)
 }
 #undef X
 
+static void dump_enum_item(type *tp, int pos)
+{
+  char buf[1024];
+  ident *id  = get_enumeration_nameid(tp, pos);
+  tarval *tv = get_enumeration_enum(tp, pos);
+
+  tarval_snprintf(buf, sizeof(buf), tv);
+  fprintf (F, "node: {title: \"");
+  PRINT_ITEMID(tp, pos); fprintf(F, "\"");
+  fprintf (F, DEFAULT_ENUM_ITEM_ATTRIBUTE);
+  fprintf (F, "label: ");
+  fprintf (F, "\"enum item %s\" " ENUM_ITEM_NODE_ATTR, id_to_str(id));
+  fprintf (F, "\n info1: \"value: %s\"}\n", buf);
+}
+
 /* dumps a type or entity and it's edges. */
 static void
 dump_type_info (type_or_ent *tore, void *env) {
@@ -1261,29 +1292,33 @@ dump_type_info (type_or_ent *tore, void *env) {
 	{
 	  for (i = 0; i < get_union_n_members(tp); i++)
 	  {
-		  print_type_ent_edge(F,tp,get_union_member(tp, i),UNION_EDGE_ATTR);
+            print_type_ent_edge(F,tp,get_union_member(tp, i),UNION_EDGE_ATTR);
 	  }
 	} break;
       case tpo_array:
 	{
-		  print_type_type_edge(F,tp,get_array_element_type(tp),ARR_ELT_TYPE_EDGE_ATTR);
-		  print_type_ent_edge(F,tp,get_array_element_entity(tp),ARR_ENT_EDGE_ATTR);
-		  for (i = 0; i < get_array_n_dimensions(tp); i++) {
-		    ir_node *upper = get_array_upper_bound(tp, i);
-		    ir_node *lower = get_array_lower_bound(tp, i);
-		    print_node_type_edge(F,upper, tp, "label: \"upper %d\"", get_array_order(tp, i));
-		    print_node_type_edge(F,lower, tp, "label: \"lower %d\"", get_array_order(tp, i));
-		    dump_const_expression(upper);
-		    dump_const_expression(lower);
-		  }
+	  print_type_type_edge(F,tp,get_array_element_type(tp),ARR_ELT_TYPE_EDGE_ATTR);
+	  print_type_ent_edge(F,tp,get_array_element_entity(tp),ARR_ENT_EDGE_ATTR);
+	  for (i = 0; i < get_array_n_dimensions(tp); i++) {
+	    ir_node *upper = get_array_upper_bound(tp, i);
+	    ir_node *lower = get_array_lower_bound(tp, i);
+	    print_node_type_edge(F,upper, tp, "label: \"upper %d\"", get_array_order(tp, i));
+	    print_node_type_edge(F,lower, tp, "label: \"lower %d\"", get_array_order(tp, i));
+	    dump_const_expression(upper);
+	    dump_const_expression(lower);
+	  }
 
 	} break;
       case tpo_enumeration:
 	{
+	  for (i = 0; i < get_enumeration_n_enums(tp); ++i) {
+	    dump_enum_item(tp, i);
+	    print_enum_item_edge(F, tp, i, "label: \"item %d\"", i);
+	  }
 	} break;
       case tpo_pointer:
 	{
-		  print_type_type_edge(F,tp,get_pointer_points_to_type(tp), PTR_PTS_TO_EDGE_ATTR);
+          print_type_type_edge(F,tp,get_pointer_points_to_type(tp), PTR_PTS_TO_EDGE_ATTR);
 	} break;
       case tpo_primitive:
 	{
