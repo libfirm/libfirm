@@ -157,7 +157,10 @@ void      set_entity_offset (entity *ent, int offset);
 /* Overwrites is a field that specifies that an access to the overwritten
    entity in the supertype must use this entity.  It's a list as with
    multiple inheritance several enitites can be overwritten.  This field
-   is mostly useful for method entities. */
+   is mostly useful for method entities.
+   If a Sel node selects an entity that is overwritten by other entities it
+   must return a pointer to the entity of the dynamic type of the pointer
+   that is passed to it.  Lowering of the Sel node must assure this. */
 void    add_entity_overwrites   (entity *ent, entity *overwritten);
 int     get_entity_n_overwrites (entity *ent);
 entity *get_entity_overwrites   (entity *ent, int pos);

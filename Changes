@@ -1,3 +1,6 @@
+  12.1.2001 Goetz
+  Added implementation of overwrites stuff.
+
   11.7.2001 Goetz
   Implemented stuff to change the type graph.  See
   typegmod.h and tpop.h for basic documentation of the change.

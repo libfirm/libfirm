@@ -14,6 +14,7 @@
 # include "entity_t.h"
 # include "mangle.h"
 # include "typegmod_t.h"
+# include "array.h"
 
 /*******************************************************************/
 /** general                                                       **/
@@ -61,12 +62,17 @@ new_entity (type *owner, ident *name, type *type)
   res->allocation = dynamic_allocated;
   res->visibility = local;
   res->ld_name = NULL;
+  res->overwrites = NEW_ARR_F(entity *, 1);
 
   res->visit = 0;
 
   /* Remember entity in it's owner. */
   insert_entity_in_owner (res);
   return res;
+}
+inline void free_entity_attrs(entity *ent) {
+  assert(ent);
+  DEL_ARR_F(ent->overwrites);
 }
 
 entity *
@@ -78,6 +84,7 @@ copy_entity_own (entity *old, type *new_owner) {
   new = (entity *) malloc (sizeof (entity));
   memcpy (new, old, sizeof (entity));
   new->owner = new_owner;
+  new->overwrites = DUP_ARR_F(entity *, old->overwrites);
 
   insert_entity_in_owner (new);
 
@@ -93,6 +100,7 @@ copy_entity_name (entity *old, ident *new_name) {
   memcpy (new, old, sizeof (entity));
   new->name = new_name;
   new->ld_name = NULL;
+  new->overwrites = DUP_ARR_F(entity *, old->overwrites);
 
   insert_entity_in_owner (new);
 
@@ -195,6 +203,30 @@ get_entity_offset (entity *ent) {
 inline void
 set_entity_offset (entity *ent, int offset) {
   ent->offset = offset;
+}
+
+inline void
+add_entity_overwrites   (entity *ent, entity *overwritten) {
+  assert(ent);
+  ARR_APP1 (entity *, ent->overwrites, overwritten);
+}
+
+inline int
+get_entity_n_overwrites (entity *ent){
+  assert(ent);
+  return (ARR_LEN (ent->overwrites))-1;
+}
+
+inline entity *
+get_entity_overwrites   (entity *ent, int pos){
+  assert(ent);
+  return ent->overwrites[pos+1];
+}
+
+inline void
+set_entity_overwrites   (entity *ent, int pos, entity *overwritten) {
+  assert(ent);
+  ent->overwrites[pos+1] = overwritten;
 }
 
 inline ir_graph *

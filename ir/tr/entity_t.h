@@ -47,6 +47,7 @@ struct entity {
                            basic type of the language or a class itself */
   type *owner;          /* The class this entity belongs to.  In case of local
 			   variables the method they are defined in. */
+  entity **overwrites;  /* A list of entities this entity overwrites.  */
   ent_allocation allocation;  /* Distinguishes static and dynamically allocated
 				 entities. */
   ent_visibility visibility;  /* Specifies visibility to external program
