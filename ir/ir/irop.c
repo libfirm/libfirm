@@ -311,7 +311,7 @@ opcode (get_op_code)(const ir_op *op){
   return __get_op_code(op);
 }
 
-ident *(get_op_ident)(ir_op *op){
+ident *(get_op_ident)(const ir_op *op){
   return __get_op_ident(op);
 }
 

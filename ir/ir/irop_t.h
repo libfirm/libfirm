@@ -181,7 +181,7 @@ static INLINE opcode __get_op_code(const ir_op *op) {
   return op->code;
 }
 
-static INLINE ident *__get_op_ident(ir_op *op){
+static INLINE ident *__get_op_ident(const ir_op *op){
   return op->name;
 }
 

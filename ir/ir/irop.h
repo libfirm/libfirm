@@ -108,7 +108,7 @@ extern ir_op *op_NoMem;           ir_op *get_op_NoMem     (void);
 extern ir_op *op_Mux;             ir_op *get_op_Mux       (void);
 
 /** Returns the ident for the opcode name */
-ident *get_op_ident(ir_op *op);
+ident *get_op_ident(const ir_op *op);
 
 /** Returns the string for the opcode. */
 const char *get_op_name(const ir_op *op);
