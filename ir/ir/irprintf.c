@@ -46,6 +46,7 @@
 #include "iterator.h"
 #include "bitset.h"
 
+#define STRNIL "(nil)"
 
 /**
  * Init the string.
@@ -432,8 +433,11 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 				case 'n':
 					{
 						ir_node *irn = va_arg(args, ir_node *);
-						snprintf(buf, sizeof(buf), "%s%s:%ld",
-								get_irn_opname(irn), get_mode_name(get_irn_mode(irn)), get_irn_node_nr(irn));
+						if(irn)
+							snprintf(buf, sizeof(buf), "%s%s:%ld",
+									get_irn_opname(irn), get_mode_name(get_irn_mode(irn)), get_irn_node_nr(irn));
+						else
+							strncpy(buf, STRNIL, sizeof(buf));
 					}
 					break;
 
