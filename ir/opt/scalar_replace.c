@@ -12,9 +12,12 @@
 # include "config.h"
 #endif
 
+#include "irprog_t.h"
+
+
 /*
  * find possible scalar replacements
  */
-void find_scalar_replacements(irgraph *irg)
+void find_scalar_replacements(ir_graph *irg)
 {
 }
