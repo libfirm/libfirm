@@ -1,3 +1,8 @@
+  28.3.2001 Boris
+  Changed Makefile and Configure scripts to produce a proper tar file
+  for distribution (libfirm-VERSION.tar)
+  Use 'make distrib' instead of 'make dist'
+
   14.3.2001 Goetz
   Changed implementation of tr module.  With this I also changed the
   interface!!  Type casts are unnecessary now, but some access funcions

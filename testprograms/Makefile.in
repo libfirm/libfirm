@@ -22,6 +22,7 @@ SOURCES := Makefile.in \
 bin_EXAMPLES = $(CFILES:.c=)
 run_bin_EXAMPLES = $(CFILES:.c=;)
 
+
 include $(topdir)/MakeRules
 
 CPPFLAGS += -I$(top_srcdir)/ir/adt -I$(top_srcdir)/ir/common -I$(top_srcdir)/ir/debug \
@@ -31,13 +32,11 @@ CPPFLAGS += -I$(top_srcdir)/ir/adt -I$(top_srcdir)/ir/common -I$(top_srcdir)/ir/
 LDFLAGS += -L$(topdir)
 LDLIBS += -lfirm -lgmp
 
+GENFILES := $(bin_EXAMPLES) *.vcg
+
 include $(top_srcdir)/MakeTargets
 
 all:	$(bin_EXAMPLES) $(topdir)/libfirm.a
 
 run:
 	$(run_bin_EXAMPLES)
-
-# this generates error messages
-local_clean:
-	$(RM) $(OFILES) $(bin_EXAMPLES) *.vcg core
