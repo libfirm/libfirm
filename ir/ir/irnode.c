@@ -137,6 +137,15 @@ copy_attrs (ir_node *old, ir_node *new) {
 
 /** getting some parameters from ir_nodes **/
 
+int
+is_ir_node (void *thing) {
+  assert(thing);
+  if (get_kind(thing) == k_ir_node)
+    return 1;
+  else
+    return 0;
+}
+
 /* returns the number of predecessors without the block predecessor. */
 INLINE int
 get_irn_arity (const ir_node *node) {

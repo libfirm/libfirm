@@ -82,6 +82,17 @@ typedef struct ir_node ir_node;
  *   of nodes, it's just a big graph.
  */
 
+/**
+ *   Checks whether a pointer points to a ir node.
+ *
+ *   @param thing     an arbitrary pointer
+ *
+ *   @return
+ *       true if the thing is a ir mode, else false
+ */
+int
+is_ir_node (void *thing);
+
 /** returns the number of predecessors without the block predecessor: */
 int                  get_irn_arity         (const ir_node *node);
 
