@@ -15,6 +15,16 @@
 
 #include <stddef.h>
 
+#include "hashptr.h"
+
+/*
+ * Define some convenience macros using the predefined hash function.
+ */
+#define pset_insert_ptr(set,key) pset_insert(set, key, HASH_PTR(key))
+#define pset_hinsert_ptr(set,key) pset_hinsert(set, key, HASH_PTR(key))
+#define pset_remove_ptr(set,key) pset_remove(set, key, HASH_PTR(key))
+#define pset_find_ptr(set,key) pset_find(set, key, HASH_PTR(key))
+
 /**
  * The abstract type of a pset (Set of pointers).
  *
