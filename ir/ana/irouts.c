@@ -265,6 +265,9 @@ static ir_node **set_out_edges(ir_node *n, ir_node **free) {
   return free;
 }
 
+  /* We want that the out of ProjX from Start contains the next block at
+     position 1, the Start block at position 2.  This is necessary for
+     the out block walker. */
 static INLINE void fix_start_proj(ir_graph *irg) {
   ir_node *proj    = NULL;
   ir_node *startbl = get_irg_start_block(irg);
