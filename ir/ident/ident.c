@@ -42,7 +42,8 @@ static ident *set_new_id_from_chars(void *handle, const char *str, int len)
 {
   set *id_set = handle;
 
-  assert(len > 0);
+  /* GL: Who added this assert?  And why? */
+  //assert(len > 0);
   return (ident *)set_hinsert0(id_set, str, len, ID_HASH(str, len));
 }
 
