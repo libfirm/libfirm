@@ -10,8 +10,6 @@
 # ifndef _COMMON_H_
 # define _COMMON_H_
 
-// GL# include <assert.h>
-
 /** Global flags.  Set these by autoconf?? **/
 
 /* There are two implementations of the Phi node construction.  The first

@@ -8,6 +8,7 @@
 
 # include "irnode_t.h"
 # include "irgraph_t.h"
+# include "irprog.h"
 # include "irdump.h"
 # include "panic.h"
 # include <string.h>
@@ -731,4 +732,19 @@ dump_ir_graph_w_types (ir_graph *irg)
 
   vcg_close();
   current_ir_graph = rem;
+}
+
+/***********************************************************************/
+/* dumps all graphs with the graph-dumper passed. Possible dumpers:    */
+/*  dump_ir_graph                                                      */
+/*  dump_ir_block_graph                                                */
+/*  dump_cfg                                                           */
+/*  dump_type_graph                                                    */
+/*  dump_ir_graph_w_types                                              */
+/***********************************************************************/
+void dump_all_ir_graphs (void dump_graph(ir_graph*)) {
+  int i;
+  for (i=0; i < get_irp_n_irgs(); i++) {
+    dump_graph(get_irp_irg(i));
+  }
 }

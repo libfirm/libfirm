@@ -37,4 +37,12 @@ void dump_all_types (void);
 /* dumps a graph and the type inforamtion. */
 void dump_ir_graph_w_types (ir_graph *irg);
 
+/* dumps all graphs with the graph-dumper passed. Possible dumpers:
+ * dump_ir_graph
+ * dump_ir_block_graph
+ * dump_cfg
+ * dump_type_graph
+ * dump_ir_graph_w_types                                            */
+void dump_all_ir_graphs (void dump_graph(ir_graph*));
+
 # endif /* _IRDUMP_H_ */

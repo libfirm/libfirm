@@ -13,11 +13,13 @@
 /* returns the kind of the thing */
 firm_kind
 get_kind (void *firm_thing) {
+  assert (firm_thing);
   return *(firm_kind *)firm_thing;
 }
 
 
 const char* print_firm_kind(void *firm_thing) {
+  assert (firm_thing);
   switch (*(firm_kind *)firm_thing) {
     case k_entity: { return "k_enitity"; } break;
     case k_type_class: { return "k_type_class"; } break;

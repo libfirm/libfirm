@@ -499,7 +499,15 @@ union type {
 };
 
 
-int is_type(void *thing);
+int is_type            (void *thing);
+int is_type_class      (void *thing);
+int is_type_strct      (void *thing);
+int is_type_method     (void *thing);
+int is_type_union      (void *thing);
+int is_type_array      (void *thing);
+int is_type_pointer    (void *thing);
+int is_type_enumeration(void *thing);
+int is_type_primitive  (void *thing);
 
 
 

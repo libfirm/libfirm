@@ -38,6 +38,5 @@ init_firm (void)
   init_cons ();
   /* Builds a construct allowing to access all information to be constructed
      later. */
-
   init_irprog ();
 }

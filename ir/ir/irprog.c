@@ -17,7 +17,8 @@ void init_irprog(void) {
   new_ir_prog ();
 }
 
-/* Create a new ir prog. Automatically called by init_firm through init_irprog. */
+/* Create a new ir prog. Automatically called by init_firm through
+   init_irprog. */
 ir_prog *new_ir_prog (void) {
   ir_prog *res;
 

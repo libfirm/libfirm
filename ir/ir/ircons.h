@@ -634,9 +634,10 @@
                       - size
 		      - linkage_ptr_info
       If the attr.i.num is type_tag or size, the node contains an attribute
-    attr.i.*type     A pointer to a type_class.
+    attr.i.*type,    a pointer to a type_class.  The mode of the node is mode_i.
       if it is linkage_ptr_info it contains
-    attr.i.*ptrinfo  An ident holding information for the linker.
+    attr.i.*ptrinfo,  an ident holding information for the linker.  The mode
+      of the node is mode_p.
 
   THE SELECT NODE
   ---------------
@@ -893,7 +894,6 @@
   Parameters:
   *store        The current memory.
   *addr         A pointer to the variable to be read in this memory.
-  *mode         The mode of the loaded value.
 
   Inputs:
     The memory and a pointer to a variable in this memory.

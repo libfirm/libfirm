@@ -229,6 +229,7 @@ new_type_method (ident *name, int arity, int n_res)
   res = (type_method *) xmalloc (sizeof (type_method));
   add_irp_type((type *) res);   /* Remember the new type global. */
   res->kind = k_type_method;
+
   res->name = name;   // do I need the name, or is the name in entity sufficient?
   res->arity = arity;
   res->param_type = (type **) xmalloc (sizeof (type *) * arity);
@@ -577,14 +578,13 @@ new_type_primitive (ident *name, ir_mode *mode)
 }
 
 /* manipulate fields of type_primitive */
-/*
 
-char  *
+const char  *
 get_primitive_name  (type_primitive *primitive) {
   assert(primitive);
   return ID_TO_STR(primitive->name);
 }
-*/
+
 
 ident *
 get_primitive_ident (type_primitive *primitive) {
@@ -630,4 +630,52 @@ is_type(void *thing) {
     return 1;
   else
     return 0;
+}
+
+int
+is_type_class(void *thing) {
+  if (get_kind(thing) == k_type_class) return 1;
+  else return 0;
+}
+
+int
+is_type_strct(void *thing) {
+  if (get_kind(thing) == k_type_strct) return 1;
+  else return 0;
+}
+
+int
+is_type_method(void *thing) {
+  if (get_kind(thing) == k_type_method) return 1;
+  else return 0;
+}
+
+int
+is_type_union(void *thing) {
+  if (get_kind(thing) == k_type_union) return 1;
+  else return 0;
+}
+
+int
+is_type_array(void *thing) {
+  if (get_kind(thing) == k_type_array) return 1;
+  else return 0;
+}
+
+int
+is_type_pointer(void *thing) {
+  if (get_kind(thing) == k_type_pointer) return 1;
+  else return 0;
+}
+
+int
+is_type_enumeration(void *thing) {
+  if (get_kind(thing) == k_type_enumeration) return 1;
+  else return 0;
+}
+
+int
+is_type_primitive(void *thing) {
+  if (get_kind(thing) == k_type_primitive) return 1;
+  else return 0;
 }

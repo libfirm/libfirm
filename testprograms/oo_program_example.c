@@ -207,10 +207,16 @@ main(void)
   /****************************************************************************/
 
   printf("Dumping graphs of all procedures.\n");
+
+  dump_all_ir_graphs(dump_ir_block_graph);
+  dump_all_ir_graphs(dump_type_graph);
+
+  /*
   for (i = 0; i < get_irp_n_irgs(); i++) {
     dump_ir_block_graph (get_irp_irg(i));
     dump_type_graph(get_irp_irg(i));
   }
+  */
   //CS
   dump_all_types();
 
