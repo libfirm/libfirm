@@ -1,7 +1,7 @@
 /* -*- c -*- */
 
 /*
- * Time-stamp: <05.12.2004 21:39:34h liekweg>
+ * Time-stamp: <17.12.2004 20:26:51h liekweg>
  * Project:     libFIRM
  * File name:   ir/ana2/qset.c
  * Purpose:     yet another set implementation
@@ -569,6 +569,9 @@ int qset_insert (qset_t *qset, sortable_t val)
 
   qset_resize (qset, qset->n_elems+1);
 
+  /* qset_print (qset, stdout); */
+  /* fprintf (stdout, "%s: must insert 0x%08x\n", __FUNCTION__, (void*) val); */
+
   qset->values [qset->n_elems++] = val;
   qset->is_sorted = FALSE;
 
@@ -723,6 +726,9 @@ int qset_test_main (int argc, char **argv)
 
 /*
   $Log$
+  Revision 1.9  2004/12/20 17:34:35  liekweg
+  fix recursion handling
+
   Revision 1.8  2004/12/06 12:49:26  liekweg
   virtually no change
 

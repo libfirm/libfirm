@@ -422,7 +422,7 @@ static void ecg_fill_ctxs_count (ir_graph *graph)
         graph_info_t *callEd_info = ecg_get_info (callEd_graph);
         callEd_info->n_ctxs ++;
 
-        /* Calling graph -> callEd_graph */
+        /* CallR graph -> CallEd_graph */
         ecg_fill_ctxs_count (callEd_graph);
 
         ced = ced->prev;
@@ -988,73 +988,116 @@ void ecg_report ()
 
   for (i = 0; i < get_irp_n_irgs (); i++) {
     ir_graph *graph = get_irp_irg (i);
-    graph_info_t *info = (graph_info_t*) pmap_get (graph_infos, graph);
+    graph_info_t *ginfo = (graph_info_t*) pmap_get (graph_infos, graph);
 
-    const char *name = get_irg_entity (graph) ?
-      get_entity_name (get_irg_entity (graph)) : "noEntity";
+    if (0 != ginfo->n_ctxs) {
+      const char *name = get_irg_entity (graph) ?
+        get_entity_name (get_irg_entity (graph)) : "noEntity";
 
-    const char *oname = get_type_name
-      (get_entity_owner (get_irg_entity (graph)));
+      const char *oname = get_type_name
+        (get_entity_owner (get_irg_entity (graph)));
 
-    const char *color =
-      (get_entity_stickyness
-       (get_irg_entity (graph)) == stickyness_sticky) ?
-      "red3" : "lightyellow";
+      const char *color =
+        (get_entity_stickyness
+         (get_irg_entity (graph)) == stickyness_sticky) ?
+        "red3" : "lightyellow";
 
-    fprintf (dot, "\t/* graph_0x%08x (\"%s\") */\n", (int) graph, name);
-    fprintf (dot,
-             "\tgraph_0x%08x [label=\"%s\\l%s\", color=\"%s\"];\n",
-             (int) graph, oname, name, color);
-    fprintf (dot, "\n");
+      fprintf (dot, "\t/* graph_0x%08x (\"%s\") */\n", (int) graph, name);
+      fprintf (dot,
+               "\tgraph_0x%08x [label=\"%s\\l%s\", color=\"%s\"];\n",
+               (int) graph, oname, name, color);
+      fprintf (dot, "\n");
 
-    call_info_t *cinfo = info->calls;
-    if (cinfo) {
-      fprintf (dot, "\t/* now the calls */\n");
-    } else {
-      fprintf (dot, "\t/* no calls, nothing to see, move along! */\n");
-    }
+      call_info_t *cinfo = ginfo->calls;
+      if (cinfo) {
+        fprintf (dot, "\t/* now the calls */\n");
+      } else {
+        fprintf (dot, "\t/* no calls, nothing to see, move along! */\n");
+      }
 
-    while (NULL != cinfo) {
-      ir_node *call = cinfo->call;
+      while (NULL != cinfo) {
+        ir_node *call = cinfo->call;
 
-      fprintf (dot, "\t/* call_0x%08x */\n", (int) call);
-      fprintf (dot, "\tcall_0x%08x [label=\"call\\[%li\\]\\l0x%08x\"];\n",
-               (int) call, get_irn_node_nr (call), (int) call);
-      fprintf (dot, "\tgraph_0x%08x -> call_0x%08x;\n",
-               (int) graph, (int) call);
+        fprintf (dot, "\t/* call_0x%08x */\n", (int) call);
+        fprintf (dot, "\tcall_0x%08x [label=\"call\\[%li\\]\", shape=\"ellipse\", color=\"lightblue\"];\n",
+                 (int) call, get_irn_node_nr (call));
+        fprintf (dot, "\tgraph_0x%08x -> call_0x%08x;\n",
+                 (int) graph, (int) call);
 
-      callEd_info_t *ced = cinfo->callEds;
-      while (NULL != ced) {
-        fprintf (dot, "\tcall_0x%08x -> graph_0x%08x;\n",
-                 (int) call, (int) ced->callEd);
-        ced = ced->prev;
+        callEd_info_t *ced = cinfo->callEds;
+        while (NULL != ced) {
+          fprintf (dot, "\tcall_0x%08x -> graph_0x%08x;\n",
+                   (int) call, (int) ced->callEd);
+          ced = ced->prev;
+        }
+        fprintf (dot, "\n");
+
+        cinfo = cinfo->prev;
       }
       fprintf (dot, "\n");
 
-      cinfo = cinfo->prev;
-    }
-    fprintf (dot, "\n");
+      alloc_info_t *ainfo = ginfo->allocs;
+      if (ainfo) {
+        fprintf (dot, "\t/* now the allocs */\n");
+      } else {
+        fprintf (dot, "\t/* no allocs */\n");
+      }
 
-    alloc_info_t *ainfo = info->allocs;
-    if (ainfo) {
-      fprintf (dot, "\t/* now the allocs */\n");
+      /* allocs */
+      while (NULL != ainfo) {
+        ir_node *alloc = ainfo->alloc;
+        const char *name = get_type_name (ainfo->tp);
+        const char *color = "red1";
+
+        fprintf (dot, "\talloc_0x%08x [label=\"%s\", color=\"%s\"];\n",
+                 (int) alloc, name, color);
+        fprintf (dot, "\tgraph_0x%08x -> alloc_0x%08x;\n",
+                 (int) graph, (int) alloc);
+
+        ainfo = ainfo->prev;
+      }
+
+      /* ctxs */
+      {
+        fprintf (dot, "\t/* now the ctxs */\n");
+        fprintf (dot, "\tctx_0x%08x [label=\"<HEAD>", (void*) graph);
+
+        int i;
+        const int max_ctxs = 30;
+        const int n_ctxs = (ginfo->n_ctxs > max_ctxs) ? max_ctxs : ginfo->n_ctxs;
+
+        assert (ginfo->ctxs && "no ctx");
+        for (i = 0; i < n_ctxs; i ++) {
+          ctx_info_t *ctx_info = ginfo->ctxs [i];
+
+          if (NULL != ctx_info->enc) {
+            fprintf (dot, "ctx_info \\[%i\\] = ctx\\[%i\\-\\>%i\\]\\l",
+                     i,
+                     ctx_info->id,
+                     ctx_info->enc->id);
+          } else {
+            fprintf (dot, "ctx_info \\[%i\\] = ctx\\[%i\\]\\l",
+                     i, ctx_info->id);
+          }
+
+          if (i+1 != n_ctxs) {
+            fprintf (dot, "|");
+          }
+        }
+
+        if (0 < ginfo->n_ctxs - max_ctxs) {
+          fprintf (dot, "(%i more)\\l", ginfo->n_ctxs - max_ctxs);
+        }
+
+        fprintf (dot, "\", color=\"green3\"];\n");
+
+        fprintf (dot,
+                 "\tgraph_0x%08x -> ctx_0x%08x:HEAD [label=\"ctx\", dir=\"none\", style=\"dotted\"];\n",
+                 (void*) graph, (void*) graph);
+      }
     } else {
-      fprintf (dot, "\t/* no allocs */\n");
-    }
-
-
-    while (NULL != ainfo) {
-      ir_node *alloc = ainfo->alloc;
-      const char *name = get_type_name (ainfo->tp);
-      const char *color = "green3";
-
-      fprintf (dot, "\talloc_0x%08x [label=\"%s\", color=\"%s\"];\n",
-               (int) alloc, name, color);
-      fprintf (dot, "\tgraph_0x%08x -> alloc_0x%08x;\n",
-               (int) graph, (int) alloc);
-
-      ainfo = ainfo->prev;
-    }
+      fprintf (dot, "\t/* graph is not called */\n");
+    } /* end all graphs */
   }
   fprintf (dot, "}\n");
 
@@ -1117,6 +1160,9 @@ void ecg_ecg ()
 
 /*
   $Log$
+  Revision 1.12  2004/12/20 17:34:34  liekweg
+  fix recursion handling
+
   Revision 1.11  2004/12/15 09:18:18  liekweg
   pto_name.c
 

@@ -102,8 +102,10 @@ void pto_run ()
                 get_type_name (get_entity_owner (get_irg_entity (graph))),
                 get_entity_name (get_irg_entity (graph))));
 
-  /* do we need some kind of environment here? */
-  pto_graph (graph, 0);
+  /* we need some kind of environment here: NULL */
+  ir_graph *save = get_current_ir_graph ();
+  pto_graph (graph, 0, NULL);
+  set_current_ir_graph (save);
 
   DBGPRINT (1, (stdout, "END   PTO\n"));
 }
@@ -134,6 +136,9 @@ void pto_cleanup ()
 
 /*
   $Log$
+  Revision 1.13  2004/12/20 17:34:34  liekweg
+  fix recursion handling
+
   Revision 1.12  2004/12/02 16:17:51  beck
   fixed config.h include
 

@@ -16,6 +16,8 @@
 # ifndef _PTO_DEBUG_
 # define _PTO_DEBUG_
 
+# include "irnode.h"
+
 /* ===================================================
    Global Defines:
    =================================================== */
@@ -32,10 +34,12 @@
  =================================================== */
 
 /* ===================================================
- Global Data Prototypes:
+ Global Prototypes:
  =================================================== */
 int get_dbg_lvl (void);
 void set_dbg_lvl (int);
+
+void pto_print_pto (ir_node*);
 
 /* ===================================================
    Global Variables:
@@ -47,6 +51,9 @@ void set_dbg_lvl (int);
 
 /*
   $Log$
+  Revision 1.3  2004/12/20 17:34:35  liekweg
+  fix recursion handling
+
   Revision 1.2  2004/11/24 14:53:56  liekweg
   Bugfixes
 

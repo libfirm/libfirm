@@ -37,11 +37,13 @@ typedef struct alloc_pto_str {
   pto_t *curr_pto;              /* name for current ctx */
 } alloc_pto_t;
 
+struct pto_env_str;             /* forward decl only */
+
 /* ===================================================
    Global Prototypes:
    =================================================== */
 /* Main loop: Initialise the graph for the given ctx_idx and iterate over it */
-void pto_graph (ir_graph*, int);
+void pto_graph (ir_graph*, int, struct pto_env_str*);
 
 /* Set the PTO value for the given node */
 void set_node_pto (ir_node*, pto_t*);
@@ -66,6 +68,9 @@ pto_t *get_alloc_pto (ir_node*);
 
 /*
   $Log$
+  Revision 1.3  2004/12/20 17:34:35  liekweg
+  fix recursion handling
+
   Revision 1.2  2004/11/24 14:53:55  liekweg
   Bugfixes
 

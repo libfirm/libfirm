@@ -194,7 +194,6 @@ static void reset_node_pto (ir_node *node, void *env)
 
   switch (op) {
   case (iro_Load):
-    /* case (iro_Const): */
   case (iro_Call):
   case (iro_Block):             /* END BLOCK only */
   case (iro_Phi): {
@@ -205,9 +204,6 @@ static void reset_node_pto (ir_node *node, void *env)
 
   case (iro_Alloc): {
     /* set alloc to 'right' current pto */
-
-    /* HERE ("alloc"); */
-
     alloc_pto_t *alloc_pto = (alloc_pto_t*) get_irn_link (node);
     alloc_pto->curr_pto = alloc_pto->ptos [ctx_idx];
 
@@ -237,7 +233,7 @@ static void reset_node_pto (ir_node *node, void *env)
   /* HERE ("end"); */
 }
 
-/* Temporary fix until we get 'real' ptos: Allocate some dummy for pto */
+/* Initialise primary name sources */
 static void init_pto (ir_node *node, void *env)
 {
   init_env_t *init_env = (init_env_t*) env;
@@ -248,26 +244,27 @@ static void init_pto (ir_node *node, void *env)
   switch (op) {
   case (iro_SymConst): {
     if (mode_P == get_irn_mode (node)) {
-      /* debugging only */
       entity *ent = get_SymConst_entity (node);
-      if (is_class_type (get_entity_type (ent)) ||
-          is_pointer_type (get_entity_type (ent))) {
+      type   *tp = get_entity_type (ent);
+      if (is_class_type (tp) || is_pointer_type (tp)) {
+        pto_t *symconst_pto = new_symconst_pto (node);
+        set_node_pto (node, symconst_pto);
+
+        /* debugging only */
         DBGPRINT (1, (stdout, "%s: new name \"%s\" for \"%s[%li]\"\n",
                       __FUNCTION__,
                       get_entity_name (ent),
                       OPNAME (node),
                       OPNUM (node)));
-
-        pto_t *symconst_pto = new_symconst_pto (node);
-        set_node_pto (node, symconst_pto);
       }
     }
   } break;
+
   case (iro_Alloc): {
-    type *tp = get_Alloc_type (node); /* debugging only */
     alloc_pto_t *alloc_pto = new_alloc_pto (node, n_ctxs);
     set_alloc_pto (node, alloc_pto);
 
+    type *tp = get_Alloc_type (node); /* debugging only */
     DBGPRINT (1, (stdout, "%s: %i names \"%s\" for \"%s[%li]\"\n",
                   __FUNCTION__,
                   n_ctxs,
@@ -409,6 +406,11 @@ void pto_init_graph (ir_graph *graph)
   pto_init_graph_allocs (graph);
 
   /* HERE ("end"); */
+
+  assert (NULL == get_irg_proj_args (graph));
+  ir_node **proj_args = find_irg_args (graph);
+  set_irg_proj_args (graph, proj_args);
+  assert (proj_args == get_irg_proj_args (graph));
 }
 
 /* Reset the given graph for a new pass run */
@@ -429,6 +431,9 @@ void pto_reset_graph_pto (ir_graph *graph, int ctx_idx)
 
 /*
   $Log$
+  Revision 1.11  2004/12/20 17:34:35  liekweg
+  fix recursion handling
+
   Revision 1.10  2004/12/15 13:31:00  liekweg
   store ctx idx in names
 

@@ -21,8 +21,9 @@
 */
 
 # include "pto_debug.h"
+# include "pto_comp.h"
+# include "qset.h"
 
-# include "irnode.h"
 /* # include "xmalloc.h" */
 
 /* Local Defines: */
@@ -52,10 +53,25 @@ void set_dbg_lvl (int lvl)
   dbg_lvl = lvl;
 }
 
+void pto_print_pto (ir_node *node)
+{
+  pto_t *pto = get_node_pto (node);
+
+  fprintf (stdout, "pto (%s[%li]) = ", OPNAME (node), OPNUM (node));
+  if (NULL != pto) {
+    qset_print (pto->values, stdout);
+  } else {
+    fprintf (stdout, "NULL");
+  }
+}
+
 
 
 /*
   $Log$
+  Revision 1.4  2004/12/20 17:34:35  liekweg
+  fix recursion handling
+
   Revision 1.3  2004/12/02 16:17:51  beck
   fixed config.h include
 

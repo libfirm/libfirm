@@ -69,7 +69,9 @@ static void find_irg_arg (ir_node *node, void *env)
    Exported Implementation:
    =================================================== */
 /* Find the arguments of a graph. For a method that has n args, the
-  result array has 'n+1' entries, the last of which is written NULL. */
+  result array has 'n+1' entries, the last of which is written NULL.
+  Note that not all entries in [0..n-1] will be populated all the time.
+*/
 ir_node **find_irg_args (ir_graph *graph)
 {
   type *tp = get_entity_type (get_irg_entity (graph));
@@ -82,14 +84,15 @@ ir_node **find_irg_args (ir_graph *graph)
   arg_env->args = args;
   arg_env->arg  = arg;
 
-  /* or use get_irg_end ?!? */
   {
     ir_graph *save = get_current_ir_graph ();
+
     set_current_ir_graph (graph);
     irg_walk (get_irg_end (graph), find_irg_arg, NULL, arg_env);
     set_current_ir_graph (save);
   }
 
+  memset (arg_env, 0x00, sizeof (find_irg_args_env_t));
   free (arg_env);
 
   args [n_args] = NULL;
@@ -149,6 +152,9 @@ int is_dummy_load_ptr (ir_node *ptr)
 
 /*
   $Log$
+  Revision 1.11  2004/12/20 17:34:35  liekweg
+  fix recursion handling
+
   Revision 1.10  2004/12/06 12:55:06  liekweg
   actually iterate
 

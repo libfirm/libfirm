@@ -42,6 +42,8 @@
 
 /* Local Data Types: */
 typedef struct pto_env_str {
+  struct pto_env_str *enc_env;
+  ir_graph *graph;
   int ctx_idx;
   int change;
 } pto_env_t;
@@ -64,13 +66,56 @@ static void pto_end_block (ir_node*, pto_env_t*);
 /* ===================================================
    Local Implementation:
    =================================================== */
+/* Add values of the actual arguments to the formal arguments */
+static int add_graph_args (ir_graph *graph, ir_node *call, pto_env_t *env)
+{
+  assert (iro_Call == get_irn_opcode (call));
+
+  int change = FALSE;
+
+  type *meth = get_entity_type (get_irg_entity (graph));
+
+  ir_node **args = get_irg_proj_args (graph);
+  int n_args = get_Call_n_params (call);
+  int i;
+
+  DBGPRINT (1, (stdout, "%s: args of %s[%li] -> 0x%08x\n",
+                __FUNCTION__, OPNAME (call), OPNUM (call), (void*) graph));
+
+  for (i = 0; i < n_args; i ++) {
+    if (NULL != args [i]) {
+      if (mode_P == get_type_mode (get_method_param_type (meth, i))) {
+        ir_node *call_arg = get_Call_param (call, i);
+        pto_t *arg_pto = get_pto (call_arg, env);
+        pto_t *frm_pto = get_node_pto (args [i]);
+
+        assert (arg_pto);
+        assert (frm_pto);
+
+        change |= qset_insert_all (frm_pto->values, arg_pto->values);
+
+        DBGPRINT (2, (stdout, "%s: arg [%i]: -> %s[%li] (%i) -> %s[%li] (%i)\n",
+                      __FUNCTION__,
+                      i,
+                      OPNAME (call_arg), OPNUM (call_arg),
+                      arg_pto->values->id,
+                      OPNAME (args [i]), OPNUM (args [i]),
+                      frm_pto->values->id));
+      }
+    }
+  }
+
+  return (change);
+}
+
 /* Transfer the actual arguments to the formal arguments */
 static void set_graph_args (ir_graph *graph, ir_node *call, pto_env_t *env)
 {
   assert (iro_Call == get_irn_opcode (call));
 
   type *meth = get_entity_type (get_irg_entity (graph));
-  ir_node **args = find_irg_args (graph);
+  ir_node **args = get_irg_proj_args (graph);
+
   int n_args = get_Call_n_params (call);
   int i;
 
@@ -97,10 +142,9 @@ static void set_graph_args (ir_graph *graph, ir_node *call, pto_env_t *env)
 static int set_graph_result (ir_graph *graph, ir_node *call)
 {
   type *tp = get_entity_type (get_irg_entity (graph));
-  int change = FALSE;
 
   if (0 == get_method_n_ress (tp)) {
-    return (change);
+    return (FALSE);
   }
 
   tp = get_method_res_type (tp, 0);
@@ -108,7 +152,7 @@ static int set_graph_result (ir_graph *graph, ir_node *call)
   if (mode_P != get_type_mode (tp)) {
     set_node_pto (call, NULL);
 
-    return (change);
+    return (FALSE);
   }
 
   ir_node *end_block = get_irg_end_block (graph);
@@ -118,7 +162,18 @@ static int set_graph_result (ir_graph *graph, ir_node *call)
 
   assert (call_pto);
 
-  change |= qset_insert_all (call_pto->values, ret_pto->values);
+    DBGPRINT (0, (stdout, "%s: before change args\n", __FUNCTION__));
+    DBGEXE (0, pto_print_pto (end_block));
+    DBGEXE (0, pto_print_pto (call));
+
+  int change = qset_insert_all (call_pto->values, ret_pto->values);
+
+  if (change) {
+    DBGPRINT (0, (stdout, "%s: after change args\n", __FUNCTION__));
+    DBGEXE (0, pto_print_pto (end_block));
+    DBGEXE (0, pto_print_pto (call));
+    /* assert (0); */
+  }
 
   return (change);
 }
@@ -247,6 +302,9 @@ static pto_t *get_pto_ret (ir_node *ret, pto_env_t *env)
 
   assert (pto);
 
+  DBGPRINT (9, (stdout, "%s: ", __FUNCTION__));
+  DBGEXE (9, pto_print_pto (ret));
+
   return (pto);
 }
 
@@ -292,7 +350,7 @@ static pto_t *get_pto (ir_node *node, pto_env_t *env)
 static void pto_load (ir_node *load, pto_env_t *pto_env)
 {
   /* perform load */
-  DBGPRINT (2, (stdout, "%s (%s[%li]): pto = %p\n", __FUNCTION__,
+  DBGPRINT (2, (stdout, "%s (%s[%li]): pto = 0x%08x\n", __FUNCTION__,
                 OPNAME (load), OPNUM (load), (void*) get_node_pto (load)));
 
   ir_node *ptr = get_Load_ptr (load);
@@ -301,17 +359,14 @@ static void pto_load (ir_node *load, pto_env_t *pto_env)
     return;
   }
 
-  /* TODO: ONLY LOAD IFF LOAD.ENT.MODE == MODE_P */
-
   entity *ent = get_ptr_ent (ptr);
 
   if (mode_P == get_type_mode (get_entity_type (ent))) {
-
     pto_t *ptr_pto = get_pto (ptr, pto_env);
 
     assert (ptr_pto);
 
-    DBGPRINT (1, (stdout, "%s (%s[%li]): ptr = %p\n", __FUNCTION__,
+    DBGPRINT (1, (stdout, "%s (%s[%li]): ptr = 0x%08x\n", __FUNCTION__,
                   OPNAME (ptr), OPNUM (ptr), (void*) ptr_pto));
 
     pto_env->change |= mod_load (load, ent, ptr_pto);
@@ -339,9 +394,9 @@ static void pto_store (ir_node *store, pto_env_t *pto_env)
   assert (ptr_pto);
   assert (val_pto);
 
-  DBGPRINT (2, (stdout, "%s (%s[%li]): ptr_pto = %p\n", __FUNCTION__,
+  DBGPRINT (2, (stdout, "%s (%s[%li]): ptr_pto = 0x%08x\n", __FUNCTION__,
                 OPNAME (ptr), OPNUM (ptr), (void*) ptr_pto));
-  DBGPRINT (2, (stdout, "%s (%s[%li]): val_pto = %p\n", __FUNCTION__,
+  DBGPRINT (2, (stdout, "%s (%s[%li]): val_pto = 0x%08x\n", __FUNCTION__,
                 OPNAME (val), OPNUM (val), (void*) val_pto));
 
   pto_env->change |= mod_store (store, ent, ptr_pto, val_pto);
@@ -349,7 +404,7 @@ static void pto_store (ir_node *store, pto_env_t *pto_env)
 
 static void pto_method (ir_node *call, pto_env_t *pto_env)
 {
-  DBGPRINT (2, (stdout, "%s:%i (%s[%li]): pto = %p\n",
+  DBGPRINT (2, (stdout, "%s:%i (%s[%li]): pto = 0x%08x\n",
                 __FUNCTION__, __LINE__, OPNAME (call), OPNUM (call),
                 (void*) get_node_pto (call)));
 
@@ -443,6 +498,9 @@ static void pto_node_post (ir_node *node, void *env)
 {
   pto_env_t *pto_env = (pto_env_t*) env;
 
+  DBGPRINT (999, (stdout, "%s (%s[%li])\n", __FUNCTION__,
+                OPNAME (node), OPNUM (node)));
+
   pto_node_node (node, pto_env);
 }
 
@@ -457,24 +515,27 @@ static void pto_call (ir_graph *graph, ir_node *call, pto_env_t *pto_env)
 {
   int change = FALSE;
 
-  /* perform call */
-  DBGPRINT (1, (stdout, "%s:%i (%s[%li])\n",
-                __FUNCTION__, __LINE__, OPNAME (call), OPNUM (call)));
-
   /* only for debugging stuff: */
   entity *ent = get_irg_entity (graph);
   const char *ent_name = (char*) get_entity_name (ent);
   const char *own_name = (char*) get_type_name (get_entity_owner (ent));
 
+  /* perform call */
+  DBGPRINT (2, (stdout, "%s (%s[%li]) to \"%s.%s\"\n",
+                __FUNCTION__, OPNAME (call), OPNUM (call),
+                own_name, ent_name));
+
   if (! get_irg_is_mem_visited (graph)) {
+    /* handle direct call */
     graph_info_t *ginfo = ecg_get_info (graph);
 
     /* Save CTX */
     int ctx_idx = find_ctx_idx (call, ginfo, get_curr_ctx ());
     ctx_info_t *call_ctx = get_ctx (ginfo, ctx_idx);
     ctx_info_t *old_ctx = set_curr_ctx (call_ctx);
-    DBGPRINT (3, (stdout, "%s>CTX: ", -- spaces));
-    DBGEXE (3, ecg_print_ctx (call_ctx, stdout));
+
+    DBGPRINT (1, (stdout, "%s>CTX: ", -- spaces));
+    DBGEXE (1, ecg_print_ctx (call_ctx, stdout));
 
     /* Initialise Alloc Names and Node values */
     pto_reset_graph_pto (graph, ctx_idx);
@@ -483,23 +544,53 @@ static void pto_call (ir_graph *graph, ir_node *call, pto_env_t *pto_env)
     set_graph_args (graph, call, pto_env);
 
     /* Visit/Iterate Graph */
-    pto_graph (graph, ctx_idx);
+    pto_graph (graph, ctx_idx, pto_env);
 
     /* Restore CTX */
     set_curr_ctx (old_ctx);
 
+    /* Get Return Value from Graph */
     change |= set_graph_result (graph, call);
 
-    DBGPRINT (3, (stdout, "%s<CTX: ", spaces ++));
-    DBGEXE (3, ecg_print_ctx (call_ctx, stdout));
+    DBGPRINT (1, (stdout, "%s<CTX: ", spaces ++));
+    DBGEXE (1, ecg_print_ctx (call_ctx, stdout));
 
     /* Don't need to reset alloc names unless we handle recursion here  */
-
-
-    /* Get Return Value from Graph */
   } else {
-    DBGPRINT (2, (stdout, "%s: recursion into \"%s.%s\"\n",
+    /* handle recursion */
+    DBGPRINT (0, (stdout, "%s: recursion into \"%s.%s\"\n",
                   __FUNCTION__, own_name, ent_name));
+    /* Find 'right' enclosing pto_env */
+    pto_env_t *enc_env = pto_env;
+
+    while (graph != enc_env->graph) {
+      enc_env = enc_env->enc_env; /* talk about naming issues here */
+
+      /* since we're in a recursion loop, we *must* find an env for the callEd here: */
+      assert (NULL != enc_env->enc_env);
+    }
+
+    /* Re-Set arguments */
+    int rec_change = add_graph_args (graph, call, pto_env);
+
+      DBGPRINT (1, (stdout, "%s: return  in:", __FUNCTION__));
+      DBGEXE (1, pto_print_pto (get_irg_end_block (graph)));
+
+    if (rec_change) {
+      DBGPRINT (0, (stdout, "%s: change args", __FUNCTION__));
+    }
+
+    rec_change |= set_graph_result (graph, call);
+
+    if (rec_change) {
+      DBGPRINT (0, (stdout, "%s: return out:", __FUNCTION__));
+      DBGEXE (0, pto_print_pto (get_irg_end_block (graph)));
+    }
+
+# if 0
+    /* appears that we don't need this: */
+    enc_env->change |= rec_change;
+# endif /* 0 */
   }
 
   /* Todo: Set 'Unknown' Value as Return Value when the graph is not
@@ -511,7 +602,7 @@ static void pto_call (ir_graph *graph, ir_node *call, pto_env_t *pto_env)
 static void pto_raise (ir_node *raise, pto_env_t *pto_env)
 {
   /* perform raise */
-  DBGPRINT (2, (stdout, "%s (%s[%li]): pto = %p\n", __FUNCTION__,
+  DBGPRINT (2, (stdout, "%s (%s[%li]): pto = 0x%08x\n", __FUNCTION__,
                 OPNAME (raise), OPNUM (raise), (void*) get_node_pto (raise)));
 }
 
@@ -530,7 +621,7 @@ static void pto_end_block (ir_node *end_block, pto_env_t *pto_env)
     return;
   }
 
-  DBGPRINT (2, (stdout, "%s (%s[%li]): pto = %p\n", __FUNCTION__,
+  DBGPRINT (2, (stdout, "%s (%s[%li]): pto = 0x%08x\n", __FUNCTION__,
                 OPNAME (end_block), OPNUM (end_block),
                 (void*) get_node_pto (end_block)));
 
@@ -555,12 +646,14 @@ static void pto_end_block (ir_node *end_block, pto_env_t *pto_env)
    Exported Implementation:
    =================================================== */
 /* Main loop: Initialise and iterate over the given graph */
-void pto_graph (ir_graph *graph, int ctx_idx)
+void pto_graph (ir_graph *graph, int ctx_idx, pto_env_t *enc_env)
 {
   /* Also exported, since we need it in 'pto.c' */
   pto_env_t *pto_env = xmalloc (sizeof (pto_env_t));
+  pto_env->enc_env = enc_env;
+  pto_env->graph   = graph;
   pto_env->ctx_idx = ctx_idx;
-  pto_env->change = TRUE;
+  pto_env->change  = TRUE;
 
   /* HERE ("start"); */
 
@@ -629,6 +722,9 @@ pto_t *get_alloc_pto (ir_node *alloc)
 
 /*
   $Log$
+  Revision 1.10  2004/12/20 17:34:35  liekweg
+  fix recursion handling
+
   Revision 1.9  2004/12/15 13:31:18  liekweg
   remove debugging stuff
 
