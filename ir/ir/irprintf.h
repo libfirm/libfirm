@@ -23,7 +23,9 @@
 #include <stddef.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include <obstack.h>
+
+/* forward definition */
+struct obstack;
 
 /**
  * Something that can append strings and chars to something.
