@@ -8,15 +8,13 @@
 top_srcdir := @top_srcdir@
 srcdir = @srcdir@
 topdir = ../..
-subdir := ir/tr
+subdir := ir/st
 
 INSTALL_HEADERS = st.h
 
 SOURCES = $(INSTALL_HEADERS)
 
-SOURCES += Makefile.in \
-			st.c \
-	    	st.h
+SOURCES += Makefile.in st.c st.h
 
 
 include $(topdir)/MakeRules

@@ -10,16 +10,16 @@ srcdir = @srcdir@
 topdir = ../..
 subdir := ir/ir
 
-INSTALL_HEADERS = irprog.h irgraph.h irnode.h irmode.h irop.h ircons.h 		\
-		irflag.h irvrfy.h irgwalk.h irgmod.h iropt.h irdump.h 		\
+INSTALL_HEADERS = irprog.h irgraph.h irnode.h irmode.h irop.h ircons.h	\
+		irflag.h irvrfy.h irgwalk.h irgmod.h iropt.h irdump.h	\
 		irgopt.h old_fctnames.h
 
 SOURCES = $(INSTALL_HEADERS)
 
 SOURCES += Makefile.in \
-		ircons.c irgmod.c irgraph_t.h irnode.c iropt.c irvrfy.c 	\
-		irgwalk.c irdump.c irgopt.c irnode_t.h iropt_t.h 		\
-		irmode.c irop.c irprog.c irflag.c irgraph.c irmode_t.h 		\
+		ircons.c irgmod.c irgraph_t.h irnode.c iropt.c irvrfy.c	\
+		irgwalk.c irdump.c irgopt.c irnode_t.h iropt_t.h	\
+		irmode.c irop.c irprog.c irflag.c irgraph.c irmode_t.h	\
 		irop_t.h irprog_t.h
 
 
