@@ -82,9 +82,13 @@ typedef struct ir_node ir_node;
  *  - name:      An identifier specifying the name of the type.  To be
  *               set by the frontend.
  *  - size:      The size of the type, i.e. an entity of this type will
- *               occupy size bytes in memory.  In several cases this is
+ *               occupy size bits in memory.  In several cases this is
  *               determined when fixing the layout of this type (class,
  *               struct, union, array, enumeration).
+ *  - alignment  The alignment of the type, i.e. an entity of this type will
+ *               be allocated an an address in memory with this alignment.
+ *               In several cases this is determined when fixing the layout
+ *               of this type (class, struct, union, array)
  *  - state:     The state of the type.  The state represents whether the
  *               layout of the type is undefined or fixed (values: layout_undefined
  *               or layout_fixed).  Compound types can have an undefined
