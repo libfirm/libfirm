@@ -8,7 +8,7 @@
 /* $Id$ */
 
 # include <obstack.h>
-# include <malloc.h>
+# include <stdlib.h>
 
 # define obstack_chunk_alloc xmalloc
 # define obstack_chunk_free free

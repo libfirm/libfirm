@@ -27,7 +27,7 @@
 #  include <stdio.h>
 # ifdef DEBUG_libfirm
 # endif /* def DEBUG_libfirm */
-#  include <malloc.h>
+#  include <stdlib.h>
 # include "misc.h"
 
 /* init globals: */

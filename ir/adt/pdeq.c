@@ -16,7 +16,6 @@
 #include "tune.h"
 #include "cookies.h"
 #include "debug.h"
-#include "malloc.h"
 #include "pdeq.h"
 
 
