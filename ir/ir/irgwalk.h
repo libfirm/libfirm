@@ -78,7 +78,8 @@ void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
  *
  * Like irg_walk(), but walks over all reachable nodes in the ir
  * graph, starting at the end operation. During the walk current_ir_graph
- * is set to irg.  Does not use the link field.
+ * is set to irg.  Does not use the link field.  If interprocedural_view
+ * is set, visits all reachable irgs.
  */
 void irg_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env);
 

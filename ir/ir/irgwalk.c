@@ -54,7 +54,7 @@ static void irg_walk_cg(ir_node * node, int visited, eset * irg_set,
   if (pre) pre(node, env);
 
   if (is_no_Block(node))
-    irg_walk_cg(get_nodes_Block(node), visited, irg_set, pre, post, env);
+    irg_walk_cg(get_nodes_block(node), visited, irg_set, pre, post, env);
 
   if (get_irn_op(node) == op_Block) { /* block */
     for (i = get_irn_arity(node) - 1; i >= 0; --i) {
@@ -74,7 +74,7 @@ static void irg_walk_cg(ir_node * node, int visited, eset * irg_set,
 	irg_walk_cg(pred, visited, irg_set, pre, post, env);
       } else {
 	ir_node * exec;
-	exec = skip_Proj(get_Block_cfgpred(get_nodes_Block(node), i));
+	exec = skip_Proj(get_Block_cfgpred(get_nodes_block(node), i));
 	assert(get_irn_op(exec) == op_CallBegin
 	       || get_irn_op(exec) == op_EndReg
 	       || get_irn_op(exec) == op_EndExcept);
@@ -124,7 +124,7 @@ irg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
     if (pre) pre(node, env);
 
     if (is_no_Block(node))
-      irg_walk_2(get_nodes_Block(node), pre, post, env);
+      irg_walk_2(get_nodes_block(node), pre, post, env);
     for (i = get_irn_arity(node) - 1; i >= 0; --i)
       irg_walk_2(get_irn_n(node, i), pre, post, env);
 
@@ -194,7 +194,7 @@ switch_irg (ir_node *n, int index) {
   if (interprocedural_view) {
     /* Only Filter and Block nodes can have predecessors in other graphs. */
     if (get_irn_op(n) == op_Filter)
-      n = get_nodes_Block(n);
+      n = get_nodes_block(n);
     if (get_irn_op(n) == op_Block) {
       ir_node *cfop = skip_Proj(get_Block_cfgpred(n, index));
       if (is_ip_cfop(cfop)) {
@@ -219,7 +219,7 @@ cg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
     if (pre) pre(node, env);
 
     if (is_no_Block(node))
-      cg_walk_2(get_nodes_Block(node), pre, post, env);
+      cg_walk_2(get_nodes_block(node), pre, post, env);
     for (i = get_irn_arity(node) - 1; i >= 0; --i) {
       rem = switch_irg(node, i);
       cg_walk_2(get_irn_n(node, i), pre, post, env);
@@ -252,7 +252,7 @@ void cg_walk(irg_walk_func *pre, irg_walk_func *post, void *env) {
 
     sb = get_irg_start_block(current_ir_graph);
     if ((get_Block_n_cfgpreds(sb) > 1) ||
-	(get_nodes_Block(get_Block_cfgpred(sb, 0)) != sb)) continue;
+	(get_nodes_block(get_Block_cfgpred(sb, 0)) != sb)) continue;
 
     cg_walk_2(get_irg_end(current_ir_graph), pre, post, env);
   }
@@ -291,7 +291,7 @@ static void irg_block_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *p
     for(i = get_Block_n_cfgpreds(node) - 1; i >= 0; --i) {
       /* find the corresponding predecessor block. */
       ir_node *pred = get_cf_op(get_Block_cfgpred(node, i));
-      pred = get_nodes_Block(pred);
+      pred = get_nodes_block(pred);
       if(get_irn_opcode(pred) == iro_Block) {
 	/* recursion */
 	irg_block_walk_2(pred, pre, post, env);
@@ -318,7 +318,7 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void
   assert(!interprocedural_view);   /* interprocedural_view not implemented, because it
 				    * interleaves with irg_walk */
   inc_irg_block_visited(current_ir_graph);
-  if (is_no_Block(node)) block = get_nodes_Block(node); else block = node;
+  if (is_no_Block(node)) block = get_nodes_block(node); else block = node;
   assert(get_irn_opcode(block)  == iro_Block);
   irg_block_walk_2(block, pre, post, env);
   /* keepalive: the endless loops ... */
@@ -578,7 +578,7 @@ ir_node *get_irn_ip_pred(ir_node *n, int pos) {
     /* Find the cf_pred refering to pos. */
     ir_node *block = n;
     ir_node *cf_pred;
-    if (get_irn_opcode(n) == iro_Filter) block = get_nodes_Block(n);
+    if (get_irn_opcode(n) == iro_Filter) block = get_nodes_block(n);
     cf_pred = skip_Proj(get_irn_n(block, pos));
 
     /* Check whether we enter or leave a procedure and act according. */
@@ -624,7 +624,7 @@ return_recur(ir_node *n, int pos) {
 
   /* Find the cf_pred refering to pos. */
   block = n;
-  if (get_irn_opcode(n) == iro_Filter) block = get_nodes_Block(n);
+  if (get_irn_opcode(n) == iro_Filter) block = get_nodes_block(n);
   cf_pred = skip_Proj(get_irn_n(block, pos));
 
   /* Check whether we re_enter or re_leave a procedure and act according. */
