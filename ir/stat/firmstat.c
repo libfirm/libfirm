@@ -149,6 +149,7 @@ static const char *opt_names[] = {
   "Phi optmization",
   "Write-After-Write optimization",
   "Write-After-Read optimization",
+  "Read-After-Write optimization",
   "Tuple optimization",
   "ID optimization",
   "Constant evaluation",
