@@ -789,7 +789,7 @@ void opt_if_conv(ir_graph *irg, opt_if_conv_info_t *params)
 
 	/* Init the debug stuff. */
 	dbg = firm_dbg_register("firm.opt.ifconv");
-	firm_dbg_set_mask(dbg, -1);
+	firm_dbg_set_mask(dbg, 0);
 
 	/* Ensure, that the dominators are computed. */
 	compute_doms(irg);
