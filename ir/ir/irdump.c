@@ -1983,13 +1983,12 @@ void dump_loops_standalone (ir_loop *loop) {
 
   /* Dump the loop elements. */
 
-  if (get_kind(son) == k_ir_loop)
+  for(i = 0; i < get_loop_n_elements(loop); i++)
     {
-      /* We are a loop son -> Recurse */
       le = get_loop_element(loop, i);
-
       son = le.son;
       if (get_kind(son) == k_ir_loop) {
+
         /* We are a loop son -> Recurse */
 
         if(loop_node_started) { /* Close the "firm-nodes" node first if we started one. */
@@ -2046,6 +2045,7 @@ void dump_loop_tree(ir_graph *irg, char *suffix)
   int el_rem = edge_label;
   edge_label = 1;
 
+  /* @@@ AS: What does that do? */
   if(strncmp(get_irg_dump_name(irg),dump_file_filter,strlen(dump_file_filter))!=0) return;
 
   current_ir_graph = irg;

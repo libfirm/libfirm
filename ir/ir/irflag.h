@@ -107,6 +107,14 @@ void set_opt_reassociation(int value);
  * Default: opt_dead_node_elimination == 1. */
 void set_opt_dead_node_elimination (int value);
 
+/** Enables/Disables dead method elimination.
+ *
+ * If opt_dead_node_elimination == 1 methods never called are
+ * removed.
+ * Default: opt_dead_node_elimination == 1. */
+void set_opt_dead_method_elimination (int value);
+void set_opt_dead_method_elimination_verbose (int value);
+
 /** Enable/Disables inlining.
  *
  * If opt_inline == 1 the inlining transformation is performed.
