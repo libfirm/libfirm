@@ -659,11 +659,16 @@ add_compound_ent_value(entity *ent, ir_node *val, entity *member) {
   path = new_compound_graph_path(owner_tp, 1);
   path->nodes[0] = member;
   if (is_array_type(owner_tp)) {
+    int max;
+    int i;
+
     assert(get_array_n_dimensions(owner_tp) == 1 && has_array_lower_bound(owner_tp, 0));
-    int max = get_array_lower_bound_int(owner_tp, 0) -1;
-    for (int i = 0; i < get_compound_ent_n_values(ent); ++i) {
+    max = get_array_lower_bound_int(owner_tp, 0) -1;
+    for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
       int index = get_compound_graph_path_array_index(get_compound_ent_value_path(ent, i), 0);
-      if (index > max) max = index;
+      if (index > max) {
+        max = index;
+      }
     }
     path->arr_indicees[0] = max + 1;
   }
@@ -748,10 +753,10 @@ int  get_compound_ent_value_offset_bits(entity *ent, int pos) {
       int size  = get_mode_size_bits (get_type_mode(node_tp));
       int align = get_mode_align_bits(get_type_mode(node_tp));
       if (size < align)
-	size = align;
+    size = align;
       else {
-	assert(size % align == 0);
-	/* ansonsten aufrunden */
+    assert(size % align == 0);
+    /* ansonsten aufrunden */
       }
       offset += size * get_compound_graph_path_array_index(path, i);
     } else {
@@ -851,14 +856,14 @@ void compute_compound_ent_array_indicees(entity *ent) {
       type *elem_tp = get_entity_type(node);
 
       if (is_array_type(elem_tp)) {
-	assert(get_array_n_dimensions(elem_tp) == 1 && "other not implemented");
-	int dim = 0;
-	if (!has_array_lower_bound(elem_tp, dim) || !has_array_upper_bound(elem_tp, dim)) {
-	  if (!unknown_bound_entity) unknown_bound_entity = node;
-	  if (node != unknown_bound_entity) return;
-	}
+    assert(get_array_n_dimensions(elem_tp) == 1 && "other not implemented");
+    int dim = 0;
+    if (!has_array_lower_bound(elem_tp, dim) || !has_array_upper_bound(elem_tp, dim)) {
+      if (!unknown_bound_entity) unknown_bound_entity = node;
+      if (node != unknown_bound_entity) return;
+    }
 
-	init_index(elem_tp);
+    init_index(elem_tp);
       }
     }
   }
@@ -871,7 +876,7 @@ void compute_compound_ent_array_indicees(entity *ent) {
       entity *node = get_compound_graph_path_node(path, j);
       type *owner_tp = get_entity_owner(node);
       if (is_array_type(owner_tp))
-	set_compound_graph_path_array_index (path, j, get_next_index(node));
+    set_compound_graph_path_array_index (path, j, get_next_index(node));
     }
   }
 
@@ -920,7 +925,7 @@ void sort_compound_ent_values(entity *ent) {
     assert(pos < size);
     assert(permutation[pos] == 0 && "two values with the same offset");
     permutation[pos] = i + 1;         /* We initialized with 0, so we can not distinguish entry 0.
-					 So inc all entries by one. */
+                     So inc all entries by one. */
     //fprintf(stderr, "i: %d, pos: %d \n", i, pos);
   }
 
@@ -1252,20 +1257,20 @@ void dump_entity (entity *ent) {
     } else {
       printf("\n  compound values:");
       for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
-	compound_graph_path *path = get_compound_ent_value_path(ent, i);
-	entity *ent0 = get_compound_graph_path_node(path, 0);
-	printf("\n    %3d ", get_entity_offset_bits(ent0));
-	if (get_type_state(type) == layout_fixed)
-	  printf("(%3d) ",   get_compound_ent_value_offset_bits(ent, i));
-	printf("%s", get_entity_name(ent0));
-	for (j = 0; j < get_compound_graph_path_length(path); ++j) {
-	  entity *node = get_compound_graph_path_node(path, j);
-	  printf(".%s", get_entity_name(node));
-	  if (is_array_type(get_entity_owner(node)))
-	    printf("[%d]", get_compound_graph_path_array_index(path, j));
-	}
-	printf("\t = ");
-	dump_node_opcode(stdout, get_compound_ent_value(ent, i));
+    compound_graph_path *path = get_compound_ent_value_path(ent, i);
+    entity *ent0 = get_compound_graph_path_node(path, 0);
+    printf("\n    %3d ", get_entity_offset_bits(ent0));
+    if (get_type_state(type) == layout_fixed)
+      printf("(%3d) ",   get_compound_ent_value_offset_bits(ent, i));
+    printf("%s", get_entity_name(ent0));
+    for (j = 0; j < get_compound_graph_path_length(path); ++j) {
+      entity *node = get_compound_graph_path_node(path, j);
+      printf(".%s", get_entity_name(node));
+      if (is_array_type(get_entity_owner(node)))
+        printf("[%d]", get_compound_graph_path_array_index(path, j));
+    }
+    printf("\t = ");
+    dump_node_opcode(stdout, get_compound_ent_value(ent, i));
       }
     }
   }
