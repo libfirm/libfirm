@@ -286,8 +286,7 @@ __is_ir_node (const void *thing) {
  * Intern version for libFirm.
  */
 static INLINE ir_op *
-__get_irn_op (const ir_node *node)
-{
+__get_irn_op (const ir_node *node) {
   assert (node);
   return node->op;
 }
@@ -297,8 +296,7 @@ __get_irn_op (const ir_node *node)
  * Intern version for libFirm.
  */
 static INLINE opcode
-__get_irn_opcode (const ir_node *node)
-{
+__get_irn_opcode (const ir_node *node) {
   assert (k_ir_node == get_kind(node));
   assert (node -> op);
   return node->op->code;
@@ -484,6 +482,34 @@ __get_irn_pinned(const ir_node *node) {
   return state;
 }
 
+static INLINE int
+__is_unop(const ir_node *node) {
+  return (node->op->opar == oparity_unary);
+}
+
+static INLINE int
+__is_binop(const ir_node *node) {
+  return (node->op->opar == oparity_binary);
+}
+
+static INLINE int
+__is_Bad(const ir_node *node) {
+  assert(node);
+  return (node && __get_irn_op(node) == op_Bad);
+}
+
+static INLINE int
+__is_no_Block(const ir_node *node) {
+  assert(node);
+  return (__get_irn_op(node) != op_Block);
+}
+
+static INLINE int
+__is_Block(const ir_node *node) {
+  assert(node);
+  return (__get_irn_op(node) == op_Block);
+}
+
 /* this section MUST contain all inline functions */
 #define is_ir_node(thing)          __is_ir_node(thing)
 #define get_irn_intra_arity(node)  __get_irn_intra_arity(node)
@@ -503,5 +529,10 @@ __get_irn_pinned(const ir_node *node) {
 #define irn_not_visited(node)      __irn_not_visited(node)
 #define set_irn_link(node, link)   __set_irn_link(node, link)
 #define get_irn_link(node)         __get_irn_link(node)
+#define is_unop(node)              __is_unop(node)
+#define is_binop(node)             __is_binop(node)
+#define is_Bad(node)               __is_Bad(node)
+#define is_no_Block(node)          __is_no_Block(node)
+#define is_Block(node)             __is_Block(node)
 
 # endif /* _IRNODE_T_H_ */
