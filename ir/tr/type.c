@@ -37,6 +37,9 @@
 # include "tpop_t.h"
 # include "typegmod_t.h"
 # include "array.h"
+# include "irprog.h"
+# include "mangle.h"
+# include "tv.h"
 
 /*******************************************************************/
 /** TYPE                                                          **/
@@ -529,6 +532,19 @@ int   get_array_n_dimensions (type *array) {
   assert(array && (array->type_op == type_array));
   return array->attr.aa.n_dimensions;
 }
+void  set_array_bounds_int   (type *array, int dimension, int lower_bound,
+			      int upper_bound) {
+  ir_graph *rem;
+  assert(array && (array->type_op == type_array));
+  rem = current_ir_graph;
+  current_ir_graph = get_const_code_irg();
+  array->attr.aa.lower_bound[dimension] =
+    new_Const(mode_I, tarval_from_long (mode_I, lower_bound));
+  array->attr.aa.upper_bound[dimension] =
+    new_Const(mode_I, tarval_from_long (mode_I, upper_bound));
+  current_ir_graph = rem;
+}
+
 void  set_array_bounds       (type *array, int dimension, ir_node * lower_bound,
                                                           ir_node * upper_bound) {
   assert(array && (array->type_op == type_array));
@@ -678,4 +694,13 @@ inline void free_primitive_attrs (type *primitive) {
 bool  is_primitive_type  (type *primitive) {
   assert(primitive);
   if (primitive->type_op == type_primitive) return 1; else return 0;
+}
+
+int is_atomic_type(type *tp) {
+  return (is_primitive_type(tp) || is_pointer_type(tp) ||
+	  is_enumeration_type(tp));
+}
+int is_compound_type(type *tp) {
+  return (is_class_type(tp) || is_struct_type(tp) ||
+	  is_array_type(tp) || is_union_type(tp));
 }

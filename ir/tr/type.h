@@ -381,6 +381,8 @@ void   set_union_delim_nameid (type *uni, int pos, ident *id);
  *   Representation of an array type.
  * NOTE
  *   The array type represents rectangular multi dimensional arrays.
+ *   The constants representing the bounds must be allocated to
+ *   get_const_code_irg() by setting current_ir_graph accordingly.
  * ATTRIBUTES
  *   n_dimensions     Number of array dimensions.
  *   *lower_bound     Lower bounds of dimensions.  Usually all 0.
@@ -401,6 +403,9 @@ type *new_type_array         (ident *name, int n_dimensions,
 
 /* manipulate private fields of array type */
 int   get_array_n_dimensions (type *array);
+/* Allocates Const nodes of mode_I for the array dimensions */
+void  set_array_bounds_int   (type *array, int dimension, int lower_bound,
+                                                          int upper_bound);
 void  set_array_bounds       (type *array, int dimension, ir_node *lower_bound,
                                                           ir_node *upper_bound);
 void  set_array_lower_bound  (type *array, int dimension, ir_node *lower_bound);
@@ -485,5 +490,35 @@ type *new_type_primitive (ident *name, ir_mode *mode);
 /* typecheck */
 bool  is_primitive_type  (type *primitive);
 /*****/
+
+
+
+/****f* type/is_atomic_type
+ *
+ * NAME
+ *   is_atomic_type - Checks whether a type is atomic.
+ * SYNOPSIS
+ *   int is_atomic_type(type *tp);
+ * INPUTS
+ *   tp - any type
+ * RESULT
+ *   true if type is primitive, pointer or enumeration
+ ***
+ */
+int is_atomic_type(type *tp);
+
+/****f* type/is_compound_type
+ *
+ * NAME
+ *   is_compound_type - Checks whether a type is compound.
+ * SYNOPSIS
+ *   int is_compound_type(type *tp)
+ * INPUTS
+ *   tp - any type
+ * RESULT
+ *   true if the type is class, structure, union or array type.
+ ***
+ */
+int is_compound_type(type *tp);
 
 # endif /* _TYPE_H_ */

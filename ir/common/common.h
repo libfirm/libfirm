@@ -47,7 +47,7 @@
 /* If this and DEBUG_libfirm are defined irdump uses the nodeid numbers as
    labels for the vcg nodes.  This makes the vcg graph better readable.
    Sometimes it's useful to see the pointer values, though. */
-#define NODEID_AS_LABEL 1
+#define NODEID_AS_LABEL 0
 
 /* a list of firm kinds */
 typedef enum {

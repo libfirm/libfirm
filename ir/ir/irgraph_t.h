@@ -49,4 +49,10 @@ struct ir_graph {
   unsigned long block_visited;       /* same as visited, for a
 					complete block */
 };
+
+/* Make a rudimentary ir graph for the constant code.
+   Must look like a correct irg, spare everything else. */
+ir_graph *new_const_code_irg();
+
+
 # endif /* _IRGRAPH_T_H_ */

@@ -13,6 +13,7 @@
 #endif
 
 # include "irprog_t.h"
+# include "irgraph_t.h"
 # include "array.h"
 # include "obst.h"
 # include "typegmod.h"
@@ -41,6 +42,8 @@ ir_prog *new_ir_prog (void) {
   res->glob_type = new_type_class(id_from_str (GLOBAL_TYPE_NAME,
 					       strlen(GLOBAL_TYPE_NAME)));
   add_irp_type((type *)res->glob_type);
+
+  res->const_code_irg = new_const_code_irg();
 
 #ifdef DEBUG_libfirm
   res->max_node_nr = 1;
@@ -142,3 +145,8 @@ int get_irp_new_node_nr() {
   return irp->max_node_nr - 1;
 }
 #endif
+
+ir_graph *get_const_code_irg()
+{
+  return irp->const_code_irg;
+}

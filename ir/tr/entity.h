@@ -83,6 +83,8 @@ typedef struct ir_graph ir_graph;
  *              @@@ Does this make sense???
  *   visibility A flag indicating the visibility of this entity (values: local,
  *              external_visible,  external_allocated)
+ *   variability A flag indicating the variability of this entity (values:
+ *              uninitialized, initalized, part_constant, constant)
  *   offset     The offset of the entity within the compound object.  Only set
  *              if IR in the state "@@@"  Wie nennen wir den??
  *   overwrites A list of entities overwritten by this entity.  This list is only
@@ -167,6 +169,33 @@ typedef enum {
 ent_visibility get_entity_visibility (entity *ent);
 void           set_entity_visibility (entity *ent, ent_visibility vis);
 
+/* This enumeration flags the variability of entities. */
+typedef enum {
+  uninitialized,    /* The content of the entity is completely unknown. */
+  initialized,       /* After allocation the entity is initalized with the
+		       value given somewhere in the entity. */
+  part_constant,    /* For entities of compound types.  Some members of the entity
+		       are constant.  The others are uninitialized.  Those members
+		       given a value for are constant. */
+  constant          /* The entity is constant. */
+} ent_variability;
+
+ent_variability get_entity_variability (entity *ent);
+void            set_entity_variability (entity *ent, ent_variability var);
+
+/* Set has no effect  for entities of type method. */
+ir_node * get_atomic_ent_value(entity *ent);
+void      set_atomic_ent_value(entity *ent, ir_node *val);
+
+/* A value of a compound entity is a pair of value and the corresponding member of
+   the compound. */
+void      add_compound_ent_value(entity *ent, ir_node *val, entity *member);
+int       get_compound_ent_n_values(entity *ent);
+ir_node  *get_compound_ent_value(entity *ent, int pos);
+entity   *get_compound_ent_value_member(entity *ent, int pos);
+void      set_compound_ent_value(entity *ent, ir_node *val, entity *member, int pos);
+
+/* Only set if layout = fixed. */
 int       get_entity_offset (entity *ent);
 void      set_entity_offset (entity *ent, int offset);
 
@@ -192,6 +221,13 @@ void    set_entity_link(entity *ent, void *l);
 ir_graph *get_entity_irg(entity *ent);
 void      set_entity_irg(entity *ent, ir_graph *irg);
 
+
+/* Returns true if the type of the entity is a primitive, pointern
+   enumeration or method type. */
+int is_atomic_entity(entity *ent);
+/* Returns true if the type of the entity is a class, structure,
+   array or union type. */
+int is_compound_entity(entity *ent);
 
 
 /*****/

@@ -164,7 +164,6 @@ void start_type_walk(ir_node *node, void *env) {
     type_walk_2((type_or_ent *)get_Alloc_type(node), pre, post, envi);
     break;
   case iro_Free:
-    printf("here in typewalk\n");
     type_walk_2((type_or_ent *)get_Free_type(node), pre, post, envi);
     break;
   default:
@@ -177,7 +176,8 @@ void type_walk(void (pre)(type_or_ent*, void*),
 	       void *env) {
   int i;
   ++type_visited;
-  type_walk_2((type_or_ent *)get_glob_type(), pre, post, env);
+  /*type_walk_2((type_or_ent *)get_glob_type(), pre, post, env);
+   global type is on the list visited below, too. */
   for (i = 0; i < get_irp_n_types(); i++) {
     type_walk_2((type_or_ent *)get_irp_type(i), pre, post, env);
   }

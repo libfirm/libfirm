@@ -115,6 +115,50 @@ new_ir_graph (entity *ent, int n_loc)
   return res;
 }
 
+
+/* Make a rudimentary ir graph for the constant code.
+   Must look like a correct irg, spare everything else. */
+ir_graph *new_const_code_irg() {
+  ir_graph *res;
+  ir_node *projX;
+
+  res = (ir_graph *) malloc (sizeof (ir_graph));
+  current_ir_graph = res;
+  res->n_loc = 1;      /* Only the memory. */
+  res->visited = 0;     /* visited flag, for the ir walker */
+  res->block_visited=0; /* visited flag, for the 'block'-walker */
+#if USE_EXPICIT_PHI_IN_STACK
+  res->Phi_in_stack = NULL;
+#endif
+  res->obst      = (struct obstack *) xmalloc (sizeof (struct obstack));
+  obstack_init (res->obst);
+  res->value_table = new_identities (); /* value table for global value
+					   numbering for optimizing use in
+					   iropt.c */
+  res->ent = NULL;
+  res->frame_type = NULL;
+  res->start_block = new_immBlock ();
+  res->end_block = new_immBlock ();
+  res->end       = new_End ();
+  mature_block(get_cur_block());
+  res->bad = new_ir_node (res, res->start_block, op_Bad, mode_T, 0, NULL);
+  res->start   = new_Start ();
+  /* Proj results of start node */
+  projX        = new_Proj (res->start, mode_X, pns_initial_exec);
+  set_store (new_Proj (res->start, mode_M, pns_global_store));
+  add_in_edge(res->start_block, projX);
+  mature_block (res->current_block);
+  add_in_edge (new_immBlock (), projX);
+  mature_block(get_cur_block());
+  /* Set the visited flag high enough that the block will never be visited. */
+  set_irn_visited(get_cur_block(), -1);
+  set_Block_block_visited(get_cur_block(), -1);
+  set_Block_block_visited(res->start_block, -1);
+  return res;
+}
+
+
+
 /* Frees the passed irgraph.
    Deallocates all nodes in this graph and the ir_graph structure.
    Sets the field irgraph in the corresponding entity to NULL.

@@ -54,6 +54,10 @@ struct entity {
 				 entities. */
   ent_visibility visibility;  /* Specifies visibility to external program
 				 fragments */
+  ent_variability variability;  /* Specifies variability of entities content */
+  ir_node *value;            /* value of atomic entity */
+  ir_node **values;     /* values of compound entities */
+  entity **val_ents;    /* entities corresponding to constant values */
   int  offset;          /* Offset in byte for this entity.  Fixed when layout
 			   of owner is determined.  */
   void *link;           /* To store some intermediate information */
@@ -61,8 +65,8 @@ struct entity {
   ir_graph *irg;        /* If (type == method_type) this is the corresponding irg.
 			   The ir_graph constructor automatically sets this field.
 		 	   @@@ Does this go here, or should it be in type_method,
-			   or should Call have an attribute ent?? */
-  /* Do we need to remember the initializer of fields? */
+			   or should Call have an attribute ent??
+			   Yes, it must be here. */
   unsigned long visit;  /* visited counter for walks of the type information */
 };
 

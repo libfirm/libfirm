@@ -491,6 +491,8 @@ ir_node *get_fragile_op_mem(ir_node *node);
                      get_irn_node_nr(X))
 #define DDMSG3(X)    printf("%s(l.%i) %s: %p\n", __FUNCTION__, __LINE__,     \
                      print_firm_kind(X), (X))
+#define DDMSG4(X)    printf("%s(l.%i) %s %s: %p\n", __FUNCTION__, __LINE__,     \
+                     get_type_tpop_name(X), get_type_name(X), (X))
 
 #endif
 

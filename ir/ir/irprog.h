@@ -91,4 +91,17 @@ int get_irp_new_node_nr();
 #endif
 /*****/
 
+/***p* irprog/get_const_code_irg
+ *
+ * NAME
+ *   get_const_code_irg - Returns an irgraph that only contains constant
+ *   expressions for constant entities.
+ * SYNOPSIS
+ *   ir_graph *get_const_code_irg();
+ * NOTE
+ *   Do not use any access function for this graph, do not generate code
+ *   for this graph.
+ */
+ir_graph *get_const_code_irg();
+
 #endif /* ifndef _IRPROG_H_ */

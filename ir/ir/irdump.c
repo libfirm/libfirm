@@ -53,6 +53,8 @@
 #define ARR_ELT_TYPE_EDGE_ATTR "class: 10 label: \"arr elt tp\" color:green"
 #define ARR_ENT_EDGE_ATTR    "class: 10 label: \"arr ent\" color: green"
 #define ENT_OVERWRITES_EDGE_ATTR "class: 11 label: \"overwrites\" color:red"
+#define ENT_VALUE_EDGE_ATTR "label: \"value "
+#define ENT_CORR_EDGE_ATTR "label: \"value %d corresponds to \" "
 #define TYPE_MEMBER_EDGE_ATTR "class: 12 label: \"member\" color:blue"
 
 
@@ -67,9 +69,15 @@ static FILE *F;
 
 /* A compiler option to turn off edge labels */
 int edge_label = 1;
+/* A compiler option to turn off dumping values of constant entities */
+int const_entities = 1;
 
 /* A global variable to record output of the Bad node. */
 int Bad_dumped;
+
+
+void dump_ir_blocks_nodes (ir_node *n, void *env);
+void dump_whole_node (ir_node *n, void* env);
 
 /*******************************************************************/
 /* routines to dump information about a single node                */
@@ -472,6 +480,9 @@ void dump_node2type_edges (ir_node *n, void *env)
   assert(n);
 
   switch (get_irn_opcode(n)) {
+  case iro_Const :
+    /* @@@ some consts have an entity */
+    break;
   case iro_SymConst:
     if (   (get_SymConst_kind(n) == type_tag)
 	   || (get_SymConst_kind(n) == size)) {
@@ -511,6 +522,15 @@ void dump_node2type_edges (ir_node *n, void *env)
 }
 
 
+void dump_const_expression(ir_node *value) {
+  ir_graph *rem = current_ir_graph;
+  current_ir_graph = get_const_code_irg();
+  irg_walk(value, dump_ir_blocks_nodes, NULL, get_nodes_Block(value));
+  set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph) -1);
+  current_ir_graph = rem;
+}
+
+
 /* dumps a type or entity and it's edges. */
 void
 dump_type_info (type_or_ent *tore, void *env) {
@@ -525,18 +545,55 @@ dump_type_info (type_or_ent *tore, void *env) {
   case k_entity:
     {
       entity *ent = (entity *)tore;
+      ir_node *value;
+      /* The node */
       xfprintf (F, "\"ent %I\" " ENTITY_NODE_ATTR , get_entity_ident(ent));
       if(dynamic_allocated == get_entity_allocation(ent))
-	xfprintf (F, " info1:\"dynamic allocated\"}\n");
+	xfprintf (F, " info1:\"dynamic allocated\n");
       else
-	xfprintf (F, " info1:\"static allocated\"}\n");
-      xfprintf (F, "nearedge: { sourcename: \"%p\" targetname: \"%p\" "
-                ENT_OWN_EDGE_ATTR "}\n", tore, get_entity_owner(ent));
+	xfprintf (F, " info1:\"static allocated\n");
+      switch (get_entity_visibility(ent)) {
+	case local:              fprintf (F, "local\n");             break;
+	case external_visible:   fprintf (F, "external_visible\n");  break;
+	case external_allocated: fprintf (F, "external_allocate\nd");break;
+      }
+      switch (get_entity_variability(ent)) {
+	case uninitialized: fprintf (F, "uninitialized");break;
+	case initialized:   fprintf (F, "initialized");  break;
+	case part_constant: fprintf (F, "part_constant");break;
+	case constant:      fprintf (F, "constant");     break;
+      }
+      xfprintf(F, "\"}\n");
+      /* The Edges */
       xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-                ENT_TYPE_EDGE_ATTR "}\n", tore, get_entity_type(ent));
+                ENT_OWN_EDGE_ATTR "}\n", ent, get_entity_owner(ent));
+      xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
+                ENT_TYPE_EDGE_ATTR "}\n", ent, get_entity_type(ent));
       for(i = 0; i < get_entity_n_overwrites(ent); i++)
 	xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-		  ENT_OVERWRITES_EDGE_ATTR "}\n", tore, get_entity_overwrites(ent, i));
+		  ENT_OVERWRITES_EDGE_ATTR "}\n", ent, get_entity_overwrites(ent, i));
+      /* attached subgraphs */
+      if (const_entities && (get_entity_variability(ent) != uninitialized)) {
+	if (is_atomic_entity(ent)) {
+	  value = get_atomic_ent_value(ent);
+	  xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"", ent);
+	  PRINT_NODEID(value);
+	  fprintf(F, "\" " ENT_VALUE_EDGE_ATTR "\"}\n");
+	  dump_const_expression(value);
+	}
+	if (is_compound_entity(ent)) {
+	  for (i = 0; i < get_compound_ent_n_values(ent); i++) {
+	    value = get_compound_ent_value(ent, i);
+	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"", ent);
+	    PRINT_NODEID(value);
+	    fprintf(F, "\" " ENT_VALUE_EDGE_ATTR " %d \"}\n", i);
+	    dump_const_expression(value);
+	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
+		      ENT_CORR_EDGE_ATTR  "}\n", ent,
+		      get_compound_ent_value_member(ent, i), i);
+	  }
+	}
+      }
     } break;
   case k_type:
     {
@@ -902,6 +959,11 @@ dump_type_graph (ir_graph *irg)
 
   /* walk over the blocks in the graph */
   type_walk_irg(irg, dump_type_info, NULL, NULL);
+  /* The walker for the const code can be called several times for the
+     same (sub) experssion.  So that no nodes are dumped several times
+     we decrease the visited flag of the corresponding graph after each
+     walk.  So now increase it finally. */
+  inc_irg_visited(get_const_code_irg());
 
   vcg_close();
   current_ir_graph = rem;
@@ -917,6 +979,7 @@ dump_all_types (void)
 {
   vcg_open_name ("All_types");
   type_walk(dump_type_info, NULL, NULL);
+  inc_irg_visited(get_const_code_irg());
   vcg_close();
 }
 
@@ -938,6 +1001,7 @@ dump_ir_graph_w_types (ir_graph *irg)
   irg_walk(irg->end, dump_whole_node, NULL, NULL);
   /* dump type info */
   type_walk_irg(irg, dump_type_info, NULL, NULL);
+  inc_irg_visited(get_const_code_irg());
   /* dump edges from graph to type info */
   irg_walk(irg->end, dump_node2type_edges, NULL, NULL);
 
@@ -958,6 +1022,7 @@ dump_ir_block_graph_w_types (ir_graph *irg)
   dump_ir_block_graph_2(irg);
   /* dump type info */
   type_walk_irg(irg, dump_type_info, NULL, NULL);
+  inc_irg_visited(get_const_code_irg());
   /* dump edges from graph to type info */
   irg_walk(irg->end, dump_node2type_edges, NULL, NULL);
 
@@ -985,4 +1050,8 @@ void dump_all_ir_graphs (void dump_graph(ir_graph*)) {
    abort with a segmentation fault. */
 void turn_of_edge_labels() {
   edge_label = 0;
+}
+
+void dump_constant_entity_values() {
+  const_entities = 0;
 }

@@ -238,4 +238,23 @@ void dump_all_ir_graphs (void dump_graph(ir_graph*));
 void turn_of_edge_labels();
 
 
+/****m* irdump/dump_constant_entity_values
+ *
+ * NAME
+ *   dump_constant_entity_values
+ * SYNOPSIS
+ *   void dump_constant_entity_values()
+ * FUNCTION
+ *   Turns off dumping the values of constant entities. Maked type graphs
+ *   better readable.
+ * INPUTS
+ *   No inputs
+ * RESULT
+ * SEE ALSO
+ *
+ ***
+ */
+void dump_constant_entity_values();
+
+
 # endif /* _IRDUMP_H_ */

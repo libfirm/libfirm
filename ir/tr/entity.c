@@ -17,6 +17,9 @@
 # include "mangle.h"
 # include "typegmod_t.h"
 # include "array.h"
+/* All this is needed to build the constant node for methods: */
+# include "irprog.h"
+# include "ircons.h"
 
 /*******************************************************************/
 /** general                                                       **/
@@ -54,6 +57,7 @@ entity *
 new_entity (type *owner, ident *name, type *type)
 {
   entity *res;
+  ir_graph *rem;
 
   res = (entity *) malloc (sizeof (entity));
   res->kind = k_entity;
@@ -63,6 +67,15 @@ new_entity (type *owner, ident *name, type *type)
   res->type = type;
   res->allocation = dynamic_allocated;
   res->visibility = local;
+  if (is_method_type(type)) {
+    res->variability = constant;
+    rem = current_ir_graph;
+    current_ir_graph = get_const_code_irg();
+    res->value = new_Const(mode_p, tarval_p_from_entity(res));
+    current_ir_graph = rem;
+  } else {
+    res->variability = uninitialized;
+  }
   res->ld_name = NULL;
   res->overwrites = NEW_ARR_F(entity *, 1);
 
@@ -197,6 +210,80 @@ set_entity_visibility (entity *ent, ent_visibility vis) {
   ent->visibility = vis;
 }
 
+inline ent_variability
+get_entity_variability (entity *ent) {
+  return ent->variability;
+}
+
+inline void
+set_entity_variability (entity *ent, ent_variability var){
+  if (var == part_constant)
+    assert(is_class_type(ent->type) || is_struct_type(ent->type));
+  if ((is_compound_type(ent->type)) &&
+      (ent->variability == uninitialized) && (var != uninitialized)) {
+    /* Allocate datastructures for constant values */
+    ent->values = NEW_ARR_F(ir_node *, 1);
+    ent->val_ents = NEW_ARR_F(entity *, 1);
+  }
+  if ((is_compound_type(ent->type)) &&
+      (var == uninitialized) && (ent->variability != uninitialized)) {
+    /* Free datastructures for constant values */
+    DEL_ARR_F(ent->values);
+    DEL_ARR_F(ent->val_ents);
+  }
+  ent->variability = var;
+}
+
+/* Set has no effect for entities of type method. */
+inline ir_node *
+get_atomic_ent_value(entity *ent) {
+  assert(ent); assert(is_atomic_entity(ent)); assert((ent->variability != uninitialized));
+  return ent->value;
+}
+
+inline void
+set_atomic_ent_value(entity *ent, ir_node *val) {
+  assert(ent && is_atomic_entity(ent) && (ent->variability != uninitialized));
+  if (is_method_type(ent->type)) return;
+  ent->value = val;
+}
+
+
+/* A value of a compound entity is a pair of value and the corresponding member of
+   the compound. */
+inline void
+add_compound_ent_value(entity *ent, ir_node *val, entity *member) {
+  assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
+  ARR_APP1 (ir_node *, ent->values, val);
+  ARR_APP1 (entity *, ent->val_ents, member);
+}
+
+inline int
+get_compound_ent_n_values(entity *ent) {
+  assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
+  return (ARR_LEN (ent->values))-1;
+}
+
+inline ir_node  *
+get_compound_ent_value(entity *ent, int pos) {
+  assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
+  return ent->values[pos+1];
+}
+
+inline entity   *
+get_compound_ent_value_member(entity *ent, int pos) {
+  assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
+  return ent->val_ents[pos+1];
+}
+
+inline void
+set_compound_ent_value(entity *ent, ir_node *val, entity *member, int pos) {
+  assert(ent && is_compound_entity(ent) && (ent->variability != uninitialized));
+  ent->values[pos+1] = val;
+  ent->val_ents[pos+1] = member;
+}
+
+
 inline int
 get_entity_offset (entity *ent) {
   return ent->offset;
@@ -257,4 +344,16 @@ set_entity_irg(entity *ent, ir_graph *irg) {
   assert (irg);
   assert (is_method_type(ent->type));
   ent->irg = irg;
+}
+
+int is_atomic_entity(entity *ent) {
+  type* t = ent->type;
+  return (is_primitive_type(t) || is_pointer_type(t) ||
+	  is_enumeration_type(t) || is_method_type(t));
+}
+
+int is_compound_entity(entity *ent) {
+  type* t = ent->type;
+  return (is_class_type(t) || is_struct_type(t) ||
+	  is_array_type(t) || is_union_type(t));
 }

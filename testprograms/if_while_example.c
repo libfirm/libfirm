@@ -63,8 +63,8 @@ main(void)
   irg = new_ir_graph (ent, 4);
 
   /* Generate two constants */
-  set_value (0, new_Const (mode_I, tarval_from_long (mode_i, 0)));
-  set_value (1, new_Const (mode_I, tarval_from_long (mode_i, 1)));
+  set_value (0, new_Const (mode_I, tarval_from_long (mode_I, 0)));
+  set_value (1, new_Const (mode_I, tarval_from_long (mode_I, 1)));
   mature_block (get_irg_current_block(irg));
 
   /* Generate a conditional branch */
