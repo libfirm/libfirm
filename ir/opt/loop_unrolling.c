@@ -532,10 +532,9 @@ copy_loop_body(set *l_n, induct_var_info *info, int unroll_factor)
 static int is_exception_possible(ir_node *node)
 {
   ir_node *pred = get_Proj_pred(node);
-  ir_op *op = get_irn_op(pred);
 
   /* only fragile ops can throw an exception */
-  if (! is_fragile_op(op))
+  if (! is_fragile_op(pred))
     return 0;
 
   /*
