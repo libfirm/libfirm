@@ -96,7 +96,7 @@ offset:  -1
 irg = g18"
 }
 edge: { sourcename:"e5" targetname: "t3" class: 3 label: "type" color: red}
-edge: { sourcename: "e5" targetname: "n4" label: "value  0 "}
+edge: { sourcename:"e5" targetname: "n4" label: "value 0"}
 node: {title: "n4" label: "&(ARRAY-STACK_EXAMPLE_main)P  4" color: yellow}
 node: {title: "t2" label: "class ARRAY-STACK_EXAMPLE"info1: "state: layout_undefined
 size: -1B,
@@ -107,6 +107,6 @@ mode: P,
 size: 4B,
 "}
 edge: { sourcename:"t3" targetname: "t1" class: 6 label: "res 0" color: green}
-edge: { sourcename: "n44" targetname: "0x80a1908" class: 2 priority: 2 linestyle: dotted}
-edge: { sourcename: "n46" targetname: "0x80a1990" class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename:"n44" targetname: "e21" class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename:"n46" targetname: "e24" class: 2 priority: 2 linestyle: dotted}
 }

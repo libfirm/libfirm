@@ -73,7 +73,7 @@ offset:  -1
 irg = g18"
 }
 edge: { sourcename:"e4" targetname: "t2" class: 3 label: "type" color: red}
-edge: { sourcename: "e4" targetname: "n3" label: "value  0 "}
+edge: { sourcename:"e4" targetname: "n3" label: "value 0"}
 node: {title: "n3" label: "&(GlobalType_GLOBAL_VAR_main)P  3" color: yellow}
 node: {title: "t2" label: "method GLOBAL_VAR_main"info1: "state: layout_fixed,
 mode: P,
@@ -86,5 +86,5 @@ size: 4B,
 node: {title: "t6" label: "class GLOBAL_VAR_mainframe_tp"info1: "state: layout_undefined
 size: -1B,
 " color: green}
-edge: { sourcename: "n38" targetname: "0x809f1f0" class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename:"n38" targetname: "e5" class: 2 priority: 2 linestyle: dotted}
 }

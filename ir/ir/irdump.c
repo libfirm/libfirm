@@ -65,7 +65,7 @@
 #define ARR_ELT_TYPE_EDGE_ATTR "class: 10 label: \"arr elt tp\" color:green"
 #define ARR_ENT_EDGE_ATTR    "class: 10 label: \"arr ent\" color: green"
 #define ENT_OVERWRITES_EDGE_ATTR "class: 11 label: \"overwrites\" color:red"
-#define ENT_VALUE_EDGE_ATTR "label: \"value "
+#define ENT_VALUE_EDGE_ATTR "label: \"value %d\""
 #define ENT_CORR_EDGE_ATTR "label: \"value %d corresponds to \" "
 #define TYPE_MEMBER_EDGE_ATTR "class: 12 label: \"member\" color:blue"
 
@@ -86,6 +86,9 @@
 #define PRINT_TYPE_ENT_EDGE(S,T,ATR,...)  {fprintf (F, "edge: { sourcename:\""); PRINT_TYPEID(S); fprintf (F, "\" targetname: \""); PRINT_ENTID(T);  fprintf (F,"\" " ATR "}\n",##__VA_ARGS__);}
 #define PRINT_ENT_ENT_EDGE(S,T,ATR,...)   {fprintf (F, "edge: { sourcename:\""); PRINT_ENTID(S); fprintf (F, "\" targetname: \""); PRINT_ENTID(T);  fprintf (F,"\" " ATR "}\n",##__VA_ARGS__);}
 #define PRINT_ENT_TYPE_EDGE(S,T,ATR,...)  {fprintf (F, "edge: { sourcename:\""); PRINT_ENTID(S); fprintf (F, "\" targetname: \""); PRINT_TYPEID(T);  fprintf (F,"\" " ATR "}\n",##__VA_ARGS__);}
+#define PRINT_NODE_TYPE_EDGE(S,T,ATR,...)  {fprintf (F, "edge: { sourcename:\""); PRINT_NODEID(S); fprintf (F, "\" targetname: \""); PRINT_TYPEID(T);  fprintf (F,"\" " ATR "}\n",##__VA_ARGS__);}
+#define PRINT_NODE_ENT_EDGE(S,T,ATR,...)   {fprintf (F, "edge: { sourcename:\""); PRINT_NODEID(S); fprintf (F, "\" targetname: \""); PRINT_ENTID(T);  fprintf (F,"\" " ATR "}\n",##__VA_ARGS__);}
+#define PRINT_ENT_NODE_EDGE(S,T,ATR,...)   {fprintf (F, "edge: { sourcename:\""); PRINT_ENTID(S); fprintf (F, "\" targetname: \""); PRINT_NODEID(T);  fprintf (F,"\" " ATR "}\n",##__VA_ARGS__);}
 
 
 /* A suffix to manipulate the file name. */
@@ -709,36 +712,22 @@ static void dump_node2type_edges (ir_node *n, void *env)
     break;
   case iro_SymConst:
     if (   (get_SymConst_kind(n) == type_tag)
-	   || (get_SymConst_kind(n) == size)) {
-      fprintf (F, "edge: { sourcename: \"");
-      PRINT_NODEID(n);
-      fprintf (F, "\" targetname: \"%p\" "
-	       NODE2TYPE_EDGE_ATTR "}\n", get_SymConst_type(n));
+	   || (get_SymConst_kind(n) == size))
+    {
+	    PRINT_NODE_TYPE_EDGE(n,get_SymConst_type(n),NODE2TYPE_EDGE_ATTR);
     }
     break;
   case iro_Sel: {
-    fprintf (F, "edge: { sourcename: \"");
-    PRINT_NODEID(n);
-    fprintf (F, "\" targetname: \"%p\" "
-	     NODE2TYPE_EDGE_ATTR "}\n", get_Sel_entity(n));
+	    PRINT_NODE_ENT_EDGE(n,get_Sel_entity(n),NODE2TYPE_EDGE_ATTR);
     } break;
   case iro_Call: {
-    fprintf (F, "edge: { sourcename: \"");
-    PRINT_NODEID(n);
-    fprintf (F, "\" targetname: \"%p\" "
-	     NODE2TYPE_EDGE_ATTR "}\n", get_Call_type(n));
+	    PRINT_NODE_TYPE_EDGE(n,get_Call_type(n),NODE2TYPE_EDGE_ATTR);
     } break;
   case iro_Alloc: {
-    fprintf (F, "edge: { sourcename: \"");
-    PRINT_NODEID(n);
-    fprintf (F, "\" targetname: \"%p\" "
-	     NODE2TYPE_EDGE_ATTR "}\n", get_Alloc_type(n));
+	    PRINT_NODE_TYPE_EDGE(n,get_Alloc_type(n),NODE2TYPE_EDGE_ATTR);
     } break;
   case iro_Free: {
-    fprintf (F, "edge: { sourcename: \"");
-    PRINT_NODEID(n);
-    fprintf (F, "\" targetname: \"%p\" "
-	     NODE2TYPE_EDGE_ATTR "}\n", get_Free_type(n));
+	    PRINT_NODE_TYPE_EDGE(n,get_Free_type(n),NODE2TYPE_EDGE_ATTR);
     } break;
   default:
     break;
@@ -892,11 +881,7 @@ dump_type_info (type_or_ent *tore, void *env) {
 	if (is_atomic_entity(ent)) {
 	  value = get_atomic_ent_value(ent);
 	  if (value) {
-	    fprintf (F, "edge: { sourcename: \"");
-	    PRINT_ENTID(ent);
-	    fprintf (F, "\" targetname: \"");
-	    PRINT_NODEID(value);
-	    fprintf(F, "\" " ENT_VALUE_EDGE_ATTR " %d \"}\n", i);
+            PRINT_ENT_NODE_EDGE(ent,value,ENT_VALUE_EDGE_ATTR,i);
 	      /*
 	    fprintf (F, "edge: { sourcename: \"%p\" targetname: \"", GET_ENTID(ent));
 	    PRINT_NODEID(value);
@@ -909,11 +894,7 @@ dump_type_info (type_or_ent *tore, void *env) {
 	  for (i = 0; i < get_compound_ent_n_values(ent); i++) {
 	    value = get_compound_ent_value(ent, i);
 	    if (value) {
-	      fprintf (F, "edge: { sourcename: \"");
-	      PRINT_ENTID(ent);
-	      fprintf (F, "\" targetname: \"");
-	      PRINT_NODEID(value);
-	      fprintf(F, "\" " ENT_VALUE_EDGE_ATTR " %d \"}\n", i);
+              PRINT_ENT_NODE_EDGE(ent,value,ENT_VALUE_EDGE_ATTR,i);
 	      dump_const_expression(value);
 	      PRINT_ENT_ENT_EDGE(ent,get_compound_ent_value_member(ent, i),ENT_CORR_EDGE_ATTR,i);
 	      /*

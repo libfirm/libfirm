@@ -57,7 +57,7 @@ offset:  -1
 irg = g18"
 }
 edge: { sourcename:"e5" targetname: "t3" class: 3 label: "type" color: red}
-edge: { sourcename: "e5" targetname: "n4" label: "value  0 "}
+edge: { sourcename:"e5" targetname: "n4" label: "value 0"}
 node: {title: "n4" label: "&(ARRAY-STACK_EXAMPLE_main)P  4" color: yellow}
 node: {title: "t2" label: "class ARRAY-STACK_EXAMPLE"info1: "state: layout_undefined
 size: -1B,

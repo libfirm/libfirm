@@ -110,7 +110,7 @@ offset:  -1
 irg = g60"
 }
 edge: { sourcename:"e7" targetname: "t5" class: 3 label: "type" color: red}
-edge: { sourcename: "e7" targetname: "n6" label: "value  0 "}
+edge: { sourcename:"e7" targetname: "n6" label: "value 0"}
 node: {title: "n6" label: "&(PRIMA_set_a)P  6" color: yellow}
 node: {title: "t5" label: "method set_a"info1: "state: layout_fixed,
 mode: P,
@@ -131,7 +131,7 @@ offset:  -1
 irg = g83"
 }
 edge: { sourcename:"e10" targetname: "t8" class: 3 label: "type" color: red}
-edge: { sourcename: "e10" targetname: "n9" label: "value  0 "}
+edge: { sourcename:"e10" targetname: "n9" label: "value 0"}
 node: {title: "n9" label: "&(PRIMA_c)P  9" color: yellow}
 node: {title: "e13"label: "ent OO_PROGRAM_EXAMPLE_main" color: yellow
  info1:"
@@ -146,7 +146,7 @@ offset:  -1
 irg = g26"
 }
 edge: { sourcename:"e13" targetname: "t11" class: 3 label: "type" color: red}
-edge: { sourcename: "e13" targetname: "n12" label: "value  0 "}
+edge: { sourcename:"e13" targetname: "n12" label: "value 0"}
 node: {title: "n12" label: "&(GlobalType_OO_PROGRAM_EXAMPLE_main)P  12" color: yellow}
 node: {title: "t0" label: "class GlobalType"info1: "state: layout_undefined
 size: -1B,
@@ -160,10 +160,10 @@ edge: { sourcename:"t11" targetname: "t1" class: 6 label: "res 0" color: green}
 node: {title: "t14" label: "class OO_PROGRAM_EXAMPLE_mainframe_tp"info1: "state: layout_undefined
 size: -1B,
 " color: green}
-edge: { sourcename: "n105" targetname: "0x80a04f0" class: 2 priority: 2 linestyle: dotted}
-edge: { sourcename: "n108" targetname: "0x80a0298" class: 2 priority: 2 linestyle: dotted}
-edge: { sourcename: "n109" targetname: "0x80a0298" class: 2 priority: 2 linestyle: dotted}
-edge: { sourcename: "n111" targetname: "0x80a0550" class: 2 priority: 2 linestyle: dotted}
-edge: { sourcename: "n113" targetname: "0x80a03e8" class: 2 priority: 2 linestyle: dotted}
-edge: { sourcename: "n115" targetname: "0x80a0480" class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename:"n105" targetname: "t8" class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename:"n108" targetname: "t2" class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename:"n109" targetname: "t2" class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename:"n111" targetname: "e10" class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename:"n113" targetname: "t5" class: 2 priority: 2 linestyle: dotted}
+edge: { sourcename:"n115" targetname: "e7" class: 2 priority: 2 linestyle: dotted}
 }

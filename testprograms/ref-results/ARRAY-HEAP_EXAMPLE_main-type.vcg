@@ -41,7 +41,7 @@ offset:  -1
 irg = g17"
 }
 edge: { sourcename:"e4" targetname: "t2" class: 3 label: "type" color: red}
-edge: { sourcename: "e4" targetname: "n3" label: "value  0 "}
+edge: { sourcename:"e4" targetname: "n3" label: "value 0"}
 node: {title: "n3" label: "&(GlobalType_ARRAY-HEAP_EXAMPLE_main)P  3" color: yellow}
 node: {title: "t0" label: "class GlobalType"info1: "state: layout_undefined
 size: -1B,
