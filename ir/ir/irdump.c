@@ -30,6 +30,8 @@
 # include "irdom.h"
 # include "common_t.h"
 
+# include "exc.h"
+
 /* Attributes of nodes */
 #define DEFAULT_NODE_ATTR ""
 #define DEFAULT_TYPE_ATTRIBUTE ""
@@ -947,12 +949,16 @@ dump_ir_block (ir_node *block, void *env) {
   if (get_irn_opcode(block) == iro_Block) {
 
     /* This is a block. So dump the vcg information to make a block. */
-    xfprintf(F, "graph: { title: \""); PRINT_NODEID(block); fprintf(F, "\"  label: \"");
+    xfprintf(F, "graph: { title: \"");
+	PRINT_NODEID(block);
+	fprintf(F, "\"  label: \"");
 #ifdef DEBUG_libfirm
     xfprintf (F, "%ld", get_irn_node_nr(block));
 #else
     xfprintf (F, "%I", block->op->name);
 #endif
+	fprintf (F, " (%s)", exc_to_string (get_Block_exc (block)));
+
     xfprintf(F, "\" status:clustered color:%s \n",
 			 get_Block_matured (block) ? "yellow" : "red");
     /* dump the blocks edges */
