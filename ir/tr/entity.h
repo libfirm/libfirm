@@ -116,6 +116,7 @@ typedef struct ir_graph ir_graph;
 /* to resolve recursion between entity.h and type.h */
 #ifndef _ENTITY_TYPEDEF_
 #define _ENTITY_TYPEDEF_
+/** the type of an entity */
 typedef struct entity entity;
 #endif
 
