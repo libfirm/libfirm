@@ -1,7 +1,16 @@
+  21.1.2002 Goetz
+  Added volatile flag to entity, order flag to array.
+  Added a set of assertions.
+
+  17.1.2002 Goetz
+  Added access function set_class_members()
+
   21.12.2001 Goetz
   Asserts in irvrfy that verify the mode of Proj nodes.  For Start,
   Call, Return they check the corresponding function type!  Corrected
   bugs in testprograms.
+  Some asserts for legal values of 'pos' arguments in type/entity
+  access routines.
 
   20.12.2001 Goetz
   Some access routines for visited flags in entity.h, irnode.h,
