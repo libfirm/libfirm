@@ -1,3 +1,5 @@
+    Add flag whether mode is associative, float modes are not!!
+
   * 25.2.04 Goetz
     Fix memory leak in irprog: free_ir_prog.
     Fix memory leak in entity: free_entity_attrs
