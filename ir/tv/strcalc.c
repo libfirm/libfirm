@@ -1153,14 +1153,22 @@ void sc_val_from_ulong(unsigned long value, void *buffer)
   }
 }
 
-long sc_val_to_long(const void *val)
+long sc_val_to_long(const void *val, unsigned int bits, unsigned int is_signed)
 {
   int i;
   long l = 0;
 
   for (i = CALC_BUFFER_SIZE - 1; i >= 0; i--)
-  {
     l = (l << 4) + _val(((char *)val)[i]);
+
+  if (bits < (sizeof(long) << 3)) {
+    /* remove unused bits */
+    l &= ~((-1) << bits);
+
+    /* sign extend */
+    if (is_signed)
+      if (l & (1 << (bits-1)))
+        l |= ((-1) << bits);
   }
   return l;
 }
@@ -1279,7 +1287,7 @@ void sc_bitcalc(const void* value1, const void* value2, int radius, int sign, un
   long offset;
 
   carry_flag = 0;
-  offset = sc_val_to_long(val2);
+  offset = sc_val_to_long(val2, radius, sign);
 
   DEBUGPRINTF_COMPUTATION(("%s ", sc_print_hex(value1)));
   switch (op)

@@ -121,7 +121,7 @@ const int sc_get_buffer_length(void);
 void sc_val_from_str(const char *str, unsigned int len, void *buffer);
 void sc_val_from_long(long l, void *buffer);
 void sc_val_from_ulong(unsigned long l, void *buffer);
-long sc_val_to_long(const void *val);
+long sc_val_to_long(const void *val, unsigned int bits, unsigned int sign);
 void sc_min_from_bits(unsigned int num_bits, unsigned int sign, void *buffer);
 void sc_max_from_bits(unsigned int num_bits, unsigned int sign, void *buffer);
 

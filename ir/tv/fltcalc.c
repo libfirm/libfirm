@@ -458,7 +458,7 @@ static char* _add(const char* a, const char* b, char* result)
    * when exponents are equal is required though.
    * Also special care about the sign is needed when the mantissas are equal
    * (+/- 0 ?) */
-  if (sign && sc_val_to_long(exp_diff) == 0) {
+  if (sign && sc_val_to_long(exp_diff, VALUE_SIZE >> 2, 1) == 0) {
     switch (sc_comp(_mant(a), _mant(b))) {
       case 1:  /* a > b */
         if (_sign(a)) _sign(result) = 1;  /* abs(a) is bigger and a is negative */
@@ -769,7 +769,7 @@ static char* _trunc(const char *a, char *result)
     memcpy(&_desc(result), &_desc(a), sizeof(descriptor_t));
 
   exp_bias = (1<<_desc(a).exponent_size)/2-1;
-  exp_val = sc_val_to_long(_exp(a)) - exp_bias;
+  exp_val = sc_val_to_long(_exp(a), VALUE_SIZE >> 2, 1) - exp_bias;
 
   if (exp_val < 0) {
     sc_val_from_ulong(0, NULL);
@@ -1212,7 +1212,7 @@ LLDBL fc_val_to_float(const void *val)
 
   /* @@@ long double exponent is 15bit, so the use of sc_val_to_long should not
    * lead to wrong results */
-  exponent = sc_val_to_long(_exp(value)) ;
+  exponent = sc_val_to_long(_exp(value), VALUE_SIZE >> 2, 1) ;
 
   sc_val_from_ulong(2, NULL);
   _shift_right(_mant(value), sc_get_buffer(), _mant(value));
