@@ -10,6 +10,8 @@
 
 #include "irgraph_t.h"
 #include "irnode_t.h"
+#include "iropt_t.h"
+#include "irgmod.h"
 #include "irmode_t.h"
 #include "ircons_t.h"
 #include "irdom_t.h"
@@ -18,7 +20,9 @@
 #include "irflag_t.h"
 
 #include "debug.h"
+#include "obst.h"
 #include "set.h"
+#include "bitfiddle.h"
 
 #define MAX_DEPTH 4
 
@@ -104,26 +108,44 @@ static ir_node *local_optimize_mux(ir_node *mux)
 }
 #endif
 
+/**
+ * check, if a node is const and return its tarval or
+ * return a default tarval.
+ * @param cnst The node whose tarval to get.
+ * @param or The alternative tarval, if the node is no Const.
+ * @return The tarval of @p cnst, if the node is Const, @p otherwise.
+ */
 static tarval *get_value_or(ir_node *cnst, tarval *or)
 {
 	return get_irn_op(cnst) == op_Const ? get_Const_tarval(cnst) : or;
 }
 
 
+/**
+ * Try to optimize nested muxes into a dis- or conjunction
+ * of two muxes.
+ * @param mux The parent mux, which has muxes as operands.
+ * @return The replacement node for this mux. If the optimization is
+ * successful, this might be an And or Or node, if not, its the mux
+ * himself.
+ */
 static ir_node *optimize_mux_chain(ir_node *mux)
 {
 	int i;
 	ir_node *res;
 	ir_node *ops[2];
-	ir_mode *mode;
+	ir_mode *mode = get_irn_mode(mux);
 	tarval *null;
 	tarval *minus_one;
 
-	if(get_irn_op(mux) != op_Mux)
+	/*
+	 * If we have no mux, or its mode is not integer, we
+	 * can return.
+	 */
+	if(get_irn_op(mux) != op_Mux || !mode_is_int(mode))
 		return mux;
 
 	res = mux;
-	mode = get_irn_mode(mux);
 	null = get_tarval_null(mode);
 	minus_one = tarval_sub(null, get_tarval_one(mode));
 
@@ -136,8 +158,8 @@ static ir_node *optimize_mux_chain(ir_node *mux)
 		ir_node *child_mux;
 
 		/*
-		 * This is the or case, the child mux is the false operand
-		 * of the parent mux.
+		 * A mux operand at the first position can be factored
+		 * out, if the operands fulfill several conditions:
 		 *
 		 * mux(c1, mux(c2, a, b), d)
 		 *
@@ -185,6 +207,7 @@ static ir_node *optimize_mux_chain(ir_node *mux)
 		}
 	}
 
+	/* recursively optimize nested muxes. */
 	set_irn_n(mux, 1, optimize_mux_chain(ops[0]));
 	set_irn_n(mux, 2, optimize_mux_chain(ops[1]));
 
@@ -203,8 +226,21 @@ static opt_if_conv_info_t default_info = {
 	4
 };
 
-/** THe debugging module. */
+/** The debugging module. */
 static firm_dbg_module_t *dbg;
+
+/**
+ * A small helper to indent strings.
+ */
+static INLINE char *str_indent(char *buf, size_t len, int depth)
+{
+	int i;
+	for(i = 0; i < depth && i < len - 1; ++i)
+		buf[i] = ' ';
+
+	buf[i] = '\0';
+	return buf;
+}
 
 /**
  * A simple check for sde effects upton an opcode of a ir node.
@@ -243,6 +279,14 @@ static int _can_move_to(ir_node *expr, ir_node *dest_block, int depth, int max_d
 	 * treat it like it could not be moved.
 	 */
 	if(depth >= max_depth) {
+		res = 0;
+		goto end;
+	}
+
+	/*
+	 * We cannot move phis!
+	 */
+	if(is_Phi(expr)) {
 		res = 0;
 		goto end;
 	}
@@ -373,9 +417,10 @@ static int cond_cmp(const void *a, const void *b, size_t size)
 /**
  * @see find_conds.
  */
-static void _find_conds(ir_node *irn, unsigned long visited_nr,
+static void _find_conds(ir_node *irn, ir_node *base_block, unsigned long visited_nr,
 		ir_node *dominator, ir_node *masked_by, int pos, int depth, set *conds)
 {
+	char ind[32];
 	ir_node *block;
 
 	block = get_nodes_block(irn);
@@ -384,14 +429,21 @@ static void _find_conds(ir_node *irn, unsigned long visited_nr,
 		ir_node *cond = NULL;
 		int i, n;
 
-		/* check, if we're on a ProjX */
-		if(is_Proj(irn) && get_irn_mode(irn) == mode_X) {
+		/* check, if we're on a ProjX
+		 *
+		 * Further, the ProjX/Cond block must dominate the base block
+		 * (the block with the phi in it), otherwise, the Cond
+		 * is not affecting the phi so that a mux can be inserted.
+		 */
+		if(is_Proj(irn) && get_irn_mode(irn) == mode_X
+				&& block_dominates(block, base_block)) {
 
 			int proj = get_Proj_proj(irn);
 			cond = get_Proj_pred(irn);
 
 			/* Check, if the pred of the proj is a Cond
-			 * with a Projb as selector. */
+			 * with a Projb as selector.
+			 */
 			if(get_irn_opcode(cond) == iro_Cond
 					&& get_irn_mode(get_Cond_selector(cond)) == mode_b) {
 
@@ -424,8 +476,8 @@ static void _find_conds(ir_node *irn, unsigned long visited_nr,
 				if(!masked_by)
 					res->cases[proj].pos = pos;
 
-				DBG((dbg, LEVEL_5, "found cond %n (%s branch) for pos %d in block %n reached by %n\n",
-							cond, get_Proj_proj(irn) ? "true" : "false", pos, block, masked_by));
+				DBG((dbg, LEVEL_5, "%>found cond %n (%s branch) for pos %d in block %n reached by %n\n",
+							depth, cond, get_Proj_proj(irn) ? "true" : "false", pos, block, masked_by));
 			}
 		}
 
@@ -448,7 +500,8 @@ static void _find_conds(ir_node *irn, unsigned long visited_nr,
 				 * as given by the caller. We also increase the depth for the
 				 * recursively called functions.
 				 */
-				_find_conds(pred, visited_nr, dominator, cond, depth == 0 ? i : pos, depth + 1, conds);
+				_find_conds(pred, base_block, visited_nr, dominator, cond,
+						depth == 0 ? i : pos, depth + 1, conds);
 			}
 		}
 	}
@@ -466,7 +519,8 @@ static void _find_conds(ir_node *irn, unsigned long visited_nr,
 static INLINE void find_conds(ir_node *irn, ir_node *dominator, set *conds)
 {
 	inc_irg_block_visited(current_ir_graph);
-	_find_conds(irn, get_irg_block_visited(current_ir_graph), dominator, NULL, 0, 0, conds);
+	_find_conds(irn, get_nodes_block(irn), get_irg_block_visited(current_ir_graph),
+			dominator, NULL, 0, 0, conds);
 }
 
 
@@ -477,7 +531,7 @@ static INLINE void find_conds(ir_node *irn, ir_node *dominator, set *conds)
  * @param cond The cond information.
  * @return The mux node made for this cond.
  */
-static ir_node *make_mux_on_demand(ir_node *phi, ir_node *dom, cond_t *cond)
+static ir_node *make_mux_on_demand(ir_node *phi, ir_node *dom, cond_t *cond, set *cond_set)
 {
 	int i;
 	ir_node *projb = get_Cond_selector(cond->cond);
@@ -491,8 +545,13 @@ static ir_node *make_mux_on_demand(ir_node *phi, ir_node *dom, cond_t *cond)
 		 * it as an operand.
 		 */
 		if(cond->cases[i].masked_by) {
-			cond_t *masking_cond = get_irn_link(cond->cases[i].masked_by);
-			operands[i] = make_mux_on_demand(phi, dom, masking_cond);
+			cond_t templ;
+			cond_t *masking_cond;
+
+			templ.cond = cond->cases[i].masked_by;
+			masking_cond = set_find(cond_set, &templ, sizeof(templ), HASH_PTR(templ.cond));
+
+			operands[i] = make_mux_on_demand(phi, dom, masking_cond, cond_set);
 		}
 
 		/*
@@ -527,7 +586,7 @@ static void check_out_phi(ir_node *irn, opt_if_conv_info_t *info)
 {
 	int max_depth = info->max_depth;
 	int i;
-	ir_node *block;
+	ir_node *block, *nw;
 	int arity;
 	ir_node *idom;
 	ir_node *mux = NULL;
@@ -623,7 +682,7 @@ static void check_out_phi(ir_node *irn, opt_if_conv_info_t *info)
 	 * produce all other muxes.
 	 * @see make_mux_on_demand.
 	 */
-	mux = make_mux_on_demand(irn, idom, largest_cond);
+	mux = make_mux_on_demand(irn, idom, largest_cond, cond_set);
 
 	/*
 	 * Try to optimize mux chains.
@@ -636,6 +695,14 @@ static void check_out_phi(ir_node *irn, opt_if_conv_info_t *info)
 	 */
 	for(i = 0; i < arity; ++i)
 		set_irn_n(irn, i, mux);
+
+	/*
+	 * optimize the phi away. This can anable further runs of this
+	 * function. Look at _can_move. phis cannot be moved there.
+	 */
+	nw = optimize_in_place_2(irn);
+	if(nw != irn)
+		exchange(irn, nw);
 }
 
 static void annotate_cond_info_pre(ir_node *irn, void *data)
@@ -653,14 +720,15 @@ static void annotate_cond_info_post(ir_node *irn, void *data)
 	 */
 	if(is_Phi(irn) && mode_is_datab(get_irn_mode(irn))) {
 		ir_node *block = get_nodes_block(irn);
-		ir_node **phi_list_head = (ir_node **) data;
 
 		set *conds = get_irn_link(block);
 
 		/* If the set is not yet computed, do it now. */
 		if(!conds) {
 			ir_node *idom = get_Block_idom(block);
-			conds = new_set(cond_cmp, 8);
+			conds = new_set(cond_cmp, log2_ceil(get_irn_arity(block)));
+
+			DBG((dbg, LEVEL_5, "searching conds at: %n up to: %n\n", irn, idom));
 
 			/*
 			 * Fill the set with conds we find on the way from
@@ -688,14 +756,16 @@ static void annotate_cond_info_post(ir_node *irn, void *data)
 		 * can be tested.
 		 */
 		if(conds) {
-			ir_node *old = *phi_list_head;
-			set_irn_link(irn, old);
-			*phi_list_head = irn;
+			struct obstack *obst = data;
+			obstack_ptr_grow(obst, irn);
 		}
 
 	}
 }
 
+/**
+ * Free the sets which are put at some blocks.
+ */
 static void free_sets(ir_node *irn, void *data)
 {
 	if(is_Block(irn) && get_irn_link(irn)) {
@@ -706,26 +776,44 @@ static void free_sets(ir_node *irn, void *data)
 
 void opt_if_conv(ir_graph *irg, opt_if_conv_info_t *params)
 {
+	struct obstack obst;
+	int i, n_phis = 0;
+	ir_node **phis;
+
 	opt_if_conv_info_t *p = params ? params : &default_info;
-	ir_node *list_head = NULL;
 
 	if(!get_opt_if_conversion())
 		return;
 
+	obstack_init(&obst);
+
+	/* Init the debug stuff. */
 	dbg = firm_dbg_register("firm.opt.ifconv");
 	firm_dbg_set_mask(dbg, -1);
 
+	/* Ensure, that the dominators are computed. */
 	compute_doms(irg);
+
 	DBG((dbg, LEVEL_4, "if conversion for irg %s(%p)\n",
 				get_entity_name(get_irg_entity(irg)), irg));
 
-	irg_walk_graph(irg, annotate_cond_info_pre, annotate_cond_info_post, &list_head);
+	/*
+	 * Collect information about the conds pu the phis on an obstack.
+	 * It is important that phi nodes which are 'higher' (with a
+	 * lower dfs pre order) are in front of the obstack. Since they are
+	 * possibly turned in to muxes this can enable the optimization
+	 * of 'lower' ones.
+	 */
+	irg_walk_graph(irg, annotate_cond_info_pre, annotate_cond_info_post, &obst);
+	n_phis = obstack_object_size(&obst) / sizeof(phis[0]);
+	phis = obstack_finish(&obst);
 
-	/* traverse the list of linked phis */
-	while(list_head) {
-		check_out_phi(list_head, p);
-		list_head = get_irn_link(list_head);
-	}
+	/* Process each suitable phi found. */
+	for(i = 0; i < n_phis; ++i)
+		check_out_phi(phis[i], p);
 
-	irg_walk_graph(irg, free_sets, NULL, NULL);
+	/* Free the sets. */
+	irg_block_walk_graph(irg, free_sets, NULL, NULL);
+
+	obstack_free(&obst, NULL);
 }
