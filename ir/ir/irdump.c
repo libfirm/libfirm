@@ -658,7 +658,7 @@ static void dump_node_vcgattr(FILE *F, ir_node *n, int bad)
   }
 
   if (dump_node_vcgattr_hook)
-    if (dump_node_vcgattr_hook(F, n));
+    if (dump_node_vcgattr_hook(F, n))
       return;
 
   switch (get_irn_opcode(n)) {
