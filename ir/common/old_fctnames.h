@@ -36,6 +36,10 @@
 #define get_Sel_n_index       get_Sel_n_indexs
 #define get_SymConst_ptrinfo  get_SymConst_name
 #define set_SymConst_ptrinfo  set_SymConst_name
+#define type_tag	      symconst_type_tag
+#define size	              symconst_size
+#define linkage_ptr_info      symconst_addr_name
+
 #define get_nodes_Block(X)    get_nodes_block(X)
 #define set_nodes_Block(X, Y) set_nodes_block(X, Y)
 #define get_Start_irg(X)      get_irn_irg(X)
@@ -90,6 +94,7 @@
 /* irdump */
 #define dump_cg_graph dump_ir_graph
 #define dump_cg_block_graph dump_ir_block_graph
+#define dont_dump_loop_information() dump_loop_information(0)
 
 /* type.h */
 #define get_type_nameid(_t_)     get_type_ident(_t_)
