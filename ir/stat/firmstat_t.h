@@ -63,7 +63,10 @@ typedef struct _graph_entry_t {
   HASH_MAP(opt_entry_t)   *opt_hash[STAT_OPT_MAX];	/**< hash maps containing opcode counter for optimizations */
   ir_graph                *irg;				/**< the graph of this object */
   entity                  *ent;				/**< the entity of this graph if one exists */
-  int                     deleted;			/**< set if this irg was deleted */
+  unsigned                is_deleted:1;			/**< set if this irg was deleted */
+  unsigned                is_leaf:1;			/**< set, if this irg is a leaf function */
+  unsigned                is_recursive:1;		/**< set, if this irg has recursive calls */
+  unsigned                is_chain_call:1;		/**< set, if this irg is a chain call */
 } graph_entry_t;
 
 /**
