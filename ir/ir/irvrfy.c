@@ -95,11 +95,11 @@ static void show_node_on_graph(ir_graph *irg, ir_node *n)
   entity *ent = get_irg_ent(irg);
 
   if (ent)
-    fprintf(stderr, "\nFIRM: irn_vrfy_irg() of Entity %s, node %ld %s%s\n",
+    fprintf(stderr, "\nFIRM: irn_vrfy_irg() of entity %s, node %ld %s%s\n",
       get_entity_name(ent),
       get_irn_node_nr(n), get_irn_opname(n), get_irn_modename(n));
   else
-    fprintf(stderr, "\nFIRM: irn_vrfy_irg() of Graph %p, node %ld %s%s\n",
+    fprintf(stderr, "\nFIRM: irn_vrfy_irg() of graph %p, node %ld %s%s\n",
       (void *)irg,
       get_irn_node_nr(n), get_irn_opname(n), get_irn_modename(n));
 }
@@ -122,6 +122,32 @@ static void show_call_param(ir_node *n, type *mt)
   }
   fprintf(stderr, ")\n");
 
+}
+
+/**
+ * Show return modes
+ */
+static void show_return_modes(ir_graph *irg, ir_node *n, type *mt, int i)
+{
+  entity *ent = get_irg_ent(irg);
+
+  fprintf(stderr, "\nFIRM: irn_vrfy_irg() Return node %ld in entity \"%s\" mode %s different from type mode %s\n",
+    get_irn_node_nr(n), get_entity_name(ent),
+    get_mode_name(get_irn_mode(get_Return_res(n, i))),
+    get_mode_name(get_type_mode(get_method_res_type(mt, i)))
+  );
+}
+
+/**
+ * Show return number of results
+ */
+static void show_return_nres(ir_graph *irg, ir_node *n, type *mt)
+{
+  entity *ent = get_irg_ent(irg);
+
+  fprintf(stderr, "\nFIRM: irn_vrfy_irg() Return node %ld in entity \"%s\" has %d results different from type %d\n",
+    get_irn_node_nr(n), get_entity_name(ent),
+    get_Return_n_ress(n), get_method_n_ress(mt));
 }
 
 INLINE static int
@@ -483,12 +509,14 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       ASSERT_AND_RET( mymode == mode_X, "Result X", 0 );   /* result X */
       /* Compare returned results with result types of method type */
       mt = get_entity_type(get_irg_ent(irg));
-      ASSERT_AND_RET( get_Return_n_ress(n) == get_method_n_ress(mt),
-          "Number of results for Return doesn't match number of results in type.", 0 );
+      ASSERT_AND_RET_DBG( get_Return_n_ress(n) == get_method_n_ress(mt),
+        "Number of results for Return doesn't match number of results in type.", 0,
+	show_return_nres(irg, n, mt););
       for (i = 0; i < get_Return_n_ress(n); i++)
-        ASSERT_AND_RET(
-            get_irn_mode(get_Return_res(n, i)) == get_type_mode(get_method_res_type(mt, i)),
-            "Mode of result for Return doesn't match mode of result type.", 0);
+        ASSERT_AND_RET_DBG(
+          get_irn_mode(get_Return_res(n, i)) == get_type_mode(get_method_res_type(mt, i)),
+          "Mode of result for Return doesn't match mode of result type.", 0,
+	   show_return_modes(irg, n, mt, i););
       break;
 
     case iro_Raise:
