@@ -681,13 +681,13 @@ void stat_new_node(const ir_node *node) {}
 
 void stat_turn_into_id(const ir_node *node) {}
 
-void stat_new_graph(const ir_graph *irg, entity *ent) {}
+void stat_new_graph(ir_graph *irg, entity *ent) {}
 
-void stat_free_graph(const ir_graph *irg) {}
+void stat_free_graph(ir_graph *irg) {}
 
-void stat_irg_walk(const ir_graph *irg, void *pre, void *post) {}
+void stat_irg_walk(ir_graph *irg, void *pre, void *post) {}
 
-void stat_irg_block_walk(const ir_graph *irg, const ir_node *node, void *pre, void *post) {}
+void stat_irg_block_walk(ir_graph *irg, const ir_node *node, void *pre, void *post) {}
 
 void stat_merge_nodes(
     ir_node **new_node_array, int new_num_entries,
