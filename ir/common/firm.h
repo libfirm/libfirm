@@ -116,6 +116,7 @@ extern "C" {
    of firm.h as not all enums are needed in the implementation
    files. */
 #include "irdump.h"
+#include "irprintf.h"
 #include "irvrfy.h"
 #include "trvrfy.h"
 
