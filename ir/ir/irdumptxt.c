@@ -245,7 +245,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
   } break;
   case iro_Const: {
     type *tp = get_Const_type(n);
-    assert(tp != none_type);
+    assert(tp != firm_none_type);
     fprintf(F, "  Const of type %s \n", get_type_name_ex(get_Const_type(n), &bad));
   } break;
   case iro_SymConst: {
@@ -288,7 +288,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 
   if (get_irg_typeinfo_state(get_irn_irg(n)) == irg_typeinfo_consistent  ||
       get_irg_typeinfo_state(get_irn_irg(n)) == irg_typeinfo_inconsistent  )
-    if (get_irn_typeinfo_type(n) != none_type)
+    if (get_irn_typeinfo_type(n) != firm_none_type)
       fprintf (F, "  Analysed type: %s\n", get_type_name_ex(get_irn_typeinfo_type(n), &bad));
 
   return bad;

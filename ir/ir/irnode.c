@@ -897,7 +897,7 @@ get_Const_type (ir_node *node) {
 void
 set_Const_type (ir_node *node, type *tp) {
   assert (node->op == op_Const);
-  if (tp != unknown_type) {
+  if (tp != firm_unknown_type) {
     assert (is_atomic_type(tp));
     assert (get_type_mode(tp) == get_irn_mode(node));
   }

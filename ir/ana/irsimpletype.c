@@ -40,10 +40,10 @@ static type *phi_cycle_type = NULL;
 /* init type link field so that types point to their pointers. */
 void precompute_pointer_types(void) {
   int i;
-  set_type_link(unknown_type, unknown_type);
-  set_type_link(none_type,    unknown_type);
+  set_type_link(firm_unknown_type, firm_unknown_type);
+  set_type_link(firm_none_type,    firm_unknown_type);
   for (i = 0; i < get_irp_n_types(); ++i)
-    set_type_link(get_irp_type(i), (void *)unknown_type);
+    set_type_link(get_irp_type(i), (void *)firm_unknown_type);
   for (i = get_irp_n_types()-1; i>=0; --i) {
     type *tp = get_irp_type(i);
     if (is_pointer_type(tp))
@@ -68,7 +68,7 @@ static type *find_type_for_Proj(ir_node *n) {
       m == mode_X  ||
       m == mode_M  ||
       m == mode_b    )
-    return none_type;
+    return firm_none_type;
 
   switch (get_irn_opcode(pred)) {
   case iro_Proj: {
@@ -84,7 +84,7 @@ static type *find_type_for_Proj(ir_node *n) {
       tp = get_method_res_type(mtp, get_Proj_proj(n));
     } else {
       VERBOSE_UNKNOWN_TYPE(("Proj %ld from Proj from ??: unknown type\n", get_irn_node_nr(n)));
-      tp = unknown_type;
+      tp = firm_unknown_type;
     }
   } break;
   case iro_Start: {
@@ -95,20 +95,20 @@ static type *find_type_for_Proj(ir_node *n) {
       tp = find_pointer_type_to(get_glob_type());
     else  if (get_Proj_proj(n) == pn_Start_P_value_arg_base) {
       VERBOSE_UNKNOWN_TYPE(("Value arg base proj %ld from Start: unknown type\n", get_irn_node_nr(n)));
-      tp =  unknown_type; /* find_pointer_type_to(get....(get_entity_type(get_irg_entity(get_irn_irg(pred))))); */
+      tp =  firm_unknown_type; /* find_pointer_type_to(get....(get_entity_type(get_irg_entity(get_irn_irg(pred))))); */
     } else {
       VERBOSE_UNKNOWN_TYPE(("Proj %ld %ld from Start: unknown type\n", get_Proj_proj(n), get_irn_node_nr(n)));
-      tp = unknown_type;
+      tp = firm_unknown_type;
     }
   } break;
   case iro_Call: {
     /* value args pointer */
     if (get_Proj_proj(n) == pn_Call_P_value_res_base) {
       VERBOSE_UNKNOWN_TYPE(("Value res base Proj %ld from Call: unknown type\n", get_irn_node_nr(n)));
-      tp = unknown_type; /* find_pointer_type_to(get....get_Call_type(pred)); */
+      tp = firm_unknown_type; /* find_pointer_type_to(get....get_Call_type(pred)); */
     } else {
       VERBOSE_UNKNOWN_TYPE(("Proj %ld %ld from Call: unknown type\n", get_Proj_proj(n), get_irn_node_nr(n)));
-      tp = unknown_type;
+      tp = firm_unknown_type;
     }
   } break;
   default:
@@ -151,7 +151,7 @@ static type *find_type_for_node(ir_node *n) {
     for (i = 0; i < get_method_n_ress(meth_type); i++) {
       type *res_type = get_method_res_type(meth_type, i);
       type *ana_res_type = get_irn_type(get_Return_res(n, i));
-      if (ana_res_type == unknown_type) continue;
+      if (ana_res_type == firm_unknown_type) continue;
       if (res_type != ana_res_type && "return value has wrong type") {
     DDMN(n);
     assert(res_type == ana_res_type && "return value has wrong type");
@@ -176,7 +176,7 @@ static type *find_type_for_node(ir_node *n) {
   case iro_CallBegin:
   case iro_EndReg:
   case iro_EndExcept:
-    tp = none_type; break;
+    tp = firm_none_type; break;
 
   /* compute the type */
   case iro_Const:  tp = get_Const_type(n); break;
@@ -196,7 +196,7 @@ static type *find_type_for_node(ir_node *n) {
     int i;
     int n_preds = get_Phi_n_preds(n);
 
-    if (n_preds == 0)  {tp = none_type; break; }
+    if (n_preds == 0)  {tp = firm_none_type; break; }
 
     /* initialize this Phi */
     set_irn_typeinfo_type(n, phi_cycle_type);
@@ -205,7 +205,7 @@ static type *find_type_for_node(ir_node *n) {
     for (i = 0; i < n_preds; ++i) {
       tp1 = compute_irn_type(get_Phi_pred(n, i));
       assert(tp1 != initial_type);
-      if ((tp1 != phi_cycle_type) && (tp1 != none_type))
+      if ((tp1 != phi_cycle_type) && (tp1 != firm_none_type))
     break;
     }
 
@@ -213,7 +213,7 @@ static type *find_type_for_node(ir_node *n) {
     tp2 = tp1;
     for (; (i < n_preds); ++i) {
       tp2 = compute_irn_type(get_Phi_pred(n, i));
-      if ((tp2 == phi_cycle_type) || (tp2 == none_type)) {
+      if ((tp2 == phi_cycle_type) || (tp2 == firm_none_type)) {
     tp2 = tp1;
     continue;
       }
@@ -226,7 +226,7 @@ static type *find_type_for_node(ir_node *n) {
 
     VERBOSE_UNKNOWN_TYPE(("Phi %ld with two different types: %s, %s: unknown type.\n", get_irn_node_nr(n),
               get_type_name(tp1), get_type_name(tp2)));
-    tp = unknown_type;
+    tp = firm_unknown_type;
   } break;
   case iro_Load: {
     ir_node *a = get_Load_ptr(n);
@@ -237,7 +237,7 @@ static type *find_type_for_node(ir_node *n) {
       if (is_array_type(tp)) tp = get_array_element_type(tp);
     } else {
       VERBOSE_UNKNOWN_TYPE(("Load %ld with typeless address. result: unknown type\n", get_irn_node_nr(n)));
-      tp = unknown_type;
+      tp = firm_unknown_type;
     }
   } break;
   case iro_Alloc:
@@ -247,7 +247,7 @@ static type *find_type_for_node(ir_node *n) {
   case iro_Id:
     tp = compute_irn_type(get_Id_pred(n)); break;
  case iro_Unknown:
-    tp = unknown_type;  break;
+    tp = firm_unknown_type;  break;
  case iro_Filter:
     assert(0 && "Filter not implemented"); break;
 
@@ -257,7 +257,7 @@ static type *find_type_for_node(ir_node *n) {
 	mode_is_reference(get_irn_mode(a)) &&
 	mode_is_reference(get_irn_mode(b))   ) {
       VERBOSE_UNKNOWN_TYPE(("Sub %ld ptr - ptr = int: unknown type\n", get_irn_node_nr(n)));
-      tp =  unknown_type; break;
+      tp =  firm_unknown_type; break;
     }
   } /* fall through to Add. */
   case iro_Add: {
@@ -276,7 +276,7 @@ static type *find_type_for_node(ir_node *n) {
   case iro_Mul: {
     if (get_irn_mode(n) != get_irn_mode(a)) {
       VERBOSE_UNKNOWN_TYPE(("Mul %ld int1 * int1 = int2: unknown type\n", get_irn_node_nr(n)));
-      tp = unknown_type; break;
+      tp = firm_unknown_type; break;
     }
     goto default_code;
   } break;
@@ -301,7 +301,7 @@ static type *find_type_for_node(ir_node *n) {
       }
       VERBOSE_UNKNOWN_TYPE(("Binop %ld with two different types: %s, %s: unknown type \n", get_irn_node_nr(n),
 			    get_type_name(tp1), get_type_name(tp2)));
-      tp = unknown_type;
+      tp = firm_unknown_type;
       break;
     }
 

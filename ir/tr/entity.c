@@ -55,9 +55,9 @@ init_entity (void)
 {
   symconst_symbol sym;
 
-  assert(unknown_type && "Call init_type before init_entity!");
+  assert(firm_unknown_type && "Call init_type before init_entity!");
   assert(!unknown_entity && "Call init_entity only once!");
-  unknown_entity = new_rd_entity(NULL, unknown_type, new_id_from_str(UNKNOWN_ENTITY_NAME), unknown_type);
+  unknown_entity = new_rd_entity(NULL, firm_unknown_type, new_id_from_str(UNKNOWN_ENTITY_NAME), firm_unknown_type);
   set_entity_visibility(unknown_entity, visibility_external_allocated);
   set_entity_ld_ident(unknown_entity, get_entity_ident(unknown_entity));
 

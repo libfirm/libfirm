@@ -163,7 +163,7 @@ new_rd_Const_type (dbg_info* db, ir_graph *irg, ir_node *block, ir_mode *mode, t
 INLINE ir_node *
 new_rd_Const (dbg_info* db, ir_graph *irg, ir_node *block, ir_mode *mode, tarval *con)
 {
-  type *tp = unknown_type;
+  type *tp = firm_unknown_type;
   /* removing this somehow causes errors in jack. */
   return new_rd_Const_type (db, irg, block, mode, con, tp);
 }
@@ -733,7 +733,7 @@ INLINE ir_node *
 new_rd_SymConst (dbg_info* db, ir_graph *irg, ir_node *block, symconst_symbol value,
 		 symconst_kind symkind)
 {
-  ir_node *res = new_rd_SymConst_type(db, irg, block, value, symkind, unknown_type);
+  ir_node *res = new_rd_SymConst_type(db, irg, block, value, symkind, firm_unknown_type);
   return res;
 }
 
