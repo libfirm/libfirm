@@ -71,7 +71,7 @@
  *      *frame           The ir_node producing the pointer to the stack frame of
  *                       the procedure as output.  This is the Proj node on the
  *                       third output of the start node.  This output of the start
- *                       node is tagged as pns_frame_base.  In FIRM most lokal
+ *                      node is tagged as pns_frame_base.  In FIRM most lokal
  *                       variables are modeled as data flow edges.  Static
  *                       allocated arrays can not be represented as dataflow
  *                       edges. Therefore FIRM has to represent them in the stack
@@ -129,7 +129,7 @@
  *
  *      + types ==> implemented in type.h
  *        With types type information is represented.  There are several type
- *        nodes.
+ *       nodes.
  *
  *    Implementation of the FIRM operations: ir_node
  *    ----------------------------------------------
@@ -171,7 +171,7 @@
  *                       one statically allocated struct ir_op for each opcode.
  *
  *      *mode            The ir_mode of the operation represented by this firm
- *                       node.  The mode of the operation is the mode of it's
+ *                      node.  The mode of the operation is the mode of it's
  *                       result.  A Firm mode is a datatype as known to the target,
  *               not a type of the source language.
  *
@@ -202,7 +202,7 @@
  *    ================
  *
  *    current_ir_graph   Points to the current ir_graph.  All constructors for
- *                       nodes add nodes to this graph.
+ *                      nodes add nodes to this graph.
  *
  *    ir_visited         An int used as flag to traverse the ir_graph.
  *
@@ -473,7 +473,7 @@
  *
  *    Mature_block also fixes the number of inputs to the Phi nodes.  Mature_block
  *    should be called as early as possible, as afterwards the generation of Phi
- *    nodes is more efficient.
+ *   nodes is more efficient.
  *
  *    Inputs:
  *      There is an input for each control flow predecessor of the block.
@@ -517,7 +517,7 @@
  *    -------------------------
  *
  *    Creates a start node.  Not actually needed public.  There is only one such
- *    node in each procedure which is automatically created by new_ir_graph.
+ *   node in each procedure which is automatically created by new_ir_graph.
  *
  *    Inputs:
  *      No inputs except the block it belogns to.
@@ -539,7 +539,7 @@
  *    -----------------------
  *
  *    Creates an end node.  Not actually needed public.  There is only one such
- *    node in each procedure which is automatically created by new_ir_graph.
+ *   node in each procedure which is automatically created by new_ir_graph.
  *
  *    Inputs:
  *      No inputs except the block it belongs to.
@@ -625,13 +625,13 @@
  *      attr.con   A tarval* pointer to the proper entry in the constant
  *                 table.
  *
- *    ir_node *new_SymConst (type *tp, symconst_kind kind)
+ *    ir_node *new_SymConst (type *tp, symconst_addr_ent kind)
  *    ------------------------------------------------------------
  *
  *    There are three kinds of symbolic constants:
- *      type_tag  The symbolic constant represents a type tag.
- *      size      The symbolic constant represents the size of a class.
- *      link_info Information for the linker, e.g. the name of a global
+ *     symconst_type_tag  The symbolic constant represents a type tag.
+ *     symconst_size      The symbolic constant represents the size of a class.
+ *     symconst_addr_name Information for the linker, e.g. the name of a global
  *                variable.
  *    To represent a pointer to an entity that is represented by an entity
  *    datastructure don't use
@@ -653,11 +653,11 @@
  *      An unsigned integer (I_u) or a pointer (P).
  *
  *    Attributes:
- *      attr.i.num       The symconst_kind, i.e. one of
- *                        - type_tag
- *                        - size
- *                - linkage_ptr_info
- *        If the attr.i.num is type_tag or size, the node contains an attribute
+ *      attr.i.num       The symconst_addr_ent, i.e. one of
+ *                        -symconst_type_tag
+ *                        -symconst_size
+ *                - symconst_addr_name
+ *        If the attr.i.num is symconst_type_tag or symconst_size, the node contains an attribute
  *      attr.i.*type,    a pointer to a type_class.  The mode of the node is mode_Is.
  *        if it is linkage_ptr_info it contains
  *      attr.i.*ptrinfo,  an ident holding information for the linker.  The mode
@@ -748,7 +748,7 @@
  *    -----------------------------------------------------------------------------------
  *
  *    Creates a procedure call to a function WITHOUT memory side effects.
- *    Nodes of this kind are floating in contrast to Call nodes.
+ *   nodes of this kind are floating in contrast to Call nodes.
  *    Further, a procedure call with FuncCall cannot raise an exception!
  *
  *    Parameters
@@ -1056,7 +1056,7 @@
  *    replaced by the Tuple operation so that the following Proj nodes have not to
  *    be changed.  (They are hard to find due to the implementation with pointers
  *    in only one direction.)  The Tuple node is smaller than any other
- *    node, so that a node can be changed into a Tuple by just changing it's
+ *   node, so that a node can be changed into a Tuple by just changing it's
  *    opcode and giving it a new in array.
  *
  *    Parameters
@@ -1131,7 +1131,7 @@
  *
  *    Keep this node alive because it is (might be) not in the control
  *    flow from Start to End.  Adds the node to the list in the end
- *    node.
+ *   node.
  *
  */
 
@@ -1152,17 +1152,13 @@
 /* The raw interface                                                       */
 /*-------------------------------------------------------------------------*/
 
-/* Constructs a Block with a fixed number of predecessors.
-   Does not set current_block.  Can not be used with automatic
-   Phi node construction. */
-
 /** Constructor for a Block node.
  *
- * Constructor for a Block node. Constructs a mature block with the given
- * predecessors.  Use Unknown nodes as predecessors to constuct a block
- * if the number of predecessors is known, but not the predecessors themselves.
- * This constructor does not set current_block.  It not be used with automatic
- * Phi node construction.
+ * Constructs a mature block with the given predecessors.  Use Unknown
+ * nodes as predecessors to constuct a block if the number of
+ * predecessors is known, but not the predecessors themselves.  This
+ * constructor does not set current_block.  It not be used with
+ * automatic Phi node construction.
  *
  * @param *db    A Pointer for  debug information.
  * @param irg    The ir graph the block belongs to.
@@ -1174,56 +1170,63 @@ ir_node *new_rd_Block  (dbg_info *db, ir_graph *irg,  int arity, ir_node *in[]);
 
 /** Constructor for a Start node.
  *
- * Constructor for a Start node.
- *
  * @param *db    A pointer for debug information.
  * @param *irg   The ir graph the node belongs to.
  * @param *block The ir block the node belongs to.
- *
  */
 ir_node *new_rd_Start  (dbg_info *db, ir_graph *irg, ir_node *block);
 
 /** Constructor for a End node.
  *
- * Constructor for a End node.
- *
  * @param *db    A pointer for  debug information.
  * @param *irg   The ir graph the node  belongs to.
  * @param *block The ir block the node belongs to.
- *
  */
 ir_node *new_rd_End    (dbg_info *db, ir_graph *irg, ir_node *block);
 
 /** Constructor for a Jmp node.
  *
- * Constructor for a Jmp node.  Jmp represents control flow to a single \
- * control successor.
+ * Jmp represents control flow to a single control successor.
  *
  * @param *db     A pointer for debug information.
  * @param *irg    The ir graph the node belongs to.
  * @param *block  The ir block the node belongs to.
- *
  */
 ir_node *new_rd_Jmp    (dbg_info *db, ir_graph *irg, ir_node *block);
 
-/** Constructor for a Cond  node.
+/** Constructor for a Break node.
  *
- * Constructor for a Cond  node.  If c is mode_b represents a conditional
- * branch (if/else). If c is mode_Is represents a switch.  (Allocates dense
- * Cond node, default Proj is 0.)
+ * Break represents control flow to a single control successor just as Jmp.
+ * The blocks separated by a break may not be concatenated by an optimization.
+ * It is used for the interprocedural representation where blocks are parted
+ * behind Call nodes to represent the control flow to called procedures.
+ *
+ * @param *db     A pointer for debug information.
+ * @param *irg    The ir graph the node belong to.
+ * @param *block  The block the node belong to.
+ */
+ir_node *new_rd_Break  (dbg_info *db, ir_graph *irg, ir_node *block);
+
+/** Constructor for a Cond node.
+ *
+ * If c is mode_b represents a conditional branch (if/else). If c is
+ * mode_Is/mode_Iu (?) represents a switch.  (Allocates dense Cond
+ * node, default Proj is 0.)
+ *
+ * This is not consistent:  Input to Cond is Is, Proj has as proj number
+ * longs.
  *
  * @param *db    A pointer for debug information.
  * @param *irg   The ir graph the node  belongs to.
  * @param *block The ir block the node belongs to.
  * @param *c     The conditions parameter. Can be of mode b or I_u.
- *
  */
 ir_node *new_rd_Cond   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *c);
 
 /** Constructor for a Return node.
  *
- * Constructor for a Return node.  Returns the memory an zero or
- * more return values.  Only node that can end regular control flow.
+ * Returns the memory an zero or more return values.  Only node that
+ * can end regular control flow.
  *
  * @param *db    A pointer for debug information.
  * @param *irg   The ir graph the node  belongs to.
@@ -1237,8 +1240,6 @@ ir_node *new_rd_Return (dbg_info *db, ir_graph *irg, ir_node *block,
 
 /** Constructor for a Raise node.
  *
- * Constructor for a Raise node.
- *
  * @param *db    A pointer for debug information.
  * @param *irg   The ir graph the node  belongs to.
  * @param *block The ir block the node belongs to.
@@ -1246,13 +1247,12 @@ ir_node *new_rd_Return (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param *obj   A pointer to the Except variable.
  */
 ir_node *new_rd_Raise  (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_node *store, ir_node *obj);
+			ir_node *store, ir_node *obj);
 
 /** Constructor for a Const node.
  *
- * Constructor for a Const node.  The constant represents a target value.
- * This constructor sets high level type information for the
- * constant value.
+ * The constant represents a target value.  This constructor sets high
+ * level type information for the constant value.
  *
  * @param *db    A pointer for debug information.
  * @param *irg   The ir graph the node  belongs to.
@@ -1264,11 +1264,11 @@ ir_node *new_rd_Raise  (dbg_info *db, ir_graph *irg, ir_node *block,
 ir_node *new_rd_Const_type (dbg_info* db, ir_graph *irg, ir_node *block,
                 ir_mode *mode, tarval *con, type *tp);
 
-/** Constructor for a Const  node.
+/** Constructor for a Const node.
  *
- * Constructor for a Const  node. The constant represents a target value.
- * Sets the type information to type_unknown.  (No more supported:  If
- * tv is entity derives a somehow useful type.)
+ * Constructor for a Const node. The constant represents a target
+ * value.  Sets the type information to type_unknown.  (No more
+ * supported: If tv is entity derives a somehow useful type.)
  *
  * @param *db    A pointer for debug information.
  * @param *irg   The ir graph the node  belongs to.
@@ -1276,7 +1276,6 @@ ir_node *new_rd_Const_type (dbg_info* db, ir_graph *irg, ir_node *block,
  * @param *mode  The mode of the operands and redults.
  * @param *con   Points to an entry in the constant table.
  */
-
 ir_node *new_rd_Const  (dbg_info *db, ir_graph *irg, ir_node *block,
                ir_mode *mode, tarval *con);
 
@@ -1284,15 +1283,15 @@ ir_node *new_rd_Const  (dbg_info *db, ir_graph *irg, ir_node *block,
  *
  *  This is the constructor for a symbolic constant.
  *    There are four kinds of symbolic constants:
- *      type_tag  The symbolic constant represents a type tag.  The type the
+ *    - type_tag  The symbolic constant represents a type tag.  The type the
  *                tag stands for is given explicitly.
- *      size      The symbolic constant represents the size of a type.  The
+ *    - size      The symbolic constant represents the size of a type.  The
  *                type of which the constant represents the size is given
  *                explicitly.
- *      addr_name The symbolic constant represents the address of an entity
+ *    - addr_name The symbolic constant represents the address of an entity
  *                (variable or method).  The variable is indicated by a name
  *                that is valid for linking.
- *      addr_ent   The symbolic constant represents the address of an entity
+ *    - addr_ent   The symbolic constant represents the address of an entity
  *                (variable or method).  The variable is given explicitly by
  *                a firm entity.
  *
@@ -1312,11 +1311,11 @@ ir_node *new_rd_SymConst (dbg_info *db, ir_graph *irg, ir_node *block,
 
 /** Constructor for a Sel node.
  *
- * Constructor for a Sel node.  The select node selects an entity (field or method)
- * from an entity with a compound type.  It explicitly specifies the entity selected.
- * Dynamically the node may select entities that overwrite the given entity.  If the
- * selected entity is an array element entity the Sel node takes the required array
- * indicees as inputs.
+ * The select node selects an entity (field or method) from an entity
+ * with a compound type.  It explicitly specifies the entity selected.
+ * Dynamically the node may select entities that overwrite the given
+ * entity.  If the selected entity is an array element entity the Sel
+ * node takes the required array indicees as inputs.
  *
  * @param   *db        A pointer for debug information.
  * @param   *irg       The ir graph the node  belongs to.
@@ -1329,14 +1328,13 @@ ir_node *new_rd_SymConst (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param   *index[]   If the compound entity is an array the indicees of the selected
  *                     element entity.  The constructor copies this array.
  * @param   *ent       The entity to select.
- *
  */
 ir_node *new_rd_Sel    (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
                        ir_node *objptr, int n_index, ir_node *index[], entity *ent);
 
-/**
- * Constructor for a InstOf node.  For translating Java.  Not supported as standard
- * firm node.
+/** Constructor for a InstOf node.
+ *
+ * For translating Java.  Not supported as standard firm node.
  *
  * @param   *db     A pointer for debug information.
  * @param   *irg    The ir graph the node  belongs to.
@@ -1347,8 +1345,9 @@ ir_node *new_rd_Sel    (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *st
  */
 ir_node *new_rd_InstOf (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store, ir_node *objptr, type *ent);
 
-/**
- * Constructor for a Call  node.
+/** Constructor for a Call node.
+ *
+ *  Represents all kinds of method and function calls.
  *
  * @param   *db     A pointer for debug information.
  * @param   *irg    The ir graph the node  belongs to.
@@ -1362,500 +1361,10 @@ ir_node *new_rd_InstOf (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *st
 ir_node *new_rd_Call   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
 			ir_node *callee, int arity, ir_node *in[], type *tp);
 
-/**
- * Constructor for a Add  node.
+/** Constructor for a FuncCall node.
  *
- * @param   *db    A pointer for debug information.
- * @param   *irg   The ir graph the node  belongs to.
- * @param   *block The ir block the node belongs to.
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
- * @param   *mode  The mode of the operands and the result.
- */
-ir_node *new_rd_Add    (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_node *op1, ir_node *op2, ir_mode *mode);
-
-/**
- * Constructor for a Sub  node.
- *
- * @param   *db    A pointer for debug information.
- * @param   *irg   The ir graph the node  belongs to.
- * @param   *block The ir block the node belongs to.
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
- * @param   *mode  The mode of the operands and the result.
- */
-ir_node *new_rd_Sub    (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_node *op1, ir_node *op2, ir_mode *mode);
-
-/**
- * Constructor for a Minus  node.
- *
- * @param   *db    A pointer for debug information.
- * @param   *irg   The ir graph the node  belongs to.
- * @param   *block The ir block the node belongs to.
- * @param   *op    The operand .
- * @param   *mode  The mode of the operand and the result.
- */
-ir_node *new_rd_Minus  (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_node *op,  ir_mode *mode);
-
-/**
- * Constructor for a Mul  node.
- *
- * @param   *db    A pointer for debug information.
- * @param   *irg   The ir graph the node  belongs to.
- * @param   *block The ir block the node belongs to.
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
- * @param   *mode  The mode of the operands and the result.
- */
-ir_node *new_rd_Mul    (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_node *op1, ir_node *op2, ir_mode *mode);
-
-/**
- * Constructor for a Quot  node.
- *
- * @param   *db    A pointer for debug information.
- * @param   *irg   The ir graph the node  belongs to.
- * @param   *block The ir block the node belongs to.
- * @param   *memop The store needed to model exceptions
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
- */
-ir_node *new_rd_Quot   (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_node *memop, ir_node *op1, ir_node *op2);
-
-/**
- * Constructor for a DivMod  node.
- *
- * @param   *db    A pointer for debug information.
- * @param   *irg   The ir graph the node  belongs to.
- * @param   *block The ir block the node belongs to.
- * @param   *memop The store needed to model exceptions
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
- */
-ir_node *new_rd_DivMod (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_node *memop, ir_node *op1, ir_node *op2);
-
-/**
- * Constructor for a Div  node.
- *
- * @param   *db    A pointer for debug information.
- * @param   *irg   The ir graph the node  belongs to.
- * @param   *block The ir block the node belongs to.
- * @param   *memop The store needed to model exceptions
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
- */
-ir_node *new_rd_Div    (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_node *memop, ir_node *op1, ir_node *op2);
-
-/**
- * Constructor for a Mod  node.
- *
- * @param   *db    A pointer for debug information.
- * @param   *irg   The ir graph the node  belongs to.
- * @param   *block The ir block the node belongs to.
- * @param   *memop The store needed to model exceptions
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
- */
-ir_node *new_rd_Mod    (dbg_info *db, ir_graph *irg, ir_node *block,
-			ir_node *memop, ir_node *op1, ir_node *op2);
-
-/**
- * Constructor for a Abs  node.
- *
- * @param   *db    A pointer for debug information.
- * @param   *irg   The ir graph the node  belongs to.
- * @param   *block The ir block the node belongs to.
- * @param   *op    The operand
- * @param   *mode  The mode of the operands and the result.
- */
-ir_node *new_rd_Abs    (dbg_info *db, ir_graph *irg, ir_node *block,
-                       ir_node *op, ir_mode *mode);
-
-/**
- * Constructor for a And  node.
- *
- * @param   *db    A pointer for debug information.
- * @param   *irg   The ir graph the node  belongs to.
- * @param   *block The ir block the node belongs to.
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
- * @param   *mode  The mode of the operands and the result.
- */
-ir_node *new_rd_And    (dbg_info *db, ir_graph *irg, ir_node *block,
-			ir_node *op1, ir_node *op2, ir_mode *mode);
-
-/**
- * Constructor for a Or  node.
- *
- * @param   *db    A pointer for debug information.
- * @param   *irg   The ir graph the node  belongs to.
- * @param   *block The ir block the node belongs to.
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
- * @param   *mode  The mode of the operands and the result.
- */
-ir_node *new_rd_Or     (dbg_info *db, ir_graph *irg, ir_node *block,
-			ir_node *op1, ir_node *op2, ir_mode *mode);
-
-/**
- * Constructor for a Eor  node.
- *
- * @param   *db    A pointer for debug information.
- * @param   *irg   The ir graph the node  belongs to.
- * @param   *block The ir block the node belongs to.
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
- * @param   *mode  The mode of the operands and the results.
- */
-ir_node *new_rd_Eor    (dbg_info *db, ir_graph *irg, ir_node *block,
-			ir_node *op1, ir_node *op2, ir_mode *mode);
-
-/**
- * Constructor for a Not  node.
- *
- * @param   *db    A pointer for debug information.
- * @param   *irg   The ir graph the node  belongs to.
- * @param   *block The ir block the node belongs to.
- * @param   *op    The operand.
- * @param   *mode  The mode of the operand and the result.
- *
- */
-ir_node *new_rd_Not    (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_node *op, ir_mode *mode);
-
-/**
- * Constructor for a Cmp  node.
- *
- * @param   *db    A pointer for debug information.
- * @param   *irg   The ir graph the node  belongs to.
- * @param   *block The ir block the node belongs to.
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
- *
- */
-ir_node *new_rd_Cmp    (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_node *op1, ir_node *op2);
-
-/**
- * Constructor for a Shl  node.
- *
- * @param   *db    A pointer for debug information.
- * @param   *irg   The ir graph the node  belongs to.
- * @param   *block The ir block the node belongs to.
- * @param   *op    The operand.
- * @param   *k     The number of bits to  shift the operand .
- * @param   *mode  The mode of the operand and the result.
- *
- */
-ir_node *new_rd_Shl    (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_node *op, ir_node *k, ir_mode *mode);
-
-
-/**
- * Constructor for a Shr  node.
- *
- * @param   *db    A pointer for debug information.
- * @param   *irg   The ir graph the node  belongs to.
- * @param   *block The ir block the node belongs to.
- * @param   *op    The operand.
- * @param   *k     The number of bits to shift the operand .
- * @param   *mode  The mode of the operand and the result.
- *
- */
-
-ir_node *new_rd_Shr    (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_node *op, ir_node *k, ir_mode *mode);
-
-/**
- * Constructor for a Shrs  node.
- *
- * @param   *db    A pointer for debug information.
- * @param   *irg   The ir graph the node  belongs to.
- * @param   *block The ir block the node belongs to.
- * @param   *op    The operand.
- * @param   *k     The number of bits to shift the operand.
- * @param   *mode  The mode of the operand and the result.
- *
- */
-
-ir_node *new_rd_Shrs   (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_node *op, ir_node *k, ir_mode *mode);
-
-/**
- * Constructor for a Rot  node.
- *
- * @param   *db    A pointer for debug information.
- * @param   *irg   The ir graph the node  belongs to.
- * @param   *block The ir block the node belongs to.
- * @param   *op    The operand.
- * @param   *k     The number of bits to rotate the operand.
- * @param   *mode  The mode of the operand.
- *
- */
-
-ir_node *new_rd_Rot    (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_node *op, ir_node *k, ir_mode *mode);
-
-
-/**
- * Constructor for a Conv  node.
- *
- * @param   *db    A pointer for debug information.
- * @param   *irg   The ir graph the node  belongs to.
- * @param   *block The ir block the node belongs to.
- * @param   *op    The operand.
- * @param   *mode  The mode of this the operand muss be converted .
- *
- */
-
-ir_node *new_rd_Conv   (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_node *op, ir_mode *mode);
-
-/**
- * Constructor for a Cast  node.  High level type cast.
- *
- * @param   *db    A pointer for debug information.
- * @param   *irg   The ir graph the node  belongs to.
- * @param   *block The ir block the node belongs to.
- * @param   *op    The operand.
- * @param   *to_tp The type of this the operand muss be casted .
- */
-ir_node *new_rd_Cast   (dbg_info* db, ir_graph *irg, ir_node *block,
-			ir_node *op, type *to_tp);
-
-/**
- * Constructor for a Phi node.
- *
- * @param *db    A pointer for debugginaromation.
- * @param *irg   The ir graph the node  belongs to.
- * @param *block The ir block the node belongs to.
- * @param arity  The number of predecessors
- * @param *in[]    Array with predecessors.  The constructor copies this array.
- * @param *mode  The mode of it's inputs and output.
- */
-ir_node *new_rd_Phi    (dbg_info *db, ir_graph *irg, ir_node *block, int arity,
-			ir_node *in[], ir_mode *mode);
-
-/**
- * Constructor for a Load  node.
- *
- * @param *db    A pointer for debug information.
- * @param *irg   The ir graph the node  belongs to.
- * @param *block The ir block the node belongs to.
- * @param *store The current memory
- * @param *adr   A pointer to the variable to be read in this memory.
- */
-ir_node *new_rd_Load   (dbg_info *db, ir_graph *irg, ir_node *block,
-			ir_node *store, ir_node *adr);
-
-/**
- * Constructor for a Store  node.
- *
- * @param *db    A pointer for debug information.
- * @param *irg   The ir graph the node  belongs to.
- * @param *block The ir block the node belongs to.
- * @param *store The current memory
- * @param *adr   A pointer to the variable to be read in this memory.
- * @param *val   The value to write to this variable.
- */
-ir_node *new_rd_Store  (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_node *store, ir_node *adr, ir_node *val);
-
-/**
- * Constructor for a Alloc node.
- *
- * @param *db         A pointer for debug information.
- * @param *irg        The ir graph the node  belongs to.
- * @param *block      The ir block the node belongs to.
- * @param *store      The memory which shall contain the new variable.
- * @param *size       The number of bytes to allocate.
- * @param *alloc_type The type of the allocated variable.
- * @param where       Where to allocate the variable, either heap_alloc or stack_alloc.
- *
- */
-ir_node *new_rd_Alloc  (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
-               ir_node *size, type *alloc_type, where_alloc where);
-
-/** Constructor for a Free node.
- *
- * Constructor for a Free node.  Frees the memory occupied by the
- * entity pointed to by the pointer arg.  Type indicates the type of
- * the entity the argument points to.
- *
- * @param *db         A pointer for debug information.
- * @param *irg        The ir graph the node  belongs to.
- * @param *block      The ir block the node belongs to.
- * @param *store      The memory which shall contain the new variable.
- * @param *ptr        The pointer to the object to free.
- * @param *size       The number of objects of type free_type to free in a sequence.
- * @param *free_type  The type of the freed variable.
- *
- */
-ir_node *new_rd_Free   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
-			ir_node *ptr, ir_node *size, type *free_type);
-
-/** Constructor for a  Sync node.
- *
- * Constructor for a  Sync node.  Merges several memory values.  The node assumes
- * that a variable either occurs only in one of the memories, or it contains the
- * same value in all memories where it occurs.
- *
- * @param *db       A pointer for debug information.
- * @param *irg      The ir graph the node  belongs to.
- * @param *block    The ir block the node belongs to.
- * @param  arity    The number of memories to syncronize.
- * @param  *in[]    An array of pointers to nodes that produce an output of type
- *                  memory.  The constructor copies this array.
- */
-ir_node *new_rd_Sync   (dbg_info *db, ir_graph *irg, ir_node *block, int arity, ir_node *in[]);
-
-/** Constructor for a Proj  node.
- *
- * Constructor for a Proj node.  Projects a single value out of a tuple.
- * The @param proj gives the position of the value within the tuple.
- *
- * @param *db    A pointer for deubugginformation.
- * @param *irg   The ir graph the node  belongs to.
- * @param *block The ir block the node belongs to.
- * @param arg    A node producing a tuple.  The node must have mode_T.
- * @param *mode  The mode of the value to project.
- * @param proj   The position of the value in the tuple.
- */
-ir_node *new_rd_Proj   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg,
-			ir_mode *mode, long proj);
-
-/** Constructor for a defaultProj node.
- *
- * Constructor for a defaultProj node.  Represents the default control flow of
- * a Switch-Cond node.
- *
- * @param *db       A pointer for debug information.
- * @param *irg      The ir graph the node  belongs to.
- * @param *block    The ir block the node belongs to.
- * @param arg       A node producing a tuple.
- * @param max_proj  The end position of the value in the tuple.
- */
-ir_node *new_rd_defaultProj (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg,
-			     long max_proj);
-
-/** Constructor for a Tuple node.
- *
- * Constructor for a Tuple node.  This is an auxiliary node to replace a
- * node that returns a tuple without changing the corresponding Proj nodes.
- *
- * @param *db     A pointer for debug information.
- * @param *irg    The ir graph the node  belongs to.
- * @param *block  The ir block the node belongs to.
- * @param arity   The number of tuple elements.
- * @param *in[]   An array containing pointers to the nodes producing the tuple
- *                elements. The constructor copies this array.
- */
-ir_node *new_rd_Tuple  (dbg_info *db, ir_graph *irg, ir_node *block,
-			int arity, ir_node *in[]);
-
-/** Constructor for a Id node.
- *
- * Constructor for a Id node.  This is an auxiliary node to
- * replace a node that returns a single value.
- *
- * @param *db     A pointer for debug information.
- * @param *irg    The ir graph the node  belongs to.
- * @param *block  The ir block the node belongs to.
- * @param *val    The value
- * @param *mode   The mode of *val.
- */
-ir_node *new_rd_Id     (dbg_info *db, ir_graph *irg, ir_node *block,
-			ir_node *val, ir_mode *mode);
-
-/** Constructor for a Bad node.
- *
- * Constructor for a Bad node.  Returns the unique Bad node of the graph.
- * The same as get_irg_bad(irg).
- *
- * @param *irg    The ir graph the node belongs to.
- */
-ir_node *new_rd_Bad    (ir_graph *irg);
-
-/**
- * Constructor for a Confirm  node.
- *
- * @param *db     A pointer for debug information.
- * @param *irg    The ir graph the node belong to.
- * @param *block  The ir block the node belong to.
- * @param *val
- * @param *bound
- * @param cmp
- */
-ir_node *new_rd_Confirm (dbg_info *db, ir_graph *irg, ir_node *block,
-             ir_node *val, ir_node *bound, pn_Cmp cmp);
-
-/**
- * Constructor for a Unknown  node.
- *
- * @param *irg    The ir graph the node  belongs to.
- * @param *m
- */
-ir_node *new_rd_Unknown(ir_graph *irg, ir_mode *m);
-
-/**
- * Constructor for a CallBegin  node.
- *
- * @param *db     A pointer for debug information.
- * @param *irg    The ir graph the node belong to.
- * @param *block  The block the node belong to.
- * @param *callee The call node bisible in the  intra procedural view.
- */
-ir_node *new_rd_CallBegin(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *callee);
-
-/**
- * Constructor for a EndReg  node.
- *
- * @param *db     A pointer for debug information.
- * @param *irg    The ir graph the node belong to.
- * @param *block  The block the node belong to.
- */
-ir_node *new_rd_EndReg (dbg_info *db, ir_graph *irg, ir_node *block);
-
-/**
- * Constructor for a EndExcept  node.
- *
- * @param *db     A pointer for debug information.
- * @param *irg    The ir graph the node belong to.
- * @param *block  The block the node belong to.
- */
-ir_node *new_rd_EndExcept(dbg_info *db, ir_graph *irg, ir_node *block);
-
-/**
- * Constructor for a Break  node.
- *
- * @param *db     A pointer for debug information.
- * @param *irg    The ir graph the node belong to.
- * @param *block  The block the node belong to.
- */
-ir_node *new_rd_Break  (dbg_info *db, ir_graph *irg, ir_node *block);
-
-/**
- *
- * Constructor for a Filter node.
- *
- * @param *db     A pointer for debug information.
- * @param *irg    The ir graph the node belong to.
- * @param *block  The block the node belong to.
- * @param *arg
- * @param *mode
- * @param proj
- */
-ir_node *new_rd_Filter (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg,
-			ir_mode *mode, long proj);
-
-/**
- * Constructor for a FuncCall  node.
+ *  FuncCall is a function Call that has no side effects.  Therefore there
+ *  is not memory operand or result.
  *
  * @param *db     A pointer for debug information.
  * @param *irg    The ir graph the node belong to.
@@ -1870,50 +1379,506 @@ ir_node *new_rd_FuncCall (dbg_info *db, ir_graph *irg, ir_node *block,
                ir_node *callee, int arity, ir_node *in[],
                type *tp);
 
+/** Constructor for a Add node.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *irg   The ir graph the node  belongs to.
+ * @param   *block The ir block the node belongs to.
+ * @param   *op1   The operand 1.
+ * @param   *op2   The operand 2.
+ * @param   *mode  The mode of the operands and the result.
+ */
+ir_node *new_rd_Add    (dbg_info *db, ir_graph *irg, ir_node *block,
+               ir_node *op1, ir_node *op2, ir_mode *mode);
+
+/** Constructor for a Sub node.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *irg   The ir graph the node  belongs to.
+ * @param   *block The ir block the node belongs to.
+ * @param   *op1   The operand 1.
+ * @param   *op2   The operand 2.
+ * @param   *mode  The mode of the operands and the result.
+ */
+ir_node *new_rd_Sub    (dbg_info *db, ir_graph *irg, ir_node *block,
+               ir_node *op1, ir_node *op2, ir_mode *mode);
+
+/** Constructor for a Minus node.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *irg   The ir graph the node  belongs to.
+ * @param   *block The ir block the node belongs to.
+ * @param   *op    The operand .
+ * @param   *mode  The mode of the operand and the result.
+ */
+ir_node *new_rd_Minus  (dbg_info *db, ir_graph *irg, ir_node *block,
+               ir_node *op,  ir_mode *mode);
+
+/** Constructor for a Mul node.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *irg   The ir graph the node  belongs to.
+ * @param   *block The ir block the node belongs to.
+ * @param   *op1   The operand 1.
+ * @param   *op2   The operand 2.
+ * @param   *mode  The mode of the operands and the result.
+ */
+ir_node *new_rd_Mul    (dbg_info *db, ir_graph *irg, ir_node *block,
+               ir_node *op1, ir_node *op2, ir_mode *mode);
+
+/** Constructor for a Quot node.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *irg   The ir graph the node  belongs to.
+ * @param   *block The ir block the node belongs to.
+ * @param   *memop The store needed to model exceptions
+ * @param   *op1   The operand 1.
+ * @param   *op2   The operand 2.
+ */
+ir_node *new_rd_Quot   (dbg_info *db, ir_graph *irg, ir_node *block,
+               ir_node *memop, ir_node *op1, ir_node *op2);
+
+/** Constructor for a DivMod node.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *irg   The ir graph the node  belongs to.
+ * @param   *block The ir block the node belongs to.
+ * @param   *memop The store needed to model exceptions
+ * @param   *op1   The operand 1.
+ * @param   *op2   The operand 2.
+ */
+ir_node *new_rd_DivMod (dbg_info *db, ir_graph *irg, ir_node *block,
+               ir_node *memop, ir_node *op1, ir_node *op2);
+
+/** Constructor for a Div node.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *irg   The ir graph the node  belongs to.
+ * @param   *block The ir block the node belongs to.
+ * @param   *memop The store needed to model exceptions
+ * @param   *op1   The operand 1.
+ * @param   *op2   The operand 2.
+ */
+ir_node *new_rd_Div    (dbg_info *db, ir_graph *irg, ir_node *block,
+               ir_node *memop, ir_node *op1, ir_node *op2);
+
+/** Constructor for a Mod node.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *irg   The ir graph the node  belongs to.
+ * @param   *block The ir block the node belongs to.
+ * @param   *memop The store needed to model exceptions
+ * @param   *op1   The operand 1.
+ * @param   *op2   The operand 2.
+ */
+ir_node *new_rd_Mod    (dbg_info *db, ir_graph *irg, ir_node *block,
+			ir_node *memop, ir_node *op1, ir_node *op2);
+
+/** Constructor for a Abs node.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *irg   The ir graph the node  belongs to.
+ * @param   *block The ir block the node belongs to.
+ * @param   *op    The operand
+ * @param   *mode  The mode of the operands and the result.
+ */
+ir_node *new_rd_Abs    (dbg_info *db, ir_graph *irg, ir_node *block,
+                       ir_node *op, ir_mode *mode);
+
+/** Constructor for a And node.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *irg   The ir graph the node  belongs to.
+ * @param   *block The ir block the node belongs to.
+ * @param   *op1   The operand 1.
+ * @param   *op2   The operand 2.
+ * @param   *mode  The mode of the operands and the result.
+ */
+ir_node *new_rd_And    (dbg_info *db, ir_graph *irg, ir_node *block,
+			ir_node *op1, ir_node *op2, ir_mode *mode);
+
+/** Constructor for a Or node.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *irg   The ir graph the node  belongs to.
+ * @param   *block The ir block the node belongs to.
+ * @param   *op1   The operand 1.
+ * @param   *op2   The operand 2.
+ * @param   *mode  The mode of the operands and the result.
+ */
+ir_node *new_rd_Or     (dbg_info *db, ir_graph *irg, ir_node *block,
+			ir_node *op1, ir_node *op2, ir_mode *mode);
+
+/** Constructor for a Eor node.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *irg   The ir graph the node  belongs to.
+ * @param   *block The ir block the node belongs to.
+ * @param   *op1   The operand 1.
+ * @param   *op2   The operand 2.
+ * @param   *mode  The mode of the operands and the results.
+ */
+ir_node *new_rd_Eor    (dbg_info *db, ir_graph *irg, ir_node *block,
+			ir_node *op1, ir_node *op2, ir_mode *mode);
+
+/** Constructor for a Not node.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *irg   The ir graph the node  belongs to.
+ * @param   *block The ir block the node belongs to.
+ * @param   *op    The operand.
+ * @param   *mode  The mode of the operand and the result.
+ */
+ir_node *new_rd_Not    (dbg_info *db, ir_graph *irg, ir_node *block,
+               ir_node *op, ir_mode *mode);
+
+/** Constructor for a Cmp node.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *irg   The ir graph the node  belongs to.
+ * @param   *block The ir block the node belongs to.
+ * @param   *op1   The operand 1.
+ * @param   *op2   The operand 2.
+ */
+ir_node *new_rd_Cmp    (dbg_info *db, ir_graph *irg, ir_node *block,
+               ir_node *op1, ir_node *op2);
+
+/** Constructor for a Shl node.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *irg   The ir graph the node  belongs to.
+ * @param   *block The ir block the node belongs to.
+ * @param   *op    The operand.
+ * @param   *k     The number of bits to  shift the operand .
+ * @param   *mode  The mode of the operand and the result.
+ */
+ir_node *new_rd_Shl    (dbg_info *db, ir_graph *irg, ir_node *block,
+               ir_node *op, ir_node *k, ir_mode *mode);
+
+/** Constructor for a Shr node.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *irg   The ir graph the node  belongs to.
+ * @param   *block The ir block the node belongs to.
+ * @param   *op    The operand.
+ * @param   *k     The number of bits to shift the operand .
+ * @param   *mode  The mode of the operand and the result.
+ */
+ir_node *new_rd_Shr    (dbg_info *db, ir_graph *irg, ir_node *block,
+               ir_node *op, ir_node *k, ir_mode *mode);
+
+/** Constructor for a Shrs node.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *irg   The ir graph the node  belongs to.
+ * @param   *block The ir block the node belongs to.
+ * @param   *op    The operand.
+ * @param   *k     The number of bits to shift the operand.
+ * @param   *mode  The mode of the operand and the result.
+ */
+ir_node *new_rd_Shrs   (dbg_info *db, ir_graph *irg, ir_node *block,
+               ir_node *op, ir_node *k, ir_mode *mode);
+
+/** Constructor for a Rot node.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *irg   The ir graph the node  belongs to.
+ * @param   *block The ir block the node belongs to.
+ * @param   *op    The operand.
+ * @param   *k     The number of bits to rotate the operand.
+ * @param   *mode  The mode of the operand.
+ */
+ir_node *new_rd_Rot    (dbg_info *db, ir_graph *irg, ir_node *block,
+               ir_node *op, ir_node *k, ir_mode *mode);
+
+
+/** Constructor for a Conv node.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *irg   The ir graph the node  belongs to.
+ * @param   *block The ir block the node belongs to.
+ * @param   *op    The operand.
+ * @param   *mode  The mode of this the operand muss be converted .
+ */
+ir_node *new_rd_Conv   (dbg_info *db, ir_graph *irg, ir_node *block,
+               ir_node *op, ir_mode *mode);
+
+/** Constructor for a Cast node.
+ *
+ * High level type cast.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *irg   The ir graph the node  belongs to.
+ * @param   *block The ir block the node belongs to.
+ * @param   *op    The operand.
+ * @param   *to_tp The type of this the operand muss be casted .
+ */
+ir_node *new_rd_Cast   (dbg_info* db, ir_graph *irg, ir_node *block,
+			ir_node *op, type *to_tp);
+
+/** Constructor for a Phi node.
+ *
+ * @param *db    A pointer for debug information.
+ * @param *irg   The ir graph the node  belongs to.
+ * @param *block The ir block the node belongs to.
+ * @param arity  The number of predecessors
+ * @param *in[]    Array with predecessors.  The constructor copies this array.
+ * @param *mode  The mode of it's inputs and output.
+ */
+ir_node *new_rd_Phi    (dbg_info *db, ir_graph *irg, ir_node *block, int arity,
+			ir_node *in[], ir_mode *mode);
+
+/** Constructor for a Load node.
+ *
+ * @param *db    A pointer for debug information.
+ * @param *irg   The ir graph the node  belongs to.
+ * @param *block The ir block the node belongs to.
+ * @param *store The current memory
+ * @param *adr   A pointer to the variable to be read in this memory.
+ */
+ir_node *new_rd_Load   (dbg_info *db, ir_graph *irg, ir_node *block,
+			ir_node *store, ir_node *adr);
+
+/** Constructor for a Store node.
+ *
+ * @param *db    A pointer for debug information.
+ * @param *irg   The ir graph the node  belongs to.
+ * @param *block The ir block the node belongs to.
+ * @param *store The current memory
+ * @param *adr   A pointer to the variable to be read in this memory.
+ * @param *val   The value to write to this variable.
+ */
+ir_node *new_rd_Store  (dbg_info *db, ir_graph *irg, ir_node *block,
+               ir_node *store, ir_node *adr, ir_node *val);
+
+/** Constructor for a Alloc node.
+ *
+ * The Alloc node extends the memory by space for an entity of type alloc_type.
+ *
+ * @param *db         A pointer for debug information.
+ * @param *irg        The ir graph the node  belongs to.
+ * @param *block      The ir block the node belongs to.
+ * @param *store      The memory which shall contain the new variable.
+ * @param *size       The number of bytes to allocate.
+ * @param *alloc_type The type of the allocated variable.
+ * @param where       Where to allocate the variable, either heap_alloc or stack_alloc.
+ */
+ir_node *new_rd_Alloc  (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
+               ir_node *size, type *alloc_type, where_alloc where);
+
+/** Constructor for a Free node.
+ *
+ * Frees the memory occupied by the entity pointed to by the pointer
+ * arg.  Type indicates the type of the entity the argument points to.
+ *
+ * @param *db         A pointer for debug information.
+ * @param *irg        The ir graph the node  belongs to.
+ * @param *block      The ir block the node belongs to.
+ * @param *store      The memory which shall contain the new variable.
+ * @param *ptr        The pointer to the object to free.
+ * @param *size       The number of objects of type free_type to free in a sequence.
+ * @param *free_type  The type of the freed variable.
+ */
+ir_node *new_rd_Free   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
+			ir_node *ptr, ir_node *size, type *free_type);
+
+/** Constructor for a Sync node.
+ *
+ * Merges several memory values.  The node assumes that a variable
+ * either occurs only in one of the memories, or it contains the same
+ * value in all memories where it occurs.
+ *
+ * @param *db       A pointer for debug information.
+ * @param *irg      The ir graph the node  belongs to.
+ * @param *block    The ir block the node belongs to.
+ * @param  arity    The number of memories to syncronize.
+ * @param  *in[]    An array of pointers to nodes that produce an output of type
+ *                  memory.  The constructor copies this array.
+ */
+ir_node *new_rd_Sync   (dbg_info *db, ir_graph *irg, ir_node *block, int arity, ir_node *in[]);
+
+/** Constructor for a Proj node.
+ *
+ * Projects a single value out of a tuple.  The parameter proj gives the
+ * position of the value within the tuple.
+ *
+ * @param *db    A pointer for deubugginformation.
+ * @param *irg   The ir graph the node  belongs to.
+ * @param *block The ir block the node belongs to.
+ * @param arg    A node producing a tuple.  The node must have mode_T.
+ * @param *mode  The mode of the value to project.
+ * @param proj   The position of the value in the tuple.
+ */
+ir_node *new_rd_Proj   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg,
+			ir_mode *mode, long proj);
+
+/** Constructor for a defaultProj node.
+ *
+ * Represents the default control flow of a Switch-Cond node.
+ *
+ * @param *db       A pointer for debug information.
+ * @param *irg      The ir graph the node  belongs to.
+ * @param *block    The ir block the node belongs to.
+ * @param arg       A node producing a tuple.
+ * @param max_proj  The end position of the value in the tuple.
+ */
+ir_node *new_rd_defaultProj (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg,
+			     long max_proj);
+
+/** Constructor for a Tuple node.
+ *
+ * This is an auxiliary node to replace a node that returns a tuple
+ * without changing the corresponding Proj nodes.
+ *
+ * @param *db     A pointer for debug information.
+ * @param *irg    The ir graph the node  belongs to.
+ * @param *block  The ir block the node belongs to.
+ * @param arity   The number of tuple elements.
+ * @param *in[]   An array containing pointers to the nodes producing the tuple
+ *                elements. The constructor copies this array.
+ */
+ir_node *new_rd_Tuple  (dbg_info *db, ir_graph *irg, ir_node *block,
+			int arity, ir_node *in[]);
+
+/** Constructor for a Id node.
+ *
+ * This is an auxiliary node to replace a node that returns a single
+ * value.
+ *
+ * @param *db     A pointer for debug information.
+ * @param *irg    The ir graph the node  belongs to.
+ * @param *block  The ir block the node belongs to.
+ * @param *val    The value
+ * @param *mode   The mode of *val.
+ */
+ir_node *new_rd_Id     (dbg_info *db, ir_graph *irg, ir_node *block,
+			ir_node *val, ir_mode *mode);
+
+/** Constructor for a Bad node.
+ *
+ * Returns the unique Bad node of the graph.  The same as
+ * get_irg_bad().
+ *
+ * @param *irg    The ir graph the node belongs to.
+ */
+ir_node *new_rd_Bad    (ir_graph *irg);
+
+/** Constructor for a Confirm node.
+ *
+ * Specifies constraints for a value.  To support dataflow analyses.
+ *
+ * Example: If the value never exceeds '100' this is expressed by placing a
+ * Confirm node val = new_d_Confirm(db, val, 100, '<') on the dataflow edge.
+ *
+ * @param *irg    The ir graph the node belong to.
+ * @param *block  The ir block the node belong to.
+ * @param *db     A pointer for debug information.
+ * @param *val    The value we express a constraint for
+ * @param *bound  The value to compare against. Must be a firm node, typically a constant.
+ * @param cmp     The compare operation.
+ */
+ir_node *new_rd_Confirm (dbg_info *db, ir_graph *irg, ir_node *block,
+             ir_node *val, ir_node *bound, pn_Cmp cmp);
+
+/** Constructor for an Unknown node.
+ *
+ * Represents an arbitrary value.  Places the node in the start block.
+ *
+ * @param *irg    The ir graph the node  belongs to.
+ * @param *m      The mode of the unknown value.
+ */
+ir_node *new_rd_Unknown(ir_graph *irg, ir_mode *m);
+
+/** Constructor for a CallBegin node.
+ *
+ * CallBegin represents control flow depending of the pointer value
+ * representing the called method to the called methods.  The
+ * constructor copies the method pointer input from the passed Call
+ * node.
+ *
+ * @param *db     A pointer for debug information.
+ * @param *irg    The ir graph the node belong to.
+ * @param *block  The block the node belong to.
+ * @param *callee The call node visible in the intra procedural view.
+ */
+ir_node *new_rd_CallBegin(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *callee);
+
+/** Constructor for a EndReg node.
+ *
+ * Used to represent regular procedure end in interprocedual view.
+ *
+ * @param *db     A pointer for debug information.
+ * @param *irg    The ir graph the node belong to.
+ * @param *block  The block the node belong to.
+ */
+ir_node *new_rd_EndReg (dbg_info *db, ir_graph *irg, ir_node *block);
+
+/** Constructor for a EndExcept node.
+ *
+ * Used to represent exceptional procedure end in interprocedural view.
+ *
+ * @param *db     A pointer for debug information.
+ * @param *irg    The ir graph the node belong to.
+ * @param *block  The block the node belong to.
+ */
+ir_node *new_rd_EndExcept(dbg_info *db, ir_graph *irg, ir_node *block);
+
+/** Constructor for a Filter node.
+ *
+ * Adds the node to the block in current_ir_block.  Filter is a node
+ * with two views used to construct the interprocedural view.  In
+ * intraprocedural view its semantics are identical to the Proj node.
+ * In interprocedural view the Filter performs the Phi operation on
+ * method parameters or results.  Other than a Phi a Filter node may
+ * not be removed if it has only a single input.
+ *
+ * The constructor builds the Filter in intraprocedural view.
+ *
+ * @param *irg    The ir graph the node belong to.
+ * @param *block  The block the node belong to.
+ * @param *arg  The tuple value to project from.
+ * @param *mode The mode of the projected value.
+ * @param proj  The position in the tuple to project from.
+ */
+ir_node *new_rd_Filter (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg,
+			ir_mode *mode, long proj);
+
+
 /*-------------------------------------------------------------------------*/
 /* The raw interface without debug support                                 */
 /*-------------------------------------------------------------------------*/
 
-/* Constructs a Block with a fixed number of predecessors.
-   Does not set current_block.  Can not be used with automatic
-   Phi node costruction. */
-
-/**
- * Constructor for a Block node.
+/** Constructor for a Block node.
  *
  * @param irg    The ir graph the block belongs to.
  * @param arity  The number of control predecessors.
- * @param in[]     An array of control predecessors.  The length of
+ * @param in[]   An array of control predecessors.  The length of
  *               the array must be 'arity'. The constructor copies this array.
  */
 ir_node *new_r_Block  (ir_graph *irg,  int arity, ir_node *in[]);
 
-/**
- * Constructor for a Start node.
+/** Constructor for a Start node.
  *
  * @param *irg   The ir graph the node belongs to.
  * @param *block The ir block the node belongs to.
  */
 ir_node *new_r_Start  (ir_graph *irg, ir_node *block);
 
-/**
- * Constructor for a End node.
+/** Constructor for a End node.
  *
  * @param *irg   The ir graph the node  belongs to.
  * @param *block The ir block the node belongs to.
  */
 ir_node *new_r_End    (ir_graph *irg, ir_node *block);
 
-/**
- * Constructor for a Jmp node.
+/** Constructor for a Jmp node.
  *
  * @param *irg    The ir graph the node belongs to.
  * @param *block  The ir block the node belongs to.
  */
 ir_node *new_r_Jmp    (ir_graph *irg, ir_node *block);
 
-/**
- * Constructor for a Cond  node.
+/** Constructor for a Cond node.
  *
  * @param *irg   The ir graph the node  belongs to.
  * @param *block The ir block the node belongs to.
@@ -1921,8 +1886,7 @@ ir_node *new_r_Jmp    (ir_graph *irg, ir_node *block);
  */
 ir_node *new_r_Cond   (ir_graph *irg, ir_node *block, ir_node *c);
 
-/**
- * Constructor for a Return node.
+/** Constructor for a Return node.
  *
  * @param *irg   The ir graph the node  belongs to.
  * @param *block The ir block the node belongs to.
@@ -1933,33 +1897,27 @@ ir_node *new_r_Cond   (ir_graph *irg, ir_node *block, ir_node *c);
 ir_node *new_r_Return (ir_graph *irg, ir_node *block,
 		       ir_node *store, int arity, ir_node *in[]);
 
-/**
- * Constructor for a Raise  node.
+/** Constructor for a Raise node.
  *
  * @param *irg   The ir graph the node  belongs to.
  * @param *block The ir block the node belongs to.
  * @param *store The current memory.
  * @param *obj   A pointer to the Except variable.
- *
  */
-
 ir_node *new_r_Raise  (ir_graph *irg, ir_node *block,
                ir_node *store, ir_node *obj);
 
-/**
- * Constructor for a Const  node.
+/** Constructor for a Const node.
  *
  * @param *irg   The ir graph the node  belongs to.
  * @param *block The ir block the node belongs to.
  * @param *mode  The mode of the operands and the results.
- * @param *con   Points to an entry in the constant table. This pointer is
- *               added to the attributes of  the node (self->attr.con).
+ * @param *con   Points to an entry in the constant table.
  */
-
 ir_node *new_r_Const  (ir_graph *irg, ir_node *block,
                ir_mode *mode, tarval *con);
-/**
- * Constructor for a SymConst  node.
+
+/** Constructor for a SymConst node.
  *
  * @param *irg    The ir graph the node  belongs to.
  * @param *block  The ir block the node belongs to.
@@ -1969,8 +1927,7 @@ ir_node *new_r_Const  (ir_graph *irg, ir_node *block,
 ir_node *new_r_SymConst (ir_graph *irg, ir_node *block,
                        type_or_id_p value, symconst_kind symkind);
 
-/**
- * Constructor for a Sel  node.
+/** Constructor for a Sel node.
  *
  * @param   *irg       The ir graph the node  belongs to.
  * @param   *block     The ir block the node belongs to.
@@ -1984,8 +1941,7 @@ ir_node *new_r_Sel    (ir_graph *irg, ir_node *block, ir_node *store,
                        ir_node *objptr, int n_index, ir_node *index[],
                entity *ent);
 
-/**
- * Constructor for a InstOf  node.
+/** Constructor for a InstOf node.
  *
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
@@ -1994,11 +1950,10 @@ ir_node *new_r_Sel    (ir_graph *irg, ir_node *block, ir_node *store,
  * @param   *z
  *
  */
-
 ir_node *new_r_InstOf (ir_graph *irg, ir_node *block, ir_node *x, ir_node *y, type *z);
 
 /**
- * Constructor for a Call  node.
+ * Constructor for a Call node.
  *
  * @param   *irg    The ir graph the node  belongs to.
  * @param   *block  The ir block the node belongs to.
@@ -2009,13 +1964,12 @@ ir_node *new_r_InstOf (ir_graph *irg, ir_node *block, ir_node *x, ir_node *y, ty
  * @param   *tp     Type information of the procedure called.
  *
  */
-
 ir_node *new_r_Call   (ir_graph *irg, ir_node *block, ir_node *store,
                ir_node *callee, int arity, ir_node *in[],
                type *tp);
 
 /**
- * Constructor for a Add  node.
+ * Constructor for a Add node.
  *
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
@@ -2024,13 +1978,11 @@ ir_node *new_r_Call   (ir_graph *irg, ir_node *block, ir_node *store,
  * @param   *mode  The mode of the operands and the result.
  *
  */
-
-
 ir_node *new_r_Add    (ir_graph *irg, ir_node *block,
                ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /**
- * Constructor for a Sub  node.
+ * Constructor for a Sub node.
  *
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
@@ -2039,12 +1991,11 @@ ir_node *new_r_Add    (ir_graph *irg, ir_node *block,
  * @param   *mode  The mode of the operands and the results.
  *
  */
-
 ir_node *new_r_Sub    (ir_graph *irg, ir_node *block,
                ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /**
- * Constructor for a Minus  node.
+ * Constructor for a Minus node.
  *
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
@@ -2052,11 +2003,10 @@ ir_node *new_r_Sub    (ir_graph *irg, ir_node *block,
  * @param   *mode  The mode of the operand and the result.
  *
  */
-
 ir_node *new_r_Minus  (ir_graph *irg, ir_node *block,
                ir_node *op,  ir_mode *mode);
 /**
- * Constructor for a Mul  node.
+ * Constructor for a Mul node.
  *
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
@@ -2065,12 +2015,11 @@ ir_node *new_r_Minus  (ir_graph *irg, ir_node *block,
  * @param   *mode  The mode of the operands and the result.
  *
  */
-
 ir_node *new_r_Mul    (ir_graph *irg, ir_node *block,
                ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /**
- * Constructor for a Quot  node.
+ * Constructor for a Quot node.
  *
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
@@ -2079,12 +2028,11 @@ ir_node *new_r_Mul    (ir_graph *irg, ir_node *block,
  * @param   *op2   The operand 2.
  *
  */
-
 ir_node *new_r_Quot   (ir_graph *irg, ir_node *block,
                ir_node *memop, ir_node *op1, ir_node *op2);
 
 /**
- * Constructor for a DivMod  node.
+ * Constructor for a DivMod node.
  *
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
@@ -2093,12 +2041,11 @@ ir_node *new_r_Quot   (ir_graph *irg, ir_node *block,
  * @param   *op2   The operand 2.
  *
  */
-
 ir_node *new_r_DivMod (ir_graph *irg, ir_node *block,
                ir_node *memop, ir_node *op1, ir_node *op2);
 
 /**
- * Constructor for a Div  node.
+ * Constructor for a Div node.
  *
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
@@ -2107,12 +2054,11 @@ ir_node *new_r_DivMod (ir_graph *irg, ir_node *block,
  * @param   *op2   The operand 2.
  *
  */
-
 ir_node *new_r_Div    (ir_graph *irg, ir_node *block,
                ir_node *memop, ir_node *op1, ir_node *op2);
 
 /**
- * Constructor for a Mod  node.
+ * Constructor for a Mod node.
  *
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
@@ -2121,12 +2067,11 @@ ir_node *new_r_Div    (ir_graph *irg, ir_node *block,
  * @param   *op2   The operand 2.
  *
  */
-
 ir_node *new_r_Mod    (ir_graph *irg, ir_node *block,
                ir_node *memop, ir_node *op1, ir_node *op2);
 
 /**
- * Constructor for a Abs  node.
+ * Constructor for a Abs node.
  *
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
@@ -2134,12 +2079,11 @@ ir_node *new_r_Mod    (ir_graph *irg, ir_node *block,
  * @param   *mode  The mode of the operands and the result.
  *
  */
-
 ir_node *new_r_Abs    (ir_graph *irg, ir_node *block,
                        ir_node *op, ir_mode *mode);
 
 /**
- * Constructor for a And  node.
+ * Constructor for a And node.
  *
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
@@ -2148,12 +2092,11 @@ ir_node *new_r_Abs    (ir_graph *irg, ir_node *block,
  * @param   *mode  The mode of the operands and the result.
  *
  */
-
 ir_node *new_r_And    (ir_graph *irg, ir_node *block,
                ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /**
- * Constructor for a Or  node.
+ * Constructor for a Or node.
  *
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
@@ -2162,12 +2105,11 @@ ir_node *new_r_And    (ir_graph *irg, ir_node *block,
  * @param   *mode  The mode of the operands and the result.
  *
  */
-
 ir_node *new_r_Or     (ir_graph *irg, ir_node *block,
                ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /**
- * Constructor for a Eor  node.
+ * Constructor for a Eor node.
  *
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
@@ -2176,12 +2118,11 @@ ir_node *new_r_Or     (ir_graph *irg, ir_node *block,
  * @param   *mode  The mode of the operands and the results.
  *
  */
-
 ir_node *new_r_Eor    (ir_graph *irg, ir_node *block,
                ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /**
- * Constructor for a Not  node.
+ * Constructor for a Not node.
  *
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
@@ -2189,12 +2130,11 @@ ir_node *new_r_Eor    (ir_graph *irg, ir_node *block,
  * @param   *mode  The mode of the operand and the result.
  *
  */
-
 ir_node *new_r_Not    (ir_graph *irg, ir_node *block,
                ir_node *op, ir_mode *mode);
 
 /**
- * Constructor for a Cmp  node.
+ * Constructor for a Cmp node.
  *
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
@@ -2202,12 +2142,11 @@ ir_node *new_r_Not    (ir_graph *irg, ir_node *block,
  * @param   *op2   The operand 2.
  *
  */
-
 ir_node *new_r_Cmp    (ir_graph *irg, ir_node *block,
                ir_node *op1, ir_node *op2);
 
 /**
- * Constructor for a Shl  node.
+ * Constructor for a Shl node.
  *
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
@@ -2216,12 +2155,11 @@ ir_node *new_r_Cmp    (ir_graph *irg, ir_node *block,
  * @param   *mode  The mode of the operand and the result.
  *
  */
-
 ir_node *new_r_Shl    (ir_graph *irg, ir_node *block,
                ir_node *op, ir_node *k, ir_mode *mode);
 
 /**
- * Constructor for a Shr  node.
+ * Constructor for a Shr node.
  *
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
@@ -2230,12 +2168,11 @@ ir_node *new_r_Shl    (ir_graph *irg, ir_node *block,
  * @param   *mode  The mode of the operand and the result.
  *
  */
-
 ir_node *new_r_Shr    (ir_graph *irg, ir_node *block,
                ir_node *op, ir_node *k, ir_mode *mode);
 
 /**
- * Constructor for a Shrs  node.
+ * Constructor for a Shrs node.
  *
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
@@ -2244,12 +2181,11 @@ ir_node *new_r_Shr    (ir_graph *irg, ir_node *block,
  * @param   *mode  The mode of the operand and the result.
  *
  */
-
 ir_node *new_r_Shrs   (ir_graph *irg, ir_node *block,
                ir_node *op, ir_node *k, ir_mode *mode);
 
 /**
- * Constructor for a Rot  node.
+ * Constructor for a Rot node.
  *
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
@@ -2258,12 +2194,11 @@ ir_node *new_r_Shrs   (ir_graph *irg, ir_node *block,
  * @param   *mode  The mode of the operand.
  *
  */
-
 ir_node *new_r_Rot    (ir_graph *irg, ir_node *block,
                ir_node *op, ir_node *k, ir_mode *mode);
 
 /**
- * Constructor for a Conv  node.
+ * Constructor for a Conv node.
  *
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
@@ -2271,12 +2206,11 @@ ir_node *new_r_Rot    (ir_graph *irg, ir_node *block,
  * @param   *mode  The mode of this the operand muss be converted .
  *
  */
-
 ir_node *new_r_Conv   (ir_graph *irg, ir_node *block,
                ir_node *op, ir_mode *mode);
 
 /**
- * Constructor for a Cast  node.
+ * Constructor for a Cast node.
  *
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
@@ -2287,6 +2221,7 @@ ir_node *new_r_Conv   (ir_graph *irg, ir_node *block,
 
 ir_node *new_r_Cast   (ir_graph *irg, ir_node *block,
                ir_node *op, type *to_tp);
+
 /**
  * Constructor for a Phi node.
  *
@@ -2297,11 +2232,11 @@ ir_node *new_r_Cast   (ir_graph *irg, ir_node *block,
  * @param *mode  The mode of it's inputs and output.
  *
  */
-
 ir_node *new_r_Phi    (ir_graph *irg, ir_node *block, int arity,
-               ir_node *in[], ir_mode *mode);
+		       ir_node *in[], ir_mode *mode);
+
 /**
- * Constructor for a Load  node.
+ * Constructor for a Load node.
  *
  * @param *irg   The ir graph the node  belongs to.
  * @param *block The ir block the node belongs to.
@@ -2309,11 +2244,10 @@ ir_node *new_r_Phi    (ir_graph *irg, ir_node *block, int arity,
  * @param *adr   A pointer to the variable to be read in this memory.
  *
  */
-
 ir_node *new_r_Load   (ir_graph *irg, ir_node *block,
                ir_node *store, ir_node *adr);
 /**
- * Constructor for a Store  node.
+ * Constructor for a Store node.
  *
  * @param *irg   The ir graph the node  belongs to.
  * @param *block The ir block the node belongs to.
@@ -2325,7 +2259,7 @@ ir_node *new_r_Load   (ir_graph *irg, ir_node *block,
 ir_node *new_r_Store  (ir_graph *irg, ir_node *block,
                ir_node *store, ir_node *adr, ir_node *val);
 /**
- * Constructor for a Alloc  node.
+ * Constructor for a Alloc node.
  *
  * @param *irg        The ir graph the node  belongs to.
  * @param *block      The ir block the node belongs to.
@@ -2339,7 +2273,7 @@ ir_node *new_r_Store  (ir_graph *irg, ir_node *block,
 ir_node *new_r_Alloc  (ir_graph *irg, ir_node *block, ir_node *store,
                ir_node *size, type *alloc_type, where_alloc where);
 /**
- * Constructor for a Free  node.
+ * Constructor for a Free node.
  *
  * @param *irg        The ir graph the node  belongs to.
  * @param *block      The ir block the node belongs to.
@@ -2352,8 +2286,9 @@ ir_node *new_r_Alloc  (ir_graph *irg, ir_node *block, ir_node *store,
 
 ir_node *new_r_Free   (ir_graph *irg, ir_node *block, ir_node *store,
                ir_node *ptr, ir_node *size, type *free_type);
+
 /**
- * Constructor for a  Sync  node.
+ * Constructor for a  Sync node.
  *
  * @param *irg      The ir graph the node  belongs to.
  * @param *block    The ir block the node belongs to.
@@ -2361,11 +2296,10 @@ ir_node *new_r_Free   (ir_graph *irg, ir_node *block, ir_node *store,
  * @param  *in[]     An array of pointers to nodes that produce an output of  type memory. The constructor copies this array.
  *
  */
-
 ir_node *new_r_Sync   (ir_graph *irg, ir_node *block, int arity, ir_node *in[]);
 
 /**
- * Constructor for a Proj  node.
+ * Constructor for a Proj node.
  *
  * @param *irg   The ir graph the node  belongs to.
  * @param *block The ir block the node belongs to.
@@ -2379,7 +2313,7 @@ ir_node *new_r_Proj   (ir_graph *irg, ir_node *block, ir_node *arg,
 		       ir_mode *mode, long proj);
 
 /**
- * Constructor for a defaultProj  node.
+ * Constructor for a defaultProj node.
  *
  * @param *irg      The ir graph the node  belongs to.
  * @param *block    The ir block the node belongs to.
@@ -2387,36 +2321,34 @@ ir_node *new_r_Proj   (ir_graph *irg, ir_node *block, ir_node *arg,
  * @param max_ proj The end  position of the value in the tuple.
  *
  */
-
 ir_node *new_r_defaultProj (ir_graph *irg, ir_node *block, ir_node *arg, long max_proj);
 
 
 /**
- * Constructor for a Tuple  node.
+ * Constructor for a Tuple node.
  *
  * @param *irg    The ir graph the node  belongs to.
  * @param *block  The ir block the node belongs to.
  * @param arity   The number of tuple elements.
- * @param *in[]    An array containing pointers to the nodes producing the tuple elements. The constructor copies this array.
- *
+ * @param *in[]   An array containing pointers to the nodes producing the tuple elements.
+ *                The constructor copies this array.
  */
-
 ir_node *new_r_Tuple  (ir_graph *irg, ir_node *block, int arity, ir_node *in[]);
+
 /**
- * Constructor for a Id  node.
+ * Constructor for a Id node.
  *
  * @param *irg    The ir graph the node  belongs to.
  * @param *block  The ir block the node belongs to.
- * @param *val
+ * @param *val    The operand to Id.
  * @param *mode   The mode of *val.
  *
  */
-
 ir_node *new_r_Id     (ir_graph *irg, ir_node *block,
                ir_node *val, ir_mode *mode);
 
 /**
- * Constructor for a Bad  node.
+ * Constructor for a Bad node.
  *
  * @param *irg    The ir graph the node  belongs to.
  *
@@ -2425,31 +2357,36 @@ ir_node *new_r_Id     (ir_graph *irg, ir_node *block,
 ir_node *new_r_Bad    (ir_graph *irg);
 
 /**
- * Constructor for a Confirm  node.
+ *
+ * Constructor for a Confirm node.
+ * Specifies constraints for a value.  To support dataflow analyses.
+ *
+ * Example: If the value never exceeds '100' this is expressed by placing a
+ * Confirm node val = new_d_Confirm(db, val, 100, '<') on the dataflow edge.
  *
  * @param *irg    The ir graph the node belong to.
  * @param *block  The ir block the node belong to.
- * @param *val
- * @param *bound
- * @param cmp
+ * @param *db     A pointer for debug information.
+ * @param *val    The value we express a constraint for
+ * @param *bound  The value to compare against. Must be a firm node, typically a constant.
+ * @param cmp     The compare operation.
  *
  */
-
 ir_node *new_r_Confirm (ir_graph *irg, ir_node *block,
             ir_node *val, ir_node *bound, pn_Cmp cmp);
 
 /**
- * Constructor for a Unknown  node.
+ *
+ * Constructor for a Unknown node.  Represents an arbtrary valus.  Places the node in
+ * the start block.
  *
  * @param *irg    The ir graph the node  belongs to.
- * @param *m
- *
+ * @param *m      The mode of the unknown value.
  */
-
 ir_node *new_r_Unknown(ir_graph *irg, ir_mode *m);
 
 /**
- * Constructor for a CallBegin  node.
+ * Constructor for a CallBegin node.
  *
  * @param *irg    The ir graph the node belong to.
  * @param *block  The block the node belong to.
@@ -2460,7 +2397,7 @@ ir_node *new_r_Unknown(ir_graph *irg, ir_mode *m);
 ir_node *new_r_CallBegin(ir_graph *irg, ir_node *block, ir_node *callee);
 
 /**
- * Constructor for a EndReg  node.
+ * Constructor for a EndReg node.
  *
  * @param *irg    The ir graph the node belong to.
  * @param *block  The block the node belong to.
@@ -2470,7 +2407,7 @@ ir_node *new_r_CallBegin(ir_graph *irg, ir_node *block, ir_node *callee);
 ir_node *new_r_EndReg (ir_graph *irg, ir_node *block);
 
 /**
- * Constructor for a EndExcept  node.
+ * Constructor for a EndExcept node.
  *
  * @param *irg    The ir graph the node belong to.
  * @param *block  The block the node belong to.
@@ -2480,7 +2417,7 @@ ir_node *new_r_EndReg (ir_graph *irg, ir_node *block);
 ir_node *new_r_EndExcept(ir_graph *irg, ir_node *block);
 
 /**
- * Constructor for a Break  node.
+ * Constructor for a Break node.
  *
  * @param *irg    The ir graph the node belong to.
  * @param *block  The block the node belong to.
@@ -2491,29 +2428,36 @@ ir_node *new_r_Break  (ir_graph *irg, ir_node *block);
 
 /**
  *
- * Costructor for a Filter node.
+ * Constructor for a Filter node. Adds the node to the block in current_ir_block.
+ * Filter is a node with two views used to construct the interprocedural view.
+ * In intraprocedural view its semantics are identical to the Proj node.
+ * In interprocedural view the Filter performs the Phi operation on method
+ * parameters or results.  Other than a Phi a Filter node may not be removed
+ * if it has only a single input.
+ *
+ * The constructor builds the Filter in intraprocedural view.
  *
  * @param *irg    The ir graph the node belong to.
  * @param *block  The block the node belong to.
- * @param *arg
- * @param *mode
- * @param proj
+ * @param *arg  The tuple value to project from.
+ * @param *mode The mode of the projected value.
+ * @param proj  The position in the tuple to project from.
  *
  */
 ir_node *new_r_Filter (ir_graph *irg, ir_node *block, ir_node *arg,
                ir_mode *mode, long proj);
+
 /**
- * Constructor for a FuncCall  node.
+ * Constructor for a FuncCall node.
  *
  * @param *irg    The ir graph the node belong to.
  * @param *block  The block the node belong to.
  * @param *callee A pointer to the called procedure.
  * @param arity   The number of procedure parameters.
- * @param *in[]    An array with the pointers to the parameters. The constructor copies this array.
+ * @param *in[]   An array with the pointers to the parameters. The constructor copies this array.
  * @param *type   Type information of the procedure called.
  *
  */
-
 ir_node *new_r_FuncCall (ir_graph *irg, ir_node *block,
 			 ir_node *callee, int arity, ir_node *in[],
 			 type *tp);
@@ -2523,22 +2467,17 @@ ir_node *new_r_FuncCall (ir_graph *irg, ir_node *block,
 /*-----------------------------------------------------------------------*/
 
 /** Sets the current block in which the following constructors place the
-   nodes they construct. */
+  nodes they construct. */
 void switch_block (ir_node *target);
 
-/* Constructs a Block with a fixed number of predecessors.
-   Does set current_block.  Can be used with automatic Phi
-   node construction. */
-
 /**
- * Constructor for a Block node. Adds the block to the graph in  current_ir_graph .
+ * Constructor for a Block node. Adds the block to the graph in current_ir_graph.
  *
- * @param *db    A Pointer for  debug information.
+ * @param *db    A Pointer for  debugginfomation.
  * @param arity  The number of control predecessors.
- * @param in     An array of control predecessors.  The length of
+ * @param in[]   An array of control predecessors.  The length of
  *               the array must be 'arity'.
  */
-
 ir_node *new_d_Block(dbg_info* db, int arity, ir_node *in[]);
 
 /**
@@ -2547,16 +2486,14 @@ ir_node *new_d_Block(dbg_info* db, int arity, ir_node *in[]);
  * @param *db    A pointer for debug information.
  *
  */
-
 ir_node *new_d_Start  (dbg_info* db);
 
 /**
- * Constructor for a End  node. Adds the node to the block in current_ir_block.
+ * Constructor for a End node. Adds the node to the block in current_ir_block.
  *
  * @param *db     A pointer for debug information.
  *
  */
-
 ir_node *new_d_End    (dbg_info* db);
 
 /**
@@ -2569,7 +2506,7 @@ ir_node *new_d_End    (dbg_info* db);
 ir_node *new_d_Jmp    (dbg_info* db);
 
 /**
- * Constructor for a Cond  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Cond node. Adds the node to the block in current_ir_block.
  *
  * @param *db    A pointer for debug information.
  * @param *c     The conditions parameter.Can be of mode b or I_u.
@@ -2591,7 +2528,7 @@ ir_node *new_d_Cond   (dbg_info* db, ir_node *c);
 ir_node *new_d_Return (dbg_info* db, ir_node *store, int arity, ir_node *in[]);
 
 /**
- * Constructor for a Raise  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Raise node. Adds the node to the block in current_ir_block.
  *
  * @param *db    A pointer for debug information.
  * @param *store The current memory.
@@ -2602,7 +2539,7 @@ ir_node *new_d_Return (dbg_info* db, ir_node *store, int arity, ir_node *in[]);
 ir_node *new_d_Raise  (dbg_info* db, ir_node *store, ir_node *obj);
 
 /**
- * Constructor for a Const_type  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Const_type node. Adds the node to the block in current_ir_block.
  *
  * @param *db    A pointer for debug information.
  * @param *mode  The mode of the operands and redults.
@@ -2614,7 +2551,7 @@ ir_node *new_d_Raise  (dbg_info* db, ir_node *store, ir_node *obj);
 ir_node *new_d_Const_type (dbg_info* db, ir_mode *mode, tarval *con, type *tp);
 
 /**
- * Constructor for a Const  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Const node. Adds the node to the block in current_ir_block.
  *
  * @param *db    A pointer for debug information.
  * @param *mode  The mode of the operands and redults.
@@ -2625,18 +2562,17 @@ ir_node *new_d_Const_type (dbg_info* db, ir_mode *mode, tarval *con, type *tp);
 ir_node *new_d_Const  (dbg_info* db, ir_mode *mode, tarval *con);
 
 /**
- * Constructor for a SymConst  node. Adds the node to the block in current_ir_block.
+ * Constructor for a SymConst node. Adds the node to the block in current_ir_block.
  *
  * @param *db     A pointer for debug information.
- * @param volue
- * @param symkind The kind of the symbolic constant: type_tag, size or link_info.
+ * @param value   A type, entity or ident depending on the SymConst kind.
+ * @param symkind The kind of the symbolic constant: symconst_type_tag, symconst_size or symconst_addr_name.
  *
  */
-
 ir_node *new_d_SymConst (dbg_info* db, type_or_id_p value, symconst_kind kind);
 
 /**
- * Constructor for a simpleSel  node. Adds the node to the block in current_ir_block.
+ * Constructor for a simpleSel node. Adds the node to the block in current_ir_block.
  *
  * @param   *db        A pointer for debug information.
  * @param   *store     The memory in which the object the entity should be selected from is allocated.
@@ -2648,7 +2584,7 @@ ir_node *new_d_SymConst (dbg_info* db, type_or_id_p value, symconst_kind kind);
 ir_node *new_d_simpleSel(dbg_info* db, ir_node *store, ir_node *objptr, entity *ent);
 
 /**
- * Constructor for a Sel  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Sel node. Adds the node to the block in current_ir_block.
  *
  * @param   *db        A pointer for debug information.
  * @param   *store     The memory in which the object the entity should be selected from is allocated.
@@ -2663,7 +2599,7 @@ ir_node *new_d_Sel    (dbg_info* db, ir_node *store, ir_node *objptr, int arity,
                      entity *ent);
 
 /**
- * Constructor for a InstOf  node. Adds the node to the block in current_ir_block.
+ * Constructor for a InstOf node. Adds the node to the block in current_ir_block.
  *
  * @param   *db    A pointer for debug information.
  * @param   *store
@@ -2675,7 +2611,7 @@ ir_node *new_d_Sel    (dbg_info* db, ir_node *store, ir_node *objptr, int arity,
 ir_node *new_d_InstOf (dbg_info* db, ir_node *store, ir_node *objptr, type *ent);
 
 /**
- * Constructor for a Call  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Call node. Adds the node to the block in current_ir_block.
  *
  * @param   *db     A pointer for debug information.
  * @param   *store  The actual store.
@@ -2690,7 +2626,7 @@ ir_node *new_d_Call   (dbg_info* db, ir_node *store, ir_node *callee, int arity,
              type *tp);
 
 /**
- * Constructor for a Add  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Add node. Adds the node to the block in current_ir_block.
  *
  * @param   *db    A pointer for debug information.
  * @param   *op1   The operand 1.
@@ -2702,7 +2638,7 @@ ir_node *new_d_Call   (dbg_info* db, ir_node *store, ir_node *callee, int arity,
 ir_node *new_d_Add    (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /**
- * Constructor for a Sub  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Sub node. Adds the node to the block in current_ir_block.
  *
  * @param   *db    A pointer for debug information.
  * @param   *op1   The operand 1.
@@ -2714,7 +2650,7 @@ ir_node *new_d_Add    (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_d_Sub    (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /**
- * Constructor for a Minus  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Minus node. Adds the node to the block in current_ir_block.
  *
  * @param   *db    A pointer for debug information.
  * @param   *op    The operand .
@@ -2725,7 +2661,7 @@ ir_node *new_d_Sub    (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_d_Minus  (dbg_info* db, ir_node *op,  ir_mode *mode);
 
 /**
- * Constructor for a Mul  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Mul node. Adds the node to the block in current_ir_block.
  *
  * @param   *db    A pointer for debug information.
  * @param   *op1   The operand 1.
@@ -2737,7 +2673,7 @@ ir_node *new_d_Minus  (dbg_info* db, ir_node *op,  ir_mode *mode);
 ir_node *new_d_Mul    (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /**
- * Constructor for a Quot  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Quot node. Adds the node to the block in current_ir_block.
  *
  * @param   *db    A pointer for debug information.
  * @param   *memop The store needed to model exceptions
@@ -2749,7 +2685,7 @@ ir_node *new_d_Mul    (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_d_Quot   (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2);
 
 /**
- * Constructor for a DivMod  node. Adds the node to the block in current_ir_block.
+ * Constructor for a DivMod node. Adds the node to the block in current_ir_block.
  *
  * @param   *db    A pointer for debug information.
  * @param   *memop The store needed to model exceptions
@@ -2761,7 +2697,7 @@ ir_node *new_d_Quot   (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2)
 ir_node *new_d_DivMod (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2);
 
 /**
- * Constructor for a Div  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Div node. Adds the node to the block in current_ir_block.
  *
  * @param   *db    A pointer for debug information.
  * @param   *memop The store needed to model exceptions
@@ -2773,7 +2709,7 @@ ir_node *new_d_DivMod (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2)
 ir_node *new_d_Div    (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2);
 
 /**
- * Constructor for a Mod  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Mod node. Adds the node to the block in current_ir_block.
  *
  * @param   *db    A pointer for debug information.
  * @param   *memop The store needed to model exceptions
@@ -2785,7 +2721,7 @@ ir_node *new_d_Div    (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2)
 ir_node *new_d_Mod    (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2);
 
 /**
- * Constructor for a Abs  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Abs node. Adds the node to the block in current_ir_block.
  *
  * @param   *db    A pointer for debug information.
  * @param   *op    The operand
@@ -2796,7 +2732,7 @@ ir_node *new_d_Mod    (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2)
 ir_node *new_d_Abs    (dbg_info* db, ir_node *op,                ir_mode *mode);
 
 /**
- * Constructor for a And  node. Adds the node to the block in current_ir_block.
+ * Constructor for a And node. Adds the node to the block in current_ir_block.
  *
  * @param   *db    A pointer for debug information.
  * @param   *irg   The ir graph the node  belongs to.
@@ -2810,7 +2746,7 @@ ir_node *new_d_Abs    (dbg_info* db, ir_node *op,                ir_mode *mode);
 ir_node *new_d_And    (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /**
- * Constructor for a Or  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Or node. Adds the node to the block in current_ir_block.
  *
  * @param   *db    A pointer for debug information.
  * @param   *op1   The operand 1.
@@ -2822,7 +2758,7 @@ ir_node *new_d_And    (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_d_Or     (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /**
- * Constructor for a Eor  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Eor node. Adds the node to the block in current_ir_block.
  *
  * @param   *db    A pointer for debug information.
  * @param   *op1   The operand 1.
@@ -2834,7 +2770,7 @@ ir_node *new_d_Or     (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_d_Eor    (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /**
- * Constructor for a Not  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Not node. Adds the node to the block in current_ir_block.
  *
  * @param   *db    A pointer for debug information.
  * @param   *op    The operand.
@@ -2845,7 +2781,7 @@ ir_node *new_d_Eor    (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_d_Not    (dbg_info* db, ir_node *op,                ir_mode *mode);
 
 /**
- * Constructor for a Shl  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Shl node. Adds the node to the block in current_ir_block.
  *
  * @param   *db    A pointer for debug information.
  * @param   *op    The operand.
@@ -2857,7 +2793,7 @@ ir_node *new_d_Not    (dbg_info* db, ir_node *op,                ir_mode *mode);
 ir_node *new_d_Shl    (dbg_info* db, ir_node *op,  ir_node *k,   ir_mode *mode);
 
 /**
- * Constructor for a Shr  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Shr node. Adds the node to the block in current_ir_block.
  *
  * @param   *db    A pointer for debug information.
  * @param   *op    The operand.
@@ -2869,7 +2805,7 @@ ir_node *new_d_Shl    (dbg_info* db, ir_node *op,  ir_node *k,   ir_mode *mode);
 ir_node *new_d_Shr    (dbg_info* db, ir_node *op,  ir_node *k,   ir_mode *mode);
 
 /**
- * Constructor for a Shrs  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Shrs node. Adds the node to the block in current_ir_block.
  *
  * @param   *db    A pointer for debug information.
  * @param   *op    The operand.
@@ -2881,7 +2817,7 @@ ir_node *new_d_Shr    (dbg_info* db, ir_node *op,  ir_node *k,   ir_mode *mode);
 ir_node *new_d_Shrs   (dbg_info* db, ir_node *op,  ir_node *k,   ir_mode *mode);
 
 /**
- * Constructor for a Rot  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Rot node. Adds the node to the block in current_ir_block.
  *
  * @param   *db    A pointer for debug information.
  * @param   *op    The operand.
@@ -2893,7 +2829,7 @@ ir_node *new_d_Shrs   (dbg_info* db, ir_node *op,  ir_node *k,   ir_mode *mode);
 ir_node *new_d_Rot    (dbg_info* db, ir_node *op,  ir_node *k,   ir_mode *mode);
 
 /**
- * Constructor for a Cmp  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Cmp node. Adds the node to the block in current_ir_block.
  *
  * @param   *db    A pointer for debug information.
  * @param   *op1   The operand 1.
@@ -2904,7 +2840,7 @@ ir_node *new_d_Rot    (dbg_info* db, ir_node *op,  ir_node *k,   ir_mode *mode);
 ir_node *new_d_Cmp    (dbg_info* db, ir_node *op1, ir_node *op2);
 
 /**
- * Constructor for a Conv  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Conv node. Adds the node to the block in current_ir_block.
  *
  * @param   *db    A pointer for debug information.
  * @param   *op    The operand.
@@ -2915,7 +2851,7 @@ ir_node *new_d_Cmp    (dbg_info* db, ir_node *op1, ir_node *op2);
 ir_node *new_d_Conv   (dbg_info* db, ir_node *op, ir_mode *mode);
 
 /**
- * Constructor for a Cast  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Cast node. Adds the node to the block in current_ir_block.
  *
  * @param   *db    A pointer for debug information.
  * @param   *op    The operand.
@@ -2938,7 +2874,7 @@ ir_node *new_d_Cast   (dbg_info* db, ir_node *op, type *to_tp);
 ir_node *new_d_Phi    (dbg_info* db, int arity, ir_node *in[], ir_mode *mode);
 
 /**
- * Constructor for a Load  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Load node. Adds the node to the block in current_ir_block.
  *
  * @param *db    A pointer for debug information.
  * @param *store The current memory
@@ -2949,7 +2885,7 @@ ir_node *new_d_Phi    (dbg_info* db, int arity, ir_node *in[], ir_mode *mode);
 ir_node *new_d_Load   (dbg_info* db, ir_node *store, ir_node *addr);
 
 /**
- * Constructor for a Store  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Store node. Adds the node to the block in current_ir_block.
  *
  * @param *db    A pointer for debug information.
  * @param *store The current memory
@@ -2960,7 +2896,7 @@ ir_node *new_d_Load   (dbg_info* db, ir_node *store, ir_node *addr);
 ir_node *new_d_Store  (dbg_info* db, ir_node *store, ir_node *addr, ir_node *val);
 
 /**
- * Constructor for a Alloc  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Alloc node. Adds the node to the block in current_ir_block.
  *
  * @param *db         A pointer for debug information.
  * @param *store      The memory which shall contain the new variable.
@@ -2974,7 +2910,7 @@ ir_node *new_d_Alloc  (dbg_info* db, ir_node *store, ir_node *size, type *alloc_
                      where_alloc where);
 
 /**
- * Constructor for a Free  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Free node. Adds the node to the block in current_ir_block.
  *
  * @param *db         A pointer for debug information.
  * @param *store      The memory which shall contain the new variable.
@@ -2988,7 +2924,7 @@ ir_node *new_d_Free   (dbg_info* db, ir_node *store, ir_node *ptr, ir_node *size
              type *free_type);
 
 /**
- * Constructor for a  Sync  node. Adds the node to the block in current_ir_block.
+ * Constructor for a  Sync node. Adds the node to the block in current_ir_block.
  *
  * @param *db       A pointer for debug information.
  * @param  arity    The number of memories to syncronize.
@@ -3000,7 +2936,7 @@ ir_node *new_d_Sync   (dbg_info* db, int arity, ir_node *in[]);
 
 
 /**
- * Constructor for a Proj  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Proj node. Adds the node to the block in current_ir_block.
  *
  * @param *db    A pointer for deubugginformation.
  * @param arg    A node producing a tuple.
@@ -3013,7 +2949,7 @@ ir_node *new_d_Proj   (dbg_info* db, ir_node *arg, ir_mode *mode, long proj);
 
 
 /**
- * Constructor for a defaultProj  node. Adds the node to the block in current_ir_block.
+ * Constructor for a defaultProj node. Adds the node to the block in current_ir_block.
  *
  * @param *db       A pointer for debug information.
  * @param arg       A node producing a tuple.
@@ -3024,7 +2960,7 @@ ir_node *new_d_Proj   (dbg_info* db, ir_node *arg, ir_mode *mode, long proj);
 ir_node *new_d_defaultProj (dbg_info* db, ir_node *arg, long max_proj);
 
 /**
- * Constructor for a Tuple  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Tuple node. Adds the node to the block in current_ir_block.
  *
  * @param *db     A pointer for debug information.
  * @param arity   The number of tuple elements.
@@ -3036,7 +2972,7 @@ ir_node *new_d_Tuple  (dbg_info* db, int arity, ir_node *in[]);
 
 
 /**
- * Constructor for a Id  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Id node. Adds the node to the block in current_ir_block.
  * Performs the Id operation, i.e., does nothing.
  *
  * @param *db     A pointer for debug information.
@@ -3054,7 +2990,7 @@ ir_node *new_d_Id     (dbg_info* db, ir_node *val, ir_mode *mode);
 ir_node *new_d_Bad    (void);
 
 /**
- * Constructor for a Confirm  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Confirm node. Adds the node to the block in current_ir_block.
  * Specifies constraints for a value.  To support dataflow analyses.
  *
  * Example: If the value never exceeds '100' this is expressed by placing a
@@ -3071,7 +3007,7 @@ ir_node *new_d_Confirm (dbg_info* db, ir_node *val, ir_node *bound, pn_Cmp cmp);
 
 
 /**
- * Constructor for a Unknown  node.  Represents an arbtrary valus.  Places the node in
+ * Constructor for a Unknown node.  Represents an arbtrary valus.  Places the node in
  * the start block.
  *
  * @param *m      The mode of the unknown value.
@@ -3081,7 +3017,7 @@ ir_node *new_d_Confirm (dbg_info* db, ir_node *val, ir_node *bound, pn_Cmp cmp);
 ir_node *new_d_Unknown(ir_mode *m);
 
 /**
- * Constructor for a CallBegin  node. Adds the node to the block in current_ir_block.
+ * Constructor for a CallBegin node. Adds the node to the block in current_ir_block.
  *
  * @param *db     A pointer for debug information.
  * @param *callee The call node bisible in the  intra procedural view.
@@ -3091,7 +3027,7 @@ ir_node *new_d_Unknown(ir_mode *m);
 ir_node *new_d_CallBegin(dbg_info *db, ir_node *callee);
 
 /**
- * Constructor for a EndReg  node. Adds the node to the block in current_ir_block.
+ * Constructor for a EndReg node. Adds the node to the block in current_ir_block.
  *
  * @param *db     A pointer for debug information.
  *
@@ -3100,7 +3036,7 @@ ir_node *new_d_CallBegin(dbg_info *db, ir_node *callee);
 ir_node *new_d_EndReg (dbg_info *db);
 
 /**
- * Constructor for a Endexcept  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Endexcept node. Adds the node to the block in current_ir_block.
  *
  * @param *db     A pointer for debug information.
  *
@@ -3109,7 +3045,7 @@ ir_node *new_d_EndReg (dbg_info *db);
 ir_node *new_d_EndExcept(dbg_info *db);
 
 /**
- * Constructor for a Breake  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Breake node. Adds the node to the block in current_ir_block.
  *
  * @param *db     A pointer for debug information.
  *
@@ -3118,7 +3054,7 @@ ir_node *new_d_EndExcept(dbg_info *db);
 
 ir_node *new_d_Break (dbg_info *db);
 
-/** Constructor for a Filter  node.
+/** Constructor for a Filter node.
  *
  * Constructor for a Filter node. Adds the node to the block in
  * current_ir_block.  Filter is a node with two views used to
@@ -3136,12 +3072,11 @@ ir_node *new_d_Break (dbg_info *db);
  * @param proj  The position in the tuple to project from.
  *
  */
-
 ir_node *new_d_Filter (dbg_info *db, ir_node *arg, ir_mode *mode, long proj);
 
 
 /**
- * Constructor for a FuncCall  node. Adds the node to the block in current_ir_block.
+ * Constructor for a FuncCall node. Adds the node to the block in current_ir_block.
  *
  * @param *db     A pointer for debug information.
  * @param *callee A pointer to the called procedure.
@@ -3164,7 +3099,7 @@ void switch_block (ir_node *target);   */
 
 /* Constructs a Block with a fixed number of predecessors.
    Does set current_block.  Can be used with automatic Phi
-   node construction. */
+  node construction. */
 
 /** Constructor for a Block node.
  *
@@ -3227,7 +3162,7 @@ ir_node *new_Jmp    (void);
 ir_node *new_Break  (void);
 
 /**
- * Constructor for a Cond  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Cond node. Adds the node to the block in current_ir_block.
  *
  * @param *c     The conditions parameter.Can be of mode b or I_u.
  *
@@ -3247,7 +3182,7 @@ ir_node *new_Cond   (ir_node *c);
 ir_node *new_Return (ir_node *store, int arity, ir_node *in[]);
 
 /**
- * Constructor for a Raise  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Raise node. Adds the node to the block in current_ir_block.
  *
  * @param *store The current memory.
  * @param *obj   A pointer to the Except variable.
@@ -3257,7 +3192,7 @@ ir_node *new_Return (ir_node *store, int arity, ir_node *in[]);
 ir_node *new_Raise  (ir_node *store, ir_node *obj);
 
 /**
- * Constructor for a Const  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Const node. Adds the node to the block in current_ir_block.
  *
  * @param *mode  The mode of the operands and redults.
  * @param *con   Points to an entry in the constant table. This pointer is added to the attributes of  the node (self->attr.con).
@@ -3267,17 +3202,16 @@ ir_node *new_Raise  (ir_node *store, ir_node *obj);
 ir_node *new_Const  (ir_mode *mode, tarval *con);
 
 /**
- * Constructor for a SymConst  node. Adds the node to the block in current_ir_block.
+ * Constructor for a SymConst node. Adds the node to the block in current_ir_block.
  *
- * @param volue
- * @param symkind The kind of the symbolic constant: type_tag, size or link_info.
+ * @param value   A type or a ident depending on the SymConst kind.
+ * @param symkind The kind of the symbolic constant: symconst_type_tag, symconst_size or symconst_addr_name.
  *
  */
-
 ir_node *new_SymConst (type_or_id_p value, symconst_kind kind);
 
 /**
- * Constructor for a simpelSel  node.
+ * Constructor for a simpelSel node.
  *
  * @param   *store     The memory in which the object the entity should be selected from is allocated.
  * @param   *objptr    The object from that the Sel operation selects a single attribute out.
@@ -3288,7 +3222,7 @@ ir_node *new_SymConst (type_or_id_p value, symconst_kind kind);
 ir_node *new_simpleSel(ir_node *store, ir_node *objptr, entity *ent);
 
 /**
- * Constructor for a Sel  node.
+ * Constructor for a Sel node.
  *
  * @param   *store     The memory in which the object the entity should be selected from is allocated.
  * @param   *objptr    The object from that the Sel operation selects a single attribute out.
@@ -3302,7 +3236,7 @@ ir_node *new_Sel    (ir_node *store, ir_node *objptr, int arity, ir_node *in[],
                      entity *ent);
 
 /**
- * Constructor for a InstOf  node. Adds the node to the block in current_ir_block.
+ * Constructor for a InstOf node. Adds the node to the block in current_ir_block.
  *
  * @param   *store
  * @param   *objptr
@@ -3313,7 +3247,7 @@ ir_node *new_Sel    (ir_node *store, ir_node *objptr, int arity, ir_node *in[],
 ir_node *new_InstOf (ir_node *store, ir_node *obj,  type *ent);
 
 /**
- * Constructor for a Call  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Call node. Adds the node to the block in current_ir_block.
  *
  * @param   *store  The actual store.
  * @param   *callee A pointer to the called procedure.
@@ -3327,7 +3261,7 @@ ir_node *new_Call   (ir_node *store, ir_node *callee, int arity, ir_node *in[],
 		     type *tp);
 
 /**
- * Constructor for a CallBegin  node. Adds the node to the block in current_ir_block.
+ * Constructor for a CallBegin node. Adds the node to the block in current_ir_block.
  *
  * @param   *callee A pointer to the called procedure.
  *
@@ -3336,7 +3270,7 @@ ir_node *new_Call   (ir_node *store, ir_node *callee, int arity, ir_node *in[],
 ir_node *new_CallBegin(ir_node *callee);
 
 /**
- * Constructor for a Add  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Add node. Adds the node to the block in current_ir_block.
  *
  * @param   *op1   The operand 1.
  * @param   *op2   The operand 2.
@@ -3347,7 +3281,7 @@ ir_node *new_CallBegin(ir_node *callee);
 ir_node *new_Add    (ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /**
- * Constructor for a Sub  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Sub node. Adds the node to the block in current_ir_block.
  *
  * @param   *op1   The operand 1.
  * @param   *op2   The operand 2.
@@ -3358,7 +3292,7 @@ ir_node *new_Add    (ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_Sub    (ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /**
- * Constructor for a Minus  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Minus node. Adds the node to the block in current_ir_block.
  *
  * @param   *op    The operand .
  * @param   *mode  The mode of the operand and the result.
@@ -3368,7 +3302,7 @@ ir_node *new_Sub    (ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_Minus  (ir_node *op,  ir_mode *mode);
 
 /**
- * Constructor for a Mul  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Mul node. Adds the node to the block in current_ir_block.
  *
  * @param   *op1   The operand 1.
  * @param   *op2   The operand 2.
@@ -3379,7 +3313,7 @@ ir_node *new_Minus  (ir_node *op,  ir_mode *mode);
 ir_node *new_Mul    (ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /**
- * Constructor for a Quot  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Quot node. Adds the node to the block in current_ir_block.
  *
  * @param   *memop The store needed to model exceptions
  * @param   *op1   The operand 1.
@@ -3390,7 +3324,7 @@ ir_node *new_Mul    (ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_Quot   (ir_node *memop, ir_node *op1, ir_node *op2);
 
 /**
- * Constructor for a DivMod  node. Adds the node to the block in current_ir_block.
+ * Constructor for a DivMod node. Adds the node to the block in current_ir_block.
  *
  * @param   *memop The store needed to model exceptions
  * @param   *op1   The operand 1.
@@ -3401,7 +3335,7 @@ ir_node *new_Quot   (ir_node *memop, ir_node *op1, ir_node *op2);
 ir_node *new_DivMod (ir_node *memop, ir_node *op1, ir_node *op2);
 
 /**
- * Constructor for a Div  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Div node. Adds the node to the block in current_ir_block.
  *
  * @param   *memop The store needed to model exceptions
  * @param   *op1   The operand 1.
@@ -3412,7 +3346,7 @@ ir_node *new_DivMod (ir_node *memop, ir_node *op1, ir_node *op2);
 ir_node *new_Div    (ir_node *memop, ir_node *op1, ir_node *op2);
 
 /**
- * Constructor for a Mod  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Mod node. Adds the node to the block in current_ir_block.
  *
  * @param   *memop The store needed to model exceptions
  * @param   *op1   The operand 1.
@@ -3423,7 +3357,7 @@ ir_node *new_Div    (ir_node *memop, ir_node *op1, ir_node *op2);
 ir_node *new_Mod    (ir_node *memop, ir_node *op1, ir_node *op2);
 
 /**
- * Constructor for a Abs  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Abs node. Adds the node to the block in current_ir_block.
  *
  * @param   *op    The operand
  * @param   *mode  The mode of the operands and the result.
@@ -3433,7 +3367,7 @@ ir_node *new_Mod    (ir_node *memop, ir_node *op1, ir_node *op2);
 ir_node *new_Abs    (ir_node *op,                ir_mode *mode);
 
 /**
- * Constructor for a And  node. Adds the node to the block in current_ir_block.
+ * Constructor for a And node. Adds the node to the block in current_ir_block.
  *
  * @param   *op1   The operand 1.
  * @param   *op2   The operand 2.
@@ -3443,7 +3377,7 @@ ir_node *new_Abs    (ir_node *op,                ir_mode *mode);
 ir_node *new_And    (ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /**
- * Constructor for a Or  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Or node. Adds the node to the block in current_ir_block.
  *
  * @param   *op1   The operand 1.
  * @param   *op2   The operand 2.
@@ -3454,7 +3388,7 @@ ir_node *new_And    (ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_Or     (ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /**
- * Constructor for a Eor  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Eor node. Adds the node to the block in current_ir_block.
  *
  * @param   *op1   The operand 1.
  * @param   *op2   The operand 2.
@@ -3465,7 +3399,7 @@ ir_node *new_Or     (ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_Eor    (ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /**
- * Constructor for a Not  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Not node. Adds the node to the block in current_ir_block.
  *
  * @param   *op    The operand.
  * @param   *mode  The mode of the operand and the result.
@@ -3475,7 +3409,7 @@ ir_node *new_Eor    (ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_Not    (ir_node *op,                ir_mode *mode);
 
 /**
- * Constructor for a Shl  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Shl node. Adds the node to the block in current_ir_block.
  *
  * @param   *op    The operand.
  * @param   *k     The number of bits to  shift the operand .
@@ -3486,7 +3420,7 @@ ir_node *new_Not    (ir_node *op,                ir_mode *mode);
 ir_node *new_Shl    (ir_node *op,  ir_node *k,   ir_mode *mode);
 
 /**
- * Constructor for a Shr  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Shr node. Adds the node to the block in current_ir_block.
  *
  * @param   *op    The operand.
  * @param   *k     The number of bits to  shift the operand .
@@ -3497,7 +3431,7 @@ ir_node *new_Shl    (ir_node *op,  ir_node *k,   ir_mode *mode);
 ir_node *new_Shr    (ir_node *op,  ir_node *k,   ir_mode *mode);
 
 /**
- * Constructor for a Shrs  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Shrs node. Adds the node to the block in current_ir_block.
  *
  * @param   *op    The operand.
  * @param   *k     The number of bits to  shift the operand .
@@ -3508,7 +3442,7 @@ ir_node *new_Shr    (ir_node *op,  ir_node *k,   ir_mode *mode);
 ir_node *new_Shrs   (ir_node *op,  ir_node *k,   ir_mode *mode);
 
 /**
- * Constructor for a Rot  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Rot node. Adds the node to the block in current_ir_block.
  *
  * @param   *op    The operand.
  * @param   *k     The number of bits to rotate the operand.
@@ -3519,7 +3453,7 @@ ir_node *new_Shrs   (ir_node *op,  ir_node *k,   ir_mode *mode);
 ir_node *new_Rot    (ir_node *op,  ir_node *k,   ir_mode *mode);
 
 /**
- * Constructor for a Cmp  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Cmp node. Adds the node to the block in current_ir_block.
  *
  * @param   *op1   The operand 1.
  * @param   *op2   The operand 2.
@@ -3529,7 +3463,7 @@ ir_node *new_Rot    (ir_node *op,  ir_node *k,   ir_mode *mode);
 ir_node *new_Cmp    (ir_node *op1, ir_node *op2);
 
 /**
- * Constructor for a Conv  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Conv node. Adds the node to the block in current_ir_block.
  *
  * @param   *op    The operand.
  * @param   *mode  The mode of this the operand muss be converted .
@@ -3539,7 +3473,7 @@ ir_node *new_Cmp    (ir_node *op1, ir_node *op2);
 ir_node *new_Conv   (ir_node *op, ir_mode *mode);
 
 /**
- * Constructor for a Cast  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Cast node. Adds the node to the block in current_ir_block.
  *
  * @param   *op    The operand.
  * @param   *to_tp The type of this the operand muss be casted .
@@ -3560,7 +3494,7 @@ ir_node *new_Cast   (ir_node *op, type *to_tp);
 ir_node *new_Phi    (int arity, ir_node *in[], ir_mode *mode);
 
 /**
- * Constructor for a Load  node.
+ * Constructor for a Load node.
  *
  * @param *store The current memory
  * @param *addr   A pointer to the variable to be read in this memory.
@@ -3570,7 +3504,7 @@ ir_node *new_Phi    (int arity, ir_node *in[], ir_mode *mode);
 ir_node *new_Load   (ir_node *store, ir_node *addr);
 
 /**
- * Constructor for a Store  node.
+ * Constructor for a Store node.
  *
  * @param *store The current memory
  * @param *addr   A pointer to the variable to be read in this memory.
@@ -3580,7 +3514,7 @@ ir_node *new_Load   (ir_node *store, ir_node *addr);
 ir_node *new_Store  (ir_node *store, ir_node *addr, ir_node *val);
 
 /**
- * Constructor for a Alloc  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Alloc node. Adds the node to the block in current_ir_block.
  *
  * @param *store      The memory which shall contain the new variable.
  * @param *size       The number of bytes to allocate.
@@ -3594,7 +3528,7 @@ ir_node *new_Alloc  (ir_node *store, ir_node *size, type *alloc_type,
 
 
 /**
- * Constructor for a Free  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Free node. Adds the node to the block in current_ir_block.
  *
  * @param *store      The memory which shall contain the new variable.
  * @param *ptr        The pointer to the object to free.
@@ -3607,50 +3541,53 @@ ir_node *new_Free   (ir_node *store, ir_node *ptr, ir_node *size,
              type *free_type);
 
 /**
- * Constructor for a  Sync  node. Adds the node to the block in current_ir_block.
+ * Constructor for a  Sync node. Adds the node to the block in current_ir_block.
  *
  * @param  arity    The number of memories to syncronize.
  * @param  **in     An array of pointers to nodes that produce an output of  type memory.
  *
  */
-
 ir_node *new_Sync   (int arity, ir_node *in[]);
 
 /**
- * Constructor for a Proj  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Proj node. Adds the node to the block in current_ir_block.
  *
  * @param arg    A node producing a tuple.
  * @param *mode  The mode of the value to project.
  * @param proj   The position of the value in the tuple.
  *
  */
-
 ir_node *new_Proj   (ir_node *arg, ir_mode *mode, long proj);
 
 /**
  *
- * Constructor for a Filter  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Filter node. Adds the node to the block in current_ir_block.
+ * Filter is a node with two views used to construct the interprocedural view.
+ * In intraprocedural view its semantics are identical to the Proj node.
+ * In interprocedural view the Filter performs the Phi operation on method
+ * parameters or results.  Other than a Phi a Filter node may not be removed
+ * if it has only a single input.
  *
- * @param *arg
- * @param *mode
- * @param proj
+ * The constructor builds the Filter in intraprocedural view.
+ *
+ * @param *arg  The tuple value to project from.
+ * @param *mode The mode of the projected value.
+ * @param proj  The position in the tuple to project from.
  *
  */
-
 ir_node *new_Filter (ir_node *arg, ir_mode *mode, long proj);
 
 /**
- * Constructor for a defaultProj  node.Adds the node to the block in current_ir_block.
+ * Constructor for a defaultProj node.Adds the node to the block in current_ir_block.
  *
  * @param arg       A node producing a tuple.
  * @param max_ proj The end  position of the value in the tuple.
  *
  */
-
 ir_node *new_defaultProj (ir_node *arg, long max_proj);
 
 /**
- * Constructor for a Tuple  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Tuple node. Adds the node to the block in current_ir_block.
  *
  * @param arity   The number of tuple elements.
  * @param **in    An array containing pointers to the nodes producing the tuple elements.
@@ -3660,18 +3597,17 @@ ir_node *new_defaultProj (ir_node *arg, long max_proj);
 ir_node *new_Tuple  (int arity, ir_node *in[]);
 
 /**
- * Constructor for a Id  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Id node. Adds the node to the block in current_ir_block.
  *
- * @param *val
+ * @param *val    The operand to Id.
  * @param *mode   The mode of *val.
  *
  */
-
 ir_node *new_Id     (ir_node *val, ir_mode *mode);
 
 /**
  *
- * Constructor for a Bad  node.
+ * Constructor for a Bad node.
  * Adds the node to the block in current_ir_block.
  *
  */
@@ -3679,27 +3615,30 @@ ir_node *new_Id     (ir_node *val, ir_mode *mode);
 ir_node *new_Bad    (void);
 
 /**
- * Constructor for a Confirm  node. Adds the node to the block in current_ir_block.
+ * Constructor for a Confirm node. Adds the node to the block in current_ir_block.
+ * Specifies constraints for a value.  To support dataflow analyses.
  *
- * @param *val
- * @param *bound
- * @param cmp
+ * Example: If the value never exceeds '100' this is expressed by placing a
+ * Confirm node val = new_d_Confirm(db, val, 100, '<') on the dataflow edge.
+ *
+ * @param *val    The value we express a constraint for
+ * @param *bound  The value to compare against. Must be a firm node, typically a constant.
+ * @param cmp     The compare operation.
  *
  */
-
 ir_node *new_Confirm (ir_node *val, ir_node *bound, pn_Cmp cmp);
 
-/**
- * Constructor for a Unknown  node. Adds the node to the block in current_ir_block.
+ /**
+ * Constructor for a Unknown node.  Represents an arbitrary value.  Places the node in
+ * the start block.
  *
- * @param *m
+ * @param *m      The mode of the unknown value.
  *
  */
-
 ir_node *new_Unknown(ir_mode *m);
 
 /**
- * Constructor for a FuncCall  node. Adds the node to the block in current_ir_block.
+ * Constructor for a FuncCall node. Adds the node to the block in current_ir_block.
  *
  * @param *callee A pointer to the called procedure.
  * @param arity   The number of procedure parameters.
@@ -3709,7 +3648,7 @@ ir_node *new_Unknown(ir_mode *m);
  */
 
 ir_node *new_FuncCall (ir_node *callee, int arity, ir_node *in[],
-             type *tp);
+		       type *tp);
 
 /*---------------------------------------------------------------------*/
 /* The comfortable interface.                                          */
