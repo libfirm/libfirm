@@ -157,6 +157,9 @@ void Java_firmjni_Heapanal_analHeap__ (JNIEnv *env, jclass clazz)
 
 /*
  * $Log$
+ * Revision 1.1  2004/04/29 12:11:36  liekweg
+ * Moved ... to aux --flo
+ *
  * Revision 1.1  2004/04/27 12:41:31  liekweg
  * Fixed ir/ana/irouts.c ir/ir/ircons.h ir/ir/irdump.c --flo
  * Added aux/Heapanal.c aux/Heapanal.java --flo
