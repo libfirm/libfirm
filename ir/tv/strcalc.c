@@ -1304,7 +1304,7 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base)
   char *pos;
   const char *digits = small_digits;
 
-  pos = output_buffer + BIT_PATTERN_SIZE;
+  pos = output_buffer + BIT_PATTERN_SIZE ;
   *pos = '\0';
 
   /* special case */
@@ -1436,8 +1436,8 @@ void init_strcalc(int precision_in_bytes)
     CALC_BUFFER_SIZE = (4 * precision_in_bytes);
     MAX_VALUE_SIZE   = (2 * precision_in_bytes);
 
-    calc_buffer = malloc(CALC_BUFFER_SIZE * sizeof(char));
-    output_buffer = malloc(BIT_PATTERN_SIZE * sizeof(char));
+    calc_buffer = malloc(CALC_BUFFER_SIZE+1 * sizeof(char));
+    output_buffer = malloc(BIT_PATTERN_SIZE+1 * sizeof(char));
 
     if (calc_buffer == NULL || output_buffer == NULL)
     {

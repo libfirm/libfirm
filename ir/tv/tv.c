@@ -41,6 +41,7 @@
 #include <assert.h>         /* assertions */
 #include <stdlib.h>         /* atoi() */
 #include <string.h>         /* nice things for strings */
+#include <strings.h>         /* nice things for strings */
 
 #include <stdlib.h>
 #include "tv_t.h"
