@@ -10,6 +10,11 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
+#ifndef _IROPT_DBG_H_
+#define _IROPT_DBG_H_
+
+#include "dbginfo_t.h"
+#include "irhooks.h"
 
 /* This file contains makros that generate the calls to
    update the debug information after a transformation. */
@@ -221,3 +226,5 @@
     hook_merge_nodes(&n, 1, &oldn, 1, HOOK_OPT_POLY_CALL);    	\
     __dbg_info_merge_pair(n, oldn, dbg_rem_poly_call);          \
   } while(0)
+
+#endif /* _IROPT_DBG_H_ */

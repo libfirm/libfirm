@@ -6,7 +6,7 @@
  * Modified by: Goetz Lindenmaier
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Copyright:   (c) 1998-2005 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -39,6 +39,7 @@
 # include "irhooks.h"
 # include "irarch.h"
 # include "hashptr.h"
+# include "opt_polymorphy.h"
 
 /* Make types visible to allow most efficient access */
 # include "entity_t.h"
@@ -2010,6 +2011,7 @@ static ir_op *firm_set_default_transform_node(ir_op *op)
   CASE(Proj);
   CASE(Or);
   CASE(End);
+  CASE(Sel);
   case iro_Shr:
   case iro_Shrs:
   case iro_Shl:
@@ -2478,17 +2480,18 @@ optimize_node (ir_node *n)
 		 free the node. */
 	iro = get_irn_opcode(n);
 	if (get_opt_constant_folding() ||
-			(iro == iro_Cond) ||
-			(iro == iro_Proj))     /* Flags tested local. */
-		n = transform_node (n);
+	    (iro == iro_Cond) ||
+	    (iro == iro_Proj) ||
+	    (iro == iro_Sel))     /* Flags tested local. */
+	  n = transform_node (n);
 
 	/* Remove nodes with dead (Bad) input.
-		 Run always for transformation induced Bads. */
+	   Run always for transformation induced Bads. */
 	n = gigo (n);
 
 	/* Now we have a legal, useful node. Enter it in hash table for cse */
 	if (get_opt_cse() && (get_irn_opcode(n) != iro_Block)) {
-		n = identify_remember (current_ir_graph->value_table, n);
+	  n = identify_remember (current_ir_graph->value_table, n);
 	}
 
 	return n;
@@ -2565,7 +2568,8 @@ optimize_in_place_2 (ir_node *n)
   iro = get_irn_opcode(n);
   if (get_opt_constant_folding() ||
       (iro == iro_Cond) ||
-      (iro == iro_Proj))     /* Flags tested local. */
+      (iro == iro_Proj) ||
+      (iro == iro_Sel))     /* Flags tested local. */
     n = transform_node (n);
 
   /* Remove nodes with dead (Bad) input.
