@@ -98,159 +98,165 @@ Discussion of new interface, proposals by Prof. Waite:
 #endif
 
 /* ************************ Constructors for tarvals ************************ */
-/****f* tv/new_tarval_from_str
+
+/**
+ * Constructor function for new tarvals.
  *
- * NAME
- *    new_tarval_from_str
- *   Constructor function for new tarvals.
+ * @param str   The string representing the target value
+ * @param len   The length of the string
+ * @param mode  The mode requested for the result tarval
  *
- * SYNOPSIS
- *    tarval *new_tarval_from_str(const char *s, size_t len, ir_mode *mode)
+ * This function creates a new tarval representing the value represented
+ * by a CString, aka char array. If a tarval representing this value already
+ * exists, this tarval is returned instead of a new one. So tarvals are
+ * directly comparable since their representation is unique.
  *
- * DESCRIPTION
- *    This function creates a new tarval representing the value represented
- *   by a CString, aka char array. If a tarval representing this value already
- *   exists, this tarval is returned instead of a new one. So tarvals are
- *   directly comparable since their representation is unique.
+ * This function accepts the following strings:
  *
- * PARAMETERS
- *   str  - The String representing the target value
- *   len  - The length of the string
- *   mode - The mode requested for the result tarval
+ * if mode is int_number:
+ *  - 0(x|X)[0-9a-fA-F]+ (hexadecimal representation)
+ *  - 0[0-7]*            (octal representation)
+ *  - (+|-)?[1-9][0-9]*  (decimal representation)
  *
- *    This function accepts the following strings:
- *   if mode is int_number:
- *      0(x|X)[0-9a-fA-F]+ (hexadecimal representation)
- *      0[0-7]*            (octal representation)
- *      (+|-)?[1-9][0-9]*  (decimal representation)
- *   if mode if float_number:
- *      (+|-)?(decimal int) (. (decimal int))? ((e|E)(+|-)?(decimal int))?
- *   if mode is boolean: true, True, TRUE ... False... 0, 1,
- *   if mode is reference: hexadecimal of decimal number as int
- *   if mode is character: hex or dec
- *    Leading and/or trailing spaces are ignored
+ * if mode if float_number:
+ *  - (+|-)?(decimal int) (. (decimal int))? ((e|E)(+|-)?(decimal int))?
  *
- * RESULT
- *    A tarval of proper type representing the requested value is returned.
+ * if mode is boolean: true, True, TRUE ... False... 0, 1,
+ *
+ * if mode is reference: hexadecimal of decimal number as int
+ *
+ * if mode is character: hex or dec
+ *
+ * Leading and/or trailing spaces are ignored
+ *
+ * @return
+ *   A tarval of proper type representing the requested value is returned.
  *   Tarvals are unique, so for any value/mode pair at most one tarval will
  *   exist, which will be returned upon further requests with an identical
  *   value/mode pair.
  *
- * NOTES
- *    If the string is not representable in the given mode an assertion is
- *   thrown.
+ * @note
+ *   If the string is not representable in the given mode an assertion is
+ *   thrown in assert build.
  *
- * SEE ALSO
+ * @sa
  *   irmode.h for predefined modes
- *   new_tarval_from_long
- *   new_tarval_from_double
- *
- ******/
+ *   new_tarval_from_long()
+ *   new_tarval_from_double()
+ */
 tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode);
 
-/****f* tv/new_tarval_from_long
+/**
+ * Constructor function for new tarvals
  *
- * NAME
- *    new_tarval_from_long
- *   Constructor function for new tarvals
+ * @param l     The long representing the value
+ * @param mode  The mode requested for the result tarval
  *
- * SYNOPSIS
- *    tarval *new_tarval_from_long(const long l. ir_mode *mode)
+ * This function creates a new tarval representing the value represented
+ * by a long integer. If a tarval representing this value already exists,
+ * this tarval is returned instead of a new one. So tarvals are directly
+ * comparable since their representation is unique.
  *
- * DESCRIPTION
- *    This function creates a new tarval representing the value represented
- *   by a long integer. If a tarval representing this value already exists,
- *   this tarval is returned instead of a new one. So tarvals are directly
- *   comparable since their representation is unique.
- *
- * PARAMETERS
- *   l    - The long representing the value
- *   mode - The mode requested for the result tarval
- *
- * RESULT
- *    A tarval of proper type representing the requested value is returned.
+ * @return
+ *   A tarval of proper type representing the requested value is returned.
  *   Tarvals are unique, so for any value/mode pair at most one tarval will
  *   exist, which will be returned upon further requests with an identical
  *   value/mode pair.
  *
- * NOTES
- *    If the long is not representable in the given mode an assertion is
- *   thrown.
+ * @note
+ *   If the long is not representable in the given mode an assertion is
+ *   thrown in assert build.
  *
- * SEE ALSO
+ * @sa
  *   irmode.h for predefined modes
- *   new_tarval_from_str
- *   new_tarval_from_double
+ *   new_tarval_from_str()
+ *   new_tarval_from_double()
  *
- ******/
-
+ */
 tarval *new_tarval_from_long(long l, ir_mode *mode);
+
 /**
  * This returns a long int with the value represented value, or
  * gibberish, depending on the size of long int and the size of the
- * stored value. It works for e.g. 1 as mode_Ls, but not for
+ * stored value. It works for e.g. 1 as mode_Ls, but might not work for
  * get_mode_max(mode_Ls).
  * This will overflow silently, so use only if you know what
- * you are doing! (better check with tarval_is_long...)
+ * you are doing! (better check with tarval_is_long()...)
  */
 long tarval_to_long(tarval *tv);
+
 /**
- * This validates if tarval_to_long will return a satisfying
+ * This validates if tarval_to_long() will return a satisfying
  * result. I.e. if tv is an int_number and between min, max
  * of long int (signed!)
  */
 int tarval_is_long(tarval *tv);
 
-/****f* tv/new_tarval_from_double
+/**
+ * Constructor function for new tarvals.
  *
- * NAME
- *    new_tarval_from_double
- *   Constructor function for new tarvals
+ * @param d     The long double representing the value
+ * @param mode  The mode requested for the result tarval
  *
- * SYNOPSIS
- *    tarval *new_tarval_from_double(const long double d, ir_mode *mode)
+ * This function creates a new tarval representing the value represented
+ * by a long double. If a tarval representing this value already exists,
+ * this tarval is returned instead of a new one. So tarvals are directly
+ * comparable since their representation is unique.
+ * Only modes of sort float_number can be constructed this way.
  *
- * DESCRIPTION
- *    This function creates a new tarval representing the value represented
- *   by a long double. If a tarval representing this value already exists,
- *   this tarval is returned instead of a new one. So tarvals are directly
- *   comparable since their representation is unique.
- *
- * PARAMETERS
- *   d    - The long double representing the value
- *   mode - The mode requested for the result tarval
- *
- *    Only modes of sort float_number can be constructed this way.
- *
- * RESULT
- *    A tarval of proper type representing the requested value is returned.
+ * @return
+ *   A tarval of proper type representing the requested value is returned.
  *   Tarvals are unique, so for any value/mode pair at most one tarval will
  *   exist, which will be returned upon further requests with an identical
  *   value/mode pair.
  *
- * NOTES
- *    If the long double is not representable in the given mode an assertion
- *   is thrown. This will happen for any mode not of sort float_number
+ * @note
+ *   If the long double is not representable in the given mode an assertion
+ *   is thrown. This will happen for any mode not of sort float_number.
  *
- * SEE ALSO
+ * @sa
  *   irmode.h for predefined values
- *   new_tarval_from_str
- *   new_tarval_from_long
- *
- ******/
+ *   new_tarval_from_str()
+ *   new_tarval_from_long()
+ */
 tarval *new_tarval_from_double(long double d, ir_mode *mode);
+
+/**
+ * This returns a double with the value represented value, or
+ * gibberish, depending on the size of double and the size of the
+ * stored value.
+ * This will overflow silently, so use only if you know what
+ * you are doing! (better check with tarval_is_long...)
+ */
 long double tarval_to_double(tarval *tv);
+
+/**
+ * This validates if tarval_to_double() will return a satisfying
+ * result. I.e. if tv is an float_number and between min, max
+ * of double
+ */
 int tarval_is_double(tarval *tv);
-/* The tarval represents the address of the entity.  As the address must
-   be constant the entity must have as owner the global type. */
+
+/**
+ * Construct a tarval that represents the address of the entity.
+ *
+ * The address must be constant, the entity must have as owner the global type.
+ */
 tarval *new_tarval_from_entity (entity *ent, ir_mode *mode);
+
+/**
+ * Returns the associated entity of a tarval.
+ */
 entity *tarval_to_entity(tarval *tv);
+
+/**
+ * Returns non-zero if a the given tarval represents an entity.
+ */
 int tarval_is_entity(tarval *tv);
 
 /** ********** Access routines for tarval fields ********** **/
 
-/****f* tv/get_tarval_*
- *
+/*
  * NAME
  *   get_tarval_mode
  *   get_tarval_ ...
@@ -271,145 +277,124 @@ int tarval_is_entity(tarval *tv);
  *
  * SEE ALSO
  *   the struct tarval
- *
- ******/
-/* get the mode of the tarval */
+ */
+
+/** Returns the mode of the tarval. */
 #ifdef TARVAL_ACCESS_DEFINES
 #  include "tv_t.h"
 #  define get_tarval_mode(tv) (tv)->mode
 #else
 ir_mode *get_tarval_mode (tarval *tv);
 #endif
-/** Testing properties of the represented values **/
-/* Returns 0 if tv is positive, else > 0. @@@ not tested! */
+
+/* Testing properties of the represented values */
+
+/** Returns 0 if tv is positive, else > 0.
+ *
+ * @todo
+ *   not tested!
+ */
 int tarval_is_negative(tarval *a);
 
-/** Some special values **/
-extern tarval *tarval_bad;                  tarval *get_tarval_bad(void);
-extern tarval *tarval_undefined;            tarval *get_tarval_undefined(void);
-/* These two are the only valid mode_b tarvals! */
-extern tarval *tarval_b_false;              tarval *get_tarval_b_false(void);
-extern tarval *tarval_b_true;               tarval *get_tarval_b_true(void);
+/** The 'bad' tarval. */
+extern tarval *tarval_bad;
+/** Returns the 'bad tarval. */
+tarval *get_tarval_bad(void);
 
-extern tarval *tarval_P_void;               tarval *get_tarval_P_void(void);
+/** The 'undefined' tarval. */
+extern tarval *tarval_undefined;
+/** Returns the 'undefined' tarval. */
+tarval *get_tarval_undefined(void);
+
+/** The mode_b tarval 'false'. */
+extern tarval *tarval_b_false;
+/** Returns the mode_b tarval 'false'. */
+tarval *get_tarval_b_false(void);
+
+/** The mode_b tarval 'true'. */
+extern tarval *tarval_b_true;
+/** Returns the mode_b tarval 'true'. */
+tarval *get_tarval_b_true(void);
+
+/** The 'void' pointer tarval. */
+extern tarval *tarval_P_void;
+/** Returns the 'void' pointer tarval. */
+tarval *get_tarval_P_void(void);
 
 /* These functions calculate and return a tarval representing the requested
  * value.
  * The functions get_mode_{Max,Min,...} return tarvals retrieved from these
  * functions, but these are stored on initialization of the irmode module and
  * therefore the irmode functions should be prefered to the functions below. */
+
+/** Returns the maximum value of a given mode. */
 tarval *get_tarval_max(ir_mode *mode);
+
+/** Returns the minimum value of a given mode. */
 tarval *get_tarval_min(ir_mode *mode);
+
+/** Returns the 0 value (additive neutral) of a given mode. */
 tarval *get_tarval_null(ir_mode *mode);
+
+/** Returns the 1 value (multiplicative neutral) of a given mode. */
 tarval *get_tarval_one(ir_mode *mode);
+
+/** Return quite nan for float_number modes. */
 tarval *get_tarval_nan(ir_mode *mode);
+
+/** Return +inf for float_number modes. */
 tarval *get_tarval_inf(ir_mode *mode);
 
 /* ******************** Arithmethic operations on tarvals ******************** */
 
-/****f* tv/tarval_cmp
+/**
+ * Compares two tarvals
  *
- * NAME
- *    tarval_cmp
- *   Compares two tarvals
+ * Compare a with b and return a pnc_number describing the relation
+ * between a and b.  This is either Uo, Lt, Eq, Gt, or False if a or b
+ * are symbolic pointers which can not be compared at all.
  *
- * SYNOPSIS
- *    pnc_number tarval_comp(tarval *a, tarval *b)
+ * @param a   A tarval to be compared
+ * @param b   A tarval to be compared
  *
- * DESCRIPTION
- *    Compare a with b and return a pnc_number describing the relation
- *   between a and b.  This is either Uo, Lt, Eq, Gt, or False if a or b
- *   are symbolic pointers which can not be compared at all.
- *
- * PARAMETERS
- *    a - A tarval
- *    b - A tarval
- *   a and b are tarvals to be compared
- *
- * RESULT
- *    The pnc_number best describing the relation between a and b is returned.
+ * @return
+ *   The pnc_number best describing the relation between a and b is returned.
  *   This means the mode with the least bits set is returned, e.g. if the
  *   tarvals are equal the pnc_number 'Eq' is returned, not 'Ge' which
  *   indicates 'greater or equal'
  *
- * SEE ALSO
+ * @sa
  *    irnode.h for the definition of pnc_numbers
- *
- ******/
+ */
 pnc_number tarval_cmp(tarval *a, tarval *b);
 
-/****f* tv/tarval_convert_to
+/**
+ * Converts a tarval to another mode.
  *
- * NAME
- *    tarval_convert_to
- *   Converts a tarval to another mode
+ * Convert tarval 'src' to mode 'mode', this will suceed if and only if mode
+ * 'mode' is wider than the mode of src, as defined in the firm documentation
+ * and as returned by the function mode_is_smaller defined in irmode.h.
  *
- * SYNOPSIS
- *    tarval *tarval_convert_to(tarval *src, ir_mode *mode)
+ * @param src    The tarval to convert
+ * @param mode   Tho mode to convert to
  *
- * DESCRIPTION
- *    Convert tarval 'src' to mode 'mode', this will suceed if and only if mode
- *   'mode' is wider than the mode of src, as defined in the firm documentation
- *   and as returned by the function mode_is_smaller defined in irmode.h.
- *
- * PARAMETERS
- *    src  - The tarval to convert
- *    mode - Tho mode to convert to
- *
- * RESULT
- *    If a tarval of mode 'mode' with the result of the conversion of the 'src'
+ * @return
+ *   If a tarval of mode 'mode' with the result of the conversion of the 'src'
  *   tarvals value already exists, it will be returned, else a new tarval is
  *   constructed and returned
  *
- * NOTES
+ * @note
  *    Illegal conversations will trigger an assertion
  *
- * SEE ALSO
+ * @sa
  *    FIRM documentation for conversion rules
  *    mode_is_smaller defined in irmode.h
- *
- ******/
+ */
 tarval *tarval_convert_to(tarval *src, ir_mode *m);
 
-/****f* tv/tarval_calculations
- *
- * NAME
- *    tarval_neg  - Negation of a tarval
- *    tarval_add  - Addition of two tarvals
- *    tarval_sub  - Subtraction from a tarval
- *    tarval_mul  - Multiplication of tarvals
- *    tarval_quo  - 'Exact' division
- *    tarval_div  - Integer division
- *    tarval_mod  - Remainder of integer division
- *    tarval_abs  - Absolute value
- *    tarval_and  - Bitwise and
- *    tarval_or   - Bitwise or
- *    tarval_eor  - Bitwise exclusive or
- *    tarval_shl  - Left shift
- *    tarval_shr  - Unsigned right shift
- *    tarval_shrs - Signed right shift
- *    tarval_rot  - Rotation
- *
- * SYNOPSIS
- *    tarval *tarval_neg (tarval *a)
- *    tarval *tarval_add (tarval *a, tarval *b)
- *    tarval *tarval_sub (tarval *a, tarval *b)
- *    tarval *tarval_mul (tarval *a, tarval *b)
- *    tarval *tarval_quo (tarval *a, tarval *b)
- *    tarval *tarval_div (tarval *a, tarval *b)
- *    tarval *tarval_mod (tarval *a, tarval *b)
- *    tarval *tarval_abs (tarval *a)
- *    tarval *tarval_and (tarval *a, tarval *b)
- *    tarval *tarval_or  (tarval *a, tarval *b)
- *    tarval *tarval_eor (tarval *a, tarval *b)
- *    tarval *tarval_shl (tarval *a, tarval *b)
- *    tarval *tarval_shr (tarval *a, tarval *b)
- *    tarval *tarval_shrs(tarval *a, tarval *b)
- *    tarval *tarval_rot (tarval *a, tarval *b)
- *
- * DESCRIPTION
- *    These function implement basic computations representable as opcodes
- *   in FIRM nodes.
+/*
+ * These function implement basic computations representable as opcodes
+ * in FIRM nodes.
  *
  * PARAMETERS
  *    tarval_neg:
@@ -426,74 +411,116 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m);
  *   returned as result.
  *
  * NOTES
- *    The order the arguments are given in is important, imagine postfix
+ *   The order the arguments are given in is important, imagine postfix
  *   notation.
- *    Illegal operations will trigger an assertion.
- *    The sort member of the struct mode defines which operations are valid
- *
- ******/
-tarval *tarval_neg(tarval *a);             /* negation */
-tarval *tarval_add(tarval *a, tarval *b);  /* addition */
-tarval *tarval_sub(tarval *a, tarval *b);  /* subtraction */
-tarval *tarval_mul(tarval *a, tarval *b);  /* multiplication */
-tarval *tarval_quo(tarval *a, tarval *b);  /* floating point division */
-tarval *tarval_div(tarval *a, tarval *b);  /* integer division */
-tarval *tarval_mod(tarval *a, tarval *b);  /* remainder */
-tarval *tarval_abs(tarval *a);             /* absolute value */
-tarval *tarval_and(tarval *a, tarval *b);  /* bitwise and */
-tarval *tarval_or (tarval *a, tarval *b);  /* bitwise or */
-tarval *tarval_eor(tarval *a, tarval *b);  /* bitwise exclusive or (xor) */
-tarval *tarval_shl(tarval *a, tarval *b);  /* bitwise left shift */
-tarval *tarval_shr(tarval *a, tarval *b);  /* bitwise unsigned right shift */
-tarval *tarval_shrs(tarval *a, tarval *b); /* bitwise signed right shift */
-tarval *tarval_rot(tarval *a, tarval *b);  /* bitwise rotation */
+ *   Illegal operations will trigger an assertion.
+ *   The sort member of the struct mode defines which operations are valid
+ */
 
-/** *********** Output of tarvals *********** **/
-/****f* tv/tarval_bitpattern
+/** Negation of a tarval. */
+tarval *tarval_neg(tarval *a);
+
+/** Addition of two tarvals. */
+tarval *tarval_add(tarval *a, tarval *b);
+
+/** Subtraction from a tarval. */
+tarval *tarval_sub(tarval *a, tarval *b);
+
+/** Multiplication of tarvals. */
+tarval *tarval_mul(tarval *a, tarval *b);
+
+/** 'Exact' division. */
+tarval *tarval_quo(tarval *a, tarval *b);
+
+/** Integer division. */
+tarval *tarval_div(tarval *a, tarval *b);
+
+/** Remainder of integer division. */
+tarval *tarval_mod(tarval *a, tarval *b);
+
+/** Absolute value. */
+tarval *tarval_abs(tarval *a);
+
+/** Bitwise and. */
+tarval *tarval_and(tarval *a, tarval *b);
+
+/** Bitwise or. */
+tarval *tarval_or (tarval *a, tarval *b);
+
+/** Bitwise exclusive or. */
+tarval *tarval_eor(tarval *a, tarval *b);
+
+/** Left shift. */
+tarval *tarval_shl(tarval *a, tarval *b);
+
+/** Unsigned (logical) right shift. */
+tarval *tarval_shr(tarval *a, tarval *b);
+
+/** Signed (arithmetic) right shift. */
+tarval *tarval_shrs(tarval *a, tarval *b);
+
+/** Rotation. */
+tarval *tarval_rot(tarval *a, tarval *b);
+
+/* *********** Output of tarvals *********** */
+
+/**
+ * Returns Bit representation of a tarval value, as string of '0' and '1'
  *
- * NAME
- *    tarval_bitpattern
- *   Bit representation of a tarval value, as string of '0' and '1'
+ * @param tv   The tarval
  *
- * SYNOPSIS
- *    char *tarval_bitpattern(tarval *tv)
+ * This function returns a printable bit representation of any value
+ * stored as tarval. This representation is a null terminated C string.
  *
- * DESCRIPTION
- *    This function returns a printable bit representation of any value
- *   stored as tarval. This representation is a null terminated C string.
- *
- * PARAMETERS
- *    tv - The tarval
- *
- * RESULT
- *    As usual in C a pointer to a char is returned. The length of the
+ * @return
+ *   As usual in C a pointer to a char is returned. The length of the
  *   returned string if fixed, just read as many chars as the mode defines
  *   as size.
  *
- * NOTE
- *    The string is allocated using malloc() and is free()ed on the next call
- *    of this function.
- *    The string consists of the ascii characters '0' and '1' and is
- *    null terminated
+ * @note
+ *   The string is allocated using malloc() and is free()ed on the next call
+ *   of this function.
+ *   The string consists of the ascii characters '0' and '1' and is
+ *   null terminated
  *
- * SEE ALSO
+ * @sa
  *    irmode.h for the definition of the ir_mode struct
  *    the size member of aforementioned struct
- *
- ******/
+ */
 char *tarval_bitpattern(tarval *tv);
 
 /**
- * returns bitpattern [from, to[
+ * Returns bitpattern [from, to[.
  */
 char *tarval_sub_bitpattern(tarval *tv, int from, int to);
 
-/* Identifying some tarvals ??? */
-/* This function is deprecated and its use strongly discouraged */
+/**
+ * Identifying some tarvals ???
+ *
+ * @return
+ *   - 0 for additive neutral,
+ *   - +1 for multiplicative neutral,
+ *   - -1 for bitwise-and neutral
+ *   - 2 else
+ *
+ * @deprecated
+ *   This function is deprecated and its use strongly discouraged.
+ *   Implemented for completeness.
+ */
 long tarval_classify(tarval *tv);
 
-/** Initialization of the tarval module **/
-void init_tarval_1(void); /* call before init_mode */
-void init_tarval_2(void); /* call after init_mode */
+/**
+ * Initialization of the tarval module.
+ *
+ * Call before init_mode().
+ */
+void init_tarval_1(void);
+
+/**
+ * Initialization of the tarval module.
+ *
+ * Call after init_mode().
+ */
+void init_tarval_2(void);
 
 #endif  /* _TV_H_ */
