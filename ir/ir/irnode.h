@@ -1,13 +1,5 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe      3 2002/02/28 13:33:52
-* All rights reserved.
-*/
-
-/**
- * @file irnode.h
- *
- * Declarations of an ir node.
- *
- * author Martin Trapp, Christian Schaefer
+ * All rights reserved.
  */
 
 /* $Id$ */
@@ -25,37 +17,48 @@
 # include "dbginfo.h"
 # include "exc.h"
 
-/* The type definiton of ir_node is also in irgraph.h to resolve
-   recursion between irnode.h and irgraph.h */
-/*
+/**
+ * @file irnode.h
  *
- * NAME ir_node - a datatype representing a Firm node
+ * @author Martin Trapp, Christian Schaefer
  *
- *  Not properly documented ;-)
- *
- *  @param The common fields are:
- *
- *  @param firm_kind    A firm_kind tag containing k_type.  This is useful
- *               for dynamically checking whether a node is a ir_node.
- *  @param arity        The number of predecessors in the Firm graph.
- *  @param in           A list with the predecessors in the Firm graph.  There are
- *               routines to access individual elements and to obtain the
- *               array.  The method returning the array should not be used.
- *  @param mode         The mode of the node.  There are routines to get the mode but
- *               also to access the mode's fields directly.
- *  @param opcode       The opcode of the node.  There are routines to get the opcode but
- *               also to access the opcode's fields directly.
- *  @param node_nr      A unique number for the node.  Available only if debugging is
- *               turned on.
+ * Declarations of an ir node.
  */
+
+/**
+ * @defgroup ir_node Declarations of an ir node.
+ *
+ * The type definiton of ir_node is also in irgraph.h to resolve
+ *  recursion between irnode.h and irgraph.h
+ *
+ * ir_node - a datatype representing a Firm node
+ *
+ *  The common fields are:
+ *
+ *  - firm_kind - A firm_kind tag containing k_type.  This is useful
+ *                for dynamically checking whether a node is a ir_node.
+ *  - arity     - The number of predecessors in the Firm graph.
+ *  - in        - A list with the predecessors in the Firm graph.  There are
+ *                routines to access individual elements and to obtain the
+ *                array.  The method returning the array should not be used.
+ *  - mode      - The mode of the node.  There are routines to get the mode
+ *                but also to access the mode's fields directly.
+ *  - opcode    - The opcode of the node. There are routines to get the opcode
+ *                but also to access the opcode's fields directly.
+ *  - node_nr   - A unique number for the node.  Available only if debugging
+ *                is turned on.
+ * @{
+ */
+
 #ifndef _IR_NODE_TYPEDEF_
 #define _IR_NODE_TYPEDEF_
 typedef struct ir_node ir_node;
 #endif
 
 /**
-    you can work on the graph without considering the different types
-    of nodes, it's just a big graph. **/
+ *   you can work on the graph without considering the different types
+ *   of nodes, it's just a big graph.
+ */
 
 /** returns the number of predecessors without the block predecessor: */
 int                  get_irn_arity         (ir_node *node);
@@ -549,7 +552,6 @@ int is_fragile_op(ir_node *node);
 /** Returns the memory operand of fragile operations. */
 ir_node *get_fragile_op_mem(ir_node *node);
 
-
 #include "ident.h"
 
 /*@{*/
@@ -593,7 +595,9 @@ ir_node *get_fragile_op_mem(ir_node *node);
 #define DDMI(X)      xprintf("%s(l.%i) %I: %p\n", __FILE__, __LINE__, (X), (X))
 
 #endif /* __GNUC__ */
-/*@}*/
+/*@}*/  /* Macros for debug.. */
+
+/*@}*/ /* end of ir_node group definition */
 
 
 # endif /* _IRNODE_H_ */
