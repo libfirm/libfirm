@@ -566,7 +566,7 @@ typedef enum _tarval_classification_t {
   TV_CLASSIFY_NULL    =  0,	/**< the tarval represents the additive neutral element */
   TV_CLASSIFY_ONE     = +1,	/**< the tarval represents the multiplicative neutral element */
   TV_CLASSIFY_ALL_ONE = -1,	/**< the tarval represents the bitwise-and neutral element */
-  TV_CLASSIFY_OTHER   =  2,	/*<< all other tarvals */
+  TV_CLASSIFY_OTHER   =  2	/**< all other tarvals */
 } tarval_classification_t;
 
 /**
