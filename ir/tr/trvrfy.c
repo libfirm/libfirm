@@ -9,6 +9,9 @@
  * Copyright:   (c) 2003 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "trvrfy.h"
 #include "irgraph_t.h"  /* for checking whether constant code is allocated
