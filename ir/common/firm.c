@@ -25,10 +25,13 @@
 # include "irmode_t.h"
 # include "irgraph_t.h"
 # include "type_t.h"
+# include "firmstat.h"
 
 void
 init_firm (default_initialize_local_variable_func_t *func)
 {
+  /* enhanced statistics */
+  stat_init();
   /* initialize all ident stuff */
   id_init (1024);
   /* create the type kinds. */
