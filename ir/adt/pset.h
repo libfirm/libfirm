@@ -182,10 +182,15 @@ void pset_stats (pset *pset);
 
 #ifdef DEBUG
 /**
- * Describe a set by printing all elements
- * to stdout.
+ * Describe a pset.
+ *
+ * Writes a description of a set to stdout. The description includes:
+ * - a header telling how many elements (nkey) and segments (nseg) are in use
+ * - for every collision chain the number of element with its hash values
+ *
+ * @param pset  the pset
  */
-void pset_describe (pset *);
+void pset_describe (pset *pset);
 #endif
 
 /* @@@ NYI */

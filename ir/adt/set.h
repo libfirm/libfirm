@@ -197,7 +197,16 @@ void set_stats (set *set);
 #endif
 
 #ifdef DEBUG
-void set_describe (set *);
+/**
+ * Describe a set.
+ *
+ * Writes a description of a set to stdout. The description includes:
+ * - a header telling how many elements (nkey) and segments (nseg) are in use
+ * - for every collision chain the number of element with its hash values
+ *
+ * @param set  the set
+ */
+void set_describe (set *set);
 #endif
 
 
