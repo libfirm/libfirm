@@ -327,7 +327,7 @@ void free_End (ir_node *end);
    We differ two flavours of this Cond.  The first, the dense Cond, passes
    control along output i if the selector value is i, 0 <= i <= n.  If the
    selector value is >n it passes control along output n.
-   The second Cond flavor differes in the treatment of cases not specified in
+   The second Cond flavor diffirences in the treatment of cases not specified in
    the source program.  It magically knows about the existence of Proj nodes.
    It only passes control along output i, 0 <= i <= n, if a node Proj(Cond, i)
    exists.  Else it passes control along output n (even if this Proj does not
@@ -567,7 +567,7 @@ void     set_Quot_mem (ir_node *node, ir_node *mem);
  */
 typedef enum {
   pn_Quot_M,           /**< Memory result.    */
-  pn_Quot_X_except,    /**< Execution result if exception occured. */
+  pn_Quot_X_except,    /**< Execution result if exception occurred. */
   pn_Quot_res,         /**< Result of computation. */
   pn_Quot_max          /**< number of projections from a Quot */
 } pn_Quot;  /* Projection numbers for Quot. */
@@ -584,7 +584,7 @@ void     set_DivMod_mem (ir_node *node, ir_node *mem);
  */
 typedef enum {
   pn_DivMod_M,           /**< Memory result.    */
-  pn_DivMod_X_except,    /**< Execution result if exception occured. */
+  pn_DivMod_X_except,    /**< Execution result if exception occurred. */
   pn_DivMod_res_div,     /**< Result of computation a / b. */
   pn_DivMod_res_mod,     /**< Result of computation a % b. */
   pn_DivMod_max          /**< number of projections from a DivMod */
@@ -602,7 +602,7 @@ void     set_Div_mem (ir_node *node, ir_node *mem);
  */
 typedef enum {
   pn_Div_M,           /**< Memory result.    */
-  pn_Div_X_except,    /**< Execution result if exception occured. */
+  pn_Div_X_except,    /**< Execution result if exception occurred. */
   pn_Div_res          /**< Result of computation. */
 } pn_Div;  /* Projection numbers for Div. */
 
@@ -618,7 +618,7 @@ void     set_Mod_mem (ir_node *node, ir_node *mem);
  */
 typedef enum {
   pn_Mod_M,           /**< Memory result.    */
-  pn_Mod_X_except,    /**< Execution result if exception occured. */
+  pn_Mod_X_except,    /**< Execution result if exception occurred. */
   pn_Mod_res,         /**< Result of computation. */
   pn_Mod_max          /**< number of projections from a Mod */
 } pn_Mod;  /* Projection numbers for Mod. */
@@ -704,7 +704,7 @@ void     set_Conv_op (ir_node *node, ir_node *op);
 
 /* Does Cast need a mem operator?
  * Cast should only depend on the type, not on the state of an
- * entity.  But:  we initialze various fields after Alloc, that
+ * entity.  But:  we initialize various fields after Alloc, that
  * are accessed in the cast.  This required some precaution, to
  * get the right memory into the Loads generated from the cast.
  */
@@ -753,7 +753,7 @@ void     set_memop_ptr (ir_node *node, ir_node *ptr);
  */
 typedef enum {
   pn_Load_M,         /**< Memory result.    */
-  pn_Load_X_except,  /**< Execution result if exception occured. */
+  pn_Load_X_except,  /**< Execution result if exception occurred. */
   pn_Load_res,       /**< Result of load operation. */
   pn_Load_max        /**< number of projections from a Load */
 } pn_Load;  /* Projection numbers for Load. */
@@ -772,7 +772,7 @@ void           set_Load_volatility (ir_node *node, ent_volatility volatility);
  */
 typedef enum {
   pn_Store_M,         /**< Memory result.    */
-  pn_Store_X_except,  /**< Execution result if exception occured. */
+  pn_Store_X_except,  /**< Execution result if exception occurred. */
   pn_Store_max        /**< number of projections from a Store */
 } pn_Store;  /* Projection numbers for Store. */
 
@@ -790,7 +790,7 @@ void           set_Store_volatility (ir_node *node, ent_volatility volatility);
  */
 typedef enum {
   pn_Alloc_M,          /**< Memory result. */
-  pn_Alloc_X_except,  /**< Execution result if exception occured. */
+  pn_Alloc_X_except,  /**< Execution result if exception occurred. */
   pn_Alloc_res,       /**< Result of allocation. */
   pn_Alloc_max        /**< number of projections from an Alloc */
 } pn_Alloc;  /* Projection numbers for Alloc. */
@@ -926,7 +926,7 @@ int is_forking_op(const ir_node *node);
 /**
  * Request additional data to be allocated with an ir node.
  * @param size The size of the additional data required.
- * @return A positive number, if the opration was successful, which
+ * @return A positive number, if the operation was successful, which
  * must be passed to the access macro get_irn_data(), 0 if the
  * registration failed.
  */
