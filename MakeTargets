@@ -1,0 +1,60 @@
+# Hey Emacs, this is a -*- makefile -*-
+#
+# libFIRM Project
+#
+# $Id$
+#
+
+.PHONY: subdir_all
+
+all : subdir_all
+
+# partial linking of a subdir's $(OFILES) into one file
+subdir.o: $(OFILES)
+	rm -f $@
+	$(LD) $(LDFLAGS) -r -o $@ $^
+
+clean: subdir_clean local_clean
+.PHONY: local_clean
+local_clean:
+	$(RM) $(OFILES) subdir.o core
+
+realclean: subdir_realclean local_clean
+	$(RM) $(GENFILES) .depend TAGS
+
+depend:	subdir_depend local_depend
+.PHONY: local_depend
+local_depend: $(CFILES) $(filter %.h,$(SOURCES) $(GENFILES))
+ifeq ($(strip $(CFILES)),)
+	>.depend
+else
+	$(CC) -M $(DEFS) $(CPPFLAGS) $(filter %.c,$^) >.depend || { $(RM) .depend; false; }
+endif
+
+
+# Recurse into $(subdirs) for $(targets)
+$(addprefix subdir_,$(targets)): $(subdirs)
+	+$(recurse)
+
+Makefile: $(srcdir)/Makefile.in $(topdir)/config.status
+	cd $(topdir) && \
+	CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= ./config.status >&2
+
+# generate TAGS
+tags:	subdir_tags local_tags
+.PHONY: local_tags
+local_tags:	$(TAGFILES)
+	etags -C $^
+
+# installation
+install:	subdir_install local_install
+local_install:
+ifneq ($(strip $(INSTALL_HEADERS)),)
+	$(INSTALL) -m u+rw,a+r $(addprefix $(srcdir)/,$(INSTALL_HEADERS)) $(INCLUDEDIR)
+endif
+ifneq ($(strip $(INSTALL_LIBS)),)
+	$(INSTALL) -m u+rw,a+r $(addprefix $(topdir)/,$(INSTALL_LIBS)) $(LIBDIR)
+endif
+
+# include dependencies
+-include .depend

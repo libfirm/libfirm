@@ -1,0 +1,24 @@
+# Hey Emacs, this is a -*- makefile -*-
+#
+# libFIRM Project
+#
+# $Id$
+#
+
+top_srcdir := @top_srcdir@
+srcdir = @srcdir@
+topdir = ../..
+subdir := ident
+
+
+SOURCES := Makefile.in ident.c ident.h ident_t.h
+
+INSTALL_HEADERS = ident.h
+
+include $(topdir)/MakeRules
+
+CPPFLAGS += -I$(top_srcdir)/ir/adt -I$(top_srcdir)/ir/common
+
+include $(top_srcdir)/MakeTargets
+
+all: subdir.o

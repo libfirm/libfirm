@@ -1,0 +1,27 @@
+# Hey Emacs, this is a -*- makefile -*-
+#
+# libFIRM Project
+#
+# $Id$
+#
+
+top_srcdir := @top_srcdir@
+srcdir = @srcdir@
+topdir = ../..
+subdir := tr
+
+
+SOURCES := Makefile.in \
+		entity.c entity_t.h mangle.h type.h typewalk.c \
+		entity.h mangle.c type.c type_or_entity.h typewalk.h
+
+INSTALL_HEADERS = $(filter %.h,$(SOURCES))
+
+include $(topdir)/MakeRules
+
+CPPFLAGS += -I$(top_srcdir)/ir/common -I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/adt \
+		-I$(top_srcdir)/ir/ir -I$(top_srcdir)/ir/tv
+
+include $(top_srcdir)/MakeTargets
+
+all: subdir.o

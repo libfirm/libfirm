@@ -1,0 +1,32 @@
+# Hey Emacs, this is a -*- makefile -*-
+#
+# libFIRM Project
+#
+# $Id$
+#
+
+top_srcdir := @top_srcdir@
+srcdir = @srcdir@
+topdir = ../..
+subdir := ir
+
+
+SOURCES := Makefile.in \
+		ircons.c irgmod.c irgraph_t.h irnode.c iropt.c irvrfy.c 	\
+		ircons.h irgmod.h irgwalk.c irnode.h iropt.h irvrfy.h		\
+		irdump.c irgopt.c irgwalk.h irnode_t.h iropt_t.h old_fctnames.h \
+		irdump.h irgopt.h irmode.c irop.c irprog.c 			\
+		irflag.c irgraph.c irmode.h irop.h irprog.h 			\
+		irflag.h irgraph.h irmode_t.h irop_t.h irprog_t.h
+
+INSTALL_HEADERS = $(filter %.h,$(SOURCES))
+
+include $(topdir)/MakeRules
+
+CPPFLAGS += -I$(top_srcdir)/ir/adt -I$(top_srcdir)/ir/ir -I$(top_srcdir)/ir/common  \
+		-I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/tr -I$(top_srcdir)/ir/tv \
+		-I$(top_srcdir)/ir/debug
+
+include $(top_srcdir)/MakeTargets
+
+all: subdir.o

@@ -1,0 +1,78 @@
+# Hey Emacs, this is a -*- makefile -*-
+#
+# libFIRM Project
+#
+# $Id$
+#
+
+VPATH = $(srcdir)
+
+CC = @CC@
+CFLAGS := @CFLAGS@
+CPPFLAGS := -I. -I$(topdir) -I$(srcdir) -I$(top_srcdir) @CPPFLAGS@
+
+INSTALL = @INSTALL@
+INCLUDEDIR = @includedir@
+LIBDIR = @libdir@
+
+DEFS = @DEFS@
+
+LD := @LD@
+LDFLAGS := @LDFLAGS@
+LD_R := @libfirm_cv_prog_ld_r@
+
+# profiling enabled?
+ifeq (@enable_profile_libfirm@,yes)
+LDFLAGS += -g -pg
+endif
+
+AR := @AR@
+ARFLAGS := rc
+
+RANLIB := @RANLIB@
+
+DISTFILES = $(SOURCES)
+CFILES = $(filter %.c,$(SOURCES) $(GENFILES))
+HFILES = $(filter %.h,$(SOURCES) $(GENFILES))
+OFILES = $(CFILES:.c=.o)
+
+TAGFILES = $(CFILES) $(HFILES)
+
+LDLIBS=$(LIBS) -lm -lc
+
+COMPILE.c = $(CC) -c $(DEFS) $(CPPFLAGS) $(CDEBUG) $(CFLAGS) $(XCFLAGS)
+COMPILE.s = $(CC) -S $(DEFS) $(CPPFLAGS) $(CDEBUG) $(CFLAGS) $(XCFLAGS)
+
+%.o: %.c
+	$(COMPILE.c) -o $@ $<
+
+%.s: %.c
+	$(COMPILE.s) -o $@ $<
+
+%.i: %.c
+	$(CPP) $(DEFS) $(CPPFLAGS) -o $@ $<
+
+%.c: %.dot
+	$(DT) $(DTFLAGS) <$^ >$@ || $(fail)
+
+
+define fail
+{ $(RM) $@; false; }
+endef
+
+# make target given by $@ recursively in $^ ...
+ifeq (,$(findstring k,$(MAKEFLAGS)))
+# ... and immediately stop on errors
+define recurse
++@for i in $^ ""; do if test $$i; then $(MAKE) -C $$i $(subst subdir_,,$@) || exit $$?; fi; done
+endef
+else
+# ... and keep going after errors
+define recurse
++@fail=; \
+for i in $^ ""; do if test $$i; then $(MAKE) -C $$i $(subst subdir_,,$@) || fail=y; fi; done; \
+test -z "$$fail"
+endef
+endif
+
+targets = all clean depend echodist echogen echosrc realclean tags install

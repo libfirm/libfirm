@@ -1,0 +1,26 @@
+# Hey Emacs, this is a -*- makefile -*-
+#
+# libFIRM Project
+#
+# $Id$
+#
+
+top_srcdir := @top_srcdir@
+srcdir = @srcdir@
+topdir = ../..
+subdir := common
+
+
+SOURCES := Makefile.in bool.h common.h firm.h panic.c tune.h xgprintf.c xp_help.h \
+		common.c firm.c misc.h panic.h xfprintf.c xoprintf.c xprintf.h
+
+INSTALL_HEADERS = $(filter %.h,$(SOURCES))
+
+include $(topdir)/MakeRules
+
+CPPFLAGS += -I$(top_srcdir)/ir/common -I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/tr \
+		-I$(top_srcdir)/ir/adt -I$(top_srcdir)/ir/tv -I$(top_srcdir)/ir/ir
+
+include $(top_srcdir)/MakeTargets
+
+all: subdir.o

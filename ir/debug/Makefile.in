@@ -1,0 +1,23 @@
+# Hey Emacs, this is a -*- makefile -*-
+#
+# libFIRM Project
+#
+# $Id$
+#
+
+top_srcdir := @top_srcdir@
+srcdir = @srcdir@
+topdir = ../..
+subdir := debug
+
+
+SOURCES := Makefile.in debinfo.c debinfo.h
+
+include $(topdir)/MakeRules
+
+CPPFLAGS += -I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/ir -I$(top_srcdir)/ir/tv \
+		-I$(top_srcdir)/ir/tr -I$(top_srcdir)/ir/common
+
+include $(top_srcdir)/MakeTargets
+
+all: subdir.o

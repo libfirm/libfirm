@@ -1,0 +1,118 @@
+dnl Process this file with autoconf to produce a configure script.
+dnl Copyright (c) 2001 IPD, Universität Karlsruhe (TH)
+
+dnl libFIRM Project
+dnl $Id$
+
+AC_REVISION($Id$)
+
+
+AC_INIT(ir/ir/ircons.c)
+
+dnl if other files should be generated just add them to ac_output_files
+ac_output_file="Makefile MakeRules ir/.dummy ir/adt/Makefile ir/debug/Makefile \
+		ir/tv/Makefile ir/common/Makefile ir/ident/Makefile ir/ir/Makefile \
+		ir/tr/Makefile testprograms/Makefile"
+
+dnl generate the config header file
+AC_CONFIG_HEADER(config.h)
+
+dnl keep track of the environment set by the user
+libfirm_conf_env="${CC+CC='$CC'} ${CFLAGS+CFLAGS='$CFLAGS'} ${CPP+CPP='$CPP'} ${CPPFLAGS+CPPFLAGS='$CPPFLAGS'} ${LDFLAGS+LDFLAGS='$LDFLAGS'} ${LIBS+LIBS='$LIBS'}"
+AC_SUBST(libfirm_conf_env)
+
+
+dnl Package options
+dnl ===============
+
+dnl set debugging
+
+AC_ARG_ENABLE(debug,
+[  --enable-debug          enable assertions and additional debugging routines],
+[if test "$enableval"=yes; then
+  AC_DEFINE(DEBUG_libfirm)
+fi],
+AC_DEFINE(NDEBUG))
+AC_SUBST(enable_debug_libfirm)
+
+
+dnl set profiling
+
+AC_ARG_ENABLE(profile,
+[  --enable-profile        enable profiling],
+[if test "$enableval"=yes; then
+  enable_profile_libfirm=yes
+fi],
+[enable_profile_libfirm=no])
+AC_SUBST(enable_profile_libfirm)
+
+
+dnl Checks for programs.
+dnl ====================
+
+dnl check for a compiler
+
+AC_PROG_CC
+
+dnl check for prelinkable linker
+
+LIBFIRM_PROG_LD_R
+if test "$libfirm_cv_prog_ld_r" != "yes"; then
+  AC_MSG_ERROR(need a prelinkcapable linker)
+fi
+
+dnl check for ar
+
+AC_CHECK_PROG(AR, ar, "ar", "")
+if test "$AR" != "ar"; then
+  AC_MSG_ERROR(need ar for creating archives)
+fi
+
+dnl check wether ar can handle option -s
+dnl if not then ranlib is needed
+dnl for simpliticity we use ranlib every time
+
+AC_PROG_RANLIB
+
+AC_PROG_INSTALL
+
+dnl Checks for header files.
+dnl ========================
+
+AC_HEADER_STDC
+
+dnl check for the gnu multiprecission (gmp) header file
+
+AC_CHECK_HEADERS(gmp.h, ac_gmp_headers="yes", ac_gmp_headers="no")
+if test "$ac_gmp_headers" != yes; then
+  dnl gmp header not found.
+  AC_MSG_ERROR("GNU multiprecission gmp header file not found")
+fi
+
+
+dnl Checks for libraries.
+dnl =====================
+
+dnl check for the gnu multiprecission (gmp) library
+
+AC_CHECK_LIB(gmp, main, ac_gmp_library="yes", ac_gmp_library="no")
+if test "$ac_gmp_library" != yes; then
+  dnl gmp library not found.
+  echo $ac_gmp_library
+  AC_MSG_ERROR("GNU multiprecission gmp library not found")
+fi
+
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+dnl ==============================================================
+
+
+dnl Checks for library functions.
+dnl =============================
+
+
+dnl Error messaging
+dnl ===============
+
+
+AC_OUTPUT($ac_output_file,[ touch stamp-h ])

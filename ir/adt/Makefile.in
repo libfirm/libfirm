@@ -1,0 +1,27 @@
+# Hey Emacs, this is a -*- makefile -*-
+#
+# libFIRM Project
+#
+# $Id$
+#
+
+top_srcdir := @top_srcdir@
+srcdir = @srcdir@
+topdir = ../..
+subdir := adt
+
+
+SOURCES := Makefile.in array.c array.h cookies.h debug.c debug.h host.h obst.h \
+	   pdeq.c pdeq.h pset.h set.c set.h xmalloc.c
+
+include $(topdir)/MakeRules
+
+CPPFLAGS += -I$(top_srcdir)/ir/adt -I$(top_srcdir)/ir/common -I$(top_srcdir)/ir/debug
+OFILES += pset.o
+
+include $(top_srcdir)/MakeTargets
+
+pset.o:	set.c pset.h
+	$(COMPILE.c) -DPSET -o $@ $<
+
+all: subdir.o

@@ -2,16 +2,21 @@
 This is a library implementing the intermediate representation
 FIRM developed at IPD Goos, Uni Karlsruhe.
 
-Call make lib to construct the library.  This creates a file
-libfirm.a and extracts all necessary header files to ./include.
+Create an architecture dependent directory (eg 'mkdir i686-linux') an cd
+to it. Call ../configure with wanted features (see ../configure --help
+for more hints). Call 'make depend; make' to construct the library. This
+creates a file libfirm.a
 
 To test the library goto ./testprograms and make and run the
 test examples placed there:
 
-make lib
+make depend; make
 cd testprograms
 make
 make run
+
+if you have set up the include and libdir using configure you can install
+the library and its headers by 'make install'
 
 For more documentation see /include/firm.h.
 To generate FIRM code from a compiler frontend read the documentation

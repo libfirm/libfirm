@@ -1,3 +1,16 @@
+  5.3.2001 Boris
+  added lots of #ifdef HAVE_CONFIG_G #include "config.h" #endif
+  replaced some C++ style comments (//) by standard C comments /**/
+  added autoconf stuff
+  worked this night:
+	- configure (with some features, see --help for more)
+	- make [depend | tags | install]
+	- make [run] in testprograms
+  did not work:
+	- compilation on SunOS
+	- make dist
+	- automatic call of autoconf if required
+
   5.3.2001 Goetz
   More colours in vcg output.
   Fixed bug:  cse found that start block equals it's
