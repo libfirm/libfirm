@@ -596,11 +596,16 @@ mode_is_dataM (const ir_mode *mode)
 int
 smaller_mode(const ir_mode *sm, const ir_mode *lm)
 {
+  int sm_bits, lm_bits;
+
   ANNOUNCE();
   assert(sm);
   assert(lm);
 
   if (sm == lm) return 1;
+
+  sm_bits = get_mode_size_bits(sm);
+  lm_bits = get_mode_size_bits(lm);
 
   switch(get_mode_sort(sm))
   {
@@ -612,18 +617,23 @@ smaller_mode(const ir_mode *sm, const ir_mode *lm)
            *   - both have the same sign and lm is the larger one
            *   - lm is the signed one and is at least two bits larger
            *     (one for the sign, one for the highest bit of sm)
+	   *   - sm & lm are two_complement and lm has greater or equal number of bits
            */
-          if (mode_is_signed(sm))
+          if (   get_mode_arithmetic(sm) == get_mode_arithmetic(lm)
+	      && get_mode_arithmetic(sm) == irma_twos_complement) {
+	    return lm_bits >= sm_bits;
+	  }
+          else if (mode_is_signed(sm))
           {
-            if ( mode_is_signed(lm) && (get_mode_size_bits(lm) > get_mode_size_bits(sm)) )
+            if ( mode_is_signed(lm) && (lm_bits >= sm_bits) )
               return 1;
           }
           else if (mode_is_signed(lm))
           {
-            if (get_mode_size_bits(lm) > get_mode_size_bits(sm) + 1)
+            if (lm_bits > sm_bits + 1)
               return 1;
           }
-          else if (get_mode_size_bits(lm) > get_mode_size_bits(sm))
+          else if (lm_bits >= sm_bits)
           {
             return 1;
           }
@@ -639,11 +649,11 @@ smaller_mode(const ir_mode *sm, const ir_mode *lm)
       break;
 
     case irms_float_number:
-      /* XXX currently only the three standard 32,64,80 bit floats
-       * are supported which can safely be converted */
-      if ( (get_mode_sort(lm) == irms_float_number)
-           && (get_mode_size_bits(lm) > get_mode_size_bits(sm)) )
-         return 1;
+      if (get_mode_arithmetic(sm) == get_mode_arithmetic(lm)) {
+        if ( (get_mode_sort(lm) == irms_float_number)
+           && (get_mode_size_bits(lm) >= get_mode_size_bits(sm)) )
+          return 1;
+      }
       break;
 
     case irms_reference:
