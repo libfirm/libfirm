@@ -52,7 +52,7 @@ void close_method(int n_ins, ir_node **ins) {
   mature_immBlock (get_cur_block());
   add_immBlock_pred  (get_cur_end_block(), x);
   mature_immBlock (get_cur_end_block());
-  finalize_cons(current_ir_graph);
+  irg_finalize_cons(current_ir_graph);
 }
 
 

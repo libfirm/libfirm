@@ -129,7 +129,7 @@ main(void)
 
   /* verify the graph */
   irg_vrfy(irg);
-  finalize_cons (irg);
+  irg_finalize_cons (irg);
 
   /* output the vcg file */
   printf("Done building the graph.  Dumping it.\n");

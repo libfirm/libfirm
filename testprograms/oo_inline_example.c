@@ -173,7 +173,7 @@ main(void)
   mature_immBlock (get_irg_end_block(main_irg));
 
   irg_vrfy(main_irg);
-  finalize_cons (main_irg);
+  irg_finalize_cons (main_irg);
 
   /****************************************************************************/
 
@@ -203,7 +203,7 @@ main(void)
 
   /* verify the graph */
   irg_vrfy(set_a_irg);
-  finalize_cons (set_a_irg);
+  irg_finalize_cons (set_a_irg);
 
   /****************************************************************************/
 
@@ -276,7 +276,7 @@ main(void)
 
   /* verify the graph */
   irg_vrfy(c_irg);
-  finalize_cons (c_irg);
+  irg_finalize_cons (c_irg);
 
   /****************************************************************************/
 

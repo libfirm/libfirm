@@ -150,7 +150,7 @@ main(void)
   add_immBlock_pred (get_irg_end_block(main_irg), x);
   mature_immBlock (get_irg_end_block(main_irg));
 
-  finalize_cons (main_irg);
+  irg_finalize_cons (main_irg);
 
   printf("Optimizing ...\n");
   dead_node_elimination(main_irg);

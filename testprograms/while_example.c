@@ -120,7 +120,7 @@ main(void)
   add_immBlock_pred (get_irg_end_block(irg), x);
   mature_immBlock (get_irg_end_block(irg));
 
-  finalize_cons (irg);
+  irg_finalize_cons (irg);
 
   printf("Optimizing ...\n");
 

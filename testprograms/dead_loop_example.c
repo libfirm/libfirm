@@ -136,7 +136,7 @@ int main(int argc, char **argv)
   add_in_edge (get_irg_end_block(irg), x);
   mature_block (get_irg_end_block(irg));
 
-  finalize_cons (irg);
+  irg_finalize_cons (irg);
 
   //printf("Optimizing ...\n");
   //dead_node_elimination(irg);

@@ -443,7 +443,7 @@ main(void)
   for (i = 0; i < n_irgs; ++i) {
     current_ir_graph = get_irp_irg(i);
     irg_vrfy(current_ir_graph);
-    finalize_cons (current_ir_graph);
+    irg_finalize_cons (current_ir_graph);
 
     construct_backedges(current_ir_graph);
 
@@ -459,7 +459,7 @@ main(void)
   for (i = 0; i < n_irgs; ++i) {
     current_ir_graph = get_irp_irg(i);
     irg_vrfy(current_ir_graph);
-    finalize_cons (current_ir_graph);
+    irg_finalize_cons (current_ir_graph);
 
     /* output the vcg file */
     dump_ir_block_graph (current_ir_graph, 0);

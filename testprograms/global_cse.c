@@ -147,7 +147,7 @@ main(void)
 
   /* verify the graph */
   irg_vrfy(irg);
-  finalize_cons (irg);
+  irg_finalize_cons (irg);
 
   printf("Optimizing ...\n");
   local_optimize_graph(irg);

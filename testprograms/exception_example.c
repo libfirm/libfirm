@@ -127,7 +127,7 @@ int main(int argc, char **argv)
   /* Now we can mature the end block as all it's predecessors are known. */
   mature_immBlock (get_irg_end_block(irg));
 
-  finalize_cons (irg);
+  irg_finalize_cons (irg);
 
   /* verify the graph */
   irg_vrfy(irg);

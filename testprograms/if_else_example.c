@@ -1,4 +1,4 @@
-/*
+	/*
  * Project:     libFIRM
  * File name:   testprograms/if_else_example.c
  * Purpose:     Shows construction of if ... else control flow.
@@ -130,7 +130,7 @@ int main(int argc, char **argv)
   /* Now we can mature the end block as all it's predecessors are known. */
   mature_immBlock (get_irg_end_block(irg));
 
-  finalize_cons (irg);
+  irg_finalize_cons (irg);
 
   printf("Optimizing ...\n");
   local_optimize_graph(irg);
@@ -138,7 +138,7 @@ int main(int argc, char **argv)
 
   /* verify the graph */
   irg_vrfy(irg);
-  finalize_cons (irg);
+  irg_finalize_cons (irg);
 
   printf("Done building the graph.  Dumping it.\n");
   dump_ir_block_graph (irg, 0);
