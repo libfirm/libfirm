@@ -529,7 +529,7 @@ dead_node_elimination(ir_graph *irg) {
     graveyard_obst = irg->obst;
 
     /* A new obstack, where the reachable nodes will be copied to. */
-    rebirth_obst = (struct obstack *) xmalloc (sizeof (struct obstack));
+    rebirth_obst = xmalloc (sizeof(*rebirth_obst));
     current_ir_graph->obst = rebirth_obst;
     obstack_init (current_ir_graph->obst);
 
@@ -907,8 +907,8 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
   arity = get_irn_arity(end_bl);    /* arity = n_exc + n_ret  */
   n_res = get_method_n_ress(get_Call_type(call));
 
-  res_pred = (ir_node **) xmalloc (n_res * sizeof (ir_node *));
-  cf_pred =  (ir_node **) xmalloc (arity * sizeof (ir_node *));
+  res_pred = xmalloc (n_res * sizeof(*res_pred));
+  cf_pred  = xmalloc (arity * sizeof(*res_pred));
 
   set_irg_current_block(current_ir_graph, post_bl); /* just to make sure */
 
@@ -1039,7 +1039,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
     }
     main_end_bl = get_irg_end_block(current_ir_graph);
     main_end_bl_arity = get_irn_arity(main_end_bl);
-    end_preds =  (ir_node **) xmalloc ((n_exc + main_end_bl_arity) * sizeof (ir_node *));
+    end_preds =  xmalloc ((n_exc + main_end_bl_arity) * sizeof(*end_preds));
 
     for (i = 0; i < main_end_bl_arity; ++i)
       end_preds[i] = get_irn_n(main_end_bl, i);
@@ -1083,7 +1083,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
     if (i < get_Block_n_cfgpreds(end_bl)) {
       bl = get_nodes_block(cf_op);
       arity = get_Block_n_cfgpreds(end_bl) + get_Block_n_cfgpreds(bl) - 1;
-      cf_pred = (ir_node **) xmalloc (arity * sizeof (ir_node *));
+      cf_pred = xmalloc (arity * sizeof(*cf_pred));
       for (j = 0; j < i; j++)
         cf_pred[j] = get_Block_cfgpred(end_bl, j);
       for (j = j; j < i + get_Block_n_cfgpreds(bl); j++)
@@ -1215,7 +1215,7 @@ typedef struct {
 } inline_irg_env;
 
 static inline_irg_env *new_inline_irg_env(void) {
-  inline_irg_env *env = xmalloc(sizeof(inline_irg_env));
+  inline_irg_env *env = xmalloc(sizeof(*env));
   env->n_nodes = -2; /* uncount Start, End */
   env->n_nodes_orig = -2; /* uncount Start, End */
   env->call_nodes = eset_create();

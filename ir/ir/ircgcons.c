@@ -56,8 +56,8 @@ typedef struct {
 } irg_data_t;
 
 static irg_data_t * irg_data_create(void) {
-  irg_data_t * data = xmalloc(sizeof(irg_data_t));
-  memset(data, 0, sizeof(irg_data_t)); /* init */
+  irg_data_t *data = xmalloc(sizeof(*data));
+  memset(data, 0, sizeof(*data)); /* init */
   return data;
 }
 

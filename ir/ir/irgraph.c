@@ -151,7 +151,7 @@ new_r_ir_graph (entity *ent, int n_loc)
                                 generation */
 #endif
   res->kind = k_ir_graph;
-  res->obst      = (struct obstack *) xmalloc (sizeof (struct obstack));
+  res->obst      = xmalloc (sizeof(*res->obst));
   obstack_init (res->obst);
   res->value_table = new_identities (); /* value table for global value
                        numbering for optimizing use in
@@ -242,7 +242,7 @@ ir_graph *new_const_code_irg(void) {
   res->Phi_in_stack = NULL;
 #endif
   res->kind = k_ir_graph;
-  res->obst      = (struct obstack *) xmalloc (sizeof (struct obstack));
+  res->obst      = xmalloc (sizeof(*res->obst));
   obstack_init (res->obst);
   res->phase_state = phase_building;
   res->op_pin_state_pinned = op_pin_state_pinned;

@@ -60,10 +60,10 @@ INLINE void remove_irp_type_from_list (type *typ) {
 ir_prog *new_ir_prog (void) {
   ir_prog *res;
 
-  res = (ir_prog *) xmalloc (sizeof(ir_prog));
-  memset(res, 0, sizeof(res));
+  res = xmalloc (sizeof(*res));
+  memset(res, 0, sizeof(*res));
   irp = res;
-  /* res->obst      = (struct obstack *) xmalloc (sizeof (struct obstack)); */
+  /* res->obst      = xmalloc (sizeof(*res->obst)); */
   res->graphs        = NEW_ARR_F (ir_graph *, 0);
   res->pseudo_graphs = NEW_ARR_F (ir_graph *, 0);
   res->types  = NEW_ARR_F (type *, 0);
