@@ -242,6 +242,18 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
   return 1;
 }
 
+static void show_binop_failure(ir_node *n, const char *text)
+{
+  ir_node *left  = get_binop_left(n);
+  ir_node *right = get_binop_right(n);
+
+  fprintf(stderr, "Verification of node %s%s(%s, %s) did not match %s\n",
+      get_irn_opname(n), get_irn_modename(n),
+      get_irn_modename(left),
+      get_irn_modename(right),
+      text);
+}
+
 int irn_vrfy_irg(ir_node *n, ir_graph *irg)
 {
   int i;
@@ -511,11 +523,12 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
     case iro_Mul:
       op1mode = get_irn_mode(in[1]);
       op2mode = get_irn_mode(in[2]);
-      ASSERT_AND_RET(
+      ASSERT_AND_RET_DBG(
           /* Mul: BB x int1 x int1 --> int2 */
           ((mode_is_int(op1mode)   && op2mode == op1mode && mode_is_int(mymode)) ||
 	   (mode_is_float(op1mode) && op2mode == op1mode && mymode == op1mode)),
-          "Mul node",0
+          "Mul node",0,
+	  show_binop_failure(n, "/* Mul: BB x int1 x int1 --> int2 */");
           );
       op_is_symmetric = 2;
       break;
@@ -524,12 +537,13 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       op1mode = get_irn_mode(in[1]);
       op2mode = get_irn_mode(in[2]);
       op3mode = get_irn_mode(in[3]);
-      ASSERT_AND_RET(
+      ASSERT_AND_RET_DBG(
           /* Quot: BB x M x float x float --> M x X x float */
           op1mode == mode_M && op2mode == op3mode &&
           get_mode_sort(op2mode) == irms_float_number &&
           mymode == mode_T,
-          "Quot node",0
+          "Quot node",0,
+	  show_binop_failure(n, "/* Quot: BB x M x float x float --> M x X x float */");
           );
       op_is_symmetric = 2;
       break;
