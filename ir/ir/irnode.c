@@ -34,22 +34,24 @@
 #define END_KEEPALIVE_OFFSET 0
 
 /* Declarations for inlineing */
-INLINE ir_node ** get_irn_in (ir_node *node);
-INLINE ir_mode *get_irn_mode (ir_node *node);
-INLINE ir_op *get_irn_op (ir_node *node);
-INLINE opcode get_irn_opcode (ir_node *node);
-INLINE ident *get_irn_opident (ir_node *node);
+INLINE ir_node ** get_irn_in (const ir_node *node);
+INLINE ir_mode *get_irn_mode (const ir_node *node);
+INLINE ir_op *get_irn_op (const ir_node *node);
+INLINE opcode get_irn_opcode (const ir_node *node);
+INLINE ident *get_irn_opident (const ir_node *node);
 INLINE type *get_SymConst_type (ir_node *node);
 INLINE ir_node *skip_nop (ir_node *node);
-INLINE int is_Proj (ir_node *node);
+INLINE int is_Proj (const ir_node *node);
 
 
-static char *pnc_name_arr [] = {"False", "Eq", "Lt", "Le",
-				"Gt", "Ge", "Lg", "Leg", "Uo",
-				"Ue", "Ul", "Ule", "Ug", "Uge",
-				"Ne", "True" };
+static const char *pnc_name_arr [] = {
+  "False", "Eq", "Lt", "Le",
+  "Gt", "Ge", "Lg", "Leg", "Uo",
+  "Ue", "Ul", "Ule", "Ug", "Uge",
+  "Ne", "True"
+};
 
-INLINE char *get_pnc_string(int pnc) {
+INLINE const char *get_pnc_string(int pnc) {
   return pnc_name_arr[pnc];
 }
 
@@ -77,10 +79,14 @@ get_negated_pnc(int pnc) {
   return 99; /* to shut up gcc */
 }
 
-static char *pns_name_arr [] = {"initial_exec", "global_store",
-				"frame_base", "globals", "args"};
+static const char *pns_name_arr [] = {
+  "initial_exec", "global_store",
+  "frame_base", "globals", "args"
+};
 
-static char *symconst_name_arr [] = {"type_tag", "size", "linkage_ptr_info"};
+static const char *symconst_name_arr [] = {
+  "type_tag", "size", "linkage_ptr_info"
+};
 
 void
 init_irnode (void)
@@ -192,7 +198,7 @@ ir_node_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
 
 /* returns the number of predecessors without the block predecessor. */
 INLINE int
-get_irn_arity (ir_node *node) {
+get_irn_arity (const ir_node *node) {
   assert(node);
   if (interprocedural_view) { /* handle Filter and Block specially */
     if (get_irn_opcode(node) == iro_Filter) {
@@ -213,7 +219,7 @@ get_irn_arity (ir_node *node) {
    lists of operands as predecessors of Block or arguments of a Call are
    consecutive. */
 INLINE ir_node **
-get_irn_in (ir_node *node) {
+get_irn_in (const ir_node *node) {
   assert(node);
   if (interprocedural_view) { /* handle Filter and Block specially */
     if (get_irn_opcode(node) == iro_Filter) {
@@ -302,14 +308,14 @@ set_irn_n (ir_node *node, int n, ir_node *in) {
 }
 
 INLINE ir_mode *
-get_irn_mode (ir_node *node)
+get_irn_mode (const ir_node *node)
 {
   assert (node);
   return node->mode;
 }
 
 INLINE modecode
-get_irn_modecode (ir_node *node)
+get_irn_modecode (const ir_node *node)
 {
   assert (node);
   return node->mode->code;
@@ -317,14 +323,14 @@ get_irn_modecode (ir_node *node)
 
 
 INLINE ident *
-get_irn_modeident (ir_node *node)
+get_irn_modeident (const ir_node *node)
 {
   assert(node);
   return node->mode->name;
 }
 
 INLINE ir_op *
-get_irn_op (ir_node *node)
+get_irn_op (const ir_node *node)
 {
   assert (node);
   return node->op;
@@ -339,7 +345,7 @@ set_irn_op (ir_node *node, ir_op *op)
 }
 
 INLINE opcode
-get_irn_opcode (ir_node *node)
+get_irn_opcode (const ir_node *node)
 {
   assert (node);
   assert (k_ir_node == get_kind(node));
@@ -348,21 +354,21 @@ get_irn_opcode (ir_node *node)
 }
 
 INLINE const char *
-get_irn_opname (ir_node *node)
+get_irn_opname (const ir_node *node)
 {
   assert(node);
   return id_to_str(node->op->name);
 }
 
 INLINE ident *
-get_irn_opident (ir_node *node)
+get_irn_opident (const ir_node *node)
 {
   assert(node);
   return node->op->name;
 }
 
 INLINE unsigned long
-get_irn_visited (ir_node *node)
+get_irn_visited (const ir_node *node)
 {
   assert (node);
   return node->visited;
@@ -382,13 +388,13 @@ mark_irn_visited (ir_node *node) {
 }
 
 INLINE int
-irn_not_visited  (ir_node *node) {
+irn_not_visited  (const ir_node *node) {
   assert (node);
   return (node->visited < current_ir_graph->visited);
 }
 
 INLINE int
-irn_visited  (ir_node *node) {
+irn_visited  (const ir_node *node) {
   assert (node);
   return (node->visited >= current_ir_graph->visited);
 }
@@ -404,14 +410,14 @@ set_irn_link (ir_node *node, void *link) {
 }
 
 INLINE void *
-get_irn_link (ir_node *node) {
+get_irn_link (const ir_node *node) {
   assert (node);
   return node->link;
 }
 
 /* Outputs a unique number for this node */
 INLINE long
-get_irn_node_nr(ir_node *node) {
+get_irn_node_nr(const ir_node *node) {
   assert(node);
 #ifdef DEBUG_libfirm
   return node->node_nr;
@@ -706,12 +712,12 @@ free_End (ir_node *end) {
 		       in array afterwards ... */
 }
 
-ir_graph *get_EndReg_irg (ir_node *end) {
+ir_graph *get_EndReg_irg (const ir_node *end) {
   assert (end->op == op_EndReg);
   return end->attr.end.irg;
 }
 
-ir_graph *get_EndExcept_irg  (ir_node *end) {
+ir_graph *get_EndExcept_irg  (const ir_node *end) {
   assert (end->op == op_EndReg);
   return end->attr.end.irg;
 }
@@ -855,7 +861,7 @@ set_Const_tarval (ir_node *node, tarval *con) {
 }
 
 INLINE symconst_kind
-get_SymConst_kind (ir_node *node) {
+get_SymConst_kind (const ir_node *node) {
   assert (node->op == op_SymConst);
   return node->attr.i.num;
 }
@@ -2238,7 +2244,7 @@ is_Block (ir_node *node) {
 }
 
 INLINE int
-is_Proj (ir_node *node) {
+is_Proj (const ir_node *node) {
   assert(node);
   return node->op == op_Proj
     || (!interprocedural_view && node->op == op_Filter);

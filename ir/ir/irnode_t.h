@@ -190,7 +190,7 @@ int ir_node_print (XP_PAR1, const xprintf_info *, XP_PARN);
 
 /** Returns the array with the ins.  The content of the array may not be
    changed.  */
-ir_node     **get_irn_in            (ir_node *node);
+ir_node     **get_irn_in            (const ir_node *node);
 
 /*@{*/
 /** access attributes directly */

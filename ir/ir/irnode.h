@@ -61,7 +61,7 @@ typedef struct ir_node ir_node;
  */
 
 /** returns the number of predecessors without the block predecessor: */
-int                  get_irn_arity         (ir_node *node);
+int                  get_irn_arity         (const ir_node *node);
 
 /** Replaces the old in array by a new one that will contain the ins given in
    the parameters.  Conserves the block predecessor.  It copies the array passed.
@@ -81,34 +81,34 @@ INLINE void          set_irn_in            (ir_node *node, int arity,
 INLINE ir_node      *get_irn_n             (ir_node *node, int n);
 INLINE void          set_irn_n             (ir_node *node, int n, ir_node *in);
 /* Get the mode struct. */
-INLINE ir_mode      *get_irn_mode          (ir_node *node);
+INLINE ir_mode      *get_irn_mode          (const ir_node *node);
 /* Get the mode-enum modecode */
-INLINE modecode      get_irn_modecode      (ir_node *node);
+INLINE modecode      get_irn_modecode      (const ir_node *node);
 /* Get the ident for a string representation of the mode */
-INLINE ident        *get_irn_modeident     (ir_node *node);
+INLINE ident        *get_irn_modeident     (const ir_node *node);
 /* Access the opcode struct of the node */
-INLINE ir_op        *get_irn_op            (ir_node *node);
+INLINE ir_op        *get_irn_op            (const ir_node *node);
 INLINE void          set_irn_op            (ir_node *node, ir_op *op);
 /* Get the opcode-enum of the node */
-INLINE opcode        get_irn_opcode        (ir_node *node);
-/* Get the ident for a string representation of the opcode */
-INLINE ident        *get_irn_opident       (ir_node *node);
+INLINE opcode        get_irn_opcode        (const ir_node *node);
 /* Get the string representation of the opcode */
-INLINE const char   *get_irn_opname        (ir_node *node);
+INLINE const char   *get_irn_opname        (const ir_node *node);
+/* Get the ident for a string representation of the opcode */
+INLINE ident        *get_irn_opident       (const ir_node *node);
+INLINE unsigned long get_irn_visited (const ir_node *node);
 INLINE void          set_irn_visited (ir_node *node, unsigned long visited);
-INLINE unsigned long get_irn_visited (ir_node *node);
 /* Sets visited to get_irg_visited(current_ir_graph) */
 INLINE void          mark_irn_visited (ir_node *node);
 /* Returns 1 if visited < get_irg_visited(current_ir_graph).  */
-INLINE int           irn_not_visited  (ir_node *node);
+INLINE int           irn_not_visited  (const ir_node *node);
 /* Returns 1 if visited >= get_irg_visited(current_ir_graph).  */
-INLINE int           irn_visited      (ir_node *node);
+INLINE int           irn_visited      (const ir_node *node);
 INLINE void          set_irn_link          (ir_node *node, void *link);
-INLINE void         *get_irn_link          (ir_node *node);
+INLINE void         *get_irn_link          (const ir_node *node);
 
 /** Outputs a unique number for this node if libfirm is compiled for
    debugging, (configure with --enable-debug) else returns 0. */
-INLINE long get_irn_node_nr(ir_node *node);
+INLINE long get_irn_node_nr(const ir_node *node);
 
 /** Returns the ir_graph this node belongs to. Only valid for
  * CallBegin, EndReg and EndExcept */
@@ -188,8 +188,8 @@ INLINE void set_End_keepalive(ir_node *end, int pos, ir_node *ka);
    free_End frees these data structures. */
 INLINE void free_End (ir_node *end);
 
-ir_graph *get_EndReg_irg (ir_node *end);
-ir_graph *get_EndExcept_irg  (ir_node *end);
+ir_graph *get_EndReg_irg (const ir_node *end);
+ir_graph *get_EndExcept_irg  (const ir_node *end);
 
 /* We distinguish three kinds of Cond nodes.  These can be distinguished
    by the mode of the selector operand and an internal flag of type cond_kind.
@@ -250,7 +250,7 @@ typedef enum {
 			by the linker. Type_or_id_p is ident *. */
 } symconst_kind;
 typedef union type_or_id * type_or_id_p;
-INLINE symconst_kind get_SymConst_kind (ir_node *node);
+INLINE symconst_kind get_SymConst_kind (const ir_node *node);
 INLINE void          set_SymConst_kind (ir_node *node, symconst_kind num);
 /* Only to access SymConst of kind type_tag or size.  Else assertion: */
 INLINE type    *get_SymConst_type (ir_node *node);
@@ -409,7 +409,7 @@ typedef enum {
   /* not_mask = Leg*/	/* bits to flip to negate comparison * @@ hack for jni interface */
 } pnc_number;
 #define not_mask Leg
-INLINE char *get_pnc_string(int pnc);
+INLINE const char *get_pnc_string(int pnc);
 INLINE int   get_negated_pnc(int pnc);
 INLINE ir_node *get_Cmp_left (ir_node *node);
 INLINE void     set_Cmp_left (ir_node *node, ir_node *left);
@@ -535,7 +535,7 @@ INLINE int      is_no_Block (ir_node *node);
 INLINE int      is_Block (ir_node *node);
 /** returns true if node is a Proj node or a Filter node in
  * intraprocedural view */
-INLINE int      is_Proj (ir_node *node);
+INLINE int      is_Proj (const ir_node *node);
 /** Returns true if the operation manipulates control flow:
    Start, End, Jmp, Cond, Return, Raise, Bad, CallBegin, EndReg, EndExcept */
 int is_cfop(ir_node *node);
@@ -554,10 +554,8 @@ ir_node *get_fragile_op_mem(ir_node *node);
 
 #include "ident.h"
 
-/*@{*/
-/** Makros for debugging the libfirm */
 #ifdef __GNUC__
-/* GNU C has the  extension */
+/* GNU C has the __FUNCTION__ extension */
 #define __MYFUNC__ __FUNCTION__
 #else
 /* use Filename instead */
@@ -585,8 +583,6 @@ ir_node *get_fragile_op_mem(ir_node *node);
 #define DDMI(X)  printf("%s(l.%i) %s: %p\n",                 __MYFUNC__, __LINE__, id_to_str(X), (X))
 /** Output information about a mode */
 #define DDMM(X)  printf("%s(l.%i) %s: %p\n",                 __MYFUNC__, __LINE__, get_mode_name(X), (X))
-
-/*@}*/  /* Macros for debug.. */
 
 /*@}*/ /* end of ir_node group definition */
 
