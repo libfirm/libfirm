@@ -3,6 +3,9 @@
 
 #include "irgraph.h"
 #include "irgwalk.h"
+#include "ircons.h"
+#include "iropt.h"
+#include "irgopt.h"
 #include "irprintf.h"
 
 #include "beutil.h"
@@ -59,4 +62,31 @@ void dump_allocated_irg(ir_graph *irg)
 		fprintf(f, "}\n");
 		fclose(f);
 	}
+}
+
+static void localize_const_walker(ir_node *irn, void *data)
+{
+	if(!is_Block(irn)) {
+		int i, n;
+
+		for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
+			ir_node *op = get_irn_n(irn, i);
+			if(get_irn_opcode(op) == iro_Const) {
+				/*
+				 * We have to create the const node by ourselves, since the
+				 * firmcons implementation always places it in the start block.
+				 */
+				ir_node *cnst = new_ir_node(NULL, get_irn_irg(irn),
+						get_nodes_block(irn), op_Const, get_irn_mode(op), 0, NULL);
+				cnst->attr.con.tv = get_Const_tarval(op);
+				set_irn_n(irn, i, cnst);
+			}
+		}
+	}
+}
+
+void localize_consts(ir_graph *irg)
+{
+	irg_walk_graph(irg, localize_const_walker, NULL, NULL);
+	dead_node_elimination(irg);
 }
