@@ -79,11 +79,7 @@ typedef union {
 void     set_irg_loop(ir_graph *irg, ir_loop *l);
 ir_loop *get_irg_loop(ir_graph *irg);
 
-/** Returns the loop n is contained in.
-    assumes current_ir_graph set properly. */
-/*  @@@ @@@ @@@ @@@@ @@@
-    current impl is very expensive: O(#nodes in irg).
-    Is used by heapanal (O(#phi)) --> better impl required. */
+/** Returns the loop n is contained in.  NULL if node is in no loop. */
 ir_loop *get_irn_loop(ir_node *n);
 
 /** Returns outer loop, itself if outermost. */

@@ -21,6 +21,7 @@
 #include "irnode.h"
 #include "irgraph_t.h"
 #include "array.h"
+#include "pmap.h"
 #include "irgwalk.h"
 #include "irprog.h"
 
@@ -35,6 +36,13 @@ static int current_dfn = 1;        /* Counter to generate depth first numbering
 				      of visited nodes.  */
 
 /**********************************************************************/
+/* Node attributes                                                   **/
+/**********************************************************************/
+
+/* A map to get from irnodes to loop nodes. */
+static pmap *node_loop_map = NULL;
+
+/**********************************************************************/
 /* Node attributes needed for the construction.                      **/
 /**********************************************************************/
 
@@ -42,7 +50,7 @@ typedef struct scc_info {
   bool in_stack;         /* Marks whether node is on the stack. */
   int dfn;               /* Depth first search number. */
   int uplink;            /* dfn number of ancestor. */
-  ir_loop *loop;         /* Refers to the containing loop. */
+  //  ir_loop *loop;         /* Refers to the containing loop. */
   /*
       struct section *section;
       xset def;
@@ -102,19 +110,27 @@ get_irn_dfn (ir_node *n) {
 /* Uses temporary information to set the loop */
 static INLINE void
 set_irn_loop_tmp (ir_node *n, ir_loop* loop) {
-  assert(get_irn_link(n));
-  ((scc_info *)get_irn_link(n))->loop = loop;
+  //assert(get_irn_link(n));
+  //((scc_info *)get_irn_link(n))->loop = loop;
+  assert(node_loop_map && "not initialized!");
+  pmap_insert(node_loop_map, (void *)n, (void *)loop);
+}
+
+/* Uses temporary information to get the loop */
+INLINE ir_loop *
+get_irn_loop (ir_node *n) {
+  ir_loop *res = NULL;
+  //assert(get_irn_link(n));
+  //return ((scc_info *)get_irn_link(n))->loop;
+  assert(node_loop_map && "not initialized!");
+
+  if (pmap_contains(node_loop_map, (void *)n))
+    res = (ir_loop *) pmap_get(node_loop_map, (void *)n);
+
+  return res;
 }
 
 #if 0
-/* Uses temporary information to get the loop */
-static INLINE ir_loop *
-get_irn_loop_tmp (ir_node *n) {
-  assert(get_irn_link(n));
-  return ((scc_info *)get_irn_link(n))->loop;
-}
-#endif
-
 static ir_loop *find_nodes_loop (ir_node *n, ir_loop *l) {
   int i;
   ir_loop *res = NULL;
@@ -140,6 +156,7 @@ ir_loop * get_irn_loop(ir_node *n) {
   l = find_nodes_loop(n, l);
   return l;
 }
+#endif
 
 /**********************************************************************/
 /* A stack.                                                          **/
@@ -447,6 +464,7 @@ static INLINE void
 init_scc (ir_graph *irg) {
   current_dfn = 1;
   loop_node_cnt = 0;
+  if (!node_loop_map) node_loop_map = pmap_create();
   init_stack();
   irg_walk_graph (irg, init_node, NULL, NULL);
   /*
@@ -892,5 +910,7 @@ void free_all_loop_information (void) {
   for (i = 0; i < get_irp_n_irgs(); i++) {
     free_loop_information(get_irp_irg(i));
   }
+  pmap_destroy(node_loop_map);
+  node_loop_map = NULL;
   interprocedural_view = rem;
 }
