@@ -1,3 +1,9 @@
+  11.7.2001 Goetz
+  Implemented stuff to change the type graph.  See
+  typegmod.h and tpop.h for basic documentation of the change.
+  There now exists a type of kind type_id.  If this appears
+  externally this is a bug.
+
   9.7.2001 Goetz
   Added some new access routines to types.
   List of overwritten fields for entities.
