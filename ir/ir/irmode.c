@@ -1,8 +1,8 @@
 /* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-* All rights reserved.
-*
-* Authors: Martin Trapp,   Christian Schaefer
-*
+** All rights reserved.
+**
+** Authors: Martin Trapp, Christian Schaefer
+**
 */
 
 /* $Id$ */
@@ -12,396 +12,313 @@
 #endif
 
 # include "irmode_t.h"
-# include <stdlib.h>
+# include "ident.h"
+# include <malloc.h>
 # include <stddef.h>
 # include <string.h>
 # include "tv.h"
+# include "array.h"
 
+#if 0
+#  define ANNOUNCE() printf(__FILE__": call no. %lld (%s)\n", count++, __FUNCTION__)
+#else
+#  define ANNOUNCE() ((void)0)
+#endif
+
+/* * *
+ * local values
+ * * */
+
+static long long count = 0;
+
+/* dynamic array to hold all modes */
+static ir_mode * modes;
+/* dynamic arrays to hold special modes' values */
+static tarval** modes_min;
+static tarval** modes_max;
+static tarval** modes_null;
+static tarval** modes_one;
+
+/* number of defined modes */
+static int num_modes;
+
+/* * *
+ * local functions
+ * * */
+
+/* compare modes that don't need to have their code field
+ * correctly set */
+static int modes_are_equal(ir_mode *m, ir_mode *n)
+{
+  if (m == n) return 1;
+  if ( (m->sort == n->sort) && (m->size == n->size) &&
+      (m->align == n->align) && (m->sign == n->sign) &&
+      (m->name == n->name) )
+    return 1;
+
+  return 0;
+}
+
+/* searches the modes array for the given mode and returns
+ * a pointer on an equal mode already in the array, NULL if
+ * none found */
+static ir_mode *find_mode(ir_mode *m)
+{
+  int i;
+
+  for (i = 0; i < num_modes; i++)
+  {
+    if (modes_are_equal(m, &modes[i])) return &modes[i];
+  }
+
+  return NULL;
+}
+
+/* sets special values of modes */
+static void set_mode_values(ir_mode* mode)
+{
+  modes_min[get_mode_modecode(mode)] = get_tarval_min(mode);
+  modes_max[get_mode_modecode(mode)] = get_tarval_max(mode);
+  modes_null[get_mode_modecode(mode)] = get_tarval_null(mode);
+  modes_one[get_mode_modecode(mode)] = get_tarval_one(mode);
+}
+/* * *
+ * globals defined in irmode.h
+ * * */
+
+/** Predefined modes **/
+
+/* FIRM internal modes: */
 ir_mode *mode_T;
-ir_mode *mode_F;
-ir_mode *mode_D;
-ir_mode *mode_E;
-ir_mode *mode_Bs;
-ir_mode *mode_Bu;
-ir_mode *mode_Hs;
-ir_mode *mode_Hu;
-ir_mode *mode_Is;
-ir_mode *mode_Iu;
-ir_mode *mode_Ls;
-ir_mode *mode_Lu;
-ir_mode *mode_C;
-ir_mode *mode_U;
-ir_mode *mode_b;
-ir_mode *mode_P;
 ir_mode *mode_X;
 ir_mode *mode_M;
 ir_mode *mode_BB;
 
-INLINE ir_mode *get_modeT() { return mode_T; }
-INLINE ir_mode *get_modeF() { return mode_F; }
-INLINE ir_mode *get_modeD() { return mode_D; }
-INLINE ir_mode *get_modeE() { return mode_E; }
-INLINE ir_mode *get_modeBs() { return mode_Bs; }
-INLINE ir_mode *get_modeBu() { return mode_Bu; }
-INLINE ir_mode *get_modeHs() { return mode_Hs; }
-INLINE ir_mode *get_modeHu() { return mode_Hu; }
-INLINE ir_mode *get_modeIs() { return mode_Is; }
-INLINE ir_mode *get_modeIu() { return mode_Iu; }
-INLINE ir_mode *get_modeLs() { return mode_Ls; }
-INLINE ir_mode *get_modeLu() { return mode_Lu; }
-INLINE ir_mode *get_modeC() { return mode_C; }
-INLINE ir_mode *get_modeU() { return mode_U; }
-INLINE ir_mode *get_modeb() { return mode_b; }
-INLINE ir_mode *get_modeP() { return mode_P; }
-INLINE ir_mode *get_modeX() { return mode_X; }
-INLINE ir_mode *get_modeM() { return mode_M; }
-INLINE ir_mode *get_modeBB() { return mode_BB; }
+/* predefined numerical modes: */
+ir_mode *mode_F;    /* float */
+ir_mode *mode_D;    /* double */
+ir_mode *mode_E;    /* long double */
 
-void
-init_mode (void)
+ir_mode *mode_Bs;   /* integral values, signed and unsigned */
+ir_mode *mode_Bu;   /* 8 bit */
+ir_mode *mode_Hs;   /* 16 bit */
+ir_mode *mode_Hu;
+ir_mode *mode_Is;   /* 32 bit */
+ir_mode *mode_Iu;
+ir_mode *mode_Ls;   /* 64 bit */
+ir_mode *mode_Lu;
+
+ir_mode *mode_C;
+ir_mode *mode_U;
+ir_mode *mode_b;
+ir_mode *mode_P;
+
+/* * *
+ * functions defined in irmode.h
+ * * */
+
+/* JNI access functions */
+INLINE ir_mode *get_modeT() { ANNOUNCE(); return mode_T; }
+INLINE ir_mode *get_modeF() { ANNOUNCE(); return mode_F; }
+INLINE ir_mode *get_modeD() { ANNOUNCE(); return mode_D; }
+INLINE ir_mode *get_modeE() { ANNOUNCE(); return mode_E; }
+INLINE ir_mode *get_modeBs() { ANNOUNCE(); return mode_Bs; }
+INLINE ir_mode *get_modeBu() { ANNOUNCE(); return mode_Bu; }
+INLINE ir_mode *get_modeHs() { ANNOUNCE(); return mode_Hs; }
+INLINE ir_mode *get_modeHu() { ANNOUNCE(); return mode_Hu; }
+INLINE ir_mode *get_modeIs() { ANNOUNCE(); return mode_Is; }
+INLINE ir_mode *get_modeIu() { ANNOUNCE(); return mode_Iu; }
+INLINE ir_mode *get_modeLs() { ANNOUNCE(); return mode_Ls; }
+INLINE ir_mode *get_modeLu() { ANNOUNCE(); return mode_Lu; }
+INLINE ir_mode *get_modeC() { ANNOUNCE(); return mode_C; }
+INLINE ir_mode *get_modeU() { ANNOUNCE(); return mode_U; }
+INLINE ir_mode *get_modeb() { ANNOUNCE(); return mode_b; }
+INLINE ir_mode *get_modeP() { ANNOUNCE(); return mode_P; }
+INLINE ir_mode *get_modeX() { ANNOUNCE(); return mode_X; }
+INLINE ir_mode *get_modeM() { ANNOUNCE(); return mode_M; }
+INLINE ir_mode *get_modeBB() { ANNOUNCE(); return mode_BB; }
+
+/* ** Constructor ** */
+ir_mode *
+mode_register(ir_mode* new_mode)
 {
-  /* allocate all modes. We need to memset them as tarval_vrfy
-     reads fields before they are initialized: It compares to
-     min/max when tarvals for min/max are allocated!  */
-  mode_T  = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_T, 0, sizeof(ir_mode));
-  mode_F  = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_F, 0, sizeof(ir_mode));
-  mode_D  = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_D, 0, sizeof(ir_mode));
-  mode_E  = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_E, 0, sizeof(ir_mode));
-  mode_Bs = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_Bs, 0, sizeof(ir_mode));
-  mode_Bu = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_Bu, 0, sizeof(ir_mode));
-  mode_Hs = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_Hs, 0, sizeof(ir_mode));
-  mode_Hu = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_Hu, 0, sizeof(ir_mode));
-  mode_Is = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_Is, 0, sizeof(ir_mode));
-  mode_Iu = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_Iu, 0, sizeof(ir_mode));
-  mode_Ls = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_Ls, 0, sizeof(ir_mode));
-  mode_Lu = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_Lu, 0, sizeof(ir_mode));
-  mode_C  = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_C, 0, sizeof(ir_mode));
-  mode_U  = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_U, 0, sizeof(ir_mode));
-  mode_b  = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_b, 0, sizeof(ir_mode));
-  mode_P  = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_P, 0, sizeof(ir_mode));
-  mode_X  = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_X, 0, sizeof(ir_mode));
-  mode_M  = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_M, 0, sizeof(ir_mode));
-  mode_BB = (ir_mode *) malloc (sizeof (ir_mode)); memset(mode_BB, 0, sizeof(ir_mode));
+  ir_mode *mode;
 
-  mode_T->code = irm_T;
-  mode_F->code = irm_F;
-  mode_D->code = irm_D;
-  mode_E->code = irm_E;
-  mode_Bs->code = irm_Bs;
-  mode_Bu->code = irm_Bu;
-  mode_Hs->code = irm_Hs;
-  mode_Hu->code = irm_Hu;
-  mode_Is->code = irm_Is;
-  mode_Iu->code = irm_Iu;
-  mode_Ls->code = irm_Ls;
-  mode_Lu->code = irm_Lu;
-  mode_C->code = irm_C;
-  mode_U->code = irm_U;
-  mode_b->code = irm_b;
-  mode_P->code = irm_P;
-  mode_X->code = irm_X;
-  mode_M->code = irm_M;
-  mode_BB->code = irm_BB;
+  ANNOUNCE();
+  assert(new_mode);
 
-  /* initialize all modes */
+  /* first check if there already is a matching mode */
+  mode = find_mode(new_mode);
+  if (mode) return mode;
 
-  mode_T->name = id_from_str ("T", 1);
-  mode_T->fsigned = 0;
-  mode_T->ffloat = 0;
+  /* sanity checks */
+  switch (new_mode->sort)
+  {
+    case auxiliary:
+    case internal_boolean:
+      assert(0 && "internal modes cannot be user defined");
+      break;
 
-  /* float */
-  mode_F->name = id_from_str ("F", 1);
-  mode_F->fsigned = 1;
-  mode_F->ffloat = 1;
-  mode_F->ld_align = 4;
-  mode_F->size = 4;
+    case float_number:
+      assert(0 && "not yet implemented");
+      break;
 
-  /* double */
-  mode_D->name = id_from_str ("D", 1);
-  mode_D->fsigned = 1;
-  mode_D->ffloat = 1;
-  mode_D->ld_align = 4;
-  mode_D->size = 8;
+    case int_number:
+    case reference:
+    case character:
+      break;
 
-  /* extended */
-  mode_E->name = id_from_str ("E", 1);
-  mode_E->fsigned = 1;
-  mode_E->ffloat = 1;
-  mode_E->ld_align = 4;
-  mode_E->size = 12;
+    default:
+      assert(0);
+  }
 
-  /* signed byte */
-  mode_Bs->name = id_from_str ("Bs", 1);
-  mode_Bs->fsigned = 1;
-  mode_Bs->ffloat = 0;
-  mode_Bs->ld_align = 1;
-  mode_Bs->size = 1;
-  mode_Bs->min = tarval_from_long (mode_Ls, 0xffffff80);
-  mode_Bs->max = tarval_from_long (mode_Ls, 0x0000007f);
-  mode_Bs->null = tarval_from_long (mode_Bs, 0);
+  /* copy mode struct to modes array */
+  ARR_EXTEND(ir_mode, modes, 1);
+  ARR_EXTEND(tarval*, modes_min, 1);
+  ARR_EXTEND(tarval*, modes_max, 1);
+  ARR_EXTEND(tarval*, modes_null, 1);
+  ARR_EXTEND(tarval*, modes_one, 1);
+  mode = &modes[num_modes];
 
-  /* unsigned byte */
-  mode_Bu->name = id_from_str ("Bu", 1);
-  mode_Bu->fsigned = 0;
-  mode_Bu->ffloat = 0;
-  mode_Bu->ld_align = 1;
-  mode_Bu->size = 1;
-  mode_Bu->min = tarval_from_long (mode_Lu, 0x00000000);
-  mode_Bu->max = tarval_from_long (mode_Lu, 0x000000ff);
-  mode_Bu->null = tarval_from_long (mode_Bu, 0);
+  memcpy(mode, new_mode, sizeof(ir_mode));
+  mode->code = num_modes;
+  num_modes++;
 
-  /* signed short integer */
-  mode_Hs->name = id_from_str ("Hs", 1);
-  mode_Hs->fsigned = 1;
-  mode_Hs->ffloat = 0;
-  mode_Hs->ld_align = 2;
-  mode_Hs->size = 2;
-  mode_Hs->min = tarval_from_long (mode_Ls, 0xffff8000);
-  mode_Hs->max = tarval_from_long (mode_Ls, 0x00007fff);
-  mode_Hs->null = tarval_from_long (mode_Hs, 0);
+  set_mode_values(mode);
 
-  /* unsigned short integer */
-  mode_Hu->name = id_from_str ("Hu", 1);
-  mode_Hu->fsigned = 0;
-  mode_Hu->ffloat = 0;
-  mode_Hu->ld_align = 2;
-  mode_Hu->size = 2;
-  mode_Hu->min = tarval_from_long (mode_Lu, 0x00000000);
-  mode_Hu->max = tarval_from_long (mode_Lu, 0x0000ffff);
-  mode_Hu->null = tarval_from_long (mode_Hu, 0);
-
-  /* signed integer */
-  mode_Is->name = id_from_str ("Is", 1);
-  mode_Is->fsigned = 1;
-  mode_Is->ffloat = 0;
-  mode_Is->ld_align = 4;
-  mode_Is->size = 4;
-  mode_Is->min = tarval_from_long (mode_Ls, 0x80000000);
-  mode_Is->max = tarval_from_long (mode_Ls, 0x7fffffff);
-  mode_Is->null = tarval_from_long (mode_Is, 0);
-
-  /* unsigned integer */
-  mode_Iu->name = id_from_str ("Iu", 1);
-  mode_Iu->fsigned = 0;
-  mode_Iu->ffloat = 0;
-  mode_Iu->ld_align = 4;
-  mode_Iu->size = 4;
-  mode_Iu->min = tarval_from_long (mode_Lu, 0x00000000);
-  mode_Iu->max = tarval_from_long (mode_Lu, 0xffffffff);
-  mode_Iu->null = tarval_from_long (mode_Iu, 0);
-
-  /* signed long integer */
-  mode_Ls->name = id_from_str ("Ls", 1);
-  mode_Ls->fsigned = 1;
-  mode_Ls->ffloat = 0;
-  mode_Ls->ld_align = 8;
-  mode_Ls->size = 8;
-  mode_Ls->min = tarval_from_long (mode_Ls, 0x80000000);
-  mode_Ls->max = tarval_from_long (mode_Ls, 0x7fffffff);
-  mode_Ls->null = tarval_from_long (mode_Ls, 0);
-
-  /* unsigned long integer */
-  mode_Lu->name = id_from_str ("Lu", 1);
-  mode_Lu->fsigned = 0;
-  mode_Lu->ffloat = 0;
-  mode_Lu->ld_align = 8;
-  mode_Lu->size = 8;
-  mode_Lu->min = tarval_from_long (mode_Lu, 0x00000000);
-  mode_Lu->max = tarval_from_long (mode_Lu, 0xffffffff);
-  mode_Lu->null = tarval_from_long (mode_Lu, 0);
-
-  /* character */
-  mode_C->name = id_from_str ("C", 1);
-  mode_C->fsigned = 0;
-  mode_C->ffloat = 0;
-  mode_C->ld_align = 1;
-  mode_C->size = 1;
-  mode_C->min = tarval_from_long (mode_Ls, 0xffffff80);
-  mode_C->max = tarval_from_long (mode_Ls, 0x0000007f);
-  mode_C->null = tarval_from_long (mode_C, 0);
-
-  /* unicode character */
-  mode_U->name = id_from_str ("U", 1);
-  mode_U->fsigned = 0;
-  mode_U->ffloat = 0;
-  mode_U->ld_align = 1;
-  mode_U->size = 2;
-  mode_U->min = tarval_from_long (mode_Ls, 0xffff8000);
-  mode_U->max = tarval_from_long (mode_Ls, 0x00007fff);
-  mode_U->null = tarval_from_long (mode_U, 0);
-
-  /* boolean */
-  mode_b->name = id_from_str ("b", 1);
-  mode_b->fsigned = 0;
-  mode_b->ffloat = 0;
-
-  /* pointer */
-  mode_P->name = id_from_str ("P", 1);
-  mode_P->fsigned = 0;
-  mode_P->ffloat = 0;
-  mode_P->ld_align = 4;
-  mode_P->size = 4;
-  mode_P->min = tarval_from_long (mode_Lu, 0x00000000);
-  mode_P->max = tarval_from_long (mode_Lu, 0xffffffff);
-  mode_P->null = tarval_from_long (mode_P, 0);
-
-  /* Execution */
-  mode_X->name = id_from_str ("X", 1);
-  mode_X->fsigned = 0;
-  mode_X->ffloat = 0;
-
-  /* Memory */
-  mode_M->name = id_from_str ("M", 1);
-  mode_M->fsigned = 0;
-  mode_M->ffloat = 0;
-
-  mode_BB->name = id_from_str ("BB", 1);
-  mode_BB->fsigned = 0;
-  mode_BB->ffloat = 0;
+  return mode;
 }
 
 /* Functions for the direct access to all attributes od a ir_mode */
-
+#ifdef MODE_ACCESS_DEFINES
+#  undef get_mode_modecode
+#  undef get_mode_ident
+#  undef get_mode_name
+#  undef get_mode_sort
+#  undef get_mode_size
+#  undef get_mode_align
+#endif
 modecode
-get_mode_modecode (ir_mode *mode)
+get_mode_modecode(ir_mode *mode)
 {
-  assert(mode && "no mode given");
+  ANNOUNCE();
   return mode->code;
 }
 
-/*
-INLINE void
-set_mode_modecode (ir_mode *mode, modecode code)
-{
-  mode->code = code;
-}
-*/
-
 ident *
-get_mode_ident (ir_mode *mode)
+get_mode_ident(ir_mode *mode)
 {
-  assert(mode && "no mode given");
+  ANNOUNCE();
   return mode->name;
 }
 
-/*
-INLINE void
-set_mode_ident (ir_mode *mode, ident *name)
+const char *
+get_mode_name(ir_mode *mode)
 {
-  mode->name = name;
-}
-*/
-
-INLINE const char *
-get_mode_name       (ir_mode *mode) {
-  assert(mode);
+  ANNOUNCE();
   return id_to_str(mode->name);
 }
-/* void  set_mode_name       (ir_mode *mode, char *name);    */
+
+mode_sort
+get_mode_sort(ir_mode* mode)
+{
+  ANNOUNCE();
+  return mode->sort;
+}
 
 int
-get_mode_size (ir_mode *mode)
+get_mode_size(ir_mode *mode)
 {
-  assert(mode && "no mode given");
+  ANNOUNCE();
   return mode->size;
 }
-/*
-INLINE void
-set_mode_size (ir_mode *mode, int size)
-{
-  mode->size = size;
-}
-*/
 
 int
-get_mode_ld_align (ir_mode *mode)
+get_mode_align (ir_mode *mode)
 {
-  assert(mode && "no mode given");
-  return mode->ld_align;
+  ANNOUNCE();
+  return mode->align;
 }
-
-/*
-INLINE void
-set_mode_ld_align (ir_mode *mode, int ld_align)
+#ifdef MODE_ACCESS_DEFINES
+#  define get_mode_modecode(mode) (mode)->code
+#  define get_mode_ident(mode) (mode)->name
+#  define get_mode_name(mode) id_to_str((mode)->name)
+#  define get_mode_sort(mode) (mode)->sort
+#  define get_mode_size(mode) (mode)->size
+#  define get_mode_align(mode) (mode)->align
+#endif
+int
+get_mode_sign (ir_mode *mode)
 {
-  mode->ld_align = ld_align;
+  ANNOUNCE();
+  return mode->sign;
 }
-*/
 
 tarval *
 get_mode_min (ir_mode *mode)
 {
-  assert(mode && "no mode given");
-  return mode->min;
-}
+  ANNOUNCE();
+  assert(mode);
+  assert(get_mode_modecode(mode) < num_modes);
+  assert(mode_is_data(mode));
 
-/*
-INLINE void
-set_mode_min (ir_mode *mode, tarval *min)
-{
-mode->min = min;
+  return modes_min[get_mode_modecode(mode)];
 }
-*/
 
 tarval *
 get_mode_max (ir_mode *mode)
 {
-  assert(mode && "no mode given");
-  return mode->max;
-}
+  ANNOUNCE();
+  assert(mode);
+  assert(get_mode_modecode(mode) < num_modes);
+  assert(mode_is_data(mode));
 
-/*
-INLINE void
-set_mode_max (ir_mode *mode, tarval *max)
-{
-  mode->max = max;
+  return modes_max[get_mode_modecode(mode)];
 }
-*/
 
 tarval *
 get_mode_null (ir_mode *mode)
 {
-  assert(mode && "no mode given");
-  return mode->null;
+  ANNOUNCE();
+  assert(mode);
+  assert(get_mode_modecode(mode) < num_modes);
+  assert(mode_is_data(mode));
+
+  return modes_null[get_mode_modecode(mode)];
 }
 
-/*
-INLINE void
-set_mode_null (ir_mode *mode, tarval *null)
+tarval *
+get_mode_one (ir_mode *mode)
 {
-  mode->null = null;
-}
-*/
+  ANNOUNCE();
+  assert(mode);
+  assert(get_mode_modecode(mode) < num_modes);
+  assert(mode_is_data(mode));
 
-unsigned
-get_mode_fsigned (ir_mode *mode)
-{
-  assert(mode && "no mode given");
-  return mode->fsigned;
+  return modes_one[get_mode_modecode(mode)];
 }
 
-/*
-INLINE voida
-set_mode_fsigned (ir_mode *mode, unsigned fsigned)
+tarval *
+get_mode_infinite(ir_mode *mode)
 {
-  mode->fsigned = fsigned;
-}
-*/
+  ANNOUNCE();
+  assert(mode);
+  assert(get_mode_modecode(mode) < num_modes);
+  assert(mode_is_float(mode));
 
-unsigned
-get_mode_ffloat (ir_mode *mode)
-{
-  assert(mode && "no mode given");
-  return mode->ffloat;
+  return get_tarval_inf(mode);
 }
 
-/*
-INLINE void
-set_mode_ffloat (ir_mode *mode, unsigned ffloat)
+tarval *
+get_mode_NAN(ir_mode *mode)
 {
-  mode->ffloat = ffloat;
+  ANNOUNCE();
+  assert(mode);
+  assert(get_mode_modecode(mode) < num_modes);
+  assert(mode_is_float(mode));
+
+  return get_tarval_nan(mode);
 }
-*/
 
 /* Functions to check, whether a modecode is signed, float, int, num, data,
    datab or dataM. For more exact definitions read the corresponding pages
@@ -424,8 +341,8 @@ set_mode_ffloat (ir_mode *mode, unsigned ffloat)
    The set of "data" is defined as:
    -------------------------------
    data  = {irm_F, irm_D, irm_E irm_Bs, irm_Bu, irm_Hs, irm_Hu,
-            irm_Is, irm_Iu, irm_Ls, irm_Lu, irm_C, irm_U, irm_p}
-            = {num || irm_C || irm_P}
+            irm_Is, irm_Iu, irm_Ls, irm_Lu, irm_C, irm_U, irm_P}
+            = {num || irm_C || irm_U || irm_P}
 
    The set of "datab" is defined as:
    ---------------------------------
@@ -440,134 +357,343 @@ set_mode_ffloat (ir_mode *mode, unsigned ffloat)
             = {data || irm_M}
 */
 
+#ifdef MODE_ACCESS_DEFINES
+#  undef mode_is_signed
+#  undef mode_is_float
+#  undef mode_is_int
+#  undef mode_is_num
+#  undef mode_is_data
+#  undef mode_is_datab
+#  undef mode_is_dataM
+#endif
 int
 mode_is_signed (ir_mode *mode)
 {
-  int res;
-  unsigned fsigned;
-
-  assert(mode && "no mode given");
-  fsigned = get_mode_fsigned (mode);
-  if (fsigned == 1) {
-    res = 1;
-  }
-  else {
-    res = 0;
-  }
-  return res;
+  ANNOUNCE();
+  assert(mode);
+  return mode->sign;
 }
 
-INLINE int
+int
 mode_is_float (ir_mode *mode)
 {
-  int res;
-  unsigned ffloat;
-
-  assert(mode && "no mode given");
-  ffloat = get_mode_ffloat (mode);
-  if (ffloat == 1) {
-    res = 1;
-  }
-  else {
-    res = 0;
-  }
-  return res;
+  ANNOUNCE();
+  assert(mode);
+  return (get_mode_sort(mode) == float_number);
 }
 
-
-INLINE int
+int
 mode_is_int (ir_mode *mode)
 {
-  int res;
-  modecode code;
-
-  assert(mode && "no mode given");
-  code = get_mode_modecode (mode);
-  if ((code >= irm_Bs) &&  (code <= irm_Lu)) {
-    res = 1;
-  }
-  else {
-    res = 0;
-  }
-  return res;
+  ANNOUNCE();
+  assert(mode);
+  return (get_mode_sort(mode) == int_number);
 }
 
-
-INLINE int
+int
 mode_is_num (ir_mode *mode)
 {
-  int res;
-
-  assert(mode && "no mode given");
-  if (mode_is_int (mode) || mode_is_float (mode)) {
-    res = 1;
-  }
-  else {
-    res = 0;
-  }
-  return res;
+  ANNOUNCE();
+  assert(mode);
+  return (mode_is_int(mode) || mode_is_float(mode));
 }
 
-INLINE int
+int
 mode_is_data (ir_mode *mode)
 {
-  int res;
-  modecode code;
-
-  assert(mode && "no mode given");
-  code = get_mode_modecode (mode);
-  if (mode_is_num (mode) ||
-      code == irm_C || code == irm_U || code == irm_P) {
-    res = 1;
-  }
-  else {
-    res = 0;
-  }
-  return res;
+  ANNOUNCE();
+  assert(mode);
+  return (mode_is_num(mode) || get_mode_sort(mode) == character || get_mode_sort(mode) == reference);
 }
 
 int
 mode_is_datab (ir_mode *mode)
 {
-  int res;
-  modecode code;
-
-  assert(mode && "no mode given");
-  code = get_mode_modecode (mode);
-  if (mode_is_data (mode) || code == irm_b ) {
-    res = 1;
-  }
-  else {
-    res = 0;
-  }
-  return res;
+  ANNOUNCE();
+  assert(mode);
+  return (mode_is_data(mode) || get_mode_sort(mode) == internal_boolean);
 }
 
 int
 mode_is_dataM (ir_mode *mode)
 {
-  int res;
-  modecode code;
-
-  assert(mode && "no mode given");
-  code = get_mode_modecode (mode);
-  if (mode_is_data (mode) || code == irm_M) {
-    res = 1;
-  }
-  else {
-    res = 0;
-  }
-  return res;
+  ANNOUNCE();
+  assert(mode);
+  return (mode_is_data(mode) || get_mode_modecode(mode) == irm_M);
 }
-
+#ifdef MODE_ACCESS_DEFINES
+#  define mode_is_signed(mode) (mode)->sign
+#  define mode_is_float(mode) ((mode)->sort == float_number)
+#  define mode_is_int(mode) ((mode)->sort == int_number)
+#  define mode_is_num(mode) (((mode)->sort == float_number) || ((mode)->sort == int_number))
+#  define mode_is_data(mode) (((mode)->sort == float_number) || ((mode)->sort == int_number) || ((mode)->sort == character) || ((mode)->sort == reference))
+#  define mode_is_datab(mode) (((mode)->sort == float_number) || ((mode)->sort == int_number) || ((mode)->sort == character) || ((mode)->sort == reference) || ((mode)->sort == internal_boolean))
+#  define mode_is_dataM(mode) (((mode)->sort == float_number) || ((mode)->sort == int_number) || ((mode)->sort == character) || ((mode)->sort == reference) || ((mode)->code == irm_M))
+#endif
 /* Returns true if sm can be converted to lm without loss. */
 bool
-smaller_mode(ir_mode *sm, ir_mode *lm) {
-  if ((mode_is_int(sm) && mode_is_int(lm)) &&
-      get_mode_modecode(sm) <= get_mode_modecode(lm))
-    return true;
-  if ((mode_is_float(sm) && mode_is_float(lm)) &&
-      get_mode_modecode(sm) <= get_mode_modecode(lm))
-    return true;
-  return(false);
+smaller_mode(ir_mode *sm, ir_mode *lm)
+{
+  ANNOUNCE();
+  assert(sm);
+  assert(lm);
+
+  if (sm == lm) return 1;
+
+  switch(get_mode_sort(sm))
+  {
+    case int_number:
+      switch(get_mode_sort(lm))
+      {
+        case int_number:
+          /* integers are convertable if
+           *   - both have the same sign and lm is the larger one
+           *   - lm is the signed one and is at least two bits larger
+           *     (one for the sign, one for the highest bit of sm)
+           */
+          if (mode_is_signed(sm))
+          {
+            if ( mode_is_signed(lm) && (get_mode_size(lm) > get_mode_size(sm)) )
+              return 1;
+          }
+          else if (mode_is_signed(lm))
+          {
+            if (get_mode_size(lm) > get_mode_size(sm) + 1)
+              return 1;
+          }
+          else if (get_mode_size(lm) > get_mode_size(sm))
+          {
+            return 1;
+          }
+          break;
+
+        case float_number:
+          /* int to float works if the float is large enough */
+          return 0;
+
+        default:
+          break;
+      }
+      break;
+
+    case float_number:
+      /* XXX currently only the three standard 32,64,80 bit floats
+       * are supported which can safely be converted */
+      if ( (get_mode_sort(lm) == float_number)
+           && (get_mode_size(lm) > get_mode_size(sm)) )
+         return 1;
+      break;
+
+    case reference:
+       /* do exist machines out there with different pointer lenghts ?*/
+      return 0;
+
+    default:
+      break;
+  }
+
+  /* else */
+  return 0;
+}
+
+/** ** initialization ** **/
+void
+init_mode (void)
+{
+  ANNOUNCE();
+  /* init flexible array */
+  modes = NEW_ARR_F(ir_mode, irm_max);
+  modes_min = NEW_ARR_F(tarval*, irm_max);
+  modes_max = NEW_ARR_F(tarval*, irm_max);
+  modes_null = NEW_ARR_F(tarval*, irm_max);
+  modes_one = NEW_ARR_F(tarval*, irm_max);
+
+  /* initialize predefined modes */
+  /* Basic Block */
+  mode_BB = &modes[irm_BB];
+  mode_BB->name = id_from_str("BB", 2);
+  mode_BB->code = irm_BB;
+  mode_BB->sort = auxiliary;
+  mode_BB->sign = 0;
+
+  /* eXecution */
+  mode_X = &modes[irm_X];
+  mode_X->name = id_from_str("X", 1);
+  mode_X->code = irm_X;
+  mode_X->sort = auxiliary;
+  mode_X->sign = 0;
+
+  /* Memory */
+  mode_M = &modes[irm_M];
+  mode_M->name = id_from_str("M", 1);
+  mode_M->code = irm_M;
+  mode_M->sort = auxiliary;
+  mode_M->sign = 0;
+
+  /* Tuple */
+  mode_T = &modes[irm_T];
+  mode_T->name = id_from_str("T", 1);
+  mode_T->code = irm_T;
+  mode_T->sign = 0;
+
+  /* boolean */
+  mode_b = &modes[irm_b];
+  mode_b->name = id_from_str("b", 1);
+  mode_b->code = irm_b;
+  mode_b->sort = internal_boolean;
+  mode_b->sign = 0;
+
+  /* float */
+  mode_F = &modes[irm_F];
+  mode_F->name = id_from_str("F", 1);
+  mode_F->code = irm_F;
+  mode_F->sort = float_number;
+  mode_F->sign = 1;
+  mode_F->align = 32;
+  mode_F->size = 32;
+
+  set_mode_values(mode_F);
+
+  /* double */
+  mode_D = &modes[irm_D];
+  mode_D->name = id_from_str("D", 1);
+  mode_D->code = irm_D;
+  mode_D->sort = float_number;
+  mode_D->sign = 1;
+  mode_D->align = 32;
+  mode_D->size = 64;
+
+  set_mode_values(mode_D);
+
+  /* extended */
+  mode_E = &modes[irm_E];
+  mode_E->name = id_from_str("E", 1);
+  mode_E->code = irm_E;
+  mode_E->sort = float_number;
+  mode_E->sign = 1;
+  mode_E->align = 32;
+  mode_E->size = 80;
+
+  set_mode_values(mode_E);
+
+  /* signed byte */
+  mode_Bs = &modes[irm_Bs];
+  mode_Bs->name = id_from_str("Bs", 2);
+  mode_Bs->code = irm_Bs;
+  mode_Bs->sort = int_number;
+  mode_Bs->sign = 1;
+  mode_Bs->align = 8;
+  mode_Bs->size = 8;
+
+  set_mode_values(mode_Bs);
+
+  /* unsigned byte */
+  mode_Bu = &modes[irm_Bu];
+  mode_Bu->name = id_from_str("Bu", 2);
+  mode_Bu->code = irm_Bu;
+  mode_Bu->sort = int_number;
+  mode_Bu->sign = 0;
+  mode_Bu->align = 8;
+  mode_Bu->size = 8;
+
+  set_mode_values(mode_Bu);
+
+  /* signed short integer */
+  mode_Hs = &modes[irm_Hs];
+  mode_Hs->name = id_from_str("Hs", 2);
+  mode_Hs->code = irm_Hs;
+  mode_Hs->sort = int_number;
+  mode_Hs->sign = 1;
+  mode_Hs->align = 16;
+  mode_Hs->size = 16;
+
+  set_mode_values(mode_Hs);
+
+  /* unsigned short integer */
+  mode_Hu = &modes[irm_Hu];
+  mode_Hu->name = id_from_str("Hu", 2);
+  mode_Hu->code = irm_Hu;
+  mode_Hu->sort = int_number;
+  mode_Hu->sign = 0;
+  mode_Hu->align = 16;
+  mode_Hu->size = 16;
+
+  set_mode_values(mode_Hu);
+
+  /* signed integer */
+  mode_Is = &modes[irm_Is];
+  mode_Is->name = id_from_str("Is", 2);
+  mode_Is->code = irm_Is;
+  mode_Is->sort = int_number;
+  mode_Is->sign = 1;
+  mode_Is->align = 32;
+  mode_Is->size = 32;
+
+  set_mode_values(mode_Is);
+
+  /* unsigned integer */
+  mode_Iu = &modes[irm_Iu];
+  mode_Iu->name = id_from_str("Iu", 2);
+  mode_Iu->code = irm_Iu;
+  mode_Iu->sort = int_number;
+  mode_Iu->sign = 0;
+  mode_Iu->align = 32;
+  mode_Iu->size = 32;
+
+  set_mode_values(mode_Iu);
+
+  /* signed long integer */
+  mode_Ls = &modes[irm_Ls];
+  mode_Ls->name = id_from_str("Ls", 2);
+  mode_Ls->code = irm_Ls;
+  mode_Ls->sort = int_number;
+  mode_Ls->sign = 1;
+  mode_Ls->align = 32;
+  mode_Ls->size = 64;
+
+  set_mode_values(mode_Ls);
+
+  /* unsigned long integer */
+  mode_Lu = &modes[irm_Lu];
+  mode_Lu->name = id_from_str("Lu", 2);
+  mode_Lu->code = irm_Lu;
+  mode_Lu->sort = int_number;
+  mode_Lu->sign = 0;
+  mode_Lu->align = 32;
+  mode_Lu->size = 64;
+
+  set_mode_values(mode_Lu);
+
+  /* Character */
+  mode_C = &modes[irm_C];
+  mode_C->name = id_from_str("C", 1);
+  mode_C->code = irm_C;
+  mode_C->sort = character;
+  mode_C->sign = 0;
+  mode_C->align = 8;
+  mode_C->size = 8;
+
+  set_mode_values(mode_C);
+
+  /* Unicode character */
+  mode_U = &modes[irm_U];
+  mode_U->name = id_from_str("U", 1);
+  mode_U->code = irm_U;
+  mode_U->sort = character;
+  mode_U->sign = 0;
+  mode_U->align = 16;
+  mode_U->size = 16;
+
+  set_mode_values(mode_U);
+
+  /* pointer */
+  mode_P = &modes[irm_P];
+  mode_P->name = id_from_str("P", 1);
+  mode_P->code = irm_P;
+  mode_P->sort = reference;
+  mode_P->sign = 0;
+  mode_P->align = 32;
+  mode_P->size = 32;
+
+  num_modes = irm_max;
 }

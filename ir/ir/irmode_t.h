@@ -10,22 +10,16 @@
 
 # include "irmode.h"
 
-/**
- * The type of a mode
- */
+/** this struct is supposed to completely define a mode **/
 struct ir_mode {
-  modecode code;
-  ident *name;            /**< Name of this mode */
-  int    size;            /**< size of the mode in Bytes. */
-  int    ld_align;        /**< ld means log2 */
-  tarval *min;            /**< largest value to be represented by this mode */
-  tarval *max;            /**< smallest value to be represented by this mode */
-  tarval *null;           /**< Representation of zero in this mode */
-  unsigned fsigned:1;     /**< signedness of this mode */
-  unsigned ffloat:1;      /**< true if this is a float */
+  modecode code;          /* unambiguous identifier of a mode */
+  ident *name;            /* Name ident of this mode */
+  mode_sort sort;         /* coarse classification of this mode:
+                             int, float, reference ...
+                             (see irmode.h) */
+  int    size;            /* size of the mode in Bits. */
+  int    align;           /* byte alignment */
+  unsigned sign:1;        /* signedness of this mode */
 };
-
-
-void init_mode (void);
 
 #endif
