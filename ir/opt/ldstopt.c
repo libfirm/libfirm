@@ -192,84 +192,100 @@ static int optimize_load(ir_node *load)
   ldst_info_t *info = get_irn_link(load);
   ir_mode *load_mode = get_Load_mode(load);
   ir_node *pred, *mem, *ptr;
-  int res = 1;
+  int res = 0;
 
+  /* do NOT touch volatile loads for now */
   if (get_Load_volatility(load) == volatility_is_volatile)
     return 0;
 
-  /*
-   * BEWARE: one might think that checking the modes is useless, because
-   * if the pointers are identical, they refer to the same object.
-   * This is only true in strong typed languages, not is C were the following
-   * is possible a = *(type1 *)p; b = *(type2 *)p ...
-   */
-
-  ptr  = get_Load_ptr(load);
-  mem  = get_Load_mem(load);
-  pred = skip_Proj(mem);
-
   if (! info->projs[pn_Load_res] && ! info->projs[pn_Load_X_except]) {
     /* a Load which value is neither used nor exception checked, remove it */
+    mem  = get_Load_mem(load);
     exchange(info->projs[pn_Load_M], mem);
-    res = 1;
+
+    return 1;
   }
-  else if (get_irn_op(pred) == op_Store && get_Store_ptr(pred) == ptr &&
-	   get_irn_mode(get_Store_value(pred)) == load_mode) {
+
+  /* the address of the load to be optimized */
+  ptr = get_Load_ptr(load);
+
+  /* the mem of the load. Must still be returned after optimization */
+  mem  = get_Load_mem(load);
+
+  /* follow the memory chain as long as there are only Loads */
+  for (pred = load; res == 0;) {
+
+    /* follow only load chains */
+    if (get_irn_op(pred) != op_Load)
+      break;
+
     /*
-     * a load immediately after a store -- a read after write.
-     * We may remove the Load, if it does not have an exception handler
-     * OR they are in the same block. In the latter case the Load cannot
-     * throw an exception when the previous Store was quiet.
+     * BEWARE: one might think that checking the modes is useless, because
+     * if the pointers are identical, they refer to the same object.
+     * This is only true in strong typed languages, not is C were the following
+     * is possible a = *(type1 *)p; b = *(type2 *)p ...
      */
-    if (! info->projs[pn_Load_X_except] || get_nodes_block(load) == get_nodes_block(pred)) {
-      DBG_OPT_RAW(pred, load);
-      exchange( info->projs[pn_Load_res], get_Store_value(pred) );
 
-      if (info->projs[pn_Load_M])
-	exchange(info->projs[pn_Load_M], mem);
+    pred = skip_Proj(get_Load_mem(pred));
 
-      /* no exception */
-      if (info->projs[pn_Load_X_except])
-	exchange( info->projs[pn_Load_X_except], new_Bad());
-      res = 1;
+    if (get_irn_op(pred) == op_Store && get_Store_ptr(pred) == ptr &&
+             get_irn_mode(get_Store_value(pred)) == load_mode) {
+      /*
+       * a load immediately after a store -- a read after write.
+       * We may remove the Load, if it does not have an exception handler
+       * OR they are in the same block. In the latter case the Load cannot
+       * throw an exception when the previous Store was quiet.
+       */
+      if (! info->projs[pn_Load_X_except] || get_nodes_block(load) == get_nodes_block(pred)) {
+        DBG_OPT_RAW(pred, load);
+        exchange( info->projs[pn_Load_res], get_Store_value(pred) );
+
+        if (info->projs[pn_Load_M])
+          exchange(info->projs[pn_Load_M], mem);
+
+        /* no exception */
+        if (info->projs[pn_Load_X_except])
+          exchange( info->projs[pn_Load_X_except], new_Bad());
+        res = 1;
+      }
     }
-  }
-  else if (get_irn_op(pred) == op_Load && get_Load_ptr(pred) == ptr &&
-	   get_Load_mode(pred) == load_mode) {
-    /*
-     * a load immediately after a load -- a read after read.
-     * We may remove the second Load, if it does not have an exception handler
-     * OR they are in the same block. In the later case the Load cannot
-     * throw an exception when the previous Load was quiet.
-     */
-    if (! info->projs[pn_Load_X_except] || get_nodes_block(load) == get_nodes_block(pred)) {
-      ldst_info_t *pred_info = get_irn_link(pred);
+    else if (get_irn_op(pred) == op_Load && get_Load_ptr(pred) == ptr &&
+             get_Load_mode(pred) == load_mode) {
+      /*
+       * a load after a load -- a read after read.
+       * We may remove the second Load, if it does not have an exception handler
+       * OR they are in the same block. In the later case the Load cannot
+       * throw an exception when the previous Load was quiet.
+       */
+      if (! info->projs[pn_Load_X_except] || get_nodes_block(load) == get_nodes_block(pred)) {
+        ldst_info_t *pred_info = get_irn_link(pred);
 
-      DBG_OPT_RAR(pred, load);
+        DBG_OPT_RAR(pred, load);
 
-      if (pred_info->projs[pn_Load_res]) {
-	/* we need a data proj from the previous load for this optimization */
-	exchange( info->projs[pn_Load_res], pred_info->projs[pn_Load_res] );
-	if (info->projs[pn_Load_M])
-	  exchange(info->projs[pn_Load_M], mem);
+        if (pred_info->projs[pn_Load_res]) {
+          /* we need a data proj from the previous load for this optimization */
+          exchange( info->projs[pn_Load_res], pred_info->projs[pn_Load_res] );
+          if (info->projs[pn_Load_M])
+            exchange(info->projs[pn_Load_M], mem);
+        }
+        else {
+          if (info->projs[pn_Load_res]) {
+            set_Proj_pred(info->projs[pn_Load_res], pred);
+            set_nodes_block(info->projs[pn_Load_res], get_nodes_block(pred));
+          }
+          if (info->projs[pn_Load_M]) {
+            /* Actually, this if should not be necessary.  Construct the Loads
+               properly!!! */
+            exchange(info->projs[pn_Load_M], mem);
+          }
+        }
+
+        /* no exception */
+        if (info->projs[pn_Load_X_except])
+          exchange(info->projs[pn_Load_X_except], new_Bad());
+
+        res = 1;
       }
-      else {
-	if (info->projs[pn_Load_res]) {
-	  set_Proj_pred(info->projs[pn_Load_res], pred);
-	  set_nodes_block(info->projs[pn_Load_res], get_nodes_block(pred));
-	}
-	if (info->projs[pn_Load_M]) {
-	  /* Actually, this if should not be necessary.  Construct the Loads
-	     properly!!! */
-	  exchange(info->projs[pn_Load_M], mem);
-	}
-      }
-
-      /* no exception */
-      if (info->projs[pn_Load_X_except])
-	exchange(info->projs[pn_Load_X_except], new_Bad());
-
-      res = 1;
     }
   }
   return res;
