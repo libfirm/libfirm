@@ -16,21 +16,15 @@ all: empty const_eval_example 					\
 
 clean:
 	rm -f 					\
-	empty.o empty 				\
-	const_eval_example.o const_eval_example \
-	if_example.o if_example 		\
-	if_else_example.o if_else_example 	\
-	if_while_example.o if_while_example 	\
-	cond_example.o cond_example 		\
-	call_str_example.o call_str_example 	\
-	memory_example.o memory_example 	\
-	array-stack_example.o array-stack_example	\
-	array-heap_example.o array-heap_example	\
-	oo_program_example.o oo_program_example	\
-	irr_cf_example.o irr_cf_example		\
-	irr_loop_example.o irr_loop_example	\
-	dead_block_example.o dead_block_example	\
-	global_var_example *.vcg core
+	empty const_eval_example 		\
+	if_example if_else_example 		\
+	if_while_example cond_example 		\
+	call_str_example memory_example 	\
+	array-stack_example array-heap_example	\
+	oo_program_example irr_cf_example	\
+	irr_loop_example dead_block_example	\
+	global_var_example			\
+	*.o *.vcg core
 
 realclean:	clean
 

@@ -17,47 +17,49 @@ int optimized = 1;
 
 /* set the flags with set_flagname, get the flag with get_flagname */
 
-void
+inline void
 set_opt_cse (int value)
 {
   opt_cse = value;
 }
 
-int
+inline int
 get_opt_cse (void)
 {
   return opt_cse;
 }
 
-void
+inline void
 set_opt_constant_folding (int value)
 {
   opt_constant_folding=value;
 }
 
-int
+inline int
 get_opt_constant_folding (void)
 {
   return opt_constant_folding;
 }
 
-void set_opt_dead_node_elimination (int value)
+inline void
+set_opt_dead_node_elimination (int value)
 {
-  opt_dead_node_elimination=value;
+  opt_dead_node_elimination = value;
 }
 
-int  get_opt_dead_node_elimination (void)
+inline int
+get_opt_dead_node_elimination (void)
 {
   return opt_dead_node_elimination;
 }
 
-void
+inline void
 set_optimize (int value)
 {
   optimized = value;
 }
 
-int
+inline int
 get_optimize (void)
 {
   return optimized;

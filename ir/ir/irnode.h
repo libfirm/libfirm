@@ -17,6 +17,16 @@
 # include "tv.h"
 # include "type.h"
 
+
+/** Global flags.  Set these by autoconf?? **/
+/* If this is defined debuging aids are created, e.g. a field in
+   ir_node uniquely numbering the nodes. */
+/* @@@???? this is also set in firm.h */
+#define DEBUG_libfirm
+#ifdef DEBUG_libfirm
+#include "irprog.h"
+#endif
+
 /* projection numbers of compare. */
 enum {
   False,		/* false */
@@ -146,6 +156,10 @@ struct ir_node {
                               used while construction to link Phi0 nodes and
 			      during optimization to link to nodes that
 			      shall replace a node. */
+#ifdef DEBUG_libfirm
+  int node_nr;             /* a unique node number for each node to make output
+			      readable. */
+#endif
   attr attr;               /* attribute of this node. Depends on opcode. */
                            /* Must be last field of struct ir_node. */
 };
@@ -188,19 +202,31 @@ inline ir_node     **get_irn_in            (ir_node *node);
    To iterate over the operands iterate from 0 to i < get_irn_arity(),
    to iterate includind the Block predecessor iterate from i = -1 to
    i < get_irn_arity. */
+/* Access predecessor n */
 inline ir_node      *get_irn_n             (ir_node *node, int n);
 inline void          set_irn_n             (ir_node *node, int n, ir_node *in);
+/* Get the mode struct. */
 inline ir_mode      *get_irn_mode          (ir_node *node);
+/* Get the mode-enum modecode */
 inline modecode      get_irn_modecode      (ir_node *node);
-inline void          set_irn_op            (ir_node *node, ir_op *op);
+/* Get the ident for a string representation of the mode */
+inline ident        *get_irn_modename      (ir_node *node);
+/* Access the opcode struct of the node */
 inline ir_op        *get_irn_op            (ir_node *node);
+inline void          set_irn_op            (ir_node *node, ir_op *op);
+/* Get the opcode-enum of the node */
+inline opcode        get_irn_opcode        (ir_node *node);
+/* Get the ident for a string representation of the opcode */
+inline ident        *get_irn_opname        (ir_node *node);
 inline void          set_irn_visited (ir_node *node, unsigned long visited);
 inline unsigned long get_irn_visited (ir_node *node);
-/* should be private to the library: */
-inline opcode        get_irn_opcode        (ir_node *node);
 inline void          set_irn_link          (ir_node *node, ir_node *link);
 inline ir_node      *get_irn_link          (ir_node *node);
 
+#ifdef DEBUG_libfirm
+/* Outputs a unique number for this node */
+inline long get_irn_node_nr(ir_node *node);
+#endif
 
 /** access attributes directly **/
 inline tarval       *get_irn_const_attr    (ir_node *node);
@@ -264,15 +290,6 @@ inline void      set_Sel_ptr (ir_node *node, ir_node *ptr);
 inline ir_node **get_Sel_index_arr (ir_node *node);
 inline int       get_Sel_n_index (ir_node *node);
 /*inline void     set_Sel_n_index (ir_node *node, int n_index); */
-
-
-inline ir_node  *get_Call_mem (ir_node *node);
-inline void      set_Call_mem (ir_node *node, ir_node *mem);
-inline ir_node  *get_Call_ptr (ir_node *node);
-inline void      set_Call_ptr (ir_node *node, ir_node *ptr);
-inline ir_node **get_Call_param_arr (ir_node *node);
-inline int       get_Call_arity (ir_node *node);
-
 inline ir_node *get_Sel_index (ir_node *node, int pos);
 inline void     set_Sel_index (ir_node *node, int pos, ir_node *index);
 inline entity  *get_Sel_entity (ir_node *node); /* entity to select */
@@ -284,6 +301,7 @@ inline ir_node *get_Call_mem (ir_node *node);
 inline void     set_Call_mem (ir_node *node, ir_node *mem);
 inline ir_node *get_Call_ptr (ir_node *node);
 inline void     set_Call_ptr (ir_node *node, ir_node *ptr);
+inline ir_node **get_Call_param_arr (ir_node *node);
 inline int      get_Call_arity (ir_node *node);
 /* inline void     set_Call_arity (ir_node *node, ir_node *arity); */
 inline ir_node  *get_Call_param (ir_node *node, int pos);
@@ -477,5 +495,19 @@ int is_cfop(ir_node *node);
 /* Returns true if the operation can change the control flow because
    of an exception. */
 int is_fragile_op(ir_node *node);
+
+
+
+/* Makros for debugging the libfirm */
+#ifdef DEBUG_libfirm
+#include "ident.h"
+
+#define DDMSG        printf("%s(l.%i)\n", __FUNCTION__, __LINE__)
+#define DDMSG1(X)    printf("%s(l.%i) %s\n", __FUNCTION__, __LINE__,         \
+                            ID_TO_STR(get_irn_opname(X)))
+#define DDMSG2(X)    printf("%s(l.%i) %s: %ld\n", __FUNCTION__, __LINE__,     \
+                     ID_TO_STR(get_irn_opname(X)), get_irn_node_nr(X))
+
+#endif
 
 # endif /* _IRNODE_H_ */

@@ -3,7 +3,7 @@
 **
 ** Author: Christian Schaefer
 **
-**  dead node elemination
+**  dead node elimination
 **  walks one time through the whole graph and copies it into another graph,
 **  so unreachable nodes will be lost.
 */
@@ -17,6 +17,6 @@
 void local_optimize_graph (ir_graph *irg);
 
 /* Performs dead node elimination by copying the ir graph to a new obstack. */
-void dead_node_elemination(ir_graph *irg);
+void dead_node_elimination(ir_graph *irg);
 
 # endif /* _IRGOPT_H_ */

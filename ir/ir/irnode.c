@@ -76,6 +76,11 @@ new_ir_node (ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mode,
     memcpy (&res->in[1], in, sizeof (ir_node *) * arity);
   }
   res->in[0] = block;
+
+#ifdef DEBUG_libfirm
+  res->node_nr = get_irp_new_node_nr();
+#endif
+
   return res;
 }
 
@@ -92,7 +97,7 @@ ir_node_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
     return printed;
   }
 
-  XPF1 ("%I", get_irn_op(np)->name);
+  XPF1 ("%I", get_irn_opname(np));
 
   switch (get_irn_opcode (np)) {	/* node label */
   case iro_Const:
@@ -194,6 +199,14 @@ get_irn_modecode (ir_node *node)
   return node->mode->code;
 }
 
+
+inline ident *
+get_irn_modename (ir_node *node)
+{
+  assert(node);
+  return node->mode->name;
+}
+
 inline ir_op *
 get_irn_op (ir_node *node)
 {
@@ -209,11 +222,18 @@ set_irn_op (ir_node *node, ir_op *op)
   node->op = op;
 }
 
-inline void
-set_irn_visited (ir_node *node, unsigned long visited)
+inline opcode
+get_irn_opcode (ir_node *node)
 {
   assert (node);
-  node->visited = visited;
+  return node->op->code;
+}
+
+inline ident *
+get_irn_opname (ir_node *node)
+{
+  assert(node);
+  return node->op->name;
 }
 
 inline unsigned long
@@ -223,13 +243,12 @@ get_irn_visited (ir_node *node)
   return node->visited;
 }
 
-inline opcode
-get_irn_opcode (ir_node *node)
+inline void
+set_irn_visited (ir_node *node, unsigned long visited)
 {
   assert (node);
-  return node->op->code;
+  node->visited = visited;
 }
-
 inline void
 set_irn_link (ir_node *node, ir_node *link) {
   assert (node);
@@ -241,6 +260,15 @@ get_irn_link (ir_node *node) {
   assert (node);
   return node->link;
 }
+
+#ifdef DEBUG_libfirm
+/* Outputs a unique number for this node */
+inline long
+get_irn_node_nr(ir_node *node) {
+  assert(node);
+  return node->node_nr;
+}
+#endif
 
 inline tarval *
 get_irn_const_attr (ir_node *node)

@@ -41,6 +41,7 @@ new_r_Block (ir_graph *irg,  int arity, ir_node **in)
 
   res = new_ir_node (current_ir_graph, NULL, op_Block, mode_R, arity, in);
 
+  irn_vrfy (res);
   return res;
 }
 
@@ -710,7 +711,7 @@ new_r_Sync (ir_graph *irg, ir_node *block, int arity, ir_node **in)
 }
 
 ir_node *
-new_r_Bad (ir_node *block)
+new_r_Bad ()
 {
   return current_ir_graph->bad;
 }

@@ -32,11 +32,14 @@ main(void)
 
   printf("creating an IR graph: CONST_EVAL_EXAMPLE...\n");
 
+
   init_firm ();
+
 
   /* Try both optimizations: */
   set_opt_constant_folding(1);
   set_opt_cse(1);
+  set_opt_dead_node_elimination (0);
 
   owner = new_type_class (id_from_str ("CONST_EVAL_EXAMPLE", 18));
   ent = new_entity ((type *)owner, id_from_str ("main", 4), NULL);
@@ -56,15 +59,13 @@ main(void)
   c = new_Proj(c, mode_i, 2);
   */
 
-
-  /*
   c = new_Add (new_Const (mode_i, tarval_from_long (mode_i, 5)),
 	       new_Const (mode_i, tarval_from_long (mode_i, 7)),
 	       mode_i);
   d = new_Add (new_Const (mode_i, tarval_from_long (mode_i, 7)),
 	       new_Const (mode_i, tarval_from_long (mode_i, 5)),
 	       mode_i);
-  */
+
   {
      ir_node *in[2];
      in[0] = c;
@@ -77,6 +78,10 @@ main(void)
   mature_block (irg->end_block);
 
   /* verify the graph */
+  irg_vrfy(irg);
+
+  dead_node_elimination(irg);
+
   irg_vrfy(irg);
 
   printf("\nDone building the graph.  Dumping it.\n");

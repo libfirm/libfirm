@@ -30,7 +30,10 @@ typedef struct ir_prog {
 				      fields and procedures.  Does this work?
 				      Better name??? @@@ */
   /*struct obstack *obst;		   * @@@ Should we place all types and entities themselves
-				      on an obstack, too?  */
+    on an obstack, too?  */
+#ifdef DEBUG_libfirm
+  long max_node_nr;
+#endif
 } ir_prog;
 
 /* A variable from where everything in the ir can be accessed. */
@@ -51,5 +54,9 @@ type_class *get_glob_type(void);
 void      add_irp_irg(ir_graph *irg);
 /* Adds type to the list of types in irp. */
 void      add_irp_type(type *typ);
+
+
+/* Returns a new, unique number to number nodes or the like. */
+int get_irp_new_node_nr();
 
 #endif /* ifndef _IRPROG_H_ */

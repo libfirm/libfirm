@@ -251,10 +251,11 @@
   * A less comfortable interface where all predecessors except the block
     an operation belongs to need to be specified.  SSA must be constructed
     by hand.  (new_<Node> constructors and switch_block()).  This interface
-    is called "block oriented".
+    is called "block oriented".  It automatically calles the local optimizations
+    for each new node.
   * An even less comfortable interface where the block needs to be specified
     explicitly.  This is called the "raw" interface. (new_r_<Node>
-    constructors).
+    constructors).  These nodes are not optimized.
 
   To use the functionality of the comfortable interface correctly the Front
   End needs to follow certain protocols.  This is explained in the following.
@@ -1171,7 +1172,7 @@ ir_node *new_r_Tuple  (ir_graph *irg, ir_node *block,
 		       int arity, ir_node **in);
 ir_node *new_r_Id     (ir_graph *irg, ir_node *block,
 		       ir_node *val, ir_mode *mode);
-ir_node *new_r_Bad    (ir_node *block);
+ir_node *new_r_Bad    ();
 
 
 /*************************************************************************/

@@ -53,3 +53,9 @@ void      add_irp_type(type *typ) {
   assert(irp);
   ARR_APP1 (type *, irp->types, typ);
 }
+
+int       get_irp_new_node_nr() {
+  assert(irp);
+  irp->max_node_nr = irp->max_node_nr + 1;
+  return irp->max_node_nr - 1;
+}

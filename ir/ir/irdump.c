@@ -33,6 +33,121 @@ static FILE *F;
 /* routines to dump information about a single node                */
 /*******************************************************************/
 
+
+
+inline void
+dump_node_opcode (ir_node *n)
+{
+  /* Const */
+  if (n->op->code == iro_Const) {
+    xfprintf (F, "%v", n->attr.con);
+  /* SymConst */
+  } else if (n->op->code == iro_SymConst) {
+    if (get_SymConst_kind(n) == linkage_ptr_info) {
+      xfprintf (F, "%I", get_SymConst_ptrinfo(n));
+    } else {
+      assert(get_kind(get_SymConst_type(n)) == k_type_class);
+      assert(get_class_ident((type_class *)get_SymConst_type(n)));
+      xfprintf (F, "%s ", id_to_str(get_class_ident((type_class *)get_SymConst_type(n))));
+      if (get_SymConst_kind == type_tag)
+	xfprintf (F, "tag");
+      else
+	xfprintf (F, "size");
+    }
+  /* all others */
+  } else {
+    xfprintf (F, "%I", n->op->name);
+  }
+}
+
+inline void
+dump_node_mode (ir_node *n)
+{
+  switch (n->op->code) {
+  case iro_Phi:
+  case iro_Const:
+  case iro_Id:
+  case iro_Proj:
+  case iro_Conv:
+  case iro_Tuple:
+  case iro_Add:
+  case iro_Sub:
+  case iro_Mul:
+  case iro_And:
+  case iro_Or:
+  case iro_Eor:
+  case iro_Shl:
+  case iro_Shr:
+  case iro_Abs:
+  case iro_Cmp:
+    xfprintf (F, "%I", n->mode->name);
+    break;
+  default:
+  }
+}
+
+inline void
+dump_node_nodeattr (ir_node *n)
+{
+  switch (n->op->code) {
+  case iro_Proj:
+    if (n->in[1]->op->code == iro_Cmp) {
+      xfprintf (F, "%s", get_pnc_string(n->attr.proj));
+    } else {
+      xfprintf (F, "%ld", n->attr.proj);
+    }
+    break;
+  case iro_Sel:
+    assert(n->attr.s.ent->kind == k_entity);
+    xfprintf (F, "%s", id_to_str(n->attr.s.ent->name));
+    /*  xdoesn't work for some reason.
+	fprintf (F, "\"%I %I\" ", n->op->name, n->attr.s.ent); */
+    break;
+  default:
+  } /* end switch */
+}
+
+inline void
+dump_node_vcgattr (ir_node *n)
+{
+  switch (n->op->code) {
+  case iro_Start:
+  case iro_End:
+    xfprintf (F, "color: blue");
+    break;
+  case iro_Block:
+    xfprintf (F, "color: lightyellow");
+    break;
+  case iro_Phi:
+    xfprintf (F, "color: green");
+    break;
+  case iro_Const:
+  case iro_Proj:
+  case iro_Tuple:
+    xfprintf (F, "color: yellow");
+    break;
+  default:
+    xfprintf (F, DEFAULT_NODE_ATTR);
+  }
+}
+
+void
+dump_node (ir_node *n) {
+
+  /* dump this node */
+  xfprintf (F, "node: {title: \"%p\" label: \"", n);
+  dump_node_opcode(n);
+  dump_node_mode (n);
+  xfprintf (F, " ");
+  dump_node_nodeattr(n);
+#ifdef DEBUG_libfirm
+  xfprintf (F, " %ld", get_irn_node_nr(n));
+#endif
+  xfprintf (F, "\" ");
+  dump_node_vcgattr(n);
+  xfprintf (F, "}\n");
+}
+
 void
 dump_ir_node (ir_node *n)
 {
@@ -411,15 +526,13 @@ vcg_close () {
   fclose (F);           /* close vcg file */
 }
 
-
-
 /************************************************************************/
 /* routines to dump a graph, blocks as conventional nodes.              */
 /************************************************************************/
 
 void
 dump_whole_node (ir_node *n, void* env) {
-  dump_ir_node(n);
+  dump_node(n);
   dump_ir_block_edge(n);
   dump_ir_data_edges(n);
 }
@@ -444,11 +557,10 @@ dump_ir_blocks_nodes (ir_node *n, void *env) {
   ir_node *block = (ir_node *)env;
 
   if (is_no_Block(n) && get_nodes_Block(n) == block) {
-    dump_ir_node(n);
+    dump_node(n);
     dump_ir_data_edges(n);
   }
 }
-
 
 void
 dump_ir_block (ir_node *block, void *env) {
@@ -456,8 +568,13 @@ dump_ir_block (ir_node *block, void *env) {
 
   if (get_irn_opcode(block) == iro_Block) {
     /* This is a block. So dump the vcg information to make a block. */
-    xfprintf(F, "graph: { title: \"%p\" status:clustered color:lightyellow \n",
-	     block);
+    xfprintf(F, "graph: { title: \"%p\"  label: \"", block);
+#ifdef DEBUG_libfirm
+    xfprintf (F, "%ld", get_irn_node_nr(block));
+#elif
+    xfprintf (F, "%I", block->op->name);
+#endif
+    xfprintf(F, "\" status:clustered color:lightyellow \n");
     /* dump the blocks edges */
     dump_ir_data_edges(block);
 
