@@ -30,13 +30,8 @@ static void pto_init_proj_load (ir_node *proj, ir_node *load)
 {
   assert ((mode_P == get_irn_mode (proj)) && "wrong proj(load)");
 
-# ifdef PTO_DUMMY
-  ir_node *ptr = get_Load_ptr (load);
-  entity *ent = get_ptr_ent (ptr);
-  type *tp = get_entity_type (ent);
-# endif /* defined PTO_DUMMY */
-
   pto_t *pto = pto_new_empty (proj);
+  pto_set_dummy (pto);
 
   DBGPRINT (1, (stdout, "%s: pto (%s[%li]) = 0x%08x\n",
                 __FUNCTION__,
@@ -55,26 +50,19 @@ static void pto_init_call (ir_node *call)
   type *meth_tp = get_entity_type (ent);
 
   if (0 == get_method_n_ress (meth_tp)) {
-    /* can't be a pointer */
+    /* no return value at all */
     return;
   }
 
   type *ret_tp  = get_method_res_type (meth_tp, 0);
 
   if (mode_P != get_type_mode (ret_tp)) {
+    /* no pointer-valued return value */
     return;
   }
 
-# ifdef PTO_DUMMY
-  ir_node *ptr = get_Call_ptr (call);
-  entity *ent = get_ptr_ent (ptr);
-  type *tp = get_entity_type (ent);
-
-  obj_desc_t *obj_desc = obj_desc_new (tp);
-  obj_desc_set_dummy (obj_desc);
-# endif /* defined PTO_DUMMY */
-
   pto_t *pto = pto_new_empty (call);
+  pto_set_dummy (pto);
 
   DBGPRINT (1, (stdout, "%s: pto (%s[%li]) = 0x%08x\n",
                 __FUNCTION__,
@@ -131,11 +119,11 @@ static void pto_init_proj (ir_node *proj)
   } break;
 
   case (iro_Load): {
-    /* Todo: ProjM (load) or ProjV(load) */
     if (mode_P == get_irn_mode (proj)) {
+    /* ProjV(load) */
       pto_init_proj_load (proj, in);
     } else {
-      /* nothing to do */
+      /* ProjM(load) --- nothing to do */
     }
   } break;
 
@@ -148,7 +136,7 @@ static void pto_init_proj (ir_node *proj)
   } break;
 
   case (iro_Raise): {
-    /* ProjM (raise) or Proj???(raise) --- TODO */
+    /* ProjX (raise) --- TODO */
   } break;
 
   case (iro_Cast): {
@@ -252,6 +240,9 @@ void pto_init_node (ir_node *node)
 
 /*
  * $Log$
+ * Revision 1.2  2004/11/08 12:33:06  liekweg
+ * initialisation; sanitize print levels, misc fixes
+ *
  * Revision 1.1  2004/11/04 14:58:59  liekweg
  * added initialisation
  *

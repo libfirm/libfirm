@@ -29,9 +29,6 @@ typedef struct obj_desc_str
 {
   obj_kind_t kind;              /* written obj_kind_obj or obj_kind_array */
   struct obj_desc_str *next;    /* link all descrs into a linked list */
-# ifdef PTO_DUMMY
-  int is_dummy;                 /* allow to filter out dummy objects */
-# endif /* defined PTO_DUMMY */
   type *tp;                     /* type of described object */
 } obj_desc_t;
 
@@ -39,9 +36,6 @@ typedef struct obj_obj_desc_str
 {
   obj_kind_t kind;              /* always written obj_kind_obj */
   struct obj_desc_str *next;    /* link all descrs into a linked list */
-# ifdef PTO_DUMMY
-  int is_dummy;                 /* allow to filter out dummy objects */
-# endif /* defined PTO_DUMMY */
   type *tp;                     /* type of described object */
   entity **fields;              /* fields of described object */
   int n_fields;                 /* number of fields */
@@ -52,9 +46,6 @@ typedef struct obj_arr_desc_str
 {
   obj_kind_t kind;              /* always written obj_kind_array */
   struct obj_desc_str *next;    /* link all descrs into a linked list */
-# ifdef PTO_DUMMY
-  int is_dummy;                 /* allow to filter out dummy objects */
-# endif /* defined PTO_DUMMY */
   type *tp;                     /* (array) type of described object */
   qset_t *val;                  /* all values of 'the' 'field' */
 } obj_arr_desc_t;
@@ -63,6 +54,7 @@ typedef struct pto_str
 {
   void *kind;                   /* always written to &pto_id */
   ir_node *node;                /* Rubbish: node for which this pto_t was constructed */
+  int is_dummy;                 /* allow to filter out dummy values */
   qset_t *objs;                 /* qset of obj_desc_t* */
 } pto_t;
 
@@ -72,15 +64,6 @@ entity *get_ptr_ent (ir_node*);
 
 /* Ctors for the pto types */
 obj_desc_t *obj_desc_new (type*);
-
-# ifdef PTO_DUMMY
-/* Mark an obj desc as a dummy */
-void obj_desc_set_dummy (obj_desc_t*);
-
-/* Say whether an obj desc is a dummy */
-int obj_desc_is_dummy (obj_desc_t*);
-# endif /* defined PTO_DUMMY */
-
 
 /* Deallocate an obj desc */
 void obj_desc_delete (obj_desc_t*);
@@ -107,6 +90,11 @@ void pto_add_name (pto_t*, obj_desc_t*);
 /* Add all the given names to the given pto. */
 void pto_add_all_names (pto_t*, qset_t*);
 
+/* Mark the given pto as a dumy */
+void pto_set_dummy (pto_t*);
+
+/* Say whether the given pto is a dummy */
+int pto_is_dummy (pto_t*);
 
 /* Find the arguments of a graph. For a method that has n args, the
   result array has 'n+1' entries, the last of which is written NULL.
@@ -123,6 +111,9 @@ qset_t *pto_lookup (obj_desc_t*, entity*);
 
 /*
   $Log$
+  Revision 1.3  2004/11/08 12:33:06  liekweg
+  initialisation; sanitize print levels, misc fixes
+
   Revision 1.2  2004/11/04 14:58:38  liekweg
   expanded pto, added initialisation, added debugging printing
 

@@ -158,17 +158,22 @@ static void find_irg_arg (ir_node *node, void *env)
 */
 static void obj_desc_print (obj_desc_t *obj)
 {
+    const char *tp_name = get_type_name (obj->tp);
+
   if (obj_kind_obj == obj->kind) {
     /* object desc */
     obj_obj_desc_t *obj_obj = (obj_obj_desc_t*) obj;
     int i;
 
     fprintf (stdout, "obj desc 0x%08x for type \"%s\"\n",
-             (int) obj, get_type_name (obj->tp));
+             (int) obj, tp_name);
 
     for (i = 0; i < obj_obj->n_fields; i ++) {
-      fprintf (stdout, " \"%s\" -> ", get_entity_name (obj_obj->fields [i]));
-      qset_print (obj_obj->vals [i], stdout);
+      if (! qset_is_empty (obj_obj->vals [i])) {
+        fprintf (stdout, " \"%s.%s\" -> ",
+                 tp_name, get_entity_name (obj_obj->fields [i]));
+        qset_print (obj_obj->vals [i], stdout);
+      }
     }
 
   } else if (obj_kind_array == obj->kind) {
@@ -178,8 +183,10 @@ static void obj_desc_print (obj_desc_t *obj)
     fprintf (stdout, "arr desc 0x%08x for type \"%s\"\n",
              (int) obj, get_type_name (obj->tp));
 
-    fprintf (stdout, " [] -> ");
-    qset_print (obj_arr->val, stdout);
+    if (! qset_is_empty (obj_arr->val)) {
+      fprintf (stdout, " %s.[] -> ", tp_name);
+      qset_print (obj_arr->val, stdout);
+    }
   } else {
     fprintf (stderr, "%s:%i: Invalid desc\n", __FILE__, __LINE__);
   }
@@ -354,6 +361,7 @@ pto_t *pto_new_empty (ir_node *node)
 
   pto->kind = &pto_id;
   pto->node = node;
+  pto->is_dummy = FALSE;
   pto->objs = qset_new (N_INITIAL_OBJS);
 
   return (pto);
@@ -412,6 +420,17 @@ void pto_add_all_names (pto_t *pto, qset_t *objs)
   qset_insert_all (pto->objs, objs);
 }
 
+/* Mark the given pto as a dumy */
+void pto_set_dummy (pto_t *pto)
+{
+  pto->is_dummy = TRUE;
+}
+
+/* Say whether the given pto is a dummy */
+int pto_is_dummy (pto_t *pto)
+{
+  return (pto->is_dummy);
+}
 
 /*
   Find the arguments of a graph. For a method that has n args, the
@@ -507,6 +526,9 @@ void pto_enter (obj_desc_t *obj_desc, entity *ent, pto_t *pto)
 
 /*
   $Log$
+  Revision 1.4  2004/11/08 12:33:06  liekweg
+  initialisation; sanitize print levels, misc fixes
+
   Revision 1.3  2004/11/04 14:58:38  liekweg
   expanded pto, added initialisation, added debugging printing
 

@@ -66,11 +66,23 @@ static pto_t *compute_pto (ir_node *node, void *env)
 {
   pto_t *node_pto = get_pto (node);
 
+  if ((NULL != node_pto) && (pto_is_dummy (node_pto))) {
+    /* weed out initialisation data as good as possible */
+
+    DBGPRINT (0, (stdout, "%s: dummy pto for (%s[%li])\n",
+                  __FUNCTION__,
+                  get_op_name (get_irn_op (node)),
+                  get_irn_node_nr (node)));
+
+    pto_delete (node_pto);
+    node_pto = NULL;
+  }
+
   if (NULL == node_pto) {
     DBGPRINT (1, (stdout, "%s: must compute pto for %s[%li]\n",
-             __FUNCTION__,
-             get_op_name (get_irn_op (node)),
-             get_irn_node_nr (node)));
+                  __FUNCTION__,
+                  get_op_name (get_irn_op (node)),
+                  get_irn_node_nr (node)));
 
     pto_node (node, env);
 
@@ -100,10 +112,10 @@ static void set_call_args (ir_node *call, ir_graph *graph, void *env)
     if (NULL != args [i-2]) {
       if (mode_P == get_irn_mode (args [i-2])) {
         pto_t *arg_pto = compute_pto (get_irn_n (call, i), env);
-        /* off-by-one because of ProjT bd */
+        /* off-by-two because of ProjT bd */
         set_pto (args [i-2], arg_pto);
       } else {
-        /* nothing */
+        /* not a pointer value */
       }
     }
   }
@@ -117,6 +129,17 @@ static void get_call_ret (ir_node *call, ir_graph *graph, void *env)
 {
   entity *ent = get_irg_ent (graph);
   type *ent_tp = get_entity_type (ent);
+
+  if (NULL != get_pto (call)) {
+    pto_t *old = get_pto (call);
+
+    if (pto_is_dummy (old)) {
+      DBGPRINT (2, (stdout, "%s: dummy pto (0x%08x) from call[%li]\n",
+                    __FUNCTION__, (int) old, get_irn_node_nr (call)));
+    }
+
+    pto_delete (old);
+  }
 
   if (0 != get_method_n_ress (ent_tp)) {
     type *ent_ret_tp = get_method_res_type (ent_tp, 0);
@@ -256,14 +279,26 @@ static void pto_node_obj_load (ir_node *load, ir_node *ptr,
   const char *own_name = (char*) get_type_name (get_entity_owner (ent));
 
   DBGPRINT (1, (stdout, "%s for (%s[%li])\n",
-           __FUNCTION__,
-           get_op_name (get_irn_op (ptr)),
-           get_irn_node_nr (ptr)));
+                __FUNCTION__,
+                get_op_name (get_irn_op (ptr)),
+                get_irn_node_nr (ptr)));
+
   if (! is_pointer_type (get_entity_type (ent))) {
     return;
   }
 
-  DBGPRINT (2, (stdout, "%s: obj load from ent (0x%08x) \"%s.%s\"\n",
+  if (NULL != get_pto (load)) {
+    pto_t *old = get_pto (load);
+
+    if (pto_is_dummy (old)) {
+      DBGPRINT (0, (stdout, "%s: dummy pto (0x%08x) from load[%li]\n",
+                    __FUNCTION__, (int) old, get_irn_node_nr (load)));
+    }
+
+    pto_delete (old);
+  }
+
+  DBGPRINT (0, (stdout, "%s: obj load from ent (0x%08x) \"%s.%s\"\n",
                 __FUNCTION__,
                 (int) ent,
                 own_name,
@@ -271,22 +306,25 @@ static void pto_node_obj_load (ir_node *load, ir_node *ptr,
 
   pto_t *ptr_objs = compute_pto (ptr, env);
   qset_t *objs = ptr_objs->objs;
-
   pto_t *res = pto_new_empty (load);
-
-  /* todo: iterate over 'objs' ... for each obj in objs, perform
-     lookup using 'ent' ... assemble results in new qset ... return
-     that as the new value */
-
   obj_desc_t *obj_desc = (obj_desc_t*) qset_start (objs);
+
+  /*   fprintf (stdout, "%s: load ptr = ", __FUNCTION__); */
+  /*   qset_print (ptr_objs->objs, stdout); */
 
   while (NULL != obj_desc) {
     qset_t *cnts = pto_lookup (obj_desc, ent);
 
     pto_add_all_names (res, cnts);
 
+    /*     fprintf (stdout, "%s: load val = ", __FUNCTION__); */
+    /*     qset_print (cnts, stdout); */
+
     obj_desc = (obj_desc_t*) qset_next (objs);
   }
+
+  /*   fprintf (stdout, "%s: load res = ", __FUNCTION__); */
+  /*   qset_print (res->objs, stdout); */
 
   set_pto (load, res);
 }
@@ -315,7 +353,7 @@ static void pto_node_arr_load (ir_node *load, ir_node *ptr,
     return;
   }
 
-  DBGPRINT (2, (stdout, "%s: array load from ent (0x%08x) \"%s.%s\"\n",
+  DBGPRINT (0, (stdout, "%s: array load from ent (0x%08x) \"%s.%s\"\n",
                 __FUNCTION__,
                 (int) ent,
                 own_name,
@@ -400,7 +438,7 @@ static void pto_node_obj_store (ir_node *store,
   const char *ent_name = (char*) get_entity_name (ent);
   const char *own_name = (char*) get_type_name (get_entity_owner (ent));
 
-  DBGPRINT (1, (stdout, "%s: obj store from ent (0x%08x) \"%s.%s\"\n",
+  DBGPRINT (0, (stdout, "%s: obj store from ent (0x%08x) \"%s.%s\"\n",
                 __FUNCTION__,
                 (int) ent, own_name, ent_name));
 
@@ -437,7 +475,7 @@ static void pto_node_arr_store (ir_node *store,
   const char *ent_name = (char*) get_entity_name (ent);
   const char *own_name = (char*) get_type_name (get_entity_owner (ent));
 
-  DBGPRINT (1, (stdout, "%s: array store from ent (0x%08x) \"%s.%s\"\n",
+  DBGPRINT (0, (stdout, "%s: array store from ent (0x%08x) \"%s.%s\"\n",
                 __FUNCTION__,
                 (int) ent, own_name, ent_name));
 
@@ -565,7 +603,7 @@ static void pto_node_call (ir_node *call, void *env)
   ir_node *ptr = get_Call_ptr (call);
   entity *ent = get_ptr_ent (ptr);
 
-  DBGPRINT (0, (stdout, "%s (%s[%li])\n",
+  DBGPRINT (1, (stdout, "%s (%s[%li])\n",
                 __FUNCTION__,
                 get_op_name (get_irn_op (call)),
                 get_irn_node_nr (call)));
@@ -589,10 +627,8 @@ static void pto_node_call (ir_node *call, void *env)
       get_call_ret (call, graph, env);
     }
   } else {
-    DBGPRINT (0, (stdout, "%s:%i: Warning: no graph for ent \"%s.%s\"\n",
-                  __FILE__, __LINE__, own_name, ent_name));
-    DBGPRINT (0, (stdout, "%s:%i: Warning: no graph for call call[%li]\n",
-                  __FILE__, __LINE__, get_irn_node_nr (call)));
+    DBGPRINT (0, (stdout, "%s:%i: Warning: no graph for ent \"%s.%s\" in call[%li]\n",
+                  __FILE__, __LINE__, own_name, ent_name, get_irn_node_nr (call)));
   }
 }
 
@@ -656,7 +692,7 @@ static void pto_node_phi (ir_node *phi, void *env)
 
     pto_t *in_pto = compute_pto (in, env);
 
-    DBGPRINT (1, (stdout, "%s: IN PHI Node (%ld) (%s) (pto = 0x%08x)\n",
+    DBGPRINT (0, (stdout, "%s: IN PHI Node (%ld) (%s) (pto = 0x%08x)\n",
                   __FUNCTION__,
                   get_irn_node_nr (in),
                   get_op_name (get_irn_op (in)),
@@ -817,8 +853,8 @@ static void pto_node (ir_node *node, void *env)
   case (iro_DivMod):
     set_pto (node, NULL);
     break;
-    /* stopgap measure */
   default: {
+    /* stopgap measure */
     DBGPRINT (0, (stdout, "%s: not handled: node[%li].op = %s\n",
                   __FUNCTION__,
                   get_irn_node_nr (node),
@@ -973,6 +1009,9 @@ void pto_cleanup ()
 
 /*
  * $Log$
+ * Revision 1.5  2004/11/08 12:33:06  liekweg
+ * initialisation; sanitize print levels, misc fixes
+ *
  * Revision 1.4  2004/11/04 14:58:38  liekweg
  * expanded pto, added initialisation, added debugging printing
  *
