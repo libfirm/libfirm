@@ -298,6 +298,7 @@ static void block_clear_entry(block_entry_t *elem)
   cnt_clr(&elem->cnt_edges);
   cnt_clr(&elem->cnt_in_edges);
   cnt_clr(&elem->cnt_out_edges);
+  cnt_clr(&elem->cnt_phi_data);
 }
 
 /**
@@ -397,6 +398,13 @@ static void undate_block_info(ir_node *node, graph_entry_t *graph)
       cnt_inc(&b_entry_other->cnt_out_edges);
     }
     return;
+  }
+  else if (op == op_Phi && mode_is_datab(get_irn_mode(node))) {
+    /* count data Phi */
+    ir_node *block = get_nodes_block(node);
+    block_entry_t *b_entry = block_get_entry(get_irn_node_nr(block), graph->block_hash);
+
+    cnt_inc(&b_entry->cnt_phi_data);
   }
 
   block   = get_nodes_block(node);

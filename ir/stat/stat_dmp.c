@@ -196,16 +196,17 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
     }
 
     /* dump block info */
-    fprintf(dmp->f, "\n%12s %12s %12s %12s %12s %12s\n", "Block Nr", "Nodes", "intern E", "incoming E", "outgoing E", "quot");
+    fprintf(dmp->f, "\n%12s %12s %12s %12s %12s %12s %12s\n", "Block Nr", "Nodes", "intern E", "incoming E", "outgoing E", "Phi", "quot");
     for (b_entry = pset_first(entry->block_hash);
 	       b_entry;
 	       b_entry = pset_next(entry->block_hash)) {
-      fprintf(dmp->f, "BLK %12ld %12u %12u %12u %12u %4.8f\n",
+      fprintf(dmp->f, "BLK %12ld %12u %12u %12u %12u %12u %4.8f\n",
 	      b_entry->block_nr,
 	      b_entry->cnt_nodes.cnt[0],
 	      b_entry->cnt_edges.cnt[0],
 	      b_entry->cnt_in_edges.cnt[0],
 	      b_entry->cnt_out_edges.cnt[0],
+              b_entry->cnt_phi_data.cnt[0],
 	      (double)b_entry->cnt_edges.cnt[0] / (double)b_entry->cnt_nodes.cnt[0]
       );
     }

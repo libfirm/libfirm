@@ -118,6 +118,7 @@ typedef struct _block_entry_t {
   counter_t  cnt_edges;			/**< the counter of edges in this block */
   counter_t  cnt_in_edges;		/**< the counter of edges incoming from other blocks to this block */
   counter_t  cnt_out_edges;		/**< the counter of edges outgoing from this block to other blocks */
+  counter_t  cnt_phi_data;              /**< the counter of data Phi nodes in this block */
   long       block_nr;			/**< block nr */
 } block_entry_t;
 
