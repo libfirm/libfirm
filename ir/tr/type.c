@@ -926,21 +926,6 @@ int (is_Class_type)(const type *clss) {
   return _is_class_type(clss);
 }
 
-/* Returns true if low is subclass of high. */
-int is_subclass_of(type *low, type *high) {
-  int i;
-  assert(is_Class_type(low) && is_Class_type(high));
-  if (low == high) return 1;
-  /* depth first search from high downwards. */
-  for (i = 0; i < get_class_n_subtypes(high); i++) {
-    if (low == get_class_subtype(high, i))
-      return 1;
-    if (is_subclass_of(low, get_class_subtype(high, i)))
-      return 1;
-  }
-  return 0;
-}
-
 /*----------------------------------------------------------------**/
 /* TYPE_STRUCT                                                     */
 /*----------------------------------------------------------------**/

@@ -49,12 +49,10 @@
 *  - int offset:     Offset in bits for this entity.  Fixed when layout
 * 	             of owner is determined.
 *  - ir_graph *irg:  If (type == method_type) this is the corresponding irg.
-*                The ir_graph constructor automatically sets this field.
+*                    The ir_graph constructor automatically sets this field.
 *                    If (type != method_type) access of this field will cause
 *                    an assertion.
 */
-
-/* $Id$ */
 
 # ifndef _ENTITY_H_
 # define _ENTITY_H_
@@ -62,6 +60,8 @@
 # include "ident.h"
 # include "type.h"
 # include "dbginfo.h"
+
+# include "tr_inheritance.h"
 
 /*-----------------------------------------------------------------*/
 /* general                                                         */
@@ -517,7 +517,6 @@ int is_compound_entity(entity *ent);
 */
 bool equal_entity(entity *ent1, entity *ent2);
 
-
 /** Outputs a unique number for this entity if libfirm is compiled for
    debugging, (configure with --enable-debug) else returns 0. */
 long get_entity_nr(entity *ent);
@@ -536,10 +535,6 @@ bool        entity_visited(entity *ent);
 
 /** Returns true if this entity was not visited. */
 bool        entity_not_visited(entity *ent);
-
-/** Returns the dynamically referenced entity if the static entity and the
- *  dynamic type are given. */
-entity *resolve_ent_polymorphy(type *dynamic_class, entity* static_ent);
 
 /**
  * @page unknown_entity

@@ -44,7 +44,6 @@
 # include "irmode.h"
 # include "dbginfo.h"
 
-
 /* to resolve recursion between entity.h and type.h */
 #ifndef _ENTITY_TYPEDEF_
 #define _ENTITY_TYPEDEF_
@@ -55,6 +54,8 @@ typedef struct entity entity;
 #define _IR_NODE_TYPEDEF_
 typedef struct ir_node ir_node;
 #endif
+
+# include "tr_inheritance.h"
 
 /**
  *  An abstract data type to represent types.
@@ -208,17 +209,21 @@ void        set_type_size_bytes(type *tp, int size);
  */
 void        set_type_size_bits(type *tp, int size);
 
-/** Returns the alignment of a type in bytes, returns -1 if the alignment is NOT
- *  a byte size, ie not dividable by 8. Calls get_type_alignment_bits(). */
+/** Returns the alignment of a type in bytes.
+ *
+ *  Returns -1 if the alignment is NOT
+ *  a byte size, i.e. not dividable by 8. Calls get_type_alignment_bits(). */
 int         get_type_alignment_bytes(type *tp);
 
-/** Returns the alignment of a type in bits. If the alignment of a type is
- * not set, it is calculated here according to the following rules:
- * 1.) if a type has a mode, the alignment is the mode size.
- * 2.) compound types have the alignment of it's biggest member.
- * 3.) array types have the alignment of its element type.
- * 4.) method types return 0 here.
- * 5.) all other types return 8 here (i.e. aligned at byte).
+/** Returns the alignment of a type in bits.
+ *
+ *  If the alignment of a type is
+ *  not set, it is calculated here according to the following rules:
+ *  1.) if a type has a mode, the alignment is the mode size.
+ *  2.) compound types have the alignment of it's biggest member.
+ *  3.) array types have the alignment of its element type.
+ *  4.) method types return 0 here.
+ *  5.) all other types return 8 here (i.e. aligned at byte).
  */
 int         get_type_alignment_bits(type *tp);
 
@@ -394,28 +399,31 @@ entity *get_class_member   (const type *clss, int pos);
 int     get_class_member_index(type *clss, entity *mem);
 
 /** Finds the member with name 'name'. If several members with the same
-    name returns one of them.  Returns NULL if no member found. */
+ *  name returns one of them.  Returns NULL if no member found. */
 entity *get_class_member_by_name(type *clss, ident *name);
 
 /** Overwrites the member at position pos, 0 <= pos < n_member with
-   the passed entity. */
+ *  the passed entity. */
 void    set_class_member   (type *clss, entity *member, int pos);
 
 /** Replaces complete member list in class type by the list passed.
-   Copies the list passed. This function is necessary to reduce the number of members.
-   members is an array of entities, num the size of this array.  Sets all
-   owners of the members passed to clss. */
+ *
+ *  Copies the list passed. This function is necessary to reduce the number of members.
+ *  members is an array of entities, num the size of this array.  Sets all
+ *  owners of the members passed to clss. */
 void    set_class_members  (type *clss, entity *members[], int arity);
 
 /** Finds member in the list of members and removes it.
-   Shrinks the member list, so iterate from the end!!!
-   Does not deallocate the entity.  */
+ *
+ *  Shrinks the member list, so iterate from the end!!!
+ *  Does not deallocate the entity.  */
 void    remove_class_member(type *clss, entity *member);
 
 
 /** Adds subtype as subtype to clss.
-   Checks whether clss is a supertype of subtype.  If not
-   adds also clss as supertype to subtype.  */
+ *
+ *  Checks whether clss is a supertype of subtype.  If not
+ *  adds also clss as supertype to subtype.  */
 void    add_class_subtype   (type *clss, type *subtype);
 
 /** Returns the number of subtypes */
@@ -425,8 +433,9 @@ int     get_class_n_subtypes (const type *clss);
 type   *get_class_subtype   (type *clss, int pos);
 
 /** Sets the subtype at position pos, 0 <= pos < n_subtype.
-   Does not set the corresponding supertype relation for subtype: this might
-   be a different position! */
+ *
+ *  Does not set the corresponding supertype relation for subtype: this might
+ *  be a different position! */
 void    set_class_subtype   (type *clss, type *subtype, int pos);
 
 /** Finds subtype in the list of subtypes and removes it  */
@@ -434,8 +443,9 @@ void    remove_class_subtype(type *clss, type *subtype);
 
 
 /** Adds supertype as supertype to class.
-   Checks whether clss is a subtype of supertype.  If not
-   adds also clss as subtype to supertype.  */
+ *
+ *  Checks whether clss is a subtype of supertype.  If not
+ *  adds also clss as subtype to supertype.  */
 void    add_class_supertype   (type *clss, type *supertype);
 
 /** Returns the number of supertypes */
@@ -447,9 +457,10 @@ int     get_class_supertype_index(type *clss, type *super_clss);
 /** Gets the supertype at position pos,  0 <= pos < n_supertype. */
 type   *get_class_supertype   (type *clss, int pos);
 
-/** Sets the supertype at position pos, 0 <= pos < n_subtype.
-   Does not set the corresponding subtype relation for supertype: this might
-   be a different position! */
+/** Sets the supertype at position pos, 0 <= pos < n_supertype.
+ *
+ *  Does not set the corresponding subtype relation for supertype: this might
+ *  be at a different position! */
 void    set_class_supertype   (type *clss, type *supertype, int pos);
 
 /** Finds supertype in the list of supertypes and removes it */
@@ -485,9 +496,6 @@ int  get_class_dfn (const type *clss);
 
 /** Returns true if a type is a class type. */
 int is_Class_type(const type *clss);
-
-/** Returns true if low is subclass of high. */
-int is_subclass_of(type *low, type *high);
 
 /**
  *  @page struct_type   Representation of a struct type

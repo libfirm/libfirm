@@ -28,6 +28,7 @@
 #include "firm_common_t.h"
 #include "typegmod.h"
 #include "irtypeinfo.h"
+#include "tr_inheritance.h"
 
 #include "callgraph.h"
 #include "field_temperature.h"
@@ -63,6 +64,7 @@ struct ir_prog {
   irg_callee_info_state callee_info_state; /**< Validity of callee information.
 					      Contains the lowest value or all irgs.  */
   ir_typeinfo_state typeinfo_state;    /**< Validity of type information. */
+  inh_transitive_closure_state inh_trans_closure_state;  /**< trans closure of inh relations. */
 
   irp_callgraph_state callgraph_state; /**< State of the callgraph. */
   struct ir_loop *outermost_cg_loop;   /**< For callgraph analysis: entry point
