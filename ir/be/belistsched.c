@@ -200,6 +200,7 @@ static ir_node *add_to_sched(block_sched_env_t *env, ir_node *irn)
     if(to_appear_in_schedule(irn)) {
         sched_info_t *info = get_irn_sched_info(irn);
         INIT_LIST_HEAD(&info->list);
+				info->time_step = env->curr_time;
         sched_add(env->block, irn);
 
         DBG((env->dbg, LEVEL_2, "\tadding %n\n", irn));
