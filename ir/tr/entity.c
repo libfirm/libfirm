@@ -96,9 +96,13 @@ new_entity (type *owner, ident *name, type *type)
   res->peculiarity   = peculiarity_existent;
   res->volatility    = volatility_non_volatile;
   res->ld_name       = NULL;
-  res->overwrites    = NEW_ARR_F(entity *, 0);
-  res->overwrittenby = NEW_ARR_F(entity *, 0);
-
+  if (is_class_type(owner)) {
+    res->overwrites    = NEW_ARR_F(entity *, 0);
+    res->overwrittenby = NEW_ARR_F(entity *, 0);
+  } else {
+    res->overwrites    = NULL;
+    res->overwrittenby = NULL;
+  }
   res->irg = NULL;
 
 #ifdef DEBUG_libfirm
@@ -156,19 +160,8 @@ copy_entity_own (entity *old, type *new_owner) {
   new = (entity *) xmalloc (sizeof (entity));
   memcpy (new, old, sizeof (entity));
   new->owner = new_owner;
-  /*
-  if ((get_type_tpop(get_entity_owner(old)) == type_class) &&
-      (get_type_tpop(new_owner) == type_class)) {
-    new->overwrites = DUP_ARR_F(entity *, old->overwrites);
-    new->overwrittenby = DUP_ARR_F(entity *, old->overwrittenby);
-  } else if ((get_type_tpop(get_entity_owner(old)) != type_class) &&
-         (get_type_tpop(new_owner) == type_class)) {
-    new->overwrites = NEW_ARR_F(entity *, 0);
-    new->overwrittenby = NEW_ARR_F(entity *, 0);
-  }
-  */
   if (is_class_type(new_owner)) {
-    new->overwrites = NEW_ARR_F(entity *, 0);
+    new->overwrites    = NEW_ARR_F(entity *, 0);
     new->overwrittenby = NEW_ARR_F(entity *, 0);
   }
 #ifdef DEBUG_libfirm
@@ -190,7 +183,7 @@ copy_entity_name (entity *old, ident *new_name) {
   new->name = new_name;
   new->ld_name = NULL;
   if (is_class_type(new->owner)) {
-    new->overwrites = DUP_ARR_F(entity *, old->overwrites);
+    new->overwrites    = DUP_ARR_F(entity *, old->overwrites);
     new->overwrittenby = DUP_ARR_F(entity *, old->overwrittenby);
   }
 #ifdef DEBUG_libfirm
@@ -754,7 +747,7 @@ remove_entity_overwrites(entity *ent, entity *overwritten) {
   for (i = 0; i < (ARR_LEN (ent->overwrites)); i++)
     if (ent->overwrites[i] == overwritten) {
       for(; i < (ARR_LEN (ent->overwrites))-1; i++)
-    ent->overwrites[i] = ent->overwrites[i+1];
+	ent->overwrites[i] = ent->overwrites[i+1];
       ARR_SETLEN(entity*, ent->overwrites, ARR_LEN(ent->overwrites) - 1);
       break;
     }
@@ -806,7 +799,7 @@ void    remove_entity_overwrittenby(entity *ent, entity *overwrites) {
   for (i = 0; i < (ARR_LEN (ent->overwrittenby)); i++)
     if (ent->overwrittenby[i] == overwrites) {
       for(; i < (ARR_LEN (ent->overwrittenby))-1; i++)
-    ent->overwrittenby[i] = ent->overwrittenby[i+1];
+	ent->overwrittenby[i] = ent->overwrittenby[i+1];
       ARR_SETLEN(entity*, ent->overwrittenby, ARR_LEN(ent->overwrittenby) - 1);
       break;
     }
