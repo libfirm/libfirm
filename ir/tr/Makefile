@@ -22,7 +22,8 @@ X_INCLUDES  =
 SHELL       = /bin/sh
 MAKE        = /usr/bin/make
 
-MEMBERS	 = entity.m mangle.m type.m typewalk.m
+DISTRIBMEMBERS	 = entity.m type.m typewalk.m
+MEMBERS	 =  $(DISTRIBMEMBERS) mangle.m
 
 CFILES = $(MEMBERS:.m=.c)
 
@@ -31,6 +32,8 @@ HFILES +=  type_or_entity.h
 HFILES +=  common.h debug.h gmp.h host.h ident.h irgraph.h  \
            irgwalk.h irmode.h irnode.h irop.h label.h misc.h \
            obst.h pset.h set.h tv.h xprintf.h xp_help.h entity_t.h
+
+DISTRIB = $(DISTRIBMEMBERS:.m=.h)
 
 OFILES = $(MEMBERS:%.m=../objects/%.o)
 
@@ -49,6 +52,9 @@ TARGET = all
 
 ../objects/%.o:    %.c
 	$(CXX) $(CFLAGS) $(CXXFLAGS) $(COPTFLAGS) $(INCLUDES) $(X_INCLUDES) -c $< -o $@
+
+lib:
+	cp $(DISTRIB) ../../include
 
 
 $(TARGET):      $(DFILES) $(OFILES)

@@ -22,7 +22,8 @@ X_INCLUDES  =
 SHELL       = /bin/sh
 MAKE        = /usr/bin/make
 
-MEMBERS	 = common.m firm.m panic.m
+DISTRIBMEMBERS = common.m firm.m
+MEMBERS	 =  $(DISTRIBMEMBERS) panic.m
 
 CFILES = $(MEMBERS:.m=.c)
 CFILES +=  xfprintf.c xfprintf.c xfprintf.c
@@ -30,8 +31,10 @@ CFILES +=  xfprintf.c xfprintf.c xfprintf.c
 HFILES = $(MEMBERS:.m=.h)
 HFILES +=  tune.h xp_help.h xprintf.h misc.h
 HFILES +=  common.h debug.h entity.h gmp.h host.h ident.h irgraph.h \
-	   irmode.h irnode.h irop.h irprog.h label.h misc.h obst.h pset.h set.h \
-           tv.h type.h xprintf.h xp_help.h
+	   irmode.h irnode.h irop.h irprog.h label.h misc.h obst.h \
+           pset.h set.h tv.h type.h xprintf.h xp_help.h
+
+DISTRIB = $(DISTRIBMEMBERS:.m=.h)
 
 OFILES = $(MEMBERS:%.m=../objects/%.o)
 OFILES +=  ../objects/xfprintf.o \
@@ -55,6 +58,9 @@ $(TARGET): $(DFILES) $(OFILES)
 
 ../objects/%.o:    %.c
 	$(CXX) $(CFLAGS) $(CXXFLAGS) $(COPTFLAGS) $(INCLUDES) $(X_INCLUDES) -c $< -o $@
+
+lib:
+	cp $(DISTRIB) ../../include
 
 clean:
 	rm -f $(OFILES) $(DFILES)

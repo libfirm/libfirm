@@ -8,6 +8,9 @@ LIBS=-lfirm -lgmp -lm
 %.o:	%.c
 	gcc -c $(INCDIRS) -g $<
 
+orb:
+	ls
+
 all: empty const_eval_example 					\
      if_example if_else_example if_while_example cond_example	\
      call_str_example memory_example array-stack_example	\

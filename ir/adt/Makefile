@@ -55,6 +55,8 @@ $(TARGET): $(DFILES) $(OFILES)
 	$(COMPILE.c) $(INCLUDES) -DPSET -o $@ $<
 #	$(CXX) $(CFLAGS) $(CXXFLAGS) $(COPTFLAGS) $(INCLUDES) $(X_INCLUDES) -c $< -o $@
 
+lib:
+
 clean:
 	rm -f $(OFILES) $(DFILES)
 

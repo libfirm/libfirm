@@ -6,8 +6,8 @@
 #
 # Makefile for IR library.
 
-# This makefile descends to all directories listed in INCLUDES and to
-# testprograms and calls make with the corresponding target there.
+# This makefile descends to all directories listed in INCLUDES
+# and calls make with the corresponding target there.
 # After returning it builds a library out of the firm files.
 # Further it updates the TAGS file with each recompilation
 
@@ -39,6 +39,9 @@ debug:
 	for i in $(SUBDIRS); do $(MAKE) "CFLAGS=$(CFLAGS) -g INCLUDES=$(INCLUDES)" -C $$i; done
 
 all:	TAGS $(TARGET)
+
+lib:
+	for i in $(SUBDIRS); do  $(MAKE) -C $$i lib; done
 
 clean:
 	for i in $(SUBDIRS); do  $(MAKE) -C $$i clean; done

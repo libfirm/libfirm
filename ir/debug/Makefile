@@ -23,12 +23,15 @@ AR          = ar rcs
 SHELL       = /bin/sh
 MAKE        = /usr/bin/make
 
-MEMBERS	 = debug.m
+DISTRIBMEMBERS =
+MEMBERS	 = $(DISTRIBMEMBERS) debug.m
 
 CFILES = $(MEMBERS:.m=.c)
 
 HFILES = $(MEMBERS:.m=.h)
 HFILES +=  misc.h host.h
+
+DISTRIB = $(DISTRIBMEMBERS:.m=.h)
 
 OFILES = $(MEMBERS:%.m=../objects/%.o)
 
@@ -50,6 +53,9 @@ TARGET = all
 
 
 $(TARGET):      $(DFILES) $(OFILES)
+
+lib:
+	cp $(DISTRIB) ../../include/
 
 clean:
 	rm -f $(OFILES) $(DFILES)

@@ -24,12 +24,15 @@ all:	TAGS ir testprograms
 testprograms:
 	$(MAKE) -C testprograms
 
+lib:
+	$(MAKE) -C ir lib
+
 clean:
 	for i in $(SUBDIRS); do  $(MAKE) -C $$i clean; done
 
 realclean:
 	for i in $(SUBDIRS); do  $(MAKE) -C $$i realclean; done
-	rm -f libfirm.a core
+	rm -f libfirm.a core include/*
 
 TAGFILES = $(shell find . -name '*.c' -o -name '*.h')
 

@@ -21,7 +21,8 @@ X_INCLUDES  =
 SHELL       = /bin/sh
 MAKE        = /usr/bin/make
 
-MEMBERS	 = tv.m
+DISTRIBMEMBERS	 = tv.m
+MEMBERS	 =  $(DISTRIBMEMBERS)
 
 CFILES = $(MEMBERS:.m=.c)
 
@@ -30,6 +31,8 @@ HFILES += ieee754.h
 
 HFILES += common.h debug.h entity.h gmp.h ident.h irmode.h obst.h \
 	  pset.h tune.h type.h xprintf.h xp_help.h
+
+DISTRIB = $(DISTRIBMEMBERS:.m=.h)
 
 OFILES = $(MEMBERS:%.m=../objects/%.o)
 
@@ -49,6 +52,8 @@ TARGET = all
 ../objects/%.o:    %.c
 	$(CXX) $(CFLAGS) $(CXXFLAGS) $(COPTFLAGS) $(INCLUDES) $(X_INCLUDES) -c $< -o $@
 
+lib:
+	cp $(DISTRIB) ../../include
 
 $(TARGET):      $(DFILES) $(OFILES)
 
