@@ -89,7 +89,7 @@ void gc_irgs(int n_keep, entity ** keep_arr) {
           assert(get_irn_op(node) == op_Call);
           for (i = get_Call_n_callees(node) - 1; i >= 0; --i) {
             entity * ent = get_Call_callee(node, i);
-            if (ent && get_entity_irg(ent) && get_entity_link(ent) != MARK) {
+            if (get_entity_irg(ent) && get_entity_link(ent) != MARK) {
               set_entity_link(ent, MARK);
               ARR_APP1(entity *, marked, ent);
 	      if (get_opt_dead_method_elimination_verbose() && get_firm_verbosity() > 2) {

@@ -566,9 +566,8 @@ get_Block_n_cfgpreds (ir_node *node) {
 
 ir_node *
 get_Block_cfgpred (ir_node *node, int pos) {
-  assert(node);
-  assert (node->op == op_Block);
   assert(-1 <= pos && pos < get_irn_arity(node));
+  assert(node->op == op_Block);
   return get_irn_n(node, pos);
 }
 

@@ -82,7 +82,7 @@ static void caller_init(int arr_length, entity ** free_methods) {
       if (get_irn_op(call) != op_Call) continue;
       for (j = get_Call_n_callees(call) - 1; j >= 0; --j) {
 	entity * ent = get_Call_callee(call, j);
-	if (ent) {
+	if (ent != unknown_entity) {
 	  irg_data_t * data = get_entity_link(ent);
 # ifndef CATE_jni
 	  assert(get_entity_irg(ent) && data);
@@ -621,7 +621,7 @@ static void construct_call(ir_node * call) {
   /* Wiederverwendete Daten initialisieren. */
   for (i = 0; i < n_callees; ++i) {
     callees[i] = get_Call_callee(call, i);
-    irgs[i] = callees[i] ? get_entity_irg(callees[i]) : NULL;
+    irgs[i] = get_entity_irg(callees[i]);
     data[i] = get_entity_link(callees[i]);
   }
 
@@ -685,14 +685,14 @@ static void construct_call(ir_node * call) {
     for (i = 0; i < n_callees; ++i) {
       entity * callee = get_Call_callee(call, i);
       if (data[i]) { /* explicit */
-    if (data[i]->except) {
-      in[i] = new_r_Proj(get_entity_irg(callee), get_nodes_block(data[i]->except),
-                 data[i]->except, mode_X, data[i]->count);
-    } else {
-      in[i] = new_Bad();
-    }
+	if (data[i]->except) {
+	  in[i] = new_r_Proj(get_entity_irg(callee), get_nodes_block(data[i]->except),
+			     data[i]->except, mode_X, data[i]->count);
+	} else {
+	  in[i] = new_Bad();
+	}
       } else { /* unknown */
-    in[i] = get_cg_Unknown(mode_X);
+	in[i] = get_cg_Unknown(mode_X);
       }
     }
 
@@ -824,7 +824,7 @@ void cg_construct(int arr_len, entity ** free_methods_arr) {
     for (node = get_irn_link(get_irg_end(current_ir_graph)); node; node = get_irn_link(node)) {
       if (get_irn_op(node) == op_Call) {
         n_callees = get_Call_n_callees(node);
-        if (n_callees > 1 || (n_callees == 1 && get_Call_callee(node, 0) != NULL)) {
+        if (n_callees > 1 || (n_callees == 1 && get_Call_callee(node, 0) != unknown_entity)) {
 	  construct_call(node);
         }
       }

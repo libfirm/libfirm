@@ -111,7 +111,7 @@ static void collect_irgs(ir_node * node, eset * irg_set) {
     int i;
     for (i = get_Call_n_callees(node) - 1; i >= 0; --i) {
       entity * ent = get_Call_callee(node, i);
-      ir_graph * irg = ent ? get_entity_irg(ent) : NULL;
+      ir_graph * irg = get_entity_irg(ent);
       if (irg && !eset_contains(irg_set, irg)) {
         eset_insert(irg_set, irg);
         irg_walk_graph(irg, (irg_walk_func *) collect_irgs, NULL, irg_set);
@@ -480,9 +480,9 @@ static void walk_entity(entity *ent, void *env)
       irg_walk(get_atomic_ent_value(ent), my_env->pre, my_env->post, my_env->env);
     }
     else {
-      int i, n = get_compound_ent_n_values(ent);
+      int i, n_vals = get_compound_ent_n_values(ent);
 
-      for (i = 0; i < n; i++)
+      for (i = 0; i < n_vals; i++)
         irg_walk(get_compound_ent_value(ent, i), my_env->pre, my_env->post, my_env->env);
     }
   }
@@ -513,11 +513,11 @@ void walk_const_code(irg_walk_func *pre, irg_walk_func *post, void *env) {
     type *tp = get_irp_type(i);
     if (is_array_type(tp)) {
       for (j = 0; j < get_array_n_dimensions(tp); j++) {
-    ir_node *n;
-    n = get_array_lower_bound(tp, j);
-    if (n) irg_walk(n, pre, post, env);
-    n = get_array_upper_bound(tp, j);
-    if (n) irg_walk(n, pre, post, env);
+	ir_node *n;
+	n = get_array_lower_bound(tp, j);
+	if (n) irg_walk(n, pre, post, env);
+	n = get_array_upper_bound(tp, j);
+	if (n) irg_walk(n, pre, post, env);
       }
     }
   }

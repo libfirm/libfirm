@@ -24,6 +24,7 @@
 #include "irop_t.h"
 
 #include "irdump.h"
+#include "irdump_t.h"
 
 #include "irgwalk.h"
 #include "typewalk.h"
@@ -48,67 +49,6 @@ int  get_opt_dump_abstvals(void);
 typedef unsigned long SeqNo;
 SeqNo get_Block_seqno(ir_node *n);
 #endif
-
-/* Attributes of nodes */
-#define PRINT_DEFAULT_NODE_ATTR
-#define DEFAULT_NODE_ATTR " "
-#define DEFAULT_TYPE_ATTRIBUTE " "
-#define DEFAULT_ENUM_ITEM_ATTRIBUTE " "
-
-/* Attributes of edges between Firm nodes */
-#define INTRA_DATA_EDGE_ATTR "class:1  priority:50"
-#define INTER_DATA_EDGE_ATTR "class:16 priority:10"
-#define BLOCK_EDGE_ATTR      "class:2  priority:50 linestyle:dotted"
-#define CF_EDGE_ATTR         "class:13 priority:60 color:red"
-#define INTRA_MEM_EDGE_ATTR  "class:14 priority:50 color:blue"
-#define INTER_MEM_EDGE_ATTR  "class:17 priority:10 color:blue"
-#define DOMINATOR_EDGE_ATTR  "class:15 color:red"
-
-#define BACK_EDGE_ATTR "linestyle:dashed "
-
-/* Attributes of edges between Firm nodes and type/entity nodes */
-#define NODE2TYPE_EDGE_ATTR "class:2 priority:2 linestyle:dotted"
-
-/* Attributes of edges in type/entity graphs. */
-#define TYPE_METH_NODE_ATTR      "color: lightyellow"
-#define TYPE_CLASS_NODE_ATTR     "color: green"
-#define TYPE_DESCRIPTION_NODE_ATTR "color: lightgreen"
-#define ENTITY_NODE_ATTR         "color: yellow"
-#define ENT_TYPE_EDGE_ATTR       "class: 3 label: \"type\" color: red"
-#define ENT_OWN_EDGE_ATTR        "class: 4 label: \"owner\" color: black"
-#define METH_PAR_EDGE_ATTR       "class: 5 label: \"param %d\" color: green"
-#define METH_RES_EDGE_ATTR       "class: 6 label: \"res %d\" color: green"
-#define TYPE_SUPER_EDGE_ATTR     "class: 7 label: \"supertype\" color: red"
-#define UNION_EDGE_ATTR          "class: 8 label: \"component\" color: blue"
-#define PTR_PTS_TO_EDGE_ATTR     "class: 9 label: \"points to\" color:green"
-#define ARR_ELT_TYPE_EDGE_ATTR   "class: 10 label: \"arr elt tp\" color:green"
-#define ARR_ENT_EDGE_ATTR        "class: 10 label: \"arr ent\" color: green"
-#define ENT_OVERWRITES_EDGE_ATTR "class: 11 label: \"overwrites\" color:red"
-#define ENT_VALUE_EDGE_ATTR      "label: \"value %d\""
-#define ENT_CORR_EDGE_ATTR       "label: \"value %d corresponds to \" "
-#define TYPE_MEMBER_EDGE_ATTR    "class: 12 label: \"member\" color:blue"
-#define ENUM_ITEM_NODE_ATTR      "color: green"
-#define CALLGRAPH_EDGE_ATTR      "calls"
-
-#if DEBUG_libfirm && NODEID_AS_LABEL
-#define PRINT_NODEID(X) fprintf(F, "n%ld", get_irn_node_nr(X))
-#define PRINT_TYPEID(X) fprintf(F, "\"t%ld\"", get_type_nr(X))
-#define PRINT_ENTID(X)  fprintf(F, "e%ld", get_entity_nr(X))
-#define PRINT_IRGID(X)  fprintf(F, "g%ld", get_irg_graph_nr(X))
-#define PRINT_CONSTID(X,Y) fprintf(F, "\"n%ldn%ld\"", get_irn_node_nr(X),get_irn_node_nr(Y))
-#define PRINT_LOOPID(X) fprintf(F, "l%d", get_loop_loop_nr(X))
-#define PRINT_ITEMID(X,Y)  fprintf(F, "i%ldT%d", get_type_nr(X), (Y))
-
-#else
-#define PRINT_NODEID(X) fprintf(F, "n%p", (void *)(X))
-#define PRINT_TYPEID(X) fprintf(F, "\"t%p\"", (void *)(X))
-#define PRINT_ENTID(X)  fprintf(F, "e%p", (void *)(X))
-#define PRINT_IRGID(X)  fprintf(F, "g%p",(void *)(X))
-#define PRINT_CONSTID(X,Y) fprintf(F, "\"n%pn%p\"", (void*)(X), (void*)(Y))
-#define PRINT_LOOPID(X) fprintf(F, "l%p", (void *)(X))
-#define PRINT_ITEMID(X,Y)  fprintf(F, "i%pT%d", (void *) (X), (Y))
-#endif
-
 
 /* basis for a color range for vcg */
 static int n_colors   = 0;
@@ -293,7 +233,7 @@ static int node_floats(ir_node *n) {
 }
 
 const char *get_ent_dump_name(entity *ent) {
-  if (! ent)
+  if (!ent)
     return "<NULL entity>";
   /* Don't use get_entity_ld_ident (ent) as it computes the mangled name! */
   if (ent->ld_name) return get_id_str(ent->ld_name);
@@ -753,11 +693,7 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
     if (Call_has_callees(n)) {
       fprintf(F, "possible callees: \n");
       for (i = 0; i < get_Call_n_callees(n); i++) {
-	if (!get_Call_callee(n, i)) {
-	  fprintf(F, "  %d external method\n", i);
-	} else {
-	  fprintf(F, "  %d: %s\n", i, get_ent_dump_name(get_Call_callee(n, i)));
-	}
+	fprintf(F, "  %d: %s\n", i, get_ent_dump_name(get_Call_callee(n, i)));
       }
     }
   } break;
@@ -766,11 +702,7 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
     if (Call_has_callees(call)) {
       fprintf(F, "possible callees: \n");
       for (i = 0; i < get_Call_n_callees(call); i++) {
-    if (!get_Call_callee(call, i)) {
-      fprintf(F, "  %d external method\n", i);
-    } else {
-      fprintf(F, "  %d: %s\n", i, get_ent_dump_name(get_Call_callee(call, i)));
-    }
+	fprintf(F, "  %d: %s\n", i, get_ent_dump_name(get_Call_callee(call, i)));
       }
     }
   } break;
@@ -1695,8 +1627,7 @@ void dump_loop_nodes_into_graph(FILE *F, ir_graph *irg) {
 /**
  * dumps the VCG header
  */
-static INLINE void
-dump_vcg_header(FILE *F, const char *name, const char *orientation) {
+INLINE void dump_vcg_header(FILE *F, const char *name, const char *orientation) {
   char *label;
 
   if (edge_label) {
@@ -1719,6 +1650,7 @@ dump_vcg_header(FILE *F, const char *name, const char *orientation) {
        "classname 16: \"interblock Data\"\n"
        "classname 2:  \"Block\"\n"
        "classname 13: \"Control Flow\"\n"
+       "classname 18: \"Exception Control Flow for Interval Analysis\"\n"
        "classname 14: \"intrablock Memory\"\n"
        "classname 17: \"interblock Memory\"\n"
        "classname 15: \"Dominators\"\n"
@@ -1779,7 +1711,7 @@ dump_vcg_header(FILE *F, const char *name, const char *orientation) {
  * @param suffix1 first filename suffix
  * @param suffix2 second filename suffix
  */
-static FILE *vcg_open (ir_graph *irg, const char * suffix1, const char *suffix2) {
+FILE *vcg_open (ir_graph *irg, const char * suffix1, const char *suffix2) {
   FILE *F;
   const char *nm = get_irg_dump_name(irg);
   int len = strlen(nm), i, j;
@@ -1863,8 +1795,7 @@ static INLINE void dump_vcg_footer (FILE *F) {
 /**
  * close the vcg file
  */
-static void
-vcg_close (FILE *F) {
+void vcg_close (FILE *F) {
   dump_vcg_footer(F);    /* print footer */
   fclose (F);           /* close vcg file */
 }

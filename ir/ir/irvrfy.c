@@ -36,7 +36,8 @@
 #define ASSERT_AND_RET(expr, string, ret) \
 do { \
   if (opt_do_node_verification == NODE_VERIFICATION_ON) {\
-    if (!(expr)) dump_ir_block_graph(current_ir_graph, "-assert"); \
+    if (!(expr) && current_ir_graph != get_const_code_irg()) \
+    dump_ir_block_graph(current_ir_graph, "-assert"); \
     assert((expr) && string); } \
   if (!(expr)) { \
     if (opt_do_node_verification == NODE_VERIFICATION_REPORT) \
@@ -324,6 +325,7 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
         "wrong Proj from Call", 0,
         show_proj_failure(p);
       );
+
       break;
 
     case iro_FuncCall:
@@ -492,6 +494,7 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
               ASSERT_AND_RET(
                   (mode == get_type_mode(get_method_res_type(mt, proj))),
                   "Mode of Proj from Call doesn't match mode of result type.", 0);
+
             }
             break;
 
@@ -774,24 +777,32 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       }
 
       for (i = 0; i < get_method_n_params(mt); i++) {
-    type *t = get_method_param_type(mt, i);
+	type *t = get_method_param_type(mt, i);
 
-    if (is_atomic_type(t)) {
-      ASSERT_AND_RET_DBG(
-          get_irn_mode(get_Call_param(n, i)) == get_type_mode(t),
-          "Mode of arg for Call doesn't match mode of arg type.", 0,
-      show_call_param(n, mt);
-      );
-    }
-    else {
-      /* call with a compound type, mode must be reference */
-      ASSERT_AND_RET_DBG(
-          mode_is_reference(get_irn_mode(get_Call_param(n, i))),
-          "Mode of arg for Call doesn't match mode of arg type.", 0,
-      show_call_param(n, mt);
-      );
-    }
+	if (is_atomic_type(t)) {
+	  ASSERT_AND_RET_DBG(
+			     get_irn_mode(get_Call_param(n, i)) == get_type_mode(t),
+			     "Mode of arg for Call doesn't match mode of arg type.", 0,
+			     show_call_param(n, mt);
+			     );
+	}
+	else {
+	  /* call with a compound type, mode must be reference */
+	  ASSERT_AND_RET_DBG(
+			     mode_is_reference(get_irn_mode(get_Call_param(n, i))),
+			     "Mode of arg for Call doesn't match mode of arg type.", 0,
+			     show_call_param(n, mt);
+			     );
+	}
       }
+
+#if 0
+      if (Call_has_callees(n)) {
+	for (i = 0; i < get_Call_n_callees(n); i++) {
+	  ASSERT_AND_RET(is_entity(get_Call_callee(n, i)), "callee array must contain entities.", 0);
+	}
+      }
+#endif
       break;
 
     case iro_Add:
