@@ -463,6 +463,17 @@ dump_node_opcode(FILE *F, ir_node *n)
     else                       fprintf(F, "%s", get_irn_opname(n));
   } break;
 
+  case iro_Proj: {
+    ir_node *cond = get_Proj_pred(n);
+
+    if (get_irn_opcode(cond) == iro_Cond
+        && get_Proj_proj(n) == get_Cond_defaultProj(cond)
+	&& get_irn_mode(get_Cond_selector(cond)) != mode_b)
+      fprintf (F, "defProj");
+    else
+      fprintf (F, "%s", get_irn_opname(n));
+  } break;
+
   case iro_Start: {
     if (interprocedural_view) {
       fprintf(F, "%s %s", get_irn_opname(n), get_ent_dump_name(get_irg_ent(get_irn_irg(n))));
