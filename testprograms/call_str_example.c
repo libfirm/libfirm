@@ -51,7 +51,7 @@ int main(int argc, char **argv)
 
   /* Make a global entity that represents the constant String. */
   const_str = new_entity(get_glob_type(), new_id_from_str("constStr"), U8array);
-  set_entity_variability(const_str, constant);
+  set_entity_variability(const_str, variability_constant);
   for (i = 0; i < strlen(str); i++) {
     tarval *val = new_tarval_from_long(str[i], mode_Bu);
     ir_node *con =  new_Const(mode_Bu, val);
