@@ -28,7 +28,7 @@
 /* memset belongs to string.h */
 # include "string.h"
 
-# include "exc.h"
+/* # include "exc.h" */
 
 #if USE_EXPLICIT_PHI_IN_STACK
 /* A stack needed for the automatic Phi node construction in constructor
@@ -55,7 +55,7 @@ new_r_Block (ir_graph *irg,  int arity, ir_node **in)
   set_Block_matured(res, 1);
   set_Block_block_visited(res, 0);
 
-  res->attr.block.exc = exc_invalid;
+  // res->attr.block.exc = exc_invalid;
 
   irn_vrfy (res);
   return res;
@@ -1756,7 +1756,7 @@ ir_node *new_immBlock (void) {
   res = new_ir_node (current_ir_graph, NULL, op_Block, mode_R, -1, NULL);
   current_ir_graph->current_block = res;
   res->attr.block.matured = 0;
-  res->attr.block.exc = exc_invalid;
+  // res->attr.block.exc = exc_invalid;
   set_Block_block_visited(res, 0);
 
   /* Create and initialize array for Phi-node construction. */
