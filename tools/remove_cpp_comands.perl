@@ -1,4 +1,18 @@
 #!/usr/local/bin/perl
+
+#
+# Project:     libFIRM
+# File name:   ir/tools/remove_cpp_commands.perl
+# Purpose:
+# Author:      Goetz Lindenmaier
+# Modified by:
+# Created:     8.2002
+# CVS-ID:      $Id$
+# Copyright:   (c) 2002-2003 Universität Karlsruhe
+# Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+#
+
+# This is necessary until CRECODER is integrated with the preprocessor.
 #
 # Take a C header file and remove all preprocessor commands.
 # Wrap all typedefs with a preprocessor guard,
