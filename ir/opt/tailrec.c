@@ -35,17 +35,17 @@
 #include "ircons.h"
 #include "irflag.h"
 #include "trouts.h"
-#include "firmstat.h"
+#include "return.h"
 
 /**
  * the environment for collecting data
  */
 typedef struct _collect_t {
-  ir_node *proj_X;		/**< initial exec proj */
-  ir_node *block;		/**< old first block */
-  int     blk_idx;		/**< cfgpred index of the initial exec in block */
-  ir_node *proj_m;		/**< linked list of memory from start proj's */
-  ir_node *proj_data;	/**< linked list of all parameter access proj's */
+  ir_node *proj_X;      /**< initial exec proj */
+  ir_node *block;       /**< old first block */
+  int     blk_idx;      /**< cfgpred index of the initial exec in block */
+  ir_node *proj_m;      /**< linked list of memory from start proj's */
+  ir_node *proj_data;   /**< linked list of all parameter access proj's */
 } collect_t;
 
 /**
