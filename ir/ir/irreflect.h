@@ -44,7 +44,7 @@ typedef enum {
 
 } rflct_mode_class_t;
 
-typedef struct {
+typedef struct _rflct_arg_t {
   const char *name;  /**< The name of the argument (just a description). */
 
   bool is_variadic; /**< True, if this argument can have multiple parameters. */
@@ -61,6 +61,13 @@ typedef struct {
 			variadic operands binding to this argument
 			must be the same. If false, they can differ. */
 } rflct_arg_t;
+
+typedef struct _rflct_sig_t {
+	int defs; /**< The number of defined arguments in the signature. */
+	int uses; /**< The number of used arguments in the signature. */
+
+	rflct_arg_t *args; /**< The arguments array. */
+} rflct_sig_t;
 
 #define RFLCT_ARG_IS_A(arg,modes) (((arg)->accepted_modes & modes) != 0)
 #define RFLCT_ARG_VALID(arg) ((arg)->name != NULL)
@@ -146,5 +153,63 @@ char *rflct_to_string(char *buf, int n, opcode opc, int sig);
  * @return str.
  */
 char *rflct_mode_class_name(char *str, int n, rflct_mode_class_t mc);
+
+/**
+ * Create a new opcode.
+ * @param opc The Firm opcode.
+ * @param name A name.
+ * @param commutative True, if the opcode is commuatative.
+ */
+void rflct_new_opcode(opcode opc, const char *name, bool commutative);
+
+/**
+ * Add a signature to the opcode.
+ * @param opc The opcode.
+ * @param args The signature.
+ * @return true, if the signature was added sucessfully, false if no
+ * more signatures can be added to the opcode.
+ */
+bool rflct_opcode_add_signature(opcode opc, rflct_sig_t *sig);
+
+/**
+ * Allocate a new signature.
+ * @param defs Number of def arguments.
+ * @param uses Number of use arguments.
+ * @return An allocated signature.
+ */
+rflct_sig_t *rflct_signature_allocate(int defs, int uses);
+
+/**
+ * Set an argument in a signature.
+ * @param sig The signature.
+ * @param is_use true, if the argument is a use, else it is considered a
+ * def.
+ * @param num The index of the argument.
+ * @param name The name of the argument.
+ * @param mc The mode class of the argument.
+ * @param is_variadic true, if the argument is variadic.
+ * @param mode_equals This variable has following meaning. If the
+ * argument is variadic, a 1 indicates that all operands binding to this
+ * argument must have the same mode. A 0 indicates, that their mode must
+ * be of the specified mode class but can differ. If the argument is non
+ * variadic, a positive number indicates, that the mode of the operand
+ * binding to this argument must be the same as the one binding to
+ * argument indexed by mode_equals. If the mode should not be dependent
+ * to another mode, set -1 here.
+ * @return The index of the argument. Only use this index in mode_equals
+ * parameters of other arguments.
+ */
+int rflct_signature_set_arg(rflct_sig_t *sig, bool is_use, int num,
+		const char *name, rflct_mode_class_t mc, bool is_variadic, int mode_equals);
+
+/**
+ * Get the arguments array index for an argument.
+ * @param sig The signature.
+ * @param is_use True, if the argument indicates a use or def argument.
+ * @param num The number of the argument.
+ * @return The index into the arguments array.
+ */
+int rflct_signature_get_index(const rflct_sig_t *sig, bool is_use, int num);
+
 
 #endif
