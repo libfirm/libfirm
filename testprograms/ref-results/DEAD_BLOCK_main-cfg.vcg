@@ -24,13 +24,13 @@ classname 12: "Member"
 infoname 1: "Attribute"
 infoname 2: "Verification errors"
 
-node: {title: "n57" label: "Block n57" }
-edge: { sourcename: "n57" targetname: "n64"}
-node: {title: "n64" label: "Block n64" }
-edge: { sourcename: "n64" targetname: "n60"}
-node: {title: "n60" label: "Block n60" }
-edge: { sourcename: "n60" targetname: "n60"}
-node: {title: "n56" label: "Bad  56"  info1: "mode:    T
+node: {title: "n58" label: "Block n58" }
+edge: { sourcename: "n58" targetname: "n65"}
+node: {title: "n65" label: "Block n65" }
+edge: { sourcename: "n65" targetname: "n61"}
+node: {title: "n61" label: "Block n61" }
+edge: { sourcename: "n61" targetname: "n61"}
+node: {title: "n57" label: "Bad  57"  info1: "mode:    T
 visited: 0
 irg:     DEAD_BLOCK_main
 arity: 0

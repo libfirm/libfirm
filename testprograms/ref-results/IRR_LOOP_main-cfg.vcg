@@ -24,22 +24,22 @@ classname 12: "Member"
 infoname 1: "Attribute"
 infoname 2: "Verification errors"
 
-node: {title: "n60" label: "Block n60" }
-edge: { sourcename: "n60" targetname: "n62"}
-node: {title: "n62" label: "Block n62" }
-edge: { sourcename: "n62" targetname: "n66"}
-edge: { sourcename: "n62" targetname: "n64"}
-node: {title: "n64" label: "Block n64" }
-edge: { sourcename: "n64" targetname: "n77"}
-edge: { sourcename: "n64" targetname: "n66"}
-node: {title: "n66" label: "Block n66" }
-edge: { sourcename: "n66" targetname: "n77"}
-edge: { sourcename: "n66" targetname: "n64"}
-node: {title: "n77" label: "Block n77" }
-edge: { sourcename: "n77" targetname: "n72"}
-node: {title: "n72" label: "Block n72" }
-edge: { sourcename: "n72" targetname: "n72"}
-node: {title: "n59" label: "Bad  59"  info1: "mode:    T
+node: {title: "n61" label: "Block n61" }
+edge: { sourcename: "n61" targetname: "n63"}
+node: {title: "n63" label: "Block n63" }
+edge: { sourcename: "n63" targetname: "n67"}
+edge: { sourcename: "n63" targetname: "n65"}
+node: {title: "n65" label: "Block n65" }
+edge: { sourcename: "n65" targetname: "n78"}
+edge: { sourcename: "n65" targetname: "n67"}
+node: {title: "n67" label: "Block n67" }
+edge: { sourcename: "n67" targetname: "n78"}
+edge: { sourcename: "n67" targetname: "n65"}
+node: {title: "n78" label: "Block n78" }
+edge: { sourcename: "n78" targetname: "n73"}
+node: {title: "n73" label: "Block n73" }
+edge: { sourcename: "n73" targetname: "n73"}
+node: {title: "n60" label: "Bad  60"  info1: "mode:    T
 visited: 0
 irg:     IRR_LOOP_main
 arity: 0
