@@ -25,6 +25,7 @@
 # include "irmode_t.h"
 # include "irgraph_t.h"
 # include "type_t.h"
+# include "type_identify.h"
 # include "firmstat.h"
 
 void
