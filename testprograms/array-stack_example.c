@@ -84,12 +84,11 @@ main(void)
 # define N_DIMS 1
 # define L_BOUND 0
 # define U_BOUND 9
-  array_type = new_type_array(id_from_str("a", 1), N_DIMS);
+  array_type = new_type_array(id_from_str("a", 1), N_DIMS, prim_t_int);
   set_array_bounds(array_type, 1, L_BOUND, U_BOUND);
-  set_array_element_type(array_type, prim_t_int);
   /* The array is an entity of the method, placed on the mehtod's own memory,
      the stack frame. */
-  array_ent = new_entity(proc_main, id_from_str("a", 1), array_type);
+  array_ent = get_array_element_entity(array_type);
   /* As the array is accessed by Sel nodes, we need information about
      the entity the node select.  Entities of an array are it's elements
      which are, in this case, integers. */

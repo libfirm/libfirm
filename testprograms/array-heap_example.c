@@ -87,14 +87,12 @@ main(void)
 # define N_DIMS 1
 # define L_BOUND 0
 # define U_BOUND 9
-  array_type = new_type_array(id_from_str("a", 1), N_DIMS);
+  array_type = new_type_array(id_from_str("a", 1), N_DIMS, prim_t_int);
   set_array_bounds(array_type, 1, L_BOUND, U_BOUND);
-  set_array_element_type(array_type, prim_t_int);
   /* As the array is accessed by Sel nodes, we need information about
      the entity the node selects.  Entities of an array are it's elements
      which are, in this case, integers. */
-  array_ent = new_entity((type*)array_type, id_from_str("array_field", 11),
-			 (type*)prim_t_int);
+  array_ent = get_array_element_entity(array_type);
 
   /* Allocate the array. All program known variables that
      are not modeled by dataflow edges need an explicit allocate node.
