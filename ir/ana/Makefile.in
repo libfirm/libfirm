@@ -15,12 +15,12 @@ srcdir = @srcdir@
 topdir = ../..
 subdir := ir/ana
 
-INSTALL_HEADERS = irouts.h irdom.h cgana.h irloop.h irtypeinfo.h irsimpletype.h
+INSTALL_HEADERS = irouts.h irdom.h cgana.h irloop.h irtypeinfo.h irsimpletype.h rta.h
 
 SOURCES = $(INSTALL_HEADERS)
 
 SOURCES += Makefile.in \
-		irouts.c irdom_t.h irdom.c cgana.c	\
+		irouts.c irdom_t.h irdom.c cgana.c	rta.c \
 		irloop_t.h irbackedge.c irbackedge_t.h irscc.c ircfscc.c irtypeinfo.c irsimpletype.c
 
 include $(topdir)/MakeRules
