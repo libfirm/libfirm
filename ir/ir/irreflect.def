@@ -1,0 +1,456 @@
+
+BEGIN_OP(Block)
+  BEGIN_ARGS
+    ARG("Block", BB)
+    MARK
+    ARG("predecessors", X)
+  END_ARGS
+END_OP
+
+BEGIN_OP(Start)
+  BEGIN_ARGS
+    ARG("Execution", X)
+    ARG("Memory", Mem)
+    ARG("Stack", Ref)
+    ARG("Global", Ref)
+    VARG("Arguments", Data)
+    ARG("Call By Value", Ref)
+    MARK
+    BLOCK
+  END_ARGS
+END_OP
+
+BEGIN_OP(End)
+  BEGIN_ARGS
+    MARK
+    BLOCK
+    VARG("Memory & Preds", Lh)
+  END_ARGS
+END_OP
+
+/*
+ * EndReg
+ */
+
+/*
+ * EndExcept
+ */
+
+/*
+ * Jmp
+ */
+
+BEGIN_OP(Jmp)
+  BEGIN_ARGS
+    ARG("Target", X)
+    MARK
+    BLOCK
+  END_ARGS
+END_OP
+
+BEGIN_OP(Break)
+  BEGIN_ARGS
+    ARG("Target", X)
+    MARK
+    BLOCK
+  END_ARGS
+END_ARGS
+
+BEGIN_OP(Cond)
+  BEGIN_ARGS
+    ARG("False Branch", X)
+    ARG("True Branch", X)
+    MARK
+    BLOCK
+    ARG("Condition", Bool)
+  END_ARGS
+
+  BEGIN_ARGS
+    VARG("Cases", X)
+    MARK
+    BLOCK
+    ARG("Switch", Int)
+  END_ARGS
+END_OP
+
+BEGIN_OP(Return)
+  BEGIN_ARGS
+    ARG("CF", X)
+    MARK
+    BLOCK
+    ARG("Memory", Mem)
+    VARG("Args", Data)
+  END_ARGS
+END_OP
+
+BEGIN_OP(CallBegin)
+  BEGIN_ARGS
+    VARG("CF", X)
+    MARK
+    BLOCK
+    ARG("Addr", Ref)
+  END_ARGS
+END_OP
+
+BEGIN_OP(Const)
+  BEGIN_ARGS
+    ARG("Value", Data)
+    MARK
+    BLOCK
+  END_ARGS
+END_OP
+
+BEGIN_OP(SymConst)
+  BEGIN_ARGS
+    ARG("Value", Int)
+    MARK
+    BLOCK
+  END_ARGS
+
+  BEGIN_ARGS
+    ARG("Value", Ref)
+    MARK
+    BLOCK
+  END_ARGS
+END_OP
+
+BEGIN_OP(Unknown)
+  BEGIN_ARGS
+    ARG("Value", Any)
+    MARK
+    BLOCK
+  END_ARGS
+END_OP
+
+BEGIN_OP(Sel)
+  BEGIN_ARGS
+    ARG("Addr", Ref)
+    MARK
+    BLOCK
+    ARG("Memory", Mem)
+    ARG("Base", Ref)
+    VARG_SAME("Indices", Int)
+  END_ARGS
+END_OP
+
+BEGIN_OP(Call)
+  BEGIN_ARGS
+    ARG("Memory", Mem)
+    ARG("CF", X)
+    VARG("Results", Data)
+    ARG("Exception Memory", Mem)
+    ARG("Stack", Ref)
+    MARK
+    BLOCK
+    ARG("Memory", Mem)
+    ARG("Addr", Ref)
+    VARG("Parameters", Data)
+  END_ARGS
+END_OP
+
+BEGIN_OP(Add)
+  BEGIN_ARGS
+    ARG("Result", NumP)
+    MARK
+    BLOCK
+    ARG_SAME("Op 1", NumP, 0)
+    ARG_SAME("Op 2", NumP, 0)
+  END_ARGS
+
+  BEGIN_ARGS
+    ARG("Result", Ref)
+    MARK
+    BLOCK
+    ARG("Op 1", Ref)
+    ARG("Op 2", Num)
+  END_ARGS
+
+  BEGIN_ARGS
+    ARG("Result", Ref)
+    MARK
+    BLOCK
+    ARG("Op 1", Num)
+    ARG("Op 2", Ref)
+  END_ARGS
+END_OP
+
+BEGIN_OP(Sub)
+  BEGIN_ARGS
+    ARG("Result", NumP)
+    MARK
+    BLOCK
+    ARG_SAME("Op 1", NumP, 0)
+    ARG_SAME("Op 2", NumP, 0)
+  END_ARGS
+
+  BEGIN_ARGS
+    ARG("Result", Ref)
+    MARK
+    BLOCK
+    ARG("Op 1", NumP)
+    ARG("Op 2", Ref)
+  END_ARGS
+
+  BEGIN_ARGS
+    ARG("Result", Ref)
+    MARK
+    BLOCK
+    ARG("Op 1", Ref)
+    ARG("Op 2", NumP)
+  END_ARGS
+
+  BEGIN_ARGS
+    ARG("Result", Num)
+    MARK
+    BLOCK
+    ARG("Op 1", Ref)
+    ARG("Op 2", Ref)
+  END_ARGS
+END_OP
+
+BEGIN_OP(Minus)
+  BEGIN_ARGS
+    ARG("Result", Float)
+    MARK
+    BLOCK
+    ARG_SAME("Op 0", Float, 0)
+  END_ARGS
+END_OP
+
+BEGIN_OP(Mul)
+  BEGIN_ARGS
+    ARG("Result", Int)
+    MARK
+    BLOCK
+    ARG("Op 0", Int)
+    ARG_SAME("Op 1", Int, 3)
+  END_ARGS
+
+  BEGIN_ARGS
+    ARG("Result", Float)
+    MARK
+    BLOCK
+    ARG_SAME("Op 0", Float, 0)
+    ARG_SAME("Op 1", Float, 0)
+  END_ARGS
+END_OP
+
+BEGIN_OP(Quot)
+  BEGIN_ARGS
+    ARG("Memory", Mem)
+    ARG("CF", X)
+    ARG("Op 0", Float)
+    MARK
+    BLOCK
+    ARG("Memory", Mem)
+    ARG_SAME("Op 0", Float, 2)
+    ARG_SAME("Op 1", Float, 2)
+  END_ARGS
+END_OP
+
+BEGIN_OP(DivMod)
+  BEGIN_ARGS
+    ARG("Memory", Mem)
+    ARG("CF", X)
+    ARG("Res 0", Int)
+    ARG_SAME("Res 1", Int, 2)
+    MARK
+    BLOCK
+    ARG("Memory", Mem)
+    ARG_SAME("Op 0", Int, 2)
+    ARG_SAME("Op 1", Int, 2)
+  END_ARGS
+END_OP
+
+BEGIN_OP(Div)
+BEGIN_ARGS
+  ARG("Memory", Mem)
+  ARG("CF", X)
+  ARG("Result", Int)
+  MARK
+  BLOCK
+  ARG("Memory", Mem)
+  ARG_SAME("Op 0", Int, 2)
+  ARG_SAME("Op 1", Int, 2)
+END_ARGS
+END_OP
+
+BEGIN_OP(Abs)
+BEGIN_ARGS
+  ARG("Res", Num)
+  MARK
+  BLOCK
+  ARG_SAME("Op", Num, 0)
+END_ARGS
+END_OP
+
+BEGIN_OP(And)
+BEGIN_ARGS
+  ARG("Res", Int)
+  MARK
+  BLOCK
+  ARG_SAME("Op 0", Int, 0)
+  ARG_SAME("Op 1", Int, 0)
+END_ARGS
+END_OP
+
+BEGIN_OP(Or)
+BEGIN_ARGS
+  ARG("Res", Int)
+  MARK
+  BLOCK
+  ARG_SAME("Op 0", Int, 0)
+  ARG_SAME("Op 1", Int, 0)
+END_ARGS
+END_OP
+
+BEGIN_OP(Eor)
+BEGIN_ARGS
+  ARG("Res", Int)
+  MARK
+  BLOCK
+  ARG_SAME("Op 0", Int, 0)
+  ARG_SAME("Op 1", Int, 0)
+END_ARGS
+END_OP
+
+BEGIN_OP(Not)
+BEGIN_ARGS
+  ARG("Res", Int)
+  MARK
+  BLOCK
+  ARG_SAME("Op", Int, 0)
+END_ARGS
+END_OP
+
+BEGIN_OP(Shl)
+BEGIN_ARGS
+  ARG("Res", Int)
+  MARK
+  BLOCK
+  ARG_SAME("Op 0", Int, 0)
+  ARG("Op 1", IntU)
+END_ARGS
+END_OP
+
+BEGIN_OP(Shr)
+BEGIN_ARGS
+  ARG("Res", Int)
+  MARK
+  BLOCK
+  ARG_SAME("Op 0", Int, 0)
+  ARG("Op 1", IntU)
+END_ARGS
+END_OP
+
+BEGIN_OP(Shrs)
+BEGIN_ARGS
+  ARG("Res", Int)
+  MARK
+  BLOCK
+  ARG_SAME("Op 0", Int, 0)
+  ARG("Op 1", IntU)
+END_ARGS
+END_OP
+
+BEGIN_OP(Rot)
+BEGIN_ARGS
+  ARG("Res", Int)
+  MARK
+  BLOCK
+  ARG_SAME("Op 0", Int, 0)
+  ARG("Op 1", Int)
+END_ARGS
+END_OP
+
+BEGIN_OP(Cmp)
+BEGIN_ARGS
+  VARG("Res", Bool)
+  MARK
+  BLOCK
+  ARG("Op 0", Datab)
+  ARG_SAME("Op 1", Datab, 3)
+END_ARGS
+END_OP
+
+BEGIN_OP(Conv)
+BEGIN_ARGS
+  VARG("Res", Datab)
+  MARK
+  BLOCK
+  ARG("Op 0", Datab)
+END_ARGS
+END_OP
+
+BEGIN_OP(Phi)
+BEGIN_ARGS
+  ARG_SAME("Res", DataM, 3)
+  MARK
+  BLOCK
+  VARG("Op 0", DataM)
+END_ARGS
+END_OP
+
+BEGIN_OP(Filter)
+BEGIN_ARGS
+  ARG_SAME("Res", DataM, 3)
+  MARK
+  BLOCK
+  VARG("Op 0", DataM)
+END_ARGS
+END_OP
+
+BEGIN_OP(Load)
+BEGIN_ARGS
+  ARG("Memory", Mem)
+  ARG("CF", X)
+  ARG("Data", Data)
+  MARK
+  BLOCK
+  ARG("Memory", Mem)
+  ARG("Addr", Ref)
+END_ARGS
+END_OP
+
+BEGIN_OP(Store)
+BEGIN_ARGS
+  ARG("Memory", Mem)
+  ARG("CF", X)
+  MARK
+  BLOCK
+  ARG("Memory", Mem)
+  ARG("Addr", Ref)
+  ARG("Data", Data)
+END_ARGS
+END_OP
+
+BEGIN_OP(Alloc)
+BEGIN_ARGS
+  ARG("Memory", Mem)
+  ARG("CF", X)
+  ARG("Addr", Ref)
+  MARK
+  BLOCK
+  ARG("Memory", Mem)
+  ARG("Size", IntU)
+END_ARGS
+END_OP
+
+BEGIN_OP(Free)
+BEGIN_ARGS
+  ARG("Memory", Mem)
+  MARK
+  BLOCK
+  ARG("Memory", Mem)
+  ARG("Addr", Ref)
+END_ARGS
+END_OP
+
+BEGIN_OP(Sync)
+BEGIN_ARGS
+  ARG("Memory", Mem)
+  MARK
+  BLOCK
+  VARG_SAME("Memory", Mem)
+END_ARGS
+END_OP
