@@ -38,6 +38,8 @@ typedef enum desc_kind_enum {
 typedef struct desc_str
 {
   int id;
+  int visit;
+  int col_idx;
   desc_kind_t kind;
   type *tp;
   ir_node *node;                /* allocation node */
@@ -48,6 +50,8 @@ typedef struct desc_str
 typedef struct obj_desc_str
 {
   int id;
+  int visit;
+  int col_idx;
   desc_kind_t kind;
   type *tp;
   ir_node *node;                /* allocation node */
@@ -62,6 +66,8 @@ typedef struct obj_desc_str
 typedef struct arr_desc_str
 {
   int id;
+  int visit;
+  int col_idx;
   desc_kind_t kind;
   type *tp;
   ir_node *node;                /* allocation node */
@@ -102,6 +108,9 @@ void pto_name_cleanup (void);
 
 /*
   $Log$
+  Revision 1.5  2004/12/06 12:52:09  liekweg
+  colorize name dump
+
   Revision 1.4  2004/11/30 15:49:27  liekweg
   include 'dump'
 
