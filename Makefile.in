@@ -22,14 +22,16 @@ subdir := .
 # do we want statistics
 enable_statistics := @enable_statistics@
 
-subdirs := ir/adt ir/debug ir/tv ir/common ir/ident ir/ir ir/opt ir/tr ir/ana ir/st ir/stat
+subdirs := ir/adt ir/debug ir/tv ir/common ir/ident ir/ir ir/opt ir/tr ir/ana ir/stat # ir/st
 
 SOURCES := Makefile.in MakeRules.in MakeTargets\
 	   aclocal.m4 config.h.in\
 	   config.guess config.sub configure.in \
 	   stamp-h.in install-sh README configure
 
-INSTALL_LIBS = libfirm.a libfirm.so
+SHARED_LIB = # libfirm.so
+
+INSTALL_LIBS = libfirm.a $(SHARED_LIB)
 
 GENFILES := stamp-h config.log config.cache
 # config.status config.h.in $(srcdir)/stamp-h.in
@@ -43,9 +45,7 @@ include $(top_srcdir)/MakeTargets
 # add target firmjni if configured with --enable-firmjni
 all: firm
 
-firm: libfirm.a
-
-#libfirm.so
+firm: libfirm.a $(SHARED_LIB)
 
 $(OFILES): config.h Makefile
 
@@ -67,12 +67,8 @@ firmjni:: libfirm.a
 
 # gernerate program documentation
 .PHONY: autodoc
-autodoc: $(AUTODOCDIR) $(AUTODOCINDEXFILE)
-
-.PHONY: $(AUTDOCINDEXFILE)
-$(AUTODOCINDEXFILE): $(CFILES) $(HFILES)
-	$(AUTODOC) $(AUTODOCFILE)
-
+autodoc: $(DOXYFILE)
+	$(DOXYGEN) $(DOXYFILE)
 
 #${srcdir}/configure: configure.in aclocal.m4
 $(srcdir)/configure: configure.in
