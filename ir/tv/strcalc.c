@@ -36,7 +36,7 @@
 /*
  * local definitions and macros
  */
-#define CLEAR_BUFFER(b) assert(b); memset(b, SC_0, CALC_BUFFER_SIZE)
+#define CLEAR_BUFFER(b) assert(b); memset(b, SC_0, calc_buffer_size)
 #define _val(a) ((a)-SC_0)
 #define _digit(a) ((a)+SC_0)
 #define _bitisset(digit, pos) (and_table[_val(digit)][_val(shift_table[pos])] != SC_0)
@@ -66,15 +66,15 @@
  */
 static char *calc_buffer = NULL;    /* buffer holding all results */
 static char *output_buffer = NULL;  /* buffer for output */
-static int BIT_PATTERN_SIZE;        /* maximum number of bits */
-static int CALC_BUFFER_SIZE;        /* size of internally stored values */
-static int MAX_VALUE_SIZE;          /* maximum size of values */
+static int bit_pattern_size;        /* maximum number of bits */
+static int calc_buffer_size;        /* size of internally stored values */
+static int max_value_size;          /* maximum size of values */
 
 static int carry_flag;              /**< some computation set the carry_flag:
-                                         - rightshift if bits were lost due to shifting
+                                         - right shift if bits were lost due to shifting
                                          - division if there was a remainder
-                                         However, the meaning of carry is machine dependant
-                                         and often devined in other ways! */
+                                         However, the meaning of carry is machine dependent
+                                         and often defined in other ways! */
 
 static const char max_digit[4] = { SC_0, SC_1, SC_3, SC_7 };
 static const char min_digit[4] = { SC_F, SC_E, SC_C, SC_8 };
@@ -441,7 +441,7 @@ static void _bitnot(const char *val, char *buffer)
 {
   int counter;
 
-  for (counter = 0; counter<CALC_BUFFER_SIZE; counter++)
+  for (counter = 0; counter<calc_buffer_size; counter++)
     buffer[counter] = not_table[_val(val[counter])];
 }
 
@@ -452,7 +452,7 @@ static void _bitor(const char *val1, const char *val2, char *buffer)
 {
   int counter;
 
-  for (counter = 0; counter<CALC_BUFFER_SIZE; counter++)
+  for (counter = 0; counter<calc_buffer_size; counter++)
     buffer[counter] = or_table[_val(val1[counter])][_val(val2[counter])];
 }
 
@@ -463,7 +463,7 @@ static void _bitxor(const char *val1, const char *val2, char *buffer)
 {
   int counter;
 
-  for (counter = 0; counter<CALC_BUFFER_SIZE; counter++)
+  for (counter = 0; counter<calc_buffer_size; counter++)
     buffer[counter] = xor_table[_val(val1[counter])][_val(val2[counter])];
 }
 
@@ -474,7 +474,7 @@ static void _bitand(const char *val1, const char *val2, char *buffer)
 {
   int counter;
 
-  for (counter = 0; counter<CALC_BUFFER_SIZE; counter++)
+  for (counter = 0; counter<calc_buffer_size; counter++)
     buffer[counter] = and_table[_val(val1[counter])][_val(val2[counter])];
 }
 
@@ -486,7 +486,7 @@ static void _bitand(const char *val1, const char *val2, char *buffer)
  */
 static int _sign(const char *val)
 {
-  return (val[CALC_BUFFER_SIZE-1] <= SC_7) ? (1) : (-1);
+  return (val[calc_buffer_size-1] <= SC_7) ? (1) : (-1);
 }
 
 /**
@@ -507,7 +507,7 @@ static void _inc(const char *val, char *buffer)
 {
   int counter = 0;
 
-  while (counter++ < CALC_BUFFER_SIZE)
+  while (counter++ < calc_buffer_size)
   {
     if (*val == SC_F)
     {
@@ -538,7 +538,7 @@ static void _negate(const char *val, char *buffer)
  * Implements a binary ADD
  *
  * @todo The implementation of carry is wrong, as it is the
- *       CALC_BUFFER_SIZE carry, not the mode depending
+ *       calc_buffer_size carry, not the mode depending
  */
 static void _add(const char *val1, const char *val2, char *buffer)
 {
@@ -546,7 +546,7 @@ static void _add(const char *val1, const char *val2, char *buffer)
   const char *add1, *add2;
   char carry = SC_0;
 
-  for (counter = 0; counter < CALC_BUFFER_SIZE; counter++)
+  for (counter = 0; counter < calc_buffer_size; counter++)
   {
     add1 = add_table[_val(val1[counter])][_val(val2[counter])];
     add2 = add_table[_val(add1[0])][_val(carry)];
@@ -562,7 +562,7 @@ static void _add(const char *val1, const char *val2, char *buffer)
  */
 static void _sub(const char *val1, const char *val2, char *buffer)
 {
-  char temp_buffer[CALC_BUFFER_SIZE];  /* intermediate buffer to hold -val2 */
+  char *temp_buffer = alloca(calc_buffer_size); /* intermediate buffer to hold -val2 */
 
   _negate(val2, temp_buffer);
   _add(val1, temp_buffer, buffer);
@@ -573,21 +573,21 @@ static void _sub(const char *val1, const char *val2, char *buffer)
  */
 static void _mul(const char *val1, const char *val2, char *buffer)
 {
-  char* temp_buffer; /* result buffer */
-  char* neg_val1;    /* abs of val1 */
-  char* neg_val2;    /* abs of val2 */
+  char *temp_buffer; /* result buffer */
+  char *neg_val1;    /* abs of val1 */
+  char *neg_val2;    /* abs of val2 */
 
   const char *mul, *add1, *add2;      /* intermediate result containers */
   char carry = SC_0;                  /* container for carries */
   char sign = 0;                      /* marks result sign */
   int c_inner, c_outer;               /* loop counters */
 
-  temp_buffer = alloca(CALC_BUFFER_SIZE);
-  neg_val1 = alloca(CALC_BUFFER_SIZE);
-  neg_val2 = alloca(CALC_BUFFER_SIZE);
+  temp_buffer = alloca(calc_buffer_size);
+  neg_val1 = alloca(calc_buffer_size);
+  neg_val2 = alloca(calc_buffer_size);
 
   /* init result buffer to zeroes */
-  memset(temp_buffer, SC_0, CALC_BUFFER_SIZE);
+  memset(temp_buffer, SC_0, calc_buffer_size);
 
   /* the multiplication works only for positive values, for negative values *
    * it is necessary to negate them and adjust the result accordingly       */
@@ -602,11 +602,11 @@ static void _mul(const char *val1, const char *val2, char *buffer)
     sign ^= 1;
   }
 
-  for (c_outer = 0; c_outer < MAX_VALUE_SIZE; c_outer++)
+  for (c_outer = 0; c_outer < max_value_size; c_outer++)
   {
     if (val2[c_outer] != SC_0)
     {
-      for (c_inner = 0; c_inner < MAX_VALUE_SIZE; c_inner++)
+      for (c_inner = 0; c_inner < max_value_size; c_inner++)
       {
         /* do the following calculation:                                    *
          * Add the current carry, the value at position c_outer+c_inner     *
@@ -636,8 +636,8 @@ static void _mul(const char *val1, const char *val2, char *buffer)
       }
 
       /* A carry may hang over */
-      /* c_outer is always smaller than MAX_VALUE_SIZE! */
-      temp_buffer[MAX_VALUE_SIZE + c_outer] = carry;
+      /* c_outer is always smaller than max_value_size! */
+      temp_buffer[max_value_size + c_outer] = carry;
       carry = SC_0;
     }
   }
@@ -645,7 +645,7 @@ static void _mul(const char *val1, const char *val2, char *buffer)
   if (sign)
     _negate(temp_buffer, buffer);
   else
-    memcpy(buffer, temp_buffer, CALC_BUFFER_SIZE);
+    memcpy(buffer, temp_buffer, calc_buffer_size);
 }
 
 /**
@@ -655,7 +655,7 @@ static void _push(const char digit, char *buffer)
 {
   int counter;
 
-  for (counter = CALC_BUFFER_SIZE - 2; counter >= 0; counter--)
+  for (counter = calc_buffer_size - 2; counter >= 0; counter--)
   {
     buffer[counter+1] = buffer[counter];
   }
@@ -679,12 +679,12 @@ static void _divmod(const char *rDividend, const char *divisor, char *quot, char
 
   int c_dividend;      /* loop counters */
 
-  neg_val1 = alloca(CALC_BUFFER_SIZE);
-  neg_val2 = alloca(CALC_BUFFER_SIZE);
+  neg_val1 = alloca(calc_buffer_size);
+  neg_val2 = alloca(calc_buffer_size);
 
   /* clear result buffer */
-  memset(quot, SC_0, CALC_BUFFER_SIZE);
-  memset(rem, SC_0, CALC_BUFFER_SIZE);
+  memset(quot, SC_0, calc_buffer_size);
+  memset(rem, SC_0, calc_buffer_size);
 
   /* if the divisor is zero this won't work (quot is zero) */
   if (sc_comp(divisor, quot) == 0) assert(0 && "division by zero!");
@@ -718,14 +718,14 @@ static void _divmod(const char *rDividend, const char *divisor, char *quot, char
       return;
 
     case -1: /* dividend < divisor */
-      memcpy(rem, rDividend, CALC_BUFFER_SIZE);
+      memcpy(rem, rDividend, calc_buffer_size);
       return;
 
     default: /* unluckily division is necessary :( */
       break;
   }
 
-  for (c_dividend = CALC_BUFFER_SIZE - 1; c_dividend >= 0; c_dividend--)
+  for (c_dividend = calc_buffer_size - 1; c_dividend >= 0; c_dividend--)
   {
     _push(dividend[c_dividend], rem);
     _push(SC_0, quot);
@@ -780,7 +780,7 @@ static void _shl(const char *val1, char *buffer, long offset, int radius, unsign
   /* if shifting far enough the result is zero */
   if (offset >= radius)
   {
-    memset(buffer, SC_0, CALC_BUFFER_SIZE);
+    memset(buffer, SC_0, calc_buffer_size);
     return;
   }
 
@@ -814,7 +814,7 @@ static void _shl(const char *val1, char *buffer, long offset, int radius, unsign
   {
     /* this sets the upper bits of the leftmost digit */
     buffer[offset] = or_table[_val(buffer[offset])][_val(min_digit[bitoffset])];
-    for (counter = offset+1; counter < CALC_BUFFER_SIZE; counter++)
+    for (counter = offset+1; counter < calc_buffer_size; counter++)
     {
       buffer[counter] = SC_F;
     }
@@ -823,7 +823,7 @@ static void _shl(const char *val1, char *buffer, long offset, int radius, unsign
   {
     /* this unsets the upper bits of the leftmost digit */
     buffer[offset] = and_table[_val(buffer[offset])][_val(max_digit[bitoffset])];
-    for (counter = offset+1; counter < CALC_BUFFER_SIZE; counter++)
+    for (counter = offset+1; counter < calc_buffer_size; counter++)
     {
       buffer[counter] = SC_0;
     }
@@ -860,7 +860,7 @@ static void _shr(const char *val1, char *buffer, long offset, int radius, unsign
     if (!sc_is_zero(val1)) {
       carry_flag = 1;
     }
-    memset(buffer, sign, CALC_BUFFER_SIZE);
+    memset(buffer, sign, calc_buffer_size);
     return;
   }
 
@@ -895,7 +895,7 @@ static void _shr(const char *val1, char *buffer, long offset, int radius, unsign
 
   /* the last digit is special in regard of signed/unsigned shift */
   bitoffset = radius%4;
-  msd = (radius/4<CALC_BUFFER_SIZE)?(val1[radius/4]):(sign);  /* most significant digit */
+  msd = (radius/4<calc_buffer_size)?(val1[radius/4]):(sign);  /* most significant digit */
 
   /* remove sign bits if mode was signed and this is an unsigned shift */
   if (!signed_shift && is_signed) {
@@ -914,7 +914,7 @@ static void _shr(const char *val1, char *buffer, long offset, int radius, unsign
   if (counter > 0) buffer[counter - 1] = or_table[_val(buffer[counter-1])][_val(shrs[1])];
 
   /* fill with SC_F or SC_0 depending on sign */
-  for (counter++; counter < CALC_BUFFER_SIZE; counter++)
+  for (counter++; counter < calc_buffer_size; counter++)
   {
     buffer[counter] = sign;
   }
@@ -927,14 +927,14 @@ static void _shr(const char *val1, char *buffer, long offset, int radius, unsign
 static void _rot(const char *val1, char *buffer, long offset, int radius, unsigned is_signed)
 {
   char *temp1, *temp2;
-  temp1 = alloca(CALC_BUFFER_SIZE);
-  temp2 = alloca(CALC_BUFFER_SIZE);
+  temp1 = alloca(calc_buffer_size);
+  temp2 = alloca(calc_buffer_size);
 
   offset = offset % radius;
 
   /* rotation by multiples of the typelength is identity */
   if (offset == 0) {
-    memmove(buffer, val1, CALC_BUFFER_SIZE);
+    memmove(buffer, val1, calc_buffer_size);
     return;
   }
 
@@ -954,7 +954,7 @@ const void *sc_get_buffer(void)
 
 const int sc_get_buffer_length(void)
 {
-  return CALC_BUFFER_SIZE;
+  return calc_buffer_size;
 }
 
 /* XXX doesn't check for overflows */
@@ -966,8 +966,8 @@ void sc_val_from_str(const char *str, unsigned int len, void *buffer)
   char sign = 0;
   char *base, *val;
 
-  base = alloca(CALC_BUFFER_SIZE);
-  val = alloca(CALC_BUFFER_SIZE);
+  base = alloca(calc_buffer_size);
+  val = alloca(calc_buffer_size);
 
   /* verify valid pointers (not null) */
   assert(str);
@@ -977,8 +977,8 @@ void sc_val_from_str(const char *str, unsigned int len, void *buffer)
   if (buffer == NULL) buffer = calc_buffer;
 
   CLEAR_BUFFER(buffer);
-  memset(base, SC_0, CALC_BUFFER_SIZE);
-  memset(val, SC_0, CALC_BUFFER_SIZE);
+  memset(base, SC_0, calc_buffer_size);
+  memset(val, SC_0, calc_buffer_size);
 
   /* strip leading spaces */
   while ((len > 0) && (*str == ' ')) { len--; str++; }
@@ -1127,7 +1127,7 @@ void sc_val_from_long(long value, void *buffer)
 
   CLEAR_BUFFER(buffer);
 
-  while ((value != 0) && (pos < (char*)buffer + CALC_BUFFER_SIZE))
+  while ((value != 0) && (pos < (char*)buffer + calc_buffer_size))
   {
     *pos++ = _digit(value & 0xf);
     value >>= 4;
@@ -1149,7 +1149,7 @@ void sc_val_from_ulong(unsigned long value, void *buffer)
   if (buffer == NULL) buffer = calc_buffer;
   pos = buffer;
 
-  while (pos < (char*)buffer + CALC_BUFFER_SIZE)
+  while (pos < (char*)buffer + calc_buffer_size)
   {
     *pos++ = _digit(value & 0xf);
     value >>= 4;
@@ -1161,7 +1161,7 @@ long sc_val_to_long(const void *val)
   int i;
   long l = 0;
 
-  for (i = CALC_BUFFER_SIZE - 1; i >= 0; i--)
+  for (i = calc_buffer_size - 1; i >= 0; i--)
   {
     l = (l << 4) + _val(((char *)val)[i]);
   }
@@ -1186,7 +1186,7 @@ void sc_min_from_bits(unsigned int num_bits, unsigned int sign, void *buffer)
 
   *pos++ = min_digit[bits%4];
 
-  for (i++; i <= CALC_BUFFER_SIZE - 1; i++)
+  for (i++; i <= calc_buffer_size - 1; i++)
     *pos++ = SC_F;
 }
 
@@ -1205,16 +1205,18 @@ void sc_max_from_bits(unsigned int num_bits, unsigned int sign, void *buffer)
 
   *pos++ = max_digit[bits%4];
 
-  for (i++; i <= CALC_BUFFER_SIZE - 1; i++)
+  for (i++; i <= calc_buffer_size - 1; i++)
     *pos++ = SC_0;
 }
 
 void sc_calc(const void* value1, const void* value2, unsigned op, void *buffer)
 {
-  char unused_res[CALC_BUFFER_SIZE]; /* temp buffer holding unused result of divmod */
+  char *unused_res;   /* temp buffer holding unused result of divmod */
 
   const char *val1 = (const char *)value1;
   const char *val2 = (const char *)value2;
+
+  unused_res = alloca(calc_buffer_size);
 
   CLEAR_BUFFER(calc_buffer);
   carry_flag = 0;
@@ -1271,7 +1273,7 @@ void sc_calc(const void* value1, const void* value2, unsigned op, void *buffer)
 
   if ((buffer != NULL) && (buffer != calc_buffer))
   {
-    memcpy(buffer, calc_buffer, CALC_BUFFER_SIZE);
+    memcpy(buffer, calc_buffer, calc_buffer_size);
   }
 }
 
@@ -1310,13 +1312,13 @@ void sc_bitcalc(const void* value1, const void* value2, int radius, int sign, un
 
   if ((buffer != NULL) && (buffer != calc_buffer))
   {
-    memmove(buffer, calc_buffer, CALC_BUFFER_SIZE);
+    memmove(buffer, calc_buffer, calc_buffer_size);
   }
 }
 
 int sc_comp(const void* value1, const void* value2)
 {
-  int counter = CALC_BUFFER_SIZE - 1;
+  int counter = calc_buffer_size - 1;
   const char *val1 = (const char *)value1;
   const char *val2 = (const char *)value2;
 
@@ -1343,9 +1345,9 @@ int sc_get_highest_set_bit(const void *value)
   const char *val = (const char*)value;
   int high, counter;
 
-  high = CALC_BUFFER_SIZE * 4 - 1;
+  high = calc_buffer_size * 4 - 1;
 
-  for (counter = CALC_BUFFER_SIZE-1; counter >= 0; counter--) {
+  for (counter = calc_buffer_size-1; counter >= 0; counter--) {
     if (val[counter] == SC_0) high -= 4;
     else {
       if (val[counter] > SC_7) return high;
@@ -1366,7 +1368,7 @@ int sc_get_lowest_set_bit(const void *value)
   sign = (_sign(val)==1)?(SC_0):(SC_F);
   low = 0;
 
-  for (counter = 0; counter < CALC_BUFFER_SIZE; counter++) {
+  for (counter = 0; counter < calc_buffer_size; counter++) {
     if (val[counter] == SC_0) low += 4;
     else {
       if (val[counter] < SC_2) return low;
@@ -1383,7 +1385,7 @@ int sc_is_zero(const void *value)
   const char* val = (const char *)value;
   int counter;
 
-  for (counter = 0; counter < CALC_BUFFER_SIZE; counter++) {
+  for (counter = 0; counter < calc_buffer_size; counter++) {
     if (val[counter] != SC_0) return 0;
   }
   return 1;
@@ -1435,17 +1437,17 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base)
   char *pos;
   const char *digits = small_digits;
 
-  base_val = alloca(CALC_BUFFER_SIZE);
-  div1_res = alloca(CALC_BUFFER_SIZE);
-  div2_res = alloca(CALC_BUFFER_SIZE);
-  rem_res = alloca(CALC_BUFFER_SIZE);
+  base_val = alloca(calc_buffer_size);
+  div1_res = alloca(calc_buffer_size);
+  div2_res = alloca(calc_buffer_size);
+  rem_res = alloca(calc_buffer_size);
 
-  pos = output_buffer + BIT_PATTERN_SIZE;
+  pos = output_buffer + bit_pattern_size;
   *(--pos) = '\0';
 
   /* special case */
   if (bits == 0) {
-    bits = BIT_PATTERN_SIZE;
+    bits = bit_pattern_size;
 #ifdef STRCALC_DEBUG_FULLPRINT
     bits <<= 1;
 #endif
@@ -1510,7 +1512,7 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base)
 
   case SC_DEC:
   case SC_OCT:
-    memset(base_val, SC_0, CALC_BUFFER_SIZE);
+    memset(base_val, SC_0, calc_buffer_size);
     base_val[0] = base == SC_DEC ? SC_A : SC_8;
 
     p    = val;
@@ -1525,7 +1527,7 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base)
     }
 
     /* transfer data into oscilating buffers */
-    memset(div1_res, SC_0, CALC_BUFFER_SIZE);
+    memset(div1_res, SC_0, calc_buffer_size);
     for (counter = 0; counter < nibbles; ++counter)
       div1_res[counter] = p[counter];
 
@@ -1572,19 +1574,19 @@ void init_strcalc(int precision)
     /* round up to multiple of 4 */
     precision = (precision + 3) & ~3;
 
-    BIT_PATTERN_SIZE = (precision);
-    CALC_BUFFER_SIZE = (precision / 2);
-    MAX_VALUE_SIZE   = (precision / 4);
+    bit_pattern_size = (precision);
+    calc_buffer_size = (precision / 2);
+    max_value_size   = (precision / 4);
 
-    calc_buffer   = malloc(CALC_BUFFER_SIZE+1 * sizeof(char));
-    output_buffer = malloc(BIT_PATTERN_SIZE+1 * sizeof(char));
+    calc_buffer   = malloc(calc_buffer_size+1 * sizeof(char));
+    output_buffer = malloc(bit_pattern_size+1 * sizeof(char));
 
     if (calc_buffer == NULL || output_buffer == NULL) {
       assert(0 && "malloc failed");
       exit(-1);
     }
 
-    DEBUGPRINTF(("init strcalc: \n\tPRECISION: %d\n\tCALC_BUFFER_SIZE = %d\n\tMAX_VALUE_SIZE = %d\n\tbuffer pointer: %p\n", precision, CALC_BUFFER_SIZE, MAX_VALUE_SIZE, calc_buffer));
+    DEBUGPRINTF(("init strcalc: \n\tPRECISION: %d\n\tCALC_BUFFER_SIZE = %d\n\tMAX_VALUE_SIZE = %d\n\tbuffer pointer: %p\n", precision, calc_buffer_size, max_value_size, calc_buffer));
   }
 }
 
@@ -1596,5 +1598,5 @@ void finish_strcalc() {
 
 int sc_get_precision(void)
 {
-  return BIT_PATTERN_SIZE;
+  return bit_pattern_size;
 }
