@@ -25,13 +25,19 @@
 #  undef NAN
 #endif
 
+#ifdef HAVE_INTTYPES_H
 #include <inttypes.h>
+#endif
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 #ifdef HAVE_ALLOCA_H
 # include <alloca.h>
+#endif
+#ifdef HAVE_MALLOC_H
+# include <malloc.h>
 #endif
 
 typedef uint32_t UINT32;
