@@ -1,6 +1,8 @@
 /* Xgprintf --- extended formatted output via generic printer functions.
    Copyright (C) 1995, 1996 Christian von Roques */
 
+/* $Id$ */
+
 /* Implements ANSI-C printf formats minus locale plus extensions,
    noteably GNU Libc-like registering of specifier-handlers.  */
 

@@ -1,6 +1,8 @@
 /* Xfprintf --- extended formatted output to obstacks.
    Copyright (C) 1995, 1996 Christian von Roques */
 
+/* $Id$ */
+
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif

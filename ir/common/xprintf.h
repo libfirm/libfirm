@@ -1,6 +1,8 @@
 /* Declarations for xprintf & friends.
    Copyright (C) 1995, 1996 Christian von Roques */
 
+/* $Id$ */
+
 /* Parts of this file are adapted from the GNU C Library.
 Copyright (C) 1991, 1992, 1993 Free Software Foundation, Inc.
 

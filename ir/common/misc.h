@@ -2,6 +2,8 @@
    Copyright (C) 1995, 1996 Markus Armbruster
    All rights reserved. */
 
+/* $Id$ */
+
 #ifndef _MISC_H_
 #define _MISC_H_
 

@@ -7,6 +7,8 @@
 ** common.h: common firm declarations
 */
 
+/* $Id$ */
+
 # ifndef _COMMON_H_
 # define _COMMON_H_
 

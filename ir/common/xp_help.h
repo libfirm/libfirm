@@ -1,6 +1,8 @@
 /* Macros to help writing output handlers.
    Copyright (C) 1996 Markus Armbruster */
 
+/* $Id$ */
+
 #ifndef _XP_HELP_H
 #define _XP_HELP_H
 
