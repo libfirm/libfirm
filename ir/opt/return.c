@@ -195,7 +195,12 @@ void normalize_n_returns(ir_graph *irg)
   ir_node *endbl = get_irg_end_block(irg);
   ir_node *end;
 
-  /* first, link all returns */
+  /*
+   * First, link all returns:
+   * These must be predecessors of the endblock.
+   * Place Returns that can be moved on list, all others
+   * on final.
+   */
   n = get_Block_n_cfgpreds(endbl);
   for (n_finals = n_rets = i = 0; i < n; ++i) {
     ir_node *ret = get_Block_cfgpred(endbl, i);
@@ -238,15 +243,19 @@ void normalize_n_returns(ir_graph *irg)
 
     n = get_Block_n_cfgpreds(block);
     for (i = 0; i < n; ++i) {
-      ir_node *jmp    = get_Block_cfgpred(block, i);
-      ir_node *new_bl = get_nodes_block(jmp);
-      ir_node *new_ret;
+      ir_node *jmp = get_Block_cfgpred(block, i);
+      ir_node *new_bl, *new_ret;
+
+      if (get_irn_op(jmp) != op_Jmp)
+        continue;
+
+      new_bl = get_nodes_block(jmp);
 
       /* create the in-array for the new Ret */
       for (j = 0; j < n_ret_vals; ++j) {
         ir_node *pred = get_irn_n(ret, j);
 
-        in[j] = is_Phi(pred) ? get_Phi_pred(pred, i) : pred;
+        in[j] = (is_Phi(pred) && get_nodes_block(pred) == block) ? get_Phi_pred(pred, i) : pred;
       }
 
       new_ret = new_r_Return(irg, new_bl, in[0], n_ret_vals - 1, &in[1]);
@@ -270,6 +279,9 @@ void normalize_n_returns(ir_graph *irg)
           ++n_finals;
         }
       }
+
+      /* remove the Jmp, we have placed a Return here */
+      exchange(jmp, new_r_Bad(irg));
     }
 
     /*
