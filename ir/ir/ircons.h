@@ -317,50 +317,52 @@
  *    The comfortable interface contains the following routines further explained
  *    below:
  *
- *    ir_node *new_immBlock  (void);
- *    ir_node *new_Start  (void);
- *    ir_node *new_End    (void);
- *    ir_node *new_Jmp    (void);
- *    ir_node *new_Cond   (ir_node *c);
- *    ir_node *new_Return (ir_node *store, int arity, ir_node **in);
- *    ir_node *new_Raise  (ir_node *store, ir_node *obj);
- *    ir_node *new_Const  (ir_mode *mode, tarval *con);
+ *    ir_node *new_immBlock (void);
+ *    ir_node *new_Start    (void);
+ *    ir_node *new_End      (void);
+ *    ir_node *new_Jmp      (void);
+ *    ir_node *new_Cond     (ir_node *c);
+ *    ir_node *new_Return   (ir_node *store, int arity, ir_node **in);
+ *    ir_node *new_Raise    (ir_node *store, ir_node *obj);
+ *    ir_node *new_Const    (ir_mode *mode, tarval *con);
  *    ir_node *new_SymConst (type_or_id *value, symconst_kind kind);
- *    ir_node *new_simpleSel (ir_node *store, ir_node *objptr, entity *ent);
- *    ir_node *new_Sel    (ir_node *store, ir_node *objptr, int arity,
- *                         ir_node **in, entity *ent);
- *    ir_node *new_Call   (ir_node *store, ir_node *callee, int arity,
- *  		       ir_node **in, type_method *type);
- *    ir_node *new_Add    (ir_node *op1, ir_node *op2, ir_mode *mode);
- *    ir_node *new_Sub    (ir_node *op1, ir_node *op2, ir_mode *mode);
- *    ir_node *new_Minus  (ir_node *op,  ir_mode *mode);
- *    ir_node *new_Mul    (ir_node *op1, ir_node *op2, ir_mode *mode);
- *    ir_node *new_Quot   (ir_node *memop, ir_node *op1, ir_node *op2);
- *    ir_node *new_DivMod (ir_node *memop, ir_node *op1, ir_node *op2);
- *    ir_node *new_Div    (ir_node *memop, ir_node *op1, ir_node *op2);
- *    ir_node *new_Mod    (ir_node *memop, ir_node *op1, ir_node *op2);
- *    ir_node *new_Abs    (ir_node *op,                ir_mode *mode);
- *    ir_node *new_And    (ir_node *op1, ir_node *op2, ir_mode *mode);
- *    ir_node *new_Or     (ir_node *op1, ir_node *op2, ir_mode *mode);
- *    ir_node *new_Eor    (ir_node *op1, ir_node *op2, ir_mode *mode);
- *    ir_node *new_Not    (ir_node *op,                ir_mode *mode);
- *    ir_node *new_Shl    (ir_node *op,  ir_node *k,   ir_mode *mode);
- *    ir_node *new_Shr    (ir_node *op,  ir_node *k,   ir_mode *mode);
- *    ir_node *new_Shrs   (ir_node *op,  ir_node *k,   ir_mode *mode);
- *    ir_node *new_Rot    (ir_node *op,  ir_node *k,   ir_mode *mode);
- *    ir_node *new_Cmp    (ir_node *op1, ir_node *op2);
- *    ir_node *new_Conv   (ir_node *op, ir_mode *mode);
- *    ir_node *new_Cast   (ir_node *op, type *to_tp);
- *    ir_node *new_Load   (ir_node *store, ir_node *addr);
- *    ir_node *new_Store  (ir_node *store, ir_node *addr, ir_node *val);
- *    ir_node *new_Alloc  (ir_node *store, ir_node *size, type *alloc_type,
- *                         where_alloc where);
- *    ir_node *new_Free   (ir_node *store, ir_node *ptr, ir_node *size,
- *    		     type *free_type);
- *    ir_node *new_Proj   (ir_node *arg, ir_mode *mode, long proj);
+ *    ir_node *new_simpleSel(ir_node *store, ir_node *objptr, entity *ent);
+ *    ir_node *new_Sel      (ir_node *store, ir_node *objptr, int arity,
+ *                           ir_node **in, entity *ent);
+ *    ir_node *new_Call     (ir_node *store, ir_node *callee, int arity,
+ *  		             ir_node **in, type_method *type);
+ *    ir_node *new_Add      (ir_node *op1, ir_node *op2, ir_mode *mode);
+ *    ir_node *new_Sub      (ir_node *op1, ir_node *op2, ir_mode *mode);
+ *    ir_node *new_Minus    (ir_node *op,  ir_mode *mode);
+ *    ir_node *new_Mul      (ir_node *op1, ir_node *op2, ir_mode *mode);
+ *    ir_node *new_Quot     (ir_node *memop, ir_node *op1, ir_node *op2);
+ *    ir_node *new_DivMod   (ir_node *memop, ir_node *op1, ir_node *op2);
+ *    ir_node *new_Div      (ir_node *memop, ir_node *op1, ir_node *op2);
+ *    ir_node *new_Mod      (ir_node *memop, ir_node *op1, ir_node *op2);
+ *    ir_node *new_Abs      (ir_node *op,                ir_mode *mode);
+ *    ir_node *new_And      (ir_node *op1, ir_node *op2, ir_mode *mode);
+ *    ir_node *new_Or       (ir_node *op1, ir_node *op2, ir_mode *mode);
+ *    ir_node *new_Eor      (ir_node *op1, ir_node *op2, ir_mode *mode);
+ *    ir_node *new_Not      (ir_node *op,                ir_mode *mode);
+ *    ir_node *new_Shl      (ir_node *op,  ir_node *k,   ir_mode *mode);
+ *    ir_node *new_Shr      (ir_node *op,  ir_node *k,   ir_mode *mode);
+ *    ir_node *new_Shrs     (ir_node *op,  ir_node *k,   ir_mode *mode);
+ *    ir_node *new_Rot      (ir_node *op,  ir_node *k,   ir_mode *mode);
+ *    ir_node *new_Cmp      (ir_node *op1, ir_node *op2);
+ *    ir_node *new_Conv     (ir_node *op, ir_mode *mode);
+ *    ir_node *new_Cast     (ir_node *op, type *to_tp);
+ *    ir_node *new_Load     (ir_node *store, ir_node *addr);
+ *    ir_node *new_Store    (ir_node *store, ir_node *addr, ir_node *val);
+ *    ir_node *new_Alloc    (ir_node *store, ir_node *size, type *alloc_type,
+ *                           where_alloc where);
+ *    ir_node *new_Free     (ir_node *store, ir_node *ptr, ir_node *size,
+ *    		             type *free_type);
+ *    ir_node *new_Proj     (ir_node *arg, ir_mode *mode, long proj);
+ *    ir_node *new_FuncCall (ir_node *store, ir_node *callee, int arity,
+ *  		             ir_node **in, type_method *type);
  *
  *    void add_in_edge (ir_node *block, ir_node *jmp);
- *    void     mature_block (ir_node *block);
+ *    void mature_block (ir_node *block);
  *    void switch_block (ir_node *target);
  *    ir_node *get_value (int pos, ir_mode *mode);
  *    void set_value (int pos, ir_node *value);
@@ -705,6 +707,27 @@
  *    Output:
  *      A tuple containing the eventually changed store and the procedure
  *      results.
+ *    Attributes:
+ *      attr.call        Contains the type information for the procedure.
+ *
+ *    ir_node *new_FuncCall (ir_node *callee, int arity, ir_node **in, type_method *type)
+ *    -----------------------------------------------------------------------------------
+ *
+ *    Creates a procedure call to a function WITHOUT memory side effects.
+ *    Nodes of this kind are floating in contrast to Call nodes.
+ *    Further, a procedure call with FuncCall cannot raise an exception!
+ *
+ *    Parameters
+ *      *callee          A pointer to the called procedure.
+ *      arity            The number of procedure parameters.
+ *      **in             An array with the pointers to the parameters.
+ *                       The constructor copies this array.
+ *      *type            Type information of the procedure called.
+ *
+ *    Inputs:
+ *      The callee and the parameters.
+ *    Output:
+ *      A tuple containing the procedure results.
  *    Attributes:
  *      attr.call        Contains the type information for the procedure.
  *
@@ -1188,6 +1211,9 @@ ir_node *new_rd_EndExcept(dbg_info *db, ir_graph *irg, ir_node *block);
 ir_node *new_rd_Break  (dbg_info *db, ir_graph *irg, ir_node *block);
 ir_node *new_rd_Filter (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg,
 		       ir_mode *mode, long proj);
+ir_node *new_rd_FuncCall (dbg_info *db, ir_graph *irg, ir_node *block,
+		       ir_node *callee, int arity, ir_node *in[],
+		       type *tp);
 
 /*-------------------------------------------------------------------------*/
 /* The raw interface without debug support                                 */
@@ -1284,6 +1310,9 @@ ir_node *new_r_EndExcept(ir_graph *irg, ir_node *block);
 ir_node *new_r_Break  (ir_graph *irg, ir_node *block);
 ir_node *new_r_Filter (ir_graph *irg, ir_node *block, ir_node *arg,
 		       ir_mode *mode, long proj);
+ir_node *new_r_FuncCall (ir_graph *irg, ir_node *block,
+		       ir_node *callee, int arity, ir_node *in[],
+		       type *tp);
 
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface                                          */
@@ -1353,6 +1382,8 @@ ir_node *new_d_EndReg (dbg_info *db);
 ir_node *new_d_EndExcept(dbg_info *db);
 ir_node *new_d_Break (dbg_info *db);
 ir_node *new_d_Filter (dbg_info *db, ir_node *arg, ir_mode *mode, long proj);
+ir_node *new_d_FuncCall (dbg_info* db, ir_node *callee, int arity, ir_node *in[],
+		     type *tp);
 
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface without debug support                    */
@@ -1418,6 +1449,8 @@ ir_node *new_Id     (ir_node *val, ir_mode *mode);
 ir_node *new_Bad    (void);
 ir_node *new_Confirm (ir_node *val, ir_node *bound, pn_Cmp cmp);
 ir_node *new_Unknown(ir_mode *m);
+ir_node *new_FuncCall (ir_node *callee, int arity, ir_node *in[],
+		     type *tp);
 
 /*---------------------------------------------------------------------*/
 /* The comfortable interface.                                          */

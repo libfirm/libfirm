@@ -808,6 +808,30 @@ new_rd_Filter (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg, ir_mod
 
 }
 
+ir_node *
+new_rd_FuncCall (dbg_info* db, ir_graph *irg, ir_node *block,
+	    ir_node *callee, int arity, ir_node **in, type *tp)
+{
+  ir_node **r_in;
+  ir_node *res;
+  int r_arity;
+
+  r_arity = arity+1;
+  NEW_ARR_A (ir_node *, r_in, r_arity);
+  r_in[0] = callee;
+  memcpy (&r_in[1], in, sizeof (ir_node *) * arity);
+
+  res = new_ir_node (db, irg, block, op_FuncCall, mode_T, r_arity, r_in);
+
+  assert(is_method_type(tp));
+  set_Call_type(res, tp);
+  res->attr.call.callee_arr = NULL;
+  res = optimize_node (res);
+  irn_vrfy_irg (res, irg);
+  return res;
+}
+
+
 INLINE ir_node *new_r_Block  (ir_graph *irg,  int arity, ir_node **in) {
   return new_rd_Block(NULL, irg, arity, in);
 }
@@ -995,6 +1019,11 @@ INLINE ir_node *new_r_Break  (ir_graph *irg, ir_node *block) {
 INLINE ir_node *new_r_Filter (ir_graph *irg, ir_node *block, ir_node *arg,
 		       ir_mode *mode, long proj) {
   return new_rd_Filter(NULL, irg, block, arg, mode, proj);
+}
+INLINE ir_node *new_r_FuncCall (ir_graph *irg, ir_node *block,
+			      ir_node *callee, int arity, ir_node **in,
+			      type *tp) {
+  return new_rd_FuncCall(NULL, irg, block, callee, arity, in, tp);
 }
 
 
@@ -1483,8 +1512,8 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode);
 static ir_node *
 phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins);
 
-static INLINE ir_node **
-new_frag_arr (ir_node *n) {
+static INLINE ir_node ** new_frag_arr (ir_node *n)
+{
   ir_node **arr;
   int opt;
   arr = NEW_ARR_D (ir_node *, current_ir_graph->obst, current_ir_graph->n_loc);
@@ -2208,6 +2237,17 @@ new_d_Filter (dbg_info *db, ir_node *arg, ir_mode *mode, long proj)
 			arg, mode, proj);
 }
 
+ir_node *
+new_d_FuncCall (dbg_info* db, ir_node *callee, int arity, ir_node **in,
+	  type *tp)
+{
+  ir_node *res;
+  res = new_rd_FuncCall (db, current_ir_graph, current_ir_graph->current_block,
+		     callee, arity, in, tp);
+
+  return res;
+}
+
 /* ********************************************************************* */
 /* Comfortable interface with automatic Phi node construction.           */
 /* (Uses also constructors of ?? interface, except new_Block.            */
@@ -2507,4 +2547,7 @@ ir_node *new_Break  (void) {
 }
 ir_node *new_Filter (ir_node *arg, ir_mode *mode, long proj) {
   return new_d_Filter(NULL, arg, mode, proj);
+}
+ir_node *new_FuncCall (ir_node *callee, int arity, ir_node **in, type *tp) {
+  return new_d_FuncCall(NULL, callee, arity, in, tp);
 }
