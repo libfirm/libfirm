@@ -52,7 +52,7 @@ static void count_block (ir_node *block, void *env)
 # endif /* def DEBUG_libfirm */
 
   fprintf (stdout, "%s: Block(%p) has # (%i)\n",
-		   __FILE__ ":count_block", block, *n);
+		   __FILE__ ":count_block", (void *)block, *n);
 
   (*n) ++;
 }
@@ -74,7 +74,7 @@ static int get_n_blocks (ir_graph *graph)
   irg_block_walk (end_block, count_block, NULL, &n);
 
   fprintf (stdout, "%s: Graph(%p) has (%i) blocks\n",
-		   __FILE__ ":get_n_blocks", graph, n);
+		   __FILE__ ":get_n_blocks", (void *)graph, n);
 
   return (n);
 }
