@@ -456,7 +456,7 @@ dump_ir_data_edges(ir_node *n)  {
     if ((interprocedural_view && get_irn_visited(pred) < visited))
       continue; /* pred not dumped */
     if (is_backedge(n, i))
-      fprintf (F, "backedge: {sourcename: ");
+      fprintf (F, "backedge: {sourcename: \"");
     else
       fprintf (F, "edge: {sourcename: \"");
     PRINT_NODEID(n);
