@@ -66,6 +66,7 @@ optimization_state_t libFIRM_verb =
   DISABLE(OPT_PRECISE_EXC_CONTEXT)                |
   0;
 
+/** The Firm verbosity level */
 int firm_verbosity_level;
 
 /* set the flags with set_flagname, get the flag with get_flagname */
@@ -219,7 +220,7 @@ void set_firm_verbosity (int value) {
 }
 
 int  (get_firm_verbosity) (void) {
-  return __get_firm_verbosity();
+  return _get_firm_verbosity();
 }
 
 
