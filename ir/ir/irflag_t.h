@@ -81,6 +81,9 @@ typedef enum {
   /** Free never called methods */
   OPT_DEAD_METHOD_ELIMINATION_VERBOSE    = 0x00010000,
 
+  /** Optimize Loads and Stores */
+  OPT_REDUNDANT_LOADSTORE                = 0x00020000,
+
   /** Turn off all optimizations. */
   OPT_OPTIMIZED                          = 0x40000000,
 } libfirm_opts_t;
@@ -103,6 +106,12 @@ static INLINE int get_opt_global_cse(void)
 static INLINE int get_opt_constant_folding(void)
 {
   return libFIRM_opt & OPT_CONSTANT_FOLDING;
+}
+
+/** Returns global constant subexpression elimination setting. */
+static INLINE int get_opt_redundant_LoadStore(void)
+{
+  return libFIRM_opt & OPT_REDUNDANT_LOADSTORE;
 }
 
 /** Returns unreachable code elimination setting. */

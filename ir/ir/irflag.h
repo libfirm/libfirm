@@ -47,6 +47,14 @@ int get_optimize(void);
  */
 void set_opt_constant_folding (int value);
 
+/** Enables/Disables removal of redundant Loads and Stores.
+ *
+ *  - Remove Store that overwrites a just stored value (WAW).
+ *  - Remove Store if it stores a value just loaded (WAR with the same value).
+ *  - Remove Load that loads a value just saved (RAW with the same value).
+ */
+void set_opt_redundant_LoadStore(int value);
+
 /** Enables/Disables constant subexpression elimination.
  *
  * If opt_cse == 1 perform constant subexpression elimination.
@@ -132,6 +140,14 @@ void set_opt_inline (int value);
  */
 void set_opt_dyn_meth_dispatch (int value);
 
+/** Enable/Disable optimization of tail-recursion calls.
+ *
+ * This flag enables/disables the optimization tail-recursion call.
+ * If the flag is turned on tail-recursion calls are optimized into loops.
+ */
+void set_opt_tail_recursion(int value);
+
+
 /** Enable/Disable normalizations of the firm representation.
  *
  *  This flag guards transformations that normalize the firm representation
@@ -146,12 +162,6 @@ void set_opt_dyn_meth_dispatch (int value);
  */
 void set_opt_normalize (int value);
 
-/** Enable/Disable optimization of tail-recursion calls.
- *
- * This flag enables/disables the optimization tail-recursion call.
- * If the flag is turned on tail-recursion calls are optimized into loops.
- */
-void set_opt_tail_recursion(int value);
 
 /** Enable/Disable precise exception context. */
 void set_opt_precise_exc_context(int value);

@@ -27,6 +27,7 @@ optimization_state_t libFIRM_opt =
   ENABLE(OPT_CSE)                                |
   DISABLE(OPT_GLOBAL_CSE)                        |
   ENABLE(OPT_CONSTANT_FOLDING)                   |
+  ENABLE(OPT_REDUNDANT_LOADSTORE)                |
   ENABLE(OPT_UNREACHABLE_CODE)                   |
   ENABLE(OPT_CONTROL_FLOW_STRAIGHTENING)         |
   ENABLE(OPT_CONTROL_FLOW_WEAK_SIMPLIFICATION)   |
@@ -66,6 +67,14 @@ set_opt_constant_folding(int value)
     libFIRM_opt |= OPT_CONSTANT_FOLDING;
   else
     libFIRM_opt &= ~OPT_CONSTANT_FOLDING;
+}
+
+void
+set_opt_redundant_LoadStore(int value) {
+  if (value)
+    libFIRM_opt |= OPT_REDUNDANT_LOADSTORE;
+  else
+    libFIRM_opt &= ~OPT_REDUNDANT_LOADSTORE;
 }
 
 void

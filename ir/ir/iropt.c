@@ -904,6 +904,8 @@ static ir_node *equivalent_node_Load(ir_node *n)
 {
   ir_node *oldn = n;
 
+  if (!get_opt_redundant_LoadStore()) return n;
+
   /* remove unnecessary Load. */
   ir_node *a = skip_Proj(get_Load_mem(n));
   ir_node *b = get_Load_ptr(n);
@@ -924,13 +926,15 @@ static ir_node *equivalent_node_Load(ir_node *n)
 }
 
 /**
- * Optimize store after store and load atfter store.
+ * Optimize store after store and load after store.
  *
  * @todo FAILS for volatile entities
  */
 static ir_node *equivalent_node_Store(ir_node *n)
 {
   ir_node *oldn = n;
+
+  if (!get_opt_redundant_LoadStore()) return n;
 
   /* remove unnecessary store. */
   ir_node *a = skip_Proj(get_Store_mem(n));
@@ -966,11 +970,11 @@ static ir_node *equivalent_node_Proj(ir_node *n)
     if ( get_Proj_proj(n) <= get_Tuple_n_preds(a) ) {
       n = get_Tuple_pred(a, get_Proj_proj(n));                     DBG_OPT_TUPLE;
     } else {
-//      assert(0); /* This should not happen! */
+      assert(0); /* This should not happen! */
 //      n = new_Bad();
-      dump_ir_block_graph(current_ir_graph, "-CRASH");
-      printf(">>>%d\n", get_irn_node_nr(n));
-      exit(1);
+      //dump_ir_block_graph(current_ir_graph, "-CRASH");
+      //printf(">>>%d\n", get_irn_node_nr(n));
+      //exit(1);
     }
   } else if (get_irn_mode(n) == mode_X &&
 	     is_Bad(get_nodes_block(n))) {
@@ -1391,6 +1395,8 @@ static ir_node *transform_node_Store(ir_node *store)
 {
   ir_node *pred = skip_Proj(get_Store_mem(store));
   ir_node *ptr  = get_Store_ptr(store);
+
+  if (!get_opt_redundant_LoadStore()) return store;
 
   if (get_irn_op(pred) == op_Store &&
       get_Store_ptr(pred) == ptr   &&
