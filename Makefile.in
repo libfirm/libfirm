@@ -46,17 +46,13 @@ testprograms:	libfirm.a
 	$(MAKE) -C testprograms
 
 
-# generate program documentation
+# gernerate program documentation
 .PHONY: autodoc
-autodoc: autodoc_xref $(AUTODOCDIR) $(GLOBALXREFFILE) autodoc_html $(INDEXFILE)
+autodoc: $(AUTODOCDIR) $(AUTODOCINDEXFILE)
 
-$(GLOBALXREFFILE): $(addsuffix /$(LOCALXREFSFILE), $(subdirs)) .xrefs
-#	cat $^ > $@
-	$(RM) $@
-	find $(PWD) -name "*.xref" -print > $@
-
-$(INDEXFILE): $(GLOBALXREFFILE)
-	$(AUTODOC) $(GLOBALXREFFILE) $@ INDEX HTML
+.PHONY: $(AUTDOCINDEXFILE)
+$(AUTODOCINDEXFILE): $(CFILES) $(HFILES)
+	$(AUTODOC) $(srcdir)/$(AUTODOCFILE)
 
 
 #${srcdir}/configure: configure.in aclocal.m4

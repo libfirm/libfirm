@@ -35,14 +35,6 @@ else
 	$(CC) -M $(DEFS) $(CPPFLAGS) $(filter %.c,$^) >.depend || { $(RM) .depend; false; }
 endif
 
-autodoc_xref: subdir_autodoc_xref local_autodoc_xref
-.PHONY: local_autodoc_xref
-local_autodoc_xref: $(LOCALXREFSFILE)
-
-autodoc_html: subdir_autodoc_html local_autodoc_html
-.PHONY: local_autodoc_html
-local_autodoc_html: $(HTMLFILES)
-
 
 # generate an archive for distribution
 distrib: dist
@@ -97,7 +89,7 @@ $(INCLUDEDIR):
 
 # generated the directory where all the generated documentation is
 $(AUTODOCDIR):
-	mkdir $@
+	mkdir -p $@
 
 # print some help
 .PHONY:	help
