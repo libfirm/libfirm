@@ -57,7 +57,7 @@ libfirm.a: $(XOFILES) $(OFILES)
 	mv -f $@.new $@
 
 libfirm.so: subdir_all $(XOFILES) $(OFILES)
-	ld -Bshareable -o ./libfirm.so $(XOFILES) -lm
+	ld -Bshareable -o ./libfirm.so $(XOFILES) -lm -L/usr/public/libxml2/lib -lxml2
 
 testprograms:	libfirm.a
 	$(MAKE) -C testprograms
