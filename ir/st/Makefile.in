@@ -10,11 +10,11 @@ srcdir = @srcdir@
 topdir = ../..
 subdir := ir/st
 
-INSTALL_HEADERS = st.h exc.h
+INSTALL_HEADERS = st.h exc.h bs.h
 
 SOURCES = $(INSTALL_HEADERS)
 
-SOURCES += Makefile.in st.c st.h exc.c
+SOURCES += Makefile.in st.c  exc.c
 
 
 include $(topdir)/MakeRules
