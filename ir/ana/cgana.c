@@ -509,7 +509,7 @@ static void callee_walker(ir_node * call, void * env) {
     entity ** arr = NEW_ARR_F(entity *, 0);
     callee_ana_node(skip_Id(get_Call_ptr(call)), methods);
     if (eset_contains(methods, MARK)) { /* unknown method */
-      ARR_APP1(entity *, arr, NULL);
+      ARR_APP1(entity *, arr, unknown_entity);
     }
     for (ent = eset_first(methods); ent; ent = eset_next(methods)) {
       if (ent != MARK) {
@@ -535,6 +535,13 @@ static void callee_walker(ir_node * call, void * env) {
     } else
 #endif
     {
+      /* remove, what we repaired. */
+      int i;
+      for (i = 0; i < ARR_LEN(arr); ++i) {
+	assert(arr[i]);
+	//if (arr[i] == unknown_entity) arr[i] = NULL;
+      }
+
       set_Call_callee_arr(call, ARR_LEN(arr), arr);
     }
     DEL_ARR_F(arr);

@@ -141,7 +141,7 @@ static void ana_Call(ir_node *n, void *env) {
   n_callees = get_Call_n_callees(n);
   for (i = 0; i < n_callees; ++i) {
     entity *callee_e = get_Call_callee(n, i);
-    if (callee_e) {  /* Null for unknown caller */
+    if (callee_e != unknown_entity) {  /* For unknown caller */
       ir_graph *callee = get_entity_irg(callee_e);
       pset_insert((pset *)callee->callers, irg, (unsigned)irg >> 3);
 

@@ -487,6 +487,10 @@ void *get_loop_link (const ir_loop *loop) {
 #endif
 }
 
+int is_ir_loop(const void *thing) {
+  return (get_kind(thing) == k_ir_loop);
+}
+
 /* The outermost loop is remarked in the surrounding graph. */
 void     set_irg_loop(ir_graph *irg, ir_loop *loop) {
   assert(irg);

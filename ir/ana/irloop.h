@@ -76,6 +76,9 @@ typedef union {
     ir_loop *son;       /**< Pointer to an ir_loop element */
 } loop_element;
 
+int      is_ir_loop(const void *thing);
+
+/** Set the outermost loop in ir graph as basic access to loop tree. */
 void     set_irg_loop(ir_graph *irg, ir_loop *l);
 ir_loop *get_irg_loop(ir_graph *irg);
 
@@ -106,7 +109,8 @@ loop_element get_loop_element (ir_loop *loop, int pos);
 int get_loop_element_pos(ir_loop *loop, void *le);
 
 /** Returns a unique node number for the loop node to make output
-    readable. Casten pointer if libfirm_debug not set. */
+    readable. If libfirm_debug is not set it returns the loop cast to
+    int. */
 int get_loop_loop_nr(ir_loop *loop);
 
 /** A field to connect additional information to a loop.  Only valid
