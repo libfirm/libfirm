@@ -663,8 +663,15 @@ typedef enum {
 } pn_Cmp;   /* Projection numbers for Cmp */
 /* #define not_mask pn_Cmp_Leg */
 
+/** returns the pnc name from an pnc constant */
 const char *get_pnc_string(int pnc);
+
+/** Calculates the negated pnc condition. */
 int         get_negated_pnc(int pnc);
+
+/** Calculates the swapped pnc condition, i.e., "<" --> ">" */
+int         get_swapped_pnc(int pnc);
+
 ir_node *get_Cmp_left (ir_node *node);
 void     set_Cmp_left (ir_node *node, ir_node *left);
 ir_node *get_Cmp_right (ir_node *node);

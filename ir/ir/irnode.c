@@ -53,30 +53,42 @@ const char *get_pnc_string(int pnc) {
   return pnc_name_arr[pnc];
 }
 
-/**
+/*
  * Calculates the negated pnc condition.
  */
 int
 get_negated_pnc(int pnc) {
   switch (pnc) {
-  case pn_Cmp_False: return pn_Cmp_True;  break;
-  case pn_Cmp_Eq:    return pn_Cmp_Ne;    break;
-  case pn_Cmp_Lt:    return pn_Cmp_Uge;   break;
-  case pn_Cmp_Le:    return pn_Cmp_Ug;    break;
-  case pn_Cmp_Gt:    return pn_Cmp_Ule;   break;
-  case pn_Cmp_Ge:    return pn_Cmp_Ul;    break;
-  case pn_Cmp_Lg:    return pn_Cmp_Ue;    break;
-  case pn_Cmp_Leg:   return pn_Cmp_Uo;    break;
-  case pn_Cmp_Uo:    return pn_Cmp_Leg;   break;
-  case pn_Cmp_Ue:    return pn_Cmp_Lg;    break;
-  case pn_Cmp_Ul:    return pn_Cmp_Ge;    break;
-  case pn_Cmp_Ule:   return pn_Cmp_Gt;    break;
-  case pn_Cmp_Ug:    return pn_Cmp_Le;    break;
-  case pn_Cmp_Uge:   return pn_Cmp_Lt;    break;
-  case pn_Cmp_Ne:    return pn_Cmp_Eq;    break;
-  case pn_Cmp_True:  return pn_Cmp_False; break;
+  case pn_Cmp_False: return pn_Cmp_True;
+  case pn_Cmp_Eq:    return pn_Cmp_Ne;
+  case pn_Cmp_Lt:    return pn_Cmp_Uge;
+  case pn_Cmp_Le:    return pn_Cmp_Ug;
+  case pn_Cmp_Gt:    return pn_Cmp_Ule;
+  case pn_Cmp_Ge:    return pn_Cmp_Ul;
+  case pn_Cmp_Lg:    return pn_Cmp_Ue;
+  case pn_Cmp_Leg:   return pn_Cmp_Uo;
+  case pn_Cmp_Uo:    return pn_Cmp_Leg;
+  case pn_Cmp_Ue:    return pn_Cmp_Lg;
+  case pn_Cmp_Ul:    return pn_Cmp_Ge;
+  case pn_Cmp_Ule:   return pn_Cmp_Gt;
+  case pn_Cmp_Ug:    return pn_Cmp_Le;
+  case pn_Cmp_Uge:   return pn_Cmp_Lt;
+  case pn_Cmp_Ne:    return pn_Cmp_Eq;
+  case pn_Cmp_True:  return pn_Cmp_False;
   }
   return 99; /* to shut up gcc */
+}
+
+/* Calculates the swapped pnc condition, i.e., "<" --> ">" */
+int
+get_swapped_pnc(int pnc) {
+  int code    = pnc & ~(pn_Cmp_Lt|pn_Cmp_Gt);
+  int lesser  = pnc & pn_Cmp_Lt;
+  int greater = pnc & pn_Cmp_Gt;
+
+  code |= (lesser ? pn_Cmp_Gt : 0) | (greater ? pn_Cmp_Lt : 0);
+
+  return code;
 }
 
 const char *pns_name_arr [] = {
