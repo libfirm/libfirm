@@ -21,18 +21,18 @@
 # include <config.h>
 #endif
 
-# include <stdlib.h>
+#include <stdlib.h>
 
-# include "irnode_t.h"
-# include "irgraph_t.h" /* visited flag */
-# include "irprog.h"
-# include "irgwalk.h"
-# include "typewalk.h"
-# include "firmstat.h"
-# include "ircgcons.h"
+#include "irnode_t.h"
+#include "irgraph_t.h" /* visited flag */
+#include "irprog.h"
+#include "irgwalk.h"
+#include "typewalk.h"
+#include "firmstat.h"
+#include "ircgcons.h"
 
-# include "eset.h"
-# include "array.h"
+#include "eset.h"
+#include "array.h"
 
 /* walk over an interprocedural graph (callgraph). Visits only graphs in irg_set. */
 static void irg_walk_cg(ir_node * node, int visited, eset * irg_set,
@@ -113,13 +113,16 @@ static void collect_irgs(ir_node * node, eset * irg_set) {
       entity * ent = get_Call_callee(node, i);
       ir_graph * irg = ent ? get_entity_irg(ent) : NULL;
       if (irg && !eset_contains(irg_set, irg)) {
-    eset_insert(irg_set, irg);
-    irg_walk_graph(irg, (irg_walk_func *) collect_irgs, NULL, irg_set);
+        eset_insert(irg_set, irg);
+        irg_walk_graph(irg, (irg_walk_func *) collect_irgs, NULL, irg_set);
       }
     }
   }
 }
 
+/**
+ * specialized version of irg_walk_2, called if only pre callback exists
+ */
 static void
 irg_walk_2_pre(ir_node *node, irg_walk_func *pre, void * env) {
   int i;
@@ -139,6 +142,9 @@ irg_walk_2_pre(ir_node *node, irg_walk_func *pre, void * env) {
   }
 }
 
+/**
+ * specialized version of irg_walk_2, called if only post callback exists
+ */
 static void
 irg_walk_2_post(ir_node *node, irg_walk_func *post, void * env) {
   int i;
@@ -158,6 +164,9 @@ irg_walk_2_post(ir_node *node, irg_walk_func *post, void * env) {
   post(node, env);
 }
 
+/**
+ * specialized version of irg_walk_2, called if pre and post callbacks exist
+ */
 static void
 irg_walk_2_both(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env) {
   int i;
@@ -179,50 +188,22 @@ irg_walk_2_both(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * e
   post(node, env);
 }
 
-
+/**
+ * Intraprozedural graph walker.
+ */
 static void
 irg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
 {
-#if 0 /* safe, old */
-  int i;
-  if (get_irn_visited(node) < get_irg_visited(current_ir_graph)) {
-    set_irn_visited(node, get_irg_visited(current_ir_graph));
-
-    if (pre) pre(node, env);
-
-    if (is_no_Block(node))
-      irg_walk_2(get_nodes_block(node), pre, post, env);
-    for (i = get_irn_arity(node) - 1; i >= 0; --i)
-      irg_walk_2(get_irn_n(node, i), pre, post, env);
-
-    if (post) post(node, env);
-  }
-#else /* faster */
-#if 0
-  if (node->visited < current_ir_graph->visited) {
-    int i;
-    set_irn_visited(node, current_ir_graph->visited);
-
-    if (pre) pre(node, env);
-
-    if (node->op != op_Block)
-      irg_walk_2(get_irn_n(node, -1), pre, post, env);
-    for (i = get_irn_arity(node) - 1; i >= 0; --i)
-      irg_walk_2(get_irn_n(node, i), pre, post, env);
-
-    if (post) post(node, env);
-  }
-#else /* even faster */
   if (node->visited < current_ir_graph->visited) {
     if      (!post) irg_walk_2_pre (node, pre, env);
     else if (!pre)  irg_walk_2_post(node, post, env);
     else            irg_walk_2_both(node, pre, post, env);
   }
-#endif
-#endif
 }
 
-
+/*
+ * generic graph walker
+ */
 void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
 {
   assert(node  && node->kind==k_ir_node);
@@ -453,7 +434,7 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void
     for (i = 0; i < arity; i++) {
       pred = get_irn_n(node, i);
       if (get_irn_op(pred) == op_Block)
-    irg_block_walk_2(pred, pre, post, env);
+        irg_block_walk_2(pred, pre, post, env);
     }
   }
 
@@ -490,7 +471,7 @@ static void walk_entity(entity *ent, void *env)
       int i, n = get_compound_ent_n_values(ent);
 
       for (i = 0; i < n; i++)
-    irg_walk(get_compound_ent_value(ent, i), my_env->pre, my_env->post, my_env->env);
+        irg_walk(get_compound_ent_value(ent, i), my_env->pre, my_env->post, my_env->env);
     }
   }
 }
