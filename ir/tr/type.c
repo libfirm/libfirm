@@ -1244,6 +1244,46 @@ INLINE int is_atomic_type(type *tp) {
   return (is_primitive_type(tp) || is_pointer_type(tp) ||
 	  is_enumeration_type(tp));
 }
+
+/*
+ * Gets the number of elements in a firm compound type.
+ */
+int get_compound_n_members(type *tp)
+{
+  int res = 0;
+
+  if (is_struct_type(tp))
+    res = get_struct_n_members(tp);
+  else if (is_class_type(tp))
+    res = get_class_n_members(tp);
+  else if (is_union_type(tp))
+    res = get_union_n_members(tp);
+  else
+    assert(0 && "need struct, union or class for member count");
+
+  return res;
+}
+
+/*
+ * Gets the member of a firm compound type at position pos.
+ */
+entity *get_compound_member(type *tp, int pos)
+{
+  entity *res;
+
+  if (is_struct_type(tp))
+    res = get_struct_member(tp, pos);
+  else if (is_class_type(tp))
+    res = get_class_member(tp, pos);
+  else if (is_union_type(tp))
+    res = get_union_member(tp, pos);
+  else
+    assert(0 && "need struct, union or class to get a member");
+
+  return res;
+}
+
+
 INLINE int is_compound_type(type *tp) {
   assert(tp && tp->kind == k_type);
   return (is_class_type(tp) || is_struct_type(tp) ||

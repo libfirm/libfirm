@@ -71,18 +71,17 @@ typedef struct ir_node ir_node;
  *
  *  The common fields are:
  *
- *  - firm_kind    A firm_kind tag containing k_type.  This is useful
+ *  - firm_kind: A firm_kind tag containing k_type.  This is useful
  *               for dynamically checking whether a node is a type node.
- *  - type_op      A tp_op specifying the kind of the type.
- *  - mode         The mode to be used to represent the type on a machine.
- *               @@@ maybe not global field??
- *  - name         An identifier specifying the name of the type.  To be
+ *  - type_op:   A tp_op specifying the kind of the type.
+ *  - mode:      The mode to be used to represent the type on a machine.
+ *  - name:      An identifier specifying the name of the type.  To be
  *               set by the frontend.
- *  - size         The size of the type, i.e. an entity of this type will
+ *  - size:      The size of the type, i.e. an entity of this type will
  *               occupy size bytes in memory.  In several cases this is
  *               determined when fixing the layout of this type (class,
  *               struct, union, array, enumeration).
- *  - state        The state of the type.  The state represents whether the
+ *  - state:     The state of the type.  The state represents whether the
  *               layout of the type is undefined or fixed (values: layout_undefined
  *               or layout_fixed).  Compound types can have an undefined
  *               layout.  The layout of the basic types primitive and pointer
@@ -91,14 +90,23 @@ typedef struct ir_node ir_node;
  *               and the size of the type must be set.
  *               A fixed layout for enumeration types means that each enumeration
  *               is associated with an implementation value.
- *  - visit        A counter for walks of the type information.
- *  - link         A void* to associate some additional information with the type.
+ *  - visit:     A counter for walks of the type information.
+ *  - link:      A void* to associate some additional information with the type.
  *
  *  These fields can only be accessed via access functions.
  *
- *  Depending on the value of type_op, i.e., depending on the kind of the
+ *  Depending on the value of @c type_op, i.e., depending on the kind of the
  *  type the adt contains further attributes.  These are documented below.
- * @see  class, struct, method, union, array, enumeration, pointer, primitive
+ *
+ *  @see
+ *
+ *  @link class_type class @endlink, @link struct_type struct @endlink,
+ *  @link method_type method @endlink, @link union_type union @endlink,
+ *  @link array_type array @endlink, @link enumeration_type enumeration @endlink,
+ *  @link pointer_type pointer @endlink, @link primitive_type primitive @endlink
+ *
+ *  @todo
+ *  	mode maybe not global field??
  */
 #ifndef _TYPE_TYPEDEF_
 #define _TYPE_TYPEDEF_
@@ -120,6 +128,7 @@ ident*      get_type_ident(type *tp);
 void        set_type_ident(type *tp, ident* id);
 const char* get_type_name(type *tp);
 
+/** The state of a type layout. */
 typedef enum {
   layout_undefined,    /**< The layout of this type is not defined.
 			  Address computation to access fields is not
@@ -132,19 +141,37 @@ typedef enum {
 			  computation. Default for pointer, primitive ane method
 			  types.  */
 } type_state;
+
+/** Returns the type layout state of a type. */
 type_state  get_type_state(type *tp);
-/* For primitives, pointer and method types the layout is always fixed.
-   This call is legal but has no effect. */
+
+/** Sets the type layout state of a type.
+ *
+ * For primitives, pointer and method types the layout is always fixed.
+ * This call is legal but has no effect.
+ */
 void        set_type_state(type *tp, type_state state);
 
-/* Returns NULL for all non atomic types. */
+/** Returns the mode of a type.
+ *
+ * Returns NULL for all non atomic types.
+ */
 ir_mode*    get_type_mode(type *tp);
-/* Only has an effect on primitive and enumeration types */
+
+/** Sets the mode of a type.
+ *
+ * Only has an effect on primitive and enumeration types.
+ */
 void        set_type_mode(type *tp, ir_mode* m);
 
+/** Returns the size of a type. */
 int         get_type_size(type *tp);
-/* For primitive, enumeration, pointer and method types the size
-   is always fixed. This call is legal but has no effect. */
+
+/** Sets the size of a type.
+ *
+ * For primitive, enumeration, pointer and method types the size
+ * is always fixed. This call is legal but has no effect.
+ */
 void        set_type_size(type *tp, int size);
 
 
@@ -159,13 +186,14 @@ void*         get_type_link(type *tp);
 void          set_type_link(type *tp, void *l);
 
 /**
+ * Visited flag to traverse the type information.
  *
- *   visited flag to traverse the type information
- *   Increase this flag by one before traversing the type information.
- *   Mark type nodes as visited by set_type_visited(type, type_visited).
- *   Check whether node was already visited by comparing get_type_visited(type)
- *   and type_visited.
- *   Or use the function to walk all types.
+ * Increase this flag by one before traversing the type information.
+ * Mark type nodes as visited by set_type_visited(type, type_visited).
+ * Check whether node was already visited by comparing get_type_visited(type)
+ * and type_visited.
+ * Or use the function to walk all types.
+ *
  * @see  typewalk
  */
 extern unsigned long type_visited;
@@ -174,14 +202,12 @@ unsigned long get_master_type_visited(void);
 void          inc_master_type_visited(void);
 
 /**
+ * Checks whether a pointer points to a type.
  *
- *   Checks whether a pointer points to a type.
+ * @param thing     an arbitrary pointer
  *
- *   @param thing     an arbitrary pointer
- *
- *   @return
- *       true if the thing is a type, else false
- *
+ * @return
+ *     true if the thing is a type, else false
  */
 int is_type            (void *thing);
 
@@ -193,7 +219,7 @@ int is_type            (void *thing);
  *
  *   @return
  *    true if the types are equal, else false.
- *    Types are equal if
+ *    Types are equal if :
  *    - they are the same type kind
  *    - they have the same name
  *    - they have the same mode (if applicable)
@@ -260,91 +286,112 @@ bool equal_type(type *tpy1, type *typ2);
 bool smaller_type (type *st, type *lt);
 
 /**
- *  Representation of a class type.
+ *  @page class_type	Representation of a class type
+ *
  *  If the type opcode is set to type_class the type represents class
  *  types.  A list of fields and methods is associated with a class.
  *  Further a class can inherit from and bequest to other classes.
  *  @@@ value class???
- *  @param The following attributes are private to this type kind.
- *  @param member     All entities belonging to this class.  This are methode entities
- *             which have type_method or fields that can have any of the
- *             following type kinds: type_class, type_struct, type_union,
- *             type_array, type_enumeration, type_pointer, type_primitive.
+ *  The following attributes are private to this type kind:
+ *  - member:     All entities belonging to this class.  This are methode entities
+ *                which have type_method or fields that can have any of the
+ *                following type kinds: type_class, type_struct, type_union,
+ *                type_array, type_enumeration, type_pointer, type_primitive.
  *
- *  @param subtypes   A list of direct subclasses.
+ *  The following two are dynamic lists that can be grown with an "add_" function,
+ *  but not shrinked:
  *
- *  @param supertypes A list of direct superclasses.
+ *  - subtypes:   A list of direct subclasses.
  *
- *  @param These are dynamic lists that can be grown with an "add_" function,
- *  @param but not shrinked.
+ *  - supertypes: A list of direct superclasses.
  *
- *  @param peculiarity The peculiarity of this class.  If the class is of peculiarity
- *             "description" it only is a description of requirememts to a class,
- *             as, e.g., a Java interface.  The class will never be allocated.
- *             Peculiatity inherited is only possible for entities.  An entity
- *             is of peculiarity inherited if the compiler generated the entity
- *             to explicitly resolve inheritance.  An inherited method entity has
- *             no value for irg.
- *             Values: description, existent, inherited.  Default: existent.
+ *  - peculiarity: The peculiarity of this class.  If the class is of peculiarity
+ *                 "description" it only is a description of requirememts to a class,
+ *                 as, e.g., a Java interface.  The class will never be allocated.
+ *                 Peculiatity inherited is only possible for entities.  An entity
+ *                 is of peculiarity inherited if the compiler generated the entity
+ *                 to explicitly resolve inheritance.  An inherited method entity has
+ *                 no value for irg.
+ *                 Values: description, existent, inherited.  Default: existent.
  *
  */
-/* create a new class type */
+
+/** Creates a new class type. */
 type   *new_type_class (ident *name);
+
+/** Creates a new class type with debug information. */
 type   *new_d_type_class (ident *name, dbg_info *db);
 
-/** manipulate private fields of class type  **/
-/* Adds the entity as member of the class.  */
+/* --- manipulate private fields of class type  --- */
+
+/** Adds the entity as member of the class.  */
 void    add_class_member   (type *clss, entity *member);
-/* Returns the number of members of this class. */
+
+/** Returns the number of members of this class. */
 int     get_class_n_members (type *clss);
-/* Returns the member at position pos, 0 <= pos < n_member */
+
+/** Returns the member at position pos, 0 <= pos < n_member */
 entity *get_class_member   (type *clss, int pos);
+
 /** Returns index of mem in clss, -1 if not contained. */
 int     get_class_member_index(type *clss, entity *mem);
-/* Overwrites the member at position pos, 0 <= pos < n_member with
+
+/** Overwrites the member at position pos, 0 <= pos < n_member with
    the passed entity. */
 void    set_class_member   (type *clss, entity *member, int pos);
-/* Replaces complete member list in class type by the list passed.  Copies the
-   list passed. This function is necessary to reduce the number of members.
+
+/** Replaces complete member list in class type by the list passed.
+   Copies the list passed. This function is necessary to reduce the number of members.
    members is an array of entities, num the size of this array.  Sets all
    owners of the members passed to clss. */
 void    set_class_members  (type *clss, entity *members[], int arity);
-/* Finds member in the list of members and removes it.
+
+/** Finds member in the list of members and removes it.
    Shrinks the member list, so iterate from the end!!!
    Does not deallocate the entity.  */
 void    remove_class_member(type *clss, entity *member);
 
 
-/* Adds subtype as subtype to clss.
+/** Adds subtype as subtype to clss.
    Checks whether clss is a supertype of subtype.  If not
    adds also clss as supertype to subtype.  */
 void    add_class_subtype   (type *clss, type *subtype);
-/* Returns the number of subtypes */
+
+/** Returns the number of subtypes */
 int     get_class_n_subtypes (type *clss);
-/* Gets the subtype at position pos, 0 <= pos < n_subtype. */
+
+/** Gets the subtype at position pos, 0 <= pos < n_subtype. */
 type   *get_class_subtype   (type *clss, int pos);
-/* Sets the subtype at positioin pos, 0 <= pos < n_subtype.  Does not
-   set the corresponding supertype relation for subtype: this might
+
+/** Sets the subtype at positioin pos, 0 <= pos < n_subtype.
+   Does not set the corresponding supertype relation for subtype: this might
    be a different position! */
 void    set_class_subtype   (type *clss, type *subtype, int pos);
-/* Finds subtype in the list of subtypes and removes it  */
+
+/** Finds subtype in the list of subtypes and removes it  */
 void    remove_class_subtype(type *clss, type *subtype);
 
 
-/* Adds supertype as supertype to class.
+/** Adds supertype as supertype to class.
    Checks whether clss is a subtype of supertype.  If not
    adds also clss as subtype to supertype.  */
 void    add_class_supertype   (type *clss, type *supertype);
-/* Returns the number of supertypes */
+
+/** Returns the number of supertypes */
 int     get_class_n_supertypes (type *clss);
+
+/** Returns the index of an supertype in a type. */
 int     get_class_supertype_index(type *clss, type *super_clss);
-/* Gets the supertype at position pos,  0 <= pos < n_supertype. */
+
+/** Gets the supertype at position pos,  0 <= pos < n_supertype. */
 type   *get_class_supertype   (type *clss, int pos);
-/* Sets the supertype at postition pos, 0 <= pos < n_subtype.  Does not
-   set the corresponding subtype relation for supertype: this might
+
+/** Sets the supertype at postition pos, 0 <= pos < n_subtype.
+   Does not set the corresponding subtype relation for supertype: this might
    be a different position! */
 void    set_class_supertype   (type *clss, type *supertype, int pos);
-/* Finds supertype in the list of supertypes and removes it */
+
+/** Finds supertype in the list of supertypes and removes it */
 void    remove_class_supertype(type *clss, type *supertype);
 
 /** This enumeration flags the peculiarity of entities and types. */
@@ -370,26 +417,30 @@ INLINE void        set_class_peculiarity (type *clss, peculiarity pec);
 void set_class_dfn (type *clss, int dfn);
 int  get_class_dfn (type *clss);
 
-/* typecheck */
+/** Returns true if a type is a class type. */
 bool is_class_type(type *clss);
-/* Returns true if low is subclass of high. */
+
+/** Returns true if low is subclass of high. */
 bool is_subclass_of(type *low, type *high);
 
 /**
- *  Representation of a struct type.
+ *  @page struct_type	Representation of a struct type
+ *
  *  Type_strct represents aggregate types that consist of a list
  *  of fields.
- *  @param member   All entities belonging to this class.  This are the fields
- *           that can have any of the following types:  type_class,
- *           type_struct, type_union, type_array, type_enumeration,
- *  	     type_pointer, type_primitive.
- *           This is a dynamic list that can be grown with an "add_" function,
- *           but not shrinked.
- *           This is a dynamic list that can be grown with an "add_" function,
- *           but not shrinked.
+ *  The following attributes are private to this type kind:
+ *  - member:  All entities belonging to this class.  This are the fields
+ *             that can have any of the following types:  type_class,
+ *             type_struct, type_union, type_array, type_enumeration,
+ *  	       type_pointer, type_primitive.
+ *             This is a dynamic list that can be grown with an "add_" function,
+ *             but not shrinked.
+ *             This is a dynamic list that can be grown with an "add_" function,
+ *             but not shrinked.
  */
-/* create a new type struct */
+/** Creates a new type struct */
 type   *new_type_struct (ident *name);
+/** Creates a new type struct with debug information. */
 type   *new_d_type_struct (ident *name, dbg_info* db);
 
 /* manipulate private fields of struct */
@@ -397,49 +448,71 @@ void    add_struct_member   (type *strct, entity *member);
 int     get_struct_n_members (type *strct);
 entity *get_struct_member   (type *strct, int pos);
 void    set_struct_member   (type *strct, int pos, entity *member);
-/* Finds member in the list of memberss and removees it */
+
+/** Finds member in the list of members and removes it. */
 void    remove_struct_member (type *strct, entity *member);
 
-/* typecheck */
+/** Returns true if a type is a struct type. */
 bool    is_struct_type(type *strct);
 
 /**
- *  Representation of a method type.
- *  A method type represents a method, function or procedure type.
- *  It contains a list of the parameter and result types, as these
- *  are part of the type description.  These lists should not
- *  be changed by a optimization, as a change creates a new method
- *  type.  Therefore optimizations should allocated new method types.
- *  The set_ routines are only for construction by a frontend.
- *  @param n_params    Number of parameters to the procedure.
- *              A procedure in FIRM has only call by value parameters.
+ * @page method_type	Representation of a method type
  *
- *  @param param_type  A list with the types of parameters.  This list is ordered.
- *              The nth type in this list corresponds to the nth element
- *              in the parameter tuple that is a result of the start node.
- *  	        (See ircons.h for more information.)
+ * A method type represents a method, function or procedure type.
+ * It contains a list of the parameter and result types, as these
+ * are part of the type description.  These lists should not
+ * be changed by a optimization, as a change creates a new method
+ * type.  Therefore optimizations should allocated new method types.
+ * The set_ routines are only for construction by a frontend.
  *
- *  @param n_res       The number of results of the method.  In general, procedures
- *              have zero results, functions one.
+ * - n_params:   Number of parameters to the procedure.
+ *               A procedure in FIRM has only call by value parameters.
  *
- *  @param res_type    A list with the types of parameters.  This list is ordered.
- *              The nth type in this list corresponds to the nth input to
- *  	        Return nodes.  (See ircons.h for more information.)
+ * - param_type: A list with the types of parameters.  This list is ordered.
+ *               The nth type in this list corresponds to the nth element
+ *               in the parameter tuple that is a result of the start node.
+ *               (See ircons.h for more information.)
+ *
+ * - n_res:      The number of results of the method.  In general, procedures
+ *               have zero results, functions one.
+ *
+ * - res_type:   A list with the types of parameters.  This list is ordered.
+ *               The nth type in this list corresponds to the nth input to
+ *               Return nodes.  (See ircons.h for more information.)
  */
 
 /** Create a new method type.
  *
-   @param n_param   the number of parameters
-   @param n_res     the number of results
-
-   The arrays for the parameter and result types are not initialized by
-   the constructor. */
+ * @param name      the name (ident) of this type
+ * @param n_param   the number of parameters
+ * @param n_res     the number of results
+ *
+ * The arrays for the parameter and result types are not initialized by
+ * the constructor.
+ */
 type *new_type_method (ident *name, int n_param, int n_res);
+
+/** Create a new method type with debug information.
+ *
+ * @param name      the name (ident) of this type
+ * @param n_param   the number of parameters
+ * @param n_res     the number of results
+ * @param db        user defined debug information
+ *
+ * The arrays for the parameter and result types are not initialized by
+ * the constructor.
+ */
 type *new_d_type_method (ident *name, int n_param, int n_res, dbg_info* db);
 
-/** manipulate private fields of method. */
+/* -- manipulate private fields of method. -- */
+
+/** Returns the number of parameters of this method. */
 int   get_method_n_params  (type *method);
+
+/** Returns the type of the parameter at position pos of a method. */
 type *get_method_param_type(type *method, int pos);
+
+/** Sets the type of the parameter at position pos of a method. */
 void  set_method_param_type(type *method, int pos, type* tp);
 
 int   get_method_n_ress   (type *method);
@@ -452,67 +525,98 @@ void  set_method_res_type(type *method, int pos, type* tp);
  * non_variadic.
  */
 typedef enum variadicity {
-  non_variadic,
-  variadic
+  non_variadic,		/**< non variadic */
+  variadic		/**< variadic */
 } variadicity;
 
+/** Returns the variadicity of a method. */
 variadicity get_method_variadicity(type *method);
+
+/** Sets the variadicity of a method. */
 void set_method_variadicity(type *method, variadicity vari);
 
-/* typecheck */
+/** Returns true if a type is a method type. */
 bool  is_method_type     (type *method);
 
 /**
- *   Representation of a union type.
+ *   @page union_type	Representation of a union type.
+ *
  *   The union type represents union types.
- *   @param n_types        Number of unioned types.
- *   @param members        Entities for unioned types.  Fixed length array.
+ *   - n_types:     Number of unioned types.
+ *   - members:     Entities for unioned types.  Fixed length array.
  *                  This is a dynamic list that can be grown with an "add_" function,
  *                  but not shrinked.
  */
-/* create a new type union  */
+/** Creates a new type union. */
 type   *new_type_union (ident *name);
+
+/** Creates a new type union with debug information. */
 type   *new_d_type_union (ident *name, dbg_info* db);
 
-/* manipulate private fields of struct */
+/* --- manipulate private fields of struct --- */
+
+/** Returns the number of unioned types of this union */
 int     get_union_n_members      (type *uni);
+
+/** Adds a new entity to a union type */
 void    add_union_member (type *uni, entity *member);
+
+/** Returns the entity at position pos of a union */
 entity *get_union_member (type *uni, int pos);
+
+/** Overwrites a entity at position pos in a union type. */
 void    set_union_member (type *uni, int pos, entity *member);
-/* Finds member in the list of members and removes it. */
+
+/** Finds member in the list of members and removes it. */
 void    remove_union_member (type *uni, entity *member);
 
-/* typecheck */
+/** Returns true if a type is a union type. */
 bool    is_union_type          (type *uni);
 
 /**
- *   Representation of an array type.
- *   The array type represents rectangular multi dimensional arrays.
- *   The constants representing the bounds must be allocated to
- *   get_const_code_irg() by setting current_ir_graph accordingly.
- *   @param n_dimensions     Number of array dimensions.
- *   @param *lower_bound     Lower bounds of dimensions.  Usually all 0.
- *   @param *upper_bound     Upper bounds or dimensions.
- *   @param *element_type    The type of the array elements.
- *   @param *element_ent     An entity for the array elements to be used for
- *                    element selection with Sel.
- *   @todo
+ * @page array_type	Representation of an array type
+ *
+ * The array type represents rectangular multi dimensional arrays.
+ * The constants representing the bounds must be allocated to
+ * get_const_code_irg() by setting current_ir_graph accordingly.
+ *
+ * - n_dimensions:    Number of array dimensions.
+ * - *lower_bound:    Lower bounds of dimensions.  Usually all 0.
+ * - *upper_bound:    Upper bounds or dimensions.
+ * - *element_type:   The type of the array elements.
+ * - *element_ent:    An entity for the array elements to be used for
+ *                      element selection with Sel.
+ * @todo
  *   Do we need several entities?  One might want
  *   to select a dimension and not a single element in case of multidim arrays.
  */
-/* create a new type array --
-   Sets n_dimension to dimension and all dimension entries to NULL.
-   Initializes order to the order of the dimensions.
-   The entity for array elements is built automatically.
-   Set dimension sizes after call to constructor with set_* routines. */
+
+/** Create a new type array.
+ *
+ * Sets n_dimension to dimension and all dimension entries to NULL.
+ * Initializes order to the order of the dimensions.
+ * The entity for array elements is built automatically.
+ * Set dimension sizes after call to constructor with set_* routines.
+ */
 type *new_type_array         (ident *name, int n_dimensions,
 			      type *element_type);
+
+/** Create a new type array with debug information.
+ *
+ * Sets n_dimension to dimension and all dimension entries to NULL.
+ * Initializes order to the order of the dimensions.
+ * The entity for array elements is built automatically.
+ * Set dimension sizes after call to constructor with set_* routines.
+ */
 type *new_d_type_array         (ident *name, int n_dimensions,
 			      type *element_type, dbg_info* db);
 
-/* manipulate private fields of array type */
+/* --- manipulate private fields of array type --- */
+
+/** Returns the number of array dimensions of this type. */
 int   get_array_n_dimensions (type *array);
-/* Allocates Const nodes of mode_I for the array dimensions */
+
+/** Allocates Const nodes of mode_I for the array dimensions */
 void  set_array_bounds_int   (type *array, int dimension, int lower_bound,
                                                           int upper_bound);
 void  set_array_bounds       (type *array, int dimension, ir_node *lower_bound,
@@ -533,79 +637,130 @@ type *get_array_element_type (type *array);
 void  set_array_element_entity (type *array, entity *ent);
 entity *get_array_element_entity (type *array);
 
-/* typecheck */
+/** Returns true if a type is an array type. */
 bool   is_array_type         (type *array);
 
 /**
- *  Representation of an enumeration type.
- *  Enumeration types need not necessarily be represented explicitly
- *  by Firm types, as the frontend can lower them to integer constants as
- *  well.  For debugging purposes or similar tasks this information is useful.
- *   @param *enum           The target values representing the constants used to
- *                   represent individual enumerations.
- *   @param *enum_nameid    Idents containing the source program name of the enumeration
- *  		     constants
+ * @page enumeration_type	Representation of an enumeration type
  *
-*/
-/* create a new type enumeration -- set the enumerators independently */
+ * Enumeration types need not necessarily be represented explicitly
+ * by Firm types, as the frontend can lower them to integer constants as
+ * well.  For debugging purposes or similar tasks this information is useful.
+ *
+ * - *enum:         The target values representing the constants used to
+ *                  represent individual enumerations.
+ * - *enum_nameid:  Idents containing the source program name of the enumeration
+ *  	     constants
+ */
+/** Create a new type enumeration -- set the enumerators independently. */
 type   *new_type_enumeration    (ident *name, int n_enums);
+
+/** Create a new type enumeration with debug information -- set the enumerators independently. */
 type   *new_d_type_enumeration    (ident *name, int n_enums, dbg_info* db);
 
-/* manipulate fields of enumeration type. */
+/* --- manipulate fields of enumeration type. --- */
+
+/** Returns the number of enumeration values of this enumeration */
 int     get_enumeration_n_enums (type *enumeration);
 
+/** Sets the enumeration value at a given position. */
 void    set_enumeration_enum    (type *enumeration, int pos, tarval *con);
+
+/** Returns the enumeration value at a given position. */
 tarval *get_enumeration_enum    (type *enumeration, int pos);
 
+/** Assign an ident to an enumeration value at a given position. */
 void    set_enumeration_nameid  (type *enumeration, int pos, ident *id);
+
+/** Returns the assigned ident of an enumeration value at a given position. */
 ident  *get_enumeration_nameid  (type *enumeration, int pos);
+
+/** Returns the assigned name of an enumeration value at a given position. */
 const char *get_enumeration_name(type *enumeration, int pos);
 
-/* typecheck */
+/** Returns true if a type is a enumeration type. */
 bool    is_enumeration_type     (type *enumeration);
 
 /**
- *   Representation of a pointer type.
- *   Pointer types.
- *   @param points_to       The type of the entity this pointer points to.
+ * @page pointer_type	Representation of a pointer type
+ *
+ * Pointer types:
+ * - points_to:      The type of the entity this pointer points to.
  */
-/* Create a new type pointer */
+/** Creates a new type pointer. */
 type *new_type_pointer           (ident *name, type *points_to);
-type *new_d_type_pointer           (ident *name, type *points_to, dbg_info* db);
 
-/* manipulate fields of type_pointer */
+/** Creates a new type pointer with debug information. */
+type *new_d_type_pointer         (ident *name, type *points_to, dbg_info* db);
+
+/* --- manipulate fields of type_pointer --- */
+
+/** Sets the type to which a pointer points to. */
 void  set_pointer_points_to_type (type *pointer, type *tp);
+
+/** Returns the type to which a pointer points to. */
 type *get_pointer_points_to_type (type *pointer);
 
-/* typecheck */
+/** Returns true if a type is a pointer type. */
 bool  is_pointer_type            (type *pointer);
 
 /**
- *   Representation of a primitive type.
- *   Primitive types are types that represent indivisible data values that
- *   map directly to modes.  They don't have a private attribute.  The
- *   important information they carry is held in the common mode field.
+ * @page primitive_type Representation of a primitive type
+ *
+ * Primitive types are types that represent indivisible data values that
+ * map directly to modes.  They don't have a private attribute.  The
+ * important information they carry is held in the common mode field.
 */
-/* create a new type primitive */
+/** Creates a new primitive type. */
 type *new_type_primitive (ident *name, ir_mode *mode);
+
+/** Creates a new primitive type with debug information. */
 type *new_d_type_primitive (ident *name, ir_mode *mode, dbg_info* db);
 
-/* typecheck */
+/** Returns true if a type is a primitive type. */
 bool  is_primitive_type  (type *primitive);
 
 
-
 /**
- *   Checks whether a type is atomic.
- *   @param tp - any type
- *   @return true if type is primitive, pointer or enumeration
+ *  Checks whether a type is atomic.
+ *  @param tp - any type
+ *  @return true if type is primitive, pointer or enumeration
  */
 int is_atomic_type(type *tp);
 
+/* --- Support for compound types --- */
+
 /**
- *   Checks whether a type is compound.
- *   @param tp - any type
- *   @return true if the type is class, structure, union or array type.
+ * Gets the number of elements in a firm compound type.
+ *
+ * This is just a comforability function, because structs and
+ * classes can often be treated be the same code, but they have
+ * different access functions to their members.
+ *
+ * @param tp  The type (must be struct, union or class).
+ *
+ * @return Number of members in the compound type.
+ */
+int get_compound_n_members(type *tp);
+
+/**
+ * Gets the member of a firm compound type at position pos.
+ *
+ * @param tp  The type (must be struct, union or class).
+ * @param pos The number of the member.
+ *
+ * @return The member entity at position pos.
+ *
+ * @see get_compound_n_members() for justifaction of existence.
+ */
+entity *get_compound_member(type *tp, int pos);
+
+/**
+ *  Checks whether a type is compound.
+ *
+ *  @param tp - any type
+ *
+ *  @return true if the type is class, structure, union or array type.
  */
 int is_compound_type(type *tp);
 
