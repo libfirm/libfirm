@@ -6,7 +6,7 @@
  * Modified by:
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 2002 Universität Karlsruhe
+ * Copyright:   (c) 2002 Universitaet Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 

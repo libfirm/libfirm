@@ -8,7 +8,7 @@ package firmjni;
  * Modified by:
  * Created:     26.2.2003
  * CVS-ID:      $Id$
- * Copyright:   (c) 2003 Universität Karlsruhe
+ * Copyright:   (c) 2003 Universitaet Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
