@@ -117,14 +117,14 @@ static void rta_act (ir_node *node, void *env)
     entity *ent = NULL;
 
     ir_node *ptr = get_Call_ptr (node);
-    // test:  ptr.op == Const
+    // TODO: test:  ptr.op == Const
 
     if (iro_Sel == get_irn_opcode (ptr)) {
       ent = get_Sel_entity (ptr);
-      set_insert (_called_methods, ent);
     }
 
     if (ent) {
+      set_insert (_called_methods, ent);
     }
   } else if (iro_Load  == op) {
     ir_node *ptr = get_Load_ptr (node);
@@ -356,6 +356,9 @@ int  rta_is_alive_field  (entity *field)
 
 /*
  * $Log$
+ * Revision 1.2  2004/06/11 18:25:39  liekweg
+ * Added todo
+ *
  * Revision 1.1  2004/06/11 18:24:18  liekweg
  * Added RTA --flo
  *
