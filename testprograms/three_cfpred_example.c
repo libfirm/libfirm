@@ -48,6 +48,7 @@
 
 int main(int argc, char **argv)
 {
+  type     *prim_t_int;
   ir_graph *irg;          /* this variable contains the irgraph */
   type *owner;      /* the class in which this method is defined */
   type *proc_main; /* type information for the method main */
@@ -59,6 +60,9 @@ int main(int argc, char **argv)
   init_firm ();
 
   set_optimize(1);
+
+  /*** Make basic type information for primitive type int. ***/
+  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_i);
 
   /* FIRM was designed for oo languages where all methods belong to a class.
    * For imperative languages like C we view a file as a large class containing
@@ -73,7 +77,9 @@ int main(int argc, char **argv)
   owner = get_glob_type();
   proc_main = new_type_method(id_from_str(METHODNAME, strlen(METHODNAME)),
 			      NRARGS, NRES);
-  /** @@@ setting of arg/res types misses **/
+  set_method_param_type(proc_main, 0, prim_t_int);
+  set_method_res_type(proc_main, 0, prim_t_int);
+
   ent = new_entity (owner,
                     id_from_str (METHODNAME, strlen(METHODNAME)),
                     proc_main);

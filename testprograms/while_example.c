@@ -48,31 +48,34 @@ main(void)
 
   prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_i);
 
-#define METHODNAME "main"
+#define METHODNAME "main_tp"
 #define NRARGS 1
-#define NRES 0
+#define NRES 1
 
   proc_main = new_type_method(id_from_str(METHODNAME, strlen(METHODNAME)),
                               NRARGS, NRES);
   set_method_param_type(proc_main, 0, prim_t_int);
+  set_method_res_type(proc_main, 0, prim_t_int);
 
-  owner = new_type_class (id_from_str ("WHILE_EXAMPLE", 16));
-  ent = new_entity (owner, id_from_str ("main", 4), proc_main);
+
+  owner = new_type_class (id_from_str ("WHILE_EXAMPLE", 13));
+  ent = new_entity (owner, id_from_str ("main", strlen("main")), proc_main);
 
   /* Generates start and end blocks and nodes and a first, initial block */
   irg = new_ir_graph (ent, 4);
 
-  /* Generate two constants */
+  /* Generate two values */
   set_value (0, new_Proj(get_irg_args(irg), mode_i, 0));
   set_value (1, new_Const (mode_i, tarval_from_long (mode_i, 1)));
   x = new_Jmp();
   mature_block (get_irg_current_block(irg));
 
+
   /* generate a block for the loop header and the conditional branch */
   r = new_immBlock ();
   add_in_edge (r, x);
   x = new_Cond (new_Proj(new_Cmp(new_Const (mode_i, tarval_from_long (mode_i, 0)),
-				 new_Const (mode_i, tarval_from_long (mode_i, 0))),
+				 get_value(1, mode_i)),
                          mode_b, Eq));
   f = new_Proj (x, mode_X, 0);
   t = new_Proj (x, mode_X, 1);
@@ -118,6 +121,8 @@ main(void)
 
   /* output the vcg file */
   printf("Done building the graph.  Dumping it.\n");
+  turn_of_edge_labels();
+  dump_all_types();
   dump_ir_block_graph (irg);
   printf("Use xvcg to view this graph:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");

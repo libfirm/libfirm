@@ -83,7 +83,6 @@ main(void)
   set_method_res_type(proc_c, 0, prim_t_int);
   proc_c_e = new_entity(class_prima, id_from_str ("c", 1), proc_c);
 
-
   /*** Now build procedure main. ***/
   /** Type information for main. **/
   printf("\nCreating an IR graph: OO_PROGRAM_EXAMPLE...\n");
