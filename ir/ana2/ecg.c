@@ -238,6 +238,9 @@ static void _collect_implementing_graphs (entity *method, lset_t *set)
 */
 static lset_t *get_implementing_graphs (entity *method, ir_node *select)
 {
+  /* const char *name = get_entity_name (method); */
+  /* fprintf (stdout, "%s (ent %s)\n", __FUNCTION__, name); */
+
   int n_graphs;
   lset_t *set = lset_create ();
   {
@@ -261,15 +264,49 @@ static lset_t *get_implementing_graphs (entity *method, ir_node *select)
   /* void *tmp = lset_first (set); */
   n_graphs = lset_n_entries (set);
 
+
+  if (visibility_external_allocated != get_entity_visibility (method)) {
+    if (0 == n_graphs) {
+      ir_graph *graph = get_irn_irg (select);
+
+      dump_ir_block_graph (graph, "-typealise");
+
+      /* fprintf (stdout, "no graphs for method %s\n", get_entity_name (method)); */
+      assert (n_graphs && "no graphs for method");
+    }
+  }
   /* typalise select_in */
   if (do_typalise) {
     ir_node *select_in = get_Sel_ptr (select);
     typalise_t *ta = typalise (select_in);
-    assert (ta && "typalise failed (go figure)");
+    /* assert (ta && "typalise failed (go figure)"); */
 
-    /* const char *res = ta_name (ta); */
+    /*
+    fprintf (stdout, "typalyse res = ");
 
-    /* fprintf (stdout, "typalyse res = %s\n", res); */
+    if (NULL != ta) {
+      if (type_invalid == ta->kind) {
+        fprintf (stdout, "invalid");
+      } else if (type_exact == ta->kind) {
+        const char *name = get_type_name (ta->res.type);
+
+        fprintf (stdout, "exact [");
+        fprintf (stdout, "%s", name);
+        fprintf (stdout, "]\n");
+      } else if (type_types == ta->kind) {
+        fprintf (stdout, "types [");
+        fprintf (stdout, "...");
+        fprintf (stdout, "]\n");
+      } else if (type_type == ta->kind) {
+        const char *name = get_type_name (ta->res.type);
+        fprintf (stdout, "type [");
+        fprintf (stdout, "%s", name);
+        fprintf (stdout, "]\n");
+      }
+    } else {
+      fprintf (stdout, "(null)\n");
+    }
+    */
 
     if (1 != n_graphs) {
       int n_filtered_graphs;
@@ -286,6 +323,17 @@ static lset_t *get_implementing_graphs (entity *method, ir_node *select)
       */
       n_graphs = n_filtered_graphs;
     }
+
+    if (visibility_external_allocated != get_entity_visibility (method)) {
+      if (0 == n_graphs) {
+        ir_graph *graph = get_irn_irg (select);
+
+        dump_ir_block_graph (graph, "-ecg");
+        /* fprintf (stdout, "no graphs for method %s\n", get_entity_name (method)); */
+        assert (n_graphs && "no graphs for method");
+      }
+    }
+
   }
 
   if (n_graphs > _max_callEds) {
@@ -294,14 +342,22 @@ static lset_t *get_implementing_graphs (entity *method, ir_node *select)
   }
 
 
-  if (visibility_external_allocated != get_entity_visibility (method)) {
-    if (0 == n_graphs) {
-      /* fprintf (stdout, "no graphs for method %s\n", get_entity_name (method)); */
-      assert (n_graphs && "no graphs for method");
-    }
+  return (set);
+}
+
+/**
+   Determine whether a call is actually a call or if it is being
+   abused for some b/d-ed reason.
+*/
+static int call_is_call (ir_node *call, ir_node *ptr)
+{
+  if (op_SymConst != get_irn_op (ptr)) {
+    return (TRUE);
+  } else if (get_SymConst_kind (ptr) != symconst_addr_name) {
+    return (TRUE);
   }
 
-  return (set);
+  return (FALSE);
 }
 
 /**
@@ -316,14 +372,22 @@ static void ecg_calls_act (ir_node *node, void *env)
     entity *ent = NULL;
     ir_node *ptr = get_Call_ptr (node);
 
+    if (!call_is_call (node, ptr)) {
+      /*
+      fprintf (stdout, "not a call: %s[%li]\n",
+               get_op_name (get_irn_op (node)),
+               get_irn_node_nr (node)); */
+      return;
+    }
+
     /* CALL SEL */
-    if (op_Sel == get_irn_op(ptr)) {
+    if (op_Sel == get_irn_op (ptr)) {
       lset_t *graphs;
       ent = get_Sel_entity (ptr);
       graphs = get_implementing_graphs (ent, ptr);
 
       append_calls (graph_info, node, graphs);
-    } else if (op_SymConst == get_irn_op(ptr)) {
+    } else if (op_SymConst == get_irn_op (ptr)) {
       if (get_SymConst_kind (ptr) == symconst_addr_ent) {
         ir_graph *graph;
         ent = get_SymConst_entity (ptr);
@@ -949,6 +1013,10 @@ void ecg_init (int typalise)
 {
   do_typalise = typalise;
 
+  if (typalise) {
+    typalise_init ();
+  }
+
   graph_infos = pmap_create ();
 
   ecg_fill_calls ();
@@ -1195,6 +1263,9 @@ void ecg_ecg (void)
 
 /*
   $Log$
+  Revision 1.19  2005/03/22 13:55:51  liekweg
+  Need to initialise typalise now
+
   Revision 1.18  2005/01/14 14:14:43  liekweg
   fix gnu extension
 
