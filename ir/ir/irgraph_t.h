@@ -130,8 +130,8 @@ struct ir_graph {
                    readable. */
 #endif
 
-#ifdef FIRM_EDGES_INPLACE
-	irg_edge_info_t edge_info;
+#if FIRM_EDGES_INPLACE
+  irg_edge_info_t edge_info;  /**< edge info for automatic outs */
 #endif
 };
 
