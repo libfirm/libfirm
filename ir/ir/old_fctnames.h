@@ -41,4 +41,8 @@
 
 #define get_method_n_res(X) get_method_n_ress(X)
 
+#define tarval_from_long(X, Y) new_tarval_from_long(Y, X)
+#define tarval_P_from_entity(X) new_tarval_from_entity(X, mode_P)
+#define get_tarval_entity(X) tarval_to_entity(X)
+
 #endif
