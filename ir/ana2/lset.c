@@ -38,7 +38,8 @@
 /* create a new lset */
 lset_t *lset_create (void)
 {
-  lset_t *lset = xmalloc(sizeof(*lset));
+  lset_t *lset = xmalloc (sizeof (lset_t));
+  memset (lset, 0x00, sizeof (lset_t));
 
   return (lset);
 }
@@ -71,7 +72,8 @@ int lset_empty (lset_t *lset)
 void lset_insert (lset_t *lset, void *data)
 {
   if (! lset_contains (lset, data)) {
-    lset_entry_t *entry = xmalloc(sizeof(*entry));
+    lset_entry_t *entry = xmalloc (sizeof (lset_entry_t));
+
     entry->data = data;
     entry->next = lset->first;
     lset->first = entry;
@@ -194,6 +196,9 @@ void lset_destroy (lset_t *lset)
 
 /*
   $Log$
+  Revision 1.4  2005/01/14 13:36:10  liekweg
+  fix malloc, fix "initialisation"
+
   Revision 1.3  2004/12/22 14:43:14  beck
   made allocations C-like
 
