@@ -42,9 +42,15 @@ void type_walk_2(type_or_ent *tore,
   /* marked? */
   switch (get_kind(tore)) {
   case k_entity:
-    if (((entity *)tore)->visit >= type_visited) return; break;
+    if (((entity *)tore)->visit >= type_visited) return;
+    break;
   case k_type:
-    if (((type *)tore)->visit >= type_visited) return; break;
+    if(type_id == get_type_tpop((type*)tore)) {
+      type_walk_2((type_or_ent *)skip_tid((type *)tore), pre, post, env);
+      return;
+    }
+    if (((type *)tore)->visit >= type_visited) return;
+    break;
   default:
     break;
   }
@@ -68,55 +74,56 @@ void type_walk_2(type_or_ent *tore,
     {
       type *tp = (type *)tore;
       mark_type_visited(tp);
-      switch (get_type_tpop_code(tp))
-	case tpo_class:
-	  {
-	    for (i=0; i<get_class_n_member(tp); i++)
-	      type_walk_2((type_or_ent *)get_class_member(tp, i), pre, post, env);
-	    for (i=0; i<get_class_n_subtype(tp); i++)
-	      type_walk_2((type_or_ent *)get_class_subtype(tp, i), pre, post, env);
-	    for (i=0; i<get_class_n_supertype(tp); i++)	  {
-	      type_walk_2((type_or_ent *)get_class_supertype(tp, i), pre, post, env);
-	    }
-	    break;
-	  case tpo_struct:
-	    {
-	      for (i=0; i<get_struct_n_member(tp); i++)
-		type_walk_2((type_or_ent *)get_struct_member(tp, i), pre, post, env);
-	    }
-	    break;
-	  case tpo_method:
-	    {
-	      for (i = 0; i < get_method_n_params(tp); i++)
-		type_walk_2((type_or_ent *)get_method_param_type(tp, i), pre, post, env);
-	      for (i = 0; i < get_method_n_res(tp); i++)
-		type_walk_2((type_or_ent *)get_method_res_type(tp, i), pre, post, env);
-	    }
-	    break;
-	  case tpo_union:
-	    {
-	      for (i = 0; i < get_union_n_members(tp); i++)
-		type_walk_2((type_or_ent *)get_union_member(tp, i), pre, post, env);
-	    }
-	    break;
-	  case tpo_array:
-	    type_walk_2((type_or_ent *)get_array_element_type(tp),
-			pre, post, env);
-	    break;
-	  case tpo_enumeration:
-	    /* a leave */
-	    break;
-	  case tpo_pointer:
-	    type_walk_2((type_or_ent *)get_pointer_points_to_type(tp),
-			pre, post, env);
-	    break;
-	  case tpo_primitive:
-	    /* a leave. */
-	    break;
-	  default:
-	    printf(" *** Faulty type! \n");
-	    break;
-	  }
+      switch (get_type_tpop_code(tp)) {
+      case tpo_class:
+	{
+	  for (i=0; i<get_class_n_supertype(tp); i++)
+	    type_walk_2((type_or_ent *)get_class_supertype(tp, i), pre, post, env);
+	  for (i=0; i<get_class_n_member(tp); i++)
+	    type_walk_2((type_or_ent *)get_class_member(tp, i), pre, post, env);
+	  for (i=0; i<get_class_n_subtype(tp); i++)
+	    type_walk_2((type_or_ent *)get_class_subtype(tp, i), pre, post, env);
+	}
+	break;
+      case tpo_struct:
+	{
+	  for (i=0; i<get_struct_n_member(tp); i++)
+	    type_walk_2((type_or_ent *)get_struct_member(tp, i), pre, post, env);
+	}
+	break;
+      case tpo_method:
+	{
+	  for (i = 0; i < get_method_n_params(tp); i++)
+	    type_walk_2((type_or_ent *)get_method_param_type(tp, i), pre, post, env);
+	  for (i = 0; i < get_method_n_res(tp); i++)
+	    type_walk_2((type_or_ent *)get_method_res_type(tp, i), pre, post, env);
+	}
+	break;
+      case tpo_union:
+	{
+	  for (i = 0; i < get_union_n_members(tp); i++)
+	    type_walk_2((type_or_ent *)get_union_member(tp, i), pre, post, env);
+	}
+	break;
+      case tpo_array:
+	type_walk_2((type_or_ent *)get_array_element_type(tp),
+		    pre, post, env);
+	break;
+      case tpo_enumeration:
+	/* a leave */
+	break;
+      case tpo_pointer:
+	type_walk_2((type_or_ent *)get_pointer_points_to_type(tp),
+		    pre, post, env);
+	break;
+      case tpo_primitive:
+      case tpo_id:
+	/* a leave. */
+	break;
+      default:
+	printf(" *** Faulty type! \n");
+	break;
+      }
     } break; /* end case k_type */
   default:
     printf(" *** Faulty type or entity! \n");
