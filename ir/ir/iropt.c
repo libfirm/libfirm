@@ -441,16 +441,16 @@ static tarval *computed_value_Proj(ir_node *n)
       /* BEWARE: a == a is NOT always True for floating Point!!! */
       /* This is a trick with the bits used for encoding the Cmp
          Proj numbers, the following statement is not the same:
-      return new_tarval_from_long (proj_nr == Eq, mode_b) */
-      return new_tarval_from_long (proj_nr & Eq, mode_b);
+      return new_tarval_from_long (proj_nr == pn_Cmp_Eq, mode_b) */
+      return new_tarval_from_long (proj_nr & pn_Cmp_Eq, mode_b);
     } else {
       tarval *taa = value_of(aa);
       tarval *tab = value_of(ab);
 
       if ((taa != tarval_bad) && (tab != tarval_bad)) { /* 2.: */
         /* strange checks... */
-        pnc_number flags = tarval_cmp (taa, tab);
-        if (flags != False) {
+        pn_Cmp flags = tarval_cmp (taa, tab);
+        if (flags != pn_Cmp_False) {
           return new_tarval_from_long (proj_nr & flags, mode_b);
         }
       } else {  /* check for 3.: */
@@ -478,7 +478,7 @@ static tarval *computed_value_Proj(ir_node *n)
                 && (mode_is_reference(get_irn_mode(ab)))
                 && (get_irn_op(aba) == op_Alloc)))
           /* 3.: */
-          return new_tarval_from_long (proj_nr & Ne, mode_b);
+          return new_tarval_from_long (proj_nr & pn_Cmp_Ne, mode_b);
       }
     }
     break;
@@ -1863,7 +1863,7 @@ static ir_node * transform_node_shift(ir_node *n)
   if (modulo_shf > 0) {
     tarval *modulo = new_tarval_from_long(modulo_shf, get_tarval_mode(res));
 
-    if (tarval_cmp(res, modulo) & Lt)
+    if (tarval_cmp(res, modulo) & pn_Cmp_Lt)
       flag = 1;
   }
   else
