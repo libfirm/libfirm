@@ -12,9 +12,17 @@
  * Licence:     This file is protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
-#define _GNU_SOURCE
-#include <string.h>
+/* get prototype for alloca somehow */
+#ifdef HAVE_ALLOCA_H
+# include <alloca.h>
+#endif
+#ifdef HAVE_STDLIB_H
+# include <stdlib.h>
+#endif
 
 # include "read.h"
 #include "irprog.h"
@@ -26,7 +34,9 @@
 #include "type.h"
 #include "tv.h"
 
-#if 0
+#define VERBOSE_PRINTING 0
+
+#if VERBOSE_PRINTING
 # define VERBOSE_PRINT(s) fprintf s
 #else
 # define VERBOSE_PRINT(s)
@@ -56,15 +66,15 @@ static char *effect_string[] = {
   "ret"
 };
 
-static const char*
-getNodeModule (xmlNodePtr node)
+static const ident*
+getNodeModuleIdent (xmlNodePtr node)
 {
   const char *mod_str = (const char*) xmlGetProp (node, BAD_CAST "module");
 
   if (NULL == mod_str) {
     return (NULL);
   } else {
-    const char *res = strdup (mod_str);
+    const ident *res = new_id_from_str (mod_str);
     return (res);
   }
 }
@@ -74,7 +84,7 @@ getNodeProcName (xmlNodePtr node)
 {
   const char *proc_str = (const char*) xmlGetProp (node, BAD_CAST "procname");
   assert (proc_str);
-  return (strdup (proc_str));
+  return (proc_str);
 }
 
 static char*
@@ -82,7 +92,7 @@ getNodeClassName (xmlNodePtr node)
 {
   char *proc_str = (char*) xmlGetProp (node, BAD_CAST "class");
   assert (proc_str);
-  return (strdup (proc_str));
+  return ( (proc_str));
 }
 
 static const char*
@@ -90,23 +100,23 @@ getNodeId (xmlNodePtr node)
 {
   const char *id_str = (const char*) xmlGetProp (node, BAD_CAST "id");
   assert (id_str);
-  return (strdup (id_str));
+  return (id_str);
 }
 
-static firmid_t
+static const char *
 getNodeRefId (xmlNodePtr node)
 {
-  firmid_t refid_str = (char*) xmlGetProp (node, BAD_CAST "refid");
+  const char *refid_str = (char*) xmlGetProp (node, BAD_CAST "refid");
   assert (refid_str);
-  return (strdup(refid_str));
+  return ((refid_str));
 }
 
-static firmid_t
+static const char*
 getNodeTypeId (xmlNodePtr node)
 {
-  firmid_t type_str = (char*) xmlGetProp (node, BAD_CAST "type");
+  const char *type_str = (char*) xmlGetProp (node, BAD_CAST "type");
   assert (type_str);
-  return (strdup(type_str));
+  return ((type_str));
 }
 
 static const char
@@ -114,7 +124,6 @@ static const char
 {
   const char *type_str = (char*) xmlGetProp (node, BAD_CAST "type");
   assert (type_str);
-
   return (type_str);
 }
 
@@ -140,12 +149,12 @@ static const char
   was Public Interface
 */
 static
-type_t *getTypeByName (const char *name)
+type_t *getTypeByIdent (const ident *id)
 {
-  type_t *curr = types;
+  type_t *curr = types; // @@@ TODO module -> types
 
   while (NULL != curr) {
-    if (0 == strcmp (name, curr->name)) {
+    if (id == curr -> type_ident) {
       return (curr);
     }
     curr = curr->prev;
@@ -155,12 +164,12 @@ type_t *getTypeByName (const char *name)
 }
 
 static
-type_t *getTypeById (firmid_t id)
+type_t *getTypeById (const ident *id)
 {
-  type_t *curr = types;
+  type_t *curr = types; // which ones?
 
   while (NULL != curr) {
-    if (0 == strcmp(id, curr->id)) {
+    if (id == curr -> id) {
       return (curr);
     }
     curr = curr->prev;
@@ -170,13 +179,28 @@ type_t *getTypeById (firmid_t id)
 }
 
 static
-entity_t *getEntityByNames (const char *name, const char *tp_name)
+entity_t *getEntityByIdents (const ident *name, const ident *tp_ident)
+{
+  entity_t *curr = entities; // TODO module -> entities
+
+  while (NULL != curr) {
+    if ((name == curr -> ent_ident)
+	&& (tp_ident == curr -> tp_ident)) {
+      return (curr);
+    }
+    curr = curr->prev;
+  }
+
+  return (NULL);
+}
+
+static
+entity_t *getEntityById (const ident *id)
 {
   entity_t *curr = entities;
 
   while (NULL != curr) {
-    if ((0 == strcmp (name, curr->name))
-	&& (0 == strcmp (tp_name, curr->tp_name))) {
+    if (id == curr -> id) {
       return (curr);
     }
     curr = curr->prev;
@@ -186,27 +210,12 @@ entity_t *getEntityByNames (const char *name, const char *tp_name)
 }
 
 static
-entity_t *getEntityById (firmid_t id)
-{
-  entity_t *curr = entities;
-
-  while (NULL != curr) {
-    if (0 == strcmp(id, curr->id)) {
-      return (curr);
-    }
-    curr = curr->prev;
-  }
-
-  return (NULL);
-}
-
-static
-proc_t *getEffectByName (const char *procname)
+proc_t *getEffectByName (const ident *proc_ident)
 {
   proc_t *curr_effs = procs;
 
   while (NULL != curr_effs) {
-    if (0 == strcmp (procname, curr_effs->procname)) {
+    if (proc_ident == curr_effs -> proc_ident) {
       return (curr_effs);
     }
     curr_effs = curr_effs->next;
@@ -241,9 +250,9 @@ parseArg (xmlDocPtr doc, xmlNodePtr argelm)
 
   arg = NEW (eff_t);
   arg -> kind = eff_arg;
-  arg -> id = id;
+  arg -> id = new_id_from_str(id);
   arg -> effect.arg.num = num;
-  arg -> effect.arg.type = typeid;
+  arg -> effect.arg.type_ident = new_id_from_str(typeid);
 
   return (arg);
 }
@@ -251,7 +260,7 @@ parseArg (xmlDocPtr doc, xmlNodePtr argelm)
 static eff_t
 *parseValref (xmlDocPtr doc, xmlNodePtr valelm)
 {
-  firmid_t ref_id;
+  const char *ref_id;
   eff_t *valref;
 
   CHECK_NAME (valelm, valref);
@@ -262,7 +271,7 @@ static eff_t
 
   valref = NEW (eff_t);
   valref->kind = eff_valref;
-  valref-> id = ref_id;
+  valref-> id = new_id_from_str(ref_id);
 
   return (valref);
 }
@@ -270,7 +279,7 @@ static eff_t
 static eff_t
 *parseSelect (xmlDocPtr doc, xmlNodePtr selelm)
 {
-  firmid_t entity_id = getNodeEntityStr (selelm);
+  const ident *entity_id = new_id_from_str(getNodeEntityStr (selelm));
   entity_t *ent;
   xmlNodePtr child;
   eff_t *valref = NULL;
@@ -282,7 +291,7 @@ static eff_t
 
   ent = getEntityById (entity_id);
   assert(ent && "entity not found");
-  VERBOSE_PRINT ((stdout, "select entity %s\n", ent -> name));
+  VERBOSE_PRINT ((stdout, "select entity %s\n", get_id_str(ent -> ent_ident)));
 
   child = selelm->xmlChildrenNode;
 
@@ -303,7 +312,7 @@ static eff_t
 static eff_t
 *parseLoad (xmlDocPtr doc, xmlNodePtr loadelm)
 {
-  firmid_t id;
+  const ident *id;
   xmlNodePtr child;
   eff_t *sel;
   eff_t *load = NEW (eff_t);
@@ -311,17 +320,16 @@ static eff_t
 
   CHECK_NAME (loadelm, load);
   VERBOSE_PRINT ((stdout, "load node \t0x%08x\n", (int) loadelm));
-  id = getNodeId (loadelm);
+  id = new_id_from_str(getNodeId (loadelm));
 
   child = loadelm->xmlChildrenNode;
-
   sel = parseSelect (doc, child);
 
   load-> id = id;
   load-> effect.load.ptrrefid = sel-> id;
   load-> effect.load.ent = sel-> effect.select.ent;
-  VERBOSE_PRINT ((stdout,
-		  "load entity \t%s\n", load -> effect.load.ent -> name));
+  VERBOSE_PRINT ((stdout, "load entity \t%s\n",
+		  get_id_str(load -> effect.load.ent -> ent_ident)));
 
   free (sel);
 
@@ -358,17 +366,17 @@ static eff_t
 static eff_t
 *parseAlloc (xmlDocPtr doc, xmlNodePtr allocelm)
 {
-  firmid_t id;
-  firmid_t type_id;
+  const ident *id;
+  const ident *type_id;
   eff_t *alloc = NEW (eff_t); /* ...! */
   alloc->kind = eff_alloc;
 
   CHECK_NAME (allocelm, alloc);
   VERBOSE_PRINT ((stdout, "alloc node \t0x%08x\n", (int) allocelm));
-  id = getNodeId (allocelm);
-  VERBOSE_PRINT ((stdout, "alloc->id = \"%s\"\n", id));
-  type_id = getNodeTypeId (allocelm);
-  VERBOSE_PRINT ((stdout, "alloc->type_id = \"%s\"\n", type_id));
+  id = new_id_from_str(getNodeId (allocelm));
+  VERBOSE_PRINT ((stdout, "alloc->id = \"%s\"\n", get_id_str(id)));
+  type_id = new_id_from_str(getNodeTypeId (allocelm));
+  VERBOSE_PRINT ((stdout, "alloc->type_id = \"%s\"\n", get_id_str(type_id)));
 
   alloc-> id = id;
   alloc-> effect.alloc.tp_id = type_id;
@@ -379,7 +387,7 @@ static eff_t
 static eff_t
 *parseCall (xmlDocPtr doc, xmlNodePtr callelm)
 {
-  firmid_t id;
+  const ident *id;
   xmlNodePtr child;
   eff_t *sel;
   xmlNodePtr arg;
@@ -389,8 +397,8 @@ static eff_t
 
   CHECK_NAME (callelm, call);
   VERBOSE_PRINT ((stdout, "call node \t0x%08x\n", (int) callelm));
-  id = getNodeId (callelm);
-  VERBOSE_PRINT ((stdout, "call->id = \"%s\"\n", id));
+  id = new_id_from_str(getNodeId (callelm));
+  VERBOSE_PRINT ((stdout, "call->id = \"%s\"\n", get_id_str(id)));
 
   child = callelm->xmlChildrenNode;
   sel = parseSelect (doc, child);
@@ -411,7 +419,7 @@ static eff_t
   free (sel);
 
   if (0 != n_args) {
-    firmid_t *args = (firmid_t*) malloc (n_args * sizeof (firmid_t) );
+    const ident **args = (const ident**) malloc(n_args * sizeof(const ident*));
     int i = 0;
 
     while (NULL != arg) {
@@ -430,9 +438,9 @@ static eff_t
 static eff_t
 *parseJoin (xmlDocPtr doc, xmlNodePtr joinelm)
 {
-  firmid_t id;
+  const ident *id;
   int n_ins;
-  firmid_t *ins;
+  const ident **ins;
   int i;
   xmlNodePtr child;
   eff_t *join = NEW (eff_t);
@@ -440,8 +448,8 @@ static eff_t
 
   CHECK_NAME (joinelm, join);
   VERBOSE_PRINT ((stdout, "join node \t0x%08x\n", (int) joinelm));
-  id = getNodeId (joinelm);
-  VERBOSE_PRINT ((stdout, "join->id = \"%s\"\n", id));
+  id = new_id_from_str(getNodeId (joinelm));
+  VERBOSE_PRINT ((stdout, "join->id = \"%s\"\n", get_id_str(id)));
 
   child = joinelm->xmlChildrenNode;
   n_ins = 0;
@@ -451,7 +459,7 @@ static eff_t
     child = child->next;
   }
 
-  ins = (firmid_t*) malloc (n_ins * sizeof (firmid_t) );
+  ins = (const ident **) malloc (n_ins * sizeof (const ident *) );
   i = 0;
   child = joinelm->xmlChildrenNode;
 
@@ -472,13 +480,13 @@ static eff_t
 static eff_t
 *parseUnknown (xmlDocPtr doc, xmlNodePtr unknownelm)
 {
-  firmid_t id;
+  const ident *id;
   eff_t *unknown = NEW (eff_t);
   unknown->kind = eff_unknown;
 
   CHECK_NAME (unknownelm, unknown);
   VERBOSE_PRINT ((stdout, "unknown node \t0x%08x\n", (int) unknownelm));
-  id = getNodeId (unknownelm);
+  id = new_id_from_str(getNodeId (unknownelm));
   unknown-> id = id;
 
   return (unknown);
@@ -510,7 +518,7 @@ static eff_t
 static eff_t
 *parseRaise (xmlDocPtr doc, xmlNodePtr raiseelm)
 {
-  firmid_t tp_id;
+  const char *tp_id;
   eff_t *valref;
   xmlNodePtr child;
   eff_t *raise = NEW (eff_t);
@@ -526,7 +534,7 @@ static eff_t
 
   valref = parseValref (doc, child);
   raise-> effect.raise.valref = valref-> id;
-  raise-> effect.raise.tp_id = tp_id;
+  raise-> effect.raise.tp_id = new_id_from_str(tp_id);
   free (valref);
 
   return (raise);
@@ -542,13 +550,13 @@ static void
 parseType (xmlDocPtr doc, xmlNodePtr typeelm)
 {
   type_t *type;
-  firmid_t tp_id = getNodeId (typeelm);
+  const char *tp_id = getNodeId (typeelm);
   VERBOSE_PRINT ((stdout, "type node \t0x%08x (%s)\n", (int) typeelm, tp_id));
   VERBOSE_PRINT ((stdout, "type = \"%s\"\n", getNodeTypeStr (typeelm)));
 
   type = (type_t*) malloc (sizeof (type_t));
-  type->name = (char*) strdup (getNodeTypeStr (typeelm));
-  type->id = tp_id;
+  type -> type_ident = new_id_from_str(getNodeTypeStr (typeelm));
+  type -> id         = new_id_from_str(tp_id);
 
   type->prev = types;
   types = type;
@@ -561,17 +569,17 @@ parseEntity (xmlDocPtr doc, xmlNodePtr entelm)
   entity_t *ent = NEW (entity_t);
 
   /* parse it */
-  firmid_t ent_id = getNodeId (entelm);
+  const char *ent_id = getNodeId (entelm);
   /* fprintf (stdout, "entity node \t0x%08x (%d)\n", (int) entelm, ent_id); */
   VERBOSE_PRINT ((stdout, "ent  = \"%s.%s\"\n",
 		  getNodeTypeStr (entelm),
 		  getNodeEntityStr (entelm)));
 
 
-  ent->name    = (char*) strdup (getNodeEntityStr (entelm));
-  ent->tp_name = (char*) strdup (getNodeTypeStr   (entelm));
-  ent -> owner = (char*) strdup (getNodeOwnerStr  (entelm));
-  ent->id = ent_id;
+  ent -> ent_ident = new_id_from_str (getNodeEntityStr (entelm));
+  ent -> tp_ident  = new_id_from_str (getNodeTypeStr   (entelm));
+  ent -> owner     = new_id_from_str (getNodeOwnerStr  (entelm));
+  ent -> id = new_id_from_str(ent_id);
 
   ent->prev = entities;
   entities = ent;
@@ -598,8 +606,8 @@ parseEffect (xmlDocPtr doc, xmlNodePtr effelm)
   VERBOSE_PRINT ((stdout, "has %d effects\n", n_effs));
 
   curr_effs = NEW (proc_t);
-  curr_effs->procname = procname;
-  curr_effs->typeid = typeid;
+  curr_effs -> proc_ident = new_id_from_str(procname);
+  curr_effs -> typeid = new_id_from_str(typeid);
   curr_effs->effs = (eff_t**) malloc (n_effs * sizeof (eff_t*));
 
   cur = effelm -> xmlChildrenNode;
@@ -650,7 +658,7 @@ void read_extern (const char *filename)
   /* xmlNsPtr ns = NULL; */           /* no namespace for us */
   xmlDocPtr doc;                /* whole document */
   xmlNodePtr cur;               /* current node */
-  const char *mod_str;
+  ident *mod_id;
   module_t *module;
 
   /* i've got no idea what the VERSION cast is all about. voodoo
@@ -669,9 +677,10 @@ void read_extern (const char *filename)
     exit (EXIT_FAILURE);
   }
 
-  mod_str = getNodeModule (cur);
-  if (NULL != mod_str) {
-    VERBOSE_PRINT ((stdout, "effects for \"%s\"\n", mod_str));
+  mod_id = getNodeModuleIdent (cur);
+  if (NULL != mod_id) {
+    VERBOSE_PRINT ((stdout, "effects for \"%s\"\n",
+		    get_id_str(mod_id)));
   }
   else {
     VERBOSE_PRINT ((stdout, "effects \t0x%08x\n", (int) cur));
@@ -696,7 +705,7 @@ void read_extern (const char *filename)
   }
 
   module = NEW(module_t);
-  module -> name = mod_str;
+  module -> id = mod_id;
   module -> types = types;
   module -> entities = entities;
   module -> procs = procs;
@@ -811,8 +820,9 @@ void freeProcEffs(proc_t *proc)
   int i;
   int num;
 
-  VERBOSE_PRINT ((stdout,
-		  "free effect for method \"%s\"\n", proc -> procname));
+  VERBOSE_PRINT ((stdout, "free effect for method \"%s\"\n",
+		  get_id_str(proc -> proc_ident)));
+
   num = proc -> n_effs;
   for(i = 0; i < num; i++) {
     switch(proc -> effs[i] -> kind) {
@@ -856,8 +866,6 @@ void freeProcEffs(proc_t *proc)
   }
   free(proc -> effs);
   proc -> effs = NULL;
-  free((void*)proc -> procname);
-  proc -> procname = NULL;
 }
 
 static
@@ -865,8 +873,9 @@ void freeModuleProcs(module_t *module)
 {
   proc_t *next_proc, *proc;
 
-  VERBOSE_PRINT ((stdout,
-		  "free procs for module \"%s\"\n", module -> name));
+  VERBOSE_PRINT ((stdout, "free procs for module \"%s\"\n",
+		  get_id_str(module -> id)));
+
   proc = module -> procs;
   while(proc) {
     next_proc = proc -> next;
@@ -884,7 +893,6 @@ void free_data(void)
   module = modules;
   while(module) {
     freeModuleProcs(module);
-    free((char*)module -> name);
     next_module = module -> next;
     free(module);
     module = next_module;
@@ -894,17 +902,18 @@ void free_data(void)
 /********************************************************************/
 
 static
-type_t *find_type_in_module(module_t *module, firmid_t typeid)
+type_t *find_type_in_module(module_t *module, const ident *typeid)
 {
   type_t *type;
 
   for(type = module -> types; type; type = type -> prev) {
-    VERBOSE_PRINT((stdout, "test typeid %s\n", type -> id));
-    if(0 == strcmp(type -> id, typeid)) {
+    VERBOSE_PRINT((stdout, "test typeid %s\n", get_id_str(type -> id)));
+    if(type -> id == typeid) {
+      VERBOSE_PRINT((stdout, "found\n"));
       return(type);
     }
   }
-  VERBOSE_PRINT((stdout, "did not find type id %s\n", typeid));
+  VERBOSE_PRINT((stdout, "did not find type id %s\n", get_id_str(typeid)));
   return(NULL);
 }
 
@@ -917,13 +926,13 @@ static void add_value_to_proc(proc_t *proc, eff_t *eff)
 }
 
 
-eff_t *find_valueid_in_proc_effects(firmid_t id, proc_t *proc)
+eff_t *find_valueid_in_proc_effects(const ident *id, proc_t *proc)
 {
   eff_t *val;
 
   val = proc -> values;
   while(val) {
-    if(0 == strcmp(id, val -> id)) {
+    if(id == val -> id) {
       return(val);
     }
     val = val -> next;
@@ -936,7 +945,8 @@ static void create_abstract_return(ir_graph *irg, proc_t *proc, eff_t *eff)
   ir_node *x;
   eff_t *eff_res;
 
-  VERBOSE_PRINT((stdout, "create effect:return in %s\n", proc -> procname));
+  VERBOSE_PRINT((stdout, "create effect:return in %s\n",
+		 get_id_str(proc -> proc_ident)));
   if(NO_ID == eff -> effect.ret.ret_id) {
     /* return void */
     x = new_Return (get_store(), 0, NULL);
@@ -971,7 +981,7 @@ static void create_abstract_arg(ir_graph *irg, proc_t *proc, eff_t *eff)
   int num;
 
   VERBOSE_PRINT((stdout, "create effect:arg %d in %s\n",
-		 eff -> effect.arg.num, proc -> procname));
+		 eff -> effect.arg.num, get_id_str(proc -> proc_ident)));
   ent = get_irg_entity(irg);
   typ = get_entity_type(ent);
 
@@ -995,7 +1005,8 @@ static void create_abstract_load(ir_graph *irg, proc_t *proc, eff_t *eff)
   ir_mode *mode;
   eff_t *addr;
 
-  VERBOSE_PRINT((stdout, "create load in %s\n", proc -> procname));
+  VERBOSE_PRINT((stdout, "create load in %s\n",
+		 get_id_str(proc -> proc_ident)));
 
   ent = eff -> effect.load.ent -> f_ent;
   VERBOSE_PRINT((stdout, "load from %s\n", get_entity_name(ent)));
@@ -1023,7 +1034,8 @@ static void create_abstract_store(ir_graph *irg, proc_t *proc, eff_t *eff)
   entity *ent;
   eff_t *addr, *val;
 
-  VERBOSE_PRINT((stdout, "create store in %s\n", proc -> procname));
+  VERBOSE_PRINT((stdout, "create store in %s\n",
+		 get_id_str(proc -> proc_ident)));
 
   ent = eff -> effect.store.ent -> f_ent;
   VERBOSE_PRINT((stdout, "store to %s\n", get_entity_name(ent)));
@@ -1056,7 +1068,8 @@ static void create_abstract_alloc(ir_graph *irg, proc_t *proc, eff_t *eff)
   type_t *xtype;
   symconst_symbol sym;
 
-  VERBOSE_PRINT((stdout, "create alloc in %s\n", proc -> procname));
+  VERBOSE_PRINT((stdout, "create alloc in %s\n",
+		 get_id_str(proc -> proc_ident)));
 
   xtype = find_type_in_module(current_module, eff -> effect.alloc.tp_id);
   assert(xtype && "type not found");
@@ -1076,7 +1089,8 @@ static void create_abstract_unknown(ir_graph *irg, proc_t *proc, eff_t *eff)
 {
   ir_node *unknown;
 
-  VERBOSE_PRINT((stdout, "create unknown in %s\n", proc -> procname));
+  VERBOSE_PRINT((stdout, "create unknown in %s\n",
+		 get_id_str(proc -> proc_ident)));
 
   unknown = new_Unknown(mode_ANY);
   eff -> firmnode = unknown;
@@ -1094,7 +1108,8 @@ static void create_abstract_call(ir_graph *irg, proc_t *proc, eff_t *eff)
   int i, num;
   type *mtype;
 
-  VERBOSE_PRINT((stdout, "create call in %s\n", proc -> procname));
+  VERBOSE_PRINT((stdout, "create call in %s\n",
+		 get_id_str(proc -> proc_ident)));
 
   ent = eff -> effect.call.ent -> f_ent;
   VERBOSE_PRINT((stdout, "call %s\n", get_entity_name(ent)));
@@ -1125,10 +1140,15 @@ static void create_abstract_call(ir_graph *irg, proc_t *proc, eff_t *eff)
   }
   call = new_Call(get_store(), sel, num, irns, get_entity_type(ent));
   set_store(new_Proj(call, mode_M, 0));
-  // eff -> firmnode = new_Proj(store, mode, 2);
-  eff -> firmnode = call;
-
-  add_value_to_proc(proc, eff);
+  if(0 != get_method_n_ress(mtype)) {
+    eff -> firmnode = new_Proj(call,
+			       get_type_mode(get_method_res_type(mtype, 0)),
+			       0);
+    add_value_to_proc(proc, eff); /* result can be accessed */
+  }
+  else {
+    eff -> firmnode = NULL; /* result can not be accessed */
+  }
 }
 
 
@@ -1138,10 +1158,16 @@ static void create_abstract_firm(module_t *module, proc_t *proc, entity *fent)
   ir_graph *irg;
   int i, num;
 
+  /* test entity */
+  assert(visibility_external_allocated == get_entity_visibility(fent)
+	 && peculiarity_existent == get_entity_peculiarity(fent)
+	 && "not an abstract entity");
   /* create irg in entity */
   irg = new_ir_graph(fent, 0);
 
-  VERBOSE_PRINT((stdout, "create effects for %s\n", proc -> procname));
+  VERBOSE_PRINT((stdout, "create effects for %s\n",
+		 get_id_str(proc -> proc_ident)));
+
   /* create effects in irg */
   num = proc -> n_effs;
   for(i = 0; i < num; i++) {
@@ -1197,7 +1223,9 @@ static void assign_firm_entity(module_t *module, entity_t *xmlent)
   entity *ent;
 
   VERBOSE_PRINT((stdout, "assign entity %s to typeid %s\n",
-		 xmlent -> name, xmlent -> owner));
+		 get_id_str(xmlent -> ent_ident),
+		 get_id_str(xmlent -> owner)));
+
   typ = find_type_in_module(module, xmlent -> owner);
   assert(typ && "class not found in module");
   type = typ -> f_tp;
@@ -1208,8 +1236,9 @@ static void assign_firm_entity(module_t *module, entity_t *xmlent)
   for(i = 0; i < num; i++) {
     ent = get_class_member(type, i);
     VERBOSE_PRINT((stdout, "compare entity %s and %s\n",
-		   xmlent -> name, get_entity_name(ent)));
-    if(0 == strcmp(get_entity_name(ent), xmlent -> name)) {
+		   get_id_str(xmlent -> ent_ident), get_entity_name(ent)));
+
+    if(get_entity_ident(ent) == xmlent -> ent_ident) {
       break;
     }
     ent = NULL;
@@ -1227,10 +1256,12 @@ static void assign_firm_type(type_t *xmltype)
   type *typ = NULL;
   int num;
 
-  VERBOSE_PRINT((stdout, "assign type %s\n", xmltype -> name));
+  VERBOSE_PRINT((stdout, "assign firm type to type %s\n",
+		 get_id_str(xmltype -> type_ident)));
+
   /* is it global type? */
   typ = get_glob_type();
-  if(0 == strcmp(xmltype -> name, get_type_name(typ))) {
+  if(xmltype -> type_ident == get_type_ident(typ)) {
     /* yes */
     xmltype -> f_tp = typ;
     VERBOSE_PRINT((stdout, "is global type %s\n", get_type_name(typ)));
@@ -1240,7 +1271,7 @@ static void assign_firm_type(type_t *xmltype)
     for(i = 0; i < num; i++) {
       typ = get_irp_type(i);
       VERBOSE_PRINT((stdout, "test type %s\n", get_type_name(typ)));
-      if(0 == strcmp(xmltype -> name, get_type_name(typ))) {
+      if(xmltype -> type_ident == get_type_ident(typ)) {
 	VERBOSE_PRINT((stdout, "found type %s\n", get_type_name(typ)));
 	xmltype -> f_tp = typ;
 	break;
@@ -1261,20 +1292,20 @@ void create_abstract_proc_effect(module_t *module, proc_t *proc)
   entity *fent;
 
   /* find the class of a procedure */
-  VERBOSE_PRINT((stdout, "do find typeid %s\n", proc -> typeid));
+  VERBOSE_PRINT((stdout, "do find typeid %s\n", get_id_str(proc -> typeid)));
   type = find_type_in_module(module, proc -> typeid);
   assert(type && "class not found in module");
 
   class_typ = get_glob_type();
   VERBOSE_PRINT((stdout, "test type %s\n", get_type_name(class_typ)));
-  if(0 != strcmp(type -> name, get_type_name(class_typ))) {
+  if(type -> type_ident != get_type_ident(class_typ)) {
     /* find module as class */
     num = get_irp_n_types();
     for(i = 0; i < num; i++) {
       class_typ = get_irp_type(i);
       VERBOSE_PRINT((stdout, "test type %s\n", get_type_name(class_typ)));
       if(is_class_type(class_typ)
-	 && (0 == strcmp(type -> name, get_type_name(class_typ)))) {
+	 && (type -> type_ident == get_type_ident(class_typ))) {
 	/* found class type */
 	VERBOSE_PRINT((stdout, "found type %s\n", get_type_name(class_typ)));
 	break;
@@ -1290,14 +1321,17 @@ void create_abstract_proc_effect(module_t *module, proc_t *proc)
   type -> f_tp = class_typ;
 
   /* find entity for procedure in class */
-  VERBOSE_PRINT((stdout, "find method %s\n", proc -> procname));
+  VERBOSE_PRINT((stdout, "find method %s\n",
+		 get_id_str(proc -> proc_ident)));
+
   num = get_class_n_members(class_typ);
   fent = NULL;
   for(i = 0; i < num; i++) {
     fent = get_class_member(class_typ, i);
     VERBOSE_PRINT((stdout, "test proc %s\n", get_entity_name(fent)));
-    if(0 == strcmp(proc -> procname, get_entity_name(fent))) {
-      VERBOSE_PRINT((stdout, "found proc %s\n", proc -> procname));
+    if(proc -> proc_ident == get_entity_ident(fent)) {
+      VERBOSE_PRINT((stdout, "found proc %s\n",
+		     get_id_str(proc -> proc_ident)));
       /* @@@ TODO check args types - not in xml yet */
       /* create Firm stuff */
       create_abstract_firm(module, proc, fent);
@@ -1317,21 +1351,21 @@ void create_abstract_module(module_t *module)
   type_t *type;
   entity_t *ent;
 
-  VERBOSE_PRINT((stdout,
-		 "create an abstraction for module %s\n", module -> name));
+  VERBOSE_PRINT((stdout, "create an abstraction for module %s\n",
+		 get_id_str(module -> id)));
 
-  VERBOSE_PRINT((stdout, "--handle types for module %s\n", module -> name));
+  VERBOSE_PRINT((stdout, "--handle types for module\n"));
   for(type = module -> types; type; type = type -> prev) {
     assign_firm_type(type);
   }
 
-  VERBOSE_PRINT((stdout, "--handle entities for module %s\n", module -> name));
+  VERBOSE_PRINT((stdout, "--handle entities for module\n"));
   /* @@@ TODO */
   for(ent = module -> entities; ent; ent = ent -> prev) {
     assign_firm_entity(module, ent);
   }
 
-  VERBOSE_PRINT((stdout, "--handle procs for module %s\n", module -> name));
+  VERBOSE_PRINT((stdout, "--handle procs for module\n"));
   for(proc = module -> procs; proc; proc = proc -> next) {
     create_abstract_proc_effect(module, proc);
   }
@@ -1364,6 +1398,9 @@ void create_abstraction(const char *filename)
 
 /*
  * $Log$
+ * Revision 1.8  2004/10/22 13:13:27  boesler
+ * replaced char* by idents, minor fix in Firm codegen for call
+ *
  * Revision 1.7  2004/10/21 15:31:55  boesler
  * added lots of stuff:
  * - build abstract syntax trees
