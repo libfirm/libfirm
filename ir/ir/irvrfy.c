@@ -134,6 +134,24 @@ static void show_unop_failure(ir_node *n, const char *text)
 }
 
 /**
+ * Prints a failure message for an op with 3 operands
+ */
+static void show_triop_failure(ir_node *n, const char *text)
+{
+  ir_node *op0  = get_irn_n(n, 0);
+  ir_node *op1  = get_irn_n(n, 1);
+  ir_node *op2  = get_irn_n(n, 2);
+
+  fprintf(stderr, "\nFIRM: irn_vrfy_irg() of node %ld %s%s(%s%s, %s%s, %s%s) did not match (%s)\n",
+      get_irn_node_nr(n),
+      get_irn_opname(n), get_irn_modename(n),
+      get_irn_opname(op0), get_irn_modename(op0),
+      get_irn_opname(op1), get_irn_modename(op1),
+      get_irn_opname(op2), get_irn_modename(op2),
+      text);
+}
+
+/**
  * Prints a failure message for a proj
  */
 static void show_proj_failure(ir_node *n)
@@ -1099,12 +1117,15 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
     case iro_Free:
       op1mode = get_irn_mode(in[1]);
       op2mode = get_irn_mode(in[2]);
+      op3mode = get_irn_mode(in[3]);
       ASSERT_AND_RET_DBG(
-                         /* Free: BB x M x ref --> M */
+                         /* Free: BB x M x ref x int_u --> M */
                          op1mode == mode_M && mode_is_reference(op2mode) &&
+                         mode_is_int(op3mode) &&
+                         !mode_is_signed(op3mode) &&
                          mymode == mode_M,
                          "Free node", 0,
-                         show_binop_failure(n, "/* Free: BB x M x ref --> M */");
+                         show_triop_failure(n, "/* Free: BB x M x ref x int_u --> M */");
                          );
       break;
 
