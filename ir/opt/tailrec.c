@@ -121,6 +121,15 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
 
   assert(n_tail_calls);
 
+  /* we add nwe nodes, so the outs are inconsistant */
+  set_irg_outs_inconsistent(irg);
+
+  /* we add new blocks and change the control flow */
+  set_irg_dom_inconsistent(irg);
+
+  /* we add a new loop */
+  set_irg_loopinfo_inconsistent(irg);
+
   set_optimize(0);
 
   /* collect needed data */
