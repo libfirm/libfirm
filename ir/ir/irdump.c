@@ -1581,16 +1581,27 @@ dump_vcg_header(const char *name, const char *orientation) {
 
 static void vcg_open (ir_graph *irg, char * suffix1, char *suffix2) {
   const char *nm = get_irg_dump_name(irg);
-  int len = strlen(nm);
+  int len = strlen(nm), i, j;
   char *fname;  /* filename to put the vcg information in */
 
   if (!suffix1) suffix1 = "";
   if (!suffix2) suffix2 = "";
 
   /** open file for vcg graph */
-  fname = malloc (len + strlen(suffix1) + strlen(suffix2) + 5);
-  strncpy (fname, nm, len);      /* copy the filename */
-  fname[len] = '\0';
+  fname = malloc (len * 2 + strlen(suffix1) + strlen(suffix2) + 5);
+
+  //strncpy (fname, nm, len);      /* copy the filename */
+  j = 0;
+  for (i = 0; i < len; ++i) {  /* replase '/' in the name: escape by @. */
+    if (nm[i] == '/') {
+      fname[j] = '@'; j++; fname[j] = '1'; j++;
+    } else if (nm[i] == '@') {
+      fname[j] = '@'; j++; fname[j] = '2'; j++;
+    } else {
+      fname[j] = nm[i]; j++;
+    }
+  }
+  fname[j] = '\0';
   strcat (fname, suffix1);  /* append file suffix */
   strcat (fname, suffix2);  /* append file suffix */
   strcat (fname, ".vcg");   /* append the .vcg suffix */
@@ -1603,12 +1614,24 @@ static void vcg_open (ir_graph *irg, char * suffix1, char *suffix2) {
 
 static void vcg_open_name (const char *name, char *suffix) {
   char *fname;  /* filename to put the vcg information in */
+  int i, j, len = strlen(name);
 
   if (!suffix) suffix = "";
 
   /** open file for vcg graph */
-  fname = malloc (strlen(name) + 5 + strlen(suffix));
-  strcpy (fname, name);    /* copy the filename */
+  fname = malloc (len * 2 + 5 + strlen(suffix));
+  //strcpy (fname, name);    /* copy the filename */
+  j = 0;
+  for (i = 0; i < len; ++i) {  /* replase '/' in the name: escape by @. */
+    if (name[i] == '/') {
+      fname[j] = '@'; j++; fname[j] = '1'; j++;
+    } else if (name[i] == '@') {
+      fname[j] = '@'; j++; fname[j] = '2'; j++;
+    } else {
+      fname[j] = name[i]; j++;
+    }
+  }
+  fname[j] = '\0';
   strcat (fname, suffix);
   strcat (fname, ".vcg");  /* append the .vcg suffix */
   F = fopen (fname, "w");  /* open file for writing */
