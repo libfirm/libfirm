@@ -663,7 +663,6 @@ tarval *tarval_neg(tarval *a)              /* negation */
   assert(mode_is_num(a->mode)); /* negation only for numerical values */
   assert(mode_is_signed(a->mode)); /* negation is difficult without negative numbers, isn't it */
 
-printf("NEG\n");
   switch (get_mode_sort(a->mode))
   {
     case int_number:
@@ -671,7 +670,6 @@ printf("NEG\n");
       return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 
     case float_number:
-printf("FP NEG\n");
       fc_neg(a->value);
       return get_tarval(fc_get_buffer(), fc_get_buffer_length(), a->mode);
 
