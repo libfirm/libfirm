@@ -92,6 +92,7 @@ typedef struct {
 typedef struct {
   symconst_symbol sym;  // old tori
   symconst_kind num;
+  type *tp;          /**< the source type, for analyses. default: type_unknown. */
 } symconst_attr;
 
 /** Sel attributes */

@@ -1279,7 +1279,7 @@ ir_node *new_rd_Const_type (dbg_info* db, ir_graph *irg, ir_node *block,
 ir_node *new_rd_Const  (dbg_info *db, ir_graph *irg, ir_node *block,
                ir_mode *mode, tarval *con);
 
-/** Constructor for a SymConst node.
+/** Constructor for a SymConst_type node.
  *
  *  This is the constructor for a symbolic constant.
  *    There are four kinds of symbolic constants:
@@ -1305,7 +1305,15 @@ ir_node *new_rd_Const  (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param *block  The ir block the node belongs to.
  * @param symkind The kind of the symbolic constant: type_tag, size, addr_name or addr_ent.
  * @param value   A type, entity or a ident depending on the SymConst kind.
+ * @param tp      The source type of the constant.
  */
+ir_node *
+new_rd_SymConst_type (dbg_info* db, ir_graph *irg, ir_node *block, symconst_symbol value,
+		      symconst_kind symkind, type *tp);
+
+/** Constructor for a SymConst node.
+ *
+ *  Same as new_rd_SymConst_type, except that it sets the type to type_unknown. */
 ir_node *new_rd_SymConst (dbg_info *db, ir_graph *irg, ir_node *block,
 			  symconst_symbol value, symconst_kind symkind);
 
@@ -2645,7 +2653,7 @@ ir_node *new_d_Const_type (dbg_info* db, ir_mode *mode, tarval *con, type *tp);
  */
 ir_node *new_d_Const  (dbg_info* db, ir_mode *mode, tarval *con);
 
-/** Constructor for a SymConst node.
+/** Constructor for a SymConst_type node.
  *
  *  Adds the node to the block in current_ir_block.
  *  This is the constructor for a symbolic constant.
@@ -2669,9 +2677,16 @@ ir_node *new_d_Const  (dbg_info* db, ir_mode *mode, tarval *con);
  *
  * @param *db     A pointer for debug information.
  * @param value   A type, entity or ident depending on the SymConst kind.
- * @param symkind The kind of the symbolic constant: symconst_type_tag, symconst_size or symconst_addr_name.
+ * @param symkind The kind of the symbolic constant: symconst_type_tag, symconst_size
+ *                or symconst_addr_name.
+ * @param tp      The source type of the constant.
  *
  */
+ir_node *new_d_SymConst_type (dbg_info* db, symconst_symbol value, symconst_kind kind, type* tp);
+
+/** Constructor for a SymConst node.
+ *
+ *  Same as new_d_SymConst_type, except that it sets the type to type_unknown. */
 ir_node *new_d_SymConst (dbg_info* db, symconst_symbol value, symconst_kind kind);
 
 /** Constructor for a simpleSel node.
