@@ -51,17 +51,17 @@ typedef enum {
  * This operation evaluates an IR node into a tarval if possible,
  * returning tarval_bad otherwise.
  */
-typedef tarval *(*computed_value_func)(ir_node *n);
+typedef tarval *(*computed_value_func)(ir_node *self);
 
 /**
  * The equivalent node operation.
  * This operation returns an equivalent node for the input node.
- * It does not create new nodes.  It is therefore safe to free n
- * if the node returned is not n.
+ * It does not create new nodes.  It is therefore safe to free self
+ * if the node returned is not self.
  * If a node returns a Tuple we can not just skip it.  If the size of the
  * in array fits, we transform n into a tuple (e.g., possible for Div).
  */
-typedef ir_node *(*equivalent_node_func)(ir_node *n);
+typedef ir_node *(*equivalent_node_func)(ir_node *self);
 
 /**
  * The transform node operation.
@@ -71,7 +71,7 @@ typedef ir_node *(*equivalent_node_func)(ir_node *n);
  * transformations _do_ generate new nodes, and thus the old node must
  * not be freed even if the equivalent node isn't the old one.
  */
-typedef ir_node *(*transform_node_func)(ir_node *n);
+typedef ir_node *(*transform_node_func)(ir_node *self);
 
 /**
  * The node attribute compare operation.
@@ -95,6 +95,12 @@ typedef int (*reassociate_func)(ir_node **n);
  */
 typedef void (*copy_attr_func)(const ir_node *old_node, ir_node *new_node);
 
+/**
+ * The get_type operation.
+ * Return the type of the node self.
+ */
+typedef type *(*get_type_func)(ir_node *self);
+
 /** The type of an ir_op. */
 struct ir_op {
   opcode code;            /**< the unique opcode of the op */
@@ -112,6 +118,7 @@ struct ir_op {
   node_cmp_attr_func    node_cmp_attr;		/**< compares two node attributes. */
   reassociate_func      reassociate;            /**< reassociate a tree */
   copy_attr_func        copy_attr;              /**< copy node attributes */
+  get_type_func         get_type;               /**< return the type of a node */
 };
 
 /**
