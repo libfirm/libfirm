@@ -29,6 +29,9 @@ endif
 AR := @AR@
 ARFLAGS := rc
 
+TAR := @TAR@
+TARFLAGS = -C $(top_srcdir) -uf $(topdir)/libfirm.tar
+
 RANLIB := @RANLIB@
 
 AUTODOC := @ROBODOC@
@@ -37,7 +40,8 @@ INDEXFILE := $(AUTODOCDIR)/index.html
 GLOBALXREFFILE := $(AUTODOCDIR)/libfirm.html.xrefs
 LOCALXREFSFILE := .xrefs
 
-DISTFILES = $(SOURCES)
+DISTFILES += $(addprefix $(srcdir)/, $(SOURCES))
+ARCHIVEDISTFILES += $(addprefix $(subdir)/, $(SOURCES))
 CFILES = $(filter %.c,$(SOURCES) $(GENFILES))
 HFILES = $(filter %.h,$(SOURCES) $(GENFILES))
 OFILES = $(CFILES:.c=.o)
@@ -99,4 +103,4 @@ test -z "$$fail"
 endef
 endif
 
-targets = all clean depend echodist echogen echosrc realclean tags install autodoc autodoc_xref autodoc_html
+targets = all clean depend realclean tags install autodoc autodoc_xref autodoc_html dist

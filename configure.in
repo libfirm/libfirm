@@ -10,7 +10,7 @@ AC_REVISION($Id$)
 AC_INIT(ir/ir/ircons.c)
 
 dnl if other files should be generated just add them to ac_output_files
-ac_output_file="Makefile MakeRules ir/.dummy ir/adt/Makefile ir/debug/Makefile \
+ac_output_file="Makefile MakeRules ir/Makefile ir/adt/Makefile ir/debug/Makefile \
 		ir/tv/Makefile ir/common/Makefile ir/ident/Makefile ir/ir/Makefile \
 		ir/tr/Makefile testprograms/Makefile"
 
@@ -77,6 +77,13 @@ dnl ------------
 AC_CHECK_PROG(AR, ar, "ar", "")
 if test "$AR" != "ar"; then
   AC_MSG_ERROR(need ar for creating archives)
+fi
+
+dnl check for tar
+dnl -------------
+AC_CHECK_PROG(TAR, tar, "tar", "")
+if test "$TAR" != "tar"; then
+  AC_MSG_ERROR(need tar for creating archives in distribution)
 fi
 
 dnl check wether ar can handle option -s

@@ -11,8 +11,12 @@ all : subdir_all
 
 # partial linking of a subdir's $(OFILES) into one file
 subdir.o: $(OFILES)
+ifeq ($(strip $(OFILES)),)
+	>$@
+else
 	rm -f $@
 	$(LD) $(LDFLAGS) -r -o $@ $^
+endif
 
 clean: subdir_clean local_clean
 .PHONY: local_clean
@@ -40,6 +44,16 @@ autodoc_html: subdir_autodoc_html local_autodoc_html
 local_autodoc_html: $(HTMLFILES)
 
 
+# generate an archive for distribution
+dist:	subdir_dist local_dist
+#	@echo create archive with $(DISTFILES)
+#	@echo tar -C $(top_srcdir) -uf libfirm.tar $(ARCHIVEDISTFILES)
+	$(TAR) $(TARFLAGS) $(ARCHIVEDISTFILES)
+.PHONY:	local_dist
+local_dist:	$(DISTFILES)
+
+
+# dont know about this
 # Recurse into $(subdirs) for $(targets)
 $(addprefix subdir_,$(targets)): $(subdirs)
 	+$(recurse)
