@@ -97,7 +97,6 @@ typedef enum {
 /* ********** Constructor for user defined modes **************** */
 /**
  * Registers a new mode.
- * Must be called BEFORE init_mode2() !!!
  *
  * The information for new mode is retrieved from the mode
  * struct passed as parameter, the code field is ignored.
@@ -117,16 +116,6 @@ ir_mode *register_mode(ir_mode* new_mode);
 
 /* ********** Access methods to read mode information *********** */
 
-#ifdef MODE_ACCESS_DEFINES
-#  include "irmode_t.h"
-#  define get_mode_modecode(mode) (mode)->code
-#  define get_mode_ident(mode) (mode)->name
-#  define get_mode_name(mode) id_to_str((mode)->name)
-#  define get_mode_sort(mode) (mode)->sort
-#  define get_mode_size_bits(mode) (mode)->size
-#  define get_mode_align(mode) (mode)->align
-#  define get_mode_sign(mode) (mode)->sign
-#else
 /** Returns the classification of the mode */
 modecode get_mode_modecode(ir_mode *mode);
 
@@ -151,8 +140,6 @@ int get_mode_align(ir_mode *mode);
 
 /** Returns the signess of a mode */
 int get_mode_sign (ir_mode *mode);
-
-#endif /* MODE_ACCESS_DEFINES */
 
 /**
  * Returns the smallest representable value of a given mode.
@@ -286,15 +273,6 @@ ir_mode *get_modeBB(void);
 */
 /*@}*/
 /* Test for a certain class of modes. */
-#ifdef MODE_ACCESS_DEFINES
-#  define mode_is_signed(mode) (mode)->sign
-#  define mode_is_float(mode) ((mode)->sort == float_number)
-#  define mode_is_int(mode) ((mode)->sort == int_number)
-#  define mode_is_num(mode) (((mode)->sort == float_number) || ((mode)->sort == int_number))
-#  define mode_is_data(mode) (((mode)->sort == float_number) || ((mode)->sort == int_number) || ((mode)->sort == character) || ((mode)->sort == reference))
-#  define mode_is_datab(mode) (((mode)->sort == float_number) || ((mode)->sort == int_number) || ((mode)->sort == character) || ((mode)->sort == reference) || ((mode)->sort == internal_boolean))
-#  define mode_is_dataM(mode) (((mode)->sort == float_number) || ((mode)->sort == int_number) || ((mode)->sort == character) || ((mode)->sort == reference) || ((mode)->code == irm_M))
-#else
 int mode_is_signed (ir_mode *mode);
 int mode_is_float (ir_mode *mode);
 int mode_is_int (ir_mode *mode);
@@ -302,7 +280,6 @@ int mode_is_num (ir_mode *mode);
 int mode_is_data (ir_mode *mode);
 int mode_is_datab (ir_mode *mode);
 int mode_is_dataM (ir_mode *mode);
-#endif
 /** Returns true if sm can be converted to lm without loss
    according to firm definiton */
 int smaller_mode(ir_mode *sm, ir_mode *lm);

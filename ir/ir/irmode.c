@@ -198,17 +198,7 @@ register_mode(ir_mode* new_mode)
   return mode;
 }
 
-/* Functions for the direct access to all attributes of a ir_mode */
-#ifdef MODE_ACCESS_DEFINES
-#  undef get_mode_modecode
-#  undef get_mode_ident
-#  undef get_mode_name
-#  undef get_mode_sort
-#  undef get_mode_size_bits
-#  undef get_mode_align
-#  undef get_mode_sign
-#endif
-
+/* Functions for the direct access to all attributes od a ir_mode */
 modecode
 get_mode_modecode(ir_mode *mode)
 {
@@ -264,16 +254,6 @@ get_mode_sign (ir_mode *mode)
   ANNOUNCE();
   return mode->sign;
 }
-
-#ifdef MODE_ACCESS_DEFINES
-#  define get_mode_modecode(mode) (mode)->code
-#  define get_mode_ident(mode) (mode)->name
-#  define get_mode_name(mode) id_to_str((mode)->name)
-#  define get_mode_sort(mode) (mode)->sort
-#  define get_mode_size_bits(mode) (mode)->size
-#  define get_mode_align(mode) (mode)->align
-#  define get_mode_sign(mode) (mode)->sign
-#endif
 
 tarval *
 get_mode_min (ir_mode *mode)
