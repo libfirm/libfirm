@@ -12,6 +12,12 @@
 #define _PATTERN_H_
 
 /**
+ * @file pattern.h
+ *
+ * Statistics for libFirm, pattern history.
+ */
+
+/**
  * calculates the pattern history.
  *
  * @param irg    The IR-graph
