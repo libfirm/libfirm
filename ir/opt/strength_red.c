@@ -40,6 +40,8 @@ struct induct_var_info {
 };
 static struct induct_var_info ivi;
 
+/** Counter for verbose information about optimization. */
+static int n_reduced_expressions;
 
 /** Detect basic iteration variables.
  *
@@ -159,6 +161,9 @@ static struct induct_var_info *is_induction_variable (ir_node *n) {
   return info;
 }
 
+/* from irdump.c */
+const char *get_irg_dump_name(ir_graph *irg);
+
 /**
  * Reduce a node.
  *
@@ -166,9 +171,10 @@ static struct induct_var_info *is_induction_variable (ir_node *n) {
  * @param *env     Free environment pointer.
  *
  * The node for reduce mus be in a loop whit *phi and *add.The *phi node muss
- * have 2 predecessors a Const and a Add node. The predecessors of Add node muss * be *phi and a Const node. The nodes a, b, c  muss be Const with dom_depth <   * phi.
+ * have 2 predecessors a Const and a Add node. The predecessors of Add node muss
+ * be *phi and a Const node. The nodes a, b, c  muss be Const with dom_depth <
+ * phi.
  */
-
 void reduce_a_node(ir_node *strong, void *env) {
   ir_node *phi, *l, *r, *c;
   ir_op *op_strong;
@@ -199,11 +205,13 @@ void reduce_a_node(ir_node *strong, void *env) {
     if (get_Block_dom_depth(get_nodes_block(c))  >=
 	get_Block_dom_depth(get_nodes_block(phi))) return;
 
-    if (get_opt_strength_red_verbosity() == 2) {
+    /* Some statistics and user information ... */
+    if (get_opt_strength_red_verbosity() && get_firm_verbosity() > 1) {
       printf("Reducing node: "); DDMN(strong);
       printf("  iter var is  "); DDMN(ivi.op);
       printf("  in graph     "); DDMG(current_ir_graph);
     }
+    n_reduced_expressions++;
 
     ir_node *inc = NULL, *init = NULL, *new_phi, *in[2], *new_op = NULL, *block_init, *block_inc;
     ir_node *init_block      = get_nodes_block(ivi.init);
@@ -258,6 +266,8 @@ void reduce_strength(ir_graph *irg) {
 
  if (!get_optimize() || !get_opt_strength_red()) return;
 
+  n_reduced_expressions = 0;
+
   /* -- Precompute some information -- */
   /* Call algorithm that computes the backedges */
   construct_cf_backedges(irg);
@@ -266,4 +276,11 @@ void reduce_strength(ir_graph *irg) {
 
   /* -- Search expressions that can be optimized -- */
   irg_walk_graph(irg, NULL, reduce_a_node, NULL);
+
+
+  if (get_opt_strength_red_verbosity()) {
+    if (n_reduced_expressions > 0)
+      printf("reduced strength of %d expressions in graph %s.\n",
+	     n_reduced_expressions, get_irg_dump_name(irg));
+  }
 }

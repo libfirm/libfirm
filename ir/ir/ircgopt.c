@@ -26,6 +26,8 @@
 #include "irgwalk.h"
 #include "irloop_t.h"
 #include "irflag_t.h"
+#include "ircons.h"
+#include "typewalk.h"
 
 static void clear_link(ir_node * node, void * env) {
   set_irn_link(node, NULL);
@@ -40,21 +42,39 @@ static void collect_call(ir_node * node, ir_node * head) {
   }
 }
 
+static void make_entity_to_description(type_or_ent *tore, void *env) {
+  if (get_kind(tore) == k_entity) {
+    entity *ent = (entity *)tore;
 
+    if ((is_method_type(get_entity_type(ent)))                        &&
+	(get_entity_peculiarity(ent) != peculiarity_description)      &&
+	(get_entity_visibility(ent)  != visibility_external_allocated)   ) {
+      entity *impl = get_SymConst_entity(get_atomic_ent_value(ent));
+      if (get_entity_link(impl) != env) {
+	set_entity_peculiarity(ent, peculiarity_description);
+	//set_atomic_ent_value(ent, new_r_Const(get_const_code_irg(), get_irg_start_block(get_const_code_irg()),
+	//				      mode_P, get_tarval_null(mode_P)));
+      }
+    }
+  }
+}
 
 /* garbage collect methods: mark and remove */
 void gc_irgs(int n_keep, entity ** keep_arr) {
-  void * MARK = &MARK;
+  void * MARK = &MARK; /* @@@ gefaehrlich!!! Aber wir markieren hoechstens zu viele ... */
   int i;
 
   if (!get_opt_dead_method_elimination()) return;
 
-  /* mark */
+  /* Mark entities that are alive.  */
   if (n_keep > 0) {
     entity ** marked = NEW_ARR_F(entity *, n_keep);
     for (i = 0; i < n_keep; ++i) {
       marked[i] = keep_arr[i];
       set_entity_link(marked[i], MARK);
+      if (get_opt_dead_method_elimination_verbose() && get_firm_verbosity() > 2) {
+        printf("dead method elimination: method %s kept alive.\n", get_entity_ld_name(marked[i]));
+      }
     }
     for (i = 0; i < ARR_LEN(marked); ++i) {
       /* check for extern methods, these don't have an IRG */
@@ -72,6 +92,10 @@ void gc_irgs(int n_keep, entity ** keep_arr) {
             if (ent && get_entity_irg(ent) && get_entity_link(ent) != MARK) {
               set_entity_link(ent, MARK);
               ARR_APP1(entity *, marked, ent);
+	      if (get_opt_dead_method_elimination_verbose() && get_firm_verbosity() > 2) {
+		printf("dead method elimination: method %s can be called from Call %ld: kept alive.\n",
+		       get_entity_ld_name(ent), get_irn_node_nr(node));
+	      }
             }
           }
         }
@@ -81,6 +105,7 @@ void gc_irgs(int n_keep, entity ** keep_arr) {
   }
 
   /* clean */
+  type_walk(make_entity_to_description, NULL, MARK);
   for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     ir_graph * irg = get_irp_irg(i);
     entity * ent = get_irg_entity(irg);
@@ -92,7 +117,7 @@ void gc_irgs(int n_keep, entity ** keep_arr) {
     if ((get_entity_visibility(ent) == visibility_local) && (get_entity_link(ent) != MARK)) {
       remove_irp_irg(irg);
       set_entity_peculiarity(ent, peculiarity_description);
-      if (get_opt_dead_method_elimination_verbose()) {
+      if (get_opt_dead_method_elimination_verbose() && get_firm_verbosity() > 1) {
         printf("dead method elimination: freeing method %s\n", get_entity_ld_name(ent));
       }
     }
