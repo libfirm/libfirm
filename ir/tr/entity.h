@@ -126,8 +126,8 @@ typedef struct entity entity;
    is type_method, then it is static_allocated and constant.  The constant
    value is a pointer to the method.
    Visibility is local, offset -1, and it is not volatile. */
-entity     *new_entity (type *owner, ident *name, type *type);
-entity     *new_d_entity (type *owner, ident *name, type *type, dbg_info *db);
+entity     *new_entity (type *owner, ident *name, type *tp);
+entity     *new_d_entity (type *owner, ident *name, type *tp, dbg_info *db);
 /* Copies the entity if the new_owner is different from the
    owner of the old entity.  Else returns the old entity.
    Automatically inserts the new entity as a member of owner. */
@@ -159,15 +159,19 @@ void        set_entity_owner (entity *ent, type *owner);
 INLINE void assert_legal_owner_of_ent(type *owner);
 
 type     *get_entity_type (entity *ent);
-void      set_entity_type (entity *ent, type *type);
+void      set_entity_type (entity *ent, type *tp);
 
 typedef enum {
-  automatic_allocated,/* The entity is allocated during runtime, implicitly
-			 as component of a compound type.   This is the default. */
-  dynamic_allocated,  /* The entity is allocated during runtime, explicitly
-			 by an Alloc node. */
-  static_allocated    /* The entity is allocated statically.  We can use a
-                         SymConst(?) as address of the entity. */
+  automatic_allocated, /* The entity is allocated during runtime, implicitly
+		  	  as component of a compound type.   This is the default. */
+  parameter_allocated, /* The entity is a parameter.  It is also automatic allocated.
+			  We distinguish the allocation of paramters from the allocation
+			  of local variables as their placement depends on the calling
+			  conventions. */
+  dynamic_allocated,   /* The entity is allocated during runtime, explicitly
+			  by an Alloc node. */
+  static_allocated     /* The entity is allocated statically.  We can use a
+                          SymConst(?) as address of the entity. */
 } ent_allocation;
 
 ent_allocation get_entity_allocation (entity *ent);
@@ -192,7 +196,7 @@ void           set_entity_visibility (entity *ent, ent_visibility vis);
 /* This enumeration flags the variability of entities. */
 typedef enum {
   uninitialized,    /* The content of the entity is completely unknown. */
-  initialized,       /* After allocation the entity is initalized with the
+  initialized,      /* After allocation the entity is initalized with the
 		       value given somewhere in the entity. */
   part_constant,    /* For entities of compound types.  Some members of the entity
 		       are constant.  The others are uninitialized.  Those members
