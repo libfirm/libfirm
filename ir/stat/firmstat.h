@@ -19,6 +19,14 @@
 #include "irgraph.h"
 
 /**
+ * Statistic options, can be or'ed.
+ */
+enum firmstat_options_t {
+  FIRMSTAT_ENABLED         = 0x00000001,	/**< enable statistics */
+  FIRMSTAT_PATTERN_ENABLED = 0x00000002		/**< enable pattern calculation */
+};
+
+/**
  * Finish the statistics.
  * Never called from libFirm should be called from user.
  */
@@ -44,8 +52,10 @@ typedef enum {
 
 /**
  * initialize the statistics module.
+ *
+ * @param enable_options  Bitmask containing the statistic options
  */
-void stat_init(void);
+void stat_init(unsigned enable_options);
 
 /**
  * A new IR op is registered.
@@ -136,7 +146,7 @@ ir_op *stat_get_op_from_opcode(opcode code);
 
 #else
 
-#define stat_init()
+#define stat_init(flag)
 #define stat_new_ir_op(op)
 #define stat_free_ir_op(op)
 #define stat_new_node(node)

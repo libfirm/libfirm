@@ -778,14 +778,14 @@ ir_op *stat_get_op_from_opcode(opcode code)
 }
 
 /* initialize the statistics module. */
-void stat_init(void)
+void stat_init(unsigned enable_options)
 {
 #define X(a)  a, sizeof(a)-1
 
   int pseudo_id = 0;
 
   /* enable statistics */
-  status->enable = 1;
+  status->enable = enable_options & FIRMSTAT_ENABLED;
 
   if (! status->enable)
    return;
@@ -810,7 +810,7 @@ void stat_init(void)
   stat_register_dumper(&csv_dumper, "firmstat.csv");
 
   /* initialize the pattern hash */
-  stat_init_pattern_history(status->enable);
+  stat_init_pattern_history(enable_options & FIRMSTAT_PATTERN_ENABLED);
 #undef X
 }
 
