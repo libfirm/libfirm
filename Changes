@@ -1,3 +1,29 @@
+  3.7.2001 Goetz
+  Entities now have two more flags, for visibility and allocation mode.
+  Types that have a layout have a flag indicating whether the layout is
+  fixed.
+
+  25.6.2001 Goetz
+  We distinguish three kinds of Cond nodes.  These can be distinguished
+  by the mode of the selector operand and an internal flag of type cond_kind.
+  First we distinguish binary Conds and switch Conds.
+  A binary Cond has as selector a boolean value.  Proj(0) projects the control
+  flow for case "False", Proj(1) the control flow for "True".  A binary Cond
+  is recognized by the boolean selector.
+  The switch Cond has as selector an unsigned integer.  It produces as result
+  an n+1 Tuple (cf0, ... , cfn) of control flows.
+  We differ two flavours of this Cond.  The first, the dense Cond, passes
+  control along output i if the selector value is i, 0 <= i <= n.  If the
+  selector value is >n it passes control along output n.
+  The second Cond flavor differes in the treatment of cases not specified in
+  the source program.  It magically knows about the existence of Proj nodes.
+  It only passes control along output i, 0 <= i <= n, if a node Proj(Cond, i)
+  exists.  Else it passes control along output n (even if this Proj does not
+  exist.)  This Cond we call "fragmentary".  There is a special constructor
+  new_defaultProj that automatically sets the flavor.
+  The two switch flavors are distinguished by a flag of type cond_kind.
+  Default flavor is "dense"
+
   20.6.2001 Goetz
   Extended iropt, tv.
   tv now implements Minus, Abs.
