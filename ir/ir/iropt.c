@@ -24,6 +24,7 @@
 # include "dbginfo_t.h"
 # include "iropt_dbg.h"
 # include "irflag_t.h"
+# include "firmstat.h"
 
 /* Make types visible to allow most efficient access */
 # include "entity_t.h"
@@ -549,16 +550,22 @@ static ir_node *equivalent_node_Cond(ir_node *n)
 
 static ir_node *equivalent_node_Or(ir_node *n)
 {
+  ir_node *oldn = n;
+
   ir_node *a = get_Or_left(n);
   ir_node *b = get_Or_right(n);
 
   /* remove a v a */
-  if (a == b)
-    n = a;
+  if (a == b) {
+    n = a;                                                             DBG_OPT_ALGSIM1;
+  }
 
   return n;
 }
 
+/**
+ * optimize operations that are commutative and have neutral 0.
+ */
 static ir_node *equivalent_node_neutral_zero(ir_node *n)
 {
   ir_node *oldn = n;
@@ -597,6 +604,10 @@ static ir_node *equivalent_node_Eor(ir_node *n)
   return equivalent_node_neutral_zero(n);
 }
 
+/**
+ * optimize operations that are not commutative but have neutral 0 on left.
+ * Test only one predecessor.
+ */
 static ir_node *equivalent_node_left_zero(ir_node *n)
 {
   ir_node *oldn = n;
@@ -604,7 +615,6 @@ static ir_node *equivalent_node_left_zero(ir_node *n)
   ir_node *a = get_binop_left(n);
   ir_node *b = get_binop_right(n);
 
-  /* optimize operations that are not commutative but have neutral 0 on left. Test only one predecessor. */
   if (tarval_classify (computed_value (b)) == TV_CLASSIFY_NULL) {
     n = a;                                                              DBG_OPT_ALGSIM1;
   }
@@ -1523,7 +1533,7 @@ ir_node *
 optimize_node (ir_node *n)
 {
   tarval *tv;
-  ir_node *old_n = n;
+  ir_node *oldn = n;
   opcode iro = intern_get_irn_opcode(n);
 
   /* Allways optimize Phi nodes: part of the construction. */
@@ -1536,9 +1546,17 @@ optimize_node (ir_node *n)
       /* try to evaluate */
       tv = computed_value (n);
       if ((intern_get_irn_mode(n) != mode_T) && (tv != tarval_bad)) {
+	/*
+	 * we MUST copy the node here temparary, because it's still needed
+	 * for DBG_OPT_ALGSIM0
+	 */
+	ir_node x = *n;
+	oldn = &x;
         /* evaluation was succesful -- replace the node. */
 	obstack_free (current_ir_graph->obst, n);
-	return new_Const (get_tarval_mode (tv), tv);
+	n = new_Const (get_tarval_mode (tv), tv);
+							DBG_OPT_ALGSIM0;
+	return n;
       }
     }
   }
@@ -1561,9 +1579,11 @@ optimize_node (ir_node *n)
   if (get_opt_cse())
     n = identify_cons (current_ir_graph->value_table, n);
 
-  if (n != old_n) {
+  if (n != oldn) {
     /* We found an existing, better node, so we can deallocate the old node. */
-    obstack_free (current_ir_graph->obst, old_n);
+    obstack_free (current_ir_graph->obst, oldn);
+
+    return n;
   }
 
   /* Some more constant expression evaluation that does not allow to
@@ -1596,7 +1616,7 @@ ir_node *
 optimize_in_place_2 (ir_node *n)
 {
   tarval *tv;
-  ir_node *old_n = n;
+  ir_node *oldn = n;
   opcode iro = intern_get_irn_opcode(n);
 
   if (!get_opt_optimize() && (intern_get_irn_op(n) != op_Phi)) return n;
@@ -1618,7 +1638,7 @@ optimize_in_place_2 (ir_node *n)
       if ((intern_get_irn_mode(n) != mode_T) && (tv != tarval_bad)) {
         /* evaluation was succesful -- replace the node. */
 	n = new_Const (get_tarval_mode (tv), tv);
-	__dbg_info_merge_pair(n, old_n, dbg_const_eval);
+						DBG_OPT_ALGSIM0;
 	return n;
       }
     }
