@@ -12,15 +12,16 @@
 # include "config.h"
 #endif
 
+#include "hashptr.h"
+#include "xmalloc.h"
 #include "firmstat_t.h"
 
 /**
  * calculates a hash value for an address
- * Addresses are typically aligned at 32bit, so we ignore the lowest bits
  */
 static unsigned addr_hash(const void *object)
 {
-  return (unsigned)object >> 3;
+  return HASH_PTR(object);
 }
 
 /**
@@ -49,10 +50,7 @@ distrib_tbl_t *stat_new_distrib_tbl(pset_cmp_fun cmp_func, distrib_hash_fun hash
 {
   distrib_tbl_t *res;
 
-  res = malloc(sizeof(*res));
-
-  if (! res)
-    return res;
+  res = xmalloc(sizeof(*res));
 
   obstack_init(&res->cnts);
 

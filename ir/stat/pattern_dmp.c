@@ -14,7 +14,9 @@
 #endif
 
 #include <stdio.h>
-#include <stdlib.h>
+#ifdef HAVE_STDLIB_H
+# include <stdlib.h>
+#endif
 
 #include "ident.h"
 #include "irop_t.h"

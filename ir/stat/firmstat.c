@@ -16,8 +16,13 @@
 #ifdef FIRM_STATISTICS
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+
+#ifdef HAVE_STDLIB_H
+# include <stdlib.h>
+#endif
+#ifdef HAVE_STRING_H
+# include <string.h>
+#endif
 
 #include "irouts.h"
 #include "irdump.h"
@@ -870,7 +875,7 @@ void stat_free_graph(ir_graph *irg)
     update_graph_stat(global, graph);
 
     /* count the DAG's */
-//    count_dags_in_graph(global, graph);
+    //count_dags_in_graph(global, graph);
 
     /* calculate the pattern */
     stat_calc_pattern_history(irg);
@@ -1162,7 +1167,7 @@ void stat_finish(const char *name)
         update_graph_stat(global, entry);
 
         /* count the DAG's */
-//        count_dags_in_graph(global, entry);
+        //count_dags_in_graph(global, entry);
 
         /* calculate the pattern */
         stat_calc_pattern_history(entry->irg);

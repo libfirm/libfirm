@@ -10,7 +10,17 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 #ifdef HAVE_CONFIG_H
-# include <config.h>
+# include "config.h"
+#endif
+
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
+#ifdef HAVE_STRING_H
+#include <string.h>
 #endif
 
 #include <assert.h>

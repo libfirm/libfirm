@@ -46,16 +46,18 @@ typedef struct _dag_env_t {
  * a DAG Entry
  */
 struct _dag_entry_t {
-  ir_node     *root;
-  unsigned    num_roots;
-  unsigned    num_nodes;
-  unsigned    num_inner_nodes;
-  unsigned    is_dead;
-  dag_entry_t *next;
+  unsigned    id;                       /**< assigned ID for this DAG */
+  ir_node     *root;                    /**< one root of the DAG */
+  unsigned    num_roots;                /**< number of root nodes in the DAG */
+  unsigned    num_nodes;                /**< overall number of nodes in the DAG */
+  unsigned    num_inner_nodes;          /**< number of inner nodes in the DAG */
+  unsigned    is_dead;                  /**< marks a dead entry */
+  dag_entry_t *next;                    /**< link all entries of a DAG */
 };
 
 /**
- * a DAG Entry link
+ * a DAG Entry link, used to connect point
+ * from several places to the same DAG Entry
  */
 typedef struct _dag_link_t {
   dag_entry_t	*entry;
@@ -84,9 +86,10 @@ static void connect_dags(ir_node *node, void *env)
   link = get_irn_link(node);
 
   if (! link) {
-    /* not assigned node found, maybe a new root */
+    /* found a not assigned node, maybe a new root */
     dag_entry_t *entry = obstack_alloc(&dag_env->obst, sizeof(*entry));
 
+    /* allocate a new link */
     link        = obstack_alloc(&dag_env->obst, sizeof(*link));
     link->entry = entry;
 
@@ -120,11 +123,12 @@ static void connect_dags(ir_node *node, void *env)
       }
     }
 
+    /* only nodes from teh same block goes into the DAG */
     if (get_nodes_block(prev) == block) {
       dag_link_t *prev_link = get_irn_link(prev);
 
       if (! prev_link) {
-	/* not assigned node, do it */
+	/* not assigned node, put it into the same DAG */
 	set_irn_link(prev, link);
 	++link->entry->num_nodes;
 	++link->entry->num_inner_nodes;
@@ -154,6 +158,7 @@ void count_dags_in_graph(graph_entry_t *global, graph_entry_t *graph)
 {
   dag_env_t   root_env;
   dag_entry_t *entry;
+  unsigned id;
 
   /* do NOT check the const code irg */
   if (graph->irg == get_const_code_irg())
@@ -173,16 +178,19 @@ void count_dags_in_graph(graph_entry_t *global, graph_entry_t *graph)
   printf("Graph %p %s --- %d\n", graph->irg, get_entity_name(get_irg_entity(graph->irg)),
       root_env.num_of_dags);
 
-  for (entry = root_env.list_of_dags; entry; entry = entry->next) {
+  for (id = 0, entry = root_env.list_of_dags; entry; entry = entry->next) {
     if (entry->is_dead)
       continue;
+    entry->id = id++;
 
-    printf("number of roots %d number of nodes %d inner %d %d\n",
+    printf("number of roots %d number of nodes %d inner %d %ld\n",
       entry->num_roots,
       entry->num_nodes,
       entry->num_inner_nodes,
       get_irn_node_nr(entry->root));
   }
+
+  assert(id == root_env.num_of_dags);
 
   obstack_free(&root_env.obst, NULL);
 }

@@ -8,6 +8,20 @@
  * Copyright:   (c) 1998-2004 UniversitÅ‰t Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
+#ifdef HAVE_STRING_H
+# include <string.h>
+#endif
+
 # include "irnode_t.h"
 # include "irgraph_t.h"
 # include "irmode_t.h"
@@ -220,6 +234,60 @@ static void collect_nodes(ir_node *node, void *env)
 }
 
 /**
+ * returns a entity if the address ptr points to a constant one.
+ */
+static entity *find_constant_entity(ir_node *ptr)
+{
+  for (;;) {
+    ir_op *op = get_irn_op(ptr);
+
+    if (op == op_SymConst && (get_SymConst_kind(ptr) == symconst_addr_ent)) {
+      return get_SymConst_entity(ptr);
+    }
+    else if (op == op_Sel) {
+      entity *ent = get_Sel_entity(ptr);
+      type *tp    = get_entity_owner(ent);
+
+      if (is_array_type(tp)) {
+        /* check bounds */
+        int i, n;
+
+        for (i = 0, n = get_Sel_n_indexs(ptr); i < n; ++i) {
+          ir_node *bound;
+          tarval *tlower, *tupper;
+          ir_node *index = get_Sel_index(ptr, i);
+          tarval *tv     = computed_value(index);
+
+          /* check if the index is constant */
+          if (tv == tarval_bad)
+            return NULL;
+
+          bound  = get_array_lower_bound(tp, i);
+          tlower = computed_value(bound);
+          bound  = get_array_upper_bound(tp, i);
+          tupper = computed_value(bound);
+
+          if (tlower == tarval_bad || tupper == tarval_bad)
+            return NULL;
+
+          if (tarval_cmp(tv, tlower) & Lt)
+            return NULL;
+          if (tarval_cmp(tupper, tv) & Lt)
+            return NULL;
+
+          /* ok, bounds check finished */
+        }
+      }
+
+      /* try next */
+      ptr = get_Sel_ptr(ptr);
+    }
+    else
+      return NULL;
+  }
+}
+
+/**
  * optimize a Load
  */
 static int optimize_load(ir_node *load)
@@ -227,6 +295,7 @@ static int optimize_load(ir_node *load)
   ldst_info_t *info = get_irn_link(load);
   ir_mode *load_mode = get_Load_mode(load);
   ir_node *pred, *mem, *ptr;
+  entity *ent;
   int res = 0;
 
   /* the address of the load to be optimized */
@@ -285,11 +354,9 @@ static int optimize_load(ir_node *load)
   /* the mem of the Load. Must still be returned after optimization */
   mem  = get_Load_mem(load);
 
-  if ((get_irn_opcode(ptr) == iro_SymConst) && (get_SymConst_kind(ptr) == symconst_addr_ent)) {
-    entity *ent = get_SymConst_entity(ptr);
-
-    assert(mode_is_reference(get_irn_mode(ptr)));
-
+  /* check if we can determine the entity that will be loaded */
+  ent = find_constant_entity(ptr);
+  if (ent) {
     if ((allocation_static == get_entity_allocation(ent)) &&
         (visibility_external_allocated != get_entity_visibility(ent))) {
       /* a static allocation that is not external: there should be NO exception
@@ -315,10 +382,20 @@ static int optimize_load(ir_node *load)
           exchange(info->projs[pn_Load_M], mem);
 
         /* no result :-) */
-        if (info->projs[pn_Load_res])
-          exchange(info->projs[pn_Load_res], copy_const_value(get_atomic_ent_value(ent)));
+        if (info->projs[pn_Load_res]) {
+          if (is_atomic_entity(ent)) {
+            ir_node *c = copy_const_value(get_atomic_ent_value(ent));
 
-        return 1;
+            DBG_OPT_RC(load, c);
+            exchange(info->projs[pn_Load_res], c);
+
+            return 1;
+          }
+        }
+      }
+      else if (variability_constant == get_entity_variability(ent)) {
+        printf(">>>>>>>>>>>>> Found access to constant entity %s in function %s\n", get_entity_name(ent),
+            get_entity_name(get_irg_entity(current_ir_graph)));
       }
 
       /* we changed the irg, but try further */
@@ -358,7 +435,7 @@ static int optimize_load(ir_node *load)
        */
       if ((!pred_info->projs[pn_Store_X_except] && !info->projs[pn_Load_X_except]) ||
           get_nodes_block(load) == get_nodes_block(pred)) {
-        DBG_OPT_RAW(pred, load);
+        DBG_OPT_RAW(load, pred);
         exchange( info->projs[pn_Load_res], get_Store_value(pred) );
 
         if (info->projs[pn_Load_M])
@@ -384,7 +461,7 @@ static int optimize_load(ir_node *load)
       if (! info->projs[pn_Load_X_except] || get_nodes_block(load) == get_nodes_block(pred)) {
         ldst_info_t *pred_info = get_irn_link(pred);
 
-        DBG_OPT_RAR(pred, load);
+        DBG_OPT_RAR(load, pred);
 
         if (pred_info->projs[pn_Load_res]) {
           /* we need a data proj from the previous load for this optimization */
@@ -476,7 +553,7 @@ static int optimize_store(ir_node *store)
        * We may remove the second Store, if it does not have an exception handler.
        */
       if (! info->projs[pn_Store_X_except]) {
-        DBG_OPT_WAR(pred, store);
+        DBG_OPT_WAR(store, pred);
         exchange( info->projs[pn_Store_M], mem );
         return 1;
       }

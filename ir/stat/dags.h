@@ -11,12 +11,7 @@
 #ifndef _DAGS_H_
 #define _DAGS_H_
 
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
-
 #include "firmstat_t.h"
-
 /*
  * count the DAG's size of a graph
  */

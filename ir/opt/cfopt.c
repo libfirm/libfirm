@@ -10,11 +10,12 @@
  */
 
 #ifdef HAVE_CONFIG_H
-# include <config.h>
+# include "config.h"
 #endif
 
 #include <assert.h>
 
+#include "xmalloc.h"
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "irprog_t.h"
@@ -298,7 +299,7 @@ static void optimize_blocks(ir_node *b, void *env) {
   for (i = 0, k = get_Block_n_cfgpreds(b); i < k; ++i) {
     max_preds += test_whether_dispensable(b, i);
   }
-  in = (ir_node **) malloc(max_preds * sizeof(ir_node *));
+  in = (ir_node **) xmalloc(max_preds * sizeof(ir_node *));
 
 /*-
   printf(" working on "); DDMN(b);
@@ -489,7 +490,7 @@ static void optimize_blocks(ir_node *b, void *env) {
 
   assert(get_irn_link(b) == NULL || (n_preds == p_preds && "Wrong Phi Fix"));
 
-  free(in);
+  xfree(in);
 }
 
 
