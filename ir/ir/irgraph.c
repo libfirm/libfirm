@@ -33,6 +33,7 @@
 # include "irouts.h"
 # include "irhooks.h"
 # include "irgwalk.h"
+# include "iredges_t.h"
 
 /**
  * Indicates, whether additional data can be registered to graphs.
@@ -125,6 +126,10 @@ new_r_ir_graph (entity *ent, int n_loc)
 
   res = alloc_graph();
   res->kind = k_ir_graph;
+
+#ifdef FIRM_EDGES_INPLACE
+	edges_init_graph(res);
+#endif
 
   /* inform statistics here, as blocks will be already build on this graph */
   hook_new_graph(res, ent);
@@ -290,6 +295,7 @@ ir_graph *new_const_code_irg(void) {
   set_irn_visited(res->no_mem, -1);
 
   res->phase_state = phase_high;
+
   return res;
 }
 

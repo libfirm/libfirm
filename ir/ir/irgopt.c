@@ -509,6 +509,8 @@ dead_node_elimination(ir_graph *irg) {
   struct obstack *graveyard_obst = NULL;
   struct obstack *rebirth_obst   = NULL;
 
+	edges_init_graph(irg);
+
   /* inform statistics that we started a dead-node elimination run */
   hook_dead_node_elim_start(irg);
 

@@ -26,6 +26,7 @@
 
 # include "irnode_t.h"
 # include "irgraph_t.h"
+# include "iredges_t.h"
 # include "irmode_t.h"
 # include "iropt_t.h"
 # include "ircons_t.h"
@@ -1089,6 +1090,8 @@ static ir_node *equivalent_node_Mux(ir_node *n)
     return get_Mux_true(n);
   else if (ts == get_tarval_b_false())
     return get_Mux_false(n);
+	else if(get_Mux_false(n) == get_Mux_true(n))
+		return get_Mux_true(n);
 
   return n;
 }
@@ -2294,94 +2297,102 @@ gigo (ir_node *node)
 ir_node *
 optimize_node (ir_node *n)
 {
-  tarval *tv;
-  ir_node *oldn = n;
-  opcode iro = get_irn_opcode(n);
+	tarval *tv;
+	ir_node *oldn = n;
+	opcode iro = get_irn_opcode(n);
 
-  type *old_tp = get_irn_type(n);
-  {
-    int i, arity = get_irn_arity(n);
-    for (i = 0; i < arity && !old_tp; ++i)
-      old_tp = get_irn_type(get_irn_n(n, i));
-  }
+	type *old_tp = get_irn_type(n);
+	{
+		int i, arity = get_irn_arity(n);
+		for (i = 0; i < arity && !old_tp; ++i)
+			old_tp = get_irn_type(get_irn_n(n, i));
+	}
 
-  /* Allways optimize Phi nodes: part of the construction. */
-  if ((!get_opt_optimize()) && (iro != iro_Phi)) return n;
+	/* Allways optimize Phi nodes: part of the construction. */
+	if ((!get_opt_optimize()) && (iro != iro_Phi)) return n;
 
-  /* constant expression evaluation / constant folding */
-  if (get_opt_constant_folding()) {
-    /* constants can not be evaluated */
-    if (iro != iro_Const) {
-      /* try to evaluate */
-      tv = computed_value(n);
-      if ((get_irn_mode(n) != mode_T) && (tv != tarval_bad)) {
-        /*
-         * we MUST copy the node here temporary, because it's still needed
-         * for DBG_OPT_CSTEVAL
-         */
-        int node_size = offsetof(ir_node, attr) +  n->op->attr_size;
-        oldn = alloca(node_size);
+	/* constant expression evaluation / constant folding */
+	if (get_opt_constant_folding()) {
+		/* constants can not be evaluated */
+		if (iro != iro_Const) {
+			/* try to evaluate */
+			tv = computed_value(n);
+			if ((get_irn_mode(n) != mode_T) && (tv != tarval_bad)) {
+				ir_node *nw;
 
-        memcpy(oldn, n, node_size);
-    CLONE_ARR_A(ir_node *, oldn->in, n->in);
+				/*
+				 * we MUST copy the node here temporary, because it's still needed
+				 * for DBG_OPT_CSTEVAL
+				 */
+				int node_size = offsetof(ir_node, attr) +  n->op->attr_size;
+				oldn = alloca(node_size);
 
-    /* ARG, copy the in array, we need it for statistics */
-    memcpy(oldn->in, n->in, ARR_LEN(n->in) * sizeof(n->in[0]));
+				memcpy(oldn, n, node_size);
+				CLONE_ARR_A(ir_node *, oldn->in, n->in);
 
-        /* evaluation was successful -- replace the node. */
-        obstack_free (current_ir_graph->obst, n);
-        n = new_Const (get_tarval_mode (tv), tv);
-    if (old_tp && get_type_mode(old_tp) == get_tarval_mode (tv))
-      set_Const_type(n, old_tp);
-                                                 DBG_OPT_CSTEVAL(oldn, n);
-        return n;
-      }
-    }
-  }
+				/* ARG, copy the in array, we need it for statistics */
+				memcpy(oldn->in, n->in, ARR_LEN(n->in) * sizeof(n->in[0]));
 
-  /* remove unnecessary nodes */
-  if (get_opt_constant_folding() ||
-      (iro == iro_Phi)  ||   /* always optimize these nodes. */
-      (iro == iro_Id)   ||
-      (iro == iro_Proj) ||
-      (iro == iro_Block)  )  /* Flags tested local. */
-    n = equivalent_node (n);
 
-  optimize_preds(n);                  /* do node specific optimizations of nodes predecessors. */
+				edges_node_deleted(n, current_ir_graph);
 
-  /** common subexpression elimination **/
-  /* Checks whether n is already available. */
-  /* The block input is used to distinguish different subexpressions. Right
-     now all nodes are op_pin_state_pinned to blocks, i.e., the cse only finds common
-     subexpressions within a block. */
-  if (get_opt_cse())
-    n = identify_cons (current_ir_graph->value_table, n);
+				/* evaluation was successful -- replace the node. */
+				obstack_free (current_ir_graph->obst, n);
+				nw = new_Const (get_tarval_mode (tv), tv);
 
-  if (n != oldn) {
-    /* We found an existing, better node, so we can deallocate the old node. */
-    obstack_free (current_ir_graph->obst, oldn);
+				if (old_tp && get_type_mode(old_tp) == get_tarval_mode (tv))
+					set_Const_type(nw, old_tp);
+				DBG_OPT_CSTEVAL(oldn, nw);
+				return nw;
+			}
+		}
+	}
 
-    return n;
-  }
+	/* remove unnecessary nodes */
+	if (get_opt_constant_folding() ||
+			(iro == iro_Phi)  ||   /* always optimize these nodes. */
+			(iro == iro_Id)   ||
+			(iro == iro_Proj) ||
+			(iro == iro_Block)  )  /* Flags tested local. */
+		n = equivalent_node (n);
 
-  /* Some more constant expression evaluation that does not allow to
-     free the node. */
-  iro = get_irn_opcode(n);
-  if (get_opt_constant_folding() ||
-      (iro == iro_Cond) ||
-      (iro == iro_Proj))     /* Flags tested local. */
-    n = transform_node (n);
+	optimize_preds(n);                  /* do node specific optimizations of nodes predecessors. */
 
-  /* Remove nodes with dead (Bad) input.
-     Run always for transformation induced Bads. */
-  n = gigo (n);
+	/** common subexpression elimination **/
+	/* Checks whether n is already available. */
+	/* The block input is used to distinguish different subexpressions. Right
+		 now all nodes are op_pin_state_pinned to blocks, i.e., the cse only finds common
+		 subexpressions within a block. */
+	if (get_opt_cse())
+		n = identify_cons (current_ir_graph->value_table, n);
 
-  /* Now we have a legal, useful node. Enter it in hash table for cse */
-  if (get_opt_cse() && (get_irn_opcode(n) != iro_Block)) {
-    n = identify_remember (current_ir_graph->value_table, n);
-  }
+	if (n != oldn) {
+		edges_node_deleted(oldn, current_ir_graph);
 
-  return n;
+		/* We found an existing, better node, so we can deallocate the old node. */
+		obstack_free (current_ir_graph->obst, oldn);
+
+		return n;
+	}
+
+	/* Some more constant expression evaluation that does not allow to
+		 free the node. */
+	iro = get_irn_opcode(n);
+	if (get_opt_constant_folding() ||
+			(iro == iro_Cond) ||
+			(iro == iro_Proj))     /* Flags tested local. */
+		n = transform_node (n);
+
+	/* Remove nodes with dead (Bad) input.
+		 Run always for transformation induced Bads. */
+	n = gigo (n);
+
+	/* Now we have a legal, useful node. Enter it in hash table for cse */
+	if (get_opt_cse() && (get_irn_opcode(n) != iro_Block)) {
+		n = identify_remember (current_ir_graph->value_table, n);
+	}
+
+	return n;
 }
 
 

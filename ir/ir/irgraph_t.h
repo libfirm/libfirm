@@ -33,9 +33,19 @@
 
 #include "obst.h"
 #include "pset.h"
+#include "set.h"
 #include "type_t.h"
 
 #define FRAME_TP_SUFFIX "frame_tp"
+
+/**
+ * Edge info to put into an irg.
+ */
+typedef struct _irg_edge_info_t {
+	set *edges;
+	unsigned activated : 1;
+} irg_edge_info_t;
+
 
 /** ir_graph holds all information for a procedure */
 struct ir_graph {
@@ -118,6 +128,10 @@ struct ir_graph {
 #ifdef DEBUG_libfirm
   int graph_nr;             /**< a unique graph number for each graph to make output
                    readable. */
+#endif
+
+#ifdef FIRM_EDGES_INPLACE
+	irg_edge_info_t edge_info;
 #endif
 };
 
