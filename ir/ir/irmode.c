@@ -927,33 +927,45 @@ int mode_honor_signed_zeros(const ir_mode *mode)
   return 0;
 }
 
+/*
+ * Returns non-zero if the given mode might overflow on unary Minus.
+ *
+ * This does NOT happen on IEEE 754.
+ */
+int mode_overflow_on_unary_Minus(const ir_mode *mode)
+{
+  if (mode->sort == irms_float_number)
+    return mode->arithmetic == irma_ieee754 ? 0 : 1;
+  return 1;
+}
+
 void finish_mode(void) {
   obstack_free(&modes, 0);
 
-  mode_T = NULL;
-  mode_X = NULL;
-  mode_M = NULL;
-  mode_BB = NULL;
+  mode_T   = NULL;
+  mode_X   = NULL;
+  mode_M   = NULL;
+  mode_BB  = NULL;
   mode_ANY = NULL;
   mode_BAD = NULL;
 
-  mode_F = NULL;
-  mode_D = NULL;
-  mode_E = NULL;
+  mode_F   = NULL;
+  mode_D   = NULL;
+  mode_E   = NULL;
 
-  mode_Bs = NULL;
-  mode_Bu = NULL;
-  mode_Hs = NULL;
-  mode_Hu = NULL;
-  mode_Is = NULL;
-  mode_Iu = NULL;
-  mode_Ls = NULL;
-  mode_Lu = NULL;
+  mode_Bs  = NULL;
+  mode_Bu  = NULL;
+  mode_Hs  = NULL;
+  mode_Hu  = NULL;
+  mode_Is  = NULL;
+  mode_Iu  = NULL;
+  mode_Ls  = NULL;
+  mode_Lu  = NULL;
 
-  mode_C = NULL;
-  mode_U = NULL;
-  mode_b = NULL;
-  mode_P = NULL;
+  mode_C   = NULL;
+  mode_U   = NULL;
+  mode_b   = NULL;
+  mode_P   = NULL;
 
   mode_P_mach = NULL;
 }

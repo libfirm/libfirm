@@ -439,4 +439,9 @@ ir_mode *find_double_bits_int_mode(const ir_mode *mode);
  */
 int mode_honor_signed_zeros(const ir_mode *mode);
 
+/**
+ * Returns non-zero if the given mode might overflow on unary Minus.
+ */
+int mode_overflow_on_unary_Minus(const ir_mode *mode);
+
 #endif /* _IRMODE_H_ */
