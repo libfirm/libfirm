@@ -14,7 +14,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include "irdump.h"
+#include "irdump_t.h"
 
 #include "firm_common_t.h"
 

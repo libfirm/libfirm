@@ -23,7 +23,6 @@
 #include "entity_t.h"
 #include "irop_t.h"
 
-#include "irdump.h"
 #include "irdump_t.h"
 
 #include "irgwalk.h"
@@ -463,10 +462,10 @@ void dump_pointer_values_to_info(bool b) {
 /* Routines to dump information about a single ir node.            */
 /*-----------------------------------------------------------------*/
 
-/**
+/*
  * dump the name of a node n to the File F.
  */
-static INLINE int
+int
 dump_node_opcode(FILE *F, ir_node *n)
 {
   int bad = 0;

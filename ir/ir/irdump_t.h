@@ -3,7 +3,7 @@
 #ifndef __IRDUMPT_T_H__
 #define __IRDUMPT_T_H__
 
-#include "firm_common_t.h"
+#include "irdump.h"
 
 /* Attributes of nodes */
 #define PRINT_DEFAULT_NODE_ATTR
@@ -76,5 +76,10 @@ void dump_vcg_header(FILE *F, const char *name, const char *orientation);
 const char *get_irg_dump_name(ir_graph *irg);
 void vcg_close (FILE *F);
 
+/**
+ * dump the name of a node n to the File F.
+ */
+int
+dump_node_opcode(FILE *F, ir_node *n);
 
 #endif /* __IRDUMPT_T_H__ */
