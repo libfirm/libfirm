@@ -25,9 +25,8 @@
 
 # include "irnode.h"
 
-/** Exchanges two nodes by conserving edges leaving old (i.e., pointers
-   pointing to old).  Turns the old node into an Id. Requires that
-   current_ir_graph is set properly. */
+/** Exchanges two nodes by conserving edges leaving old (i.e.,
+   pointers pointing to old).  Turns the old node into an Id. */
 void exchange (ir_node *old, ir_node *nw);
 
 /** Turns a node into a "useless" Tuple.

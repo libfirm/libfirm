@@ -50,7 +50,9 @@ INLINE void
 exchange (ir_node *old, ir_node *nw)
 {
   ir_node *block;
+  ir_graph *irg = get_irn_irg (old);
 
+  assert (irg);
   assert(get_irn_op(old)->opar != oparity_dynamic);
 
   stat_turn_into_id(old);
@@ -58,7 +60,7 @@ exchange (ir_node *old, ir_node *nw)
   block = old->in[0];
 
   old->op = op_Id;
-  old->in = NEW_ARR_D (ir_node *, current_ir_graph->obst, 2);
+  old->in = NEW_ARR_D (ir_node *, irg->obst, 2);
   old->in[0] = block;
   old->in[1] = nw;
 }
@@ -121,7 +123,7 @@ static void move (ir_node *node, ir_node *from_bl, ir_node *to_bl) {
     proj = get_irn_link(node);
     while (proj) {
       if (get_nodes_Block(proj) == from_bl)
-	set_nodes_Block(proj, to_bl);
+    set_nodes_Block(proj, to_bl);
       proj = get_irn_link(proj);
     }
   }
@@ -148,7 +150,7 @@ void part_block(ir_node *node) {
   /* Transform the control flow */
   old_block = get_nodes_Block(node);
   new_block = new_Block(get_Block_n_cfgpreds(old_block),
-			get_Block_cfgpred_arr(old_block));
+            get_Block_cfgpred_arr(old_block));
   set_irg_current_block(current_ir_graph, new_block);
   {
     ir_node *in[1];
@@ -166,8 +168,8 @@ void part_block(ir_node *node) {
   set_irn_link(old_block, NULL);
   while (phi) {
     if(get_nodes_Block(phi) == old_block);   /* @@@ inlinening chokes on phis that don't
-					       obey this condition.  How do they get into
-					       the list??? Example: InterfaceIII */
+                           obey this condition.  How do they get into
+                           the list??? Example: InterfaceIII */
       set_nodes_Block(phi, new_block);
     phi = get_irn_link(phi);
   }
