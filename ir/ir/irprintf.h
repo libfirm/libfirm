@@ -27,6 +27,7 @@
  * Something that can append strings and chars to something.
  */
 typedef struct _appender_t {
+	void (*init)(void *object, size_t n);
 	void (*append_char)(void *object, size_t n, char ch);
 	void (*append_str)(void *object, size_t n, const char *str);
 } appender_t;

@@ -43,7 +43,15 @@
 
 
 /**
- * append a char to a string buffer
+ * Init the string.
+ */
+static void str_init(void *object, size_t n)
+{
+	strcpy(object, "");
+}
+
+/**
+ * append a char to a string buffer.
  */
 static void str_append_char(void *object, size_t n, char ch)
 {
@@ -56,15 +64,23 @@ static void str_append_char(void *object, size_t n, char ch)
 }
 
 /**
- * append a string to a string buffer
+ * append a string to a string buffer.
  */
 static void str_append_str(void *object, size_t n, const char *str)
 {
 	strncat(object, str, n);
 }
 
+
 /**
- * append a char to a file
+ * Init the file. i.e. do nothing.
+ */
+static void file_init(void *object, size_t n)
+{
+}
+
+/**
+ * append a char to a file.
  */
 static void file_append_char(void *object, size_t n, char ch)
 {
@@ -72,7 +88,7 @@ static void file_append_char(void *object, size_t n, char ch)
 }
 
 /**
- * append a string to a file
+ * append a string to a file.
  */
 static void file_append_str(void *object, size_t n, const char *str)
 {
@@ -83,6 +99,7 @@ static void file_append_str(void *object, size_t n, const char *str)
  * the file appender
  */
 static const appender_t file_appender = {
+	file_init,
 	file_append_char,
 	file_append_str
 };
@@ -91,6 +108,7 @@ static const appender_t file_appender = {
  * the string buffer appender
  */
 static const appender_t str_appender = {
+	str_init,
 	str_append_char,
 	str_append_str
 };
@@ -151,9 +169,18 @@ struct settings {
 	int alternate;
 };
 
+/* Length specifiers. */
+enum {
+	len_char,
+	len_short,
+	len_int,
+	len_long,
+	len_long_long
+};
+
+
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
-
 
 static void dump_with_settings(const appender_t *app, void *object, size_t limit,
 		const struct settings *settings, const char *str)
@@ -181,17 +208,6 @@ static void dump_with_settings(const appender_t *app, void *object, size_t limit
 }
 
 
-
-/* Length specifiers. */
-enum {
-	len_char,
-	len_short,
-	len_int,
-	len_long,
-	len_long_long
-};
-
-
 /**
  * A small printf helper routine for ir nodes.
  * @param app An appender (this determines where the stuff is dumped
@@ -210,6 +226,8 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 
 #define DUMP_STR(s) app->append_str(object, limit, s)
 #define DUMP_CH(ch) app->append_char(object, limit, ch)
+
+	app->init(object, limit);
 
 	for(i = 0, n = strlen(fmt); i < n; ++i) {
 		char ch = fmt[i];
