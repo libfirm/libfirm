@@ -21,3 +21,6 @@ ident *mangle_entity (entity *ent);
 
 /* Sorry, I'm not sure what this does... seems to copy the string. */
 ident *mangle_type   (type *type);
+
+/* Returns a new ident that represents first_scnd. */
+ident *mangle (ident *first, ident* scnd);

@@ -1245,6 +1245,15 @@ ir_node *get_store (void);
 /* Write a store. */
 void set_store (ir_node *store);
 
+/** Useful access routines **/
+/* Returns the current block of the current graph.  To set the current
+   block use switch_block(). */
+ir_node *get_cur_block();
+
+/* Returns the frame type of the current graph */
+type *get_cur_frame_type();
+
+
 /***********************************************************************/
 /* initialize ir construction                                          */
 /***********************************************************************/

@@ -56,6 +56,7 @@ struct entity {
 				 fragments */
   int  offset;          /* Offset in byte for this entity.  Fixed when layout
 			   of owner is determined.  */
+  void *link;           /* To store some intermediate information */
   /* for methods */
   ir_graph *irg;        /* If (type == method_type) this is the corresponding irg.
 			   The ir_graph constructor automatically sets this field.

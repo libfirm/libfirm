@@ -147,7 +147,7 @@ main(void)
   set_store(new_Proj(call, mode_M, 0));
   /* Get the result of the procedure: select the result tuple from the call,
      then the proper result from the tuple. */
-  res = new_Proj(new_Proj(call, mode_T, 1), mode_I, 0);
+  res = new_Proj(new_Proj(call, mode_T, 2), mode_I, 0);
 
   /* return the results of procedure main */
   {

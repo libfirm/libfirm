@@ -231,6 +231,19 @@ set_entity_overwrites   (entity *ent, int pos, entity *overwritten) {
   ent->overwrites[pos+1] = overwritten;
 }
 
+/* A link to store intermediate information */
+void *
+get_entity_link(entity *ent) {
+  assert(ent);
+  return ent->link;
+}
+
+void
+set_entity_link(entity *ent, void *l) {
+  assert(ent);
+  ent->link = l;
+}
+
 inline ir_graph *
 get_entity_irg(entity *ent) {
   assert (ent);

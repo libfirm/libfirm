@@ -110,6 +110,8 @@ void type_walk_2(type_or_ent *tore,
       case tpo_array:
 	type_walk_2((type_or_ent *)get_array_element_type(tp),
 		    pre, post, env);
+	type_walk_2((type_or_ent *)get_array_element_entity(tp),
+		    pre, post, env);
 	break;
       case tpo_enumeration:
 	/* a leave */

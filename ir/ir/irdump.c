@@ -50,7 +50,8 @@
 #define TYPE_SUPER_EDGE_ATTR "class: 7 label: \"supertype\" color: blue"
 #define UNION_EDGE_ATTR      "class: 8 label: \"component\" color: blue"
 #define PTR_PTS_TO_EDGE_ATTR "class: 9 label: \"points to\" color:green"
-#define ARR_ELT_TYPE_EDGE_ATTR "class: 10 label: \"arr elt\" color:green"
+#define ARR_ELT_TYPE_EDGE_ATTR "class: 10 label: \"arr elt tp\" color:green"
+#define ARR_ENT_EDGE_ATTR    "class: 10 label: \"arr ent\" color: green"
 #define ENT_OVERWRITES_EDGE_ATTR "class: 11 label: \"overwrites\" color:red"
 #define TYPE_MEMBER_EDGE_ATTR "class: 12 label: \"member\" color:blue"
 
@@ -588,6 +589,8 @@ dump_type_info (type_or_ent *tore, void *env) {
 	  xfprintf (F, "\"}\n");
 	  xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
 		    ARR_ELT_TYPE_EDGE_ATTR "}\n", tp, get_array_element_type(tp), i);
+	  xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
+		    ARR_ENT_EDGE_ATTR "}\n", tp, get_array_element_entity(tp), i);
 	} break;
       case tpo_enumeration:
 	{

@@ -88,6 +88,7 @@ typedef struct ir_graph ir_graph;
  *   overwrites A list of entities overwritten by this entity.  This list is only
  *              existent if the owner of this entity is a class.  The members in
  *              this list must be entities of super classes.
+ *   link       A void* to associate some additional inforamtion with the entity.
  *   irg        If the entity is a method this is the ir graph that represents the
  *              code of the method.
  *
@@ -181,6 +182,10 @@ int     get_entity_n_overwrites (entity *ent);
 entity *get_entity_overwrites   (entity *ent, int pos);
 void    set_entity_overwrites   (entity *ent, int pos, entity *overwritten);
 /* Do we need a second relation "overwritten"? */
+
+/* A link to store intermediate information */
+void*   get_entity_link(entity *ent);
+void    set_entity_link(entity *ent, void *l);
 
 /* The entity knows the corresponding irg if the entity is a method.
    This allows to get from a Call to the called irg. */

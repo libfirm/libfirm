@@ -19,6 +19,8 @@ struct ir_graph {
   struct entity  *ent;               /* The entity of this procedure, i.e.,
 					the type of the procedure and the
 					class it belongs to. */
+  struct type    *frame_type;        /* A class type representing the stack frame.
+					Can include "inner" methods. */
   struct ir_node *start_block;       /* block the start node will belong to */
   struct ir_node *start;	     /* start node of this ir_graph */
   struct ir_node *end_block;         /* block the end node will belong to */

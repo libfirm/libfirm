@@ -25,9 +25,6 @@
 
 # include "pset.h"
 
-/* @@@ for testing */
-#include "irdump.h"
-
 /* Defined in iropt.c */
 pset *new_identities (void);
 void  del_identities (pset *value_table);
@@ -319,6 +316,25 @@ dead_node_elimination(ir_graph *irg) {
 /*  Funcionality for inlining                                         */
 /**********************************************************************/
 
+/* Copy node for inlineing.  Copies the node by calling copy_node and
+   then updates the entity if it's a local one.  env must be a pointer
+   to the frame type of the procedure. The new entities must be in
+   the link field of the entities. */
+void
+copy_node_inline (ir_node *n, void *env) {
+  ir_node *new;
+  type *frame_tp = (type *)env;
+
+  copy_node(n, NULL);
+  if (get_irn_op(n) == op_Sel) {
+    new = get_new_node (n);
+    assert(get_irn_op(new) == op_Sel);
+    if (get_entity_owner(get_Sel_entity(n)) == frame_tp) {
+      set_Sel_entity(new, get_entity_link(get_Sel_entity(n)));
+    }
+  }
+}
+
 void inline_method(ir_node *call, ir_graph *called_graph) {
   ir_node *pre_call;
   ir_node *post_call, *post_bl;
@@ -329,6 +345,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   ir_node *ret, *phi;
   ir_node *cf_op, *bl;
   int arity, n_ret, n_exc, n_res, i, j;
+  type *called_frame, *caller_frame;
 
   if (!get_opt_inline()) return;
 
@@ -386,7 +403,14 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
 			get_irg_block_visited(current_ir_graph) +1 +1); /* count for self edge */
 
   /*** Replicate local entities of the called_graph ***/
-  /* @@@ */
+  /* copy the entities. */
+  called_frame = get_irg_frame_type(called_graph);
+  for (i = 0; i < get_class_n_member(called_frame); i++) {
+    entity *new_ent, *old_ent;
+    old_ent = get_class_member(called_frame, i);
+    new_ent = copy_entity_own(old_ent, get_cur_frame_type());
+    set_entity_link(old_ent, new_ent);
+  }
 
   /* visited is > than that of called graph.  With this trick visited will
      remain unchanged so that an outer walker calling this inline will
@@ -394,9 +418,11 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph)-1);
 
   /** Performing dead node elimination inlines the graph **/
-  /* Copies the nodes to the obstack of current_ir_graph. */
+  /* Copies the nodes to the obstack of current_ir_graph. Updates links to new
+     entities. */
   /* @@@ endless loops are not copied!! */
-  irg_walk(get_irg_end(called_graph), copy_node, copy_preds, NULL);
+  irg_walk(get_irg_end(called_graph), copy_node_inline, copy_preds,
+	   get_irg_frame_type(called_graph));
 
   /* Repair called_graph */
   set_irg_visited(called_graph, get_irg_visited(current_ir_graph));
@@ -404,6 +430,15 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   set_Block_block_visited(get_irg_start_block(called_graph), 0);
 
   /*** Merge the end of the inlined procedure with the call site ***/
+  /* We will turn the old Call node into a Tuple with the following
+     predecessors:
+     -1:  Block of Tuple.
+     0: Phi of all Memories of Return statements.
+     1: Jmp from new Block that merges the control flow from all exception
+        predecessors of the old end block.
+     2: Tuple of all arguments.
+     3: Phi of Exception memories.
+  */
 
   /** Precompute some values **/
   end_bl = get_new_node(get_irg_end_block(called_graph));

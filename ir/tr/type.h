@@ -93,6 +93,7 @@ typedef struct ir_node ir_node;
  *               A fixed layout for enumeration types means that each enumeration
  *               is associated with an implementation value.
  *  visit        A counter for walks of the type information.
+ *  link         A void* to associate some additional inforamtion with the type.
  *
  *  These fields can only be accessed via access functions.
  *

@@ -38,7 +38,7 @@ void type_walk_irg(ir_graph *irg,
 /** Walks over all type information reachable from global roots.
     Touches every type and entity in specified order:
     - first the super types
-    - secand the type itself
+    - second the type itself
     - third the sub types.  If new types/entities are created
     during the traversal these will be visited, too. **/
 void type_walk_super2sub(void (pre)(type_or_ent*, void*),

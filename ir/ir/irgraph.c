@@ -18,6 +18,7 @@
 # include "iropt_t.h"
 # include "array.h"
 # include "irgmod.h"
+# include "mangle.h"
 
 ir_graph *current_ir_graph;
 
@@ -79,6 +80,10 @@ new_ir_graph (entity *ent, int n_loc)
   /** Type inforamtion for the procedure of the graph **/
   res->ent = ent;
   set_entity_irg(ent, res);
+
+  /** A type that represents the stack frame.  A class type so that it can
+      contain "inner" methods as in Pascal. **/
+  res->frame_type = new_type_class(mangle(get_entity_ident(ent), id_from_str("frame_tp", 8)));
 
   /** Nodes needed in every graph **/
   res->end_block = new_immBlock ();
@@ -262,6 +267,19 @@ void
 set_irg_ent (ir_graph *irg, entity *ent)
 {
   irg->ent = ent;
+}
+
+type *
+get_irg_frame_type (ir_graph *irg)
+{
+  assert(irg && irg->frame_type);
+  return irg->frame_type;
+}
+
+void
+set_irg_frame_type (ir_graph *irg, type *ftp)
+{
+  irg->frame_type = ftp;
 }
 
 int

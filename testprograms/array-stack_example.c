@@ -74,7 +74,7 @@ main(void)
 
   /* build typeinformation of procedure main */
   owner = new_type_class (id_from_str ("ARRAY-STACK_EXAMPLE", 19));
-  proc_main = new_type_method(id_from_str("main", 4), 0, 1);
+  proc_main = new_type_method(id_from_str("main_tp", 4), 0, 1);
   set_method_res_type(proc_main, 0, prim_t_int);
   proc_main_e = new_entity (owner, id_from_str ("main", 4), proc_main);
 
@@ -84,18 +84,20 @@ main(void)
 # define N_DIMS 1
 # define L_BOUND 0
 # define U_BOUND 9
-  array_type = new_type_array(id_from_str("a", 1), N_DIMS, prim_t_int);
+  array_type = new_type_array(id_from_str("a_tp", 4), N_DIMS, prim_t_int);
   set_array_bounds(array_type, 1,
 		   new_Const(mode_I, tarval_from_long (mode_I, L_BOUND)),
 		   new_Const(mode_I, tarval_from_long (mode_I, U_BOUND)));
   /* The array is an entity of the method, placed on the mehtod's own memory,
      the stack frame. */
-  array_ent = get_array_element_entity(array_type);
+  array_ent = new_entity(get_cur_frame_type(), id_from_str("a", 1), array_type);
   /* As the array is accessed by Sel nodes, we need information about
-     the entity the node select.  Entities of an array are it's elements
+     the entity the node selects.  Entities of an array are it's elements
      which are, in this case, integers. */
   /* change entity owner types.   */
-  field_ent = new_entity(array_type, id_from_str("array_field", 11), prim_t_int);
+  field_ent = get_array_element_entity(array_type);
+
+
 
   /* Now the "real" program: */
   /* Select the array from the stack frame.  */
@@ -138,6 +140,7 @@ main(void)
   printf("Dumping the graph and a type graph.\n");
   dump_ir_block_graph (main_irg);
   dump_type_graph(main_irg);
+  dump_ir_block_graph_w_types(main_irg);
   printf("Use xvcg to view these graphs:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
 

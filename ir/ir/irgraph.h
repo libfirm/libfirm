@@ -118,6 +118,9 @@ void     set_irg_current_block (ir_graph *irg, ir_node *node);
 entity  *get_irg_ent (ir_graph *irg);
 void     set_irg_ent (ir_graph *irg, entity *ent);
 
+type    *get_irg_frame_type (ir_graph *irg);
+void     set_irg_frame_type (ir_graph *irg, type *ftp);
+
 /* Use not encouraged, internal of Phi construction algorithm. */
 int      get_irg_n_loc (ir_graph *irg);
 void     set_irg_n_loc (ir_graph *irg, int n_loc);

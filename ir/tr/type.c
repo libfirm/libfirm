@@ -515,7 +515,7 @@ type *new_type_array         (ident *name, int n_dimensions,
   res->attr.aa.lower_bound  = (ir_node **) xmalloc (sizeof (ir_node *) * n_dimensions);
   res->attr.aa.upper_bound  = (ir_node **) xmalloc (sizeof (ir_node *) * n_dimensions);
   res->attr.aa.element_type = element_type;
-  new_entity(res, name, element_type);
+  new_entity(res, mangle(name, id_from_str("elem_ent", 8)), element_type);
   return res;
 }
 inline void free_array_attrs (type *array) {

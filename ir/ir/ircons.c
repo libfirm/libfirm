@@ -1781,6 +1781,20 @@ set_store (ir_node *store)
   current_ir_graph->current_block->attr.block.graph_arr[0] = store;
 }
 
+
+/** Useful access routines **/
+/* Returns the current block of the current graph.  To set the current
+   block use switch_block(). */
+ir_node *get_cur_block() {
+  return get_irg_current_block(current_ir_graph);
+}
+
+/* Returns the frame type of the current graph */
+type *get_cur_frame_type() {
+  return get_irg_frame_type(current_ir_graph);
+}
+
+
 /* ********************************************************************* */
 /* initialize */
 
