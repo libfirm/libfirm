@@ -221,7 +221,7 @@ void compute_callgraph(void) {
     callee_set = (pset *)irg->callees;
     count = pset_count(callee_set);
     irg->callees = NEW_ARR_F(ir_graph *, count);
-    irg->callee_isbe = calloc(count, sizeof(int));
+    irg->callee_isbe = calloc(count, sizeof(*irg->callee_isbe));
     c = pset_first(callee_set);
     for (j = 0; j < count; ++j) {
       irg->callees[j] = c;
@@ -233,7 +233,7 @@ void compute_callgraph(void) {
     caller_set = (pset *)irg->callers;
     count = pset_count(caller_set);
     irg->callers = NEW_ARR_F(ir_graph *, count);
-    irg->caller_isbe =  calloc(count, sizeof(int));
+    irg->caller_isbe =  calloc(count, sizeof(*irg->caller_isbe));
     c = pset_first(caller_set);
     for (j = 0; j < count; ++j) {
       irg->callers[j] = c;
@@ -304,14 +304,14 @@ void callgraph_walk(callgraph_walk_func *pre, callgraph_walk_func *post, void *e
 /* loop construction algorithm                                                         */
 /* ----------------------------------------------------------------------------------- */
 
-static ir_graph *outermost_ir_graph;      /* The outermost graph the scc is computed
+static ir_graph *outermost_ir_graph;      /**< The outermost graph the scc is computed
                       for */
-static ir_loop *current_loop;      /* Current cfloop construction is working
+static ir_loop *current_loop;      /**< Current cfloop construction is working
                       on. */
-static int loop_node_cnt = 0;      /* Counts the number of allocated cfloop nodes.
+static int loop_node_cnt = 0;      /**< Counts the number of allocated cfloop nodes.
                       Each cfloop node gets a unique number.
                       What for? ev. remove. @@@ */
-static int current_dfn = 1;        /* Counter to generate depth first numbering
+static int current_dfn = 1;        /**< Counter to generate depth first numbering
                       of visited nodes.  */
 
 
@@ -320,78 +320,92 @@ static int current_dfn = 1;        /* Counter to generate depth first numbering
 /**********************************************************************/
 
 typedef struct scc_info {
-  bool in_stack;         /* Marks whether node is on the stack. */
-  int dfn;               /* Depth first search number. */
-  int uplink;            /* dfn number of ancestor. */
+  bool in_stack;         /**< Marks whether node is on the stack. */
+  int dfn;               /**< Depth first search number. */
+  int uplink;            /**< dfn number of ancestor. */
   int visited;
 } scc_info;
 
-static INLINE scc_info* new_scc_info(void) {
-  scc_info *info = obstack_alloc (outermost_ir_graph->obst, sizeof (scc_info));
-  memset (info, 0, sizeof (scc_info));
+/**
+ * allocates a new scc_info of the obstack
+ */
+static INLINE scc_info *new_scc_info(void) {
+  scc_info *info = obstack_alloc (outermost_ir_graph->obst, sizeof(*info));
+  memset(info, 0, sizeof(*info));
   return info;
 }
 
 static INLINE int
 cg_irg_visited(ir_graph *n) {
-  return (((scc_info *)n->link)->visited >= master_cg_visited);
+  scc_info *info = get_irg_link(n);
+  return (info->visited >= master_cg_visited);
 }
 
 static INLINE void
 mark_cg_irg_visited(ir_graph *n) {
-  ((scc_info *)n->link)->visited = master_cg_visited;
+  scc_info *info = get_irg_link(n);
+  info->visited = master_cg_visited;
 }
 
 static INLINE void
 set_cg_irg_visited(ir_graph *n, int i) {
-  ((scc_info *)n->link)->visited = i;
+  scc_info *info = get_irg_link(n);
+  info->visited = i;
 }
 
 static INLINE int
 get_cg_irg_visited(ir_graph *n) {
-  return ((scc_info *)n->link)->visited;
+  scc_info *info = get_irg_link(n);
+  return info->visited;
 }
 
 static INLINE void
 mark_irg_in_stack (ir_graph *n) {
-  assert(get_irg_link(n));
-  ((scc_info *)n->link)->in_stack = true;
+  scc_info *info = get_irg_link(n);
+  assert(info);
+  info->in_stack = true;
 }
 
 static INLINE void
 mark_irg_not_in_stack (ir_graph *n) {
-  assert(get_irg_link(n));
-  ((scc_info *)n->link)->in_stack = false;
+  scc_info *info = get_irg_link(n);
+  assert(info);
+  info->in_stack = false;
 }
 
 static INLINE bool
 irg_is_in_stack (ir_graph *n) {
-  assert(get_irg_link(n));
-  return ((scc_info *)n->link)->in_stack;
+  scc_info *info = get_irg_link(n);
+  assert(info);
+  return info->in_stack;
 }
 
 static INLINE void
 set_irg_uplink (ir_graph *n, int uplink) {
-  assert(get_irg_link(n));
-  ((scc_info *)n->link)->uplink = uplink;
+  scc_info *info = get_irg_link(n);
+  assert(info);
+  info->uplink = uplink;
 }
 
 static INLINE int
 get_irg_uplink (ir_graph *n) {
-  assert(get_irg_link(n));
-  return ((scc_info *)n->link)->uplink;
+  scc_info *info = get_irg_link(n);
+  assert(info);
+  return info->uplink;
 }
 
 static INLINE void
 set_irg_dfn (ir_graph *n, int dfn) {
-  assert(get_irg_link(n));
-  ((scc_info *)n->link)->dfn = dfn;
+  scc_info *info = get_irg_link(n);
+  assert(info);
+  info->dfn = dfn;
 }
 
 static INLINE int
 get_irg_dfn (ir_graph *n) {
-  assert(get_irg_link(n));
-  return ((scc_info *)n->link)->dfn;
+  scc_info *info = get_irg_link(n);
+  assert(info);
+  return info->dfn;
 }
 
 /**********************************************************************/
@@ -399,8 +413,11 @@ get_irg_dfn (ir_graph *n) {
 /**********************************************************************/
 
 static ir_graph **stack = NULL;
-static int tos = 0;                /* top of stack */
+static int tos = 0;                /**< top of stack */
 
+/**
+ * initialize the irg stack
+ */
 static INLINE void init_stack(void) {
   if (stack) {
     ARR_RESIZE (ir_graph *, stack, 1000);
@@ -410,7 +427,10 @@ static INLINE void init_stack(void) {
   tos = 0;
 }
 
-
+/**
+ * push a graph on the irg stack
+ * @param n the graph to be pushed
+ */
 static INLINE void
 push (ir_graph *n)
 {
@@ -422,6 +442,9 @@ push (ir_graph *n)
   mark_irg_in_stack(n);
 }
 
+/**
+ * return the topmost graph on the stack and pop it
+ */
 static INLINE ir_graph *
 pop (void)
 {
@@ -430,8 +453,10 @@ pop (void)
   return n;
 }
 
-/* The nodes up to n belong to the current loop.
-   Removes them from the stack and adds them to the current loop. */
+/**
+ * The nodes up to n belong to the current loop.
+ * Removes them from the stack and adds them to the current loop.
+ */
 static INLINE void
 pop_scc_to_loop (ir_graph *n)
 {
@@ -474,8 +499,10 @@ static void close_loop (ir_loop *l)
   current_loop = l;
 }
 
-/* Removes and unmarks all nodes up to n from the stack.
-   The nodes must be visited once more to assign them to a scc. */
+/**
+ * Removes and unmarks all nodes up to n from the stack.
+ * The nodes must be visited once more to assign them to a scc.
+ */
 static INLINE void
 pop_scc_unmark_visit (ir_graph *n)
 {
@@ -488,34 +515,36 @@ pop_scc_unmark_visit (ir_graph *n)
 }
 
 /**********************************************************************/
-/* The loop datastructure.                                           **/
+/* The loop data structure.                                          **/
 /**********************************************************************/
 
-/* Allocates a new loop as son of current_loop.  Sets current_loop
-   to the new loop and returns the father. */
+/**
+ * Allocates a new loop as son of current_loop.  Sets current_loop
+ * to the new loop and returns the father.
+ */
 static ir_loop *new_loop (void) {
   ir_loop *father, *son;
 
   father = current_loop;
 
-  son = (ir_loop *) obstack_alloc (outermost_ir_graph->obst, sizeof (ir_loop));
-  memset (son, 0, sizeof (ir_loop));
-  son->kind = k_ir_loop;
+  son = obstack_alloc (outermost_ir_graph->obst, sizeof(*son));
+  memset (son, 0, sizeof(*son));
+  son->kind     = k_ir_loop;
   son->children = NEW_ARR_F (loop_element, 0);
-  son->n_nodes = 0;
-  son->n_sons = 0;
+  son->n_nodes  = 0;
+  son->n_sons   = 0;
   if (father) {
     son->outer_loop = father;
     add_loop_son(father, son);
-    son->depth = father->depth+1;
+    son->depth = father->depth + 1;
   } else {  /* The root loop */
     son->outer_loop = son;
-    son->depth = 0;
+    son->depth      = 0;
   }
 
 #ifdef DEBUG_libfirm
   son->loop_nr = get_irp_new_node_nr();
-  son->link = NULL;
+  son->link    = NULL;
 #endif
 
   current_loop = son;
@@ -531,13 +560,18 @@ static ir_loop *new_loop (void) {
 static INLINE void
 init_scc (void) {
   int i;
-  current_dfn = 1;
+  int n_irgs;
+
+  current_dfn   = 1;
   loop_node_cnt = 0;
   init_stack();
-  for (i = 0; i < get_irp_n_irgs(); ++i) {
-    set_irg_link(get_irp_irg(i), new_scc_info());
-    get_irp_irg(i)->callgraph_recursion_depth = 0;
-    get_irp_irg(i)->callgraph_loop_depth = 0;
+
+  n_irgs = get_irp_n_irgs();
+  for (i = 0; i < n_irgs; ++i) {
+    ir_graph *irg = get_irp_irg(i);
+    set_irg_link(irg, new_scc_info());
+    irg->callgraph_recursion_depth = 0;
+    irg->callgraph_loop_depth      = 0;
   }
 }
 
@@ -560,19 +594,22 @@ is_head (ir_graph *n, ir_graph *root)
       some_outof_loop = 1;
     } else {
       if (get_irg_uplink(pred) < get_irg_uplink(root))  {
-	DDMG(pred); DDMG(root);
-	assert(get_irg_uplink(pred) >= get_irg_uplink(root));
+	    DDMG(pred); DDMG(root);
+	    assert(get_irg_uplink(pred) >= get_irg_uplink(root));
       }
       some_in_loop = 1;
     }
   }
 
-  return some_outof_loop && some_in_loop;
+  return some_outof_loop & some_in_loop;
 }
-/* Returns true if n is possible loop head of an endless loop.
-   I.e., it is a Block, Phi or Filter node and has only predecessors
-   within the loop.
-   @arg root: only needed for assertion. */
+
+/**
+ * Returns true if n is possible loop head of an endless loop.
+ * I.e., it is a Block, Phi or Filter node and has only predecessors
+ * within the loop.
+ * @arg root: only needed for assertion.
+ */
 static bool
 is_endless_head (ir_graph *n, ir_graph *root)
 {
@@ -585,22 +622,24 @@ is_endless_head (ir_graph *n, ir_graph *root)
     assert(pred);
     if (is_irg_callee_backedge(n, i)) { continue; }
     if (!irg_is_in_stack(pred)) {
-	some_outof_loop = 1;
+	  some_outof_loop = 1;
     } else {
       if(get_irg_uplink(pred) < get_irg_uplink(root)) {
-	DDMG(pred); DDMG(root);
-	assert(get_irg_uplink(pred) >= get_irg_uplink(root));
+	    DDMG(pred); DDMG(root);
+	    assert(get_irg_uplink(pred) >= get_irg_uplink(root));
       }
       some_in_loop = 1;
     }
   }
 
-  return !some_outof_loop && some_in_loop;
+  return !some_outof_loop & some_in_loop;
 }
 
 
-/* Check whether there is a parallel edge in the ip control flow.
-   Only */
+/**
+ * Check whether there is a parallel edge in the ip control flow.
+ * Only
+ */
 static bool
 is_ip_head (ir_graph *n, ir_graph *pred)
 {
@@ -632,8 +671,10 @@ is_ip_head (ir_graph *n, ir_graph *pred)
   return is_be;
 }
 
-/* Returns index of the predecessor with the smallest dfn number
-   greater-equal than limit. */
+/**
+ * Returns index of the predecessor with the smallest dfn number
+ * greater-equal than limit.
+ */
 static int
 smallest_dfn_pred (ir_graph *n, int limit)
 {
@@ -652,7 +693,7 @@ smallest_dfn_pred (ir_graph *n, int limit)
   return index;
 }
 
-/* Returns index of the predecessor with the largest dfn number. */
+/** Returns index of the predecessor with the largest dfn number. */
 static int
 largest_dfn_pred (ir_graph *n)
 {
@@ -692,21 +733,21 @@ find_tail (ir_graph *n) {
       m = stack[i];
 
       if (is_head (m, n)) {
-	res_index = smallest_dfn_pred (m, get_irg_dfn(m) + 1);
-	if (res_index == -2)  /* no smallest dfn pred found. */
-	  res_index = largest_dfn_pred (m);
+	    res_index = smallest_dfn_pred (m, get_irg_dfn(m) + 1);
+	    if (res_index == -2)  /* no smallest dfn pred found. */
+	      res_index = largest_dfn_pred (m);
 
-	if ((m == n) && (res_index == -2)) {
-	  i = -1;
-	}
-	break;
+	    if ((m == n) && (res_index == -2)) {
+	      i = -1;
+	    }
+	    break;
       }
 
       /* We should not walk past our selves on the stack:  The upcoming nodes
 	 are not in this loop. We assume a loop not reachable from Start. */
       if (m == n) {
-	i = -1;
-	break;
+	    i = -1;
+	    break;
       }
 
     }
@@ -714,14 +755,14 @@ find_tail (ir_graph *n) {
     if (i < 0) {
       /* A dead loop not reachable from Start. */
       for (i = tos-2; i >= 0; --i) {
-	m = stack[i];
-	if (is_endless_head (m, n)) {
-	  res_index = smallest_dfn_pred (m, get_irg_dfn(m) + 1);
-	  if (res_index == -2)  /* no smallest dfn pred found. */
-	    res_index = largest_dfn_pred (m);
-	  break;
-	}
-	if (m == n) { break; }  /* It's not an unreachable loop, either. */
+	    m = stack[i];
+	    if (is_endless_head (m, n)) {
+	      res_index = smallest_dfn_pred (m, get_irg_dfn(m) + 1);
+	      if (res_index == -2)  /* no smallest dfn pred found. */
+	        res_index = largest_dfn_pred (m);
+	      break;
+	    }
+	    if (m == n) { break; }  /* It's not an unreachable loop, either. */
       }
       //assert(0 && "no head found on stack");
     }
@@ -754,15 +795,15 @@ find_tail (ir_graph *n) {
       //printf(" found 1a! "); DDM;
       in_and_out = m;
       if (is_ip_head(pred, m)) {
-	//printf(" found 1b! "); DDM;
-	ip_in_and_out = m;
+	    //printf(" found 1b! "); DDM;
+	    ip_in_and_out = m;
       }
     } else if (!ip_only_in && is_endless_head(m, n)) {
       only_in = m;
       //printf(" found 2a! "); DDM;
       if (is_ip_head(pred, m)) {
-	//printf(" found 2b! "); DDM;
-	ip_only_in = m;
+	    //printf(" found 2b! "); DDM;
+	    ip_only_in = m;
       }
     } else if (is_ip_head(pred, m)) {
       //printf(" found 3! "); DDM;   This happens for self recursions in the second
@@ -879,7 +920,9 @@ static void cgscc (ir_graph *n) {
 }
 
 
-
+/**
+ * reset the backedge information for all callers in all irgs
+ */
 static void reset_isbe(void) {
   int i, n_irgs = get_irp_n_irgs();
 
@@ -891,6 +934,7 @@ static void reset_isbe(void) {
     for (j = 0; j < n_cs; ++j) {
       irg->caller_isbe[j] = 0;
     }
+
     n_cs = get_irg_n_callees(irg);
     for (j = 0; j < n_cs; ++j) {
       irg->callee_isbe[j] = 0;
@@ -944,37 +988,43 @@ void compute_loop_depth (ir_graph *irg, void *env) {
 }
 
 
-/* ----------------------------------------------------------------------------------- */
-/* Another algorithm to compute recursion nesting depth                                */
-/* Walk the callgraph.  For each crossed loop increase the nesting depth by one.       */
-/* Assign graphs the maximal nesting depth.   Don't increas if passing loops more than */
+/* ------------------------------------------------------------------------------------ */
+/* Another algorithm to compute recursion nesting depth                                 */
+/* Walk the callgraph.  For each crossed loop increase the nesting depth by one.        */
+/* Assign graphs the maximal nesting depth.   Don't increase if passing loops more than */
 /* once.                                                                               */
-/* ----------------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------------------ */
 
 
 /* For callees, we want to remember the Call nodes, too. */
-struct ana_entry2 {
-  ir_loop **loop_stack;
-  int tos;
+typedef struct struct ana_entry2 {
+  ir_loop **loop_stack;   /**< a stack of ir_loop entries */
+  int tos;                /**< the top of stack entry */
   int recursion_nesting;
-};
+} ana_entry2;
 
-typedef struct ana_entry2 ana_entry2;
-
+/**
+ * push a loop entry on the stack
+ */
 static void push2(ana_entry2 *e, ir_loop *g) {
   if (ARR_LEN(e->loop_stack) == e->tos) {
     ARR_APP1(ir_loop *, e->loop_stack, g);
   } else {
     e->loop_stack[e->tos] = g;
   }
-  e->tos ++;
+  ++e->tos;
 }
 
+/**
+ * returns the top of stack and pop it
+ */
 static ir_loop *pop2(ana_entry2 *e) {
-  e->tos --;
-  return e->loop_stack[e->tos+1];
+  return e->loop_stack[--e->tos];
 }
 
+/**
+ * check if a loop g in on the stack. Did not check the TOS.
+ */
 static int in_stack(ana_entry2 *e, ir_loop *g) {
   int i;
   for (i = e->tos-1; i >= 0; --i) {
@@ -983,7 +1033,7 @@ static int in_stack(ana_entry2 *e, ir_loop *g) {
   return 0;
 }
 
-void compute_rec_depth (ir_graph *irg, void *env) {
+static void compute_rec_depth (ir_graph *irg, void *env) {
   ana_entry2 *e = (ana_entry2 *)env;
   ir_loop *l = irg->l;
   int depth, old_depth = irg->callgraph_recursion_depth;
@@ -1066,7 +1116,7 @@ void find_callgraph_recursions(void) {
     int j, n_callees = get_irg_n_callees(irg);
     for (j = 0; j < n_callees; ++j) {
       if (is_irg_callee_backedge(irg, j))
-	set_irg_caller_backedge(get_irg_callee(irg, j), irg);
+	    set_irg_caller_backedge(get_irg_callee(irg, j), irg);
     }
   }
 
@@ -1093,8 +1143,8 @@ void find_callgraph_recursions(void) {
   }
 
   /* -- compute the recursion depth -- */
-  e.loop_stack = NEW_ARR_F(ir_loop *, 0);
-  e.tos = 0;
+  e.loop_stack        = NEW_ARR_F(ir_loop *, 0);
+  e.tos               = 0;
   e.recursion_nesting = 0;
   irp->max_callgraph_recursion_depth = 0;
 
