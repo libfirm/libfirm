@@ -191,17 +191,17 @@ ir_graph *new_const_code_irg(void) {
   res->obst      = (struct obstack *) xmalloc (sizeof (struct obstack));
   obstack_init (res->obst);
   res->phase_state = phase_building;
-  res->pinned = pinned;
+  res->pinned      = pinned;
   res->value_table = new_identities (); /* value table for global value
                        numbering for optimizing use in
                        iropt.c */
   res->ent = NULL;
-  res->frame_type = NULL;
+  res->frame_type  = NULL;
   res->start_block = new_immBlock ();
-  res->end_block  = new_immBlock ();
-  res->end        = new_End ();
-  res->end_reg    = res->end;
-  res->end_except = res->end;
+  res->end_block   = new_immBlock ();
+  res->end         = new_End ();
+  res->end_reg     = res->end;
+  res->end_except  = res->end;
   mature_block(get_cur_block());
   res->bad = new_ir_node (NULL, res, res->start_block, op_Bad, mode_T, 0, NULL);
   res->start   = new_Start ();
@@ -222,6 +222,8 @@ ir_graph *new_const_code_irg(void) {
   set_Block_block_visited(res->start_block, -1);
   set_irn_visited(res->start_block, -1);
   set_irn_visited(res->bad, -1);
+
+  res->phase_state = phase_high;
   return res;
 }
 
