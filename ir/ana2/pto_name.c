@@ -463,8 +463,8 @@ qset_t *get_entry (desc_t *desc, entity *ent)
     return (arr_desc->value);
   } else {
     assert (0 && "invalid descriptor");
-    return NULL;
   }
+  return NULL;
 }
 
 
@@ -654,6 +654,9 @@ void pto_name_cleanup (void)
 
 /*
   $Log$
+  Revision 1.13  2005/02/11 10:21:28  beck
+  get_entry now always returns a value
+
   Revision 1.12  2005/01/14 14:13:56  liekweg
   fix gnu extension, fix fprintf's, fix allocs
 
