@@ -151,15 +151,18 @@ tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode);
  */
 tarval *new_tarval_from_long(long l, ir_mode *mode);
 
-/**
+/** Return value as long if possible.
+ *
  * This returns a long int with the value represented value, or
  * gibberish, depending on the size of long int and the size of the
  * stored value. It works for e.g. 1 as mode_Ls, but might not work for
  * get_mode_max(mode_Ls).
  * This will overflow silently, so use only if you know what
  * you are doing! (better check with tarval_is_long()...)
+ * Works only for int modes, even not for character modes!
  */
 long tarval_to_long(tarval *tv);
+#define get_tarval_long tarval_to_long
 
 /**
  * This validates if tarval_to_long() will return a satisfying
