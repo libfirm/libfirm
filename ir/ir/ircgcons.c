@@ -280,8 +280,10 @@ static void prepare_irg_end(ir_graph * irg, irg_data_t * data) {
 	if (!mode && get_irn_mode(in[i]) != mode_T)
 	  mode = get_irn_mode(in[i]);
       }
-      assert(mode); /* @@@ else we must create a Bad node */
-      data->res[j] = new_Phi(n_ret, in, mode);
+      if (mode)
+	data->res[j] = new_Phi(n_ret, in, mode);
+      else  /* All preds are Bad */
+	data->res[j] = new_Bad();
     }
     DEL_ARR_F(in);
   }
