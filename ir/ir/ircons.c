@@ -540,7 +540,7 @@ new_rd_Call (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *store,
 
   res = new_ir_node(db, irg, block, op_Call, mode_T, r_arity, r_in);
 
-  assert(is_method_type(tp));
+  assert((get_unknown_type() == tp) || is_method_type(tp));
   set_Call_type(res, tp);
   res->attr.call.exc.pin_state = op_pin_state_pinned;
   res->attr.call.callee_arr    = NULL;

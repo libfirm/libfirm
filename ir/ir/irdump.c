@@ -742,18 +742,20 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
   case iro_Call: {
     type *tp = get_Call_type(n);
     fprintf(F, "calling method of type %s \n", get_type_name_ex(tp, &bad));
-    for (i = 0; i < get_method_n_params(tp); ++i)
-      fprintf(F, "  param %d type: %s \n", i, get_type_name_ex(get_method_param_type(tp, i), &bad));
-    for (i = 0; i < get_method_n_ress(tp); ++i)
-      fprintf(F, "  resul %d type: %s \n", i, get_type_name_ex(get_method_res_type(tp, i), &bad));
+    if(get_unknown_type() != tp) {
+      for (i = 0; i < get_method_n_params(tp); ++i)
+	fprintf(F, "  param %d type: %s \n", i, get_type_name_ex(get_method_param_type(tp, i), &bad));
+      for (i = 0; i < get_method_n_ress(tp); ++i)
+	fprintf(F, "  resul %d type: %s \n", i, get_type_name_ex(get_method_res_type(tp, i), &bad));
+    }
     if (Call_has_callees(n)) {
       fprintf(F, "possible callees: \n");
       for (i = 0; i < get_Call_n_callees(n); i++) {
-    if (!get_Call_callee(n, i)) {
-      fprintf(F, "  %d external method\n", i);
-    } else {
-      fprintf(F, "  %d: %s\n", i, get_ent_dump_name(get_Call_callee(n, i)));
-    }
+	if (!get_Call_callee(n, i)) {
+	  fprintf(F, "  %d external method\n", i);
+	} else {
+	  fprintf(F, "  %d: %s\n", i, get_ent_dump_name(get_Call_callee(n, i)));
+	}
       }
     }
   } break;

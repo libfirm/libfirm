@@ -745,12 +745,17 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       /* Call: BB x M x ref x data1 x ... x datan
          --> M x datan+1 x ... x data n+m */
       ASSERT_AND_RET( op1mode == mode_M && mode_is_reference(op2mode), "Call node", 0 );  /* operand M x ref */
+
+      mt = get_Call_type(n);
+      if(get_unknown_type() == mt) {
+	break;
+      }
+
       for (i=3; i < get_irn_arity(n); i++) {
         ASSERT_AND_RET( mode_is_data(get_irn_mode(in[i])), "Call node", 0 );  /* operand datai */
       };
       ASSERT_AND_RET( mymode == mode_T, "Call result not a tuple", 0 );   /* result T */
       /* Compare arguments of node with those of type */
-      mt = get_Call_type(n);
 
       if (get_method_variadicity(mt) == variadicity_variadic) {
         ASSERT_AND_RET_DBG(

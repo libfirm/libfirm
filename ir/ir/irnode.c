@@ -1122,7 +1122,7 @@ get_Call_type (ir_node *node) {
 void
 set_Call_type (ir_node *node, type *tp) {
   assert (node->op == op_Call);
-  assert (is_method_type(tp));
+  assert ((get_unknown_type() == tp) || is_method_type(tp));
   node->attr.call.cld_tp = tp;
 }
 
