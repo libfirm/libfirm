@@ -1593,7 +1593,7 @@ void
 add_in_edge (ir_node *block, ir_node *jmp)
 {
   if (block->attr.block.matured) {
-    printf("Error: Block already matured!\n");
+    assert(0 && "Error: Block already matured!\n");
   }
   else {
     assert (jmp != NULL);
