@@ -8,6 +8,7 @@
 
 # include "ircons.h"
 # include "irgraph.h"
+# include "irprog.h"
 # include "iropt.h"
 # include "array.h"
 # include "irgmod.h"
@@ -36,6 +37,7 @@ new_ir_graph (entity *ent, int params)
 
   res = (ir_graph *) malloc (sizeof (ir_graph));
   current_ir_graph = res;
+  add_irp_irg(res);          /* remember this graph global. */
 
   /** Internal information for graph construction either held in the graph or
   *** initialized for each graph. **/
@@ -47,7 +49,6 @@ new_ir_graph (entity *ent, int params)
   res->Phi_in_stack = new_Phi_in_stack();  /* A stack needed for automatic Phi
                                 generation */
 #endif
-  //???!! turn the Phi_in_stack into a field of ir_graph??
   res->obst      = (struct obstack *) xmalloc (sizeof (struct obstack));
   obstack_init (res->obst);
   res->value_table = new_identities (); /* Symbol table for local variables
@@ -158,6 +159,21 @@ set_frame_of_irgraph(ir_graph *irg, ir_node *node)
 {
   irg->frame = node;
 }
+
+
+ir_node *
+get_irg_globals (ir_graph *irg)
+{
+  return irg->globals;
+}
+
+void
+set_irg_globals (ir_graph *irg, ir_node *node)
+{
+  irg->globals = node;
+}
+
+
 
 ir_node *
 get_args_of_irgraph (ir_graph *irg)

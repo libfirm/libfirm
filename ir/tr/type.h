@@ -42,8 +42,8 @@ type_class *new_type_class (ident *name);
 char  *get_class_name  (type_class *clss);
 ident *get_class_ident (type_class *clss);
 /*
-void   set_class_name  (type_class *class, char *name);
-void   set_class_ident (type_class *class, ident* ident);
+void   set_class_name  (type_class *clss, char *name);
+void   set_class_ident (type_class *clss, ident* ident);
 */
 
 /*******************************************************************/

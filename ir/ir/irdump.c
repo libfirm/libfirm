@@ -262,6 +262,7 @@ void dump_node2type_edges (ir_node *n, void *env)
 	      NODE2TYPE_EDGE_ATTR "}\n", n, get_Alloc_type(n));
     break;
   case iro_Free:
+    printf(" in irdum\n");
     xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
 	      NODE2TYPE_EDGE_ATTR "}\n", n, get_Free_type(n));
     break;

@@ -12,7 +12,7 @@ all: empty const_eval_example 					\
      if_example if_else_example if_while_example cond_example	\
      call_str_example memory_example array-stack_example	\
      array-heap_example oo_program_example irr_cf_example	\
-     irr_loop_example dead_block_example
+     irr_loop_example dead_block_example global_var_example
 
 clean:
 	rm -f 					\
@@ -30,7 +30,7 @@ clean:
 	irr_cf_example.o irr_cf_example		\
 	irr_loop_example.o irr_loop_example	\
 	dead_block_example.o dead_block_example	\
-	*.vcg core
+	global_var_example *.vcg core
 
 realclean:	clean
 
@@ -48,7 +48,8 @@ run:
 	oo_program_example;	\
 	irr_cf_example;		\
 	irr_loop_example;	\
-	dead_block_example;
+	dead_block_example;	\
+	global_var_example;
 
 empty: empty.o
 	gcc -o empty empty.o $(LIBDIRS) $(LIBS)
@@ -91,3 +92,6 @@ irr_loop_example: irr_loop_example.o
 
 dead_block_example: dead_block_example.o
 	gcc -o dead_block_example dead_block_example.o $(LIBDIRS) $(LIBS)
+
+global_var_example: global_var_example.o
+	gcc -o global_var_example global_var_example.o $(LIBDIRS) $(LIBS)

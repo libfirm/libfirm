@@ -81,10 +81,10 @@ void     set_cstore_of_irgraph (ir_graph *irg, ir_node *node);
 ir_node *get_frame_of_irgraph (ir_graph *irg);
 void     set_frame_of_irgraph (ir_graph *irg, ir_node *node);
 
-/*
+
 ir_node *get_irg_globals (ir_graph *irg);
 void     set_irg_globals (ir_graph *irg, ir_node *node);
- */
+
 
 ir_node *get_args_of_irgraph (ir_graph *irg);
 void     set_args_of_irgraph (ir_graph *irg, ir_node *node);

@@ -8,6 +8,8 @@
 */
 
 # include "type.h"
+# include "irprog.h"  /* So that constructors can add the type to global
+			 data structure. */
 
 unsigned long type_visited = 0;
 
@@ -26,6 +28,7 @@ new_type_class (ident *name)//, int members)
   type_class *res;
 
   res = (type_class *) xmalloc (sizeof (type_class));
+  add_irp_type((type *) res);   /* Remember the new type global. */
   res->kind = k_type_class;
   res->name = name;
 
@@ -69,6 +72,7 @@ new_type_strct (ident *name)//, int members)
   type_strct *res;
 
   res = (type_strct *) xmalloc (sizeof (type_strct));
+  add_irp_type((type *) res);   /* Remember the new type global. */
   res->kind = k_type_strct;
   res->name = name;
 
@@ -113,6 +117,7 @@ new_type_method (ident *name, int arity, int n_res)
   type_method *res;
 
   res = (type_method *) xmalloc (sizeof (type_method));
+  add_irp_type((type *) res);   /* Remember the new type global. */
   res->kind = k_type_method;
   res->name = name;   // do I need the name, or is the name in entity sufficient?
   res->arity = arity;
@@ -203,6 +208,7 @@ new_type_union (ident *name, int n_types)
   type_union *res;
 
   res = (type_union *) xmalloc (sizeof (type_union));
+  add_irp_type((type *) res);   /* Remember the new type global. */
   res->kind = k_type_union;
   res->name = name;   // do I need a name?
   res->n_types = n_types;
@@ -252,6 +258,7 @@ new_type_array (ident *name, int n_dimensions)
   type_array *res;
 
   res = (type_array *) xmalloc (sizeof (type_array));
+  add_irp_type((type *) res);   /* Remember the new type global. */
   res->kind = k_type_array;
   res->name = name;
   res->n_dimensions = n_dimensions;
@@ -341,6 +348,7 @@ new_type_enumeration (ident *name /* , int n_enums */)
   type_enumeration *res;
 
   res = (type_enumeration *) xmalloc (sizeof (type_enumeration));
+  add_irp_type((type *) res);   /* Remember the new type global. */
   res->kind = k_type_enumeration;
   res->name = name;
   /*
@@ -392,6 +400,7 @@ new_type_pointer (ident *name, type *points_to)
   type_pointer *res;
 
   res = (type_pointer *) xmalloc (sizeof (type_pointer));
+  add_irp_type((type *) res);   /* Remember the new type global. */
   res->kind = k_type_pointer;
   res->name = name;
   res->points_to = points_to;
@@ -443,6 +452,7 @@ new_type_primitive (ident *name, ir_mode *mode)
   type_primitive *res;
 
   res = (type_primitive *) xmalloc (sizeof (type_primitive));
+  add_irp_type((type *) res);   /* Remember the new type global. */
   res->kind = k_type_primitive;
   res->name = name;
   res->mode = mode;

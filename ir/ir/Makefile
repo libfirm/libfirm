@@ -23,7 +23,7 @@ SHELL       = /bin/sh
 MAKE        = /usr/bin/make
 
 MEMBERS	 = ircons.m irdump.m irflag.m irgmod.m irgraph.m irgopt.m \
-           irgwalk.m irmode.m irnode.m irop.m iropt.m irvrfy.m
+           irgwalk.m irmode.m irnode.m irop.m iropt.m irprog.m irvrfy.m
 
 CFILES = $(MEMBERS:.m=.c)
 

@@ -34,4 +34,7 @@ init_firm (void)
   init_op ();
   /* called once for each run of this library, empty at this moment!!! */
   init_cons ();
+  /* Builds a construct allowing to access all information to be constructed
+     later. */
+  init_irprog ();
 }

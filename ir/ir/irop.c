@@ -89,7 +89,7 @@ init_op(void)
   op_SymConst = new_ir_op (iro_SymConst, id_from_str ("SymConst", 8),
 			   sizeof (symconst_attr), 0);
 
-  op_Sel = new_ir_op (iro_Sel, id_from_str ("Sel", 3), sizeof (entity *), 1);
+  op_Sel = new_ir_op (iro_Sel, id_from_str ("Sel", 3), sizeof (sel_attr), 1);
 
   op_Call = new_ir_op (iro_Call, id_from_str ("Call", 4), sizeof (type_method *), 1);
   op_Add = new_ir_op (iro_Add, id_from_str ("Add", 3), 0, 0);

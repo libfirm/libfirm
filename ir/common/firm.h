@@ -12,8 +12,8 @@
 
 # include "entity.h"
 # include "ircons.h"
+# include "irprog.h"
 # include "type.h"
-# include "iropt.h"
 # include "xprintf.h"
 
 

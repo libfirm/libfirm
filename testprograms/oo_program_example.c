@@ -22,7 +22,7 @@
 ***    return (d + a);
 ***  end
 ***
-***  set_a(e:int):void
+***  set_a(e:int): void
 ***    self.a = e;
 ***  end
 ***
@@ -60,7 +60,7 @@ main(void)
 
   /* first build procedure main */
   printf("creating an IR graph: OO_PROGRAM_EXAMPLE...\n");
-  owner = new_type_class (id_from_str ("OO_PROGRAM_EXAMPLE", 18));
+  owner = get_glob_type();
   proc_main = new_type_method(id_from_str("main", 4), 0, 1);
   set_method_res_type(proc_main, 0, (type *)prim_t_int);
 
@@ -74,7 +74,7 @@ main(void)
 
   /* allocate the defined object and generate the type information */
   class_prima = new_type_class(id_from_str ("PRIMA", 5));
-  obj_size = new_SymConst((type *)class_prima, size);
+  obj_size = new_SymConst((type_or_id *)class_prima, size);
   obj_o    = new_Alloc(get_store(), obj_size, (type *)class_prima, heap_alloc);
   set_store(new_Proj(obj_o, mode_M, 0));  /* make the changed memory visible */
   obj_o    = new_Proj(obj_o, mode_p, 1);  /* remember the pointer to the object */

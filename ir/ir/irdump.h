@@ -31,5 +31,7 @@ void dump_cfg (ir_graph *irg);
 /* dumps the type information reachable from an ir graph. */
 void dump_type_graph (ir_graph *irg);
 
+/* dumps a graph and the type inforamtion. */
+   void dump_ir_graph_w_types (ir_graph *irg);
 
 # endif /* _IRDUMP_H_ */

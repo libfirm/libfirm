@@ -30,7 +30,7 @@ CFILES +=  xfprintf.c xfprintf.c xfprintf.c
 HFILES = $(MEMBERS:.m=.h)
 HFILES +=  tune.h xp_help.h xprintf.h misc.h
 HFILES +=  common.h debug.h entity.h gmp.h host.h ident.h irgraph.h \
-	   irmode.h irnode.h irop.h label.h misc.h obst.h pset.h set.h \
+	   irmode.h irnode.h irop.h irprog.h label.h misc.h obst.h pset.h set.h \
            tv.h type.h xprintf.h xp_help.h
 
 OFILES = $(MEMBERS:%.m=../objects/%.o)

@@ -144,8 +144,7 @@ ir_node_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
 inline int
 get_irn_arity (ir_node *node)
 {
-  // printf("called for node %s\n", ID_TO_STR(node->op->name));
-  // if (get_irn_opcode(node) == iro_Block) return (ARR_LEN((node)->in));
+  assert(node);
   return (ARR_LEN((node)->in)-1);
 }
 
@@ -160,8 +159,7 @@ get_irn_in (ir_node *node)
 /* to iterate through the predecessors without touching the array */
 /* To iterate over the operands iterate from 0 to i < get_irn_arity(),
    to iterate includind the Block predecessor iterate from i = -1 to
-   i < get_irn_arity.
-   Don't know how to iterate if it is a block ?? */
+   i < get_irn_arity. */
 inline ir_node *
 get_irn_n (ir_node *node, int n)
 {
@@ -553,14 +551,14 @@ set_Sel_entity (ir_node *node, entity *ent) {
   node->attr.s.ent = ent;
 }
 
-inline linkage_type *
+inline linkage_type
 get_Sel_linkage_type (ir_node *node) {
   assert (node->op == op_Sel);
   return node->attr.s.ltyp;
 }
 
 inline void
-set_Sel_linkage_type (ir_node *node, linkage_type *lt) {
+set_Sel_linkage_type (ir_node *node, linkage_type lt) {
   assert (node->op == op_Sel);
   node->attr.s.ltyp = lt;
 }

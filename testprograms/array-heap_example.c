@@ -43,7 +43,7 @@
 int
 main(void)
 {
-  /* describes the fake class "ARRAY-HEAP_EXAMPLE" with it's method main */
+  /* describes the method main */
   type_class     *owner;
   type_method    *proc_main;
   entity         *proc_main_e;
@@ -65,7 +65,6 @@ main(void)
   ir_graph       *main_irg;
   ir_node        *array, *array_ptr, *c3, *elt, *val, *x;
 
-
   init_firm ();
 
   /* make basic type information for primitive type int.
@@ -78,7 +77,7 @@ main(void)
   printf("creating an IR graph: ARRAY-HEAP_EXAMPLE...\n");
 
   /* first build procedure main */
-  owner = new_type_class (id_from_str ("ARRAY-HEAP_EXAMPLE", 13));
+  owner = get_glob_type();
   proc_main = new_type_method(id_from_str("main", 4), 0, 1);
   set_method_res_type(proc_main, 0, (type *)prim_t_int);
   proc_main_e = new_entity ((type*)owner, id_from_str ("main", 4), (type *)proc_main);
@@ -92,9 +91,10 @@ main(void)
   set_array_bounds(array_type, 1, L_BOUND, U_BOUND);
   set_array_element_type(array_type, (union type*)prim_t_int);
   /* As the array is accessed by Sel nodes, we need information about
-     the entity the node select.  Entities of an array are it's elements
+     the entity the node selects.  Entities of an array are it's elements
      which are, in this case, integers. */
-  array_ent = new_entity((type*)array_type, id_from_str("array_field", 11), (type*)prim_t_int);
+  array_ent = new_entity((type*)array_type, id_from_str("array_field", 11),
+			 (type*)prim_t_int);
 
   /* Allocate the array. All program known variables that
      are not modeled by dataflow edges need an explicit allocate node.

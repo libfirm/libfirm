@@ -139,7 +139,9 @@ void start_type_walk(ir_node *node, void *env) {
       break;
     case iro_Alloc:
       type_walk_2((type_or_ent *)get_Alloc_type(node), pre, post, envi);
+      break;
     case iro_Free:
+      printf("here in typewalk\n");
       type_walk_2((type_or_ent *)get_Free_type(node), pre, post, envi);
       break;
   assert(node);

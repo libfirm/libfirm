@@ -1,3 +1,17 @@
+
+
+  5.7.2000 Goetz
+  Fixed a bug in irop:  Size of Sel node was (entity *) instead of
+  sel_attr.  Therefor array_heap_example aborted.
+  Also found a missing break in typewalk, case iro_Alloc.
+
+  5.7.2000 Goetz
+  Added a construct that unifies all things constructed by the lib
+  and needed to represent a program:  irprog.ch
+  This contains a list of all types as well as a list of all ir graphs.
+  I added calls to initialization and constructors so that this is constructed
+  automatically.  I changed firm.c, type.c, irgraph.c and ev. more.
+
   5.7.2000 Goetz
   Removed strange block struct and constructor from ircons.c.
   Moved routines for automatic Phi construction from irgmod to ircons.

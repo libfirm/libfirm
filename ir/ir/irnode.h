@@ -101,7 +101,7 @@ typedef enum {
 
 typedef struct {
   entity *ent;          /* entity to select */
-  linkage_type *ltyp;   /* linkage type of the entity */
+  linkage_type ltyp;    /* linkage type of the entity */
 } sel_attr;
 
 /* Alloc attributes */
@@ -265,8 +265,8 @@ inline ir_node *get_Sel_index (ir_node *node, int pos);
 inline void     set_Sel_index (ir_node *node, int pos, ir_node *index);
 inline entity  *get_Sel_entity (ir_node *node); /* entity to select */
 inline void     set_Sel_entity (ir_node *node, entity *ent);
-inline linkage_type *get_Sel_linkage_type (ir_node *node);
-inline void     set_Sel_linkage_type (ir_node *node, linkage_type *lt);
+inline linkage_type get_Sel_linkage_type (ir_node *node);
+inline void     set_Sel_linkage_type (ir_node *node, linkage_type lt);
 
 inline ir_node *get_Call_mem (ir_node *node);
 inline void     set_Call_mem (ir_node *node, ir_node *mem);
