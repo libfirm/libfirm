@@ -114,7 +114,8 @@ static callEd_info_t *append_callEd_info (callEd_info_t *ced, ir_graph *callEd)
 */
 static void append_calls (graph_info_t *info, ir_node *call, lset_t *callEds)
 {
-  call_info_t *cinfo = (call_info_t*) xmalloc (sizeof (call_info_t));
+  call_info_t *cinfo = xmalloc (sizeof(*cinfo));
+  ir_graph *callEd;
 
   /* setup */
   cinfo->call = call;
@@ -123,12 +124,8 @@ static void append_calls (graph_info_t *info, ir_node *call, lset_t *callEds)
   cinfo->callEds = NULL;
 
   /* enter */
-  ir_graph *callEd = lset_first (callEds);
-  while (callEd) {
+  for (callEd = lset_first (callEds); callEd; callEd = lset_next(callEds))
     cinfo->callEds = append_callEd_info (cinfo->callEds, callEd);
-
-    callEd = lset_next (callEds);
-  }
 }
 
 /**
@@ -136,7 +133,7 @@ static void append_calls (graph_info_t *info, ir_node *call, lset_t *callEds)
 */
 static void append_call (graph_info_t *info, ir_node *call, ir_graph *callEd)
 {
-  call_info_t *cinfo = (call_info_t*) xmalloc (sizeof (call_info_t));
+  call_info_t *cinfo = xmalloc (sizeof(*cinfo));
 
   cinfo->call = call;
   cinfo->prev = info->calls;
@@ -223,6 +220,7 @@ static void _collect_implementing_graphs (entity *method, lset_t *set)
 */
 static lset_t *get_implementing_graphs (entity *method, ir_node *select)
 {
+  int n_graphs;
   lset_t *set = lset_create ();
   {
     ir_graph *impl = _get_implementing_graph (method);
@@ -243,7 +241,7 @@ static lset_t *get_implementing_graphs (entity *method, ir_node *select)
   }
 
   /* void *tmp = lset_first (set); */
-  int n_graphs = lset_n_entries (set);
+  n_graphs = lset_n_entries (set);
 
   /* typalise select_in */
   if (do_typalise) {
@@ -256,9 +254,10 @@ static lset_t *get_implementing_graphs (entity *method, ir_node *select)
     /* fprintf (stdout, "typalyse res = %s\n", res); */
 
     if (1 != n_graphs) {
-      set = filter_for_ta (set, ta);
+      int n_filtered_graphs;
 
-      int n_filtered_graphs = lset_n_entries (set);
+      set = filter_for_ta (set, ta);
+      n_filtered_graphs = lset_n_entries (set);
 
       /*
         fprintf (stdout, "%s: %02d %02d\n",
@@ -292,23 +291,25 @@ static lset_t *get_implementing_graphs (entity *method, ir_node *select)
 */
 static void ecg_calls_act (ir_node *node, void *env)
 {
-  opcode op = get_irn_opcode (node);
+  ir_op *op = get_irn_op(node);
   graph_info_t *graph_info = (graph_info_t*) env;
 
-  if (iro_Call == op) {         /* CALL */
+  if (op_Call == op) {         /* CALL */
     entity *ent = NULL;
     ir_node *ptr = get_Call_ptr (node);
 
     /* CALL SEL */
-    if (iro_Sel == get_irn_opcode (ptr)) {
+    if (op_Sel == get_irn_op(ptr)) {
+      lset_t *graphs;
       ent = get_Sel_entity (ptr);
-      lset_t *graphs = get_implementing_graphs (ent, ptr);
+      graphs = get_implementing_graphs (ent, ptr);
 
       append_calls (graph_info, node, graphs);
-    } else if (iro_SymConst == get_irn_opcode (ptr)) {
+    } else if (op_SymConst == get_irn_op(ptr)) {
       if (get_SymConst_kind (ptr) == symconst_addr_ent) {
+        ir_graph *graph;
         ent = get_SymConst_entity (ptr);
-        ir_graph *graph = get_entity_irg (ent);
+        graph = get_entity_irg (ent);
 
         if (graph) {
           append_call (graph_info, node, graph);
@@ -331,7 +332,7 @@ static void ecg_calls_act (ir_node *node, void *env)
       DDMN (ptr);
       assert (0 && "Unexpected address expression");
     }
-  } else if (iro_Alloc == op) {
+  } else if (op_Alloc == op) {
     type *tp = get_Alloc_type (node);
     /* const char *name = get_type_name (tp); */
 
@@ -408,9 +409,9 @@ static void ecg_fill_ctxs_count (ir_graph *graph)
 
   /* count how many ctxs we have per graph */
   if (0 == ginfo->ecg_seen) {
+    call_info_t *cinfo = ginfo->calls;
 
     ginfo->ecg_seen = 1;
-    call_info_t *cinfo = ginfo->calls;
 
     while (NULL != cinfo) {
       callEd_info_t *ced = cinfo->callEds;
@@ -463,8 +464,8 @@ static void ecg_fill_ctxs_write (ir_graph *graph, ctx_info_t *enc_ctx)
 
   /* enter a new ctx for all callEds along the call edges of this graph */
   if (0 == ginfo->ecg_seen) {
-    ginfo->ecg_seen = 1;
     call_info_t *cinfo = ginfo->calls;
+    ginfo->ecg_seen = 1;
 
     while (NULL != cinfo) {
       callEd_info_t *ced = cinfo->callEds;
@@ -498,18 +499,22 @@ static void ecg_fill_ctxs_write (ir_graph *graph, ctx_info_t *enc_ctx)
 */
 static void ecg_fill_ctxs (void)
 {
+  ctx_info_t *main_ctx;
+  ir_graph *main_irg;
+  graph_info_t *ginfo;
+
   ecg_fill_ctxs_count (get_irp_main_irg ());
   ecg_fill_ctxs_alloc ();
 
-  ctx_info_t *main_ctx = new_ctx (get_irp_main_irg (), NULL, NULL);
-  ir_graph *main_irg = get_irp_main_irg ();
+  main_ctx = new_ctx (get_irp_main_irg (), NULL, NULL);
+  main_irg = get_irp_main_irg ();
 
   set_main_ctx (main_ctx);
 
   /* Grrr, have to add this ctx manually to main.ginfo ... */
-  graph_info_t *ginfo = ecg_get_info (main_irg);
+  ginfo = ecg_get_info (main_irg);
   ginfo->n_ctxs = 1;
-  ginfo->ctxs = (ctx_info_t **) xmalloc (1 * sizeof (ctx_info_t*));
+  ginfo->ctxs = xmalloc (1 * sizeof (ctx_info_t*));
   ginfo->ctxs [0] = main_ctx;
 
   ecg_fill_ctxs_write (main_irg, main_ctx);
@@ -523,10 +528,10 @@ static void ecg_fill_ctxs (void)
 */
 void ecg_print_ctx (ctx_info_t *ctx, FILE *stream)
 {
-  entity *ent = get_irg_ent (ctx->graph);
+  entity *ent = get_irg_entity(ctx->graph);
   ir_node *call = ctx->call;
-  const char *ent_name = (char*) get_entity_name (ent);
-  const char *own_name = (char*) get_type_name (get_entity_owner (ent));
+  const char *ent_name = get_entity_name (ent);
+  const char *own_name = get_type_name (get_entity_owner (ent));
 
   fprintf (stream, "CTX[%i](%s.%s->%s[%li])",
            ctx->id, own_name, ent_name,
@@ -687,6 +692,9 @@ callEd_info_t *ecg_get_callEd_info (ir_node *call)
 */
 static int ecg_ecg_graph (FILE *dot, ir_graph *graph)
 {
+  int graph_no;
+  call_info_t *cinfo;
+  alloc_info_t *ainfo;
   const char *name = get_irg_entity (graph) ?
     get_entity_name (get_irg_entity (graph)) : "noEntity";
   const char *color =
@@ -709,7 +717,7 @@ static int ecg_ecg_graph (FILE *dot, ir_graph *graph)
 
   assert (0L <= _graphs);
 
-  const int graph_no = _graphs ++;
+  graph_no = _graphs ++;
   ginfo->ecg_seen = graph_no;
 
   fprintf (dot, "\t/* Graph of \"%s.%s\" */\n",
@@ -730,7 +738,7 @@ static int ecg_ecg_graph (FILE *dot, ir_graph *graph)
     return (graph_no);
   }
 
-  call_info_t *cinfo = ginfo->calls;
+  cinfo = ginfo->calls;
   while (NULL != cinfo) {
     ir_node *call = cinfo->call;
     callEd_info_t *ced = cinfo->callEds;
@@ -768,7 +776,7 @@ static int ecg_ecg_graph (FILE *dot, ir_graph *graph)
   } /* done all calls (graph) */
 
   /* now the allocs */
-  alloc_info_t *ainfo = ecg_get_alloc_info (graph);
+  ainfo = ecg_get_alloc_info (graph);
   if (ainfo) {
     fprintf (dot, "\t/* now the allocs */\n");
   } else {
@@ -796,11 +804,11 @@ static int ecg_ecg_graph (FILE *dot, ir_graph *graph)
 
   /* write table of ctxs */
   {
-    fprintf (dot, "\tctx_%i [label=\"<HEAD>", graph_no);
-
     int i;
     const int max_ctxs = 30;
     const int n_ctxs = (ginfo->n_ctxs > max_ctxs) ? max_ctxs : ginfo->n_ctxs;
+
+    fprintf (dot, "\tctx_%i [label=\"<HEAD>", graph_no);
 
     assert (ginfo->ctxs && "no ctx");
     for (i = 0; i < n_ctxs; i ++) {
@@ -847,6 +855,8 @@ static char spaces [BUF_SIZE];
 
 static void ecg_ecg_count (ir_graph *graph)
 {
+  int graph_no;
+  call_info_t *cinfo;
   graph_info_t *ginfo = (graph_info_t*) pmap_get (graph_infos, graph);
 
   if (0 != ginfo->ecg_seen) {
@@ -872,7 +882,7 @@ static void ecg_ecg_count (ir_graph *graph)
     }
   */
 
-  const int graph_no = _graphs ++;
+  graph_no = _graphs ++;
   ginfo->ecg_seen = graph_no;
 
   fprintf (stdout, "%sMethod \"%s.%s\"\n",
@@ -880,7 +890,7 @@ static void ecg_ecg_count (ir_graph *graph)
            get_type_name (get_entity_owner (get_irg_entity (graph))),
            get_entity_name (get_irg_entity (graph)));
 
-  call_info_t *cinfo = ginfo->calls;
+  cinfo = ginfo->calls;
   while (NULL != cinfo) {
 
     callEd_info_t *ced = cinfo->callEds;
@@ -929,11 +939,11 @@ void ecg_init (int typalise)
 /**
    Clean up our mess.
 */
-void ecg_cleanup ()
+void ecg_cleanup (void)
 {
-  return;
-
   int i;
+
+  return;
 
   for (i = 0; i < get_irp_n_irgs (); i++) {
     ir_graph *graph = get_irp_irg (i);
@@ -942,9 +952,9 @@ void ecg_cleanup ()
     call_info_t *cinfo = info->calls;
 
     while (NULL != cinfo) {
-      cinfo->call = NULL;
-
       callEd_info_t *ced = cinfo->callEds;
+
+      cinfo->call = NULL;
 
       while (NULL != ced) {
         callEd_info_t *nced = ced->prev;
@@ -991,6 +1001,9 @@ void ecg_report ()
     graph_info_t *ginfo = (graph_info_t*) pmap_get (graph_infos, graph);
 
     if (0 != ginfo->n_ctxs) {
+      call_info_t *cinfo;
+      alloc_info_t *ainfo;
+
       const char *name = get_irg_entity (graph) ?
         get_entity_name (get_irg_entity (graph)) : "noEntity";
 
@@ -1008,7 +1021,7 @@ void ecg_report ()
                (int) graph, oname, name, color);
       fprintf (dot, "\n");
 
-      call_info_t *cinfo = ginfo->calls;
+      cinfo = ginfo->calls;
       if (cinfo) {
         fprintf (dot, "\t/* now the calls */\n");
       } else {
@@ -1016,6 +1029,7 @@ void ecg_report ()
       }
 
       while (NULL != cinfo) {
+        callEd_info_t *ced;
         ir_node *call = cinfo->call;
 
         fprintf (dot, "\t/* call_0x%08x */\n", (int) call);
@@ -1024,7 +1038,7 @@ void ecg_report ()
         fprintf (dot, "\tgraph_0x%08x -> call_0x%08x;\n",
                  (int) graph, (int) call);
 
-        callEd_info_t *ced = cinfo->callEds;
+        ced = cinfo->callEds;
         while (NULL != ced) {
           fprintf (dot, "\tcall_0x%08x -> graph_0x%08x;\n",
                    (int) call, (int) ced->callEd);
@@ -1036,7 +1050,7 @@ void ecg_report ()
       }
       fprintf (dot, "\n");
 
-      alloc_info_t *ainfo = ginfo->allocs;
+      ainfo = ginfo->allocs;
       if (ainfo) {
         fprintf (dot, "\t/* now the allocs */\n");
       } else {
@@ -1059,12 +1073,12 @@ void ecg_report ()
 
       /* ctxs */
       {
-        fprintf (dot, "\t/* now the ctxs */\n");
-        fprintf (dot, "\tctx_0x%08x [label=\"<HEAD>", (void*) graph);
-
         int i;
         const int max_ctxs = 30;
         const int n_ctxs = (ginfo->n_ctxs > max_ctxs) ? max_ctxs : ginfo->n_ctxs;
+
+        fprintf (dot, "\t/* now the ctxs */\n");
+        fprintf (dot, "\tctx_0x%08x [label=\"<HEAD>", (void*) graph);
 
         assert (ginfo->ctxs && "no ctx");
         for (i = 0; i < n_ctxs; i ++) {
@@ -1112,12 +1126,13 @@ void ecg_report ()
 /**
    Experimental:  Print the ecg
 */
-void ecg_ecg ()
+void ecg_ecg (void)
 {
+  FILE *dot;
+  ir_graph *main_graph = get_irp_main_irg ();
+
   _graphs = 0;
   _calls  = 0;
-
-  ir_graph *main_graph = get_irp_main_irg ();
 
   /*
     memset (spaces, '.', BUF_SIZE);
@@ -1133,7 +1148,7 @@ void ecg_ecg ()
   _graphs = 0;
   _calls  = 0;
 
-  FILE *dot = fopen ("ecg.dot", "w");
+  dot = fopen ("ecg.dot", "w");
 
   fprintf (dot, "digraph \"ecg\" {\n");
   fprintf (dot, "\tgraph [rankdir=\"LR\", ordering=\"out\", size=\"11, 7\", rotate=\"90\", ratio=\"fill\"];\n");
@@ -1160,6 +1175,9 @@ void ecg_ecg ()
 
 /*
   $Log$
+  Revision 1.13  2004/12/21 14:21:16  beck
+  removed C99 constructs
+
   Revision 1.12  2004/12/20 17:34:34  liekweg
   fix recursion handling
 
