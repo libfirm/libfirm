@@ -16,12 +16,21 @@
 /*
   Timing stuff.  Not really part of ana2, but where else should it go.
 */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
 
 # include "timing.h"
+
+struct timing_env
+{
+  struct timeval *start;
+  struct timeval *end;
+};
 
 
 /*
@@ -51,7 +60,7 @@ timeval_subtract (struct timeval *x, struct timeval *y)
   Public Interface
 */
 timing_t *
-start_timing ()
+start_timing (void)
 {
   timing_t *t = (timing_t*) malloc (sizeof (timing_t));
 
@@ -87,6 +96,9 @@ end_timing (timing_t *t)
 
 /*
   $Log$
+  Revision 1.2  2004/12/21 15:52:23  beck
+  moved struct timing_env to .c file, added config.h
+
   Revision 1.1  2004/10/29 18:55:52  liekweg
   (mostly) generic timimg
 

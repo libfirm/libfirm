@@ -19,11 +19,7 @@
 /*
    Data structures
  */
-typedef struct timing_env
-{
-  struct timeval *start;
-  struct timeval *end;
-} timing_t;
+typedef struct timing_env timing_t;
 
 /*
   Protos
@@ -36,6 +32,9 @@ int       end_timing   (timing_t*);
 
 /*
   $Log$
+  Revision 1.2  2004/12/21 15:52:23  beck
+  moved struct timing_env to .c file, added config.h
+
   Revision 1.1  2004/10/29 18:55:52  liekweg
   (mostly) generic timimg
 
