@@ -335,5 +335,11 @@ vrfy_wrap (ir_node *node, void *env) {
 void
 irg_vrfy (ir_graph *irg)
 {
+  ir_graph *rem;
+  rem = current_ir_graph;
+  current_ir_graph = irg;
+
   irg_walk(irg->end, vrfy_wrap, NULL, NULL);
+
+  current_ir_graph = rem;
 }

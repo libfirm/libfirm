@@ -208,6 +208,9 @@ copy_preds (ir_node *n, void *env) {
    graph.  */
 void
 copy_graph () {
+
+  ir_node *old, *new;
+
   /* Not all nodes remembered in current_ir_graph might be reachable
      from the end node.  Assure their link is set to NULL, so that
      we can test whether new nodes have been computed. */
@@ -224,13 +227,20 @@ copy_graph () {
   /* fix the fields in current_ir_graph */
   set_irg_end        (current_ir_graph, get_new_node(get_irg_end(current_ir_graph)));
   set_irg_end_block  (current_ir_graph, get_new_node(get_irg_end_block(current_ir_graph)));
-  if (get_irn_link(get_irg_frame(current_ir_graph)) == NULL)
-    irg_walk(get_irg_frame(current_ir_graph), copy_node, copy_preds, NULL);
-  if (get_irn_link(get_irg_globals(current_ir_graph)) == NULL)
-    irg_walk(get_irg_globals(current_ir_graph), copy_node, copy_preds, NULL);
-  if (get_irn_link(get_irg_args(current_ir_graph)) == NULL)
-    irg_walk(get_irg_args(current_ir_graph), copy_node, copy_preds, NULL);
+  if (get_irn_link(get_irg_frame(current_ir_graph)) == NULL) {
+    copy_node (get_irg_frame(current_ir_graph), NULL);
+    copy_preds(get_irg_frame(current_ir_graph), NULL);
+  }
+  if (get_irn_link(get_irg_globals(current_ir_graph)) == NULL) {
+    copy_node (get_irg_globals(current_ir_graph), NULL);
+    copy_preds(get_irg_globals(current_ir_graph), NULL);
+  }
+  if (get_irn_link(get_irg_args(current_ir_graph)) == NULL) {
+    copy_node (get_irg_args(current_ir_graph), NULL);
+    copy_preds(get_irg_args(current_ir_graph), NULL);
+  }
   set_irg_start  (current_ir_graph, get_new_node(get_irg_start(current_ir_graph)));
+
   set_irg_start_block(current_ir_graph,
 		      get_new_node(get_irg_start_block(current_ir_graph)));
   set_irg_frame  (current_ir_graph, get_new_node(get_irg_frame(current_ir_graph)));
