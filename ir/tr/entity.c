@@ -696,6 +696,9 @@ get_compound_ent_value_path(entity *ent, int pos) {
   return ent->val_paths[pos];
 }
 
+/**
+ * Returns non-zero, if two compound_graph_pathes are equal
+ */
 static int equal_paths(compound_graph_path *path1, int *visited_indicees, compound_graph_path *path2) {
   int i;
   int len1 = get_compound_graph_path_length(path1);
@@ -704,19 +707,25 @@ static int equal_paths(compound_graph_path *path1, int *visited_indicees, compou
   if (len2 > len1) return false;
 
   for (i = 0; i < len1; i++) {
+    type   *tp;
     entity *node1 = get_compound_graph_path_node(path1, i);
     entity *node2 = get_compound_graph_path_node(path2, i);
+
     if (node1 != node2) return false;
-    type *tp = get_entity_owner(node1);
+
+    tp = get_entity_owner(node1);
     if (is_Array_type(tp)) {
+      long low;
+
       /* Compute the index of this node. */
       assert(get_array_n_dimensions(tp) == 1 && "multidim not implemented");
-      long low = get_array_lower_bound_int(tp, 0);
-      if (low+visited_indicees[i] < get_compound_graph_path_array_index(path2, i)) {
-	visited_indicees[i]++;
-	return false;
+
+      low = get_array_lower_bound_int(tp, 0);
+      if (low + visited_indicees[i] < get_compound_graph_path_array_index(path2, i)) {
+	      visited_indicees[i]++;
+	      return false;
       } else {
-	assert(low+visited_indicees[i] == get_compound_graph_path_array_index(path2, i));
+	      assert(low + visited_indicees[i] == get_compound_graph_path_array_index(path2, i));
       }
     }
   }

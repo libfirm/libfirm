@@ -171,6 +171,7 @@ double get_type_estimated_n_instances(type *tp) {
 
 double get_type_estimated_mem_consumption_bytes(type *tp) {
   assert(0);
+  return 0.0;
 }
 
 int get_type_estimated_n_fields(type *tp) {
@@ -397,11 +398,13 @@ double get_entity_estimated_n_dyncalls(entity *ent) {
 /* ------------------------------------------------------------------------- */
 
 static void acc_temp (type *tp) {
+  int i, n_subtypes, n_members;
+  double inst;
+
   assert(is_Class_type(tp));
 
-  int i, n_subtypes = get_class_n_subtypes(tp);
-
   /* Recursive descend. */
+  n_subtypes = get_class_n_subtypes(tp);
   for (i = 0; i < n_subtypes; ++i) {
     type *stp = get_class_subtype(tp, i);
     if (type_not_visited(stp)) {
@@ -410,7 +413,7 @@ static void acc_temp (type *tp) {
   }
 
   /* Deal with entity numbers. */
-  int n_members = get_class_n_members(tp);
+  n_members = get_class_n_members(tp);
   for (i = 0; i < n_members; ++i) {
     entity *mem = get_class_member(tp, i);
     double acc_loads  = get_entity_estimated_n_loads (mem);
@@ -426,7 +429,7 @@ static void acc_temp (type *tp) {
   }
 
   /* Deal with type numbers. */
-  double inst = get_type_estimated_n_instances(tp);
+  inst = get_type_estimated_n_instances(tp);
   for (i = 0; i < n_subtypes; ++i) {
     type *stp = get_class_subtype(tp, i);
     inst += get_type_acc_estimated_n_instances(stp);
@@ -447,12 +450,12 @@ void accumulate_temperatures(void) {
       int j, n_subtypes = get_class_n_subtypes(tp);
       int has_unmarked_subtype = false;
       for (j = 0; j < n_subtypes && !has_unmarked_subtype; ++j) {
-	type *stp = get_class_subtype(tp, j);
-	if (type_not_visited(stp)) has_unmarked_subtype = true;
+	      type *stp = get_class_subtype(tp, j);
+	      if (type_not_visited(stp)) has_unmarked_subtype = true;
       }
 
       if (!has_unmarked_subtype)
-	acc_temp(tp);
+	      acc_temp(tp);
     }
   }
 

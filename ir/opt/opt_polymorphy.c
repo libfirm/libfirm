@@ -41,8 +41,9 @@ static type *get_dynamic_type(ir_node *ptr) {
  */
 ir_node *transform_node_Sel(ir_node *node)
 {
-  entity *ent = get_Sel_entity(node);
-  ir_node *new_node;
+  ir_node *new_node, *ptr;
+  type    *dyn_tp;
+  entity  *ent = get_Sel_entity(node);
 
   if (get_irp_phase_state() == phase_building) return node;
 
@@ -72,18 +73,19 @@ ir_node *transform_node_Sel(ir_node *node)
   }
 
   /* If we know the dynamic type, we can replace the Sel by a constant. */
-  ir_node *ptr = get_Sel_ptr(node);      /* The address we select from. */
-  type *dyn_tp = get_dynamic_type(ptr);  /* The runtime type of ptr. */
+  ptr = get_Sel_ptr(node);      /* The address we select from. */
+  dyn_tp = get_dynamic_type(ptr);  /* The runtime type of ptr. */
 
   if (dyn_tp != firm_unknown_type) {
     entity *called_ent;
+    ir_node *rem_block;
 
     /* We know which method will be called, no dispatch necessary. */
     called_ent = resolve_ent_polymorphy(dyn_tp, ent);
     /* called_ent may not be description: has no Address/Const to Call! */
     assert(get_entity_peculiarity(called_ent) != peculiarity_description);
 
-    ir_node *rem_block = get_cur_block();
+    rem_block = get_cur_block();
     set_cur_block(get_nodes_block(node));
     new_node = copy_const_value(get_atomic_ent_value(called_ent));
     set_cur_block(rem_block);
@@ -105,16 +107,18 @@ ir_node *transform_node_Sel(ir_node *node)
  */
 ir_node *transform_node_Load(ir_node *n)
 {
+  ir_node *field_ptr, *new_node, *ptr;
+  entity  *ent;
+  type    *dyn_tp;
+
   if (!(get_opt_optimize() && get_opt_dyn_meth_dispatch()))
     return n;
 
-  ir_node *field_ptr = get_Load_ptr(n);
+  field_ptr = get_Load_ptr(n);
 
   if (get_irn_op(field_ptr) != op_Sel) return n;
 
-  entity *ent  = get_Sel_entity(field_ptr);
-  ir_node *new_node;
-
+  ent = get_Sel_entity(field_ptr);
   if ((get_entity_allocation(ent) != allocation_static)    ||
       (get_entity_variability(ent) != variability_constant)  )
     return n;
@@ -129,8 +133,8 @@ ir_node *transform_node_Load(ir_node *n)
   }
 
   /* If we know the dynamic type, we can replace the Sel by a constant. */
-  ir_node *ptr = get_Sel_ptr(field_ptr);      /* The address we select from. */
-  type *dyn_tp = get_dynamic_type(ptr);  /* The runtime type of ptr. */
+  ptr = get_Sel_ptr(field_ptr);    /* The address we select from. */
+  dyn_tp = get_dynamic_type(ptr);  /* The runtime type of ptr. */
 
   if (dyn_tp != firm_unknown_type) {
     entity *loaded_ent;
