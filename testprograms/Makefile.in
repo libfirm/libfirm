@@ -22,9 +22,10 @@ SOURCES := Makefile.in \
 	dead_block_example.c   inheritance_example.c  while_example.c		\
 	endless_loop.c	       global_cse.c	      oo_inline_example.c
 
+GENFILES = %.vcg results.txt
+
 bin_EXAMPLES = $(CFILES:.c=)
 run_bin_EXAMPLES = $(patsubst %.c,./%;,$(CFILES))
-
 
 include $(topdir)/MakeRules
 
@@ -44,20 +45,17 @@ all:	$(bin_EXAMPLES) $(topdir)/libfirm.a
 run:
 	$(run_bin_EXAMPLES)
 
-test:   clean all
+test:   realclean all
 	($(run_bin_EXAMPLES))>run-result.txt
-	-rm $(REF_DIR)/All_types.vcg $(REF_DIR)/*-type.vcg $(REF_DIR)/*-all.vcg  # contains pointers that differ from run to run -- change!!! debug-ints!!
+	-$(RM) $(REF_DIR)/All_types.vcg $(REF_DIR)/*-type.vcg $(REF_DIR)/*-all.vcg  # contains pointers that differ from run to run -- change!!! debug-ints!!
 	($(DIFF) run-result.txt $(REF_DIR)/run-result.txt) || (echo Libfirm test failed; exit 1)
 	for g in $(REF_DIR)/*.vcg; do\
 		($(DIFF) -s `basename $$g` $$g)||   (echo Libfirm test failed; exit 1) \
 	done;
 	@echo Libfirm test successful
 
-reference: clean all
-	rm -f $(REF_DIR)/*.vcg
+reference: realclean all
+	$(RM) $(REF_DIR)/*.vcg
 	($(run_bin_EXAMPLES))>$(REF_DIR)/run-result.txt
 	rm All_types.vcg  *-type.vcg *-all.vcg    # contains pointers that differ from run to run -- change!!! debug-ints!!
 	install -c -m0644 *.vcg $(REF_DIR)
-
-subdir_clean:
-	rm -f run-result.txt *.vcg $(bin_EXAMPLES)
