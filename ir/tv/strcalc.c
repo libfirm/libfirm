@@ -520,6 +520,7 @@ static void _add(const char *val1, const char *val2, char *buffer)
     buffer[counter] = add2[0];
     carry = add_table[_val(add1[1])][_val(add2[1])][0];
   }
+  carry_flag = carry != SC_0;
 }
 
 static void _mul(const char *val1, const char *val2, char *buffer)
@@ -1509,7 +1510,7 @@ void init_strcalc(int precision)
     if (precision <= 0) precision = SC_DEFAULT_PRECISION;
 
     /* round up to multiple of 4 */
-    if (precision & 0x3) precision += 4 - (precision&0x3);
+    precision = (precision + 3) & ~3;
 
     BIT_PATTERN_SIZE = (precision);
     CALC_BUFFER_SIZE = (precision / 2);
@@ -1518,8 +1519,7 @@ void init_strcalc(int precision)
     calc_buffer   = malloc(CALC_BUFFER_SIZE+1 * sizeof(char));
     output_buffer = malloc(BIT_PATTERN_SIZE+1 * sizeof(char));
 
-    if (calc_buffer == NULL || output_buffer == NULL)
-    {
+    if (calc_buffer == NULL || output_buffer == NULL) {
       assert(0 && "malloc failed");
       exit(-1);
     }
@@ -1533,6 +1533,7 @@ void finish_strcalc() {
   free(calc_buffer);   calc_buffer   = NULL;
   free(output_buffer); output_buffer = NULL;
 }
+
 int sc_get_precision(void)
 {
   return BIT_PATTERN_SIZE;
