@@ -2,7 +2,7 @@ dnl
 dnl Project:     libFIRM
 dnl File name:   configure.in
 dnl Purpose:
-dnl Author:      Till Riedel
+dnl Author:      Till Riedel (??)
 dnl Modified by:
 dnl Created:
 dnl CVS-ID:      $Id$
@@ -207,6 +207,16 @@ AC_CHECK_HEADERS(obstack.h, ac_obstack_headers="yes", ac_obstack_headers="no")
 if test "$ac_obstack_headers" != yes; then
   dnl obstack header not found.
   AC_MSG_ERROR("obstack.h not found")
+fi
+
+
+AC_CHECK_HEADERS(alloca.h, ac_alloca_headers="yes", ac_alloca_headers="no")
+if test "$ac_alloca_headers" != yes; then
+  if test "$ac_cv_header_stdc" == no; then
+    AC_MSG_ERROR("alloca.h and stdlib.h not found")
+  else
+    AC_DEFINE(HAVE_ALLOCA_H)
+  fi
 fi
 
 

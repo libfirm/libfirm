@@ -1,8 +1,14 @@
 /* config.h.in.  Generated from configure.in by autoheader.  */
 /*
- * libFIRM Project
- *
- * $Id$
+ * Project:     libFIRM
+ * File name:   acconfig.h
+ * Purpose:
+ * Author:      Till Riedel
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2002-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
 /* define to enable debugging stuff. */
@@ -13,6 +19,9 @@
 
 /* Define to value "inline" for gcc inlineing. */
 #undef USE_GCC_INLINE
+
+/* Define to 1 if you have the <alloca.h> header file. */
+#undef HAVE_ALLOCA_H
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
