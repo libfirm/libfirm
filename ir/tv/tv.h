@@ -208,6 +208,9 @@ void tarval_stats (void);
 #endif
 
 ir_mode *get_tv_mode (tarval *tv);
+/* Returns the entity if the tv is a pointer to an entity, else
+   returns NULL; */
 entity *get_tv_entity(tarval *tv);
+
 
 #endif

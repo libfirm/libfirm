@@ -1779,9 +1779,20 @@ get_tv_mode (tarval *tv)
   return tv->mode;
 }
 
+/* Returns the entity if the tv is a pointer to an entity, else
+   returns NULL; */
+entity *get_tv_entity(tarval *tv) {
+  entity *ent = NULL;
 
-entity *get_tv_entity(tarval *tv)
-{
-  /*assert(??? && "not a pointer to an entity");*/
-  return tv->u.p.ent;
+  if (tv->mode == mode_p) {
+    if (tv->u.p.xname) {
+      assert(0);
+      /* not an entity */
+    } else if (tv->u.p.ent) {
+      ent = tv->u.p.ent;
+    } else {
+      /* not an entity */
+    }
+  }
+  return ent;
 }
