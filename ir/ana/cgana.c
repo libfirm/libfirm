@@ -204,9 +204,10 @@ static entity ** get_impl_methods(entity * method) {
  *
  *
  *  @param node The node to analyze
- *  @param ldname_map A map that mapps names of entities to the entities.
+ *  @param env  A map that maps names of entities to the entities.
  */
-static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
+static void sel_methods_walker(ir_node * node, void *env) {
+  pmap *ldname_map = env;
 
   /* replace SymConst(name)-operations by SymConst(ent) */
   if (get_irn_op(node) == op_SymConst) {
@@ -227,7 +228,6 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
       }
     }
   }
-
   else if (get_irn_op(node) == op_Sel &&
 	   is_method_type(get_entity_type(get_Sel_entity(node)))) {
     entity * ent = get_Sel_entity(node);
@@ -237,9 +237,11 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
         (get_irn_op(skip_Proj(get_Sel_ptr(node))) == op_Alloc)) {
       ir_node *new_node;
       entity *called_ent;
+
       /* We know which method will be called, no dispatch necessary. */
       called_ent = resolve_ent_polymorphy(get_Alloc_type(skip_Proj(get_Sel_ptr(node))), ent);
       set_irg_current_block(current_ir_graph, get_nodes_block(node));
+
       /* called_ent may not be description: has no Address/Const to Call! */
       assert(get_entity_peculiarity(called_ent) != peculiarity_description);
       new_node = copy_const_value(get_atomic_ent_value(called_ent));
@@ -247,7 +249,6 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
       DBG_OPT_POLY_ALLOC(node, new_node);
       exchange(node, new_node);
     }
-
     else {
       assert(get_entity_peculiarity(ent) != peculiarity_inherited);
       if (!eset_contains(entities, ent)) {
@@ -310,7 +311,7 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
  *  SymConst(entity)-Operationen ersetzt. */
 static void sel_methods_init(void) {
   int i;
-  pmap * ldname_map = pmap_create();   /* Map entitiy names to entities: to replace SymConst(name) by SymConst(ent). */
+  pmap * ldname_map = pmap_create();   /* Map entity names to entities: to replace SymConst(name) by SymConst(ent). */
 
   assert(entities == NULL);
   entities = eset_create();
@@ -322,13 +323,13 @@ static void sel_methods_init(void) {
       pmap_insert(ldname_map, (void *) get_entity_ld_ident(ent), ent);
     }
   }
-  all_irg_walk((irg_walk_func *) sel_methods_walker, NULL, ldname_map);
+  all_irg_walk(sel_methods_walker, NULL, ldname_map);
   pmap_destroy(ldname_map);
 }
 
 /*****************************************************************************/
 
-/* Datenstruktur freigeben. */
+/** Frees the allocated entity map */
 static void sel_methods_dispose(void) {
   entity * ent;
   assert(entities);
@@ -344,13 +345,15 @@ static void sel_methods_dispose(void) {
 }
 
 
-/* Gibt die Menge aller Methoden zurück, die an diesem Sel-Knoten
- * zurückgegeben werden können. Die Liste enthält keine doppelten
- * Einträge. */
+/**
+ * Returns an array of all methods that could be called at a Sel node.
+ * This array contains every entry only once.
+ */
 static entity ** get_Sel_arr(ir_node * sel) {
   static entity ** NULL_ARRAY = NULL;
   entity * ent;
   entity ** arr;
+
   assert(sel && get_irn_op(sel) == op_Sel);
   ent = get_Sel_entity(sel);
   assert(is_method_type(get_entity_type(ent))); /* what else? */
@@ -367,12 +370,16 @@ static entity ** get_Sel_arr(ir_node * sel) {
   }
 }
 
-
+/**
+ * Returns the number of possible called methods at a Sel node.
+ */
 static int get_Sel_n_methods(ir_node * sel) {
   return ARR_LEN(get_Sel_arr(sel));
 }
 
-
+/**
+ * Returns the ith possible called method entity at a Sel node.
+ */
 static entity * get_Sel_method(ir_node * sel, int pos) {
   entity ** arr = get_Sel_arr(sel);
   assert(pos >= 0 && pos < ARR_LEN(arr));
@@ -403,9 +410,9 @@ static void callee_ana_proj(ir_node * node, long n, eset * methods) {
     ir_node * pred = get_Proj_pred(node);
     if (get_irn_link(pred) != MARK) {
       if (get_irn_op(pred) == op_Tuple) {
-    callee_ana_proj(get_Tuple_pred(pred, get_Proj_proj(node)), n, methods);
+        callee_ana_proj(get_Tuple_pred(pred, get_Proj_proj(node)), n, methods);
       } else {
-    eset_insert(methods, MARK); /* free method -> unknown */
+        eset_insert(methods, MARK); /* free method -> unknown */
       }
     }
     break;
