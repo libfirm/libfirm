@@ -398,11 +398,11 @@ static void irg_block_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *p
       ir_node *pred = get_cf_op(get_Block_cfgpred(node, i));
       pred = get_nodes_block(pred);
       if(get_irn_opcode(pred) == iro_Block) {
-    /* recursion */
-    irg_block_walk_2(pred, pre, post, env);
+        /* recursion */
+        irg_block_walk_2(pred, pre, post, env);
       }
       else {
-    assert(get_irn_opcode(pred) == iro_Bad);
+        assert(get_irn_opcode(pred) == iro_Bad);
       }
     }
 
@@ -428,6 +428,7 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void
   if (is_no_Block(node)) block = get_nodes_block(node); else block = node;
   assert(get_irn_opcode(block)  == iro_Block);
   irg_block_walk_2(block, pre, post, env);
+
   /* keepalive: the endless loops ... */
   if (get_irn_op(node) == op_End) {
     int arity = get_irn_arity(node);
@@ -435,6 +436,17 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void
       pred = get_irn_n(node, i);
       if (get_irn_op(pred) == op_Block)
         irg_block_walk_2(pred, pre, post, env);
+    }
+    /* Sometimes the blocks died, but are still reachable through Phis.
+     * Make sure the algorithms that try to remove these reach them. */
+    for (i = 0; i < arity; i++) {
+      pred = get_irn_n(node, i);
+      if (get_irn_op(pred) == op_Phi) {
+	ir_node *block = get_nodes_block(pred);
+
+	if (! is_Bad(block))
+          irg_block_walk_2(block, pre, post, env);
+      }
     }
   }
 
