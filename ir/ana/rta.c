@@ -48,6 +48,7 @@ static eset *_live_graphs    = NULL;
 static eset *_dead_graphs    = NULL;
 
 static int whole_world = 0;
+static int verbose     = 0;
 
 /**
    Initialise the static data structures.
@@ -85,17 +86,16 @@ static void rta_act (ir_node *node, void *env)
 
     if (iro_Sel == get_irn_opcode (ptr)) { /* CALL SEL */
       ent = get_Sel_entity (ptr);
+      eset_insert (_called_methods, ent);
     } else if (iro_Const == get_irn_opcode (ptr)) { /* CALL CONST */
       ent = get_tarval_entity (get_Const_tarval (ptr));
+      ir_graph *graph = get_entity_irg (ent);
 
+      eset_insert (_live_graphs, graph);
     } else if (iro_SymConst == get_irn_opcode (ptr)) { /* CALL SYMCONST */
       /* If this SymConst refers to a method the method is external_visible
-     and therefore must be considered live anyways. */
+         and therefore must be considered live anyways. */
       /* assert (ent && "couldn't determine entity of call to symConst"); */
-    }
-
-    if (ent) {
-      eset_insert (_called_methods, ent);
     }
   } else if (iro_Load  == op) { /* LOAD */
     ir_node *ptr = get_Load_ptr (node);
@@ -199,13 +199,13 @@ static void rta_fill_all (int rerun)
          visible. Pretend that they are called: */
       entity *ent = get_irg_entity (graph);
       if (visibility_external_visible == get_entity_visibility (ent)) {
-        eset_insert (_called_methods, ent);
+        /* eset_insert (_called_methods, ent); */
 
         if (get_entity_irg (ent)) {
           eset_insert (_live_graphs, get_entity_irg (ent));
         }
 
-        eset_insert (_live_classes, get_entity_owner (ent));
+        /* eset_insert (_live_classes, get_entity_owner (ent)); */
       }
     }
 
@@ -501,15 +501,17 @@ static void remove_irg (ir_graph *graph)
 }
 
 /* Initialise the RTA data structures, and perform RTA.
-   @param   verbose Iff != 0, print statistics as we go along
+   @param   do_verbose Iff != 0, print statistics as we go along
+   @param   do_whole_world Iff != 0, assume whole-world
 */
-void rta_init (int verbose, int do_whole_world)
+void rta_init (int do_verbose, int do_whole_world)
 {
   int n_live_graphs = get_irp_n_irgs ();
   int n_graphs = 0;
   int n_runs = 0;
 
   whole_world = do_whole_world;
+  verbose = do_verbose;
 
 # ifdef DEBUG_libfirm
   int i;
@@ -557,7 +559,7 @@ void rta_init (int verbose, int do_whole_world)
 }
 
 /* Delete all graphs that we have found to be dead from the program */
-void rta_delete_dead_graphs ()
+void rta_delete_dead_graphs (void)
 {
   int i;
   int n_graphs = get_irp_n_irgs ();
@@ -585,12 +587,18 @@ void rta_delete_dead_graphs ()
   for (graph = eset_first (dead_graphs);
        graph;
        graph = (ir_graph*) eset_next (dead_graphs)) {
+
+    if (verbose) {
+      fprintf(stdout, "RTA: removing graph of ");
+      DDMEO(get_irg_ent (graph));
+    }
+
     remove_irg (graph);
   }
 }
 
 /* Clean up the RTA data structures.  Call this after calling rta_init */
-void rta_cleanup ()
+void rta_cleanup (void)
 {
 # ifdef DEBUG_libfirm
   int i;
@@ -669,20 +677,20 @@ int  rta_is_alive_field  (entity *field)
 }
 
 /* dump our opinion */
-void rta_report (FILE *stream)
+void rta_report (void)
 {
   int i;
 
   for (i = 0; i < get_irp_n_types(); ++i) {
     type *tp = get_irp_type(i);
     if (is_class_type(tp) && rta_is_alive_class(tp)) {
-      fprintf(stream, "RTA: considered allocated: "); DDMT(tp);
+      fprintf(stdout, "RTA: considered allocated: "); DDMT(tp);
     }
   }
 
   for (i = 0; i < get_irp_n_irgs(); i++) {
     if (rta_is_alive_graph (get_irp_irg(i))) {
-      fprintf(stream, "RTA: considered called: graph of");
+      fprintf(stdout, "RTA: considered called: graph of ");
       DDMEO(get_irg_ent (get_irp_irg(i)));
     }
   }
@@ -691,6 +699,9 @@ void rta_report (FILE *stream)
 
 /*
  * $Log$
+ * Revision 1.14  2004/06/18 13:12:43  liekweg
+ * final bug fix (calls via consts)
+ *
  * Revision 1.13  2004/06/17 16:34:33  liekweg
  * removed DD*s
  *

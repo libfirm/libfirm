@@ -19,12 +19,15 @@ int rta_is_alive_graph(ir_graph *graph);
 /* Inquire whether the given field is alive */
 int rta_is_alive_field(entity *field);
 /* dump our opinion */
-void rta_report (FILE*);
+void rta_report (void);
 
 #endif /* def _RTA_H_ */
 
 /*
  * $Log$
+ * Revision 1.7  2004/06/18 13:12:43  liekweg
+ * final bug fix (calls via consts)
+ *
  * Revision 1.6  2004/06/17 14:21:14  liekweg
  * major bugfix
  *
