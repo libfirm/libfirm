@@ -3,3 +3,5 @@ config.log
 config.h
 Makefile
 MakeRules
+changelog.html
+changelog.xml
