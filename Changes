@@ -1,3 +1,12 @@
+  23.1.2002 Goetz
+  Implemented support for endless loops:
+  Adapted End node.
+  Adapted Phi constructors so that memory phis are added.
+  Adapted Cond optimization: add block to End.
+  Adapted dead node elimination: compation of Ends predecessors
+  Adapted inlineing:  remember keepalives of inlined graph.
+  Added informative strings to asserts in irvrfy.
+
   21.1.2002 Goetz
   Added volatile flag to entity, order flag to array.
   Added a set of assertions.
