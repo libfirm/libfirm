@@ -41,7 +41,6 @@ void ir_snprintf(char *buf, size_t n, const char *fmt, ...);
 
 #define ir_debugf ir_printf
 #define ir_fdebugf ir_fprintf
-#define ir_sndebugf ir_snprintf
 
 #else
 
@@ -53,9 +52,6 @@ static INLINE void ir_fdebugf(FILE *, const char *fmt, ...)
 {
 }
 
-static INLINE void ir_sndebugf(char *buf, size_t n, const char *fmt, ...)
-{
-}
 
 #endif
 
