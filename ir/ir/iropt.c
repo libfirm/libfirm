@@ -311,7 +311,7 @@ static tarval *computed_value_Rot(ir_node *n)
   tarval *tb = value_of(b);
 
   if ((ta != tarval_bad) && (tb != tarval_bad)) {
-    /* return tarval_rot (ta, tb); */
+    return tarval_rot (ta, tb);
   }
   return tarval_bad;
 }
