@@ -543,6 +543,14 @@ void set_irg_callee_info_state(ir_graph *irg, irg_callee_info_state s) {
   irg->callee_info_state = s;
 }
 
+irg_inline_property get_irg_inline_property(ir_graph *irg) {
+  return irg->inline_property;
+}
+void set_irg_inline_property(ir_graph *irg, irg_inline_property s) {
+  irg->inline_property = s;
+}
+
+
 INLINE void
 set_irg_link (ir_graph *irg, void *thing) {
   irg->link = thing;

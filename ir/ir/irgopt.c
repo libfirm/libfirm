@@ -577,7 +577,9 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   int exc_handling; ir_node *proj;
   type *called_frame;
 
-  if (!get_opt_optimize() || !get_opt_inline()) return;
+  if (!get_opt_optimize() || !get_opt_inline() ||
+      (get_irg_inline_property(called_graph) == irg_inline_forbidden)) return;
+
   /* --  Turn off optimizations, this can cause problems when allocating new nodes. -- */
   rem_opt = get_opt_optimize();
   set_optimize(0);
@@ -996,7 +998,8 @@ void inline_small_irgs(ir_graph *irg, int size) {
       ir_graph *callee;
       tv = get_Const_tarval(get_Call_ptr(calls[i]));
       callee = get_entity_irg(tarval_to_entity(tv));
-      if ((_obstack_memory_used(callee->obst) - obstack_room(callee->obst)) < size) {
+      if (((_obstack_memory_used(callee->obst) - obstack_room(callee->obst)) < size) ||
+	  (get_irg_inline_property(callee) == irg_inline_forced)) {
         inline_method(calls[i], callee);
       }
     }
@@ -1122,7 +1125,9 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
         ir_graph *callee = get_call_called_irg(call);
 
         if (env->n_nodes > maxsize) break;
-        if (callee && is_leave(callee) && is_smaller(callee, leavesize)) {
+        if (callee &&
+	    ((is_leave(callee) && is_smaller(callee, leavesize)) ||
+	     (get_irg_inline_property(callee) == irg_inline_forced))) {
           if (!phiproj_computed) {
             phiproj_computed = 1;
             collect_phiprojs(current_ir_graph);

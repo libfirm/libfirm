@@ -62,6 +62,7 @@ struct ir_graph {
   irg_dom_state dom_state;           /**< Dominator information */
   irg_typeinfo_state typeinfo_state; /**< Validity of type information */
   irg_callee_info_state callee_info_state; /**< Validity of callee information */
+  irg_inline_property inline_property;     /**< How to handle inlineing. */
 
   /* -- Fields for construction -- */
 #if USE_EXPLICIT_PHI_IN_STACK
