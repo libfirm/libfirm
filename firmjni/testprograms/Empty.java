@@ -40,7 +40,7 @@ class Empty {
 	int owner = Irprog.getGlobType();
 
 	/* The type of the method */
-	int name = Ident.idFromStr("EMPTY_main", 10);
+	int name = Ident.newIdFromStr("EMPTY_main");
 	int proc_main = Type.newTypeMethod(name, 0, 0);
 	/* An entity representing the method.  Owner of the entity is the global
 	   class type mentioned above. */
@@ -65,21 +65,21 @@ class Empty {
 
 	/* Now we generated all instructions for this block and all its predecessor
 	 * blocks so we can mature it.  (There are not too much.) */
-	Ircons.matureBlock (Irgraph.getIrgCurrentBlock(irg));
+	Ircons.matureImmBlock (Irgraph.getIrgCurrentBlock(irg));
 
 	/* This adds the in edge of the end block which originates at the return statement.
 	 * The return node passes controlflow to the end block.  */
-	Ircons.addInEdge (Irgraph.getIrgEndBlock(irg), x);
+	Ircons.addImmBlockPred (Irgraph.getIrgEndBlock(irg), x);
 	/* Now we can mature the end block as all it's predecessors are known. */
-	Ircons.matureBlock (Irgraph.getIrgEndBlock(irg));
+	Ircons.matureImmBlock (Irgraph.getIrgEndBlock(irg));
 
 	/* Verify the graph.  Finds some very bad errors in the graph. */
 	Irvrfy.irgVrfy(irg);
 	Ircons.finalizeCons (irg);
 
 	System.out.println("Done building the graph.  Dumping it.");
-	Irdump.dumpIrBlockGraph (irg);
-	Irdump.dumpAllTypes();
+	Irdump.dumpIrBlockGraph (irg, "");
+	Irdump.dumpAllTypes("");
 
 
 	System.out.println("use xvcg to view this graph:");

@@ -2,14 +2,14 @@
 
 # include "Heapanal.h"
 
-# include "libfirm/firm.h"
+# include "firm.h"
 # include "irsimpletype.h"
 # include "heapanal/heapanal.h"
 
 /*  boilerplate stuff: */
-#include "libfirm/irvrfy.h"
-#include "libfirm/trvrfy.h"
-#include "libfirm/irdump.h"
+#include "irvrfy.h"
+#include "trvrfy.h"
+#include "irdump.h"
 
 
 /*  I/O: */
@@ -70,12 +70,12 @@ void Java_firmjni_Heapanal_analHeap__ (JNIEnv *env, jclass clazz)
     /*  opt_load_const_static(); */
 
     /* dump graphs as they come out of the front end */
-    dump_file_suffix = "-fe";
-    dump_all_types ();
-    dump_class_hierarchy (true);
-    dump_all_ir_graphs(dump_ir_block_graph);
-    dump_all_ir_graphs(dump_ir_block_graph_w_types);
-    dump_all_ir_graphs(dump_cfg);
+    char *suffix = "-fe";
+    dump_all_types (suffix);
+    dump_class_hierarchy (true, suffix);
+    dump_all_ir_graphs(dump_ir_block_graph, suffix);
+    dump_all_ir_graphs(dump_ir_block_graph_w_types, suffix);
+    dump_all_ir_graphs(dump_cfg, suffix);
 
     /* verify constructed graphs */
     for (i = 0; i < get_irp_n_irgs(); i++)
@@ -93,8 +93,7 @@ void Java_firmjni_Heapanal_analHeap__ (JNIEnv *env, jclass clazz)
 
       if (1) {
         dump_loop_information();
-        dump_file_suffix = "-1.2-intra-loop";
-        dump_ir_block_graph(get_irp_irg(i));
+        dump_ir_block_graph(get_irp_irg(i), "-1.2-intra-loop");
         dont_dump_loop_information();
         dump_loop_tree(get_irp_irg(i), "-1.2-intra");
       }
@@ -102,14 +101,14 @@ void Java_firmjni_Heapanal_analHeap__ (JNIEnv *env, jclass clazz)
 
     DDMG (get_irp_main_irg ());
     assert(get_irp_main_irg());
-    assert(get_irg_ent(get_irp_main_irg()));
+    assert(get_irg_entity(get_irp_main_irg()));
 
 
     /** Do interprocedural optimizations **/
     /* Analysis that builds the call graph and finds the free methods,
        i.e. methods that are dereferenced.
        Optimizes polymorphic calls.*/
-    cgana(&arr_len, &free_methods);
+    cgana(&arr_len, &free_methods, 0);
     /* Remove methods that are never called. */
     /*  gc_irgs(arr_len, free_methods); */
     /* Build the interprocedural dataflow representation */
@@ -119,8 +118,7 @@ void Java_firmjni_Heapanal_analHeap__ (JNIEnv *env, jclass clazz)
     /*  construct_ip_backedges(); */
 
     dump_loop_information();
-    dump_file_suffix = "-1.2-inter-loop";
-    dump_all_cg_block_graph();
+    dump_all_cg_block_graph("-1.2-inter-loop");
     dont_dump_loop_information();
     dump_loop_tree(get_irp_main_irg(), "-1.2-inter");
 
@@ -130,7 +128,7 @@ void Java_firmjni_Heapanal_analHeap__ (JNIEnv *env, jclass clazz)
 
     set_max_chi_height(8);  /* change ad lib */
     set_initial_context_depth(4);   /* change as needed */
-    ha_analyse_heap(get_irg_ent(get_irp_main_irg()), 1);
+    ha_analyse_heap(get_irg_entity(get_irp_main_irg()), 1);
 
     /* Remove the interprocedural dataflow representation */
     free(free_methods);
@@ -156,6 +154,9 @@ void Java_firmjni_Heapanal_analHeap__ (JNIEnv *env, jclass clazz)
 
 /*
  * $Log$
+ * Revision 1.4  2004/08/14 10:09:52  goetz
+ * adapted to new semantics
+ *
  * Revision 1.3  2004/04/30 09:00:01  goetz
  * added configure support for heap analyses
  *

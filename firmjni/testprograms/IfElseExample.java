@@ -46,18 +46,18 @@ class IfElseExample {
 	int owner = Irprog.getGlobType();
 
 	/* Basic type information for primitive type int. */
-	int primIntTypeName = Ident.idFromStr("int", 3);
+	int primIntTypeName = Ident.newIdFromStr("int");
 	int primIntType = Type.newTypePrimitive(primIntTypeName, Irmode.getModeIs());
 
 	/* The type of the method */
-	int tpName = Ident.idFromStr("IF_ELSE_EXAMPLE_main_p", 23);
+	int tpName = Ident.newIdFromStr("IF_ELSE_EXAMPLE_main_p");
 	int procMain = Type.newTypeMethod(tpName, 0, 2);
 	Type.setMethodResType(procMain, 0, primIntType);
 	Type.setMethodResType(procMain, 1, primIntType);
 
 	/* An entity representing the method.  Owner of the entity is the global
 	    class type mentioned above. */
-	int name = Ident.idFromStr("IF_ELSE_EXAMPLE_main", 20);
+	int name = Ident.newIdFromStr("IF_ELSE_EXAMPLE_main");
 	int ent = Entity.newEntity (owner, name, procMain);
 
 	/** Build code for the procedure. **/
@@ -81,27 +81,27 @@ class IfElseExample {
 	int f = Ircons.newProj (x, Irmode.getModeX(), 0); /* if condition is false */
 	int t = Ircons.newProj (x, Irmode.getModeX(), 1); /* if condition is true */
 
-	Ircons.matureBlock (Irgraph.getIrgCurrentBlock(irg));
+	Ircons.matureImmBlock (Irgraph.getIrgCurrentBlock(irg));
 
 	/* generate and fill the then block */
 	int b = Ircons.newImmBlock ();
-	Ircons.addInEdge (b, t);
+	Ircons.addImmBlockPred (b, t);
 	Ircons.setValue (0, Ircons.getValue(1, Irmode.getModeIs()));
-	Ircons.matureBlock (b);
+	Ircons.matureImmBlock (b);
 	int x_then = Ircons.newJmp ();
 
 	/* generate and fill the else block */
 	b = Ircons.newImmBlock ();
-	Ircons.addInEdge (b, f);
+	Ircons.addImmBlockPred (b, f);
 	Ircons.setValue (1, Ircons.newConst (Irmode.getModeIs(),
 					     Tv.newTarvalFromLong (2, Irmode.getModeIs())));
-	Ircons.matureBlock (b);
+	Ircons.matureImmBlock (b);
 	int x_else = Ircons.newJmp ();
 
 	/* generate the join block and add all cfg edges */
 	b = Ircons.newImmBlock ();
-	Ircons.addInEdge (b, x_then);
-	Ircons.addInEdge (b, x_else);
+	Ircons.addImmBlockPred (b, x_then);
+	Ircons.addImmBlockPred (b, x_else);
 
 	int[] in = new int[2]; /* this is the array containing the return parameters */
 	in[0] = Ircons.getValue(0, Irmode.getModeIs());
@@ -110,14 +110,14 @@ class IfElseExample {
 
 	/* Now generate all instructions for this block and all its predecessor
 	   blocks so we can mature it. */
-	Ircons.matureBlock (Irgraph.getIrgCurrentBlock(irg));
+	Ircons.matureImmBlock (Irgraph.getIrgCurrentBlock(irg));
 
 	/* This adds the in edge of the end block which originates at the
 	   return statement.  The return node passes control flow to the
 	   end block.  */
-	Ircons.addInEdge (Irgraph.getIrgEndBlock(irg), x);
+	Ircons.addImmBlockPred (Irgraph.getIrgEndBlock(irg), x);
 	/* Now we can mature the end block as all it's predecessors are known. */
-	Ircons.matureBlock (Irgraph.getIrgEndBlock(irg));
+	Ircons.matureImmBlock (Irgraph.getIrgEndBlock(irg));
 
 	Irvrfy.irgVrfy(irg);
 	Ircons.finalizeCons (irg);
@@ -126,8 +126,8 @@ class IfElseExample {
 	Irgopt.localOptimizeGraph(irg);
 	Irgopt.deadNodeElimination(irg);
 
-	Irdump.dumpIrBlockGraph (irg);
-	Irdump.dumpAllTypes();
+	Irdump.dumpIrBlockGraph (irg, "");
+	Irdump.dumpAllTypes("");
 
 	System.out.println("use xvcg to view this graph:");
 	System.out.println("/ben/goetz/bin/xvcg GRAPHNAME\n");
