@@ -350,7 +350,7 @@ void    dump_entity (entity *ent);
 
 /** Write the type and all its attributes to the file passed.
  * */
-void    dump_type_to_file (FILE *f, type *tp, unsigned verbosity);
+void    dump_type_to_file (FILE *f, type *tp, dump_verbosity verbosity);
 
 /** Write the type and all its attributes to stdout.
  *  */
