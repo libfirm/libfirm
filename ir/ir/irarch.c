@@ -88,6 +88,14 @@ void arch_dep_set_opts(arch_dep_opts_t the_opts) {
   opts = the_opts;
 }
 
+/* check, wheater a mode allows a Mulh instruction */
+static int allow_Mulh(ir_mode *mode)
+{
+  if (get_mode_size_bits(mode) > params->max_bits_for_mulh)
+    return 0;
+  return (mode_is_signed(mode) && params->allow_mulhs) || (!mode_is_signed(mode) && params->allow_mulhu);
+}
+
 ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn)
 {
   ir_node *res = irn;
@@ -692,8 +700,7 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn)
     }
     else {
       /* other constant */
-      if ((mode_is_signed(mode) && params->allow_mulhs) ||
-          (!mode_is_signed(mode) && params->allow_mulhu))
+      if (allow_Mulh(mode))
         res = replace_div_by_mulh(irn, tv);
     }
   }
@@ -777,8 +784,7 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn)
     }
     else {
       /* other constant */
-      if ((mode_is_signed(mode) && params->allow_mulhs) ||
-          (!mode_is_signed(mode) && params->allow_mulhu)) {
+      if (allow_Mulh(mode)) {
         res = replace_div_by_mulh(irn, tv);
 
         res = new_rd_Mul(dbg, current_ir_graph, block, res, c, mode);
@@ -883,8 +889,7 @@ void arch_dep_replace_divmod_by_const(ir_node **div, ir_node **mod, ir_node *irn
     }
     else {
       /* other constant */
-      if ((mode_is_signed(mode) && params->allow_mulhs) ||
-          (!mode_is_signed(mode) && params->allow_mulhu)) {
+      if (allow_Mulh(mode)) {
         ir_node *t;
 
         *div = replace_div_by_mulh(irn, tv);
