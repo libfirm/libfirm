@@ -1330,9 +1330,9 @@ new_rd_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode, ir_node **in, int i
      If so, it is a real Phi node and we break the loop.  Else the Phi
      node merges the same definition on several paths and therefore is
      not needed. */
-  for (i = 0;  i < ins;  ++i)
-  {
-    if (in[i] == res || in[i] == known) continue;
+  for (i = 0;  i < ins;  ++i) {
+    if (in[i] == res || in[i] == known)
+      continue;
 
     if (known == res)
       known = in[i];
@@ -1345,8 +1345,8 @@ new_rd_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode, ir_node **in, int i
 #if USE_EXPLICIT_PHI_IN_STACK
     free_to_Phi_in_stack(res);
 #else
-		edges_node_deleted(res, current_ir_graph);
-    obstack_free (current_ir_graph->obst, res);
+    edges_node_deleted(res, current_ir_graph);
+    obstack_free(current_ir_graph->obst, res);
 #endif
     res = known;
   } else {
@@ -1569,15 +1569,16 @@ new_rd_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
   /* i==ins: there is at most one predecessor, we don't need a phi node. */
   if (i == ins) {
     if (res != known) {
-			edges_node_deleted(res, current_ir_graph);
+      edges_node_deleted(res, current_ir_graph);
       obstack_free (current_ir_graph->obst, res);
       if (is_Phi(known)) {
-	/* If pred is a phi node we want to optmize it: If loops are matured in a bad
-	   order, an enclosing Phi know may get superfluous. */
-	res = optimize_in_place_2(known);
-	if (res != known) { exchange(known, res); }
-      } else {
-	res = known;
+        /* If pred is a phi node we want to optimize it: If loops are matured in a bad
+           order, an enclosing Phi know may get superfluous. */
+        res = optimize_in_place_2(known);
+        if (res != known)
+          exchange(known, res);
+        else
+          res = known;
       }
     } else {
       /* A undefined value, e.g., in unreachable code. */
