@@ -1,3 +1,7 @@
+  7.9.2000 Goetz
+  Finished implementation of dump_all_types.
+  Added new testprogram inheritance_example.
+
   6.9.2000 Chris
   Added seven access routines in type.[hc]:
   get_class_n_member, get_class_n_subtype, get_class_n_supertype,

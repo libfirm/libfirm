@@ -38,9 +38,21 @@ new_entity (type *owner, ident *name, type *type)
 
   res->visit = 0;
 
-  /* add entity to the list of entities of the owner. */
-  // res->owner->member[res->owner->n_members] = res;
-  // res->owner->n_members ++;
+  switch (get_kind(owner)) {
+  case k_type_class: {
+    add_class_member ((type_class *) owner, res);
+  } break;
+  case k_type_strct: {
+    add_strct_member ((type_strct *) owner, res);
+  } break;
+  case k_type_union: {
+    /* not implemented */
+  } break;
+  case k_type_method: {
+    /* not implemented */
+  } break;
+  default: ;
+  }
 
   return res;
 }

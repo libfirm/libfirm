@@ -48,5 +48,8 @@ typedef enum {
 /* returns the kind of the thing */
 firm_kind get_kind(void *firm_thing);
 
+/* returns a string. */
+const char* print_firm_kind(void *firm_thing);
+
 
 # endif /*_COMMON_H_ */

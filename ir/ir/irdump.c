@@ -289,23 +289,17 @@ dump_ir_node (ir_node *n)
     break;
   case iro_Sel:
     assert(get_kind(get_Sel_entity(n)) == k_entity);
-    /*assert(n->attr.s.ent->kind == k_entity);*/
     xfprintf (F, "\"%I ", n->op->name);
-    /*xfprintf (F, "%s\" ", id_to_str(n->attr.s.ent->name));*/
     xfprintf (F, "%s", id_to_str(get_entity_ident(get_Sel_entity(n))));
     /*  xdoesn't work for some reason.
-	fprintf (F, "\"%I %I\" ", n->op->name, n->attr.s.ent); */
+	fprintf (F, "\"%I %I\" ", n->op->name, get_entity_ident(get_Sel_entity(n))); */
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_SymConst:
     assert(get_kind(get_SymConst_type(n)) == k_type_class);
-    /* assert(n->attr.i.type->kind == k_type_class); */
     assert(get_class_ident((type_class *)get_SymConst_type(n)));
-    /* assert(n->attr.i.type->clss->name); */
-    xfprintf (F, "\"%s ", id_to_str(get_class_ident((type_class *)get_SymConst_type(n))));
-    /* xfprintf (F, "\"%s ", id_to_str(n->attr.i.type->name)); */
-    /* doesn't work for some reason. */
-    /* xfprintf (F, "\"%N\" ", n->attr.i.type); */
+    xfprintf (F, "\"%s ",
+	      id_to_str(get_class_ident((type_class *)get_SymConst_type(n))));
     switch (n->attr.i.num){
     case type_tag:
       xfprintf (F, "tag\" ");
@@ -419,14 +413,16 @@ dump_type_info (type_or_ent *tore, void *env) {
     {
       type_class *type = (type_class *)tore;
       xfprintf (F, "\"class %I\"}\n", get_class_ident(type));
-      /* edges !!!??? */
+      for (i=0; i < get_class_n_supertype(type); i++)
+	xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
+		  " label: \"supertype\" " TYPE_EDGE_ATTR "}\n",
+		  type, get_class_supertype(type, i));
     }
     break;
   case k_type_strct:
     {
       type_strct *type = (type_strct *)tore;
       xfprintf (F, "\"strct %I\"}\n", get_strct_ident(type));
-      /* edges !!!??? */
     }
     break;
   case k_type_method:

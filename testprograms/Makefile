@@ -11,7 +11,8 @@ LIBS=-lfirm -lgmp
 all: empty const_eval_example 					\
      if_example if_else_example if_while_example cond_example	\
      call_str_example memory_example array-stack_example	\
-     array-heap_example oo_program_example irr_cf_example	\
+     array-heap_example oo_program_example inheritance_example	\
+     irr_cf_example	\
      irr_loop_example dead_block_example global_var_example	\
      three_cfpred_example
 
@@ -22,7 +23,8 @@ clean:
 	if_while_example cond_example 		\
 	call_str_example memory_example 	\
 	array-stack_example array-heap_example	\
-	oo_program_example irr_cf_example	\
+	oo_program_example inheritance_example	\
+	irr_cf_example	\
 	irr_loop_example dead_block_example	\
 	global_var_example three_cfpred_example	\
 	*.o *.vcg core
@@ -41,6 +43,7 @@ run:
 	array-stack_example;	\
 	array-heap_example; 	\
 	oo_program_example;	\
+	inheritance_example;	\
 	irr_cf_example;		\
 	irr_loop_example;	\
 	dead_block_example;	\
@@ -79,6 +82,9 @@ array-heap_example: array-heap_example.o
 
 oo_program_example: oo_program_example.o
 	gcc -o oo_program_example oo_program_example.o $(LIBDIRS) $(LIBS)
+
+inheritance_example: inheritance_example.o
+	gcc -o inheritance_example inheritance_example.o $(LIBDIRS) $(LIBS)
 
 irr_cf_example: irr_cf_example.o
 	gcc -o irr_cf_example irr_cf_example.o $(LIBDIRS) $(LIBS)

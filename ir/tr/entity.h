@@ -55,14 +55,15 @@ typedef struct ir_graph ir_graph;
 typedef struct entity entity;
 #endif
 
-/* create a new entity */
-entity   *new_entity (type *owner, ident *name, type *type);
+/* Creates a new entity.
+   Automatically inserts the entity as a member of owner. */
+entity     *new_entity (type *owner, ident *name, type *type);
 
 /* manipulate fields of entity */
-char     *get_entity_name     (entity *ent);
-ident    *get_entity_ident    (entity *ent);
-
-ident    *get_entity_ld_name  (entity *ent);
+const char *get_entity_name     (entity *ent);
+ident      *get_entity_ident    (entity *ent);
+/* returns the mangled name of the entity */
+ident      *get_entity_ld_name  (entity *ent);
 
 /*
 char     *get_entity_ld_name  (entity *ent);

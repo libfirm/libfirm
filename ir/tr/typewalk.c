@@ -77,7 +77,6 @@ void type_walk_2(type_or_ent *tore,
     case k_type_class:
       {
 	int i;
-
 	((type_class *)tore)->visit = type_visited;
 	//CS
 	for (i=0; i<get_class_n_member((type_class *)tore); i++)

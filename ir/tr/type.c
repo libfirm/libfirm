@@ -115,11 +115,8 @@ set_class_subtype (type_class *class, type_class *subtype, int pos)
 int
 get_class_n_subtype (type_class *class)
 {
-  int res;
-
   assert(class);
-  res = (ARR_LEN (class->members))-1;
-  return res;
+  return (ARR_LEN (class->subtypes))-1;
 }
 
 /* field: supertype */
@@ -145,11 +142,8 @@ set_class_supertype (type_class *class, type_class *supertype, int pos)
 int
 get_class_n_supertype (type_class *class)
 {
-  int res;
-
   assert(class);
-  res = (ARR_LEN (class->members))-1;
-  return res;
+  return (ARR_LEN (class->supertypes))-1;
 }
 
 /*******************************************************************/

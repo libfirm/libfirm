@@ -228,27 +228,27 @@ type_class *new_type_class (ident *name);
 /* manipulate fields of type_class */
 
 const char  *get_class_name  (type_class *class);
-ident *get_class_ident (type_class *class);
+ident       *get_class_ident (type_class *class);
 
 /* Not necessary now!
 void   set_class_name  (type_class *class, char *name);
 void   set_class_ident (type_class *class, ident* ident);
 */
 
-void add_class_member (type_class *class, entity *member);
+void    add_class_member (type_class *class, entity *member);
+int     get_class_n_member (type_class *class);
 entity *get_class_member (type_class *class, int pos);
-void set_class_member (type_class *class, entity *member, int pos);
-int get_class_n_member (type_class *class);
+void    set_class_member (type_class *class, entity *member, int pos);
 
-void add_class_subtype (type_class *class,  type_class *subtype);
+void        add_class_subtype (type_class *class,  type_class *subtype);
+int         get_class_n_subtype (type_class *class);
 type_class *get_class_subtype (type_class *class, int pos);
-void set_class_subtype (type_class *class, type_class *subtype, int pos);
-int get_class_n_subtype (type_class *class);
+void        set_class_subtype (type_class *class, type_class *subtype, int pos);
 
-void add_class_supertype (type_class *class, type_class *supertype);
+void        add_class_supertype (type_class *class, type_class *supertype);
+int         get_class_n_supertype (type_class *class);
 type_class *get_class_supertype (type_class *class, int pos);
-void set_class_supertype (type_class *class, type_class *supertype, int pos);
-int get_class_n_supertype (type_class *class);
+void        set_class_supertype (type_class *class, type_class *supertype, int pos);
 
 /*******************************************************************/
 /** TYPE_STRCT                                                   **/
@@ -267,12 +267,12 @@ type_strct *new_type_strct (ident *name);
 
 /* manipulate fields of type_strct */
 const char  *get_strct_name  (type_strct *strct);
-ident *get_strct_ident (type_strct *strct);
+ident       *get_strct_ident (type_strct *strct);
 
-int get_strct_n_member (type_strct *strct);
-void  add_strct_member (type_strct *strct, entity *member);
-entity *get_strct_member (type_strct *strct, int pos);
-void set_strct_member (type_strct *strct, int pos, entity *member);
+void         add_strct_member (type_strct *strct, entity *member);
+int          get_strct_n_member (type_strct *strct);
+entity      *get_strct_member (type_strct *strct, int pos);
+void         set_strct_member (type_strct *strct, int pos, entity *member);
 
 /*
 void   set_strct_name  (type_strct *strct, char *name);
@@ -299,24 +299,24 @@ typedef struct {
   unsigned long visit; /* visited counter for walks of the type information */
 } type_method;
 
-/* create a new type_method
-   arity is number of parameters. */
+/* Create a new type_method.
+   Arity is the number of parameters. */
 type_method *new_type_method (ident *name, int arity, int n_res);
 
 /* manipulate fields of type_method */
 const char  *get_method_name  (type_method *method);
-ident *get_method_ident (type_method *method);
+ident       *get_method_ident (type_method *method);
 /*
 void   set_method_name  (type_method *method, char *name);
 void   set_method_ident (type_method *method, ident* ident); */
 
 inline int   get_method_arity (type_method *method);
-inline void  set_method_arity (type_method *method, int arity);
+/*inline void  set_method_arity (type_method *method, int arity);*/
 inline type *get_method_param_type(type_method *method, int pos);
 inline void  set_method_param_type(type_method *method, int pos, type* type);
 
 inline int   get_method_n_res (type_method *method);
-inline void  set_method_n_res (type_method *method, int n_res);
+/*inline void  set_method_n_res (type_method *method, int n_res);*/
 inline type *get_method_res_type(type_method *method, int pos);
 inline void  set_method_res_type(type_method *method, int pos, type* type);
 
@@ -338,7 +338,7 @@ type_union *new_type_union (ident *name, int n_types);
 
 /* manipulate fields of type_union */
 const char  *get_union_name  (type_union *uni);
-ident *get_union_ident (type_union *uni);
+ident       *get_union_ident (type_union *uni);
 /*
 void   set_union_name  (type_union *union, char *name);
 void   set_union_ident (type_union *union, ident* ident);
@@ -370,7 +370,7 @@ type_array *new_type_array (ident *name, int n_dimensions);
 
 /* manipulate fields of type_array */
 const char  *get_array_name  (type_array *array);
-ident *get_array_ident (type_array *array);
+ident       *get_array_ident (type_array *array);
 /*
 void   set_array_name  (type_array *array, char *name);
 void   set_array_ident (type_array *array, ident* ident);
@@ -412,7 +412,7 @@ type_enumeration *new_type_enumeration (ident *name /* , int n_enums */);
 
 /* manipulate fields of type_enumeration */
 const char  *get_enumeration_name  (type_enumeration *enumeration);
-ident *get_enumeration_ident (type_enumeration *enumeration);
+ident       *get_enumeration_ident (type_enumeration *enumeration);
 /*
 void   set_enumeration_name  (type_enumeration *enumeration, char *name);
 void   set_enumeration_ident (type_enumeration *enumeration, ident* ident);
