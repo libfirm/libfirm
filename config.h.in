@@ -1,4 +1,3 @@
-/* config.h.in.  Generated from configure.in by autoheader.  */
 /*
  * Project:     libFIRM
  * File name:   acconfig.h
@@ -11,15 +10,6 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
-/* define to 1 to enable debugging stuff. */
-#undef DEBUG_libfirm
-
-/* Define to disable assertion checking.  */
-#undef NDEBUG
-
-/* undef to disable inlining */
-#undef USE_INLINING
-
 /* Define to 1 if you have the <alloca.h> header file. */
 #undef HAVE_ALLOCA_H
 
@@ -28,10 +18,6 @@
 
 /* Define to 1 if you have the <jni.h> header file. */
 #undef HAVE_JNI_H
-
-/* Define to 1 if long double works and has more range or precision than
-   double. */
-#undef HAVE_LONG_DOUBLE
 
 /* Define to 1 if you have the <math.h> header file. */
 #undef HAVE_MATH_H
@@ -81,12 +67,15 @@
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
+/* ---------------snip, snip ---------------------- */
+
 /* Define to 1 if your processor stores words with the most significant byte
    first (like Motorola and SPARC, unlike Intel and VAX). */
 #undef WORDS_BIGENDIAN
 
-/* Define to 1 if Firm statistics are activated */
-#undef FIRM_STATISTICS
+/* Define to 1 if long double works and has more range or precision than
+   double. */
+#undef HAVE_LONG_DOUBLE
 
 /* Define to 1 for heap analysis support */
 #undef DO_HEAPANALYSIS
@@ -99,6 +88,18 @@
 
 /* Define the right const token */
 #undef const
+
+/* define to 1 to enable debugging stuff. */
+#undef DEBUG_libfirm
+
+/* Define to disable assertion checking.  */
+#undef NDEBUG
+
+/* undef to disable inlining */
+#undef USE_INLINING
+
+/* Define to 1 if Firm statistics are activated */
+#undef FIRM_STATISTICS
 
 #ifdef USE_INLINING
 #define INLINE inline
