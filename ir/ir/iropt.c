@@ -1493,8 +1493,11 @@ ir_node_hash (ir_node *node)
 
   if (node->op == op_Const) {
     /* special value for const, as they only differ in their tarval. */
-    /* @@@ What about SymConst? */
     h = ((unsigned) node->attr.con.tv)>>3 ;
+    h = 9*h + (unsigned)get_irn_mode(node);
+  } else if (node->op == op_SymConst) {
+    /* special value for const, as they only differ in their symbol. */
+    h = ((unsigned) node->attr.i.sym.type_p)>>3 ;
     h = 9*h + (unsigned)get_irn_mode(node);
   } else {
 
