@@ -1366,7 +1366,7 @@ mature_block (ir_node *block)
        these, too. **/
     for (n = block->link;  n;  n=next) {
       inc_irg_visited(current_ir_graph);
-e      next = n->link;
+      next = n->link;
       exchange (n, phi_merge (block, n->attr.phi0_pos, n->mode, nin, ins));
     }
 

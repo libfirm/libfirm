@@ -931,7 +931,8 @@ dump_ir_block (ir_node *block, void *env) {
 #else
     xfprintf (F, "%I", block->op->name);
 #endif
-    xfprintf(F, "\" status:clustered color:lightyellow \n");
+    xfprintf(F, "\" status:clustered color:%s \n",
+			 get_Block_matured (block) ? "yellow" : "red");
     /* dump the blocks edges */
     dump_ir_data_edges(block);
 
