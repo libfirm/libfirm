@@ -26,10 +26,10 @@ struct ir_prog {
   ir_graph *main_irg;              /* entry point to the compiled program */
                   /* or a list, in case we compile a library or the like? */
   ir_graph **graphs;               /* all graphs in the ir */
-  type **types;                    /* all types in the ir */
   type_class *glob_type;           /* global type.  Class as it can have
 				      fields and procedures.  Does this work?
 				      Better name??? @@@ */
+  type **types;                    /* all types in the ir */
   /*struct obstack *obst;	    * @@@ Should we place all types and
                                       entities on an obstack, too? */
 #ifdef DEBUG_libfirm
@@ -58,10 +58,13 @@ void      set_irp_main_irg(ir_graph *main_irg);
 void      add_irp_irg(ir_graph *irg);
 int       get_irp_n_irgs();
 ir_graph *get_irp_irg(int pos);
-  /*     set_irp_irg()     und das gleiche fuer type */
+void      set_irp_irg(int pos, ir_graph *irg);
 
 /* Adds type to the list of types in irp. */
-void      add_irp_type(type *typ);
+void  add_irp_type(type *typ);
+int   get_irp_n_types();
+type *get_irp_type(int pos);
+void  set_irp_type(int pos, type *typ);
 
 /** Functions to access the fields of ir_prog **/
 type_class *get_glob_type(void);

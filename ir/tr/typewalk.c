@@ -9,11 +9,12 @@
 ** - execute the post function after recursion
 */
 
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "irgwalk.h"
 #include "irgraph.h"
 #include "irnode.h"
+#include "irprog.h"
 #include "type_or_entity.h"
 
 /* Make types visible to allow most efficient access */
@@ -27,8 +28,9 @@ typedef struct type_walk_env {
 
 
 void type_walk_2(type_or_ent *tore,
-	      void (pre)(type_or_ent*, void*), void (post)(type_or_ent*, void*),
-	    void *env)
+	       void (pre)(type_or_ent*, void*),
+	       void (post)(type_or_ent*, void*),
+	       void *env)
 {
   int i, visited = 0;
 
@@ -92,6 +94,7 @@ void type_walk_2(type_or_ent *tore,
       break;
     case k_type_union:
       ((type_union *)tore)->visit = type_visited;
+      /* !!!!! */
       break;
     case k_type_array:
       ((type_array *)tore)->visit = type_visited;
@@ -155,9 +158,21 @@ void start_type_walk(ir_node *node, void *env) {
     }
 }
 
-void type_walk(ir_graph *irg,
-	      void (pre)(type_or_ent*, void*), void (post)(type_or_ent*, void*),
-	      void *env)
+void type_walk(void (pre)(type_or_ent*, void*),
+	       void (post)(type_or_ent*, void*),
+	       void *env) {
+  int i;
+  ++type_visited;
+  type_walk_2((type_or_ent *)get_glob_type(), pre, post, env);
+  for (i = 0; i < get_irp_n_types(); i++) {
+    type_walk_2((type_or_ent *)get_irp_type(i), pre, post, env);
+  }
+}
+
+void type_walk_irg (ir_graph *irg,
+		    void (pre)(type_or_ent*, void*),
+		    void (post)(type_or_ent*, void*),
+		    void *env)
 {
   /* this is needed to pass the parameters to the walker that actually
      walks the type information */

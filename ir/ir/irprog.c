@@ -72,11 +72,39 @@ ir_graph *get_irp_irg(int pos){
   return irp->graphs[pos+1];
 }
 
+void set_irp_irg(int pos, ir_graph *irg) {
+  assert (irp && irg);
+  assert (pos < (ARR_LEN((irp)->graphs) - 1));
+  /* Strangely the first element of the array is NULL.  Why??  */
+  irp->graphs[pos+1] = irg;
+}
+
 /* Adds type to the list of types in irp. */
 void add_irp_type(type *typ) {
   assert (typ != NULL);
   assert(irp);
   ARR_APP1 (type *, irp->types, typ);
+}
+
+int get_irp_n_types (void) {
+  assert (irp && irp->types);
+  /* Strangely the first element of the array is NULL.  Why??  */
+  return (ARR_LEN((irp)->types) - 1);
+}
+
+type *get_irp_type(int pos) {
+  assert (irp && irp->types);
+  /* Strangely the first element of the array is NULL.  Why??  */
+  return irp->types[pos+1];
+
+}
+
+void  set_irp_type(int pos, type *typ) {
+  assert (irp && typ);
+  assert (pos < (ARR_LEN((irp)->types) - 1));
+  /* Strangely the first element of the array is NULL.  Why??  */
+  irp->types[pos+1] = typ;
+
 }
 
 int get_irp_new_node_nr() {

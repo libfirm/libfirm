@@ -2,7 +2,7 @@ DIRS = adt common debug ident ir tr tv
 INCDIRS = -I../include
 
 LIBDIRS=-L.. -L/usr/public/lib/gmp/
-LIBS=-lfirm -lgmp -lm
+LIBS=-lfirm -lgmp
 
 %.o:	%.c
 	gcc -c $(INCDIRS) -g $<

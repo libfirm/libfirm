@@ -55,15 +55,6 @@ typedef struct ir_graph ir_graph;
 typedef struct entity entity;
 #endif
 
-/*CS*/
-//#ifndef _TYPE_TYPEDEF_
-//#define _TYPE_TYPEDEF_
-/* to resolve recursion between entity.h and irgraph.h */
-//typedef union type type;
-//#endif
-
-//typedef struct entity entity;
-
 /* create a new entity */
 entity   *new_entity (type *owner, ident *name, type *type);
 

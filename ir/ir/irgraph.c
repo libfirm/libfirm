@@ -221,6 +221,7 @@ set_irg_current_block (ir_graph *irg, ir_node *node)
 entity *
 get_irg_ent (ir_graph *irg)
 {
+  assert(irg && irg->ent);
   return irg->ent;
 }
 

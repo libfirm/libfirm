@@ -92,6 +92,8 @@ int main(int argc, char **argv)
   printf("Done building the graph.  Dumping it.\n");
   dump_ir_block_graph (irg);
 
+  dump_all_types();
+
   printf("use xvcg to view this graph:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
 

@@ -497,15 +497,13 @@ void vcg_open (ir_graph *irg, char *suffix) {
   int len;
 
   /** open file for vcg graph */
-  id    = get_entity_ld_name (irg->ent);
-
+  id    = get_entity_ld_name (get_irg_ent(irg));
   len   = id_to_strlen (id);
   cp    = id_to_str (id);
   fname = malloc (len + 5 + strlen(suffix));
   strcpy (fname, cp);      /* copy the filename */
   strcat (fname, suffix);  /* append file suffix */
   strcat (fname, ".vcg");  /* append the .vcg suffix */
-
   F = fopen (fname, "w");  /* open file for writing */
   if (!F) {
     panic ("cannot open %s for writing (%m)", fname);  /* not reached */
@@ -521,6 +519,34 @@ void vcg_open (ir_graph *irg, char *suffix) {
 	    "orientation: bottom_to_top\n"
 	    "classname 1: \"Data\"\n"
 	    "classname 2: \"Block\"\n", cp);
+
+  xfprintf (F, "\n");		/* a separator */
+}
+
+void vcg_open_name (const char *name) {
+  char *fname;  /* filename to put the vcg information in */
+  int len;
+
+  /** open file for vcg graph */
+  len   = strlen(name);
+  fname = malloc (len + 5);
+  strcpy (fname, name);    /* copy the filename */
+  strcat (fname, ".vcg");  /* append the .vcg suffix */
+  F = fopen (fname, "w");  /* open file for writing */
+  if (!F) {
+    panic ("cannot open %s for writing (%m)", fname);  /* not reached */
+  }
+
+  /* print header */
+  xfprintf (F,
+	    "graph: { title: \"ir graph of %s\"\n"
+	    "display_edge_labels: yes\n"
+	    "layoutalgorithm: mindepth\n"
+	    "manhattan_edges: yes\n"
+	    "port_sharing: no\n"
+	    "orientation: bottom_to_top\n"
+	    "classname 1: \"Data\"\n"
+	    "classname 2: \"Block\"\n", name);
 
   xfprintf (F, "\n");		/* a separator */
 }
@@ -651,7 +677,8 @@ dump_cfg (ir_graph *irg)
 
 
 /***********************************************************************/
-/* the following routine dumps all type information                    */
+/* the following routine dumps all type information reachable from an  */
+/* irg                                                                 */
 /***********************************************************************/
 
 
@@ -665,12 +692,24 @@ dump_type_graph (ir_graph *irg)
   vcg_open (irg, "-type");
 
   /* walk over the blocks in the graph */
-  type_walk(irg, dump_type_info, NULL, NULL);
+  type_walk_irg(irg, dump_type_info, NULL, NULL);
 
   vcg_close();
   current_ir_graph = rem;
 }
 
+/***********************************************************************/
+/* the following routine dumps all type information                    */
+/***********************************************************************/
+
+
+void
+dump_all_types (void)
+{
+  vcg_open_name ("All_types");
+  type_walk(dump_type_info, NULL, NULL);
+  vcg_close();
+}
 
 /***********************************************************************/
 /* dumps a graph with type information                                 */
@@ -690,7 +729,7 @@ dump_ir_graph_w_types (ir_graph *irg)
   /*  irg_block_walk(irg->end, dump_ir_block, NULL, irg); */
   irg_walk(irg->end, dump_whole_node, NULL, NULL);
   /* dump type info */
-  type_walk(irg, dump_type_info, NULL, NULL);
+  type_walk_irg(irg, dump_type_info, NULL, NULL);
   /* dump edges from graph to type info */
   irg_walk(irg->end, dump_node2type_edges, NULL, NULL);
 

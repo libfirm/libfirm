@@ -1,3 +1,16 @@
+  6.9.00 Goetz
+  Added irdump routine dump_all_types.
+  Did changes to irprog, type, typewalk to achieve this.
+  typewalk needs to walk along members, sub and supertypes, this
+  is still missing!  irdump then needs to output these edges.
+
+======================================================================
+==================== New version: 0.2.5 ==============================
+======================================================================
+
+  3.9.00 Goetz
+  Made new Version: 0.2.5
+
   15.8.2000 Goetz until 3.9.00
   Separated irnode.h and many others into two files: one public
   one private.

@@ -11,6 +11,7 @@
 # include "irprog.h"  /* So that constructors can add the type to global
 			 data structure. */
 # include "array.h"
+# include "ident_t.h"
 
 unsigned long type_visited = 0;
 
@@ -36,9 +37,6 @@ new_type_class (ident *name)//, int members)
   res->members = NEW_ARR_F (entity *, 1);
   res->subtypes = NEW_ARR_F (type_class *, 1);
   res->supertypes = NEW_ARR_F (type_class *, 1);
-  // res->n_members = 0;
-  // res->max_members = members;
-  // res->member = (entity **) xmalloc (sizeof (entity*) * members);
 
   res->visit = 0;
 
@@ -138,23 +136,20 @@ new_type_strct (ident *name)//, int members)
   res->kind = k_type_strct;
   res->name = name;
 
-  // res->n_members = 0;
-  // res->max_members = members;
-  // res->member = (entity **) xmalloc (sizeof (entity*) * members);
-
+  res->members = NEW_ARR_F (entity *, 1);
   res->visit = 0;
 
   return res;
 }
 
 /* manipulate fields of type_strct */
-/*
-char  *
+
+const char *
 get_strct_name  (type_strct *strct) {
   assert(strct);
   return ID_TO_STR(strct->name);
 }
-*/
+
 
 ident *
 get_strct_ident (type_strct *strct) {
@@ -193,13 +188,11 @@ new_type_method (ident *name, int arity, int n_res)
 }
 
 /* manipulate fields of type_method */
-/*
-char *
+const char *
 get_method_name  (type_method *method) {
   assert(method);
   return ID_TO_STR(method->name);
 }
-*/
 
 ident *
 get_method_ident (type_method *method) {

@@ -248,13 +248,19 @@ type_class *get_class_supertype (type_class *class, int pos);
 void set_class_supertype (type_class *class, type_class *supertype, int pos);
 
 
-/*  get_class_entity_arr
+/*
     get_class_n_entities
     get_class_entity(class, pos)
     set_class_entity(class, pos, entity)
-    get_class_sub_arr
+    get_class_n_sub
     ...
-    get_class_super_arr
+
+
+    Bitte implementieren, und dann in walker (Suche nach !!!! )
+    einfuegen.
+    Genauso Struct!!
+
+    Dann ev. noch in irdump Ausgabe der Kanten eingeben.
 */
 
 /*******************************************************************/
@@ -264,10 +270,7 @@ void set_class_supertype (type_class *class, type_class *supertype, int pos);
 typedef struct {
   firm_kind kind;
   ident *name;
-  /** needs list with it's entities -- does it really??
-      Entities can be added during their creation.
-  int n_members;
-  entity **member; **/
+  entity **members;
   unsigned long visit;     /* visited counter for walks of the type information */
 } type_strct;
 
@@ -276,7 +279,7 @@ typedef struct {
 type_strct *new_type_strct (ident *name);
 
 /* manipulate fields of type_strct */
-char  *get_strct_name  (type_strct *strct);
+const char  *get_strct_name  (type_strct *strct);
 ident *get_strct_ident (type_strct *strct);
 /*
 void   set_strct_name  (type_strct *strct, char *name);
@@ -303,11 +306,12 @@ typedef struct {
   unsigned long visit; /* visited counter for walks of the type information */
 } type_method;
 
-/* create a new type_method */
+/* create a new type_method
+   arity is number of parameters. */
 type_method *new_type_method (ident *name, int arity, int n_res);
 
 /* manipulate fields of type_method */
-char  *get_method_name  (type_method *method);
+const char  *get_method_name  (type_method *method);
 ident *get_method_ident (type_method *method);
 /*
 void   set_method_name  (type_method *method, char *name);
@@ -340,7 +344,7 @@ typedef struct {
 type_union *new_type_union (ident *name, int n_types);
 
 /* manipulate fields of type_union */
-char  *get_union_name  (type_union *uni);
+const char  *get_union_name  (type_union *uni);
 ident *get_union_ident (type_union *uni);
 /*
 void   set_union_name  (type_union *union, char *name);
@@ -372,7 +376,7 @@ typedef struct {
 type_array *new_type_array (ident *name, int n_dimensions);
 
 /* manipulate fields of type_array */
-char  *get_array_name  (type_array *array);
+const char  *get_array_name  (type_array *array);
 ident *get_array_ident (type_array *array);
 /*
 void   set_array_name  (type_array *array, char *name);
@@ -414,7 +418,7 @@ typedef struct {
 type_enumeration *new_type_enumeration (ident *name /* , int n_enums */);
 
 /* manipulate fields of type_enumeration */
-char  *get_enumeration_name  (type_enumeration *enumeration);
+const char  *get_enumeration_name  (type_enumeration *enumeration);
 ident *get_enumeration_ident (type_enumeration *enumeration);
 /*
 void   set_enumeration_name  (type_enumeration *enumeration, char *name);
@@ -447,7 +451,7 @@ typedef struct {
 type_pointer *new_type_pointer (ident *name, type *points_to);
 
 /* manipulate fields of type_pointer */
-char  *get_pointer_name  (type_pointer *pointer);
+const char  *get_pointer_name  (type_pointer *pointer);
 ident *get_pointer_ident (type_pointer *pointer);
 /*
 void   set_pointer_name  (type_pointer *pointer, char *name);
@@ -474,7 +478,7 @@ typedef struct {
 type_primitive *new_type_primitive (ident *name, ir_mode *mode);
 
 /* manipulate fields of type_primitive */
-char  *get_primitive_name  (type_primitive *primitive);
+const char  *get_primitive_name  (type_primitive *primitive);
 ident *get_primitive_ident (type_primitive *primitive);
 /*
 void   set_primitive_name  (type_primitive *primitive, char *name);
