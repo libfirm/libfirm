@@ -12,8 +12,7 @@
 #ifndef _FOURCC_H
 #define _FOURCC_H
 
-
-/* define an always readable fourcc code */
+/** define a readable fourcc code */
 #define FOURCC(a,b,c,d)         ((a) | ((b) << 8) | ((c) << 16) | ((d) << 24))
 
 #endif /* _FOURCC_H */
