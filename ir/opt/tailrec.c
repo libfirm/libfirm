@@ -189,6 +189,8 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
     in[i] = get_Call_mem(calls);
     ++i;
   }
+  assert(i == n_tail_calls + 1);
+
   phis[0] = new_rd_Phi(NULL, irg, block, n_tail_calls + 1, in, mode_M);
 
   /* build the data phi's */
@@ -274,6 +276,9 @@ void opt_tail_rec_irg(ir_graph *irg)
     call_ptr = get_Call_ptr(call);
 
     if (get_irn_op(call_ptr) != op_SymConst)
+      continue;
+
+    if (get_SymConst_kind(call_ptr) != symconst_addr_ent)
       continue;
 
     ent = get_SymConst_entity(call_ptr);
