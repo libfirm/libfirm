@@ -43,6 +43,11 @@ struct ir_loop {
   struct obset **oval;
   struct loop_node *link;
   */
+#ifdef DEBUG_libfirm
+  int loop_nr;             /**< a unique node number for each loop node to make output
+			      readable. */
+#endif
+
 };
 
 static INLINE void

@@ -101,6 +101,15 @@ int      get_loop_n_elements (ir_loop *loop);
     kind pointer, an ir_node* or an ir_loop*. */
 loop_element get_loop_element (ir_loop *loop, int pos);
 
+/** Returns the element number of the loop son in loop.
+ *  Returns -1 if not found. O(#elements). */
+int get_loop_element_pos(ir_loop *loop, void *le);
+
+/** Returns a unique node number for the loop node to make output
+    readable. */
+int get_loop_loop_nr(ir_loop *loop);
+
+
 /*
  * Constructing and destructing the loop/backedge information.
  */

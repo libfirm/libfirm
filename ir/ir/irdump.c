@@ -93,7 +93,7 @@ SeqNo get_Block_seqno(ir_node *n);
 #define PRINT_ENTID(X)  fprintf(F, "e%ld", get_entity_nr(X))
 #define PRINT_IRGID(X)  fprintf(F, "g%ld", get_irg_graph_nr(X))
 #define PRINT_CONSTID(X,Y) fprintf(F, "\"n%ldn%ld\"", get_irn_node_nr(X),get_irn_node_nr(Y))
-#define PRINT_LOOPID(X) fprintf(F, "l%p", (void *)X)
+#define PRINT_LOOPID(X) fprintf(F, "l%d", get_loop_loop_nr(X))
 
 #else
 #define PRINT_NODEID(X) fprintf(F, "n%p", (void*) X)
@@ -1367,7 +1367,7 @@ dump_loop_son_edge (ir_loop *loop, int i) {
   fprintf (F, "\" targetname: \"");
   PRINT_LOOPID(get_loop_son(loop, i));
   fprintf (F, "\" color: darkgreen label: \"%d\"}\n",
-	   get_loop_element_nr(loop, get_loop_son(loop, i)));
+	   get_loop_element_pos(loop, get_loop_son(loop, i)));
 }
 
 static
@@ -1808,11 +1808,11 @@ void dump_loops_standalone (ir_loop *loop) {
 
 	  if(loop_node_started) /* Close the "firm-nodes" node first if we started one. */
 	    {
-	      fprintf(F, "\" }");
+	      fprintf(F, "\" }\n");
 	      loop_node_started = 0;
 	    }
-	  dump_loops_standalone(son);
 	  dump_loop_son_edge(loop, son_number++);
+	  dump_loops_standalone(son);
 	}
       else
 	{
@@ -1823,20 +1823,19 @@ void dump_loops_standalone (ir_loop *loop) {
 	  if (!loop_node_started)
 	    {
 	      /* Start a new node which contains all firm nodes of the current loop */
-
 	      fprintf (F, "edge: {sourcename: \"");
 	      PRINT_LOOPID(loop);
 	      fprintf (F, "\" targetname: \"");
 	      PRINT_LOOPID(loop);
-	      fprintf (F, "-%d-nodes\" label:\"%d ...\"}\n", chunk_nr, i);
+	      fprintf (F, "-%d-nodes\" label:\"%d ...\"}\n", i, i);
 
 	      fprintf (F, "node: { title: \"");
 	      PRINT_LOOPID(loop);
-	      fprintf (F, "-%d-nodes\" color: lightyellow label: \"", chunk_nr++);
+	      fprintf (F, "-%d-nodes\" color: lightyellow label: \n        \"", i);
 	      loop_node_started = 1;
 	    }
 	  else
-	    fprintf(F, "\n");
+	    fprintf(F, "\n         ");
 
 	  dump_node_opcode(n);
 	  dump_node_mode (n);
@@ -1849,7 +1848,7 @@ void dump_loops_standalone (ir_loop *loop) {
 
   if(loop_node_started)
     {
-      fprintf(F, "\" }");
+      fprintf(F, "\" }\n");
       loop_node_started = 0;
     }
 }

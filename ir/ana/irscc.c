@@ -3,6 +3,8 @@
  * File name:   ir/ana/irscc.c
  * Purpose:     Compute the strongly connected regions and build
  *              backedge/loop datastructures.
+ *              A variation on the Tarjan algorithm. See also [Trapp:99],
+ *              Chapter 5.2.1.2.
  * Author:      Goetz Lindenmaier
  * Modified by:
  * Created:     7.2002
@@ -23,7 +25,7 @@
 #include "array.h"
 #include "pmap.h"
 #include "irgwalk.h"
-#include "irprog.h"
+#include "irprog_t.h"
 
 ir_graph *outermost_ir_graph;      /* The outermost graph the scc is computed
 				      for */
@@ -295,6 +297,10 @@ static ir_loop *new_loop (void) {
     son->depth = 0;
   }
 
+#ifdef DEBUG_libfirm
+  son->loop_nr = get_irp_new_node_nr();
+#endif
+
   current_loop = son;
   return father;
 }
@@ -418,6 +424,24 @@ loop_element get_loop_element (ir_loop *loop, int pos) {
   assert(loop && loop->kind == k_ir_loop && pos < ARR_LEN(loop->children));
 
   return(loop -> children[pos]);
+}
+
+int get_loop_element_pos(ir_loop *loop, void *le) {
+  assert(loop && loop->kind == k_ir_loop);
+  int i;
+
+  for (i = 0; i < get_loop_n_elements(loop); i++)
+    if (get_loop_element(loop, i).node == le) return i;
+  return -1;
+}
+
+int get_loop_loop_nr(ir_loop *loop) {
+  assert(loop && loop->kind == k_ir_loop);
+#ifdef DEBUG_libfirm
+  return loop->loop_nr;
+#else
+  return (int)loop;
+#endif
 }
 
 /* The outermost loop is remarked in the surrounding graph. */
