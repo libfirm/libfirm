@@ -568,7 +568,7 @@ static void callee_ana(void) {
     irg_walk_graph(get_irp_irg(i), callee_walker, remove_Tuples, NULL);
     set_irg_callee_info_state(get_irp_irg(i), irg_callee_info_consistent);
   }
-  set_irp_callee_info_state(irg_callee_info_consistent);
+  //set_irp_callee_info_state(irg_callee_info_consistent);
 }
 
 

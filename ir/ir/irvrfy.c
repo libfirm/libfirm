@@ -668,14 +668,13 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       break;
 
   case iro_Const: {
-      tarval *tv = get_Const_tarval(n);
-	  ASSERT_AND_RET(
-			 /* Const: BB --> data */
-			 (mode_is_data (mymode) ||
-			  mymode == mode_b)      /* we want boolean constants for static evaluation */
-			 ,"Const node", 0        /* of Cmp. */
-			 );
-     } break;
+    ASSERT_AND_RET(
+		   /* Const: BB --> data */
+		   (mode_is_data (mymode) ||
+		    mymode == mode_b)      /* we want boolean constants for static evaluation */
+		   ,"Const node", 0        /* of Cmp. */
+		   );
+    } break;
 
     case iro_SymConst:
       if (get_SymConst_kind(n) == symconst_addr_ent) {

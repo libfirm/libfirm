@@ -24,7 +24,6 @@
 #include "irgraph_t.h"
 #include "ircons.h"
 #include "irflag.h"
-#include "tv.h"
 #include "firmstat.h"
 
 /**
@@ -253,7 +252,6 @@ void opt_tail_rec_irg(ir_graph *irg)
   for (i = 0; i < n_preds; ++i) {
     ir_node *ret = get_Block_cfgpred(end_block, i);
     ir_node *proj_m, *call, *call_ptr;
-    tarval *tv;
     entity *ent;
     int j, n_ress;
     ir_node **ress;
