@@ -33,7 +33,11 @@ print TDF "#ifndef MYTYPEDEFS\n#define MYTYPEDEFS\n";
 print TDF "typedef unsigned long size_t;\n";
 #print TDF "typedef enum { false = 0, true = 1 } bool;\n";  geht nicht, false und true JAVA Schluesselwoerter
 print TDF "typedef int bool;\n";
-print TDF "#endif\n";
+# Some typedefs we need because of wrond order resultion by this script
+print TDF "#ifndef _ENTITY_TYPEDEF_\n#define _ENTITY_TYPEDEF_\ntypedef struct entity entity;\n#endif\n";
+# Some typedefs we need because we do not include the according header files
+print TDF "typedef struct dbg_info dbg_info;\n";
+print TDF "#endif /* MYTYPEDEFS */ \n";
 
 #to collect typedefs
 $openbracket = 0;
