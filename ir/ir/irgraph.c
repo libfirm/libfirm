@@ -418,7 +418,7 @@ set_irg_n_loc (ir_graph *irg, int n_loc)
 
 
 /* Returns the obstack associated with the graph. */
-struct obstack get_irg_obstack(ir_graph *irg) {
+struct obstack *get_irg_obstack(ir_graph *irg) {
   return irg->obst;
 }
 

@@ -88,6 +88,6 @@ INLINE void
 set_irg_pinned (ir_graph *irg, op_pinned p);
 
 /** Returns the obstack associated with the graph. */
-struct obstack get_irg_obstack(ir_graph *irg);
+struct obstack *get_irg_obstack(ir_graph *irg);
 
 # endif /* _IRGRAPH_T_H_ */
