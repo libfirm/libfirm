@@ -52,14 +52,16 @@ extern char *dump_file_suffix;
  *     A file containing the firm graph in vcg format.
  *
  *  Dumps all Firm nodes of a single graph for a single procedure in
- *  standard xvcg format.
- *  Dumps the graph to a file.  The file name is constructed from the
- *  name of the entity describing the procedure (irg->entity) and the
- *  ending .vcg.  Eventually overwrites existing files.
+ *  standard xvcg format.  Dumps the graph to a file.  The file name
+ *  is constructed from the name of the entity describing the
+ *  procedure (irg->entity) and the ending -pure<-ip>.vcg.  Eventually
+ *  overwrites existing files.  Visits all nodes in
+ *  interprocedural_view.
  *
  * @see turn_off_edge_labels()
  */
 void dump_ir_graph (ir_graph *irg);
+#define dump_cg_graph dump_ir_graph
 
 /**
  *  Dump a firm graph without explicit block nodes.
@@ -73,11 +75,80 @@ void dump_ir_graph (ir_graph *irg);
  *  extended xvcg format.
  *  Dumps the graph to a file.  The file name is constructed from the
  *  name of the entity describing the procedure (irg->entity) and the
- *  ending .vcg.  Eventually overwrites existing files.
+ *  ending <-ip>.vcg.  Eventually overwrites existing files.  Dumps several
+ *  procedures in boxes if interprocedural_view.
  *
  * @see turn_off_edge_labels()
  */
 void dump_ir_block_graph (ir_graph *irg);
+#define dump_cg_block_graph dump_ir_block_graph
+
+/** Dumps all graphs in interprocedural view to a file named All_graphs.vcg.
+ */
+void dump_all_cg_block_graph(void);
+
+/**
+ *  Dumps a firm graph and  all the type information needed for Calls,
+ *  Sels, ... in this graph.
+ *
+ *  @param irg   The firm graph to be dumped with its type information.
+ *
+ *  @return
+ *      A file containing the firm graph and the type information of the firm graph in vcg format.
+ *
+ *  Dumps the graph to a file.  The file name is constructed from the
+ *  name of the entity describing the procedure (irg->entity) and the
+ *  ending -all.vcg.  Eventually overwrites existing files.
+ *
+ * @see turn_off_edge_labels()
+ */
+void dump_ir_graph_w_types (ir_graph *irg);
+
+/**
+ *  Dumps a firm graph and  all the type information needed for Calls,
+ *  Sels, ... in this graph.
+ *
+ *  @param irg   The firm graph to be dumped with its type information.
+ *
+ *  @return
+ *      A file containing the firm graph and the type information of the firm graph in vcg format.
+ *
+ *  The graph is in blocked format.
+ *  Dumps the graph to a file.  The file name is constructed from the
+ *  name of the entity describing the procedure (irg->entity) and the
+ *  ending -all.vcg.  Eventually overwrites existing files.
+ *
+ * @see turn_off_edge_labels()
+ */
+void dump_ir_block_graph_w_types (ir_graph *irg);
+
+/**
+ *   The type of a walker function that is called for each graph.
+ *
+ *   @param irg   current visited graph
+ */
+typedef void dump_graph_func(ir_graph *irg);
+
+/**
+ *   A walker that calls a dumper for each graph.
+ *
+ *   @param dump_graph    The dumper to be used for dumping.
+ *
+ *   @return
+ *      Whatever the dumper creates.
+ *
+ *   Walks over all firm graphs and  calls a dumper for each graph.
+ *   The following dumpers can be passed as arguments:
+ *   - dump_ir_graph()
+ *   - dump_ir_block_graph()
+ *   - dump_cfg()
+ *   - dump_type_graph()
+ *   - dump_ir_graph_w_types()
+ *
+ * @see turn_off_edge_labels()
+ */
+void dump_all_ir_graphs (dump_graph_func *dump_graph);
+
 
 /**
  *   Dump the control flow graph of a procedure.
@@ -98,6 +169,7 @@ void dump_cfg (ir_graph *irg);
 
 /**
  *  Dumps all the type information needed for Calls, Sels, ... in this graph.
+ *  Does not dump the graph!
  *
  *  @param irg   The firm graph whose type information is to be dumped.
  *  @return
@@ -143,91 +215,6 @@ void dump_all_types (void);
  *   Dumps to a file class_hierarchy.vcg
  */
 void dump_class_hierarchy (bool entities);
-
-/**
- *  Dumps a firm graph and  all the type information needed for Calls,
- *  Sels, ... in this graph.
- *
- *  @param irg   The firm graph to be dumped with its type information.
- *
- *  @return
- *      A file containing the firm graph and the type information of the firm graph in vcg format.
- *
- *  Dumps the graph to a file.  The file name is constructed from the
- *  name of the entity describing the procedure (irg->entity) and the
- *  ending -all.vcg.  Eventually overwrites existing files.
- *
- * @see turn_off_edge_labels()
- */
-void dump_ir_graph_w_types (ir_graph *irg);
-
-/**
- *  Dumps a firm graph and  all the type information needed for Calls,
- *  Sels, ... in this graph.
- *
- *  @param irg   The firm graph to be dumped with its type information.
- *
- *  @return
- *      A file containing the firm graph and the type information of the firm graph in vcg format.
- *
- *  The graph is in blocked format.
- *  Dumps the graph to a file.  The file name is constructed from the
- *  name of the entity describing the procedure (irg->entity) and the
- *  ending -all.vcg.  Eventually overwrites existing files.
- *
- * @see turn_off_edge_labels()
- */
-void dump_ir_block_graph_w_types (ir_graph *irg);
-
-/**
- *  Dumps a interprocedural firm graph as dump_ir_graph.
- *
- *  @param irg   The firm graph to be dumped.
- *
- *  @return
- *      A file containing the firm graph in vcg format.
- */
-void dump_cg_graph(ir_graph * irg);
-
-/**
- *  Dumps a interprocedural firm graph as dump_ir_block_graph.
- *
- *  @param irg   The firm graph to be dumped.
- *
- *  @return
- *      A file containing the firm graph in vcg format.
- */
-void dump_cg_block_graph(ir_graph * irg);
-
-
-void dump_all_cg_block_graph(void);
-
-/**
- *   The type of a walker function that is called for each graph.
- *
- *   @param irg   current visited graph
- */
-typedef void dump_graph_func(ir_graph *irg);
-
-/**
- *   A walker that calls a dumper for each graph.
- *
- *   @param dump_graph    The dumper to be used for dumping.
- *
- *   @return
- *      Whatever the dumper creates.
- *
- *   Walks over all firm graphs and  calls a dumper for each graph.
- *   The following dumpers can be passed as arguments:
- *   - dump_ir_graph()
- *   - dump_ir_block_graph()
- *   - dump_cfg()
- *   - dump_type_graph()
- *   - dump_ir_graph_w_types()
- *
- * @see turn_off_edge_labels()
- */
-void dump_all_ir_graphs (dump_graph_func *dump_graph);
 
 /**
  *   Sets the vcg flag "display_edge_labels" to no.
