@@ -104,7 +104,8 @@ static void collect_irgs(ir_node * node, eset * irg_set) {
   }
 }
 
-void irg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
+static void
+irg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
 {
   int i;
   assert(node);
@@ -197,7 +198,8 @@ switch_irg (ir_node *n, int index) {
   return old_current;
 }
 
-void cg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
+static void
+cg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
 {
   int i;
   ir_graph *rem = NULL;
@@ -255,7 +257,7 @@ void cg_walk(irg_walk_func *pre, irg_walk_func *post, void *env) {
 /***************************************************************************/
 
 /* Walks back from n until it finds a real cf op. */
-ir_node *get_cf_op(ir_node *n) {
+static ir_node *get_cf_op(ir_node *n) {
   ir_node *pred;
 
   n = skip_nop(n);
@@ -268,7 +270,7 @@ ir_node *get_cf_op(ir_node *n) {
   return skip_Proj(n);
 }
 
-void irg_block_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
+static void irg_block_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
 {
   int i;
   assert(get_irn_opcode(node) == iro_Block);
@@ -340,7 +342,7 @@ typedef struct walk_env {
 } walk_env;
 
 /* Walk to all constant expressions in this entity. */
-void walk_entity(entity *ent, void *env) {
+static void walk_entity(entity *ent, void *env) {
   walk_env *my_env = (walk_env *)env;
   if (get_entity_variability(ent) != uninitialized) {
     if (is_atomic_entity(ent)) {
