@@ -45,11 +45,11 @@
 *  - type *type:     The type of this entity, e.g., a method type, a
 *                    basic type of the language or a class itself.
 *  - type *owner:    The class this entity belongs to.  In case of local
-* 	             variables the method they are defined in.
+*                variables the method they are defined in.
 *  - int offset:     Offset in byte for this entity.  Fixed when layout
-* 	             of owner is determined.
+*                of owner is determined.
 *  - ir_graph *irg:  If (type == method_type) this is the corresponding irg.
-* 	             The ir_graph constructor automatically sets this field.
+*                The ir_graph constructor automatically sets this field.
 *                    If (type != method_type) access of this field will cause
 *                    an assertion.
 */
@@ -213,13 +213,13 @@ void      set_entity_type (entity *ent, type *tp);
 /** The allocation type. */
 typedef enum {
   allocation_automatic, /**< The entity is allocated during runtime, implicitly
-		  	     as component of a compound type.   This is the default. */
+                 as component of a compound type.   This is the default. */
   allocation_parameter, /**< The entity is a parameter.  It is also automatic allocated.
-			     We distinguish the allocation of paramters from the allocation
-			     of local variables as their placement depends on the calling
-			     conventions. */
+                 We distinguish the allocation of paramters from the allocation
+                 of local variables as their placement depends on the calling
+                 conventions. */
   allocation_dynamic,   /**< The entity is allocated during runtime, explicitly
-			     by an Alloc node. */
+                 by an Alloc node. */
   allocation_static     /**< The entity is allocated statically.  We can use a
                              Const as address of the entity. */
 } ent_allocation;
@@ -240,12 +240,12 @@ const char *get_allocation_name(ent_allocation vis);
 typedef enum {
   visibility_local,              /**< The entity is only visible locally.  This is the default. */
   visibility_external_visible,   /**< The entity is visible to other external program parts, but
-			              it is defined here.  It may not be optimized away.  The entity must
-		                      be static_allocated. */
-  visibility_external_allocated  /**< The entity is defined and allocated externally.  This compilation
-			              must not allocate memory for this entity. The entity must
-		                      be static_allocated.  This can also be an external defined
-			              method. */
+                          it is defined here.  It may not be optimized away.  The entity must
+                              be static_allocated. */
+  visibility_external_allocated,  /**< The entity is defined and allocated externally.  This compilation
+                          must not allocate memory for this entity. The entity must
+                              be static_allocated.  This can also be an external defined
+                          method. */
 } ent_visibility;
 
 /** Returns the visibility of an entity. */
@@ -261,10 +261,10 @@ const char *get_visibility_name(ent_visibility vis);
 typedef enum {
   variability_uninitialized,    /**< The content of the entity is completely unknown. */
   variability_initialized,      /**< After allocation the entity is initalized with the
-		                     value given somewhere in the entity. */
+                             value given somewhere in the entity. */
   variability_part_constant,    /**< For entities of compound types.  Some members of the entity
-		                     are constant.  The others are uninitialized.  Those members
-		                     given a value for are constant. */
+                             are constant.  The others are uninitialized.  Those members
+                             given a value for are constant. */
   variability_constant          /**< The entity is constant. */
 } ent_variability;
 
@@ -291,6 +291,21 @@ void           set_entity_volatility (entity *ent, ent_volatility vol);
 
 /* Return the name of the volatility. */
 const char *get_volatility_name(ent_volatility var);
+
+/** This enumeration flags the stickyness of an entity. */
+typedef enum {
+  stickyness_unsticky,          /**< The entity can be removed from
+                                   the program, unles contraindicated
+                                   by other attributes */
+  stickyness_sticky             /**< The entity must remain in the
+                                   program in any case */
+} ent_stickyness;
+
+/** Get the entity's stickyness */
+ent_stickyness get_entity_stickyness (entity *ent);
+
+/** Set the entity's stickyness */
+void set_entity_stickyness (entity *ent, ent_stickyness stickyness);
 
 /** Returns the offset of an entity (in a compound). Only set if layout = fixed. */
 int       get_entity_offset (entity *ent);

@@ -63,13 +63,14 @@ struct entity {
                            basic type of the language or a class itself */
   type *owner;          /**< The compound type (e.g. class type) this entity belongs to. */
   ent_allocation allocation;  /**< Distinguishes static and dynamically allocated
-				 entities and some further cases. */
+                 entities and some further cases. */
   ent_visibility visibility;  /**< Specifies visibility to external program
-				 fragments */
+                 fragments */
   ent_variability variability;  /**< Specifies variability of entities content */
   ent_volatility volatility;    /**< Specifies volatility of entities content */
+  ent_stickyness stickyness;    /**< Specifies whether this entity is sticky  */
   int  offset;          /**< Offset in byte for this entity.  Fixed when layout
-			   of owner is determined.  */
+               of owner is determined.  */
   void *link;           /**< To store some intermediate information */
   unsigned long visit;  /**< visited counter for walks of the type information */
   struct dbg_info* dbi;    /**< A pointer to information for debug support. */
@@ -92,11 +93,11 @@ struct entity {
   /* ------------- fields for methods ---------------*/
   enum peculiarity peculiarity;
   ir_graph *irg;        /**< If (type == method_type) this is the corresponding irg.
-			   The ir_graph constructor automatically sets this field.
-			   Yes, it must be here. */
+               The ir_graph constructor automatically sets this field.
+               Yes, it must be here. */
 #ifdef DEBUG_libfirm
   int nr;             /**< a unique node number for each node to make output
-			      readable. */
+                  readable. */
 #endif
 };
 
