@@ -15,12 +15,6 @@ old Nodes: 39, 36, 21,
 Optimization: 4
 new Nodes: 29,
 old Nodes: 44, 37,
-Optimization: 1
-new Nodes: 32,
-old Nodes: 59, 32,
-Optimization: 1
-new Nodes: 30,
-old Nodes: 62, 30,
 Done building the graph.  Optimizing it.
 Optimization: 4
 new Nodes: 29,
