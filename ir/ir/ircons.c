@@ -1144,7 +1144,7 @@ new_rd_Phi0 (ir_graph *irg, ir_node *block, ir_mode *mode)
 */
 #if USE_EXPLICIT_PHI_IN_STACK
 INLINE Phi_in_stack *
-new_Phi_in_stack() {
+new_Phi_in_stack(void) {
   Phi_in_stack *res;
 
   res = (Phi_in_stack *) malloc ( sizeof (Phi_in_stack));
