@@ -92,7 +92,7 @@
 <!ATTLIST	unknown		%firm.id;>
 
 <!-- join two or more values -->
-<!ELEMENT	join		(valref,valref)>
+<!ELEMENT	join		(valref,valref+)>
 <!ATTLIST	join		%firm.id;>
 
 <!-- raise an exception -->
@@ -105,6 +105,9 @@
 <!--
 
  $Log$
+ Revision 1.11  2004/11/02 14:30:56  liekweg
+ Re-allow multi-input join
+
  Revision 1.10  2004/10/29 18:52:32  liekweg
  Allow only two values for join
 
