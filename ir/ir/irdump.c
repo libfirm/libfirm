@@ -39,8 +39,7 @@
 # include "panic.h"
 # include "array.h"
 # include "pmap.h"
-
-# include "exc.h"
+# include "eset.h"
 
 //#define HEAPANAL
 #ifdef HEAPANAL
@@ -200,7 +199,7 @@ char *dump_file_suffix = "";
 static FILE *F;
 
 static void dump_whole_node(ir_node *n, void* env);
-static INLINE void dump_loop_info(ir_graph *irg);
+static INLINE void dump_loop_nodes_into_graph(ir_graph *irg);
 
 /*******************************************************************/
 /* Helper functions.                                                */
@@ -323,6 +322,8 @@ int dump_backedge_information_flag = 1;
 int dump_const_local = 0;
 bool opt_dump_analysed_type_info = 1;
 bool opt_dump_pointer_values_to_info = 0;  /* default off: for test compares!! */
+
+char* overrule_nodecolor = NULL;
 
 INLINE bool get_opt_dump_const_local(void) {
   if (!dump_out_edge_flag && !dump_loop_information_flag)
@@ -539,6 +540,8 @@ dump_node_vcgattr (ir_node *n)
   default:
     PRINT_DEFAULT_NODE_ATTR;
   }
+
+  if (overrule_nodecolor) fprintf(F, " color: %s", overrule_nodecolor);
 }
 
 static INLINE void
@@ -949,7 +952,7 @@ dump_block_graph (ir_graph *irg) {
     }
   }
 
-  if (dump_loop_information_flag) dump_loop_info(irg);
+  if (dump_loop_information_flag) dump_loop_nodes_into_graph(irg);
 
   current_ir_graph = rem;
 }
@@ -1349,6 +1352,30 @@ dump_out_edge (ir_node *n, void* env) {
 }
 
 static INLINE void
+dump_loop_label(ir_loop *loop) {
+  fprintf (F, "loop %d, %d sons, %d nodes",
+	   get_loop_depth(loop), get_loop_n_sons(loop), get_loop_n_nodes(loop));
+}
+
+static INLINE void dump_loop_info(ir_loop *loop) {
+  fprintf (F, " info1: \"");
+  fprintf (F, " loop nr: %d", get_loop_loop_nr(loop));
+  fprintf (F, "\"");
+}
+
+static INLINE void
+dump_loop_node(ir_loop *loop) {
+  fprintf (F, "node: {title: \"");
+  PRINT_LOOPID(loop);
+  fprintf (F, "\" label: \"");
+  dump_loop_label(loop);
+  fprintf (F, "\" ");
+  dump_loop_info(loop);
+  fprintf (F, "}\n");
+
+}
+
+static INLINE void
 dump_loop_node_edge (ir_loop *loop, int i) {
   assert(loop);
   fprintf (F, "edge: {sourcename: \"");
@@ -1374,10 +1401,8 @@ static
 void dump_loops (ir_loop *loop) {
   int i;
   /* dump this loop node */
-  fprintf (F, "node: {title: \"");
-  PRINT_LOOPID(loop);
-  fprintf (F, "\" label: \"loop %d, %d sons, %d nodes\" }\n",
-	   get_loop_depth(loop), get_loop_n_sons(loop), get_loop_n_nodes(loop));
+  dump_loop_node(loop);
+
   /* dump edges to nodes in loop -- only if it is a real loop */
   if (get_loop_depth(loop) != 0) {
     for (i = 0; i < get_loop_n_nodes(loop); i++) {
@@ -1391,7 +1416,7 @@ void dump_loops (ir_loop *loop) {
 }
 
 static INLINE
-void dump_loop_info(ir_graph *irg) {
+void dump_loop_nodes_into_graph(ir_graph *irg) {
   ir_graph *rem = current_ir_graph;
   current_ir_graph = irg;
 
@@ -1788,15 +1813,13 @@ void dump_all_ir_graphs (dump_graph_func *dmp_grph) {
 
 
 void dump_loops_standalone (ir_loop *loop) {
-  int i, loop_node_started = 0, son_number = 0, chunk_nr = 0;
+  int i, loop_node_started = 0, son_number = 0;
   loop_element le;
 
-  /* Start a new loop node */
-  fprintf (F, "node: {title: \"");
-  PRINT_LOOPID(loop);
-  fprintf (F, "\" color: yellow label: \"loop %d, %d sons, %d nodes\" }\n",
-	   get_loop_depth(loop), get_loop_n_sons(loop), get_loop_n_nodes(loop));
+  /* Dump a new loop node. */
+  dump_loop_node(loop);
 
+  /* Dump the loop elements. */
   for(i = 0; i < get_loop_n_elements(loop); i++)
     {
       le = get_loop_element(loop, i);
@@ -1831,11 +1854,11 @@ void dump_loops_standalone (ir_loop *loop) {
 
 	      fprintf (F, "node: { title: \"");
 	      PRINT_LOOPID(loop);
-	      fprintf (F, "-%d-nodes\" color: lightyellow label: \n        \"", i);
+	      fprintf (F, "-%d-nodes\" color: lightyellow label: \"", i);
 	      loop_node_started = 1;
 	    }
 	  else
-	    fprintf(F, "\n         ");
+	    fprintf(F, "\n");
 
 	  dump_node_opcode(n);
 	  dump_node_mode (n);
@@ -1870,4 +1893,143 @@ void dump_loop_tree(ir_graph *irg, char *suffix)
 
   edge_label = el_rem;
   current_ir_graph = rem;
+}
+
+
+/*******************************************************************************/
+/* Dumps the firm nodes in the loop tree to a graph along with the loop nodes. */
+/*******************************************************************************/
+
+void collect_nodeloop(ir_loop *loop, eset *loopnodes) {
+  int i, son_number = 0, node_number = 0;
+
+  if (dump_loop_information_flag) dump_loop_node(loop);
+
+  for (i = 0; i < get_loop_n_elements(loop); i++) {
+    loop_element le = get_loop_element(loop, i);
+    if (*(le.kind) == k_ir_loop) {
+      if (dump_loop_information_flag) dump_loop_son_edge(loop, son_number++);
+      /* Recur */
+      collect_nodeloop(le.son, loopnodes);
+    } else {
+      //if (!is_Block(le.node)) dump_ir_block_edge(le.node);
+      //dump_ir_data_edges(le.node);
+      //dump_node(le.node);
+      if (dump_loop_information_flag) dump_loop_node_edge(loop, node_number++);
+      /* collect all nodes into a set so we can dump the nodes edges selectively. */
+      eset_insert(loopnodes, le.node);
+    }
+  }
+}
+
+void collect_nodeloop_external_nodes(ir_loop *loop, eset *loopnodes, eset *extnodes) {
+  int i, j, start;
+
+  for(i = 0; i < get_loop_n_elements(loop); i++) {
+    loop_element le = get_loop_element(loop, i);
+    if (*(le.kind) == k_ir_loop) {
+      /* Recur */
+      collect_nodeloop_external_nodes(le.son, loopnodes, extnodes);
+    } else {
+      if (is_Block(le.node)) start = 0; else start = -1;
+      for (j = start; j < get_irn_arity(le.node); j++) {
+	ir_node *pred = get_irn_n(le.node, j);
+	if (!eset_contains(loopnodes, pred)) {
+	  eset_insert(extnodes, pred);
+	  if (!is_Block(pred)) {
+	    pred = get_nodes_block(pred);
+	    if (!eset_contains(loopnodes, pred)) eset_insert(extnodes, pred);
+          }
+	}
+      }
+    }
+  }
+}
+
+void dump_loop (ir_loop *l, char *suffix) {
+  char name[50];
+  eset *loopnodes = eset_create();
+  eset *extnodes = eset_create();
+  int dc_rem = dump_const_local;
+  ir_node *n, *b;
+  dump_const_local = 1;
+
+  sprintf(name, "loop_%d", get_loop_loop_nr(l));
+  vcg_open_name (name, suffix);
+  dump_vcg_header(name, NULL);
+
+  /* collect all nodes to dump */
+  collect_nodeloop(l, loopnodes);
+  collect_nodeloop_external_nodes(l, loopnodes, extnodes);
+
+  /* build block lists */
+  for (n = eset_first(loopnodes); n != NULL; n = eset_next(loopnodes))
+    set_irn_link(n, NULL);
+  for (n = eset_first(extnodes); n != NULL; n = eset_next(extnodes))
+    set_irn_link(n, NULL);
+  for (n = eset_first(loopnodes); n != NULL; n = eset_next(loopnodes))
+    if (!is_Block(n)) {
+      b = get_nodes_block(n);
+      set_irn_link(n, get_irn_link(b));
+      set_irn_link(b, n);
+    }
+  for (n = eset_first(extnodes); n != NULL; n = eset_next(extnodes))
+    if (!is_Block(n)) {
+      b = get_nodes_block(n);
+      set_irn_link(n, get_irn_link(b));
+      set_irn_link(b, n);
+    }
+
+  for (b = eset_first(loopnodes); b != NULL; b = eset_next(loopnodes))
+    if (is_Block(b)) {
+      fprintf(F, "graph: { title: \"");
+      PRINT_NODEID(b);
+      fprintf(F, "\"  label: \"");
+      dump_node_opcode(b);
+      fprintf (F, " %ld", get_irn_node_nr(b));
+      fprintf(F, "\" status:clustered color:yellow\n");
+
+      /* dump the blocks edges */
+      dump_ir_data_edges(b);
+
+      /* dump the nodes that go into the block */
+      for (n = get_irn_link(b); n; n = get_irn_link(n)) {
+	if (eset_contains(extnodes, n)) overrule_nodecolor = "lightblue";
+	dump_node(n);
+	overrule_nodecolor = NULL;
+	if (!eset_contains(extnodes, n)) dump_ir_data_edges(n);
+      }
+
+      /* Close the vcg information for the block */
+      fprintf(F, "}\n");
+      dump_const_node_local(b);
+      fprintf(F, "\n");
+    }
+  for (b = eset_first(extnodes); b != NULL; b = eset_next(extnodes))
+    if (is_Block(b)) {
+      fprintf(F, "graph: { title: \"");
+      PRINT_NODEID(b);
+      fprintf(F, "\"  label: \"");
+      dump_node_opcode(b);
+      fprintf (F, " %ld", get_irn_node_nr(b));
+      fprintf(F, "\" status:clustered color:lightblue\n");
+
+      /* dump the nodes that go into the block */
+      for (n = get_irn_link(b); n; n = get_irn_link(n)) {
+	if (!eset_contains(loopnodes, n)) overrule_nodecolor = "lightblue";
+	dump_node(n);
+	overrule_nodecolor = NULL;
+	if (eset_contains(loopnodes, n)) dump_ir_data_edges(n);
+      }
+
+      /* Close the vcg information for the block */
+      fprintf(F, "}\n");
+      dump_const_node_local(b);
+      fprintf(F, "\n");
+    }
+
+  eset_destroy(loopnodes);
+  eset_destroy(extnodes);
+  vcg_close();
+  dump_const_local = dc_rem;
 }

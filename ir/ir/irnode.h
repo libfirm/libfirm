@@ -791,7 +791,7 @@ ir_node *get_fragile_op_mem(ir_node *node);
 /** Output information about a mode */
 #define DDMM(X)  printf("%s(l.%i) %s: %p\n",                 __MYFUNC__, __LINE__, get_mode_name(X), (void *)(X))
 /** Output information about a loop */
-#define DDML(X)  printf("%s(l.%i) loop with depth %d: %p\n", __MYFUNC__, __LINE__, get_loop_depth(X), (void *)(X))
+#define DDML(X)  printf("%s(l.%i) loop with depth %d: %d\n", __MYFUNC__, __LINE__, get_loop_depth(X), get_loop_loop_nr(X))
 /** Output information about a tarVal */
 #define DDMV(X)  printf("%s(l.%i) tarval: ",__MYFUNC__, __LINE__); tarval_printf(X); printf(" (%p)\n", (void *)(X));
 

@@ -35,6 +35,7 @@
 
 # include "irnode.h"
 # include "irgraph.h"
+# include "irloop.h"
 
 /**
  * The value of this string will be added to the file name before .vcg
@@ -223,11 +224,22 @@ void dump_class_hierarchy (bool entities);
  * <name of irg><suffix>-looptree.vcg
  * Turns on edge labels by default.
  *
+ * Implementing this dumper was stimulated by Florian Liekwegs similar dumper.
+ *
  * @arg irg     Dump the loop tree for this graph.
  * @arg suffix  Suffix to filename.
  */
 void dump_loop_tree(ir_graph *irg, char *suffix);
 
+/** Dumps the firm nodes in the sub-loop-tree of loop to a graph.
+ *  Dumps the loop nodes if dump_loop_information() is set.
+ *
+ *  The name of the file is loop_<loop_nr><suffix>.vcg.
+ *
+ *  @arg loop    Dump the loop tree for this loop.
+ *  @arg suffix  Suffix to filename.
+ */
+void dump_loop (ir_loop *l, char *suffix);
 
 /**
  *   Sets the vcg flag "display_edge_labels" to no.
