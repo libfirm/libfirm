@@ -614,7 +614,7 @@ new_Block (int arity, ir_node **in)
 {
   ir_node *res;
 
-  res = new_r_Block (arity, in);
+  res = new_r_Block (current_ir_graph, arity, in);
   current_ir_graph->current_block = res;
 
   /* Create and initialize array for Phi-node construction. */
