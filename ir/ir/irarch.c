@@ -535,6 +535,10 @@ static ir_node *replace_div_by_mulh(ir_node *div, tarval *tv)
   int bits       = get_mode_size_bits(mode);
   ir_node *q, *t, *c;
 
+  /* Beware: do not transform bad code */
+  if (is_Bad(n) || is_Bad(block))
+    return div;
+
   if (mode_is_signed(mode)) {
     struct ms mag = magic(tv);
 
