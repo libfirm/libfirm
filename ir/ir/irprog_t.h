@@ -71,7 +71,7 @@ struct ir_prog {
 #endif
 };
 
-INLINE void remove_irp_type_from_list (type *typ);
+void remove_irp_type_from_list (type *typ);
 
 static INLINE type *
 __get_glob_type(void) {
