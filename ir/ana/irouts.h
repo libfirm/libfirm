@@ -65,7 +65,7 @@ void irg_out_block_walk(ir_node *node,
 			void *env);
 
 /*------------------------------------------------------------------*/
-/* Building and Removing the out datasturcture                      */
+/* Building and Removing the out datastructure                      */
 /*------------------------------------------------------------------*/
 
 /** Computes the out edges.  Sets a flag in irg to "outs_consistent".  If the
