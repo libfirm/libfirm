@@ -2164,7 +2164,6 @@ INLINE void
 set_value (int pos, ir_node *value)
 {
   assert(get_irg_phase_state (current_ir_graph) == phase_building);
-  assert(!get_Block_matured(current_ir_graph->current_block));
   assert(pos+1 < current_ir_graph->n_loc);
   current_ir_graph->current_block->attr.block.graph_arr[pos + 1] = value;
 }
@@ -2185,7 +2184,6 @@ set_store (ir_node *store)
 {
   /* GL: one could call set_value instead */
   assert(get_irg_phase_state (current_ir_graph) == phase_building);
-  assert(!get_Block_matured(current_ir_graph->current_block));
   current_ir_graph->current_block->attr.block.graph_arr[0] = store;
 }
 
