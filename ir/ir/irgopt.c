@@ -883,6 +883,8 @@ void inline_small_irgs(ir_graph *irg, int size) {
 /*  will be executed only if needed.                                */
 /********************************************************************/
 
+#include "irdump.h"
+
 static pdeq *worklist;		/* worklist of ir_node*s */
 
 /* Find the earliest correct block for N.  --- Place N into the
@@ -905,7 +907,8 @@ place_floats_early (ir_node *n)
 
     if ((get_irn_op(n) == op_Const) ||
 	(get_irn_op(n) == op_SymConst) ||
-	(is_Bad(n))) {
+	(is_Bad(n)) ||
+	(get_irn_op(n) == op_Unknown)) {
       /* These nodes will not be placed by the loop below. */
       b = get_irg_start_block(current_ir_graph);
       depth = 1;
@@ -1491,7 +1494,8 @@ static void walk_critical_cf_edges(ir_node *n, void *env) {
     for (i=0; i<arity; i++) {
       pre = get_irn_n(n, i);
       /* Predecessor has multiple sucessors. Insert new flow edge */
-      if ((NULL != pre) && (op_Proj == get_irn_op(pre))) {
+      if ((NULL != pre) && (op_Proj == get_irn_op(pre)) &&
+	  op_Raise != get_irn_op(skip_Proj(pre))) {
 
 	/* set predecessor array for new block */
 	in = NEW_ARR_D (ir_node *, current_ir_graph->obst, 1);
