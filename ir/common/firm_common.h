@@ -28,7 +28,9 @@ typedef enum {
   k_entity,     /**< an entity */
   k_type,       /**< a type */
   k_ir_node,    /**< an ir node */
-  k_ir_loop     /**< a loop */
+  k_ir_loop,    /**< a loop */
+  k_ir_mode,    /**< a ir mode */
+  k_tarval      /**< a tarval */
 } firm_kind;
 
 /**
