@@ -85,7 +85,7 @@ void set_type_alloc_array(type *tp, ir_node **alls) {
 
 
 /*------------------------------------------------------------------*/
-/* Accessing the out datastructures.                                */
+/* Accessing the out data structures.                               */
 /* These routines only work properly if firm is in state            */
 /* trouts_consistent or trouts_inconsistent.                        */
 /*------------------------------------------------------------------*/
@@ -95,66 +95,82 @@ void set_type_alloc_array(type *tp, ir_node **alls) {
 /**------------------------------------------------------------------*/
 
 int get_entity_n_accesses(entity *ent) {
+  ir_node ** accs;
+
   assert(ent && is_entity(ent));
 
-  ir_node ** accs = (ir_node **)get_entity_access_array(ent);
+  accs = get_entity_access_array(ent);
   return ARR_LEN(accs);
 }
 
 ir_node *get_entity_access(entity *ent, int pos) {
+  ir_node ** accs;
+
   assert(0 <= pos && pos < get_entity_n_accesses(ent));
 
-  ir_node ** accs = (ir_node **)get_entity_access_array(ent);
+  accs = get_entity_access_array(ent);
   return accs[pos];
 }
 
 void add_entity_access(entity *ent, ir_node *n) {
+  ir_node ** accs;
+
   assert(ent && is_entity(ent));
   assert(n && is_ir_node(n));
 
-  ir_node ** accs = (ir_node **)get_entity_access_array(ent);
+  accs = get_entity_access_array(ent);
   ARR_APP1(ir_node *, accs, n);
   set_entity_access_array(ent, accs);
 }
 
 void set_entity_access(entity *ent, int pos, ir_node *n) {
+  ir_node ** accs;
+
   assert(0 <= pos && pos < get_entity_n_accesses(ent));
   assert(n && is_ir_node(n));
 
-  ir_node ** accs = (ir_node **)get_entity_access_array(ent);
+  accs = get_entity_access_array(ent);
   accs[pos] = n;
 }
 
 /**------------------------------------------------------------------*/
 
 int get_entity_n_references(entity *ent) {
+  ir_node ** refs;
+
   assert(ent && is_entity(ent));
 
-  ir_node ** refs = (ir_node **)get_entity_reference_array(ent);
+  refs = get_entity_reference_array(ent);
   return ARR_LEN(refs);
 }
 
 ir_node *get_entity_reference(entity *ent, int pos) {
+  ir_node ** refs;
+
   assert(0 <= pos && pos < get_entity_n_references(ent));
 
-  ir_node ** refs = (ir_node **)get_entity_reference_array(ent);
+  refs = get_entity_reference_array(ent);
   return refs[pos];
 }
 
 void add_entity_reference(entity *ent, ir_node *n) {
+  ir_node ** refs;
+
   assert(ent && is_entity(ent));
   assert(n && is_ir_node(n));
 
-  ir_node ** refs = (ir_node **)get_entity_reference_array(ent);
+  refs = get_entity_reference_array(ent);
   ARR_APP1(ir_node *, refs, n);
   set_entity_reference_array(ent, refs);
 }
 
 void set_entity_reference(entity *ent, int pos, ir_node *n) {
+  ir_node ** refs;
+
   assert(0 <= pos && pos < get_entity_n_references(ent));
   assert(n && is_ir_node(n));
 
-  ir_node ** refs = (ir_node **)get_entity_reference_array(ent);
+  refs = get_entity_reference_array(ent);
   refs[pos] = n;
 }
 
@@ -165,34 +181,41 @@ void set_entity_reference(entity *ent, int pos, ir_node *n) {
 
 /* Number of Alloc nodes that create an instance of this type */
 int get_type_n_allocations(type *tp) {
+  ir_node **allocs;
+
   assert(tp && is_type(tp));
 
-  ir_node **allocs = get_type_alloc_array(tp);
+  allocs = get_type_alloc_array(tp);
   return ARR_LEN(allocs);
 }
 
 /* Alloc node that creates an instance of this type */
 ir_node *get_type_allocation(type *tp, int pos) {
+  ir_node **allocs;
   assert(0 <= pos && pos < get_type_n_allocations(tp));
 
-  ir_node **allocs = get_type_alloc_array(tp);
+  allocs = get_type_alloc_array(tp);
   return allocs[pos];
 }
 
 void add_type_allocation(type *tp, ir_node *n) {
+  ir_node **allocs;
+
   assert(tp && is_type(tp));
   assert(n && is_ir_node(n));
 
-  ir_node **allocs = get_type_alloc_array(tp);
+  allocs = get_type_alloc_array(tp);
   ARR_APP1(ir_node *, allocs, n);
   set_type_alloc_array(tp, allocs);
 }
 
 void set_type_allocation(type *tp, int pos, ir_node *n) {
+  ir_node **allocs;
+
   assert(0 <= pos && pos < get_type_n_allocations(tp));
   assert(n && is_ir_node(n));
 
-  ir_node **allocs = get_type_alloc_array(tp);
+  allocs = get_type_alloc_array(tp);
   allocs[pos] = n;
 }
 
