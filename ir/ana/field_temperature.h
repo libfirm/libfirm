@@ -33,17 +33,29 @@
 
 
 /** The entities that can be accessed by this Sel node. */
-int get_Sel_n_accessed_entities(ir_node *sel);
-entity *get_Sel_accessed_entity(ir_node *sel, int pos);
+int     get_Sel_n_accessed_entities(ir_node *sel);
+entity *get_Sel_accessed_entity    (ir_node *sel, int pos);
 
 
+/** Number of Load/Store nodes that possibly access this entity. */
+int get_entity_n_accesses(entity *ent);
 
+/** Load/Store node that possibly access this entity. */
+ir_node *get_entity_access(entity *ent, int pos);
 
+int get_weighted_loop_depth(ir_node *n);
 
 /** compute the field temperature. */
 void compute_field_temperature(void);
 
 /** free occupied memory, reset */
 void free_field_temperature(void);
+
+
+
+
+
+/** An auxiliary/temporary function */
+int is_jack_rts_class(type *t);
 
 #endif /* _FIELD_TEMPERATURE_H_ */

@@ -35,15 +35,6 @@ static void add_unrecognized_access(ir_node *n) {
 /*   Access routines for entities                                              */
 /* *************************************************************************** */
 
-/* The entities that can be accessed by this Sel node. */
-int get_Sel_n_accessed_entities(ir_node *sel) {
-  return 1;
-}
-
-entity *get_Sel_accessed_entity(ir_node *sel, int pos) {
-  return get_Sel_entity(sel);
-}
-
 int get_entity_n_accesses(entity *ent) {
   assert(ent && is_entity(ent));
 
@@ -78,6 +69,19 @@ void set_entity_access(entity *ent, int pos, ir_node *n) {
 /* *************************************************************************** */
 /*   Access routines for nodes                                                 */
 /* *************************************************************************** */
+
+/* *************************************************************************** */
+/*   Access routines for irnodes                                               */
+/* *************************************************************************** */
+
+/* The entities that can be accessed by this Sel node. */
+int get_Sel_n_accessed_entities(ir_node *sel) {
+  return 1;
+}
+
+entity *get_Sel_accessed_entity(ir_node *sel, int pos) {
+  return get_Sel_entity(sel);
+}
 
 /* An addr node is a SymConst or a Sel. */
 int get_addr_n_entities(ir_node *addr) {
@@ -124,6 +128,34 @@ entity *get_addr_entity(ir_node *addr, int pos) {
   return ent;
 }
 
+
+int get_irn_loop_call_depth(ir_node *n) {
+  ir_graph *irg = get_irn_irg(n);
+  return get_irg_loop_depth(irg);
+}
+
+int get_irn_loop_depth(ir_node *n) {
+  get_loop_depth(get_irn_loop(get_nodes_block(n)));
+}
+
+int get_irn_recursion_depth(ir_node *n) {
+  ir_graph *irg = get_irn_irg(n);
+  return get_irg_recursion_depth(irg);
+}
+
+
+/* *************************************************************************** */
+/* The heuristic                                                               */
+/* *************************************************************************** */
+
+int get_weighted_loop_depth(ir_node *n) {
+  int loop_call_depth = get_irn_loop_call_depth(n);
+  int loop_depth      = get_irn_loop_depth(n);
+  int recursion_depth = get_irn_recursion_depth(n);
+
+  return loop_call_depth + loop_depth + recursion_depth;
+}
+
 /* *************************************************************************** */
 /* The analyses                                                                */
 /* *************************************************************************** */
@@ -138,10 +170,8 @@ void chain_accesses(ir_node *n, void *env) {
   int i, n_ents;
   ir_node *addr;
 
-  if (get_irn_op(n) == op_Load) {
-    addr = get_Load_ptr(n);
-  } else if  (get_irn_op(n) == op_Store) {
-    addr = get_Store_ptr(n);
+  if (is_memop(n)) {
+    addr = get_memop_ptr(n);
   } else {
     return;
   }
@@ -174,4 +204,22 @@ void compute_field_temperature(void) {
 void free_field_temperature(void) {
   DEL_ARR_F(unrecognized_access);
   unrecognized_access = NULL;
+}
+
+
+
+/* *************************************************************************** */
+/* Auxiliary                                                                   */
+/* *************************************************************************** */
+
+
+int is_jack_rts_class(type *t) {
+  ident *name = get_type_ident(t);
+
+  if (id_is_prefix(new_id_from_str("java/"), name)) return 1;
+  if (id_is_prefix(new_id_from_str("["), name)) return 1;
+  if (id_is_prefix(new_id_from_str("gnu/"), name)) return 1;
+  if (id_is_prefix(new_id_from_str("java/"), name)) return 1;
+
+  return 0;
 }
