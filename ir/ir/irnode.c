@@ -164,24 +164,24 @@ new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mo
 
 int
 (is_ir_node)(const void *thing) {
-  return __is_ir_node(thing);
+  return _is_ir_node(thing);
 }
 
 int
 (get_irn_intra_arity)(const ir_node *node) {
-  return __get_irn_intra_arity(node);
+  return _get_irn_intra_arity(node);
 }
 
 int
 (get_irn_inter_arity)(const ir_node *node) {
-  return __get_irn_inter_arity(node);
+  return _get_irn_inter_arity(node);
 }
 
-int (*__get_irn_arity)(const ir_node *node) = __get_irn_intra_arity;
+int (*_get_irn_arity)(const ir_node *node) = _get_irn_intra_arity;
 
 int
 (get_irn_arity)(const ir_node *node) {
-  return __get_irn_arity(node);
+  return _get_irn_arity(node);
 }
 
 /* Returns the array with ins. This array is shifted with respect to the
@@ -232,19 +232,19 @@ set_irn_in (ir_node *node, int arity, ir_node **in) {
 
 ir_node *
 (get_irn_intra_n)(const ir_node *node, int n) {
-  return __get_irn_intra_n (node, n);
+  return _get_irn_intra_n (node, n);
 }
 
 ir_node *
 (get_irn_inter_n)(const ir_node *node, int n) {
-  return __get_irn_inter_n (node, n);
+  return _get_irn_inter_n (node, n);
 }
 
-ir_node *(*__get_irn_n)(const ir_node *node, int n) = __get_irn_intra_n;
+ir_node *(*_get_irn_n)(const ir_node *node, int n) = _get_irn_intra_n;
 
 ir_node *
 (get_irn_n)(const ir_node *node, int n) {
-  return __get_irn_n(node, n);
+  return _get_irn_n(node, n);
 }
 
 void
@@ -275,13 +275,13 @@ set_irn_n (ir_node *node, int n, ir_node *in) {
 
 ir_mode *
 (get_irn_mode)(const ir_node *node) {
-  return __get_irn_mode(node);
+  return _get_irn_mode(node);
 }
 
 void
 (set_irn_mode)(ir_node *node, ir_mode *mode)
 {
-  __set_irn_mode(node, mode);
+  _set_irn_mode(node, mode);
 }
 
 modecode
@@ -309,7 +309,7 @@ get_irn_modeident (const ir_node *node)
 ir_op *
 (get_irn_op)(const ir_node *node)
 {
-  return __get_irn_op(node);
+  return _get_irn_op(node);
 }
 
 /* should be private to the library: */
@@ -323,7 +323,7 @@ set_irn_op (ir_node *node, ir_op *op)
 opcode
 (get_irn_opcode)(const ir_node *node)
 {
-  return __get_irn_opcode(node);
+  return _get_irn_opcode(node);
 }
 
 const char *
@@ -346,43 +346,43 @@ get_irn_opident (const ir_node *node)
 unsigned long
 (get_irn_visited)(const ir_node *node)
 {
-  return __get_irn_visited(node);
+  return _get_irn_visited(node);
 }
 
 void
 (set_irn_visited)(ir_node *node, unsigned long visited)
 {
-  __set_irn_visited(node, visited);
+  _set_irn_visited(node, visited);
 }
 
 void
 (mark_irn_visited)(ir_node *node) {
-  __mark_irn_visited(node);
+  _mark_irn_visited(node);
 }
 
 int
 (irn_not_visited)(const ir_node *node) {
-  return __irn_not_visited(node);
+  return _irn_not_visited(node);
 }
 
 int
 (irn_visited)(const ir_node *node) {
-  return __irn_visited(node);
+  return _irn_visited(node);
 }
 
 void
 (set_irn_link)(ir_node *node, void *link) {
-  __set_irn_link(node, link);
+  _set_irn_link(node, link);
 }
 
 void *
 (get_irn_link)(const ir_node *node) {
-  return __get_irn_link(node);
+  return _get_irn_link(node);
 }
 
 op_pin_state
 (get_irn_pinned)(const ir_node *node) {
-  return __get_irn_pinned(node);
+  return _get_irn_pinned(node);
 }
 
 void set_irn_pinned(ir_node *node, op_pin_state state) {
@@ -693,11 +693,11 @@ void remove_Block_cg_cfgpred_arr(ir_node * node) {
 }
 
 ir_node *(set_Block_dead)(ir_node *block) {
-  return __set_Block_dead(block);
+  return _set_Block_dead(block);
 }
 
 int (is_Block_dead)(const ir_node *block) {
-  return __is_Block_dead(block);
+  return _is_Block_dead(block);
 }
 
 void
@@ -1332,7 +1332,7 @@ set_Cast_type (ir_node *node, type *to_tp) {
 
 int
 (is_unop)(const ir_node *node) {
-  return __is_unop(node);
+  return _is_unop(node);
 }
 
 ir_node *
@@ -1354,7 +1354,7 @@ set_unop_op (ir_node *node, ir_node *op) {
 
 int
 (is_binop)(const ir_node *node) {
-  return __is_binop(node);
+  return _is_binop(node);
 }
 
 ir_node *
@@ -1994,17 +1994,17 @@ skip_Id (ir_node *node) {
 
 int
 (is_Bad)(const ir_node *node) {
-  return __is_Bad(node);
+  return _is_Bad(node);
 }
 
 int
 (is_no_Block)(const ir_node *node) {
-  return  __is_no_Block(node);
+  return _is_no_Block(node);
 }
 
 int
 (is_Block)(const ir_node *node) {
-  return __is_Block(node);
+  return _is_Block(node);
 }
 
 /* returns true if node is a Unknown node. */
