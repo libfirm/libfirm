@@ -28,6 +28,9 @@
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>
 #endif
+#ifdef HAVE_MALLOC_H
+# include <malloc.h>
+#endif
 
 # include "st.h"
 # include "irgwalk.h"
