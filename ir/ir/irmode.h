@@ -3,24 +3,20 @@
  */
 /* $Id$ */
 
-/****h* libfirm/irmode
- *
- * NAME
+/**
+ * @file irmode.h
  *    irmode -- Modes for ir operators
  *
- * AUTHORS
- *    Christian Schaefer
- *    Matthias Heil
+ * @author Christian Schaefer, Matthias Heil
  *
- * DESCRIPTION
- *    This module specifies the modes that type the firm nodes.
+ * This module specifies the modes that type the firm nodes.
  *
- * SEE ALSO
+ * SEE ALSO:
  *    UKA tech report 1999-44 for more information about modes.
  *
- ******/
-# ifndef _IRMODE_H_
-# define _IRMODE_H_
+ */
+#ifndef _IRMODE_H_
+#define _IRMODE_H_
 
 #include "ident.h"
 
@@ -29,37 +25,32 @@
   typedef struct tarval tarval;
 #endif
 
-/****s* tv/ir_mode
+/**
+ * Contains relevant information about a mode.
  *
- * NAME
- *    ir_mode
- *   Contains relevant information about a mode
+ * Neccessary information about a mode is stored in this struct
+ * which is used by the tarval modul to perform calculations
+ * and comparisons of values of a such described mode.
  *
- * DESCRIPTION
- *    Neccessary information about a mode is stored in this struct
- *    which is used by the tarval modul to perform calculations
- *    and comparisons of values of a such described mode
+ * ATTRIBUTES:
+ *  -  modecode code: An unambigous int for the mode
+ *  -  ident *name:             Name of this mode
+ *  -  mode_sort sort:          sort of mode specifying possible usage kategories
+ *  -  int    size:             size of the mode in Bits.
+ *  -  int    align:            byte alignment
+ *  -  unsigned sign:1:         signedness of this mode
+ *  -  ... more to come
  *
- * ATTRIBUTES
- *    modecode code: An unambigous int for the mode
- *    ident *name:             Name of this mode
- *    mode_sort sort:          sort of mode specifying possible usage kategories
- *    int    size:             size of the mode in Bits.
- *    int    align:            byte alignment
- *    unsigned sign:1:         signedness of this mode
- *    ... more to come
- *
- * SEE ALSO
+ * SEE ALSO:
  *    The tech report 1999-44 describing FIRM and predefined modes
  *    tarval.h
- ******/
-
+ */
 typedef struct ir_mode ir_mode;
 
-/** ********** Predefined modes ********** **/
+/* ********** Predefined modes ********** */
 
 /**
- * according to tech report 1999-14:
+ * Predefined mode according to tech report 1999-14.
  */
 typedef enum { /* irm is short for `ir mode' */
   irm_BB,                       /**< basic block */
@@ -85,27 +76,26 @@ typedef enum { /* irm is short for `ir mode' */
 } modecode;
 
 /** These values represent the different arithmetics used to
- *  manipulate values */
+ *  manipulate values.
+ */
 typedef enum {
-  /** Predefined sorts of modes **/
-  auxiliary,         /* Only for Firm use, predefined. */
-  internal_boolean,  /* Internal boolean representation.
+  /* Predefined sorts of modes */
+  auxiliary,         /**< Only for Firm use, predefined. */
+  internal_boolean,  /**< Internal boolean representation.
 		        Storing to memory impossible, convert first. */
   /** user-extensible sorts of modes **/
-  int_number,        /* A mode to represent int numbers.
+  int_number,        /**< A mode to represent int numbers.
 		        Integer computations can be performed. */
-  float_number,      /* A mode to represent float numbers.
+  float_number,      /**< A mode to represent float numbers.
 		        Floating point computations can be performed. */
-  reference,         /* A mode to represent entities.
+  reference,         /**< A mode to represent entities.
 		        Restricted int computations can be performed */
-  character          /* A mode to represent characters/symbols
+  character          /**< A mode to represent characters/symbols
 		        ?? Are computations allowed? as int?? */
 } mode_sort;
 
-/** ********** Constructor for user defined modes **************** **/
+/* ********** Constructor for user defined modes **************** */
 /**
- * register_mode(mode* new_mode)
- *
  * Registers a new mode.
  * Must be called BEFORE init_mode2() !!!
  *
@@ -125,7 +115,7 @@ typedef enum {
  */
 ir_mode *register_mode(ir_mode* new_mode);
 
-/** ********** Access methods to read mode information *********** **/
+/* ********** Access methods to read mode information *********** */
 
 #ifdef MODE_ACCESS_DEFINES
 #  include "irmode_t.h"
@@ -136,83 +126,103 @@ ir_mode *register_mode(ir_mode* new_mode);
 #  define get_mode_size_bits(mode) (mode)->size
 #  define get_mode_align(mode) (mode)->align
 #else
-/* The classification of the mode */
+/** Returns the classification of the mode */
 modecode get_mode_modecode(ir_mode *mode);
 
-/* The ident* name of the mode */
+/** Returns the ident* of the mode */
 ident *get_mode_ident(ir_mode *mode);
 
-/* The null-terminated name of this mode */
+/** Returns the null-terminated name of this mode. */
 const char *get_mode_name(ir_mode *mode);
 
-/* A coarse classification of the mode */
+/** Returns a coarse classification of the mode. */
 mode_sort get_mode_sort(ir_mode *mode);
 
-/** The size of values of the mode in bits. */
+/** Returns the size of values of the mode in bits. */
 int get_mode_size_bits(ir_mode *mode);
-/** The size of values of the mode in bytes.  If the size is not
+
+/** Returns the size of values of the mode in bytes.  If the size is not
     dividable by 8 returns -1. */
 int get_mode_size_bytes(ir_mode *mode);
 
-/* The alignment of values of the mode in bytes. */
+/** Returns the alignment of values of the mode in bytes. */
 int get_mode_align(ir_mode *mode);
 #endif
 
-/* The smallest representable value. For modes of the
- * sort float_number this is the most negative value
- * bigger than -infinit */
+/**
+ * Returns the smallest representable value of a given mode.
+ *
+ * For modes of the sort float_number this is the most negative value
+ * bigger than -infinit.
+ */
 tarval *get_mode_min(ir_mode *mode);
 
-/* The biggest representable value. For modes of the
- * sort float_number this is the largest value lower
- * than infinit */
+/**
+ * Returns the biggest representable value o f a given mode.
+ *
+ * For modes of the sort float_number this is the largest value lower
+ * than infinit.
+ */
 tarval *get_mode_max(ir_mode *mode);
 
-/* The value Zero represented in this mode
-   Zero is the additive neutral element and as such
-   is defined only for modes allowing addition, i.e.
-   floats and ints, and references (NULL-Pointer)
-   else returns tarval_bad */
+/**
+ * Returns the value Zero represented in this mode.
+ *
+ * Zero is the additive neutral element and as such
+ * is defined only for modes allowing addition, i.e.
+ * floats and ints, and references (NULL-Pointer)
+ * else returns tarval_bad.
+ */
 tarval *get_mode_null(ir_mode *mode);
 
-/* The value One, represented in this mode
+/**
+ * Returns the value One, represented in this mode.
+ *
  * One, being the multiplicative neutral element,
  * is defined only for modes allowing multiplication,
- * i.e. ints and floats */
+ * i.e. ints and floats.
+ */
 tarval *get_mode_one(ir_mode *mode);
 
-/* This is only valid for float_numbers, other modes
- * will result in tarval_bad */
+/**
+ * Returns the positive infinite value of a mode.
+ *
+ * This is only valid for float_numbers, other modes
+ * will result in tarval_bad.
+ */
 tarval *get_mode_infinite(ir_mode *mode);
 
-/* This is only valid for float_numbers, other modes
- * will result in tarval_bad */
+/**
+ * Returns the NAN value of a given mode.
+ *
+ * This is only valid for float_numbers, other modes
+ * will result in tarval_bad.
+ */
 tarval *get_mode_NAN(ir_mode *mode);
 
+/* -- Auxiliary modes necessary for the Firm representation -- */
+extern ir_mode *mode_T;  /**< tuple (none) */
+extern ir_mode *mode_X;  /**< execution */
+extern ir_mode *mode_M;	 /**< memory */
+extern ir_mode *mode_BB; /**< block */
 
-/** Auxiliary modes necessary for the Firm representation **/
-extern ir_mode *mode_T;  /* tuple (none) */
-extern ir_mode *mode_X;  /* execution */
-extern ir_mode *mode_M;	 /* memory */
-extern ir_mode *mode_BB; /* block */
+/* -- A set of predifined, numerical modes according to Techreport 1999-44 -- */
+extern ir_mode *mode_F;	 /**< signed float(32) */
+extern ir_mode *mode_D;  /**< signed double(64) */
+extern ir_mode *mode_E;  /**< signed extended(80) */
+extern ir_mode *mode_Bs; /**< signed byte (former char) */
+extern ir_mode *mode_Bu; /**< unsigned byte (former char) */
+extern ir_mode *mode_Hs; /**< signed short integer */
+extern ir_mode *mode_Hu; /**< unsigened short integer */
+extern ir_mode *mode_Is; /**< signed integer */
+extern ir_mode *mode_Iu; /**< unsigned integer */
+extern ir_mode *mode_Ls; /**< signed long integer */
+extern ir_mode *mode_Lu; /**< unsigned long integer */
 
-/** A set of predifined, numerical modes according to Techreport 1999-44 **/
-extern ir_mode *mode_F;	 /* signed float(32) */
-extern ir_mode *mode_D;  /* signed double(64) */
-extern ir_mode *mode_E;  /* signed extended(80) */
-extern ir_mode *mode_Bs; /* signed byte (former char) */
-extern ir_mode *mode_Bu; /* unsigned byte (former char) */
-extern ir_mode *mode_Hs; /* signed short integer */
-extern ir_mode *mode_Hu; /* unsigened short integer */
-extern ir_mode *mode_Is; /* signed integer */
-extern ir_mode *mode_Iu; /* unsigned integer */
-extern ir_mode *mode_Ls; /* signed long integer */
-extern ir_mode *mode_Lu; /* unsigned long integer */
-
-extern ir_mode *mode_b;  /* internal boolean */
-extern ir_mode *mode_C;  /* 8 bit char */
-extern ir_mode *mode_U;  /* 16 bit unicode char */
-extern ir_mode *mode_P;  /* pointer */
+extern ir_mode *mode_b;  /**< internal boolean */
+extern ir_mode *mode_C;  /**< 8 bit char */
+extern ir_mode *mode_U;  /**< 16 bit unicode char */
+extern ir_mode *mode_P;  /**< pointer */
 
 /*@{*/
 /** Access routines for JNI Interface */
@@ -295,4 +305,4 @@ int smaller_mode(ir_mode *sm, ir_mode *lm);
 /** mode module initialization, call once before use of any other function **/
 void init_mode (void);
 
-# endif /* _IRMODE_H_ */
+#endif /* _IRMODE_H_ */
