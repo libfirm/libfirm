@@ -12,7 +12,7 @@
 #define _ESET_H_
 
 
-#include "bool.h"
+#include <stdbool.h>
 
 
 /* "eset" ist eine Menge von Adressen. Der Vergleich und das Hashen

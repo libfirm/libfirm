@@ -44,7 +44,7 @@ Discussion of new interface, proposals by Prof. Waite:
 
 # include "irmode.h"
 # include "entity.h"
-# include "bool.h"
+# include <stdbool.h>
 
 #ifndef _TARVAL_TYPEDEF_
 #define _TARVAL_TYPEDEF_

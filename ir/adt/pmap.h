@@ -12,7 +12,7 @@
 #define _PMAP_H_
 
 
-#include "bool.h"
+#include <stdbool.h>
 
 
 /* Map die Adressen auf Adressen abbildet. Der Vergleich und das

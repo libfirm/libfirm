@@ -1,6 +1,6 @@
 /* Copyright (c) 2002 by Universität Karlsruhe (TH).  All Rights Reserved */
 /*
-** Time-stamp: <Monday, 04.11.2002, 17:32:28 goetz@i44pc2.info.uni-karlsruhe.de>
+** Time-stamp: <Thursday, 19.12.2002, 15:45:43 goetz@i44pc2.info.uni-karlsruhe.de>
 */
 
 /***
@@ -25,7 +25,7 @@
 # include "irop.h"
 # include "irouts.h"
 
-#include "bool.h"
+#include <stdbool.h>
 
 typedef enum {
   exc_invalid = 0,					/* not yet computed */

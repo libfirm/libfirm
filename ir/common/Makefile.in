@@ -10,7 +10,7 @@ srcdir = @srcdir@
 topdir = ../..
 subdir := ir/common
 
-INSTALL_HEADERS := bool.h firm_common.h firm.h
+INSTALL_HEADERS := firm_common.h firm.h
 
 SOURCES = $(INSTALL_HEADERS)
 

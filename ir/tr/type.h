@@ -37,7 +37,7 @@
 # include "firm_common.h"
 # include "ident.h"
 # include "irmode.h"
-# include "bool.h"
+# include <stdbool.h>
 # include "dbginfo.h"
 
 

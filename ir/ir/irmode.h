@@ -20,7 +20,7 @@ reimplementation of the tarval module.
 # define _IRMODE_H_
 
 #include "ident.h"
-#include "bool.h"
+#include <stdbool.h>
 
 # define target_bits 8
 

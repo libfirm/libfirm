@@ -1166,7 +1166,7 @@ static void merge_blocks(ir_node *n, void *env) {
       /* We would have to run gigo if new is bad. */
       if (!get_optimize() || (!get_opt_control_flow_straightening()
 			      && !get_opt_control_flow_weak_simplification()))
-	/* how could something be optimized of flags are not set? */
+	/* how could something be optimized if flags are not set? */
 	assert(0 && "strange ??!!");
       exchange (b, new);
       b = new;

@@ -22,7 +22,7 @@
 
 #include "bs.h"
 
-#include "bool.h"
+#include <stdbool.h>
 
 
 /* Data Types: */

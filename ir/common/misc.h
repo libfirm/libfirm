@@ -30,7 +30,7 @@ void *alloca ();
 
 
 #include "host.h"
-#include "bool.h"
+#include <stdbool.h>
 
 /* Alignment of nodes, cf common/tag.h, a power of two.
 
