@@ -69,9 +69,6 @@
 extern "C" {
 #endif
 
-//  #include "old_fctnames.h"
-
-
 /* The representations */
 #include "firm_common.h"   /* common type tags. */
 #include "irprog.h"        /* control flow and data of a program */
@@ -111,6 +108,10 @@ extern "C" {
 #include "irdump.h"
 #include "irvrfy.h"
 #include "trvrfy.h"
+
+/* Makros that define the old function names we decided to rename.
+   Use for compatibility with old implementations. */
+#include "old_fctnames.h"
 
 /**
  * libFirm initialization parameters.
