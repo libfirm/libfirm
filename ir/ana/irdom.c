@@ -214,7 +214,7 @@ void compute_doms(ir_graph *irg) {
     tmp_dom_info *v;
 
     /* Step 2 */
-    irn_arity = get_irn_arity(w->block);
+    irn_arity = intern_get_irn_arity(w->block);
     for (j = 0;  j < irn_arity;  j++) {
       ir_node *pred = get_nodes_Block(get_Block_cfgpred(w->block, j));
       tmp_dom_info *u;

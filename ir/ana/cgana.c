@@ -31,7 +31,7 @@
 #include "irgwalk.h"
 #include "ircons.h"
 #include "irgmod.h"
-#include "irnode.h"
+#include "irnode_t.h"
 #include "irflag_t.h"
 
 #include "dbginfo_t.h"
@@ -79,7 +79,7 @@ entity *get_inherited_methods_implementation(entity *inh_meth) {
   ir_node *addr = get_atomic_ent_value(inh_meth);
   assert(addr && "constant entity without value");
 
-  if (get_irn_op(addr) == op_Const) {
+  if (intern_get_irn_op(addr) == op_Const) {
     impl_meth = tarval_to_entity(get_Const_tarval(addr));
   } else {
     assert(0 && "Complex constant values not supported -- adress of method should be straight constant!");
@@ -189,7 +189,7 @@ static entity ** get_impl_methods(entity * method) {
 
 
 static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
-  if (get_irn_op(node) == op_SymConst) {
+  if (intern_get_irn_op(node) == op_SymConst) {
     /* Wenn möglich SymConst-Operation durch Const-Operation
      * ersetzen. */
     if (get_SymConst_kind(node) == linkage_ptr_info) {
@@ -206,11 +206,11 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
 	}
       }
     }
-  } else if (get_irn_op(node) == op_Sel &&
+  } else if (intern_get_irn_op(node) == op_Sel &&
 	     is_method_type(get_entity_type(get_Sel_entity(node)))) {
     entity * ent = get_Sel_entity(node);
     if (get_opt_optimize() && get_opt_dyn_meth_dispatch() &&
-	(get_irn_op(skip_Proj(get_Sel_ptr(node))) == op_Alloc)) {
+	(intern_get_irn_op(skip_Proj(get_Sel_ptr(node))) == op_Alloc)) {
       ir_node *new_node;
       entity *called_ent;
       /* We know which method will be called, no dispatch necessary. */
@@ -329,7 +329,7 @@ static entity ** get_Sel_arr(ir_node * sel) {
   static entity ** NULL_ARRAY = NULL;
   entity * ent;
   entity ** arr;
-  assert(sel && get_irn_op(sel) == op_Sel);
+  assert(sel && intern_get_irn_op(sel) == op_Sel);
   ent = get_Sel_entity(sel);
   assert(is_method_type(get_entity_type(ent))); /* what else? */
   arr = get_entity_link(ent);
@@ -373,14 +373,14 @@ static void callee_ana_proj(ir_node * node, long n, eset * methods) {
   }
   set_irn_link(node, MARK);
 
-  switch (get_irn_opcode(node)) {
+  switch (intern_get_irn_opcode(node)) {
   case iro_Proj: {
     /* proj_proj: in einem "sinnvollen" Graphen kommt jetzt ein
      * op_Tuple oder ein Knoten, der eine "freie Methode"
      * zurückgibt. */
     ir_node * pred = get_Proj_pred(node);
     if (get_irn_link(pred) != MARK) {
-      if (get_irn_op(pred) == op_Tuple) {
+      if (intern_get_irn_op(pred) == op_Tuple) {
 	callee_ana_proj(get_Tuple_pred(pred, get_Proj_proj(node)), n, methods);
       } else {
 	eset_insert(methods, MARK); /* free method -> unknown */
@@ -417,7 +417,7 @@ static void callee_ana_node(ir_node * node, eset * methods) {
   }
   set_irn_link(node, MARK);
 
-  switch (get_irn_opcode(node)) {
+  switch (intern_get_irn_opcode(node)) {
   case iro_SymConst:
     /* externe Methode (wegen fix_symconst!) */
     eset_insert(methods, MARK); /* free method -> unknown */
@@ -483,7 +483,7 @@ static void callee_ana_node(ir_node * node, eset * methods) {
 
 
 static void callee_walker(ir_node * call, void * env) {
-  if (get_irn_op(call) == op_Call) {
+  if (intern_get_irn_op(call) == op_Call) {
     eset * methods = eset_create();
     entity * ent;
     entity ** arr = NEW_ARR_F(entity *, 0);
@@ -539,13 +539,13 @@ static void free_mark_proj(ir_node * node, long n, eset * set) {
     return;
   }
   set_irn_link(node, MARK);
-  switch (get_irn_opcode(node)) {
+  switch (intern_get_irn_opcode(node)) {
   case iro_Proj: {
     /* proj_proj: in einem "sinnvollen" Graphen kommt jetzt ein
      * op_Tuple oder ein Knoten, der in "free_ana_walker" behandelt
      * wird. */
     ir_node * pred = get_Proj_pred(node);
-    if (get_irn_link(pred) != MARK && get_irn_op(pred) == op_Tuple) {
+    if (get_irn_link(pred) != MARK && intern_get_irn_op(pred) == op_Tuple) {
       free_mark_proj(get_Tuple_pred(pred, get_Proj_proj(node)), n, set);
     } else {
       /* nothing: da in "free_ana_walker" behandelt. */
@@ -583,7 +583,7 @@ static void free_mark(ir_node * node, eset * set) {
     return; /* already visited */
   }
   set_irn_link(node, MARK);
-  switch (get_irn_opcode(node)) {
+  switch (intern_get_irn_opcode(node)) {
   case iro_Sel: {
     entity * ent = get_Sel_entity(node);
     if (is_method_type(get_entity_type(ent))) {
@@ -631,7 +631,7 @@ static void free_ana_walker(ir_node * node, eset * set) {
     /* bereits in einem Zyklus besucht. */
     return;
   }
-  switch (get_irn_opcode(node)) {
+  switch (intern_get_irn_opcode(node)) {
   /* special nodes */
   case iro_Sel:
   case iro_SymConst:
@@ -648,7 +648,7 @@ static void free_ana_walker(ir_node * node, eset * set) {
     set_irn_link(node, MARK);
     for (i = get_Call_arity(node) - 1; i >= 0; --i) {
       ir_node * pred = get_Call_param(node, i);
-      if (mode_is_reference(get_irn_mode(pred))) {
+      if (mode_is_reference(intern_get_irn_mode(pred))) {
 	free_mark(pred, set);
       }
     }
@@ -657,9 +657,9 @@ static void free_ana_walker(ir_node * node, eset * set) {
    * jemand das Gegenteil implementiert. */
   default:
     set_irn_link(node, MARK);
-    for (i = get_irn_arity(node) - 1; i >= 0; --i) {
+    for (i = intern_get_irn_arity(node) - 1; i >= 0; --i) {
       ir_node * pred = get_irn_n(node, i);
-      if (mode_is_reference(get_irn_mode(pred))) {
+      if (mode_is_reference(intern_get_irn_mode(pred))) {
 	free_mark(pred, set);
       }
     }

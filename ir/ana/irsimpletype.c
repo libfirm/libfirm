@@ -24,6 +24,7 @@
 # include "irtypeinfo.h"
 # include "irsimpletype.h"
 
+# include "irnode_t.h"
 # include "irprog.h"
 # include "irgwalk.h"
 # include "ident.h"
@@ -60,7 +61,7 @@ static type* compute_irn_type(ir_node *n);
 static type *find_type_for_Proj(ir_node *n) {
   type *tp;
   ir_node *pred = skip_Tuple(get_Proj_pred(n));
-  ir_mode *m = get_irn_mode(n);
+  ir_mode *m = intern_get_irn_mode(n);
 
   if (m == mode_T  ||
       m == mode_BB ||
@@ -69,16 +70,16 @@ static type *find_type_for_Proj(ir_node *n) {
       m == mode_b    )
     return none_type;
 
-  switch(get_irn_opcode(pred)) {
+  switch(intern_get_irn_opcode(pred)) {
   case iro_Proj: {
     ir_node *pred_pred;
     /* Deal with Start / Call here: we need to know the Proj Nr. */
     assert(get_irn_mode(pred) == mode_T);
     pred_pred = get_Proj_pred(pred);
-    if (get_irn_op(pred_pred) == op_Start)  {
+    if (intern_get_irn_op(pred_pred) == op_Start)  {
       type *mtp = get_entity_type(get_irg_ent(get_Start_irg(pred_pred)));
       tp = get_method_param_type(mtp, get_Proj_proj(n));
-    } else if (get_irn_op(pred_pred) == op_Call) {
+    } else if (intern_get_irn_op(pred_pred) == op_Call) {
       type *mtp = get_Call_type(pred_pred);
       tp = get_method_res_type(mtp, get_Proj_proj(n));
     } else {
@@ -135,7 +136,7 @@ static type *find_type_for_node(ir_node *n) {
     tp2 = compute_irn_type(b);
   }
 
-  switch(get_irn_opcode(n)) {
+  switch(intern_get_irn_opcode(n)) {
 
   case iro_InstOf: {
     assert(0 && "op_InstOf not supported");
@@ -229,9 +230,9 @@ static type *find_type_for_node(ir_node *n) {
   } break;
   case iro_Load: {
     ir_node *a = get_Load_ptr(n);
-    if (get_irn_op(a) == op_Sel)
+    if (intern_get_irn_op(a) == op_Sel)
       tp = get_entity_type(get_Sel_entity(a));
-    else if ((get_irn_op(a) == op_Const) &&
+    else if ((intern_get_irn_op(a) == op_Const) &&
 	(tarval_is_entity(get_Const_tarval(a))))
       tp = get_entity_type(tarval_to_entity(get_Const_tarval(a)));
     else if (is_pointer_type(compute_irn_type(a))) {
@@ -255,28 +256,28 @@ static type *find_type_for_node(ir_node *n) {
 
   /* catch special cases with fallthrough to binop/unop cases in default. */
   case iro_Sub: {
-    if (mode_is_int(get_irn_mode(n))       &&
-	mode_is_reference(get_irn_mode(a)) &&
-	mode_is_reference(get_irn_mode(b))   ) {
+    if (mode_is_int(intern_get_irn_mode(n))       &&
+	mode_is_reference(intern_get_irn_mode(a)) &&
+	mode_is_reference(intern_get_irn_mode(b))   ) {
       VERBOSE_UNKNOWN_TYPE(("Sub %ld ptr - ptr = int: unknown type\n", get_irn_node_nr(n)));
       tp =  unknown_type; break;
     }
   } /* fall through to Add. */
   case iro_Add: {
-    if (mode_is_reference(get_irn_mode(n)) &&
-	mode_is_reference(get_irn_mode(a)) &&
-	mode_is_int(get_irn_mode(b))         ) {
+    if (mode_is_reference(intern_get_irn_mode(n)) &&
+	mode_is_reference(intern_get_irn_mode(a)) &&
+	mode_is_int(intern_get_irn_mode(b))         ) {
       tp = tp1; break;
     }
-    if (mode_is_reference(get_irn_mode(n)) &&
-	mode_is_int(get_irn_mode(a))       &&
-	mode_is_reference(get_irn_mode(b))    ) {
+    if (mode_is_reference(intern_get_irn_mode(n)) &&
+	mode_is_int(intern_get_irn_mode(a))       &&
+	mode_is_reference(intern_get_irn_mode(b))    ) {
       tp = tp2; break;
     }
     goto default_code;
   } break;
   case iro_Mul: {
-    if (get_irn_mode(n) != get_irn_mode(a)) {
+    if (intern_get_irn_mode(n) != intern_get_irn_mode(a)) {
       VERBOSE_UNKNOWN_TYPE(("Mul %ld int1 * int1 = int2: unknown type\n", get_irn_node_nr(n)));
       tp = unknown_type; break;
     }

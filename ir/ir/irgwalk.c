@@ -45,9 +45,9 @@ static void irg_walk_cg(ir_node * node, int visited, eset * irg_set,
   set_irn_visited(node, visited);
 
   pred = skip_Proj(node);
-  if (get_irn_op(pred) == op_CallBegin
-      || get_irn_op(pred) == op_EndReg
-      || get_irn_op(pred) == op_EndExcept) {
+  if (intern_get_irn_op(pred) == op_CallBegin
+      || intern_get_irn_op(pred) == op_EndReg
+      || intern_get_irn_op(pred) == op_EndExcept) {
     current_ir_graph = get_irn_irg(pred);
   }
 
@@ -56,28 +56,28 @@ static void irg_walk_cg(ir_node * node, int visited, eset * irg_set,
   if (is_no_Block(node))
     irg_walk_cg(get_nodes_block(node), visited, irg_set, pre, post, env);
 
-  if (get_irn_op(node) == op_Block) { /* block */
-    for (i = get_irn_arity(node) - 1; i >= 0; --i) {
-      ir_node * exec = get_irn_n(node, i);
+  if (intern_get_irn_op(node) == op_Block) { /* block */
+    for (i = intern_get_irn_arity(node) - 1; i >= 0; --i) {
+      ir_node * exec = intern_get_irn_n(node, i);
       ir_node * pred = skip_Proj(exec);
-      if ((get_irn_op(pred) != op_CallBegin
-	   && get_irn_op(pred) != op_EndReg
-	   && get_irn_op(pred) != op_EndExcept)
+      if ((intern_get_irn_op(pred) != op_CallBegin
+	   && intern_get_irn_op(pred) != op_EndReg
+	   && intern_get_irn_op(pred) != op_EndExcept)
 	  || eset_contains(irg_set, get_irn_irg(pred))) {
 	irg_walk_cg(exec, visited, irg_set, pre, post, env);
       }
     }
-  } else if (get_irn_op(node) == op_Filter) {
-    for (i = get_irn_arity(node) - 1; i >= 0; --i) {
-      ir_node * pred = get_irn_n(node, i);
-      if (get_irn_op(pred) == op_Unknown || get_irn_op(pred) == op_Bad) {
+  } else if (intern_get_irn_op(node) == op_Filter) {
+    for (i = intern_get_irn_arity(node) - 1; i >= 0; --i) {
+      ir_node * pred = intern_get_irn_n(node, i);
+      if (intern_get_irn_op(pred) == op_Unknown || intern_get_irn_op(pred) == op_Bad) {
 	irg_walk_cg(pred, visited, irg_set, pre, post, env);
       } else {
 	ir_node * exec;
 	exec = skip_Proj(get_Block_cfgpred(get_nodes_block(node), i));
-	assert(get_irn_op(exec) == op_CallBegin
-	       || get_irn_op(exec) == op_EndReg
-	       || get_irn_op(exec) == op_EndExcept);
+	assert(intern_get_irn_op(exec) == op_CallBegin
+	       || intern_get_irn_op(exec) == op_EndReg
+	       || intern_get_irn_op(exec) == op_EndExcept);
 	if (eset_contains(irg_set, get_irn_irg(exec))) {
 	  current_ir_graph = get_irn_irg(exec);
 	  irg_walk_cg(pred, visited, irg_set, pre, post, env);
@@ -86,8 +86,8 @@ static void irg_walk_cg(ir_node * node, int visited, eset * irg_set,
       }
     }
   } else {
-    for (i = get_irn_arity(node) - 1; i >= 0; --i) {
-      irg_walk_cg(get_irn_n(node, i), visited, irg_set, pre, post, env);
+    for (i = intern_get_irn_arity(node) - 1; i >= 0; --i) {
+      irg_walk_cg(intern_get_irn_n(node, i), visited, irg_set, pre, post, env);
     }
   }
 
@@ -99,7 +99,7 @@ static void irg_walk_cg(ir_node * node, int visited, eset * irg_set,
 
 /* Insert all ir_graphs in irg_set, that are (transitive) reachable. */
 static void collect_irgs(ir_node * node, eset * irg_set) {
-  if (get_irn_op(node) == op_Call) {
+  if (intern_get_irn_op(node) == op_Call) {
     int i;
     for (i = get_Call_n_callees(node) - 1; i >= 0; --i) {
       entity * ent = get_Call_callee(node, i);
@@ -125,8 +125,8 @@ irg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
 
     if (is_no_Block(node))
       irg_walk_2(get_nodes_block(node), pre, post, env);
-    for (i = get_irn_arity(node) - 1; i >= 0; --i)
-      irg_walk_2(get_irn_n(node, i), pre, post, env);
+    for (i = intern_get_irn_arity(node) - 1; i >= 0; --i)
+      irg_walk_2(intern_get_irn_n(node, i), pre, post, env);
 
     if (post) post(node, env);
   }
@@ -137,9 +137,9 @@ irg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
     if (pre) pre(node, env);
 
     if (node->op != op_Block)
-      irg_walk_2(get_irn_n(node, -1), pre, post, env);
-    for (i = get_irn_arity(node) - 1; i >= 0; --i)
-      irg_walk_2(get_irn_n(node, i), pre, post, env);
+      irg_walk_2(intern_get_irn_n(node, -1), pre, post, env);
+    for (i = intern_get_irn_arity(node) - 1; i >= 0; --i)
+      irg_walk_2(intern_get_irn_n(node, i), pre, post, env);
 
     if (post) post(node, env);
   }
@@ -206,9 +206,9 @@ switch_irg (ir_node *n, int index) {
 
   if (interprocedural_view) {
     /* Only Filter and Block nodes can have predecessors in other graphs. */
-    if (get_irn_op(n) == op_Filter)
+    if (intern_get_irn_op(n) == op_Filter)
       n = get_nodes_block(n);
-    if (get_irn_op(n) == op_Block) {
+    if (intern_get_irn_op(n) == op_Block) {
       ir_node *cfop = skip_Proj(get_Block_cfgpred(n, index));
       if (is_ip_cfop(cfop)) {
 	current_ir_graph = get_irn_irg(cfop);
@@ -233,10 +233,10 @@ cg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
 
     if (is_no_Block(node))
       cg_walk_2(get_nodes_block(node), pre, post, env);
-    for (i = get_irn_arity(node) - 1; i >= 0; --i) {
+    for (i = intern_get_irn_arity(node) - 1; i >= 0; --i) {
       rem = switch_irg(node, i);  /* @@@ AS: Is this wrong? We do have to
                                              switch to the irg of the predecessor, don't we? */
-      cg_walk_2(get_irn_n(node, i), pre, post, env);
+      cg_walk_2(intern_get_irn_n(node, i), pre, post, env);
       current_ir_graph = rem;
     }
 
@@ -316,7 +316,7 @@ static ir_node *get_cf_op(ir_node *n) {
   n = skip_Tuple(n);
   pred = skip_Proj(n);
   if (!(is_cfop(pred) || is_fragile_op(pred) ||
-	(get_irn_op(pred) == op_Bad)))
+	(intern_get_irn_op(pred) == op_Bad)))
     n = get_cf_op(n);
 
   return skip_Proj(n);
@@ -325,7 +325,6 @@ static ir_node *get_cf_op(ir_node *n) {
 static void irg_block_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
 {
   int i;
-  assert(get_irn_opcode(node) == iro_Block);
 
   if(get_Block_block_visited(node) < get_irg_block_visited(current_ir_graph)) {
     set_Block_block_visited(node, get_irg_block_visited(current_ir_graph));
@@ -336,7 +335,7 @@ static void irg_block_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *p
       /* find the corresponding predecessor block. */
       ir_node *pred = get_cf_op(get_Block_cfgpred(node, i));
       pred = get_nodes_block(pred);
-      if(get_irn_opcode(pred) == iro_Block) {
+      if(intern_get_irn_opcode(pred) == iro_Block) {
 	/* recursion */
 	irg_block_walk_2(pred, pre, post, env);
       }
@@ -366,11 +365,11 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void
   assert(get_irn_opcode(block)  == iro_Block);
   irg_block_walk_2(block, pre, post, env);
   /* keepalive: the endless loops ... */
-  if (get_irn_op(node) == op_End) {
-    int arity = get_irn_arity(node);
+  if (intern_get_irn_op(node) == op_End) {
+    int arity = intern_get_irn_arity(node);
     for (i = 0; i < arity; i++) {
-      pred = get_irn_n(node, i);
-      if (get_irn_op(pred) == op_Block)
+      pred = intern_get_irn_n(node, i);
+      if (intern_get_irn_op(pred) == op_Block)
 	irg_block_walk_2(pred, pre, post, env);
     }
   }
@@ -591,8 +590,8 @@ enter_procedure(ir_node *block, ir_node *cf_pred, int pos) {
   assert(interprocedural_view);
 
   interprocedural_view = 0;
-  callbegin = skip_Proj(get_irn_n(block, 0));
-  assert(get_irn_op(callbegin) == op_CallBegin);
+  callbegin = skip_Proj(intern_get_irn_n(block, 0));
+  assert(intern_get_irn_op(callbegin) == op_CallBegin);
   interprocedural_view = 1;
 
   push_callsite(irg, callbegin);
@@ -624,18 +623,18 @@ ir_node *get_irn_ip_pred(ir_node *n, int pos) {
     /* Find the cf_pred refering to pos. */
     ir_node *block = n;
     ir_node *cf_pred;
-    if (get_irn_opcode(n) == iro_Filter) block = get_nodes_block(n);
-    cf_pred = skip_Proj(get_irn_n(block, pos));
+    if (intern_get_irn_opcode(n) == iro_Filter) block = get_nodes_block(n);
+    cf_pred = skip_Proj(intern_get_irn_n(block, pos));
 
     /* Check whether we enter or leave a procedure and act according. */
-    if ((get_irn_op(cf_pred) == op_EndReg) ||
-	(get_irn_op(cf_pred) == op_EndExcept))
+    if ((intern_get_irn_op(cf_pred) == op_EndReg) ||
+	(intern_get_irn_op(cf_pred) == op_EndExcept))
       enter_procedure(block, cf_pred, pos);
-    if (get_irn_op(cf_pred) == op_CallBegin)
+    if (intern_get_irn_op(cf_pred) == op_CallBegin)
       if (!leave_procedure(block, cf_pred, pos)) return NULL;
   }
 
-  return get_irn_n(n, pos);
+  return intern_get_irn_n(n, pos);
 }
 
 static INLINE void
@@ -670,13 +669,13 @@ return_recur(ir_node *n, int pos) {
 
   /* Find the cf_pred refering to pos. */
   block = n;
-  if (get_irn_opcode(n) == iro_Filter) block = get_nodes_block(n);
-  cf_pred = skip_Proj(get_irn_n(block, pos));
+  if (intern_get_irn_opcode(n) == iro_Filter) block = get_nodes_block(n);
+  cf_pred = skip_Proj(intern_get_irn_n(block, pos));
 
   /* Check whether we re_enter or re_leave a procedure and act according. */
-  if ((get_irn_op(cf_pred) == op_EndReg) ||
-      (get_irn_op(cf_pred) == op_EndExcept))
+  if ((intern_get_irn_op(cf_pred) == op_EndReg) ||
+      (intern_get_irn_op(cf_pred) == op_EndExcept))
     re_enter_procedure(block, cf_pred, pos);
-  if (get_irn_op(cf_pred) == op_CallBegin)
+  if (intern_get_irn_op(cf_pred) == op_CallBegin)
     re_leave_procedure(block, cf_pred, pos);
 }

@@ -20,10 +20,8 @@
 #include "irgraph_t.h"
 #include "irmode_t.h"
 #include "typegmod.h"
-#include "array.h"
 #include "irbackedge_t.h"
 #include "irdump.h"
-#include "irflag_t.h"
 #include "irop_t.h"
 #include "irprog_t.h"
 
@@ -159,32 +157,19 @@ is_ir_node (const void *thing) {
     return 0;
 }
 
-/* returns the number of predecessors without the block predecessor. */
 INLINE int
 get_irn_intra_arity (const ir_node *node) {
-  assert(node);
-  return ARR_LEN(node->in) - 1;
+  return intern_get_irn_intra_arity(node);
 }
 
-/* returns the number of predecessors without the block predecessor. */
 INLINE int
 get_irn_inter_arity (const ir_node *node) {
-  assert(node);
-  if (get_irn_opcode(node) == iro_Filter) {
-    assert(node->attr.filter.in_cg);
-    return ARR_LEN(node->attr.filter.in_cg) - 1;
-  } else if (get_irn_opcode(node) == iro_Block && node->attr.block.in_cg) {
-    return ARR_LEN(node->attr.block.in_cg) - 1;
-  }
-  return get_irn_intra_arity(node);
+  return intern_get_irn_inter_arity(node);
 }
 
-/* returns the number of predecessors without the block predecessor. */
 INLINE int
 get_irn_arity (const ir_node *node) {
-  assert(node);
-  if (interprocedural_view) return get_irn_inter_arity(node);
-  return get_irn_intra_arity(node);
+  return intern_get_irn_arity(node);
 }
 
 /* Returns the array with ins. This array is shifted with respect to the
@@ -235,34 +220,18 @@ set_irn_in (ir_node *node, int arity, ir_node **in) {
 
 INLINE ir_node *
 get_irn_intra_n (ir_node *node, int n) {
-  return (node->in[n + 1] = skip_nop(node->in[n + 1]));
+  return intern_get_irn_intra_n (node, n);
 }
 
-INLINE ir_node*
+INLINE ir_node *
 get_irn_inter_n (ir_node *node, int n) {
-  /* handle Filter and Block specially */
-  if (get_irn_opcode(node) == iro_Filter) {
-    assert(node->attr.filter.in_cg);
-    return (node->attr.filter.in_cg[n + 1] = skip_nop(node->attr.filter.in_cg[n + 1]));
-  } else if (get_irn_opcode(node) == iro_Block && node->attr.block.in_cg) {
-    return (node->attr.block.in_cg[n + 1] = skip_nop(node->attr.block.in_cg[n + 1]));
-  }
-
-  return get_irn_intra_n (node, n);
+  return intern_get_irn_inter_n (node, n);
 }
 
-/* to iterate through the predecessors without touching the array */
-/* To iterate over the operands iterate from 0 to i < get_irn_arity(),
-   to iterate including the Block predecessor iterate from i = -1 to
-   i < get_irn_arity.
-   If it is a block, the entry -1 is NULL. */
 INLINE ir_node *
 get_irn_n (ir_node *node, int n) {
-  assert(node); assert(-1 <= n && n < get_irn_arity(node));
-  if (interprocedural_view)  return get_irn_inter_n (node, n);
-  return get_irn_intra_n (node, n);
+  return intern_get_irn_n (node, n);
 }
-
 
 INLINE void
 set_irn_n (ir_node *node, int n, ir_node *in) {
@@ -289,10 +258,8 @@ set_irn_n (ir_node *node, int n, ir_node *in) {
 }
 
 INLINE ir_mode *
-get_irn_mode (const ir_node *node)
-{
-  assert (node);
-  return node->mode;
+get_irn_mode (const ir_node *node) {
+  return intern_get_irn_mode(node);
 }
 
 INLINE void
@@ -328,8 +295,7 @@ get_irn_modeident (const ir_node *node)
 INLINE ir_op *
 get_irn_op (const ir_node *node)
 {
-  assert (node);
-  return node->op;
+  return intern_get_irn_op(node);
 }
 
 /* should be private to the library: */
@@ -343,9 +309,7 @@ set_irn_op (ir_node *node, ir_op *op)
 INLINE opcode
 get_irn_opcode (const ir_node *node)
 {
-  assert (k_ir_node == get_kind(node));
-  assert (node -> op);
-  return node->op->code;
+  return intern_get_irn_opcode(node);
 }
 
 INLINE const char *
@@ -728,8 +692,7 @@ INLINE void
 set_Start_irg(ir_node *node, ir_graph *irg) {
   assert(node->op == op_Start);
   assert(is_ir_graph(irg));
-  assert(0 && " Why set irg? ");
-  //node->attr.start.irg = irg;
+  assert(0 && " Why set irg? -- use set_irn_irg");
 }
 
 INLINE int
@@ -1917,7 +1880,7 @@ skip_nop (ir_node *node) {
     ir_node *rem_pred = node->in[0+1];
     ir_node *res;
 
-    assert (get_irn_arity (node) > 0);
+    assert (intern_get_irn_arity (node) > 0);
 
     node->in[0+1] = node;
     res = skip_nop(rem_pred);
@@ -1933,7 +1896,6 @@ skip_nop (ir_node *node) {
 /* This should compact Id-cycles to self-cycles. It has the same (or less?) complexity
    than any other approach, as Id chains are resolved and all point to the real node, or
    all id's are self loops. */
-extern int opt_normalize;
 INLINE ir_node *
 skip_nop (ir_node *node) {
   ir_node *pred;
@@ -1949,7 +1911,7 @@ skip_nop (ir_node *node) {
     if (pred->op != op_Id) return pred; /* shortcut */
     rem_pred = pred;
 
-    assert (get_irn_arity (node) > 0);
+    assert (intern_get_irn_arity (node) > 0);
 
     node->in[0+1] = node;
     res = skip_nop(rem_pred);
@@ -1962,8 +1924,6 @@ skip_nop (ir_node *node) {
   }
 }
 #endif
-
-
 
 INLINE ir_node *
 skip_Id (ir_node *node) {

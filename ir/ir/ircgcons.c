@@ -20,6 +20,7 @@
 
 #include "array.h"
 #include "irprog.h"
+#include "irnode_t.h"
 #include "ircons.h"
 #include "irgmod.h"
 #include "irgwalk.h"
@@ -58,7 +59,7 @@ static void caller_init(int arr_length, entity ** free_methods) {
     ir_node * call;
     /* Die Call-Knoten sind (mit den Proj-Knoten) am End-Knoten verlinkt! */
     for (call = get_irn_link(get_irg_end(irg)); call; call = get_irn_link(call)) {
-      if (get_irn_op(call) != op_Call) continue;
+      if (intern_get_irn_op(call) != op_Call) continue;
       for (j = get_Call_n_callees(call) - 1; j >= 0; --j) {
 	entity * ent = get_Call_callee(call, j);
 	if (ent) {
@@ -91,14 +92,14 @@ static INLINE ir_node * tail(ir_node * node) {
  * (auch bei Proj->Call Operationen) und Phi-Operationen in die Liste ihres
  * Grundblocks einfügen. */
 static void collect_phicallproj_walker(ir_node * node, ir_node ** call_tail) {
-  if (get_irn_op(node) == op_Call) {
+  if (intern_get_irn_op(node) == op_Call) {
     /* Die Liste von Call an call_tail anhängen. */
     ir_node * link;
     assert(get_irn_link(*call_tail) == NULL);
     set_irn_link(*call_tail, node);
     /* call_tail aktualisieren: */
     for (link = get_irn_link(*call_tail); link; *call_tail = link, link = get_irn_link(link)) ;
-  } else if (get_irn_op(node) == op_Proj) {
+  } else if (intern_get_irn_op(node) == op_Proj) {
     ir_node * head = skip_Proj(get_Proj_pred(node));
     set_irn_link(node, get_irn_link(head));
     set_irn_link(head, node);
@@ -106,7 +107,7 @@ static void collect_phicallproj_walker(ir_node * node, ir_node ** call_tail) {
     if (head == *call_tail) {
       *call_tail = node;
     }
-  } else if (get_irn_op(node) == op_Phi) {
+  } else if (intern_get_irn_op(node) == op_Phi) {
     ir_node * block = get_nodes_Block(node);
     set_irn_link(node, get_irn_link(block));
     set_irn_link(block, node);
@@ -150,7 +151,7 @@ static void collect_phicallproj(void) {
 static ir_node * exchange_proj(ir_node * proj) {
   ir_node * filter;
   assert(get_irn_op(proj) == op_Proj);
-  filter = new_Filter(get_Proj_pred(proj), get_irn_mode(proj), get_Proj_proj(proj));
+  filter = new_Filter(get_Proj_pred(proj), intern_get_irn_mode(proj), get_Proj_proj(proj));
   /* Die Proj- (Id-) Operation sollte im gleichen Grundblock stehen, wie die
    * Filter-Operation. */
   set_nodes_Block(proj, get_nodes_Block(filter));
@@ -221,7 +222,7 @@ static void prepare_irg(ir_graph * irg, irg_data_t * data) {
    * dass oben für "verschiedene" Proj-Operationen wegen CSE nur eine
    * Filter-Operation erzeugt worden sein kann. */
   for (link = get_irg_start(irg), proj = get_irn_link(link); proj; proj = get_irn_link(proj)) {
-    if (get_irn_op(proj) == op_Id) { /* replaced with filter */
+    if (intern_get_irn_op(proj) == op_Id) { /* replaced with filter */
       ir_node * filter = get_Id_pred(proj);
       assert(get_irn_op(filter) == op_Filter);
       if (filter != link && get_irn_link(filter) == NULL) {
@@ -238,8 +239,8 @@ static void prepare_irg(ir_graph * irg, irg_data_t * data) {
   if (data->open) {
     set_Block_cg_cfgpred(start_block, 0, get_cg_Unknown(mode_X));
     for (proj = get_irn_link(get_irg_start(irg)); proj; proj = get_irn_link(proj)) {
-      if (get_irn_op(proj) == op_Filter) {
-	set_Filter_cg_pred(proj, 0, get_cg_Unknown(get_irn_mode(proj)));
+      if (intern_get_irn_op(proj) == op_Filter) {
+	set_Filter_cg_pred(proj, 0, get_cg_Unknown(intern_get_irn_mode(proj)));
       }
     }
     data->count = 1;
@@ -262,7 +263,7 @@ static void prepare_irg_end(ir_graph * irg, irg_data_t * data) {
   int n_ret = 0;
 
   for (i = get_Block_n_cfgpreds(end_block) - 1; i >= 0; --i) {
-    if (get_irn_op(cfgpred_arr[i]) == op_Return) {
+    if (intern_get_irn_op(cfgpred_arr[i]) == op_Return) {
       if (ret_arr) {
 	ARR_APP1(ir_node *, ret_arr, cfgpred_arr[i]);
       } else {
@@ -304,8 +305,8 @@ static void prepare_irg_end(ir_graph * irg, irg_data_t * data) {
       /* In[0] could be a Bad node with wrong mode. */
       for (i = n_ret - 1; i >= 0; --i) {
 	in[i] = get_Return_res(ret_arr[i], j);
-	if (!mode && get_irn_mode(in[i]) != mode_T)
-	  mode = get_irn_mode(in[i]);
+	if (!mode && intern_get_irn_mode(in[i]) != mode_T)
+	  mode = intern_get_irn_mode(in[i]);
       }
       if (mode)
 	data->res[j] = new_Phi(n_ret, in, mode);
@@ -329,7 +330,7 @@ static void prepare_irg_end_except(ir_graph * irg, irg_data_t * data) {
   int n_except = 0;
   ir_node ** cfgpred_arr = get_Block_cfgpred_arr(end_block);
   for (i = get_Block_n_cfgpreds(end_block) - 1; i >= 0; --i) {
-    if (get_irn_op(cfgpred_arr[i]) != op_Return) {
+    if (intern_get_irn_op(cfgpred_arr[i]) != op_Return) {
       if (except_arr) {
 	ARR_APP1(ir_node *, except_arr, cfgpred_arr[i]);
       } else {
@@ -348,9 +349,9 @@ static void prepare_irg_end_except(ir_graph * irg, irg_data_t * data) {
     /* mem */
     for (i = n_except - 1; i >= 0; --i) {
       ir_node * node = skip_Proj(except_arr[i]);
-      if (get_irn_op(node) == op_Call) {
+      if (intern_get_irn_op(node) == op_Call) {
 	in[i] = new_r_Proj(irg, get_nodes_Block(node), node, mode_M, 3);
-      } else if (get_irn_op(node) == op_Raise) {
+      } else if (intern_get_irn_op(node) == op_Raise) {
 	in[i] = new_r_Proj(irg, get_nodes_Block(node), node, mode_M, 1);
       } else {
 	assert(is_fragile_op(node));
@@ -402,8 +403,8 @@ static void move_nodes(ir_node * from_block, ir_node * to_block, ir_node * node)
   int i;
   ir_node *proj;
 
-  for (i = get_irn_arity(node) - 1; i >= 0; --i) {
-    ir_node * pred = get_irn_n(node, i);
+  for (i = intern_get_irn_arity(node) - 1; i >= 0; --i) {
+    ir_node * pred = intern_get_irn_n(node, i);
     if (get_nodes_Block(pred) == from_block) {
       move_nodes(from_block, to_block, pred);
     }
@@ -413,8 +414,8 @@ static void move_nodes(ir_node * from_block, ir_node * to_block, ir_node * node)
   /* Move projs of this node. */
   proj = get_irn_link(node);
   for (; proj; proj = skip_Id(get_irn_link(proj))) {
-    if (get_irn_op(proj) != op_Proj && get_irn_op(proj) != op_Filter) continue;
-    if ((get_nodes_Block(proj) == from_block) && (skip_Proj(get_irn_n(proj, 0)) == node))
+    if (intern_get_irn_op(proj) != op_Proj && intern_get_irn_op(proj) != op_Filter) continue;
+    if ((get_nodes_Block(proj) == from_block) && (skip_Proj(intern_get_irn_n(proj, 0)) == node))
       set_nodes_Block(proj, to_block);
   }
 }
@@ -436,7 +437,7 @@ static void construct_start(entity * caller, entity * callee,
 
   set_Block_cg_cfgpred(get_nodes_Block(start), data->count, exec);
   for (filter = get_irn_link(start); filter; filter = get_irn_link(filter)) {
-    if (get_irn_op(filter) != op_Filter) continue;
+    if (intern_get_irn_op(filter) != op_Filter) continue;
     if (get_Proj_pred(filter) == start) {
       switch ((int) get_Proj_proj(filter)) {
       case pns_global_store:
@@ -446,13 +447,13 @@ static void construct_start(entity * caller, entity * callee,
 	/* "frame_base" wird nur durch Unknown dargestellt. Man kann ihn aber
 	 * auch explizit darstellen, wenn sich daraus Vorteile für die
 	 * Datenflussanalyse ergeben. */
-	set_Filter_cg_pred(filter, data->count, get_cg_Unknown(get_irn_mode(filter)));
+	set_Filter_cg_pred(filter, data->count, get_cg_Unknown(intern_get_irn_mode(filter)));
 	break;
       case pns_globals:
 	/* "globals" wird nur durch Unknown dargestellt. Man kann ihn aber auch
 	 * explizit darstellen, wenn sich daraus Vorteile für die
 	 * Datenflussanalyse ergeben. */
-	set_Filter_cg_pred(filter, data->count, get_cg_Unknown(get_irn_mode(filter)));
+	set_Filter_cg_pred(filter, data->count, get_cg_Unknown(intern_get_irn_mode(filter)));
 	break;
       default:
 	/* not reached */
@@ -526,8 +527,8 @@ static ir_node * get_except(ir_node * call) {
   /* Mit CSE könnte man das effizienter machen! Die Methode wird aber für jede
    * Aufrufstelle nur ein einziges Mal aufgerufen. */
   ir_node * proj;
-  for (proj = get_irn_link(call); proj && get_irn_op(proj) == op_Proj; proj = get_irn_link(proj)) {
-    if (get_Proj_proj(proj) == 1 && get_irn_op(get_Proj_pred(proj)) == op_Call) {
+  for (proj = get_irn_link(call); proj && intern_get_irn_op(proj) == op_Proj; proj = get_irn_link(proj)) {
+    if (get_Proj_proj(proj) == 1 && intern_get_irn_op(get_Proj_pred(proj)) == op_Call) {
       return proj;
     }
   }
@@ -702,7 +703,7 @@ static void construct_call(ir_node * call) {
    * interprozedurale Vorgänger einfügen. */
   set_irg_current_block(current_ir_graph, post_block);
   for (proj = get_irn_link(call); proj; proj = get_irn_link(proj)) {
-    if (get_irn_op(proj) != op_Proj) continue;
+    if (intern_get_irn_op(proj) != op_Proj) continue;
     if (skip_Proj(get_Proj_pred(proj)) != call) continue;
     if (get_Proj_pred(proj) == call) {
       if (get_Proj_proj(proj) == 0) { /* memory */
@@ -750,7 +751,7 @@ static void construct_call(ir_node * call) {
 	set_irn_link(filter, get_irn_link(post_block));
 	set_irn_link(post_block, filter);
       }
-      fill_result(get_Proj_proj(filter), n_callees, data, in, get_irn_mode(filter));
+      fill_result(get_Proj_proj(filter), n_callees, data, in, intern_get_irn_mode(filter));
       set_Filter_cg_pred_arr(filter, n_callees, in);
     }
   }
@@ -792,7 +793,7 @@ void cg_construct(int arr_len, entity ** free_methods_arr) {
     ir_node * node;
     current_ir_graph = get_irp_irg(i);
     for (node = get_irn_link(get_irg_end(current_ir_graph)); node; node = get_irn_link(node)) {
-      if (get_irn_op(node) == op_Call) {
+      if (intern_get_irn_op(node) == op_Call) {
 	int n_callees = get_Call_n_callees(node);
 	if (n_callees > 1 || (n_callees == 1 && get_Call_callee(node, 0) != NULL)) {
 	  construct_call(node);
@@ -812,17 +813,17 @@ void cg_construct(int arr_len, entity ** free_methods_arr) {
 
 
 static void destruct_walker(ir_node * node, void * env) {
-  if (get_irn_op(node) == op_Block) {
+  if (intern_get_irn_op(node) == op_Block) {
     remove_Block_cg_cfgpred_arr(node);
-  } else if (get_irn_op(node) == op_Filter) {
+  } else if (intern_get_irn_op(node) == op_Filter) {
     set_irg_current_block(current_ir_graph, get_nodes_Block(node));
-    exchange(node, new_Proj(get_Filter_pred(node), get_irn_mode(node), get_Filter_proj(node)));
-  } else if (get_irn_op(node) == op_Break) {
+    exchange(node, new_Proj(get_Filter_pred(node), intern_get_irn_mode(node), get_Filter_proj(node)));
+  } else if (intern_get_irn_op(node) == op_Break) {
     set_irg_current_block(current_ir_graph, get_nodes_Block(node));
     exchange(node, new_Jmp());
-  } else if (get_irn_op(node) == op_Call) {
+  } else if (intern_get_irn_op(node) == op_Call) {
     remove_Call_callee_arr(node);
-  } else if (get_irn_op(node) == op_Proj) {
+  } else if (intern_get_irn_op(node) == op_Proj) {
     // some ProjX end up in strage blocks.
     set_nodes_block(node, get_nodes_block(get_Proj_pred(node)));
   }

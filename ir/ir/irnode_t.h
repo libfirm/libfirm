@@ -29,10 +29,12 @@
 
 # include "irnode.h"
 # include "irop_t.h"
+# include "irflag_t.h"
 # include "firm_common_t.h"
 # include "irdom_t.h" /* For size of struct dom_info. */
 # include "dbginfo.h"
 # include "irloop.h"
+# include "array.h"
 
 # include "exc.h"
 
@@ -240,5 +242,94 @@ sel_attr      get_irn_sel_attr      (ir_node *node);
 int           get_irn_phi_attr      (ir_node *node);
 block_attr    get_irn_block_attr   (ir_node *node);
 /*@}*/
+
+/*********************************************************************/
+/*  These function are most used in libfirm.  Give them as static    */
+/*  functions so they can be inlined.                                */
+/*********************************************************************/
+
+
+
+/* returns the number of predecessors without the block predecessor. */
+static INLINE int
+intern_get_irn_intra_arity (const ir_node *node) {
+  assert(node);
+  return ARR_LEN(node->in) - 1;
+}
+
+/* returns the number of predecessors without the block predecessor. */
+static INLINE int
+intern_get_irn_inter_arity (const ir_node *node) {
+  assert(node);
+  if (get_irn_opcode(node) == iro_Filter) {
+    assert(node->attr.filter.in_cg);
+    return ARR_LEN(node->attr.filter.in_cg) - 1;
+  } else if (get_irn_opcode(node) == iro_Block && node->attr.block.in_cg) {
+    return ARR_LEN(node->attr.block.in_cg) - 1;
+  }
+  return intern_get_irn_intra_arity(node);
+}
+
+/* returns the number of predecessors without the block predecessor. */
+static INLINE int
+intern_get_irn_arity (const ir_node *node) {
+  assert(node);
+  if (interprocedural_view) return intern_get_irn_inter_arity(node);
+  return intern_get_irn_intra_arity(node);
+}
+
+static INLINE ir_node *
+intern_get_irn_intra_n (ir_node *node, int n) {
+  return (node->in[n + 1] = skip_nop(node->in[n + 1]));
+}
+
+static INLINE ir_node*
+intern_get_irn_inter_n (ir_node *node, int n) {
+  /* handle Filter and Block specially */
+  if (get_irn_opcode(node) == iro_Filter) {
+    assert(node->attr.filter.in_cg);
+    return (node->attr.filter.in_cg[n + 1] = skip_nop(node->attr.filter.in_cg[n + 1]));
+  } else if (get_irn_opcode(node) == iro_Block && node->attr.block.in_cg) {
+    return (node->attr.block.in_cg[n + 1] = skip_nop(node->attr.block.in_cg[n + 1]));
+  }
+
+  return get_irn_intra_n (node, n);
+}
+
+/* to iterate through the predecessors without touching the array */
+/* To iterate over the operands iterate from 0 to i < get_irn_arity(),
+   to iterate including the Block predecessor iterate from i = -1 to
+   i < get_irn_arity.
+   If it is a block, the entry -1 is NULL. */
+static INLINE ir_node *
+intern_get_irn_n (ir_node *node, int n) {
+  assert(node); assert(-1 <= n && n < intern_get_irn_arity(node));
+  if (interprocedural_view)  return get_irn_inter_n (node, n);
+  return get_irn_intra_n (node, n);
+}
+
+static INLINE ir_mode *
+intern_get_irn_mode (const ir_node *node)
+{
+  assert (node);
+  return node->mode;
+}
+
+static INLINE ir_op *
+intern_get_irn_op (const ir_node *node)
+{
+  assert (node);
+  return node->op;
+}
+
+static INLINE opcode
+intern_get_irn_opcode (const ir_node *node)
+{
+  assert (k_ir_node == get_kind(node));
+  assert (node -> op);
+  return node->op->code;
+}
+
+
 
 # endif /* _IRNODE_T_H_ */

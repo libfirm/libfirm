@@ -919,7 +919,7 @@ entity *resolve_ent_polymorphy(type *dynamic_class, entity* static_ent) {
   entity *res = resolve_ent_polymorphy2(dynamic_class, static_ent);
   if (!res) {
     printf(" Could not find entity "); DDME(static_ent);
-    printf("  in class"); DDMT(dynamic_class);
+    printf("  in "); DDMT(dynamic_class);
     printf("\n");
     dump_entity(static_ent);
     dump_type(get_entity_owner(static_ent));

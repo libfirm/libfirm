@@ -17,6 +17,7 @@
 #include "firmwalk.h"
 #include "pmap.h"
 #include "entity.h"
+#include "irnode_t.h"
 #include "irprog.h"
 #include "irgwalk.h"
 #include "array.h"
@@ -261,7 +262,7 @@ static
 void fw_collect_irn(ir_node *irn, void *env)
 {
   fw_data *data;
-  ir_mode* mode = get_irn_mode(irn);
+  ir_mode* mode = intern_get_irn_mode(irn);
 
   /* The link field will be cleared in the walk_do_mode()
     callback function. */

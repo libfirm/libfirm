@@ -514,23 +514,23 @@ init_node (ir_node *n, void *env) {
   /* Also init nodes not visible in intraproc_view. */
     /* @@@ init_node is called for too many nodes -- this wastes memory!.
        The mem is not lost as its on the obstack. */
-  if (get_irn_op(n) == op_Filter) {
+  if (intern_get_irn_op(n) == op_Filter) {
     for (i = 0; i < get_Filter_n_cg_preds(n); i++)
       init_node(get_Filter_cg_pred(n, i), NULL);
   }
-  if (get_irn_op(n) == op_Block) {
+  if (intern_get_irn_op(n) == op_Block) {
     for (i = 0; i < get_Block_cg_n_cfgpreds(n); i++) {
       init_node(get_Block_cg_cfgpred(n, i), NULL);
     }
   }
   /* The following pattern matches only after a call from above pattern. */
-  if ((get_irn_op(n) == op_Proj) /*&& (get_Proj_proj(n) == 0)*/) {
+  if ((intern_get_irn_op(n) == op_Proj) /*&& (get_Proj_proj(n) == 0)*/) {
     /* @@@ init_node is called for every proj -- this wastes memory!.
        The mem is not lost as its on the obstack. */
     ir_node *cb = get_Proj_pred(n);
-    if ((get_irn_op(cb) == op_CallBegin) ||
-    (get_irn_op(cb) == op_EndReg) ||
-    (get_irn_op(cb) == op_EndExcept)) {
+    if ((intern_get_irn_op(cb) == op_CallBegin) ||
+	(intern_get_irn_op(cb) == op_EndReg) ||
+	(intern_get_irn_op(cb) == op_EndExcept)) {
       init_node(cb, NULL);
       init_node(get_nodes_Block(cb), NULL);
     }
@@ -565,9 +565,9 @@ init_ip_scc (void) {
 static bool is_outermost_Start(ir_node *n) {
   /* Test whether this is the outermost Start node.  If so
      recursion must end. */
-  if ((get_irn_op(n) == op_Block)     &&
+  if ((intern_get_irn_op(n) == op_Block)     &&
       (get_Block_n_cfgpreds(n) == 1)  &&
-      (get_irn_op(skip_Proj(get_Block_cfgpred(n, 0))) == op_Start) &&
+      (intern_get_irn_op(skip_Proj(get_Block_cfgpred(n, 0))) == op_Start) &&
       (get_nodes_Block(skip_Proj(get_Block_cfgpred(n, 0))) == n)) {
     return true;
   }
@@ -576,7 +576,7 @@ static bool is_outermost_Start(ir_node *n) {
       not possible in interprocedural view as outermost_graph is
       not necessarily the only with a dead-end start block.
       Besides current_ir_graph is not set properly. */
-  if ((get_irn_op(n) == op_Block) &&
+  if ((intern_get_irn_op(n) == op_Block) &&
       (n == get_irg_start_block(current_ir_graph))) {
     if ((!interprocedural_view)  ||
     (current_ir_graph == outermost_ir_graph))
@@ -589,7 +589,7 @@ static bool is_outermost_Start(ir_node *n) {
 /* Don't walk from nodes to blocks except for Control flow operations. */
 static INLINE int
 get_start_index(ir_node *n) {
-  if (is_cfop(n) || is_fragile_op(n) || get_irn_op(n) == op_Start)
+  if (is_cfop(n) || is_fragile_op(n) || intern_get_irn_op(n) == op_Start)
     return -1;
   else
     return 0;
@@ -603,9 +603,9 @@ switch_irg (ir_node *n, int index) {
 
   if (interprocedural_view) {
     /* Only Filter and Block nodes can have predecessors in other graphs. */
-    if (get_irn_op(n) == op_Filter)
+    if (intern_get_irn_op(n) == op_Filter)
       n = get_nodes_Block(n);
-    if (get_irn_op(n) == op_Block) {
+    if (intern_get_irn_op(n) == op_Block) {
       ir_node *cfop = skip_Proj(get_Block_cfgpred(n, index));
       if (is_ip_cfop(cfop)) {
     current_ir_graph = get_irn_irg(cfop);
@@ -637,21 +637,21 @@ find_irg_on_stack (ir_node *n) {
       m = stack[i];
       /*printf(" Visiting %d ", i); DDMN(m);*/
       if (is_ip_cfop(m)) {
-    current_ir_graph = get_irn_irg(m);
-    break;
+	current_ir_graph = get_irn_irg(m);
+	break;
       }
-      if (get_irn_op(m) == op_Filter) {
-    /* Find the corresponding ip_cfop */
-    ir_node *pred = stack[i+1];
-    int j;
-    for (j = 0; j < get_Filter_n_cg_preds(m); j++)
-      if (get_Filter_cg_pred(m, j) == pred) break;
-    if (j >= get_Filter_n_cg_preds(m))
-      /* It is a filter we didn't pass as the predecessors are marked. */
-      continue;
-    assert(get_Filter_cg_pred(m, j) == pred);
-    switch_irg(m, j);
-    break;
+      if (intern_get_irn_op(m) == op_Filter) {
+	/* Find the corresponding ip_cfop */
+	ir_node *pred = stack[i+1];
+	int j;
+	for (j = 0; j < get_Filter_n_cg_preds(m); j++)
+	  if (get_Filter_cg_pred(m, j) == pred) break;
+	if (j >= get_Filter_n_cg_preds(m))
+	  /* It is a filter we didn't pass as the predecessors are marked. */
+	  continue;
+	assert(get_Filter_cg_pred(m, j) == pred);
+	switch_irg(m, j);
+	break;
       }
     }
   }
@@ -681,7 +681,7 @@ static void test(ir_node *pred, ir_node *root, ir_node *this) {
 
 /* Test for legal loop header: Block, Phi, ... */
 INLINE static bool is_possible_loop_head(ir_node *n) {
-  ir_op *op = get_irn_op(n);
+  ir_op *op = intern_get_irn_op(n);
   return ((op == op_Block) ||
       (op == op_Phi) ||
       ((op == op_Filter) && interprocedural_view));
@@ -700,10 +700,11 @@ is_head (ir_node *n, ir_node *root)
   /* Test for legal loop header: Block, Phi, ... */
   if (!is_possible_loop_head(n))
     return false;
+
   if (!is_outermost_Start(n)) {
-    arity = get_irn_arity(n);
+    arity = intern_get_irn_arity(n);
     for (i = get_start_index(n); i < arity; i++) {
-      ir_node *pred = get_irn_n(n, i);
+      ir_node *pred = intern_get_irn_n(n, i);
       assert(pred);
       if (is_backedge(n, i)) continue;
       if (!irn_is_in_stack(pred)) {
@@ -725,9 +726,9 @@ smallest_dfn_pred (ir_node *n, int limit)
   int i, index = -2, min = -1;
 
   if (!is_outermost_Start(n)) {
-    int arity = get_irn_arity(n);
+    int arity = intern_get_irn_arity(n);
     for (i = get_start_index(n); i < arity; i++) {
-      ir_node *pred = get_irn_n(n, i);
+      ir_node *pred = intern_get_irn_n(n, i);
       assert(pred);
       if (is_backedge(n, i) || !irn_is_in_stack(pred)) continue;
       if (get_irn_dfn(pred) >= limit && (min == -1 || get_irn_dfn(pred) < min)) {
@@ -746,9 +747,9 @@ largest_dfn_pred (ir_node *n)
   int i, index = -2, max = -1;
 
   if (!is_outermost_Start(n)) {
-    int arity = get_irn_arity(n);
+    int arity = intern_get_irn_arity(n);
     for (i = get_start_index(n); i < arity; i++) {
-      ir_node *pred = get_irn_n(n, i);
+      ir_node *pred = intern_get_irn_n(n, i);
       if (is_backedge (n, i) || !irn_is_in_stack(pred)) continue;
       if (get_irn_dfn(pred) > max) {
     index = i;
@@ -795,7 +796,7 @@ find_tail (ir_node *n) {
   assert (res_index > -2);
 
   set_backedge (m, res_index);
-  return is_outermost_Start(n) ? NULL : get_irn_n(m, res_index);
+  return is_outermost_Start(n) ? NULL : intern_get_irn_n(m, res_index);
 }
 
 
@@ -818,13 +819,13 @@ static void scc (ir_node *n) {
      so is_backedge does not access array[-1] but correctly returns false! */
 
   if (!is_outermost_Start(n)) {
-    int arity = get_irn_arity(n);
+    int arity = intern_get_irn_arity(n);
     for (i = get_start_index(n); i < arity; i++) {
       ir_node *m;
       if (is_backedge(n, i)) continue;
 
-      m = get_irn_n(n, i); /* get_irn_ip_pred(n, i); */
-      //if ((!m) || (get_irn_op(m) == op_Unknown)) continue;
+      m = intern_get_irn_n(n, i); /* get_irn_ip_pred(n, i); */
+      //if ((!m) || (intern_get_irn_op(m) == op_Unknown)) continue;
       scc (m);
       if (irn_is_in_stack(m)) {
     /* Uplink of m is smaller if n->m is a backedge.
