@@ -20,7 +20,7 @@ SOURCES := Makefile.in \
 	dead_block_example.c   inheritance_example.c  while_example.c
 
 bin_EXAMPLES = $(CFILES:.c=)
-run_bin_EXAMPLES = $(CFILES:.c=;)
+run_bin_EXAMPLES = $(patsubst %.c,./%;,$(CFILES))
 
 
 include $(topdir)/MakeRules
