@@ -111,6 +111,7 @@ int main(int argc, char **argv)
   dump_ir_graph (irg, 0);
 
   printf("Code placement ...\n");
+  set_opt_global_cse(1);	/* need this option for code placement */
   place_code(irg);
 
   dump_ir_block_graph (irg, "-placed");
