@@ -947,11 +947,13 @@ void compute_compound_ent_array_indicees(entity *ent) {
 
 }
 
-/** @fixme MMB: the memcpy is very strange */
-static int *resize (int *buf, int new_size) {
+/** resize: double the allocated buffer */
+static int *resize (int *buf, int *size) {
+  int new_size =  *size * 2;
   int *new_buf = xcalloc(new_size, sizeof(new_buf[0]));
-  memcpy(new_buf, buf, new_size>1);
+  memcpy(new_buf, buf, *size);
   free(buf);
+  *size = new_size;
   return new_buf;
 }
 
@@ -993,8 +995,7 @@ void sort_compound_ent_values(entity *ent) {
   for (i = 0; i < n_vals; ++i) {
     int pos = get_compound_ent_value_offset_bits(ent, i);
     while (pos >= size) {
-      size = size + size;
-      permutation = resize(permutation, size);
+      permutation = resize(permutation, &size);
     }
     assert(pos < size);
     assert(permutation[pos] == 0 && "two values with the same offset");
