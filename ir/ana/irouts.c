@@ -25,7 +25,7 @@
 /* $Id$ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
+#endif /* defined HAVE_CONFIG_H */
 
 #include "irouts.h"
 #include "irnode_t.h"
@@ -34,6 +34,12 @@
 #include "irprog_t.h"
 #include "irgwalk.h"
 #include "string.h"
+
+#ifdef DEBUG_libfirm
+/* Note:  ir_node.out_valid and ir_graph.n_outs are only present when DEBUG_libfirm is defined */
+/* Accesses to out_valid and n_outs are fenced out to avoid breakage
+   when compiling with neither DEBUG_libfirm or NDEBUG defined */
+#endif /* defined DEBUG_libfirm */
 
 /**********************************************************************/
 /** Accessing the out datastructures                                 **/
@@ -44,14 +50,14 @@ static void reset_outs (ir_node *node, void *unused)
   node->out = NULL;
 #ifdef DEBUG_libfirm
   node->out_valid = 0;
-#endif
+#endif /* defined DEBUG_libfirm */
 }
 
 /* returns the number of successors of the node: */
 INLINE int get_irn_n_outs    (ir_node *node) {
 #ifdef DEBUG_libfirm
   assert (node->out_valid);
-#endif
+#endif /* defined DEBUG_libfirm */
   return (int)(node->out[0]);
 }
 
@@ -61,7 +67,7 @@ INLINE ir_node *get_irn_out      (ir_node *node, int pos) {
   assert(pos >= 0 && pos < get_irn_n_outs(node));
 #ifdef DEBUG_libfirm
   assert (node->out_valid);
-#endif
+#endif /* defined DEBUG_libfirm */
   return node->out[pos+1];
 }
 
@@ -70,7 +76,7 @@ INLINE void set_irn_out      (ir_node *node, int pos, ir_node *out) {
   assert(pos >= 0 && pos < get_irn_n_outs(node));
 #ifdef DEBUG_libfirm
   assert (node->out_valid);
-#endif
+#endif /* defined DEBUG_libfirm */
   node->out[pos+1] = out;
 }
 
@@ -80,7 +86,7 @@ INLINE int get_Block_n_cfg_outs (ir_node *bl) {
   assert(bl && (get_irn_op(bl) == op_Block));
 #ifdef DEBUG_libfirm
   assert (bl->out_valid);
-#endif
+#endif /* defined DEBUG_libfirm */
   for (i = 0; i < (int)bl->out[0]; i++)
     if ((get_irn_mode(bl->out[i+1]) == mode_X) &&
     (get_irn_op(bl->out[i+1]) != op_End)) n_cfg_outs++;
@@ -93,13 +99,13 @@ INLINE ir_node *get_Block_cfg_out  (ir_node *bl, int pos) {
   assert(bl && (get_irn_op(bl) == op_Block));
 #ifdef DEBUG_libfirm
   assert (bl->out_valid);
-#endif
+#endif /* defined DEBUG_libfirm */
   for (i = 0; i < (int)bl->out[0]; i++)
     if ((get_irn_mode(bl->out[i+1]) == mode_X)  &&
     (get_irn_op(bl->out[i+1]) != op_End)) {
       if (out_pos == pos) {
-	ir_node *cfop = bl->out[i+1];
-	return cfop->out[0+1];
+    ir_node *cfop = bl->out[i+1];
+    return cfop->out[0+1];
       } else {
         out_pos++;
       }
@@ -239,7 +245,7 @@ static ir_node **set_out_edges(ir_node *n, ir_node **free) {
   n->out = free;
 #ifdef DEBUG_libfirm
   n->out_valid = 1;
-#endif
+#endif /* defined DEBUG_libfirm */
   free = &free[n_outs];
   /* We count the successors again, the space will be sufficient.
      We use this counter to remember the position for the next back
@@ -279,7 +285,7 @@ static INLINE void fix_start_proj(ir_graph *irg) {
 void compute_outs(ir_graph *irg) {
   ir_graph *rem = current_ir_graph;
   int n_out_edges = 0;
-  ir_node **end = NULL;
+  ir_node **end = NULL;         /* Only for debugging */
 
   current_ir_graph = irg;
 
@@ -295,15 +301,19 @@ void compute_outs(ir_graph *irg) {
 
   /* allocate memory for all out edges. */
   irg->outs = (ir_node **) xmalloc (n_out_edges * sizeof(ir_node *));
+#ifdef DEBUG_libfirm
   irg->n_outs = n_out_edges;
+#endif /* defined DEBUG_libfirm */
 
   /* The second iteration splits the irg->outs array into smaller arrays
      for each node and writes the back edges into this array. */
   inc_irg_visited(irg);
   end = set_out_edges(get_irg_end(irg), irg->outs);
 
+#ifdef DEBUG_libfirm
   /* Check how much memory we have used */
   assert (end == (irg->outs + n_out_edges));
+#endif /* defined DEBUG_libfirm */
 
   /* We want that the out of ProjX from Start contains the next block at
      position 1, the Start block at position 2.  This is necessary for
@@ -443,7 +453,9 @@ void compute_ip_outs(void) {
   assert(get_irp_ip_view_state() == ip_view_valid &&
      "Cannot construct outs for invalid ip view.");
 
-  if (irp->outs_state != no_outs) free_ip_outs();
+  if (irp->outs_state != no_outs) {
+    free_ip_outs();
+  }
 
   global_count = n_out_edges = count_ip_outs();
   out_edges = (ir_node **) malloc (n_out_edges * sizeof(ir_node *));
@@ -468,11 +480,19 @@ void free_outs(ir_graph *irg) {
   irg->outs_state = no_outs;
 
   if (irg->outs) {
+#ifdef DEBUG_libfirm
     memset(irg->outs, 0, irg->n_outs);
+#endif /* defined DEBUG_libfirm */
     free(irg->outs);
     irg->outs = NULL;
+#ifdef DEBUG_libfirm
     irg->n_outs = 0;
+#endif /* defined DEBUG_libfirm */
   }
 
-  //irg_walk_graph (irg, reset_outs, NULL, NULL);
+#ifdef DEBUG_libfirm
+  /* when debugging, *always* reset all nodes' outs!  irg->outs might
+     have been lying to us */
+  irg_walk_graph (irg, reset_outs, NULL, NULL);
+#endif /* defined DEBUG_libfirm */
 }
