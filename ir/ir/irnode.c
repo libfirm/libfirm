@@ -1357,6 +1357,52 @@ set_Cast_type (ir_node *node, type *to_tp) {
   node->attr.cast.totype = to_tp;
 }
 
+
+/* Checks for upcast.
+ *
+ * Returns true if the Cast node casts a class type to a super type.
+ */
+int is_Cast_upcast(ir_node *node) {
+  type *totype   = get_Cast_type(node);
+  type *fromtype = get_irn_typeinfo_type(get_Cast_op(node));
+  ir_graph *myirg = get_irn_irg(node);
+
+  assert(get_irg_typeinfo_state(myirg) == ir_typeinfo_consistent);
+  assert(fromtype);
+
+  while (is_Pointer_type(totype) && is_Pointer_type(fromtype)) {
+    totype   = get_pointer_points_to_type(totype);
+    fromtype = get_pointer_points_to_type(fromtype);
+  }
+
+  assert(fromtype);
+
+  if (!is_Class_type(totype)) return false;
+  return is_subclass_of(fromtype, totype);
+}
+
+/* Checks for downcast.
+ *
+ * Returns true if the Cast node casts a class type to a sub type.
+ */
+int is_Cast_downcast(ir_node *node) {
+  type *totype   = get_Cast_type(node);
+  type *fromtype = get_irn_typeinfo_type(get_Cast_op(node));
+
+  assert(get_irg_typeinfo_state(get_irn_irg(node)) == ir_typeinfo_consistent);
+  assert(fromtype);
+
+  while (is_Pointer_type(totype) && is_Pointer_type(fromtype)) {
+    totype   = get_pointer_points_to_type(totype);
+    fromtype = get_pointer_points_to_type(fromtype);
+  }
+
+  assert(fromtype);
+
+  if (!is_Class_type(totype)) return false;
+  return is_subclass_of(totype, fromtype);
+}
+
 int
 (is_unop)(const ir_node *node) {
   return _is_unop(node);

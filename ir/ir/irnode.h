@@ -246,6 +246,9 @@ ir_node  *get_Block_cfgpred (ir_node *node, int pos);
 void      set_Block_cfgpred (ir_node *node, int pos, ir_node *pred);
 bool      get_Block_matured (ir_node *node);
 void      set_Block_matured (ir_node *node, bool matured);
+
+/** A visited flag only for block nodes.
+ *  @see also: get_irn_visited() inc_irg_visited() inc_irg_block_visited()*/
 unsigned long get_Block_block_visited (ir_node *node);
 void      set_Block_block_visited (ir_node *node, unsigned long visit);
 ir_node  *set_Block_dead(ir_node *block);
@@ -700,6 +703,21 @@ ir_node *get_Cast_op (ir_node *node);
 void     set_Cast_op (ir_node *node, ir_node *op);
 type    *get_Cast_type (ir_node *node);
 void     set_Cast_type (ir_node *node, type *to_tp);
+
+/** Checks for upcast.
+ *
+ * Returns true if the Cast node casts a class type to a super type.
+ * Works also for pointers to classes (recursively).
+ */
+int is_Cast_upcast(ir_node *node);
+
+/** Checks for downcast.
+ *
+ * Returns true if the Cast node casts a class type to a sub type.
+ * Works also for pointers to classes (recursively).
+ */
+int is_Cast_downcast(ir_node *node);
+
 
 /** Returns true if n is Phi or Filter in interprocedural_view.
    Returns false if irg in phase building and the Phi has zero
