@@ -15,6 +15,8 @@ srcdir = @srcdir@
 topdir = ../..
 subdir := ir/ir
 
+enable_libcore := @enable_libcore@
+
 INSTALL_HEADERS = irprog.h irgraph.h irnode.h irmode.h irop.h ircons.h	\
 		irflag.h irvrfy.h irgwalk.h irgmod.h iropt.h irdump.h	\
 		irgopt.h ircgcons.h ircgopt.h irreflect.h irarch.h irprintf.h \
