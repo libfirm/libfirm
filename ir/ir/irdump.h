@@ -352,7 +352,8 @@ typedef enum {
   dump_verbosity_onlyPrimitiveTypes = 0x000BF000,  /**< dump only primitive types */
   dump_verbosity_onlyEnumerationTypes=0x0007F000,  /**< dump only enumeration types */
 
-  dump_verbosity_max                = 0x4FF00FFE   /**< turn on all verbosity.
+  dump_verbosity_max                = 0x4FF00FBE   /**< turn on all verbosity.
+						        Do not turn on negative flags!
 						        @@@ Because of a bug in gcc 3.2 we can not set the
 							first two bits. */
 } dump_verbosity;
@@ -389,6 +390,11 @@ void    dump_type (type *tp);
  *  For verbosity see the documentation of the verbosity flags above.
  */
 void dump_types_as_text(unsigned verbosity, const char *suffix);
+
+/** Dumps all global variables as text.
+ *
+ */
+void dump_globals_as_text(unsigned verbosity, const char *suffix);
 
 /* **************************************************************************** */
 /*                                    FLAGS                                     */

@@ -977,3 +977,31 @@ void dump_types_as_text(unsigned verbosity, const char *suffix) {
   fclose (F);
   if (CSV) fclose (CSV);
 }
+
+
+void dump_globals_as_text(unsigned verbosity, const char *suffix) {
+  const char *basename;
+  FILE *F, *CSV = NULL;
+  type *g = get_glob_type();
+  int i, n_mems = get_class_n_members(g);
+
+  basename = irp_prog_name_is_set() ? get_irp_prog_name() : "TextGlobals";
+  F = text_open (basename, suffix, "-globals", ".txt");
+
+  if (verbosity & dump_verbosity_csv) {
+    CSV = text_open (basename, suffix, "-types", ".csv");
+    //fprintf(CSV, "Class, Field, Operation, L0, L1, L2, L3\n");
+  }
+
+  for (i = 0; i < n_mems; ++i) {
+    entity *e = get_class_member(g, i);
+
+    dump_entity_to_file(F, e, verbosity);
+    if (CSV) {
+      //dump_entitycsv_to_file_prefix(CSV, e, "", verbosity, ""???);
+    }
+  }
+
+  fclose (F);
+  if (CSV) fclose (CSV);
+}
