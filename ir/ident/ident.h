@@ -13,7 +13,7 @@
 # define _IDENT_H_
 
 # include <stdio.h>
-# include "assert.h"
+# include <assert.h>
 # include "common.h"
 
 /****h* libfirm/ident
