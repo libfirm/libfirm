@@ -169,14 +169,14 @@ typedef struct {
   ent_volatility volatility;	/**< the volatility of a Store operation */
 } store_attr;
 
-typedef pn_Cmp confirm_attr; /** Attribute to hold compare operation */
+typedef pn_Cmp confirm_attr;    /**< Attribute to hold compare operation */
 
 /**
  * Edge info to put into an irn.
  */
 typedef struct _irn_edge_info_t {
-	struct list_head outs_head;
-	int out_count;
+  struct list_head outs_head;  /**< The list of all outs */
+  int out_count;               /**< number of outs in the list */
 } irn_edge_info_t;
 
 
@@ -243,7 +243,7 @@ struct ir_node {
   struct section *sec;
 #endif
 #if FIRM_EDGES_INPLACE
-	irn_edge_info_t edge_info;
+  irn_edge_info_t edge_info;  /**< everlasting out edges */
 #endif
   /* ------- Opcode depending fields -------- */
   attr attr;               /**< attribute of this node. Depends on opcode.
