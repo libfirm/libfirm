@@ -33,7 +33,7 @@ void local_optimize_node(ir_node *n);
  *
  * @param irg  The graph to be optimized.
  *
- * After appliying local_optimize_graph() to a IR-graph, Bad nodes
+ * After applying local_optimize_graph() to a IR-graph, Bad nodes
  * only occure as predecessor of Block and Phi nodes.
  */
 void local_optimize_graph (ir_graph *irg);
@@ -53,9 +53,6 @@ void local_optimize_graph (ir_graph *irg);
  *  the outs state set to outs_none.  Backedge information is conserved.
  *  Removes old attributes of nodes.  Sets link field to NULL.
  *  Callee information must be freed (irg_callee_info_none).
- *
- *  Attention: the numbers assigned to nodes if the library is compiled for
- *  development/debugging are not conserved by copying.
  *
  * @param irg  The graph to be optimized.
  */
