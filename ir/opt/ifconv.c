@@ -48,7 +48,7 @@ static ir_node *local_optimize_mux(ir_node *mux)
 	/* If we have no cmp above the mux, get out. */
 	if(is_Proj(sel) && get_irn_mode(sel) == mode_b && get_irn_opcode(cmp) == iro_Cmp) {
 
-		pnc_number cc = get_Proj_proj(sel);
+		pn_Cmp cc = get_Proj_proj(sel);
 		ir_mode *mode = get_irn_mode(mux);
 		ir_node *block = get_nodes_block(n);
 		ir_node *cmp_left = get_Cmp_left(cmp);
@@ -182,8 +182,8 @@ static ir_node *optimize_mux_chain(ir_node *mux)
 			tvb = get_value_or(b, minus_one);
 			tvd = get_value_or(d, null);
 
-			if(tarval_cmp(tarval_or(tva, tvd), tvd) == Eq
-					&& tarval_cmp(tarval_or(tvb, tvd), tvd) == Eq) {
+			if(tarval_cmp(tarval_or(tva, tvd), tvd) == pn_Cmp_Eq
+					&& tarval_cmp(tarval_or(tvb, tvd), tvd) == pn_Cmp_Eq) {
 
 				ops[i] = new_Const(mode, null);
 				res = new_r_Or(current_ir_graph, get_nodes_block(mux),
@@ -196,8 +196,8 @@ static ir_node *optimize_mux_chain(ir_node *mux)
 			tvb = get_value_or(b, null);
 			tvd = get_value_or(d, minus_one);
 
-			if(tarval_cmp(tarval_and(tva, tvd), tvd) == Eq
-					&& tarval_cmp(tarval_and(tvb, tvd), tvd) == Eq) {
+			if(tarval_cmp(tarval_and(tva, tvd), tvd) == pn_Cmp_Eq
+					&& tarval_cmp(tarval_and(tvb, tvd), tvd) == pn_Cmp_Eq) {
 
 				ops[i] = new_Const(mode, minus_one);
 				res = new_r_And(current_ir_graph, get_nodes_block(mux),
