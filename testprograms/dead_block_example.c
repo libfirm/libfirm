@@ -57,8 +57,6 @@ int main(int argc, char **argv)
   /* init library */
   init_firm ();
 
-  set_opt_cse(0);  /* there is a bug: first and start block are cse!! @@@ */
-
   /*** Make basic type information for primitive type int. ***/
   prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_i);
 

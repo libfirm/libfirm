@@ -34,6 +34,7 @@
 
 int main(int argc, char **argv)
 {
+  type     *prim_t_int;
   ir_graph *irg;       /* this variable contains the irgraph */
   type     *owner;     /* the class in which this method is defined */
   type     *method;    /* the type of this method */
@@ -45,6 +46,9 @@ int main(int argc, char **argv)
   /* init library */
   init_firm ();
 
+  /*** Make basic type information for primitive type int. ***/
+  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_i);
+
   /* FIRM was designed for oo languages where all methods belong to a class.
    * For imperative languages like C we view a file as a large class containing
    * all functions as methods in this file.
@@ -55,6 +59,9 @@ int main(int argc, char **argv)
 
   owner = get_glob_type();
   method = new_type_method (id_from_str("main", 4), 0, 2);
+  set_method_res_type(method, 0, prim_t_int);
+  set_method_res_type(method, 1, prim_t_int);
+
   ent = new_entity (owner, id_from_str (ENTITYNAME,
 		    strlen(ENTITYNAME)), method);
 
@@ -121,6 +128,8 @@ int main(int argc, char **argv)
   add_in_edge (get_irg_end_block(irg), x);
   /* Now we can mature the end block as all it's predecessors are known. */
   mature_block (get_irg_end_block(irg));
+
+  finalize_cons (irg);
 
   printf("\nOptimizing ...\n");
   local_optimize_graph(irg);
