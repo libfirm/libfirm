@@ -169,25 +169,18 @@ Creating an IR graph: IF_EXAMPLE...
 Done building the graph.  Dumping and optimizing it.
 
 loop unrolling with factor 2
-do_loop_unroll(l.857) graph LOOP_UNROLL_EXAMPLE_m1: 45 (0x8131a40) in class GlobalType.
 
 loop unrolling with factor 2
-do_loop_unroll(l.857) graph LOOP_UNROLL_EXAMPLE_m2: 148 (0x8136360) in class GlobalType.
 
 loop unrolling with factor 2
-do_loop_unroll(l.857) graph LOOP_UNROLL_EXAMPLE_m3: 210 (0x8139be0) in class GlobalType.
 
 loop unrolling with factor 4
-do_loop_unroll(l.857) graph LOOP_UNROLL_EXAMPLE_m4: 276 (0x813d4d8) in class GlobalType.
 
 loop unrolling with factor 2
-do_loop_unroll(l.857) graph LOOP_UNROLL_EXAMPLE_m5: 343 (0x8140d48) in class GlobalType.
 
 loop unrolling with factor 4
-do_loop_unroll(l.857) graph LOOP_UNROLL_EXAMPLE_m6: 409 (0x81445f8) in class GlobalType.
 
 loop unrolling with factor 2
-do_loop_unroll(l.857) graph LOOP_UNROLL_EXAMPLE_m7: 475 (0x8147ea0) in class GlobalType.
 
 Creating an IR graph: THREE_CFPRED_EXAMPLE ...
 Optimizing ...

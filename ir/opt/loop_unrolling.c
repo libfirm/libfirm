@@ -444,7 +444,7 @@ static void
 copy_loop_body(set *l_n, induct_var_info *info, int unroll_factor)
 {
   int i;
-  copies_t *value, *info_op, *phi, *loop_h, key, *value_block;
+  copies_t *value, *info_op, *phi, *loop_h = NULL, key, *value_block;
 
   ir_node *loop_head = get_loop_node(info->l_itervar_phi, 0);
 
@@ -454,13 +454,13 @@ copy_loop_body(set *l_n, induct_var_info *info, int unroll_factor)
     else if (is_Phi_in_loop_head(value->irn, loop_head))
       phi = value;
     else if (copy_loop_head){
-      /* If the loop head must be copied. */
+      /* The loop head must be copied. */
       for (i = 0; i < unroll_factor - 1; i++){
 	      copy_node(value->irn, NULL);
 	      value->copy[i] = get_irn_link(value->irn);
       }
     } else {
-      /* If the loop head and its nodes mustn't be copied. */
+      /* The loop head and its nodes must not be copied. */
       if((value->irn->op == op_Block             &&
 	        value->irn != loop_head)               ||
 	       (value->irn->op != op_Block             &&
@@ -663,7 +663,7 @@ new_after_loop_block (set *l_n, ir_node* block, copies_t *loop_in, int unroll_fa
 static void
 new_after_loop_node(set *l_n, set *loop_outs, ir_node *node, copies_t *loop_in, int unroll_factor)
 {
-  ir_node *pred, *block_pred, *node_block, *new_phi;
+  ir_node *pred, *block_pred = NULL, *node_block, *new_phi;
   int phi = 0, old_preds, new_preds, all_new_preds, p, q, i, s;
   copies_t key, *value = NULL;
   ir_node **all_in;
@@ -705,10 +705,11 @@ new_after_loop_node(set *l_n, set *loop_outs, ir_node *node, copies_t *loop_in, 
 
     if (get_irn_op(block_pred) == op_Proj) {
       if (get_Proj_pred(block_pred) == pred)
-	      break;
+	break;
     }
-    else
+    else {
       block_pred = NULL;
+    }
   }
 
   if (! block_pred) return;
@@ -884,9 +885,9 @@ static void do_loop_unroll(ir_node *n, void *env)
     unroll_factor = 2;
   else return;
 
-  printf("\nloop unrolling with factor %d \n", unroll_factor);
-
-  DDMG(get_irn_irg(n));
+  if (get_firm_verbosity())
+    printf("\nloop unrolling with factor %d \n", unroll_factor);
+  //DDMG(get_irn_irg(n));
 
   /* The unroll factor must be less than 4. */
   assert(unroll_factor <= MAX_UNROLL);
