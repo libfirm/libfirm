@@ -30,6 +30,7 @@
 # include "type_identify.h"
 # include "firmstat.h"
 # include "irreflect_t.h"
+# include "irarch.h"
 
 void
 init_firm(const firm_parameter_t *param)
@@ -79,6 +80,10 @@ init_firm(const firm_parameter_t *param)
   init_type_identify(def_params.ti_if);
   /* Init reflection facility. */
   init_rflct();
+
+  /* Init architecture dependent optimizations. */
+  arch_dep_init(arch_dep_default_factory);
+  arch_dep_set_opts(arch_dep_mul_to_shift);
 }
 
 
