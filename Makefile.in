@@ -34,8 +34,10 @@ XOFILES += $(addsuffix /subdir.o, $(subdirs))
 
 include $(top_srcdir)/MakeTargets
 
-
+# add target firmjni if configured with --enable-firmjni
 all: config.h Makefile libfirm.a
+
+firm: config.h Makefile libfirm.a
 
 libfirm.a: subdir_all $(XOFILES) $(OFILES)
 	$(AR) $(ARFLAGS) $@.new $(XOFILES) $(OFILES)
@@ -44,8 +46,9 @@ libfirm.a: subdir_all $(XOFILES) $(OFILES)
 
 testprograms:	libfirm.a
 	$(MAKE) -C testprograms
-#	$(MAKE) -C firmjni  test  Tut nicht in craks Makefile
 
+firmjni:: libfirm.a
+	$(MAKE) -C firmjni
 
 # gernerate program documentation
 .PHONY: autodoc
@@ -75,8 +78,11 @@ stamp-h: config.h.in config.status
 config.status: configure
 	./config.status --recheck
 
+# add target test-firmjni if configured with --enable-firmjni
 test::
 	$(MAKE) -C testprograms test;
+
+test-firmjni::
 	$(MAKE) -C firmjni test;
 
 test-reference::
@@ -84,3 +90,4 @@ test-reference::
 
 test-clean:
 	$(MAKE) -C testprograms realclean
+	$(MAKE) -C firmjni/testprograms clean;

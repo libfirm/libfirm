@@ -3356,8 +3356,8 @@ fi
 done
 
   if test "$ac_jni_headers" != yes; then
-    { { echo "$as_me:$LINENO: error: jni header file not found. (IPD: add -I/usr/public2/java/jdk1.3.1-sun/include/ -I/usr/public2/java/jdk1.3.1-sun/include/linux/ to CPPFLAGS)" >&5
-echo "$as_me: error: jni header file not found. (IPD: add -I/usr/public2/java/jdk1.3.1-sun/include/ -I/usr/public2/java/jdk1.3.1-sun/include/linux/ to CPPFLAGS)" >&2;}
+    { { echo "$as_me:$LINENO: error: jni header file not found. (IPD: add --with-includedir=/usr/public2/java/jdk1.3.1-sun/include/:/usr/public2/java/jdk1.3.1-sun/include/linux/ to configure flags)" >&5
+echo "$as_me: error: jni header file not found. (IPD: add --with-includedir=/usr/public2/java/jdk1.3.1-sun/include/:/usr/public2/java/jdk1.3.1-sun/include/linux/ to configure flags)" >&2;}
    { (exit 1); exit 1; }; }
   fi
 fi
