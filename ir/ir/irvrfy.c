@@ -237,6 +237,16 @@ static void show_phi_inputs(ir_node *phi, ir_node *block)
     get_irn_node_nr(block), get_irn_arity(block));
 }
 
+/* If the address is Sel or SymConst, return the entity. */
+static entity *get_ptr_entity(ir_node *ptr) {
+  if (get_irn_op(ptr) == op_Sel) {
+    return get_Sel_entity(ptr);
+  } else if ((get_irn_op(ptr) == op_SymConst) && (get_SymConst_kind(ptr) == symconst_addr_ent)) {
+    return get_SymConst_entity(ptr);
+  }
+  return NULL;
+}
+
 /**
  * verify the Proj number
  */
@@ -370,38 +380,29 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
 
     case iro_Load:
       if (proj == pn_Load_res) {
-    ir_node *ptr = get_Load_ptr(pred);
-    entity *ent = NULL;
-    if (get_irn_op(ptr) == op_Sel) {
-      ent = get_Sel_entity(ptr);
-    } /*
-        We may not test this, after lowering and optimization the Const can
-        have an unexpected type.
-    else if ((get_irn_op(ptr) == op_Const) &&
-           tarval_is_entity(get_Const_tarval(ptr))) {
-      ent = get_tarval_entity(get_Const_tarval(ptr));
-    } */
-    if (ent) {
-      ASSERT_AND_RET_DBG(
-        (mode == get_type_mode(get_entity_type(ent))),
-        "wrong data Proj from Load, entity type_mode failed", 0,
-        show_proj_failure_ent(p, ent);
-      );
-    }
-    else {
-      ASSERT_AND_RET_DBG(
-        mode_is_data(mode),
-       "wrong data Proj from Load", 0,
-       show_proj_failure(p);
-     );
-    }
+	ir_node *ptr = get_Load_ptr(pred);
+	entity *ent = get_ptr_entity(ptr);
+	if (ent) {
+	  ASSERT_AND_RET_DBG(
+			     (mode == get_type_mode(get_entity_type(ent))),
+			     "wrong data Proj from Load, entity type_mode failed", 0,
+			     show_proj_failure_ent(p, ent);
+			     );
+	}
+	else {
+	  ASSERT_AND_RET_DBG(
+			     mode_is_data(mode),
+			     "wrong data Proj from Load", 0,
+			     show_proj_failure(p);
+			     );
+	}
       } else {
-    ASSERT_AND_RET_DBG(
-      ((proj == pn_Load_M        && mode == mode_M) ||
-       (proj == pn_Load_X_except && mode == mode_X)),
-          "wrong Proj from Load", 0,
-      show_proj_failure(p);
-    );
+	ASSERT_AND_RET_DBG(
+			   ((proj == pn_Load_M        && mode == mode_M) ||
+			    (proj == pn_Load_X_except && mode == mode_X)),
+			   "wrong Proj from Load", 0,
+			   show_proj_failure(p);
+			   );
       }
       break;
 
@@ -1064,6 +1065,12 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
                      "Store node", 0
                      );
       ASSERT_AND_RET(mymode == mode_T, "Store node", 0);
+
+      entity *target = get_ptr_entity(in[2]);
+      if (target) {
+	ASSERT_AND_RET(op3mode == get_type_mode(get_entity_type(target)), "Store node", 0);
+      }
+
       break;
 
     case iro_Alloc:
