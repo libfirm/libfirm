@@ -52,6 +52,7 @@ ir_op *op_Shr;		   ir_op *get_op_Shr       () { return op_Shr;       }
 ir_op *op_Shrs;		   ir_op *get_op_Shrs      () { return op_Shrs;      }
 ir_op *op_Rot;		   ir_op *get_op_Rot       () { return op_Rot;       }
 ir_op *op_Conv;		   ir_op *get_op_Conv      () { return op_Conv;      }
+ir_op *op_Cast;            ir_op *get_op_Cast      () { return op_Cast;      }
 
 ir_op *op_Phi;		   ir_op *get_op_Phi       () { return op_Phi;       }
 
@@ -131,6 +132,7 @@ init_op(void)
   op_Shrs  = new_ir_op (iro_Shrs,  "Shrs",   floats, 1, 0);
   op_Rot   = new_ir_op (iro_Rot,   "Rot",    floats, 1, 0);
   op_Conv  = new_ir_op (iro_Conv,  "Conv",   floats, 0, 0);
+  op_Cast  = new_ir_op (iro_Cast,  "Cast",   floats, 0, sizeof (cast_attr));
 
   op_Phi   = new_ir_op (iro_Phi,   "Phi",    pinned, 1, sizeof (int));
 

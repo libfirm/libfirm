@@ -900,6 +900,8 @@ vt_cmp (const void *elt, const void *key)
       || (get_irn_sel_attr(a).ent->type != get_irn_sel_attr(b).ent->type);
   case iro_Phi:
     return get_irn_phi_attr (a) != get_irn_phi_attr (b);
+  case iro_Cast:
+    return get_Cast_type(a) != get_Cast_type(b);
   default: ;
   }
 

@@ -976,7 +976,7 @@ set_InstOf_obj (ir_node *node, ir_node *obj) {
 /* For unary and binary arithmetic operations the access to the
    operands can be factored out.  Left is the first, right the
    second arithmetic value  as listed in tech report 0999-33.
-   unops are: Minus, Abs, Not, Conv
+   unops are: Minus, Abs, Not, Conv, Cast
    binops are: Add, Sub, Mul, Quot, DivMod, Div, Mod, And, Or, Eor, Shl,
    Shr, Shrs, Rotate, Cmp */
 
@@ -1558,44 +1558,63 @@ set_Conv_op (ir_node *node, ir_node *op) {
   set_irn_n(node, 0, op);
 }
 
+INLINE ir_node *
+get_Cast_op (ir_node *node) {
+  assert (node->op == op_Cast);
+  return get_irn_n(node, 0);
+}
 
+INLINE void
+set_Cast_op (ir_node *node, ir_node *op) {
+  assert (node->op == op_Cast);
+  set_irn_n(node, 0, op);
+}
 
-int
+INLINE type *
+get_Cast_type (ir_node *node) {
+  assert (node->op == op_Cast);
+  return node->attr.cast.totype;
+}
+
+INLINE void
+set_Cast_type (ir_node *node, type *to_tp) {
+  assert (node->op == op_Cast);
+  node->attr.cast.totype = to_tp;
+}
+
+INLINE int
 is_unop (ir_node *node) {
   return ( node->op == op_Minus ||
            node->op == op_Abs  ||
 	   node->op == op_Not  ||
-           node->op == op_Conv );
+           node->op == op_Conv ||
+           node->op == op_Cast );
 }
 
 INLINE ir_node *
 get_unop_op (ir_node *node) {
-  assert ( node->op == op_Minus ||
-           node->op == op_Abs  ||
-	    node->op == op_Not  ||
-           node->op == op_Conv );
+  assert (is_unop(node));
   switch (get_irn_opcode (node)) {
     case iro_Minus: return get_Minus_op(node); break;
     case iro_Abs:   return get_Abs_op(node);   break;
     case iro_Not:   return get_Not_op(node);   break;
     case iro_Conv:  return get_Conv_op(node);  break;
+    case iro_Cast:  return get_Cast_op(node);  break;
     default: return NULL;
   }
 }
 
 INLINE void
 set_unop_op (ir_node *node, ir_node *op) {
-    assert (node->op == op_Minus ||
-	    node->op == op_Abs   ||
-	    node->op == op_Not   ||
-	    node->op == op_Conv    );
-    switch (get_irn_opcode (node)) {
+  assert (is_unop(node));
+  switch (get_irn_opcode (node)) {
     case iro_Minus:   set_Minus_op(node, op); break;
     case iro_Abs:     set_Abs_op(node, op);   break;
     case iro_Not:     set_Not_op(node, op);   break;
     case iro_Conv:    set_Conv_op(node, op);  break;
+    case iro_Cast:    set_Cast_op(node, op);  break;
     default:  ;
-    }
+  }
 
 }
 

@@ -174,6 +174,9 @@ static void start_type_walk(ir_node *node, void *env) {
   case iro_Free:
     type_walk_2((type_or_ent *)get_Free_type(node), pre, post, envi);
     break;
+  case iro_Cast:
+    type_walk_2((type_or_ent *)get_Cast_type(node), pre, post, envi);
+    break;
   default:
     break;
   }

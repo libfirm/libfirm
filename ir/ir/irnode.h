@@ -353,7 +353,7 @@ void set_CallBegin_call (ir_node *node, ir_node *call);
 /* For unary and binary arithmetic operations the access to the
    operands can be factored out.  Left is the first, right the
    second arithmetic value  as listed in tech report 1999-44.
-   unops are: Minus, Abs, Not, Conv
+   unops are: Minus, Abs, Not, Conv, Cast
    binops are: Add, Sub, Mul, Quot, DivMod, Div, Mod, And, Or, Eor, Shl,
    Shr, Shrs, Rot, Cmp */
 INLINE int      is_unop (ir_node *node);
@@ -462,6 +462,11 @@ INLINE void     set_Rot_right (ir_node *node, ir_node *right);
 
 INLINE ir_node *get_Conv_op (ir_node *node);
 INLINE void     set_Conv_op (ir_node *node, ir_node *op);
+
+INLINE ir_node *get_Cast_op (ir_node *node);
+INLINE void     set_Cast_op (ir_node *node, ir_node *op);
+INLINE type    *get_Cast_type (ir_node *node);
+INLINE void     set_Cast_type (ir_node *node, type *to_tp);
 
 INLINE ir_node **get_Phi_preds_arr (ir_node *node);
 INLINE int       get_Phi_n_preds (ir_node *node);

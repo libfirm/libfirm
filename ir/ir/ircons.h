@@ -342,6 +342,7 @@
  *    ir_node *new_Rot    (ir_node *op,  ir_node *k,   ir_mode *mode);
  *    ir_node *new_Cmp    (ir_node *op1, ir_node *op2);
  *    ir_node *new_Conv   (ir_node *op, ir_mode *mode);
+ *    ir_node *new_Cast   (ir_node *op, type *to_tp);
  *    ir_node *new_Load   (ir_node *store, ir_node *addr);
  *    ir_node *new_Store  (ir_node *store, ir_node *addr, ir_node *val);
  *    ir_node *new_Alloc  (ir_node *store, ir_node *size, type *alloc_type,
@@ -1146,6 +1147,8 @@ ir_node *new_rd_Rot    (dbg_info *db, ir_graph *irg, ir_node *block,
 		       ir_node *op, ir_node *k, ir_mode *mode);
 ir_node *new_rd_Conv   (dbg_info *db, ir_graph *irg, ir_node *block,
 		       ir_node *op, ir_mode *mode);
+ir_node *new_rd_Cast   (dbg_info* db, ir_graph *irg, ir_node *block,
+		       ir_node *op, type *to_tp);
 ir_node *new_rd_Phi    (dbg_info *db, ir_graph *irg, ir_node *block, int arity,
 		       ir_node *in[], ir_mode *mode);
 ir_node *new_rd_Load   (dbg_info *db, ir_graph *irg, ir_node *block,
@@ -1238,6 +1241,8 @@ ir_node *new_r_Rot    (ir_graph *irg, ir_node *block,
 		       ir_node *op, ir_node *k, ir_mode *mode);
 ir_node *new_r_Conv   (ir_graph *irg, ir_node *block,
 		       ir_node *op, ir_mode *mode);
+ir_node *new_r_Cast   (ir_graph *irg, ir_node *block,
+		       ir_node *op, type *to_tp);
 ir_node *new_r_Phi    (ir_graph *irg, ir_node *block, int arity,
 		       ir_node *in[], ir_mode *mode);
 ir_node *new_r_Load   (ir_graph *irg, ir_node *block,
@@ -1312,6 +1317,7 @@ ir_node *new_d_Shrs   (dbg_info* db, ir_node *op,  ir_node *k,   ir_mode *mode);
 ir_node *new_d_Rot    (dbg_info* db, ir_node *op,  ir_node *k,   ir_mode *mode);
 ir_node *new_d_Cmp    (dbg_info* db, ir_node *op1, ir_node *op2);
 ir_node *new_d_Conv   (dbg_info* db, ir_node *op, ir_mode *mode);
+ir_node *new_d_Cast   (dbg_info* db, ir_node *op, type *to_tp);
 ir_node *new_d_Phi    (dbg_info* db, int arity, ir_node *in[], ir_mode *mode);
 ir_node *new_d_Load   (dbg_info* db, ir_node *store, ir_node *addr);
 ir_node *new_d_Store  (dbg_info* db, ir_node *store, ir_node *addr, ir_node *val);
@@ -1380,6 +1386,7 @@ ir_node *new_Shrs   (ir_node *op,  ir_node *k,   ir_mode *mode);
 ir_node *new_Rot    (ir_node *op,  ir_node *k,   ir_mode *mode);
 ir_node *new_Cmp    (ir_node *op1, ir_node *op2);
 ir_node *new_Conv   (ir_node *op, ir_mode *mode);
+ir_node *new_Cast   (ir_node *op, type *to_tp);
 ir_node *new_Phi    (int arity, ir_node *in[], ir_mode *mode);
 ir_node *new_Load   (ir_node *store, ir_node *addr);
 ir_node *new_Store  (ir_node *store, ir_node *addr, ir_node *val);

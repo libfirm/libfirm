@@ -595,6 +595,15 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
           );
       break;
 
+    case iro_Cast:
+      op1mode = get_irn_mode(in[1]);
+      ASSERT_AND_RET(
+          /* Conv: BB x datab1 --> datab2 */
+          mode_is_data(op1mode) && op1mode == mymode,
+          "Cast node", 0
+          );
+      break;
+
     case iro_Phi:
       /* Phi: BB x dataM^n --> dataM */
       /* for some reason "<=" aborts. int there a problem with get_store? */

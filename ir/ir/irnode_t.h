@@ -120,6 +120,11 @@ typedef struct {
   ir_node * call;            /**< associated Call-operation */
 } callbegin_attr;
 
+/** Cast attributes */
+typedef struct {
+  type *totype;
+} cast_attr;
+
 /** Some irnodes just have one attribute, these are stored here,
    some have more. Their name is 'irnodename_attr' */
 typedef union {
@@ -133,6 +138,7 @@ typedef union {
   alloc_attr     a;     /**< For Alloc. */
   io_attr	 io;	/**< For InstOf */
   type          *f;     /**< For Free. */
+  cast_attr      cast;  /**< For Cast. */
   int            phi0_pos;  /**< For Phi. Used to remember the value defined by
 			       this Phi node.  Needed when the Phi is completed
 			       to call get_r_internal_value to find the

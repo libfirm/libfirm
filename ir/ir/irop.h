@@ -30,7 +30,7 @@ typedef enum {
   iro_Sel,  iro_InstOf,
   iro_Call, iro_Add, iro_Sub, iro_Minus, iro_Mul, iro_Quot, iro_DivMod,
   iro_Div,  iro_Mod, iro_Abs, iro_And, iro_Or, iro_Eor, iro_Not,
-  iro_Cmp,  iro_Shl, iro_Shr, iro_Shrs, iro_Rot, iro_Conv,
+  iro_Cmp,  iro_Shl, iro_Shr, iro_Shrs, iro_Rot, iro_Conv, iro_Cast,
   iro_Phi,
   iro_Load, iro_Store, iro_Alloc, iro_Free, iro_Sync,
   iro_Proj, iro_Tuple, iro_Id, iro_Bad,
@@ -73,6 +73,7 @@ extern ir_op *op_Shr;             ir_op *get_op_Shr       (void);
 extern ir_op *op_Shrs;            ir_op *get_op_Shrs      (void);
 extern ir_op *op_Rot;             ir_op *get_op_Rot       (void);
 extern ir_op *op_Conv;            ir_op *get_op_Conv      (void);
+extern ir_op *op_Cast;            ir_op *get_op_Cast      (void);
 
 extern ir_op *op_Phi;             ir_op *get_op_Phi       (void);
 

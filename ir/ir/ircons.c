@@ -189,7 +189,17 @@ new_rd_Conv (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *op, ir_mode *
   res = optimize_node (res);
   irn_vrfy_irg (res, irg);
   return res;
+}
 
+INLINE ir_node *
+new_rd_Cast (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *op, type *to_tp)
+{
+  ir_node *res;
+  res = new_ir_node (db, irg, block, op_Cast, get_irn_mode(op), 1, &op);
+  res->attr.cast.totype = to_tp;
+  res = optimize_node (res);
+  irn_vrfy_irg (res, irg);
+  return res;
 }
 
 INLINE ir_node *
@@ -888,6 +898,9 @@ INLINE ir_node *new_r_Rot    (ir_graph *irg, ir_node *block,
 INLINE ir_node *new_r_Conv   (ir_graph *irg, ir_node *block,
 		       ir_node *op, ir_mode *mode) {
   return new_rd_Conv(NULL, irg, block, op, mode);
+}
+INLINE ir_node *new_r_Cast   (ir_graph *irg, ir_node *block, ir_node *op, type *to_tp) {
+  return new_rd_Cast(NULL, irg, block, op, to_tp);
 }
 INLINE ir_node *new_r_Phi    (ir_graph *irg, ir_node *block, int arity,
 		       ir_node **in, ir_mode *mode) {
@@ -1793,6 +1806,12 @@ new_d_Conv (dbg_info* db, ir_node *op, ir_mode *mode)
 }
 
 ir_node *
+new_d_Cast (dbg_info* db, ir_node *op, type *to_tp)
+{
+  return new_rd_Cast (db, current_ir_graph, current_ir_graph->current_block, op, to_tp);
+}
+
+ir_node *
 new_d_Tuple (dbg_info* db, int arity, ir_node **in)
 {
   return new_rd_Tuple (db, current_ir_graph, current_ir_graph->current_block,
@@ -2379,6 +2398,9 @@ ir_node *new_Cmp    (ir_node *op1, ir_node *op2) {
 }
 ir_node *new_Conv   (ir_node *op, ir_mode *mode) {
   return new_d_Conv(NULL, op, mode);
+}
+ir_node *new_Cast   (ir_node *op, type *to_tp) {
+  return new_d_Cast(NULL, op, to_tp);
 }
 ir_node *new_Phi    (int arity, ir_node **in, ir_mode *mode) {
   return new_d_Phi(NULL, arity, in, mode);

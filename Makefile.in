@@ -23,7 +23,7 @@ SOURCES := Makefile.in MakeRules.in MakeTargets\
 	   config.guess config.sub configure.in \
 	   stamp-h.in install-sh README configure
 
-INSTALL_LIBS = libfirm.a
+INSTALL_LIBS = libfirm.a libfirm.so
 
 GENFILES := stamp-h config.log config.cache
 # config.status config.h.in $(srcdir)/stamp-h.in
@@ -35,14 +35,17 @@ XOFILES += $(addsuffix /subdir.o, $(subdirs))
 include $(top_srcdir)/MakeTargets
 
 # add target firmjni if configured with --enable-firmjni
-all: config.h Makefile libfirm.a
+all: firm
 
-firm: config.h Makefile libfirm.a
+firm: config.h Makefile libfirm.a libfirm.so
 
 libfirm.a: subdir_all $(XOFILES) $(OFILES)
 	$(AR) $(ARFLAGS) $@.new $(XOFILES) $(OFILES)
 	$(RANLIB) $@.new
 	mv -f $@.new $@
+
+libfirm.so: subdir_all $(XOFILES) $(OFILES)
+	ld -Bshareable -o ./libfirm.so $(XOFILES) -lm
 
 testprograms:	libfirm.a
 	$(MAKE) -C testprograms

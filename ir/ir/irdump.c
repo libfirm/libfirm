@@ -221,7 +221,10 @@ dump_node_nodeattr (ir_node *n)
     break;
   case iro_Sel: {
     assert(get_kind(get_Sel_entity(n)) == k_entity);
-    fprintf (F, "%s", id_to_str(get_entity_ident(get_Sel_entity(n))));
+    fprintf (F, "%s", get_entity_name(get_Sel_entity(n)));
+    } break;
+  case iro_Cast: {
+    fprintf (F, "to %s", get_type_name(get_Cast_type(n)));
     } break;
   default:
     ;
@@ -539,21 +542,24 @@ static void dump_node2type_edges (ir_node *n, void *env)
   case iro_SymConst:
     if (   (get_SymConst_kind(n) == type_tag)
 	   || (get_SymConst_kind(n) == size))
-    {
-	    PRINT_NODE_TYPE_EDGE(n,get_SymConst_type(n),NODE2TYPE_EDGE_ATTR);
-    }
+      {
+	PRINT_NODE_TYPE_EDGE(n,get_SymConst_type(n),NODE2TYPE_EDGE_ATTR);
+      }
     break;
   case iro_Sel: {
-	    PRINT_NODE_ENT_EDGE(n,get_Sel_entity(n),NODE2TYPE_EDGE_ATTR);
+      PRINT_NODE_ENT_EDGE(n,get_Sel_entity(n),NODE2TYPE_EDGE_ATTR);
     } break;
   case iro_Call: {
-	    PRINT_NODE_TYPE_EDGE(n,get_Call_type(n),NODE2TYPE_EDGE_ATTR);
+      PRINT_NODE_TYPE_EDGE(n,get_Call_type(n),NODE2TYPE_EDGE_ATTR);
     } break;
   case iro_Alloc: {
-	    PRINT_NODE_TYPE_EDGE(n,get_Alloc_type(n),NODE2TYPE_EDGE_ATTR);
+      PRINT_NODE_TYPE_EDGE(n,get_Alloc_type(n),NODE2TYPE_EDGE_ATTR);
     } break;
   case iro_Free: {
-	    PRINT_NODE_TYPE_EDGE(n,get_Free_type(n),NODE2TYPE_EDGE_ATTR);
+      PRINT_NODE_TYPE_EDGE(n,get_Free_type(n),NODE2TYPE_EDGE_ATTR);
+    } break;
+  case iro_Cast: {
+      PRINT_NODE_TYPE_EDGE(n,get_Cast_type(n),NODE2TYPE_EDGE_ATTR);
     } break;
   default:
     break;
