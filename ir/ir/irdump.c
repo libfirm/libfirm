@@ -42,7 +42,7 @@
 
 # include "exc.h"
 
-#define HEAPANAL
+//#define HEAPANAL
 #ifdef HEAPANAL
 void dump_chi_term(FILE *FL, ir_node *n);
 void dump_state(FILE *FL, ir_node *n);
@@ -57,9 +57,9 @@ SeqNo get_Block_seqno(ir_node *n);
 #define DEFAULT_TYPE_ATTRIBUTE " "
 
 /* Attributes of edges between Firm nodes */
-#define BLOCK_EDGE_ATTR "class: 2 priority: 2 linestyle: dotted"
-#define CF_EDGE_ATTR    "color: red"
-#define MEM_EDGE_ATTR   "color: blue"
+#define BLOCK_EDGE_ATTR     "class: 2 priority: 2 linestyle: dotted"
+#define CF_EDGE_ATTR        "color: red"
+#define MEM_EDGE_ATTR       "color: blue"
 #define DOMINATOR_EDGE_ATTR "color: red"
 
 #define BACK_EDGE_ATTR "linestyle: dashed "
@@ -909,9 +909,6 @@ dump_whole_block(ir_node *block) {
 
   /* dump the blocks edges */
   dump_ir_data_edges(block);
-#ifdef HEAPANAL
-  dump_chi_term(F, block);
-#endif
 
   /* dump the nodes that go into the block */
   for (node = ird_get_irn_link(block); node; node = ird_get_irn_link(node)) {
@@ -922,6 +919,9 @@ dump_whole_block(ir_node *block) {
   /* Close the vcg information for the block */
   fprintf(F, "}\n");
   dump_const_node_local(block);
+#ifdef HEAPANAL
+  dump_chi_term(F, block);
+#endif
   fprintf(F, "\n");
 }
 
