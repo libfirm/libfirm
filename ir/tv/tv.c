@@ -896,7 +896,6 @@ int tarval_print(XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
   ANNOUNCE();
   tarval *tv;
   const char *str;
-  int offset;
   char buf[100];
 
   tv = XP_GETARG(tarval *, 0);
@@ -904,9 +903,8 @@ int tarval_print(XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
   {
     case int_number:
     case character:
-      offset = 16 - (get_mode_size_bits(tv->mode)/4);
-      str = sc_print_hex(tv->value);
-      return XPF1R("0x%s", str + offset);
+      str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_DEC);
+      return XPF1R("%s", str);
 
     case float_number:
       return XPF1R("%s", fc_print_dec(tv->value, buf, sizeof(buf)));

@@ -14,9 +14,9 @@
 #include <stdio.h>    /* output for error messages */
 #include <stdlib.h>
 
-/*****************************************************************************
+/*
  * local definitions and macros
- *****************************************************************************/
+ */
 #define BIT_PATTERN_SIZE (8 * BIGGEST_INTEGER_SIZE_IN_BYTES)
 #define CALC_BUFFER_SIZE (4 * BIGGEST_INTEGER_SIZE_IN_BYTES)
 #define MAX_VALUE_SIZE   (2 * BIGGEST_INTEGER_SIZE_IN_BYTES)
@@ -28,15 +28,22 @@
 
 #define fail_char(a, b, c, d) _fail_char((a), (b), (c), (d), __FILE__,  __LINE__)
 
+/* shortcut output for debugging only, gices always full precisition */
+#define sc_print_hex(a) sc_print((a), 0, SC_HEX)
+#define sc_print_dec(a) sc_print((a), 0, SC_DEC)
+#define sc_print_oct(a) sc_print((a), 0, SC_OCT)
+#define sc_print_bin(a) sc_print((a), 0, SC_BIN)
+
+
 #if 0
 #  define DEBUGPRINTF(x) printf x
 #else
 #  define DEBUGPRINTF(x) ((void)0)
 #endif
 
-/*****************************************************************************
+/*
  * private variables
- *****************************************************************************/
+ */
 
 static char calc_buffer[CALC_BUFFER_SIZE];    /* buffer holding all results */
 
@@ -378,6 +385,13 @@ static char const shrs_table[16][4][2] = {
                        { {SC_E, SC_0}, {SC_7, SC_0}, {SC_3, SC_8}, {SC_1, SC_C} },
                        { {SC_F, SC_0}, {SC_7, SC_8}, {SC_3, SC_C}, {SC_1, SC_E} }
                                    };
+
+/* for converting to binary string */
+static const char *binary_table[16] = {
+  "0000", "0001", "0010", "0011", "0100", "0101", "0110", "0111",
+  "1000", "1001", "1010", "1011", "1100", "1101", "1110", "1111"
+};
+
 /*****************************************************************************
  * private functions
  *****************************************************************************/
@@ -580,7 +594,8 @@ static void _divmod(const char *dividend, const char *divisor, char *quot, char 
   memset(rem, SC_0, CALC_BUFFER_SIZE);
 
   /* if the dividend is zero result is zero (quot is zero)*/
-  if (sc_comp(dividend, quot) == 0) return;
+  if (sc_comp(dividend, quot) == 0)
+    return;
   /* if the divisor is zero this won't work (quot is zero) */
   if (sc_comp(divisor, quot) == 0) assert(0 && "quotision by zero!");
 
@@ -1213,34 +1228,123 @@ unsigned char sc_sub_bits(const void *value, int len, unsigned byte_ofs)
   return res;
 }
 
-const char *sc_print(const void *value, unsigned base)
+/*
+ * convert to a string
+ */
+const char *sc_print(const void *value, unsigned bits, enum base_t base)
 {
-  int counter;
+  char base_val[CALC_BUFFER_SIZE];
+  char div1_res[CALC_BUFFER_SIZE];
+  char div2_res[CALC_BUFFER_SIZE];
+  char rem_res[CALC_BUFFER_SIZE];
+  int counter, nibbles, i;
+  char x;
 
   const char *val = (const char *)value;
+  const char *p;
+  char *m, *n, *t;
   char *pos;
   static char *buf = NULL;
 
-  if (buf != NULL) free(buf);
-  buf = malloc(BIT_PATTERN_SIZE);
+  if (! buf) {
+    /* TODO: this buffer could be allocated in the initialising phase too */
+    buf = malloc(BIT_PATTERN_SIZE + 1);
+    if (! buf)
+      return NULL;
+  }
 
-  pos = buf + BIT_PATTERN_SIZE - 1;
+  pos = buf + BIT_PATTERN_SIZE;
   *pos = '\0';
 
-  switch (base)
-  {
-    case SC_HEX:
-      for (counter = 0; counter < MAX_VALUE_SIZE; counter++)
-      {
-        if (val[counter] < SC_A)
-          *(--pos) = val[counter] + '0';
-        else
-          *(--pos) = val[counter] + 'a' - 10;
-      }
-      break;
+  /* special case */
+  if (bits == 0)
+    bits = BIT_PATTERN_SIZE;
 
-    default:
-      assert(0);
-  }
+  nibbles = bits >> 2;
+  switch (base) {
+
+  case SC_HEX:
+    for (counter = 0; counter < nibbles; ++counter)
+      *(--pos) = "0123456789abcdef"[_val(val[counter])];
+
+    /* last nibble must be masked */
+    if (bits & 3) {
+      x = and_table[_val(val[++counter])][bits & 3];
+      *(--pos) = "0123456789abcdef"[_val(x)];
+    }
+
+    /* now kill zeros */
+    for (; counter > 1; --counter, ++pos)
+      if (pos[0] != '0')
+	break;
+    break;
+
+  case SC_BIN:
+    for (counter = 0; counter < nibbles; ++counter) {
+      pos -= 4;
+      p = binary_table[_val(val[counter])];
+      pos[0] = p[0];
+      pos[1] = p[1];
+      pos[2] = p[2];
+      pos[3] = p[3];
+    }
+
+    /* last nibble must be masked */
+    if (bits & 3) {
+      x = and_table[_val(val[++counter])][bits & 3];
+
+      pos -= 4;
+      p = binary_table[_val(x)];
+      pos[0] = p[0];
+      pos[1] = p[1];
+      pos[2] = p[2];
+      pos[3] = p[3];
+    }
+
+    /* now kill zeros */
+    for (counter <<= 2; counter > 1; --counter, ++pos)
+      if (pos[0] != '0')
+	break;
+    break;
+
+  case SC_DEC:
+  case SC_OCT:
+    memset(base_val, SC_0, CALC_BUFFER_SIZE);
+    base_val[0] = base == SC_DEC ? SC_A : SC_8;
+
+    /* transfer data into oscilating buffers */
+    memset(div1_res, SC_0, CALC_BUFFER_SIZE);
+    for (counter = 0; counter < nibbles; ++counter)
+      div1_res[counter] = val[counter];
+
+    /* last nibble must be masked */
+    if (bits & 3) {
+      ++counter;
+
+      div1_res[counter] = and_table[_val(val[counter])][bits & 3];
+    }
+
+    m = div1_res;
+    n = div2_res;
+    for (;;) {
+      _divmod(m, base_val, n, rem_res);
+      t = m;
+      m = n;
+      n = t;
+      *(--pos) = "0123456789abcdef"[_val(rem_res[0])];
+
+      x = 0;
+      for (i = 0; i < sizeof(div1_res); ++i)
+     	x |= _val(m[i]);
+
+      if (x == 0)
+	break;
+    }
+    break;
+
+  default:
+    assert(0);
+    return NULL;
+}
   return pos;
 }

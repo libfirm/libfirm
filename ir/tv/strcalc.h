@@ -43,33 +43,39 @@ enum {
   SC_F,
 };
 
+/**
+ * Possible operations on integer values.
+ */
 enum {
-  SC_ADD = 0,
-  SC_SUB,
-  SC_NEG,
-  SC_MUL,
-  SC_DIV,
-  SC_MOD,
-  SC_SHL,
-  SC_SHR,
-  SC_SHRS,
-  SC_ROT,
-  SC_AND,
-  SC_OR,
-  SC_NOT,
-  SC_XOR,
+  SC_ADD = 0,		/**< Addition */
+  SC_SUB,		/**< Substraction */
+  SC_NEG,		/**< Unary Minus */
+  SC_MUL,		/**< Multiplication */
+  SC_DIV,		/**< Integer Division (with rounding toward zero ?) */
+  SC_MOD,		/**< Devision Remainder */
+  SC_SHL,		/**< Left Shift */
+  SC_SHR,		/**< Logical (unsigned) Right Shift */
+  SC_SHRS,		/**< Arithmetic (signed) Right Shift */
+  SC_ROT,		/**< Rotation (both directions) */
+  SC_AND,		/**< Bitwise And */
+  SC_OR,		/**< Bitwise Or */
+  SC_NOT,		/**< Bitwise Not */
+  SC_XOR,		/**< Bitwise Exclusive Or */
 };
 
-enum {
-  SC_HEX,
-  SC_DEC,
-  SC_OKT,
-  SC_BIN,
+/**
+ * The output mode for ntger values.
+ */
+enum base_t {
+  SC_HEX,	/**< hexadecimal output */
+  SC_DEC,	/**< decimal output */
+  SC_OCT,	/**< octal output */
+  SC_BIN,	/**< binary output */
 };
 
-/*****************************************************************************
+/*
  * definitions and macros
- *****************************************************************************/
+ */
 #define sc_add(a, b) sc_calc((a), (b), SC_ADD)
 #define sc_sub(a, b) sc_calc((a), (b), SC_SUB)
 #define sc_neg(a) sc_calc((a), NULL, SC_NEG)
@@ -85,13 +91,9 @@ enum {
 #define sc_shrs(a, b, c, d) sc_bitcalc((a), (b), (c), (d), SC_SHRS)
 #define sc_rot(a, b, c, d) sc_bitcalc((a), (b), (c), (d), SC_ROT)
 
-#define sc_print_hex(a) sc_print((a), SC_HEX)
-#define sc_print_dec(a) sc_print((a), SC_DEC)
-#define sc_print_okt(a) sc_print((a), SC_OKT)
-#define sc_print_bin(a) sc_print((a), SC_BIN)
-/*****************************************************************************
+/*
  * function declarations
- *****************************************************************************/
+ */
 const void *sc_get_buffer(void);
 const int sc_get_buffer_length(void);
 
@@ -107,6 +109,13 @@ int  sc_comp(const void *val1, const void *val2);
 
 unsigned char sc_sub_bits(const void *val, int len, unsigned byte_ofs);
 
-const char *sc_print(const void *val1, unsigned base);
+/**
+ * Converts a tarval into a string.
+ *
+ * @param val1		the value pointer
+ * @param bits		number of valid bits in this value
+ * @param base		output base
+ */
+const char *sc_print(const void *val1, unsigned bits, enum base_t base);
 
 #endif /* _STRCALC_H_ */
