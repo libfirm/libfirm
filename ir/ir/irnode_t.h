@@ -10,7 +10,6 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
-
 /**
  * @file irnode_t.h
  *
@@ -18,7 +17,6 @@
  *
  * @author Martin Trapp, Christian Schaefer
  */
-
 
 # ifndef _IRNODE_T_H_
 # define _IRNODE_T_H_
@@ -239,12 +237,6 @@ struct ir_node {
 };
 
 
-/** Copies all attributes stored in the old node  to the new node.
-    Assumes both have the same opcode and sufficient size. */
-void
-copy_attrs(const ir_node *old_node, ir_node *new_node);
-
-
 /** Returns the array with the ins.  The content of the array may not be
    changed.  */
 ir_node     **get_irn_in            (const ir_node *node);
@@ -265,6 +257,11 @@ load_attr            get_irn_load_attr     (ir_node *node);
 store_attr           get_irn_store_attr    (ir_node *node);
 except_attr          get_irn_except_attr   (ir_node *node);
 /** @} */
+
+/*
+ * The amount of additional space for custom data to be allocated upon creating a new node.
+ */
+extern unsigned firm_add_node_size;
 
 /*-------------------------------------------------------------------*/
 /*  These function are most used in libfirm.  Give them as static    */
@@ -288,6 +285,16 @@ static INLINE ir_op *
 __get_irn_op (const ir_node *node) {
   assert (node);
   return node->op;
+}
+
+/** Copies all attributes stored in the old node  to the new node.
+    Assumes both have the same opcode and sufficient size. */
+static INLINE void
+copy_node_attr(const ir_node *old_node, ir_node *new_node) {
+  ir_op *op = __get_irn_op(old_node);
+
+  /* must always exist */
+  op->copy_attr(old_node, new_node);
 }
 
 /**

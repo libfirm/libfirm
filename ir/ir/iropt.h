@@ -41,9 +41,4 @@ tarval *computed_value (ir_node *n);
  */
 ir_node *optimize_in_place (ir_node *n);
 
-/**
- * set the default ir op operations
- */
-ir_op *firm_set_default_operations(ir_op *op);
-
 # endif /* _IROPT_H_ */

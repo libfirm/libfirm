@@ -922,7 +922,7 @@ int is_forking_op(const ir_node *node);
  * must be passed to the access macro get_irn_data(), 0 if the
  * registration failed.
  */
-size_t register_additional_node_data(size_t size);
+unsigned register_additional_node_data(unsigned size);
 
 
 /*-----------------------------------------------------------------*/

@@ -22,7 +22,7 @@
 # include "irnode_t.h"
 # include "firmstat.h"
 
-# include "iropt.h"             /* for firm_set_default_operations */
+# include "iropt_t.h"             /* for firm_set_default_operations */
 
 # include "xmalloc.h"
 
@@ -90,6 +90,45 @@ ir_op *op_EndExcept;   ir_op *get_op_EndExcept (void) { return op_EndExcept; }
 ir_op *op_NoMem;       ir_op *get_op_NoMem     (void) { return op_NoMem; }
 
 
+/*
+ * Copies all attributes stored in the old node to the new node.
+ * Assumes both have the same opcode and sufficient size.
+ */
+void default_copy_attr(const ir_node *old_node, ir_node *new_node) {
+  unsigned size = firm_add_node_size;
+
+  assert(get_irn_op(old_node) == get_irn_op(new_node));
+  memcpy(&new_node->attr, &old_node->attr, get_op_attr_size(get_irn_op(old_node)));
+
+  if (size > 0) {
+    /* copy additional node data */
+    memcpy(get_irn_data(new_node, void, size), get_irn_data(old_node, void, size), size);
+  }
+}
+
+/**
+ * Copies all attributes stored in the old node to the new node.
+ * Assumes both have the same opcode and sufficient size.
+ */
+static void
+call_copy_attr(const ir_node *old_node, ir_node *new_node) {
+  default_copy_attr(old_node, new_node);
+
+  remove_Call_callee_arr(new_node);
+}
+
+/**
+ * Sets the copy_attr operation for an ir_op
+ */
+static ir_op *firm_set_default_copy_attr(ir_op *op) {
+  if (op->code == iro_Call)
+    op->copy_attr = call_copy_attr;
+  else
+    op->copy_attr = default_copy_attr;
+
+  return op;
+}
+
 ir_op *
 new_ir_op(opcode code, const char *name, op_pin_state p, unsigned flags, op_arity opar, int op_index, size_t attr_size)
 {
@@ -107,6 +146,8 @@ new_ir_op(opcode code, const char *name, op_pin_state p, unsigned flags, op_arit
   res->op_index  = op_index;
 
   firm_set_default_operations(res);
+  firm_set_default_copy_attr(res);
+
   stat_new_ir_op(res);
   return res;
 }

@@ -97,23 +97,22 @@ static int forbid_new_data = 0;
  * The amount of additional space for custom data to be allocated upon
  * creating a new node.
  */
-static size_t additional_node_data_size = 0;
+unsigned firm_add_node_size = 0;
 
 
-size_t register_additional_node_data(size_t size)
-{
-	assert(!forbid_new_data && "Too late to register additional node data");
+/* register new space for every node */
+unsigned register_additional_node_data(unsigned size) {
+  assert(!forbid_new_data && "Too late to register additional node data");
 
-	if(forbid_new_data)
-		return 0;
+  if (forbid_new_data)
+    return 0;
 
-	return additional_node_data_size += size;
+  return firm_add_node_size += size;
 }
 
 
 void
-init_irnode (void)
-{
+init_irnode(void) {
 	/* Forbid the addition of new data to an ir node. */
 	forbid_new_data = 1;
 }
@@ -129,13 +128,13 @@ new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mo
          int arity, ir_node **in)
 {
   ir_node *res;
-  size_t node_size = offsetof(ir_node, attr) + op->attr_size + additional_node_data_size;
+  size_t node_size = offsetof(ir_node, attr) + op->attr_size + firm_add_node_size;
 	char *p;
 
   assert(irg && op && mode);
   p = obstack_alloc (irg->obst, node_size);
   memset(p, 0, node_size);
-	res = (ir_node *) (p + additional_node_data_size);
+	res = (ir_node *) (p + firm_add_node_size);
 
   res->kind    = k_ir_node;
   res->op      = op;
@@ -159,15 +158,6 @@ new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mo
   stat_new_node(res);
 
   return res;
-}
-
-/* Copies all attributes stored in the old node to the new node.
-   Assumes both have the same opcode and sufficient size. */
-void
-copy_attrs (const ir_node *old_node, ir_node *new_node) {
-  assert(get_irn_op(old_node) == get_irn_op(new_node));
-  memcpy(&new_node->attr, &old_node->attr, get_op_attr_size(get_irn_op(old_node)));
-  if (get_irn_op(new_node) == op_Call) remove_Call_callee_arr(new_node);
 }
 
 /*-- getting some parameters from ir_nodes --*/

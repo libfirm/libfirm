@@ -86,6 +86,12 @@ typedef int (*node_cmp_attr_func)(ir_node *a, ir_node *b);
  */
 typedef int (*reassociate_func)(ir_node *n);
 
+/**
+ * The copy attribute operation.
+ * Copy the node attributes from a 'old' node to a 'new' one.
+ */
+typedef void (*copy_attr_func)(const ir_node *old_node, ir_node *new_node);
+
 /** The type of an ir_op. */
 struct ir_op {
   opcode code;            /**< the unique opcode of the op */
@@ -102,6 +108,7 @@ struct ir_op {
   transform_node_func   transform_node;		/**< optimizes the node by transforming it. */
   node_cmp_attr_func    node_cmp_attr;		/**< compares two node attributes. */
   reassociate_func      reassociate;            /**< reassociate a tree */
+  copy_attr_func        copy_attr;              /**< copy node attributes */
 };
 
 /**
@@ -131,6 +138,12 @@ void init_op(void);
 
 /** Free memory used by irop module. */
 void finish_op(void);
+
+/**
+ * Copies simply all attributes stored in the old node to the new node.
+ * Assumes both have the same opcode and sufficient size.
+ */
+void default_copy_attr(const ir_node *old_node, ir_node *new_node);
 
 /** Returns the attribute size of nodes of this opcode.
    @note Use not encouraged, internal feature. */

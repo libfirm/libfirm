@@ -52,5 +52,9 @@ value_of(ir_node *n) {
     return tarval_bad;
 }
 
+/**
+ * set the default ir op operations
+ */
+ir_op *firm_set_default_operations(ir_op *op);
 
 # endif /* _IROPT_T_H_ */
