@@ -18,6 +18,28 @@
 #include "obst.h"
 #include "set.h"
 
+#ifdef WITH_LIBCORE
+
+#include "irargs_t.h"
+
+static void firm_dbg_default_printer(struct obstack *obst, const char *fmt, va_list args)
+{
+  static arg_env_t *env = NULL;
+
+  if(!env)
+    env = firm_get_arg_env();
+
+  lc_evoprintf(env, obst, fmt, args);
+
+}
+
+firm_dbg_module_t *firm_dbg_register(const char *name)
+{
+  return dbg_register_with_printer(name, firm_dbg_default_printer);
+}
+
+#else
+
 static struct obstack dbg_obst;
 static set *module_set;
 
@@ -109,3 +131,6 @@ void _firm_dbg_print_msg(const char *filename, int line, const char *func, void 
 		obstack_free(&dbg_obst, mi);
 	}
 }
+
+
+#endif /* WITH_LIBCORE */

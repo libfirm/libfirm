@@ -7,17 +7,35 @@
 #ifndef _FIRM_DEBUG_H
 #define _FIRM_DEBUG_H
 
+#include "firm_config.h"
+
+#ifdef WITH_LIBCORE
+
+#include <libcore/debug.h>
+
+/* use the newer debug implementation in libcore */
+typedef dbg_module_t firm_dbg_module_t;
+
+extern firm_dbg_module_t *firm_dbg_register(const char *name);
+
+#define firm_dbg_set_mask(module, mask) dbg_set_mask(module, mask)
+#define firm_dbg_get_mask(module)       dbg_get_mask(module)
+#define firm_dbg_set_file(module, file) dbg_set_file(module, file)
+
+#else
+/* use the builtin debug implementation */
+
 #include <stdio.h>
 
 enum firm_dbg_level_t {
-	LEVEL_DEFAULT = 0,		/**< Prints always. Use with DBG(). */
+	LEVEL_DEFAULT = 0, /**< Prints always. Use with DBG(). */
 	LEVEL_1 = 1,
 	LEVEL_2 = 2,
 	LEVEL_3 = 4,
 	LEVEL_4 = 8,
 	LEVEL_5 = 16,
 
-	SET_LEVEL_1 = 1,			/**< use with firm_dbg_set_mask(). */
+	SET_LEVEL_1 = 1,   /**< use with firm_dbg_set_mask(). */
 	SET_LEVEL_2 = 3,
 	SET_LEVEL_3 = 7,
 	SET_LEVEL_4 = 15,
@@ -119,5 +137,6 @@ void firm_dbg_set_file(firm_dbg_module_t *module, FILE *file);
 #define DBG(args)
 #endif
 
+#endif /* WITH_LIBCORE */
 
-#endif
+#endif /* _FIRM_DEBUG_H */
