@@ -488,32 +488,38 @@ ir_node *copy_const_value(ir_node *n) {
   ir_node *nn;
   ir_mode *m;
 
+  /* @@@ GL I think  we should implement this using the routines from irgopt for
+     dead node elimination/inlineing. */
+
   m = get_irn_mode(n);
   switch(get_irn_opcode(n)) {
   case iro_Const:
-    nn = new_Const(m, get_Const_tarval(n)); break;
+    nn = new_Const(m, get_Const_tarval(n));     set_Const_type(nn, get_Const_type(n));
+    //nn = new_rd_Const_type(get_irn_dbg_info(n), current_ir_graph, get_cur_block(),
+    //		   m,  get_Const_tarval(n), get_Const_type(n));
+    break;
   case iro_SymConst:
-
-    nn = new_SymConst(get_SymConst_symbol(n), get_SymConst_kind(n));
+    nn = new_d_SymConst_type(NULL, get_SymConst_symbol(n), get_SymConst_kind(n),
+			     get_SymConst_value_type(n));
     break;
   case iro_Add:
     nn = new_Add(copy_const_value(get_Add_left(n)),
-         copy_const_value(get_Add_right(n)), m); break;
+		 copy_const_value(get_Add_right(n)), m); break;
   case iro_Sub:
     nn = new_Sub(copy_const_value(get_Sub_left(n)),
-         copy_const_value(get_Sub_right(n)), m); break;
+		 copy_const_value(get_Sub_right(n)), m); break;
   case iro_Mul:
     nn = new_Mul(copy_const_value(get_Mul_left(n)),
-         copy_const_value(get_Mul_right(n)), m); break;
+		 copy_const_value(get_Mul_right(n)), m); break;
   case iro_And:
     nn = new_And(copy_const_value(get_And_left(n)),
-         copy_const_value(get_And_right(n)), m); break;
+		 copy_const_value(get_And_right(n)), m); break;
   case iro_Or:
     nn = new_Or(copy_const_value(get_Or_left(n)),
-         copy_const_value(get_Or_right(n)), m); break;
+		copy_const_value(get_Or_right(n)), m); break;
   case iro_Eor:
     nn = new_Eor(copy_const_value(get_Eor_left(n)),
-         copy_const_value(get_Eor_right(n)), m); break;
+		 copy_const_value(get_Eor_right(n)), m); break;
   case iro_Cast:
     nn = new_Cast(copy_const_value(get_Cast_op(n)), get_Cast_type(n)); break;
   case iro_Conv:
@@ -730,6 +736,7 @@ set_array_entity_values(entity *ent, tarval **values, int num_vals) {
   ir_graph *rem = current_ir_graph;
   type *arrtp = get_entity_type(ent);
   ir_node *val;
+  type *elttp = get_array_element_type(arrtp);
 
   assert(is_array_type(arrtp));
   assert(get_array_n_dimensions(arrtp) == 1);
@@ -740,7 +747,7 @@ set_array_entity_values(entity *ent, tarval **values, int num_vals) {
   current_ir_graph = get_const_code_irg();
 
   for (i = 0; i < num_vals; i++) {
-    val = new_Const(get_tarval_mode (values[i]), values[i]);
+    val = new_Const_type(values[i], elttp);
     add_compound_ent_value(ent, val, get_array_element_entity(arrtp));
     set_compound_graph_path_array_index(get_compound_ent_value_path(ent, i), 0, i);
   }
