@@ -1318,12 +1318,10 @@ INLINE type   *new_type_enumeration    (ident *name, int n_enums) {
   int i;
   res = new_type(type_enumeration, NULL, name);
   res->attr.ea.n_enums     = n_enums;
-  res->attr.ea.enumer      = (tarval **) xmalloc (sizeof (tarval *) * n_enums);
-  res->attr.ea.enum_nameid = (ident  **) xmalloc (sizeof (ident  *) * n_enums);
-  for (i = 0; i < n_enums; i++) {
-    res->attr.ea.enumer[i] = NULL;
-    res->attr.ea.enum_nameid  = NULL;
-  }
+  res->attr.ea.enumer      = (tarval **)xmalloc(sizeof(res->attr.ea.enumer[0]) * n_enums);
+  res->attr.ea.enum_nameid = (ident  **)xmalloc(sizeof(res->attr.ea.enum_nameid[0]) * n_enums);
+  memset(res->attr.ea.enumer,      0, sizeof(res->attr.ea.enumer[0])      * n_enums);
+  memset(res->attr.ea.enum_nameid, 0, sizeof(res->attr.ea.enum_nameid[0]) * n_enums);
   return res;
 }
 type   *new_d_type_enumeration    (ident *name, int n_enums, dbg_info* db) {
