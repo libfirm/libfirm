@@ -84,7 +84,7 @@
  *
  *      *args        The ir_node that produces the arguments of the method as
  *               it's result.  This is a Proj node on the fourth output of
- *               the start node.  This output is tagged as pns_args.
+ *               the start node.  This output is tagged as pn_Start_T_args.
  *
  *      *bad             The bad node is an auxiliary node. It is needed only once,
  *                       so there is this globally reachable node.
@@ -95,7 +95,7 @@
  *
  *      *current_block   A pointer to the current block.  Any node created with
  *                       one of the node constructors (new_<opcode>) are assigned
- *                       to this block.  It can be set with switch_block(block).
+ *                       to this block.  It can be set with set_cur_block(block).
  *                       Only needed for ir construction.
  *
  *      params/n_loc     An int giving the number of local variables in this
@@ -182,7 +182,7 @@
  *      *link            A pointer to an ir_node.  With this pointer all Phi nodes
  *                       are attached to a Block, i.e., a Block points to it's
  *                       first Phi node, this node points to the second Phi node
- *                       in the Block and so fourth.  Used in mature_block
+ *                       in the Block and so fourth.  Used in mature_immBlock
  *                       to find all Phi nodes to be matured.  It's also used to
  *               annotate a node with a better, optimized version of it.
  *
@@ -227,7 +227,7 @@
  *      (new_<Node> constructurs and a set of additional routines.)
  *    * A less comfortable interface where all predecessors except the block
  *      an operation belongs to need to be specified.  SSA must be constructed
- *      by hand.  (new_<Node> constructors and switch_block()).  This interface
+ *      by hand.  (new_<Node> constructors and set_cur_block()).  This interface
  *      is called "block oriented".  It automatically calles the local optimizations
  *      for each new node.
  *    * An even less comfortable interface where the block needs to be specified
@@ -257,16 +257,16 @@
  *
  *    A global variable holds the current basic block.  All (non block) nodes
  *    generated are added to this block.  The current block can be set with
- *    switch_block(block).  If several blocks are constructed in parallel block
+ *    set_cur_block(block).  If several blocks are constructed in parallel block
  *    switches need to be performed constantly.
  *
  *    To generate a Block node (with the comfortable interface) it's predecessor
  *    control flow nodes need not be known.  In case of cyclic control flow these
- *    can not be known when the block is constructed.  With add_in_edge(block,
+ *    can not be known when the block is constructed.  With add_immBlock_pred(block,
  *    cfnode) predecessors can be added to the block.  If all predecessors are
- *    added to the block mature_block(b) needs to be called.  Calling mature_block
+ *    added to the block mature_immBlock(b) needs to be called.  Calling mature_immBlock
  *    early improves the efficiency of the Phi node construction algorithm.
- *    But if several  blocks are constructed at once, mature_block must only
+ *    But if several  blocks are constructed at once, mature_immBlock must only
  *    be called after performing all set_values and set_stores in the block!
  *    (See documentation of new_immBlock constructor.)
  *
@@ -298,9 +298,9 @@
  *    ir_node *this_block, *cf_pred1, *cf_pred2, *a_val, *mem, *div, *res, *cf_op;
  *
  *    this_block = new_immBlock();
- *    add_in_edge(this_block, cf_pred1);
- *    add_in_edge(this_block, cf_pred2);
- *    mature_block(this_block);
+ *    add_immBlock_pred(this_block, cf_pred1);
+ *    add_immBlock_pred(this_block, cf_pred2);
+ *    mature_immBlock(this_block);
  *    a_val = get_value(42, mode_Iu);
  *    mem = get_store();
  *    div = new_Div(mem, a_val, a_val);
@@ -395,9 +395,9 @@
  *    ir_node *new_FuncCall (ir_node *store, ir_node *callee, int arity,
  *                       ir_node **in, type_method *type);
  *
- *    void add_in_edge (ir_node *block, ir_node *jmp);
- *    void mature_block (ir_node *block);
- *    void switch_block (ir_node *target);
+ *    void add_immBlock_pred (ir_node *block, ir_node *jmp);
+ *    void mature_immBlock (ir_node *block);
+ *    void set_cur_block (ir_node *target);
  *    ir_node *get_value (int pos, ir_mode *mode);
  *    void set_value (int pos, ir_node *value);
  *    ir_node *get_store (void);
@@ -433,15 +433,14 @@
  *    Creates a new block.  Sets current_block to itself.  When a new block is
  *    created it cannot be known how many predecessors this block will have in the
  *    control flow graph. Therefore the list of inputs can not be fixed at
- *    creation.  Predecessors can be added with add_in_edge (block, control flow
+ *    creation.  Predecessors can be added with add_immBlock_pred (block, control flow
  *    operation).  With every added predecessor the number of inputs to Phi nodes
  *    also changes.
  *
- *    The block can be completed by mature_block(block) if all predecessors are
- *    known.  If several blocks are built at once, mature_block can only be called
+ *    The block can be completed by mature_immBlock(block) if all predecessors are
+ *    known.  If several blocks are built at once, mature_immBlock can only be called
  *    after set_value has been called for all values that are life at the end
- *    of the block.  This is necessary so that Phi nodes created by mature_block
- *    get the right predecessors in case of cyclic dependencies.  If all set_values
+ *    of the block.  This is necessary so that Phi nodes created mature_immBlock *    get the right predecessors in case of cyclic dependencies.  If all set_values
  *    of this block are called after maturing it and before calling get_value
  *    in some block that is control flow dependent on this block, the construction
  *    is correct.
@@ -451,7 +450,7 @@
  *
  *      block_before_loop = new_block();
  *      set_value(x);
- *      mature_block(block_before_loop);
+ *      mature_immBlock(block_before_loop);
  *      before2header = new_Jmp;
  *
  *      loop_header = new_block ();
@@ -460,18 +459,18 @@
  *      loop_body = new_block ();
  *      body2header = new_Jmp();
  *
- *      add_in_edge(loop_header, before2header);
- *      add_in_edge(loop_header, body2header);
- *      add_in_edge(loop_body, header2body);
+ *      add_immBlock_pred(loop_header, before2header);
+ *      add_immBlock_pred(loop_header, body2header);
+ *      add_immBlock_pred(loop_body, header2body);
  *
- *      mature_block(loop_header);
- *      mature_block(loop_body);
+ *      mature_immBlock(loop_header);
+ *      mature_immBlock(loop_body);
  *
  *      get_value(loop_body, x);   //  gets the Phi in loop_header
  *      set_value(loop_header, x); //  sets the value the above get_value should
  *                                 //  have returned!!!
  *
- *    Mature_block also fixes the number of inputs to the Phi nodes.  Mature_block
+ *    Mature_immBlock also fixes the number of inputs to the Phi nodes.  Mature_immBlock
  *    should be called as early as possible, as afterwards the generation of Phi
  *   nodes is more efficient.
  *
@@ -523,16 +522,12 @@
  *      No inputs except the block it belogns to.
  *    Output:
  *      A tuple of 4 (5, 6) distinct values. These are labeled by the following
- *      projection numbers (pns_number):
- *      * pns_initial_exec
- *                       mode X, points to the first block to be executed.
- *      * pns_global_store
- *                       mode M, the global store
- *      * pns_frame_base mode P, a pointer to the base of the procedures
- *                       stack frame.
- *      * pns_globals    mode P, a pointer to the part of the memory containing
- *                               _all_ global things.
- *      * pns_args       mode T, a tuple containing all arguments of the procedure.
+ *      projection numbers (pn_Start):
+ *      * pn_Start_X_initial_exec    mode X, points to the first block to be exe *                                   cuted.
+ *      * pn_Start_M                 mode M, the global store
+ *      * pn_Start_P_frame_base      mode P, a pointer to the base of the proce  *                                   dures stack frame.
+ *      * pn_Start_P_globals         mode P, a pointer to the part of the memory *                                   containing_all_ global things.
+ *      * pn_Start_T_args            mode T, a tuple containing all arguments of *                                   the procedure.
  *
  *
  *    ir_node *new_End (void)
@@ -2566,7 +2561,7 @@ ir_node *new_r_FuncCall (ir_graph *irg, ir_node *block,
  *
  *  @param target  The new current block.
  */
-void     switch_block (ir_node *target);
+void     set_cur_block (ir_node *target);
 
 /** Returns the current block of the current graph. */
 ir_node *get_cur_block(void);
@@ -3300,7 +3295,7 @@ ir_node *new_d_FuncCall (dbg_info* db, ir_node *callee, int arity, ir_node *in[]
 /*-----------------------------------------------------------------------*/
 
 /* Needed from the interfase with debug support:
-void switch_block (ir_node *target);   */
+void set_cur_block (ir_node *target);   */
 
 /** Constructor for a Block node.
  *
@@ -3936,10 +3931,10 @@ ir_node *new_d_immBlock (dbg_info* db);
 ir_node *new_immBlock (void);
 
 /** Add a control flow edge to an immature block. */
-void add_in_edge (ir_node *immblock, ir_node *jmp);
+void add_immBlock_pred (ir_node *immblock, ir_node *jmp);
 
 /** Fix the number of predecessors of an immature block. */
-void mature_block (ir_node *block);
+void mature_immBlock (ir_node *block);
 
 
 /** Get the current value of a local variable.
@@ -4016,11 +4011,5 @@ void finalize_cons (ir_graph *irg);
  */
 typedef ir_node *default_initialize_local_variable_func_t(ir_mode *mode, int pos);
 
-/**
- * Initializes the graph construction.
- *
- * @param func  @see default_initialize_local_variable_func_t
- */
-void init_cons (default_initialize_local_variable_func_t *func);
 
 # endif /* _IRCONS_H_ */

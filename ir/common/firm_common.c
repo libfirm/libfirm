@@ -73,7 +73,7 @@ void firm_identify_thing(void *X)
     printf("type: %s %s: %ld (%p)\n", get_type_tpop_name(X), get_type_name(X), get_type_nr(X), X);
     break;
   case k_ir_graph:
-    printf("graph: %s: %ld (%p)\n", get_entity_name(get_irg_ent(X)), get_irg_graph_nr(X), X);
+    printf("graph: %s: %ld (%p)\n", get_entity_name(get_irg_entity(X)), get_irg_graph_nr(X), X);
     break;
   case k_ir_node:
     printf("irnode: %s%s %ld (%p)\n", get_irn_opname(X), get_mode_name(get_irn_mode(X)), get_irn_node_nr(X), X);

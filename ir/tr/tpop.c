@@ -51,17 +51,17 @@ free_tpop(tp_op* tpop) {
 void
 init_tpop(void)
 {
-  type_class       = new_tpop (tpo_class      , id_from_str("class"       , 5), sizeof (cls_attr));
-  type_struct      = new_tpop (tpo_struct     , id_from_str("struct"      , 6), sizeof (stc_attr));
-  type_method      = new_tpop (tpo_method     , id_from_str("method"      , 6), sizeof (mtd_attr));
-  type_union       = new_tpop (tpo_union      , id_from_str("union"       , 5), sizeof (uni_attr));
-  type_array       = new_tpop (tpo_array      , id_from_str("array"       , 5), sizeof (arr_attr));
-  type_enumeration = new_tpop (tpo_enumeration, id_from_str("enumeration" ,11), sizeof (enm_attr));
-  type_pointer     = new_tpop (tpo_pointer    , id_from_str("pointer"     , 7), sizeof (ptr_attr));
-  type_primitive   = new_tpop (tpo_primitive  , id_from_str("primitive"   , 9), /* sizeof (pri_attr) */ 0);
-  type_id          = new_tpop (tpo_id         , id_from_str("type_id"     , 7), /* sizeof (id_attr)  */ 0);
-  tpop_none        = new_tpop (tpo_none       , id_from_str("tpop_none"   , 9), /* sizeof (non_attr) */ 0);
-  tpop_unknown     = new_tpop (tpo_unknown    , id_from_str("tpop_unknown",12), /* sizeof (ukn_attr) */ 0);
+  type_class       = new_tpop (tpo_class      , new_id_from_chars("class"       , 5), sizeof (cls_attr));
+  type_struct      = new_tpop (tpo_struct     , new_id_from_chars("struct"      , 6), sizeof (stc_attr));
+  type_method      = new_tpop (tpo_method     , new_id_from_chars("method"      , 6), sizeof (mtd_attr));
+  type_union       = new_tpop (tpo_union      , new_id_from_chars("union"       , 5), sizeof (uni_attr));
+  type_array       = new_tpop (tpo_array      , new_id_from_chars("array"       , 5), sizeof (arr_attr));
+  type_enumeration = new_tpop (tpo_enumeration, new_id_from_chars("enumeration" ,11), sizeof (enm_attr));
+  type_pointer     = new_tpop (tpo_pointer    , new_id_from_chars("pointer"     , 7), sizeof (ptr_attr));
+  type_primitive   = new_tpop (tpo_primitive  , new_id_from_chars("primitive"   , 9), /* sizeof (pri_attr) */ 0);
+  type_id          = new_tpop (tpo_id         , new_id_from_chars("type_id"     , 7), /* sizeof (id_attr)  */ 0);
+  tpop_none        = new_tpop (tpo_none       , new_id_from_chars("tpop_none"   , 9), /* sizeof (non_attr) */ 0);
+  tpop_unknown     = new_tpop (tpo_unknown    , new_id_from_chars("tpop_unknown",12), /* sizeof (ukn_attr) */ 0);
 }
 
 /* Finalize the topo module.

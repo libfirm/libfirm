@@ -54,20 +54,20 @@ main(void)
   set_opt_cse(1);
   set_opt_dead_node_elimination (1);
 
-  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_Is);
+  prim_t_int = new_type_primitive(new_id_from_chars ("int", 3), mode_Is);
 
 #define METHODNAME "main_tp"
 #define NRARGS 1
 #define NRES 1
 
-  proc_main = new_type_method(id_from_str(METHODNAME, strlen(METHODNAME)),
+  proc_main = new_type_method(new_id_from_chars(METHODNAME, strlen(METHODNAME)),
                               NRARGS, NRES);
   set_method_param_type(proc_main, 0, prim_t_int);
   set_method_res_type(proc_main, 0, prim_t_int);
 
 
-  owner = new_type_class (id_from_str ("WHILE_EXAMPLE", 13));
-  ent = new_entity (owner, id_from_str ("main", strlen("main")), proc_main);
+  owner = new_type_class (new_id_from_chars ("WHILE_EXAMPLE", 13));
+  ent = new_entity (owner, new_id_from_chars ("main", strlen("main")), proc_main);
   get_entity_ld_name(ent); /* force name mangling */
 
   /* Generates start and end blocks and nodes and a first, initial block */
@@ -77,12 +77,12 @@ main(void)
   set_value (0, new_Proj(get_irg_args(irg), mode_Is, 0));
   set_value (1, new_Const (mode_Is, new_tarval_from_long (1, mode_Is)));
   x = new_Jmp();
-  mature_block (get_irg_current_block(irg));
+  mature_immBlock (get_irg_current_block(irg));
 
 
   /* generate a block for the loop header and the conditional branch */
   r = new_immBlock ();
-  add_in_edge (r, x);
+  add_immBlock_pred (r, x);
   x = new_Cond (new_Proj(new_Cmp(new_Const (mode_Is, new_tarval_from_long (0, mode_Is)),
                  get_value(1, mode_Is)),
                          mode_b, Eq));
@@ -91,9 +91,9 @@ main(void)
 
   /* generate the block for the loop body */
   b = new_immBlock ();
-  add_in_edge (b, t);
+  add_immBlock_pred (b, t);
   x = new_Jmp ();
-  add_in_edge (r, x);
+  add_immBlock_pred (r, x);
 
   /* The code in the loop body,
      as we are dealing with local variables only the dataflow edges
@@ -101,13 +101,13 @@ main(void)
   set_value (2, get_value (0, mode_Is));
   set_value (0, get_value (1, mode_Is));
   set_value (1, get_value (2, mode_Is));
-  mature_block (b);
-  mature_block (r);
+  mature_immBlock (b);
+  mature_immBlock (r);
 
   /* generate the return block */
   r = new_immBlock ();
-  add_in_edge (r, f);
-  mature_block (r);
+  add_immBlock_pred (r, f);
+  mature_immBlock (r);
 
   {
      ir_node *in[1];
@@ -117,8 +117,8 @@ main(void)
   }
 
   /* finalize the end block generated in new_ir_graph() */
-  add_in_edge (get_irg_end_block(irg), x);
-  mature_block (get_irg_end_block(irg));
+  add_immBlock_pred (get_irg_end_block(irg), x);
+  mature_immBlock (get_irg_end_block(irg));
 
   finalize_cons (irg);
 
@@ -133,8 +133,9 @@ main(void)
   /* output the vcg file */
   printf("Done building the graph.  Dumping it.\n");
   turn_off_edge_labels();
-  dump_all_types();
-  dump_ir_block_graph (irg);
+  char *suffix = "";
+  dump_all_types(suffix);
+  dump_ir_block_graph (irg, suffix);
   printf("Use xvcg to view this graph:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
 

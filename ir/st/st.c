@@ -319,7 +319,7 @@ static void update_dominators (ir_node *block, void *env)
   /* check preds: */
   for (i = 0; i < n_ins; i ++)
     {
-      ir_node *in  = get_nodes_Block (get_irn_n (block, i));
+      ir_node *in  = get_nodes_block (get_irn_n (block, i));
       bs_t in_mask = get_mask  (dt, in);
 
       new_mask &= in_mask;
@@ -378,7 +378,7 @@ static ir_node *_get_idom (dt_t *dt, ir_node *block)
 	  {
 		ir_node *ndom = 0;
 
-		pred = get_nodes_Block (get_irn_n (block, i));
+		pred = get_nodes_block (get_irn_n (block, i));
 		ndom = _get_idom (dt, pred);
 
 		if (ndom != idom)

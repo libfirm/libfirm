@@ -162,7 +162,7 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
   for (i = 1, p = rets; p; p = get_irn_link(p)) {
     ir_node *jmp;
 
-    switch_block(get_nodes_Block(p));
+    set_cur_block(get_nodes_block(p));
     jmp = new_Jmp();
 
     exchange(p, new_Bad());
@@ -275,14 +275,10 @@ void opt_tail_rec_irg(ir_graph *irg)
     /* check if it's a recursive call */
     call_ptr = get_Call_ptr(call);
 
-    if (get_irn_op(call_ptr) != op_Const)
+    if (get_irn_op(call_ptr) != op_SymConst)
       continue;
 
-    tv = get_Const_tarval(call_ptr);
-    if (! tarval_is_entity(tv))
-      continue;
-
-    ent = get_tarval_entity(tv);
+    ent = get_SymConst_entity(call_ptr);
     if (!ent || get_entity_irg(ent) != irg)
       continue;
 

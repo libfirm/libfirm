@@ -274,7 +274,7 @@ static bool is_outermost_StartBlock(ir_node *n) {
   assert(is_Block(n));
   if ((get_Block_n_cfgpreds(n) == 1)  &&
       (get_irn_op(skip_Proj(get_Block_cfgpred(n, 0))) == op_Start) &&
-      (get_nodes_Block(skip_Proj(get_Block_cfgpred(n, 0))) == n)) {
+      (get_nodes_block(skip_Proj(get_Block_cfgpred(n, 0))) == n)) {
     return true;
   }
   return false;

@@ -33,7 +33,7 @@ ir_graph *make_method(char *name, int n_locs) {
 
 
 ir_node *make_Call(ir_graph *c, int n_args, ir_node **args) {
-  entity *ent = get_irg_ent(c);
+  entity *ent = get_irg_entity(c);
   type *mtp = get_entity_type(ent);
   symconst_symbol sym;
   sym.entity_p = ent;
@@ -49,9 +49,9 @@ ir_node *make_Call(ir_graph *c, int n_args, ir_node **args) {
 
 void close_method(int n_ins, ir_node **ins) {
   ir_node *x =  new_Return (get_store(), n_ins, ins);
-  mature_block (get_cur_block());
-  add_in_edge  (get_cur_end_block(), x);
-  mature_block (get_cur_end_block());
+  mature_immBlock (get_cur_block());
+  add_immBlock_pred  (get_cur_end_block(), x);
+  mature_immBlock (get_cur_end_block());
   finalize_cons(current_ir_graph);
 }
 

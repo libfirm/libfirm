@@ -155,9 +155,6 @@ new_rd_Const (dbg_info* db, ir_graph *irg, ir_node *block, ir_mode *mode, tarval
 {
   type *tp = unknown_type;
   /* removing this somehow causes errors in jack. */
-  if (tarval_is_entity(con))
-    tp = find_pointer_type_to_type(get_entity_type(get_tarval_entity(con)));
-
   return new_rd_Const_type (db, irg, block, mode, con, tp);
 }
 
@@ -1147,7 +1144,7 @@ new_d_Block (dbg_info* db, int arity, ir_node **in)
 
   Call Graph:   ( A ---> B == A "calls" B)
 
-       get_value         mature_block
+       get_value         mature_immBlock
           |                   |
           |                   |
           |                   |
@@ -1369,7 +1366,7 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
      The call order
        get_value    (makes Phi0, put's it into graph_arr)
        set_value    (overwrites Phi0 in graph_arr)
-       mature_block (upgrades Phi0, puts it again into graph_arr, overwriting
+       mature_immBlock (upgrades Phi0, puts it again into graph_arr, overwriting
                      the proper value.)
      fails. */
   if (!block->attr.block.graph_arr[pos]) {
@@ -1460,7 +1457,7 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
     /* The block is not mature, we don't know how many in's are needed.  A Phi
        with zero predecessors is created.  Such a Phi node is called Phi0
        node.  (There is also an obsolete Phi0 opcode.) The Phi0 is then added
-       to the list of Phi0 nodes in this block to be matured by mature_block
+       to the list of Phi0 nodes in this block to be matured by mature_immBlock
        later.
        The Phi0 has to remember the pos of it's internal value.  If the real
        Phi is computed, pos is used to update the array with the local
@@ -1764,7 +1761,7 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
      optimization possibilities.
      The Phi0 node either is allocated in this function, or it comes from
      a former call to get_r_value_internal. In this case we may not yet
-     exchange phi0, as this is done in mature_block. */
+     exchange phi0, as this is done in mature_immBlock. */
   if (!phi0) {
     phi0_all = block->attr.block.graph_arr[pos];
     if (!((get_irn_op(phi0_all) == op_Phi) &&
@@ -1861,7 +1858,7 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
     /* The block is not mature, we don't know how many in's are needed.  A Phi
        with zero predecessors is created.  Such a Phi node is called Phi0
        node.  The Phi0 is then added to the list of Phi0 nodes in this block
-       to be matured by mature_block later.
+       to be matured by mature_immBlock later.
        The Phi0 has to remember the pos of it's internal value.  If the real
        Phi is computed, pos is used to update the array with the local
        values. */
@@ -1893,7 +1890,7 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
 /** Finalize a Block node, when all control flows are known.  */
 /** Acceptable parameters are only Block nodes.               */
 void
-mature_block (ir_node *block)
+mature_immBlock (ir_node *block)
 {
 
   int ins;
@@ -2406,7 +2403,7 @@ new_immBlock (void) {
 
 /* add an adge to a jmp/control flow node */
 void
-add_in_edge (ir_node *block, ir_node *jmp)
+add_immBlock_pred (ir_node *block, ir_node *jmp)
 {
   if (block->attr.block.matured) {
     assert(0 && "Error: Block already matured!\n");
@@ -2419,7 +2416,7 @@ add_in_edge (ir_node *block, ir_node *jmp)
 
 /* changing the current block */
 void
-switch_block (ir_node *target)
+set_cur_block (ir_node *target)
 {
   current_ir_graph->current_block = target;
 }
@@ -2479,7 +2476,7 @@ keep_alive (ir_node *ka)
 
 /** Useful access routines **/
 /* Returns the current block of the current graph.  To set the current
-   block use switch_block(). */
+   block use set_cur_block. */
 ir_node *get_cur_block() {
   return get_irg_current_block(current_ir_graph);
 }

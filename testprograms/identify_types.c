@@ -59,7 +59,7 @@ int main(int argc, char **argv)
   */
 
   printf("Done building the graph.  Dumping it.\n");
-  dump_all_types();
+  dump_all_types(0);
 
   printf("use xvcg to view this graph:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");

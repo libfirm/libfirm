@@ -66,7 +66,7 @@ int irn_vrfy_irg_dump(struct ir_node *checknode, ir_graph *irg, const char **bad
 
 /**
  * Calls irn_vrfy for each node in irg.
- * Graph must be in state "pinned".
+ * Graph must be in state "op_pin_state_pinned".
  *
  * \return
  * 	NON-zero on success.

@@ -55,7 +55,13 @@ typedef enum {
  *
  * @param enable_options  Bitmask containing the statistic options
  */
-void stat_init(unsigned enable_options);
+
+void init_stat(void);
+
+/**
+ * Finish the statistics.
+ */
+void stat_finish(void);
 
 /**
  * A new IR op is registered.
@@ -146,7 +152,8 @@ ir_op *stat_get_op_from_opcode(opcode code);
 
 #else
 
-#define stat_init(flag)
+#define init_stat()
+#define stat_finish()
 #define stat_new_ir_op(op)
 #define stat_free_ir_op(op)
 #define stat_new_node(node)

@@ -1287,7 +1287,7 @@ type *new_type_array         (ident *name, int n_dimensions,
   current_ir_graph = rem;
 
   res->attr.aa.element_type = element_type;
-  new_entity(res, mangle_u(name, id_from_str("elem_ent", 8)), element_type);
+  new_entity(res, mangle_u(name, new_id_from_chars("elem_ent", 8)), element_type);
 
   return res;
 }
@@ -1374,7 +1374,7 @@ long     get_array_lower_bound_int  (type *array, int dimension) {
   assert(array && (array->type_op == type_array));
   node = array->attr.aa.lower_bound[dimension];
   assert(get_irn_op(node) == op_Const);
-  return tarval_to_long(get_Const_tarval(node));
+  return get_tarval_long(get_Const_tarval(node));
 }
 int       has_array_upper_bound  (type *array, int dimension) {
   assert(array && (array->type_op == type_array));
@@ -1389,7 +1389,7 @@ long     get_array_upper_bound_int  (type *array, int dimension) {
   assert(array && (array->type_op == type_array));
   node = array->attr.aa.upper_bound[dimension];
   assert(get_irn_op(node) == op_Const);
-  return tarval_to_long(get_Const_tarval(node));
+  return get_tarval_long(get_Const_tarval(node));
 }
 
 void set_array_order (type *array, int dimension, int order) {

@@ -68,7 +68,7 @@ ir_prog *new_ir_prog (void) {
   res->max_node_nr = 0;
 #endif
 
-  res->glob_type = new_type_class(id_from_str (GLOBAL_TYPE_NAME,
+  res->glob_type = new_type_class(new_id_from_chars (GLOBAL_TYPE_NAME,
 					       strlen(GLOBAL_TYPE_NAME)));
   /* Remove type from type list.  Must be treated differently than
      other types. */
@@ -76,7 +76,7 @@ ir_prog *new_ir_prog (void) {
 
   res->const_code_irg = new_const_code_irg();
 
-  res->outs_state = no_outs;
+  res->outs_state = outs_none;
   res->ip_outedges = NULL;
 
   return res;

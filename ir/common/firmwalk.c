@@ -283,7 +283,7 @@ void fw_collect_irn(ir_node *irn, void *env)
   else
   {
     /* add this node to block's node list */
-    ir_node *block = get_nodes_Block(irn);
+    ir_node *block = get_nodes_block(irn);
     data = fw_get_data(block);
     ARR_APP1(ir_node *, FW_GET_DATA_LIST(data), irn);
   }

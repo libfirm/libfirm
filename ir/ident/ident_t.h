@@ -16,8 +16,8 @@
 # include "ident.h"
 # include "set.h"
 
-void id_init (int initial_n_idents);
-void id_finish (void);
+void init_ident (int initial_n_idents);
+void finish_ident (void);
 
 #define ID_HASH(str, len) \
   (((  ((unsigned char *)(str))[0] * 33 \
@@ -43,7 +43,7 @@ static INLINE const char * __get_id_str(ident *id) { return (const char *)id->dp
 static INLINE int __get_id_strlen(ident *id) { return id->size; }
 
 
-#define id_from_str(str, len)    __id_from_str(str, len)
+#define new_id_from_chars(str, len)    __id_from_str(str, len)
 #define get_id_str(id)           __get_id_str(id)
 #define get_id_strlen(id)        __get_id_strlen(id)
 

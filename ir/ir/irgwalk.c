@@ -374,7 +374,7 @@ void cg_walk(irg_walk_func *pre, irg_walk_func *post, void *env) {
 static ir_node *get_cf_op(ir_node *n) {
   ir_node *pred;
 
-  n = skip_nop(n);
+  n = skip_Id(n);
   n = skip_Tuple(n);
   pred = skip_Proj(n);
   if (!(is_cfop(pred) || is_fragile_op(pred) ||
@@ -672,7 +672,7 @@ leave_procedure(ir_node *block, ir_node *cf_pred, int pos) {
   if (tos == cf_pred) {
     /* We entered this procedure by the call pred pos refers to. */
     pop_callsite(current_ir_graph);
-    current_ir_graph = get_CallBegin_irg(cf_pred);
+    current_ir_graph = get_irn_irg(cf_pred);
     return true;
   } else {
     /* We won't walk. */
@@ -705,7 +705,7 @@ static INLINE void
 re_enter_procedure(ir_node *block, ir_node *cf_pred, int pos) {
   ir_node *callbegin = pop_callsite(current_ir_graph);
   assert(interprocedural_view);
-  current_ir_graph = get_CallBegin_irg(callbegin);
+  current_ir_graph = get_irn_irg(callbegin);
 }
 
 static INLINE void

@@ -157,7 +157,7 @@ static void show_proj_failure_ent(ir_node *n, entity *ent)
  */
 static void show_node_on_graph(ir_graph *irg, ir_node *n)
 {
-  entity *ent = get_irg_ent(irg);
+  entity *ent = get_irg_entity(irg);
 
   if (ent)
     fprintf(stderr, "\nFIRM: irn_vrfy_irg() of entity %s, node %ld %s%s\n",
@@ -194,7 +194,7 @@ static void show_call_param(ir_node *n, type *mt)
  */
 static void show_return_modes(ir_graph *irg, ir_node *n, type *mt, int i)
 {
-  entity *ent = get_irg_ent(irg);
+  entity *ent = get_irg_entity(irg);
 
   fprintf(stderr, "\nFIRM: irn_vrfy_irg() Return node %ld in entity \"%s\" mode %s different from type mode %s\n",
     get_irn_node_nr(n), get_entity_name(ent),
@@ -208,7 +208,7 @@ static void show_return_modes(ir_graph *irg, ir_node *n, type *mt, int i)
  */
 static void show_return_nres(ir_graph *irg, ir_node *n, type *mt)
 {
-  entity *ent = get_irg_ent(irg);
+  entity *ent = get_irg_entity(irg);
 
   fprintf(stderr, "\nFIRM: irn_vrfy_irg() Return node %ld in entity \"%s\" has %d results different from type %d\n",
     get_irn_node_nr(n), get_entity_name(ent),
@@ -234,7 +234,7 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
   ir_mode *mode;
   int proj;
 
-  pred = skip_nop(get_Proj_pred(p));
+  pred = skip_Id(get_Proj_pred(p));
   ASSERT_AND_RET(get_irn_mode(pred) == mode_T, "mode of a 'projed' node is not Tuple", 0);
   mode = get_irn_mode(p);
   proj = get_Proj_proj(p);
@@ -243,13 +243,13 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
     case iro_Start:
       ASSERT_AND_RET_DBG(
           (
-           (proj == pns_initial_exec   && mode == mode_X) ||
-           (proj == pns_global_store   && mode == mode_M) ||
-           (proj == pns_frame_base     && mode_is_reference(mode)) ||
-           (proj == pns_globals        && mode_is_reference(mode)) ||
-           (proj == pns_args           && mode == mode_T) ||
-           (proj == pns_value_arg_base && mode_is_reference(mode)) ||
-           (proj == pns_value_arg_base && mode == mode_T)    /* FIXME: only one of those */
+           (proj == pn_Start_X_initial_exec && mode == mode_X) ||
+           (proj == pn_Start_M         && mode == mode_M) ||
+           (proj == pn_Start_P_frame_base && mode_is_reference(mode)) ||
+           (proj == pn_Start_P_globals && mode_is_reference(mode)) ||
+           (proj == pn_Start_T_args    && mode == mode_T) ||
+           (proj == pn_Start_P_value_arg_base && mode_is_reference(mode)) ||
+           (proj == pn_Start_P_value_arg_base && mode == mode_T)    /* FIXME: only one of those */
           ),
           "wrong Proj from Start", 0,
       show_proj_failure(p);
@@ -419,14 +419,14 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
         type *mt; /* A method type */
         long nr = get_Proj_proj(pred);
 
-        pred = skip_nop(get_Proj_pred(pred));
+        pred = skip_Id(get_Proj_pred(pred));
         ASSERT_AND_RET((get_irn_mode(pred) == mode_T), "Proj from something not a tuple", 0);
         switch (get_irn_opcode(pred))
         {
           case iro_Start:
-            mt = get_entity_type(get_irg_ent(irg));
+            mt = get_entity_type(get_irg_entity(irg));
 
-        if (nr == pns_args) {
+        if (nr == pn_Start_T_args) {
               ASSERT_AND_RET(
                   (proj >= 0 && mode_is_data(mode)),
                   "wrong Proj from Proj from Start", 0);
@@ -441,7 +441,7 @@ vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
                   (mode == get_type_mode(get_method_param_type(mt, proj))),
                   "Mode of Proj from Start doesn't match mode of param type.", 0);
             }
-        else if (nr == pns_value_arg_base) {
+        else if (nr == pn_Start_P_value_arg_base) {
           ASSERT_AND_RET(
                   (proj >= 0 && mode_is_reference(mode)),
                   "wrong Proj from Proj from Start", 0
@@ -633,7 +633,7 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       };
       ASSERT_AND_RET( mymode == mode_X, "Result X", 0 );   /* result X */
       /* Compare returned results with result types of method type */
-      mt = get_entity_type(get_irg_ent(irg));
+      mt = get_entity_type(get_irg_entity(irg));
       ASSERT_AND_RET_DBG( get_Return_n_ress(n) == get_method_n_ress(mt),
         "Number of results for Return doesn't match number of results in type.", 0,
       show_return_nres(irg, n, mt););
@@ -669,11 +669,6 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
 
   case iro_Const: {
       tarval *tv = get_Const_tarval(n);
-      if (tarval_is_entity(tv))
-	  ASSERT_AND_RET(
-	                 (get_irn_irg(n) == get_const_code_irg()) ||
-	                 (get_entity_peculiarity(get_tarval_entity(tv)) != peculiarity_description),
-	                 "descriptions have no address", 0);
 	  ASSERT_AND_RET(
 			 /* Const: BB --> data */
 			 (mode_is_data (mymode) ||
@@ -1137,7 +1132,7 @@ int irg_vrfy(ir_graph *irg)
   rem = current_ir_graph;
   current_ir_graph = irg;
 
-  assert(get_irg_pinned(irg) == pinned);
+  assert(get_irg_pinned(irg) == op_pin_state_pinned);
 
   irg_walk(irg->end, vrfy_wrap, NULL, &res);
 

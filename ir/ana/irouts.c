@@ -139,7 +139,7 @@ void irg_out_walk(ir_node *node,
             irg_walk_func *pre, irg_walk_func *post,
             void *env) {
   assert(node);
-  if (get_irg_outs_state(current_ir_graph) != no_outs) {
+  if (get_irg_outs_state(current_ir_graph) != outs_none) {
     inc_irg_visited (current_ir_graph);
     irg_out_walk_2(node, pre, post, env);
   }
@@ -290,7 +290,7 @@ void compute_outs(ir_graph *irg) {
 
   /* Update graph state */
   assert(get_irg_phase_state(current_ir_graph) != phase_building);
-  if (current_ir_graph->outs_state != no_outs) free_outs(current_ir_graph);
+  if (current_ir_graph->outs_state != outs_none) free_outs(current_ir_graph);
   current_ir_graph->outs_state = outs_consistent;
 
   /* This first iteration counts the overall number of out edges and the
@@ -453,7 +453,7 @@ void compute_ip_outs(void) {
   assert(get_irp_ip_view_state() == ip_view_valid &&
      "Cannot construct outs for invalid ip view.");
 
-  if (irp->outs_state != no_outs) {
+  if (irp->outs_state != outs_none) {
     free_ip_outs();
   }
 
@@ -470,14 +470,14 @@ void free_ip_outs(void)
     free(out_edges);
     set_irp_ip_outedges(NULL);
   }
-  irp->outs_state = no_outs;
+  irp->outs_state = outs_none;
 }
 
 
 void free_outs(ir_graph *irg) {
 
-  /*   current_ir_graph->outs_state = no_outs; */
-  irg->outs_state = no_outs;
+  /*   current_ir_graph->outs_state = outs_none; */
+  irg->outs_state = outs_none;
 
   if (irg->outs) {
 #ifdef DEBUG_libfirm

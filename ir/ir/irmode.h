@@ -245,7 +245,7 @@ unsigned int get_mode_modulo_shift(const ir_mode *mode);
  *  a vector mode. For non-vector modes it returns 1 for data and 0
  *  for all other modes
  */
-unsigned int get_mode_vector_elems(const ir_mode *mode);
+unsigned int get_mode_n_vector_elems(const ir_mode *mode);
 
 /** Returns the stored intermediate information. */
 void *get_mode_link(const ir_mode *mode);
@@ -274,7 +274,7 @@ tarval *get_mode_max(ir_mode *mode);
  *
  * Zero is the additive neutral element and as such
  * is defined only for modes allowing addition, i.e.
- * floats and ints, and references (NULL-Pointer)
+ * op_pin_state_floats and ints, and references (NULL-Pointer)
  * else returns tarval_bad.
  */
 tarval *get_mode_null(ir_mode *mode);
@@ -284,7 +284,7 @@ tarval *get_mode_null(ir_mode *mode);
  *
  * One, being the multiplicative neutral element,
  * is defined only for modes allowing multiplication,
- * i.e. ints and floats.
+ * i.e. ints and op_pin_state_floats.
  */
 tarval *get_mode_one(ir_mode *mode);
 
@@ -425,10 +425,5 @@ int mode_is_int_vector (const ir_mode *mode);
    according to firm definiton */
 int smaller_mode(const ir_mode *sm, const ir_mode *lm);
 
-/** mode module initialization, call once before use of any other function **/
-void init_mode(void);
-
-/** mode module finalization. frees all memory.  */
-void finish_mode(void);
 
 #endif /* _IRMODE_H_ */

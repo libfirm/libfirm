@@ -56,17 +56,17 @@ int main(int argc, char **argv)
   init_firm (NULL);
 
   /** make idents for all used identifiers in the program. */
-  Ci  = id_from_str("C",  strlen("C"));
-  ai  = id_from_str("a",  strlen("a"));
-  fi  = id_from_str("f",  strlen("f"));
-  fti  = id_from_str("f_type",  strlen("f_type"));
-  gi  = id_from_str("g",  strlen("g"));
-  gti  = id_from_str("g_type",  strlen("g_type"));
-  inti = id_from_str("int", strlen("int"));
-  dipti = id_from_str("C_dispatch_table_type", strlen("C_dispatch_table_type"));
-  diptei = id_from_str("C_dispatch_table", strlen("C_dispatch_table"));
-  diptpi = id_from_str("C_dispatch_table_p_type", strlen("C_dispatch_table_p_type"));
-  diptpei = id_from_str("C_dispatch_table_p", strlen("C_dispatch_table_p"));
+  Ci  = new_id_from_chars("C",  strlen("C"));
+  ai  = new_id_from_chars("a",  strlen("a"));
+  fi  = new_id_from_chars("f",  strlen("f"));
+  fti  = new_id_from_chars("f_type",  strlen("f_type"));
+  gi  = new_id_from_chars("g",  strlen("g"));
+  gti  = new_id_from_chars("g_type",  strlen("g_type"));
+  inti = new_id_from_chars("int", strlen("int"));
+  dipti = new_id_from_chars("C_dispatch_table_type", strlen("C_dispatch_table_type"));
+  diptei = new_id_from_chars("C_dispatch_table", strlen("C_dispatch_table"));
+  diptpi = new_id_from_chars("C_dispatch_table_p_type", strlen("C_dispatch_table_p_type"));
+  diptpei = new_id_from_chars("C_dispatch_table_p", strlen("C_dispatch_table_p"));
 
 
   /** make the type information needed */
@@ -94,7 +94,9 @@ int main(int argc, char **argv)
   current_ir_graph = get_const_code_irg();
   /* The pointer to the dispatch table is constant. */
   /* The constant is the address of the given entity */
-  n = new_Const(mode_P, new_tarval_from_entity(dipte, mode_P));
+  symconst_symbol sym;
+  sym.entity_p = dipte;
+  n = new_SymConst(sym, symconst_addr_ent);
   set_entity_variability(diptpe, variability_constant);
   set_atomic_ent_value(diptpe, n);
 
@@ -109,8 +111,8 @@ int main(int argc, char **argv)
   type *arrt;
   entity *arre, *arrelte;
 
-  arrei =  id_from_str("arr", strlen("arr"));
-  arrti =  id_from_str("arr_t",  strlen("arr_t"));
+  arrei =  new_id_from_chars("arr", strlen("arr"));
+  arrti =  new_id_from_chars("arr_t",  strlen("arr_t"));
 
   /** The array type **/
   /* Don't reuse int type so that graph layout is better readable */
@@ -133,7 +135,7 @@ int main(int argc, char **argv)
   add_compound_ent_value(arre, n, arrelte);
 }
   printf("Done building the graph.  Dumping it.\n");
-  dump_all_types();
+  dump_all_types(0);
 
   printf("use xvcg to view this graph:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");

@@ -64,11 +64,11 @@ int main(int argc, char **argv)
 #define NRES 0
   printf("\nCreating an IR graph: %s...\n", CLASSNAME);
 
-  owner = new_type_class (id_from_str (CLASSNAME, strlen(CLASSNAME)));
-  proc_main = new_type_method(id_from_str(METHODNAME, strlen(METHODNAME)),
+  owner = new_type_class (new_id_from_chars (CLASSNAME, strlen(CLASSNAME)));
+  proc_main = new_type_method(new_id_from_chars(METHODNAME, strlen(METHODNAME)),
                               NRARGS, NRES);
   ent = new_entity (owner,
-                    id_from_str (METHODNAME, strlen(METHODNAME)),
+                    new_id_from_chars (METHODNAME, strlen(METHODNAME)),
                     proc_main);
   get_entity_ld_name(ent); /* To enforce name mangling for vcg graph name */
 
@@ -85,33 +85,33 @@ int main(int argc, char **argv)
   cond = new_Cond(new_Proj(new_Cmp(expr, c1), mode_b, Eq));
   f = new_Proj(cond, mode_X, 0);
   t = new_Proj(cond, mode_X, 1);
-  mature_block(get_irg_current_block(irg));
+  mature_immBlock(get_irg_current_block(irg));
 
   loopBlock1 = new_immBlock();
-  add_in_edge(loopBlock1, t);
+  add_immBlock_pred(loopBlock1, t);
   cond = new_Cond(new_Proj(new_Cmp(expr, c2), mode_b, Eq));
   f_l1 = new_Proj(cond, mode_X, 0);
   t_l1 = new_Proj(cond, mode_X, 1);
 
   loopBlock2 = new_immBlock();
-  add_in_edge(loopBlock2, f);
+  add_immBlock_pred(loopBlock2, f);
   cond = new_Cond(new_Proj(new_Cmp(expr, c3), mode_b, Eq));
   f_l2 = new_Proj(cond, mode_X, 0);
   t_l2 = new_Proj(cond, mode_X, 1);
 
-  add_in_edge(loopBlock1, t_l2);
-  add_in_edge(loopBlock2, t_l1);
-  mature_block(loopBlock1);
-  mature_block(loopBlock2);
+  add_immBlock_pred(loopBlock1, t_l2);
+  add_immBlock_pred(loopBlock2, t_l1);
+  mature_immBlock(loopBlock1);
+  mature_immBlock(loopBlock2);
 
   new_immBlock();
-  add_in_edge(get_irg_current_block(irg), f_l2);
-  add_in_edge(get_irg_current_block(irg), f_l1);
+  add_immBlock_pred(get_irg_current_block(irg), f_l2);
+  add_immBlock_pred(get_irg_current_block(irg), f_l1);
   x = new_Return (get_store(), 0, NULL);
-  mature_block (get_irg_current_block(irg));
+  mature_immBlock (get_irg_current_block(irg));
 
-  add_in_edge (get_irg_end_block(irg), x);
-  mature_block (get_irg_end_block(irg));
+  add_immBlock_pred (get_irg_end_block(irg), x);
+  mature_immBlock (get_irg_end_block(irg));
 
   finalize_cons (irg);
 
@@ -122,8 +122,9 @@ int main(int argc, char **argv)
   irg_vrfy(irg);
 
   printf("Dumping the graph and a control flow graph.\n");
-  dump_ir_block_graph (irg);
-  dump_cfg (irg);
+  char *dump_file_suffix = "";
+  dump_ir_block_graph (irg, dump_file_suffix);
+  dump_cfg (irg, dump_file_suffix);
   printf("Use xvcg to view these graphs:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
 

@@ -114,17 +114,17 @@ const char *get_op_name(const ir_op *op);
 /** Returns the enum for the opcode */
 opcode get_op_code(const ir_op *op);
 
-/** pinned states */
+/** op_pin_state_pinned states */
 typedef enum {
-  floats = 0,    /**< Nodes of this opcode can be placed in any basic block. */
-  pinned           /**< Nodes must remain in this basic block. */
-} op_pinned;
+  op_pin_state_floats = 0,    /**< Nodes of this opcode can be placed in any basic block. */
+  op_pin_state_pinned           /**< Nodes must remain in this basic block. */
+} op_pin_state;
 
 /** gets pinned state of an opcode */
-op_pinned get_op_pinned(const ir_op *op);
+op_pin_state get_op_pinned(const ir_op *op);
 
 /** Sets pinned in the opcode.  Setting it to floating has no effect
    for Block, Phi and control flow nodes. */
-void set_op_pinned(ir_op *op, op_pinned pinned);
+void set_op_pinned(ir_op *op, op_pin_state pinned);
 
 # endif /* _IROP_H_ */

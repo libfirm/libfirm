@@ -215,7 +215,7 @@ void compute_doms(ir_graph *irg) {
     /* Step 2 */
     irn_arity = get_irn_arity(w->block);
     for (j = 0;  j < irn_arity;  j++) {
-      ir_node *pred = get_nodes_Block(get_Block_cfgpred(w->block, j));
+      ir_node *pred = get_nodes_block(get_Block_cfgpred(w->block, j));
       tmp_dom_info *u;
 
       if ((is_Bad(get_Block_cfgpred(w->block, j))) ||
@@ -267,7 +267,7 @@ void compute_doms(ir_graph *irg) {
 void free_dom_and_peace(ir_graph *irg) {
   /* Update graph state */
   assert(get_irg_phase_state(current_ir_graph) != phase_building);
-  current_ir_graph->dom_state = no_dom;
+  current_ir_graph->dom_state = dom_none;
 
   /* With the implementation right now there is nothing to free,
      but better call it anyways... */

@@ -398,7 +398,7 @@ static void count_block_info(ir_node *node, graph_entry_t *graph)
     /* count all incoming edges */
     for (i = 0; i < arity; ++i) {
       ir_node *pred = get_irn_n(node, i);
-      ir_node *other_block = get_nodes_Block(pred);
+      ir_node *other_block = get_nodes_block(pred);
       block_entry_t *b_entry_other = block_get_entry(get_irn_node_nr(other_block), graph->block_hash);
 
       cnt_inc(&b_entry->cnt_in_edges);	/* an edge coming from another block */
@@ -410,7 +410,7 @@ static void count_block_info(ir_node *node, graph_entry_t *graph)
     // return;
   }
 
-  block   = get_nodes_Block(node);
+  block   = get_nodes_block(node);
   b_entry = block_get_entry(get_irn_node_nr(block), graph->block_hash);
 
   /* we have a new nodes */
@@ -425,7 +425,7 @@ static void count_block_info(ir_node *node, graph_entry_t *graph)
     if (get_irn_op(pred) == op_Block)
       continue;
 
-    other_block = get_nodes_Block(pred);
+    other_block = get_nodes_block(pred);
 
     if (other_block == block)
       cnt_inc(&b_entry->cnt_edges);	/* a in block edge */
@@ -778,7 +778,7 @@ ir_op *stat_get_op_from_opcode(opcode code)
 }
 
 /* initialize the statistics module. */
-void stat_init(unsigned enable_options)
+void init_stat(void)
 {
 #define X(a)  a, sizeof(a)-1
 
@@ -794,10 +794,10 @@ void stat_init(unsigned enable_options)
 
   /* build the pseudo-ops */
   _op_Phi0.code = --pseudo_id;
-  _op_Phi0.name = id_from_str(X("Phi0"));
+  _op_Phi0.name = new_id_from_chars(X("Phi0"));
 
   _op_PhiM.code = --pseudo_id;
-  _op_PhiM.name = id_from_str(X("PhiM"));
+  _op_PhiM.name = new_id_from_chars(X("PhiM"));
 
   /* create the hash-tables */
   status->irg_hash   = new_pset(graph_cmp, 8);
@@ -1131,7 +1131,7 @@ void stat_finish(void)
 #define FIRM_STATISTICS
 #include "firmstat.h"
 
-void stat_init(unsigned options) {}
+void init_stat(void) {}
 
 void stat_finish(void) {}
 

@@ -45,7 +45,7 @@ void local_optimize_graph (ir_graph *irg);
  *  Dead_node_elimination is only performed if options `optimize' and
  *  `opt_dead_node_elimination' are set.  The graph may
  *  not be in state phase_building.  The outs datasturcture is freed,
- *  the outs state set to no_outs.  Backedge information is conserved.
+ *  the outs state set to outs_none.  Backedge information is conserved.
  *  Removes old attributes of nodes.  Sets link field to NULL.
  *  Callee information must be freed (irg_callee_info_none).
  *
@@ -87,7 +87,7 @@ void remove_bad_predecessors(ir_graph *irg);
  *  Sets visited masterflag in current_ir_graph to the max of the flag in
  *  current and called graph.
  *  Assumes that both, the called and the calling graph are in state
- *  "pinned".
+ *  "op_pin_state_pinned".
  *  It is recommended to call local_optimize_graph after inlining as this
  *  function leaves a set of obscure Tuple nodes, e.g. a Proj-Tuple-Jmp
  *  combination as control flow operation.

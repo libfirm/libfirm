@@ -326,7 +326,7 @@ __get_irn_arity (const ir_node *node) {
  */
 static INLINE ir_node *
 __get_irn_intra_n (ir_node *node, int n) {
-  return (node->in[n + 1] = skip_nop(node->in[n + 1]));
+  return (node->in[n + 1] = skip_Id(node->in[n + 1]));
 }
 
 /**
@@ -337,9 +337,9 @@ __get_irn_inter_n (ir_node *node, int n) {
   /* handle Filter and Block specially */
   if (__get_irn_opcode(node) == iro_Filter) {
     assert(node->attr.filter.in_cg);
-    return (node->attr.filter.in_cg[n + 1] = skip_nop(node->attr.filter.in_cg[n + 1]));
+    return (node->attr.filter.in_cg[n + 1] = skip_Id(node->attr.filter.in_cg[n + 1]));
   } else if (__get_irn_opcode(node) == iro_Block && node->attr.block.in_cg) {
-    return (node->attr.block.in_cg[n + 1] = skip_nop(node->attr.block.in_cg[n + 1]));
+    return (node->attr.block.in_cg[n + 1] = skip_Id(node->attr.block.in_cg[n + 1]));
   }
 
   return __get_irn_intra_n (node, n);

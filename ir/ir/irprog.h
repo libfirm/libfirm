@@ -75,9 +75,6 @@ extern ir_prog *irp;
  */
 ir_prog *get_irp(void);
 
-/** initializes ir_prog. Calls the constructor for an ir_prog. */
-void init_irprog(void);
-
 /** Creates a new ir_prog, returns it and sets irp with it.
  *  Automatically called by init_firm() through init_irprog. */
 ir_prog *new_ir_prog (void);

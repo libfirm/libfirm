@@ -75,13 +75,13 @@ main(void)
   set_opt_dead_node_elimination (1);
 
   /*** Make basic type information for primitive type int. ***/
-  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_Iu);
+  prim_t_int = new_type_primitive(new_id_from_chars ("int", 3), mode_Iu);
 
   /* a class to get started with, containing the main procedure */
-  owner = new_type_class (id_from_str ("MEMORY_EXAMPLE", 14));
-  method = new_type_method (id_from_str("main", 4), 0, 1);
+  owner = new_type_class (new_id_from_chars ("MEMORY_EXAMPLE", 14));
+  method = new_type_method (new_id_from_chars("main", 4), 0, 1);
   set_method_res_type(method, 0, prim_t_int);
-  ent = new_entity (owner, id_from_str ("main", 4), method);
+  ent = new_entity (owner, new_id_from_chars ("main", 4), method);
   get_entity_ld_name(ent); /* To enforce name mangling for vcg graph name */
 
   /* Generates start and end blocks and nodes and a first, initial block */
@@ -91,11 +91,11 @@ main(void)
   a = new_simpleSel(
               get_store(),
               get_irg_globals(irg),
-              new_entity(get_glob_type(),id_from_str("VAR_A",6),prim_t_int));
+              new_entity(get_glob_type(),new_id_from_chars("VAR_A",6),prim_t_int));
   b = new_simpleSel(
               get_store(),
               get_irg_globals(irg),
-              new_entity(get_glob_type(),id_from_str("VAR_B",6),prim_t_int));
+              new_entity(get_glob_type(),new_id_from_chars("VAR_B",6),prim_t_int));
    /* set VAR_A and VAR_B to constant values */
   set_store (new_Proj (new_Store (get_store (), a,
 		     	          new_Const (mode_Iu, new_tarval_from_long (0, mode_Is))),
@@ -107,11 +107,11 @@ main(void)
 
   /* finish this first block */
   x = new_Jmp ();
-  mature_block (get_irg_current_block(irg));
+  mature_immBlock (get_irg_current_block(irg));
 
   /* a loop body */
   r = new_immBlock ();
-  add_in_edge (r, x);
+  add_immBlock_pred (r, x);
 
   /* exchange the content of the two variables. Exceptions not cached. */
   /* load the value and make it's effects visible. */
@@ -135,13 +135,13 @@ main(void)
           mode_b, Gt));
 
   /* build the cfg of the loop */
-  add_in_edge (r, new_Proj (x, mode_X, 0));
+  add_immBlock_pred (r, new_Proj (x, mode_X, 0));
   x = new_Proj (x, mode_X, 1);
-  mature_block(r);
+  mature_immBlock(r);
 
   /* generate the block the loop exits to */
   r = new_immBlock ();
-  add_in_edge (r, x);
+  add_immBlock_pred (r, x);
 
   /* generate the return block and return the content of VAR_A */
   {
@@ -151,9 +151,9 @@ main(void)
 
      x = new_Return (new_Proj(x, mode_M, 0), 1, in);
   }
-  mature_block (r);
-  add_in_edge (get_irg_end_block(irg), x);
-  mature_block (get_irg_end_block(irg));
+  mature_immBlock (r);
+  add_immBlock_pred (get_irg_end_block(irg), x);
+  mature_immBlock (get_irg_end_block(irg));
 
   finalize_cons (irg);
 
@@ -164,7 +164,7 @@ main(void)
   irg_vrfy(irg);
 
   printf("Done building the graph.  Dumping it.\n");
-  dump_ir_block_graph (irg);
+  dump_ir_block_graph (irg, 0);
   printf("Use xvcg to view this graph:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
 

@@ -197,7 +197,6 @@ copy_entity_name (entity *old, ident *new_name) {
 void
 free_entity (entity *ent) {
   assert(ent && ent->kind == k_entity);
-  free_tarval_entity(ent);
   free_entity_attrs(ent);
   ent->kind = k_BAD;
   free(ent);

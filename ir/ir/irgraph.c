@@ -46,7 +46,7 @@ INLINE void set_interprocedural_view(bool state) {
 
 static ident* frame_type_suffix = NULL;
 void init_irgraph(void) {
-  frame_type_suffix = id_from_str(FRAME_TP_SUFFIX, strlen(FRAME_TP_SUFFIX));
+  frame_type_suffix = new_id_from_chars(FRAME_TP_SUFFIX, strlen(FRAME_TP_SUFFIX));
 }
 
 #if USE_EXPLICIT_PHI_IN_STACK
@@ -113,9 +113,9 @@ new_ir_graph (entity *ent, int n_loc)
   res->outs = NULL;
 
   res->phase_state    = phase_building;
-  res->pinned         = pinned;
-  res->outs_state     = no_outs;
-  res->dom_state      = no_dom;
+  res->op_pin_state_pinned = op_pin_state_pinned;
+  res->outs_state     = outs_none;
+  res->dom_state      = dom_none;
   res->typeinfo_state = irg_typeinfo_none;
   res->loopinfo_state = loopinfo_none;
 
@@ -141,28 +141,27 @@ new_ir_graph (entity *ent, int n_loc)
   /* res->unknown = new_ir_node (NULL, res, res->start_block, op_Unknown, mode_T, 0, NULL); */
 
   /* Proj results of start node */
-  projX            = new_Proj (res->start, mode_X, pns_initial_exec);
-  res->frame       = new_Proj (res->start, mode_P_mach, pns_frame_base);
-  res->globals     = new_Proj (res->start, mode_P_mach, pns_globals);
-  res->initial_mem = new_Proj (res->start, mode_M, pns_global_store);
-  res->args        = new_Proj (res->start, mode_T, pns_args);
+  projX            = new_Proj (res->start, mode_X, pn_Start_X_initial_exec);
+  res->frame       = new_Proj (res->start, mode_P_mach, pn_Start_P_frame_base);   res->globals     = new_Proj (res->start, mode_P_mach, pn_Start_P_globals);
+  res->initial_mem = new_Proj (res->start, mode_M, pn_Start_M);
+  res->args        = new_Proj (res->start, mode_T, pn_Start_T_args);
 #ifdef DEBUG_libfirm
   res->graph_nr    = get_irp_new_node_nr();
 #endif
 
   set_store(res->initial_mem);
 
-  add_in_edge(res->start_block, projX);
+  add_immBlock_pred(res->start_block, projX);
   /*
    * The code generation needs it. leave it in now.
    * Use of this edge is matter of discussion, unresolved. Also possible:
-   * add_in_edge(res->start_block, res->start_block), but invalid typed.
+   * add_immBlock_pred(res->start_block, res->start_block), but invalid typed.
    */
-  mature_block (res->current_block);
+  mature_immBlock (res->current_block);
 
   /*-- Make a block to start with --*/
   first_block = new_immBlock();
-  add_in_edge (first_block, projX);
+  add_immBlock_pred (first_block, projX);
 
   return res;
 }
@@ -191,31 +190,27 @@ ir_graph *new_const_code_irg(void) {
   res->obst      = (struct obstack *) xmalloc (sizeof (struct obstack));
   obstack_init (res->obst);
   res->phase_state = phase_building;
-  res->pinned      = pinned;
+  res->op_pin_state_pinned = op_pin_state_pinned;
   res->value_table = new_identities (); /* value table for global value
                        numbering for optimizing use in
                        iropt.c */
   res->ent = NULL;
   res->frame_type  = NULL;
   res->start_block = new_immBlock ();
-  res->end_block   = new_immBlock ();
-  res->end         = new_End ();
-  res->end_reg     = res->end;
-  res->end_except  = res->end;
-  mature_block(get_cur_block());
+  res->end_block  = new_immBlock ();
+  res->end        = new_End ();
+  res->end_reg    = res->end;
+  res->end_except = res->end;
+  mature_immBlock(get_cur_block());
   res->bad = new_ir_node (NULL, res, res->start_block, op_Bad, mode_T, 0, NULL);
   res->start   = new_Start ();
 
   /* Proj results of start node */
-  projX            = new_Proj (res->start, mode_X, pns_initial_exec);
-  res->initial_mem = new_Proj (res->start, mode_M, pns_global_store);
-
-  set_store(res->initial_mem);
-  add_in_edge(res->start_block, projX);
-
-  mature_block (res->current_block);
-  add_in_edge (new_immBlock (), projX);
-  mature_block(get_cur_block());
+  projX        = new_Proj (res->start, mode_X, pn_Start_X_initial_exec);
+  add_immBlock_pred(res->start_block, projX);
+  mature_immBlock (res->current_block);
+  add_immBlock_pred (new_immBlock (), projX);
+  mature_immBlock(get_cur_block());
   /* Set the visited flag high enough that the block will never be visited. */
   set_irn_visited(get_cur_block(), -1);
   set_Block_block_visited(get_cur_block(), -1);
@@ -239,7 +234,7 @@ void  del_identities (pset *value_table);
    graph, nor the entity standing for this graph. */
 void free_ir_graph (ir_graph *irg) {
   stat_free_graph(irg);
-  if (irg->outs_state != no_outs) free_outs(irg);
+  if (irg->outs_state != outs_none) free_outs(irg);
   if (irg->frame_type)  free_type(irg->frame_type);
   if (irg->value_table) del_identities(irg->value_table);
   if (irg->ent) {
@@ -427,12 +422,12 @@ void
 }
 
 entity *
-(get_irg_ent)(ir_graph *irg) {
+(get_irg_entity)(ir_graph *irg) {
   return __get_irg_ent(irg);
 }
 
 void
-(set_irg_ent)(ir_graph *irg, entity *ent) {
+(set_irg_entity)(ir_graph *irg, entity *ent) {
   __set_irg_ent(irg, ent);
 }
 
@@ -517,7 +512,7 @@ void
   __set_irg_phase_low(irg);
 }
 
-op_pinned
+op_pin_state
 (get_irg_pinned)(ir_graph *irg) {
   return __get_irg_pinned(irg);
 }
@@ -568,7 +563,7 @@ set_irg_loopinfo_inconsistent(ir_graph *irg) {
 }
 
 void
-(set_irg_pinned)(ir_graph *irg, op_pinned p) {
+(set_irg_pinned)(ir_graph *irg, op_pin_state p) {
   __set_irg_pinned(irg, p);
 }
 

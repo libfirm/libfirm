@@ -1,3 +1,4 @@
+
 /*
  * Project:     libFIRM
  * File name:   testprograms/array-stack_example.c
@@ -73,20 +74,20 @@ main(void)
      This is the modeling appropriate for other languages.
      Mode_i says that all language-integers shall be implemented
      as a 32 bit processor-integer value.  */
-  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_Is);
+  prim_t_int = new_type_primitive(new_id_from_chars ("int", 3), mode_Is);
 
   /* build typeinformation of procedure main */
-  owner = new_type_class (id_from_str ("ARRAY-STACK_EXAMPLE", 19));
-  proc_main = new_type_method(id_from_str("main_tp", 7), 0, 1);
+  owner = new_type_class (new_id_from_chars ("ARRAY-STACK_EXAMPLE", 19));
+  proc_main = new_type_method(new_id_from_chars("main_tp", 7), 0, 1);
   set_method_res_type(proc_main, 0, prim_t_int);
-  proc_main_e = new_entity (owner, id_from_str ("main", 4), proc_main);
+  proc_main_e = new_entity (owner, new_id_from_chars ("main", 4), proc_main);
   get_entity_ld_name(proc_main_e); /* force name mangling */
 
   /* make type information for the array and set the bounds */
 # define N_DIMS 1
 # define L_BOUND 0
 # define U_BOUND 9
-  array_type = new_type_array(id_from_str("a_tp", 4), N_DIMS, prim_t_int);
+  array_type = new_type_array(new_id_from_chars("a_tp", 4), N_DIMS, prim_t_int);
   current_ir_graph = get_const_code_irg();
   set_array_bounds(array_type, 0,
 		   new_Const(mode_Iu, new_tarval_from_long (L_BOUND, mode_Iu)),
@@ -96,7 +97,7 @@ main(void)
 
   /* The array is an entity of the method, placed on the mehtod's own memory,
      the stack frame. */
-  array_ent = new_entity(get_cur_frame_type(), id_from_str("a", 1), array_type);
+  array_ent = new_entity(get_cur_frame_type(), new_id_from_chars("a", 1), array_type);
   /* As the array is accessed by Sel nodes, we need information about
      the entity the node selects.  Entities of an array are it's elements
      which are, in this case, integers. */
@@ -130,11 +131,11 @@ main(void)
 
      x = new_Return (get_store (), 1, in);
   }
-  mature_block (get_irg_current_block(main_irg));
+  mature_immBlock (get_irg_current_block(main_irg));
 
   /* complete the end_block */
-  add_in_edge (get_irg_end_block(main_irg), x);
-  mature_block (get_irg_end_block(main_irg));
+  add_immBlock_pred (get_irg_end_block(main_irg), x);
+  mature_immBlock (get_irg_end_block(main_irg));
 
   finalize_cons (main_irg);
 
@@ -143,12 +144,12 @@ main(void)
 
   /* verify the graph */
   irg_vrfy(main_irg);
-
+  char *dump_file_suffix = "";
   printf("Dumping the graph and a type graph.\n");
-  dump_ir_block_graph (main_irg);
-  dump_type_graph(main_irg);
-  dump_ir_block_graph_w_types(main_irg);
-  dump_all_types();
+  dump_ir_block_graph (main_irg, dump_file_suffix);
+  dump_type_graph(main_irg, dump_file_suffix);
+  dump_ir_block_graph_w_types(main_irg, dump_file_suffix);
+  dump_all_types(dump_file_suffix);
   printf("Use xvcg to view these graphs:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
 

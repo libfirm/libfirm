@@ -48,10 +48,10 @@ int main(int argc, char **argv)
   init_firm (NULL);
 
   /* An unsinged 8 bit type */
-  U8 = new_type_primitive (id_from_str("char", 4), mode_Bu);
+  U8 = new_type_primitive (new_id_from_chars("char", 4), mode_Bu);
   /* An array containing unsigned 8 bit elements. */
-  U8array = new_type_array (id_from_str ("char_arr", 8), 1, U8);
-  string_ptr = new_type_pointer (id_from_str ("ptr_to_string", 13), U8array);
+  U8array = new_type_array (new_id_from_chars("char_arr", 8), 1, U8);
+  string_ptr = new_type_pointer (new_id_from_chars ("ptr_to_string", 13), U8array);
 
   /* Make a global entity that represents the constant String. */
   const_str = new_entity(get_glob_type(), new_id_from_str("constStr"), U8array);
@@ -72,7 +72,7 @@ int main(int argc, char **argv)
 #define NRARGS 0
 #define NRES 0
   owner = get_glob_type();
-  proc_main = new_type_method(id_from_str(METHODNAME, strlen(METHODNAME)),
+  proc_main = new_type_method(new_id_from_chars(METHODNAME, strlen(METHODNAME)),
                               NRARGS, NRES);
 
   /* Make type information for called method which also belongs to the
@@ -81,14 +81,14 @@ int main(int argc, char **argv)
 #define F_NRARGS 1
 #define F_NRES 0
   owner = get_glob_type();
-  proc_called = new_type_method(id_from_str(F_METHODNAME, strlen(F_METHODNAME)),
+  proc_called = new_type_method(new_id_from_chars(F_METHODNAME, strlen(F_METHODNAME)),
                               F_NRARGS, F_NRES);
   set_method_param_type(proc_called, 0, string_ptr);
 
 
   /* Make the entity for main needed for a correct  ir_graph.  */
 #define ENTITYNAME "CALL_STR_EXAMPLE_main"
-  ent = new_entity (owner, id_from_str (ENTITYNAME, strlen(ENTITYNAME)),
+  ent = new_entity (owner, new_id_from_chars (ENTITYNAME, strlen(ENTITYNAME)),
                     proc_main);
 
   /* Generates the basic graph for the method represented by entity ent, that
@@ -99,11 +99,12 @@ int main(int argc, char **argv)
   irg = new_ir_graph (ent, NUM_OF_LOCAL_VARS);
 
   /* get the pointer to the string constant */
-  str_addr = new_Const(mode_P, new_tarval_from_entity(const_str, mode_P));
+  symconst_symbol sym;
+  sym.entity_p = const_str;
+  str_addr = new_SymConst(sym, symconst_addr_ent);
 
   /* get the pointer to the procedure from the class type */
   /* this is how a pointer to be fixed by the linker is represented. */
-  symconst_symbol sym;
   sym.ident_p = new_id_from_str (F_METHODNAME);
   proc_ptr = new_SymConst (sym, symconst_addr_name);
 
@@ -120,13 +121,13 @@ int main(int argc, char **argv)
   x = new_Return (get_store(), 0, NULL);
   /* Now we generated all instructions for this block and all its predecessor blocks
    * so we can mature it. */
-  mature_block (get_irg_current_block(irg));
+  mature_immBlock (get_irg_current_block(irg));
 
   /* This adds the in edge of the end block which originates at the return statement.
    * The return node passes controlflow to the end block.  */
-  add_in_edge (get_irg_end_block(irg), x);
+  add_immBlock_pred (get_irg_end_block(irg), x);
   /* Now we can mature the end block as all it's predecessors are known. */
-  mature_block (get_irg_end_block(irg));
+  mature_immBlock (get_irg_end_block(irg));
 
   finalize_cons (irg);
 
@@ -137,8 +138,9 @@ int main(int argc, char **argv)
   irg_vrfy(irg);
 
   printf("Done building the graph.  Dumping it.\n");
-  dump_ir_block_graph (irg);
-  dump_all_types();
+  char *dump_file_suffix = "";
+  dump_ir_block_graph (irg, dump_file_suffix);
+  dump_all_types(dump_file_suffix);
   printf("Use xvcg to view this graph:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
 

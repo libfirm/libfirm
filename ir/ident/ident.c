@@ -24,17 +24,17 @@
 
 set *__id_set;
 
-void id_init(int initial_n_idents)
+void init_ident(int initial_n_idents)
 {
   __id_set = new_set(memcmp, initial_n_idents);
 }
 
-void id_finish (void) {
+void finish_ident (void) {
   del_set(__id_set);
   __id_set = NULL;
 }
 
-ident *(id_from_str)(const char *str, int len)
+ident *(new_id_from_chars)(const char *str, int len)
 {
   return __id_from_str(str, len);
 }
@@ -42,7 +42,7 @@ ident *(id_from_str)(const char *str, int len)
 ident *new_id_from_str(const char *str)
 {
   assert(str);
-  return id_from_str(str, strlen(str));
+  return new_id_from_chars(str, strlen(str));
 }
 
 const char *(get_id_str)(ident *id)

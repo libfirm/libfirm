@@ -36,7 +36,7 @@
 
 /** To iterate through the successors iterate from 0 to i < get_irn_outs(). No
    order of successors guaranteed.  Will return edges from block to floating
-   nodes even if irgraph is in state "floats". */
+   nodes even if irgraph is in state "op_pin_state_floats". */
 /* returns the number of successors of the node: */
 int             get_irn_n_outs (ir_node *node);
 
@@ -79,11 +79,11 @@ void irg_out_block_walk(ir_node *node,
 /** Computes the out edges.  Sets a flag in irg to "outs_consistent".  If the
    graph is changed this flag must be set to "outs_inconsistent".  Computes
    out edges from block to floating nodes even if graph is in state
-   "floats".   Optimizes Tuple nodes. */
+   "op_pin_state_floats".   Optimizes Tuple nodes. */
 void compute_outs(ir_graph *irg);
 /** Computes the out edges in interprocedural view */
 void compute_ip_outs(void);
-/** Frees the out datastructures.  Sets the flag in irg to "no_outs". */
+/** Frees the out datastructures.  Sets the flag in irg to "outs_none". */
 void free_ip_outs(void);
 void free_outs(ir_graph *irg);
 

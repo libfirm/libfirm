@@ -59,7 +59,7 @@ void set_opt_cse (int value);
  * If opt_global_cse == 1 and opt_cse == 1 perform intra procedure
  * constant subexpression elimination for floating nodes.  Intra
  * procedure cse gets the graph into state "floating".  It is necessary
- * to run pre/code motion to get the graph back into state "pinned".
+ * to run pre/code motion to get the graph back into state "op_pin_state_pinned".
  * right after a call to local_optimize with global cse turned on.
  * Default: opt_global_cse == 0.
  */

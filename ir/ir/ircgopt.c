@@ -83,7 +83,7 @@ void gc_irgs(int n_keep, entity ** keep_arr) {
   /* clean */
   for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     ir_graph * irg = get_irp_irg(i);
-    entity * ent = get_irg_ent(irg);
+    entity * ent = get_irg_entity(irg);
     /* Removing any graph invalidates all interprocedural loop trees. */
     if (get_irg_loopinfo_state(irg) == loopinfo_ip_consistent ||
         get_irg_loopinfo_state(irg) == loopinfo_ip_inconsistent) {

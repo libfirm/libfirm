@@ -50,6 +50,7 @@ struct ir_mode {
   const void        *tv_priv;   /**< tarval module will save private data here */
 };
 
+
 /* ------------------------------- *
  * inline functions                *
  * ------------------------------- */
@@ -220,31 +221,37 @@ __mode_is_int_vector(const ir_mode *mode) {
   return (__get_mode_sort(mode) == irms_int_number) && (__get_mode_vector_elems(mode) > 1);
 }
 
-#define get_modeP_mach()             __get_modeP_mach()
-#define set_modeP_mach(p)            __set_modeP_mach(p)
-#define get_mode_modecode(mode)      __get_mode_modecode(mode)
-#define get_mode_ident(mode)         __get_mode_ident(mode)
-#define get_mode_sort(mode)          __get_mode_sort(mode)
-#define get_mode_size_bits(mode)     __get_mode_size_bits(mode)
-#define get_mode_size_bytes(mode)    __get_mode_size_bytes(mode)
-#define get_mode_align(mode)         __get_mode_align(mode)
-#define get_mode_sign(mode)          __get_mode_sign(mode)
-#define get_mode_arithmetic(mode)    __get_mode_arithmetic(mode)
-#define get_mode_modulo_shift(mode)  __get_mode_modulo_shift(mode)
-#define get_mode_vector_elems(mode)  __get_mode_vector_elems(mode)
-#define get_mode_link(mode)          __get_mode_link(mode)
-#define set_mode_link(mode, l)       __set_mode_link(mode, l)
-#define mode_is_signed(mode)         __mode_is_signed(mode)
-#define mode_is_float(mode)          __mode_is_float(mode)
-#define mode_is_int(mode)            __mode_is_int(mode)
-#define mode_is_character(mode)      __mode_is_character(mode)
-#define mode_is_reference(mode)      __mode_is_reference(mode)
-#define mode_is_num(mode)            __mode_is_num(mode)
-#define mode_is_numP(mode)           __mode_is_numP(mode)
-#define mode_is_data(mode)           __mode_is_data(mode)
-#define mode_is_datab(mode)          __mode_is_datab(mode)
-#define mode_is_dataM(mode)          __mode_is_dataM(mode)
-#define mode_is_float_vector(mode)   __mode_is_float_vector(mode)
-#define mode_is_int_vector(mode)     __mode_is_int_vector(mode)
+/** mode module initialization, call once before use of any other function **/
+void init_mode(void);
+
+/** mode module finalization. frees all memory.  */
+void finish_mode(void);
+
+#define get_modeP_mach()               __get_modeP_mach()
+#define set_modeP_mach(p)              __set_modeP_mach(p)
+#define get_mode_modecode(mode)        __get_mode_modecode(mode)
+#define get_mode_ident(mode)           __get_mode_ident(mode)
+#define get_mode_sort(mode)            __get_mode_sort(mode)
+#define get_mode_size_bits(mode)       __get_mode_size_bits(mode)
+#define get_mode_size_bytes(mode)      __get_mode_size_bytes(mode)
+#define get_mode_align(mode)           __get_mode_align(mode)
+#define get_mode_sign(mode)            __get_mode_sign(mode)
+#define get_mode_arithmetic(mode)      __get_mode_arithmetic(mode)
+#define get_mode_modulo_shift(mode)    __get_mode_modulo_shift(mode)
+#define get_mode_n_vector_elems(mode)  __get_mode_vector_elems(mode)
+#define get_mode_link(mode)            __get_mode_link(mode)
+#define set_mode_link(mode, l)         __set_mode_link(mode, l)
+#define mode_is_signed(mode)           __mode_is_signed(mode)
+#define mode_is_float(mode)            __mode_is_float(mode)
+#define mode_is_int(mode)              __mode_is_int(mode)
+#define mode_is_character(mode)        __mode_is_character(mode)
+#define mode_is_reference(mode)        __mode_is_reference(mode)
+#define mode_is_num(mode)              __mode_is_num(mode)
+#define mode_is_numP(mode)             __mode_is_numP(mode)
+#define mode_is_data(mode)             __mode_is_data(mode)
+#define mode_is_datab(mode)            __mode_is_datab(mode)
+#define mode_is_dataM(mode)            __mode_is_dataM(mode)
+#define mode_is_float_vector(mode)     __mode_is_float_vector(mode)
+#define mode_is_int_vector(mode)       __mode_is_int_vector(mode)
 
 #endif /* _IRMODE_T_H_ */

@@ -179,7 +179,7 @@ void          set_irn_link     (ir_node *node, void *link);
 void         *get_irn_link     (const ir_node *node);
 
 /** Returns the ir_graph this node belongs to. Only valid if irg
- *  is in state pinned (irg is only stored in the block. */
+ *  is in state op_pin_state_pinned (irg is only stored in the block. */
 ir_graph     *get_irn_irg      (ir_node *node);
 
 /** Outputs a unique number for this node if libFIRM is compiled for
@@ -222,9 +222,9 @@ new_ir_node (dbg_info *db,
  * access routines that work for all nodes we use infix "nodes" and do not
  * name this function get_irn_block. */
 #define get_nodes_block get_nodes_Block
-ir_node  *get_nodes_Block (ir_node *node);
+ir_node  *get_nodes_block (ir_node *node);
 #define set_nodes_block set_nodes_Block
-void      set_nodes_Block (ir_node *node, ir_node *block);
+void      set_nodes_block (ir_node *node, ir_node *block);
 
 /**
  * @function get_irn_block
@@ -245,20 +245,6 @@ typedef enum {
                    type of this method. */
 } pn_Start; /* Projection numbers for Start. */
 
-/**
- * Projection numbers for result of Start node: use for Proj nodes!
- * @remark This is the old name convention, don't use anymore.
- */
-typedef enum {
-  pns_initial_exec,     /**< Projection on an executable, the initial control flow. */
-  pns_global_store,     /**< Projection on the global store */
-  pns_frame_base,       /**< Projection on the frame base */
-  pns_globals,          /**< Projection on the pointer to the data segment
-                 containing _all_ global entities. */
-  pns_args,             /**< Projection on all arguments */
-  pns_value_arg_base    /**< Pointer to region of compound value arguments as defined by
-                 type of this method. */
-} pns_number; /* pns: Projection Number Start */
 
 /** Test whether arbitrary node is frame pointer.
  *
@@ -306,10 +292,6 @@ ir_node  *get_Block_cg_cfgpred(ir_node * node, int pos);
 /* frees the memory. */
 void      remove_Block_cg_cfgpred_arr(ir_node * node);
 
-/* Start references the irg it is in.
- @@@ old -- use get_irn_irg instead! */
-ir_graph *get_Start_irg(ir_node *node);
-
 int  get_End_n_keepalives(ir_node *end);
 ir_node *get_End_keepalive(ir_node *end, int pos);
 void add_End_keepalive (ir_node *end, ir_node *ka);
@@ -319,9 +301,6 @@ void set_End_keepalive(ir_node *end, int pos, ir_node *ka);
    free_End frees these data structures. */
 void free_End (ir_node *end);
 
-/* @@@ old -- use get_irn_irg instead!  */
-ir_graph *get_EndReg_irg (ir_node *end);
-ir_graph *get_EndExcept_irg (ir_node *end);
 
 /* We distinguish three kinds of Cond nodes.  These can be distinguished
    by the mode of the selector operand and an internal flag of type cond_kind.
@@ -457,21 +436,6 @@ void     set_Sel_entity (ir_node *node, entity *ent);
 
 /**
  * Projection numbers for result of Call node: use for Proj nodes!
- *
- * @remark old name convention!
- */
-typedef enum {
-  pncl_memory = 0,        /**< The memory result. */
-  pncl_exc_target = 1,    /**< The control flow result branching to the exception handler */
-  pncl_result_tuple = 2,  /**< The tuple containing all (0, 1, 2, ...) results */
-  pncl_exc_memory = 3,    /**< The memory result in case the called method terminated with
-                  an exception */
-  pncl_value_res_base = 4 /**< A pointer to the memory region containing copied results
-                  passed by value (for compound result types). */
-} pncl_number;   /* pncl: Projection Number CaLl */
-
-/**
- * Projection numbers for result of Call node: use for Proj nodes!
  */
 typedef enum {
   pn_Call_M_regular = 0,  /**< The memory result. */
@@ -515,8 +479,6 @@ void    remove_Call_callee_arr(ir_node * node);
 
 ir_node  *get_CallBegin_ptr  (ir_node *node);
 void      set_CallBegin_ptr  (ir_node *node, ir_node *ptr);
-/* @@@ old -- use get_irn_irg instead!  */
-ir_graph *get_CallBegin_irg  (ir_node *node);
 ir_node  *get_CallBegin_call (ir_node *node);
 void      set_CallBegin_call (ir_node *node, ir_node *call);
 
@@ -860,7 +822,6 @@ void     set_Confirm_cmp   (ir_node *node, pn_Cmp cmp);
 /** returns operand of node if node is a Proj. */
 ir_node *skip_Proj (ir_node *node);
 /** returns operand of node if node is a Id */
-ir_node *skip_nop  (ir_node *node);
 ir_node *skip_Id  (ir_node *node);   /* Same as skip_nop. */
 /* returns corresponding operand of Tuple if node is a Proj from
    a Tuple. */
@@ -881,9 +842,6 @@ int      is_Proj (const ir_node *node);
 /** Returns true if the operation manipulates control flow:
    Start, End, Jmp, Cond, Return, Raise, Bad, CallBegin, EndReg, EndExcept */
 int is_cfop(ir_node *node);
-
-/* @@@ old -- use get_irn_irg instead!  */
-ir_graph *get_ip_cfop_irg(ir_node *n);
 
 /** Returns true if the operation manipulates interprocedural control flow:
     CallBegin, EndReg, EndExcept */
@@ -935,9 +893,9 @@ void    dump_irn(ir_node *n);
 /** Output information about an entity and its owner */
 #define DDMEO(X) printf("%s(l.%i) %s (own: %s): %ld (%p)\n", __MYFUNC__, __LINE__, get_entity_name(X), get_type_name(get_entity_owner(X)), get_entity_nr(X), (void *)(X))
 /** Output information about a graph */
-#define DDMG(X)  printf("%s(l.%i) %s: %ld (%p)\n",           __MYFUNC__, __LINE__, get_entity_name(get_irg_ent(X)), get_irg_graph_nr(X), (void *)(X))
+#define DDMG(X)  printf("%s(l.%i) %s: %ld (%p)\n",           __MYFUNC__, __LINE__, get_entity_name(get_irg_entity(X)), get_irg_graph_nr(X), (void *)(X))
 /** Output information about an ident */
-#define DDMI(X)  printf("%s(l.%i) %s: %p\n",                 __MYFUNC__, __LINE__, id_to_str(X), (void *)(X))
+#define DDMI(X)  printf("%s(l.%i) %s: %p\n",                 __MYFUNC__, __LINE__, get_id_str(X), (void *)(X))
 /** Output information about a mode */
 #define DDMM(X)  printf("%s(l.%i) %s: %p\n",                 __MYFUNC__, __LINE__, get_mode_name(X), (void *)(X))
 /** Output information about a loop */

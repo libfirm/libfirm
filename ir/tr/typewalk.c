@@ -232,7 +232,7 @@ void type_walk_irg (ir_graph *irg,
   ++type_visited;
   irg_walk(get_irg_end(irg), start_type_walk, NULL, &type_env);
 
-  type_walk_2((type_or_ent *)get_irg_ent(irg), pre, post, env);
+  type_walk_2((type_or_ent *)get_irg_entity(irg), pre, post, env);
 
   type_walk_2((type_or_ent *)get_irg_frame_type(irg), pre, post, env);
 

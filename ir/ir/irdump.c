@@ -234,7 +234,6 @@ static void print_enum_item_edge(FILE *F, type *E, int item, const char *fmt, ..
 /*******************************************************************/
 
 /* A suffix to manipulate the file name. */
-char *dump_file_suffix = "";
 
 char *dump_file_filter = "";
 
@@ -291,8 +290,8 @@ static void clear_link(ir_node * node, void * env) {
 
 
 static int node_floats(ir_node *n) {
-  return ((get_op_pinned(get_irn_op(n)) == floats) &&
-      (get_irg_pinned(current_ir_graph) == floats));
+  return ((get_op_pinned(get_irn_op(n)) == op_pin_state_floats) &&
+      (get_irg_pinned(current_ir_graph) == op_pin_state_floats));
 }
 
 static const char *get_ent_dump_name(entity *ent) {
@@ -305,7 +304,7 @@ static const char *get_ent_dump_name(entity *ent) {
 
 static const char *get_irg_dump_name(ir_graph *irg) {
   /* Don't use get_entity_ld_ident (ent) as it computes the mangled name! */
-  entity *ent = get_irg_ent(irg);
+  entity *ent = get_irg_entity(irg);
   return get_ent_dump_name(ent);
 }
 
@@ -327,7 +326,7 @@ static void collect_node(ir_node * node, void *env) {
 
 /** Construct lists to walk ir block-wise.
  *
- * Collects all blocks, nodes not pinned,
+ * Collects all blocks, nodes not op_pin_state_pinned,
  * Bad and Unknown into a flexible array in link field of
  * irg they belong to.  Sets the irg link field to NULL in all
  * graphs not visited.
@@ -496,7 +495,7 @@ dump_node_opcode(FILE *F, ir_node *n)
 
   case iro_Start: {
     if (interprocedural_view) {
-      fprintf(F, "%s %s", get_irn_opname(n), get_ent_dump_name(get_irg_ent(get_irn_irg(n))));
+      fprintf(F, "%s %s", get_irn_opname(n), get_ent_dump_name(get_irg_entity(get_irn_irg(n))));
       break;
     }
   } /* fall through */
@@ -565,7 +564,7 @@ dump_node_nodeattr(FILE *F, ir_node *n)
   switch (get_irn_opcode(n)) {
   case iro_Start:
     if (false && interprocedural_view) {
-      fprintf (F, "%s", get_ent_dump_name(get_irg_ent(current_ir_graph)));
+      fprintf (F, "%s", get_ent_dump_name(get_irg_entity(current_ir_graph)));
     }
     break;
   case iro_Proj:
@@ -667,7 +666,7 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
   /* Source types */
   switch (get_irn_opcode(n)) {
   case iro_Start: {
-    type *tp = get_entity_type(get_irg_ent(get_irn_irg(n)));
+    type *tp = get_entity_type(get_irg_entity(get_irn_irg(n)));
     fprintf(F, "start of method of type %s \n", get_type_name_ex(tp, &bad));
     for (i = 0; i < get_method_n_params(tp); ++i)
       fprintf(F, "  param %d type: %s \n", i, get_type_name_ex(get_method_param_type(tp, i), &bad));
@@ -723,7 +722,7 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
   } break;
   case iro_Return: {
     if (!interprocedural_view) {
-      type *tp = get_entity_type(get_irg_ent(get_irn_irg(n)));
+      type *tp = get_entity_type(get_irg_entity(get_irn_irg(n)));
       fprintf(F, "return in method of type %s \n", get_type_name_ex(tp, &bad));
       for (i = 0; i < get_method_n_ress(tp); ++i)
     fprintf(F, "  res %d type: %s \n", i, get_type_name_ex(get_method_res_type(tp, i), &bad));
@@ -1118,7 +1117,7 @@ dump_whole_block(FILE *F, ir_node *block) {
 }
 
 /** dumps a graph block-wise. Expects all blockless nodes in arr in irgs link.
- *  The outermost nodes: blocks and nodes not pinned, Bad, Unknown. */
+ *  The outermost nodes: blocks and nodes not op_pin_state_pinned, Bad, Unknown. */
 static void
 dump_block_graph(FILE *F, ir_graph *irg) {
   int i;
@@ -1152,7 +1151,7 @@ static void dump_graph(FILE *F, ir_graph *irg) {
   fprintf(F, "graph: { title: \"");
   PRINT_IRGID(irg);
   fprintf(F, "\" label: \"%s\" status:clustered color:white \n",
-      get_ent_dump_name(get_irg_ent(irg)));
+      get_ent_dump_name(get_irg_entity(irg)));
 
   dump_block_graph(F, irg);
 
@@ -1800,21 +1799,18 @@ vcg_close (FILE *F) {
 /** Routine to dump a graph, blocks as conventional nodes.
  */
 void
-dump_ir_graph (ir_graph *irg)
+dump_ir_graph (ir_graph *irg, char *suffix )
 {
   FILE *f;
   ir_graph *rem;
-  char *suffix;
+  char *suffix1;
   rem = current_ir_graph;
 
-  /* if a filter is set, dump only the irg's that match the filter */
-  if (strncmp(get_entity_name(get_irg_ent(irg)), dump_file_filter, strlen(dump_file_filter)) != 0)
-    return;
-
+  if(strncmp(get_entity_name(get_irg_entity(irg)),dump_file_filter,strlen(dump_file_filter))!=0) return;
   current_ir_graph = irg;
-  if (interprocedural_view) suffix = "-pure-ip";
-  else                      suffix = "-pure";
-  f = vcg_open(irg, dump_file_suffix, suffix);
+  if (interprocedural_view) suffix1 = "-pure-ip";
+  else                      suffix1 = "-pure";
+  f = vcg_open(irg, suffix, suffix1);
   dump_vcg_header(f, get_irg_dump_name(irg), NULL);
 
   /* walk over the graph */
@@ -1822,8 +1818,8 @@ dump_ir_graph (ir_graph *irg)
   irg_walk(get_irg_end(irg), NULL, dump_whole_node, f);
 
   /* dump the out edges in a separate walk */
-  if ((dump_out_edge_flag) && (get_irg_outs_state(irg) != no_outs)) {
-    irg_out_walk(get_irg_start(irg), dump_out_edge, NULL, f);
+  if ((dump_out_edge_flag) && (get_irg_outs_state(irg) != outs_none)) {
+    irg_out_walk(get_irg_start(irg), dump_out_edge, NULL, NULL);
   }
 
   vcg_close(f);
@@ -1833,19 +1829,16 @@ dump_ir_graph (ir_graph *irg)
 
 
 void
-dump_ir_block_graph (ir_graph *irg)
+dump_ir_block_graph (ir_graph *irg, char *suffix)
 {
   FILE *f;
   int i;
-  char *suffix;
+  char *suffix1;
 
-  /* if a filter is set, dump only the irg's that match the filter */
-  if (strncmp(get_entity_name(get_irg_ent(irg)), dump_file_filter, strlen(dump_file_filter)) != 0)
-    return;
-
-  if (interprocedural_view) suffix = "-ip";
-  else                      suffix = "";
-  f = vcg_open(irg, dump_file_suffix, suffix);
+  if(strncmp(get_entity_name(get_irg_entity(irg)),dump_file_filter,strlen(dump_file_filter))!=0) return;
+  if (interprocedural_view) suffix1 = "-ip";
+  else                      suffix1 = "";
+  f = vcg_open(irg, suffix, suffix1);
   dump_vcg_header(f, get_irg_dump_name(irg), NULL);
 
   construct_block_lists(irg);
@@ -1864,11 +1857,11 @@ dump_ir_block_graph (ir_graph *irg)
 /** dumps a graph with type information
  */
 void
-dump_ir_graph_w_types (ir_graph *irg)
+dump_ir_graph_w_types (ir_graph *irg, char *suffix)
 {
   FILE *f;
   ir_graph *rem = current_ir_graph;
-  char *suffix;
+  char *suffix1;
 
   /* if a filter is set, dump only the irg's that match the filter */
   if (strncmp(get_irg_dump_name(irg), dump_file_filter, strlen(dump_file_filter)) != 0)
@@ -1876,9 +1869,9 @@ dump_ir_graph_w_types (ir_graph *irg)
 
   current_ir_graph = irg;
 
-  if (interprocedural_view) suffix = "-pure-wtypes-ip";
-  else                      suffix = "-pure-wtypes";
-  f = vcg_open(irg, dump_file_suffix, suffix);
+  if (interprocedural_view) suffix1 = "-pure-wtypes-ip";
+  else                      suffix1 = "-pure-wtypes";
+  f = vcg_open(irg,suffix, suffix1);
   dump_vcg_header(f, get_irg_dump_name(irg), NULL);
 
   /* dump common ir graph */
@@ -1894,20 +1887,20 @@ dump_ir_graph_w_types (ir_graph *irg)
 }
 
 void
-dump_ir_block_graph_w_types (ir_graph *irg)
+dump_ir_block_graph_w_types (ir_graph *irg, char *suffix)
 {
   FILE *f;
   int i;
-  char *suffix;
+  char *suffix1;
   ir_graph *rem = current_ir_graph;
 
   /* if a filter is set, dump only the irg's that match the filter */
   if (strncmp(get_irg_dump_name(irg), dump_file_filter, strlen(dump_file_filter)) != 0)
     return;
 
-  if (interprocedural_view) suffix = "-wtypes-ip";
-  else                      suffix = "-wtypes";
-  f = vcg_open(irg, dump_file_suffix, suffix);
+  if (interprocedural_view) suffix1 = "-wtypes-ip";
+  else                      suffix1 = "-wtypes";
+  f = vcg_open(irg, suffix, suffix1);
   dump_vcg_header(f, get_irg_dump_name(irg), NULL);
 
   /* dump common blocked ir graph */
@@ -1976,7 +1969,7 @@ dump_block_to_cfg(ir_node *block, void *env) {
 }
 
 void
-dump_cfg (ir_graph *irg)
+dump_cfg (ir_graph *irg, char *suffix)
 {
   FILE *f;
   ir_graph *rem = current_ir_graph;
@@ -1989,7 +1982,7 @@ dump_cfg (ir_graph *irg)
 
   current_ir_graph = irg;
 
-  f = vcg_open(irg, dump_file_suffix, "-cfg");
+  f = vcg_open(irg, suffix, "-cfg");
   dump_vcg_header(f, get_irg_dump_name(irg), NULL);
 
   if (interprocedural_view) {
@@ -2021,7 +2014,7 @@ void dump_callgraph(char *filesuffix) {
 
   for (i = 0; i < n_irgs; ++i) {
     ir_graph *irg = get_irp_irg(i);
-    entity *ent = get_irg_ent(irg);
+    entity *ent = get_irg_entity(irg);
     int j, n_callees = get_irg_n_callees(irg);
 
     dump_entity_node(F, ent);
@@ -2041,13 +2034,13 @@ void dump_callgraph(char *filesuffix) {
 
 
 /* Dump all irgs in interprocedural view to a single file. */
-void dump_all_cg_block_graph(void) {
+void dump_all_cg_block_graph(char *suffix) {
   FILE *f;
   int i;
   int rem_view = interprocedural_view;
   interprocedural_view = 1;
 
-  f = vcg_open_name("All_graphs", dump_file_suffix);
+  f = vcg_open_name("All_graphs", suffix);
   dump_vcg_header(f, "All_graphs", NULL);
 
   /* collect nodes in all irgs reachable in call graph*/
@@ -2073,7 +2066,7 @@ void dump_all_cg_block_graph(void) {
 /***********************************************************************/
 
 void
-dump_type_graph (ir_graph *irg)
+dump_type_graph (ir_graph *irg, char *suffix)
 {
   FILE *f;
   ir_graph *rem;
@@ -2084,7 +2077,7 @@ dump_type_graph (ir_graph *irg)
 
   current_ir_graph = irg;
 
-  f = vcg_open(irg, dump_file_suffix, "-type");
+  f = vcg_open(irg, suffix, "-type");
   dump_vcg_header(f, get_irg_dump_name(irg), NULL);
 
   /* walk over the blocks in the graph */
@@ -2100,9 +2093,9 @@ dump_type_graph (ir_graph *irg)
 }
 
 void
-dump_all_types (void)
+dump_all_types (char *suffix)
 {
-  FILE *f = vcg_open_name("All_types", dump_file_suffix);
+  FILE *f = vcg_open_name("All_types", suffix);
   dump_vcg_header(f, "All_types", NULL);
   type_walk(dump_type_info, NULL, f);
   inc_irg_visited(get_const_code_irg());
@@ -2110,9 +2103,9 @@ dump_all_types (void)
 }
 
 void
-dump_class_hierarchy (bool entities)
+dump_class_hierarchy (bool entities, char *suffix)
 {
-  FILE *f = vcg_open_name("class_hierarchy", dump_file_suffix);
+  FILE *f = vcg_open_name("class_hierarchy", suffix);
   h_env_t env;
 
   env.f = f;
@@ -2134,10 +2127,10 @@ dump_class_hierarchy (bool entities)
 /*  dump_ir_graph_w_types                                              */
 /***********************************************************************/
 
-void dump_all_ir_graphs(dump_graph_func *dmp_grph) {
+void dump_all_ir_graphs(dump_graph_func *dmp_grph, char *suffix) {
   int i;
   for (i=0; i < get_irp_n_irgs(); i++) {
-    dmp_grph(get_irp_irg(i));
+    dmp_grph(get_irp_irg(i), suffix);
   }
 }
 

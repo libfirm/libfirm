@@ -522,7 +522,7 @@ init_node (ir_node *n, void *env) {
     (get_irn_op(cb) == op_EndReg) ||
     (get_irn_op(cb) == op_EndExcept)) {
       init_node(cb, NULL);
-      init_node(get_nodes_Block(cb), NULL);
+      init_node(get_nodes_block(cb), NULL);
     }
   }
 #endif
@@ -561,7 +561,7 @@ static bool is_outermost_Start(ir_node *n) {
   if ((get_irn_op(n) == op_Block)     &&
       (get_Block_n_cfgpreds(n) == 1)  &&
       (get_irn_op(skip_Proj(get_Block_cfgpred(n, 0))) == op_Start) &&
-      (get_nodes_Block(skip_Proj(get_Block_cfgpred(n, 0))) == n)) {
+      (get_nodes_block(skip_Proj(get_Block_cfgpred(n, 0))) == n)) {
     return true;
   }
 #if 0
@@ -595,8 +595,8 @@ get_start_index(ir_node *n) {
   if (get_irn_op(n) == op_Phi   ||
       get_irn_op(n) == op_Block ||
       (get_irn_op(n) == op_Filter && interprocedural_view) ||
-      (get_irg_pinned(get_irn_irg(n)) == floats &&
-       get_op_pinned(get_irn_op(n)) == floats))
+      (get_irg_pinned(get_irn_irg(n)) == op_pin_state_floats &&
+       get_op_pinned(get_irn_op(n)) == op_pin_state_floats))
     // Here we could test for backedge at -1 which is illegal
     return 0;
   else
@@ -1185,7 +1185,7 @@ void construct_ip_backedges (void) {
     /* Find real entry points */
     sb = get_irg_start_block(current_ir_graph);
     if ((get_Block_n_cfgpreds(sb) > 1) ||
-    (get_nodes_Block(get_Block_cfgpred(sb, 0)) != sb)) continue;
+    (get_nodes_block(get_Block_cfgpred(sb, 0)) != sb)) continue;
     /* Compute scc for this graph */
     outermost_ir_graph = current_ir_graph;
     set_irg_visited(outermost_ir_graph, get_max_irg_visited());

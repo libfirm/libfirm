@@ -358,7 +358,7 @@ int tarval_is_long(tarval *tv)
 }
 
 /* this might overflow the machine's long, so use only with small values */
-long tarval_to_long(tarval* tv)
+long get_tarval_long(tarval* tv)
 {
   ANNOUNCE();
   assert(tarval_is_long(tv) && "tarval too big to fit in long");
@@ -394,7 +394,7 @@ int tarval_is_double(tarval *tv)
   return (get_mode_sort(tv->mode) == irms_float_number);
 }
 
-long double tarval_to_double(tarval *tv)
+long double get_tarval_double(tarval *tv)
 {
   ANNOUNCE();
   assert(tarval_is_double(tv));
@@ -402,58 +402,6 @@ long double tarval_to_double(tarval *tv)
   return fc_val_to_float(tv->value);
 }
 
-/* The tarval represents the address of the entity.  As the address must
-   be constant the entity must have as owner the global type.
- * We no more support this function: Use the new SymConst instead.
- */
-tarval *new_tarval_from_entity (entity *ent, ir_mode *mode)
-{
-  ANNOUNCE();
-  assert(ent);
-  assert(mode && (get_mode_sort(mode) == irms_reference));
-
-  return get_tarval((void *)ent, 0, mode);
-}
-
-
-int tarval_is_entity(tarval *tv)
-{
-  ANNOUNCE();
-  assert(tv);
-  /* tv->value == NULL means dereferencing a null pointer */
-  return ((get_mode_sort(tv->mode) == irms_reference) && (tv->value != NULL) && (tv->length == 0)
-      && (tv != tarval_P_void));
-}
-
-#undef tarval_to_entity
-entity *tarval_to_entity(tarval *tv) { return get_tarval_entity(tv); }
-entity *get_tarval_entity(tarval *tv)
-{
-  ANNOUNCE();
-  assert(tv);
-
-  if (tarval_is_entity(tv))
-    return (entity *)tv->value;
-  else {
-    assert(0 && "tarval did not represent an entity");
-    return NULL;
-  }
-}
-
-void free_tarval_entity(entity *ent) {
-  /* There can be a tarval referencing this entity.  Even if the
-     tarval is not used by the code any more, it can still reference
-     the entity as tarvals live indepently of the entity referenced.
-     Further the tarval is hashed into a set. If a hash function
-     evaluation happens to collide with this tarval, we will vrfy that
-     it contains a proper entity and we will crash if the entity is
-     freed.
-
-     Unluckily, tarvals can neither be changed nor deleted, and to find
-     one, all existing reference modes have to be tried -> a facility
-     to retrieve all modes of a kind is needed. */
-  ANNOUNCE();
-}
 
 /*
  * Access routines for tarval fields ========================================
@@ -506,7 +454,7 @@ tarval *get_tarval_max(ir_mode *mode)
   ANNOUNCE();
   assert(mode);
 
-  if (get_mode_vector_elems(mode) > 1) {
+  if (get_mode_n_vector_elems(mode) > 1) {
     /* vector arithmetic not implemented yet */
     return tarval_bad;
   }
@@ -551,7 +499,7 @@ tarval *get_tarval_min(ir_mode *mode)
   ANNOUNCE();
   assert(mode);
 
-  if (get_mode_vector_elems(mode) > 1) {
+  if (get_mode_n_vector_elems(mode) > 1) {
     /* vector arithmetic not implemented yet */
     return tarval_bad;
   }
@@ -596,7 +544,7 @@ tarval *get_tarval_null(ir_mode *mode)
   ANNOUNCE();
   assert(mode);
 
-  if (get_mode_vector_elems(mode) > 1) {
+  if (get_mode_n_vector_elems(mode) > 1) {
     /* vector arithmetic not implemented yet */
     return tarval_bad;
   }
@@ -628,7 +576,7 @@ tarval *get_tarval_one(ir_mode *mode)
   ANNOUNCE();
   assert(mode);
 
-  if (get_mode_vector_elems(mode) > 1) {
+  if (get_mode_n_vector_elems(mode) > 1) {
     /* vector arithmetic not implemented yet */
     return tarval_bad;
   }
@@ -659,7 +607,7 @@ tarval *get_tarval_nan(ir_mode *mode)
   ANNOUNCE();
   assert(mode);
 
-  if (get_mode_vector_elems(mode) > 1) {
+  if (get_mode_n_vector_elems(mode) > 1) {
     /* vector arithmetic not implemented yet */
     return tarval_bad;
   }
@@ -690,7 +638,7 @@ tarval *get_tarval_inf(ir_mode *mode)
   ANNOUNCE();
   assert(mode);
 
-  if (get_mode_vector_elems(mode) > 1) {
+  if (get_mode_n_vector_elems(mode) > 1) {
     /* vector arithmetic not implemented yet */
     return tarval_bad;
   }
@@ -728,7 +676,7 @@ int tarval_is_negative(tarval *a)
   ANNOUNCE();
   assert(a);
 
-  if (get_mode_vector_elems(a->mode) > 1) {
+  if (get_mode_n_vector_elems(a->mode) > 1) {
     /* vector arithmetic not implemented yet */
     assert(0 && "tarval_is_negative is not allowed for vector modes");
     return 0;
@@ -784,7 +732,7 @@ pnc_number tarval_cmp(tarval *a, tarval *b)
   if (a == b) return Eq;
   if (a->mode != b->mode) return False;
 
-  if (get_mode_vector_elems(a->mode) > 1) {
+  if (get_mode_n_vector_elems(a->mode) > 1) {
     /* vector arithmetic not implemented yet */
     assert(0 && "cmp not implemented for vector modes");
   }
@@ -829,7 +777,7 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m)
 
   if (src->mode == m) return src;
 
-  if (get_mode_vector_elems(src->mode) > 1) {
+  if (get_mode_n_vector_elems(src->mode) > 1) {
     /* vector arithmetic not implemented yet */
     return tarval_bad;
   }
@@ -985,7 +933,7 @@ tarval *tarval_neg(tarval *a)
   assert(mode_is_num(a->mode)); /* negation only for numerical values */
   assert(mode_is_signed(a->mode)); /* negation is difficult without negative numbers, isn't it */
 
-  if (get_mode_vector_elems(a->mode) > 1) {
+  if (get_mode_n_vector_elems(a->mode) > 1) {
     /* vector arithmetic not implemented yet */
     return tarval_bad;
   }
@@ -1018,7 +966,7 @@ tarval *tarval_add(tarval *a, tarval *b)
   assert(b);
   assert((a->mode == b->mode) || (get_mode_sort(a->mode) == irms_character && mode_is_int(b->mode)));
 
-  if (get_mode_vector_elems(a->mode) > 1 || get_mode_vector_elems(b->mode) > 1) {
+  if (get_mode_n_vector_elems(a->mode) > 1 || get_mode_n_vector_elems(b->mode) > 1) {
     /* vector arithmetic not implemented yet */
     return tarval_bad;
   }
@@ -1053,7 +1001,7 @@ tarval *tarval_sub(tarval *a, tarval *b)
   assert(b);
   assert((a->mode == b->mode) || (get_mode_sort(a->mode) == irms_character && mode_is_int(b->mode)));
 
-  if (get_mode_vector_elems(a->mode) > 1 || get_mode_vector_elems(b->mode) > 1) {
+  if (get_mode_n_vector_elems(a->mode) > 1 || get_mode_n_vector_elems(b->mode) > 1) {
     /* vector arithmetic not implemented yet */
     return tarval_bad;
   }
@@ -1087,7 +1035,7 @@ tarval *tarval_mul(tarval *a, tarval *b)
   assert(b);
   assert((a->mode == b->mode) && mode_is_num(a->mode));
 
-  if (get_mode_vector_elems(a->mode) > 1) {
+  if (get_mode_n_vector_elems(a->mode) > 1) {
     /* vector arithmetic not implemented yet */
     return tarval_bad;
   }
@@ -1119,7 +1067,7 @@ tarval *tarval_quo(tarval *a, tarval *b)
   assert(b);
   assert((a->mode == b->mode) && mode_is_float(a->mode));
 
-  if (get_mode_vector_elems(a->mode) > 1) {
+  if (get_mode_n_vector_elems(a->mode) > 1) {
     /* vector arithmetic not implemented yet */
     return tarval_bad;
   }
@@ -1139,7 +1087,7 @@ tarval *tarval_div(tarval *a, tarval *b)
   assert(b);
   assert((a->mode == b->mode) && mode_is_int(a->mode));
 
-  if (get_mode_vector_elems(a->mode) > 1) {
+  if (get_mode_n_vector_elems(a->mode) > 1) {
     /* vector arithmetic not implemented yet */
     return tarval_bad;
   }
@@ -1162,7 +1110,7 @@ tarval *tarval_mod(tarval *a, tarval *b)
   assert(b);
   assert((a->mode == b->mode) && mode_is_int(a->mode));
 
-  if (get_mode_vector_elems(a->mode) > 1) {
+  if (get_mode_n_vector_elems(a->mode) > 1) {
     /* vector arithmetic not implemented yet */
     return tarval_bad;
   }
@@ -1185,7 +1133,7 @@ tarval *tarval_abs(tarval *a)
   assert(a);
   assert(mode_is_num(a->mode));
 
-  if (get_mode_vector_elems(a->mode) > 1) {
+  if (get_mode_n_vector_elems(a->mode) > 1) {
     /* vector arithmetic not implemented yet */
     return tarval_bad;
   }
@@ -1307,7 +1255,7 @@ tarval *tarval_shl(tarval *a, tarval *b)
   assert(b);
   assert(mode_is_int(a->mode) && mode_is_int(b->mode));
 
-  if (get_mode_vector_elems(a->mode) > 1 || get_mode_vector_elems(a->mode) > 1) {
+  if (get_mode_n_vector_elems(a->mode) > 1 || get_mode_n_vector_elems(a->mode) > 1) {
     /* vector arithmetic not implemented yet */
     return tarval_bad;
   }
@@ -1337,7 +1285,7 @@ tarval *tarval_shr(tarval *a, tarval *b)
   assert(b);
   assert(mode_is_int(a->mode) && mode_is_int(b->mode));
 
-  if (get_mode_vector_elems(a->mode) > 1 || get_mode_vector_elems(a->mode) > 1) {
+  if (get_mode_n_vector_elems(a->mode) > 1 || get_mode_n_vector_elems(a->mode) > 1) {
     /* vector arithmetic not implemented yet */
     return tarval_bad;
   }
@@ -1367,7 +1315,7 @@ tarval *tarval_shrs(tarval *a, tarval *b)
   assert(b);
   assert(mode_is_int(a->mode) && mode_is_int(b->mode));
 
-  if (get_mode_vector_elems(a->mode) > 1 || get_mode_vector_elems(a->mode) > 1) {
+  if (get_mode_n_vector_elems(a->mode) > 1 || get_mode_n_vector_elems(a->mode) > 1) {
     /* vector arithmetic not implemented yet */
     return tarval_bad;
   }
@@ -1397,7 +1345,7 @@ tarval *tarval_rot(tarval *a, tarval *b)
   assert(b);
   assert(mode_is_int(a->mode) && mode_is_int(b->mode));
 
-  if (get_mode_vector_elems(a->mode) > 1 || get_mode_vector_elems(a->mode) > 1) {
+  if (get_mode_n_vector_elems(a->mode) > 1 || get_mode_n_vector_elems(a->mode) > 1) {
     /* vector arithmetic not implemented yet */
     return tarval_bad;
   }
@@ -1476,18 +1424,7 @@ int tarval_snprintf(char *buf, size_t len, tarval *tv)
 
     case irms_reference:
       if (tv == tarval_P_void) return snprintf(buf, len, "NULL");
-      if (tv->value != NULL)
-	if (tarval_is_entity(tv)) {
-	  if (get_entity_peculiarity((entity *)tv->value) != peculiarity_description)
-	    return snprintf(buf, len, "%s%s%s", prefix, get_entity_ld_name((entity *)tv->value), suffix);
-	  else {
-	    if (mode_info->mode_output == TVO_NATIVE)
-	      return snprintf(buf, len, "NULL");
-	    else
-	      return snprintf(buf, len, "0");
-	  }
-	}
-	else {
+      if (tv->value != NULL){
 	  if (len > tv->length) {
 	    memcpy(buf, tv->value, tv->length);
 	    buf[tv->length] = '\0';
@@ -1498,7 +1435,7 @@ int tarval_snprintf(char *buf, size_t len, tarval *tv)
 	    buf[len-1] = '\0';
 	  }
 	  return tv->length;
-	}
+         }
       else
 	return snprintf(buf, len, "void");
 
@@ -1540,7 +1477,7 @@ int tarval_printf(tarval *tv) {
 }
 
 
-char *tarval_bitpattern(tarval *tv)
+char *get_tarval_bitpattern(tarval *tv)
 {
   return NULL;
 }
@@ -1548,7 +1485,7 @@ char *tarval_bitpattern(tarval *tv)
 /*
  * access to the bitpattern
  */
-unsigned char tarval_sub_bits(tarval *tv, unsigned byte_ofs)
+unsigned char get_tarval_sub_bits(tarval *tv, unsigned byte_ofs)
 {
   switch (get_mode_sort(tv->mode)) {
     case irms_int_number:
@@ -1570,7 +1507,7 @@ unsigned char tarval_sub_bits(tarval *tv, unsigned byte_ofs)
  *
  * Returns zero on success.
  */
-int tarval_set_mode_output_option(ir_mode *mode, const tarval_mode_info *modeinfo)
+int  set_tarval_mode_output_option(ir_mode *mode, const tarval_mode_info *modeinfo)
 {
   assert(mode);
 
@@ -1583,7 +1520,7 @@ int tarval_set_mode_output_option(ir_mode *mode, const tarval_mode_info *modeinf
  *
  * This functions returns the modinfo of a given mode.
  */
-const tarval_mode_info *tarval_get_mode_output_option(ir_mode *mode)
+const tarval_mode_info *get_tarval_mode_output_option(ir_mode *mode)
 {
   assert(mode);
 
@@ -1599,7 +1536,7 @@ const tarval_mode_info *tarval_get_mode_output_option(ir_mode *mode)
  *   - TV_CLASSIFY_ALL_ONE for bitwise-and neutral
  *   - TV_CLASSIFY_OTHER   else
  */
-tarval_classification_t tarval_classify(tarval *tv)
+tarval_classification_t classify_tarval(tarval *tv)
 {
   ANNOUNCE();
   if (!tv || tv == tarval_bad) return TV_CLASSIFY_OTHER;
@@ -1667,17 +1604,17 @@ void init_tarval_2(void)
    * assign output modes that are compatible with the
    * old implementation: Hex output
    */
-  tarval_set_mode_output_option(mode_U,  &hex_output);
-  tarval_set_mode_output_option(mode_C,  &hex_output);
-  tarval_set_mode_output_option(mode_Bs, &hex_output);
-  tarval_set_mode_output_option(mode_Bu, &hex_output);
-  tarval_set_mode_output_option(mode_Hs, &hex_output);
-  tarval_set_mode_output_option(mode_Hu, &hex_output);
-  tarval_set_mode_output_option(mode_Is, &hex_output);
-  tarval_set_mode_output_option(mode_Iu, &hex_output);
-  tarval_set_mode_output_option(mode_Ls, &hex_output);
-  tarval_set_mode_output_option(mode_Lu, &hex_output);
-  tarval_set_mode_output_option(mode_P,  &reference_output);
+  set_tarval_mode_output_option(mode_U,  &hex_output);
+  set_tarval_mode_output_option(mode_C,  &hex_output);
+  set_tarval_mode_output_option(mode_Bs, &hex_output);
+  set_tarval_mode_output_option(mode_Bu, &hex_output);
+  set_tarval_mode_output_option(mode_Hs, &hex_output);
+  set_tarval_mode_output_option(mode_Hu, &hex_output);
+  set_tarval_mode_output_option(mode_Is, &hex_output);
+  set_tarval_mode_output_option(mode_Iu, &hex_output);
+  set_tarval_mode_output_option(mode_Ls, &hex_output);
+  set_tarval_mode_output_option(mode_Lu, &hex_output);
+  set_tarval_mode_output_option(mode_P,  &reference_output);
 }
 
 /* free all memory occupied by tarval. */

@@ -62,7 +62,7 @@ ident *new_id_from_str (const char *str);
  *
  * @see new_id_from_str(), get_id_strlen()
  */
-ident *id_from_str (const char *str, int len);
+ident *new_id_from_chars (const char *str, int len);
 
 /**
  * Returns a string represented by an ident.
@@ -74,7 +74,7 @@ ident *id_from_str (const char *str, int len);
  *
  * @return cp - a string
  *
- * @see new_id_from_str(), id_from_str(), get_id_strlen()
+ * @see new_id_from_str(), new_id_from_chars(), get_id_strlen()
  */
 const char *get_id_str  (ident *id);
 
@@ -85,7 +85,7 @@ const char *get_id_str  (ident *id);
  *
  * @return len - the length of the string
  *
- * @see new_id_from_str(), id_from_str(), get_id_str()
+ * @see new_id_from_str(), new_id_from_chars(), get_id_str()
  */
 int  get_id_strlen(ident *id);
 /**
@@ -94,7 +94,7 @@ int  get_id_strlen(ident *id);
  * @param prefix - the prefix
  * @param id     - the ident
  *
- * @see new_id_from_str(), id_from_str(), get_id_str(), id_is_prefix()
+ * @see new_id_from_str(), new_id_from_chars(), get_id_str(), id_is_prefix()
  */
 int id_is_prefix (ident *prefix, ident *id);
 
@@ -104,7 +104,7 @@ int id_is_prefix (ident *prefix, ident *id);
  * @param suffix - the suffix
  * @param id     - the ident
  *
- * @see new_id_from_str(), id_from_str(), get_id_str(), id_is_prefix()
+ * @see new_id_from_str(), new_id_from_chars(), get_id_str(), id_is_prefix()
  */
 int id_is_suffix (ident *suffix, ident *id);
 
@@ -114,7 +114,7 @@ int id_is_suffix (ident *suffix, ident *id);
  * @param infix  - the infix
  * @param id     - the ident to search in
  *
- * @see new_id_from_str(), id_from_str(), get_id_str(), id_is_prefix()
+ * @see new_id_from_str(), new_id_from_chars(), get_id_str(), id_is_prefix()
  */
 /* int id_contains(ident *infix, ident *id); */
 
@@ -124,7 +124,7 @@ int id_is_suffix (ident *suffix, ident *id);
  * @param id     - the ident
  * @param c      - the character
  *
- * @see new_id_from_str(), id_from_str(), get_id_str()
+ * @see new_id_from_str(), new_id_from_chars(), get_id_str()
  */
 int id_contains_char (ident *id, char c);
 
@@ -136,7 +136,7 @@ int id_contains_char (ident *id, char c);
  * @return
  *    number of bytes written
  *
- * @see new_id_from_str(), id_from_str(), get_id_str(), id_is_prefix(), fprint_id()
+ * @see new_id_from_str(), new_id_from_chars(), get_id_str(), id_is_prefix(), fprint_id()
  */
 int print_id (ident *id);
 
@@ -149,7 +149,7 @@ int print_id (ident *id);
  * @return
  *    number of btes written
  *
- * @see new_id_from_str(), id_from_str(), get_id_str(), id_is_prefix(), print_id()
+ * @see new_id_from_str(), new_id_from_chars(), get_id_str(), id_is_prefix(), print_id()
  */
 int fprint_id (FILE *F, ident *id);
 

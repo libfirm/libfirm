@@ -63,7 +63,7 @@ extern char *dump_file_filter;
  *
  * @see turn_off_edge_labels()
  */
-void dump_ir_graph (ir_graph *irg);
+void dump_ir_graph (ir_graph *irg, char *suffix);
 #define dump_cg_graph dump_ir_graph
 
 /**
@@ -83,12 +83,12 @@ void dump_ir_graph (ir_graph *irg);
  *
  * @see turn_off_edge_labels()
  */
-void dump_ir_block_graph (ir_graph *irg);
+void dump_ir_block_graph (ir_graph *irg, char *suffix);
 #define dump_cg_block_graph dump_ir_block_graph
 
 /** Dumps all graphs in interprocedural view to a file named All_graphs.vcg.
  */
-void dump_all_cg_block_graph(void);
+void dump_all_cg_block_graph(char *suffix);
 
 /**
  *  Dumps a firm graph and  all the type information needed for Calls,
@@ -105,7 +105,7 @@ void dump_all_cg_block_graph(void);
  *
  * @see turn_off_edge_labels()
  */
-void dump_ir_graph_w_types (ir_graph *irg);
+void dump_ir_graph_w_types (ir_graph *irg, char *suffix);
 
 /**
  *  Dumps a firm graph and  all the type information needed for Calls,
@@ -123,14 +123,14 @@ void dump_ir_graph_w_types (ir_graph *irg);
  *
  * @see turn_off_edge_labels()
  */
-void dump_ir_block_graph_w_types (ir_graph *irg);
+void dump_ir_block_graph_w_types (ir_graph *irg, char *suffix);
 
 /**
  *   The type of a walker function that is called for each graph.
  *
  *   @param irg   current visited graph
  */
-typedef void dump_graph_func(ir_graph *irg);
+typedef void dump_graph_func(ir_graph *irg, char *suffix);
 
 /**
  *   A walker that calls a dumper for each graph.
@@ -150,7 +150,7 @@ typedef void dump_graph_func(ir_graph *irg);
  *
  * @see turn_off_edge_labels()
  */
-void dump_all_ir_graphs (dump_graph_func *dump_graph);
+void dump_all_ir_graphs (dump_graph_func *dump_graph, char *suffix);
 
 
 /**
@@ -168,7 +168,7 @@ void dump_all_ir_graphs (dump_graph_func *dump_graph);
  *
  * @see turn_off_edge_labels()
  */
-void dump_cfg (ir_graph *irg);
+void dump_cfg (ir_graph *irg, char *suffix);
 
 
 /** Dump the call graph.
@@ -191,7 +191,7 @@ void dump_callgraph(char *filesuffix);
  *
  * @see turn_off_edge_labels()
  */
-void dump_type_graph (ir_graph *irg);
+void dump_type_graph (ir_graph *irg, char *suffix);
 
 /**
  *   Dumps all type information.
@@ -206,7 +206,7 @@ void dump_type_graph (ir_graph *irg);
  *
  * @see turn_off_edge_labels()
  */
-void dump_all_types (void);
+void dump_all_types (char *suffix);
 
 /**
  *   Dumps the class hierarchy with or without entities.
@@ -224,7 +224,7 @@ void dump_all_types (void);
  *   is dumped along with the entities.
  *   Dumps to a file class_hierarchy.vcg
  */
-void dump_class_hierarchy (bool entities);
+void dump_class_hierarchy (bool entities, char *suffix);
 
 
 /**

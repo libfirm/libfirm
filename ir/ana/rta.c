@@ -76,7 +76,7 @@ static int add_graph (ir_graph *graph)
   if (!eset_contains (_live_graphs, graph)) {
     if (verbose > 1) {
       fprintf(stdout, "RTA:        new graph of ");
-      DDMEO(get_irg_ent (graph));
+      DDMEO(get_irg_entity (graph));
     }
 
     eset_insert (_live_graphs, graph);
@@ -156,15 +156,6 @@ static void rta_act (ir_node *node, void *env)
     if (iro_Sel == get_irn_opcode (ptr)) { /* CALL SEL */
       ent = get_Sel_entity (ptr);
       *change = add_implementing_graphs (ent);
-    } else if (iro_Const == get_irn_opcode (ptr)) { /* CALL CONST */
-      ent = get_tarval_entity (get_Const_tarval (ptr));
-      ir_graph *graph = get_entity_irg (ent);
-      /* don't use get_implementing_graph on a Const! */
-      if (graph) {
-        *change = add_graph (graph);
-      } else {
-        /* it's an external allocated thing. */
-      }
     } else if (iro_SymConst == get_irn_opcode (ptr)) { /* CALL SYMCONST */
       if (get_SymConst_kind(ptr) == symconst_addr_ent) {
 	ent = get_SymConst_entity (ptr);
@@ -258,7 +249,7 @@ static int rta_fill_incremental (void)
 
       if (verbose > 1) {
         fprintf(stdout, "RTA: RUN %i: considering graph of ", n_runs);
-        DDMEO(get_irg_ent (graph));
+        DDMEO(get_irg_entity (graph));
       }
 
       rerun |= rta_fill_graph (graph);
@@ -342,7 +333,7 @@ static void remove_irg (ir_graph *graph)
   entity *ent = get_irg_entity (graph);
   peculiarity pec = get_entity_peculiarity (ent);
 
-  /*   DDMEO (get_irg_ent(graph)); */
+  /*   DDMEO (get_irg_entity(graph)); */
 
   /* delete the ir_graph data */
   set_entity_peculiarity (ent, peculiarity_description);
@@ -366,7 +357,7 @@ static void remove_irg (ir_graph *graph)
     set_entity_peculiarity (ent, peculiarity_inherited);
 
     exchange (get_atomic_ent_value (ent),
-              get_atomic_ent_value (get_irg_ent(graph)));
+              get_atomic_ent_value (get_irg_entity(graph)));
   }
 }
 
@@ -472,7 +463,7 @@ void rta_delete_dead_graphs (void)
 
     if ((verbose > 1) || get_opt_dead_method_elimination_verbose ()) {
       fprintf(stdout, "RTA: removing graph of ");
-      DDMEO(get_irg_ent (graph));
+      DDMEO(get_irg_entity (graph));
     }
 
     remove_irg (graph);
@@ -536,7 +527,7 @@ void rta_report (void)
   for (i = 0; i < get_irp_n_irgs(); i++) {
     if (rta_is_alive_graph (get_irp_irg(i))) {
       fprintf(stdout, "RTA: considered called: graph of ");
-      DDMEO(get_irg_ent (get_irp_irg(i)));
+      DDMEO(get_irg_entity (get_irp_irg(i)));
     }
   }
 }
@@ -544,6 +535,11 @@ void rta_report (void)
 
 /*
  * $Log$
+ * Revision 1.22  2004/08/13 08:57:15  beyhan
+ * normalized names of functions, enums ...
+ * added suffix as argument to dumpers, removed global variable
+ * removed support for tarval/Const
+ *
  * Revision 1.21  2004/07/08 15:50:56  goetz
  * firmstat added
  *

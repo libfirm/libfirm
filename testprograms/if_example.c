@@ -53,16 +53,16 @@ main(void)
 
   owner = get_glob_type();
   /* Type information for the procedure */
-  proc_main = new_type_method(id_from_str(METHODNAME, strlen(METHODNAME)),
+  proc_main = new_type_method(new_id_from_chars(METHODNAME, strlen(METHODNAME)),
 			      NRARGS, NRES);
   /* The entity for the procedure */
   ent = new_entity (owner,
-                    id_from_str (METHODNAME, strlen(METHODNAME)),
+                    new_id_from_chars (METHODNAME, strlen(METHODNAME)),
                     proc_main);
   /* The type int.  This type is necessary to model the result and parameters
      the procedure. */
 #define PRIM_NAME "int"
-  typ = new_type_primitive(id_from_str(PRIM_NAME, strlen(PRIM_NAME)), mode_Is);
+  typ = new_type_primitive(new_id_from_chars(PRIM_NAME, strlen(PRIM_NAME)), mode_Is);
   /* The parameter and result types of the procedure. */
   set_method_param_type(proc_main, 0, typ);
   set_method_res_type(proc_main, 0, typ);
@@ -85,7 +85,7 @@ main(void)
   set_value (b_pos, new_Const (mode_Is, new_tarval_from_long (2, mode_Is)));
   /* We know all predecessors of the block and all set_values and set_stores are
      preformed.   We can mature the block.  */
-  mature_block (get_irg_current_block(irg));
+  mature_immBlock (get_irg_current_block(irg));
 
   /* Generate a conditional branch */
   cmp = new_Cmp(get_value(a_pos, mode_Is), get_value(b_pos, mode_Is));
@@ -95,7 +95,7 @@ main(void)
 
   /* generate and fill the then block */
   r = new_immBlock ();
-  add_in_edge (r, t);
+  add_immBlock_pred (r, t);
   {
     ir_node *b,*c;
     c = new_Const (mode_Is, new_tarval_from_long (3, mode_Is));
@@ -106,14 +106,14 @@ main(void)
   }
   set_value (a_pos, a);
 
-  mature_block (r);
+  mature_immBlock (r);
   x = new_Jmp ();
 
   /* generate the fall through block and add all cfg edges */
   r = new_immBlock ();
-  add_in_edge (r, f);
-  add_in_edge (r, x);
-  mature_block (r);
+  add_immBlock_pred (r, f);
+  add_immBlock_pred (r, x);
+  mature_immBlock (r);
   /* The Return statement */
   {
      ir_node *in[1], *store ;
@@ -124,8 +124,8 @@ main(void)
   }
 
   /* finalize the end block generated in new_ir_graph() */
-  add_in_edge (get_irg_end_block(irg), x);
-  mature_block (get_irg_end_block(irg));
+  add_immBlock_pred (get_irg_end_block(irg), x);
+  mature_immBlock (get_irg_end_block(irg));
 
   /* verify the graph */
   irg_vrfy(irg);
@@ -133,7 +133,7 @@ main(void)
 
   /* output the vcg file */
   printf("Done building the graph.  Dumping it.\n");
-  dump_ir_block_graph (irg);
+  dump_ir_block_graph (irg, 0);
   printf("use xvcg to view this graph:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
 

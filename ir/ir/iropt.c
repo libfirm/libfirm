@@ -213,8 +213,8 @@ static tarval *computed_value_And(ir_node *n)
   } else {
     tarval *v;
 
-    if (   (tarval_classify ((v = computed_value (a))) == TV_CLASSIFY_NULL)
-	|| (tarval_classify ((v = computed_value (b))) == TV_CLASSIFY_NULL)) {
+    if (   (classify_tarval ((v = computed_value (a))) == TV_CLASSIFY_NULL)
+	|| (classify_tarval ((v = computed_value (b))) == TV_CLASSIFY_NULL)) {
       return v;
     }
   }
@@ -233,8 +233,8 @@ static tarval *computed_value_Or(ir_node *n)
     return tarval_or (ta, tb);
   } else {
     tarval *v;
-    if (   (tarval_classify ((v = computed_value (a))) == TV_CLASSIFY_ALL_ONE)
-	|| (tarval_classify ((v = computed_value (b))) == TV_CLASSIFY_ALL_ONE)) {
+    if (   (classify_tarval ((v = computed_value (a))) == TV_CLASSIFY_ALL_ONE)
+	|| (classify_tarval ((v = computed_value (b))) == TV_CLASSIFY_ALL_ONE)) {
       return v;
     }
   }
@@ -373,8 +373,8 @@ static tarval *computed_value_Proj(ir_node *n)
 	  return new_tarval_from_long (get_Proj_proj(n) & flags, mode_b);
 	}
       } else {  /* check for 3.: */
-	ir_node *aaa = skip_nop(skip_Proj(aa));
-	ir_node *aba = skip_nop(skip_Proj(ab));
+	ir_node *aaa = skip_Id(skip_Proj(aa));
+	ir_node *aba = skip_Id(skip_Proj(ab));
 
 	if (   (   (/* aa is ProjP and aaa is Alloc */
 		       (get_irn_op(aa) == op_Proj)
@@ -527,7 +527,7 @@ static ir_node *equivalent_node_Block(ir_node *n)
 {
   ir_node *oldn = n;
 
-  /* The Block constructor does not call optimize, but mature_block
+  /* The Block constructor does not call optimize, but mature_immBlock
      calls the optimization. */
   assert(get_Block_matured(n));
 
@@ -539,7 +539,7 @@ static ir_node *equivalent_node_Block(ir_node *n)
      Remaining Phi nodes are just Ids. */
    if ((get_Block_n_cfgpreds(n) == 1) &&
        (get_irn_op(get_Block_cfgpred(n, 0)) == op_Jmp)) {
-     ir_node *predblock = get_nodes_Block(get_Block_cfgpred(n, 0));
+     ir_node *predblock = get_nodes_block(get_Block_cfgpred(n, 0));
      if (predblock == oldn) {
        /* Jmp jumps into the block it is in -- deal self cycle. */
        n = new_Bad();                                      DBG_OPT_DEAD;
@@ -549,7 +549,7 @@ static ir_node *equivalent_node_Block(ir_node *n)
    }
    else if ((get_Block_n_cfgpreds(n) == 1) &&
 	    (get_irn_op(skip_Proj(get_Block_cfgpred(n, 0))) == op_Cond)) {
-     ir_node *predblock = get_nodes_Block(get_Block_cfgpred(n, 0));
+     ir_node *predblock = get_nodes_block(get_Block_cfgpred(n, 0));
      if (predblock == oldn) {
        /* Jmp jumps into the block it is in -- deal self cycle. */
        n = new_Bad();                                      DBG_OPT_DEAD;
@@ -569,7 +569,7 @@ static ir_node *equivalent_node_Block(ir_node *n)
 	(get_irn_mode(get_Cond_selector(get_Proj_pred(a))) == mode_b)) {
       /* Also a single entry Block following a single exit Block.  Phis have
 	 twice the same operand and will be optimized away. */
-      n = get_nodes_Block(a);                                         DBG_OPT_IFSIM;
+      n = get_nodes_block(a);                                         DBG_OPT_IFSIM;
     }
   } else if (get_opt_unreachable_code() &&
 	     (n != current_ir_graph->start_block) &&
@@ -596,7 +596,7 @@ static ir_node *equivalent_node_Jmp(ir_node *n)
 {
   /* GL: Why not same for op_Raise?? */
   /* unreachable code elimination */
-  if (is_Bad(get_nodes_Block(n)))
+  if (is_Bad(get_nodes_block(n)))
     n = new_Bad();
 
   return n;
@@ -652,7 +652,7 @@ static ir_node *equivalent_node_neutral_zero(ir_node *n)
 
   /* If this predecessors constant value is zero, the operation is
      unnecessary. Remove it: */
-  if (tarval_classify (tv) == TV_CLASSIFY_NULL) {
+  if (classify_tarval (tv) == TV_CLASSIFY_NULL) {
     n = on;                                                             DBG_OPT_ALGSIM1;
   }
 
@@ -673,7 +673,7 @@ static ir_node *equivalent_node_left_zero(ir_node *n)
   ir_node *a = get_binop_left(n);
   ir_node *b = get_binop_right(n);
 
-  if (tarval_classify(computed_value(b)) == TV_CLASSIFY_NULL) {
+  if (classify_tarval(computed_value(b)) == TV_CLASSIFY_NULL) {
     n = a;                                                              DBG_OPT_ALGSIM1;
   }
 
@@ -718,9 +718,9 @@ static ir_node *equivalent_node_Mul(ir_node *n)
   ir_node *b = get_Mul_right(n);
 
   /* Mul is commutative and has again an other neutral element. */
-  if (tarval_classify (computed_value (a)) == TV_CLASSIFY_ONE) {
+  if (classify_tarval (computed_value (a)) == TV_CLASSIFY_ONE) {
     n = b;                                                              DBG_OPT_ALGSIM1;
-  } else if (tarval_classify (computed_value (b)) == TV_CLASSIFY_ONE) {
+  } else if (classify_tarval (computed_value (b)) == TV_CLASSIFY_ONE) {
     n = a;                                                              DBG_OPT_ALGSIM1;
   }
   return n;
@@ -735,7 +735,7 @@ static ir_node *equivalent_node_Div(ir_node *n)
   ir_node *b = get_Div_right(n);
 
   /* Div is not commutative. */
-  if (tarval_classify(computed_value(b)) == TV_CLASSIFY_ONE) { /* div(x, 1) == x */
+  if (classify_tarval(computed_value(b)) == TV_CLASSIFY_ONE) { /* div(x, 1) == x */
     /* Turn Div into a tuple (mem, bad, a) */
     ir_node *mem = get_Div_mem(n);
     turn_into_tuple(n, 3);
@@ -758,9 +758,9 @@ static ir_node *equivalent_node_And(ir_node *n)
 
   if (a == b) {
     n = a;    /* And has it's own neutral element */
-  } else if (tarval_classify(computed_value(a)) == TV_CLASSIFY_ALL_ONE) {
+  } else if (classify_tarval(computed_value(a)) == TV_CLASSIFY_ALL_ONE) {
     n = b;
-  } else if (tarval_classify(computed_value(b)) == TV_CLASSIFY_ALL_ONE) {
+  } else if (classify_tarval(computed_value(b)) == TV_CLASSIFY_ALL_ONE) {
     n = a;
   }
   if (n != oldn)                                                        DBG_OPT_ALGSIM1;
@@ -970,7 +970,7 @@ static ir_node *equivalent_node_Proj(ir_node *n)
       n = new_Bad();
     }
   } else if (get_irn_mode(n) == mode_X &&
-	     is_Bad(get_nodes_Block(n))) {
+	     is_Bad(get_nodes_block(n))) {
     /* Remove dead control flow -- early gigo. */
     n = new_Bad();
   }
@@ -1159,7 +1159,7 @@ static ir_node *transform_node_DivMod(ir_node *n)
     set_Tuple_pred(n, pn_DivMod_X_except, new_Bad());  /* no exception */
     set_Tuple_pred(n, pn_DivMod_res_div,  a);
     set_Tuple_pred(n, pn_DivMod_res_mod,  b);
-    assert(get_nodes_Block(n));
+    assert(get_nodes_block(n));
   }
 
   return n;
@@ -1178,7 +1178,7 @@ static ir_node *transform_node_Cond(ir_node *n)
       (get_opt_unreachable_code())) {
     /* It's a boolean Cond, branching on a boolean constant.
 	       Replace it by a tuple (Bad, Jmp) or (Jmp, Bad) */
-    jmp = new_r_Jmp(current_ir_graph, get_nodes_Block(n));
+    jmp = new_r_Jmp(current_ir_graph, get_nodes_block(n));
     turn_into_tuple(n, 2);
     if (ta == tarval_b_true) {
       set_Tuple_pred(n, pn_Cond_false, new_Bad());
@@ -1188,7 +1188,7 @@ static ir_node *transform_node_Cond(ir_node *n)
       set_Tuple_pred(n, pn_Cond_true, new_Bad());
     }
     /* We might generate an endless loop, so keep it alive. */
-    add_End_keepalive(get_irg_end(current_ir_graph), get_nodes_Block(n));
+    add_End_keepalive(get_irg_end(current_ir_graph), get_nodes_block(n));
   } else if ((ta != tarval_bad) &&
 	     (get_irn_mode(a) == mode_Iu) &&
 	     (get_Cond_kind(n) == dense) &&
@@ -1197,21 +1197,21 @@ static ir_node *transform_node_Cond(ir_node *n)
        Also this tuple might get really big...
        I generate the Jmp here, and remember it in link.  Link is used
        when optimizing Proj. */
-    set_irn_link(n, new_r_Jmp(current_ir_graph, get_nodes_Block(n)));
+    set_irn_link(n, new_r_Jmp(current_ir_graph, get_nodes_block(n)));
     /* We might generate an endless loop, so keep it alive. */
-    add_End_keepalive(get_irg_end(current_ir_graph), get_nodes_Block(n));
+    add_End_keepalive(get_irg_end(current_ir_graph), get_nodes_block(n));
   } else if ((get_irn_op(a) == op_Eor)
 	     && (get_irn_mode(a) == mode_b)
-	     && (tarval_classify(computed_value(get_Eor_right(a))) == TV_CLASSIFY_ONE)) {
+	     && (classify_tarval(computed_value(get_Eor_right(a))) == TV_CLASSIFY_ONE)) {
     /* The Eor is a negate.  Generate a new Cond without the negate,
        simulate the negate by exchanging the results. */
-    set_irn_link(n, new_r_Cond(current_ir_graph, get_nodes_Block(n),
+    set_irn_link(n, new_r_Cond(current_ir_graph, get_nodes_block(n),
 			       get_Eor_left(a)));
   } else if ((get_irn_op(a) == op_Not)
 	     && (get_irn_mode(a) == mode_b)) {
     /* A Not before the Cond.  Generate a new Cond without the Not,
        simulate the Not by exchanging the results. */
-    set_irn_link(n, new_r_Cond(current_ir_graph, get_nodes_Block(n),
+    set_irn_link(n, new_r_Cond(current_ir_graph, get_nodes_block(n),
 			       get_Not_op(a)));
   }
   return n;
@@ -1225,16 +1225,16 @@ static ir_node *transform_node_Eor(ir_node *n)
   if ((get_irn_mode(n) == mode_b)
       && (get_irn_op(a) == op_Proj)
       && (get_irn_mode(a) == mode_b)
-      && (tarval_classify (computed_value (b)) == TV_CLASSIFY_ONE)
+      && (classify_tarval (computed_value (b)) == TV_CLASSIFY_ONE)
       && (get_irn_op(get_Proj_pred(a)) == op_Cmp))
     /* The Eor negates a Cmp. The Cmp has the negated result anyways! */
-    n = new_r_Proj(current_ir_graph, get_nodes_Block(n), get_Proj_pred(a),
+    n = new_r_Proj(current_ir_graph, get_nodes_block(n), get_Proj_pred(a),
 		   mode_b, get_negated_pnc(get_Proj_proj(a)));
   else if ((get_irn_mode(n) == mode_b)
-	   && (tarval_classify (computed_value (b)) == TV_CLASSIFY_ONE))
+	   && (classify_tarval (computed_value (b)) == TV_CLASSIFY_ONE))
     /* The Eor is a Not. Replace it by a Not. */
     /*   ????!!!Extend to bitfield 1111111. */
-    n = new_r_Not(current_ir_graph, get_nodes_Block(n), a, mode_b);
+    n = new_r_Not(current_ir_graph, get_nodes_block(n), a, mode_b);
 
   return n;
 }
@@ -1251,7 +1251,7 @@ static ir_node *transform_node_Not(ir_node *n)
       && (get_irn_mode(a) == mode_b)
       && (get_irn_op(get_Proj_pred(a)) == op_Cmp))
     /* We negate a Cmp. The Cmp has the negated result anyways! */
-    n = new_r_Proj(current_ir_graph, get_nodes_Block(n), get_Proj_pred(a),
+    n = new_r_Proj(current_ir_graph, get_nodes_block(n), get_Proj_pred(a),
 		   mode_b, get_negated_pnc(get_Proj_proj(a)));
 
   return n;
@@ -1272,7 +1272,7 @@ static ir_node *transform_node_Proj(ir_node *proj)
     b = get_Div_right(n);
     tb = computed_value(b);
 
-    if (tb != tarval_bad && tarval_classify(tb) != TV_CLASSIFY_NULL) { /* div(x, c) && c != 0 */
+    if (tb != tarval_bad && classify_tarval(tb) != TV_CLASSIFY_NULL) { /* div(x, c) && c != 0 */
       ir_node *div, *proj;
       ir_node *a = get_Div_left(n);
       ir_node *mem = get_Div_mem(n);
@@ -1281,9 +1281,9 @@ static ir_node *transform_node_Proj(ir_node *proj)
       set_optimize(0);
       {
         div = new_rd_Div(get_irn_dbg_info(n), current_ir_graph,
-	  get_nodes_Block(n), get_irg_initial_mem(current_ir_graph), a, b);
+	  get_nodes_block(n), get_irg_initial_mem(current_ir_graph), a, b);
 
-        proj = new_r_Proj(current_ir_graph, get_nodes_Block(n), div, get_irn_mode(a), pn_Div_res);
+        proj = new_r_Proj(current_ir_graph, get_nodes_block(n), div, get_irn_mode(a), pn_Div_res);
       }
       set_optimize(rem);
 
@@ -1297,7 +1297,7 @@ static ir_node *transform_node_Proj(ir_node *proj)
     b = get_Mod_right(n);
     tb = computed_value(b);
 
-    if (tb != tarval_bad && tarval_classify(tb) != TV_CLASSIFY_NULL) { /* mod(x, c) && c != 0 */
+    if (tb != tarval_bad && classify_tarval(tb) != TV_CLASSIFY_NULL) { /* mod(x, c) && c != 0 */
       ir_node *mod, *proj;
       ir_node *a = get_Mod_left(n);
       ir_node *mem = get_Mod_mem(n);
@@ -1306,9 +1306,9 @@ static ir_node *transform_node_Proj(ir_node *proj)
       set_optimize(0);
       {
         mod = new_rd_Mod(get_irn_dbg_info(n), current_ir_graph,
-	  get_nodes_Block(n), get_irg_initial_mem(current_ir_graph), a, b);
+	  get_nodes_block(n), get_irg_initial_mem(current_ir_graph), a, b);
 
-        proj = new_r_Proj(current_ir_graph, get_nodes_Block(n), mod, get_irn_mode(a), pn_Mod_res);
+        proj = new_r_Proj(current_ir_graph, get_nodes_block(n), mod, get_irn_mode(a), pn_Mod_res);
       }
       set_optimize(rem);
 
@@ -1322,7 +1322,7 @@ static ir_node *transform_node_Proj(ir_node *proj)
     b = get_DivMod_right(n);
     tb = computed_value(b);
 
-    if (tb != tarval_bad && tarval_classify(tb) != TV_CLASSIFY_NULL) { /* DivMod(x, c) && c != 0 */
+    if (tb != tarval_bad && classify_tarval(tb) != TV_CLASSIFY_NULL) { /* DivMod(x, c) && c != 0 */
       ir_node *div_mod, *proj_div, *proj_mod;
       ir_node *a = get_Mod_left(n);
       ir_node *mem = get_Mod_mem(n);
@@ -1331,10 +1331,10 @@ static ir_node *transform_node_Proj(ir_node *proj)
       set_optimize(0);
       {
         div_mod = new_rd_DivMod(get_irn_dbg_info(n), current_ir_graph,
-	  get_nodes_Block(n), get_irg_initial_mem(current_ir_graph), a, b);
+	  get_nodes_block(n), get_irg_initial_mem(current_ir_graph), a, b);
 
-        proj_div = new_r_Proj(current_ir_graph, get_nodes_Block(n), div_mod, get_irn_mode(a), pn_DivMod_res_div);
-        proj_mod = new_r_Proj(current_ir_graph, get_nodes_Block(n), div_mod, get_irn_mode(a), pn_DivMod_res_mod);
+        proj_div = new_r_Proj(current_ir_graph, get_nodes_block(n), div_mod, get_irn_mode(a), pn_DivMod_res_div);
+        proj_mod = new_r_Proj(current_ir_graph, get_nodes_block(n), div_mod, get_irn_mode(a), pn_DivMod_res_mod);
       }
       set_optimize(rem);
 
@@ -1471,7 +1471,7 @@ static ir_node *transform_node_Or(ir_node *or)
   tv4 = get_Const_tarval(c4);
 
   tv = tarval_or(tv4, tv2);
-  if (tarval_classify(tv) != TV_CLASSIFY_ALL_ONE) {
+  if (classify_tarval(tv) != TV_CLASSIFY_ALL_ONE) {
     /* have at least one 0 at the same bit position */
     return or;
   }
@@ -1666,8 +1666,8 @@ vt_cmp (const void *elt, const void *key)
   if (irn_arity_a != get_irn_arity(b))
     return 1;
 
-  /* for block-local cse and pinned nodes: */
-  if (!get_opt_global_cse() || (get_op_pinned(get_irn_op(a)) == pinned)) {
+  /* for block-local cse and op_pin_state_pinned nodes: */
+  if (!get_opt_global_cse() || (get_op_pinned(get_irn_op(a)) == op_pin_state_pinned)) {
     if (get_irn_n(a, -1) != get_irn_n(b, -1))
       return 1;
   }
@@ -1769,7 +1769,7 @@ identify (pset *value_table, ir_node *n)
 }
 
 /**
- * During construction we set the pinned flag in the graph right when the
+ * During construction we set the op_pin_state_pinned flag in the graph right when the
  * optimization is performed.  The flag turning on procedure global cse could
  * be changed between two allocations.  This way we are safe.
  */
@@ -1778,7 +1778,7 @@ identify_cons (pset *value_table, ir_node *n) {
   ir_node *old = n;
   n = identify(value_table, n);
   if (get_irn_n(old, -1) != get_irn_n(n, -1))
-    set_irg_pinned(current_ir_graph, floats);
+    set_irg_pinned(current_ir_graph, op_pin_state_floats);
   return n;
 }
 
@@ -1912,7 +1912,7 @@ optimize_node (ir_node *n)
   /** common subexpression elimination **/
   /* Checks whether n is already available. */
   /* The block input is used to distinguish different subexpressions. Right
-     now all nodes are pinned to blocks, i.e., the cse only finds common
+     now all nodes are op_pin_state_pinned to blocks, i.e., the cse only finds common
      subexpressions within a block. */
   if (get_opt_cse())
     n = identify_cons (current_ir_graph->value_table, n);
@@ -1996,7 +1996,7 @@ optimize_in_place_2 (ir_node *n)
   /** common subexpression elimination **/
   /* Checks whether n is already available. */
   /* The block input is used to distinguish different subexpressions.  Right
-     now all nodes are pinned to blocks, i.e., the cse only finds common
+     now all nodes are op_pin_state_pinned to blocks, i.e., the cse only finds common
      subexpressions within a block. */
   if (get_opt_cse()) {
     n = identify (current_ir_graph->value_table, n);
@@ -2035,7 +2035,7 @@ optimize_in_place (ir_node *n)
   assert(get_irg_phase_state(current_ir_graph) != phase_building);
 
   if (get_opt_global_cse())
-    set_irg_pinned(current_ir_graph, floats);
+    set_irg_pinned(current_ir_graph, op_pin_state_floats);
   if (get_irg_outs_state(current_ir_graph) == outs_consistent)
     set_irg_outs_inconsistent(current_ir_graph);
   /* Maybe we could also test whether optimizing the node can

@@ -43,7 +43,7 @@ int main(int argc, char **argv)
   init_firm (NULL);
 
   /*** Make basic type information for primitive type int. ***/
-  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_Is);
+  prim_t_int = new_type_primitive(new_id_from_chars ("int", 3), mode_Is);
 
   /* FIRM was designed for oo languages where all methods belong to a class.
    * For imperative languages like C we view a file as a large class containing
@@ -54,11 +54,11 @@ int main(int argc, char **argv)
 #define CLASSNAME "COND_EXAMPLE"
 #define ENTITYNAME "main"
 
-  owner = new_type_class (id_from_str (CLASSNAME, strlen(CLASSNAME)));
-  method = new_type_method (id_from_str("main", 4), 1, 1);
+  owner = new_type_class (new_id_from_chars (CLASSNAME, strlen(CLASSNAME)));
+  method = new_type_method (new_id_from_chars("main", 4), 1, 1);
   set_method_param_type(method, 0, prim_t_int);
   set_method_res_type(method, 0, prim_t_int);
-  ent = new_entity (owner, id_from_str (ENTITYNAME, strlen(ENTITYNAME)), method);
+  ent = new_entity (owner, new_id_from_chars (ENTITYNAME, strlen(ENTITYNAME)), method);
   get_entity_ld_name(ent);
 
 
@@ -98,19 +98,19 @@ int main(int argc, char **argv)
   f = new_Proj (x, mode_X, 0); /* if condition is false */
   t = new_Proj (x, mode_X, 1); /* if condition is true */
 
-  mature_block (get_irg_current_block(irg));
+  mature_immBlock (get_irg_current_block(irg));
 
   /* generate and fill the then block */
   b = new_immBlock ();
-  add_in_edge (b, t);
+  add_immBlock_pred (b, t);
   set_value (0, new_Const (mode_Is, new_tarval_from_long (1, mode_Is)));
-  mature_block (b);
+  mature_immBlock (b);
   x_then = new_Jmp ();
 
   /* generate the fall through block and add all cfg edges */
   b = new_immBlock ();
-  add_in_edge (b, x_then);
-  add_in_edge (b, f);
+  add_immBlock_pred (b, x_then);
+  add_immBlock_pred (b, f);
 
 
   /* Generate the return node into current region. */
@@ -121,13 +121,13 @@ int main(int argc, char **argv)
   }
   /* Now generate all instructions for this block and all its predecessor blocks
    * so we can mature it. */
-  mature_block (get_irg_current_block(irg));
+  mature_immBlock (get_irg_current_block(irg));
 
   /* This adds the in edge of the end block which originates at the
      return statement. The return node passes controlflow to the end block.*/
-  add_in_edge (get_irg_end_block(irg), x);
+  add_immBlock_pred (get_irg_end_block(irg), x);
   /* Now we can mature the end block as all it's predecessors are known. */
-  mature_block (get_irg_end_block(irg));
+  mature_immBlock (get_irg_end_block(irg));
 
   finalize_cons (irg);
 
@@ -138,7 +138,7 @@ int main(int argc, char **argv)
   irg_vrfy(irg);
 
   printf("Done building the graph.  Dumping it.\n");
-  dump_ir_block_graph (irg);
+  dump_ir_block_graph (irg, 0);
   printf("Use xvcg to view this graph:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
 

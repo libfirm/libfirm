@@ -53,7 +53,7 @@ int main(int argc, char **argv)
      This is the modeling appropriate for other languages.
      Mode_i says that all integers shall be implemented as a
      32 bit integer value.  */
-  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_Is);
+  prim_t_int = new_type_primitive(new_id_from_chars ("int", 3), mode_Is);
 
   /* FIRM was designed for oo languages where all methods belong to a class.
    * For imperative languages like C we view a file or compilation unit as
@@ -66,10 +66,10 @@ int main(int argc, char **argv)
 
   /* Main is an entity of this global class. */
   owner = get_glob_type();
-  proc_main = new_type_method(id_from_str(METHODNAME, strlen(METHODNAME)),
+  proc_main = new_type_method(new_id_from_chars(METHODNAME, strlen(METHODNAME)),
                               NRARGS, NRES);
   main_ent = new_entity (owner,
-			 id_from_str (METHODNAME, strlen(METHODNAME)),
+			 new_id_from_chars (METHODNAME, strlen(METHODNAME)),
 			 proc_main);
 
   /* Generates the basic graph for the method represented by entity main_ent, that
@@ -80,7 +80,7 @@ int main(int argc, char **argv)
 
   /* Generate the entities for the global variables. */
   i_ent = new_entity (get_glob_type(),
-		      id_from_str ("i", strlen("i")),
+		      new_id_from_chars ("i", strlen("i")),
 		      prim_t_int);
 
   irg = new_ir_graph (main_ent, NUM_OF_LOCAL_VARS);
@@ -100,13 +100,13 @@ int main(int argc, char **argv)
 
   /* Now generate all instructions for this block and all its predecessor blocks
    * so we can mature it. */
-  mature_block (get_irg_current_block(irg));
+  mature_immBlock (get_irg_current_block(irg));
 
   /* This adds the in edge of the end block which originates at the return statement.
    * The return node passes controlflow to the end block.  */
-  add_in_edge (get_irg_end_block(irg), x);
+  add_immBlock_pred (get_irg_end_block(irg), x);
   /* Now we can mature the end block as all it's predecessors are known. */
-  mature_block (get_irg_end_block(irg));
+  mature_immBlock (get_irg_end_block(irg));
 
   finalize_cons (irg);
 
@@ -117,8 +117,9 @@ int main(int argc, char **argv)
   irg_vrfy(irg);
 
   printf("Done building the graph.  Dumping it.\n");
-  dump_ir_block_graph (irg);
-  dump_ir_graph_w_types (irg);
+  char *dump_file_suffix = "";
+  dump_ir_block_graph (irg, dump_file_suffix);
+  dump_ir_graph_w_types (irg, dump_file_suffix);
   printf("Use xvcg to view this graph:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
 

@@ -60,7 +60,7 @@ struct ir_graph {
 
   /* -- Fields indicating different states of irgraph -- */
   irg_phase_state phase_state;       /**< compiler phase */
-  op_pinned pinned;                  /**< Flag for status of nodes */
+  op_pin_state op_pin_state_pinned;  /**< Flag for status of nodes */
   irg_outs_state outs_state;         /**< Out edges. */
   irg_dom_state dom_state;           /**< Dominator information */
   irg_typeinfo_state typeinfo_state;       /**< Validity of type information */
@@ -111,13 +111,13 @@ void init_irgraph(void);
 ir_graph *new_const_code_irg(void);
 
 /**
- * Set the pinned state of a graph.
+ * Set the op_pin_state_pinned state of a graph.
  *
  * @irg     the IR graph
  * @p       new pin state
  */
 INLINE void
-set_irg_pinned (ir_graph *irg, op_pinned p);
+set_irg_pinned (ir_graph *irg, op_pin_state p);
 
 /** Returns the obstack associated with the graph. */
 struct obstack *get_irg_obstack(ir_graph *irg);
@@ -325,9 +325,9 @@ __set_irg_phase_low(ir_graph *irg) {
   irg->phase_state = phase_low;
 }
 
-static INLINE op_pinned
+static INLINE op_pin_state
 __get_irg_pinned(ir_graph *irg) {
-  return irg->pinned;
+  return irg->op_pin_state_pinned;
 }
 
 static INLINE irg_outs_state
@@ -361,8 +361,8 @@ __set_irg_loopinfo_state(ir_graph *irg, irg_loopinfo_state s) {
 }
 
 static INLINE void
-__set_irg_pinned(ir_graph *irg, op_pinned p) {
-  irg->pinned = p;
+__set_irg_pinned(ir_graph *irg, op_pin_state p) {
+  irg->op_pin_state_pinned = p;
 }
 
 static INLINE irg_callee_info_state
@@ -444,8 +444,8 @@ __inc_irg_block_visited(ir_graph *irg)
 #define set_irg_bad(irg, node)             __set_irg_bad(irg, node)
 #define get_irg_current_block(irg)         __get_irg_current_block(irg)
 #define set_irg_current_block(irg, node)   __set_irg_current_block(irg, node)
-#define get_irg_ent(irg)                   __get_irg_ent(irg)
-#define set_irg_ent(irg, ent)              __set_irg_ent(irg, ent)
+#define get_irg_entity(irg)                   __get_irg_ent(irg)
+#define set_irg_entity(irg, ent)              __set_irg_ent(irg, ent)
 #define get_irg_frame_type(irg)            __get_irg_frame_type(irg)
 #define set_irg_frame_type(irg, ftp)       __set_irg_frame_type(irg, ftp)
 #define get_irg_obstack(irg)               __get_irg_obstack(irg)

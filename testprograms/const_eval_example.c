@@ -45,18 +45,18 @@ main(void)
   init_firm (NULL);
 
   /*** Make basic type information for primitive type int. ***/
-  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_Is);
+  prim_t_int = new_type_primitive(new_id_from_chars ("int", 3), mode_Is);
 
   /* Try both optimizations: */
   set_opt_constant_folding(1);
   set_opt_cse(1);
   set_opt_dead_node_elimination (1);
 
-  owner = new_type_class (id_from_str ("CONST_EVAL_EXAMPLE", 18));
-  method = new_type_method (id_from_str("main", 4), 0, 2);
+  owner = new_type_class (new_id_from_chars ("CONST_EVAL_EXAMPLE", 18));
+  method = new_type_method (new_id_from_chars("main", 4), 0, 2);
   set_method_res_type(method, 0, prim_t_int);
   set_method_res_type(method, 1, prim_t_int);
-  ent = new_entity (owner, id_from_str ("main", 4), method);
+  ent = new_entity (owner, new_id_from_chars ("main", 4), method);
   get_entity_ld_name(ent);
 
   irg = new_ir_graph (ent, 4);
@@ -65,7 +65,7 @@ main(void)
   b = new_Const (mode_Is, new_tarval_from_long (5, mode_Is));
 
   x = new_Jmp ();
-  mature_block (get_irg_current_block(irg));
+  mature_immBlock (get_irg_current_block(irg));
 
   /*  To test const eval on DivMod
   c = new_DivMod(get_store(), a, b);
@@ -89,8 +89,8 @@ main(void)
      x = new_Return (get_store (), 2, in);
   }
 
-  add_in_edge (get_irg_end_block(irg), x);
-  mature_block (get_irg_end_block(irg));
+  add_immBlock_pred (get_irg_end_block(irg), x);
+  mature_immBlock (get_irg_end_block(irg));
 
   finalize_cons (irg);
 
@@ -101,7 +101,7 @@ main(void)
   irg_vrfy(irg);
 
   printf("Done building the graph.  Dumping it.\n");
-  dump_ir_block_graph (irg);
+  dump_ir_block_graph (irg, 0);
 
   printf("use xvcg to view this graph:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");

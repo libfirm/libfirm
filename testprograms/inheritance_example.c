@@ -55,15 +55,15 @@ int main(int argc, char **argv)
   init_firm (NULL);
 
   /** make idents for all used identifiers in the program. */
-  ii  = id_from_str("i",  strlen("i"));
-  ci  = id_from_str("c",  strlen("c"));
-  di  = id_from_str("d",  strlen("d"));
-  ei  = id_from_str("e",  strlen("e"));
-  m1i = id_from_str("m1", strlen("m1"));
-  m2i = id_from_str("m2", strlen("m2"));
-  inti= id_from_str("int",strlen("int"));
-  ai  = id_from_str("a",  strlen("a"));
-  bi  = id_from_str("b",  strlen("b"));
+  ii  = new_id_from_chars("i",  strlen("i"));
+  ci  = new_id_from_chars("c",  strlen("c"));
+  di  = new_id_from_chars("d",  strlen("d"));
+  ei  = new_id_from_chars("e",  strlen("e"));
+  m1i = new_id_from_chars("m1", strlen("m1"));
+  m2i = new_id_from_chars("m2", strlen("m2"));
+  inti= new_id_from_chars("int",strlen("int"));
+  ai  = new_id_from_chars("a",  strlen("a"));
+  bi  = new_id_from_chars("b",  strlen("b"));
 
   /** make the type information needed */
   /* Language defined types */
@@ -104,7 +104,7 @@ int main(int argc, char **argv)
 
 
   printf("Done building the graph.  Dumping it.\n");
-  dump_all_types();
+  dump_all_types(0);
 
   printf("use xvcg to view this graph:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");

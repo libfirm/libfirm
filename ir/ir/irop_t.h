@@ -83,7 +83,7 @@ struct ir_op {
   opcode code;            /**< the unique opcode of the op */
   ident *name;            /**< the name of the op */
   size_t attr_size;       /**< Space needed in memory for private attributes */
-  op_pinned pinned;       /**< How to deal with the node in cse, pre. */
+  op_pin_state op_pin_state_pinned; /**< How to deal with the node in cse, pre. */
   op_arity opar;          /**< arity of operator. */
   int op_index;           /**< the index of the first data operand, 0 for most cases, 1 for Div etc. */
   unsigned flags;         /**< flags describing the behavior of the ir_op, a bitmaks of irop_flags */
@@ -100,7 +100,7 @@ struct ir_op {
  *
  * @param code      the opcode, one of type \c opcode
  * @param name      the printable name of this opcode
- * @param p         wheater operations of this opcode are pinned or floating
+ * @param p         wheater operations of this opcode are op_pin_state_pinned or floating
  * @param flags     a bitmask of irop_flags describing the behavior of the ir operation
  * @param opar      the parity of this ir operation
  * @param op_index  if the parity is oparity_unary, oparity_binary or oparity_trinary the index
@@ -109,7 +109,7 @@ struct ir_op {
  *
  * @return The genenerated ir operation.
  */
-ir_op * new_ir_op(opcode code, const char *name, op_pinned p,
+ir_op * new_ir_op(opcode code, const char *name, op_pin_state p,
 		   unsigned flags, op_arity opar, int op_index, size_t attr_size);
 
 /**

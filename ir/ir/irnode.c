@@ -457,13 +457,13 @@ get_irn_block_attr (ir_node *node)
 
 /* this works for all except Block */
 ir_node *
-get_nodes_Block (ir_node *node) {
+get_nodes_block (ir_node *node) {
   assert (!(node->op == op_Block));
   return get_irn_n(node, -1);
 }
 
 void
-set_nodes_Block (ir_node *node, ir_node *block) {
+set_nodes_block (ir_node *node, ir_node *block) {
   assert (!(node->op == op_Block));
   set_irn_n(node, -1, block);
 }
@@ -601,12 +601,12 @@ get_Block_handler (ir_node *block) {
 / * handler handling for Nodes * /
 void
 set_Node_handler (ir_node *node, ir_node *handler) {
-  set_Block_handler (get_nodes_Block (node), handler);
+  set_Block_handler (get_nodes_block (node), handler);
 }
 
 ir_node *
 get_Node_handler (ir_node *node) {
-  return (get_Block_handler (get_nodes_Block (node)));
+  return (get_Block_handler (get_nodes_block (node)));
 }
 
 / * exc_t handling for Blocks * /
@@ -622,11 +622,11 @@ exc_t get_Block_exc (ir_node *block) {
 
 / * exc_t handling for Nodes * /
 void set_Node_exc (ir_node *node, exc_t exc) {
-  set_Block_exc (get_nodes_Block (node), exc);
+  set_Block_exc (get_nodes_block (node), exc);
 }
 
 exc_t get_Node_exc (ir_node *node) {
-  return (get_Block_exc (get_nodes_Block (node)));
+  return (get_Block_exc (get_nodes_block (node)));
 }
 */
 
@@ -675,12 +675,6 @@ void remove_Block_cg_cfgpred_arr(ir_node * node) {
   node->attr.block.in_cg = NULL;
 }
 
-/* Start references the irg it is in. */
-ir_graph *
-get_Start_irg(ir_node *node) {
-  return get_irn_irg(node);
-}
-
 void
 set_Start_irg(ir_node *node, ir_graph *irg) {
   assert(node->op == op_Start);
@@ -721,13 +715,6 @@ free_End (ir_node *end) {
                in array afterwards ... */
 }
 
-ir_graph *get_EndReg_irg (ir_node *end) {
-  return get_irn_irg(end);
-}
-
-ir_graph *get_EndExcept_irg  (ir_node *end) {
-  return get_irn_irg(end);
-}
 
 /*
 > Implementing the case construct (which is where the constant Proj node is
@@ -889,10 +876,6 @@ set_Const_type (ir_node *node, type *tp) {
   if (tp != unknown_type) {
     assert (is_atomic_type(tp));
     assert (get_type_mode(tp) == get_irn_mode(node));
-    assert (!tarval_is_entity(get_Const_tarval(node)) ||
-        (is_pointer_type(tp) &&
-         (get_pointer_points_to_type(tp) ==
-          get_entity_type(get_tarval_entity(get_Const_tarval(node))))));
   }
 
   node->attr.con.tp = tp;
@@ -1185,9 +1168,6 @@ ir_node * get_CallBegin_ptr (ir_node *node) {
 void set_CallBegin_ptr (ir_node *node, ir_node *ptr) {
   assert(node->op == op_CallBegin);
   set_irn_n(node, 0, ptr);
-}
-ir_graph * get_CallBegin_irg (ir_node *node) {
-  return get_irn_irg(node);
 }
 ir_node * get_CallBegin_call (ir_node *node) {
   assert(node->op == op_CallBegin);
@@ -1885,11 +1865,11 @@ skip_Tuple (ir_node *node) {
 
   if (!get_opt_normalize()) return node;
 
-  node = skip_nop(node);
+  node = skip_Id(node);
   if (get_irn_op(node) == op_Proj) {
-    pred = skip_nop(get_Proj_pred(node));
+    pred = skip_Id(get_Proj_pred(node));
     if (get_irn_op(pred) == op_Proj) /* nested Tuple ? */
-      pred = skip_nop(skip_Tuple(pred));
+      pred = skip_Id(skip_Tuple(pred));
     if (get_irn_op(pred) == op_Tuple)
       return get_Tuple_pred(pred, get_Proj_proj(node));
   }
@@ -1899,7 +1879,7 @@ skip_Tuple (ir_node *node) {
 /** returns operand of node if node is a Cast */
 ir_node *skip_Cast  (ir_node *node) {
   if (node && get_irn_op(node) == op_Cast) {
-    return skip_nop(get_irn_n(node, 0));
+    return skip_Id(get_irn_n(node, 0));
   } else {
     return node;
   }
@@ -1910,7 +1890,7 @@ ir_node *skip_Cast  (ir_node *node) {
    than any other approach, as Id chains are resolved and all point to the real node, or
    all id's are self loops. */
 ir_node *
-skip_nop (ir_node *node) {
+skip_Id (ir_node *node) {
   /* don't assert node !!! */
 
   if (!get_opt_normalize()) return node;
@@ -1924,7 +1904,7 @@ skip_nop (ir_node *node) {
     assert (get_irn_arity (node) > 0);
 
     node->in[0+1] = node;
-    res = skip_nop(rem_pred);
+    res = skip_Id(rem_pred);
     if (res->op == op_Id) /* self-loop */ return node;
 
     node->in[0+1] = res;
@@ -1938,7 +1918,7 @@ skip_nop (ir_node *node) {
    than any other approach, as Id chains are resolved and all point to the real node, or
    all id's are self loops. */
 ir_node *
-skip_nop (ir_node *node) {
+skip_Id (ir_node *node) {
   ir_node *pred;
   /* don't assert node !!! */
 
@@ -1961,7 +1941,7 @@ skip_nop (ir_node *node) {
     assert (get_irn_arity (node) > 0);
 
     node->in[0+1] = node;   /* turn us into a self referencing Id:  shorten Id cycles. */
-    res = skip_nop(rem_pred);
+    res = skip_Id(rem_pred);
     if (res->op == op_Id) /* self-loop */ return node;
 
     node->in[0+1] = res;    /* Turn Id chain into Ids all referencing the chain end. */
@@ -1971,11 +1951,6 @@ skip_nop (ir_node *node) {
   }
 }
 #endif
-
-ir_node *
-skip_Id (ir_node *node) {
-  return skip_nop(node);
-}
 
 int
 is_Bad (ir_node *node) {
@@ -2021,10 +1996,6 @@ is_cfop(ir_node *node) {
    CallBegin, EndReg, EndExcept */
 int is_ip_cfop(ir_node *node) {
   return is_ip_cfopcode(get_irn_op(node));
-}
-
-ir_graph *get_ip_cfop_irg(ir_node *n) {
-  return get_irn_irg(n);
 }
 
 /* Returns true if the operation can change the control flow because

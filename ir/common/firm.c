@@ -48,9 +48,9 @@ init_firm(const firm_parameter_t *param)
   }
 
   /* initialize all ident stuff */
-  id_init(1024);
+  init_ident (1024);
   /* enhanced statistics, need idents */
-  stat_init(def_params.enable_statistics);
+  init_stat();
   /* create the type kinds. */
   init_tpop();
   /* create an obstack and put all tarvals in a pdeq */
@@ -95,5 +95,5 @@ void free_firm(void) {
   finish_op();
   finish_mode();
   finish_tpop();
-  id_finish();
+  finish_ident();
 }

@@ -56,12 +56,12 @@ int main(int argc, char **argv)
 #define NRARGS 0
 #define NRES 0
   /* The type of the method */
-  proc_main = new_type_method(id_from_str(METHODNAME, strlen(METHODNAME)),
+  proc_main = new_type_method(new_id_from_chars(METHODNAME, strlen(METHODNAME)),
                               NRARGS, NRES);
   /* An entity representing the method.  Owner of the entity is the global class
      type mentioned above. */
   ent = new_entity ((type *)owner,
-                    id_from_str (METHODNAME, strlen(METHODNAME)),
+                    new_id_from_chars (METHODNAME, strlen(METHODNAME)),
                     (type *)proc_main);
 
   /** Build code for the procedure. **/
@@ -82,20 +82,20 @@ int main(int argc, char **argv)
     x = new_Return (get_store(), 0, NULL);
   /* Now we generated all instructions for this block and all its predecessor
    * blocks so we can mature it.  (There are not too much.) */
-  mature_block (get_irg_current_block(irg));
+  mature_immBlock (get_irg_current_block(irg));
 
   /* This adds the in edge of the end block which originates at the return statement.
    * The return node passes controlflow to the end block.  */
-  add_in_edge (get_irg_end_block(irg), x);
+  add_immBlock_pred (get_irg_end_block(irg), x);
   /* Now we can mature the end block as all it's predecessors are known. */
-  mature_block (get_irg_end_block(irg));
+  mature_immBlock (get_irg_end_block(irg));
 
   /* Verify the graph.  Finds some very bad errors in the graph. */
   irg_vrfy(irg);
   finalize_cons (irg);
 
   printf("Done building the graph.  Dumping it.\n");
-  dump_ir_block_graph (irg);
+  dump_ir_block_graph (irg, 0);
 
   printf("use xvcg to view this graph:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");

@@ -69,7 +69,8 @@
 extern "C" {
 #endif
 
-#include "old_fctnames.h"
+//  #include "old_fctnames.h"
+
 
 /* The representations */
 #include "firm_common.h"   /* common type tags. */

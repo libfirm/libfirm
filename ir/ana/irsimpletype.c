@@ -77,7 +77,7 @@ static type *find_type_for_Proj(ir_node *n) {
     assert(get_irn_mode(pred) == mode_T);
     pred_pred = get_Proj_pred(pred);
     if (get_irn_op(pred_pred) == op_Start)  {
-      type *mtp = get_entity_type(get_irg_ent(get_Start_irg(pred_pred)));
+      type *mtp = get_entity_type(get_irg_entity(get_irn_irg(pred_pred)));
       tp = get_method_param_type(mtp, get_Proj_proj(n));
     } else if (get_irn_op(pred_pred) == op_Call) {
       type *mtp = get_Call_type(pred_pred);
@@ -89,13 +89,13 @@ static type *find_type_for_Proj(ir_node *n) {
   } break;
   case iro_Start: {
     /* globals and frame pointer */
-    if (get_Proj_proj(n) == pns_frame_base)
-      tp = find_pointer_type_to(get_irg_frame_type(get_Start_irg(pred)));
-    else if (get_Proj_proj(n) == pns_globals)
+    if (get_Proj_proj(n) ==  pn_Start_P_frame_base)
+      tp = find_pointer_type_to(get_irg_frame_type(get_irn_irg(pred)));
+    else if (get_Proj_proj(n) == pn_Start_P_globals)
       tp = find_pointer_type_to(get_glob_type());
-    else  if (get_Proj_proj(n) == pns_value_arg_base) {
+    else  if (get_Proj_proj(n) == pn_Start_P_value_arg_base) {
       VERBOSE_UNKNOWN_TYPE(("Value arg base proj %ld from Start: unknown type\n", get_irn_node_nr(n)));
-      tp =  unknown_type; /* find_pointer_type_to(get....(get_entity_type(get_irg_ent(get_Start_irg(pred))))); */
+      tp =  unknown_type; /* find_pointer_type_to(get....(get_entity_type(get_irg_entity(get_irn_irg(pred))))); */
     } else {
       VERBOSE_UNKNOWN_TYPE(("Proj %ld %ld from Start: unknown type\n", get_Proj_proj(n), get_irn_node_nr(n)));
       tp = unknown_type;
@@ -103,7 +103,7 @@ static type *find_type_for_Proj(ir_node *n) {
   } break;
   case iro_Call: {
     /* value args pointer */
-    if (get_Proj_proj(n) == pncl_value_res_base) {
+    if (get_Proj_proj(n) == pn_Call_P_value_res_base) {
       VERBOSE_UNKNOWN_TYPE(("Value res base Proj %ld from Call: unknown type\n", get_irn_node_nr(n)));
       tp = unknown_type; /* find_pointer_type_to(get....get_Call_type(pred)); */
     } else {
@@ -147,7 +147,7 @@ static type *find_type_for_node(ir_node *n) {
     /* Check returned type. */
     /*
     int i;
-    type *meth_type = get_entity_type(get_irg_ent(current_ir_graph));
+    type *meth_type = get_entity_type(get_irg_entity(current_ir_graph));
     for (i = 0; i < get_method_n_ress(meth_type); i++) {
       type *res_type = get_method_res_type(meth_type, i);
       type *ana_res_type = get_irn_type(get_Return_res(n, i));
@@ -232,9 +232,6 @@ static type *find_type_for_node(ir_node *n) {
     ir_node *a = get_Load_ptr(n);
     if (get_irn_op(a) == op_Sel)
       tp = get_entity_type(get_Sel_entity(a));
-    else if ((get_irn_op(a) == op_Const) &&
-    (tarval_is_entity(get_Const_tarval(a))))
-      tp = get_entity_type(get_tarval_entity(get_Const_tarval(a)));
     else if (is_pointer_type(compute_irn_type(a))) {
       tp = get_pointer_points_to_type(get_irn_type(a));
       if (is_array_type(tp)) tp = get_array_element_type(tp);

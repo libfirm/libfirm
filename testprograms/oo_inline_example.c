@@ -68,30 +68,30 @@ main(void)
   set_opt_dead_node_elimination(1);
 
   /*** Make basic type information for primitive type int. ***/
-  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_Is);
+  prim_t_int = new_type_primitive(new_id_from_chars ("int", 3), mode_Is);
 
   /*** Make type information for the class (PRIMA). ***/
   /* The type of the class */
   class_prima = new_type_class(new_id_from_str ("PRIMA_INLINE"));
   /* We need type information for pointers to the class: */
-  class_p_ptr = new_type_pointer (id_from_str ("class_prima_ptr", 15),
+  class_p_ptr = new_type_pointer (new_id_from_chars ("class_prima_ptr", 15),
 				  class_prima);
   /* An entity for the field (a).  The entity constructor automatically adds
      the entity as member of the owner. */
-  a_e = new_entity(class_prima, id_from_str ("a", 1), prim_t_int);
+  a_e = new_entity(class_prima, new_id_from_chars ("a", 1), prim_t_int);
   /* An entity for the method set_a.  But first we need type information
      for the method. */
-  proc_set_a = new_type_method(id_from_str("set_a", 5), 2, 0);
+  proc_set_a = new_type_method(new_id_from_chars("set_a", 5), 2, 0);
   set_method_param_type(proc_set_a, 0, class_p_ptr);
   set_method_param_type(proc_set_a, 1, prim_t_int);
-  proc_set_a_e = new_entity(class_prima, id_from_str ("set_a", 5), proc_set_a);
+  proc_set_a_e = new_entity(class_prima, new_id_from_chars ("set_a", 5), proc_set_a);
   /* An entity for the method c. Implicit argument "self" must be modeled
      explicit! */
-  proc_c   = new_type_method(id_from_str("c", 1 ), 2, 1);
+  proc_c   = new_type_method(new_id_from_chars("c", 1 ), 2, 1);
   set_method_param_type(proc_c, 0, class_p_ptr);
   set_method_param_type(proc_c, 1, prim_t_int);
   set_method_res_type(proc_c, 0, prim_t_int);
-  proc_c_e = new_entity(class_prima, id_from_str ("c", 1), proc_c);
+  proc_c_e = new_entity(class_prima, new_id_from_chars ("c", 1), proc_c);
 
   /*** Now build procedure main. ***/
   /** Type information for main. **/
@@ -100,12 +100,12 @@ main(void)
      owner is the global type. */
   owner = get_glob_type();
   /* Main has zero parameters and one result. */
-  proc_main = new_type_method(id_from_str("OO_INLINE_EXAMPLE_main", 22), 0, 1);
+  proc_main = new_type_method(new_id_from_chars("OO_INLINE_EXAMPLE_main", 22), 0, 1);
   /* The result type is int. */
   set_method_res_type(proc_main, 0, prim_t_int);
 
   /* The entity for main. */
-  proc_main_e = new_entity (owner, id_from_str ("OO_INLINE_EXAMPLE_main", 22), proc_main);
+  proc_main_e = new_entity (owner, new_id_from_chars ("OO_INLINE_EXAMPLE_main", 22), proc_main);
 
   /** Build code for procedure main. **/
   /* We need one local variable (for "o"). */
@@ -166,11 +166,11 @@ main(void)
      in[0] = res;
      x = new_Return (get_store(), 1, in);
   }
-  mature_block (get_irg_current_block(main_irg));
+  mature_immBlock (get_irg_current_block(main_irg));
 
   /* complete the end_block */
-  add_in_edge (get_irg_end_block(main_irg), x);
-  mature_block (get_irg_end_block(main_irg));
+  add_immBlock_pred (get_irg_end_block(main_irg), x);
+  mature_immBlock (get_irg_end_block(main_irg));
 
   irg_vrfy(main_irg);
   finalize_cons (main_irg);
@@ -195,11 +195,11 @@ main(void)
 
   /* return nothing */
   x = new_Return (get_store (), 0, NULL);
-  mature_block (get_irg_current_block(set_a_irg));
+  mature_immBlock (get_irg_current_block(set_a_irg));
 
   /* complete the end_block */
-  add_in_edge (get_irg_end_block(set_a_irg), x);
-  mature_block (get_irg_end_block(set_a_irg));
+  add_immBlock_pred (get_irg_end_block(set_a_irg), x);
+  mature_immBlock (get_irg_end_block(set_a_irg));
 
   /* verify the graph */
   irg_vrfy(set_a_irg);
@@ -220,11 +220,11 @@ main(void)
   set_value(2, new_Const (mode_Is, new_tarval_from_long (0, mode_Is)));
 
   x = new_Jmp();
-  mature_block (get_irg_current_block(c_irg));
+  mature_immBlock (get_irg_current_block(c_irg));
 
   /* generate a block for the loop header and the conditional branch */
   r = new_immBlock ();
-  add_in_edge (r, x);
+  add_immBlock_pred (r, x);
   x = new_Cond (new_Proj(new_Cmp(new_Const (mode_Is, new_tarval_from_long (0, mode_Is)),
 				 new_Const (mode_Is, new_tarval_from_long (0, mode_Is))),
 			 mode_b, Eq));
@@ -237,7 +237,7 @@ main(void)
 
   /* generate the block for the loop body */
   b = new_immBlock ();
-  add_in_edge (b, t);
+  add_immBlock_pred (b, t);
 
   /* The code in the loop body,
      as we are dealing with local variables only the dataflow edges
@@ -248,13 +248,13 @@ main(void)
   a_ptr = new_simpleSel(get_store(), self, a_e);
   set_store(new_Store(get_store(), a_ptr, get_value(2, mode_Is)));
   x = new_Jmp ();
-  add_in_edge(r, x);
-  mature_block (b);
-  mature_block (r);
+  add_immBlock_pred(r, x);
+  mature_immBlock (b);
+  mature_immBlock (r);
 
   /* generate the return block */
   r = new_immBlock ();
-  add_in_edge (r, f);
+  add_immBlock_pred (r, f);
   /* Select the entity and load the value */
   a_ptr = new_simpleSel(get_store(), self, a_e);
   a_val = new_Load(get_store(), a_ptr);
@@ -268,11 +268,11 @@ main(void)
 
     x = new_Return (get_store (), 1, in);
   }
-  mature_block (r);
+  mature_immBlock (r);
 
   /* complete the end_block */
-  add_in_edge (get_irg_end_block(c_irg), x);
-  mature_block (get_irg_end_block(c_irg));
+  add_immBlock_pred (get_irg_end_block(c_irg), x);
+  mature_immBlock (get_irg_end_block(c_irg));
 
   /* verify the graph */
   irg_vrfy(c_irg);
@@ -299,9 +299,10 @@ main(void)
   get_entity_ld_ident(proc_set_a_e);
   get_entity_ld_ident(proc_c_e);
   turn_off_edge_labels();
-  dump_all_ir_graphs(dump_ir_block_graph);
-  dump_all_ir_graphs(dump_ir_block_graph_w_types);
-  dump_all_types();
+  char *suffix = "";
+  dump_all_ir_graphs(dump_ir_block_graph, suffix);
+  dump_all_ir_graphs(dump_ir_block_graph_w_types, suffix);
+  dump_all_types(0);
 
   printf("Use xvcg to view these graphs:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");

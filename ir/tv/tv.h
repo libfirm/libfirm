@@ -21,7 +21,7 @@
 #define _TV_H_
 
 # include "irmode.h"
-# include "entity.h"
+  //# include "entity.h"
 # include "irnode.h"    /* for pnc_number enum */
 
 
@@ -161,8 +161,7 @@ tarval *new_tarval_from_long(long l, ir_mode *mode);
  * you are doing! (better check with tarval_is_long()...)
  * Works only for int modes, even not for character modes!
  */
-long tarval_to_long(tarval *tv);
-#define get_tarval_long tarval_to_long
+long get_tarval_long(tarval *tv);
 
 /**
  * This validates if tarval_to_long() will return a satisfying
@@ -207,7 +206,7 @@ tarval *new_tarval_from_double(long double d, ir_mode *mode);
  * This will overflow silently, so use only if you know what
  * you are doing! (better check with tarval_is_long...)
  */
-long double tarval_to_double(tarval *tv);
+long double get_tarval_double(tarval *tv);
 
 /**
  * This validates if tarval_to_double() will return a satisfying
@@ -221,19 +220,19 @@ int tarval_is_double(tarval *tv);
  *
  * The address must be constant, the entity must have as owner the global type.
  * We no more support this function: Use the new SymConst instead.
- */
 tarval *new_tarval_from_entity (entity *ent, ir_mode *mode);
+ */
 
 /**
  * Returns the associated entity of a tarval.  Asserts if tarval does not
  * contain an entity.
- */
 entity *get_tarval_entity(tarval *tv);
+ */
 
 /**
  * Returns non-zero if a the given tarval represents an entity.
- */
 int tarval_is_entity(tarval *tv);
+ */
 
 /** ********** Access routines for tarval fields ********** **/
 
@@ -497,7 +496,7 @@ typedef struct tarval_mode_info {
  *
  * @return zero on success.
  */
-int tarval_set_mode_output_option(ir_mode *mode, const tarval_mode_info *modeinfo);
+int  set_tarval_mode_output_option(ir_mode *mode, const tarval_mode_info *modeinfo);
 
 /**
  * Returns the output options of one mode.
@@ -508,7 +507,7 @@ int tarval_set_mode_output_option(ir_mode *mode, const tarval_mode_info *modeinf
  *
  * @return the output option
  */
-const tarval_mode_info *tarval_get_mode_output_option(ir_mode *mode);
+const tarval_mode_info *get_tarval_mode_output_option(ir_mode *mode);
 
 /**
  * Returns Bit representation of a tarval value, as string of '0' and '1'
@@ -533,7 +532,7 @@ const tarval_mode_info *tarval_get_mode_output_option(ir_mode *mode);
  *    irmode.h for the definition of the ir_mode struct
  *    the size member of aforementioned struct
  */
-char *tarval_bitpattern(tarval *tv);
+char *get_tarval_bitpattern(tarval *tv);
 
 /**
  * Returns the bitpattern of the bytes_ofs byte.
@@ -560,7 +559,7 @@ char *tarval_bitpattern(tarval *tv);
  * @note
  *   The result of this funcion is undefined if the mode is neither integer nor float.
  */
-unsigned char tarval_sub_bits(tarval *tv, unsigned byte_ofs);
+unsigned char get_tarval_sub_bits(tarval *tv, unsigned byte_ofs);
 
 /**
  * Return values of tarval classify
@@ -581,7 +580,7 @@ typedef enum _tarval_classification_t {
  *   - TV_CLASSIFY_ALL_ONE for bitwise-and neutral
  *   - TV_CLASSIFY_OTHER   else
  */
-tarval_classification_t tarval_classify(tarval *tv);
+tarval_classification_t classify_tarval(tarval *tv);
 
 
 

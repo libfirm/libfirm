@@ -65,7 +65,7 @@ void set_Block_pre_num(ir_node *bl, int num);
  */
 void compute_doms(ir_graph *irg);
 
-/** Frees the dominator datastructures.  Sets the flag in irg to "no_dom". */
+/** Frees the dominator datastructures.  Sets the flag in irg to "dom_none". */
 void free_dom_and_peace(ir_graph *irg);
 
 #endif /* _IRDOM_H_ */

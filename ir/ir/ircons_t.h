@@ -16,6 +16,13 @@
 #include "ircons.h"
 # include "irgraph_t.h"
 
+/**
+ * Initializes the graph construction.
+ *
+ * @param func  @see default_initialize_local_variable_func_t
+ */
+void init_cons (default_initialize_local_variable_func_t *func);
+
 /* inline functions */
 
 static INLINE ir_node *
