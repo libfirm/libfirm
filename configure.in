@@ -130,6 +130,16 @@ fi],
 [disable_libiberty=no])
 AC_SUBST(disable_libiberty)
 
+dnl enable Firm hooks
+dnl -------------
+AC_ARG_ENABLE(hooks,
+[  --disable-hooks         disable Firm hooks],
+[if test "$enableval" = yes; then
+  AC_DEFINE(FIRM_ENABLE_HOOKS)
+fi],
+AC_DEFINE(FIRM_ENABLE_HOOKS)
+)
+
 dnl enable Firm statistics
 dnl -------------
 AC_ARG_ENABLE(statistics,

@@ -832,6 +832,7 @@ Optional Features:
   --enable-heapanalysis   Compile with heap analysis.
   --enable-backend        Compile with backend facility.
   --disable-libiberty     disable own libiberty parts
+  --disable-hooks         disable Firm hooks
   --enable-statistics     enable Firm statistics
   --disable-external-effects  disable descriptions of external effects in XML
 
@@ -1354,6 +1355,23 @@ else
   disable_libiberty=no
 fi;
 
+
+# Check whether --enable-hooks or --disable-hooks was given.
+if test "${enable_hooks+set}" = set; then
+  enableval="$enable_hooks"
+  if test "$enableval" = yes; then
+  cat >>confdefs.h <<\_ACEOF
+#define FIRM_ENABLE_HOOKS 1
+_ACEOF
+
+fi
+else
+  cat >>confdefs.h <<\_ACEOF
+#define FIRM_ENABLE_HOOKS 1
+_ACEOF
+
+
+fi;
 
 # Check whether --enable-statistics or --disable-statistics was given.
 if test "${enable_statistics+set}" = set; then

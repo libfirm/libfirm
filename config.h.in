@@ -98,6 +98,9 @@
 /* undef to disable inlining */
 #undef USE_INLINING
 
+/* Define to 1 if Firm hooks are activated */
+#undef FIRM_ENABLE_HOOKS
+
 /* Define to 1 if Firm statistics are activated */
 #undef FIRM_STATISTICS
 
@@ -105,4 +108,11 @@
 #define INLINE inline
 #else
 #define INLINE
+#endif
+
+/* Firm statistics need hooks */
+#ifdef FIRM_STATISTICS
+#ifndef FIRM_ENABLE_HOOKS
+#define FIRM_ENABLE_HOOKS
+#endif
 #endif
