@@ -412,8 +412,6 @@ static tarval *computed_value_Proj(ir_node *n)
 /**
  * If the parameter n can be computed, return its value, else tarval_bad.
  * Performs constant folding.
- *
- * GL: Only if n is arithmetic operator?
  */
 tarval *computed_value(ir_node *n)
 {
@@ -545,6 +543,10 @@ static ir_node *equivalent_node_Block(ir_node *n)
   return n;
 }
 
+/**
+ * Returns a equivalent node for a Jmp, a Bad :-)
+ * Of course this only happens if the Block of the Jmp is Bad.
+ */
 static ir_node *equivalent_node_Jmp(ir_node *n)
 {
   /* GL: Why not same for op_Raise?? */
@@ -562,6 +564,9 @@ static ir_node *equivalent_node_Cond(ir_node *n)
   return n;
 }
 
+/**
+ * Use algebraic simplification a v a = a.
+ */
 static ir_node *equivalent_node_Or(ir_node *n)
 {
   ir_node *oldn = n;
@@ -578,7 +583,8 @@ static ir_node *equivalent_node_Or(ir_node *n)
 }
 
 /**
- * optimize operations that are commutative and have neutral 0.
+ * optimize operations that are commutative and have neutral 0,
+ * so a op 0 = 0 op a = a.
  */
 static ir_node *equivalent_node_neutral_zero(ir_node *n)
 {
@@ -592,9 +598,9 @@ static ir_node *equivalent_node_neutral_zero(ir_node *n)
 
   /* After running compute_node there is only one constant predecessor.
      Find this predecessors value and remember the other node: */
-  if ((tv = computed_value (a)) != tarval_bad) {
+  if ((tv = computed_value(a)) != tarval_bad) {
     on = b;
-  } else if ((tv = computed_value (b)) != tarval_bad) {
+  } else if ((tv = computed_value(b)) != tarval_bad) {
     on = a;
   } else
     return n;
@@ -608,19 +614,12 @@ static ir_node *equivalent_node_neutral_zero(ir_node *n)
   return n;
 }
 
-static ir_node *equivalent_node_Add(ir_node *n)
-{
-  return equivalent_node_neutral_zero(n);
-}
-
-static ir_node *equivalent_node_Eor(ir_node *n)
-{
-  return equivalent_node_neutral_zero(n);
-}
+#define equivalent_node_Add  equivalent_node_neutral_zero
+#define equivalent_node_Eor  equivalent_node_neutral_zero
 
 /**
- * optimize operations that are not commutative but have neutral 0 on left.
- * Test only one predecessor.
+ * optimize operations that are not commutative but have neutral 0 on left,
+ * so a op 0 = a.
  */
 static ir_node *equivalent_node_left_zero(ir_node *n)
 {
@@ -629,38 +628,22 @@ static ir_node *equivalent_node_left_zero(ir_node *n)
   ir_node *a = get_binop_left(n);
   ir_node *b = get_binop_right(n);
 
-  if (tarval_classify (computed_value (b)) == TV_CLASSIFY_NULL) {
+  if (tarval_classify(computed_value(b)) == TV_CLASSIFY_NULL) {
     n = a;                                                              DBG_OPT_ALGSIM1;
   }
 
   return n;
 }
 
-static ir_node *equivalent_node_Sub(ir_node *n)
-{
-  return equivalent_node_left_zero(n);
-}
+#define equivalent_node_Sub   equivalent_node_left_zero
+#define equivalent_node_Shl   equivalent_node_left_zero
+#define equivalent_node_Shr   equivalent_node_left_zero
+#define equivalent_node_Shrs  equivalent_node_left_zero
+#define equivalent_node_Rot   equivalent_node_left_zero
 
-static ir_node *equivalent_node_Shl(ir_node *n)
-{
-  return equivalent_node_left_zero(n);
-}
-
-static ir_node *equivalent_node_Shr(ir_node *n)
-{
-  return equivalent_node_left_zero(n);
-}
-
-static ir_node *equivalent_node_Shrs(ir_node *n)
-{
-  return equivalent_node_left_zero(n);
-}
-
-static ir_node *equivalent_node_Rot(ir_node *n)
-{
-  return equivalent_node_left_zero(n);
-}
-
+/**
+ * Er, a "symmetic unop", ie op(op(n)) = n.
+ */
 static ir_node *equivalent_node_symmetric_unop(ir_node *n)
 {
   ir_node *oldn = n;
@@ -672,19 +655,16 @@ static ir_node *equivalent_node_symmetric_unop(ir_node *n)
   return n;
 }
 
-static ir_node *equivalent_node_Not(ir_node *n)
-{
-  /* NotNot x == x */
-  return equivalent_node_symmetric_unop(n);
-}
+/* NotNot x == x */
+#define equivalent_node_Not    equivalent_node_symmetric_unop
 
-static ir_node *equivalent_node_Minus(ir_node *n)
-{
-  /* --x == x */  /* ??? Is this possible or can --x raise an
-			 out of bounds exception if min =! max? */
-  return equivalent_node_symmetric_unop(n);
-}
+/* --x == x */  /* ??? Is this possible or can --x raise an
+		       out of bounds exception if min =! max? */
+#define equivalent_node_Minus  equivalent_node_symmetric_unop
 
+/**
+ * Optimize a * 1 = 1 * a = a.
+ */
 static ir_node *equivalent_node_Mul(ir_node *n)
 {
   ir_node *oldn = n;
@@ -701,6 +681,9 @@ static ir_node *equivalent_node_Mul(ir_node *n)
   return n;
 }
 
+/**
+ * Optimize a / 1 = a.
+ */
 static ir_node *equivalent_node_Div(ir_node *n)
 {
   ir_node *a = get_Div_left(n);
@@ -718,6 +701,9 @@ static ir_node *equivalent_node_Div(ir_node *n)
   return n;
 }
 
+/**
+ * Optimize a & 0b1...1 = 0b1...1 & a =  a & a = a.
+ */
 static ir_node *equivalent_node_And(ir_node *n)
 {
   ir_node *oldn = n;
@@ -727,15 +713,18 @@ static ir_node *equivalent_node_And(ir_node *n)
 
   if (a == b) {
     n = a;    /* And has it's own neutral element */
-  } else if (tarval_classify (computed_value (a)) == TV_CLASSIFY_ALL_ONE) {
+  } else if (tarval_classify(computed_value(a)) == TV_CLASSIFY_ALL_ONE) {
     n = b;
-  } else if (tarval_classify (computed_value (b)) == TV_CLASSIFY_ALL_ONE) {
+  } else if (tarval_classify(computed_value(b)) == TV_CLASSIFY_ALL_ONE) {
     n = a;
   }
   if (n != oldn)                                                        DBG_OPT_ALGSIM1;
   return n;
 }
 
+/**
+ * Try to remove useless conv's:
+ */
 static ir_node *equivalent_node_Conv(ir_node *n)
 {
   ir_node *oldn = n;
@@ -880,6 +869,11 @@ static ir_node *equivalent_node_Load(ir_node *n)
  return n;
 }
 
+/**
+ * Optimize store after store and load atfter store.
+ *
+ * @todo FAILS for volatile entities
+ */
 static ir_node *equivalent_node_Store(ir_node *n)
 {
   ir_node *oldn = n;
@@ -929,11 +923,14 @@ static ir_node *equivalent_node_Proj(ir_node *n)
   return n;
 }
 
+/**
+ * Remove Id's.
+ */
 static ir_node *equivalent_node_Id(ir_node *n)
 {
   ir_node *oldn = n;
 
-  n = follow_Id (n);                                                 DBG_OPT_ID;
+  n = follow_Id(n);                                                 DBG_OPT_ID;
   return n;
 }
 
@@ -951,7 +948,7 @@ case iro_Mod, Quot, DivMod
  * in array fits, we transform n into a tuple (e.g., Div).
  */
 ir_node *
-equivalent_node (ir_node *n)
+equivalent_node(ir_node *n)
 {
   if (n->op->equivalent_node)
     return n->op->equivalent_node(n);
@@ -987,8 +984,8 @@ static ir_op *firm_set_default_equivalent_node(ir_op *op)
   CASE(And);
   CASE(Conv);
   CASE(Phi);
-  CASE(Load);
-  CASE(Store);
+  CASE(Load);		/* dangerous */
+  CASE(Store);		/* dangerous, see todo */
   CASE(Proj);
   CASE(Id);
   default:
@@ -1035,8 +1032,6 @@ optimize_preds(ir_node *n) {
 static ir_node *transform_node_Div(ir_node *n)
 {
   tarval *tv = computed_value(n);
-  ir_node *b = get_Div_right(n);
-  tarval *tb = computed_value(b);
 
   /* BEWARE: it is NOT possible to optimize a/a to 1, as this may cause a exception */
 
@@ -1049,34 +1044,12 @@ static ir_node *transform_node_Div(ir_node *n)
     set_Tuple_pred(n, pn_Div_X_except, new_Bad());
     set_Tuple_pred(n, pn_Div_res, new_Const(get_tarval_mode(tv), tv));
   }
-  else if (tb != tarval_bad && tarval_classify(tb) != TV_CLASSIFY_NULL) { /* div(x, c) && c != 0 */
-    ir_node *div, *proj;
-    ir_node *a = get_Div_left(n);
-    ir_node *mem = get_Div_mem(n);
-    int rem = get_optimize();
-
-    set_optimize(0);
-    {
-      div = new_rd_Div(get_irn_dbg_info(n), current_ir_graph,
-	get_nodes_Block(n), get_irg_initial_mem(current_ir_graph), a, b);
-    }
-    set_optimize(rem);
-    proj = new_r_Proj(current_ir_graph, get_nodes_Block(n), div, get_irn_mode(a), pn_Div_res);
-
-    turn_into_tuple(n, 3);
-    set_Tuple_pred(n, pn_Div_M, mem);
-    set_Tuple_pred(n, pn_Div_X_except, new_Bad());
-    set_Tuple_pred(n, pn_Div_res, proj);
-
-  }
   return n;
 }
 
 static ir_node *transform_node_Mod(ir_node *n)
 {
   tarval *tv = computed_value(n);
-  ir_node *b = get_Mod_right(n);
-  tarval *tb = computed_value(b);
 
   /* BEWARE: it is NOT possible to optimize a%a to 0, as this may cause a exception */
 
@@ -1087,26 +1060,6 @@ static ir_node *transform_node_Mod(ir_node *n)
     set_Tuple_pred(n, pn_Mod_M, mem);
     set_Tuple_pred(n, pn_Mod_X_except, new_Bad());
     set_Tuple_pred(n, pn_Mod_res, new_Const(get_tarval_mode(tv), tv));
-  }
-  else if (tb != tarval_bad && tarval_classify(tb) != TV_CLASSIFY_NULL) { /* div(x, c) && c != 0 */
-    ir_node *mod, *proj;
-    ir_node *a = get_Mod_left(n);
-    ir_node *mem = get_Mod_mem(n);
-    int rem = get_optimize();
-
-    set_optimize(0);
-    {
-      mod = new_rd_Mod(get_irn_dbg_info(n), current_ir_graph,
-	get_nodes_Block(n), get_irg_initial_mem(current_ir_graph), a, b);
-    }
-    set_optimize(rem);
-    proj = new_r_Proj(current_ir_graph, get_nodes_Block(n), mod, get_irn_mode(a), pn_Mod_res);
-
-    turn_into_tuple(n, 3);
-    set_Tuple_pred(n, pn_Mod_M, mem);
-    set_Tuple_pred(n, pn_Mod_X_except, new_Bad());
-    set_Tuple_pred(n, pn_Mod_res, proj);
-
   }
   return n;
 }
@@ -1232,6 +1185,9 @@ static ir_node *transform_node_Eor(ir_node *n)
   return n;
 }
 
+/**
+ * Transfor a boolean Not.
+ */
 static ir_node *transform_node_Not(ir_node *n)
 {
   ir_node *a = get_Not_op(n);
@@ -1247,6 +1203,102 @@ static ir_node *transform_node_Not(ir_node *n)
   return n;
 }
 
+/**
+ * Transform a Div/Mod/DivMod with a non-zero constant. Must be
+ * done here to avoid that this optimization runs more than once...
+ */
+static ir_node *transform_node_Proj(ir_node *proj)
+{
+  ir_node *n = get_Proj_pred(proj);
+  ir_node *b;
+  tarval *tb;
+
+  switch (get_irn_opcode(n)) {
+  case iro_Div:
+    b = get_Div_right(n);
+    tb = computed_value(b);
+
+    if (tb != tarval_bad && tarval_classify(tb) != TV_CLASSIFY_NULL) { /* div(x, c) && c != 0 */
+      ir_node *div, *proj;
+      ir_node *a = get_Div_left(n);
+      ir_node *mem = get_Div_mem(n);
+      int rem = get_optimize();
+
+      set_optimize(0);
+      {
+        div = new_rd_Div(get_irn_dbg_info(n), current_ir_graph,
+	  get_nodes_Block(n), get_irg_initial_mem(current_ir_graph), a, b);
+
+        proj = new_r_Proj(current_ir_graph, get_nodes_Block(n), div, get_irn_mode(a), pn_Div_res);
+      }
+      set_optimize(rem);
+
+      turn_into_tuple(n, 3);
+      set_Tuple_pred(n, pn_Mod_M, mem);
+      set_Tuple_pred(n, pn_Mod_X_except, new_Bad());
+      set_Tuple_pred(n, pn_Mod_res, proj);
+    }
+    break;
+  case iro_Mod:
+    b = get_Mod_right(n);
+    tb = computed_value(b);
+
+    if (tb != tarval_bad && tarval_classify(tb) != TV_CLASSIFY_NULL) { /* mod(x, c) && c != 0 */
+      ir_node *mod, *proj;
+      ir_node *a = get_Mod_left(n);
+      ir_node *mem = get_Mod_mem(n);
+      int rem = get_optimize();
+
+      set_optimize(0);
+      {
+        mod = new_rd_Mod(get_irn_dbg_info(n), current_ir_graph,
+	  get_nodes_Block(n), get_irg_initial_mem(current_ir_graph), a, b);
+
+        proj = new_r_Proj(current_ir_graph, get_nodes_Block(n), mod, get_irn_mode(a), pn_Mod_res);
+      }
+      set_optimize(rem);
+
+      turn_into_tuple(n, 3);
+      set_Tuple_pred(n, pn_Mod_M, mem);
+      set_Tuple_pred(n, pn_Mod_X_except, new_Bad());
+      set_Tuple_pred(n, pn_Mod_res, proj);
+    }
+    break;
+  case iro_DivMod:
+    b = get_DivMod_right(n);
+    tb = computed_value(b);
+
+    if (tb != tarval_bad && tarval_classify(tb) != TV_CLASSIFY_NULL) { /* DivMod(x, c) && c != 0 */
+      ir_node *div_mod, *proj_div, *proj_mod;
+      ir_node *a = get_Mod_left(n);
+      ir_node *mem = get_Mod_mem(n);
+      int rem = get_optimize();
+
+      set_optimize(0);
+      {
+        div_mod = new_rd_DivMod(get_irn_dbg_info(n), current_ir_graph,
+	  get_nodes_Block(n), get_irg_initial_mem(current_ir_graph), a, b);
+
+        proj_div = new_r_Proj(current_ir_graph, get_nodes_Block(n), div_mod, get_irn_mode(a), pn_DivMod_res_div);
+        proj_mod = new_r_Proj(current_ir_graph, get_nodes_Block(n), div_mod, get_irn_mode(a), pn_DivMod_res_mod);
+      }
+      set_optimize(rem);
+
+      turn_into_tuple(n, 4);
+      set_Tuple_pred(n, pn_DivMod_M, mem);
+      set_Tuple_pred(n, pn_DivMod_X_except, new_Bad());
+      set_Tuple_pred(n, pn_DivMod_res_div, proj_div);
+      set_Tuple_pred(n, pn_DivMod_res_mod, proj_mod);
+    }
+    break;
+  default:
+    /* do nothing */
+    return proj;
+  }
+
+  /* we have added a Tuple, optimize it for the current Proj away */
+  return equivalent_node_Proj(proj);
+}
 
 /**
  * Tries several [inplace] [optimizing] transformations and returns an
@@ -1278,6 +1330,7 @@ static ir_op *firm_set_default_transform_node(ir_op *op)
   CASE(Cond);
   CASE(Eor);
   CASE(Not);
+  CASE(Proj);
   default:
     op->transform_node  = NULL;
   }
