@@ -2331,7 +2331,7 @@ optimize_node (ir_node *n)
 			old_tp = get_irn_type(get_irn_n(n, i));
 	}
 
-	/* Allways optimize Phi nodes: part of the construction. */
+	/* Always optimize Phi nodes: part of the construction. */
 	if ((!get_opt_optimize()) && (iro != iro_Phi)) return n;
 
 	/* constant expression evaluation / constant folding */
