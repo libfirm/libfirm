@@ -602,8 +602,8 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   int exc_handling; ir_node *proj;
   type *called_frame;
 
-  if (!get_opt_optimize() || !get_opt_inline() ||
-      (get_irg_inline_property(called_graph) == irg_inline_forbidden)) return;
+  if ( !(get_irg_inline_property(called_graph) == irg_inline_forced) && (!get_opt_optimize() || !get_opt_inline() ||
+      (get_irg_inline_property(called_graph) == irg_inline_forbidden))) return;
 
   /* --  Turn off optimizations, this can cause problems when allocating new nodes. -- */
   rem_opt = get_opt_optimize();
@@ -634,13 +634,6 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
      exc_handling: 0 There is a handler.
                    1 Branches to End.
 		   2 Exception handling not represented in Firm. -- */
-  exc_handling = 2;
-  for (proj = (ir_node *)get_irn_link(call); proj; proj = (ir_node *)get_irn_link(proj)) {
-    assert(get_irn_op(proj) == op_Proj);
-    if (get_Proj_proj(proj) == pn_Call_M_except) { exc_handling = 0; break;}
-    if (get_Proj_proj(proj) == pn_Call_X_except) { exc_handling = 1; }
-  }
-
   {
     ir_node *proj, *Mproj = NULL, *Xproj = NULL;
     for (proj = (ir_node *)get_irn_link(call); proj; proj = (ir_node *)get_irn_link(proj)) {
@@ -648,9 +641,9 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
       if (get_Proj_proj(proj) == pn_Call_X_except) Xproj = proj;
       if (get_Proj_proj(proj) == pn_Call_M_except) Mproj = proj;
     }
-    if      (Mproj) { assert(Xproj); exc_handling = 0; }
-    else if (Xproj) {                exc_handling = 1; }
-    else            {                exc_handling = 2; }
+    if      (Mproj) { assert(Xproj); exc_handling = 0; } // Mproj
+    else if (Xproj) {                exc_handling = 1; } //!Mproj &&  Xproj
+    else            {                exc_handling = 2; } //!Mproj && !Xproj
   }
 
 
@@ -821,7 +814,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
      Second the Call branches to End, the exception is not handled.  Just
      add all inlined exception branches to the End node.
      Third: there is no Exception edge at all. Handle as case two. */
-  if (exc_handler == 0) {
+  if (exc_handling == 0) {
     n_exc = 0;
     for (i = 0; i < arity; i++) {
       ir_node *ret;
@@ -861,7 +854,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
     int main_end_bl_arity;
     ir_node **end_preds;
 
-    /* assert(exc_handler == 1 || no exceptions. ) */
+    /* assert(exc_handling == 1 || no exceptions. ) */
     n_exc = 0;
     for (i = 0; i < arity; i++) {
       ir_node *ret = get_irn_n(end_bl, i);
