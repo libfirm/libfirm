@@ -141,7 +141,7 @@ ident*      get_type_ident(type *tp);
 void        set_type_ident(type *tp, ident* id);
 const char* get_type_name(type *tp);
 
-/** The state of a type layout. */
+/** The state of the type layout. */
 typedef enum {
   layout_undefined,    /**< The layout of this type is not defined.
 			  Address computation to access fields is not

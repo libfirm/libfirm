@@ -40,7 +40,7 @@
 void exchange_types(type *old_type, type *new_type);
 
 /**
- *   skip id types until a useful type is reached.
+ *   Skip id types until a useful type is reached.
  *
  *   @param tp - A type of arbitrary kind.
  *
