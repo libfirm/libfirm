@@ -72,11 +72,9 @@ static tarval *computed_value_Add(ir_node *n)
   tarval *ta = value_of(a);
   tarval *tb = value_of(b);
 
-  if ((ta != tarval_bad) && (tb != tarval_bad)
-        && (get_irn_mode(a) == get_irn_mode(b))
-        && !(get_mode_sort(get_irn_mode(a)) == irms_reference)) {
+  if ((ta != tarval_bad) && (tb != tarval_bad) && (get_irn_mode(a) == get_irn_mode(b)))
     return tarval_add(ta, tb);
-  }
+
   return tarval_bad;
 }
 
@@ -98,11 +96,9 @@ static tarval *computed_value_Sub(ir_node *n)
   ta = value_of(a);
   tb = value_of(b);
 
-  if ((ta != tarval_bad) && (tb != tarval_bad)
-        && (get_irn_mode(a) == get_irn_mode(b))
-        && !(get_mode_sort(get_irn_mode(a)) == irms_reference)) {
+  if ((ta != tarval_bad) && (tb != tarval_bad) && (get_irn_mode(a) == get_irn_mode(b)))
     return tarval_sub(ta, tb);
-  }
+
   return tarval_bad;
 }
 
@@ -137,14 +133,10 @@ static tarval *computed_value_Mul(ir_node *n)
     /* a*0 = 0 or 0*b = 0:
        calls computed_value recursive and returns the 0 with proper
        mode. */
-    tarval *v;
-
-    if ( ( ((v = ta) != tarval_bad)
-             && (v == get_mode_null(get_tarval_mode(v))) )
-      || ( ((v = tb) != tarval_bad)
-             && (v == get_mode_null(get_tarval_mode(v))) )) {
-        return v;
-    }
+    if ((ta != tarval_bad) && (ta == get_mode_null(get_tarval_mode(ta))))
+      return ta;
+    if ((tb != tarval_bad) && (tb == get_mode_null(get_tarval_mode(tb))))
+      return tb;
   }
   return tarval_bad;
 }
@@ -178,8 +170,8 @@ static tarval *do_computed_value_Div(ir_node *a, ir_node *b)
   tarval *tb = value_of(b);
 
   /* Compute c1 / c2 or 0 / a, a != 0 */
-  if ((ta != tarval_bad) && (tb != get_mode_null(get_irn_mode(b)))) {
-    if (tb != tarval_bad)   /* div by zero: return tarval_bad */
+  if (ta != tarval_bad) {
+    if ((tb != tarval_bad) && (tb != get_mode_null(get_irn_mode(b))))   /* div by zero: return tarval_bad */
       return tarval_div(ta, tb);
     else if (ta == get_mode_null(get_tarval_mode(ta)))  /* 0 / b == 0 */
       return ta;
@@ -254,8 +246,8 @@ static tarval *computed_value_And(ir_node *n)
   } else {
     tarval *v;
 
-    if (   (classify_tarval ((v = computed_value (a))) == TV_CLASSIFY_NULL)
-        || (classify_tarval ((v = computed_value (b))) == TV_CLASSIFY_NULL)) {
+    if (   (classify_tarval ((v = ta)) == TV_CLASSIFY_NULL)
+        || (classify_tarval ((v = tb)) == TV_CLASSIFY_NULL)) {
       return v;
     }
   }
@@ -278,8 +270,8 @@ static tarval *computed_value_Or(ir_node *n)
     return tarval_or (ta, tb);
   } else {
     tarval *v;
-    if (   (classify_tarval ((v = computed_value (a))) == TV_CLASSIFY_ALL_ONE)
-        || (classify_tarval ((v = computed_value (b))) == TV_CLASSIFY_ALL_ONE)) {
+    if (   (classify_tarval ((v = ta)) == TV_CLASSIFY_ALL_ONE)
+        || (classify_tarval ((v = tb)) == TV_CLASSIFY_ALL_ONE)) {
       return v;
     }
   }
@@ -434,8 +426,8 @@ static tarval *computed_value_Proj(ir_node *n)
       return new_tarval_from_long (proj_nr == Eq, mode_b) */
       return new_tarval_from_long (proj_nr & Eq, mode_b);
     } else {
-      tarval *taa = computed_value (aa);
-      tarval *tab = computed_value (ab);
+      tarval *taa = value_of(aa);
+      tarval *tab = value_of(ab);
 
       if ((taa != tarval_bad) && (tab != tarval_bad)) { /* 2.: */
         /* strange checks... */
@@ -695,9 +687,9 @@ static ir_node *equivalent_node_neutral_zero(ir_node *n)
 
   /* After running compute_node there is only one constant predecessor.
      Find this predecessors value and remember the other node: */
-  if ((tv = computed_value(a)) != tarval_bad) {
+  if ((tv = value_of(a)) != tarval_bad) {
     on = b;
-  } else if ((tv = computed_value(b)) != tarval_bad) {
+  } else if ((tv = value_of(b)) != tarval_bad) {
     on = a;
   } else
     return n;
@@ -727,7 +719,7 @@ static ir_node *equivalent_node_left_zero(ir_node *n)
   ir_node *a = get_binop_left(n);
   ir_node *b = get_binop_right(n);
 
-  if (classify_tarval(computed_value(b)) == TV_CLASSIFY_NULL) {
+  if (classify_tarval(value_of(b)) == TV_CLASSIFY_NULL) {
     n = a;
 
     DBG_OPT_ALGSIM1(oldn, a, b, n);
@@ -776,10 +768,10 @@ static ir_node *equivalent_node_Mul(ir_node *n)
   ir_node *b = get_Mul_right(n);
 
   /* Mul is commutative and has again an other neutral element. */
-  if (classify_tarval (computed_value (a)) == TV_CLASSIFY_ONE) {
+  if (classify_tarval(value_of(a)) == TV_CLASSIFY_ONE) {
     n = b;
     DBG_OPT_ALGSIM1(oldn, a, b, n);
-  } else if (classify_tarval (computed_value (b)) == TV_CLASSIFY_ONE) {
+  } else if (classify_tarval(value_of(b)) == TV_CLASSIFY_ONE) {
     n = a;
     DBG_OPT_ALGSIM1(oldn, a, b, n);
   }
@@ -795,7 +787,7 @@ static ir_node *equivalent_node_Div(ir_node *n)
   ir_node *b = get_Div_right(n);
 
   /* Div is not commutative. */
-  if (classify_tarval(computed_value(b)) == TV_CLASSIFY_ONE) { /* div(x, 1) == x */
+  if (classify_tarval(value_of(b)) == TV_CLASSIFY_ONE) { /* div(x, 1) == x */
     /* Turn Div into a tuple (mem, bad, a) */
     ir_node *mem = get_Div_mem(n);
     turn_into_tuple(n, 3);
@@ -815,7 +807,7 @@ static ir_node *equivalent_node_DivMod(ir_node *n)
   ir_node *b = get_DivMod_right(n);
 
   /* Div is not commutative. */
-  if (classify_tarval(computed_value(b)) == TV_CLASSIFY_ONE) { /* div(x, 1) == x */
+  if (classify_tarval(value_of(b)) == TV_CLASSIFY_ONE) { /* div(x, 1) == x */
     /* Turn DivMod into a tuple (mem, bad, a, 0) */
     ir_node *mem = get_Div_mem(n);
     ir_mode *mode = get_irn_mode(b);
@@ -841,10 +833,10 @@ static ir_node *equivalent_node_And(ir_node *n)
 
   if (a == b) {
     n = a;    /* And has it's own neutral element */
-  } else if (classify_tarval(computed_value(a)) == TV_CLASSIFY_ALL_ONE) {
+  } else if (classify_tarval(value_of(a)) == TV_CLASSIFY_ALL_ONE) {
     n = b;
     DBG_OPT_ALGSIM1(oldn, a, b, n);
-  } else if (classify_tarval(computed_value(b)) == TV_CLASSIFY_ALL_ONE) {
+  } else if (classify_tarval(value_of(b)) == TV_CLASSIFY_ALL_ONE) {
     n = a;
     DBG_OPT_ALGSIM1(oldn, a, b, n);
   }
@@ -1124,7 +1116,7 @@ static ir_node *transform_node_Mul(ir_node *n) {
 
 static ir_node *transform_node_Div(ir_node *n)
 {
-  tarval *tv = computed_value(n);
+  tarval *tv = value_of(n);
   ir_node *value = n;
 
   /* BEWARE: it is NOT possible to optimize a/a to 1, as this may cause a exception */
@@ -1148,7 +1140,7 @@ static ir_node *transform_node_Div(ir_node *n)
 
 static ir_node *transform_node_Mod(ir_node *n)
 {
-  tarval *tv = computed_value(n);
+  tarval *tv = value_of(n);
   ir_node *value = n;
 
   /* BEWARE: it is NOT possible to optimize a%a to 0, as this may cause a exception */
@@ -1260,7 +1252,7 @@ static ir_node *transform_node_Cond(ir_node *n)
     add_End_keepalive(get_irg_end(current_ir_graph), get_nodes_block(n));
   } else if ((get_irn_op(a) == op_Eor)
              && (get_irn_mode(a) == mode_b)
-             && (classify_tarval(computed_value(get_Eor_right(a))) == TV_CLASSIFY_ONE)) {
+             && (classify_tarval(value_of(get_Eor_right(a))) == TV_CLASSIFY_ONE)) {
     /* The Eor is a negate.  Generate a new Cond without the negate,
        simulate the negate by exchanging the results. */
     set_irn_link(n, new_r_Cond(current_ir_graph, get_nodes_block(n),
@@ -1283,13 +1275,13 @@ static ir_node *transform_node_Eor(ir_node *n)
   if ((get_irn_mode(n) == mode_b)
       && (get_irn_op(a) == op_Proj)
       && (get_irn_mode(a) == mode_b)
-      && (classify_tarval (computed_value (b)) == TV_CLASSIFY_ONE)
+      && (classify_tarval (value_of(b)) == TV_CLASSIFY_ONE)
       && (get_irn_op(get_Proj_pred(a)) == op_Cmp))
     /* The Eor negates a Cmp. The Cmp has the negated result anyways! */
     n = new_r_Proj(current_ir_graph, get_nodes_block(n), get_Proj_pred(a),
                    mode_b, get_negated_pnc(get_Proj_proj(a)));
   else if ((get_irn_mode(n) == mode_b)
-           && (classify_tarval (computed_value (b)) == TV_CLASSIFY_ONE))
+           && (classify_tarval (value_of(b)) == TV_CLASSIFY_ONE))
     /* The Eor is a Not. Replace it by a Not. */
     /*   ????!!!Extend to bitfield 1111111. */
     n = new_r_Not(current_ir_graph, get_nodes_block(n), a, mode_b);
@@ -1346,7 +1338,7 @@ static ir_node *transform_node_Proj(ir_node *proj)
   switch (get_irn_opcode(n)) {
   case iro_Div:
     b  = get_Div_right(n);
-    tb = computed_value(b);
+    tb = value_of(b);
 
     if (tb != tarval_bad && classify_tarval(tb) != TV_CLASSIFY_NULL) { /* div(x, c) && c != 0 */
       proj_nr = get_Proj_proj(proj);
@@ -1370,7 +1362,7 @@ static ir_node *transform_node_Proj(ir_node *proj)
     break;
   case iro_Mod:
     b  = get_Mod_right(n);
-    tb = computed_value(b);
+    tb = value_of(b);
 
     if (tb != tarval_bad && classify_tarval(tb) != TV_CLASSIFY_NULL) { /* mod(x, c) && c != 0 */
       proj_nr = get_Proj_proj(proj);
@@ -1393,7 +1385,7 @@ static ir_node *transform_node_Proj(ir_node *proj)
     break;
   case iro_DivMod:
     b  = get_DivMod_right(n);
-    tb = computed_value(b);
+    tb = value_of(b);
 
     if (tb != tarval_bad && classify_tarval(tb) != TV_CLASSIFY_NULL) { /* DivMod(x, c) && c != 0 */
       proj_nr = get_Proj_proj(proj);
@@ -1418,7 +1410,7 @@ static ir_node *transform_node_Proj(ir_node *proj)
   case iro_Cond:
     if (get_opt_unreachable_code()) {
       b = get_Cond_selector(n);
-      tb = computed_value(b);
+      tb = value_of(b);
 
       if (tb != tarval_bad && mode_is_int(get_tarval_mode(tb))) {
         /* we have a constant switch */
@@ -1570,11 +1562,11 @@ static ir_node * transform_node_shift(ir_node *n)
   if (get_irn_op(left) != get_irn_op(n))
     return n;
 
-  tv1 = computed_value(get_binop_right(n));
+  tv1 = value_of(get_binop_right(n));
   if (tv1 == tarval_bad)
     return n;
 
-  tv2 = computed_value(get_binop_right(left));
+  tv2 = value_of(get_binop_right(left));
   if (tv2 == tarval_bad)
     return n;
 
@@ -2051,7 +2043,7 @@ optimize_node (ir_node *n)
     /* constants can not be evaluated */
     if (iro != iro_Const) {
       /* try to evaluate */
-      tv = computed_value (n);
+      tv = computed_value(n);
       if ((get_irn_mode(n) != mode_T) && (tv != tarval_bad)) {
         /*
          * we MUST copy the node here temporary, because it's still needed
@@ -2156,13 +2148,15 @@ optimize_in_place_2 (ir_node *n)
     /* constants can not be evaluated */
     if (iro != iro_Const) {
       /* try to evaluate */
-      tv = computed_value (n);
+      tv = computed_value(n);
       if ((get_irn_mode(n) != mode_T) && (tv != tarval_bad)) {
         /* evaluation was successful -- replace the node. */
         n = new_Const (get_tarval_mode (tv), tv);
+
 	if (old_tp && get_type_mode(old_tp) == get_tarval_mode (tv))
 	  set_Const_type(n, old_tp);
-                                                            DBG_OPT_ALGSIM0(oldn, n);
+
+        DBG_OPT_ALGSIM0(oldn, n);
         return n;
       }
     }
