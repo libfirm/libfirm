@@ -518,6 +518,9 @@ dump_node_opcode(FILE *F, ir_node *n)
     if (ent) fprintf (F, " %s", get_entity_name(ent));
     break;
   }
+  case iro_Load:
+    fprintf (F, "%s[%s]", get_irn_opname(n), get_mode_name_ex(get_Load_mode(n), &bad));
+    break;
 
 default_case:
   default: {
