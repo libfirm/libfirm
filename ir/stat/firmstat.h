@@ -128,6 +128,11 @@ void stat_inline(ir_node *call, ir_graph *irg);
 void stat_tail_rec(ir_graph *irg);
 
 /**
+ * Strength reduction was performed on an iteration variable.
+ */
+void stat_strength_red(ir_graph *irg, ir_node *strong, ir_node *cmp);
+
+/**
  * Start the dead node elimination.
  */
 void stat_dead_node_elim_start(ir_graph *irg);
@@ -163,6 +168,7 @@ ir_op *stat_get_op_from_opcode(opcode code);
 #define stat_lower(node)
 #define stat_inline(call, irg)
 #define stat_tail_rec(irg)
+#define stat_strength_red(irg, strong, cmp)
 #define stat_dead_node_elim_start(irg)
 #define stat_dead_node_elim_stop(irg)
 

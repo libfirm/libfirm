@@ -58,6 +58,7 @@ typedef struct _graph_entry_t {
   counter_t               cnt_walked_blocks;		/**< walker walked over the graph blocks */
   counter_t               cnt_was_inlined;		/**< number of times other graph were inlined */
   counter_t               cnt_got_inlined;		/**< number of times this graph was inlined */
+  counter_t               cnt_strength_red;		/**< number of times strength reduction was successful on this graph */
   counter_t               cnt_edges;			/**< number of DF edges in this graph */
   HASH_MAP(opt_entry_t)   *opt_hash[STAT_OPT_MAX];	/**< hash maps containing opcode counter for optimizations */
   ir_graph                *irg;				/**< the graph of this object */

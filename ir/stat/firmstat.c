@@ -172,8 +172,9 @@ static void graph_clear_entry(graph_entry_t *elem)
 {
   cnt_clr(&elem->cnt_walked);
   cnt_clr(&elem->cnt_walked_blocks);
-  cnt_clr(&elem->cnt_got_inlined);
   cnt_clr(&elem->cnt_was_inlined);
+  cnt_clr(&elem->cnt_got_inlined);
+  cnt_clr(&elem->cnt_strength_red);
   cnt_clr(&elem->cnt_edges);
 }
 
@@ -527,11 +528,12 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
         fprintf(dmp->f, "\nIrg %p", (void *)entry->irg);
     }
 
-    fprintf(dmp->f, " %swalked %d over blocks %d was inlined %d got inlined %d:\n",
+    fprintf(dmp->f, " %swalked %d over blocks %d was inlined %d got inlined %d strength red %d:\n",
         entry->deleted ? "DELETED " : "",
         entry->cnt_walked.cnt[0], entry->cnt_walked_blocks.cnt[0],
         entry->cnt_was_inlined.cnt[0],
-        entry->cnt_got_inlined.cnt[0]
+        entry->cnt_got_inlined.cnt[0],
+	entry->cnt_strength_red.cnt[0]
     );
   }
   else {
@@ -646,7 +648,7 @@ static void csv_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 
   counter_t cnt[4];
 
-  if (entry->irg) {
+  if (entry->irg && !entry->deleted) {
     ir_graph *const_irg = get_const_code_irg();
 
     if (entry->irg == const_irg) {
@@ -872,7 +874,7 @@ void stat_free_graph(ir_graph *irg)
     count_nodes_in_graph(global, graph);
 
     /* count the DAG's */
-    count_dags_in_graph(global, graph);
+//    count_dags_in_graph(global, graph);
 
     /* calculate the pattern */
     stat_calc_pattern_history(irg);
@@ -1003,6 +1005,36 @@ void stat_inline(ir_node *call, ir_graph *called_irg)
 }
 
 /*
+ * A graph with tail-recursions was optimized.
+ */
+void stat_tail_rec(ir_graph *irg)
+{
+  if (! status->enable)
+    return;
+
+  STAT_ENTER;
+  {
+  }
+  STAT_LEAVE;
+}
+
+/*
+ * Strength reduction was performed on an iteration variable.
+ */
+void stat_strength_red(ir_graph *irg, ir_node *strong, ir_node *cmp)
+{
+  if (! status->enable)
+    return;
+
+  STAT_ENTER;
+  {
+    graph_entry_t *graph = graph_get_entry(irg, status->irg_hash);
+    cnt_inc(&graph->cnt_strength_red);
+  }
+  STAT_LEAVE;
+}
+
+/*
  * Start the dead node elimination.
  */
 void stat_dead_node_elim_start(ir_graph *irg)
@@ -1050,7 +1082,7 @@ void stat_finish(const char *name)
         count_nodes_in_graph(global, entry);
 
         /* count the DAG's */
-        count_dags_in_graph(global, entry);
+//        count_dags_in_graph(global, entry);
 
         /* calculate the pattern */
         stat_calc_pattern_history(entry->irg);
@@ -1120,6 +1152,10 @@ void stat_merge_nodes(
 void stat_lower(ir_node *node) {}
 
 void stat_inline(ir_node *call, ir_graph *irg) {}
+
+void stat_tail_rec(ir_graph *irg) {}
+
+void stat_strength_red(ir_graph *irg, ir_node *strong, ir_node *cmp) {}
 
 void stat_dead_node_elim_start(ir_graph *irg) {}
 
