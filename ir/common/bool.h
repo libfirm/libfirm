@@ -9,6 +9,10 @@
 
 /* $Id$ */
 
+
+/*#include "stdbool.h"*/
+
+
 # ifndef _BOOL_H_
 # define _BOOL_H_
 

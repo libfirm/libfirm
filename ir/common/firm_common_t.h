@@ -4,7 +4,7 @@
 ** Authors: Martin Trapp, Christian Schaefer &
 **          Goetz Lindenmaier
 **
-** common_t.h: preprocessor flags
+** firm_common_t.h: preprocessor flags
 */
 
 /* $Id$ */
@@ -12,7 +12,7 @@
 # ifndef _COMMON_T_H_
 # define _COMMON_T_H_
 
-#include "common.h"
+#include "firm_common.h"
 
 /** Global flags.  Set these by autoconf?? **/
 

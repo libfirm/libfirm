@@ -4,7 +4,7 @@
 ** Authors: Martin Trapp, Christian Schaefer &
 **          Goetz Lindenmaier
 **
-** common.c:
+** firm_common.c:
 */
 
 /* $Id$ */
@@ -13,7 +13,7 @@
 # include <config.h>
 #endif
 
-#include "common_t.h"
+#include "firm_common_t.h"
 #include "irgraph.h"
 
 /* returns the kind of the thing */

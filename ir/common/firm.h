@@ -73,11 +73,19 @@
 # include "ircgopt.h"    /* Optimizations based on interprocedural graph */
 
 # include "irdom.h"      /* Dominator analysis */
-# include "cgana.h"      /* Analysis to construct interprocedural graph
-			    including some optimizations */
+# include "cgana.h"      /* Analysis to construct interprocedural graph */
+                         /* including some optimizations */
+# include "irloop.h"     /* loop and backedge analysis */
 
 # include "irgmod.h"     /* Support to modify ir */
 # include "irgwalk.h"    /* Support to walk ir */
+# include "typewalk.h"   /* Support to walk type information */
+
+/* @@@ temporarily for jni builder until preprocessor works.
+   Then it should be sufficient to include <file.h> instead
+   of firm.h as not all enums are needed in the impelmentation
+   files. */
+# include "irdump.h"
 
 /* initialize firm */
 void init_firm (void);

@@ -4,13 +4,13 @@
 ** Authors: Martin Trapp, Christian Schaefer &
 **          Goetz Lindenmaier
 **
-** common.h: common firm declarations
+** firm_common.h: common firm declarations
 */
 
 /* $Id$ */
 
-# ifndef _COMMON_H_
-# define _COMMON_H_
+# ifndef _FIRM_COMMON_H_
+# define _FIRM_COMMON_H_
 
 #ifndef INLINE
 #ifdef USE_GCC_INLINE
@@ -34,4 +34,4 @@ firm_kind get_kind(void *firm_thing);
 /* returns a string. */
 const char* print_firm_kind(void *firm_thing);
 
-# endif /*_COMMON_H_ */
+# endif /*_FIRM_COMMON_H_ */
