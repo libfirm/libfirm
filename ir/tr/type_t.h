@@ -112,9 +112,9 @@ typedef union {
 
 /** the structure of a type */
 struct type {
-  firm_kind kind;
-  tp_op *type_op;
-  ident *name;
+  firm_kind kind;          /**< the firm kind, must be k_type */
+  tp_op *type_op;          /**< the type operation of the type */
+  ident *name;             /**< The name of the type */
   type_state state;        /**< Represents the types state: layout undefined or
                   fixed. */
   int size;                /**< Size of an entity of this type. This is determined
@@ -133,8 +133,7 @@ struct type {
 
 #ifdef DEBUG_libfirm
   int nr;             /**< a unique node number for each node to make output
-                  readable. */
-  char *c_name;                 /**< since idents are opaque, provide the name in cleartext */
+                           readable. */
 #endif
   tp_attr attr;            /* type kind specific fields. This must be the last
                   entry in this struct!  Varying size! */
@@ -146,9 +145,9 @@ struct type {
  *   @param type_op - the kind of this type.  May not be type_id.
  *   @param mode    - the mode to be used for this type, may be NULL
  *   @param name    - an ident for the name of this type.
- *   @return a new type of the given type.  The remaining private attributes are not
- *   @return initalized.  The type is in state layout_undefined.
  *
+ *   @return A new type of the given type.  The remaining private attributes are not
+ *           initialized.  The type is in state layout_undefined.
  */
 INLINE type *
 new_type(tp_op *type_op,
