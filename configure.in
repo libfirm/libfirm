@@ -133,19 +133,18 @@ dnl disable external effects in XML
 dnl -------------------------------
 AC_MSG_CHECKING([for using external effects in xml2])
 AC_ARG_ENABLE(external-effects,
-[  --disable-effects       disable descriptions of external effects in XML],
-[if test "$enableval"=no; then
+[  --disable-external-effects  disable descriptions of external effects in XML],
+[if test "$enableval"="no"; then
   enable_external_effects=no
 fi],
 [enable_external_effects=yes])
 AC_SUBST(enable_external_effects)
-if test "$enable_external_effects" == "no"; then
+if test "$enable_external_effects" == no; then
   AC_MSG_RESULT([disabled])
 else
   AC_MSG_RESULT([enabled])
 fi
 dnl check for header and library below
-
 
 dnl Checks for programs.
 dnl ====================
