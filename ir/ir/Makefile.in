@@ -27,7 +27,6 @@ SOURCES += 	Makefile.in \
 		irmode.c irop.c irprog.c irflag.c irflag_t.h irgraph.c \
 		irmode_t.h irop_t.h irprog_t.h ircgcons.c ircgopt.c
 
-
 include $(topdir)/MakeRules
 
 CPPFLAGS += 	-I$(top_srcdir)/ir/adt   -I$(top_srcdir)/ir/ir  -I$(top_srcdir)/ir/common  \
