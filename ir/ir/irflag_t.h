@@ -99,7 +99,7 @@ extern int firm_verbosity_level;
 
 
 /** Returns constant folding optimization setting. */
-static INLINE int get_opt_cse(void)
+static INLINE int _get_opt_cse(void)
 {
   return libFIRM_opt & OPT_CSE;
 }
@@ -116,7 +116,7 @@ static INLINE int get_opt_strength_red(void)
 }
 
 /** Returns verbosity for strength reduction.   */
-static INLINE int get_opt_strength_red_verbosity(void)
+static INLINE int get_opt_strength_red_verbose(void)
 {
   return libFIRM_verb & OPT_STRENGTH_RED;
 }
@@ -193,7 +193,7 @@ static INLINE int get_opt_optimize(void)
   return libFIRM_opt & OPT_OPTIMIZED;
 }
 
-static INLINE int __get_firm_verbosity (void) {
+static INLINE int _get_firm_verbosity (void) {
   return firm_verbosity_level;
 }
 
@@ -233,6 +233,7 @@ static INLINE int get_opt_precise_exc_context(void)
 
 
 
-#define get_firm_verbosity()  __get_firm_verbosity()
+#define get_opt_cse()          _get_opt_cse()
+#define get_firm_verbosity()   _get_firm_verbosity()
 
 #endif /* _IRFLAG_T_H_ */
