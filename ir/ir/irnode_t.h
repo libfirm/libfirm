@@ -537,6 +537,31 @@ _is_Block(const ir_node *node) {
   return (_get_irn_op(node) == op_Block);
 }
 
+static INLINE unsigned long
+_get_Block_block_visited (ir_node *node) {
+  assert (node->op == op_Block);
+  return node->attr.block.block_visited;
+}
+
+static INLINE void
+_set_Block_block_visited (ir_node *node, unsigned long visit) {
+  assert (node->op == op_Block);
+  node->attr.block.block_visited = visit;
+}
+
+/* For this current_ir_graph must be set. */
+static INLINE void
+_mark_Block_block_visited (ir_node *node) {
+  assert (node->op == op_Block);
+  node->attr.block.block_visited = get_irg_block_visited(current_ir_graph);
+}
+
+static INLINE int
+_Block_not_block_visited(ir_node *node) {
+  assert (node->op == op_Block);
+  return (node->attr.block.block_visited < get_irg_block_visited(current_ir_graph));
+}
+
 static INLINE ir_node *
 _set_Block_dead(ir_node *block) {
   assert(_get_irn_op(block) == op_Block);
@@ -580,33 +605,37 @@ static INLINE type *_get_irn_type(ir_node *node) {
 }
 
 /* this section MUST contain all inline functions */
-#define is_ir_node(thing)          _is_ir_node(thing)
-#define get_irn_intra_arity(node)  _get_irn_intra_arity(node)
-#define get_irn_inter_arity(node)  _get_irn_inter_arity(node)
-#define get_irn_arity(node)        _get_irn_arity(node)
-#define get_irn_intra_n(node, n)   _get_irn_intra_n(node, n)
-#define get_irn_inter_n(node, n)   _get_irn_inter_n(node, n)
-#define get_irn_n(node, n)         _get_irn_n(node, n)
-#define get_irn_mode(node)         _get_irn_mode(node)
-#define set_irn_mode(node, mode)   _set_irn_mode(node, mode)
-#define get_irn_op(node)           _get_irn_op(node)
-#define get_irn_opcode(node)       _get_irn_opcode(node)
-#define get_irn_visited(node)      _get_irn_visited(node)
-#define set_irn_visited(node, v)   _set_irn_visited(node, v)
-#define mark_irn_visited(node)     _mark_irn_visited(node)
-#define irn_visited(node)          _irn_visited(node)
-#define irn_not_visited(node)      _irn_not_visited(node)
-#define set_irn_link(node, link)   _set_irn_link(node, link)
-#define get_irn_link(node)         _get_irn_link(node)
-#define is_unop(node)              _is_unop(node)
-#define is_binop(node)             _is_binop(node)
-#define is_Bad(node)               _is_Bad(node)
-#define is_no_Block(node)          _is_no_Block(node)
-#define is_Block(node)             _is_Block(node)
-#define set_Block_dead(block)      _set_Block_dead(block)
-#define is_Block_dead(block)       _is_Block_dead(block)
-#define get_Const_tarval(node)     _get_Const_tarval(node)
-#define classify_Const(node)       _classify_Const(node)
-#define get_irn_type(node)         _get_irn_type(node)
+#define is_ir_node(thing)                     _is_ir_node(thing)
+#define get_irn_intra_arity(node)             _get_irn_intra_arity(node)
+#define get_irn_inter_arity(node)             _get_irn_inter_arity(node)
+#define get_irn_arity(node)                   _get_irn_arity(node)
+#define get_irn_intra_n(node, n)              _get_irn_intra_n(node, n)
+#define get_irn_inter_n(node, n)              _get_irn_inter_n(node, n)
+#define get_irn_n(node, n)                    _get_irn_n(node, n)
+#define get_irn_mode(node)                    _get_irn_mode(node)
+#define set_irn_mode(node, mode)              _set_irn_mode(node, mode)
+#define get_irn_op(node)                      _get_irn_op(node)
+#define get_irn_opcode(node)                  _get_irn_opcode(node)
+#define get_irn_visited(node)                 _get_irn_visited(node)
+#define set_irn_visited(node, v)              _set_irn_visited(node, v)
+#define mark_irn_visited(node)                _mark_irn_visited(node)
+#define irn_visited(node)                     _irn_visited(node)
+#define irn_not_visited(node)                 _irn_not_visited(node)
+#define set_irn_link(node, link)              _set_irn_link(node, link)
+#define get_irn_link(node)                    _get_irn_link(node)
+#define is_unop(node)                         _is_unop(node)
+#define is_binop(node)                        _is_binop(node)
+#define is_Bad(node)                          _is_Bad(node)
+#define is_no_Block(node)                     _is_no_Block(node)
+#define is_Block(node)                        _is_Block(node)
+#define get_Block_block_visited(node)         _get_Block_block_visited(node)
+#define set_Block_block_visited(node, visit)  _set_Block_block_visited(node, visit)
+#define mark_Block_block_visited(node)        _mark_Block_block_visited(node)
+#define Block_not_block_visited(node)         _Block_not_block_visited(node)
+#define set_Block_dead(block)                 _set_Block_dead(block)
+#define is_Block_dead(block)                  _is_Block_dead(block)
+#define get_Const_tarval(node)                _get_Const_tarval(node)
+#define classify_Const(node)                  _classify_Const(node)
+#define get_irn_type(node)                    _get_irn_type(node)
 
 # endif /* _IRNODE_T_H_ */

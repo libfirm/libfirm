@@ -633,29 +633,26 @@ set_Block_matured (ir_node *node, bool matured) {
   assert (node->op == op_Block);
   node->attr.block.matured = matured;
 }
+
 unsigned long
-get_Block_block_visited (ir_node *node) {
-  assert (node->op == op_Block);
-  return node->attr.block.block_visited;
+(get_Block_block_visited)(ir_node *node) {
+  return _get_Block_block_visited(node);
 }
 
 void
-set_Block_block_visited (ir_node *node, unsigned long visit) {
-  assert (node->op == op_Block);
-  node->attr.block.block_visited = visit;
+(set_Block_block_visited)(ir_node *node, unsigned long visit) {
+  _set_Block_block_visited(node, visit);
 }
 
 /* For this current_ir_graph must be set. */
 void
-mark_Block_block_visited (ir_node *node) {
-  assert (node->op == op_Block);
-  node->attr.block.block_visited = get_irg_block_visited(current_ir_graph);
+(mark_Block_block_visited)(ir_node *node) {
+  _mark_Block_block_visited(node);
 }
 
 int
-Block_not_block_visited(ir_node *node) {
-  assert (node->op == op_Block);
-  return (node->attr.block.block_visited < get_irg_block_visited(current_ir_graph));
+(Block_not_block_visited)(ir_node *node) {
+  return _Block_not_block_visited(node);
 }
 
 ir_node *
