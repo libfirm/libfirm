@@ -32,6 +32,7 @@
 
 # include "typewalk.h"
 # include "irgwalk.h"
+# include "tv.h"
 # include "xmalloc.h"
 
 # include "gnu_ext.h"
@@ -429,6 +430,9 @@ void pto_reset_graph_pto (ir_graph *graph, int ctx_idx)
 
 /*
   $Log$
+  Revision 1.18  2005/02/16 13:27:52  beck
+  added needed tv.h include
+
   Revision 1.17  2005/01/14 14:12:51  liekweg
   prepare gnu extension fix
 
