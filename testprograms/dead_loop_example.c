@@ -41,6 +41,7 @@
 int main(int argc, char **argv)
 {
   ir_graph *irg;        /* this variable contains the irgraph */
+  type     *prim_t_int;
   type     *owner;      /* the class in which this method is defined */
   type     *proc_main;  /* typeinformation for the method main */
   entity   *ent;        /* represents this method as entity of owner */
@@ -49,7 +50,7 @@ int main(int argc, char **argv)
 
   /* init library */
   init_firm (NULL);
-  set_opt_normalize(0);
+  //set_opt_normalize(0);
   set_opt_constant_folding (0);  /* so that the stupid tests are not optimized. */
   set_opt_cse(1);
   set_opt_dead_node_elimination(1);
@@ -62,12 +63,15 @@ int main(int argc, char **argv)
    */
 #define CLASSNAME "DEAD_LOOP"
 #define METHODNAME "main"
-#define NRARGS 0
+#define NRARGS 1
 #define NRES 0
   printf("\nCreating an IR graph: %s...\n", CLASSNAME);
 
+  prim_t_int = new_type_primitive(id_from_str ("int", 3), mode_Is);
+
   owner = new_type_class (new_id_from_str (CLASSNAME));
   proc_main = new_type_method(new_id_from_str(METHODNAME), NRARGS, NRES);
+  set_method_param_type(proc_main, 0, prim_t_int);
   ent = new_entity (owner, new_id_from_str (METHODNAME), proc_main);
   get_entity_ld_name(ent); /* To enforce name mangling for vcg graph name */
 
@@ -87,7 +91,7 @@ int main(int argc, char **argv)
 
   switch_block(loopBlock1);
   c1 = new_Const (mode_Is, new_tarval_from_long (1, mode_Is));
-  c2 = new_Const (mode_Is, new_tarval_from_long (2, mode_Is));
+  c2 = new_Proj(get_irg_args(irg), mode_Is, 0);
   x =  new_Cond(new_Proj(new_Cmp(c1, c2), mode_b, Eq));
   f = new_Proj(x, mode_X, 0);
   t = new_Proj(x, mode_X, 1);
@@ -96,6 +100,7 @@ int main(int argc, char **argv)
   mature_block(loopBlock2);
 #endif
 
+#if 0
   /* Make the unreachable, endless loop */
   loopBlock1 = new_immBlock();
   loopBlock2 = new_immBlock();
@@ -108,6 +113,7 @@ int main(int argc, char **argv)
   add_in_edge(loopBlock2, x);
   add_End_keepalive(get_irg_end(irg), x);
   mature_block(loopBlock2);
+#endif
 
   /* Make the return block */
   switch_block(returnBlock);
@@ -138,6 +144,7 @@ int main(int argc, char **argv)
   construct_backedges(irg);
 
   printf("Dumping the graph with analyses information.\n");
+  dump_file_suffix = "-ana";
 
   dump_out_edges();
   dump_dominator_information();
@@ -145,6 +152,8 @@ int main(int argc, char **argv)
   dump_backedge_information(1);
 
   dump_ir_block_graph (irg);
+  dump_cfg (irg);
+  dump_loop_tree(irg, dump_file_suffix);
 
   printf("Use xvcg to view these graphs:\n");
   printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
