@@ -1330,6 +1330,9 @@ static ir_node *transform_node_Proj(ir_node *proj)
     if (tb != tarval_bad && classify_tarval(tb) != TV_CLASSIFY_NULL) { /* div(x, c) && c != 0 */
       proj_nr = get_Proj_proj(proj);
 
+      /* this node may float */
+      set_irn_pinned(n, op_pin_state_floats);
+
       if (proj_nr == pn_Div_X_except) {
         /* we found an exception handler, remove it */
         return new_Bad();
@@ -1338,6 +1341,7 @@ static ir_node *transform_node_Proj(ir_node *proj)
 	/* the memory Proj can be removed */
         ir_node *res = get_Div_mem(n);
         set_Div_mem(n, get_irg_initial_mem(current_ir_graph));
+
 	if (proj_nr == pn_Div_M)
           return res;
       }
@@ -1349,6 +1353,9 @@ static ir_node *transform_node_Proj(ir_node *proj)
 
     if (tb != tarval_bad && classify_tarval(tb) != TV_CLASSIFY_NULL) { /* mod(x, c) && c != 0 */
       proj_nr = get_Proj_proj(proj);
+
+      /* this node may float */
+      set_irn_pinned(n, op_pin_state_floats);
 
       if (proj_nr == pn_Mod_X_except) {
         /* we found an exception handler, remove it */
@@ -1369,6 +1376,9 @@ static ir_node *transform_node_Proj(ir_node *proj)
 
     if (tb != tarval_bad && classify_tarval(tb) != TV_CLASSIFY_NULL) { /* DivMod(x, c) && c != 0 */
       proj_nr = get_Proj_proj(proj);
+
+      /* this node may float */
+      set_irn_pinned(n, op_pin_state_floats);
 
       if (proj_nr == pn_DivMod_X_except) {
         /* we found an exception handler, remove it */
@@ -1657,7 +1667,7 @@ static int node_cmp_attr_Store(ir_node *a, ir_node *b)
 {
   /* NEVER do CSE on volatile Stores */
   return (get_Store_volatility(a) == volatility_is_volatile ||
-      get_Load_volatility(b) == volatility_is_volatile);
+      get_Store_volatility(b) == volatility_is_volatile);
 }
 
 /**
