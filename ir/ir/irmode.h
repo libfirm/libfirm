@@ -123,7 +123,6 @@ unsigned get_mode_ffloat   (ir_mode *mode);
 int mode_is_signed (ir_mode *mode);
 int mode_is_float (ir_mode *mode);
 int mode_is_int (ir_mode *mode);
-# define is_chilCHIL(m) ((m) <= irm_L && (m) >= irm_c) /* old */
 int mode_is_num (ir_mode *mode);
 int mode_is_data (ir_mode *mode);
 int mode_is_datab (ir_mode *mode);

@@ -45,7 +45,8 @@ static void irg_walk_cg(ir_node * node, int visited, eset * irg_set,
 
   if (pre) pre(node, env);
 
-  if (is_no_Block(node)) irg_walk_cg(get_nodes_Block(node), visited, irg_set, pre, post, env);
+  if (is_no_Block(node))
+    irg_walk_cg(get_nodes_Block(node), visited, irg_set, pre, post, env);
 
   if (get_irn_op(node) == op_Block) { /* block */
     for (i = get_irn_arity(node) - 1; i >= 0; --i) {
@@ -103,37 +104,22 @@ static void collect_irgs(ir_node * node, eset * irg_set) {
   }
 }
 
-
 void irg_walk_2(ir_node *node, irg_walk_func pre, irg_walk_func post, void * env)
 {
   int i;
-
-
   assert(node);
-  /*      printf(" - "); DDMSG2(node);  */
 
   if (get_irn_visited(node) < get_irg_visited(current_ir_graph)) {
-
-/*      printf(" -> "); DDMSG2(node);  */
     set_irn_visited(node, get_irg_visited(current_ir_graph));
 
-    if (pre) {
-      pre(node, env);
-    }
+    if (pre) pre(node, env);
 
-    if (is_no_Block(node)) {
+    if (is_no_Block(node))
       irg_walk_2(get_nodes_Block(node), pre, post, env);
-    }
-    for (i = get_irn_arity(node) - 1; i >= 0; --i) {
-      /* printf("   "); DDMSG2(node);
-	 printf("   "); DDMSG2(get_irn_n(node, i));  */
-
+    for (i = get_irn_arity(node) - 1; i >= 0; --i)
       irg_walk_2(get_irn_n(node, i), pre, post, env);
-    }
 
-/*      printf(" <- "); DDMSG2(node);  */
-    if (post)
-      post(node, env);
+    if (post) post(node, env);
   }
   return;
 }
@@ -171,9 +157,6 @@ void irg_walk_graph(ir_graph *irg, irg_walk_func pre, irg_walk_func post, void *
   current_ir_graph = rem;
 }
 
-
-/***************************************************************************/
-
 /* Executes irg_walk(end, pre, post, env) for all irgraphs in irprog.
    Sets current_ir_graph properly for each walk.  Conserves current
    current_ir_graph. */
@@ -190,6 +173,84 @@ void all_irg_walk(irg_walk_func pre, irg_walk_func post, void *env) {
   }
   current_ir_graph = rem;
 }
+
+/***************************************************************************/
+
+/* Returns current_ir_graph and sets it to the irg of predecessor index
+   of node n. */
+static INLINE ir_graph *
+switch_irg (ir_node *n, int index) {
+  ir_graph *old_current = current_ir_graph;
+
+  if (interprocedural_view) {
+    /* Only Filter and Block nodes can have predecessors in other graphs. */
+    if (get_irn_op(n) == op_Filter)
+      n = get_nodes_Block(n);
+    if (get_irn_op(n) == op_Block) {
+      ir_node *cfop = skip_Proj(get_Block_cfgpred(n, index));
+      if (is_ip_cfop(cfop)) {
+	current_ir_graph = get_irn_irg(cfop);
+      }
+    }
+  }
+
+  return old_current;
+}
+
+void cg_walk_2(ir_node *node, irg_walk_func pre, irg_walk_func post, void * env)
+{
+  int i;
+  ir_graph *rem = NULL;
+  assert(node);
+
+  if (get_irn_visited(node) < get_irg_visited(current_ir_graph)) {
+    set_irn_visited(node, get_irg_visited(current_ir_graph));
+
+    if (pre) pre(node, env);
+
+    if (is_no_Block(node))
+      cg_walk_2(get_nodes_Block(node), pre, post, env);
+    for (i = get_irn_arity(node) - 1; i >= 0; --i) {
+      rem = switch_irg(node, i);
+      cg_walk_2(get_irn_n(node, i), pre, post, env);
+      current_ir_graph = rem;
+    }
+
+    if (post) post(node, env);
+  }
+  return;
+}
+
+
+/* Walks all irgs in interprocedural view.  Visits each node only once. */
+void cg_walk(irg_walk_func pre, irg_walk_func post, void *env) {
+  int i;
+  ir_graph *rem = current_ir_graph;
+  int rem_view = interprocedural_view;
+
+  interprocedural_view = true;
+
+  inc_max_irg_visited();
+  /* Fix all irg_visited flags */
+  for (i = 0; i < get_irp_n_irgs(); i++)
+    set_irg_visited(get_irp_irg(i), get_max_irg_visited());
+
+  /* Walk starting at unreachable procedures. */
+  for (i = 0; i < get_irp_n_irgs(); i++) {
+    ir_node *sb;
+    current_ir_graph = get_irp_irg(i);
+
+    sb = get_irg_start_block(current_ir_graph);
+    if ((get_Block_n_cfgpreds(sb) > 1) ||
+	(get_nodes_Block(get_Block_cfgpred(sb, 0)) != sb)) continue;
+
+    cg_walk_2(get_irg_end(current_ir_graph), pre, post, env);
+  }
+
+  interprocedural_view = rem_view;
+  current_ir_graph = rem;
+}
+
 
 /***************************************************************************/
 
@@ -210,38 +271,27 @@ ir_node *get_cf_op(ir_node *n) {
 void irg_block_walk_2(ir_node *node, irg_walk_func pre, irg_walk_func post, void *env)
 {
   int i;
-
   assert(get_irn_opcode(node) == iro_Block);
 
   if(get_Block_block_visited(node) < get_irg_block_visited(current_ir_graph)) {
     set_Block_block_visited(node, get_irg_block_visited(current_ir_graph));
 
-    if(pre)
-      pre(node, env);
+    if(pre) pre(node, env);
 
     for(i = get_Block_n_cfgpreds(node) - 1; i >= 0; --i) {
-
       /* find the corresponding predecessor block. */
       ir_node *pred = get_cf_op(get_Block_cfgpred(node, i));
-      /* GL: I'm not sure whether this assert must go through.  There
-         could be Id chains?? Tuple/Proj .... */
-
-      assert(is_cfop(pred)
-			 || is_fragile_op(pred)
-			 || (get_irn_op(pred) == op_Bad));
-
       pred = get_nodes_Block(pred);
       if(get_irn_opcode(pred) == iro_Block) {
 	/* recursion */
 	irg_block_walk_2(pred, pre, post, env);
       }
       else {
-		assert(get_irn_opcode(pred) == iro_Bad);
+	assert(get_irn_opcode(pred) == iro_Bad);
       }
     }
 
-    if(post)
-      post(node, env);
+    if(post) post(node, env);
   }
   return;
 }
@@ -273,7 +323,8 @@ void irg_block_walk(ir_node *node, irg_walk_func pre, irg_walk_func post, void *
 }
 
 
-void irg_block_walk_graph(ir_graph *irg, irg_walk_func pre, irg_walk_func post, void *env) {
+void irg_block_walk_graph(ir_graph *irg, irg_walk_func pre,
+			  irg_walk_func post, void *env) {
   ir_graph * rem = current_ir_graph;
   current_ir_graph = irg;
   irg_block_walk(get_irg_end(irg), pre, post, env);
@@ -339,6 +390,58 @@ void walk_const_code(irg_walk_func pre, irg_walk_func post, void *env) {
 
   current_ir_graph = rem;
 }
+
+
+/********************************************************************/
+/** Walking support for interprocedural analysis                   **/
+/**                                                                **/
+/** @@@ Don't use, not operational yet, doesn't grok recursions!!  **/
+/** @@@ Header for irgwalk.h, here until it works. **/
+/**                                                                **/
+/** Interprocedural walking should not walk all predecessors of    **/
+/** all nodes.  When leaving a procedure the walker should only    **/
+/** follow the edge corresponding to the most recent entry of the  **/
+/** procedure.  The following functions use an internal stack to   **/
+/** remember the current call site of a procedure.                 **/
+/** They also set current_ir_graph correctly.                      **/
+/**                                                                **/
+/** Usage example:                                                 **/
+/**                                                                **/
+/** void init_ip_walk ();                                          **/
+/** work_on_graph(some_end_node);                                  **/
+/** void finish_ip_walk();                                         **/
+/**                                                                **/
+/** work_on_graph(ir_node *n) {                                    **/
+/**   for (i = 0; i < get_irn_arity(n); i++) {                     **/
+/**     if (...) continue;                                         **/
+/**     ir_node *m = get_irn_ip_pred(n, i);                        **/
+/**     if !m continue;                                            **/
+/**     work_on_graph(m);                                          **/
+/**     return_recur(n, i);                                        **/
+/**   }                                                            **/
+/** }                                                              **/
+/********************************************************************/
+
+/* Allocates some necessary datastructures. */
+void init_ip_walk ();
+/* Frees some necessary datastructures. */
+void finish_ip_walk();
+
+/* Call for i in {0|-1 ... get_irn_arity(n)}.
+   If n is a conventional node returns the same node as get_irn_n(n, i).
+   If the predecessors of n are in the callee of the procedure n belongs
+   to, returns get_irn_n(n, i) if this node is in the callee on the top
+   of the stack, else returns NULL.
+   If the predecessors of n are in a procedure called by the procedure n
+   belongs to pushes the caller on the caller stack in the callee.
+   Sets current_ir_graph to the graph the node returned is in. */
+ir_node *get_irn_ip_pred(ir_node *n, int pos);
+
+/* If get_irn_ip_pred() returned a node (not NULL) this must be
+   called to clear up the stacks.
+   Sets current_ir_graph to the graph n is in. */
+void return_recur(ir_node *n, int pos);
+
 
 /********************************************************************/
 /** Walking support for interprocedural analysis                   **/

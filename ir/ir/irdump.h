@@ -232,6 +232,9 @@ void dump_cg_graph(ir_graph * irg);
  */
 void dump_cg_block_graph(ir_graph * irg);
 
+
+void dump_all_cg_block_graph();
+
 /****m* irdump/dump_all_ir_graphs
  *
  * NAME
@@ -275,6 +278,27 @@ void dump_all_ir_graphs (void dump_graph(ir_graph*));
  ***
  */
 void turn_off_edge_labels();
+
+/****m* irdump/dump_consts_local
+ *
+ * NAME
+ *   dump_consts_local
+ * SYNOPSIS
+ *   void dump_consts_local(bool b);
+ * FUNCTION
+ *   If set to true constants will be replicated for every use. In non blocked
+ *   view edges from constant to block are scipped.  Vcg
+ *   then layouts the graphs more compact, this makes them better readable.
+ *   The flag is automatically and temporarily set to false if other
+ *   edges are dumped, as outs, loop, ...
+ *   Default setting: false.
+ * INPUTS
+ * RESULT
+ * SEE ALSO
+ *
+ ***
+ */
+void dump_consts_local(bool b);
 
 
 /****m* irdump/turn_off_constant_entity_values
@@ -351,6 +375,25 @@ void dump_out_edges();
  */
 void dump_dominator_information();
 
+
+/****m* irdump/dump_loop_information
+ *
+ * NAME
+ *   dump_loop_information
+ * SYNOPSIS
+ *   void dump_loop_information()
+ * FUNCTION
+ *   If this flag is set the dumper dumps loop nodes and edges from
+ *   these nodes to the contained ir nodes.
+ *   Can be turned off with dont_dump_loop_information().
+ *   If the loops are interprocedural nodes can be missing.
+ * INPUTS
+ *   No inputs
+ * RESULT
+ * SEE ALSO
+ *
+ ***
+ */
 void dump_loop_information();
 void dont_dump_loop_information();
 

@@ -258,11 +258,11 @@ set_irn_in (ir_node *node, int arity, ir_node **in) {
    If it is a block, the entry -1 is NULL. */
 INLINE ir_node *
 get_irn_n (ir_node *node, int n) {
-  /* debug @@@ */
+  /* debug @@@
   if (-1 > n || get_irn_arity(node) <= n) {
     printf("pos: %d, arity: %d ", n, get_irn_arity(node));
     DDMN(node);
-  }
+    } */
   assert(node); assert(-1 <= n && n < get_irn_arity(node));
   if (interprocedural_view) { /* handle Filter and Block specially */
     if (get_irn_opcode(node) == iro_Filter) {
@@ -511,13 +511,13 @@ get_Block_n_cfgpreds (ir_node *node) {
 
 INLINE ir_node *
 get_Block_cfgpred (ir_node *node, int pos) {
-  /* debug @@@ */
   assert (node->op == op_Block);
+  /* debug @@@
   if (-1 > pos || get_irn_arity(node) <= pos) {
     dump_ir_block_graph(current_ir_graph);
     printf("pos: %d, arity: %d ", pos, get_irn_arity(node));
     DDMN(node);
-  }
+    } */
   assert(node); assert(-1 <= pos && pos < get_irn_arity(node));
   return get_irn_n(node, pos);
 }
@@ -645,8 +645,8 @@ ir_node ** get_Block_cg_cfgpred_arr(ir_node * node) {
 }
 
 int get_Block_cg_n_cfgpreds(ir_node * node) {
-  assert(node->op == op_Block && node->attr.block.in_cg);
-  return ARR_LEN(node->attr.block.in_cg) - 1;
+  assert(node->op == op_Block);
+  return node->attr.block.in_cg == NULL ? 0 : ARR_LEN(node->attr.block.in_cg) - 1;
 }
 
 ir_node * get_Block_cg_cfgpred(ir_node * node, int pos) {
@@ -2213,6 +2213,12 @@ is_no_Block (ir_node *node) {
 }
 
 INLINE int
+is_Block (ir_node *node) {
+  assert(node);
+  return (get_irn_opcode(node) == iro_Block);
+}
+
+INLINE int
 is_Proj (ir_node *node) {
   assert(node);
   return node->op == op_Proj
@@ -2227,8 +2233,21 @@ is_cfop(ir_node *node) {
 
 /* Returns true if the operation manipulates interprocedural control flow:
    CallBegin, EndReg, EndExcept */
-int is_ip_cfop(ir_node *node) {
+INLINE int is_ip_cfop(ir_node *node) {
   return is_ip_cfopcode(get_irn_op(node));
+}
+
+ir_graph *get_ip_cfop_irg(ir_node *n) {
+  switch (get_irn_opcode(n)) {
+  case iro_EndReg:
+    return get_EndReg_irg(n);
+  case iro_EndExcept:
+    return get_EndExcept_irg(n);
+  case iro_CallBegin:
+    return get_CallBegin_irg(n);
+  default:
+    assert(is_ip_cfop(n));
+  }
 }
 
 /* Returns true if the operation can change the control flow because

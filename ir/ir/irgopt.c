@@ -743,7 +743,7 @@ void inline_small_irgs(ir_graph *irg, int size) {
 
   if (!(get_optimize() && get_opt_inline())) return;
 
-  /*DDME(get_irg_ent(current_ir_graph));*/
+  //DDME(get_irg_ent(current_ir_graph));
 
   current_ir_graph = irg;
   /* Handle graph state */
@@ -766,7 +766,6 @@ void inline_small_irgs(ir_graph *irg, int size) {
       tv = get_Const_tarval(get_Call_ptr(calls[i]));
       callee = get_entity_irg(tv->u.p.ent);
       if ((_obstack_memory_used(callee->obst) - obstack_room(callee->obst)) < size) {
-	/*printf(" inlineing "); DDME(tv->u.p.ent);*/
 	inline_method(calls[i], callee);
       }
     }
@@ -904,7 +903,7 @@ consumer_dom_dca (ir_node *dca, ir_node *consumer, ir_node *producer)
   return dca;
 }
 
-int get_irn_loop_depth(ir_node *n) {
+INLINE int get_irn_loop_depth(ir_node *n) {
   return get_loop_depth(get_irn_loop(n));
 }
 
@@ -988,9 +987,8 @@ place_floats_late (ir_node *n)
 	dca = consumer_dom_dca (dca, get_irn_out(n, i), n);
       }
       set_nodes_Block(n, dca);
-#if 1
+
       move_out_of_loops (n, early);
-#endif
     }
   }
 
@@ -1017,8 +1015,6 @@ INLINE void place_late() {
     if (irn_not_visited(n)) place_floats_late(n);
   }
 }
-
-#include "irdump.h"
 
 void place_code(ir_graph *irg) {
   ir_graph *rem = current_ir_graph;

@@ -180,8 +180,8 @@ computed_value (ir_node *n)
 	 only 1 is used.
          There are several case where we can evaluate a Cmp node:
          1. The nodes compared are both the same.  If we compare for
-            equal, this will return true, else it will return false.
-            This step relies on cse.
+            equal, greater equal, ... this will return true, else it
+	    will return false.  This step relies on cse.
          2. The predecessors of Cmp are target values.  We can evaluate
             the Cmp.
          3. The predecessors are Allocs or void* constants.  Allocs never
@@ -322,7 +322,8 @@ equivalent_node (ir_node *n)
 	if ((get_irn_op(a) == op_Proj) &&
 	    (get_irn_op(b) == op_Proj) &&
 	    (get_Proj_pred(a) == get_Proj_pred(b)) &&
-	    (get_irn_op(get_Proj_pred(a)) == op_Cond)) {
+	    (get_irn_op(get_Proj_pred(a)) == op_Cond) &&
+	    (get_irn_mode(get_Cond_selector(get_Proj_pred(a))) == mode_b)) {
 	  /* Also a single entry Block following a single exit Block.  Phis have
 	     twice the same operand and will be optimized away. */
 	  n = get_nodes_Block(a);                                         DBG_OPT_IFSIM;
@@ -407,10 +408,11 @@ equivalent_node (ir_node *n)
       set_Tuple_pred(n, 2, a);
     }
     break;
-    /* GL: Why are they skipped?  DivMod allocates new nodes --> it's
-       treated in transform node.
-	   case iro_Mod, Quot, DivMod
-    */
+  /*
+  case iro_Mod, Quot, DivMod
+    DivMod allocates new nodes --> it's treated in transform node.
+    What about Quot, DivMod?
+  */
   case iro_And:
     if (a == b) {
       n = a;    /* And has it's own neutral element */
@@ -574,7 +576,7 @@ equivalent_node (ir_node *n)
 	}
       } else if (get_irn_mode(n) == mode_X &&
 		 is_Bad(get_nodes_Block(n))) {
-        /* Remove dead control flow. */
+        /* Remove dead control flow -- early gigo. */
 	n = new_Bad();
       }
     }

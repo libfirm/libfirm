@@ -37,9 +37,13 @@ void irg_walk_graph(ir_graph *irg, irg_walk_func pre, irg_walk_func post, void *
 
 /* Executes irg_walk(end, pre, post, env) for all irgraphs in irprog.
    Sets current_ir_graph properly for each walk.  Conserves current
-   current_ir_graph. */
+   current_ir_graph.  In interprocedural view nodes can be visited several
+   times. */
 void all_irg_walk(irg_walk_func pre, irg_walk_func post, void *env);
 
+/* Walks all irgs in interprocedural view.  Visits each node only once.
+   Sets current_ir_graph properly. */
+void cg_walk(irg_walk_func pre, irg_walk_func post, void *env);
 
 /* Walks only over Block nodes in the graph.  Has it's own visited
    flag, so that it can be interleaved with the other walker.
@@ -54,55 +58,6 @@ void irg_block_walk_graph(ir_graph *irg, irg_walk_func pre, irg_walk_func post, 
 /* Walks over all code in const_code_irg.
    Uses visited flag in const_code_irg. */
 void walk_const_code(irg_walk_func pre, irg_walk_func post, void *env);
-
-/********************************************************************/
-/** Walking support for interprocedural analysis                   **/
-/**                                                                **/
-/** @@@ Don't use, not operational yet, doesn't grok recursions!!  **/
-/**                                                                **/
-/** Interprocedural walking should not walk all predecessors of    **/
-/** all nodes.  When leaving a procedure the walker should only    **/
-/** follow the edge corresponding to the most recent entry of the  **/
-/** procedure.  The following functions use an internal stack to   **/
-/** remember the current call site of a procedure.                 **/
-/** They also set current_ir_graph correctly.                      **/
-/**                                                                **/
-/** Usage example:                                                 **/
-/**                                                                **/
-/** void init_ip_walk ();                                          **/
-/** work_on_graph(some_end_node);                                  **/
-/** void finish_ip_walk();                                         **/
-/**                                                                **/
-/** work_on_graph(ir_node *n) {                                    **/
-/**   for (i = 0; i < get_irn_arity(n); i++) {                     **/
-/**     if (...) continue;                                         **/
-/**     ir_node *m = get_irn_ip_pred(n, i);                        **/
-/**     if !m continue;                                            **/
-/**     work_on_graph(m);                                          **/
-/**     return_recur(n, i);                                        **/
-/**   }                                                            **/
-/** }                                                              **/
-/********************************************************************/
-
-/* Allocates some necessary datastructures. */
-void init_ip_walk ();
-/* Frees some necessary datastructures. */
-void finish_ip_walk();
-
-/* Call for i in {0|-1 ... get_irn_arity(n)}.
-   If n is a conventional node returns the same node as get_irn_n(n, i).
-   If the predecessors of n are in the callee of the procedure n belongs
-   to, returns get_irn_n(n, i) if this node is in the callee on the top
-   of the stack, else returns NULL.
-   If the predecessors of n are in a procedure called by the procedure n
-   belongs to pushes the caller on the caller stack in the callee.
-   Sets current_ir_graph to the graph the node returned is in. */
-ir_node *get_irn_ip_pred(ir_node *n, int pos);
-
-/* If get_irn_ip_pred() returned a node (not NULL) this must be
-   called to clear up the stacks.
-   Sets current_ir_graph to the graph n is in. */
-void return_recur(ir_node *n, int pos);
 
 
 # endif /* _IRGWALK_H_ */

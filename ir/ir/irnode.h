@@ -160,13 +160,16 @@ INLINE int       Block_not_block_visited(ir_node *node);
 
 /* Set and remove interprocedural predecessors. If the interprocedural
  * predecessors are removed, the node has the same predecessors in
- * both views. */
+ * both views.
+ * @@@ Maybe better:  arity is zero if no cg preds. */
 void set_Block_cg_cfgpred_arr(ir_node * node, int arity, ir_node ** in);
 void set_Block_cg_cfgpred(ir_node * node, int pos, ir_node * pred);
 /* @@@ not supported */
 ir_node ** get_Block_cg_cfgpred_arr(ir_node * node);
+/* Returns the number of interproc predecessors.  0 if none. */
 int get_Block_cg_n_cfgpreds(ir_node * node);
 ir_node * get_Block_cg_cfgpred(ir_node * node, int pos);
+/* frees the memory. */
 void remove_Block_cg_cfgpred_arr(ir_node * node);
 
 /* exc handling @@@ ajacs specific -- not supported */
@@ -193,7 +196,6 @@ INLINE void set_End_keepalive(ir_node *end, int pos, ir_node *ka);
 INLINE void free_End (ir_node *end);
 
 ir_graph *get_EndReg_irg (ir_node *end);
-
 ir_graph *get_EndExcept_irg  (ir_node *end);
 
 /* We distinguish three kinds of Cond nodes.  These can be distinguished
@@ -452,7 +454,8 @@ INLINE ir_node  *get_Filter_pred(ir_node *node);
 INLINE void      set_Filter_pred(ir_node *node, ir_node *pred);
 INLINE long      get_Filter_proj(ir_node *node);
 INLINE void      set_Filter_proj(ir_node *node, long proj);
-/* set the interprocedural predecessors, ...d_arr uses current_ir_graph. */
+/* set the interprocedural predecessors, ...d_arr uses current_ir_graph.
+ * @@@ Maybe better:  arity is zero if no cg preds. */
 void             set_Filter_cg_pred_arr(ir_node * node, int arity, ir_node ** in);
 void             set_Filter_cg_pred(ir_node * node, int pos, ir_node * pred);
 int              get_Filter_n_cg_preds(ir_node *node);
@@ -533,6 +536,8 @@ INLINE ir_node *skip_Tuple (ir_node *node);
 INLINE int      is_Bad    (ir_node *node);
 /* returns true if the node is not a Block */
 INLINE int      is_no_Block (ir_node *node);
+/* returns true if the node is a Block */
+INLINE int      is_Block (ir_node *node);
 /* returns true if node is a Proj node or a Filter node in
  * intraprocedural view */
 INLINE int      is_Proj (ir_node *node);
@@ -546,6 +551,8 @@ int is_ip_cfop(ir_node *node);
 /* Returns true if the operation can change the control flow because
    of an exception: Call, Quot, DivMod, Div, Mod, Load, Store, Alloc,
    Bad. */
+ir_graph *get_ip_cfop_irg(ir_node *n);
+
 int is_fragile_op(ir_node *node);
 /* Returns the memory operand of fragile operations. */
 ir_node *get_fragile_op_mem(ir_node *node);

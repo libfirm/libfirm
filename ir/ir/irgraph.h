@@ -226,6 +226,7 @@ void     inc_irg_visited(ir_graph *irg);
 unsigned long get_irg_visited (ir_graph *irg);
 void     set_irg_visited(ir_graph *irg, unsigned long i);
 unsigned long get_max_irg_visited(void);
+void set_max_irg_visited(int val);
 unsigned long inc_max_irg_visited(void);
 
 /* increments block_visited by one */

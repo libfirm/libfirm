@@ -456,17 +456,21 @@ unsigned long
 get_max_irg_visited(void)
 {
   int i;
-  for(i = 0; i < get_irp_n_irgs(); i++)
-    assert(max_irg_visited >= get_irg_visited(get_irp_irg(i)));
+  //for(i = 0; i < get_irp_n_irgs(); i++)
+  //  assert(max_irg_visited >= get_irg_visited(get_irp_irg(i)));
   return max_irg_visited;
+}
+
+void set_max_irg_visited(int val) {
+  max_irg_visited = val;
 }
 
 unsigned long
 inc_max_irg_visited(void)
 {
   int i;
-  for(i = 0; i < get_irp_n_irgs(); i++)
-    assert(max_irg_visited >= get_irg_visited(get_irp_irg(i)));
+  //  for(i = 0; i < get_irp_n_irgs(); i++)
+  //assert(max_irg_visited >= get_irg_visited(get_irp_irg(i)));
   max_irg_visited++;
   return max_irg_visited;
 }
