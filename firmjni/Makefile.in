@@ -42,7 +42,11 @@ CLASSFILES = $(MEMBERS:.m=.class)
 CPPFLAGS = 	-I$(top_srcdir)/ir/ir  -I$(top_srcdir)/ir/common  	\
 		-I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/tr  	\
 	        -I$(top_srcdir)/ir/tv -I$(top_srcdir)/ir/debug 		\
-	        -I$(top_srcdir)/ir/ana -I$(top_srcdir)/ir/st @CPPFLAGS@
+	        -I$(top_srcdir)/ir/ana -I$(top_srcdir)/ir/st \
+			-I$(top_srcdir)/../opt/heapanal \
+			-I$(top_srcdir)/include \
+			-I/usr/local/jdk1.3.1/include \
+			-I/usr/local/jdk1.3.1/include/freebsd @CPPFLAGS@
 
 LDFLAGS += $(topdir)
 
@@ -67,7 +71,7 @@ FIRM_PATH_HEADERS=common/firm.h common/firm_common.h \
 FIRM_SOURCE_DIR_HEADERS=$(addprefix $(SOURCE_DIR)/,$(FIRM_HEADERS))
 
 # hand implemented members
-IMPL_MEMBERS = Dbginfo.m
+IMPL_MEMBERS = Dbginfo.m Heapanal.m
 
 # The directory containing crecoder.jar and, for now,
 # remove_cpp_comands.perl
@@ -102,9 +106,10 @@ Type_or_entity.h: Type_or_entity.class
 
 
 Dbginfo.java:
-	cp $(srcdir)/Dbginfo.java .
-	cp $(srcdir)/Dbginfo.c .
+	cp $(top_srcdir)/aux/Dbginfo.java $(top_srcdir)/aux/Dbginfo.c .
 
+Heapanal.java:
+	cp $(top_srcdir)/aux/Heapanal.java $(top_srcdir)/aux/Heapanal.c .
 
 %.h:	%.class
 	javah -classpath $(topdir) -o $@ $(PACKAGENAME).$(<:.class=)
@@ -116,7 +121,8 @@ $(OFILES):
 	gcc $(CPPFLAGS) -c $(@:.o=.c) -o $@
 
 jni:    $(HFILES) $(OFILES)  # ../libfirm.a
-	gcc -shared -fPIC -o $(LIBNAME) *.o -lfirm -L..
+	gcc -shared -fPIC -o $(LIBNAME) *.o -lfirm -L.. -lheapanal -L../../opt/heapanal \
+	-liberty -L../../sw/lib
 
 install:
 	cp libfirmjni.so $(libdir)

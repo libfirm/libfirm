@@ -21,6 +21,11 @@ static jmethodID sets_id;
 static JNIEnv   *my_env_jni_;
 static jclass    my_cls_jni_;
 
+struct dbg_info
+{
+  int idx;
+};
+
 static void
 my_dbg_info_merge_pair(ir_node *nw, ir_node *old, dbg_action info) {
   if (pair_id) {
@@ -53,4 +58,41 @@ void Java_firmjni_Dbginfo_dbgInit (JNIEnv *env_jni_, jclass cls_jni_) {
   my_cls_jni_ = cls_jni_;
 
   dbg_init(&my_dbg_info_merge_pair, &my_dbg_info_merge_sets);
+}
+
+/** Return the dbg object index of the given node. A new dbg object is created, if needed. */
+jint Java_firmjni_Dbginfo_getDbgInfoIdx (JNIEnv *env, jclass clss, jint jnode)
+{
+  /*
+  ir_node *node = (ir_node*) jnode;
+
+  dbg_info *info = get_irn_dbg_info (node);
+
+  if (0 == info) {
+	info = get_dbg_info ();
+	set_irn_dbg_info (node, info);
+  }
+
+  return (info->idx);
+  */
+
+  return (0);
+}
+
+/** Return the dbg object index of the given node, or <TT>-1</TT> if none has been set. */
+jint Java_firmjni_Dbginfo_doGetDbgInfoIdx (JNIEnv *env, jclass clss, jint jnode)
+{
+  /*
+  ir_node *node = (ir_node*) jnode;
+
+  dbg_info *info = get_irn_dbg_info (node);
+
+  if (0 == info) {
+	return (-1);
+  }
+
+  return (info->idx);
+  */
+
+  return (0);
 }
