@@ -41,27 +41,27 @@ xprintf_register (char spec, xprintf_function func)
 int
 xvgprintf (xgprintf_func *out, void *arg, const char *fmt, va_list args)
 {
-  int done;						/* number of chars printed */
+  int done;		/* number of chars printed */
   unsigned long num;
   int is_neg;
   long signed_num;
   int base;
   char c;
-  char fbuf[FBUFSIZE];			/* buffer for sprintf @@@ Yeek! */
-  char buf[BUFSIZE];			/* buffer for itoa */
-  char *str;					/* buffer pointer for number conversion */
-  const char *s;				/* string to be printed by string: */
-  int len;						/* length of s */
-  char pad;						/* padding: ' ' or '0' */
-  int showsign;					/* always show sign ['+'] */
-  int space;					/* print space if positive */
-  int left;						/* left justify */
-  int alt;						/* alternate format 0x... */
-  char fc;						/* conversion specifier */
-  int width;					/* width of output field */
-  int prec;						/* min. # of digits for integers; max
-								   number of chars for from string */
-  int qualifier;				/* 'h', 'l', or 'L' for integer fields */
+  char fbuf[FBUFSIZE];	/* buffer for sprintf @@@ Yeek! */
+  char buf[BUFSIZE];	/* buffer for itoa */
+  char *str;		/* buffer pointer for number conversion */
+  const char *s;	/* string to be printed by string: */
+  int len;		/* length of s */
+  char pad;		/* padding: ' ' or '0' */
+  int showsign;		/* always show sign ['+'] */
+  int space;		/* print space if positive */
+  int left;		/* left justify */
+  int alt;		/* alternate format 0x... */
+  char fc;		/* conversion specifier */
+  int width;		/* width of output field */
+  int prec;		/* min. # of digits for integers; max
+			   number of chars for from string */
+  int qualifier;	/* 'h', 'l', or 'L' for integer fields */
 
   unsigned short helper_short;
 
@@ -143,17 +143,17 @@ xvgprintf (xgprintf_func *out, void *arg, const char *fmt, va_list args)
       info.pad = pad;
 
       /* Sharing `args' with another function is not blessed by ANSI
-		 C.  From ISO/IEC DIS 9899, section 4.4:
+	 C.  From ISO/IEC DIS 9899, section 4.4:
 
-		 If access to the varying arguments is desired, the called
-		 function shall declare an object (referred as `ap' in this
-		 section) having type va_list.  The object `ap' may be passed
-		 as an argument to another function; if that function invokes
-		 the va_arg macro with parameter `ap', the value of `ap' in
-		 the calling function is indeterminate and shall be passed to
-		 the va_end macro prior to any futher reference to `ap'.
+	 If access to the varying arguments is desired, the called
+	 function shall declare an object (referred as `ap' in this
+	 section) having type va_list.  The object `ap' may be passed
+	 as an argument to another function; if that function invokes
+	 the va_arg macro with parameter `ap', the value of `ap' in
+	 the calling function is indeterminate and shall be passed to
+	 the va_end macro prior to any futher reference to `ap'.
 
-		 Nevertheless, it works with most compilers, including gcc.  */
+	 Nevertheless, it works with most compilers, including gcc.  */
       func_done = print_func[(unsigned char)fc] (out, arg, &info, &args);
       if (func_done < 0) return -1;
       else done += func_done;
@@ -301,9 +301,9 @@ xvgprintf (xgprintf_func *out, void *arg, const char *fmt, va_list args)
       case 'g':
       case 'G':
 #ifdef HAVE_ANSI_SPRINTF
-		len = sprintf (fbuf, "%g", va_arg (args, double));
+		len = sprintf (fbuf, "%1.20e", va_arg (args, double));
 #else
-		sprintf (fbuf, "%g", va_arg (args, double));
+		sprintf (fbuf, "%1.20e", va_arg (args, double));
 		len = strlen (fbuf);
 #endif
 		s = fbuf;
