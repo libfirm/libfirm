@@ -11,6 +11,11 @@
  */
 
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
+
 #include "fltcalc.h"
 #include "strcalc.h"
 
@@ -25,12 +30,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#ifdef linux
+#ifdef HAVE_ALLOCA_H
 # include <alloca.h>
-#else
-# ifdef __APPLE__
-# include <stdlib.h>
-# endif
 #endif
 
 typedef uint32_t UINT32;

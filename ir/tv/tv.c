@@ -20,17 +20,19 @@
 /* This implementation assumes:
  *  - target has IEEE-754 floating-point arithmetic.  */
 
+
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
+
 #include <assert.h>         /* assertions */
 #include <stdlib.h>         /* atoi() */
 #include <string.h>         /* nice things for strings */
 #include <strings.h>        /* strings.h also includes bsd only function strcasecmp */
 #include <stdlib.h>
-#ifdef linux
+#ifdef HAVE_ALLOCA_H
 # include <alloca.h>
-#else
-# ifdef __APPLE__
-# include <stdlib.h>
-# endif
 #endif
 
 #include "tv_t.h"
