@@ -80,14 +80,12 @@ __get_glob_type(void) {
 static INLINE int
 __get_irp_n_irgs(void) {
   assert (irp && irp->graphs);
-  /* Strangely the first element of the array is NULL.  Why??  */
   return (ARR_LEN((irp)->graphs));
 }
 
 static INLINE ir_graph *
 __get_irp_irg(int pos){
   assert (irp && irp->graphs);
-  /* Strangely the first element of the array is NULL.  Why??  */
   return irp->graphs[pos];
 }
 
@@ -95,14 +93,12 @@ __get_irp_irg(int pos){
 static INLINE int
 __get_irp_n_types (void) {
   assert (irp && irp->types);
-  /* Strangely the first element of the array is NULL.  Why??  */
   return (ARR_LEN((irp)->types));
 }
 
 static INLINE type *
 __get_irp_type(int pos) {
   assert (irp && irp->types);
-  /* Strangely the first element of the array is NULL.  Why??  */
   /* Don't set the skip_tid result so that no double entries are generated. */
   return skip_tid(irp->types[pos]);
 }

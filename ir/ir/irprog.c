@@ -146,7 +146,6 @@ ir_graph *(get_irp_irg)(int pos){
 void set_irp_irg(int pos, ir_graph *irg) {
   assert (irp && irg);
   assert (pos < (ARR_LEN((irp)->graphs)));
-  /* Strangely the first element of the array is NULL.  Why??  */
   irp->graphs[pos] = irg;
 }
 
@@ -172,7 +171,6 @@ type *(get_irp_type) (int pos) {
 void  set_irp_type(int pos, type *typ) {
   assert (irp && typ);
   assert (pos < (ARR_LEN((irp)->types)));
-  /* Strangely the first element of the array is NULL.  Why??  */
   irp->types[pos] = typ;
 }
 
