@@ -126,6 +126,10 @@ struct type {
   void *link;              /**< holds temporary data - like in irnode_t.h */
   struct dbg_info* dbi;    /**< A pointer to information for debug support. */
 
+  /* ------------- fields for analyses ---------------*/
+  ir_node **allocations;    /**< array of all Alloc nodes with this type
+			      @@@ Should not be in here, hash table! */
+
 #ifdef DEBUG_libfirm
   int nr;             /**< a unique node number for each node to make output
 			      readable. */

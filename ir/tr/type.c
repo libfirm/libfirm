@@ -103,6 +103,7 @@ new_type(tp_op *type_op, ir_mode *mode, ident* name) {
 
   node_size = offsetof(type, attr) +  type_op->attr_size;
   res = (type *) xmalloc (node_size);
+  memset((void *)res, 0, node_size);
   add_irp_type(res);   /* Remember the new type global. */
 
   res->kind    = k_type;
