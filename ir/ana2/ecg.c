@@ -13,7 +13,7 @@
  */
 
 #ifdef HAVE_CONFIG_H
-# include <config.h>
+# include "config.h"
 #endif
 
 /**
@@ -1123,6 +1123,9 @@ void ecg_ecg ()
 
 /*
   $Log$
+  Revision 1.9  2004/12/02 16:17:50  beck
+  fixed config.h include
+
   Revision 1.8  2004/11/30 14:45:44  liekweg
   fix graph dumping, remove 'HERE's
 

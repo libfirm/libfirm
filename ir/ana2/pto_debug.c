@@ -13,7 +13,7 @@
 */
 
 # ifdef HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 # endif
 
 /*
@@ -56,6 +56,9 @@ void set_dbg_lvl (int lvl)
 
 /*
   $Log$
+  Revision 1.3  2004/12/02 16:17:51  beck
+  fixed config.h include
+
   Revision 1.2  2004/11/24 14:53:56  liekweg
   Bugfixes
 

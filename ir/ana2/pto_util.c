@@ -12,9 +12,9 @@
    Licence:     This file is protected by the GPL -  GNU GENERAL PUBLIC LICENSE.
 */
 
-# ifdef HAVE_CONFIG_H
-#  include <config.h>
-# endif
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
 /*
  pto_util: Utilitites for PTO
@@ -22,7 +22,7 @@
 
 # include "pto_util.h"
 
-# include "irnode.h"
+# include "irnode_t.h"
 # include "irgwalk.h"
 # include "xmalloc.h"
 
@@ -151,6 +151,9 @@ int is_dummy_load_ptr (ir_node *ptr)
 
 /*
   $Log$
+  Revision 1.9  2004/12/02 16:17:51  beck
+  fixed config.h include
+
   Revision 1.8  2004/11/26 15:59:14  liekweg
   recognize dummy loads
 

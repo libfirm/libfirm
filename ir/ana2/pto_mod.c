@@ -12,9 +12,9 @@
    Licence:     This file is protected by the GPL -  GNU GENERAL PUBLIC LICENSE.
 */
 
-# ifdef HAVE_CONFIG_H
-#  include <config.h>
-# endif
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
 /*
   pto_mod: Load/Store Transfer Functions
@@ -92,6 +92,9 @@ int mod_load  (ir_node *load, entity *ent,
 
 /*
   $Log$
+  Revision 1.2  2004/12/02 16:17:51  beck
+  fixed config.h include
+
   Revision 1.1  2004/11/30 14:47:54  liekweg
   fix initialisation; do correct iteration
 

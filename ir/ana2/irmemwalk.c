@@ -21,7 +21,7 @@
 
 
 # ifdef HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 # endif
 
 # include "irgwalk.h"           /* for irg_walk_func */
@@ -261,6 +261,9 @@ void irg_walk_mem (ir_graph *graph,
 
 /*
   $Log$
+  Revision 1.6  2004/12/02 16:17:51  beck
+  fixed config.h include
+
   Revision 1.5  2004/11/19 10:35:20  liekweg
   also test for NoMem
 

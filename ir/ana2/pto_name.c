@@ -12,9 +12,9 @@
   Licence:     This file is protected by the GPL -  GNU GENERAL PUBLIC LICENSE.
 */
 
-# ifdef HAVE_CONFIG_H
-#  include <config.h>
-# endif
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
 /*
   pto_name: Names for abstract objects
@@ -424,6 +424,9 @@ void pto_name_cleanup ()
 
 /*
   $Log$
+  Revision 1.5  2004/12/02 16:17:51  beck
+  fixed config.h include
+
   Revision 1.4  2004/11/30 15:49:27  liekweg
   include 'dump'
 

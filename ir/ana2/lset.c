@@ -14,7 +14,7 @@
 
 
 # ifdef HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 # endif
 
 # include "lset.h"
@@ -26,7 +26,10 @@
 # endif /* not defined TRUE */
 
 # include <assert.h>
+
+#ifdef HAVE_STRING_H
 # include <string.h>             /* need memset */
+#endif
 
 /*
   Lists, err, Sets
@@ -191,6 +194,9 @@ void lset_destroy (lset_t *lset)
 
 /*
   $Log$
+  Revision 1.2  2004/12/02 16:17:51  beck
+  fixed config.h include
+
   Revision 1.1  2004/10/21 11:09:37  liekweg
   Moved memwalk stuf into irmemwalk
   Moved lset stuff into lset

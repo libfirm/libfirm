@@ -23,8 +23,9 @@
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>
 #endif
-
+#ifdef HAVE_STRING_H
 # include <string.h>
+#endif
 
 #include "read_t.h"
 #include "read.h"
@@ -1659,6 +1660,9 @@ void free_abstraction(void) {
 
 /*
  * $Log$
+ * Revision 1.18  2004/12/02 16:21:42  beck
+ * fixed config.h include
+ *
  * Revision 1.17  2004/11/23 14:17:31  liekweg
  * fenced out currently unneeded static functions
  *

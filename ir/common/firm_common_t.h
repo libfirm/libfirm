@@ -21,10 +21,6 @@
 # ifndef _COMMON_T_H_
 # define _COMMON_T_H_
 
-#ifdef HAVE_CONFIG_H
-# include <config.h>
-#endif
-
 #include "firm_common.h"
 
 /* --- Global flags.  --- */

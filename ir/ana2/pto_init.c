@@ -12,9 +12,9 @@
    Licence:     This file is protected by the GPL -  GNU GENERAL PUBLIC LICENSE.
 */
 
-# ifdef HAVE_CONFIG_H
-#  include <config.h>
-# endif
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
 /*
  pto_init: Initialisation Functions
@@ -422,6 +422,9 @@ void pto_reset_graph_pto (ir_graph *graph, int ctx_idx)
 
 /*
   $Log$
+  Revision 1.8  2004/12/02 16:17:51  beck
+  fixed config.h include
+
   Revision 1.7  2004/11/30 14:47:54  liekweg
   fix initialisation; do correct iteration
 

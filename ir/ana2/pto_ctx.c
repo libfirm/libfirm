@@ -13,7 +13,7 @@
 */
 
 # ifdef HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 # endif
 
 /*
@@ -85,6 +85,9 @@ ctx_info_t *set_curr_ctx (ctx_info_t *ctx)
 
 /*
   $Log$
+  Revision 1.4  2004/12/02 16:17:51  beck
+  fixed config.h include
+
   Revision 1.3  2004/11/24 14:53:55  liekweg
   Bugfixes
 

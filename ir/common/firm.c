@@ -11,10 +11,15 @@
  */
 
 #ifdef HAVE_CONFIG_H
-# include <config.h>
+# include "config.h"
+#endif
+
+#ifdef HAVE_STRING_H
+# include <string.h>
 #endif
 
 # include <stdio.h>
+
 # include "ident_t.h"
 # include "firm.h"
 # include "mangle.h"

@@ -13,7 +13,7 @@
 */
 
 # ifdef HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 # endif
 
 /*
@@ -28,7 +28,7 @@
 # include "pto_ctx.h"
 # include "pto_mod.h"
 
-# include "irnode.h"
+# include "irnode_t.h"
 # include "irprog.h"
 # include "xmalloc.h"
 # include "irmemwalk.h"
@@ -619,6 +619,9 @@ pto_t *get_alloc_pto (ir_node *alloc)
 
 /*
   $Log$
+  Revision 1.6  2004/12/02 16:17:51  beck
+  fixed config.h include
+
   Revision 1.5  2004/11/30 14:47:54  liekweg
   fix initialisation; do correct iteration
 

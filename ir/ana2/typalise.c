@@ -14,7 +14,7 @@
 
 
 # ifdef HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 # endif
 
 # include "typalise.h"
@@ -25,9 +25,12 @@
 # endif /* not defined TRUE */
 
 # include <assert.h>
-# include <string.h>
 
-# include "irnode.h"
+#ifdef HAVE_STRING_H
+# include <string.h>
+#endif
+
+# include "irnode_t.h"
 # include "irgwalk.h"
 # include "xmalloc.h"
 
@@ -704,6 +707,9 @@ typalise_t *typalise (ir_node *node)
 
 /*
   $Log$
+  Revision 1.3  2004/12/02 16:17:51  beck
+  fixed config.h include
+
   Revision 1.2  2004/10/22 09:53:10  liekweg
   Correctly handle proj_args
 

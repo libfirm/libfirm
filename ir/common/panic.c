@@ -12,14 +12,14 @@
 
 
 #ifdef HAVE_CONFIG_H
-# include <config.h>
+# include "config.h"
 #endif
 
 # include <stdlib.h>
 
-# include "panic.h"
 # include <stdio.h>
 # include <stdarg.h>
+# include "panic.h"
 
 
 void
