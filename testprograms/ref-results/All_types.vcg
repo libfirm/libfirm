@@ -28,7 +28,8 @@ edge: { sourcename: "t11" targetname: "e13"class: 12 label: "member" color:blue}
 edge: { sourcename: "t11" targetname: "e16"class: 12 label: "member" color:blue}
 edge: { sourcename: "t11" targetname: "e19"class: 12 label: "member" color:blue}
 node: {title: "e13" label: "ent a" color: yellow
- info1:"
+ info1: "
+id: e13
 allocation:  automatic allocated
 visibility:  local
 variability: uninitialized
@@ -40,7 +41,8 @@ offset:  -1"
 }
 edge: { sourcename: "e13" targetname: "t10"class: 3 label: "type" color: red}
 node: {title: "e16" label: "ent set_a" color: yellow
- info1:"
+ info1: "
+id: e16
 allocation:  static allocated
 visibility:  local
 variability: constant
@@ -53,7 +55,8 @@ irg = g69"
 }
 edge: { sourcename: "e16" targetname: "t14"class: 3 label: "type" color: red}
 edge: { sourcename: "e16" targetname: "n15"label: "value 0"}
-node: {title: "n15" label: "&(PRIMA_set_a)P  15" color: yellow}
+node: {title: "n15" label: "&(PRIMA_set_a)P  15" color: yellow info1: "visited: 4
+"}
 node: {title: "t14" label: "method set_a" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
@@ -66,7 +69,8 @@ size: 4B,
 "}
 edge: { sourcename: "t12" targetname: "t11"class: 9 label: "points to" color:green}
 node: {title: "e19" label: "ent c" color: yellow
- info1:"
+ info1: "
+id: e19
 allocation:  static allocated
 visibility:  local
 variability: constant
@@ -79,7 +83,8 @@ irg = g92"
 }
 edge: { sourcename: "e19" targetname: "t17"class: 3 label: "type" color: red}
 edge: { sourcename: "e19" targetname: "n18"label: "value 0"}
-node: {title: "n18" label: "&(PRIMA_c)P  18" color: yellow}
+node: {title: "n18" label: "&(PRIMA_c)P  18" color: yellow info1: "visited: 4
+"}
 node: {title: "t17" label: "method c" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
@@ -97,7 +102,8 @@ size: -1B,
 " color: green}
 edge: { sourcename: "t0" targetname: "e22"class: 12 label: "member" color:blue}
 node: {title: "e22" label: "ent OO_INLINE_EXAMPLE_main" color: yellow
- info1:"
+ info1: "
+id: e22
 allocation:  static allocated
 visibility:  local
 variability: constant
@@ -110,5 +116,6 @@ irg = g35"
 }
 edge: { sourcename: "e22" targetname: "t20"class: 3 label: "type" color: red}
 edge: { sourcename: "e22" targetname: "n21"label: "value 0"}
-node: {title: "n21" label: "&(GlobalType_OO_INLINE_EXAMPLE_main)P  21" color: yellow}
+node: {title: "n21" label: "&(GlobalType_OO_INLINE_EXAMPLE_main)P  21" color: yellow info1: "visited: 4
+"}
 }

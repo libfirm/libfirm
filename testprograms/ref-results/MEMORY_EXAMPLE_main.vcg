@@ -7,105 +7,140 @@ orientation: bottom_to_top
 classname 1: "Data"
 classname 2: "Block"
 classname 3: "Entity type"classname 4: "Entity owner"classname 5: "Method Param"classname 6: "Method Res"classname 7: "Super"classname 8: "Union"classname 9: "Points-to"classname 10: "Array Element Type"classname 11: "Overwrites"classname 12: "Member"
-graph: { title: "n76"  label: "76" status:clustered color:yellow
-edge: {sourcename: "n76" targetname: "n77" label: "0" color: red}
-node: {title: "n75" label: "End  75" color: blue}
+graph: { title: "n76" label: "76" status:clustered color:yellow
+edge: {sourcename: "n76 " targetname: "n77" label: "0" color: red}
+node: {title: "n75" label: "End  75" color: blue info1: "visited: 15
+"}
 }
 
-graph: { title: "n78"  label: "78" status:clustered color:yellow
-edge: {sourcename: "n78" targetname: "n79" label: "0" color: red}
-node: {title: "n77" label: "Return  77" }
-edge: {sourcename: "n77" targetname: "n113" label: "0" color: blue}
-edge: {sourcename: "n77" targetname: "n111" label: "1" }
-node: {title: "n111" label: "ProjIu 2 111" color: yellow}
-edge: {sourcename: "n111" targetname: "n112" label: "0" }
-node: {title: "n112" label: "Load  112" }
-edge: {sourcename: "n112" targetname: "n95" label: "0" color: blue}
-edge: {sourcename: "n112" targetname: "n87" label: "1" }
-node: {title: "n113" label: "ProjM 0 113" color: yellow}
-edge: {sourcename: "n113" targetname: "n112" label: "0" color: blue}
+graph: { title: "n78" label: "78" status:clustered color:yellow
+edge: {sourcename: "n78 " targetname: "n79" label: "0" color: red}
+node: {title: "n77" label: "Return  77"  info1: "visited: 16
+"}
+edge: {sourcename: "n77 " targetname: "n113" label: "0" color: blue}
+edge: {sourcename: "n77 " targetname: "n111" label: "1" }
+node: {title: "n111" label: "ProjIu 2 111" color: yellow info1: "visited: 16
+"}
+edge: {sourcename: "n111 " targetname: "n112" label: "0" }
+node: {title: "n112" label: "Load  112"  info1: "visited: 16
+"}
+edge: {sourcename: "n112 " targetname: "n95" label: "0" color: blue}
+edge: {sourcename: "n112 " targetname: "n87" label: "1" }
+node: {title: "n113" label: "ProjM 0 113" color: yellow info1: "visited: 16
+"}
+edge: {sourcename: "n113 " targetname: "n112" label: "0" color: blue}
 }
 
-graph: { title: "n80"  label: "80" status:clustered color:yellow
-edge: {sourcename: "n80" targetname: "n110" label: "0" color: red}
-edge: {sourcename: "n80" targetname: "n81" label: "1" color: red}
-node: {title: "n79" label: "ProjX 1 79" color: yellow}
-edge: {sourcename: "n79" targetname: "n82" label: "0" color: red}
-node: {title: "n81" label: "ProjX 0 81" color: yellow}
-edge: {sourcename: "n81" targetname: "n82" label: "0" color: red}
-node: {title: "n82" label: "Cond  82" }
-edge: {sourcename: "n82" targetname: "n83" label: "0" }
-node: {title: "n83" label: "Projb Gt 83" color: yellow}
-edge: {sourcename: "n83" targetname: "n84" label: "0" }
-node: {title: "n84" label: "CmpT  84" }
-edge: {sourcename: "n84" targetname: "n109" label: "0" }
-edge: {sourcename: "n84" targetname: "n85" label: "1" }
-node: {title: "n85" label: "ProjIu 2 85" color: yellow}
-edge: {sourcename: "n85" targetname: "n86" label: "0" }
-node: {title: "n86" label: "Load  86" }
-edge: {sourcename: "n86" targetname: "n94" label: "0" color: blue}
-edge: {sourcename: "n86" targetname: "n87" label: "1" }
-node: {title: "n94" label: "PhiM  94" color: green}
-edge: {sourcename: "n94" targetname: "n104" label: "0" color: blue}
-edge: {sourcename: "n94" targetname: "n95" label: "1" color: blue}
-node: {title: "n95" label: "ProjM 0 95" color: yellow}
-edge: {sourcename: "n95" targetname: "n96" label: "0" color: blue}
-node: {title: "n96" label: "Store  96" }
-edge: {sourcename: "n96" targetname: "n98" label: "0" color: blue}
-edge: {sourcename: "n96" targetname: "n97" label: "1" }
-edge: {sourcename: "n96" targetname: "n85" label: "2" }
-node: {title: "n98" label: "ProjM 0 98" color: yellow}
-edge: {sourcename: "n98" targetname: "n99" label: "0" color: blue}
-node: {title: "n99" label: "Store  99" }
-edge: {sourcename: "n99" targetname: "n103" label: "0" color: blue}
-edge: {sourcename: "n99" targetname: "n87" label: "1" }
-edge: {sourcename: "n99" targetname: "n100" label: "2" }
-node: {title: "n100" label: "ProjIu 2 100" color: yellow}
-edge: {sourcename: "n100" targetname: "n101" label: "0" }
-node: {title: "n101" label: "Load  101" }
-edge: {sourcename: "n101" targetname: "n102" label: "0" color: blue}
-edge: {sourcename: "n101" targetname: "n97" label: "1" }
-node: {title: "n102" label: "ProjM 0 102" color: yellow}
-edge: {sourcename: "n102" targetname: "n86" label: "0" color: blue}
-node: {title: "n103" label: "ProjM 0 103" color: yellow}
-edge: {sourcename: "n103" targetname: "n101" label: "0" color: blue}
+graph: { title: "n80" label: "80" status:clustered color:yellow
+edge: {sourcename: "n80 " targetname: "n110" label: "0" color: red}
+edge: {sourcename: "n80 " targetname: "n81" label: "1" color: red}
+node: {title: "n79" label: "ProjX 1 79" color: yellow info1: "visited: 17
+"}
+edge: {sourcename: "n79 " targetname: "n82" label: "0" color: red}
+node: {title: "n81" label: "ProjX 0 81" color: yellow info1: "visited: 17
+"}
+edge: {sourcename: "n81 " targetname: "n82" label: "0" color: red}
+node: {title: "n82" label: "Cond  82"  info1: "visited: 17
+"}
+edge: {sourcename: "n82 " targetname: "n83" label: "0" }
+node: {title: "n83" label: "Projb Gt 83" color: yellow info1: "visited: 17
+"}
+edge: {sourcename: "n83 " targetname: "n84" label: "0" }
+node: {title: "n84" label: "CmpT  84"  info1: "visited: 17
+"}
+edge: {sourcename: "n84 " targetname: "n109" label: "0" }
+edge: {sourcename: "n84 " targetname: "n85" label: "1" }
+node: {title: "n85" label: "ProjIu 2 85" color: yellow info1: "visited: 17
+"}
+edge: {sourcename: "n85 " targetname: "n86" label: "0" }
+node: {title: "n86" label: "Load  86"  info1: "visited: 17
+"}
+edge: {sourcename: "n86 " targetname: "n94" label: "0" color: blue}
+edge: {sourcename: "n86 " targetname: "n87" label: "1" }
+node: {title: "n94" label: "PhiM  94" color: green info1: "visited: 17
+"}
+edge: {sourcename: "n94 " targetname: "n104" label: "0" color: blue}
+edge: {sourcename: "n94 " targetname: "n95" label: "1" color: blue}
+node: {title: "n95" label: "ProjM 0 95" color: yellow info1: "visited: 17
+"}
+edge: {sourcename: "n95 " targetname: "n96" label: "0" color: blue}
+node: {title: "n96" label: "Store  96"  info1: "visited: 17
+"}
+edge: {sourcename: "n96 " targetname: "n98" label: "0" color: blue}
+edge: {sourcename: "n96 " targetname: "n97" label: "1" }
+edge: {sourcename: "n96 " targetname: "n85" label: "2" }
+node: {title: "n98" label: "ProjM 0 98" color: yellow info1: "visited: 17
+"}
+edge: {sourcename: "n98 " targetname: "n99" label: "0" color: blue}
+node: {title: "n99" label: "Store  99"  info1: "visited: 17
+"}
+edge: {sourcename: "n99 " targetname: "n103" label: "0" color: blue}
+edge: {sourcename: "n99 " targetname: "n87" label: "1" }
+edge: {sourcename: "n99 " targetname: "n100" label: "2" }
+node: {title: "n100" label: "ProjIu 2 100" color: yellow info1: "visited: 17
+"}
+edge: {sourcename: "n100 " targetname: "n101" label: "0" }
+node: {title: "n101" label: "Load  101"  info1: "visited: 17
+"}
+edge: {sourcename: "n101 " targetname: "n102" label: "0" color: blue}
+edge: {sourcename: "n101 " targetname: "n97" label: "1" }
+node: {title: "n102" label: "ProjM 0 102" color: yellow info1: "visited: 17
+"}
+edge: {sourcename: "n102 " targetname: "n86" label: "0" color: blue}
+node: {title: "n103" label: "ProjM 0 103" color: yellow info1: "visited: 17
+"}
+edge: {sourcename: "n103 " targetname: "n101" label: "0" color: blue}
 }
 
-graph: { title: "n88"  label: "88" status:clustered color:yellow
-edge: {sourcename: "n88" targetname: "n89" label: "0" color: red}
-node: {title: "n87" label: "Sel VAR_A 87" }
-edge: {sourcename: "n87" targetname: "n93" label: "0" color: blue}
-edge: {sourcename: "n87" targetname: "n92" label: "1" }
-node: {title: "n97" label: "Sel VAR_B 97" }
-edge: {sourcename: "n97" targetname: "n93" label: "0" color: blue}
-edge: {sourcename: "n97" targetname: "n92" label: "1" }
-node: {title: "n104" label: "ProjM 0 104" color: yellow}
-edge: {sourcename: "n104" targetname: "n105" label: "0" color: blue}
-node: {title: "n105" label: "Store  105" }
-edge: {sourcename: "n105" targetname: "n107" label: "0" color: blue}
-edge: {sourcename: "n105" targetname: "n97" label: "1" }
-edge: {sourcename: "n105" targetname: "n106" label: "2" }
-node: {title: "n107" label: "ProjM 0 107" color: yellow}
-edge: {sourcename: "n107" targetname: "n108" label: "0" color: blue}
-node: {title: "n108" label: "Store  108" }
-edge: {sourcename: "n108" targetname: "n93" label: "0" color: blue}
-edge: {sourcename: "n108" targetname: "n87" label: "1" }
-edge: {sourcename: "n108" targetname: "n109" label: "2" }
-node: {title: "n110" label: "Jmp  110" }
+graph: { title: "n88" label: "88" status:clustered color:yellow
+edge: {sourcename: "n88 " targetname: "n89" label: "0" color: red}
+node: {title: "n87" label: "Sel VAR_A 87"  info1: "visited: 18
+"}
+edge: {sourcename: "n87 " targetname: "n93" label: "0" color: blue}
+edge: {sourcename: "n87 " targetname: "n92" label: "1" }
+node: {title: "n97" label: "Sel VAR_B 97"  info1: "visited: 18
+"}
+edge: {sourcename: "n97 " targetname: "n93" label: "0" color: blue}
+edge: {sourcename: "n97 " targetname: "n92" label: "1" }
+node: {title: "n104" label: "ProjM 0 104" color: yellow info1: "visited: 18
+"}
+edge: {sourcename: "n104 " targetname: "n105" label: "0" color: blue}
+node: {title: "n105" label: "Store  105"  info1: "visited: 18
+"}
+edge: {sourcename: "n105 " targetname: "n107" label: "0" color: blue}
+edge: {sourcename: "n105 " targetname: "n97" label: "1" }
+edge: {sourcename: "n105 " targetname: "n106" label: "2" }
+node: {title: "n107" label: "ProjM 0 107" color: yellow info1: "visited: 18
+"}
+edge: {sourcename: "n107 " targetname: "n108" label: "0" color: blue}
+node: {title: "n108" label: "Store  108"  info1: "visited: 18
+"}
+edge: {sourcename: "n108 " targetname: "n93" label: "0" color: blue}
+edge: {sourcename: "n108 " targetname: "n87" label: "1" }
+edge: {sourcename: "n108 " targetname: "n109" label: "2" }
+node: {title: "n110" label: "Jmp  110"  info1: "visited: 18
+"}
 }
 
-graph: { title: "n90"  label: "90" status:clustered color:yellow
-edge: {sourcename: "n90" targetname: "n89" label: "0" color: red}
-node: {title: "n89" label: "ProjX 0 89" color: yellow}
-edge: {sourcename: "n89" targetname: "n91" label: "0" color: red}
-node: {title: "n91" label: "Start  91" color: blue}
-node: {title: "n92" label: "ProjP 3 92" color: yellow}
-edge: {sourcename: "n92" targetname: "n91" label: "0" }
-node: {title: "n93" label: "ProjM 1 93" color: yellow}
-edge: {sourcename: "n93" targetname: "n91" label: "0" color: blue}
-node: {title: "n106" label: "0x1Iu  106" color: yellow}
-node: {title: "n109" label: "0x0Iu  109" color: yellow}
+graph: { title: "n90" label: "90" status:clustered color:yellow
+edge: {sourcename: "n90 " targetname: "n89" label: "0" color: red}
+node: {title: "n89" label: "ProjX 0 89" color: yellow info1: "visited: 19
+"}
+edge: {sourcename: "n89 " targetname: "n91" label: "0" color: red}
+node: {title: "n91" label: "Start  91" color: blue info1: "visited: 19
+"}
+node: {title: "n92" label: "ProjP 3 92" color: yellow info1: "visited: 19
+"}
+edge: {sourcename: "n92 " targetname: "n91" label: "0" }
+node: {title: "n93" label: "ProjM 1 93" color: yellow info1: "visited: 19
+"}
+edge: {sourcename: "n93 " targetname: "n91" label: "0" color: blue}
+node: {title: "n106" label: "0x1Iu  106" color: yellow info1: "visited: 19
+"}
+node: {title: "n109" label: "0x0Iu  109" color: yellow info1: "visited: 19
+"}
 }
 
-node: {title: "n116" label: "Bad  116" }
+node: {title: "n116" label: "Bad  116"  info1: "visited: 0
+"}
 }

@@ -8,7 +8,8 @@ classname 1: "Data"
 classname 2: "Block"
 classname 3: "Entity type"classname 4: "Entity owner"classname 5: "Method Param"classname 6: "Method Res"classname 7: "Super"classname 8: "Union"classname 9: "Points-to"classname 10: "Array Element Type"classname 11: "Overwrites"classname 12: "Member"
 node: {title: "e30" label: "ent a_tp_elem_ent" color: yellow
- info1:"
+ info1: "
+id: e30
 allocation:  automatic allocated
 visibility:  local
 variability: uninitialized
@@ -29,7 +30,8 @@ mode: Is,
 size: 4B,
 "}
 node: {title: "e33" label: "ent a" color: yellow
- info1:"
+ info1: "
+id: e33
 allocation:  automatic allocated
 visibility:  local
 variability: uninitialized
@@ -45,7 +47,8 @@ size: -1B,
 " color: green}
 edge: { sourcename: "t15" targetname: "e33"class: 12 label: "member" color:blue}
 node: {title: "e14" label: "ent main" color: yellow
- info1:"
+ info1: "
+id: e14
 allocation:  static allocated
 visibility:  local
 variability: constant
@@ -58,7 +61,8 @@ irg = g27"
 }
 edge: { sourcename: "e14" targetname: "t12"class: 3 label: "type" color: red}
 edge: { sourcename: "e14" targetname: "n13"label: "value 0"}
-node: {title: "n13" label: "&(ARRAY-STACK_EXAMPLE_main)P  13" color: yellow}
+node: {title: "n13" label: "&(ARRAY-STACK_EXAMPLE_main)P  13" color: yellow info1: "visited: 1
+"}
 node: {title: "t11" label: "class ARRAY-STACK_EXAMPLE" info1: "state: layout_undefined
 size: -1B,
 " color: green}

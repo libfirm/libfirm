@@ -7,40 +7,52 @@ orientation: bottom_to_top
 classname 1: "Data"
 classname 2: "Block"
 classname 3: "Entity type"classname 4: "Entity owner"classname 5: "Method Param"classname 6: "Method Res"classname 7: "Super"classname 8: "Union"classname 9: "Points-to"classname 10: "Array Element Type"classname 11: "Overwrites"classname 12: "Member"
-graph: { title: "n223"  label: "223" status:clustered color:yellow
-edge: {sourcename: "n223" targetname: "n224" label: "0" color: red}
-node: {title: "n222" label: "End  222" color: blue}
+graph: { title: "n223" label: "223" status:clustered color:yellow
+edge: {sourcename: "n223 " targetname: "n224" label: "0" color: red}
+node: {title: "n222" label: "End  222" color: blue info1: "visited: 16
+"}
 }
 
-graph: { title: "n225"  label: "225" status:clustered color:yellow
-edge: {sourcename: "n225" targetname: "n226" label: "0" color: red}
-node: {title: "n224" label: "Return  224" }
-edge: {sourcename: "n224" targetname: "n229" label: "0" color: blue}
-node: {title: "n229" label: "ProjM 0 229" color: yellow}
-edge: {sourcename: "n229" targetname: "n230" label: "0" color: blue}
-node: {title: "n230" label: "Store  230" }
-edge: {sourcename: "n230" targetname: "n235" label: "0" color: blue}
-edge: {sourcename: "n230" targetname: "n233" label: "1" }
-edge: {sourcename: "n230" targetname: "n231" label: "2" }
-node: {title: "n231" label: "ProjIs 1 231" color: yellow}
-edge: {sourcename: "n231" targetname: "n232" label: "0" }
-node: {title: "n233" label: "Sel a 233" }
-edge: {sourcename: "n233" targetname: "n235" label: "0" color: blue}
-edge: {sourcename: "n233" targetname: "n234" label: "1" }
-node: {title: "n234" label: "ProjP 0 234" color: yellow}
-edge: {sourcename: "n234" targetname: "n232" label: "0" }
+graph: { title: "n225" label: "225" status:clustered color:yellow
+edge: {sourcename: "n225 " targetname: "n226" label: "0" color: red}
+node: {title: "n224" label: "Return  224"  info1: "visited: 17
+"}
+edge: {sourcename: "n224 " targetname: "n229" label: "0" color: blue}
+node: {title: "n229" label: "ProjM 0 229" color: yellow info1: "visited: 17
+"}
+edge: {sourcename: "n229 " targetname: "n230" label: "0" color: blue}
+node: {title: "n230" label: "Store  230"  info1: "visited: 17
+"}
+edge: {sourcename: "n230 " targetname: "n235" label: "0" color: blue}
+edge: {sourcename: "n230 " targetname: "n233" label: "1" }
+edge: {sourcename: "n230 " targetname: "n231" label: "2" }
+node: {title: "n231" label: "ProjIs 1 231" color: yellow info1: "visited: 17
+"}
+edge: {sourcename: "n231 " targetname: "n232" label: "0" }
+node: {title: "n233" label: "Sel a 233"  info1: "visited: 17
+"}
+edge: {sourcename: "n233 " targetname: "n235" label: "0" color: blue}
+edge: {sourcename: "n233 " targetname: "n234" label: "1" }
+node: {title: "n234" label: "ProjP 0 234" color: yellow info1: "visited: 17
+"}
+edge: {sourcename: "n234 " targetname: "n232" label: "0" }
 }
 
-graph: { title: "n227"  label: "227" status:clustered color:yellow
-edge: {sourcename: "n227" targetname: "n226" label: "0" color: red}
-node: {title: "n226" label: "ProjX 0 226" color: yellow}
-edge: {sourcename: "n226" targetname: "n228" label: "0" color: red}
-node: {title: "n228" label: "Start  228" color: blue}
-node: {title: "n232" label: "ProjT 4 232" color: yellow}
-edge: {sourcename: "n232" targetname: "n228" label: "0" }
-node: {title: "n235" label: "ProjM 1 235" color: yellow}
-edge: {sourcename: "n235" targetname: "n228" label: "0" color: blue}
+graph: { title: "n227" label: "227" status:clustered color:yellow
+edge: {sourcename: "n227 " targetname: "n226" label: "0" color: red}
+node: {title: "n226" label: "ProjX 0 226" color: yellow info1: "visited: 18
+"}
+edge: {sourcename: "n226 " targetname: "n228" label: "0" color: red}
+node: {title: "n228" label: "Start  228" color: blue info1: "visited: 18
+"}
+node: {title: "n232" label: "ProjT 4 232" color: yellow info1: "visited: 18
+"}
+edge: {sourcename: "n232 " targetname: "n228" label: "0" }
+node: {title: "n235" label: "ProjM 1 235" color: yellow info1: "visited: 18
+"}
+edge: {sourcename: "n235 " targetname: "n228" label: "0" color: blue}
 }
 
-node: {title: "n238" label: "Bad  238" }
+node: {title: "n238" label: "Bad  238"  info1: "visited: 0
+"}
 }

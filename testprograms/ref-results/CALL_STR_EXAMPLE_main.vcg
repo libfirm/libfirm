@@ -7,33 +7,43 @@ orientation: bottom_to_top
 classname 1: "Data"
 classname 2: "Block"
 classname 3: "Entity type"classname 4: "Entity owner"classname 5: "Method Param"classname 6: "Method Res"classname 7: "Super"classname 8: "Union"classname 9: "Points-to"classname 10: "Array Element Type"classname 11: "Overwrites"classname 12: "Member"
-graph: { title: "n54"  label: "54" status:clustered color:yellow
-edge: {sourcename: "n54" targetname: "n55" label: "0" color: red}
-node: {title: "n53" label: "End  53" color: blue}
+graph: { title: "n54" label: "54" status:clustered color:yellow
+edge: {sourcename: "n54 " targetname: "n55" label: "0" color: red}
+node: {title: "n53" label: "End  53" color: blue info1: "visited: 6
+"}
 }
 
-graph: { title: "n56"  label: "56" status:clustered color:yellow
-edge: {sourcename: "n56" targetname: "n57" label: "0" color: red}
-node: {title: "n55" label: "Return  55" }
-edge: {sourcename: "n55" targetname: "n60" label: "0" color: blue}
-node: {title: "n60" label: "ProjM 0 60" color: yellow}
-edge: {sourcename: "n60" targetname: "n61" label: "0" color: blue}
-node: {title: "n61" label: "Call  61" }
-edge: {sourcename: "n61" targetname: "n64" label: "0" color: blue}
-edge: {sourcename: "n61" targetname: "n63" label: "1" }
-edge: {sourcename: "n61" targetname: "n62" label: "2" }
+graph: { title: "n56" label: "56" status:clustered color:yellow
+edge: {sourcename: "n56 " targetname: "n57" label: "0" color: red}
+node: {title: "n55" label: "Return  55"  info1: "visited: 7
+"}
+edge: {sourcename: "n55 " targetname: "n60" label: "0" color: blue}
+node: {title: "n60" label: "ProjM 0 60" color: yellow info1: "visited: 7
+"}
+edge: {sourcename: "n60 " targetname: "n61" label: "0" color: blue}
+node: {title: "n61" label: "Call  61"  info1: "visited: 7
+"}
+edge: {sourcename: "n61 " targetname: "n64" label: "0" color: blue}
+edge: {sourcename: "n61 " targetname: "n63" label: "1" }
+edge: {sourcename: "n61 " targetname: "n62" label: "2" }
 }
 
-graph: { title: "n58"  label: "58" status:clustered color:yellow
-edge: {sourcename: "n58" targetname: "n57" label: "0" color: red}
-node: {title: "n57" label: "ProjX 0 57" color: yellow}
-edge: {sourcename: "n57" targetname: "n59" label: "0" color: red}
-node: {title: "n59" label: "Start  59" color: blue}
-node: {title: "n62" label: "&(GlobalType_constStr)P  62" color: yellow}
-node: {title: "n63" label: "SymC f  63" }
-node: {title: "n64" label: "ProjM 1 64" color: yellow}
-edge: {sourcename: "n64" targetname: "n59" label: "0" color: blue}
+graph: { title: "n58" label: "58" status:clustered color:yellow
+edge: {sourcename: "n58 " targetname: "n57" label: "0" color: red}
+node: {title: "n57" label: "ProjX 0 57" color: yellow info1: "visited: 8
+"}
+edge: {sourcename: "n57 " targetname: "n59" label: "0" color: red}
+node: {title: "n59" label: "Start  59" color: blue info1: "visited: 8
+"}
+node: {title: "n62" label: "&(GlobalType_constStr)P  62" color: yellow info1: "visited: 8
+"}
+node: {title: "n63" label: "SymC f  63"  info1: "visited: 8
+"}
+node: {title: "n64" label: "ProjM 1 64" color: yellow info1: "visited: 8
+"}
+edge: {sourcename: "n64 " targetname: "n59" label: "0" color: blue}
 }
 
-node: {title: "n68" label: "Bad  68" }
+node: {title: "n68" label: "Bad  68"  info1: "visited: 0
+"}
 }

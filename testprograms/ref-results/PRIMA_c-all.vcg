@@ -7,56 +7,73 @@ orientation: bottom_to_top
 classname 1: "Data"
 classname 2: "Block"
 classname 3: "Entity type"classname 4: "Entity owner"classname 5: "Method Param"classname 6: "Method Res"classname 7: "Super"classname 8: "Union"classname 9: "Points-to"classname 10: "Array Element Type"classname 11: "Overwrites"classname 12: "Member"
-graph: { title: "n241"  label: "241" status:clustered color:yellow
-node: {title: "n240" label: "End  240" color: blue}
+graph: { title: "n241" label: "241" status:clustered color:yellow
+node: {title: "n240" label: "End  240" color: blue info1: "visited: 26
+"}
 }
 
-graph: { title: "n246"  label: "246" status:clustered color:yellow
-edge: {sourcename: "n246" targetname: "n248" label: "0" color: red}
-edge: {sourcename: "n246" targetname: "n247" label: "1" color: red}
-node: {title: "n250" label: "PhiM  250" color: green}
-edge: {sourcename: "n250" targetname: "n259" label: "0" color: blue}
-edge: {sourcename: "n250" targetname: "n251" label: "1" color: blue}
-node: {title: "n247" label: "Jmp  247" }
-node: {title: "n251" label: "Store  251" }
-edge: {sourcename: "n251" targetname: "n250" label: "0" color: blue}
-edge: {sourcename: "n251" targetname: "n257" label: "1" }
-edge: {sourcename: "n251" targetname: "n252" label: "2" }
-node: {title: "n252" label: "PhiIs  252" color: green}
-edge: {sourcename: "n252" targetname: "n255" label: "0" }
-edge: {sourcename: "n252" targetname: "n253" label: "1" }
-node: {title: "n253" label: "PhiIs  253" color: green}
-edge: {sourcename: "n253" targetname: "n254" label: "0" }
-edge: {sourcename: "n253" targetname: "n252" label: "1" }
-node: {title: "n257" label: "Sel a 257" }
-edge: {sourcename: "n257" targetname: "n250" label: "0" color: blue}
-edge: {sourcename: "n257" targetname: "n258" label: "1" }
+graph: { title: "n246" label: "246" status:clustered color:yellow
+edge: {sourcename: "n246 " targetname: "n248" label: "0" color: red}
+edge: {sourcename: "n246 " targetname: "n247" label: "1" color: red}
+node: {title: "n250" label: "PhiM  250" color: green info1: "visited: 27
+"}
+edge: {sourcename: "n250 " targetname: "n259" label: "0" color: blue}
+edge: {sourcename: "n250 " targetname: "n251" label: "1" color: blue}
+node: {title: "n247" label: "Jmp  247"  info1: "visited: 27
+"}
+node: {title: "n251" label: "Store  251"  info1: "visited: 27
+"}
+edge: {sourcename: "n251 " targetname: "n250" label: "0" color: blue}
+edge: {sourcename: "n251 " targetname: "n257" label: "1" }
+edge: {sourcename: "n251 " targetname: "n252" label: "2" }
+node: {title: "n252" label: "PhiIs  252" color: green info1: "visited: 27
+"}
+edge: {sourcename: "n252 " targetname: "n255" label: "0" }
+edge: {sourcename: "n252 " targetname: "n253" label: "1" }
+node: {title: "n253" label: "PhiIs  253" color: green info1: "visited: 27
+"}
+edge: {sourcename: "n253 " targetname: "n254" label: "0" }
+edge: {sourcename: "n253 " targetname: "n252" label: "1" }
+node: {title: "n257" label: "Sel a 257"  info1: "visited: 27
+"}
+edge: {sourcename: "n257 " targetname: "n250" label: "0" color: blue}
+edge: {sourcename: "n257 " targetname: "n258" label: "1" }
 }
 
-graph: { title: "n249"  label: "249" status:clustered color:yellow
-edge: {sourcename: "n249" targetname: "n244" label: "0" color: red}
-node: {title: "n248" label: "Jmp  248" }
-node: {title: "n255" label: "ProjIs 1 255" color: yellow}
-edge: {sourcename: "n255" targetname: "n256" label: "0" }
-node: {title: "n258" label: "ProjP 0 258" color: yellow}
-edge: {sourcename: "n258" targetname: "n256" label: "0" }
+graph: { title: "n249" label: "249" status:clustered color:yellow
+edge: {sourcename: "n249 " targetname: "n244" label: "0" color: red}
+node: {title: "n248" label: "Jmp  248"  info1: "visited: 28
+"}
+node: {title: "n255" label: "ProjIs 1 255" color: yellow info1: "visited: 28
+"}
+edge: {sourcename: "n255 " targetname: "n256" label: "0" }
+node: {title: "n258" label: "ProjP 0 258" color: yellow info1: "visited: 28
+"}
+edge: {sourcename: "n258 " targetname: "n256" label: "0" }
 }
 
-graph: { title: "n243"  label: "243" status:clustered color:yellow
-edge: {sourcename: "n243" targetname: "n244" label: "0" color: red}
-node: {title: "n244" label: "ProjX 0 244" color: yellow}
-edge: {sourcename: "n244" targetname: "n245" label: "0" color: red}
-node: {title: "n245" label: "Start  245" color: blue}
-node: {title: "n254" label: "0x0Is  254" color: yellow}
-node: {title: "n256" label: "ProjT 4 256" color: yellow}
-edge: {sourcename: "n256" targetname: "n245" label: "0" }
-node: {title: "n259" label: "ProjM 1 259" color: yellow}
-edge: {sourcename: "n259" targetname: "n245" label: "0" color: blue}
+graph: { title: "n243" label: "243" status:clustered color:yellow
+edge: {sourcename: "n243 " targetname: "n244" label: "0" color: red}
+node: {title: "n244" label: "ProjX 0 244" color: yellow info1: "visited: 29
+"}
+edge: {sourcename: "n244 " targetname: "n245" label: "0" color: red}
+node: {title: "n245" label: "Start  245" color: blue info1: "visited: 29
+"}
+node: {title: "n254" label: "0x0Is  254" color: yellow info1: "visited: 29
+"}
+node: {title: "n256" label: "ProjT 4 256" color: yellow info1: "visited: 29
+"}
+edge: {sourcename: "n256 " targetname: "n245" label: "0" }
+node: {title: "n259" label: "ProjM 1 259" color: yellow info1: "visited: 29
+"}
+edge: {sourcename: "n259 " targetname: "n245" label: "0" color: blue}
 }
 
-node: {title: "n242" label: "Bad  242" }
+node: {title: "n242" label: "Bad  242"  info1: "visited: 0
+"}
 node: {title: "e13" label: "ent a" color: yellow
- info1:"
+ info1: "
+id: e13
 allocation:  automatic allocated
 visibility:  local
 variability: uninitialized
@@ -74,7 +91,8 @@ edge: { sourcename: "t11" targetname: "e13"class: 12 label: "member" color:blue}
 edge: { sourcename: "t11" targetname: "e16"class: 12 label: "member" color:blue}
 edge: { sourcename: "t11" targetname: "e19"class: 12 label: "member" color:blue}
 node: {title: "e16" label: "ent set_a" color: yellow
- info1:"
+ info1: "
+id: e16
 allocation:  static allocated
 visibility:  local
 variability: constant
@@ -87,7 +105,8 @@ irg = g69"
 }
 edge: { sourcename: "e16" targetname: "t14"class: 3 label: "type" color: red}
 edge: { sourcename: "e16" targetname: "n15"label: "value 0"}
-node: {title: "n15" label: "&(PRIMA_set_a)P  15" color: yellow}
+node: {title: "n15" label: "&(PRIMA_set_a)P  15" color: yellow info1: "visited: 3
+"}
 node: {title: "t14" label: "method set_a" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
@@ -104,7 +123,8 @@ mode: Is,
 size: 4B,
 "}
 node: {title: "e19" label: "ent c" color: yellow
- info1:"
+ info1: "
+id: e19
 allocation:  static allocated
 visibility:  local
 variability: constant
@@ -117,7 +137,8 @@ irg = g92"
 }
 edge: { sourcename: "e19" targetname: "t17"class: 3 label: "type" color: red}
 edge: { sourcename: "e19" targetname: "n18"label: "value 0"}
-node: {title: "n18" label: "&(PRIMA_c)P  18" color: yellow}
+node: {title: "n18" label: "&(PRIMA_c)P  18" color: yellow info1: "visited: 3
+"}
 node: {title: "t17" label: "method c" info1: "state: layout_fixed,
 mode: P,
 size: 4B,

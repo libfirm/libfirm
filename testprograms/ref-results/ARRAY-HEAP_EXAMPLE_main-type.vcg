@@ -8,7 +8,8 @@ classname 1: "Data"
 classname 2: "Block"
 classname 3: "Entity type"classname 4: "Entity owner"classname 5: "Method Param"classname 6: "Method Res"classname 7: "Super"classname 8: "Union"classname 9: "Points-to"classname 10: "Array Element Type"classname 11: "Overwrites"classname 12: "Member"
 node: {title: "e29" label: "ent a_elem_ent" color: yellow
- info1:"
+ info1: "
+id: e29
 allocation:  automatic allocated
 visibility:  local
 variability: uninitialized
@@ -29,7 +30,8 @@ mode: Is,
 size: 4B,
 "}
 node: {title: "e13" label: "ent ARRAY-HEAP_EXAMPLE_main" color: yellow
- info1:"
+ info1: "
+id: e13
 allocation:  static allocated
 visibility:  local
 variability: constant
@@ -42,7 +44,8 @@ irg = g26"
 }
 edge: { sourcename: "e13" targetname: "t11"class: 3 label: "type" color: red}
 edge: { sourcename: "e13" targetname: "n12"label: "value 0"}
-node: {title: "n12" label: "&(GlobalType_ARRAY-HEAP_EXAMPLE_main)P  12" color: yellow}
+node: {title: "n12" label: "&(GlobalType_ARRAY-HEAP_EXAMPLE_main)P  12" color: yellow info1: "visited: 1
+"}
 node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
 size: -1B,
 " color: green}
