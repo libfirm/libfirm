@@ -32,6 +32,8 @@
 
 # include "exc.h"
 
+# include "pmap.h"
+
 /* Attributes of nodes */
 #define DEFAULT_NODE_ATTR ""
 #define DEFAULT_TYPE_ATTRIBUTE ""
@@ -66,7 +68,7 @@
 
 
 #if DEBUG_libfirm && NODEID_AS_LABEL
-#define PRINT_NODEID(X) fprintf(F, "%d", get_irn_node_nr(X))
+#define PRINT_NODEID(X) fprintf(F, "%ld", get_irn_node_nr(X))
 #else
 #define PRINT_NODEID(X) fprintf(F, "%p", X)
 #endif
@@ -103,6 +105,7 @@ void dump_whole_node (ir_node *n, void* env);
 inline void
 dump_node_opcode (ir_node *n)
 {
+  assert(n && n->op);
 
   /* Const */
   if (n->op->code == iro_Const) {
@@ -122,6 +125,11 @@ dump_node_opcode (ir_node *n)
       else
 	xfprintf (F, "size");
     }
+
+  /* Filter */
+  } else if (n->op->code == iro_Filter && !interprocedural_view) {
+    fprintf(F, "Proj'");
+
   /* all others */
   } else {
     xfprintf (F, "%I", get_irn_opident(n));
@@ -136,6 +144,7 @@ dump_node_mode (ir_node *n)
   case iro_Const:
   case iro_Id:
   case iro_Proj:
+  case iro_Filter:
   case iro_Conv:
   case iro_Tuple:
   case iro_Add:
@@ -165,6 +174,9 @@ dump_node_nodeattr (ir_node *n)
       xfprintf (F, "%ld", n->attr.proj);
     }
     break;
+  case iro_Filter:
+    xfprintf (F, "%ld", n->attr.filter.proj);
+    break;
   case iro_Sel: {
     assert(get_kind(get_Sel_entity(n)) == k_entity);
     xfprintf (F, "%I", get_entity_ident(get_Sel_entity(n)));
@@ -178,6 +190,10 @@ dump_node_vcgattr (ir_node *n)
 {
   switch (n->op->code) {
   case iro_Start:
+  case iro_EndReg:
+    /* fall through */
+  case iro_EndExcept:
+    /* fall through */
   case iro_End:
     xfprintf (F, "color: blue");
     break;
@@ -189,6 +205,7 @@ dump_node_vcgattr (ir_node *n)
     break;
   case iro_Const:
   case iro_Proj:
+  case iro_Filter:
   case iro_Tuple:
     xfprintf (F, "color: yellow");
     break;
@@ -226,6 +243,10 @@ dump_ir_node (ir_node *n)
     xfprintf (F, "\"%I\" color: blue ", get_irn_opident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
      break;
+  case iro_EndReg:
+    /* fall through */
+  case iro_EndExcept:
+    /* fall through */
   case iro_End:
     xfprintf (F, "\"%I\" color: blue ", get_irn_opident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
@@ -256,6 +277,10 @@ dump_ir_node (ir_node *n)
     } else {
       xfprintf (F, "\"%I%I %ld\"", get_irn_opident(n), get_irn_modeident(n), n->attr.proj);
     }
+    xfprintf (F, DEFAULT_NODE_ATTR);
+    break;
+  case iro_Filter:
+    xfprintf (F, "\"%I%I %ld\"", get_irn_opident(n), get_irn_modeident(n), n->attr.filter.proj);
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Conv:
@@ -326,11 +351,19 @@ dump_ir_node (ir_node *n)
     xfprintf (F, "\"%I\"", get_irn_opident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
+  case iro_Break:
+    xfprintf (F, "\"%I\"", get_irn_opident(n));
+    xfprintf (F, DEFAULT_NODE_ATTR);
+    break;
   case iro_Cond:
     xfprintf (F, "\"%I\"", get_irn_opident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_Call:
+    xfprintf (F, "\"%I\"", get_irn_opident(n));
+    xfprintf (F, DEFAULT_NODE_ATTR);
+    break;
+  case iro_CallBegin:
     xfprintf (F, "\"%I\"", get_irn_opident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
@@ -382,6 +415,10 @@ dump_ir_node (ir_node *n)
     xfprintf (F, "\"%I%I\" ", get_irn_opident(n), get_irn_modeident(n));
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
+  case iro_Unknown:
+    xfprintf (F, "\"%I%I\" ", get_irn_opident(n), get_irn_modeident(n));
+    xfprintf (F, DEFAULT_NODE_ATTR);
+    break;
   default:
     xfprintf (F, "\"%I%I\" ", get_irn_opident(n), get_irn_modeident(n));
   }
@@ -417,7 +454,10 @@ void print_edge_vcgattr(ir_node *from, int to) {
 	xfprintf (F, MEM_EDGE_ATTR);
     }
     break;
+  case iro_EndReg: break;
+  case iro_EndExcept: break;
   case iro_Jmp:     break;
+  case iro_Break:   break;
   case iro_Cond:    break;
   case iro_Return:
   case iro_Raise:
@@ -429,6 +469,7 @@ void print_edge_vcgattr(ir_node *from, int to) {
   case iro_Call:
     if (to == 0) xfprintf (F, MEM_EDGE_ATTR);
     break;
+  case iro_CallBegin: break;
   case iro_Add:     break;
   case iro_Sub:     break;
   case iro_Minus:   break;
@@ -463,6 +504,7 @@ void print_edge_vcgattr(ir_node *from, int to) {
     break;
   case iro_Tuple:  break;
   case iro_Proj:
+  case iro_Filter:
     switch (get_irn_modecode(from)) {
     case irm_X:
       xfprintf (F, CF_EDGE_ATTR);
@@ -474,6 +516,7 @@ void print_edge_vcgattr(ir_node *from, int to) {
     }
     break;
   case iro_Bad:    break;
+  case iro_Unknown: break;
   case iro_Id:     break;
   default:
   }
@@ -482,17 +525,19 @@ void print_edge_vcgattr(ir_node *from, int to) {
 /* dump edges to our inputs */
 void
 dump_ir_data_edges(ir_node *n)  {
-  int i, max;
+  int i, visited = get_irn_visited(n);
 
   if ((get_irn_op(n) == op_End) && (!dump_keepalive))
     return;
 
   for (i = 0; i < get_irn_arity(n); i++) {
-    assert(get_irn_n(n, i));
+    ir_node * pred = get_irn_n(n, i);
+    assert(pred);
+    if (interprocedural_view && get_irn_visited(pred) < visited) continue; /* pred not dumped */
     fprintf (F, "edge: {sourcename: \"");
     PRINT_NODEID(n);
     fprintf (F, "\" targetname: \"");
-    PRINT_NODEID(get_irn_n(n, i));
+    PRINT_NODEID(pred);
     fprintf (F, "\"");
     fprintf (F, " label: \"%d\" ", i);
     print_edge_vcgattr(n, i);
@@ -891,6 +936,12 @@ vcg_close () {
 /* routines to dump a graph, blocks as conventional nodes.              */
 /************************************************************************/
 
+int node_floats(ir_node *n) {
+
+  return ((get_op_pinned(get_irn_op(n)) == floats) &&
+	  (get_irg_pinned(current_ir_graph) == floats));
+}
+
 void
 dump_whole_node (ir_node *n, void* env) {
   dump_node(n);
@@ -908,7 +959,8 @@ dump_ir_graph (ir_graph *irg)
   vcg_open (irg, "");
 
   /* walk over the graph */
-  irg_walk(irg->end, dump_whole_node, NULL, NULL);
+  /* dump_whole_node must be called in post visiting predecessors */
+  irg_walk(irg->end, NULL, dump_whole_node, NULL);
 
   /* dump the out edges in a separate walk */
   if ((dump_out_edge_flag) && (get_irg_outs_state(irg) != no_outs)) {
@@ -923,12 +975,6 @@ dump_ir_graph (ir_graph *irg)
 /***********************************************************************/
 /* the following routines dump the nodes as attached to the blocks.    */
 /***********************************************************************/
-
-int node_floats(ir_node *n) {
-
-  return ((get_op_pinned(get_irn_op(n)) == floats) &&
-	  (get_irg_pinned(current_ir_graph) == floats));
-}
 
 void
 dump_ir_blocks_nodes (ir_node *n, void *env) {
@@ -957,11 +1003,11 @@ dump_ir_block (ir_node *block, void *env) {
 #else
     xfprintf (F, "%I", block->op->name);
 #endif
-	if (exc_normal != get_Block_exc (block))
-	  fprintf (F, " (%s)", exc_to_string (get_Block_exc (block)));
+    if (exc_normal != get_Block_exc (block))
+      fprintf (F, " (%s)", exc_to_string (get_Block_exc (block)));
 
     xfprintf(F, "\" status:clustered color:%s \n",
-			 get_Block_matured (block) ? "yellow" : "red");
+	     get_Block_matured (block) ? "yellow" : "red");
     /* dump the blocks edges */
     dump_ir_data_edges(block);
 
@@ -1210,4 +1256,143 @@ void dump_out_edges() {
 
 void dump_dominator_information() {
   dump_dominator_information_flag = 1;
+}
+
+
+static void clear_link(ir_node * node, void * env) {
+  set_irn_link(node, NULL);
+}
+
+
+static inline bool is_Block(ir_node * node) {
+  return !is_no_Block(node);
+}
+
+
+static void collect_blocks_floats_cg(ir_node * node, pmap * map) {
+  if (is_Block(node)
+      || node_floats(node)
+      || get_irn_op(node) == op_Bad
+      || get_irn_op(node) == op_Unknown) {
+    pmap_entry * entry = pmap_find(map, current_ir_graph);
+    if (entry) {
+      ARR_APP1(ir_node *, (ir_node **) entry->value, node);
+    } else {
+      ir_node ** arr = NEW_ARR_F(ir_node *, 1);
+      arr[0] = node;
+      pmap_insert(map, current_ir_graph, arr);
+    }
+  } else {
+    ir_node * block = get_nodes_Block(node);
+    set_irn_link(node, get_irn_link(block));
+    set_irn_link(block, node);
+  }
+}
+
+
+static void dump_cg_ir_block(ir_node * node, void * env) {
+  assert(is_Block(node));
+  xfprintf(F, "graph: { title: \"");
+  PRINT_NODEID(node);
+  fprintf(F, "\"  label: \"");
+#ifdef DEBUG_libfirm
+  xfprintf (F, "%ld", get_irn_node_nr(node));
+#else
+  xfprintf (F, "%I", node->op->name);
+#endif
+  if (exc_normal != get_Block_exc(node)) {
+    fprintf (F, " (%s)", exc_to_string (get_Block_exc(node)));
+  }
+
+  xfprintf(F, "\" status:clustered color:%s \n",
+	   get_Block_matured(node) ? "yellow" : "red");
+
+  /* dump the blocks edges */
+  dump_ir_data_edges(node);
+
+  /* dump the nodes that go into the block */
+  for (node = get_irn_link(node); node; node = get_irn_link(node)) {
+    dump_node(node);
+    dump_ir_data_edges(node);
+  }
+
+  /* Close the vcg information for the block */
+  xfprintf(F, "}\n\n");
+}
+
+
+/* dump interprocedural graph with surrounding methods */
+void dump_cg_block_graph(ir_graph * irg) {
+  pmap * map = pmap_create();
+  pmap_entry * entry;
+  vcg_open(irg, "");
+
+  irg_walk_graph(irg, clear_link, (irg_walk_func) collect_blocks_floats_cg, map);
+  for (entry = pmap_first(map); entry; entry = pmap_next(map)) {
+    ir_node ** arr = entry->value;
+    int i;
+
+    xfprintf(F, "graph: { title: \"%I\" label: \"%I\" status:clustered color:white \n",
+	     get_entity_ident(get_irg_ent(entry->key)),
+	     get_entity_ident(get_irg_ent(entry->key)));
+
+    for (i = ARR_LEN(arr) - 1; i >= 0; --i) {
+      ir_node * node = arr[i];
+      if (is_Block(node)) {
+	dump_cg_ir_block(node, NULL);
+      } else {
+	dump_node(node);
+	dump_ir_data_edges(node);
+      }
+    }
+
+    DEL_ARR_F(arr);
+
+    /* Close the vcg information for the irg */
+    xfprintf(F, "}\n\n");
+  }
+
+  pmap_destroy(map);
+
+  vcg_close();
+}
+
+
+/* dump interprocedural block graph with surrounding methods */
+void dump_cg_graph(ir_graph * irg) {
+  pmap * map = pmap_create();
+  pmap_entry * entry;
+  vcg_open(irg, "");
+
+  irg_walk_graph(irg, clear_link, (irg_walk_func) collect_blocks_floats_cg, map);
+  for (entry = pmap_first(map); entry; entry = pmap_next(map)) {
+    ir_node ** arr = entry->value;
+    int i;
+    ident * irg_ident = get_entity_ident(get_irg_ent(entry->key));
+
+    xfprintf(F, "graph: { title: \"%I\" label: \"%I\" status:clustered color:white \n",
+	     irg_ident, irg_ident);
+
+    for (i = ARR_LEN(arr) - 1; i >= 0; --i) {
+      ir_node * node = arr[i];
+      dump_node(node);
+      dump_ir_data_edges(node);
+      if (is_Block(node)) {
+	for (node = get_irn_link(node); node; node = get_irn_link(node)) {
+	  dump_node(node);
+	  dump_ir_block_edge(node);
+	  dump_ir_data_edges(node);
+	}
+      }
+    }
+
+    DEL_ARR_F(arr);
+
+    /* Close the vcg information for the irg */
+    xfprintf(F, "}\n\n");
+  }
+
+  pmap_destroy(map);
+
+  vcg_close();
 }

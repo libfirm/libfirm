@@ -72,6 +72,10 @@ typedef struct ir_graph ir_graph;
    optimizations. */
 extern ir_graph *current_ir_graph;
 
+/* This flag indicate the current view. The behaviour of some methods
+ * (get_irn_*, set_irn_*) is influenced by this flag. */
+extern bool interprocedural_view;
+
 /* Create a new ir graph to built ir for a procedure.
    ent is the entity representing this procedure, i.e., the type of the
    entity must be of a method type.  The constructor automatically sets the
@@ -118,6 +122,10 @@ void     set_irg_args (ir_graph *irg, ir_node *node);
 /* Use new_Bad() instead!! */
 ir_node *get_irg_bad (ir_graph *irg);
 void     set_irg_bad (ir_graph *irg, ir_node *node);
+
+/* Use new_Unknown() instead!! */
+ir_node *get_irg_unknown (ir_graph *irg);
+void     set_irg_unknown (ir_graph *irg, ir_node *node);
 
 ir_node *get_irg_current_block (ir_graph *irg);
 void     set_irg_current_block (ir_graph *irg, ir_node *node);
@@ -203,6 +211,7 @@ void set_irg_dom_inconsistent(ir_graph *irg);
 void     inc_irg_visited(ir_graph *irg);
 unsigned long get_irg_visited (ir_graph *irg);
 void     set_irg_visited(ir_graph *irg, unsigned long i);
+unsigned long get_max_irg_visited(void);
 
 /* increments block_visited by one */
 void     inc_irg_block_visited(ir_graph *irg);

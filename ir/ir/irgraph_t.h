@@ -36,6 +36,7 @@ struct ir_graph {
   struct ir_node *args;              /* methods arguments */
   struct ir_node *bad;		     /* bad node of this ir_graph, the one and
                                         only in this graph */
+  struct ir_node *unknown;           /* unknown node of this ir_graph */
   struct obstack *obst;		     /* obstack where all of the ir_nodes live */
   struct ir_node *current_block;     /* block for newly gen_*()-erated
 					ir_nodes */

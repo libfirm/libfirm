@@ -35,7 +35,8 @@ irn_vrfy (ir_node *n)
 
   if (opcode != iro_Phi && opcode != iro_Block)
     for (i = 0; i < get_irn_arity(n); i++)
-      if (get_irn_opcode(get_irn_n(n, i)) == iro_Bad)
+      if (get_irn_opcode(get_irn_n(n, i)) == iro_Bad
+	  || get_irn_opcode(get_irn_n(n, i)) == iro_Unknown)
 	return;
 
   mymode = get_irn_mode (n);
@@ -63,7 +64,7 @@ irn_vrfy (ir_node *n)
 	    /* Cond: BB x Iu --> X^n */
 	    || op1mode == mode_I) && "Cond node"
            );
-            assert (mymode == mode_T);
+    assert (mymode == mode_T);
     break;
   case iro_Return:
     op1mode = get_irn_mode(in[1]);
@@ -78,10 +79,10 @@ irn_vrfy (ir_node *n)
     mt = get_entity_type(get_irg_ent(current_ir_graph));
     assert(get_Return_n_res(n) == get_method_n_res(mt) &&
 	     "Number of results for Return doesn't match number of results in type.");
-      for (i = 0; i < get_Return_n_res(n); i++)
-	assert((get_irn_mode(get_Return_res(n, i))
-		== get_type_mode(get_method_res_type(mt, i))) &&
-	       "Mode of result for Return doesn't match mode of result type.");
+    for (i = 0; i < get_Return_n_res(n); i++)
+      assert((get_irn_mode(get_Return_res(n, i))
+	      == get_type_mode(get_method_res_type(mt, i))) &&
+	     "Mode of result for Return doesn't match mode of result type.");
 
     break;
   case iro_Raise:
@@ -463,6 +464,12 @@ vrfy_Proj_proj(ir_node *p) {
   }
   case iro_Tuple:
     /* We don't test */
+    break;
+  case iro_CallBegin:
+    break;
+  case iro_EndReg:
+    break;
+  case iro_EndExcept:
     break;
   default: assert(0);
   }

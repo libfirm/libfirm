@@ -172,7 +172,7 @@ copy_node (ir_node *n, void *env) {
    Spare the Bad predecessors of Phi and Block nodes. */
 void
 copy_preds (ir_node *n, void *env) {
-  ir_node *nn, *block, *on;
+  ir_node *nn, *block;
   int i, j;
 
   nn = get_new_node(n);
@@ -328,6 +328,11 @@ copy_graph_env () {
     copy_preds(get_irg_bad(current_ir_graph), NULL);
   }
   set_irg_bad(current_ir_graph, get_new_node(get_irg_bad(current_ir_graph)));
+  if (get_irn_link(get_irg_unknown(current_ir_graph)) == NULL) {
+    copy_node(get_irg_unknown(current_ir_graph), NULL);
+    copy_preds(get_irg_unknown(current_ir_graph), NULL);
+  }
+  set_irg_unknown(current_ir_graph, get_new_node(get_irg_unknown(current_ir_graph)));
 }
 
 /* Copies all reachable nodes to a new obstack.  Removes bad inputs
@@ -410,7 +415,7 @@ void inline_method(ir_node *call, ir_graph *called_graph) {
   ir_node *ret, *phi;
   ir_node *cf_op, *bl;
   int arity, n_ret, n_exc, n_res, i, j, rem_opt;
-  type *called_frame, *caller_frame;
+  type *called_frame;
 
   if (!get_optimize() || !get_opt_inline()) return;
   /** Turn off optimizations, this can cause problems when allocating new nodes. **/
@@ -816,9 +821,6 @@ place_floats_early (ir_node *n)
    places all floating nodes reachable from its argument through floating
    nodes and adds all beginnings at pinned nodes to the worklist. */
 inline void place_early () {
-  int i;
-  bool del_me;
-
   assert(worklist);
   inc_irg_visited(current_ir_graph);
 
@@ -1026,7 +1028,6 @@ static void merge_blocks(ir_node *n, void *env) {
 }
 
 static void collect_nodes(ir_node *n, void *env) {
-  int i;
   if (is_no_Block(n)) {
     ir_node *b = get_nodes_Block(n);
 

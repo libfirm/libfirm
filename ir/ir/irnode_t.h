@@ -33,6 +33,9 @@ typedef struct {
 				 in different phases.  Eventually inline the whole
 				 datastructure. */
   exc_t exc;					/* role of this block for exception handling */
+  ir_node ** in_cg;           /* array with predecessors in
+			       * interprocedural_view, if they differ
+			       * from intraprocedural predecessors */
 } block_attr;
 
 /* Cond attributes */
@@ -65,6 +68,7 @@ typedef struct {
 #if PRECISE_EXC_CONTEXT
   struct ir_node **frag_arr; /* For Phi node construction in case of exceptions */
 #endif
+  entity ** callee_arr; /* result of callee analysis */
 } call_attr;
 
 /* Alloc attributes */
@@ -75,6 +79,25 @@ typedef struct {
   struct ir_node **frag_arr; /* For Phi node construction in case of exceptions */
 #endif
 } alloc_attr;
+
+/* Filter attributes */
+typedef struct {
+  long proj;                 /* contains the result position to project (Proj) */
+  ir_node ** in_cg;          /* array with interprocedural predecessors (Phi) */
+} filter_attr;
+
+/* EndReg/EndExcept attributes */
+typedef struct {
+  ir_graph * irg;            /* ir_graph this node belongs to (for
+			      * navigating in interprocedural graphs) */
+} end_attr;
+
+/* CallBegin attributes */
+typedef struct {
+  ir_graph * irg;            /* ir_graph this node belongs to (for
+			      * navigating in interprocedural graphs) */
+  ir_node * call;            /* associated Call-operation */
+} callbegin_attr;
 
 /* Some irnodes just have one attribute, these are stored here,
    some have more. Their name is 'irnodename_attr' */
@@ -94,6 +117,9 @@ typedef union {
 			       node takes the role of the obsolete Phi0 node,
 			       therefore the name. */
   long           proj;  /* For Proj: contains the result position to project */
+  filter_attr    filter;    /* For Filter */
+  end_attr       end;       /* For EndReg, EndExcept */
+  callbegin_attr callbegin; /* For CallBegin */
 #if PRECISE_EXC_CONTEXT
   struct ir_node **frag_arr; /* For Phi node construction in case of exceptions
 			       for nodes Store, Load, Div, Mod, Quot, DivMod. */
@@ -147,6 +173,6 @@ inline symconst_attr get_irn_symconst_attr (ir_node *node);
 type         *get_irn_call_attr     (ir_node *node);
 sel_attr      get_irn_sel_attr      (ir_node *node);
 int           get_irn_phi_attr      (ir_node *node);
-block_attr    get_irn_return_attr   (ir_node *node);
+block_attr    get_irn_block_attr   (ir_node *node);
 
 # endif /* _IRNODE_T_H_ */

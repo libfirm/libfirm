@@ -30,7 +30,8 @@ typedef enum {
   iro_Cmp, iro_Shl, iro_Shr, iro_Shrs, iro_Rot, iro_Conv,
   iro_Phi,
   iro_Load, iro_Store, iro_Alloc, iro_Free, iro_Sync,
-  iro_Proj, iro_Tuple, iro_Id, iro_Bad
+  iro_Proj, iro_Tuple, iro_Id, iro_Bad,
+  iro_Unknown, iro_Filter, iro_Break, iro_CallBegin, iro_EndReg, iro_EndExcept
 } opcode;
 
 typedef struct ir_op ir_op;
@@ -82,6 +83,13 @@ extern ir_op *op_Tuple;
 extern ir_op *op_Proj;
 extern ir_op *op_Id;
 extern ir_op *op_Bad;
+
+extern ir_op *op_Unknown;
+extern ir_op *op_Filter;
+extern ir_op *op_Break;
+extern ir_op *op_CallBegin;
+extern ir_op *op_EndReg;
+extern ir_op *op_EndExcept;
 
 
 /* Returns the string for the opcode. */

@@ -850,6 +850,8 @@ vt_cmp (const void *elt, const void *key)
     return get_irn_const_attr (a) != get_irn_const_attr (b);
   case iro_Proj:
     return get_irn_proj_attr (a) != get_irn_proj_attr (b);
+  case iro_Filter:
+    return get_Filter_proj(a) != get_Filter_proj(b);
   case iro_Alloc:
     return (get_irn_alloc_attr(a).where != get_irn_alloc_attr(b).where)
       || (get_irn_alloc_attr(a).type != get_irn_alloc_attr(b).type);

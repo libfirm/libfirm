@@ -488,7 +488,10 @@ get_entity_irg(entity *ent) {
 inline void
 set_entity_irg(entity *ent, ir_graph *irg) {
   assert (ent && ent->type);
-  assert (irg);
+  /* Wie kann man die Referenz auf einen IRG löschen, z.B. wenn die
+   * Methode selbst nicht mehr aufgerufen werden kann, die Entität
+   * aber erhalten bleiben soll. */
+  /* assert (irg); */
   assert (is_method_type(ent->type));
   assert (ent->peculiarity == existent);
   ent->irg = irg;

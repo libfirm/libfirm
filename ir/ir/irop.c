@@ -63,6 +63,13 @@ ir_op *op_Proj;
 ir_op *op_Id;
 ir_op *op_Bad;
 
+ir_op *op_Unknown;
+ir_op *op_Filter;
+ir_op *op_Break;
+ir_op *op_CallBegin;
+ir_op *op_EndReg;
+ir_op *op_EndExcept;
+
 
 ir_op *
 new_ir_op (opcode code, char *name, op_pinned p, int labeled, size_t attr_size)
@@ -133,6 +140,13 @@ init_op(void)
   op_Tuple = new_ir_op (iro_Tuple, "Tuple",  floats, 1, 0);
   op_Id    = new_ir_op (iro_Id,    "Id",     floats, 0, 0);
   op_Bad   = new_ir_op (iro_Bad,   "Bad",    floats, 0, 0);
+
+  op_Unknown   = new_ir_op (iro_Unknown,   "Unknown",   floats, 0, 0);
+  op_Filter    = new_ir_op (iro_Filter,    "Filter",    pinned, 0, sizeof(filter_attr));
+  op_Break     = new_ir_op (iro_Break,     "Break",     pinned, 0, 0);
+  op_CallBegin = new_ir_op (iro_CallBegin, "CallBegin", pinned, 0, sizeof(callbegin_attr));
+  op_EndReg    = new_ir_op (iro_EndReg,    "EndReg",    pinned, 0, sizeof(end_attr));
+  op_EndExcept = new_ir_op (iro_EndExcept, "EndExcept", pinned, 0, sizeof(end_attr));
 }
 
 /* Returns the string for the opcode. */
@@ -172,5 +186,10 @@ int is_cfopcode(ir_op *op) {
           || (op == op_Return)
           || (op == op_Raise)
           || (op == op_Bad)
-	  || (op == op_End));
+	  || (op == op_End)
+          || (op == op_Unknown)
+          || (op == op_Break)
+	  || (op == op_CallBegin)
+	  || (op == op_EndReg)
+	  || (op == op_EndExcept));
 }

@@ -160,10 +160,20 @@ inline void      set_Block_graph_arr (ir_node *node, int pos, ir_node *value);
 void  set_Block_exc (ir_node*, exc_t);
 exc_t get_Block_exc (ir_node*);
 
+/* Set and remove interprocedural predecessors. If the interprocedural
+ * predecessors are removed, the node has the same predecessors in
+ * both views. */
+void set_Block_cg_cfgpred_arr(ir_node * node, int arity, ir_node ** in);
+void set_Block_cg_cfgpred(ir_node * node, int pos, ir_node * pred);
+ir_node ** get_Block_cg_cfgpred_arr(ir_node * node);
+int get_Block_cg_n_cfgpreds(ir_node * node);
+void remove_Block_cg_cfgpred_arr(ir_node * node);
+
 
 inline int  get_End_n_keepalives(ir_node *end);
 inline ir_node *get_End_keepalive(ir_node *end, int pos);
 inline void add_End_keepalive (ir_node *end, ir_node *ka);
+inline ir_node *set_End_keepalive(ir_node *end, int pos, ir_node *ka);
 /* Some parts of the End node are allocated seperately -- their memory
    is not recovered by dead_node_elimination if a End node is dead.
    free_End frees these data structures. */
@@ -274,6 +284,12 @@ inline ir_node *get_Call_param (ir_node *node, int pos);
 inline void     set_Call_param (ir_node *node, int pos, ir_node *param);
 inline type    *get_Call_type (ir_node *node);
 inline void     set_Call_type (ir_node *node, type *type);
+
+/* Set, get and remove the callee-analysis. */
+int get_Call_n_callees(ir_node * node);
+entity * get_Call_callee(ir_node * node, int pos);
+void set_Call_callee_arr(ir_node * node, int n, entity ** arr);
+void remove_Call_callee_arr(ir_node * node);
 
 /* For unary and binary arithmetic operations the access to the
    operands can be factored out.  Left is the first, right the
@@ -467,6 +483,16 @@ inline void      set_Tuple_pred (ir_node *node, int pos, ir_node *pred);
 inline ir_node  *get_Id_pred (ir_node *node);
 inline void      set_Id_pred (ir_node *node, ir_node *pred);
 
+inline ir_node  *get_Filter_pred(ir_node *node);
+inline long      get_Filter_proj(ir_node *node);
+/* set the interprocedural predecessors */
+void             set_Filter_cg_pred_arr(ir_node * node, int arity, ir_node ** in);
+void             set_Filter_cg_pred(ir_node * node, int pos, ir_node * pred);
+
+/* Returns the ir_graph this node belongs to. Only valid for
+ * CallBegin, EndReg and EndExcept */
+inline ir_graph *get_irn_irg(ir_node *node);
+
 /*****/
 
 /****s* irnode/other2
@@ -490,6 +516,9 @@ inline ir_node *skip_Tuple (ir_node *node);
 inline int      is_Bad    (ir_node *node);
 /* returns true if the node is not a Block */
 inline int      is_no_Block (ir_node *node);
+/* returns true if node is a Proj node or a Filter node in
+ * intraprocedural view */
+inline int      is_Proj (ir_node *node);
 /* Returns true if the operation manipulates control flow:
    Start, End, Jmp, Cond, Return, Raise, Bad */
 int is_cfop(ir_node *node);

@@ -56,6 +56,7 @@ new_rd_Block (dbg_info* db, ir_graph *irg,  int arity, ir_node **in)
   set_Block_block_visited(res, 0);
 
   res->attr.block.exc = exc_normal;
+  res->attr.block.in_cg = NULL;
 
   irn_vrfy (res);
   return res;
@@ -445,6 +446,7 @@ new_rd_Call (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *store,
 
   assert(is_method_type(type));
   set_Call_type(res, type);
+  res->attr.call.callee_arr = NULL;
   res = optimize (res);
   irn_vrfy (res);
   return res;
@@ -603,6 +605,81 @@ ir_node *
 new_rd_Bad ()
 {
   return current_ir_graph->bad;
+}
+
+ir_node *
+new_rd_Unknown ()
+{
+  return current_ir_graph->unknown;
+}
+
+ir_node *
+new_rd_CallBegin (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *call)
+{
+  ir_node *in[1] = { get_Call_ptr(call) };
+  ir_node *res;
+  res = new_ir_node (db, irg, block, op_CallBegin, mode_T, 1, in);
+  res->attr.callbegin.irg = irg;
+  res->attr.callbegin.call = call;
+  res = optimize (res);
+  irn_vrfy (res);
+  return res;
+}
+
+ir_node *
+new_rd_EndReg (dbg_info *db, ir_graph *irg, ir_node *block)
+{
+  ir_node *res;
+
+  res = new_ir_node (db, irg, block, op_EndReg, mode_T, -1, NULL);
+  res->attr.end.irg = irg;
+
+  irn_vrfy (res);
+  return res;
+}
+
+ir_node *
+new_rd_EndExcept (dbg_info *db, ir_graph *irg, ir_node *block)
+{
+  ir_node *res;
+
+  res = new_ir_node (db, irg, block, op_EndExcept, mode_T, -1, NULL);
+  res->attr.end.irg = irg;
+
+  irn_vrfy (res);
+  return res;
+}
+
+inline ir_node *
+new_rd_Break (dbg_info *db, ir_graph *irg, ir_node *block)
+{
+  ir_node *in[0] = {};
+  ir_node *res;
+  res = new_ir_node (db, irg, block, op_Break, mode_X, 0, in);
+  res = optimize (res);
+  irn_vrfy (res);
+  return res;
+}
+
+ir_node *
+new_rd_Filter (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg, ir_mode *mode,
+	       long proj)
+{
+  ir_node *in[1] = {arg};
+  ir_node *res;
+  res = new_ir_node (db, irg, block, op_Filter, mode, 1, in);
+  res->attr.filter.proj = proj;
+  res->attr.filter.in_cg = NULL;
+
+  assert(res);
+  assert(get_Proj_pred(res));
+  assert(get_nodes_Block(get_Proj_pred(res)));
+
+  res = optimize (res);
+
+  irn_vrfy (res);
+  return res;
+
 }
 
 ir_node *new_r_Block  (ir_graph *irg,  int arity, ir_node **in) {
@@ -764,6 +841,26 @@ ir_node *new_r_Id     (ir_graph *irg, ir_node *block,
 ir_node *new_r_Bad    () {
   return new_rd_Bad();
 }
+ir_node *new_r_Unknown () {
+  return new_rd_Unknown();
+}
+ir_node *new_r_CallBegin (ir_graph *irg, ir_node *block, ir_node *callee) {
+  return new_rd_CallBegin(NULL, irg, block, callee);
+}
+ir_node *new_r_EndReg (ir_graph *irg, ir_node *block) {
+  return new_rd_EndReg(NULL, irg, block);
+}
+ir_node *new_r_EndExcept (ir_graph *irg, ir_node *block) {
+  return new_rd_EndExcept(NULL, irg, block);
+}
+ir_node *new_r_Break  (ir_graph *irg, ir_node *block) {
+  return new_rd_Break(NULL, irg, block);
+}
+ir_node *new_r_Filter (ir_graph *irg, ir_node *block, ir_node *arg,
+		       ir_mode *mode, long proj) {
+  return new_rd_Filter(NULL, irg, block, arg, mode, proj);
+}
+
 
 /** ********************/
 /** public interfaces  */
@@ -1280,7 +1377,7 @@ get_frag_arr (ir_node *n) {
   }
 }
 
-inline ir_node *
+void
 set_frag_value(ir_node **frag_arr, int pos, ir_node *val) {
   if (!frag_arr[pos]) frag_arr[pos] = val;
   if (frag_arr[current_ir_graph->n_loc - 1])
@@ -1290,7 +1387,6 @@ set_frag_value(ir_node **frag_arr, int pos, ir_node *val) {
 inline ir_node *
 get_r_frag_value_internal (ir_node *block, ir_node *cfOp, int pos, ir_mode *mode) {
   ir_node *res;
-  ir_node **rem;
   ir_node **frag_arr;
 
   assert(is_fragile_op(cfOp) && (get_irn_op(cfOp) != op_Bad));
@@ -1901,6 +1997,49 @@ new_d_Bad (void)
   return current_ir_graph->bad;
 }
 
+ir_node *
+new_d_Unknown (void)
+{
+  return current_ir_graph->unknown;
+}
+
+ir_node *
+new_d_CallBegin (dbg_info *db, ir_node *call)
+{
+  ir_node *res;
+  res = new_rd_CallBegin (db, current_ir_graph, current_ir_graph->current_block, call);
+  return res;
+}
+
+ir_node *
+new_d_EndReg (dbg_info *db)
+{
+  ir_node *res;
+  res = new_rd_EndReg(db, current_ir_graph, current_ir_graph->current_block);
+  return res;
+}
+
+ir_node *
+new_d_EndExcept (dbg_info *db)
+{
+  ir_node *res;
+  res = new_rd_EndExcept(db, current_ir_graph, current_ir_graph->current_block);
+  return res;
+}
+
+ir_node *
+new_d_Break (dbg_info *db)
+{
+  return new_rd_Break (db, current_ir_graph, current_ir_graph->current_block);
+}
+
+ir_node *
+new_d_Filter (dbg_info *db, ir_node *arg, ir_mode *mode, long proj)
+{
+  return new_rd_Filter (db, current_ir_graph, current_ir_graph->current_block,
+			arg, mode, proj);
+}
+
 /* ********************************************************************* */
 /* Comfortable interface with automatic Phi node construction.           */
 /* (Uses also constructors of ?? interface, except new_Block.            */
@@ -1917,6 +2056,7 @@ ir_node *new_d_immBlock (dbg_info* db) {
   current_ir_graph->current_block = res;
   res->attr.block.matured = 0;
   res->attr.block.exc = exc_normal;
+  res->attr.block.in_cg = NULL;
   set_Block_block_visited(res, 0);
 
   /* Create and initialize array for Phi-node construction. */
@@ -2166,4 +2306,22 @@ ir_node *new_Id     (ir_node *val, ir_mode *mode) {
 }
 ir_node *new_Bad    (void) {
   return new_d_Bad();
+}
+ir_node *new_Unknown(void) {
+  return new_d_Unknown();
+}
+ir_node *new_CallBegin (ir_node *callee) {
+  return new_d_CallBegin(NULL, callee);
+}
+ir_node *new_EndReg (void) {
+  return new_d_EndReg(NULL);
+}
+ir_node *new_EndExcept (void) {
+  return new_d_EndExcept(NULL);
+}
+ir_node *new_Break  (void) {
+  return new_d_Break(NULL);
+}
+ir_node *new_Filter (ir_node *arg, ir_mode *mode, long proj) {
+  return new_d_Filter(NULL, arg, mode, proj);
 }

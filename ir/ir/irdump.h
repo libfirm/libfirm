@@ -23,7 +23,8 @@
  *   representation. Some use the original format,
  *   but most generate an extended format that is only read by some special
  *   versions of xvcg or by the comercialized version now calles aiSee.
- *   A test version of aiSee is available at http://www.absint.de/aisee/download/index.htm.
+ *   A test version of aiSee is available at
+ *   http://www.absint.de/aisee/download/index.htm.
  *
  *   Most routines use the name of the passed entity as the name of the
  *   file dumped to.
@@ -194,6 +195,42 @@ void dump_ir_graph_w_types (ir_graph *irg);
  ***
  */
 void dump_ir_block_graph_w_types (ir_graph *irg);
+
+
+
+/****m* irdump/dump_cg_graph
+ *
+ * NAME
+ *   dump_cg_graph
+ * SYNOPSIS
+ *   void dump_cg_graph (ir_graph *irg);
+ * FUNCTION
+ *  Dumps a interprocedural firm graph as dump_ir_graph.
+ * INPUTS
+ *   irg: The firm graph to be dumped.
+ * RESULT
+ *   A file containing the firm graph in vcg format.
+ * SEE ALSO
+ ***
+ */
+void dump_cg_graph(ir_graph * irg);
+
+/****m* irdump/dump_cg_block_graph
+ *
+ * NAME
+ *   dump_cg_block_graph
+ * SYNOPSIS
+ *   void dump_cg_block_graph (ir_graph *irg);
+ * FUNCTION
+ *  Dumps a interprocedural firm graph as dump_ir_block_graph.
+ * INPUTS
+ *   irg: The firm graph to be dumped.
+ * RESULT
+ *   A file containing the firm graph in vcg format.
+ * SEE ALSO
+ ***
+ */
+void dump_cg_block_graph(ir_graph * irg);
 
 /****m* irdump/dump_all_ir_graphs
  *

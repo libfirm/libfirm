@@ -1166,6 +1166,13 @@ ir_node *new_rd_Tuple  (dbg_info *db, ir_graph *irg, ir_node *block,
 ir_node *new_rd_Id     (dbg_info *db, ir_graph *irg, ir_node *block,
 		       ir_node *val, ir_mode *mode);
 ir_node *new_rd_Bad    ();
+ir_node *new_rd_Unknown();
+ir_node *new_rd_CallBegin(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *callee);
+ir_node *new_rd_EndReg (dbg_info *db, ir_graph *irg, ir_node *block);
+ir_node *new_rd_EndExcept(dbg_info *db, ir_graph *irg, ir_node *block);
+ir_node *new_rd_Break  (dbg_info *db, ir_graph *irg, ir_node *block);
+ir_node *new_rd_Filter (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg,
+		       ir_mode *mode, long proj);
 
 /***************************************************************************/
 /* The raw interface without debug support                                 */
@@ -1251,6 +1258,13 @@ ir_node *new_r_Tuple  (ir_graph *irg, ir_node *block,
 ir_node *new_r_Id     (ir_graph *irg, ir_node *block,
 		       ir_node *val, ir_mode *mode);
 ir_node *new_r_Bad    ();
+ir_node *new_r_Unknown();
+ir_node *new_r_CallBegin(ir_graph *irg, ir_node *block, ir_node *callee);
+ir_node *new_r_EndReg (ir_graph *irg, ir_node *block);
+ir_node *new_r_EndExcept(ir_graph *irg, ir_node *block);
+ir_node *new_r_Break  (ir_graph *irg, ir_node *block);
+ir_node *new_r_Filter (ir_graph *irg, ir_node *block, ir_node *arg,
+		       ir_mode *mode, long proj);
 
 /*************************************************************************/
 /* The block oriented interface                                          */
@@ -1311,6 +1325,12 @@ ir_node *new_d_defaultProj (dbg_info* db, ir_node *arg, long max_proj);
 ir_node *new_d_Tuple  (dbg_info* db, int arity, ir_node **in);
 ir_node *new_d_Id     (dbg_info* db, ir_node *val, ir_mode *mode);
 ir_node *new_d_Bad    (void);
+ir_node *new_d_Unknown(void);
+ir_node *new_d_CallBegin(dbg_info *db, ir_node *callee);
+ir_node *new_d_EndReg (dbg_info *db);
+ir_node *new_d_EndExcept(dbg_info *db);
+ir_node *new_d_Break (dbg_info *db);
+ir_node *new_d_Filter (dbg_info *db, ir_node *arg, ir_mode *mode, long proj);
 
 /*************************************************************************/
 /* The block oriented interface without debug support                    */
@@ -1368,6 +1388,12 @@ ir_node *new_defaultProj (ir_node *arg, long max_proj);
 ir_node *new_Tuple  (int arity, ir_node **in);
 ir_node *new_Id     (ir_node *val, ir_mode *mode);
 ir_node *new_Bad    (void);
+ir_node *new_Unknown(void);
+ir_node *new_CallBegin(ir_node *callee);
+ir_node *new_EndReg (void);
+ir_node *new_EndExcept(void);
+ir_node *new_Break (void);
+ir_node *new_Filter (ir_node *arg, ir_mode *mode, long proj);
 
 /***********************************************************************/
 /* The comfortable interface.                                          */

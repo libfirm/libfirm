@@ -36,7 +36,7 @@
 #define USE_EXPLICIT_PHI_IN_STACK 1
 
 /*
-/* If this is defined debuging aids are created, e.g. a field in
+ * If this is defined debuging aids are created, e.g. a field in
  * ir_node uniquely numbering the nodes.
  * #define DEBUG_libfirm 1
  * This is now set by the configure script as an option.

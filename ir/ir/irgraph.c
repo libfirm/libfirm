@@ -22,6 +22,8 @@
 
 ir_graph *current_ir_graph;
 
+bool interprocedural_view = false;
+
 #if USE_EXPLICIT_PHI_IN_STACK
 /* really defined in ircons.c */
 typedef struct Phi_in_stack Phi_in_stack;
@@ -99,6 +101,7 @@ new_ir_graph (entity *ent, int n_loc)
   res->start_block = new_immBlock ();
   res->start   = new_Start ();
   res->bad     = new_ir_node (NULL, res, res->start_block, op_Bad, mode_T, 0, NULL);
+  res->unknown = new_ir_node (NULL, res, res->start_block, op_Unknown, mode_T, 0, NULL);
 
   /* Proj results of start node */
   projX        = new_Proj (res->start, mode_X, pns_initial_exec);
@@ -150,6 +153,7 @@ ir_graph *new_const_code_irg() {
   res->end       = new_End ();
   mature_block(get_cur_block());
   res->bad = new_ir_node (NULL, res, res->start_block, op_Bad, mode_T, 0, NULL);
+  res->unknown = new_ir_node (NULL, res, res->start_block, op_Unknown, mode_T, 0, NULL);
   res->start   = new_Start ();
   /* Proj results of start node */
   projX        = new_Proj (res->start, mode_X, pns_initial_exec);
@@ -295,6 +299,18 @@ set_irg_bad (ir_graph *irg, ir_node *node)
 }
 
 ir_node *
+get_irg_unknown (ir_graph *irg)
+{
+  return irg->unknown;
+}
+
+void
+set_irg_unknown (ir_graph *irg, ir_node *node)
+{
+  irg->unknown = node;
+}
+
+ir_node *
 get_irg_current_block (ir_graph *irg)
 {
   return irg->current_block;
@@ -396,6 +412,10 @@ set_irg_pinned (ir_graph *irg, op_pinned p)
   irg->pinned = p;
 }
 
+/* maximum of all ir_graphs */
+static int max_irg_visited = 0;
+
+
 unsigned long
 get_irg_visited (ir_graph *irg)
 {
@@ -411,7 +431,15 @@ set_irg_visited (ir_graph *irg, unsigned long visited)
 void
 inc_irg_visited (ir_graph *irg)
 {
-  irg->visited = irg->visited++;
+  if (++irg->visited > max_irg_visited) {
+    max_irg_visited = irg->visited;
+  }
+}
+
+unsigned long
+get_max_irg_visited(void)
+{
+  return max_irg_visited;
 }
 
 unsigned long
@@ -429,5 +457,5 @@ set_irg_block_visited (ir_graph *irg, unsigned long visited)
 void
 inc_irg_block_visited (ir_graph *irg)
 {
-  irg->block_visited = irg->block_visited++;
+  ++irg->block_visited;
 }

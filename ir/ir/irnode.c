@@ -161,6 +161,10 @@ ir_node_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
   case iro_Jmp:
   case iro_Return:
   case iro_End:
+  case iro_Break:
+  case iro_EndReg:
+  case iro_EndExcept:
+  case iro_CallBegin:
     break;
   default:
     XPF1 ("%I", get_irn_mode(np)->name);
@@ -173,10 +177,18 @@ ir_node_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
 
 /* returns the number of predecessors without the block predecessor. */
 inline int
-get_irn_arity (ir_node *node)
-{
+get_irn_arity (ir_node *node) {
   assert(node);
-  return (ARR_LEN((node)->in)-1);
+  if (interprocedural_view) { /* handle Filter and Block specially */
+    if (get_irn_opcode(node) == iro_Filter) {
+      assert(node->attr.filter.in_cg);
+      return ARR_LEN(node->attr.filter.in_cg) - 1;
+    } else if (get_irn_opcode(node) == iro_Block && node->attr.block.in_cg) {
+      return ARR_LEN(node->attr.block.in_cg) - 1;
+    }
+    /* else fall through */
+  }
+  return ARR_LEN(node->in) - 1;
 }
 
 /* Returns the array with ins. This array is shifted with respect to the
@@ -186,21 +198,42 @@ get_irn_arity (ir_node *node)
    lists of operands as predecessors of Block or arguments of a Call are
    consecutive. */
 inline ir_node **
-get_irn_in (ir_node *node)
-{
-  assert (node);
-  return ((node)->in);
+get_irn_in (ir_node *node) {
+  assert(node);
+  if (interprocedural_view) { /* handle Filter and Block specially */
+    if (get_irn_opcode(node) == iro_Filter) {
+      assert(node->attr.filter.in_cg);
+      return node->attr.filter.in_cg;
+    } else if (get_irn_opcode(node) == iro_Block && node->attr.block.in_cg) {
+      return node->attr.block.in_cg;
+    }
+    /* else fall through */
+  }
+  return node->in;
 }
 
 inline void
 set_irn_in (ir_node *node, int arity, ir_node **in) {
+  ir_node *** arr;
   assert(node);
-  if (arity != get_irn_arity(node)) {
-    ir_node *block = node->in[0];
-    node->in = NEW_ARR_D (ir_node *, current_ir_graph->obst, (arity+1));
-    node->in[0] = block;
+  if (interprocedural_view) { /* handle Filter and Block specially */
+    if (get_irn_opcode(node) == iro_Filter) {
+      assert(node->attr.filter.in_cg);
+      arr = &node->attr.filter.in_cg;
+    } else if (get_irn_opcode(node) == iro_Block && node->attr.block.in_cg) {
+      arr = &node->attr.block.in_cg;
+    } else {
+      arr = &node->in;
+    }
+  } else {
+    arr = &node->in;
   }
-  memcpy (&node->in[1], in, sizeof (ir_node *) * arity);
+  if (arity != ARR_LEN(*arr) - 1) {
+    ir_node * block = (*arr)[0];
+    *arr = NEW_ARR_D(ir_node *, current_ir_graph->obst, arity + 1);
+    (*arr)[0] = block;
+  }
+  memcpy((*arr) + 1, in, sizeof(ir_node *) * arity);
 }
 
 /* to iterate through the predecessors without touching the array */
@@ -209,22 +242,42 @@ set_irn_in (ir_node *node, int arity, ir_node **in) {
    i < get_irn_arity.
    If it is a block, the entry -1 is NULL. */
 inline ir_node *
-get_irn_n (ir_node *node, int n)
-{
-  ir_node *res;
-  assert (node);
-  assert ((get_irn_arity (node) > n) && (-1 <= n));
-  res = skip_nop(node->in[n+1]);
-  if (res != node->in[n+1]) node->in[n+1] = res;
-  return res;
+get_irn_n (ir_node *node, int n) {
+  assert(node && -1 <= n && n < get_irn_arity(node));
+  if (interprocedural_view) { /* handle Filter and Block specially */
+    if (get_irn_opcode(node) == iro_Filter) {
+      assert(node->attr.filter.in_cg);
+      return (node->attr.filter.in_cg[n + 1] = skip_nop(node->attr.filter.in_cg[n + 1]));
+    } else if (get_irn_opcode(node) == iro_Block && node->attr.block.in_cg) {
+      return (node->attr.block.in_cg[n + 1] = skip_nop(node->attr.block.in_cg[n + 1]));
+    }
+    /* else fall through */
+  }
+  return (node->in[n + 1] = skip_nop(node->in[n + 1]));
 }
 
 inline void
-set_irn_n (ir_node *node, int n, ir_node *in)
-{
-  assert (node);
-  assert (get_irn_arity (node) > n);
-  node->in[n+1] = in;
+set_irn_n (ir_node *node, int n, ir_node *in) {
+  assert(node && -1 <= n && n < get_irn_arity(node));
+  if ((n == -1) && (get_irn_opcode(node) == iro_Filter)) {
+    /* Change block pred in both views! */
+    node->in[n + 1] = in;
+    assert(node->attr.filter.in_cg);
+    node->attr.filter.in_cg[n + 1] = in;
+    return;
+  }
+  if (interprocedural_view) { /* handle Filter and Block specially */
+    if (get_irn_opcode(node) == iro_Filter) {
+      assert(node->attr.filter.in_cg);
+      node->attr.filter.in_cg[n + 1] = in;
+      return;
+    } else if (get_irn_opcode(node) == iro_Block && node->attr.block.in_cg) {
+      node->attr.block.in_cg[n + 1] = in;
+      return;
+    }
+    /* else fall through */
+  }
+  node->in[n + 1] = in;
 }
 
 inline ir_mode *
@@ -505,6 +558,35 @@ exc_t get_Block_exc (ir_node *block)
   return (block->attr.block.exc);
 }
 
+void set_Block_cg_cfgpred_arr(ir_node * node, int arity, ir_node ** in) {
+  assert(node->op == op_Block);
+  if (node->attr.block.in_cg == NULL || arity != ARR_LEN(node->attr.block.in_cg) - 1) {
+    node->attr.block.in_cg = NEW_ARR_D(ir_node *, current_ir_graph->obst, arity + 1);
+    node->attr.block.in_cg[0] = NULL;
+  }
+  memcpy(node->attr.block.in_cg + 1, in, sizeof(ir_node *) * arity);
+}
+
+void set_Block_cg_cfgpred(ir_node * node, int pos, ir_node * pred) {
+  assert(node->op == op_Block && node->attr.block.in_cg && 0 <= pos && pos < ARR_LEN(node->attr.block.in_cg) - 1);
+  node->attr.block.in_cg[pos + 1] = pred;
+}
+
+ir_node ** get_Block_cg_cfgpred_arr(ir_node * node) {
+  assert(node->op == op_Block);
+  return node->attr.block.in_cg == NULL ? NULL : node->attr.block.in_cg  + 1;
+}
+
+int get_Block_cg_n_cfgpreds(ir_node * node) {
+  assert(node->op == op_Block && node->attr.block.in_cg);
+  return ARR_LEN(node->attr.block.in_cg) - 1;
+}
+
+void remove_Block_cg_cfgpred_arr(ir_node * node) {
+  assert(node->op == op_Block);
+  node->attr.block.in_cg = NULL;
+}
+
 inline int
 get_End_n_keepalives(ir_node *end) {
   assert (end->op == op_End);
@@ -521,6 +603,12 @@ inline void
 add_End_keepalive (ir_node *end, ir_node *ka) {
   assert (end->op == op_End);
   ARR_APP1 (ir_node *, end->in, ka);
+}
+
+inline ir_node *
+set_End_keepalive(ir_node *end, int pos, ir_node *ka) {
+  assert (end->op == op_End);
+  set_irn_n(end, pos + END_KEEPALIVE_OFFSET, ka);
 }
 
 inline void
@@ -875,6 +963,29 @@ set_Call_type (ir_node *node, type *type) {
   assert (node->op == op_Call);
   assert (is_method_type(type));
   node->attr.call.cld_tp = type;
+}
+
+int get_Call_n_callees(ir_node * node) {
+  assert(node->op == op_Call && node->attr.call.callee_arr);
+  return ARR_LEN(node->attr.call.callee_arr);
+}
+
+entity * get_Call_callee(ir_node * node, int pos) {
+  assert(node->op == op_Call && node->attr.call.callee_arr);
+  return node->attr.call.callee_arr[pos];
+}
+
+void set_Call_callee_arr(ir_node * node, int n, entity ** arr) {
+  assert(node->op == op_Call);
+  if (node->attr.call.callee_arr == NULL || get_Call_n_callees(node) != n) {
+    node->attr.call.callee_arr = NEW_ARR_D(entity *, current_ir_graph->obst, n);
+  }
+  memcpy(node->attr.call.callee_arr, arr, n * sizeof(entity *));
+}
+
+void remove_Call_callee_arr(ir_node * node) {
+  assert(node->op == op_Call);
+  node->attr.call.callee_arr = NULL;
 }
 
 /* For unary and binary arithmetic operations the access to the
@@ -1775,20 +1886,25 @@ set_Sync_pred (ir_node *node, int pos, ir_node *pred) {
 
 inline ir_node *
 get_Proj_pred (ir_node *node) {
-  assert (node->op == op_Proj);
+  assert (is_Proj(node));
   return get_irn_n(node, 0);
 }
 
 inline void
 set_Proj_pred (ir_node *node, ir_node *pred) {
-  assert (node->op == op_Proj);
+  assert (is_Proj(node));
   set_irn_n(node, 0, pred);
 }
 
 inline long
 get_Proj_proj (ir_node *node) {
-  assert (node->op == op_Proj);
-  return node->attr.proj;
+  assert (is_Proj(node));
+  if (get_irn_opcode(node) == iro_Proj) {
+    return node->attr.proj;
+  } else {
+    assert(get_irn_opcode(node) == iro_Filter);
+    return node->attr.filter.proj;
+  }
 }
 
 inline void
@@ -1840,6 +1956,46 @@ set_Id_pred (ir_node *node, ir_node *pred) {
   set_irn_n(node, 0, pred);
 }
 
+
+inline ir_node *
+get_Filter_pred(ir_node *node) {
+  assert(node->op == op_Filter);
+  return node->in[1];
+}
+
+inline long
+get_Filter_proj(ir_node *node) {
+  assert(node->op == op_Filter);
+  return node->attr.filter.proj;
+}
+
+void set_Filter_cg_pred_arr(ir_node * node, int arity, ir_node ** in) {
+  assert(node->op == op_Filter);
+  if (node->attr.filter.in_cg == NULL || arity != ARR_LEN(node->attr.filter.in_cg) - 1) {
+    node->attr.filter.in_cg = NEW_ARR_D(ir_node *, current_ir_graph->obst, arity + 1);
+    node->attr.filter.in_cg[0] = node->in[0];
+  }
+  memcpy(node->attr.filter.in_cg + 1, in, sizeof(ir_node *) * arity);
+}
+
+void set_Filter_cg_pred(ir_node * node, int pos, ir_node * pred) {
+  assert(node->op == op_Filter && node->attr.filter.in_cg && 0 <= pos && pos < ARR_LEN(node->attr.filter.in_cg) - 1);
+  node->attr.filter.in_cg[pos + 1] = pred;
+}
+
+
+inline ir_graph *
+get_irn_irg(ir_node *node) {
+  if (get_irn_op(node) == op_CallBegin) {
+    return node->attr.callbegin.irg;
+  } else if (get_irn_op(node) == op_EndReg || get_irn_op(node) == op_EndExcept) {
+    return node->attr.end.irg;
+  } else {
+    assert(0 && "no irg attr");
+  }
+}
+
+
 /******************************************************************/
 /*  Auxiliary routines                                            */
 /******************************************************************/
@@ -1847,7 +2003,7 @@ set_Id_pred (ir_node *node, ir_node *pred) {
 inline ir_node *
 skip_Proj (ir_node *node) {
   /* don't assert node !!! */
-  if (node && (node->op == op_Proj)) {
+  if (node && is_Proj(node)) {
     return get_Proj_pred(node);
   } else {
     return node;
@@ -1902,6 +2058,13 @@ is_no_Block (ir_node *node) {
   return (get_irn_opcode(node) != iro_Block);
 }
 
+inline int
+is_Proj (ir_node *node) {
+  assert(node);
+  return node->op == op_Proj
+    || (!interprocedural_view && node->op == op_Filter);
+}
+
 /* Returns true if the operation manipulates control flow. */
 int
 is_cfop(ir_node *node) {
@@ -1920,7 +2083,8 @@ is_fragile_op(ir_node *node) {
           || (get_irn_opcode(node) == iro_Load)
           || (get_irn_opcode(node) == iro_Store)
           || (get_irn_opcode(node) == iro_Alloc)
-          || (get_irn_opcode(node) == iro_Bad));
+          || (get_irn_opcode(node) == iro_Bad)
+          || (get_irn_opcode(node) == iro_Unknown));
 }
 
 
@@ -1939,7 +2103,10 @@ ir_node *get_fragile_op_mem(ir_node *node) {
   case iro_Alloc :
     return get_irn_n(node, 0);
   case iro_Bad   :
+  case iro_Unknown:
     return node;
   default: ;
+    assert(0 && "not reached");
+    return NULL;
   }
 }
