@@ -253,7 +253,7 @@ char *tarval_to_str(tarval *tv)
 #endif
 
 /*
- * helper function, creta a tarval from long
+ * helper function, create a tarval from long
  */
 tarval *new_tarval_from_long(long l, ir_mode *mode)
 {
@@ -1022,11 +1022,16 @@ int tarval_snprintf(char *buf, size_t len, tarval *tv)
 
     case irms_reference:
       if (tv->value != NULL)
-        if (tarval_is_entity(tv))
+        if (tarval_is_entity(tv)) {
           if (get_entity_peculiarity((entity *)tv->value) == existent)
-            return snprintf(buf, len, "&(%s)", get_entity_ld_name((entity *)tv->value));
-          else
-            return snprintf(buf, len, "NULL");
+            return snprintf(buf, len, "%s%s%s", prefix, get_entity_ld_name((entity *)tv->value), suffix);
+          else {
+	    if (mode_info->mode_output == TVO_NATIVE)
+              return snprintf(buf, len, "NULL");
+	    else
+              return snprintf(buf, len, "0");
+	  }
+	}
         else {
 	  if (size > tv->length) {
 	    memcpy(buf, tv->value, tv->length);
@@ -1146,6 +1151,16 @@ static const tarval_mode_info hex_output = {
   NULL,
 };
 
+/**
+ * default mode_info for output as reference
+ */
+static const tarval_mode_info reference_output = {
+  TVO_NATIVE,
+  "&(",
+  ")",
+};
+
+
 /*
  * Initialization of the tarval module: called after init_mode()
  */
@@ -1184,6 +1199,7 @@ void init_tarval_2(void)
   tarval_set_mode_output_option(mode_Iu, &hex_output);
   tarval_set_mode_output_option(mode_Ls, &hex_output);
   tarval_set_mode_output_option(mode_Lu, &hex_output);
+  tarval_set_mode_output_option(mode_P,  &reference_output);
 }
 
 /****************************************************************************
