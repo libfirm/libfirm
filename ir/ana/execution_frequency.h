@@ -29,10 +29,11 @@
 #include "irgraph.h"
 
 
-/** Returns the nunmber of times the block/region is executed according to
- *  out estimate. */
-double     get_Block_exec_freq(ir_node *b);
-double     get_region_exec_freq(void *reg);
+/** Returns the number of times the block/region is executed according to
+ *  our estimate. */
+double get_irn_exec_freq(ir_node *n);
+double get_Block_exec_freq (ir_node *b);
+double get_region_exec_freq(void *reg);
 
 /** Compute the execution frequency for all blocks in the given
  *  graph.

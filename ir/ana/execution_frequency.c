@@ -69,6 +69,11 @@ double     get_Block_exec_freq(ir_node *b) {
   return get_region_exec_freq((void *)b);
 }
 
+double get_irn_exec_freq(ir_node *n) {
+  if (!is_Block(n)) n = get_nodes_block(n);
+  return get_Block_exec_freq(n);
+}
+
 
 /*------------------------------------------------------------------*/
 /* The algorithm to compute the execution freqencies.
@@ -119,13 +124,8 @@ static INLINE void compute_region_freqency(void *reg, double head_weight) {
   for (i = 0; i < n_ins; ++i) {
     void *pred_reg = get_region_in(reg, i);
     if (pred_reg) {
-      if (is_ir_node(reg) && get_irn_node_nr((ir_node *)reg) == 50573)
-	printf(" + %lf", get_weighted_region_exec_freq(reg, i));
       my_freq += get_weighted_region_exec_freq(reg, i);
     }
-  }
-  if (is_ir_node(reg) && get_irn_node_nr(reg) == 50573) {
-    printf(" myfreq %lf", my_freq); DDMN((ir_node *)reg);
   }
 
   if (my_freq == 0.0) {
@@ -147,7 +147,9 @@ static void compute_frequency(int default_loop_weight) {
   ir_loop *outermost_l = get_irg_loop(current_ir_graph);
   pdeq *block_worklist = new_pdeq1(outermost_l);
 
-  set_region_exec_freq(outermost_l, 1.0/default_loop_weight);  /* outermost start is considered a loop head. */
+  /* Outermost start is considered a loop head.  We will soon multiply
+     by default_loop_weight. */
+  set_region_exec_freq(outermost_l, 1.0/default_loop_weight);
 
   while (!pdeq_empty(block_worklist)) {
     ir_loop *l = (ir_loop *)pdeq_getl(block_worklist);
@@ -181,9 +183,9 @@ void compute_execution_frequency(ir_graph *irg, int default_loop_weight, double 
   compute_frequency(default_loop_weight);
 
   /*
-  dump_loop_tree     (current_ir_graph, "-execfreq");
-  dump_ir_block_graph(current_ir_graph, "-execfreq");
-  dump_interval_graph(current_ir_graph, "-execfreq");
+    dump_loop_tree     (current_ir_graph, "-execfreq");
+    dump_ir_block_graph(current_ir_graph, "-execfreq");
+    dump_interval_graph(current_ir_graph, "-execfreq");
   */
 
   current_ir_graph = rem;
