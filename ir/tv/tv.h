@@ -46,7 +46,6 @@ Discussion of new interface, proposals by Prof. Waite:
 
 # include "irmode.h"
 # include "entity.h"
-# include <stdbool.h>
 # include "irnode.h"    /* for pnc_number enum */
 
 /****h* libfirm/tv
