@@ -59,14 +59,20 @@
 /**
  * Merge the debug info due to an algebraic_simplification
  */
-#define DBG_OPT_CSTEVAL(oldn, n)                                     	\
+#define DBG_OPT_CSTEVAL(oldn, n)                                  \
   do {                                                          	\
-	  hook_merge_nodes(&n, 1, &oldn, 1, HOOK_OPT_CONST_EVAL);    	\
+	  hook_merge_nodes(&n, 1, &oldn, 1, HOOK_OPT_CONST_EVAL);    	  \
           __dbg_info_merge_pair(n, oldn, dbg_const_eval);	        \
   } while(0)
 
-#define DBG_OPT_ALGSIM1(oldn, a, b, n)                                \
-  do {                                                                \
+#define DBG_OPT_ALGSIM0(oldn, n)                                  \
+  do {                                                            \
+    hook_merge_nodes(&n, 1, &oldn, 1, HOOK_OPT_ALGSIM);    	      \
+    __dbg_info_merge_pair(n, oldn, dbg_algebraic_simplification); \
+  } while(0)
+
+#define DBG_OPT_ALGSIM1(oldn, a, b, n)                          \
+  do {                                                          \
 	  ir_node *ons[3];                                            \
 	  ons[0] = oldn;                                              \
 	  ons[1] = a;                                                 \
