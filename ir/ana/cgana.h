@@ -57,8 +57,13 @@
  *  Performs some optimizations possible by the analysed information:
  *    - Replace SymConst nodes by Const nodes if possible,
  *    - Replace (Sel-method(Alloc)) by Const method,
- *    - Replaces unreachable Sel nodes by Bad  (@@@ was genau meint unreachable?)
- *    - Replaces Sel-method by Const if the Method is never overwritten */
+ *    - Replaces Sel nodes by Bad if there is no implementation for the selected entity.  (@@@ was genau meint unreachable?)
+ *    - Replaces Sel-method by Const if the Method is never overwritten
+ *    - Replaces Calls by Tuple containing Bads if callee array is empty (there is no implementation to call)
+ *
+ *
+ *  Leaves Bad control predecessors in the graph!
+ */
 /*  @@@ I assume this can not be called via JNI :-( -- how to obtain the array pointer? */
 void cgana(int *len, entity ***free_methods, int whole);
 
