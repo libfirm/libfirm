@@ -101,4 +101,26 @@ static INLINE void cnt_add_i(counter_t *dst, int src)
   }
 }
 
+/**
+ * compare two counter
+ */
+static INLINE int cnt_cmp(const counter_t *a, const counter_t *b)
+{
+  int i;
+  unsigned va, vb;
+
+
+  for (i = STAT_CNT_NUM - 1 ; i >= 0; --i) {
+    va = a->cnt[i];
+    vb = b->cnt[i];
+
+    if (va != vb)
+      break;
+  }
+
+  if (va != vb)
+    return va < vb ? -1 : 1;
+  return 0;
+}
+
 #endif /* _COUNTER_H_ */
