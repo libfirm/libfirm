@@ -83,17 +83,21 @@ LLDBL fc_val_to_float(const void *val)
 void fc_get_min(unsigned int num_bits)
 {
   CLEAR_BUFFER();
-  switch (num_bits)
-  {
+
+  /*
+   * Beware: FLT_MIN is the "Minimum normalised float",
+   * not the smallest number in arithmetic sense
+   */
+  switch (num_bits) {
     case 32:
-      value = FLT_MIN;
+      value = -FLT_MAX;
       break;
     case 64:
-      value = DBL_MIN;
+      value = -DBL_MAX;
       break;
     case 80:
     default:
-      value = LDBL_MIN;
+      value = -LDBL_MAX;
       break;
   }
 }
@@ -152,8 +156,17 @@ void fc_calc(const void *a, const void *b, int opcode)
 
 int fc_comp(const void *a, const void *b)
 {
-  if (CAST_IN(a) == CAST_IN(b)) return 0;
-  else return (CAST_IN(a) > CAST_IN(b))?(1):(-1);
+  char buf1[40], buf2[40];
+
+  if (CAST_IN(a) == CAST_IN(b)) {
+    return 0;
+  }
+  else if (CAST_IN(a) > CAST_IN(b)) {
+    return 1;
+  }
+  else {
+    return -1;
+  }
 }
 
 char *fc_print_dec(const void *a, char *buf, int buflen)

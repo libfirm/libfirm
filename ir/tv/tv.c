@@ -169,6 +169,9 @@ static int overflows(tarval *tv)
       break;
 
     case irms_float_number:
+      /*
+       * TODO: check NaNs
+       */
       if (fc_comp(tv->value, get_mode_max(tv->mode)->value) == 1) return 1;
       if (fc_comp(tv->value, get_mode_min(tv->mode)->value) == -1) return 1;
       break;
@@ -630,20 +633,32 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m)
       break;
 
     case irms_float_number:
+      switch (get_mode_sort(m)) {
+	case irms_float_number:
+          tv.mode   = m;
+          tv.length = src->length;
+          tv.value  = src->value;
+          if (overflows(&tv)) {
+            return tarval_bad;
+	  }
+
+          return INSERT_TARVAL(&tv);
+
+	default:
+	  break;
+      }
       break;
 
     case irms_int_number:
-      switch (get_mode_sort(m))
-      {
+      switch (get_mode_sort(m)) {
         case irms_int_number:
         case irms_character:
-          tv.mode = m;
+          tv.mode   = m;
           tv.length = src->length;
-          tv.value = src->value;
+          tv.value  = src->value;
           if (overflows(&tv))
-          {
             return tarval_bad;
-          }
+
           return INSERT_TARVAL(&tv);
 
         case irms_internal_boolean:
