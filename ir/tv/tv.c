@@ -338,7 +338,7 @@ tarval_hash (tarval *tv)
 
 
 
-/******************** Initialization ****************************************/
+/*** ***************** Initialization ************************************* ***/
 
 void
 tarval_init_1 (void)
@@ -432,7 +432,7 @@ tarval_init_2 (void)
 
 
 
-/************************* Constructors for tarvals *************************/
+/*** ********************** Constructors for tarvals ********************** ***/
 
 /* copy from src to dst len chars omitting '_'. */
 static char *
@@ -765,7 +765,7 @@ tarval_cancel (void)
 
 
 
-/********************* Arithmethic operations on tarvals ********************/
+/*** ****************** Arithmethic operations on tarvals ***************** ***/
 
 /* Return `src' converted to mode `m' if representable, else NULL.
    @@@ lots of conversions missing */

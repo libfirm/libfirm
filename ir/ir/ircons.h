@@ -21,8 +21,12 @@
  it is always unambiguous.
 **/
 
-/**
-***  IRCONS
+/****h* libfirm/ircons
+ *
+ * NAME
+ *   file ircons.h
+ *
+ * NOTES
 
   This file documents all datatypes and constructors needed to
   build a FIRM representation of a pocedure.  The constructors are
@@ -1075,8 +1079,8 @@
   --------------------------------
 
   Returns the node defining the actual store.
-
-**/
+  *****
+  */
 
 
 # ifndef _IRCONS_H_

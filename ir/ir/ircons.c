@@ -36,7 +36,7 @@ struct Phi_in_stack {
 typedef struct Phi_in_stack Phi_in_stack;
 #endif
 
-/*********************************************** */
+/*** ******************************************** */
 /** privat interfaces, for professional use only */
 
 /* Constructs a Block with a fixed number of predecessors.
@@ -579,10 +579,24 @@ new_r_Bad ()
   return current_ir_graph->bad;
 }
 
-/***********************/
+/** ********************/
 /** public interfaces  */
 /** construction tools */
 
+/****f* ircons/new_Start
+ *
+ * NAME
+ *   new_Start -- create a new Start node in the current block
+ *
+ * SYNOPSIS
+ *   s = new_Start(void);
+ *   ir_node* new_Start(void);
+ *
+ * RESULT
+ *   s - pointer to the created Start node
+ *
+ ****
+ */
 ir_node *
 new_Start (void)
 {
@@ -632,7 +646,7 @@ new_Block (int arity, ir_node **in)
   return res;
 }
 
-/*************************************************************************/
+/* ***********************************************************************/
 /* Methods necessary for automatic Phi node creation                     */
 /*
   ir_node *phi_merge            (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
@@ -656,7 +670,7 @@ new_Block (int arity, ir_node **in)
 	       \|/                \|/
   	    new_r_Phi0          new_r_Phi_in
 
-*****************************************************************************/
+* *************************************************************************** */
 
 /* Creates a Phi node with 0 predecessors */
 inline ir_node *
@@ -1194,7 +1208,7 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
 
 #endif /* USE_FAST_PHI_CONSTRUCTION */
 
-/****************************************************************************/
+/* ************************************************************************** */
 
 /** Finalize a Block node, when all control flows are known.  */
 /** Acceptable parameters are only Block nodes.               */
@@ -1504,10 +1518,10 @@ new_Bad (void)
   return current_ir_graph->bad;
 }
 
-/*************************************************************************/
+/* ********************************************************************* */
 /* Comfortable interface with automatic Phi node construction.           */
 /* (Uses also constructors of ?? interface, except new_Block.            */
-/*************************************************************************/
+/* ********************************************************************* */
 
 /** Block construction **/
 /* immature Block without predecessors */
@@ -1551,7 +1565,7 @@ switch_block (ir_node *target)
   current_ir_graph->current_block = target;
 }
 
-/****************************/
+/* ************************ */
 /* parameter administration */
 
 /* get a value from the parameter array from the current block by its index */
@@ -1586,7 +1600,7 @@ set_store (ir_node *store)
   current_ir_graph->current_block->attr.block.graph_arr[0] = store;
 }
 
-/*************************************************************************/
+/* ********************************************************************* */
 /* initialize */
 
 /* call once for each run of the library */

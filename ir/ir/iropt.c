@@ -714,7 +714,7 @@ transform_node (ir_node *n)
   return n;
 }
 
-/***************** Common Subexpression Elimination *****************/
+/* **************** Common Subexpression Elimination **************** */
 
 /* Compare function for two nodes in the hash table.   Gets two     */
 /* nodes as parameters.                                             */
