@@ -68,6 +68,7 @@ void pto_init (int lvl)
 
   /* Initialise the name module */
   pto_name_init ();
+
   /* Initialise the init module */
   pto_init_init ();
 
@@ -130,6 +131,9 @@ void pto_cleanup ()
 
 /*
   $Log$
+  Revision 1.9  2004/11/26 16:01:56  liekweg
+  debugging annotations
+
   Revision 1.8  2004/11/24 14:54:21  liekweg
   Added pto.c as main entry point
 

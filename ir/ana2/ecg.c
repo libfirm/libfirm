@@ -40,6 +40,8 @@
 # include "typalise.h"
 # include "lset.h"
 
+# define HERE(msg)  fprintf (stdout, "%s:%i %s\n", __FUNCTION__, __LINE__, msg)
+
 /*
   le flag
 */
@@ -344,21 +346,27 @@ static void ecg_calls_act (ir_node *node, void *env)
 */
 static void ecg_fill_graph_calls (ir_graph *graph)
 {
-  graph_info_t *graph_info = (graph_info_t*) xmalloc (sizeof (graph_info_t));
+  graph_info_t *ginfo = (graph_info_t*) xmalloc (sizeof (graph_info_t));
 
-  graph_info->graph = graph;
-  graph_info->calls = NULL;
-  graph_info->ecg_seen = 0;
-  graph_info->ctxs = NULL;
-  graph_info->n_ctxs = 0;
+  /* memset (ginfo, 0x00, sizeof (graph_info_t)); */
+  assert (ginfo != graph_infos_list);
+
+  ginfo->graph  = graph;
+  ginfo->calls  = NULL;
+  ginfo->ecg_seen = 0;
+  ginfo->ctxs   = NULL;
+  ginfo->n_ctxs = 0;
+  ginfo->prev   = NULL;
 
   /* link up into global list */
-  graph_info->prev = graph_infos_list;
-  graph_infos_list = graph_info;
+  ginfo->prev = graph_infos_list;
+  graph_infos_list = ginfo;
 
-  irg_walk_graph (graph, ecg_calls_act, NULL, graph_info);
+  assert (ginfo != ginfo->prev);
 
-  pmap_insert (graph_infos, graph, graph_info);
+  irg_walk_graph (graph, ecg_calls_act, NULL, ginfo);
+
+  pmap_insert (graph_infos, graph, ginfo);
 }
 
 /**
@@ -432,6 +440,7 @@ static void ecg_fill_ctxs_alloc (void)
   /* allocate the memory needed for the ctxts: */
   graph_info_t *ginfo = graph_infos_list;
 
+  HERE ("start");
   while (NULL != ginfo) {
     ginfo->ctxs = (ctx_info_t **) xmalloc (ginfo->n_ctxs * sizeof (ctx_info_t*));
 
@@ -441,8 +450,10 @@ static void ecg_fill_ctxs_alloc (void)
     */
     ginfo->n_ctxs = 0;
 
+    assert (ginfo != ginfo->prev);
     ginfo = ginfo->prev;
   }
+  HERE ("end");
 }
 
 /**
@@ -490,7 +501,9 @@ static void ecg_fill_ctxs_write (ir_graph *graph, ctx_info_t *enc_ctx)
 static void ecg_fill_ctxs (void)
 {
   ecg_fill_ctxs_count (get_irp_main_irg ());
+  HERE ("start");
   ecg_fill_ctxs_alloc ();
+  HERE ("start");
 
   ctx_info_t *main_ctx = new_ctx (get_irp_main_irg (), NULL, NULL);
   ir_graph *main_irg = get_irp_main_irg ();
@@ -912,8 +925,8 @@ void ecg_init (int typalise)
   graph_infos = pmap_create ();
 
   ecg_fill_calls ();
+  HERE ("start");
   ecg_fill_ctxs ();
-
   ecg_ecg ();
 }
 
@@ -922,6 +935,8 @@ void ecg_init (int typalise)
 */
 void ecg_cleanup ()
 {
+  return;
+
   int i;
 
   for (i = 0; i < get_irp_n_irgs (); i++) {
@@ -1113,6 +1128,9 @@ void ecg_ecg ()
 
 /*
   $Log$
+  Revision 1.7  2004/11/26 16:01:56  liekweg
+  debugging annotations
+
   Revision 1.6  2004/11/24 14:53:55  liekweg
   Bugfixes
 
