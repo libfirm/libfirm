@@ -1,0 +1,34 @@
+#
+# Project:     libFIRM
+# File name:   ir/ana/Makefile.in
+# Purpose:
+# Author:      Boris Boesler, Till Riedel
+# Modified by:
+# Created:
+# CVS-ID:      $Id$
+# Copyright:   (c) 1999-2003 Universität Karlsruhe
+# Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+#
+
+top_srcdir := @top_srcdir@
+srcdir = @srcdir@
+topdir = ../..
+subdir := ir/ana
+
+INSTALL_HEADERS = pto.h ecg.h  \
+
+SOURCES = $(INSTALL_HEADERS)
+
+SOURCES += Makefile.in \
+	   pto.c ecg.c
+
+include $(topdir)/MakeRules
+
+CPPFLAGS += -I$(top_srcdir)/ir/adt -I$(top_srcdir)/ir/ir -I$(top_srcdir)/ir/common  \
+		-I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/tr -I$(top_srcdir)/ir/tv \
+		-I$(top_srcdir)/ir/debug -I$(top_srcdir)/ir/ana -I$(top_srcdir)/ir/st \
+		-I$(top_srcdir)/ir/opt -I$(top_srcdir)/ir/stat
+
+include $(top_srcdir)/MakeTargets
+
+all: subdir.o
