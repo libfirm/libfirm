@@ -1,4 +1,6 @@
 
+#ifndef _BITSET_IA32_H
+#define _BITSET_IA32_H
 
 #undef _bitset_inside_clear
 #undef _bitset_inside_set
@@ -99,18 +101,6 @@ static INLINE unsigned long *_bitset_sse_data_ptr(void *data, size_t bitset_base
 #define _bitset_inside_binop_or(tgt,src) _bitset_sse_inside_binop_or(tgt,src)
 #define _bitset_inside_binop_xor(tgt,src) _bitset_sse_inside_binop_xor(tgt,src)
 
-/* and with zero sets everything to zero. */
-#define _bitset_inside_binop_with_zero_and(tgt) _bitset_sse_inside_binop_with_zero_and(tgt)
-
-/* And Not with 0 is the identity (its like and with 1) */
-#define _bitset_inside_binop_with_zero_andnot(tgt)
-
-/* Or with zero is also the identity */
-#define _bitset_inside_binop_with_zero_or(tgt)
-
-/* Xor with 0 is like negation, we have to do it. */
-#define _bitset_inside_binop_with_zero_xor(tgt) _bitset_sse_inside_binop_with_zero_xor(tgt)
-
 #define _BITSET_SSE_BINOP(name) \
 static INLINE void _bitset_sse_inside_binop_ ## name(unsigned long *tgt, unsigned long *src) \
 { \
@@ -129,14 +119,6 @@ static INLINE void _bitset_sse_inside_binop_with_zero_and(unsigned long *tgt)
 	tgt[3] = 0;
 }
 
-static INLINE void _bitset_sse_inside_binop_with_zero_xor(unsigned long *tgt)
-{
-	__m128i src_op = _mm_setzero_si128();
-	__m128i tgt_op = _mm_load_si128((void *) tgt);
-	__m128i res = _mm_xor_si128(tgt_op, src_op);
-	_mm_store_si128((__m128i *) tgt, res);
-}
-
 static INLINE void _bitset_sse_inside_binop_andnot(unsigned long *tgt, unsigned long *src)
 {
 	__m128i src_op = _mm_load_si128((void *) src);
@@ -150,4 +132,5 @@ _BITSET_SSE_BINOP(or)
 _BITSET_SSE_BINOP(xor)
 
 
+#endif
 #endif

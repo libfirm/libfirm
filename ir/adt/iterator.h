@@ -9,6 +9,9 @@
 
 #include "fourcc.h"
 
+/**
+ * The iterator magic word.
+ */
 #define ITERATOR_MAGIC FOURCC('I', 'T', 'E', 'R')
 
 /**

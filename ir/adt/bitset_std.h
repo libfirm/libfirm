@@ -30,6 +30,14 @@
 
 
 /**
+ * Clear some units from a certain address on.
+ * @param addr The address from where to clear.
+ * @param n The number of units to set to 0.
+ */
+#define _bitset_inside_clear_units(addr,n) \
+	memset(addr, 0, n * BS_UNIT_SIZE)
+
+/**
  * Set a bit in a unit.
  * @param unit A pointer to the unit.
  * @param bit which bit to set.
@@ -100,8 +108,3 @@ static INLINE int _bitset_std_inside_ntz(unsigned long *unit_ptr)
 #define _bitset_inside_binop_andnot(tgt,src) ((*tgt) &= ~(*src))
 #define _bitset_inside_binop_or(tgt,src) ((*tgt) |= (*src))
 #define _bitset_inside_binop_xor(tgt,src) ((*tgt) ^= (*src))
-
-#define _bitset_inside_binop_with_zero_and(tgt) ((*tgt) &= 0UL)
-#define _bitset_inside_binop_with_zero_andnot(tgt) ((*tgt) &= ~0UL)
-#define _bitset_inside_binop_with_zero_or(tgt) ((*tgt) |= 0UL)
-#define _bitset_inside_binop_with_zero_xor(tgt) ((*tgt) ^= 0UL)

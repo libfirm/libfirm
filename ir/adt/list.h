@@ -8,7 +8,6 @@
 
 #include "firm_config.h"
 
-
 /*
  * Simple doubly linked list implementation.
  *
