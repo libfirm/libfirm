@@ -23,7 +23,6 @@ DIFF ?= diff -c0
 REF_DIR = $(srcdir)/ref-results
 
 SOURCES := Makefile.in          	\
-        tarval_test.c                   \
 	array-heap_example.c    	\
 	array-stack_example.c   	\
 	call_str_example.c      	\
@@ -63,7 +62,7 @@ include $(topdir)/MakeRules
 CPPFLAGS += -I$(top_srcdir)/ir/adt -I$(top_srcdir)/ir/common -I$(top_srcdir)/ir/debug \
 		-I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/ir -I$(top_srcdir)/ir/tr \
 		-I$(top_srcdir)/ir/tv -I$(top_srcdir)/ir/st  -I$(top_srcdir)/ir/ana \
-		-I$(top_srcdir)/ir/opt -I$(top_srcdir)/ir/stat
+		-I$(top_srcdir)/ir/opt -I$(top_srcdir)/ir/stat -I$(topdir)/ir/config
 
 LDFLAGS = -L$(topdir)
 LDFLAGS+= @LDFLAGS@
