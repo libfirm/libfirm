@@ -22,7 +22,6 @@
 #define mature_block(X)	      mature_immBlock(X)
 #define switch_block(X)	      set_cur_block(X)
 
-
 /* irgraph */
 #define get_irg_ent(X)        get_irg_entity(X)
 #define get_irg_params        get_irg_n_locs
@@ -69,6 +68,11 @@
 #define floats                   op_pin_state_floats
 #define pinned    	   	 op_pin_state_pinned
 #define op_pinned		 op_pin_state
+
+/* irdump */
+#define dump_cg_graph dump_ir_graph
+#define dump_cg_block_graph dump_ir_block_graph
+extern char *dump_file_filter;  /* use the setter instead. */
 
 /* type.h */
 #define get_type_nameid(_t_)     get_type_ident(_t_)
