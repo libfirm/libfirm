@@ -15,10 +15,15 @@ srcdir = @srcdir@
 topdir = ..
 subdir := testprograms
 
+enable_libcore          := @enable_libcore@
+enable_external_effects := @enable_external_effects@
+disable_libiberty       := @disable_libiberty@
+
 DIFF ?= diff -c0
 REF_DIR = $(srcdir)/ref-results
 
 SOURCES := Makefile.in          	\
+        tarval_test.c                   \
 	array-heap_example.c    	\
 	array-stack_example.c   	\
 	call_str_example.c      	\
@@ -62,8 +67,20 @@ CPPFLAGS += -I$(top_srcdir)/ir/adt -I$(top_srcdir)/ir/common -I$(top_srcdir)/ir/
 
 LDFLAGS = -L$(topdir)
 LDFLAGS+= @LDFLAGS@
-LDLIBS += -lfirm -liberty @LIBS@
-# @@@ TODO replace hand crafted stuff (xml2) for configure
+LDLIBS += -lfirm @LIBS@
+
+ifeq ($(enable_libcore),yes)
+LDLIBS += -lcore
+endif
+
+ifeq ($(enable_external_effects),yes)
+LDLIBS += -lxml
+endif
+
+ifeq ($(disable_libiberty),yes)
+LDLIBS += -liberty
+endif
+
 
 GENFILES := $(bin_EXAMPLES) *.vcg
 
