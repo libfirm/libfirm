@@ -21,7 +21,7 @@ pset *new_identities (void);
 void  del_identities (pset *value_table);
 void  add_identities (pset *value_table, ir_node *node);
 
-ir_node *optimize (ir_node *n);
+ir_node *optimize_node (ir_node *n);
 
 ir_node *optimize_in_place_2 (ir_node *n);
 

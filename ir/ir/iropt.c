@@ -1012,7 +1012,7 @@ gigo (ir_node *node)
    It can only be called if it is guaranteed that no other nodes
    reference this one, i.e., right after construction of a node.  */
 ir_node *
-optimize (ir_node *n)
+optimize_node (ir_node *n)
 {
   tarval *tv;
   ir_node *old_n = n;
