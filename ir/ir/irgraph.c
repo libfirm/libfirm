@@ -18,6 +18,8 @@
 # include <string.h>
 #endif
 
+#include <stddef.h>
+
 # include "xmalloc.h"
 # include "ircons.h"
 # include "irgraph_t.h"
@@ -31,6 +33,18 @@
 # include "irouts.h"
 # include "firmstat.h"
 # include "irgwalk.h"
+
+/**
+ * Indicates, whether additional data can be registered to graphs.
+ * If set to 1, this is not possible anymore.
+ */
+static int forbid_new_data = 0;
+
+/**
+ * The amount of additional space for custom data to be allocated upon
+ * creating a new graph.
+ */
+static size_t additional_graph_data_size = 0;
 
 ir_graph *current_ir_graph;
 INLINE ir_graph *get_current_ir_graph(void) {
@@ -63,7 +77,24 @@ void (set_interprocedural_view)(int state) {
 
 static ident* frame_type_suffix = NULL;
 void init_irgraph(void) {
-  frame_type_suffix = new_id_from_chars(FRAME_TP_SUFFIX, strlen(FRAME_TP_SUFFIX));
+  frame_type_suffix = new_id_from_str(FRAME_TP_SUFFIX);
+	forbid_new_data = 1;
+}
+
+/**
+ * Allocate a new ir graph.
+ * This function respects the registered graph data. The only reason for
+ * this function is, that there are two locations, where graphs are
+ * allocated (new_r_ir_graph, new_const_code_irg).
+ * @return Memory for a new graph.
+ */
+ir_graph *alloc_graph(void)
+{
+	size_t size = sizeof(ir_graph) + additional_graph_data_size;
+	char *ptr = xmalloc(size);
+	memset(ptr, 0, size);
+
+	return (ir_graph *) (ptr + additional_graph_data_size);
 }
 
 #if USE_EXPLICIT_PHI_IN_STACK
@@ -89,8 +120,7 @@ new_r_ir_graph (entity *ent, int n_loc)
   ir_node *first_block;
   ir_node *projX;
 
-  res = (ir_graph *) xmalloc (sizeof (ir_graph));
-  memset(res, 0, sizeof (ir_graph));
+  res = alloc_graph();
   res->kind = k_ir_graph;
 
   /* inform statistics here, as blocks will be already build on this graph */
@@ -198,8 +228,7 @@ ir_graph *new_const_code_irg(void) {
   ir_graph *res;
   ir_node *projX;
 
-  res = (ir_graph *) xmalloc (sizeof(*res));
-  memset(res, 0, sizeof(*res));
+  res = alloc_graph();
 
   /* inform statistics here, as blocks will be already build on this graph */
   stat_new_graph(res, NULL);
@@ -716,4 +745,14 @@ void normalize_proj_nodes(ir_graph *irg)
 {
   irg_walk_graph(irg, NULL, normalize_proj_walker, NULL);
 	set_irg_outs_inconsistent(irg);
+}
+
+size_t register_additional_graph_data(size_t size)
+{
+	assert(!forbid_new_data && "Too late to register additional node data");
+
+	if(forbid_new_data)
+		return 0;
+
+	return additional_graph_data_size += size;
 }
