@@ -53,7 +53,7 @@ static eset * entities = NULL;
 
 
 /** Bestimmt die eindeutige Methode, die die Methode für den
- * übergebenen (dynamischen) Typ überschreibt. */
+ *  übergebenen (dynamischen) Typ überschreibt. */
 static entity * get_implementation(type * class, entity * method) {
   int i;
   if (get_entity_peculiarity(method) != peculiarity_description &&
@@ -81,13 +81,16 @@ static entity * get_implementation(type * class, entity * method) {
 static entity *get_inherited_methods_implementation(entity *inh_meth) {
   entity *impl_meth = NULL;
   ir_node *addr = get_atomic_ent_value(inh_meth);
+
   assert(addr && "constant entity without value");
+
   if ((get_irn_op(addr) == op_SymConst) &&
-	     (get_SymConst_kind(addr) == symconst_addr_ent)) {
+      (get_SymConst_kind(addr) == symconst_addr_ent)) {
     impl_meth = get_SymConst_entity(addr);
   } else {
     assert(0 && "Complex constant values not supported -- address of method should be straight constant!");
   }
+
   if (impl_meth && (get_entity_peculiarity(impl_meth) != peculiarity_existent)) {
     /*
       printf("this_meth: "); DDMEO(inh_meth);
@@ -719,25 +722,23 @@ static void free_ana_walker(ir_node * node, eset * set) {
  * SymConst-Operationen müssen in passende Const-Operationen
  * umgewandelt worden sein, d.h. SymConst-Operationen verweisen immer
  * auf eine echt externe Methode.  */
-static entity ** get_free_methods(int whole)
+static entity ** get_free_methods(void)
 {
   eset * set = eset_create();
   int i;
   entity ** arr = NEW_ARR_F(entity *, 0);
   entity * ent;
 
-  if (! whole) {
-    for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-      ir_graph * irg = get_irp_irg(i);
-      entity * ent = get_irg_entity(irg);
-      /* insert "external visible" methods. */
-      if (get_entity_visibility(ent) != visibility_local) {
-        eset_insert(set, ent);
-      }
-      /* Finde alle Methoden die in dieser Methode extern sichtbar werden,
-         z.B. da die Adresse einer Methode abgespeichert wird. */
-      irg_walk_graph(irg, NULL, (irg_walk_func *) free_ana_walker, set);
+  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+    ir_graph * irg = get_irp_irg(i);
+    entity * ent = get_irg_entity(irg);
+    /* insert "external visible" methods. */
+    if (get_entity_visibility(ent) != visibility_local) {
+      eset_insert(set, ent);
     }
+    /* Finde alle Methoden die in dieser Methode extern sichtbar werden,
+       z.B. da die Adresse einer Methode abgespeichert wird. */
+    irg_walk_graph(irg, NULL, (irg_walk_func *) free_ana_walker, set);
   }
 
   /* insert sticky methods, too */
@@ -764,12 +765,12 @@ static entity ** get_free_methods(int whole)
   return arr;
 }
 
-void cgana(int *length, entity ***free_methods, int whole) {
+void cgana(int *length, entity ***free_methods) {
   entity ** free_meths;
   int i;
 
   sel_methods_init();
-  free_meths = get_free_methods(whole);
+  free_meths = get_free_methods();
   callee_ana();
   sel_methods_dispose();
 
