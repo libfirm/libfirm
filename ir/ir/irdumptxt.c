@@ -937,6 +937,13 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
     }
   }
 
+  fprintf(F, "  state:     %s,\n", get_type_state_name(get_type_state(tp)));
+  fprintf(F, "  size:      %2d Bits,\n",  get_type_size_bits(tp));
+  fprintf(F, "  alignment: %2d Bits,\n",  get_type_alignment_bits(tp));
+  if (is_atomic_type(tp))
+    fprintf(F, "  mode:      %s,\n",  get_mode_name(get_type_mode(tp)));
+  fprintf(F, "  dbg info:  %p,",  (void *)get_type_dbg_info(tp));
+
   if (verbosity & dump_verbosity_accessStats) {
 #if 0
     int n_all = get_type_n_allocs(tp);
