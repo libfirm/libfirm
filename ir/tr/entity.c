@@ -117,7 +117,7 @@ new_entity (type *owner, ident *name, type *type)
 
 #ifdef DEBUG_libfirm
   res->nr = get_irp_new_node_nr();
-  res->c_name = (char*) get_id_str (name);
+  res->c_name = (char *)get_id_str (name);
 #endif /* DEBUG_libfirm */
 
   res->visit = 0;
@@ -194,7 +194,7 @@ copy_entity_name (entity *old, ident *new_name) {
   }
 #ifdef DEBUG_libfirm
   new->nr = get_irp_new_node_nr();
-  new->c_name = get_id_str (new->name);
+  new->c_name = (char *)get_id_str (new->name);
 #endif
 
   insert_entity_in_owner (new);
