@@ -1,4 +1,7 @@
   14.3.2001 Boris
+  added file TODO
+
+  14.3.2001 Boris
   added creation of a tar archive for distribution
   replaced ir/.dummy.in by ir/Makefile.in
 
