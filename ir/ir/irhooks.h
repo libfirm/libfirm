@@ -45,9 +45,19 @@ typedef enum {
   HOOK_OPT_ARCH_DEP,    /**< architecture dependent optimization */
   HOOK_OPT_REASSOC,     /**< reassociation */
   HOOK_OPT_POLY_CALL,   /**< polymorphic call optimization */
+  HOOK_OPT_IF_CONV,     /**< an if conversion was tried */
   HOOK_LOWERED,         /**< lowered */
   HOOK_OPT_LAST
 } hook_opt_kind;
+
+typedef enum _if_result_t {
+  IF_RESULT_SUCCESS         = 0,  /**< if conversion could be done */
+  IF_RESULT_SIDE_EFFECT     = 1,  /**< if conversion failed because of side effect */
+  IF_RESULT_SIDE_EFFECT_PHI = 2,  /**< if conversion failed because of Phi node found */
+  IF_RESULT_TOO_DEEP        = 3,  /**< if conversion failed because of to deep DAG's */
+  IF_RESULT_BAD_CF          = 4,  /**< if conversion failed because of bad control flow */
+  IF_RESULT_LAST
+} if_result_t;
 
 /**
  * a hook entry
@@ -76,6 +86,7 @@ typedef struct hook_entry {
     void (*_hook_strength_red)(void *context, ir_graph *irg, ir_node *strong, ir_node *cmp);
     void (*_hook_dead_node_elim_start)(void *context, ir_graph *irg);
     void (*_hook_dead_node_elim_stop)(void *context, ir_graph *irg);
+    void (*_hook_if_conversion)(void *context, ir_graph *irg, ir_node *phi, int pos, ir_node *mux, if_result_t reason);
     void (*_hook_arch_dep_replace_mul_with_shifts)(void *context, ir_node *irn);
     void (*_hook_arch_dep_replace_div_by_const)(void *context, ir_node *irn);
     void (*_hook_arch_dep_replace_mod_by_const)(void *context, ir_node *irn);
@@ -112,6 +123,7 @@ typedef enum {
   hook_strength_red,
   hook_dead_node_elim_start,
   hook_dead_node_elim_stop,
+  hook_if_conversion,
   hook_arch_dep_replace_mul_with_shifts,
   hook_arch_dep_replace_div_by_const,
   hook_arch_dep_replace_mod_by_const,
@@ -173,6 +185,8 @@ extern hook_entry_t *hooks[hook_last];
   hook_exec(hook_strength_red, (ctx, irg, strong, cmp))
 #define hook_dead_node_elim_start(irg)    hook_exec(hook_dead_node_elim_start, (ctx, irg))
 #define hook_dead_node_elim_stop(irg)     hook_exec(hook_dead_node_elim_stop, (ctx, irg))
+#define hook_if_conversion(irg, phi, pos, mux, reason) \
+  hook_exec(hook_if_conversion, (ctx, irg, phi, pos, mux, reason))
 #define hook_arch_dep_replace_mul_with_shifts(irn) \
   hook_exec(hook_arch_dep_replace_mul_with_shifts, (ctx, irn))
 #define hook_arch_dep_replace_div_by_const(irn) \
