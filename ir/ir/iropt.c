@@ -850,23 +850,32 @@ static ir_node *equivalent_node_Phi(ir_node *n)
   return n;
 }
 
+/**
+ * Optimize Loads after Store.
+ *
+ * @todo FAILS for volatile entities
+ */
 static ir_node *equivalent_node_Load(ir_node *n)
 {
-#if 0  /* Is an illegal transformation: different nodes can
-	  represent the same pointer value!! */
- ir_node *a = skip_Proj(get_Load_mem(n));
- ir_node *b = get_Load_ptr(n);
+  ir_node *oldn = n;
 
- if (get_irn_op(a) == op_Store) {
-   if ( different_identity (b, get_Store_ptr(a))) {
-	 /* load and store use different pointers, therefore load
-		needs not take store's memory but the state before. */
-	 set_Load_mem (n, get_Store_mem(a));
-   } else if (( 0 /* ???didn't get cryptic test that returns 0 */ )) {
-   }
- }
-#endif
- return n;
+  /* remove unnecessary Load. */
+  ir_node *a = skip_Proj(get_Load_mem(n));
+  ir_node *b = get_Load_ptr(n);
+  ir_node *c;
+
+  /* TODO: check for volatile */
+  if (get_irn_op(a) == op_Store && get_Store_ptr(a) == b) {
+    /* We load immediately after a store -- a read after write. */
+    ir_node *mem = get_Load_mem(n);
+
+    c = get_Store_value(a);
+    turn_into_tuple(n, 3);
+    set_Tuple_pred(n, pn_Load_M,        mem);
+    set_Tuple_pred(n, pn_Load_res,      c);
+    set_Tuple_pred(n, pn_Load_X_except, new_Bad());                DBG_OPT_RAW;
+  }
+  return n;
 }
 
 /**
@@ -1301,6 +1310,129 @@ static ir_node *transform_node_Proj(ir_node *proj)
 }
 
 /**
+ * Transform a Store before a Store to the same address...
+ *
+ * @todo Check for volatile! Moreover, what if the first store
+ *       has a exception handler while the other has not?
+ */
+static ir_node *transform_node_Store(ir_node *store)
+{
+  ir_node *n   = skip_Proj(get_Store_mem(store));
+  ir_node *ptr = get_Store_ptr(store);
+
+  if (get_irn_op(n) == op_Store && get_Store_ptr(n) == ptr) {
+    /* the Store n is useless, as it is overwritten by the store store */
+    ir_node *mem = get_Store_mem(n);
+
+    turn_into_tuple(n, 2);
+    set_Tuple_pred(n, pn_Store_M,        mem);
+    set_Tuple_pred(n, pn_Store_X_except, new_Bad());
+  }
+  return store;
+}
+
+/**
+ * returns the operands of a commutative bin-op, if one operand is
+ * a const, it is returned as the second one.
+ */
+static void get_comm_Binop_Ops(ir_node *binop, ir_node **a, ir_node **c)
+{
+  ir_node *op_a = get_binop_left(binop);
+  ir_node *op_b = get_binop_right(binop);
+
+  assert(is_op_commutative(get_irn_op(binop)));
+
+  if (get_irn_op(op_a) == op_Const) {
+    *a = op_b;
+    *c = op_a;
+  }
+  else {
+    *a = op_a;
+    *c = op_b;
+  }
+}
+
+/**
+ * Optimize a Or(And(Or(And(v,c4),c3),c2),c1) pattern if possible.
+ * Such pattern may arise in bitfield stores.
+ *
+ * value  c4                  value      c4 & c2
+ *    AND     c3                    AND           c1 | c3
+ *        OR     c2      ===>               OR
+ *           AND    c1
+ *               OR
+ */
+static ir_node *transform_node_Or(ir_node *or)
+{
+  ir_node *and, *c1;
+  ir_node *or_l, *c2;
+  ir_node *and_l, *c3;
+  ir_node *value, *c4;
+  ir_node *new_and, *new_const, *block;
+  ir_mode *mode = get_irn_mode(or);
+
+  tarval *tv1, *tv2, *tv3, *tv4, *tv, *n_tv4, *n_tv2;
+
+  get_comm_Binop_Ops(or, &and, &c1);
+  if ((get_irn_op(c1) != op_Const) || (get_irn_op(and) != op_And))
+    return or;
+
+  get_comm_Binop_Ops(and, &or_l, &c2);
+  if ((get_irn_op(c2) != op_Const) || (get_irn_op(or_l) != op_Or))
+    return or;
+
+  get_comm_Binop_Ops(or_l, &and_l, &c3);
+  if ((get_irn_op(c3) != op_Const) || (get_irn_op(and_l) != op_And))
+    return or;
+
+  get_comm_Binop_Ops(and_l, &value, &c4);
+  if (get_irn_op(c4) != op_Const)
+    return or;
+
+  /* ok, found the pattern, check for conditions */
+  assert(mode == get_irn_mode(and));
+  assert(mode == get_irn_mode(or_l));
+  assert(mode == get_irn_mode(and_l));
+
+  tv1 = get_Const_tarval(c1);
+  tv2 = get_Const_tarval(c2);
+  tv3 = get_Const_tarval(c3);
+  tv4 = get_Const_tarval(c4);
+
+  tv = tarval_or(tv4, tv2);
+  if (tarval_classify(tv) != TV_CLASSIFY_ALL_ONE) {
+    /* have at least one 0 at the same bit position */
+    return or;
+  }
+
+  n_tv4 = tarval_not(tv4);
+  if (tv3 != tarval_and(tv3, n_tv4)) {
+    /* bit in the or_mask is outside the and_mask */
+    return or;
+  }
+
+  n_tv2 = tarval_not(tv2);
+  if (tv1 != tarval_and(tv1, n_tv2)) {
+    /* bit in the or_mask is outside the and_mask */
+    return or;
+  }
+
+  /* ok, all conditions met */
+  block = get_nodes_block(or);
+
+  new_and = new_r_And(current_ir_graph, block,
+      value, new_r_Const(current_ir_graph, block, mode, tarval_and(tv4, tv2)), mode);
+
+  new_const = new_r_Const(current_ir_graph, block, mode, tarval_or(tv3, tv1));
+
+  set_Or_left(or, new_and);
+  set_Or_right(or, new_const);
+
+  /* check for more */
+  return transform_node_Or(or);
+}
+
+/**
  * Tries several [inplace] [optimizing] transformations and returns an
  * equivalent node.  The difference to equivalent_node() is that these
  * transformations _do_ generate new nodes, and thus the old node must
@@ -1331,6 +1463,8 @@ static ir_op *firm_set_default_transform_node(ir_op *op)
   CASE(Eor);
   CASE(Not);
   CASE(Proj);
+  CASE(Store);
+  CASE(Or);
   default:
     op->transform_node  = NULL;
   }
