@@ -50,9 +50,9 @@ init_firm(const firm_parameter_t *param)
   }
 
   /* initialize all ident stuff */
-  init_ident (1024);
+  init_ident(1024);
   /* enhanced statistics, need idents */
-  init_stat();
+  init_stat(def_params.enable_statistics);
   /* create the type kinds. */
   init_tpop();
   /* create an obstack and put all tarvals in a pdeq */
@@ -64,7 +64,7 @@ init_firm(const firm_parameter_t *param)
   /* init graph construction */
   init_irgraph();
   /* kind of obstack initialization */
-  init_mangle();
+  firm_init_mangle();
   /* initalize all op codes an irnode can consist of */
   init_op();
   /* called once for each run of this library */
