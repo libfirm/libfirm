@@ -34,6 +34,7 @@
 #include "irgmod.h"
 #include "irnode_t.h"
 #include "irflag_t.h"
+#include "irmode_t.h"
 
 #include "dbginfo_t.h"
 
