@@ -408,9 +408,11 @@ typedef enum peculiarity {
  		                    Overwrites must refer to at least one other
  		                    entity.  If this is a method entity there exists
  		                    no irg for this entity, only for one of the
- 		                    overwritten ones. */
+ 		                    overwritten ones.
+			            Only for entity. */
   peculiarity_existent         /**< The entity/type (can) exist. */
 } peculiarity;
+char *get_peculiarity_string(peculiarity p);
 
 /* The peculiarity of the class.  The enumeration peculiarity is defined
    in entity.h */
@@ -546,6 +548,9 @@ void  set_method_res_type(type *method, int pos, type* tp);
 /* Returns an entity that represents the copied value result.  Only necessary
    for compounds passed by value. This information is constructed only on demand. */
 entity *get_method_value_res_ent(type *method, int pos);
+/*
+ */
+type *get_method_value_res_type(type *method);
 
 /**
  * this enum flags the variadicity of methods (methods with a

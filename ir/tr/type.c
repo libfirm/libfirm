@@ -745,6 +745,14 @@ void    remove_class_supertype(type *clss, type *supertype) {
     }
 }
 
+char *get_peculiarity_string(peculiarity p) {
+  if (p == peculiarity_description)
+    return "peculiarity_description";
+  if (p == peculiarity_inherited)
+    return "peculiarity_inherited";
+  return "peculiarity_existent";
+}
+
 INLINE peculiarity get_class_peculiarity (type *clss) {
   assert(clss && (clss->type_op == type_class));
   return clss->attr.ca.peculiarity;
@@ -925,10 +933,17 @@ entity *get_method_value_param_ent(type *method, int pos) {
     method->attr.ma.value_params
       = build_value_type(mangle_u(get_type_ident(method), value_params_suffix),
 			 get_method_n_params(method), method->attr.ma.param_type);
-  assert((get_entity_type(get_struct_member(method->attr.ma.value_params, pos)) != method->attr.ma.value_params)
+  assert((get_entity_type(get_struct_member(method->attr.ma.value_params, pos))
+	  != method->attr.ma.value_params)
 	 && "param type not yet set");
   return get_struct_member(method->attr.ma.value_params, pos);
 }
+
+type *get_method_value_res_type(type *method) {
+  assert(method && (method->type_op == type_method));
+  return method->attr.ma.value_params;
+}
+
 
 int   get_method_n_ress   (type *method) {
   assert(method && (method->type_op == type_method));
