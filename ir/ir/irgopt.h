@@ -3,7 +3,7 @@
 */
 
 /**
-* @file irgopts.h
+* @file irgopt.h
 *
 * Optimizations for a whole ir graph, i.e., a procedure.
 *
