@@ -85,6 +85,19 @@ double get_entity_estimated_n_calls(entity *ent);
  *  to other static fields that overwrite/are overwritten. */
 double get_entity_estimated_n_dyncalls(entity *ent);
 
+/* ------------------------------------------------------------------------- */
+/* Accumulate information in the type hierarchy.                             */
+/* ------------------------------------------------------------------------- */
+
+typedef enum {
+  temperature_none,
+  temperature_consistent,
+  temperature_inconsistent
+} irp_temperature_state;
+
+void accumulate_temperatures(void);
+void free_accumulated_temperatures(void);
+
 /** An auxiliary/temporary function */
 int is_jack_rts_class(type *t);
 int is_jack_rts_entity(entity *e);
