@@ -911,7 +911,7 @@ optimize (ir_node *n)
 
   /** common subexpression elimination **/
   /* Checks whether n is already available. */
-  /* The block input is used to distinguish different subexpressions.  Right
+  /* The block input is used to distinguish different subexpressions. Right
      now all nodes are pinned to blocks, i.e., the cse only finds common
      subexpressions within a block. */
 
@@ -1019,31 +1019,4 @@ optimize_in_place (ir_node *n)
   }
 
   return n;
-}
-
-
-void
-optimize_in_place_wrapper (ir_node *n, void *env) {
-  int i;
-  ir_node *optimized;
-
-  /* optimize all sons after recursion, i.e., the sons' sons are
-     optimized already. */
-  for (i = -1; i < get_irn_arity(n); i++) {
-    optimized = optimize_in_place(get_irn_n(n, i));
-    set_irn_n(n, i, optimized);
-  }
-}
-
-
-void
-optimize_graph (ir_graph *irg)
-{
-  ir_graph *rem = current_ir_graph;
-  current_ir_graph = irg;
-
-  /* walk over the graph */
-  irg_walk(irg->end, NULL, optimize_in_place_wrapper, NULL);
-
-  current_ir_graph = rem;
 }

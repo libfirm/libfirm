@@ -929,7 +929,7 @@
 /* Create a new irnode in irg, with an op, mode, arity and        */
 /* some incoming irnodes.                                         */
 /* If arity is negative, a node with a dynamic array is created.  */
-/*CS inline ir_node *new_ir_node (ir_graph *irg, ir_node *block, ir_op *op,
+/* inline ir_node *new_ir_node (ir_graph *irg, ir_node *block, ir_op *op,
 			     ir_mode *mode, int arity, ir_node **in);
 */
 /** These headers need not to be here. They are never used by the
@@ -949,6 +949,9 @@ typedef struct Phi_in_stack {
 /* privat interfaces */
 /* more detailed construction */
 
+ir_node *new_r_Block  (ir_graph *irg,  int arity, ir_node **in);
+ir_node *new_r_Start  (ir_graph *irg, ir_node *block);
+ir_node *new_r_End    (ir_graph *irg, ir_node *block);
 ir_node *new_r_Jmp    (ir_graph *irg, ir_node *block);
 ir_node *new_r_Cond   (ir_graph *irg, ir_node *block, ir_node *c);
 ir_node *new_r_Return (ir_graph *irg, ir_node *block,
@@ -990,6 +993,8 @@ ir_node *new_r_Eor    (ir_graph *irg, ir_node *block,
 		       ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_r_Not    (ir_graph *irg, ir_node *block,
 		       ir_node *op, ir_mode *mode);
+ir_node *new_r_Cmp    (ir_graph *irg, ir_node *block,
+		       ir_node *op1, ir_node *op2);
 ir_node *new_r_Shl    (ir_graph *irg, ir_node *block,
 		       ir_node *op, ir_node *k, ir_mode *mode);
 ir_node *new_r_Shr    (ir_graph *irg, ir_node *block,
@@ -998,8 +1003,6 @@ ir_node *new_r_Shrs   (ir_graph *irg, ir_node *block,
 		       ir_node *op, ir_node *k, ir_mode *mode);
 ir_node *new_r_Rot    (ir_graph *irg, ir_node *block,
 		       ir_node *op, ir_node *k, ir_mode *mode);
-ir_node *new_r_Cmp    (ir_graph *irg, ir_node *block,
-		       ir_node *op1, ir_node *op2);
 ir_node *new_r_Conv   (ir_graph *irg, ir_node *block,
 		       ir_node *op, ir_mode *mode);
 ir_node *new_r_Phi    (ir_graph *irg, ir_node *block, int arity,

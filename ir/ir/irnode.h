@@ -67,10 +67,12 @@ typedef struct {
 } block_attr;
 
 typedef enum {
-  type_tag,          /* The SymConst is a type tag for the given type. */
-  size,              /* The SymConst is the size of the given type. */
+  type_tag,          /* The SymConst is a type tag for the given type.
+			Type_or_id is type */
+  size,              /* The SymConst is the size of the given type.
+			Type_or_id is type */
   linkage_ptr_info   /* The SymConst is a symbolic pointer to be filled in
-			by the linker. */
+			by the linker. Type_or_id is ident */
 } symconst_kind;
 
 typedef union {
@@ -156,7 +158,7 @@ typedef struct ir_node ir_node;
 /* Create a new irnode in irg, with an op, mode, arity and        */
 /* some incoming irnodes.                                         */
 /* If arity is negative, a node with a dynamic array is created.  */
-/*CS inline ir_node *new_ir_node (int *irg, ir_node *block, ir_op *op,
+/* inline ir_node *new_ir_node (int *irg, ir_node *block, ir_op *op,
   ir_mode *mode, int arity, ir_node **in);
 */
 #endif

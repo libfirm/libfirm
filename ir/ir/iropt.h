@@ -32,8 +32,4 @@ void del_identities (pset *value_table);
 ir_node *optimize (ir_node *n);
 ir_node *optimize_in_place (ir_node *n);
 
-
-void optimize_graph (ir_graph *irg);
-
-
 # endif /* _IROPT_H_ */

@@ -49,6 +49,41 @@ new_ir_node (ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mode,
 /*********************************************** */
 /** privat interfaces, for professional use only */
 
+/*CS*/
+inline ir_node *
+new_r_Block (ir_graph *irg,  int arity, ir_node **in)
+{
+  ir_node *res;
+
+  return res;
+
+}
+
+ir_node *
+new_r_Start (ir_graph *irg, ir_node *block)
+{
+  ir_node *res;
+
+  res = new_ir_node (irg, block, op_Start, mode_T, 0, NULL);
+
+  ir_vrfy (res);
+  return res;
+}
+
+
+ir_node *
+new_r_End (ir_graph *irg, ir_node *block)
+{
+  ir_node *res;
+
+  res = new_ir_node (irg, block, op_End, mode_X, -1, NULL);
+
+  ir_vrfy (res);
+  return res;
+
+}
+
+
 /* Creates a Phi node with 0 predecessors */
 inline ir_node *
 new_r_Phi0 (ir_graph *irg, ir_node *block, ir_mode *mode)

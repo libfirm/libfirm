@@ -22,7 +22,7 @@ X_INCLUDES  =
 SHELL       = /bin/sh
 MAKE        = /usr/bin/make
 
-MEMBERS	 = ircons.m irdump.m irflag.m irgmod.m irgraph.m \
+MEMBERS	 = ircons.m irdump.m irflag.m irgmod.m irgraph.m irgopt.m \
            irgwalk.m irmode.m irnode.m irop.m iropt.m irvrfy.m
 
 CFILES = $(MEMBERS:.m=.c)
