@@ -19,11 +19,16 @@
 # include "irgraph.h"
 
 /** Tests the modes of chechnode and its predecessors.
-   Checknode must be in current_ir_graph. */
+    Checknode must be in current_ir_graph. */
 void irn_vrfy (struct ir_node *checknode);
 
+/** Tests the modes of chechnode and its predecessors.
+    Checknode must be in given ir_graph. */
+void irn_vrfy_irg (struct ir_node *checknode, ir_graph *irg);
+
+
 /** Calls irn_vrfy for each node in irg.
-   Graph must be in state "pinned".*/
+    Graph must be in state "pinned".*/
 void irg_vrfy (ir_graph *irg);
 
 

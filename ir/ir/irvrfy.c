@@ -20,7 +20,7 @@
 ir_node **get_irn_in (ir_node *node);
 
 INLINE static void
-vrfy_Proj_proj(ir_node *p) {
+vrfy_Proj_proj(ir_node *p, ir_graph *irg) {
   ir_node *pred;
   ir_mode *mode;
   int proj;
@@ -108,7 +108,7 @@ vrfy_Proj_proj(ir_node *p) {
     case iro_Start: {
       assert (proj >= 0 && mode_is_data(mode) &&
 	      "wrong Proj from Proj from Start");
-      mt = get_entity_type(get_irg_ent(current_ir_graph));
+      mt = get_entity_type(get_irg_ent(irg));
       assert(proj < get_method_n_params(mt) &&
 	     "More Projs for args than args in type");
       if ((mode == mode_P) && is_compound_type(get_method_param_type(mt, proj)))
@@ -147,10 +147,10 @@ vrfy_Proj_proj(ir_node *p) {
 }
 
 void
-irn_vrfy (ir_node *n)
+irn_vrfy_irg (ir_node *n, ir_graph *irg)
 {
   int i;
-  int opcode;
+  int opcode, opcode1;
   ir_mode *mymode, *op1mode = NULL, *op2mode, *op3mode;
   int op_is_symmetric = 1;	/* 0: asymmetric
 				   1: operands have identical modes
@@ -159,13 +159,22 @@ irn_vrfy (ir_node *n)
 
   ir_node **in;
 
+  if (! interprocedural_view) {
+    /*
+     * do NOT check placement in interprocedural view, as we don't always know
+     * the "right" graph ...
+     */
+    assert(node_is_in_irgs_storage(irg, n) && "Node is not stored on proper IR graph!");
+  }
+
   opcode = get_irn_opcode (n);
 
   if (opcode != iro_Phi && opcode != iro_Block)
-    for (i = 0; i < get_irn_arity(n); i++)
-      if (get_irn_opcode(get_irn_n(n, i)) == iro_Bad
-	  || get_irn_opcode(get_irn_n(n, i)) == iro_Unknown)
+    for (i = 0; i < get_irn_arity(n); i++) {
+      opcode1 = get_irn_opcode(get_irn_n(n, i));
+      if (opcode1 == iro_Bad || opcode1 == iro_Unknown)
 	return;
+    }
 
   mymode = get_irn_mode (n);
   in = get_irn_in (n);
@@ -210,7 +219,7 @@ irn_vrfy (ir_node *n)
     };
     assert ( mymode == mode_X );   /* result X */
     /* Compare returned results with result types of method type */
-    mt = get_entity_type(get_irg_ent(current_ir_graph));
+    mt = get_entity_type(get_irg_ent(irg));
     assert(get_Return_n_ress(n) == get_method_n_ress(mt) &&
 	     "Number of results for Return doesn't match number of results in type.");
     for (i = 0; i < get_Return_n_ress(n); i++)
@@ -500,12 +509,17 @@ irn_vrfy (ir_node *n)
     assert ( mymode == mode_M  && "Sync node");
     break;
   case iro_Proj:
-    vrfy_Proj_proj(n);
+    vrfy_Proj_proj(n, irg);
     break;
   default: ;
   }
 }
 
+void
+irn_vrfy (ir_node *n)
+{
+  irn_vrfy_irg(n, current_ir_graph);
+}
 
 /*******************************************************************/
 /* Verify the whole graph.                                         */
