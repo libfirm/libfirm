@@ -263,7 +263,7 @@ ent_variability get_entity_variability (entity *ent);
 void            set_entity_variability (entity *ent, ent_variability var);
 
 /** Return the name of the variablity. */
-const char *get_variablity_name(ent_variability var);
+const char *get_variability_name(ent_variability var);
 
 /** This enumeration flags the volatility of entities. */
 typedef enum {

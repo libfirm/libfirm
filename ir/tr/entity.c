@@ -320,7 +320,7 @@ set_entity_variability (entity *ent, ent_variability var){
 }
 
 /* return the name of the variablity */
-const char *get_variablity_name(ent_variability var)
+const char *get_variability_name(ent_variability var)
 {
 #define X(a)	case a: return #a
   switch (var) {
