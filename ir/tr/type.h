@@ -36,8 +36,6 @@
 # ifndef _TYPE_H_
 # define _TYPE_H_
 
-# include <stdbool.h>
-
 # include "tpop.h"
 # include "firm_common.h"
 # include "ident.h"
@@ -300,7 +298,7 @@ int is_type            (const void *thing);
  *       This is to avoid endless recursions; with pointer types circlic
  *       type graphs are possible.)
  */
-bool equal_type(type *tpy1, type *typ2);
+int equal_type(type *tpy1, type *typ2);
 
 /**
  *   Checks whether two types are structural comparable.
@@ -337,7 +335,7 @@ bool equal_type(type *tpy1, type *typ2);
  *      @return smaller than the points_to type of lt.
  *
  */
-bool smaller_type (type *st, type *lt);
+int smaller_type (type *st, type *lt);
 
 /**
  *  @page class_type	Representation of a class type
@@ -484,7 +482,7 @@ int  get_class_dfn (const type *clss);
 int is_class_type(const type *clss);
 
 /** Returns true if low is subclass of high. */
-bool is_subclass_of(type *low, type *high);
+int is_subclass_of(type *low, type *high);
 
 /**
  *  @page struct_type	Representation of a struct type
