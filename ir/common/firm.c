@@ -16,6 +16,7 @@
 # include "xp_help.h"
 # include "irnode_t.h"
 # include "tv_t.h"
+# include "tpop_t.h"
 
 void
 init_firm (void)
@@ -28,7 +29,9 @@ init_firm (void)
   xprintf_register ('R', ir_node_print);
   /* initialize all ident stuff */
   id_init ();
-  /* create an obstack and put alle tarvals in a pdeq */
+  /* create the type kinds. */
+  init_tpop ();
+  /* create an obstack and put all tarvals in a pdeq */
   tarval_init_1 ();
   /* initialize all modes an ir node can consist of */
   init_mode ();

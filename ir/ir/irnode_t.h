@@ -53,7 +53,7 @@ typedef union {
   struct tarval *con;   /* For Const: contains the value of the constant */
   symconst_attr  i;     /* For SymConst. */
   sel_attr       s;     /* For Sel. */
-  type_method   *call;  /* For Call: pointer to the type of the method to call */
+  type          *call;  /* For Call: pointer to the type of the method to call */
   long           proj;  /* For Proj: contains the result position to project */
   alloc_attr     a;     /* For Alloc. */
   type          *f;     /* For Free. */
@@ -104,7 +104,7 @@ inline long          get_irn_proj_attr     (ir_node *node);
 inline alloc_attr    get_irn_alloc_attr    (ir_node *node);
 inline type         *get_irn_free_attr     (ir_node *node);
 inline symconst_attr get_irn_symconst_attr (ir_node *node);
-type_method  *get_irn_call_attr     (ir_node *node);
+type         *get_irn_call_attr     (ir_node *node);
 sel_attr      get_irn_sel_attr      (ir_node *node);
 int           get_irn_phi_attr      (ir_node *node);
 block_attr    get_irn_return_attr   (ir_node *node);

@@ -32,11 +32,11 @@
 
 int main(int argc, char **argv)
 {
-  ir_graph *irg;          /* this variable contains the irgraph */
-  type_class *owner;      /* the class in which this method is defined */
-  type_method *method;    /* the type of this method */
-  entity *ent;            /* represents this method as entity of owner */
-  ir_node *x, *x_then, *x_else, *c0, *c1, *c2, *cmpGt, *f, *t, *b;
+  ir_graph *irg;       /* this variable contains the irgraph */
+  type     *owner;     /* the class in which this method is defined */
+  type     *method;    /* the type of this method */
+  entity   *ent;       /* represents this method as entity of owner */
+  ir_node  *x, *x_then, *x_else, *c0, *c1, *c2, *cmpGt, *f, *t, *b;
 
   printf("\ncreating an IR graph: IF_ELSE_EXAMPLE...\n");
 
@@ -53,8 +53,8 @@ int main(int argc, char **argv)
 
   owner = get_glob_type();
   method = new_type_method (id_from_str("main", 4), 0, 2);
-  ent = new_entity ((type *)owner, id_from_str (ENTITYNAME,
-		    strlen(ENTITYNAME)), (type *)method);
+  ent = new_entity (owner, id_from_str (ENTITYNAME,
+		    strlen(ENTITYNAME)), method);
 
   /* Generates the basic graph for the method represented by entity ent, that
    * is, generates start and end blocks and nodes and a first, initial block.

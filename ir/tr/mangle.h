@@ -17,5 +17,5 @@ void init_mangle (void);
    a separating "_". f*/
 ident *mangle_entity (entity *ent);
 
-/* Sorry, I'm not sure what this does... */
+/* Sorry, I'm not sure what this does... seems to copy the string. */
 ident *mangle_type   (type *type);

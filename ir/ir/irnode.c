@@ -146,7 +146,7 @@ ir_node_print (XP_PAR1, const xprintf_info *info ATTRIBUTE((unused)), XP_PARN)
     XPF1 ("%I", get_irn_mode(np)->name);
     XPC  (" ");
     XP   (symconst_name_arr[get_irn_symconst_attr(np).num]);
-    XPF1 (" %#N", get_class_ident((type_class *)get_SymConst_type(np)));
+    XPF1 (" %#N", get_type_nameid(get_SymConst_type(np)));
     break;
   case iro_Start:		/* don't dump mode of these */
   case iro_Cond:
@@ -335,7 +335,7 @@ get_irn_symconst_attr (ir_node *node)
   return node->attr.i;
 }
 
-inline type_method *
+inline type *
 get_irn_call_attr (ir_node *node)
 {
   assert (node->op == op_Call);
@@ -741,15 +741,16 @@ set_Call_param (ir_node *node, int pos, ir_node *param) {
   set_irn_n(node, pos + CALL_PARAM_OFFSET, param);
 }
 
-inline type_method *
+inline type *
 get_Call_type (ir_node *node) {
   assert (node->op == op_Call);
   return node->attr.call;
 }
 
 inline void
-set_Call_type (ir_node *node, type_method *type) {
+set_Call_type (ir_node *node, type *type) {
   assert (node->op == op_Call);
+  assert (is_method_type(type));
   node->attr.call = type;
 }
 

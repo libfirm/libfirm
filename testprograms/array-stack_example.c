@@ -36,22 +36,22 @@ int
 main(void)
 {
   /* describes the general structure of a C-file */
-  type_class     *owner;        /* the class standing for everything in this file */
-  type_method    *proc_main;    /* Typeinformation for method main. */
+  type           *owner;        /* the class standing for everything in this file */
+  type           *proc_main;    /* Typeinformation for method main. */
   entity         *proc_main_e;  /* The entity describing that method main is an
                                    entity of the fake class representing the file. */
 
   /* describes types defined by the language */
-  type_primitive *prim_t_int;
+  type           *prim_t_int;
 
   /* describes the array and its fields. */
   entity         *array_ent;    /* the entity representing the array as member
                                    of the stack/method */
-  type_array     *array_type;   /* the type information for the array */
+  type           *array_type;   /* the type information for the array */
   entity         *field_ent;    /* the entity representing a field of the array */
 
   /* Needed while finding the element size.  */
-  type_primitive *elt_type;
+  type           *elt_type;
   ir_mode        *elt_type_mode;
   int            size;
   ir_node        *arr_size;
@@ -75,8 +75,8 @@ main(void)
   /* build typeinformation of procedure main */
   owner = new_type_class (id_from_str ("ARRAY-STACK_EXAMPLE", 19));
   proc_main = new_type_method(id_from_str("main", 4), 0, 1);
-  set_method_res_type(proc_main, 0, (type *)prim_t_int);
-  proc_main_e = new_entity ((type*)owner, id_from_str ("main", 4), (type *)proc_main);
+  set_method_res_type(proc_main, 0, prim_t_int);
+  proc_main_e = new_entity (owner, id_from_str ("main", 4), proc_main);
 
   main_irg = new_ir_graph (proc_main_e, 4);
 
@@ -86,15 +86,15 @@ main(void)
 # define U_BOUND 9
   array_type = new_type_array(id_from_str("a", 1), N_DIMS);
   set_array_bounds(array_type, 1, L_BOUND, U_BOUND);
-  set_array_element_type(array_type, (type*)prim_t_int);
+  set_array_element_type(array_type, prim_t_int);
   /* The array is an entity of the method, placed on the mehtod's own memory,
      the stack frame. */
-  array_ent = new_entity((type *)proc_main, id_from_str("a", 1), (type *)array_type);
+  array_ent = new_entity(proc_main, id_from_str("a", 1), array_type);
   /* As the array is accessed by Sel nodes, we need information about
      the entity the node select.  Entities of an array are it's elements
      which are, in this case, integers. */
   /* change entity owner types.   */
-  field_ent = new_entity((type*)array_type, id_from_str("array_field", 11), (type*)prim_t_int);
+  field_ent = new_entity(array_type, id_from_str("array_field", 11), prim_t_int);
 
   /* Now the "real" program: */
   /* Select the array from the stack frame.  */

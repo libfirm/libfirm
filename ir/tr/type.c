@@ -1,576 +1,458 @@
-
-/* Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
-** All rights reserved.
-**
-** Authors: Martin Trapp, Christian Schaefer &
-**          Goetz Lindenmaier
-**
-** type.c: datastructures to hold type information.
-*/
-
-#ifdef HAVE_CONFIG_H
-# include <config.h>
-#endif
-
-# include "type.h"
-# include "irprog.h"  /* So that constructors can add the type to global
-			 data structure. */
+/****h* libfirm/type.c
+ *
+ * NAME
+ *   file type.c - implementation of the datastructure to hold
+ *   type information.
+ * COPYRIGHT
+ *  (C) 2001 by Universitaet Karlsruhe
+ * AUTHORS
+ *  Martin Trapp, Christian Schaefer, Goetz Lindenmaier
+ *
+ * NOTES
+ *  This module supplies a datastructure to represent all types
+ *  known in the compiled program.  This includes types specified
+ *  in the program as well as types defined by the language.  In the
+ *  view of the intermediate representation there is no difference
+ *  between these types.
+ *
+ *  There exist several kinds of types, arranged by the structure of
+ *  the type.  A type is described by a set of attributes.  Some of
+ *  these attributes are common to all types, others depend on the
+ *  kind of the type.
+ *
+ *  Types are different from the modes defined in irmode:  Types are
+ *  on the level of the programming language, modes at the level of
+ *  the target processor.
+ *
+ * SEE ALSO
+ *   type_t.h type tpop
+ *****
+ */
+# include <stdlib.h>
+# include <stddef.h>
+# include "type_t.h"
+# include "tpop_t.h"
 # include "array.h"
-# include "ident_t.h"
 
-unsigned long type_visited = 0;
+/*******************************************************************/
+/** TYPE                                                          **/
+/*******************************************************************/
 
-void
-init (void)
-{
+unsigned long type_visited;
+
+inline type *
+new_type(tp_op *type_op, ir_mode *mode, ident* name) {
+  type *res;
+
+  int node_size = offsetof (type, attr) +  type_op->attr_size;
+  res = (type *) xmalloc (node_size);
+  add_irp_type(res);   /* Remember the new type global. */
+
+  res->kind = k_type;
+  res->type_op = type_op;
+  res->mode = mode;
+  res->name = name;
+  res->size = -1;
+  res->visit = 0;
+
+  return res;
+}
+
+tp_op*      get_type_tpop(type *tp) {
+  assert(tp);
+  return tp->type_op;
+}
+
+ident*      get_type_tpop_nameid(type *tp) {
+  assert(tp);
+  return tp->type_op->name;
+}
+const char* get_type_tpop_name(type *tp) {
+  assert(tp);
+  return id_to_str(tp->type_op->name);
+}
+tp_opcode    get_type_tpop_code(type *tp) {
+  assert(tp);
+  return tp->type_op->code;
+}
+ir_mode*    get_type_mode(type *tp) {
+  assert(tp);
+  return tp->mode;
+}
+void        set_type_mode(type *tp, ir_mode* m) {
+  assert(tp);
+  tp->mode = m;
+}
+ident*      get_type_nameid(type *tp) {
+  assert(tp);
+  return tp->name;
+}
+void        set_type_nameid(type *tp, ident* id) {
+  assert(tp);
+  tp->name = id;
+}
+const char* get_type_name(type *tp) {
+  assert(tp);
+  return id_to_str(tp->name);
+}
+int         get_type_size(type *tp) {
+  assert(tp);
+  return tp->size;
+}
+void        set_type_size(type *tp, int size) {
+  assert(tp);
+  tp->size = size;
+}
+unsigned long get_type_visited(type *tp) {
+  assert(tp);
+  return tp->visit;
+}
+void        set_type_visited(type *tp, unsigned long num) {
+  assert(tp);
+  tp->visit = num;
+}
+/* Sets visited field in type to type_visited. */
+void        mark_type_visited(type *tp) {
+  assert(tp);
+  assert(tp->visit < type_visited);
+  tp->visit = type_visited;
+}
+
+int is_type            (void *thing) {
+  assert(thing);
+  if (get_kind(thing) == k_type)
+    return 1;
+  else
+    return 0;
 }
 
 /*******************************************************************/
 /** TYPE_CLASS                                                    **/
 /*******************************************************************/
 
-type_class *
-new_type_class (ident *name) /*, int members) */
-{
-  type_class *res;
+/* create a new class type */
+type   *new_type_class (ident *name) {
+  type *res;
 
-  res = (type_class *) xmalloc (sizeof (type_class));
-  add_irp_type((type *) res);   /* Remember the new type global. */
-  res->kind = k_type_class;
-  res->name = name;
+  res = new_type(type_class, NULL, name);
 
-  res->members = NEW_ARR_F (entity *, 1);
-  res->subtypes = NEW_ARR_F (type_class *, 1);
-  res->supertypes = NEW_ARR_F (type_class *, 1);
-
-  res->visit = 0;
+  res->attr.ca.members    = NEW_ARR_F (entity *, 1);
+  res->attr.ca.subtypes   = NEW_ARR_F (type *, 1);
+  res->attr.ca.supertypes = NEW_ARR_F (type *, 1);
 
   return res;
 }
+/* manipulate private fields of class type  */
+void    add_class_member   (type *clss, entity *member) {
+  assert(clss && (clss->type_op == type_class));
+  ARR_APP1 (entity *, clss->attr.ca.members, member);
+}
+int     get_class_n_member (type *clss) {
+  assert(clss && (clss->type_op == type_class));
+  return (ARR_LEN (clss->attr.ca.members))-1;
+}
+entity *get_class_member   (type *clss, int pos) {
+  assert(clss && (clss->type_op == type_class));
+  return clss->attr.ca.members[pos+1];
+}
+void    set_class_member   (type *clss, entity *member, int pos) {
+  assert(clss && (clss->type_op == type_class));
+  clss->attr.ca.members[pos+1] = member;
+}
 
-/* manipulate fields of type_class */
-const char *
-get_class_name  (type_class *clss) {
+void    add_class_subtype   (type *clss, type *subtype) {
+  assert(clss && (clss->type_op == type_class));
+  ARR_APP1 (type *, clss->attr.ca.subtypes, subtype);
+}
+int     get_class_n_subtype (type *clss) {
+  assert(clss && (clss->type_op == type_class));
+  return (ARR_LEN (clss->attr.ca.subtypes))-1;
+}
+type   *get_class_subtype   (type *clss, int pos) {
+  assert(clss && (clss->type_op == type_class));
+  return clss->attr.ca.subtypes[pos+1];
+}
+void    set_class_subtype   (type *clss, type *subtype, int pos) {
+  assert(clss && (clss->type_op == type_class));
+  clss->attr.ca.subtypes[pos+1] = subtype;
+}
+
+void    add_class_supertype   (type *clss, type *supertype) {
+  assert(clss && (clss->type_op == type_class));
+  ARR_APP1 (type *, clss->attr.ca.supertypes, supertype);
+}
+int     get_class_n_supertype (type *clss) {
+  assert(clss && (clss->type_op == type_class));
+  return (ARR_LEN (clss->attr.ca.supertypes))-1;
+}
+type   *get_class_supertype   (type *clss, int pos) {
+  assert(clss && (clss->type_op == type_class));
+  return clss->attr.ca.supertypes[pos+1];
+}
+void    set_class_supertype   (type *clss, type *supertype, int pos) {
+  assert(clss && (clss->type_op == type_class));
+  clss->attr.ca.supertypes[pos+1] = supertype;
+}
+/* typecheck */
+bool    is_class_type(type *clss) {
   assert(clss);
-  return id_to_str(clss->name);
+  if (clss->type_op == type_class) return 1; else return 0;
 }
-
-/* field: ident */
-ident *
-get_class_ident (type_class *clss) {
-  assert(clss);
-  return clss->name;
-}
-
-/*
-void   set_class_name  (type_class *clss, char *name);
-void   set_class_ident (type_class *clss, ident* ident);
-*/
-
-/* field: member */
-void
-add_class_member (type_class *clss, entity *member)
-{
-  ARR_APP1 (entity *, clss->members, member);
-}
-
-entity *
-get_class_member (type_class *clss, int pos)
-{
-  assert (clss);
-  return clss->members[pos+1];
-}
-
-void
-set_class_member (type_class *clss, entity *member, int pos)
-{
-  clss->members[pos+1] = member;
-}
-
-int
-get_class_n_member (type_class *clss)
-{
-  int res;
-
-  assert(clss);
-  res = (ARR_LEN (clss->members))-1;
-  return res;
-}
-
-/* field: subtype */
-void
-add_class_subtype (type_class *clss,  type_class *subtype)
-{
-  ARR_APP1 (type_class *, clss->subtypes, subtype);
-}
-
-type_class *
-get_class_subtype (type_class *clss, int pos)
-{
-  assert (clss);
-  return clss->subtypes[pos+1];
-}
-
-void
-set_class_subtype (type_class *clss, type_class *subtype, int pos)
-{
-  clss->subtypes[pos+1] = subtype;
-}
-
-int
-get_class_n_subtype (type_class *clss)
-{
-  assert(clss);
-  return (ARR_LEN (clss->subtypes))-1;
-}
-
-/* field: supertype */
-void
-add_class_supertype (type_class *clss, type_class *supertype)
-{
-  ARR_APP1 (type_class *, clss->supertypes, supertype);
-}
-
-type_class *
-get_class_supertype (type_class *clss, int pos)
-{
-  assert (clss);
-  return clss->supertypes[pos+1];
-}
-
-void
-set_class_supertype (type_class *clss, type_class *supertype, int pos)
-{
-  clss->supertypes[pos+1] = supertype;
-}
-
-int
-get_class_n_supertype (type_class *clss)
-{
-  assert(clss);
-  return (ARR_LEN (clss->supertypes))-1;
-}
-
-int
-get_class_size (type_class *clss) {
-  assert(clss);
-  return clss->size;
-}
-
-void
-set_class_size (type_class *clss, int size) {
-  assert(clss);
-  clss->size = size;
-}
-
 
 /*******************************************************************/
-/** TYPE_STRCT                                                   **/
+/** TYPE_STRUCT                                                   **/
 /*******************************************************************/
 
-type_strct *
-new_type_strct (ident *name) /*, int members) */
-{
-  type_strct *res;
-
-  res = (type_strct *) xmalloc (sizeof (type_strct));
-  add_irp_type((type *) res);   /* Remember the new type global. */
-  res->kind = k_type_strct;
-  res->name = name;
-
-  res->members = NEW_ARR_F (entity *, 1);
-  res->visit = 0;
-
+/* create a new type struct */
+type   *new_type_struct (ident *name) {
+  type *res;
+  res = new_type(type_struct, NULL, name);
+  res->attr.sa.members = NEW_ARR_F (entity *, 1);
   return res;
 }
-
-/* manipulate fields of type_strct */
-
-const char *
-get_strct_name  (type_strct *strct) {
+/* manipulate private fields of struct */
+void    add_struct_member   (type *strct, entity *member) {
+  assert(strct && (strct->type_op == type_struct));
+  ARR_APP1 (entity *, strct->attr.sa.members, member);
+}
+int     get_struct_n_member (type *strct) {
+  assert(strct && (strct->type_op == type_struct));
+  return (ARR_LEN (strct->attr.sa.members))-1;
+}
+entity *get_struct_member   (type *strct, int pos) {
+  assert(strct && (strct->type_op == type_struct));
+  return strct->attr.sa.members[pos+1];
+}
+void    set_struct_member   (type *strct, int pos, entity *member) {
+  assert(strct && (strct->type_op == type_struct));
+  strct->attr.sa.members[pos+1] = member;
+}
+/* typecheck */
+bool    is_struct_type(type *strct) {
   assert(strct);
-  return ID_TO_STR(strct->name);
+  if (strct->type_op == type_struct) return 1; else return 0;
 }
-
-
-ident *
-get_strct_ident (type_strct *strct) {
-  assert(strct);
-  return strct->name;
-}
-
-int
-get_strct_n_member (type_strct *strct)
-{
-  int res;
-
-  assert(strct);
-  res = (ARR_LEN (strct->members))-1;
-  return res;
-}
-
-void
-add_strct_member (type_strct *strct, entity *member)
-{
-  ARR_APP1 (type_strct *, strct->members, member);
-}
-
-entity *
-get_strct_member (type_strct *strct, int pos)
-{
-  assert (strct);
-  return strct->members[pos+1];
-}
-
-void
-set_strct_member (type_strct *strct, int pos, entity *member)
-{
-  strct->members[pos+1] = member;
-}
-
-/*
-void   set_strct_name  (type_strct *strct, char *name);
-void   set_strct_ident (type_strct *strct, ident* ident);
-*/
-
 
 /*******************************************************************/
 /** TYPE_METHOD                                                   **/
 /*******************************************************************/
 
-/* create a new type_method */
-type_method *
-new_type_method (ident *name, int arity, int n_res)
-{
-  type_method *res;
-
-  res = (type_method *) xmalloc (sizeof (type_method));
-  add_irp_type((type *) res);   /* Remember the new type global. */
-  res->kind = k_type_method;
-
-  res->name = name;   /* do I need the name, or is the name in entity sufficient? */
-  res->arity = arity;
-  res->param_type = (type **) xmalloc (sizeof (type *) * arity);
-  res->n_res  = n_res;
-  res->res_type = (type **) xmalloc (sizeof (type *) * n_res);
-
-  res->visit = 0;
-
+/* Create a new method type.
+   N_param is the number of parameters, n_res the number of results.  */
+type *new_type_method (ident *name, int n_param, int n_res) {
+  type *res;
+  res = new_type(type_method, NULL, name);
+  res->attr.ma.n_params   = n_param;
+  res->attr.ma.param_type = (type **) xmalloc (sizeof (type *) * n_param);
+  res->attr.ma.n_res      = n_res;
+  res->attr.ma.res_type   = (type **) xmalloc (sizeof (type *) * n_res);
   return res;
 }
 
-/* manipulate fields of type_method */
-const char *
-get_method_name  (type_method *method) {
+/* manipulate private fields of method. */
+int   get_method_n_params  (type *method) {
+  assert(method && (method->type_op == type_method));
+  return method->attr.ma.n_params;
+}
+type *get_method_param_type(type *method, int pos) {
+  assert(method && (method->type_op == type_method));
+  return method->attr.ma.param_type[pos];
+}
+void  set_method_param_type(type *method, int pos, type* type) {
+  assert(method && (method->type_op == type_method));
+  method->attr.ma.param_type[pos] = type;
+}
+
+int   get_method_n_res   (type *method) {
+  assert(method && (method->type_op == type_method));
+  return method->attr.ma.n_res;
+}
+type *get_method_res_type(type *method, int pos) {
+  assert(method && (method->type_op == type_method));
+  return method->attr.ma.res_type[pos];
+}
+void  set_method_res_type(type *method, int pos, type* type) {
+  assert(method && (method->type_op == type_method));
+  method->attr.ma.res_type[pos] = type;
+}
+/* typecheck */
+bool  is_method_type     (type *method) {
   assert(method);
-  return ID_TO_STR(method->name);
+  if (method->type_op == type_method) return 1; else return 0;
 }
-
-ident *
-get_method_ident (type_method *method) {
-  assert(method);
-  return method->name;
-}
-
-/*
-void   set_method_name  (type_method *method, char *name);
-void   set_method_ident (type_method *method, ident* ident);
-*/
-
-
-inline int
-get_method_n_params (type_method *method) {
-  return method->arity;
-}
-
-inline int
-get_method_arity (type_method *method) {
-  return method->arity;
-}
-
-/*
-inline void
-set_method_arity (type_method *method, int arity) {
-  method->arity = arity;
-  / change array size, somehow copy.  *
-}
-*/
-
-inline type *
-get_method_param_type(type_method *method, int pos) {
-  return method->param_type[pos];
-}
-
-inline void
-set_method_param_type(type_method *method, int pos, type* type) {
-  method->param_type[pos] = type;
-}
-
-
-inline int
-get_method_n_res (type_method *method) {
-  return method->n_res;
-}
-
-/*
-inline void
-set_method_n_res (type_method *method, int n_res) {
-  method->n_res = n_res;
-}
-*/
-
-inline type *
-get_method_res_type(type_method *method, int pos) {
-  return method->res_type[pos];
-}
-
-inline void
-set_method_res_type(type_method *method, int pos, type* type) {
-  method->res_type[pos] = type;
-}
-
+/*****/
 
 /*******************************************************************/
 /** TYPE_UNION                                                    **/
 /*******************************************************************/
 
-/* create a new type_union -- set unioned types by hand. */
-type_union *
-new_type_union (ident *name, int n_types)
-{
-  type_union *res;
-
-  res = (type_union *) xmalloc (sizeof (type_union));
-  add_irp_type((type *) res);   /* Remember the new type global. */
-  res->kind = k_type_union;
-  res->name = name;   /* do I need a name? */
-  res->n_types = n_types;
-  /*
-  res->unioned_type = (int *) xmalloc (sizeof (int) * n_types);
-  */
-
-  res->visit = 0;
-
+/* create a new type uni */
+type  *new_type_uni (ident *name, int n_types) {
+  type *res;
+  res = new_type(type_union, NULL, name);
+  res->attr.ua.n_types = n_types;
+  res->attr.ua.unioned_type = (type **)  xmalloc (sizeof (type *)  * n_types);
+  res->attr.ua.delim_names  = (ident **) xmalloc (sizeof (ident *) * n_types);
   return res;
 }
-
-/* manipulate fields of type_union */
-/*
-char *
-get_union_name  (type_union *uni) {
-  assert(uni);
-  return ID_TO_STR(uni->name);
+/* manipulate private fields of struct */
+int    get_union_n_types      (type *uni) {
+  assert(uni && (uni->type_op == type_union));
+  return uni->attr.ua.n_types;
 }
-*/
-
-ident *
-get_union_ident (type_union *uni) {
-  assert(uni);
-  return uni->name;
+type  *get_union_unioned_type (type *uni, int pos) {
+  assert(uni && (uni->type_op == type_union));
+  return uni->attr.ua.unioned_type[pos];
+}
+void   set_union_unioned_type (type *uni, int pos, type *type) {
+  assert(uni && (uni->type_op == type_union));
+  uni->attr.ua.unioned_type[pos] = type;
+}
+ident *get_union_delim_nameid (type *uni, int pos) {
+  assert(uni && (uni->type_op == type_union));
+  return uni->attr.ua.delim_names[pos];
+}
+const char *get_union_delim_name (type *uni, int pos) {
+  assert(uni && (uni->type_op == type_union));
+  return id_to_str(uni->attr.ua.delim_names[pos]);
+}
+void   set_union_delim_nameid (type *uni, int pos, ident *id) {
+  assert(uni && (uni->type_op == type_union));
+  uni->attr.ua.delim_names[pos] = id;
 }
 
-/*
-void   set_union_name  (type_union *union, char *name);
-void   set_union_ident (type_union *union, ident* ident);
-*/
-/*
-int    get_union_n_types (type_union *union);
-void   set_union_n_types (type_union *union, int n);
-type  *get_union_unioned_type (type_union *union, int pos);
-void   set_union_unioned_type (type_union *union, int pos, type *type);
-*/
+/* typecheck */
+bool   is_union_type         (type *uni) {
+  assert(uni);
+  if (uni->type_op == type_union) return 1; else return 0;
+}
 
 /*******************************************************************/
 /** TYPE_ARRAY                                                    **/
 /*******************************************************************/
 
-/* create a new type_array */
-inline type_array *
-new_type_array (ident *name, int n_dimensions)
-{
-  type_array *res;
 
-  res = (type_array *) xmalloc (sizeof (type_array));
-  add_irp_type((type *) res);   /* Remember the new type global. */
-  res->kind = k_type_array;
-  res->name = name;
-  res->n_dimensions = n_dimensions;
-  res->lower_bound = (int *) xmalloc (sizeof (int) * n_dimensions);
-  res->upper_bound = (int *) xmalloc (sizeof (int) * n_dimensions);
-
-  res->visit = 0;
-
+/* create a new type array -- set dimension sizes independently */
+type *new_type_array         (ident *name, int n_dimensions) {
+  type *res;
+  res = new_type(type_array, NULL, name);
+  res->attr.aa.n_dimensions = n_dimensions;
+  res->attr.aa.lower_bound  = (int *) xmalloc (sizeof (int) * n_dimensions);
+  res->attr.aa.upper_bound  = (int *) xmalloc (sizeof (int) * n_dimensions);
   return res;
 }
-
-/* manipulate fields of type_array */
-/*
-char *
-get_array_name  (type_array *array) {
+/* manipulate private fields of array type */
+int   get_array_n_dimensions (type *array) {
+  assert(array && (array->type_op == type_array));
+  return array->attr.aa.n_dimensions;
+}
+void  set_array_bounds       (type *array, int dimension, int lower_bound,
+                                                          int upper_bound) {
+  assert(array && (array->type_op == type_array));
+  array->attr.aa.lower_bound[dimension] = lower_bound;
+  array->attr.aa.upper_bound[dimension] = upper_bound;
+}
+void  set_array_lower_bound  (type *array, int dimension, int lower_bound) {
+  assert(array && (array->type_op == type_array));
+  array->attr.aa.lower_bound[dimension] = lower_bound;
+}
+void  set_array_upper_bound  (type *array, int dimension, int upper_bound) {
+  assert(array && (array->type_op == type_array));
+  array->attr.aa.upper_bound[dimension] = upper_bound;
+}
+int   get_array_lower_bound  (type *array, int dimension) {
+  assert(array && (array->type_op == type_array));
+  return array->attr.aa.lower_bound[dimension];
+}
+int   get_array_upper_bound  (type *array, int dimension) {
+  assert(array && (array->type_op == type_array));
+  return array->attr.aa.upper_bound[dimension];
+}
+void  set_array_element_type (type *array, type *type) {
+  assert(array && (array->type_op == type_array));
+  array->attr.aa.element_type = type;
+}
+type *get_array_element_type (type *array) {
+  assert(array && (array->type_op == type_array));
+  return array->attr.aa.element_type;
+}
+/* typecheck */
+bool   is_array_type         (type *array) {
   assert(array);
-  return ID_TO_STR(array->name);
+  if (array->type_op == type_array) return 1; else return 0;
 }
-*/
-
-ident *
-get_array_ident (type_array *array) {
-  assert(array);
-  return array->name;
-}
-
-/*
-void   set_array_name  (type_array *array, char *name);
-void   set_array_ident (type_array *array, ident* ident);
-*/
-
-inline void
-set_array_dimensions (type_array* array, int n) {
-  array->n_dimensions = n;
-}
-
-inline int
-get_array_dimensions (type_array* array) {
-  return array->n_dimensions;
-}
-
-inline void
-set_array_bounds (type_array* array, int dimension, int lower_bound,
-		  int upper_bound) {
-  array->lower_bound[dimension-1] = lower_bound;
-  array->upper_bound[dimension-1] = upper_bound;
-}
-
-inline void
-set_array_lower_bound (type_array* array, int dimension, int lower_bound) {
-  array->lower_bound[dimension-1] = lower_bound;
-}
-
-inline void
-set_array_upper_bound (type_array* array, int dimension, int upper_bound) {
-  array->upper_bound[dimension-1] = upper_bound;
-}
-
-inline int
-get_array_lower_bound (type_array* array, int dimension) {
-  return array->lower_bound[dimension-1];
-}
-
-inline int
-get_array_upper_bound (type_array* array, int dimension) {
-  return array->upper_bound[dimension-1];
-}
-
-inline void set_array_element_type (type_array *array, type *type) {
-  array->element_type = type;
-}
-
-inline type *
-get_array_element_type (type_array *array) {
-  return array->element_type;
-}
-
 
 /*******************************************************************/
 /** TYPE_ENUMERATION                                              **/
 /*******************************************************************/
 
 /* create a new type enumeration -- set the enumerators independently */
-type_enumeration *
-new_type_enumeration (ident *name /* , int n_enums */)
-{
-  type_enumeration *res;
-
-  res = (type_enumeration *) xmalloc (sizeof (type_enumeration));
-  add_irp_type((type *) res);   /* Remember the new type global. */
-  res->kind = k_type_enumeration;
-  res->name = name;
-  /*
-  res->n_enums = n_enums;
-  res->enum = (int *) xmalloc (sizeof (int) * n_enums);
-  */
-
-  res->visit = 0;
-
+type   *new_type_enumeration    (ident *name, int n_enums) {
+  type *res;
+  res = new_type(type_enumeration, NULL, name);
+  res->attr.ea.n_enums     = n_enums;
+  res->attr.ea.enumer      = (tarval **) xmalloc (sizeof (tarval *) * n_enums);
+  res->attr.ea.enum_nameid = (ident  **) xmalloc (sizeof (ident  *) * n_enums);
   return res;
 }
 
-/* manipulate fields of type_enumeration */
-/*
-char *
-get_enumeration_name  (type_enumeration *enumeration) {
-  assert(enumeration);
-  return ID_TO_STR(enumeration->name);
+/* manipulate fields of enumeration type. */
+int     get_enumeration_n_enums (type *enumeration) {
+  assert(enumeration && (enumeration->type_op == type_enumeration));
+  return enumeration->attr.ea.n_enums;
 }
-*/
-
-ident *
-get_enumeration_ident (type_enumeration *enumeration) {
-  assert(enumeration);
-  return enumeration->name;
+void    set_enumeration_enum    (type *enumeration, int pos, tarval *con) {
+  assert(enumeration && (enumeration->type_op == type_enumeration));
+  enumeration->attr.ea.enumer[pos] = con;
+}
+tarval *get_enumeration_enum    (type *enumeration, int pos) {
+  assert(enumeration && (enumeration->type_op == type_enumeration));
+  return enumeration->attr.ea.enumer[pos];
+}
+void    set_enumeration_nameid  (type *enumeration, int pos, ident *id) {
+  assert(enumeration && (enumeration->type_op == type_enumeration));
+  enumeration->attr.ea.enum_nameid[pos] = id;
+}
+ident  *get_enumeration_nameid  (type *enumeration, int pos) {
+  assert(enumeration && (enumeration->type_op == type_enumeration));
+  return enumeration->attr.ea.enum_nameid[pos];
+}
+const char *get_enumeration_name(type *enumeration, int pos) {
+  assert(enumeration && (enumeration->type_op == type_enumeration));
+  return id_to_str(enumeration->attr.ea.enum_nameid[pos]);
 }
 
-/*
-void   set_enumeration_name  (type_enumeration *enumeration, char *name);
-void   set_enumeration_ident (type_enumeration *enumeration, ident* ident);
-*/
-/*
-void     set_enumeration_n_enums (type_enumeration *enumeration, int n);
-int     *get_enumeration_n_enums (type_enumeration *enumeration);
-void     set_enumeration_enum    (type_enumeration *enumeration, int pos,
-                                 ir_node const);
-ir_node *get_enumeration_enum    (type_enumeration *enumeration, int pos);
-*/
-
+/* typecheck */
+bool    is_enumeration_type     (type *enumeration) {
+  assert(enumeration);
+  if (enumeration->type_op == type_enumeration) return 1; else return 0;
+}
 
 /*******************************************************************/
 /** TYPE_POINTER                                                  **/
 /*******************************************************************/
 
-/* create a new type pointer */
-type_pointer *
-new_type_pointer (ident *name, type *points_to)
-{
-  type_pointer *res;
-
-  res = (type_pointer *) xmalloc (sizeof (type_pointer));
-  add_irp_type((type *) res);   /* Remember the new type global. */
-  res->kind = k_type_pointer;
-  res->name = name;
-  res->points_to = points_to;
-
-  res->visit = 0;
-
+/* Create a new type pointer */
+type *new_type_pointer           (ident *name, type *points_to) {
+  type *res;
+  res = new_type(type_pointer, mode_p, name);
+  res->attr.pa.points_to = points_to;
   return res;
 }
-
 /* manipulate fields of type_pointer */
-/*
-char *
-get_pointer_name  (type_pointer *pointer) {
+void  set_pointer_points_to_type (type *pointer, type *type) {
+  assert(pointer && (pointer->type_op == type_pointer));
+  pointer->attr.pa.points_to = type;
+}
+type *get_pointer_points_to_type (type *pointer) {
+  assert(pointer && (pointer->type_op == type_pointer));
+  return pointer->attr.pa.points_to;
+}
+
+/* typecheck */
+bool  is_pointer_type            (type *pointer) {
   assert(pointer);
-  return ID_TO_STR(pointer->name);
-}
-*/
-
-ident *
-get_pointer_ident (type_pointer *pointer) {
-  assert(pointer);
-  return pointer->name;
-}
-
-/*
-void   set_pointer_name  (type_pointer *pointer, char *name);
-void   set_pointer_ident (type_pointer *pointer, ident* ident);
-*/
-
-inline void
-set_pointer_points_to_type (type_pointer *pointer, type* type) {
-  pointer->points_to = type;
-}
-
-inline type *
-get_pointer_points_to_type (type_pointer *pointer) {
-  return pointer->points_to;
+  if (pointer->type_op == type_pointer) return 1; else return 0;
 }
 
 
@@ -578,122 +460,15 @@ get_pointer_points_to_type (type_pointer *pointer) {
 /** TYPE_PRIMITIVE                                                **/
 /*******************************************************************/
 
-/* create a new type_primitive */
-inline type_primitive *
-new_type_primitive (ident *name, ir_mode *mode)
-{
-  type_primitive *res;
-
-  res = (type_primitive *) xmalloc (sizeof (type_primitive));
-  add_irp_type((type *) res);   /* Remember the new type global. */
-  res->kind = k_type_primitive;
-  res->name = name;
-  res->mode = mode;
-
-  res->visit = 0;
-
+/* create a new type primitive */
+type *new_type_primitive (ident *name, ir_mode *mode) {
+  type *res;
+  res = new_type(type_primitive, mode_p, name);
   return res;
 }
 
-/* manipulate fields of type_primitive */
-
-const char  *
-get_primitive_name  (type_primitive *primitive) {
+/* typecheck */
+bool  is_primitive_type  (type *primitive) {
   assert(primitive);
-  return ID_TO_STR(primitive->name);
-}
-
-
-ident *
-get_primitive_ident (type_primitive *primitive) {
-  assert(primitive);
-  return primitive->name;
-}
-/*
-void   set_primitive_name  (type_primitive *primitive, char *name);
-void   set_primitive_ident (type_primitive *primitive, ident* ident);
-*/
-
-inline ir_mode *
-get_primitive_mode (type_primitive *primitive) {
-  return primitive->mode;
-}
-
-inline void
-set_primitive_mode (type_primitive *primitive, ir_mode *mode) {
-  primitive->mode = mode;
-}
-
-
-
-
-/*******************************************************************/
-/**  To manage all different types the same                       **/
-/*******************************************************************/
-
-
-int
-is_type(void *thing) {
-  firm_kind kind;
-
-  kind = get_kind(thing);
-  if (   (kind == k_type_class)
-      || (kind == k_type_strct)
-      || (kind == k_type_method)
-      || (kind == k_type_union)
-      || (kind == k_type_array)
-      || (kind == k_type_enumeration)
-      || (kind == k_type_pointer)
-      || (kind == k_type_primitive))
-    return 1;
-  else
-    return 0;
-}
-
-int
-is_type_class(void *thing) {
-  if (get_kind(thing) == k_type_class) return 1;
-  else return 0;
-}
-
-int
-is_type_strct(void *thing) {
-  if (get_kind(thing) == k_type_strct) return 1;
-  else return 0;
-}
-
-int
-is_type_method(void *thing) {
-  if (get_kind(thing) == k_type_method) return 1;
-  else return 0;
-}
-
-int
-is_type_union(void *thing) {
-  if (get_kind(thing) == k_type_union) return 1;
-  else return 0;
-}
-
-int
-is_type_array(void *thing) {
-  if (get_kind(thing) == k_type_array) return 1;
-  else return 0;
-}
-
-int
-is_type_pointer(void *thing) {
-  if (get_kind(thing) == k_type_pointer) return 1;
-  else return 0;
-}
-
-int
-is_type_enumeration(void *thing) {
-  if (get_kind(thing) == k_type_enumeration) return 1;
-  else return 0;
-}
-
-int
-is_type_primitive(void *thing) {
-  if (get_kind(thing) == k_type_primitive) return 1;
-  else return 0;
+  if (primitive->type_op == type_primitive) return 1; else return 0;
 }

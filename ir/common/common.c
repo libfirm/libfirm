@@ -26,6 +26,8 @@ const char* print_firm_kind(void *firm_thing) {
   assert (firm_thing);
   switch (*(firm_kind *)firm_thing) {
     case k_entity: { return "k_enitity"; } break;
+    case k_type: { return "k_type"; } break;
+#if 0
     case k_type_class: { return "k_type_class"; } break;
     case k_type_strct: { return "k_type_strct:"; } break;
     case k_type_method: { return "k_type_method:"; } break;
@@ -34,6 +36,7 @@ const char* print_firm_kind(void *firm_thing) {
     case k_type_enumeration: { return "k_type_enumeration"; } break;
     case k_type_pointer: { return "k_type_pointer"; } break;
     case k_type_primitive: { return "k_type_primitive"; } break;
+#endif
     case k_ir_node: { return "k_ir_node"; } break;
   }
   return "";

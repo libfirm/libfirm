@@ -53,10 +53,10 @@ int
 main(void)
 {
   ir_graph *irg;
-  type_class *owner;
-  type_method *method;    /* the type of this method */
-  entity *ent;
-  ir_node *a, *b, *x, *y, *r;
+  type     *owner;
+  type     *method;    /* the type of this method */
+  entity   *ent;
+  ir_node  *a, *b, *x, *y, *r;
 
   printf("\nCreating an IR graph: MEMORY_EXAMPLE...\n");
 
@@ -67,7 +67,7 @@ main(void)
   /* a class to get started with, containing the main procedure */
   owner = new_type_class (id_from_str ("MEMORY_EXAMPLE", 14));
   method = new_type_method (id_from_str("main", 4), 0, 2);
-  ent = new_entity ((type *)owner, id_from_str ("main", 4), (type *)method);
+  ent = new_entity (owner, id_from_str ("main", 4), method);
 
   /* Generates start and end blocks and nodes and a first, initial block */
   irg = new_ir_graph (ent, 4);

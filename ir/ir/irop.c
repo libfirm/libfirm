@@ -96,7 +96,7 @@ init_op(void)
 
   op_Sel = new_ir_op (iro_Sel, id_from_str ("Sel", 3), sizeof (sel_attr), 1);
 
-  op_Call = new_ir_op (iro_Call, id_from_str ("Call", 4), sizeof (type_method *), 1);
+  op_Call = new_ir_op (iro_Call, id_from_str ("Call", 4), sizeof (type *), 1);
   op_Add = new_ir_op (iro_Add, id_from_str ("Add", 3), 0, 0);
   op_Minus = new_ir_op (iro_Minus, id_from_str ("Minus", 5), 0, 0);
   op_Sub = new_ir_op (iro_Sub, id_from_str ("Sub", 3), 0, 1);

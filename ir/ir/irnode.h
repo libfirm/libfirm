@@ -180,8 +180,8 @@ inline int      get_Call_arity (ir_node *node);
 /* inline void     set_Call_arity (ir_node *node, ir_node *arity); */
 inline ir_node *get_Call_param (ir_node *node, int pos);
 inline void     set_Call_param (ir_node *node, int pos, ir_node *param);
-inline type_method *get_Call_type (ir_node *node);
-inline void     set_Call_type (ir_node *node, type_method *type);
+inline type    *get_Call_type (ir_node *node);
+inline void     set_Call_type (ir_node *node, type *type);
 
 /* For unary and binary arithmetic operations the access to the
    operands can be factored out.  Left is the first, right the

@@ -12,12 +12,13 @@
 # include "mangle.h"
 # include <obstack.h>
 # include "obst.h"
-# include "entity.h"
 # include <stdlib.h>
-# include "ident_t.h"
+# include "misc.h"
 
 /* Make types visible to allow most efficient access */
 # include "entity_t.h"
+# include "type_t.h"
+# include "tpop_t.h"
 
 static struct obstack mangle_obst;
 
@@ -45,9 +46,10 @@ mangle_type (type *type)
   int len;
   ident *res;
 
-  assert (type->kind == k_type_class);
+  assert (type->kind == k_type);
+  assert (type->type_op->code == tpo_class);
 
-  xoprintf (&mangle_obst, "%I", type->clss.name);
+  xoprintf (&mangle_obst, "%I", type->name);
   len = obstack_object_size (&mangle_obst);
   cp = obstack_finish (&mangle_obst);
   res = id_from_str (cp, len);

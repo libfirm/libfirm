@@ -34,8 +34,8 @@ int
 main(void)
 {
   ir_graph *irg;
-  type_class *owner;
-  type_method *proc_main;
+  type *owner;
+  type *proc_main;
   entity *ent;
   ir_node *b, *x, *r, *t, *f;
 
@@ -57,7 +57,7 @@ main(void)
   proc_main = new_type_method(id_from_str(METHODNAME, strlen(METHODNAME)),
                               NRARGS, NRES);
   owner = new_type_class (id_from_str ("IF_WHILE_EXAMPLE", 16));
-  ent = new_entity ((type *)owner, id_from_str ("main", 4), (type *)proc_main);
+  ent = new_entity (owner, id_from_str ("main", 4), proc_main);
 
   /* Generates start and end blocks and nodes and a first, initial block */
   irg = new_ir_graph (ent, 4);

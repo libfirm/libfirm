@@ -23,11 +23,11 @@
 
 int main(int argc, char **argv)
 {
-  ir_graph *irg;          /* this variable contains the irgraph */
-  type_class *owner;      /* the class in which this method is defined */
-  type_method *method;    /* the type of this method */
-  entity *ent;            /* represents this method as entity of owner */
-  ir_node *x, *x_then, *arg1, *c2, *c10, *cmpGt, *cmpLt, *and, *f, *t, *b;
+  ir_graph *irg;       /* this variable contains the irgraph */
+  type     *owner;     /* the class in which this method is defined */
+  type     *method;    /* the type of this method */
+  entity   *ent;       /* represents this method as entity of owner */
+  ir_node  *x, *x_then, *arg1, *c2, *c10, *cmpGt, *cmpLt, *and, *f, *t, *b;
 
   printf("\nCreating an IR graph: COND_EXAMPLE...\n");
 
@@ -45,7 +45,7 @@ int main(int argc, char **argv)
 
   owner = new_type_class (id_from_str (CLASSNAME, strlen(CLASSNAME)));
   method = new_type_method (id_from_str("main", 4), 0, 2);
-  ent = new_entity ((type *)owner, id_from_str (ENTITYNAME, strlen(ENTITYNAME)), (type *)method);
+  ent = new_entity (owner, id_from_str (ENTITYNAME, strlen(ENTITYNAME)), method);
 
 
   /* Generates the basic graph for the method represented by entity ent, that

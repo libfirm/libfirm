@@ -29,7 +29,7 @@ extern ir_graph *current_ir_graph;
 
 /* Create a new ir graph to built ir for a procedure.
    ent is the entity representing this procedure, i.e., the type of the
-   entity must be type_method.  The constructor automatically sets the
+   entity must be of a method type.  The constructor automatically sets the
    field irg of the entity to the new ir graph.
    n_loc is the number of local variables in this procedure including
    the procedure parameters. */

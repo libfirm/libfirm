@@ -46,6 +46,7 @@
 #define METH_PAR_EDGE_ATTR   "label: \"param %d\" color: green"
 #define METH_RES_EDGE_ATTR   "label: \"res %d\" color: green"
 #define TYPE_SUPER_EDGE_ATTR "label: \"supertype\" color: blue"
+#define UNION_EDGE_ATTR      "label: \"component\" color: blue"
 #define PTR_PTS_TO_EDGE_ATTR "label: \"points to\" color:green"
 #define ARR_ELT_TYPE_EDGE_ATTR "label: \"arr elt\" color:green"
 
@@ -73,9 +74,9 @@ dump_node_opcode (ir_node *n)
     if (get_SymConst_kind(n) == linkage_ptr_info) {
       xfprintf (F, "%I", get_SymConst_ptrinfo(n));
     } else {
-      assert(get_kind(get_SymConst_type(n)) == k_type_class);
-      assert(get_class_ident((type_class *)get_SymConst_type(n)));
-      xfprintf (F, "%s ", id_to_str(get_class_ident((type_class *)get_SymConst_type(n))));
+      assert(get_kind(get_SymConst_type(n)) == k_type);
+      assert(get_type_nameid(get_SymConst_type(n)));
+      xfprintf (F, "%s ", id_to_str(get_type_nameid(get_SymConst_type(n))));
       if (get_SymConst_kind == type_tag)
 	xfprintf (F, "tag");
       else
@@ -317,10 +318,9 @@ dump_ir_node (ir_node *n)
     xfprintf (F, DEFAULT_NODE_ATTR);
     break;
   case iro_SymConst:
-    assert(get_kind(get_SymConst_type(n)) == k_type_class);
-    assert(get_class_ident((type_class *)get_SymConst_type(n)));
-    xfprintf (F, "\"%s ",
-	      id_to_str(get_class_ident((type_class *)get_SymConst_type(n))));
+    assert(get_kind(get_SymConst_type(n)) == k_type);
+    assert(get_type_nameid(get_SymConst_type(n)));
+    xfprintf (F, "\"%s ", get_type_name(get_SymConst_type(n)));
     switch (n->attr.i.num){
     case type_tag:
       xfprintf (F, "tag\" ");
@@ -497,73 +497,75 @@ dump_type_info (type_or_ent *tore, void *env) {
       xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
                 ENT_TYPE_EDGE_ATTR "}\n", tore, get_entity_type(ent));
     } break;
-  case k_type_class:
+  case k_type:
     {
-      type_class *type = (type_class *)tore;
-      xfprintf (F, "\"class %I\" " TYPE_CLASS_NODE_ATTR "}\n", get_class_ident(type));
-      for (i=0; i < get_class_n_supertype(type); i++)
-	xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-		  TYPE_SUPER_EDGE_ATTR "}\n",
-		  type, get_class_supertype(type, i));
-    } break;
-  case k_type_strct:
-    {
-      type_strct *type = (type_strct *)tore;
-      xfprintf (F, "\"strct %I\"}\n", get_strct_ident(type));
-      /* edges !!!??? */
-    } break;
-  case k_type_method:
-    {
-      type_method *type = (type_method *)tore;
-      xfprintf (F, "\"meth %I\" " TYPE_METH_NODE_ATTR "}\n", get_method_ident(type));
-      for (i = 0; i < get_method_arity(type); i++)
-	xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-		  METH_PAR_EDGE_ATTR "}\n",
-		  tore, get_method_param_type(type, i), i);
-      for (i = 0; i < get_method_n_res(type); i++)
-	xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-		  METH_RES_EDGE_ATTR "}\n",
-		  tore, get_method_res_type(type, i), i);
-    } break;
-  case k_type_union:
-    {
-      type_union *type = (type_union *)tore;
-      xfprintf (F, "\"union %I\"}\n", get_union_ident(type));
-      /* edges !!!??? */
-    } break;
-  case k_type_array:
-    {
-      type_array *type = (type_array *)tore;
-      xfprintf (F, "\"array %I\"}\n", get_array_ident(type));
-      xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-	        ARR_ELT_TYPE_EDGE_ATTR "}\n", tore, get_array_element_type(type), i);
-      /* edges !!!??? */
-    } break;
-  case k_type_enumeration:
-    {
-      type_enumeration *type = (type_enumeration *)tore;
-      xfprintf (F, "\"enum %I\"}\n", get_enumeration_ident(type));
-    } break;
-  case k_type_pointer:
-    {
-      type_pointer *type = (type_pointer *)tore;
-      xfprintf (F, "\"ptr %I\"}\n", get_pointer_ident(type));
-      xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-		PTR_PTS_TO_EDGE_ATTR "}\n", tore,
-		get_pointer_points_to_type(type), i);
-    } break;
-  case k_type_primitive:
-    {
-      type_primitive *type = (type_primitive *)tore;
-      xfprintf (F, "\"prim %I, mode %I\"}\n", get_primitive_ident(type),
-		get_mode_ident(get_primitive_mode(type)));
-    } break;
+      type *type = tore;
+      xfprintf (F, "\"%I %I", get_type_tpop_nameid(type), get_type_nameid(type));
+
+      switch (get_type_tpop_code(type)) {
+      case tpo_class:
+	{
+	  xfprintf (F, "\" " TYPE_CLASS_NODE_ATTR "}\n");
+	  for (i=0; i < get_class_n_supertype(type); i++)
+	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
+		      TYPE_SUPER_EDGE_ATTR "}\n",
+		      type, get_class_supertype(type, i));
+	} break;
+      case tpo_struct:
+	{
+	  xfprintf (F, "\"}\n");
+	} break;
+      case tpo_method:
+	{
+	  xfprintf (F, "\" " TYPE_METH_NODE_ATTR "}\n");
+	  for (i = 0; i < get_method_n_params(type); i++)
+	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
+		      METH_PAR_EDGE_ATTR "}\n",
+		      type, get_method_param_type(type, i), i);
+	  for (i = 0; i < get_method_n_res(type); i++)
+	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
+		      METH_RES_EDGE_ATTR "}\n",
+		      type, get_method_res_type(type, i), i);
+	} break;
+      case tpo_union:
+	{
+	  xfprintf (F, "\"}\n");
+	  for (i = 0; i < get_union_n_types(type); i++)
+	    xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
+		      "label: \"%I\"f" UNION_EDGE_ATTR "}\n",
+		      type, get_union_unioned_type(type, i), get_union_delim_nameid(type, i));
+	} break;
+      case tpo_array:
+	{
+	  xfprintf (F, "\"}\n");
+	  xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
+		    ARR_ELT_TYPE_EDGE_ATTR "}\n", type, get_array_element_type(type), i);
+	} break;
+      case tpo_enumeration:
+	{
+	  xfprintf (F, "\"}\n");
+	} break;
+      case tpo_pointer:
+	{
+	  xfprintf (F, "\"}\n");
+	  xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
+		    PTR_PTS_TO_EDGE_ATTR "}\n", type,
+		    get_pointer_points_to_type(type), i);
+	} break;
+      case tpo_primitive:
+	{
+	  xfprintf (F, "mode %I\"}\n", get_mode_ident(get_type_mode(type)));
+	} break;
+      default: break;
+      } /* switch type */
+
+    } break; /* case k_type */
   default:
     {
       xfprintf (F, "\" faulty type \"}\n");
       printf(" *** irdump,  %s(l.%i), faulty type.\n", __FUNCTION__, __LINE__);
     } break;
-  }
+  } /* switch kind_or_entity */
 }
 
 /************************************************************************/

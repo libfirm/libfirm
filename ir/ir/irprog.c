@@ -60,7 +60,7 @@ void set_irp_main_irg(ir_graph *main_irg) {
   irp->main_irg = main_irg;
 }
 
-type_class *get_glob_type(void) {
+type *get_glob_type(void) {
   assert(irp);
   return irp->glob_type;
 }

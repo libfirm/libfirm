@@ -1118,7 +1118,7 @@ ir_node *new_r_Sel    (ir_graph *irg, ir_node *block, ir_node *store,
 		       entity *ent);
 ir_node *new_r_Call   (ir_graph *irg, ir_node *block, ir_node *store,
 		       ir_node *callee, int arity, ir_node **in,
-		       type_method *type);
+		       type *type);
 ir_node *new_r_Add    (ir_graph *irg, ir_node *block,
 		       ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_r_Sub    (ir_graph *irg, ir_node *block,
@@ -1201,7 +1201,7 @@ ir_node *new_simpleSel (ir_node *store, ir_node *objptr, entity *ent);
 ir_node *new_Sel    (ir_node *store, ir_node *objptr, int arity, ir_node **in,
                      entity *ent);
 ir_node *new_Call   (ir_node *store, ir_node *callee, int arity, ir_node **in,
-		     type_method *type);
+		     type *type);
 ir_node *new_Add    (ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_Sub    (ir_node *op1, ir_node *op2, ir_mode *mode);
 ir_node *new_Minus  (ir_node *op,  ir_mode *mode);

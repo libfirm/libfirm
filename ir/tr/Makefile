@@ -22,7 +22,7 @@ X_INCLUDES  =
 SHELL       = /bin/sh
 MAKE        = /usr/bin/make
 
-DISTRIBMEMBERS	 = entity.m type.m typewalk.m
+DISTRIBMEMBERS	 = entity.m type.m typewalk.m tpop.m
 MEMBERS	 =  $(DISTRIBMEMBERS) mangle.m
 
 CFILES = $(MEMBERS:.m=.c)
@@ -31,7 +31,8 @@ HFILES = $(MEMBERS:.m=.h)
 HFILES +=  type_or_entity.h
 HFILES +=  common.h debug.h gmp.h host.h ident.h irgraph.h  \
            irgwalk.h irmode.h irnode.h irop.h label.h misc.h \
-           obst.h pset.h set.h tv.h xprintf.h xp_help.h entity_t.h
+           obst.h pset.h set.h tv.h xprintf.h xp_help.h entity_t.h \
+	   type_t.h tpop_t.h
 
 DISTRIB = $(DISTRIBMEMBERS:.m=.h)
 DISTRIB += type_or_entity.h

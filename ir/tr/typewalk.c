@@ -23,6 +23,7 @@
 
 /* Make types visible to allow most efficient access */
 # include "entity_t.h"
+#include "type_t.h"
 
 typedef struct type_walk_env {
   void *pre;
@@ -36,123 +37,95 @@ void type_walk_2(type_or_ent *tore,
 	       void (post)(type_or_ent*, void*),
 	       void *env)
 {
-  int i, visited = 0;
+  int i;
 
   /* marked? */
   switch (get_kind(tore)) {
   case k_entity:
-    if (((entity *)tore)->visit >= type_visited) visited = 1; break;
-  case k_type_class:
-    if (((type_class *)tore)->visit >= type_visited) visited = 1; break;
-  case k_type_strct:
-    if (((type_strct *)tore)->visit >= type_visited) visited = 1; break;
-  case k_type_method:
-    if (((type_method *)tore)->visit >= type_visited) visited = 1; break;
-  case k_type_union:
-    if (((type_union *)tore)->visit >= type_visited) visited = 1; break;
-  case k_type_array:
-    if (((type_array *)tore)->visit >= type_visited) visited = 1; break;
-  case k_type_enumeration:
-    if (((type_enumeration *)tore)->visit >= type_visited) visited = 1; break;
-  case k_type_pointer:
-    if (((type_pointer *)tore)->visit >= type_visited) visited = 1;  break;
-  case k_type_primitive:
-    if (((type_primitive *)tore)->visit >= type_visited) visited = 1;  break;
+    if (((entity *)tore)->visit >= type_visited) return; break;
+  case k_type:
+    if (((type *)tore)->visit >= type_visited) return; break;
   default:
     break;
   }
 
-  if (!visited) { /* not marked. */
+  /* execute pre method */
+  if(pre)
+    pre(tore, env);
 
-    /* execute pre method */
-    if(pre)
-      pre(tore, env);
+  /* iterate */
+  switch (get_kind(tore)) {
+  case k_entity:
+    {
 
-    /* iterate */
-    switch (get_kind(tore)) {
-    case k_entity:
-      {
-	entity *ent = (entity *)tore;
-	ent->visit = type_visited;
-	type_walk_2((type_or_ent *)get_entity_owner(ent), pre, post, env);
-	type_walk_2((type_or_ent *)get_entity_type(ent), pre, post, env);
-      }
-      break;
-    case k_type_class:
-      {
-	int i;
-	((type_class *)tore)->visit = type_visited;
-	/* CS */
-	for (i=0; i<get_class_n_member((type_class *)tore); i++)
-	  {
-	    type_walk_2((type_or_ent *)get_class_member((type_class *)tore, i),
-			pre, post, env);
-	  }
-	for (i=0; i<get_class_n_subtype((type_class *)tore); i++)
-	  {
-	    type_walk_2((type_or_ent *)get_class_subtype((type_class *)tore, i),
-			pre, post, env);
-	  }
-	for (i=0; i<get_class_n_supertype((type_class *)tore); i++)
-	  {
-	    type_walk_2((type_or_ent *)get_class_supertype((type_class *)tore, i),
-			pre, post, env);
-	  }
-      }
-      break;
-    case k_type_strct:
-      {
-	int i;
-
-	((type_strct *)tore)->visit = type_visited;
-	/* CS */
-	for (i=0; i<get_strct_n_member((type_strct *)tore); i++)
-	  {
-	    type_walk_2((type_or_ent *)get_strct_member((type_strct *)tore, i),
-			pre, post, env);
-	  }
-      }
-      break;
-    case k_type_method:
-      {
-	type_method *meth  = (type_method *)tore;
-	meth->visit = type_visited;
-	for (i = 0; i < get_method_arity(meth); i++)
-	  type_walk_2((type_or_ent *)get_method_param_type(meth, i), pre, post, env);
-	for (i = 0; i < get_method_n_res(meth); i++)
-	  type_walk_2((type_or_ent *)get_method_res_type(meth, i), pre, post, env);
-      }
-      break;
-    case k_type_union:
-      ((type_union *)tore)->visit = type_visited;
-      /* !!!!! */
-      break;
-    case k_type_array:
-      ((type_array *)tore)->visit = type_visited;
-      type_walk_2((type_or_ent *)get_array_element_type((type_array *)tore),
-		  pre, post, env);
-      break;
-    case k_type_enumeration:
-      ((type_enumeration *)tore)->visit = type_visited;
-      /* a leave */
-      break;
-    case k_type_pointer:
-      ((type_pointer *)tore)->visit = type_visited;
-      type_walk_2((type_or_ent *)get_pointer_points_to_type((type_pointer *)tore),
-		  pre, post, env);
-      break;
-    case k_type_primitive:
-      ((type_primitive *)tore)->visit = type_visited;
-      /* a leave. */
-      break;
-    default:
-      break;
+      entity *ent = (entity *)tore;
+      ent->visit = type_visited;
+      type_walk_2((type_or_ent *)get_entity_owner(ent), pre, post, env);
+      type_walk_2((type_or_ent *)get_entity_type(ent), pre, post, env);
     }
-
-    /* execute post method */
-    if(post)
-      post(tore, env);
+    break;
+  case k_type:
+    {
+      type *tp = (type *)tore;
+      mark_type_visited(tp);
+      switch (get_type_tpop_code(tp))
+	case tpo_class:
+	  {
+	    for (i=0; i<get_class_n_member(tp); i++)
+	      type_walk_2((type_or_ent *)get_class_member(tp, i), pre, post, env);
+	    for (i=0; i<get_class_n_subtype(tp); i++)
+	      type_walk_2((type_or_ent *)get_class_subtype(tp, i), pre, post, env);
+	    for (i=0; i<get_class_n_supertype(tp); i++)	  {
+	      type_walk_2((type_or_ent *)get_class_supertype(tp, i), pre, post, env);
+	    }
+	    break;
+	  case tpo_struct:
+	    {
+	      for (i=0; i<get_struct_n_member(tp); i++)
+		type_walk_2((type_or_ent *)get_struct_member(tp, i), pre, post, env);
+	    }
+	    break;
+	  case tpo_method:
+	    {
+	      for (i = 0; i < get_method_n_params(tp); i++)
+		type_walk_2((type_or_ent *)get_method_param_type(tp, i), pre, post, env);
+	      for (i = 0; i < get_method_n_res(tp); i++)
+		type_walk_2((type_or_ent *)get_method_res_type(tp, i), pre, post, env);
+	    }
+	    break;
+	  case tpo_union:
+	    {
+	      for (i = 0; i < get_union_n_types(tp); i++)
+		type_walk_2((type_or_ent *)get_union_unioned_type(tp, i), pre, post, env);
+	    }
+	    break;
+	  case tpo_array:
+	    type_walk_2((type_or_ent *)get_array_element_type(tp),
+			pre, post, env);
+	    break;
+	  case tpo_enumeration:
+	    /* a leave */
+	    break;
+	  case tpo_pointer:
+	    type_walk_2((type_or_ent *)get_pointer_points_to_type(tp),
+			pre, post, env);
+	    break;
+	  case tpo_primitive:
+	    /* a leave. */
+	    break;
+	  default:
+	    printf(" *** Faulty type! \n");
+	    break;
+	  }
+    } break; /* end case k_type */
+  default:
+    printf(" *** Faulty type or entity! \n");
+    break;
   }
+
+  /* execute post method */
+  if(post)
+    post(tore, env);
 
   return;
 }
@@ -160,33 +133,32 @@ void type_walk_2(type_or_ent *tore,
 void start_type_walk(ir_node *node, void *env) {
   void *pre  = ((type_walk_env *)env)->pre;
   void *post = ((type_walk_env *)env)->post;
-  void *envi  = ((type_walk_env *)env)->env;
+  void *envi = ((type_walk_env *)env)->env;
 
   assert(node);
 
-    switch (get_irn_opcode(node)) {  /* node label */
-    case iro_SymConst:
-      if (   (get_SymConst_kind(node) == type_tag)
-	  || (get_SymConst_kind(node) == size))
-	type_walk_2((type_or_ent *)get_SymConst_type(node), pre, post, envi);
-      break;
-    case iro_Sel:
-      type_walk_2((type_or_ent *)get_Sel_entity(node), pre, post, envi);
-      break;
-    case iro_Call:
-      type_walk_2((type_or_ent *)get_Call_type(node), pre, post, envi);
-      break;
-    case iro_Alloc:
-      type_walk_2((type_or_ent *)get_Alloc_type(node), pre, post, envi);
-      break;
-    case iro_Free:
-      printf("here in typewalk\n");
-      type_walk_2((type_or_ent *)get_Free_type(node), pre, post, envi);
-      break;
-  assert(node);
-    default:
-      break;
-    }
+  switch (get_irn_opcode(node)) {  /* node label */
+  case iro_SymConst:
+    if (   (get_SymConst_kind(node) == type_tag)
+	   || (get_SymConst_kind(node) == size))
+      type_walk_2((type_or_ent *)get_SymConst_type(node), pre, post, envi);
+    break;
+  case iro_Sel:
+    type_walk_2((type_or_ent *)get_Sel_entity(node), pre, post, envi);
+    break;
+  case iro_Call:
+    type_walk_2((type_or_ent *)get_Call_type(node), pre, post, envi);
+    break;
+  case iro_Alloc:
+    type_walk_2((type_or_ent *)get_Alloc_type(node), pre, post, envi);
+    break;
+  case iro_Free:
+    printf("here in typewalk\n");
+    type_walk_2((type_or_ent *)get_Free_type(node), pre, post, envi);
+    break;
+  default:
+    break;
+  }
 }
 
 void type_walk(void (pre)(type_or_ent*, void*),
@@ -218,6 +190,6 @@ void type_walk_irg (ir_graph *irg,
 
   type_walk_2((type_or_ent *)get_irg_ent(irg), pre, post, env);
 
-  /* @@@ free type_walk_env!! */
+  free(type_env);
   return;
 }

@@ -43,17 +43,17 @@ new_entity (type *owner, ident *name, type *type)
 
   res->visit = 0;
 
-  switch (get_kind(owner)) {
-  case k_type_class: {
-    add_class_member ((type_class *) owner, res);
+  switch (get_type_tpop_code(owner)) {
+  case tpo_class: {
+    add_class_member (owner, res);
   } break;
-  case k_type_strct: {
-    add_strct_member ((type_strct *) owner, res);
+  case tpo_struct: {
+    add_struct_member (owner, res);
   } break;
-  case k_type_union: {
+  case tpo_union: {
     /* not implemented */
   } break;
-  case k_type_method: {
+  case tpo_method: {
     /* not implemented */
   } break;
   default: ;
@@ -92,10 +92,10 @@ set_entity_owner (entity *ent, type *owner) {
 
 inline void   /* should this go into type.c? */
 assert_legal_owner_of_ent(type *owner) {
-  assert (owner->clss.kind   == k_type_class ||
-          owner->uni.kind    == k_type_union ||
-          owner->array.kind  == k_type_array ||
-          owner->method.kind == k_type_method );
+  assert (get_type_tpop_code(owner) == tpo_class ||
+          get_type_tpop_code(owner) == tpo_union ||
+          get_type_tpop_code(owner) == tpo_array ||
+          get_type_tpop_code(owner) == tpo_method );
 }
 
 inline ident *
@@ -134,7 +134,7 @@ set_entity_offset (entity *ent, int offset) {
 inline ir_graph *
 get_entity_irg(entity *ent) {
   assert (ent);
-  assert (get_kind(ent->type) == k_type_method);
+  assert (is_method_type(ent->type));
   return ent->irg;
 }
 
@@ -142,6 +142,6 @@ inline void
 set_entity_irg(entity *ent, ir_graph *irg) {
   assert (ent && ent->type);
   assert (irg);
-  assert (get_kind(ent->type) == k_type_method);
+  assert (is_method_type(ent->type));
   ent->irg = irg;
 }

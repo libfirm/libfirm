@@ -58,7 +58,8 @@ inline ident      *id_from_str (char *str, int len);
  * SYNOPSIS
  *  char *cp = id_to_str (ident *id);
  * FUNCTION
- *  Returns the string cp represented by id. This string cp is not Null terminated!
+ *  Returns the string cp represented by id. This string cp is not
+ *  Null terminated!
  * INPUTS
  *  id - the ident
  * RESULT

@@ -49,8 +49,8 @@
 int main(int argc, char **argv)
 {
   ir_graph *irg;          /* this variable contains the irgraph */
-  type_class *owner;      /* the class in which this method is defined */
-  type_method *proc_main; /* type information for the method main */
+  type *owner;      /* the class in which this method is defined */
+  type *proc_main; /* type information for the method main */
   entity *ent;            /* represents this method as entity of owner */
   ir_node *c1, *c2, *cond, *f, *t, *endBlock, *Block1, *jmp,
           *scndCondBlock, *Block2, *Block3, *x;
@@ -74,9 +74,9 @@ int main(int argc, char **argv)
   proc_main = new_type_method(id_from_str(METHODNAME, strlen(METHODNAME)),
 			      NRARGS, NRES);
   /** @@@ setting of arg/res types misses **/
-  ent = new_entity ((type *)owner,
+  ent = new_entity (owner,
                     id_from_str (METHODNAME, strlen(METHODNAME)),
-                    (type *)proc_main);
+                    proc_main);
 
 #define NUM_OF_LOCAL_VARS 2
 

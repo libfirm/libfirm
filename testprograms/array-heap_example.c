@@ -44,26 +44,26 @@ int
 main(void)
 {
   /* describes the method main */
-  type_class     *owner;
-  type_method    *proc_main;
-  entity         *proc_main_e;
+  type     *owner;
+  type     *proc_main;
+  entity   *proc_main_e;
 
   /* describes types defined by the language */
-  type_primitive *prim_t_int;
+  type     *prim_t_int;
 
   /* describes the array and its fields. */
-  type_array     *array_type;   /* the type information for the array */
-  entity         *array_ent;    /* the entity representing a field of the array */
+  type     *array_type;   /* the type information for the array */
+  entity   *array_ent;    /* the entity representing a field of the array */
 
   /* Needed while finding the element size.  */
-  type_primitive *elt_type;
-  ir_mode        *elt_type_mode;
-  int            size;
-  ir_node        *arr_size;
+  type     *elt_type;
+  ir_mode  *elt_type_mode;
+  int       size;
+  ir_node  *arr_size;
 
   /* holds the graph and nodes. */
-  ir_graph       *main_irg;
-  ir_node        *array, *array_ptr, *c3, *elt, *val, *x;
+  ir_graph *main_irg;
+  ir_node  *array, *array_ptr, *c3, *elt, *val, *x;
 
   init_firm ();
 
@@ -89,7 +89,7 @@ main(void)
 # define U_BOUND 9
   array_type = new_type_array(id_from_str("a", 1), N_DIMS);
   set_array_bounds(array_type, 1, L_BOUND, U_BOUND);
-  set_array_element_type(array_type, (union type*)prim_t_int);
+  set_array_element_type(array_type, prim_t_int);
   /* As the array is accessed by Sel nodes, we need information about
      the entity the node selects.  Entities of an array are it's elements
      which are, in this case, integers. */
@@ -100,9 +100,8 @@ main(void)
      are not modeled by dataflow edges need an explicit allocate node.
      If the variable shall be placed on the stack, set stack_alloc.  */
   /*   first compute size in bytes. */
-  elt_type = (type_primitive *)get_array_element_type(array_type);
-  if (! (elt_type->kind == k_type_primitive)) printf(" do something else\n");
-  elt_type_mode = get_primitive_mode(elt_type);
+  elt_type = get_array_element_type(array_type);
+  elt_type_mode = get_type_mode(elt_type);
   /*   better: read bounds out of array type information */
   size = (U_BOUND - L_BOUND + 1) * get_mode_size(elt_type_mode);
   /*   make constant representing the size */

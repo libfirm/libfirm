@@ -26,8 +26,8 @@ int
 main(void)
 {
   ir_graph *irg;
-  type_class *owner;
-  type_method *method;    /* the type of this method */
+  type *owner;
+  type *method;    /* the type of this method */
   entity *ent;
   ir_node *a, *b, *c, *d, *x;
 
@@ -42,7 +42,7 @@ main(void)
 
   owner = new_type_class (id_from_str ("CONST_EVAL_EXAMPLE", 18));
   method = new_type_method (id_from_str("main", 4), 0, 2);
-  ent = new_entity ((type *)owner, id_from_str ("main", 4), (type *)method);
+  ent = new_entity (owner, id_from_str ("main", 4), method);
 
   irg = new_ir_graph (ent, 4);
 

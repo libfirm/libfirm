@@ -30,13 +30,13 @@
 
 int main(int argc, char **argv)
 {
-  ir_graph *irg;          /* this variable contains the irgraph */
-  type_class *owner;      /* the class in which this method is defined */
-  type_method *proc_main; /* type information for the method main */
-  type_primitive *prim_t_int;  /* describes int type defined by the language */
-  entity *main_ent;       /* represents this method as entity of owner */
-  entity *i_ent;          /* the entity representing the global variable i */
-  ir_node *x, *i_ptr, *store;
+  ir_graph *irg;        /* this variable contains the irgraph */
+  type     *owner;      /* the class in which this method is defined */
+  type     *proc_main;  /* type information for the method main */
+  type     *prim_t_int; /* describes int type defined by the language */
+  entity   *main_ent;   /* represents this method as entity of owner */
+  entity   *i_ent;      /* the entity representing the global variable i */
+  ir_node  *x, *i_ptr, *store;
 
   printf("\nCreating an IR graph: GLOBAL_VAR ...\n");
 
@@ -63,9 +63,9 @@ int main(int argc, char **argv)
   owner = get_glob_type();
   proc_main = new_type_method(id_from_str(METHODNAME, strlen(METHODNAME)),
                               NRARGS, NRES);
-  main_ent = new_entity ((type *)owner,
+  main_ent = new_entity (owner,
 			 id_from_str (METHODNAME, strlen(METHODNAME)),
-			 (type *)proc_main);
+			 proc_main);
 
   /* Generates the basic graph for the method represented by entity main_ent, that
    * is, generates start and end blocks and nodes and a first, initial block.
@@ -74,9 +74,9 @@ int main(int argc, char **argv)
 #define NUM_OF_LOCAL_VARS 0
 
   /* Generate the entities for the global variables. */
-  i_ent = new_entity ((type *)get_glob_type(),
+  i_ent = new_entity (get_glob_type(),
 		      id_from_str ("i", strlen("i")),
-		      (type *)prim_t_int);
+		      prim_t_int);
 
   irg = new_ir_graph (main_ent, NUM_OF_LOCAL_VARS);
 

@@ -40,6 +40,11 @@
 /* a list of firm kinds */
 typedef enum {
   k_entity,
+  k_type,
+  k_ir_node
+} firm_kind;
+
+#if 0
   k_type_class,
   k_type_strct,
   k_type_method,
@@ -48,8 +53,7 @@ typedef enum {
   k_type_enumeration,
   k_type_pointer,
   k_type_primitive,
-  k_ir_node
-} firm_kind;
+#endif
 
 /* returns the kind of the thing */
 firm_kind get_kind(void *firm_thing);

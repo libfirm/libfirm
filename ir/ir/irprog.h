@@ -51,7 +51,7 @@ type *get_irp_type(int pos);
 void  set_irp_type(int pos, type *typ);
 
 /** Functions to access the fields of ir_prog **/
-type_class *get_glob_type(void);
+type *get_glob_type(void);
 
 #ifdef DEBUG_libfirm
 /* Returns a new, unique number to number nodes or the like. */

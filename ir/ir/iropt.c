@@ -768,8 +768,7 @@ vt_cmp (const void *elt, const void *key)
     return (get_irn_symconst_attr(a).num != get_irn_symconst_attr(b).num)
       || (get_irn_symconst_attr(a).tori.typ != get_irn_symconst_attr(b).tori.typ);
   case iro_Call:
-    return (get_irn_call_attr(a)->kind != get_irn_call_attr(b)->kind)
-      || (get_irn_call_attr(a)->arity != get_irn_call_attr(b)->arity);
+    return (get_irn_call_attr(a) != get_irn_call_attr(b));
   case iro_Sel:
     return (get_irn_sel_attr(a).ent->kind != get_irn_sel_attr(b).ent->kind)
       || (get_irn_sel_attr(a).ent->name != get_irn_sel_attr(b).ent->name)

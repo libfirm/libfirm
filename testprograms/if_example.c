@@ -27,10 +27,10 @@ int
 main(void)
 {
   ir_graph *irg;
-  type_class *owner;
+  type *owner;
   entity *ent;
-  type_method *proc_main; /* type information for the method main */
-  type_primitive *typ;
+  type *proc_main; /* type information for the method main */
+  type *typ;
   ir_node *x, *r, *t, *f, *a, *cmp;
   int a_pos, b_pos;
 
@@ -46,14 +46,14 @@ main(void)
   owner = get_glob_type();
   proc_main = new_type_method(id_from_str(METHODNAME, strlen(METHODNAME)),
 			      NRARGS, NRES);
-  ent = new_entity ((type *)owner,
+  ent = new_entity (owner,
                     id_from_str (METHODNAME, strlen(METHODNAME)),
-                    (type *)proc_main);
+                    proc_main);
 
 #define RES_NAME "int"
   typ = new_type_primitive(id_from_str(RES_NAME, strlen(RES_NAME)), mode_i);
-  set_method_param_type(proc_main, 0, (type*)typ);
-  set_method_res_type(proc_main, 0, (type*)typ);
+  set_method_param_type(proc_main, 0, typ);
+  set_method_res_type(proc_main, 0, typ);
 
   /* Generates start and end blocks and nodes and a first, initial block */
   irg = new_ir_graph (ent, 2);

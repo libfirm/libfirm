@@ -36,11 +36,11 @@
 int
 main(void)
 {
-  type_primitive *prim_t_int;
-  type_class   *owner, *class_prima, *class_langint;
-  type_method  *proc_main, *proc_set, *proc_c;
-  type_pointer *class_p_ptr;
-  entity       *proc_main_e, *proc_set_e, *proc_c_e, *a_e;
+  type     *prim_t_int;
+  type     *owner, *class_prima, *class_langint;
+  type     *proc_main, *proc_set, *proc_c;
+  type     *class_p_ptr;
+  entity   *proc_main_e, *proc_set_e, *proc_c_e, *a_e;
 
   ir_graph     *main_irg, *set_a_irg, *c_irg;
   ir_node      *c2, *c5, *obj_o, *obj_size, *proc_ptr, *call, *x;
@@ -62,10 +62,9 @@ main(void)
   printf("\nCreating an IR graph: OO_PROGRAM_EXAMPLE...\n");
   owner = get_glob_type();
   proc_main = new_type_method(id_from_str("main", 4), 0, 1);
-  set_method_res_type(proc_main, 0, (type *)prim_t_int);
+  set_method_res_type(proc_main, 0, prim_t_int);
 
-  proc_main_e = new_entity ((type *)owner, id_from_str ("main", 4),
-                            (type *)proc_main);
+  proc_main_e = new_entity (owner, id_from_str ("main", 4), proc_main);
   main_irg = new_ir_graph (proc_main_e, 4);
   /* Remark that this irg is the main routine of the program. */
   set_irp_main_irg(main_irg);
@@ -77,19 +76,18 @@ main(void)
   /* allocate the defined object and generate the type information */
   class_prima = new_type_class(id_from_str ("PRIMA", 5));
   obj_size = new_SymConst((type_or_id_p)class_prima, size);
-  obj_o    = new_Alloc(get_store(), obj_size, (type *)class_prima, heap_alloc);
+  obj_o    = new_Alloc(get_store(), obj_size, class_prima, heap_alloc);
   set_store(new_Proj(obj_o, mode_M, 0));  /* make the changed memory visible */
   obj_o    = new_Proj(obj_o, mode_p, 1);  /* remember the pointer to the object */
   /* we need type information for pointers to the class: */
   class_p_ptr = new_type_pointer (id_from_str ("class_prima_ptr", 15),
-				  (type *)class_prima);
+				  class_prima);
 
   /* get the pointer to the procedure from the class type */
   proc_set = new_type_method(id_from_str("set_a", 5), 2, 0);
-  set_method_param_type(proc_set, 0, (type *)class_p_ptr);
-  set_method_param_type(proc_set, 1, (type *)prim_t_int);
-  proc_set_e = new_entity((type *)class_prima, id_from_str ("set_a", 5),
-			  (type*)proc_set);
+  set_method_param_type(proc_set, 0, class_p_ptr);
+  set_method_param_type(proc_set, 1, prim_t_int);
+  proc_set_e = new_entity(class_prima, id_from_str ("set_a", 5), proc_set);
   proc_ptr = new_simpleSel(get_store(),  /* The memory the object is allocated in */
    		      obj_o,             /* The pointer to the object */
 		      proc_set_e );      /* The feature to select */
@@ -106,11 +104,10 @@ main(void)
 
   /* get the pointer to the procedure from the class type */
   proc_c   = new_type_method(id_from_str("c", 1 ), 2, 1);
-  set_method_param_type(proc_c, 0, (type *)class_p_ptr);
-  set_method_param_type(proc_c, 1, (type *)prim_t_int);
-  set_method_res_type(proc_c, 0, (type *)prim_t_int);
-  proc_c_e = new_entity((type *)class_prima, id_from_str ("c", 1),
-			(type*)proc_c);
+  set_method_param_type(proc_c, 0, class_p_ptr);
+  set_method_param_type(proc_c, 1, prim_t_int);
+  set_method_res_type(proc_c, 0, prim_t_int);
+  proc_c_e = new_entity(class_prima, id_from_str ("c", 1), proc_c);
   proc_ptr = new_simpleSel(get_store(), obj_o, proc_c_e);
 
   /* call procedure c, first built array with parameters */
@@ -151,8 +148,8 @@ main(void)
   par1 = new_Proj(get_irg_args(set_a_irg), mode_I, 1);
   /* Create and select the entity to set */
   class_langint = new_type_class(id_from_str ("Int", 3));
-  a_e = new_entity((type *)class_prima, id_from_str ("a", 1),
-		   (type*)class_langint);
+  a_e = new_entity(class_prima, id_from_str ("a", 1),
+		   class_langint);
   a_ptr = new_simpleSel(get_store(), self, a_e);
   /* perform the assignment */
   set_store(new_Proj(new_Store(get_store(), a_ptr, par1), mode_M, 0));

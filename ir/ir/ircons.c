@@ -404,7 +404,7 @@ new_r_Cond (ir_graph *irg, ir_node *block, ir_node *c)
 
 ir_node *
 new_r_Call (ir_graph *irg, ir_node *block, ir_node *store,
-	    ir_node *callee, int arity, ir_node **in, type_method *type)
+	    ir_node *callee, int arity, ir_node **in, type *type)
 {
   ir_node **r_in;
   ir_node *res;
@@ -418,6 +418,7 @@ new_r_Call (ir_graph *irg, ir_node *block, ir_node *store,
 
   res = new_ir_node (irg, block, op_Call, mode_T, r_arity, r_in);
 
+  assert(is_method_type(type));
   set_Call_type(res, type);
   res = optimize (res);
   irn_vrfy (res);
@@ -1433,7 +1434,7 @@ new_Cond (ir_node *c)
 
 ir_node *
 new_Call (ir_node *store, ir_node *callee, int arity, ir_node **in,
-	  type_method *type)
+	  type *type)
 {
   return new_r_Call (current_ir_graph, current_ir_graph->current_block,
 		     store, callee, arity, in, type);

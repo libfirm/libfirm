@@ -23,12 +23,12 @@
 
 int main(int argc, char **argv)
 {
-  ir_graph *irg;          /* this variable contains the irgraph */
-  type_class *owner;      /* the class in which this method is defined */
-  type_method *proc_main; /* type information for the method main */
-  type_method *proc_called; /* type information for called method f */
-  entity *ent;            /* represents this method as entity of owner */
-  ir_node *x, *const_str, *proc_ptr, *call;
+  ir_graph *irg;         /* this variable contains the irgraph */
+  type     *owner;       /* the class in which this method is defined */
+  type     *proc_main;   /* type information for the method main */
+  type     *proc_called; /* type information for called method f */
+  entity   *ent;         /* represents this method as entity of owner */
+  ir_node  *x, *const_str, *proc_ptr, *call;
 
   printf("\nCreating an IR graph: CALL_STR_EXAMPLE...\n");
 
@@ -59,8 +59,8 @@ int main(int argc, char **argv)
 
   /* Make the entity for main needed for a correct  ir_graph.  */
 #define ENTITYNAME "main"
-  ent = new_entity ((type *)owner, id_from_str (ENTITYNAME, strlen(ENTITYNAME)),
-                    (type *)proc_main);
+  ent = new_entity (owner, id_from_str (ENTITYNAME, strlen(ENTITYNAME)),
+                    proc_main);
 
   /* Generates the basic graph for the method represented by entity ent, that
    * is, generates start and end blocks and nodes and a first, initial block.

@@ -45,11 +45,11 @@
 
 int main(int argc, char **argv)
 {
-  ir_graph *irg;          /* this variable contains the irgraph */
-  type_class *owner;      /* the class in which this method is defined */
-  type_method *proc_main; /* typeinformation for the method main */
-  entity *ent;            /* represents this method as entity of owner */
-  ir_node *expr, *c1, *c2, *cond, *f, *t, *jmp, *x;
+  ir_graph *irg;        /* this variable contains the irgraph */
+  type     *owner;      /* the class in which this method is defined */
+  type     *proc_main;  /* typeinformation for the method main */
+  entity   *ent;        /* represents this method as entity of owner */
+  ir_node  *expr, *c1, *c2, *cond, *f, *t, *jmp, *x;
 
   printf("\nCreating an IR graph: IRR_CF...\n");
 

@@ -37,9 +37,9 @@
 int main(int argc, char **argv)
 {
   ident *ii, *ci, *di, *ei, *m1i, *m2i, *inti, *ai; /* suffix i names identifiers */
-  type_class  *it, *ct, *dt, *et;                   /*        t names types       */
-  type_method *m1t, *m2t;
-  type_primitive *intt;
+  type  *it, *ct, *dt, *et;                   /*        t names types       */
+  type  *m1t, *m2t;
+  type  *intt;
   entity *c_m1e, *c_m2e, *e_m2e, *d_ae, *e_ae;        /*        e names entities    */
 
   ir_node *x;
@@ -72,7 +72,7 @@ int main(int argc, char **argv)
 
   /** add structure to type graph **/
   /* parameters of methods */
-  set_method_param_type(m2t, 0, (type *)intt);
+  set_method_param_type(m2t, 0, intt);
   /* inheritance */
   add_class_subtype(it, ct);
   add_class_subtype(ct, et);
@@ -82,11 +82,11 @@ int main(int argc, char **argv)
   add_class_supertype(et, dt);
 
   /** make entities **/
-  c_m1e = new_entity((type *)ct, m1i, (type *)m1t);
-  c_m2e = new_entity((type *)ct, m2i, (type *)m2t);
-  e_m2e = new_entity((type *)et, m2i, (type *)m2t);
-  d_ae = new_entity((type *)dt, ai, (type *)intt);
-  e_ae = new_entity((type *)et, ai, (type *)intt);
+  c_m1e = new_entity(ct, m1i, m1t);
+  c_m2e = new_entity(ct, m2i, m2t);
+  e_m2e = new_entity(et, m2i, m2t);
+  d_ae  = new_entity(dt, ai, intt);
+  e_ae  = new_entity(et, ai, intt);
 
   printf("Done building the graph.  Dumping it.\n");
   dump_all_types();
