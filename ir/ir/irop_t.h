@@ -102,6 +102,24 @@ typedef void (*copy_attr_func)(const ir_node *old_node, ir_node *new_node);
  */
 typedef type *(*get_type_func)(ir_node *self);
 
+/**
+ * The verify_node operation.
+ * Return non-zero if the node verification is ok, else 0.
+ * Depending on the node verification settings, may even assert.
+ *
+ * @see do_node_verification()
+ */
+typedef int (*verify_node_func)(ir_node *self, ir_graph *irg);
+
+/**
+ * The verify_node operation for Proj(X).
+ * Return non-zero if the node verification is ok, else 0.
+ * Depending on the node verification settings, may even assert.
+ *
+ * @see do_node_verification()
+ */
+typedef int (*verify_proj_node_func)(ir_node *self, ir_node *proj);
+
 /** The type of an ir_op. */
 struct ir_op {
   opcode code;            /**< the unique opcode of the op */
@@ -120,6 +138,8 @@ struct ir_op {
   reassociate_func      reassociate;            /**< reassociate a tree */
   copy_attr_func        copy_attr;              /**< copy node attributes */
   get_type_func         get_type;               /**< return the type of a node */
+  verify_node_func      verify_node;            /**< verify the node */
+  verify_proj_node_func verify_proj_node;       /**< verify the Proj node */
 };
 
 /**

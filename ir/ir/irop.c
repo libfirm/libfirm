@@ -23,6 +23,7 @@
 # include "irhooks.h"
 
 # include "iropt_t.h"             /* for firm_set_default_operations */
+# include "irvrfy_t.h"
 
 # include "xmalloc.h"
 
@@ -148,6 +149,7 @@ new_ir_op(opcode code, const char *name, op_pin_state p, unsigned flags, op_arit
 
   firm_set_default_operations(res);
   firm_set_default_copy_attr(res);
+  firm_set_default_verifyer(res);
 
   hook_new_ir_op(res);
   return res;
