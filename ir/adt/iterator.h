@@ -7,7 +7,7 @@
 
 /**
  * Check, if some memory object appears to be an iterator.
- * @param ptr SOme memory.
+ * @param ptr Some memory.
  * @return 1, if that memory area appears to be an iterator, 0 if not.
  */
 int is_iterator(const void *ptr);
