@@ -84,7 +84,8 @@ struct ir_graph {
   struct Phi_in_stack *Phi_in_stack; /**< needed for automatic Phi construction */
 #endif
   int n_loc;                         /**< number of local variable in this
-                    procedure including procedure parameters. */
+                                          procedure including procedure parameters. */
+  void **loc_descriptions;           /**< storage for local variable desriptions */
 
   /* -- Fields for optimizations / analysis information -- */
   pset *value_table;                 /**< hash table for global value numbering (cse)
