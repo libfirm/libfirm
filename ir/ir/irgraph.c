@@ -138,7 +138,6 @@ new_ir_graph (entity *ent, int n_loc)
   res->start_block = new_immBlock();
   res->start   = new_Start();
   res->bad     = new_ir_node(NULL, res, res->start_block, op_Bad, mode_T, 0, NULL);
-  /* res->unknown = new_ir_node (NULL, res, res->start_block, op_Unknown, mode_T, 0, NULL); */
 
   /* Proj results of start node */
   projX            = new_Proj (res->start, mode_X, pn_Start_X_initial_exec);
@@ -180,7 +179,7 @@ ir_graph *new_const_code_irg(void) {
   stat_new_graph(res, NULL);
 
   current_ir_graph = res;
-  res->n_loc = 1;      /* Only the memory. */
+  res->n_loc = 1;       /* Only the memory. */
   res->visited = 0;     /* visited flag, for the ir walker */
   res->block_visited=0; /* visited flag, for the 'block'-walker */
 #if USE_EXPLICIT_PHI_IN_STACK
@@ -196,21 +195,23 @@ ir_graph *new_const_code_irg(void) {
                        iropt.c */
   res->ent = NULL;
   res->frame_type  = NULL;
+  res->initial_mem = new_Proj (res->start, mode_M, pn_Start_M);
   res->start_block = new_immBlock ();
   res->end_block  = new_immBlock ();
   res->end        = new_End ();
   res->end_reg    = res->end;
   res->end_except = res->end;
-  mature_immBlock(get_cur_block());
+  mature_immBlock(get_cur_block());  /* mature the end block */
   res->bad = new_ir_node (NULL, res, res->start_block, op_Bad, mode_T, 0, NULL);
   res->start   = new_Start ();
 
   /* Proj results of start node */
   projX        = new_Proj (res->start, mode_X, pn_Start_X_initial_exec);
-  add_immBlock_pred(res->start_block, projX);
-  mature_immBlock (res->current_block);
+  add_immBlock_pred (res->start_block, projX);
+  mature_immBlock   (res->start_block);  /* mature the start block */
+
   add_immBlock_pred (new_immBlock (), projX);
-  mature_immBlock(get_cur_block());
+  mature_immBlock   (get_cur_block());   /* mature the 'body' block for expressions */
   /* Set the visited flag high enough that the block will never be visited. */
   set_irn_visited(get_cur_block(), -1);
   set_Block_block_visited(get_cur_block(), -1);
@@ -233,6 +234,7 @@ void  del_identities (pset *value_table);
    Does not free types, entities or modes that are used only by this
    graph, nor the entity standing for this graph. */
 void free_ir_graph (ir_graph *irg) {
+
   stat_free_graph(irg);
   if (irg->outs_state != outs_none) free_outs(irg);
   if (irg->frame_type)  free_type(irg->frame_type);
