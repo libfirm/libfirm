@@ -4,18 +4,20 @@ layoutalgorithm: mindepth
 manhattan_edges: yes
 port_sharing: no
 orientation: bottom_to_top
-classname 1: "Data"
-classname 2: "Block"
-classname 13:"Control Flow"
-classname 14:"Memory"
-classname 15:"Dominators"
-classname 3: "Entity type"
-classname 4: "Entity owner"
-classname 5: "Method Param"
-classname 6: "Method Res"
-classname 7: "Super"
-classname 8: "Union"
-classname 9: "Points-to"
+classname 1:  "intrablock Data"
+classname 16: "interblock Data"
+classname 2:  "Block"
+classname 13: "Control Flow"
+classname 14: "intrablock Memory"
+classname 17: "interblock Memory"
+classname 15: "Dominators"
+classname 3:  "Entity type"
+classname 4:  "Entity owner"
+classname 5:  "Method Param"
+classname 6:  "Method Res"
+classname 7:  "Super"
+classname 8:  "Union"
+classname 9:  "Points-to"
 classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
@@ -24,7 +26,7 @@ infoname 2: "Verification errors"
 
 graph: { title: "g45" label: "CALL_STR_EXAMPLE_main" status:clustered color:white
 graph: { title: "n56"  label: "Block 56" status:clustered color:yellow
-edge: {sourcename: "n56" targetname: "n57" label: "0" class:13 color:red}
+edge: {sourcename: "n56" targetname: "n57" label: "0" class:13 priority:60 color:red}
 node: {title: "n55" label: "End  55"  info1: "visited: 6
 irg:     CALL_STR_EXAMPLE_main
 arity: 0
@@ -32,36 +34,36 @@ arity: 0
 }
 
 graph: { title: "n58"  label: "Block 58" status:clustered color:yellow
-edge: {sourcename: "n58" targetname: "n59" label: "0" class:13 color:red}
+edge: {sourcename: "n58" targetname: "n59" label: "0" class:13 priority:60 color:red}
 node: {title: "n57" label: "Return  57"  info1: "visited: 6
 irg:     CALL_STR_EXAMPLE_main
 arity: 1
 return in method of type CALL_STR_EXAMPLE_main
 " info2: "mymode == mode_X && Result X"}
-edge: {sourcename: "n57" targetname: "n62" label: "0" class:14 color:blue}
+edge: {sourcename: "n57" targetname: "n62" label: "0" class:14 priority:50 color:blue}
 node: {title: "n62" label: "ProjM 0 62"  info1: "visited: 6
 irg:     CALL_STR_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n62" targetname: "n63" label: "0" class:14 color:blue}
+edge: {sourcename: "n62" targetname: "n63" label: "0" class:17 priority:10 color:blue}
 node: {title: "n63" label: "Call  63"  info1: "visited: 6
 irg:     CALL_STR_EXAMPLE_main
 arity: 3
 calling method of type f
   param 0 type: ptr_to_string
 " info2: "get_Call_n_params(n) == get_method_n_params(mt) && Number of args for Call doesn't match number of args in non variadic type."}
-edge: {sourcename: "n63" targetname: "n66" label: "0" class:14 color:blue}
-edge: {sourcename: "n63" targetname: "n65" label: "1" }
-edge: {sourcename: "n63" targetname: "n64" label: "2" }
+edge: {sourcename: "n63" targetname: "n66" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n63" targetname: "n65" label: "1" class:16 priority:10}
+edge: {sourcename: "n63" targetname: "n64" label: "2" class:16 priority:10}
 }
 
 graph: { title: "n60"  label: "Block 60" status:clustered color:yellow
-edge: {sourcename: "n60" targetname: "n59" label: "0" class:13 color:red}
+edge: {sourcename: "n60" targetname: "n59" label: "0" class:13 priority:60 color:red}
 node: {title: "n66" label: "ProjM 1 66"  info1: "visited: 6
 irg:     CALL_STR_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n66" targetname: "n61" label: "0" class:14 color:blue}
+edge: {sourcename: "n66" targetname: "n61" label: "0" class:17 priority:10 color:blue}
 node: {title: "n65" label: "SymC f  65"  info1: "visited: 6
 irg:     CALL_STR_EXAMPLE_main
 arity: 0
@@ -75,7 +77,7 @@ node: {title: "n59" label: "ProjX 0 59"  info1: "visited: 6
 irg:     CALL_STR_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n59" targetname: "n61" label: "0" class:13 color:red}
+edge: {sourcename: "n59" targetname: "n61" label: "0" class:13 priority:60 color:red}
 node: {title: "n61" label: "Start  61"  info1: "visited: 6
 irg:     CALL_STR_EXAMPLE_main
 arity: 0

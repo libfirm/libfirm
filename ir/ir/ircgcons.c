@@ -21,10 +21,27 @@
 #include "array.h"
 #include "irprog.h"
 #include "irnode_t.h"
+#include "irprog_t.h"
 #include "ircons.h"
 #include "irgmod.h"
 #include "irgwalk.h"
 #include "irflag_t.h"
+
+
+/* Return the current state of the interprocedural view. */
+ip_view_state get_irp_ip_view_state(void) {
+  return irp->ip_view;
+}
+
+/* Set the current state of the interprocedural view. */
+static void set_irp_ip_view(ip_view_state state) {
+  irp->ip_view = state;
+}
+
+/* Set the state of the interprocedural view to invalid. */
+void set_irp_ip_view_invalid(void) {
+  set_irp_ip_view(ip_view_invalid);
+}
 
 
 /*  # define CATE_jni */
@@ -765,6 +782,10 @@ static void construct_call(ir_node * call) {
 void cg_construct(int arr_len, entity ** free_methods_arr) {
   int i;
 
+  if (get_irp_ip_view_state() == ip_view_valid) return;
+  if (get_irp_ip_view_state() == ip_view_invalid) cg_destruct();
+  set_irp_ip_view(ip_view_valid);
+
   collect_phicallproj();
 
   /* count callers */
@@ -832,13 +853,16 @@ static void destruct_walker(ir_node * node, void * env) {
 
 void cg_destruct(void) {
   int i;
-  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-    ir_graph * irg = get_irp_irg(i);
-    irg_walk_graph(irg, destruct_walker, clear_link, NULL);
-    set_irg_frame(irg, skip_nop(get_irg_frame(irg)));
-    set_irg_globals(irg, skip_nop(get_irg_globals(irg)));
-    set_irg_callee_info_state(irg, irg_callee_info_none);
-    set_irg_end_reg(irg, get_irg_end(irg));
-    set_irg_end_except(irg, get_irg_end(irg));
+  if (get_irp_ip_view_state() != ip_view_no) {
+    for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+      ir_graph * irg = get_irp_irg(i);
+      irg_walk_graph(irg, destruct_walker, clear_link, NULL);
+      set_irg_frame(irg, skip_nop(get_irg_frame(irg)));
+      set_irg_globals(irg, skip_nop(get_irg_globals(irg)));
+      set_irg_callee_info_state(irg, irg_callee_info_none);
+      set_irg_end_reg(irg, get_irg_end(irg));
+      set_irg_end_except(irg, get_irg_end(irg));
+    }
+    set_irp_ip_view(ip_view_no);
   }
 }

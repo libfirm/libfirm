@@ -44,6 +44,7 @@ print OUT "\n#include \"firm_typedefs.h\"\n\n";
 print TDF "#define INLINE\n";
 print TDF "#define FILE int *\n";
 print TDF "#ifndef MYTYPEDEFS\n#define MYTYPEDEFS\n";
+#print TDF "#undef __cplusplus\n";
 print TDF "typedef unsigned long size_t;\n";
 #print TDF "typedef enum { false = 0, true = 1 } bool;\n";  geht nicht, false und true JAVA Schluesselwoerter
 print TDF "typedef int bool;\n";
@@ -98,6 +99,8 @@ foreach $line (@lines) {
 		$guardedtypedef = 0;
 	    }
 	}
+    } elsif ($line =~ /extern "C"/) {
+	print OUT "/* extern C */ {";
     } else {
 	print OUT "$line";
 	$scndlastline = $lastline;

@@ -196,9 +196,8 @@ void compute_doms(ir_graph *irg) {
   if (current_ir_graph->outs_state != outs_consistent)
     compute_outs(current_ir_graph);
 
-/**
-      this with a standard walker as passing the parent to the sons isn't
-      simple. **/
+  /* this with a standard walker as passing the parent to the sons isn't
+     simple. */
   used = 0;
   inc_irg_block_visited(current_ir_graph);
   init_tmp_dom_info(get_irg_start_block(current_ir_graph), NULL, tdi_list, &used);

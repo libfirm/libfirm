@@ -19,12 +19,17 @@
 *
 * This file defines a construct that keeps all information about a
 * program:
+*   - A reference point to the method to be executed on program start.
 *   - A list of all procedures.
 *   - A list of all types.
-*   - A global type that can be thought of as a god-class containing all
-*     global variables and procedures.  This is not the base class of
+*   - A global type that contais all global variables and procedures that do
+*     not belong to a class.  This type represents the data segment of the
+*     program.  It is not the base class of
 *     all classes in a class hierarchy (as, e.g., "object" in java).
-*   - (An obstack containing global things, e.g., the above mentioned lists.)
+*   - A degenerated graph that contains constant expressions.
+*   - interprocedural outs state.
+*   - a flag indicating validity of the interprocedural representation.
+*   - the output file name
 */
 
 # ifndef _IRPROG_H_
@@ -32,6 +37,7 @@
 
 # include "irnode.h"
 # include "type.h"
+
 
 /**
  * Datastructure that holds central information about a program
@@ -128,7 +134,6 @@ const char  *get_irp_prog_name (void);
 
 /**
  *   Returns an irgraph that only contains constant
- *
  *   expressions for constant entities.
  *   Do not use any access function for this graph, do not generate code
  *   for this graph.  This graph contains only one block.  The constant
@@ -138,8 +143,10 @@ const char  *get_irp_prog_name (void);
 ir_graph *get_const_code_irg(void);
 
 irg_outs_state get_irp_ip_outs_state(void);
-void set_irp_ip_outs_inconsistent(void);
-void      set_irp_ip_outedges(ir_node ** ip_outedges);
-ir_node** get_irp_ip_outedges(void);
+void           set_irp_ip_outs_inconsistent(void);
+
+/* @@@ Must this be global visible? */
+void           set_irp_ip_outedges(ir_node ** ip_outedges);
+ir_node**      get_irp_ip_outedges(void);
 
 #endif /* ifndef _IRPROG_H_ */

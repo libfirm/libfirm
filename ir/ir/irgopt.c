@@ -514,7 +514,7 @@ static void relink_bad_block_predecessors(ir_node *n, void *env) {
   } /* Block is not relinked */
 }
 
-/**
+/*
  * Relinks Bad predecesors from Bocks and Phis called by walker
  * remove_bad_predecesors(). If n is a Block, call
  * relink_bad_block_redecessors(). If n is a Phinode, call also the relinking

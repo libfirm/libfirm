@@ -172,21 +172,21 @@ typedef union {
   type           *f;    /**< For Free. */
   cast_attr      cast;  /**< For Cast. */
   int            phi0_pos;  /**< For Phi. Used to remember the value defined by
-                   this Phi node.  Needed when the Phi is completed
-                   to call get_r_internal_value to find the
-                   predecessors. If this attribute is set, the Phi
-                   node takes the role of the obsolete Phi0 node,
-                   therefore the name. */
+			       this Phi node.  Needed when the Phi is completed
+			       to call get_r_internal_value to find the
+			       predecessors. If this attribute is set, the Phi
+			       node takes the role of the obsolete Phi0 node,
+			       therefore the name. */
   int *phi_backedge;    /**< For Phi after construction.
-               Field n set to true if pred n is backedge.
-               @todo Ev. replace by bitfield! */
+			   Field n set to true if pred n is backedge.
+			   @todo Ev. replace by bitfield! */
   long           proj;  /**< For Proj: contains the result position to project */
   confirm_attr   confirm_cmp;   /**< For Confirm: compare operation */
   filter_attr    filter;    /**< For Filter */
   end_attr       end;       /**< For EndReg, EndExcept */
 #if PRECISE_EXC_CONTEXT
   struct ir_node **frag_arr; /**< For Phi node construction in case of exceptions
-                   for nodes Store, Load, Div, Mod, Quot, DivMod. */
+				for nodes Store, Load, Div, Mod, Quot, DivMod. */
 #endif
 } attr;
 
@@ -202,8 +202,8 @@ struct ir_node {
   struct ir_node **in;     /**< array with predecessors / operands */
   void *link;              /**< to attach additional information to the node, e.g.
                               used while construction to link Phi0 nodes and
-                  during optimization to link to nodes that
-                  shall replace a node. */
+			      during optimization to link to nodes that
+			      shall replace a node. */
   /* ------- Fields for optimizations / analysis information ------- */
   struct ir_node **out;    /**< array of out edges */
   struct dbg_info* dbi;    /**< A pointer to information for debug support. */

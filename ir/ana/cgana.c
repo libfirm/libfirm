@@ -246,9 +246,12 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
 	   fuer die es keine Implementierung gibt. */
 	if (get_entity_peculiarity(ent) == peculiarity_description) {
 	  /* @@@ GL Methode um Fehler anzuzeigen aufrufen! */
-	  printf("WARNING: Calling method description %s in method %s which has "
-		  "no implementation!\n", get_entity_name(ent),
-		  get_entity_name(get_irg_ent(current_ir_graph)));
+	  printf("WARNING: Calling method description %s\n  in method %s\n  of class %s\n  which has "
+		 "no implementation!\n", get_entity_name(ent),
+		 get_entity_name(get_irg_ent(current_ir_graph)),
+		 get_type_name(get_entity_owner(get_irg_ent(current_ir_graph))));
+	  printf("This happens when compiling a Java Interface that's never really used, i.e., "
+		 "no class implementing the interface is ever used.\n");
 	} else {
 	  exchange(node, new_Bad());
 	}
@@ -679,6 +682,7 @@ static entity ** get_free_methods(void) {
   int i;
   entity ** arr = NEW_ARR_F(entity *, 0);
   entity * ent;
+
   for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     ir_graph * irg = get_irp_irg(i);
     entity * ent = get_irg_ent(irg);
@@ -686,13 +690,16 @@ static entity ** get_free_methods(void) {
     if (get_entity_visibility(ent) != visibility_local) {
       eset_insert(set, ent);
     }
+    /* Finde alle Methoden die in dieser Methode extern sichtbar werden,
+       z.B. da die Adresse einer Methode abgespeichert wird. */
     irg_walk_graph(irg, NULL, (irg_walk_func *) free_ana_walker, set);
   }
-  /* Hauptprogramm ist auch frei, auch wenn es nicht "external
+  /* Hauptprogramm ist auch dann frei, wenn es nicht "external
    * visible" ist. */
-  if(get_irp_main_irg()) {
+  if (get_irp_main_irg()) {
     eset_insert(set, get_irg_ent(get_irp_main_irg()));
   }
+  /* Wandle Menge in Feld um.  Effizienter. */
   for (ent = eset_first(set); ent; ent = eset_next(set)) {
     ARR_APP1(entity *, arr, ent);
   }

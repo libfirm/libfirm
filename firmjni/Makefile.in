@@ -46,7 +46,8 @@ CLASSFILES = $(MEMBERS:.m=.class)
 CPPFLAGS += 	-I$(top_srcdir)/ir/ir  -I$(top_srcdir)/ir/common  	\
 		-I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/tr  	\
 	        -I$(top_srcdir)/ir/tv -I$(top_srcdir)/ir/debug 		\
-	        -I$(top_srcdir)/ir/ana -I$(top_srcdir)/ir/st
+	        -I$(top_srcdir)/ir/ana -I$(top_stcdir)/ir/opt		\
+		-I$(top_srcdir)/ir/st
 
 LDFLAGS += -I$(topdir)
 

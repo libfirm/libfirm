@@ -1519,6 +1519,13 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode);
 static ir_node *
 phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins);
 
+/* Construct a new frag_array for node n.
+   Copy the content from the current graph_arr of the corresponding block:
+   this is the current state.
+   Set ProjM(n) as current memory state.
+   Further the last entry in frag_arr of current block points to n.  This
+   constructs a chain block->last_frag_op-> ... first_frag_op of all frag ops in the block.
+ */
 static INLINE ir_node ** new_frag_arr (ir_node *n)
 {
   ir_node **arr;
@@ -2262,7 +2269,7 @@ new_d_FuncCall (dbg_info* db, ir_node *callee, int arity, ir_node **in,
 /* (Uses also constructors of ?? interface, except new_Block.            */
 /* ********************************************************************* */
 
-/** Block construction **/
+/* * Block construction **/
 /* immature Block without predecessors */
 ir_node *new_d_immBlock (dbg_info* db) {
   ir_node *res;

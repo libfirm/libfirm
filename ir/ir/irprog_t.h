@@ -23,6 +23,7 @@
 
 #include "irprog.h"
 #include "irgraph.h"
+#include "ircgcons.h"
 #include "firm_common_t.h"
 
 
@@ -43,6 +44,7 @@ struct ir_prog {
   irg_outs_state outs_state;     /**< Out edges. */
   ir_node **ip_outedges;         /**< Huge Array that contains all out edges
 				    in interprocedural view. */
+  ip_view_state ip_view;         /**< State of interprocedural view. */
   ident     *name;
   /*struct obstack *obst;	   * @@@ Should we place all types and
                                      entities on an obstack, too? */

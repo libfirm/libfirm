@@ -409,6 +409,9 @@ void compute_ip_outs(void) {
   int n_out_edges;
   ir_node **out_edges;
 
+  assert(get_irp_ip_view_state() == ip_view_valid &&
+	 "Cannot construct outs for invalid ip view.");
+
   if (irp->outs_state != no_outs) free_ip_outs();
 
   global_count = n_out_edges = count_ip_outs();

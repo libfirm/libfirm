@@ -24,9 +24,9 @@
 *
 *  VAR_A is some extern variable.
 *
-*  main(int a) {        /*  pos 0 *
-*    int b = 1;         /*  pos 1 *
-*    int h;             /*  pos 2 *
+*  main(int a) {        //  pos 0
+*    int b = 1;         //  pos 1
+*    int h;             //  pos 2
 *
 *    while (0 == 0) loop {
 *      h = a;

@@ -4,18 +4,20 @@ layoutalgorithm: mindepth
 manhattan_edges: yes
 port_sharing: no
 orientation: bottom_to_top
-classname 1: "Data"
-classname 2: "Block"
-classname 13:"Control Flow"
-classname 14:"Memory"
-classname 15:"Dominators"
-classname 3: "Entity type"
-classname 4: "Entity owner"
-classname 5: "Method Param"
-classname 6: "Method Res"
-classname 7: "Super"
-classname 8: "Union"
-classname 9: "Points-to"
+classname 1:  "intrablock Data"
+classname 16: "interblock Data"
+classname 2:  "Block"
+classname 13: "Control Flow"
+classname 14: "intrablock Memory"
+classname 17: "interblock Memory"
+classname 15: "Dominators"
+classname 3:  "Entity type"
+classname 4:  "Entity owner"
+classname 5:  "Method Param"
+classname 6:  "Method Res"
+classname 7:  "Super"
+classname 8:  "Union"
+classname 9:  "Points-to"
 classname 10: "Array Element Type"
 classname 11: "Overwrites"
 classname 12: "Member"
@@ -26,7 +28,7 @@ node: {title: "n134" label: "Block  134"  info1: "visited: 8
 irg:     PRIMA_set_a
 arity: 1 backedges:
 " info2: "((get_irn_irg(n) && get_irn_irg(n) == irg)) && Block node has wrong irg attribute"color: lightyellow}
-edge: {sourcename: "n134" targetname: "n133" label: "0" class:13 color:red}
+edge: {sourcename: "n134" targetname: "n133" label: "0" class:13 priority:60 color:red}
 node: {title: "n135" label: "Start  135"  info1: "visited: 8
 irg:     PRIMA_set_a
 arity: 0
@@ -34,80 +36,80 @@ start of method of type set_a
   param 0 type: class_prima_ptr
   param 1 type: int
 " info2: "mymode == mode_T && Start node"color: blue}
-edge: { sourcename: "n135" targetname: "n134" class:2 priority:2 linestyle:dotted}
+edge: { sourcename: "n135" targetname: "n134" class:2  priority:50 linestyle:dotted}
 node: {title: "n133" label: "ProjX 0 133"  info1: "visited: 8
 irg:     PRIMA_set_a
 arity: 1
 "color: yellow}
-edge: {sourcename: "n133" targetname: "n135" label: "0" class:13 color:red}
-edge: { sourcename: "n133" targetname: "n134" class:2 priority:2 linestyle:dotted}
+edge: {sourcename: "n133" targetname: "n135" label: "0" class:13 priority:60 color:red}
+edge: { sourcename: "n133" targetname: "n134" class:2  priority:50 linestyle:dotted}
 node: {title: "n132" label: "Block  132"  info1: "visited: 8
 irg:     PRIMA_set_a
 arity: 1 backedges:
 " info2: "((get_irn_irg(n) && get_irn_irg(n) == irg)) && Block node has wrong irg attribute"color: lightyellow}
-edge: {sourcename: "n132" targetname: "n133" label: "0" class:13 color:red}
+edge: {sourcename: "n132" targetname: "n133" label: "0" class:13 priority:60 color:red}
 node: {title: "n139" label: "ProjT 4 139"  info1: "visited: 8
 irg:     PRIMA_set_a
 arity: 1
 "color: yellow}
-edge: {sourcename: "n139" targetname: "n135" label: "0" }
-edge: { sourcename: "n139" targetname: "n134" class:2 priority:2 linestyle:dotted}
+edge: {sourcename: "n139" targetname: "n135" label: "0" class:1  priority:50}
+edge: { sourcename: "n139" targetname: "n134" class:2  priority:50 linestyle:dotted}
 node: {title: "n138" label: "ProjIs 1 138"  info1: "visited: 8
 irg:     PRIMA_set_a
 arity: 1
 " info2: "(mode == get_type_mode(get_method_param_type(mt, proj))) && Mode of Proj from Start doesn't match mode of param type."color: yellow}
-edge: {sourcename: "n138" targetname: "n139" label: "0" }
-edge: { sourcename: "n138" targetname: "n132" class:2 priority:2 linestyle:dotted}
+edge: {sourcename: "n138" targetname: "n139" label: "0" class:16 priority:10}
+edge: { sourcename: "n138" targetname: "n132" class:2  priority:50 linestyle:dotted}
 node: {title: "n141" label: "ProjP 0 141"  info1: "visited: 8
 irg:     PRIMA_set_a
 arity: 1
 " info2: "(mode == get_type_mode(get_method_param_type(mt, proj))) && Mode of Proj from Start doesn't match mode of param type."color: yellow}
-edge: {sourcename: "n141" targetname: "n139" label: "0" }
-edge: { sourcename: "n141" targetname: "n132" class:2 priority:2 linestyle:dotted}
+edge: {sourcename: "n141" targetname: "n139" label: "0" class:16 priority:10}
+edge: { sourcename: "n141" targetname: "n132" class:2  priority:50 linestyle:dotted}
 node: {title: "n142" label: "ProjM 1 142"  info1: "visited: 8
 irg:     PRIMA_set_a
 arity: 1
 "color: yellow}
-edge: {sourcename: "n142" targetname: "n135" label: "0" class:14 color:blue}
-edge: { sourcename: "n142" targetname: "n134" class:2 priority:2 linestyle:dotted}
+edge: {sourcename: "n142" targetname: "n135" label: "0" class:17 priority:10 color:blue}
+edge: { sourcename: "n142" targetname: "n134" class:2  priority:50 linestyle:dotted}
 node: {title: "n140" label: "Sel a 140"  info1: "visited: 8
 irg:     PRIMA_set_a
 arity: 2
 Selecting entity of type int
   from entity of type PRIMA
 "}
-edge: {sourcename: "n140" targetname: "n142" label: "0" class:14 color:blue}
-edge: {sourcename: "n140" targetname: "n141" label: "1" }
-edge: { sourcename: "n140" targetname: "n132" class:2 priority:2 linestyle:dotted}
+edge: {sourcename: "n140" targetname: "n142" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n140" targetname: "n141" label: "1" class:1  priority:50}
+edge: { sourcename: "n140" targetname: "n132" class:2  priority:50 linestyle:dotted}
 node: {title: "n137" label: "Store  137"  info1: "visited: 8
 irg:     PRIMA_set_a
 arity: 3
 " info2: "mymode == mode_T && Store node"}
-edge: {sourcename: "n137" targetname: "n142" label: "0" class:14 color:blue}
-edge: {sourcename: "n137" targetname: "n140" label: "1" }
-edge: {sourcename: "n137" targetname: "n138" label: "2" }
-edge: { sourcename: "n137" targetname: "n132" class:2 priority:2 linestyle:dotted}
+edge: {sourcename: "n137" targetname: "n142" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n137" targetname: "n140" label: "1" class:1  priority:50}
+edge: {sourcename: "n137" targetname: "n138" label: "2" class:1  priority:50}
+edge: { sourcename: "n137" targetname: "n132" class:2  priority:50 linestyle:dotted}
 node: {title: "n136" label: "ProjM 0 136"  info1: "visited: 8
 irg:     PRIMA_set_a
 arity: 1
 "color: yellow}
-edge: {sourcename: "n136" targetname: "n137" label: "0" class:14 color:blue}
-edge: { sourcename: "n136" targetname: "n132" class:2 priority:2 linestyle:dotted}
+edge: {sourcename: "n136" targetname: "n137" label: "0" class:17 priority:10 color:blue}
+edge: { sourcename: "n136" targetname: "n132" class:2  priority:50 linestyle:dotted}
 node: {title: "n131" label: "Return  131"  info1: "visited: 8
 irg:     PRIMA_set_a
 arity: 1
 return in method of type set_a
 " info2: "mymode == mode_X && Result X"}
-edge: {sourcename: "n131" targetname: "n136" label: "0" class:14 color:blue}
-edge: { sourcename: "n131" targetname: "n132" class:2 priority:2 linestyle:dotted}
+edge: {sourcename: "n131" targetname: "n136" label: "0" class:14 priority:50 color:blue}
+edge: { sourcename: "n131" targetname: "n132" class:2  priority:50 linestyle:dotted}
 node: {title: "n130" label: "Block  130"  info1: "visited: 8
 irg:     PRIMA_set_a
 arity: 1 backedges:
 " info2: "((get_irn_irg(n) && get_irn_irg(n) == irg)) && Block node has wrong irg attribute"color: lightyellow}
-edge: {sourcename: "n130" targetname: "n131" label: "0" class:13 color:red}
+edge: {sourcename: "n130" targetname: "n131" label: "0" class:13 priority:60 color:red}
 node: {title: "n129" label: "End  129"  info1: "visited: 8
 irg:     PRIMA_set_a
 arity: 0
 "color: blue}
-edge: { sourcename: "n129" targetname: "n130" class:2 priority:2 linestyle:dotted}
+edge: { sourcename: "n129" targetname: "n130" class:2  priority:50 linestyle:dotted}
 }

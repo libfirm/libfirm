@@ -197,12 +197,18 @@ new_ir_node (dbg_info *db,
  *
  */
 
-/* This works for all except Block.  To express the difference to
- * access routines that work for all nodes we use infix "nodes". */
+/** This works for all except Block.  To express the difference to
+ * access routines that work for all nodes we use infix "nodes" and do not
+ * name this function get_irn_block. */
 #define get_nodes_block get_nodes_Block
 ir_node  *get_nodes_Block (ir_node *node);
 #define set_nodes_block set_nodes_Block
 void      set_nodes_Block (ir_node *node, ir_node *block);
+
+/**
+ * @function get_irn_block
+ * @see get_nodes_block
+ */
 
 /**
  * Projection numbers for result of Start node: use for Proj nodes!
@@ -857,7 +863,7 @@ ir_node *get_fragile_op_mem(ir_node *node);
 /** Output information about a node */
 #define DDMN(X)  printf("%s(l.%i) %s%s: %ld (%p)\n",         __MYFUNC__, __LINE__,  get_irn_opname(X), get_mode_name(get_irn_mode(X)), get_irn_node_nr(X), (void *)(X))
 /** Output information about a node and its block */
-#define DDMNB(X) printf("%s%s: %ld (in block %ld)\n", get_irn_opname(X),  get_mode_name(get_irn_mode(X)), get_irn_node_nr(X), get_irn_node_nr(get_nodes_Block(X)))
+#define DDMNB(X) printf("%s%s: %ld (in block %ld)\n", get_irn_opname(X),  get_mode_name(get_irn_mode(X)), get_irn_node_nr(X), get_irn_node_nr(get_nodes_block(X)))
 /** Output information about a type */
 #define DDMT(X)  printf("%s(l.%i) %s %s: %ld (%p)\n",        __MYFUNC__, __LINE__, get_type_tpop_name(X), get_type_name(X), get_type_nr(X), (void *)(X))
 /** Output information about an entity */
