@@ -48,13 +48,19 @@ local_tags:	$(TAGFILES)
 
 # installation
 install:	subdir_install local_install
-local_install:
+local_install: $(INCLUDEDIR) $(LIBDIR)
 ifneq ($(strip $(INSTALL_HEADERS)),)
 	$(INSTALL) -m u+rw,a+r $(addprefix $(srcdir)/,$(INSTALL_HEADERS)) $(INCLUDEDIR)
 endif
 ifneq ($(strip $(INSTALL_LIBS)),)
 	$(INSTALL) -m u+rw,a+r $(addprefix $(topdir)/,$(INSTALL_LIBS)) $(LIBDIR)
 endif
+
+$(LIBDIR):	$(LIBDIR)
+	mkdir -p $@
+
+$(INCLUDEDIR):	$(INCLUDEDIR)
+	mkdir -p $@
 
 # include dependencies
 -include .depend

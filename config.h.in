@@ -11,3 +11,9 @@
 
 /* Define if you have the <gmp.h> header file.  */
 #undef HAVE_GMP_H
+
+/* Define if you have the <math.h> header file.  */
+#undef HAVE_MATH_H
+
+/* Define if you have the <obstack.h> header file.  */
+#undef HAVE_OBSTACK_H
