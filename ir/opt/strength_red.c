@@ -199,13 +199,13 @@ void reduce_a_node(ir_node *strong, void *env) {
     if (get_Block_dom_depth(get_nodes_block(c))  >=
 	get_Block_dom_depth(get_nodes_block(phi))) return;
 
-#if 1
-    printf("Reducing node: "); DDMN(strong);
-    printf("  iter var is  "); DDMN(ivi.op);
-    printf("  in graph     "); DDMG(current_ir_graph);
-#endif
+    if (get_opt_strength_red_verbosity() == 2) {
+      printf("Reducing node: "); DDMN(strong);
+      printf("  iter var is  "); DDMN(ivi.op);
+      printf("  in graph     "); DDMG(current_ir_graph);
+    }
 
-    ir_node *inc, *init, *new_phi, *in[2], *new_op, *block_init, *block_inc;
+    ir_node *inc = NULL, *init = NULL, *new_phi, *in[2], *new_op = NULL, *block_init, *block_inc;
     ir_node *init_block      = get_nodes_block(ivi.init);
     ir_node *increment_block = get_nodes_block(ivi.increment);
     ir_node *c_block         = get_nodes_block(c) ;
