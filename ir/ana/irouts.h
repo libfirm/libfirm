@@ -81,6 +81,8 @@ void irg_out_block_walk(ir_node *node,
    out edges from block to floating nodes even if graph is in state
    "floats".   Optimizes Tuple nodes. */
 void compute_outs(ir_graph *irg);
+/** Computes the out edges in interprocedural view */
+void compute_ip_outs(ir_graph *irg);
 /** Frees the out datastructures.  Sets the flag in irg to "no_outs". */
 void free_outs(ir_graph *irg);
 

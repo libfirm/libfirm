@@ -31,6 +31,7 @@
 #include "irnode_t.h"
 #include "irgraph_t.h"     /* To access irg->outs field (which is private to this module)
 			      without public access routine */
+#include "irprog.h"
 
 /**********************************************************************/
 /** Accessing the out datastructures                                 **/
@@ -277,6 +278,69 @@ void compute_outs(ir_graph *irg) {
 
   current_ir_graph = rem;
 }
+
+
+void compute_ip_outs(ir_graph *irg) { /*irg_walk_func *pre, irg_walk_func *post, void *env) { */
+  int i;
+  ir_graph *rem = current_ir_graph;
+  int rem_view = interprocedural_view;
+
+  interprocedural_view = true;
+
+  inc_max_irg_visited();
+  /* Fix all irg_visited flags */
+  for (i = 0; i < get_irp_n_irgs(); i++)
+    set_irg_visited(get_irp_irg(i), get_max_irg_visited());
+
+  /* Walk starting at unreachable procedures. Only these
+   * have End blocks visible in interprocedural view. */
+  for (i = 0; i < get_irp_n_irgs(); i++) {
+    ir_node *sb;
+    current_ir_graph = get_irp_irg(i);
+
+    sb = get_irg_start_block(current_ir_graph);
+
+    if ((get_Block_n_cfgpreds(sb) > 1) ||
+	(get_nodes_block(get_Block_cfgpred(sb, 0)) != sb)) continue;
+
+    compute_outs(current_ir_graph); /*cg_walk_2(get_irg_end(current_ir_graph), pre, post, env);*/
+  }
+
+  /* Check whether we walked all procedures: there could be procedures
+     with cyclic calls but no call from the outside. */
+  for (i = 0; i < get_irp_n_irgs(); i++) {
+    ir_node *sb;
+    current_ir_graph = get_irp_irg(i);
+
+    /* Test start block: if inner procedure end and end block are not
+     * visible and therefore not marked. */
+    sb = get_irg_start_block(current_ir_graph);
+    if (get_irn_visited(sb) < get_irg_visited(current_ir_graph)) {
+      compute_outs(current_ir_graph); /*cg_walk_2(sb, pre, post, env);    */
+    }
+  }
+
+  /* Walk all endless loops in inner procedures.
+   * We recognize an inner procedure if the End node is not visited. */
+  for (i = 0; i < get_irp_n_irgs(); i++) {
+    ir_node *e;
+    current_ir_graph = get_irp_irg(i);
+    e = get_irg_end(current_ir_graph);
+    if (get_irn_visited(e) < get_irg_visited(current_ir_graph)) {
+      int j;
+      /* Don't visit the End node. */
+      /*   for (j = 0; j < get_End_n_keepalives(e); j++)
+	   cg_walk_2(get_End_keepalive(e, j), pre, post, env);*/
+      compute_outs(current_ir_graph);
+    }
+  }
+
+  interprocedural_view = rem_view;
+  current_ir_graph = rem;
+}
+
+
+
 
 void free_outs(ir_graph *irg) {
 
