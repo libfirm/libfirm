@@ -32,8 +32,8 @@ typedef struct _walker_t {
 
 typedef enum {
   NO_CONSTANT   = 0,    /**< node is not constant */
-  REAL_CONSTANT = 1,    /**< node is a constnt that is suitable for constant folding */
-  CONST_EXPR    = 4     /**< node is not constant expression in the current context,
+  REAL_CONSTANT = 1,    /**< node is a Const that is suitable for constant folding */
+  CONST_EXPR    = 4     /**< node is a constant expression in the current context,
                              use 4 here to simplify implementation of get_comm_Binop_ops() */
 } const_class_t;
 
@@ -57,8 +57,8 @@ static const_class_t get_const_class(ir_node *n)
  * returns the operands of a commutative bin-op, if one operand is
  * a constant in the current context, it is returned as the second one.
  *
- * Beware: Real constrants must be returned with higher priority than
- * constnt expression, because they might be folded.
+ * Beware: Real constants must be returned with higher priority than
+ * constant expression, because they might be folded.
  */
 static void get_comm_Binop_ops(ir_node *binop, ir_node **a, ir_node **c)
 {
@@ -196,7 +196,7 @@ static int reassoc_commutative(ir_node *n)
       /* all three are constant and either all are constant expressions or two of them are:
        * then, applying this rule would lead into a cycle
        *
-       * Note that if t2 is a onstant so is c2, so we save one test.
+       * Note that if t2 is a constant so is c2, so we save one test.
        */
       return 0;
     }
@@ -263,7 +263,7 @@ static int reassoc_commutative(ir_node *n)
 #define reassoc_Eor  reassoc_commutative
 
 /**
- * reassociate using distibutive law for Mul and Add/Sub
+ * reassociate using distributive law for Mul and Add/Sub
  */
 static int reassoc_Mul(ir_node *n)
 {
@@ -364,7 +364,7 @@ void optimize_reassociation(ir_graph *irg)
   }
 }
 
-/* initialise the reassociation by adding operations to some opcodes */
+/* initialize the reassociation by adding operations to some opcodes */
 void firm_init_reassociation(void)
 {
 #define INIT(a) op_##a->reassociate  = reassoc_##a;
