@@ -54,7 +54,7 @@ void be_phi_opt(ir_graph* irg) {
 	printf("-----------------------> Building domtree <-----------------------\n");
 	dominfo = domtree_create(irg);
 	printf("-----------------------> Coalescing <-----------------------\n");
-	be_phi_coalesce_locals(all_phi_classes, dominfo);
+	/* be_phi_coalesce_locals(all_phi_classes, dominfo); */
 	printf("-----------------------> Destroying domtree <-----------------------\n");
 	domtree_free(dominfo);
 }
