@@ -76,7 +76,6 @@ extern ir_mode *mode_X; /* execution */
 extern ir_mode *mode_M; /* memory */
 extern ir_mode *mode_R; /* block */
 extern ir_mode *mode_Z; /* infinit integers */ /* oblivious */
-extern ir_mode *mode_T; /* tuple (none) */
 
 /* An enum for this mode */
 modecode get_mode_modecode (ir_mode *mode);
