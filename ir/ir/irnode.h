@@ -7,24 +7,24 @@
 # ifndef _IRNODE_H_
 # define _IRNODE_H_
 
-/* Projection numbers of compare: use for Proj nodes! */
+/** Projection numbers of compare: use for Proj nodes! */
 typedef enum {
-  False,		/* false */
-  Eq,			/* equal */
-  Lt,			/* less */
-  Le,			/* less or equal */
-  Gt,			/* greater */
-  Ge,			/* greater or equal */
-  Lg,			/* less or greater */
-  Leg,			/* less, equal or greater = ordered */
-  Uo,			/* unordered */
-  Ue,			/* unordered or equal */
-  Ul,			/* unordered or less */
-  Ule,			/* unordered, less or equal */
-  Ug,			/* unordered or greater */
-  Uge,			/* unordered, greater or equal */
-  Ne,			/* unordered, less or greater = not equal */
-  True		        /* true */
+  False,		/**< false */
+  Eq,			/**< equal */
+  Lt,			/**< less */
+  Le,			/**< less or equal */
+  Gt,			/**< greater */
+  Ge,			/**< greater or equal */
+  Lg,			/**< less or greater */
+  Leg,			/**< less, equal or greater = ordered */
+  Uo,			/**< unordered */
+  Ue,			/**< unordered or equal */
+  Ul,			/**< unordered or less */
+  Ule,			/**< unordered, less or equal */
+  Ug,			/**< unordered or greater */
+  Uge,			/**< unordered, greater or equal */
+  Ne,			/**< unordered, less or greater = not equal */
+  True		        /**< true */
   /* not_mask = Leg*/	/* bits to flip to negate comparison * @@ hack for jni interface */
 } pnc_number;
 #define not_mask Leg
@@ -102,28 +102,29 @@ INLINE void          set_irn_in            (ir_node *node, int arity,
 /* get_irn_n removes Id predecessors. */
 INLINE ir_node      *get_irn_n             (ir_node *node, int n);
 INLINE void          set_irn_n             (ir_node *node, int n, ir_node *in);
-/* Get the mode struct. */
+/** Gets the mode struct. */
 INLINE ir_mode      *get_irn_mode          (const ir_node *node);
-/* Get the mode-enum modecode */
+/** Gets the mode-enum modecode. */
 INLINE modecode      get_irn_modecode      (const ir_node *node);
-/* Get the ident for a string representation of the mode */
+/** Gets the ident for a string representation of the mode .*/
 INLINE ident        *get_irn_modeident     (const ir_node *node);
-/* Access the opcode struct of the node */
+/** Gets the opcode struct of the node */
 INLINE ir_op        *get_irn_op            (const ir_node *node);
+/** Sets the opcode struct of the node. */
 INLINE void          set_irn_op            (ir_node *node, ir_op *op);
-/* Get the opcode-enum of the node */
+/** Gets the opcode-enum of the node. */
 INLINE opcode        get_irn_opcode        (const ir_node *node);
-/* Get the string representation of the opcode */
+/** Get the string representation of the opcode. */
 INLINE const char   *get_irn_opname        (const ir_node *node);
-/* Get the ident for a string representation of the opcode */
+/** Get the ident for a string representation of the opcode. */
 INLINE ident        *get_irn_opident       (const ir_node *node);
 INLINE unsigned long get_irn_visited (const ir_node *node);
 INLINE void          set_irn_visited (ir_node *node, unsigned long visited);
-/* Sets visited to get_irg_visited(current_ir_graph) */
+/** Sets visited to get_irg_visited(current_ir_graph). */
 INLINE void          mark_irn_visited (ir_node *node);
-/* Returns 1 if visited < get_irg_visited(current_ir_graph).  */
+/** Returns 1 if visited < get_irg_visited(current_ir_graph).  */
 INLINE int           irn_not_visited  (const ir_node *node);
-/* Returns 1 if visited >= get_irg_visited(current_ir_graph).  */
+/** Returns 1 if visited >= get_irg_visited(current_ir_graph).  */
 INLINE int           irn_visited      (const ir_node *node);
 INLINE void          set_irn_link          (ir_node *node, void *link);
 INLINE void         *get_irn_link          (const ir_node *node);
@@ -309,11 +310,17 @@ INLINE void     set_Call_mem (ir_node *node, ir_node *mem);
 INLINE ir_node *get_Call_ptr (ir_node *node);
 INLINE void     set_Call_ptr (ir_node *node, ir_node *ptr);
 INLINE ir_node **get_Call_param_arr (ir_node *node);
+/** Gets the number of parameters of a call. */
 INLINE int      get_Call_n_params (ir_node *node);
+/** Gets the call parameter at position pos. */
 INLINE ir_node *get_Call_param (ir_node *node, int pos);
+/** Sets the call parameter at position pos. */
 INLINE void     set_Call_param (ir_node *node, int pos, ir_node *param);
+/** Gets the type of a call. */
 INLINE type    *get_Call_type (ir_node *node);
+/** Sets the type of a call. */
 INLINE void     set_Call_type (ir_node *node, type *tp);
+/** Gets the arity of a call. Identical to get_Call_n_params(). */
 INLINE int      get_Call_arity (ir_node *node);
 
 /* Set, get and remove the callee-analysis. */
