@@ -44,14 +44,12 @@ void set_irp_ip_view_invalid(void) {
 }
 
 
-/*  # define CATE_jni */
-
-/* Datenstruktur für jede Methode */
+/* Data for each method */
 typedef struct {
-  int count;                      /* GL: anzahl aufrufer */
-  bool open;              /* offene Methode (mit unbekanntem Aufrufer) */
-  ir_node * reg, * mem, ** res;   /* EndReg, Mem und Rückgabewerte */
-  ir_node * except, * except_mem; /* EndExcept und Mem für Ausnahmeabbruch */
+  int count;                      /* Number of calleers. */
+  bool open;                      /* Open method: called by an unknown caller */
+  ir_node * reg, * mem, ** res;   /* EndReg, Mem and Method return values */
+  ir_node * except, * except_mem; /* EndExcept and Mem for exception return */
 } irg_data_t;
 
 static irg_data_t * irg_data_create(void) {
@@ -60,8 +58,13 @@ static irg_data_t * irg_data_create(void) {
   return data;
 }
 
-/* Die Anzahl der Aufrufer jeder Methode zählen (irg_data_t->count), und die
- * offenen Methoden (mit unbekannten Vorgänger) markieren. */
+/** Count the number of callers of each method and mark open methods.
+ *
+ *  Fills the irg_data data structure.
+ *  Open methods are methods with an unknown caller, I.e., methods that
+ *   - are external visible
+ *   - are dereferenced somewhere within the program (i.e., the address of the
+ *     method is stored somewhere). */
 static void caller_init(int arr_length, entity ** free_methods) {
   int i, j;
   for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
@@ -74,18 +77,18 @@ static void caller_init(int arr_length, entity ** free_methods) {
   for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     ir_graph * irg = get_irp_irg(i);
     ir_node * call;
-    /* Die Call-Knoten sind (mit den Proj-Knoten) am End-Knoten verlinkt! */
+    /* We collected all call nodes in a link list at the end node. */
     for (call = get_irn_link(get_irg_end(irg)); call; call = get_irn_link(call)) {
       if (get_irn_op(call) != op_Call) continue;
       for (j = get_Call_n_callees(call) - 1; j >= 0; --j) {
-    entity * ent = get_Call_callee(call, j);
-    if (ent) {
-      irg_data_t * data = get_entity_link(ent);
+	entity * ent = get_Call_callee(call, j);
+	if (ent) {
+	  irg_data_t * data = get_entity_link(ent);
 # ifndef CATE_jni
-      assert(get_entity_irg(ent) && data);
-      ++data->count;
+	  assert(get_entity_irg(ent) && data);
+	  ++data->count;
 # endif /* ndef CATE_jni */
-    }
+	}
       }
     }
   }
@@ -199,8 +202,8 @@ static void prepare_irg_end_except(ir_graph * irg, irg_data_t * data);
  * block has no predecessors. */
 static INLINE ir_node *get_cg_Unknown(ir_mode *m) {
   assert((get_Block_n_cfgpreds(get_irg_start_block(get_irp_main_irg())) == 1) &&
-     (get_nodes_block(get_Block_cfgpred(get_irg_start_block(get_irp_main_irg()), 0)) ==
-      get_irg_start_block(get_irp_main_irg())));
+	 (get_nodes_block(get_Block_cfgpred(get_irg_start_block(get_irp_main_irg()), 0)) ==
+	  get_irg_start_block(get_irp_main_irg())));
   return new_r_Unknown(get_irp_main_irg(), m);
 }
 
@@ -322,14 +325,14 @@ static void prepare_irg_end(ir_graph * irg, irg_data_t * data) {
       ir_mode *mode = NULL;
       /* In[0] could be a Bad node with wrong mode. */
       for (i = n_ret - 1; i >= 0; --i) {
-    in[i] = get_Return_res(ret_arr[i], j);
-    if (!mode && get_irn_mode(in[i]) != mode_T)
-      mode = get_irn_mode(in[i]);
+	in[i] = get_Return_res(ret_arr[i], j);
+	if (!mode && get_irn_mode(in[i]) != mode_T)
+	  mode = get_irn_mode(in[i]);
       }
       if (mode)
-    data->res[j] = new_Phi(n_ret, in, mode);
+	data->res[j] = new_Phi(n_ret, in, mode);
       else  /* All preds are Bad */
-    data->res[j] = new_Bad();
+	data->res[j] = new_Bad();
     }
 
     DEL_ARR_F(in);
@@ -822,7 +825,7 @@ void cg_construct(int arr_len, entity ** free_methods_arr) {
       if (get_irn_op(node) == op_Call) {
         n_callees = get_Call_n_callees(node);
         if (n_callees > 1 || (n_callees == 1 && get_Call_callee(node, 0) != NULL)) {
-          construct_call(node);
+	  construct_call(node);
         }
       }
     }
@@ -841,12 +844,18 @@ void cg_construct(int arr_len, entity ** free_methods_arr) {
 static void destruct_walker(ir_node * node, void * env) {
   if (get_irn_op(node) == op_Block) {
     remove_Block_cg_cfgpred_arr(node);
+    /* Do not turn Break into Jmp.  Better: merge blocks right away. */
+    if (get_Block_n_cfgpreds(node) == 1) {
+      ir_node *pred = get_Block_cfgpred(node, 0);
+      if (get_irn_op(pred) == op_Break)
+	exchange(node, get_nodes_block(pred));
+    }
   } else if (get_irn_op(node) == op_Filter) {
     set_irg_current_block(current_ir_graph, get_nodes_block(node));
     exchange(node, new_Proj(get_Filter_pred(node), get_irn_mode(node), get_Filter_proj(node)));
   } else if (get_irn_op(node) == op_Break) {
-    set_irg_current_block(current_ir_graph, get_nodes_block(node));
-    exchange(node, new_Jmp());
+    //set_irg_current_block(current_ir_graph, get_nodes_block(node));
+    //exchange(node, new_Jmp());
   } else if (get_irn_op(node) == op_Call) {
     remove_Call_callee_arr(node);
   } else if (get_irn_op(node) == op_Proj) {
