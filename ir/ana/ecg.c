@@ -32,6 +32,8 @@
 # define TRUE 1
 # define FALSE 0
 
+# define BUF_SIZE 1024
+
 # include "ecg.h"
 
 /*
@@ -553,7 +555,7 @@ static typalise_t *ta_join (typalise_t *one, typalise_t *two)
 
 static const char *ta_name (typalise_t *ta)
 {
-# define BUF_SIZE 1024
+/* # define BUF_SIZE 1024 */
   static char buf [BUF_SIZE];
 
   int len = sprintf (buf, "[%d] ", ta->id);
@@ -583,7 +585,7 @@ static const char *ta_name (typalise_t *ta)
   }
 
   return (buf);
-# undef BUF_SIZE
+/* # undef BUF_SIZE */
 }
 
 /**
@@ -1195,13 +1197,15 @@ static int ecg_ecg_graph (FILE *dot, ir_graph *graph)
   const char *color =
     (get_entity_stickyness
      (get_irg_entity (graph)) == stickyness_sticky) ?
-    "blue" : "red";
+    "red" : "lightyellow";
 
   graph_info_t *ginfo = (graph_info_t*) pmap_get (graph_infos, graph);
 
   if (0 != ginfo->ecg_seen) {
+    fprintf (dot, "\t/* recursive call to \"%s\" (%d) */\n", name, ginfo->ecg_seen);
+# if 0
     fprintf (dot, "\t/* recursive call to \"%s\" (0x%08x) */\n", name, graph);
-
+# endif /* 0 */
     return (ginfo->ecg_seen);
   }
 
@@ -1210,8 +1214,14 @@ static int ecg_ecg_graph (FILE *dot, ir_graph *graph)
   const int graph_no = _graphs ++;
   ginfo->ecg_seen = graph_no;
 
-  fprintf (dot, "\t/* Graph of \"%s\" */\n", name);
-  fprintf (dot, "\tgraph_%i [label=\"%s\", color=\"%s\"];\n", graph_no, name, color);
+  fprintf (dot, "\t/* Graph of \"%s.%s\" */\n",
+           get_type_name (get_entity_owner (get_irg_entity (graph))),
+           name);
+  fprintf (dot, "\tgraph_%i [label=\"%s\\l%s\", color=\"%s\"];\n",
+           graph_no,
+           get_type_name (get_entity_owner (get_irg_entity (graph))),
+           name,
+           color);
   fprintf (dot, "\n");
 
   if (visibility_external_allocated ==
@@ -1230,19 +1240,21 @@ static int ecg_ecg_graph (FILE *dot, ir_graph *graph)
     fprintf (dot, "\t/* Call 0x%08x */\n", call);
     fprintf (dot, "\tcall_%i [label=\"call\\l0x%08x\"];\n",
              call_no, call);
-    fprintf (dot, "\tgraph_%i -> call_%i;\n", graph_no, call_no);
+    fprintf (dot, "\tgraph_%i -> call_%i [color=\"black\"];\n", graph_no, call_no);
 
     while (NULL != ced) {
       ir_graph *callEd_graph = ced->callEd;
       const int callEd_no = ecg_ecg_graph (dot, callEd_graph);
       const char *callEd_name = get_irg_entity (callEd_graph) ?
         get_entity_name (get_irg_entity (callEd_graph)) : "noEntity";
-      const char *direction = (callEd_no <= graph_no) ? "back" : "forward";
-      const char *callEd_color     = (callEd_no <= graph_no) ? "red" : "black";
+      const char *direction = (callEd_no <= graph_no) ? "forward" : "forward";
+      const char *callEd_color     = (callEd_no <= graph_no) ? "red" : "lightyellow";
 
-      fprintf (dot, "\t/* Call to graph \"%s\" */\n", callEd_name);
-      /* Todo: Check for recursive calls */
-      /* if (callEd_no > graph_no) */ { /* do do recursive calls (for now) */
+      fprintf (dot, "\t/* Call from graph \"%s\" to graph \"%s\" */\n",
+               name,
+               callEd_name);
+      /* Check for recursive calls */
+      /* if (callEd_no > graph_no) */ { /* do recursive calls (for now) */
       fprintf (dot, "\tcall_%i -> graph_%i [color=\"%s\", dir=\"%s\"];\n",
                call_no, callEd_no, callEd_color, direction);
       }
@@ -1265,6 +1277,8 @@ static int ecg_ecg_graph (FILE *dot, ir_graph *graph)
 /**
    Count how many nodes the ECG will have
 */
+static char spaces [BUF_SIZE];
+
 static void ecg_ecg_count (ir_graph *graph)
 {
   graph_info_t *ginfo = (graph_info_t*) pmap_get (graph_infos, graph);
@@ -1277,26 +1291,45 @@ static void ecg_ecg_count (ir_graph *graph)
   if (_depth > _max_depth) {
     _max_depth = _depth;
 
-    fprintf (stdout, "_max_depth = %i\n", _max_depth);
-    fprintf (stdout, "\tn_graphs: %i\n", _graphs);
+    /*
+      fprintf (stdout, "_max_depth = %i\n", _max_depth);
+      fprintf (stdout, "\tn_graphs: %i\n", _graphs);
+    */
   }
 
   assert (0L <= _graphs);
 
-  if (!(_graphs % 1000000)) {
+  /*
+    if (0 == (_graphs % 1000000)) {
     fprintf (stdout, "\tn_graphs: %i\n", _graphs);
     fprintf (stdout, "_depth = %i\n", _depth);
-  }
+    }
+  */
 
   const int graph_no = _graphs ++;
   ginfo->ecg_seen = graph_no;
+
+  fprintf (stdout, "%sMethod \"%s.%s\"\n",
+           spaces + BUF_SIZE - _depth,
+           get_type_name (get_entity_owner (get_irg_entity (graph))),
+           get_entity_name (get_irg_entity (graph)));
 
   call_info_t *cinfo = ginfo->calls;
   while (NULL != cinfo) {
 
     callEd_info_t *ced = cinfo->callEds;
+
+    fprintf (stdout, "%sCall \"0x%08x\"\n",
+             spaces + BUF_SIZE - _depth,
+             cinfo->call);
+
     while (NULL != ced) {
       ir_graph *callEd_graph = ced->callEd;
+
+      fprintf (stdout, "%sCall Target \"%s.%s\"\n",
+               spaces + BUF_SIZE - _depth,
+               get_type_name (get_entity_owner (get_irg_entity (callEd_graph))),
+               get_entity_name (get_irg_entity (callEd_graph)));
 
       ecg_ecg_count (callEd_graph);
 
@@ -1403,7 +1436,7 @@ void ecg_report ()
     const char *color =
       (get_entity_stickyness
        (get_irg_entity (graph)) == stickyness_sticky) ?
-      "red" : "blue";
+      "red" : "lightyellow";
 
     fprintf (dot, "\t/* graph_0x%08x (\"%s\") */\n", graph, name);
     fprintf (dot,
@@ -1454,15 +1487,18 @@ void ecg_ecg ()
   ir_graph *main_graph = get_irp_main_irg ();
 
   /*
+  memset (spaces, '.', BUF_SIZE);
+  spaces [BUF_SIZE-1] = '\0';
+
   ecg_ecg_count (main_graph);
   fprintf (stdout, "n_graphs: %i\n", _graphs);
   fprintf (stdout, "max_depth = %i\n", _max_depth);
+  */
 
-  return;
+  /* return; */
 
   _graphs = 0;
   _calls  = 0;
-  */
 
   FILE *dot = fopen ("ecg.dot", "w");
 
