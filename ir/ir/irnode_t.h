@@ -341,7 +341,7 @@ extern int (*__get_irn_arity)(const ir_node *node);
  */
 static INLINE ir_node *
 __get_irn_intra_n (ir_node *node, int n) {
-  assert(node); assert(-1 <= n && n < __get_irn_arity(node));
+  assert(node); assert(-1 <= n && n < __get_irn_intra_arity(node));
 
   return (node->in[n + 1] = skip_Id(node->in[n + 1]));
 }
@@ -351,7 +351,7 @@ __get_irn_intra_n (ir_node *node, int n) {
  */
 static INLINE ir_node*
 __get_irn_inter_n (ir_node *node, int n) {
-  assert(node); assert(-1 <= n && n < __get_irn_arity(node));
+  assert(node); assert(-1 <= n && n < __get_irn_inter_arity(node));
 
   /* handle Filter and Block specially */
   if (__get_irn_opcode(node) == iro_Filter) {
