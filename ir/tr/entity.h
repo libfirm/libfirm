@@ -376,7 +376,7 @@ void    set_compound_graph_path_node(compound_graph_path *gr, int pos, entity *n
 int     get_compound_graph_path_array_index(compound_graph_path *gr, int pos);
 void    set_compound_graph_path_array_index(compound_graph_path *gr, int pos, int index);
 
-/** Checks wether the path up to pos is correct. If the path contains a NULL,
+/** Checks whether the path up to pos is correct. If the path contains a NULL,
  *  assumes the path is not complete and returns 'true'. */
 int is_proper_compound_graph_path(compound_graph_path *gr, int pos);
 
@@ -389,8 +389,16 @@ void     set_compound_ent_value_w_path(entity *ent, ir_node *val, compound_graph
  *  Asserts if the entity has variability_uninitialized.
  * */
 int      get_compound_ent_n_values(entity *ent);
+/** Returns a constant value given the position. */
 ir_node *get_compound_ent_value(entity *ent, int pos);
+/** Returns the access path for value at position pos. */
 compound_graph_path *get_compound_ent_value_path(entity *ent, int pos);
+/** Returns the position of a value with the given path.
+ *  The path must contain array indicees for all array element entities. */
+int get_compound_ent_pos_by_path(entity *ent, compound_graph_path *path);
+/** Returns a constant value given the access path.
+ *  The path must contain array indicees for all array element entities. */
+ir_node *get_compound_ent_value_by_path(entity *ent, compound_graph_path *path);
 
 /** Removes all constant entries where the path ends at value_ent. Does not
    free the memory of the paths.  (The same path might be used for several

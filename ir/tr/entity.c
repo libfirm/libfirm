@@ -696,6 +696,53 @@ get_compound_ent_value_path(entity *ent, int pos) {
   return ent->val_paths[pos];
 }
 
+static int equal_paths(compound_graph_path *path1, int *visited_indicees, compound_graph_path *path2) {
+  int i;
+  int len1 = get_compound_graph_path_length(path1);
+  int len2 = get_compound_graph_path_length(path2);
+
+  if (len2 > len1) return false;
+
+  for (i = 0; i < len1; i++) {
+    entity *node1 = get_compound_graph_path_node(path1, i);
+    entity *node2 = get_compound_graph_path_node(path2, i);
+    if (node1 != node2) return false;
+    type *tp = get_entity_owner(node1);
+    if (is_Array_type(tp)) {
+      /* Compute the index of this node. */
+      assert(get_array_n_dimensions(tp) == 1 && "multidim not implemented");
+      long low = get_array_lower_bound_int(tp, 0);
+      if (low+visited_indicees[i] < get_compound_graph_path_array_index(path2, i)) {
+	visited_indicees[i]++;
+	return false;
+      } else {
+	assert(low+visited_indicees[i] == get_compound_graph_path_array_index(path2, i));
+      }
+    }
+  }
+  return true;
+}
+
+/* Returns the position of a value with the given path.
+ *  The path must contain array indicees for all array element entities. */
+int get_compound_ent_pos_by_path(entity *ent, compound_graph_path *path) {
+  int i, n_paths = get_compound_ent_n_values(ent);
+  int *visited_indicees = (int *)xcalloc(get_compound_graph_path_length(path), sizeof(int));
+  for (i = 0; i < n_paths; i ++) {
+    if (equal_paths(get_compound_ent_value_path(ent, i), visited_indicees, path))
+      return i;
+  }
+  assert(0 && "path not found");
+  return -1;
+}
+
+/* Returns a constant value given the access path.
+ *  The path must contain array indicees for all array element entities. */
+ir_node *get_compound_ent_value_by_path(entity *ent, compound_graph_path *path) {
+  return get_compound_ent_value(ent, get_compound_ent_pos_by_path(ent, path));
+}
+
+
 void
 remove_compound_ent_value(entity *ent, entity *value_ent) {
   int i;
@@ -889,7 +936,7 @@ static int get_next_index(entity *elem_ent) {
  *  array bounds must be representable as ints.
  *
  *  (If the bounds are not representable as ints we have to represent
- *  the indices as firm nodes.  But the still we must be able to
+ *  the indices as firm nodes.  But still we must be able to
  *  evaluate the index against the upper bound.)
  */
 void compute_compound_ent_array_indicees(entity *ent) {
@@ -947,7 +994,6 @@ void compute_compound_ent_array_indicees(entity *ent) {
         set_compound_graph_path_array_index (path, j, get_next_index(node));
     }
   }
-
 }
 
 /** resize: double the allocated buffer */

@@ -169,6 +169,8 @@ static int constants_on_wrong_irg(entity *ent) {
  */
 static int check_entity(entity *ent) {
   int rem_vpi;
+  type *tp = get_entity_type(ent);
+  type *owner = get_entity_owner(ent);
 
   current_ir_graph =  get_const_code_irg();
   if (constants_on_wrong_irg(ent)) {
@@ -195,6 +197,21 @@ static int check_entity(entity *ent) {
       entity *impl = get_SymConst_entity(get_atomic_ent_value(ent));
       assert(get_entity_peculiarity(impl) == peculiarity_existent &&
 	     "inherited method entities must have constant pointing to existent entity.");
+    }
+  }
+
+  /* Entities in global type are not dynamic or automatic allocated. */
+  if (owner == get_glob_type()) {
+    assert(get_entity_allocation(ent) != allocation_dynamic &&
+	   get_entity_allocation(ent) != allocation_automatic);
+  }
+
+  if (get_entity_variability(ent) != variability_uninitialized) {
+    if (is_atomic_type(tp)) {
+      ir_node *val = get_atomic_ent_value(ent);
+      if (val)
+	assert(get_irn_mode(val) == get_type_mode(tp) &&
+	       "Mode of constant in entity must match type.");
     }
   }
 

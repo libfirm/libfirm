@@ -39,6 +39,7 @@
 # define _ENTITY_T_H_
 
 #include "firm_common_t.h"
+#include "firm_config.h"
 
 # include "entity.h"
 # include "typegmod.h"
@@ -52,9 +53,9 @@ struct compound_graph_path {
   type *tp;             /**< The type this path belongs to. */
   int len;              /**< length of the path */
   int *arr_indicees;    /**< List of array indeces.  To compute position of
-                 array elements */
+			   array elements */
   entity *nodes[1];     /**< List of entities of length len to express the
-                 access path. */
+			   access path. */
 };
 
 /** the type of an entity */
