@@ -1,4 +1,6 @@
-
+  5.7.2000 Goetz
+  Fixed some testprograms to new semantics of firm.
+  Added testprogram global_var_example.
 
   5.7.2000 Goetz
   Fixed a bug in irop:  Size of Sel node was (entity *) instead of
