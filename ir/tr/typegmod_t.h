@@ -1,3 +1,4 @@
+/* (C) 2001 by Universitaet Karlsruhe */
 
 /* $Id$ */
 
@@ -7,9 +8,7 @@
 # include "typegmod.h"
 
 /**
- *
- *  file typegmod.h
- *   (C) 2001 by Universitaet Karlsruhe
+ * @file typegmod.h
  *   Goetz Lindenmaier
  *  This module supplies routines that support changing the type graph.
  */

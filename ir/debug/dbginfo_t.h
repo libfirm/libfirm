@@ -1,14 +1,16 @@
 /*
 *  Copyright (C) 2001 by Universitaet Karlsruhe
 *  All rights reserved.
+*/
+
+/**
+* @file dbginfo_t.h
 *
-*  Authors: Goetz Lindenmaier
+* @author Goetz Lindenmaier
 *
 *  dbginfo: This is a empty implementation of the Firm interface to
 *  debugging support.  It only guarantees that the Firm library compiles
 *  and runs without any real debugging support.
-*  The functions herein are declared weak so that they can be overriden
-*  by a real implementation.
 */
 
 /* $Id$ */

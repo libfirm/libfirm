@@ -1,17 +1,22 @@
-/* Copyright (c) 2002 by Universität Karlsruhe (TH).  All Rights Reserved  */
+/* Copyright (c) 2002 by Universitaet Karlsruhe (TH).  All Rights Reserved  */
 
 /**
-   NAME
-     st.h
-   PURPOSE
-     provide some auxilliary structures for firm graphs.
-   S
+   @file st.h
+
+   Provide some auxilliary structures for firm graphs.
+
+   @author Florian Liekweg
+
+   @note
      not quite complete
+*/
+
+/*
    HISTORY
      liekweg - Feb 26, 2002: Created.
    CVS:
      $Id$
-***/
+*/
 
 # ifndef _ST_H_
 # define _ST_H_
@@ -27,18 +32,18 @@
 
 /* Data Types: */
 
-/*   One dominator tree */
+/**  One dominator tree */
 typedef struct
 {
   int n_blocks;
-  ir_graph *graph;	/* PRE */
+  ir_graph *graph;	/**< PRE */
   ir_node **blocks;
-  ir_node **idoms;	/* idom [n] == immediate dominator of blocks [n] */
+  ir_node **idoms;	/**< idom [n] == immediate dominator of blocks [n] */
   bs_t *masks;
 }
 dt_t;
 
-/* List entry:  */
+/** List entry.  */
 typedef struct dtree_t
 {
   dt_t *tree;
@@ -48,7 +53,7 @@ typedef struct dtree_t
 }
 dtree_t;
 
-/* dominator environment for a node @a in graph @graph */
+/** dominator environment for a node dom_env_t::a in graph dom_env_t::graph */
 typedef struct dom_env_t
 {
   dt_t     *dt;
