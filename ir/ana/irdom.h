@@ -33,10 +33,12 @@
 # include "irnode.h"
 
 
-/* Accessing the dominator datastructure.
+/** Accessing the dominator datastructure.
  *
  * These routines only work properly if the ir_graph is in state
  * dom_consistent or dom_inconsistent.
+ *
+ * If the block is not reachable from Start, returns a Bad node.
  */
 ir_node *get_Block_idom(ir_node *bl);
 void set_Block_idom(ir_node *bl, ir_node *n);

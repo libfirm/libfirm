@@ -20,13 +20,18 @@
 #include "irdom_t.h"
 #include "irgraph_t.h"   /* To access state field. */
 #include "irnode_t.h"
+#include "ircons_t.h"
 
-/**********************************************************************/
+/*--------------------------------------------------------------------*/
 /** Accessing the dominator data structures                          **/
-/**********************************************************************/
+/*--------------------------------------------------------------------*/
 
 ir_node *get_Block_idom(ir_node *bl) {
   assert(get_irn_op(bl) == op_Block);
+  if (get_Block_dom_depth(bl) == -1) {
+    /* This block is not reachable from Start */
+    return new_Bad();
+  }
   return bl->attr.block.dom.idom;
 }
 
@@ -57,23 +62,9 @@ void set_Block_dom_depth(ir_node *bl, int depth) {
 
 
 
-/**********************************************************************/
-/** Building and Removing the dominator datasturcture                **/
-/**                                                                  **/
-/**  **/
-/**  **/
-/**  **/
-/**  **/
-/**  **/
-/**  **/
-/** .**/
-/**  **/
-/**  **/
-/**  **/
-/**  **/
-/**  **/
-/**  **/
-/**********************************************************************/
+/*--------------------------------------------------------------------*/
+/*  Building and Removing the dominator datastructure                 */
+/*--------------------------------------------------------------------*/
 
 static void count_and_init_blocks(ir_node *bl, void *env) {
   int *n_blocks = (int *) env;
@@ -215,10 +206,11 @@ void compute_doms(ir_graph *irg) {
     /* Step 2 */
     irn_arity = get_irn_arity(w->block);
     for (j = 0;  j < irn_arity;  j++) {
-      ir_node *pred = get_nodes_block(get_Block_cfgpred(w->block, j));
+      ir_node *cf_op = get_Block_cfgpred(w->block, j);
+      ir_node *pred  = get_nodes_block(cf_op);
       tmp_dom_info *u;
 
-      if ((is_Bad(get_Block_cfgpred(w->block, j))) ||
+      if ((is_Bad(cf_op)) || (is_Bad(pred)) ||
 	  (get_Block_pre_num (pred) == -1))
 	continue;	/* control-dead */
 
