@@ -820,6 +820,9 @@ void     set_Free_size (ir_node *node, ir_node *size);
 type    *get_Free_type (ir_node *node);
 void     set_Free_type (ir_node *node, type *tp);
 
+where_alloc  get_Free_where (ir_node *node);
+void         set_Free_where (ir_node *node, where_alloc where);
+
 ir_node **get_Sync_preds_arr (ir_node *node);
 int       get_Sync_n_preds (ir_node *node);
 ir_node  *get_Sync_pred (ir_node *node, int pos);
