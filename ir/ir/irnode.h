@@ -13,8 +13,10 @@
 # ifndef _IRNODE_H_
 # define _IRNODE_H_
 
-/** Projection numbers of compare: use for Proj nodes! */
-/* @@@ there are numbers with normalized names below! */
+/**
+ * Projection numbers of compare: use for Proj nodes!
+ * @remark there are numbers with normalized names below!
+ */
 typedef enum {
   False = 0,		/**< false */
   Eq,			/**< equal */
@@ -195,8 +197,24 @@ INLINE ir_node  *get_nodes_Block (ir_node *node);
 #define set_nodes_block set_nodes_Block
 INLINE void      set_nodes_Block (ir_node *node, ir_node *block);
 
-/** Projection numbers for result of Start node: use for Proj nodes! */
-/* @@@ old name convention! */
+/**
+ * Projection numbers for result of Start node: use for Proj nodes!
+ */
+typedef enum {
+  pn_Start_X_initial_exec,  /**< Projection on the initial control flow. */
+  pn_Start_M,               /**< Projection on the initial memory. */
+  pn_Start_P_frame_base,    /**< Projection on the frame base pointer. */
+  pn_Start_P_globals,       /**< Projection on the pointer to the data segment
+			       containing _all_ global entities. */
+  pn_Start_T_args,          /**< Projection on all arguments. */
+  pn_Start_P_value_arg_base /**< Pointer to region of compound value arguments as defined by
+			       type of this method. */
+} pn_Start; /* Projection numbers for Start. */
+
+/**
+ * Projection numbers for result of Start node: use for Proj nodes!
+ * @remark This is the old name convention, don't use anymore.
+ */
 typedef enum {
   pns_initial_exec,     /**< Projection on an executable, the initial control
 			   flow. */
@@ -208,16 +226,6 @@ typedef enum {
   pns_value_arg_base    /**< Pointer to region of compound value arguments as defined by
   			     type of this method. */
 } pns_number; /* pns: Projection Number Start */
-typedef enum {
-  pn_Start_X_initial_exec,  /**< Projection on the initial control flow. */
-  pn_Start_M,               /**< Projection on the initial memory. */
-  pn_Start_P_frame_base,    /**< Projection on the frame base pointer. */
-  pn_Start_P_globals,       /**< Projection on the pointer to the data segment
-			       containing _all_ global entities. */
-  pn_Start_T_args,          /**< Projection on all arguments. */
-  pn_Start_P_value_arg_base /**< Pointer to region of compound value arguments as defined by
-			       type of this method. */
-} pn_Start; /* Projection numbers for Start. */
 
 /** Test whether arbitrary node is frame pointer.
  *
@@ -313,6 +321,9 @@ INLINE void      set_Cond_selector (ir_node *node, ir_node *selector);
 INLINE cond_kind get_Cond_kind (ir_node *node);
 INLINE void      set_Cond_kind (ir_node *node, cond_kind kind);
 
+/**
+ * Projection numbers for conditions.
+ */
 typedef enum {
   pn_Cond_false,    /**< Control flow if operand is "false". */
   pn_Cond_true      /**< Control flow if operand is "true".  */
@@ -330,6 +341,9 @@ INLINE void     set_Raise_mem (ir_node *node, ir_node *mem);
 INLINE ir_node *get_Raise_exo_ptr (ir_node *node);  /* PoinTeR to EXception Object */
 INLINE void     set_Raise_exo_ptr (ir_node *node, ir_node *exoptr);
 
+/**
+ * Projection numbers for Raise.
+ */
 typedef enum {
   pn_Raise_X,    /**< Execution result. */
   pn_Raise_M     /**< Memory result.    */
@@ -355,6 +369,7 @@ typedef enum {
   linkage_ptr_info   /**< The SymConst is a symbolic pointer to be filled in
 			by the linker. Type_or_id_p is ident *. */
 } symconst_kind;
+
 typedef union type_or_id * type_or_id_p;
 INLINE symconst_kind get_SymConst_kind (const ir_node *node);
 INLINE void          set_SymConst_kind (ir_node *node, symconst_kind num);
@@ -380,8 +395,11 @@ INLINE void     set_Sel_index (ir_node *node, int pos, ir_node *index);
 INLINE entity  *get_Sel_entity (ir_node *node); /* entity to select */
 INLINE void     set_Sel_entity (ir_node *node, entity *ent);
 
-/** Projection numbers for result of Call node: use for Proj nodes! */
-/* @@@ old name convention! */
+/**
+ * Projection numbers for result of Call node: use for Proj nodes!
+ *
+ * @remark old name convention!
+ */
 typedef enum {
   pncl_memory = 0,        /**< The memory result. */
   pncl_exc_target = 1,    /**< The control flow result branching to the exception handler */
@@ -392,6 +410,9 @@ typedef enum {
 			      passed by value (for compound result types). */
 } pncl_number;   /* pncl: Projection Number CaLl */
 
+/**
+ * Projection numbers for result of Call node: use for Proj nodes!
+ */
 typedef enum {
   pn_Call_M_regular = 0,  /**< The memory result. */
   pn_Call_T_result  = 2,  /**< The tuple containing all (0, 1, 2, ...) results */
@@ -477,6 +498,9 @@ INLINE void     set_Quot_right (ir_node *node, ir_node *right);
 INLINE ir_node *get_Quot_mem (ir_node *node);
 INLINE void     set_Quot_mem (ir_node *node, ir_node *mem);
 
+/**
+ * Projection numbers for Quot: use for Proj nodes!
+ */
 typedef enum {
   pn_Quot_M,           /**< Memory result.    */
   pn_Quot_X_except,    /**< Execution result if exception occured. */
@@ -490,6 +514,9 @@ INLINE void     set_DivMod_right (ir_node *node, ir_node *right);
 INLINE ir_node *get_DivMod_mem (ir_node *node);
 INLINE void     set_DivMod_mem (ir_node *node, ir_node *mem);
 
+/**
+ * Projection numbers for DivMod: use for Proj nodes!
+ */
 typedef enum {
   pn_DivMod_M,           /**< Memory result.    */
   pn_DivMod_X_except,    /**< Execution result if exception occured. */
@@ -504,6 +531,9 @@ INLINE void     set_Div_right (ir_node *node, ir_node *right);
 INLINE ir_node *get_Div_mem (ir_node *node);
 INLINE void     set_Div_mem (ir_node *node, ir_node *mem);
 
+/**
+ * Projection numbers for Div: use for Proj nodes!
+ */
 typedef enum {
   pn_Div_M,           /**< Memory result.    */
   pn_Div_X_except,    /**< Execution result if exception occured. */
@@ -517,6 +547,9 @@ INLINE void     set_Mod_right (ir_node *node, ir_node *right);
 INLINE ir_node *get_Mod_mem (ir_node *node);
 INLINE void     set_Mod_mem (ir_node *node, ir_node *mem);
 
+/**
+ * Projection numbers for Mod: use for Proj nodes!
+ */
 typedef enum {
   pn_Mod_M,           /**< Memory result.    */
   pn_Mod_X_except,    /**< Execution result if exception occured. */
@@ -544,10 +577,12 @@ INLINE void     set_Eor_right (ir_node *node, ir_node *right);
 INLINE ir_node *get_Not_op (ir_node *node);
 INLINE void     set_Not_op (ir_node *node, ir_node *op);
 
-/* Projection numbers for Cmp are defined several times.
-   The bit patterns are used for variouse tests, so don't change.
-   The "unordered" values are possible results of comparing
-   floating point numbers. */
+/**
+ * Projection numbers for Cmp are defined several times.
+ * The bit patterns are used for variouse tests, so don't change.
+ * The "unordered" values are possible results of comparing
+ * floating point numbers.
+ */
 typedef enum {
   pn_Cmp_False = 0,   /**< false */
   pn_Cmp_Eq,	      /**< equal */
@@ -629,6 +664,9 @@ void             set_Filter_cg_pred(ir_node * node, int pos, ir_node * pred);
 int              get_Filter_n_cg_preds(ir_node *node);
 ir_node *        get_Filter_cg_pred(ir_node *node, int pos);
 
+/**
+ * Projection numbers for Load: use for Proj nodes!
+ */
 typedef enum {
   pn_Load_M,         /**< Memory result.    */
   pn_Load_X_except,  /**< Execution result if exception occured. */
@@ -640,6 +678,9 @@ INLINE void     set_Load_mem (ir_node *node, ir_node *mem);
 INLINE ir_node *get_Load_ptr (ir_node *node);
 INLINE void     set_Load_ptr (ir_node *node, ir_node *ptr);
 
+/**
+ * Projection numbers for Store: use for Proj nodes!
+ */
 typedef enum {
   pn_Store_M,         /**< Memory result.    */
   pn_Store_X_except   /**< Execution result if exception occured. */
@@ -652,6 +693,9 @@ INLINE void     set_Store_ptr (ir_node *node, ir_node *ptr);
 INLINE ir_node *get_Store_value (ir_node *node);
 INLINE void     set_Store_value (ir_node *node, ir_node *value);
 
+/**
+ * Projection numbers for Alloc: use for Proj nodes!
+ */
 typedef enum {
   pn_Alloc_M,    /**< Memory result. */
   pn_Alloc_X_except,    /**< Execution result if exception occured. */
@@ -665,7 +709,7 @@ INLINE void     set_Alloc_size (ir_node *node, ir_node *size);
 INLINE type    *get_Alloc_type (ir_node *node);
 INLINE void     set_Alloc_type (ir_node *node, type *tp);
 
-/** allocation place. */
+/** The allocation place. */
 typedef enum {
   stack_alloc,          /**< Alloc allocates the object on the stack. */
   heap_alloc            /**< Alloc allocates the object on the heap. */
