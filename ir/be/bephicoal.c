@@ -22,12 +22,10 @@
 #include "phiclass_t.h"
 #include "bephicoal_t.h"
 
-#define DEBUG_LVL 0
-//SET_LEVEL_1
-#define MAX_COLORS 16
+#define DEBUG_LVL 0 //SET_LEVEL_2
+#define MAX_COLORS 32
 
 #define INITIAL_SLOTS_PINNED_GLOBAL 256
-//#define INITIAL_SLOTS_FREE_NODES    128
 #define INITIAL_SLOTS_CHANGED_NODES 32
 
 /* some things for readable code */
@@ -67,8 +65,6 @@ typedef struct _node_stat_t {
  * corresponding phi class.
  */
 typedef struct _phi_unit_t {
-	unsigned char phi_count;			/**< the number of phi nodes in this unit */
-	/* 1 phi */
 	unsigned char node_count;			/**< size of the nodes-array */
 	unsigned char conflict_count;		/**< size of the conflicts-array */
 	unsigned char conflict_count_org;	/**< initial size of the conflicts-array */
@@ -80,13 +76,7 @@ typedef struct _phi_unit_t {
 static firm_dbg_module_t *dbgphi = NULL;
 
 /**
- * Contains ir_nodes of phi-classes whose colors may change unlimited times.
- * These nodes are not optimizable, so there is no need to pin their color.
- */
-//static pset *free_nodes = NULL;
-
-/**
- * Contains already optimized ir_nodes of phi-classes fully processed.
+ * Contains already optimized ir_nodes of phi-units fully processed.
  * So one can perform a check not to switch them twice or more.
  */
 static pset *pinned_global = NULL;
@@ -253,8 +243,8 @@ static INLINE int pu_is_global_pinnable(phi_unit_t *pu, ir_node *irn) {
  * Determines a maximum independent set with respect to the conflict edges
  * in pu->conflicts and the nodes beeing all non-removed nodes of pu->nodes.
  * TODO: make this 'un-greedy'
- * TODO: be aware that phi nodes should find their way in the set.
- *       for 1 phi in greedy version this is no prob, cause is comes first at [0].
+ * ATTENTION: be aware that phi nodes find their way into the set. For 1 phi
+ * 			  in greedy version this is no prob, cause it comes first at [0].
  */
 static int pu_get_mis(phi_unit_t *pu, struct obstack *res) {
 	int i, o, size = 0;
@@ -296,6 +286,7 @@ static int pu_get_mis(phi_unit_t *pu, struct obstack *res) {
  *
  * ASSUMPTION: Assumes that a life range of a single value can't be spilt into
  * 			   several smaller intervals where other values can live in between.
+ *             This should be true in SSA.
  */
 static ir_node *_pu_color_irn(phi_unit_t *pu, ir_node *irn, int col, const ir_node *trigger, struct obstack *changed_nodes) {
 	ir_node *res;
@@ -341,7 +332,7 @@ static ir_node *_pu_color_irn(phi_unit_t *pu, ir_node *irn, int col, const ir_no
 		in = 1;
 		out = 0;
 
-		/* process the queue. The code below looks for every block dominated
+		/* process the queue. The code below checks for every block dominated
 		 * by the irns one, and in which the irn is live, if there are
 		 * conflicting nodes */
 		while (out < in) {
@@ -453,8 +444,7 @@ static int pu_try_color(phi_unit_t *pu, int col, int b_size) {
 
 			if (confl_node == CHANGE_SAVE) {
 				DBG((dbgphi, LEVEL_2, "\t    Save\n"));
-				//if (!pset_find_ptr(free_nodes, test_node))
-					pu_pin_node(pu, test_node);
+				pu_pin_node(pu, test_node);
 			} else if (confl_node == CHANGE_NYI) {
 				DBG((dbgphi, 0, "\t    NYI\n"));
 			} else if (confl_node == CHANGE_IMPOSSIBLE) {
@@ -497,7 +487,8 @@ ret:
  * Tries to re-allocate colors of nodes in this phi unit, to achieve a lower
  * number of copy instructions placed during phi destruction. Optimized version.
  * Works only for phi-classes/phi-units with exactly 1 phi node, which is the
- * case for approximately 80% of all phi units.
+ * case for approximately 80% of all phi classes. All other phi classes are
+ * reduced to this case.
  */
 static void pu_coal_1_phi(phi_unit_t *pu) {
 	int size, col, b_size, b_color;
@@ -537,7 +528,7 @@ static void pu_coal_1_phi(phi_unit_t *pu) {
 	/* now apply the found optimum */
 	if (b_changes) {
 		node_stat_t *ns;
-		DBG((dbgphi, 0, "\tBest color: %d  Copies: %d/%d\n", b_color, pu->node_count-b_size, pu->node_count-1));
+		DBG((dbgphi, 1, "\tBest color: %d  Copies: %d/%d\n", b_color, pu->node_count-b_size, pu->node_count-1));
 		for (ns = set_first(b_changes); ns; ns = set_next(b_changes)) {
 			/* NO_COLOR is possible, if we had an undo; so the irn stays in the
 			 * pu->changed_nodes with new color set to NO_COLOR. */
@@ -554,49 +545,52 @@ static void pu_coal_1_phi(phi_unit_t *pu) {
 	}
 }
 
-/**
- * Tries to re-allocate colors of nodes in this phi unit, to achieve a lower
- * number of copy instructions placed during phi destruction.
- * General purpose version.
- */
-static void pu_coal_n_phi(phi_unit_t *pu) {
-	/* TODO */
-}
 
 /**
- * Prepares a phi class for further processing as a phi unit.
- * @param pc The phi class to prepare.
- * @return A so called phi unit containing some prepared informations
- *         needed by the following coalescing phase.
+ * Prepares a phi class for further processing as one or more phi units.
+ * Calls the worker-functions for all units.
+ * @param pc The phi class to process.
+ * @param root_phi In case of recursive call this is the phi node not beeing
+ * 				   an argument in the phi1unit.
+ * 				   Else this has to be NULL.
  */
-static phi_unit_t *new_pu(pset *pc) {
-	phi_unit_t *pu;
+static void coal_phi_class(pset *pc, ir_node *root_phi) {
+	int phi_count = 0;
 	ir_node *n, *phi = NULL;
 
-	/* get the phi count of this class */
-	pu = calloc(1, sizeof(*pu));
-	for (n = pset_first(pc); n; n = pset_next(pc))
-		if (is_Phi(n)) {
-			phi = n;
-			pu->phi_count++;
-		}
+	/* unfortunately there _can_ be >1 phi nodes in a phi1unit,
+	 * so we have an if... */
+	if (root_phi) {
+		phi = root_phi;
+		phi_count = 1;
+	} else {
+		/* get the phi count of this class. May result in phi_count == 1 */
+		for (n = pset_first(pc); n; n = pset_next(pc))
+			if (is_Phi(n)) {
+				phi = n;
+				phi_count++;
+			}
+	}
 
-	if (pu->phi_count == 1) {
+	/* the 'simple' case */
+	if (phi_count == 1) {
+		phi_unit_t *pu;
 		ir_node **tmp;
-		int i, o;
 		struct obstack ob;
+		int i, o;
 
 		obstack_init(&ob);
 
-		/* build member set not containing phi interferers */
 		DBG((dbgphi, 1, "\tPhi-1 unit:\n"));
+		pu = calloc(1, sizeof(*pu));
 
+		/* build member set not containing phi interferers */
 		DBG((dbgphi, 1, "\t    %n\n", phi));
 		obstack_ptr_grow(&ob, phi);
 		pu->node_count = 1;
 
 		for (n = pset_first(pc); n; n = pset_next(pc)) {
-			if (is_Phi(n))
+			if (n == phi)
 				continue;
 			if (!phi_ops_interfere(phi, n)) {
 				DBG((dbgphi, 1, "\t    %n\n", n));
@@ -604,13 +598,12 @@ static phi_unit_t *new_pu(pset *pc) {
 				pu->node_count++;
 			} else {
 				DBG((dbgphi, 1, "\t    %n \tdropped\n", n));
-				/* TODO: What if the irn is only free wrt one phi class? */
-				//pset_insert_ptr(free_nodes, n);
 			}
 		}
 		tmp = obstack_finish(&ob);
 		pu->nodes = malloc(pu->node_count * sizeof(*pu->nodes));
 		memcpy(&pu->nodes[0], tmp, pu->node_count * sizeof(*tmp));
+		obstack_free(&ob, NULL);
 
 		/* init conlict graph to life range interference */
 		DBG((dbgphi, 1, "\tInitial conflicts:\n"));
@@ -620,31 +613,117 @@ static phi_unit_t *new_pu(pset *pc) {
 					pu_add_conflict(pu, pu->nodes[i], pu->nodes[o]);
 		pu->conflict_count_org = pu->conflict_count;
 
+		/* init changed nodes */
 		pu->changed_nodes = new_set(set_cmp_node_stat_t, INITIAL_SLOTS_CHANGED_NODES);
 
-		obstack_free(&ob, NULL);
-	} else {
-		DBG((dbgphi, 1, "\tPhi-n unit:\n"));
-		/* TODO */
-	}
+		pu_coal_1_phi(pu);
 
-	return pu;
-}
-
-
-/**
- * Deletes a phi unit
- */
-static void free_pu(phi_unit_t *pu) {
-	if (pu->phi_count == 1) {
 		free(pu->nodes);
 		free(pu->changed_nodes);
 		if (pu->conflicts)
 			free(pu->conflicts);
-	} else {
-		/* TODO */
+	} else {	/* the 'not so easy' case */
+		DBG((dbgphi, 1, "\tPhi-n unit:\n"));
+
+		/* copy pc into big_pc... */
+		pset *copy = pset_new_ptr(32);
+		for (n = pset_first(pc); n; n = pset_next(pc)) {
+			DBG((dbgphi, 1, "\t    %n\n", n));
+			pset_insert_ptr(copy, n);
+		}
+
+		/* ... because we want to build small 'connected graphs' and
+		 * delete their members from the copy */
+		while (pset_count(copy) > 0) {
+			/* build all connected sets from the copy */
+			int last = 0, first = 0;
+			ir_node **queue = calloc(pset_count(copy), sizeof(*queue));
+
+			/* pick some node out of copy, place into queue */
+			n = pset_first(copy);
+			pset_break(copy);
+			pset_remove_ptr(copy, n);
+			queue[last++] = n;
+
+			DBG((dbgphi, 1, "\tConnected:\n"));
+			pset *connected = pset_new_ptr(8);
+			while (first < last) {
+				/* pick n out of the queue into connected set */
+				n = queue[first++];
+				pset_insert_ptr(connected, n);
+				DBG((dbgphi, 1, "\t    %n\n", n));
+
+
+				/* check if pre/successors are 'connected' with n */
+				{
+					ir_node *other;
+					int i;
+					/* insert all args of n, which are in the phi class to the queue */
+					for(i=0; i < get_irn_arity(n); ++i) {
+						other = get_irn_n(n, i);
+						if (pset_find_ptr(copy, other) && !values_interfere(n, other)) {
+							queue[last++] = other;
+							pset_remove_ptr(copy, other);
+						}
+					}
+					/* same for outs of n */
+					for(i=0; i < get_irn_n_outs(n); ++i) {
+						other = get_irn_out(n, i);
+						if (pset_find_ptr(copy, other) && !values_interfere(n, other)) {
+							queue[last++] = other;
+							pset_remove_ptr(copy, other);
+						}
+					}
+				}
+			}
+
+			/* Now we have a "connected graph" build from copy==pc.
+			 * Remove 1-phi-units from the connected set for
+			 * passing to optimizer */
+			while (pset_count(connected) > 0) {
+				pset *phi1unit;
+				ir_node *phi = NULL;
+				int i;
+				/* search a phi node */
+				for (n = pset_first(connected); n; n = pset_next(connected))
+					if (is_Phi(n)) {
+						phi = n;
+						break;
+					}
+				pset_break(connected);
+
+				/* if there are only non-phi nodes left quit */
+				if (!phi)
+					break;
+
+				/* Build a 1-phi-unit with this phi */
+				DBG((dbgphi, 1, "\t    Phi-1-unit:\n"));
+				phi1unit = pset_new_ptr(8);
+				pset_insert_ptr(phi1unit, phi);
+				pset_remove_ptr(connected, phi);
+				DBG((dbgphi, 1, "\t\t%n\n", phi));
+				/* insert all arguments of phi, which are in the connected set
+				 * to the 1-phi-unit */
+				for(i=0; i < get_irn_arity(phi); ++i) {
+					ir_node *arg = get_irn_n(phi, i);
+					if (pset_find_ptr(connected, arg)) {
+						DBG((dbgphi, 1, "\t\t%n\n", arg));
+						pset_insert_ptr(phi1unit, arg);
+						pset_remove_ptr(connected, arg);
+					}
+				}
+
+				/* finally the call for coalescing the 1-phi-unit */
+				if (pset_count(phi1unit) > 1) /* ==1 can happen if the connected set contains only a single phi node */
+					coal_phi_class(phi1unit, phi);
+
+				del_pset(phi1unit);
+			}
+			del_pset(connected);
+			free(queue);
+		}
+		del_pset(copy);
 	}
-	free(pu);
 }
 
 
@@ -652,18 +731,10 @@ void be_phi_coalesce(pset *all_phi_classes) {
 	pset *pc;
 
 	pinned_global = pset_new_ptr(INITIAL_SLOTS_PINNED_GLOBAL);
-//	free_nodes = pset_new_ptr(INITIAL_SLOTS_FREE_NODES);
 
-	for (pc = pset_first(all_phi_classes); pc; pc = pset_next(all_phi_classes)) {
-		phi_unit_t *pu = new_pu(pc);
-		if (pu->phi_count == 1)
-			pu_coal_1_phi(pu);
-		else
-			pu_coal_n_phi(pu);
-		free_pu(pu);
-	}
+	for (pc = pset_first(all_phi_classes); pc; pc = pset_next(all_phi_classes))
+		coal_phi_class(pc, NULL);
 
-//	del_pset(free_nodes);
 	del_pset(pinned_global);
 }
 
