@@ -157,16 +157,16 @@ static entity ** get_impl_methods(entity * method) {
 /* debug makros used in sel_methods_walker */
 #define SIZ(x)    sizeof(x)/sizeof((x)[0])
 
-#define DBG_OPT_NORMALIZE                                     \
+#define DBG_OPT_NORMALIZE                                                      \
 	  __dbg_info_merge_pair(new_node, node, dbg_const_eval)
-#define DBG_OPT_POLY_ALLOC                                               \
-  do {                                                       \
-	ir_node *ons[2];                                         \
-	ons[0] = node;                                           \
-	ons[1] = skip_Proj(get_Sel_ptr(node));                     \
+#define DBG_OPT_POLY_ALLOC                                                     \
+  do {                                                                         \
+	ir_node *ons[2];                                                       \
+	ons[0] = node;                                                         \
+	ons[1] = skip_Proj(get_Sel_ptr(node));                                 \
 	__dbg_info_merge_sets(&new_node, 1, ons, SIZ(ons), dbg_rem_poly_call); \
      } while(0)
-#define DBG_OPT_POLY \
+#define DBG_OPT_POLY                                                           \
 	  __dbg_info_merge_pair(new_node, node, dbg_rem_poly_call)
 
 
@@ -178,7 +178,7 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
       pmap_entry * entry = pmap_find(ldname_map, (void *) get_SymConst_ptrinfo(node));
       if (entry != NULL) { /* Method is declared in the compiled code */
 	entity * ent = entry->value;
-	if (get_entity_visibility(ent) != external_allocated) { /* Meth. is defined */
+	if (get_opt_normalize() && (get_entity_visibility(ent) != external_allocated)) { /* Meth. is defined */
 	  ir_node *new_node;
 	  assert(get_entity_irg(ent));
 	  set_irg_current_block(current_ir_graph, get_nodes_Block(node));
@@ -191,11 +191,14 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
   } else if (get_irn_op(node) == op_Sel &&
 	     is_method_type(get_entity_type(get_Sel_entity(node)))) {
     entity * ent = get_Sel_entity(node);
-    if (get_irn_op(skip_Proj(get_Sel_ptr(node))) == op_Alloc) {
+    if (get_optimize() && get_opt_dyn_meth_dispatch() &&
+	(get_irn_op(skip_Proj(get_Sel_ptr(node))) == op_Alloc)) {
       ir_node *new_node;
       /* We know which method will be called, no dispatch necessary. */
       assert(get_entity_peculiarity(ent) != description);
       set_irg_current_block(current_ir_graph, get_nodes_Block(node));
+      /* @@@ Is this correct?? Alloc could reference a subtype of the owner
+	 of Sel that overwrites the method referenced in Sel. */
       new_node = copy_const_value(get_atomic_ent_value(ent));              DBG_OPT_POLY_ALLOC;
       exchange (node, new_node);
     } else {
@@ -236,7 +239,8 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
 	printf("\n");
 #endif
 
-	if (ARR_LEN(arr) == 1 && arr[0] != NULL) {
+	if (get_optimize() && get_opt_dyn_meth_dispatch() &&
+	    (ARR_LEN(arr) == 1 && arr[0] != NULL)) {
 	  ir_node *new_node;
 	  /* Die Sel-Operation kann immer nur einen Wert auf eine
 	   * interne Methode zurückgeben. Wir können daher die

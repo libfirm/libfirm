@@ -448,6 +448,8 @@ equivalent_node (ir_node *n)
       ir_node *first_val = NULL; /* to shutup gcc */
       ir_node *scnd_val = NULL;  /* to shutup gcc */
 
+      if (!get_opt_normalize()) return;
+
       n_preds = get_Phi_n_preds(n);
 
       block = get_nodes_Block(n);

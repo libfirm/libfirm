@@ -54,7 +54,8 @@ int  get_opt_cse (void);
  * constant subexpression elimination for floating nodes.  Intra
  * procedure cse gets the graph into state "floating".  It is necessary
  * to run pre/code motion to get the graph back into state "pinned".
- * Default: opt_global_cse == 1.
+ * right after a call to local_optimize with global cse turned on.
+ * Default: opt_global_cse == 0.
  */
 void set_opt_global_cse (int value);
 /** Returns global constant subexpression elimination setting. */
@@ -123,5 +124,30 @@ int  get_opt_dead_node_elimination (void);
 void set_opt_inline (int value);
 /** Returns inlining setting. */
 int  get_opt_inline (void);
+
+/** Enable/Disable optimization of dynamic method dispatch
+ *
+ * This flag enables/disables the optimization of dynamic method dispatch.
+ * If the flag is turned on Sel nodes can be replaced by Const nodes representing
+ * the address of a function.
+ */
+void set_opt_dyn_meth_dispatch (int value);
+int  get_opt_dyn_meth_dispatch (void);
+
+/** Enable/Disable normalizations of the firm representation.
+ *
+ *  This flag guards transformations that normalize the firm representation
+ *  as removing Ids and Tuples, useless Phis, replacing SymConst(id) by
+ *  Const(entity) and others.
+ *  The transformations guarded by this flag are not guarded by flag
+ *  "optimize".
+ *  Many algorithms operating on firm can not deal with constructs in
+ *  the non-normalized representation.
+ *  default: 1
+ *  @@@ ATTENTION: not all such transformations are guarded by a flag.
+ */
+void set_opt_normalize (int value);
+int  get_opt_normalize (void);
+
 
 #endif

@@ -18,20 +18,27 @@
 
 /* 0 - don't do this optimization
    1 - lets see, if there is a better graph */
-int optimized = 1;                  /* Turn off all optimizations */
+int optimized = 1;                  /* Turn off all optimizations. */
 
-int opt_cse = 1;                    /* Hash the nodes */
-int opt_global_cse = 0;             /* Don't use block predecessor for comparison */
-/* @@@ 0 solage code placement fehlt */
-int opt_constant_folding = 1;       /* Evaluate operations */
-int opt_unreachable_code = 1;       /* Bad node propagation */
+int opt_cse = 1;                    /* Hash the nodes. */
+int opt_global_cse = 0;             /* Don't use block predecessor for comparison.
+				       Default must be zero as code placement must
+				       be run right after a local optimize walk with
+				       opt_global_cse on. */
+int opt_constant_folding = 1;       /* Evaluate operations. */
+int opt_unreachable_code = 1;       /* Bad node propagation. */
 int opt_control_flow_straightening = 1;           /*  */
-int opt_control_flow_weak_simplification = 1;           /*  */
-int opt_control_flow_strong_simplification = 1;           /*  */
+int opt_control_flow_weak_simplification = 1;     /*  */
+int opt_control_flow_strong_simplification = 1;   /*  */
 int opt_critical_edges = 1;
-int opt_dead_node_elimination = 1;  /* Reclaim memory */
-int opt_reassociation = 1;          /* Reassociate nodes */
-int opt_inline = 1;                 /* Do inlining transformation */
+int opt_dead_node_elimination = 1;  /* Reclaim memory. */
+int opt_reassociation = 1;          /* Reassociate nodes. */
+int opt_inline = 1;                 /* Do inlining transformation. */
+int opt_dyn_meth_dispatch = 1;      /* Remove dynamic method dispatch. */
+
+int opt_normalize = 1;              /* Transformations that normalize the firm representation
+				       as removing Ids and Tuples, useless Phis, SymConst(id) ->
+				       Const(entity) ... */
 
 /* set the flags with set_flagname, get the flag with get_flagname */
 INLINE void
@@ -160,4 +167,27 @@ INLINE void set_opt_inline (int value) {
 
 INLINE int  get_opt_inline (void) {
   return opt_inline;
+}
+
+/** Enable/Disable optimization of dynamic method dispatch
+ *
+ * This flag enables/disables the optimization of dynamic method dispatch.
+ * If the flag is turned on Sel nodes can be replaced by Const nodes representing
+ * the address of a function.
+ */
+void set_opt_dyn_meth_dispatch (int value) {
+  opt_dyn_meth_dispatch = value;
+}
+int  get_opt_dyn_meth_dispatch (void) {
+  return opt_dyn_meth_dispatch;
+}
+
+
+
+INLINE void set_opt_normalize (int value) {
+  opt_normalize = value;
+}
+
+INLINE int  get_opt_normalize (void) {
+  return opt_normalize;
 }

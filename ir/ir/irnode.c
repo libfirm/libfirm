@@ -20,6 +20,7 @@
 #include "array.h"
 #include "irbackedge_t.h"
 #include "irdump.h"
+#include "irflag.h"
 
 #ifdef DEBUG_libfirm
 #include "irprog_t.h"
@@ -39,7 +40,6 @@ INLINE ir_op *get_irn_op (ir_node *node);
 INLINE opcode get_irn_opcode (ir_node *node);
 INLINE ident *get_irn_opident (ir_node *node);
 INLINE type *get_SymConst_type (ir_node *node);
-INLINE ir_node *skip_nop (ir_node *node);
 INLINE ir_node *skip_nop (ir_node *node);
 INLINE int is_Proj (ir_node *node);
 
@@ -2183,6 +2183,8 @@ INLINE ir_node *
 skip_Tuple (ir_node *node) {
   ir_node *pred;
 
+  if (!get_opt_normalize()) return node;
+
   node = skip_nop(node);
   if (get_irn_op(node) == op_Proj) {
     pred = skip_nop(get_Proj_pred(node));
@@ -2197,6 +2199,8 @@ skip_Tuple (ir_node *node) {
 INLINE ir_node *
 skip_nop (ir_node *node) {
   /* don't assert node !!! */
+
+  if (!get_opt_normalize()) return node;
 
   /* Don't use get_Id_pred:  We get into an endless loop for
      self-referencing Ids. */
