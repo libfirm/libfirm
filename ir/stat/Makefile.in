@@ -1,0 +1,37 @@
+#
+# Project:     libFIRM
+# File name:   ir/stat/Makefile.in
+# Purpose:
+# Author:      Boris Boesler, Till Riedel
+# Modified by:
+# Created:
+# CVS-ID:      $Id$
+# Copyright:   (c) 2004 Universität Karlsruhe
+# Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+#
+
+top_srcdir := @top_srcdir@
+srcdir = @srcdir@
+topdir = ../..
+subdir := ir/ir
+
+INSTALL_HEADERS =
+
+SOURCES = $(INSTALL_HEADERS)
+
+SOURCES += 	Makefile.in \
+		firmstat.h
+
+ifeq ($(enable_statistics),yes)
+SOURCES += firmstat.c
+endif
+
+include $(topdir)/MakeRules
+
+CPPFLAGS += 	-I$(top_srcdir)/ir/adt   -I$(top_srcdir)/ir/ir  -I$(top_srcdir)/ir/common  \
+		-I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/tr  -I$(top_srcdir)/ir/tv \
+		-I$(top_srcdir)/ir/debug -I$(top_srcdir)/ir/ana -I$(top_srcdir)/ir/st
+
+include $(top_srcdir)/MakeTargets
+
+all: subdir.o
