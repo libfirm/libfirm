@@ -25,124 +25,124 @@ infoname 1: "Attribute"
 infoname 2: "Verification errors"
 
 graph: { title: "g27" label: "WHILE_EXAMPLE_main" status:clustered color:white
-graph: { title: "n65"  label: "Block 65" status:clustered color:yellow
-edge: {sourcename: "n65" targetname: "n66" label: "0" class:13 priority:60 color:red}
-node: {title: "n64" label: "End  64"  info1: "visited: 16
+graph: { title: "n66"  label: "Block 66" status:clustered color:yellow
+edge: {sourcename: "n66" targetname: "n67" label: "0" class:13 priority:60 color:red}
+node: {title: "n64" label: "End  64"  info1: "visited: 17
 irg:     WHILE_EXAMPLE_main
 arity: 0
 "color: blue}
 }
 
-graph: { title: "n67"  label: "Block 67" status:clustered color:yellow
-edge: {sourcename: "n67" targetname: "n68" label: "0" class:13 priority:60 color:red}
-node: {title: "n66" label: "Return  66"  info1: "visited: 16
+graph: { title: "n68"  label: "Block 68" status:clustered color:yellow
+edge: {sourcename: "n68" targetname: "n69" label: "0" class:13 priority:60 color:red}
+node: {title: "n67" label: "Return  67"  info1: "visited: 17
 irg:     WHILE_EXAMPLE_main
 arity: 2
 return in method of type main_tp
   res 0 type: int
 " info2: "mymode == mode_X && Result X"}
-edge: {sourcename: "n66" targetname: "n88" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n66" targetname: "n87" label: "1" class:1  priority:50}
-node: {title: "n87" label: "SubIs  87"  info1: "visited: 16
+edge: {sourcename: "n67" targetname: "n89" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n67" targetname: "n88" label: "1" class:1  priority:50}
+node: {title: "n88" label: "SubIs  88"  info1: "visited: 17
 irg:     WHILE_EXAMPLE_main
 arity: 2
 "}
-edge: {sourcename: "n87" targetname: "n77" label: "0" class:16 priority:10}
-edge: {sourcename: "n87" targetname: "n76" label: "1" class:16 priority:10}
+edge: {sourcename: "n88" targetname: "n78" label: "0" class:16 priority:10}
+edge: {sourcename: "n88" targetname: "n77" label: "1" class:16 priority:10}
 }
 
-graph: { title: "n69"  label: "Block 69" status:clustered color:yellow
-edge: {sourcename: "n69" targetname: "n86" label: "0" class:13 priority:60 color:red}
-edge: {sourcename: "n69" targetname: "n70" label: "1" class:13 priority:60 color:red}
-node: {title: "n68" label: "ProjX 0 68"  info1: "visited: 16
+graph: { title: "n70"  label: "Block 70" status:clustered color:yellow
+edge: {sourcename: "n70" targetname: "n87" label: "0" class:13 priority:60 color:red}
+edge: {sourcename: "n70" targetname: "n71" label: "1" class:13 priority:60 color:red}
+node: {title: "n69" label: "ProjX 0 69"  info1: "visited: 17
 irg:     WHILE_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n68" targetname: "n73" label: "0" class:13 priority:60 color:red}
-node: {title: "n72" label: "ProjX 1 72"  info1: "visited: 16
+edge: {sourcename: "n69" targetname: "n74" label: "0" class:13 priority:60 color:red}
+node: {title: "n73" label: "ProjX 1 73"  info1: "visited: 17
 irg:     WHILE_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n72" targetname: "n73" label: "0" class:13 priority:60 color:red}
-node: {title: "n73" label: "Cond  73"  info1: "visited: 16
+edge: {sourcename: "n73" targetname: "n74" label: "0" class:13 priority:60 color:red}
+node: {title: "n74" label: "Cond  74"  info1: "visited: 17
 irg:     WHILE_EXAMPLE_main
 arity: 1
 " info2: "mymode == mode_T && Cond mode is not a tuple"}
-edge: {sourcename: "n73" targetname: "n74" label: "0" class:1  priority:50}
-node: {title: "n74" label: "Projb Eq 74"  info1: "visited: 16
+edge: {sourcename: "n74" targetname: "n75" label: "0" class:1  priority:50}
+node: {title: "n75" label: "Projb Eq 75"  info1: "visited: 17
 irg:     WHILE_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n74" targetname: "n75" label: "0" class:1  priority:50}
-node: {title: "n75" label: "CmpT  75"  info1: "visited: 16
+edge: {sourcename: "n75" targetname: "n76" label: "0" class:1  priority:50}
+node: {title: "n76" label: "CmpT  76"  info1: "visited: 17
 irg:     WHILE_EXAMPLE_main
 arity: 2
 "}
-edge: {sourcename: "n75" targetname: "n85" label: "0" class:16 priority:10}
-edge: {sourcename: "n75" targetname: "n76" label: "1" class:1  priority:50}
-node: {title: "n76" label: "PhiIs  76"  info1: "visited: 16
-irg:     WHILE_EXAMPLE_main
-arity: 2 backedges:
-" info2: "mode_is_dataM(mymode) && Phi node"color: green}
-edge: {sourcename: "n76" targetname: "n84" label: "0" class:16 priority:10}
+edge: {sourcename: "n76" targetname: "n86" label: "0" class:16 priority:10}
 edge: {sourcename: "n76" targetname: "n77" label: "1" class:1  priority:50}
-node: {title: "n77" label: "PhiIs  77"  info1: "visited: 16
+node: {title: "n77" label: "PhiIs  77"  info1: "visited: 17
 irg:     WHILE_EXAMPLE_main
 arity: 2 backedges:
 " info2: "mode_is_dataM(mymode) && Phi node"color: green}
-edge: {sourcename: "n77" targetname: "n78" label: "0" class:16 priority:10}
-edge: {sourcename: "n77" targetname: "n76" label: "1" class:1  priority:50}
+edge: {sourcename: "n77" targetname: "n85" label: "0" class:16 priority:10}
+edge: {sourcename: "n77" targetname: "n78" label: "1" class:1  priority:50}
+node: {title: "n78" label: "PhiIs  78"  info1: "visited: 17
+irg:     WHILE_EXAMPLE_main
+arity: 2 backedges:
+" info2: "mode_is_dataM(mymode) && Phi node"color: green}
+edge: {sourcename: "n78" targetname: "n79" label: "0" class:16 priority:10}
+edge: {sourcename: "n78" targetname: "n77" label: "1" class:1  priority:50}
 }
 
-graph: { title: "n71"  label: "Block 71" status:clustered color:yellow
-edge: {sourcename: "n71" targetname: "n72" label: "0" class:13 priority:60 color:red}
-node: {title: "n70" label: "Jmp  70"  info1: "visited: 16
+graph: { title: "n72"  label: "Block 72" status:clustered color:yellow
+edge: {sourcename: "n72" targetname: "n73" label: "0" class:13 priority:60 color:red}
+node: {title: "n71" label: "Jmp  71"  info1: "visited: 17
 irg:     WHILE_EXAMPLE_main
 arity: 0
 " info2: "mymode == mode_X && Jmp node"}
 }
 
-graph: { title: "n79"  label: "Block 79" status:clustered color:yellow
-edge: {sourcename: "n79" targetname: "n80" label: "0" class:13 priority:60 color:red}
-node: {title: "n86" label: "Jmp  86"  info1: "visited: 16
+graph: { title: "n80"  label: "Block 80" status:clustered color:yellow
+edge: {sourcename: "n80" targetname: "n81" label: "0" class:13 priority:60 color:red}
+node: {title: "n87" label: "Jmp  87"  info1: "visited: 17
 irg:     WHILE_EXAMPLE_main
 arity: 0
 " info2: "mymode == mode_X && Jmp node"}
-node: {title: "n78" label: "ProjIs 0 78"  info1: "visited: 16
+node: {title: "n79" label: "ProjIs 0 79"  info1: "visited: 17
 irg:     WHILE_EXAMPLE_main
 arity: 1
 " info2: "(mode == get_type_mode(get_method_param_type(mt, proj))) && Mode of Proj from Start doesn't match mode of param type."color: yellow}
-edge: {sourcename: "n78" targetname: "n83" label: "0" class:16 priority:10}
+edge: {sourcename: "n79" targetname: "n84" label: "0" class:16 priority:10}
 }
 
-graph: { title: "n81"  label: "Block 81" status:clustered color:yellow
-edge: {sourcename: "n81" targetname: "n80" label: "0" class:13 priority:60 color:red}
-node: {title: "n88" label: "ProjM 1 88"  info1: "visited: 16
+graph: { title: "n82"  label: "Block 82" status:clustered color:yellow
+edge: {sourcename: "n82" targetname: "n81" label: "0" class:13 priority:60 color:red}
+node: {title: "n89" label: "ProjM 1 89"  info1: "visited: 17
 irg:     WHILE_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n88" targetname: "n82" label: "0" class:17 priority:10 color:blue}
-node: {title: "n85" label: "0x0Is  85"  info1: "visited: 16
+edge: {sourcename: "n89" targetname: "n83" label: "0" class:17 priority:10 color:blue}
+node: {title: "n86" label: "0x0Is  86"  info1: "visited: 17
 irg:     WHILE_EXAMPLE_main
 arity: 0
 Const of type type_unknown
 " info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
-node: {title: "n84" label: "0x1Is  84"  info1: "visited: 16
+node: {title: "n85" label: "0x1Is  85"  info1: "visited: 17
 irg:     WHILE_EXAMPLE_main
 arity: 0
 Const of type type_unknown
 " info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
-node: {title: "n83" label: "ProjT 4 83"  info1: "visited: 16
+node: {title: "n84" label: "ProjT 4 84"  info1: "visited: 17
 irg:     WHILE_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n83" targetname: "n82" label: "0" class:1  priority:50}
-node: {title: "n80" label: "ProjX 0 80"  info1: "visited: 16
+edge: {sourcename: "n84" targetname: "n83" label: "0" class:1  priority:50}
+node: {title: "n81" label: "ProjX 0 81"  info1: "visited: 17
 irg:     WHILE_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n80" targetname: "n82" label: "0" class:13 priority:60 color:red}
-node: {title: "n82" label: "Start  82"  info1: "visited: 16
+edge: {sourcename: "n81" targetname: "n83" label: "0" class:13 priority:60 color:red}
+node: {title: "n83" label: "Start  83"  info1: "visited: 17
 irg:     WHILE_EXAMPLE_main
 arity: 0
 start of method of type main_tp

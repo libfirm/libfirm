@@ -24,25 +24,25 @@ classname 12: "Member"
 infoname 1: "Attribute"
 infoname 2: "Verification errors"
 
-node: {title: "n63" label: "Block n63" }
-edge: { sourcename: "n63" targetname: "n65"}
-node: {title: "n65" label: "Block n65" }
-edge: { sourcename: "n65" targetname: "n88"}
-edge: { sourcename: "n65" targetname: "n67"}
-node: {title: "n67" label: "Block n67" }
-edge: { sourcename: "n67" targetname: "n81"}
-edge: { sourcename: "n67" targetname: "n69"}
-node: {title: "n69" label: "Block n69" }
-edge: { sourcename: "n69" targetname: "n71"}
-node: {title: "n71" label: "Block n71" }
-edge: { sourcename: "n71" targetname: "n73"}
-node: {title: "n73" label: "Block n73" }
-edge: { sourcename: "n73" targetname: "n73"}
-node: {title: "n81" label: "Block n81" }
-edge: { sourcename: "n81" targetname: "n71"}
-node: {title: "n88" label: "Block n88" }
-edge: { sourcename: "n88" targetname: "n81"}
-node: {title: "n94" label: "Bad  94"  info1: "visited: 0
+node: {title: "n64" label: "Block n64" }
+edge: { sourcename: "n64" targetname: "n66"}
+node: {title: "n66" label: "Block n66" }
+edge: { sourcename: "n66" targetname: "n89"}
+edge: { sourcename: "n66" targetname: "n68"}
+node: {title: "n68" label: "Block n68" }
+edge: { sourcename: "n68" targetname: "n82"}
+edge: { sourcename: "n68" targetname: "n70"}
+node: {title: "n70" label: "Block n70" }
+edge: { sourcename: "n70" targetname: "n72"}
+node: {title: "n72" label: "Block n72" }
+edge: { sourcename: "n72" targetname: "n74"}
+node: {title: "n74" label: "Block n74" }
+edge: { sourcename: "n74" targetname: "n74"}
+node: {title: "n82" label: "Block n82" }
+edge: { sourcename: "n82" targetname: "n72"}
+node: {title: "n89" label: "Block n89" }
+edge: { sourcename: "n89" targetname: "n82"}
+node: {title: "n63" label: "Bad  63"  info1: "visited: 0
 irg:     IRREGULAR_CF_main
 arity: 0
 "}

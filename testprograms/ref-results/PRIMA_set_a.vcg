@@ -25,72 +25,72 @@ infoname 1: "Attribute"
 infoname 2: "Verification errors"
 
 graph: { title: "g65" label: "PRIMA_set_a" status:clustered color:white
-graph: { title: "n125"  label: "Block 125" status:clustered color:yellow
-edge: {sourcename: "n125" targetname: "n126" label: "0" class:13 priority:60 color:red}
-node: {title: "n124" label: "End  124"  info1: "visited: 10
+graph: { title: "n126"  label: "Block 126" status:clustered color:yellow
+edge: {sourcename: "n126" targetname: "n127" label: "0" class:13 priority:60 color:red}
+node: {title: "n124" label: "End  124"  info1: "visited: 11
 irg:     PRIMA_set_a
 arity: 0
 "color: blue}
 }
 
-graph: { title: "n127"  label: "Block 127" status:clustered color:yellow
-edge: {sourcename: "n127" targetname: "n128" label: "0" class:13 priority:60 color:red}
-node: {title: "n126" label: "Return  126"  info1: "visited: 10
+graph: { title: "n128"  label: "Block 128" status:clustered color:yellow
+edge: {sourcename: "n128" targetname: "n129" label: "0" class:13 priority:60 color:red}
+node: {title: "n127" label: "Return  127"  info1: "visited: 11
 irg:     PRIMA_set_a
 arity: 1
 return in method of type set_a
 " info2: "mymode == mode_X && Result X"}
-edge: {sourcename: "n126" targetname: "n131" label: "0" class:14 priority:50 color:blue}
-node: {title: "n131" label: "ProjM 0 131"  info1: "visited: 10
+edge: {sourcename: "n127" targetname: "n132" label: "0" class:14 priority:50 color:blue}
+node: {title: "n132" label: "ProjM 0 132"  info1: "visited: 11
 irg:     PRIMA_set_a
 arity: 1
 "color: yellow}
-edge: {sourcename: "n131" targetname: "n132" label: "0" class:17 priority:10 color:blue}
-node: {title: "n132" label: "Store  132"  info1: "visited: 10
+edge: {sourcename: "n132" targetname: "n133" label: "0" class:17 priority:10 color:blue}
+node: {title: "n133" label: "Store  133"  info1: "visited: 11
 irg:     PRIMA_set_a
 arity: 3
 " info2: "mymode == mode_T && Store node"}
-edge: {sourcename: "n132" targetname: "n137" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n132" targetname: "n135" label: "1" class:1  priority:50}
-edge: {sourcename: "n132" targetname: "n133" label: "2" class:1  priority:50}
-node: {title: "n135" label: "Sel a 135"  info1: "visited: 10
+edge: {sourcename: "n133" targetname: "n138" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n133" targetname: "n136" label: "1" class:1  priority:50}
+edge: {sourcename: "n133" targetname: "n134" label: "2" class:1  priority:50}
+node: {title: "n136" label: "Sel a 136"  info1: "visited: 11
 irg:     PRIMA_set_a
 arity: 2
 Selecting entity of type int
   from entity of type PRIMA
 "}
-edge: {sourcename: "n135" targetname: "n137" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n135" targetname: "n136" label: "1" class:1  priority:50}
-node: {title: "n136" label: "ProjP 0 136"  info1: "visited: 10
+edge: {sourcename: "n136" targetname: "n138" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n136" targetname: "n137" label: "1" class:1  priority:50}
+node: {title: "n137" label: "ProjP 0 137"  info1: "visited: 11
 irg:     PRIMA_set_a
 arity: 1
 " info2: "(mode == get_type_mode(get_method_param_type(mt, proj))) && Mode of Proj from Start doesn't match mode of param type."color: yellow}
-edge: {sourcename: "n136" targetname: "n134" label: "0" class:16 priority:10}
-node: {title: "n133" label: "ProjIs 1 133"  info1: "visited: 10
+edge: {sourcename: "n137" targetname: "n135" label: "0" class:16 priority:10}
+node: {title: "n134" label: "ProjIs 1 134"  info1: "visited: 11
 irg:     PRIMA_set_a
 arity: 1
 " info2: "(mode == get_type_mode(get_method_param_type(mt, proj))) && Mode of Proj from Start doesn't match mode of param type."color: yellow}
-edge: {sourcename: "n133" targetname: "n134" label: "0" class:16 priority:10}
+edge: {sourcename: "n134" targetname: "n135" label: "0" class:16 priority:10}
 }
 
-graph: { title: "n129"  label: "Block 129" status:clustered color:yellow
-edge: {sourcename: "n129" targetname: "n128" label: "0" class:13 priority:60 color:red}
-node: {title: "n137" label: "ProjM 1 137"  info1: "visited: 10
+graph: { title: "n130"  label: "Block 130" status:clustered color:yellow
+edge: {sourcename: "n130" targetname: "n129" label: "0" class:13 priority:60 color:red}
+node: {title: "n138" label: "ProjM 1 138"  info1: "visited: 11
 irg:     PRIMA_set_a
 arity: 1
 "color: yellow}
-edge: {sourcename: "n137" targetname: "n130" label: "0" class:17 priority:10 color:blue}
-node: {title: "n134" label: "ProjT 4 134"  info1: "visited: 10
+edge: {sourcename: "n138" targetname: "n131" label: "0" class:17 priority:10 color:blue}
+node: {title: "n135" label: "ProjT 4 135"  info1: "visited: 11
 irg:     PRIMA_set_a
 arity: 1
 "color: yellow}
-edge: {sourcename: "n134" targetname: "n130" label: "0" class:1  priority:50}
-node: {title: "n128" label: "ProjX 0 128"  info1: "visited: 10
+edge: {sourcename: "n135" targetname: "n131" label: "0" class:1  priority:50}
+node: {title: "n129" label: "ProjX 0 129"  info1: "visited: 11
 irg:     PRIMA_set_a
 arity: 1
 "color: yellow}
-edge: {sourcename: "n128" targetname: "n130" label: "0" class:13 priority:60 color:red}
-node: {title: "n130" label: "Start  130"  info1: "visited: 10
+edge: {sourcename: "n129" targetname: "n131" label: "0" class:13 priority:60 color:red}
+node: {title: "n131" label: "Start  131"  info1: "visited: 11
 irg:     PRIMA_set_a
 arity: 0
 start of method of type set_a

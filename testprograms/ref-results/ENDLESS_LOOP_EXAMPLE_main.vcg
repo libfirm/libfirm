@@ -28,25 +28,25 @@ graph: { title: "g27" label: "ENDLESS_LOOP_EXAMPLE_main" status:clustered color:
 graph: { title: "n77"  label: "Block 77" status:clustered color:yellow
 edge: {sourcename: "n77" targetname: "n81" label: "0" class:13 priority:60 color:red}
 edge: {sourcename: "n77" targetname: "n78" label: "1" class:13 priority:60 color:red}
-node: {title: "n83" label: "PhiM  83"  info1: "visited: 20
+node: {title: "n83" label: "PhiM  83"  info1: "visited: 21
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 2 backedges:
 " info2: "mode_is_dataM(mymode) && Phi node"color: green}
 edge: {sourcename: "n83" targetname: "n93" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n83" targetname: "n84" label: "1" class:17 priority:10 color:blue}
-node: {title: "n84" label: "ProjM 0 84"  info1: "visited: 20
+node: {title: "n84" label: "ProjM 0 84"  info1: "visited: 21
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n84" targetname: "n85" label: "0" class:17 priority:10 color:blue}
-node: {title: "n85" label: "Store  85"  info1: "visited: 20
+node: {title: "n85" label: "Store  85"  info1: "visited: 21
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 3
 " info2: "mymode == mode_T && Store node"}
 edge: {sourcename: "n85" targetname: "n83" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n85" targetname: "n91" label: "1" class:1  priority:50}
 edge: {sourcename: "n85" targetname: "n86" label: "2" class:1  priority:50}
-node: {title: "n91" label: "Sel VAR_A 91"  info1: "visited: 20
+node: {title: "n91" label: "Sel VAR_A 91"  info1: "visited: 21
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 2
 Selecting entity of type int
@@ -54,19 +54,19 @@ Selecting entity of type int
 "}
 edge: {sourcename: "n91" targetname: "n83" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n91" targetname: "n92" label: "1" class:16 priority:10}
-node: {title: "n86" label: "PhiIs  86"  info1: "visited: 20
+node: {title: "n86" label: "PhiIs  86"  info1: "visited: 21
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 2 backedges:
 " info2: "mode_is_dataM(mymode) && Phi node"color: green}
 edge: {sourcename: "n86" targetname: "n89" label: "0" class:16 priority:10}
 edge: {sourcename: "n86" targetname: "n87" label: "1" class:1  priority:50}
-node: {title: "n87" label: "PhiIs  87"  info1: "visited: 20
+node: {title: "n87" label: "PhiIs  87"  info1: "visited: 21
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 2 backedges:
 " info2: "mode_is_dataM(mymode) && Phi node"color: green}
 edge: {sourcename: "n87" targetname: "n88" label: "0" class:16 priority:10}
 edge: {sourcename: "n87" targetname: "n86" label: "1" class:1  priority:50}
-node: {title: "n78" label: "Jmp  78"  info1: "visited: 20
+node: {title: "n78" label: "Jmp  78"  info1: "visited: 21
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 0
 " info2: "mymode == mode_X && Jmp node"}
@@ -74,12 +74,12 @@ arity: 0
 
 graph: { title: "n82"  label: "Block 82" status:clustered color:yellow
 edge: {sourcename: "n82" targetname: "n75" label: "0" class:13 priority:60 color:red}
-node: {title: "n89" label: "ProjIs 0 89"  info1: "visited: 20
+node: {title: "n89" label: "ProjIs 0 89"  info1: "visited: 21
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 1
 " info2: "(mode == get_type_mode(get_method_param_type(mt, proj))) && Mode of Proj from Start doesn't match mode of param type."color: yellow}
 edge: {sourcename: "n89" targetname: "n90" label: "0" class:16 priority:10}
-node: {title: "n81" label: "Jmp  81"  info1: "visited: 20
+node: {title: "n81" label: "Jmp  81"  info1: "visited: 21
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 0
 " info2: "mymode == mode_X && Jmp node"}
@@ -87,32 +87,32 @@ arity: 0
 
 graph: { title: "n74"  label: "Block 74" status:clustered color:yellow
 edge: {sourcename: "n74" targetname: "n75" label: "0" class:13 priority:60 color:red}
-node: {title: "n93" label: "ProjM 1 93"  info1: "visited: 20
+node: {title: "n93" label: "ProjM 1 93"  info1: "visited: 21
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n93" targetname: "n76" label: "0" class:17 priority:10 color:blue}
-node: {title: "n92" label: "ProjP 3 92"  info1: "visited: 20
+node: {title: "n92" label: "ProjP 3 92"  info1: "visited: 21
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n92" targetname: "n76" label: "0" class:1  priority:50}
-node: {title: "n90" label: "ProjT 4 90"  info1: "visited: 20
+node: {title: "n90" label: "ProjT 4 90"  info1: "visited: 21
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n90" targetname: "n76" label: "0" class:1  priority:50}
-node: {title: "n88" label: "0x1Is  88"  info1: "visited: 20
+node: {title: "n88" label: "0x1Is  88"  info1: "visited: 21
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 0
 Const of type type_unknown
 " info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
-node: {title: "n75" label: "ProjX 0 75"  info1: "visited: 20
+node: {title: "n75" label: "ProjX 0 75"  info1: "visited: 21
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n75" targetname: "n76" label: "0" class:13 priority:60 color:red}
-node: {title: "n76" label: "Start  76"  info1: "visited: 20
+node: {title: "n76" label: "Start  76"  info1: "visited: 21
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 0
 start of method of type main_tp
@@ -120,8 +120,8 @@ start of method of type main_tp
 " info2: "mymode == mode_T && Start node"color: blue}
 }
 
-graph: { title: "n72"  label: "Block 72" status:clustered color:yellow
-node: {title: "n71" label: "End  71"  info1: "visited: 20
+graph: { title: "n73"  label: "Block 73" status:clustered color:yellow
+node: {title: "n71" label: "End  71"  info1: "visited: 21
 irg:     ENDLESS_LOOP_EXAMPLE_main
 arity: 2
 "color: blue}

@@ -27,7 +27,7 @@ infoname 2: "Verification errors"
 graph: { title: "g65" label: "PRIMA_INLINE_set_a" status:clustered color:white
 graph: { title: "n214"  label: "Block 214" status:clustered color:yellow
 edge: {sourcename: "n214" targetname: "n215" label: "0" class:13 priority:60 color:red}
-node: {title: "n213" label: "End  213"  info1: "visited: 18
+node: {title: "n212" label: "End  212"  info1: "visited: 19
 irg:     PRIMA_INLINE_set_a
 arity: 0
 "color: blue}
@@ -35,25 +35,25 @@ arity: 0
 
 graph: { title: "n216"  label: "Block 216" status:clustered color:yellow
 edge: {sourcename: "n216" targetname: "n217" label: "0" class:13 priority:60 color:red}
-node: {title: "n215" label: "Return  215"  info1: "visited: 18
+node: {title: "n215" label: "Return  215"  info1: "visited: 19
 irg:     PRIMA_INLINE_set_a
 arity: 1
 return in method of type set_a
 " info2: "mymode == mode_X && Result X"}
 edge: {sourcename: "n215" targetname: "n220" label: "0" class:14 priority:50 color:blue}
-node: {title: "n220" label: "ProjM 0 220"  info1: "visited: 18
+node: {title: "n220" label: "ProjM 0 220"  info1: "visited: 19
 irg:     PRIMA_INLINE_set_a
 arity: 1
 "color: yellow}
 edge: {sourcename: "n220" targetname: "n221" label: "0" class:17 priority:10 color:blue}
-node: {title: "n221" label: "Store  221"  info1: "visited: 18
+node: {title: "n221" label: "Store  221"  info1: "visited: 19
 irg:     PRIMA_INLINE_set_a
 arity: 3
 " info2: "mymode == mode_T && Store node"}
 edge: {sourcename: "n221" targetname: "n226" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n221" targetname: "n224" label: "1" class:1  priority:50}
 edge: {sourcename: "n221" targetname: "n222" label: "2" class:1  priority:50}
-node: {title: "n224" label: "Sel a 224"  info1: "visited: 18
+node: {title: "n224" label: "Sel a 224"  info1: "visited: 19
 irg:     PRIMA_INLINE_set_a
 arity: 2
 Selecting entity of type int
@@ -61,12 +61,12 @@ Selecting entity of type int
 "}
 edge: {sourcename: "n224" targetname: "n226" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n224" targetname: "n225" label: "1" class:1  priority:50}
-node: {title: "n225" label: "ProjP 0 225"  info1: "visited: 18
+node: {title: "n225" label: "ProjP 0 225"  info1: "visited: 19
 irg:     PRIMA_INLINE_set_a
 arity: 1
 " info2: "(mode == get_type_mode(get_method_param_type(mt, proj))) && Mode of Proj from Start doesn't match mode of param type."color: yellow}
 edge: {sourcename: "n225" targetname: "n223" label: "0" class:16 priority:10}
-node: {title: "n222" label: "ProjIs 1 222"  info1: "visited: 18
+node: {title: "n222" label: "ProjIs 1 222"  info1: "visited: 19
 irg:     PRIMA_INLINE_set_a
 arity: 1
 " info2: "(mode == get_type_mode(get_method_param_type(mt, proj))) && Mode of Proj from Start doesn't match mode of param type."color: yellow}
@@ -75,22 +75,22 @@ edge: {sourcename: "n222" targetname: "n223" label: "0" class:16 priority:10}
 
 graph: { title: "n218"  label: "Block 218" status:clustered color:yellow
 edge: {sourcename: "n218" targetname: "n217" label: "0" class:13 priority:60 color:red}
-node: {title: "n226" label: "ProjM 1 226"  info1: "visited: 18
+node: {title: "n226" label: "ProjM 1 226"  info1: "visited: 19
 irg:     PRIMA_INLINE_set_a
 arity: 1
 "color: yellow}
 edge: {sourcename: "n226" targetname: "n219" label: "0" class:17 priority:10 color:blue}
-node: {title: "n223" label: "ProjT 4 223"  info1: "visited: 18
+node: {title: "n223" label: "ProjT 4 223"  info1: "visited: 19
 irg:     PRIMA_INLINE_set_a
 arity: 1
 "color: yellow}
 edge: {sourcename: "n223" targetname: "n219" label: "0" class:1  priority:50}
-node: {title: "n217" label: "ProjX 0 217"  info1: "visited: 18
+node: {title: "n217" label: "ProjX 0 217"  info1: "visited: 19
 irg:     PRIMA_INLINE_set_a
 arity: 1
 "color: yellow}
 edge: {sourcename: "n217" targetname: "n219" label: "0" class:13 priority:60 color:red}
-node: {title: "n219" label: "Start  219"  info1: "visited: 18
+node: {title: "n219" label: "Start  219"  info1: "visited: 19
 irg:     PRIMA_INLINE_set_a
 arity: 0
 start of method of type set_a

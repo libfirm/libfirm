@@ -25,89 +25,89 @@ infoname 1: "Attribute"
 infoname 2: "Verification errors"
 
 graph: { title: "g86" label: "PRIMA_INLINE_c" status:clustered color:white
-graph: { title: "n236"  label: "Block 236" status:clustered color:yellow
-edge: {sourcename: "n236" targetname: "n238" label: "0" class:13 priority:60 color:red}
-edge: {sourcename: "n236" targetname: "n237" label: "1" class:13 priority:60 color:red}
-node: {title: "n240" label: "PhiM  240"  info1: "visited: 23
+graph: { title: "n235"  label: "Block 235" status:clustered color:yellow
+edge: {sourcename: "n235" targetname: "n237" label: "0" class:13 priority:60 color:red}
+edge: {sourcename: "n235" targetname: "n236" label: "1" class:13 priority:60 color:red}
+node: {title: "n239" label: "PhiM  239"  info1: "visited: 24
 irg:     PRIMA_INLINE_c
 arity: 2 backedges:
 " info2: "mode_is_dataM(mymode) && Phi node"color: green}
-edge: {sourcename: "n240" targetname: "n249" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n240" targetname: "n241" label: "1" class:17 priority:10 color:blue}
-node: {title: "n241" label: "Store  241"  info1: "visited: 23
+edge: {sourcename: "n239" targetname: "n248" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n239" targetname: "n240" label: "1" class:17 priority:10 color:blue}
+node: {title: "n240" label: "Store  240"  info1: "visited: 24
 irg:     PRIMA_INLINE_c
 arity: 3
 " info2: "mymode == mode_T && Store node"}
-edge: {sourcename: "n241" targetname: "n240" label: "0" class:14 priority:50 color:blue}
-edge: {sourcename: "n241" targetname: "n247" label: "1" class:1  priority:50}
-edge: {sourcename: "n241" targetname: "n242" label: "2" class:1  priority:50}
-node: {title: "n247" label: "Sel a 247"  info1: "visited: 23
+edge: {sourcename: "n240" targetname: "n239" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n240" targetname: "n246" label: "1" class:1  priority:50}
+edge: {sourcename: "n240" targetname: "n241" label: "2" class:1  priority:50}
+node: {title: "n246" label: "Sel a 246"  info1: "visited: 24
 irg:     PRIMA_INLINE_c
 arity: 2
 Selecting entity of type int
   from entity of type PRIMA_INLINE
 "}
-edge: {sourcename: "n247" targetname: "n240" label: "0" class:14 priority:50 color:blue}
-edge: {sourcename: "n247" targetname: "n248" label: "1" class:16 priority:10}
-node: {title: "n242" label: "PhiIs  242"  info1: "visited: 23
+edge: {sourcename: "n246" targetname: "n239" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n246" targetname: "n247" label: "1" class:16 priority:10}
+node: {title: "n241" label: "PhiIs  241"  info1: "visited: 24
 irg:     PRIMA_INLINE_c
 arity: 2 backedges:
 " info2: "mode_is_dataM(mymode) && Phi node"color: green}
-edge: {sourcename: "n242" targetname: "n245" label: "0" class:16 priority:10}
-edge: {sourcename: "n242" targetname: "n243" label: "1" class:1  priority:50}
-node: {title: "n243" label: "PhiIs  243"  info1: "visited: 23
+edge: {sourcename: "n241" targetname: "n244" label: "0" class:16 priority:10}
+edge: {sourcename: "n241" targetname: "n242" label: "1" class:1  priority:50}
+node: {title: "n242" label: "PhiIs  242"  info1: "visited: 24
 irg:     PRIMA_INLINE_c
 arity: 2 backedges:
 " info2: "mode_is_dataM(mymode) && Phi node"color: green}
-edge: {sourcename: "n243" targetname: "n244" label: "0" class:16 priority:10}
-edge: {sourcename: "n243" targetname: "n242" label: "1" class:1  priority:50}
-node: {title: "n237" label: "Jmp  237"  info1: "visited: 23
+edge: {sourcename: "n242" targetname: "n243" label: "0" class:16 priority:10}
+edge: {sourcename: "n242" targetname: "n241" label: "1" class:1  priority:50}
+node: {title: "n236" label: "Jmp  236"  info1: "visited: 24
 irg:     PRIMA_INLINE_c
 arity: 0
 " info2: "mymode == mode_X && Jmp node"}
 }
 
-graph: { title: "n239"  label: "Block 239" status:clustered color:yellow
-edge: {sourcename: "n239" targetname: "n234" label: "0" class:13 priority:60 color:red}
-node: {title: "n248" label: "ProjP 0 248"  info1: "visited: 23
+graph: { title: "n238"  label: "Block 238" status:clustered color:yellow
+edge: {sourcename: "n238" targetname: "n233" label: "0" class:13 priority:60 color:red}
+node: {title: "n247" label: "ProjP 0 247"  info1: "visited: 24
 irg:     PRIMA_INLINE_c
 arity: 1
 " info2: "(mode == get_type_mode(get_method_param_type(mt, proj))) && Mode of Proj from Start doesn't match mode of param type."color: yellow}
-edge: {sourcename: "n248" targetname: "n246" label: "0" class:16 priority:10}
-node: {title: "n245" label: "ProjIs 1 245"  info1: "visited: 23
+edge: {sourcename: "n247" targetname: "n245" label: "0" class:16 priority:10}
+node: {title: "n244" label: "ProjIs 1 244"  info1: "visited: 24
 irg:     PRIMA_INLINE_c
 arity: 1
 " info2: "(mode == get_type_mode(get_method_param_type(mt, proj))) && Mode of Proj from Start doesn't match mode of param type."color: yellow}
-edge: {sourcename: "n245" targetname: "n246" label: "0" class:16 priority:10}
-node: {title: "n238" label: "Jmp  238"  info1: "visited: 23
+edge: {sourcename: "n244" targetname: "n245" label: "0" class:16 priority:10}
+node: {title: "n237" label: "Jmp  237"  info1: "visited: 24
 irg:     PRIMA_INLINE_c
 arity: 0
 " info2: "mymode == mode_X && Jmp node"}
 }
 
-graph: { title: "n233"  label: "Block 233" status:clustered color:yellow
-edge: {sourcename: "n233" targetname: "n234" label: "0" class:13 priority:60 color:red}
-node: {title: "n249" label: "ProjM 1 249"  info1: "visited: 23
+graph: { title: "n232"  label: "Block 232" status:clustered color:yellow
+edge: {sourcename: "n232" targetname: "n233" label: "0" class:13 priority:60 color:red}
+node: {title: "n248" label: "ProjM 1 248"  info1: "visited: 24
 irg:     PRIMA_INLINE_c
 arity: 1
 "color: yellow}
-edge: {sourcename: "n249" targetname: "n235" label: "0" class:17 priority:10 color:blue}
-node: {title: "n246" label: "ProjT 4 246"  info1: "visited: 23
+edge: {sourcename: "n248" targetname: "n234" label: "0" class:17 priority:10 color:blue}
+node: {title: "n245" label: "ProjT 4 245"  info1: "visited: 24
 irg:     PRIMA_INLINE_c
 arity: 1
 "color: yellow}
-edge: {sourcename: "n246" targetname: "n235" label: "0" class:1  priority:50}
-node: {title: "n244" label: "0x0Is  244"  info1: "visited: 23
+edge: {sourcename: "n245" targetname: "n234" label: "0" class:1  priority:50}
+node: {title: "n243" label: "0x0Is  243"  info1: "visited: 24
 irg:     PRIMA_INLINE_c
 arity: 0
 Const of type type_unknown
 " info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
-node: {title: "n234" label: "ProjX 0 234"  info1: "visited: 23
+node: {title: "n233" label: "ProjX 0 233"  info1: "visited: 24
 irg:     PRIMA_INLINE_c
 arity: 1
 "color: yellow}
-edge: {sourcename: "n234" targetname: "n235" label: "0" class:13 priority:60 color:red}
-node: {title: "n235" label: "Start  235"  info1: "visited: 23
+edge: {sourcename: "n233" targetname: "n234" label: "0" class:13 priority:60 color:red}
+node: {title: "n234" label: "Start  234"  info1: "visited: 24
 irg:     PRIMA_INLINE_c
 arity: 0
 start of method of type c
@@ -117,7 +117,7 @@ start of method of type c
 }
 
 graph: { title: "n231"  label: "Block 231" status:clustered color:yellow
-node: {title: "n230" label: "End  230"  info1: "visited: 23
+node: {title: "n229" label: "End  229"  info1: "visited: 24
 irg:     PRIMA_INLINE_c
 arity: 2
 "color: blue}
