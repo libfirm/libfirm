@@ -162,8 +162,10 @@ void
 set_type_state(type *tp, type_state state) {
   assert(tp);
   /* For pointer and primitive always fixed. */
-  if ((tp->type_op != type_pointer) && (tp->type_op != type_primitive))
+  if ((tp->type_op != type_pointer) && (tp->type_op != type_primitive)) {
+    /* @@@ assert that the layout really is fixed!!! */
     tp->state = state;
+  }
 }
 
 unsigned long get_type_visited(type *tp) {

@@ -80,6 +80,15 @@ typedef struct ir_node ir_node;
  *               occupy size bytes in memory.  In several cases this is
  *               determined when fixing the layout of this type (class,
  *               struct, union, array, enumeration).
+ *  state        The state of the type.  The state represents whether the
+ *               layout of the type is undefined or fixed (values: layout_undefined
+ *               or layout_fixed).  Compound types can have an undefined
+ *               layout.  The layout of the basic types primitive and pointer
+ *               is always layout_fixed.  If the layout of
+ *               compound types is fixed all entities must have an offset
+ *               and the size of the type must be set.
+ *               A fixed layout for enumeration types means that each enumeration
+ *               is associated with an implementation value.
  *  visit        A counter for walks of the type information.
  *
  *  These fields can only be accessed via access functions.

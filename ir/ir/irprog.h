@@ -37,10 +37,16 @@
  * NOTE  Preliminary documentation ;-)
  *
  * FIELDS
- *  type   A list containing all types known to the translated program.
- *         Some types can have several entries in this list (as a result of
- *         using exchange_types()).
- * ...
+ *  main_irg  The ir graph that is the entry point to the program.
+ *            (Anything not reachable from here may be optimized away.
+ *            If we want to translate libraries or the like correctly
+ *            we must replace this by a list.)
+ *  irg       List of all ir graphs in the program.
+ *  type      A list containing all types known to the translated program.
+ *            Some types can have several entries in this list (as a result of
+ *            using exchange_types()).
+ *  glob_type The unique global type that is owner of all global entities.
+ *
  * SOURCE
  */
 typedef struct ir_prog ir_prog;
@@ -48,11 +54,11 @@ typedef struct ir_prog ir_prog;
 /* A variable from where everything in the ir can be accessed. */
 extern ir_prog *irp;
 
-/* initializes ir_prog. Calles the constructor for an ir_prog. */
+/* initializes ir_prog. Calls the constructor for an ir_prog. */
 void init_irprog(void);
 
 /* Creates a new ir_prog, returns it and sets irp with it.
-   Automatically called by init_firm through init_irprog. */
+   Automatically called by init_firm through init_irprog.  */
 ir_prog *new_ir_prog (void);
 
 /* Access the main routine of the compiled program. */

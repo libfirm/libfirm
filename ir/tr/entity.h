@@ -72,9 +72,22 @@ typedef struct ir_graph ir_graph;
  *   entity - An abstract data type to represent program entites.
  * NOTE
  *
- *   ... not documented ...
- *
  * ATTRIBUTES
+ *   owner      A compound type this entity is a part of.
+ *   type       The type of this entity.
+ *   name       The string that represents this entity in the source program.
+ *   allocation A flag saying whether the entity is dynamically or statically
+ *              allocated (values: dynamic_allocated,  static_allocated).
+ *              @@@ Does this make sense???
+ *   visibility A flag indicating the visibility of this entity (values: local,
+ *              external_visible,  external_allocated)
+ *   offset     The offset of the entity within the compound object.  Only set
+ *              if IR in the state "@@@"  Wie nennen wir den??
+ *   overwrites A list of entities overwritten by this entity.  This list is only
+ *              existent if the owner of this entity is a class.  The members in
+ *              this list must be entities of super classes.
+ *   irg        If the entity is a method this is the ir graph that represents the
+ *              code of the method.
  *
  *
  *  These fields can only be accessed via access functions.
