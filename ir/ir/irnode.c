@@ -1498,6 +1498,31 @@ set_Phi_pred (ir_node *node, int pos, ir_node *pred) {
   set_irn_n(node, pos, pred);
 }
 
+
+int is_memop(ir_node *node) {
+  return ((get_irn_op(node) == op_Load) || (get_irn_op(node) == op_Load));
+}
+
+ir_node *get_memop_mem (ir_node *node) {
+  assert(is_memop(node));
+  return get_irn_n(node, 0);
+}
+
+void     set_memop_mem (ir_node *node, ir_node *mem) {
+  assert(is_memop(node));
+  set_irn_n(node, 0, mem);
+}
+
+ir_node *get_memop_ptr (ir_node *node) {
+  assert(is_memop(node));
+  return get_irn_n(node, 1);
+}
+
+void     set_memop_ptr (ir_node *node, ir_node *ptr) {
+  assert(is_memop(node));
+  set_irn_n(node, 1, ptr);
+}
+
 ir_node *
 get_Load_mem (ir_node *node) {
   assert (node->op == op_Load);

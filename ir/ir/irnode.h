@@ -719,6 +719,17 @@ void     set_Filter_cg_pred(ir_node * node, int pos, ir_node * pred);
 int      get_Filter_n_cg_preds(ir_node *node);
 ir_node *get_Filter_cg_pred(ir_node *node, int pos);
 
+/** Return true if parameter is a memory operation.
+ *
+ *  A memory operation is an operation that directly changes the
+ *  memory.  I.e., a Load or a Store operation.
+ */
+int is_memop(ir_node *node);
+ir_node *get_memop_mem (ir_node *node);
+void     set_memop_mem (ir_node *node, ir_node *mem);
+ir_node *get_memop_ptr (ir_node *node);
+void     set_memop_ptr (ir_node *node, ir_node *ptr);
+
 /**
  * Projection numbers for Load: use for Proj nodes!
  */

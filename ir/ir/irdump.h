@@ -263,13 +263,15 @@ void dump_callgraph_loop_tree(const char *suffix);
 
 /** Verbosity for text dumpers */
 typedef enum {
-  dump_verbosity_onlynames         = 0x00000001,   /**< only dump type names. turns off all other
+  dump_verbosity_onlynames         = 0x00000001,   /**< only dump names. turns off all other
 						      flags up to 0x00010000. */
   dump_verbosity_fields            = 0x00000002,   /**< dump types and fields (like a type declaration) */
   dump_verbosity_methods           = 0x00000004,   /**< dump types and methods (like a type declaration) */
   dump_verbosity_typeattrs         = 0x00000008,   /**< dump all type attributes */
   dump_verbosity_entattrs          = 0x00000010,   /**< dump all entity attributes */
   dump_verbosity_entconsts         = 0x00000020,   /**< dump entity constants */
+
+  dump_verbosity_accessStats       = 0x00000100,   /**< dump entity access statistics */
 
   dump_verbosity_noClassTypes      = 0x00001000,   /**< dump no class       types */
   dump_verbosity_noStructTypes     = 0x00002000,   /**< dump no struct      types */
@@ -289,7 +291,7 @@ typedef enum {
   dump_verbosity_onlyPrimitiveTypes = 0x000BF000,  /**< dump only primitive types */
   dump_verbosity_onlyEnumerationTypes=0x0008F000,  /**< dump only enumeration types */
 
-  dump_verbosity_max               = 0x48888887,   /**< turn on all verbosity. */
+  dump_verbosity_max               = 0x48888887    /**< turn on all verbosity. */
 } dump_verbosity;
 
 

@@ -22,6 +22,8 @@
 #include "irprog_t.h"
 #include "entity_t.h"
 
+#include "field_temperature.h"
+
 int dump_node_opcode(FILE *F, ir_node *n); /* from irdump.c */
 
 
@@ -89,10 +91,19 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
       X(variability_constant);
     }
     fprintf(F, "\n");
-  } else {  /* no entityattrs */
+  } else {  /* no entattrs */
     fprintf(F, "%s(%3d) %*s: %s", prefix,
 	    get_entity_offset_bits(ent), -40, get_type_name(get_entity_type(ent)), get_entity_name(ent));
     if (is_method_type(get_entity_type(ent))) fprintf(F, "(...)");
+
+    if (verbosity & dump_verbosity_accessStats) {
+      if (get_entity_allocation(ent) == allocation_static) {
+	fprintf(F, " (stat)");
+      } else {
+	if (get_entity_peculiarity(ent) == peculiarity_description) fprintf(F, " (desc)");
+	if (get_entity_peculiarity(ent) == peculiarity_inherited)   fprintf(F, " (inh)");
+      }
+    }
     fprintf(F, "\n");
   }
 
@@ -148,6 +159,27 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
     }
     fprintf(F, "\n");
   }
+
+  if (verbosity & dump_verbosity_accessStats) {
+    int n_acc = get_entity_n_accesses(ent);
+    fprintf(F, "%s  Access Stats", prefix);
+    char comma = ':';
+    for (i = 0; i < n_acc; ++i) {
+      ir_node *acc = get_entity_access(ent, i);
+      if (get_irn_op(acc) == op_Load) {
+	fprintf(F, "%c L", comma);
+      } else if (get_irn_op(acc) == op_Store) {
+	fprintf(F, "%c S", comma);
+      } else {
+	assert(0);
+      }
+      fprintf(F, " %d", get_weighted_loop_depth(acc));
+      comma = ',';
+    }
+    fprintf(F, "\n");
+  }
+
+
 }
 #undef X
 
@@ -287,6 +319,9 @@ void dump_types_as_text(unsigned verbosity, const char *suffix) {
 
   for (i = 0; i < n_types; ++i) {
     type *t = get_irp_type(i);
+
+    if (is_jack_rts_class(t)) continue;
+
     dump_type_to_file(F, t, verbosity);
   }
 
