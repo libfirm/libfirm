@@ -24,100 +24,100 @@ classname 12: "Member"
 infoname 1: "Attribute"
 infoname 2: "Verification errors"
 
-node: {title: "n108" label: "Block  108"  info1: "visited: 17
+node: {title: "n103" label: "Block  103"  info1: "visited: 18
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1 backedges:
 " info2: "((get_irn_irg(n) && get_irn_irg(n) == irg)) && Block node has wrong irg attribute"color: lightyellow}
-edge: {sourcename: "n108" targetname: "n107" label: "0" class:13 priority:60 color:red}
-node: {title: "n109" label: "Start  109"  info1: "visited: 17
+edge: {sourcename: "n103" targetname: "n102" label: "0" class:13 priority:60 color:red}
+node: {title: "n104" label: "Start  104"  info1: "visited: 18
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 0
 start of method of type OO_PROGRAM_EXAMPLE_main
 " info2: "mymode == mode_T && Start node"color: blue}
-edge: { sourcename: "n109" targetname: "n108" class:2  priority:50 linestyle:dotted}
-node: {title: "n107" label: "ProjX 0 107"  info1: "visited: 17
+edge: { sourcename: "n104" targetname: "n103" class:2  priority:50 linestyle:dotted}
+node: {title: "n102" label: "ProjX 0 102"  info1: "visited: 18
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n107" targetname: "n109" label: "0" class:13 priority:60 color:red}
-edge: { sourcename: "n107" targetname: "n108" class:2  priority:50 linestyle:dotted}
-node: {title: "n106" label: "Block  106"  info1: "visited: 17
+edge: {sourcename: "n102" targetname: "n104" label: "0" class:13 priority:60 color:red}
+edge: { sourcename: "n102" targetname: "n103" class:2  priority:50 linestyle:dotted}
+node: {title: "n101" label: "Block  101"  info1: "visited: 18
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1 backedges:
 " info2: "((get_irn_irg(n) && get_irn_irg(n) == irg)) && Block node has wrong irg attribute"color: lightyellow}
-edge: {sourcename: "n106" targetname: "n107" label: "0" class:13 priority:60 color:red}
-node: {title: "n117" label: "ProjM 1 117"  info1: "visited: 17
+edge: {sourcename: "n101" targetname: "n102" label: "0" class:13 priority:60 color:red}
+node: {title: "n112" label: "ProjM 1 112"  info1: "visited: 18
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n117" targetname: "n109" label: "0" class:17 priority:10 color:blue}
-edge: { sourcename: "n117" targetname: "n108" class:2  priority:50 linestyle:dotted}
-node: {title: "n115" label: "Alloc  115"  info1: "visited: 17
+edge: {sourcename: "n112" targetname: "n104" label: "0" class:17 priority:10 color:blue}
+edge: { sourcename: "n112" targetname: "n103" class:2  priority:50 linestyle:dotted}
+node: {title: "n110" label: "Alloc  110"  info1: "visited: 18
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 2
 allocating entity of type PRIMA
 "}
-node: {title: "n115n116" label: "SymC PRIMA size  116"  info1: "visited: 17
+node: {title: "n110n111" label: "SymC PRIMA size  111"  info1: "visited: 18
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 0
 "}
-edge: {sourcename: "n115" targetname: "n117" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n115" targetname: "n115n116" label: "1" class:16 priority:10}
-edge: { sourcename: "n115" targetname: "n106" class:2  priority:50 linestyle:dotted}
-node: {title: "n114" label: "ProjP 2 114"  info1: "visited: 17
+edge: {sourcename: "n110" targetname: "n112" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n110" targetname: "n110n111" label: "1" class:16 priority:10}
+edge: { sourcename: "n110" targetname: "n101" class:2  priority:50 linestyle:dotted}
+node: {title: "n109" label: "ProjP 2 109"  info1: "visited: 18
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n114" targetname: "n115" label: "0" class:1  priority:50}
-edge: { sourcename: "n114" targetname: "n106" class:2  priority:50 linestyle:dotted}
-node: {title: "n123" label: "ProjM 0 123"  info1: "visited: 17
+edge: {sourcename: "n109" targetname: "n110" label: "0" class:1  priority:50}
+edge: { sourcename: "n109" targetname: "n101" class:2  priority:50 linestyle:dotted}
+node: {title: "n118" label: "ProjM 0 118"  info1: "visited: 18
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n123" targetname: "n115" label: "0" class:17 priority:10 color:blue}
-edge: { sourcename: "n123" targetname: "n106" class:2  priority:50 linestyle:dotted}
-node: {title: "n122" label: "Sel PRIMA_set_a 122"  info1: "visited: 17
+edge: {sourcename: "n118" targetname: "n110" label: "0" class:17 priority:10 color:blue}
+edge: { sourcename: "n118" targetname: "n101" class:2  priority:50 linestyle:dotted}
+node: {title: "n117" label: "Sel PRIMA_set_a 117"  info1: "visited: 18
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 2
 Selecting entity of type set_a
   from entity of type PRIMA
 "}
-edge: {sourcename: "n122" targetname: "n123" label: "0" class:14 priority:50 color:blue}
-edge: {sourcename: "n122" targetname: "n114" label: "1" class:1  priority:50}
-edge: { sourcename: "n122" targetname: "n106" class:2  priority:50 linestyle:dotted}
-node: {title: "n120" label: "Call  120"  info1: "visited: 17
+edge: {sourcename: "n117" targetname: "n118" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n117" targetname: "n109" label: "1" class:1  priority:50}
+edge: { sourcename: "n117" targetname: "n101" class:2  priority:50 linestyle:dotted}
+node: {title: "n115" label: "Call  115"  info1: "visited: 18
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 4
 calling method of type set_a
   param 0 type: class_prima_ptr
   param 1 type: int
 " info2: "get_Call_n_params(n) == get_method_n_params(mt) && Number of args for Call doesn't match number of args in non variadic type."}
-node: {title: "n120n121" label: "0x2Is  121"  info1: "visited: 17
+node: {title: "n115n116" label: "0x2Is  116"  info1: "visited: 18
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 0
 Const of type type_unknown
 "color: yellow}
-edge: {sourcename: "n120" targetname: "n123" label: "0" class:14 priority:50 color:blue}
-edge: {sourcename: "n120" targetname: "n122" label: "1" class:1  priority:50}
-edge: {sourcename: "n120" targetname: "n114" label: "2" class:1  priority:50}
-edge: {sourcename: "n120" targetname: "n120n121" label: "3" class:16 priority:10}
-edge: { sourcename: "n120" targetname: "n106" class:2  priority:50 linestyle:dotted}
-node: {title: "n119" label: "ProjM 0 119"  info1: "visited: 17
+edge: {sourcename: "n115" targetname: "n118" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n115" targetname: "n117" label: "1" class:1  priority:50}
+edge: {sourcename: "n115" targetname: "n109" label: "2" class:1  priority:50}
+edge: {sourcename: "n115" targetname: "n115n116" label: "3" class:16 priority:10}
+edge: { sourcename: "n115" targetname: "n101" class:2  priority:50 linestyle:dotted}
+node: {title: "n114" label: "ProjM 0 114"  info1: "visited: 18
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n119" targetname: "n120" label: "0" class:17 priority:10 color:blue}
-edge: { sourcename: "n119" targetname: "n106" class:2  priority:50 linestyle:dotted}
-node: {title: "n118" label: "Sel PRIMA_c 118"  info1: "visited: 17
+edge: {sourcename: "n114" targetname: "n115" label: "0" class:17 priority:10 color:blue}
+edge: { sourcename: "n114" targetname: "n101" class:2  priority:50 linestyle:dotted}
+node: {title: "n113" label: "Sel PRIMA_c 113"  info1: "visited: 18
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 2
 Selecting entity of type c
   from entity of type PRIMA
 "}
-edge: {sourcename: "n118" targetname: "n119" label: "0" class:14 priority:50 color:blue}
-edge: {sourcename: "n118" targetname: "n114" label: "1" class:1  priority:50}
-edge: { sourcename: "n118" targetname: "n106" class:2  priority:50 linestyle:dotted}
-node: {title: "n112" label: "Call  112"  info1: "visited: 17
+edge: {sourcename: "n113" targetname: "n114" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n113" targetname: "n109" label: "1" class:1  priority:50}
+edge: { sourcename: "n113" targetname: "n101" class:2  priority:50 linestyle:dotted}
+node: {title: "n107" label: "Call  107"  info1: "visited: 18
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 4
 calling method of type c
@@ -125,53 +125,53 @@ calling method of type c
   param 1 type: int
   resul 0 type: int
 " info2: "get_Call_n_params(n) == get_method_n_params(mt) && Number of args for Call doesn't match number of args in non variadic type."}
-node: {title: "n112n113" label: "0x5Is  113"  info1: "visited: 17
+node: {title: "n107n108" label: "0x5Is  108"  info1: "visited: 18
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 0
 Const of type type_unknown
 "color: yellow}
-edge: {sourcename: "n112" targetname: "n119" label: "0" class:14 priority:50 color:blue}
-edge: {sourcename: "n112" targetname: "n118" label: "1" class:1  priority:50}
-edge: {sourcename: "n112" targetname: "n114" label: "2" class:1  priority:50}
-edge: {sourcename: "n112" targetname: "n112n113" label: "3" class:16 priority:10}
-edge: { sourcename: "n112" targetname: "n106" class:2  priority:50 linestyle:dotted}
-node: {title: "n111" label: "ProjT 2 111"  info1: "visited: 17
+edge: {sourcename: "n107" targetname: "n114" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n107" targetname: "n113" label: "1" class:1  priority:50}
+edge: {sourcename: "n107" targetname: "n109" label: "2" class:1  priority:50}
+edge: {sourcename: "n107" targetname: "n107n108" label: "3" class:16 priority:10}
+edge: { sourcename: "n107" targetname: "n101" class:2  priority:50 linestyle:dotted}
+node: {title: "n106" label: "ProjT 2 106"  info1: "visited: 18
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n111" targetname: "n112" label: "0" class:1  priority:50}
-edge: { sourcename: "n111" targetname: "n106" class:2  priority:50 linestyle:dotted}
-node: {title: "n110" label: "ProjIs 0 110"  info1: "visited: 17
+edge: {sourcename: "n106" targetname: "n107" label: "0" class:1  priority:50}
+edge: { sourcename: "n106" targetname: "n101" class:2  priority:50 linestyle:dotted}
+node: {title: "n105" label: "ProjIs 0 105"  info1: "visited: 18
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1
 " info2: "(mode == get_type_mode(get_method_res_type(mt, proj))) && Mode of Proj from Call doesn't match mode of result type."color: yellow}
-edge: {sourcename: "n110" targetname: "n111" label: "0" class:1  priority:50}
-edge: { sourcename: "n110" targetname: "n106" class:2  priority:50 linestyle:dotted}
-node: {title: "n124" label: "ProjM 0 124"  info1: "visited: 17
+edge: {sourcename: "n105" targetname: "n106" label: "0" class:1  priority:50}
+edge: { sourcename: "n105" targetname: "n101" class:2  priority:50 linestyle:dotted}
+node: {title: "n119" label: "ProjM 0 119"  info1: "visited: 18
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1
 "color: yellow}
-edge: {sourcename: "n124" targetname: "n112" label: "0" class:17 priority:10 color:blue}
-edge: { sourcename: "n124" targetname: "n106" class:2  priority:50 linestyle:dotted}
-node: {title: "n105" label: "Return  105"  info1: "visited: 17
+edge: {sourcename: "n119" targetname: "n107" label: "0" class:17 priority:10 color:blue}
+edge: { sourcename: "n119" targetname: "n101" class:2  priority:50 linestyle:dotted}
+node: {title: "n100" label: "Return  100"  info1: "visited: 18
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 2
 return in method of type OO_PROGRAM_EXAMPLE_main
   res 0 type: int
 " info2: "mymode == mode_X && Result X"}
-edge: {sourcename: "n105" targetname: "n124" label: "0" class:14 priority:50 color:blue}
-edge: {sourcename: "n105" targetname: "n110" label: "1" class:1  priority:50}
-edge: { sourcename: "n105" targetname: "n106" class:2  priority:50 linestyle:dotted}
-node: {title: "n104" label: "Block  104"  info1: "visited: 17
+edge: {sourcename: "n100" targetname: "n119" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n100" targetname: "n105" label: "1" class:1  priority:50}
+edge: { sourcename: "n100" targetname: "n101" class:2  priority:50 linestyle:dotted}
+node: {title: "n99" label: "Block  99"  info1: "visited: 18
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 1 backedges:
 " info2: "((get_irn_irg(n) && get_irn_irg(n) == irg)) && Block node has wrong irg attribute"color: lightyellow}
-edge: {sourcename: "n104" targetname: "n105" label: "0" class:13 priority:60 color:red}
-node: {title: "n103" label: "End  103"  info1: "visited: 17
+edge: {sourcename: "n99" targetname: "n100" label: "0" class:13 priority:60 color:red}
+node: {title: "n98" label: "End  98"  info1: "visited: 18
 irg:     OO_PROGRAM_EXAMPLE_main
 arity: 0
 "color: blue}
-edge: { sourcename: "n103" targetname: "n104" class:2  priority:50 linestyle:dotted}
+edge: { sourcename: "n98" targetname: "n99" class:2  priority:50 linestyle:dotted}
 node: {title: "t18" label: "method c" info1: "state: layout_fixed,
 mode: P,
 size: 4B,
@@ -222,7 +222,7 @@ peculiarity: peculiarity_existent
 name:    set_a
 ld_name: PRIMA_set_a
 offset:  -1
-irg = g68"
+irg = g65"
 }
 edge: { sourcename: "e17" targetname: "t15"class: 3 label: "type" color: red}
 edge: { sourcename: "e17" targetname: "n16"label: "value 0"}
@@ -250,7 +250,7 @@ peculiarity: peculiarity_existent
 name:    c
 ld_name: PRIMA_c
 offset:  -1
-irg = g90"
+irg = g86"
 }
 edge: { sourcename: "e20" targetname: "t18"class: 3 label: "type" color: red}
 edge: { sourcename: "e20" targetname: "n19"label: "value 0"}
@@ -294,10 +294,10 @@ node: {title: "t24" label: "class OO_PROGRAM_EXAMPLE_mainframe_tp" info1: "state
 size: -1B,
 peculiarity: peculiarity_existent
 " color: green}
-edge: { sourcename: "n112" targetname: "t18"class:2 priority:2 linestyle:dotted}
-edge: { sourcename: "n115" targetname: "t12"class:2 priority:2 linestyle:dotted}
-edge: { sourcename: "n116" targetname: "t12"class:2 priority:2 linestyle:dotted}
-edge: { sourcename: "n118" targetname: "e20"class:2 priority:2 linestyle:dotted}
-edge: { sourcename: "n120" targetname: "t15"class:2 priority:2 linestyle:dotted}
-edge: { sourcename: "n122" targetname: "e17"class:2 priority:2 linestyle:dotted}
+edge: { sourcename: "n107" targetname: "t18"class:2 priority:2 linestyle:dotted}
+edge: { sourcename: "n110" targetname: "t12"class:2 priority:2 linestyle:dotted}
+edge: { sourcename: "n111" targetname: "t12"class:2 priority:2 linestyle:dotted}
+edge: { sourcename: "n113" targetname: "e20"class:2 priority:2 linestyle:dotted}
+edge: { sourcename: "n115" targetname: "t15"class:2 priority:2 linestyle:dotted}
+edge: { sourcename: "n117" targetname: "e17"class:2 priority:2 linestyle:dotted}
 }

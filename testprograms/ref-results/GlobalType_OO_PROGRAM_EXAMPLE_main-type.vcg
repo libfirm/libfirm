@@ -74,7 +74,7 @@ peculiarity: peculiarity_existent
 name:    set_a
 ld_name: PRIMA_set_a
 offset:  -1
-irg = g68"
+irg = g65"
 }
 edge: { sourcename: "e17" targetname: "t15"class: 3 label: "type" color: red}
 edge: { sourcename: "e17" targetname: "n16"label: "value 0"}
@@ -102,7 +102,7 @@ peculiarity: peculiarity_existent
 name:    c
 ld_name: PRIMA_c
 offset:  -1
-irg = g90"
+irg = g86"
 }
 edge: { sourcename: "e20" targetname: "t18"class: 3 label: "type" color: red}
 edge: { sourcename: "e20" targetname: "n19"label: "value 0"}

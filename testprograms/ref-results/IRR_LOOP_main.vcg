@@ -27,7 +27,7 @@ infoname 2: "Verification errors"
 graph: { title: "g26" label: "IRR_LOOP_main" status:clustered color:white
 graph: { title: "n60"  label: "Block 60" status:clustered color:yellow
 edge: {sourcename: "n60" targetname: "n61" label: "0" class:13 priority:60 color:red}
-node: {title: "n59" label: "End  59"  info1: "visited: 5
+node: {title: "n59" label: "End  59"  info1: "visited: 6
 irg:     IRR_LOOP_main
 arity: 3
 "color: blue}
@@ -36,13 +36,13 @@ arity: 3
 graph: { title: "n62"  label: "Block 62" status:clustered color:yellow
 edge: {sourcename: "n62" targetname: "n86" label: "0" class:13 priority:60 color:red}
 edge: {sourcename: "n62" targetname: "n63" label: "1" class:13 priority:60 color:red}
-node: {title: "n61" label: "Return  61"  info1: "visited: 5
+node: {title: "n61" label: "Return  61"  info1: "visited: 6
 irg:     IRR_LOOP_main
 arity: 1
 return in method of type main
 " info2: "mymode == mode_X && Result X"}
 edge: {sourcename: "n61" targetname: "n87" label: "0" class:14 priority:50 color:blue}
-node: {title: "n87" label: "PhiM  87"  info1: "visited: 5
+node: {title: "n87" label: "PhiM  87"  info1: "visited: 6
 irg:     IRR_LOOP_main
 arity: 2 backedges:
 " info2: "mode_is_dataM(mymode) && Phi node"color: green}
@@ -53,33 +53,33 @@ edge: {sourcename: "n87" targetname: "n88" label: "1" class:17 priority:10 color
 graph: { title: "n64"  label: "Block 64" status:clustered color:yellow
 edge: {sourcename: "n64" targetname: "n85" label: "0" class:13 priority:60 color:red}
 edge: {sourcename: "n64" targetname: "n65" label: "1" class:13 priority:60 color:red}
-node: {title: "n88" label: "PhiM  88"  info1: "visited: 5
+node: {title: "n88" label: "PhiM  88"  info1: "visited: 6
 irg:     IRR_LOOP_main
 arity: 2 backedges:
 " info2: "mode_is_dataM(mymode) && Phi node"color: green}
 edge: {sourcename: "n88" targetname: "n90" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n88" targetname: "n89" label: "1" class:17 priority:10 color:blue}
-node: {title: "n63" label: "ProjX 0 63"  info1: "visited: 5
+node: {title: "n63" label: "ProjX 0 63"  info1: "visited: 6
 irg:     IRR_LOOP_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n63" targetname: "n68" label: "0" class:13 priority:60 color:red}
-node: {title: "n67" label: "ProjX 1 67"  info1: "visited: 5
+node: {title: "n67" label: "ProjX 1 67"  info1: "visited: 6
 irg:     IRR_LOOP_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n67" targetname: "n68" label: "0" class:13 priority:60 color:red}
-node: {title: "n68" label: "Cond  68"  info1: "visited: 5
+node: {title: "n68" label: "Cond  68"  info1: "visited: 6
 irg:     IRR_LOOP_main
 arity: 1
 " info2: "mymode == mode_T && Cond mode is not a tuple"}
 edge: {sourcename: "n68" targetname: "n69" label: "0" class:1  priority:50}
-node: {title: "n69" label: "Projb Eq 69"  info1: "visited: 5
+node: {title: "n69" label: "Projb Eq 69"  info1: "visited: 6
 irg:     IRR_LOOP_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n69" targetname: "n70" label: "0" class:1  priority:50}
-node: {title: "n70" label: "CmpT  70"  info1: "visited: 5
+node: {title: "n70" label: "CmpT  70"  info1: "visited: 6
 irg:     IRR_LOOP_main
 arity: 2
 "}
@@ -90,33 +90,33 @@ edge: {sourcename: "n70" targetname: "n71" label: "1" class:16 priority:10}
 graph: { title: "n66"  label: "Block 66" status:clustered color:yellow
 edge: {sourcename: "n66" targetname: "n76" label: "0" class:13 priority:60 color:red}
 edge: {sourcename: "n66" targetname: "n67" label: "1" class:13 priority:60 color:red}
-node: {title: "n89" label: "PhiM  89"  info1: "visited: 5
+node: {title: "n89" label: "PhiM  89"  info1: "visited: 6
 irg:     IRR_LOOP_main
 arity: 2 backedges:
 " info2: "mode_is_dataM(mymode) && Phi node"color: green}
 edge: {sourcename: "n89" targetname: "n90" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n89" targetname: "n88" label: "1" class:17 priority:10 color:blue}
-node: {title: "n86" label: "ProjX 0 86"  info1: "visited: 5
+node: {title: "n86" label: "ProjX 0 86"  info1: "visited: 6
 irg:     IRR_LOOP_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n86" targetname: "n82" label: "0" class:13 priority:60 color:red}
-node: {title: "n65" label: "ProjX 1 65"  info1: "visited: 5
+node: {title: "n65" label: "ProjX 1 65"  info1: "visited: 6
 irg:     IRR_LOOP_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n65" targetname: "n82" label: "0" class:13 priority:60 color:red}
-node: {title: "n82" label: "Cond  82"  info1: "visited: 5
+node: {title: "n82" label: "Cond  82"  info1: "visited: 6
 irg:     IRR_LOOP_main
 arity: 1
 " info2: "mymode == mode_T && Cond mode is not a tuple"}
 edge: {sourcename: "n82" targetname: "n83" label: "0" class:1  priority:50}
-node: {title: "n83" label: "Projb Eq 83"  info1: "visited: 5
+node: {title: "n83" label: "Projb Eq 83"  info1: "visited: 6
 irg:     IRR_LOOP_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n83" targetname: "n84" label: "0" class:1  priority:50}
-node: {title: "n84" label: "CmpT  84"  info1: "visited: 5
+node: {title: "n84" label: "CmpT  84"  info1: "visited: 6
 irg:     IRR_LOOP_main
 arity: 2
 "}
@@ -126,27 +126,27 @@ edge: {sourcename: "n84" targetname: "n71" label: "1" class:16 priority:10}
 
 graph: { title: "n77"  label: "Block 77" status:clustered color:yellow
 edge: {sourcename: "n77" targetname: "n73" label: "0" class:13 priority:60 color:red}
-node: {title: "n85" label: "ProjX 1 85"  info1: "visited: 5
+node: {title: "n85" label: "ProjX 1 85"  info1: "visited: 6
 irg:     IRR_LOOP_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n85" targetname: "n78" label: "0" class:13 priority:60 color:red}
-node: {title: "n76" label: "ProjX 0 76"  info1: "visited: 5
+node: {title: "n76" label: "ProjX 0 76"  info1: "visited: 6
 irg:     IRR_LOOP_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n76" targetname: "n78" label: "0" class:13 priority:60 color:red}
-node: {title: "n78" label: "Cond  78"  info1: "visited: 5
+node: {title: "n78" label: "Cond  78"  info1: "visited: 6
 irg:     IRR_LOOP_main
 arity: 1
 " info2: "mymode == mode_T && Cond mode is not a tuple"}
 edge: {sourcename: "n78" targetname: "n79" label: "0" class:1  priority:50}
-node: {title: "n79" label: "Projb Eq 79"  info1: "visited: 5
+node: {title: "n79" label: "Projb Eq 79"  info1: "visited: 6
 irg:     IRR_LOOP_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n79" targetname: "n80" label: "0" class:1  priority:50}
-node: {title: "n80" label: "CmpT  80"  info1: "visited: 5
+node: {title: "n80" label: "CmpT  80"  info1: "visited: 6
 irg:     IRR_LOOP_main
 arity: 2
 "}
@@ -156,32 +156,32 @@ edge: {sourcename: "n80" targetname: "n81" label: "1" class:16 priority:10}
 
 graph: { title: "n72"  label: "Block 72" status:clustered color:yellow
 edge: {sourcename: "n72" targetname: "n73" label: "0" class:13 priority:60 color:red}
-node: {title: "n90" label: "ProjM 1 90"  info1: "visited: 5
+node: {title: "n90" label: "ProjM 1 90"  info1: "visited: 6
 irg:     IRR_LOOP_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n90" targetname: "n74" label: "0" class:17 priority:10 color:blue}
-node: {title: "n81" label: "0x1Is  81"  info1: "visited: 5
+node: {title: "n81" label: "0x1Is  81"  info1: "visited: 6
 irg:     IRR_LOOP_main
 arity: 0
 Const of type type_unknown
 " info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
-node: {title: "n75" label: "0x0Is  75"  info1: "visited: 5
+node: {title: "n75" label: "0x0Is  75"  info1: "visited: 6
 irg:     IRR_LOOP_main
 arity: 0
 Const of type type_unknown
 " info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
-node: {title: "n71" label: "0x2Is  71"  info1: "visited: 5
+node: {title: "n71" label: "0x2Is  71"  info1: "visited: 6
 irg:     IRR_LOOP_main
 arity: 0
 Const of type type_unknown
 " info2: "(mode_is_data (mymode) || mymode == mode_b) && Const node"color: yellow}
-node: {title: "n73" label: "ProjX 0 73"  info1: "visited: 5
+node: {title: "n73" label: "ProjX 0 73"  info1: "visited: 6
 irg:     IRR_LOOP_main
 arity: 1
 "color: yellow}
 edge: {sourcename: "n73" targetname: "n74" label: "0" class:13 priority:60 color:red}
-node: {title: "n74" label: "Start  74"  info1: "visited: 5
+node: {title: "n74" label: "Start  74"  info1: "visited: 6
 irg:     IRR_LOOP_main
 arity: 0
 start of method of type main
