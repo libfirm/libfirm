@@ -130,10 +130,11 @@ static int reassoc_Sub(ir_node *n)
 
     irn = new_rd_Add(dbg, current_ir_graph, block, left, irn, get_irn_mode(n));
 
+/*
     printf("Applied: %s - %s => %s + (-%s)\n",
         get_irn_opname(get_Sub_left(n)), get_irn_opname(c),
         get_irn_opname(get_Sub_left(n)), get_irn_opname(c) );
-
+*/
     exchange(n, irn);
 
     return 1;
@@ -182,6 +183,10 @@ static int reassoc_commutative(ir_node *n)
 
     get_comm_Binop_ops(t1, &t2, &c2);
 
+    /* do not optimize Bad nodes, will fail later */
+    if (is_Bad(t2))
+      return 0;
+
     c_c1 = get_const_class(c1);
     c_c2 = get_const_class(c2);
     c_t2 = get_const_class(t2);
@@ -201,7 +206,27 @@ static int reassoc_commutative(ir_node *n)
        * convert c1 .OP. (c2 .OP. x) => (c1 .OP. c2) .OP. x
        */
       ir_node *irn, *in[2];
-      ir_mode *mode;
+      ir_mode *mode, *mode_c1 = get_irn_mode(c1), *mode_c2 = get_irn_mode(c2);
+
+      /* It might happen, that c1 and c2 have different modes, for instance Is and Iu.
+       * Handle this here.
+       */
+      if (mode_c1 != mode_c2) {
+        if (mode_is_int(mode_c1) && mode_is_int(mode_c2)) {
+          /* get the bigger one */
+          if (get_mode_size_bits(mode_c1) > get_mode_size_bits(mode_c2))
+            c2 = new_r_Conv(current_ir_graph, block, c2, mode_c1);
+          else if (get_mode_size_bits(mode_c1) < get_mode_size_bits(mode_c2))
+            c1 = new_r_Conv(current_ir_graph, block, c1, mode_c2);
+          else {
+            /* Try to cast the real const */
+            if (c_c1 == REAL_CONSTANT)
+              c1 = new_r_Conv(current_ir_graph, block, c1, mode_c2);
+            else
+              c2 = new_r_Conv(current_ir_graph, block, c2, mode_c1);
+          }
+        }
+      }
 
       in[0] = c1;
       in[1] = c2;
@@ -213,13 +238,20 @@ static int reassoc_commutative(ir_node *n)
       mode = get_mode_from_ops(in[0], in[1]);
       irn   = optimize_node(new_ir_node(NULL, current_ir_graph, block, op, mode, 2, in));
 
+/*
       printf("Applied: %s .%s. (%s .%s. %s) => (%s .%s. %s) .%s. %s\n",
           get_irn_opname(c1), get_irn_opname(n), get_irn_opname(c2), get_irn_opname(n), get_irn_opname(t2),
           get_irn_opname(c1), get_irn_opname(n), get_irn_opname(c2), get_irn_opname(n), get_irn_opname(t2));
-
-      exchange(n, irn);
-
-      return 1;
+  */
+      /*
+       * in some rare cases it can really happen that we get the same node back.
+       * This might be happen in dead loops, were the Phi nodes are already gone away.
+       * So check this.
+      */
+      if (n != irn) {
+        exchange(n, irn);
+        return 1;
+      }
     }
   }
   return 0;
@@ -256,12 +288,13 @@ static int reassoc_Mul(ir_node *n)
     mode  = get_mode_from_ops(in[0], in[1]);
     irn   = optimize_node(new_ir_node(NULL, current_ir_graph, block, op, mode, 2, in));
 
+/*
     printf("Applied: (%s .%s. %s) %s %s => (%s %s %s) .%s. (%s %s %s)\n",
         get_irn_opname(t1), get_op_name(op), get_irn_opname(t2), get_irn_opname(n), get_irn_opname(c),
         get_irn_opname(t1), get_irn_opname(n), get_irn_opname(c),
         get_op_name(op),
         get_irn_opname(t2), get_irn_opname(n), get_irn_opname(c));
-
+*/
     exchange(n, irn);
 
     return 1;
