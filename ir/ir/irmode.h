@@ -104,7 +104,7 @@ typedef enum {
   irma_none = 1,              /**< For modes for which no representation is specified.
 				   These are modes of sort auxiliary, internal_boolean and
 				   character. */
-  irma_twos_complement = 2    /**< Values of the mode are represented as two's complement.
+  irma_twos_complement = 2,   /**< Values of the mode are represented as two's complement.
 				   Only legal for modes of sort int_number and reference. */
   irma_ones_complement,       /**< Values of the mode are represented  as one's complement.
 			           Only legal for modes of sort int_number and reference. */
