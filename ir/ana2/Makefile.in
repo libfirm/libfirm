@@ -17,7 +17,7 @@ subdir := ir/ana2
 
 INSTALL_HEADERS = ecg.h irmemwalk.h lset.h typalise.h pto.h pto_comp.h \
 	pto_ctx.h pto_debug.h pto_init.h pto_name.h pto_util.h pto_mod.h \
-	qset.h
+	qset.h gnu_ext.h
 
 SOURCES = $(INSTALL_HEADERS)
 
