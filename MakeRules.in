@@ -28,6 +28,7 @@ LN_S := @LN_S@
 # profiling enabled?
 ifeq (@enable_profile_libfirm@,yes)
 LDFLAGS += # -g -pg GL: geht bei mir nicht: unrecognised option
+CFLAGS += -g -pg
 endif
 
 AR := @AR@
