@@ -506,7 +506,16 @@ static void callee_walker(ir_node * call, void * env) {
        * konnte. Wir ersetzen die Call-Operation ebenfalls durch
        * eine Bad-Operation. Die Verlinkung muss wiederhergestellt
        * werden! */
-      exchange(call, new_Bad());
+      /* exchange(call, new_Bad());  invalid firm */
+
+      ir_node *mem = get_Call_mem(call);
+      turn_into_tuple (call, pn_Call_max);
+      set_Tuple_pred(call, pn_Call_M_regular       , mem);
+      set_Tuple_pred(call, pn_Call_T_result        , new_Bad());
+      set_Tuple_pred(call, pn_Call_P_value_res_base, new_Bad());
+      set_Tuple_pred(call, pn_Call_X_except        , new_Bad());  /* new_Jmp() ?? new_Raise() ?? */
+      set_Tuple_pred(call, pn_Call_M_except        , mem);
+
     } else {
       set_Call_callee_arr(call, ARR_LEN(arr), arr);
     }
