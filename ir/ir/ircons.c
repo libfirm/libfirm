@@ -1074,7 +1074,8 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
        (bad, jmp).  As the start has a self referencing control flow edge,
        we get a self referencing Id, which is hard to optimize away.  We avoid
        this by defining the value as a Bad node.
-       Returning a const with tarval_bad is a preliminary solution. */
+       Returning a const with tarval_bad is a preliminary solution.  In some
+       situations we might want a Warning or an Error. */
 
     if (block == get_irg_start_block(current_ir_graph)) {
       block->attr.block.graph_arr[pos] = new_Const(mode, tarval_bad);
