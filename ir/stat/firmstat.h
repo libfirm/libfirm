@@ -125,7 +125,7 @@ void stat_dead_node_elim_stop(ir_graph *irg);
 #define stat_lower(node)
 #define stat_inline(call, irg)
 #define stat_dead_node_elim_start(irg)
-#define stat_dead_node_elim_start(irg)
+#define stat_dead_node_elim_stop(irg)
 
 #endif
 
