@@ -230,6 +230,12 @@
 #define ARR_SETLEN(type, arr, n)					\
   (XMALLOC_TRACE (arr) = _arr_setlen ((arr), (n), sizeof(type) * (n)))
 
+/** Set a length smaller than the current length of the array.  Do not
+ *  resize. len must be <= ARR_LEN(arr). */
+#define ARR_SHRINKLEN(arr,len)                                          \
+   (ARR_VRFY ((arr)), assert(_ARR_DESCR((arr))->nelts >= len),             \
+    _ARR_DESCR((arr))->nelts = len)
+
 /**
  * Resize a flexible array by growing it by delta elements.
  *
