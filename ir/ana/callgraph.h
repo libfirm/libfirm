@@ -66,6 +66,7 @@ int       get_irg_callee_loop_depth(ir_graph *irg, int pos);
 /** Maximal loop depth of all paths from an external visible method to
     this irg. */
 int       get_irg_loop_depth(ir_graph *irg);
+
 /** Maximal recursion depth of all paths from an external visible method to
     this irg. */
 int       get_irg_recursion_depth(ir_graph *irg);

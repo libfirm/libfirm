@@ -24,75 +24,10 @@
 #include "irgwalk.h"
 
 #include "array.h"
-#include "set.h"
-#include "hashptr.h"
-
 
 /* *************************************************************************** */
 /* initialize, global variables.                                               */
 /* *************************************************************************** */
-
-/* *************************************************************************** */
-/* Another hash table, this time containing temperature values.                */
-/* *************************************************************************** */
-
-typedef struct {
-  firm_kind *kind;   /* An entity or type. */
-  double    val1;
-} temperature_tp;
-
-/* We use this set for all types and entities.  */
-static set *temperature_set = NULL;
-
-static int temp_cmp(const void *e1, const void *e2, size_t size) {
-  temperature_tp *ef1 = (temperature_tp *)e1;
-  temperature_tp *ef2 = (temperature_tp *)e2;
-  return (ef1->kind != ef2->kind);
-}
-
-static INLINE unsigned int tem_hash(void *e) {
-  void *v = (void *) ((temperature_tp *)e)->kind;
-  return HASH_PTR(v);
-}
-
-double get_entity_acc_estimated_n_loads (entity *ent) {
-  return 0;
-}
-double get_entity_acc_estimated_n_stores(entity *ent) {
-  return 0;
-}
-
-void set_entity_acc_estimated_n_loads (entity *ent, double val) {
-}
-void set_entity_acc_estimated_n_stores(entity *ent, double val) {
-}
-
-double get_type_acc_estimated_n_instances(type *tp) {
-  return 0;
-}
-void set_type_acc_estimated_n_instances(type *tp, double val) {
-}
-
-/*
-static INLINE void set_region_exec_freq(void *reg, double freq) {
-  reg_exec_freq ef;
-  ef.reg  = reg;
-  ef.freq = freq;
-  set_insert(exec_freq_set, &ef, sizeof(ef), exec_freq_hash(&ef));
-}
-
-INLINE double get_region_exec_freq(void *reg) {
-  reg_exec_freq ef, *found;
-  ef.reg  = reg;
-  assert(exec_freq_set);
-  found = set_find(exec_freq_set, &ef, sizeof(ef), exec_freq_hash(&ef));
-  if (found)
-    return found->freq;
-  else
-    return 0;
-}
-*/
-
 
 /* *************************************************************************** */
 /*   Access routines for irnodes                                               */
@@ -390,83 +325,6 @@ double get_entity_estimated_n_dyncalls(entity *ent) {
 
   }
   return n_calls;
-}
-
-/* ------------------------------------------------------------------------- */
-/* Accumulate information in the type hierarchy.                             */
-/* This should go to co_read_profiling.c                                     */
-/* ------------------------------------------------------------------------- */
-
-static void acc_temp (type *tp) {
-  int i, n_subtypes, n_members;
-  double inst;
-
-  assert(is_Class_type(tp));
-
-  /* Recursive descend. */
-  n_subtypes = get_class_n_subtypes(tp);
-  for (i = 0; i < n_subtypes; ++i) {
-    type *stp = get_class_subtype(tp, i);
-    if (type_not_visited(stp)) {
-      acc_temp(stp);
-    }
-  }
-
-  /* Deal with entity numbers. */
-  n_members = get_class_n_members(tp);
-  for (i = 0; i < n_members; ++i) {
-    entity *mem = get_class_member(tp, i);
-    double acc_loads  = get_entity_estimated_n_loads (mem);
-    double acc_writes = get_entity_estimated_n_stores(mem);
-    int j, n_ov = get_entity_n_overwrittenby(mem);
-    for (j = 0; j < n_ov; ++j) {
-      entity *ov_mem = get_entity_overwrittenby(mem, j);
-      acc_loads  += get_entity_acc_estimated_n_loads (ov_mem);
-      acc_writes += get_entity_acc_estimated_n_stores(ov_mem);
-    }
-    set_entity_acc_estimated_n_loads (mem, acc_loads);
-    set_entity_acc_estimated_n_stores(mem, acc_writes);
-  }
-
-  /* Deal with type numbers. */
-  inst = get_type_estimated_n_instances(tp);
-  for (i = 0; i < n_subtypes; ++i) {
-    type *stp = get_class_subtype(tp, i);
-    inst += get_type_acc_estimated_n_instances(stp);
-  }
-  set_type_acc_estimated_n_instances(tp, inst);
-
-  mark_type_visited(tp);
-}
-
-void accumulate_temperatures(void) {
-  int i, n_types = get_irp_n_types();
-  free_accumulated_temperatures();
-
-  inc_master_type_visited();
-  for (i = 0; i < n_types; ++i) {
-    type *tp = get_irp_type(i);
-    if (is_Class_type(tp)) { /* For others there is nothing to accumulate. */
-      int j, n_subtypes = get_class_n_subtypes(tp);
-      int has_unmarked_subtype = false;
-      for (j = 0; j < n_subtypes && !has_unmarked_subtype; ++j) {
-	      type *stp = get_class_subtype(tp, j);
-	      if (type_not_visited(stp)) has_unmarked_subtype = true;
-      }
-
-      if (!has_unmarked_subtype)
-	      acc_temp(tp);
-    }
-  }
-
-  irp->temperature_state = temperature_consistent;
-}
-
-
-void free_accumulated_temperatures(void) {
-  if (temperature_set) del_set(temperature_set);
-  temperature_set = NULL;
-  irp->temperature_state = temperature_none;
 }
 
 /* ------------------------------------------------------------------------- */

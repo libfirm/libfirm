@@ -50,7 +50,7 @@ int get_weighted_loop_depth(ir_node *n);
 /** Heuristic merging recursion and loop depth. */
 double get_irn_final_cost(ir_node *n);
 
-/** Get accumulated execution frequencies.
+/** Get accumulated(really?) execution frequencies.
  *  A heuristic weights the recursions. */
 double get_type_estimated_n_instances(type *clss);
 double get_type_estimated_mem_consumption_bytes(type *tp);
@@ -94,9 +94,6 @@ typedef enum {
   temperature_consistent,
   temperature_inconsistent
 } irp_temperature_state;
-
-void accumulate_temperatures(void);
-void free_accumulated_temperatures(void);
 
 /** An auxiliary/temporary function */
 int is_jack_rts_class(type *t);
