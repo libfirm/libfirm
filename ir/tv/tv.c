@@ -230,11 +230,13 @@ static tarval *get_tarval_overflow(const void *value, int length, ir_mode *mode)
 /*
  *   public variables declared in tv.h
  */
-tarval *tarval_bad;
-tarval *tarval_undefined;
-tarval *tarval_b_false;
-tarval *tarval_b_true;
-tarval *tarval_P_void;
+static tarval reserved_tv[5];
+
+tarval *tarval_bad       = &reserved_tv[0];
+tarval *tarval_undefined = &reserved_tv[1];
+tarval *tarval_b_false   = &reserved_tv[2];
+tarval *tarval_b_true    = &reserved_tv[3];
+tarval *tarval_P_void    = &reserved_tv[4];
 
 /*
  *   public functions declared in tv.h
@@ -1435,12 +1437,6 @@ void init_tarval_1(void)
    * bit mantissa (needs extra bits for rounding and overflow) */
   init_strcalc(68);
   init_fltcalc(0);
-
-  tarval_bad = (tarval*)malloc(sizeof(tarval));
-  tarval_undefined = (tarval*)malloc(sizeof(tarval));
-  tarval_b_true = (tarval*)malloc(sizeof(tarval));
-  tarval_b_false = (tarval*)malloc(sizeof(tarval));
-  tarval_P_void = (tarval*)malloc(sizeof(tarval));
 }
 
 /*
