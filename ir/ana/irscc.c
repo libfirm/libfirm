@@ -604,7 +604,7 @@ get_start_index(ir_node *n) {
       get_irn_op(n) == op_Block ||
       (get_irn_op(n) == op_Filter && interprocedural_view) ||
       (get_irg_pinned(get_irn_irg(n)) == op_pin_state_floats &&
-       get_op_pinned(get_irn_op(n)) == op_pin_state_floats))
+       get_irn_pinned(n) == op_pin_state_floats))
     // Here we could test for backedge at -1 which is illegal
     return 0;
   else
