@@ -14,6 +14,9 @@
 **
 **  This file does not belong to the interface of the firm library.
 */
+
+/* $Id$ */
+
 # ifndef _DEBINFO_H_
 # define _DEBINFO_H_
 

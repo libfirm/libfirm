@@ -2,6 +2,8 @@
    Copyright (C) 1995, 1996 Markus Armbruster
    All rights reserved. */
 
+/* $Id$ */
+
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif

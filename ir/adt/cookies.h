@@ -2,6 +2,8 @@
    Copyright (C) 1995, 1996 Christian von Roques & Markus Armbruster
    All rights reserved.  */
 
+/* $Id$ */
+
 #ifndef _COOKIES_H
 #define _COOKIES_H
 

@@ -21,6 +21,8 @@
     TODO: Fix Esmond's ugly MixedCapsIdentifiers ;->
  */
 
+/* $Id$ */
+
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif

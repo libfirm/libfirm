@@ -1,4 +1,6 @@
 
+/* $Id$ */
+
 # ifndef _TYPE_T_H_
 # define _TYPE_T_H_
 

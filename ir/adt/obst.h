@@ -5,6 +5,8 @@
 **
 */
 
+/* $Id$ */
+
 # include <obstack.h>
 # include <malloc.h>
 

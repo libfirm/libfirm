@@ -2,6 +2,8 @@
    Copyright (C) 1995, 1996 Markus Armbruster
    All rights reserved. */
 
+/* $Id$ */
+
 /* @@@ growing a dynamic on an obstack */
 
 #ifndef _ARRAY_H

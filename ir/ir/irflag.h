@@ -6,6 +6,8 @@
 ** irflag --- optimization flags
 */
 
+/* $Id$ */
+
 #ifndef _IRFLAG_H_
 #define _IRFLAG_H_
 

@@ -1,6 +1,8 @@
 /* Xmalloc --- never failing wrappers for malloc() & friends.
    Copyright (C) 1995, 1996 Markus Armbruster */
 
+/* $Id$ */
+
 /* @@@ ToDo: replace this file with the one from liberty.
    [reimplement xstrdup, ... ] */
 

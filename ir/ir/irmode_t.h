@@ -1,4 +1,6 @@
 
+/* $Id$ */
+
 # ifndef _IRMODE_T_H_
 # define _IRMODE_T_H_
 

@@ -10,6 +10,8 @@
 ** - execute the post function after recursion
 */
 
+/* $Id$ */
+
 
 /* walk over all type information reachable from the ir graph. */
 

@@ -26,6 +26,8 @@
 **
 */
 
+/* $Id$ */
+
 # ifndef _ENTITY_T_H_
 # define _ENTITY_T_H_
 

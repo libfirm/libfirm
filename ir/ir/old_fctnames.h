@@ -7,6 +7,7 @@
 ** Some makros supporting old function names.
 */
 
+/* $Id$ */
 
 #ifndef __OLD_FCTNAMES_H__
 #define __OLD_FCTNAMES_H__

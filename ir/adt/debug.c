@@ -2,6 +2,8 @@
    Copyright (C) 1995, 1996 Christian von Roques
    All rights reserved. */
 
+/* $Id$ */
+
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif

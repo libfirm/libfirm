@@ -1,6 +1,8 @@
 /* Declarations for Target Values.
    Copyright (C) 1995, 1996 Christian von Roques */
 
+/* $Id$ */
+
 #ifndef _TV_T_H
 #define _TV_T_H
 

@@ -5,6 +5,8 @@
 **
 */
 
+/* $Id$ */
+
 # include "ident.h"
 # include "entity.h"
 # include "type.h"

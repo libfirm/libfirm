@@ -1,6 +1,8 @@
 /* Declarations for set.
    Copyright (C) 1995, 1996 Markus Armbruster */
 
+/* $Id$ */
+
 #ifndef _SET_H
 #define _SET_H
 

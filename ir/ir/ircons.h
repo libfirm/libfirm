@@ -7,6 +7,7 @@
 ** ircons.h ir node construction
 */
 
+/* $Id$ */
 
 /** !!!
 *** Ideas for imrovement:

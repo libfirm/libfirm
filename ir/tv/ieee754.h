@@ -1,6 +1,8 @@
 /* IEEE754 fp format.
    Copyright (C) 1995, 1996 Christian von Roques */
 
+/* $Id$ */
+
 /* This file was derived from the GNU C Library's ieee754.h which
    carried the following copyright notice:
 

@@ -28,6 +28,9 @@
  *   type_t.h type tpop
  *****
  */
+
+/* $Id$ */
+
 # include <stdlib.h>
 # include <stddef.h>
 # include "type_t.h"

@@ -6,6 +6,8 @@
 **
 */
 
+/* $Id$ */
+
 /* A datatype to treat types and entities as the same. */
 
 # ifndef _TYPE_OR_ENTITY_H_

@@ -11,7 +11,7 @@
 ** graph before starting the walker.
 */
 
-
+/* $Id$ */
 
 # ifndef _IRGWALK_H_
 # define _IRGWALK_H_

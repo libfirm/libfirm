@@ -2,6 +2,8 @@
    Copyright (C) 1995, 1996 Christian von Roques
    All rights reserved.  */
 
+/* $Id$ */
+
 #ifndef _DEBUG_H_
 #define _DEBUG_H_
 

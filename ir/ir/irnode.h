@@ -6,6 +6,8 @@
 ** declarations of an ir node
 */
 
+/* $Id$ */
+
 # ifndef _IRNODE_H_
 # define _IRNODE_H_
 

@@ -7,6 +7,8 @@
 ** Authors: Martin Trapp, Christian Schaefer
 */
 
+/* $Id$ */
+
 # ifndef _IDENT_H_
 # define _IDENT_H_
 

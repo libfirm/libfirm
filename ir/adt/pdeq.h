@@ -1,6 +1,8 @@
 /* Declarations for pdeq.
    Copyright (C) 1995, 1996 Christian von Roques */
 
+/* $Id$ */
+
 #ifndef _PDEQ_H
 #define _PDEQ_H
 

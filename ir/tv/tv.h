@@ -1,6 +1,10 @@
 /* Declarations for Target Values.
    Copyright (C) 1995, 1996 Christian von Roques
+*/
 
+/* $Id$ */
+
+/*
 Discussion of new interface, proposals by Prof. Waite:
 (email of 13.6.2001)
 > 1. You say that you plan to replace the tv module.  That replacement is

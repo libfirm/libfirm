@@ -1,6 +1,8 @@
 /* TV --- Target Values, aka Constant Table.
    Copyright (C) 1995, 1996 Christian von Roques */
 
+/* $Id$ */
+
 /* This implementation assumes:
    * target characters/strings can be represented as type `char'/`char *',
    * host's type `long'/`unsigned long' can hold values of mode `l'/`L',

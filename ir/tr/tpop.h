@@ -1,4 +1,6 @@
 
+/* $Id$ */
+
 # ifndef _TYPEOP_H_
 # define _TYPEOP_H_
 

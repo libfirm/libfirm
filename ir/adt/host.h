@@ -2,6 +2,8 @@
    Copyright (C) 1995, 1996 Markus Armbruster
    All rights reserved.*/
 
+/* $Id$ */
+
 #ifndef _HOST_H
 #define _HOST_H
 

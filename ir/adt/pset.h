@@ -1,6 +1,8 @@
 /* Declarations for pset.
    Copyright (C) 1995, 1996 Markus Armbruster */
 
+/* $Id$ */
+
 #ifndef _PSET_H
 #define _PSET_H
 
