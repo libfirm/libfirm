@@ -1,0 +1,8 @@
+ * 20.6.2001 Goetz
+   tarval_shr neither implements sign extended nor zero extended
+   shift: it is dependent on the system implementation of >>.
+
+ * 7.6.2001 Goetz
+   gmp.h/libgmp.a differ from RedHat 6.x to 7.x.
+   Therefore compile libfirm with the gmp.h belonging to the library
+   later used for linking.

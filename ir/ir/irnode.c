@@ -448,7 +448,37 @@ set_Block_graph_arr (ir_node *node, int pos, ir_node *value) {
   assert (node->op == op_Block);
   node->attr.block.graph_arr[pos+1] = value;
 }
+/*
+> Implementing the case construct (which is where the constant Proj node is
+> important) involves far more than simply determining the constant values.
+> We could argue that this is more properly a function of the translator from
+> Firm to the target machine.  That could be done if there was some way of
+> projecting "default" out of the Cond node.
+I know it's complicated.
+Basically there are two proglems:
+ - determining the gaps between the projs
+ - determining the biggest case constant to konw the proj number for
+   the default node.
+I see several solutions:
+1. Introduce a ProjDefault node.  Solves both problems.
+   This means to extend all optimizations executed during construction.
+2. Give the Cond node for switch two flavors:
+   a) there are no gaps in the projs  (existing flavor)
+   b) gaps may exist, default proj is still the Proj with the largest
+      projection number.  This covers also the gaps.
+3. Fix the semantic of the Cond to that of 2b)
 
+Solution 2 seems to be the best:
+Computing the gaps in the Firm representation is not too hard, i.e.,
+libfirm can implement a routine that transforms betweeen the two
+flavours.  This is also possible for 1) but 2) does not require to
+change any existing optimization.
+Further it should be far simpler to determine the biggest constant than
+to compute all gaps.
+I don't want to choose 3) as 2a) seems to have advantages for
+dataflow analysis and 3) does not allow to convert the representation to
+2a).
+*/
 inline ir_node *
 get_Cond_selector (ir_node *node) {
   assert (node->op == op_Cond);
