@@ -1,7 +1,4 @@
-/**
- *
- * @file loop_unrolling.h
- *
+/*
  * Project:     libFIRM
  * File name:   ir/opt/loop_unrolling.h
  * Purpose:     Loop unrolling.
@@ -11,23 +8,23 @@
  * CVS-ID:      $Id$
  * Copyright:   (c) 2004 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- *
- *
- *
- *
  */
 
-
-# ifndef _LOOP_UNROLLING_H_
-# define _LOOP_UNROLLING_H_
-
-# include "irgraph.h"
-
-/** Loop unrolling.
+/**
+ * @file loop_unrolling.h
  *
+ * Loop unrolling.
+ *
+ * @author Beyhan Veliev
  */
+#ifndef _LOOP_UNROLLING_H_
+#define _LOOP_UNROLLING_H_
 
-void optimize_loop_unrolling (ir_graph *irg);
+#include "irgraph.h"
 
+/**
+ * Do Loop unrolling in the given graph.
+ */
+void optimize_loop_unrolling(ir_graph *irg);
 
 #endif  /* _LOOP_UNROLLING_H_ */
