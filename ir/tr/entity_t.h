@@ -55,6 +55,7 @@ struct entity {
   ent_visibility visibility;  /* Specifies visibility to external program
 				 fragments */
   ent_variability variability;  /* Specifies variability of entities content */
+  ent_volatility volatility;    /* Specifies volatility of entities content */
   ir_node *value;            /* value of atomic entity */
   ir_node **values;     /* values of compound entities */
   entity **val_ents;    /* entities corresponding to constant values */

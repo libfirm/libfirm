@@ -88,105 +88,149 @@ void free_type_attrs(type *tp) {
 /* set/get the link field */
 void *get_type_link(type *tp)
 {
-  assert(tp);
+  assert(tp && tp->kind == k_type);
   return(tp -> link);
 }
 
 void set_type_link(type *tp, void *l)
 {
-  assert(tp);
+  assert(tp && tp->kind == k_type);
   tp -> link = l;
 }
 
 tp_op*      get_type_tpop(type *tp) {
-  assert(tp);
+  assert(tp && tp->kind == k_type);
   return tp->type_op;
 }
 
 ident*      get_type_tpop_nameid(type *tp) {
-  assert(tp);
+  assert(tp && tp->kind == k_type);
   return tp->type_op->name;
 }
 
 const char* get_type_tpop_name(type *tp) {
-  assert(tp);
+  assert(tp && tp->kind == k_type);
   return id_to_str(tp->type_op->name);
 }
 
 tp_opcode    get_type_tpop_code(type *tp) {
-  assert(tp);
+  assert(tp && tp->kind == k_type);
   return tp->type_op->code;
 }
 
 ir_mode*    get_type_mode(type *tp) {
-  assert(tp);
+  assert(tp && tp->kind == k_type);
   return tp->mode;
 }
 
 void        set_type_mode(type *tp, ir_mode* m) {
-  assert(tp);
-  tp->mode = m;
-  /* For pointer and primitive size depends on the mode. */
-  if ((tp->type_op == type_pointer) || (tp->type_op == type_primitive))
+  assert(tp && tp->kind == k_type);
+
+  assert((tp->type_op != type_primitive) || mode_is_data(m) &&
+	 /* Modes of primitives must be data */
+	 (tp->type_op != type_enumeration) || mode_is_int(m));
+         /* Modes of enumerations must be integers */
+
+  if ((tp->type_op == type_primitive) || (tp->type_op == type_enumeration)) {
+    /* For pointer, primitive and enumeration size depends on the mode. */
     tp->size == get_mode_size(m);
+    tp->mode = m;
+  }
 }
 
 ident*      get_type_ident(type *tp) {
-  assert(tp);
+  assert(tp && tp->kind == k_type);
   return tp->name;
 }
 
 void        set_type_ident(type *tp, ident* id) {
-  assert(tp);
+  assert(tp && tp->kind == k_type);
   tp->name = id;
 }
 
 const char* get_type_name(type *tp) {
-  assert(tp);
+  assert(tp && tp->kind == k_type);
   return id_to_str(tp->name);
 }
 
 int         get_type_size(type *tp) {
-  assert(tp);
+  assert(tp && tp->kind == k_type);
   return tp->size;
 }
 
 void
 set_type_size(type *tp, int size) {
-  assert(tp);
-  /* For pointer and primitive size depends on the mode. */
-  if ((tp->type_op != type_pointer) && (tp->type_op != type_primitive))
+  assert(tp && tp->kind == k_type);
+  /* For pointer enumeration and primitive size depends on the mode.
+     Methods don't have a size. */
+  if ((tp->type_op != type_pointer) && (tp->type_op != type_primitive) &&
+      (tp->type_op != type_enumeration) && (tp->type_op != type_method))
     tp->size = size;
 }
 
 type_state
 get_type_state(type *tp) {
-  assert(tp);
+  assert(tp && tp->kind == k_type);
   return tp->state;
 }
 
 void
 set_type_state(type *tp, type_state state) {
-  assert(tp);
-  /* For pointer and primitive always fixed. */
-  if ((tp->type_op != type_pointer) && (tp->type_op != type_primitive)) {
-    /* @@@ assert that the layout really is fixed!!! */
-    tp->state = state;
+  assert(tp && tp->kind == k_type);
+
+  if ((tp->type_op == type_pointer) && (tp->type_op == type_primitive) &&
+      (tp->type_op == type_method))
+    return;
+
+  /* Just a correctness check: */
+  if (state == layout_fixed) {
+    int i;
+    switch (get_type_tpop_code(tp)) {
+    case tpo_class:
+      {
+	assert(get_type_size(tp) > -1);
+	for (i = 0; i < get_class_n_member(tp); i++)
+	  assert(get_entity_offset(get_class_member(tp, i)) > -1);
+	  assert(get_entity_allocation(get_class_member(tp, i)) == automatic_allocated);
+      } break;
+    case tpo_struct:
+      {
+	assert(get_type_size(tp) > -1);
+	for (i = 0; i < get_struct_n_member(tp); i++) {
+	  assert(get_entity_offset(get_struct_member(tp, i)) > -1);
+	  assert(get_entity_allocation(get_struct_member(tp, i)) == automatic_allocated);
+	}
+      } break;
+    case tpo_union:
+      { /* ?? */
+      } break;
+    case tpo_array:
+      { /* ?? */
+      } break;
+    case tpo_enumeration:
+      {
+	assert(get_type_mode != NULL);
+	for (i = 0; i < get_enumeration_n_enums(tp); i++)
+	  assert(get_enumeration_enum(tp, i) != NULL);
+      } break;
+    default: break;
+    } /* switch (tp) */
   }
+  tp->state = state;
 }
 
 unsigned long get_type_visited(type *tp) {
-  assert(tp);
+  assert(tp && tp->kind == k_type);
   return tp->visit;
 }
 
 void        set_type_visited(type *tp, unsigned long num) {
-  assert(tp);
+  assert(tp && tp->kind == k_type);
   tp->visit = num;
 }
 /* Sets visited field in type to type_visited. */
 void        mark_type_visited(type *tp) {
-  assert(tp);
+  assert(tp && tp->kind == k_type);
   assert(tp->visit < type_visited);
   tp->visit = type_visited;
 }
@@ -239,6 +283,16 @@ void    set_class_member   (type *clss, entity *member, int pos) {
   assert(clss && (clss->type_op == type_class));
   assert(pos >= 0 && pos < get_class_n_member(clss));
   clss->attr.ca.members[pos+1] = member;
+}
+void    set_class_members  (type *clss, entity **members, int arity) {
+  int i;
+  assert(clss && (clss->type_op == type_class));
+  DEL_ARR_F(clss->attr.ca.members);
+  clss->attr.ca.members    = NEW_ARR_F (entity *, 1);
+  for (i = 0; i < arity; i++) {
+    set_entity_owner(members[i], clss);
+    ARR_APP1 (entity *, clss->attr.ca.members, members[i]);
+  }
 }
 void    remove_class_member(type *clss, entity *member) {
   int i;
@@ -348,6 +402,7 @@ inline void free_struct_attrs (type *strct) {
 /* manipulate private fields of struct */
 void    add_struct_member   (type *strct, entity *member) {
   assert(strct && (strct->type_op == type_struct));
+  assert(get_type_tpop(get_entity_type(member)) != type_method);
   ARR_APP1 (entity *, strct->attr.sa.members, member);
 }
 int     get_struct_n_member (type *strct) {
@@ -362,6 +417,7 @@ entity *get_struct_member   (type *strct, int pos) {
 void    set_struct_member   (type *strct, int pos, entity *member) {
   assert(strct && (strct->type_op == type_struct));
   assert(pos >= 0 && pos < get_struct_n_member(strct));
+  /* assert(get_entity_type(member)->type_op != type_method); @@@ lowerfirm !!*/
   strct->attr.sa.members[pos+1] = member;
 }
 void    remove_struct_member(type *strct, entity *member) {
@@ -389,7 +445,9 @@ bool    is_struct_type(type *strct) {
    N_param is the number of parameters, n_res the number of results.  */
 type *new_type_method (ident *name, int n_param, int n_res) {
   type *res;
-  res = new_type(type_method, NULL, name);
+  res = new_type(type_method, mode_p, name);
+  res->state = layout_fixed;
+  res->size = get_mode_size(mode_p);
   res->attr.ma.n_params   = n_param;
   res->attr.ma.param_type = (type **) xmalloc (sizeof (type *) * n_param);
   res->attr.ma.n_res      = n_res;
@@ -533,10 +591,20 @@ bool   is_union_type         (type *uni) {
 type *new_type_array         (ident *name, int n_dimensions,
 			      type *element_type) {
   type *res;
+  int i;
+  assert((element_type->type_op != type_method));
+  assert(get_type_tpop(element_type) != type_method);
   res = new_type(type_array, NULL, name);
   res->attr.aa.n_dimensions = n_dimensions;
   res->attr.aa.lower_bound  = (ir_node **) xmalloc (sizeof (ir_node *) * n_dimensions);
   res->attr.aa.upper_bound  = (ir_node **) xmalloc (sizeof (ir_node *) * n_dimensions);
+  res->attr.aa.order  = (int *) xmalloc (sizeof (int) * n_dimensions);
+
+  for (i = 0; i < n_dimensions; i++) {
+    res->attr.aa.lower_bound[i]  = NULL;
+    res->attr.aa.upper_bound[i]  = NULL;
+    res->attr.aa.order[i] = i;
+  }
   res->attr.aa.element_type = element_type;
   new_entity(res, mangle(name, id_from_str("elem_ent", 8)), element_type);
   return res;
@@ -587,6 +655,14 @@ ir_node * get_array_upper_bound  (type *array, int dimension) {
   assert(array && (array->type_op == type_array));
   return array->attr.aa.upper_bound[dimension];
 }
+void set_array_order (type *array, int dimension, int order) {
+  assert(array && (array->type_op == type_array));
+  array->attr.aa.order[dimension] = order;
+}
+int  get_array_order (type *array, int dimension) {
+  assert(array && (array->type_op == type_array));
+  return array->attr.aa.order[dimension];
+}
 void  set_array_element_type (type *array, type *type) {
   assert(array && (array->type_op == type_array));
   array->attr.aa.element_type = type;
@@ -597,7 +673,9 @@ type *get_array_element_type (type *array) {
 }
 void  set_array_element_entity (type *array, entity *ent) {
   assert(array && (array->type_op == type_array));
+  assert((get_entity_type(ent)->type_op != type_method));
   array->attr.aa.element_ent = ent;
+  array->attr.aa.element_type = get_entity_type(ent);
 }
 entity *get_array_element_entity (type *array) {
   assert(array && (array->type_op == type_array));
@@ -617,12 +695,18 @@ bool   is_array_type         (type *array) {
 /* create a new type enumeration -- set the enumerators independently */
 type   *new_type_enumeration    (ident *name, int n_enums) {
   type *res;
+  int i;
   res = new_type(type_enumeration, NULL, name);
   res->attr.ea.n_enums     = n_enums;
   res->attr.ea.enumer      = (tarval **) xmalloc (sizeof (tarval *) * n_enums);
   res->attr.ea.enum_nameid = (ident  **) xmalloc (sizeof (ident  *) * n_enums);
+  for (i = 0; i < n_enums; i++) {
+    res->attr.ea.enumer[i] = NULL;
+    res->attr.ea.enum_nameid  = NULL;
+  }
   return res;
 }
+
 inline void free_enumeration_attrs(type *enumeration) {
   assert(enumeration && (enumeration->type_op == type_enumeration));
   free(enumeration->attr.ea.enumer);
@@ -717,15 +801,22 @@ inline void free_primitive_attrs (type *primitive) {
 
 /* typecheck */
 bool  is_primitive_type  (type *primitive) {
-  assert(primitive);
+  assert(primitive && primitive->kind == k_type);
   if (primitive->type_op == type_primitive) return 1; else return 0;
 }
 
-int is_atomic_type(type *tp) {
+/*******************************************************************/
+/** common functionality                                          **/
+/*******************************************************************/
+
+
+inline int is_atomic_type(type *tp) {
+  assert(tp && tp->kind == k_type);
   return (is_primitive_type(tp) || is_pointer_type(tp) ||
 	  is_enumeration_type(tp));
 }
-int is_compound_type(type *tp) {
+inline int is_compound_type(type *tp) {
+  assert(tp && tp->kind == k_type);
   return (is_class_type(tp) || is_struct_type(tp) ||
 	  is_array_type(tp) || is_union_type(tp));
 }

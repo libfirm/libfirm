@@ -39,6 +39,7 @@
 # include "irmode.h"
 # include "bool.h"
 
+
 #ifndef _ENTITY_TYPEDEF_
 #define _ENTITY_TYPEDEF_
 /* to resolve recursion between entity.h and type.h */
@@ -105,6 +106,8 @@ typedef struct ir_node ir_node;
  */
 typedef struct type type;
 
+# include "type_or_entity.h"
+
 void*       get_type_link(type *tp);
 void        set_type_link(type *tp, void *l);
 tp_op*      get_type_tpop(type *tp);
@@ -112,7 +115,9 @@ ident*      get_type_tpop_nameid(type *tp);
 const char* get_type_tpop_name(type *tp);
 tp_opcode   get_type_tpop_code(type *tp);
 
+/* Returns NULL for all non atomic types. */
 ir_mode*    get_type_mode(type *tp);
+/* Only has an effect on primitive and enumeration types */
 void        set_type_mode(type *tp, ir_mode* m);
 
 ident*      get_type_ident(type *tp);
@@ -120,8 +125,8 @@ void        set_type_ident(type *tp, ident* id);
 const char* get_type_name(type *tp);
 
 int         get_type_size(type *tp);
-/* For primitives and pointer types the size is always fixed.
-   This call is legal but has no effect. */
+/* For primitives, enumerationsm, pointer and method types the size
+   is always fixed. This call is legal but has no effect. */
 void        set_type_size(type *tp, int size);
 
 typedef enum {
@@ -138,7 +143,7 @@ typedef enum {
 } type_state;
 
 type_state  get_type_state(type *tp);
-/* For primitives and pointer types the layout is always fixed.
+/* For primitives, pointer and method types the layout is always fixed.
    This call is legal but has no effect. */
 void        set_type_state(type *tp, type_state state);
 
@@ -215,6 +220,11 @@ entity *get_class_member   (type *clss, int pos);
 /* Overwrites the member at position pos, 0 <= pos < n_member with
    the passed entity. */
 void    set_class_member   (type *clss, entity *member, int pos);
+/* Replaces complete member list in class type by the list passed.  Copies the
+   list passed. This function is necessary to reduce the number of members.
+   members is an array of entities, num the size of this array.  Sets all
+   owners of the members passed to clss. */
+void    set_class_members  (type *clss, entity **members, int arity);
 /* Finds member in the list of members and overwrites it with NULL
  @@@ Doesn't work properly. */
 void    remove_class_member(type *clss, entity *member);
@@ -396,8 +406,10 @@ void   set_union_delim_nameid (type *uni, int pos, ident *id);
  * SOURCE
  */
 /* create a new type array --
-   Set dimension sizes after call to constructor with set_* routines.
-   Entity for array elements is built automatically. */
+   Sets n_dimension to dimension and all dimension entries to NULL.
+   Initializes order to the order of the dimensions.
+   Entity for array elements is built automatically.
+   Set dimension sizes after call to constructor with set_* routines. */
 type *new_type_array         (ident *name, int n_dimensions,
 			      type *element_type);
 
@@ -412,6 +424,9 @@ void  set_array_lower_bound  (type *array, int dimension, ir_node *lower_bound);
 void  set_array_upper_bound  (type *array, int dimension, ir_node *upper_bound);
 ir_node * get_array_lower_bound  (type *array, int dimension);
 ir_node * get_array_upper_bound  (type *array, int dimension);
+
+void set_array_order (type *array, int dimension, int order);
+int  get_array_order (type *array, int dimension);
 
 void  set_array_element_type (type *array, type *type);
 type *get_array_element_type (type *array);

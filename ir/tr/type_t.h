@@ -56,6 +56,7 @@ typedef struct {
   int   n_dimensions;  /* Number of array dimensions.  */
   ir_node **lower_bound;   /* Lower bounds of dimensions.  Usually all 0. */
   ir_node **upper_bound;   /* Upper bounds or dimensions. */
+  int *order;              /* Ordering of dimensions. */
   type *element_type;  /* The type of the array elements. */
   entity *element_ent; /* Entity for the array elements, to be used for
 			  element selection with Sel. */
@@ -74,9 +75,9 @@ typedef struct {
 } ptr_attr;
 
 /*
-typedef struct {        * No private attr yet. *
-} pri_attr;
-*/
+typedef struct {   * No private attr yet! *
+} pri_attr; */
+
 
 /*
 typedef struct {        * No private attr, must be smaller than others! *
@@ -97,13 +98,13 @@ typedef union {
 struct type {
   firm_kind kind;
   tp_op *type_op;
-  ir_mode *mode;
   ident *name;
   type_state state;        /* Represents the types state: layout undefined or
 			      fixed. */
   int size;                /* Size of an entity of this type.  This is determined
 			      when fixing the layout of this class.  Size must be
 			      given in bytes. */
+  ir_mode *mode;           /* The mode for atomic types */
   unsigned long visit;     /* visited counter for walks of the type information */
   void *link;              /* holds temporary data - like in irnode_t.h */
   tp_attr attr;            /* type kind specific fields. This must be the last

@@ -65,8 +65,12 @@ new_entity (type *owner, ident *name, type *type)
   res->owner = owner;
   res->name = name;
   res->type = type;
-  res->allocation = dynamic_allocated;
+  if (get_type_tpop(type) == type_method)
+    res->allocation = static_allocated;
+  else
+    res->allocation = automatic_allocated;
   res->visibility = local;
+  res->offset = -1;
   if (is_method_type(type)) {
     res->variability = constant;
     rem = current_ir_graph;
@@ -76,6 +80,7 @@ new_entity (type *owner, ident *name, type *type)
   } else {
     res->variability = uninitialized;
   }
+  res->volatility = non_volatile;
   res->ld_name = NULL;
   res->overwrites = NEW_ARR_F(entity *, 1);
 
@@ -232,6 +237,17 @@ set_entity_variability (entity *ent, ent_variability var){
     DEL_ARR_F(ent->val_ents);
   }
   ent->variability = var;
+}
+
+
+inline ent_volatility
+get_entity_volatility (entity *ent) {
+  return ent->volatility;
+}
+
+inline void
+set_entity_volatility (entity *ent, ent_volatility vol) {
+  ent->volatility = vol;
 }
 
 /* Set has no effect for entities of type method. */

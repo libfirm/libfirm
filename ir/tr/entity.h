@@ -144,11 +144,12 @@ type     *get_entity_type (entity *ent);
 void      set_entity_type (entity *ent, type *type);
 
 typedef enum {
-  dynamic_allocated,  /* The entity is allocated during runtime, either explicitly
-			 by an Alloc node or implicitly as component of a compound
-			 type.  This is the default. */
+  automatic_allocated,/* The entity is allocated during runtime, implicitly
+			 as component of a compound type.   This is the default. */
+  dynamic_allocated,  /* The entity is allocated during runtime, explicitly
+			 by an Alloc node. */
   static_allocated    /* The entity is allocated statically.  We can use a
-			  SymConst as address of the entity. */
+                         SymConst(?) as address of the entity. */
 } ent_allocation;
 
 ent_allocation get_entity_allocation (entity *ent);
@@ -182,6 +183,15 @@ typedef enum {
 
 ent_variability get_entity_variability (entity *ent);
 void            set_entity_variability (entity *ent, ent_variability var);
+
+/* This enumeration flags the volatility of entities. */
+typedef enum {
+  non_volatile,    /* The entity is not volatile */
+  is_volatile      /* The entity is volatile */
+} ent_volatility;
+
+ent_volatility get_entity_volatility (entity *ent);
+void           set_entity_volatility (entity *ent, ent_volatility vol);
 
 /* Set has no effect  for entities of type method. */
 ir_node * get_atomic_ent_value(entity *ent);
