@@ -228,7 +228,11 @@ static int optimize_load(ir_node *load)
         info->projs[pn_Load_X_except] = NULL;
       }
 
-      if (variability_constant == get_entity_variability(ent)) {
+      if (variability_constant == get_entity_variability(ent)
+	  && is_atomic_entity(ent)) {   /* Might not be atomic after
+					 lowering of Sels.  In this
+					 case we could also load, but
+					 it's more complicated. */
         /* more simpler case: we load the content of a constant value:
          * replace it by the constant itself
          */
