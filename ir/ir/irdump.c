@@ -540,12 +540,18 @@ dump_whole_node (ir_node *n, void* env) {
 void
 dump_ir_graph (ir_graph *irg)
 {
+  ir_graph *rem;
+  rem = current_ir_graph;
+  current_ir_graph = irg;
+
   vcg_open (irg, "");
 
   /* walk over the graph */
   irg_walk(irg->end, dump_whole_node, NULL, NULL);
 
   vcg_close();
+
+  current_ir_graph = rem;
 }
 
 /***********************************************************************/
@@ -589,12 +595,17 @@ dump_ir_block (ir_node *block, void *env) {
 void
 dump_ir_block_graph (ir_graph *irg)
 {
+  ir_graph *rem;
+  rem = current_ir_graph;
+  current_ir_graph = irg;
+
   vcg_open (irg, "");
 
   /* walk over the blocks in the graph */
   irg_block_walk(irg->end, dump_ir_block, NULL, irg);
 
   vcg_close();
+  current_ir_graph = rem;
 }
 
 
@@ -641,12 +652,17 @@ dump_cfg (ir_graph *irg)
 void
 dump_type_graph (ir_graph *irg)
 {
+  ir_graph *rem;
+  rem = current_ir_graph;
+  current_ir_graph = irg;
+
   vcg_open (irg, "-type");
 
   /* walk over the blocks in the graph */
   type_walk(irg, dump_type_info, NULL, NULL);
 
   vcg_close();
+  current_ir_graph = rem;
 }
 
 
@@ -658,6 +674,10 @@ dump_type_graph (ir_graph *irg)
 void
 dump_ir_graph_w_types (ir_graph *irg)
 {
+  ir_graph *rem;
+  rem = current_ir_graph;
+  current_ir_graph = irg;
+
   vcg_open (irg, "-all");
 
   /* dump common ir graph */
@@ -669,4 +689,5 @@ dump_ir_graph_w_types (ir_graph *irg)
   irg_walk(irg->end, dump_node2type_edges, NULL, NULL);
 
   vcg_close();
+  current_ir_graph = rem;
 }

@@ -22,22 +22,27 @@
 # include "type.h"
 /*# include "obst.h"*/
 
-typedef struct ir_prog {
+struct ir_prog {
   firm_kind kind;
+  ir_graph *main_irg;              /* entry point to the compiled program */
+                  /* or a list, in case we compile a library or the like? */
   ir_graph **graphs;               /* all graphs in the ir */
   type **types;                    /* all types in the ir */
   type_class *glob_type;           /* global type.  Class as it can have
 				      fields and procedures.  Does this work?
 				      Better name??? @@@ */
-  /*struct obstack *obst;		   * @@@ Should we place all types and entities themselves
-    on an obstack, too?  */
+  /*struct obstack *obst;	    * @@@ Should we place all types and
+                                      entities on an obstack, too? */
 #ifdef DEBUG_libfirm
-  long max_node_nr;
+  long max_node_nr;                /* to generate unique numbers for nodes. */
 #endif
-} ir_prog;
+};
+
+typedef struct ir_prog ir_prog;
 
 /* A variable from where everything in the ir can be accessed. */
 ir_prog *irp;
+
 
 /* initializes ir_prog. Calles the constructor for an ir_prog. */
 void init_irprog(void);
@@ -46,11 +51,15 @@ void init_irprog(void);
    Automatically called by init_firm through init_irprog. */
 ir_prog *new_ir_prog (void);
 
+/* Access the main routine of the compiled program. */
+ir_graph *get_irp_main_irg();
+void      set_irp_main_irg(ir_graph *main_irg);
+
 /* Adds irg to the list of ir graphs in irp. */
 void      add_irp_irg(ir_graph *irg);
-/*   get_irp_n_irgs()  * GL Chris: immer globale irp benutzen! *
-     get_irp_irg(int pos)
-     set_irp_irg()     und das gleiche fuer type */
+int       get_irp_n_irgs();
+ir_graph *get_irp_irg(int pos);
+  /*     set_irp_irg()     und das gleiche fuer type */
 
 /* Adds type to the list of types in irp. */
 void      add_irp_type(type *typ);

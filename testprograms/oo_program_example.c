@@ -50,6 +50,8 @@ main(void)
   ir_node      *self, *par1, *a_ptr;
   ir_node      *a_val;
 
+  int i;
+
   init_firm ();
 
   set_opt_constant_folding(0);
@@ -67,6 +69,8 @@ main(void)
   proc_main_e = new_entity ((type *)owner, id_from_str ("main", 4),
                             (type *)proc_main);
   main_irg = new_ir_graph (proc_main_e, 4);
+  /* Remark that this irg is the main routine of the program. */
+  set_irp_main_irg(main_irg);
 
   /* There is only one block in main, it contains the constants and the calls. */
   c2 = new_Const (mode_i, tarval_from_long (mode_i, 2));
@@ -138,9 +142,6 @@ main(void)
 
   printf("\nDone building the graph.\n");
   irg_vrfy(main_irg);
-  printf("Dumping the graph and a type graph.\n");
-  dump_ir_block_graph (main_irg);
-  dump_type_graph(main_irg);
 
   /****************************************************************************/
 
@@ -169,9 +170,6 @@ main(void)
 
   printf("\nDone building the graph.\n");
   irg_vrfy(set_a_irg);
-  printf("Dumping the graph and a type graph.\n");
-  dump_ir_block_graph (set_a_irg);
-  dump_type_graph(set_a_irg);
 
   /****************************************************************************/
 
@@ -206,9 +204,13 @@ main(void)
   irg_vrfy(main_irg);
 
   printf("\nDone building the graph.\n");
-  printf("Dumping the graph and a type graph.\n");
-  dump_ir_block_graph (c_irg);
-  dump_type_graph(c_irg);
+
+  printf("Dumping graphs of all procedures.\n");
+
+  for (i = 0; i < get_irp_n_irgs(); i++) {
+    dump_ir_block_graph (get_irp_irg(i));
+    dump_type_graph(get_irp_irg(i));
+  }
 
   /****************************************************************************/
 

@@ -173,7 +173,8 @@ inline ir_node *
 get_irn_n (ir_node *node, int n)
 {
   assert (node);
-  // assert (get_irn_arity (node) > n);
+  /* GL commented the assert in, 12.7.00, let's see whether it works */
+  assert (get_irn_arity (node) > n);
   return skip_nop(node->in[n+1]);
 }
 

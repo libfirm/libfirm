@@ -33,8 +33,20 @@ ir_prog *new_ir_prog (void) {
   return res;
 }
 
-
 /** Functions to access the fields of ir_prog **/
+
+
+/* Access the main routine of the compiled program. */
+ir_graph *get_irp_main_irg() {
+  assert (irp);
+  return irp->main_irg;
+}
+
+void set_irp_main_irg(ir_graph *main_irg) {
+  assert (irp);
+  irp->main_irg = main_irg;
+}
+
 type_class *get_glob_type(void) {
   assert(irp);
   return irp->glob_type;
@@ -43,18 +55,30 @@ type_class *get_glob_type(void) {
 /* Adds irg to the list of ir graphs in irp. */
 void      add_irp_irg(ir_graph *irg) {
   assert (irg != NULL);
-  assert(irp);
+  assert(irp && irp->graphs);
   ARR_APP1 (ir_graph *, irp->graphs, irg);
 }
 
+int get_irp_n_irgs() {
+  assert (irp && irp->graphs);
+  /* Strangely the first element of the array is NULL.  Why??  */
+  return (ARR_LEN((irp)->graphs) - 1);
+}
+
+ir_graph *get_irp_irg(int pos){
+  assert (irp && irp->graphs);
+  /* Strangely the first element of the array is NULL.  Why??  */
+  return irp->graphs[pos+1];
+}
+
 /* Adds type to the list of types in irp. */
-void      add_irp_type(type *typ) {
+void add_irp_type(type *typ) {
   assert (typ != NULL);
   assert(irp);
   ARR_APP1 (type *, irp->types, typ);
 }
 
-int       get_irp_new_node_nr() {
+int get_irp_new_node_nr() {
   assert(irp);
   irp->max_node_nr = irp->max_node_nr + 1;
   return irp->max_node_nr - 1;

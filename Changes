@@ -1,3 +1,17 @@
+  12.7.2000 Goetz
+  Changed output of oo_prog_example: now uses the internal list
+  of all irgs.  Had to implement some of the access routines for
+  that.  Also fixed a bug in irdump.  Main routines did not use
+  current_ir_graph properly.
+
+  12.7.2000 Goetz
+  Implemented some missing parts in irgopt.
+  Added field irg to entity. Only valid if entity is a method.
+  Had to resove a cyclic de[endency between irgraph.h and entity.h
+  for this.
+  Added fields sub and super to type_class for inheritance.
+  Added field main_irg to irprog.
+
   7.7.2000 Chris
   Fixed some bugs in irgopt.c
   Added some missing 'get_new_node' methods, so the new obstack contains
