@@ -15,12 +15,14 @@ srcdir = @srcdir@
 topdir = ../..
 subdir := ir/ana2
 
-INSTALL_HEADERS = ecg.h irmemwalk.h lset.h typalise.h pto.h pto_util.h \
+INSTALL_HEADERS = ecg.h irmemwalk.h lset.h typalise.h pto.h \
+				  pto_init.h pto_util.h qset.h timing.h \
 
 SOURCES = $(INSTALL_HEADERS)
 
 SOURCES += Makefile.in \
-	   ecg.c irmemwalk.c lset.c typalise.c pto.c pto_util.c
+	   ecg.c irmemwalk.c lset.c typalise.c pto.c \
+	   pto_init.c pto_util.c qset.c timing.c
 
 include $(topdir)/MakeRules
 
