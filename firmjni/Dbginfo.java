@@ -27,11 +27,13 @@ public class Dbginfo {
     public static native void dbgInit ();
 
     public static void myJavaDbgInfoMergePair(int new_node, int old_node, int info) {
+	System.out.println("Optimization: "+ info);
         System.out.println("new Node " + Irnode.getIrnNodeNr(new_node));
         System.out.println("old Node " + Irnode.getIrnNodeNr(old_node));
     }
 
     public static void myJavaDbgInfoMergeSets(int new_nodes[], int old_nodes[], int info) {
+	System.out.println("Optimization: "+ info);
         System.out.print("new Nodes: ");
 	for (int i = 0; i < new_nodes.length; i++)
 	  System.out.print(Irnode.getIrnNodeNr(new_nodes[i]) + ", ");
