@@ -189,8 +189,8 @@ static void start_type_walk(ir_node *node, void *env) {
   }
 }
 
-void type_walk(type_walk_func pre,
-	       type_walk_func post,
+void type_walk(type_walk_func *pre,
+	       type_walk_func *post,
 	       void *env) {
   int i;
   ++type_visited;
@@ -480,7 +480,7 @@ void class_walk_super2sub(
 #endif
 void class_walk_super2sub(
 		  void (*pre)(type*, void*),
-		  void (post)(type*, void*),
+		  void (*post)(type*, void*),
 		  void *env)
 {
   int i;
