@@ -21,6 +21,7 @@
 # include "tv.h"
 # include "tune.h"
 # include "dbginfo_t.h"
+# include "iropt_dbg.c"
 
 /* Make types visible to allow most efficient access */
 # include "entity_t.h"
@@ -281,6 +282,7 @@ equivalent_node (ir_node *n)
   ir_node *a = NULL; /* to shutup gcc */
   ir_node *b = NULL; /* to shutup gcc */
   ir_node *c = NULL; /* to shutup gcc */
+  ir_node *oldn = n;
 
   ins = get_irn_arity (n);
 
@@ -309,7 +311,7 @@ equivalent_node (ir_node *n)
       if ((get_Block_n_cfgpreds(n) == 1) &&
 	  (get_irn_op(get_Block_cfgpred(n, 0)) == op_Jmp) &&
 	  (get_opt_control_flow())) {
-	n = get_nodes_Block(get_Block_cfgpred(n, 0));
+	n = get_nodes_Block(get_Block_cfgpred(n, 0));                     DBG_OPT_STG;
       } else if ((get_Block_n_cfgpreds(n) == 2) &&
 		 (get_opt_control_flow())) {
 	/* Test whether Cond jumps twice to this block
@@ -322,7 +324,7 @@ equivalent_node (ir_node *n)
 	    (get_irn_op(get_Proj_pred(a)) == op_Cond)) {
 	  /* Also a single entry Block following a single exit Block.  Phis have
 	     twice the same operand and will be optimized away. */
-	  n = get_nodes_Block(a);
+	  n = get_nodes_Block(a);                                         DBG_OPT_IFSIM;
 	}
       } else if (get_opt_unreachable_code() &&
 		 (n != current_ir_graph->start_block) &&
@@ -349,24 +351,23 @@ equivalent_node (ir_node *n)
 	/** remove stuff as x+0, x*1 x&true ... constant expression evaluation **/
   case iro_Or:  if (a == b) {n = a; break;}
   case iro_Add:
-  case iro_Eor:
-    { tarval *tv;
-	ir_node *on;
-	/* After running compute_node there is only one constant predecessor.
-	   Find this predecessors value and remember the other node: */
-	if ((tv = computed_value (a))) {
-	  on = b;
-	} else if ((tv = computed_value (b))) {
-	  on = a;
-	} else break;
+  case iro_Eor: {
+    tarval *tv;
+    ir_node *on;
+    /* After running compute_node there is only one constant predecessor.
+       Find this predecessors value and remember the other node: */
+    if ((tv = computed_value (a))) {
+      on = b;
+    } else if ((tv = computed_value (b))) {
+      on = a;
+    } else break;
 
-	/* If this predecessors constant value is zero, the operation is
-	   unnecessary. Remove it: */
-	if (tarval_classify (tv) == 0) {
-	  n = on;
-	}
+    /* If this predecessors constant value is zero, the operation is
+       unnecessary. Remove it: */
+    if (tarval_classify (tv) == 0) {
+      n = on;                                                             DBG_OPT_ALGSIM1;
     }
-    break;
+  } break;
   case iro_Sub:
   case iro_Shl:
   case iro_Shr:
@@ -374,7 +375,7 @@ equivalent_node (ir_node *n)
   case iro_Rot:
     /* these operations are not commutative.  Test only one predecessor. */
     if (tarval_classify (computed_value (b)) == 0) {
-      n = a;
+      n = a;                                                              DBG_OPT_ALGSIM1;
       /* Test if b > #bits of a ==> return 0 / divide b by #bits
          --> transform node? */
     }
@@ -382,15 +383,16 @@ equivalent_node (ir_node *n)
   case iro_Not:   /* NotNot x == x */
   case iro_Minus: /* --x == x */  /* ??? Is this possible or can --x raise an
 					 out of bounds exception if min =! max? */
-    if (get_irn_op(get_unop_op(n)) == get_irn_op(n))
-      n = get_unop_op(get_unop_op(n));
+    if (get_irn_op(get_unop_op(n)) == get_irn_op(n)) {
+      n = get_unop_op(get_unop_op(n));                                    DBG_OPT_ALGSIM2
+    }
     break;
   case iro_Mul:
     /* Mul is commutative and has again an other neutral element. */
     if (tarval_classify (computed_value (a)) == 1) {
-      n = b;
+      n = b;                                                              DBG_OPT_ALGSIM1
     } else if (tarval_classify (computed_value (b)) == 1) {
-      n = a;
+      n = a;                                                              DBG_OPT_ALGSIM1
     }
     break;
   case iro_Div:
@@ -409,21 +411,22 @@ equivalent_node (ir_node *n)
 	   case iro_Mod, Quot, DivMod
     */
   case iro_And:
-    if (a == b) n = a;
-    /* And has it's own neutral element */
-    else if (tarval_classify (computed_value (a)) == -1) {
+    if (a == b) {
+      n = a;    /* And has it's own neutral element */
+    } else if (tarval_classify (computed_value (a)) == -1) {
       n = b;
     } else if (tarval_classify (computed_value (b)) == -1) {
       n = a;
     }
+    if (n != oldn)                                                        DBG_OPT_ALGSIM1;
     break;
   case iro_Conv:
     if (get_irn_mode(n) == get_irn_mode(a)) { /* No Conv necessary */
-      n = a;
+      n = a;                                                              DBG_OPT_ALGSIM3;
     } else if (get_irn_mode(n) == mode_b) {
       if (get_irn_op(a) == op_Conv &&
-		  get_irn_mode (get_Conv_op(a)) == mode_b) {
-		n = get_Conv_op(a);	/* Convb(Conv*(xxxb(...))) == xxxb(...) */
+	  get_irn_mode (get_Conv_op(a)) == mode_b) {
+	n = get_Conv_op(a);	/* Convb(Conv*(xxxb(...))) == xxxb(...) */ DBG_OPT_ALGSIM2;
       }
     }
     break;
@@ -503,7 +506,7 @@ equivalent_node (ir_node *n)
 
       /* Fold, if no multiple distinct non-self-referencing inputs */
       if (i >= n_preds) {
-	n = first_val;
+	n = first_val;                                     DBG_OPT_PHI;
       } else {
 	/* skip the remaining Ids. */
 	while (++i < n_preds) {
@@ -516,7 +519,7 @@ equivalent_node (ir_node *n)
   case iro_Load:
     {
 #if 0  /* Is an illegal transformation: different nodes can
-		  represent the same pointer value!! */
+	  represent the same pointer value!! */
  a = skip_Proj(get_Load_mem(n));
  b = get_Load_ptr(n);
 
@@ -542,18 +545,17 @@ equivalent_node (ir_node *n)
           && get_Store_ptr(a) == b
           && skip_Proj(get_Store_value(a)) == c) {
         /* We have twice exactly the same store -- a write after write. */
-		n = a;
+	n = a;                                                         DBG_OPT_WAW;
       } else if (get_irn_op(c) == op_Load
 		 && (a == c || skip_Proj(get_Load_mem(c)) == a)
-                 && get_Load_ptr(c) == b )
-	/* !!!??? and a cryptic test */ {
+                 && get_Load_ptr(c) == b ) {
         /* We just loaded the value from the same memory, i.e., the store
            doesn't change the memory -- a write after read. */
 	a = get_Store_mem(n);
         turn_into_tuple(n, 2);
         set_Tuple_pred(n, 0, a);
-        set_Tuple_pred(n, 1, new_Bad());
-      }
+        set_Tuple_pred(n, 1, new_Bad());                               DBG_OPT_WAR;
+       }
     }
     break;
 
@@ -564,7 +566,7 @@ equivalent_node (ir_node *n)
       if ( get_irn_op(a) == op_Tuple) {
         /* Remove the Tuple/Proj combination. */
 	if ( get_Proj_proj(n) <= get_Tuple_n_preds(a) ) {
-	  n = get_Tuple_pred(a, get_Proj_proj(n));
+	  n = get_Tuple_pred(a, get_Proj_proj(n));                     DBG_OPT_TUPLE;
 	} else {
           assert(0); /* This should not happen! */
 	  n = new_Bad();
@@ -578,7 +580,7 @@ equivalent_node (ir_node *n)
     break;
 
   case iro_Id:
-    n = follow_Id (n);
+    n = follow_Id (n);                                                 DBG_OPT_ID;
     break;
 
   default: break;
@@ -1106,9 +1108,8 @@ optimize_in_place_2 (ir_node *n)
       if ((get_irn_mode(n) != mode_T) && (tv != NULL)) {
         /* evaluation was succesful -- replace the node. */
 	n = new_Const (get_tv_mode (tv), tv);
-	__dbg_info_merge_pair(n, old_n, id_from_str("const_eval", 10));
+	__dbg_info_merge_pair(n, old_n, dbg_const_eval);
 	return n;
-        /* xprintf("* optimize: computed node %I\n", n->op->name);*/
       }
     }
   }
@@ -1117,8 +1118,8 @@ optimize_in_place_2 (ir_node *n)
   /*if (get_opt_constant_folding()) */
   if (get_opt_constant_folding() ||
       (get_irn_op(n) == op_Phi)  ||   /* always optimize these nodes. */
-      (get_irn_op(n) == op_Id)   ||
-      (get_irn_op(n) == op_Proj) ||
+      (get_irn_op(n) == op_Id)   ||   /* ... */
+      (get_irn_op(n) == op_Proj) ||   /* ... */
       (get_irn_op(n) == op_Block)  )  /* Flags tested local. */
     n = equivalent_node (n);
 
