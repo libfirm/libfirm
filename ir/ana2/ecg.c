@@ -321,11 +321,11 @@ static void ecg_calls_act (ir_node *node, void *env)
     }
   } else if (iro_Alloc == op) {
     type *tp = get_Alloc_type (node);
-    const char *name = get_type_name (tp);
+    /* const char *name = get_type_name (tp); */
 
     append_alloc (graph_info, node, tp);
 
-    fprintf (stdout, "NEW \"%s\"\n", name);
+    /* fprintf (stdout, "NEW \"%s\"\n", name); */
   }
 }
 
@@ -706,7 +706,7 @@ void ecg_report ()
     while (NULL != ainfo) {
       ir_node *alloc = ainfo->alloc;
       const char *name = get_type_name (ainfo->tp);
-      const char *color = "red1";
+      const char *color = "green3";
 
       fprintf (dot, "\talloc_0x%08x [label=\"%s\", color=\"%s\"]\n",
                (int) alloc, name, color);
@@ -782,6 +782,9 @@ void ecg_ecg ()
 
 /*
   $Log$
+  Revision 1.3  2004/11/04 14:54:44  liekweg
+  Nicer Colors
+
   Revision 1.2  2004/10/21 11:09:37  liekweg
   Moved memwalk stuf into irmemwalk
   Moved lset stuff into lset
