@@ -580,12 +580,13 @@ void reduce_strength(ir_graph *irg) {
   /* -- Search expressions that can be optimized -- */
   irg_walk_graph(irg, NULL, reduce_itervar, NULL);
 
-  if (get_opt_strength_red_verbose())
+  if (get_opt_strength_red_verbose()) {
     printf ("\n %d made new_phis und  ", n_made_new_phis);
     printf("reduced %d iteration variables "
            "in \n graph %s.%s.\n", n_reduced_expressions,
        get_type_name(get_entity_owner(get_irg_entity(irg))),
        get_entity_name(get_irg_entity(irg)));
+  }
 
   current_ir_graph = rem;
 }
