@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+
+<project name="libfirm" default="html" basedir=".">
+  <target name="cvslog">
+    <cvschangelog destfile="changelog.xml" daysinpast="1000" dir="ir">
+	  <user displayname="Michael Beck" userid="beck"/>
+	  <user displayname="Goetz Lindenmaier" userid="goetz"/>
+	  <user displayname="Boris Boesler" userid="boesler"/>
+	  <user displayname="Sebastian Hack" userid="hack"/>
+	  <user displayname="Florian Liekweg" userid="liekweg"/>
+          <user displayname="Daniel Grund" userid="daniel"/>
+          <user displayname="Beyhan Veljew" userid="beyhan"/>
+          <user displayname="Firm Project Account" userid="firm"/>
+          <user displayname="Holger Baer" userid="baer"/>
+          <user displayname="Till Riedel" userid="till"/>
+
+	  <!-- user displayname="" userid=""/ -->
+	</cvschangelog>
+  </target>
+
+  <target name="html">
+    <style in="changelog.xml"
+           out="changelog.html"
+           style="${ant.home}/etc/changelog.xsl">
+      <param name="title" expression="Ant ChangeLog"/>
+      <param name="module" expression="jakarta-ant"/>
+      <param name="cvsweb" expression="http://cvs.apache.org/viewcvs/"/>
+    </style>
+  </target>
+
+</project>
