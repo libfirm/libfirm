@@ -35,8 +35,9 @@ new_tpop (tp_opcode code, ident *name, unsigned flags, size_t attr_size)
   tp_op *res;
 
   res = xmalloc(sizeof(*res));
-  res->code = code;
-  res->name = name;
+  res->code      = code;
+  res->name      = name;
+  res->flags     = flags;
   res->attr_size = attr_size;
   return res;
 }
