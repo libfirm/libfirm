@@ -125,6 +125,7 @@ ir_mode *register_mode(ir_mode* new_mode);
 #  define get_mode_sort(mode) (mode)->sort
 #  define get_mode_size_bits(mode) (mode)->size
 #  define get_mode_align(mode) (mode)->align
+#  define get_mode_sign(mode) (mode)->sign
 #else
 /** Returns the classification of the mode */
 modecode get_mode_modecode(ir_mode *mode);
@@ -147,7 +148,11 @@ int get_mode_size_bytes(ir_mode *mode);
 
 /** Returns the alignment of values of the mode in bytes. */
 int get_mode_align(ir_mode *mode);
-#endif
+
+/** Returns the signess of a mode */
+int get_mode_sign (ir_mode *mode);
+
+#endif /* MODE_ACCESS_DEFINES */
 
 /**
  * Returns the smallest representable value of a given mode.

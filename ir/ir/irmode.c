@@ -46,8 +46,10 @@ static int num_modes;
  * local functions
  * * */
 
-/* compare modes that don't need to have their code field
- * correctly set */
+/**
+ * compare modes that don't need to have their code field
+ * correctly set
+ */
 static int modes_are_equal(ir_mode *m, ir_mode *n)
 {
   if (m == n) return 1;
@@ -59,9 +61,11 @@ static int modes_are_equal(ir_mode *m, ir_mode *n)
   return 0;
 }
 
-/* searches the modes array for the given mode and returns
+/**
+ * searches the modes array for the given mode and returns
  * a pointer on an equal mode already in the array, NULL if
- * none found */
+ * none found
+ */
 static ir_mode *find_mode(ir_mode *m)
 {
   int i;
@@ -74,7 +78,9 @@ static ir_mode *find_mode(ir_mode *m)
   return NULL;
 }
 
-/* sets special values of modes */
+/**
+ * sets special values of modes
+ */
 static void set_mode_values(ir_mode* mode)
 {
   modes_min[get_mode_modecode(mode)] = get_tarval_min(mode);
@@ -86,7 +92,7 @@ static void set_mode_values(ir_mode* mode)
  * globals defined in irmode.h
  * * */
 
-/** Predefined modes **/
+/* --- Predefined modes --- */
 
 /* FIRM internal modes: */
 ir_mode *mode_T;
@@ -157,10 +163,12 @@ register_mode(ir_mode* new_mode)
     case auxiliary:
     case internal_boolean:
       assert(0 && "internal modes cannot be user defined");
+      return NULL;
       break;
 
     case float_number:
       assert(0 && "not yet implemented");
+      return NULL;
       break;
 
     case int_number:
@@ -170,6 +178,7 @@ register_mode(ir_mode* new_mode)
 
     default:
       assert(0);
+      return NULL;
   }
 
   /* copy mode struct to modes array */
@@ -189,7 +198,7 @@ register_mode(ir_mode* new_mode)
   return mode;
 }
 
-/* Functions for the direct access to all attributes od a ir_mode */
+/* Functions for the direct access to all attributes of a ir_mode */
 #ifdef MODE_ACCESS_DEFINES
 #  undef get_mode_modecode
 #  undef get_mode_ident
@@ -197,7 +206,9 @@ register_mode(ir_mode* new_mode)
 #  undef get_mode_sort
 #  undef get_mode_size_bits
 #  undef get_mode_align
+#  undef get_mode_sign
 #endif
+
 modecode
 get_mode_modecode(ir_mode *mode)
 {
@@ -246,6 +257,14 @@ get_mode_align (ir_mode *mode)
   ANNOUNCE();
   return mode->align;
 }
+
+int
+get_mode_sign (ir_mode *mode)
+{
+  ANNOUNCE();
+  return mode->sign;
+}
+
 #ifdef MODE_ACCESS_DEFINES
 #  define get_mode_modecode(mode) (mode)->code
 #  define get_mode_ident(mode) (mode)->name
@@ -253,13 +272,8 @@ get_mode_align (ir_mode *mode)
 #  define get_mode_sort(mode) (mode)->sort
 #  define get_mode_size_bits(mode) (mode)->size
 #  define get_mode_align(mode) (mode)->align
+#  define get_mode_sign(mode) (mode)->sign
 #endif
-int
-get_mode_sign (ir_mode *mode)
-{
-  ANNOUNCE();
-  return mode->sign;
-}
 
 tarval *
 get_mode_min (ir_mode *mode)
@@ -503,17 +517,17 @@ smaller_mode(ir_mode *sm, ir_mode *lm)
   return 0;
 }
 
-/** ** initialization ** **/
+/* ** initialization ** */
 void
 init_mode (void)
 {
   ANNOUNCE();
   /* init flexible array */
-  modes = NEW_ARR_F(ir_mode, irm_max);
-  modes_min = NEW_ARR_F(tarval*, irm_max);
-  modes_max = NEW_ARR_F(tarval*, irm_max);
+  modes      = NEW_ARR_F(ir_mode, irm_max);
+  modes_min  = NEW_ARR_F(tarval*, irm_max);
+  modes_max  = NEW_ARR_F(tarval*, irm_max);
   modes_null = NEW_ARR_F(tarval*, irm_max);
-  modes_one = NEW_ARR_F(tarval*, irm_max);
+  modes_one  = NEW_ARR_F(tarval*, irm_max);
 
   /* initialize predefined modes */
   /* Basic Block */
@@ -522,6 +536,7 @@ init_mode (void)
   mode_BB->code = irm_BB;
   mode_BB->sort = auxiliary;
   mode_BB->sign = 0;
+  mode_BB->tv_priv = NULL;
 
   /* eXecution */
   mode_X = &modes[irm_X];
@@ -529,6 +544,7 @@ init_mode (void)
   mode_X->code = irm_X;
   mode_X->sort = auxiliary;
   mode_X->sign = 0;
+  mode_X->tv_priv = NULL;
 
   /* Memory */
   mode_M = &modes[irm_M];
@@ -536,12 +552,14 @@ init_mode (void)
   mode_M->code = irm_M;
   mode_M->sort = auxiliary;
   mode_M->sign = 0;
+  mode_M->tv_priv = NULL;
 
   /* Tuple */
   mode_T = &modes[irm_T];
   mode_T->name = id_from_str("T", 1);
   mode_T->code = irm_T;
   mode_T->sign = 0;
+  mode_T->tv_priv = NULL;
 
   /* boolean */
   mode_b = &modes[irm_b];
@@ -549,6 +567,7 @@ init_mode (void)
   mode_b->code = irm_b;
   mode_b->sort = internal_boolean;
   mode_b->sign = 0;
+  mode_b->tv_priv = NULL;
 
   /* float */
   mode_F = &modes[irm_F];
@@ -558,6 +577,7 @@ init_mode (void)
   mode_F->sign = 1;
   mode_F->align = 32;
   mode_F->size = 32;
+  mode_F->tv_priv = NULL;
 
   set_mode_values(mode_F);
 
@@ -569,6 +589,7 @@ init_mode (void)
   mode_D->sign = 1;
   mode_D->align = 32;
   mode_D->size = 64;
+  mode_D->tv_priv = NULL;
 
   set_mode_values(mode_D);
 
@@ -580,6 +601,7 @@ init_mode (void)
   mode_E->sign = 1;
   mode_E->align = 32;
   mode_E->size = 80;
+  mode_E->tv_priv = NULL;
 
   set_mode_values(mode_E);
 
@@ -591,6 +613,7 @@ init_mode (void)
   mode_Bs->sign = 1;
   mode_Bs->align = 8;
   mode_Bs->size = 8;
+  mode_Bs->tv_priv = NULL;
 
   set_mode_values(mode_Bs);
 
@@ -602,6 +625,7 @@ init_mode (void)
   mode_Bu->sign = 0;
   mode_Bu->align = 8;
   mode_Bu->size = 8;
+  mode_Bu->tv_priv = NULL;
 
   set_mode_values(mode_Bu);
 
@@ -613,6 +637,7 @@ init_mode (void)
   mode_Hs->sign = 1;
   mode_Hs->align = 16;
   mode_Hs->size = 16;
+  mode_Hs->tv_priv = NULL;
 
   set_mode_values(mode_Hs);
 
@@ -624,6 +649,7 @@ init_mode (void)
   mode_Hu->sign = 0;
   mode_Hu->align = 16;
   mode_Hu->size = 16;
+  mode_Hu->tv_priv = NULL;
 
   set_mode_values(mode_Hu);
 
@@ -635,6 +661,7 @@ init_mode (void)
   mode_Is->sign = 1;
   mode_Is->align = 32;
   mode_Is->size = 32;
+  mode_Is->tv_priv = NULL;
 
   set_mode_values(mode_Is);
 
@@ -646,6 +673,7 @@ init_mode (void)
   mode_Iu->sign = 0;
   mode_Iu->align = 32;
   mode_Iu->size = 32;
+  mode_Iu->tv_priv = NULL;
 
   set_mode_values(mode_Iu);
 
@@ -657,6 +685,7 @@ init_mode (void)
   mode_Ls->sign = 1;
   mode_Ls->align = 32;
   mode_Ls->size = 64;
+  mode_Ls->tv_priv = NULL;
 
   set_mode_values(mode_Ls);
 
@@ -668,6 +697,7 @@ init_mode (void)
   mode_Lu->sign = 0;
   mode_Lu->align = 32;
   mode_Lu->size = 64;
+  mode_Lu->tv_priv = NULL;
 
   set_mode_values(mode_Lu);
 
@@ -679,6 +709,7 @@ init_mode (void)
   mode_C->sign = 0;
   mode_C->align = 8;
   mode_C->size = 8;
+  mode_C->tv_priv = NULL;
 
   set_mode_values(mode_C);
 
@@ -690,6 +721,7 @@ init_mode (void)
   mode_U->sign = 0;
   mode_U->align = 16;
   mode_U->size = 16;
+  mode_U->tv_priv = NULL;
 
   set_mode_values(mode_U);
 
@@ -701,6 +733,7 @@ init_mode (void)
   mode_P->sign = 0;
   mode_P->align = 32;
   mode_P->size = 32;
+  mode_P->tv_priv = NULL;
 
   num_modes = irm_max;
 }
