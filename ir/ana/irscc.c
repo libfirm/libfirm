@@ -28,18 +28,15 @@
 #include "irprog_t.h"
 #include "irdump.h"
 
-#undef INLINE
-#define INLINE
-
 ir_graph *outermost_ir_graph;      /* The outermost graph the scc is computed
-				      for */
+                      for */
 static ir_loop *current_loop;      /* Current loop construction is working
-				      on. */
+                      on. */
 static int loop_node_cnt = 0;      /* Counts the number of allocated loop nodes.
-				      Each loop node gets a unique number.
-				      What for? ev. remove. @@@ */
+                      Each loop node gets a unique number.
+                      What for? ev. remove. @@@ */
 static int current_dfn = 1;        /* Counter to generate depth first numbering
-				      of visited nodes.  */
+                      of visited nodes.  */
 
 /**********************************************************************/
 /* Node attributes                                                   **/
@@ -255,7 +252,7 @@ pop_scc_to_loop (ir_node *n)
     } while(m != n);
 
   if(i > 1)
-    printf("Mehr als eine Iteration!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+    printf("Mehr als eine Iteration!!!!!!!!!!!!!!!!!!!!!!!!!!!!11111\n");
 }
 
 /* GL ??? my last son is my grandson???  Removes loops with no
@@ -275,13 +272,13 @@ void close_loop (ir_loop *l)
       lelement = get_loop_element(last_son, 0);
       gson = lelement.son;
       if(get_kind(gson) == k_ir_loop)
-	{
+    {
           loop_element new_last_son;
 
-	  gson -> outer_loop = l;
+      gson -> outer_loop = l;
           new_last_son.son = gson;
-	  l -> children[last] = new_last_son;
-	}
+      l -> children[last] = new_last_son;
+    }
     }
 
   current_loop = l;
@@ -532,8 +529,8 @@ init_node (ir_node *n, void *env) {
        The mem is not lost as its on the obstack. */
     ir_node *cb = get_Proj_pred(n);
     if ((get_irn_op(cb) == op_CallBegin) ||
-	(get_irn_op(cb) == op_EndReg) ||
-	(get_irn_op(cb) == op_EndExcept)) {
+    (get_irn_op(cb) == op_EndReg) ||
+    (get_irn_op(cb) == op_EndExcept)) {
       init_node(cb, NULL);
       init_node(get_nodes_Block(cb), NULL);
     }
@@ -582,7 +579,7 @@ static bool is_outermost_Start(ir_node *n) {
   if ((get_irn_op(n) == op_Block) &&
       (n == get_irg_start_block(current_ir_graph))) {
     if ((!interprocedural_view)  ||
-	(current_ir_graph == outermost_ir_graph))
+    (current_ir_graph == outermost_ir_graph))
       return true;
   }
 #endif
@@ -611,8 +608,8 @@ switch_irg (ir_node *n, int index) {
     if (get_irn_op(n) == op_Block) {
       ir_node *cfop = skip_Proj(get_Block_cfgpred(n, index));
       if (is_ip_cfop(cfop)) {
-	current_ir_graph = get_irn_irg(cfop);
-	set_irg_visited(current_ir_graph, get_max_irg_visited());
+    current_ir_graph = get_irn_irg(cfop);
+    set_irg_visited(current_ir_graph, get_max_irg_visited());
       }
     }
   }
@@ -640,21 +637,21 @@ find_irg_on_stack (ir_node *n) {
       m = stack[i];
       /*printf(" Visiting %d ", i); DDMN(m);*/
       if (is_ip_cfop(m)) {
-	current_ir_graph = get_irn_irg(m);
-	break;
+    current_ir_graph = get_irn_irg(m);
+    break;
       }
       if (get_irn_op(m) == op_Filter) {
-	/* Find the corresponding ip_cfop */
-	ir_node *pred = stack[i+1];
-	int j;
-	for (j = 0; j < get_Filter_n_cg_preds(m); j++)
-	  if (get_Filter_cg_pred(m, j) == pred) break;
-	if (j >= get_Filter_n_cg_preds(m))
-	  /* It is a filter we didn't pass as the predecessors are marked. */
-	  continue;
-	assert(get_Filter_cg_pred(m, j) == pred);
-	switch_irg(m, j);
-	break;
+    /* Find the corresponding ip_cfop */
+    ir_node *pred = stack[i+1];
+    int j;
+    for (j = 0; j < get_Filter_n_cg_preds(m); j++)
+      if (get_Filter_cg_pred(m, j) == pred) break;
+    if (j >= get_Filter_n_cg_preds(m))
+      /* It is a filter we didn't pass as the predecessors are marked. */
+      continue;
+    assert(get_Filter_cg_pred(m, j) == pred);
+    switch_irg(m, j);
+    break;
       }
     }
   }
@@ -686,8 +683,8 @@ static void test(ir_node *pred, ir_node *root, ir_node *this) {
 INLINE static bool is_possible_loop_head(ir_node *n) {
   ir_op *op = get_irn_op(n);
   return ((op == op_Block) ||
-	  (op == op_Phi) ||
-	  ((op == op_Filter) && interprocedural_view));
+      (op == op_Phi) ||
+      ((op == op_Filter) && interprocedural_view));
 }
 
 /* Returns true if n is a loop header, i.e., it is a Block, Phi
@@ -703,7 +700,6 @@ is_head (ir_node *n, ir_node *root)
   /* Test for legal loop header: Block, Phi, ... */
   if (!is_possible_loop_head(n))
     return false;
-
   if (!is_outermost_Start(n)) {
     arity = get_irn_arity(n);
     for (i = get_start_index(n); i < arity; i++) {
@@ -711,10 +707,10 @@ is_head (ir_node *n, ir_node *root)
       assert(pred);
       if (is_backedge(n, i)) continue;
       if (!irn_is_in_stack(pred)) {
-	some_outof_loop = 1;
+    some_outof_loop = 1;
       } else {
-	assert(get_irn_uplink(pred) >= get_irn_uplink(root));
-	some_in_loop = 1;
+    assert(get_irn_uplink(pred) >= get_irn_uplink(root));
+    some_in_loop = 1;
       }
     }
   }
@@ -735,8 +731,8 @@ smallest_dfn_pred (ir_node *n, int limit)
       assert(pred);
       if (is_backedge(n, i) || !irn_is_in_stack(pred)) continue;
       if (get_irn_dfn(pred) >= limit && (min == -1 || get_irn_dfn(pred) < min)) {
-	index = i;
-	min = get_irn_dfn(pred);
+    index = i;
+    min = get_irn_dfn(pred);
       }
     }
   }
@@ -755,8 +751,8 @@ largest_dfn_pred (ir_node *n)
       ir_node *pred = get_irn_n(n, i);
       if (is_backedge (n, i) || !irn_is_in_stack(pred)) continue;
       if (get_irn_dfn(pred) > max) {
-	index = i;
-	max = get_irn_dfn(pred);
+    index = i;
+    max = get_irn_dfn(pred);
       }
     }
   }
@@ -782,17 +778,17 @@ find_tail (ir_node *n) {
   if (is_head (m, n)) {
     res_index = smallest_dfn_pred(m, 0);
     if ((res_index == -2) &&  /* no smallest dfn pred found. */
-	(n == m))
+    (n == m))
       return NULL;
   } else {
     if (m == n) return NULL;
     for (i = tos-2; ; --i) {
       m = stack[i];
       if (is_head (m, n)) {
-	res_index = smallest_dfn_pred (m, get_irn_dfn(m) + 1);
-	if (res_index == -2)  /* no smallest dfn pred found. */
-	  res_index = largest_dfn_pred (m);
-	break;
+    res_index = smallest_dfn_pred (m, get_irn_dfn(m) + 1);
+    if (res_index == -2)  /* no smallest dfn pred found. */
+      res_index = largest_dfn_pred (m);
+    break;
       }
     }
   }
@@ -807,7 +803,6 @@ find_tail (ir_node *n) {
 
 static void scc (ir_node *n) {
   int i;
-
   if (irn_visited(n)) return;
   mark_irn_visited(n);
 
@@ -832,10 +827,10 @@ static void scc (ir_node *n) {
       //if ((!m) || (get_irn_op(m) == op_Unknown)) continue;
       scc (m);
       if (irn_is_in_stack(m)) {
-	/* Uplink of m is smaller if n->m is a backedge.
-	   Propagate the uplink to mark the loop. */
-	if (get_irn_uplink(m) < get_irn_uplink(n))
-	  set_irn_uplink(n, get_irn_uplink(m));
+    /* Uplink of m is smaller if n->m is a backedge.
+       Propagate the uplink to mark the loop. */
+    if (get_irn_uplink(m) < get_irn_uplink(n))
+      set_irn_uplink(n, get_irn_uplink(m));
       }
     }
   }
@@ -858,11 +853,11 @@ static void scc (ir_node *n) {
       ir_loop *l;
       int close;
       if (get_loop_n_elements(current_loop) > 0) {
-	l = new_loop();
-	close = 1;
+    l = new_loop();
+    close = 1;
       } else {
-	l = current_loop;
-	close = 0;
+    l = current_loop;
+    close = 0;
       }
 #else
       ir_loop *l = new_loop();
@@ -871,7 +866,7 @@ static void scc (ir_node *n) {
       /* Remove the loop from the stack ... */
       pop_scc_unmark_visit (n);
       /* and recompute it in a better order; and so that it goes into
-	 the new loop. */
+     the new loop. */
       // GL @@@ remove experimental stuff rem = find_irg_on_stack(tail);
 
       scc (tail);
@@ -884,7 +879,7 @@ static void scc (ir_node *n) {
       close_loop(l);
     } else {
       /* AS: No inner loop was found. Pop all nodes from the stack
-	 to the current loop. */
+     to the current loop. */
       pop_scc_to_loop(n);
     }
   }
@@ -897,7 +892,7 @@ void construct_backedges(ir_graph *irg) {
   ir_loop *head_rem;
 
   assert(!interprocedural_view &&
-	 "not implemented, use construct_ip_backedges");
+     "not implemented, use construct_ip_backedges");
 
   current_ir_graph = irg;
   outermost_ir_graph = irg;
@@ -960,7 +955,7 @@ void construct_ip_backedges (void) {
     /* Find real entry points */
     sb = get_irg_start_block(current_ir_graph);
     if ((get_Block_n_cfgpreds(sb) > 1) ||
-	(get_nodes_Block(get_Block_cfgpred(sb, 0)) != sb)) continue;
+    (get_nodes_Block(get_Block_cfgpred(sb, 0)) != sb)) continue;
     /* Compute scc for this graph */
     outermost_ir_graph = current_ir_graph;
     set_irg_visited(outermost_ir_graph, get_max_irg_visited());
@@ -1004,7 +999,7 @@ void construct_ip_backedges (void) {
     sb = get_irg_start_block(current_ir_graph);
 
     if ((get_Block_n_cfgpreds(sb) > 1) ||
-	(get_nodes_block(get_Block_cfgpred(sb, 0)) != sb)) continue;
+    (get_nodes_block(get_Block_cfgpred(sb, 0)) != sb)) continue;
 
     scc(get_irg_end(current_ir_graph));
   }
