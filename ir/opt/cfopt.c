@@ -46,6 +46,37 @@
 /* semantics of Phi nodes.                                          */
 /*------------------------------------------------------------------*/
 
+
+static void remove_senseless_conds(ir_node *bl, void *data)
+{
+	int i, j;
+	int n = get_irn_arity(bl);
+
+	assert(is_Block(bl));
+
+	for(i = 0; i < n; ++i) {
+		ir_node *pred_i = get_irn_n(bl, i);
+		ir_node *cond_i = skip_Proj(pred_i);
+
+		for(j = i + 1; j < n; ++j) {
+			ir_node *pred_j = get_irn_n(bl, j);
+			ir_node *cond_j = skip_Proj(pred_j);
+
+			if(cond_j == cond_i
+					&& get_irn_opcode(cond_i) == iro_Cond
+					&& get_irn_mode(get_Cond_selector(cond_i)) == mode_b) {
+
+				ir_node *jmp = new_r_Jmp(current_ir_graph, get_nodes_block(cond_i));
+				set_irn_n(bl, i, jmp);
+				set_irn_n(bl, j, new_Bad());
+
+				break;
+			}
+		}
+	}
+}
+
+
 /**
  * Removes Tuples from Block control flow predecessors.
  * Optimizes blocks with equivalent_node().  This is tricky,
@@ -545,6 +576,7 @@ void optimize_cf(ir_graph *irg) {
     }
   }
 
+	irg_block_walk_graph(current_ir_graph, NULL, remove_senseless_conds, NULL);
   /* Use block visited flag to mark non-empty blocks. */
   inc_irg_block_visited(irg);
   irg_walk(end, merge_blocks, collect_nodes, NULL);
@@ -576,6 +608,7 @@ void optimize_cf(ir_graph *irg) {
   }
   /* DEL_ARR_F(end->in);   GL @@@ tut nicht ! */
   end->in = in;
+
 
   /* the verifyer doesn't work yet with floating nodes */
   if (get_irg_pinned(irg) == op_pin_state_pinned) {
