@@ -83,14 +83,14 @@ computed_value (ir_node *n)
   case iro_Add:
     if ((ta != tarval_bad) && (tb != tarval_bad)
           && (get_irn_mode(a) == get_irn_mode(b))
-          && !(get_mode_sort(get_irn_mode(a)) == reference)) {
+          && !(get_mode_sort(get_irn_mode(a)) == irms_reference)) {
       res = tarval_add (ta, tb);
     }
     break;
   case iro_Sub:
     if ((ta != tarval_bad) && (tb != tarval_bad)
           && (get_irn_mode(a) == get_irn_mode(b))
-          && !(get_mode_sort(get_irn_mode(a)) == reference)) {
+          && !(get_mode_sort(get_irn_mode(a)) == irms_reference)) {
       res = tarval_sub (ta, tb);
     }
     break;

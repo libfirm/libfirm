@@ -47,15 +47,15 @@ static int num_modes;
  * * */
 
 /**
- * compare modes that don't need to have their code field
+ * Compare modes that don't need to have their code field
  * correctly set
  */
 static int modes_are_equal(ir_mode *m, ir_mode *n)
 {
   if (m == n) return 1;
   if ( (m->sort == n->sort) && (m->size == n->size) &&
-      (m->align == n->align) && (m->sign == n->sign) &&
-      (m->name == n->name) )
+      (m->align == n->align) && (m->sign == n->sign)
+     )
     return 1;
 
   return 0;
@@ -144,9 +144,11 @@ INLINE ir_mode *get_modeX() { ANNOUNCE(); return mode_X; }
 INLINE ir_mode *get_modeM() { ANNOUNCE(); return mode_M; }
 INLINE ir_mode *get_modeBB() { ANNOUNCE(); return mode_BB; }
 
-/* ** Constructor ** */
-ir_mode *
-register_mode(ir_mode* new_mode)
+/**
+ * Registers a new mode if not defined yet, else returns
+ * the "equivalent" one.
+ */
+static ir_mode *register_mode(ir_mode* new_mode)
 {
   ir_mode *mode;
 
@@ -160,24 +162,24 @@ register_mode(ir_mode* new_mode)
   /* sanity checks */
   switch (new_mode->sort)
   {
-    case auxiliary:
-    case internal_boolean:
+    case irms_auxiliary:
+    case irms_internal_boolean:
       assert(0 && "internal modes cannot be user defined");
       return NULL;
       break;
 
-    case float_number:
+    case irms_float_number:
       assert(0 && "not yet implemented");
       return NULL;
       break;
 
-    case int_number:
-    case reference:
-    case character:
+    case irms_int_number:
+    case irms_reference:
+    case irms_character:
       break;
 
     default:
-      assert(0);
+      assert(0 && "wrong mode sort");
       return NULL;
   }
 
@@ -196,6 +198,23 @@ register_mode(ir_mode* new_mode)
   set_mode_values(mode);
 
   return mode;
+}
+
+/*
+ * Creates a new mode.
+ */
+ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align, int sign)
+{
+  ir_mode mode_tmpl, *res;
+
+  mode_tmpl.name    = new_id_from_str(name);
+  mode_tmpl.sort    = sort;
+  mode_tmpl.size    = bit_size;
+  mode_tmpl.align   = align;
+  mode_tmpl.sign    = sign ? 1 : 0;
+  mode_tmpl.tv_priv = NULL;
+
+  return register_mode(&mode_tmpl);
 }
 
 /* Functions for the direct access to all attributes od a ir_mode */
@@ -380,7 +399,7 @@ mode_is_float (ir_mode *mode)
 {
   ANNOUNCE();
   assert(mode);
-  return (get_mode_sort(mode) == float_number);
+  return (get_mode_sort(mode) == irms_float_number);
 }
 
 int
@@ -388,7 +407,7 @@ mode_is_int (ir_mode *mode)
 {
   ANNOUNCE();
   assert(mode);
-  return (get_mode_sort(mode) == int_number);
+  return (get_mode_sort(mode) == irms_int_number);
 }
 
 int
@@ -404,7 +423,7 @@ mode_is_data (ir_mode *mode)
 {
   ANNOUNCE();
   assert(mode);
-  return (mode_is_num(mode) || get_mode_sort(mode) == character || get_mode_sort(mode) == reference);
+  return (mode_is_num(mode) || get_mode_sort(mode) == irms_character || get_mode_sort(mode) == irms_reference);
 }
 
 int
@@ -412,7 +431,7 @@ mode_is_datab (ir_mode *mode)
 {
   ANNOUNCE();
   assert(mode);
-  return (mode_is_data(mode) || get_mode_sort(mode) == internal_boolean);
+  return (mode_is_data(mode) || get_mode_sort(mode) == irms_internal_boolean);
 }
 
 int
@@ -424,12 +443,12 @@ mode_is_dataM (ir_mode *mode)
 }
 #ifdef MODE_ACCESS_DEFINES
 #  define mode_is_signed(mode) (mode)->sign
-#  define mode_is_float(mode) ((mode)->sort == float_number)
-#  define mode_is_int(mode) ((mode)->sort == int_number)
-#  define mode_is_num(mode) (((mode)->sort == float_number) || ((mode)->sort == int_number))
-#  define mode_is_data(mode) (((mode)->sort == float_number) || ((mode)->sort == int_number) || ((mode)->sort == character) || ((mode)->sort == reference))
-#  define mode_is_datab(mode) (((mode)->sort == float_number) || ((mode)->sort == int_number) || ((mode)->sort == character) || ((mode)->sort == reference) || ((mode)->sort == internal_boolean))
-#  define mode_is_dataM(mode) (((mode)->sort == float_number) || ((mode)->sort == int_number) || ((mode)->sort == character) || ((mode)->sort == reference) || ((mode)->code == irm_M))
+#  define mode_is_float(mode) ((mode)->sort == irms_float_number)
+#  define mode_is_int(mode) ((mode)->sort == irms_int_number)
+#  define mode_is_num(mode) (((mode)->sort == irms_float_number) || ((mode)->sort == irms_int_number))
+#  define mode_is_data(mode) (((mode)->sort == irms_float_number) || ((mode)->sort == irms_int_number) || ((mode)->sort == irms_character) || ((mode)->sort == irms_reference))
+#  define mode_is_datab(mode) (((mode)->sort == irms_float_number) || ((mode)->sort == irms_int_number) || ((mode)->sort == irms_character) || ((mode)->sort == irms_reference) || ((mode)->sort == irms_internal_boolean))
+#  define mode_is_dataM(mode) (((mode)->sort == irms_float_number) || ((mode)->sort == irms_int_number) || ((mode)->sort == irms_character) || ((mode)->sort == irms_reference) || ((mode)->code == irm_M))
 #endif
 /* Returns true if sm can be converted to lm without loss. */
 int
@@ -443,10 +462,10 @@ smaller_mode(ir_mode *sm, ir_mode *lm)
 
   switch(get_mode_sort(sm))
   {
-    case int_number:
+    case irms_int_number:
       switch(get_mode_sort(lm))
       {
-        case int_number:
+        case irms_int_number:
           /* integers are convertable if
            *   - both have the same sign and lm is the larger one
            *   - lm is the signed one and is at least two bits larger
@@ -468,7 +487,7 @@ smaller_mode(ir_mode *sm, ir_mode *lm)
           }
           break;
 
-        case float_number:
+        case irms_float_number:
           /* int to float works if the float is large enough */
           return 0;
 
@@ -477,15 +496,15 @@ smaller_mode(ir_mode *sm, ir_mode *lm)
       }
       break;
 
-    case float_number:
+    case irms_float_number:
       /* XXX currently only the three standard 32,64,80 bit floats
        * are supported which can safely be converted */
-      if ( (get_mode_sort(lm) == float_number)
+      if ( (get_mode_sort(lm) == irms_float_number)
            && (get_mode_size_bits(lm) > get_mode_size_bits(sm)) )
          return 1;
       break;
 
-    case reference:
+    case irms_reference:
        /* do exist machines out there with different pointer lenghts ?*/
       return 0;
 
@@ -514,7 +533,7 @@ init_mode (void)
   mode_BB = &modes[irm_BB];
   mode_BB->name = id_from_str("BB", 2);
   mode_BB->code = irm_BB;
-  mode_BB->sort = auxiliary;
+  mode_BB->sort = irms_auxiliary;
   mode_BB->sign = 0;
   mode_BB->tv_priv = NULL;
 
@@ -522,7 +541,7 @@ init_mode (void)
   mode_X = &modes[irm_X];
   mode_X->name = id_from_str("X", 1);
   mode_X->code = irm_X;
-  mode_X->sort = auxiliary;
+  mode_X->sort = irms_auxiliary;
   mode_X->sign = 0;
   mode_X->tv_priv = NULL;
 
@@ -530,7 +549,7 @@ init_mode (void)
   mode_M = &modes[irm_M];
   mode_M->name = id_from_str("M", 1);
   mode_M->code = irm_M;
-  mode_M->sort = auxiliary;
+  mode_M->sort = irms_auxiliary;
   mode_M->sign = 0;
   mode_M->tv_priv = NULL;
 
@@ -545,7 +564,7 @@ init_mode (void)
   mode_b = &modes[irm_b];
   mode_b->name = id_from_str("b", 1);
   mode_b->code = irm_b;
-  mode_b->sort = internal_boolean;
+  mode_b->sort = irms_internal_boolean;
   mode_b->sign = 0;
   mode_b->tv_priv = NULL;
 
@@ -553,7 +572,7 @@ init_mode (void)
   mode_F = &modes[irm_F];
   mode_F->name = id_from_str("F", 1);
   mode_F->code = irm_F;
-  mode_F->sort = float_number;
+  mode_F->sort = irms_float_number;
   mode_F->sign = 1;
   mode_F->align = 32;
   mode_F->size = 32;
@@ -565,7 +584,7 @@ init_mode (void)
   mode_D = &modes[irm_D];
   mode_D->name = id_from_str("D", 1);
   mode_D->code = irm_D;
-  mode_D->sort = float_number;
+  mode_D->sort = irms_float_number;
   mode_D->sign = 1;
   mode_D->align = 32;
   mode_D->size = 64;
@@ -577,7 +596,7 @@ init_mode (void)
   mode_E = &modes[irm_E];
   mode_E->name = id_from_str("E", 1);
   mode_E->code = irm_E;
-  mode_E->sort = float_number;
+  mode_E->sort = irms_float_number;
   mode_E->sign = 1;
   mode_E->align = 32;
   mode_E->size = 80;
@@ -589,7 +608,7 @@ init_mode (void)
   mode_Bs = &modes[irm_Bs];
   mode_Bs->name = id_from_str("Bs", 2);
   mode_Bs->code = irm_Bs;
-  mode_Bs->sort = int_number;
+  mode_Bs->sort = irms_int_number;
   mode_Bs->sign = 1;
   mode_Bs->align = 8;
   mode_Bs->size = 8;
@@ -601,7 +620,7 @@ init_mode (void)
   mode_Bu = &modes[irm_Bu];
   mode_Bu->name = id_from_str("Bu", 2);
   mode_Bu->code = irm_Bu;
-  mode_Bu->sort = int_number;
+  mode_Bu->sort = irms_int_number;
   mode_Bu->sign = 0;
   mode_Bu->align = 8;
   mode_Bu->size = 8;
@@ -613,7 +632,7 @@ init_mode (void)
   mode_Hs = &modes[irm_Hs];
   mode_Hs->name = id_from_str("Hs", 2);
   mode_Hs->code = irm_Hs;
-  mode_Hs->sort = int_number;
+  mode_Hs->sort = irms_int_number;
   mode_Hs->sign = 1;
   mode_Hs->align = 16;
   mode_Hs->size = 16;
@@ -625,7 +644,7 @@ init_mode (void)
   mode_Hu = &modes[irm_Hu];
   mode_Hu->name = id_from_str("Hu", 2);
   mode_Hu->code = irm_Hu;
-  mode_Hu->sort = int_number;
+  mode_Hu->sort = irms_int_number;
   mode_Hu->sign = 0;
   mode_Hu->align = 16;
   mode_Hu->size = 16;
@@ -637,7 +656,7 @@ init_mode (void)
   mode_Is = &modes[irm_Is];
   mode_Is->name = id_from_str("Is", 2);
   mode_Is->code = irm_Is;
-  mode_Is->sort = int_number;
+  mode_Is->sort = irms_int_number;
   mode_Is->sign = 1;
   mode_Is->align = 32;
   mode_Is->size = 32;
@@ -649,7 +668,7 @@ init_mode (void)
   mode_Iu = &modes[irm_Iu];
   mode_Iu->name = id_from_str("Iu", 2);
   mode_Iu->code = irm_Iu;
-  mode_Iu->sort = int_number;
+  mode_Iu->sort = irms_int_number;
   mode_Iu->sign = 0;
   mode_Iu->align = 32;
   mode_Iu->size = 32;
@@ -661,7 +680,7 @@ init_mode (void)
   mode_Ls = &modes[irm_Ls];
   mode_Ls->name = id_from_str("Ls", 2);
   mode_Ls->code = irm_Ls;
-  mode_Ls->sort = int_number;
+  mode_Ls->sort = irms_int_number;
   mode_Ls->sign = 1;
   mode_Ls->align = 32;
   mode_Ls->size = 64;
@@ -673,7 +692,7 @@ init_mode (void)
   mode_Lu = &modes[irm_Lu];
   mode_Lu->name = id_from_str("Lu", 2);
   mode_Lu->code = irm_Lu;
-  mode_Lu->sort = int_number;
+  mode_Lu->sort = irms_int_number;
   mode_Lu->sign = 0;
   mode_Lu->align = 32;
   mode_Lu->size = 64;
@@ -685,7 +704,7 @@ init_mode (void)
   mode_C = &modes[irm_C];
   mode_C->name = id_from_str("C", 1);
   mode_C->code = irm_C;
-  mode_C->sort = character;
+  mode_C->sort = irms_character;
   mode_C->sign = 0;
   mode_C->align = 8;
   mode_C->size = 8;
@@ -697,7 +716,7 @@ init_mode (void)
   mode_U = &modes[irm_U];
   mode_U->name = id_from_str("U", 1);
   mode_U->code = irm_U;
-  mode_U->sort = character;
+  mode_U->sort = irms_character;
   mode_U->sign = 0;
   mode_U->align = 16;
   mode_U->size = 16;
@@ -709,7 +728,7 @@ init_mode (void)
   mode_P = &modes[irm_P];
   mode_P->name = id_from_str("P", 1);
   mode_P->code = irm_P;
-  mode_P->sort = reference;
+  mode_P->sort = irms_reference;
   mode_P->sign = 0;
   mode_P->align = 32;
   mode_P->size = 32;

@@ -80,39 +80,47 @@ typedef enum { /* irm is short for `ir mode' */
  */
 typedef enum {
   /* Predefined sorts of modes */
-  auxiliary,         /**< Only for Firm use, predefined. */
-  internal_boolean,  /**< Internal boolean representation.
-		        Storing to memory impossible, convert first. */
+  irms_auxiliary,         /**< Only for Firm use, predefined. */
+  irms_internal_boolean,  /**< Internal boolean representation.
+		               Storing to memory impossible, convert first. */
   /** user-extensible sorts of modes **/
-  int_number,        /**< A mode to represent int numbers.
-		        Integer computations can be performed. */
-  float_number,      /**< A mode to represent float numbers.
-		        Floating point computations can be performed. */
-  reference,         /**< A mode to represent entities.
-		        Restricted int computations can be performed */
-  character          /**< A mode to represent characters/symbols
-		        ?? Are computations allowed? as int?? */
+  irms_int_number,        /**< A mode to represent int numbers.
+		               Integer computations can be performed. */
+  irms_float_number,      /**< A mode to represent float numbers.
+		               Floating point computations can be performed. */
+  irms_reference,         /**< A mode to represent entities.
+		               Restricted int computations can be performed */
+  irms_character          /**< A mode to represent characters/symbols
+		               ?? Are computations allowed? as int?? */
 } mode_sort;
 
 /* ********** Constructor for user defined modes **************** */
 /**
- * Registers a new mode.
+ * Creates a new mode.
  *
- * The information for new mode is retrieved from the mode
- * struct passed as parameter, the code field is ignored.
- * The struct is copied into the internal mode array and the code
- * field will be set to a unique integer.
+ * @param name		the name of the mode to be created
+ * @param sort		the mode_sort of teh mode to be created
+ * @param bit_size	number of bits this mode allocate
+ * @param align		the byte alignment for an entity of this mode (in bits)
+ * @param sign		non-zero if this is a signed mode
+ *
+ * This function constructs a new mode given by the parameters.
+ * If the parameters match an already defined mode, this mode is returned
+ * (including the default modes).
+ * If the mode is newly allocated, a new unique mode_code is choosen.
  * Also, special value tarvals will be calculated such as null,
  * min, max and can be retrieved using the get_mode_* fuctions
  *
- * If a mode with the given characteristics already exists,
- * it will be returned instead of creating a new one.
+ * @return
+ * 	The new mode or NULL on error.
  *
- * The passed struct can be safely deallocated after the function
- * returns.
- * To access the new mode the returned mode pointer must be used!
+ * @note
+ * 	FIRM modes are unique independant of its name. So, you cannot expect
+ * 	that the returned mode will have the mode name.
+ * 	It is allowed to construct the default modes. So, a call
+ * 	new_ir_mode("Int", irms_int_number, 32, 4, 1) will return mode_Is.
  */
-ir_mode *register_mode(ir_mode* new_mode);
+ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int align, int sign);
 
 /* ********** Access methods to read mode information *********** */
 
