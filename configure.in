@@ -7,6 +7,7 @@ dnl $Id$
 AC_REVISION($Id$)
 
 
+
 AC_INIT(libfirm,0.3.0)
 AC_PREREQ(2.50)
 dnl if other files should be generated just add them to ac_output_files
@@ -126,6 +127,13 @@ AC_PROG_RANLIB
 
 AC_PROG_INSTALL
 
+touch tmp-install.a tmp-install.b
+if eval "$INSTALL -C tmp-install.a tmp-install.b" ; then
+    INSTALL="$INSTALL -C"
+fi
+rm tmp-install.a tmp-install.b
+
+
 AC_PROG_LN_S
 
 dnl check for doxygen if enabled
@@ -179,12 +187,13 @@ fi
 
 
 dnl check for the obstack header file
+AC_FUNC_OBSTACK
 
-AC_CHECK_HEADERS(obstack.h, ac_obstack_headers="yes", ac_obstack_headers="no")
-if test "$ac_obstack_headers" != yes; then
-  dnl obstack header not found.
-  AC_MSG_ERROR("obstack header file not found")
-fi
+#AC_CHECK_HEADERS(obstack.h, ac_obstack_headers="yes", ac_obstack_headers="no")
+#if test "$ac_obstack_headers" != yes; then
+#  dnl obstack header not found.
+#  AC_MSG_ERROR("obstack header file not found")
+#fi
 
 
 dnl check for jni header files
