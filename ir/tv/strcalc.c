@@ -13,6 +13,7 @@
 #include "strcalc.h"
 
 #include <stdlib.h>
+#include <alloca.h>
 #include <assert.h>   /* assertions */
 #include <string.h>   /* memset/memcmp */
 #include <stdio.h>    /* output for error messages */
@@ -512,14 +513,18 @@ static void _add(const char *val1, const char *val2, char *buffer)
 
 static void _mul(const char *val1, const char *val2, char *buffer)
 {
-  char temp_buffer[CALC_BUFFER_SIZE]; /* result buffer */
-  char neg_val1[CALC_BUFFER_SIZE];    /* abs of val1 */
-  char neg_val2[CALC_BUFFER_SIZE];    /* abs of val2 */
+  char* temp_buffer; /* result buffer */
+  char* neg_val1;    /* abs of val1 */
+  char* neg_val2;    /* abs of val2 */
 
   const char *mul, *add1, *add2;      /* intermediate result containers */
   char carry = SC_0;                  /* container for carries */
   char sign = 0;                      /* marks result sign */
   int c_inner, c_outer;               /* loop counters */
+
+  temp_buffer = alloca(CALC_BUFFER_SIZE);
+  neg_val1 = alloca(CALC_BUFFER_SIZE);
+  neg_val2 = alloca(CALC_BUFFER_SIZE);
 
   /* init result buffer to zeroes */
   memset(temp_buffer, SC_0, CALC_BUFFER_SIZE);
@@ -585,7 +590,8 @@ static void _mul(const char *val1, const char *val2, char *buffer)
 
 static void _sub(const char *val1, const char *val2, char *buffer)
 {
-  char temp_buffer[CALC_BUFFER_SIZE];  /* intermediate buffer to hold -val2 */
+  char *temp_buffer;  /* intermediate buffer to hold -val2 */
+  temp_buffer = alloca(CALC_BUFFER_SIZE);
 
   _negate(val2, temp_buffer);
   _add(val1, temp_buffer, buffer);
@@ -606,12 +612,15 @@ static void _push(const char digit, char *buffer)
 static void _divmod(const char *dividend, const char *divisor, char *quot, char *rem)
 {
   const char *minus_divisor;
-  char neg_val1[CALC_BUFFER_SIZE];
-  char neg_val2[CALC_BUFFER_SIZE];
+  char *neg_val1;
+  char *neg_val2;
 
   char sign = 0;     /* remember result sign */
 
   int c_dividend;      /* loop counters */
+
+  neg_val1 = alloca(CALC_BUFFER_SIZE);
+  neg_val2 = alloca(CALC_BUFFER_SIZE);
 
   /* clear result buffer */
   memset(quot, SC_0, CALC_BUFFER_SIZE);
@@ -844,8 +853,9 @@ static void _shr(const char *val1, char *buffer, long offset, int radius, unsign
 /* positive: low-order -> high order, negative other direction */
 static void _rot(const char *val1, char *buffer, long offset, int radius, unsigned is_signed)
 {
-  char temp1[CALC_BUFFER_SIZE];
-  char temp2[CALC_BUFFER_SIZE];
+  char *temp1, *temp2;
+  temp1 = alloca(CALC_BUFFER_SIZE);
+  temp2 = alloca(CALC_BUFFER_SIZE);
 
   offset = offset % radius;
 
@@ -881,8 +891,10 @@ void sc_val_from_str(const char *str, unsigned int len, void *buffer)
   unsigned int orig_len = len;
 
   char sign = 0;
-  char base[CALC_BUFFER_SIZE];
-  char val[CALC_BUFFER_SIZE];
+  char *base, *val;
+
+  base = alloca(CALC_BUFFER_SIZE);
+  val = alloca(CALC_BUFFER_SIZE);
 
   /* verify valid pointers (not null) */
   assert(str);
@@ -1126,11 +1138,12 @@ void sc_max_from_bits(unsigned int num_bits, unsigned int sign, void *buffer)
 
 void sc_calc(const void* value1, const void* value2, unsigned op, void *buffer)
 {
-  char unused_res[CALC_BUFFER_SIZE]; /* temp buffer holding unused result of divmod */
+  char *unused_res; /* temp buffer holding unused result of divmod */
 
   const char *val1 = (const char *)value1;
   const char *val2 = (const char *)value2;
 
+  unused_res = alloca(CALC_BUFFER_SIZE);
   CLEAR_BUFFER(calc_buffer);
   carry_flag = 0;
 
@@ -1340,10 +1353,7 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base)
   static const char big_digits[]   = "0123456789ABCDEF";
   static const char small_digits[] = "0123456789abcdef";
 
-  char base_val[CALC_BUFFER_SIZE];
-  char div1_res[CALC_BUFFER_SIZE];
-  char div2_res[CALC_BUFFER_SIZE];
-  char rem_res[CALC_BUFFER_SIZE];
+  char *base_val, *div1_res, *div2_res, *rem_res;
   int counter, nibbles, i, sign;
   char x;
 
@@ -1352,6 +1362,11 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base)
   char *m, *n, *t;
   char *pos;
   const char *digits = small_digits;
+
+  base_val = alloca(CALC_BUFFER_SIZE);
+  div1_res = alloca(CALC_BUFFER_SIZE);
+  div2_res = alloca(CALC_BUFFER_SIZE);
+  rem_res = alloca(CALC_BUFFER_SIZE);
 
   pos = output_buffer + BIT_PATTERN_SIZE;
   *(--pos) = '\0';

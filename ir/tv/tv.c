@@ -1180,12 +1180,23 @@ tarval *tarval_eor(tarval *a, tarval *b)
  */
 tarval *tarval_shl(tarval *a, tarval *b)
 {
+  char *temp_val = NULL;
   ANNOUNCE();
   assert(a);
   assert(b);
   assert(mode_is_int(a->mode) && mode_is_int(b->mode));
 
-  sc_shl(a->value, b->value, get_mode_size_bits(a->mode), mode_is_signed(a->mode), NULL);
+  if (get_mode_modulo_shift(a->mode) != 0)
+  {
+    temp_val = alloca(sc_get_buffer_length());
+
+    sc_val_from_ulong(get_mode_modulo_shift(a->mode), temp_val);
+    sc_mod(b->value, temp_val, temp_val);
+  }
+  else
+    temp_val = (char*)b->value;
+
+  sc_shl(a->value, temp_val, get_mode_size_bits(a->mode), mode_is_signed(a->mode), NULL);
   return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 }
 
@@ -1194,10 +1205,21 @@ tarval *tarval_shl(tarval *a, tarval *b)
  */
 tarval *tarval_shr(tarval *a, tarval *b)
 {
+  char *temp_val = NULL;
   ANNOUNCE();
   assert(a);
   assert(b);
   assert(mode_is_int(a->mode) && mode_is_int(b->mode));
+
+  if (get_mode_modulo_shift(a->mode) != 0)
+  {
+    temp_val = alloca(sc_get_buffer_length());
+
+    sc_val_from_ulong(get_mode_modulo_shift(a->mode), temp_val);
+    sc_mod(b->value, temp_val, temp_val);
+  }
+  else
+    temp_val = (char*)b->value;
 
   sc_shr(a->value, b->value, get_mode_size_bits(a->mode), mode_is_signed(a->mode), NULL);
   return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
@@ -1208,10 +1230,21 @@ tarval *tarval_shr(tarval *a, tarval *b)
  */
 tarval *tarval_shrs(tarval *a, tarval *b)
 {
+  char *temp_val = NULL;
   ANNOUNCE();
   assert(a);
   assert(b);
   assert(mode_is_int(a->mode) && mode_is_int(b->mode));
+
+  if (get_mode_modulo_shift(a->mode) != 0)
+  {
+    temp_val = alloca(sc_get_buffer_length());
+
+    sc_val_from_ulong(get_mode_modulo_shift(a->mode), temp_val);
+    sc_mod(b->value, temp_val, temp_val);
+  }
+  else
+    temp_val = (char*)b->value;
 
   sc_shrs(a->value, b->value, get_mode_size_bits(a->mode), mode_is_signed(a->mode), NULL);
   return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
@@ -1222,10 +1255,21 @@ tarval *tarval_shrs(tarval *a, tarval *b)
  */
 tarval *tarval_rot(tarval *a, tarval *b)
 {
+  char *temp_val = NULL;
   ANNOUNCE();
   assert(a);
   assert(b);
   assert(mode_is_int(a->mode) && mode_is_int(b->mode));
+
+  if (get_mode_modulo_shift(a->mode) != 0)
+  {
+    temp_val = alloca(sc_get_buffer_length());
+
+    sc_val_from_ulong(get_mode_modulo_shift(a->mode), temp_val);
+    sc_mod(b->value, temp_val, temp_val);
+  }
+  else
+    temp_val = (char*)b->value;
 
   sc_rot(a->value, b->value, get_mode_size_bits(a->mode), mode_is_signed(a->mode), NULL);
   return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
