@@ -955,7 +955,12 @@ void vcg_open_name (const char *name) {
   /** open file for vcg graph */
   len   = strlen(name);
   fname = malloc (len + 5);
+  if (dump_file_suffix)
+    fname = malloc (len + 5 + strlen(dump_file_suffix));
+  else
+    fname = malloc (len + 5);
   strcpy (fname, name);    /* copy the filename */
+  if (dump_file_suffix) strcat (fname, dump_file_suffix);
   strcat (fname, ".vcg");  /* append the .vcg suffix */
   F = fopen (fname, "w");  /* open file for writing */
   if (!F) {
