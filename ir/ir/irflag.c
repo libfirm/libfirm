@@ -42,6 +42,7 @@ optimization_state_t libFIRM_opt =
   ENABLE(OPT_NORMALIZE)                          |
   ENABLE(OPT_TAIL_RECURSION)                     |
   ENABLE(OPT_PRECISE_EXC_CONTEXT)                |
+  DISABLE(OPT_FRAGILE_OPS)                       |
   0;
 
 optimization_state_t libFIRM_verb =
@@ -64,6 +65,7 @@ optimization_state_t libFIRM_verb =
   DISABLE(OPT_NORMALIZE)                          |
   DISABLE(OPT_TAIL_RECURSION)                     |
   DISABLE(OPT_PRECISE_EXC_CONTEXT)                |
+  DISABLE(OPT_FRAGILE_OPS)                       |
   0;
 
 /** The Firm verbosity level */
@@ -279,6 +281,14 @@ void set_opt_precise_exc_context(int value)
   else
     libFIRM_opt &= ~OPT_PRECISE_EXC_CONTEXT;
 #endif
+}
+
+void set_opt_fragile_ops(int value)
+{
+  if (value)
+    libFIRM_opt |= OPT_FRAGILE_OPS;
+  else
+    libFIRM_opt &= ~OPT_FRAGILE_OPS;
 }
 
 /* Save the current optimization state. */
