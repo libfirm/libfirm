@@ -15,20 +15,23 @@
 # include "config.h"
 #endif
 
-
-#include "strcalc.h"
-
-#include <stdlib.h>
+#ifdef HAVE_STDLIB_H
+# include <stdlib.h>
+#endif
 #ifdef HAVE_ALLOCA_H
 # include <alloca.h>
 #endif
 #ifdef HAVE_MALLOC_H
 # include <malloc.h>
 #endif
+#ifdef HAVE_STRING_H
+# include <string.h>  /* memset/memcmp */
+#endif
 #include <assert.h>   /* assertions */
-#include <string.h>   /* memset/memcmp */
 #include <stdio.h>    /* output for error messages */
 #include <limits.h>   /* definition of LONG_MIN, used in sc_get_val_from_long */
+
+#include "strcalc.h"
 
 /*
  * local definitions and macros

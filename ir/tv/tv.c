@@ -28,7 +28,9 @@
 
 #include <assert.h>         /* assertions */
 #include <stdlib.h>         /* atoi() */
-#include <string.h>         /* nice things for strings */
+#ifdef HAVE_STRING_H
+# include <string.h>         /* nice things for strings */
+#endif
 #ifdef HAVE_STRINGS_H
 #include <strings.h>        /* strings.h also includes bsd only function strcasecmp */
 #endif
@@ -46,7 +48,6 @@
 #include "entity_t.h"       /* needed to store pointers to entities */
 #include "irmode_t.h"
 #include "irnode.h"         /* defines boolean return values (pnc_number)*/
-#include "host.h"
 #include "strcalc.h"
 #include "fltcalc.h"
 
