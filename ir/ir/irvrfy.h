@@ -24,16 +24,23 @@
 # include "irnode.h"
 # include "irgraph.h"
 
-/** Turns verification of nodes on.
+typedef enum _node_verification_t
+{
+  NODE_VERIFICATION_OFF        = 0,		/**< do not verify nodes at all */
+  NODE_VERIFICATION_ON         = 1,		/**< do node verification and assert on error in debug version */
+  NODE_VERIFICATION_REPORT     = 2,		/**< do node verification, but report to stderr only */
+  NODE_VERIFICATION_ERROR_ONLY = 3		/**< do node verification, but NEVER do assert nor report */
+} node_verification_t;
+
+/** Select verification of nodes.
  *
- *  This flag turns verification of nodes on.  Per default the
- *  verification is on.  Turn the verification off
- *  during development to check partial implementations.
+ *  Per default the  verification is in mode NODE_VERIFICATION_ASSERT.
+ *  Turn the verification off during development to check partial implementations.
  */
-void do_node_verification(bool b);
+void do_node_verification(node_verification_t mode);
 
 /**
- * Tests the modes of chechnode and its predecessors.
+ * Tests the modes of checknode and its predecessors.
  * Checknode must be in current_ir_graph.
  *
  * \return
@@ -50,6 +57,13 @@ int irn_vrfy(struct ir_node *checknode);
  */
 int irn_vrfy_irg(struct ir_node *checknode, ir_graph *irg);
 
+/**
+ * Same as irn_vrfy_irg, but temporary sets verification mode to
+ * NODE_VERIFICATION_ERROR_ONLY.
+ * \return
+ * 	NON-zero on success
+ */
+int irn_vrfy_irg_dump(struct ir_node *checknode, ir_graph *irg, const char **bad_string);
 
 /**
  * Calls irn_vrfy for each node in irg.
@@ -59,6 +73,5 @@ int irn_vrfy_irg(struct ir_node *checknode, ir_graph *irg);
  * 	NON-zero on success.
  */
 int irg_vrfy(ir_graph *irg);
-
 
 # endif /* _IRVRFY_H_ */

@@ -31,16 +31,53 @@
  */
 #define ASSERT_AND_RET_DBG(expr, string, ret, blk)  	if (!(expr)) return (ret)
 #else
-#define ASSERT_AND_RET(expr, string, ret)  		do { assert((expr) && string); if (!(expr)) return (ret); } while(0)
-#define ASSERT_AND_RET_DBG(expr, string, ret, blk) 	do { if (!(expr)) { { blk } assert(0 && string); return (ret); } } while(0)
+#define ASSERT_AND_RET(expr, string, ret) \
+do { \
+  bad_msg = #expr " && " string; \
+  if (opt_do_node_verification == NODE_VERIFICATION_ON) \
+    assert((expr) && string); \
+  if (!(expr)) { \
+    if (opt_do_node_verification == NODE_VERIFICATION_REPORT) \
+      fprintf(stderr, #expr " : " string "\n"); \
+    return (ret); \
+  } \
+} while(0)
+
+#define ASSERT_AND_RET_DBG(expr, string, ret, blk) \
+do { \
+  if (!(expr)) { \
+    bad_msg = #expr " && " string; \
+    if (opt_do_node_verification != NODE_VERIFICATION_ERROR_ONLY) { blk; } \
+    if (opt_do_node_verification == NODE_VERIFICATION_REPORT) \
+      fprintf(stderr, #expr " : " string "\n"); \
+    else if (opt_do_node_verification == NODE_VERIFICATION_ON) \
+      assert((expr) && string); \
+    return (ret); \
+  } \
+} while(0)
+
 #endif
 
 /* @@@ replace use of array "in" by access functions. */
 ir_node **get_irn_in(ir_node *node);
 
-bool opt_do_node_verification = 1;
-void do_node_verification(bool b) {
-  opt_do_node_verification = b;
+static node_verification_t opt_do_node_verification = NODE_VERIFICATION_ON;
+static const char *bad_msg;
+
+void do_node_verification(node_verification_t mode)
+{
+  opt_do_node_verification = mode;
+}
+
+/**
+ * Prints a failure for a Node
+ */
+static void show_node_failure(ir_node *n)
+{
+  fprintf(stderr, "\nFIRM: irn_vrfy_irg() of node %ld %s%s\n" ,
+    get_irn_node_nr(n),
+    get_irn_opname(n), get_irn_modename(n)
+  );
 }
 
 /**
@@ -103,7 +140,6 @@ static void show_proj_failure_ent(ir_node *n, entity *ent)
       get_entity_name(ent), get_type_name(get_entity_type(ent)),
       m ? get_mode_name(m) : "<no mode>");
 }
-
 
 /**
  * Show a node and a graph
@@ -431,7 +467,8 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
   int op_is_symmetric = 1;  /*  0: asymmetric
 				1: operands have identical modes
 				2: modes of operands == mode of this node */
-  type *mt; /* A method type */
+  type *mt;                 /* A method type */
+  entity *ent;
 
   ir_node **in;
 
@@ -578,15 +615,17 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
     case iro_Sel:
       op1mode = get_irn_mode(in[1]);
       op2mode = get_irn_mode(in[2]);
-      ASSERT_AND_RET(
+      ASSERT_AND_RET_DBG(
           /* Sel: BB x M x ref x int^n --> ref */
           (op1mode == mode_M && op2mode == mymode && mode_is_reference(mymode)),
-	  "Sel node", 0
+	  "Sel node", 0, show_node_failure(n)
           );
       for (i=3; i < get_irn_arity(n); i++)
       {
-        ASSERT_AND_RET(mode_is_int(get_irn_mode(in[i])), "Sel node", 0);
+        ASSERT_AND_RET_DBG(mode_is_int(get_irn_mode(in[i])), "Sel node", 0, show_node_failure(n));
       }
+      ent = get_Sel_entity(n);
+      ASSERT_AND_RET_DBG(ent, "Sel node with empty entity", 0, show_node_failure(n));
       break;
 
     case iro_InstOf:
@@ -983,6 +1022,30 @@ int irg_vrfy(ir_graph *irg)
   irg_walk(irg->end, vrfy_wrap, NULL, &res);
 
   current_ir_graph = rem;
+
+  if (opt_do_node_verification == NODE_VERIFICATION_REPORT && ! res) {
+    entity *ent = get_irg_entity(current_ir_graph);
+
+    if (ent)
+      fprintf(stderr, "irg_verify: Verifying graph %s failed\n", get_entity_name(ent));
+    else
+      fprintf(stderr, "irg_verify: Verifying graph %p failed\n", (void *)current_ir_graph);
+  }
+
 #endif
+  return res;
+}
+
+int irn_vrfy_irg_dump(ir_node *n, ir_graph *irg, const char **bad_string)
+{
+  int res;
+  node_verification_t old = opt_do_node_verification;
+
+  bad_msg = NULL;
+  opt_do_node_verification = NODE_VERIFICATION_ERROR_ONLY;
+  res = irn_vrfy_irg(n, irg);
+  opt_do_node_verification = old;
+  *bad_string = bad_msg;
+
   return res;
 }
