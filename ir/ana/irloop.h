@@ -65,9 +65,9 @@ typedef struct ir_loop ir_loop;
 
 /* Loop elements are loop nodes and ir nodes */
 typedef union {
-    firm_kind *kind;    /* is either k_ir_node or k_ir_loop */
-    ir_node *node;      /* Pointer to a loop tree element */
-    ir_loop *son;       /* Pointer to a ir_graph element */
+    firm_kind *kind;    /**< is either k_ir_node or k_ir_loop */
+    ir_node *node;      /**< Pointer to an ir_node element */
+    ir_loop *son;       /**< Pointer to an ir_loop element */
 } loop_element;
 
 void     set_irg_loop(ir_graph *irg, ir_loop *l);
@@ -92,6 +92,8 @@ ir_node *get_loop_node (ir_loop *loop, int pos);
 
 /** Returns the number of elements contained in loop.  */
 int      get_loop_n_elements (ir_loop *loop);
+/** Returns a loop element.  A loop element can be interpreted as a
+    kind poitner, an ir_node* or an ir_loop*. */
 loop_element get_loop_element (ir_loop *loop, int pos);
 
 /*

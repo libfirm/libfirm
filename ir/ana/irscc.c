@@ -286,7 +286,7 @@ ir_loop *get_loop_son (ir_loop *loop, int pos) {
   int child_nr = 0, loop_nr = -1;
 
   assert(loop && loop->kind == k_ir_loop);
-  while(child_nr < ARR_LEN(loop->children));
+  while(child_nr < ARR_LEN(loop->children))
    {
     if(*(loop -> children[child_nr].kind) == k_ir_loop)
       loop_nr++;
@@ -303,6 +303,7 @@ ir_loop *get_loop_son (ir_loop *loop, int pos) {
 static INLINE void
 add_loop_son(ir_loop *loop, ir_loop *son) {
   assert(loop && loop->kind == k_ir_loop);
+  assert(get_kind(son) == k_ir_loop);
   ARR_APP1 (loop_element, loop->children, (loop_element) son);
   loop -> n_sons++;
 }
@@ -318,17 +319,18 @@ int      get_loop_n_nodes (ir_loop *loop) {
  * TODO: This method isn`t very efficient !        *
  * Returns NULL if there isnt`t a pos`th ir_node   */
 ir_node *get_loop_node (ir_loop *loop, int pos) {
-  int child_nr = 0, node_nr = -1;
+  int child_nr, node_nr = -1;
 
   assert(loop && loop->kind == k_ir_loop);
-  while(child_nr < ARR_LEN(loop->children));
-   {
+  assert(pos < get_loop_n_nodes(loop));
+
+  for (child_nr = 0; child_nr < ARR_LEN(loop->children); child_nr++) {
     if(*(loop -> children[child_nr].kind) == k_ir_node)
       node_nr++;
     if(node_nr == pos)
       return(loop -> children[child_nr].node);
-    child_nr++;
-   }
+  }
+  assert(0 && "no child at pos found");
   return NULL;
 }
 
@@ -338,8 +340,28 @@ ir_node *get_loop_node (ir_loop *loop, int pos) {
 static INLINE void
 add_loop_node(ir_loop *loop, ir_node *n) {
   assert(loop && loop->kind == k_ir_loop);
+  assert(get_kind(n) == k_ir_node);
   ARR_APP1 (loop_element, loop->children, (loop_element) n);
   loop->n_nodes++;
+}
+
+/** Returns the number of elements contained in loop.  */
+int get_loop_n_elements (ir_loop *loop) {
+  assert(loop && loop->kind == k_ir_loop);
+  return(ARR_LEN(loop->children));
+}
+
+/*
+ Returns the pos`th loop element.
+ This may be a loop_node or a ir_node. The caller of this function has
+ to check the *(loop_element.kind) field for "k_ir_node" or "k_ir_loop"
+ and then select the apropriate "loop_element.node" or "loop_element.son".
+*/
+
+loop_element get_loop_element (ir_loop *loop, int pos) {
+  assert(loop && loop->kind == k_ir_loop && pos < ARR_LEN(loop->children));
+
+  return(loop -> children[pos]);
 }
 
 /* The outermost loop is remarked in the surrounding graph. */
@@ -351,27 +373,6 @@ ir_loop *get_irg_loop(ir_graph *irg) {
   assert(irg);
   return irg->loop;
 }
-
-/** Returns the number of elements contained in loop.  */
-int get_loop_n_elements (ir_loop *loop)
- {
-  assert(loop && loop->kind == k_ir_loop);
-  return(ARR_LEN(loop->children));
- }
-
-/*
- Returns the pos`th loop element.
- This may be a loop_node or a ir_node. The caller of this function has
- to check the *(loop_element.kind) field for "k_ir_node" or "k_ir_loop"
- and then select the apropriate "loop_element.ir_node" or "loop_element.ir_son".
-*/
-
-loop_element get_loop_element (ir_loop *loop, int pos)
- {
-  assert(loop && loop->kind == k_ir_loop && pos < ARR_LEN(loop->children));
-
-  return(loop -> children[pos]);
- }
 
 /**********************************************************************/
 /* Constructing and destructing the loop/backedge information.       **/
