@@ -28,8 +28,10 @@
 /* Make types visible to allow most efficient access */
 # include "entity_t.h"
 
-/* Trivial INLINEable routine for copy propagation.
-   Does follow Ids, needed to optimize INLINEd code. */
+/**
+ * Trivial INLINEable routine for copy propagation.
+ * Does follow Ids, needed to optimize INLINEd code.
+ */
 static INLINE ir_node *
 follow_Id (ir_node *n)
 {
@@ -37,6 +39,9 @@ follow_Id (ir_node *n)
   return n;
 }
 
+/**
+ * Returns the tarval of a Const node or tarval_bad for all other nodes.
+ */
 static INLINE tarval *
 value_of (ir_node *n)
 {
@@ -46,8 +51,12 @@ value_of (ir_node *n)
     return tarval_bad;
 }
 
-/* if n can be computed, return the value, else tarval_bad. Performs
-   constant folding. GL: Only if n is arithmetic operator? */
+/**
+ * If the parameter n can be computed, return its value, else tarval_bad.
+ * Performs constant folding.
+ *
+ * GL: Only if n is arithmetic operator?
+ */
 tarval *
 computed_value (ir_node *n)
 {
@@ -301,11 +310,13 @@ different_identity (ir_node *a, ir_node *b)
 }
 #endif
 
-/* equivalent_node returns a node equivalent to N.  It skips all nodes that
-   perform no actual computation, as, e.g., the Id nodes.  It does not create
-   new nodes.  It is therefore safe to free N if the node returned is not N.
-   If a node returns a Tuple we can not just skip it.  If the size of the
-   in array fits, we transform n into a tuple (e.g., Div). */
+/**
+ * equivalent_node() returns a node equivalent to input n. It skips all nodes that
+ * perform no actual computation, as, e.g., the Id nodes.  It does not create
+ * new nodes.  It is therefore safe to free n if the node returned is not n.
+ * If a node returns a Tuple we can not just skip it.  If the size of the
+ * in array fits, we transform n into a tuple (e.g., Div).
+ */
 ir_node *
 equivalent_node (ir_node *n)
 {
@@ -643,7 +654,9 @@ equivalent_node (ir_node *n)
   return n;
 } /* end equivalent_node() */
 
-/* do node specific optimizations of nodes predecessors. */
+/**
+ * Do node specific optimizations of nodes predecessors.
+ */
 static void
 optimize_preds(ir_node *n) {
   ir_node *a = NULL, *b = NULL;
@@ -675,10 +688,12 @@ optimize_preds(ir_node *n) {
 }
 
 
-/* tries several [inplace] [optimizing] transformations and returns an
-   equivalent node.  The difference to equivalent_node is that these
-   transformations _do_ generate new nodes, and thus the old node must
-   not be freed even if the equivalent node isn't the old one. */
+/**
+ * Tries several [inplace] [optimizing] transformations and returns an
+ * equivalent node.  The difference to equivalent_node() is that these
+ * transformations _do_ generate new nodes, and thus the old node must
+ * not be freed even if the equivalent node isn't the old one.
+ */
 static ir_node *
 transform_node (ir_node *n) {
   ir_node *a = NULL, *b;
@@ -893,8 +908,10 @@ transform_node (ir_node *n) {
     in a graph. */
 #define N_IR_NODES 512
 
-/* Compare function for two nodes in the hash table.   Gets two       */
-/* nodes as parameters.  Returns 0 if the nodes are a cse.            */
+/**
+ * Compare function for two nodes in the hash table. Gets two
+ * nodes as parameters.  Returns 0 if the nodes are a cse.
+ */
 static int
 vt_cmp (const void *elt, const void *key)
 {
@@ -959,6 +976,9 @@ vt_cmp (const void *elt, const void *key)
   return 0;
 }
 
+/**
+ * Calculate a hash value of a node.
+ */
 static unsigned
 ir_node_hash (ir_node *node)
 {
@@ -993,8 +1013,10 @@ del_identities (pset *value_table)
   del_pset (value_table);
 }
 
-/* Return the canonical node computing the same value as n.
-   Looks up the node in a hash table. */
+/**
+ * Return the canonical node computing the same value as n.
+ * Looks up the node in a hash table.
+ */
 static INLINE ir_node *
 identify (pset *value_table, ir_node *n)
 {
@@ -1002,6 +1024,7 @@ identify (pset *value_table, ir_node *n)
 
   if (!value_table) return n;
 
+  /* TODO: use a generic commutative attribute */
   if (get_opt_reassociation()) {
     switch (get_irn_opcode (n)) {
     case iro_Add:
@@ -1028,9 +1051,11 @@ identify (pset *value_table, ir_node *n)
   return o;
 }
 
-/* During construction we set the pinned flag in the graph right when the
-   optimizatin is performed.  The flag turning on procedure global cse could
-   be changed between two allocations.  This way we are safe. */
+/**
+ * During construction we set the pinned flag in the graph right when the
+ * optimizatin is performed.  The flag turning on procedure global cse could
+ * be changed between two allocations.  This way we are safe.
+ */
 static INLINE ir_node *
 identify_cons (pset *value_table, ir_node *n) {
   ir_node *old = n;
@@ -1040,9 +1065,11 @@ identify_cons (pset *value_table, ir_node *n) {
   return n;
 }
 
-/* Return the canonical node computing the same value as n.
-   Looks up the node in a hash table, enters it in the table
-   if it isn't there yet. */
+/**
+ * Return the canonical node computing the same value as n.
+ * Looks up the node in a hash table, enters it in the table
+ * if it isn't there yet.
+ */
 static ir_node *
 identify_remember (pset *value_table, ir_node *node)
 {
@@ -1063,14 +1090,15 @@ add_identities (pset *value_table, ir_node *node) {
   identify_remember (value_table, node);
 }
 
-/* garbage in, garbage out. If a node has a dead input, i.e., the
-   Bad node is input to the node, return the Bad node.  */
+/**
+ * garbage in, garbage out. If a node has a dead input, i.e., the
+ * Bad node is input to the node, return the Bad node.
+ */
 static INLINE ir_node *
 gigo (ir_node *node)
 {
   int i, irn_arity;
   ir_op* op = get_irn_op(node);
-
 
   /* remove garbage blocks by looking at control flow that leaves the block
      and replacing the control flow by Bad. */
@@ -1113,17 +1141,20 @@ gigo (ir_node *node)
 }
 
 
-/* These optimizations deallocate nodes from the obstack.
-   It can only be called if it is guaranteed that no other nodes
-   reference this one, i.e., right after construction of a node.  */
+/**
+ * These optimizations deallocate nodes from the obstack.
+ * It can only be called if it is guaranteed that no other nodes
+ * reference this one, i.e., right after construction of a node.
+ */
 ir_node *
 optimize_node (ir_node *n)
 {
   tarval *tv;
   ir_node *old_n = n;
+  opcode iro = get_irn_opcode(n);
 
   /* Allways optimize Phi nodes: part of the construction. */
-  if ((!get_opt_optimize()) && (get_irn_op(n) != op_Phi)) return n;
+  if ((!get_opt_optimize()) && (iro != iro_Phi)) return n;
 
   /* constant expression evaluation / constant folding */
   if (get_opt_constant_folding()) {
@@ -1141,10 +1172,10 @@ optimize_node (ir_node *n)
 
   /* remove unnecessary nodes */
   if (get_opt_constant_folding() ||
-      (get_irn_op(n) == op_Phi)  ||   /* always optimize these nodes. */
-      (get_irn_op(n) == op_Id)   ||
-      (get_irn_op(n) == op_Proj) ||
-      (get_irn_op(n) == op_Block)  )  /* Flags tested local. */
+      (iro == iro_Phi)  ||   /* always optimize these nodes. */
+      (iro == iro_Id)   ||
+      (iro == iro_Proj) ||
+      (iro == iro_Block)  )  /* Flags tested local. */
     n = equivalent_node (n);
 
   optimize_preds(n);                  /* do node specific optimizations of nodes predecessors. */
@@ -1164,9 +1195,10 @@ optimize_node (ir_node *n)
 
   /* Some more constant expression evaluation that does not allow to
      free the node. */
+  iro = get_irn_opcode(n);
   if (get_opt_constant_folding() ||
-      (get_irn_op(n) == op_Cond) ||
-      (get_irn_op(n) == op_Proj))     /* Flags tested local. */
+      (iro == iro_Cond) ||
+      (iro == iro_Proj))     /* Flags tested local. */
     n = transform_node (n);
 
   /* Remove nodes with dead (Bad) input.
@@ -1182,14 +1214,17 @@ optimize_node (ir_node *n)
 }
 
 
-/* These optimizations never deallocate nodes.  This can cause dead
-   nodes lying on the obstack.  Remove these by a dead node elimination,
-   i.e., a copying garbage collection. */
+/**
+ * These optimizations never deallocate nodes.  This can cause dead
+ * nodes lying on the obstack.  Remove these by a dead node elimination,
+ * i.e., a copying garbage collection.
+ */
 ir_node *
 optimize_in_place_2 (ir_node *n)
 {
   tarval *tv;
   ir_node *old_n = n;
+  opcode iro = get_irn_opcode(n);
 
   if (!get_opt_optimize() && (get_irn_op(n) != op_Phi)) return n;
 
@@ -1204,7 +1239,7 @@ optimize_in_place_2 (ir_node *n)
   /* constant expression evaluation / constant folding */
   if (get_opt_constant_folding()) {
     /* constants can not be evaluated */
-    if  (get_irn_op(n) != op_Const) {
+    if (iro != iro_Const) {
       /* try to evaluate */
       tv = computed_value (n);
       if ((get_irn_mode(n) != mode_T) && (tv != tarval_bad)) {
@@ -1219,10 +1254,10 @@ optimize_in_place_2 (ir_node *n)
   /* remove unnecessary nodes */
   /*if (get_opt_constant_folding()) */
   if (get_opt_constant_folding() ||
-      (get_irn_op(n) == op_Phi)  ||   /* always optimize these nodes. */
-      (get_irn_op(n) == op_Id)   ||   /* ... */
-      (get_irn_op(n) == op_Proj) ||   /* ... */
-      (get_irn_op(n) == op_Block)  )  /* Flags tested local. */
+      (iro == iro_Phi)  ||   /* always optimize these nodes. */
+      (iro == iro_Id)   ||   /* ... */
+      (iro == iro_Proj) ||   /* ... */
+      (iro == iro_Block)  )  /* Flags tested local. */
     n = equivalent_node (n);
 
   optimize_preds(n);                  /* do node specific optimizations of nodes predecessors. */
@@ -1237,9 +1272,10 @@ optimize_in_place_2 (ir_node *n)
   }
 
   /* Some more constant expression evaluation. */
+  iro = get_irn_opcode(n);
   if (get_opt_constant_folding() ||
-      (get_irn_op(n) == op_Cond) ||
-      (get_irn_op(n) == op_Proj))     /* Flags tested local. */
+      (iro == iro_Cond) ||
+      (iro == iro_Proj))     /* Flags tested local. */
     n = transform_node (n);
 
   /* Remove nodes with dead (Bad) input.
@@ -1258,11 +1294,15 @@ optimize_in_place_2 (ir_node *n)
   return n;
 }
 
-/* Wrapper for external use, set proper status bits after optimization */
+/**
+ * Wrapper for external use, set proper status bits after optimization.
+ */
 ir_node *
-optimize_in_place (ir_node *n) {
+optimize_in_place (ir_node *n)
+{
   /* Handle graph state */
   assert(get_irg_phase_state(current_ir_graph) != phase_building);
+
   if (get_opt_global_cse())
     set_irg_pinned(current_ir_graph, floats);
   if (get_irg_outs_state(current_ir_graph) == outs_consistent)
