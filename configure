@@ -561,7 +561,7 @@ ac_configure=$ac_aux_dir/configure # This should be Cygnus configure.
 
 ac_output_file="Makefile MakeRules ir/Makefile ir/adt/Makefile ir/debug/Makefile \
 		ir/tv/Makefile ir/common/Makefile ir/ident/Makefile ir/ir/Makefile \
-		ir/tr/Makefile testprograms/Makefile"
+		ir/ana/Makefile ir/tr/Makefile testprograms/Makefile"
 
 
 

@@ -21,7 +21,7 @@ exec_prefix := @exec_prefix@
 bindir = $(exec_prefix)/bin
 datadir = $(prefix)/lib
 
-subdirs := ir ir/adt ir/debug ir/tv ir/common ir/ident ir/ir ir/tr
+subdirs := ir ir/adt ir/debug ir/tv ir/common ir/ident ir/ir ir/tr ir/ana
 
 SOURCES := Makefile.in MakeRules.in MakeTargets\
 	   aclocal.m4 config.h.in\
