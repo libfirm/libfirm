@@ -82,12 +82,30 @@ dnl ========================
 
 AC_HEADER_STDC
 
+dnl check for the math header file
+
+AC_CHECK_HEADERS(math.h, ac_math_headers="yes", ac_math_headers="no")
+if test "$ac_math_headers" != yes; then
+  dnl math header not found.
+  AC_MSG_ERROR("math header file not found")
+fi
+
+
 dnl check for the gnu multiprecission (gmp) header file
 
 AC_CHECK_HEADERS(gmp.h, ac_gmp_headers="yes", ac_gmp_headers="no")
 if test "$ac_gmp_headers" != yes; then
   dnl gmp header not found.
   AC_MSG_ERROR("GNU multiprecission gmp header file not found")
+fi
+
+
+dnl check for the obstack header file
+
+AC_CHECK_HEADERS(obstack.h, ac_obstack_headers="yes", ac_obstack_headers="no")
+if test "$ac_obstack_headers" != yes; then
+  dnl obstack header not found.
+  AC_MSG_ERROR("obstack header file not found")
 fi
 
 
@@ -99,8 +117,14 @@ dnl check for the gnu multiprecission (gmp) library
 AC_CHECK_LIB(gmp, main, ac_gmp_library="yes", ac_gmp_library="no")
 if test "$ac_gmp_library" != yes; then
   dnl gmp library not found.
-  echo $ac_gmp_library
   AC_MSG_ERROR("GNU multiprecission gmp library not found")
+fi
+
+
+AC_CHECK_LIB(m, main, ac_m_library="yes", ac_m_library="no")
+if test "$ac_m_library" != yes; then
+  dnl std math library not found.
+  AC_MSG_ERROR("standard math library not found")
 fi
 
 
@@ -110,6 +134,12 @@ dnl ==============================================================
 
 dnl Checks for library functions.
 dnl =============================
+
+dnl check for strerror
+
+AC_CHECK_FUNC(strerror,,
+  AC_MSG_ERROR("need strerror function")
+)
 
 
 dnl Error messaging

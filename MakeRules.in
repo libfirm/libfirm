@@ -7,6 +7,8 @@
 
 VPATH = $(srcdir)
 
+SHELL = @CONFIG_SHELL@
+
 CC = @CC@
 CFLAGS := @CFLAGS@
 CPPFLAGS := -I. -I$(topdir) -I$(srcdir) -I$(top_srcdir) @CPPFLAGS@
