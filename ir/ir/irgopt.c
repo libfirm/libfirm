@@ -40,6 +40,7 @@
 
 #include "irflag_t.h"
 #include "irhooks.h"
+#include "iredges_t.h"
 
 /* Defined in iropt.c */
 pset *new_identities (void);
