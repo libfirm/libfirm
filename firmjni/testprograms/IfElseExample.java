@@ -29,8 +29,9 @@ class IfElseExample {
 
 	System.out.println("\nCreating an IR graph: IfElseExample...");
 
-  /* init library: Java did not support the callback, so ALWAYS use 0 here */
+	/* init library */
 	Firm.initFirm(0);
+	Dbginfo.dbgInit();
 
 	/** Build type information for the compilation unit. **/
 

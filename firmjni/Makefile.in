@@ -33,13 +33,13 @@ CLASSFILES = $(MEMBERS:.m=.class)
 CPPFLAGS = 	-I$(top_srcdir)/ir/ir  -I$(top_srcdir)/ir/common  	\
 		-I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/tr  	\
 	        -I$(top_srcdir)/ir/tv -I$(top_srcdir)/ir/debug 		\
-	        -I$(top_srcdir)/ir/ana -I$(top_srcdir)/ir/st @CPPFLAGS@ \
-		-D_SIZE_T_
+	        -I$(top_srcdir)/ir/ana -I$(top_srcdir)/ir/st @CPPFLAGS@
 
 LDFLAGS += $(topdir)
 
 FIRM_HEADERS=$(notdir $(FIRM_PATH_HEADERS))
 MEMBERS=$(subst .h,.m,$(shell echo $(FIRM_HEADERS)|$(SHELL_TOUPPER)))
+MEMBERS += $(IMPL_MEMBERS)
 
 # How to pass function pointers? Therefore removed.
 # irgwalk.h typewalk.h
@@ -48,7 +48,7 @@ MEMBERS=$(subst .h,.m,$(shell echo $(FIRM_HEADERS)|$(SHELL_TOUPPER)))
 #      Irgwalk.m Typewalk.m
 #
 FIRM_PATH_HEADERS=common/firm.h common/firm_common.h \
-	debug/dbginfo.h ident/ident.h tv/tv.h \
+	ident/ident.h tv/tv.h \
 	tr/type.h tr/entity.h tr/type_or_entity.h tr/tpop.h tr/mangle.h \
 	ir/irprog.h ir/irgraph.h ir/irnode.h ir/irmode.h ir/irop.h \
 	ir/ircons.h ir/ircgcons.h ir/irflag.h ir/irvrfy.h ir/irdump.h \
@@ -56,6 +56,9 @@ FIRM_PATH_HEADERS=common/firm.h common/firm_common.h \
 	ana/irouts.h ana/irdom.h ana/irloop.h ana/cgana.h \
 	ir/irgmod.h tr/typegmod.h
 FIRM_SOURCE_DIR_HEADERS=$(addprefix $(SOURCE_DIR)/,$(FIRM_HEADERS))
+
+# hand implemented members
+IMPL_MEMBERS = Dbginfo.m
 
 # The directory containing crecoder.jar and, for now,
 # remove_cpp_comands.perl
@@ -76,7 +79,7 @@ classfiles: $(CLASSFILES)
 javafiles: $(JAVAFILES)
 
 %.class: %.java
-	javac $<
+	javac -classpath .. $<
 
 # javah renames these files.  the jnibuilder doesn't anticipate this
 # and generates #includes with the original names.
@@ -87,6 +90,12 @@ Firm_common.h: Firm_common.class
 Type_or_entity.h: Type_or_entity.class
 	ln -sf Type_0005for_0005fentity.h Type_or_entity.h
 	javah -classpath $(topdir) -o $@ $(PACKAGENAME).$(<:.class=)
+
+
+Dbginfo.java:
+	cp $(srcdir)/Dbginfo.java .
+	cp $(srcdir)/Dbginfo.c .
+
 
 %.h:	%.class
 	javah -classpath $(topdir) -o $@ $(PACKAGENAME).$(<:.class=)
@@ -147,5 +156,8 @@ $(FIRM_HEADERS):$(FIRM_SOURCE_DIR_HEADERS) $(SOURCE_DIR)/firm_typedefs.h
 
 H_FROM_JAVA=$(subst .java,.h,$(shell echo $@|$(SHELL_TOLOWER)))
 
-%.java: $(FIRM_HEADERS)
+%.java: $(FIRM_SOURCE_DIR_HEADERS) $(SOURCE_DIR)/firm_typedefs.h
+	gcc $(CPPFLAGS) -E -C -P $(SOURCE_DIR)/$(H_FROM_JAVA) -o $(H_FROM_JAVA)
 	env CLASSPATH=$(FIRM_JNI_TOOLS_DIR)/crecoder.jar:$$CLASSPATH java crecoder/tools/jniBuilder/BuildJNI $(H_FROM_JAVA);\
+	rm $(H_FROM_JAVA);
+# remove the patched header so that further compilation finds the proper firm headers
