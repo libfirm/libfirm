@@ -1971,7 +1971,7 @@ dump_ir_block_graph_w_types (ir_graph *irg, const char *suffix)
 static void
 dump_block_to_cfg(ir_node *block, void *env) {
   FILE *F = env;
-  int i;
+  int i, fl;
   ir_node *pred;
 
   if (is_Block(block)) {
@@ -1988,12 +1988,29 @@ dump_block_to_cfg(ir_node *block, void *env) {
     fprintf (F, "\" ");
     fprintf(F, "info1:\"");
     if (dump_dominator_information_flag)
-      fprintf(F, "info1:\"dom depth %d\n", get_Block_dom_depth(block));
+      fprintf(F, "dom depth %d\n", get_Block_dom_depth(block));
+
+    /* show arity and possible Bad predecessors of the block */
+    fprintf(F, "arity: %d\n", get_Block_n_cfgpreds(block));
+    for (fl = i = 0; i < get_Block_n_cfgpreds(block); ++i) {
+      ir_node *pred = get_Block_cfgpred(block, i);
+      if (is_Bad(pred)) {
+	if (! fl)
+	  fprintf(F, "Bad pred at pos: ");
+	fprintf(F, "%d ", i);
+	fl = 1;
+      }
+    }
+    if (fl)
+      fprintf(F, "\n");
+
     fprintf (F, "\"");  /* closing quote of info */
 
     if ((block == get_irg_start_block(get_irn_irg(block))) ||
 	(block == get_irg_end_block(get_irn_irg(block)))     )
       fprintf(F, " color:blue ");
+    else if (fl)
+      fprintf(F, " color:yellow ");
 
     fprintf (F, "}\n");
     /* Dump the edges */
