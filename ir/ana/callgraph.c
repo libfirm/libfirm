@@ -1118,7 +1118,7 @@ static void compute_rec_depth (ir_graph *irg, void *env) {
 
 
 /* ----------------------------------------------------------------------------------- */
-/* Another algorithm to compute recursion nesting depth                                */
+/* Another algorithm to compute the execution freqency of methods ignoring recursions. */
 /* Walk the callgraph.  Ignore backedges.  Use sum of execution freqencies of Call     */
 /* nodes to evaluate a callgraph edge.                                                 */
 /* ----------------------------------------------------------------------------------- */

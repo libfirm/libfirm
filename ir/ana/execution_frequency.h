@@ -22,26 +22,41 @@
  * We assume the start block of a procedure is executed once.  Based on this we
  * compute the execution freqency of all blocks.
  *
- *
+ * The computation of the freqencies depends on the count of exception control
+ * flow computed during the interval analysis.  The interval analysis again
+ * depends on stuff computed here.
  */
 
 #include "irnode.h"
 #include "irgraph.h"
 
+/* A proj from a Cond that goes to an exception handler. */
+int is_fragile_Proj(ir_node *n);
 
 /** Returns the number of times the block/region is executed according to
- *  our estimate. */
-double get_irn_exec_freq(ir_node *n);
+ *  our estimate. Gives a number relative to the Start node of the procedure
+ *  the block is in, which is weighted with 1. */
+double get_irn_exec_freq   (ir_node *n);
 double get_Block_exec_freq (ir_node *b);
 double get_region_exec_freq(void *reg);
 
 /** Compute the execution frequency for all blocks in the given
  *  graph.
  *
- * @param irg                  The graph to be analyzed.
- * @param default_loop_weight  The default number of executions of a loop.
+ * @param irg                   The graph to be analyzed.
+ * @param default_loop_weight   The default number of executions of a loop.
+ * @param exception_probability The probability that a fragile operation causes an exception.
+ *
+ * Uses link field.
  */
 void compute_execution_frequency(ir_graph *irg, int default_loop_weight, double exception_probability);
+
+/** Compute the execution frequency for all graphs.
+ *
+ * @param default_loop_weight   The default number of executions of a loop.
+ * @param exception_probability The probability that a fragile operation causes an exception.
+ *
+ */
 void compute_execution_frequencies(int default_loop_weight, double exception_probability);
 
 /** Free occupied memory, reset. */

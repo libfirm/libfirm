@@ -1,3 +1,4 @@
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -7,7 +8,7 @@
 #endif
 
 #include "interval_analysis.h"
-
+#include "execution_frequency.h"
 #include "firm_common_t.h"
 #include "set.h"
 #include "array.h"
@@ -71,7 +72,7 @@ int get_region_n_ins(void *region) {
 
 void *get_region_in(void *region, int pos) {
   assert(0 <= pos && pos < get_region_n_ins(region));
-  return (get_region_attr(region)->in_array)[pos];
+  return ((get_region_attr(region)->in_array)[pos]);
 }
 
 void add_region_in (void *region, void *in) {
@@ -93,7 +94,7 @@ void inc_region_n_exc_outs(void *region) {
 
 void *get_loop_cfop(void *region, int pos) {
   assert(0 <= pos && pos < get_region_n_ins(region));
-  return (get_region_attr(region)->op_array)[pos];
+  return ((get_region_attr(region)->op_array)[pos]);
 }
 
 void add_loop_cfop (void *region, void *cfop) {
@@ -102,7 +103,8 @@ void add_loop_cfop (void *region, void *cfop) {
 }
 
 static INLINE void exc_outs(void *reg, ir_node *cfop) {
-  if (is_fragile_op(cfop)) inc_region_n_exc_outs(reg);
+  if (is_fragile_op(cfop) || (is_fragile_Proj(cfop)))
+    inc_region_n_exc_outs(reg);
 }
 
 /*------------------------------------------------------------------*/
@@ -235,8 +237,16 @@ static void construct_interval_block(ir_node *b, ir_loop *l) {
       continue;
     }
 
-    cfop = skip_Proj(get_Block_cfgpred(b, i));
-    pred = get_nodes_block(cfop);
+    cfop = get_Block_cfgpred(b, i);
+    if (is_Proj(cfop)) {
+      if (get_irn_op(get_Proj_pred(cfop)) != op_Cond) {
+	cfop = skip_Proj(cfop);
+      } else {
+	assert(get_nodes_block(cfop) == get_nodes_block(skip_Proj(cfop)));
+      }
+    }
+
+    pred = skip_Proj(get_nodes_block(cfop));
     /* We want nice blocks. */
     assert(   get_irn_op(pred) != op_Bad
            && get_irn_op(skip_Proj(get_Block_cfgpred(b, i))) != op_Bad);

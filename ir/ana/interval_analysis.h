@@ -17,13 +17,14 @@
  *
  *  @author Goetz Lindenmaier
  *
- *  The analysis is based on the control flow looptree.  An intervall are basically
- *  all nodes in a single ir_loop entry, i.e., basic blocks and inner loop nodes.
- *  The analysis computes a new set of edges that link all nodes of a loop to an
- *  acyclic graph.
+ *  The analysis is based on the control flow looptree.  An intervall
+ *  are basically all nodes in a single ir_loop entry, i.e., basic
+ *  blocks and inner loop nodes.  The analysis computes a new set of
+ *  edges that link all nodes of a loop to an acyclic graph.
  *
- *
- *
+ *  The interval analysis counts the number of exception control flow
+ *  operations leaving a block.  This depends on stuff computed in
+ *  execution_freqencies.
  */
 
 #ifndef _INTERVAL_ANALYSIS_H_
@@ -47,6 +48,11 @@ void  add_region_in   (void *region, void *in);
  *  This number is useful for evaluation of execution frequencies.
  */
 int get_region_n_outs(void *region);
+
+/** The number of exception out edges of a region.
+ *
+ *  This number is useful for evaluation of execution frequencies.
+ */
 int get_region_n_exc_outs(void *region);
 
 /** The control flow operation corresponding to the loop-region in at

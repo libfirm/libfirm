@@ -126,7 +126,17 @@ void *get_loop_link (const ir_loop *loop);
 /* ------------------------------------------------------------------- */
 
 /** Constructs backedge information for irg in intraprocedural view.
- *  @returns Maximal depth of loop tree. */
+ *  @returns Maximal depth of loop tree.
+ *
+ *  ATTENTION:
+ *  One assumes, the Phi nodes in a block with a backedge have backedges
+ *  at the same positions as the block.  This is not the case, as
+ *  the scc algorithms does not respect the program semantics in this case.
+ *  Take a swap in a loop (t = i; i = j; j = t;)  This results in two Phi
+ *  nodes.  They form a cycle.  Once the scc algorithm deleted one of the
+ *  edges, the cycle is removed.  The second Phi node does not get a
+ *  backedge!
+ */
 /* @@@ Well, maybe construct_loop_information or analyze_loops ? */
 int construct_backedges(ir_graph *irg);
 
