@@ -787,6 +787,10 @@ static ir_node *equivalent_node_left_zero(ir_node *n)
 
 /**
  * Er, a "symmetic unop", ie op(op(n)) = n.
+ *
+ * @fixme -(-a) == a, but might overflow two times.
+ * We handle it anyway here but the better way would be a
+ * flag. This would be needed for Pascal for instance.
  */
 static ir_node *equivalent_node_symmetric_unop(ir_node *n)
 {
@@ -1173,14 +1177,18 @@ static ir_node *equivalent_node_Mux(ir_node *n)
 
 /**
  * Optimize -a CMP -b into b CMP a.
- * This works even for floating point
+ * This works only for for modes where unary Minus
+ * cannot Overflow.
+ * Note that two-complement integers can Overflow
+ * so it will NOT work.
  */
 static ir_node *equivalent_node_Cmp(ir_node *n)
 {
   ir_node *left  = get_Cmp_left(n);
   ir_node *right = get_Cmp_right(n);
 
-  if (get_irn_op(left) == op_Minus && get_irn_op(right) == op_Minus) {
+  if (get_irn_op(left) == op_Minus && get_irn_op(right) == op_Minus &&
+      !mode_overflow_on_unary_Minus(get_irn_mode(left))) {
     left  = get_Minus_op(left);
     right = get_Minus_op(right);
     set_Cmp_left(n, right);
@@ -1386,16 +1394,14 @@ static ir_node *transform_node_Sub(ir_node *n)
   n = transform_node_AddSub(n);
 
   mode = get_irn_mode(n);
-  if (mode_is_num(mode)) {
-    if (classify_Const(get_Sub_left(n)) == CNST_NULL) {
-      n = new_rd_Minus(
-            get_irn_dbg_info(n),
-            current_ir_graph,
-            get_nodes_block(n),
-            get_Sub_right(n),
-            mode);
-      DBG_OPT_ALGSIM0(oldn, n);
-    }
+  if (mode_is_num(mode) && (classify_Const(get_Sub_left(n)) == CNST_NULL)) {
+    n = new_rd_Minus(
+          get_irn_dbg_info(n),
+          current_ir_graph,
+          get_nodes_block(n),
+          get_Sub_right(n),
+          mode);
+    DBG_OPT_ALGSIM0(oldn, n);
   }
 
   return n;
@@ -1814,13 +1820,17 @@ static ir_node *transform_node_Proj(ir_node *proj)
         tv = get_Const_tarval(c);
 
         if (tv != tarval_bad) {
-          /* the following optimization is possibe on floating point values only:
+          /* the following optimization is possibe on modes without Overflow
+           * on Unary Minus or on == and !=:
            * -a CMP c  ==>  a swap(CMP) -c
            *
-           * Beware: for two-complement it is NOT true, see this:
+           * Beware: for two-complement Overflow may occur, so only == and != can
+           * be optimized, see this:
            * -MININT < 0 =/=> MININT > 0 !!!
            */
-          if (mode_is_float(mode) && get_opt_constant_folding() && get_irn_op(left) == op_Minus) {
+          if (get_opt_constant_folding() && get_irn_op(left) == op_Minus &&
+              (!mode_overflow_on_unary_Minus(mode) ||
+               (mode_is_int(mode) && (proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg)))) {
             left = get_Minus_op(left);
             tv = tarval_sub(get_tarval_null(mode), tv);
 
@@ -1832,8 +1842,10 @@ static ir_node *transform_node_Proj(ir_node *proj)
           if (mode_is_int(mode)) {
             /* Ne includes Unordered which is not possible on integers.
              * However, frontends often use this wrong, so fix it here */
-            if (proj_nr == pn_Cmp_Ne)
+            if (proj_nr == pn_Cmp_Ne) {
               proj_nr = pn_Cmp_Lg;
+              set_Proj_proj(proj, proj_nr);
+            }
 
             /* c > 0 : a < c  ==>  a <= (c-1)    a >= c  ==>  a > (c-1) */
             if ((proj_nr == pn_Cmp_Lt || proj_nr == pn_Cmp_Ge) &&
@@ -2246,7 +2258,7 @@ static ir_node *transform_node_End(ir_node *n) {
 }
 
 /**
- * Optimize a Mux into some simplier cases
+ * Optimize a Mux into some simplier cases.
  */
 static ir_node *transform_node_Mux(ir_node *n)
 {
@@ -2329,41 +2341,49 @@ static ir_node *transform_node_Mux(ir_node *n)
 
       if (mode_is_int(mode) && mode_is_signed(mode) &&
           get_mode_arithmetic(mode) == irma_twos_complement) {
+        ir_node *x = get_Cmp_left(cmp);
+
         /* the following optimization works only with signed integer two-complement mode */
 
-        if ((proj_nr == pn_Cmp_Lt || proj_nr == pn_Cmp_Le) &&
-            classify_Const(t) == CNST_ALL_ONE &&
-            classify_Const(f) == CNST_NULL) {
+        if (mode == get_irn_mode(x)) {
           /*
-           * Mux(x:T </<= 0, 0, -1) -> Shrs(x, sizeof_bits(T) - 1)
-           * Conditions:
-           * T must be signed.
+           * FIXME: this restriction is two rigid, as it would still
+           * work if mode(x) = Hs and mode == Is, but at least it removes
+           * all wrong cases.
            */
-          n = new_rd_Shrs(get_irn_dbg_info(n),
-                current_ir_graph, block, get_Cmp_left(cmp),
-                new_r_Const_long(current_ir_graph, block, mode_Iu,
-                  get_mode_size_bits(mode) - 1),
-                mode);
-          DBG_OPT_ALGSIM1(oldn, cmp, sel, n);
-          return n;
-        }
-        else if ((proj_nr == pn_Cmp_Gt || proj_nr == pn_Cmp_Ge) &&
-                 classify_Const(t) == CNST_ONE &&
-                 classify_Const(f) == CNST_NULL) {
-          /*
-           * Mux(x:T >/>= 0, 0, 1) -> Shr(-x, sizeof_bits(T) - 1)
-           * Conditions:
-           * T must be signed.
-           */
-          n = new_rd_Shr(get_irn_dbg_info(n),
-                current_ir_graph, block,
-                new_r_Minus(current_ir_graph, block,
-                  get_Cmp_left(cmp), mode),
-                new_r_Const_long(current_ir_graph, block, mode_Iu,
-                  get_mode_size_bits(mode) - 1),
-                mode);
-          DBG_OPT_ALGSIM1(oldn, cmp, sel, n);
-          return n;
+          if ((proj_nr == pn_Cmp_Lt || proj_nr == pn_Cmp_Le) &&
+              classify_Const(t) == CNST_ALL_ONE &&
+              classify_Const(f) == CNST_NULL) {
+            /*
+             * Mux(x:T </<= 0, 0, -1) -> Shrs(x, sizeof_bits(T) - 1)
+             * Conditions:
+             * T must be signed.
+             */
+            n = new_rd_Shrs(get_irn_dbg_info(n),
+                  current_ir_graph, block, x,
+                  new_r_Const_long(current_ir_graph, block, mode_Iu,
+                    get_mode_size_bits(mode) - 1),
+                  mode);
+            DBG_OPT_ALGSIM1(oldn, cmp, sel, n);
+            return n;
+          }
+          else if ((proj_nr == pn_Cmp_Gt || proj_nr == pn_Cmp_Ge) &&
+                   classify_Const(t) == CNST_ONE &&
+                   classify_Const(f) == CNST_NULL) {
+            /*
+             * Mux(x:T >/>= 0, 0, 1) -> Shr(-x, sizeof_bits(T) - 1)
+             * Conditions:
+             * T must be signed.
+             */
+            n = new_rd_Shr(get_irn_dbg_info(n),
+                  current_ir_graph, block,
+                  new_r_Minus(current_ir_graph, block, x, mode),
+                  new_r_Const_long(current_ir_graph, block, mode_Iu,
+                    get_mode_size_bits(mode) - 1),
+                  mode);
+            DBG_OPT_ALGSIM1(oldn, cmp, sel, n);
+            return n;
+          }
         }
       }
     }
