@@ -1557,13 +1557,22 @@ void create_abstract_proc_effect(module_t *module, proc_t *proc)
       /* @@@ TODO check args types - not in xml yet */
       /* create Firm stuff */
       create_abstract_firm(module, proc, fent);
-      break;
+      return;
     }
     else {
       fent = NULL;
     }
   }
-  assert(fent && "procedure not found in class");
+
+  /* fail */
+  fprintf(stderr,
+	  "method %s not found\nNo effects generated\nCandidates are:\n",
+	  get_id_str(proc -> proc_ident));
+  for(i = 0; i < num; i++) {
+    fent = get_class_member(class_typ, i);
+    fprintf(stderr, "%s\n", get_entity_name(fent));
+  }
+  //assert(fent && "procedure not found in class");
 }
 
 static
@@ -1625,6 +1634,9 @@ void create_abstraction(const char *filename)
 
 /*
  * $Log$
+ * Revision 1.14  2004/11/10 14:42:00  boesler
+ * be more helpful if a method does not exist
+ *
  * Revision 1.13  2004/11/05 14:00:53  liekweg
  * added raise
  *
