@@ -179,7 +179,7 @@ SET *
 (PMANGLE(new)) (MANGLEP(cmp_fun) cmp, int nslots)
 {
   int i;
-  SET *table = xmalloc (sizeof (SET));
+  SET *table = xmalloc(sizeof(*table));
 
   if (nslots > SEGMENT_SIZE * DIRECTORY_SIZE)
     nslots = DIRECTORY_SIZE;
