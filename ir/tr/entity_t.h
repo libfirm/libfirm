@@ -1,11 +1,14 @@
 /*10 2002/03/19 13:08:33
 *  Copyright (C) 1998 - 2000 by Universitaet Karlsruhe
 *  All rights reserved.
+*/
+
+/**
+* @file entity_t.h
 *
-*  Authors: Martin Trapp, Christian Schaefer,
-*           Goetz Lindenmaier
+* entity.h:  entities represent all program known objects.
 *
-*  entity.h:  entities represent all program known objects.
+* @author Martin Trapp, Christian Schaefer, Goetz Lindenmaier
 *
 *  An entity is the representation of program known objects in Firm.
 *  The primary concept of entities is to represent members of complex
@@ -23,7 +26,6 @@
 *  program is a universally defined class type "GlobalType".  The owner
 *  of procedures defined in the scope of an other procedure is the
 *  enclosing procedure.
-*
 */
 
 /* $Id$ */
@@ -33,6 +35,7 @@
 
 # include "entity.h"
 
+/** the type of an entity */
 struct entity {
   firm_kind kind;       /**< dynamic type tag for entity. */
   ident *name;          /**< name of this entity */
