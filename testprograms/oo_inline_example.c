@@ -290,7 +290,7 @@ main(void)
   }
 
   printf("Dumping graphs of all procedures and a type graph.\n");
-  turn_of_edge_labels();
+  turn_off_edge_labels();
   dump_all_ir_graphs(dump_ir_block_graph);
   dump_all_ir_graphs(dump_ir_block_graph_w_types);
   dump_all_types();

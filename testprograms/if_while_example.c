@@ -43,7 +43,7 @@ main(void)
   printf("\nCreating an IR graph: IF_WHILE_EXAMPLE...\n");
 
   init_firm ();
-  turn_of_edge_labels();
+  turn_off_edge_labels();
 
   set_optimize(1);
   set_opt_constant_folding(0);  /* so that the stupid tests are not optimized. */

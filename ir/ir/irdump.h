@@ -217,7 +217,7 @@ void dump_ir_block_graph_w_types (ir_graph *irg);
  */
 void dump_all_ir_graphs (void dump_graph(ir_graph*));
 
-/****m* irdump/turn_of_edge_labels
+/****m* irdump/turn_off_edge_labels
  *
  * NAME
  *   turn_off_edge_labels
