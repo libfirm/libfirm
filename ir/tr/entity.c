@@ -115,7 +115,7 @@ new_rd_entity (dbg_info *db, type *owner, ident *name, type *type)
 
   res->visibility = visibility_local;
   res->offset = -1;
-  if (is_method_type(type)) {
+  if (is_Method_type(type)) {
     symconst_symbol sym;
     sym.entity_p = res;
     res->variability = variability_constant;
@@ -133,7 +133,7 @@ new_rd_entity (dbg_info *db, type *owner, ident *name, type *type)
   res->volatility    = volatility_non_volatile;
   res->stickyness    = stickyness_unsticky;
   res->ld_name       = NULL;
-  if (is_class_type(owner)) {
+  if (is_Class_type(owner)) {
     res->overwrites    = NEW_ARR_F(entity *, 0);
     res->overwrittenby = NEW_ARR_F(entity *, 0);
   } else {
@@ -206,7 +206,7 @@ copy_entity_own (entity *old, type *new_owner) {
   newe = xmalloc(sizeof(*newe));
   memcpy (newe, old, sizeof(*newe));
   newe->owner = new_owner;
-  if (is_class_type(new_owner)) {
+  if (is_Class_type(new_owner)) {
     newe->overwrites    = NEW_ARR_F(entity *, 0);
     newe->overwrittenby = NEW_ARR_F(entity *, 0);
   }
@@ -229,7 +229,7 @@ copy_entity_name (entity *old, ident *new_name) {
   memcpy(newe, old, sizeof(*newe));
   newe->name = new_name;
   newe->ld_name = NULL;
-  if (is_class_type(newe->owner)) {
+  if (is_Class_type(newe->owner)) {
     newe->overwrites    = DUP_ARR_F(entity *, old->overwrites);
     newe->overwrittenby = DUP_ARR_F(entity *, old->overwrittenby);
   }
@@ -387,7 +387,7 @@ set_entity_variability (entity *ent, ent_variability var)
 {
   assert(ent && ent->kind == k_entity);
   if (var == variability_part_constant)
-    assert(is_class_type(ent->type) || is_struct_type(ent->type));
+    assert(is_Class_type(ent->type) || is_Struct_type(ent->type));
 
   if ((is_compound_type(ent->type)) &&
       (ent->variability == variability_uninitialized) && (var != variability_uninitialized)) {
@@ -395,7 +395,7 @@ set_entity_variability (entity *ent, ent_variability var)
     ent->values    = NEW_ARR_F(ir_node *, 0);
     ent->val_paths = NEW_ARR_F(compound_graph_path *, 0);
   }
-  if ((is_atomic_type(ent->type)) &&
+  if ((is_Atomic_type(ent->type)) &&
       (ent->variability == variability_uninitialized) && (var != variability_uninitialized)) {
     /* Set default constant value. */
     ent->value = new_rd_Unknown(get_const_code_irg(), get_type_mode(ent->type));
@@ -493,7 +493,7 @@ get_atomic_ent_value(entity *ent)
 void
 set_atomic_ent_value(entity *ent, ir_node *val) {
   assert(is_atomic_entity(ent) && (ent->variability != variability_uninitialized));
-  if (is_method_type(ent->type) && (ent->peculiarity == peculiarity_existent))
+  if (is_Method_type(ent->type) && (ent->peculiarity == peculiarity_existent))
     return;
   ent->value = val;
 }
@@ -619,7 +619,7 @@ int is_proper_compound_graph_path(compound_graph_path *gr, int pos) {
     owner = get_entity_type(node);
   }
   if (pos == get_compound_graph_path_length(gr))
-    if (!is_atomic_type(owner)) return false;
+    if (!is_Atomic_type(owner)) return false;
   return true;
 }
 
@@ -718,7 +718,7 @@ add_compound_ent_value(entity *ent, ir_node *val, entity *member) {
   assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
   path = new_compound_graph_path(owner_tp, 1);
   path->nodes[0] = member;
-  if (is_array_type(owner_tp)) {
+  if (is_Array_type(owner_tp)) {
     int max;
     int i;
 
@@ -783,7 +783,7 @@ set_array_entity_values(entity *ent, tarval **values, int num_vals) {
   ir_node *val;
   type *elttp = get_array_element_type(arrtp);
 
-  assert(is_array_type(arrtp));
+  assert(is_Array_type(arrtp));
   assert(get_array_n_dimensions(arrtp) == 1);
   /* One bound is sufficient, the number of constant fields makes the
      size. */
@@ -813,7 +813,7 @@ int  get_compound_ent_value_offset_bits(entity *ent, int pos) {
     entity *node = get_compound_graph_path_node(path, i);
     type *node_tp = get_entity_type(node);
     type *owner_tp = get_entity_owner(node);
-    if (is_array_type(owner_tp)) {
+    if (is_Array_type(owner_tp)) {
       int size  = get_type_size_bits(node_tp);
       int align = get_type_alignment_bits(node_tp);
       if (size < align)
@@ -903,7 +903,7 @@ void compute_compound_ent_array_indicees(entity *ent) {
   /* We can not compute the indexes if there is more than one array
      with an unknown bound.  For this remember the first entity that
      represents such an array. It could be ent. */
-  if (is_array_type(tp)) {
+  if (is_Array_type(tp)) {
     int dim = 0;
 
     assert(get_array_n_dimensions(tp) == 1 && "other not implemented");
@@ -920,7 +920,7 @@ void compute_compound_ent_array_indicees(entity *ent) {
       entity *node = get_compound_graph_path_node(path, j);
       type *elem_tp = get_entity_type(node);
 
-      if (is_array_type(elem_tp)) {
+      if (is_Array_type(elem_tp)) {
         int dim = 0;
         assert(get_array_n_dimensions(elem_tp) == 1 && "other not implemented");
         if (!has_array_lower_bound(elem_tp, dim) || !has_array_upper_bound(elem_tp, dim)) {
@@ -940,7 +940,7 @@ void compute_compound_ent_array_indicees(entity *ent) {
     for (j = 0; j < path_len; ++j) {
       entity *node = get_compound_graph_path_node(path, j);
       type *owner_tp = get_entity_owner(node);
-      if (is_array_type(owner_tp))
+      if (is_Array_type(owner_tp))
         set_compound_graph_path_array_index (path, j, get_next_index(node));
     }
   }
@@ -1048,21 +1048,21 @@ void
 
 void
 add_entity_overwrites(entity *ent, entity *overwritten) {
-  assert(ent && is_class_type(get_entity_owner(ent)));
+  assert(ent && is_Class_type(get_entity_owner(ent)));
   ARR_APP1(entity *, ent->overwrites, overwritten);
   ARR_APP1(entity *, overwritten->overwrittenby, ent);
 }
 
 int
 get_entity_n_overwrites(entity *ent) {
-  assert(ent && is_class_type(get_entity_owner(ent)));
+  assert(ent && is_Class_type(get_entity_owner(ent)));
   return (ARR_LEN(ent->overwrites));
 }
 
 int
 get_entity_overwrites_index(entity *ent, entity *overwritten) {
   int i;
-  assert(ent && is_class_type(get_entity_owner(ent)));
+  assert(ent && is_Class_type(get_entity_owner(ent)));
   for (i = 0; i < get_entity_n_overwrites(ent); i++)
     if (get_entity_overwrites(ent, i) == overwritten)
       return i;
@@ -1071,14 +1071,14 @@ get_entity_overwrites_index(entity *ent, entity *overwritten) {
 
 entity *
 get_entity_overwrites   (entity *ent, int pos) {
-  assert(ent && is_class_type(get_entity_owner(ent)));
+  assert(ent && is_Class_type(get_entity_owner(ent)));
   assert(pos < get_entity_n_overwrites(ent));
   return ent->overwrites[pos];
 }
 
 void
 set_entity_overwrites   (entity *ent, int pos, entity *overwritten) {
-  assert(ent && is_class_type(get_entity_owner(ent)));
+  assert(ent && is_Class_type(get_entity_owner(ent)));
   assert(pos < get_entity_n_overwrites(ent));
   ent->overwrites[pos] = overwritten;
 }
@@ -1086,7 +1086,7 @@ set_entity_overwrites   (entity *ent, int pos, entity *overwritten) {
 void
 remove_entity_overwrites(entity *ent, entity *overwritten) {
   int i;
-  assert(ent && is_class_type(get_entity_owner(ent)));
+  assert(ent && is_Class_type(get_entity_owner(ent)));
   for (i = 0; i < (ARR_LEN (ent->overwrites)); i++)
     if (ent->overwrites[i] == overwritten) {
       for(; i < (ARR_LEN (ent->overwrites))-1; i++)
@@ -1098,20 +1098,20 @@ remove_entity_overwrites(entity *ent, entity *overwritten) {
 
 void
 add_entity_overwrittenby   (entity *ent, entity *overwrites) {
-  assert(ent && is_class_type(get_entity_owner(ent)));
+  assert(ent && is_Class_type(get_entity_owner(ent)));
   add_entity_overwrites(overwrites, ent);
 }
 
 int
 get_entity_n_overwrittenby (entity *ent) {
-  assert(ent && is_class_type(get_entity_owner(ent)));
+  assert(ent && is_Class_type(get_entity_owner(ent)));
   return (ARR_LEN (ent->overwrittenby));
 }
 
 int
 get_entity_overwrittenby_index(entity *ent, entity *overwrites) {
   int i;
-  assert(ent && is_class_type(get_entity_owner(ent)));
+  assert(ent && is_Class_type(get_entity_owner(ent)));
   for (i = 0; i < get_entity_n_overwrittenby(ent); i++)
     if (get_entity_overwrittenby(ent, i) == overwrites)
       return i;
@@ -1120,21 +1120,21 @@ get_entity_overwrittenby_index(entity *ent, entity *overwrites) {
 
 entity *
 get_entity_overwrittenby   (entity *ent, int pos) {
-  assert(ent && is_class_type(get_entity_owner(ent)));
+  assert(ent && is_Class_type(get_entity_owner(ent)));
   assert(pos < get_entity_n_overwrittenby(ent));
   return ent->overwrittenby[pos];
 }
 
 void
 set_entity_overwrittenby   (entity *ent, int pos, entity *overwrites) {
-  assert(ent && is_class_type(get_entity_owner(ent)));
+  assert(ent && is_Class_type(get_entity_owner(ent)));
   assert(pos < get_entity_n_overwrittenby(ent));
   ent->overwrittenby[pos] = overwrites;
 }
 
 void    remove_entity_overwrittenby(entity *ent, entity *overwrites) {
   int i;
-  assert(ent  && is_class_type(get_entity_owner(ent)));
+  assert(ent  && is_Class_type(get_entity_owner(ent)));
   for (i = 0; i < (ARR_LEN (ent->overwrittenby)); i++)
     if (ent->overwrittenby[i] == overwrites) {
       for(; i < (ARR_LEN (ent->overwrittenby))-1; i++)
@@ -1162,7 +1162,7 @@ ir_graph *
 
 void
 set_entity_irg(entity *ent, ir_graph *irg) {
-  assert(ent && is_method_type(get_entity_type(ent)));
+  assert(ent && is_Method_type(get_entity_type(ent)));
   /* Wie kann man die Referenz auf einen IRG löschen, z.B. wenn die
    * Methode selbst nicht mehr aufgerufen werden kann, die Entität
    * aber erhalten bleiben soll?  Wandle die Entitaet in description oder
@@ -1184,15 +1184,15 @@ int
 int is_atomic_entity(entity *ent) {
   type* t = get_entity_type(ent);
   assert(ent && ent->kind == k_entity);
-  return (is_primitive_type(t) || is_pointer_type(t) ||
-      is_enumeration_type(t) || is_method_type(t));
+  return (is_Primitive_type(t) || is_Pointer_type(t) ||
+      is_Enumeration_type(t) || is_Method_type(t));
 }
 
 int is_compound_entity(entity *ent) {
   type* t = get_entity_type(ent);
   assert(ent && ent->kind == k_entity);
-  return (is_class_type(t) || is_struct_type(t) ||
-      is_array_type(t) || is_union_type(t));
+  return (is_Class_type(t) || is_Struct_type(t) ||
+      is_Array_type(t) || is_Union_type(t));
 }
 
 /**

@@ -225,7 +225,7 @@ static INLINE void
 __set_entity_peculiarity(entity *ent, peculiarity pec) {
   assert(ent && ent->kind == k_entity);
   /* @@@ why peculiarity only for methods? */
-  assert(is_method_type(ent->type));
+  assert(is_Method_type(ent->type));
 
   ent->peculiarity = pec;
 }
@@ -283,7 +283,7 @@ __set_entity_link(entity *ent, void *l) {
 static INLINE ir_graph *
 __get_entity_irg(const entity *ent) {
   assert(ent && ent->kind == k_entity);
-  assert(ent == unknown_entity || is_method_type(ent->type));
+  assert(ent == unknown_entity || is_Method_type(ent->type));
   if (!get_visit_pseudo_irgs() && ent->irg && is_pseudo_ir_graph(ent->irg))
     return NULL;
   return ent->irg;

@@ -481,7 +481,7 @@ void set_class_dfn (type *clss, int dfn);
 int  get_class_dfn (const type *clss);
 
 /** Returns true if a type is a class type. */
-int is_class_type(const type *clss);
+int is_Class_type(const type *clss);
 
 /** Returns true if low is subclass of high. */
 int is_subclass_of(type *low, type *high);
@@ -528,7 +528,7 @@ void    set_struct_member   (type *strct, int pos, entity *member);
 void    remove_struct_member (type *strct, entity *member);
 
 /** Returns true if a type is a struct type. */
-int     is_struct_type(const type *strct);
+int     is_Struct_type(const type *strct);
 
 /**
  * @page method_type	Representation of a method type
@@ -662,7 +662,7 @@ int get_method_first_variadic_param_index(const type *method);
 void set_method_first_variadic_param_index(type *method, int index);
 
 /** Returns true if a type is a method type. */
-int   is_method_type     (const type *method);
+int   is_Method_type     (const type *method);
 
 /**
  *   @page union_type	Representation of a union type.
@@ -697,7 +697,7 @@ void    set_union_member (type *uni, int pos, entity *member);
 void    remove_union_member (type *uni, entity *member);
 
 /** Returns true if a type is a union type. */
-int     is_union_type          (const type *uni);
+int     is_Union_type          (const type *uni);
 
 /**
  * @page array_type	Representation of an array type
@@ -774,7 +774,7 @@ void  set_array_element_entity (type *array, entity *ent);
 entity *get_array_element_entity (const type *array);
 
 /** Returns true if a type is an array type. */
-int    is_array_type(const type *array);
+int    is_Array_type(const type *array);
 
 /**
  * @page enumeration_type	Representation of an enumeration type
@@ -815,7 +815,7 @@ ident  *get_enumeration_nameid  (const type *enumeration, int pos);
 const char *get_enumeration_name(const type *enumeration, int pos);
 
 /** Returns true if a type is a enumeration type. */
-int     is_enumeration_type     (const type *enumeration);
+int     is_Enumeration_type     (const type *enumeration);
 
 /**
  * @page pointer_type	Representation of a pointer type
@@ -844,7 +844,7 @@ void  set_pointer_points_to_type (type *pointer, type *tp);
 type *get_pointer_points_to_type (type *pointer);
 
 /** Returns true if a type is a pointer type. */
-int   is_pointer_type            (const type *pointer);
+int   is_Pointer_type            (const type *pointer);
 
 /** Returns the first pointer type that has as points_to tp.
  *  Not efficient: O(#types).
@@ -865,7 +865,7 @@ type *new_type_primitive (ident *name, ir_mode *mode);
 type *new_d_type_primitive (ident *name, ir_mode *mode, dbg_info* db);
 
 /** Returns true if a type is a primitive type. */
-int  is_primitive_type  (const type *primitive);
+int  is_Primitive_type  (const type *primitive);
 
 
 /**
@@ -918,7 +918,7 @@ type *get_unknown_type(void);
  *  @param tp - any type
  *  @return true if type is primitive, pointer or enumeration
  */
-int is_atomic_type(const type *tp);
+int is_Atomic_type(const type *tp);
 
 /* --- Support for compound types --- */
 

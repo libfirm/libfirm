@@ -434,7 +434,7 @@ class_walk_s2s_2(type *tp,
   /* marked? */
   if (tp->visit >= type_visited) return;
 
-  assert(is_class_type(tp));
+  assert(is_Class_type(tp));
   /* Assure all supertypes are visited before */
   for (i=0; i < get_class_n_supertypes(tp); i++) {
     if (get_type_visited(get_class_supertype(tp, i)) < type_visited)
@@ -469,9 +469,9 @@ void class_walk_super2sub(
   ++type_visited;
   for (i = 0; i < n_types; i++) {
     tp = get_irp_type(i);
-    if (is_class_type(tp) &&
-	(get_class_n_supertypes(tp) == 0) &&
-	(tp->visit < type_visited))  {
+    if (is_Class_type(tp) &&
+	    (get_class_n_supertypes(tp) == 0) &&
+	    (tp->visit < type_visited))  {
       assert(!is_frame_type(tp));
       assert(tp != get_glob_type());
       class_walk_s2s_2(tp, pre, post, env);

@@ -152,7 +152,7 @@ static int constants_on_wrong_irg(entity *ent) {
     if (get_atomic_ent_value(ent))
       return constant_on_wrong_irg(get_atomic_ent_value(ent));
     else if (get_entity_visibility(ent) != visibility_external_allocated)
-      assert((is_class_type(get_entity_owner(ent)) &&
+      assert((is_Class_type(get_entity_owner(ent)) &&
           get_class_peculiarity(get_entity_owner(ent)) == peculiarity_description) &&
          "Value in constant atomic entity not set.");
   }
@@ -180,7 +180,7 @@ static int check_entity(entity *ent) {
   set_visit_pseudo_irgs(1);
   if ((get_entity_peculiarity(ent) == peculiarity_existent) &&
       (get_entity_visibility(ent) != visibility_external_allocated) &&
-      (is_method_type(get_entity_type(ent)))                &&
+      (is_Method_type(get_entity_type(ent)))                &&
       (!get_entity_irg(ent) || !(is_ir_graph(get_entity_irg(ent))))) {
     assert(0 && "Method ents with pec_exist must have an irg");
     return error_existent_entity_without_irg;

@@ -184,67 +184,67 @@ void init_type (void);
 
 extern unsigned long type_visited;
 
-static INLINE void __set_master_type_visited(unsigned long val) { type_visited = val; }
-static INLINE unsigned long __get_master_type_visited(void)     { return type_visited; }
-static INLINE void __inc_master_type_visited(void)              { type_visited++; }
+static INLINE void _set_master_type_visited(unsigned long val) { type_visited = val; }
+static INLINE unsigned long _get_master_type_visited(void)     { return type_visited; }
+static INLINE void _inc_master_type_visited(void)              { type_visited++; }
 
 static INLINE void *
-__get_type_link(const type *tp) {
+_get_type_link(const type *tp) {
   assert(tp && tp->kind == k_type);
   return(tp -> link);
 }
 
 static INLINE void
-__set_type_link(type *tp, void *l) {
+_set_type_link(type *tp, void *l) {
   assert(tp && tp->kind == k_type);
   tp -> link = l;
 }
 
 static INLINE const tp_op*
-__get_type_tpop(const type *tp) {
+_get_type_tpop(const type *tp) {
   assert(tp && tp->kind == k_type);
   return tp->type_op;
 }
 
 static INLINE ident*
-__get_type_tpop_nameid(const type *tp) {
+_get_type_tpop_nameid(const type *tp) {
   assert(tp && tp->kind == k_type);
   return get_tpop_ident(tp->type_op);
 }
 
 static INLINE tp_opcode
-__get_type_tpop_code(const type *tp) {
+_get_type_tpop_code(const type *tp) {
   assert(tp && tp->kind == k_type);
   return get_tpop_code(tp->type_op);
 }
 
 static INLINE ir_mode *
-__get_type_mode(const type *tp) {
+_get_type_mode(const type *tp) {
   assert(tp && tp->kind == k_type);
   return tp->mode;
 }
 
 static INLINE ident *
-__get_type_ident(const type *tp) {
+_get_type_ident(const type *tp) {
   assert(tp && tp->kind == k_type);
   return tp->name;
 }
 
 static INLINE void
-__set_type_ident(type *tp, ident* id) {
+_set_type_ident(type *tp, ident* id) {
   assert(tp && tp->kind == k_type);
   tp->name = id;
 }
 
 static INLINE int
-__get_type_size_bits(const type *tp) {
+_get_type_size_bits(const type *tp) {
   assert(tp && tp->kind == k_type);
   return tp->size;
 }
 
 static INLINE int
-__get_type_size_bytes(const type *tp) {
-  int size = __get_type_size_bits(tp);
+_get_type_size_bytes(const type *tp) {
+  int size = _get_type_size_bits(tp);
   if (size < 0)
     return -1;
   if ((size & 7) != 0) {
@@ -255,146 +255,146 @@ __get_type_size_bytes(const type *tp) {
 }
 
 static INLINE type_state
-__get_type_state(const type *tp) {
+_get_type_state(const type *tp) {
   assert(tp && tp->kind == k_type);
   return tp->state;
 }
 
 static INLINE unsigned long
-__get_type_visited(const type *tp) {
+_get_type_visited(const type *tp) {
   assert(tp && tp->kind == k_type);
   return tp->visit;
 }
 
 static INLINE void
-__set_type_visited(type *tp, unsigned long num) {
+_set_type_visited(type *tp, unsigned long num) {
   assert(tp && tp->kind == k_type);
   tp->visit = num;
 }
 
 static INLINE void
-__mark_type_visited(type *tp) {
+_mark_type_visited(type *tp) {
   assert(tp && tp->kind == k_type);
   assert(tp->visit < type_visited);
   tp->visit = type_visited;
 }
 
 static INLINE int
-__type_visited(const type *tp) {
+_type_visited(const type *tp) {
   assert(tp && tp->kind == k_type);
   return tp->visit >= type_visited;
 }
 
 static INLINE int
-__type_not_visited(const type *tp) {
+_type_not_visited(const type *tp) {
   assert(tp && tp->kind == k_type);
   return tp->visit  < type_visited;
 }
 
 static INLINE int
-__is_type(const void *thing) {
+_is_type(const void *thing) {
   return (get_kind(thing) == k_type);
 }
 
 static INLINE int
-__is_class_type(const type *clss) {
+_is_class_type(const type *clss) {
   assert(clss);
   return (clss->type_op == type_class);
 }
 
 static INLINE int
-__get_class_n_members (const type *clss) {
+_get_class_n_members (const type *clss) {
   assert(clss && (clss->type_op == type_class));
   return (ARR_LEN (clss->attr.ca.members));
 }
 
 static INLINE entity *
-__get_class_member   (const type *clss, int pos) {
+_get_class_member   (const type *clss, int pos) {
   assert(clss && (clss->type_op == type_class));
-  assert(pos >= 0 && pos < __get_class_n_members(clss));
+  assert(pos >= 0 && pos < _get_class_n_members(clss));
   return clss->attr.ca.members[pos];
 }
 
 static INLINE int
-__is_struct_type(const type *strct) {
+_is_struct_type(const type *strct) {
   assert(strct);
   return (strct->type_op == type_struct);
 }
 
 static INLINE int
-__is_method_type(const type *method) {
+_is_method_type(const type *method) {
   assert(method);
   return (method->type_op == type_method);
 }
 
 static INLINE int
-__is_union_type(const type *uni) {
+_is_union_type(const type *uni) {
   assert(uni);
   return (uni->type_op == type_union);
 }
 
 static INLINE int
-__is_array_type(const type *array) {
+_is_array_type(const type *array) {
   assert(array);
   return (array->type_op == type_array);
 }
 
 static INLINE int
-__is_enumeration_type(const type *enumeration) {
+_is_enumeration_type(const type *enumeration) {
   assert(enumeration);
   return (enumeration->type_op == type_enumeration);
 }
 
 static INLINE int
-__is_pointer_type(const type *pointer) {
+_is_pointer_type(const type *pointer) {
   assert(pointer);
   return (pointer->type_op == type_pointer);
 }
 
 /** Returns true if a type is a primitive type. */
 static INLINE int
-__is_primitive_type(const type *primitive) {
+_is_primitive_type(const type *primitive) {
   assert(primitive && primitive->kind == k_type);
   return (primitive->type_op == type_primitive);
 }
 
 static INLINE int
-__is_atomic_type(const type *tp) {
+_is_atomic_type(const type *tp) {
   assert(tp && tp->kind == k_type);
-  return (is_primitive_type(tp) || is_pointer_type(tp) ||
-      is_enumeration_type(tp));
+  return (_is_primitive_type(tp) || _is_pointer_type(tp) ||
+      _is_enumeration_type(tp));
 }
 
 
-#define set_master_type_visited(val)      __set_master_type_visited(val)
-#define get_master_type_visited()         __get_master_type_visited()
-#define inc_master_type_visited()         __inc_master_type_visited()
-#define get_type_link(tp)                 __get_type_link(tp)
-#define set_type_link(tp, l)              __set_type_link(tp, l)
-#define get_type_tpop(tp)                 __get_type_tpop(tp)
-#define get_type_tpop_nameid(tp)          __get_type_tpop_nameid(tp)
-#define get_type_tpop_code(tp)            __get_type_tpop_code(tp)
-#define get_type_mode(tp)                 __get_type_mode(tp)
-#define get_type_ident(tp)                __get_type_ident(tp)
-#define set_type_ident(tp, id)            __set_type_ident(tp, id)
-#define get_type_size(tp)                 __get_type_size(tp)
-#define get_type_state(tp)                __get_type_state(tp)
-#define get_type_visited(tp)              __get_type_visited(tp)
-#define set_type_visited(tp, num)         __set_type_visited(tp, num)
-#define mark_type_visited(tp)             __mark_type_visited(tp)
-#define type_visited(tp)                  __type_visited(tp)
-#define type_not_visited(tp)              __type_not_visited(tp)
-#define is_type(thing)                    __is_type(thing)
-#define is_class_type(clss)               __is_class_type(clss)
-#define get_class_n_members(clss)         __get_class_n_members(clss)
-#define get_class_member(clss, pos)       __get_class_member(clss, pos)
-#define is_struct_type(strct)             __is_struct_type(strct)
-#define is_method_type(method)            __is_method_type(method)
-#define is_union_type(uni)                __is_union_type(uni)
-#define is_array_type(array)              __is_array_type(array)
-#define is_enumeration_type(enumeration)  __is_enumeration_type(enumeration)
-#define is_pointer_type(pointer)          __is_pointer_type(pointer)
-#define is_primitive_type(primitive)      __is_primitive_type(primitive)
-#define is_atomic_type(tp)                __is_atomic_type(tp)
+#define set_master_type_visited(val)      _set_master_type_visited(val)
+#define get_master_type_visited()         _get_master_type_visited()
+#define inc_master_type_visited()         _inc_master_type_visited()
+#define get_type_link(tp)                 _get_type_link(tp)
+#define set_type_link(tp, l)              _set_type_link(tp, l)
+#define get_type_tpop(tp)                 _get_type_tpop(tp)
+#define get_type_tpop_nameid(tp)          _get_type_tpop_nameid(tp)
+#define get_type_tpop_code(tp)            _get_type_tpop_code(tp)
+#define get_type_mode(tp)                 _get_type_mode(tp)
+#define get_type_ident(tp)                _get_type_ident(tp)
+#define set_type_ident(tp, id)            _set_type_ident(tp, id)
+#define get_type_size(tp)                 _get_type_size(tp)
+#define get_type_state(tp)                _get_type_state(tp)
+#define get_type_visited(tp)              _get_type_visited(tp)
+#define set_type_visited(tp, num)         _set_type_visited(tp, num)
+#define mark_type_visited(tp)             _mark_type_visited(tp)
+#define type_visited(tp)                  _type_visited(tp)
+#define type_not_visited(tp)              _type_not_visited(tp)
+#define is_type(thing)                    _is_type(thing)
+#define is_Class_type(clss)               _is_class_type(clss)
+#define get_class_n_members(clss)         _get_class_n_members(clss)
+#define get_class_member(clss, pos)       _get_class_member(clss, pos)
+#define is_Struct_type(strct)             _is_struct_type(strct)
+#define is_Method_type(method)            _is_method_type(method)
+#define is_Union_type(uni)                _is_union_type(uni)
+#define is_Array_type(array)              _is_array_type(array)
+#define is_Enumeration_type(enumeration)  _is_enumeration_type(enumeration)
+#define is_Pointer_type(pointer)          _is_pointer_type(pointer)
+#define is_Primitive_type(primitive)      _is_primitive_type(primitive)
+#define is_Atomic_type(tp)                _is_atomic_type(tp)
 
 # endif /* _TYPE_T_H_ */

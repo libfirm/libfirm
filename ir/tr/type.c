@@ -98,9 +98,9 @@ void init_type(void) {
 
 unsigned long type_visited;
 
-void (set_master_type_visited)(unsigned long val) { __set_master_type_visited(val); }
-unsigned long (get_master_type_visited)(void)     { return __get_master_type_visited(); }
-void (inc_master_type_visited)(void)              { __inc_master_type_visited(); }
+void (set_master_type_visited)(unsigned long val) { _set_master_type_visited(val); }
+unsigned long (get_master_type_visited)(void)     { return _get_master_type_visited(); }
+void (inc_master_type_visited)(void)              { _inc_master_type_visited(); }
 
 
 type *
@@ -140,7 +140,7 @@ void        free_type(type *tp) {
   /* Free the attributes of the type. */
   free_type_attrs(tp);
   /* Free entities automatically allocated with the type */
-  if (is_array_type(tp))
+  if (is_Array_type(tp))
     free_entity(get_array_element_entity(tp));
   /* And now the type itself... */
   tp->kind = k_BAD;
@@ -178,20 +178,20 @@ void free_type_attrs(type *tp) {
 /* set/get the link field */
 void *(get_type_link)(const type *tp)
 {
-  return __get_type_link(tp);
+  return _get_type_link(tp);
 }
 
 void (set_type_link)(type *tp, void *l)
 {
-  __set_type_link(tp, l);
+  _set_type_link(tp, l);
 }
 
 const tp_op *(get_type_tpop)(const type *tp) {
-  return __get_type_tpop(tp);
+  return _get_type_tpop(tp);
 }
 
 ident *(get_type_tpop_nameid)(const type *tp) {
-  return __get_type_tpop_nameid(tp);
+  return _get_type_tpop_nameid(tp);
 }
 
 const char* get_type_tpop_name(const type *tp) {
@@ -200,11 +200,11 @@ const char* get_type_tpop_name(const type *tp) {
 }
 
 tp_opcode (get_type_tpop_code)(const type *tp) {
-  return __get_type_tpop_code(tp);
+  return _get_type_tpop_code(tp);
 }
 
 ir_mode *(get_type_mode)(const type *tp) {
-  return __get_type_mode(tp);
+  return _get_type_mode(tp);
 }
 
 void        set_type_mode(type *tp, ir_mode* m) {
@@ -244,11 +244,11 @@ void        set_type_mode(type *tp, ir_mode* m) {
 }
 
 ident *(get_type_ident)(const type *tp) {
-  return __get_type_ident(tp);
+  return _get_type_ident(tp);
 }
 
 void (set_type_ident)(type *tp, ident* id) {
-  __set_type_ident(tp, id);
+  _set_type_ident(tp, id);
 }
 
 /* Outputs a unique number for this node */
@@ -267,11 +267,11 @@ const char* get_type_name(const type *tp) {
 }
 
 int (get_type_size_bytes)(const type *tp) {
-  return __get_type_size_bytes(tp);
+  return _get_type_size_bytes(tp);
 }
 
 int (get_type_size_bits)(const type *tp) {
-  return __get_type_size_bits(tp);
+  return _get_type_size_bits(tp);
 }
 
 void
@@ -311,7 +311,7 @@ int get_type_alignment_bits(type *tp) {
   /* alignment NOT set calculate it "on demand" */
   if (tp->mode)
     align = get_mode_size_bits(tp->mode);
-  else if (is_array_type(tp))
+  else if (is_Array_type(tp))
     align = get_type_alignment_bits(get_array_element_type(tp));
   else if (is_compound_type(tp)) {
     int i, n = get_compound_n_members(tp);
@@ -325,7 +325,7 @@ int get_type_alignment_bits(type *tp) {
         align = a;
     }
   }
-  else if (is_method_type(tp))
+  else if (is_Method_type(tp))
     align = 0;
 
   /* write back */
@@ -349,7 +349,7 @@ set_type_alignment_bytes(type *tp, int align) {
 }
 
 type_state (get_type_state)(const type *tp) {
-  return __get_type_state(tp);
+  return _get_type_state(tp);
 }
 
 void
@@ -374,7 +374,7 @@ set_type_state(type *tp, type_state state) {
           { DDMT(tp); DDME(get_class_member(tp, i)); }
         assert(get_entity_offset_bits(get_class_member(tp, i)) > -1);
             /* TR ??
-        assert(is_method_type(get_entity_type(get_class_member(tp, i))) ||
+        assert(is_Method_type(get_entity_type(get_class_member(tp, i))) ||
            (get_entity_allocation(get_class_member(tp, i)) == allocation_automatic));
                    */
       }
@@ -409,29 +409,29 @@ set_type_state(type *tp, type_state state) {
 }
 
 unsigned long (get_type_visited)(const type *tp) {
-  return __get_type_visited(tp);
+  return _get_type_visited(tp);
 }
 
 void (set_type_visited)(type *tp, unsigned long num) {
-  __set_type_visited(tp, num);
+  _set_type_visited(tp, num);
 }
 
 /* Sets visited field in type to type_visited. */
 void (mark_type_visited)(type *tp) {
-  __mark_type_visited(tp);
+  _mark_type_visited(tp);
 }
 
 /* @@@ name clash with master flag
 int (type_visited)(const type *tp) {
-  return __type_visited(tp);
+  return _type_visited(tp);
 }*/
 
 int (type_not_visited)(const type *tp) {
-  return __type_not_visited(tp);
+  return _type_not_visited(tp);
 }
 
 int (is_type)(const void *thing) {
-  return __is_type(thing);
+  return _is_type(thing);
 }
 
 /* Checks whether two types are structural equal.*/
@@ -740,7 +740,7 @@ void    add_class_member   (type *clss, entity *member) {
 }
 
 int     (get_class_n_members) (const type *clss) {
-  return __get_class_n_members(clss);
+  return _get_class_n_members(clss);
 }
 
 int     get_class_member_index(type *clss, entity *mem) {
@@ -753,7 +753,7 @@ int     get_class_member_index(type *clss, entity *mem) {
 }
 
 entity *(get_class_member)   (const type *clss, int pos) {
-  return __get_class_member(clss, pos);
+  return _get_class_member(clss, pos);
 }
 
 entity *get_class_member_by_name(type *clss, ident *name) {
@@ -910,14 +910,14 @@ int get_class_dfn (const type *clss)
 }
 
 /* typecheck */
-int (is_class_type)(const type *clss) {
-  return __is_class_type(clss);
+int (is_Class_type)(const type *clss) {
+  return _is_class_type(clss);
 }
 
 /* Returns true if low is subclass of high. */
 int is_subclass_of(type *low, type *high) {
   int i;
-  assert(is_class_type(low) && is_class_type(high));
+  assert(is_Class_type(low) && is_Class_type(high));
   if (low == high) return 1;
   /* depth first search from high downwards. */
   for (i = 0; i < get_class_n_subtypes(high); i++) {
@@ -1003,8 +1003,8 @@ void    remove_struct_member(type *strct, entity *member) {
 }
 
 /* typecheck */
-int (is_struct_type)(const type *strct) {
-  return __is_struct_type(strct);
+int (is_Struct_type)(const type *strct) {
+  return _is_struct_type(strct);
 }
 
 /*******************************************************************/
@@ -1236,8 +1236,8 @@ void set_method_first_variadic_param_index(type *method, int index)
 }
 
 /* typecheck */
-int (is_method_type)(const type *method) {
-  return __is_method_type(method);
+int (is_Method_type)(const type *method) {
+  return _is_method_type(method);
 }
 
 /*-----------------------------------------------------------------*/
@@ -1331,8 +1331,8 @@ void   remove_union_member(type *uni, entity *member) {
 }
 
 /* typecheck */
-int (is_union_type)(const type *uni) {
-  return __is_union_type(uni);
+int (is_Union_type)(const type *uni) {
+  return _is_union_type(uni);
 }
 
 /*-----------------------------------------------------------------*/
@@ -1346,7 +1346,7 @@ type *new_type_array         (ident *name, int n_dimensions,
   type *res;
   int i;
   ir_graph *rem = current_ir_graph;
-  assert(!is_method_type(element_type));
+  assert(!is_Method_type(element_type));
 
   res = new_type(type_array, NULL, name);
   res->attr.aa.n_dimensions = n_dimensions;
@@ -1479,7 +1479,7 @@ int  get_array_order (const type *array, int dimension) {
 
 void  set_array_element_type (type *array, type *tp) {
   assert(array && (array->type_op == type_array));
-  assert(!is_method_type(tp));
+  assert(!is_Method_type(tp));
   array->attr.aa.element_type = tp;
 }
 type *get_array_element_type (type *array) {
@@ -1499,8 +1499,8 @@ entity *get_array_element_entity (const type *array) {
 }
 
 /* typecheck */
-int (is_array_type)(const type *array) {
-  return __is_array_type(array);
+int (is_Array_type)(const type *array) {
+  return _is_array_type(array);
 }
 
 /*-----------------------------------------------------------------*/
@@ -1563,8 +1563,8 @@ const char *get_enumeration_name(const type *enumeration, int pos) {
 }
 
 /* typecheck */
-int (is_enumeration_type)(const type *enumeration) {
-  return __is_enumeration_type(enumeration);
+int (is_Enumeration_type)(const type *enumeration) {
+  return _is_enumeration_type(enumeration);
 }
 
 /*-----------------------------------------------------------------*/
@@ -1604,8 +1604,8 @@ type *get_pointer_points_to_type (type *pointer) {
 }
 
 /* typecheck */
-int (is_pointer_type)(const type *pointer) {
-  return __is_pointer_type(pointer);
+int (is_Pointer_type)(const type *pointer) {
+  return _is_pointer_type(pointer);
 }
 
 /* Returns the first pointer type that has as points_to tp.
@@ -1615,7 +1615,7 @@ type *find_pointer_type_to_type (type *tp) {
   int i;
   for (i = 0; i < get_irp_n_types(); ++i) {
     type *found = get_irp_type(i);
-    if (is_pointer_type(found) && get_pointer_points_to_type(found) == tp)
+    if (is_Pointer_type(found) && get_pointer_points_to_type(found) == tp)
       return (found);
   }
   return firm_unknown_type;
@@ -1649,8 +1649,8 @@ void free_primitive_attrs (type *primitive) {
 }
 
 /* typecheck */
-int (is_primitive_type)(const type *primitive) {
-  return __is_primitive_type(primitive);
+int (is_Primitive_type)(const type *primitive) {
+  return _is_primitive_type(primitive);
 }
 
 /*-----------------------------------------------------------------*/
@@ -1658,8 +1658,8 @@ int (is_primitive_type)(const type *primitive) {
 /*-----------------------------------------------------------------*/
 
 
-int (is_atomic_type)(const type *tp) {
-  return __is_atomic_type(tp);
+int (is_Atomic_type)(const type *tp) {
+  return _is_atomic_type(tp);
 }
 
 /*
@@ -1669,11 +1669,11 @@ int get_compound_n_members(const type *tp)
 {
   int res = 0;
 
-  if (is_struct_type(tp))
+  if (is_Struct_type(tp))
     res = get_struct_n_members(tp);
-  else if (is_class_type(tp))
+  else if (is_Class_type(tp))
     res = get_class_n_members(tp);
-  else if (is_union_type(tp))
+  else if (is_Union_type(tp))
     res = get_union_n_members(tp);
   else
     assert(0 && "need struct, union or class for member count");
@@ -1688,11 +1688,11 @@ entity *get_compound_member(const type *tp, int pos)
 {
   entity *res;
 
-  if (is_struct_type(tp))
+  if (is_Struct_type(tp))
     res = get_struct_member(tp, pos);
-  else if (is_class_type(tp))
+  else if (is_Class_type(tp))
     res = get_class_member(tp, pos);
-  else if (is_union_type(tp))
+  else if (is_Union_type(tp))
     res = get_union_member(tp, pos);
   else
   {
