@@ -105,7 +105,7 @@ struct SET {
 
 #ifdef STATS
 
-static void
+void
 MANGLEP(stats) (SET *table)
 {
   int nfree = 0;
@@ -208,7 +208,7 @@ SET *
 }
 
 
-static void
+void
 PMANGLE(del) (SET *table)
 {
 #ifdef DEBUG
@@ -233,7 +233,7 @@ iter_step (SET *table)
 }
 
 
-static void *
+void *
 MANGLEP(first) (SET *table)
 {
   assert (!table->iter_tail);
@@ -248,7 +248,7 @@ MANGLEP(first) (SET *table)
 }
 
 
-static void *
+void *
 MANGLEP(next) (SET *table)
 {
   assert (table->iter_tail);
@@ -263,7 +263,7 @@ MANGLEP(next) (SET *table)
   return table->iter_tail->entry.dptr;
 }
 
-static void
+void
 MANGLEP(break) (SET *table)
 {
   assert (table->iter_tail);
