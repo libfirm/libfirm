@@ -669,9 +669,12 @@ dump_type_info (type_or_ent *tore, void *env) {
                 ENT_OWN_EDGE_ATTR "}\n", ent, get_entity_owner(ent));*/
       xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
                 ENT_TYPE_EDGE_ATTR "}\n", ent, get_entity_type(ent));
-      for(i = 0; i < get_entity_n_overwrites(ent); i++)
-	xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-		  ENT_OVERWRITES_EDGE_ATTR "}\n", ent, get_entity_overwrites(ent, i));
+      if(is_class_type(get_entity_owner(ent))) {
+	for(i = 0; i < get_entity_n_overwrites(ent); i++)
+	  xfprintf (F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
+		    ENT_OVERWRITES_EDGE_ATTR "}\n",
+		    ent, get_entity_overwrites(ent, i));
+      }
       /* attached subgraphs */
       if (const_entities && (get_entity_variability(ent) != uninitialized)) {
 	if (is_atomic_entity(ent)) {
