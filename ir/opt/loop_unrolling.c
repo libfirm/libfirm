@@ -877,11 +877,11 @@ static void do_loop_unroll(ir_node *n, void *env)
   if ((cmp_typ == pn_Cmp_Le || cmp_typ == pn_Cmp_Ge) && (iter_end % iter_increment == 0))
     iter_number ++;
 
-  if (iter_number & 3 == 0)
+  if ((iter_number & 3) == 0)
     unroll_factor = 4;
-  else if (iter_number % 3 == 0)
+  else if ((iter_number % 3) == 0)
     unroll_factor = 3;
-  else if (iter_number & 1 == 0)
+  else if ((iter_number & 1) == 0)
     unroll_factor = 2;
   else return;
 
