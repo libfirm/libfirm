@@ -69,6 +69,9 @@ typedef enum {
    */
   OPT_NORMALIZE                          = 0x00001000,
 
+  /** Remove tail-recursion. */
+  OPT_TAIL_RECURSION                     = 0x00002000,
+
   /** Turn off all optimizations. */
   OPT_OPTIMIZED                          = 0x40000000,
 } libfirm_opts_t;
@@ -155,6 +158,12 @@ static INLINE int get_opt_dyn_meth_dispatch(void)
 static INLINE int get_opt_normalize(void)
 {
   return libFIRM_opt & OPT_NORMALIZE;
+}
+
+/** Returns tail-recursion setting. */
+static INLINE int get_opt_tail_recursion(void)
+{
+  return libFIRM_opt & OPT_TAIL_RECURSION;
 }
 
 #endif /* _IRFLAG_T_H_ */
