@@ -60,7 +60,7 @@
  *    - Replaces unreachable Sel nodes by Bad  (@@@ was genau meint unreachable?)
  *    - Replaces Sel-method by Const if the Method is never overwritten */
 /*  @@@ I assume this can not be called via JNI :-( -- how to obtain the array pointer? */
-void cgana(int *len, entity ***free_methods);
+void cgana(int *len, entity ***free_methods, int whole);
 
 /** Free callee information.
  *
