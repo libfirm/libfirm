@@ -66,9 +66,18 @@
 # include "ident.h"      /* source code identificators */
 /* Functionality */
 # include "ircons.h"     /* construct ir */
-# include "irgopt.h"     /* optimize ir */
-# include "irgmod.h"     /* Support to modify ir */
+# include "ircgcons.h"   /* construct interprocedural graph */
+
 # include "irflag.h"     /* optimization flags */
+# include "irgopt.h"     /* optimize ir */
+# include "ircgopt.h"    /* Optimizations based on interprocedural graph */
+
+# include "irdom.h"      /* Dominator analysis */
+# include "cgana.h"      /* Analysis to construct interprocedural graph
+			    including some optimizations */
+
+# include "irgmod.h"     /* Support to modify ir */
+# include "irgwalk.h"    /* Support to walk ir */
 
 /* initialize firm */
 void init_firm (void);
