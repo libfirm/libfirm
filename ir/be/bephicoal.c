@@ -6,9 +6,12 @@
 #include <stdlib.h>
 
 #include "obst.h"
+#include "set.h"
 #include "pset.h"
 #include "bitset.h"
 #include "debug.h"
+#include "irouts.h"
+#include "irdom.h"
 
 #include "bechordal.h"
 #include "belive.h"
@@ -16,15 +19,17 @@
 #include "bephicongr_t.h"
 #include "bephicoal_t.h"
 
-#define DEBUG_LVL SET_LEVEL_2
-
-#define MAX_PHI_CLS_SIZE (1<<(sizeof(unsigned char)*8)) /* possible colors added should fit into unsigned char */
+#define DEBUG_LVL SET_LEVEL_3
 #define MAX_COLORS 16
-#define CHANGE_IMPOSSIBLE 0
-#define CHANGE_SAVE 1
 
-#define DRYRUN 0
-#define PERFORM 1
+/* some things for readable code */
+#define CHANGE_SAVE NULL
+#define CHANGE_IMPOSSIBLE (ir_node *)1
+#define CHANGE_NYI (ir_node *)2
+typedef enum _perform_t { dryrun = 0, perform = 1 } perform_t;
+/* TODO: ask/check if additional ir_node-space is initialized with 0000 */
+//#define belongs_to_a_phi_class(n) (get_irn_phi_info(n)->phi)
+//#define is_color_free(bl,col) (!bitset_is_set(get_ra_block_info(bl)->used_colors, col))
 
 typedef struct _phi_unit_t {
 	unsigned char count;
@@ -33,17 +38,14 @@ typedef struct _phi_unit_t {
 	/* 1 phi */
 	ir_node **members;			/**< [0] is the phi node. [1..count-1] the arguments of the phi not interfering with it */
 	int *colors;				/**< [i] is the color to set for members[i]. [i] == NO_COLOR means dont change anything for members[i]*/
+	/* TODO: perhaps unneccessary */
 	char *is_live_in;			/**< [i]==1 means members[i] is live-in in (all of) its cf-pred-blocks of the phi node */
 } phi_unit_t;
 
 
 static firm_dbg_module_t *dbgphi = NULL;
+int XXX_copies=0, XXX_count=0;
 
-/**
- * Contains ir_nodes of phi-classes whose colors were reassigned during coalescing.
- * So one can perform a check not to switch them twice or more.
- */
-static pset *pinned_nodes = NULL;
 
 /**
  * Contains ir_nodes of phi-classes whose colors may change unlimited times.
@@ -51,67 +53,230 @@ static pset *pinned_nodes = NULL;
  */
 static pset *free_nodes = NULL;
 
-
-/* TODO: ask/check if additional ir_node-space is initialized with 0000 */
-#define belongs_to_a_phi_class(n) (get_irn_phi_info(n)->phi)
-
-#define is_color_free(bl,col) (!bitset_is_set(get_ra_block_info(bl)->used_colors, col))
+/**
+ * Contains already optimized ir_nodes of phi-classes fully processed.
+ * So one can perform a check not to switch them twice or more.
+ */
+static pset *pinned_global = NULL;
 
 /**
- * Sets the color of node @p n to @p col, but acts
- * pinning aware.
+ * Contains optimized ir_nodes of the phi-classes
+ * currently optimized. So one can perform a check not to switch them
+ * twice or more.
  */
-static INLINE void set_color(ir_node *n, int col) {
-	assert(!pset_find_ptr(pinned_nodes, n));
-	set_irn_color(n, col);
-	if (belongs_to_a_phi_class(n) && !pset_find_ptr(free_nodes, n))
-		pset_insert_ptr(pinned_nodes, n);
+static pset *pinned_local = NULL;
+
+/**
+ * Contains the hypothetic colors of currently processed phi unit
+ */
+static set *hyp_cols = NULL;
+
+typedef struct _hyp_col_t {
+	ir_node *irn;
+	int color;
+} hyp_col_t;
+
+int set_cmp_hyp_col_t(const void *x, const void *y, size_t size) {
+	return ((hyp_col_t *)x)->irn != ((hyp_col_t *)y)->irn;
+}
+
+
+/**
+ * @return The hypothetic color of the irn if available.
+ *         Otherwise the current color of it.
+ */
+static INLINE int get_hyp_color(ir_node *irn) {
+	hyp_col_t hc;
+	hyp_col_t *found;
+	hc.irn = irn;
+	found = set_find(hyp_cols, &hc, sizeof(hc), HASH_PTR(irn));
+	if (found)
+		return found->color;
+	else
+		return get_irn_color(irn);
 }
 
 /**
- * Tries to set the color of @p n to @p col. Performs recoloring of other nodes
- * as required to preserve correctness.
- * @param  n The node to set the color for
- * @param  col The color to set.
- * @param  dryrun If true no colors are actually set, only testing is performed.
- *                If false colors get set and it must be sure that no conflicts will occur.
- * @return If setting the color is impossible CHANGE_IMPOSSIBLE is returned
- *         else the number of nodes that need a (cascading) change is returned.
+ * Sets the hypothetic color of an irn
  */
-static int color_irn(ir_node *n, int col, int perform) {
-	ir_node *bl;
-	int res = CHANGE_IMPOSSIBLE;
-	DBG((dbgphi, LEVEL_2, "\t\t\t%n --> %d\n", n, col));
-	assert(is_color(col));
+static INLINE void set_hyp_color(ir_node *irn, int color) {
+	hyp_col_t hc;
+	hyp_col_t *found;
+	hc.irn = irn;
+	found = set_find(hyp_cols, &hc, sizeof(hc), HASH_PTR(irn));
+	if (found)
+		found->color = color;
+	else {
+		hc.color = color;
+		set_insert(hyp_cols, &hc, sizeof(hc), HASH_PTR(irn));
+	}
+}
 
-	if (get_irn_color(n) == col) {
-		DBG((dbgphi, LEVEL_2, "\t\t\t  Same\n"));
-		/* insert it into pinned_nodes */
-		if (perform)
-			if (belongs_to_a_phi_class(n) && !pset_find_ptr(free_nodes, n))
-				pset_insert_ptr(pinned_nodes, n);
-		return CHANGE_SAVE;
+
+
+/**
+ * Variable neede in _color_irn.
+ * Not on stack, because never changed during recursion.
+ */
+static perform_t _color_irn_perform;
+
+/**
+ * Get all nodes which conflict with the color-setting of a node, because they
+ * have the same color and are living together at some point in time.
+ * @param irn The ir_node to find conflicting nodes for
+ * @param color The color the conflicting nodes must have
+ * @param bl  The root-block of the dom-sub-tree to start the search from.
+ * @param exc An exceptional node which is never added to the result set of conflicting nodes
+ * @param res An obstack to grow the resulting nodes on.
+ */
+static void get_conflicting_nodes(const ir_node *irn, int color, ir_node *bl, const ir_node *exc, struct obstack *res) {
+	struct obstack q;
+	int in, out;
+
+	/* setup the queue */
+	obstack_init(&q);
+	obstack_ptr_grow(&q, bl);
+	in = 1;
+	out = 0;
+
+	/* process the queue */
+	while (out < in) {
+		ir_node *curr_bl, *sub_bl;
+		int i, max;
+
+		curr_bl = ((ir_node **)obstack_base(&q))[out++];
+
+		/* Add to the result all nodes in the block which live in target color
+		 * and interfere with the irn */
+		for (i = 0, max = get_irn_n_outs(curr_bl); i < max; ++i) {
+			ir_node *n = get_irn_out(curr_bl, i);
+			int n_col;
+			if (!is_allocatable_irn(n))
+				continue;
+			if (_color_irn_perform == perform)
+				n_col = get_irn_color(n);
+			else
+				n_col = get_hyp_color(n);
+
+			if (n != exc && get_hyp_color(n) == color && phi_ops_interfere(irn, n))
+				obstack_ptr_grow(res, n);
+		}
+
+		/* If irn lives out check i-dominated blocks where the irn lives in */
+		/* Fill the queue */
+		if (is_live_out(curr_bl, irn)) {
+			dominates_for_each(curr_bl, sub_bl)
+				if (is_live_in(sub_bl, irn)) {
+					obstack_ptr_grow(&q, sub_bl);
+					in++;
+				}
+		}
 	}
 
-	if (pset_find_ptr(pinned_nodes, n)) {
-		DBG((dbgphi, LEVEL_2, "\t\t\t  Pinned\n"));
-		if (perform)
-			assert(0 && "No prior check with dryrun or buggy");
-		return CHANGE_IMPOSSIBLE;
+	obstack_free(&q, NULL);
+}
+
+
+/**
+ * Tries to set the color of @p n to @p col. Performs recoloring of other nodes
+ * as required to preserve correctness. Recursive.
+ * @param  irn The node to set the color for
+ * @param  col The color to set.
+ * @param  trigger The irn that caused the wish to change the color of the irn
+ * @return CHANGE_SAVE iff setting the color is possible.
+ *         CHANGE_IMPOSSIBLE iff conflicts with reg-constraintsis occured.
+ *         Else the conflicting ir_node is returned.
+ *
+ * ASSUMPTION: Assumes that a life range of a single value can't be spilt into
+ * 			   several smaller intervals where other values can live in between.
+ */
+static ir_node *_color_irn(ir_node *irn, int col, const ir_node *trigger) {
+	ir_node *res;
+	struct obstack confl_ob;
+	ir_node **confl, *cn;
+	ir_node *irn_bl;
+	int i, irn_col;
+	if (_color_irn_perform == perform)
+		irn_col = get_irn_color(irn);
+	else
+		irn_col = get_hyp_color(irn);
+
+	obstack_init(&confl_ob);
+
+	if (irn_col == col)
+		goto ret_save;
+
+	if (pset_find_ptr(pinned_global, irn)) {
+		DBG((dbgphi, LEVEL_3, "\t\t\t%n \t~~> %n := %d: Pinned other\n", trigger, irn, col));
+		res = irn;
+		goto ret_confl;
 	}
 
-	bl = get_nodes_block(n);
-	if (is_color_free(bl, col) && !is_live_out(bl, n)) {
-		DBG((dbgphi, LEVEL_2, "\t\t\t  Free\n"));
-		if (perform)
-			set_color(n, col);
-		return CHANGE_SAVE;
+	if (pset_find_ptr(pinned_local, irn)) {
+		DBG((dbgphi, LEVEL_3, "\t\t\t%n \t~~> %n := %d: Pinned current\n", trigger, irn, col));
+		res = irn;
+		goto ret_confl;
 	}
 
-	/* for now, in the aldi-version return impossible */
-	DBG((dbgphi, LEVEL_2, "\t\t\t  Impossible\n"));
-	return CHANGE_IMPOSSIBLE;
+	/* process all nodes which would conflict with this change */
+	irn_bl = get_nodes_block(irn);
+	get_conflicting_nodes(irn, col, irn_bl, trigger, &confl_ob);
+	obstack_ptr_grow(&confl_ob, NULL);
+	confl = (ir_node **) obstack_finish(&confl_ob);
 
+	for (i = 0, cn = confl[0]; cn; cn = confl[++i]) {
+		ir_node *sub_res;
+
+		/* for now don't let the changes spread in root-direction of the dom-tree */
+		if (is_live_in(irn_bl, cn)) {
+			DBG((dbgphi, LEVEL_3, "\t\t\t%n \t~~> %n := %d: NYI %n\n", trigger, irn, col, cn));
+			res = CHANGE_NYI;
+			goto ret_confl;
+		}
+
+		/* try to color the conflicting node cn with the color of the irn itself */
+		DBG((dbgphi, LEVEL_3, "\t\t\t%n \t~~> %n := %d: Subcheck\n", trigger, irn, col));
+		sub_res = _color_irn(cn, irn_col, irn);
+		if (sub_res != CHANGE_SAVE) {
+			res = sub_res;
+			goto ret_confl;
+		}
+	}
+	/* if we arrive here all sub changes can be applied,
+	 * so it is save to change this irn */
+
+ret_save:
+	DBG((dbgphi, LEVEL_2, "\t\t\t%n \t~~> %n := %d: Save\n", trigger, irn, col));
+	obstack_free(&confl_ob, NULL);
+	if (_color_irn_perform == perform)
+		set_irn_color(irn, col);
+	else
+		set_hyp_color(irn, col);
+	return CHANGE_SAVE;
+
+ret_confl:
+	DBG((dbgphi, LEVEL_2, "\t\t\t%n \t~~> %n := %d: Conflict\n", trigger, irn, col));
+	obstack_free(&confl_ob, NULL);
+	assert(!_color_irn_perform && "When applying changes these must be save, but if you reach here they aren't!");
+	return res;
+}
+
+
+static ir_node *color_irn(ir_node *irn, int col, perform_t do_what) {
+	ir_node *res;
+
+	_color_irn_perform = do_what;
+	res = _color_irn(irn, col, irn);
+
+	if (res == CHANGE_SAVE && !pset_find_ptr(free_nodes, irn)) {
+		if (do_what == perform) {
+			DBG((dbgphi, LEVEL_2, "\t\t\t\t\t @G %n\n", irn));
+			pset_insert_ptr(pinned_global, irn);
+		} else {
+			DBG((dbgphi, LEVEL_2, "\t\t\t\t\t @L %n\n", irn));
+			pset_insert_ptr(pinned_local, irn);
+		}
+	}
 	return res;
 }
 
@@ -123,8 +288,8 @@ static int color_irn(ir_node *n, int col, int perform) {
  *   _then_ all changes together can be applied conflict free.
  * - _If_ there is a member, which is live-in or live-out in its cf-pred-block
  *    of the phi node, it is possible that all changes together will conflict.
- * TODO: check above comment with swapping complete colors in mind
- * - TODO: Write sth. about dom-tree influence on this.
+ * TODO: Check above comment with swapping complete colors in mind
+ * TODO: Write sth. about dom-tree influence on this.
  */
 static int try_colors(phi_unit_t *pu, int col, int b_size) {
 	struct obstack ob;
@@ -132,6 +297,8 @@ static int try_colors(phi_unit_t *pu, int col, int b_size) {
 	ir_node **cand, **mis;
 
 	obstack_init(&ob);
+	pinned_local = pset_new_ptr(8);
+	hyp_cols = new_set(set_cmp_hyp_col_t, 8);
 
 	/* first init pessimistically, so we can just return
 	 * if we see there wont be a better result */
@@ -145,7 +312,7 @@ static int try_colors(phi_unit_t *pu, int col, int b_size) {
 	cand_size = 0;
 	for (i = 0; i < pu->count; ++i) {
 		DBG((dbgphi, 1, "\t\t    Testing %n\n", pu->members[i]));
-		if (color_irn(pu->members[i], col, DRYRUN) == CHANGE_SAVE) {
+		if (color_irn(pu->members[i], col, dryrun) == CHANGE_SAVE) {
 			DBG((dbgphi, 1, "\t\t\tAdding to cand\n"));
 			obstack_ptr_grow(&ob, pu->members[i]);
 			cand_size++;
@@ -170,7 +337,7 @@ static int try_colors(phi_unit_t *pu, int col, int b_size) {
 		int intf_det = 0;
 		for (o = 0; o < mis_size; ++o) {
 			mis = (ir_node**) obstack_base(&ob);
-			if (values_interfere(cand[i], mis[o])) {
+			if (phi_ops_interfere(cand[i], mis[o])) {
 				intf_det = 1;
 				break;
 			}
@@ -192,30 +359,23 @@ static int try_colors(phi_unit_t *pu, int col, int b_size) {
 				pu->colors[i] = col;
 
 ret:
+	del_set(hyp_cols);
+	del_pset(pinned_local);
 	obstack_free(&ob, NULL);
 	return mis_size;
 }
 
 
 /**
- * Sets the colors of members[i] to colors[i] as far as possible.
- * Each single change must be conflict free (checked by try_colors).
- * In some cases not all colors can be set.
+ * Sets the colors of members[i] to colors[i].
+ * All changes togehter must be conflict free.
  */
- /*TODO : BUGGY due to false reasoning with live-outs
-  * 	  thus fallback to save variant with testing all before setting. */
 static void set_colors(phi_unit_t *pu) {
 	int i;
 
 	for (i = 0; i < pu->count; ++i)
-		if (pu->colors[i] != NO_COLOR) {
-			if (color_irn(pu->members[i], pu->colors[i], DRYRUN) == CHANGE_SAVE) {
-				DBG((dbgphi, 1, "\t\tSetting %n to %d\n", pu->members[i], pu->colors[i]));
-				color_irn(pu->members[i], pu->colors[i], PERFORM);
-			} else {
-				DBG((dbgphi, 1, "\t\tConflict due to sth.: %n\n", pu->members[i]));
-			}
-		}
+		if (pu->colors[i] != NO_COLOR)
+			color_irn(pu->members[i], pu->colors[i], perform);
 }
 
 
@@ -229,8 +389,9 @@ static void coalesce_1_phi(phi_unit_t *pu) {
 	int *b_colors, b_size, b_color;
 	int i, size, col;
 
-	/* init best search result */
 	b_colors = malloc(pu->count * sizeof(*b_colors));
+
+	/* init best search result */
 	b_size = 0;
 	b_color = NO_COLOR;
 	for (i = 0; i < pu->count; ++i)
@@ -254,6 +415,8 @@ static void coalesce_1_phi(phi_unit_t *pu) {
 			break;
 	}
 	DBG((dbgphi, 1, "\tBest color: %d  Copies: %d/%d\n", b_color, pu->count-b_size, pu->count));
+	XXX_copies += pu->count-b_size;
+	XXX_count += pu->count;
 	if (b_color == NO_COLOR)
 		goto ret;
 
@@ -265,6 +428,7 @@ ret:
 	free(b_colors);
 }
 
+
 /**
  * Tries to re-allocate colors of this phi-class, to achieve a lower number of
  * copies placed during phi destruction. General purpose version.
@@ -273,6 +437,7 @@ static void coalesce_n_phi(phi_unit_t *pu) {
 	DBG((dbgphi, 1, "\n"));
 	/* TODO */
 }
+
 
 /**
  * Prepares a phi class for further processing as a phi unit.
@@ -283,8 +448,6 @@ static void coalesce_n_phi(phi_unit_t *pu) {
 static phi_unit_t *new_phi_unit(pset *pc) {
 	phi_unit_t *pu;
 	ir_node *n, *phi = NULL;
-
-	assert(pset_count(pc) <= MAX_PHI_CLS_SIZE && "Phi class too large!");
 
 	/* get the phi count of this class */
 	pu = malloc(sizeof(*pu));
@@ -308,7 +471,7 @@ static phi_unit_t *new_phi_unit(pset *pc) {
 		for (n = pset_first(pc); n; n = pset_next(pc)) {
 			if (is_Phi(n))
 				continue;
-			if (!values_interfere(phi, n)) {
+			if (!phi_ops_interfere(phi, n)) {
 				DBG((dbgphi, 1, "\tAdding to members: %n\n", n));
 				obstack_ptr_grow(&ob, n);
 				pu->count++;
@@ -369,7 +532,6 @@ static phi_unit_t *new_phi_unit(pset *pc) {
  * Deletes a phi unit
  */
 static void free_phi_unit(phi_unit_t *pu) {
-	DBG((dbgphi, 1, "\n"));
 	if (pu->phi_count == 1) {
 		free(pu->members);
 		free(pu->colors);
@@ -384,7 +546,7 @@ static void free_phi_unit(phi_unit_t *pu) {
 void be_phi_coalesce(pset *all_phi_classes) {
 	pset *pc;
 
-	pinned_nodes = pset_new_ptr(256);
+	pinned_global = pset_new_ptr(256);
 	free_nodes = pset_new_ptr(64);
 
 	for (pc = pset_first(all_phi_classes); pc; pc = pset_next(all_phi_classes)) {
@@ -396,8 +558,10 @@ void be_phi_coalesce(pset *all_phi_classes) {
 		free_phi_unit(pu);
 	}
 
+	DBG((dbgphi, 1, "Copies: %d / %d\n", XXX_copies, XXX_count));
+
 	del_pset(free_nodes);
-	del_pset(pinned_nodes);
+	del_pset(pinned_global);
 }
 
 
