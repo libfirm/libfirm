@@ -27,7 +27,6 @@ xfprinter (void *f, const char *data, size_t len)
   return len;
 }
 
-
 int
 xfprintf (FILE *F, const char *fmt, ...)
 {

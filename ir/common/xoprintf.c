@@ -33,7 +33,6 @@ xoprintf (struct obstack *obst, const char *fmt, ...)
   return res;
 }
 
-
 int
 xvoprintf (struct obstack *obst, const char *fmt, va_list args)
 {

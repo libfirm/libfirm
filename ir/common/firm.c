@@ -27,6 +27,7 @@ init_firm (void)
   xprintf_register ('v', tarval_print);
   /* register the character 'R' as variable for ir node outputs. */
   xprintf_register ('R', ir_node_print);
+
   /* initialize all ident stuff */
   id_init ();
   /* create the type kinds. */

@@ -36,7 +36,6 @@ xprintf_register (char spec, xprintf_function func)
   print_func[(unsigned char)spec] = func;
 }
 
-
 int
 xvgprintf (xgprintf_func *out, void *arg, const char *fmt, va_list args)
 {
@@ -61,6 +60,8 @@ xvgprintf (xgprintf_func *out, void *arg, const char *fmt, va_list args)
   int prec;						/* min. # of digits for integers; max
 								   number of chars for from string */
   int qualifier;				/* 'h', 'l', or 'L' for integer fields */
+
+  unsigned short helper_short;
 
   done = 0;
 
@@ -215,10 +216,13 @@ xvgprintf (xgprintf_func *out, void *arg, const char *fmt, va_list args)
       case 'x':			/* heXadecimal */
 		base = 16;
       number:			/* get and print a unsigned number */
+
 		if (qualifier == 'l')
 		  num = va_arg(args, unsigned long);
 		else if (qualifier == 'h')
-		  num = va_arg(args, unsigned short);
+		  /* vormals unsigned short, falsch fuer gcc 2.96
+		     siehe http://mail.gnu.org/pipermail/discuss-gnustep/1999-October/010624.html */
+		  num = va_arg(args, unsigned int);
 		else
 		  num = va_arg(args, unsigned int);
 		/* ANSI only specifies the `+' and ` ' flags for signed conversions.  */
@@ -230,7 +234,9 @@ xvgprintf (xgprintf_func *out, void *arg, const char *fmt, va_list args)
 		if (qualifier == 'l')
 		  signed_num = va_arg(args, long);
 		else if (qualifier == 'h')
-		  signed_num = va_arg(args, short);
+		  /* vormals short, falsch fuer gcc 2.96 siehe
+		     http://mail.gnu.org/pipermail/discuss-gnustep/1999-October/010624.html */
+		  signed_num = va_arg(args, int);
 		else
 		  signed_num = va_arg(args, int);
 		num = (is_neg = signed_num < 0) ? - signed_num : signed_num;
