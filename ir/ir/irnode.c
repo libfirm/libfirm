@@ -785,7 +785,7 @@ set_Return_res (ir_node *node, int pos, ir_node *res){
 
 INLINE ir_node *
 get_Raise_mem (ir_node *node) {
-  assert (node->op == op_Return);
+  assert (node->op == op_Raise);
   return get_irn_n(node, 0);
 }
 

@@ -1487,7 +1487,7 @@ static void walk_critical_cf_edges(ir_node *n, void *env) {
       /* Predecessor has multiple sucessors. Insert new flow edge */
       if ((NULL != pre) && (op_Proj == get_irn_op(pre))) {
 
-	/* set predeseccor array for new block */
+	/* set predecessor array for new block */
 	in = NEW_ARR_D (ir_node *, current_ir_graph->obst, 1);
 	/* set predecessor of new block */
 	in[0] = pre;
