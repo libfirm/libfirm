@@ -767,7 +767,7 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
     type *tp = get_entity_type(get_irg_entity(get_irn_irg(n)));
     fprintf(F, "start of method of type %s\n", get_type_name_ex(tp, &bad));
     for (i = 0; i < get_method_n_params(tp); ++i)
-      fprintf(F, "  param %d type: %s n", i, get_type_name_ex(get_method_param_type(tp, i), &bad));
+      fprintf(F, "  param %d type: %s \n", i, get_type_name_ex(get_method_param_type(tp, i), &bad));
     if ((get_irp_ip_view_state() == ip_view_valid) && !get_interprocedural_view()) {
       ir_node *sbl = get_nodes_block(n);
       int i, n_cfgpreds = get_Block_cg_n_cfgpreds(sbl);
@@ -1997,7 +1997,7 @@ dump_ir_graph (ir_graph *irg, const char *suffix )
 
   /* dump the out edges in a separate walk */
   if ((dump_out_edge_flag) && (get_irg_outs_state(irg) != outs_none)) {
-    irg_out_walk(get_irg_start(irg), dump_out_edge, NULL, NULL);
+    irg_out_walk(get_irg_start(irg), dump_out_edge, NULL, f);
   }
 
   vcg_close(f);
