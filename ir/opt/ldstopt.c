@@ -134,6 +134,9 @@ static int update_exc(ldst_info_t *info, ir_node *block, int pos)
   return 0;
 }
 
+#define get_irn_out_n(node)     (unsigned)get_irn_link(node)
+#define set_irn_out_n(node, n)  set_irn_link(adr, (void *)(n))
+
 /**
  * walker, collects all Load/Store/Proj nodes
  *
@@ -146,12 +149,27 @@ static void collect_nodes(ir_node *node, void *env)
   walk_env_t  *wenv = env;
 
   if (get_irn_op(node) == op_Proj) {
-    pred = get_Proj_pred(node);
+    ir_node *adr;
+    ir_op *op;
 
-    if (get_irn_op(pred) == op_Load || get_irn_op(pred) == op_Store) {
+    pred = get_Proj_pred(node);
+    op   = get_irn_op(pred);
+
+    if (op == op_Load) {
+      adr       = get_Load_ptr(pred);
       ldst_info = get_ldst_info(pred, wenv);
 
       wenv->changes |= update_projs(ldst_info, node);
+
+      set_irn_out_n(adr, get_irn_out_n(adr) + 1);
+    }
+    else if (op == op_Store) {
+      adr       = get_Store_ptr(pred);
+      ldst_info = get_ldst_info(pred, wenv);
+
+      wenv->changes |= update_projs(ldst_info, node);
+
+      set_irn_out_n(adr, get_irn_out_n(adr) + 1);
     }
   }
   else if (get_irn_op(node) == op_Block) { /* check, if it's an exception block */
@@ -194,6 +212,47 @@ static int optimize_load(ir_node *load)
   ir_node *pred, *mem, *ptr;
   int res = 0;
 
+  /* the address of the load to be optimized */
+  ptr = get_Load_ptr(load);
+
+  /*
+   * Check if we can remove the exception form a Load:
+   * this can be done, if the address is from an Sel(Alloc) and
+   * the Sel type is a subtype of the alloc type.
+   *
+   * This optimizes some often used OO constructs,
+   * like x = new O; x->t;
+   */
+  if (info->projs[pn_Load_X_except]) {
+    if (get_irn_op(ptr) == op_Sel) {
+      ir_node *mem = get_Sel_mem(ptr);
+
+      if (get_irn_op(mem) == op_Alloc) {
+        /* ok, check the types */
+        entity *ent  = get_Sel_entity(ptr);
+        type *s_type = get_entity_type(ent);
+        type *a_type = get_Alloc_type(mem);
+
+        if (is_subclass_of(s_type, a_type)) {
+          /* ok, condition met: there can't be an exception because
+           * alloc guarantees that enough memory was allocated */
+
+          exchange(info->projs[pn_Load_X_except], new_Bad());
+          info->projs[pn_Load_X_except] = NULL;
+        }
+      }
+    }
+    else if (get_irn_op(ptr) == op_Alloc) {
+      /* simple case: a direct load after an Alloc. Firm Alloc throw
+       * an exception in case of out-of-memory. So, there is no way for an
+       * exception in this load.
+       * This code is constructed by the "exception lowering" in the Jack compiler.
+       */
+       exchange(info->projs[pn_Load_X_except], new_Bad());
+       info->projs[pn_Load_X_except] = NULL;
+    }
+  }
+
   /* do NOT touch volatile loads for now */
   if (get_Load_volatility(load) == volatility_is_volatile)
     return 0;
@@ -206,10 +265,7 @@ static int optimize_load(ir_node *load)
     return 1;
   }
 
-  /* the address of the load to be optimized */
-  ptr = get_Load_ptr(load);
-
-  /* the mem of the load. Must still be returned after optimization */
+  /* the mem of the Load. Must still be returned after optimization */
   mem  = get_Load_mem(load);
 
   if ((get_irn_opcode(ptr) == iro_SymConst) && (get_SymConst_kind(ptr) == symconst_addr_ent)) {
@@ -253,6 +309,11 @@ static int optimize_load(ir_node *load)
     }
   }
 
+  /* Check, if the address of this load is used more than once.
+   * If not, this load cannot be removed in any case. */
+  if (get_irn_out_n(ptr) <= 1)
+    return 0;
+
   /* follow the memory chain as long as there are only Loads */
   for (pred = skip_Proj(mem); ; pred = skip_Proj(get_Load_mem(pred))) {
 
@@ -268,15 +329,15 @@ static int optimize_load(ir_node *load)
       ldst_info_t *pred_info = get_irn_link(pred);
 
       /*
-       * a load immediately after a store -- a read after write.
-       * We may remove the Load, if both load & Store does not have an exception handler
+       * a Load immediately after a Store -- a read after write.
+       * We may remove the Load, if both Load & Store does not have an exception handler
        * OR they are in the same block. In the latter case the Load cannot
        * throw an exception when the previous Store was quiet.
        *
        * Why we need to check for Store Exc? If the Store cannot be executed (ROM)
        * the exception handler might simply jump into the load block :-(
        * We could make it a little bit better if we would know that the exception
-       * handler of teh Store jumps directly to the end...
+       * handler of the Store jumps directly to the end...
        */
       if ((!pred_info->projs[pn_Store_X_except] && !info->projs[pn_Load_X_except]) ||
           get_nodes_block(load) == get_nodes_block(pred)) {
@@ -295,12 +356,12 @@ static int optimize_load(ir_node *load)
     else if (get_irn_op(pred) == op_Load && get_Load_ptr(pred) == ptr &&
              get_Load_mode(pred) == load_mode) {
       /*
-       * a load after a load -- a read after read.
+       * a Load after a Load -- a read after read.
        * We may remove the second Load, if it does not have an exception handler
        * OR they are in the same block. In the later case the Load cannot
        * throw an exception when the previous Load was quiet.
        *
-       * Here, there is no need to check if the previos load has an exception hander because
+       * Here, there is no need to check if the previos Load has an exception hander because
        * they would have exact the same exception...
        */
       if (! info->projs[pn_Load_X_except] || get_nodes_block(load) == get_nodes_block(pred)) {
@@ -334,7 +395,7 @@ static int optimize_load(ir_node *load)
       }
     }
 
-    /* follow only load chains */
+    /* follow only Load chains */
     if (get_irn_op(pred) != op_Load)
       break;
    }
@@ -361,11 +422,16 @@ static int optimize_store(ir_node *store)
    * is possible *(type1 *)p = a; *(type2 *)p = b ...
    */
 
-  block = get_nodes_block(store);
   ptr   = get_Store_ptr(store);
+
+  /* Check, if the address of this load is used more than once.
+   * If not, this load cannot be removed in any case. */
+  if (get_irn_out_n(ptr) <= 1)
+    return 0;
+
+  block = get_nodes_block(store);
   mem   = get_Store_mem(store);
   value = get_Store_value(store);
-
   mode  = get_irn_mode(value);
 
   /* follow the memory chain as long as there are only Loads */
@@ -375,7 +441,7 @@ static int optimize_store(ir_node *store)
     if (get_irn_op(pred) == op_Store && get_Store_ptr(pred) == ptr &&
         get_nodes_block(pred) == block && get_irn_mode(get_Store_value(pred)) == mode) {
       /*
-       * a store after a store in the same block -- a write after write.
+       * a Store after a Store in the same block -- a write after write.
        * We may remove the first Store, if it does not have an exception handler.
        *
        * TODO: What, if both have the same exception handler ???
@@ -389,7 +455,7 @@ static int optimize_store(ir_node *store)
     else if (get_irn_op(pred) == op_Load && get_Load_ptr(pred) == ptr &&
              value == pred_info->projs[pn_Load_res]) {
       /*
-       * a store of a value after a load -- a write after read.
+       * a Store of a value after a Load -- a write after read.
        * We may remove the second Store, if it does not have an exception handler.
        */
       if (! info->projs[pn_Store_X_except]) {
@@ -399,7 +465,7 @@ static int optimize_store(ir_node *store)
       }
     }
 
-    /* follow only load chains */
+    /* follow only Load chains */
     if (get_irn_op(pred) != op_Load)
       break;
   }
