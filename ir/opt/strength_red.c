@@ -165,7 +165,7 @@ induct_var_info *is_induction_variable (induct_var_info *info) {
   /* Information about loop of itervar_phi. */
   info->l_itervar_phi = get_irn_loop(get_nodes_block(info->itervar_phi));
 
-  /* This "for" searchs for the Cmp successor of the
+  /* This "for" searches for the Cmp successor of the
      iter_var to reduce and marks if the iter_var have a Store
      successor or a successor out of loop.*/
   info->phi_pred = get_irn_n_outs(info->itervar_phi);
