@@ -81,11 +81,15 @@ typedef enum {
   /** Free never called methods */
   OPT_DEAD_METHOD_ELIMINATION_VERBOSE    = 0x00010000,
 
+  /** Do Strength reduction */
+  OPT_STRENGTH_RED                       = 0x00020000,
+
   /** Optimize Loads and Stores */
-  OPT_REDUNDANT_LOADSTORE                = 0x00020000,
+  OPT_REDUNDANT_LOADSTORE                = 0x00040000,
 
   /** Turn off all optimizations. */
   OPT_OPTIMIZED                          = 0x40000000,
+
 } libfirm_opts_t;
 
 extern optimization_state_t libFIRM_opt;
@@ -100,6 +104,11 @@ static INLINE int get_opt_cse(void)
 static INLINE int get_opt_global_cse(void)
 {
   return libFIRM_opt & OPT_GLOBAL_CSE;
+}
+
+static INLINE int get_opt_strength_red(void)
+{
+  return libFIRM_opt & OPT_STRENGTH_RED;
 }
 
 /** Returns global constant subexpression elimination setting. */

@@ -26,6 +26,7 @@ optimization_state_t libFIRM_opt =
   ENABLE(OPT_OPTIMIZED)                          |
   ENABLE(OPT_CSE)                                |
   DISABLE(OPT_GLOBAL_CSE)                        |
+  ENABLE(OPT_STRENGTH_RED)                       |
   ENABLE(OPT_CONSTANT_FOLDING)                   |
   ENABLE(OPT_REDUNDANT_LOADSTORE)                |
   ENABLE(OPT_UNREACHABLE_CODE)                   |
@@ -58,6 +59,14 @@ void set_opt_global_cse(int value)
     libFIRM_opt |= OPT_GLOBAL_CSE;
   else
     libFIRM_opt &= ~OPT_GLOBAL_CSE;
+}
+
+void set_opt_strength_red (int value)
+{
+  if (value)
+    libFIRM_opt |= OPT_STRENGTH_RED;
+  else
+    libFIRM_opt &= ~OPT_STRENGTH_RED;
 }
 
 void

@@ -73,6 +73,15 @@ void set_opt_cse (int value);
  */
 void set_opt_global_cse (int value);
 
+/** Enables/Disables strength reduction.
+ *
+ * If opt_strength_red == 1 perform strength reduction.
+ * See strenth_red.h.
+ *
+ * Default: opt_strength_red = 1;
+ */
+void set_opt_strength_red (int value);
+
 /** Enables/Disables unreachable code elimination.
  *
  * If set, evaluate conditions of conditional branch and replace the
