@@ -137,7 +137,7 @@ main(void)
   mature_block (main_irg->end_block);
 
   printf("\nDone building the graph.\n");
-  vrfy_graph(main_irg);
+  irg_vrfy(main_irg);
   printf("Dumping the graph and a type graph.\n");
   dump_ir_block_graph (main_irg);
   dump_type_graph(main_irg);
@@ -168,7 +168,7 @@ main(void)
   mature_block (set_a_irg->end_block);
 
   printf("\nDone building the graph.\n");
-  vrfy_graph(set_a_irg);
+  irg_vrfy(set_a_irg);
   printf("Dumping the graph and a type graph.\n");
   dump_ir_block_graph (set_a_irg);
   dump_type_graph(set_a_irg);
