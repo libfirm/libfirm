@@ -32,7 +32,7 @@ static xprintf_function *print_func[UCHAR_MAX+1];
 
 
 void
-xprintf_register (char spec, xprintf_function func)
+xprintf_register (char spec, xprintf_function *func)
 {
   assert ((spec > 0) && !print_func[(unsigned char)spec]);
   print_func[(unsigned char)spec] = func;
