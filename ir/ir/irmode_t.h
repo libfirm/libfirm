@@ -6,6 +6,9 @@
 
 # include "irmode.h"
 
+/**
+ * The type of a mode
+ */
 struct ir_mode {
   modecode code;
   ident *name;            /**< Name of this mode */
