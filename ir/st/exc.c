@@ -104,6 +104,15 @@ static bool is_cfg_jmp (ir_node *node)
 }
 #endif
 
+void set_Block_exc(ir_node *n, ir_node *exc) {
+}
+
+ir_node * get_Block_exc(ir_node *n) {
+  return NULL;
+}
+
+
+
 /*
  Return true iff a new exception region must be left upon entry of this block.
 
