@@ -26,6 +26,7 @@
 # include "iropt_dbg.h"
 # include "irflag_t.h"
 # include "firmstat.h"
+# include "irarch.h"
 
 /* Make types visible to allow most efficient access */
 # include "entity_t.h"
@@ -1046,6 +1047,11 @@ optimize_preds(ir_node *n) {
   } /* end switch */
 }
 
+static ir_node *transform_node_Mul(ir_node *n)
+{
+  return arch_dep_replace_mul_with_shifts(n);
+}
+
 static ir_node *transform_node_Div(ir_node *n)
 {
   tarval *tv = computed_value(n);
@@ -1450,6 +1456,7 @@ static ir_op *firm_set_default_transform_node(ir_op *op)
     break
 
   switch (op->code) {
+  CASE(Mul);
   CASE(Div);
   CASE(Mod);
   CASE(DivMod);
