@@ -396,7 +396,10 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m);
  *   The sort member of the struct mode defines which operations are valid
  */
 
-/** Negation of a tarval. */
+/** bitwise Negation of a tarval. */
+tarval *tarval_not(tarval *a);
+
+/** arithmetic Negation of a tarval. */
 tarval *tarval_neg(tarval *a);
 
 /** Addition of two tarvals. */

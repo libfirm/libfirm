@@ -1141,7 +1141,7 @@ void sc_calc(const void* value1, const void* value2, unsigned op, void *buffer)
     case SC_NEG:
       _negate(val1, calc_buffer);
       DEBUGPRINTF_COMPUTATION(("negated: %s\n", sc_print_hex(calc_buffer)));
-      return;
+      break;
     case SC_OR:
       DEBUGPRINTF_COMPUTATION(("| "));
       _bitor(val1, val2, calc_buffer);
@@ -1157,7 +1157,7 @@ void sc_calc(const void* value1, const void* value2, unsigned op, void *buffer)
     case SC_NOT:
       _bitnot(val1, calc_buffer);
       DEBUGPRINTF_COMPUTATION(("bit-negated: %s\n", sc_print_hex(calc_buffer)));
-      return;
+      break;
     case SC_ADD:
       DEBUGPRINTF_COMPUTATION(("+ "));
       _add(val1, val2, calc_buffer);

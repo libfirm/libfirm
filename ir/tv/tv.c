@@ -875,7 +875,30 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m)
 }
 
 /*
- * negation
+ * bitwise negation
+ */
+tarval *tarval_not(tarval *a)
+{
+  char *buffer;
+
+  ANNOUNCE();
+  assert(a);
+  assert(mode_is_int(a->mode)); /* bitwise negation is only allowed for integer */
+
+  switch (get_mode_sort(a->mode))
+  {
+    case irms_int_number:
+      buffer = alloca(sc_get_buffer_length());
+      sc_not(a->value, buffer);
+      return get_tarval(buffer, a->length, a->mode);
+
+    default:
+      return tarval_bad;
+  }
+}
+
+/*
+ * arithmetic negation
  */
 tarval *tarval_neg(tarval *a)
 {
@@ -1143,7 +1166,7 @@ tarval *tarval_eor(tarval *a, tarval *b)
       return (a == b)? tarval_b_false : tarval_b_true;
 
     case irms_int_number:
-      sc_or(a->value, b->value, NULL);
+      sc_xor(a->value, b->value, NULL);
       return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 
     default:
