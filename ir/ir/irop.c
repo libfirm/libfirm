@@ -269,6 +269,15 @@ ident *(get_op_ident)(ir_op *op){
   return __get_op_ident(op);
 }
 
+const char *get_op_pin_state_name(op_pin_state s) {
+  switch(s) {
+  case op_pin_state_floats: return "op_pin_state_floats";
+  case op_pin_state_pinned: return "op_pin_state_pinned";
+  case op_pin_state_exc_pinned: return "op_pin_state_exc_pinned";
+  case op_pin_state_mem_pinned: return "op_pin_state_mem_pinned";
+  }
+}
+
 op_pin_state (get_op_pinned)(const ir_op *op){
   return __get_op_pinned(op);
 }

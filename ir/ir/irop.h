@@ -125,6 +125,8 @@ typedef enum {
                                    exception or uses memory, else can float. Used internally. */
 } op_pin_state;
 
+const char *get_op_pin_state_name(op_pin_state s);
+
 /** gets pinned state of an opcode */
 op_pin_state get_op_pinned(const ir_op *op);
 
