@@ -1122,7 +1122,7 @@ new_d_Block (dbg_info* db, int arity, ir_node **in)
 
 * *************************************************************************** */
 
-/* Creates a Phi node with 0 predecessors */
+/** Creates a Phi node with 0 predecessors */
 static INLINE ir_node *
 new_rd_Phi0 (ir_graph *irg, ir_node *block, ir_mode *mode)
 {
@@ -1402,7 +1402,7 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
   res = block->attr.block.graph_arr[pos];
 
   /* case 2 -- If the value is actually computed, return it. */
-  if (res) { return res;};
+  if (res) return res;
 
   if (block->attr.block.matured) { /* case 3 */
 
