@@ -1,3 +1,13 @@
+  28.5.2001 Goetz
+  We need an entity for the array elements for the Sel nodes.  This
+  entity should be stored in the array type.  Changed constructor
+  parameters: include array element type.  Entity for elements is built
+  automatically now.
+
+  28.5.2001 Goetz
+  Removed bug in tv.c.
+  Faulty use of va_arg, became visible with new, stricter gcc 2.96.
+
   23.5.2001 Goetz
   Added list of member entites to union.  unioned_types and delimiters
   are superfluous now -- removed.
