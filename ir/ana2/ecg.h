@@ -52,17 +52,27 @@ typedef struct graph_info
   struct graph_info *prev;
 } graph_info_t;
 
+typedef void graph_hnd_t  (graph_info_t*, void*);
+typedef void alloc_hnd_t  (alloc_info_t*, void*);
+typedef void call_hnd_t   (call_info_t*, void*);
+typedef void callEd_hnd_t (callEd_info_t*, void*);
+
 /* protos */
 void ecg_print_ctx (ctx_info_t*, FILE *stream);
 
 ctx_info_t *get_ctx (graph_info_t*, int);
 ctx_info_t *get_main_ctx (void);
 
-void ecg_init (int);
+void ecg_iterate_graphs (graph_hnd_t*, void*);
+void ecg_iterate_allocs (graph_info_t*, alloc_hnd_t*, void*);
+void ecg_iterate_calls  (graph_info_t*, call_hnd_t*, void*);
+void ecg_iterate_callEds  (call_info_t*, callEd_hnd_t*, void*);
+
 graph_info_t *ecg_get_info (ir_graph*);
 alloc_info_t *ecg_get_alloc_info (ir_graph*);
 callEd_info_t *ecg_get_callEd_info (ir_node*);
 
+void ecg_init (int);
 void ecg_cleanup (void);
 void ecg_report (void);
 void ecg_ecg (void);
@@ -72,6 +82,9 @@ void ecg_ecg (void);
 
 /*
 $Log$
+Revision 1.3  2004/11/20 21:20:29  liekweg
+Added iterator functions
+
 Revision 1.2  2004/11/18 16:36:37  liekweg
 Added unique ids for debugging, added access functions
 

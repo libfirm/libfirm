@@ -18,7 +18,7 @@
 
 /**
    Erweiterter Aufrufgraph.
- */
+*/
 
 #include "irnode.h"
 #include "pmap.h"
@@ -41,13 +41,13 @@
 # include "lset.h"
 
 /*
-   le flag
+  le flag
 */
 /* static int verbose     = 0; */
 static int do_typalise = 0;
 
 /*
-   globals
+  globals
 */
 
 /* Ids for the ctxs */
@@ -76,8 +76,8 @@ static entity* _max_callEds_callR = NULL;
 void set_main_ctx (ctx_info_t*);
 
 /* ====================
-  Alloc stuff
-  ==================== */
+   Alloc stuff
+   ==================== */
 static void append_alloc (graph_info_t *ginfo, ir_node *alloc, type *tp)
 {
   alloc_info_t *ainfo = (alloc_info_t*) xmalloc (sizeof (alloc_info_t));
@@ -92,8 +92,8 @@ static void append_alloc (graph_info_t *ginfo, ir_node *alloc, type *tp)
 
 
 /* ====================
-  CallEd stuff
-  ==================== */
+   CallEd stuff
+   ==================== */
 /**
    Append the given callEd to the given callEd info.
 */
@@ -259,11 +259,11 @@ static lset_t *get_implementing_graphs (entity *method, ir_node *select)
       int n_filtered_graphs = lset_n_entries (set);
 
       /*
-      fprintf (stdout, "%s: %02d %02d\n",
-               __FUNCTION__,
-               n_graphs,
-               n_filtered_graphs,
-               n_graphs - n_filtered_graphs);
+        fprintf (stdout, "%s: %02d %02d\n",
+        __FUNCTION__,
+        n_graphs,
+        n_filtered_graphs,
+        n_graphs - n_filtered_graphs);
       */
       n_graphs = n_filtered_graphs;
     }
@@ -436,8 +436,8 @@ static void ecg_fill_ctxs_alloc (void)
     ginfo->ctxs = (ctx_info_t **) xmalloc (ginfo->n_ctxs * sizeof (ctx_info_t*));
 
     /*
-    fprintf (stdout, "graph of \"%s\": n_ctxs = %i\n",
-             get_entity_name (get_irg_entity (ginfo->graph)), ginfo->n_ctxs);
+      fprintf (stdout, "graph of \"%s\": n_ctxs = %i\n",
+      get_entity_name (get_irg_entity (ginfo->graph)), ginfo->n_ctxs);
     */
     ginfo->n_ctxs = 0;
 
@@ -461,7 +461,7 @@ static void ecg_fill_ctxs_write (ir_graph *graph, ctx_info_t *enc_ctx)
       callEd_info_t *ced = cinfo->callEds;
 
       while (NULL != ced) {
-      ctx_info_t *ctx = new_ctx (graph, cinfo->call, enc_ctx);
+        ctx_info_t *ctx = new_ctx (graph, cinfo->call, enc_ctx);
 
         ir_graph *callEd_graph = ced->callEd;
 
@@ -508,7 +508,7 @@ static void ecg_fill_ctxs (void)
 
 /* ====================
    CTX stuff
-  ==================== */
+   ==================== */
 /*
   Nicely print a ctx_info_t to the given output stream
 */
@@ -542,7 +542,7 @@ ctx_info_t *get_ctx (graph_info_t *ginfo, int ctx_idx)
 }
 
 /*
-   Get the pseudo-ctx of 'main'
+  Get the pseudo-ctx of 'main'
 */
 ctx_info_t *get_main_ctx ()
 {
@@ -559,8 +559,71 @@ void set_main_ctx (ctx_info_t *ctx)
 
 
 /* ====================
-  ECG stuff
-  ==================== */
+   ECG stuff
+   ==================== */
+
+/* ====================
+   Iterator stuff
+   ==================== */
+/*
+   Iterate over all graphs
+*/
+void ecg_iterate_graphs (graph_hnd_t *hnd, void *env)
+{
+  graph_info_t *ginfo = graph_infos_list;
+
+  while (NULL != ginfo) {
+    hnd (ginfo, env);
+
+    ginfo = ginfo->prev;
+  }
+}
+
+
+/*
+   Iterate of all allocs of a given graph info
+*/
+void ecg_iterate_allocs (graph_info_t *ginfo, alloc_hnd_t *hnd, void *env)
+{
+  alloc_info_t *ainfo = ginfo->allocs;
+
+  while (NULL != ainfo) {
+    hnd (ainfo, env);
+
+    ainfo = ainfo->prev;
+  }
+}
+
+
+/*
+  Iterate over all calls of the given graph info
+*/
+void ecg_iterate_calls  (graph_info_t *ginfo, call_hnd_t *hnd, void *env)
+{
+  call_info_t *cinfo = ginfo->calls;
+
+  while (NULL != cinfo) {
+    hnd (cinfo, env);
+
+    cinfo = cinfo->prev;
+  }
+}
+
+
+/*
+  Iterate over all callEds of the given call info
+*/
+void ecg_iterate_callEds  (call_info_t *cinfo, callEd_hnd_t *hnd, void *env)
+{
+  callEd_info_t *ced = cinfo->callEds;
+
+  while (NULL != ced) {
+    hnd (ced, env);
+
+    ced = ced->prev;
+  }
+}
+
 
 /*
   get the call infos for the given graph
@@ -722,26 +785,25 @@ static int ecg_ecg_graph (FILE *dot, ir_graph *graph)
     fprintf (dot, "\tctx_%i [label=\"<HEAD>", graph_no);
 
     int i;
-    const int max_ctxs = 20;
+    const int max_ctxs = 30;
     const int n_ctxs = (ginfo->n_ctxs > max_ctxs) ? max_ctxs : ginfo->n_ctxs;
 
-    if (NULL != ginfo->ctxs) {
-      for (i = 0; i < n_ctxs; i ++) {
-        ctx_info_t *ctx_info = ginfo->ctxs [i];
+    assert (ginfo->ctxs && "no ctx");
+    for (i = 0; i < n_ctxs; i ++) {
+      ctx_info_t *ctx_info = ginfo->ctxs [i];
 
-        if (NULL != ctx_info->enc) {
-          fprintf (dot, "ctx_info \\[%i\\] = ctx\\[%i\\-\\>%i\\]\\l",
-                   i,
-                   ctx_info->id,
-                   ctx_info->enc->id);
-        } else {
-          fprintf (dot, "ctx_info \\[%i\\] = ctx\\[%i\\]\\l",
-                   i, ctx_info->id);
-        }
+      if (NULL != ctx_info->enc) {
+        fprintf (dot, "ctx_info \\[%i\\] = ctx\\[%i\\-\\>%i\\]\\l",
+                 i,
+                 ctx_info->id,
+                 ctx_info->enc->id);
+      } else {
+        fprintf (dot, "ctx_info \\[%i\\] = ctx\\[%i\\]\\l",
+                 i, ctx_info->id);
+      }
 
-        if (i+1 != n_ctxs) {
-          fprintf (dot, "|");
-        }
+      if (i+1 != n_ctxs) {
+        fprintf (dot, "|");
       }
     }
 
@@ -833,8 +895,8 @@ static void ecg_ecg_count (ir_graph *graph)
 }
 
 /* ====================
-  Public Interface
-  ==================== */
+   Public Interface
+   ==================== */
 
 /**
    Initialise our data structures.
@@ -1004,12 +1066,12 @@ void ecg_ecg ()
   ir_graph *main_graph = get_irp_main_irg ();
 
   /*
-  memset (spaces, '.', BUF_SIZE);
-  spaces [BUF_SIZE-1] = '\0';
+    memset (spaces, '.', BUF_SIZE);
+    spaces [BUF_SIZE-1] = '\0';
 
-  ecg_ecg_count (main_graph);
-  fprintf (stdout, "n_graphs: %i\n", _graphs);
-  fprintf (stdout, "max_depth = %i\n", _max_depth);
+    ecg_ecg_count (main_graph);
+    fprintf (stdout, "n_graphs: %i\n", _graphs);
+    fprintf (stdout, "max_depth = %i\n", _max_depth);
   */
 
   /* return; */
@@ -1047,6 +1109,9 @@ void ecg_ecg ()
 
 /*
   $Log$
+  Revision 1.5  2004/11/20 21:20:29  liekweg
+  Added iterator functions
+
   Revision 1.4  2004/11/18 16:36:37  liekweg
   Added unique ids for debugging, added access functions
 
