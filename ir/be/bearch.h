@@ -43,6 +43,22 @@ arch_isa_t *arch_add_isa(const char *name);
 arch_register_class_t *arch_add_register_class(arch_isa_t *isa, const char *name, int n_regs);
 
 /**
+ * Add a register set to an isa.
+ * @param cls The register class the set belongs to.
+ * @param name The name of the register set.
+ * @return The register set.
+ */
+arch_register_set_t *arch_add_register_set(arch_isa_t *isa,
+		const arch_register_class_t *cls, const char *name);
+
+/**
+ * Add a register to a register set.
+ * @param set The register set.
+ * @param index The index of the register in the class.
+ */
+void arch_register_set_add_register(arch_register_set_t *set, int index);
+
+/**
  * Add a register to a register class.
  * @param cls The register class.
  * @param index The index of the register (its number within the
@@ -79,14 +95,51 @@ arch_insn_format_t *arch_add_insn_format(arch_isa_t *isa, const char *name, int 
  * @param set The register set.
  * @return The corresponding operand type.
  */
-arch_operand_t *arch_add_operand_register_set(arch_insn_format_t *fmt,
+arch_operand_t *arch_set_operand_register_set(arch_insn_format_t *fmt,
 		int pos, const arch_register_set_t *set);
 
-arch_operand_t *arch_add_operand_callback(arch_insn_format_t *fmt,
+/**
+ * Set the operand to a callback.
+ * @param fmt The instruction format.
+ * @param pos The position of the operand. See also
+ * arch_set_operand_register_set().
+ * @param cb The callback function which decides about the registers to
+ * allocate.
+ * @return The operand.
+ */
+arch_operand_t *arch_set_operand_callback(arch_insn_format_t *fmt,
 		int pos, arch_register_callback_t *cb);
 
-arch_operand_t *arch_add_operand_immediate(arch_insn_format_t *fmt,
+/**
+ * Mark an operand as an immediate.
+ * @param fmt The instructionm format.
+ * @param pos The position. See also arch_set_operand_register_set().
+ * @param imm The immediate which expected.
+ * @return The operand.
+ */
+arch_operand_t *arch_set_operand_immediate(arch_insn_format_t *fmt,
 		int pos, const arch_immediate_t *imm);
+
+/**
+ * Mark an operand as a memory operand.
+ * @param fmt The format.
+ * @param pos The position of the operand.
+ * @return The operand.
+ */
+arch_operand_t *arch_set_operand_memory(arch_insn_format_t *fmt, int pos);
+
+/**
+ * Denote, that an operand must equal another.
+ * This only makes sense with registers. Then, this operand must get the
+ * same register as the one denoted by same_as_pos.
+ *
+ * @param fmt The instruction format.
+ * @param pos The position of the operand.
+ * @param same_as_pos The position of the other operand.
+ * @return The operand.
+ */
+arch_operand_t *arch_set_operand_equals(arch_insn_format_t *fmt, int pos, int same_as_pos);
+
 
 /**
  * Add an instruction to the isa.
@@ -127,7 +180,23 @@ arch_insn_t *arch_find_insn(const arch_isa_t *isa, const char *name);
  * @return The register class, if it has been added, NULL if it is
  * unknown.
  */
-arch_register_class_t *arch_find_register_class(arch_isa_t *isa, const char *name);
+arch_register_class_t *arch_find_register_class(const arch_isa_t *isa, const char *name);
+
+/**
+ * Find a register set in an isa.
+ * @param isa The isa.
+ * @param name The name of the register set.
+ * @return The register set or NULL if it does not exist.
+ */
+arch_register_set_t *arch_find_register_set(const arch_isa_t *isa, const char *name);
+
+/**
+ * find an immediate registered in some isa.
+ * @param isa The isa.
+ * @param name The name of the immediate.
+ * @return The immediate, or NULL if it did not exist.
+ */
+arch_immediate_t *arch_find_immediate(const arch_isa_t *isa, const char *name);
 
 /**
  * Get the register set for a register class.

@@ -87,9 +87,7 @@ struct _arch_register_t {
 struct _arch_register_set_t {
 	arch_header_t header;
 	const struct _arch_register_class_t *reg_class;		/**< The register class for this set. */
-	unsigned comprises_full_class : 1;								/**< True, if all registers of the class
-																											are contained in this set. */
-	int regs[1];																			/**< An array containing 0/1 at place i
+	char regs[1];																			/**< An array containing 0/1 at place i
 																											whether the register with index i is
 																											in the set or not. */
 };
@@ -145,7 +143,7 @@ struct _arch_immediate_t {
  * The member of an enum.
  */
 struct _arch_enum_member_t {
-	arch_header_t header;			/**< The omnipresent header. */
+	arch_header_t header;		/**< The omnipresent header. */
 	arch_enum_t *enm;					/**< The enum, this member belongs to. */
 };
 
@@ -163,11 +161,10 @@ struct _arch_enum_t {
 };
 
 typedef enum _arch_operand_type_t {
-	arch_operand_type_ir = 0,
-	arch_operand_type_variadic,
-	arch_operand_type_symconst,
-	arch_operand_type_register_set,
-	arch_operand_type_immediate
+#define ARCH_OPERAND_TYPE(name,size_in_irn) arch_operand_type_ ## name,
+#include "bearch_operand_types.def"
+#undef ARCH_OPERAND_TYPE
+	arch_operand_type_last
 } arch_operand_type_t;
 
 
@@ -189,13 +186,14 @@ typedef union _arch_operand_data_t {
 																							immediate. */
 
 	const arch_enum_t *enm;										/**< Some enumeration value. */
+
+	int same_as_pos;                          /**< 'Same as' position for equals. */
 } arch_operand_data_t;
 
 /**
  * An operand to an instruction.
  */
 struct _arch_operand_t {
-	int offset_in_irn_data;
 	arch_operand_type_t type;									/**< The type of the operand. */
 	arch_operand_data_t data;									/**< The payload. */
 };
@@ -207,13 +205,23 @@ struct _arch_insn_format_t {
 	arch_header_t header;
 	int n_in;																	/**< Number of in operands. */
 	int n_out;																/**< Number of out operands. */
-	int irn_data_size;
 
 	arch_operand_t operands[1];	/**< Array with operands. */
 };
 
-#define arch_get_in_operand(fmt, index) 		(&((fmt)->operands[(fmt)->n_out + (index)]))
-#define arch_get_out_operand(fmt, index) 		(&((fmt)->operands[index]))
+/*
+ * Transform the position into an offset which is suitable to
+ * index the operands array in the format.
+ *
+ * The layout is:
+ * operand:    in0 in1 in2 ... out0 out1 out2
+ * position:   0   1   2       -1   -2   -3
+ */
+#define arch_inout_to_index(fmt, pos)				((pos) >= 0 ? (pos) : -((pos) + 1) + (fmt)->n_in)
+
+#define arch_get_in_operand(fmt, pos) 			(&((fmt)->operands[arch_inout_to_index(fmt, pos)]))
+#define arch_get_out_operand(fmt, pos) 			(&((fmt)->operands[arch_inout_to_index(fmt, -((pos) + 1))]))
+
 
 /**
  * An instruction.

@@ -1,0 +1,8 @@
+ARCH_OPERAND_TYPE(invalid,       0)
+ARCH_OPERAND_TYPE(memory,        0)
+ARCH_OPERAND_TYPE(equals,        0)
+ARCH_OPERAND_TYPE(callback,      0)
+ARCH_OPERAND_TYPE(variadic,      0)
+ARCH_OPERAND_TYPE(symconst,      sizeof(entity *))
+ARCH_OPERAND_TYPE(register_set,  sizeof(arch_register_set_t *))
+ARCH_OPERAND_TYPE(immediate,     sizeof(tarval *))

@@ -11,7 +11,7 @@
 #include "bearch_t.h"
 
 #include "firm_config.h"
-#include "set.h"
+#include "pset.h"
 
 #include "entity.h"
 #include "ircons_t.h"
@@ -19,6 +19,9 @@
 #if 1 /* HAVE_ALLOCA_H */
 #include <alloca.h>
 #endif /* HAVE_ALLOCA_H */
+
+/* Needed for obstack copy */
+#define bcopy(src,dst,n) memcpy(dst,src,n)
 
 #define INIT_HEADER(tgt, kind_suffix, a_isa, str) \
 	do { \
@@ -37,22 +40,61 @@ static INLINE int hash_header(const arch_header_t *header)
 	return res;
 }
 
-static int cmp_header(const void *a, const void *b, size_t size)
+static int cmp_header(const void *a, const void *b)
 {
 	const arch_header_t *h1 = a;
 	const arch_header_t *h2 = b;
 
-	return !(h1->kind == h2->kind && strcmp(h1->name, h2->name) == 0);
+	return !(h1->kind == h2->kind && h1->isa == h2->isa && strcmp(h1->name, h2->name) == 0);
 }
 
-static set *arch_data = NULL;
+/**
+ * The obstack and pset where the arch data is stored.
+ */
+typedef struct _arch_data_t {
+	struct obstack obst;			/**< Here is the data allocated. */
+	pset *header_set;					/**< Here reside copies of the headers. */
+} arch_data_t;
 
-static set *get_arch_data(void)
+/**
+ * Get the storage (obstack and pset) for the arch objects.
+ * @return A struct containing both, the obst and pset where
+ * the objects are allocated and their pointer are recorded.
+ */
+static INLINE arch_data_t *get_arch_data(void)
 {
-	if(!arch_data)
-		arch_data = new_set(cmp_header, 256);
+	static arch_data_t arch_data;
+	static int inited = 0;
 
-	return arch_data;
+	if(!inited) {
+		obstack_init(&arch_data.obst);
+		arch_data.header_set = new_pset(cmp_header, 512);
+		inited = 1;
+	}
+
+	return &arch_data;
+}
+
+/**
+ * Dump all arch objects in the arch_data collection.
+ */
+static void dump_arch_data(void)
+{
+	void *p;
+	arch_data_t *d = get_arch_data();
+	static const char *kind_names[] = {
+#define ARCH_OBJ(name,in_list)	#name,
+#include "bearch_obj.def"
+#undef ARCH_OBJ
+		""
+	};
+
+	printf("arch set:\n");
+	for(p = pset_first(d->header_set); p; p = pset_next(d->header_set)) {
+		arch_header_t *header = p;
+		printf("%20s %10s %10s\n", kind_names[header->kind], header->name,
+				header->isa ? header->isa->header.name : "");
+	}
 }
 
 typedef struct _obj_info_t {
@@ -78,52 +120,37 @@ static const obj_info_t obj_info[] = {
  * @param isa The isa the object belongs to or NULL if it is the isa
  * itself.
  * @param name The name of the object.
- * @param was_new A pointer to an int where 1/0 is stored if the
- * object was created or already present. If NULL, it is simply ignored.
  * @return A pointer to the object.
  */
 static INLINE void *_arch_data_insert(arch_kind_t kind, arch_isa_t *isa,
-		const char *name, size_t size, int *was_new)
+		const char *name, size_t size)
 {
+	arch_data_t *ad = get_arch_data();
 	const obj_info_t *info = &obj_info[kind];
-	arch_header_t *data = alloca(size);
+	arch_header_t *header = obstack_alloc(&ad->obst, size);
 	arch_header_t *res = NULL;
 
-	memset(data, 0, size);
-	data->kind = kind;
-	data->isa = isa;
-	data->name = get_id_str(new_id_from_str(name));
-	data->is_new = 1;
+	memset(header, 0, size);
+	header->name = name;
+	header->kind = kind;
+	header->isa = isa;
+	header->is_new = 1;
 
-	res = set_insert(get_arch_data(), data, size, hash_header(data));
-
-	/* If the object is newly created and thus not yet present
-	 * in the set, add it to the isa */
-	if(res->is_new) {
-
-		/*
-		 * The inserted object was no isa, list it in the isa if this is
-		 * desired.
-		 */
-		if(isa && info->listed_in_isa)
-			list_add(&res->list, &isa->heads[kind]);
-
-		/* The inserted object is an isa, so initialize all its list heads. */
-		else {
-			int i;
-			arch_isa_t *isa = (arch_isa_t *) res;
-
-			for(i = 0; i < arch_kind_last; ++i)
-				INIT_LIST_HEAD(&isa->heads[i]);
-		}
-	}
+	res = pset_insert(ad->header_set, header, hash_header(header));
 
 	/*
-	 * If the caller wants to know, of the object was newly created,
-	 * give it to him.
+	 * If the object is newly created and thus not yet present
+	 * in the set, add it to the isa
+	 * The inserted object was no isa, list it in the isa if this is
+	 * desired.
 	 */
-	if(was_new)
-		*was_new = res->is_new;
+	if(res->is_new && isa && info->listed_in_isa) {
+		list_add(&res->list, &isa->heads[kind]);
+	}
+
+	/* if it was in the set, remove it from the obstack */
+	if(!res->is_new)
+		obstack_free(&ad->obst, header);
 
 	/* Mark the object as NOT new. */
 	res->is_new = 0;
@@ -131,19 +158,18 @@ static INLINE void *_arch_data_insert(arch_kind_t kind, arch_isa_t *isa,
 	return res;
 }
 
-#define arch_data_insert(type_suffix, isa, name, was_new) \
-	_arch_data_insert(arch_kind_ ## type_suffix, isa, name, sizeof(arch_ ## type_suffix ## _t), was_new)
+#define arch_data_insert(type_suffix, isa, name) \
+	_arch_data_insert(arch_kind_ ## type_suffix, isa, name, sizeof(arch_ ## type_suffix ## _t))
 
 static INLINE void *_arch_data_find(arch_kind_t kind, const arch_isa_t *isa, const char *name)
 {
 	arch_header_t header;
 
-	memset(&header, 0, sizeof(header));
 	header.kind = kind;
 	header.isa = (arch_isa_t *) isa;
 	header.name = name;
 
-	return set_find(get_arch_data(), &header, sizeof(header), hash_header(&header));
+	return pset_find(get_arch_data()->header_set, &header, hash_header(&header));
 }
 
 #define arch_data_find(type_suffix, isa, name) \
@@ -151,18 +177,59 @@ static INLINE void *_arch_data_find(arch_kind_t kind, const arch_isa_t *isa, con
 
 arch_isa_t *arch_add_isa(const char *name)
 {
-	return arch_data_insert(isa, NULL, name, NULL);
+	arch_isa_t *isa;
+	int i;
+
+	isa = arch_data_insert(isa, NULL, name);
+	for(i = 0; i < arch_kind_last; ++i)
+		INIT_LIST_HEAD(&isa->heads[i]);
+
+	return isa;
+}
+
+arch_register_set_t *arch_add_register_set(arch_isa_t *isa,
+		const arch_register_class_t *cls, const char *name)
+{
+	arch_register_set_t *set =
+		_arch_data_insert(arch_kind_register_set, isa, name,
+				sizeof(arch_register_set_t) + cls->n_regs * sizeof(set->regs[0]));
+
+	set->reg_class = cls;
+	memset(set->regs, 0, sizeof(set->regs[0]) * cls->n_regs);
+
+	return set;
 }
 
 arch_register_class_t *arch_add_register_class(arch_isa_t *isa, const char *name, int n_regs)
 {
+	char buf[64];
+	char *set_name;
+	int i, n;
+
 	arch_register_class_t *cls =
 		_arch_data_insert(arch_kind_register_class, isa, name,
-				sizeof(arch_register_class_t) + n_regs * sizeof(arch_register_t *), NULL);
+				sizeof(arch_register_class_t) + n_regs * sizeof(arch_register_t *));
+
+	/* Make a name for the set contianing all regs in this class. */
+	n = snprintf(buf, sizeof(buf), "%s$set", name);
+	set_name = obstack_copy(&get_arch_data()->obst, buf, n);
 
 	cls->n_regs = n_regs;
 
+	/* make the set of all registers in this class */
+	cls->set = arch_add_register_set(isa, cls, name);
+
+	/* Add each register in this class to the set */
+	for(i = 0; i < n_regs; ++i)
+		cls->set->regs[i] = 1;
+
 	return cls;
+}
+
+void arch_register_set_add_register(arch_register_set_t *set, int index)
+{
+	assert(index >= 0 && index < set->reg_class->n_regs);
+	set->regs[index] = 1;
 }
 
 arch_register_t *arch_add_register(arch_register_class_t *cls, int index, const char *name)
@@ -171,7 +238,7 @@ arch_register_t *arch_add_register(arch_register_class_t *cls, int index, const 
 
 	assert(index >= 0 && index < cls->n_regs);
 	reg = _arch_data_insert(arch_kind_register, arch_obj_get_isa(cls), name,
-			sizeof(arch_register_t), NULL);
+			sizeof(arch_register_t));
 	cls->regs[index] = reg;
 
 	reg->index = index;
@@ -183,18 +250,43 @@ arch_register_t *arch_add_register(arch_register_class_t *cls, int index, const 
 
 arch_immediate_t *arch_add_immediate(arch_isa_t *isa, const char *name, ir_mode *mode)
 {
-	arch_immediate_t *imm = arch_data_insert(immediate, isa, name, NULL);
+	arch_immediate_t *imm = arch_data_insert(immediate, isa, name);
 	imm->mode = mode;
 	return imm;
 }
 
+/*
+ * Size of each operand type which should be allocated in an irn.
+ * Keep this list up to date with the arch_operand_type_t enum.
+ */
 static const size_t operand_sizes[] = {
-	0,
-	0,
-	sizeof(entity *),
-	sizeof(arch_register_t *),
-	sizeof(tarval *)
+#define ARCH_OPERAND_TYPE(name,size_in_irn) size_in_irn,
+#include "bearch_operand_types.def"
+#undef ARCH_OPERAND_TYPE
+	0
 };
+
+/**
+ * Determine the amount of bytes which has to be extra allocated when a
+ * new ir node is made from a insn format.
+ * This size depends on the operands specified in the insn format.
+ * @param fmt The instruction format.
+ * @return The number of bytes which the operands of an instruction
+ * will need in an ir node.
+ */
+static INLINE int arch_get_operands_size(const arch_insn_format_t *fmt)
+{
+	int i, res = 0;
+
+	for(i = 0; i < fmt->n_in + fmt->n_out; ++i) {
+		arch_operand_type_t type = fmt->operands[i].type;
+
+		assert(type > arch_operand_type_invalid && type < arch_operand_type_last);
+		res += operand_sizes[type];
+	}
+
+	return res;
+}
 
 arch_insn_format_t *arch_add_insn_format(arch_isa_t *isa, const char *name, int n_in, int n_out)
 {
@@ -202,39 +294,29 @@ arch_insn_format_t *arch_add_insn_format(arch_isa_t *isa, const char *name, int 
 
 	arch_insn_format_t *fmt =
 		_arch_data_insert(arch_kind_insn_format, isa, name,
-				sizeof(arch_insn_format_t) + (n_in + n_out) * sizeof(arch_operand_type_t), NULL);
+				sizeof(arch_insn_format_t) + (n_in + n_out) * sizeof(arch_operand_t));
 
 	fmt->n_in = n_in;
 	fmt->n_out = n_out;
-	fmt->irn_data_size = 0;
 
-	/*
-	 * Compute the number of bytes which must be extra allocated if this
-	 * opcode is instantiated.
-	 */
-	for(i = 0; i < fmt->n_in; ++i) {
-		arch_operand_t *op = arch_get_in_operand(fmt, i);
-		op->offset_in_irn_data = fmt->irn_data_size;
-		fmt->irn_data_size += operand_sizes[op->type];
-	}
-
-	if(fmt->n_out == 1) {
-		arch_operand_t *op = arch_get_in_operand(fmt, i);
-		op->offset_in_irn_data = fmt->irn_data_size;
-		fmt->irn_data_size += operand_sizes[op->type];
-	}
+	/* initialize each operand with invalid. */
+	for(i = 0; i < n_in + n_out; ++i)
+		fmt->operands[i].type = arch_operand_type_invalid;
 
 	return fmt;
 }
 
 arch_insn_t *arch_add_insn(arch_insn_format_t *fmt, const char *name)
 {
+	/* Get the size the operands will need in the irn. */
+	int operands_size = arch_get_operands_size(fmt);
+
 	/* Insert the insn into the isa. */
-	arch_insn_t *insn = arch_data_insert(insn, arch_obj_get_isa(fmt), name, NULL);
+	arch_insn_t *insn = arch_data_insert(insn, arch_obj_get_isa(fmt), name);
 
 	insn->format = fmt;
 	insn->op = new_ir_op(get_next_ir_opcode(), name, op_pin_state_pinned, 0,
-			oparity_dynamic, 0, sizeof(arch_irn_data_t) + fmt->irn_data_size);
+			oparity_dynamic, 0, sizeof(arch_irn_data_t) + operands_size);
 
 	return insn;
 }
@@ -254,14 +336,74 @@ arch_insn_t *arch_find_insn(const arch_isa_t *isa, const char *name)
 	return arch_data_find(insn, isa, name);
 }
 
-arch_register_class_t *arch_find_register_class_t(arch_isa_t *isa, const char *name)
+arch_immediate_t *arch_find_immediate(const arch_isa_t *isa, const char *name)
+{
+	return arch_data_find(immediate, isa, name);
+}
+
+arch_register_class_t *arch_find_register_class(const arch_isa_t *isa, const char *name)
 {
 	return arch_data_find(register_class, isa, name);
+}
+
+arch_register_set_t *arch_find_register_set(const arch_isa_t *isa, const char *name)
+{
+	return arch_data_find(register_set, isa, name);
 }
 
 arch_register_set_t *arch_get_register_set_for_class(arch_register_class_t *cls)
 {
 	return _arch_get_register_set_for_class(cls);
+}
+
+static INLINE arch_operand_t *_arch_set_operand(arch_insn_format_t *fmt, int pos,
+		arch_operand_type_t type)
+{
+	arch_operand_t *operand;
+	int ofs = arch_inout_to_index(fmt, pos);
+
+	assert(ofs < fmt->n_in + fmt->n_out);
+
+	operand = &fmt->operands[ofs];
+	operand->type = type;
+	return operand;
+}
+
+arch_operand_t *arch_set_operand_register_set(arch_insn_format_t *fmt,
+		int pos, const arch_register_set_t *set)
+{
+	arch_operand_t *op = _arch_set_operand(fmt, pos, arch_operand_type_register_set);
+	op->data.set = set;
+	return op;
+}
+
+arch_operand_t *arch_set_operand_callback(arch_insn_format_t *fmt,
+		int pos, arch_register_callback_t *cb)
+{
+	arch_operand_t *op = _arch_set_operand(fmt, pos, arch_operand_type_callback);
+	op->data.callback = cb;
+	return op;
+}
+
+arch_operand_t *arch_set_operand_immediate(arch_insn_format_t *fmt,
+		int pos, const arch_immediate_t *imm)
+{
+	arch_operand_t *op = _arch_set_operand(fmt, pos, arch_operand_type_immediate);
+	op->data.imm = imm;
+	return op;
+}
+
+arch_operand_t *arch_set_operand_memory(arch_insn_format_t *fmt, int pos)
+{
+	arch_operand_t *op = _arch_set_operand(fmt, pos, arch_operand_type_memory);
+	return op;
+}
+
+arch_operand_t *arch_set_operand_equals(arch_insn_format_t *fmt, int pos, int same_as_pos)
+{
+	arch_operand_t *op = _arch_set_operand(fmt, pos, arch_operand_type_equals);
+	op->data.same_as_pos = same_as_pos;
+	return op;
 }
 
 ir_node *arch_new_node(const arch_insn_t *insn, ir_graph *irg, ir_node *block,
