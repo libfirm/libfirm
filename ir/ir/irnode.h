@@ -610,8 +610,8 @@ INLINE void     set_Cast_op (ir_node *node, ir_node *op);
 INLINE type    *get_Cast_type (ir_node *node);
 INLINE void     set_Cast_type (ir_node *node, type *to_tp);
 
-/* returns true if n is Phi or Filter in interprocedural_view. */
-INLINE int      is_Phi (ir_node *n);
+/* Returns true if n is Phi or Filter in interprocedural_view. */
+INLINE int       is_Phi (ir_node *n);
 /* These routines also work for Filter nodes in interprocedural view. */
 INLINE ir_node **get_Phi_preds_arr (ir_node *node);
 INLINE int       get_Phi_n_preds (ir_node *node);
@@ -734,6 +734,8 @@ INLINE int      is_Bad    (ir_node *node);
 INLINE int      is_no_Block (ir_node *node);
 /** returns true if the node is a Block */
 INLINE int      is_Block (ir_node *node);
+/** returns true if node is a Unknown node. */
+INLINE int      is_Unknown (ir_node *node);
 /** returns true if node is a Proj node or a Filter node in
  * intraprocedural view */
 INLINE int      is_Proj (const ir_node *node);

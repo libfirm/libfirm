@@ -2370,6 +2370,13 @@ is_Block (ir_node *node) {
   return (get_irn_opcode(node) == iro_Block);
 }
 
+/* returns true if node is a Unknown node. */
+INLINE int
+is_Unknown (ir_node *node) {
+  assert(node);
+  return (get_irn_opcode(node) == iro_Unknown);
+}
+
 INLINE int
 is_Proj (const ir_node *node) {
   assert(node);
