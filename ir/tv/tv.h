@@ -1,5 +1,39 @@
 /* Declarations for Target Values.
-   Copyright (C) 1995, 1996 Christian von Roques */
+   Copyright (C) 1995, 1996 Christian von Roques
+
+Discussion of new interface, proposals by Prof. Waite:
+(email of 13.6.2001)
+> 1. You say that you plan to replace the tv module.  That replacement is
+>    absolutely essential for an ANSI C translator:  Section 6.1.3.2 of the
+>    standard says that the representation of an integer_constant depends
+>    upon its value as well as any suffixes that are attached to it.  The
+>    possible Firm modes for such a constant are i, I, l, and L.  The
+>    current tv module provides only one integer conversion routine, and
+>    that requires conversion by the client.  Since the type of the value
+>    argument is long, this may preclude the representation of an unsigned
+>    long constant.
+>
+>    There is a similar problem with floating constants.  Floating
+>    constants can be suffixed in C, and the mode depends upon the suffix.
+>    It can indicate that the constant is of type long double, which your
+>    current tv module is incapable of representing.
+>
+>    Your tv module interface accepts two kinds of information: modes and
+>    values.  Values obtained from the program text might be uninterpreted
+>    strings, strings interpreted as integers, and strings interpreted as
+>    reals.  Values provided by the compiler are usually integers.  Modes are
+>    always Firm modes.  It seems to me that the tv module should provide
+>    tarval* constructors for three of the four kinds of values.  Each of these
+>    constructors should have an ir_mode parameter and one or more parameters
+>    appropriate for the kind of value.  As is currently the case, one
+>    constructor should be provided for both compiler-generated integers and
+>    source strings interpreted as integers.  (This avoids problems of
+>    different conversion radices -- the client does the conversion.)  For
+>    symmetry, the constructor for source strings interpreted as reals should
+>    accept a long double parameter and require the client to do the
+>    conversion.
+
+*/
 
 #ifndef _TV_H
 #define _TV_H
