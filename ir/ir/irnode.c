@@ -29,10 +29,11 @@
 
 /* some constants fixing the positions of nodes predecessors
    in the in array */
-#define CALL_PARAM_OFFSET 2
-#define SEL_INDEX_OFFSET 2
-#define RETURN_RESULT_OFFSET 1  /* mem is not a result */
-#define END_KEEPALIVE_OFFSET 0
+#define CALL_PARAM_OFFSET     2
+#define FUNCCALL_PARAM_OFFSET 1
+#define SEL_INDEX_OFFSET      2
+#define RETURN_RESULT_OFFSET  1  /* mem is not a result */
+#define END_KEEPALIVE_OFFSET  0
 
 static const char *pnc_name_arr [] = {
   "False", "Eq", "Lt", "Le",
@@ -1192,13 +1193,13 @@ set_FuncCall_ptr (ir_node *node, ir_node *ptr) {
 ir_node **
 get_FuncCall_param_arr (ir_node *node) {
   assert (node->op == op_FuncCall);
-  return (ir_node **)&get_irn_in(node)[CALL_PARAM_OFFSET];
+  return (ir_node **)&get_irn_in(node)[FUNCCALL_PARAM_OFFSET];
 }
 
 int
 get_FuncCall_n_params (ir_node *node)  {
   assert (node->op == op_FuncCall);
-  return (get_irn_arity(node) - CALL_PARAM_OFFSET);
+  return (get_irn_arity(node) - FUNCCALL_PARAM_OFFSET);
 }
 
 int
@@ -1216,13 +1217,13 @@ set_FuncCall_arity (ir_node *node, ir_node *arity) {
 ir_node *
 get_FuncCall_param (ir_node *node, int pos) {
   assert (node->op == op_FuncCall);
-  return get_irn_n(node, pos + CALL_PARAM_OFFSET);
+  return get_irn_n(node, pos + FUNCCALL_PARAM_OFFSET);
 }
 
 void
 set_FuncCall_param (ir_node *node, int pos, ir_node *param) {
   assert (node->op == op_FuncCall);
-  set_irn_n(node, pos + CALL_PARAM_OFFSET, param);
+  set_irn_n(node, pos + FUNCCALL_PARAM_OFFSET, param);
 }
 
 type *
