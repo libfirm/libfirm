@@ -7,6 +7,11 @@
 #ifndef _IMPL_H
 #define _IMPL_H
 
+#define _MANGLE(prefix,name)		prefix ## name
+
+#define INTERNAL(name)					_MANGLE(_, name)
+
+
 #define _HEAD1(name,res,t1) \
 	res (name)(t1 p1)
 
@@ -67,29 +72,29 @@ _HEAD4(name, res, t1, t2, t3, t4) { \
 
 
 #define FIRM_IMPL1(name,type,t1) \
-  _IMPL1(name, __, return, type, t1)
+  _IMPL1(name, _, return, type, t1)
 
 #define FIRM_IMPL2(name,type,t1,t2) \
-  _IMPL2(name, __, return, type, t1, t2)
+  _IMPL2(name, _, return, type, t1, t2)
 
 #define FIRM_IMPL3(name,type,t1,t2,t3) \
-  _IMPL3(name, __, return, type, t1, t2, t3)
+  _IMPL3(name, _, return, type, t1, t2, t3)
 
 #define FIRM_IMPL4(name,type,t1,t2,t3,t4) \
-  _IMPL4(name, __, return, type, t1, t2, t3, t4)
+  _IMPL4(name, _, return, type, t1, t2, t3, t4)
 
 
 #define FIRM_IMPL1_VOID(name,t1) \
-  _IMPL1(name, __, (void), void, t1)
+  _IMPL1(name, _, (void), void, t1)
 
 #define FIRM_IMPL2_VOID(name,t1,t2) \
-  _IMPL2(name, __, (void), void, t1, t2)
+  _IMPL2(name, _, (void), void, t1, t2)
 
 #define FIRM_IMPL3_VOID(name,t1,t2,t3) \
-  _IMPL3(name, __, (void), void, t1, t2, t3)
+  _IMPL3(name, _, (void), void, t1, t2, t3)
 
 #define FIRM_IMPL4_VOID(name,t1,t2,t3,t4) \
-  _IMPL4(name, __, (void), void, t1, t2, t3, t4)
+  _IMPL4(name, _, (void), void, t1, t2, t3, t4)
 
 #define FIRM_PROTO1(name,type,t1) 						_HEAD1(name, type, t1)
 #define FIRM_PROTO2(name,type,t1,t2) 					_HEAD2(name, type, t1, t2)
