@@ -89,8 +89,8 @@ extern "C" {
 
 #include "irouts.h"        /* Graph reversal / out edges. */
 #include "irdom.h"         /* Dominator analysis */
-#include "cgana.h"         /* Analysis to construct interprocedural graph
-                              including some optimizations */
+#include "cgana.h"         /* Analysis to construct interprocedural graph */
+                           /* including some optimizations */
 #include "irloop.h"        /* loop and backedge analysis */
 
 #include "irgmod.h"        /* Support to modify ir */
@@ -113,11 +113,11 @@ extern "C" {
 /**
  * libFirm initialization parameters.
  */
-typedef struct _firm_parameter_t {
+struct _firm_parameter_t {
   /**
    * The size of this structure. init_firm() will only initialize
    * this amount of data. This allows to add more fields to this structure
-   * without breaking compatibility to older source
+   * without breaking compatibility to older source.
    */
   unsigned int size;
 
@@ -146,7 +146,12 @@ typedef struct _firm_parameter_t {
    */
   hash_types_func_t                        *hash_types_func;
 
-} firm_parameter_t;
+};
+
+
+typedef struct _firm_parameter_t firm_parameter_t;
+
+
 
 /**
  * Initialize the firm library.

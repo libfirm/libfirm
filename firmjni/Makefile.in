@@ -64,6 +64,7 @@ MEMBERS += $(IMPL_MEMBERS)
 FIRM_PATH_HEADERS=common/firm.h common/firm_common.h \
 	ident/ident.h tv/tv.h \
 	tr/type.h tr/entity.h tr/type_or_entity.h tr/tpop.h tr/mangle.h \
+	tr/type_identify.h					\
 	ir/irprog.h ir/irgraph.h ir/irnode.h ir/irmode.h ir/irop.h \
 	ir/ircons.h ir/ircgcons.h ir/irflag.h ir/irvrfy.h ir/irdump.h \
 	ir/iropt.h ir/irgopt.h ir/ircgopt.h \
