@@ -532,6 +532,7 @@ entity *resolve_ent_polymorphy(type *dynamic_class, entity* static_ent);
  *
  *  Writes the entity and all its attributes to stdout if DEBUG_libfirm
  *  is set.  Else does nothing. */
+void    dump_entity_to_file (FILE *F, entity *ent);
 void    dump_entity (entity *ent);
 
 

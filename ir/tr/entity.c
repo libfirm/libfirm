@@ -346,6 +346,11 @@ set_entity_variability (entity *ent, ent_variability var)
     ent->values    = NEW_ARR_F(ir_node *, 0);
     ent->val_paths = NEW_ARR_F(compound_graph_path *, 0);
   }
+  if ((is_atomic_type(ent->type)) &&
+      (ent->variability == variability_uninitialized) && (var != variability_uninitialized)) {
+    /* Set default constant value. */
+    ent->value = new_rd_Unknown(get_const_code_irg(), get_type_mode(ent->type));
+  }
 
   if ((is_compound_type(ent->type)) &&
       (var == variability_uninitialized) && (ent->variability != variability_uninitialized)) {
@@ -1197,36 +1202,40 @@ entity *resolve_ent_polymorphy(type *dynamic_class, entity* static_ent) {
 #if 1 || DEBUG_libfirm
 int dump_node_opcode(FILE *F, ir_node *n); /* from irdump.c */
 
-#define X(a)    case a: printf(#a); break
-void dump_entity (entity *ent) {
+
+
+#define X(a)    case a: fprintf(F, #a); break
+void    dump_entity_to_file (FILE *F, entity *ent) {
   int i, j;
+  assert(ent && ent->kind == k_entity);
   type *owner = get_entity_owner(ent);
   type *type  = get_entity_type(ent);
-  assert(ent && ent->kind == k_entity);
-  printf("entity %s (%ld)\n", get_entity_name(ent), get_entity_nr(ent));
-  printf("  type:  %s (%ld)\n", get_type_name(type),  get_type_nr(type));
-  printf("  owner: %s (%ld)\n", get_type_name(owner), get_type_nr(owner));
+  fprintf(F, "entity %s (%ld)\n", get_entity_name(ent), get_entity_nr(ent));
+  fprintf(F, "  type:  %s (%ld)\n", get_type_name(type),  get_type_nr(type));
+  fprintf(F, "  owner: %s (%ld)\n", get_type_name(owner), get_type_nr(owner));
 
-  if (get_entity_n_overwrites(ent) > 0) {
-    printf("  overwrites:\n");
-    for (i = 0; i < get_entity_n_overwrites(ent); ++i) {
-      entity *ov = get_entity_overwrites(ent, i);
-      printf("    %d: %s of class %s\n", i, get_entity_name(ov), get_type_name(get_entity_owner(ov)));
+  if (is_class_type(get_entity_owner(ent))) {
+    if (get_entity_n_overwrites(ent) > 0) {
+      fprintf(F, "  overwrites:\n");
+      for (i = 0; i < get_entity_n_overwrites(ent); ++i) {
+	entity *ov = get_entity_overwrites(ent, i);
+      fprintf(F, "    %d: %s of class %s\n", i, get_entity_name(ov), get_type_name(get_entity_owner(ov)));
+      }
+    } else {
+      fprintf(F, "  Does not overwrite other entities. \n");
     }
-  } else {
-    printf("  Does not overwrite other entities. \n");
-  }
-  if (get_entity_n_overwrittenby(ent) > 0) {
-    printf("  overwritten by:\n");
-    for (i = 0; i < get_entity_n_overwrittenby(ent); ++i) {
-      entity *ov = get_entity_overwrittenby(ent, i);
-      printf("    %d: %s of class %s\n", i, get_entity_name(ov), get_type_name(get_entity_owner(ov)));
+    if (get_entity_n_overwrittenby(ent) > 0) {
+      fprintf(F, "  overwritten by:\n");
+      for (i = 0; i < get_entity_n_overwrittenby(ent); ++i) {
+	entity *ov = get_entity_overwrittenby(ent, i);
+	fprintf(F, "    %d: %s of class %s\n", i, get_entity_name(ov), get_type_name(get_entity_owner(ov)));
+      }
+    } else {
+      fprintf(F, "  Is not overwriten by other entities. \n");
     }
-  } else {
-    printf("  Is not overwriten by other entities. \n");
   }
 
-  printf("  allocation:  ");
+  fprintf(F, "  allocation:  ");
   switch (get_entity_allocation(ent)) {
     X(allocation_dynamic);
     X(allocation_automatic);
@@ -1234,14 +1243,14 @@ void dump_entity (entity *ent) {
     X(allocation_parameter);
   }
 
-  printf("\n  visibility:  ");
+  fprintf(F, "\n  visibility:  ");
   switch (get_entity_visibility(ent)) {
     X(visibility_local);
     X(visibility_external_visible);
     X(visibility_external_allocated);
   }
 
-  printf("\n  variability: ");
+  fprintf(F, "\n  variability: ");
   switch (get_entity_variability(ent)) {
     X(variability_uninitialized);
     X(variability_initialized);
@@ -1251,47 +1260,58 @@ void dump_entity (entity *ent) {
 
   if (get_entity_variability(ent) != variability_uninitialized) {
     if (is_atomic_entity(ent)) {
-      printf("\n  atomic value: ");
-      dump_node_opcode(stdout, get_atomic_ent_value(ent));
+      fprintf(F, "\n  atomic value: ");
+      dump_node_opcode(F, get_atomic_ent_value(ent));
     } else {
-      printf("\n  compound values:");
+      fprintf(F, "\n  compound values:");
       for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
     compound_graph_path *path = get_compound_ent_value_path(ent, i);
     entity *ent0 = get_compound_graph_path_node(path, 0);
-    printf("\n    %3d ", get_entity_offset_bits(ent0));
+    fprintf(F, "\n    %3d ", get_entity_offset_bits(ent0));
     if (get_type_state(type) == layout_fixed)
-      printf("(%3d) ",   get_compound_ent_value_offset_bits(ent, i));
-    printf("%s", get_entity_name(ent0));
+      fprintf(F, "(%3d) ",   get_compound_ent_value_offset_bits(ent, i));
+    fprintf(F, "%s", get_entity_name(ent0));
     for (j = 0; j < get_compound_graph_path_length(path); ++j) {
       entity *node = get_compound_graph_path_node(path, j);
-      printf(".%s", get_entity_name(node));
+      fprintf(F, ".%s", get_entity_name(node));
       if (is_array_type(get_entity_owner(node)))
-        printf("[%d]", get_compound_graph_path_array_index(path, j));
+        fprintf(F, "[%d]", get_compound_graph_path_array_index(path, j));
     }
-    printf("\t = ");
-    dump_node_opcode(stdout, get_compound_ent_value(ent, i));
+    fprintf(F, "\t = ");
+    dump_node_opcode(F, get_compound_ent_value(ent, i));
       }
     }
   }
 
-  printf("\n  volatility:  ");
+  fprintf(F, "\n  volatility:  ");
   switch (get_entity_volatility(ent)) {
     X(volatility_non_volatile);
     X(volatility_is_volatile);
   }
 
-  printf("\n  peculiarity: %s", get_peculiarity_string(get_entity_peculiarity(ent)));
-  printf("\n  ld_name: %s", ent->ld_name ? get_entity_ld_name(ent) : "no yet set");
-  printf("\n  offset:  %d", get_entity_offset_bits(ent));
+  fprintf(F, "\n  peculiarity: %s", get_peculiarity_string(get_entity_peculiarity(ent)));
+  fprintf(F, "\n  ld_name: %s", ent->ld_name ? get_entity_ld_name(ent) : "no yet set");
+  fprintf(F, "\n  offset:  %d", get_entity_offset_bits(ent));
   if (is_method_type(get_entity_type(ent))) {
-    if (get_entity_irg(ent))   /* can be null */
-      { printf("\n  irg = %ld", get_irg_graph_nr(get_entity_irg(ent))); }
-    else
-      { printf("\n  irg = NULL"); }
+    if (get_entity_irg(ent))   /* can be null */ {
+      fprintf(F, "\n  irg = %ld", get_irg_graph_nr(get_entity_irg(ent)));
+      if (get_irp_callgraph_state() == irp_callgraph_and_calltree_consistent) {
+	fprintf(F, "\n    recursion depth %d", get_irg_recursion_depth(get_entity_irg(ent)));
+	fprintf(F, "\n    loop depth      %d", get_irg_loop_depth(get_entity_irg(ent)));
+      }
+    } else {
+      fprintf(F, "\n  irg = NULL");
+    }
   }
-  printf("\n\n");
+  fprintf(F, "\n\n");
 }
 #undef X
+
+void dump_entity (entity *ent) {
+  dump_entity_to_file(stdout, ent);
+}
+
 #else  /* DEBUG_libfirm */
+void dump_entity_to_file (FILE *F, entity *ent) {}
 void dump_entity (entity *ent) {}
 #endif /* DEBUG_libfirm */

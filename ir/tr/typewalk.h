@@ -31,29 +31,25 @@
 
 #include "irgraph.h"
 
-/**
- * the type walk function
+/** Type of argument functions for type walkers.
  *
  * @param tore    points to the visited type or entity
  * @param env     free environment pointer
  */
 typedef void type_walk_func(type_or_ent *tore, void *env);
 
-/**
- * the class walk function
+/**  The class walk function
  *
  * @param clss    points to the visited class
  * @param env     free environment pointer
  */
 typedef void class_walk_func(type *clss, void *env);
 
-/**
-    Touches every type and entity in unspecified order.  If new
-    types/entities are created during the traversal these will
-    be visited, too. */
-void type_walk(type_walk_func *pre,
-	       type_walk_func *post,
-	       void *env);
+/** Touches every type and entity in unspecified order.  If new
+ *  types/entities are created during the traversal these will
+ *  be visited, too.
+ *  Does not touch frame types or types for value params ... */
+void type_walk(type_walk_func *pre, type_walk_func *post, void *env);
 
 /** Walks over all type information reachable from an ir graph.
  *

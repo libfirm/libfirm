@@ -191,13 +191,10 @@ static void start_type_walk(ir_node *node, void *env) {
   }
 }
 
-void type_walk(type_walk_func *pre,
-	       type_walk_func *post,
-	       void *env) {
+void type_walk(type_walk_func *pre, type_walk_func *post, void *env) {
   int i, n_types = get_irp_n_types();
+
   ++type_visited;
-  /*type_walk_2((type_or_ent *)get_glob_type(), pre, post, env);
-   global type is on the list visited below, too. */
   for (i = 0; i < n_types; i++) {
     type_walk_2((type_or_ent *)get_irp_type(i), pre, post, env);
   }
