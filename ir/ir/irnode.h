@@ -157,9 +157,19 @@ inline int       Block_not_block_visited(ir_node *node);
 inline ir_node  *get_Block_graph_arr (ir_node *node, int pos);
 inline void      set_Block_graph_arr (ir_node *node, int pos, ir_node *value);
 
-void  set_Block_exc (ir_node*, exc_t);
-exc_t get_Block_exc (ir_node*);
+/* exc handling */
+void     set_Block_exc     (ir_node*, exc_t);
+exc_t    get_Block_exc     (ir_node*);
 
+void     set_Node_exc      (ir_node*, exc_t);
+exc_t    get_Node_exc      (ir_node*);
+
+/* handler handling */
+void     set_Block_handler (ir_node*, ir_node*);
+ir_node* get_Block_handler (ir_node*);
+
+void     set_Node_handler  (ir_node*, ir_node*);
+ir_node* get_Node_handler  (ir_node*);
 /* Set and remove interprocedural predecessors. If the interprocedural
  * predecessors are removed, the node has the same predecessors in
  * both views. */
@@ -168,7 +178,6 @@ void set_Block_cg_cfgpred(ir_node * node, int pos, ir_node * pred);
 ir_node ** get_Block_cg_cfgpred_arr(ir_node * node);
 int get_Block_cg_n_cfgpreds(ir_node * node);
 void remove_Block_cg_cfgpred_arr(ir_node * node);
-
 
 inline int  get_End_n_keepalives(ir_node *end);
 inline ir_node *get_End_keepalive(ir_node *end, int pos);
@@ -271,6 +280,13 @@ typedef enum {
 } linkage_type;
 inline linkage_type get_Sel_linkage_type (ir_node *node);
 inline void     set_Sel_linkage_type (ir_node *node, linkage_type lt);
+
+type           *get_InstOf_ent   (ir_node*);
+void            set_InstOf_ent   (ir_node*, type*);
+ir_node        *get_InstOf_obj   (ir_node*);
+void            set_InstOf_obj   (ir_node*, ir_node*);
+ir_node        *get_InstOf_store (ir_node*);
+void            set_InstOf_store (ir_node*, ir_node*);
 
 inline ir_node *get_Call_mem (ir_node *node);
 inline void     set_Call_mem (ir_node *node, ir_node *mem);

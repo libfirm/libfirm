@@ -33,6 +33,7 @@ typedef struct {
 				 in different phases.  Eventually inline the whole
 				 datastructure. */
   exc_t exc;					/* role of this block for exception handling */
+  ir_node *handler_entry;		/* handler entry block iff this block is part of a region */
   ir_node ** in_cg;           /* array with predecessors in
 			       * interprocedural_view, if they differ
 			       * from intraprocedural predecessors */
@@ -80,6 +81,13 @@ typedef struct {
 #endif
 } alloc_attr;
 
+/* InstOf attributes */
+typedef struct
+{
+  type *ent;
+  int dfn;
+} io_attr;
+
 /* Filter attributes */
 typedef struct {
   long proj;                 /* contains the result position to project (Proj) */
@@ -109,6 +117,7 @@ typedef union {
   sel_attr       s;     /* For Sel. */
   call_attr      call;  /* For Call: pointer to the type of the method to call */
   alloc_attr     a;     /* For Alloc. */
+  io_attr		 io;	/* For InstOf */
   type          *f;     /* For Free. */
   int            phi0_pos;  /* For Phi. Used to remember the value defined by
 			       this Phi node.  Needed when the Phi is completed

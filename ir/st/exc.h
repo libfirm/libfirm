@@ -34,7 +34,7 @@ typedef enum {
   // must push a new exc contrext at entry of block:
   exc_region,					/* region entry */
 
-  // must pop current exc contrext at exit of block
+  // must pop current exc contrext at EXIT of block
   exc_exit,						/* region exit */
 
   // must pop current exc contrext at entry of block

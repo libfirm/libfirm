@@ -24,10 +24,10 @@ typedef enum {
   iro_Block,
   iro_Start, iro_End, iro_Jmp, iro_Cond, iro_Return, iro_Raise,
   iro_Const, iro_SymConst,
-  iro_Sel,
+  iro_Sel,  iro_InstOf,
   iro_Call, iro_Add, iro_Sub, iro_Minus, iro_Mul, iro_Quot, iro_DivMod,
-  iro_Div, iro_Mod, iro_Abs, iro_And, iro_Or, iro_Eor, iro_Not,
-  iro_Cmp, iro_Shl, iro_Shr, iro_Shrs, iro_Rot, iro_Conv,
+  iro_Div,  iro_Mod, iro_Abs, iro_And, iro_Or, iro_Eor, iro_Not,
+  iro_Cmp,  iro_Shl, iro_Shr, iro_Shrs, iro_Rot, iro_Conv,
   iro_Phi,
   iro_Load, iro_Store, iro_Alloc, iro_Free, iro_Sync,
   iro_Proj, iro_Tuple, iro_Id, iro_Bad,
@@ -45,6 +45,7 @@ extern ir_op *op_Cond;
 extern ir_op *op_Return;
 extern ir_op *op_Raise;
 extern ir_op *op_Sel;
+extern ir_op *op_InstOf;
 
 extern ir_op *op_Const;
 extern ir_op *op_SymConst;

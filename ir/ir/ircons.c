@@ -56,6 +56,7 @@ new_rd_Block (dbg_info* db, ir_graph *irg,  int arity, ir_node **in)
   set_Block_block_visited(res, 0);
 
   res->attr.block.exc = exc_normal;
+  res->attr.block.handler_entry = 0;
   res->attr.block.in_cg = NULL;
 
   irn_vrfy (res);
@@ -562,6 +563,27 @@ new_rd_Sel (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *store, ir_node
   return res;
 }
 
+ir_node *
+new_rd_InstOf (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store, ir_node *objptr, type *ent)
+{
+  ir_node **r_in;
+  ir_node *res;
+  int r_arity;
+
+  r_arity = 2;
+  NEW_ARR_A (ir_node *, r_in, r_arity);
+  r_in [0] = store;
+  r_in [1] = objptr;
+
+  res = new_ir_node (db, irg, block, op_Sel, mode_T, r_arity, r_in);
+
+  res->attr.io.ent = ent;
+
+  // res = optimize (res);
+  // irn_vrfy (res);
+  return (res);
+}
+
 inline ir_node *
 new_rd_SymConst (dbg_info* db, ir_graph *irg, ir_node *block, type_or_id_p value,
                 symconst_kind symkind)
@@ -718,6 +740,10 @@ ir_node *new_r_Sel    (ir_graph *irg, ir_node *block, ir_node *store,
 		       entity *ent) {
   return new_rd_Sel(NULL, irg, block, store, objptr, n_index, index, ent);
 }
+ir_node *new_r_InstOf (ir_graph *irg, ir_node *block, ir_node *store, ir_node *objptr,
+					   type *ent) {
+  return (new_rd_InstOf (NULL, irg, block, store, objptr, ent));
+}
 ir_node *new_r_Call   (ir_graph *irg, ir_node *block, ir_node *store,
 		       ir_node *callee, int arity, ir_node **in,
 		       type *type) {
@@ -736,7 +762,7 @@ ir_node *new_r_Minus  (ir_graph *irg, ir_node *block,
   return new_rd_Minus(NULL, irg, block,  op, mode);
 }
 ir_node *new_r_Mul    (ir_graph *irg, ir_node *block,
-		       ir_node *op1, ir_node *op2, ir_mode *mode) {
+					   ir_node *op1, ir_node *op2, ir_mode *mode) {
   return new_rd_Mul(NULL, irg, block, op1, op2, mode);
 }
 ir_node *new_r_Quot   (ir_graph *irg, ir_node *block,
@@ -1977,6 +2003,13 @@ new_d_Sel (dbg_info* db, ir_node *store, ir_node *objptr, int n_index, ir_node *
 }
 
 ir_node *
+new_d_InstOf (dbg_info *db, ir_node *store, ir_node *objptr, type *ent)
+{
+  return (new_rd_InstOf (db, current_ir_graph, current_ir_graph->current_block,
+						 store, objptr, ent));
+}
+
+ir_node *
 new_d_SymConst (dbg_info* db, type_or_id_p value, symconst_kind kind)
 {
   return new_rd_SymConst (db, current_ir_graph, current_ir_graph->current_block,
@@ -2056,6 +2089,7 @@ ir_node *new_d_immBlock (dbg_info* db) {
   current_ir_graph->current_block = res;
   res->attr.block.matured = 0;
   res->attr.block.exc = exc_normal;
+  res->attr.block.handler_entry = 0;
   res->attr.block.in_cg = NULL;
   set_Block_block_visited(res, 0);
 
@@ -2209,6 +2243,9 @@ ir_node *new_simpleSel(ir_node *store, ir_node *objptr, entity *ent) {
 ir_node *new_Sel    (ir_node *store, ir_node *objptr, int arity, ir_node **in,
                      entity *ent) {
   return new_d_Sel(NULL, store, objptr, arity, in, ent);
+}
+ir_node *new_InstOf (ir_node *store, ir_node *objptr, type *ent) {
+  return (new_d_InstOf (NULL, store, objptr, ent));
 }
 ir_node *new_Call   (ir_node *store, ir_node *callee, int arity, ir_node **in,
 		     type *type) {

@@ -548,14 +548,57 @@ set_Block_graph_arr (ir_node *node, int pos, ir_node *value) {
   node->attr.block.graph_arr[pos+1] = value;
 }
 
+/* handler handling for Blocks */
+void set_Block_handler (ir_node *block, ir_node *handler)
+{
+  assert ((block->op == op_Block));
+  assert ((handler->op == op_Block));
+
+  block->attr.block.handler_entry = handler;
+}
+
+ir_node *get_Block_handler (ir_node *block)
+{
+  assert ((block->op == op_Block));
+
+  return (block->attr.block.handler_entry);
+}
+
+/* handler handling for Nodes */
+void set_Node_handler (ir_node *node, ir_node *handler)
+{
+  set_Block_handler (get_nodes_Block (node), handler);
+}
+
+ir_node *get_Node_handler (ir_node *node)
+{
+  return (get_Block_handler (get_nodes_Block (node)));
+}
+
+
+/* exc_t handling for Blocks */
 void set_Block_exc (ir_node *block, exc_t exc)
 {
+  assert ((block->op == op_Block));
   block->attr.block.exc = exc;
 }
 
 exc_t get_Block_exc (ir_node *block)
 {
+  assert ((block->op == op_Block));
+
   return (block->attr.block.exc);
+}
+
+/* exc_t handling for Nodes */
+void set_Node_exc (ir_node *node, exc_t exc)
+{
+  set_Block_exc (get_nodes_Block (node), exc);
+}
+
+exc_t get_Node_exc (ir_node *node)
+{
+  return (get_Block_exc (get_nodes_Block (node)));
 }
 
 void set_Block_cg_cfgpred_arr(ir_node * node, int arity, ir_node ** in) {
@@ -890,6 +933,42 @@ inline void
 set_Sel_linkage_type (ir_node *node, linkage_type lt) {
   assert (node->op == op_Sel);
   node->attr.s.ltyp = lt;
+}
+
+type *
+get_InstOf_ent (ir_node *node) {
+  assert (node->op = op_InstOf);
+  return (node->attr.io.ent);
+}
+
+void
+set_InstOf_ent (ir_node *node, type *ent) {
+  assert (node->op = op_InstOf);
+  node->attr.io.ent = ent;
+}
+
+ir_node *
+get_InstOf_store (ir_node *node) {
+  assert (node->op = op_InstOf);
+  return (get_irn_n (node, 0));
+}
+
+void
+set_InstOf_store (ir_node *node, ir_node *obj) {
+  assert (node->op = op_InstOf);
+  set_irn_n (node, 0, obj);
+}
+
+ir_node *
+get_InstOf_obj (ir_node *node) {
+  assert (node->op = op_InstOf);
+  return (get_irn_n (node, 1));
+}
+
+void
+set_InstOf_obj (ir_node *node, ir_node *obj) {
+  assert (node->op = op_InstOf);
+  set_irn_n (node, 1, obj);
 }
 
 inline ir_node *

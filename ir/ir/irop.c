@@ -25,6 +25,7 @@ ir_op *op_Return;
 ir_op *op_Raise;
 
 ir_op *op_Sel;
+ir_op *op_InstOf;
 
 ir_op *op_Const;
 ir_op *op_SymConst;
@@ -106,6 +107,7 @@ init_op(void)
 			                     floats, 0, sizeof (symconst_attr));
 
   op_Sel   = new_ir_op (iro_Sel,   "Sel",    floats, 1, sizeof (sel_attr));
+  op_InstOf= new_ir_op (iro_InstOf,"InstOf", floats, 1, sizeof (sel_attr));
 
   op_Call  = new_ir_op (iro_Call,  "Call",   pinned, 1, sizeof (call_attr));
   op_Add   = new_ir_op (iro_Add,   "Add",    floats, 0, 0);

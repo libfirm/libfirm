@@ -120,6 +120,10 @@ irn_vrfy (ir_node *n)
     for (i=3; i < get_irn_arity(n); i++) {
 	    assert (get_irn_mode(in[i]) == mode_I && "Sel node"); }
     break;
+  case iro_InstOf:
+	assert (mode_T == mymode);
+	assert (mode_is_data (op1mode));
+	break;
   case iro_Call:
     op1mode = get_irn_mode(in[1]);
     op2mode = get_irn_mode(in[2]);
@@ -385,6 +389,10 @@ vrfy_Proj_proj(ir_node *p) {
 	    (proj == 1 && mode == mode_M) &&
 	    "wrong Proj from Raise" );
     break;
+  case iro_InstOf:
+	assert (((proj >= 0 && mode == mode_X) &&
+			 "wrong Proj from InstOf"));
+	break;
   case iro_Call:
     assert ((proj == 0 && mode == mode_M) ||
 	    (proj == 1 && mode == mode_X) ||
