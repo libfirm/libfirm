@@ -11,6 +11,7 @@
  */
 
 /**
+ * @file cgana.c
  * Intraprozedurale Analyse zur Abschätzung der Aufrufrelation. Es
  * wird eine Menge von freien Methoden und anschließend die an den
  * Call-Operationen aufrufbaren Methoden bestimmt.
@@ -33,12 +34,15 @@
 
 #include "irflag_t.h"
 #include "dbginfo_t.h"
+#include "iropt_dbg.h"
 
 #include "eset.h"
 #include "pmap.h"
 #include "array.h"
 
 #include "irdump.h"
+
+#include "firmstat.h"
 
 /* Eindeutige Adresse zur Markierung von besuchten Knoten und zur
  * Darstellung der unbekannten Methode. */
@@ -146,7 +150,7 @@ static void collect_impls(entity *method, eset *set, int *size, bool *open) {
       }
     }
   }
-  /** recursive descent **/
+  /*- recursive descent -*/
   for (i = get_entity_n_overwrittenby(method) - 1; i >= 0; --i)
     collect_impls(get_entity_overwrittenby(method, i), set, size, open);
 }
@@ -191,24 +195,6 @@ static entity ** get_impl_methods(entity * method) {
   return arr;
 }
 
-
-/* debug makros used in sel_methods_walker */
-#define SIZ(x)    sizeof(x)/sizeof((x)[0])
-
-#define DBG_OPT_NORMALIZE                                                      \
-      __dbg_info_merge_pair(new_node, node, dbg_const_eval)
-#define DBG_OPT_POLY_ALLOC                                                     \
-  do {                                                                         \
-    ir_node *ons[2];                                                       \
-    ons[0] = node;                                                         \
-    ons[1] = skip_Proj(get_Sel_ptr(node));                                 \
-    __dbg_info_merge_sets(&new_node, 1, ons, SIZ(ons), dbg_rem_poly_call); \
-     } while(0)
-#define DBG_OPT_POLY                                                           \
-      __dbg_info_merge_pair(new_node, node, dbg_rem_poly_call)
-
-
-
 /** Analyse address computations.
  *
  *  - If the node is a SymConst(name) replace it by SymConst(ent) if possible.
@@ -231,7 +217,9 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
 	if (get_opt_normalize() && (get_entity_visibility(ent) != visibility_external_allocated)) { /* Meth. is defined */
 	  set_irg_current_block(current_ir_graph, get_nodes_block(node));
 	  ir_node *new_node = copy_const_value(get_atomic_ent_value(ent));
-	                                                                             DBG_OPT_NORMALIZE;
+
+	  DBG_OPT_CSTEVAL(node, new_node);
+
 	  assert(get_entity_irg(ent));
 	  DDMN(new_node);
 	  exchange(node, new_node);
@@ -254,8 +242,10 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
       set_irg_current_block(current_ir_graph, get_nodes_block(node));
       /* called_ent may not be description: has no Address/Const to Call! */
       assert(get_entity_peculiarity(called_ent) != peculiarity_description);
-      new_node = copy_const_value(get_atomic_ent_value(called_ent));       DBG_OPT_POLY_ALLOC;
-      exchange (node, new_node);
+      new_node = copy_const_value(get_atomic_ent_value(called_ent));
+
+      DBG_OPT_POLY_ALLOC(node, new_node);
+      exchange(node, new_node);
     }
 
     else {
@@ -305,7 +295,8 @@ static void sel_methods_walker(ir_node * node, pmap * ldname_map) {
           set_irg_current_block(current_ir_graph, get_nodes_block(node));
           assert(get_entity_peculiarity(get_SymConst_entity(get_atomic_ent_value(arr[0]))) ==
 	         peculiarity_existent);
-          new_node = copy_const_value(get_atomic_ent_value(arr[0]));         DBG_OPT_POLY;
+          new_node = copy_const_value(get_atomic_ent_value(arr[0]));
+          DBG_OPT_POLY(node, new_node);
           exchange (node, new_node);
         }
       }
@@ -698,7 +689,7 @@ static void free_ana_walker(ir_node * node, eset * set) {
     for (i = get_Call_arity(node) - 1; i >= 0; --i) {
       ir_node * pred = get_Call_param(node, i);
       if (mode_is_reference(get_irn_mode(pred))) {
-    free_mark(pred, set);
+        free_mark(pred, set);
       }
     }
     break;
@@ -709,7 +700,7 @@ static void free_ana_walker(ir_node * node, eset * set) {
     for (i = get_irn_arity(node) - 1; i >= 0; --i) {
       ir_node * pred = get_irn_n(node, i);
       if (mode_is_reference(get_irn_mode(pred))) {
-    free_mark(pred, set);
+        free_mark(pred, set);
       }
     }
     break;
