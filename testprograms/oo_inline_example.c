@@ -246,7 +246,7 @@ main(void)
   set_value (1, get_value (2, mode_Is));
   set_value (2, get_value (3, mode_Is));
   a_ptr = new_simpleSel(get_store(), self, a_e);
-  set_store(new_Store(get_store(), a_ptr, get_value(2, mode_Is)));
+  set_store(new_Proj(new_Store(get_store(), a_ptr, get_value(2, mode_Is)), mode_M, pn_Store_M));
   x = new_Jmp ();
   add_immBlock_pred(r, x);
   mature_immBlock (b);
