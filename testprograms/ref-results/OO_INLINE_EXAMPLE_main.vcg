@@ -53,50 +53,62 @@ colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
 graph: { title: "g39" label: "OO_INLINE_EXAMPLE_main" status:clustered color:white
-graph: { title: "n180"  label: "Block 180" status:clustered color:yellow
-edge: {sourcename: "n180" targetname: "n141" label: "0" class:13 priority:60 color:red}
-edge: {sourcename: "n180" targetname: "n181" label: "1" class:13 priority:60 color:red}
-node: {title: "n179" label: "PhiM 179"  info1: "Phi 179
+graph: { title: "n181"  label: "Block 181" status:clustered color:yellow
+edge: {sourcename: "n181" targetname: "n142" label: "0" class:13 priority:60 color:red}
+edge: {sourcename: "n181" targetname: "n182" label: "1" class:13 priority:60 color:red}
+node: {title: "n180" label: "PhiM 180"  info1: "Phi 180
   mode:    M
   visited: 25
   irg:     OO_INLINE_EXAMPLE_main
   arity:   2
   pred nodes:
-    -1:    Block 180
-     0:    Proj 151
-     1:    Store 185
+    -1:    Block 181
+     0:    Proj 152
+     1:    Proj 186
   Private Attributes:
   backedges:
 "
 color: green}
-edge: {sourcename: "n179" targetname: "n151" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n179" targetname: "n185" label: "1" class:17 priority:10 color:blue}
-node: {title: "n185" label: "Store 185"  info1: "Store 185
+edge: {sourcename: "n180" targetname: "n152" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n180" targetname: "n186" label: "1" class:17 priority:10 color:blue}
+node: {title: "n186" label: "ProjM 0 186"  info1: "Proj 186
+  mode:    M
+  visited: 25
+  irg:     OO_INLINE_EXAMPLE_main
+  arity:   1
+  pred nodes:
+    -1:    Block 181
+     0:    Store 187
+  Private Attributes:
+"
+color: yellow}
+edge: {sourcename: "n186" targetname: "n187" label: "0" class:17 priority:10 color:blue}
+node: {title: "n187" label: "Store 187"  info1: "Store 187
   mode:    T
   visited: 25
   irg:     OO_INLINE_EXAMPLE_main
   arity:   3
   pred nodes:
-    -1:    Block 180
-     0:    Phi 179
-     1:    Sel 189
-     2:    Phi 186
+    -1:    Block 181
+     0:    Phi 180
+     1:    Sel 191
+     2:    Phi 188
   Private Attributes:
   pinned state: op_pin_state_pinned
   volatility: volatility_non_volatile
 "
 }
-edge: {sourcename: "n185" targetname: "n179" label: "0" class:14 priority:50 color:blue}
-edge: {sourcename: "n185" targetname: "n189" label: "1" class:1  priority:50}
-edge: {sourcename: "n185" targetname: "n186" label: "2" class:1  priority:50}
-node: {title: "n189" label: "Sel a 189"  info1: "Sel 189
+edge: {sourcename: "n187" targetname: "n180" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n187" targetname: "n191" label: "1" class:1  priority:50}
+edge: {sourcename: "n187" targetname: "n188" label: "2" class:1  priority:50}
+node: {title: "n191" label: "Sel a 191"  info1: "Sel 191
   mode:    P
   visited: 25
   irg:     OO_INLINE_EXAMPLE_main
   arity:   2
   pred nodes:
-    -1:    Block 180
-     0:    Phi 179
+    -1:    Block 181
+     0:    Phi 180
      1:    Proj 48
   Private Attributes:
   Selecting entity of type int
@@ -104,89 +116,89 @@ node: {title: "n189" label: "Sel a 189"  info1: "Sel 189
     of type PRIMA_INLINE
 "
 }
-edge: {sourcename: "n189" targetname: "n179" label: "0" class:14 priority:50 color:blue}
-edge: {sourcename: "n189" targetname: "n48" label: "1" class:16 priority:10}
-node: {title: "n186" label: "PhiIs 186"  info1: "Phi 186
+edge: {sourcename: "n191" targetname: "n180" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n191" targetname: "n48" label: "1" class:16 priority:10}
+node: {title: "n188" label: "PhiIs 188"  info1: "Phi 188
   mode:    Is
   visited: 25
   irg:     OO_INLINE_EXAMPLE_main
   arity:   2
   pred nodes:
-    -1:    Block 180
+    -1:    Block 181
      0:    0x5 42
-     1:    Phi 187
+     1:    Phi 189
   Private Attributes:
   backedges:
 "
 color: green}
-edge: {sourcename: "n186" targetname: "n42" label: "0" class:16 priority:10}
-edge: {sourcename: "n186" targetname: "n187" label: "1" class:1  priority:50}
-node: {title: "n187" label: "PhiIs 187"  info1: "Phi 187
+edge: {sourcename: "n188" targetname: "n42" label: "0" class:16 priority:10}
+edge: {sourcename: "n188" targetname: "n189" label: "1" class:1  priority:50}
+node: {title: "n189" label: "PhiIs 189"  info1: "Phi 189
   mode:    Is
   visited: 25
   irg:     OO_INLINE_EXAMPLE_main
   arity:   2
   pred nodes:
-    -1:    Block 180
-     0:    0x0 188
-     1:    Phi 186
+    -1:    Block 181
+     0:    0x0 190
+     1:    Phi 188
   Private Attributes:
   backedges:
 "
 color: green}
-edge: {sourcename: "n187" targetname: "n188" label: "0" class:16 priority:10}
-edge: {sourcename: "n187" targetname: "n186" label: "1" class:1  priority:50}
-node: {title: "n181" label: "Jmp 181"  info1: "Jmp 181
+edge: {sourcename: "n189" targetname: "n190" label: "0" class:16 priority:10}
+edge: {sourcename: "n189" targetname: "n188" label: "1" class:1  priority:50}
+node: {title: "n182" label: "Jmp 182"  info1: "Jmp 182
   mode:    X
   visited: 25
   irg:     OO_INLINE_EXAMPLE_main
   arity:   0
   pred nodes:
-    -1:    Block 180
+    -1:    Block 181
   Private Attributes:
 "
 }
 }
 
-graph: { title: "n144"  label: "Block 144" status:clustered color:yellow
-edge: {sourcename: "n144" targetname: "n34" label: "0" class:13 priority:60 color:red}
-node: {title: "n151" label: "ProjM 0 151"  info1: "Proj 151
+graph: { title: "n145"  label: "Block 145" status:clustered color:yellow
+edge: {sourcename: "n145" targetname: "n34" label: "0" class:13 priority:60 color:red}
+node: {title: "n152" label: "ProjM 0 152"  info1: "Proj 152
   mode:    M
   visited: 25
   irg:     OO_INLINE_EXAMPLE_main
   arity:   1
   pred nodes:
-    -1:    Block 144
-     0:    Store 152
+    -1:    Block 145
+     0:    Store 153
   Private Attributes:
 "
 color: yellow}
-edge: {sourcename: "n151" targetname: "n152" label: "0" class:17 priority:10 color:blue}
-node: {title: "n152" label: "Store 152"  info1: "Store 152
+edge: {sourcename: "n152" targetname: "n153" label: "0" class:17 priority:10 color:blue}
+node: {title: "n153" label: "Store 153"  info1: "Store 153
   mode:    T
   visited: 25
   irg:     OO_INLINE_EXAMPLE_main
   arity:   3
   pred nodes:
-    -1:    Block 144
+    -1:    Block 145
      0:    Proj 47
-     1:    Sel 155
+     1:    Sel 156
      2:    0x2 41
   Private Attributes:
   pinned state: op_pin_state_pinned
   volatility: volatility_non_volatile
 "
 }
-edge: {sourcename: "n152" targetname: "n47" label: "0" class:14 priority:50 color:blue}
-edge: {sourcename: "n152" targetname: "n155" label: "1" class:1  priority:50}
-edge: {sourcename: "n152" targetname: "n41" label: "2" class:16 priority:10}
-node: {title: "n155" label: "Sel a 155"  info1: "Sel 155
+edge: {sourcename: "n153" targetname: "n47" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n153" targetname: "n156" label: "1" class:1  priority:50}
+edge: {sourcename: "n153" targetname: "n41" label: "2" class:16 priority:10}
+node: {title: "n156" label: "Sel a 156"  info1: "Sel 156
   mode:    P
   visited: 25
   irg:     OO_INLINE_EXAMPLE_main
   arity:   2
   pred nodes:
-    -1:    Block 144
+    -1:    Block 145
      0:    Proj 47
      1:    Proj 48
   Private Attributes:
@@ -195,15 +207,15 @@ node: {title: "n155" label: "Sel a 155"  info1: "Sel 155
     of type PRIMA_INLINE
 "
 }
-edge: {sourcename: "n155" targetname: "n47" label: "0" class:14 priority:50 color:blue}
-edge: {sourcename: "n155" targetname: "n48" label: "1" class:1  priority:50}
+edge: {sourcename: "n156" targetname: "n47" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n156" targetname: "n48" label: "1" class:1  priority:50}
 node: {title: "n47" label: "ProjM 0 47"  info1: "Proj 47
   mode:    M
   visited: 25
   irg:     OO_INLINE_EXAMPLE_main
   arity:   1
   pred nodes:
-    -1:    Block 144
+    -1:    Block 145
      0:    Alloc 45
   Private Attributes:
 "
@@ -215,7 +227,7 @@ node: {title: "n48" label: "ProjP 2 48"  info1: "Proj 48
   irg:     OO_INLINE_EXAMPLE_main
   arity:   1
   pred nodes:
-    -1:    Block 144
+    -1:    Block 145
      0:    Alloc 45
   Private Attributes:
 "
@@ -227,7 +239,7 @@ node: {title: "n45" label: "Alloc 45"  info1: "Alloc 45
   irg:     OO_INLINE_EXAMPLE_main
   arity:   2
   pred nodes:
-    -1:    Block 144
+    -1:    Block 145
      0:    Proj 37
      1:    SymC PRIMA_INLINE size 43
   Private Attributes:
@@ -238,24 +250,24 @@ node: {title: "n45" label: "Alloc 45"  info1: "Alloc 45
 }
 edge: {sourcename: "n45" targetname: "n37" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n45" targetname: "n43" label: "1" class:16 priority:10}
-node: {title: "n188" label: "0x0Is 188"  info1: "0x0 188
+node: {title: "n190" label: "0x0Is 190"  info1: "0x0 190
   mode:    Is
   visited: 25
   irg:     OO_INLINE_EXAMPLE_main
   arity:   0
   pred nodes:
-    -1:    Block 144
+    -1:    Block 145
   Private Attributes:
   Const of type type_unknown
 "
 color: yellow}
-node: {title: "n141" label: "Jmp 141"  info1: "Jmp 141
+node: {title: "n142" label: "Jmp 142"  info1: "Jmp 142
   mode:    X
   visited: 25
   irg:     OO_INLINE_EXAMPLE_main
   arity:   0
   pred nodes:
-    -1:    Block 144
+    -1:    Block 145
   Private Attributes:
 "
 }
@@ -336,15 +348,15 @@ color: blue}
 }
 
 graph: { title: "n28"  label: "Block 28" status:clustered color:yellow
-node: {title: "n195" label: "End 195"  info1: "End 195
+node: {title: "n197" label: "End 197"  info1: "End 197
   mode:    X
   visited: 25
   irg:     OO_INLINE_EXAMPLE_main
   arity:   2
   pred nodes:
     -1:    Block 28
-     0:    Block 180
-     1:    Phi 179
+     0:    Block 181
+     1:    Phi 180
   Private Attributes:
 "
 color: blue}
