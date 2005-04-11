@@ -19,7 +19,7 @@ enable_libcore          := @enable_libcore@
 enable_external_effects := @enable_external_effects@
 disable_libiberty       := @disable_libiberty@
 
-DIFF ?= diff -c0
+DIFF ?= diff # -c0  newer diffs do not support/need this
 REF_DIR = $(srcdir)/ref-results
 
 SOURCES := Makefile.in          	\
