@@ -74,7 +74,7 @@ LDLIBS += -lcore
 endif
 
 ifeq ($(enable_external_effects),yes)
-LDLIBS += -lxml
+LDLIBS += -lxml2
 endif
 
 ifeq ($(disable_libiberty),yes)
