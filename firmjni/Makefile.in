@@ -1,4 +1,4 @@
-#
+
 # Project:     libFIRM
 # File name:   firmjni/Makefile.in
 # Purpose:
@@ -65,7 +65,7 @@ LDFLAGS += -lcore
 endif
 
 ifeq ($(enable_external_effects),yes)
-LDFLAGS += -lxml
+LDFLAGS += -lxml2
 endif
 
 ifeq ($(disable_libiberty),yes)
