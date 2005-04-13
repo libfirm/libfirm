@@ -267,6 +267,7 @@ int opt_tail_rec_irg(ir_graph *irg)
   int n_preds;
   int i, n_tail_calls = 0;
   ir_node *rets = NULL;
+  type *mtd_type, *call_type;
 
   if (! get_opt_tail_recursion() || ! get_opt_optimize())
     return 0;
@@ -324,6 +325,27 @@ int opt_tail_rec_irg(ir_graph *irg)
     }
     if (j < n_ress)
       continue;
+
+    /*
+     * Check, that the types match. At least in C
+     * this might fail.
+     */
+    mtd_type  = get_entity_type(ent);
+    call_type = get_Call_type(call);
+
+    if (mtd_type != call_type) {
+      /*
+       * Hmm, the types did not match, bad.
+       * This can happen in C when no prototyp is given
+       * or K&R style is used.
+       */
+#if 0
+      printf("Warning: Tail recursion fails because of different method and call types:\n");
+      dump_type(mtd_type);
+      dump_type(call_type);
+#endif
+      return 0;
+    }
 
     /* here, we have found a call */
     set_irn_link(call, get_irn_link(end_block));
