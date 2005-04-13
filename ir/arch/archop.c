@@ -23,7 +23,7 @@
 #include "ircons_t.h"
 #include "iropt_t.h"
 #include "firm_common_t.h"
-#include "irvrfy.h"
+#include "irvrfy_t.h"
 #include "iropt_dbg.h"
 #include "archop.h"
 
@@ -283,6 +283,24 @@ ir_node *arch_transform_node_Mux(ir_node *n)
   return n;
 }
 
+/**
+ * verify a MinMax node
+ */
+static int verify_node_MinMax(ir_node *n, ir_graph *irg) {
+  ir_mode *mymode  = get_irn_mode(n);
+  ir_mode *op1mode = get_irn_mode(get_binop_left(n));
+  ir_mode *op2mode = get_irn_mode(get_binop_right(n));
+
+  ASSERT_AND_RET(
+    /* MinMax: BB x numP x numP --> numP */
+    op1mode == mymode &&
+    op2mode == mymode &&
+    mode_is_numP(mymode),
+    "Min or Max node", 0
+  );
+  return 1;
+}
+
 /*
  * initialize the ops.
  */
@@ -297,9 +315,11 @@ void firm_archops_init(const arch_ops_info *info)
     op_Min = new_ir_op(get_next_ir_opcode(), "Min",  op_pin_state_floats, irop_flag_commutative, oparity_binary, 0, 0);
     op_Min->computed_value  = computed_value_Min;
     op_Min->equivalent_node = equivalent_node_Min;
+    op_Min->verify_node     = verify_node_MinMax;
 
     op_Max = new_ir_op(get_next_ir_opcode(), "Max",  op_pin_state_floats, irop_flag_commutative, oparity_binary, 0, 0);
     op_Max->computed_value  = computed_value_Max;
     op_Max->equivalent_node = equivalent_node_Max;
+    op_Max->verify_node     = verify_node_MinMax;
   }
 }
