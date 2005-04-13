@@ -333,7 +333,8 @@ static int verify_node_Proj_Cond(ir_node *pred, ir_node *p) {
   ASSERT_AND_RET_DBG(
     (
       (proj >= 0 && mode == mode_X && get_irn_mode(get_Cond_selector(pred)) == mode_b) ||   /* compare */
-      (mode == mode_X && mode_is_int(get_irn_mode(get_Cond_selector(pred))))                /* switch */
+      (mode == mode_X && mode_is_int(get_irn_mode(get_Cond_selector(pred)))) ||             /* switch */
+      is_Bad(get_Cond_selector(pred))                                                       /* rare */
     ),
     "wrong Proj from Cond", 0,
     show_proj_failure(p);
@@ -965,6 +966,12 @@ static int verify_node_Call(ir_node *n, ir_graph *irg) {
   /* Call: BB x M x ref x data1 x ... x datan
      --> M x datan+1 x ... x data n+m */
   ASSERT_AND_RET( op1mode == mode_M && mode_is_reference(op2mode), "Call node", 0 );  /* operand M x ref */
+
+  /* NoMem nodes are only allowed as memory input if the Call is NOT pinned */
+  ASSERT_AND_RET(
+    (get_irn_op(get_Call_mem(n)) == op_NoMem && get_irn_pinned(n) != op_pin_state_pinned) ||
+    (get_irn_op(get_Call_mem(n)) != op_NoMem && get_irn_pinned(n) == op_pin_state_pinned),
+    "Call node with wrong memory input", 0 );
 
   mt = get_Call_type(n);
   if(get_unknown_type() == mt) {
