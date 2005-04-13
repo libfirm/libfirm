@@ -855,13 +855,13 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
     if (verbosity & dump_verbosity_typeattrs) {
       fprintf(F, "  supertypes: ");
       for (i = 0; i < get_class_n_supertypes(tp); ++i) {
-	      type *stp = get_class_supertype(tp, i);
-	      fprintf(F, "\n    %s", get_type_name(stp));
+        type *stp = get_class_supertype(tp, i);
+        fprintf(F, "\n    %s", get_type_name(stp));
       }
       fprintf(F, "\n  subtypes: ");
       for (i = 0; i < get_class_n_subtypes(tp); ++i) {
-	      type *stp = get_class_subtype(tp, i);
-	      fprintf(F, "\n    %s", get_type_name(stp));
+        type *stp = get_class_subtype(tp, i);
+        fprintf(F, "\n    %s", get_type_name(stp));
       }
 
       fprintf(F, "\n  peculiarity: %s", get_peculiarity_string(get_class_peculiarity(tp)));
@@ -928,6 +928,27 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
     if (verbosity & dump_verbosity_typeattrs) {
       type *tt = get_pointer_points_to_type(tp);
       fprintf(F, "\n  points to %s (%ld)", get_type_name(tt), get_type_nr(tt));
+    }
+    break;
+
+  case tpo_method:
+    if (verbosity & dump_verbosity_typeattrs) {
+      fprintf(F, "\n  return types: %d", get_method_n_ress(tp));
+      for (i = 0; i < get_method_n_ress(tp); ++i) {
+        type *rtp = get_method_res_type(tp, i);
+        fprintf(F, "\n    %s", get_type_name(rtp));
+      }
+
+      fprintf(F, "\n  parameter types: %d", get_method_n_params(tp));
+      for (i = 0; i < get_method_n_params(tp); ++i) {
+        type *ptp = get_method_param_type(tp, i);
+        fprintf(F, "\n    %s", get_type_name(ptp));
+      }
+
+      if (get_method_variadicity(tp)) {
+        fprintf(F, "\n    ...");
+      }
+      fprintf(F, "\n");
     }
     break;
 
