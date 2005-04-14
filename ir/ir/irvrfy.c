@@ -969,7 +969,7 @@ static int verify_node_Call(ir_node *n, ir_graph *irg) {
 
   /* NoMem nodes are only allowed as memory input if the Call is NOT pinned */
   ASSERT_AND_RET(
-    (get_irn_op(get_Call_mem(n)) == op_NoMem && get_irn_pinned(n) != op_pin_state_pinned) ||
+    (get_irn_op(get_Call_mem(n)) == op_NoMem) ||
     (get_irn_op(get_Call_mem(n)) != op_NoMem && get_irn_pinned(n) == op_pin_state_pinned),
     "Call node with wrong memory input", 0 );
 
