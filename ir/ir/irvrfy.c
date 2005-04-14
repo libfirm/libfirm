@@ -390,12 +390,12 @@ static int verify_node_Proj_Call(ir_node *n, ir_node *p) {
   );
   if (proj == pn_Call_X_except)
     ASSERT_AND_RET(
-      get_irn_pinned(n) == op_pin_state_pinned,
-      "Exception Proj from unpinned Call", 0);
+      get_irn_op(get_Call_mem(n)) != op_NoMem,
+      "Exception Proj from FunctionCall", 0);
   else if (proj == pn_Call_M_regular || proj == pn_Call_M_except)
     ASSERT_AND_RET(
-      get_irn_pinned(n) == op_pin_state_pinned,
-      "Memory Proj from unpinned Call", 0);
+      get_irn_op(get_Call_mem(n)) != op_NoMem,
+      "Memory Proj from FunctionCall", 0);
   return 1;
 }
 
