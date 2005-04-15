@@ -32,6 +32,7 @@
 
 #include "callgraph.h"
 #include "field_temperature.h"
+#include "execution_frequency.h"
 
 #include "array.h"
 
@@ -73,7 +74,8 @@ struct ir_prog {
   int max_callgraph_recursion_depth;   /**< needed in callgraph. */
   int max_method_execution_frequency;  /**< needed in callgraph. */
   irp_temperature_state temperature_state; /**< accumulated temperatures computed? */
-
+  exec_freq_state execfreq_state;        /**< State of execution freqency information */
+  loop_nesting_depth_state lnd_state;  /**< State of loop nesting depth information. */
 #ifdef DEBUG_libfirm
   long max_node_nr;                /**< to generate unique numbers for nodes. */
 #endif

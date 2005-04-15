@@ -28,13 +28,14 @@
 #include "irtypeinfo.h"
 #include "irprog.h"
 #include "pseudo_irg.h"
+#include "type_t.h"
 
 #include "irloop.h"
+#include "execution_frequency.h"
 
 #include "obst.h"
 #include "pset.h"
 #include "set.h"
-#include "type_t.h"
 
 #define FRAME_TP_SUFFIX "frame_tp"
 
@@ -88,6 +89,7 @@ struct ir_graph {
   irg_callee_info_state callee_info_state; /**< Validity of callee information */
   irg_inline_property inline_property;     /**< How to handle inlineing. */
   irg_loopinfo_state loopinfo_state;       /**< state of loop information */
+  exec_freq_state   execfreq_state;        /**< state of execution freqency information */
 
   /* -- Fields for construction -- */
 #if USE_EXPLICIT_PHI_IN_STACK
