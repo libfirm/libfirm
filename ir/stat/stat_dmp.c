@@ -142,7 +142,7 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
     }
     else {
       if (entry->ent)
-        fprintf(dmp->f, "\nEntity %s, Irg %p", get_entity_name(entry->ent), (void *)entry->irg);
+        fprintf(dmp->f, "\nEntity %s, Irg %p", get_entity_ld_name(entry->ent), (void *)entry->irg);
       else
         fprintf(dmp->f, "\nIrg %p", (void *)entry->irg);
     }

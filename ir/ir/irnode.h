@@ -999,7 +999,11 @@ void    dump_irn(ir_node *n);
 /** Output the firm kind of the node */
 #define DDMK(X)  printf("%s(l.%i) %s: %p\n",                 __MYFUNC__, __LINE__,  print_firm_kind(X), (void *)(X));
 /** Output information about a node */
-#define DDMN(X)  printf("%s(l.%i) %s%s: %ld (%p)\n",         __MYFUNC__, __LINE__,  get_irn_opname(X), get_mode_name(get_irn_mode(X)), get_irn_node_nr(X), (void *)(X))
+
+/*#define DDMN(X)  printf("%s(l.%i) %s%s: %ld (%p)\n",         __MYFUNC__, __LINE__,  get_irn_opname(X), get_mode_name(get_irn_mode(X)), get_irn_node_nr(X), (void *)(X))*/
+int dump_node_opcode(FILE *F, ir_node *n);
+#define DDMN(X)  do { printf("%s(l.%i) ", __MYFUNC__, __LINE__); dump_node_opcode(stdout, X); printf(": %ld (%p)\n", get_irn_node_nr(X), (void *)(X)); } while (0)
+
 /** Output information about a node and its block */
 #define DDMNB(X) printf("%s%s: %ld (in block %ld)\n", get_irn_opname(X),  get_mode_name(get_irn_mode(X)), get_irn_node_nr(X), get_irn_node_nr(get_nodes_block(X)))
 /** Output information about a type */

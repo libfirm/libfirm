@@ -39,13 +39,13 @@ typedef struct pset pset;
 /*
  * Define some convenience macros using the predefined hash function.
  */
-#define pset_insert_ptr(set,key) pset_insert(set, key, HASH_PTR(key))
+#define pset_insert_ptr(set,key)  pset_insert(set, key, HASH_PTR(key))
 #define pset_hinsert_ptr(set,key) pset_hinsert(set, key, HASH_PTR(key))
-#define pset_remove_ptr(set,key) pset_remove(set, key, HASH_PTR(key))
-#define pset_find_ptr(set,key) pset_find(set, key, HASH_PTR(key))
-#define pset_new_ptr(slots) new_pset(pset_default_ptr_cmp, slots)
-#define pset_new_ptr_default() pset_new_ptr(64)
-void    pset_insert_pset_ptr(pset *target, pset *src); /* Insertss all elements of src in target. */
+#define pset_remove_ptr(set,key)  pset_remove(set, key, HASH_PTR(key))
+#define pset_find_ptr(set,key)    pset_find(set, key, HASH_PTR(key))
+#define pset_new_ptr(slots)       new_pset(pset_default_ptr_cmp, slots)
+#define pset_new_ptr_default()    pset_new_ptr(64)
+void    pset_insert_pset_ptr(pset *target, pset *src); /* Inserts all elements of src in target. */
 
 
 /** The entry of a pset, representing an element pointer in the set and it's meta-information */

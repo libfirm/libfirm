@@ -22,18 +22,20 @@
 /**
  * Optimize function calls by handling real functions.
  *
- * This optimization first detects all "real fucntions", ie
+ * This optimization first detects all "real functions", i.e.,
  * IR graphs that neither read nor write memory (and hence did
  * not create exceptions, as these use memory in Firm).
  *
  * The result of calls to such functions depends only on its
- * arguments, hence those calls are not anymore pinned.
+ * arguments, hence those calls are no more pinned.
  *
  * This is a rather strong criteria, so do not expect that a
  * lot of functions will be found. Moreover, all of them might
  * already be inlined if inlining is activated.
  * Anyway, it might be good for handling builtin's or pseudo-graphs,
  * even if the later read/write memory (but we know how).
+ *
+ * If callee information is valid, we also optimize polymorphic Calls.
  */
 void optimize_funccalls(void);
 

@@ -35,19 +35,20 @@
 #include "entity.h"
 #include "irnode.h"
 
+/*-----------------------------------------------------------------*/
+/* Accessing the trout datastructures.                             */
+/* These routines only work properly if firm is in state           */
+/* trouts_consistent or trouts_inconsistent.                       */
+/*-----------------------------------------------------------------*/
 
-/*------------------------------------------------------------------*/
-/* Accessing the trout datastructures.                              */
-/* These routines only work properly if firm is in state            */
-/* trouts_consistent or trouts_inconsistent.                        */
-/*------------------------------------------------------------------*/
-
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+/* entities                                                        */
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 /** Number of Load/Store nodes that possibly access this entity. */
 int get_entity_n_accesses(entity *ent);
 /** Load/Store node that possibly access this entity. */
 ir_node *get_entity_access(entity *ent, int pos);
-
 
 /** Number of references to an entity, in form of SymConst/Sel.
  *  Including references from constant entities and the like. */
@@ -56,6 +57,9 @@ int get_entity_n_references(entity *ent);
  *  Including references from constants. */
 ir_node *get_entity_reference(entity *ent, int pos);
 
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+/* types                                                           */
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 /** Number of Alloc nodes that create an instance of this type. */
 int get_type_n_allocs(type *tp);
@@ -72,9 +76,10 @@ int get_class_n_upcasts(type *clss);
 int get_class_n_downcasts(type *clss);
 
 /* Access all pointer types that point to tp. */
-int get_type_n_pointertypes_to(type *tp);
+int   get_type_n_pointertypes_to(type *tp);
 type *get_type_pointertype_to(type *tp, int pos);
 
+/* @@@ TODO: compute all entities that use a type. */
 
 /*------------------------------------------------------------------*/
 /* Building and Removing the trout datastructure                    */
@@ -82,7 +87,8 @@ type *get_type_pointertype_to(type *tp, int pos);
 
 /** The state of the tr_out datastructure.
  *
- *  We reuse the enum of irouts. */
+ *  We reuse the enum of irouts.
+ *  @see irouts.h. */
 irg_outs_state get_trouts_state(void);
 void           set_trouts_inconsistent(void);
 
@@ -107,8 +113,7 @@ void           set_trouts_inconsistent(void);
  *   type --> entity of this type. @@@ to be implemented.
  *
  *  Sets trout state to outs_consistent.
- *
- *  @todo @@@ We need a flag that signs the consistency of the out information. */
+ */
 void compute_trouts(void);
 
 /** Free trout data. */

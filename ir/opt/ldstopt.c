@@ -315,7 +315,7 @@ static compound_graph_path *rec_get_accessed_path(ir_node *ptr, int depth) {
   if (get_irn_op(ptr) == op_SymConst) {
     assert(get_SymConst_kind(ptr) == symconst_addr_ent);
     root = get_SymConst_entity(ptr);
-    res = depth == 0 ? NULL : new_compound_graph_path(get_entity_type(root), depth);
+    res = (depth == 0) ? NULL : new_compound_graph_path(get_entity_type(root), depth);
   }
   else {
     assert(get_irn_op(ptr) == op_Sel);
@@ -466,12 +466,12 @@ static int optimize_load(ir_node *load)
       }
       else if (variability_constant == get_entity_variability(ent)) {
         compound_graph_path *path;
-
+	/*
         printf(">>>>>>>>>>>>> Found access to constant entity %s in function %s\n", get_entity_name(ent),
         get_entity_name(get_irg_entity(current_ir_graph)));
         printf("  load: "); DDMN(load);
         printf("  ptr:  "); DDMN(ptr);
-
+	*/
         path = get_accessed_path(ptr);
         if (path) {
           ir_node *c;
@@ -479,13 +479,13 @@ static int optimize_load(ir_node *load)
           assert(is_proper_compound_graph_path(path, get_compound_graph_path_length(path)-1));
           c = get_compound_ent_value_by_path(ent, path);
 
-          printf("  cons: "); DDMN(c);
+          /* printf("  cons: "); DDMN(c); */
 
           if (info->projs[pn_Load_M])
             exchange(info->projs[pn_Load_M], mem);
           if (info->projs[pn_Load_res])
             exchange(info->projs[pn_Load_res], copy_const_value(c));
-
+          /*
           {
             int j;
             for (j = 0; j < get_compound_graph_path_length(path); ++j) {
@@ -496,8 +496,20 @@ static int optimize_load(ir_node *load)
             }
             printf("\n");
           }
-        } else
+	  */
+        } else {
+	  /*  We can not determine a correct access path.  E.g., in jack, we load
+	      a byte from an object to generate an exception.   Happens in test program
+	      Reflectiontest.
+	  printf(">>>>>>>>>>>>> Found access to constant entity %s in function %s\n", get_entity_name(ent),
+		 get_entity_name(get_irg_entity(current_ir_graph)));
+	  printf("  load: "); DDMN(load);
+	  printf("  ptr:  "); DDMN(ptr);
+	  if (get_irn_op(ptr) == op_SymConst &&
+		get_SymConst_kind(ptr) == symconst_addr_ent) { printf("        "); DDMEO(get_SymConst_entity(ptr)); }
           printf("cannot optimize.\n");
+	  */
+	}
       }
 
       /* we changed the irg, but try further */

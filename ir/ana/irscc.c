@@ -916,7 +916,6 @@ is_outermost_loop(ir_loop *l) {
  *                   The core algorithm.                     *
  *-----------------------------------------------------------*/
 
-
 static void scc (ir_node *n) {
   int i;
   if (irn_visited(n)) return;

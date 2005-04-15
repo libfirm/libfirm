@@ -24,7 +24,7 @@
  */
 typedef enum {
   ip_view_no,       /**< The interprocedural view is not constructed.  There are no
-                         view specific nodes (EndReg, Filter....) in any graph.  */
+                         view specific nodes (EndReg, Filter, Break ...) in any graph.  */
   ip_view_valid,    /**< The interprocedural view is valid.  */
   ip_view_invalid   /**< The interprocedural view is invalid.  Specific nodes are
                          all still in the representation, but the graph is no more complete. */
