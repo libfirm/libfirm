@@ -1340,4 +1340,18 @@ void analyse_loop_nesting_depth(void) {
   find_callgraph_recursions();
 
   compute_performance_estimates();
+
+  set_irp_loop_nesting_depth_state(loop_nesting_depth_consistent);
+}
+
+
+loop_nesting_depth_state get_irp_loop_nesting_depth_state(void) {
+  return irp->lnd_state;
+}
+void                     set_irp_loop_nesting_depth_state(loop_nesting_depth_state s) {
+  irp->lnd_state = s;
+}
+void                     set_irp_loop_nesting_depth_state_inconsistent(void) {
+  if (irp->lnd_state == loop_nesting_depth_consistent)
+    irp->lnd_state = loop_nesting_depth_inconsistent;
 }

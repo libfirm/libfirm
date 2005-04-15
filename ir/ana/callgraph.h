@@ -105,12 +105,28 @@ void find_callgraph_recursions(void);
  **/
 void compute_performance_estimates(void);
 
-/** Computes the loop nesting information.
+/** Computes the interprocedural loop nesting information.
+ *
+ * Computes two numbers for each irg:  the depth it is called in 'normal'
+ * loops and the depth of recursions it is in.
  *
  * Computes callee info and the callgraph if
  * this information is not available.
  */
 void analyse_loop_nesting_depth(void);
+
+/** State of loop nesting depth. */
+typedef enum {
+  loop_nesting_depth_none,             /**< Loop nesting depths are not computed, no memory is
+					    allocated, access fails. */
+  loop_nesting_depth_consistent,       /**< Loop nesting depth information is computed and correct. */
+  loop_nesting_depth_inconsistent      /**< Loop nesting depth is computed but the graphs have been
+					    changed since. */
+} loop_nesting_depth_state;
+
+loop_nesting_depth_state get_irp_loop_nesting_depth_state(void);
+void                     set_irp_loop_nesting_depth_state(loop_nesting_depth_state s);
+void                     set_irp_loop_nesting_depth_state_inconsistent(void);
 
 
 #endif /* _CALLGRAPH_H_ */

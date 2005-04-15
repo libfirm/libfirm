@@ -59,8 +59,31 @@ void compute_execution_frequency(ir_graph *irg, int default_loop_weight, double 
  */
 void compute_execution_frequencies(int default_loop_weight, double exception_probability);
 
-/** Free occupied memory, reset. */
+/** Free occupied memory, reset for all graphs. */
 void free_execution_frequency(void);
+
+/** State of execution freqencies for graphs and the whole program.
+ *
+ * The exec_freq_state in irp is consistent, if the state of all graphs is consistent.
+ * It is none, if the state of all graphs is none.  Else it is inconsistent. */
+typedef enum {
+  exec_freq_none,             /**< Execution frequencies are not computed, no memory is
+				   allocated, access fails. */
+  exec_freq_consistent,       /**< Execution frequency information is computed and correct. */
+  exec_freq_inconsistent      /**< Execution frequency is computed but the graph has been
+				   changed since. */
+} exec_freq_state;
+
+exec_freq_state get_irg_exec_freq_state(ir_graph *irg);
+void            set_irg_exec_freq_state(ir_graph *irg, exec_freq_state s);
+/* Sets irg and irp exec freq state to inconsistent if it is set to consistent. */
+void            set_irg_exec_freq_state_inconsistent(ir_graph *irg);
+
+exec_freq_state get_irp_exec_freq_state(void);
+/* Sets irp and all irg exec freq states to inconsistent if it is set to consistent. */
+void            set_irp_exec_freq_state_inconsistent(void);
+
+
 
 
 #endif /* _EXECUTION_FREQUENCY_H_ */

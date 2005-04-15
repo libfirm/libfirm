@@ -19,12 +19,15 @@
 #include "set.h"
 #include "pdeq.h"
 
-#include "irprog.h"
+#include "irprog_t.h"
+#include "irgraph_t.h"
 #include "irnode_t.h"
 #include "irloop.h"
 #include "irgwalk.h"
 
 #include "interval_analysis.h"
+
+void set_irp_exec_freq_state(exec_freq_state s);
 
 /*------------------------------------------------------------------*/
 /* A hashmap mapping the frequency to block and loop nodes.  Block
@@ -377,6 +380,10 @@ void compute_execution_frequency(ir_graph *irg, int default_loop_weight, double 
   construct_intervals(current_ir_graph);
   compute_frequency(default_loop_weight);
 
+  set_irg_exec_freq_state(irg, exec_freq_consistent);
+  if (get_irp_exec_freq_state() == exec_freq_none)
+    set_irp_exec_freq_state(exec_freq_inconsistent);
+
   /*
     dump_loop_tree     (current_ir_graph, "-execfreq");
     dump_ir_block_graph(current_ir_graph, "-execfreq");
@@ -393,10 +400,53 @@ void compute_execution_frequencies(int default_loop_weight, double exception_pro
   for (i = 0; i < n_irgs; ++i) {
     compute_execution_frequency(get_irp_irg(i), default_loop_weight, exception_probability);
   }
+  set_irp_exec_freq_state(exec_freq_consistent);
 }
 
 /** free occupied memory, reset */
 void free_execution_frequency(void) {
+  int i, n_irgs = get_irp_n_irgs();
   free_intervals();
   del_set(exec_freq_set);
+
+  for (i = 0; i < n_irgs; ++i)
+    set_irg_exec_freq_state(get_irp_irg(i), exec_freq_none);
+  set_irp_exec_freq_state(exec_freq_none);
+}
+
+exec_freq_state get_irg_exec_freq_state(ir_graph *irg) {
+  return irg->execfreq_state;
+}
+void            set_irg_exec_freq_state(ir_graph *irg, exec_freq_state s) {
+  if ((get_irp_exec_freq_state() == exec_freq_consistent && s != exec_freq_consistent) ||
+      (get_irp_exec_freq_state() == exec_freq_none       && s != exec_freq_none))
+    irp->execfreq_state = exec_freq_inconsistent;
+  irg->execfreq_state = s;
+}
+
+/* Sets irg and irp exec freq state to inconsistent if it is set to consistent. */
+void            set_irg_exec_freq_state_inconsistent(ir_graph *irg) {
+  if (get_irg_exec_freq_state(irg) == exec_freq_consistent)
+    set_irg_exec_freq_state(irg, exec_freq_inconsistent);
+}
+
+void set_irp_exec_freq_state(exec_freq_state s) {
+  irp->execfreq_state = s;
+}
+
+exec_freq_state get_irp_exec_freq_state(void) {
+  return irp->execfreq_state;
+}
+
+/* Sets irp and all irg exec freq states to inconsistent if it is set to consistent. */
+void            set_irp_exec_freq_state_inconsistent(void) {
+  if (get_irp_exec_freq_state() != exec_freq_none) {
+    int i, n_irgs = get_irp_n_irgs();
+    set_irp_exec_freq_state(exec_freq_inconsistent);
+    for (i = 0; i < n_irgs; ++i) {
+      ir_graph *irg = get_irp_irg(i);
+      if (get_irg_exec_freq_state(irg) != exec_freq_none)
+	irg->execfreq_state = exec_freq_inconsistent;
+    }
+  }
 }

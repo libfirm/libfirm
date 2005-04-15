@@ -60,7 +60,8 @@ double get_type_estimated_mem_consumption_bytes(type *tp);
  *  Further this ignores padding for alignment, especially of small fields. */
 int    get_type_estimated_size_bytes(type *tp);
 /** Estimates the number of fields of a single Object.
- *  The heuristic mainly affects array sizes. */
+ *  The heuristic mainly affects array sizes.
+ *  @@@ Misses inherited fields! */
 int    get_type_estimated_n_fields(type *tp);
 double get_type_estimated_n_casts(type *clss);
 
