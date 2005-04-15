@@ -76,6 +76,7 @@ static const be_chordal_dump_params_t dump_params = {
 	4
 };
 
+#ifdef DUMP_INTERVALS
 static void draw_interval_graphs(ir_node *block,
 		struct list_head *border_head,
 		const be_chordal_dump_params_t *params)
@@ -151,6 +152,7 @@ static void draw_interval_graphs(ir_node *block,
 		fclose(f);
 	}
 }
+#endif
 
 #if 0
 typedef struct _tree_layout_info_t {
@@ -402,7 +404,7 @@ static void dump_ifg(ir_graph *irg, set *edges, const char *filename)
 			n_edges++;
 		}
 
-		fprintf(f, "\tx [label=\"nodes: %d, edges: %d\"]\n", bitset_popcnt(bs), n_edges);
+		fprintf(f, "\tx [label=\"nodes: %lu, edges: %d\"]\n", bitset_popcnt(bs), n_edges);
 
 		bitset_foreach(bs, pos) {
 			int nr = (int) pos;
@@ -623,7 +625,7 @@ static void assign(ir_node *block, void *env_ptr)
 
 	/* Mark the obstack level and allocate the temporary tmp_colors */
 	void *obstack_level = obstack_base(obst);
-	bitset_t *tmp_colors = bitset_obstack_alloc(obst, env->colors_n);
+	/*bitset_t *tmp_colors = bitset_obstack_alloc(obst, env->colors_n);*/
 
 	const ir_node *irn;
 	border_t *b;
