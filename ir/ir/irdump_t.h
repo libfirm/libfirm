@@ -58,6 +58,7 @@
 
 extern int dump_dominator_information_flag;
 extern bool opt_dump_pointer_values_to_info;
+extern bool opt_dump_analysed_type_info;
 
 FILE *vcg_open (ir_graph *irg, const char * suffix1, const char *suffix2);
 FILE *vcg_open_name (const char *name, const char *suffix);
@@ -74,5 +75,11 @@ const char *get_mode_name_ex(ir_mode *mode, int *bad);
  */
 int
 dump_node_opcode(FILE *F, ir_node *n);
+
+int dump_node_label(FILE *F, ir_node *n);
+
+
+/** Writes vcg representation with titel "PRINT_TYPEID(tp)" to file F. */
+int dump_type_node(FILE *F, type *tp);
 
 #endif /* __IRDUMPT_T_H__ */

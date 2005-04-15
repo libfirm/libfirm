@@ -191,6 +191,8 @@ void dump_subgraph (ir_node *root, int depth, const char *suffix);
 /** Dump the call graph.
  *
  * Dumps the callgraph to a file "Callgraph"<suffix>".vcg".
+ *
+ * @see dump_callgraph_loop_tree(const char *suffix)
  */
 void dump_callgraph(const char *suffix);
 

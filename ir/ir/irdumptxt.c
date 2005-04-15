@@ -33,12 +33,10 @@
 #include "irgwalk.h"
 #include "tv.h"
 
+#include "irdom.h"
 #include "field_temperature.h"
 
 #define MY_SIZE 1024     /* Size of an array that actually should be computed. */
-
-int dump_node_opcode(FILE *F, ir_node *n); /* from irdump.c */
-
 
 /* Just opens a file, mangling a file name.
  *
@@ -164,7 +162,25 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
   switch (get_irn_opcode(n)) {
   case iro_Block: {
     fprintf(F, "  block visited: %ld\n", get_Block_block_visited(n));
-    fprintf(F, "  dominator info: output not implemented\n");
+    if (get_irg_dom_state(get_irn_irg(n)) != dom_none) {
+      fprintf(F, "  dom depth %d\n", get_Block_dom_depth(n));
+      fprintf(F, "  tree pre num %d\n", get_Block_dom_tree_pre_num(n));
+      fprintf(F, "  max subtree pre num %d\n", get_Block_dom_max_subtree_pre_num(n));
+    }
+
+    fprintf(F, "  Execution freqency statistics:\n");
+    if (get_irg_exec_freq_state(get_irn_irg(n)) != exec_freq_none)
+      fprintf(F, "    procedure local evaluation:   %8.2lf\n", get_irn_exec_freq(n));
+    if (get_irp_loop_nesting_depth_state() != loop_nesting_depth_none)
+      fprintf(F, "    call freqency of procedure:   %8.2lf\n",
+	      get_irg_method_execution_frequency(get_irn_irg(n)));
+    if (get_irp_callgraph_state() == irp_callgraph_and_calltree_consistent)
+      fprintf(F, "    recursion depth of procedure: %8.2lf\n", (double)get_irn_recursion_depth(n));
+    if ((get_irg_exec_freq_state(get_irn_irg(n)) != exec_freq_none) &&
+	(get_irp_loop_nesting_depth_state() != loop_nesting_depth_none) &&
+	(get_irp_callgraph_state() == irp_callgraph_and_calltree_consistent))
+      fprintf(F, "    final evaluation:           **%8.2lf**\n", get_irn_final_cost(n));
+
     /* not dumped: graph_arr */
     /* not dumped: mature    */
   }  break;
@@ -380,6 +396,62 @@ int addr_is_alloc(ir_node *acc) {
   return 1;
 }
 
+/** dumps something like:
+ *
+ *  "prefix"  "Name" (x): node1, ... node7,\n
+ *  "prefix"    node8, ... node15,\n
+ *  "prefix"    node16, node17\n
+ */
+static void dump_node_list(FILE *F, firm_kind *k, char *prefix,
+			   int (*get_entity_n_nodes)(firm_kind *ent),
+			   ir_node *(*get_entity_node)(firm_kind *ent, int pos),
+			   char *name) {
+  int i, n_nodes = get_entity_n_nodes(k);
+  char *comma = "";
+
+  fprintf(F, "%s  %s (%d):", prefix, name, n_nodes);
+  for (i = 0; i < n_nodes; ++i) {
+    int rem;
+    if (i > 7 && !(i & 7)) { /* line break every eigth node. */
+      fprintf(F, ",\n%s   ", prefix);
+      comma = "";
+    }
+    fprintf(F, "%s ", comma);
+    rem = opt_dump_analysed_type_info;
+    opt_dump_analysed_type_info = 0;
+    dump_node_label(F, get_entity_node(k, i));
+    opt_dump_analysed_type_info = rem;
+    comma = ",";
+  }
+  fprintf(F, "\n");
+}
+
+/** dumps something like:
+ *
+ *  "prefix"  "Name" (x): node1, ... node7,\n
+ *  "prefix"    node8, ... node15,\n
+ *  "prefix"    node16, node17\n
+ */
+static void dump_type_list(FILE *F, type *tp, char *prefix,
+			   int (*get_n_types)(type *tp),
+			   type *(*get_type)(type *tp, int pos),
+			   char *name) {
+  int i, n_nodes = get_n_types(tp);
+  char *comma = "";
+
+  fprintf(F, "%s  %s (%d):", prefix, name, n_nodes);
+  for (i = 0; i < n_nodes; ++i) {
+    if (i > 7 && !(i & 7)) { /* line break every eigth node. */
+      fprintf(F, ",\n%s   ", prefix);
+      comma = "";
+    }
+    fprintf(F, "%s %s(%ld)", comma, get_type_name(get_type(tp, i)), get_type_nr(tp));
+    //dump_type_to_file(F, get_type(tp, i), dump_verbosity_onlynames);
+    comma = ",";
+  }
+  fprintf(F, "\n");
+}
+
 #define X(a)    case a: fprintf(F, #a); break
 void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned verbosity) {
   int i, j;
@@ -508,6 +580,14 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
       }
     }
     fprintf(F, "\n");
+  }
+
+  if (get_trouts_state()) {
+    fprintf(F, "%sEntity outs:\n", prefix);
+    dump_node_list(F, (firm_kind *)ent, prefix, (int(*)(firm_kind *))get_entity_n_accesses,
+		   (ir_node *(*)(firm_kind *, int))get_entity_access, "Accesses");
+    dump_node_list(F, (firm_kind *)ent, prefix, (int(*)(firm_kind *))get_entity_n_references,
+		   (ir_node *(*)(firm_kind *, int))get_entity_reference, "References");
   }
 
   if (verbosity & dump_verbosity_accessStats) {
@@ -969,7 +1049,17 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
   fprintf(F, "  alignment: %2d Bits,\n",  get_type_alignment_bits(tp));
   if (is_atomic_type(tp))
     fprintf(F, "  mode:      %s,\n",  get_mode_name(get_type_mode(tp)));
-  fprintf(F, "  dbg info:  %p,",  (void *)get_type_dbg_info(tp));
+  fprintf(F, "  dbg info:  %p,\n",  (void *)get_type_dbg_info(tp));
+
+  if (get_trouts_state()) {
+    fprintf(F, "\n  Type outs:\n");
+    dump_node_list(F, (firm_kind *)tp, "  ", (int(*)(firm_kind *))get_type_n_allocs,
+		   (ir_node *(*)(firm_kind *, int))get_type_alloc, "Allocations");
+    dump_node_list(F, (firm_kind *)tp, "  ", (int(*)(firm_kind *))get_type_n_casts,
+		   (ir_node *(*)(firm_kind *, int))get_type_cast, "Casts");
+    dump_type_list(F, tp, "  ", get_type_n_pointertypes_to, get_type_pointertype_to, "PointerTpsTo");
+  }
+
 
   if (verbosity & dump_verbosity_accessStats) {
 #if 0

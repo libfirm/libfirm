@@ -671,9 +671,23 @@ dump_node_nodeattr(FILE *F, ir_node *n)
   return bad;
 }
 
+#include <math.h>
+#include "execution_frequency.h"
+#include "callgraph.h"
 
-/** Dumps a node label without the enclosing ". */
-static int dump_node_label(FILE *F, ir_node *n) {
+void dump_node_ana_vals(FILE *F, ir_node *n) {
+  return;
+  fprintf(F, " %lf*(%2.0lf + %2.0lf) = %2.0lf ",
+	  get_irn_exec_freq(n),
+	  get_irg_method_execution_frequency(get_irn_irg(n)),
+	  pow(5, get_irg_recursion_depth(get_irn_irg(n))),
+	  get_irn_exec_freq(n) * (get_irg_method_execution_frequency(get_irn_irg(n)) + pow(5, get_irg_recursion_depth(get_irn_irg(n))))
+	  );
+}
+
+
+/* Dumps a node label without the enclosing ". */
+int dump_node_label(FILE *F, ir_node *n) {
   int bad = 0;
 
   bad |= dump_node_opcode(F, n);
@@ -847,6 +861,7 @@ static void dump_node(FILE *F, ir_node *n)
 
   bad = ! irn_vrfy_irg_dump(n, current_ir_graph, &p);
   bad |= dump_node_label(F, n);
+  dump_node_ana_vals(F, n);
   //dump_node_ana_info(F, n);
   fprintf(F, "\" ");
   bad |= dump_node_info(F, n);
@@ -1225,7 +1240,7 @@ static void dump_node2type_edges(ir_node *n, void *env)
   }
 }
 
-
+#if 0
 static int print_type_info(FILE *F, type *tp) {
   int bad = 0;
 
@@ -1274,7 +1289,7 @@ static void print_typespecific_info(FILE *F, type *tp) {
   default: break;
   } /* switch type */
 }
-
+#endif
 
 static void print_typespecific_vcgattr(FILE *F, type *tp) {
   switch (get_type_tpop_code(tp)) {
@@ -1311,6 +1326,8 @@ static void print_typespecific_vcgattr(FILE *F, type *tp) {
   } /* switch type */
 }
 
+
+/* Why not dump_type_node as the others? */
 static int print_type_node(FILE *F, type *tp)
 {
   int bad = 0;
@@ -1319,14 +1336,23 @@ static int print_type_node(FILE *F, type *tp)
   PRINT_TYPEID(tp);
   fprintf (F, " label: \"%s %s\"", get_type_tpop_name(tp), get_type_name_ex(tp, &bad));
   fprintf (F, " info1: \"");
+#if 0
   bad |= print_type_info(F, tp);
   print_typespecific_info(F, tp);
+#else
+  dump_type_to_file(F, tp, dump_verbosity_max);
+#endif
   fprintf (F, "\"");
   print_typespecific_vcgattr(F, tp);
   fprintf (F, "}\n");
 
   return bad;
 }
+
+int dump_type_node(FILE *F, type *tp) {
+  return print_type_node(F, tp);
+}
+
 
 #define X(a)    case a: fprintf(F, #a); break
 void dump_entity_node(FILE *F, entity *ent, int color)
@@ -1983,25 +2009,36 @@ dump_block_to_cfg(ir_node *block, void *env) {
     PRINT_NODEID(block);
     fprintf (F, "\" ");
     fprintf(F, "info1:\"");
+
+#if 0
     if (dump_dominator_information_flag) {
       fprintf(F, "dom depth %d\n", get_Block_dom_depth(block));
       fprintf(F, "tree pre num %d\n", get_Block_dom_tree_pre_num(block));
       fprintf(F, "max subtree pre num %d\n", get_Block_dom_max_subtree_pre_num(block));
-		}
+    }
 
     /* show arity and possible Bad predecessors of the block */
     fprintf(F, "arity: %d\n", get_Block_n_cfgpreds(block));
     for (fl = i = 0; i < get_Block_n_cfgpreds(block); ++i) {
       ir_node *pred = get_Block_cfgpred(block, i);
       if (is_Bad(pred)) {
-    if (! fl)
-      fprintf(F, "Bad pred at pos: ");
-    fprintf(F, "%d ", i);
-    fl = 1;
+	if (! fl)
+	  fprintf(F, "Bad pred at pos: ");
+	fprintf(F, "%d ", i);
+	fl = 1;
       }
     }
     if (fl)
       fprintf(F, "\n");
+#else
+    /* the generic version. */
+    dump_irnode_to_file(F, block);
+
+    /* Check whether we have bad predecessors to color the block. */
+    for (i = 0; i < get_Block_n_cfgpreds(block); ++i)
+      if ((fl = is_Bad(get_Block_cfgpred(block, i))))
+	break;
+#endif
 
     fprintf (F, "\"");  /* closing quote of info */
 
