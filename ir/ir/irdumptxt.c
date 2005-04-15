@@ -944,7 +944,7 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
         fprintf(F, "\n    %s", get_type_name(stp));
       }
 
-      fprintf(F, "\n  peculiarity: %s", get_peculiarity_string(get_class_peculiarity(tp)));
+      fprintf(F, "\n  peculiarity: %s\n", get_peculiarity_string(get_class_peculiarity(tp)));
     }
     break;
 
@@ -1007,12 +1007,13 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
   case tpo_pointer:
     if (verbosity & dump_verbosity_typeattrs) {
       type *tt = get_pointer_points_to_type(tp);
-      fprintf(F, "\n  points to %s (%ld)", get_type_name(tt), get_type_nr(tt));
+      fprintf(F, "\n  points to %s (%ld)\n", get_type_name(tt), get_type_nr(tt));
     }
     break;
 
   case tpo_method:
     if (verbosity & dump_verbosity_typeattrs) {
+      fprintf(F, "\n  variadicity: %s", get_variadicity_name(get_method_variadicity(tp)));
       fprintf(F, "\n  return types: %d", get_method_n_ress(tp));
       for (i = 0; i < get_method_n_ress(tp); ++i) {
         type *rtp = get_method_res_type(tp, i);
@@ -1024,7 +1025,6 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
         type *ptp = get_method_param_type(tp, i);
         fprintf(F, "\n    %s", get_type_name(ptp));
       }
-
       if (get_method_variadicity(tp)) {
         fprintf(F, "\n    ...");
       }
@@ -1036,6 +1036,7 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
   case tpo_id:
   case tpo_none:
   case tpo_unknown:
+      fprintf(F, "\n");
     break;
 
   default:
@@ -1047,7 +1048,7 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
   fprintf(F, "  state:     %s,\n", get_type_state_name(get_type_state(tp)));
   fprintf(F, "  size:      %2d Bits,\n",  get_type_size_bits(tp));
   fprintf(F, "  alignment: %2d Bits,\n",  get_type_alignment_bits(tp));
-  if (is_atomic_type(tp))
+  if (is_atomic_type(tp) || is_Method_type(tp))
     fprintf(F, "  mode:      %s,\n",  get_mode_name(get_type_mode(tp)));
   fprintf(F, "  dbg info:  %p,\n",  (void *)get_type_dbg_info(tp));
 
