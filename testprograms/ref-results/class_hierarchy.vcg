@@ -52,9 +52,57 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-node: {title: "t15" label: "class PRIMA" info1: "state: layout_undefined
-size: -1b,
-peculiarity: peculiarity_existent
+node: {title: "t15" label: "class PRIMA" info1: "class type PRIMA (15)
+  members:
+    entity a (17)
+      type:  int (14)
+      owner: PRIMA (15)
+      Does not overwrite other entities.
+      Is not overwritten by other entities.
+      allocation:  allocation_automatic
+      visibility:  visibility_local
+      variability: variability_uninitialized
+      volatility:  volatility_non_volatile
+      peculiarity: peculiarity_existent
+      ld_name: no yet set
+      offset:  -1
+    entity set_a (20)
+      type:  set_a (18)
+      owner: PRIMA (15)
+      Does not overwrite other entities.
+      Is not overwritten by other entities.
+      allocation:  allocation_static
+      visibility:  visibility_local
+      variability: variability_constant
+      atomic value: SymC &set_a
+      volatility:  volatility_non_volatile
+      peculiarity: peculiarity_existent
+      ld_name: PRIMA_set_a
+      offset:  -1
+      irg = 73
+    entity c (23)
+      type:  c (21)
+      owner: PRIMA (15)
+      Does not overwrite other entities.
+      Is not overwritten by other entities.
+      allocation:  allocation_static
+      visibility:  visibility_local
+      variability: variability_constant
+      atomic value: SymC &c
+      volatility:  volatility_non_volatile
+      peculiarity: peculiarity_existent
+      ld_name: PRIMA_c
+      offset:  -1
+      irg = 96
+  supertypes:
+  subtypes:
+  peculiarity: peculiarity_existent
+  state:     layout_undefined,
+  size:      -1 Bits,
+  alignment: 32 Bits,
+  dbg info:  (nil),
+
+
 " color: green}
 node: {title: "e20" label: "ent PRIMA_set_a" color: yellow
  info1: "entity set_a (20)

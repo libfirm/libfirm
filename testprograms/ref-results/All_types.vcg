@@ -52,22 +52,56 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-node: {title: "t14" label: "primitive int" info1: "state: layout_fixed,
-mode: Is,
-size: 32b,
+node: {title: "t14" label: "primitive int" info1: "primitive type int (14)
+  state:     layout_fixed,
+  size:      32 Bits,
+  alignment: 32 Bits,
+  mode:      Is,
+  dbg info:  (nil),
+
+
 "}
-node: {title: "t15" label: "method main_tp" info1: "state: layout_fixed,
-mode: P,
-size: 32b,
-variadicity: variadicity_non_variadic
-params: 1
-results: 1
+node: {title: "t15" label: "method main_tp" info1: "method type main_tp (15)
+  variadicity: variadicity_non_variadic
+  return types: 1
+    int
+  parameter types: 1
+    int
+  state:     layout_fixed,
+  size:      32 Bits,
+  alignment: 32 Bits,
+  mode:      P,
+  dbg info:  (nil),
+
+
 "}
 edge: { sourcename: "t15" targetname: "t14"class: 5 label: "param 0" color: green}
 edge: { sourcename: "t15" targetname: "t14"class: 6 label: "res 0" color: green}
-node: {title: "t16" label: "class WHILE_EXAMPLE" info1: "state: layout_undefined
-size: -1b,
-peculiarity: peculiarity_existent
+node: {title: "t16" label: "class WHILE_EXAMPLE" info1: "class type WHILE_EXAMPLE (16)
+  members:
+    entity main (18)
+      type:  main_tp (15)
+      owner: WHILE_EXAMPLE (16)
+      Does not overwrite other entities.
+      Is not overwritten by other entities.
+      allocation:  allocation_static
+      visibility:  visibility_local
+      variability: variability_constant
+      atomic value: SymC &main
+      volatility:  volatility_non_volatile
+      peculiarity: peculiarity_existent
+      ld_name: WHILE_EXAMPLE_main
+      offset:  -1
+      irg = 31
+  supertypes:
+  subtypes:
+  peculiarity: peculiarity_existent
+  state:     layout_undefined,
+  size:      -1 Bits,
+  alignment: 32 Bits,
+  dbg info:  (nil),
+
+
 " color: green}
 edge: { sourcename: "t16" targetname: "e18"class: 12 label: "member" color:blue}
 node: {title: "e18" label: "ent WHILE_EXAMPLE_main" color: yellow
@@ -103,8 +137,16 @@ node: {title: "n17" label: "SymC &main 17"  info1: "SymC &main 17
   type of value: type_unknown
 "
 }
-node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
-size: -1b,
-peculiarity: peculiarity_existent
+node: {title: "t0" label: "class GlobalType" info1: "class type GlobalType (0)
+  members:
+  supertypes:
+  subtypes:
+  peculiarity: peculiarity_existent
+  state:     layout_undefined,
+  size:      -1 Bits,
+  alignment:  0 Bits,
+  dbg info:  (nil),
+
+
 " color: green}
 }

@@ -52,13 +52,43 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-node: {title: "n20" label: "End Block n20" info1:"arity: 1
+node: {title: "n20" label: "End Block n20" info1:"Block 20
+  mode:    BB
+  visited: 12
+  irg:     DEAD_BLOCK_main
+  arity:   1
+  pred nodes:
+     0:    Return 51
+  Private Attributes:
+  backedges:
+  block visited: 2
+  Execution freqency statistics:
 " color:blue }
 edge: { sourcename: "n20" targetname: "n32"}
-node: {title: "n32" label: "Block n32" info1:"arity: 1
+node: {title: "n32" label: "Block n32" info1:"Block 32
+  mode:    BB
+  visited: 12
+  irg:     DEAD_BLOCK_main
+  arity:   1
+  pred nodes:
+     0:    Proj 26
+  Private Attributes:
+  backedges:
+  block visited: 2
+  Execution freqency statistics:
 "}
 edge: { sourcename: "n32" targetname: "n22"}
-node: {title: "n22" label: "Start Block n22" info1:"arity: 1
+node: {title: "n22" label: "Start Block n22" info1:"Block 22
+  mode:    BB
+  visited: 12
+  irg:     DEAD_BLOCK_main
+  arity:   1
+  pred nodes:
+     0:    Proj 26
+  Private Attributes:
+  backedges:
+  block visited: 2
+  Execution freqency statistics:
 " color:blue }
 edge: { sourcename: "n22" targetname: "n22"}
 node: {title: "n61" label: "Bad 61"  info1: "Bad 61

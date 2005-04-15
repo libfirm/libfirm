@@ -65,7 +65,7 @@ node: {title: "n30" label: "Block 30"  info1: "Block 30
      0:    Proj 34
   backedges:
   block visited: 0
-  dominator info: output not implemented
+  Execution freqency statistics:
 "
 color: lightyellow}
 edge: {sourcename: "n30" targetname: "n34" label: "0" class:13 priority:60 color:red}
@@ -107,7 +107,7 @@ node: {title: "n191" label: "Block 191"  info1: "Block 191
      0:    Proj 34
   backedges:
   block visited: 0
-  dominator info: output not implemented
+  Execution freqency statistics:
 "
 color: lightyellow}
 edge: {sourcename: "n191" targetname: "n34" label: "0" class:13 priority:60 color:red}
@@ -167,7 +167,7 @@ node: {title: "n64" label: "Block 64"  info1: "Block 64
      0:    Proj 195
   backedges:
   block visited: 0
-  dominator info: output not implemented
+  Execution freqency statistics:
 "
 color: lightyellow}
 edge: {sourcename: "n64" targetname: "n195" label: "0" class:13 priority:60 color:red}
@@ -211,7 +211,7 @@ node: {title: "n74" label: "Block 74"  info1: "Block 74
      0:    Proj 68
   backedges:
   block visited: 0
-  dominator info: output not implemented
+  Execution freqency statistics:
 "
 color: lightyellow}
 edge: {sourcename: "n74" targetname: "n68" label: "0" class:13 priority:60 color:red}
@@ -239,7 +239,7 @@ node: {title: "n188" label: "Block 188"  info1: "Block 188
      0:    Jmp 187
   backedges:
   block visited: 0
-  dominator info: output not implemented
+  Execution freqency statistics:
 "
 color: lightyellow}
 edge: {sourcename: "n188" targetname: "n187" label: "0" class:13 priority:60 color:red}
@@ -280,7 +280,7 @@ node: {title: "n197" label: "Block 197"  info1: "Block 197
      0:    Proj 194
   backedges:
   block visited: 0
-  dominator info: output not implemented
+  Execution freqency statistics:
 "
 color: lightyellow}
 edge: {sourcename: "n197" targetname: "n194" label: "0" class:13 priority:60 color:red}
@@ -340,7 +340,7 @@ node: {title: "n87" label: "Block 87"  info1: "Block 87
      0:    Proj 201
   backedges:
   block visited: 0
-  dominator info: output not implemented
+  Execution freqency statistics:
 "
 color: lightyellow}
 edge: {sourcename: "n87" targetname: "n201" label: "0" class:13 priority:60 color:red}
@@ -384,7 +384,7 @@ node: {title: "n97" label: "Block 97"  info1: "Block 97
      0:    Proj 91
   backedges:
   block visited: 0
-  dominator info: output not implemented
+  Execution freqency statistics:
 "
 color: lightyellow}
 edge: {sourcename: "n97" targetname: "n91" label: "0" class:13 priority:60 color:red}
@@ -412,7 +412,7 @@ node: {title: "n180" label: "Block 180"  info1: "Block 180
      0:    Jmp 179
   backedges:
   block visited: 0
-  dominator info: output not implemented
+  Execution freqency statistics:
 "
 color: lightyellow}
 edge: {sourcename: "n180" targetname: "n179" label: "0" class:13 priority:60 color:red}
@@ -453,7 +453,7 @@ node: {title: "n40" label: "Block 40"  info1: "Block 40
      0:    Proj 200
   backedges:
   block visited: 0
-  dominator info: output not implemented
+  Execution freqency statistics:
 "
 color: lightyellow}
 edge: {sourcename: "n40" targetname: "n200" label: "0" class:13 priority:60 color:red}
@@ -857,7 +857,7 @@ node: {title: "n28" label: "Block 28"  info1: "Block 28
      0:    Return 59
   backedges:
   block visited: 0
-  dominator info: output not implemented
+  Execution freqency statistics:
 "
 color: lightyellow}
 edge: {sourcename: "n28" targetname: "n59" label: "0" class:13 priority:60 color:red}

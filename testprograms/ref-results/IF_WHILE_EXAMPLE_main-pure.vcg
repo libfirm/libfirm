@@ -87,7 +87,7 @@ node: {title: "n22" label: "Block 22"  info1: "Block 22
   Private Attributes:
   backedges:
   block visited: 0
-  dominator info: output not implemented
+  Execution freqency statistics:
 "
 color: lightyellow}
 edge: {sourcename: "n22" targetname: "n26" label: "0" class:13 priority:60 color:red}
@@ -169,7 +169,7 @@ node: {title: "n46" label: "Block 46"  info1: "Block 46
   Private Attributes:
   backedges:
   block visited: 0
-  dominator info: output not implemented
+  Execution freqency statistics:
 "
 color: lightyellow}
 edge: {sourcename: "n46" targetname: "n45" label: "0" class:13 priority:60 color:red}
@@ -194,7 +194,7 @@ node: {title: "n32" label: "Block 32"  info1: "Block 32
   Private Attributes:
   backedges:
   block visited: 0
-  dominator info: output not implemented
+  Execution freqency statistics:
 "
 color: lightyellow}
 edge: {sourcename: "n32" targetname: "n26" label: "0" class:13 priority:60 color:red}
@@ -220,7 +220,7 @@ node: {title: "n38" label: "Block 38"  info1: "Block 38
   Private Attributes:
   backedges:
   block visited: 0
-  dominator info: output not implemented
+  Execution freqency statistics:
 "
 color: lightyellow}
 edge: {sourcename: "n38" targetname: "n35" label: "0" class:13 priority:60 color:red}
@@ -248,7 +248,7 @@ node: {title: "n60" label: "Block 60"  info1: "Block 60
   Private Attributes:
   backedges:
   block visited: 0
-  dominator info: output not implemented
+  Execution freqency statistics:
 "
 color: lightyellow}
 edge: {sourcename: "n60" targetname: "n44" label: "0" class:13 priority:60 color:red}
@@ -363,7 +363,7 @@ node: {title: "n20" label: "Block 20"  info1: "Block 20
   Private Attributes:
   backedges:
   block visited: 0
-  dominator info: output not implemented
+  Execution freqency statistics:
 "
 color: lightyellow}
 edge: {sourcename: "n20" targetname: "n76" label: "0" class:13 priority:60 color:red}

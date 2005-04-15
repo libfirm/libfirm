@@ -62,7 +62,7 @@ node: {title: "n22" label: "Block 22"  info1: "Block 22
   Private Attributes:
   backedges:
   block visited: 0
-  dominator info: output not implemented
+  Execution freqency statistics:
 "
 color: lightyellow}
 edge: {sourcename: "n22" targetname: "n26" label: "0" class:13 priority:60 color:red}
@@ -101,7 +101,7 @@ node: {title: "n32" label: "Block 32"  info1: "Block 32
   Private Attributes:
   backedges:
   block visited: 0
-  dominator info: output not implemented
+  Execution freqency statistics:
 "
 color: lightyellow}
 edge: {sourcename: "n32" targetname: "n26" label: "0" class:13 priority:60 color:red}
@@ -217,7 +217,7 @@ node: {title: "n20" label: "Block 20"  info1: "Block 20
   Private Attributes:
   backedges:
   block visited: 0
-  dominator info: output not implemented
+  Execution freqency statistics:
 "
 color: lightyellow}
 edge: {sourcename: "n20" targetname: "n39" label: "0" class:13 priority:60 color:red}
@@ -249,9 +249,43 @@ node: {title: "e18" label: "ent i" color: yellow
 "
 }
 edge: { sourcename: "e18" targetname: "t14"class: 3 label: "type" color: red}
-node: {title: "t0" label: "class GlobalType" info1: "state: layout_undefined
-size: -1b,
-peculiarity: peculiarity_existent
+node: {title: "t0" label: "class GlobalType" info1: "class type GlobalType (0)
+  members:
+    entity GLOBAL_VAR_main (17)
+      type:  GLOBAL_VAR_main (15)
+      owner: GlobalType (0)
+      Does not overwrite other entities.
+      Is not overwritten by other entities.
+      allocation:  allocation_static
+      visibility:  visibility_local
+      variability: variability_constant
+      atomic value: SymC &GLOBAL_VAR_main
+      volatility:  volatility_non_volatile
+      peculiarity: peculiarity_existent
+      ld_name: no yet set
+      offset:  -1
+      irg = 31
+    entity i (18)
+      type:  int (14)
+      owner: GlobalType (0)
+      Does not overwrite other entities.
+      Is not overwritten by other entities.
+      allocation:  allocation_automatic
+      visibility:  visibility_local
+      variability: variability_uninitialized
+      volatility:  volatility_non_volatile
+      peculiarity: peculiarity_existent
+      ld_name: no yet set
+      offset:  -1
+  supertypes:
+  subtypes:
+  peculiarity: peculiarity_existent
+  state:     layout_undefined,
+  size:      -1 Bits,
+  alignment: 32 Bits,
+  dbg info:  (nil),
+
+
 " color: green}
 edge: { sourcename: "t0" targetname: "e17"class: 12 label: "member" color:blue}
 edge: { sourcename: "t0" targetname: "e18"class: 12 label: "member" color:blue}
@@ -288,20 +322,38 @@ node: {title: "n16" label: "SymC &GLOBAL_VAR_main 16"  info1: "SymC &GLOBAL_VAR_
   type of value: type_unknown
 "
 }
-node: {title: "t15" label: "method GLOBAL_VAR_main" info1: "state: layout_fixed,
-mode: P,
-size: 32b,
-variadicity: variadicity_non_variadic
-params: 0
-results: 0
+node: {title: "t15" label: "method GLOBAL_VAR_main" info1: "method type GLOBAL_VAR_main (15)
+  variadicity: variadicity_non_variadic
+  return types: 0
+  parameter types: 0
+  state:     layout_fixed,
+  size:      32 Bits,
+  alignment: 32 Bits,
+  mode:      P,
+  dbg info:  (nil),
+
+
 "}
-node: {title: "t14" label: "primitive int" info1: "state: layout_fixed,
-mode: Is,
-size: 32b,
+node: {title: "t14" label: "primitive int" info1: "primitive type int (14)
+  state:     layout_fixed,
+  size:      32 Bits,
+  alignment: 32 Bits,
+  mode:      Is,
+  dbg info:  (nil),
+
+
 "}
-node: {title: "t19" label: "class GLOBAL_VAR_mainframe_tp" info1: "state: layout_undefined
-size: -1b,
-peculiarity: peculiarity_existent
+node: {title: "t19" label: "class GLOBAL_VAR_mainframe_tp" info1: "class type GLOBAL_VAR_mainframe_tp (19)
+  members:
+  supertypes:
+  subtypes:
+  peculiarity: peculiarity_existent
+  state:     layout_undefined,
+  size:      -1 Bits,
+  alignment:  0 Bits,
+  dbg info:  (nil),
+
+
 " color: green}
 edge: { sourcename: "n34" targetname: "e18"class:2 priority:2 linestyle:dotted}
 }

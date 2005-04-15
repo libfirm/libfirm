@@ -52,33 +52,126 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-node: {title: "n66" label: "End Block n66" info1:"arity: 1
+node: {title: "n66" label: "End Block n66" info1:"Block 66
+  mode:    BB
+  visited: 6
+  irg:     IRR_LOOP_loop2
+  arity:   1
+  pred nodes:
+     0:    Return 116
+  Private Attributes:
+  backedges:
+  in loop 130 with depth 0
+  block visited: 1
+  Execution freqency statistics:
 " color:blue }
 edge: { sourcename: "n66" targetname: "n114"}
-node: {title: "n114" label: "Block n114" info1:"arity: 2
+node: {title: "n114" label: "Block n114" info1:"Block 114
+  mode:    BB
+  visited: 6
+  irg:     IRR_LOOP_loop2
+  arity:   2
+  pred nodes:
+     0:    Proj 100
+     1:    Proj 112
+  Private Attributes:
+  backedges:
+  in loop 130 with depth 0
+  block visited: 1
+  Execution freqency statistics:
 "}
 edge: { sourcename: "n114" targetname: "n96"}
 edge: { sourcename: "n114" targetname: "n108"}
-node: {title: "n108" label: "Block n108" info1:"arity: 2
+node: {title: "n108" label: "Block n108" info1:"Block 108
+  mode:    BB
+  visited: 6
+  irg:     IRR_LOOP_loop2
+  arity:   2
+  pred nodes:
+     0:    Proj 88
+     1: be Proj 106
+  Private Attributes:
+  backedges:  1
+  in loop 131 with depth 1
+  block visited: 1
+  Execution freqency statistics:
 "}
 edge: { sourcename: "n108" targetname: "n78"}
 edge: { sourcename: "n108" targetname: "n102"}
-node: {title: "n102" label: "Block n102" info1:"arity: 3
+node: {title: "n102" label: "Block n102" info1:"Block 102
+  mode:    BB
+  visited: 6
+  irg:     IRR_LOOP_loop2
+  arity:   3
+  pred nodes:
+     0:    Proj 94
+     1:    Proj 101
+     2:    Proj 113
+  Private Attributes:
+  backedges:
+  in loop 132 with depth 2
+  block visited: 1
+  Execution freqency statistics:
 "}
 edge: { sourcename: "n102" targetname: "n90"}
 edge: { sourcename: "n102" targetname: "n96"}
 edge: { sourcename: "n102" targetname: "n108"}
-node: {title: "n96" label: "Block n96" info1:"arity: 2
+node: {title: "n96" label: "Block n96" info1:"Block 96
+  mode:    BB
+  visited: 6
+  irg:     IRR_LOOP_loop2
+  arity:   2
+  pred nodes:
+     0:    Proj 95
+     1: be Proj 107
+  Private Attributes:
+  backedges:  1
+  in loop 132 with depth 2
+  block visited: 1
+  Execution freqency statistics:
 "}
 edge: { sourcename: "n96" targetname: "n90"}
 edge: { sourcename: "n96" targetname: "n102"}
-node: {title: "n90" label: "Block n90" info1:"arity: 1
+node: {title: "n90" label: "Block n90" info1:"Block 90
+  mode:    BB
+  visited: 6
+  irg:     IRR_LOOP_loop2
+  arity:   1
+  pred nodes:
+     0:    Proj 89
+  Private Attributes:
+  backedges:
+  in loop 130 with depth 0
+  block visited: 1
+  Execution freqency statistics:
 "}
 edge: { sourcename: "n90" targetname: "n78"}
-node: {title: "n78" label: "Block n78" info1:"arity: 1
+node: {title: "n78" label: "Block n78" info1:"Block 78
+  mode:    BB
+  visited: 6
+  irg:     IRR_LOOP_loop2
+  arity:   1
+  pred nodes:
+     0:    Proj 72
+  Private Attributes:
+  backedges:
+  in loop 130 with depth 0
+  block visited: 1
+  Execution freqency statistics:
 "}
 edge: { sourcename: "n78" targetname: "n68"}
-node: {title: "n68" label: "Start Block n68" info1:"arity: 1
+node: {title: "n68" label: "Start Block n68" info1:"Block 68
+  mode:    BB
+  visited: 6
+  irg:     IRR_LOOP_loop2
+  arity:   1
+  pred nodes:
+     0:    Proj 72
+  Private Attributes:
+  backedges:
+  in loop 130 with depth 0
+  block visited: 1
+  Execution freqency statistics:
 " color:blue }
 edge: { sourcename: "n68" targetname: "n68"}
 node: {title: "n70" label: "Bad 70"  info1: "Bad 70

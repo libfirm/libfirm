@@ -62,7 +62,7 @@ node: {title: "n87" label: "Block 87"  info1: "Block 87
   Private Attributes:
   backedges:
   block visited: 0
-  dominator info: output not implemented
+  Execution freqency statistics:
 "
 color: lightyellow}
 edge: {sourcename: "n87" targetname: "n91" label: "0" class:13 priority:60 color:red}
@@ -103,7 +103,7 @@ node: {title: "n97" label: "Block 97"  info1: "Block 97
   Private Attributes:
   backedges:
   block visited: 0
-  dominator info: output not implemented
+  Execution freqency statistics:
 "
 color: lightyellow}
 edge: {sourcename: "n97" targetname: "n91" label: "0" class:13 priority:60 color:red}
@@ -263,7 +263,7 @@ node: {title: "n85" label: "Block 85"  info1: "Block 85
   Private Attributes:
   backedges:
   block visited: 0
-  dominator info: output not implemented
+  Execution freqency statistics:
 "
 color: lightyellow}
 edge: {sourcename: "n85" targetname: "n107" label: "0" class:13 priority:60 color:red}

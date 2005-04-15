@@ -69,9 +69,57 @@ node: {title: "e17" label: "ent a" color: yellow
 "
 }
 edge: { sourcename: "e17" targetname: "t14"class: 3 label: "type" color: red}
-node: {title: "t15" label: "class PRIMA" info1: "state: layout_undefined
-size: -1b,
-peculiarity: peculiarity_existent
+node: {title: "t15" label: "class PRIMA" info1: "class type PRIMA (15)
+  members:
+    entity a (17)
+      type:  int (14)
+      owner: PRIMA (15)
+      Does not overwrite other entities.
+      Is not overwritten by other entities.
+      allocation:  allocation_automatic
+      visibility:  visibility_local
+      variability: variability_uninitialized
+      volatility:  volatility_non_volatile
+      peculiarity: peculiarity_existent
+      ld_name: no yet set
+      offset:  -1
+    entity set_a (20)
+      type:  set_a (18)
+      owner: PRIMA (15)
+      Does not overwrite other entities.
+      Is not overwritten by other entities.
+      allocation:  allocation_static
+      visibility:  visibility_local
+      variability: variability_constant
+      atomic value: SymC &set_a
+      volatility:  volatility_non_volatile
+      peculiarity: peculiarity_existent
+      ld_name: PRIMA_set_a
+      offset:  -1
+      irg = 73
+    entity c (23)
+      type:  c (21)
+      owner: PRIMA (15)
+      Does not overwrite other entities.
+      Is not overwritten by other entities.
+      allocation:  allocation_static
+      visibility:  visibility_local
+      variability: variability_constant
+      atomic value: SymC &c
+      volatility:  volatility_non_volatile
+      peculiarity: peculiarity_existent
+      ld_name: PRIMA_c
+      offset:  -1
+      irg = 96
+  supertypes:
+  subtypes:
+  peculiarity: peculiarity_existent
+  state:     layout_undefined,
+  size:      -1 Bits,
+  alignment: 32 Bits,
+  dbg info:  (nil),
+
+
 " color: green}
 edge: { sourcename: "t15" targetname: "e17"class: 12 label: "member" color:blue}
 edge: { sourcename: "t15" targetname: "e20"class: 12 label: "member" color:blue}
@@ -109,23 +157,41 @@ node: {title: "n19" label: "SymC &set_a 19"  info1: "SymC &set_a 19
   type of value: type_unknown
 "
 }
-node: {title: "t18" label: "method set_a" info1: "state: layout_fixed,
-mode: P,
-size: 32b,
-variadicity: variadicity_non_variadic
-params: 2
-results: 0
+node: {title: "t18" label: "method set_a" info1: "method type set_a (18)
+  variadicity: variadicity_non_variadic
+  return types: 0
+  parameter types: 2
+    class_prima_ptr
+    int
+  state:     layout_fixed,
+  size:      32 Bits,
+  alignment: 32 Bits,
+  mode:      P,
+  dbg info:  (nil),
+
+
 "}
 edge: { sourcename: "t18" targetname: "t16"class: 5 label: "param 0" color: green}
 edge: { sourcename: "t18" targetname: "t14"class: 5 label: "param 1" color: green}
-node: {title: "t16" label: "pointer class_prima_ptr" info1: "state: layout_fixed,
-mode: P,
-size: 32b,
+node: {title: "t16" label: "pointer class_prima_ptr" info1: "pointer type class_prima_ptr (16)
+  points to PRIMA (15)
+  state:     layout_fixed,
+  size:      32 Bits,
+  alignment: 32 Bits,
+  mode:      P,
+  dbg info:  (nil),
+
+
 "}
 edge: { sourcename: "t16" targetname: "t15"class: 9 label: "points to" color:green}
-node: {title: "t14" label: "primitive int" info1: "state: layout_fixed,
-mode: Is,
-size: 32b,
+node: {title: "t14" label: "primitive int" info1: "primitive type int (14)
+  state:     layout_fixed,
+  size:      32 Bits,
+  alignment: 32 Bits,
+  mode:      Is,
+  dbg info:  (nil),
+
+
 "}
 node: {title: "e23" label: "ent PRIMA_c" color: yellow
  info1: "entity c (23)
@@ -160,18 +226,34 @@ node: {title: "n22" label: "SymC &c 22"  info1: "SymC &c 22
   type of value: type_unknown
 "
 }
-node: {title: "t21" label: "method c" info1: "state: layout_fixed,
-mode: P,
-size: 32b,
-variadicity: variadicity_non_variadic
-params: 2
-results: 1
+node: {title: "t21" label: "method c" info1: "method type c (21)
+  variadicity: variadicity_non_variadic
+  return types: 1
+    int
+  parameter types: 2
+    class_prima_ptr
+    int
+  state:     layout_fixed,
+  size:      32 Bits,
+  alignment: 32 Bits,
+  mode:      P,
+  dbg info:  (nil),
+
+
 "}
 edge: { sourcename: "t21" targetname: "t16"class: 5 label: "param 0" color: green}
 edge: { sourcename: "t21" targetname: "t14"class: 5 label: "param 1" color: green}
 edge: { sourcename: "t21" targetname: "t14"class: 6 label: "res 0" color: green}
-node: {title: "t84" label: "class cframe_tp" info1: "state: layout_undefined
-size: -1b,
-peculiarity: peculiarity_existent
+node: {title: "t84" label: "class cframe_tp" info1: "class type cframe_tp (84)
+  members:
+  supertypes:
+  subtypes:
+  peculiarity: peculiarity_existent
+  state:     layout_undefined,
+  size:      -1 Bits,
+  alignment:  0 Bits,
+  dbg info:  (nil),
+
+
 " color: green}
 }

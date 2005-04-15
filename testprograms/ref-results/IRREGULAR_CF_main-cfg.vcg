@@ -52,30 +52,112 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-node: {title: "n19" label: "End Block n19" info1:"arity: 1
+node: {title: "n19" label: "End Block n19" info1:"Block 19
+  mode:    BB
+  visited: 8
+  irg:     IRREGULAR_CF_main
+  arity:   1
+  pred nodes:
+     0:    Return 54
+  Private Attributes:
+  backedges:
+  block visited: 2
+  Execution freqency statistics:
 " color:blue }
 edge: { sourcename: "n19" targetname: "n52"}
-node: {title: "n52" label: "Block n52" info1:"arity: 2
+node: {title: "n52" label: "Block n52" info1:"Block 52
+  mode:    BB
+  visited: 8
+  irg:     IRREGULAR_CF_main
+  arity:   2
+  pred nodes:
+     0:    Jmp 51
+     1:    Jmp 49
+  Private Attributes:
+  backedges:
+  block visited: 2
+  Execution freqency statistics:
 "}
 edge: { sourcename: "n52" targetname: "n50"}
 edge: { sourcename: "n52" targetname: "n48"}
-node: {title: "n48" label: "Block n48" info1:"arity: 2
+node: {title: "n48" label: "Block n48" info1:"Block 48
+  mode:    BB
+  visited: 8
+  irg:     IRREGULAR_CF_main
+  arity:   2
+  pred nodes:
+     0:    Proj 47
+     1:    Jmp 41
+  Private Attributes:
+  backedges:
+  block visited: 2
+  Execution freqency statistics:
 "}
 edge: { sourcename: "n48" targetname: "n42"}
 edge: { sourcename: "n48" targetname: "n40"}
-node: {title: "n40" label: "Block n40" info1:"arity: 1
+node: {title: "n40" label: "Block n40" info1:"Block 40
+  mode:    BB
+  visited: 8
+  irg:     IRREGULAR_CF_main
+  arity:   1
+  pred nodes:
+     0:    Proj 39
+  Private Attributes:
+  backedges:
+  block visited: 2
+  Execution freqency statistics:
 "}
 edge: { sourcename: "n40" targetname: "n31"}
-node: {title: "n31" label: "Block n31" info1:"arity: 1
+node: {title: "n31" label: "Block n31" info1:"Block 31
+  mode:    BB
+  visited: 8
+  irg:     IRREGULAR_CF_main
+  arity:   1
+  pred nodes:
+     0:    Proj 25
+  Private Attributes:
+  backedges:
+  block visited: 2
+  Execution freqency statistics:
 "}
 edge: { sourcename: "n31" targetname: "n21"}
-node: {title: "n21" label: "Start Block n21" info1:"arity: 1
+node: {title: "n21" label: "Start Block n21" info1:"Block 21
+  mode:    BB
+  visited: 8
+  irg:     IRREGULAR_CF_main
+  arity:   1
+  pred nodes:
+     0:    Proj 25
+  Private Attributes:
+  backedges:
+  block visited: 2
+  Execution freqency statistics:
 " color:blue }
 edge: { sourcename: "n21" targetname: "n21"}
-node: {title: "n42" label: "Block n42" info1:"arity: 1
+node: {title: "n42" label: "Block n42" info1:"Block 42
+  mode:    BB
+  visited: 8
+  irg:     IRREGULAR_CF_main
+  arity:   1
+  pred nodes:
+     0:    Proj 38
+  Private Attributes:
+  backedges:
+  block visited: 2
+  Execution freqency statistics:
 "}
 edge: { sourcename: "n42" targetname: "n31"}
-node: {title: "n50" label: "Block n50" info1:"arity: 1
+node: {title: "n50" label: "Block n50" info1:"Block 50
+  mode:    BB
+  visited: 8
+  irg:     IRREGULAR_CF_main
+  arity:   1
+  pred nodes:
+     0:    Proj 46
+  Private Attributes:
+  backedges:
+  block visited: 2
+  Execution freqency statistics:
 "}
 edge: { sourcename: "n50" targetname: "n42"}
 node: {title: "n67" label: "Bad 67"  info1: "Bad 67
