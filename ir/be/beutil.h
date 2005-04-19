@@ -53,4 +53,18 @@ void localize_consts(ir_graph *irg);
  */
 void dump_allocated_irg(ir_graph *irg, char *suffix);
 
+
+
+static INLINE FILE *ffopen(const char *base, const char *ext, const char *mode) {
+	FILE *out;
+	char buf[1024];
+
+	snprintf(buf, sizeof(buf), "%s.%s", base, ext);
+	if (! (out = fopen(buf, mode))) {
+		fprintf(stderr, "Cannot open file %s in mode %s\n", buf, mode);
+		return NULL;
+	}
+	return out;
+}
+
 #endif
