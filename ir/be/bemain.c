@@ -25,7 +25,7 @@
 #include "beutil.h"
 #include "bechordal.h"
 #include "bechordal.h"
-#include "bephiopt.h"
+#include "becopyoptmain.h"
 #include "phistat.h"
 
 #include "beasm_dump_globals.h"
@@ -103,7 +103,7 @@ void be_init(void)
 	be_numbering_init();
 	be_ra_init();
 	be_ra_chordal_init();
-	be_phi_opt_init();
+	be_copy_opt_init();
 }
 
 extern void be_ra_chordal(ir_graph *irg);
@@ -128,7 +128,7 @@ static void be_main_loop(void)
 #ifdef DUMP_ALLOCATED
 		dump_allocated_irg(irg, "");
 #endif
-		be_phi_opt(irg);
+		be_copy_opt(irg);
 
 		be_ra_chordal_done(irg);
 		be_numbering_done(irg);
