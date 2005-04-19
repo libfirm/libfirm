@@ -307,6 +307,18 @@ static INLINE void bitset_clear_all(bitset_t *bs)
 }
 
 /**
+ * Set the bitset.
+ * This sets all bits to one.
+ * @param bs The bitset.
+ */
+static INLINE void bitset_set_all(bitset_t *bs)
+{
+	//TODO is this correct (last unit)?
+	//TODO is -1 correct == all bits equal 1
+	memset(bs->data, -1, BS_UNIT_SIZE * bs->units);
+}
+
+/**
  * Check, if one bitset is contained by another.
  * That is, each bit set in lhs is also set in rhs.
  * @param lhs A bitset.
