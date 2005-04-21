@@ -30,6 +30,7 @@
 #include "besched_t.h"
 #include "belive_t.h"
 #include "bechordal_t.h"
+#include "bearch.h"
 
 #undef DUMP_INTERVALS
 #undef DUMP_PRESSURE
@@ -61,6 +62,8 @@ typedef struct _env_t {
 	bitset_t *colors;			/**< The color mask. */
 	bitset_t *in_colors;	/**< Colors used by live in values. */
 	int colors_n;					/**< The number of colors. */
+  const arch_isa_if_t *isa;           /**< The isa interface. */
+  const arch_register_class_t *cls;   /**< The current register class. */
 } env_t;
 
 
@@ -154,116 +157,7 @@ static void draw_interval_graphs(ir_node *block,
 }
 #endif
 
-#if 0
-typedef struct _tree_layout_info_t {
-	ir_node *block;
-	int is_child;
-	int child_slot;
-	unsigned x;
-	unsigned y;
-	int steps;
-} tree_layout_info_t;
-
-typedef struct _tree_layout_params_t {
-	int interval_dist;
-	int x_block_dist;
-	int y_block_dist;
-	int step_len;
-} tree_layout_params_t;
-
-static const tree_layout_params_t tree_layout_params = {
-	10, 20, 20, 5
-};
-
-static void dump_tree_collect(ir_node *block, void *env)
-{
-	ir_block *curr;
-	struct list_head *border_head;
-
-	int pre_num = get_Block_dom_tree_pre_num(block);
-	tree_layout_info_t *info = env;
-	tree_layout_info_t *i = &info[pre_num];
-
-	i->block = block;
-	i->child_slot = -1;
-	i->steps = list_empty(border_head) ? 0 : list_entry(border_head->prev, border_t, list)->step;
-	i->is_child = 1;
-
-	dominates_for_each(block, curr)
-		i->is_child = 0;
-}
-
-static void dump_tree_assign_x(ir_node *block, void *env)
-{
-	unsigned min_x = -1, max_x = 0;
-	int n_childs = 0;
-	ir_block *curr;
-
-	int pre_num = get_Block_dom_tree_pre_num(block);
-	tree_layout_info_t *info = env;
-	tree_layout_info_t *i = &info[pre_num];
-
-	if(i->is_child)
-		return;
-
-	dominates_for_each(block, curr) {
-		tree_layout_info_t *ci = &info[get_Block_dom_tree_pre_num(curr)];
-		max_x = MAX(max_x, ci->x);
-		min_x = MIN(min_x, ci->x);
-		n_childs++;
-	}
-
-	i->x = (max_x - mix_x) / n_childs;
-}
-
-static void dump_tree_assign_y(ir_node *block, void *env)
-{
-	unsigned min_x = -1, max_x = 0;
-	int n_childs = 0;
-	ir_block *curr;
-
-	int pre_num = get_Block_dom_tree_pre_num(block);
-	tree_layout_info_t *info = env;
-	tree_layout_info_t *i = &info[pre_num];
-	ir_block *idom = get_Block_idom(block);
-
-	i->y = 0;
-	if(idom) {
-		tree_layout_info_t *idom_info = &info[get_Block_dom_tree_pre_num(idom)];
-		i->y = idom_info->y + idom_info->steps * params->step_len + params->y_dist;
-	}
-}
-
-static void draw_block(ir_block *bl, void *env)
-{
-}
-
-static void dump_interval_tree(ir_graph *irg, const tree_layout_params_t *params)
-{
-	int i, slot;
-	int n_blocks = get_Block_dom_max_subtree_pre_num(get_irg_start_block(irg));
-	tree_layout_info_t *info = malloc(sizeof(info[0]) * n_blocks);
-
-	/* Fill the info array. */
-	dom_tree_walk_irg(irg, NULL, dump_tree_collect, info);
-
-	/* Assign the child slots. */
-	for(i = 0, slot = 0; i < n_blocks; ++i) {
-		tree_layout_info_t *i = &info[i];
-		if(i->is_child) {
-			i->child_slot = slot++;
-			i->x = i->child_slot * params->max_color * params->interval_dist + params->block_dist;
-		}
-	}
-
-	dom_tree_walk_irg(irg, NULL, dump_tree_assign_xy, info);
-
-	free(info);
-}
-#endif
-
 #ifdef BUILD_GRAPH
-
 
 #define IF_EDGE_HASH(e) ((e)->src)
 
@@ -390,7 +284,7 @@ static void dump_ifg(ir_graph *irg, set *edges, const char *filename)
 	FILE *f;
 
 	if((f = fopen(filename, "wt")) != NULL) {
-		long pos;
+		bitset_pos_t pos;
 		int n_edges = 0;
 		if_edge_t *edge;
 		bitset_t *bs = bitset_malloc(get_graph_node_count(irg));
@@ -404,7 +298,7 @@ static void dump_ifg(ir_graph *irg, set *edges, const char *filename)
 			n_edges++;
 		}
 
-		fprintf(f, "\tx [label=\"nodes: %lu, edges: %d\"]\n", bitset_popcnt(bs), n_edges);
+		fprintf(f, "\tx [label=\"nodes: %u, edges: %d\"]\n", bitset_popcnt(bs), n_edges);
 
 		bitset_foreach(bs, pos) {
 			int nr = (int) pos;
@@ -521,6 +415,8 @@ static void pressure(ir_node *block, void *env_ptr)
 	struct list_head *head;
 	pset *live_in = get_live_in(block);
 	pset *live_end = get_live_end(block);
+  const arch_register_class_t *cls = env->cls;
+  const arch_isa_if_t *isa = env->isa;
 
 	DBG((dbg, LEVEL_1, "Computing pressure in block %n\n", block));
 	bitset_clear_all(live);
@@ -536,8 +432,8 @@ static void pressure(ir_node *block, void *env_ptr)
 	for(irn = pset_first(live_end); irn; irn = pset_next(live_end)) {
 		DBG((dbg, LEVEL_3, "\tMaking live: %n/%d\n", irn, get_irn_graph_nr(irn)));
 		bitset_set(live, get_irn_graph_nr(irn));
-		if(is_allocatable_irn(irn))
-			border_use(irn, step, 0);
+    if(arch_isa_irn_has_reg_class(isa, irn, cls))
+      border_use(irn, step, 0);
 	}
 
 	++step;
@@ -553,24 +449,20 @@ static void pressure(ir_node *block, void *env_ptr)
 		/* Erase the color of each node encountered. */
 		set_irn_color(irn, NO_COLOR);
 
-		/*
-		 * If the node defines a datab value, i.e. something, registers must
-		 * be allocated for, add a new def border to the border list.
-		 */
-		if(is_allocatable_irn(irn)) {
+    /*
+     * If the node defines some value, which can put into a
+     * register of the current class, make a border for it.
+     */
+		if(arch_isa_irn_has_reg_class(isa, irn, cls)) {
+      bitset_pos_t elm;
 			int nr = get_irn_graph_nr(irn);
 
 			bitset_clear(live, nr);
 			border_def(irn, step, 1);
 
 #ifdef BUILD_GRAPH
-			{
-				unsigned long elm;
-				bitset_foreach(live, elm) {
-					int live_nr = (int) elm;
-					add_if(env, nr, live_nr);
-				}
-			}
+      bitset_foreach(live, elm)
+        add_if(env, nr, (int) elm);
 #endif
 		}
 
@@ -581,7 +473,7 @@ static void pressure(ir_node *block, void *env_ptr)
 			for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
 				ir_node *op = get_irn_n(irn, i);
 
-				if(is_allocatable_irn(op)) {
+				if(arch_isa_irn_has_reg_class(isa, op, cls)) {
 					int nr = get_irn_graph_nr(op);
 
 					DBG((dbg, LEVEL_4, "\t\tpos: %d, use: %n\n", i, op));
@@ -601,7 +493,7 @@ static void pressure(ir_node *block, void *env_ptr)
 	 * Add initial defs for all values live in.
 	 */
 	for(irn = pset_first(live_in); irn; irn = pset_next(live_in)) {
-		if(is_allocatable_irn(irn)) {
+		if(arch_isa_irn_has_reg_class(isa, irn, cls)) {
 
 			/* Mark the value live in. */
 			bitset_set(live, get_irn_graph_nr(irn));
@@ -619,6 +511,8 @@ static void assign(ir_node *block, void *env_ptr)
 	bitset_t *live = env->live;
 	bitset_t *colors = env->colors;
 	bitset_t *in_colors = env->in_colors;
+  const arch_isa_if_t *isa = env->isa;
+  const arch_register_class_t *cls = env->cls;
 
 	/* The used colors will remain on the obstack. */
 	bitset_t *used_colors = bitset_obstack_alloc(obst, env->colors_n);
@@ -649,7 +543,7 @@ static void assign(ir_node *block, void *env_ptr)
 	 * allocated before), we have to mark their colors as used also.
 	 */
 	for(irn = pset_first(live_in); irn; irn = pset_next(live_in)) {
-		if(is_allocatable_irn(irn)) {
+		if(arch_isa_irn_has_reg_class(isa, irn, cls)) {
 			int col = get_irn_color(irn);
 
 			/* Mark the color of the live in value as used. */
@@ -741,7 +635,7 @@ static void assign(ir_node *block, void *env_ptr)
 
 		if((f = fopen(buf, "wt")) != NULL) {
 			sched_foreach_reverse(block, irn) {
-				if(is_allocatable_irn(irn))
+				if(arch_isa_irn_has_reg_class(isa, irn, cls))
 					ir_fprintf(f, "\"%n\" %d %d\n", irn, sched_get_time_step(irn),
 							get_ra_node_info(irn)->pressure);
 
@@ -768,9 +662,12 @@ void be_ra_chordal_init(void)
 	firm_dbg_set_mask(dbg, 0);
 }
 
-void be_ra_chordal(ir_graph *irg)
+void be_ra_chordal(ir_graph *irg,
+    const arch_isa_if_t *isa,
+    const arch_register_class_t *cls)
 {
 	int node_count = get_graph_node_count(irg);
+  int colors_n = arch_register_class_n_regs(cls);
 	env_t *env = malloc(sizeof(*env));
 
 	if(get_irg_dom_state(irg) != dom_consistent)
@@ -783,9 +680,11 @@ void be_ra_chordal(ir_graph *irg)
 #endif
 
 	env->live = bitset_obstack_alloc(&env->obst, node_count);
-	env->colors = bitset_obstack_alloc(&env->obst, TEST_COLORS);
-	env->in_colors = bitset_obstack_alloc(&env->obst, TEST_COLORS);
-	env->colors_n = TEST_COLORS;
+	env->colors = bitset_obstack_alloc(&env->obst, colors_n);
+	env->in_colors = bitset_obstack_alloc(&env->obst, colors_n);
+	env->colors_n = colors_n;
+  env->cls = cls;
+  env->isa = isa;
 
 	/* First, determine the pressure */
 	dom_tree_walk_irg(irg, pressure, NULL, env);

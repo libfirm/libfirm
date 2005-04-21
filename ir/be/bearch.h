@@ -2,238 +2,266 @@
 #ifndef _FIRM_BEARCH_H
 #define _FIRM_BEARCH_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "firm_config.h"
 
-struct bitset_t;
+#include "irop_t.h"
+#include "irnode_t.h"
+#include "irmode_t.h"
 
-/*
- * Define the types of the arch facility.
- * All arch object names are stored in bearch_obj.def
- */
-#define ARCH_OBJ(x,list) typedef struct _arch_ ## x ## _t arch_ ## x ## _t;
+#include "hashptr.h"
+#include "fourcc.h"
+#include "set.h"
+#include "list.h"
+#include "ident.h"
+
+#include "bearch.h"
+
+#define ARCH_OBJ(name,x) typedef struct _arch_ ## name ## _t arch_ ## name ## _t;
 #include "bearch_obj.def"
 #undef ARCH_OBJ
 
-/**
- * A callback to determine the set of valid registers.
- *
- * @param irn 				The node which represents an instance of the instruction.
- * @param pos 				The number of the insn's operand to consider.
- * @param valid_regs 	A bitset where all valid registers are put.
- */
-typedef void (arch_register_callback_t)(ir_node *irn, int pos, struct bitset_t *valid_regs);
+struct _bitset_t;
 
-
-/**
- * Add a new instruction set architecture.
- * @param name The name of the isa.
- * @return The isa object.
- */
-arch_isa_t *arch_add_isa(const char *name);
+typedef enum _arch_register_type_t {
+	arch_register_type_none = 0,
+  arch_register_type_write_invariant,
+	arch_register_type_caller_saved,    /**< The register must be saved by the caller
+                                        upon a function call. It thus can be overwritten
+																								in the called function. */
+	arch_register_type_callee_saved,    /**< The register must be saved by the called function,
+                                        it thus survives a function call. */
+	arch_register_type_ignore           /**< Do not consider this register when allocating. */
+} arch_register_type_t;
 
 /**
- * Add a register class to the isa.
- * @param isa The isa to add the reg class to.
- * @param name The name of the register class.
- * @param n_regs The number of registers in that class.
- * @param mode The mode of the registers in that class.
+ * A register.
  */
-arch_register_class_t *arch_add_register_class(arch_isa_t *isa, const char *name, int n_regs);
+struct _arch_register_t {
+  const char *name;                         /**< The name of the register. */
+	const arch_register_class_t *reg_class;   /**< The class the register belongs to. */
+	int index;																/**< The index of the register in the class. */
+	arch_register_type_t type;                /**< The type of the register. */
+};
+
+static INLINE const arch_register_class_t *
+_arch_register_get_class(const arch_register_t *reg)
+{
+  return reg->reg_class;
+}
+
+static INLINE int _arch_register_get_index(const arch_register_t *reg)
+{
+  return reg->index;
+}
+
+#define arch_register_get_class(reg)      _arch_register_get_class(reg)
+#define arch_register_get_index(reg)      _arch_register_get_index(reg)
 
 /**
- * Add a register set to an isa.
- * @param cls The register class the set belongs to.
- * @param name The name of the register set.
- * @return The register set.
+ * A (sub-) set of registers.
  */
-arch_register_set_t *arch_add_register_set(arch_isa_t *isa,
-		const arch_register_class_t *cls, const char *name);
+struct _arch_register_set_t {
+	const struct _arch_register_class_t *reg_class;   /**< The register class for this set. */
+	int *regs;                                        /**< An array containing 0/1 at place i
+																											whether the register with index i is
+																											in the set or not. */
+};
 
-/**
- * Add a register to a register set.
- * @param set The register set.
- * @param index The index of the register in the class.
- */
-void arch_register_set_add_register(arch_register_set_t *set, int index);
+static INLINE int _arch_register_in_set(const arch_register_set_t *set,
+    const arch_register_t *reg)
+{
+	if(reg->reg_class != set->reg_class)
+		return 0;
 
-/**
- * Add a register to a register class.
- * @param cls The register class.
- * @param index The index of the register (its number within the
- * class).
- * @param name The name of the register.
- * @return The register.
- */
-arch_register_t *arch_add_register(arch_register_class_t *cls, int index, const char *name);
-
-/**
- * Add an immediate to the instruction set architecture.
- * @param isa The isa.
- * @param name The name of the immediate.
- * @param mode The mode of the immediate.
- * @return The immediate.
- */
-arch_immediate_t *arch_add_immediate(arch_isa_t *isa, const char *name, ir_mode *mode);
-
-/**
- * Add an instruction format to an isa.
- * @param isa The isa.
- * @param name The name of the instruction format.
- * @param n_in The number of in operands.
- * @param n_out The number of out operands.
- * @return The format.
- */
-arch_insn_format_t *arch_add_insn_format(arch_isa_t *isa, const char *name, int n_in, int n_out);
-
-/**
- * Add a register set as an operand type.
- * @param fmt The instruction format whose operand is to be set.
- * @param pos The position of the operand. Note that input operands are
- * numbered from 0 to n and output operands from -1 to -m.
- * @param set The register set.
- * @return The corresponding operand type.
- */
-arch_operand_t *arch_set_operand_register_set(arch_insn_format_t *fmt,
-		int pos, const arch_register_set_t *set);
-
-/**
- * Set the operand to a callback.
- * @param fmt The instruction format.
- * @param pos The position of the operand. See also
- * arch_set_operand_register_set().
- * @param cb The callback function which decides about the registers to
- * allocate.
- * @return The operand.
- */
-arch_operand_t *arch_set_operand_callback(arch_insn_format_t *fmt,
-		int pos, arch_register_callback_t *cb);
-
-/**
- * Mark an operand as an immediate.
- * @param fmt The instructionm format.
- * @param pos The position. See also arch_set_operand_register_set().
- * @param imm The immediate which expected.
- * @return The operand.
- */
-arch_operand_t *arch_set_operand_immediate(arch_insn_format_t *fmt,
-		int pos, const arch_immediate_t *imm);
-
-/**
- * Mark an operand as a memory operand.
- * @param fmt The format.
- * @param pos The position of the operand.
- * @return The operand.
- */
-arch_operand_t *arch_set_operand_memory(arch_insn_format_t *fmt, int pos);
-
-/**
- * Denote, that an operand must equal another.
- * This only makes sense with registers. Then, this operand must get the
- * same register as the one denoted by same_as_pos.
- *
- * @param fmt The instruction format.
- * @param pos The position of the operand.
- * @param same_as_pos The position of the other operand.
- * @return The operand.
- */
-arch_operand_t *arch_set_operand_equals(arch_insn_format_t *fmt, int pos, int same_as_pos);
+	return set->regs[reg->index];
+}
 
 
 /**
- * Add an instruction to the isa.
- * @param fmt The instructon format.
- * @param name The name of the instruction.
+ * A class of registers.
+ * Like general purpose or floating point.
  */
-arch_insn_t *arch_add_insn(arch_insn_format_t *fmt, const char *name);
+struct _arch_register_class_t {
+  const char *name;         /**< The name of the register. */
+	arch_register_set_t *set; /**< A register set containing all registers
+															in this class. */
+	int n_regs;								/**< Number of registers in this class. */
+	const arch_register_t *regs; /**< The array of registers. */
+};
 
+#define arch_register_class_n_regs(cls) ((cls)->n_regs)
 
-/**
- * Find an instruction format.
- * @param isa The isa.
- * @param name The name of the instruction format.
- * @return The instruction format, if it was added before, or NULL if it
- * is unknown.
- */
-arch_insn_format_t *arch_find_insn_format(const arch_isa_t *isa, const char *name);
+static INLINE const arch_register_t *
+_arch_register_for_index(const arch_register_class_t *cls, int idx)
+{
+	assert(0 <= idx && idx < cls->n_regs);
+	return &cls->regs[idx];
+}
 
-/**
- * Find an isa.
- * @param name The name of the isa.
- * @return The isa if it has been added, or NULl if it is unknwon.
- */
-arch_isa_t *arch_find_isa(const char *name);
-
-/**
- * Find an sintrsuction in the instruction set architecture.
- * @param isa The instruction set architecture.
- * @param name The name of the instruction.
- * @return The instruction or NULL if no such instruction exists.
- */
-arch_insn_t *arch_find_insn(const arch_isa_t *isa, const char *name);
-
-/**
- * Find a register class of an isa.
- * @param isa The isa.
- * @param name The name of the register class.
- * @return The register class, if it has been added, NULL if it is
- * unknown.
- */
-arch_register_class_t *arch_find_register_class(const arch_isa_t *isa, const char *name);
-
-/**
- * Find a register set in an isa.
- * @param isa The isa.
- * @param name The name of the register set.
- * @return The register set or NULL if it does not exist.
- */
-arch_register_set_t *arch_find_register_set(const arch_isa_t *isa, const char *name);
-
-/**
- * find an immediate registered in some isa.
- * @param isa The isa.
- * @param name The name of the immediate.
- * @return The immediate, or NULL if it did not exist.
- */
-arch_immediate_t *arch_find_immediate(const arch_isa_t *isa, const char *name);
+#define arch_register_for_index(cls, idx) \
+  _arch_register_for_index(cls, idx)
 
 /**
  * Get the register set for a register class.
- * Each register class possesses a set containing all registers known in
- * the class.
- * @param cls The class.
- * @return The register set for the register class.
+ * @param cls The register class.
+ * @return The set containing all registers in the class.
  */
-arch_register_set_t *arch_get_register_set_for_class(arch_register_class_t *cls);
+#define arch_get_register_set_for_class(cls) ((cls)->set)
 
 /**
- * Get a mode which is a placeholder for an unknown mode.
- * @return Some mode to use, if you don't know which mode you will need,
- * yet.
+ * An immediate.
  */
-ir_mode *arch_get_unknown_mode(void);
+struct _arch_immediate_t {
+  const char *name;         /**< The name of the immediate. */
+	ir_mode *mode;						/**< The mode of the immediate. */
+};
 
 /**
- * Make a new bare instance of an insn.
- * @param insn The instruction.
- * @param irg The graph.
- * @param arity The number of operands to reserve for the ir_node.
- * @return An ir node. Its block and operands are set to an Unknown
- * node.
+ * The member of an enum.
  */
-ir_node *arch_new_node_bare(const arch_insn_t *insn, ir_graph *irg, int arity);
+struct _arch_enum_member_t {
+	arch_enum_t *enm;					/**< The enum, this member belongs to. */
+};
 
 /**
- * Make a new instance of an insn.
- * This functions works like new_ir_node() and uses the op in the
- * insn.
+ * An enumeration operand type.
+ *
+ * Enumeration operand types can be used to describe the variants
+ * of an instruction, like giving the cases for a compare (gt, lt,
+ * eq, ...) some other special attributes of an instruction.
  */
-ir_node *arch_new_node(const arch_insn_t *insn, ir_graph *irg, ir_node *block,
-		ir_mode *mode, int arity, ir_node **in);
+struct _arch_enum_t {
+	int n_members;										/**< The number of members in this enum. */
+	arch_enum_member_t *members[1];		/**< The array of members. */
+};
 
-#ifdef __cplusplus
-}
-#endif
+typedef enum _arch_operand_type_t {
+#define ARCH_OPERAND_TYPE(name,size_in_irn) arch_operand_type_ ## name,
+#include "bearch_operand_types.def"
+#undef ARCH_OPERAND_TYPE
+	arch_operand_type_last
+} arch_operand_type_t;
 
-#endif
+
+
+/**
+ * The data for the different flavours of operand types.
+ */
+typedef union _arch_operand_data_t {
+	const arch_register_set_t *set;       /**< The set of valid registers is directly
+                                          given. Note, that if an insn has no constraints,
+                                          the set comprises all registers in the
+                                          register class. */
+
+	const arch_immediate_t *imm;          /**< If the operand is an immediate
+                                          operand, this describes the kind of
+                                          immediate. */
+
+	const arch_enum_t *enm;               /**< Some enumeration value. */
+
+	int same_as_pos;                      /**< 'Same as' position for equals. */
+} arch_operand_data_t;
+
+/**
+ * An operand to an instruction.
+ */
+struct _arch_operand_t {
+	arch_operand_type_t type;									/**< The type of the operand. */
+	arch_operand_data_t data;									/**< The payload. */
+};
+
+/**
+ * An instruction format.
+ */
+struct _arch_insn_format_t {
+	int n_in;                       /**< Number of in operands. */
+	int n_out;                      /**< Number of out operands. */
+
+	arch_operand_t * const *in_operands;    /**< In operands. */
+	arch_operand_t * const *out_operands;   /**< Out operands. */
+};
+
+/**
+ * An instruction.
+ */
+struct _arch_insn_t {
+	const arch_insn_format_t *format;			/**< The format of the instruction. */
+	ir_op *op;														/**< The firm opcode for this insn. */
+};
+
+/**
+ * Architecture interface.
+ */
+struct _arch_isa_if_t {
+
+  /**
+   * Initialize the isa interface.
+   */
+  void (*init)(void);
+
+  /**
+   * Get the the number of register classes in the isa.
+   * @return The number of register classes.
+   */
+  int (*get_n_reg_class)(void);
+
+  /**
+   * Get the i-th register class.
+   * @param i The number of the register class.
+   * @return The register class.
+   */
+  const arch_register_class_t *(*get_reg_class)(int i);
+
+  /**
+   * Check, if a register is suitable to carry the node's value.
+   * @param irn The node.
+   * @param reg The register to check for.
+   * @return 1, if the register can be allocated for that node, 0 if
+   * not.
+   */
+  int (*is_reg_allocatable)(const ir_node *irn, const arch_register_t *reg);
+
+  /**
+   * Put all registers of a given class which are allocatable to a
+   * certain node into a bitset.
+   * The bitset contains the indices of the registers concerning
+   * the register class @p cls.
+   * @param irn The node.
+   * @param cls The register class.
+   * @param bs The bitset.
+   * @return The number of registers which were put into the bitset.
+   */
+  int (*get_allocatable_regs)(const ir_node *irn,
+      const arch_register_class_t *cls, struct _bitset_t *bs);
+
+  /**
+   * Get the register class, the value of a node belongs to.
+   * @param irn The node.
+   * @return The register class of the registers which can hold the
+   * value of irn. If the node does not return a value, or possesses no
+   * suitable register class, NULL is returned.
+   */
+  const arch_register_class_t *(*get_irn_reg_class)(const ir_node *irn);
+
+  /**
+   * Get an op for a name.
+   * @note This method may not be implemented.
+   * @param name The name of the op.
+   * @return The op with that name.
+   */
+  ir_op *(*get_op_by_name)(const char *name);
+};
+
+/**
+ * Check, if the value of a node can be stored in a
+ * specific register class.
+ * @param isa The isa.
+ * @param irn The node.
+ * @param cls The register class.
+ * @return 1, if the value can be stored in the register class, 0 if
+ * not.
+ */
+#define arch_isa_irn_has_reg_class(isa, irn, cls) \
+  ((isa)->get_irn_reg_class(irn) == (cls))
+
+#endif /* _FIRM_BEARCH_H */

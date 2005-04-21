@@ -24,9 +24,8 @@
 #include "belive_t.h"
 #include "beutil.h"
 #include "bechordal.h"
-#include "bechordal.h"
+#include "bearch.h"
 #include "becopyoptmain.h"
-#include "phistat.h"
 
 #include "beasm_dump_globals.h"
 #include "beasm_asm_gnu.h"
@@ -106,13 +105,17 @@ void be_init(void)
 	be_copy_opt_init();
 }
 
-extern void be_ra_chordal(ir_graph *irg);
+/* The preliminary Firm backend isa. */
+extern arch_isa_if_t arch_isa_if_firm;
 
 static void be_main_loop(void)
 {
 	int i, n;
+  const arch_isa_if_t *isa = &arch_isa_if_firm;
 
 	for(i = 0, n = get_irp_n_irgs(); i < n; ++i) {
+    int j, m;
+
 		ir_graph *irg = get_irp_irg(i);
 
 		localize_consts(irg);
@@ -121,17 +124,30 @@ static void be_main_loop(void)
 		dump_ir_block_graph(irg, "-local-const");
 #endif
 		be_numbering(irg);
+
+    /* Schedule the graphs. */
 		list_sched(irg, trivial_selector);
-		be_liveness(irg);
-		be_ra_chordal(irg);
+
+    /* Liveness analysis */
+    be_liveness(irg);
+
+    /*
+     * Perform the following for each register
+     * class.
+     */
+    for(j = 0, m = isa->get_n_reg_class(); j < m; ++j) {
+      const arch_register_class_t *cls = isa->get_reg_class(j);
+
+      be_ra_chordal(irg, isa, cls);
 
 #ifdef DUMP_ALLOCATED
-		dump_allocated_irg(irg, "");
+      dump_allocated_irg(irg, "");
 #endif
-		be_copy_opt(irg);
+      // be_copy_opt(irg);
+      be_ra_chordal_done(irg);
+    }
 
-		be_ra_chordal_done(irg);
-		be_numbering_done(irg);
+    be_numbering_done(irg);
 	}
 }
 
@@ -144,8 +160,8 @@ void be_main(int argc, const char *argv[])
 	gnu_assembler = gnuasm_create_assembler();
 	asm_output_file = fopen("asm_output.asm", "w");
 
-	asm_dump_globals ( gnu_assembler );
-	gnuasm_dump ( gnu_assembler, asm_output_file );
-	gnuasm_delete_assembler ( gnu_assembler );
+	asm_dump_globals(gnu_assembler);
+	gnuasm_dump(gnu_assembler, asm_output_file);
+	gnuasm_delete_assembler(gnu_assembler);
 	fclose(asm_output_file);
 }
