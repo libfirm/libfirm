@@ -39,8 +39,8 @@ struct _sp_matrix_t {
 	struct list_head *first, *last; /* first is to remember start-point; last was returned just before */
 };
 
-#define __offsetof(type,member) ((char *) &(((type *) 0)->member) - (char *) 0)
-#define __container_of(ptr,type,member) ((type *) ((char *) (ptr) - __offsetof(type, member)))
+#define _offsetof(type,member) ((char *) &(((type *) 0)->member) - (char *) 0)
+#define _container_of(ptr,type,member) ((type *) ((char *) (ptr) - _offsetof(type, member)))
 #define is_empty_row(row) (row>m->maxrow || list_empty(m->rows[row]))
 #define is_empty_col(col) (col>m->maxcol || list_empty(m->cols[col]))
 #define list_entry_by_col(h) (&list_entry(h, entry_t, col_chain)->e)
@@ -180,7 +180,7 @@ void matrix_set(sp_matrix_t *m, int row, int col, int val) {
 		if (val != 0) {
 			me->val = val;
 		} else {
-			entr = __container_of(me, entry_t, e);
+			entr = _container_of(me, entry_t, e);
 			list_del(&entr->row_chain);
 			list_del(&entr->col_chain);
 			free(entr);
