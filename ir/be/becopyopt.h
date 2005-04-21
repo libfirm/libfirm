@@ -31,13 +31,14 @@
 #include "irdom.h"
 #include "irouts.h"
 
+#include "beutil.h"
 #include "benumb_t.h"
 #include "belive_t.h"
 #include "bera_t.h"
 #include "bechordal_t.h"
 
 /**
- * TODO THIS EXTERNAL THINGS
+ * TODO external things
  * define get_weight to sth representing the _gain_ if node n and m
  * have the same color. Must return values MIN_WEIGHT <= . <= MAX_WEIGHT.
  */
@@ -66,9 +67,6 @@ typedef struct _copy_opt_t {
 	ir_graph *irg;				/**< the irg which is processed */
 	struct list_head units;		/**< all units to optimize in right oreder */
 	pset *roots;				/**< used only temporary for detecting multiple appends */
-
-	/* for heuristic */
-	pset *pinned_global;		/**< optimized nodes should not be altered any more */
 } copy_opt_t;
 
 

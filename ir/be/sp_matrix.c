@@ -138,10 +138,10 @@ sp_matrix_t *new_matrix(int row_init, int col_init) {
 
 void del_matrix(sp_matrix_t *m) {
 	int i;
-	entry_t *e;
+	entry_t *e, *tmp;
 
 	for (i=0; i<m->rowc; ++i) {
-		list_for_each_entry(entry_t, e, m->rows[i], row_chain)
+		list_for_each_entry_safe(entry_t, e, tmp, m->rows[i], row_chain)
 			free(e);
 		free(m->rows[i]);
 	}

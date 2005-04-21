@@ -11,7 +11,7 @@
 
 #include "becopyopt.h"
 
-#define DEBUG_LVL SET_LEVEL_1
+#define DEBUG_LVL 0 //SET_LEVEL_1
 static firm_dbg_module_t *dbg = NULL;
 
 #define SLOTS_PINNED_GLOBAL 256
@@ -45,13 +45,13 @@ typedef struct _node_stat_t {
 typedef struct _qnode_t {
 	struct list_head queue;		/**< chaining of unit_t->queue */
 	int color;					/**< target color */
-	bitset_t *nodes;			/**< marks the nodes of unit_t->nodes[i] beeing part of this qnode */
 	set *conflicts;				/**< contains conflict_t's. All internal conflicts */
-	int size;					/**< number of nodes in the mis. equals number of set bits in mis */
-	bitset_t *mis;				/**< marks the nodes of unit_t->nodes[i] beeing part of the max idependent set */
+	int mis_size;				/**< number of nodes in the mis. */
+	const ir_node **mis;		/**< the nodes of unit_t->nodes[] beeing part of the max idependent set */
 	set *changed_nodes;			/**< contains node_stat_t's. */
 } qnode_t;
 
+pset *pinned_global;			/**< optimized nodes should not be altered any more */
 
 static int set_cmp_conflict_t(const void *x, const void *y, size_t size) {
 	const conflict_t *xx = x;
@@ -65,7 +65,7 @@ static int set_cmp_conflict_t(const void *x, const void *y, size_t size) {
  */
 static INLINE void qnode_add_conflict(const qnode_t *qn, const ir_node *n1, const ir_node *n2) {
 	conflict_t c;
-	DBG((dbg, LEVEL_3, "\t    %n -- %n\n", n1, n2));
+	DBG((dbg, LEVEL_4, "\t      %n -- %n\n", n1, n2));
 
 	if ((int)n1 < (int)n2) {
 		c.n1 = n1;
@@ -83,7 +83,7 @@ static INLINE void qnode_add_conflict(const qnode_t *qn, const ir_node *n1, cons
 static INLINE int qnode_are_conflicting(const qnode_t *qn, const ir_node *n1, const ir_node *n2) {
 	conflict_t c;
 	/* search for live range interference */
-	if (values_interfere(n1, n2))
+	if (n1!=n2 && values_interfere(n1, n2))
 		return 1;
 	/* search for recoloring conflicts */
 	if ((int)n1 < (int)n2) {
@@ -184,19 +184,21 @@ static INLINE void qnode_pin_local(const qnode_t *qn, const ir_node *irn) {
  * 			   several smaller intervals where other values can live in between.
  *             This should be true in SSA.
  */
-static const ir_node *qnode_color_irn(const qnode_t *qn, const ir_node *irn, int col, const ir_node *trigger, const copy_opt_t *co) {
+static const ir_node *qnode_color_irn(const qnode_t *qn, const ir_node *irn, int col, const ir_node *trigger) {
 	const ir_node *res;
 	struct obstack confl_ob;
 	ir_node **confl, *cn;
 	int i, irn_col;
 
-	DBG((dbg, LEVEL_3, "\t\t%n \tcaused col(%n) \t%2d --> %2d\n", trigger, irn, qnode_get_new_color(qn, irn), col));
+	DBG((dbg, LEVEL_3, "\t      %n \tcaused col(%n) \t%2d --> %2d\n", trigger, irn, qnode_get_new_color(qn, irn), col));
 	obstack_init(&confl_ob);
 	irn_col = qnode_get_new_color(qn, irn);
 
 	if (irn_col == col)
 		goto ret_save;
-	if (pset_find_ptr(co->pinned_global, irn) || qnode_is_pinned_local(qn, irn)) {
+	if (!is_possible_color(irn, col))
+		goto ret_imposs;
+	if (pset_find_ptr(pinned_global, irn) || qnode_is_pinned_local(qn, irn)) {
 		res = irn;
 		goto ret_confl;
 	}
@@ -215,7 +217,7 @@ static const ir_node *qnode_color_irn(const qnode_t *qn, const ir_node *irn, int
 			pset *live_ins = get_live_in(irn_bl);
 			for (n = pset_first(live_ins); n; n = pset_next(live_ins))
 				if (is_allocatable_irn(n) && n != trigger && qnode_get_new_color(qn, n) == col && values_interfere(irn, n)) {
-					DBG((dbg, LEVEL_4, "\t\t    %n\ttroubles\n", n));
+					DBG((dbg, LEVEL_4, "\t        %n\ttroubles\n", n));
 					obstack_ptr_grow(&confl_ob, n);
 					pset_break(live_ins);
 					break;
@@ -242,7 +244,7 @@ static const ir_node *qnode_color_irn(const qnode_t *qn, const ir_node *irn, int
 			for (i = 0, max = get_irn_n_outs(curr_bl); i < max; ++i) {
 				ir_node *n = get_irn_out(curr_bl, i);
 				if (is_allocatable_irn(n) && n != trigger && qnode_get_new_color(qn, n) == col && values_interfere(irn, n)) {
-					DBG((dbg, LEVEL_4, "\t\t    %n\ttroubles\n", n));
+					DBG((dbg, LEVEL_4, "\t        %n\ttroubles\n", n));
 					obstack_ptr_grow(&confl_ob, n);
 				}
 			}
@@ -267,7 +269,7 @@ static const ir_node *qnode_color_irn(const qnode_t *qn, const ir_node *irn, int
 		const ir_node *sub_res;
 
 		/* try to color the conflicting node cn with the color of the irn itself */
-		sub_res = qnode_color_irn(qn, cn, irn_col, irn, co);
+		sub_res = qnode_color_irn(qn, cn, irn_col, irn);
 		if (sub_res != CHANGE_SAVE) {
 			res = sub_res;
 			goto ret_confl;
@@ -276,13 +278,18 @@ static const ir_node *qnode_color_irn(const qnode_t *qn, const ir_node *irn, int
 	/* if we arrive here all sub changes can be applied, so it's save to change this irn */
 
 ret_save:
-	DBG((dbg, LEVEL_3, "\t\t%n save\n", irn));
+	DBG((dbg, LEVEL_3, "\t      %n save\n", irn));
 	obstack_free(&confl_ob, NULL);
 	qnode_set_new_color(qn, irn, col);
 	return CHANGE_SAVE;
 
+ret_imposs:
+	DBG((dbg, LEVEL_3, "\t      %n impossible\n", irn));
+	obstack_free(&confl_ob, NULL);
+	return res;
+
 ret_confl:
-	DBG((dbg, LEVEL_3, "\t\t%n conflicting\n", irn));
+	DBG((dbg, LEVEL_3, "\t      %n conflicting\n", irn));
 	obstack_free(&confl_ob, NULL);
 	return res;
 }
@@ -293,30 +300,31 @@ ret_confl:
  * @returns 1 iff all members colors could be set
  *          0 else
  */
-static int qnode_try_color(const qnode_t *qn, const unit_t *ou, const copy_opt_t *co) {
+static int qnode_try_color(const qnode_t *qn) {
 	int i;
-	bitset_foreach(qn->mis, i) {
+	for (i=0; i<qn->mis_size; ++i) {
 		const ir_node *test_node, *confl_node;
 
-		test_node = ou->nodes[i];
-		DBG((dbg, LEVEL_2, "\t    Testing %n\n", test_node));
-		confl_node = qnode_color_irn(qn, test_node, qn->color, test_node, co);
+		test_node = qn->mis[i];
+		DBG((dbg, LEVEL_3, "\t    Testing %n\n", test_node));
+		confl_node = qnode_color_irn(qn, test_node, qn->color, test_node);
 
 		if (confl_node == CHANGE_SAVE) {
-			DBG((dbg, LEVEL_2, "\t    Save\n"));
+			DBG((dbg, LEVEL_3, "\t    Save --> pin local\n"));
 			qnode_pin_local(qn, test_node);
 		} else if (confl_node == CHANGE_IMPOSSIBLE) {
-			DBG((dbg, LEVEL_2, "\t    Impossible\n"));
-			bitset_clear(qn->nodes, i);
+			DBG((dbg, LEVEL_3, "\t    Impossible --> remove from qnode\n"));
+			qnode_add_conflict(qn, test_node, test_node);
 		} else {
-			DBG((dbg, LEVEL_2, "\t    Conflicting\n"));
 			if (qnode_is_pinned_local(qn, confl_node)) {
 				/* changing test_node would change back a node of current ou */
+				DBG((dbg, LEVEL_3, "\t    Conflicting local --> add conflict\n"));
 				qnode_add_conflict(qn, confl_node, test_node);
 			}
-			if (pset_find_ptr(co->pinned_global, confl_node)) {
+			if (pset_find_ptr(pinned_global, confl_node)) {
 				/* changing test_node would change back a node of a prior ou */
-				bitset_clear(qn->nodes, i);
+				DBG((dbg, LEVEL_3, "\t    Conflicting global --> remove from qnode\n"));
+				qnode_add_conflict(qn, test_node, test_node);
 			}
 		}
 
@@ -327,44 +335,19 @@ static int qnode_try_color(const qnode_t *qn, const unit_t *ou, const copy_opt_t
 }
 
 /**
- * Creates a new qnode
- */
-static INLINE qnode_t *new_qnode(const unit_t *ou, int color) {
-	qnode_t *qn = malloc(sizeof(*qn));
-	qn->color = color;
-	qn->mis = bitset_malloc(ou->node_count-1);
-	qn->nodes = bitset_malloc(ou->node_count-1);
-	bitset_set_all(qn->nodes);
-	qn->conflicts = new_set(set_cmp_conflict_t, SLOTS_CONFLICTS);
-	qn->changed_nodes = new_set(set_cmp_node_stat_t, SLOTS_CHANGED_NODES);
-	return qn;
-}
-
-/**
- * Frees space used by a queue node
- */
-static INLINE void free_qnode(qnode_t *qn) {
-	del_set(qn->conflicts);
-	del_set(qn->changed_nodes);
-	bitset_free(qn->nodes);
-	bitset_free(qn->mis);
-	free(qn);
-}
-
-/**
  * Determines a maximum independent set with respect to the interference and
  * conflict edges of all nodes in a qnode.
  */
 static INLINE void qnode_max_ind_set(qnode_t *qn, const unit_t *ou) {
 	int all_size, curr_size, i, o;
 	int *which;
-	const ir_node **curr, **all = alloca(bitset_popcnt(qn->nodes) * sizeof(*all));
+	const ir_node **curr, **all = alloca(ou->node_count * sizeof(*all));
 
 	/* all contains all nodes not removed in this qn */
-	assert(bitset_is_set(qn->nodes, 0) && "root is not element of this queue node");
 	all_size = 0;
-	bitset_foreach(qn->nodes, i)
-		all[all_size++] = ou->nodes[i];
+	for (i=0; i<ou->node_count; ++i)
+		if (!qnode_are_conflicting(qn, ou->nodes[i], ou->nodes[i]))
+			all[all_size++] = ou->nodes[i];
 
 	/* which[i] says which element to take out of all[] and put into curr[i] */
 	which = alloca(all_size*sizeof(*which));
@@ -386,12 +369,9 @@ static INLINE void qnode_max_ind_set(qnode_t *qn, const unit_t *ou) {
 					goto conflict_found;
 
 		/* We had no conflict. This is the max indep. set */
-		bitset_clear_all(qn->mis);
-		qn->size = curr_size;
+		qn->mis_size = curr_size;
 		for (i=0; i<curr_size; ++i)
-			for (o=0; o<ou->node_count; ++o)
-				if (curr[i] == ou->nodes[o])
-					bitset_set(qn->mis, o);
+			qn->mis[i] = curr[i];
 		return;
 
 conflict_found:
@@ -423,25 +403,52 @@ conflict_found:
 }
 
 /**
+ * Creates a new qnode
+ */
+static INLINE qnode_t *new_qnode(const unit_t *ou, int color) {
+	qnode_t *qn = malloc(sizeof(*qn));
+	qn->color = color;
+	qn->mis = malloc(ou->node_count * sizeof(*qn->mis));
+	qn->conflicts = new_set(set_cmp_conflict_t, SLOTS_CONFLICTS);
+	qn->changed_nodes = new_set(set_cmp_node_stat_t, SLOTS_CHANGED_NODES);
+	return qn;
+}
+
+/**
+ * Frees space used by a queue node
+ */
+static INLINE void free_qnode(qnode_t *qn) {
+	del_set(qn->conflicts);
+	del_set(qn->changed_nodes);
+	free(qn->mis);
+	free(qn);
+}
+
+/**
  * Inserts a qnode in the sorted queue of the outimization unit. Queue is
  * ordered by field 'size' (the size of the mis) in decreasing order.
  */
-static INLINE void qnode_insert(qnode_t *qn, unit_t *ou) {
+static INLINE void ou_insert_qnode(unit_t *ou, qnode_t *qn) {
 	struct list_head *lh;
-	/* root node is not in qnode */
-	if (!bitset_is_set(qn->nodes, 0)) {
+
+	if (qnode_are_conflicting(qn, ou->nodes[0], ou->nodes[0])) {
+		/* root node is not in qnode */
 		free_qnode(qn);
 		return;
 	}
 
 	qnode_max_ind_set(qn, ou);
-	if (ou->mis_size < qn->size)
-		ou->mis_size = qn->size;
 
+	/* set ou->mis_size for lower bound compution */
+	if (ou->mis_size < qn->mis_size)
+		ou->mis_size = qn->mis_size;
+
+	/* do the insertion */
+	DBG((dbg, LEVEL_4, "\t  Insert qnode color %d with size %d\n", qn->color, qn->mis_size));
 	lh = &ou->queue;
 	while (lh->next != &ou->queue) {
 		qnode_t *curr = list_entry_queue(lh->next);
-		if (curr->size <= qn->size)
+		if (curr->mis_size <= qn->mis_size)
 			break;
 		lh = lh->next;
 	}
@@ -455,40 +462,46 @@ static INLINE void qnode_insert(qnode_t *qn, unit_t *ou) {
  * case for approximately 80% of all phi classes and all register constrained
  * nodes. (All other phi classes are reduced to this case.)
  */
-static void co_heur_opt_unit(const copy_opt_t *co, unit_t *ou) {
+static void ou_optimize(unit_t *ou) {
 	int i;
-	qnode_t * curr;
+	qnode_t *curr, *tmp;
+
+	DBG((dbg, LEVEL_1, "\tOptimizing unit:\n"));
+	for (i=0; i<ou->node_count; ++i)
+		DBG((dbg, LEVEL_1, "\t %n\n", ou->nodes[i]));
 
 	/* init queue */
 	INIT_LIST_HEAD(&ou->queue);
-	for (i=MAX_COLORS-1; i>=0; --i)
+	for (i=0; i<MAX_COLORS; ++i)
 		if (is_possible_color(ou->nodes[0], i))
-			qnode_insert(new_qnode(ou, i), ou);
+			ou_insert_qnode(ou, new_qnode(ou, i));
 
 	/* search best */
 	while (!list_empty(&ou->queue)) {
 		/* get head of queue */
 		curr = list_entry_queue(ou->queue.next);
 		list_del(&curr->queue);
+		DBG((dbg, LEVEL_2, "\t  Examine qnode color %d with size %d\n", curr->color, curr->mis_size));
+
 		/* try */
-		if (qnode_try_color(curr, ou, co))
+		if (qnode_try_color(curr))
 			break;
 		/* no success, so re-insert */
 		del_set(curr->changed_nodes);
 		curr->changed_nodes = new_set(set_cmp_node_stat_t, SLOTS_CHANGED_NODES);
-		qnode_insert(curr, ou);
+		ou_insert_qnode(ou, curr);
 	}
 
 	/* apply the best found qnode */
-	if (curr->size >= 2) {
-		DBG((dbg, 1, "\tBest color: %d  Copies: %d/%d\n", curr->color, ou->interf+ou->node_count-1-curr->size));
+	if (curr->mis_size >= 2) {
+		DBG((dbg, LEVEL_1, "\t  Best color: %d  Copies: %d/%d\n", curr->color, ou->interf+ou->node_count-curr->mis_size, ou->interf+ou->node_count-1));
 		/* globally pin root and eventually others */
-		pset_insert_ptr(co->pinned_global, ou->nodes[0]);
+		pset_insert_ptr(pinned_global, ou->nodes[0]);
 		for (i=1; i<ou->node_count; ++i) {
 			const ir_node *irn = ou->nodes[i];
 			int nc = qnode_get_new_color(curr, irn);
 			if (nc != NO_COLOR && nc == qnode_get_new_color(curr, ou->nodes[0]))
-				pset_insert_ptr(co->pinned_global, irn);
+				pset_insert_ptr(pinned_global, irn);
 		}
 
 		/* set color of all changed nodes */
@@ -496,7 +509,7 @@ static void co_heur_opt_unit(const copy_opt_t *co, unit_t *ou) {
 		for (ns = set_first(curr->changed_nodes); ns; ns = set_next(curr->changed_nodes)) {
 			/* NO_COLOR is possible, if we had an undo */
 			if (ns->new_color != NO_COLOR) {
-				DBG((dbg, 1, "\t    color(%n) := %d\n", ns->irn, ns->new_color));
+				DBG((dbg, LEVEL_2, "\t    color(%n) := %d\n", ns->irn, ns->new_color));
 				set_irn_color(ns->irn, ns->new_color);
 			}
 		}
@@ -504,7 +517,7 @@ static void co_heur_opt_unit(const copy_opt_t *co, unit_t *ou) {
 
 	/* free best qnode (curr) and queue */
 	free_qnode(curr);
-	list_for_each_entry(qnode_t, curr, &ou->queue, queue)
+	list_for_each_entry_safe(qnode_t, curr, tmp, &ou->queue, queue)
 		free_qnode(curr);
 }
 
@@ -513,10 +526,10 @@ void co_heur_opt(copy_opt_t *co) {
 	dbg = firm_dbg_register("ir.be.copyoptheur");
 	firm_dbg_set_mask(dbg, DEBUG_LVL);
 
-	co->pinned_global = pset_new_ptr(SLOTS_PINNED_GLOBAL);
+	pinned_global = pset_new_ptr(SLOTS_PINNED_GLOBAL);
 
 	list_for_each_entry(unit_t, curr, &co->units, units)
-		co_heur_opt_unit(co, curr);
+		ou_optimize(curr);
 
-	del_pset(co->pinned_global);
+	del_pset(pinned_global);
 }

@@ -59,6 +59,7 @@ static void check_results(ir_graph *irg) {
 			}
 	}
 	obstack_free(&ob, NULL);
+	DBG((dbg, 1, "The checker seems to be happy!\n"));
 }
 
 void be_copy_opt_init(void) {
@@ -69,6 +70,7 @@ void be_copy_opt_init(void) {
 void be_copy_opt(ir_graph* irg) {
 	copy_opt_t *co;
 
+	DBG((dbg, LEVEL_1, "\nIRG: %s\n\n", get_entity_name(get_irg_entity(irg))));
 	check_results(irg);
 	co = new_copy_opt(irg);
 

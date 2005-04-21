@@ -16,18 +16,18 @@
 #include "becopyopt.h"
 
 #define DUMP_MPS			/**< dumps the problem in "CPLEX"-MPS format. NOT fixed-column-MPS. */
-#define USE_SOS				/**< uses Special Ordered Sets when using MPS */
+#undef USE_SOS				/**< uses Special Ordered Sets when using MPS */
 #define DO_SOLVE 			/**< solve the MPS output with CPLEX */
-#define DUMP_MATRICES		/**< dumps all matrices completely. only recommended for small problems */
-#define DUMP_LP				/**< dumps the problem in LP format. 'human-readable' equations etc... */
+#undef DUMP_MATRICES		/**< dumps all matrices completely. only recommended for small problems */
+#undef DUMP_LP				/**< dumps the problem in LP format. 'human-readable' equations etc... */
 #define DELETE_FILES		/**< deletes all dumped files after use */
-#define EXPECT_FILENAME "runme" /** name of the expect-script */
 
 /* CPLEX-account related stuff */
 #define SSH_USER_HOST_PATH "kb61@sp-smp.rz.uni-karlsruhe.de"
 #define SSH_PASSWD "!cplex90"
+#define EXPECT_FILENAME "runme" /** name of the expect-script */
 
-#define DEBUG_LVL SET_LEVEL_1
+#define DEBUG_LVL 0 //SET_LEVEL_1
 static firm_dbg_module_t *dbg = NULL;
 
 #define SLOTS_NUM2POS 256
@@ -129,18 +129,6 @@ static INLINE int pi_get_pos(problem_instance_t *pi, int num, int col) {
 		return -1;
 }
 
-static INLINE FILE *ffopen(const char *base, const char *ext, const char *mode) {
-	FILE *out;
-	char buf[1024];
-
-	snprintf(buf, sizeof(buf), "%s.%s", base, ext);
-	if (! (out = fopen(buf, mode))) {
-		fprintf(stderr, "Cannot open file %s in mode %s\n", buf, mode);
-		assert(0);
-	}
-	return out;
-}
-
 #ifdef DUMP_MATRICES
 /**
  * Dump the raw matrices of the problem to a file for debugging.
@@ -185,7 +173,7 @@ static void pi_dump_lp(problem_instance_t *pi) {
 	matrix_elem_t *e;
 	FILE *out = ffopen(pi->name, "lpo", "wt");
 
-	DBG((dbg, LEVEL_1, "Dumping lp_org...\n"));
+	DBG((dbg, LEVEL_1, "Dumping lp...\n"));
 	/* calc the big M for Q */
 	max_abs_Qij = pi->maxQij;
 	if (-pi->minQij > max_abs_Qij)
@@ -365,13 +353,14 @@ static void pi_dump_mps(problem_instance_t *pi) {
 static void pi_solve_ilp(problem_instance_t *pi) {
 	FILE *out;
 
+	DBG((dbg, LEVEL_1, "Solving with CPLEX@RZ...\n"));
 	/* write command file for CPLEX */
 	out = ffopen(pi->name, "cmd", "wt");
 	fprintf(out, "read %s.mps\n", pi->name);
 	fprintf(out, "read %s.mst\n", pi->name);
 	fprintf(out, "set mip strategy mipstart 1\n");
-	fprintf(out, "optimize\n");
 	fprintf(out, "set logfile %s.sol\n", pi->name);
+	fprintf(out, "optimize\n");
 	fprintf(out, "display solution variables 1-%d\n", pi->x_dim);
 	fprintf(out, "set logfile cplex.log\n");
 	fprintf(out, "quit\n");
@@ -414,6 +403,9 @@ static void pi_apply_solution(problem_instance_t *pi) {
 	while (!feof(in)) {
 		char buf[1024];
 		int num = -1, col = -1, val = -1;
+
+		//TODO No integer feasible solution exists.
+
 		if (fscanf(in, "x%d_%d %d.%s\n", &num, &col, &val, buf) != 3) {
 			while(fscanf(in, "%1020s\n", buf) != 1);
 			continue;
@@ -431,6 +423,7 @@ static void pi_apply_solution(problem_instance_t *pi) {
 static void pi_delete_files(problem_instance_t *pi) {
 	char buf[1024];
 	int end = snprintf(buf, sizeof(buf), "%s", pi->name);
+	DBG((dbg, LEVEL_1, "Deleting files...\n"));
 #ifdef DUMP_MATRICES
 	snprintf(buf+end, sizeof(buf)-end, ".matrix");
 	remove(buf);
@@ -549,7 +542,7 @@ static problem_instance_t *new_pi(const copy_opt_t *co) {
 	/* Vector x
 	 * one entry per node and possible color */
 	obstack_init(&pi->ob);
-	dom_tree_walk_irg(co->irg, pi_collect_x_names, NULL, &pi->ob);
+	dom_tree_walk_irg(co->irg, pi_collect_x_names, NULL, pi);
 	pi->x = obstack_finish(&pi->ob);
 
 	/* Matrix Q

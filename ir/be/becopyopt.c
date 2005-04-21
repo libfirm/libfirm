@@ -5,10 +5,10 @@
 
 #include "becopyopt.h"
 
-#define DEBUG_LVL SET_LEVEL_1
+#define DEBUG_LVL 0 //SET_LEVEL_1
 static firm_dbg_module_t *dbg = NULL;
 
-//TODO
+//TODO external things
 #define is_optimizable(irn) (is_Phi(irn) || 0)
 
 /**
@@ -21,7 +21,7 @@ static firm_dbg_module_t *dbg = NULL;
 static void co_append_unit(copy_opt_t *co, const ir_node *root) {
 	int i, arity;
 	unit_t *unit;
-	DBG((dbg, LEVEL_1, "Root: %n\n", root));
+	DBG((dbg, LEVEL_1, "\t  Root: %n\n", root));
 	/* check if we encountered this root earlier */
 	if (pset_find_ptr(co->roots, root))
 		return;
@@ -39,15 +39,15 @@ static void co_append_unit(copy_opt_t *co, const ir_node *root) {
 	/* check all args */
 	for (i=0; i<arity; ++i) {
 		ir_node *arg = get_irn_n(root, i);
-		if (!values_interfere(root, arg)) {
-			if (arg != root) {
-				DBG((dbg, LEVEL_1, "Member: %n\n", arg));
+		if (arg != root) {
+			if (!values_interfere(root, arg)) {
+				DBG((dbg, LEVEL_1, "\t  Member: %n\n", arg));
 				if (is_optimizable(arg))
 					co_append_unit(co, arg);
 				unit->nodes[unit->node_count++] = arg;
-			}
-		} else
-			unit->interf++;
+			} else
+				unit->interf++;
+		}
 	}
 
 	if (unit->node_count > 1) {
@@ -70,6 +70,7 @@ static void co_collect_in_block(ir_node *block, void *env) {
 }
 
 static void co_collect_units(copy_opt_t *co) {
+	DBG((dbg, LEVEL_1, "\tCollecting optimization units\n"));
 	co->roots = pset_new_ptr(64);
 	dom_tree_walk_irg(co->irg, co_collect_in_block, NULL, co);
 	del_pset(co->roots);
@@ -87,8 +88,8 @@ copy_opt_t *new_copy_opt(ir_graph *irg) {
 }
 
 void free_copy_opt(copy_opt_t *co) {
-	unit_t *curr;
-	list_for_each_entry(unit_t, curr, &co->units, units) {
+	unit_t *curr, *tmp;
+	list_for_each_entry_safe(unit_t, curr, tmp, &co->units, units) {
 		free(curr->nodes);
 		free(curr);
 	}

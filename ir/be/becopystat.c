@@ -2,9 +2,11 @@
  * @author Daniel Grund
  * @date 19.04.2005
  */
+#include <stdlib.h>
+#include "list.h"
+#include "irprog.h"
 #include "beutil.h"
 #include "becopystat.h"
-#include "list.h"
 
 struct _irg_stat_t {
 	struct list_head chain;
@@ -12,10 +14,11 @@ struct _irg_stat_t {
 	const char *irg_name;
 	int interferers, lb, max;
 	int copies[3];
+	//TODO double ilp_time;
 };
 
 typedef struct _all_stat_t {
-	char *unit_name;
+	const char *unit_name;
 	struct list_head irgs;
 } all_stat_t;
 
@@ -28,7 +31,7 @@ irg_stat_t *new_irg_stat(copy_opt_t *co) {
 
 	if (!all_stats) {
 		all_stats = calloc(1, sizeof(*all_stats));
-		//TODO all_stats->unit_name = ??? */
+		all_stats->unit_name = get_irp_prog_name();
 		INIT_LIST_HEAD(&all_stats->irgs);
 		is = calloc(1, sizeof(*is));
 		is->irg_name = "CUMULATIVE";
