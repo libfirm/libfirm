@@ -2,6 +2,9 @@
 #ifndef _BITSET_IA32_H
 #define _BITSET_IA32_H
 
+typedef unsigned int bitset_unit_t;
+#define BITSET_UNIT_FMT "%0x"
+
 #undef _bitset_inside_clear
 #undef _bitset_inside_set
 #undef _bitset_inside_flip
@@ -25,7 +28,7 @@
 #define _bitset_inside_ntz(unit) _bitset_ia32_inside_ntz(unit)
 #define _bitset_inside_ntz_value(unit) _bitset_ia32_inside_ntz_value(unit)
 
-static INLINE int _bitset_ia32_inside_is_set(unsigned long *unit, unsigned bit)
+static INLINE int _bitset_ia32_inside_is_set(bitset_unit_t *unit, unsigned bit)
 {
 	int res = 0;
 	__asm__("mov $0,%0\n\tbtl %1,%2\n\tadc $0,%0"
@@ -35,20 +38,20 @@ static INLINE int _bitset_ia32_inside_is_set(unsigned long *unit, unsigned bit)
 	return res;
 }
 
-static INLINE unsigned _bitset_ia32_inside_nlz(unsigned long *unit)
+static INLINE unsigned _bitset_ia32_inside_nlz(bitset_unit_t *unit)
 {
 	unsigned res = 0;
 	__asm__("bsrl %1,%0" :"=r" (res) :"m" (unit));
 	return *unit == 0 ? 32 : res;
 }
 
-static INLINE unsigned _bitset_ia32_inside_ntz(unsigned long *unit) {
+static INLINE unsigned _bitset_ia32_inside_ntz(bitset_unit_t *unit) {
 	unsigned res = 0;
 	__asm__("bsfl %1,%0" :"=r" (res) :"m" (unit));
 	return *unit == 0 ? 32 : res;
 }
 
-static INLINE unsigned _bitset_ia32_inside_ntz_value(unsigned long unit) {
+static INLINE unsigned _bitset_ia32_inside_ntz_value(bitset_unit_t unit) {
 	unsigned res = 0;
 	__asm__("bsfl %1,%0" :"=r" (res) :"rm" (unit));
 	return unit == 0 ? 32 : res;
@@ -83,8 +86,8 @@ static INLINE unsigned _bitset_ia32_inside_ntz_value(unsigned long unit) {
 #define _bitset_data_ptr(data,bitset_base_size,highest_bit) \
   _bitset_sse_data_ptr(data, bitset_base_size, highest_bit)
 
-static INLINE unsigned long *_bitset_sse_data_ptr(void *data, size_t bitset_base_size,
-		unsigned long highest_bit)
+static INLINE bitset_unit_t *_bitset_sse_data_ptr(void *data, size_t bitset_base_size,
+		bitset_pos_t highest_bit)
 {
 	ptrdiff_t diff;
 	char *units = data;
@@ -92,7 +95,7 @@ static INLINE unsigned long *_bitset_sse_data_ptr(void *data, size_t bitset_base
 	diff = (units - (char *) 0) + bitset_base_size;
 	diff = round_up2(diff, 16);
 	units = (char *) 0 + diff;
-	return (unsigned long *) units;
+	return (bitset_unit_t *) units;
 }
 
 #define _BITSET_BINOP_UNITS_INC 4
@@ -102,7 +105,7 @@ static INLINE unsigned long *_bitset_sse_data_ptr(void *data, size_t bitset_base
 #define _bitset_inside_binop_xor(tgt,src) _bitset_sse_inside_binop_xor(tgt,src)
 
 #define _BITSET_SSE_BINOP(name) \
-static INLINE void _bitset_sse_inside_binop_ ## name(unsigned long *tgt, unsigned long *src) \
+static INLINE void _bitset_sse_inside_binop_ ## name(bitset_unit_t *tgt, bitset_unit_t *src) \
 { \
 	__m128i src_op = _mm_load_si128((__m128i *) src); \
 	__m128i tgt_op = _mm_load_si128((__m128i *) tgt); \
@@ -111,7 +114,7 @@ static INLINE void _bitset_sse_inside_binop_ ## name(unsigned long *tgt, unsigne
 }
 
 
-static INLINE void _bitset_sse_inside_binop_with_zero_and(unsigned long *tgt)
+static INLINE void _bitset_sse_inside_binop_with_zero_and(bitset_unit_t *tgt)
 {
 	tgt[0] = 0;
 	tgt[1] = 0;
@@ -119,7 +122,7 @@ static INLINE void _bitset_sse_inside_binop_with_zero_and(unsigned long *tgt)
 	tgt[3] = 0;
 }
 
-static INLINE void _bitset_sse_inside_binop_andnot(unsigned long *tgt, unsigned long *src)
+static INLINE void _bitset_sse_inside_binop_andnot(bitset_unit_t *tgt, bitset_unit_t *src)
 {
 	__m128i src_op = _mm_load_si128((void *) src);
 	__m128i tgt_op = _mm_load_si128((void *) tgt);

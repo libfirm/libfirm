@@ -1,4 +1,10 @@
 
+/** Use ordinary ints as unit types. */
+typedef unsigned int bitset_unit_t;
+
+#define BITSET_UNIT_FMT "%0x"
+#define BITSET_UNIT_ALL_ONE ((unsigned int) -1)
+
 /**
  * Units needed for a given highest bit.
  * This implementation always allocates units in a multiple of 16 bytes.
@@ -26,7 +32,7 @@
  * @param hightest_bit The highest bit that will occur in the bitset.
  */
 #define _bitset_data_ptr(data,bitset_base_size,highest_bit) \
-	((unsigned long *) ((char *) data + bitset_base_size))
+	((bitset_unit_t *) ((char *) data + bitset_base_size))
 
 
 /**
@@ -72,10 +78,10 @@
  * @return The Number of leading zeroes.
  */
 #define _bitset_inside_ntz(unit_ptr) _bitset_std_inside_ntz(unit_ptr)
-static INLINE int _bitset_std_inside_ntz(unsigned long *unit_ptr)
+static INLINE bitset_pos_t _bitset_std_inside_ntz(bitset_unit_t *unit_ptr)
 {
 	unsigned long data = *unit_ptr;
-	return 32 - nlz(~data & (data - 1));
+	return 32 - (bitset_pos_t) nlz(~data & (data - 1));
 }
 
 /**

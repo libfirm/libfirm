@@ -16,6 +16,8 @@
 #include "firm_config.h"
 #include "bitfiddle.h"
 
+typedef unsigned int bitset_pos_t;
+
 #include "bitset_std.h"
 
 /*
@@ -25,11 +27,12 @@
 */
 
 typedef struct _bitset_t {
-	unsigned long units;
-	unsigned long *data;
+	bitset_pos_t units;
+  bitset_pos_t highest_bit;
+	bitset_unit_t *data;
 } bitset_t;
 
-#define BS_UNIT_SIZE sizeof(unsigned long)
+#define BS_UNIT_SIZE sizeof(bitset_unit_t)
 #define BS_UNIT_SIZE_BITS (BS_UNIT_SIZE * 8)
 #define BS_UNIT_MASK (BS_UNIT_SIZE_BITS - 1)
 
@@ -52,13 +55,26 @@ typedef struct _bitset_t {
  * @param units The number of units that are allocated for the bitset.
  * @return A pointer to the initialized bitset.
  */
-static INLINE bitset_t *_bitset_prepare(void *area, unsigned long highest_bit)
+static INLINE bitset_t *_bitset_prepare(void *area, bitset_pos_t highest_bit)
 {
 	bitset_t *ptr = area;
 	memset(area, 0, _bitset_overall_size(sizeof(bitset_t), highest_bit));
 	ptr->units = _bitset_units(highest_bit);
+  ptr->highest_bit = highest_bit;
 	ptr->data = _bitset_data_ptr(area, sizeof(bitset_t), highest_bit);
 	return ptr;
+}
+
+/**
+ * Mask out all bits, which are only there, because the number
+ * of bits in the set didn't match a unit size boundary.
+ * @param bs The bitset.
+ * @return The masked bitset.
+ */
+static INLINE bitset_t *_bitset_mask_highest(bitset_t *bs)
+{
+  bs->data[bs->units - 1] &= (bs->highest_bit & BS_UNIT_MASK) - 1;
+  return bs;
 }
 
 /**
@@ -67,6 +83,13 @@ static INLINE bitset_t *_bitset_prepare(void *area, unsigned long highest_bit)
  * @return The capacity in bits of the bitset.
  */
 #define bitset_capacity(bs) ((bs)->units * BS_UNIT_SIZE_BITS)
+
+/**
+ * Get the highest bit which can be stored in the bitset.
+ * @param bs The bitset.
+ * @return The highest bit which can be set or cleared.
+ */
+#define bistet_highest_bit(bs)  ((bs)->highest_bit)
 
 /**
  * Allocate a bitset on an obstack.
@@ -107,9 +130,10 @@ static INLINE bitset_t *_bitset_prepare(void *area, unsigned long highest_bit)
  * @param bit The bit.
  * @return A pointer to the unit containing the bit.
  */
-static INLINE unsigned long *_bitset_get_unit(const bitset_t *bs, unsigned long bit)
+static INLINE bitset_unit_t *_bitset_get_unit(const bitset_t *bs, bitset_pos_t bit)
 {
-	assert(bit < bs->units * BS_UNIT_SIZE_BITS && "Bit too large");
+	/* assert(bit < bs->units * BS_UNIT_SIZE_BITS && "Bit too large"); */
+  assert(bit <= bs->highest_bit && "Bit to large");
 	return bs->data + bit / BS_UNIT_SIZE_BITS;
 }
 
@@ -118,9 +142,9 @@ static INLINE unsigned long *_bitset_get_unit(const bitset_t *bs, unsigned long 
  * @param bs The bitset.
  * @param bit The bit to set.
  */
-static INLINE void bitset_set(bitset_t *bs, unsigned long bit)
+static INLINE void bitset_set(bitset_t *bs, bitset_pos_t bit)
 {
-	unsigned long *unit = _bitset_get_unit(bs, bit);
+	bitset_unit_t *unit = _bitset_get_unit(bs, bit);
 	_bitset_inside_set(unit, bit & BS_UNIT_MASK);
 }
 
@@ -129,15 +153,21 @@ static INLINE void bitset_set(bitset_t *bs, unsigned long bit)
  * @param bs The bitset.
  * @param bit The bit to clear.
  */
-static INLINE void bitset_clear(bitset_t *bs, unsigned long bit)
+static INLINE void bitset_clear(bitset_t *bs, bitset_pos_t bit)
 {
-	unsigned long *unit = _bitset_get_unit(bs, bit);
+	bitset_unit_t *unit = _bitset_get_unit(bs, bit);
 	_bitset_inside_clear(unit, bit & BS_UNIT_MASK);
 }
 
-static INLINE int bitset_is_set(const bitset_t *bs, unsigned long bit)
+/**
+ * Check, if a bit is set.
+ * @param bs The bitset.
+ * @param bit The bit to check for.
+ * @return 1, if the bit was set, 0 if not.
+ */
+static INLINE int bitset_is_set(const bitset_t *bs, bitset_pos_t bit)
 {
-	unsigned long *unit = _bitset_get_unit(bs, bit);
+	bitset_unit_t *unit = _bitset_get_unit(bs, bit);
 	return _bitset_inside_is_set(unit, bit & BS_UNIT_MASK);
 }
 
@@ -146,9 +176,9 @@ static INLINE int bitset_is_set(const bitset_t *bs, unsigned long bit)
  * @param bs The bitset.
  * @param bit The bit to flip.
  */
-static INLINE void bitset_flip(bitset_t *bs, unsigned long bit)
+static INLINE void bitset_flip(bitset_t *bs, bitset_pos_t bit)
 {
-	unsigned long *unit = _bitset_get_unit(bs, bit);
+	bitset_unit_t *unit = _bitset_get_unit(bs, bit);
 	_bitset_inside_flip(unit, bit & BS_UNIT_MASK);
 }
 
@@ -160,13 +190,13 @@ static INLINE void bitset_flip(bitset_t *bs, unsigned long bit)
  */
 static INLINE bitset_t *bitset_copy(bitset_t *tgt, const bitset_t *src)
 {
-	unsigned long tu = tgt->units;
-	unsigned long su = src->units;
-	unsigned long min_units = tu < su ? tu : su;
+	bitset_pos_t tu = tgt->units;
+	bitset_pos_t su = src->units;
+	bitset_pos_t min_units = tu < su ? tu : su;
 	memcpy(tgt->data, src->data, min_units * BS_UNIT_SIZE);
 	if(tu > min_units)
 		memset(tgt->data + min_units, 0, BS_UNIT_SIZE * (tu - min_units));
-	return tgt;
+	return _bitset_mask_highest(tgt);
 }
 
 /**
@@ -174,13 +204,13 @@ static INLINE bitset_t *bitset_copy(bitset_t *tgt, const bitset_t *src)
  * @param bs The bitset.
  * @return The smallest bit set in the bitset.
  */
-static INLINE unsigned long bitset_min(const bitset_t *bs)
+static INLINE bitset_pos_t bitset_min(const bitset_t *bs)
 {
-	unsigned long i, ofs = 0;
+	bitset_pos_t i, ofs = 0;
 
 	for(i = 0; i < bs->units; ++i) {
-		unsigned long *unit = &bs->data[i];
-		unsigned long pos = _bitset_inside_ntz(unit);
+		bitset_unit_t *unit = &bs->data[i];
+		bitset_pos_t pos = _bitset_inside_ntz(unit);
 		if(pos > 0)
 			return ofs + pos;
 		ofs += BS_UNIT_SIZE_BITS;
@@ -194,13 +224,13 @@ static INLINE unsigned long bitset_min(const bitset_t *bs)
  * @param bs The bitset.
  * @return The greatest bit set in the bitset.
  */
-static INLINE unsigned long bitset_max(const bitset_t *bs)
+static INLINE bitset_pos_t bitset_max(const bitset_t *bs)
 {
-	unsigned long i, max = 0, ofs = 0;
+	bitset_pos_t i, max = 0, ofs = 0;
 
 	for(i = 0; i < bs->units; ++i) {
-		unsigned long *unit = &bs->data[i];
-		unsigned long pos = _bitset_inside_nlz(unit);
+		bitset_unit_t *unit = &bs->data[i];
+		bitset_pos_t pos = _bitset_inside_nlz(unit);
 		if(pos > 0)
 			max = ofs + pos;
 		ofs += BS_UNIT_SIZE_BITS;
@@ -217,30 +247,30 @@ static INLINE unsigned long bitset_max(const bitset_t *bs)
  * @return The next set bit from pos on, or -1, if no set bit was found
  * after pos.
  */
-static INLINE unsigned long _bitset_next(const bitset_t *bs,
-		unsigned long pos, int set)
+static INLINE bitset_pos_t _bitset_next(const bitset_t *bs,
+		bitset_pos_t pos, int set)
 {
-	unsigned long unit_number = pos / BS_UNIT_SIZE_BITS;
+	bitset_pos_t unit_number = pos / BS_UNIT_SIZE_BITS;
 
 	if(unit_number >= bs->units)
 		return -1;
 
 	{
-		unsigned long bit_in_unit = pos & BS_UNIT_MASK;
-		unsigned long in_unit_mask = (1 << bit_in_unit) - 1;
+		bitset_pos_t bit_in_unit = pos & BS_UNIT_MASK;
+		bitset_pos_t in_unit_mask = (1 << bit_in_unit) - 1;
 
 		/*
 		 * Mask out the bits smaller than pos in the current unit.
 		 * We are only interested in bits set higher than pos.
 		 */
-		unsigned long curr_unit = bs->data[unit_number];
+		bitset_unit_t curr_unit = bs->data[unit_number];
 
 		/*
 		 * Find the next bit set in the unit.
 		 * Mind that this function returns 0, if the unit is -1 and
 		 * counts the bits from 1 on.
 		 */
-		unsigned long next_in_this_unit =
+		bitset_pos_t next_in_this_unit =
 			_bitset_inside_ntz_value((set ? curr_unit : ~curr_unit) & ~in_unit_mask);
 
 		/* If there is a bit set in the current unit, exit. */
@@ -249,10 +279,10 @@ static INLINE unsigned long _bitset_next(const bitset_t *bs,
 
 		/* Else search for set bits in the next units. */
 		else {
-			unsigned long i;
+			bitset_pos_t i;
 			for(i = unit_number + 1; i < bs->units; ++i) {
-				unsigned long data = bs->data[i];
-				unsigned long first_set =
+				bitset_unit_t data = bs->data[i];
+				bitset_pos_t first_set =
 					_bitset_inside_ntz_value(set ? data : ~data);
 
 				if(first_set < BS_UNIT_SIZE_BITS)
@@ -285,10 +315,10 @@ static INLINE unsigned long _bitset_next(const bitset_t *bs,
  * @param bs The bitset.
  * @return The number of bits set in the bitset.
  */
-static INLINE unsigned long bitset_popcnt(const bitset_t *bs)
+static INLINE bitset_pos_t bitset_popcnt(const bitset_t *bs)
 {
-	unsigned long i, pop = 0;
-	unsigned long *unit;
+	bitset_pos_t i, pop = 0;
+	bitset_unit_t *unit;
 
 	for(i = 0, unit = bs->data; i < bs->units; ++i, ++unit)
 		pop += _bitset_inside_pop(unit);
@@ -301,9 +331,10 @@ static INLINE unsigned long bitset_popcnt(const bitset_t *bs)
  * This sets all bits to zero.
  * @param bs The bitset.
  */
-static INLINE void bitset_clear_all(bitset_t *bs)
+static INLINE bitset_t *bitset_clear_all(bitset_t *bs)
 {
 	memset(bs->data, 0, BS_UNIT_SIZE * bs->units);
+  return bs;
 }
 
 /**
@@ -311,11 +342,10 @@ static INLINE void bitset_clear_all(bitset_t *bs)
  * This sets all bits to one.
  * @param bs The bitset.
  */
-static INLINE void bitset_set_all(bitset_t *bs)
+static INLINE bitset_t *bitset_set_all(bitset_t *bs)
 {
-	//TODO is this correct (last unit)?
-	//TODO is -1 correct == all bits equal 1
 	memset(bs->data, -1, BS_UNIT_SIZE * bs->units);
+  return bs;
 }
 
 /**
@@ -327,12 +357,12 @@ static INLINE void bitset_set_all(bitset_t *bs)
  */
 static INLINE int bitset_contains(const bitset_t *lhs, const bitset_t *rhs)
 {
-	unsigned long n = lhs->units < rhs->units ? lhs->units : rhs->units;
-	unsigned long i;
+	bitset_pos_t n = lhs->units < rhs->units ? lhs->units : rhs->units;
+	bitset_pos_t i;
 
 	for(i = 0; i < n; ++i) {
-		unsigned long lu = lhs->data[i];
-		unsigned long ru = rhs->data[i];
+		bitset_unit_t lu = lhs->data[i];
+		bitset_unit_t ru = rhs->data[i];
 
 		if((lu | ru) & ~ru)
 			return 0;
@@ -373,11 +403,11 @@ static INLINE void bitset_fprint(FILE *file, const bitset_t *bs)
 
 static INLINE void bitset_debug_fprint(FILE *file, const bitset_t *bs)
 {
-	unsigned long i;
+	bitset_pos_t i;
 
-	fprintf(file, "%lu:", bs->units);
+	fprintf(file, "%u:", bs->units);
 	for(i = 0; i < bs->units; ++i)
-		fprintf(file, " %0lx", bs->data[i]);
+		fprintf(file, " " BITSET_UNIT_FMT, bs->data[i]);
 }
 
 /*
@@ -387,13 +417,13 @@ static INLINE void bitset_debug_fprint(FILE *file, const bitset_t *bs)
 #define BINARY_OP(op) \
 static INLINE bitset_t *bitset_ ## op(bitset_t *tgt, const bitset_t *src) \
 { \
-	unsigned long i; \
-	unsigned long n = tgt->units > src->units ? src->units : tgt->units; \
+	bitset_pos_t i; \
+	bitset_pos_t n = tgt->units > src->units ? src->units : tgt->units; \
 	for(i = 0; i < n; i += _BITSET_BINOP_UNITS_INC) \
 		_bitset_inside_binop_ ## op(&tgt->data[i], &src->data[i]); \
 	if(n < tgt->units) \
 		_bitset_clear_rest(&tgt->data[i], tgt->units - i); \
-	return tgt; \
+	return _bitset_mask_highest(tgt); \
 }
 
 /*
