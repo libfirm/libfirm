@@ -10,8 +10,9 @@
  */
 
 #include "becopyopt.h"
+#include "becopystat.h"
 
-#define DEBUG_LVL 0 //SET_LEVEL_1
+#define DEBUG_LVL SET_LEVEL_1
 static firm_dbg_module_t *dbg = NULL;
 
 #define SLOTS_PINNED_GLOBAL 256
@@ -31,7 +32,7 @@ typedef struct _conflict_t {
 
 /**
  * If an irn is changed, the changes first get stored in a node_stat_t,
- * to allow undo of changes  (=drop new data) in case of conflicts.
+ * to allow undo of changes (=drop new data) in case of conflicts.
  */
 typedef struct _node_stat_t {
 	const ir_node *irn;
@@ -527,9 +528,9 @@ void co_heur_opt(copy_opt_t *co) {
 	firm_dbg_set_mask(dbg, DEBUG_LVL);
 
 	pinned_global = pset_new_ptr(SLOTS_PINNED_GLOBAL);
-
 	list_for_each_entry(unit_t, curr, &co->units, units)
-		ou_optimize(curr);
+		if (curr->node_count > 1)
+			ou_optimize(curr);
 
 	del_pset(pinned_global);
 }

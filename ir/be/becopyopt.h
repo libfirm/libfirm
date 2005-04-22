@@ -36,6 +36,7 @@
 #include "belive_t.h"
 #include "bera_t.h"
 #include "bechordal_t.h"
+#include "bearch.h"
 
 /**
  * TODO external things
@@ -44,6 +45,7 @@
  */
 #define get_weight(n,m) 1
 #define is_possible_color(irn, col) 1
+#define is_Copy(irn) 0
 #define MAX_COLORS 32
 
 /**
@@ -64,16 +66,19 @@ typedef struct _unit_t {
  * Data representing the problem of copy minimization.
  */
 typedef struct _copy_opt_t {
-	ir_graph *irg;				/**< the irg which is processed */
-	struct list_head units;		/**< all units to optimize in right oreder */
-	pset *roots;				/**< used only temporary for detecting multiple appends */
+	ir_graph *irg;						/**< the irg to process */
+	const arch_isa_if_t *isa;
+	const arch_register_class_t *cls;	/**< the registerclass to optimize */
+	struct list_head units;				/**< all units to optimize in right oreder */
+	pset *roots;						/**< used only temporary for detecting multiple appends */
+	struct obstack ob;
 } copy_opt_t;
 
 
 /**
  * Generate the problem. Collect all infos and optimizable nodes.
  */
-copy_opt_t *new_copy_opt(ir_graph *irg);
+copy_opt_t *new_copy_opt(ir_graph *irg, const arch_isa_if_t *isa, const arch_register_class_t *cls);
 
 /**
  * Free the space...
@@ -81,6 +86,12 @@ copy_opt_t *new_copy_opt(ir_graph *irg);
 void free_copy_opt(copy_opt_t *co);
 
 /**
+ * Returns the current number of copies needed
+ */
+int co_get_copy_count(copy_opt_t *co);
+
+/**
+ * IMPORTANT: Available only iff heuristic has run!
  * Returns a lower bound for the number of copies needed based on interfering
  * arguments and the size of a max indep. set (only ifg-edges) of the other args.
  */
@@ -101,5 +112,10 @@ void co_heur_opt(copy_opt_t *co);
  * Solves the problem using mixed integer programming
  */
 void co_ilp_opt(copy_opt_t *co);
+
+/**
+ * Checks the register allocation for correctness
+ */
+void co_check_allocation(copy_opt_t *co);
 
 #endif

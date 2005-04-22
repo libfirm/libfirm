@@ -14,6 +14,7 @@
  */
 
 #include "becopyopt.h"
+#include "becopystat.h"
 
 #define DUMP_MPS			/**< dumps the problem in "CPLEX"-MPS format. NOT fixed-column-MPS. */
 #undef USE_SOS				/**< uses Special Ordered Sets when using MPS */
@@ -23,11 +24,11 @@
 #define DELETE_FILES		/**< deletes all dumped files after use */
 
 /* CPLEX-account related stuff */
-#define SSH_USER_HOST_PATH "kb61@sp-smp.rz.uni-karlsruhe.de"
+#define SSH_USER_HOST "kb61@sp-smp.rz.uni-karlsruhe.de"
 #define SSH_PASSWD "!cplex90"
 #define EXPECT_FILENAME "runme" /** name of the expect-script */
 
-#define DEBUG_LVL 0 //SET_LEVEL_1
+#define DEBUG_LVL SET_LEVEL_1
 static firm_dbg_module_t *dbg = NULL;
 
 #define SLOTS_NUM2POS 256
@@ -369,20 +370,17 @@ static void pi_solve_ilp(problem_instance_t *pi) {
 	/* write expect-file for copying problem to RZ */
 	out = ffopen(EXPECT_FILENAME, "exp", "wt");
 	fprintf(out, "#! /usr/bin/expect\n");
-	fprintf(out, "spawn scp %s.mps %s.mst %s.cmd %s:\n", pi->name, pi->name, pi->name, SSH_USER_HOST_PATH);
-	fprintf(out, "expect \":\"\n");
-	fprintf(out, "send \"%s\\n\"\n", SSH_PASSWD);
-	fprintf(out, "interact\n");
+	fprintf(out, "spawn scp %s.mps %s.mst %s.cmd %s:\n", pi->name, pi->name, pi->name, SSH_USER_HOST); /* copy problem files */
+	fprintf(out, "expect \":\"\nsend \"%s\\n\"\ninteract\n", SSH_PASSWD);
 
-	fprintf(out, "spawn ssh %s \"./cplex90 < %s.cmd\"\n", SSH_USER_HOST_PATH, pi->name);
-	fprintf(out, "expect \":\"\n");
-	fprintf(out, "send \"%s\\n\"\n", SSH_PASSWD);
-	fprintf(out, "interact\n");
+	fprintf(out, "spawn ssh %s \"./cplex90 < %s.cmd\"\n", SSH_USER_HOST, pi->name); /* solve */
+	fprintf(out, "expect \":\"\nsend \"%s\\n\"\ninteract\n", SSH_PASSWD);
 
-	fprintf(out, "spawn scp %s:%s.sol .\n", SSH_USER_HOST_PATH, pi->name);
-	fprintf(out, "expect \":\"\n");
-	fprintf(out, "send \"%s\\n\"\n", SSH_PASSWD);
-	fprintf(out, "interact\n");
+	fprintf(out, "spawn scp %s:%s.sol .\n", SSH_USER_HOST, pi->name); /*copy back solution */
+	fprintf(out, "expect \":\"\nsend \"%s\\n\"\ninteract\n", SSH_PASSWD);
+
+	fprintf(out, "spawn ssh %s ./dell\n", SSH_USER_HOST); /* clean files on server */
+	fprintf(out, "expect \":\"\nsend \"%s\\n\"\ninteract\n", SSH_PASSWD);
 	fclose(out);
 
 	/* call the expect script */
@@ -473,10 +471,10 @@ static void pi_collect_x_names(ir_node *block, void *env) {
 /**
  * Checks if all nodes in living are live_out in block block.
  */
-static INLINE int all_live_out(ir_node *block, pset *living) {
+static INLINE int all_live_in(ir_node *block, pset *living) {
 	ir_node *n;
 	for (n = pset_first(living); n; n = pset_next(living))
-		if (!is_live_out(block, n)) {
+		if (!is_live_in(block, n)) {
 			pset_break(living);
 			return 0;
 		}
@@ -510,8 +508,8 @@ static void pi_clique_finder(ir_node *block, void *env) {
 
 			/* before shrinking the set, store the current 'maximum' clique;
 			 * do NOT if clique is a single node
-			 * do NOT if all values are live_out */
-			if (phase == growing && pset_count(living) >= 2 && !all_live_out(block, living)) {
+			 * do NOT if all values are live_in (in this case they were contained in a live-out clique elsewhere) */
+			if (phase == growing && pset_count(living) >= 2 && !all_live_in(block, living)) {
 				ir_node *n;
 				for (n = pset_first(living); n; n = pset_next(living)) {
 					int pos = pi_get_pos(pi, get_irn_graph_nr(n), pi->curr_color);

@@ -16,7 +16,6 @@
 #include "irgraph.h"
 
 void be_copy_opt_init(void);
-void be_copy_opt(ir_graph* irg);
-void be_copy_opt_done(ir_graph* irg);
+void be_copy_opt(ir_graph* irg, const arch_isa_if_t *isa, const arch_register_class_t *cls);
 
 #endif

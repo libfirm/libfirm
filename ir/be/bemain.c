@@ -15,6 +15,7 @@
 #include "irprog.h"
 #include "irgraph.h"
 #include "irdump.h"
+#include "phiclass.h"
 
 #include "be_t.h"
 #include "bera_t.h"
@@ -26,12 +27,13 @@
 #include "bechordal.h"
 #include "bearch.h"
 #include "becopyoptmain.h"
+#include "becopystat.h"
 
 #include "beasm_dump_globals.h"
 #include "beasm_asm_gnu.h"
 
 #undef DUMP_ALLOCATED
-#undef DUMP_LOCALIZED
+#define DUMP_LOCALIZED
 
 #define N_PHASES 256
 
@@ -102,6 +104,9 @@ void be_init(void)
 	be_numbering_init();
 	be_ra_init();
 	be_ra_chordal_init();
+#ifdef DO_STAT
+	stat_init();
+#endif
 	be_copy_opt_init();
 }
 
@@ -111,11 +116,10 @@ extern arch_isa_if_t arch_isa_if_firm;
 static void be_main_loop(void)
 {
 	int i, n;
-  const arch_isa_if_t *isa = &arch_isa_if_firm;
+	const arch_isa_if_t *isa = &arch_isa_if_firm;
 
 	for(i = 0, n = get_irp_n_irgs(); i < n; ++i) {
-    int j, m;
-
+		int j, m;
 		ir_graph *irg = get_irp_irg(i);
 
 		localize_consts(irg);
@@ -125,36 +129,39 @@ static void be_main_loop(void)
 #endif
 		be_numbering(irg);
 
-    /* Schedule the graphs. */
+		/* Schedule the graphs. */
 		list_sched(irg, trivial_selector);
 
-    /* Liveness analysis */
-    be_liveness(irg);
+		/* Liveness analysis */
+		be_liveness(irg);
 
-    /*
-     * Perform the following for each register
-     * class.
-     */
-    for(j = 0, m = isa->get_n_reg_class(); j < m; ++j) {
-      const arch_register_class_t *cls = isa->get_reg_class(j);
+#ifdef DO_STAT
+		stat_reset();
+		stat_collect_irg(irg);
+#endif
+		/* Perform the following for each register class. */
+		for(j = 0, m = isa->get_n_reg_class(); j < m; ++j) {
+			const arch_register_class_t *cls = isa->get_reg_class(j);
 
-      be_ra_chordal(irg, isa, cls);
+			be_ra_chordal(irg, isa, cls);
 
 #ifdef DUMP_ALLOCATED
-      dump_allocated_irg(irg, "");
+			dump_allocated_irg(irg, "");
 #endif
-      // be_copy_opt(irg);
-      be_ra_chordal_done(irg);
-    }
-
-    be_numbering_done(irg);
+			be_copy_opt(irg, isa, cls);
+			be_ra_chordal_done(irg);
+		}
+#ifdef DO_STAT
+		stat_dump(irg);
+#endif
+	    be_numbering_done(irg);
 	}
 }
 
 void be_main(int argc, const char *argv[])
 {
-  assembler_t *gnu_assembler;
-  FILE *asm_output_file;
+	assembler_t *gnu_assembler;
+	FILE *asm_output_file;
 
 	be_main_loop();
 	gnu_assembler = gnuasm_create_assembler();

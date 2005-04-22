@@ -3,105 +3,67 @@
  * - phi coalescing
  * - register-constrained nodes
  *
- * Contains a simple checker for this optimization.
- * By request some statistics are collected too.
- *
  * @author Daniel Grund
  * @date 11.04.2005
  */
 
-#include "debug.h"
-#include "list.h"
-#include "obst.h"
-#include "irgraph.h"
-#include "irnode.h"
-#include "irgwalk.h"
-
-#include "bera_t.h"
-#include "becopyoptmain.h"
 #include "becopyopt.h"
 #include "becopystat.h"
+#include "becopyoptmain.h"
 
 #define DO_HEUR
 #define DO_ILP
-#undef DO_STAT
 
 #define DEBUG_LVL SET_LEVEL_1
 static firm_dbg_module_t *dbg = NULL;
-
-/**
- * Needed for result checking
- */
-static void allocatable_collector(ir_node *node, void *env) {
-	struct obstack *obst = env;
-	if (!is_Block(node) && is_allocatable_irn(node))
-		obstack_ptr_grow(obst, node);
-}
-
-/**
- * This O(n^2) checker checks, if two ifg-connected nodes have the same color.
- */
-static void check_results(ir_graph *irg) {
-	struct obstack ob;
-	ir_node **nodes, *n1, *n2;
-	int i, o;
-
-	obstack_init(&ob);
-	irg_walk_graph(irg, allocatable_collector, NULL, &ob);
-	obstack_ptr_grow(&ob, NULL);
-	nodes = (ir_node **) obstack_finish(&ob);
-	for (i = 0, n1 = nodes[i]; n1; n1 = nodes[++i]) {
-		assert(! (is_allocatable_irn(n1) && get_irn_color(n1) == NO_COLOR));
-		for (o = i+1, n2 = nodes[o]; n2; n2 = nodes[++o])
-			if (phi_ops_interfere(n1, n2) && get_irn_color(n1) == get_irn_color(n2)) {
-				DBG((dbg, 0, "Error: %n in %n  and  %n in %n\n", n1, get_nodes_block(n1), n2, get_nodes_block(n2)));
-				assert(0 && "Interfering values have the same color!");
-			}
-	}
-	obstack_free(&ob, NULL);
-	DBG((dbg, 1, "The checker seems to be happy!\n"));
-}
 
 void be_copy_opt_init(void) {
 	dbg = firm_dbg_register("ir.be.copyopt");
 	firm_dbg_set_mask(dbg, DEBUG_LVL);
 }
 
-void be_copy_opt(ir_graph* irg) {
+void be_copy_opt(ir_graph* irg, const arch_isa_if_t *isa, const arch_register_class_t *cls) {
 	copy_opt_t *co;
+	int lb, copies;
 
 	DBG((dbg, LEVEL_1, "\nIRG: %s\n\n", get_entity_name(get_irg_entity(irg))));
-	check_results(irg);
-	co = new_copy_opt(irg);
+	co = new_copy_opt(irg, isa, cls);
+	co_check_allocation(co);
 
 #ifdef DO_STAT
-	irg_stat_t *stats = new_irg_stat(co);
-	irg_stat_count(stats, co, 0);
+	copies = co_get_copy_count(co);
+	curr_vals[I_COPIES_INIT] += copies;
+	DBG((dbg, 1, "Init copies: %3d\n", copies));
 #endif
 
 #ifdef DO_HEUR
 	co_heur_opt(co);
-	check_results(irg);
+	co_check_allocation(co);
 #ifdef DO_STAT
-	irg_stat_count(stats, co, 1);
+	copies = co_get_copy_count(co);
+	curr_vals[I_COPIES_HEUR] += copies;
+	DBG((dbg, 1, "Heur copies: %3d\n", copies));
 #endif
 #endif
 
 #ifdef DO_ILP
-	co_ilp_opt(co);
-	check_results(irg);
-#ifdef DO_STAT
-	irg_stat_count(stats, co, 2);
-#endif
-#endif
+	lb = co_get_lower_bound(co);
+	copies = co_get_copy_count(co);
+//TODO remove checks and enable lb
+	assert(copies>=lb && "At least one computation of these two is boooogy");
+//	if (copies > lb) {
+		co_ilp_opt(co);
+		co_check_allocation(co);
+//	}
+	copies = co_get_copy_count(co);
+	assert(copies>=lb && "At least one computation of these two is boooogy");
 
 #ifdef DO_STAT
-	irg_stat_print(stats);
-	all_stat_dump();
+	copies = co_get_copy_count(co);
+	curr_vals[I_COPIES_HEUR] += copies;
+	DBG((dbg, 1, "Opt  copies: %3d\n", copies));
+#endif
 #endif
 
 	free_copy_opt(co);
-}
-
-void be_copy_opt_done(ir_graph* irg) {
 }
