@@ -189,6 +189,9 @@ struct _arch_insn_t {
 	ir_op *op;														/**< The firm opcode for this insn. */
 };
 
+#define arch_insn_is_allocatable(insn,reg) \
+  ((irn)->get_allocatable_regs(irn, cls, NULL) != 0)
+
 /**
  * Architecture interface.
  */
@@ -213,23 +216,14 @@ struct _arch_isa_if_t {
   const arch_register_class_t *(*get_reg_class)(int i);
 
   /**
-   * Check, if a register is suitable to carry the node's value.
-   * @param irn The node.
-   * @param reg The register to check for.
-   * @return 1, if the register can be allocated for that node, 0 if
-   * not.
-   */
-  int (*is_reg_allocatable)(const ir_node *irn, const arch_register_t *reg);
-
-  /**
    * Put all registers of a given class which are allocatable to a
    * certain node into a bitset.
    * The bitset contains the indices of the registers concerning
    * the register class @p cls.
    * @param irn The node.
    * @param cls The register class.
-   * @param bs The bitset.
-   * @return The number of registers which were put into the bitset.
+   * @param bs The bitset. Can be NULL.
+   * @return The number of registers which are allocatable at this node.
    */
   int (*get_allocatable_regs)(const ir_node *irn,
       const arch_register_class_t *cls, struct _bitset_t *bs);
@@ -242,6 +236,8 @@ struct _arch_isa_if_t {
    * suitable register class, NULL is returned.
    */
   const arch_register_class_t *(*get_irn_reg_class)(const ir_node *irn);
+
+
 
   /**
    * Get an op for a name.
@@ -263,5 +259,14 @@ struct _arch_isa_if_t {
  */
 #define arch_isa_irn_has_reg_class(isa, irn, cls) \
   ((isa)->get_irn_reg_class(irn) == (cls))
+
+/**
+ * Check, if a register is allocatable for an irn.
+ * @param irn The node.
+ * @param reg The register.
+ * @return 1, if the register can be allocated to this node, 0 if not.
+ */
+#define arch_isa_reg_is_allocatable(irn, reg) \
+  ((isa)->get_allocatable_regs(irn, (reg)->reg_class, NULL) != 0)
 
 #endif /* _FIRM_BEARCH_H */

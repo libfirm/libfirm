@@ -16,6 +16,8 @@
 #define DBG_BERA "firm.be.ra"
 
 typedef struct _ra_node_info_t {
+	ir_node *spill_location;  /**< Spill location node of the node.
+															If NULL, the node is not spilled. */
 	int pressure;							/**< Register pressure at this node. */
 	int color;								/**< The color assigned to this node. */
 } ra_node_info_t;
@@ -40,6 +42,8 @@ typedef struct _ra_info_t {
 
 #define get_ra_node_info(the_node) 		(&get_ra_irn_info(the_node)->v.node)
 #define get_ra_block_info(the_block) 	(&get_ra_irn_info(the_block)->v.block)
+
+#define get_block_border_head(bl)     (&get_ra_block_info(bl)->border_head)
 
 extern size_t ra_irn_data_offset;
 

@@ -20,7 +20,7 @@ static arch_register_class_t reg_classes[] = {
   (sizeof(reg_classes) / sizeof(reg_classes[0]))
 
 #define CLS_GP 0
-#define CLS_FP 0
+#define CLS_FP 1
 
 static void firm_init(void)
 {
@@ -78,32 +78,33 @@ static const arch_register_class_t *firm_get_irn_reg_class(const ir_node *irn)
   return NULL;
 }
 
-static int firm_is_reg_allocatable(const ir_node *irn, const arch_register_t *reg)
-{
-  return arch_register_get_class(reg) == firm_get_irn_reg_class(irn);
-}
-
 static int firm_get_allocatable_regs(const ir_node *irn,
     const arch_register_class_t *cls, bitset_t *bs)
 {
-  int i;
+  int res = 0;
 
   if(firm_get_irn_reg_class(irn) != cls) {
-    bitset_clear_all(bs);
-    return 0;
+    if(bs)
+      bitset_clear_all(bs);
   }
 
-  for(i = 0; i < cls->n_regs; ++i)
-    bitset_set_all(bs);
+  else {
+    int i;
 
-  return cls->n_regs;
+    res = cls->n_regs;
+    if(bs) {
+      for(i = 0; i < cls->n_regs; ++i)
+        bitset_set(bs, i);
+    }
+  }
+
+  return res;
 }
 
 const arch_isa_if_t arch_isa_if_firm = {
   firm_init,
   firm_get_n_reg_class,
   firm_get_reg_class,
-  firm_is_reg_allocatable,
   firm_get_allocatable_regs,
   firm_get_irn_reg_class,
   NULL

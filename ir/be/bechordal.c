@@ -32,9 +32,14 @@
 #include "bechordal_t.h"
 #include "bearch.h"
 
-#undef DUMP_INTERVALS
+#undef BUILD_GRAPH
+#define DUMP_INTERVALS
 #undef DUMP_PRESSURE
-#undef DUMP_IFG
+#define DUMP_IFG
+
+#if defined(DUMP_IFG) && !defined(BUILD_GRAPH)
+#define BUILD_GRAPH
+#endif
 
 
 #ifdef DEBUG_libfirm
@@ -54,6 +59,7 @@ static firm_dbg_module_t *dbg;
  */
 typedef struct _env_t {
 	struct obstack obst;	/**< An obstack for temporary storage. */
+  ir_graph *irg;        /**< The graph the reg alloc is running on. */
 #ifdef BUILD_GRAPH
 	set *graph;						/**< The interference graph. */
 #endif
@@ -64,6 +70,8 @@ typedef struct _env_t {
 	int colors_n;					/**< The number of colors. */
   const arch_isa_if_t *isa;           /**< The isa interface. */
   const arch_register_class_t *cls;   /**< The current register class. */
+  void *data;           /**< Some pointer, to which different
+                          phases can attach data to. */
 } env_t;
 
 
@@ -74,26 +82,33 @@ typedef struct _be_chordal_dump_params_t {
 } be_chordal_dump_params_t;
 
 static const be_chordal_dump_params_t dump_params = {
-	30,
+	10,
 	10,
 	4
 };
 
 #ifdef DUMP_INTERVALS
-static void draw_interval_graphs(ir_node *block,
-		struct list_head *border_head,
-		const be_chordal_dump_params_t *params)
+
+static INLINE void intv_filename(char *s, size_t n,
+    const env_t *env, ir_node *block)
+{
+	ir_snprintf(s, n, "intv_%F_%s_bl%N.eps",
+      env->irg, env->cls->name, block);
+}
+
+static void draw_interval_graph(const env_t *env,
+    ir_node *block, const be_chordal_dump_params_t *params)
 {
 	int i;
 	int x_dist = params->x_dist;
 	int y_dist = params->y_dist;
-	ir_graph *irg = get_irn_irg(block);
+	ir_graph *irg = env->irg;
+  struct list_head *border_head = get_block_border_head(block);
 
 	FILE *f;
 	char buf[1024];
 
-	ir_snprintf(buf, sizeof(buf), "intv_%s_bl%N.eps",
-			get_entity_name(get_irg_entity(irg)), block);
+  intv_filename(buf, sizeof(buf), env, block);
 
 	if((f = fopen(buf, "wt")) != NULL) {
 		border_t *b;
@@ -155,6 +170,63 @@ static void draw_interval_graphs(ir_node *block,
 		fclose(f);
 	}
 }
+
+static void dump_block(ir_node *bl, void *data)
+{
+  const env_t *env = data;
+  FILE *f = env->data;
+  char buf[128];
+
+  draw_interval_graph(env, bl, &dump_params);
+
+  intv_filename(buf, sizeof(buf), env, bl);
+  ir_fprintf(f, "\tb%N [shape=\"epsf\" shapefile=\"%s\"];\n", bl, buf);
+}
+
+static void dump_edges(ir_node *bl, void *data)
+{
+  const env_t *env = data;
+  FILE *f = env->data;
+  int i, n;
+  ir_node *dom;
+
+#if 0
+  for(i = 0, n = get_irn_arity(bl); i < n; ++i) {
+    ir_node *pred = get_irn_n(bl, i);
+    ir_fprintf(f, "\tb%N -> b%N;\n", get_nodes_block(pred), bl);
+  }
+#endif
+
+  for(dom = get_Block_dominated_first(bl); dom;
+      dom = get_Block_dominated_next(dom)) {
+
+    ir_fprintf(f, "\tb%N -> b%N;\n", dom, bl);
+  }
+}
+
+static void dump_intv_cfg(env_t *env)
+{
+  FILE *f;
+  char buf[128];
+
+  ir_snprintf(buf, sizeof(buf), "intv_cfg_%s_%F.dot",
+      env->cls->name, env->irg);
+
+  if((f = fopen(buf, "wt")) != NULL) {
+    void *old_data = env->data;
+
+    env->data = f;
+    ir_fprintf(f, "digraph G {\n");
+    ir_fprintf(f, "\tgraph [rankdir=\"LR\", ordering=\"out\"];\n");
+    dom_tree_walk_irg(env->irg, dump_block, dump_edges, env);
+    // irg_block_walk_graph(env->irg, dump_block, dump_edges, env);
+    ir_fprintf(f, "}\n");
+    fclose(f);
+
+    env->data = old_data;
+  }
+}
+
 #endif
 
 #ifdef BUILD_GRAPH
@@ -621,10 +693,6 @@ static void assign(ir_node *block, void *env_ptr)
 		}
 	}
 
-#ifdef DUMP_INTERVALS
-	draw_interval_graphs(block, head, &dump_params);
-#endif
-
 #ifdef DUMP_PRESSURE
 	{
 		char buf[128];
@@ -659,7 +727,7 @@ static void assign(ir_node *block, void *env_ptr)
 void be_ra_chordal_init(void)
 {
 	dbg = firm_dbg_register(DBG_BERA);
-	firm_dbg_set_mask(dbg, 0);
+	firm_dbg_set_mask(dbg, -1);
 }
 
 void be_ra_chordal(ir_graph *irg,
@@ -685,6 +753,7 @@ void be_ra_chordal(ir_graph *irg,
 	env->colors_n = colors_n;
   env->cls = cls;
   env->isa = isa;
+  env->irg = irg;
 
 	/* First, determine the pressure */
 	dom_tree_walk_irg(irg, pressure, NULL, env);
@@ -699,9 +768,13 @@ void be_ra_chordal(ir_graph *irg,
 	{
 		char buf[128];
 
-		ir_snprintf(buf, sizeof(buf), "ifg_%s.dot", get_entity_name(get_irg_entity(irg)));
+		ir_snprintf(buf, sizeof(buf), "ifg_%F.dot", irg);
 		dump_ifg(irg, env->graph, buf);
 	}
+#endif
+
+#ifdef DUMP_INTERVALS
+  dump_intv_cfg(env);
 #endif
 
 	set_irg_ra_link(irg, env);
