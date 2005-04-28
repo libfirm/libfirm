@@ -52,7 +52,7 @@ typedef struct _bitset_t {
  *   alignment.
  *
  * @param area A pointer to memory reserved for the bitset.
- * @param units The number of units that are allocated for the bitset.
+ * @param size The size of the bitset in bits.
  * @return A pointer to the initialized bitset.
  */
 static INLINE bitset_t *_bitset_prepare(void *area, bitset_pos_t size)
@@ -85,9 +85,10 @@ static INLINE bitset_t *_bitset_mask_highest(bitset_t *bs)
 #define bitset_capacity(bs) ((bs)->units * BS_UNIT_SIZE_BITS)
 
 /**
- * Get the highest bit which can be stored in the bitset.
+ * Get the size of the bitset in bits.
+ * @note Note the difference between capacity and size.
  * @param bs The bitset.
- * @return The highest bit which can be set or cleared.
+ * @return The highest bit which can be set or cleared plus 1.
  */
 #define bistet_size(bs)  ((bs)->size)
 
