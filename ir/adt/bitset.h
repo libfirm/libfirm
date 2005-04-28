@@ -28,7 +28,7 @@ typedef unsigned int bitset_pos_t;
 
 typedef struct _bitset_t {
 	bitset_pos_t units;
-  bitset_pos_t highest_bit;
+  bitset_pos_t size;
 	bitset_unit_t *data;
 } bitset_t;
 
@@ -42,11 +42,11 @@ typedef struct _bitset_t {
  *
  * Note that this function needs three macros which must be provided by the
  * bitfield implementor:
- * - _bitset_overall_size(highest_bit) The overall size that must be
+ * - _bitset_overall_size(size) The overall size that must be
  *   allocated for the bitfield in bytes.
- * - _bitset_units(highest_bit) The number of units that will be
+ * - _bitset_units(size) The number of units that will be
  *   present in the bitfield for a given highest bit.
- * - _bitset_data_ptr(data, highest_bit) This produces as pointer to the
+ * - _bitset_data_ptr(data, size) This produces as pointer to the
  *   first unit in the allocated memory area. The main reason for this
  *   macro is, that some bitset implementors want control over memory
  *   alignment.
@@ -55,13 +55,13 @@ typedef struct _bitset_t {
  * @param units The number of units that are allocated for the bitset.
  * @return A pointer to the initialized bitset.
  */
-static INLINE bitset_t *_bitset_prepare(void *area, bitset_pos_t highest_bit)
+static INLINE bitset_t *_bitset_prepare(void *area, bitset_pos_t size)
 {
 	bitset_t *ptr = area;
-	memset(area, 0, _bitset_overall_size(sizeof(bitset_t), highest_bit));
-	ptr->units = _bitset_units(highest_bit);
-  ptr->highest_bit = highest_bit;
-	ptr->data = _bitset_data_ptr(area, sizeof(bitset_t), highest_bit);
+	memset(area, 0, _bitset_overall_size(sizeof(bitset_t), size));
+	ptr->units = _bitset_units(size);
+  ptr->size = size;
+	ptr->data = _bitset_data_ptr(area, sizeof(bitset_t), size);
 	return ptr;
 }
 
@@ -73,7 +73,7 @@ static INLINE bitset_t *_bitset_prepare(void *area, bitset_pos_t highest_bit)
  */
 static INLINE bitset_t *_bitset_mask_highest(bitset_t *bs)
 {
-  bs->data[bs->units - 1] &= (bs->highest_bit & BS_UNIT_MASK) - 1;
+  bs->data[bs->units - 1] &= (bs->size & BS_UNIT_MASK) - 1;
   return bs;
 }
 
@@ -89,24 +89,24 @@ static INLINE bitset_t *_bitset_mask_highest(bitset_t *bs)
  * @param bs The bitset.
  * @return The highest bit which can be set or cleared.
  */
-#define bistet_highest_bit(bs)  ((bs)->highest_bit)
+#define bistet_size(bs)  ((bs)->size)
 
 /**
  * Allocate a bitset on an obstack.
  * @param obst The obstack.
- * @param highest_bit The greatest bit that shall be stored in the set.
+ * @param size The greatest bit that shall be stored in the set.
  * @return A pointer to an empty initialized bitset.
  */
-#define bitset_obstack_alloc(obst,highest_bit) \
-  _bitset_prepare(obstack_alloc(obst, _bitset_overall_size(sizeof(bitset_t), highest_bit)), highest_bit)
+#define bitset_obstack_alloc(obst,size) \
+  _bitset_prepare(obstack_alloc(obst, _bitset_overall_size(sizeof(bitset_t), size)), size)
 
 /**
  * Allocate a bitset via malloc.
- * @param highest_bit The greatest bit that shall be stored in the set.
+ * @param size The greatest bit that shall be stored in the set.
  * @return A pointer to an empty initialized bitset.
  */
-#define bitset_malloc(highest_bit) \
-	_bitset_prepare(malloc(_bitset_overall_size(sizeof(bitset_t), highest_bit)), highest_bit)
+#define bitset_malloc(size) \
+	_bitset_prepare(malloc(_bitset_overall_size(sizeof(bitset_t), size)), size)
 
 /**
  * Free a bitset allocated with bitset_malloc().
@@ -116,11 +116,11 @@ static INLINE bitset_t *_bitset_mask_highest(bitset_t *bs)
 
 /**
  * Allocate a bitset on the stack via alloca.
- * @param highest_bit The greatest bit that shall be stored in the set.
+ * @param size The greatest bit that shall be stored in the set.
  * @return A pointer to an empty initialized bitset.
  */
-#define bitset_alloca(highest_bit) \
-	_bitset_prepare(alloca(_bitset_overall_size(sizeof(bitset_t), highest_bit)), highest_bit)
+#define bitset_alloca(size) \
+	_bitset_prepare(alloca(_bitset_overall_size(sizeof(bitset_t), size)), size)
 
 
 /**
@@ -133,7 +133,7 @@ static INLINE bitset_t *_bitset_mask_highest(bitset_t *bs)
 static INLINE bitset_unit_t *_bitset_get_unit(const bitset_t *bs, bitset_pos_t bit)
 {
 	/* assert(bit < bs->units * BS_UNIT_SIZE_BITS && "Bit too large"); */
-  assert(bit <= bs->highest_bit && "Bit to large");
+  assert(bit <= bs->size && "Bit to large");
 	return bs->data + bit / BS_UNIT_SIZE_BITS;
 }
 
