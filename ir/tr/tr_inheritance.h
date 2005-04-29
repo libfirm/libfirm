@@ -30,8 +30,15 @@
 #define _TR_INHERITANCE_H_
 
 #include "type.h"
-/* #include "entity.h" */
+/*#include "entity.h"*/
 #include "ident.h"
+
+
+/* to resolve recursion between entity.h and irgraph.h */
+#ifndef _IR_GRAPH_TYPEDEF_
+#define _IR_GRAPH_TYPEDEF_
+typedef struct ir_graph ir_graph;
+#endif
 
 /* ----------------------------------------------------------------------- */
 /* Classify pairs of types/entities in the inheritance relations.          */
@@ -45,6 +52,14 @@
  *  subclasses of high.  */
 int is_subclass_of(type *low, type *high);
 
+/** Returns true if high is superclass of low.
+ *
+ *  Low is a subclass of high if low == high or if low is a subclass of
+ *  a subclass of high.  I.e, we search in all subtypes of high for low.
+ *  @@@ this can be implemented more efficient if we know the set of all
+ *  subclasses of high.  */
+int is_superclass_of(type *high, type *low);
+
 /** Returns true if high is (transitive) overwritten by low.
  *
  *  Returns false if high == low. */
@@ -52,9 +67,9 @@ int is_overwritten_by(entity *high, entity *low);
 
 /** Resolve polymorphy in the inheritance relation.
  *
- * Returns the dynamically referenced entity if the static entity and the
- * dynamic type are given.
- * Searches downwards in overwritten tree. */
+ *  Returns the dynamically referenced entity if the static entity and the
+ *  dynamic type are given.
+ *  Searches downwards in overwritten tree. */
 entity *resolve_ent_polymorphy(type *dynamic_class, entity* static_ent);
 
 /* ----------------------------------------------------------------------- */
@@ -119,8 +134,8 @@ typedef enum {
   inh_transitive_closure_max         /**<  Invalid value. */
 } inh_transitive_closure_state;
 
-void                        set_irp_inh_transitive_closure_state(inh_transitive_closure_state s);
-void                        invalidate_irp_inh_transitive_closure_state(void);
+void                         set_irp_inh_transitive_closure_state(inh_transitive_closure_state s);
+void                         invalidate_irp_inh_transitive_closure_state(void);
 inh_transitive_closure_state get_irp_inh_transitive_closure_state(void);
 
 
@@ -140,6 +155,7 @@ void free_inh_transitive_closure(void);
 /** Iterate over all transitive subtypes. */
 type *get_class_trans_subtype_first(type *tp);
 type *get_class_trans_subtype_next (type *tp);
+int   is_class_trans_subtype (type *tp, type *subtp);
 
 /* - supertype ----------------------------------------------------------- */
 
@@ -159,4 +175,54 @@ entity *get_entity_trans_overwrittenby_next (entity *ent);
 entity *get_entity_trans_overwrites_first(entity *ent);
 entity *get_entity_trans_overwrites_next (entity *ent);
 
+
+/* ----------------------------------------------------------------------- */
+/** The state of Cast operations that cast class types or pointers to class
+ *  types.
+ *
+ * The state expresses, how far Cast operations conform with the class
+ * hierarchy.
+ *
+ *   class A {}
+ *   class B1 extends A {}
+ *   class B2 extends A {}
+ *   class C  extends B1 {}
+ * normalized:  Cast operations conform with the inheritance relation.
+ *   I.e., the type of the operand of a Cast is either a super= or a sub-
+ *   type of the type casted to. Example: (A)((B2) (new C())).
+ * transitive:  Cast operations conform with the transitive inheritance
+ *   relation. Example: (A)(new C()).
+ * any:  Cast operations do not conform with the transitive inheritance
+ *   relation.  Example: (B2)(new B1())
+ *
+ *  @see: tropt.h
+ */
+/* ----------------------------------------------------------------------- */
+
+/** Flags for class cast state.
+ *
+ * The state in irp is allways smaller or equal to the state of any
+ * irg.
+ *
+ * We rely on the ordering of the enum. */
+typedef enum {
+  ir_class_casts_any        = 0, /**< There are class casts that do not cast in conformance with
+				      the class hierarchy.  @@@ So far this does not happen in Firm. */
+  ir_class_casts_transitive = 1, /**< Class casts conform to transitive inheritance edges. Default. */
+  ir_class_casts_normalized = 2, /**< Class casts conform to inheritance edges. */
+  ir_class_casts_state_max,
+} ir_class_cast_state;
+char *get_class_cast_state_string(ir_class_cast_state s);
+
+void                set_irg_class_cast_state(ir_graph *irg, ir_class_cast_state s);
+ir_class_cast_state get_irg_class_cast_state(ir_graph *irg);
+void                set_irp_class_cast_state(ir_class_cast_state s);
+ir_class_cast_state get_irp_class_cast_state(void);
+
+/** Verify the class cast state of an irg.
+ *
+ *  Asserts if state is to high, outputs warning if state is to low
+ *  and firm verbosity is set.
+ */
+void verify_irg_class_cast_state(ir_graph *irg);
 #endif  /* _TR_INHERITANCE_H_ */

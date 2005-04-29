@@ -20,10 +20,13 @@
 #include "type.h"
 #include "entity.h"
 #include "typewalk.h"
+#include "irgraph_t.h"
 #include "irprog_t.h"
 #include "pset.h"
 #include "set.h"
 #include "mangle.h"
+#include "irgwalk.h"
+#include "irflag.h"
 //#include ".h"
 
 
@@ -411,6 +414,11 @@ type *get_class_trans_subtype_next (type *tp) {
   return pset_next(get_type_map(tp, d_down));
 }
 
+int is_class_trans_subtype (type *tp, type *subtp) {
+  assert_valid_state();
+  return (pset_find_ptr(get_type_map(tp, d_down), subtp) != NULL);
+}
+
 /* - supertype ----------------------------------------------------------- */
 
 type *get_class_trans_supertype_first(type *tp) {
@@ -480,6 +488,10 @@ int is_subclass_of(type *low, type *high) {
   return 0;
 }
 
+int is_superclass_of(type *high, type *low) {
+  return is_subclass_of(low, high);
+}
+
 int is_overwritten_by(entity *high, entity *low) {
   int i, n_overwrittenby;
   assert(is_entity(low) && is_entity(high));
@@ -531,4 +543,102 @@ entity *resolve_ent_polymorphy(type *dynamic_class, entity *static_ent) {
   assert(res);
 
   return res;
+}
+
+
+
+/* ----------------------------------------------------------------------- */
+/* Class cast state handling.                                              */
+/* ----------------------------------------------------------------------- */
+
+/* - State handling. ----------------------------------------- */
+
+void set_irg_class_cast_state(ir_graph *irg, ir_class_cast_state s) {
+  if (get_irp_class_cast_state() > s) set_irp_class_cast_state(s);
+  irg->class_cast_state = s;
+}
+
+ir_class_cast_state get_irg_class_cast_state(ir_graph *irg) {
+  return irg->class_cast_state;
+}
+
+void set_irp_class_cast_state(ir_class_cast_state s) {
+  int i;
+  for (i = 0; i < get_irp_n_irgs(); ++i)
+    assert(get_irg_class_cast_state(get_irp_irg(i)) >= s);
+  irp->class_cast_state = s;
+}
+
+ir_class_cast_state get_irp_class_cast_state(void) {
+  return irp->class_cast_state;
+}
+
+char *get_class_cast_state_string(ir_class_cast_state s) {
+#define X(a)    case a: return #a
+  switch(s) {
+    X(ir_class_casts_any);
+    X(ir_class_casts_transitive);
+    X(ir_class_casts_normalized);
+    X(ir_class_casts_state_max);
+  default: return "invalid class cast state";
+  }
+#undef X
+}
+
+/* - State verification. ------------------------------------- */
+
+typedef struct ccs_env {
+  ir_class_cast_state expected_state;
+  ir_class_cast_state worst_situation;
+} ccs_env;
+
+void verify_irn_class_cast_state(ir_node *n, void *env) {
+  ccs_env *ccs = (ccs_env *)env;
+  ir_class_cast_state this_state = ir_class_casts_any;
+
+  type *fromtype = get_irn_typeinfo_type(get_Cast_op(n));
+  type *totype   = get_Cast_type(n);
+  int ref_depth = 0;
+
+  while (is_Pointer_type(totype) && is_Pointer_type(fromtype)) {
+    totype   = get_pointer_points_to_type(totype);
+    fromtype = get_pointer_points_to_type(fromtype);
+    ref_depth++;
+  }
+
+  if (!is_Class_type(totype)) return;
+
+  if (is_subclass_of(totype, fromtype) ||
+      is_subclass_of(fromtype, totype)   ) {
+    this_state = ir_class_casts_transitive;
+    if ((get_class_supertype_index(totype, fromtype) == -1) &&
+	(get_class_supertype_index(fromtype, totype) == -1) ) {
+      this_state = ir_class_casts_normalized;
+    }
+  }
+
+  assert(this_state >= ccs->expected_state &&
+	 "invalid state class cast state setting in graph");
+
+  if (this_state < ccs->worst_situation)
+    ccs->worst_situation = this_state;
+}
+
+
+/** Verify that the graph meets reqirements of state set. */
+void verify_irg_class_cast_state(ir_graph *irg) {
+  ccs_env env;
+
+  env.expected_state  = get_irg_class_cast_state(irg);
+  env.worst_situation = ir_class_casts_normalized;
+
+  irg_walk_graph(irg, NULL, verify_irn_class_cast_state, &env);
+
+  if ((env.worst_situation > env.expected_state) && get_firm_verbosity()) {
+    printf("Note:  class cast state is set lower than reqired in graph\n       ");
+    DDMG(irg);
+    printf("       state is %s, reqired is %s\n",
+	   get_class_cast_state_string(env.expected_state),
+	   get_class_cast_state_string(env.worst_situation));
+  }
 }
