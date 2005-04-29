@@ -70,6 +70,7 @@ ir_node *get_type_alloc(type *tp, int pos);
 int get_type_n_casts(type *tp);
 /** Cast node that cast a pointer to this type. */
 ir_node *get_type_cast(type *tp, int pos);
+void add_type_cast(type *tp, ir_node *cast);
 /** Return number of upcasts. O(#casts). */
 int get_class_n_upcasts(type *clss);
 /** Return number of downcasts. O(#casts). */
@@ -78,6 +79,7 @@ int get_class_n_downcasts(type *clss);
 /* Access all pointer types that point to tp. */
 int   get_type_n_pointertypes_to(type *tp);
 type *get_type_pointertype_to(type *tp, int pos);
+void  add_type_pointertype_to(type *tp, type *ptp);
 
 /* @@@ TODO: compute all entities that use a type. */
 
@@ -90,6 +92,7 @@ type *get_type_pointertype_to(type *tp, int pos);
  *  We reuse the enum of irouts.
  *  @see irouts.h. */
 irg_outs_state get_trouts_state(void);
+/** Set the tr out state to inconsistent if it is consistent. */
 void           set_trouts_inconsistent(void);
 
 /** Compute the outs of types and entities.

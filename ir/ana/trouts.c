@@ -479,7 +479,8 @@ irg_outs_state get_trouts_state(void) {
   return irp->trouts_state;
 }
 void           set_trouts_inconsistent(void) {
-  irp->trouts_state = outs_inconsistent;
+  if (irp->trouts_state == outs_consistent)
+    irp->trouts_state = outs_inconsistent;
 }
 
 
