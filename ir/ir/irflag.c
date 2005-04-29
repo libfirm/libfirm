@@ -40,6 +40,8 @@ optimization_state_t libFIRM_opt =
   ENABLE(OPT_REASSOCIATION)                      |
   ENABLE(OPT_INLINE)                             |
   ENABLE(OPT_DYN_METH_DISPATCH)                  |
+  ENABLE(OPT_CLASS_CASTS)                        |
+  DISABLE(OPT_SUPPRESS_DOWNCAST_OPT)             |
   ENABLE(OPT_NORMALIZE)                          |
   ENABLE(OPT_TAIL_RECURSION)                     |
   ENABLE(OPT_PRECISE_EXC_CONTEXT)                |
@@ -66,6 +68,7 @@ optimization_state_t libFIRM_verb =
   DISABLE(OPT_REASSOCIATION)                      |
   DISABLE(OPT_INLINE)                             |
   DISABLE(OPT_DYN_METH_DISPATCH)                  |
+  DISABLE(OPT_CLASS_CASTS)                        |
   DISABLE(OPT_NORMALIZE)                          |
   DISABLE(OPT_TAIL_RECURSION)                     |
   DISABLE(OPT_PRECISE_EXC_CONTEXT)                |
@@ -274,6 +277,38 @@ void set_opt_dyn_meth_dispatch (int value)
 int (get_opt_dyn_meth_dispatch)(void) {
   return _get_opt_dyn_meth_dispatch();
 }
+
+void set_opt_optimize_class_casts (int value)
+{
+  if (value)
+    libFIRM_opt |= OPT_CLASS_CASTS;
+  else
+    libFIRM_opt &= ~OPT_CLASS_CASTS;
+}
+int  (get_opt_optimize_class_casts) (void) {
+  return _get_opt_optimize_class_casts();
+}
+void set_opt_optimize_class_casts_verbose (int value)
+{
+  if (value)
+    libFIRM_verb |= OPT_CLASS_CASTS;
+  else
+    libFIRM_verb &= ~OPT_CLASS_CASTS;
+}
+int  (get_opt_optimize_class_casts_verbose) (void) {
+  return _get_opt_optimize_class_casts_verbose();
+}
+void set_opt_suppress_downcast_optimization(int value)
+{
+  if (value)
+    libFIRM_opt |= OPT_SUPPRESS_DOWNCAST_OPT;
+  else
+    libFIRM_opt &= ~OPT_SUPPRESS_DOWNCAST_OPT;
+}
+int  (get_opt_suppress_downcast_optimization)(void) {
+  return _get_opt_suppress_downcast_optimization();
+}
+
 
 /* Enable/Disable normalizations of the firm representation. */
 void set_opt_normalize(int value)

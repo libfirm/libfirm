@@ -186,7 +186,7 @@ void set_opt_dead_method_elimination_verbose (int value);
  */
 void set_opt_inline (int value);
 
-/** Enable/Disable optimization of dynamic method dispatch
+/** Enable/Disable optimization of dynamic method dispatch.
  *
  * This flag enables/disables the optimization of dynamic method dispatch.
  * If the flag is turned on Sel nodes can be replaced by Const nodes representing
@@ -194,6 +194,24 @@ void set_opt_inline (int value);
  */
 void set_opt_dyn_meth_dispatch (int value);
 int  get_opt_dyn_meth_dispatch (void);
+
+/** Enable/Disable type optimization of cast nodes.
+ *
+ * Controls the optimizations in tropt.h.  Default: on.
+ */
+void set_opt_optimize_class_casts (int value);
+int  get_opt_optimize_class_casts (void);
+void set_opt_optimize_class_casts_verbose (int value);
+int  get_opt_optimize_class_casts_verbose (void);
+
+/** Restricts the behaviour of cast optimization.
+ *
+ *  If set, downcast are not optimized if they might be
+ *  illegal as in (Super)(Sub) (new Super()).  Default:
+ *  0 == not suppressed.
+ */
+void set_opt_suppress_downcast_optimization(int value);
+int  get_opt_suppress_downcast_optimization(void);
 
 /** Enable/Disable optimization of tail-recursion calls.
  *

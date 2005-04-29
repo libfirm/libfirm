@@ -98,6 +98,10 @@ typedef enum {
   /** Optimize real function calls. */
   OPT_REAL_FUNC_CALL                     = 0x00200000,
 
+  /** Optimize cast nodes. */
+  OPT_CLASS_CASTS                        = 0x00400000,
+  OPT_SUPPRESS_DOWNCAST_OPT              = 0x00800000,
+
   /** Turn off all optimizations. */
   OPT_OPTIMIZED                          = 0x40000000,
 
@@ -230,6 +234,18 @@ static INLINE int _get_opt_dyn_meth_dispatch(void)
   return libFIRM_opt & OPT_DYN_METH_DISPATCH;
 }
 
+static INLINE int _get_opt_optimize_class_casts (void) {
+  return libFIRM_opt & OPT_CLASS_CASTS;
+}
+
+static INLINE int _get_opt_optimize_class_casts_verbose (void) {
+  return libFIRM_verb & OPT_CLASS_CASTS;
+}
+
+static INLINE int _get_opt_suppress_downcast_optimization (void) {
+  return libFIRM_opt & OPT_SUPPRESS_DOWNCAST_OPT;
+}
+
 static INLINE int get_opt_normalize(void)
 {
   return libFIRM_opt & OPT_NORMALIZE;
@@ -271,8 +287,11 @@ static INLINE int get_opt_real_func_call(void)
   return libFIRM_opt & OPT_REAL_FUNC_CALL;
 }
 
-#define get_opt_cse()                 _get_opt_cse()
-#define get_firm_verbosity()          _get_firm_verbosity()
-#define get_opt_dyn_meth_dispatch()   _get_opt_dyn_meth_dispatch()
+#define get_opt_cse()                            _get_opt_cse()
+#define get_firm_verbosity()                     _get_firm_verbosity()
+#define get_opt_dyn_meth_dispatch()              _get_opt_dyn_meth_dispatch()
+#define get_opt_optimize_class_casts()           _get_opt_optimize_class_casts()
+#define get_opt_optimize_class_casts_verbose()   _get_opt_optimize_class_casts_verbose()
+#define get_opt_suppress_downcast_optimization() _get_opt_suppress_downcast_optimization()
 
 #endif /* _IRFLAG_T_H_ */
