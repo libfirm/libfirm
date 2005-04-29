@@ -17,14 +17,14 @@ subdir := ir/ir
 
 INSTALL_HEADERS = cfopt.h tailrec.h ldstopt.h strength_red.h reassoc.h \
 		loop_unrolling.h funccall.h opt_polymorphy.h ifconv.h \
-		return.h
+		return.h tropt.h
 
 SOURCES = $(INSTALL_HEADERS)
 
 SOURCES += 	Makefile.in \
 		cfopt.c tailrec.c strength_red.c ldstopt.c reassoc.c \
 		loop_unrolling.c ifconv.c scalar_replace.c funccall.c \
-		opt_polymorphy.c return.c
+		opt_polymorphy.c return.c tropt.c
 
 include $(topdir)/MakeRules
 
