@@ -83,6 +83,7 @@ ir_prog *new_ir_prog (void) {
   res->outs_state   = outs_none;
   res->ip_outedges  = NULL;
   res->trouts_state = outs_none;
+  res->class_cast_state = ir_class_casts_transitive;
 
   return res;
 }

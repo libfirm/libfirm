@@ -29,6 +29,7 @@
 #include "irprog.h"
 #include "pseudo_irg.h"
 #include "type_t.h"
+#include "tr_inheritance.h"
 
 #include "irloop.h"
 #include "execution_frequency.h"
@@ -90,6 +91,7 @@ struct ir_graph {
   irg_inline_property inline_property;     /**< How to handle inlineing. */
   irg_loopinfo_state loopinfo_state;       /**< state of loop information */
   exec_freq_state   execfreq_state;        /**< state of execution freqency information */
+  ir_class_cast_state class_cast_state;    /**< kind of cast operations in code. */
 
   /* -- Fields for construction -- */
 #if USE_EXPLICIT_PHI_IN_STACK
@@ -376,7 +378,8 @@ _get_irg_outs_state(const ir_graph *irg) {
 
 static INLINE void
 _set_irg_outs_inconsistent(ir_graph *irg) {
-  irg->outs_state = outs_inconsistent;
+  if (irg->outs_state == outs_consistent)
+    irg->outs_state = outs_inconsistent;
 }
 
 static INLINE irg_dom_state

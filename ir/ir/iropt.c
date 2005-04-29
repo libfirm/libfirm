@@ -961,7 +961,7 @@ static ir_node *equivalent_node_Conv(ir_node *n)
 
 /**
  * A Cast may be removed if the type of the previous node
- * is already to type of the Cast.
+ * is already the type of the Cast.
  */
 static ir_node *equivalent_node_Cast(ir_node *n) {
   ir_node *pred = get_Cast_op(n);

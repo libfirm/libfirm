@@ -76,6 +76,8 @@ struct ir_prog {
   irp_temperature_state temperature_state; /**< accumulated temperatures computed? */
   exec_freq_state execfreq_state;        /**< State of execution freqency information */
   loop_nesting_depth_state lnd_state;  /**< State of loop nesting depth information. */
+  ir_class_cast_state class_cast_state;    /**< kind of cast operations in code. */
+
 #ifdef DEBUG_libfirm
   long max_node_nr;                /**< to generate unique numbers for nodes. */
 #endif

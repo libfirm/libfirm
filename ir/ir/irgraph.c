@@ -174,6 +174,7 @@ new_r_ir_graph (entity *ent, int n_loc)
   res->typeinfo_state = ir_typeinfo_none;
   set_irp_typeinfo_inconsistent();           /* there is a new graph with typeinfo_none. */
   res->loopinfo_state = loopinfo_none;
+  res->class_cast_state = ir_class_casts_transitive;
 
   /*-- Type information for the procedure of the graph --*/
   res->ent = ent;
