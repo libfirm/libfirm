@@ -826,6 +826,14 @@ type   *get_class_subtype   (type *clss, int pos) {
   assert(pos >= 0 && pos < get_class_n_subtypes(clss));
   return clss->attr.ca.subtypes[pos] = skip_tid(clss->attr.ca.subtypes[pos]);
 }
+int     get_class_subtype_index(type *clss, const type *subclass) {
+  int i, n_subtypes = get_class_n_subtypes(clss);
+  assert(is_Class_type(subclass));
+  for (i = 0; i < n_subtypes; ++i) {
+    if (get_class_subtype(clss, i) == subclass) return i;
+  }
+  return -1;
+}
 void    set_class_subtype   (type *clss, type *subtype, int pos) {
   assert(clss && (clss->type_op == type_class));
   assert(pos >= 0 && pos < get_class_n_subtypes(clss));
@@ -859,10 +867,9 @@ int     get_class_n_supertypes (const type *clss) {
   return (ARR_LEN (clss->attr.ca.supertypes));
 }
 int get_class_supertype_index(type *clss, type *super_clss) {
-  int i;
-  assert(clss && (clss->type_op == type_class));
+  int i, n_supertypes = get_class_n_supertypes(clss);
   assert(super_clss && (super_clss->type_op == type_class));
-  for (i = 0; i < get_class_n_supertypes(clss); i++)
+  for (i = 0; i < n_supertypes; i++)
     if (get_class_supertype(clss, i) == super_clss)
       return i;
   return -1;
@@ -890,14 +897,14 @@ void    remove_class_supertype(type *clss, type *supertype) {
 }
 
 const char *get_peculiarity_string(peculiarity p) {
+#define X(a)    case a: return #a
   switch (p) {
-  case peculiarity_description:
-    return "peculiarity_description";
-  case peculiarity_inherited:
-    return "peculiarity_inherited";
-  default:
-    return "peculiarity_existent";
+    X(peculiarity_description);
+    X(peculiarity_inherited);
+    X(peculiarity_existent);
   }
+#undef X
+  return "invalid peculiarity";
 }
 
 peculiarity get_class_peculiarity (const type *clss) {

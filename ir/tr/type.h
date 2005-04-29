@@ -432,6 +432,12 @@ int     get_class_n_subtypes (const type *clss);
 /** Gets the subtype at position pos, 0 <= pos < n_subtype. */
 type   *get_class_subtype   (type *clss, int pos);
 
+/** Returns the index to access subclass as subtype of class.
+ *
+ *  If subclass is no direct subtype of class returns -1.
+ */
+int get_class_subtype_index(type *clss, const type *subclass);
+
 /** Sets the subtype at position pos, 0 <= pos < n_subtype.
  *
  *  Does not set the corresponding supertype relation for subtype: this might
@@ -451,7 +457,10 @@ void    add_class_supertype   (type *clss, type *supertype);
 /** Returns the number of supertypes */
 int     get_class_n_supertypes (const type *clss);
 
-/** Returns the index of an supertype in a type. */
+/** Returns the index to access superclass as supertype of class.
+ *
+ *  If superclass is no direct supertype of class returns -1.
+ */
 int     get_class_supertype_index(type *clss, type *super_clss);
 
 /** Gets the supertype at position pos,  0 <= pos < n_supertype. */
