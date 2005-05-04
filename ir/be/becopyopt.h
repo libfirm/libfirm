@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <alloca.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -38,21 +39,29 @@
 #include "bechordal_t.h"
 #include "bearch.h"
 
-/**
- * TODO external things
- * define get_weight to sth representing the _gain_ if node n and m
- * have the same color. Must return values MIN_WEIGHT <= . <= MAX_WEIGHT.
- */
-#define get_weight(n,m) 1
-#define is_possible_color(irn, col) 1
+/* TODO is_Copy */
 #define is_Copy(irn) 0
-#define MAX_COLORS 32
+#define DEBUG_IRG "scanner.c__init_td__gp"
+
+/**
+ * Data representing the problem of copy minimization.
+ */
+typedef struct _copy_opt_t {
+	ir_graph *irg;						/**< the irg to process */
+	char *name;							/**< ProgName__IrgName__RegClass */
+	const arch_isa_if_t *isa;
+	const arch_register_class_t *cls;	/**< the registerclass all nodes belong to (in this pass) */
+	struct list_head units;				/**< all units to optimize in right oreder */
+	pset *roots;						/**< used only temporary for detecting multiple appends */
+	struct obstack ob;
+} copy_opt_t;
 
 /**
  * A single unit of optimization. Lots of these form a copy-opt problem
  */
 typedef struct _unit_t {
 	struct list_head units;		/**< chain for all units */
+	copy_opt_t *co;				/**< the copy_opt this unit belongs to */
 	int interf;					/**< number of nodes dropped due to interference */
 	int node_count;				/**< size of the nodes array */
 	const ir_node **nodes;		/**< [0] is the root-node, others are non interfering args of it. */
@@ -61,19 +70,6 @@ typedef struct _unit_t {
 	int mis_size;				/**< size of a mis considering only ifg (not coloring conflicts) */
 	struct list_head queue;		/**< list of (mis/color) sorted by size of mis */
 } unit_t;
-
-/**
- * Data representing the problem of copy minimization.
- */
-typedef struct _copy_opt_t {
-	ir_graph *irg;						/**< the irg to process */
-	const arch_isa_if_t *isa;
-	const arch_register_class_t *cls;	/**< the registerclass to optimize */
-	struct list_head units;				/**< all units to optimize in right oreder */
-	pset *roots;						/**< used only temporary for detecting multiple appends */
-	struct obstack ob;
-} copy_opt_t;
-
 
 /**
  * Generate the problem. Collect all infos and optimizable nodes.
