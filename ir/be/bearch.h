@@ -228,6 +228,8 @@ struct _arch_isa_if_t {
   int (*get_allocatable_regs)(const ir_node *irn,
       const arch_register_class_t *cls, struct _bitset_t *bs);
 
+  int (*is_reg_allocatable)(const ir_node *irn, const arch_register_t *reg);
+
   /**
    * Get the register class, the value of a node belongs to.
    * @param irn The node.
@@ -267,6 +269,6 @@ struct _arch_isa_if_t {
  * @return 1, if the register can be allocated to this node, 0 if not.
  */
 #define arch_isa_reg_is_allocatable(irn, reg) \
-  ((isa)->get_allocatable_regs(irn, (reg)->reg_class, NULL) != 0)
+  ((isa)->is_reg_allocatable(irn, reg))
 
 #endif /* _FIRM_BEARCH_H */

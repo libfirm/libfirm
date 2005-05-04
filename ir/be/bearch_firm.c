@@ -6,7 +6,7 @@
 #include "bitset.h"
 #include "bearch.h"
 
-#define N_REGS 1024
+#define N_REGS 64
 
 static arch_register_t gp_regs[N_REGS];
 static arch_register_t fp_regs[N_REGS];
@@ -101,11 +101,25 @@ static int firm_get_allocatable_regs(const ir_node *irn,
   return res;
 }
 
+static int firm_is_reg_allocatable(const ir_node *irn, const arch_register_t *reg)
+{
+	const arch_register_class_t *cls = reg->reg_class;
+	ir_mode *irm = get_irn_mode(irn);
+
+	if(mode_is_float(irm))
+		return cls == &reg_classes[CLS_FP];
+	else if(mode_is_datab(irm))
+		return cls == &reg_classes[CLS_GP];
+
+	return 0;
+}
+
 const arch_isa_if_t arch_isa_if_firm = {
   firm_init,
   firm_get_n_reg_class,
   firm_get_reg_class,
   firm_get_allocatable_regs,
+  firm_is_reg_allocatable,
   firm_get_irn_reg_class,
   NULL
 };
