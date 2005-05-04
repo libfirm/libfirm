@@ -16,23 +16,27 @@
 #include "becopyopt.h"
 #include "becopystat.h"
 
-#define DUMP_MPS			/**< dumps the problem in "CPLEX"-MPS format. NOT fixed-column-MPS. */
+#define DUMP_MILP			/**< dumps the problem as Mixed Integer Linear Programming in "CPLEX"-MPS format. NOT fixed-column-MPS. */
+#undef DUMP_MIQP			/**< dumps the problem as Mixed Integer Quadratic Programming in "CPLEX"-MPS format. NOT fixed-column-MPS. */
 #undef USE_SOS				/**< uses Special Ordered Sets when using MPS */
-#define DO_SOLVE 			/**< solve the MPS output with CPLEX */
+#undef DO_SOLVE 			/**< solve the MPS output with CPLEX */
 #undef DUMP_MATRICES		/**< dumps all matrices completely. only recommended for small problems */
 #undef DUMP_LP				/**< dumps the problem in LP format. 'human-readable' equations etc... */
-#define DELETE_FILES		/**< deletes all dumped files after use */
+#undef DELETE_FILES		/**< deletes all dumped files after use */
 
 /* CPLEX-account related stuff */
 #define SSH_USER_HOST "kb61@sp-smp.rz.uni-karlsruhe.de"
-#define SSH_PASSWD "!cplex90"
+#define SSH_PASSWD_FILE "/ben/daniel/.smppw"
 #define EXPECT_FILENAME "runme" /** name of the expect-script */
 
-#define DEBUG_LVL SET_LEVEL_1
+#define DEBUG_LVL 0 //SET_LEVEL_1
 static firm_dbg_module_t *dbg = NULL;
 
 #define SLOTS_NUM2POS 256
 #define SLOTS_LIVING 32
+
+/* get_weight represents the _gain_ if node n and m have the same color. */
+#define get_weight(n,m) 1
 
 /**
  * A type storing names of the x variables in the form x[NUMBER]_[COLOR]
@@ -60,12 +64,11 @@ typedef struct _num2pos_t {
  * This problem is called the original problem
  */
 typedef struct _problem_instance_t {
-	ir_graph* irg;
-	const char *name;
-	int x_dim, A_dim, B_dim;	/**< number of: x variables, rows in A, rows in B */
-	x_name_t *x;				/**< stores the names of the x variables. all possible colors for a node are ordered and occupy consecutive entries. lives in obstack ob. */
-	set *num2pos;				/**< maps node numbers to positions in x. */
-	sp_matrix_t *Q, *A, *B;		/**< the (sparse) matrices of this problem */
+	const copy_opt_t *co;			/** the original copy_opt problem */
+	int x_dim, A_dim, B_dim;		/**< number of: x variables (equals Q_dim), rows in A, rows in B */
+	x_name_t *x;					/**< stores the names of the x variables. all possible colors for a node are ordered and occupy consecutive entries. lives in obstack ob. */
+	set *num2pos;					/**< maps node numbers to positions in x. */
+	sp_matrix_t *Q, *A, *B;			/**< the (sparse) matrices of this problem */
 
 	/* needed only for linearizations */
 	int bigM, maxQij, minQij;
@@ -136,7 +139,7 @@ static INLINE int pi_get_pos(problem_instance_t *pi, int num, int col) {
  */
 static void pi_dump_matrices(problem_instance_t *pi) {
 	int i;
-	FILE *out = ffopen(pi->name, "matrix", "wt");
+	FILE *out = ffopen(pi->co->name, "matrix", "wt");
 
 	DBG((dbg, LEVEL_1, "Dumping raw...\n"));
 	fprintf(out, "\n\nx-names =\n");
@@ -172,7 +175,7 @@ static void pi_dump_matrices(problem_instance_t *pi) {
 static void pi_dump_lp(problem_instance_t *pi) {
 	int i, max_abs_Qij;
 	matrix_elem_t *e;
-	FILE *out = ffopen(pi->name, "lpo", "wt");
+	FILE *out = ffopen(pi->co->name, "lpo", "wt");
 
 	DBG((dbg, LEVEL_1, "Dumping lp...\n"));
 	/* calc the big M for Q */
@@ -234,37 +237,65 @@ static void pi_dump_lp(problem_instance_t *pi) {
 }
 #endif
 
-#ifdef DUMP_MPS
+#ifdef DO_SOLVE
+static void pi_dump_start_sol(problem_instance_t *pi) {
+	int i;
+	FILE *out = ffopen(pi->co->name, "mst", "wt");
+	fprintf(out, "NAME\n");
+	for (i=0; i<pi->x_dim; ++i) {
+		int val, n, c;
+		n = pi->x[i].n;
+		c = pi->x[i].c;
+		if (get_irn_color(get_irn_for_graph_nr(pi->co->irg, n)) == c)
+			val = 1;
+		else
+			val = 0;
+		fprintf(out, "    x%d_%d\t%d\n", n, c, val);
+	}
+	fprintf(out, "ENDATA\n");
+	fclose(out);
+}
+#endif
+
+#ifdef DUMP_MILP
 /**
  * Dumps an mps file representing the problem. This is NOT the old-style,
  * fixed-column format. Some white spaces are important, in general spaces
  * are separators, MARKER-lines are used in COLUMN section to define binaries.
  */
-//BETTER use last 2 fields in COLUMNS section
-static void pi_dump_mps(problem_instance_t *pi) {
+//BETTER use last 2 fields in COLUMNS section. See MPS docu for details
+static void pi_dump_milp(problem_instance_t *pi) {
 	int i, max_abs_Qij;
-	matrix_elem_t *e;
-	FILE *out = ffopen(pi->name, "mps", "wt");
+	const matrix_elem_t *e;
+	FILE *out = ffopen(pi->co->name, "milp", "wt");
 
-	DBG((dbg, LEVEL_1, "Dumping mps...\n"));
+	DBG((dbg, LEVEL_1, "Dumping milp...\n"));
 	max_abs_Qij = pi->maxQij;
 	if (-pi->minQij > max_abs_Qij)
 		max_abs_Qij = -pi->minQij;
 	pi->bigM = pi->A_dim * max_abs_Qij;
 	DBG((dbg, LEVEL_2, "BigM = %d\n", pi->bigM));
 
-	fprintf(out, "NAME %s\n", pi->name);
+	matrix_optimize(pi->Q);
+	bitset_t *good_row = bitset_alloca(pi->x_dim);
+	for (i=0; i<pi->x_dim; ++i)
+		if (matrix_row_first(pi->Q, i))
+			bitset_set(good_row, i);
+
+	fprintf(out, "NAME %s\n", pi->co->name);
 
 	fprintf(out, "ROWS\n");
 	fprintf(out, " N obj\n");
 	for (i=0; i<pi->x_dim; ++i)
-		fprintf(out, " E cQ%d\n", i);
+		if (bitset_is_set(good_row, i))
+			fprintf(out, " E cQ%d\n", i);
 	for (i=0; i<pi->A_dim; ++i)
 		fprintf(out, " E cA%d\n", i);
 	for (i=0; i<pi->B_dim; ++i)
 		fprintf(out, " L cB%d\n", i);
 	for (i=0; i<pi->x_dim; ++i)
-		fprintf(out, " L cy%d\n", i);
+		if (bitset_is_set(good_row, i))
+			fprintf(out, " L cy%d\n", i);
 
 	fprintf(out, "COLUMNS\n");
 	/* the x vars come first */
@@ -282,7 +313,8 @@ static void pi_dump_mps(problem_instance_t *pi) {
 		}
 #endif
 		/* participation in objective */
-		fprintf(out, "    x%d_%d\tobj\t%d\n", pi->x[i].n, pi->x[i].c, -pi->bigM);
+		if (bitset_is_set(good_row, i))
+			fprintf(out, "    x%d_%d\tobj\t%d\n", pi->x[i].n, pi->x[i].c, -pi->bigM);
 		/* in Q */
 		matrix_foreach_in_col(pi->Q, i, e)
 			fprintf(out, "    x%d_%d\tcQ%d\t%d\n", pi->x[i].n, pi->x[i].c, e->row, e->val);
@@ -293,7 +325,8 @@ static void pi_dump_mps(problem_instance_t *pi) {
 		matrix_foreach_in_col(pi->B, i, e)
 			fprintf(out, "    x%d_%d\tcB%d\t%d\n", pi->x[i].n, pi->x[i].c, e->row, e->val);
 		/* in y */
-		fprintf(out, "    x%d_%d\tcy%d\t%d\n", pi->x[i].n, pi->x[i].c, i, 2*pi->bigM);
+		if (bitset_is_set(good_row, i))
+			fprintf(out, "    x%d_%d\tcy%d\t%d\n", pi->x[i].n, pi->x[i].c, i, 2*pi->bigM);
 	}
 
 #ifdef USE_SOS
@@ -302,46 +335,96 @@ static void pi_dump_mps(problem_instance_t *pi) {
 	fprintf(out, "    MARKI1\t'MARKER'\t'INTEND'\n"); /* end of marking */
 
 	/* next the s vars */
-	for (i=0; i<pi->x_dim; ++i) {
-		/* participation in objective */
-		fprintf(out, "    s%d_%d\tobj\t%d\n", pi->x[i].n, pi->x[i].c, 1);
-		/* in Q */
-		fprintf(out, "    s%d_%d\tcQ%d\t%d\n", pi->x[i].n, pi->x[i].c, i, -1);
-	}
+	for (i=0; i<pi->x_dim; ++i)
+		if (bitset_is_set(good_row, i)) {
+			/* participation in objective */
+			fprintf(out, "    s%d_%d\tobj\t%d\n", pi->x[i].n, pi->x[i].c, 1);
+			/* in Q */
+			fprintf(out, "    s%d_%d\tcQ%d\t%d\n", pi->x[i].n, pi->x[i].c, i, -1);
+		}
 
 	/* next the y vars */
-	for (i=0; i<pi->x_dim; ++i) {
-		/* in Q */
-		fprintf(out, "    y%d_%d\tcQ%d\t%d\n", pi->x[i].n, pi->x[i].c, i, -1);
-		/* in y */
-		fprintf(out, "    y%d_%d\tcy%d\t%d\n", pi->x[i].n, pi->x[i].c, i, 1);
-	}
+	for (i=0; i<pi->x_dim; ++i)
+		if (bitset_is_set(good_row, i)) {
+			/* in Q */
+			fprintf(out, "    y%d_%d\tcQ%d\t%d\n", pi->x[i].n, pi->x[i].c, i, -1);
+			/* in y */
+			fprintf(out, "    y%d_%d\tcy%d\t%d\n", pi->x[i].n, pi->x[i].c, i, 1);
+		}
 
 	fprintf(out, "RHS\n");
 	for (i=0; i<pi->x_dim; ++i)
-		fprintf(out, "    rhs\tcQ%d\t%d\n", i, -pi->bigM);
+		if (bitset_is_set(good_row, i))
+			fprintf(out, "    rhs\tcQ%d\t%d\n", i, -pi->bigM);
 	for (i=0; i<pi->A_dim; ++i)
 		fprintf(out, "    rhs\tcA%d\t%d\n", i, 1);
 	for (i=0; i<pi->B_dim; ++i)
 		fprintf(out, "    rhs\tcB%d\t%d\n", i, 1);
 	for (i=0; i<pi->x_dim; ++i)
-		fprintf(out, "    rhs\tcy%d\t%d\n", i, 2*pi->bigM);
+		if (bitset_is_set(good_row, i))
+			fprintf(out, "    rhs\tcy%d\t%d\n", i, 2*pi->bigM);
 
 	fprintf(out, "ENDATA\n");
 	fclose(out);
+}
+#endif
 
-	out = ffopen(pi->name, "mst", "wt");
-	fprintf(out, "NAME\n");
+#ifdef DUMP_MIQP
+static void pi_dump_miqp(problem_instance_t *pi) {
+	int i;
+	matrix_elem_t *e;
+	FILE *out = ffopen(pi->co->name, "miqp", "wt");
+
+	DBG((dbg, LEVEL_1, "Dumping miqp...\n"));
+
+	pi->bigM = 42;
+	fprintf(out, "NAME %s\n", pi->co->name);
+	fprintf(out, "ROWS\n");
+	fprintf(out, " N obj\n");
+	for (i=0; i<pi->A_dim; ++i)
+		fprintf(out, " E cA%d\n", i);
+	for (i=0; i<pi->B_dim; ++i)
+		fprintf(out, " L cB%d\n", i);
+
+	fprintf(out, "COLUMNS\n");
+	/* the x vars come first */
+	/* mark them as binaries */
+	fprintf(out, "    MARKI0\t'MARKER'\t'INTORG'\n");
 	for (i=0; i<pi->x_dim; ++i) {
-		int val, n, c;
-		n = pi->x[i].n;
-		c = pi->x[i].c;
-		if (get_irn_color(get_irn_for_graph_nr(pi->irg, n)) == c)
-			val = 1;
-		else
-			val = 0;
-		fprintf(out, "    x%d_%d\t%d\n", n, c, val);
+		/* participation in objective */
+		fprintf(out, "    x%d_%d\tobj\t%d\n", pi->x[i].n, pi->x[i].c, -pi->bigM);
+		/* in A */
+		matrix_foreach_in_col(pi->A, i, e)
+			fprintf(out, "    x%d_%d\tcA%d\t%d\n", pi->x[i].n, pi->x[i].c, e->row, e->val);
+		/* in B */
+		matrix_foreach_in_col(pi->B, i, e)
+			fprintf(out, "    x%d_%d\tcB%d\t%d\n", pi->x[i].n, pi->x[i].c, e->row, e->val);
 	}
+	fprintf(out, "    MARKI1\t'MARKER'\t'INTEND'\n"); /* end of marking */
+
+	fprintf(out, "RHS\n");
+	for (i=0; i<pi->A_dim; ++i)
+		fprintf(out, "    rhs\tcA%d\t%d\n", i, 1);
+	for (i=0; i<pi->B_dim; ++i)
+		fprintf(out, "    rhs\tcB%d\t%d\n", i, 1);
+
+	fprintf(out, "QMATRIX\n"); /* 1/2 (Q + Q^T) */
+	/* the diag entries */
+	for (i=0; i<pi->x_dim; ++i) {
+		int val = matrix_get(pi->Q, i, i) + pi->bigM;
+		fprintf(out, "    x%d_%d\tx%d_%d\t%d\n", pi->x[i].n, pi->x[i].c, pi->x[i].n, pi->x[i].c, val);
+	}
+	/* the off-diag entries */
+	for (i=0; i<matrix_get_rowcount(pi->Q); ++i)
+		matrix_foreach_in_row(pi->Q, i, e) {
+			int val;
+			if (e->col >= e->row)
+				break;
+			val = e->val + matrix_get(pi->Q, e->col, e->row); /* the transposed entry */
+			fprintf(out, "    x%d_%d\tx%d_%d\t%d\n", pi->x[i].n, pi->x[i].c, pi->x[e->col].n, pi->x[e->col].c, val);
+			fprintf(out, "    x%d_%d\tx%d_%d\t%d\n", pi->x[e->col].n, pi->x[e->col].c, pi->x[i].n, pi->x[i].c, val);
+		}
+
 	fprintf(out, "ENDATA\n");
 	fclose(out);
 }
@@ -352,15 +435,22 @@ static void pi_dump_mps(problem_instance_t *pi) {
  * Invoke an external solver
  */
 static void pi_solve_ilp(problem_instance_t *pi) {
-	FILE *out;
+	FILE *out, *pwfile;
+	char passwd[128];
 
 	DBG((dbg, LEVEL_1, "Solving with CPLEX@RZ...\n"));
 	/* write command file for CPLEX */
-	out = ffopen(pi->name, "cmd", "wt");
-	fprintf(out, "read %s.mps\n", pi->name);
-	fprintf(out, "read %s.mst\n", pi->name);
+	out = ffopen(pi->co->name, "cmd", "wt");
+	fprintf(out, "set logfile %s.sol\n", pi->co->name);
+#ifdef DUMP_MILP
+	fprintf(out, "read %s.milp mps\n", pi->co->name);
+#endif
+#ifdef DUMP_MIQP
+	fprintf(out, "read %s.miqp mps\n", pi->co->name);
+#endif
+	fprintf(out, "read %s.mst\n", pi->co->name);
 	fprintf(out, "set mip strategy mipstart 1\n");
-	fprintf(out, "set logfile %s.sol\n", pi->name);
+	fprintf(out, "set mip emphasis 3\n");
 	fprintf(out, "optimize\n");
 	fprintf(out, "display solution variables 1-%d\n", pi->x_dim);
 	fprintf(out, "set logfile cplex.log\n");
@@ -368,19 +458,23 @@ static void pi_solve_ilp(problem_instance_t *pi) {
 	fclose(out);
 
 	/* write expect-file for copying problem to RZ */
+	pwfile = fopen(SSH_PASSWD_FILE, "rt");
+	fgets(passwd, sizeof(passwd), pwfile);
+	fclose(pwfile);
+
 	out = ffopen(EXPECT_FILENAME, "exp", "wt");
 	fprintf(out, "#! /usr/bin/expect\n");
-	fprintf(out, "spawn scp %s.mps %s.mst %s.cmd %s:\n", pi->name, pi->name, pi->name, SSH_USER_HOST); /* copy problem files */
-	fprintf(out, "expect \":\"\nsend \"%s\\n\"\ninteract\n", SSH_PASSWD);
+	fprintf(out, "spawn scp %s.miqp %s.milp %s.mst %s.cmd %s:\n", pi->co->name, pi->co->name, pi->co->name, pi->co->name, SSH_USER_HOST); /* copy problem files */
+	fprintf(out, "expect \"word:\"\nsend \"%s\\n\"\ninteract\n", passwd);
 
-	fprintf(out, "spawn ssh %s \"./cplex90 < %s.cmd\"\n", SSH_USER_HOST, pi->name); /* solve */
-	fprintf(out, "expect \":\"\nsend \"%s\\n\"\ninteract\n", SSH_PASSWD);
+	fprintf(out, "spawn ssh %s \"./cplex90 < %s.cmd\"\n", SSH_USER_HOST, pi->co->name); /* solve */
+	fprintf(out, "expect \"word:\"\nsend \"%s\\n\"\ninteract\n", passwd);
 
-	fprintf(out, "spawn scp %s:%s.sol .\n", SSH_USER_HOST, pi->name); /*copy back solution */
-	fprintf(out, "expect \":\"\nsend \"%s\\n\"\ninteract\n", SSH_PASSWD);
+	fprintf(out, "spawn scp %s:%s.sol .\n", SSH_USER_HOST, pi->co->name); /*copy back solution */
+	fprintf(out, "expect \"word:\"\nsend \"%s\\n\"\ninteract\n", passwd);
 
 	fprintf(out, "spawn ssh %s ./dell\n", SSH_USER_HOST); /* clean files on server */
-	fprintf(out, "expect \":\"\nsend \"%s\\n\"\ninteract\n", SSH_PASSWD);
+	fprintf(out, "expect \"word:\"\nsend \"%s\\n\"\ninteract\n", passwd);
 	fclose(out);
 
 	/* call the expect script */
@@ -393,7 +487,7 @@ static void pi_solve_ilp(problem_instance_t *pi) {
  * output file of the solver.
  */
 static void pi_apply_solution(problem_instance_t *pi) {
-	FILE *in = ffopen(pi->name, "sol", "rt");
+	FILE *in = ffopen(pi->co->name, "sol", "rt");
 
 	if (!in)
 		return;
@@ -402,15 +496,31 @@ static void pi_apply_solution(problem_instance_t *pi) {
 		char buf[1024];
 		int num = -1, col = -1, val = -1;
 
-		//TODO No integer feasible solution exists.
+		fgets(buf, sizeof(buf), in);
+		DBG((dbg, LEVEL_3, "Line: %s", buf));
 
-		if (fscanf(in, "x%d_%d %d.%s\n", &num, &col, &val, buf) != 3) {
-			while(fscanf(in, "%1020s\n", buf) != 1);
-			continue;
+		if (strcmp(buf, "No integer feasible solution exists.") == 0)
+			assert(0 && "CPLEX says: No integer feasible solution exists!");
+
+		if (strcmp(buf, "TODO Out of memory") == 0) {}
+
+#ifdef DO_STAT
+		{
+			/* solution time */
+			float sol_time;
+			int iter;
+			if (sscanf(buf, "Solution time = %f sec. Iterations = %d", &sol_time, &iter) == 2) {
+				DBG((dbg, LEVEL_2, " Time: %f Iter: %d\n", sol_time, iter));
+				curr_vals[I_ILP_TIME] += 10 * sol_time;
+				curr_vals[I_ILP_ITER] += iter;
+			}
 		}
-		if (val == 1) {
-			DBG((dbg, LEVEL_1, "x%d_%d = %d\n", num, col, val));
-			set_irn_color(get_irn_for_graph_nr(pi->irg, num), col);
+#endif
+
+		/* variable value */
+		if (sscanf(buf, "x%d_%d %d", &num, &col, &val) == 3 && val == 1) {
+			DBG((dbg, LEVEL_2, " x%d_%d = %d\n", num, col, val));
+			set_irn_color(get_irn_for_graph_nr(pi->co->irg, num), col);
 		}
 	}
 	fclose(in);
@@ -420,13 +530,13 @@ static void pi_apply_solution(problem_instance_t *pi) {
 #ifdef DELETE_FILES
 static void pi_delete_files(problem_instance_t *pi) {
 	char buf[1024];
-	int end = snprintf(buf, sizeof(buf), "%s", pi->name);
+	int end = snprintf(buf, sizeof(buf), "%s", pi->co->name);
 	DBG((dbg, LEVEL_1, "Deleting files...\n"));
 #ifdef DUMP_MATRICES
 	snprintf(buf+end, sizeof(buf)-end, ".matrix");
 	remove(buf);
 #endif
-#ifdef DUMP_MPS
+#ifdef DUMP_MILP
 	snprintf(buf+end, sizeof(buf)-end, ".mps");
 	remove(buf);
 	snprintf(buf+end, sizeof(buf)-end, ".mst");
@@ -434,6 +544,10 @@ static void pi_delete_files(problem_instance_t *pi) {
 	snprintf(buf+end, sizeof(buf)-end, ".cmd");
 	remove(buf);
 	remove(EXPECT_FILENAME ".exp");
+#endif
+#ifdef DO_SOLVE
+	snprintf(buf+end, sizeof(buf)-end, ".sol");
+	remove(buf);
 #endif
 #ifdef DUMP_LP
 	snprintf(buf+end, sizeof(buf)-end, ".lp");
@@ -449,6 +563,7 @@ static void pi_collect_x_names(ir_node *block, void *env) {
 	problem_instance_t *pi = env;
 	struct list_head *head = &get_ra_block_info(block)->border_head;
 	border_t *curr;
+	bitset_t *pos_regs = bitset_alloca(pi->co->cls->n_regs);
 
 	list_for_each_entry_reverse(border_t, curr, head, list)
 		if (curr->is_def && curr->is_real) {
@@ -457,10 +572,11 @@ static void pi_collect_x_names(ir_node *block, void *env) {
 
 			xx.n = get_irn_graph_nr(curr->irn);
 			pi_set_first_pos(pi, xx.n, pi->x_dim);
-			//TODO iterate over all possible colors !!MUST BE IN ORDER!!
-			for (xx.c=0; xx.c<MAX_COLORS; ++xx.c) {
-				if (!is_possible_color(irn, xx.c))
-					continue;
+
+			// iterate over all possible colors in order
+			bitset_clear_all(pos_regs);
+			pi->co->isa->get_allocatable_regs(curr->irn, pi->co->cls, pos_regs);
+			bitset_foreach(pos_regs, xx.c) {
 				DBG((dbg, LEVEL_2, "Adding %n %d\n", curr->irn, xx.c));
 				obstack_grow(&pi->ob, &xx, sizeof(xx));
 				pi->x_dim++;		/* one x variable for each node and color */
@@ -496,8 +612,6 @@ static void pi_clique_finder(ir_node *block, void *env) {
 
 	list_for_each_entry_reverse(border_t, b, head, list) {
 		const ir_node *irn = b->irn;
-		if (!is_possible_color(n, pi->curr_col))
-			continue;
 
 		if (b->is_def) {
 			DBG((dbg, LEVEL_2, "Def %n\n", irn));
@@ -532,8 +646,7 @@ static void pi_clique_finder(ir_node *block, void *env) {
 static problem_instance_t *new_pi(const copy_opt_t *co) {
 	DBG((dbg, LEVEL_1, "Generating new instance...\n"));
 	problem_instance_t *pi = calloc(1, sizeof(*pi));
-	pi->irg = co->irg;
-	pi->name = 	get_entity_name(get_irg_entity(co->irg));
+	pi->co = co;
 	pi->num2pos = new_set(set_cmp_num2pos, SLOTS_NUM2POS);
 	pi->bigM = 1;
 
@@ -609,11 +722,11 @@ static problem_instance_t *new_pi(const copy_opt_t *co) {
 	/* Matrix B
 	 * interference constraints using exactly those cliques not contained in others. */
 	{
-		int color, expected_clipques = pi->A_dim/3 * MAX_COLORS;
+		int color, expected_clipques = pi->A_dim/4 * pi->co->cls->n_regs;
 		pi->B = new_matrix(expected_clipques, pi->x_dim);
-		for (color = 0; color < MAX_COLORS; ++color) {
+		for (color = 0; color < pi->co->cls->n_regs; ++color) {
 			pi->curr_color = color;
-			dom_tree_walk_irg(pi->irg, pi_clique_finder, NULL, pi);
+			dom_tree_walk_irg(pi->co->irg, pi_clique_finder, NULL, pi);
 		}
 		pi->B_dim = matrix_get_rowcount(pi->B);
 	}
@@ -625,6 +738,7 @@ static problem_instance_t *new_pi(const copy_opt_t *co) {
  * clean the problem instance
  */
 static void free_pi(problem_instance_t *pi) {
+	DBG((dbg, LEVEL_1, "Generating new instance...\n"));
 	del_matrix(pi->Q);
 	del_matrix(pi->A);
 	del_matrix(pi->B);
@@ -636,22 +750,32 @@ static void free_pi(problem_instance_t *pi) {
 void co_ilp_opt(copy_opt_t *co) {
 	dbg = firm_dbg_register("ir.be.copyoptilp");
 	firm_dbg_set_mask(dbg, DEBUG_LVL);
+	if (!strcmp(co->name, DEBUG_IRG))
+		firm_dbg_set_mask(dbg, -1);
 
 	problem_instance_t *pi = new_pi(co);
+	DBG((dbg, 0, "\t\t\t %5d %5d %5d\n", pi->x_dim, pi->A_dim, pi->B_dim));
 
+	if (pi->x_dim > 0) {
 #ifdef DUMP_MATRICES
 	pi_dump_matrices(pi);
 #endif
+
 
 #ifdef DUMP_LP
 	pi_dump_lp(pi);
 #endif
 
-#ifdef DUMP_MPS
-	pi_dump_mps(pi);
+#ifdef DUMP_MILP
+	pi_dump_milp(pi);
+#endif
+
+#ifdef DUMP_MIQP
+	pi_dump_miqp(pi);
 #endif
 
 #ifdef DO_SOLVE
+	pi_dump_start_sol(pi);
 	pi_solve_ilp(pi);
 	pi_apply_solution(pi);
 #endif
@@ -659,6 +783,6 @@ void co_ilp_opt(copy_opt_t *co) {
 #ifdef DELETE_FILES
 	pi_delete_files(pi);
 #endif
-
+	}
 	free_pi(pi);
 }
