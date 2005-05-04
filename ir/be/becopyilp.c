@@ -16,12 +16,9 @@
 #include "becopyopt.h"
 #include "becopystat.h"
 
-#define DUMP_MILP			/**< dumps the problem as Mixed Integer Linear Programming in "CPLEX"-MPS format. NOT fixed-column-MPS. */
-#undef DUMP_MIQP			/**< dumps the problem as Mixed Integer Quadratic Programming in "CPLEX"-MPS format. NOT fixed-column-MPS. */
-#undef USE_SOS				/**< uses Special Ordered Sets when using MPS */
-#undef DO_SOLVE 			/**< solve the MPS output with CPLEX */
 #undef DUMP_MATRICES		/**< dumps all matrices completely. only recommended for small problems */
-#undef DUMP_LP				/**< dumps the problem in LP format. 'human-readable' equations etc... */
+#define DUMP_MILP			/**< dumps the problem as Mixed Integer Linear Programming in "CPLEX"-MPS format. NOT fixed-column-MPS. */
+#undef DO_SOLVE 			/**< solve the MPS output with CPLEX */
 #undef DELETE_FILES		/**< deletes all dumped files after use */
 
 /* CPLEX-account related stuff */
@@ -159,104 +156,6 @@ static void pi_dump_matrices(problem_instance_t *pi) {
 }
 #endif
 
-#ifdef DUMP_LP
-/**
- * Dumps the problem instance as a MILP. The original problem is transformed into:
- * min f = es - Mex
- * udN:  Qx -y -s +Me = 0
- *       Ax  = e
- *       Bx <= e
- *        y <= 2M(e-x)
- *        x \in N   y, s >= 0
- *
- * with M >= max sum Q'ij * x_j
- *            i   j
- */
-static void pi_dump_lp(problem_instance_t *pi) {
-	int i, max_abs_Qij;
-	matrix_elem_t *e;
-	FILE *out = ffopen(pi->co->name, "lpo", "wt");
-
-	DBG((dbg, LEVEL_1, "Dumping lp...\n"));
-	/* calc the big M for Q */
-	max_abs_Qij = pi->maxQij;
-	if (-pi->minQij > max_abs_Qij)
-		max_abs_Qij = -pi->minQij;
-	pi->bigM = pi->A_dim * max_abs_Qij;
-	DBG((dbg, LEVEL_2, "BigM = %d\n", pi->bigM));
-
-	/* generate objective function */
-	fprintf(out, "min: ");
-	for (i=0; i<pi->x_dim; ++i)
-		fprintf(out, "+s%d_%d -%dx%d_%d ", pi->x[i].n, pi->x[i].c, pi->bigM, pi->x[i].n, pi->x[i].c);
-	fprintf(out, ";\n\n");
-
-	/* constraints for former objective function */
-	for (i=0; i<pi->x_dim; ++i)	{
-		matrix_foreach_in_row(pi->Q, i, e) {
-			int Qio = e->val;
-				if (Qio == 1)
-					fprintf(out, "+x%d_%d ", pi->x[e->col].n, pi->x[e->col].c);
-				else if(Qio == -1)
-					fprintf(out, "-x%d_%d ", pi->x[e->col].n, pi->x[e->col].c);
-				else
-					fprintf(out, "%+dx%d_%d ", Qio, pi->x[e->col].n, pi->x[e->col].c);
-		}
-		fprintf(out, "-y%d_%d -s%d_%d +%d= 0;\n", pi->x[i].n, pi->x[i].c, pi->x[i].n, pi->x[i].c, pi->bigM);
-	}
-	fprintf(out, "\n\n");
-
-	/* constraints for (special) complementary condition */
-	for (i=0; i<pi->x_dim; ++i)
-		fprintf(out, "y%d_%d <= %d - %dx%d_%d;\n", pi->x[i].n, pi->x[i].c, 2*pi->bigM, 2*pi->bigM, pi->x[i].n, pi->x[i].c);
-	fprintf(out, "\n\n");
-
-	/* knapsack constraints */
-	for (i=0; i<pi->A_dim; ++i)	{
-		matrix_foreach_in_row(pi->Q, i, e)
-			fprintf(out, "+x%d_%d ", pi->x[e->col].n, pi->x[e->col].c);
-		fprintf(out, " = 1;\n");
-	}
-	fprintf(out, "\n\n");
-
-	/* interference graph constraints */
-	for (i=0; i<pi->B_dim; ++i)	{
-		matrix_foreach_in_row(pi->Q, i, e)
-			fprintf(out, "+x%d_%d ", pi->x[e->col].n, pi->x[e->col].c);
-		fprintf(out, " <= 1;\n");
-	}
-	fprintf(out, "\n\n");
-
-	/* integer constraints */
-	fprintf(out, "int x%d_%d", pi->x[0].n, pi->x[0].c);
-	for (i=1; i<pi->x_dim; ++i)
-		fprintf(out, ", x%d_%d", pi->x[i].n, pi->x[i].c);
-	fprintf(out, ";\n");
-
-	fclose(out);
-}
-#endif
-
-#ifdef DO_SOLVE
-static void pi_dump_start_sol(problem_instance_t *pi) {
-	int i;
-	FILE *out = ffopen(pi->co->name, "mst", "wt");
-	fprintf(out, "NAME\n");
-	for (i=0; i<pi->x_dim; ++i) {
-		int val, n, c;
-		n = pi->x[i].n;
-		c = pi->x[i].c;
-		if (get_irn_color(get_irn_for_graph_nr(pi->co->irg, n)) == c)
-			val = 1;
-		else
-			val = 0;
-		fprintf(out, "    x%d_%d\t%d\n", n, c, val);
-	}
-	fprintf(out, "ENDATA\n");
-	fclose(out);
-}
-#endif
-
 #ifdef DUMP_MILP
 /**
  * Dumps an mps file representing the problem. This is NOT the old-style,
@@ -301,17 +200,7 @@ static void pi_dump_milp(problem_instance_t *pi) {
 	/* the x vars come first */
 	/* mark them as binaries */
 	fprintf(out, "    MARKI0\t'MARKER'\t'INTORG'\n");
-#ifdef USE_SOS
-	int sos_cnt = 0;
-	fprintf(out, " S1 SOS_%d\t'MARKER'\t'SOSORG'\n", sos_cnt++);
-#endif
 	for (i=0; i<pi->x_dim; ++i) {
-#ifdef USE_SOS
-		if (i>0 && pi->x[i].n != pi->x[i-1].n) {
-			fprintf(out, "    SOS_%d\t'MARKER'\t'SOSEND'\n", sos_cnt++);
-			fprintf(out, " S1 SOS_%d\t'MARKER'\t'SOSORG'\n", sos_cnt++);
-		}
-#endif
 		/* participation in objective */
 		if (bitset_is_set(good_row, i))
 			fprintf(out, "    x%d_%d\tobj\t%d\n", pi->x[i].n, pi->x[i].c, -pi->bigM);
@@ -329,9 +218,6 @@ static void pi_dump_milp(problem_instance_t *pi) {
 			fprintf(out, "    x%d_%d\tcy%d\t%d\n", pi->x[i].n, pi->x[i].c, i, 2*pi->bigM);
 	}
 
-#ifdef USE_SOS
-	fprintf(out, "    SOS_%d\t'MARKER'\t'SOSEND'\n", sos_cnt++);
-#endif
 	fprintf(out, "    MARKI1\t'MARKER'\t'INTEND'\n"); /* end of marking */
 
 	/* next the s vars */
@@ -369,68 +255,29 @@ static void pi_dump_milp(problem_instance_t *pi) {
 }
 #endif
 
-#ifdef DUMP_MIQP
-static void pi_dump_miqp(problem_instance_t *pi) {
+#ifdef DO_SOLVE
+/**
+ * Dumps the known solution to a file to make use of it
+ * as a starting solution respectively as a bound
+ */
+static void pi_dump_start_sol(problem_instance_t *pi) {
 	int i;
-	matrix_elem_t *e;
-	FILE *out = ffopen(pi->co->name, "miqp", "wt");
-
-	DBG((dbg, LEVEL_1, "Dumping miqp...\n"));
-
-	pi->bigM = 42;
-	fprintf(out, "NAME %s\n", pi->co->name);
-	fprintf(out, "ROWS\n");
-	fprintf(out, " N obj\n");
-	for (i=0; i<pi->A_dim; ++i)
-		fprintf(out, " E cA%d\n", i);
-	for (i=0; i<pi->B_dim; ++i)
-		fprintf(out, " L cB%d\n", i);
-
-	fprintf(out, "COLUMNS\n");
-	/* the x vars come first */
-	/* mark them as binaries */
-	fprintf(out, "    MARKI0\t'MARKER'\t'INTORG'\n");
+	FILE *out = ffopen(pi->co->name, "mst", "wt");
+	fprintf(out, "NAME\n");
 	for (i=0; i<pi->x_dim; ++i) {
-		/* participation in objective */
-		fprintf(out, "    x%d_%d\tobj\t%d\n", pi->x[i].n, pi->x[i].c, -pi->bigM);
-		/* in A */
-		matrix_foreach_in_col(pi->A, i, e)
-			fprintf(out, "    x%d_%d\tcA%d\t%d\n", pi->x[i].n, pi->x[i].c, e->row, e->val);
-		/* in B */
-		matrix_foreach_in_col(pi->B, i, e)
-			fprintf(out, "    x%d_%d\tcB%d\t%d\n", pi->x[i].n, pi->x[i].c, e->row, e->val);
+		int val, n, c;
+		n = pi->x[i].n;
+		c = pi->x[i].c;
+		if (get_irn_color(get_irn_for_graph_nr(pi->co->irg, n)) == c)
+			val = 1;
+		else
+			val = 0;
+		fprintf(out, "    x%d_%d\t%d\n", n, c, val);
 	}
-	fprintf(out, "    MARKI1\t'MARKER'\t'INTEND'\n"); /* end of marking */
-
-	fprintf(out, "RHS\n");
-	for (i=0; i<pi->A_dim; ++i)
-		fprintf(out, "    rhs\tcA%d\t%d\n", i, 1);
-	for (i=0; i<pi->B_dim; ++i)
-		fprintf(out, "    rhs\tcB%d\t%d\n", i, 1);
-
-	fprintf(out, "QMATRIX\n"); /* 1/2 (Q + Q^T) */
-	/* the diag entries */
-	for (i=0; i<pi->x_dim; ++i) {
-		int val = matrix_get(pi->Q, i, i) + pi->bigM;
-		fprintf(out, "    x%d_%d\tx%d_%d\t%d\n", pi->x[i].n, pi->x[i].c, pi->x[i].n, pi->x[i].c, val);
-	}
-	/* the off-diag entries */
-	for (i=0; i<matrix_get_rowcount(pi->Q); ++i)
-		matrix_foreach_in_row(pi->Q, i, e) {
-			int val;
-			if (e->col >= e->row)
-				break;
-			val = e->val + matrix_get(pi->Q, e->col, e->row); /* the transposed entry */
-			fprintf(out, "    x%d_%d\tx%d_%d\t%d\n", pi->x[i].n, pi->x[i].c, pi->x[e->col].n, pi->x[e->col].c, val);
-			fprintf(out, "    x%d_%d\tx%d_%d\t%d\n", pi->x[e->col].n, pi->x[e->col].c, pi->x[i].n, pi->x[i].c, val);
-		}
-
 	fprintf(out, "ENDATA\n");
 	fclose(out);
 }
-#endif
 
-#ifdef DO_SOLVE
 /**
  * Invoke an external solver
  */
@@ -547,10 +394,6 @@ static void pi_delete_files(problem_instance_t *pi) {
 #endif
 #ifdef DO_SOLVE
 	snprintf(buf+end, sizeof(buf)-end, ".sol");
-	remove(buf);
-#endif
-#ifdef DUMP_LP
-	snprintf(buf+end, sizeof(buf)-end, ".lp");
 	remove(buf);
 #endif
 }
@@ -761,17 +604,8 @@ void co_ilp_opt(copy_opt_t *co) {
 	pi_dump_matrices(pi);
 #endif
 
-
-#ifdef DUMP_LP
-	pi_dump_lp(pi);
-#endif
-
 #ifdef DUMP_MILP
 	pi_dump_milp(pi);
-#endif
-
-#ifdef DUMP_MIQP
-	pi_dump_miqp(pi);
 #endif
 
 #ifdef DO_SOLVE
