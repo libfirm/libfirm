@@ -25,9 +25,8 @@ void be_copy_opt_init(void) {
 void be_copy_opt(ir_graph* irg, const arch_isa_if_t *isa, const arch_register_class_t *cls) {
 	copy_opt_t *co;
 	int lb, copies;
-
-	DBG((dbg, LEVEL_1, "\nIRG: %s\n\n", get_entity_name(get_irg_entity(irg))));
 	co = new_copy_opt(irg, isa, cls);
+	DBG((dbg, LEVEL_1, "\n\n    ===>  %s  <===\n\n", co->name));
 	co_check_allocation(co);
 
 #ifdef DO_STAT
@@ -50,7 +49,9 @@ void be_copy_opt(ir_graph* irg, const arch_isa_if_t *isa, const arch_register_cl
 	lb = co_get_lower_bound(co);
 	copies = co_get_copy_count(co);
 //TODO remove checks and enable lb
-	assert(copies>=lb && "At least one computation of these two is boooogy");
+	if (copies<lb)
+		DBG((dbg, 0, "\n\nAt least one computation of these two is boooogy %d < %d\n\n", lb, copies));
+
 //	if (copies > lb) {
 		co_ilp_opt(co);
 		co_check_allocation(co);
