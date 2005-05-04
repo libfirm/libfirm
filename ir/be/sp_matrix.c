@@ -11,12 +11,16 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <alloca.h>
 #include <assert.h>
 #include "sp_matrix.h"
 #include "list.h"
+#include "bitset.h"
+
+#define MAX(a,b) ((a<b)?b:a)
 
 typedef enum _iter_direction_t {
-	down, right
+	down, right, all
 } iter_direction_t;
 
 typedef struct _entry_t {
@@ -32,11 +36,16 @@ struct _sp_matrix_t {
 	/* These are the dimensions of allocated arrays below.
 	 * rowc >= maxrow and colc >= maxcol hold. */
 	int rowc, colc;
+	/* number of entries */
+	int entries;
 	/* arrays of list_head* as entry-points to rows and cols */
 	struct list_head **rows, **cols;
-	/* for iteration */
+	/* for iteration: first is to remember start-point;
+	 * 				  last was returned just before
+	 * 				  next is used in case last was removed from list */
 	iter_direction_t dir;
-	struct list_head *first, *last; /* first is to remember start-point; last was returned just before */
+	struct list_head *first, *last, *next;
+	int iter_row; /* used for iteration over all elements */
 };
 
 #define _offsetof(type,member) ((char *) &(((type *) 0)->member) - (char *) 0)
@@ -131,8 +140,10 @@ static INLINE matrix_elem_t *_m_search_in_col(const sp_matrix_t *m, int row, int
 
 sp_matrix_t *new_matrix(int row_init, int col_init) {
 	sp_matrix_t *res = calloc(1, sizeof(*res));
-	_m_alloc_row(res, 0, row_init);
-	_m_alloc_col(res, 0, col_init);
+	res->maxrow = -1;
+	res->maxcol = -1;
+	_m_alloc_row(res, 0, MAX(0, row_init));
+	_m_alloc_col(res, 0, MAX(0, col_init));
 	return res;
 }
 
@@ -184,11 +195,16 @@ void matrix_set(sp_matrix_t *m, int row, int col, int val) {
 			list_del(&entr->row_chain);
 			list_del(&entr->col_chain);
 			free(entr);
+			m->entries--;
 		}
 		return;
 	}
 
-	/* if it does not exist search the other direction */
+	/* if it does not exist and 0 should be set just quit */
+	if (val == 0)
+		return;
+
+	/* if it does not exist and val != 0 search the other direction */
 	if (m->maxrow >= m->maxcol)
 		_m_search_in_col(m, row, col, &above);
 	else
@@ -202,6 +218,7 @@ void matrix_set(sp_matrix_t *m, int row, int col, int val) {
 	entr->e.val = val;
 	list_add(&entr->row_chain, leftof);
 	list_add(&entr->col_chain, above);
+	m->entries++;
 }
 
 int matrix_get(const sp_matrix_t *m, int row, int col) {
@@ -222,6 +239,10 @@ int matrix_get(const sp_matrix_t *m, int row, int col) {
 	return me?me->val:0;
 }
 
+int matrix_get_entries(const sp_matrix_t *m) {
+	return m->entries;
+}
+
 int matrix_get_rowcount(const sp_matrix_t *m) {
 	return m->maxrow+1;
 }
@@ -230,40 +251,133 @@ int matrix_get_colcount(const sp_matrix_t *m) {
 	return m->maxcol+1;
 }
 
-matrix_elem_t *matrix_row_first(sp_matrix_t *m, int row) {
+const matrix_elem_t *matrix_row_first(sp_matrix_t *m, int row) {
 	if (is_empty_row(row))
 		return NULL;
 	m->dir = right;
 	m->first = m->rows[row];
-	m->last = m->rows[row]->next;
-	assert ( (&list_entry(m->last, entry_t, row_chain)->e)->row == row);
-	return &list_entry(m->last, entry_t, row_chain)->e;
+	m->last = m->first->next;
+	m->next = m->last->next;
+	assert (list_entry_by_row(m->last)->row == row);
+	return list_entry_by_row(m->last);
 }
 
-matrix_elem_t *matrix_col_first(sp_matrix_t *m, int col) {
+const matrix_elem_t *matrix_col_first(sp_matrix_t *m, int col) {
 	if (is_empty_col(col))
 		return NULL;
 	m->dir = down;
 	m->first = m->cols[col];
-	m->last = m->cols[col]->next;
-	assert ( (&list_entry(m->last, entry_t, col_chain)->e)->col == col);
-	return &list_entry(m->last, entry_t, col_chain)->e;
+	m->last = m->first->next;
+	m->next = m->last->next;
+	assert (list_entry_by_col(m->last)->col == col);
+	return list_entry_by_col(m->last);
 }
 
-matrix_elem_t *matrix_next(sp_matrix_t *m) {
+static INLINE const matrix_elem_t *matrix_first_from(sp_matrix_t *m, int startrow) {
+	const matrix_elem_t *res;
+	int i;
+	for (i=startrow; i<=m->maxrow; ++i)
+		if ((res = matrix_row_first(m, i))) {
+			m->iter_row = i;
+			m->dir = all;
+			return res;
+		}
+	return NULL;
+}
+
+const matrix_elem_t *matrix_first(sp_matrix_t *m) {
+	return matrix_first_from(m, 0);
+}
+
+const matrix_elem_t *matrix_next(sp_matrix_t *m) {
 	assert(m->last && "Start iteration with matrix_???_first, before calling me!");
-	if (m->last->next == m->first)
-		return NULL;
-	m->last = m->last->next;
-	if (m->dir == right)
-		return &list_entry(m->last, entry_t, row_chain)->e;
-	else
-		return &list_entry(m->last, entry_t, col_chain)->e;
+	if (!m->last->next)
+		;
+	if (m->next == m->first) {
+		if (m->dir == all)
+			return matrix_first_from(m, ++m->iter_row);
+		else
+			return NULL;
+	}
+	m->last = m->next;
+	m->next = m->next->next;
+	if (m->dir == down)
+		return list_entry_by_col(m->last);
+	else /* right or all */
+		return list_entry_by_row(m->last);
+}
+
+static int cmp_count(const void *e1, const void *e2) {
+	return (int *)e2 - (int *)e1;
+}
+
+static INLINE void matrix_fill_row(sp_matrix_t *m, int row, bitset_t *fullrow) {
+	const matrix_elem_t *e;
+	bitset_set(fullrow, row);
+	matrix_foreach_in_col(m, row, e)
+		if (!bitset_is_set(fullrow, e->row)) {
+			assert(0 == matrix_get(m, e->col, e->row));
+			matrix_set(m, e->col, e->row, e->val);
+			matrix_set(m, e->row, e->col, 0);
+		}
+}
+
+void matrix_optimize(sp_matrix_t *m) {
+	int i, size, redo;
+	int *c;
+	const matrix_elem_t *e;
+	bitset_t *fullrow;
+
+	size = MAX(m->maxcol, m->maxrow)+1;
+
+	/* kill all double-entries (Mij and Mji are set) */
+	matrix_foreach(m, e) {
+		assert(e->row != e->col && "Root has itself as arg. Ok. But the arg (=root) will alwazs have the same color as root");
+		int t_val = matrix_get(m, e->col, e->row);
+		if (t_val) {
+			matrix_set(m, e->col, e->row, 0);
+			matrix_set(m, e->row, e->col, e->val + t_val);
+		}
+	}
+
+	c = alloca(size * sizeof(*c));
+	redo = 1;
+	fullrow = bitset_alloca(size);
+	/* kill 'all' rows containing only 1 entry */
+	while (redo) {
+		redo = 0;
+		/* count elements in rows */
+		memset(c, 0, size * sizeof(*c));
+		matrix_foreach(m, e)
+			c[e->row]++;
+		for (i=0; i<size; ++i)
+			if (c[i] == 1 && !bitset_is_set(fullrow, i)) {
+				redo = 1;
+				/* if the other row isn't empty move the e in there, else fill e's row */
+				if (e = matrix_row_first(m, i), e) {
+					if (c[e->col] > 0)
+						matrix_fill_row(m, e->col, fullrow);
+					else
+						matrix_fill_row(m, e->row, fullrow);
+				}
+			}
+	}
+
+
+	memset(c, 0, size * sizeof(*c));
+	matrix_foreach(m, e)
+		c[e->row]++;
+	qsort(c, size, sizeof(*c), cmp_count);
+
+
+	for (i=0; i<size; ++i)
+		if (!bitset_is_set(fullrow, i))
+			matrix_fill_row(m, i, fullrow);
 }
 
 void matrix_dump(sp_matrix_t *m, FILE *out, int factor) {
 	int i, o, last_idx;
-	matrix_elem_t *e;
+	const matrix_elem_t *e;
 
 	for (i=0; i <= m->maxrow; ++i) {
 		last_idx = -1;
@@ -281,7 +395,7 @@ void matrix_dump(sp_matrix_t *m, FILE *out, int factor) {
 
 void matrix_self_test(int d) {
 	int i, o;
-	matrix_elem_t *e;
+	const matrix_elem_t *e;
 	sp_matrix_t *m = new_matrix(10, 10);
 
 	for (i=0; i<d; ++i)
@@ -320,5 +434,19 @@ void matrix_self_test(int d) {
 		i++;
 	}
 	assert(i == 4);
+	del_matrix(m);
+
+	m = new_matrix(5,5);
+	matrix_set(m, 1,1,1);
+	matrix_set(m, 2,2,2);
+	matrix_set(m, 3,3,3);
+	matrix_set(m, 3,5,4);
+	matrix_set(m, 4,4,5);
+	matrix_set(m, 5,5,6);
+	for (i=1, e = matrix_first(m); e; ++i, e=matrix_next(m))
+		assert(e->val == i);
+	assert(i == 7);
+	matrix_set(m, 1,1,0);
+	assert(5 == matrix_get_entries(m));
 	del_matrix(m);
 }
