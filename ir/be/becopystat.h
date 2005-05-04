@@ -2,7 +2,7 @@
  * @author Daniel Grund
  * @date 11.04.2005
  */
-#define DO_STAT
+#undef DO_STAT
 
 #ifdef DO_STAT
 
@@ -14,6 +14,7 @@
 #define MAX_ARITY 10
 #define MAX_CLS_SIZE 10
 #define MAX_PHASE 2
+
 /**
  * For an explanation of these values see phi_stat_dump_pretty
  */
@@ -21,6 +22,7 @@ enum vals_t {
 	I_ALL_NODES = 0,
 	I_BLOCKS,
 
+	/* phi nodes */
 	I_PHI_CNT,			/* number of phi nodes */
 	I_PHI_ARG_CNT,		/* number of arguments of phis */
 	I_PHI_ARG_SELF,		/* number of arguments of phis being the phi itself */
@@ -30,6 +32,7 @@ enum vals_t {
 	I_PHI_ARITY_S,
 	I_PHI_ARITY_E    = I_PHI_ARITY_S+MAX_ARITY,
 
+	/* phi classes */
 	I_CLS_CNT,			/* number of phi classes */
 	I_CLS_IF_FREE,		/* number of pc having no interference */
 	I_CLS_IF_MAX,		/* number of possible interferences in all classes */
@@ -37,6 +40,14 @@ enum vals_t {
 	I_CLS_SIZE_S,
 	I_CLS_SIZE_E = I_CLS_SIZE_S+MAX_CLS_SIZE,
 
+	/* TODO copy nodes */
+	I_CPY_CNT,			/* number of copynodes */
+
+	/* TODO ilp values */
+	I_ILP_TIME,			/* !external set! solving time in 10th seconds */
+	I_ILP_ITER,			/* !external set! number of simplex iterations */
+
+	/* copy instructions */
 	I_COPIES_MAX,		/* max number of copies possible */
 	I_COPIES_INIT,		/* !external set! number of copies in initial allocation */
 	I_COPIES_HEUR,		/* !external set! number of copies after heuristic */

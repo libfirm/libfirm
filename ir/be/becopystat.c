@@ -96,6 +96,7 @@ static void stat_phi_node(ir_node *phi) {
  */
 //TODO stat_copy_node
 static void stat_copy_node(ir_node *root) {
+	curr_vals[I_CPY_CNT]++;
 //	if (values_interfere(root, arg))
 //		curr_vals[I_COPIES_IF]++;
 }
@@ -161,7 +162,10 @@ void stat_collect_irg(ir_graph *irg) {
 
 void stat_dump(ir_graph *irg) {
 	int i;
-	FILE *out = ffopen(get_entity_name(get_irg_entity(irg)), "stat", "wt");
+	char buf[1024];
+
+	snprintf(buf, sizeof(buf), "%s__%s", get_irp_prog_name(), get_entity_name(get_irg_entity(irg)));
+	FILE *out = ffopen(buf, "stat", "wt");
 
 	fprintf(out, "%s\n", get_irp_prog_name());
 	for (i = 0; i < ASIZE; i++) {

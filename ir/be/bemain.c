@@ -33,7 +33,7 @@
 #include "beasm_asm_gnu.h"
 
 #undef DUMP_ALLOCATED
-#define DUMP_LOCALIZED
+#undef DUMP_LOCALIZED
 
 #define N_PHASES 256
 
@@ -104,10 +104,10 @@ void be_init(void)
 	be_numbering_init();
 	be_ra_init();
 	be_ra_chordal_init();
+	be_copy_opt_init();
 #ifdef DO_STAT
 	stat_init();
 #endif
-	be_copy_opt_init();
 }
 
 /* The preliminary Firm backend isa. */
@@ -137,7 +137,6 @@ static void be_main_loop(void)
 
 #ifdef DO_STAT
 		stat_reset();
-		stat_collect_irg(irg);
 #endif
 		/* Perform the following for each register class. */
 		for(j = 0, m = isa->get_n_reg_class(); j < m; ++j) {
@@ -147,6 +146,9 @@ static void be_main_loop(void)
 
 #ifdef DUMP_ALLOCATED
 			dump_allocated_irg(irg, "");
+#endif
+#ifdef DO_STAT
+			stat_collect_irg(irg);
 #endif
 			be_copy_opt(irg, isa, cls);
 			be_ra_chordal_done(irg);
