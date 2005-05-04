@@ -6,10 +6,9 @@
 #include "becopyopt.h"
 #include "becopystat.h"
 
-#define DEBUG_LVL SET_LEVEL_1
+#define DEBUG_LVL 0 //SET_LEVEL_1
 static firm_dbg_module_t *dbg = NULL;
 
-//TODO external things
 #define is_curr_reg_class(irn) (co->isa->get_irn_reg_class(irn)==co->cls)
 #define is_optimizable(irn) (is_Phi(irn) || is_Copy(irn))
 
@@ -34,6 +33,7 @@ static void co_append_unit(copy_opt_t *co, const ir_node *root) {
 	/* init unit */
 	arity = get_irn_arity(root);
 	unit = calloc(1, sizeof(*unit));
+	unit->co = co;
 	unit->interf = 0;
 	unit->node_count = 1;
 	unit->nodes = malloc((arity+1) * sizeof(*unit->nodes));
@@ -54,9 +54,15 @@ static void co_append_unit(copy_opt_t *co, const ir_node *root) {
 				unit->interf++;
 		}
 	}
-
 	unit->nodes = realloc(unit->nodes, unit->node_count * sizeof(*unit->nodes));
 	list_add_tail(&unit->units, &co->units);
+	/* Init mis_size to node_count. So get_lower_bound returns correct results.
+	 * - Now it can be called even before the heuristic has run.
+	 * - And it will return correct results for units with nodecount 1 which are
+	 * not optimized during the heuristic and have therefor delivered wrong results for get_lower_bound
+	 */
+	unit->mis_size = unit->node_count;
+
 }
 
 static void co_collect_in_block(ir_node *block, void *env) {
@@ -77,6 +83,8 @@ static void co_collect_units(copy_opt_t *co) {
 }
 
 copy_opt_t *new_copy_opt(ir_graph *irg, const arch_isa_if_t *isa, const arch_register_class_t *cls) {
+	const char *s1, *s2, *s3;
+	int len;
 	dbg = firm_dbg_register("ir.be.copyopt");
 	firm_dbg_set_mask(dbg, DEBUG_LVL);
 
@@ -84,6 +92,16 @@ copy_opt_t *new_copy_opt(ir_graph *irg, const arch_isa_if_t *isa, const arch_reg
 	co->irg = irg;
 	co->isa = isa;
 	co->cls = cls;
+
+	s1 = get_irp_prog_name();
+	s2 = get_entity_name(get_irg_entity(co->irg));
+	s3 = cls->name;
+	len = strlen(s1) + strlen(s2) + strlen(s3) + 5;
+	co->name = malloc(len);
+	if (!strcmp(co->name, DEBUG_IRG))
+		firm_dbg_set_mask(dbg, -1);
+	snprintf(co->name, len, "%s__%s__%s", s1, s2, s3);
+
 	INIT_LIST_HEAD(&co->units);
 	co_collect_units(co);
 	return co;
@@ -91,6 +109,7 @@ copy_opt_t *new_copy_opt(ir_graph *irg, const arch_isa_if_t *isa, const arch_reg
 
 void free_copy_opt(copy_opt_t *co) {
 	unit_t *curr, *tmp;
+	free(co->name);
 	list_for_each_entry_safe(unit_t, curr, tmp, &co->units, units) {
 		free(curr->nodes);
 		free(curr);
