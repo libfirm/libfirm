@@ -12,7 +12,7 @@
 #include "becopyopt.h"
 #include "becopystat.h"
 
-#define DEBUG_LVL SET_LEVEL_1
+#define DEBUG_LVL 0 //SET_LEVEL_1
 static firm_dbg_module_t *dbg = NULL;
 
 #define SLOTS_PINNED_GLOBAL 256
@@ -45,6 +45,7 @@ typedef struct _node_stat_t {
  */
 typedef struct _qnode_t {
 	struct list_head queue;		/**< chaining of unit_t->queue */
+	const unit_t *ou;			/**< the opt unit this qnode belongs to */
 	int color;					/**< target color */
 	set *conflicts;				/**< contains conflict_t's. All internal conflicts */
 	int mis_size;				/**< number of nodes in the mis. */
@@ -197,12 +198,12 @@ static const ir_node *qnode_color_irn(const qnode_t *qn, const ir_node *irn, int
 
 	if (irn_col == col)
 		goto ret_save;
-	if (!is_possible_color(irn, col))
-		goto ret_imposs;
 	if (pset_find_ptr(pinned_global, irn) || qnode_is_pinned_local(qn, irn)) {
 		res = irn;
 		goto ret_confl;
 	}
+	if (!qn->ou->co->isa->is_reg_allocatable(irn, arch_register_for_index(qn->ou->co->cls, col)))
+		goto ret_imposs;
 
 	/* get all nodes which would conflict with this change */
 	{
@@ -287,7 +288,7 @@ ret_save:
 ret_imposs:
 	DBG((dbg, LEVEL_3, "\t      %n impossible\n", irn));
 	obstack_free(&confl_ob, NULL);
-	return res;
+	return CHANGE_IMPOSSIBLE;
 
 ret_confl:
 	DBG((dbg, LEVEL_3, "\t      %n conflicting\n", irn));
@@ -408,6 +409,7 @@ conflict_found:
  */
 static INLINE qnode_t *new_qnode(const unit_t *ou, int color) {
 	qnode_t *qn = malloc(sizeof(*qn));
+	qn->ou = ou;
 	qn->color = color;
 	qn->mis = malloc(ou->node_count * sizeof(*qn->mis));
 	qn->conflicts = new_set(set_cmp_conflict_t, SLOTS_CONFLICTS);
@@ -466,6 +468,7 @@ static INLINE void ou_insert_qnode(unit_t *ou, qnode_t *qn) {
 static void ou_optimize(unit_t *ou) {
 	int i;
 	qnode_t *curr, *tmp;
+	bitset_t *pos_regs = bitset_alloca(ou->co->cls->n_regs);
 
 	DBG((dbg, LEVEL_1, "\tOptimizing unit:\n"));
 	for (i=0; i<ou->node_count; ++i)
@@ -473,9 +476,9 @@ static void ou_optimize(unit_t *ou) {
 
 	/* init queue */
 	INIT_LIST_HEAD(&ou->queue);
-	for (i=0; i<MAX_COLORS; ++i)
-		if (is_possible_color(ou->nodes[0], i))
-			ou_insert_qnode(ou, new_qnode(ou, i));
+	ou->co->isa->get_allocatable_regs(ou->nodes[0], ou->co->cls, pos_regs);
+	bitset_foreach(pos_regs, i)
+		ou_insert_qnode(ou, new_qnode(ou, i));
 
 	/* search best */
 	while (!list_empty(&ou->queue)) {
@@ -526,6 +529,8 @@ void co_heur_opt(copy_opt_t *co) {
 	unit_t *curr;
 	dbg = firm_dbg_register("ir.be.copyoptheur");
 	firm_dbg_set_mask(dbg, DEBUG_LVL);
+	if (!strcmp(co->name, DEBUG_IRG))
+		firm_dbg_set_mask(dbg, -1);
 
 	pinned_global = pset_new_ptr(SLOTS_PINNED_GLOBAL);
 	list_for_each_entry(unit_t, curr, &co->units, units)
