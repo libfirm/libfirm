@@ -6,6 +6,9 @@
  * @author Daniel Grund
  * @date 11.04.2005
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "becopyopt.h"
 #include "becopystat.h"
