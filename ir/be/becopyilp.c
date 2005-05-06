@@ -12,7 +12,18 @@
  *       We use CPLEX 9.0 which runs on a machine residing at the Rechenzentrum.
  * @date 12.04.2005
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
+
+#include "xmalloc.h"
 #include "becopyopt.h"
 #include "becopystat.h"
 
@@ -115,8 +126,9 @@ static INLINE int pi_get_first_pos(problem_instance_t *pi, int num) {
  */
 static INLINE int pi_get_pos(problem_instance_t *pi, int num, int col) {
 	num2pos_t find, *found;
-	find.num = num;
 	int pos;
+
+	find.num = num;
 	found = set_find(pi->num2pos, &find, sizeof(find), HASH_NUM(num));
 	if (!found)
 		return -1;
@@ -166,6 +178,7 @@ static void pi_dump_matrices(problem_instance_t *pi) {
 static void pi_dump_milp(problem_instance_t *pi) {
 	int i, max_abs_Qij;
 	const matrix_elem_t *e;
+	bitset_t *good_row;
 	FILE *out = ffopen(pi->co->name, "milp", "wt");
 
 	DBG((dbg, LEVEL_1, "Dumping milp...\n"));
@@ -176,7 +189,7 @@ static void pi_dump_milp(problem_instance_t *pi) {
 	DBG((dbg, LEVEL_2, "BigM = %d\n", pi->bigM));
 
 	matrix_optimize(pi->Q);
-	bitset_t *good_row = bitset_alloca(pi->x_dim);
+	good_row = bitset_alloca(pi->x_dim);
 	for (i=0; i<pi->x_dim; ++i)
 		if (matrix_row_first(pi->Q, i))
 			bitset_set(good_row, i);
@@ -487,8 +500,10 @@ static void pi_clique_finder(ir_node *block, void *env) {
  * Generate the initial problem matrices and vectors.
  */
 static problem_instance_t *new_pi(const copy_opt_t *co) {
+	problem_instance_t *pi;
+
 	DBG((dbg, LEVEL_1, "Generating new instance...\n"));
-	problem_instance_t *pi = calloc(1, sizeof(*pi));
+	pi = xcalloc(1, sizeof(*pi));
 	pi->co = co;
 	pi->num2pos = new_set(set_cmp_num2pos, SLOTS_NUM2POS);
 	pi->bigM = 1;
@@ -587,16 +602,18 @@ static void free_pi(problem_instance_t *pi) {
 	del_matrix(pi->B);
 	del_set(pi->num2pos);
 	obstack_free(&pi->ob, NULL);
-	free(pi);
+	xfree(pi);
 }
 
 void co_ilp_opt(copy_opt_t *co) {
+	problem_instance_t *pi;
+
 	dbg = firm_dbg_register("ir.be.copyoptilp");
 	firm_dbg_set_mask(dbg, DEBUG_LVL);
 	if (!strcmp(co->name, DEBUG_IRG))
 		firm_dbg_set_mask(dbg, -1);
 
-	problem_instance_t *pi = new_pi(co);
+	pi = new_pi(co);
 	DBG((dbg, 0, "\t\t\t %5d %5d %5d\n", pi->x_dim, pi->A_dim, pi->B_dim));
 
 	if (pi->x_dim > 0) {
