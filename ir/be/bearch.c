@@ -5,20 +5,25 @@
  *
  * $Id$
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
 
 #include <string.h>
 
-#include "bearch_t.h"
+#include "bearch.h"
 
-#include "firm_config.h"
 #include "pset.h"
 
 #include "entity.h"
 #include "ircons_t.h"
-
-#if 1 /* HAVE_ALLOCA_H */
-#include <alloca.h>
-#endif /* HAVE_ALLOCA_H */
 
 /* Needed for obstack copy */
 #define bcopy(src,dst,n) memcpy(dst,src,n)
