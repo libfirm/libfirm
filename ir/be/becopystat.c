@@ -2,11 +2,16 @@
  * @author Daniel Grund
  * @date 19.04.2005
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <string.h>
 #include "phiclass_t.h"
 #include "irprog.h"
 #include "becopyopt.h"
 #include "becopystat.h"
+#include "xmalloc.h"
 
 #ifdef DO_STAT
 
@@ -119,7 +124,7 @@ static void stat_phi_class(pset *pc) {
 		curr_vals[I_CLS_SIZE_S + size]++;
 
 	/* get an array of all members for double iterating */
-	members = malloc(size * sizeof(*members));
+	members = xmalloc(size * sizeof(*members));
 	for (i = 0, p = pset_first(pc); p; p = pset_next(pc))
 		members[i++] = p;
 	assert(i == size);
@@ -137,7 +142,7 @@ static void stat_phi_class(pset *pc) {
 	/* Does this phi class have an inner interference? */
 	curr_vals[I_CLS_IF_FREE] += if_free;
 
-	free(members);
+	xfree(members);
 }
 
 void stat_collect_irg(ir_graph *irg) {
