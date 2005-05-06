@@ -7,17 +7,6 @@
 #ifndef _BECOPYOPT_H
 #define _BECOPYOPT_H
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <alloca.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-
 #include "debug.h"
 #include "obst.h"
 #include "list.h"
