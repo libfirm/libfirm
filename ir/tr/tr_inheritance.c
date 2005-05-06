@@ -283,7 +283,7 @@ static void compute_down_closure(type *tp) {
 static void compute_up_closure(type *tp) {
   pset *myset, *subset;
   int i, n_subtypes, n_members, n_supertypes;
-  int master_visited = get_master_type_visited();
+  unsigned long master_visited = get_master_type_visited();
 
   assert(is_Class_type(tp));
 
@@ -354,13 +354,13 @@ void compute_inh_transitive_closure(void) {
 
       assert(get_type_visited(tp) < get_master_type_visited()-1);
       for (j = 0; j < n_subtypes && !has_unmarked_subtype; ++j) {
-	type *stp = get_class_subtype(tp, j);
-	if (type_not_visited(stp)) has_unmarked_subtype = true;
+	      type *stp = get_class_subtype(tp, j);
+	      if (type_not_visited(stp)) has_unmarked_subtype = true;
       }
 
       /* This is a good starting point. */
       if (!has_unmarked_subtype)
-	compute_down_closure(tp);
+	      compute_down_closure(tp);
     }
   }
 
