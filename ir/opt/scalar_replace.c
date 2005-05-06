@@ -8,11 +8,22 @@
  * Copyright:   (c) 1998-2005 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
+
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
 
 #include "scalar_replace.h"
 
 /**
- * a path element entry: it is either an entity
+ * A path element entry: it is either an entity
  * or a tarval, because the evaluate only constant array
  * accesses like a.b.c[8].d
  */
@@ -32,18 +43,20 @@ typedef struct _path_t {
 } path_t;
 
 typedef struct {
-  ir_node *irn;                 /**< Phi or unknown node from the graph to be repairing.*/
-  ir_node **link;               /**< Array of Stores's volue, that have been scalar replaced.*/
+  ir_node *irn;                 /**< Phi or unknown node from the graph to be repairing. */
+  ir_node **link;               /**< Array of Stores's volue, that have been scalar replaced. */
 } repairs_t;
 
-typedef struct _scalars_t{
-  entity *ent;                 /* A entity for scalar replacement.*/
-  type *ent_owner;             /* The owner of this entity.*/
+typedef struct _scalars_t {
+  entity *ent;                 /**< A entity for scalar replacement. */
+  type *ent_owner;             /**< The owner of this entity. */
 } scalars_t;
 
 
 /**
- * compare two pathes
+ * Compare two pathes.
+ *
+ * @return 0 if they are identically
  */
 static int path_cmp(const void *elt, const void *key, size_t size)
 {
@@ -54,7 +67,9 @@ static int path_cmp(const void *elt, const void *key, size_t size)
 }
 
 /**
- * Compare two elements of the repairs_t set
+ * Compare two elements of the repairs_t set.
+ *
+ * @return 0 if they are identically
  */
 static int set_cmp(const void *elt, const void *key, size_t size)
 {
@@ -65,7 +80,9 @@ static int set_cmp(const void *elt, const void *key, size_t size)
 }
 
 /**
- * Compare two elements of the scalars_t set
+ * Compare two elements of the scalars_t set.
+ *
+ * @return 0 if they are identically
  */
 static int ent_cmp(const void *elt, const void *key, size_t size)
 {
@@ -76,12 +93,12 @@ static int ent_cmp(const void *elt, const void *key, size_t size)
 }
 
 /**
- * a hash for a path
+ * Calculate a hash value for a path.
  */
 static unsigned path_hash(const path_t *path)
 {
   unsigned hash = 0;
-  int i;
+  unsigned i;
 
   for (i = 0; i < path->path_len; ++i)
     hash ^= (unsigned)path->path[i].ent;
@@ -90,9 +107,9 @@ static unsigned path_hash(const path_t *path)
 }
 
 /**
- * Returns non-zero, if all indeces of a Sel node are constants
+ * Returns non-zero, if all indeces of a Sel node are constants.
  *
- * @param *sel  The Sel node,that muss be chek.
+ * @param sel  the Sel node that will be checked
  */
 static int is_const_sel(ir_node *sel) {
   int i, n = get_Sel_n_indexs(sel);
@@ -107,9 +124,9 @@ static int is_const_sel(ir_node *sel) {
 }
 
 /**
- * Returns non-zero, if the address of a sel (or it's succsessor sels is taken).
+ * Returns non-zero, if the address of a Sel node (or it's succsessor Sels) is taken.
  *
- * @param sel
+ * @param sel  the Sel node
  */
 static int is_address_taken(type *ent_type, ir_node *sel)
 {
@@ -149,7 +166,7 @@ static int is_address_taken(type *ent_type, ir_node *sel)
 }
 
 /**
- * link all leave Sels with the entity
+ * Link all leave Sels with the entity.
  *
  * @param ent  the entity that will be scalar replaced
  * @param sel  a Sel node that selects some fields of this entity
@@ -177,11 +194,12 @@ static void link_all_leave_sels(entity *ent, ir_node *sel)
   }
 }
 
+/* we need a special address that serves as an address taken marker */
 static char _x;
 static void *ADDRESS_TAKEN = &_x;
 
 /**
- * find possible scalar replacements
+ * Find possible scalar replacements.
  *
  * @param irg  an IR graph
  *
@@ -208,9 +226,9 @@ static void do_find_scalar_replacements(ir_graph *irg)
     }
   }
 
-  /* Check the ir_graph for Sel nodes.If the entity of Sel is't a scalar replacement
+  /* Check the ir_graph for Sel nodes. If the entity of Sel isn't a scalar replacement
    set the link of this entity equal NULL. */
-  for (i = 0 ; i < n; i++){
+  for (i = 0 ; i < n; i++) {
     ir_node *succ = get_irn_out(irg_frame, i);
 
     if (get_irn_op(succ) == op_Sel) {
@@ -232,7 +250,7 @@ static void do_find_scalar_replacements(ir_graph *irg)
 }
 
 /**
- * return a path from the sel node sel to it's root
+ * Return a path from the Sel node sel to it's root.
  */
 static path_t *find_path(ir_node *sel, unsigned len)
 {
@@ -265,8 +283,8 @@ static path_t *find_path(ir_node *sel, unsigned len)
 
 
 /**
- * allocate value numbers for the leaves
- * in our found entities
+ * Allocate value numbers for the leaves
+ * in our found entities.
  *
  * @param ent   the entity that will be scalar replaced
  * @param vnum  the first value number we can assign
@@ -291,7 +309,7 @@ static unsigned allocate_value_numbers(entity *ent, unsigned vnum, ir_mode ***mo
     if (path)
       set_irn_link(sel, (void *)path->vnum);
     else {
-      int i;
+      unsigned i;
 
       key->vnum = vnum++;
 
@@ -322,7 +340,7 @@ static unsigned allocate_value_numbers(entity *ent, unsigned vnum, ir_mode ***mo
 static char p;
 static void *NODE_VISITED = &p;
 static char t;
-static void * LOOP_WALK = &t;
+static void *LOOP_WALK = &t;
 static char s;
 static void *LOOP_HEAD_PHI = &s;
 
@@ -341,9 +359,9 @@ static void *PRED_SEARCH = &q;
 /**
  * Recursive  walk over the blocks, that are predecessors of "node".
  *
- * @param *node    A Load or Phi node. The predecessor of this node muss be faund.
- * @param *value   A struct pointer, that contains the block of node and their link.
- * @parm  *repairs A set, that contains all blocks, that have a array as link, and all Phis, that
+ * @param node     A Load or Phi node. The predecessor of this node muss be faund.
+ * @param value    A struct pointer, that contains the block of node and their link.
+ * @parm  repairs  A set, that contains all blocks, that have a array as link, and all Phis, that
  *                 have copies to repair.
  * @param pos      The position, that muss contain the  predecessor of node, in the array, that have got the bloks
  *                 from the repairs set.
@@ -354,40 +372,43 @@ static void pred_search(ir_node *node, repairs_t *value, set *repairs, int pos, 
 {
   ir_node *nodes_block;
   repairs_t key, *value_pred;
+  int i, n;
+
   DDMN(node);
   nodes_block = get_nodes_block(node);
-  /* If the predecessor is faund.  */
-  if((pos == -2 && value->link[pos] !=  NULL))
+
+  /* If the predecessor is found.  */
+  if ((pos == -2 && value->link[pos] !=  NULL))
     return;
 
-  int i, n = get_Block_n_cfgpreds(nodes_block) ;
+  n = get_Block_n_cfgpreds(nodes_block);
 
-  for (i = (n - 1); i >= 0; i--){
-
+  for (i = n - 1; i >= 0; --i) {
     ir_node *pred = get_Block_cfgpred(nodes_block, i);
 
     key.irn = nodes_block;
     value_pred = set_find(repairs, &key, sizeof(key), HASH_PTR(key.irn));
-    /* If nodes_block haven't the  necessary information and the predecessor of it isn't
-       visited  "pred_search" be called rekursive. Else the necessary Information is found
-       and the recursion braek*/
-    if(value_pred == NULL || value_pred->link[pos] == NULL){
-      if(get_irn_link(pred) != PRED_SEARCH ){
+    /* If nodes_block don't have the necessary information and the predecessor of it isn't
+       visited "pred_search" was called recursive. Else the necessary information is found
+       and the recursion stops. */
+    if (value_pred == NULL || value_pred->link[pos] == NULL) {
+      if (get_irn_link(pred) != PRED_SEARCH) {
 	set_irn_link(node, PRED_SEARCH);
 	pred_search(pred, value, repairs, pos, phi_pred);
       }
-    }else{
-      if(value->link[pos] == NULL && pos != -2){
-	if(get_Block_dom_depth(value->irn) >=
-	   get_Block_dom_depth(get_nodes_block(value_pred->link[pos]))){
+    }
+    else {
+      if (value->link[pos] == NULL && pos != -2) {
+	if (get_Block_dom_depth(value->irn) >=
+	    get_Block_dom_depth(get_nodes_block(value_pred->link[pos]))) {
 	  value->link[pos] = value_pred->link[pos];
 	  pos = -2;
 	  break;
 	}
-      }else{
-	if(get_irn_op(value->link[pos]) == op_Phi && pos != -2 &&
-	   value->link[pos] != value_pred->link[pos]){
-
+      }
+      else {
+	if (get_irn_op(value->link[pos]) == op_Phi && pos != -2 &&
+	    value->link[pos] != value_pred->link[pos]) {
 	  set_Phi_pred(value->link[pos], phi_pred, value_pred->link[pos]);
 	  pos = -2;
 	  break;
@@ -396,18 +417,16 @@ static void pred_search(ir_node *node, repairs_t *value, set *repairs, int pos, 
     }
   }
 
-
-  if(get_irn_link(node) == PRED_SEARCH)
+  if (get_irn_link(node) == PRED_SEARCH)
     set_irn_link(node, NULL);
-
 }
 
 /**
  * Create a link for blocks, that have Phi, Load or Store nodes for scalar_replacement.
  *
- * @param *node    A Phi, Load or Store node, that block muss get a  link.
- * @param *env     Contains information about scalars number and mode.
- * @parm  *repairs A set, that contains all blocks, that have a  link, and all Phis, that
+ * @param node    A Phi, Load or Store node, that block muss get a  link.
+ * @param env     Contains information about scalars number and mode.
+ * @parm  repairs A set, that contains all blocks, that have a link, and all Phis, that
  *                 have copies to repair.
  */
 static void block_link(ir_node *node, env_t *env, set *repairs)
@@ -416,19 +435,18 @@ static void block_link(ir_node *node, env_t *env, set *repairs)
   ir_node *nods_block ;
   int i;
   nods_block = get_nodes_block(node);
-  /* If the block of the node haven't a link. */
-  if(get_irn_link(nods_block) == NULL){
+  /* If the block of the node have no link. */
+  if (get_irn_link(nods_block) == NULL) {
     DDMN(nods_block);
     key.irn = nods_block;
     value = set_insert(repairs, &key, sizeof(key), HASH_PTR(key.irn));
     value->link = obstack_alloc(&env->obst, sizeof(ir_node *) * env->nvals);
      /* The block of the node be inserted in the set repairs, because it have yet a link.
 	The link is a array with size equal to number of scalars.*/
-    for(i = 0; i < env->nvals; i++)
+    for (i = 0; i < env->nvals; i++)
       /* First  all links member be set to NULL. */
       value->link[i] = NULL;
     set_irn_link(nods_block, value->link);
-
   }
 }
 
@@ -436,125 +454,129 @@ static void block_link(ir_node *node, env_t *env, set *repairs)
  * Handle Phis, that get the memory edge of Loads or Stors, that were been scalar replaced or
  * will be scalar replaced.
  *
- * @param *phi     A Phi node, that muss have mode_M.
- * @param *env     Contains information about scalars number and mode.
- * @parm  *repairs A set, that contains all blocks, that have a  link, and all Phis, that
+ * @param phi     A Phi node, that muss have mode_M.
+ * @param env     Contains information about scalars number and mode.
+ * @parm  repairs A set that contains all blocks having a link and all Phis that
  *                 have copies to repair.
- *
  */
-
 static void phi_handling(ir_node *phi, env_t *env, set *repairs)
 {
   ir_node *phi_block, **link;
   repairs_t key, *value;
+  int rem;
+  int p = 0, i, phi_preds;
+  ir_node **in;
 
   key.irn = phi;
   value = set_find(repairs, &key, sizeof(key), HASH_PTR(key.irn));
+
   /* Test if the phi have been handled. */
-  if(value != NULL)
+  if (value != NULL)
     return;
 
-  int rem = get_optimize();
+  rem = get_optimize();
 
-    int p = 0, i, phi_preds;
-    phi_block = get_nodes_block(phi);
-    phi_preds = get_Phi_n_preds(phi);
+  phi_block = get_nodes_block(phi);
+  phi_preds = get_Phi_n_preds(phi);
 
-    /* Test if the Phi have predecessors, that were been or will be scalar replaced. */
-    for(i = 0; i < phi_preds; i++){
-      ir_node *pred = get_Phi_pred(phi, i);
-      ir_node *pred_block = get_nodes_block(pred);
+  /* Test if the Phi have predecessors, that were been or will be scalar replaced. */
+  for (i = 0; i < phi_preds; i++){
+    ir_node *pred = get_Phi_pred(phi, i);
+    ir_node *pred_block = get_nodes_block(pred);
 
-      key.irn = pred_block;
-      value = set_find(repairs, &key, sizeof(key), HASH_PTR(key.irn));
+    key.irn = pred_block;
+    value = set_find(repairs, &key, sizeof(key), HASH_PTR(key.irn));
 
-      if(value != NULL)
-	p ++;
-    }
-    /* Phis from the loop head muss be handled.*/
-    if(get_irn_link(phi) == LOOP_HEAD_PHI)
-      p ++;
+    if (value != NULL)
+      p++;
+  }
+  /* Phis from the loop head muss be handled.*/
+  if (get_irn_link(phi) == LOOP_HEAD_PHI)
+    p++;
 
-    /* If the Phi node have such predecessor(s), be inserted in the repairs set, else is nothing to do
-       and exit "phi_handling".*/
-    if(p){
-      key.irn = phi;
-      value = set_insert(repairs, &key, sizeof(key), HASH_PTR(key.irn));
-    }else
-      return;
+  /* If the Phi node have such predecessor(s), be inserted in the repairs set, else is nothing to do
+     and exit "phi_handling".*/
+  if (p) {
+    key.irn = phi;
+    value = set_insert(repairs, &key, sizeof(key), HASH_PTR(key.irn));
+  }
+  else
+    return;
 
-    //DDMN(phi);
-    if (get_irn_link(phi_block) == NULL)
-      block_link(phi, env, repairs);
+  //DDMN(phi);
+  if (get_irn_link(phi_block) == NULL)
+    block_link(phi, env, repairs);
 
-    link = get_irn_link(phi_block);
+  link = get_irn_link(phi_block);
 
-    ir_node *in[phi_preds] ;
-    key.irn = phi_block;
-    value = set_find(repairs, &key, sizeof(key), HASH_PTR(phi_block));
+  key.irn = phi_block;
+  value = set_find(repairs, &key, sizeof(key), HASH_PTR(phi_block));
 
-    /* We will build soem Phi nodes. Beware, as they have all Unknown predecessors, CSE
-     * would combine them into one. To prevent this, we must deactivate Optimizations here
-     */
-    for(p = 0; p < env->nvals; p ++) {
+  in = alloca(phi_preds * sizeof(*in));
 
-      for(i = 0; i < phi_preds; i++)
-        in[i] = new_Unknown(env->modes[p]);
+  /* We will build some Phi nodes. Beware, as they have all Unknown predecessors, CSE
+   * would combine them into one. To prevent this, we must deactivate Optimizations here
+   */
+  for (p = 0; p < env->nvals; ++p) {
 
-      set_optimize(0);
-      value->link[p] = new_r_Phi(current_ir_graph, get_nodes_block(phi), phi_preds, in, env->modes[p]);
-      set_optimize(rem);
-    }
+    for (i = 0; i < phi_preds; ++i)
+      in[i] = new_Unknown(env->modes[p]);
+
+    set_optimize(0);
+    value->link[p] = new_r_Phi(current_ir_graph, get_nodes_block(phi), phi_preds, in, env->modes[p]);
+    set_optimize(rem);
+  }
 }
 
 /**
  * Handle Loads, that were been scalar replaced or
  * will be scalar replaced.
  *
- * @param *load    A load node.
- * @param *env     Contains information about scalars number and mode.
- * @parm  *repairs A set, that contains all blocks, that have a  link, and all Phis, that
+ * @param load    A load node.
+ * @param env     Contains information about scalars number and mode.
+ * @parm  repairs A set, that contains all blocks, that have a  link, and all Phis, that
  *                 have copies to repair.
- *
  */
-
 static void load_handling(ir_node *load, env_t *env, set *repairs)
 {
   repairs_t key, *value;
-  ir_node * load_ptr, *load_mem, *nods_block;
+  ir_node *load_ptr, *load_mem, *nods_block;
+  unsigned i;
+
   nods_block = get_nodes_block(load);
   load_ptr = get_Load_ptr(load);
   load_mem = get_Load_mem(load);
   // DDMN(load);
   /* The pointer predecessor of Load muss be a Sel node. */
-  if(get_irn_op(load_ptr) == op_Sel){
-    /* If the link field of sel's entity is set to "ADDRESS_TAKEN", that mean this value
-       can't be scalar replaced.It is nothing to do and "load_handling" muss be exit.*/
-    if ( get_entity_link(get_Sel_entity(load_ptr)) == ADDRESS_TAKEN)
+  if (get_irn_op(load_ptr) == op_Sel) {
+    /* If the link field of sel's entity is set to "ADDRESS_TAKEN", that means this value
+       can't be scalar replaced. It is nothing to do and load_handling() must be exited. */
+    if (get_entity_link(get_Sel_entity(load_ptr)) == ADDRESS_TAKEN)
       return;
 
     key.irn = nods_block;
     value = set_find(repairs, &key, sizeof(key), HASH_PTR(nods_block));
-    /* Load's pointer predecessor's link field contains the position in the block's link, where
-       muss be  searched the predecessor of this load.*/
-    unsigned i = (unsigned)get_irn_link(load_ptr);
 
-    /* If the link of Load's block doasn't contains at position "i" a node or isn't calculated,
-       than muss be called "pred_search".*/
-    if (value == NULL){
+    /* Load's pointer predecessor's link field contains the position in the block's link, where
+       must be searched the predecessor of this Load. */
+    i = (unsigned)get_irn_link(load_ptr);
+
+    /* If the link of Load's block doesn't contains at position "i" a node or isn't calculated,
+       than pred_search() must be called .*/
+    if (value == NULL) {
       block_link(load, env, repairs);
       key.irn = nods_block;
       value = set_find(repairs, &key, sizeof(key), HASH_PTR(nods_block));
       pred_search(load, value, repairs, i, 0);
-    }else
-      if(value->link[i] == NULL)
-	pred_search(load, value, repairs, i, 0);
+    } else if (value->link[i] == NULL)
+      pred_search(load, value, repairs, i, 0);
 
-    /* If afte "pred_search" call the link of Load's block at position "i" is equal to "NULL",
-       that means the loading value weren't be initialise and the load predecessor be set to "Unknown"*/
-    if(value->link[i] == NULL)
+    /* If after the pred_search() call the link of Load's block at position "i" is equal to NULL,
+       that means the loaded value wasn't initialized and the load predecessor is set to Unknown */
+    if (value->link[i] == NULL)
       value->link[i] = new_Unknown(env->modes[i]);
-    /* The load node can be turned to tupel now. The tupel will bi optimized later. */
+
+    /* The Load node can be turned into a tuple now. This tuple will be optimized later. */
     turn_into_tuple(load, pn_Load_max);
     set_Tuple_pred(load, pn_Load_M, load_mem);
     set_Tuple_pred(load, pn_Load_res, value->link[i]);
@@ -563,23 +585,21 @@ static void load_handling(ir_node *load, env_t *env, set *repairs)
 }
 
 /**
- * A walker along the memory edge. Load and Phi nodes muss be found for optimisation
+ * A walker along the memory edge. Load and Phi nodes muss be found for optimization
  *
- * @param *node    A node from the graph.
- * @param *env     Contains information about scalars number and mode.
- * @parm  *repairs A set, that contains all blocks, that have a  link, and all Phis, that
- *                 have copies to repair.
+ * @param node    A node from the graph.
+ * @param env     Contains information about scalars number and mode.
+ * @parm  repairs A set, that contains all blocks, that have a  link, and all Phis, that
+ *                have copies to repair.
 */
-
-static void  memory_edge_walk2(ir_node *node, env_t *env, set *repairs)
+static void memory_edge_walk2(ir_node *node, env_t *env, set *repairs)
 {
   int i, p, n = get_irn_arity(node);
   repairs_t key, *value, *value_block;
   ir_node *phi_pred;
   DDMN(node);
 
-  for (i = 0; i < n; i++){
-
+  for (i = 0; i < n; i++) {
     ir_node *pred = get_irn_n(node, i);
 
     if((get_irn_op(pred) == op_Proj    &&
@@ -604,8 +624,8 @@ static void  memory_edge_walk2(ir_node *node, env_t *env, set *repairs)
    if (get_irn_op(node) == op_Phi && get_irn_mode(node) == mode_M){
      key.irn = node;
      value = set_find(repairs, &key, sizeof(key), HASH_PTR(key.irn));
-     /* If the phi is in the set " repairs ", then muss be handled.*/
-     if(value != NULL){
+     /* If the phi is in the set " repairs ", then must be handled.*/
+     if (value != NULL){
        //  DDMN(node);
        key.irn = get_nodes_block(node);
        value_block = set_find(repairs, &key, sizeof(key), HASH_PTR(key.irn));
@@ -618,8 +638,8 @@ static void  memory_edge_walk2(ir_node *node, env_t *env, set *repairs)
 	 }
      }
    }
-   /* Reset the links, that have beeb used by the walk.*/
-   if(get_irn_link(node) == NODE_VISITED)
+   /* Reset the links, that have been used by the walk.*/
+   if (get_irn_link(node) == NODE_VISITED)
      set_irn_link(node, NULL);
 }
 
@@ -640,13 +660,11 @@ static void loop_walk(ir_node *node, env_t *env, set *repairs)
   DDMN(node);
 
   /* Test if the loop head have been achieved. */
-  if(has_backedges(get_nodes_block(node)))
+  if (has_backedges(get_nodes_block(node)))
     return;
 
-  for (i = 0; i < n; i++){
-
+  for (i = 0; i < n; i++) {
     ir_node *pred = get_irn_n(node, i);
-
 
     if((get_irn_op(pred) == op_Proj    &&
 	get_irn_mode(pred) == mode_M)  ||
@@ -656,51 +674,47 @@ static void loop_walk(ir_node *node, env_t *env, set *repairs)
        get_irn_op(pred) == op_Alloc)
       loop_walk(pred, env, repairs);
 
-
     if(get_irn_op(pred) == op_Phi    &&
        get_irn_mode(pred) == mode_M &&
        get_irn_link(pred) !=  LOOP_WALK) {
       set_irn_link(pred, LOOP_WALK);
       loop_walk(pred, env, repairs);
     }
-
   }
 
+  if (get_irn_op(node) == op_Load)
+    load_handling(node, env, repairs);
 
-   if (get_irn_op(node) == op_Load)
-     load_handling(node, env, repairs);
-
-   if (get_irn_op(node) == op_Phi && get_irn_mode(node) == mode_M){
-     key.irn = node;
-     value = set_find(repairs, &key, sizeof(key), HASH_PTR(key.irn));
-     /* If the phi is in the set " repairs ", then muss be handled.*/
-     if(value != NULL){
-       DDMN(node);
-       key.irn = get_nodes_block(node);
-       value_block = set_find(repairs, &key, sizeof(key), HASH_PTR(key.irn));
-       n = get_irn_arity(node);
-       /* All predecessors of a Phi node muss be found.*/
-       for(i = 0; i < env->nvals; i ++)
-	 for(p = 0; p < n; p ++){
-	   phi_pred = get_Phi_pred(value->irn, p);
-	   pred_search(phi_pred, value_block, repairs, i, p);
-	 }
-     }
-   }
-   /* Reset the links, that have beeb used by the walk.*/
-   if(get_irn_link(node) == LOOP_WALK)
-     set_irn_link(node, NULL);
+  if (get_irn_op(node) == op_Phi && get_irn_mode(node) == mode_M){
+    key.irn = node;
+    value = set_find(repairs, &key, sizeof(key), HASH_PTR(key.irn));
+    /* If the phi is in the set " repairs ", then muss be handled.*/
+    if(value != NULL){
+      DDMN(node);
+      key.irn = get_nodes_block(node);
+      value_block = set_find(repairs, &key, sizeof(key), HASH_PTR(key.irn));
+      n = get_irn_arity(node);
+      /* All predecessors of a Phi node muss be found.*/
+      for(i = 0; i < env->nvals; i ++)
+        for(p = 0; p < n; p ++){
+          phi_pred = get_Phi_pred(value->irn, p);
+          pred_search(phi_pred, value_block, repairs, i, p);
+        }
+    }
+  }
+  /* Reset the links, that have beeb used by the walk.*/
+  if(get_irn_link(node) == LOOP_WALK)
+    set_irn_link(node, NULL);
 }
 
 /**
- * Handle Stors, that were been scalar replaced or
+ * Handle Stores that were been scalar replaced or
  * will be scalar replaced.
  *
- * @param *load    A store node.
- * @param *env     Contains information about scalars number and mode.
- * @parm  *repairs A set, that contains all blocks, that have a  link, and all Phis, that
- *                 have copies to repair.
- *
+ * @param load    A store node.
+ * @param env     Contains information about scalars number and mode.
+ * @parm  repairs A set, that contains all blocks, that have a  link, and all Phis, that
+ *                have copies to repair.
  */
 static void store_handling(ir_node *store, env_t *env, set *repairs)
 {
@@ -708,125 +722,118 @@ static void store_handling(ir_node *store, env_t *env, set *repairs)
   ir_node *nods_block, *store_mem, *store_ptr, *store_value, **link, *phi;
   ir_loop *store_l;
 
-  /* If the link field of stor's is set to "NODE_VISITED", that mean this value
-     can't be scalar replaced.It is nothing to do and "load_handling" muss be exit.*/
+  store_ptr = get_Store_ptr(store);
 
-    store_ptr = get_Store_ptr(store);
-    /* The pointer predecessor of Store muss be a Sel node.*/
-    if(get_irn_op(store_ptr) == op_Sel) {
+  /* The pointer predecessor of Store must be a Sel node.*/
+  if (get_irn_op(store_ptr) == op_Sel) {
+    /* If the link field of a Store's is set to "ADDRESS_TAKEN", that mean this value
+       can't be scalar replaced. It's nothing to do and store_handling() must be exit.*/
+    if (get_entity_link(get_Sel_entity(store_ptr)) == ADDRESS_TAKEN)
+      return;
 
-      /* If the link field of stor's is set to "ADDRESS_TAKEN", that mean this value
-	 can't be scalar replaced.It's nothing to do and "load_handling" muss be exit.*/
-      if ( get_entity_link(get_Sel_entity(store_ptr)) == ADDRESS_TAKEN)
-	return;
-
-      /* If the Store node is in a loop, than the loop head of the Store
-       *muss be handled, if thies ist'n be done. */
-      store_l = get_irn_loop(store);
-      if(store_l != NULL){
-	phi = get_loop_node(store_l, 0);
-	if(get_irn_op(phi) != op_Block){
-	  key.irn = get_nodes_block(phi);
-	  value = set_find(repairs, &key, sizeof(key), HASH_PTR(key.irn));
-	  if(value == NULL ){
-	    set_irn_link(phi, LOOP_HEAD_PHI);
-	    block_link(phi, env, repairs);
-	    phi_handling(phi, env, repairs);
-	  }
-	}
+    /* If the Store node is in a loop, than the loop head of the Store
+     * must be handled, if this was not already done. */
+    store_l = get_irn_loop(store);
+    if (store_l != NULL) {
+      phi = get_loop_node(store_l, 0);
+      if (get_irn_op(phi) != op_Block) {
+        key.irn = get_nodes_block(phi);
+        value = set_find(repairs, &key, sizeof(key), HASH_PTR(key.irn));
+        if (value == NULL) {
+          set_irn_link(phi, LOOP_HEAD_PHI);
+          block_link(phi, env, repairs);
+          phi_handling(phi, env, repairs);
+        }
       }
-
-
-      DDMN(store);
-      nods_block = get_nodes_block(store);
-
-      key.irn = nods_block;
-      value = set_find(repairs, &key, sizeof(key), HASH_PTR(nods_block));
-
-      store_mem   = get_Store_mem(store);
-      store_value = get_Store_value(store);
-
-
-
-      if(store_l != NULL)
-	loop_walk(store, env, repairs);
-      else
-	memory_edge_walk2(store, env, repairs);
-      /* Stor's pointer predecessor's link field contains the position in the block's link, where
-       muss be  saved the value predecessor of this sore.*/
-      value->link[(unsigned)get_irn_link(store_ptr)] = store_value;
-
-      /* The store node can be turned to tupel now. The tupel will bi optimized later. */
-      turn_into_tuple(store, pn_Store_max);
-      set_Tuple_pred(store, pn_Store_M, store_mem);
-      set_Tuple_pred(store, pn_Store_X_except, new_Bad());
-
-      set_irn_link(nods_block, link);
     }
+
+    DDMN(store);
+    nods_block = get_nodes_block(store);
+
+    key.irn = nods_block;
+    value = set_find(repairs, &key, sizeof(key), HASH_PTR(nods_block));
+
+    store_mem   = get_Store_mem(store);
+    store_value = get_Store_value(store);
+
+    if (store_l != NULL)
+      loop_walk(store, env, repairs);
+    else
+      memory_edge_walk2(store, env, repairs);
+    /* Store's pointer predecessor's link field contains the position in the block's link, where
+     must be saved the value predecessor of this store. */
+    value->link[(unsigned)get_irn_link(store_ptr)] = store_value;
+
+    /* The store node can be turned into a tuple now. This tuple will be optimized later. */
+    turn_into_tuple(store, pn_Store_max);
+    set_Tuple_pred(store, pn_Store_M, store_mem);
+    set_Tuple_pred(store, pn_Store_X_except, new_Bad());
+
+    /* FIXME: link is uninitialized here */
+    set_irn_link(nods_block, link);
+  }
 }
 
 /**
- * A walker along the memory edge. Stors, Phis and their blocks as well Load's blocks muss be found for optimisation
+ * A walker along the memory edge. Stores, Phis and their blocks as well Load's blocks must be found for optimization
  *
- * @param *node    A node from the graph.
- * @param *env     Contains information about scalars number and mode.
- * @parm  *repairs A set, that contains all blocks, that have a  link, and all Phis, that
- *                 have copies to repair.
+ * @param node    A node from the graph.
+ * @param env     Contains information about scalars number and mode.
+ * @parm  repairs A set, that contains all blocks, that have a link, and all Phis, that
+ *                have copies to repair.
 */
-static void  memory_edge_walk(ir_node *node, env_t *env, set *repairs)
+static void memory_edge_walk(ir_node *node, env_t *env, set *repairs)
 {
-  DDMN(node);
-  if(get_irn_link(get_nodes_block(node)) != NULL)
-    set_irn_link(get_nodes_block(node), NULL);
   int i, n = get_irn_arity(node);
+  ir_op *op;
 
-  for (i = (n - 1); i >= 0; i--){
+  DDMN(node);
 
+  set_irn_link(get_nodes_block(node), NULL);
+
+  for (i = n - 1; i >= 0; --i) {
     ir_node *pred = get_irn_n(node, i);
+    ir_op *op = get_irn_op(pred);
 
-
-    if((get_irn_op(pred) == op_Proj    &&
-	get_irn_mode(pred) == mode_M)  ||
-       is_memop(pred)                  ||
-       get_irn_op(pred) == op_Call     ||
-       get_irn_op(pred) == op_Alloc)
+    if ((op == op_Proj    &&
+         get_irn_mode(pred) == mode_M) ||
+       op == op_Load                   ||
+       op == op_Store                  ||
+       op == op_Call                   ||
+       op == op_Alloc)
       memory_edge_walk(pred, env, repairs);
 
-
-    if(get_irn_op(pred) == op_Phi    &&
-       get_irn_mode(pred) == mode_M &&
-       get_irn_link(pred) != NODE_VISITED){
+    if (op == op_Phi                 &&
+        get_irn_mode(pred) == mode_M &&
+        get_irn_link(pred) != NODE_VISITED) {
       set_irn_link(pred, NODE_VISITED);
       memory_edge_walk(pred, env, repairs);
     }
-
   }
 
-  if (get_irn_op(node) == op_Store ||
-      get_irn_op(node) == op_Load)
+  op =  get_irn_op(node);
+  if (op == op_Store || op == op_Load)
     block_link(node, env, repairs);
 
-  if (get_irn_op(node) == op_Phi && get_irn_mode(node) == mode_M)
+  if (op == op_Phi && get_irn_mode(node) == mode_M)
     phi_handling(node, env, repairs);
 
-  if (get_irn_op(node) == op_Store)
+  if (op == op_Store)
     store_handling(node, env, repairs);
-  /* Reset the links, that have beeb used by the walk.*/
-  if(get_irn_link(node) == NODE_VISITED)
+
+  /* Reset the links, that have been used by the walk.*/
+  if (get_irn_link(node) == NODE_VISITED)
     set_irn_link(node, NULL);
 }
 
-
-
-
 /**
- *  Make scalar replacement
+ *  Make scalar replacement.
  *
- * @param *envals  The number of scalars.
- * @parm  *repairs A set, that contains all blocks, that have a  link, and all Phis, that
- *                 have copies to repair.
- * @param modes    A flexible array, containing all the modes of
- *                 the value numbers.
+ * @param envals  The number of scalars.
+ * @parm  repairs A set, that contains all blocks, that have a  link, and all Phis, that
+ *                have copies to repair.
+ * @param modes   A flexible array, containing all the modes of
+ *                the value numbers.
  */
 static void do_scalar_replacements(int nvals, set * repairs, ir_mode **modes)
 {
@@ -838,28 +845,27 @@ static void do_scalar_replacements(int nvals, set * repairs, ir_mode **modes)
   obstack_init(&env.obst);
   env.nvals = nvals;
   env.modes = modes;
+
   /* Search for scalars.*/
-  for(i = 0; i < n; i++){
+  for (i = 0; i < n; ++i) {
     ir_node *pred = get_Block_cfgpred(end_block, i);
-    if(get_irn_op(pred) != op_Block)
+    if (get_irn_op(pred) != op_Block)
       memory_edge_walk(pred, &env, repairs);
   }
+
   /* Search for predecessors of scalars.*/
-  for(i = 0; i < n; i++){
+  for (i = 0; i < n; ++i) {
     ir_node *pred = get_Block_cfgpred(end_block, i);
-    if(get_irn_op(pred) != op_Block)
+    if (get_irn_op(pred) != op_Block)
       memory_edge_walk2(pred, &env, repairs);
-
   }
-
   obstack_free(&env.obst, NULL);
 }
-
 
 /*
  * Find possible scalar replacements
  *
- * @param *irg  The current ir graph.
+ * @param irg  The current ir graph.
  */
 void find_scalar_replacements(ir_graph *irg)
 {
@@ -868,6 +874,8 @@ void find_scalar_replacements(ir_graph *irg)
   scalars_t key, *value;
   ir_node *irg_frame;
   ir_mode **modes;
+  set *set_ent, *repairs;
+  type *ent_type;
 
   /* Call algorithm that computes the out edges */
   compute_outs(irg);
@@ -889,33 +897,33 @@ void find_scalar_replacements(ir_graph *irg)
   irg_frame = get_irg_frame(irg);
   nvals = 0;
   modes = NEW_ARR_F(ir_mode *, 16);
-  set *set_ent = new_set(ent_cmp, 8);
+  set_ent = new_set(ent_cmp, 8);
 
-  for (i = 0 ; i < get_irn_n_outs(irg_frame); i++){
+  for (i = 0 ; i < get_irn_n_outs(irg_frame); i++) {
     ir_node *succ = get_irn_out(irg_frame, i);
 
-    if( get_irn_op(succ) == op_Sel) {
+    if (get_irn_op(succ) == op_Sel) {
       entity *ent = get_Sel_entity(succ);
 
       if (get_entity_link(ent) == NULL || get_entity_link(ent) == ADDRESS_TAKEN)
         continue;
 
-      type *ent_type = get_entity_type(ent);
+      ent_type = get_entity_type(ent);
 
       key.ent = ent;
       key.ent_owner = get_entity_owner (ent);
       set_insert(set_ent, &key, sizeof(key), HASH_PTR(key.ent));
 
       if (is_Array_type(ent_type)) {
-	printf("<<<<<<<found array %s\n", get_entity_name(ent));
+        printf("<<<<<<<found array %s\n", get_entity_name(ent));
       }
       else if (is_Struct_type(ent_type)) {
-	printf("<<<<<<<found struct %s\n", get_entity_name(ent));
+        printf("<<<<<<<found struct %s\n", get_entity_name(ent));
       }
       else if(is_atomic_type(ent_type))
-	printf("<<<<<<<found atomic value %s\n", get_entity_name(ent));
+        printf("<<<<<<<found atomic value %s\n", get_entity_name(ent));
       else {
-	assert(0 && "\nDon't a array, struct or atomic value");
+        assert(0 && "\nDon't a array, struct or atomic value");
       }
 
       nvals = allocate_value_numbers(ent, nvals, &modes);
@@ -924,17 +932,18 @@ void find_scalar_replacements(ir_graph *irg)
 
   printf("  %u values will be needed\n", nvals);
 
-  /* A set for nodes that muss be repair. This are phi or unknown nodes. */
-  set *repairs = new_set(set_cmp, 8);
+  /* A set of nodes that must be repaired. These are Phi or Unknown nodes. */
+  repairs = new_set(set_cmp, 8);
 
   /* If scalars ware found. */
-  if(nvals)
+  if (nvals)
     do_scalar_replacements(nvals, repairs, modes);
 
   value = set_first(set_ent);
   for (; value != NULL; value = set_next(set_ent))
-    remove_class_member (value->ent_owner, value->ent);
+    remove_class_member(value->ent_owner, value->ent);
 
   del_set(set_ent);
+  del_set(repairs);
   DEL_ARR_F(modes);
 }
