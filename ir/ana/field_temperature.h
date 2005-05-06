@@ -41,6 +41,9 @@ int     get_Sel_n_accessed_entities(ir_node *sel);
 entity *get_Sel_accessed_entity    (ir_node *sel, int pos);
 */
 
+int get_irn_loop_call_depth(ir_node *n);
+int get_irn_loop_depth(ir_node *n);
+int get_irn_recursion_depth(ir_node *n);
 
 /** Get the weighted interprocedural loop depth of the node.
     The depth is estimated by a heuristic. The heuristic consideres
