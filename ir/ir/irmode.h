@@ -46,7 +46,7 @@
  * ATTRIBUTES:
  *  -  modecode code:           An unambigous int (enum) for the mode
  *  -  ident *name:             Name of this mode. Two modes are different if the name is different.
- *  -  mode_sort sort:          sort of mode specifying possible usage kategories
+ *  -  mode_sort sort:          sort of mode specifying possible usage categories
  *  -  int    size:             size of the mode in Bits.
  *  -  unsigned sign:1:         signedness of this mode
  *  -  ... more to come
@@ -146,9 +146,9 @@ typedef enum {
  * This function constructs a new mode given by the parameters.
  * If the parameters match an already defined mode, this mode is returned
  * (including the default modes).
- * If the mode is newly allocated, a new unique mode_code is choosen.
+ * If the mode is newly allocated, a new unique mode_code is chosen.
  * Also, special value tarvals will be calculated such as null,
- * min, max and can be retrieved using the get_mode_* fuctions
+ * min, max and can be retrieved using the get_mode_* functions
  *
  * @return
  * 	The new mode or NULL on error.
@@ -162,19 +162,19 @@ ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int sign, m
 /**
  * Creates a new vector mode.
  *
- * @param name		the name of the mode to be created
- * @param sort		the mode_sort of the mode to be created
- * @param bit_size	number of bits for one element of this mode
+ * @param name		      the name of the mode to be created
+ * @param sort		      the mode_sort of the mode to be created
+ * @param bit_size	    number of bits for one element of this mode
  * @param num_of_elem   number of elements in this vector mode
- * @param sign		non-zero if this is a signed mode
+ * @param sign		      non-zero if this is a signed mode
  * @param arithmetic    arithmetic operations possible with a mode
  * @param modulo_shift  Is ignored for modes other than integer.
  *
  * This function constructs a new vector mode given by the parameters.
  * If the parameters match an already defined mode, this mode is returned.
- * If the mode is newly allocated, a new unique mode_code is choosen.
+ * If the mode is newly allocated, a new unique mode_code is chosen.
  * Also, special value tarvals will be calculated such as null,
- * min, max and can be retrieved using the get_mode_* fuctions
+ * min, max and can be retrieved using the get_mode_* functions
  *
  * @return
  * 	The new mode or NULL on error.
@@ -247,7 +247,7 @@ void  set_mode_link(ir_mode *mode, void *l);
  * Returns the smallest representable value of a given mode.
  *
  * For modes of the sort float_number this is the most negative value
- * bigger than -infinit.
+ * bigger than -infinite.
  */
 tarval *get_mode_min(ir_mode *mode);
 
@@ -255,7 +255,7 @@ tarval *get_mode_min(ir_mode *mode);
  * Returns the biggest representable value o f a given mode.
  *
  * For modes of the sort float_number this is the largest value lower
- * than infinit.
+ * than infinite.
  */
 tarval *get_mode_max(ir_mode *mode);
 
@@ -296,14 +296,14 @@ tarval *get_mode_NAN(ir_mode *mode);
 
 extern ir_mode *mode_M;	 /**< memory */
 
-/* -- A set of predifined, numerical modes according to Techreport 1999-44 -- */
+/* -- A set of predefined, numerical modes according to Techreport 1999-44 -- */
 extern ir_mode *mode_F;	 /**< signed float(32) */
 extern ir_mode *mode_D;  /**< signed double(64) */
 extern ir_mode *mode_E;  /**< signed extended(80) */
 extern ir_mode *mode_Bs; /**< signed byte (former char) */
 extern ir_mode *mode_Bu; /**< unsigned byte (former char) */
 extern ir_mode *mode_Hs; /**< signed short integer */
-extern ir_mode *mode_Hu; /**< unsigened short integer */
+extern ir_mode *mode_Hu; /**< unsigned short integer */
 extern ir_mode *mode_Is; /**< signed integer */
 extern ir_mode *mode_Iu; /**< unsigned integer */
 extern ir_mode *mode_Ls; /**< signed long integer */

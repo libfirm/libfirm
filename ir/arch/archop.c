@@ -184,7 +184,7 @@ static tarval *computed_value_Max(ir_node *n)
 
 /**
  * Returns an equivalent node for a Min/Max node.
- * We do not allow Exeptions in our Min/Max, so there will be always
+ * We do not allow Exceptions in our Min/Max, so there will be always
  * an result.
  * The problem is Min(NaN, NaN) == NaN ???.
  */

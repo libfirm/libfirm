@@ -99,9 +99,9 @@ extern "C" {
 #include "mangle.h"         /* Support for mangling ident names. */
 #include "tr_inheritance.h" /* Support to handle inheritance. */
 
-#include "irarch.h"        /* architecture dependant optimizations */
-#include "archop.h"        /* architecture dependant opcodes */
-//#include "modeconv.h"      /* architecture dependant mode conversion */
+#include "irarch.h"        /* architecture dependent optimizations */
+#include "archop.h"        /* architecture dependent opcodes */
+//#include "modeconv.h"      /* architecture dependent mode conversion */
 
 #include "firmstat.h"      /* statistics */
 
@@ -121,7 +121,7 @@ extern "C" {
 
 #include "iredges.h"
 
-/* Makros that define the old function names we decided to rename.
+/* Macros that define the old function names we decided to rename.
    Use for compatibility with old implementations. */
 /*#include "old_fctnames.h"*/
 
@@ -163,8 +163,8 @@ struct _firm_parameter_t {
   ident_if_t *id_if;
 
   /**
-   * The architecture dependand opcode settings.
-   * If not set, no architecture dependand operations will be used.
+   * The architecture dependent opcode settings.
+   * If not set, no architecture dependent operations will be used.
    */
   arch_ops_info *arch_op_settings;
 };
@@ -175,7 +175,7 @@ typedef struct _firm_parameter_t firm_parameter_t;
  * Initialize the firm library.
  *
  * Initializes the firm library.  Allocates default data structures.
- * Initializes configurable behaviour of the library.
+ * Initializes configurable behavior of the library.
  *
  * @param param    A structure containing the parameters of the libFirm.
  *

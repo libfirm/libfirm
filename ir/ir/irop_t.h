@@ -131,7 +131,7 @@ struct ir_op {
   unsigned flags;         /**< flags describing the behavior of the ir_op, a bitmaks of irop_flags */
 
   /* CallBacks */
-  computed_value_func	computed_value;		/**< evaluates a node into a tarval if possible. */
+  computed_value_func	  computed_value;		/**< evaluates a node into a tarval if possible. */
   equivalent_node_func  equivalent_node;	/**< optimizes the node by returning an equivalent one. */
   transform_node_func   transform_node;		/**< optimizes the node by transforming it. */
   node_cmp_attr_func    node_cmp_attr;		/**< compares two node attributes. */
@@ -147,14 +147,14 @@ struct ir_op {
  *
  * @param code      the opcode, one of type \c opcode
  * @param name      the printable name of this opcode
- * @param p         wheater operations of this opcode are op_pin_state_pinned or floating
+ * @param p         whether operations of this opcode are op_pin_state_pinned or floating
  * @param flags     a bitmask of irop_flags describing the behavior of the ir operation
  * @param opar      the parity of this ir operation
  * @param op_index  if the parity is oparity_unary, oparity_binary or oparity_trinary the index
  *                  of the left operand
  * @param attr_size attribute size for this ir operation
  *
- * @return The genenerated ir operation.
+ * @return The generated ir operation.
  */
 ir_op * new_ir_op(opcode code, const char *name, op_pin_state p,
 		   unsigned flags, op_arity opar, int op_index, size_t attr_size);
