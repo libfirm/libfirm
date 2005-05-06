@@ -81,35 +81,34 @@ void set_irn_out      (ir_node *node, int pos, ir_node *out) {
 }
 
 
-int get_Block_n_cfg_outs (ir_node *bl) {
+int get_Block_n_cfg_outs(ir_node *bl) {
   int i, n_cfg_outs = 0;
-  assert(bl && (get_irn_op(bl) == op_Block));
+  assert(bl && is_Block(bl));
 #ifdef DEBUG_libfirm
   assert (bl->out_valid);
 #endif /* defined DEBUG_libfirm */
-  for (i = 0; i < (int)bl->out[0]; i++)
-    if ((get_irn_mode(bl->out[i+1]) == mode_X) &&
-        (get_irn_op(bl->out[i+1]) != op_End))
+  for (i = 1; i <= (int)bl->out[0]; i++)
+    if ((get_irn_mode(bl->out[i]) == mode_X) &&
+        (get_irn_op(bl->out[i]) != op_End))
       n_cfg_outs++;
   return n_cfg_outs;
 }
 
 
-ir_node *get_Block_cfg_out  (ir_node *bl, int pos) {
+ir_node *get_Block_cfg_out(ir_node *bl, int pos) {
   int i, out_pos = 0;
   assert(bl && (get_irn_op(bl) == op_Block));
 #ifdef DEBUG_libfirm
   assert (bl->out_valid);
 #endif /* defined DEBUG_libfirm */
-  for (i = 0; i < (int)bl->out[0]; i++)
-    if ((get_irn_mode(bl->out[i+1]) == mode_X)  &&
-        (get_irn_op(bl->out[i+1]) != op_End)) {
+  for (i = 1; i <= (int)bl->out[0]; i++)
+    if ((get_irn_mode(bl->out[i]) == mode_X)  &&
+        (get_irn_op(bl->out[i]) != op_End)) {
       if (out_pos == pos) {
-        ir_node *cfop = bl->out[i+1];
-        return cfop->out[0+1];
-      } else {
+        ir_node *cfop = bl->out[i];
+        return cfop->out[1];
+      } else
         out_pos++;
-      }
     }
   return NULL;
 }
@@ -223,15 +222,15 @@ static int _count_outs(ir_node *n) {
 
   for (i = start; i < irn_arity; i++) {
     /* Optimize Tuples.  They annoy if walking the cfg. */
-    ir_node *succ = skip_Tuple(get_irn_n(n, i));
-    set_irn_n(n, i, succ);
+    ir_node *pred = skip_Tuple(get_irn_n(n, i));
+    set_irn_n(n, i, pred);
 
     /* count outs for successors */
-    if (get_irn_visited(succ) < get_irg_visited(current_ir_graph)) {
-      res += _count_outs(succ);
+    if (get_irn_visited(pred) < get_irg_visited(current_ir_graph)) {
+      res += _count_outs(pred);
     }
     /* Count my outs */
-    succ->out = (ir_node **)( (int)succ->out + 1);
+    pred->out = (ir_node **)( (int)pred->out + 1);
   }
   return res;
 }
@@ -267,7 +266,7 @@ static int count_outs(ir_graph *irg) {
  */
 static ir_node **_set_out_edges(ir_node *n, ir_node **free) {
   int n_outs, start, i, irn_arity;
-  ir_node *succ;
+  ir_node *pred;
 
   set_irn_visited(n, get_irg_visited(current_ir_graph));
 
@@ -287,13 +286,13 @@ static ir_node **_set_out_edges(ir_node *n, ir_node **free) {
   irn_arity = get_irn_arity(n);
 
   for (i = start; i < irn_arity; i++) {
-    succ = get_irn_n(n, i);
+    pred = get_irn_n(n, i);
     /* Recursion */
-    if (get_irn_visited(succ) < get_irg_visited(current_ir_graph))
-      free = _set_out_edges(succ, free);
+    if (get_irn_visited(pred) < get_irg_visited(current_ir_graph))
+      free = _set_out_edges(pred, free);
     /* Remember our back edge */
-    succ->out[get_irn_n_outs(succ)+1] = n;
-    succ->out[0] = (ir_node *) (get_irn_n_outs(succ) + 1);
+    pred->out[get_irn_n_outs(pred)+1] = n;
+    pred->out[0] = (ir_node *) (get_irn_n_outs(pred) + 1);
   }
   return free;
 }
