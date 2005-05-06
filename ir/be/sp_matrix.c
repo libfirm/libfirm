@@ -9,9 +9,15 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <alloca.h>
 #include <assert.h>
 #include "sp_matrix.h"
 #include "list.h"
@@ -72,7 +78,7 @@ static INLINE int _m_new_size(int old_size, int min) {
 
 /**
  * Allocates space for @p count entries in the rows array and
- * intitializes all entries from @p start to the end.
+ * inititializes all entries from @p start to the end.
  */
 static INLINE void _m_alloc_row(sp_matrix_t *m, int start, int count) {
 	int p;
@@ -88,7 +94,7 @@ static INLINE void _m_alloc_row(sp_matrix_t *m, int start, int count) {
 
 /**
  * Allocates space for @p count entries in the cols array and
- * intitializes all entries from @p start to the end.
+ * inititializes all entries from @p start to the end.
  */
 static INLINE void _m_alloc_col(sp_matrix_t *m, int start, int count) {
 	int p;
@@ -332,8 +338,10 @@ void matrix_optimize(sp_matrix_t *m) {
 
 	/* kill all double-entries (Mij and Mji are set) */
 	matrix_foreach(m, e) {
+    int t_val;
+
 		assert(e->row != e->col && "Root has itself as arg. Ok. But the arg (=root) will alwazs have the same color as root");
-		int t_val = matrix_get(m, e->col, e->row);
+		t_val = matrix_get(m, e->col, e->row);
 		if (t_val) {
 			matrix_set(m, e->col, e->row, 0);
 			matrix_set(m, e->row, e->col, e->val + t_val);
