@@ -34,6 +34,8 @@
 # include "irgwalk.h"
 # include "xmalloc.h"
 # include "gnu_ext.h"
+# include "irdump.h"
+# include "typewalk.h"
 
 
 /*
@@ -760,8 +762,10 @@ typalise_t *typalise (ir_node *node)
     typalise_t *ta = NULL;
 
     for (i = 0; i < n_ins; i ++) {
+      typalise_t *ta_in;
+
       phi_in = get_irn_n (node, i);
-      typalise_t *ta_in = typalise (phi_in);
+      ta_in = typalise (phi_in);
 
       if (NULL != ta_in) {
         ta = (NULL == ta) ? ta_in : ta_join (ta, ta_in);
@@ -872,6 +876,10 @@ void typalise_init ()
 
 /*
   $Log$
+  Revision 1.10  2005/05/06 12:02:34  beck
+  added missing includes
+  removed C99 features
+
   Revision 1.9  2005/03/22 13:56:09  liekweg
   "small" fix for exception b/d
 
