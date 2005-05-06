@@ -2,7 +2,11 @@
  * @author Daniel Grund
  * @date 12.04.2005
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
+#include "xmalloc.h"
 #include "becopyopt.h"
 #include "becopystat.h"
 
@@ -32,11 +36,11 @@ static void co_append_unit(copy_opt_t *co, const ir_node *root) {
 
 	/* init unit */
 	arity = get_irn_arity(root);
-	unit = calloc(1, sizeof(*unit));
+	unit = xcalloc(1, sizeof(*unit));
 	unit->co = co;
 	unit->interf = 0;
 	unit->node_count = 1;
-	unit->nodes = malloc((arity+1) * sizeof(*unit->nodes));
+	unit->nodes = xmalloc((arity+1) * sizeof(*unit->nodes));
 	unit->nodes[0] = root;
 	INIT_LIST_HEAD(&unit->queue);
 
@@ -54,7 +58,7 @@ static void co_append_unit(copy_opt_t *co, const ir_node *root) {
 				unit->interf++;
 		}
 	}
-	unit->nodes = realloc(unit->nodes, unit->node_count * sizeof(*unit->nodes));
+	unit->nodes = xrealloc(unit->nodes, unit->node_count * sizeof(*unit->nodes));
 	list_add_tail(&unit->units, &co->units);
 	/* Init mis_size to node_count. So get_lower_bound returns correct results.
 	 * - Now it can be called even before the heuristic has run.
@@ -85,10 +89,12 @@ static void co_collect_units(copy_opt_t *co) {
 copy_opt_t *new_copy_opt(ir_graph *irg, const arch_isa_if_t *isa, const arch_register_class_t *cls) {
 	const char *s1, *s2, *s3;
 	int len;
+        copy_opt_t *co;
+
 	dbg = firm_dbg_register("ir.be.copyopt");
 	firm_dbg_set_mask(dbg, DEBUG_LVL);
 
-	copy_opt_t *co = calloc(1, sizeof(*co));
+	co = xcalloc(1, sizeof(*co));
 	co->irg = irg;
 	co->isa = isa;
 	co->cls = cls;
@@ -97,7 +103,7 @@ copy_opt_t *new_copy_opt(ir_graph *irg, const arch_isa_if_t *isa, const arch_reg
 	s2 = get_entity_name(get_irg_entity(co->irg));
 	s3 = cls->name;
 	len = strlen(s1) + strlen(s2) + strlen(s3) + 5;
-	co->name = malloc(len);
+	co->name = xmalloc(len);
 	if (!strcmp(co->name, DEBUG_IRG))
 		firm_dbg_set_mask(dbg, -1);
 	snprintf(co->name, len, "%s__%s__%s", s1, s2, s3);
@@ -109,10 +115,10 @@ copy_opt_t *new_copy_opt(ir_graph *irg, const arch_isa_if_t *isa, const arch_reg
 
 void free_copy_opt(copy_opt_t *co) {
 	unit_t *curr, *tmp;
-	free(co->name);
+	xfree(co->name);
 	list_for_each_entry_safe(unit_t, curr, tmp, &co->units, units) {
-		free(curr->nodes);
-		free(curr);
+		xfree(curr->nodes);
+		xfree(curr);
 	}
 }
 
