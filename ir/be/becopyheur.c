@@ -8,7 +8,18 @@
  * @author Daniel Grund
  * @date 12.04.2005
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
+
+#include "xmalloc.h"
 #include "becopyopt.h"
 #include "becopystat.h"
 
@@ -49,7 +60,7 @@ typedef struct _qnode_t {
 	int color;					/**< target color */
 	set *conflicts;				/**< contains conflict_t's. All internal conflicts */
 	int mis_size;				/**< number of nodes in the mis. */
-	const ir_node **mis;		/**< the nodes of unit_t->nodes[] beeing part of the max idependent set */
+	const ir_node **mis;		/**< the nodes of unit_t->nodes[] being part of the max independent set */
 	set *changed_nodes;			/**< contains node_stat_t's. */
 } qnode_t;
 
@@ -178,11 +189,11 @@ static INLINE void qnode_pin_local(const qnode_t *qn, const ir_node *irn) {
  * @param  irn The node to set the color for
  * @param  col The color to set
  * @param  trigger The irn that caused the wish to change the color of the irn
- * @return CHANGE_SAVE iff setting the color is possible, with all transiteve effects.
+ * @return CHANGE_SAVE iff setting the color is possible, with all transitive effects.
  *         CHANGE_IMPOSSIBLE iff conflicts with reg-constraintsis occured.
  *         Else the first conflicting ir_node encountered is returned.
  *
- * ASSUMPTION: Assumes that a life range of a single value can't be spilt into
+ * ASSUMPTION: Assumes that a life range of a single value can't be split into
  * 			   several smaller intervals where other values can live in between.
  *             This should be true in SSA.
  */
@@ -359,7 +370,7 @@ static INLINE void qnode_max_ind_set(qnode_t *qn, const unit_t *ou) {
 	/* stores the currently examined set */
 	curr = alloca(all_size*sizeof(*curr));
 
-	while (1) { /* this loop will terminate because at least a single node'll be a max indep. set */
+	while (1) { /* this loop will terminate because at least a single node will be a max indep. set */
 		/* build current set */
 		for (i=0; i<curr_size; ++i)
 			curr[i] = all[which[all_size-curr_size+i]];
@@ -408,7 +419,7 @@ conflict_found:
  * Creates a new qnode
  */
 static INLINE qnode_t *new_qnode(const unit_t *ou, int color) {
-	qnode_t *qn = malloc(sizeof(*qn));
+	qnode_t *qn = xmalloc(sizeof(*qn));
 	qn->ou = ou;
 	qn->color = color;
 	qn->mis = malloc(ou->node_count * sizeof(*qn->mis));
@@ -423,12 +434,12 @@ static INLINE qnode_t *new_qnode(const unit_t *ou, int color) {
 static INLINE void free_qnode(qnode_t *qn) {
 	del_set(qn->conflicts);
 	del_set(qn->changed_nodes);
-	free(qn->mis);
-	free(qn);
+	xfree(qn->mis);
+	xfree(qn);
 }
 
 /**
- * Inserts a qnode in the sorted queue of the outimization unit. Queue is
+ * Inserts a qnode in the sorted queue of the optimization unit. Queue is
  * ordered by field 'size' (the size of the mis) in decreasing order.
  */
 static INLINE void ou_insert_qnode(unit_t *ou, qnode_t *qn) {
@@ -498,6 +509,8 @@ static void ou_optimize(unit_t *ou) {
 
 	/* apply the best found qnode */
 	if (curr->mis_size >= 2) {
+		node_stat_t *ns;
+
 		DBG((dbg, LEVEL_1, "\t  Best color: %d  Copies: %d/%d\n", curr->color, ou->interf+ou->node_count-curr->mis_size, ou->interf+ou->node_count-1));
 		/* globally pin root and eventually others */
 		pset_insert_ptr(pinned_global, ou->nodes[0]);
@@ -509,7 +522,6 @@ static void ou_optimize(unit_t *ou) {
 		}
 
 		/* set color of all changed nodes */
-		node_stat_t *ns;
 		for (ns = set_first(curr->changed_nodes); ns; ns = set_next(curr->changed_nodes)) {
 			/* NO_COLOR is possible, if we had an undo */
 			if (ns->new_color != NO_COLOR) {
