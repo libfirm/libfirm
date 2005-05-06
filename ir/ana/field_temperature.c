@@ -82,7 +82,7 @@ int get_weighted_loop_depth(ir_node *n) {
 static int default_recursion_weight = 5;
 
 /* The final evaluation of a node.  In this function we can
-   adapt the heuristic.  Combine execution freqency with
+   adapt the heuristic.  Combine execution frequency with
    recursion depth.
    @@@ the second version of the heuristic. */
 double get_irn_final_cost(ir_node *n) {
