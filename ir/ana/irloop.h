@@ -125,10 +125,16 @@ void *get_loop_link (const ir_loop *loop);
 /* Constructing and destructing the loop/backedge information.         */
 /* ------------------------------------------------------------------- */
 
-/** Constructs backedge information for irg in intraprocedural view.
+/** Constructs backedge information and loop tree for a graph in intraprocedural view.
+ *
+ *  The algorithm views the program representation as a pure graph.
+ *  It assumes that only block and phi nodes may be loop headers.
+ *  The resulting loop tree is a possible visiting order for dataflow
+ *  analysis.
+ *
  *  @returns Maximal depth of loop tree.
  *
- *  ATTENTION:
+ *  @remark
  *  One assumes, the Phi nodes in a block with a backedge have backedges
  *  at the same positions as the block.  This is not the case, as
  *  the scc algorithms does not respect the program semantics in this case.
@@ -140,21 +146,41 @@ void *get_loop_link (const ir_loop *loop);
 /* @@@ Well, maybe construct_loop_information or analyze_loops ? */
 int construct_backedges(ir_graph *irg);
 
-/** Constructs backedges for all irgs in interprocedural view.  All
-    loops in the graph will be marked as such, not only realizeable
-    loops and recursions in the program.  E.g., if the same funcion is
-    called twice, there is a loop between the first function return and
-    the second call.
- *  @returns Maximal depth of loop tree. */
+/** Constructs backedges for all irgs in interprocedural view.
+ *
+ *  @see As construct_backedges(), but for interprocedural view.
+ *
+ *  @remark
+ *  All loops in the graph will be marked as such, not only
+ *  realizeable loops and recursions in the program.  E.g., if the
+ *  same funcion is called twice, there is a loop between the first
+ *  function return and the second call.
+ *
+ *  @returns Maximal depth of loop tree.
+*/
 int construct_ip_backedges(void);
 
-/* Construct loop tree only for control flow.
+/** Construct loop tree only for control flow.
+ *
+ *  This constructs loop information resembling the program structure.
+ *  It is useful for loop optimizations and analyses, as, e.g., finding
+ *  iteration variables or loop invariant code motion.
+ *
+ *  This algorithm computes only back edge information for Block nodes, not
+ *  for Phi nodes.
+ *
  * @returns Maximal depth of loop tree. */
 int construct_cf_backedges(ir_graph *irg);
+
+/** Construct interprocedural loop tree for control flow.
+ *
+ *  @see construct_cf_backedges() and construct_ip_backedges().
+ */
 int construct_ip_cf_backedges (void);
 
 /** Removes all loop information.
-    Resets all backedges */
+ *  Resets all backedges.  Works for any construction algorithm.
+ */
 void free_loop_information(ir_graph *irg);
 void free_all_loop_information (void);
 
