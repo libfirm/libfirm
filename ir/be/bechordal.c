@@ -32,10 +32,10 @@
 #include "bechordal_t.h"
 #include "bearch.h"
 
-#undef BUILD_GRAPH
-#define DUMP_INTERVALS
+#define BUILD_GRAPH
+#undef DUMP_INTERVALS
 #undef DUMP_PRESSURE
-#define DUMP_IFG
+#undef DUMP_IFG
 
 #if defined(DUMP_IFG) && !defined(BUILD_GRAPH)
 #define BUILD_GRAPH
@@ -61,7 +61,8 @@ typedef struct _env_t {
 	struct obstack obst;	/**< An obstack for temporary storage. */
   ir_graph *irg;        /**< The graph the reg alloc is running on. */
 #ifdef BUILD_GRAPH
-	set *graph;						/**< The interference graph. */
+	set *nodes;						/**< The interference graph nodes. */
+	set *edges;						/**< The interference graph edges. */
 #endif
 
 	bitset_t *live;				/**< A liveness bitset. */
@@ -232,6 +233,7 @@ static void dump_intv_cfg(env_t *env)
 #ifdef BUILD_GRAPH
 
 #define IF_EDGE_HASH(e) ((e)->src)
+#define IF_NODE_HASH(n) ((n)->nnr)
 
 static int if_edge_cmp(const void *p1, const void *p2, size_t size)
 {
@@ -239,6 +241,14 @@ static int if_edge_cmp(const void *p1, const void *p2, size_t size)
 	const if_edge_t *e2 = p2;
 
 	return !(e1->src == e2->src && e1->tgt == e2->tgt);
+}
+
+static int if_node_cmp(const void *p1, const void *p2, size_t size)
+{
+	const if_node_t *n1 = p1;
+	const if_node_t *n2 = p2;
+
+	return n1->irn != n2->irn;
 }
 
 static INLINE if_edge_t *edge_init(if_edge_t *edge, int src, int tgt)
@@ -258,15 +268,29 @@ static INLINE if_edge_t *edge_init(if_edge_t *edge, int src, int tgt)
 static INLINE void add_if(const env_t *env, int src, int tgt)
 {
 	if_edge_t edge;
+	if_node_t node, *src_node, *tgt_node;
+	/* insert edge */
 	edge_init(&edge, src, tgt);
-	set_insert(env->graph, &edge, sizeof(edge), IF_EDGE_HASH(&edge));
+	set_insert(env->edges, &edge, sizeof(edge), IF_EDGE_HASH(&edge));
+
+	/* insert nodes */
+	node.nnr = src;
+	node.neighb = pset_new_ptr(8);
+	src_node = set_insert(env->nodes, &node, sizeof(node), IF_NODE_HASH(&node));
+	node.nnr = tgt;
+	node.neighb = pset_new_ptr(8);
+	tgt_node = set_insert(env->nodes, &node, sizeof(node), IF_NODE_HASH(&node));
+
+	/* insert neighbors into nodes */
+	pset_insert_ptr(src_node->neighb, tgt_node);
+	pset_insert_ptr(tgt_node->neighb, src_node);
 }
 
 static INLINE int are_connected(const env_t *env, int src, int tgt)
 {
 	if_edge_t edge;
 	edge_init(&edge, src, tgt);
-	return set_find(env->graph, &edge, sizeof(edge), IF_EDGE_HASH(&edge)) != NULL;
+	return set_find(env->edges, &edge, sizeof(edge), IF_EDGE_HASH(&edge)) != NULL;
 }
 
 static void dump_ifg(ir_graph *irg, set *edges, const char *filename)
@@ -727,7 +751,7 @@ static void assign(ir_node *block, void *env_ptr)
 void be_ra_chordal_init(void)
 {
 	dbg = firm_dbg_register(DBG_BERA);
-	firm_dbg_set_mask(dbg, -1);
+	firm_dbg_set_mask(dbg, 0);
 }
 
 void be_ra_chordal(ir_graph *irg,
@@ -744,7 +768,8 @@ void be_ra_chordal(ir_graph *irg,
 	obstack_init(&env->obst);
 
 #ifdef BUILD_GRAPH
-	env->graph = new_set(if_edge_cmp, node_count);
+	env->edges = new_set(if_edge_cmp, node_count);
+	env->nodes = new_set(if_node_cmp, node_count);
 #endif
 
 	env->live = bitset_obstack_alloc(&env->obst, node_count);
@@ -769,7 +794,7 @@ void be_ra_chordal(ir_graph *irg,
 		char buf[128];
 
 		ir_snprintf(buf, sizeof(buf), "ifg_%F.dot", irg);
-		dump_ifg(irg, env->graph, buf);
+		dump_ifg(irg, env->edges, buf);
 	}
 #endif
 
@@ -785,7 +810,13 @@ void be_ra_chordal_done(ir_graph *irg)
 	env_t *env = get_irg_ra_link(irg);
 
 #ifdef BUILD_GRAPH
-	free(env->graph);
+	{
+		if_node_t *ifn;
+		for(ifn = set_first(env->nodes); ifn; ifn = set_next(env->nodes))
+			free(ifn->neighb);
+		free(env->nodes);
+		free(env->edges);
+	}
 #endif
 
 	obstack_free(&env->obst, NULL);
@@ -807,7 +838,19 @@ int phi_ops_interfere(const ir_node *a, const ir_node *b)
 }
 
 #ifdef BUILD_GRAPH
+/** TODO remove this
+ * Deprecated. Use be_ra_get_ifg_edges instead.
+ */
 set *be_ra_get_ifg(ir_graph *irg) {
-	return ((env_t *)get_irg_ra_link(irg))->graph;
+	return ((env_t *)get_irg_ra_link(irg))->edges;
 }
+
+set *be_ra_get_ifg_edges(ir_graph *irg) {
+	return ((env_t *)get_irg_ra_link(irg))->edges;
+}
+
+set *be_ra_get_ifg_nodes(ir_graph *irg) {
+	return ((env_t *)get_irg_ra_link(irg))->nodes;
+}
+
 #endif

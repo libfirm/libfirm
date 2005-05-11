@@ -30,11 +30,18 @@ typedef struct _border_t {
 } border_t;
 
 #ifdef BUILD_GRAPH
+typedef struct _if_node_t {
+	int nnr;
+	pset *neighb;
+} if_node_t;
+
 typedef struct _if_edge_t {
 	int src, tgt;
 } if_edge_t;
 
-set *be_ra_get_ifg(ir_graph *irg);
+set *be_ra_get_ifg(ir_graph *irg); /**< Deprecated. Use be_ra_get_ifg_edges. */
+set *be_ra_get_ifg_edges(ir_graph *irg);
+set *be_ra_get_ifg_nodes(ir_graph *irg);
 #endif
 
 extern void be_ra_chordal_spill(ir_graph *irg);
