@@ -42,6 +42,10 @@ typedef struct _if_edge_t {
 set *be_ra_get_ifg(ir_graph *irg); /**< Deprecated. Use be_ra_get_ifg_edges. */
 set *be_ra_get_ifg_edges(ir_graph *irg);
 set *be_ra_get_ifg_nodes(ir_graph *irg);
+int ifg_has_edge(const ir_graph *irg, if_node_t *n1, if_node_t* n2);
+#define ifn_get_degree(ifnode) pset_count(ifnode->neighb)
+#define foreach_neighb(ifnode, curr) \
+			for(curr=pset_first(ifnode->neighb); curr; curr=pset_next(ifnode->neighb))
 #endif
 
 extern void be_ra_chordal_spill(ir_graph *irg);

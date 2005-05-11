@@ -248,7 +248,7 @@ static int if_node_cmp(const void *p1, const void *p2, size_t size)
 	const if_node_t *n1 = p1;
 	const if_node_t *n2 = p2;
 
-	return n1->irn != n2->irn;
+	return n1->nnr != n2->nnr;
 }
 
 static INLINE if_edge_t *edge_init(if_edge_t *edge, int src, int tgt)
@@ -291,6 +291,10 @@ static INLINE int are_connected(const env_t *env, int src, int tgt)
 	if_edge_t edge;
 	edge_init(&edge, src, tgt);
 	return set_find(env->edges, &edge, sizeof(edge), IF_EDGE_HASH(&edge)) != NULL;
+}
+
+int ifg_has_edge(const ir_graph *irg, if_node_t *n1, if_node_t* n2) {
+	return are_connected(get_irg_ra_link(irg), n1->nnr, n2->nnr);
 }
 
 static void dump_ifg(ir_graph *irg, set *edges, const char *filename)
